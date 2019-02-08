@@ -12,11 +12,10 @@
 #include <stdbool.h>
 #include <unistd.h>
 #include <locale.h>
-#include "output_statistics_ncurses.h"
-
 #include "atsc3_utils.h"
 #include "atsc3_lls.h"
 #include "atsc3_mmtp_types.h"
+#include "atsc3_output_statistics_ncurses.h"
 
 #ifndef ATSC3_MMT_PACKET_STATISTICS_H_
 #define ATSC3_MMT_PACKET_STATISTICS_H_
