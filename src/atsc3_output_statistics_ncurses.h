@@ -33,6 +33,8 @@
 #include <pthread.h>
 #include <stdlib.h>
 
+#include "atsc3_lls.h"
+
 #ifndef ATSC3_OUTPUT_STATISTICS_NCURSES_H_
 #define ATSC3_OUTPUT_STATISTICS_NCURSES_H_
 
@@ -42,6 +44,8 @@ void ncurses_mutext_init();
 void ncurses_writer_lock_mutex_acquire();
 void ncurses_writer_lock_mutex_release();
 void ncurses_writer_lock_mutex_destroy();
+
+void lls_dump_instance_table_ncurses(lls_table_t* lls_session);
 
 
 //#if defined OUTPUT_STATISTICS && OUTPUT_STATISTICS == NCURSES
@@ -68,6 +72,7 @@ WINDOW* right_window_outline;
 WINDOW* bottom_window_outline;
 	WINDOW* pkt_global_loss_window;
 
+int global_mmt_loss_count;
 
 #define __DOUPDATE()				doupdate();
 
@@ -110,14 +115,21 @@ WINDOW* bottom_window_outline;
 #define __PS_CLEAR() 				werase(pkt_global_stats_window); \
 									werase(pkt_flow_stats_window);
 
-#define __PS_STATS_GLOBAL_LOSS(...) ncurses_writer_lock_mutex_acquire(); \
-									wprintw(pkt_global_loss_window, __VA_ARGS__); \
-									wprintw(pkt_global_loss_window,"\n"); \
-									ncurses_writer_lock_mutex_release();
+#define __PS_STATS_GLOBAL_LOSS(...)	wprintw(pkt_global_loss_window, __VA_ARGS__); \
+									wprintw(pkt_global_loss_window,"\n");
 
 #define __PS_STATS_STDOUT(...)		printf(__VA_ARGS__); \
 									printf("\n");
 
+
+#define __LLS_DUMP_NOUPDATE()		wnoutrefresh(signaling_global_stats_window);
+
+#define __LLS_DUMP_CLEAR()			wclear(signaling_global_stats_window);
+
+#define __LLS_DUMP(...)				wprintw(signaling_global_stats_window, __VA_ARGS__); \
+									wprintw(signaling_global_stats_window,"\n");
+
+#define __LLS_REFRESH()		 		wrefresh(signaling_global_stats_window);
 
 
 
