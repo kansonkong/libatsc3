@@ -67,17 +67,17 @@ void *printBandwidthStatistics(void *vargp)
 		global_bandwidth_statistics->interval_filtered_last_rx = global_bandwidth_statistics->interval_filtered_current_rx;
 		global_bandwidth_statistics->grand_filtered_rx += interval_filtered_delta;
 
-		__BW_STATS_RUNTIME("lls rx  : %'13d B/s, %'13d B", interval_lls_delta, interval_lls_rx_s);
-		__BW_STATS_RUNTIME("mmt     : %'13d B/s, %'13d B", interval_mmt_delta, interval_mmt_rx_s);
-		__BW_STATS_RUNTIME("alc rx  : %'13d B/s, %'13d B", interval_alc_delta, interval_alc_rx_s);
-		__BW_STATS_RUNTIME("Filtered: %'13d B/s, %'13d B", interval_filtered_delta, interval_filtered_rx_s);
-		__BW_STATS_RUNTIME("total rx: %'13d B/s, %'13d B", interval_total_delta, 	interval_total_rx_s);
+		__BW_STATS_RUNTIME("LLS     : %'8d  b/s, %'13d b",   interval_lls_delta, 						interval_lls_rx_s);
+		__BW_STATS_RUNTIME("MMT     : %'8d Kb/s, %'13d Kb",  (interval_mmt_delta * 8) / 1024.0, 		(interval_mmt_rx_s * 8) / 1024.0);
+		__BW_STATS_RUNTIME("ALC     : %'8d Kb/s, %'13d Kb",  (interval_alc_delta * 8) / 1024.0, 		(interval_alc_rx_s* 8) / 1024.0);
+		__BW_STATS_RUNTIME("Filtered: %'8d Kb/s, %'13d KB",  (interval_filtered_delta * 8) / 1024.0,	(interval_filtered_rx_s * 8) / 1024.0);
+		__BW_STATS_RUNTIME("Total   : %'8d Kb/s, %'13d KB",  (interval_total_delta * 8) / 1024.0, 		(interval_total_rx_s * 8) / 1024.0);
 
-		__BW_STATS_LIFETIME("LLS rx  : %'13d B", 			 global_bandwidth_statistics->grand_lls_rx);
+		__BW_STATS_LIFETIME("LLS     : %'13d B", 			 global_bandwidth_statistics->grand_lls_rx);
 		__BW_STATS_LIFETIME("MMT     : %'13d B", 			 global_bandwidth_statistics->grand_mmt_rx);
-		__BW_STATS_LIFETIME("ALC rx  : %'13d B", 			 global_bandwidth_statistics->grand_alc_rx);
+		__BW_STATS_LIFETIME("ALC     : %'13d B", 			 global_bandwidth_statistics->grand_alc_rx);
 		__BW_STATS_LIFETIME("Filtered: %'13d B",			 global_bandwidth_statistics->grand_filtered_rx);
-		__BW_STATS_LIFETIME("Total rx: %'13d B", 			 global_bandwidth_statistics->grand_total_rx);
+		__BW_STATS_LIFETIME("Total   : %'13d B", 			 global_bandwidth_statistics->grand_total_rx);
 
 		__BW_STATS_REFRESH();
 	}

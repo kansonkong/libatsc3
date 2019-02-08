@@ -132,12 +132,12 @@ void create_or_update_window_sizes(bool should_create) {
   int left_window_y = 0;
   int left_window_x = 0;
   int right_window_h = (rows * pct_split_top) / 100;
-  int right_window_w = cols/2;
+  int right_window_w = cols/2 -1;
   int right_window_y = 0;
-  int right_window_x = cols/2+1;
+  int right_window_x = cols/2 +1;
 
   int bottom_window_h = rows - left_window_h - 1;
-  int bottom_window_w = cols;
+  int bottom_window_w = cols - 1;
   int bottom_window_y = left_window_h + 1;
   int bottom_window_x = 0;
 
@@ -171,22 +171,22 @@ void create_or_update_window_sizes(bool should_create) {
 	  //left
 
 	  //bandwidth window
-	  bw_window_outline = 		derwin(left_window_outline, 	12, 				left_window_w-2,  left_window_h-12, 	1);
+	  bw_window_outline = 		derwin(left_window_outline, 	8, 			left_window_w-2,  left_window_h-8, 	1);
 	  whline(bw_window_outline, ACS_HLINE, left_window_w-2);
 
 	  char msg_bandwidth[] = "RX Bandwidth Statistics";
 	  mvwprintw(bw_window_outline, 0, cols/4 - strlen(msg_bandwidth)/2,"%s", msg_bandwidth);
 
-	  bw_window_runtime = 		derwin(bw_window_outline, 9, (left_window_w-2)/2, 2, 1);
-	  bw_window_lifetime = 		derwin(bw_window_outline, 9, (left_window_w-2)/2, 2, left_window_w/2);
+	  bw_window_runtime = 		derwin(bw_window_outline, 6, (left_window_w-2)/2, 1, 1);
+	  bw_window_lifetime = 		derwin(bw_window_outline, 6, (left_window_w-2)/2, 1, left_window_w/2);
 
 	  //pkt_global_loss_window_outline = 	derwin(left_window_outline, pkt_window_height-25, half_cols-4, 22, 1);
 
 	  //RIGHT
-	  pkt_flow_stats_window =	derwin(right_window_outline, right_window_h-6, right_window_w-2, 1, 1);
+	  pkt_flow_stats_window =	derwin(right_window_outline, right_window_h-6, right_window_w-3, 1, 1);
 
 	  //bottom
-	  pkt_global_loss_window = 	derwin(bottom_window_outline, bottom_window_h-1, bottom_window_w-1, 1, 1);
+	  pkt_global_loss_window = 	derwin(bottom_window_outline, bottom_window_h-1, bottom_window_w-2, 1, 1);
 
 
   } else {
