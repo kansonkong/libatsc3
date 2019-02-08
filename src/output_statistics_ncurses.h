@@ -78,6 +78,8 @@ WINDOW* bottom_window_outline;
 #define __PS_STATS_FLOW(...) 		wprintw(pkt_flow_stats_window, __VA_ARGS__); \
 									wprintw(pkt_flow_stats_window,"\n");
 
+#define __PS_STATS_HR()				whline(bw_window_outline, ACS_HLINE, 0);
+
 #define __PS_STATS_LOSS(...) 		wprintw(pkt_global_loss_window, __VA_ARGS__); \
 									wprintw(pkt_global_loss_window,"\n");
 

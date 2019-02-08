@@ -332,18 +332,18 @@ void atsc3_packet_statistics_dump_global_stats(){
 
 
 		__PS_STATS_FLOW("packet_sequence_numbers: %-10u to %-10u (0x%08x to 0x%08x)",		packet_mmt_stats->packet_sequence_number_sample_interval_start, 	packet_mmt_stats->packet_sequence_number, packet_mmt_stats->packet_sequence_number_sample_interval_start,	packet_mmt_stats->packet_sequence_number);
-		__PS_STATS_FLOW("packet RX count: %-6d                             mpu_sequence_number: %-10u  ",	packet_mmt_stats->packet_sequence_number_sample_interval_processed,
+		__PS_STATS_FLOW("packet RX count: %-6d        mpu_sequence_number: %-10u  ",	packet_mmt_stats->packet_sequence_number_sample_interval_processed,
 																										packet_mmt_stats->mpu_stats_timed_sample_interval->mpu_sequence_number_last);
 
-		__PS_STATS_FLOW("missing        : %-6d                                   mpu timed_total: %-6d", 	packet_mmt_stats->packet_sequence_number_sample_interval_missing,
+		__PS_STATS_FLOW("missing        : %-6d         mpu timed_total: %-6d", 	packet_mmt_stats->packet_sequence_number_sample_interval_missing,
 																								packet_mmt_stats->mpu_stats_timed_sample_interval->mpu_timed_total);
-		__PS_STATS_FLOW("pkt_seq num gap: %-10d                                signalling_messages total: %u", packet_mmt_stats->packet_sequence_number_sample_interval_gap,
+		__PS_STATS_FLOW("pkt_seq num gap: %-10d        signalling_messages total: %u", packet_mmt_stats->packet_sequence_number_sample_interval_gap,
 				packet_mmt_stats->signalling_stats_sample_interval->signalling_messages_total);
 
-		__PS_STATS_FLOW("Lifetime NTP   : %u.%03u to %u.%03u (%-u to %-u)                     Loss Pct: %f",packet_mmt_stats->timestamp_lifetime_start_s, packet_mmt_stats->timestamp_lifetime_start_us/100, seconds, microseconds/100, packet_mmt_stats->timestamp_lifetime_start, packet_mmt_stats->timestamp, computed_flow_packet_loss);
-		__PS_STATS_FLOW("packet_seq_numbers: %-10u to %-10u (0x%08x to 0x%08x)              max sequence gap: %-6d ",	packet_mmt_stats->packet_sequence_number_lifetime_start,  packet_mmt_stats->packet_sequence_number, packet_mmt_stats->packet_sequence_number_lifetime_start, packet_mmt_stats->packet_sequence_number, packet_mmt_stats->packet_sequence_number_max_gap);
-		__PS_STATS_FLOW("Total packets RX: %-6u,                                           missing: %-6u",	packet_mmt_stats->packet_sequence_number_lifetime_processed, packet_mmt_stats->packet_sequence_number_lifetime_missing);
-
+		__PS_STATS_FLOW("Lifetime NTP   : %u.%03u to %u.%03u (%-u to %-u)        Loss Pct: %f",packet_mmt_stats->timestamp_lifetime_start_s, packet_mmt_stats->timestamp_lifetime_start_us/100, seconds, microseconds/100, packet_mmt_stats->timestamp_lifetime_start, packet_mmt_stats->timestamp, computed_flow_packet_loss);
+		__PS_STATS_FLOW("packet_seq_numbers: %-10u to %-10u (0x%08x to 0x%08x)    max sequence gap: %-6d ",	packet_mmt_stats->packet_sequence_number_lifetime_start,  packet_mmt_stats->packet_sequence_number, packet_mmt_stats->packet_sequence_number_lifetime_start, packet_mmt_stats->packet_sequence_number, packet_mmt_stats->packet_sequence_number_max_gap);
+		__PS_STATS_FLOW("Total packets RX: %-6u,                                  missing: %-6u",	packet_mmt_stats->packet_sequence_number_lifetime_processed, packet_mmt_stats->packet_sequence_number_lifetime_missing);
+		__PS_STATS_HR();
 
 		//clear out any sample interval attributes
 		packet_mmt_stats->has_timestamp_sample_interval_start = false;
