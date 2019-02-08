@@ -185,10 +185,10 @@ void create_or_update_window_sizes(bool should_reload_term_size) {
 	//
 	//WINDOW *derwin(WINDOW *orig, 							int nlines, 	int ncols, 			int begin_y, 		int begin_x);
 	//left
-	pkt_global_stats_window = derwin(left_window_outline, 		left_window_h-13, 44,				 1, 	1);
+	pkt_global_stats_window = derwin(left_window_outline, 		left_window_h-12, 44,				 1, 	1);
 
 	//left signaling
-	signaling_global_stats_window = derwin(left_window_outline, left_window_h-8, left_window_w/2-2, 1, 45 );
+	signaling_global_stats_window = derwin(left_window_outline, left_window_h-6, left_window_w/2-2, 1, 45 );
 	wvline(signaling_global_stats_window, ACS_VLINE, left_window_h-8);
 
 	//left
@@ -208,7 +208,7 @@ void create_or_update_window_sizes(bool should_reload_term_size) {
 	pkt_flow_stats_window =	derwin(right_window_outline, right_window_h-6, right_window_w-3, 1, 1);
 
 	//bottom
-	pkt_global_loss_window = 	derwin(bottom_window_outline, bottom_window_h-1, bottom_window_w-2, 1, 1);
+	pkt_global_loss_window = 	derwin(bottom_window_outline, bottom_window_h-2, bottom_window_w-2, 1, 1);
 
 	wrefresh(my_window);
 	wrefresh(left_window_outline);
@@ -290,6 +290,18 @@ int process_lls_table_slt_update(lls_table_t* lls) {
 	}
 	lls_session->lls_table_slt = lls;
 
+	ncurses_writer_lock_mutex_acquire();
+
+	__LLS_DUMP_NOUPDATE();
+	__LLS_DUMP_CLEAR();
+	for(int i=0; i < lls->slt_table.service_entry_n; i++) {
+			service_t* service = lls->slt_table.service_entry[i];
+			lls_dump_instance_table_ncurses(lls_session->lls_table_slt);
+	}
+	__DOUPDATE();
+	__LLS_REFRESH();
+	ncurses_writer_lock_mutex_release();
+
 
 	for(int i=0; i < lls->slt_table.service_entry_n; i++) {
 		service_t* service = lls->slt_table.service_entry[i];
@@ -298,7 +310,6 @@ int process_lls_table_slt_update(lls_table_t* lls) {
 		if(service->broadcast_svc_signaling.sls_protocol == SLS_PROTOCOL_ROUTE) {
 			//TODO - we probably need to clear out the ALC session?
 			if(!lls_session->lls_slt_alc_session->alc_session) {
-				lls_dump_instance_table(lls_session->lls_table_slt);
 
 				lls_session->lls_slt_alc_session->lls_slt_service_id_alc = service->service_id;
 				lls_session->lls_slt_alc_session->alc_arguments = calloc(1, sizeof(alc_arguments_t));
@@ -525,7 +536,7 @@ void process_packet(u_char *user, const struct pcap_pkthdr *pkthdr, const u_char
 	//drop mdNS
 	if(udp_packet->dst_ip_addr == UDP_FILTER_MDNS_IP_ADDRESS && udp_packet->dst_port == UDP_FILTER_MDNS_PORT) {
 		global_stats->packet_counter_filtered_ipv4++;
-		printf("setting dns current_bytes_rx: %d, packets_rx: %d", global_bandwidth_statistics->interval_filtered_current_bytes_rx, global_bandwidth_statistics->interval_filtered_current_packets_rx);
+		//printf("setting dns current_bytes_rx: %d, packets_rx: %d", global_bandwidth_statistics->interval_filtered_current_bytes_rx, global_bandwidth_statistics->interval_filtered_current_packets_rx);
 		global_bandwidth_statistics->interval_filtered_current_bytes_rx += udp_packet->data_length;
 		global_bandwidth_statistics->interval_filtered_current_packets_rx++;
 
