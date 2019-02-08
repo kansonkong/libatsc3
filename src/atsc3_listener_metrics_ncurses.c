@@ -146,7 +146,7 @@ void create_or_update_window_sizes(bool should_reload_term_size) {
 
 	getmaxyx(my_window, rows, cols);              /* get the number of rows and columns */
 
-	int pct_split_top = 66;
+	int pct_split_top = 85;
 
 	int left_window_h = (rows * pct_split_top ) / 100;
 	int left_window_w = cols/2;
@@ -188,8 +188,7 @@ void create_or_update_window_sizes(bool should_reload_term_size) {
 	pkt_global_stats_window = derwin(left_window_outline, 		left_window_h-12, 44,				 1, 	1);
 
 	//left signaling
-	signaling_global_stats_window = derwin(left_window_outline, left_window_h-6, left_window_w/2-2, 1, 45 );
-	wvline(signaling_global_stats_window, ACS_VLINE, left_window_h-8);
+	signaling_global_stats_window = derwin(left_window_outline, left_window_h-11, left_window_w-50, 1, 46 );
 
 	//left
 	//bandwidth window
@@ -205,7 +204,7 @@ void create_or_update_window_sizes(bool should_reload_term_size) {
 	//pkt_global_loss_window_outline = 	derwin(left_window_outline, pkt_window_height-25, half_cols-4, 22, 1);
 
 	//RIGHT
-	pkt_flow_stats_window =	derwin(right_window_outline, right_window_h-6, right_window_w-3, 1, 1);
+	pkt_flow_stats_window =	derwin(right_window_outline, right_window_h-2, right_window_w-3, 1, 1);
 
 	//bottom
 	pkt_global_loss_window = 	derwin(bottom_window_outline, bottom_window_h-2, bottom_window_w-2, 1, 1);
@@ -291,13 +290,10 @@ int process_lls_table_slt_update(lls_table_t* lls) {
 	lls_session->lls_table_slt = lls;
 
 	ncurses_writer_lock_mutex_acquire();
-
-	__LLS_DUMP_NOUPDATE();
 	__LLS_DUMP_CLEAR();
-	for(int i=0; i < lls->slt_table.service_entry_n; i++) {
-			service_t* service = lls->slt_table.service_entry[i];
-			lls_dump_instance_table_ncurses(lls_session->lls_table_slt);
-	}
+	__LLS_REFRESH();
+
+	lls_dump_instance_table_ncurses(lls_session->lls_table_slt);
 	__DOUPDATE();
 	__LLS_REFRESH();
 	ncurses_writer_lock_mutex_release();
