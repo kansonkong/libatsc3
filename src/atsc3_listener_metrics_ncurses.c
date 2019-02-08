@@ -83,7 +83,7 @@ int PACKET_COUNTER=0;
 #include <ncurses.h>
 #include <limits.h>
 /* ncurses.h includes stdio.h */
-#include "output_statistics_ncurses.h"
+#include "atsc3_output_statistics_ncurses.h"
 
 #define _ENABLE_DEBUG true
 
@@ -118,113 +118,108 @@ int printf(const char *format, ...)  {
 
 
 
-void create_or_update_window_sizes(bool should_create) {
-    int rows, cols;
-    //set_term
-    getmaxyx(my_window, rows, cols);              /* get the number of rows and columns */
-    //  mvprintw(row/2,(col-strlen(msg))/2,"%s",msg);
-                                         /* print the message at the center of the screen */
+void create_or_update_window_sizes(bool should_reload_term_size) {
+	int rows, cols;
 
-  int pct_split_top = 66;
+	if(should_reload_term_size) {
+		struct winsize size;
+		if (ioctl(fileno(stdout), TIOCGWINSZ, &size) == 0) {
+			__INFO("rows: %d, cols:%d\n",  size.ws_row, size.ws_col);
+			//delete sub wins
+			delwin(pkt_global_loss_window);
+			delwin(bottom_window_outline);
+			delwin(pkt_flow_stats_window);
+			delwin(right_window_outline);
+			delwin(bw_window_lifetime);
+			delwin(bw_window_runtime);
+			delwin(bw_window_outline);
+			delwin(pkt_global_stats_window);
+			delwin(left_window_outline);
+			delwin(my_window);
+		    clear();
+		    endwin();
+			resizeterm(size.ws_row, size.ws_col);
+		}
+	}
+	my_window = newwin(0, 0, 0, 0);
 
-  int left_window_h = (rows * pct_split_top ) / 100;
-  int left_window_w = cols/2;
-  int left_window_y = 0;
-  int left_window_x = 0;
-  int right_window_h = (rows * pct_split_top) / 100;
-  int right_window_w = cols/2 -1;
-  int right_window_y = 0;
-  int right_window_x = cols/2 +1;
+	getmaxyx(my_window, rows, cols);              /* get the number of rows and columns */
 
-  int bottom_window_h = rows - left_window_h - 1;
-  int bottom_window_w = cols - 1;
-  int bottom_window_y = left_window_h + 1;
-  int bottom_window_x = 0;
+	int pct_split_top = 66;
 
-  if(should_create) {
-	  //draw our anchors
-	  //WINDOW 					*newwin(int nlines, int ncols, int begin_y, int begin_x);
+	int left_window_h = (rows * pct_split_top ) / 100;
+	int left_window_w = cols/2;
+	int left_window_y = 0;
+	int left_window_x = 0;
+	int right_window_h = (rows * pct_split_top) / 100;
+	int right_window_w = cols/2 -1;
+	int right_window_y = 0;
+	int right_window_x = cols/2 +1;
 
-	  left_window_outline = 	newwin(left_window_h, left_window_w, left_window_y, left_window_x);
-	  right_window_outline =	newwin(right_window_h, right_window_w, right_window_y, right_window_x);
-	  bottom_window_outline = 	newwin(bottom_window_h, bottom_window_w, bottom_window_y, bottom_window_x);
+	int bottom_window_h = rows - left_window_h - 1;
+	int bottom_window_w = cols - 1;
+	int bottom_window_y = left_window_h + 1;
+	int bottom_window_x = 0;
 
-	  box(left_window_outline, 0, 0);
-	  box(right_window_outline, 0, 0);
-	  box(bottom_window_outline, 0, 0);
-
-	  char msg_global[] = "Global ATSC 3.0 Statistics";
-	  mvwprintw(left_window_outline, 0, (left_window_w - strlen(msg_global))/2,"%s", msg_global);
-
-	  char msg_flows[] = "Flow ATSC 3.0 Statistics";
-	  mvwprintw(right_window_outline, 0, right_window_w/2 - strlen(msg_flows)/2, "%s", msg_flows);
-
-	  char msg_global_lossl[] = "MMT Loss";
-	  mvwprintw(bottom_window_outline, 0, cols/2 - strlen(msg_global)/2,"%s", msg_global_lossl);
-
-
-	  //WINDOW *derwin(WINDOW *orig, 							int nlines, 	int ncols, 			int begin_y, 		int begin_x);
-
-	  //left
-	  pkt_global_stats_window = derwin(left_window_outline, 	left_window_h-13, left_window_w-2,				 1, 	1);
-
-	  //left
-
-	  //bandwidth window
-	  bw_window_outline = 		derwin(left_window_outline, 	8, 			left_window_w-2,  left_window_h-8, 	1);
-	  whline(bw_window_outline, ACS_HLINE, left_window_w-2);
-
-	  char msg_bandwidth[] = "RX Bandwidth Statistics";
-	  mvwprintw(bw_window_outline, 0, cols/4 - strlen(msg_bandwidth)/2,"%s", msg_bandwidth);
-
-	  bw_window_runtime = 		derwin(bw_window_outline, 6, (left_window_w-2)/2, 1, 1);
-	  bw_window_lifetime = 		derwin(bw_window_outline, 6, (left_window_w-2)/2, 1, left_window_w/2);
-
-	  //pkt_global_loss_window_outline = 	derwin(left_window_outline, pkt_window_height-25, half_cols-4, 22, 1);
-
-	  //RIGHT
-	  pkt_flow_stats_window =	derwin(right_window_outline, right_window_h-6, right_window_w-3, 1, 1);
-
-	  //bottom
-	  pkt_global_loss_window = 	derwin(bottom_window_outline, bottom_window_h-1, bottom_window_w-2, 1, 1);
+	//WINDOW 					*newwin(int nlines, int ncols, int begin_y, int begin_x);
+	left_window_outline = 	newwin(left_window_h, left_window_w, left_window_y, left_window_x);
+	right_window_outline =	newwin(right_window_h, right_window_w, right_window_y, right_window_x);
+	bottom_window_outline = newwin(bottom_window_h, bottom_window_w, bottom_window_y, bottom_window_x);
 
 
-  } else {
-	  wclear(pkt_global_stats_window);
-	  wclear(bw_window_runtime);
+	//draw our anchors
+	box(left_window_outline, 0, 0);
+	box(right_window_outline, 0, 0);
+	box(bottom_window_outline, 0, 0);
 
-	  wclear(bw_window_lifetime);
-	  wclear(pkt_flow_stats_window);
-	  wclear(pkt_global_loss_window);
+	char msg_global[] = "Global ATSC 3.0 Statistics";
+	mvwprintw(left_window_outline, 0, (left_window_w - strlen(msg_global))/2,"%s", msg_global);
 
-	  //
-//	  mvwin(bottom_window_outline, bw_window_y, 0);
-//	  wresize(bottom_window_outline, bw_window_height, bw_window_width);
-//	  mvwin(left_window_outline, 0, 0);
-//	  wresize(left_window_outline, bw_window_height, half_cols);
-//	  mvwin(right_window_outline, 0, half_cols);
-//	  wresize(right_window_outline, bw_window_height, half_cols);
-  }
+	char msg_flows[] = "Flow ATSC 3.0 Statistics";
+	mvwprintw(right_window_outline, 0, right_window_w/2 - strlen(msg_flows)/2, "%s", msg_flows);
 
+	char msg_global_lossl[] = "MMT Loss";
+	mvwprintw(bottom_window_outline, 0, cols/2 - strlen(msg_global)/2,"%s", msg_global_lossl);
+
+	//WINDOW *derwin(WINDOW *orig, 							int nlines, 	int ncols, 			int begin_y, 		int begin_x);
+	//left
+	pkt_global_stats_window = derwin(left_window_outline, 	left_window_h-13, left_window_w-2,				 1, 	1);
+
+	//left
+	//bandwidth window
+	bw_window_outline = 		derwin(left_window_outline, 	8, 			left_window_w-2,  left_window_h-8, 	1);
+	whline(bw_window_outline, ACS_HLINE, left_window_w-2);
+
+	char msg_bandwidth[] = "RX Bandwidth Statistics";
+	mvwprintw(bw_window_outline, 0, cols/4 - strlen(msg_bandwidth)/2,"%s", msg_bandwidth);
+
+	bw_window_runtime = 		derwin(bw_window_outline, 6, (left_window_w-2)/2, 1, 1);
+	bw_window_lifetime = 		derwin(bw_window_outline, 6, (left_window_w-3)/2, 1, left_window_w/2-1);
+
+	//pkt_global_loss_window_outline = 	derwin(left_window_outline, pkt_window_height-25, half_cols-4, 22, 1);
+
+	//RIGHT
+	pkt_flow_stats_window =	derwin(right_window_outline, right_window_h-6, right_window_w-3, 1, 1);
+
+	//bottom
+	pkt_global_loss_window = 	derwin(bottom_window_outline, bottom_window_h-1, bottom_window_w-2, 1, 1);
+
+	wrefresh(my_window);
 	wrefresh(left_window_outline);
-	//wrefresh(bw_window_outline);
 	wrefresh(right_window_outline);
-    wrefresh(bottom_window_outline);
-
-
-  //pkt_global_stats_window = wresize(rows-bw_window_height_rows, cols/2, 0, 0);
-  //pkt_flow_stats_window = wresize(rows-bw_window_height_rows, cols/2, cols/2, 0);
+	wrefresh(bottom_window_outline);
 
 }
+
 void handle_winch(int sig)
 {
-    endwin();
+	ncurses_writer_lock_mutex_acquire();
+
     // Needs to be called after an endwin() so ncurses will initialize
     // itself with the new terminal dimensions.
-    refresh();
-    clear();
+    create_or_update_window_sizes(true);
+    ncurses_writer_lock_mutex_release();
 
-    create_or_update_window_sizes(false);
 }
 
 
@@ -811,11 +806,8 @@ int main(int argc,char **argv) {
 
 #ifndef _TEST_RUN_VALGRIND_OSX_
 
-	pthread_t thread_id;
-	pthread_create(&thread_id, NULL, printBandwidthStatistics, NULL);
+	ncurses_mutext_init();
 
-	pthread_t global_stats_thread_id;
-	pthread_create(&global_stats_thread_id, NULL, printGlobalStatistics, NULL);
 
 	//wire up resize handler
     struct sigaction sa;
@@ -825,14 +817,14 @@ int main(int argc,char **argv) {
 
     //remap as our printf is redirected to stderr
     my_screen = newterm(NULL, stdout, stdin);
-    my_window = newwin(0, 0, 0, 0);
+    create_or_update_window_sizes(false);
 
-    int rows, cols;
-    char msg[] = "Loading...";
-    //my_window = initscr();
-    getmaxyx(my_window, rows, cols);              /* get the number of rows and columns */
+	pthread_t global_bandwidth_thread_id;
+	pthread_create(&global_bandwidth_thread_id, NULL, printBandwidthStatistics, NULL);
 
-    create_or_update_window_sizes(true);
+	pthread_t global_stats_thread_id;
+	pthread_create(&global_stats_thread_id, NULL, printGlobalStatistics, NULL);
+
 
 #endif
 

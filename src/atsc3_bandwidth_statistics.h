@@ -12,7 +12,7 @@
 #include <unistd.h>
 #include <locale.h>
 
-#include "output_statistics_ncurses.h"
+#include "atsc3_output_statistics_ncurses.h"
 #include "atsc3_utils.h"
 
 
