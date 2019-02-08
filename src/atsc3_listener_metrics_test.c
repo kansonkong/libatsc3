@@ -416,7 +416,7 @@ void process_packet(u_char *user, const struct pcap_pkthdr *pkthdr, const u_char
 	//compute total_rx on all packets
 	__TRACE("updating interval_total_current_rx: %d", udp_packet->data_length)
 
-	global_bandwidth_statistics->interval_total_current_rx += udp_packet->data_length;
+	global_bandwidth_statistics->interval_total_current_bytes_rx += udp_packet->data_length;
 	global_stats->packet_counter_total_received++;
 
 	//drop mdNS
@@ -430,7 +430,7 @@ void process_packet(u_char *user, const struct pcap_pkthdr *pkthdr, const u_char
 
 	if(udp_packet->dst_ip_addr == LLS_DST_ADDR && udp_packet->dst_port == LLS_DST_PORT) {
 		global_stats->packet_counter_lls_packets_received++;
-		global_bandwidth_statistics->interval_lls_current_rx += udp_packet->data_length;
+		global_bandwidth_statistics->interval_lls_current_bytes_rx += udp_packet->data_length;
 		__TRACE("setting global_bandwidth_statistics->interval_lls_current_rx += %d", udp_packet->data_length);
 
 		//process as lls

@@ -55,6 +55,7 @@ WINDOW* my_window;
 
 WINDOW* left_window_outline;
 	WINDOW* pkt_global_stats_window;
+	WINDOW* signaling_global_stats_window;
 
 	WINDOW* bw_window_outline;
 		WINDOW* bw_window_runtime;
@@ -92,7 +93,7 @@ WINDOW* bottom_window_outline;
 #define __PS_STATS_FLOW(...) 		wprintw(pkt_flow_stats_window, __VA_ARGS__); \
 									wprintw(pkt_flow_stats_window,"\n");
 
-#define __PS_STATS_HR()				whline(pkt_flow_stats_window, ACS_HLINE, 15); \
+#define __PS_STATS_HR()				whline(pkt_flow_stats_window, ACS_BOARD, 15); \
 									wprintw(pkt_flow_stats_window,"\n");
 
 

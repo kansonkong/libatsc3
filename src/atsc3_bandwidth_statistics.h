@@ -35,25 +35,41 @@ typedef struct bandwith_statistics {
 	//using sig_atomic_t so parser thread doesn't need to be synchronized for locks for updating the current value
 	//only the collation thread should touch grand_total_rx
 
-	sig_atomic_t	interval_total_current_rx;
-	uint32_t		interval_total_last_rx;
-	uint32_t		grand_total_rx;
+	//TODO - move all of this and the computation logic to macros...
+	sig_atomic_t	interval_lls_current_bytes_rx;
+	sig_atomic_t	interval_lls_current_packets_rx;
+	uint32_t		interval_lls_last_bytes_rx;
+	uint32_t		interval_lls_last_packets_rx;
+	uint32_t		grand_lls_bytes_rx;
+	uint32_t		grand_lls_packets_rx;
 
-	sig_atomic_t	interval_lls_current_rx;
-	uint32_t		interval_lls_last_rx;
-	uint32_t		grand_lls_rx;
+	sig_atomic_t	interval_mmt_current_bytes_rx;
+	sig_atomic_t	interval_mmt_current_packets_rx;
+	uint32_t		interval_mmt_last_bytes_rx;
+	uint32_t		interval_mmt_last_packets_rx;
+	uint32_t		grand_mmt_bytes_rx;
+	uint32_t		grand_mmt_packets_rx;
 
-	sig_atomic_t	interval_mmt_current_rx;
-	uint32_t		interval_mmt_last_rx;
-	uint32_t		grand_mmt_rx;
+	sig_atomic_t	interval_alc_current_bytes_rx;
+	sig_atomic_t	interval_alc_current_packets_rx;
+	uint32_t		interval_alc_last_bytes_rx;
+	uint32_t		interval_alc_last_packets_rx;
+	uint32_t		grand_alc_bytes_rx;
+	uint32_t		grand_alc_packets_rx;
 
-	sig_atomic_t	interval_alc_current_rx;
-	uint32_t		interval_alc_last_rx;
-	uint32_t		grand_alc_rx;
+	sig_atomic_t	interval_filtered_current_bytes_rx;
+	sig_atomic_t	interval_filtered_current_packets_rx;
+	uint32_t		interval_filtered_last_bytes_rx;
+	uint32_t		interval_filtered_last_packets_rx;
+	uint32_t		grand_filtered_bytes_rx;
+	uint32_t		grand_filtered_packets_rx;
 
-	sig_atomic_t	interval_filtered_current_rx;
-	uint32_t		interval_filtered_last_rx;
-	uint32_t		grand_filtered_rx;
+	sig_atomic_t	interval_total_current_bytes_rx;
+	sig_atomic_t	interval_total_current_packets_rx;
+	uint32_t		interval_total_last_bytes_rx;
+	uint32_t		interval_total_last_packets_rx;
+	uint32_t		grand_total_bytes_rx;
+	uint32_t		grand_total_packets_rx;
 
 	struct timeval 	snapshot_timeval_start;
 	struct timeval 	program_timeval_start;
