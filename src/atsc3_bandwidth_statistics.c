@@ -59,7 +59,6 @@ void doBandwidthStatusUpdate() {
 	global_bandwidth_statistics->interval_total_last_bytes_rx = global_bandwidth_statistics->interval_total_current_bytes_rx;
 	global_bandwidth_statistics->interval_total_last_packets_rx = global_bandwidth_statistics->interval_total_current_packets_rx;
 	uint32_t interval_total_bits_rx_s = (8 * interval_total_bytes_delta) / deltaTS;
-	printf("total_bytes delta: %d, 8x=%d\n, %llu", interval_total_bytes_delta, interval_total_bytes_delta *8, 8 * interval_total_bytes_delta * 1000000ll);
 
 	uint32_t interval_total_packets_rx_s = (interval_total_packtets_delta) / deltaTS;
 

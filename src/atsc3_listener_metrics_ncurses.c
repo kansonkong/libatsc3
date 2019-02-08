@@ -116,6 +116,71 @@ int printf(const char *format, ...)  {
 }
 #endif
 
+#define __TEST_FFPLAY_MMTP_PIPE_PLAYBACK__ false
+
+#ifdef __TEST_FFPLAY_MMTP_PIPE_PLAYBACK__
+
+pid_t pid;
+int fd[2];
+//
+//void create_ffplay_pipe() {
+//	pipe(fd);
+//	pid = fork();
+//
+//	if(pid==0)
+//	{
+//	    dup2(fd[WRITE_END], STDOUT_FILENO);
+//	    close(fd[READ_END]);
+//	    close(fd[WRITE_END]);
+//	    execlp(firstcmd, firstcmd, frsarg, (char*) NULL);
+//	    fprintf(stderr, "Failed to execute '%s'\n", firstcmd);
+//	    exit(1);
+//	}
+//	else
+//	{
+//	    pid=fork();
+//
+//	    if(pid==0)
+//	    {
+//	        dup2(fd[READ_END], STDIN_FILENO);
+//	        close(fd[WRITE_END]);
+//	        close(fd[READ_END]);
+//	        execlp(scmd, scmd, secarg,(char*) NULL);
+//	        fprintf(stderr, "Failed to execute '%s'\n", scmd);
+//	        exit(1);
+//	    }
+//	    else
+//	    {
+//	        int status;
+//	        close(fd[READ_END]);
+//	        close(fd[WRITE_END]);
+//	        waitpid(pid, &status, 0);
+//	    }
+//	}
+//}
+
+FILE *ffplay_pipe;
+sig_atomic_t ffplay_consumer_running;
+
+void create_ffplay_pipe() {
+///Applications/VLC.app/Contents/MacOS/VLC --log-verbose 3 --input-repeat 65535 - > vlc.log 2>&
+	//char* cmd = "/usr/local/bin/ffplay -i -";
+	char* cmd = "/Applications/VLC.app/Contents/MacOS/VLC --demux mp4 --verbose 3 --file-logging --logfile vlc.log -";
+	if ( !(ffplay_pipe = popen(cmd, "w")) ) {
+		exit(1);
+	}
+	ffplay_consumer_running = 1;
+}
+
+void push_mfu_block(block_t* block) {
+	printf("in: %d", block->i_buffer);
+
+	int output_size = fwrite(block->p_buffer, 1, block->i_buffer, ffplay_pipe);
+
+}
+
+#endif
+
 
 
 void create_or_update_window_sizes(bool should_reload_term_size) {
@@ -650,6 +715,11 @@ void process_packet(u_char *user, const struct pcap_pkthdr *pkthdr, const u_char
 		//dump header, then dump applicable packet type
 		//mmtp_packet_header_dump(mmtp_payload);
 
+//		printf("payload is");
+		if(mmtp_payload->mmtp_packet_header.mmtp_packet_id==35 && ip_header[16] == 239 && ip_header[17] == 255 && ip_header[18] == 10 && ip_header[19] == 1) {
+			printf("pushing psn:%d, ", mmtp_payload->mmtp_mpu_type_packet_header.packet_sequence_number);
+			push_mfu_block(mmtp_payload->mmtp_mpu_type_packet_header.mpu_data_unit_payload);
+		}
 		if(mmtp_payload->mmtp_packet_header.mmtp_payload_type == 0x0) {
 			global_stats->packet_counter_mmt_mpu++;
 
@@ -659,6 +729,8 @@ void process_packet(u_char *user, const struct pcap_pkthdr *pkthdr, const u_char
 				//timed
 				//mpu_dump_flow(udp_packet->dst_ip_addr, udp_packet->dst_port, mmtp_payload);
 				//mpu_dump_reconstitued(udp_packet->dst_ip_addr, udp_packet->dst_port, mmtp_payload);
+
+				//write out to ffmpeg pipe...
 
 			} else {
 				//non-timed
@@ -762,6 +834,7 @@ int main(int argc,char **argv) {
     mmtp_sub_flow_vector = calloc(1, sizeof(*mmtp_sub_flow_vector));
     mmtp_sub_flow_vector_init(mmtp_sub_flow_vector);
     lls_session = lls_session_create();
+    create_ffplay_pipe();
 
     global_stats = calloc(1, sizeof(*global_stats));
     gettimeofday(&global_stats->program_timeval_start, 0);
