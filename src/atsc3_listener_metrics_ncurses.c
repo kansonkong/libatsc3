@@ -50,6 +50,14 @@ shall carry a Destination IP address either
 	•In the case that multiple LLS streams (hence, multiple SLTs) are present in a
 	given broadcast emission, each IP address/port combination in use for non-LLS streams
 	shall be unique across all Services in the aggregate broadcast emission;
+
+
+
+	for testing:
+	  fprintf(stdout, "left window h: rows: %d, max: %d, %lu, %d,  %d, %d", rows, INT_MAX, sizeof(int), left_window_h, rows*100, (rows*100)/66);
+
+  abort();
+
 */
 
 
@@ -72,93 +80,137 @@ int PACKET_COUNTER=0;
 #include <time.h>
 #include <signal.h>
 #include <sys/ioctl.h>
-#include <ncurses.h>                    /* ncurses.h includes stdio.h */
+#include <ncurses.h>
+#include <limits.h>
+/* ncurses.h includes stdio.h */
 #include "output_statistics_ncurses.h"
+
+#define _ENABLE_DEBUG true
+
+#define __ERROR(...)   printf("%s:%d:ERROR :","listener",__LINE__);printf(__VA_ARGS__);
+#define __WARN(...)    printf("%s:%d:WARN: ","listener",__LINE__);printf(__VA_ARGS__);
+#define __INFO(...)    printf("%s:%d: ","listener",__LINE__);printf(__VA_ARGS__);
+
+#ifdef _ENABLE_DEBUG
+#define __DEBUG(...)   printf("%s:%d:DEBUG: ","listener",__LINE__);printf(__VA_ARGS__);
+#define __DEBUGF(...)  printf("%s:%d:DEBUG: ","listener",__LINE__);printf(__VA_ARGS__);
+#define __DEBUGA(...) 	__PRINTF(__VA_ARGS__);
+#define __DEBUGN(...)  __PRINTLN(__VA_ARGS__);
+#else
+#define __DEBUG(...)
+#define __DEBUGF(...)
+#define __DEBUGA(...)
+#define __DEBUGN(...)
+#endif
+
 
 #ifndef _TEST_RUN_VALGRIND_OSX_
 
 int printf(const char *format, ...)  {
-return 0;
+	va_list argptr;
+	va_start(argptr, format);
+	vfprintf(stderr, format, argptr);
+    va_end(argptr);
+
+	return 0;
 }
 #endif
-#if !defined OUTPUT_STATISTICS && OUTPUT_STATISTICS == NCURSES
 
-WINDOW* bw_window_outline;
-WINDOW* pkt_global_stats_window_outline;
-WINDOW* pkt_flow_stats_window_outline;
 
-WINDOW* bw_window_runtime;
-WINDOW* bw_window_lifetime;
-
-WINDOW* pkt_global_stats_window;
-WINDOW* pkt_global_loss_window;
-
-WINDOW* pkt_flow_stats_window;
-WINDOW* my_window;
-
-#endif
 
 void create_or_update_window_sizes(bool should_create) {
     int rows, cols;
     //set_term
-    getmaxyx(my_window,rows,cols);              /* get the number of rows and columns */
+    getmaxyx(my_window, rows, cols);              /* get the number of rows and columns */
     //  mvprintw(row/2,(col-strlen(msg))/2,"%s",msg);
                                          /* print the message at the center of the screen */
 
-  int bw_window_height = 9;
-  int bw_window_y = rows - bw_window_height;
-  int bw_window_width = cols;
+  int pct_split_top = 66;
 
-  int pkt_window_height = rows-bw_window_height;
-  int half_cols = cols/2;
+  int left_window_h = (rows * pct_split_top ) / 100;
+  int left_window_w = cols/2;
+  int left_window_y = 0;
+  int left_window_x = 0;
+  int right_window_h = (rows * pct_split_top) / 100;
+  int right_window_w = cols/2;
+  int right_window_y = 0;
+  int right_window_x = cols/2+1;
+
+  int bottom_window_h = rows - left_window_h - 1;
+  int bottom_window_w = cols;
+  int bottom_window_y = left_window_h + 1;
+  int bottom_window_x = 0;
 
   if(should_create) {
-	  //WINDOW *newwin(int nlines, int ncols, int begin_y, int begin_x);
+	  //draw our anchors
+	  //WINDOW 					*newwin(int nlines, int ncols, int begin_y, int begin_x);
 
-     bw_window_outline = newwin(bw_window_height, bw_window_width, bw_window_y, 0);
-     bw_window_runtime = subwin(bw_window_outline, bw_window_height-2, half_cols-2, bw_window_y+1, 1);
-     bw_window_lifetime = subwin(bw_window_outline, bw_window_height-2, half_cols-2, bw_window_y+1, half_cols + 1);
-     box(bw_window_lifetime, 0, 0);
+	  left_window_outline = 	newwin(left_window_h, left_window_w, left_window_y, left_window_x);
+	  right_window_outline =	newwin(right_window_h, right_window_w, right_window_y, right_window_x);
+	  bottom_window_outline = 	newwin(bottom_window_h, bottom_window_w, bottom_window_y, bottom_window_x);
 
-     pkt_global_stats_window_outline = newwin(pkt_window_height, half_cols, 0, 0);
-     pkt_global_stats_window = subwin(pkt_global_stats_window_outline, 20, half_cols-2, 1, 1);
-     pkt_global_loss_window = subwin(pkt_global_stats_window_outline, pkt_window_height-25, half_cols-4, 22, 2);
+	  box(left_window_outline, 0, 0);
+	  box(right_window_outline, 0, 0);
+	  box(bottom_window_outline, 0, 0);
 
-     pkt_flow_stats_window_outline = newwin(pkt_window_height, half_cols, 0, half_cols);
-     pkt_flow_stats_window = subwin(pkt_flow_stats_window_outline, pkt_window_height-2, half_cols-2, 1, half_cols+1);
+	  char msg_global[] = "Global ATSC 3.0 Statistics";
+	  mvwprintw(left_window_outline, 0, (left_window_w - strlen(msg_global))/2,"%s", msg_global);
 
-     box(bw_window_outline, 0, 0);
-     char msg_bandwidth[] = "RX Bandwidth Statistics";
-     mvwprintw(bw_window_outline, 0, (cols-strlen(msg_bandwidth))/2,"%s", msg_bandwidth);
+	  char msg_flows[] = "Flow ATSC 3.0 Statistics";
+	  mvwprintw(right_window_outline, 0, right_window_w/2 - strlen(msg_flows)/2, "%s", msg_flows);
 
-     box(pkt_global_stats_window_outline, 0, 0);
-     char msg_global[] = "Global ATSC 3.0 Statistics";
-     mvwprintw(pkt_global_stats_window_outline, 0, (half_cols-strlen(msg_global))/2,"%s", msg_global);
+	  char msg_global_lossl[] = "MMT Loss";
+	  mvwprintw(bottom_window_outline, 0, cols/2 - strlen(msg_global)/2,"%s", msg_global_lossl);
 
-     box(pkt_global_loss_window, 0, 0);
-     char msg_global_lossl[] = "Loss";
-     mvwprintw(pkt_global_loss_window, 0, (half_cols-strlen(msg_global))/2,"%s", msg_global_lossl);
 
-     box(pkt_flow_stats_window_outline, 0, 0);
-     char msg_flows[] = "Flow ATSC 3.0 Statistics";
-     mvwprintw(pkt_flow_stats_window_outline, 0, (half_cols - (half_cols /2) + strlen(msg_flows))/2,"%s", msg_flows);
+	  //WINDOW *derwin(WINDOW *orig, 							int nlines, 	int ncols, 			int begin_y, 		int begin_x);
+
+	  //left
+	  pkt_global_stats_window = derwin(left_window_outline, 	left_window_h-13, left_window_w-2,				 1, 	1);
+
+	  //left
+
+	  //bandwidth window
+	  bw_window_outline = 		derwin(left_window_outline, 	12, 				left_window_w-2,  left_window_h-12, 	1);
+	  whline(bw_window_outline, ACS_HLINE, left_window_w-2);
+
+	  char msg_bandwidth[] = "RX Bandwidth Statistics";
+	  mvwprintw(bw_window_outline, 0, cols/4 - strlen(msg_bandwidth)/2,"%s", msg_bandwidth);
+
+	  bw_window_runtime = 		derwin(bw_window_outline, 9, (left_window_w-2)/2, 2, 1);
+	  bw_window_lifetime = 		derwin(bw_window_outline, 9, (left_window_w-2)/2, 2, left_window_w/2);
+
+	  //pkt_global_loss_window_outline = 	derwin(left_window_outline, pkt_window_height-25, half_cols-4, 22, 1);
+
+	  //RIGHT
+	  pkt_flow_stats_window =	derwin(right_window_outline, right_window_h-6, right_window_w-2, 1, 1);
+
+	  //bottom
+	  pkt_global_loss_window = 	derwin(bottom_window_outline, bottom_window_h-1, bottom_window_w-1, 1, 1);
+
+
   } else {
-	  wclear(bw_window_runtime);
-	  wclear(bw_window_lifetime);
-
 	  wclear(pkt_global_stats_window);
-	  wclear(pkt_flow_stats_window);
+	  wclear(bw_window_runtime);
 
-	  mvwin(bw_window_outline, bw_window_y, 0);
-	  wresize(bw_window_outline, bw_window_height, bw_window_width);
-	  mvwin(pkt_global_stats_window_outline, 0, 0);
-	  wresize(pkt_global_stats_window_outline, bw_window_height, half_cols);
-	  mvwin(pkt_flow_stats_window_outline, 0, half_cols);
-	  wresize(pkt_flow_stats_window_outline, bw_window_height, half_cols);
+	  wclear(bw_window_lifetime);
+	  wclear(pkt_flow_stats_window);
+	  wclear(pkt_global_loss_window);
+
+	  //
+//	  mvwin(bottom_window_outline, bw_window_y, 0);
+//	  wresize(bottom_window_outline, bw_window_height, bw_window_width);
+//	  mvwin(left_window_outline, 0, 0);
+//	  wresize(left_window_outline, bw_window_height, half_cols);
+//	  mvwin(right_window_outline, 0, half_cols);
+//	  wresize(right_window_outline, bw_window_height, half_cols);
   }
- wrefresh(bw_window_outline);
- wrefresh(pkt_global_stats_window_outline);
- wrefresh(pkt_flow_stats_window_outline);
+
+	wrefresh(left_window_outline);
+	//wrefresh(bw_window_outline);
+	wrefresh(right_window_outline);
+    wrefresh(bottom_window_outline);
+
 
   //pkt_global_stats_window = wresize(rows-bw_window_height_rows, cols/2, 0, 0);
   //pkt_flow_stats_window = wresize(rows-bw_window_height_rows, cols/2, cols/2, 0);
@@ -201,23 +253,6 @@ extern int _LLS_DEBUG_ENABLED;
 
 
 
-
-#define __ERROR(...)   printf("%s:%d:ERROR :","listener",__LINE__);__PRINTLN(__VA_ARGS__);
-#define __WARN(...)    printf("%s:%d:WARN: ","listener",__LINE__);__PRINTLN(__VA_ARGS__);
-#define __INFO(...)    printf("%s:%d: ","listener",__LINE__);__PRINTLN(__VA_ARGS__);
-
-#ifdef _ENABLE_DEBUG
-#define __DEBUG(...)   printf("%s:%d:DEBUG: ","listener",__LINE__);__PRINTLN(__VA_ARGS__);
-#define __DEBUGF(...)  printf("%s:%d:DEBUG: ","listener",__LINE__);__PRINTF(__VA_ARGS__);
-#define __DEBUGA(...) 	__PRINTF(__VA_ARGS__);
-#define __DEBUGN(...)  __PRINTLN(__VA_ARGS__);
-#else
-#define __DEBUG(...)
-#define __DEBUGF(...)
-#define __DEBUGA(...)
-#define __DEBUGN(...)
-#endif
-
 #ifdef _ENABLE_TRACE
 #define __TRACE(...)   printf("%s:%d:TRACE:",__FILE__,__LINE__);__PRINTLN(__VA_ARGS__);
 
@@ -258,6 +293,7 @@ int process_lls_table_slt_update(lls_table_t* lls) {
 
 	for(int i=0; i < lls->slt_table.service_entry_n; i++) {
 		service_t* service = lls->slt_table.service_entry[i];
+		__INFO("checking service: %d", service->service_id);
 
 		if(service->broadcast_svc_signaling.sls_protocol == SLS_PROTOCOL_ROUTE) {
 			//TODO - we probably need to clear out the ALC session?
@@ -487,10 +523,10 @@ void process_packet(u_char *user, const struct pcap_pkthdr *pkthdr, const u_char
 
 	//4294967295
 	//1234567890
-	__DEBUGF("Src. Addr  : %d.%d.%d.%d\t(%-10u)\t", ip_header[12], ip_header[13], ip_header[14], ip_header[15], udp_packet->src_ip_addr);
-	__DEBUGN("Src. Port  : %-5hu ", (udp_header[0] << 8) + udp_header[1]);
-	__DEBUGF("Dst. Addr  : %d.%d.%d.%d\t(%-10u)\t", ip_header[16], ip_header[17], ip_header[18], ip_header[19], udp_packet->dst_ip_addr);
-	__DEBUGA("Dst. Port  : %-5hu \t", (udp_header[2] << 8) + udp_header[3]);
+	__TRACE("Src. Addr  : %d.%d.%d.%d\t(%-10u)\t", ip_header[12], ip_header[13], ip_header[14], ip_header[15], udp_packet->src_ip_addr);
+	__TRACE("Src. Port  : %-5hu ", (udp_header[0] << 8) + udp_header[1]);
+	__TRACE("Dst. Addr  : %d.%d.%d.%d\t(%-10u)\t", ip_header[16], ip_header[17], ip_header[18], ip_header[19], udp_packet->dst_ip_addr);
+	__TRACE("Dst. Port  : %-5hu \t", (udp_header[2] << 8) + udp_header[3]);
 
 	__TRACE("Length\t\t\t\t\t%d", (udp_header[4] << 8) + udp_header[5]);
 	__TRACE("Checksum\t\t\t\t0x%02x 0x%02x", udp_header[6], udp_header[7]);
@@ -502,7 +538,7 @@ void process_packet(u_char *user, const struct pcap_pkthdr *pkthdr, const u_char
 		__ERROR("invalid data length of udp packet: %d", udp_packet->data_length);
 		return;
 	}
-	__DEBUG("Data length: %d", udp_packet->data_length);
+	__TRACE("Data length: %d", udp_packet->data_length);
 	udp_packet->data = malloc(udp_packet->data_length * sizeof(udp_packet->data));
 	memcpy(udp_packet->data, &packet[udp_header_start + 8], udp_packet->data_length);
 
@@ -579,7 +615,6 @@ void process_packet(u_char *user, const struct pcap_pkthdr *pkthdr, const u_char
 			}
 		}
 
-		atsc3_packet_statistics_dump_global_stats();
 		goto cleanup;
 	}
 
@@ -631,7 +666,7 @@ void process_packet(u_char *user, const struct pcap_pkthdr *pkthdr, const u_char
 
 		global_stats->packet_counter_mmtp_packets_received++;
 
-		__DEBUG("data len: %d", udp_packet->data_length)
+		__TRACE("data len: %d", udp_packet->data_length)
 		mmtp_payload_fragments_union_t* mmtp_payload = mmtp_packet_parse(mmtp_sub_flow_vector, udp_packet->data, udp_packet->data_length);
 
 		if(!mmtp_payload) {
@@ -676,9 +711,7 @@ void process_packet(u_char *user, const struct pcap_pkthdr *pkthdr, const u_char
 			goto cleanup;
 		}
 
-		atsc3_packet_statistics_dump_global_stats();
 		mmtp_payload_fragments_union_free(&mmtp_payload);
-
 	}
 
 cleanup:
@@ -779,18 +812,25 @@ int main(int argc,char **argv) {
 #ifndef _TEST_RUN_VALGRIND_OSX_
 
 	pthread_t thread_id;
+	pthread_create(&thread_id, NULL, printBandwidthStatistics, NULL);
 
-	pthread_create(&thread_id, NULL, printBandwidthStatistics);
+	pthread_t global_stats_thread_id;
+	pthread_create(&global_stats_thread_id, NULL, printGlobalStatistics, NULL);
 
+	//wire up resize handler
     struct sigaction sa;
     memset(&sa, 0, sizeof(struct sigaction));
     sa.sa_handler = handle_winch;
     sigaction(SIGWINCH, &sa, NULL);
 
+    //remap as our printf is redirected to stderr
+    my_screen = newterm(NULL, stdout, stdin);
+    my_window = newwin(0, 0, 0, 0);
+
     int rows, cols;
     char msg[] = "Loading...";
-    my_window = initscr();
-//    getmaxyx(my_window,rows,cols);              /* get the number of rows and columns */
+    //my_window = initscr();
+    getmaxyx(my_window, rows, cols);              /* get the number of rows and columns */
 
     create_or_update_window_sizes(true);
 
