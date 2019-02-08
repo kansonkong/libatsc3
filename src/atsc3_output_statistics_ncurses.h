@@ -124,7 +124,7 @@ int global_mmt_loss_count;
 
 #define __LLS_DUMP_NOUPDATE()		wnoutrefresh(signaling_global_stats_window);
 
-#define __LLS_DUMP_CLEAR()			wclear(signaling_global_stats_window);
+#define __LLS_DUMP_CLEAR()			werase(signaling_global_stats_window);
 
 #define __LLS_DUMP(...)				wprintw(signaling_global_stats_window, __VA_ARGS__); \
 									wprintw(signaling_global_stats_window,"\n");
