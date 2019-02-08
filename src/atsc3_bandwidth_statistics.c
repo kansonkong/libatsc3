@@ -58,14 +58,16 @@ void doBandwidthStatusUpdate() {
 	uint32_t interval_total_packtets_delta = (global_bandwidth_statistics->interval_total_current_packets_rx - global_bandwidth_statistics->interval_total_last_packets_rx);
 	global_bandwidth_statistics->interval_total_last_bytes_rx = global_bandwidth_statistics->interval_total_current_bytes_rx;
 	global_bandwidth_statistics->interval_total_last_packets_rx = global_bandwidth_statistics->interval_total_current_packets_rx;
-	uint32_t interval_total_bytes_rx_s = (interval_total_bytes_delta * 1000000) / deltaTuS;
-	uint32_t interval_total_packets_rx_s = (interval_total_packtets_delta * 1000000) / deltaTuS;
+	uint32_t interval_total_bits_rx_s = (8 * interval_total_bytes_delta) / deltaTS;
+	printf("total_bytes delta: %d, 8x=%d\n, %llu", interval_total_bytes_delta, interval_total_bytes_delta *8, 8 * interval_total_bytes_delta * 1000000ll);
+
+	uint32_t interval_total_packets_rx_s = (interval_total_packtets_delta) / deltaTS;
 
 
 	uint32_t interval_lls_bytes_delta =   (global_bandwidth_statistics->interval_lls_current_bytes_rx -  global_bandwidth_statistics->interval_lls_last_bytes_rx);
 	uint32_t interval_lls_packets_delta = (global_bandwidth_statistics->interval_lls_current_packets_rx - global_bandwidth_statistics->interval_lls_last_packets_rx);
-	uint32_t interval_lls_bytes_rx_s =    (interval_lls_bytes_delta * 1000000) / deltaTuS;
-	uint32_t interval_lls_packets_rx_s =  (interval_lls_packets_delta * 1000000) / deltaTuS;
+	uint32_t interval_lls_bits_rx_s =    (8 * interval_lls_bytes_delta ) / deltaTS;
+	uint32_t interval_lls_packets_rx_s =  (interval_lls_packets_delta ) / deltaTS;
 	global_bandwidth_statistics->interval_lls_last_bytes_rx =   global_bandwidth_statistics->interval_lls_current_bytes_rx;
 	global_bandwidth_statistics->interval_lls_last_packets_rx = global_bandwidth_statistics->interval_lls_current_packets_rx;
 	global_bandwidth_statistics->grand_lls_bytes_rx += interval_lls_bytes_delta;
@@ -74,8 +76,8 @@ void doBandwidthStatusUpdate() {
 
 	uint32_t interval_mmt_bytes_delta =   (global_bandwidth_statistics->interval_mmt_current_bytes_rx   - global_bandwidth_statistics->interval_mmt_last_bytes_rx);
 	uint32_t interval_mmt_packets_delta = (global_bandwidth_statistics->interval_mmt_current_packets_rx - global_bandwidth_statistics->interval_mmt_last_packets_rx);
-	uint32_t interval_mmt_bytes_rx_s =    (interval_mmt_bytes_delta * 1000000) / deltaTuS;
-	uint32_t interval_mmt_packets_rx_s =  (interval_mmt_packets_delta * 1000000) / deltaTuS;
+	uint32_t interval_mmt_bits_rx_s =    (8 * interval_mmt_bytes_delta ) / deltaTS;
+	uint32_t interval_mmt_packets_rx_s =  (interval_mmt_packets_delta ) / deltaTS;
 	global_bandwidth_statistics->interval_mmt_last_bytes_rx =   global_bandwidth_statistics->interval_mmt_current_bytes_rx;
 	global_bandwidth_statistics->interval_mmt_last_packets_rx = global_bandwidth_statistics->interval_mmt_current_packets_rx;
 	global_bandwidth_statistics->grand_mmt_bytes_rx +=   interval_mmt_bytes_delta;
@@ -83,8 +85,8 @@ void doBandwidthStatusUpdate() {
 
 	uint32_t interval_alc_bytes_delta =   (global_bandwidth_statistics->interval_alc_current_bytes_rx -   global_bandwidth_statistics->interval_alc_last_bytes_rx);
 	uint32_t interval_alc_packets_delta = (global_bandwidth_statistics->interval_alc_current_packets_rx - global_bandwidth_statistics->interval_alc_last_packets_rx);
-	uint32_t interval_alc_bytes_rx_s =    (interval_alc_bytes_delta * 1000000) / deltaTuS;
-	uint32_t interval_alc_packets_rx_s =  (interval_alc_packets_delta * 1000000) / deltaTuS;
+	uint32_t interval_alc_bits_rx_s =    (8 * interval_alc_bytes_delta ) / deltaTS;
+	uint32_t interval_alc_packets_rx_s =  (interval_alc_packets_delta ) / deltaTS;
 	global_bandwidth_statistics->interval_alc_last_bytes_rx = global_bandwidth_statistics->interval_alc_current_bytes_rx;
 	global_bandwidth_statistics->interval_alc_last_packets_rx = global_bandwidth_statistics->interval_alc_current_packets_rx;
 	global_bandwidth_statistics->grand_alc_bytes_rx += interval_alc_bytes_delta;
@@ -94,18 +96,18 @@ void doBandwidthStatusUpdate() {
 
 	uint32_t interval_filtered_bytes_delta =   (global_bandwidth_statistics->interval_filtered_current_bytes_rx -  global_bandwidth_statistics->interval_filtered_last_bytes_rx);
 	uint32_t interval_filtered_packets_delta = (global_bandwidth_statistics->interval_filtered_current_packets_rx - global_bandwidth_statistics->interval_filtered_last_packets_rx);
-	uint32_t interval_filtered_bytes_rx_s =    (interval_filtered_bytes_delta * 1000000) / deltaTuS;
-	uint32_t interval_filtered_packets_rx_s =  (interval_filtered_packets_delta * 1000000) / deltaTuS;
+	uint32_t interval_filtered_bits_rx_s =     (8 * interval_filtered_bytes_delta ) / deltaTS;
+	uint32_t interval_filtered_packets_rx_s =  (interval_filtered_packets_delta) / deltaTS;
 	global_bandwidth_statistics->interval_filtered_last_bytes_rx = global_bandwidth_statistics->interval_filtered_current_bytes_rx;
 	global_bandwidth_statistics->interval_filtered_last_packets_rx = global_bandwidth_statistics->interval_filtered_current_packets_rx;
 	global_bandwidth_statistics->grand_filtered_bytes_rx += interval_filtered_bytes_delta;
 	global_bandwidth_statistics->grand_filtered_packets_rx += interval_filtered_packets_delta;
 
-	__BW_STATS_RUNTIME("LLS     : %'13d Kb/s, %'13d pps",  (interval_lls_bytes_rx_s * 8.0) 		/ 1024.0, 							interval_lls_packets_rx_s);
-	__BW_STATS_RUNTIME("MMT     : %'13d Kb/s, %'13d pps",  (interval_mmt_bytes_rx_s * 8.0)     / 1024.0, 		interval_mmt_packets_rx_s);
-	__BW_STATS_RUNTIME("ALC     : %'13d Kb/s, %'13d pps",  (interval_alc_bytes_rx_s      * 8.0) / 1024.0, 		interval_alc_packets_rx_s);
-	__BW_STATS_RUNTIME("Filtered: %'13d Kb/s, %'13d pps",  (interval_filtered_bytes_rx_s * 8.0) / 1024.0,		interval_filtered_packets_rx_s);
-	__BW_STATS_RUNTIME("Total   : %'13d Kb/s, %'13d pps",  (interval_total_bytes_rx_s    * 8.0)	/ 1024.0, 		interval_total_packets_rx_s);
+	__BW_STATS_RUNTIME("LLS     : %'13d Kb/s, %'13d pps",	interval_lls_bits_rx_s 		 / 1024, 							interval_lls_packets_rx_s);
+	__BW_STATS_RUNTIME("MMT     : %'13d Kb/s, %'13d pps",	interval_mmt_bits_rx_s      / 1024, 		interval_mmt_packets_rx_s);
+	__BW_STATS_RUNTIME("ALC     : %'13d Kb/s, %'13d pps",	interval_alc_bits_rx_s      / 1024, 		interval_alc_packets_rx_s);
+	__BW_STATS_RUNTIME("Filtered: %'13d Kb/s, %'13d pps",	interval_filtered_bits_rx_s / 1024,		interval_filtered_packets_rx_s);
+	__BW_STATS_RUNTIME("Total   : %'13d Kb/s, %'13d pps",	interval_total_bits_rx_s    / 1024, 		interval_total_packets_rx_s);
 
 	__BW_STATS_LIFETIME("LLS     : %'13d B, %'13d pkts",	global_bandwidth_statistics->grand_lls_bytes_rx, 		global_bandwidth_statistics->grand_lls_packets_rx);
 	__BW_STATS_LIFETIME("MMT     : %'13d B, %'13d pkts",	global_bandwidth_statistics->grand_mmt_bytes_rx, 		global_bandwidth_statistics->grand_mmt_packets_rx);
