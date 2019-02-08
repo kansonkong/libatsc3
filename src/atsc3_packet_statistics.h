@@ -21,31 +21,10 @@
 #ifndef ATSC3_MMT_PACKET_STATISTICS_H_
 #define ATSC3_MMT_PACKET_STATISTICS_H_
 
-
-
-#ifndef __PKT_STATS_NCURSES
-#define __PS_REFRESH()
-#define __PS_CLEAR()
-#define __PS_STATS(...)   printf("%s:%d: ","pkt_stats",__LINE__);__PRINTLN(__VA_ARGS__);
-#define __PS_STATS_G(...) __PS_STATS(__VA_ARGS__);
-#define __PS_STATS_F(...) __PS_STATS(__VA_ARGS__);
-#define __PS_STATS_L(...) fprintf( stderr, __VA_ARGS__);fprintf( stderr, "\n");
-//__PS_STATS(__VA_ARGS__);
-#define	__PS_REFRESH_L();
-
-#define __PS_STATSL(...)  printf("%s:%d: ","pkt_stats",__LINE__);printf(__VA_ARGS__);
-#define __PS_STATSC(...)  printf(__VA_ARGS__);
-#define __PS_STATSN(...)  __PRINTLN(__VA_ARGS__);
-
-#define __PS_ERROR(...)   printf("%s:%d:ERROR :","pkt_stats",__LINE__);__PRINTLN(__VA_ARGS__);
-#define __PS_WARN(...)    printf("%s:%d:WARN: ","pkt_stats",__LINE__);__PRINTLN(__VA_ARGS__);
-#define __PS_INFO(...)    printf("%s:%d: ",__FILE__,__LINE__);__PRINTLN(__VA_ARGS__);
-#endif
-
 #ifdef _ENABLE_DEBUG
 #define __PS_DEBUG(...)   printf("%s:%d:DEBUG: ",__FILE__,__LINE__);__PRINTLN(__VA_ARGS__);
 #define __PS_DEBUGF(...)  printf("%s:%d:DEBUG: ",__FILE__,__LINE__);__PRINTF(__VA_ARGS__);
-#define __PS_DEBUGA(...) 	__PRINTF(__VA_ARGS__);
+#define __PS_DEBUGA(...)  __PRINTF(__VA_ARGS__);
 #define __PS_DEBUGN(...)  __PRINTLN(__VA_ARGS__);
 #else
 #define __PS_DEBUG(...)
@@ -240,5 +219,6 @@ packet_id_mmt_stats_t* find_or_get_packet_id(uint32_t ip, uint16_t port, uint32_
 
 void atsc3_packet_statistics_dump_global_stats();
 void atsc3_packet_statistics_mmt_stats_populate(udp_packet_t* udp_packet, mmtp_payload_fragments_union_t* mmtp_payload);
+void *printGlobalStatistics(void *vargp);
 
 #endif /* ATSC3_MMT_PACKET_STATISTICS_H_ */

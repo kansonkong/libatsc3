@@ -437,7 +437,7 @@ void process_packet(u_char *user, const struct pcap_pkthdr *pkthdr, const u_char
 		lls_table_t* lls = lls_table_create(udp_packet->data, udp_packet->data_length);
 		if(lls) {
 			global_stats->packet_counter_lls_packets_parsed++;
-
+			__INFO("lls_table_id: %d", lls->lls_table_id);
 			if(lls->lls_table_id == SLT) {
 				global_stats->packet_counter_lls_slt_packets_parsed++;
 				//if we have a lls_slt table, and the group is the same but its a new vewsion, reprocess

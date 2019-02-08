@@ -31,10 +31,8 @@ void *printBandwidthStatistics(void *vargp)
 		double runtimeTS = runtimeTuS/1000000.0;
 		__BW_CLEAR();
 
-		__BW_STATS_BORDER("--------------------------------------------------------------------------------");
-		__BW_STATS_I("Bandwidth Stats over: %.2fs ", deltaTS);
-		__BW_STATS_L("Runtime: %.2fs", runtimeTS);
-		__BW_STATS_BORDER("--------------------------------------------------------------------------------");
+		__BW_STATS_RUNTIME("Bandwidth Stats over: %.2fs ", deltaTS);
+		__BW_STATS_LIFETIME("Runtime: %.2fs", runtimeTS);
 
 		//subtract current from last over deltaT, update last snapshot value, compute Bytes/second without losing precision
 
@@ -69,19 +67,18 @@ void *printBandwidthStatistics(void *vargp)
 		global_bandwidth_statistics->interval_filtered_last_rx = global_bandwidth_statistics->interval_filtered_current_rx;
 		global_bandwidth_statistics->grand_filtered_rx += interval_filtered_delta;
 
-		__BW_STATS_I("  interval lls rx   : %'13d B/s, %'13d B", interval_lls_delta, interval_lls_rx_s);
-		__BW_STATS_L("  lifetime lls rx   : %'13d B", 			 global_bandwidth_statistics->grand_lls_rx);
-		__BW_STATS_I("  interval mmt      : %'13d B/s, %'13d B", interval_mmt_delta, interval_mmt_rx_s);
-		__BW_STATS_L("  lifetime mmt      : %'13d B", 			 global_bandwidth_statistics->grand_mmt_rx);
-		__BW_STATS_I("  interval alc rx   : %'13d B/s, %'13d B", interval_alc_delta, interval_alc_rx_s);
-		__BW_STATS_L("  lifetime alc rx   : %'13d B", 			 global_bandwidth_statistics->grand_alc_rx);
-		__BW_STATS_I("  interval filt.    : %'13d B/s, %'13d B", interval_filtered_delta, interval_filtered_rx_s);
-		__BW_STATS_L("  lifetime filt.    : %'13d B",			 global_bandwidth_statistics->grand_filtered_rx);
-		__BW_STATS_BORDER("  ------------------");
-		__BW_STATS_I("  interval total rx : %'13d B/s, %'13d B", interval_total_delta, 	interval_total_rx_s);
-		__BW_STATS_L("  lifetime total rx : %'13d B", 			 global_bandwidth_statistics->grand_total_rx);
+		__BW_STATS_RUNTIME("lls rx  : %'13d B/s, %'13d B", interval_lls_delta, interval_lls_rx_s);
+		__BW_STATS_RUNTIME("mmt     : %'13d B/s, %'13d B", interval_mmt_delta, interval_mmt_rx_s);
+		__BW_STATS_RUNTIME("alc rx  : %'13d B/s, %'13d B", interval_alc_delta, interval_alc_rx_s);
+		__BW_STATS_RUNTIME("Filtered: %'13d B/s, %'13d B", interval_filtered_delta, interval_filtered_rx_s);
+		__BW_STATS_RUNTIME("total rx: %'13d B/s, %'13d B", interval_total_delta, 	interval_total_rx_s);
 
-		__BW_STATS_BORDER("--------------------------------------------------------------------------------");
+		__BW_STATS_LIFETIME("LLS rx  : %'13d B", 			 global_bandwidth_statistics->grand_lls_rx);
+		__BW_STATS_LIFETIME("MMT     : %'13d B", 			 global_bandwidth_statistics->grand_mmt_rx);
+		__BW_STATS_LIFETIME("ALC rx  : %'13d B", 			 global_bandwidth_statistics->grand_alc_rx);
+		__BW_STATS_LIFETIME("Filtered: %'13d B",			 global_bandwidth_statistics->grand_filtered_rx);
+		__BW_STATS_LIFETIME("Total rx: %'13d B", 			 global_bandwidth_statistics->grand_total_rx);
+
 		__BW_STATS_REFRESH();
 	}
 

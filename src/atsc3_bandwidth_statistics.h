@@ -21,7 +21,7 @@
 
 #ifndef __BW_STATS_NCURSES
 #define __BW_STATS(...)   printf("%s:%d: ","bw_stats",__LINE__);__PRINTLN(__VA_ARGS__);
-#define __BW_STATS_I(...)  printf("%s:%d: ","bw_stats",__LINE__);
+#define __BW_STATS_RUNTIME(...)  printf("%s:%d: ","bw_stats",__LINE__);
 #define __BW_STATS_L(...)  __PRINTLN(__VA_ARGS__);
 
 #define __BW_STATS_BORDER(...) __BW_STATS(__VA_ARGS__)
