@@ -17,7 +17,11 @@ void *printGlobalStatistics(void *vargp)
 	setlocale(LC_ALL,"");
 	while(true) {
 		sleep(1);
+		ncurses_writer_lock_mutex_acquire();
+		__PS_STATS_NOUPDATE();
 		atsc3_packet_statistics_dump_global_stats();
+		__DOUPDATE();
+		ncurses_writer_lock_mutex_release();
 	}
 }
 int comparator_packet_id_mmt_stats_t(const void *a, const void *b)
@@ -167,6 +171,7 @@ void atsc3_packet_statistics_mmt_stats_populate(udp_packet_t* udp_packet, mmtp_p
 		packet_mmt_stats->packet_sequence_number_lifetime_missing += packet_mmt_stats->packet_sequence_number_last_gap;
 		global_stats->packet_counter_mmtp_packets_missing += packet_mmt_stats->packet_sequence_number_last_gap;
 
+
 		__PS_STATS_GLOBAL_LOSS("Flow: %u.%u.%u.%u:%u, Packet_id: %u, Packet Counter: %u to %u, TS: %u-t%u, PSN: %u-%u, missing: %u",
 						__toip(packet_mmt_stats),
 						packet_mmt_stats->packet_id,
@@ -282,11 +287,10 @@ int DUMP_COUNTER_2=0;
 void atsc3_packet_statistics_dump_global_stats(){
 	bool has_output = false;
 
+	__PS_CLEAR();
 	struct timeval tNow;
 	gettimeofday(&tNow, NULL);
-	__PS_CLEAR();
 	long long elapsedDurationUs = timediff(tNow, global_stats->program_timeval_start);
-
 	__PS_STATS_GLOBAL("Elapsed Duration            : %-.2fs", elapsedDurationUs / 1000000.0);
 	__PS_STATS_GLOBAL("LLS total packets received  : %'-u", global_stats->packet_counter_lls_packets_received);
 	__PS_STATS_GLOBAL("> parsed good               : %'-u", global_stats->packet_counter_lls_packets_parsed);
@@ -319,7 +323,7 @@ void atsc3_packet_statistics_dump_global_stats(){
 		uint16_t seconds;
 		uint16_t microseconds;
 		compute_ntp32_to_seconds_microseconds(packet_mmt_stats->timestamp, &seconds, &microseconds);
-
+		__PS_STATS_HR();
 		__PS_STATS_FLOW("Interval Flow: %u.%u.%u.%u:%u, packet_id: %u, NTP range: %u.%03u to %u.%03u (%-u - %-u)", __toip(packet_mmt_stats),
 																												packet_mmt_stats->packet_id,
 																												packet_mmt_stats->timestamp_sample_interval_start_s,
