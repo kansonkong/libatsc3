@@ -116,7 +116,7 @@ int printf(const char *format, ...)  {
 }
 #endif
 
-#define __TEST_FFPLAY_MMTP_PIPE_PLAYBACK__ false
+//#define __TEST_FFPLAY_MMTP_PIPE_PLAYBACK__
 
 #ifdef __TEST_FFPLAY_MMTP_PIPE_PLAYBACK__
 
@@ -717,8 +717,8 @@ void process_packet(u_char *user, const struct pcap_pkthdr *pkthdr, const u_char
 
 //		printf("payload is");
 		if(mmtp_payload->mmtp_packet_header.mmtp_packet_id==35 && ip_header[16] == 239 && ip_header[17] == 255 && ip_header[18] == 10 && ip_header[19] == 1) {
-			printf("pushing psn:%d, ", mmtp_payload->mmtp_mpu_type_packet_header.packet_sequence_number);
-			push_mfu_block(mmtp_payload->mmtp_mpu_type_packet_header.mpu_data_unit_payload);
+	//		printf("pushing psn:%d, ", mmtp_payload->mmtp_mpu_type_packet_header.packet_sequence_number);
+//			push_mfu_block(mmtp_payload->mmtp_mpu_type_packet_header.mpu_data_unit_payload);
 		}
 		if(mmtp_payload->mmtp_packet_header.mmtp_payload_type == 0x0) {
 			global_stats->packet_counter_mmt_mpu++;
@@ -834,7 +834,7 @@ int main(int argc,char **argv) {
     mmtp_sub_flow_vector = calloc(1, sizeof(*mmtp_sub_flow_vector));
     mmtp_sub_flow_vector_init(mmtp_sub_flow_vector);
     lls_session = lls_session_create();
-    create_ffplay_pipe();
+    //create_ffplay_pipe();
 
     global_stats = calloc(1, sizeof(*global_stats));
     gettimeofday(&global_stats->program_timeval_start, 0);
