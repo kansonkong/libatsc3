@@ -292,6 +292,7 @@ void atsc3_packet_statistics_dump_global_stats(){
 	gettimeofday(&tNow, NULL);
 	long long elapsedDurationUs = timediff(tNow, global_stats->program_timeval_start);
 	__PS_STATS_GLOBAL("Elapsed Duration            : %-.2fs", elapsedDurationUs / 1000000.0);
+
 	__PS_STATS_GLOBAL("LLS total packets received  : %'-u", global_stats->packet_counter_lls_packets_received);
 	__PS_STATS_GLOBAL("> parsed good               : %'-u", global_stats->packet_counter_lls_packets_parsed);
 	__PS_STATS_GLOBAL("> parsed error              : %'-u", global_stats->packet_counter_lls_packets_parsed_error);
@@ -310,7 +311,7 @@ void atsc3_packet_statistics_dump_global_stats(){
 	__PS_STATS_GLOBAL("> parsed good               : %'-u",	global_stats->packet_counter_alc_packets_parsed);
 	__PS_STATS_GLOBAL("> parsed errors             : %'-u",	global_stats->packet_counter_alc_packets_parsed_error);
 	__PS_STATS_GLOBAL("Non ATSC3 Packets           : %'-u", global_stats->packet_counter_filtered_ipv4);
-	__PS_STATS_GLOBAL("Total Mulicast Packets RX   : %'-u", global_stats->packet_counter_total_received);
+	__PS_STATS_GLOBAL("Total Mulicast Packets RX   : %'-u", global_stats->packets_total_received);
 
 	//dump flow status
 	for(int i=0; i < global_stats->packet_id_n; i++ ) {
@@ -323,7 +324,6 @@ void atsc3_packet_statistics_dump_global_stats(){
 		uint16_t seconds;
 		uint16_t microseconds;
 		compute_ntp32_to_seconds_microseconds(packet_mmt_stats->timestamp, &seconds, &microseconds);
-		__PS_STATS_HR();
 		__PS_STATS_FLOW("Interval Flow: %u.%u.%u.%u:%u, packet_id: %u, NTP range: %u.%03u to %u.%03u (%-u - %-u)", __toip(packet_mmt_stats),
 																												packet_mmt_stats->packet_id,
 																												packet_mmt_stats->timestamp_sample_interval_start_s,
@@ -347,6 +347,14 @@ void atsc3_packet_statistics_dump_global_stats(){
 		__PS_STATS_FLOW("Lifetime NTP   : %u.%03u to %u.%03u (%-u to %-u)        Loss Pct: %f",packet_mmt_stats->timestamp_lifetime_start_s, packet_mmt_stats->timestamp_lifetime_start_us/100, seconds, microseconds/100, packet_mmt_stats->timestamp_lifetime_start, packet_mmt_stats->timestamp, computed_flow_packet_loss);
 		__PS_STATS_FLOW("packet_seq_numbers: %-10u to %-10u (0x%08x to 0x%08x)    max sequence gap: %-6d ",	packet_mmt_stats->packet_sequence_number_lifetime_start,  packet_mmt_stats->packet_sequence_number, packet_mmt_stats->packet_sequence_number_lifetime_start, packet_mmt_stats->packet_sequence_number, packet_mmt_stats->packet_sequence_number_max_gap);
 		__PS_STATS_FLOW("Total packets RX: %-6u,                                  missing: %-6u",	packet_mmt_stats->packet_sequence_number_lifetime_processed, packet_mmt_stats->packet_sequence_number_lifetime_missing);
+		int row, col;
+		getyx(pkt_flow_stats_window, row, col);
+		printf("----row: %d, col: %d\n", row, col);
+		wmove(pkt_flow_stats_window, row, col+2);
+		wrefresh(pkt_flow_stats_window);
+		whline(pkt_flow_stats_window, ACS_HLINE, 8);
+		wrefresh(pkt_flow_stats_window);
+
 		__PS_STATS_HR();
 
 		//clear out any sample interval attributes
