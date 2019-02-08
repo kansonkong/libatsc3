@@ -26,40 +26,28 @@ void ncurses_writer_lock_mutex_destroy() {
 void lls_dump_instance_table_ncurses(lls_table_t* base_table) {
 
 	__LLS_DUMP("LLS Base Table:");
-	__LLS_DUMP("--------------------------");
-	__LLS_DUMP("lls_table_id             : %d (0x%x)", base_table->lls_table_id, base_table->lls_table_id);
-	__LLS_DUMP("lls_group_id             : %d (0x%x)", base_table->lls_group_id, base_table->lls_group_id);
-	__LLS_DUMP("group_count_minus1       : %d (0x%x)", base_table->group_count_minus1, base_table->group_count_minus1);
-	__LLS_DUMP("lls_table_version        : %d (0x%x)", base_table->lls_table_version, base_table->lls_table_version);
-//	__LLS_DUMP(" xml decoded payload size : %d", 	base_table->raw_xml.xml_payload_size);
-//	__LLS_DUMP(" --------------------------");
-//
-//	if(base_table->raw_xml.xml_payload) {
-//		__LLS_DUMP("\t%s", base_table->raw_xml.xml_payload);
-//	}
-//
-	__LLS_DUMP(" --------------------------");
+	__LLS_DUMP("");
+	__LLS_DUMP("lls_table_id       : %-3d (0x%-3x)  group_id      : %-3d (0x%-3x)", base_table->lls_table_id,	base_table->lls_table_id, base_table->lls_group_id, base_table->lls_group_id);
+	__LLS_DUMP("group_count_minus1 : %-3d (0x%-3x)  table_version : %-3d (0x%-3x)", base_table->group_count_minus1, base_table->group_count_minus1, base_table->lls_table_version, base_table->lls_table_version);
+	__LLS_DUMP("");
 
 	if(base_table->lls_table_id == SLT) {
 
-	__LLS_DUMP("SLT: Service contains %d entries:", base_table->slt_table.service_entry_n);
+		__LLS_DUMP("SLT: Service contains %d entries:", base_table->slt_table.service_entry_n);
 
-	for(int i=0l; i < base_table->slt_table.service_entry_n; i++) {
-		service_t* service = base_table->slt_table.service_entry[i];
-		__LLS_DUMP("  service_id                  : %d", service->service_id);
-		__LLS_DUMP("  global_service_id           : %s", service->global_service_id);
-		__LLS_DUMP("  major_channel_no            : %d", service->major_channel_no);
-		__LLS_DUMP("  minor_channel_no            : %d", service->minor_channel_no);
-		__LLS_DUMP("  service_category            : %d", service->service_category);
-		__LLS_DUMP("  short_service_name          : %s", service->short_service_name);
-		__LLS_DUMP("  slt_svc_seq_num             : %d", service->slt_svc_seq_num);
-		__LLS_DUMP("  broadcast_svc_signaling");
-		__LLS_DUMP("    sls_protocol              : %d", service->broadcast_svc_signaling.sls_protocol);
-		__LLS_DUMP("    sls_destination_ip_address: %s", service->broadcast_svc_signaling.sls_destination_ip_address);
-		__LLS_DUMP("    sls_destination_udp_port  : %s", service->broadcast_svc_signaling.sls_destination_udp_port);
-		__LLS_DUMP("    sls_source_ip_address     : %s", service->broadcast_svc_signaling.sls_source_ip_address);
-
-	}
+		for(int i=0l; i < base_table->slt_table.service_entry_n; i++) {
+			service_t* service = base_table->slt_table.service_entry[i];
+			__LLS_DUMP("  service_id                  : %d", service->service_id);
+			__LLS_DUMP("  global_service_id           : %s", service->global_service_id);
+			__LLS_DUMP("  major_channel_no            : %-5d     minor_channel_no        : %d", service->major_channel_no, service->minor_channel_no);
+			__LLS_DUMP("  service_category            : %-5d     slt_svc_seq_num         : %d", service->service_category, service->slt_svc_seq_num);
+			__LLS_DUMP("  short_service_name          : %s", service->short_service_name);
+			__LLS_DUMP("  broadcast_svc_signaling");
+			__LLS_DUMP("    sls_protocol              : %d", service->broadcast_svc_signaling.sls_protocol);
+			__LLS_DUMP("    sls_destination_ip_address: %s:%s", service->broadcast_svc_signaling.sls_destination_ip_address, service->broadcast_svc_signaling.sls_destination_udp_port);
+			__LLS_DUMP("    sls_source_ip_address     : %s", service->broadcast_svc_signaling.sls_source_ip_address);
+			__LLS_DUMP("");
+		}
 	}
 
 	//decorate with instance types: hd = int16_t, hu = uint_16t, hhu = uint8_t
