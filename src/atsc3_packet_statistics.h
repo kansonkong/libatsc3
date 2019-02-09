@@ -99,6 +99,8 @@ typedef struct packet_id_mmt_stats {
 
 	bool	 has_timestamp;
 	uint32_t timestamp;
+	uint16_t timestamp_s;
+	uint16_t timestamp_us;
 
 	bool	 has_timestamp_sample_interval_start;
 	uint32_t timestamp_sample_interval_start;
