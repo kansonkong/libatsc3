@@ -87,13 +87,13 @@ int PACKET_COUNTER=0;
 
 #define _ENABLE_DEBUG true
 
-#define __ERROR(...)   printf("%s:%d:ERROR :","listener",__LINE__);printf(__VA_ARGS__);
-#define __WARN(...)    printf("%s:%d:WARN: ","listener",__LINE__);printf(__VA_ARGS__);
-#define __INFO(...)    printf("%s:%d: ","listener",__LINE__);printf(__VA_ARGS__);
+#define __ERROR(...)   printf("%s:%d:ERROR :","listener",__LINE__);printf(__VA_ARGS__);printf("\n");
+#define __WARN(...)    printf("%s:%d:WARN: ","listener",__LINE__);printf(__VA_ARGS__);printf("\n");
+#define __INFO(...)    printf("%s:%d: ","listener",__LINE__);printf(__VA_ARGS__);printf("\n");
 
 #ifdef _ENABLE_DEBUG
-#define __DEBUG(...)   printf("%s:%d:DEBUG: ","listener",__LINE__);printf(__VA_ARGS__);
-#define __DEBUGF(...)  printf("%s:%d:DEBUG: ","listener",__LINE__);printf(__VA_ARGS__);
+#define __DEBUG(...)   printf("%s:%d:DEBUG: ","listener",__LINE__);printf(__VA_ARGS__);printf("\n");
+#define __DEBUGF(...)  printf("%s:%d:DEBUG: ","listener",__LINE__);printf(__VA_ARGS__);printf("\n");
 #define __DEBUGA(...) 	__PRINTF(__VA_ARGS__);
 #define __DEBUGN(...)  __PRINTLN(__VA_ARGS__);
 #else
@@ -341,6 +341,7 @@ void __trace_dump_ip_header_info(u_char* ip_header) {
 
 uint32_t* dst_ip_addr_filter = NULL;
 uint16_t* dst_ip_port_filter = NULL;
+uint16_t* dst_packet_id_filter = NULL;
 
 // lls and alc glue for slt, contains lls_table_slt and lls_slt_alc_session
 
@@ -414,6 +415,12 @@ cleanup:
 	return -1;
 }
 
+
+void count_packet_as_filtered(udp_packet_t* udp_packet) {
+	global_stats->packet_counter_filtered_ipv4++;
+	global_bandwidth_statistics->interval_filtered_current_bytes_rx += udp_packet->data_length;
+	global_bandwidth_statistics->interval_filtered_current_packets_rx++;
+}
 
 //make sure to invoke     mmtp_sub_flow_vector_init(&p_sys->mmtp_sub_flow_vector);
 mmtp_sub_flow_vector_t* mmtp_sub_flow_vector;
@@ -652,9 +659,7 @@ void process_packet(u_char *user, const struct pcap_pkthdr *pkthdr, const u_char
 
 	if(udp_packet->dst_ip_addr <= MIN_ATSC3_MULTICAST_BLOCK || udp_packet->dst_ip_addr >= MAX_ATSC3_MULTICAST_BLOCK) {
 		//out of range, so drop
-		global_stats->packet_counter_filtered_ipv4++;
-		global_bandwidth_statistics->interval_filtered_current_bytes_rx += udp_packet->data_length;
-		global_bandwidth_statistics->interval_filtered_current_packets_rx++;
+		count_packet_as_filtered(udp_packet);
 
 		goto cleanup;
 	}
@@ -693,10 +698,6 @@ void process_packet(u_char *user, const struct pcap_pkthdr *pkthdr, const u_char
 	//Process flow as MMT, we should only have MMT packets left at this point..
 	if((dst_ip_addr_filter == NULL && dst_ip_port_filter == NULL) || (udp_packet->dst_ip_addr == *dst_ip_addr_filter && udp_packet->dst_port == *dst_ip_port_filter)) {
 
-		global_bandwidth_statistics->interval_mmt_current_bytes_rx += udp_packet->data_length;
-		global_bandwidth_statistics->interval_mmt_current_packets_rx++;
-		global_stats->packet_counter_mmtp_packets_received++;
-
 		__TRACE("data len: %d", udp_packet->data_length)
 		mmtp_payload_fragments_union_t* mmtp_payload = mmtp_packet_parse(mmtp_sub_flow_vector, udp_packet->data, udp_packet->data_length);
 
@@ -710,15 +711,25 @@ void process_packet(u_char *user, const struct pcap_pkthdr *pkthdr, const u_char
 					);
 			goto cleanup;
 		}
+
+		//for filtering MMT flows by a specific packet_id
+		if(dst_packet_id_filter && *dst_packet_id_filter != mmtp_payload->mmtp_packet_header.mmtp_packet_id) {
+			count_packet_as_filtered(udp_packet);
+			goto cleanup;
+		}
+
+		global_bandwidth_statistics->interval_mmt_current_bytes_rx += udp_packet->data_length;
+		global_bandwidth_statistics->interval_mmt_current_packets_rx++;
+		global_stats->packet_counter_mmtp_packets_received++;
+
 		atsc3_packet_statistics_mmt_stats_populate(udp_packet, mmtp_payload);
 
 		//dump header, then dump applicable packet type
 		//mmtp_packet_header_dump(mmtp_payload);
 
-//		printf("payload is");
 		if(mmtp_payload->mmtp_packet_header.mmtp_packet_id==35 && ip_header[16] == 239 && ip_header[17] == 255 && ip_header[18] == 10 && ip_header[19] == 1) {
-	//		printf("pushing psn:%d, ", mmtp_payload->mmtp_mpu_type_packet_header.packet_sequence_number);
-//			push_mfu_block(mmtp_payload->mmtp_mpu_type_packet_header.mpu_data_unit_payload);
+				//printf("pushing psn:%d, ", mmtp_payload->mmtp_mpu_type_packet_header.packet_sequence_number);
+			//push_mfu_block(mmtp_payload->mmtp_mpu_type_packet_header.mpu_data_unit_payload);
 		}
 		if(mmtp_payload->mmtp_packet_header.mmtp_payload_type == 0x0) {
 			global_stats->packet_counter_mmt_mpu++;
@@ -781,9 +792,13 @@ int main(int argc,char **argv) {
 
     char *dev;
 
-    char *dst_ip = NULL;
-    char *dst_port = NULL;
+    char *filter_dst_ip = "";
+    char *filter_dst_port = "";
+    char *filter_packet_id = "";
+
     int dst_port_filter_int;
+    int dst_ip_port_filter_int;
+    int dst_packet_id_filter_int;
 
     char errbuf[PCAP_ERRBUF_SIZE];
     pcap_t* descr;
@@ -795,35 +810,56 @@ int main(int argc,char **argv) {
     if(argc == 2) {
     	dev = argv[1];
     	__INFO("listening on dev: %s", dev);
-    } else if(argc==4) {
+    } else if(argc>=4) {
     	//listen to a selected flow
     	dev = argv[1];
-    	dst_ip = argv[2];
-    	dst_port = argv[3];
+    	filter_dst_ip = argv[2];
 
-    	dst_ip_addr_filter = calloc(1, sizeof(uint32_t));
-    	char* pch = strtok (dst_ip,".");
-    	int offset = 24;
-    	while (pch != NULL && offset>=0) {
-    		uint8_t octet = atoi(pch);
-    		*dst_ip_addr_filter |= octet << offset;
-    		offset-=8;
-    	    pch = strtok (NULL, " ,.-");
-    	  }
+		//skip ip address filter if our params are * or -
+    	if(!(strncmp("*", filter_dst_ip, 1) == 0 || strncmp("-", filter_dst_ip, 1) == 0)) {
+			dst_ip_addr_filter = calloc(1, sizeof(uint32_t));
+			char* pch = strtok (filter_dst_ip,".");
+			int offset = 24;
+			while (pch != NULL && offset>=0) {
+				uint8_t octet = atoi(pch);
+				*dst_ip_addr_filter |= octet << offset;
+				offset-=8;
+				pch = strtok (NULL, ".");
+			}
+		}
 
-    	dst_port_filter_int = atoi(dst_port);
-    	dst_ip_port_filter = calloc(1, sizeof(uint16_t));
-    	*dst_ip_port_filter |= dst_port_filter_int & 0xFFFF;
+    	if(argc>=4) {
+    		filter_dst_port = argv[3];
+        	if(!(strncmp("*", filter_dst_port, 1) == 0 || strncmp("-", filter_dst_port, 1) == 0)) {
+            	__INFO("832:");
 
-    	__INFO("listening on dev: %s, dst_ip: %s, dst_port: %s", dev, dst_ip, dst_port);
+				dst_port_filter_int = atoi(filter_dst_port);
+				dst_ip_port_filter = calloc(1, sizeof(uint16_t));
+				*dst_ip_port_filter |= dst_port_filter_int & 0xFFFF;
+        	}
+    	}
+
+    	if(argc>=5) {
+    		filter_packet_id = argv[4];
+        	if(!(strncmp("*", filter_packet_id, 1) == 0 || strncmp("-", filter_packet_id, 1) == 0)) {
+				dst_packet_id_filter_int = atoi(filter_packet_id);
+				dst_packet_id_filter = calloc(1, sizeof(uint16_t));
+				*dst_packet_id_filter |= dst_packet_id_filter_int & 0xFFFF;
+        	}
+    	}
+
+    	__INFO("listening on dev: %s, dst_ip: %s (%p), dst_port: %s (%p), dst_packet_id: %s (%p)", dev, filter_dst_ip, dst_ip_addr_filter, filter_dst_port, dst_ip_port_filter, filter_packet_id, dst_packet_id_filter);
+
 
     } else {
     	println("%s - a udp mulitcast listener test harness for atsc3 mmt messages", argv[0]);
     	println("---");
-    	println("args: dev (dst_ip) (dst_port)");
+    	println("args: dev (dst_ip) (dst_port) (packet_id)");
     	println(" dev: device to listen for udp multicast, default listen to 0.0.0.0:0");
     	println(" (dst_ip): optional, filter to specific ip address");
     	println(" (dst_port): optional, filter to specific port");
+    	println(" (packet_id): optional, filter to specific packet_id across all streams");
+
     	println("");
     	exit(1);
     }
