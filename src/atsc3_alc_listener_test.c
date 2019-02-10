@@ -36,10 +36,13 @@ int PACKET_COUNTER=0;
 #include <netinet/ip.h>
 #include <string.h>
 #include <sys/stat.h>
+
 #include "atsc3_lls.h"
 #include "atsc3_utils.h"
+
 #include "alc_rx.h"
 #include "alc_channel.h"
+#include "atsc3_alc_utils.h"
 
 #define println(...) printf(__VA_ARGS__);printf("\n")
 
@@ -51,12 +54,12 @@ int PACKET_COUNTER=0;
 #define __INFO(...)    printf("%s:%d:INFO:",__FILE__,__LINE__);__PRINTLN(__VA_ARGS__);
 
 #ifdef _ENABLE_DEBUG
-#define __DEBUG(...)   printf("%s:%d:DEBUG:",__FILE__,__LINE__);__PRINTLN(__VA_ARGS__);
+#define __ALC_UTILS_DEBUG(...)   printf("%s:%d:DEBUG:",__FILE__,__LINE__);__PRINTLN(__VA_ARGS__);
 #define __DEBUGF(...)  printf("%s:%d:DEBUG:",__FILE__,__LINE__);__PRINTF(__VA_ARGS__);
 #define __DEBUGA(...) 	__PRINTF(__VA_ARGS__);
 #define __DEBUGN(...)  __PRINTLN(__VA_ARGS__);
 #else
-#define __DEBUG(...)
+#define __ALC_UTILS_DEBUG(...)
 #define __DEBUGF(...)
 #define __DEBUGA(...)
 #define __DEBUGN(...)
@@ -229,44 +232,8 @@ void process_packet(u_char *user, const struct pcap_pkthdr *pkthdr, const u_char
 			//write out our alc fragment to disk, no reordering here yet
 
 			/* TODO: check if instance_id is set --> EXT_FDT header exists in packet */
+			alc_packet_dump_to_object(alc_packet);
 
-			char *myFilePathName = calloc(128, sizeof(char));
-			int filename_pos = 0;
-			__INFO("have tsi: %s, toi: %s, sbn: %x, esi: %x len: %d",
-					alc_packet->tsi, alc_packet->toi,
-					alc_packet->esi, alc_packet->sbn, alc_packet->alc_len);
-
-			FILE *f = NULL;
-
-			//if no TSI, this is metadata and create a new object for each payload
-			if(!alc_packet->tsi) {
-				snprintf(myFilePathName,127, "route/%s-%s-%d", alc_packet->tsi, alc_packet->toi, __INT_LOOP_COUNT++);
-				f = fopen(myFilePathName, "w");
-
-			} else {
-				snprintf(myFilePathName,127, "route/%s-%s", alc_packet->tsi, alc_packet->toi);
-
-				if(alc_packet->esi>0) {
-					__INFO("alc_rx.c - dumping to file in append mode: %s, esi: %d", myFilePathName, alc_packet->esi);
-					f = fopen(myFilePathName, "a");
-				} else {
-					__INFO("alc_rx.c - dumping to file in write mode: %s, esi: %d", myFilePathName, alc_packet->esi);
-					//open as write
-					f = fopen(myFilePathName, "w");
-				}
-			}
-
-			if(!f) {
-				__WARN("alc_rx.c - UNABLE TO OPEN FILE %s", myFilePathName);
-				goto cleanup;
-			}
-
-			for(int i=0; i < alc_packet->alc_len; i++) {
-				fputc(alc_packet->alc_payload[i], f);
-			}
-			fclose(f);
-			__INFO("alc_rx.c - dumping to file complete: %s", myFilePathName);
-			free(myFilePathName);
 		}
 	}
 
@@ -311,7 +278,7 @@ int main(int argc,char **argv) {
     //listen to all flows
     if(argc == 2) {
     	dev = argv[1];
-	    __DEBUG("listening on dev: %s", dev);
+	    __ALC_UTILS_DEBUG("listening on dev: %s", dev);
     } else if(argc==4) {
     	//listen to a selected flow
 		dev = argv[1];

@@ -23,7 +23,8 @@
 #define _LLS_PRINTLN(...) printf(__VA_ARGS__);printf("\n")
 #define _LLS_PRINTF(...)  printf(__VA_ARGS__);
 
-#define __LLSU_TRACE(...) _LLS_PRINTLN(__VA_ARGS__);
+#define __LLSU_TRACE(...)
+//#define __LLSU_TRACE(...) _LLS_PRINTLN(__VA_ARGS__);
 
 //alc - assume single session for now
 

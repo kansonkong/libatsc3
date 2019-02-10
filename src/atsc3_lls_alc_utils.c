@@ -66,8 +66,7 @@ lls_slt_alc_session_t* lls_slt_alc_session_find(lls_session_t* lls_session, lls_
 	for(int i=0; i < lls_session->lls_slt_alc_sessions_n; i++ ) {
 		lls_slt_alc_session_t* lls_slt_alc_session = lls_session->lls_slt_alc_sessions[i];
 
-
-		__LLSU_TRACE("lls_slt_alc_session_find lls_service: service_id: %hu, src: %s (%u),  dest: %s:%s as: %u.%u.%u.%u:%u (%u:%u), checking against %hu, dest: %u.%u.%u.%u:%u (%u:%u)",
+		__LLSU_TRACE("lls_slt_alc_session_find lls_service: service_id: %hu, src: %s (%u), dest: %s:%s (%u:%u), checking against %hu, dest: %u.%u.%u.%u:%u (%u:%u)",
 				lls_service->service_id,
 				lls_service->broadcast_svc_signaling.sls_source_ip_address,
 				sls_source_ip_address,
@@ -104,7 +103,6 @@ lls_slt_alc_session_t* lls_slt_alc_session_find_from_udp_packet(lls_session_t* l
 			return lls_slt_alc_session;
 		}
 	}
-
 
 	return NULL;
 }

@@ -55,12 +55,12 @@ extern int _LLS_DEBUG_ENABLED;
 #define __INFO(...)    printf("%s:%d:INFO:",__FILE__,__LINE__);__PRINTLN(__VA_ARGS__);
 
 #ifdef _ENABLE_DEBUG
-#define __DEBUG(...)   printf("%s:%d:DEBUG:",__FILE__,__LINE__);__PRINTLN(__VA_ARGS__);
+#define __ALC_UTILS_DEBUG(...)   printf("%s:%d:DEBUG:",__FILE__,__LINE__);__PRINTLN(__VA_ARGS__);
 #define __DEBUGF(...)  printf("%s:%d:DEBUG:",__FILE__,__LINE__);__PRINTF(__VA_ARGS__);
 #define __DEBUGA(...) 	__PRINTF(__VA_ARGS__);
 #define __DEBUGN(...)  __PRINTLN(__VA_ARGS__);
 #else
-#define __DEBUG(...)
+#define __ALC_UTILS_DEBUG(...)
 #define __DEBUGF(...)
 #define __DEBUGA(...)
 #define __DEBUGN(...)
@@ -132,7 +132,7 @@ void mpu_dump_flow(uint32_t dst_ip, uint16_t dst_port, mmtp_payload_fragments_un
 	//sub_flow_vector is a global
 	dump_mpu(mmtp_payload);
 
-	__DEBUG("::dumpMfu ******* file dump file: %d.%d.%d.%d:%d-p:%d.s:%d.ft:%d",
+	__ALC_UTILS_DEBUG("::dumpMfu ******* file dump file: %d.%d.%d.%d:%d-p:%d.s:%d.ft:%d",
 			(dst_ip>>24)&0xFF,(dst_ip>>16)&0xFF,(dst_ip>>8)&0xFF,(dst_ip)&0xFF,
 			dst_port,
 			mmtp_payload->mmtp_mpu_type_packet_header.mmtp_packet_id,
@@ -150,7 +150,7 @@ void mpu_dump_flow(uint32_t dst_ip, uint16_t dst_port, mmtp_payload_fragments_un
 			mmtp_payload->mmtp_mpu_type_packet_header.mpu_fragment_type);
 
 
-	__DEBUG("::dumpMfu ******* file dump file: %s", myFilePathName);
+	__ALC_UTILS_DEBUG("::dumpMfu ******* file dump file: %s", myFilePathName);
 
 	FILE *f = fopen(myFilePathName, "a");
 	if(!f) {
@@ -186,7 +186,7 @@ void mpu_dump_reconstitued(uint32_t dst_ip, uint16_t dst_port, mmtp_payload_frag
 			mmtp_payload->mpu_data_unit_payload_fragments_timed.mpu_sequence_number);
 
 
-	__DEBUG("::dumpMfu ******* file dump file: %s", myFilePathName);
+	__ALC_UTILS_DEBUG("::dumpMfu ******* file dump file: %s", myFilePathName);
 
 	FILE *f = fopen(myFilePathName, "a");
 	if(!f) {
@@ -281,7 +281,7 @@ void process_packet(u_char *user, const struct pcap_pkthdr *pkthdr, const u_char
 		__ERROR("invalid data length of udp packet: %d", udp_packet->data_length);
 		return;
 	}
-	__DEBUG("Data length: %d", udp_packet->data_length);
+	__ALC_UTILS_DEBUG("Data length: %d", udp_packet->data_length);
 	udp_packet->data = malloc(udp_packet->data_length * sizeof(udp_packet->data));
 	memcpy(udp_packet->data, &packet[udp_header_start + 8], udp_packet->data_length);
 
@@ -315,7 +315,7 @@ void process_packet(u_char *user, const struct pcap_pkthdr *pkthdr, const u_char
 		}
 	} else 	if((dst_ip_addr_filter == NULL && dst_ip_port_filter == NULL) || (udp_packet->dst_ip_addr == *dst_ip_addr_filter && udp_packet->dst_port == *dst_ip_port_filter)) {
 
-		__DEBUG("data len: %d", udp_packet->data_length)
+		__ALC_UTILS_DEBUG("data len: %d", udp_packet->data_length)
 		mmtp_payload_fragments_union_t* mmtp_payload = mmtp_packet_parse(mmtp_sub_flow_vector, udp_packet->data, udp_packet->data_length);
 
 		if(!mmtp_payload) {
@@ -391,10 +391,10 @@ int main(int argc,char **argv) {
     //listen to all flows
     if(argc == 2) {
     	dev = argv[1];
-	    __DEBUG("listening on dev: %s", dev);
+	    __ALC_UTILS_DEBUG("listening on dev: %s", dev);
     } else if(argc==4) {
     	//listen
-        __DEBUG("listening on dev: %s, dst_ip: %s, dst_port: %s", dev, dst_ip, dst_port);
+        __ALC_UTILS_DEBUG("listening on dev: %s, dst_ip: %s, dst_port: %s", dev, dst_ip, dst_port);
         char delim[] = ".";
         char* ptr = NULL;
 
