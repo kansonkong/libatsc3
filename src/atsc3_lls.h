@@ -297,6 +297,7 @@ xml_node_t* xml_payload_document_extract_root_node(xml_document_t*);
 
 //etst methods
 char* lls_get_service_category_value(uint service_category);
+char* lls_get_sls_protocol_value(uint protocol);
 
 int build_SLT_table(lls_table_t *lls_table, xml_node_t *xml_root);
 int build_SystemTime_table(lls_table_t* lls_table, xml_node_t* xml_root);
