@@ -81,13 +81,17 @@ extern "C" {
 
 typedef struct alc_packet {
 	def_lct_hdr_t* def_lct_hdr;
-	char* tsi;
-	char* toi;
+	uint8_t close_object_flag;
+	uint8_t close_session_flag;
+
+	char* tsi_c;
+	char* toi_c;
 	unsigned long long transfer_len;
 	uint32_t sbn;
 	uint32_t esi;
 	unsigned int  alc_len;
 	uint8_t* alc_payload;
+
 } alc_packet_t;
 
 void alc_packet_free(alc_packet_t* alc_packet);

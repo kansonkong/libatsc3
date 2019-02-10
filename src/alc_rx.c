@@ -93,14 +93,14 @@ void alc_packet_free(alc_packet_t* alc_packet) {
 			free(alc_packet->def_lct_hdr);
 		}
 
-		if(alc_packet->tsi) {
-			free(alc_packet->tsi);
-			alc_packet->tsi = NULL;
+		if(alc_packet->tsi_c) {
+			free(alc_packet->tsi_c);
+			alc_packet->tsi_c = NULL;
 		}
 
-		if(alc_packet->toi) {
-			free(alc_packet->toi);
-			alc_packet->toi = NULL;
+		if(alc_packet->toi_c) {
+			free(alc_packet->toi_c);
+			alc_packet->toi_c = NULL;
 		}
 
 		if(alc_packet->alc_payload) {
@@ -201,8 +201,9 @@ int alc_rx_analyze_packet(char *data, int len, alc_channel_t *ch, alc_packet_t**
 	def_lct_hdr->flag_o = (data[1]>>5) & 0x3;
 	def_lct_hdr->flag_h = (data[1]>>4) & 0x1;
 	def_lct_hdr->reserved = (data[1]>>2) & 0x3;
-	def_lct_hdr->flag_a = (data[1]>>1) & 0x1;
-	def_lct_hdr->flag_b = (data[1]) & 0x1;
+
+	def_lct_hdr->flag_a = (data[1]>>1) & 0x1; //close session flag
+	def_lct_hdr->flag_b = (data[1]) & 0x1; //close object flag
 
 	//byte3
 	def_lct_hdr->hdr_len_raw = data[2];
@@ -301,6 +302,7 @@ int alc_rx_analyze_packet(char *data, int len, alc_channel_t *ch, alc_packet_t**
 		}
 	}
 
+	//remap into string representation of tsi
 	snprintf(tsi, 16, "%hu%hu%hu", def_lct_hdr->ts_id[0], def_lct_hdr->ts_id[1], def_lct_hdr->ts_id[2]);
 
 	ALC_RX_DEBUG("ts_id def_lct_hdr->flag_s: %d, def_lct_hdr->flag_h: %d, length: %d bits, val: %s",
@@ -380,6 +382,7 @@ int alc_rx_analyze_packet(char *data, int len, alc_channel_t *ch, alc_packet_t**
 		}
 	}
 
+	//remap into string representation of toi
 	snprintf(toi, 40, "%hu%hu%hu%hu%hu%hu%hu", def_lct_hdr->to_id[0], def_lct_hdr->to_id[1], def_lct_hdr->to_id[2],	def_lct_hdr->to_id[3], def_lct_hdr->to_id[4], def_lct_hdr->to_id[5], def_lct_hdr->to_id[6]);
 
 	ALC_RX_DEBUG("to_id def_lct_hdr->flag_o: %d, def_lct_hdr->flag_h: %d, length: %d bits, val: %s",
@@ -713,13 +716,17 @@ int alc_rx_analyze_packet(char *data, int len, alc_channel_t *ch, alc_packet_t**
 	*alc_packet_ptr = alc_packet;
 
 	alc_packet->def_lct_hdr = def_lct_hdr;
-	alc_packet->tsi = tsi;
-	alc_packet->toi = toi;
+	alc_packet->close_object_flag = def_lct_hdr->flag_b;
+	alc_packet->close_session_flag = def_lct_hdr->flag_a;
+
+	alc_packet->tsi_c = tsi;
+	alc_packet->toi_c = toi;
 	alc_packet->transfer_len = transfer_len;
 	alc_packet->sbn = sbn;
 	alc_packet->esi = esi;
 	alc_packet->alc_len = len - hdrlen;
 	alc_packet->alc_payload = calloc(alc_packet->alc_len, sizeof(uint8_t));
+
 	memcpy(alc_packet->alc_payload, &data[hdrlen], alc_packet->alc_len);
 
 	ALC_RX_DEBUG("alc_packet is now: %p", alc_packet);
