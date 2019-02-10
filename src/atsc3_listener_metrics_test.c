@@ -74,7 +74,7 @@ int PACKET_COUNTER=0;
 #include "atsc3_utils.h"
 
 #include "atsc3_lls.h"
-#include "atsc3_lls_alc_tools.h"
+#include "atsc3_lls_alc_utils.h"
 
 #include "atsc3_mmtp_types.h"
 #include "atsc3_mmtp_parser.h"
@@ -147,7 +147,7 @@ int process_lls_table_slt_update(lls_table_t* lls) {
 
 
 	for(int i=0; i < lls->slt_table.service_entry_n; i++) {
-		service_t* service = lls->slt_table.service_entry[i];
+		lls_service_t* service = lls->slt_table.service_entry[i];
 
 		if(service->broadcast_svc_signaling.sls_protocol == SLS_PROTOCOL_ROUTE) {
 			//TODO - we probably need to clear out the ALC session?
