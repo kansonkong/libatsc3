@@ -221,6 +221,6 @@ packet_id_mmt_stats_t* find_or_create_packet_id(uint32_t ip, uint16_t port, uint
 
 void atsc3_packet_statistics_dump_global_stats();
 void atsc3_packet_statistics_mmt_stats_populate(udp_packet_t* udp_packet, mmtp_payload_fragments_union_t* mmtp_payload);
-void *printGlobalStatistics(void *vargp);
+void *print_global_statistics_thread(void *vargp);
 
 #endif /* ATSC3_MMT_PACKET_STATISTICS_H_ */

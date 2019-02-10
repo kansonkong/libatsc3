@@ -21,6 +21,7 @@
 #define ATSC3_OUTPUT_STATISTICS_NCURSES_H_
 
 void ncurses_init();
+void* ncurses_input_run_thread();
 
 pthread_mutex_t ncurses_writer_lock;
 void ncurses_mutext_init();
@@ -31,7 +32,7 @@ void ncurses_writer_lock_mutex_destroy();
 void create_or_update_window_sizes(bool should_reload_term_size);
 void handle_winch(int sig);
 
-void* lls_dump_instance_table_thread(void*);
+void* print_lls_instance_table_thread(void*);
 void lls_dump_instance_table_ncurses(lls_table_t* lls_session);
 
 #define __BW_STATS_NCURSES true
@@ -116,6 +117,9 @@ int global_mmt_loss_count;
 
 #define __LLS_REFRESH()		 		wrefresh(signaling_global_stats_window);
 
+#ifndef CTRL
+#define CTRL(c) ((c) & 037)
+#endif
 
 #define __NCURSES_ERROR(...)   printf("%s:%d:ERROR :","listener",__LINE__);printf(__VA_ARGS__);printf("\n");
 #define __NCURSES_WARN(...)    printf("%s:%d:WARN: ","listener",__LINE__);printf(__VA_ARGS__);printf("\n");
