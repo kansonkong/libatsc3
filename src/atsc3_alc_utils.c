@@ -63,70 +63,52 @@ RFC 5775               ALC Protocol Instantiation             April 2010
    step (3) above.  If immediate checking is possible and if the packet
    fails the check, then the receiver MUST silently discard the packet.
  */
-#include <stdio.h>
-#include <stdlib.h>
-#include <sys/stat.h>
-
-#include "alc_rx.h"
-#include "alc_channel.h"
+#include "atsc3_alc_utils.h"
 
 static int __INT_LOOP_COUNT=0;
 
 
-#define println(...) printf(__VA_ARGS__);printf("\n")
+char* alc_packet_dump_to_object_get_filename(alc_packet_t* alc_packet) {
+	char *file_name = calloc(255, sizeof(char));
 
-#define __PRINTLN(...) printf(__VA_ARGS__);printf("\n")
-#define __PRINTF(...)  printf(__VA_ARGS__);
+	if(!alc_packet->toi_c) {
+		snprintf(file_name, 255, "%s%s-%s-%d", __ALC_DUMP_OUTPUT_PATH__, alc_packet->toi_c, alc_packet->toi_c, __INT_LOOP_COUNT++);
+	} else {
+		snprintf(file_name, 255, "%s%s-%s", __ALC_DUMP_OUTPUT_PATH__, alc_packet->tsi_c, alc_packet->toi_c);
+	}
 
-#define __ERROR(...)   printf("%s:%d:ERROR:",__FILE__,__LINE__);__PRINTLN(__VA_ARGS__);
-#define __WARN(...)    printf("%s:%d:WARN:",__FILE__,__LINE__);__PRINTLN(__VA_ARGS__);
-#define __INFO(...)    printf("%s:%d:INFO:",__FILE__,__LINE__);__PRINTLN(__VA_ARGS__);
+	return file_name;
+}
 
-#ifdef _ENABLE_DEBUG
-#define __DEBUG(...)   printf("%s:%d:DEBUG:",__FILE__,__LINE__);__PRINTLN(__VA_ARGS__);
-#define __DEBUGF(...)  printf("%s:%d:DEBUG:",__FILE__,__LINE__);__PRINTF(__VA_ARGS__);
-#define __DEBUGA(...) 	__PRINTF(__VA_ARGS__);
-#define __DEBUGN(...)  __PRINTLN(__VA_ARGS__);
-#else
-#define __DEBUG(...)
-#define __DEBUGF(...)
-#define __DEBUGA(...)
-#define __DEBUGN(...)
-#endif
-
-int dumpAlcPacketToObect(alc_packet_t* alc_packet) {
+int alc_packet_dump_to_object(alc_packet_t* alc_packet) {
 
 	int bytesWritten = 0;
     mkdir("route", 0777);
+    char* file_name = alc_packet_dump_to_object_get_filename(alc_packet);
 
-	char *myFilePathName = calloc(128, sizeof(char));
 	int filename_pos = 0;
-	__DEBUG("have tsi: %s, toi: %s, sbn: %x, esi: %x len: %d",
-			alc_packet->tsi, alc_packet->toi,
+	__ALC_UTILS_DEBUG("have tsi: %s, toi: %s, sbn: %x, esi: %x len: %d",
+			alc_packet->tsi_c, alc_packet->toi_c,
 			alc_packet->esi, alc_packet->sbn, alc_packet->alc_len);
 
 	FILE *f = NULL;
 
 	//if no TSI, this is metadata and create a new object for each payload
-	if(!alc_packet->tsi) {
-		snprintf(myFilePathName,127, "route/%s-%s-%d", alc_packet->tsi, alc_packet->toi, __INT_LOOP_COUNT++);
-		f = fopen(myFilePathName, "w");
-
+	if(!alc_packet->tsi_c) {
+		f = fopen(file_name, "w");
 	} else {
-		snprintf(myFilePathName,127, "route/%s-%s", alc_packet->tsi, alc_packet->toi);
-
 		if(alc_packet->esi>0) {
-			__DEBUG("alc_rx.c - dumping to file in append mode: %s, esi: %d", myFilePathName, alc_packet->esi);
-			f = fopen(myFilePathName, "a");
+			__ALC_UTILS_DEBUG("dumping to file in append mode: %s, esi: %d", file_name, alc_packet->esi);
+			f = fopen(file_name, "a");
 		} else {
-			__DEBUG("alc_rx.c - dumping to file in write mode: %s, esi: %d", myFilePathName, alc_packet->esi);
+			__ALC_UTILS_DEBUG("dumping to file in write mode: %s, esi: %d", file_name, alc_packet->esi);
 			//open as write
-			f = fopen(myFilePathName, "w");
+			f = fopen(file_name, "w");
 		}
 	}
 
 	if(!f) {
-		__WARN("alc_rx.c - UNABLE TO OPEN FILE %s", myFilePathName);
+		__ALC_UTILS_WARN("UNABLE TO OPEN FILE %s", file_name);
 		goto cleanup;
 	}
 
@@ -137,14 +119,204 @@ int dumpAlcPacketToObect(alc_packet_t* alc_packet) {
 
 	fclose(f);
 
-	__DEBUG("alc_rx.c - dumping to file complete: %s", myFilePathName);
-	free(myFilePathName);
+	__ALC_UTILS_DEBUG("dumping to file complete: %s", file_name);
 
-	cleanup:
-		if(alc_packet) {
-			alc_packet_free(alc_packet);
+#if defined(__TESTING_PREPEND_TSI__) && defined(__TESTING_PREPEND_TOI_INIT__)
+	char* tsi_prepend_init = __TESTING_PREPEND_TSI__;
+	char* toi_prepend_init = __TESTING_PREPEND_TOI_INIT__;
+	__ALC_UTILS_DEBUG("checking %s, %s,  %d", alc_packet->tsi_c, alc_packet->toi_c, alc_packet->close_object_flag);
 
-		}
+	if(strncmp(alc_packet->tsi_c, tsi_prepend_init, strlen(alc_packet->tsi_c)) == 0 &&
+				strncmp(alc_packet->toi_c, toi_prepend_init, strlen(alc_packet->toi_c)) &&
+				alc_packet->close_object_flag) {
+		__alc_prepend_fragment_with_init_box(file_name, alc_packet);
+
+
+	}
+#endif
+
+
+#if defined(__TESTING_RECONSTITUTED_TSI__) && defined(__TESTING_RECONSTITUTED_TOI_INIT__) && defined(__TESTING_RECONSITIUTED_FILE_NAME__)
+	char* tsi_recon_init = __TESTING_RECONSTITUTED_TSI__;
+	char* toi_recon_init = __TESTING_RECONSTITUTED_TOI_INIT__;
+	__ALC_UTILS_DEBUG("checking %s, %s,  %d", alc_packet->tsi_c, alc_packet->toi_c, alc_packet->close_object_flag);
+
+	if(strncmp(alc_packet->tsi_c, tsi_recon_init, strlen(alc_packet->tsi_c)) == 0 &&
+				strncmp(alc_packet->toi_c, toi_recon_init, strlen(alc_packet->toi_c)) &&
+				alc_packet->close_object_flag) {
+		__alc_recon_fragment_with_init_box(file_name, alc_packet);
+	}
+#endif
+
+cleanup:
+	free(file_name);
+	if(alc_packet) {
+		alc_packet_free(alc_packet);
+	}
 
 	return bytesWritten;
+}
+
+
+void __alc_prepend_fragment_with_init_box(char* file_name, alc_packet_t* alc_packet) {
+
+#if defined(__TESTING_PREPEND_TSI__) && defined(__TESTING_PREPEND_TOI_INIT__)
+
+	char* tsi_init = __TESTING_PREPEND_TSI__;
+	char* toi_init = __TESTING_PREPEND_TOI_INIT__;
+
+	char* init_file_name = calloc(255, sizeof(char));
+	char* fm4v_file_name = calloc(255, sizeof(char)); //.m4v == 4
+
+	__ALC_UTILS_DEBUG(" - concat %s, %s,  %d", alc_packet->tsi_c, alc_packet->toi_c, alc_packet->close_object_flag);
+
+	snprintf(init_file_name, 255, "%s%s-%s", __ALC_DUMP_OUTPUT_PATH__, tsi_init, toi_init);
+	snprintf(fm4v_file_name, 255, "%s%s-%s.m4v", __ALC_DUMP_OUTPUT_PATH__, alc_packet->tsi_c, alc_packet->toi_c);
+
+	if( access( init_file_name, F_OK ) == -1 ) {
+		__ALC_UTILS_ERROR("unable to open init file: %s", init_file_name);
+		goto cleanup;
+	}
+	struct stat st;
+	stat(init_file_name, &st);
+
+	uint8_t* init_payload = calloc(st.st_size, sizeof(uint8_t));
+	FILE* init_file = fopen(init_file_name, "r");
+	if(!init_file) {
+		__ALC_UTILS_ERROR("unable to open init file: %s", init_file_name);
+		goto cleanup;
+	}
+
+	fread(init_payload, st.st_size, 1, init_file);
+	fclose(init_file);
+
+	FILE* fm4v_output_file = fopen(fm4v_file_name, "w");
+	if(!fm4v_output_file) {
+		__ALC_UTILS_ERROR("unable to open fm4v output file: %s", fm4v_file_name);
+		goto cleanup;
+	}
+
+	fwrite(init_payload, st.st_size, 1, fm4v_output_file);
+	uint64_t block_size = 8192;
+
+	FILE* m4v_fragment_input_file = fopen(file_name, "r");
+	uint8_t* m4v_payload = calloc(block_size, sizeof(uint8_t));
+	if(!m4v_fragment_input_file) {
+		__ALC_UTILS_ERROR("unable to open m4v fragment input: %s", file_name);
+		goto cleanup;
+	}
+	struct stat fragment_input_stat;
+	stat(file_name, &fragment_input_stat);
+	uint64_t write_count=0;
+	bool has_eof = false;
+	while(!has_eof) {
+		int read_size = fread(m4v_payload, block_size, 1, m4v_fragment_input_file);
+		uint64_t read_bytes = read_size * block_size;
+		if(!read_bytes && feof(m4v_fragment_input_file)) {
+			read_bytes = fragment_input_stat.st_size - (block_size * write_count);
+			has_eof = true;
+		}
+		__ALC_UTILS_TRACE("read bytes: %llu", read_bytes);
+
+		int write_size = fwrite(m4v_payload, read_bytes, 1, fm4v_output_file);
+		if(has_eof) {
+			__ALC_UTILS_TRACE("write bytes: %u", write_size);
+
+			fclose(m4v_fragment_input_file);
+			fclose(fm4v_output_file);
+			break;
+		}
+		write_count++;
+	}
+cleanup:
+	return;
+#endif
+
+}
+
+bool __ALC_RECON_HAS_WRITTEN_INIT_BOX = false;
+
+void __alc_recon_fragment_with_init_box(char* file_name, alc_packet_t* alc_packet) {
+
+	char* tsi_init = __TESTING_RECONSTITUTED_TSI__;
+	char* toi_init = __TESTING_RECONSTITUTED_TOI_INIT__;
+
+	char* init_file_name = calloc(255, sizeof(char));
+	char* recon_file_name = calloc(255, sizeof(char)); //.m4v == 4
+	FILE* recon_output_file = NULL;
+
+	__ALC_UTILS_DEBUG(" - recon %s, %s,  %d", alc_packet->tsi_c, alc_packet->toi_c, alc_packet->close_object_flag);
+
+	snprintf(init_file_name, 255, "%s%s-%s", __ALC_DUMP_OUTPUT_PATH__, tsi_init, toi_init);
+	snprintf(recon_file_name, 255, "%s%s", __ALC_DUMP_OUTPUT_PATH__, __TESTING_RECONSITIUTED_FILE_NAME__);
+
+	if(!__ALC_RECON_HAS_WRITTEN_INIT_BOX) {
+
+
+		if( access( init_file_name, F_OK ) == -1 ) {
+			__ALC_UTILS_ERROR("unable to open init file: %s", init_file_name);
+			goto cleanup;
+		}
+
+		struct stat st;
+		stat(init_file_name, &st);
+
+		uint8_t* init_payload = calloc(st.st_size, sizeof(uint8_t));
+		FILE* init_file = fopen(init_file_name, "r");
+		if(!init_file || st.st_size == 0) {
+			__ALC_UTILS_ERROR("unable to open init file: %s", init_file_name);
+			goto cleanup;
+		}
+
+		fread(init_payload, st.st_size, 1, init_file);
+		fclose(init_file);
+		recon_output_file = fopen(recon_file_name, "w");
+		if(!recon_output_file) {
+			__ALC_UTILS_ERROR("unable to open recon_output_file for writing: %s", recon_file_name);
+			goto cleanup;
+		}
+		fwrite(init_payload, st.st_size, 1, recon_output_file);
+		__ALC_RECON_HAS_WRITTEN_INIT_BOX = true;
+
+	} else {
+		recon_output_file = fopen(recon_file_name, "a");
+		if(!recon_output_file) {
+		__ALC_UTILS_ERROR("unable to open recon_output_file for append: %s", recon_file_name);
+			goto cleanup;
+		}
+	}
+
+	uint64_t block_size = 8192;
+
+	FILE* m4v_fragment_input_file = fopen(file_name, "r");
+	uint8_t* m4v_payload = calloc(block_size, sizeof(uint8_t));
+	if(!m4v_fragment_input_file) {
+		__ALC_UTILS_ERROR("unable to open m4v fragment input: %s", file_name);
+		goto cleanup;
+	}
+	struct stat fragment_input_stat;
+	stat(file_name, &fragment_input_stat);
+	uint64_t write_count=0;
+	bool has_eof = false;
+	while(!has_eof) {
+		int read_size = fread(m4v_payload, block_size, 1, m4v_fragment_input_file);
+		uint64_t read_bytes = read_size * block_size;
+		if(!read_bytes && feof(m4v_fragment_input_file)) {
+			read_bytes = fragment_input_stat.st_size - (block_size * write_count);
+			has_eof = true;
+		}
+		__ALC_UTILS_TRACE("read bytes: %llu", read_bytes);
+
+		int write_size = fwrite(m4v_payload, read_bytes, 1, recon_output_file);
+		if(has_eof) {
+			__ALC_UTILS_TRACE("write bytes: %u", write_size);
+
+			fclose(m4v_fragment_input_file);
+			fclose(recon_output_file);
+			break;
+		}
+		write_count++;
+	}
+cleanup:
+	return;
 }

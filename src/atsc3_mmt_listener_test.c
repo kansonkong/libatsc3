@@ -56,12 +56,12 @@ int PACKET_COUNTER=0;
 #define __INFO(...)    printf("%s:%d:INFO:",__FILE__,__LINE__);__PRINTLN(__VA_ARGS__);
 
 #ifdef _ENABLE_DEBUG
-#define __DEBUG(...)   printf("%s:%d:DEBUG:",__FILE__,__LINE__);__PRINTLN(__VA_ARGS__);
+#define __ALC_UTILS_DEBUG(...)   printf("%s:%d:DEBUG:",__FILE__,__LINE__);__PRINTLN(__VA_ARGS__);
 #define __DEBUGF(...)  printf("%s:%d:DEBUG:",__FILE__,__LINE__);__PRINTF(__VA_ARGS__);
 #define __DEBUGA(...) 	__PRINTF(__VA_ARGS__);
 #define __DEBUGN(...)  __PRINTLN(__VA_ARGS__);
 #else
-#define __DEBUG(...)
+#define __ALC_UTILS_DEBUG(...)
 #define __DEBUGF(...)
 #define __DEBUGA(...)
 #define __DEBUGN(...)
@@ -362,7 +362,7 @@ int main(int argc,char **argv) {
     //listen to all flows
     if(argc == 2) {
     	dev = argv[1];
-	    __DEBUG("listening on dev: %s", dev);
+	    __ALC_UTILS_DEBUG("listening on dev: %s", dev);
     } else if(argc==4) {
     	//listen to a selected flow
 		dev = argv[1];

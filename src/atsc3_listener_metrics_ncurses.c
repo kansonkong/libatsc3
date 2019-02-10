@@ -97,7 +97,7 @@ int PACKET_COUNTER=0;
 #define __DEBUGA(...) 	__PRINTF(__VA_ARGS__);
 #define __DEBUGN(...)  __PRINTLN(__VA_ARGS__);
 #else
-#define __DEBUG(...)
+#define __ALC_UTILS_DEBUG(...)
 #define __DEBUGF(...)
 #define __DEBUGA(...)
 #define __DEBUGN(...)
@@ -408,34 +408,34 @@ void count_packet_as_filtered(udp_packet_t* udp_packet) {
 mmtp_sub_flow_vector_t* mmtp_sub_flow_vector;
 void dump_mpu(mmtp_payload_fragments_union_t* mmtp_payload) {
 
-	__DEBUG("------------------");
+	__ALC_UTILS_DEBUG("------------------");
 
 	if(mmtp_payload->mmtp_mpu_type_packet_header.mpu_timed_flag) {
-		__DEBUG("MFU Packet (Timed)");
-		__DEBUG("-----------------");
-		__DEBUG(" mpu_fragmentation_indicator: %d", mmtp_payload->mpu_data_unit_payload_fragments_timed.mpu_fragment_type);
-		__DEBUG(" movie_fragment_seq_num: %u", mmtp_payload->mpu_data_unit_payload_fragments_timed.movie_fragment_sequence_number);
-		__DEBUG(" sample_num: %u", mmtp_payload->mpu_data_unit_payload_fragments_timed.sample_number);
-		__DEBUG(" offset: %u", mmtp_payload->mpu_data_unit_payload_fragments_timed.offset);
-		__DEBUG(" pri: %d", mmtp_payload->mpu_data_unit_payload_fragments_timed.priority);
-		__DEBUG(" mpu_sequence_number: %u",mmtp_payload->mpu_data_unit_payload_fragments_timed.mpu_sequence_number);
+		__ALC_UTILS_DEBUG("MFU Packet (Timed)");
+		__ALC_UTILS_DEBUG("-----------------");
+		__ALC_UTILS_DEBUG(" mpu_fragmentation_indicator: %d", mmtp_payload->mpu_data_unit_payload_fragments_timed.mpu_fragment_type);
+		__ALC_UTILS_DEBUG(" movie_fragment_seq_num: %u", mmtp_payload->mpu_data_unit_payload_fragments_timed.movie_fragment_sequence_number);
+		__ALC_UTILS_DEBUG(" sample_num: %u", mmtp_payload->mpu_data_unit_payload_fragments_timed.sample_number);
+		__ALC_UTILS_DEBUG(" offset: %u", mmtp_payload->mpu_data_unit_payload_fragments_timed.offset);
+		__ALC_UTILS_DEBUG(" pri: %d", mmtp_payload->mpu_data_unit_payload_fragments_timed.priority);
+		__ALC_UTILS_DEBUG(" mpu_sequence_number: %u",mmtp_payload->mpu_data_unit_payload_fragments_timed.mpu_sequence_number);
 
 	} else {
-		__DEBUG("MFU Packet (Non-timed)");
-		__DEBUG("---------------------");
-		__DEBUG(" mpu_fragmentation_indicator: %d", mmtp_payload->mpu_data_unit_payload_fragments_nontimed.mpu_fragment_type);
-		__DEBUG(" non_timed_mfu_item_id: %u", mmtp_payload->mpu_data_unit_payload_fragments_nontimed.non_timed_mfu_item_id);
+		__ALC_UTILS_DEBUG("MFU Packet (Non-timed)");
+		__ALC_UTILS_DEBUG("---------------------");
+		__ALC_UTILS_DEBUG(" mpu_fragmentation_indicator: %d", mmtp_payload->mpu_data_unit_payload_fragments_nontimed.mpu_fragment_type);
+		__ALC_UTILS_DEBUG(" non_timed_mfu_item_id: %u", mmtp_payload->mpu_data_unit_payload_fragments_nontimed.non_timed_mfu_item_id);
 
 	}
 
-	__DEBUG("-----------------");
+	__ALC_UTILS_DEBUG("-----------------");
 }
 
 void mpu_dump_flow(uint32_t dst_ip, uint16_t dst_port, mmtp_payload_fragments_union_t* mmtp_payload) {
 	//sub_flow_vector is a global
 	dump_mpu(mmtp_payload);
 
-	__DEBUG("::dumpMfu ******* file dump file: %d.%d.%d.%d:%d-p:%d.s:%d.ft:%d",
+	__ALC_UTILS_DEBUG("::dumpMfu ******* file dump file: %d.%d.%d.%d:%d-p:%d.s:%d.ft:%d",
 			(dst_ip>>24)&0xFF,(dst_ip>>16)&0xFF,(dst_ip>>8)&0xFF,(dst_ip)&0xFF,
 			dst_port,
 			mmtp_payload->mmtp_mpu_type_packet_header.mmtp_packet_id,
@@ -453,7 +453,7 @@ void mpu_dump_flow(uint32_t dst_ip, uint16_t dst_port, mmtp_payload_fragments_un
 			mmtp_payload->mmtp_mpu_type_packet_header.mpu_fragment_type);
 
 
-	__DEBUG("::dumpMfu ******* file dump file: %s", myFilePathName);
+	__ALC_UTILS_DEBUG("::dumpMfu ******* file dump file: %s", myFilePathName);
 
 	FILE *f = fopen(myFilePathName, "a");
 	if(!f) {
@@ -473,7 +473,7 @@ void mpu_dump_reconstitued(uint32_t dst_ip, uint16_t dst_port, mmtp_payload_frag
 	//sub_flow_vector is a global
 	dump_mpu(mmtp_payload);
 
-	__DEBUG("::dump_mpu_reconstitued ******* file dump file: %d.%d.%d.%d:%d-p:%d.s:%d.ft:%d",
+	__ALC_UTILS_DEBUG("::dump_mpu_reconstitued ******* file dump file: %d.%d.%d.%d:%d-p:%d.s:%d.ft:%d",
 			(dst_ip>>24)&0xFF,(dst_ip>>16)&0xFF,(dst_ip>>8)&0xFF,(dst_ip)&0xFF,
 			dst_port,
 			mmtp_payload->mmtp_mpu_type_packet_header.mmtp_packet_id,
@@ -489,7 +489,7 @@ void mpu_dump_reconstitued(uint32_t dst_ip, uint16_t dst_port, mmtp_payload_frag
 			mmtp_payload->mpu_data_unit_payload_fragments_timed.mpu_sequence_number);
 
 
-	__DEBUG("::dumpMfu ******* file dump file: %s", myFilePathName);
+	__ALC_UTILS_DEBUG("::dumpMfu ******* file dump file: %s", myFilePathName);
 
 		FILE *f = fopen(myFilePathName, "a");
 	if(!f) {
@@ -613,13 +613,13 @@ void process_packet(u_char *user, const struct pcap_pkthdr *pkthdr, const u_char
 					lls_session->lls_table_slt->lls_table_version != lls->lls_table_version)) {
 
 					int retval = 0;
-					__DEBUG("Beginning processing of SLT from lls_table_slt_update");
+					__ALC_UTILS_DEBUG("Beginning processing of SLT from lls_table_slt_update");
 
 					retval = process_lls_table_slt_update(lls);
 					should_free_lls = false;
 
 					if(!retval) {
-						__DEBUG("lls_table_slt_update -- complete");
+						__ALC_UTILS_DEBUG("lls_table_slt_update -- complete");
 					} else {
 						global_stats->packet_counter_lls_packets_parsed_error++;
 						__ERROR("unable to parse LLS table");
@@ -665,7 +665,7 @@ void process_packet(u_char *user, const struct pcap_pkthdr *pkthdr, const u_char
 			int retval = alc_rx_analyze_packet((char*)udp_packet->data, udp_packet->data_length, &ch, &alc_packet);
 			if(!retval) {
 				global_stats->packet_counter_alc_packets_parsed++;
-				dumpAlcPacketToObect(alc_packet);
+				alc_packet_dump_to_object(alc_packet);
 				goto cleanup;
 			} else {
 				__ERROR("Error in ALC decode: %d", retval);
