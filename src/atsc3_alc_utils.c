@@ -65,16 +65,19 @@ RFC 5775               ALC Protocol Instantiation             April 2010
  */
 #include "atsc3_alc_utils.h"
 
+int _ALC_PACKET_DUMP_TO_OBJECT_ENABLED = 0;
 
-int _ALC_UTILS_DEBUG_ENABLED=0;
+int _ALC_UTILS_DEBUG_ENABLED=1;
 int _ALC_UTILS_TRACE_ENABLED=0;
 
 
 bool __ALC_RECON_FILE_PTR_HAS_WRITTEN_INIT_BOX = false;
-FILE* __ALC_RECON_FILE_PTR = NULL;
+
+pipe_ffplay_buffer_t* __ALC_RECON_FILE_BUFFER_STRUCT = NULL;
 char* __ALC_RECON_FILE_PTR_TSI = NULL;
 char* __ALC_RECON_FILE_PTR_TOI_INIT = NULL;
 
+FILE* __ALC_RECON_FILE_PTR = NULL; //deprecated
 
 static int __INT_LOOP_COUNT=0;
 
@@ -94,11 +97,15 @@ char* alc_packet_dump_to_object_get_filename(alc_packet_t* alc_packet) {
 int alc_packet_dump_to_object(alc_packet_t* alc_packet) {
 
 	int bytesWritten = 0;
-    mkdir("route", 0777);
     char* file_name = alc_packet_dump_to_object_get_filename(alc_packet);
 
+	if(!_ALC_PACKET_DUMP_TO_OBJECT_ENABLED) {
+			goto cleanup;
+		}
+    mkdir("route", 0777);
+
 	int filename_pos = 0;
-	__ALC_UTILS_DEBUG("have tsi: %s, toi: %s, sbn: %x, esi: %x len: %d",
+	__ALC_UTILS_TRACE("have tsi: %s, toi: %s, sbn: %x, esi: %x len: %d",
 			alc_packet->tsi_c, alc_packet->toi_c,
 			alc_packet->esi, alc_packet->sbn, alc_packet->alc_len);
 
@@ -109,10 +116,10 @@ int alc_packet_dump_to_object(alc_packet_t* alc_packet) {
 		f = fopen(file_name, "w");
 	} else {
 		if(alc_packet->esi>0) {
-			__ALC_UTILS_DEBUG("dumping to file in append mode: %s, esi: %d", file_name, alc_packet->esi);
+			__ALC_UTILS_TRACE("dumping to file in append mode: %s, esi: %d", file_name, alc_packet->esi);
 			f = fopen(file_name, "a");
 		} else {
-			__ALC_UTILS_DEBUG("dumping to file in write mode: %s, esi: %d", file_name, alc_packet->esi);
+			__ALC_UTILS_TRACE("dumping to file in write mode: %s, esi: %d", file_name, alc_packet->esi);
 			//open as write
 			f = fopen(file_name, "w");
 		}
@@ -123,15 +130,19 @@ int alc_packet_dump_to_object(alc_packet_t* alc_packet) {
 		goto cleanup;
 	}
 
-	for(int i=0; i < alc_packet->alc_len; i++) {
-		fputc(alc_packet->alc_payload[i], f);
-		bytesWritten++;
+	__ALC_UTILS_TRACE("dumping alc packet size: %d to %p", alc_packet->alc_len, f);
+	int blocks_written = fwrite(alc_packet->alc_payload, alc_packet->alc_len, 1, f);
+	if(blocks_written != 1) {
+		__ALC_UTILS_WARN("short packet write!");
 	}
 
 	fclose(f);
 
-	__ALC_UTILS_DEBUG("dumping to file complete: %s", file_name);
-
+	if(alc_packet->close_object_flag) {
+		__ALC_UTILS_TRACE("dumping to file done: %s, is complete: %d", file_name, alc_packet->close_object_flag);
+	} else {
+		__ALC_UTILS_TRACE("dumping to file step: %s, is complete: %d", file_name, alc_packet->close_object_flag);
+	}
 #if defined(__TESTING_PREPEND_TSI__) && defined(__TESTING_PREPEND_TOI_INIT__)
 	char* tsi_prepend_init = __TESTING_PREPEND_TSI__;
 	char* toi_prepend_init = __TESTING_PREPEND_TOI_INIT__;
@@ -147,7 +158,7 @@ int alc_packet_dump_to_object(alc_packet_t* alc_packet) {
 #endif
 
 
-#if defined(__TESTING_RECONSTITUTED_TSI__) && defined(__TESTING_RECONSTITUTED_TOI_INIT__) && defined(__TESTING_RECONSITIUTED_FILE_NAME__)
+#if defined(__TESTING_RECON_FILE_POINTER__) && defined(__TESTING_RECONSTITUTED_TSI__) && defined(__TESTING_RECONSTITUTED_TOI_INIT__) && defined(__TESTING_RECONSITIUTED_FILE_NAME__)
 	char* tsi_recon_init = __TESTING_RECONSTITUTED_TSI__;
 	char* toi_recon_init = __TESTING_RECONSTITUTED_TOI_INIT__;
 	__ALC_UTILS_DEBUG("checking %s, %s,  %d", alc_packet->tsi_c, alc_packet->toi_c, alc_packet->close_object_flag);
@@ -159,20 +170,34 @@ int alc_packet_dump_to_object(alc_packet_t* alc_packet) {
 	}
 #endif
 
+#ifdef __TESTING_RECON_WITH_POPEN_FILE_POINTER__
+	if(__ALC_RECON_FILE_BUFFER_STRUCT && __ALC_RECON_FILE_PTR_TSI && __ALC_RECON_FILE_PTR_TOI_INIT) {
+			__ALC_UTILS_DEBUG("checking %s, %s,  %d", alc_packet->tsi_c, alc_packet->toi_c, alc_packet->close_object_flag);
 
-	if(__ALC_RECON_FILE_PTR && __ALC_RECON_FILE_PTR_TSI && __ALC_RECON_FILE_PTR_TOI_INIT) {
-		__ALC_UTILS_DEBUG("checking %s, %s,  %d", alc_packet->tsi_c, alc_packet->toi_c, alc_packet->close_object_flag);
+			if(strncmp(alc_packet->tsi_c, __ALC_RECON_FILE_PTR_TSI, strlen(alc_packet->tsi_c)) == 0 &&
+						strncmp(alc_packet->toi_c, __ALC_RECON_FILE_PTR_TOI_INIT, strlen(alc_packet->toi_c)) &&
+						alc_packet->close_object_flag) {
+				alc_recon_file_ptr_fragment_with_init_box(__ALC_RECON_FILE_PTR, alc_packet);
+			}
+		}
+#endif
+
+
+	if(__ALC_RECON_FILE_BUFFER_STRUCT && __ALC_RECON_FILE_PTR_TSI && __ALC_RECON_FILE_PTR_TOI_INIT) {
+		__ALC_UTILS_TRACE("checking %s, %s,  %d", alc_packet->tsi_c, alc_packet->toi_c, alc_packet->close_object_flag);
 
 		if(strncmp(alc_packet->tsi_c, __ALC_RECON_FILE_PTR_TSI, strlen(alc_packet->tsi_c)) == 0 &&
 					strncmp(alc_packet->toi_c, __ALC_RECON_FILE_PTR_TOI_INIT, strlen(alc_packet->toi_c)) &&
 					alc_packet->close_object_flag) {
-			alc_recon_file_ptr_fragment_with_init_box(__ALC_RECON_FILE_PTR, alc_packet);
+			alc_recon_file_buffer_struct_fragment_with_init_box(__ALC_RECON_FILE_BUFFER_STRUCT, alc_packet);
 		}
 	}
 
 
 cleanup:
-	free(file_name);
+	if(file_name) {
+		free(file_name);
+	}
 	if(alc_packet) {
 		alc_packet_free(alc_packet);
 	}
@@ -438,6 +463,127 @@ broken_pipe:
 	__ALC_RECON_FILE_PTR = NULL;
 
 cleanup:
+	if(m4v_payload) {
+		free(m4v_payload);
+		m4v_payload = NULL;
+	}
+	if(file_name) {
+		free(file_name);
+		file_name = NULL;
+	}
+
+
+	return;
+}
+
+/*
+ * mutex buffer writer
+ */
+
+void alc_recon_file_buffer_struct_set_tsi_toi(pipe_ffplay_buffer_t* pipe_ffplay_buffer, char* tsi, char* toi_init) {
+	__ALC_RECON_FILE_BUFFER_STRUCT = pipe_ffplay_buffer;
+	__ALC_RECON_FILE_PTR_TSI = tsi;
+	__ALC_RECON_FILE_PTR_TOI_INIT = toi_init;
+}
+
+
+void alc_recon_file_buffer_struct_fragment_with_init_box(pipe_ffplay_buffer_t* pipe_ffplay_buffer, alc_packet_t* alc_packet) {
+	int flush_ret = 0;
+	if(!__ALC_RECON_FILE_PTR_TSI || !__ALC_RECON_FILE_PTR_TOI_INIT) {
+		__ALC_UTILS_WARN("alc_recon_file_ptr_fragment_with_init_box - NULL: tsi: %p, toi: %p", __ALC_RECON_FILE_PTR_TSI, __ALC_RECON_FILE_PTR_TOI_INIT);
+		return;
+	}
+
+	char* file_name = alc_packet_dump_to_object_get_filename(alc_packet);
+	char* toi_init = __TESTING_RECONSTITUTED_TOI_INIT__;
+	char* init_file_name = calloc(255, sizeof(char));
+
+	__ALC_UTILS_DEBUG("alc_recon_file_buffer_struct_fragment_with_init_box - ENTER - %s, %s,  %d", alc_packet->tsi_c, alc_packet->toi_c, alc_packet->close_object_flag);
+
+	snprintf(init_file_name, 255, "%s%s-%s", __ALC_DUMP_OUTPUT_PATH__, __ALC_RECON_FILE_PTR_TSI, toi_init);
+
+	pipe_buffer_reader_mutex_lock(pipe_ffplay_buffer);
+
+	if(!pipe_ffplay_buffer->has_written_init_box) {
+		if( access( init_file_name, F_OK ) == -1 ) {
+			__ALC_UTILS_ERROR("unable to open init file: %s", init_file_name);
+			goto cleanup;
+		}
+
+		struct stat st;
+		stat(init_file_name, &st);
+
+		uint8_t* init_payload = calloc(st.st_size, sizeof(uint8_t));
+		FILE* init_file = fopen(init_file_name, "r");
+		if(!init_file || st.st_size == 0) {
+			__ALC_UTILS_ERROR("unable to open init file: %s", init_file_name);
+			goto cleanup;
+		}
+
+		fread(init_payload, st.st_size, 1, init_file);
+		fclose(init_file);
+
+		pipe_buffer_push_block(pipe_ffplay_buffer, init_payload, st.st_size);
+		pipe_ffplay_buffer->has_written_init_box = true;
+
+	} else {
+		//noop here
+	}
+
+	uint64_t block_size = __PLAYER_FFPLAY_PIPE_WRITER_BLOCKSIZE;
+
+	FILE* m4v_fragment_input_file = fopen(file_name, "r");
+	uint8_t* m4v_payload = calloc(block_size, sizeof(uint8_t));
+	if(!m4v_fragment_input_file) {
+		__ALC_UTILS_ERROR("unable to open m4v fragment input: %s", file_name);
+		goto cleanup;
+	}
+	struct stat fragment_input_stat;
+	stat(file_name, &fragment_input_stat);
+	uint64_t write_count = 0;
+	uint64_t total_bytes_written = 0;
+	bool has_eof = false;
+
+	while(!has_eof) {
+		int read_size = fread(m4v_payload, block_size, 1, m4v_fragment_input_file);
+		uint64_t read_bytes = read_size * block_size;
+		if(!read_bytes && feof(m4v_fragment_input_file)) {
+			read_bytes = fragment_input_stat.st_size - (block_size * write_count);
+			has_eof = true;
+		}
+		total_bytes_written += read_bytes;
+		__ALC_UTILS_TRACE("read bytes: %llu, bytes written: %llu, total filesize: %llu, has eof input: %d", read_bytes, total_bytes_written, fragment_input_stat.st_size, has_eof);
+
+		pipe_buffer_push_block(pipe_ffplay_buffer, m4v_payload, read_bytes);
+
+		if(has_eof) {
+			fclose(m4v_fragment_input_file);
+			break;
+		}
+		write_count++;
+
+	}
+
+	//signal and then unlock, docs indicate the only way to ensure a signal is not lost is to send it while holding the lock
+	__ALC_UTILS_DEBUG("alc_recon_file_buffer_struct_fragment_with_init_box - SIGNALING - %s, %s,  %d", alc_packet->tsi_c, alc_packet->toi_c, alc_packet->close_object_flag);
+
+	pipe_buffer_condition_signal(pipe_ffplay_buffer);
+
+	pipe_buffer_reader_mutex_unlock(pipe_ffplay_buffer);
+	__ALC_UTILS_DEBUG("alc_recon_file_buffer_struct_fragment_with_init_box - RETURN - %s, %s,  %d", alc_packet->tsi_c, alc_packet->toi_c, alc_packet->close_object_flag);
+
+	goto cleanup;
+
+broken_pipe:
+	__ALC_UTILS_ERROR("flush returned: %d, closing pipe", flush_ret);
+	fclose(__ALC_RECON_FILE_PTR);
+	__ALC_RECON_FILE_PTR = NULL;
+
+cleanup:
+	if(m4v_payload) {
+		free(m4v_payload);
+		m4v_payload = NULL;
+	}
 	if(file_name) {
 		free(file_name);
 		file_name = NULL;
