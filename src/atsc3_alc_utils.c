@@ -70,6 +70,12 @@ int _ALC_UTILS_DEBUG_ENABLED=0;
 int _ALC_UTILS_TRACE_ENABLED=0;
 
 
+bool __ALC_RECON_FILE_PTR_HAS_WRITTEN_INIT_BOX = false;
+FILE* __ALC_RECON_FILE_PTR = NULL;
+char* __ALC_RECON_FILE_PTR_TSI = NULL;
+char* __ALC_RECON_FILE_PTR_TOI_INIT = NULL;
+
+
 static int __INT_LOOP_COUNT=0;
 
 
@@ -152,6 +158,18 @@ int alc_packet_dump_to_object(alc_packet_t* alc_packet) {
 		__alc_recon_fragment_with_init_box(file_name, alc_packet);
 	}
 #endif
+
+
+	if(__ALC_RECON_FILE_PTR && __ALC_RECON_FILE_PTR_TSI && __ALC_RECON_FILE_PTR_TOI_INIT) {
+		__ALC_UTILS_DEBUG("checking %s, %s,  %d", alc_packet->tsi_c, alc_packet->toi_c, alc_packet->close_object_flag);
+
+		if(strncmp(alc_packet->tsi_c, __ALC_RECON_FILE_PTR_TSI, strlen(alc_packet->tsi_c)) == 0 &&
+					strncmp(alc_packet->toi_c, __ALC_RECON_FILE_PTR_TOI_INIT, strlen(alc_packet->toi_c)) &&
+					alc_packet->close_object_flag) {
+			alc_recon_file_ptr_fragment_with_init_box(__ALC_RECON_FILE_PTR, alc_packet);
+		}
+	}
+
 
 cleanup:
 	free(file_name);
@@ -323,5 +341,108 @@ void __alc_recon_fragment_with_init_box(char* file_name, alc_packet_t* alc_packe
 		write_count++;
 	}
 cleanup:
+	return;
+}
+
+void alc_recon_file_ptr_set_tsi_toi(FILE* file_ptr, char* tsi, char* toi_init) {
+	__ALC_RECON_FILE_PTR = file_ptr;
+	__ALC_RECON_FILE_PTR_TSI = tsi;
+	__ALC_RECON_FILE_PTR_TOI_INIT = toi_init;
+}
+
+void alc_recon_file_ptr_fragment_with_init_box(FILE* output_file_ptr, alc_packet_t* alc_packet) {
+	int flush_ret = 0;
+	if(!__ALC_RECON_FILE_PTR_TSI || !__ALC_RECON_FILE_PTR_TOI_INIT) {
+		__ALC_UTILS_WARN("alc_recon_file_ptr_fragment_with_init_box - NULL: tsi: %p, toi: %p", __ALC_RECON_FILE_PTR_TSI, __ALC_RECON_FILE_PTR_TOI_INIT);
+		return;
+	}
+
+	char* file_name = alc_packet_dump_to_object_get_filename(alc_packet);
+	char* toi_init = __TESTING_RECONSTITUTED_TOI_INIT__;
+
+	char* init_file_name = calloc(255, sizeof(char));
+
+	__ALC_UTILS_DEBUG("recon %s, %s,  %d", alc_packet->tsi_c, alc_packet->toi_c, alc_packet->close_object_flag);
+
+	snprintf(init_file_name, 255, "%s%s-%s", __ALC_DUMP_OUTPUT_PATH__, __ALC_RECON_FILE_PTR_TSI, toi_init);
+
+	if(!__ALC_RECON_FILE_PTR_HAS_WRITTEN_INIT_BOX) {
+		if( access( init_file_name, F_OK ) == -1 ) {
+			__ALC_UTILS_ERROR("unable to open init file: %s", init_file_name);
+			goto cleanup;
+		}
+
+		struct stat st;
+		stat(init_file_name, &st);
+
+		uint8_t* init_payload = calloc(st.st_size, sizeof(uint8_t));
+		FILE* init_file = fopen(init_file_name, "r");
+		if(!init_file || st.st_size == 0) {
+			__ALC_UTILS_ERROR("unable to open init file: %s", init_file_name);
+			goto cleanup;
+		}
+
+		fread(init_payload, st.st_size, 1, init_file);
+		fclose(init_file);
+
+		fwrite(init_payload, st.st_size, 1, output_file_ptr);
+		__ALC_RECON_HAS_WRITTEN_INIT_BOX = true;
+
+	} else {
+		//noop here
+	}
+
+	uint64_t block_size = 8192;
+
+	FILE* m4v_fragment_input_file = fopen(file_name, "r");
+	uint8_t* m4v_payload = calloc(block_size, sizeof(uint8_t));
+	if(!m4v_fragment_input_file) {
+		__ALC_UTILS_ERROR("unable to open m4v fragment input: %s", file_name);
+		goto cleanup;
+	}
+	struct stat fragment_input_stat;
+	stat(file_name, &fragment_input_stat);
+	uint64_t write_count=0;
+	bool has_eof = false;
+	while(!has_eof) {
+		int read_size = fread(m4v_payload, block_size, 1, m4v_fragment_input_file);
+		uint64_t read_bytes = read_size * block_size;
+		if(!read_bytes && feof(m4v_fragment_input_file)) {
+			read_bytes = fragment_input_stat.st_size - (block_size * write_count);
+			has_eof = true;
+		}
+		__ALC_UTILS_TRACE("read bytes: %llu", read_bytes);
+
+		if(feof(output_file_ptr)) {
+			goto broken_pipe;
+		}
+
+		int write_size = fwrite(m4v_payload, read_bytes, 1, output_file_ptr);
+		if(has_eof) {
+			__ALC_UTILS_TRACE("write bytes: %u", write_size);
+
+			fclose(m4v_fragment_input_file);
+			flush_ret = fflush(output_file_ptr);
+			if(flush_ret || feof(output_file_ptr)) {
+				goto broken_pipe;
+			}
+			break;
+		}
+		write_count++;
+	}
+	goto cleanup;
+
+broken_pipe:
+	__ALC_UTILS_ERROR("flush returned: %d, closing pipe", flush_ret);
+	fclose(__ALC_RECON_FILE_PTR);
+	__ALC_RECON_FILE_PTR = NULL;
+
+cleanup:
+	if(file_name) {
+		free(file_name);
+		file_name = NULL;
+	}
+
+
 	return;
 }

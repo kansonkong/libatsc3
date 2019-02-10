@@ -31,6 +31,7 @@ int _LLS_DEBUG_ENABLED = 1;
 int _LLS_TRACE_ENABLED = 0;
 
 char* LLS_SERVICE_CATEGORY_VALUES[] = {"atsc reserved", "linear av", "linear audio", "app based svc.", "esg service", "eas service", "atsc other" };
+char* LLS_PROTOCOL_VALUES[] = {"atsc reserved", "ROUTE", "MMTP", "atsc other" };
 
 
 static lls_table_t* __lls_create_base_table_raw(uint8_t* lls, int size) {
@@ -622,6 +623,15 @@ char* lls_get_service_category_value(uint service_category) {
 		return LLS_SERVICE_CATEGORY_VALUES[service_category];
 	} else {
 		return LLS_SERVICE_CATEGORY_VALUES[lls_service_category_count-1];
+	}
+}
+
+char* lls_get_sls_protocol_value(uint protocol) {
+	int lls_protocol_count = sizeof(LLS_PROTOCOL_VALUES) / sizeof(char*);
+	if(protocol < lls_protocol_count-1) {
+		return LLS_PROTOCOL_VALUES[protocol];
+	} else {
+		return LLS_PROTOCOL_VALUES[lls_protocol_count-1];
 	}
 }
 

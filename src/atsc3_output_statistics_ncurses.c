@@ -6,6 +6,8 @@
  */
 
 #include "atsc3_output_statistics_ncurses.h"
+#include "atsc3_player_ffplay.h"
+#include "atsc3_alc_utils.h"
 
 void ncurses_init() {
 	/** hacks
@@ -41,6 +43,7 @@ void ncurses_init() {
 	noecho();						/* Don't echo() while we do getch */
 
 }
+int play_mode = 0;
 
 void* ncurses_input_run_thread() {
 	int ch;
@@ -48,11 +51,39 @@ void* ncurses_input_run_thread() {
 	while(1) {
 
 		ch = wgetch(my_window);
-		if(ch == CTRL('c')) {
+		if(ch == CTRL('c') || ch == 'q') {
 			//end and clear screen back to terminal
 			endwin();
 			exit(1);
 		}
+		if(ch == 'p') {
+			//play stream...
+			if(play_mode == 1) {
+				FILE* pipe_ffmpeg = pipe_create_ffplay();
+				alc_recon_file_ptr_set_tsi_toi(pipe_ffmpeg, __TESTING_RECONSTITUTED_TSI__, __TESTING_RECONSTITUTED_TOI_INIT__);
+
+
+			} else if(play_mode == 2) {
+				FILE* pipe_ffmpeg = pipe_create_ffplay();
+
+			} else {
+				__NCURSES_WARN("not playing - play mode is: %d", play_mode);
+			}
+
+		}
+		if(ch == 'r') {
+			__NCURSES_INFO("switching to ROUTE mode");
+			wmove(my_window, 0, 1);
+			wprintw(my_window, "switching to ROUTE mode, press 'p' to play tsi: %s, with toi_init: %s", __TESTING_RECONSTITUTED_TSI__, __TESTING_RECONSTITUTED_TOI_INIT__);
+			//ncurses_switch_to_route();
+			play_mode = 1;
+		}
+
+		if(ch == 'm') {
+			//ncurses_switch_to_mmt();
+			play_mode = 2;
+		}
+
 		if(ch == KEY_F(1))		/* Without keypad enabled this will */
 			printw("F1 Key pressed");/*  not get to us either	*/
 						/* Without noecho() some ugly escape
@@ -115,11 +146,11 @@ void create_or_update_window_sizes(bool should_reload_term_size) {
 
 	int left_window_h = (rows * pct_split_top ) / 100;
 	int left_window_w = cols/2;
-	int left_window_y = 0;
+	int left_window_y = 1;
 	int left_window_x = 0;
 	int right_window_h = (rows * pct_split_top) / 100;
 	int right_window_w = cols/2 -1;
-	int right_window_y = 0;
+	int right_window_y = 1;
 	int right_window_x = cols/2 +1;
 
 	int bottom_window_h = rows - left_window_h - 1;
@@ -214,8 +245,8 @@ void lls_dump_instance_table_ncurses(lls_table_t* base_table) {
 
 	__LLS_DUMP("LLS Base Table:");
 	__LLS_DUMP("");
-	__LLS_DUMP("lls_table_id       : %-3d (0x%-3x)  group_id      : %-3d (0x%-3x)", base_table->lls_table_id,	base_table->lls_table_id, base_table->lls_group_id, base_table->lls_group_id);
-	__LLS_DUMP("group_count_minus1 : %-3d (0x%-3x)  table_version : %-3d (0x%-3x)", base_table->group_count_minus1, base_table->group_count_minus1, base_table->lls_table_version, base_table->lls_table_version);
+	__LLS_DUMP("lls_table_id       : %-3d (0x%-3x)     group_id      : %-3d (0x%-3x)", base_table->lls_table_id,	base_table->lls_table_id, base_table->lls_group_id, base_table->lls_group_id);
+	__LLS_DUMP("group_count_minus1 : %-3d (0x%-3x)     table_version : %-3d (0x%-3x)", base_table->group_count_minus1, base_table->group_count_minus1, base_table->lls_table_version, base_table->lls_table_version);
 	__LLS_DUMP("");
 
 	if(base_table->lls_table_id == SLT) {
@@ -224,15 +255,14 @@ void lls_dump_instance_table_ncurses(lls_table_t* base_table) {
 
 		for(int i=0l; i < base_table->slt_table.service_entry_n; i++) {
 			lls_service_t* service = base_table->slt_table.service_entry[i];
-			__LLS_DUMP("  service_id                  : %d", service->service_id);
-			__LLS_DUMP("  global_service_id           : %s", service->global_service_id);
-			__LLS_DUMP("  major_channel_no            : %-5d     minor_channel_no        : %d", service->major_channel_no, service->minor_channel_no);
-			__LLS_DUMP("  service_category            : %-5d     slt_svc_seq_num         : %d", service->service_category, service->slt_svc_seq_num);
-			__LLS_DUMP("  short_service_name          : %s", service->short_service_name);
-			__LLS_DUMP("  broadcast_svc_signaling");
-			__LLS_DUMP("    sls_protocol              : %d", service->broadcast_svc_signaling.sls_protocol);
-			__LLS_DUMP("    sls_destination_ip_address: %s:%s", service->broadcast_svc_signaling.sls_destination_ip_address, service->broadcast_svc_signaling.sls_destination_udp_port);
-			__LLS_DUMP("    sls_source_ip_address     : %s", service->broadcast_svc_signaling.sls_source_ip_address);
+			__LLS_DUMP("service_id         : %-5d           global_service_id : %s", service->service_id, service->global_service_id);
+			__LLS_DUMP("major_channel_no   : %-5d           minor_channel_no  : %d", service->major_channel_no, service->minor_channel_no);
+			__LLS_DUMP("service_category   : %1d, %-8s    slt_svc_seq_num   : %d", service->service_category, lls_get_service_category_value(service->service_category), service->slt_svc_seq_num);
+			__LLS_DUMP("short_service_name : %s", service->short_service_name);
+			__LLS_DUMP(" broadcast_svc_signaling");
+			__LLS_DUMP("  sls_protocol               : %d, %s", service->broadcast_svc_signaling.sls_protocol, lls_get_sls_protocol_value(service->broadcast_svc_signaling.sls_protocol));
+			__LLS_DUMP("  sls_destination_ip_address : %s:%s", service->broadcast_svc_signaling.sls_destination_ip_address, service->broadcast_svc_signaling.sls_destination_udp_port);
+			__LLS_DUMP("  sls_source_ip_address      : %s", service->broadcast_svc_signaling.sls_source_ip_address);
 			__LLS_DUMP("");
 		}
 	}

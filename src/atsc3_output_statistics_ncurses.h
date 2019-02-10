@@ -121,8 +121,8 @@ int global_mmt_loss_count;
 #define CTRL(c) ((c) & 037)
 #endif
 
-#define __NCURSES_ERROR(...)   printf("%s:%d:ERROR :","listener",__LINE__);printf(__VA_ARGS__);printf("\n");
-#define __NCURSES_WARN(...)    printf("%s:%d:WARN: ","listener",__LINE__);printf(__VA_ARGS__);printf("\n");
-#define __NCURSES_INFO(...)    printf("%s:%d: ","listener",__LINE__);printf(__VA_ARGS__);printf("\n");
+#define __NCURSES_ERROR(...)   printf("%s:%d:ERROR :","ncurses",__LINE__);printf(__VA_ARGS__);printf("\n");
+#define __NCURSES_WARN(...)    printf("%s:%d:WARN: ","ncurses",__LINE__);printf(__VA_ARGS__);printf("\n");
+#define __NCURSES_INFO(...)    printf("%s:%d: ","ncurses",__LINE__);printf(__VA_ARGS__);printf("\n");
 
 #endif /* ATSC3_OUTPUT_STATISTICS_NCURSES_H_ */
