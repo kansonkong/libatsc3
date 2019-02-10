@@ -9,6 +9,8 @@
 #include "atsc3_player_ffplay.h"
 #include "atsc3_alc_utils.h"
 
+extern int _ALC_PACKET_DUMP_TO_OBJECT_ENABLED;
+
 void ncurses_init() {
 	/** hacks
 	*
@@ -59,12 +61,12 @@ void* ncurses_input_run_thread() {
 		if(ch == 'p') {
 			//play stream...
 			if(play_mode == 1) {
-				FILE* pipe_ffmpeg = pipe_create_ffplay();
-				alc_recon_file_ptr_set_tsi_toi(pipe_ffmpeg, __TESTING_RECONSTITUTED_TSI__, __TESTING_RECONSTITUTED_TOI_INIT__);
+				pipe_ffplay_buffer_t* pipe_ffplay_buffer = pipe_create_ffplay();
+				alc_recon_file_buffer_struct_set_tsi_toi(pipe_ffplay_buffer, __TESTING_RECONSTITUTED_TSI__, __TESTING_RECONSTITUTED_TOI_INIT__);
 
 
 			} else if(play_mode == 2) {
-				FILE* pipe_ffmpeg = pipe_create_ffplay();
+				//FILE* pipe_ffmpeg = pipe_create_ffplay();
 
 			} else {
 				__NCURSES_WARN("not playing - play mode is: %d", play_mode);
@@ -72,15 +74,18 @@ void* ncurses_input_run_thread() {
 
 		}
 		if(ch == 'r') {
-			__NCURSES_INFO("switching to ROUTE mode");
+			__NCURSES_INFO("Switching to ALC/ROUTE Capture Mode");
 			wmove(my_window, 0, 1);
-			wprintw(my_window, "switching to ROUTE mode, press 'p' to play tsi: %s, with toi_init: %s", __TESTING_RECONSTITUTED_TSI__, __TESTING_RECONSTITUTED_TOI_INIT__);
+			_ALC_PACKET_DUMP_TO_OBJECT_ENABLED = 1;
+			wprintw(my_window, "Switching to ALC/ROUTE Capture Mode, press 'p' to play tsi: %s, with toi_init: %s", __TESTING_RECONSTITUTED_TSI__, __TESTING_RECONSTITUTED_TOI_INIT__);
 			//ncurses_switch_to_route();
 			play_mode = 1;
 		}
 
 		if(ch == 'm') {
 			//ncurses_switch_to_mmt();
+			_ALC_PACKET_DUMP_TO_OBJECT_ENABLED = 0;
+
 			play_mode = 2;
 		}
 

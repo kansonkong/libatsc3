@@ -11,6 +11,8 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
+#include <time.h>
+#include <sys/time.h>
 
 #include "fixups.h"
 
@@ -20,26 +22,6 @@
 
 
 #define uS 1000000ULL
-
-#define _ATSC3_UTILS_PRINTLN(...) printf(__VA_ARGS__);printf("\n")
-#define _ATSC3_UTILS_PRINTF(...)  printf(__VA_ARGS__);
-
-#define _ATSC3_UTILS_ERROR(...)   printf("%s:%d:ERROR:",__FILE__,__LINE__);_ATSC3_UTILS_PRINTLN(__VA_ARGS__);
-#define _ATSC3_UTILS_WARN(...)    printf("%s:%d:WARN:",__FILE__,__LINE__);_ATSC3_UTILS_PRINTLN(__VA_ARGS__);
-#define _ATSC3_UTILS_INFO(...)    printf("%s:%d:INFO:",__FILE__,__LINE__);_ATSC3_UTILS_PRINTLN(__VA_ARGS__);
-#define _ATSC3_UTILS_DEBUG(...)   printf("%s:%d:DEBUG:",__FILE__,__LINE__);_ATSC3_UTILS_PRINTLN(__VA_ARGS__);
-
-#ifdef __ENABLE_ATSC3_UTILS_TRACE
-#define _ATSC3_UTILS_TRACE(...)   printf("%s:%d:TRACE:",__FILE__,__LINE__);_ATSC3_UTILS_PRINTLN(__VA_ARGS__);
-#define _ATSC3_UTILS_TRACEF(...)  printf("%s:%d:TRACE:",__FILE__,__LINE__);_ATSC3_UTILS_PRINTF(__VA_ARGS__);
-#define _ATSC3_UTILS_TRACEA(...)  _ATSC3_UTILS_PRINTF(__VA_ARGS__);
-#define _ATSC3_UTILS_TRACEN(...)  _ATSC3_UTILS_PRINTLN(__VA_ARGS__);
-#else
-#define _ATSC3_UTILS_TRACE(...)
-#define _ATSC3_UTILS_TRACEF(...)
-#define _ATSC3_UTILS_TRACEA(...)
-#define _ATSC3_UTILS_TRACEN(...)
-#endif
 
 
 //ATSC3/331 Section 6.1 - drop non mulitcast ip ranges - e.g not in  239.255.0.0 to 239.255.255.255
@@ -52,6 +34,7 @@
 
 
 long long timediff(struct timeval t1, struct timeval t0);
+double gt();
 
 //convert struct { uint32_t ip, uint16_t port} to bitsift representation
 //printf format: //%u.%u.%u.%u:%u
@@ -99,5 +82,28 @@ void freeclean(void** tofree);
 uint32_t parseIpAddressIntoIntval(char* dst_ip);
 
 uint16_t parsePortIntoIntval(char* dst_port);
+
+
+
+#define _ATSC3_UTILS_PRINTLN(...) printf(__VA_ARGS__);printf("\n")
+#define _ATSC3_UTILS_PRINTF(...)  printf(__VA_ARGS__);
+
+#define _ATSC3_UTILS_ERROR(...)   printf("%s:%d:ERROR:",__FILE__,__LINE__);_ATSC3_UTILS_PRINTLN(__VA_ARGS__);
+#define _ATSC3_UTILS_WARN(...)    printf("%s:%d:WARN:",__FILE__,__LINE__);_ATSC3_UTILS_PRINTLN(__VA_ARGS__);
+#define _ATSC3_UTILS_INFO(...)    printf("%s:%d:INFO:",__FILE__,__LINE__);_ATSC3_UTILS_PRINTLN(__VA_ARGS__);
+#define _ATSC3_UTILS_DEBUG(...)   printf("%s:%d:DEBUG:",__FILE__,__LINE__);_ATSC3_UTILS_PRINTLN(__VA_ARGS__);
+
+#ifdef __ENABLE_ATSC3_UTILS_TRACE
+#define _ATSC3_UTILS_TRACE(...)   printf("%s:%d:TRACE:",__FILE__,__LINE__);_ATSC3_UTILS_PRINTLN(__VA_ARGS__);
+#define _ATSC3_UTILS_TRACEF(...)  printf("%s:%d:TRACE:",__FILE__,__LINE__);_ATSC3_UTILS_PRINTF(__VA_ARGS__);
+#define _ATSC3_UTILS_TRACEA(...)  _ATSC3_UTILS_PRINTF(__VA_ARGS__);
+#define _ATSC3_UTILS_TRACEN(...)  _ATSC3_UTILS_PRINTLN(__VA_ARGS__);
+#else
+#define _ATSC3_UTILS_TRACE(...)
+#define _ATSC3_UTILS_TRACEF(...)
+#define _ATSC3_UTILS_TRACEA(...)
+#define _ATSC3_UTILS_TRACEN(...)
+#endif
+
 
 #endif /* ATSC3_UTILS_H_ */
