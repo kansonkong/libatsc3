@@ -44,7 +44,7 @@ void* pipe_buffer_writer_thread(void* pipe_ffplay_buffer_pointer) {
 
 		//wait until we have accumulated at least 5 fragments or we have BUFFER/2 available for writing
 		if(pipe_ffplay_buffer->reader_unlock_count++ < __PLAYER_INITIAL_BUFFER_SEGMENT_COUNT && (pipe_ffplay_buffer->pipe_buffer_reader_pos < (__PLAYER_FFPLAY_PIPE_INTERNAL_BUFFER_SIZE/2))) {
-			__PLAYER_FFPLAY_INFO("skipping signal, mutex count %d < 5, buffer reader pos: %u",  pipe_ffplay_buffer->reader_unlock_count, pipe_ffplay_buffer->pipe_buffer_reader_pos);
+			__PLAYER_FFPLAY_INFO("skipping signal, mutex count %d < %d, buffer reader pos: %u",  pipe_ffplay_buffer->reader_unlock_count, __PLAYER_INITIAL_BUFFER_SEGMENT_COUNT, pipe_ffplay_buffer->pipe_buffer_reader_pos);
 			goto unlock_from_error;
 		}
 
