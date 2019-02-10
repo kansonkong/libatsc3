@@ -11,6 +11,7 @@
 #include <stdint.h>
 #include <stdbool.h>
 #include <string.h>
+#include <semaphore.h>
 
 #include "atsc3_utils.h"
 
@@ -26,8 +27,9 @@ extern int _PLAYER_FFPLAY_TRACE_ENABLED;
 
 typedef struct pipe_ffplay_buffer {
 	//used to signal pipe writer new data is present
-	pthread_cond_t pipe_buffer_unlocked_cond_signal;
-	sig_atomic_t reader_unlock_count;
+	sem_t* pipe_buffer_semaphore;
+
+	sig_atomic_t writer_unlock_count;
 
 	//mutex for reader buffer
 	pthread_mutex_t pipe_buffer_reader_mutex_lock;
@@ -52,6 +54,10 @@ typedef struct pipe_ffplay_buffer {
 	//player pipe for ffplay via popen
 	FILE* player_pipe;
 
+	//TODO - refactor out attributes for mmt?
+	uint32_t last_mpu_sequence_number;
+
+
 } pipe_ffplay_buffer_t;
 
 pipe_ffplay_buffer_t* pipe_create_ffplay();
@@ -67,7 +73,7 @@ void pipe_buffer_push_block(pipe_ffplay_buffer_t* pipe_ffplay_buffer, uint8_t* b
 #define __PLAYER_FFPLAY_INFO(...)    printf("%s:%d:INFO:%.4f: ",__FILE__,__LINE__, gt()); printf(__VA_ARGS__); printf("\n");
 
 #define __PLAYER_FFPLAY_DEBUG(...)  		if(_PLAYER_FFPLAY_DEBUG_ENABLED) { printf("%s:%d:DEBUG:%.4f: ",__FILE__,__LINE__, gt()); printf(__VA_ARGS__); printf("\n"); }
-#define __PLAYER_FFPLAY_DEBUG_READER(...)   if(false && _PLAYER_FFPLAY_DEBUG_ENABLED) { printf("%s:%d:DEBUG_READER:%.4f: ",__FILE__,__LINE__, gt()); printf(__VA_ARGS__); printf("\n"); }
+#define __PLAYER_FFPLAY_DEBUG_READER(...)   if(_PLAYER_FFPLAY_DEBUG_ENABLED) { printf("%s:%d:DEBUG_READER:%.4f: ",__FILE__,__LINE__, gt()); printf(__VA_ARGS__); printf("\n"); }
 #define __PLAYER_FFPLAY_DEBUG_WRITER(...)   if(_PLAYER_FFPLAY_DEBUG_ENABLED) { printf("%s:%d:DEBUG_WRITER:%.4f: ",__FILE__,__LINE__, gt()); printf(__VA_ARGS__); printf("\n"); }
 
 #define __PLAYER_FFPLAY_TRACE(...)   if(_PLAYER_FFPLAY_TRACE_ENABLED) { printf("%s:%d:TRACE:%.4f: ",__FILE__,__LINE__, gt()); printf(__VA_ARGS__); printf("\n"); }

@@ -133,7 +133,7 @@ uint8_t* mmt_mpu_parse_payload(mmtp_sub_flow_vector_t* mmtp_sub_flow_vector, mmt
 
 			} else {
 				to_read_packet_length = udp_raw_buf_size - (buf-raw_buf);
-				_MPU_DEBUG("skipping data_unit_size: mpu_aggregation_flag:0, raw packet size: %d, buf: %p, raw_buf: %p, to_read_packet_length: %d",
+				_MPU_DEBUG("using data_unit_size from packet length: mpu_aggregation_flag:0, raw packet size: %d, buf: %p, raw_buf: %p, to_read_packet_length: %d",
 						udp_raw_buf_size, buf, raw_buf, to_read_packet_length);
 			}
 
@@ -235,9 +235,10 @@ uint8_t* mmt_mpu_parse_payload(mmtp_sub_flow_vector_t* mmtp_sub_flow_vector, mmt
 					mmtp_packet_header->mpu_data_unit_payload_fragments_timed.offset     					  	= (timed_mfu_block[8] << 24) | (timed_mfu_block[9] << 16) | (timed_mfu_block[10] << 8) | (timed_mfu_block[11]);
 					mmtp_packet_header->mpu_data_unit_payload_fragments_timed.priority 							= timed_mfu_block[12];
 					mmtp_packet_header->mpu_data_unit_payload_fragments_timed.dep_counter						= timed_mfu_block[13];
+					uint8_t* rewind_buf = buf;
 
 					//parse out mmthsample block if this is our first fragment or we are a complete fragment,
-					if(mmtp_packet_header->mpu_data_unit_payload_fragments_timed.mpu_fragmentation_indicator == 0 || mmtp_packet_header->mpu_data_unit_payload_fragments_timed.mpu_fragmentation_indicator == 1) {
+					if(mmtp_packet_header->mpu_data_unit_payload_fragments_timed.mpu_fragment_type == 2 && (mmtp_packet_header->mpu_data_unit_payload_fragments_timed.mpu_fragmentation_indicator == 0 || mmtp_packet_header->mpu_data_unit_payload_fragments_timed.mpu_fragmentation_indicator == 1)) {
 
 						//MMTHSample does not subclass box...
 						//buf = extract(buf, &mmthsample_len, 1);
@@ -289,6 +290,7 @@ uint8_t* mmt_mpu_parse_payload(mmtp_sub_flow_vector_t* mmtp_sub_flow_vector, mmt
 					//end mfu box read
 
 					to_read_packet_length = udp_raw_buf_size - (buf - raw_buf);
+//					to_read_packet_length = udp_raw_buf_size - (rewind_buf - raw_buf);
 				} else {
 					uint8_t non_timed_mfu_block[4];
 					uint32_t non_timed_mfu_item_id;
