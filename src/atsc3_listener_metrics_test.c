@@ -655,7 +655,7 @@ int main(int argc,char **argv) {
     //create our background thread for bandwidth calculation
 
 	pthread_t thread_id;
-	pthread_create(&thread_id, NULL, printBandwidthStatistics, NULL);
+	pthread_create(&thread_id, NULL, print_bandwidth_statistics_thread, NULL);
 
 
 

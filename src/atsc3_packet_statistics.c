@@ -11,7 +11,7 @@
 
 
 
-void *printGlobalStatistics(void *vargp)
+void *print_global_statistics_thread(void *vargp)
 {
 	__PS_TRACE("Starting printGlobalStatistics");
 	setlocale(LC_ALL,"");

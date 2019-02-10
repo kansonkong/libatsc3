@@ -7,7 +7,6 @@
 
 #include "atsc3_output_statistics_ncurses.h"
 
-
 void ncurses_init() {
 	/** hacks
 	*
@@ -32,9 +31,40 @@ void ncurses_init() {
 	sa.sa_handler = handle_winch;
 	sigaction(SIGWINCH, &sa, NULL);
 
+
 	//remap as our printf is redirected to stderr
 	my_screen = newterm(NULL, stdout, stdin);
 	create_or_update_window_sizes(false);
+
+	raw();
+	keypad(my_window, TRUE);		/* We get F1, F2 etc..		*/
+	noecho();						/* Don't echo() while we do getch */
+
+}
+
+void* ncurses_input_run_thread() {
+	int ch;
+
+	while(1) {
+
+		ch = wgetch(my_window);
+		if(ch == CTRL('c')) {
+			//end and clear screen back to terminal
+			endwin();
+			exit(1);
+		}
+		if(ch == KEY_F(1))		/* Without keypad enabled this will */
+			printw("F1 Key pressed");/*  not get to us either	*/
+						/* Without noecho() some ugly escape
+						 * charachters might have been printed
+						 * on screen			*/
+		else
+		{	printw("The pressed key is ");
+			attron(A_BOLD);
+			printw("%c", ch);
+			attroff(A_BOLD);
+		}
+	}
 }
 
 void ncurses_mutext_init() {
@@ -162,7 +192,7 @@ void handle_winch(int sig)
 
 }
 
-void* lls_dump_instance_table_thread(void* lls_session_ptr) {
+void* print_lls_instance_table_thread(void* lls_session_ptr) {
 
 	lls_session_t* lls_session = (lls_session_t*)lls_session_ptr;
 	while(1) {

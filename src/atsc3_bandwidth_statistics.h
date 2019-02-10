@@ -76,6 +76,6 @@ typedef struct bandwith_statistics {
 } bandwidth_statistics_t;
 
 bandwidth_statistics_t *global_bandwidth_statistics;
-void *printBandwidthStatistics(void *vargp);
+void *print_bandwidth_statistics_thread(void *vargp);
 
 #endif /* ATSC3_BANDWIDTH_STATISTICS_H_ */
