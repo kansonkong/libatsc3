@@ -11,7 +11,7 @@ int _PLAYER_FFPLAY_TRACE_ENABLED = 0;
 
 void pipe_buffer_condition_signal(pipe_ffplay_buffer_t* pipe_ffplay_buffer) {
 	int ret = pthread_cond_signal(&pipe_ffplay_buffer->pipe_buffer_unlocked_cond_signal);
-	__PLAYER_FFPLAY_DEBUG("signal condition returned: %d ", ret);
+	__PLAYER_FFPLAY_DEBUG_READER("signal condition returned: %d ", ret);
 }
 
 void pipe_buffer_reader_mutex_lock(pipe_ffplay_buffer_t* pipe_ffplay_buffer) {
@@ -71,19 +71,25 @@ void* pipe_buffer_writer_thread(void* pipe_ffplay_buffer_pointer) {
 		//unlock now that double buffer is complete
 		pipe_buffer_reader_mutex_unlock(pipe_ffplay_buffer);
 
-		__PLAYER_FFPLAY_INFO("ffplay BEFORE WRITE, to write to pipe: %p, from %p, pos: %d to %d, total size: %d",
+		if(pipe_ffplay_buffer->pipe_buffer_writer_pos < 512000) {
+			__PLAYER_FFPLAY_WARN("WARNING - remaining buffer is less than ~512KB, this may cause player underflow! ffplay BEFORE WRITE, to write to pipe: %p, from %p, pos: %d to %d",
+							pipe_ffplay_buffer->player_pipe,
+							pipe_ffplay_buffer->pipe_buffer_writer,
+							0,
+							pipe_ffplay_buffer->pipe_buffer_writer_pos);
+		} else {
+			__PLAYER_FFPLAY_DEBUG_WRITER("ffplay BEFORE WRITE, to write to pipe: %p, from %p, pos: %d to %d",
 				pipe_ffplay_buffer->player_pipe,
 				pipe_ffplay_buffer->pipe_buffer_writer,
 				0,
-				__PLAYER_FFPLAY_PIPE_WRITER_BLOCKSIZE,
 				pipe_ffplay_buffer->pipe_buffer_writer_pos);
-
+		}
 
 		for(int i=0; i < pipe_ffplay_buffer->pipe_buffer_writer_pos; i+=__PLAYER_FFPLAY_PIPE_WRITER_BLOCKSIZE) {
 			int bytes_to_write_remaining = pipe_ffplay_buffer->pipe_buffer_writer_pos - i;
 			int to_write_blocksize = bytes_to_write_remaining > __PLAYER_FFPLAY_PIPE_WRITER_BLOCKSIZE ? __PLAYER_FFPLAY_PIPE_WRITER_BLOCKSIZE : bytes_to_write_remaining;
 
-			__PLAYER_FFPLAY_INFO("writing from %p, pos: %d, blocksize: %d, total size: %d", &pipe_ffplay_buffer->pipe_buffer_writer[i], i, to_write_blocksize, pipe_ffplay_buffer->pipe_buffer_writer_pos);
+			__PLAYER_FFPLAY_TRACE_WRITER("writing from %p, pos: %d, blocksize: %d, total size: %d", &pipe_ffplay_buffer->pipe_buffer_writer[i], i, to_write_blocksize, pipe_ffplay_buffer->pipe_buffer_writer_pos);
 			int fwrite_ret = fwrite(&pipe_ffplay_buffer->pipe_buffer_writer[i], to_write_blocksize, 1, pipe_ffplay_buffer->player_pipe);
 			if(fwrite_ret != 1) {
 				__PLAYER_FFPLAY_WARN("short fwrite! at pos: %u, total buffer length: %u", i, pipe_ffplay_buffer->pipe_buffer_writer_pos);
@@ -95,12 +101,8 @@ void* pipe_buffer_writer_thread(void* pipe_ffplay_buffer_pointer) {
 		}
 
 
-		__PLAYER_FFPLAY_INFO("ffplay AFTER write, to write to pipe: %p, from %p, pos: %d to %d, total size: %d",
-				pipe_ffplay_buffer->player_pipe,
-				pipe_ffplay_buffer->pipe_buffer_writer,
-				0,
-				__PLAYER_FFPLAY_PIPE_WRITER_BLOCKSIZE,
-				pipe_ffplay_buffer->pipe_buffer_writer_pos);
+		__PLAYER_FFPLAY_DEBUG_WRITER("ffplay AFTER write, to write to pipe: %p complete",
+				pipe_ffplay_buffer->player_pipe);
 
 
 		pipe_ffplay_buffer->pipe_buffer_writer_pos = 0;
@@ -169,7 +171,7 @@ error:
  */
 void pipe_buffer_push_block(pipe_ffplay_buffer_t* pipe_ffplay_buffer, uint8_t* block, uint32_t block_size)  {
 
-	__PLAYER_FFPLAY_DEBUG("pipe_push_block with reader buffer: %p, to_write %d, current buffer len: %d, total buffer size: %d", pipe_ffplay_buffer->pipe_buffer_reader, block_size, pipe_ffplay_buffer->pipe_buffer_reader_pos, pipe_ffplay_buffer->pipe_buffer_reader_size);
+	__PLAYER_FFPLAY_DEBUG_READER("pipe_push_block with reader buffer: %p, to_write %d, current buffer len: %d, total buffer size: %d", pipe_ffplay_buffer->pipe_buffer_reader, block_size, pipe_ffplay_buffer->pipe_buffer_reader_pos, pipe_ffplay_buffer->pipe_buffer_reader_size);
 	//make sure we have enough space, otherwise realloc...
 	if(pipe_ffplay_buffer->pipe_buffer_reader_pos + block_size > pipe_ffplay_buffer->pipe_buffer_reader_size) {
 		__PLAYER_FFPLAY_WARN("pipe_push_block, calling realloc due to with reader buffer: %p, to_write %d, current size: %d", pipe_ffplay_buffer->pipe_buffer_reader, block_size, pipe_ffplay_buffer->pipe_buffer_reader_size);
