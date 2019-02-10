@@ -379,15 +379,15 @@ int build_SLT_table(lls_table_t *lls_table, xml_node_t *xml_root) {
 		lls_table->slt_table.service_entry_n++;
 		//TODO - grow this dynamically to N?
 		if(!lls_table->slt_table.service_entry) {
-			lls_table->slt_table.service_entry = (service_t**)calloc(32, sizeof(service_t**));
+			lls_table->slt_table.service_entry = (lls_service_t**)calloc(32, sizeof(lls_service_t**));
 		}
 
 		//service_row_node_xml_string
 		uint8_t* child_row_node_attributes_s = xml_attributes_clone(service_row_node_xml_string);
 		kvp_collection_t* service_attributes_collecton = kvp_collection_parse(child_row_node_attributes_s);
 
-		lls_table->slt_table.service_entry[lls_table->slt_table.service_entry_n-1] = calloc(1, sizeof(service_t));
-		service_t* service_entry = lls_table->slt_table.service_entry[lls_table->slt_table.service_entry_n-1];
+		lls_table->slt_table.service_entry[lls_table->slt_table.service_entry_n-1] = calloc(1, sizeof(lls_service_t));
+		lls_service_t* service_entry = lls_table->slt_table.service_entry[lls_table->slt_table.service_entry_n-1];
 		//map in other attributes, e.g
 
 
@@ -493,7 +493,7 @@ int build_SLT_table(lls_table_t *lls_table, xml_node_t *xml_root) {
 	return 0;
 }
 
-int build_SLT_BROADCAST_SVC_SIGNALING_table(service_t* service_table, xml_node_t *service_row_node, kvp_collection_t* kvp_collection) {
+int build_SLT_BROADCAST_SVC_SIGNALING_table(lls_service_t* service_table, xml_node_t *service_row_node, kvp_collection_t* kvp_collection) {
 	int ret = 0;
 	xml_string_t* service_row_node_xml_string = xml_node_name(service_row_node);
 	uint8_t *svc_attributes = xml_attributes_clone(service_row_node_xml_string);
@@ -637,7 +637,7 @@ void lls_dump_instance_table(lls_table_t* base_table) {
 		_LLS_INFO("SLT: Service contains %d entries:", base_table->slt_table.service_entry_n);
 
 		for(int i=0l; i < base_table->slt_table.service_entry_n; i++) {
-			service_t* service = base_table->slt_table.service_entry[i];
+			lls_service_t* service = base_table->slt_table.service_entry[i];
 			_LLS_INFO(" -----------------------------");
 			_LLS_INFO("  service_id                  : %d", service->service_id);
 			_LLS_INFO("  global_service_id           : %s", service->global_service_id);

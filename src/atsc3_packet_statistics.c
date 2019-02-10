@@ -24,6 +24,7 @@ void *printGlobalStatistics(void *vargp)
 		ncurses_writer_lock_mutex_release();
 	}
 }
+
 int comparator_packet_id_mmt_stats_t(const void *a, const void *b)
 {
 	__PS_TRACE("comparator_packet_id_mmt_stats_t with %u from %u", ((packet_id_mmt_stats_t *)a)->packet_id, ((packet_id_mmt_stats_t *)b)->packet_id);
@@ -34,7 +35,6 @@ int comparator_packet_id_mmt_stats_t(const void *a, const void *b)
 
 	return 0;
 }
-
 
 packet_flow_t* find_packet_flow(uint32_t ip, uint16_t port) {
 	for(int i=0; i < global_stats->packet_flow_n; i++ ) {
@@ -64,8 +64,12 @@ packet_id_mmt_stats_t* find_packet_id(uint32_t ip, uint16_t port, uint32_t packe
 
 	return NULL;
 }
+/**
+ * todo - refactor out the reference to global_stats
+ *
+ */
 
-packet_id_mmt_stats_t* find_or_get_packet_id(uint32_t ip, uint16_t port, uint32_t packet_id) {
+packet_id_mmt_stats_t* find_or_create_packet_id(uint32_t ip, uint16_t port, uint32_t packet_id) {
 	packet_id_mmt_stats_t* packet_mmt_stats = find_packet_id(ip, port, packet_id);
 	if(!packet_mmt_stats) {
 		if(global_stats->packet_id_n && global_stats->packet_id_vector) {
@@ -135,7 +139,7 @@ int global_loss_count;
 void atsc3_packet_statistics_mmt_stats_populate(udp_packet_t* udp_packet, mmtp_payload_fragments_union_t* mmtp_payload) {
 
 
-	packet_id_mmt_stats_t* packet_mmt_stats = find_or_get_packet_id(udp_packet->dst_ip_addr, udp_packet->dst_port, mmtp_payload->mmtp_packet_header.mmtp_packet_id);
+	packet_id_mmt_stats_t* packet_mmt_stats = find_or_create_packet_id(udp_packet->dst_ip_addr, udp_packet->dst_port, mmtp_payload->mmtp_packet_header.mmtp_packet_id);
 
 	packet_mmt_stats->packet_sequence_number_sample_interval_processed++;
 	packet_mmt_stats->packet_sequence_number_lifetime_processed++;
