@@ -476,6 +476,10 @@ void process_packet(u_char *user, const struct pcap_pkthdr *pkthdr, const u_char
 		if(mmtp_payload->mmtp_packet_header.mmtp_payload_type == 0x0) {
 			global_stats->packet_counter_mmt_mpu++;
 
+			if(mmtp_payload->mmtp_mpu_type_packet_header.mpu_timed_flag == 1) {
+				global_stats->packet_counter_mmt_timed_mpu++;
+
+
 #ifdef __TEST_FFPLAY_MMTP_PIPE_PLAYBACK__
 
 			if(mmtp_payload->mmtp_packet_header.mmtp_packet_id==35 && ip_header[16] == 239 && ip_header[17] == 255 && ip_header[18] == 10 && ip_header[19] == 1) {
@@ -495,9 +499,6 @@ void process_packet(u_char *user, const struct pcap_pkthdr *pkthdr, const u_char
 				push_mfu_block(mmtp_payload->mmtp_mpu_type_packet_header.mpu_data_unit_payload);
 			}
 #endif
-
-			if(mmtp_payload->mmtp_mpu_type_packet_header.mpu_timed_flag == 1) {
-				global_stats->packet_counter_mmt_timed_mpu++;
 
 				//timed
 				//mpu_dump_flow(udp_packet->dst_ip_addr, udp_packet->dst_port, mmtp_payload);
@@ -708,7 +709,7 @@ int main(int argc,char **argv) {
 	pthread_join(global_ncurses_input_thread_id, NULL);
 
 #else
-    pcap_loop_run(dev);
+	pcap_loop_run_thread(dev);
 #endif
 
 

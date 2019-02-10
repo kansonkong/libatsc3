@@ -101,7 +101,7 @@ int alc_packet_dump_to_object(alc_packet_t* alc_packet) {
 
 	if(!_ALC_PACKET_DUMP_TO_OBJECT_ENABLED) {
 			goto cleanup;
-		}
+	}
     mkdir("route", 0777);
 
 	int filename_pos = 0;

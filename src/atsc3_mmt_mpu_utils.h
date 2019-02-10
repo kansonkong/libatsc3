@@ -5,16 +5,17 @@
  *      Author: jjustman
  */
 #include "atsc3_mmtp_types.h"
+#include "atsc3_mmtp_parser.h"
+#include "atsc3_player_ffplay.h"
 
 #ifndef ATSC3_MMT_MPU_UTILS_H_
 #define ATSC3_MMT_MPU_UTILS_H_
 
 extern int _MMT_MPU_DEBUG_ENABLED;
 
-void dump_mpu(mmtp_payload_fragments_union_t* mmtp_payload);
+void mpu_dump_header(mmtp_payload_fragments_union_t* mmtp_payload);
 void mpu_dump_reconstitued(uint32_t dst_ip, uint16_t dst_port, mmtp_payload_fragments_union_t* mmtp_payload);
-
-
+void mpu_play_object(pipe_ffplay_buffer_t* ffplay_buffer, mmtp_payload_fragments_union_t* mmtp_payload);
 
 #define __MMT_MPU_ERROR(...)   printf("%s:%d:ERROR :","listener",__LINE__);printf(__VA_ARGS__);printf("\n");
 #define __MMT_MPU_WARN(...)    printf("%s:%d:WARN: ","listener",__LINE__);printf(__VA_ARGS__);printf("\n");

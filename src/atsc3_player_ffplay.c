@@ -10,8 +10,8 @@ int _PLAYER_FFPLAY_DEBUG_ENABLED = 1;
 int _PLAYER_FFPLAY_TRACE_ENABLED = 0;
 
 void pipe_buffer_condition_signal(pipe_ffplay_buffer_t* pipe_ffplay_buffer) {
-	int ret = pthread_cond_signal(&pipe_ffplay_buffer->pipe_buffer_unlocked_cond_signal);
-	__PLAYER_FFPLAY_DEBUG_READER("signal condition returned: %d ", ret);
+	int ret = sem_post(pipe_ffplay_buffer->pipe_buffer_semaphore);
+	__PLAYER_FFPLAY_DEBUG_READER("sem post: %d ", ret);
 }
 
 void pipe_buffer_reader_mutex_lock(pipe_ffplay_buffer_t* pipe_ffplay_buffer) {
@@ -28,23 +28,22 @@ void* pipe_buffer_writer_thread(void* pipe_ffplay_buffer_pointer) {
 
 	while(1) {
 
-	wait_signal:
+await_semaphore:
 
-		//wait on a signal condition
-
-		condition_wait_ret = pthread_cond_wait(&pipe_ffplay_buffer->pipe_buffer_unlocked_cond_signal, &pipe_ffplay_buffer->pipe_buffer_reader_mutex_lock);
-		__PLAYER_FFPLAY_INFO("mutex count %d, buffer reader pos: %u, condition_wait return: %d",  pipe_ffplay_buffer->reader_unlock_count, pipe_ffplay_buffer->pipe_buffer_reader_pos, condition_wait_ret);
-
+		sem_wait(pipe_ffplay_buffer->pipe_buffer_semaphore);
+		__PLAYER_FFPLAY_ERROR("--> AFTER PIPE_BUFFER_SEMAPHORE")
+		pipe_buffer_reader_mutex_lock(pipe_ffplay_buffer);
 
 		if(pipe_ffplay_buffer->pipe_buffer_reader_to_shutdown) {
 			__PLAYER_FFPLAY_INFO("shutting down pipe_buffer_writer thread");
 			pipe_ffplay_buffer->pipe_buffer_reader_is_shutdown = true;
+			pipe_buffer_reader_mutex_unlock(pipe_ffplay_buffer);
 			return 0;
 		}
 
 		//wait until we have accumulated at least 5 fragments or we have BUFFER/2 available for writing
-		if(pipe_ffplay_buffer->reader_unlock_count++ < __PLAYER_INITIAL_BUFFER_SEGMENT_COUNT && (pipe_ffplay_buffer->pipe_buffer_reader_pos < (__PLAYER_FFPLAY_PIPE_INTERNAL_BUFFER_SIZE/2))) {
-			__PLAYER_FFPLAY_INFO("skipping signal, mutex count %d < %d, buffer reader pos: %u",  pipe_ffplay_buffer->reader_unlock_count, __PLAYER_INITIAL_BUFFER_SEGMENT_COUNT, pipe_ffplay_buffer->pipe_buffer_reader_pos);
+		if(pipe_ffplay_buffer->writer_unlock_count++ < __PLAYER_INITIAL_BUFFER_SEGMENT_COUNT && (pipe_ffplay_buffer->pipe_buffer_reader_pos < (__PLAYER_FFPLAY_PIPE_INTERNAL_BUFFER_SIZE/2))) {
+			__PLAYER_FFPLAY_INFO("skipping signal, mutex count %d < %d, buffer reader pos: %u",  pipe_ffplay_buffer->writer_unlock_count, __PLAYER_INITIAL_BUFFER_SEGMENT_COUNT, pipe_ffplay_buffer->pipe_buffer_reader_pos);
 			goto unlock_from_error;
 		}
 
@@ -100,19 +99,20 @@ void* pipe_buffer_writer_thread(void* pipe_ffplay_buffer_pointer) {
 			}
 		}
 
-
 		__PLAYER_FFPLAY_DEBUG_WRITER("ffplay AFTER write, to write to pipe: %p complete",
 				pipe_ffplay_buffer->player_pipe);
 
-
 		pipe_ffplay_buffer->pipe_buffer_writer_pos = 0;
+		goto await_semaphore;
 
-		goto wait_signal;
 
-	//unlock if we aren't ready to swap and write
-	unlock_from_error:
+		//unlock if we aren't ready to swap and write
+unlock_from_error:
+
+		__PLAYER_FFPLAY_INFO("..player before mutex_unlock");
 		pipe_buffer_reader_mutex_unlock(pipe_ffplay_buffer);
-		goto wait_signal;
+		__PLAYER_FFPLAY_INFO("..player before pthread_cond_wait");
+		goto await_semaphore;
 	}
 }
 
@@ -124,7 +124,9 @@ pipe_ffplay_buffer_t* pipe_create_ffplay() {
 		abort();
 	}
 
-	pthread_cond_init(&pipe_ffplay_buffer->pipe_buffer_unlocked_cond_signal, NULL);
+	pipe_ffplay_buffer->pipe_buffer_semaphore = sem_open("/atsc3_player_ffplay", O_CREAT, 0644, 0);
+	__PLAYER_FFPLAY_ERROR("sem_init returned: %p", pipe_ffplay_buffer->pipe_buffer_semaphore);
+	assert(pipe_ffplay_buffer->pipe_buffer_semaphore);
 
 	pipe_ffplay_buffer->pipe_buffer_reader = calloc(__PLAYER_FFPLAY_PIPE_INTERNAL_BUFFER_SIZE, sizeof(uint8_t));
 	assert(pipe_ffplay_buffer->pipe_buffer_reader);
@@ -142,6 +144,9 @@ pipe_ffplay_buffer_t* pipe_create_ffplay() {
 		__PLAYER_FFPLAY_ERROR("unable to create pipe for cmd: %s", cmd);
 		goto error;
 	}
+	pipe_ffplay_buffer->player_pipe = fopen("mpu/recon.m4v", "w");
+
+
 	__PLAYER_FFPLAY_DEBUG("pipe created: file* is %p", pipe_ffplay_buffer->player_pipe);
 
 	pthread_create(&pipe_ffplay_buffer->pipe_buffer_thread_id, NULL, pipe_buffer_writer_thread, (void*)pipe_ffplay_buffer);
@@ -181,6 +186,8 @@ void pipe_buffer_push_block(pipe_ffplay_buffer_t* pipe_ffplay_buffer, uint8_t* b
 			new_size = pipe_ffplay_buffer->pipe_buffer_reader_pos + block_size;
 		}
 		pipe_ffplay_buffer->pipe_buffer_reader = realloc(pipe_ffplay_buffer->pipe_buffer_reader, new_size);
+		pipe_ffplay_buffer->pipe_buffer_reader_size = new_size;
+
 		if(!pipe_ffplay_buffer->pipe_buffer_reader) {
 			__PLAYER_FFPLAY_WARN("realloc failed! exiting");
 			exit(1);
