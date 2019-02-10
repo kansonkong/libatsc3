@@ -44,6 +44,8 @@ int PACKET_COUNTER=0;
 #include "alc_channel.h"
 #include "atsc3_alc_utils.h"
 
+extern int _ALC_PACKET_DUMP_TO_OBJECT_ENABLED;
+
 #define println(...) printf(__VA_ARGS__);printf("\n")
 
 #define __PRINTLN(...) printf(__VA_ARGS__);printf("\n")
@@ -271,6 +273,7 @@ int main(int argc,char **argv) {
     bpf_u_int32 maskp;
     bpf_u_int32 netp;
 
+    _ALC_PACKET_DUMP_TO_OBJECT_ENABLED = 1;
     //listen to all flows
     if(argc == 2) {
     	dev = argv[1];

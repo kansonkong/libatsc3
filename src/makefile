@@ -1,6 +1,8 @@
-all: intermediate_lls intermediate_mmt intermediate_alc libatsc3_core unit_tests listener_tests listener_ncurses
+all: intermediate_lls intermediate_mmt intermediate_alc intermediate_ffplay libatsc3_core unit_tests listener_tests listener_ncurses
 clean:
-	rm -f *.o
+	-rm -f *.o
+	-rm -f route/*
+	-rm -f mmt/*
 	
 intermediate_lls: atsc3_lls.o atsc3_lls_slt_utils.o  atsc3_lls_alc_utils.o
 
@@ -11,6 +13,7 @@ intermediate_mmt: xml.o atsc3_mmtp_parser.o atsc3_mmt_mpu_parser.o atsc3_mmt_sig
  #atsc3_packet_statistics.o 
  
 intermediate_alc:alc_rx.c alc_session.c fec.c null_fec.c rs_fec.c xor_fec.c atsc3_alc_utils.c 
+intermediate_ffplay: atsc3_player_ffplay.o
 
 libatsc3_core: libatsc3.o
 
@@ -64,7 +67,10 @@ alc_rx.o:  alc_rx.h alc_rx.c
 atsc3_alc_utils.o: atsc3_alc_utils.h atsc3_alc_utils.c
 	cc -g -c atsc3_alc_utils.c
 	
-
+	
+atsc3_player_ffplay.o: atsc3_player_ffplay.h atsc3_player_ffplay.c
+	cc -g -c atsc3_player_ffplay.c
+	
 # stats modules
 
 #atsc3_bandwidth_statistics.o: atsc3_bandwidth_statistics.h atsc3_bandwidth_statistics.c
@@ -80,12 +86,12 @@ atsc3_alc_utils.o: atsc3_alc_utils.h atsc3_alc_utils.c
 libatsc3.o: xml.o atsc3_lls.o atsc3_lls_slt_utils.o atsc3_mmtp_parser.o atsc3_mmtp_ntp32_to_pts.o atsc3_utils.o \
 		fixups_timespec_get.o atsc3_mmt_signaling_message.o atsc3_mmt_mpu_parser.o alc_channel.o alc_list.o \
 		alc_rx.o alc_session.o fec.o null_fec.o rs_fec.o xor_fec.o mad.o mad_rlc.o transport.o atsc3_alc_utils.o \
-		atsc3_lls_alc_utils.o atsc3_mmt_mpu_utils.o
+		atsc3_lls_alc_utils.o atsc3_mmt_mpu_utils.o atsc3_player_ffplay.o
 	
 	ld -o libatsc3.o -r xml.o atsc3_lls.o atsc3_lls_slt_utils.o atsc3_mmtp_parser.o atsc3_mmtp_ntp32_to_pts.o atsc3_utils.o \
 		fixups_timespec_get.o atsc3_mmt_signaling_message.o atsc3_mmt_mpu_parser.o alc_channel.o alc_list.o \
 		alc_rx.o alc_session.o fec.o null_fec.o rs_fec.o xor_fec.o mad.o mad_rlc.o transport.o atsc3_alc_utils.o \
-		atsc3_lls_alc_utils.o atsc3_mmt_mpu_utils.o
+		atsc3_lls_alc_utils.o atsc3_mmt_mpu_utils.o atsc3_player_ffplay.o
 		
 # atsc3_bandwidth_statistics.o
 # atsc3_packet_statistics.o
@@ -126,10 +132,9 @@ atsc3_listener_test: atsc3_listener_test.c libatsc3.o
 	
 atsc3_listener_metrics_ncurses: atsc3_listener_metrics_ncurses.c atsc3_bandwidth_statistics.c \
 								atsc3_packet_statistics.c atsc3_output_statistics_ncurses.h \
-								atsc3_output_statistics_ncurses.c libatsc3.o \
-								atsc3_player_ffplay.c atsc3_player_ffplay.h
+								atsc3_output_statistics_ncurses.c libatsc3.o 
 	cc -D OUTPUT_STATISTICS=NCURSES -g atsc3_listener_metrics_ncurses.c atsc3_output_statistics_ncurses.c \
-							atsc3_bandwidth_statistics.c atsc3_packet_statistics.c libatsc3.o atsc3_player_ffplay.c \
+							atsc3_bandwidth_statistics.c atsc3_packet_statistics.c libatsc3.o \
 							-lz -lpcap -lncurses -o atsc3_listener_metrics_ncurses
 	#cc -D _TEST_RUN_VALGRIND_OSX_=true -g atsc3_listener_metrics_ncurses.c atsc3_bandwidth_statistics.c atsc3_packet_statistics.c libatsc3.o -lz -lpcap -lncurses -o atsc3_listener_metrics_ncurses
 

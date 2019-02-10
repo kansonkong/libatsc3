@@ -315,18 +315,18 @@ int __unzip_gzip_payload(uint8_t *input_payload, uint input_payload_size, uint8_
 #define _LLS_PRINTLN(...) printf(__VA_ARGS__);printf("\n")
 #define _LLS_PRINTF(...)  printf(__VA_ARGS__);
 
-#define _LLS_ERROR(...)   printf("%s:%d:ERROR:",__FILE__,__LINE__);_LLS_PRINTLN(__VA_ARGS__);
-#define _LLS_WARN(...)    printf("%s:%d:WARN:",__FILE__,__LINE__);_LLS_PRINTLN(__VA_ARGS__);
-#define _LLS_INFO(...)    printf("%s:%d:INFO:",__FILE__,__LINE__);_LLS_PRINTLN(__VA_ARGS__);
+#define _LLS_ERROR(...)   printf("%s:%d:ERROR:%.4f: ",__FILE__,__LINE__, gt());_LLS_PRINTLN(__VA_ARGS__);
+#define _LLS_WARN(...)    printf("%s:%d:WARN:%.4f: ",__FILE__,__LINE__, gt());_LLS_PRINTLN(__VA_ARGS__);
+#define _LLS_INFO(...)    printf("%s:%d:INFO:%.4f: ",__FILE__,__LINE__, gt());_LLS_PRINTLN(__VA_ARGS__);
 
-#define _LLS_DEBUG(...)   if(_LLS_DEBUG_ENABLED) { printf("%s:%d:DEBUG:",__FILE__,__LINE__);_LLS_PRINTLN(__VA_ARGS__); }
-#define _LLS_DEBUGF(...)  if(_LLS_DEBUG_ENABLED) { printf("%s:%d:DEBUG:",__FILE__,__LINE__);_LLS_PRINTF(__VA_ARGS__); }
+#define _LLS_DEBUG(...)   if(_LLS_DEBUG_ENABLED) { printf("%s:%d:DEBUG:%.4f: ",__FILE__,__LINE__, gt());_LLS_PRINTLN(__VA_ARGS__); }
+#define _LLS_DEBUGF(...)  if(_LLS_DEBUG_ENABLED) { printf("%s:%d:DEBUG:%.4f: ",__FILE__,__LINE__, gt());_LLS_PRINTF(__VA_ARGS__); }
 #define _LLS_DEBUGA(...)  if(_LLS_DEBUG_ENABLED) { _LLS_PRINTF(__VA_ARGS__); }
 #define _LLS_DEBUGN(...)  if(_LLS_DEBUG_ENABLED) { _LLS_PRINTLN(__VA_ARGS__); }
 #define _LLS_DEBUGNT(...) if(_LLS_DEBUG_ENABLED) { _LLS_PRINTF(" ");_LLS_PRINTLN(__VA_ARGS__); }
 
-#define _LLS_TRACE(...)   if(_LLS_TRACE_ENABLED) { printf("%s:%d:TRACE:",__FILE__,__LINE__);_LLS_PRINTLN(__VA_ARGS__); }
-#define _LLS_TRACEF(...)  if(_LLS_TRACE_ENABLED) {  printf("%s:%d:TRACE:",__FILE__,__LINE__);_LLS_PRINTF(__VA_ARGS__); }
+#define _LLS_TRACE(...)   if(_LLS_TRACE_ENABLED) { printf("%s:%d:TRACE:%.4f: ",__FILE__,__LINE__, gt());_LLS_PRINTLN(__VA_ARGS__); }
+#define _LLS_TRACEF(...)  if(_LLS_TRACE_ENABLED) {  printf("%s:%d:TRACE:%.4f: ",__FILE__,__LINE__, gt());_LLS_PRINTF(__VA_ARGS__); }
 #define _LLS_TRACEA(...)  if(_LLS_TRACE_ENABLED) { _LLS_PRINTF(__VA_ARGS__); }
 #define _LLS_TRACEN(...)  if(_LLS_TRACE_ENABLED) { _LLS_PRINTLN(__VA_ARGS__); }
 
