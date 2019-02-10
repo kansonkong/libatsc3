@@ -37,9 +37,11 @@ int PACKET_COUNTER=0;
 #include <netinet/ip.h>
 #include <string.h>
 #include <sys/stat.h>
+
 #include "atsc3_mmtp_types.h"
 #include "atsc3_lls.h"
 #include "atsc3_mmtp_parser.h"
+#include "atsc3_mmt_mpu_utils.h"
 
 extern int _MPU_DEBUG_ENABLED;
 extern int _MMTP_DEBUG_ENABLED;
@@ -103,104 +105,6 @@ uint16_t* dst_ip_port_filter = NULL;
 
 //make sure to invoke     mmtp_sub_flow_vector_init(&p_sys->mmtp_sub_flow_vector);
 mmtp_sub_flow_vector_t* mmtp_sub_flow_vector;
-void dump_mpu(mmtp_payload_fragments_union_t* mmtp_payload) {
-
-	__INFO("------------------");
-
-	if(mmtp_payload->mmtp_mpu_type_packet_header.mpu_timed_flag) {
-		__INFO("MFU Packet (Timed)");
-		__INFO("-----------------");
-		__INFO(" mpu_fragmentation_indicator: %d", mmtp_payload->mpu_data_unit_payload_fragments_timed.mpu_fragment_type);
-		__INFO(" movie_fragment_seq_num: %u", mmtp_payload->mpu_data_unit_payload_fragments_timed.movie_fragment_sequence_number);
-		__INFO(" sample_num: %u", mmtp_payload->mpu_data_unit_payload_fragments_timed.sample_number);
-		__INFO(" offset: %u", mmtp_payload->mpu_data_unit_payload_fragments_timed.offset);
-		__INFO(" pri: %d", mmtp_payload->mpu_data_unit_payload_fragments_timed.priority);
-		__INFO(" mpu_sequence_number: %u",mmtp_payload->mpu_data_unit_payload_fragments_timed.mpu_sequence_number);
-
-	} else {
-		__INFO("MFU Packet (Non-timed)");
-		__INFO("---------------------");
-		__INFO(" mpu_fragmentation_indicator: %d", mmtp_payload->mpu_data_unit_payload_fragments_nontimed.mpu_fragment_type);
-		__INFO(" non_timed_mfu_item_id: %u", mmtp_payload->mpu_data_unit_payload_fragments_nontimed.non_timed_mfu_item_id);
-
-	}
-
-	__INFO("-----------------");
-}
-
-void mpu_dump_flow(uint32_t dst_ip, uint16_t dst_port, mmtp_payload_fragments_union_t* mmtp_payload) {
-	//sub_flow_vector is a global
-	dump_mpu(mmtp_payload);
-
-	__ALC_UTILS_DEBUG("::dumpMfu ******* file dump file: %d.%d.%d.%d:%d-p:%d.s:%d.ft:%d",
-			(dst_ip>>24)&0xFF,(dst_ip>>16)&0xFF,(dst_ip>>8)&0xFF,(dst_ip)&0xFF,
-			dst_port,
-			mmtp_payload->mmtp_mpu_type_packet_header.mmtp_packet_id,
-			mmtp_payload->mpu_data_unit_payload_fragments_timed.mpu_sequence_number,
-
-			mmtp_payload->mmtp_mpu_type_packet_header.mpu_fragment_type);
-
-	char *myFilePathName = calloc(64, sizeof(char*));
-	snprintf(myFilePathName, 64, "mpu/%d.%d.%d.%d,%d-p.%d.s,%d.ft,%d",
-			(dst_ip>>24)&0xFF,(dst_ip>>16)&0xFF,(dst_ip>>8)&0xFF,(dst_ip)&0xFF,
-			dst_port,
-			mmtp_payload->mmtp_mpu_type_packet_header.mmtp_packet_id,
-			mmtp_payload->mpu_data_unit_payload_fragments_timed.mpu_sequence_number,
-
-			mmtp_payload->mmtp_mpu_type_packet_header.mpu_fragment_type);
-
-
-	__ALC_UTILS_DEBUG("::dumpMfu ******* file dump file: %s", myFilePathName);
-
-	FILE *f = fopen(myFilePathName, "a");
-	if(!f) {
-		__INFO("::dumpMpu ******* UNABLE TO OPEN FILE %s", myFilePathName);
-			return;
-	}
-
-
-	for(int i=0; i <  mmtp_payload->mmtp_mpu_type_packet_header.mpu_data_unit_payload->i_buffer; i++) {
-		fputc(mmtp_payload->mmtp_mpu_type_packet_header.mpu_data_unit_payload->p_buffer[i], f);
-	}
-	fclose(f);
-}
-
-//assumes in-order delivery
-void mpu_dump_reconstitued(uint32_t dst_ip, uint16_t dst_port, mmtp_payload_fragments_union_t* mmtp_payload) {
-	//sub_flow_vector is a global
-	dump_mpu(mmtp_payload);
-
-	__INFO("::dump_mpu_reconstitued ******* file dump file: %d.%d.%d.%d:%d-p:%d.s:%d.ft:%d",
-			(dst_ip>>24)&0xFF,(dst_ip>>16)&0xFF,(dst_ip>>8)&0xFF,(dst_ip)&0xFF,
-			dst_port,
-			mmtp_payload->mmtp_mpu_type_packet_header.mmtp_packet_id,
-			mmtp_payload->mpu_data_unit_payload_fragments_timed.mpu_sequence_number,
-
-			mmtp_payload->mmtp_mpu_type_packet_header.mpu_fragment_type);
-
-	char *myFilePathName = calloc(64, sizeof(char*));
-	snprintf(myFilePathName, 64, "mpu/%d.%d.%d.%d,%d-p.%d.s,%d.ft",
-			(dst_ip>>24)&0xFF,(dst_ip>>16)&0xFF,(dst_ip>>8)&0xFF,(dst_ip)&0xFF,
-			dst_port,
-			mmtp_payload->mmtp_mpu_type_packet_header.mmtp_packet_id,
-			mmtp_payload->mpu_data_unit_payload_fragments_timed.mpu_sequence_number);
-
-
-	__ALC_UTILS_DEBUG("::dumpMfu ******* file dump file: %s", myFilePathName);
-
-	FILE *f = fopen(myFilePathName, "a");
-	if(!f) {
-		__ERROR("::dumpMpu ******* UNABLE TO OPEN FILE %s", myFilePathName);
-			return;
-	}
-
-
-	for(int i=0; i <  mmtp_payload->mmtp_mpu_type_packet_header.mpu_data_unit_payload->i_buffer; i++) {
-		fputc(mmtp_payload->mmtp_mpu_type_packet_header.mpu_data_unit_payload->p_buffer[i], f);
-	}
-	fclose(f);
-}
-
 
 void process_packet(u_char *user, const struct pcap_pkthdr *pkthdr, const u_char *packet) {
 

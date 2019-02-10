@@ -26,7 +26,12 @@
 #include "atsc3_utils.h"
 #include "atsc3_lls.h"
 #include "xml.h"
+
 int _LLS_DEBUG_ENABLED = 1;
+int _LLS_TRACE_ENABLED = 0;
+
+char* LLS_SERVICE_CATEGORY_VALUES[] = {"atsc reserved", "linear av", "linear audio", "app based svc.", "esg service", "eas service", "atsc other" };
+
 
 static lls_table_t* __lls_create_base_table_raw(uint8_t* lls, int size) {
 
@@ -188,7 +193,7 @@ lls_table_t* lls_table_create( uint8_t* lls_packet, int size) {
 	if(!xml_root_node)
 			goto cleanup;
 
-	_LLS_TRACE("lls_create_table: calling lls_create_table_type_instance with xml children count: %d\n", xml_node_children(xml_root_node));
+	_LLS_TRACE("lls_create_table: calling lls_create_table_type_instance with xml children count: %zu\n", xml_node_children(xml_root_node));
 
 	res = lls_create_table_type_instance(lls_table, xml_root_node);
 
@@ -611,6 +616,14 @@ cleanup:
 	return ret;
 }
 
+char* lls_get_service_category_value(uint service_category) {
+	int lls_service_category_count = sizeof(LLS_SERVICE_CATEGORY_VALUES) / sizeof(char*);
+	if(service_category < lls_service_category_count-1) {
+		return LLS_SERVICE_CATEGORY_VALUES[service_category];
+	} else {
+		return LLS_SERVICE_CATEGORY_VALUES[lls_service_category_count-1];
+	}
+}
 
 void lls_dump_instance_table(lls_table_t* base_table) {
 	_LLS_TRACE("dump_instance_table: base_table address: %p", base_table);

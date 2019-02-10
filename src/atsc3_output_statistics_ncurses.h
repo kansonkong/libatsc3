@@ -4,27 +4,6 @@
  *  Created on: Feb 7, 2019
  *      Author: jjustman
  *
- *      hacks:
- *
- *
-  FILE *f = fopen("/dev/tty", "r+");
-  SCREEN *screen = newterm(NULL, f, f);
-  set_term(screen);
-
-  //this goes to stdout
-  fprintf(stdout, "hello\n");
-  //this goes to the console
-  fprintf(stderr, "some error\n");
-  //this goes to display
-  mvprintw(0, 0, "hello ncurses");
-  refresh();
-  getch();
-  endwin();
-
-  return 0;
-
-  #define _DUMP_ALL_MPU_FLOWS_ true
-
  */
 
 
@@ -32,11 +11,16 @@
 #include <ncurses.h>                    /* ncurses.h includes stdio.h */
 #include <pthread.h>
 #include <stdlib.h>
+#include <sys/ioctl.h>
+#include <signal.h>
 
 #include "atsc3_lls.h"
+#include "atsc3_lls_slt_utils.h"
 
 #ifndef ATSC3_OUTPUT_STATISTICS_NCURSES_H_
 #define ATSC3_OUTPUT_STATISTICS_NCURSES_H_
+
+void ncurses_init();
 
 pthread_mutex_t ncurses_writer_lock;
 void ncurses_mutext_init();
@@ -44,11 +28,12 @@ void ncurses_mutext_init();
 void ncurses_writer_lock_mutex_acquire();
 void ncurses_writer_lock_mutex_release();
 void ncurses_writer_lock_mutex_destroy();
+void create_or_update_window_sizes(bool should_reload_term_size);
+void handle_winch(int sig);
 
+void* lls_dump_instance_table_thread(void*);
 void lls_dump_instance_table_ncurses(lls_table_t* lls_session);
 
-
-//#if defined OUTPUT_STATISTICS && OUTPUT_STATISTICS == NCURSES
 #define __BW_STATS_NCURSES true
 #define __PKT_STATS_NCURSES true
 
@@ -132,5 +117,8 @@ int global_mmt_loss_count;
 #define __LLS_REFRESH()		 		wrefresh(signaling_global_stats_window);
 
 
+#define __NCURSES_ERROR(...)   printf("%s:%d:ERROR :","listener",__LINE__);printf(__VA_ARGS__);printf("\n");
+#define __NCURSES_WARN(...)    printf("%s:%d:WARN: ","listener",__LINE__);printf(__VA_ARGS__);printf("\n");
+#define __NCURSES_INFO(...)    printf("%s:%d: ","listener",__LINE__);printf(__VA_ARGS__);printf("\n");
 
 #endif /* ATSC3_OUTPUT_STATISTICS_NCURSES_H_ */

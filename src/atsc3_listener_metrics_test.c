@@ -137,7 +137,7 @@ uint16_t* dst_ip_port_filter = NULL;
 
 lls_session_t* lls_session;
 
-int process_lls_table_slt_update(lls_table_t* lls) {
+int lls_slt_table_process_update(lls_table_t* lls) {
 
 	if(lls_session->lls_table_slt) {
 		lls_table_free(lls_session->lls_table_slt);
@@ -448,7 +448,7 @@ void process_packet(u_char *user, const struct pcap_pkthdr *pkthdr, const u_char
 					int retval = 0;
 					__ALC_UTILS_DEBUG("Beginning processing of SLT from lls_table_slt_update");
 
-					retval = process_lls_table_slt_update(lls);
+					retval = lls_slt_table_process_update(lls);
 
 					if(!retval) {
 						__ALC_UTILS_DEBUG("lls_table_slt_update -- complete");

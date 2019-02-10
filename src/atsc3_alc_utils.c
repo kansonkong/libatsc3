@@ -65,6 +65,11 @@ RFC 5775               ALC Protocol Instantiation             April 2010
  */
 #include "atsc3_alc_utils.h"
 
+
+int _ALC_UTILS_DEBUG_ENABLED=0;
+int _ALC_UTILS_TRACE_ENABLED=0;
+
+
 static int __INT_LOOP_COUNT=0;
 
 
