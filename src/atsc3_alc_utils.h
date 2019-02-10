@@ -40,6 +40,10 @@ extern int _ALC_UTILS_TRACE_ENABLED;
 char* alc_packet_dump_to_object_get_filename(alc_packet_t* alc_packet);
 
 int alc_packet_dump_to_object(alc_packet_t* alc_packet);
+
+void alc_recon_file_ptr_set_tsi_toi(FILE* file_ptr, char* tsi, char* toi_init);
+void alc_recon_file_ptr_fragment_with_init_box(FILE*,  alc_packet_t* alc_packet);
+
 void __alc_prepend_fragment_with_init_box(char* file_name, alc_packet_t* alc_packet);
 void __alc_recon_fragment_with_init_box(char* file_name, alc_packet_t* alc_packet);
 
