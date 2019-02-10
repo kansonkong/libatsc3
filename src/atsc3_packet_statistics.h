@@ -196,7 +196,7 @@ typedef struct global_atsc3_stats {
 	uint32_t packet_counter_mmt_unknown;
 
 	int packet_flow_n;
-	packet_flow_t** packet_flow_vector;
+	packet_flow_t** packet_flow_vector; //not used yet
 
 	int	packet_id_n;
 	packet_id_mmt_stats_t** packet_id_vector;
@@ -217,7 +217,7 @@ typedef struct global_atsc3_stats {
 global_atsc3_stats* global_stats;
 
 packet_id_mmt_stats_t* find_packet_id(uint32_t ip, uint16_t port, uint32_t packet_id);
-packet_id_mmt_stats_t* find_or_get_packet_id(uint32_t ip, uint16_t port, uint32_t packet_id);
+packet_id_mmt_stats_t* find_or_create_packet_id(uint32_t ip, uint16_t port, uint32_t packet_id);
 
 void atsc3_packet_statistics_dump_global_stats();
 void atsc3_packet_statistics_mmt_stats_populate(udp_packet_t* udp_packet, mmtp_payload_fragments_union_t* mmtp_payload);

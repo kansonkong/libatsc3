@@ -226,15 +226,15 @@ typedef struct service {
 	char*		short_service_name;
 	uint8_t 	slt_svc_seq_num;  //Version of SLT service info for this service.
 	broadcast_svc_signaling_t broadcast_svc_signaling;
-} service_t;
+} lls_service_t;
 
 
 typedef struct slt_table {
 	int*				bsid;			//list
 	int					bsid_n;
 	char*			 	slt_capabilities;
-	service_t**			service_entry; 	//list
 	int					service_entry_n;
+	lls_service_t**		service_entry; 	//list
 
 } slt_table_t;
 
@@ -376,7 +376,7 @@ xml_node_t* xml_payload_document_extract_root_node(xml_document_t*);
 int build_SLT_table(lls_table_t *lls_table, xml_node_t *xml_root);
 int build_SystemTime_table(lls_table_t* lls_table, xml_node_t* xml_root);
 
-int build_SLT_BROADCAST_SVC_SIGNALING_table(service_t* service_table, xml_node_t *xml_node, kvp_collection_t* kvp_collection);
+int build_SLT_BROADCAST_SVC_SIGNALING_table(lls_service_t* service_table, xml_node_t *xml_node, kvp_collection_t* kvp_collection);
 
 // internal helper methods here
 int __unzip_gzip_payload(uint8_t *input_payload, uint input_payload_size, uint8_t **decompressed_payload);

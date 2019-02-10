@@ -1,6 +1,6 @@
 /*
  *
- * atsc3_llt.c:  driver for ATSC 3.0 LLS listener over udp
+ * atsc3_lmt.c: test driver for ATSC 3.0 LMT parsing for ALP
  *
  */
 

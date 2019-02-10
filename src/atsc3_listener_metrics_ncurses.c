@@ -159,24 +159,33 @@ int fd[2];
 //	}
 //}
 
-FILE *ffplay_pipe;
+FILE *file_pipe;
+FILE *player_pipe;
 sig_atomic_t ffplay_consumer_running;
 
 void create_ffplay_pipe() {
 ///Applications/VLC.app/Contents/MacOS/VLC --log-verbose 3 --input-repeat 65535 - > vlc.log 2>&
 	//char* cmd = "/usr/local/bin/ffplay -i -";
-	char* cmd = "/Applications/VLC.app/Contents/MacOS/VLC --demux mp4 --verbose 3 --file-logging --logfile vlc.log -";
-	if ( !(ffplay_pipe = popen(cmd, "w")) ) {
+	//--demux mp4
+
+	char* cmd = "/Applications/VLC.app/Contents/MacOS/VLC test.mmt";
+	if ( !(player_pipe = popen(cmd, "w")) ) {
 		exit(1);
 	}
 	ffplay_consumer_running = 1;
 }
 
 void push_mfu_block(block_t* block) {
-	printf("in: %d", block->i_buffer);
 
-	int output_size = fwrite(block->p_buffer, 1, block->i_buffer, ffplay_pipe);
+//	int output_size = fwrite(block->p_buffer, 1, block->i_buffer, ffplay_pipe);
 
+//	printf("in: %d, wrote %d bytes", block->i_buffer, output_size);
+
+	int output_size = fwrite(block->p_buffer, block->i_buffer, 1, file_pipe);
+
+	if(!player_pipe) {
+		create_ffplay_pipe();
+	}
 }
 
 #endif
@@ -299,7 +308,7 @@ void handle_winch(int sig)
 #include "atsc3_utils.h"
 
 #include "atsc3_lls.h"
-#include "atsc3_lls_alc_tools.h"
+#include "atsc3_lls_alc_utils.h"
 
 #include "atsc3_mmtp_types.h"
 #include "atsc3_mmtp_parser.h"
@@ -366,36 +375,17 @@ int process_lls_table_slt_update(lls_table_t* lls) {
 
 
 	for(int i=0; i < lls->slt_table.service_entry_n; i++) {
-		service_t* service = lls->slt_table.service_entry[i];
-		__INFO("checking service: %d", service->service_id);
+		lls_service_t* lls_service = lls->slt_table.service_entry[i];
+		__INFO("checking service: %d", lls_service->service_id);
 
-		if(service->broadcast_svc_signaling.sls_protocol == SLS_PROTOCOL_ROUTE) {
-			//TODO - we probably need to clear out the ALC session?
-			if(!lls_session->lls_slt_alc_session->alc_session) {
+		if(lls_service->broadcast_svc_signaling.sls_protocol == SLS_PROTOCOL_ROUTE) {
+			lls_slt_alc_session_t* lls_slt_alc_session = lls_slt_alc_session_find_or_create(lls_session, lls_service);
 
-				lls_session->lls_slt_alc_session->lls_slt_service_id_alc = service->service_id;
-				lls_session->lls_slt_alc_session->alc_arguments = calloc(1, sizeof(alc_arguments_t));
-
-				lls_session->lls_slt_alc_session->sls_source_ip_address = parseIpAddressIntoIntval(service->broadcast_svc_signaling.sls_source_ip_address);
-
-				lls_session->lls_slt_alc_session->sls_destination_ip_address = parseIpAddressIntoIntval(service->broadcast_svc_signaling.sls_destination_ip_address);
-				lls_session->lls_slt_alc_session->sls_destination_udp_port = parsePortIntoIntval(service->broadcast_svc_signaling.sls_destination_udp_port);
-
-				__INFO("adding sls_source ip: %s as: %u.%u.%u.%u| dest: %s:%s as: %u.%u.%u.%u:%u (%u:%u)",
-						service->broadcast_svc_signaling.sls_source_ip_address,
-						__toipnonstruct(lls_session->lls_slt_alc_session->sls_source_ip_address),
-						service->broadcast_svc_signaling.sls_destination_ip_address,
-						service->broadcast_svc_signaling.sls_destination_udp_port,
-						__toipandportnonstruct(lls_session->lls_slt_alc_session->sls_destination_ip_address, lls_session->lls_slt_alc_session->sls_destination_udp_port),
-						lls_session->lls_slt_alc_session->sls_destination_ip_address, lls_session->lls_slt_alc_session->sls_destination_udp_port);
-
-				lls_session->lls_slt_alc_session->alc_session = open_alc_session(lls_session->lls_slt_alc_session->alc_arguments);
-
-				if(!lls_session->lls_slt_alc_session->alc_session) {
-				  __ERROR("Unable to instantiate alc session for service_id: %d via SLS_PROTOCOL_ROUTE", service->service_id);
-					goto cleanup;
-				}
-
+			//TODO - we probably need to clear out any missing ALC sessions?
+			if(!lls_slt_alc_session->alc_session) {
+				lls_slt_alc_session_remove(lls_service, lls_slt_alc_session);
+				__ERROR("Unable to instantiate alc session for service_id: %d via SLS_PROTOCOL_ROUTE", lls_service->service_id);
+				goto cleanup;
 		  	}
 		}
 	}
@@ -403,15 +393,7 @@ int process_lls_table_slt_update(lls_table_t* lls) {
 	return 0;
 
 cleanup:
-	if(lls_session->lls_slt_alc_session->alc_arguments) {
-		free(lls_session->lls_slt_alc_session->alc_arguments);
-		lls_session->lls_slt_alc_session->alc_arguments = NULL;
-	}
 
-	if(lls_session->lls_slt_alc_session->alc_session) {
-		free(lls_session->lls_slt_alc_session->alc_session);
-		lls_session->lls_slt_alc_session->alc_session = NULL;
-	}
 	return -1;
 }
 
@@ -522,6 +504,7 @@ void mpu_dump_reconstitued(uint32_t dst_ip, uint16_t dst_port, mmtp_payload_frag
 	fclose(f);
 }
 
+bool hasSentMPUHeader;
 
 void process_packet(u_char *user, const struct pcap_pkthdr *pkthdr, const u_char *packet) {
 
@@ -665,18 +648,18 @@ void process_packet(u_char *user, const struct pcap_pkthdr *pkthdr, const u_char
 	}
 
 	//ALC (ROUTE) - If this flow is registered from the SLT, process it as ALC, otherwise run the flow thru MMT
-	if(lls_session->lls_slt_alc_session->alc_session &&	(lls_session->lls_slt_alc_session->sls_relax_source_ip_check || lls_session->lls_slt_alc_session->sls_source_ip_address == udp_packet->src_ip_addr) &&
-			lls_session->lls_slt_alc_session->sls_destination_ip_address == udp_packet->dst_ip_addr && lls_session->lls_slt_alc_session->sls_destination_udp_port == udp_packet->dst_port) {
+	lls_slt_alc_session_t* matching_lls_slt_alc_session = lls_slt_alc_session_find_from_udp_packet(lls_session, udp_packet->src_ip_addr, udp_packet->dst_ip_addr, udp_packet->dst_port);
+	if(matching_lls_slt_alc_session) {
 
 		global_bandwidth_statistics->interval_alc_current_bytes_rx += udp_packet->data_length;
 		global_bandwidth_statistics->interval_alc_current_packets_rx++;
 		global_stats->packet_counter_alc_recv++;
 
-		if(lls_session->lls_slt_alc_session->alc_session) {
+		if(matching_lls_slt_alc_session->alc_session) {
 			//re-inject our alc session
 			alc_packet_t* alc_packet = NULL;
 			alc_channel_t ch;
-			ch.s = lls_session->lls_slt_alc_session->alc_session;
+			ch.s = matching_lls_slt_alc_session->alc_session;
 
 			//process ALC streams
 			int retval = alc_rx_analyze_packet((char*)udp_packet->data, udp_packet->data_length, &ch, &alc_packet);
@@ -727,12 +710,28 @@ void process_packet(u_char *user, const struct pcap_pkthdr *pkthdr, const u_char
 		//dump header, then dump applicable packet type
 		//mmtp_packet_header_dump(mmtp_payload);
 
-		if(mmtp_payload->mmtp_packet_header.mmtp_packet_id==35 && ip_header[16] == 239 && ip_header[17] == 255 && ip_header[18] == 10 && ip_header[19] == 1) {
-				//printf("pushing psn:%d, ", mmtp_payload->mmtp_mpu_type_packet_header.packet_sequence_number);
-			//push_mfu_block(mmtp_payload->mmtp_mpu_type_packet_header.mpu_data_unit_payload);
-		}
 		if(mmtp_payload->mmtp_packet_header.mmtp_payload_type == 0x0) {
 			global_stats->packet_counter_mmt_mpu++;
+
+#ifdef __TEST_FFPLAY_MMTP_PIPE_PLAYBACK__
+
+			if(mmtp_payload->mmtp_packet_header.mmtp_packet_id==35 && ip_header[16] == 239 && ip_header[17] == 255 && ip_header[18] == 10 && ip_header[19] == 1) {
+				if(!hasSentMPUHeader) {
+					if(mmtp_payload->mmtp_mpu_type_packet_header.mpu_fragment_type == 0x0) {
+						hasSentMPUHeader = true;
+					} else {
+						goto cleanup;
+					}
+				} else if(mmtp_payload->mmtp_mpu_type_packet_header.mpu_fragment_type == 0x0) {
+					goto cleanup;
+				} else if(mmtp_payload->mmtp_mpu_type_packet_header.mpu_fragment_type == 0x1) {
+					__INFO("got movie fragment metadata: %d, ", mmtp_payload->mmtp_mpu_type_packet_header.packet_sequence_number);
+
+				}
+				__INFO("pushing psn: %d, ", mmtp_payload->mmtp_mpu_type_packet_header.packet_sequence_number);
+				push_mfu_block(mmtp_payload->mmtp_mpu_type_packet_header.mpu_data_unit_payload);
+			}
+#endif
 
 			if(mmtp_payload->mmtp_mpu_type_packet_header.mpu_timed_flag == 1) {
 				global_stats->packet_counter_mmt_timed_mpu++;
@@ -805,6 +804,7 @@ int main(int argc,char **argv) {
     struct bpf_program fp;
     bpf_u_int32 maskp;
     bpf_u_int32 netp;
+    hasSentMPUHeader = false;
 
     //listen to all flows
     if(argc == 2) {
@@ -870,7 +870,14 @@ int main(int argc,char **argv) {
     mmtp_sub_flow_vector = calloc(1, sizeof(*mmtp_sub_flow_vector));
     mmtp_sub_flow_vector_init(mmtp_sub_flow_vector);
     lls_session = lls_session_create();
+
+    #ifdef __TEST_FFPLAY_MMTP_PIPE_PLAYBACK__
     //create_ffplay_pipe();
+
+    file_pipe = fopen("test.mmt", "w");
+    player_pipe = NULL;
+
+	#endif
 
     global_stats = calloc(1, sizeof(*global_stats));
     gettimeofday(&global_stats->program_timeval_start, 0);
