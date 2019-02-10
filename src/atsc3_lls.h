@@ -5,9 +5,6 @@
  *      Author: jjustman
  */
 
-#ifndef MODULES_DEMUX_MMT_ASTC3_LLS_H_
-#define MODULES_DEMUX_MMT_ASTC3_LLS_H_
-
 #include <string.h>
 #include <stdlib.h>
 #include <stdio.h>
@@ -15,30 +12,11 @@
 #include "zlib.h"
 #include "xml.h"
 
-#define _LLS_PRINTLN(...) printf(__VA_ARGS__);printf("\n")
-#define _LLS_PRINTF(...)  printf(__VA_ARGS__);
+extern int _LLS_DEBUG_ENABLED;
+extern int _LLS_TRACE_ENABLED;
 
-#define _LLS_ERROR(...)   printf("%s:%d:ERROR:",__FILE__,__LINE__);_LLS_PRINTLN(__VA_ARGS__);
-#define _LLS_WARN(...)    printf("%s:%d:WARN:",__FILE__,__LINE__);_LLS_PRINTLN(__VA_ARGS__);
-#define _LLS_INFO(...)    printf("%s:%d:INFO:",__FILE__,__LINE__);_LLS_PRINTLN(__VA_ARGS__);
-
-#define _LLS_DEBUG(...)   if(_LLS_DEBUG_ENABLED) { printf("%s:%d:DEBUG:",__FILE__,__LINE__);_LLS_PRINTLN(__VA_ARGS__); }
-#define _LLS_DEBUGF(...)  if(_LLS_DEBUG_ENABLED) { printf("%s:%d:DEBUG:",__FILE__,__LINE__);_LLS_PRINTF(__VA_ARGS__); }
-#define _LLS_DEBUGA(...)  if(_LLS_DEBUG_ENABLED) { _LLS_PRINTF(__VA_ARGS__); }
-#define _LLS_DEBUGN(...)  if(_LLS_DEBUG_ENABLED) { _LLS_PRINTLN(__VA_ARGS__); }
-#define _LLS_DEBUGNT(...) if(_LLS_DEBUG_ENABLED){ _LLS_PRINTF(" ");_LLS_PRINTLN(__VA_ARGS__); }
-
-#ifdef __ENABLE_LLS_TRACE
-#define _LLS_TRACE(...)   printf("%s:%d:TRACE:",__FILE__,__LINE__);_LLS_PRINTLN(__VA_ARGS__);
-#define _LLS_TRACEF(...)  printf("%s:%d:TRACE:",__FILE__,__LINE__);_LLS_PRINTF(__VA_ARGS__);
-#define _LLS_TRACEA(...)  _LLS_PRINTF(__VA_ARGS__);
-#define _LLS_TRACEN(...)  _LLS_PRINTLN(__VA_ARGS__);
-#else
-#define _LLS_TRACE(...)
-#define _LLS_TRACEF(...)
-#define _LLS_TRACEA(...)
-#define _LLS_TRACEN(...)
-#endif
+#ifndef MODULES_DEMUX_MMT_ASTC3_LLS_H_
+#define MODULES_DEMUX_MMT_ASTC3_LLS_H_
 
 
 #define LLS_DST_ADDR 3758102332
@@ -191,7 +169,7 @@ typedef struct slt_entry {
  	other values			ATSC Reserved
 
  */
-enum serviceCategory {
+enum LLS_SERVICE_CATEGORY {
 	SERVICE_CATEGORY_ATSC_RESERVED=0,
 	SERVICE_CATEGORY_LINEAR_AV_SERVICE=1,
 	SERVICE_CATEGORY_LINEAR_AUDIO_ONLY_SERVICE=2,
@@ -200,7 +178,8 @@ enum serviceCategory {
 	SERVICE_CATEGORY_EAS_SERVICE=5,
 	SERVICE_CATEGORY_ATSC_RESERVED_OTHER=-1	};
 
-enum slsProtocol {
+
+enum LLS_SLS_SERVICE_PROTOCOL {
 	SLS_PROTOCOL_ATSC_RESERVED=0,
 	SLS_PROTOCOL_ROUTE=1,
 	SLS_PROTOCOL_MMTP=2,
@@ -303,6 +282,53 @@ typedef struct lls_table {
 
 lls_table_t* lls_create_base_table( uint8_t* lls, int size);
 
+lls_table_t* lls_create_xml_table( uint8_t* lls_packet, int size);
+//todo - rename this lls_table_create
+lls_table_t* lls_table_create( uint8_t* lls_packet, int size);
+//todo - rename this lls_table_free
+void lls_table_free(lls_table_t* lls_table);
+int lls_create_table_type_instance(lls_table_t* lls_table, xml_node_t* xml_node);
+
+void lls_dump_instance_table(lls_table_t *base_table);
+
+//xml parsing methods
+xml_document_t* xml_payload_document_parse(uint8_t *xml, int xml_size);
+xml_node_t* xml_payload_document_extract_root_node(xml_document_t*);
+
+//etst methods
+char* lls_get_service_category_value(uint service_category);
+
+int build_SLT_table(lls_table_t *lls_table, xml_node_t *xml_root);
+int build_SystemTime_table(lls_table_t* lls_table, xml_node_t* xml_root);
+
+int build_SLT_BROADCAST_SVC_SIGNALING_table(lls_service_t* service_table, xml_node_t *xml_node, kvp_collection_t* kvp_collection);
+
+
+// internal helper methods here
+int __unzip_gzip_payload(uint8_t *input_payload, uint input_payload_size, uint8_t **decompressed_payload);
+
+
+
+
+
+#define _LLS_PRINTLN(...) printf(__VA_ARGS__);printf("\n")
+#define _LLS_PRINTF(...)  printf(__VA_ARGS__);
+
+#define _LLS_ERROR(...)   printf("%s:%d:ERROR:",__FILE__,__LINE__);_LLS_PRINTLN(__VA_ARGS__);
+#define _LLS_WARN(...)    printf("%s:%d:WARN:",__FILE__,__LINE__);_LLS_PRINTLN(__VA_ARGS__);
+#define _LLS_INFO(...)    printf("%s:%d:INFO:",__FILE__,__LINE__);_LLS_PRINTLN(__VA_ARGS__);
+
+#define _LLS_DEBUG(...)   if(_LLS_DEBUG_ENABLED) { printf("%s:%d:DEBUG:",__FILE__,__LINE__);_LLS_PRINTLN(__VA_ARGS__); }
+#define _LLS_DEBUGF(...)  if(_LLS_DEBUG_ENABLED) { printf("%s:%d:DEBUG:",__FILE__,__LINE__);_LLS_PRINTF(__VA_ARGS__); }
+#define _LLS_DEBUGA(...)  if(_LLS_DEBUG_ENABLED) { _LLS_PRINTF(__VA_ARGS__); }
+#define _LLS_DEBUGN(...)  if(_LLS_DEBUG_ENABLED) { _LLS_PRINTLN(__VA_ARGS__); }
+#define _LLS_DEBUGNT(...) if(_LLS_DEBUG_ENABLED) { _LLS_PRINTF(" ");_LLS_PRINTLN(__VA_ARGS__); }
+
+#define _LLS_TRACE(...)   if(_LLS_TRACE_ENABLED) { printf("%s:%d:TRACE:",__FILE__,__LINE__);_LLS_PRINTLN(__VA_ARGS__); }
+#define _LLS_TRACEF(...)  if(_LLS_TRACE_ENABLED) {  printf("%s:%d:TRACE:",__FILE__,__LINE__);_LLS_PRINTF(__VA_ARGS__); }
+#define _LLS_TRACEA(...)  if(_LLS_TRACE_ENABLED) { _LLS_PRINTF(__VA_ARGS__); }
+#define _LLS_TRACEN(...)  if(_LLS_TRACE_ENABLED) { _LLS_PRINTLN(__VA_ARGS__); }
+
 /**
  *
  * Raw SLT example:
@@ -357,29 +383,6 @@ see atsc3_lls_test.c for base64 string getters of test payloads
  *
  */
 
-
-lls_table_t* lls_create_xml_table( uint8_t* lls_packet, int size);
-//todo - rename this lls_table_create
-lls_table_t* lls_table_create( uint8_t* lls_packet, int size);
-//todo - rename this lls_table_free
-void lls_table_free(lls_table_t* lls_table);
-int lls_create_table_type_instance(lls_table_t* lls_table, xml_node_t* xml_node);
-
-void lls_dump_instance_table(lls_table_t *base_table);
-
-//xml parsing methods
-xml_document_t* xml_payload_document_parse(uint8_t *xml, int xml_size);
-xml_node_t* xml_payload_document_extract_root_node(xml_document_t*);
-
-//etst methods
-
-int build_SLT_table(lls_table_t *lls_table, xml_node_t *xml_root);
-int build_SystemTime_table(lls_table_t* lls_table, xml_node_t* xml_root);
-
-int build_SLT_BROADCAST_SVC_SIGNALING_table(lls_service_t* service_table, xml_node_t *xml_node, kvp_collection_t* kvp_collection);
-
-// internal helper methods here
-int __unzip_gzip_payload(uint8_t *input_payload, uint input_payload_size, uint8_t **decompressed_payload);
 
 
 #endif /* MODULES_DEMUX_MMT_ASTC3_LLS_H_ */

@@ -82,8 +82,34 @@ int PACKET_COUNTER=0;
 #include <sys/ioctl.h>
 #include <ncurses.h>
 #include <limits.h>
-/* ncurses.h includes stdio.h */
+
+#include "atsc3_listener_udp.h"
+#include "atsc3_utils.h"
+
+#include "atsc3_lls.h"
+#include "atsc3_lls_alc_utils.h"
+
+#include "atsc3_lls_slt_utils.h"
+
+#include "atsc3_mmtp_types.h"
+#include "atsc3_mmtp_parser.h"
+#include "atsc3_mmtp_ntp32_to_pts.h"
+#include "atsc3_mmt_mpu_utils.h"
+
+#include "alc_channel.h"
+#include "alc_rx.h"
+#include "atsc3_alc_utils.h"
+
+#include "atsc3_bandwidth_statistics.h"
+#include "atsc3_packet_statistics.h"
+
 #include "atsc3_output_statistics_ncurses.h"
+
+extern int _MPU_DEBUG_ENABLED;
+extern int _MMTP_DEBUG_ENABLED;
+extern int _LLS_DEBUG_ENABLED;
+
+#define MAX_PCAP_LEN 1514
 
 #define _ENABLE_DEBUG true
 
@@ -105,7 +131,7 @@ int PACKET_COUNTER=0;
 
 
 #ifndef _TEST_RUN_VALGRIND_OSX_
-
+//overload printf to write to stderr
 int printf(const char *format, ...)  {
 	va_list argptr;
 	va_start(argptr, format);
@@ -162,6 +188,7 @@ int fd[2];
 FILE *file_pipe;
 FILE *player_pipe;
 sig_atomic_t ffplay_consumer_running;
+bool hasSentMPUHeader;
 
 void create_ffplay_pipe() {
 ///Applications/VLC.app/Contents/MacOS/VLC --log-verbose 3 --input-repeat 65535 - > vlc.log 2>&
@@ -192,138 +219,7 @@ void push_mfu_block(block_t* block) {
 
 
 
-void create_or_update_window_sizes(bool should_reload_term_size) {
-	int rows, cols;
 
-	if(should_reload_term_size) {
-		struct winsize size;
-		if (ioctl(fileno(stdout), TIOCGWINSZ, &size) == 0) {
-			__INFO("rows: %d, cols:%d\n",  size.ws_row, size.ws_col);
-			//delete sub wins
-			delwin(pkt_global_loss_window);
-			delwin(bottom_window_outline);
-			delwin(pkt_flow_stats_window);
-			delwin(right_window_outline);
-			delwin(bw_window_lifetime);
-			delwin(bw_window_runtime);
-			delwin(bw_window_outline);
-			delwin(signaling_global_stats_window);
-			delwin(pkt_global_stats_window);
-			delwin(left_window_outline);
-			delwin(my_window);
-		    clear();
-		    endwin();
-			resizeterm(size.ws_row, size.ws_col);
-		}
-	}
-	my_window = newwin(0, 0, 0, 0);
-
-	getmaxyx(my_window, rows, cols);              /* get the number of rows and columns */
-
-	int pct_split_top = 85;
-
-	int left_window_h = (rows * pct_split_top ) / 100;
-	int left_window_w = cols/2;
-	int left_window_y = 0;
-	int left_window_x = 0;
-	int right_window_h = (rows * pct_split_top) / 100;
-	int right_window_w = cols/2 -1;
-	int right_window_y = 0;
-	int right_window_x = cols/2 +1;
-
-	int bottom_window_h = rows - left_window_h - 1;
-	int bottom_window_w = cols - 1;
-	int bottom_window_y = left_window_h + 1;
-	int bottom_window_x = 0;
-
-	//WINDOW 					*newwin(int nlines, int ncols, int begin_y, int begin_x);
-	left_window_outline = 	newwin(left_window_h, left_window_w, left_window_y, left_window_x);
-	right_window_outline =	newwin(right_window_h, right_window_w, right_window_y, right_window_x);
-	bottom_window_outline = newwin(bottom_window_h, bottom_window_w, bottom_window_y, bottom_window_x);
-
-	//draw our anchors
-	box(left_window_outline, 0, 0);
-	box(right_window_outline, 0, 0);
-	box(bottom_window_outline, 0, 0);
-
-	char msg_global[] = "Global ATSC 3.0 Statistics";
-	mvwprintw(left_window_outline, 0, (left_window_w - strlen(msg_global))/2,"%s", msg_global);
-
-	char msg_flows[] = "Flow ATSC 3.0 Statistics";
-	mvwprintw(right_window_outline, 0, right_window_w/2 - strlen(msg_flows)/2, "%s", msg_flows);
-
-	char msg_global_lossl[] = "MMT Loss";
-	mvwprintw(bottom_window_outline, 0, cols/2 - strlen(msg_global)/2,"%s", msg_global_lossl);
-
-
-	//
-	//WINDOW *derwin(WINDOW *orig, 							int nlines, 	int ncols, 			int begin_y, 		int begin_x);
-	//left
-	pkt_global_stats_window = derwin(left_window_outline, 		left_window_h-12, 44,				 1, 	1);
-
-	//left signaling
-	signaling_global_stats_window = derwin(left_window_outline, left_window_h-11, left_window_w-50, 1, 46 );
-
-	//left
-	//bandwidth window
-	bw_window_outline = 		derwin(left_window_outline, 	8, 			left_window_w-2,  left_window_h-8, 	1);
-	whline(bw_window_outline, ACS_HLINE, left_window_w-2);
-
-	char msg_bandwidth[] = "RX Bandwidth Statistics";
-	mvwprintw(bw_window_outline, 0, cols/4 - strlen(msg_bandwidth)/2,"%s", msg_bandwidth);
-
-	bw_window_runtime = 		derwin(bw_window_outline, 6, (left_window_w-2)/2, 1, 1);
-	bw_window_lifetime = 		derwin(bw_window_outline, 6, (left_window_w-3)/2, 1, left_window_w/2-1);
-
-	//pkt_global_loss_window_outline = 	derwin(left_window_outline, pkt_window_height-25, half_cols-4, 22, 1);
-
-	//RIGHT
-	pkt_flow_stats_window =	derwin(right_window_outline, right_window_h-2, right_window_w-3, 1, 1);
-
-	//bottom
-	pkt_global_loss_window = 	derwin(bottom_window_outline, bottom_window_h-2, bottom_window_w-2, 1, 1);
-
-	wrefresh(my_window);
-	wrefresh(left_window_outline);
-	wrefresh(right_window_outline);
-	wrefresh(bottom_window_outline);
-
-}
-
-void handle_winch(int sig)
-{
-	ncurses_writer_lock_mutex_acquire();
-
-    // Needs to be called after an endwin() so ncurses will initialize
-    // itself with the new terminal dimensions.
-    create_or_update_window_sizes(true);
-    ncurses_writer_lock_mutex_release();
-
-}
-
-
-
-
-#include "atsc3_listener_udp.h"
-#include "atsc3_utils.h"
-
-#include "atsc3_lls.h"
-#include "atsc3_lls_alc_utils.h"
-
-#include "atsc3_mmtp_types.h"
-#include "atsc3_mmtp_parser.h"
-#include "atsc3_mmtp_ntp32_to_pts.h"
-
-#include "alc_channel.h"
-#include "alc_rx.h"
-#include "atsc3_alc_utils.h"
-
-#include "atsc3_bandwidth_statistics.h"
-#include "atsc3_packet_statistics.h"
-
-extern int _MPU_DEBUG_ENABLED;
-extern int _MMTP_DEBUG_ENABLED;
-extern int _LLS_DEBUG_ENABLED;
 
 
 
@@ -356,46 +252,9 @@ uint16_t* dst_packet_id_filter = NULL;
 
 lls_session_t* lls_session;
 
-int process_lls_table_slt_update(lls_table_t* lls) {
+//make sure to invoke     mmtp_sub_flow_vector_init(&p_sys->mmtp_sub_flow_vector);
+mmtp_sub_flow_vector_t* mmtp_sub_flow_vector;
 
-	if(lls_session->lls_table_slt) {
-		lls_table_free(lls_session->lls_table_slt);
-		lls_session->lls_table_slt = NULL;
-	}
-	lls_session->lls_table_slt = lls;
-
-	ncurses_writer_lock_mutex_acquire();
-	__LLS_DUMP_CLEAR();
-	__LLS_REFRESH();
-
-	lls_dump_instance_table_ncurses(lls_session->lls_table_slt);
-	__DOUPDATE();
-	__LLS_REFRESH();
-	ncurses_writer_lock_mutex_release();
-
-
-	for(int i=0; i < lls->slt_table.service_entry_n; i++) {
-		lls_service_t* lls_service = lls->slt_table.service_entry[i];
-		__INFO("checking service: %d", lls_service->service_id);
-
-		if(lls_service->broadcast_svc_signaling.sls_protocol == SLS_PROTOCOL_ROUTE) {
-			lls_slt_alc_session_t* lls_slt_alc_session = lls_slt_alc_session_find_or_create(lls_session, lls_service);
-
-			//TODO - we probably need to clear out any missing ALC sessions?
-			if(!lls_slt_alc_session->alc_session) {
-				lls_slt_alc_session_remove(lls_service, lls_slt_alc_session);
-				__ERROR("Unable to instantiate alc session for service_id: %d via SLS_PROTOCOL_ROUTE", lls_service->service_id);
-				goto cleanup;
-		  	}
-		}
-	}
-	global_stats->packet_counter_lls_slt_update_processed++;
-	return 0;
-
-cleanup:
-
-	return -1;
-}
 
 
 void count_packet_as_filtered(udp_packet_t* udp_packet) {
@@ -404,107 +263,7 @@ void count_packet_as_filtered(udp_packet_t* udp_packet) {
 	global_bandwidth_statistics->interval_filtered_current_packets_rx++;
 }
 
-//make sure to invoke     mmtp_sub_flow_vector_init(&p_sys->mmtp_sub_flow_vector);
-mmtp_sub_flow_vector_t* mmtp_sub_flow_vector;
-void dump_mpu(mmtp_payload_fragments_union_t* mmtp_payload) {
 
-	__ALC_UTILS_DEBUG("------------------");
-
-	if(mmtp_payload->mmtp_mpu_type_packet_header.mpu_timed_flag) {
-		__ALC_UTILS_DEBUG("MFU Packet (Timed)");
-		__ALC_UTILS_DEBUG("-----------------");
-		__ALC_UTILS_DEBUG(" mpu_fragmentation_indicator: %d", mmtp_payload->mpu_data_unit_payload_fragments_timed.mpu_fragment_type);
-		__ALC_UTILS_DEBUG(" movie_fragment_seq_num: %u", mmtp_payload->mpu_data_unit_payload_fragments_timed.movie_fragment_sequence_number);
-		__ALC_UTILS_DEBUG(" sample_num: %u", mmtp_payload->mpu_data_unit_payload_fragments_timed.sample_number);
-		__ALC_UTILS_DEBUG(" offset: %u", mmtp_payload->mpu_data_unit_payload_fragments_timed.offset);
-		__ALC_UTILS_DEBUG(" pri: %d", mmtp_payload->mpu_data_unit_payload_fragments_timed.priority);
-		__ALC_UTILS_DEBUG(" mpu_sequence_number: %u",mmtp_payload->mpu_data_unit_payload_fragments_timed.mpu_sequence_number);
-
-	} else {
-		__ALC_UTILS_DEBUG("MFU Packet (Non-timed)");
-		__ALC_UTILS_DEBUG("---------------------");
-		__ALC_UTILS_DEBUG(" mpu_fragmentation_indicator: %d", mmtp_payload->mpu_data_unit_payload_fragments_nontimed.mpu_fragment_type);
-		__ALC_UTILS_DEBUG(" non_timed_mfu_item_id: %u", mmtp_payload->mpu_data_unit_payload_fragments_nontimed.non_timed_mfu_item_id);
-
-	}
-
-	__ALC_UTILS_DEBUG("-----------------");
-}
-
-void mpu_dump_flow(uint32_t dst_ip, uint16_t dst_port, mmtp_payload_fragments_union_t* mmtp_payload) {
-	//sub_flow_vector is a global
-	dump_mpu(mmtp_payload);
-
-	__ALC_UTILS_DEBUG("::dumpMfu ******* file dump file: %d.%d.%d.%d:%d-p:%d.s:%d.ft:%d",
-			(dst_ip>>24)&0xFF,(dst_ip>>16)&0xFF,(dst_ip>>8)&0xFF,(dst_ip)&0xFF,
-			dst_port,
-			mmtp_payload->mmtp_mpu_type_packet_header.mmtp_packet_id,
-			mmtp_payload->mpu_data_unit_payload_fragments_timed.mpu_sequence_number,
-
-			mmtp_payload->mmtp_mpu_type_packet_header.mpu_fragment_type);
-
-	char *myFilePathName = calloc(64, sizeof(char*));
-	snprintf(myFilePathName, 64, "mpu/%d.%d.%d.%d,%d-p.%d.s,%d.ft,%d",
-			(dst_ip>>24)&0xFF,(dst_ip>>16)&0xFF,(dst_ip>>8)&0xFF,(dst_ip)&0xFF,
-			dst_port,
-			mmtp_payload->mmtp_mpu_type_packet_header.mmtp_packet_id,
-			mmtp_payload->mpu_data_unit_payload_fragments_timed.mpu_sequence_number,
-
-			mmtp_payload->mmtp_mpu_type_packet_header.mpu_fragment_type);
-
-
-	__ALC_UTILS_DEBUG("::dumpMfu ******* file dump file: %s", myFilePathName);
-
-	FILE *f = fopen(myFilePathName, "a");
-	if(!f) {
-		__INFO("::dumpMpu ******* UNABLE TO OPEN FILE %s", myFilePathName);
-			return;
-	}
-
-
-	for(int i=0; i <  mmtp_payload->mmtp_mpu_type_packet_header.mpu_data_unit_payload->i_buffer; i++) {
-		fputc(mmtp_payload->mmtp_mpu_type_packet_header.mpu_data_unit_payload->p_buffer[i], f);
-	}
-	fclose(f);
-}
-
-//assumes in-order delivery
-void mpu_dump_reconstitued(uint32_t dst_ip, uint16_t dst_port, mmtp_payload_fragments_union_t* mmtp_payload) {
-	//sub_flow_vector is a global
-	dump_mpu(mmtp_payload);
-
-	__ALC_UTILS_DEBUG("::dump_mpu_reconstitued ******* file dump file: %d.%d.%d.%d:%d-p:%d.s:%d.ft:%d",
-			(dst_ip>>24)&0xFF,(dst_ip>>16)&0xFF,(dst_ip>>8)&0xFF,(dst_ip)&0xFF,
-			dst_port,
-			mmtp_payload->mmtp_mpu_type_packet_header.mmtp_packet_id,
-			mmtp_payload->mpu_data_unit_payload_fragments_timed.mpu_sequence_number,
-
-			mmtp_payload->mmtp_mpu_type_packet_header.mpu_fragment_type);
-
-	char *myFilePathName = calloc(64, sizeof(char*));
-	snprintf(myFilePathName, 64, "mpu/%d.%d.%d.%d,%d-p.%d.s,%d.ft",
-			(dst_ip>>24)&0xFF,(dst_ip>>16)&0xFF,(dst_ip>>8)&0xFF,(dst_ip)&0xFF,
-			dst_port,
-			mmtp_payload->mmtp_mpu_type_packet_header.mmtp_packet_id,
-			mmtp_payload->mpu_data_unit_payload_fragments_timed.mpu_sequence_number);
-
-
-	__ALC_UTILS_DEBUG("::dumpMfu ******* file dump file: %s", myFilePathName);
-
-		FILE *f = fopen(myFilePathName, "a");
-	if(!f) {
-		__ERROR("::dumpMpu ******* UNABLE TO OPEN FILE %s", myFilePathName);
-			return;
-	}
-
-
-	for(int i=0; i <  mmtp_payload->mmtp_mpu_type_packet_header.mpu_data_unit_payload->i_buffer; i++) {
-		fputc(mmtp_payload->mmtp_mpu_type_packet_header.mpu_data_unit_payload->p_buffer[i], f);
-	}
-	fclose(f);
-}
-
-bool hasSentMPUHeader;
 
 void process_packet(u_char *user, const struct pcap_pkthdr *pkthdr, const u_char *packet) {
 
@@ -601,36 +360,40 @@ void process_packet(u_char *user, const struct pcap_pkthdr *pkthdr, const u_char
 		global_stats->packet_counter_lls_packets_received++;
 
 		//process as lls
-		lls_table_t* lls = lls_table_create(udp_packet->data, udp_packet->data_length);
-		if(lls) {
+		lls_table_t* lls_table = lls_table_create(udp_packet->data, udp_packet->data_length);
+		if(lls_table) {
 			global_stats->packet_counter_lls_packets_parsed++;
+
 			bool should_free_lls = true; //do not free the lls table if we keep a reference in process_lls_table_slt_update
-			if(lls->lls_table_id == SLT) {
+			if(lls_table->lls_table_id == SLT) {
+
 				global_stats->packet_counter_lls_slt_packets_parsed++;
 				//if we have a lls_slt table, and the group is the same but its a new version, reprocess
 				if(!lls_session->lls_table_slt ||
-					(lls_session->lls_table_slt && lls_session->lls_table_slt->lls_group_id == lls->lls_group_id &&
-					lls_session->lls_table_slt->lls_table_version != lls->lls_table_version)) {
+					(lls_session->lls_table_slt && lls_session->lls_table_slt->lls_group_id == lls_table->lls_group_id &&
+					lls_session->lls_table_slt->lls_table_version != lls_table->lls_table_version)) {
 
 					int retval = 0;
-					__ALC_UTILS_DEBUG("Beginning processing of SLT from lls_table_slt_update");
+					__DEBUG("Beginning processing of SLT from lls_table_slt_update");
 
-					retval = process_lls_table_slt_update(lls);
+					retval = lls_slt_table_process_update(lls_session, lls_table);
 					should_free_lls = false;
 
 					if(!retval) {
-						__ALC_UTILS_DEBUG("lls_table_slt_update -- complete");
+						global_stats->packet_counter_lls_slt_update_processed++;
+						__DEBUG("lls_table_slt_update -- complete");
 					} else {
 						global_stats->packet_counter_lls_packets_parsed_error++;
 						__ERROR("unable to parse LLS table");
-						lls_table_free(lls);
+						lls_table_free(lls_table);
 
 						goto cleanup;
 					}
 				}
 			}
+
 			if(should_free_lls) {
-				lls_table_free(lls);
+				lls_table_free(lls_table);
 			}
 		}
 
@@ -776,7 +539,39 @@ cleanup:
 }
 
 
-#define MAX_PCAP_LEN 1514
+void* pcap_loop_run_thread(void* dev_pointer) {
+	char* dev = (char*) dev_pointer;
+
+	char errbuf[PCAP_ERRBUF_SIZE];
+	pcap_t* descr;
+	struct bpf_program fp;
+	bpf_u_int32 maskp;
+	bpf_u_int32 netp;
+
+	pcap_lookupnet(dev, &netp, &maskp, errbuf);
+    descr = pcap_open_live(dev, MAX_PCAP_LEN, 1, 0, errbuf);
+
+    if(descr == NULL) {
+        printf("pcap_open_live(): %s",errbuf);
+        exit(1);
+    }
+
+    char filter[] = "udp";
+    if(pcap_compile(descr,&fp, filter,0,netp) == -1) {
+        fprintf(stderr,"Error calling pcap_compile");
+        exit(1);
+    }
+
+    if(pcap_setfilter(descr,&fp) == -1) {
+        fprintf(stderr,"Error setting filter");
+        exit(1);
+    }
+
+    pcap_loop(descr,-1,process_packet,NULL);
+
+    return 0;
+}
+
 /**
  *
  * atsc3_mmt_listener_test interface (dst_ip) (dst_port)
@@ -799,12 +594,7 @@ int main(int argc,char **argv) {
     int dst_ip_port_filter_int;
     int dst_packet_id_filter_int;
 
-    char errbuf[PCAP_ERRBUF_SIZE];
-    pcap_t* descr;
-    struct bpf_program fp;
-    bpf_u_int32 maskp;
-    bpf_u_int32 netp;
-    hasSentMPUHeader = false;
+
 
     //listen to all flows
     if(argc == 2) {
@@ -871,40 +661,30 @@ int main(int argc,char **argv) {
     mmtp_sub_flow_vector_init(mmtp_sub_flow_vector);
     lls_session = lls_session_create();
 
-    #ifdef __TEST_FFPLAY_MMTP_PIPE_PLAYBACK__
-    //create_ffplay_pipe();
-
-    file_pipe = fopen("test.mmt", "w");
-    player_pipe = NULL;
-
-	#endif
-
     global_stats = calloc(1, sizeof(*global_stats));
     gettimeofday(&global_stats->program_timeval_start, 0);
 
     global_bandwidth_statistics = calloc(1, sizeof(*global_bandwidth_statistics));
 	gettimeofday(&global_bandwidth_statistics->program_timeval_start, NULL);
 
+
     //create our background thread for bandwidth calculation
+    /** ncurses support - valgrind on osx will fail in pthread_create...**/
+
+	ncurses_init();
 
 
+#ifdef __TEST_FFPLAY_MMTP_PIPE_PLAYBACK__
+    //create_ffplay_pipe();
+    hasSentMPUHeader = false;
 
-    /** ncurses support **/
+    file_pipe = fopen("test.mmt", "w");
+    player_pipe = NULL;
+
+#endif
+
 
 #ifndef _TEST_RUN_VALGRIND_OSX_
-
-	ncurses_mutext_init();
-
-
-	//wire up resize handler
-    struct sigaction sa;
-    memset(&sa, 0, sizeof(struct sigaction));
-    sa.sa_handler = handle_winch;
-    sigaction(SIGWINCH, &sa, NULL);
-
-    //remap as our printf is redirected to stderr
-    my_screen = newterm(NULL, stdout, stdin);
-    create_or_update_window_sizes(false);
 
 	pthread_t global_bandwidth_thread_id;
 	pthread_create(&global_bandwidth_thread_id, NULL, printBandwidthStatistics, NULL);
@@ -912,31 +692,19 @@ int main(int argc,char **argv) {
 	pthread_t global_stats_thread_id;
 	pthread_create(&global_stats_thread_id, NULL, printGlobalStatistics, NULL);
 
+	pthread_t global_slt_thread_id;
+	pthread_create(&global_slt_thread_id, NULL, lls_dump_instance_table_thread, (void*)lls_session);
 
+	pthread_t global_pcap_thread_id;
+	int pcap_ret = pthread_create(&global_pcap_thread_id, NULL, pcap_loop_run_thread, (void*)dev);
+	assert(!pcap_ret);
+
+	pthread_join(global_pcap_thread_id, NULL);
+
+#else
+    pcap_loop_run(dev);
 #endif
 
-
-
-    pcap_lookupnet(dev, &netp, &maskp, errbuf);
-    descr = pcap_open_live(dev, MAX_PCAP_LEN, 1, 0, errbuf);
-
-    if(descr == NULL) {
-        printf("pcap_open_live(): %s",errbuf);
-        exit(1);
-    }
-
-    char filter[] = "udp";
-    if(pcap_compile(descr,&fp, filter,0,netp) == -1) {
-        fprintf(stderr,"Error calling pcap_compile");
-        exit(1);
-    }
-
-    if(pcap_setfilter(descr,&fp) == -1) {
-        fprintf(stderr,"Error setting filter");
-        exit(1);
-    }
-
-    pcap_loop(descr,-1,process_packet,NULL);
 
     return 0;
 }
