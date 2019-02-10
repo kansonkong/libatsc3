@@ -54,12 +54,10 @@ int PACKET_COUNTER=0;
 #define __INFO(...)    printf("%s:%d:INFO:",__FILE__,__LINE__);__PRINTLN(__VA_ARGS__);
 
 #ifdef _ENABLE_DEBUG
-#define __ALC_UTILS_DEBUG(...)   printf("%s:%d:DEBUG:",__FILE__,__LINE__);__PRINTLN(__VA_ARGS__);
 #define __DEBUGF(...)  printf("%s:%d:DEBUG:",__FILE__,__LINE__);__PRINTF(__VA_ARGS__);
 #define __DEBUGA(...) 	__PRINTF(__VA_ARGS__);
 #define __DEBUGN(...)  __PRINTLN(__VA_ARGS__);
 #else
-#define __ALC_UTILS_DEBUG(...)
 #define __DEBUGF(...)
 #define __DEBUGA(...)
 #define __DEBUGN(...)
@@ -100,8 +98,6 @@ uint32_t* dst_ip_addr_filter = NULL;
 uint16_t* dst_ip_port_filter = NULL;
 
 alc_session_t* alc_session;
-static int __INT_LOOP_COUNT=0;
-
 
 void process_packet(u_char *user, const struct pcap_pkthdr *pkthdr, const u_char *packet) {
 
