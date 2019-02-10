@@ -10,7 +10,7 @@
 
 void doBandwidthStatusUpdate();
 
-void *printBandwidthStatistics(void *vargp)
+void *print_bandwidth_statistics_thread(void *vargp)
 {
 	__BW_TRACE("Starting printBandwidthStatistics");
     setlocale(LC_ALL,"");

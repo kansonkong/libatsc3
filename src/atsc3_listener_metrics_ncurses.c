@@ -687,19 +687,25 @@ int main(int argc,char **argv) {
 #ifndef _TEST_RUN_VALGRIND_OSX_
 
 	pthread_t global_bandwidth_thread_id;
-	pthread_create(&global_bandwidth_thread_id, NULL, printBandwidthStatistics, NULL);
+	pthread_create(&global_bandwidth_thread_id, NULL, print_bandwidth_statistics_thread, NULL);
 
 	pthread_t global_stats_thread_id;
-	pthread_create(&global_stats_thread_id, NULL, printGlobalStatistics, NULL);
+	pthread_create(&global_stats_thread_id, NULL, print_global_statistics_thread, NULL);
 
 	pthread_t global_slt_thread_id;
-	pthread_create(&global_slt_thread_id, NULL, lls_dump_instance_table_thread, (void*)lls_session);
+	pthread_create(&global_slt_thread_id, NULL, print_lls_instance_table_thread, (void*)lls_session);
+
+	pthread_t global_ncurses_input_thread_id;
+	int ncurses_input_ret = pthread_create(&global_ncurses_input_thread_id, NULL, ncurses_input_run_thread, NULL);
+	assert(!ncurses_input_ret);
 
 	pthread_t global_pcap_thread_id;
 	int pcap_ret = pthread_create(&global_pcap_thread_id, NULL, pcap_loop_run_thread, (void*)dev);
 	assert(!pcap_ret);
 
+
 	pthread_join(global_pcap_thread_id, NULL);
+	pthread_join(global_ncurses_input_thread_id, NULL);
 
 #else
     pcap_loop_run(dev);
