@@ -139,11 +139,11 @@ pipe_ffplay_buffer_t* pipe_create_ffplay() {
 	pipe_ffplay_buffer->pipe_buffer_writer_pos = 0;
 
 	//-infbuf -max_delay 5000000 -loglevel debug
-	char* cmd = "ffplay -hide_banner -";
-	if ( !(pipe_ffplay_buffer->player_pipe = popen(cmd, "w")) ) {
-		__PLAYER_FFPLAY_ERROR("unable to create pipe for cmd: %s", cmd);
-		goto error;
-	}
+//	char* cmd = "ffplay -hide_banner -";
+//	if ( !(pipe_ffplay_buffer->player_pipe = popen(cmd, "w")) ) {
+//		__PLAYER_FFPLAY_ERROR("unable to create pipe for cmd: %s", cmd);
+//		goto error;
+//	}
 	pipe_ffplay_buffer->player_pipe = fopen("mpu/recon.m4v", "w");
 
 
