@@ -64,7 +64,7 @@ void mpu_dump_flow(uint32_t dst_ip, uint16_t dst_port, mmtp_payload_fragments_un
 			return;
 	}
 
-	int blocks_written = fwrite(mmtp_payload->mmtp_mpu_type_packet_header.mpu_data_unit_payload, mmtp_payload->mmtp_mpu_type_packet_header.mpu_data_unit_payload->i_buffer, 1, f);
+	int blocks_written = fwrite(mmtp_payload->mmtp_mpu_type_packet_header.mpu_data_unit_payload->p_buffer, mmtp_payload->mmtp_mpu_type_packet_header.mpu_data_unit_payload->i_buffer, 1, f);
 	if(blocks_written != 1) {
 		__MMT_MPU_WARN("Incomplete block written for %s", myFilePathName);
 	}
@@ -123,7 +123,7 @@ void mpu_dump_reconstitued(uint32_t dst_ip, uint16_t dst_port, mmtp_payload_frag
  *
  */
 
-void mpu_play_object(pipe_ffplay_buffer_t* pipe_ffplay_buffer, mmtp_payload_fragments_union_t* mmtp_payload) {
+void mpu_push_to_output_buffer(pipe_ffplay_buffer_t* pipe_ffplay_buffer, mmtp_payload_fragments_union_t* mmtp_payload) {
 
 	bool should_signal = false;
 	if(mmtp_payload->mmtp_mpu_type_packet_header.mmtp_payload_type != 0x0) {
@@ -167,6 +167,48 @@ void mpu_play_object(pipe_ffplay_buffer_t* pipe_ffplay_buffer, mmtp_payload_frag
 
 	}
 
+
+cleanup:
+	mmtp_payload_fragments_union_free(&mmtp_payload);
+
+}
+
+/*
+ * only use this if you will manage the mutex externally
+ */
+
+void mpu_push_to_output_buffer_no_locking(pipe_ffplay_buffer_t* pipe_ffplay_buffer, mmtp_payload_fragments_union_t* mmtp_payload) {
+
+	bool should_signal = false;
+	if(mmtp_payload->mmtp_mpu_type_packet_header.mmtp_payload_type != 0x0) {
+		__MMT_MPU_WARN("Incorrect payload type: 0x%x", mmtp_payload->mmtp_mpu_type_packet_header.mmtp_payload_type);
+		goto cleanup;
+
+	}
+
+	if(!pipe_ffplay_buffer->has_written_init_box) {
+		if(mmtp_payload->mmtp_mpu_type_packet_header.mpu_fragment_type != 0x0) {
+			goto cleanup;
+		}
+
+		pipe_buffer_push_block(pipe_ffplay_buffer, mmtp_payload->mmtp_mpu_type_packet_header.mpu_data_unit_payload->p_buffer, mmtp_payload->mmtp_mpu_type_packet_header.mpu_data_unit_payload->i_buffer);
+		pipe_ffplay_buffer->last_mpu_sequence_number = mmtp_payload->mmtp_mpu_type_packet_header.mpu_sequence_number;
+		pipe_ffplay_buffer->has_written_init_box = true;
+
+		__MMT_MPU_DEBUG("pushing init fragment for %d fragment_type: 0", mmtp_payload->mmtp_mpu_type_packet_header.mpu_sequence_number);
+
+		goto cleanup;
+
+	} else {
+		//ignore our init box after we've sent it the first time
+		if(mmtp_payload->mmtp_mpu_type_packet_header.mpu_fragment_type == 0x0) {
+			goto cleanup;
+		}
+
+		pipe_buffer_push_block(pipe_ffplay_buffer, mmtp_payload->mmtp_mpu_type_packet_header.mpu_data_unit_payload->p_buffer, mmtp_payload->mmtp_mpu_type_packet_header.mpu_data_unit_payload->i_buffer);
+
+		pipe_ffplay_buffer->last_mpu_sequence_number = mmtp_payload->mmtp_mpu_type_packet_header.mpu_sequence_number;
+	}
 
 cleanup:
 	mmtp_payload_fragments_union_free(&mmtp_payload);

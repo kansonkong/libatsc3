@@ -17,7 +17,7 @@ intermediate_ffplay: atsc3_player_ffplay.o
 
 libatsc3_core: libatsc3.o
 
-unit_tests: atsc3_lmt_test atsc3_lls_slt_parser_test atsc3_lls_test atsc3_lls_SystemTime_test atsc3_mmt_signaling_message_test
+unit_tests: atsc3_lmt_test atsc3_lls_slt_parser_test atsc3_lls_test atsc3_lls_SystemTime_test atsc3_mmt_signaling_message_test atsc3_isobmff_box_test
 
 listener_tests: atsc3_alc_listener_test atsc3_lls_listener_test atsc3_mmt_listener_test atsc3_listener_test 
 # atsc3_listener_metrics_test
@@ -111,6 +111,9 @@ atsc3_lls_SystemTime_test: atsc3_lls_SystemTime_test.c libatsc3.o
 
 atsc3_mmt_signaling_message_test: atsc3_mmt_signaling_message_test.c libatsc3.o
 	cc -g atsc3_mmt_signaling_message_test.c libatsc3.o -lz -o atsc3_mmt_signaling_message_test
+	
+atsc3_isobmff_box_test: atsc3_isobmff_box_test.c
+	cc -g atsc3_isobmff_box_test.c -o atsc3_isobmff_box_test
 
 #integration tests
 
