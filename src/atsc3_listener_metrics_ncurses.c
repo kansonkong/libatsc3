@@ -428,7 +428,7 @@ void process_packet(u_char *user, const struct pcap_pkthdr *pkthdr, const u_char
 			int retval = alc_rx_analyze_packet((char*)udp_packet->data, udp_packet->data_length, &ch, &alc_packet);
 			if(!retval) {
 				global_stats->packet_counter_alc_packets_parsed++;
-				alc_packet_dump_to_object(alc_packet);
+				alc_packet_dump_to_object(&alc_packet);
 				goto cleanup;
 			} else {
 				__ERROR("Error in ALC decode: %d", retval);

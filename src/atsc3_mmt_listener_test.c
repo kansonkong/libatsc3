@@ -101,7 +101,7 @@ mmtp_payload_fragments_union_t* mmtp_payload_previous_for_reassembly = NULL;
 
 pipe_ffplay_buffer_t* pipe_ffplay_buffer = NULL;
 uint32_t last_mpu_sequence_number = 0;
-
+uint32_t fragment_count = 0;
 void process_packet(u_char *user, const struct pcap_pkthdr *pkthdr, const u_char *packet) {
 
   int i = 0;
@@ -355,7 +355,7 @@ void process_packet(u_char *user, const struct pcap_pkthdr *pkthdr, const u_char
 								if(mpu_metadata) {
 									mpu_push_to_output_buffer_no_locking(pipe_ffplay_buffer, mpu_metadata);
 								}
-
+// && fragment_count++ < 0
 								if(fragment_metadata) {
 									mpu_push_to_output_buffer_no_locking(pipe_ffplay_buffer, fragment_metadata);
 								}

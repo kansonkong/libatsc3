@@ -87,10 +87,12 @@ typedef struct route_fragment {
 
 } route_fragment_t;
 
-void alc_packet_free(alc_packet_t* alc_packet) {
+void alc_packet_free(alc_packet_t** alc_packet_ptr) {
+	alc_packet_t* alc_packet = *alc_packet_ptr;
 	if(alc_packet) {
 		if(alc_packet->def_lct_hdr) {
 			free(alc_packet->def_lct_hdr);
+			alc_packet->def_lct_hdr = NULL;
 		}
 
 		if(alc_packet->tsi_c) {
@@ -109,14 +111,14 @@ void alc_packet_free(alc_packet_t* alc_packet) {
 		}
 
 		free(alc_packet);
-		alc_packet = NULL;
+		*alc_packet_ptr = NULL;
 	}
 }
 
 
 int alc_rx_analyze_packet(char *data, int len, alc_channel_t *ch, alc_packet_t** alc_packet_ptr) {
 
-	int retval = 0;
+	int retval = -1;
 	int hdrlen = 0;			/* length of whole FLUTE/ALC/LCT header */
 	int het = 0;
 	int hel = 0;
