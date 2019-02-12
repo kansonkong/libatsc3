@@ -48,7 +48,7 @@ extern int _ALC_PACKET_DUMP_TO_OBJECT_ENABLED;
 
 char* alc_packet_dump_to_object_get_filename(alc_packet_t* alc_packet);
 
-int alc_packet_dump_to_object(alc_packet_t* alc_packet);
+int alc_packet_dump_to_object(alc_packet_t** alc_packet_ptr);
 
 //deprecated
 void alc_recon_file_ptr_set_tsi_toi(FILE* file_ptr, char* tsi, char* toi_init);

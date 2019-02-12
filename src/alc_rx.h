@@ -94,7 +94,7 @@ typedef struct alc_packet {
 
 } alc_packet_t;
 
-void alc_packet_free(alc_packet_t* alc_packet);
+void alc_packet_free(alc_packet_t** alc_packet_ptr);
 
 int alc_rx_analyze_packet(char *data, int len, alc_channel_t *ch, alc_packet_t** alc_packet_ptr);
 

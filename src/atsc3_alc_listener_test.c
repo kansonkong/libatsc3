@@ -181,7 +181,7 @@ void process_packet(u_char *user, const struct pcap_pkthdr *pkthdr, const u_char
 		__ERROR("invalid data length of udp packet: %d", udp_packet->data_length);
 		return;
 	}
-	__INFO("Data length: %d", udp_packet->data_length);
+	__TRACE("UDP: Data length: %d", udp_packet->data_length);
 	udp_packet->data = malloc(udp_packet->data_length * sizeof(udp_packet->data));
 	memcpy(udp_packet->data, &packet[udp_header_start + 8], udp_packet->data_length);
 
@@ -213,7 +213,7 @@ void process_packet(u_char *user, const struct pcap_pkthdr *pkthdr, const u_char
 		__INFO("    Dst. Addr   : %d.%d.%d.%d\t(%-10u)\t", ip_header[16], ip_header[17], ip_header[18], ip_header[19], udp_packet->dst_ip_addr);
 		__INFO("    Dst. Port   : %-5hu \t", (uint16_t)((udp_header[2] << 8) + udp_header[3]));
 	#endif
-		__INFO("data len: %d", udp_packet->data_length);
+		__INFO("Matching flow: data len: %d", udp_packet->data_length);
 
 		if(alc_session != NULL) {
 		//	int retval = recv_packet(alc_session);
@@ -230,15 +230,16 @@ void process_packet(u_char *user, const struct pcap_pkthdr *pkthdr, const u_char
 			//write out our alc fragment to disk, no reordering here yet
 
 			/* TODO: check if instance_id is set --> EXT_FDT header exists in packet */
-			alc_packet_dump_to_object(alc_packet);
+			alc_packet_dump_to_object(&alc_packet);
 
 		}
 	}
 
 cleanup:
-	if(alc_packet) {
-		alc_packet_free(alc_packet);
-	}
+//alc_packet_dump_to_object will free alc packet
+//	if(alc_packet) {
+//		alc_packet_free(alc_packet);
+//	}
 
 	if(udp_packet->data) {
 		free(udp_packet->data);
