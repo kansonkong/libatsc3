@@ -306,15 +306,15 @@ int main() {
 		printf("first segment len: %p - %p\n", truncate_box.box_start, binary_payload_start);
 
 
-
-		memcpy(final_payload, binary_payload_start, truncate_box.box_start);
-		uint8_t last_segment_len = binary_payload_size - first_segment_len - truncate_box.box_size;
-
-		memcpy(&final_payload[first_segment_len], truncate_box.box_end, last_segment_len);
-		uint8_t total_len = first_segment_len + last_segment_len;
-		printf("old length: %u, new length: %u", binary_payload_size, total_len);
+//
+//		memcpy(final_payload, binary_payload_start, truncate_box.box_start);
+//		uint8_t last_segment_len = binary_payload_size - first_segment_len - truncate_box.box_size;
+//
+//		memcpy(&final_payload[first_segment_len], truncate_box.box_end, last_segment_len);
+//		uint8_t total_len = first_segment_len + last_segment_len;
+//		printf("old length: %u, new length: %u", binary_payload_size, total_len);
 		FILE* fp = fopen("patch.moof", "w");
-		fwrite(binary_payload_start, total_len, 1, fp);
+//		fwrite(binary_payload_start, total_len, 1, fp);
 		fclose(fp);
 
 	}

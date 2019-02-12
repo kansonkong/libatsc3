@@ -94,8 +94,9 @@ char* alc_packet_dump_to_object_get_filename(alc_packet_t* alc_packet) {
 	return file_name;
 }
 
-int alc_packet_dump_to_object(alc_packet_t* alc_packet) {
+int alc_packet_dump_to_object(alc_packet_t** alc_packet_ptr) {
 
+	alc_packet_t* alc_packet = *alc_packet_ptr;
 	int bytesWritten = 0;
     char* file_name = alc_packet_dump_to_object_get_filename(alc_packet);
 
@@ -199,7 +200,7 @@ cleanup:
 		free(file_name);
 	}
 	if(alc_packet) {
-		alc_packet_free(alc_packet);
+		alc_packet_free(alc_packet_ptr);
 	}
 
 	return bytesWritten;
