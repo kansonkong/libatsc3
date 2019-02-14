@@ -98,6 +98,7 @@ mmtp_sub_flow_vector_t* mmtp_sub_flow_vector;
 
 //todo - keep track of these by flow and packet_id to detect mpu_sequence_number increment
 mmtp_payload_fragments_union_t* mmtp_payload_previous_for_reassembly = NULL;
+uint32_t __SEQUENCE_NUMBER_COUNT=0;
 
 pipe_ffplay_buffer_t* pipe_ffplay_buffer = NULL;
 uint32_t last_mpu_sequence_number = 0;
@@ -293,6 +294,8 @@ void process_packet(u_char *user, const struct pcap_pkthdr *pkthdr, const u_char
 
 					uint32_t total_mdat_body_size = 0;
 
+
+
 					//todo - keep an array of our offsets here if we have sequence gaps...
 					//data_unit payload is only fragment_type = 0x2
 					for(int i=0; i < total_fragments; i++) {
@@ -301,88 +304,131 @@ void process_packet(u_char *user, const struct pcap_pkthdr *pkthdr, const u_char
 
 						total_mdat_body_size += packet->mpu_data_unit_payload_fragments_timed.mpu_data_unit_payload->i_buffer;
 					}
+/*
+ * build a dummy fragment metadata box
+ */
+					if(false) {
+						//update or recreate our fragment_metadata_packet
+						if(fragment_metadata) {
+							//update the box size for mdat
+							int fragment_metadata_len = fragment_metadata->mpu_data_unit_payload_fragments_timed.mpu_data_unit_payload->i_buffer;
+							if(fragment_metadata_len > 8) {
+								//find mfhd box
+								uint8_t* full_box = fragment_metadata->mpu_data_unit_payload_fragments_timed.mpu_data_unit_payload->p_buffer;
 
-					//update or recreate our fragment_metadata_packet
-					if(fragment_metadata) {
-						//update the box size for mdat
-						int fragment_metadata_len = fragment_metadata->mpu_data_unit_payload_fragments_timed.mpu_data_unit_payload->i_buffer;
-						if(fragment_metadata_len > 8) {
-							//find mfhd box
-							uint8_t* full_box = fragment_metadata->mpu_data_unit_payload_fragments_timed.mpu_data_unit_payload->p_buffer;
+								for(int i=0; i < fragment_metadata_len-4; i++) {
+									if(full_box[i]=='m' && full_box[i+1] == 'f' && full_box[i+2] == 'h' && full_box[i+3] ==  'd') {
+										uint8_t mfhd_value[4];
+										uint32_t mfhd_value_full = 0;
 
-							for(int i=0; i < fragment_metadata_len-4; i++) {
-								if(full_box[i]=='m' && full_box[i+1] == 'f' && full_box[i+2] == 'h' && full_box[i+3] ==  'd') {
-									uint8_t mfhd_value[4];
-									uint32_t mfhd_value_full = 0;
+										i+=8; //shift forward for box version and flags (32 bits)
+										__MMT_MPU_INFO("found MFHD box at i: %d", i);
+										mfhd_value_full = (full_box[i] << 24) | (full_box[i+1] << 16) | (full_box[i+2] << 8) | (full_box[i+3]);
+										mfhd_value_full++;
+										full_box[i] = mfhd_value_full >> 24;
+										full_box[i+1] = mfhd_value_full >> 16;
+										full_box[i+2] = mfhd_value_full >> 8;
+										full_box[i+3] = mfhd_value_full;
 
-									i+=8; //shift forward for box version and flags (32 bits)
-									__MMT_MPU_INFO("found MFHD box at i: %d", i);
-									mfhd_value_full = (full_box[i] << 24) | (full_box[i+1] << 16) | (full_box[i+2] << 8) | (full_box[i+3]);
-									mfhd_value_full++;
-									full_box[i] = mfhd_value_full >> 24;
-									full_box[i+1] = mfhd_value_full >> 16;
-									full_box[i+2] = mfhd_value_full >> 8;
-									full_box[i+3] = mfhd_value_full;
+										__MMT_MPU_INFO("new value: 0x%02x 0x%02x 0x%02x 0x%02x", (full_box[i] >> 24) &0xff,  (full_box[i+1] >> 16) &0xff,  (full_box[i+2] >> 8) &0xff,  (full_box[i+3]) &0xff);
 
-									__MMT_MPU_INFO("new value: 0x%02x 0x%02x 0x%02x 0x%02x", (full_box[i] >> 24) &0xff,  (full_box[i+1] >> 16) &0xff,  (full_box[i+2] >> 8) &0xff,  (full_box[i+3]) &0xff);
+										uint8_t mdat_box[8];
+										__MMT_MPU_INFO("total_mdat_body_size: %u, total box size: %u", total_mdat_body_size, total_mdat_body_size+8);
+										total_mdat_body_size +=8;
+
+										memcpy(&mdat_box, &fragment_metadata->mpu_data_unit_payload_fragments_timed.mpu_data_unit_payload->p_buffer[fragment_metadata_len-8], 8);
+										__MMT_MPU_INFO("packet_counter: %u, last 8 bytes of metadata fragment before recalc: 0x%02x 0x%02x 0x%02x 0x%02x 0x%02x 0x%02x 0x%02x 0x%02x",
+												fragment_metadata->mpu_data_unit_payload_fragments_timed.packet_counter,
+												mdat_box[0], mdat_box[1], mdat_box[2], mdat_box[3], mdat_box[4], mdat_box[5], mdat_box[6], mdat_box[7]);
+
+										if(mdat_box[4] == 'm' && mdat_box[5] == 'd' && mdat_box[6] == 'a' && mdat_box[7] == 't') {
+											mdat_box[0] = (total_mdat_body_size >> 24) & 0xFF;
+											mdat_box[1] = (total_mdat_body_size >> 16) & 0xFF;
+											mdat_box[2] = (total_mdat_body_size >> 8) & 0xFF;
+											mdat_box[3] = (total_mdat_body_size) & 0xFF;
 
 
+											memcpy(&fragment_metadata->mpu_data_unit_payload_fragments_timed.mpu_data_unit_payload->p_buffer[fragment_metadata_len-8], &mdat_box, 4);
+											__MMT_MPU_INFO("last 8 bytes of metadata fragment updated to: 0x%02x 0x%02x 0x%02x 0x%02x 0x%02x 0x%02x 0x%02x 0x%02x",
+																			mdat_box[0], mdat_box[1], mdat_box[2], mdat_box[3], mdat_box[4], mdat_box[5], mdat_box[6], mdat_box[7]);
+
+
+
+									}
 								}
 							}
-
-							uint8_t mdat_box[8];
-							__MMT_MPU_INFO("total_mdat_body_size: %u, total box size: %u", total_mdat_body_size, total_mdat_body_size+8);
-							total_mdat_body_size +=8;
-
-							memcpy(&mdat_box, &fragment_metadata->mpu_data_unit_payload_fragments_timed.mpu_data_unit_payload->p_buffer[fragment_metadata_len-8], 8);
-							__MMT_MPU_INFO("packet_counter: %u, last 8 bytes of metadata fragment before recalc: 0x%02x 0x%02x 0x%02x 0x%02x 0x%02x 0x%02x 0x%02x 0x%02x",
-									fragment_metadata->mpu_data_unit_payload_fragments_timed.packet_counter,
-									mdat_box[0], mdat_box[1], mdat_box[2], mdat_box[3], mdat_box[4], mdat_box[5], mdat_box[6], mdat_box[7]);
-
-							if(mdat_box[4] == 'm' && mdat_box[5] == 'd' && mdat_box[6] == 'a' && mdat_box[7] == 't') {
-								mdat_box[0] = (total_mdat_body_size >> 24) & 0xFF;
-								mdat_box[1] = (total_mdat_body_size >> 16) & 0xFF;
-								mdat_box[2] = (total_mdat_body_size >> 8) & 0xFF;
-								mdat_box[3] = (total_mdat_body_size) & 0xFF;
-
-
-								memcpy(&fragment_metadata->mpu_data_unit_payload_fragments_timed.mpu_data_unit_payload->p_buffer[fragment_metadata_len-8], &mdat_box, 4);
-								__MMT_MPU_INFO("last 8 bytes of metadata fragment updated to: 0x%02x 0x%02x 0x%02x 0x%02x 0x%02x 0x%02x 0x%02x 0x%02x",
-																mdat_box[0], mdat_box[1], mdat_box[2], mdat_box[3], mdat_box[4], mdat_box[5], mdat_box[6], mdat_box[7]);
-
-
-								pipe_buffer_reader_mutex_lock(pipe_ffplay_buffer);
-								if(mpu_metadata) {
-									mpu_push_to_output_buffer_no_locking(pipe_ffplay_buffer, mpu_metadata);
-								}
-// && fragment_count++ < 0
-								if(fragment_metadata) {
-									mpu_push_to_output_buffer_no_locking(pipe_ffplay_buffer, fragment_metadata);
-								}
-								//push to mpu_push_output_buffer
-								for(int i=0; i < total_fragments; i++) {
-									mmtp_payload_fragments_union_t* packet = data_unit_payload_fragments->data[i];
-
-									mpu_push_to_output_buffer_no_locking(pipe_ffplay_buffer, packet);
-
-								}
-								pipe_buffer_condition_signal(pipe_ffplay_buffer);
-
-								pipe_buffer_reader_mutex_unlock(pipe_ffplay_buffer);
-
-							} else {
-								__MMT_MPU_ERROR("fragment metadata packet, cant find trailing mdat!");
-
-							}
-
 						} else {
-							__MMT_MPU_ERROR("fragment metadata packet is too short to offset mdat box! len is: %d", fragment_metadata_len);
+								__MMT_MPU_ERROR("fragment metadata packet, cant find trailing mdat!");
 						}
-					} else {
-						__MMT_MPU_ERROR("missing fragment metadata! can't rebuild moof and mdat boxes yet (TODO)!");
+					}
+
+					//create a dummy fragment metadata obect
+					mmtp_payload_fragments_union_t* fragment_metdata = calloc(1, sizeof(mmtp_payload_fragments_union_t));
+					fragment_metadata->mmtp_mpu_type_packet_header.mmtp_payload_type = 0x0;
+					fragment_metadata->mmtp_mpu_type_packet_header.mpu_fragment_type = 0x1;
+					fragment_metadata->mmtp_mpu_type_packet_header.mmtp_packet_id = mmtp_payload_previous_for_reassembly->mmtp_packet_header.mmtp_packet_id;
+					fragment_metadata->mmtp_mpu_type_packet_header.mpu_sequence_number = mmtp_payload_previous_for_reassembly->mmtp_mpu_type_packet_header.mpu_sequence_number;
+
+					/**
+					 * [moof] size=8+1020 8+16 = 24
+					  [mfhd] size=12+4
+					    sequence number = 2
+					[mdat] size=8+274432
+					 */
+
+					uint8_t* moof_box = calloc(32, sizeof(uint8_t));
+					uint8_t moof_box_size = 24;
+					char* moof_label = "moof";
+					uint8_t mfhd_size = 16;
+					char* mfhd_label = "mfhd";
+					char* mdat_label = "mdat";
+
+					memcpy(&moof_box[3], &moof_box_size, 1);
+					memcpy(&moof_box[4], &moof_label, 4);
+					memcpy(&moof_box[8], &mfhd_size, 1);
+					memcpy(&moof_box[9], &mfhd_label, 1);
+					++__SEQUENCE_NUMBER_COUNT;
+					memcpy(&moof_box[20], &__SEQUENCE_NUMBER_COUNT, 4);
+
+					uint32_t mdat_body_size= htonl(total_mdat_body_size + 8);
+					memcpy(&moof_box[24], &mdat_body_size, 4);
+					memcpy(&moof_box[28], &mdat_label, 4);
+
+
+
+
+
+					pipe_buffer_reader_mutex_lock(pipe_ffplay_buffer);
+					if(mpu_metadata) {
+						mpu_push_to_output_buffer_no_locking(pipe_ffplay_buffer, mpu_metadata);
+					}
+
+					if(fragment_metadata) {
+						mpu_push_to_output_buffer_no_locking(pipe_ffplay_buffer, fragment_metadata);
+					}
+					//push to mpu_push_output_buffer
+					for(int i=0; i < total_fragments; i++) {
+						mmtp_payload_fragments_union_t* packet = data_unit_payload_fragments->data[i];
+
+						mpu_push_to_output_buffer_no_locking(pipe_ffplay_buffer, packet);
 
 					}
+					__INFO("Calling pipe_buffer_condition_signal");
+					pipe_buffer_condition_signal(pipe_ffplay_buffer);
+
+					pipe_buffer_reader_mutex_unlock(pipe_ffplay_buffer);
+
+					mmtp_payload_previous_for_reassembly = mmtp_payload;
+
+
+//				} else {
+//					__MMT_MPU_ERROR("fragment metadata packet is too short to offset mdat box! len is: %d", fragment_metadata_len);
+//				}
+				} else {
+					__MMT_MPU_ERROR("missing fragment metadata! can't rebuild moof and mdat boxes yet (TODO)!");
+
 				}
+
 
 
 
@@ -392,10 +438,14 @@ void process_packet(u_char *user, const struct pcap_pkthdr *pkthdr, const u_char
 				//mpu_dump_reconstitued(udp_packet->dst_ip_addr, udp_packet->dst_port, mmtp_payload);
 
 				//	mpu_play_object(ffplay_buffer, mmtp_payload);
-				mmtp_payload_previous_for_reassembly = mmtp_payload;
 			} else {
 				//non-timed
 			}
+
+			if(!mmtp_payload_previous_for_reassembly) {
+				mmtp_payload_previous_for_reassembly = mmtp_payload;
+			}
+
 		} else if(mmtp_payload->mmtp_packet_header.mmtp_payload_type == 0x2) {
 
 			signaling_message_dump(mmtp_payload);
@@ -404,6 +454,7 @@ void process_packet(u_char *user, const struct pcap_pkthdr *pkthdr, const u_char
 			_MMTP_WARN("mmtp_packet_parse: unknown payload type of 0x%x", mmtp_payload->mmtp_packet_header.mmtp_payload_type);
 			goto cleanup;
 		}
+	}
 	}
 
 cleanup:
