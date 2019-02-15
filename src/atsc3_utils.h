@@ -71,7 +71,7 @@ typedef struct atsc3_block {
 
 block_t* block_Alloc(int len);
 block_t* block_Duplicate(block_t* a);
-void block_Release(block_t* a);
+void block_Release(block_t** a);
 
 //alloc and copy - note limited to 16k
 char* strlcopy(char*);
