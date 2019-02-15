@@ -204,14 +204,15 @@ block_t* block_Duplicate(block_t* a) {
 	return b;
 }
 
-void block_Release(block_t* a) {
+void block_Release(block_t** a_ptr) {
+	block_t* a = *a_ptr;
 	if(a) {
-		if(a->p_buffer) {
+		if(a->p_buffer && a->i_buffer) {
 			free(a->p_buffer);
 			a->p_buffer = NULL;
 		}
 		free(a);
-		a = NULL;
+		a_ptr = NULL;
 	}
 }
 

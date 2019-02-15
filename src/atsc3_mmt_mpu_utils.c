@@ -211,6 +211,8 @@ void mpu_push_to_output_buffer_no_locking(pipe_ffplay_buffer_t* pipe_ffplay_buff
 	}
 
 cleanup:
-	mmtp_payload_fragments_union_free(&mmtp_payload);
+	__MMT_MPU_DEBUG("freeing payload: %p, packet_counter: %u, packet_sequence_number: %u", mmtp_payload, mmtp_payload->mmtp_mpu_type_packet_header.packet_counter, mmtp_payload->mmtp_mpu_type_packet_header.mpu_sequence_number);
+//temporary until i can figure out who's walking off the heap or doublefree'ing
+	//mmtp_payload_fragments_union_free(&mmtp_payload);
 
 }
