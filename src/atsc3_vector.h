@@ -169,10 +169,11 @@ atsc3_vector_enforce_size_t_(size_t value)
  * \param pcap a pointer to the `cap` field of the vector [IN/OUT]
  * \param psize a pointer to the `size` field of the vector [IN/OUT]
  * \return the reallocated array, or `ptr` if reallocation failed
+ *
+ * remove restrict keyword for c++ cross compile restrict
  */
 static inline void *
-atsc3_vector_reallocdata_(void *ptr, size_t count, size_t size,
-                        size_t *restrict pcap, size_t *restrict psize)
+atsc3_vector_reallocdata_(void *ptr, size_t count, size_t size, size_t*  pcap, size_t* psize)
 {
     void *n = vlc_reallocarray(ptr, count, size);
     if (!n)
