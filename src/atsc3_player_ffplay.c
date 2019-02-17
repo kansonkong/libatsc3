@@ -138,12 +138,13 @@ pipe_ffplay_buffer_t* pipe_create_ffplay() {
 	pipe_ffplay_buffer->pipe_buffer_writer_size = __PLAYER_FFPLAY_PIPE_INTERNAL_BUFFER_SIZE;
 	pipe_ffplay_buffer->pipe_buffer_writer_pos = 0;
 
-	//-infbuf -max_delay 5000000 -loglevel debug
-	char* cmd = "ffplay -hide_banner -";
-	if ( !(pipe_ffplay_buffer->player_pipe = popen(cmd, "w")) ) {
-		__PLAYER_FFPLAY_ERROR("unable to create pipe for cmd: %s", cmd);
-		goto error;
-	}
+//	//-infbuf -max_delay 5000000 -loglevel debug
+//	char* cmd = "ffplay -hide_banner -";
+//	if ( !(pipe_ffplay_buffer->player_pipe = popen(cmd, "w")) ) {
+//		__PLAYER_FFPLAY_ERROR("unable to create pipe for cmd: %s", cmd);
+//		goto error;
+//	}
+
 	pipe_ffplay_buffer->player_pipe = fopen("mpu/recon.m4v", "w");
 
 
@@ -176,7 +177,7 @@ error:
  */
 void pipe_buffer_push_block(pipe_ffplay_buffer_t* pipe_ffplay_buffer, uint8_t* block, uint32_t block_size)  {
 
-	__PLAYER_FFPLAY_DEBUG_READER("pipe_push_block with reader buffer: %p, to_write %d, current buffer len: %d, total buffer size: %d", pipe_ffplay_buffer->pipe_buffer_reader, block_size, pipe_ffplay_buffer->pipe_buffer_reader_pos, pipe_ffplay_buffer->pipe_buffer_reader_size);
+	__PLAYER_FFPLAY_TRACE_READER("pipe_push_block with reader buffer: %p, to_write %d, current buffer len: %d, total buffer size: %d", pipe_ffplay_buffer->pipe_buffer_reader, block_size, pipe_ffplay_buffer->pipe_buffer_reader_pos, pipe_ffplay_buffer->pipe_buffer_reader_size);
 	//make sure we have enough space, otherwise realloc...
 	if(pipe_ffplay_buffer->pipe_buffer_reader_pos + block_size > pipe_ffplay_buffer->pipe_buffer_reader_size) {
 		__PLAYER_FFPLAY_WARN("pipe_push_block, calling realloc due to with reader buffer: %p, to_write %d, current size: %d", pipe_ffplay_buffer->pipe_buffer_reader, block_size, pipe_ffplay_buffer->pipe_buffer_reader_size);
