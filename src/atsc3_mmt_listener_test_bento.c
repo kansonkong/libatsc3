@@ -345,7 +345,7 @@ void process_packet(u_char *user, const struct pcap_pkthdr *pkthdr, const u_char
 
 						mpu_push_to_output_buffer_no_locking(pipe_ffplay_buffer, packet);
 					}
-					__INFO("Data Unit Payloads: pushed %d total fragments, over %u Fragment Metadata: Found for mpu_sequence_number: %u, fragment_metadata packet_id: %d", total_fragments, total_mdat_body_size, mmtp_payload_previous_for_reassembly->mmtp_mpu_type_packet_header.mpu_sequence_number, fragment_metadata->mmtp_packet_header.mmtp_packet_id);
+					__INFO("Data Unit Payload: MPU_sequence_number: %u, pushed %d total fragments, over %u Fragment Metadata bytes, fragment_metadata packet_id: %d", mmtp_payload_previous_for_reassembly->mmtp_mpu_type_packet_header.mpu_sequence_number, total_fragments, total_mdat_body_size, fragment_metadata->mmtp_packet_header.mmtp_packet_id);
 
 					//only trigger a signal if we have our init box and fragment metadata for this cycle
 					if(pipe_ffplay_buffer->has_written_init_box && fragment_metadata) {
@@ -356,11 +356,12 @@ void process_packet(u_char *user, const struct pcap_pkthdr *pkthdr, const u_char
 
 
 					//remove our packets from the subflow and free block allocs, as mpu_push_to_output_buffer_no_locking will copy the p_buffer to a slab
-					for(int i=0; i < total_fragments; i++) {
+					for(int i=0; i < data_unit_payload_fragments->size; i++) {
 						mmtp_payload_fragments_union_t* packet = data_unit_payload_fragments->data[i];
 
 						__TRACE("freeing payload: %p, packet_counter: %u, packet_sequence_number: %u", mmtp_payload, mmtp_payload->mmtp_mpu_type_packet_header.packet_counter, mmtp_payload->mmtp_mpu_type_packet_header.mpu_sequence_number);
-					//???	mmtp_payload_fragment_remove_from_subflow_and_free_packet(mmtp_sub_flow_vector, packet);
+						mmtp_payload_fragments_union_free( &packet);
+						atsc3_vector_remove_noshrink(data_unit_payload_fragments, i);
 					}
 				}
 
