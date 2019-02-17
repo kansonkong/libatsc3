@@ -245,13 +245,15 @@ void process_packet(u_char *user, const struct pcap_pkthdr *pkthdr, const u_char
 			if(mmtp_payload->mmtp_mpu_type_packet_header.mpu_timed_flag == 1) {
 
 				if(mmtp_payload_previous_for_reassembly && mmtp_payload_previous_for_reassembly->mmtp_mpu_type_packet_header.mpu_sequence_number != mmtp_payload->mmtp_mpu_type_packet_header.mpu_sequence_number) {
+
+				if(mmtp_payload_previous_for_reassembly && mmtp_payload_previous_for_reassembly->mmtp_mpu_type_packet_header.mpu_sequence_number != mmtp_payload->mmtp_mpu_type_packet_header.mpu_sequence_number) {
 					__INFO("recon for mpu_sequence_number: %u", mmtp_payload_previous_for_reassembly->mmtp_mpu_type_packet_header.mpu_sequence_number);
 
 					//reassemble previous segment
 					mmtp_sub_flow_t* mmtp_sub_flow = mmtp_sub_flow_vector_get_or_set_packet_id(mmtp_sub_flow_vector, mmtp_payload_previous_for_reassembly->mmtp_packet_header.mmtp_packet_id);
-					mpu_data_unit_payload_fragments_t* mpu_metadata_fragments = mpu_data_unit_payload_fragments_find_mpu_sequence_number(&mmtp_sub_flow->mpu_fragments->mpu_metadata_fragments_vector, mmtp_payload_previous_for_reassembly->mmtp_mpu_type_packet_header.mpu_sequence_number);
-					mpu_data_unit_payload_fragments_t* mpu_movie_fragments = mpu_data_unit_payload_fragments_find_mpu_sequence_number(&mmtp_sub_flow->mpu_fragments->mpu_movie_fragment_metadata_vector, mmtp_payload_previous_for_reassembly->mmtp_mpu_type_packet_header.mpu_sequence_number);
-					mpu_data_unit_payload_fragments_t* data_unit_payload_types = mpu_data_unit_payload_fragments_find_mpu_sequence_number(&mmtp_sub_flow->mpu_fragments->media_fragment_unit_vector, mmtp_payload_previous_for_reassembly->mmtp_mpu_type_packet_header.mpu_sequence_number);
+					mpu_data_unit_payload_fragments_t* mpu_metadata_fragments = 	mpu_data_unit_payload_fragments_find_mpu_sequence_number(&mmtp_sub_flow->mpu_fragments->mpu_metadata_fragments_vector, mmtp_payload_previous_for_reassembly->mmtp_mpu_type_packet_header.mpu_sequence_number);
+					mpu_data_unit_payload_fragments_t* mpu_movie_fragments = 		mpu_data_unit_payload_fragments_find_mpu_sequence_number(&mmtp_sub_flow->mpu_fragments->movie_fragment_metadata_vector, mmtp_payload_previous_for_reassembly->mmtp_mpu_type_packet_header.mpu_sequence_number);
+					mpu_data_unit_payload_fragments_t* data_unit_payload_types = 	mpu_data_unit_payload_fragments_find_mpu_sequence_number(&mmtp_sub_flow->mpu_fragments->media_fragment_unit_vector, mmtp_payload_previous_for_reassembly->mmtp_mpu_type_packet_header.mpu_sequence_number);
 
 					if(!data_unit_payload_types) {
 						__WARN("data_unit_payload_types is null!");

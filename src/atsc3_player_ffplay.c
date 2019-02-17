@@ -24,7 +24,6 @@ void pipe_buffer_reader_mutex_unlock(pipe_ffplay_buffer_t* pipe_ffplay_buffer) {
 
 void* pipe_buffer_writer_thread(void* pipe_ffplay_buffer_pointer) {
 	pipe_ffplay_buffer_t* pipe_ffplay_buffer = (pipe_ffplay_buffer_t*) pipe_ffplay_buffer_pointer;
-	int condition_wait_ret = 0;
 
 	while(1) {
 
@@ -47,7 +46,11 @@ await_semaphore:
 			goto unlock_from_error;
 		}
 
-		pipe_ffplay_buffer->has_met_minimum_startup_buffer_threshold = true;
+		if(pipe_ffplay_buffer->pipe_buffer_reader_pos > __PLAYER_INITIAL_BUFFER_TARGET) {
+			pipe_ffplay_buffer->has_met_minimum_startup_buffer_threshold = true;
+		} else {
+			goto unlock_from_error;
+		}
 
 		if(pipe_ffplay_buffer->pipe_buffer_reader_pos < 512) {
 			__PLAYER_FFPLAY_WARN("short read! skipping signal as pipe_buffer_reader_pos is %u", pipe_ffplay_buffer->pipe_buffer_reader_pos);
@@ -79,7 +82,7 @@ await_semaphore:
 							0,
 							pipe_ffplay_buffer->pipe_buffer_writer_pos);
 		} else {
-			__PLAYER_FFPLAY_DEBUG_WRITER("ffplay BEFORE WRITE, to write to pipe: %p, from %p, pos: %d to %d",
+			__PLAYER_FFPLAY_WARN("ffplay BEFORE WRITE, to write to pipe: %p, from %p, pos: %d to %d",
 				pipe_ffplay_buffer->player_pipe,
 				pipe_ffplay_buffer->pipe_buffer_writer,
 				0,
@@ -90,7 +93,7 @@ await_semaphore:
 			int bytes_to_write_remaining = pipe_ffplay_buffer->pipe_buffer_writer_pos - i;
 			int to_write_blocksize = bytes_to_write_remaining > __PLAYER_FFPLAY_PIPE_WRITER_BLOCKSIZE ? __PLAYER_FFPLAY_PIPE_WRITER_BLOCKSIZE : bytes_to_write_remaining;
 
-			__PLAYER_FFPLAY_TRACE_WRITER("writing from %p, pos: %d, blocksize: %d, total size: %d", &pipe_ffplay_buffer->pipe_buffer_writer[i], i, to_write_blocksize, pipe_ffplay_buffer->pipe_buffer_writer_pos);
+			__PLAYER_FFPLAY_WARN("WRITING from %p, pos: %d, blocksize: %d, total size: %d", &pipe_ffplay_buffer->pipe_buffer_writer[i], i, to_write_blocksize, pipe_ffplay_buffer->pipe_buffer_writer_pos);
 			int fwrite_ret = fwrite(&pipe_ffplay_buffer->pipe_buffer_writer[i], to_write_blocksize, 1, pipe_ffplay_buffer->player_pipe);
 			if(fwrite_ret != 1) {
 				__PLAYER_FFPLAY_WARN("short fwrite! at pos: %u, total buffer length: %u", i, pipe_ffplay_buffer->pipe_buffer_writer_pos);
@@ -111,7 +114,7 @@ await_semaphore:
 			}
 		}
 
-		__PLAYER_FFPLAY_DEBUG_WRITER("ffplay AFTER write, to write to pipe: %p complete",
+		__PLAYER_FFPLAY_WARN("ffplay AFTER write, to write to pipe: %p complete",
 				pipe_ffplay_buffer->player_pipe);
 
 		pipe_ffplay_buffer->pipe_buffer_writer_pos = 0;
@@ -156,11 +159,19 @@ pipe_ffplay_buffer_t* pipe_create_ffplay() {
 	/* Failed to set value 'drawtext=fontfile=/System/Library/Fonts/Helveticza.ttc: fix_bounds=1: shadowx=2: shadowy=2: timecode_rate=59.94: timecode='00\:00\:00\:00': fontcolor=white: fontsize=96: box=1: boxcolor=black@0.4: x=550:y=h-th-50, drawtext=fontfile=/System/Library/Fonts/Helvetica.ttc: fix_bounds=1: shadowx=2: shadowy=2: text='%{pts}': fontcolor=white: fontsize=96: box=1: boxcolor=black@0.4: x=500-tw:y=h-th-50, drawtext=fontfile=/System/Library/Fonts/Helvetica.ttc: fix_bounds=1: shadowx=2: shadowy=2: text='%{eif\:n/59.94*90000\:d}': fontcolor=white: fontsize=96: box=1: boxcolor=black@0.4: x=500-tw:y=h-th-150, drawtext=fontfile=/System/Library/Fonts/Helvetica.ttc: fix_bounds=1: shadowx=2: shadowy=2: text='%{pict_type}': fontcolor=white: fontsize=96: box=1: boxcolor=black@0.4: x=10-tw:y=th+10' for option 'filter_complex': Option not found
 	 *-framedrop -infbuf setpts=N/(59.94*TB), genpts
 	 */
-	char* cmd = "ffplay -err_detect ignore_err -hide_banner -nostats -vf \"drawtext=fontfile=/System/Library/Fonts/Helvetica.ttc: fix_bounds=1: shadowx=2: shadowy=2: timecode_rate=59.94: timecode='00\\:00\\:00\\:00': fontcolor=white: fontsize=96: box=1: boxcolor=black@0.4: x=550:y=h-th-50, drawtext=fontfile=/System/Library/Fonts/Helvetica.ttc: fix_bounds=1: shadowx=2: shadowy=2: text='%{pts}': fontcolor=white: fontsize=96: box=1: boxcolor=black@0.4: x=500-tw:y=h-th-50, drawtext=fontfile=/System/Library/Fonts/Helvetica.ttc: fix_bounds=1: shadowx=2: shadowy=2: text='%{eif\\:n/59.94*90000\\:d}': fontcolor=white: fontsize=96: box=1: boxcolor=black@0.4: x=500-tw:y=h-th-150, drawtext=fontfile=/System/Library/Fonts/Helvetica.ttc: fix_bounds=1: shadowx=2: shadowy=2: text='%{pict_type}': fontcolor=white: fontsize=96: box=1: boxcolor=black@0.4: x=10-tw:y=th+10\"  - > ffplay.errors 2>&1";
+	char* cmd = "ffplay -infbuf -err_detect ignore_err -hide_banner -nostats -vf \"drawtext=fontfile=/System/Library/Fonts/Helvetica.ttc: fix_bounds=1: shadowx=2: shadowy=2: timecode_rate=59.94: timecode='00\\:00\\:00\\:00': fontcolor=white: fontsize=96: box=1: boxcolor=black@0.4: x=550:y=h-th-50, drawtext=fontfile=/System/Library/Fonts/Helvetica.ttc: fix_bounds=1: shadowx=2: shadowy=2: text='%{pts}': fontcolor=white: fontsize=96: box=1: boxcolor=black@0.4: x=500-tw:y=h-th-50, drawtext=fontfile=/System/Library/Fonts/Helvetica.ttc: fix_bounds=1: shadowx=2: shadowy=2: text='%{eif\\:n/59.94*90000\\:d}': fontcolor=white: fontsize=96: box=1: boxcolor=black@0.4: x=500-tw:y=h-th-150, drawtext=fontfile=/System/Library/Fonts/Helvetica.ttc: fix_bounds=1: shadowx=2: shadowy=2: text='%{pict_type}': fontcolor=white: fontsize=96: box=1: boxcolor=black@0.4: x=10-tw:y=th+10\"  - > ffplay.errors 2>&1";
 	if ( !(pipe_ffplay_buffer->player_pipe = popen(cmd, "w")) ) {
 		__PLAYER_FFPLAY_ERROR("unable to create pipe for cmd: %s", cmd);
 		goto error;
 	}
+	/**
+	 *
+	 * char* cmd = "ffplay -infbuf -err_detect ignore_err -hide_banner -nostats -vf \"drawtext=fontfile=/System/Library/Fonts/Helvetica.ttc: fix_bounds=1: shadowx=2: shadowy=2: timecode_rate=59.94: timecode='00\\:00\\:00\\:00': fontcolor=white: fontsize=96: box=1: boxcolor=black@0.4: x=550:y=h-th-50, drawtext=fontfile=/System/Library/Fonts/Helvetica.ttc: fix_bounds=1: shadowx=2: shadowy=2: text='%{pts}': fontcolor=white: fontsize=96: box=1: boxcolor=black@0.4: x=500-tw:y=h-th-50, drawtext=fontfile=/System/Library/Fonts/Helvetica.ttc: fix_bounds=1: shadowx=2: shadowy=2: text='%{eif\\:n/59.94*90000\\:d}': fontcolor=white: fontsize=96: box=1: boxcolor=black@0.4: x=500-tw:y=h-th-150, drawtext=fontfile=/System/Library/Fonts/Helvetica.ttc: fix_bounds=1: shadowx=2: shadowy=2: text='%{pict_type}': fontcolor=white: fontsize=96: box=1: boxcolor=black@0.4: x=10-tw:y=th+10\"  - > ffplay.errors 2>&1";
+	if ( !(pipe_ffplay_buffer->player_pipe = popen(cmd, "w")) ) {
+		__PLAYER_FFPLAY_ERROR("unable to create pipe for cmd: %s", cmd);
+		goto error;
+	}
+	 */
 
 	//pipe_ffplay_buffer->player_pipe = fopen("mpu/recon.m4v", "w");
 
@@ -193,6 +204,8 @@ error:
  *
  */
 void pipe_buffer_push_block(pipe_ffplay_buffer_t* pipe_ffplay_buffer, uint8_t* block, uint32_t block_size)  {
+
+	__PLAYER_FFPLAY_WARN("pipe_push_block with reader buffer: %p, to_write %d, current buffer len: %d, total buffer size: %d", pipe_ffplay_buffer->pipe_buffer_reader, block_size, pipe_ffplay_buffer->pipe_buffer_reader_pos, pipe_ffplay_buffer->pipe_buffer_reader_size);
 
 	__PLAYER_FFPLAY_TRACE_READER("pipe_push_block with reader buffer: %p, to_write %d, current buffer len: %d, total buffer size: %d", pipe_ffplay_buffer->pipe_buffer_reader, block_size, pipe_ffplay_buffer->pipe_buffer_reader_pos, pipe_ffplay_buffer->pipe_buffer_reader_size);
 	//make sure we have enough space, otherwise realloc...
