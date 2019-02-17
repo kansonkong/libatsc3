@@ -357,7 +357,7 @@ void process_packet(u_char *user, const struct pcap_pkthdr *pkthdr, const u_char
 					pipe_buffer_reader_mutex_unlock(pipe_ffplay_buffer);
 
 					mmtp_payload_previous_for_reassembly = mmtp_payload;
-					usleep(5000); //sleep 1 ms so our output thread can flush out first box
+					//usleep(5000); //sleep 1 ms so our output thread can flush out first box
 
 				}
 				//mmtp_sub_flow_t* packet_subflow = mmtp_payload->mmtp_packet_header.mmtp_sub_flow;
