@@ -294,8 +294,6 @@ void process_packet(u_char *user, const struct pcap_pkthdr *pkthdr, const u_char
 
 					uint32_t total_mdat_body_size = 0;
 
-
-
 					//todo - keep an array of our offsets here if we have sequence gaps...
 					//data_unit payload is only fragment_type = 0x2
 					for(int i=0; i < total_fragments; i++) {
@@ -304,223 +302,38 @@ void process_packet(u_char *user, const struct pcap_pkthdr *pkthdr, const u_char
 
 						total_mdat_body_size += packet->mpu_data_unit_payload_fragments_timed.mpu_data_unit_payload->i_buffer;
 					}
-/*
- * build a dummy fragment metadata box
- */
-					if(true) {
-						//update or recreate our fragment_metadata_packet
-						if(fragment_metadata) {
-							//update the box size for mdat
-							int fragment_metadata_len = fragment_metadata->mpu_data_unit_payload_fragments_timed.mpu_data_unit_payload->i_buffer;
-							if(fragment_metadata_len > 8) {
-								//find mfhd box
-								uint8_t* full_box = fragment_metadata->mpu_data_unit_payload_fragments_timed.mpu_data_unit_payload->p_buffer;
 
-//								for(int i=0; i < fragment_metadata_len-4; i++) {
-//									if(full_box[i]=='m' && full_box[i+1] == 'f' && full_box[i+2] == 'h' && full_box[i+3] ==  'd') {
-//										uint8_t mfhd_value[4];
-//										uint32_t mfhd_value_full = 0;
-//
-//										i+=8; //shift forward for box version and flags (32 bits)
-//										__MMT_MPU_INFO("found MFHD box at i: %d", i);
-//										mfhd_value_full = (full_box[i] << 24) | (full_box[i+1] << 16) | (full_box[i+2] << 8) | (full_box[i+3]);
-//										mfhd_value_full++;
-//										full_box[i] = mfhd_value_full >> 24;
-//										full_box[i+1] = mfhd_value_full >> 16;
-//										full_box[i+2] = mfhd_value_full >> 8;
-//										full_box[i+3] = mfhd_value_full;
-//
-//										__MMT_MPU_INFO("new value: 0x%02x 0x%02x 0x%02x 0x%02x", (full_box[i] >> 24) &0xff,  (full_box[i+1] >> 16) &0xff,  (full_box[i+2] >> 8) &0xff,  (full_box[i+3]) &0xff);
+					if(fragment_metadata) {
+						int fragment_metadata_len = fragment_metadata->mmtp_mpu_type_packet_header.mpu_data_unit_payload->i_buffer;
 
-									uint8_t mdat_box[8];
-									__MMT_MPU_INFO("total_mdat_body_size: %u, total box size: %u", total_mdat_body_size, total_mdat_body_size+8);
-									total_mdat_body_size +=8;
+						uint8_t mdat_box[8];
+						__MMT_MPU_INFO("total_mdat_body_size: %u, total box size: %u", total_mdat_body_size, total_mdat_body_size+8);
+						total_mdat_body_size +=8;
 
-									memcpy(&mdat_box, &fragment_metadata->mpu_data_unit_payload_fragments_timed.mpu_data_unit_payload->p_buffer[fragment_metadata_len-8], 8);
-									__MMT_MPU_INFO("packet_counter: %u, last 8 bytes of metadata fragment before recalc: 0x%02x 0x%02x 0x%02x 0x%02x 0x%02x 0x%02x 0x%02x 0x%02x",
-											fragment_metadata->mpu_data_unit_payload_fragments_timed.packet_counter,
-											mdat_box[0], mdat_box[1], mdat_box[2], mdat_box[3], mdat_box[4], mdat_box[5], mdat_box[6], mdat_box[7]);
+						memcpy(&mdat_box, &fragment_metadata->mpu_data_unit_payload_fragments_timed.mpu_data_unit_payload->p_buffer[fragment_metadata_len-8], 8);
+						__MMT_MPU_INFO("packet_counter: %u, last 8 bytes of metadata fragment before recalc: 0x%02x 0x%02x 0x%02x 0x%02x 0x%02x 0x%02x 0x%02x 0x%02x",
+								fragment_metadata->mpu_data_unit_payload_fragments_timed.packet_counter,
+								mdat_box[0], mdat_box[1], mdat_box[2], mdat_box[3], mdat_box[4], mdat_box[5], mdat_box[6], mdat_box[7]);
 
-									if(mdat_box[4] == 'm' && mdat_box[5] == 'd' && mdat_box[6] == 'a' && mdat_box[7] == 't') {
-										mdat_box[0] = (total_mdat_body_size >> 24) & 0xFF;
-										mdat_box[1] = (total_mdat_body_size >> 16) & 0xFF;
-										mdat_box[2] = (total_mdat_body_size >> 8) & 0xFF;
-										mdat_box[3] = (total_mdat_body_size) & 0xFF;
+						if(mdat_box[4] == 'm' && mdat_box[5] == 'd' && mdat_box[6] == 'a' && mdat_box[7] == 't') {
+							mdat_box[0] = (total_mdat_body_size >> 24) & 0xFF;
+							mdat_box[1] = (total_mdat_body_size >> 16) & 0xFF;
+							mdat_box[2] = (total_mdat_body_size >> 8) & 0xFF;
+							mdat_box[3] = (total_mdat_body_size) & 0xFF;
 
 
-										memcpy(&fragment_metadata->mpu_data_unit_payload_fragments_timed.mpu_data_unit_payload->p_buffer[fragment_metadata_len-8], &mdat_box, 4);
-										__MMT_MPU_INFO("last 8 bytes of metadata fragment updated to: 0x%02x 0x%02x 0x%02x 0x%02x 0x%02x 0x%02x 0x%02x 0x%02x",
-																		mdat_box[0], mdat_box[1], mdat_box[2], mdat_box[3], mdat_box[4], mdat_box[5], mdat_box[6], mdat_box[7]);
+							memcpy(&fragment_metadata->mpu_data_unit_payload_fragments_timed.mpu_data_unit_payload->p_buffer[fragment_metadata_len-8], &mdat_box, 4);
+							__MMT_MPU_INFO("last 8 bytes of metadata fragment updated to: 0x%02x 0x%02x 0x%02x 0x%02x 0x%02x 0x%02x 0x%02x 0x%02x",
+															mdat_box[0], mdat_box[1], mdat_box[2], mdat_box[3], mdat_box[4], mdat_box[5], mdat_box[6], mdat_box[7]);
 
 
-
-									}
-								}
-							}
 						} else {
-								__MMT_MPU_ERROR("fragment metadata packet, cant find trailing mdat!");
+							__MMT_MPU_ERROR("fragment metadata packet, cant find trailing mdat!");
 						}
-					}
+					} else {
+						__MMT_MPU_ERROR("fragment metadata packet IS NULL");
+									}
 
-
-//					if(false) {
-//						__MMT_MPU_INFO("Rebuilding fragment metadata");
-//
-//						//create a dummy fragment metadata obect
-//						fragment_metadata = calloc(1, sizeof(mmtp_payload_fragments_union_t));
-//						fragment_metadata->mmtp_mpu_type_packet_header.mmtp_payload_type = 0x0;
-//						fragment_metadata->mmtp_mpu_type_packet_header.mpu_fragment_type = 0x1;
-//						fragment_metadata->mmtp_mpu_type_packet_header.mmtp_packet_id = mmtp_payload_previous_for_reassembly->mmtp_packet_header.mmtp_packet_id;
-//						fragment_metadata->mmtp_packet_header.packet_counter = -1;
-//						fragment_metadata->mmtp_mpu_type_packet_header.mpu_sequence_number = mmtp_payload_previous_for_reassembly->mmtp_mpu_type_packet_header.mpu_sequence_number;
-
-						/**
-						 * [moof] size=8+1020 8+16 = 24
-						  [mfhd] size=12+4
-							sequence number = 2
-						[mdat] size=8+274432
-
-	p moof_box[3]
-	p moof_box[4]
-	p moof_box[5]
-	p moof_box[6]
-	p moof_box[7]
-	p moof_box[8]
-
-//						 */
-//						//    [tfdt] size=12+8, version=1
-//						int tfdt_pos = 0;
-//						int tfdt_box_size = 20;
-//
-//						uint8_t* tfdt_box = calloc(tfdt_box_size, sizeof(uint8_t));
-//						uint32_t tfdt_size = tfdt_box_size;
-//						uint32_t tfdt_size_htonl = htonl(tfdt_box_size);
-//
-//						memcpy(&tfdt_box[tfdt_pos], &tfdt_size_htonl, 4);
-//						tfdt_pos += 4;
-//
-//						char* tfdt_label = "tfdt";  //extends fullbox
-//						memcpy(&tfdt_box[tfdt_pos], tfdt_label, 4);
-//						tfdt_pos += 4;
-//
-//						uint32_t tfdt_version = htonl(1);
-//						memcpy(&tfdt_box[tfdt_pos], &tfdt_version, 4);
-//						tfdt_pos += 4;
-//
-//						//base media decode time
-//						//leave with default 0's
-//						tfdt_pos += 8;
-//
-//
-//
-//
-//						int tfhd_pos = 0;
-//						int tfhd_box_size = 24;
-//						uint8_t* tfhd_box = calloc(tfhd_box_size, sizeof(uint8_t));
-//						uint32_t tfhd_size = htonl(tfhd_box_size);
-//
-//						memcpy(&tfhd_box[tfhd_pos], &tfhd_size, 4);
-//						tfhd_pos += 4;
-//
-//						char* tfhd_label = "tfhd";
-//						memcpy(&tfhd_box[tfhd_pos], tfhd_label, 4);
-//						tfhd_pos += 4;
-//
-//						uint32_t tfhd_flags = htonl(0x020000 | 0x000001);
-//						memcpy(&tfhd_box[tfhd_pos], &tfhd_flags, 4);
-//						tfhd_pos += 4;
-//
-//						uint32_t tfhd_id = htonl(1);
-//						memcpy(&tfhd_box[tfhd_pos], &tfhd_id, 4);
-//						tfhd_pos += 4;
-//						//not exactly correct...
-//						uint32_t tfhd_base_data_offset = htonl(40 + tfdt_size + 16);
-//						tfhd_pos += 4;
-//
-//						memcpy(&tfhd_box[tfhd_pos], &tfhd_base_data_offset, 4);
-//						tfhd_pos += 4;
-//
-//
-//
-//
-//
-//						uint8_t* moof_box = calloc(1024, sizeof(uint8_t));
-//						uint32_t moof_box_size = 24 + tfhd_pos + tfdt_size;
-//						uint32_t moof_box_size_nl = htonl(moof_box_size);
-//						char* moof_label = "moof";
-//						uint32_t mfhd_size = htonl(16);
-//						char* mfhd_label = "mfhd";
-//						char* mdat_label = "mdat";
-//						int pos=0;
-//						memcpy(&moof_box[pos], &moof_box_size_nl, 4);
-//						pos += 4;//move past moof label
-//
-//						memcpy(&moof_box[pos], moof_label, 4);
-//						pos += 4;//move past moof label
-//						memcpy(&moof_box[pos], &mfhd_size, 4);
-//						pos+=4;
-//						memcpy(&moof_box[pos], mfhd_label, 4);
-//						++__SEQUENCE_NUMBER_COUNT;
-//						pos+=4; //move past fullbox
-//						pos+=4;
-//						uint32_t sequence_htonl = htonl(__SEQUENCE_NUMBER_COUNT);
-//						memcpy(&moof_box[pos], &sequence_htonl, 4);
-//						pos+=4;
-//
-//						__INFO("copy tfhd box at pos: %u", pos);
-//
-//						//copy in tfhd box
-//						memcpy(&moof_box[pos], tfhd_box, tfhd_pos);
-//						pos+=tfhd_pos;
-//
-//						__INFO("copy tfdt_box box at pos: %u", pos);
-//
-//						//copy tfdt_box
-//						memcpy(&moof_box[pos], tfdt_box, tfdt_pos);
-//						pos+=tfdt_pos;
-//
-//
-//						__INFO("after tfdt_box copy, pos is now: %u", pos);
-//
-
-
-						/** additional boxes to rebuild
-						 *
-	[traf] size=8+1016
-	    [tfhd] size=12+4, flags=20000
-	      track ID = 1
-	    [tfdt] size=12+8, version=1
-	      base media decode time = 0
-	    [trun] size=12+968, flags=f01
-	      sample count = 60
-	      data offset = 1108
-						 */
-//						char* traf_label = "traf";
-//
-//
-//
-//
-//
-//						char* trun_label = "trun";
-//
-//
-//
-//						uint32_t mdat_body_size= htonl(total_mdat_body_size + 8);
-//						memcpy(&moof_box[pos], &mdat_body_size, 4);
-//						pos+=4;
-//
-//						memcpy(&moof_box[pos], mdat_label, 4);
-//						pos+=4;
-//
-//						__INFO("alloc total box size of: %u", pos);
-//
-//						block_t* block = block_Alloc(pos);
-//						memcpy(&block->p_buffer, &moof_box, pos);
-//						block->i_buffer = pos;
-//
-//						fragment_metadata->mmtp_mpu_type_packet_header.mpu_data_unit_payload = block;
-//
-//					}
 					__MMT_MPU_INFO("pushing boxes");
 
 					pipe_buffer_reader_mutex_lock(pipe_ffplay_buffer);
