@@ -143,7 +143,7 @@ atsc3_listener_metrics_ncurses: atsc3_listener_metrics_ncurses.c atsc3_bandwidth
 
 
 atsc3_mmt_listener_test_bento: atsc3_mmt_listener_test_bento.c  bento4/MPUtoISOBMFFProcessor.h bento4/MPUtoISOBMFFProcessor.cpp
-	g++ -g atsc3_mmt_listener_test_bento.c bento4/MPUtoISOBMFFProcessor.cpp libatsc3.o -I../bento/include/ -L../bento/lib -lap4   -lz -lpcap -o atsc3_mmt_listener_test_bento
+	g++ -g atsc3_mmt_listener_test_bento.c bento4/MPUtoISOBMFFProcessor.cpp libatsc3.o -I../bento/include/ -L../bento/lib -lap4 -lz -lpcap -o atsc3_mmt_listener_test_bento
 
 
 mpu_isobmff_bento:  bento4/MPUProcessor.cpp

@@ -285,8 +285,7 @@ void process_packet(u_char *user, const struct pcap_pkthdr *pkthdr, const u_char
 					pipe_buffer_reader_mutex_lock(pipe_ffplay_buffer);
 					if(mpu_metadata) {
 						//swap out our p_buffer with bento isobmff processing
-						AP4_MemoryByteStream* cleaned_mpu_metadata = mpuToISOBMFFProcessBoxes(mpu_metadata->mmtp_mpu_type_packet_header.mpu_data_unit_payload->p_buffer, mpu_metadata->mmtp_mpu_type_packet_header.mpu_data_unit_payload->i_buffer);
-						cleaned_mpu_metadata->AddReference();
+						AP4_DataBuffer* cleaned_mpu_metadata = mpuToISOBMFFProcessBoxes(mpu_metadata->mmtp_mpu_type_packet_header.mpu_data_unit_payload->p_buffer, mpu_metadata->mmtp_mpu_type_packet_header.mpu_data_unit_payload->i_buffer, -1);
 
 						block_Release(&mpu_metadata->mmtp_mpu_type_packet_header.mpu_data_unit_payload);
 						mpu_metadata->mmtp_mpu_type_packet_header.mpu_data_unit_payload = block_Alloc(cleaned_mpu_metadata->GetDataSize());
@@ -294,7 +293,7 @@ void process_packet(u_char *user, const struct pcap_pkthdr *pkthdr, const u_char
 						__MMT_MPU_INFO("MPU Metadata: Got back %d bytes from mpuToISOBMFFProcessBoxes", cleaned_mpu_metadata->GetDataSize());
 
 						mpu_push_to_output_buffer_no_locking(pipe_ffplay_buffer, mpu_metadata);
-						cleaned_mpu_metadata->Release();
+						delete cleaned_mpu_metadata;
 					}
 					int total_fragments = data_unit_payload_fragments->size;
 
@@ -310,66 +309,84 @@ void process_packet(u_char *user, const struct pcap_pkthdr *pkthdr, const u_char
 							total_mdat_body_size += packet->mpu_data_unit_payload_fragments_timed.mpu_data_unit_payload->i_buffer;
 						}
 
-						int fragment_metadata_len = fragment_metadata->mmtp_mpu_type_packet_header.mpu_data_unit_payload->i_buffer;
+//						int fragment_metadata_len = fragment_metadata->mmtp_mpu_type_packet_header.mpu_data_unit_payload->i_buffer;
+//
+//						uint8_t mdat_box[8];
+//						__MMT_MPU_INFO("total_mdat_body_size: %u, total box size: %u", total_mdat_body_size, total_mdat_body_size+8);
+//						total_mdat_body_size +=8;
+//
+//						memcpy(&mdat_box, &fragment_metadata->mpu_data_unit_payload_fragments_timed.mpu_data_unit_payload->p_buffer[fragment_metadata_len-8], 8);
+//						__MMT_MPU_INFO("packet_counter: %u, last 8 bytes of metadata fragment before recalc: \n0x%02x 0x%02x 0x%02x 0x%02x 0x%02x 0x%02x 0x%02x 0x%02x",
+//								fragment_metadata->mpu_data_unit_payload_fragments_timed.packet_counter,
+//								mdat_box[0], mdat_box[1], mdat_box[2], mdat_box[3], mdat_box[4], mdat_box[5], mdat_box[6], mdat_box[7]);
+//
+//						if(mdat_box[4] == 'm' && mdat_box[5] == 'd' && mdat_box[6] == 'a' && mdat_box[7] == 't') {
+//							mdat_box[0] = (total_mdat_body_size >> 24) & 0xFF;
+//							mdat_box[1] = (total_mdat_body_size >> 16) & 0xFF;
+//							mdat_box[2] = (total_mdat_body_size >> 8) & 0xFF;
+//							mdat_box[3] = (total_mdat_body_size) & 0xFF;
+//
+//
+//							memcpy(&fragment_metadata->mpu_data_unit_payload_fragments_timed.mpu_data_unit_payload->p_buffer[fragment_metadata_len-8], &mdat_box, 4);
+//							__MMT_MPU_INFO("last 8 bytes of metadata fragment updated to: \n0x%02x 0x%02x 0x%02x 0x%02x 0x%02x 0x%02x 0x%02x 0x%02x",
+//															mdat_box[0], mdat_box[1], mdat_box[2], mdat_box[3], mdat_box[4], mdat_box[5], mdat_box[6], mdat_box[7]);
+//
+//
+//						} else {
+//							__MMT_MPU_ERROR("fragment metadata packet, cant find trailing mdat!");
+//						}
+//						__MMT_MPU_INFO("Fragment Metadata: pushing %d bytes to mpuToISOBMFFProcessBoxes", fragment_metadata->mmtp_mpu_type_packet_header.mpu_data_unit_payload->i_buffer);
+//						int buffer_length = fragment_metadata->mmtp_mpu_type_packet_header.mpu_data_unit_payload->i_buffer;
+//
+//						__MMT_MPU_INFO("mdat is: 0x%02x 0x%02x 0x%02x 0x%02x 0x%02x 0x%02x 0x%02x 0x%02x",
+//								fragment_metadata->mmtp_mpu_type_packet_header.mpu_data_unit_payload->p_buffer[buffer_length-8],
+//								fragment_metadata->mmtp_mpu_type_packet_header.mpu_data_unit_payload->p_buffer[buffer_length-7],
+//								fragment_metadata->mmtp_mpu_type_packet_header.mpu_data_unit_payload->p_buffer[buffer_length-6],
+//								fragment_metadata->mmtp_mpu_type_packet_header.mpu_data_unit_payload->p_buffer[buffer_length-5],
+//								fragment_metadata->mmtp_mpu_type_packet_header.mpu_data_unit_payload->p_buffer[buffer_length-4],
+//								fragment_metadata->mmtp_mpu_type_packet_header.mpu_data_unit_payload->p_buffer[buffer_length-3],
+//								fragment_metadata->mmtp_mpu_type_packet_header.mpu_data_unit_payload->p_buffer[buffer_length-2],
+//								fragment_metadata->mmtp_mpu_type_packet_header.mpu_data_unit_payload->p_buffer[buffer_length-1]	);
+//
 
-						uint8_t mdat_box[8];
-						__MMT_MPU_INFO("total_mdat_body_size: %u, total box size: %u", total_mdat_body_size, total_mdat_body_size+8);
-						total_mdat_body_size +=8;
+//						uint32_t fragment_recon_len = total_mdat_body_size + fragment_metadata->mmtp_mpu_type_packet_header.mpu_data_unit_payload->i_buffer;
+//						uint8_t* fragment_recon = (uint8_t*) calloc(fragment_recon_len, sizeof(uint8_t));
+//						int offset = fragment_metadata->mmtp_mpu_type_packet_header.mpu_data_unit_payload->i_buffer;
+//
+//						memcpy(fragment_recon, fragment_metadata->mmtp_mpu_type_packet_header.mpu_data_unit_payload->p_buffer, offset);
+//
+//						//todo - keep an array of our offsets here if we have sequence gaps...
+//						//data_unit payload is only fragment_type = 0x2
+//						for(int i=0; i < total_fragments; i++) {
+//							mmtp_payload_fragments_union_t* packet = data_unit_payload_fragments->data[i];
+//							__MMT_MPU_INFO("i: %d, p: %p, frag indicator is: %d, mpu_sequence_number: %u, size: %u, packet_counter: %u, data_unit payload: %p, block_t: %p", i, packet, packet->mpu_data_unit_payload_fragments_timed.mpu_fragmentation_indicator, packet->mpu_data_unit_payload_fragments_timed.mpu_sequence_number, packet->mpu_data_unit_payload_fragments_timed.mpu_data_unit_payload->i_buffer, packet->mpu_data_unit_payload_fragments_timed.packet_counter, packet->mpu_data_unit_payload_fragments_timed.mpu_data_unit_payload, packet->mpu_data_unit_payload_fragments_timed.mpu_data_unit_payload->p_buffer);
+//							memcpy(&fragment_recon[offset], packet->mmtp_mpu_type_packet_header.mpu_data_unit_payload->p_buffer, packet->mpu_data_unit_payload_fragments_timed.mpu_data_unit_payload->i_buffer);
+//							offset += packet->mpu_data_unit_payload_fragments_timed.mpu_data_unit_payload->i_buffer;
+//						}
 
-						memcpy(&mdat_box, &fragment_metadata->mpu_data_unit_payload_fragments_timed.mpu_data_unit_payload->p_buffer[fragment_metadata_len-8], 8);
-						__MMT_MPU_INFO("packet_counter: %u, last 8 bytes of metadata fragment before recalc: \n0x%02x 0x%02x 0x%02x 0x%02x 0x%02x 0x%02x 0x%02x 0x%02x",
-								fragment_metadata->mpu_data_unit_payload_fragments_timed.packet_counter,
-								mdat_box[0], mdat_box[1], mdat_box[2], mdat_box[3], mdat_box[4], mdat_box[5], mdat_box[6], mdat_box[7]);
+//						AP4_MemoryByteStream* cleaned_fragment_metadata = mpuToISOBMFFProcessBoxes(fragment_metadata->mmtp_mpu_type_packet_header.mpu_data_unit_payload->p_buffer, fragment_metadata->mmtp_mpu_type_packet_header.mpu_data_unit_payload->i_buffer, total_mdat_body_size);
+						AP4_DataBuffer* cleaned_fragment_metadata = mpuToISOBMFFProcessBoxes(fragment_metadata->mmtp_mpu_type_packet_header.mpu_data_unit_payload->p_buffer, fragment_metadata->mmtp_mpu_type_packet_header.mpu_data_unit_payload->i_buffer, total_mdat_body_size);
 
-						if(mdat_box[4] == 'm' && mdat_box[5] == 'd' && mdat_box[6] == 'a' && mdat_box[7] == 't') {
-							mdat_box[0] = (total_mdat_body_size >> 24) & 0xFF;
-							mdat_box[1] = (total_mdat_body_size >> 16) & 0xFF;
-							mdat_box[2] = (total_mdat_body_size >> 8) & 0xFF;
-							mdat_box[3] = (total_mdat_body_size) & 0xFF;
-
-
-							memcpy(&fragment_metadata->mpu_data_unit_payload_fragments_timed.mpu_data_unit_payload->p_buffer[fragment_metadata_len-8], &mdat_box, 4);
-							__MMT_MPU_INFO("last 8 bytes of metadata fragment updated to: \n0x%02x 0x%02x 0x%02x 0x%02x 0x%02x 0x%02x 0x%02x 0x%02x",
-															mdat_box[0], mdat_box[1], mdat_box[2], mdat_box[3], mdat_box[4], mdat_box[5], mdat_box[6], mdat_box[7]);
-
-
-						} else {
-							__MMT_MPU_ERROR("fragment metadata packet, cant find trailing mdat!");
-						}
-						__MMT_MPU_INFO("Fragment Metadata: pushing %d bytes to mpuToISOBMFFProcessBoxes", fragment_metadata->mmtp_mpu_type_packet_header.mpu_data_unit_payload->i_buffer);
-						int buffer_length = fragment_metadata->mmtp_mpu_type_packet_header.mpu_data_unit_payload->i_buffer;
-
-						__MMT_MPU_INFO("mdat is: 0x%02x 0x%02x 0x%02x 0x%02x 0x%02x 0x%02x 0x%02x 0x%02x",
-								fragment_metadata->mmtp_mpu_type_packet_header.mpu_data_unit_payload->p_buffer[buffer_length-8],
-								fragment_metadata->mmtp_mpu_type_packet_header.mpu_data_unit_payload->p_buffer[buffer_length-7],
-								fragment_metadata->mmtp_mpu_type_packet_header.mpu_data_unit_payload->p_buffer[buffer_length-6],
-								fragment_metadata->mmtp_mpu_type_packet_header.mpu_data_unit_payload->p_buffer[buffer_length-5],
-								fragment_metadata->mmtp_mpu_type_packet_header.mpu_data_unit_payload->p_buffer[buffer_length-4],
-								fragment_metadata->mmtp_mpu_type_packet_header.mpu_data_unit_payload->p_buffer[buffer_length-3],
-								fragment_metadata->mmtp_mpu_type_packet_header.mpu_data_unit_payload->p_buffer[buffer_length-2],
-								fragment_metadata->mmtp_mpu_type_packet_header.mpu_data_unit_payload->p_buffer[buffer_length-1]	);
-
-
-						AP4_MemoryByteStream* cleaned_fragment_metadata = mpuToISOBMFFProcessBoxes(fragment_metadata->mmtp_mpu_type_packet_header.mpu_data_unit_payload->p_buffer, fragment_metadata->mmtp_mpu_type_packet_header.mpu_data_unit_payload->i_buffer);
-						cleaned_fragment_metadata->AddReference();
+						//AP4_MemoryByteStream* cleaned_fragment_metadata = mpuToISOBMFFProcessBoxes(fragment_recon, fragment_recon_len);
 
 						block_Release(&fragment_metadata->mmtp_mpu_type_packet_header.mpu_data_unit_payload);
 						fragment_metadata->mmtp_mpu_type_packet_header.mpu_data_unit_payload = block_Alloc(cleaned_fragment_metadata->GetDataSize());
+						//AP4_Result tell
 						memcpy(fragment_metadata->mmtp_mpu_type_packet_header.mpu_data_unit_payload->p_buffer, cleaned_fragment_metadata->GetData(), cleaned_fragment_metadata->GetDataSize());
 
 						__MMT_MPU_INFO("Fragment Metadata: Got back %d bytes from mpuToISOBMFFProcessBoxes", cleaned_fragment_metadata->GetDataSize());
-						buffer_length = cleaned_fragment_metadata->GetDataSize();
-						__MMT_MPU_INFO("mdat is: 0x%02x 0x%02x 0x%02x 0x%02x 0x%02x 0x%02x 0x%02x 0x%02x",
-								fragment_metadata->mmtp_mpu_type_packet_header.mpu_data_unit_payload->p_buffer[buffer_length-8],
-								fragment_metadata->mmtp_mpu_type_packet_header.mpu_data_unit_payload->p_buffer[buffer_length-7],
-								fragment_metadata->mmtp_mpu_type_packet_header.mpu_data_unit_payload->p_buffer[buffer_length-6],
-								fragment_metadata->mmtp_mpu_type_packet_header.mpu_data_unit_payload->p_buffer[buffer_length-5],
-								fragment_metadata->mmtp_mpu_type_packet_header.mpu_data_unit_payload->p_buffer[buffer_length-4],
-								fragment_metadata->mmtp_mpu_type_packet_header.mpu_data_unit_payload->p_buffer[buffer_length-3],
-								fragment_metadata->mmtp_mpu_type_packet_header.mpu_data_unit_payload->p_buffer[buffer_length-2],
-								fragment_metadata->mmtp_mpu_type_packet_header.mpu_data_unit_payload->p_buffer[buffer_length-1]	);
+//						buffer_length = cleaned_fragment_metadata->GetDataSize();
+//						__MMT_MPU_INFO("mdat is: 0x%02x 0x%02x 0x%02x 0x%02x 0x%02x 0x%02x 0x%02x 0x%02x",
+//								fragment_metadata->mmtp_mpu_type_packet_header.mpu_data_unit_payload->p_buffer[buffer_length-8],
+//								fragment_metadata->mmtp_mpu_type_packet_header.mpu_data_unit_payload->p_buffer[buffer_length-7],
+//								fragment_metadata->mmtp_mpu_type_packet_header.mpu_data_unit_payload->p_buffer[buffer_length-6],
+//								fragment_metadata->mmtp_mpu_type_packet_header.mpu_data_unit_payload->p_buffer[buffer_length-5],
+//								fragment_metadata->mmtp_mpu_type_packet_header.mpu_data_unit_payload->p_buffer[buffer_length-4],
+//								fragment_metadata->mmtp_mpu_type_packet_header.mpu_data_unit_payload->p_buffer[buffer_length-3],
+//								fragment_metadata->mmtp_mpu_type_packet_header.mpu_data_unit_payload->p_buffer[buffer_length-2],
+//								fragment_metadata->mmtp_mpu_type_packet_header.mpu_data_unit_payload->p_buffer[buffer_length-1]	);
 						mpu_push_to_output_buffer_no_locking(pipe_ffplay_buffer, fragment_metadata);
-						cleaned_fragment_metadata->Release();
+						delete cleaned_fragment_metadata;
 
 					}
 
