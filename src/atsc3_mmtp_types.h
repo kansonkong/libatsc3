@@ -37,7 +37,8 @@ extern int _MMTP_TRACE_ENABLED;
 #define __LOG_DEBUG(...) printf(__VA_ARGS__)
 //(msg_Info(__VA_ARGS__))
 #define __LOG_TRACE(...)
-#define __PRINTF_DEBUG(...) printf(__VA_ARGS__)
+#define __PRINTF_DEBUG(...)
+//printf(__VA_ARGS__)
 //(
 #define __PRINTF_TRACE(...)
 //printf(__VA_ARGS__)
