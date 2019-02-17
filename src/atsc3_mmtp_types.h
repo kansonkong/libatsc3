@@ -39,7 +39,8 @@ extern int _MMTP_TRACE_ENABLED;
 #define __LOG_TRACE(...)
 #define __PRINTF_DEBUG(...) printf(__VA_ARGS__)
 //(
-#define __PRINTF_TRACE(...) printf(__VA_ARGS__)
+#define __PRINTF_TRACE(...)
+//printf(__VA_ARGS__)
 
 
 
@@ -262,7 +263,7 @@ typedef struct {
 	mpu_data_unit_payload_fragments_vector_t 	mpu_metadata_fragments_vector;
 
 	//Movie fragment metadata, 					mpu_fragment_type==0x01
-	mpu_data_unit_payload_fragments_vector_t	mpu_movie_fragment_metadata_vector;
+	mpu_data_unit_payload_fragments_vector_t	movie_fragment_metadata_vector;
 
 	//MPU (media fragment_unit),				mpu_fragment_type==0x02
 	mpu_data_unit_payload_fragments_vector_t	media_fragment_unit_vector;

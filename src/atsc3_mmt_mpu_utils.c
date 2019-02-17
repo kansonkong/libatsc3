@@ -179,13 +179,16 @@ cleanup:
 
 void mpu_push_to_output_buffer_no_locking(pipe_ffplay_buffer_t* pipe_ffplay_buffer, mmtp_payload_fragments_union_t* mmtp_payload) {
 
-	bool should_signal = false;
+	__MMT_MPU_WARN("payload of size: %d payload type: 0x%x", mmtp_payload->mmtp_mpu_type_packet_header.mpu_data_unit_payload->i_buffer, mmtp_payload->mmtp_mpu_type_packet_header.mpu_fragment_type);
+
+	//discard if we are not a mpu payload
 	if(mmtp_payload->mmtp_mpu_type_packet_header.mmtp_payload_type != 0x0) {
 		__MMT_MPU_WARN("Incorrect payload type: 0x%x", mmtp_payload->mmtp_mpu_type_packet_header.mmtp_payload_type);
 		goto cleanup;
 
 	}
 
+	//if we have not written our init box, mpu_fragment_type == 0x0, then discard until we see our first mpu_fragment_type == 0x0
 	if(!pipe_ffplay_buffer->has_written_init_box) {
 		if(mmtp_payload->mmtp_mpu_type_packet_header.mpu_fragment_type != 0x0) {
 			goto cleanup;
@@ -195,7 +198,7 @@ void mpu_push_to_output_buffer_no_locking(pipe_ffplay_buffer_t* pipe_ffplay_buff
 		pipe_ffplay_buffer->last_mpu_sequence_number = mmtp_payload->mmtp_mpu_type_packet_header.mpu_sequence_number;
 		pipe_ffplay_buffer->has_written_init_box = true;
 
-		__MMT_MPU_DEBUG("pushing init fragment for %d fragment_type: 0", mmtp_payload->mmtp_mpu_type_packet_header.mpu_sequence_number);
+		__MMT_MPU_DEBUG("!!!pushing init fragment for %d fragment_type: 0", mmtp_payload->mmtp_mpu_type_packet_header.mpu_sequence_number);
 
 		goto cleanup;
 
@@ -205,14 +208,13 @@ void mpu_push_to_output_buffer_no_locking(pipe_ffplay_buffer_t* pipe_ffplay_buff
 			goto cleanup;
 		}
 
+		__MMT_MPU_DEBUG("pushing payload fragment for %d fragment_type: %d", mmtp_payload->mmtp_mpu_type_packet_header.mpu_sequence_number, mmtp_payload->mmtp_mpu_type_packet_header.mpu_fragment_type);
+
 		pipe_buffer_push_block(pipe_ffplay_buffer, mmtp_payload->mmtp_mpu_type_packet_header.mpu_data_unit_payload->p_buffer, mmtp_payload->mmtp_mpu_type_packet_header.mpu_data_unit_payload->i_buffer);
 
 		pipe_ffplay_buffer->last_mpu_sequence_number = mmtp_payload->mmtp_mpu_type_packet_header.mpu_sequence_number;
 	}
 
 cleanup:
-	__MMT_MPU_DEBUG("freeing payload: %p, packet_counter: %u, packet_sequence_number: %u", mmtp_payload, mmtp_payload->mmtp_mpu_type_packet_header.packet_counter, mmtp_payload->mmtp_mpu_type_packet_header.mpu_sequence_number);
-//temporary until i can figure out who's walking off the heap or doublefree'ing
-	mmtp_payload_fragments_union_free(&mmtp_payload);
-
+	return;
 }

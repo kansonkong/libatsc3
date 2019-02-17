@@ -107,8 +107,8 @@
 #define atsc3_vector_clear(pv) \
 ( \
     /* cannot be implemened as do-while(0), called from ATSC3_VECTOR_resize_() */ \
-    ATSC3_VECTOR_destroy(pv), \
-    ATSC3_VECTOR_init(pv) \
+    atsc3_vector_destroy(pv), \
+	atsc3_vector_init(pv) \
 )
 
 /**
