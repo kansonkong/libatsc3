@@ -5,13 +5,41 @@
 //  Created by Jason Justman on 2/17/19.
 //
 
+
+/*****************************************************************
+|
+|    AP4 - MP4 File Dumper
+|
+|    Copyright 2002-2008 Axiomatic Systems, LLC
+|
+|
+|    This file is derived from Bento4/AP4 (MP4 Atom Processing Library).
+|
+|    Unless you have obtained Bento4 under a difference license,
+|    this version of Bento4 is Bento4|GPL.
+|    Bento4|GPL is free software; you can redistribute it and/or modify
+|    it under the terms of the GNU General Public License as published by
+|    the Free Software Foundation; either version 2, or (at your option)
+|    any later version.
+|
+|    Bento4|GPL is distributed in the hope that it will be useful,
+|    but WITHOUT ANY WARRANTY; without even the implied warranty of
+|    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+|    GNU General Public License for more details.
+|
+|    You should have received a copy of the GNU General Public License
+|    along with Bento4|GPL; see the file COPYING.  If not, write to the
+|    Free Software Foundation, 59 Temple Place - Suite 330, Boston, MA
+|    02111-1307, USA.
+|
+ ****************************************************************/
+
 #include <stdio.h>
 #include <string.h>
 
 #include <stdlib.h>
 
 #include "Ap4.h"
-#include "MPUInspector.h"
 
 #ifdef __EMSCRIPTEN__
 #include "emscripten.h"
@@ -388,16 +416,6 @@ main(int argc, char** argv)
     AP4_ByteStream* output = NULL;
     AP4_FileByteStream::Create("-stdout", AP4_FileByteStream::STREAM_MODE_WRITE, output);
     
-    // create an inspector
-    
-    AP4_AtomInspector* inspector = new AP4_MPUInspector(*output);
-//    if (json_format) {
-//        inspector = new AP4_JsonInspector(*output);
-//    } else {
-//        inspector = new AP4_PrintInspector(*output);
-//    }
-    inspector->SetVerbosity(verbosity);
-    
     AP4_MemoryByteStream* stream = new AP4_MemoryByteStream(8192000);
     
 
@@ -424,38 +442,6 @@ main(int argc, char** argv)
         input->Seek(position);
 
 
-//        atom->Inspect(*inspector);
-//
-//        AP4_AtomParent* parent = atom->GetParent();
-//        if(parent) {
-//
-//            AP4_List<AP4_Atom>::Item* child = parent->GetChildren().FirstItem();
-//            while (child) {
-//                AP4_UI32 m_Type = child->GetData()->GetType();
-//
-//                char name[5];
-//                AP4_FormatFourCharsPrintable(name, m_Type);
-//                name[4] = '\0';
-//
-//
-//                child = child->GetNext();
-//
-//            }
-//
-//        }
-//
-        
-        
-      
-        // inspect the atom
-        
-        
-        
-        
-        // restore the previous stream position
-        
-        // destroy the atom
-     //   delete atom;
     }
     if (output) output->Release();
     
@@ -479,7 +465,6 @@ main(int argc, char** argv)
     }
     
     if (input) input->Release();
-    delete inspector;
     
     return 0;
 }
