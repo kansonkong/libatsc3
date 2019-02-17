@@ -42,10 +42,12 @@ await_semaphore:
 		}
 
 		//wait until we have accumulated at least 5 fragments or we have BUFFER/2 available for writing
-		if(pipe_ffplay_buffer->writer_unlock_count++ < __PLAYER_INITIAL_BUFFER_SEGMENT_COUNT && (pipe_ffplay_buffer->pipe_buffer_reader_pos < (__PLAYER_FFPLAY_PIPE_INTERNAL_BUFFER_SIZE/2))) {
+		if(pipe_ffplay_buffer->writer_unlock_count++ < __PLAYER_INITIAL_BUFFER_SEGMENT_COUNT || (!pipe_ffplay_buffer->has_met_minimum_startup_buffer_threshold && pipe_ffplay_buffer->pipe_buffer_reader_pos < __PLAYER_INITIAL_BUFFER_TARGET)) {
 			__PLAYER_FFPLAY_INFO("skipping signal, mutex count %d < %d, buffer reader pos: %u",  pipe_ffplay_buffer->writer_unlock_count, __PLAYER_INITIAL_BUFFER_SEGMENT_COUNT, pipe_ffplay_buffer->pipe_buffer_reader_pos);
 			goto unlock_from_error;
 		}
+
+		pipe_ffplay_buffer->has_met_minimum_startup_buffer_threshold = true;
 
 		if(pipe_ffplay_buffer->pipe_buffer_reader_pos < 512) {
 			__PLAYER_FFPLAY_WARN("short read! skipping signal as pipe_buffer_reader_pos is %u", pipe_ffplay_buffer->pipe_buffer_reader_pos);
@@ -92,6 +94,16 @@ await_semaphore:
 			int fwrite_ret = fwrite(&pipe_ffplay_buffer->pipe_buffer_writer[i], to_write_blocksize, 1, pipe_ffplay_buffer->player_pipe);
 			if(fwrite_ret != 1) {
 				__PLAYER_FFPLAY_WARN("short fwrite! at pos: %u, total buffer length: %u", i, pipe_ffplay_buffer->pipe_buffer_writer_pos);
+				//TODO - handle ffmpeg shutdown cases here
+
+
+//				atsc3_player_ffplay.c:94:WARN:1550422471.1440: short fwrite! at pos: 0, total buffer length: 614888
+//				atsc3_player_ffplay.c:94:WARN:1550422471.1441: short fwrite! at pos: 131070, total buffer length: 614888
+//				atsc3_player_ffplay.c:94:WARN:1550422471.1441: short fwrite! at pos: 262140, total buffer length: 614888
+//				atsc3_player_ffplay.c:94:WARN:1550422471.1441: short fwrite! at pos: 393210, total buffer length: 614888
+//				Process 15790 stopped
+//				* thread #1, queue = 'com.apple.main-thread', stop reason = signal SIGPIPE
+//				    frame #0: 0x00007fff5c80ad82 libsystem_kernel.dylib`__semwait_signal + 10
 			}
 			int fflush_ret = fflush(pipe_ffplay_buffer->player_pipe);
 			if(fflush_ret != 0) {
@@ -138,14 +150,19 @@ pipe_ffplay_buffer_t* pipe_create_ffplay() {
 	pipe_ffplay_buffer->pipe_buffer_writer_size = __PLAYER_FFPLAY_PIPE_INTERNAL_BUFFER_SIZE;
 	pipe_ffplay_buffer->pipe_buffer_writer_pos = 0;
 
-//	//-infbuf -max_delay 5000000 -loglevel debug
-//	char* cmd = "ffplay -hide_banner -";
-//	if ( !(pipe_ffplay_buffer->player_pipe = popen(cmd, "w")) ) {
-//		__PLAYER_FFPLAY_ERROR("unable to create pipe for cmd: %s", cmd);
-//		goto error;
-//	}
+	//-infbuf -max_delay 5000000 -loglevel debug
+	//ffmpeg -i input -vf "drawtext=fontfile=Arial.ttf: text='%{frame_num}': start_number=1: x=(w-tw)/2: y=h-(2*lh): fontcolor=black: fontsize=20: box=1: boxcolor=white: boxborderw=5" -c:a copy output
 
-	pipe_ffplay_buffer->player_pipe = fopen("mpu/recon.m4v", "w");
+	/* Failed to set value 'drawtext=fontfile=/System/Library/Fonts/Helveticza.ttc: fix_bounds=1: shadowx=2: shadowy=2: timecode_rate=59.94: timecode='00\:00\:00\:00': fontcolor=white: fontsize=96: box=1: boxcolor=black@0.4: x=550:y=h-th-50, drawtext=fontfile=/System/Library/Fonts/Helvetica.ttc: fix_bounds=1: shadowx=2: shadowy=2: text='%{pts}': fontcolor=white: fontsize=96: box=1: boxcolor=black@0.4: x=500-tw:y=h-th-50, drawtext=fontfile=/System/Library/Fonts/Helvetica.ttc: fix_bounds=1: shadowx=2: shadowy=2: text='%{eif\:n/59.94*90000\:d}': fontcolor=white: fontsize=96: box=1: boxcolor=black@0.4: x=500-tw:y=h-th-150, drawtext=fontfile=/System/Library/Fonts/Helvetica.ttc: fix_bounds=1: shadowx=2: shadowy=2: text='%{pict_type}': fontcolor=white: fontsize=96: box=1: boxcolor=black@0.4: x=10-tw:y=th+10' for option 'filter_complex': Option not found
+	 *
+	 */
+	char* cmd = "ffplay -err_detect ignore_err -hide_banner -nostats -genpts -framedrop -infbuf -vf \"setpts=N/(59.94*TB), drawtext=fontfile=/System/Library/Fonts/Helvetica.ttc: fix_bounds=1: shadowx=2: shadowy=2: timecode_rate=59.94: timecode='00\\:00\\:00\\:00': fontcolor=white: fontsize=96: box=1: boxcolor=black@0.4: x=550:y=h-th-50, drawtext=fontfile=/System/Library/Fonts/Helvetica.ttc: fix_bounds=1: shadowx=2: shadowy=2: text='%{pts}': fontcolor=white: fontsize=96: box=1: boxcolor=black@0.4: x=500-tw:y=h-th-50, drawtext=fontfile=/System/Library/Fonts/Helvetica.ttc: fix_bounds=1: shadowx=2: shadowy=2: text='%{eif\\:n/59.94*90000\\:d}': fontcolor=white: fontsize=96: box=1: boxcolor=black@0.4: x=500-tw:y=h-th-150, drawtext=fontfile=/System/Library/Fonts/Helvetica.ttc: fix_bounds=1: shadowx=2: shadowy=2: text='%{pict_type}': fontcolor=white: fontsize=96: box=1: boxcolor=black@0.4: x=10-tw:y=th+10\"  - > ffplay.errors 2>&1";
+	if ( !(pipe_ffplay_buffer->player_pipe = popen(cmd, "w")) ) {
+		__PLAYER_FFPLAY_ERROR("unable to create pipe for cmd: %s", cmd);
+		goto error;
+	}
+
+	//pipe_ffplay_buffer->player_pipe = fopen("mpu/recon.m4v", "w");
 
 
 	__PLAYER_FFPLAY_DEBUG("pipe created: file* is %p", pipe_ffplay_buffer->player_pipe);

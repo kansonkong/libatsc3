@@ -21,7 +21,8 @@
 extern int _PLAYER_FFPLAY_DEBUG_ENABLED;
 extern int _PLAYER_FFPLAY_TRACE_ENABLED;
 
-#define __PLAYER_INITIAL_BUFFER_SEGMENT_COUNT 0 //change from 3 for mmt testing
+#define __PLAYER_INITIAL_BUFFER_SEGMENT_COUNT 8  //wait for at least 8 signals
+#define __PLAYER_INITIAL_BUFFER_TARGET 1024000  //and 1 MB of payload before starting to stream to ffplay
 #define __PLAYER_FFPLAY_PIPE_INTERNAL_BUFFER_SIZE 8192000
 #define __PLAYER_FFPLAY_PIPE_WRITER_BLOCKSIZE 131070
 
@@ -50,6 +51,8 @@ typedef struct pipe_ffplay_buffer {
 	uint32_t pipe_buffer_writer_size;
 
 	uint8_t* pipe_buffer_writer;
+
+	bool has_met_minimum_startup_buffer_threshold;
 
 	//player pipe for ffplay via popen
 	FILE* player_pipe;
