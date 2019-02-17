@@ -1,4 +1,4 @@
-all: intermediate_lls intermediate_mmt intermediate_alc intermediate_ffplay libatsc3_core unit_tests listener_tests listener_ncurses
+all: intermediate_lls intermediate_mmt intermediate_alc intermediate_ffplay libatsc3_core unit_tests listener_tests listener_ncurses mpu_isobmff_bento
 clean:
 	-rm -f *.o
 	-rm -f route/*
@@ -141,3 +141,6 @@ atsc3_listener_metrics_ncurses: atsc3_listener_metrics_ncurses.c atsc3_bandwidth
 							-lz -lpcap -lncurses -o atsc3_listener_metrics_ncurses
 	#cc -D _TEST_RUN_VALGRIND_OSX_=true -g atsc3_listener_metrics_ncurses.c atsc3_bandwidth_statistics.c atsc3_packet_statistics.c libatsc3.o -lz -lpcap -lncurses -o atsc3_listener_metrics_ncurses
 
+
+mpu_isobmff_bento: bento4/MPUInspector.cpp bento4/MPUInspector.h bento4/MPUProcessor.cpp
+	g++ bento4/MPUProcessor.cpp -I../bento/include/ -L../bento/lib -lap4 -o MPUISOBmffProcessor
