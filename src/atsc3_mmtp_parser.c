@@ -256,11 +256,20 @@ void mmtp_sub_flow_vector_init(mmtp_sub_flow_vector_t *mmtp_sub_flow_vector) {
 	__PRINTF_DEBUG("%d:mmtp_sub_flow_vector_init: %p\n", __LINE__, mmtp_sub_flow_vector);
 }
 
+void mmtp_payload_fragment_remove_from_subflow_and_free_packet(mmtp_sub_flow_vector_t *mmtp_sub_flow_vector, mmtp_payload_fragments_union_t *mmtp_packet) {
+	mmtp_sub_flow_t* mmtp_sub_flow = mmtp_sub_flow_vector_get_or_set_packet_id(mmtp_sub_flow_vector, mmtp_packet->mmtp_packet_header.mmtp_packet_id);
+	__PRINTF("Removing from sub flow: %p - %d\n", mmtp_sub_flow,  mmtp_packet->mmtp_mpu_type_packet_header.mpu_fragment_type);
+
+	mmtp_sub_flow_remove_mmtp_packet(mmtp_sub_flow, mmtp_packet);
+
+	mmtp_payload_fragments_union_free(&mmtp_packet);
+}
+
 void mmtp_payload_fragments_union_free(mmtp_payload_fragments_union_t** mmtp_payload_fragments_p) {
 	mmtp_payload_fragments_union_t* mmtp_payload_fragment = *mmtp_payload_fragments_p;
 	if(mmtp_payload_fragment) {
 		if(mmtp_payload_fragment->mmtp_packet_header.mmtp_payload_type == 0x0) {
-			//clean up
+			//clean up data block allocs
 			mmt_mpu_free_payload(mmtp_payload_fragment);
 		}
 
@@ -316,7 +325,6 @@ mmtp_sub_flow_t* mmtp_sub_flow_vector_get_or_set_packet_id(mmtp_sub_flow_vector_
 		atsc3_vector_init(&entry->mmtp_generic_object_fragments_vector);
 		atsc3_vector_init(&entry->mmtp_signalling_message_fragements_vector);
 		atsc3_vector_init(&entry->mmtp_repair_symbol_vector);
-
 		atsc3_vector_push(vec, entry);
 	}
 
@@ -373,6 +381,7 @@ void mmtp_sub_flow_push_mmtp_packet(mmtp_sub_flow_t *mmtp_sub_flow, mmtp_payload
 	if(mmtp_packet->mmtp_packet_header.mmtp_payload_type == 0x00) {
 		//(mmtp_mpu_type_packet_header_fields_t*
 		//defer, we don;'t know enough about the type
+
 		mpu_fragments_t *mpu_fragments = mpu_fragments_get_or_set_packet_id(mmtp_sub_flow, mmtp_packet->mmtp_packet_header.mmtp_packet_id);
 		atsc3_vector_push(&mpu_fragments->all_mpu_fragments_vector, mmtp_packet);
 
@@ -384,6 +393,32 @@ void mmtp_sub_flow_push_mmtp_packet(mmtp_sub_flow_t *mmtp_sub_flow, mmtp_payload
 		atsc3_vector_push(&mmtp_sub_flow->mmtp_repair_symbol_vector, mmtp_packet);
 	}
 }
+
+
+void mmtp_sub_flow_remove_mmtp_packet(mmtp_sub_flow_t *mmtp_sub_flow, mmtp_payload_fragments_union_t *mmtp_packet) {
+	mmtp_packet->mmtp_packet_header.mmtp_sub_flow = mmtp_sub_flow;
+
+	ssize_t* index;
+
+	//	__PRINTF_TRACE("%d:, packet_counter: %d, packet_id: %d, mmtp_payload_type: 0x%x\n", __LINE__, mmtp_packet->mmtp_packet_header.packet_counter, mmtp_packet->mmtp_packet_header.mmtp_packet_id, mmtp_packet->mmtp_packet_header.mmtp_payload_type);
+	if(mmtp_packet->mmtp_packet_header.mmtp_payload_type == 0x00) {
+		mpu_fragments_t* mpu_fragments = mmtp_sub_flow->mpu_fragments;
+		if(mpu_fragments) {
+			atsc3_vector_index_of(&mpu_fragments->all_mpu_fragments_vector, mmtp_packet, index);
+			atsc3_vector_remove(&mpu_fragments->all_mpu_fragments_vector, *index);
+		}
+	} else if(mmtp_packet->mmtp_packet_header.mmtp_payload_type == 0x01) {
+		atsc3_vector_index_of(&mmtp_sub_flow->mmtp_generic_object_fragments_vector, mmtp_packet, index);
+		atsc3_vector_remove(&mmtp_sub_flow->mmtp_generic_object_fragments_vector, *index);
+	} else if(mmtp_packet->mmtp_packet_header.mmtp_payload_type == 0x02) {
+		atsc3_vector_index_of(&mmtp_sub_flow->mmtp_signalling_message_fragements_vector, mmtp_packet, index);
+		atsc3_vector_remove(&mmtp_sub_flow->mmtp_signalling_message_fragements_vector, *index);
+	} else if(mmtp_packet->mmtp_packet_header.mmtp_payload_type == 0x03) {
+		atsc3_vector_index_of(&mmtp_sub_flow->mmtp_repair_symbol_vector, mmtp_packet, index);
+		atsc3_vector_remove(&mmtp_sub_flow->mmtp_repair_symbol_vector, *index);
+	}
+}
+
 
 
 
