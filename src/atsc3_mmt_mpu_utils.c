@@ -158,7 +158,7 @@ void mpu_push_to_output_buffer(pipe_ffplay_buffer_t* pipe_ffplay_buffer, mmtp_pa
 
 		if(mmtp_payload->mmtp_mpu_type_packet_header.mpu_sequence_number != pipe_ffplay_buffer->last_mpu_sequence_number) {
 			//signal here, we will have the first fragment of the next slice in the payload, but its simpler for now...
-			__MMT_MPU_DEBUG("triggering signal because mpu_sequence changed from %u to %u",  pipe_ffplay_buffer->last_mpu_sequence_number, mmtp_payload->mmtp_mpu_type_packet_header.mpu_sequence_number );
+			__MMT_MPU_INFO("triggering signal because mpu_sequence changed from %u to %u",  pipe_ffplay_buffer->last_mpu_sequence_number, mmtp_payload->mmtp_mpu_type_packet_header.mpu_sequence_number );
 			pipe_buffer_condition_signal(pipe_ffplay_buffer);
 		}
 		pipe_ffplay_buffer->last_mpu_sequence_number = mmtp_payload->mmtp_mpu_type_packet_header.mpu_sequence_number;

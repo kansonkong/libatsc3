@@ -72,13 +72,13 @@ int PACKET_COUNTER=0;
 
 #define _ENABLE_DEBUG true
 
-#define __ERROR(...)   printf("%s:%d:ERROR:",__FILE__,__LINE__);printf(__VA_ARGS__);printf("\n");
-#define __WARN(...)    printf("%s:%d:WARN:",__FILE__,__LINE__);printf(__VA_ARGS__);printf("\n");
-#define __INFO(...)    printf("%s:%d:INFO:",__FILE__,__LINE__);printf(__VA_ARGS__);printf("\n");
+#define __ERROR(...)   printf("%s:%d:ERROR:%.4f: ",__FILE__,__LINE__, gt());printf(__VA_ARGS__);printf("\n");
+#define __WARN(...)    printf("%s:%d:WARN:%.4f: ",__FILE__,__LINE__,gt());printf(__VA_ARGS__);printf("\n");
+#define __INFO(...)    printf("%s:%d:INFO:%.4f: ",__FILE__,__LINE__,gt());printf(__VA_ARGS__);printf("\n");
 
 #ifdef _ENABLE_DEBUG
-#define __DEBUG(...)   printf("%s:%d:DEBUG:",__FILE__,__LINE__);__PRINTLN(__VA_ARGS__);
-#define __DEBUGF(...)  printf("%s:%d:DEBUG:",__FILE__,__LINE__);__PRINTF(__VA_ARGS__);
+#define __DEBUG(...)   printf("%s:%d:DEBUG:%.4f: ",__FILE__,__LINE__,gt());__PRINTLN(__VA_ARGS__);
+#define __DEBUGF(...)  printf("%s:%d:DEBUG:%.4f: ",__FILE__,__LINE__,gt());__PRINTF(__VA_ARGS__);
 #define __DEBUGA(...) 	__PRINTF(__VA_ARGS__);
 #define __DEBUGN(...)  __PRINTLN(__VA_ARGS__);
 #else
@@ -403,7 +403,6 @@ void process_packet(u_char *user, const struct pcap_pkthdr *pkthdr, const u_char
 					pipe_buffer_reader_mutex_unlock(pipe_ffplay_buffer);
 
 					mmtp_payload_previous_for_reassembly = mmtp_payload;
-					usleep(50); //sleep 1 ms so our output thread can flush out first box
 				}
 				//mmtp_sub_flow_t* packet_subflow = mmtp_payload->mmtp_packet_header.mmtp_sub_flow;
 

@@ -142,11 +142,11 @@ atsc3_listener_metrics_ncurses: atsc3_listener_metrics_ncurses.c atsc3_bandwidth
 	#cc -D _TEST_RUN_VALGRIND_OSX_=true -g atsc3_listener_metrics_ncurses.c atsc3_bandwidth_statistics.c atsc3_packet_statistics.c libatsc3.o -lz -lpcap -lncurses -o atsc3_listener_metrics_ncurses
 
 
-atsc3_mmt_listener_test_bento: atsc3_mmt_listener_test_bento.c  bento4/MPUtoISOBMFFProcessor.h bento4/MPUtoISOBMFFProcessor.cpp
+atsc3_mmt_listener_test_bento: atsc3_mmt_listener_test_bento.c  bento4/MPUtoISOBMFFProcessor.h bento4/MPUtoISOBMFFProcessor.cpp libatsc3.o atsc3_player_ffplay.c
 	g++ -g atsc3_mmt_listener_test_bento.c bento4/MPUtoISOBMFFProcessor.cpp libatsc3.o -I../bento/include/ -L../bento/lib -lap4 -lz -lpcap -o atsc3_mmt_listener_test_bento
 
 
-mpu_isobmff_bento:  bento4/MPUProcessor.cpp
+mpu_isobmff_bento:  bento4/MPUProcessor.cpp libatsc3.o
 	g++ -g bento4/MPUProcessor.cpp -I../bento/include/ -L../bento/lib -lap4 -o MPUISOBmffProcessor
 	
 #bento4/MPUProcessor.cpp	
