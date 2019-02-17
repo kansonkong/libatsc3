@@ -409,7 +409,6 @@ void mpu_fragments_assign_to_payload_vector(mmtp_sub_flow_t* mmtp_sub_flow, mmtp
 //	mmtp_sub_flow_t mmtp_sub_flow = mpu_type_packet->mpu_
 
 	mpu_fragments_t *mpu_fragments = mmtp_sub_flow->mpu_fragments;
-	__PRINTF_TRACE("%d:mpu_fragments_assign_to_payload_vector - packet_counter: %u, mpu_fragments is: %p, all_mpu_frags_vector.size: %zu\n", __LINE__, mpu_type_packet->mmtp_packet_header.packet_counter, mpu_fragments, mpu_fragments->all_mpu_fragments_vector.size);
 
 	mpu_data_unit_payload_fragments_t *to_assign_payload_vector = NULL;
 	if(mpu_type_packet->mmtp_mpu_type_packet_header.mpu_fragment_type == 0x00) {
@@ -424,9 +423,11 @@ void mpu_fragments_assign_to_payload_vector(mmtp_sub_flow_t* mmtp_sub_flow, mmtp
 	}
 
 	if(to_assign_payload_vector) {
-		__PRINTF_TRACE("%d: to_assign_payload_vector, sequence_number: %d, size is: %zu\n", __LINE__, mpu_type_packet->mmtp_mpu_type_packet_header.mpu_sequence_number, to_assign_payload_vector->timed_fragments_vector.size);
+		__PRINTF_TRACE("%d:mpu_fragments_assign_to_payload_vector - packet_counter: %u, packet_id: %d, sequence_number: %d, fragment type: %d, mpu_fragments is: %p, all_mpu_frags_vector.size: %zu\n", __LINE__, mpu_type_packet->mmtp_packet_header.packet_counter, mpu_type_packet->mmtp_mpu_type_packet_header.mmtp_packet_id,  mpu_type_packet->mmtp_mpu_type_packet_header.mpu_sequence_number, mpu_type_packet->mmtp_mpu_type_packet_header.mpu_fragment_type, mpu_fragments, mpu_fragments->all_mpu_fragments_vector.size);
+
+		//__PRINTF_TRACE("%d: to_assign_payload_vector, sequence_number: %d, size is: %zu\n", __LINE__, mpu_type_packet->mmtp_mpu_type_packet_header.mpu_sequence_number, to_assign_payload_vector->timed_fragments_vector.size);
 		if(mpu_type_packet->mmtp_mpu_type_packet_header.mpu_timed_flag) {
-			__PRINTF_TRACE("%d:mpu_data_unit_payload_fragments_get_or_set_mpu_sequence_number_from_packet, sequence_number: %d, pushing to timed_fragments_vector: %p", __LINE__, to_assign_payload_vector->mpu_sequence_number, &to_assign_payload_vector->timed_fragments_vector);
+			//__PRINTF_TRACE("%d:mpu_data_unit_payload_fragments_get_or_set_mpu_sequence_number_from_packet, sequence_number: %d, pushing to timed_fragments_vector: %p", __LINE__, to_assign_payload_vector->mpu_sequence_number, &to_assign_payload_vector->timed_fragments_vector);
 			atsc3_vector_push(&to_assign_payload_vector->timed_fragments_vector, mpu_type_packet);
 		} else {
 			atsc3_vector_push(&to_assign_payload_vector->nontimed_fragments_vector, mpu_type_packet);

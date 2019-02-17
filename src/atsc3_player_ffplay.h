@@ -76,6 +76,8 @@ void pipe_buffer_push_block(pipe_ffplay_buffer_t* pipe_ffplay_buffer, uint8_t* b
 #define __PLAYER_FFPLAY_DEBUG_READER(...)   if(_PLAYER_FFPLAY_DEBUG_ENABLED) { printf("%s:%d:DEBUG_READER:%.4f: ",__FILE__,__LINE__, gt()); printf(__VA_ARGS__); printf("\n"); }
 #define __PLAYER_FFPLAY_DEBUG_WRITER(...)   if(_PLAYER_FFPLAY_DEBUG_ENABLED) { printf("%s:%d:DEBUG_WRITER:%.4f: ",__FILE__,__LINE__, gt()); printf(__VA_ARGS__); printf("\n"); }
 
+#define __PLAYER_FFPLAY_TRACE_READER(...)   if(_PLAYER_FFPLAY_TRACE_ENABLED) { printf("%s:%d:TRACE:%.4f: ",__FILE__,__LINE__, gt()); printf(__VA_ARGS__); printf("\n"); }
+
 #define __PLAYER_FFPLAY_TRACE(...)   if(_PLAYER_FFPLAY_TRACE_ENABLED) { printf("%s:%d:TRACE:%.4f: ",__FILE__,__LINE__, gt()); printf(__VA_ARGS__); printf("\n"); }
 #define __PLAYER_FFPLAY_TRACE_WRITER(...)  if(_PLAYER_FFPLAY_TRACE_ENABLED) { printf("%s:%d:TRACE_WRITER:%.4f: ",__FILE__,__LINE__, gt()); printf(__VA_ARGS__); printf("\n"); }
 #endif /* ATSC3_PLAYER_FFPLAY_H_ */

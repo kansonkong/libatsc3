@@ -19,7 +19,7 @@ libatsc3_core: libatsc3.o
 
 unit_tests: atsc3_lmt_test atsc3_lls_slt_parser_test atsc3_lls_test atsc3_lls_SystemTime_test atsc3_mmt_signaling_message_test atsc3_isobmff_box_test
 
-listener_tests: atsc3_alc_listener_test atsc3_lls_listener_test atsc3_mmt_listener_test atsc3_listener_test 
+listener_tests: atsc3_alc_listener_test atsc3_lls_listener_test atsc3_mmt_listener_test atsc3_listener_test atsc3_mmt_listener_test_bento
 # atsc3_listener_metrics_test
 
 listener_ncurses: atsc3_listener_metrics_ncurses
@@ -142,7 +142,15 @@ atsc3_listener_metrics_ncurses: atsc3_listener_metrics_ncurses.c atsc3_bandwidth
 	#cc -D _TEST_RUN_VALGRIND_OSX_=true -g atsc3_listener_metrics_ncurses.c atsc3_bandwidth_statistics.c atsc3_packet_statistics.c libatsc3.o -lz -lpcap -lncurses -o atsc3_listener_metrics_ncurses
 
 
-mpu_isobmff_bento: bento4/MPUInspector.cpp bento4/MPUInspector.h bento4/MPUProcessor.cpp
-	g++ bento4/MPUProcessor.cpp -I../bento/include/ -L../bento/lib -lap4 -o MPUISOBmffProcessor
+atsc3_mmt_listener_test_bento: atsc3_mmt_listener_test_bento.c  bento4/MPUtoISOBMFFProcessor.h bento4/MPUtoISOBMFFProcessor.cpp
+	g++ -g atsc3_mmt_listener_test_bento.c bento4/MPUtoISOBMFFProcessor.cpp libatsc3.o -I../bento/include/ -L../bento/lib -lap4   -lz -lpcap -o atsc3_mmt_listener_test_bento
+
+
+mpu_isobmff_bento:  bento4/MPUProcessor.cpp
+	g++ -g bento4/MPUProcessor.cpp -I../bento/include/ -L../bento/lib -lap4 -o MPUISOBmffProcessor
 	
-	
+#bento4/MPUProcessor.cpp	
+
+
+
+
