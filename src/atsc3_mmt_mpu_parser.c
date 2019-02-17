@@ -461,13 +461,14 @@ void mmt_mpu_free_payload(mmtp_payload_fragments_union_t* mmtp_payload_fragments
 	//free raw data block allocs
 	if(mmtp_payload_fragments && mmtp_payload_fragments->mmtp_packet_header.mmtp_payload_type == 0x0) {
 		if(mmtp_payload_fragments->mmtp_mpu_type_packet_header.raw_packet) {
-			free(mmtp_payload_fragments->mmtp_mpu_type_packet_header.raw_packet);
+			block_Release(&mmtp_payload_fragments->mmtp_mpu_type_packet_header.raw_packet);
 			mmtp_payload_fragments->mmtp_mpu_type_packet_header.raw_packet = NULL;
 		}
 
 		if(mmtp_payload_fragments->mmtp_mpu_type_packet_header.mpu_data_unit_payload) {
 			_MMTP_TRACE("mmtp_payload_fragments->mmtp_mpu_type_packet_header.mpu_data_unit_payload BEFORE : %p", mmtp_payload_fragments->mmtp_mpu_type_packet_header.mpu_data_unit_payload);
 			block_Release(&mmtp_payload_fragments->mmtp_mpu_type_packet_header.mpu_data_unit_payload);
+			mmtp_payload_fragments->mmtp_mpu_type_packet_header.mpu_data_unit_payload = NULL;
 		}
 	}
 

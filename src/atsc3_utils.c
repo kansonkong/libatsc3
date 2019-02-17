@@ -212,7 +212,7 @@ void block_Release(block_t** a_ptr) {
 			a->p_buffer = NULL;
 		}
 		free(a);
-		a_ptr = NULL;
+		*a_ptr = NULL;
 	}
 }
 

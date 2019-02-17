@@ -165,7 +165,7 @@ AP4_DataBuffer* mpuToISOBMFFProcessBoxes(uint8_t* full_mpu_payload, uint32_t ful
 
     AP4_MemoryByteStream* memoryInputByteStream = new AP4_MemoryByteStream(full_mpu_payload, full_mpu_payload_size);
     
-    AP4_DataBuffer* dataBuffer = new AP4_DataBuffer(512);
+    AP4_DataBuffer* dataBuffer = new AP4_DataBuffer(4096);
 
     // open the output memory buffer, assume we won't be bigger than our ingest payload size for now
     AP4_MemoryByteStream* memoryOutputByteStream = new AP4_MemoryByteStream(dataBuffer);
