@@ -296,18 +296,18 @@ void process_packet(u_char *user, const struct pcap_pkthdr *pkthdr, const u_char
 
 					} else {
 						__WARN("Movie Fragment Metadata is NULL!");
-						goto cleanup; //for now
+						goto update_previous_mmtp_payload; //for now
 					}
 
 					if(!data_unit_payload_types) {
 						__WARN("data_unit_payload_types is null!");
-						goto cleanup;
+						goto update_previous_mmtp_payload;
 					}
 					mpu_data_unit_payload_fragments_timed_vector_t* data_unit_payload_fragments = &data_unit_payload_types->timed_fragments_vector;
 
 					if(!data_unit_payload_fragments) {
 						__WARN("data_unit_payload_fragments is null!");
-						goto cleanup;
+						goto update_previous_mmtp_payload;
 					}
 
 
@@ -368,11 +368,12 @@ void process_packet(u_char *user, const struct pcap_pkthdr *pkthdr, const u_char
 					}
 				}
 
-				mmtp_payload_previous_for_reassembly = mmtp_payload;
 
 			} else {
 				//non-timed
 			}
+
+update_previous_mmtp_payload:
 
 			mmtp_payload_previous_for_reassembly = mmtp_payload;
 
