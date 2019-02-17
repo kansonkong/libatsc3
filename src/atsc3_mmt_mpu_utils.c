@@ -179,7 +179,7 @@ cleanup:
 
 void mpu_push_to_output_buffer_no_locking(pipe_ffplay_buffer_t* pipe_ffplay_buffer, mmtp_payload_fragments_union_t* mmtp_payload) {
 
-	__MMT_MPU_WARN("payload of size: %d payload type: 0x%x", mmtp_payload->mmtp_mpu_type_packet_header.mpu_data_unit_payload->i_buffer, mmtp_payload->mmtp_mpu_type_packet_header.mpu_fragment_type);
+	__MMT_MPU_DEBUG("payload of size: %d payload type: 0x%x", mmtp_payload->mmtp_mpu_type_packet_header.mpu_data_unit_payload->i_buffer, mmtp_payload->mmtp_mpu_type_packet_header.mpu_fragment_type);
 
 	//discard if we are not a mpu payload
 	if(mmtp_payload->mmtp_mpu_type_packet_header.mmtp_payload_type != 0x0) {
