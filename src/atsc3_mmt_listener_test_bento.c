@@ -252,16 +252,12 @@ void process_packet(u_char *user, const struct pcap_pkthdr *pkthdr, const u_char
 					//hack...mmtp_payload_previous_for_reassembly->mmtp_mpu_type_packet_header.mpu_sequence_number);
 					//mpu_data_unit_payload_fragments_t* mpu_metadata_fragments =		mpu_data_unit_payload_fragments_find_mpu_sequence_number(&mmtp_sub_flow->mpu_fragments->mpu_metadata_fragments_vector, 	mmtp_payload->mmtp_mpu_type_packet_header.mpu_sequence_number);
 					mpu_data_unit_payload_fragments_t* mpu_metadata_fragments =		mmtp_sub_flow->mpu_fragments->mpu_metadata_fragments_vector.data[0];
-
 					mpu_data_unit_payload_fragments_t* movie_metadata_fragments = 	mpu_data_unit_payload_fragments_find_mpu_sequence_number(&mmtp_sub_flow->mpu_fragments->movie_fragment_metadata_vector, mmtp_payload_previous_for_reassembly->mmtp_mpu_type_packet_header.mpu_sequence_number);
-
 					mpu_data_unit_payload_fragments_t* data_unit_payload_types =	mpu_data_unit_payload_fragments_find_mpu_sequence_number(&mmtp_sub_flow->mpu_fragments->media_fragment_unit_vector,		mmtp_payload_previous_for_reassembly->mmtp_mpu_type_packet_header.mpu_sequence_number);
 
 					mmtp_payload_fragments_union_t* mpu_metadata = NULL;
-					//at mpu_sequence_number: %u, mpu_metadata packet_id: %d", mmtp_payload_previous_for_reassembly->mmtp_mpu_type_packet_header.mpu_sequence_number, mpu_metadata->mmtp_packet_header.mmtp_packet_id);
+					uint32_t total_mdat_body_size = 0;
 
-
-//					mpu_metadata_fragments->
 					if(mpu_metadata_fragments && mpu_metadata_fragments->timed_fragments_vector.size) {
 						__INFO("MPU Metadata: fragments: %p, size: %lu", mpu_metadata_fragments, mpu_metadata_fragments->timed_fragments_vector.size);
 
@@ -316,7 +312,6 @@ void process_packet(u_char *user, const struct pcap_pkthdr *pkthdr, const u_char
 					if(fragment_metadata) {
 						pipe_buffer_reader_mutex_lock(pipe_ffplay_buffer);
 
-						uint32_t total_mdat_body_size = 0;
 
 						//todo - keep an array of our offsets here if we have sequence gaps...
 						//data_unit payload is only fragment_type = 0x2
@@ -350,6 +345,7 @@ void process_packet(u_char *user, const struct pcap_pkthdr *pkthdr, const u_char
 
 						mpu_push_to_output_buffer_no_locking(pipe_ffplay_buffer, packet);
 					}
+					__INFO("Data Unit Payloads: pushed %d total fragments, over %u Fragment Metadata: Found for mpu_sequence_number: %u, fragment_metadata packet_id: %d", total_fragments, total_mdat_body_size, mmtp_payload_previous_for_reassembly->mmtp_mpu_type_packet_header.mpu_sequence_number, fragment_metadata->mmtp_packet_header.mmtp_packet_id);
 
 					//only trigger a signal if we have our init box and fragment metadata for this cycle
 					if(pipe_ffplay_buffer->has_written_init_box && fragment_metadata) {
@@ -455,7 +451,7 @@ int main(int argc,char **argv) {
     int dst_ip_port_filter_int;
     int dst_packet_id_filter_int;
 
-    _MMT_MPU_DEBUG_ENABLED = 1;
+    _MMT_MPU_DEBUG_ENABLED = 0;
     _PLAYER_FFPLAY_DEBUG_ENABLED = 1;
     _MMTP_DEBUG_ENABLED = 0;
     _MPU_DEBUG_ENABLED = 0;
