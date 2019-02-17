@@ -153,15 +153,15 @@ AP4_DataBuffer* mpuToISOBMFFProcessBoxes(uint8_t* full_mpu_payload, uint32_t ful
 	//AP4_Result result = AP4_FileByteStream::Create(filename, AP4_FileByteStream::STREAM_MODE_READ, input);
   //  AP4_MemoryByteStream
 	//    AP4_MemoryByteStream(const AP4_UI08* buffer, AP4_Size size);
-
-	char* filename = (char*)calloc(20, sizeof(char));
-	snprintf(filename, 20, "mpudump-%d", mpu_dump_count++);
-	FILE* f = fopen(filename, "w");
-	for(int i=0; i < full_mpu_payload_size; i++) {
-		fwrite(&full_mpu_payload[i], 1, 1, f);
-
-	}
-	fclose(f);
+//
+//	char* filename = (char*)calloc(20, sizeof(char));
+//	snprintf(filename, 20, "mpudump-%d", mpu_dump_count++);
+//	FILE* f = fopen(filename, "w");
+//	for(int i=0; i < full_mpu_payload_size; i++) {
+//		fwrite(&full_mpu_payload[i], 1, 1, f);
+//
+//	}
+//	fclose(f);
 
     AP4_MemoryByteStream* memoryInputByteStream = new AP4_MemoryByteStream(full_mpu_payload, full_mpu_payload_size);
     
