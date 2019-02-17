@@ -244,7 +244,6 @@ void process_packet(u_char *user, const struct pcap_pkthdr *pkthdr, const u_char
 
 			if(mmtp_payload->mmtp_mpu_type_packet_header.mpu_timed_flag == 1) {
 
-				if(mmtp_payload_previous_for_reassembly && mmtp_payload_previous_for_reassembly->mmtp_mpu_type_packet_header.mpu_sequence_number != mmtp_payload->mmtp_mpu_type_packet_header.mpu_sequence_number) {
 
 				if(mmtp_payload_previous_for_reassembly && mmtp_payload_previous_for_reassembly->mmtp_mpu_type_packet_header.mpu_sequence_number != mmtp_payload->mmtp_mpu_type_packet_header.mpu_sequence_number) {
 					__INFO("recon for mpu_sequence_number: %u", mmtp_payload_previous_for_reassembly->mmtp_mpu_type_packet_header.mpu_sequence_number);
