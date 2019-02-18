@@ -218,3 +218,8 @@ void mpu_push_to_output_buffer_no_locking(pipe_ffplay_buffer_t* pipe_ffplay_buff
 cleanup:
 	return;
 }
+
+void mpu_fragments_vector_shrink_to_fit(mpu_fragments_t* mpu_fragments) {
+	//atsc3_vector_shrink_to_fit(&mpu_fragments->all_mpu_fragments_vector);
+	atsc3_vector_autoshrink(&mpu_fragments->all_mpu_fragments_vector);
+}

@@ -20,6 +20,8 @@ void mpu_push_to_output_buffer(pipe_ffplay_buffer_t* ffplay_buffer, mmtp_payload
 
 void mpu_push_to_output_buffer_no_locking(pipe_ffplay_buffer_t* ffplay_buffer, mmtp_payload_fragments_union_t* mmtp_payload);
 
+void mpu_fragments_vector_shrink_to_fit(mpu_fragments_t* mpu_fragments);
+
 #define __MMT_MPU_ERROR(...)   printf("%s:%d:ERROR :",__FILE__,__LINE__);printf(__VA_ARGS__);printf("\n");
 #define __MMT_MPU_WARN(...)    printf("%s:%d:WARN: ",__FILE__,__LINE__);printf(__VA_ARGS__);printf("\n");
 #define __MMT_MPU_INFO(...)    printf("%s:%d: ",__FILE__,__LINE__);printf(__VA_ARGS__);printf("\n");

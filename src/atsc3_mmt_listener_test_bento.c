@@ -52,6 +52,7 @@ extern "C" {
 #include "atsc3_mmt_mpu_utils.h"
 
 #include "atsc3_player_ffplay.h"
+#include "atsc3_vector.h"
 
 }
 
@@ -243,19 +244,25 @@ void process_packet(u_char *user, const struct pcap_pkthdr *pkthdr, const u_char
 
 			if(mmtp_payload->mmtp_mpu_type_packet_header.mpu_timed_flag == 1) {
 				mpu_data_unit_payload_fragments_t* data_unit_payload_types = NULL;
-				mpu_data_unit_payload_fragments_timed_vector_t* data_unit_payload_fragments = NULL;
+				mpu_data_unit_payload_fragments_timed_vector_t* data_unit_payload_fragments = NULL; //techincally this is mpu_fragments->media_fragment_unit_vector
+				mpu_data_unit_payload_fragments_t* mpu_metadata_fragments =	NULL;
+				mpu_data_unit_payload_fragments_t* movie_metadata_fragments  = NULL;
+				mmtp_sub_flow_t* mmtp_sub_flow = NULL;
 
 				if(mmtp_payload_previous_for_reassembly && mmtp_payload_previous_for_reassembly->mmtp_mpu_type_packet_header.mpu_sequence_number != mmtp_payload->mmtp_mpu_type_packet_header.mpu_sequence_number) {
 					__INFO("Starting re-fragmenting because mpu_sequence number changed from %u to %u", mmtp_payload_previous_for_reassembly->mmtp_mpu_type_packet_header.mpu_sequence_number, mmtp_payload->mmtp_mpu_type_packet_header.mpu_sequence_number);
 
 					//reassemble previous segment
-					mmtp_sub_flow_t* mmtp_sub_flow = mmtp_sub_flow_vector_get_or_set_packet_id(mmtp_sub_flow_vector, mmtp_payload_previous_for_reassembly->mmtp_packet_header.mmtp_packet_id);
+					mmtp_sub_flow = mmtp_sub_flow_vector_get_or_set_packet_id(mmtp_sub_flow_vector, mmtp_payload_previous_for_reassembly->mmtp_packet_header.mmtp_packet_id);
+
 
 					//hack...mmtp_payload_previous_for_reassembly->mmtp_mpu_type_packet_header.mpu_sequence_number);
 					//mpu_data_unit_payload_fragments_t* mpu_metadata_fragments =		mpu_data_unit_payload_fragments_find_mpu_sequence_number(&mmtp_sub_flow->mpu_fragments->mpu_metadata_fragments_vector, 	mmtp_payload->mmtp_mpu_type_packet_header.mpu_sequence_number);
-					mpu_data_unit_payload_fragments_t* mpu_metadata_fragments =		mmtp_sub_flow->mpu_fragments->mpu_metadata_fragments_vector.data[0];
-					mpu_data_unit_payload_fragments_t* movie_metadata_fragments = 	mpu_data_unit_payload_fragments_find_mpu_sequence_number(&mmtp_sub_flow->mpu_fragments->movie_fragment_metadata_vector, mmtp_payload_previous_for_reassembly->mmtp_mpu_type_packet_header.mpu_sequence_number);
-					data_unit_payload_types =	mpu_data_unit_payload_fragments_find_mpu_sequence_number(&mmtp_sub_flow->mpu_fragments->media_fragment_unit_vector,		mmtp_payload_previous_for_reassembly->mmtp_mpu_type_packet_header.mpu_sequence_number);
+
+					mpu_metadata_fragments 	 = mmtp_sub_flow->mpu_fragments->mpu_metadata_fragments_vector.data ? mmtp_sub_flow->mpu_fragments->mpu_metadata_fragments_vector.data[0] : NULL;
+
+					movie_metadata_fragments = mpu_data_unit_payload_fragments_find_mpu_sequence_number(&mmtp_sub_flow->mpu_fragments->movie_fragment_metadata_vector, mmtp_payload_previous_for_reassembly->mmtp_mpu_type_packet_header.mpu_sequence_number);
+					data_unit_payload_types  = mpu_data_unit_payload_fragments_find_mpu_sequence_number(&mmtp_sub_flow->mpu_fragments->media_fragment_unit_vector, mmtp_payload_previous_for_reassembly->mmtp_mpu_type_packet_header.mpu_sequence_number);
 
 					mmtp_payload_fragments_union_t* mpu_metadata = NULL;
 					uint32_t total_mdat_body_size = 0;
@@ -320,7 +327,11 @@ void process_packet(u_char *user, const struct pcap_pkthdr *pkthdr, const u_char
 						//data_unit payload is only fragment_type = 0x2
 						for(int i=0; i < total_fragments; i++) {
 							mmtp_payload_fragments_union_t* packet = data_unit_payload_fragments->data[i];
-							__TRACE("i: %d, p: %p, frag indicator is: %d, mpu_sequence_number: %u, size: %u, packet_counter: %u, data_unit payload: %p, block_t: %p", i, packet, packet->mpu_data_unit_payload_fragments_timed.mpu_fragmentation_indicator, packet->mpu_data_unit_payload_fragments_timed.mpu_sequence_number, packet->mpu_data_unit_payload_fragments_timed.mpu_data_unit_payload->i_buffer, packet->mpu_data_unit_payload_fragments_timed.packet_counter, packet->mpu_data_unit_payload_fragments_timed.mpu_data_unit_payload, packet->mpu_data_unit_payload_fragments_timed.mpu_data_unit_payload->p_buffer);
+							__TRACE("i: %d, p: %p, frag indicator is: %d, mpu_sequence_number: %u, size: %u, packet_counter: %u, data_unit payload: %p, block_t: %p", i, packet,
+									packet->mpu_data_unit_payload_fragments_timed.mpu_fragmentation_indicator, packet->mpu_data_unit_payload_fragments_timed.mpu_sequence_number,
+									packet->mpu_data_unit_payload_fragments_timed.mpu_data_unit_payload->i_buffer,
+									packet->mpu_data_unit_payload_fragments_timed.packet_counter, packet->mpu_data_unit_payload_fragments_timed.mpu_data_unit_payload,
+									packet->mpu_data_unit_payload_fragments_timed.mpu_data_unit_payload->p_buffer);
 
 							total_mdat_body_size += packet->mpu_data_unit_payload_fragments_timed.mpu_data_unit_payload->i_buffer;
 						}
@@ -366,16 +377,80 @@ void process_packet(u_char *user, const struct pcap_pkthdr *pkthdr, const u_char
 
 purge_pending_mfu_and_update_previous_mmtp_payload:
 
+				//clear out our "global" packet_id data_unit_payloads from the mpu fragments
+				mpu_fragments_t* mpu_fragments = NULL;
+				if(mmtp_payload_previous_for_reassembly) {
+					if(!mmtp_sub_flow) {
+						//try and find our packet_id subflow to clean up any intermediate objects
+						mmtp_sub_flow = mmtp_sub_flow_vector_get_or_set_packet_id(mmtp_sub_flow_vector, mmtp_payload_previous_for_reassembly->mmtp_packet_header.mmtp_packet_id);
+						__INFO("mmtp_sub_flow was null, now: %p, resolved from sub_flow_vector and packet_id: %d", mmtp_sub_flow, mmtp_payload_previous_for_reassembly->mmtp_packet_header.mmtp_packet_id);
+
+					}
+
+					if(mmtp_sub_flow) {
+						 mpu_fragments = mpu_fragments_get_or_set_packet_id(mmtp_sub_flow, mmtp_payload_previous_for_reassembly->mmtp_packet_header.mmtp_packet_id);
+					}
+
+					if(!data_unit_payload_fragments && mpu_fragments) {
+						data_unit_payload_types = mpu_data_unit_payload_fragments_find_mpu_sequence_number(&mpu_fragments->media_fragment_unit_vector, mmtp_payload_previous_for_reassembly->mmtp_mpu_type_packet_header.mpu_sequence_number);
+						if(data_unit_payload_types && data_unit_payload_types->timed_fragments_vector.data) {
+							data_unit_payload_fragments = &data_unit_payload_types->timed_fragments_vector;
+						}
+					}
+				}
+
 				if(data_unit_payload_fragments) {
+					//clear out matching packets from allpackets,
+					ssize_t* all_packets_index = (long*) calloc(1, sizeof(ssize_t));
+
 					//clear out any mfu's in queue if we are here
 					//remove our packets from the subflow and free block allocs, as mpu_push_to_output_buffer_no_locking will copy the p_buffer to a slab
 					for(int i=0; i < data_unit_payload_fragments->size; i++) {
+
 						mmtp_payload_fragments_union_t* packet = data_unit_payload_fragments->data[i];
 
 						__INFO("freeing payload: %p, packet_counter: %u, packet_sequence_number: %u", mmtp_payload, packet->mmtp_mpu_type_packet_header.packet_counter, packet->mmtp_mpu_type_packet_header.mpu_sequence_number);
-						mmtp_payload_fragments_union_free( &packet);
-						atsc3_vector_remove_noshrink(data_unit_payload_fragments, i);
+
+						//					mmtp_sub_flow->mpu_fragments->all_mpu_fragments_vector
+
+						//free the sub-flow fragment
+						atsc3_vector_index_of(&mmtp_sub_flow->mpu_fragments->all_mpu_fragments_vector, packet, all_packets_index);
+
+						if(*all_packets_index >-1) {
+							__INFO("freeing payload from all_mpu_fragments_vector via vector_remove_noshrkink at index: %ld", *all_packets_index);
+							atsc3_vector_remove_noshrink(&mmtp_sub_flow->mpu_fragments->all_mpu_fragments_vector, *all_packets_index);
+						}
+
+						if(mpu_fragments) {
+							//free global fragment
+							atsc3_vector_index_of(&mpu_fragments->all_mpu_fragments_vector, packet, all_packets_index);
+							if(*all_packets_index >-1) {
+								atsc3_vector_remove_noshrink(&mpu_fragments->all_mpu_fragments_vector, *all_packets_index);
+
+							}
+
+							printf("---> packet flow all_mpu_Fragments_vector is: %p, size: %lu, mmtp_sub_flow->mpu_fragments is: %p, global mpu_fragments->all_mpu_fragments is: %p, and size is: %lu",
+									&packet->mmtp_mpu_type_packet_header.mmtp_sub_flow->mpu_fragments->all_mpu_fragments_vector,
+									packet->mmtp_mpu_type_packet_header.mmtp_sub_flow->mpu_fragments->all_mpu_fragments_vector.size,
+									&mmtp_sub_flow->mpu_fragments->all_mpu_fragments_vector,
+									&mpu_fragments->all_mpu_fragments_vector,
+									mpu_fragments->all_mpu_fragments_vector.size);
+
+						}
+
+						//clear out any block_t allocs
+						mmtp_payload_fragments_union_free(&packet);
+
 					}
+
+					mpu_fragments_vector_shrink_to_fit(mmtp_sub_flow->mpu_fragments);
+
+					if(mpu_fragments) {
+						mpu_fragments_vector_shrink_to_fit(mpu_fragments);
+					}
+
+					//clear out all of the data uint fragments here...
+					atsc3_vector_clear(data_unit_payload_fragments);
 				}
 
 
