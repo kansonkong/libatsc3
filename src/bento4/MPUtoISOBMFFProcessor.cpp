@@ -92,6 +92,8 @@ void traverseChildren(AP4_Atom* toCheckAtom) {
             if(strncmp(toRemoveEdts, name, 4) == 0 || strncmp(toRemoveTfdt, name, 4) == 0) {
                 printf("removing %s\n", name);
                 atom->Detach();
+                //seems to throw up a segfault? delete atom;
+
                 atom = NULL;
             } else if(strncmp(toFindTrun, name, 4) == 0) {
                 AP4_TrunAtom* trunAtom = AP4_DYNAMIC_CAST(AP4_TrunAtom, atom);
@@ -104,6 +106,8 @@ void traverseChildren(AP4_Atom* toCheckAtom) {
                 if(trexAtom->GetTrackId() == 2) {
                     printf("removing %s\n", name);
                     atom->Detach();
+                    //seems to throw up a segfault? delete atom;
+
                     return;
                 }
             } else if(strncmp(toRemoveTrak, name, 4) == 0 ) {
@@ -115,6 +119,8 @@ void traverseChildren(AP4_Atom* toCheckAtom) {
                     printf("removing %s\n", name);
                  
                     atom->Detach();
+                    //seems to throw up a segfault? delete atom;
+
                     return;
                 }
             } else if(strncmp(toRemoveTraf, name, 4) == 0 ) {
@@ -133,6 +139,8 @@ void traverseChildren(AP4_Atom* toCheckAtom) {
                     }
                     //adjust the other trun offset
                     atom->Detach();
+                    //seems to throw up a segfault? delete atom;
+
                     return;
                 }
             }
@@ -197,6 +205,8 @@ AP4_DataBuffer* mpuToISOBMFFProcessBoxes(uint8_t* full_mpu_payload, uint32_t ful
         
         memoryInputByteStream->Seek(position);
         atom->Inspect(*inspector);
+        delete atom;
+
         memoryInputByteStream->Seek(position);
 
     }
@@ -208,8 +218,11 @@ AP4_DataBuffer* mpuToISOBMFFProcessBoxes(uint8_t* full_mpu_payload, uint32_t ful
     
 
     if (boxDumpConsoleOutput) boxDumpConsoleOutput->Release();
+    if (memoryInputByteStream) memoryInputByteStream->Release();
+
     delete inspector;
 
     
+
     return dataBuffer;
 }
