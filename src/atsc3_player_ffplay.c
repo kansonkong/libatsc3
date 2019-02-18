@@ -30,7 +30,8 @@ void* pipe_buffer_writer_thread(void* pipe_ffplay_buffer_pointer) {
 await_semaphore:
 
 		sem_wait(pipe_ffplay_buffer->pipe_buffer_semaphore);
-		__PLAYER_FFPLAY_ERROR("--> AFTER PIPE_BUFFER_SEMAPHORE")
+		__PLAYER_FFPLAY_DEBUG("PlayerOutputThread, sem wait posted");
+
 		pipe_buffer_reader_mutex_lock(pipe_ffplay_buffer);
 
 		if(pipe_ffplay_buffer->pipe_buffer_reader_to_shutdown) {
@@ -96,7 +97,7 @@ await_semaphore:
 			int bytes_to_write_remaining = pipe_ffplay_buffer->pipe_buffer_writer_pos - i;
 			int to_write_blocksize = bytes_to_write_remaining > __PLAYER_FFPLAY_PIPE_WRITER_BLOCKSIZE ? __PLAYER_FFPLAY_PIPE_WRITER_BLOCKSIZE : bytes_to_write_remaining;
 
-			__PLAYER_FFPLAY_WARN("WRITING from %p, pos: %d, blocksize: %d, total size: %d", &pipe_ffplay_buffer->pipe_buffer_writer[i], i, to_write_blocksize, pipe_ffplay_buffer->pipe_buffer_writer_pos);
+			__PLAYER_FFPLAY_TRACE("WRITING from %p, pos: %d, blocksize: %d, total size: %d", &pipe_ffplay_buffer->pipe_buffer_writer[i], i, to_write_blocksize, pipe_ffplay_buffer->pipe_buffer_writer_pos);
 
 			int fwrite_ret = fwrite(&pipe_ffplay_buffer->pipe_buffer_writer[i], to_write_blocksize, 1, pipe_ffplay_buffer->player_pipe);
 			pipe_ffplay_buffer->pipe_write_counts++;
@@ -183,7 +184,8 @@ pipe_ffplay_buffer_t* pipe_create_ffplay() {
 	}
 	 */
 
-	pipe_ffplay_buffer->player_pipe = fopen("mpu/recon.m4v", "w");
+	//use this for capturing the reconstitued mpu for troubleshooting
+	//pipe_ffplay_buffer->player_pipe = fopen("mpu/recon.m4v", "w");
 
 
 	__PLAYER_FFPLAY_DEBUG("pipe created: file* is %p", pipe_ffplay_buffer->player_pipe);

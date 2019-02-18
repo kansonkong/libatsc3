@@ -327,15 +327,14 @@ void process_packet(u_char *user, const struct pcap_pkthdr *pkthdr, const u_char
 						goto purge_pending_mfu_and_update_previous_mmtp_payload;
 					}
 
-
 					int total_fragments = data_unit_payload_fragments->size;
 
 					if(fragment_metadata) {
 						pipe_buffer_reader_mutex_lock(pipe_ffplay_buffer);
 
-
-						//todo - keep an array of our offsets here if we have sequence gaps...
+						//todo - keep an array of our offsets here if we have sequence gaps or duplicates/out-of-order
 						//data_unit payload is only fragment_type = 0x2
+
 						for(int i=0; i < total_fragments; i++) {
 							mmtp_payload_fragments_union_t* packet = data_unit_payload_fragments->data[i];
 							__TRACE("i: %d, p: %p, frag indicator is: %d, mpu_sequence_number: %u, size: %u, packet_counter: %u, data_unit payload: %p, block_t: %p", i, packet,

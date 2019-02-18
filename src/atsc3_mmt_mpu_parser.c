@@ -409,6 +409,7 @@ mpu_fragments_t* mpu_fragments_get_or_set_packet_id(mmtp_sub_flow_t* mmtp_sub_fl
 	return entry;
 }
 
+//check for duplicate entries before pushing into the corresponding table (based upon packet_id,  packet_sequence_number, mpu_sequence_number and fragmentation counter)
 void mpu_fragments_assign_to_payload_vector(mmtp_sub_flow_t* mmtp_sub_flow, mmtp_payload_fragments_union_t* mpu_type_packet) {
 	//use mmtp_sub_flow ref, find packet_id, map into mpu/mfu vector
 //	mmtp_sub_flow_t mmtp_sub_flow = mpu_type_packet->mpu_
@@ -420,8 +421,8 @@ void mpu_fragments_assign_to_payload_vector(mmtp_sub_flow_t* mmtp_sub_flow, mmtp
 	if(mpu_type_packet->mmtp_mpu_type_packet_header.mpu_fragment_type == 0x00) {
 		//push to mpu_metadata fragments vector
 
-		to_assign_payload_vector = mpu_data_unit_payload_fragments_get_or_set_mpu_sequence_number_from_packet(&mpu_fragments->mpu_metadata_fragments_vector, mpu_type_packet);
 		__PRINTF_TRACE("%d:mpu_fragments_assign_to_payload_vector - MPU fragment type == %x, packet_counter: %u, packet_id: %d, sequence_number: %d, fragment type: %d, mpu_fragments is: %p, all_mpu_frags_vector.size: %zu\n", __LINE__, mpu_type_packet->mmtp_mpu_type_packet_header.mpu_fragment_type, mpu_type_packet->mmtp_packet_header.packet_counter, mpu_type_packet->mmtp_mpu_type_packet_header.mmtp_packet_id,  mpu_type_packet->mmtp_mpu_type_packet_header.mpu_sequence_number, mpu_type_packet->mmtp_mpu_type_packet_header.mpu_fragment_type, mpu_fragments, mpu_fragments->all_mpu_fragments_vector.size);
+		to_assign_payload_vector = mpu_data_unit_payload_fragments_get_or_set_mpu_sequence_number_from_packet(&mpu_fragments->mpu_metadata_fragments_vector, mpu_type_packet);
 
 	} else if(mpu_type_packet->mmtp_mpu_type_packet_header.mpu_fragment_type == 0x01) {
 		//push to mpu_movie_fragment
