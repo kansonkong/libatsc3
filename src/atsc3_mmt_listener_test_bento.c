@@ -242,6 +242,8 @@ void process_packet(u_char *user, const struct pcap_pkthdr *pkthdr, const u_char
 		if(mmtp_payload->mmtp_packet_header.mmtp_payload_type == 0x0) {
 
 			if(mmtp_payload->mmtp_mpu_type_packet_header.mpu_timed_flag == 1) {
+				mpu_data_unit_payload_fragments_t* data_unit_payload_types = NULL;
+				mpu_data_unit_payload_fragments_timed_vector_t* data_unit_payload_fragments = NULL;
 
 				if(mmtp_payload_previous_for_reassembly && mmtp_payload_previous_for_reassembly->mmtp_mpu_type_packet_header.mpu_sequence_number != mmtp_payload->mmtp_mpu_type_packet_header.mpu_sequence_number) {
 					__INFO("Starting re-fragmenting because mpu_sequence number changed from %u to %u", mmtp_payload_previous_for_reassembly->mmtp_mpu_type_packet_header.mpu_sequence_number, mmtp_payload->mmtp_mpu_type_packet_header.mpu_sequence_number);
@@ -253,7 +255,7 @@ void process_packet(u_char *user, const struct pcap_pkthdr *pkthdr, const u_char
 					//mpu_data_unit_payload_fragments_t* mpu_metadata_fragments =		mpu_data_unit_payload_fragments_find_mpu_sequence_number(&mmtp_sub_flow->mpu_fragments->mpu_metadata_fragments_vector, 	mmtp_payload->mmtp_mpu_type_packet_header.mpu_sequence_number);
 					mpu_data_unit_payload_fragments_t* mpu_metadata_fragments =		mmtp_sub_flow->mpu_fragments->mpu_metadata_fragments_vector.data[0];
 					mpu_data_unit_payload_fragments_t* movie_metadata_fragments = 	mpu_data_unit_payload_fragments_find_mpu_sequence_number(&mmtp_sub_flow->mpu_fragments->movie_fragment_metadata_vector, mmtp_payload_previous_for_reassembly->mmtp_mpu_type_packet_header.mpu_sequence_number);
-					mpu_data_unit_payload_fragments_t* data_unit_payload_types =	mpu_data_unit_payload_fragments_find_mpu_sequence_number(&mmtp_sub_flow->mpu_fragments->media_fragment_unit_vector,		mmtp_payload_previous_for_reassembly->mmtp_mpu_type_packet_header.mpu_sequence_number);
+					data_unit_payload_types =	mpu_data_unit_payload_fragments_find_mpu_sequence_number(&mmtp_sub_flow->mpu_fragments->media_fragment_unit_vector,		mmtp_payload_previous_for_reassembly->mmtp_mpu_type_packet_header.mpu_sequence_number);
 
 					mmtp_payload_fragments_union_t* mpu_metadata = NULL;
 					uint32_t total_mdat_body_size = 0;
@@ -292,18 +294,19 @@ void process_packet(u_char *user, const struct pcap_pkthdr *pkthdr, const u_char
 
 					} else {
 						__WARN("Movie Fragment Metadata is NULL!");
-						goto update_previous_mmtp_payload; //for now
+						goto purge_pending_mfu_and_update_previous_mmtp_payload; //for now
 					}
 
 					if(!data_unit_payload_types) {
 						__WARN("data_unit_payload_types is null!");
-						goto update_previous_mmtp_payload;
+						goto purge_pending_mfu_and_update_previous_mmtp_payload;
 					}
-					mpu_data_unit_payload_fragments_timed_vector_t* data_unit_payload_fragments = &data_unit_payload_types->timed_fragments_vector;
+
+					data_unit_payload_fragments = &data_unit_payload_types->timed_fragments_vector;
 
 					if(!data_unit_payload_fragments) {
 						__WARN("data_unit_payload_fragments is null!");
-						goto update_previous_mmtp_payload;
+						goto purge_pending_mfu_and_update_previous_mmtp_payload;
 					}
 
 
@@ -335,7 +338,11 @@ void process_packet(u_char *user, const struct pcap_pkthdr *pkthdr, const u_char
 						delete cleaned_fragment_metadata;
 						pipe_buffer_reader_mutex_unlock(pipe_ffplay_buffer);
 					} else {
+						__WARN("fragment_metadata is null!");
+
 						//TODO - rebuild media fragment box here
+						goto purge_pending_mfu_and_update_previous_mmtp_payload; //for now
+
 					}
 
 					//push to mpu_push_output_buffer
@@ -355,11 +362,17 @@ void process_packet(u_char *user, const struct pcap_pkthdr *pkthdr, const u_char
 					pipe_buffer_reader_mutex_unlock(pipe_ffplay_buffer);
 
 
+				}
+
+purge_pending_mfu_and_update_previous_mmtp_payload:
+
+				if(data_unit_payload_fragments) {
+					//clear out any mfu's in queue if we are here
 					//remove our packets from the subflow and free block allocs, as mpu_push_to_output_buffer_no_locking will copy the p_buffer to a slab
 					for(int i=0; i < data_unit_payload_fragments->size; i++) {
 						mmtp_payload_fragments_union_t* packet = data_unit_payload_fragments->data[i];
 
-						__TRACE("freeing payload: %p, packet_counter: %u, packet_sequence_number: %u", mmtp_payload, mmtp_payload->mmtp_mpu_type_packet_header.packet_counter, mmtp_payload->mmtp_mpu_type_packet_header.mpu_sequence_number);
+						__INFO("freeing payload: %p, packet_counter: %u, packet_sequence_number: %u", mmtp_payload, packet->mmtp_mpu_type_packet_header.packet_counter, packet->mmtp_mpu_type_packet_header.mpu_sequence_number);
 						mmtp_payload_fragments_union_free( &packet);
 						atsc3_vector_remove_noshrink(data_unit_payload_fragments, i);
 					}
@@ -370,11 +383,9 @@ void process_packet(u_char *user, const struct pcap_pkthdr *pkthdr, const u_char
 				//non-timed
 			}
 
-update_previous_mmtp_payload:
-
 			mmtp_payload_previous_for_reassembly = mmtp_payload;
 
-			} else if(mmtp_payload->mmtp_packet_header.mmtp_payload_type == 0x2) {
+		} else if(mmtp_payload->mmtp_packet_header.mmtp_payload_type == 0x2) {
 
 			signaling_message_dump(mmtp_payload);
 
