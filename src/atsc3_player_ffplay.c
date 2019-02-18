@@ -97,10 +97,18 @@ await_semaphore:
 			int to_write_blocksize = bytes_to_write_remaining > __PLAYER_FFPLAY_PIPE_WRITER_BLOCKSIZE ? __PLAYER_FFPLAY_PIPE_WRITER_BLOCKSIZE : bytes_to_write_remaining;
 
 			__PLAYER_FFPLAY_WARN("WRITING from %p, pos: %d, blocksize: %d, total size: %d", &pipe_ffplay_buffer->pipe_buffer_writer[i], i, to_write_blocksize, pipe_ffplay_buffer->pipe_buffer_writer_pos);
+
 			int fwrite_ret = fwrite(&pipe_ffplay_buffer->pipe_buffer_writer[i], to_write_blocksize, 1, pipe_ffplay_buffer->player_pipe);
+			pipe_ffplay_buffer->pipe_write_counts++;
+
+			if(pipe_ffplay_buffer->pipe_write_counts < 25) {
+				usleep(100000); 				//TODO - throttle up our buffer
+			}
+
 			if(fwrite_ret != 1) {
 				__PLAYER_FFPLAY_WARN("short fwrite! at pos: %u, total buffer length: %u", i, pipe_ffplay_buffer->pipe_buffer_writer_pos);
 				//TODO - handle ffmpeg shutdown cases here
+
 
 
 //				atsc3_player_ffplay.c:94:WARN:1550422471.1440: short fwrite! at pos: 0, total buffer length: 614888

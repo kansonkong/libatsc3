@@ -21,10 +21,10 @@
 extern int _PLAYER_FFPLAY_DEBUG_ENABLED;
 extern int _PLAYER_FFPLAY_TRACE_ENABLED;
 
-#define __PLAYER_INITIAL_BUFFER_SEGMENT_COUNT 8  //wait for at least 5 signals
+#define __PLAYER_INITIAL_BUFFER_SEGMENT_COUNT 4  //wait for at least 5 signals
 #define __PLAYER_INITIAL_BUFFER_TARGET 2048000  //and 1 MB of payload before starting to stream to ffplay
 #define __PLAYER_FFPLAY_PIPE_INTERNAL_BUFFER_SIZE 8192000
-#define __PLAYER_FFPLAY_PIPE_WRITER_BLOCKSIZE 128000
+#define __PLAYER_FFPLAY_PIPE_WRITER_BLOCKSIZE 32767
 
 typedef struct pipe_ffplay_buffer {
 	//used to signal pipe writer new data is present
@@ -51,6 +51,8 @@ typedef struct pipe_ffplay_buffer {
 	uint32_t pipe_buffer_writer_size;
 
 	uint8_t* pipe_buffer_writer;
+
+	uint32_t pipe_write_counts;
 
 	bool has_met_minimum_startup_buffer_threshold;
 
