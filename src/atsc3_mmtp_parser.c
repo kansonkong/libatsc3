@@ -255,7 +255,6 @@ void mmtp_sub_flow_vector_init(mmtp_sub_flow_vector_t *mmtp_sub_flow_vector) {
 	atsc3_vector_init(mmtp_sub_flow_vector);
 	__PRINTF_DEBUG("%d:mmtp_sub_flow_vector_init: %p\n", __LINE__, mmtp_sub_flow_vector);
 }
-
 void mmtp_payload_fragments_union_free(mmtp_payload_fragments_union_t** mmtp_payload_fragments_p) {
 	mmtp_payload_fragments_union_t* mmtp_payload_fragment = *mmtp_payload_fragments_p;
 	if(mmtp_payload_fragment) {
@@ -392,7 +391,10 @@ void mmtp_sub_flow_push_mmtp_packet(mmtp_sub_flow_t *mmtp_sub_flow, mmtp_payload
 	atsc3_vector_init(&entry->mpu_fragments->media_fragment_unit_vector);
  */
 
-
+/**
+ *
+ * see atsc3_mmt_listener_bento.c for other places these packets may be apptended to
+ */
 void mmtp_sub_flow_remove_mmtp_packet(mmtp_sub_flow_t *mmtp_sub_flow, mmtp_payload_fragments_union_t *mmtp_packet) {
 	mmtp_packet->mmtp_packet_header.mmtp_sub_flow = mmtp_sub_flow;
 
