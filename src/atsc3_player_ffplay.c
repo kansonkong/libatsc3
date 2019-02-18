@@ -46,10 +46,13 @@ await_semaphore:
 			goto unlock_from_error;
 		}
 
-		if(pipe_ffplay_buffer->pipe_buffer_reader_pos > __PLAYER_INITIAL_BUFFER_TARGET) {
-			pipe_ffplay_buffer->has_met_minimum_startup_buffer_threshold = true;
-		} else {
+		if(!pipe_ffplay_buffer->has_met_minimum_startup_buffer_threshold && pipe_ffplay_buffer->pipe_buffer_reader_pos < __PLAYER_INITIAL_BUFFER_TARGET) {
+			__PLAYER_FFPLAY_INFO("!has_met_minimum_startup_buffer_threshold, buffer level: %d < buffer target: %d", pipe_ffplay_buffer->pipe_buffer_reader_pos,__PLAYER_INITIAL_BUFFER_TARGET );
+
 			goto unlock_from_error;
+		} else {
+			pipe_ffplay_buffer->has_met_minimum_startup_buffer_threshold = true;
+			__PLAYER_FFPLAY_INFO("has_met_minimum_startup_buffer_threshold, buffer level: %d > buffer target: %d", pipe_ffplay_buffer->pipe_buffer_reader_pos,__PLAYER_INITIAL_BUFFER_TARGET );
 		}
 
 		if(pipe_ffplay_buffer->pipe_buffer_reader_pos < 512) {
@@ -114,8 +117,7 @@ await_semaphore:
 			}
 		}
 
-		__PLAYER_FFPLAY_WARN("ffplay AFTER write, to write to pipe: %p complete",
-				pipe_ffplay_buffer->player_pipe);
+		__PLAYER_FFPLAY_WARN("ffplay AFTER write, to write to pipe: %p complete", pipe_ffplay_buffer->player_pipe);
 
 		pipe_ffplay_buffer->pipe_buffer_writer_pos = 0;
 		goto await_semaphore;
@@ -124,9 +126,9 @@ await_semaphore:
 		//unlock if we aren't ready to swap and write
 unlock_from_error:
 
-		__PLAYER_FFPLAY_INFO("..player before mutex_unlock");
+		__PLAYER_FFPLAY_INFO("unlock_from_error, player before mutex_unlock");
 		pipe_buffer_reader_mutex_unlock(pipe_ffplay_buffer);
-		__PLAYER_FFPLAY_INFO("..player before pthread_cond_wait");
+		__PLAYER_FFPLAY_INFO("unlock_from_error, player before await_semaphore");
 		goto await_semaphore;
 	}
 }
