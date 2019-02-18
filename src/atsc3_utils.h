@@ -15,6 +15,7 @@
 #include <sys/time.h>
 
 #include "fixups.h"
+#include "unistd.h"
 
 #define println(...) printf(__VA_ARGS__);printf("\n")
 #define __PRINTLN(...) printf(__VA_ARGS__);printf("\n")
