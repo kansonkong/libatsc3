@@ -329,7 +329,7 @@ void process_packet(u_char *user, const struct pcap_pkthdr *pkthdr, const u_char
 						//AP4_Result tell
 						memcpy(fragment_metadata->mmtp_mpu_type_packet_header.mpu_data_unit_payload->p_buffer, cleaned_fragment_metadata->GetData(), cleaned_fragment_metadata->GetDataSize());
 
-						__MMT_MPU_INFO("Fragment Metadata: Got back %d bytes from mpuToISOBMFFProcessBoxes, total mdat box size is: %d", cleaned_fragment_metadata->GetDataSize(), total_mdat_body_size);
+						__INFO("Fragment Metadata: Got back %d bytes from mpuToISOBMFFProcessBoxes, total mdat box size is: %d", cleaned_fragment_metadata->GetDataSize(), total_mdat_body_size);
 
 						mpu_push_to_output_buffer_no_locking(pipe_ffplay_buffer, fragment_metadata);
 						delete cleaned_fragment_metadata;
