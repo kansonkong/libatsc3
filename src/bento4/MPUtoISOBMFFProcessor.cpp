@@ -163,6 +163,12 @@ AP4_DataBuffer* mpuToISOBMFFProcessBoxes(uint8_t* full_mpu_payload, uint32_t ful
 //	}
 //	fclose(f);
 
+	AP4_ByteStream* boxDumpConsoleOutput = NULL;
+	AP4_FileByteStream::Create("-stdout", AP4_FileByteStream::STREAM_MODE_WRITE, boxDumpConsoleOutput);
+
+	AP4_AtomInspector* inspector = new AP4_PrintInspector(*boxDumpConsoleOutput);
+    inspector->SetVerbosity(3);
+
     AP4_MemoryByteStream* memoryInputByteStream = new AP4_MemoryByteStream(full_mpu_payload, full_mpu_payload_size);
     
     AP4_DataBuffer* dataBuffer = new AP4_DataBuffer(4096);
@@ -190,24 +196,20 @@ AP4_DataBuffer* mpuToISOBMFFProcessBoxes(uint8_t* full_mpu_payload, uint32_t ful
         atom->Write(*memoryOutputByteStream);
         
         memoryInputByteStream->Seek(position);
+        atom->Inspect(*inspector);
+        memoryInputByteStream->Seek(position);
+
     }
 
     if(mdat_size > 0) {
 		memoryOutputByteStream->WriteUI32(mdat_size+AP4_ATOM_HEADER_SIZE);
 		memoryOutputByteStream->WriteUI32(AP4_ATOM_TYPE_MDAT);
     }
-//
-//
-//    AP4_Size size = stream->GetDataSize();
-//    const AP4_UI08* data = stream->GetData();
-//
-//    for(unsigned int i=0; i < size; i++) {
-//        fwrite(&data[i], 1, 1, fp);
-//    }
-//
-
     
-//    if (input) input->Release();
+
+    if (boxDumpConsoleOutput) boxDumpConsoleOutput->Release();
+    delete inspector;
+
     
     return dataBuffer;
 }
