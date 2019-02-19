@@ -37,6 +37,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
+#include <stdint.h>
 #include "Ap4.h"
 
 #ifdef __EMSCRIPTEN__
