@@ -10,6 +10,10 @@
 
 #include <stdlib.h>
 #include <stdio.h>
+#include <stdint.h>
+#include <signal.h>
+#include <fcntl.h>
+
 #include <string.h>
 #include <time.h>
 #include <sys/time.h>

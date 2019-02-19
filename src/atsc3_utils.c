@@ -12,16 +12,6 @@
 #include <strings.h>
 
 
-int is_big_endian(void)
-{
-    union {
-        uint32_t i;
-        char c[4];
-    } e = { 0x01000000 };
-
-    return e.c[0];
-}
-
 long long timediff(struct timeval t1, struct timeval t0) {
 	return  (t1.tv_sec-t0.tv_sec)*1000000LL + t1.tv_usec-t0.tv_usec;
 }
