@@ -4,8 +4,9 @@
  *  Created on: Feb 17, 2019
  *      Author: jjustman
  */
-
+#include <stdint.h>
 #include "Ap4.h"
+
 
 #ifndef BENTO4_MPUTOISOBMFFPROCESSOR_H_
 #define BENTO4_MPUTOISOBMFFPROCESSOR_H_
