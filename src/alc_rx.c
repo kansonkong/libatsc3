@@ -42,6 +42,8 @@
 #include <math.h>
 #include <assert.h>
 
+#include <stdint.h>
+
 #ifdef _MSC_VER
 #include <winsock2.h>
 #include <process.h>
@@ -74,6 +76,36 @@
  *
  * @return status of packet [WAITING_FDT = 5, OK = 4, EMPTY_PACKET = 3, HDR_ERROR = 2,
  *                          MEM_ERROR = 1, DUP_PACKET = 0]
+ *
+ *
+ *
+ *
+ *                          Note for ATSC3 compat:  **SEE atsc3_alc_rx.c** for fixed 32bit words
+ *
+ *                          A.3.6 LCT Building Block
+The LCT packet header fields shall be used as defined by the LCT building block in RFC 5651 [26]. The semantics and usage of the following LCT header fields shall be further constrained in ROUTE as follows:
+123
+ATSC A/331:2017 A/331, Annex A 6 December 2017
+ Version number (V) – This 4-bit field indicates the protocol version number. The version number for this specification is ‘0001’.
+
+Congestion Control flag (C) field – This 2-bit field, as defined in RFC 5651 [26], shall be set to ‘00’.
+Protocol-Specific Indication (PSI) – This 2-bit field indicates whether the current packet is a source packet or an FEC repair packet. As the ROUTE source protocol only delivers source packets, this field shall be set to ‘10’.
+
+Transport Session Identifier flag (S) – This 1-bit field shall be set to ‘1’ to indicate a 32-bit word in the TSI field.
+Transport Object Identifier flag (O) – This 2-bit field shall be set to ‘01’ to indicate the number of full 32-bit words in the TOI field.
+
+Half-word flag (H) – This 1-bit field shall be set to ‘0’ to indicate that no half-word field sizes are used.
+
+Codepoint (CP) – This 8-bit field is used to indicate the type of the payload that is carried by this packet, and for ROUTE, is defined as shown below in Table A.3.6 to indicate the type of delivery object carried in the payload of the associated ROUTE packet. Depending on the type of the payload, additional payload header(s) may be added to prefix the payload data.
+
+Transport Session Identifier (TSI) – This 32-bit field shall identify the Transport Session in ROUTE. The context of the Transport Session is provided by signaling metadata. The TSI field is constrained to a length of 32 bits because the Transport Session Identifier flag (S) must be set to ‘1’ and the Half-word flag (H) must be set to ‘0’.
+
+Transport Object Identifier (TOI) – This 32-bit field shall identify the object within this session to which the payload of the current packet belongs. The mapping of the TOI field to the object is provided by the Extended FDT. The TOI field is constrained to a length of 32 bits because the Transport Object Identifier flag (O) must be set to ‘01’ and the Half-word flag (H) must be set to ‘0’.
+
+
+The main changes that ROUTE introduces to the usage of the LCT building block are the following:
+• ROUTE limits the usage of the LCT building block to a single channel per session. Congestion control is thus sender-driven in ROUTE.
+The functionality of receiver-driven layered multicast may still be offered by the application, allowing the receiver application to select the appropriate delivery session based on the bandwidth requirement of that session.
  *
  */
 
@@ -116,7 +148,7 @@ void alc_packet_free(alc_packet_t** alc_packet_ptr) {
 }
 
 
-int alc_rx_analyze_packet(char *data, int len, alc_channel_t *ch, alc_packet_t** alc_packet_ptr) {
+int alc_rx_analyze_packet_non_a331_compliant(char *data, int len, alc_channel_t *ch, alc_packet_t** alc_packet_ptr) {
 
 	int retval = -1;
 	int hdrlen = 0;			/* length of whole FLUTE/ALC/LCT header */
@@ -329,6 +361,9 @@ int alc_rx_analyze_packet(char *data, int len, alc_channel_t *ch, alc_packet_t**
 	 *  16  bits,  0 bits
 	 *
 	 **/
+
+	__uint128_t z;
+
 	ALC_RX_TRACE("reading for to_id at: %d, val: %d", hdrlen, data[hdrlen]);
 
 	if(def_lct_hdr->flag_o == 3) {
@@ -342,6 +377,7 @@ int alc_rx_analyze_packet(char *data, int len, alc_channel_t *ch, alc_packet_t**
 		def_lct_hdr->to_id_bits = max(def_lct_hdr->to_id_bits, 96);
 		def_lct_hdr->to_id[1]  = (data[hdrlen++] << 8) & 0xFF00;
 		def_lct_hdr->to_id[1] |= data[hdrlen++] & 0xFF;
+
 	}
 
 	if(def_lct_hdr->flag_o >= 2) {
@@ -350,11 +386,13 @@ int alc_rx_analyze_packet(char *data, int len, alc_channel_t *ch, alc_packet_t**
 			def_lct_hdr->to_id_bits = max(def_lct_hdr->to_id_bits, 80);
 			def_lct_hdr->to_id[2]  = (data[hdrlen++] << 8) & 0xFF00;
 			def_lct_hdr->to_id[2] |= data[hdrlen++] & 0xFF;
+
 		}
 		//to field is 64 bits
 		def_lct_hdr->to_id_bits = max(def_lct_hdr->to_id_bits, 64);
 		def_lct_hdr->to_id[3]  = (data[hdrlen++] << 8) & 0xFF00;
 		def_lct_hdr->to_id[3] |= data[hdrlen++] & 0xFF;
+
 	}
 	if(def_lct_hdr->flag_o >= 1) {
 		if(def_lct_hdr->flag_o > 1 ||def_lct_hdr->flag_h == 1) {
@@ -362,13 +400,15 @@ int alc_rx_analyze_packet(char *data, int len, alc_channel_t *ch, alc_packet_t**
 			def_lct_hdr->to_id_bits = max(def_lct_hdr->to_id_bits, 48);
 			def_lct_hdr->to_id[4]  = (data[hdrlen++] << 8) & 0xFF00;
 			def_lct_hdr->to_id[4] |= data[hdrlen++] & 0xFF;
+
 		}
 		//tsi field 32 bits
 		def_lct_hdr->to_id_bits = max(def_lct_hdr->to_id_bits, 32);
 		ALC_RX_TRACE("setting field for to_id_bits: %d, byte11: 0x%02x, byte12: 0x%02x", def_lct_hdr->ts_id_bits, data[hdrlen]&0xFF, data[hdrlen+1]&0xFF);
 
-		def_lct_hdr->to_id[5]  = (data[hdrlen++] << 8) & 0xFF00;
-		def_lct_hdr->to_id[5] |= data[hdrlen++] & 0xFF;
+		def_lct_hdr->to_id[5]  = (data[hdrlen++] << 8); //& 0xFF00;
+		def_lct_hdr->to_id[5] |= (data[hdrlen++] & 0xFF);
+
 	}
 	if(def_lct_hdr->flag_o >= 0) {
 		if(def_lct_hdr->flag_o >  0 ||def_lct_hdr->flag_h == 1) {
@@ -376,16 +416,22 @@ int alc_rx_analyze_packet(char *data, int len, alc_channel_t *ch, alc_packet_t**
 			def_lct_hdr->to_id_bits = max(def_lct_hdr->to_id_bits, 16);
 			ALC_RX_TRACE("setting field for to_id_bits: %d, byte13: 0x%02x, byte14: 0x%02x", def_lct_hdr->ts_id_bits, data[hdrlen]&0xFF, data[hdrlen+1]&0xFF);
 
-			def_lct_hdr->to_id[6] = (data[hdrlen++] << 8) & 0xFF00;
+			def_lct_hdr->to_id[6] = (data[hdrlen++] << 8); // & 0xFF00;
 			def_lct_hdr->to_id[6] |= data[hdrlen++] & 0xFF;
+
 		} else {
 			//tso field can be 0 bits
 			def_lct_hdr->to_id_bits = 0;
 		}
 	}
 
+
 	//remap into string representation of toi
-	snprintf(toi, 40, "%hu%hu%hu%hu%hu%hu%hu", def_lct_hdr->to_id[0], def_lct_hdr->to_id[1], def_lct_hdr->to_id[2],	def_lct_hdr->to_id[3], def_lct_hdr->to_id[4], def_lct_hdr->to_id[5], def_lct_hdr->to_id[6]);
+	snprintf(toi, 40, "%u%u%u%u",
+			ntohl(0x00 << 16 |def_lct_hdr->to_id[0]),
+			ntohl((def_lct_hdr->to_id[1] << 16) | def_lct_hdr->to_id[2]),
+			ntohl((def_lct_hdr->to_id[3] << 16) | def_lct_hdr->to_id[4]),
+			ntohl((def_lct_hdr->to_id[5] << 16) | def_lct_hdr->to_id[6]));
 
 	ALC_RX_DEBUG("to_id def_lct_hdr->flag_o: %d, def_lct_hdr->flag_h: %d, length: %d bits, val: %s",
 			def_lct_hdr->flag_o,
@@ -450,9 +496,9 @@ int alc_rx_analyze_packet(char *data, int len, alc_channel_t *ch, alc_packet_t**
 
 	if(!(fec_enc_id == COM_NO_C_FEC_ENC_ID || fec_enc_id == RS_FEC_ENC_ID ||
 		fec_enc_id == SB_SYS_FEC_ENC_ID || fec_enc_id == SIMPLE_XOR_FEC_ENC_ID)) {
-			ALC_RX_WARN("FEC Encoding ID: %i is not supported!", fec_enc_id);
-			retval = HDR_ERROR;
-			goto error;
+			ALC_RX_WARN("FEC Encoding ID: %i is not supported, ignoring!", fec_enc_id);
+//            retval = HDR_ERROR;
+//            goto error;
 	}
 
 	//if we have extra data in the header we haven't read yet, process it as an extension
@@ -626,6 +672,20 @@ int alc_rx_analyze_packet(char *data, int len, alc_channel_t *ch, alc_packet_t**
 
 				  hdrlen += (hel-1) << 2;
 				  exthdrlen -= (hel-1);
+				  break;
+
+			  case EXT_TOL:
+				  /* justman-2019-02-19 - parse out transfer len as there is no close object flag here  - 194*/
+
+  				  transfer_len = (word & 0x00FFFFFF);
+
+                  ALC_RX_INFO("EXT_TOL, tsi:%s,  toi: %s, het is: %d, hel is: %d, exthdrlen: %d, toi transfer len: %llu", tsi, toi, het,  hel, exthdrlen, transfer_len);
+
+                 //assume we are 24bit transfer len
+				 // hdrlen += 4;
+
+			//	  hdrlen += (hel-1) << 2;
+			//	  exthdrlen -= (hel-1);
 				  break;
 
 			  default:

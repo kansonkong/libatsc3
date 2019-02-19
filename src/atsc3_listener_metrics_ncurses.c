@@ -97,7 +97,7 @@ int PACKET_COUNTER=0;
 #include "atsc3_mmt_mpu_utils.h"
 
 #include "alc_channel.h"
-#include "alc_rx.h"
+#include "atsc3_alc_rx.h"
 #include "atsc3_alc_utils.h"
 
 #include "atsc3_bandwidth_statistics.h"
@@ -425,7 +425,7 @@ void process_packet(u_char *user, const struct pcap_pkthdr *pkthdr, const u_char
 			ch.s = matching_lls_slt_alc_session->alc_session;
 
 			//process ALC streams
-			int retval = alc_rx_analyze_packet((char*)udp_packet->data, udp_packet->data_length, &ch, &alc_packet);
+			int retval = alc_rx_analyze_packet_a331_compliant((char*)udp_packet->data, udp_packet->data_length, &ch, &alc_packet);
 			if(!retval) {
 				global_stats->packet_counter_alc_packets_parsed++;
 				alc_packet_dump_to_object(&alc_packet);

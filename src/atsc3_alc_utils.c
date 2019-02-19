@@ -74,21 +74,18 @@ int _ALC_UTILS_TRACE_ENABLED=0;
 bool __ALC_RECON_FILE_PTR_HAS_WRITTEN_INIT_BOX = false;
 
 pipe_ffplay_buffer_t* __ALC_RECON_FILE_BUFFER_STRUCT = NULL;
-char* __ALC_RECON_FILE_PTR_TSI = NULL;
-char* __ALC_RECON_FILE_PTR_TOI_INIT = NULL;
+uint32_t* __ALC_RECON_FILE_PTR_TSI = NULL;
+uint32_t* __ALC_RECON_FILE_PTR_TOI_INIT = NULL;
 
 FILE* __ALC_RECON_FILE_PTR = NULL; //deprecated
 
-static int __INT_LOOP_COUNT=0;
 
 
 char* alc_packet_dump_to_object_get_filename(alc_packet_t* alc_packet) {
 	char *file_name = calloc(255, sizeof(char));
 
-	if(!alc_packet->toi_c) {
-		snprintf(file_name, 255, "%s%s-%s-%d", __ALC_DUMP_OUTPUT_PATH__, alc_packet->toi_c, alc_packet->toi_c, __INT_LOOP_COUNT++);
-	} else {
-		snprintf(file_name, 255, "%s%s-%s", __ALC_DUMP_OUTPUT_PATH__, alc_packet->tsi_c, alc_packet->toi_c);
+	if(alc_packet->def_lct_hdr) {
+		snprintf(file_name, 255, "%s%u-%u", __ALC_DUMP_OUTPUT_PATH__, alc_packet->def_lct_hdr->tsi, alc_packet->def_lct_hdr->toi);
 	}
 
 	return file_name;
@@ -106,14 +103,16 @@ int alc_packet_dump_to_object(alc_packet_t** alc_packet_ptr) {
     mkdir("route", 0777);
 
 	int filename_pos = 0;
-	__ALC_UTILS_TRACE("have tsi: %s, toi: %s, sbn: %x, esi: %x len: %d",
-			alc_packet->tsi_c, alc_packet->toi_c,
+	__ALC_UTILS_TRACE("have tsi: %u, toi: %u, sbn: %x, esi: %x len: %d",
+			alc_packet->def_lct_hdr->tsi, alc_packet->def_lct_hdr->toi,
 			alc_packet->esi, alc_packet->sbn, alc_packet->alc_len);
 
 	FILE *f = NULL;
 
 	//if no TSI, this is metadata and create a new object for each payload
-	if(!alc_packet->tsi_c) {
+	//The SLS fragments shall be delivered on a dedicated LCT transport channel with TSI = 0.
+
+	if(!alc_packet->def_lct_hdr->tsi) {
 		f = fopen(file_name, "w");
 	} else {
 		if(alc_packet->esi>0) {
@@ -139,6 +138,7 @@ int alc_packet_dump_to_object(alc_packet_t** alc_packet_ptr) {
 
 	fclose(f);
 
+	//also investigate alc_packet->transfer_len if we dont get a close object tag
 	if(alc_packet->close_object_flag) {
 		__ALC_UTILS_TRACE("dumping to file done: %s, is complete: %d", file_name, alc_packet->close_object_flag);
 	} else {
@@ -185,11 +185,10 @@ int alc_packet_dump_to_object(alc_packet_t** alc_packet_ptr) {
 
 
 	if(__ALC_RECON_FILE_BUFFER_STRUCT && __ALC_RECON_FILE_PTR_TSI && __ALC_RECON_FILE_PTR_TOI_INIT) {
-		__ALC_UTILS_TRACE("checking %s, %s,  %d", alc_packet->tsi_c, alc_packet->toi_c, alc_packet->close_object_flag);
+		__ALC_UTILS_TRACE("checking tsi: %u, toi: %u,  %d", alc_packet->def_lct_hdr->tsi, alc_packet->def_lct_hdr->toi, alc_packet->close_object_flag);
 
-		if(strncmp(alc_packet->tsi_c, __ALC_RECON_FILE_PTR_TSI, strlen(alc_packet->tsi_c)) == 0 &&
-					strncmp(alc_packet->toi_c, __ALC_RECON_FILE_PTR_TOI_INIT, strlen(alc_packet->toi_c)) &&
-					alc_packet->close_object_flag) {
+		if(alc_packet->def_lct_hdr->tsi == *__ALC_RECON_FILE_PTR_TSI && alc_packet->def_lct_hdr->toi == *__ALC_RECON_FILE_PTR_TOI_INIT &&	alc_packet->close_object_flag) {
+
 			alc_recon_file_buffer_struct_fragment_with_init_box(__ALC_RECON_FILE_BUFFER_STRUCT, alc_packet);
 		}
 	}
@@ -287,16 +286,16 @@ bool __ALC_RECON_HAS_WRITTEN_INIT_BOX = false;
 
 void __alc_recon_fragment_with_init_box(char* file_name, alc_packet_t* alc_packet) {
 
-	char* tsi_init = __TESTING_RECONSTITUTED_TSI__;
-	char* toi_init = __TESTING_RECONSTITUTED_TOI_INIT__;
+	uint32_t tsi_init = __TESTING_RECONSTITUTED_TSI__;
+	uint32_t toi_init = __TESTING_RECONSTITUTED_TOI_INIT__;
 
 	char* init_file_name = calloc(255, sizeof(char));
 	char* recon_file_name = calloc(255, sizeof(char)); //.m4v == 4
 	FILE* recon_output_file = NULL;
 
-	__ALC_UTILS_DEBUG(" - recon %s, %s,  %d", alc_packet->tsi_c, alc_packet->toi_c, alc_packet->close_object_flag);
+	__ALC_UTILS_DEBUG(" alc_recon_fragment_with_init_box: %u, %u,  %d", alc_packet->def_lct_hdr->tsi, alc_packet->def_lct_hdr->toi, alc_packet->close_object_flag);
 
-	snprintf(init_file_name, 255, "%s%s-%s", __ALC_DUMP_OUTPUT_PATH__, tsi_init, toi_init);
+	snprintf(init_file_name, 255, "%s%u-%u", __ALC_DUMP_OUTPUT_PATH__, tsi_init, toi_init);
 	snprintf(recon_file_name, 255, "%s%s", __ALC_DUMP_OUTPUT_PATH__, __TESTING_RECONSITIUTED_FILE_NAME__);
 
 	if(!__ALC_RECON_HAS_WRITTEN_INIT_BOX) {
@@ -370,10 +369,19 @@ cleanup:
 	return;
 }
 
-void alc_recon_file_ptr_set_tsi_toi(FILE* file_ptr, char* tsi, char* toi_init) {
+//watch out for leaks...
+void alc_recon_file_ptr_set_tsi_toi(FILE* file_ptr, uint32_t tsi, uint32_t toi_init) {
 	__ALC_RECON_FILE_PTR = file_ptr;
-	__ALC_RECON_FILE_PTR_TSI = tsi;
-	__ALC_RECON_FILE_PTR_TOI_INIT = toi_init;
+	if(!__ALC_RECON_FILE_PTR_TSI) {
+		__ALC_RECON_FILE_PTR_TSI = calloc(1, sizeof(uint32_t));
+	}
+	*__ALC_RECON_FILE_PTR_TSI = tsi;
+
+
+	if(!__ALC_RECON_FILE_PTR_TOI_INIT) {
+		__ALC_RECON_FILE_PTR_TOI_INIT = calloc(1, sizeof(uint32_t));
+		}
+	*__ALC_RECON_FILE_PTR_TOI_INIT = toi_init;
 }
 
 void alc_recon_file_ptr_fragment_with_init_box(FILE* output_file_ptr, alc_packet_t* alc_packet) {
@@ -384,13 +392,13 @@ void alc_recon_file_ptr_fragment_with_init_box(FILE* output_file_ptr, alc_packet
 	}
 
 	char* file_name = alc_packet_dump_to_object_get_filename(alc_packet);
-	char* toi_init = __TESTING_RECONSTITUTED_TOI_INIT__;
+	uint32_t toi_init = __TESTING_RECONSTITUTED_TOI_INIT__;
 
 	char* init_file_name = calloc(255, sizeof(char));
 
-	__ALC_UTILS_DEBUG("recon %s, %s,  %d", alc_packet->tsi_c, alc_packet->toi_c, alc_packet->close_object_flag);
+	__ALC_UTILS_DEBUG("recon %u, %u, %d", alc_packet->def_lct_hdr->tsi, alc_packet->def_lct_hdr->toi, alc_packet->close_object_flag);
 
-	snprintf(init_file_name, 255, "%s%s-%s", __ALC_DUMP_OUTPUT_PATH__, __ALC_RECON_FILE_PTR_TSI, toi_init);
+	snprintf(init_file_name, 255, "%s%u-%u", __ALC_DUMP_OUTPUT_PATH__, *__ALC_RECON_FILE_PTR_TSI, toi_init);
 
 	if(!__ALC_RECON_FILE_PTR_HAS_WRITTEN_INIT_BOX) {
 		if( access( init_file_name, F_OK ) == -1 ) {
@@ -481,10 +489,10 @@ cleanup:
  * mutex buffer writer
  */
 
-void alc_recon_file_buffer_struct_set_tsi_toi(pipe_ffplay_buffer_t* pipe_ffplay_buffer, char* tsi, char* toi_init) {
+void alc_recon_file_buffer_struct_set_tsi_toi(pipe_ffplay_buffer_t* pipe_ffplay_buffer, uint32_t tsi, uint32_t toi_init) {
 	__ALC_RECON_FILE_BUFFER_STRUCT = pipe_ffplay_buffer;
-	__ALC_RECON_FILE_PTR_TSI = tsi;
-	__ALC_RECON_FILE_PTR_TOI_INIT = toi_init;
+	*__ALC_RECON_FILE_PTR_TSI = tsi;
+	*__ALC_RECON_FILE_PTR_TOI_INIT = toi_init;
 }
 
 
@@ -496,12 +504,12 @@ void alc_recon_file_buffer_struct_fragment_with_init_box(pipe_ffplay_buffer_t* p
 	}
 
 	char* file_name = alc_packet_dump_to_object_get_filename(alc_packet);
-	char* toi_init = __TESTING_RECONSTITUTED_TOI_INIT__;
+	uint8_t toi_init = __TESTING_RECONSTITUTED_TOI_INIT__;
 	char* init_file_name = calloc(255, sizeof(char));
 
-	__ALC_UTILS_DEBUG("alc_recon_file_buffer_struct_fragment_with_init_box - ENTER - %s, %s,  %d", alc_packet->tsi_c, alc_packet->toi_c, alc_packet->close_object_flag);
+	__ALC_UTILS_DEBUG("alc_recon_file_buffer_struct_fragment_with_init_box - ENTER - %u, %u,  %d", alc_packet->def_lct_hdr->tsi, alc_packet->def_lct_hdr->toi, alc_packet->close_object_flag);
 
-	snprintf(init_file_name, 255, "%s%s-%s", __ALC_DUMP_OUTPUT_PATH__, __ALC_RECON_FILE_PTR_TSI, toi_init);
+	snprintf(init_file_name, 255, "%s%u-%u", __ALC_DUMP_OUTPUT_PATH__, *__ALC_RECON_FILE_PTR_TSI, toi_init);
 
 	pipe_buffer_reader_mutex_lock(pipe_ffplay_buffer);
 
@@ -566,12 +574,12 @@ void alc_recon_file_buffer_struct_fragment_with_init_box(pipe_ffplay_buffer_t* p
 	}
 
 	//signal and then unlock, docs indicate the only way to ensure a signal is not lost is to send it while holding the lock
-	__ALC_UTILS_DEBUG("alc_recon_file_buffer_struct_fragment_with_init_box - SIGNALING - %s, %s,  %d", alc_packet->tsi_c, alc_packet->toi_c, alc_packet->close_object_flag);
+	__ALC_UTILS_DEBUG("alc_recon_file_buffer_struct_fragment_with_init_box - SIGNALING - %u, %u,  %d", alc_packet->def_lct_hdr->tsi, alc_packet->def_lct_hdr->toi, alc_packet->close_object_flag);
 
 	pipe_buffer_condition_signal(pipe_ffplay_buffer);
 
 	pipe_buffer_reader_mutex_unlock(pipe_ffplay_buffer);
-	__ALC_UTILS_DEBUG("alc_recon_file_buffer_struct_fragment_with_init_box - RETURN - %s, %s,  %d", alc_packet->tsi_c, alc_packet->toi_c, alc_packet->close_object_flag);
+	__ALC_UTILS_DEBUG("alc_recon_file_buffer_struct_fragment_with_init_box - RETURN - %u, %u,  %d", alc_packet->def_lct_hdr->tsi, alc_packet->def_lct_hdr->toi, alc_packet->close_object_flag);
 
 	goto cleanup;
 
