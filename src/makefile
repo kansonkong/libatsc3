@@ -3,6 +3,8 @@ clean:
 	-rm -f *.o
 	-rm -f route/*
 	-rm -f mmt/*
+	-rm atsc3_mmt_listener_test_bento
+	
 	
 intermediate_lls: atsc3_lls.o atsc3_lls_slt_utils.o  atsc3_lls_alc_utils.o
 
@@ -12,7 +14,7 @@ intermediate_mmt: xml.o atsc3_mmtp_parser.o atsc3_mmt_mpu_parser.o atsc3_mmt_sig
  
  #atsc3_packet_statistics.o 
  
-intermediate_alc:alc_rx.c alc_session.c fec.c null_fec.c rs_fec.c xor_fec.c atsc3_alc_utils.c 
+intermediate_alc:atsc3_alc_rx.c alc_session.c fec.c null_fec.c rs_fec.c xor_fec.c atsc3_alc_utils.c 
 intermediate_ffplay: atsc3_player_ffplay.o
 
 libatsc3_core: libatsc3.o
@@ -61,8 +63,8 @@ atsc3_utils.o: atsc3_utils.h atsc3_utils.c
 fixups_timespec_get.o:  fixups.h fixups_timespec_get.c
 	cc -g -c fixups_timespec_get.c
 
-alc_rx.o:  alc_rx.h alc_rx.c
-	cc -g -c alc_rx.c
+atsc3_alc_rx.o:  atsc3_alc_rx.h atsc3_alc_rx.c atsc3_lct_hdr.h
+	cc -g -c atsc3_alc_rx.c
 
 atsc3_alc_utils.o: atsc3_alc_utils.h atsc3_alc_utils.c
 	cc -g -c atsc3_alc_utils.c
@@ -85,12 +87,12 @@ atsc3_player_ffplay.o: atsc3_player_ffplay.h atsc3_player_ffplay.c
 
 libatsc3.o: xml.o atsc3_lls.o atsc3_lls_slt_utils.o atsc3_mmtp_parser.o atsc3_mmtp_ntp32_to_pts.o atsc3_utils.o \
 		fixups_timespec_get.o atsc3_mmt_signaling_message.o atsc3_mmt_mpu_parser.o alc_channel.o alc_list.o \
-		alc_rx.o alc_session.o fec.o null_fec.o rs_fec.o xor_fec.o mad.o mad_rlc.o transport.o atsc3_alc_utils.o \
+		atsc3_alc_rx.o alc_session.o fec.o null_fec.o rs_fec.o xor_fec.o mad.o mad_rlc.o transport.o atsc3_alc_utils.o \
 		atsc3_lls_alc_utils.o atsc3_mmt_mpu_utils.o atsc3_player_ffplay.o
 	
 	ld -o libatsc3.o -r xml.o atsc3_lls.o atsc3_lls_slt_utils.o atsc3_mmtp_parser.o atsc3_mmtp_ntp32_to_pts.o atsc3_utils.o \
 		fixups_timespec_get.o atsc3_mmt_signaling_message.o atsc3_mmt_mpu_parser.o alc_channel.o alc_list.o \
-		alc_rx.o alc_session.o fec.o null_fec.o rs_fec.o xor_fec.o mad.o mad_rlc.o transport.o atsc3_alc_utils.o \
+		atsc3_alc_rx.o alc_session.o fec.o null_fec.o rs_fec.o xor_fec.o mad.o mad_rlc.o transport.o atsc3_alc_utils.o \
 		atsc3_lls_alc_utils.o atsc3_mmt_mpu_utils.o atsc3_player_ffplay.o
 		
 # atsc3_bandwidth_statistics.o

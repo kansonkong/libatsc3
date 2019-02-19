@@ -150,6 +150,9 @@ pipe_ffplay_buffer_t* pipe_create_ffplay() {
 		abort();
 	}
 
+   // signal(SIGPIPE, SIG_IGN);
+
+    
 	pipe_ffplay_buffer->pipe_buffer_semaphore = sem_open("/atsc3_player_ffplay", O_CREAT, 0644, 0);
 	__PLAYER_FFPLAY_ERROR("sem_init returned: %p", pipe_ffplay_buffer->pipe_buffer_semaphore);
 	assert(pipe_ffplay_buffer->pipe_buffer_semaphore);
@@ -185,7 +188,7 @@ pipe_ffplay_buffer_t* pipe_create_ffplay() {
 	 */
 
 	//use this for capturing the reconstitued mpu for troubleshooting
-	//pipe_ffplay_buffer->player_pipe = fopen("mpu/recon.m4v", "w");
+//	pipe_ffplay_buffer->player_pipe = fopen("mpu/recon.m4v", "w");
 
 
 	__PLAYER_FFPLAY_DEBUG("pipe created: file* is %p", pipe_ffplay_buffer->player_pipe);

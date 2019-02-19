@@ -34,6 +34,8 @@
 #define UDP_FILTER_MDNS_PORT 5353
 
 
+int is_big_endian(void);
+
 long long timediff(struct timeval t1, struct timeval t0);
 double gt();
 

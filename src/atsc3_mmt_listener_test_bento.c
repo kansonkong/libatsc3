@@ -96,6 +96,7 @@ int PACKET_COUNTER=0;
 #define __TRACE(...)
 #endif
 
+
 // extern "C" void lls_table_free(lls_table*);
 
 uint32_t* dst_ip_addr_filter = NULL;
@@ -243,6 +244,8 @@ void process_packet(u_char *user, const struct pcap_pkthdr *pkthdr, const u_char
 		//for filtering MMT flows by a specific packet_id
 		if(dst_packet_id_filter && *dst_packet_id_filter != mmtp_payload->mmtp_packet_header.mmtp_packet_id) {
 			__TRACE("dropping packet id: %d", mmtp_payload->mmtp_packet_header.mmtp_packet_id);
+            mmtp_payload_fragments_union_free(&mmtp_payload);
+
 			goto cleanup;
 		}
 		//dump header, then dump applicable packet type
@@ -300,7 +303,8 @@ void process_packet(u_char *user, const struct pcap_pkthdr *pkthdr, const u_char
 						delete cleaned_mpu_metadata;
 
 						pipe_buffer_reader_mutex_unlock(pipe_ffplay_buffer);
-
+						//dont release this data unit payload as it should be stable for the MPU metadata
+                       
 					} else {
 						__WARN("MPU Metadata is NULL!");
 					}
@@ -358,6 +362,7 @@ void process_packet(u_char *user, const struct pcap_pkthdr *pkthdr, const u_char
 						mpu_push_to_output_buffer_no_locking(pipe_ffplay_buffer, fragment_metadata);
 						delete cleaned_fragment_metadata;
 						pipe_buffer_reader_mutex_unlock(pipe_ffplay_buffer);
+
 					} else {
 						__WARN("fragment_metadata is null!");
 
@@ -372,6 +377,8 @@ void process_packet(u_char *user, const struct pcap_pkthdr *pkthdr, const u_char
 						mmtp_payload_fragments_union_t* packet = data_unit_payload_fragments->data[i];
 
 						mpu_push_to_output_buffer_no_locking(pipe_ffplay_buffer, packet);
+                        
+                        //block_Release(&packet->mmtp_mpu_type_packet_header.mpu_data_unit_payload);
 					}
 					__INFO("Data Unit Payload: MPU_sequence_number: %u, pushed %d total fragments, over %u Fragment Metadata bytes, fragment_metadata packet_id: %d",
 							*last_mpu_sequence_number_received, total_fragments, total_mdat_body_size, fragment_metadata->mmtp_packet_header.mmtp_packet_id);
@@ -448,7 +455,7 @@ purge_pending_mfu_and_update_previous_mmtp_payload:
 				}
 
 
-				if(data_unit_payload_fragments) {
+				if(data_unit_payload_fragments ) {
 					//clear out matching packets from allpackets,
 					ssize_t* all_packets_index = (long*) calloc(1, sizeof(ssize_t));
 
@@ -521,12 +528,11 @@ purge_pending_mfu_and_update_previous_mmtp_payload:
 cleanup:
 
 
-	if(udp_packet->data) {
-		free(udp_packet->data);
-		udp_packet->data = NULL;
-	}
-
 	if(udp_packet) {
+        if(udp_packet->data) {
+            free(udp_packet->data);
+            udp_packet->data = NULL;
+        }
 		free(udp_packet);
 		udp_packet = NULL;
 	}

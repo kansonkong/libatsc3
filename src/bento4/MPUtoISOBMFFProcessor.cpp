@@ -38,6 +38,8 @@
 #include <string.h>
 #include <stdlib.h>
 #include "Ap4.h"
+#include <list>
+using namespace std;
 
 #ifdef __EMSCRIPTEN__
 #include "emscripten.h"
@@ -51,7 +53,7 @@
 int sequenceNumber = 1;
 AP4_TrunAtom* trunToComputeDataOffset = NULL;
 
-void traverseChildren(AP4_Atom* toCheckAtom) {
+void traverseChildren(AP4_Atom* toCheckAtom, list<AP4_Atom*> atomList) {
     AP4_AtomParent* parent = AP4_DYNAMIC_CAST(AP4_ContainerAtom, toCheckAtom);
     
     if(!parent) {
@@ -63,7 +65,9 @@ void traverseChildren(AP4_Atom* toCheckAtom) {
         if(child->GetData()) {
             AP4_Atom* atom = child->GetData();
             AP4_UI32 m_Type2 = atom->GetType();
-            
+
+            atomList.push_back(atom);
+
             char name[5];
             AP4_FormatFourCharsPrintable(name, m_Type2);
             name[4] = '\0';
@@ -93,22 +97,31 @@ void traverseChildren(AP4_Atom* toCheckAtom) {
                 printf("removing %s\n", name);
                 atom->Detach();
                 //seems to throw up a segfault? delete atom;
-
                 atom = NULL;
+
+                //child = NULL;
+
+                return;
             } else if(strncmp(toFindTrun, name, 4) == 0) {
                 AP4_TrunAtom* trunAtom = AP4_DYNAMIC_CAST(AP4_TrunAtom, atom);
                 //todo check with parent/tfhd.track id==1
                 trunToComputeDataOffset = trunAtom;
                 printf("setting trunToComputeDataOffset to: %p\n", trunToComputeDataOffset);
+               // child = NULL;
+
                 
             } else if(strncmp(toRemoveTrex, name, 4) == 0 ) {
                 AP4_TrexAtom* trexAtom = AP4_DYNAMIC_CAST(AP4_TrexAtom, atom);
                 if(trexAtom->GetTrackId() == 2) {
                     printf("removing %s\n", name);
                     atom->Detach();
+                    atom = NULL;
+
                     //seems to throw up a segfault? delete atom;
 
-                    return;
+                   // child = NULL;
+                    
+                 //   return;
                 }
             } else if(strncmp(toRemoveTrak, name, 4) == 0 ) {
                 //dynamic cast to figure out our track id
@@ -119,16 +132,20 @@ void traverseChildren(AP4_Atom* toCheckAtom) {
                     printf("removing %s\n", name);
                  
                     atom->Detach();
-                    //seems to throw up a segfault? delete atom;
+                    atom = NULL;
+                    //child = NULL;
 
-                    return;
+                    //seems to throw up a segfault? delete atom;
+                    //child = NULL;
+
+                   // return;
                 }
             } else if(strncmp(toRemoveTraf, name, 4) == 0 ) {
                 AP4_ContainerAtom* traf = AP4_DYNAMIC_CAST(AP4_ContainerAtom, atom);
                 AP4_TfhdAtom* tfhdAtom = AP4_DYNAMIC_CAST(AP4_TfhdAtom, traf->GetChild(AP4_ATOM_TYPE_TFHD));
                 
                 if(tfhdAtom->GetTrackId() == 2) {
-                    printf("removing %s\n", name);
+                    printf("toRemoveTraf: removing %s\n", name);
                     if(trunToComputeDataOffset) {
                         
                         //20 is the size of the tfdt box removed earlier
@@ -139,17 +156,21 @@ void traverseChildren(AP4_Atom* toCheckAtom) {
                     }
                     //adjust the other trun offset
                     atom->Detach();
+                    atom = NULL;
+//                    child = NULL;
+                   // child = NULL;
                     //seems to throw up a segfault? delete atom;
 
-                    return;
+                 //   return;
                 }
             }
             if(atom) {
-                traverseChildren(atom);
+                traverseChildren(atom, atomList);
             }
         }
-        child = child->GetNext();
-        
+        if(child) {
+            child = child->GetNext();
+        }
     }
 }
 
@@ -186,6 +207,8 @@ AP4_DataBuffer* mpuToISOBMFFProcessBoxes(uint8_t* full_mpu_payload, uint32_t ful
     
     // inspect the atoms one by one
     AP4_Atom* atom;
+    list<AP4_Atom*> atomList;
+    
     AP4_DefaultAtomFactory atom_factory;
     while (atom_factory.CreateAtomFromStream(*memoryInputByteStream, atom) == AP4_SUCCESS) {
         // remember the current stream position because the Inspect method
@@ -200,13 +223,13 @@ AP4_DataBuffer* mpuToISOBMFFProcessBoxes(uint8_t* full_mpu_payload, uint32_t ful
         name[4] = '\0';
         printf("mpuToISOBMFFProcessBoxes - atom is: %s\n", name);
 
-        traverseChildren(atom);
+        traverseChildren(atom, atomList);
         atom->Write(*memoryOutputByteStream);
         
         memoryInputByteStream->Seek(position);
         atom->Inspect(*inspector);
-        delete atom;
-
+        atomList.push_back(atom);
+        
         memoryInputByteStream->Seek(position);
 
     }
@@ -216,7 +239,14 @@ AP4_DataBuffer* mpuToISOBMFFProcessBoxes(uint8_t* full_mpu_payload, uint32_t ful
 		memoryOutputByteStream->WriteUI32(AP4_ATOM_TYPE_MDAT);
     }
     
-
+    //clean up our atom list
+    while(atomList.size()) {
+        
+        AP4_Atom* toClear = atomList.front();
+        atomList.pop_front();
+    //    delete toClear;
+    }
+    
     if (boxDumpConsoleOutput) boxDumpConsoleOutput->Release();
     if (memoryInputByteStream) memoryInputByteStream->Release();
 

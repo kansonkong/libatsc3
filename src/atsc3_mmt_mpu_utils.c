@@ -175,6 +175,8 @@ cleanup:
 
 /*
  * only use this if you will manage the mutex externally
+ *
+ * callee is responsible for freeing mpu_data_unit_payload
  */
 
 void mpu_push_to_output_buffer_no_locking(pipe_ffplay_buffer_t* pipe_ffplay_buffer, mmtp_payload_fragments_union_t* mmtp_payload) {
@@ -198,7 +200,7 @@ void mpu_push_to_output_buffer_no_locking(pipe_ffplay_buffer_t* pipe_ffplay_buff
 		pipe_ffplay_buffer->last_mpu_sequence_number = mmtp_payload->mmtp_mpu_type_packet_header.mpu_sequence_number;
 		pipe_ffplay_buffer->has_written_init_box = true;
 
-		__MMT_MPU_DEBUG("!!!pushing init fragment for %d fragment_type: 0", mmtp_payload->mmtp_mpu_type_packet_header.mpu_sequence_number);
+		__MMT_MPU_DEBUG("pushing init fragment for %d fragment_type: 0", mmtp_payload->mmtp_mpu_type_packet_header.mpu_sequence_number);
 
 		goto cleanup;
 

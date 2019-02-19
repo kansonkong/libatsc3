@@ -109,6 +109,10 @@ extern "C" {
 #define EXT_TIME	2		/**< Time extension header defined by LCT */
 #define	EXT_FTI		64		/**< FEC object transmission information extension header defined by ALC */
 
+//2019-02-19 - ATSC 3.0 compat
+#define EXT_TOL 	194
+
+
 #define SENDER		0		/**< Operation mode is sender */	
 #define RECEIVER	1		/**< Operation mode is receiver */
 
