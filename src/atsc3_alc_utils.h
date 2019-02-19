@@ -12,7 +12,7 @@
 #include <stdbool.h>
 
 #include "atsc3_utils.h"
-#include "alc_rx.h"
+#include "atsc3_alc_rx.h"
 #include "alc_channel.h"
 #include "atsc3_player_ffplay.h"
 
@@ -31,8 +31,8 @@ extern int _ALC_UTILS_TRACE_ENABLED;
 //#define __TESTING_PREPEND_TOI_INIT__ 		"0000002"
 
 //reconsitiute fragments into single file, init box, for pipe playback...
-#define __TESTING_RECONSTITUTED_TSI__ 		"003000"
-#define __TESTING_RECONSTITUTED_TOI_INIT__ 	"0000002"
+#define __TESTING_RECONSTITUTED_TSI__ 		003000
+#define __TESTING_RECONSTITUTED_TOI_INIT__ 	0000002
 
 //write out to file recon
 //#define __TESTING_RECON_FILE_POINTER__
@@ -51,11 +51,11 @@ char* alc_packet_dump_to_object_get_filename(alc_packet_t* alc_packet);
 int alc_packet_dump_to_object(alc_packet_t** alc_packet_ptr);
 
 //deprecated
-void alc_recon_file_ptr_set_tsi_toi(FILE* file_ptr, char* tsi, char* toi_init);
+void alc_recon_file_ptr_set_tsi_toi(FILE* file_ptr, uint32_t tsi, uint32_t toi_init);
 void alc_recon_file_ptr_fragment_with_init_box(FILE*,  alc_packet_t* alc_packet);
 
 //new
-void alc_recon_file_buffer_struct_set_tsi_toi(pipe_ffplay_buffer_t* pipe_ffplay_buffer, char* tsi, char* toi_init);
+void alc_recon_file_buffer_struct_set_tsi_toi(pipe_ffplay_buffer_t* pipe_ffplay_buffer, uint32_t tsi, uint32_t toi_init);
 void alc_recon_file_buffer_struct_fragment_with_init_box(pipe_ffplay_buffer_t* pipe_ffplay_buffer, alc_packet_t* alc_packet);
 
 void __alc_prepend_fragment_with_init_box(char* file_name, alc_packet_t* alc_packet);

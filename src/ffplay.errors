@@ -1,0 +1,6 @@
+Routing option err_detect to both codec and muxer layer
+Initialized opengl renderer.
+[NULL @ 0x7ff7fc855c00] Opening 'pipe:' for reading
+[pipe @ 0x7ff7fe205740] Setting default whitelist 'crypto'
+[AVIOContext @ 0x7ff7fe208680] Statistics: 0 bytes read, 0 seeks
+pipe:: Invalid data found when processing input

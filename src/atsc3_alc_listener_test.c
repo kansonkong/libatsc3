@@ -40,11 +40,12 @@ int PACKET_COUNTER=0;
 #include "atsc3_lls.h"
 #include "atsc3_utils.h"
 
-#include "alc_rx.h"
+#include "atsc3_alc_rx.h"
 #include "alc_channel.h"
 #include "atsc3_alc_utils.h"
 
 extern int _ALC_PACKET_DUMP_TO_OBJECT_ENABLED;
+extern int _ALC_UTILS_TRACE_ENABLED;
 
 #define println(...) printf(__VA_ARGS__);printf("\n")
 
@@ -220,7 +221,7 @@ void process_packet(u_char *user, const struct pcap_pkthdr *pkthdr, const u_char
 			alc_channel_t ch;
 			ch.s = alc_session;
 
-			int retval = alc_rx_analyze_packet((char*)udp_packet->data, udp_packet->data_length, &ch, &alc_packet);
+			int retval = alc_rx_analyze_packet_a331_compliant((char*)udp_packet->data, udp_packet->data_length, &ch, &alc_packet);
 
 			if(retval) {
 				__ERROR("Error in alc_analyze_packet: %d", retval);
@@ -275,6 +276,7 @@ int main(int argc,char **argv) {
     bpf_u_int32 netp;
 
     _ALC_PACKET_DUMP_TO_OBJECT_ENABLED = 1;
+    _ALC_UTILS_TRACE_ENABLED = 1;
     //listen to all flows
     if(argc == 2) {
     	dev = argv[1];
