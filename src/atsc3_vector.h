@@ -28,8 +28,19 @@
 #include <stddef.h>
 
 #define ATSC3_VECTOR_FAILFLAG_ (~(((size_t) -1) >> 1)) /* only the MSB */
+# define VLC_USED
 
-#include "atsc3_decoupling_vlc_common.h"
+
+// #include "atsc3_decoupling_vlc_common.h"
+
+
+#define container_of(ptr, type, member) \
+    ((type *)(((char *)(ptr)) - offsetof(type, member)))
+
+
+
+
+
 /**
  * \defgroup vector Vector
  * \ingroup cext
@@ -143,6 +154,96 @@ atsc3_vector_enforce_size_t_(size_t value)
 }
 
 #define ATSC3_VECTOR_FAILFLAG_ (~(((size_t) -1) >> 1)) /* only the MSB */
+
+
+
+#include <limits.h>
+
+static inline bool umul_overflow(unsigned a, unsigned b, unsigned *res)
+{
+
+     *res = a * b;
+     return b > 0 && a > (UINT_MAX / b);
+
+}
+
+static inline bool umull_overflow(unsigned long a, unsigned long b,
+                                  unsigned long *res)
+{
+     *res = a * b;
+     return b > 0 && a > (ULONG_MAX / b);
+
+}
+
+static inline bool umulll_overflow(unsigned long long a, unsigned long long b,
+                                   unsigned long long *res)
+{
+     *res = a * b;
+     return b > 0 && a > (ULLONG_MAX / b);
+
+}
+
+
+#ifndef __cplusplus
+
+/**
+ * Overflowing multiplication
+ *
+ * Converts \p a and \p b to the type of \p *r.
+ * Then computes the product of both conversions while checking for overflow.
+ * Finally stores the result in \p *r.
+ *
+ * \param a an integer
+ * \param b an integer
+ * \param r a pointer to an integer [OUT]
+ * \retval false The product did not overflow.
+ * \retval true The product overflowed.
+ */
+#define mul_overflow(a,b,r) \
+    _Generic(*(r), \
+        unsigned: umul_overflow(a, b, (unsigned *)(r)), \
+        unsigned long: umull_overflow(a, b, (unsigned long *)(r)), \
+        unsigned long long: umulll_overflow(a, b, (unsigned long long *)(r)))
+#else
+static inline bool mul_overflow(unsigned a, unsigned b, unsigned *res)
+{
+    return umul_overflow(a, b, res);
+}
+
+static inline bool mul_overflow(unsigned long a, unsigned long b,
+                                unsigned long *res)
+{
+    return umull_overflow(a, b, res);
+}
+
+static inline bool mul_overflow(unsigned long long a, unsigned long long b,
+                                unsigned long long *res)
+{
+    return umulll_overflow(a, b, res);
+}
+#endif
+
+
+
+
+
+//from vlc - atsc3_decoupling_vlc_common
+#define VLC_USED __attribute__ ((warn_unused_result))
+
+VLC_USED
+static inline void *vlc_alloc(size_t count, size_t size)
+{
+    return mul_overflow(count, size, &size) ? NULL : malloc(size);
+}
+
+VLC_USED
+static inline void *vlc_reallocarray(void *ptr, size_t count, size_t size)
+{
+    return mul_overflow(count, size, &size) ? NULL : realloc(ptr, size);
+}
+
+
+
 
 /**
  * Realloc data and update vector fields.
