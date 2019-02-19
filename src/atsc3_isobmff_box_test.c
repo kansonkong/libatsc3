@@ -230,6 +230,7 @@
 
  */
 #include <stdio.h>
+#include <string.h>
 #include <strings.h>
 #include <stdlib.h>
 #include <netinet/in.h>
@@ -475,7 +476,7 @@ void* parse_box_from_header(uint8_t** binary_payload, uint8_t* binary_payload_st
 		//copy first uint32_t size, uint32_t type into our final box
 		memcpy(current_box, &temp_box, 8);
 
-		((moof_t*)current_box)->mfhd = calloc(1, sizeof(mfhd_t));
+		((moof_t*)current_box)->mfhd = calloc(1, sizeof(mfhd_t));
 		parse_box_from_header(binary_payload, binary_payload_start, binary_payload_size, &(((moof_t*)current_box)->mfhd));
 
 		int traf_n = 0;
@@ -488,7 +489,7 @@ void* parse_box_from_header(uint8_t** binary_payload, uint8_t* binary_payload_st
 				((moof_t*)current_box)->traf = realloc(((moof_t*)current_box)->traf, traf_n+1);
 			}
 
-			((moof_t*)current_box)->traf[traf_n] = calloc(1, sizeof(traf_t));
+			((moof_t*)current_box)->traf[traf_n] = calloc(1, sizeof(traf_t));
 			parse_box_from_header(binary_payload, binary_payload_start, binary_payload_size, &((((moof_t*)current_box)->traf[traf_n])));
 		}
 

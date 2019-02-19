@@ -35,7 +35,7 @@
 #define _TRANSPORT_H_
 
 #include <sys/types.h>
-
+#include <math.h>
 #ifdef LINUX
 #include <unistd.h>
 #endif
