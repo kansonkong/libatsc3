@@ -34,7 +34,7 @@ block_t* atsc3_isobmff_build_mpu_metadata_ftyp_box(udp_flow_t* udp_flow, udp_flo
 
 		__ISOBMFF_TOOLS_DEBUG("atsc3_isobmff_build_mpu_metadata_ftyp_box: Searching for MPU Metadata with %u:%u and packet_id: %u", udp_flow->dst_ip_addr, udp_flow->dst_port, udp_flow_packet_id_mpu_sequence_tuple->packet_id);
 
-		mmtp_sub_flow = mmtp_sub_flow_vector_get_or_set_packet_id(mmtp_sub_flow_vector, udp_flow_packet_id_mpu_sequence_tuple->packet_id);
+ 		mmtp_sub_flow = mmtp_sub_flow_vector_get_or_set_packet_id(mmtp_sub_flow_vector, udp_flow_packet_id_mpu_sequence_tuple->packet_id);
 
 		if(mmtp_sub_flow) {
 			mpu_metadata_fragments = mmtp_sub_flow->mpu_fragments->mpu_metadata_fragments_vector.data ? mmtp_sub_flow->mpu_fragments->mpu_metadata_fragments_vector.data[0] : NULL;
@@ -60,19 +60,18 @@ block_t* atsc3_isobmff_build_mpu_metadata_ftyp_box(udp_flow_t* udp_flow, udp_flo
 				//TODO - fix me to use the proper mbms packet id's for video and audio packet_id's
 				if(mpu_metadata_fragment->mmtp_mpu_type_packet_header.mmtp_packet_id == 35) {
 					video_isobmff_header = mpu_metadata_fragment->mmtp_mpu_type_packet_header.mpu_data_unit_payload;
-				} else if(mpu_metadata_fragment->mmtp_mpu_type_packet_header.mmtp_packet_id == 35) {
+				} else if(mpu_metadata_fragment->mmtp_mpu_type_packet_header.mmtp_packet_id == 36) {
 					audio_isobmff_header = mpu_metadata_fragment->mmtp_mpu_type_packet_header.mpu_data_unit_payload;
 				}
 			}
 		}
-
-		if(!video_isobmff_header || !audio_isobmff_header) {
-			__ISOBMFF_TOOLS_WARN("Unable to find video and audio isobmff headers, v: %p, a: %p", video_isobmff_header, audio_isobmff_header);
-			return NULL;
-		}
-
-		__ISOBMFF_TOOLS_DEBUG("MPU Metadata: Pushing to Bento4");
 	}
+    if(!video_isobmff_header || !audio_isobmff_header) {
+        __ISOBMFF_TOOLS_WARN("Unable to find video and audio isobmff headers, v: %p, a: %p", video_isobmff_header, audio_isobmff_header);
+        return NULL;
+    }
+    
+    __ISOBMFF_TOOLS_DEBUG("MPU Metadata: Pushing to Bento4");
 //	AP4_DataBuffer* cleaned_mpu_metadata = mpuToDumpISOBMFFBoxes(mpu_metadata->mmtp_mpu_type_packet_header.mpu_data_unit_payload->p_buffer, mpu_metadata->mmtp_mpu_type_packet_header.mpu_data_unit_payload->i_buffer, -1);
 //swap out our p_buffer with bento isobmff processing
 //	AP4_DataBuffer* cleaned_mpu_metadata = mpuToISOBMFFProcessBoxes(mpu_metadata->mmtp_mpu_type_packet_header.mpu_data_unit_payload->p_buffer, mpu_metadata->mmtp_mpu_type_packet_header.mpu_data_unit_payload->i_buffer, -1);
