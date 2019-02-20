@@ -386,7 +386,7 @@ void process_packet(u_char *user, const struct pcap_pkthdr *pkthdr, const u_char
 					//only trigger a signal if we have our init box and fragment metadata for this cycle
 					if(pipe_ffplay_buffer->has_written_init_box && fragment_metadata) {
 						__INFO("Calling pipe_buffer_condition_signal");
-						pipe_buffer_condition_signal(pipe_ffplay_buffer);
+						pipe_buffer_notify_semaphore_post(pipe_ffplay_buffer);
 					}
 					pipe_buffer_reader_mutex_unlock(pipe_ffplay_buffer);
 
@@ -583,9 +583,9 @@ int main(int argc,char **argv) {
 
     char *dev;
 
-    char *filter_dst_ip = "";
-    char *filter_dst_port = "";
-    char *filter_packet_id = "";
+    char *filter_dst_ip = NULL;
+    char *filter_dst_port = NULL;
+    char *filter_packet_id = NULL;
 
     int dst_port_filter_int;
     int dst_ip_port_filter_int;

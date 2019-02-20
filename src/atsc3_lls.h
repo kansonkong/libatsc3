@@ -218,6 +218,7 @@ typedef struct slt_table {
 } slt_table_t;
 
 typedef struct rrt_table {
+	void* to_implement;
 
 } rrt_table_t;
 
@@ -246,9 +247,15 @@ typedef struct system_time_table {
 
 } system_time_table_t;
 
-typedef struct aeat_table { } aeat_table_t;
-typedef struct on_screen_message_notification { } on_screen_message_notification_t;
-typedef struct lls_reserved_table { } lls_reserved_table_t;
+typedef struct aeat_table {
+	void* to_implement;
+} aeat_table_t;
+typedef struct on_screen_message_notification {
+	void* to_implement;
+} on_screen_message_notification_t;
+typedef struct lls_reserved_table {
+	void* to_implement;
+} lls_reserved_table_t;
 
 typedef enum {
 	SLT = 1,

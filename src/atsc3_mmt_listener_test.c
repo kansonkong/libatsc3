@@ -353,7 +353,7 @@ void process_packet(u_char *user, const struct pcap_pkthdr *pkthdr, const u_char
 
 					}
 					__INFO("Calling pipe_buffer_condition_signal");
-					pipe_buffer_condition_signal(pipe_ffplay_buffer);
+					pipe_buffer_notify_semaphore_post(pipe_ffplay_buffer);
 
 					pipe_buffer_reader_mutex_unlock(pipe_ffplay_buffer);
 
