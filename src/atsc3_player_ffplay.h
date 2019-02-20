@@ -4,14 +4,16 @@
  *  Created on: Feb 10, 2019
  *      Author: jjustman
  */
-#include <stdio.h>
 #include <assert.h>
-#include <stdlib.h>
 #include <pthread.h>
-#include <stdint.h>
-#include <stdbool.h>
-#include <string.h>
 #include <semaphore.h>
+#include <signal.h>
+#include <stdbool.h>
+#include <stdio.h>
+#include <stdint.h>
+#include <stdlib.h>
+#include <string.h>
+#include <unistd.h>
 
 #include "atsc3_utils.h"
 
@@ -66,12 +68,16 @@ typedef struct pipe_ffplay_buffer {
 } pipe_ffplay_buffer_t;
 
 pipe_ffplay_buffer_t* pipe_create_ffplay();
+void pipe_release_ffplay(pipe_ffplay_buffer_t** pipe_ffplay_buffer);
 
-void pipe_buffer_condition_signal(pipe_ffplay_buffer_t* pipe_ffplay_buffer);
+void pipe_buffer_notify_semaphore_post(pipe_ffplay_buffer_t* pipe_ffplay_buffer);
 void pipe_buffer_reader_mutex_lock(pipe_ffplay_buffer_t* pipe_ffplay_buffer);
 void pipe_buffer_reader_mutex_unlock(pipe_ffplay_buffer_t* pipe_ffplay_buffer);
-void pipe_buffer_push_block(pipe_ffplay_buffer_t* pipe_ffplay_buffer, uint8_t* block, uint32_t block_size);
 
+void pipe_buffer_reader_check_if_shutdown(pipe_ffplay_buffer_t** pipe_ffplay_buffer);
+
+//this method is not protected, you must acuire and release the mutex upstream.
+int pipe_buffer_unsafe_push_block(	pipe_ffplay_buffer_t* pipe_ffplay_buffer, uint8_t* block, uint32_t block_size);
 
 #define __PLAYER_FFPLAY_ERROR(...)   printf("%s:%d:ERROR:%.4f: ",__FILE__,__LINE__, gt()); printf(__VA_ARGS__); printf("\n");
 #define __PLAYER_FFPLAY_WARN(...)    printf("%s:%d:WARN:%.4f: ",__FILE__,__LINE__, gt()); printf(__VA_ARGS__); printf("\n");

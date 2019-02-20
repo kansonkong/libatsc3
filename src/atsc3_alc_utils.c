@@ -548,7 +548,7 @@ void alc_recon_file_buffer_struct_fragment_with_init_box(pipe_ffplay_buffer_t* p
 		fread(init_payload, st.st_size, 1, init_file);
 		fclose(init_file);
 
-		pipe_buffer_push_block(pipe_ffplay_buffer, init_payload, st.st_size);
+		pipe_buffer_unsafe_push_block(pipe_ffplay_buffer, init_payload, st.st_size);
 		pipe_ffplay_buffer->has_written_init_box = true;
 
 	} else {
@@ -579,7 +579,7 @@ void alc_recon_file_buffer_struct_fragment_with_init_box(pipe_ffplay_buffer_t* p
 		total_bytes_written += read_bytes;
 		__ALC_UTILS_TRACE("read bytes: %llu, bytes written: %llu, total filesize: %llu, has eof input: %d", read_bytes, total_bytes_written, fragment_input_stat.st_size, has_eof);
 
-		pipe_buffer_push_block(pipe_ffplay_buffer, m4v_payload, read_bytes);
+		pipe_buffer_unsafe_push_block(pipe_ffplay_buffer, m4v_payload, read_bytes);
 
 		if(has_eof) {
 			fclose(m4v_fragment_input_file);
@@ -592,7 +592,10 @@ void alc_recon_file_buffer_struct_fragment_with_init_box(pipe_ffplay_buffer_t* p
 	//signal and then unlock, docs indicate the only way to ensure a signal is not lost is to send it while holding the lock
 	__ALC_UTILS_DEBUG("alc_recon_file_buffer_struct_fragment_with_init_box - SIGNALING - %u, %u,  %d", alc_packet->def_lct_hdr->tsi, alc_packet->def_lct_hdr->toi, alc_packet->close_object_flag);
 
-	pipe_buffer_condition_signal(pipe_ffplay_buffer);
+	pipe_buffer_notify_semaphore_post(pipe_ffplay_buffer);
+
+	//check to see if we have shutdown
+	pipe_buffer_reader_check_if_shutdown(&pipe_ffplay_buffer);
 
 	pipe_buffer_reader_mutex_unlock(pipe_ffplay_buffer);
 	__ALC_UTILS_DEBUG("alc_recon_file_buffer_struct_fragment_with_init_box - RETURN - %u, %u,  %d", alc_packet->def_lct_hdr->tsi, alc_packet->def_lct_hdr->toi, alc_packet->close_object_flag);
