@@ -10,7 +10,7 @@ intermediate_lls: atsc3_lls.o atsc3_lls_slt_utils.o  atsc3_lls_alc_utils.o
 
 intermediate_mmt: xml.o atsc3_mmtp_parser.o atsc3_mmt_mpu_parser.o atsc3_mmt_signaling_message.o \
  atsc3_mmtp_ntp32_to_pts.o atsc3_utils.o fixups_timespec_get.o \
- atsc3_bandwidth_statistics.o  atsc3_mmt_mpu_utils.o
+ atsc3_bandwidth_statistics.o  atsc3_mmt_mpu_utils.o atsc3_isobmff_tools.o
  
  #atsc3_packet_statistics.o 
  
@@ -68,11 +68,13 @@ atsc3_alc_rx.o:  atsc3_alc_rx.h atsc3_alc_rx.c atsc3_lct_hdr.h
 
 atsc3_alc_utils.o: atsc3_alc_utils.h atsc3_alc_utils.c
 	cc -g -c atsc3_alc_utils.c
-	
-	
+		
 atsc3_player_ffplay.o: atsc3_player_ffplay.h atsc3_player_ffplay.c
 	cc -g -c atsc3_player_ffplay.c
-	
+
+atsc3_isobmff_tools.o: atsc3_isobmff_tools.h atsc3_isobmff_tools.c
+	cc -g -c atsc3_isobmff_tools.c
+		
 # stats modules
 
 #atsc3_bandwidth_statistics.o: atsc3_bandwidth_statistics.h atsc3_bandwidth_statistics.c
@@ -88,12 +90,12 @@ atsc3_player_ffplay.o: atsc3_player_ffplay.h atsc3_player_ffplay.c
 libatsc3.o: xml.o atsc3_lls.o atsc3_lls_slt_utils.o atsc3_mmtp_parser.o atsc3_mmtp_ntp32_to_pts.o atsc3_utils.o \
 		fixups_timespec_get.o atsc3_mmt_signaling_message.o atsc3_mmt_mpu_parser.o alc_channel.o alc_list.o \
 		atsc3_alc_rx.o alc_session.o fec.o null_fec.o rs_fec.o xor_fec.o mad.o mad_rlc.o transport.o atsc3_alc_utils.o \
-		atsc3_lls_alc_utils.o atsc3_mmt_mpu_utils.o atsc3_player_ffplay.o
+		atsc3_lls_alc_utils.o atsc3_mmt_mpu_utils.o atsc3_player_ffplay.o atsc3_isobmff_tools.o
 	
 	ld  -o libatsc3.o -r xml.o atsc3_lls.o atsc3_lls_slt_utils.o atsc3_mmtp_parser.o atsc3_mmtp_ntp32_to_pts.o atsc3_utils.o \
 		fixups_timespec_get.o atsc3_mmt_signaling_message.o atsc3_mmt_mpu_parser.o alc_channel.o alc_list.o \
 		atsc3_alc_rx.o alc_session.o fec.o null_fec.o rs_fec.o xor_fec.o mad.o mad_rlc.o transport.o atsc3_alc_utils.o \
-		atsc3_lls_alc_utils.o atsc3_mmt_mpu_utils.o atsc3_player_ffplay.o
+		atsc3_lls_alc_utils.o atsc3_mmt_mpu_utils.o atsc3_player_ffplay.o atsc3_isobmff_tools.o
 		
 # atsc3_bandwidth_statistics.o
 # atsc3_packet_statistics.o
