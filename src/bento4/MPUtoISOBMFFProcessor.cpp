@@ -243,8 +243,63 @@ AP4_DataBuffer* mpuToISOBMFFProcessBoxes(uint8_t* full_mpu_payload, uint32_t ful
     if (memoryInputByteStream) memoryInputByteStream->Release();
 
     delete inspector;
+    return dataBuffer;
+}
 
+AP4_DataBuffer* mpuToDumpISOBMFFBoxes(uint8_t* full_mpu_payload, uint32_t full_mpu_payload_size, int mdat_size) {
+    printf("in mpuToDumpISOBMFFBoxes");
     
-
+    //AP4_Result result = AP4_FileByteStream::Create(filename, AP4_FileByteStream::STREAM_MODE_READ, input);
+    //  AP4_MemoryByteStream
+    //    AP4_MemoryByteStream(const AP4_UI08* buffer, AP4_Size size);
+    //
+    //    char* filename = (char*)calloc(20, sizeof(char));
+    //    snprintf(filename, 20, "mpudump-%d", mpu_dump_count++);
+    //    FILE* f = fopen(filename, "w");
+    //    for(int i=0; i < full_mpu_payload_size; i++) {
+    //        fwrite(&full_mpu_payload[i], 1, 1, f);
+    //
+    //    }
+    //    fclose(f);
+    
+    AP4_ByteStream* boxDumpConsoleOutput = NULL;
+    AP4_FileByteStream::Create("-stdout", AP4_FileByteStream::STREAM_MODE_WRITE, boxDumpConsoleOutput);
+    
+    AP4_AtomInspector* inspector = new AP4_PrintInspector(*boxDumpConsoleOutput);
+    inspector->SetVerbosity(3);
+    
+    AP4_MemoryByteStream* memoryInputByteStream = new AP4_MemoryByteStream(full_mpu_payload, full_mpu_payload_size);
+    
+    AP4_DataBuffer* dataBuffer = new AP4_DataBuffer(4096);
+    
+    // open the output memory buffer, assume we won't be bigger than our ingest payload size for now
+    AP4_MemoryByteStream* memoryOutputByteStream = new AP4_MemoryByteStream(dataBuffer);
+    
+    // inspect the atoms one by one
+    AP4_Atom* atom;
+    list<AP4_Atom*> atomList;
+    
+    AP4_DefaultAtomFactory atom_factory;
+    while (atom_factory.CreateAtomFromStream(*memoryInputByteStream, atom) == AP4_SUCCESS) {
+        // remember the current stream position because the Inspect method
+        // may read from the stream (there may be stream references in some
+        // of the atoms
+        AP4_Position position;
+        memoryInputByteStream->Tell(position);
+        
+       
+        atom->Inspect(*inspector);
+        
+        memoryInputByteStream->Seek(position);
+        
+    }
+    
+    if (boxDumpConsoleOutput) boxDumpConsoleOutput->Release();
+    if (memoryInputByteStream) memoryInputByteStream->Release();
+    
+    delete inspector;
+    
+    
+    
     return dataBuffer;
 }
