@@ -5,6 +5,8 @@
  *      Author: jjustman
  */
 #include <assert.h>
+#include <fcntl.h>           /* Definition of AT_* constants */
+
 #include <pthread.h>
 #include <semaphore.h>
 #include <signal.h>
@@ -14,6 +16,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
+#include <sys/stat.h>
 
 #include "atsc3_utils.h"
 

@@ -234,6 +234,16 @@ pipe_ffplay_buffer_t* pipe_create_ffplay() {
 	pipe_ffplay_buffer->pipe_buffer_writer_size = __PLAYER_FFPLAY_PIPE_INTERNAL_BUFFER_SIZE;
 	pipe_ffplay_buffer->pipe_buffer_writer_pos = 0;
 
+	char* tmpAudioFifo = tmpnam(NULL);
+
+	//make a 2nd fifo for audio
+//    int res = mkfifo(tmpAudioFifo, S_IRUSR| S_IWUSR);
+//    if(!res) {
+//        __PLAYER_FFPLAY_ERROR("unable to prepare pipe for audio playback at: %s", tmpAudioFifo);
+//        goto error;
+//    }
+
+
 	//flags=bicubic
 	//-infbuf -max_delay 5000000 -loglevel debug
 	//ffmpeg -i input -vf "drawtext=fontfile=Arial.ttf: text='%{frame_num}': start_number=1: x=(w-tw)/2: y=h-(2*lh): fontcolor=black: fontsize=20: box=1: boxcolor=white: boxborderw=5" -c:a copy output
@@ -256,7 +266,7 @@ pipe_ffplay_buffer_t* pipe_create_ffplay() {
 	 */
 
 	//use this for capturing the reconstitued mpu for troubleshooting
-//	pipe_ffplay_buffer->player_pipe = fopen("mpu/recon.m4v", "w");
+	pipe_ffplay_buffer->player_pipe = fopen("mpu/recon.m4v", "w");
 
 
 	__PLAYER_FFPLAY_DEBUG("pipe created: file* is %p", pipe_ffplay_buffer->player_pipe);
