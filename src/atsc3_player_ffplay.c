@@ -211,6 +211,9 @@ error:
 	return NULL;
 }
 
+/**TODO: add a shutdown hook so we can switch between flows for observation ***/
+
+
 /*
  * note: you must lock externally, as we don't want to lock mid-fragment
  * 	pipe_buffer_reader_mutex_lock(pipe_ffplay_buffer);

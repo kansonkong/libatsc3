@@ -112,10 +112,12 @@ int alc_packet_dump_to_object(alc_packet_t** alc_packet_ptr) {
 	//if no TSI, this is metadata and create a new object for each payload
 	//The SLS fragments shall be delivered on a dedicated LCT transport channel with TSI = 0.
 
+
 	if(!alc_packet->def_lct_hdr->tsi) {
 		f = fopen(file_name, "w");
 	} else {
-		if(alc_packet->esi>0) {
+		//esi will not be 0 if this is FEC protected, use sbn (Source block number instead).
+		if(alc_packet->sbn>0) {
 			__ALC_UTILS_TRACE("dumping to file in append mode: %s, esi: %d", file_name, alc_packet->esi);
 			f = fopen(file_name, "a");
 		} else {
@@ -184,10 +186,11 @@ int alc_packet_dump_to_object(alc_packet_t** alc_packet_ptr) {
 #endif
 
 
+	//push our fragments EXCEPT for the mpu fragment box, we will pull that at the start of a
 	if(__ALC_RECON_FILE_BUFFER_STRUCT && __ALC_RECON_FILE_PTR_TSI && __ALC_RECON_FILE_PTR_TOI_INIT) {
 		__ALC_UTILS_TRACE("checking tsi: %u, toi: %u,  %d", alc_packet->def_lct_hdr->tsi, alc_packet->def_lct_hdr->toi, alc_packet->close_object_flag);
 
-		if(alc_packet->def_lct_hdr->tsi == *__ALC_RECON_FILE_PTR_TSI && alc_packet->def_lct_hdr->toi == *__ALC_RECON_FILE_PTR_TOI_INIT &&	alc_packet->close_object_flag) {
+		if(alc_packet->def_lct_hdr->tsi == *__ALC_RECON_FILE_PTR_TSI && alc_packet->def_lct_hdr->toi != *__ALC_RECON_FILE_PTR_TOI_INIT && alc_packet->close_object_flag) {
 
 			alc_recon_file_buffer_struct_fragment_with_init_box(__ALC_RECON_FILE_BUFFER_STRUCT, alc_packet);
 		}
@@ -491,11 +494,24 @@ cleanup:
 
 void alc_recon_file_buffer_struct_set_tsi_toi(pipe_ffplay_buffer_t* pipe_ffplay_buffer, uint32_t tsi, uint32_t toi_init) {
 	__ALC_RECON_FILE_BUFFER_STRUCT = pipe_ffplay_buffer;
+
+	if(!__ALC_RECON_FILE_PTR_TSI) {
+		__ALC_RECON_FILE_PTR_TSI = calloc(1, sizeof(uint32_t));
+	}
+
+	if(!__ALC_RECON_FILE_PTR_TOI_INIT) {
+		__ALC_RECON_FILE_PTR_TOI_INIT = calloc(1, sizeof(uint32_t));
+	}
+
 	*__ALC_RECON_FILE_PTR_TSI = tsi;
 	*__ALC_RECON_FILE_PTR_TOI_INIT = toi_init;
 }
 
 
+/*** we take this off of disk for the reassembeled fragment metadta and mpu
+ *
+ *
+ */
 void alc_recon_file_buffer_struct_fragment_with_init_box(pipe_ffplay_buffer_t* pipe_ffplay_buffer, alc_packet_t* alc_packet) {
 	int flush_ret = 0;
 	if(!__ALC_RECON_FILE_PTR_TSI || !__ALC_RECON_FILE_PTR_TOI_INIT) {
@@ -504,7 +520,7 @@ void alc_recon_file_buffer_struct_fragment_with_init_box(pipe_ffplay_buffer_t* p
 	}
 
 	char* file_name = alc_packet_dump_to_object_get_filename(alc_packet);
-	uint8_t toi_init = __TESTING_RECONSTITUTED_TOI_INIT__;
+	uint32_t toi_init = *__ALC_RECON_FILE_PTR_TOI_INIT;
 	char* init_file_name = calloc(255, sizeof(char));
 
 	__ALC_UTILS_DEBUG("alc_recon_file_buffer_struct_fragment_with_init_box - ENTER - %u, %u,  %d", alc_packet->def_lct_hdr->tsi, alc_packet->def_lct_hdr->toi, alc_packet->close_object_flag);

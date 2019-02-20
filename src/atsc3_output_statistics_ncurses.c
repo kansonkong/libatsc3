@@ -46,6 +46,15 @@ void ncurses_init() {
 
 }
 int play_mode = 0;
+uint32_t my_route_tsi = 0;
+uint32_t my_route_toi_init_fragment = 0;
+pipe_ffplay_buffer_t* pipe_ffplay_buffer = NULL;
+
+void mtl_clear() {
+	wmove(my_window, 0, 1);
+	wclrtoeol(my_window);
+	wmove(my_window, 0, 1);
+}
 
 void* ncurses_input_run_thread() {
 	int ch;
@@ -55,31 +64,85 @@ void* ncurses_input_run_thread() {
 		ch = wgetch(my_window);
 		if(ch == CTRL('c') || ch == 'q') {
 			//end and clear screen back to terminal
-			endwin();
-			exit(1);
+			goto endwin;
 		}
-		if(ch == 'p') {
-			//play stream...
-			if(play_mode == 1) {
-				pipe_ffplay_buffer_t* pipe_ffplay_buffer = pipe_create_ffplay();
-				alc_recon_file_buffer_struct_set_tsi_toi(pipe_ffplay_buffer, __TESTING_RECONSTITUTED_TSI__, __TESTING_RECONSTITUTED_TOI_INIT__);
 
-
-			} else if(play_mode == 2) {
-				//FILE* pipe_ffmpeg = pipe_create_ffplay();
-
-			} else {
-				__NCURSES_WARN("not playing - play mode is: %d", play_mode);
-			}
-
-		}
 		if(ch == 'r') {
 			__NCURSES_INFO("Switching to ALC/ROUTE Capture Mode");
-			wmove(my_window, 0, 1);
 			_ALC_PACKET_DUMP_TO_OBJECT_ENABLED = 1;
-			wprintw(my_window, "Switching to ALC/ROUTE Capture Mode, press 'p' to play tsi: %s, with toi_init: %s", __TESTING_RECONSTITUTED_TSI__, __TESTING_RECONSTITUTED_TOI_INIT__);
+
 			//ncurses_switch_to_route();
 			play_mode = 1;
+
+			mtl_clear();
+			wprintw(my_window, "Switching to ALC/ROUTE Capture Mode, press 's' to set tsi, 'o' to set toi init fragment, and 'p' to play, 'x' to return to normal flow monitoring");
+
+			while(1) {
+				char str[10];
+
+				ch = wgetch(my_window);
+				if(ch == CTRL('c') || ch == 'q') {
+					goto endwin;
+				} else if (ch == 'x') {
+					play_mode = 0;
+					mtl_clear();
+					wprintw(my_window, "Exiting ALC/ROUTE capture mode");
+					alc_recon_file_buffer_struct_set_tsi_toi(NULL, 0, 0);
+					_ALC_PACKET_DUMP_TO_OBJECT_ENABLED = 0;
+
+				}
+
+				if(ch == 's') {
+					mtl_clear();
+					wprintw(my_window, "Please enter TSI to play back: ");
+					echo();
+					//wgetstr(my_window, str);
+					mvwgetnstr(my_window, 0, 32, str, 10);
+					noecho();
+					mtl_clear();
+
+					long my_tsi_long = strtol(str, NULL, 0);
+					my_route_tsi = (uint32_t) my_tsi_long;
+					mtl_clear();
+					wprintw(my_window, "Monitoring TSI: %u",  my_route_tsi);
+
+				} else if (ch =='o') {
+					mtl_clear();
+					wprintw(my_window, "Please enter TOI init fragment id (e.g. 000002) to play back: ");
+					echo();
+
+					mvwgetnstr(my_window, 0, 63, str, 10);
+					noecho();
+					mtl_clear();
+
+					long my_toi_init_fragment = strtol(str, NULL, 0);
+					my_route_toi_init_fragment = (uint32_t) my_toi_init_fragment;
+					wprintw(my_window, "Monitoring TOI init frag: %u",  my_route_toi_init_fragment);
+
+				} else if(ch == 'p') {
+
+					//play stream...
+					if(play_mode == 1) {
+						mtl_clear();
+						wprintw(my_window, "Starting playback for TSI: %u, TOI init frag: %u-%u...",  my_route_tsi, my_route_tsi, my_route_toi_init_fragment);
+
+						if(!pipe_ffplay_buffer) {
+							pipe_ffplay_buffer = pipe_create_ffplay();
+						}
+
+						alc_recon_file_buffer_struct_set_tsi_toi(pipe_ffplay_buffer, my_route_tsi, my_route_toi_init_fragment);
+
+
+					} else {
+						mtl_clear();
+						wprintw(my_window, "...invalid command");
+
+						__NCURSES_WARN("not playing - play mode is: %d", play_mode);
+					}
+
+				}
+			}
+
 		}
 
 		if(ch == 'm') {
@@ -101,6 +164,11 @@ void* ncurses_input_run_thread() {
 			attroff(A_BOLD);
 		}
 	}
+
+
+endwin:
+	endwin();
+	exit(1);
 }
 
 void ncurses_mutext_init() {
