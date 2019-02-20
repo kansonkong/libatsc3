@@ -249,7 +249,7 @@ void process_packet(u_char *user, const struct pcap_pkthdr *pkthdr, const u_char
 
 			if(mmtp_payload->mmtp_mpu_type_packet_header.mpu_timed_flag == 1) {
 
-				__INFO("Starting processing loop, current mpu_sequence_number is: %d, packet_sequence_number: %d", mmtp_payload->mmtp_mpu_type_packet_header.mpu_sequence_number, mmtp_payload->mmtp_mpu_type_packet_header.packet_sequence_number);
+				__TRACE("Starting processing loop, current mpu_sequence_number is: %d, packet_sequence_number: %d", mmtp_payload->mmtp_mpu_type_packet_header.mpu_sequence_number, mmtp_payload->mmtp_mpu_type_packet_header.packet_sequence_number);
 
 				mpu_data_unit_payload_fragments_t* data_unit_payload_types = NULL;
 				mpu_data_unit_payload_fragments_timed_vector_t* data_unit_payload_fragments = NULL; //techincally this is mpu_fragments->media_fragment_unit_vector
@@ -261,7 +261,7 @@ void process_packet(u_char *user, const struct pcap_pkthdr *pkthdr, const u_char
 				udp_flow_packet_id_mpu_sequence_tuple_t* udp_flow_last_packet_id_mpu_sequence_id = udp_flow_last_mpu_sequence_number_from_packet_id(udp_flow_latest_mpu_sequence_number_container, udp_packet, mmtp_payload->mmtp_mpu_type_packet_header.mmtp_packet_id);
 
 				if(udp_flow_last_packet_id_mpu_sequence_id) {
-					__INFO("before refragment check: ptr: %p, last dst_ip_addr: %u, last dst_port: %hu, last packet_id: %u, last mpu_sequence_number: %u",
+					__TRACE("before refragment check: ptr: %p, last dst_ip_addr: %u, last dst_port: %hu, last packet_id: %u, last mpu_sequence_number: %u",
 							udp_flow_last_packet_id_mpu_sequence_id,
 							udp_flow_last_packet_id_mpu_sequence_id->udp_flow.dst_ip_addr,
 							udp_flow_last_packet_id_mpu_sequence_id->udp_flow.dst_port,
@@ -348,7 +348,7 @@ void process_packet(u_char *user, const struct pcap_pkthdr *pkthdr, const u_char
 
 						for(int i=0; i < total_fragments; i++) {
 							mmtp_payload_fragments_union_t* packet = data_unit_payload_fragments->data[i];
-							__INFO("i: Computing MDAT size: %d, p: %p, frag indicator is: %d, mpu_sequence_number: %u, size: %u, packet_counter: %u, data_unit payload: %p, block_t: %p", i, packet,
+							__TRACE("i: Computing MDAT size: %d, p: %p, frag indicator is: %d, mpu_sequence_number: %u, size: %u, packet_counter: %u, data_unit payload: %p, block_t: %p", i, packet,
 									packet->mpu_data_unit_payload_fragments_timed.mpu_fragmentation_indicator,
 									packet->mpu_data_unit_payload_fragments_timed.mpu_sequence_number,
 									packet->mpu_data_unit_payload_fragments_timed.mpu_data_unit_payload->i_buffer,
@@ -403,8 +403,8 @@ void process_packet(u_char *user, const struct pcap_pkthdr *pkthdr, const u_char
 							udp_flow_last_packet_id_mpu_sequence_id->mpu_sequence_number_last_refragmentation_flush = udp_flow_last_packet_id_mpu_sequence_id->mpu_sequence_number;
 
 							//jdj-2019-02-20 - try and clear all packets flow
-//							__INFO("Calling atsc3_vecor clear for: all_mpu_fragments_vector");
-//							atsc3_vector_clear(&fragment_metadata->mpu_data_unit_payload_fragments_timed.mmtp_sub_flow->mpu_fragments->all_mpu_fragments_vector);
+							__INFO("Calling atsc3_vecor clear for: all_mpu_fragments_vector");
+							atsc3_vector_clear(&fragment_metadata->mpu_data_unit_payload_fragments_timed.mmtp_sub_flow->mpu_fragments->all_mpu_fragments_vector);
 
 						}
 					}
@@ -442,9 +442,9 @@ purge_pending_mfu_and_update_previous_mmtp_payload:
 							if(data_unit_payload_types && data_unit_payload_types->timed_fragments_vector.data) {
 								data_unit_payload_fragments = &data_unit_payload_types->timed_fragments_vector;
 								if(data_unit_payload_fragments) {
-									__INFO("Beginning eviction pass for mpu: %u, mmtp_sub_flow->mpu_fragments->all_mpu_fragments_vector.size: %lu", udp_flow_last_packet_id_mpu_sequence_id->mpu_sequence_number_evict_range_start, mmtp_sub_flow->mpu_fragments->all_mpu_fragments_vector.size)
+						//			__INFO("Beginning eviction pass for mpu: %u, mmtp_sub_flow->mpu_fragments->all_mpu_fragments_vector.size: %lu", udp_flow_last_packet_id_mpu_sequence_id->mpu_sequence_number_evict_range_start, mmtp_sub_flow->mpu_fragments->all_mpu_fragments_vector.size)
 									int evicted_count = atsc3_mmt_mpu_clear_data_unit_payload_fragments(mmtp_sub_flow, mpu_fragments, data_unit_payload_fragments);
-									__INFO("Eviction pass for mpu: %u resulted in %u", udp_flow_last_packet_id_mpu_sequence_id->mpu_sequence_number_evict_range_start, evicted_count);
+						//			__INFO("Eviction pass for mpu: %u resulted in %u", udp_flow_last_packet_id_mpu_sequence_id->mpu_sequence_number_evict_range_start, evicted_count);
 								}
 							}
 						}
@@ -453,7 +453,7 @@ purge_pending_mfu_and_update_previous_mmtp_payload:
 update_last_packet_id_and_mpu_sequence_number:
 
 				udp_flow_packet_id_mpu_sequence_tuple_t* last_flow_reference = udp_flow_latest_mpu_sequence_number_add_or_replace(udp_flow_latest_mpu_sequence_number_container, udp_packet, mmtp_payload);
-				__INFO("update_last_packet_id_and_mpu_sequence_number: ptr: %p, last dst_ip_addr: %u, last dst_port: %hu, last packet_id: %u, last mpu_sequence_number: %u",
+				__TRACE("update_last_packet_id_and_mpu_sequence_number: ptr: %p, last dst_ip_addr: %u, last dst_port: %hu, last packet_id: %u, last mpu_sequence_number: %u",
 						last_flow_reference,
 						last_flow_reference->udp_flow.dst_ip_addr,
 						last_flow_reference->udp_flow.dst_port,

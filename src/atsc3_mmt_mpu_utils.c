@@ -221,7 +221,7 @@ int atsc3_mmt_mpu_clear_data_unit_payload_fragments(mmtp_sub_flow_t* mmtp_sub_fl
 
 		//free the sub-flow fragment
 		atsc3_vector_index_of(&mmtp_sub_flow->mpu_fragments->all_mpu_fragments_vector, packet, all_packets_index);
-		__MMT_MPU_INFO("freeing container: mmtp_sub_flow->mpu_fragments->all_mpu_fragments_vector: %p, payload : %p, packet_counter: %u, mpu_sequence_number: %u, at index: %ld",
+		__MMT_MPU_DEBUG("freeing container: mmtp_sub_flow->mpu_fragments->all_mpu_fragments_vector: %p, payload : %p, packet_counter: %u, mpu_sequence_number: %u, at index: %ld",
 										&mmtp_sub_flow->mpu_fragments->all_mpu_fragments_vector,
 										packet,
 										packet->mmtp_mpu_type_packet_header.packet_counter,
@@ -229,7 +229,7 @@ int atsc3_mmt_mpu_clear_data_unit_payload_fragments(mmtp_sub_flow_t* mmtp_sub_fl
 										*all_packets_index);
 
 		if(*all_packets_index >-1) {
-			__MMT_MPU_INFO("freeing payload from all_mpu_fragments_vector via vector_remove_noshrkink at index: %ld", *all_packets_index);
+			__MMT_MPU_DEBUG("freeing payload from all_mpu_fragments_vector via vector_remove_noshrkink at index: %ld", *all_packets_index);
 			atsc3_vector_remove_noshrink(&mmtp_sub_flow->mpu_fragments->all_mpu_fragments_vector, *all_packets_index);
 			evicted_count++;
 		}
@@ -237,7 +237,7 @@ int atsc3_mmt_mpu_clear_data_unit_payload_fragments(mmtp_sub_flow_t* mmtp_sub_fl
 		if(mpu_fragments) {
 			//free global fragment
 			atsc3_vector_index_of(&mpu_fragments->all_mpu_fragments_vector, packet, all_packets_index);
-			__MMT_MPU_INFO("freeing container: mpu_fragments->all_mpu_fragments_vector: %p, payload : %p, packet_counter: %u, mpu_sequence_number: %u, at index: %ld",
+			__MMT_MPU_DEBUG("freeing container: mpu_fragments->all_mpu_fragments_vector: %p, payload : %p, packet_counter: %u, mpu_sequence_number: %u, at index: %ld",
 													&mpu_fragments->all_mpu_fragments_vector,
 													packet,
 													packet->mmtp_mpu_type_packet_header.packet_counter,
@@ -248,7 +248,7 @@ int atsc3_mmt_mpu_clear_data_unit_payload_fragments(mmtp_sub_flow_t* mmtp_sub_fl
 				atsc3_vector_remove_noshrink(&mpu_fragments->all_mpu_fragments_vector, *all_packets_index);
 				evicted_count++;
 			}
-			__MMT_MPU_INFO("packet flow all_mpu_Fragments_vector is: %p, size: %lu, mmtp_sub_flow->mpu_fragments is: %p, global mpu_fragments->all_mpu_fragments is: %p, and size is: %lu",
+			__MMT_MPU_DEBUG("packet flow all_mpu_Fragments_vector is: %p, size: %lu, mmtp_sub_flow->mpu_fragments is: %p, global mpu_fragments->all_mpu_fragments is: %p, and size is: %lu",
 					&packet->mmtp_mpu_type_packet_header.mmtp_sub_flow->mpu_fragments->all_mpu_fragments_vector,
 					packet->mmtp_mpu_type_packet_header.mmtp_sub_flow->mpu_fragments->all_mpu_fragments_vector.size,
 					&mmtp_sub_flow->mpu_fragments->all_mpu_fragments_vector,
@@ -422,7 +422,7 @@ void mpu_push_to_output_buffer(pipe_ffplay_buffer_t* pipe_ffplay_buffer, mmtp_pa
 
 		if(mmtp_payload->mmtp_mpu_type_packet_header.mpu_sequence_number != pipe_ffplay_buffer->last_mpu_sequence_number) {
 			//signal here, we will have the first fragment of the next slice in the payload, but its simpler for now...
-			__MMT_MPU_INFO("triggering signal because mpu_sequence changed from %u to %u",  pipe_ffplay_buffer->last_mpu_sequence_number, mmtp_payload->mmtp_mpu_type_packet_header.mpu_sequence_number );
+			__MMT_MPU_DEBUG("triggering signal because mpu_sequence changed from %u to %u",  pipe_ffplay_buffer->last_mpu_sequence_number, mmtp_payload->mmtp_mpu_type_packet_header.mpu_sequence_number );
 			pipe_buffer_notify_semaphore_post(pipe_ffplay_buffer);
 		}
 		pipe_ffplay_buffer->last_mpu_sequence_number = mmtp_payload->mmtp_mpu_type_packet_header.mpu_sequence_number;
