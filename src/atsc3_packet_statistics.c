@@ -139,7 +139,7 @@ int global_loss_count;
 void atsc3_packet_statistics_mmt_stats_populate(udp_packet_t* udp_packet, mmtp_payload_fragments_union_t* mmtp_payload) {
 
 
-	packet_id_mmt_stats_t* packet_mmt_stats = find_or_create_packet_id(udp_packet->dst_ip_addr, udp_packet->dst_port, mmtp_payload->mmtp_packet_header.mmtp_packet_id);
+	packet_id_mmt_stats_t* packet_mmt_stats = find_or_create_packet_id(udp_packet->udp_flow.dst_ip_addr, udp_packet->udp_flow.dst_port, mmtp_payload->mmtp_packet_header.mmtp_packet_id);
 
 	packet_mmt_stats->packet_sequence_number_sample_interval_processed++;
 	packet_mmt_stats->packet_sequence_number_lifetime_processed++;
@@ -147,7 +147,7 @@ void atsc3_packet_statistics_mmt_stats_populate(udp_packet_t* udp_packet, mmtp_p
 #if defined _DUMP_ALL_MPU_FLOWS_ && _DUMP_ALL_MPU_FLOWS_ == true
 	//push this to our missing packet flow for investigation
 					__PS_STATS_L("packets present:\t%u.%u.%u.%u\t%u\tpacket_counter:\t%u\ttimestamp:\t%u\tpacket_id:\t%u\tpacket_sequence_number:\t%u",
-							__toipandportnonstruct(udp_packet->dst_ip_addr, udp_packet->dst_port),
+							__toipandportnonstruct(udp_packet->udp_flow.dst_ip_addr, udp_packet->udp_flow.dst_port),
 							mmtp_payload->mmtp_packet_header.packet_counter,
 							mmtp_payload->mmtp_packet_header.mmtp_timestamp,
 							mmtp_payload->mmtp_packet_header.mmtp_packet_id,
