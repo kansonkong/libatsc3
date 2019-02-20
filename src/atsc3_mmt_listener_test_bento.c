@@ -38,6 +38,7 @@ atsc3_lls_listener_test.c:153:DEBUG:Dst. Address : 224.0.23.60 (3758102332)	Dst.
 #include <string.h>
 #include <sys/stat.h>
 #include <pthread.h>
+#include "bento4/MPUtoISOBMFFProcessor.h"
 
 extern "C" {
 
@@ -50,13 +51,12 @@ extern "C" {
 #include "atsc3_mmtp_parser.h"
 #include "atsc3_mmt_mpu_parser.h"
 #include "atsc3_mmt_mpu_utils.h"
-
+#include "atsc3_isobmff_tools.h"
 #include "atsc3_player_ffplay.h"
 #include "atsc3_vector.h"
 
 }
 
-#include "bento4/MPUtoISOBMFFProcessor.h"
 
 extern int _PLAYER_FFPLAY_DEBUG_ENABLED;
 extern int _MPU_DEBUG_ENABLED;
@@ -252,7 +252,7 @@ void process_packet(u_char *user, const struct pcap_pkthdr *pkthdr, const u_char
 				__TRACE("Starting processing loop, current mpu_sequence_number is: %d, packet_sequence_number: %d", mmtp_payload->mmtp_mpu_type_packet_header.mpu_sequence_number, mmtp_payload->mmtp_mpu_type_packet_header.packet_sequence_number);
 
 				mpu_data_unit_payload_fragments_t* data_unit_payload_types = NULL;
-				mpu_data_unit_payload_fragments_timed_vector_t* data_unit_payload_fragments = NULL; //techincally this is mpu_fragments->media_fragment_unit_vector
+				mpu_data_unit_payload_fragments_timed_vector_t* data_unit_payload_fragments = NULL; //technically this is mpu_fragments->media_fragment_unit_vector
 				mpu_data_unit_payload_fragments_t* mpu_metadata_fragments =	NULL;
 				mpu_data_unit_payload_fragments_t* movie_metadata_fragments  = NULL;
 				mmtp_sub_flow_t* mmtp_sub_flow = NULL;
@@ -273,14 +273,14 @@ void process_packet(u_char *user, const struct pcap_pkthdr *pkthdr, const u_char
 
 					__INFO("Starting re-fragmenting because mpu_sequence number changed from %u to %u", udp_flow_last_packet_id_mpu_sequence_id->mpu_sequence_number, mmtp_payload->mmtp_mpu_type_packet_header.mpu_sequence_number);
 
+
+					atsc3_isobmff_build_mpu_metadata_ftyp_box(udp_packet, udp_flow_latest_mpu_sequence_number_container, mmtp_sub_flow_vector);
+
 					//reassemble previous segment
 					mmtp_sub_flow = mmtp_sub_flow_vector_get_or_set_packet_id(mmtp_sub_flow_vector, udp_flow_last_packet_id_mpu_sequence_id->packet_id);
-
-
 					//hack...mmtp_payload_previous_for_reassembly->mmtp_mpu_type_packet_header.mpu_sequence_number);
 					//mpu_data_unit_payload_fragments_t* mpu_metadata_fragments =		mpu_data_unit_payload_fragments_find_mpu_sequence_number(&mmtp_sub_flow->mpu_fragments->mpu_metadata_fragments_vector, 	mmtp_payload->mmtp_mpu_type_packet_header.mpu_sequence_number);
 
-					mpu_metadata_fragments 	 = mmtp_sub_flow->mpu_fragments->mpu_metadata_fragments_vector.data ? mmtp_sub_flow->mpu_fragments->mpu_metadata_fragments_vector.data[0] : NULL;
 
 					movie_metadata_fragments = mpu_data_unit_payload_fragments_find_mpu_sequence_number(&mmtp_sub_flow->mpu_fragments->movie_fragment_metadata_vector, udp_flow_last_packet_id_mpu_sequence_id->mpu_sequence_number);
 					data_unit_payload_types  = mpu_data_unit_payload_fragments_find_mpu_sequence_number(&mmtp_sub_flow->mpu_fragments->media_fragment_unit_vector, udp_flow_last_packet_id_mpu_sequence_id->mpu_sequence_number);
@@ -288,26 +288,21 @@ void process_packet(u_char *user, const struct pcap_pkthdr *pkthdr, const u_char
 					mmtp_payload_fragments_union_t* mpu_metadata = NULL;
 					uint32_t total_mdat_body_size = 0;
 
+
+
+
 					if(mpu_metadata_fragments && mpu_metadata_fragments->timed_fragments_vector.size) {
 						__INFO("MPU Metadata: fragments: %p, size: %lu", mpu_metadata_fragments, mpu_metadata_fragments->timed_fragments_vector.size);
 
-						mpu_metadata = mpu_metadata_fragments->timed_fragments_vector.data[0];
-						__INFO("MPU Metadata: Found at mpu_metadata packet_id: %d, mpu_sequence_number: %u", udp_flow_last_packet_id_mpu_sequence_id->packet_id, mpu_metadata->mmtp_mpu_type_packet_header.mpu_sequence_number);
-
 						pipe_buffer_reader_mutex_lock(pipe_ffplay_buffer);
 
-						__MMT_MPU_INFO("MPU Metadata: Pushing to Bento4")
 
 						//swap out our p_buffer with bento isobmff processing
-						AP4_DataBuffer* cleaned_mpu_metadata = mpuToISOBMFFProcessBoxes(mpu_metadata->mmtp_mpu_type_packet_header.mpu_data_unit_payload->p_buffer, mpu_metadata->mmtp_mpu_type_packet_header.mpu_data_unit_payload->i_buffer, -1);
+                        
 
-						block_Release(&mpu_metadata->mmtp_mpu_type_packet_header.mpu_data_unit_payload);
-						mpu_metadata->mmtp_mpu_type_packet_header.mpu_data_unit_payload = block_Alloc(cleaned_mpu_metadata->GetDataSize());
-						memcpy(mpu_metadata->mmtp_mpu_type_packet_header.mpu_data_unit_payload->p_buffer, cleaned_mpu_metadata->GetData(), cleaned_mpu_metadata->GetDataSize());
-						__MMT_MPU_INFO("MPU Metadata: Got back %d bytes from mpuToISOBMFFProcessBoxes", cleaned_mpu_metadata->GetDataSize());
+                        
 
 						mpu_push_to_output_buffer_no_locking(pipe_ffplay_buffer, mpu_metadata);
-						delete cleaned_mpu_metadata;
 
 						pipe_buffer_reader_mutex_unlock(pipe_ffplay_buffer);
 						//dont release this data unit payload as it should be stable for the MPU metadata
@@ -359,8 +354,14 @@ void process_packet(u_char *user, const struct pcap_pkthdr *pkthdr, const u_char
 							total_mdat_body_size += packet->mpu_data_unit_payload_fragments_timed.mpu_data_unit_payload->i_buffer;
 						}
 
-						AP4_DataBuffer* cleaned_fragment_metadata = mpuToISOBMFFProcessBoxes(fragment_metadata->mmtp_mpu_type_packet_header.mpu_data_unit_payload->p_buffer, fragment_metadata->mmtp_mpu_type_packet_header.mpu_data_unit_payload->i_buffer, total_mdat_body_size);
+						AP4_DataBuffer* cleaned_fragment_metadata = mpuToDumpISOBMFFBoxes(fragment_metadata->mmtp_mpu_type_packet_header.mpu_data_unit_payload->p_buffer, fragment_metadata->mmtp_mpu_type_packet_header.mpu_data_unit_payload->i_buffer, total_mdat_body_size);
 
+                        
+                        /**
+                         
+                         AP4_DataBuffer* cleaned_fragment_metadata = mpuToISOBMFFProcessBoxes(fragment_metadata->mmtp_mpu_type_packet_header.mpu_data_unit_payload->p_buffer, fragment_metadata->mmtp_mpu_type_packet_header.mpu_data_unit_payload->i_buffer, total_mdat_body_size);
+
+                         **/
 						block_Release(&fragment_metadata->mmtp_mpu_type_packet_header.mpu_data_unit_payload);
 						fragment_metadata->mmtp_mpu_type_packet_header.mpu_data_unit_payload = block_Alloc(cleaned_fragment_metadata->GetDataSize());
 						//AP4_Result tell

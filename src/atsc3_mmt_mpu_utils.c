@@ -15,29 +15,55 @@ udp_flow_latest_mpu_sequence_number_container_t* udp_flow_latest_mpu_sequence_nu
 	return udp_flow_latest_mpu_sequence_number_container;
 }
 
-void udp_flow_latest_mpu_sequence_number_container_t_release(udp_flow_latest_mpu_sequence_number_container_t* udp_flow_latest_mpu_sequence_number_container_t) {
+udp_flow_latest_mpu_sequence_number_container_t* udp_flow_find_matching_flows(udp_flow_latest_mpu_sequence_number_container_t* udp_flow_latest_mpu_sequence_number_container, udp_flow_t* udp_flow_to_search) {
+	udp_flow_latest_mpu_sequence_number_container_t* my_matching_flows = udp_flow_latest_mpu_sequence_number_container_t_init();
 
-	for(int i=0; i < udp_flow_latest_mpu_sequence_number_container_t->udp_flows_n; i++) {
-		udp_flow_packet_id_mpu_sequence_tuple_t* udp_flow_packet_id_mpu_sequence_tuple = udp_flow_latest_mpu_sequence_number_container_t->udp_flows[i];
-		if(udp_flow_packet_id_mpu_sequence_tuple) {
-			free(udp_flow_packet_id_mpu_sequence_tuple);
-			udp_flow_latest_mpu_sequence_number_container_t->udp_flows[i] = NULL;
+	//do 2 passes, one to collect the matching counts and a second to build a collection** without havint to remalloc
+	my_matching_flows->udp_flows_n = 0;
+
+	for(int i=0; i < udp_flow_latest_mpu_sequence_number_container->udp_flows_n; i++) {
+		udp_flow_packet_id_mpu_sequence_tuple_t* udp_flow_packet_id_mpu_sequence_tuple = udp_flow_latest_mpu_sequence_number_container->udp_flows[i];
+		if(udp_flow_match_from_udp_flow_t(udp_flow_packet_id_mpu_sequence_tuple, udp_flow_to_search)) {
+			my_matching_flows->udp_flows_n++;
 		}
 	}
-	udp_flow_latest_mpu_sequence_number_container_t->udp_flows_n = 0;
 
-	free(udp_flow_latest_mpu_sequence_number_container_t);
+	if(!my_matching_flows->udp_flows_n) {
+		return NULL;
+	}
+
+	my_matching_flows->udp_flows = calloc(my_matching_flows->udp_flows_n, sizeof(my_matching_flows->udp_flows));
+
+	int flow_position = 0;
+	//copy the actual flows over
+	for(int i=0; i < udp_flow_latest_mpu_sequence_number_container->udp_flows_n; i++) {
+		udp_flow_packet_id_mpu_sequence_tuple_t* udp_flow_packet_id_mpu_sequence_tuple = udp_flow_latest_mpu_sequence_number_container->udp_flows[i];
+		if(udp_flow_match_from_udp_flow_t(udp_flow_packet_id_mpu_sequence_tuple, udp_flow_to_search)) {
+			my_matching_flows->udp_flows[flow_position] = calloc(1, sizeof(udp_flow_packet_id_mpu_sequence_tuple_t));
+			memcpy(&my_matching_flows->udp_flows[flow_position], udp_flow_packet_id_mpu_sequence_tuple, sizeof(udp_flow_packet_id_mpu_sequence_tuple_t));
+
+			flow_position++;
+		}
+	}
+
+
+	return my_matching_flows;
 }
-/**
- * uint32_t		src_ip_addr;
-	uint32_t		dst_ip_addr
-	uint16_t		src_port;
-	uint16_t		dst_port;
- */
 
-#define udp_flow_match(a, b)  ((a->udp_flow.dst_ip_addr == b->udp_flow.dst_ip_addr) && (a->udp_flow.dst_port == b->udp_flow.dst_port))
-#define udp_flow_and_packet_id_match(a, b) (udp_flow_match(a, b) && a->packet_id == b->packet_id)
 
+void udp_flow_latest_mpu_sequence_number_container_t_release(udp_flow_latest_mpu_sequence_number_container_t* udp_flow_latest_mpu_sequence_number_container) {
+
+	for(int i=0; i < udp_flow_latest_mpu_sequence_number_container->udp_flows_n; i++) {
+		udp_flow_packet_id_mpu_sequence_tuple_t* udp_flow_packet_id_mpu_sequence_tuple = udp_flow_latest_mpu_sequence_number_container->udp_flows[i];
+		if(udp_flow_packet_id_mpu_sequence_tuple) {
+			free(udp_flow_packet_id_mpu_sequence_tuple);
+			udp_flow_latest_mpu_sequence_number_container->udp_flows[i] = NULL;
+		}
+	}
+	udp_flow_latest_mpu_sequence_number_container->udp_flows_n = 0;
+
+	free(udp_flow_latest_mpu_sequence_number_container);
+}
 
 /*
  * will return the highest sequence number stored

@@ -58,9 +58,23 @@ typedef struct udp_flow_latest_mpu_sequence_number_container {
 
 } udp_flow_latest_mpu_sequence_number_container_t;
 
+/**
+ *  uint32_t		src_ip_addr;
+	uint32_t		dst_ip_addr
+	uint16_t		src_port;
+	uint16_t		dst_port;
+ */
+
+#define udp_flow_match(a, b)  ((a->udp_flow.dst_ip_addr == b->udp_flow.dst_ip_addr) && (a->udp_flow.dst_port == b->udp_flow.dst_port))
+#define udp_flow_match_from_udp_flow_t(a, b)  ((a->udp_flow.dst_ip_addr == b->dst_ip_addr) && (a->udp_flow.dst_port == b->dst_port))
+#define udp_flow_and_packet_id_match(a, b) (udp_flow_match(a, b) && a->packet_id == b->packet_id)
+
+
 //i miss stl containers...
+
 udp_flow_latest_mpu_sequence_number_container_t* udp_flow_latest_mpu_sequence_number_container_t_init();
-void udp_flow_latest_mpu_sequence_number_container_t_release(udp_flow_latest_mpu_sequence_number_container_t* udp_flow_latest_mpu_sequence_number_container_t);
+udp_flow_latest_mpu_sequence_number_container_t* udp_flow_find_matching_flows(udp_flow_latest_mpu_sequence_number_container_t* udp_flow_latest_mpu_sequence_number_container, udp_flow_t* udp_flow_to_search);
+void udp_flow_latest_mpu_sequence_number_container_t_release(udp_flow_latest_mpu_sequence_number_container_t* udp_flow_latest_mpu_sequence_number_container);
 udp_flow_packet_id_mpu_sequence_tuple_t* udp_flow_last_mpu_sequence_number_from_packet_id(udp_flow_latest_mpu_sequence_number_container_t* udp_flow_latest_mpu_sequence_number_container, udp_packet_t* udp_packet, uint32_t packet_id);
 udp_flow_packet_id_mpu_sequence_tuple_t* udp_flow_latest_mpu_sequence_number_add_or_replace(udp_flow_latest_mpu_sequence_number_container_t* udp_flow_latest_mpu_sequence_number_container, udp_packet_t* udp_packet, mmtp_payload_fragments_union_t* mmtp_packet);
 
@@ -82,7 +96,6 @@ void mpu_fragments_vector_shrink_to_fit(mpu_fragments_t* mpu_fragments);
 #define __MMT_MPU_ERROR(...)   printf("%s:%d:ERROR :",__FILE__,__LINE__);printf(__VA_ARGS__);printf("\n");
 #define __MMT_MPU_WARN(...)    printf("%s:%d:WARN: ",__FILE__,__LINE__);printf(__VA_ARGS__);printf("\n");
 #define __MMT_MPU_INFO(...)    printf("%s:%d: ",__FILE__,__LINE__);printf(__VA_ARGS__);printf("\n");
-
 #define __MMT_MPU_DEBUG(...)   if(_MMT_MPU_DEBUG_ENABLED) {printf("%s:%d:DEBUG: ",__FILE__,__LINE__);printf(__VA_ARGS__);printf("\n"); }
 
 #endif /* ATSC3_MMT_MPU_UTILS_H_ */
