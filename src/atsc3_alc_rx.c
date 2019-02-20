@@ -294,7 +294,7 @@ int alc_rx_analyze_packet_a331_compliant(char *data, int len, alc_channel_t *ch,
 
 	if(!(fec_enc_id == COM_NO_C_FEC_ENC_ID || fec_enc_id == RS_FEC_ENC_ID ||
 		fec_enc_id == SB_SYS_FEC_ENC_ID || fec_enc_id == SIMPLE_XOR_FEC_ENC_ID)) {
-			ALC_RX_WARN("FEC Encoding ID: %i is not supported, ignoring!", fec_enc_id);
+			ALC_RX_DEBUG("FEC Encoding ID: %i is not supported, ignoring!", fec_enc_id);
 //            retval = HDR_ERROR;
 //            goto error;
 	}
@@ -477,7 +477,7 @@ int alc_rx_analyze_packet_a331_compliant(char *data, int len, alc_channel_t *ch,
 
   				  transfer_len = (word & 0x00FFFFFF);
 
-                  ALC_RX_INFO("EXT_TOL, tsi: %u, toi: %u,  het is: %d, hel is: %d, exthdrlen: %d, toi transfer len: %llu", def_lct_hdr->tsi, def_lct_hdr->toi, het,  hel, exthdrlen, transfer_len);
+                  ALC_RX_DEBUG("EXT_TOL, tsi: %u, toi: %u,  het is: %d, hel is: %d, exthdrlen: %d, toi transfer len: %llu", def_lct_hdr->tsi, def_lct_hdr->toi, het,  hel, exthdrlen, transfer_len);
 
                   //no additional read performed here, continue the loop
                   break;
@@ -501,59 +501,21 @@ int alc_rx_analyze_packet_a331_compliant(char *data, int len, alc_channel_t *ch,
 	/* Check if we have an empty packet without FEC Payload ID */
 	if(header_pos == len) {
 		retval = EMPTY_PACKET;
+		ALC_RX_WARN("analyze_packet: empty packet!");
+
 		goto error;
 	}
 
+	/*** do not try and process any sbn or esi values here,
+	 * as fec payload id is really the start_offset
+	 *
+	 * fec data is referened by the codepoint lookup
+	 *
+	 */
 
-	if((fec_enc_id == COM_NO_C_FEC_ENC_ID) || (fec_enc_id ==  COM_FEC_ENC_ID)) {
 
-		if(len < header_pos + 4) {
-			ALC_RX_WARN("analyze_packet: packet too short %d", len);
-			retval = HDR_ERROR;
-			goto error;
-		}
-
-		word = __readuint32(data, header_pos);
-
-		sbn = (word >> 16);
-		esi = (word & 0xFFFF);
-		header_pos += 4;
-	}
-	else if(fec_enc_id == RS_FEC_ENC_ID) {
-		word = __readuint32(data, header_pos);
-
-		sbn = (word >> finite_field);
-		esi = (word & ((1 << finite_field) - 1));
-
-		/* finite_field is not used furthermore, default value used in fec.c (#define GF_BITS  8 in fec.h) */
-
-		header_pos += 4;
-	} else if(((fec_enc_id == SB_LB_E_FEC_ENC_ID) || (fec_enc_id == SIMPLE_XOR_FEC_ENC_ID))) {
-		if (len < header_pos + 8) {
-			ALC_RX_WARN("analyze_packet: packet too short %d", len);
-			retval = HDR_ERROR;
-			goto error;
-		}
-
-		sbn = __readuint32(data, header_pos);
-		header_pos += 4;
-		esi = __readuint32(data, header_pos);
-		header_pos += 4;
-
-	} else if(fec_enc_id == SB_SYS_FEC_ENC_ID) {
-		if (len < header_pos + 8) {
-			ALC_RX_WARN("analyze_packet: packet too short %d", len);
-			return HDR_ERROR;
-		}
-
-		sbn = __readuint32(data, header_pos);
-
-		header_pos += 4;
-		word = __readuint32(data, header_pos);
-		sb_len = (word >> 16);
-		esi = (word & 0xFFFF);
-		header_pos += 4;
-	}
+	sbn = __readuint32(data, header_pos);
+	header_pos += 4;
 
 	alc_packet_t* alc_packet = calloc(1, sizeof(alc_packet_t));
 	*alc_packet_ptr = alc_packet;
@@ -564,13 +526,12 @@ int alc_rx_analyze_packet_a331_compliant(char *data, int len, alc_channel_t *ch,
 
 	alc_packet->transfer_len = transfer_len;
 	alc_packet->sbn = sbn;
-	alc_packet->esi = esi;
 	alc_packet->alc_len = len - header_pos;
 	alc_packet->alc_payload = calloc(alc_packet->alc_len, sizeof(uint8_t));
 
 	memcpy(alc_packet->alc_payload, &data[header_pos], alc_packet->alc_len);
 
-	ALC_RX_DEBUG("alc_packet is now: %p", alc_packet);
+	ALC_RX_DEBUG("alc_packet is now: %p, started at packet header_pos: %u, fragment start block is: %u, fragment length is: %u", alc_packet, header_pos, alc_packet->sbn, alc_packet->alc_len);
 	return ALC_OK;
 
 error:
