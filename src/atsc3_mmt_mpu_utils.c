@@ -40,7 +40,7 @@ udp_flow_latest_mpu_sequence_number_container_t* udp_flow_find_matching_flows(ud
 		udp_flow_packet_id_mpu_sequence_tuple_t* udp_flow_packet_id_mpu_sequence_tuple = udp_flow_latest_mpu_sequence_number_container->udp_flows[i];
 		if(udp_flow_match_from_udp_flow_t(udp_flow_packet_id_mpu_sequence_tuple, udp_flow_to_search)) {
 			my_matching_flows->udp_flows[flow_position] = calloc(1, sizeof(udp_flow_packet_id_mpu_sequence_tuple_t));
-			memcpy(&my_matching_flows->udp_flows[flow_position], udp_flow_packet_id_mpu_sequence_tuple, sizeof(udp_flow_packet_id_mpu_sequence_tuple_t));
+			memcpy(my_matching_flows->udp_flows[flow_position], udp_flow_packet_id_mpu_sequence_tuple, sizeof(udp_flow_packet_id_mpu_sequence_tuple_t));
 
 			flow_position++;
 		}
@@ -104,7 +104,8 @@ udp_flow_packet_id_mpu_sequence_tuple_t* udp_flow_latest_mpu_sequence_number_add
 	udp_flow_packet_id_mpu_sequence_tuple_t** udp_flow_packet_id_mpu_sequence_tuple_in_collection = NULL;
 	udp_flow_packet_id_mpu_sequence_tuple_t** udp_flow_packet_id_mpu_sequence_matching_pkt_id = NULL;
 
-	for(int i=0; i < udp_flow_latest_mpu_sequence_number_container->udp_flows_n; i++) {
+
+    for(int i=0; i < udp_flow_latest_mpu_sequence_number_container->udp_flows_n; i++) {
 		udp_flow_packet_id_mpu_sequence_tuple_in_collection = &udp_flow_latest_mpu_sequence_number_container->udp_flows[i];
 
 		if(udp_flow_match((*udp_flow_packet_id_mpu_sequence_tuple_in_collection), udp_packet) && ((*udp_flow_packet_id_mpu_sequence_tuple_in_collection)->packet_id == mmtp_packet->mmtp_mpu_type_packet_header.mmtp_packet_id)) {
@@ -148,7 +149,7 @@ udp_flow_packet_id_mpu_sequence_tuple_t* udp_flow_latest_mpu_sequence_number_add
 			return *udp_flow_packet_id_mpu_sequence_matching_pkt_id;
 		} else {
 			//update the tuple with the new mpu_sequence_number
-			(*udp_flow_packet_id_mpu_sequence_tuple_in_collection)->mpu_sequence_number = mmtp_packet->mmtp_mpu_type_packet_header.mpu_sequence_number;
+			(*udp_flow_packet_id_mpu_sequence_matching_pkt_id)->mpu_sequence_number = mmtp_packet->mmtp_mpu_type_packet_header.mpu_sequence_number;
 		}
 	} else {
 		if(udp_flow_latest_mpu_sequence_number_container->udp_flows_n) {
