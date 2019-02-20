@@ -73,43 +73,41 @@ void traverseChildren(AP4_Atom* toCheckAtom, list<AP4_Atom*> atomList) {
             AP4_FormatFourCharsPrintable(name, m_Type2);
             name[4] = '\0';
             
-            printf("atom is: %s\n", name);
-            char* toFindMfhd = "mfhd";
+            // printf("atom is: %s\n", name);
+            const char* toFindMfhd = "mfhd";
             if(strncmp(toFindMfhd, name, 4) == 0) {
                 AP4_MfhdAtom* mfhdAtom = AP4_DYNAMIC_CAST(AP4_MfhdAtom, atom);
                 mfhdAtom->SetSequenceNumber(sequenceNumber++);
             }
             
-            char* toFindTrun = "trun";
+            const char* toFindTrun = "trun";
             
-            char* toRemoveTrak = "trak";
-            char* toRemoveTrex = "trex";
+            const char* toRemoveTrak = "trak";
+            const char* toRemoveTrex = "trex";
 
             
-            char* toRemoveTfdt = "tfdt";
+            const char* toRemoveTfdt = "tfdt";
             
-            char* toRemoveEdts = "edts";
+            const char* toRemoveEdts = "edts";
             //remove tfhd?
-            char* toRemoveTraf = "traf";
+            const char* toRemoveTraf = "traf";
             
             
-            //indiscriminate removal
-            if(strncmp(toRemoveEdts, name, 4) == 0 || strncmp(toRemoveTfdt, name, 4) == 0) {
+            if(strncmp(toRemoveEdts, name, 4) == 0) {
                 printf("removing %s\n", name);
                 atom->Detach();
-                //seems to throw up a segfault? delete atom;
+                //set atom to null so we don't traverse to this boxes children
                 atom = NULL;
-
-                //child = NULL;
-
-                return;
+                
+            } else if (strncmp(toRemoveTfdt, name, 4) == 0) {
+                printf("removing %s\n", name);
+                atom->Detach();
             } else if(strncmp(toFindTrun, name, 4) == 0) {
                 AP4_TrunAtom* trunAtom = AP4_DYNAMIC_CAST(AP4_TrunAtom, atom);
                 //todo check with parent/tfhd.track id==1
                 trunToComputeDataOffset = trunAtom;
                 printf("setting trunToComputeDataOffset to: %p\n", trunToComputeDataOffset);
                // child = NULL;
-
                 
             } else if(strncmp(toRemoveTrex, name, 4) == 0 ) {
                 AP4_TrexAtom* trexAtom = AP4_DYNAMIC_CAST(AP4_TrexAtom, atom);
@@ -132,14 +130,11 @@ void traverseChildren(AP4_Atom* toCheckAtom, list<AP4_Atom*> atomList) {
                 if(tkhdAtom->GetTrackId() == 2) {
                     printf("removing %s\n", name);
                  
-                    atom->Detach();
+                    trakAtom->Detach();
+                    //don't iterate over our children...
                     atom = NULL;
-                    //child = NULL;
-
-                    //seems to throw up a segfault? delete atom;
-                    //child = NULL;
-
-                   // return;
+                    child = NULL;
+                  
                 }
             } else if(strncmp(toRemoveTraf, name, 4) == 0 ) {
                 AP4_ContainerAtom* traf = AP4_DYNAMIC_CAST(AP4_ContainerAtom, atom);

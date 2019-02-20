@@ -138,7 +138,7 @@ void mpu_push_to_output_buffer(pipe_ffplay_buffer_t* pipe_ffplay_buffer, mmtp_pa
 		}
 
 		pipe_buffer_reader_mutex_lock(pipe_ffplay_buffer);
-		pipe_buffer_push_block(pipe_ffplay_buffer, mmtp_payload->mmtp_mpu_type_packet_header.mpu_data_unit_payload->p_buffer, mmtp_payload->mmtp_mpu_type_packet_header.mpu_data_unit_payload->i_buffer);
+		pipe_buffer_unsafe_push_block(pipe_ffplay_buffer, mmtp_payload->mmtp_mpu_type_packet_header.mpu_data_unit_payload->p_buffer, mmtp_payload->mmtp_mpu_type_packet_header.mpu_data_unit_payload->i_buffer);
 		pipe_ffplay_buffer->last_mpu_sequence_number = mmtp_payload->mmtp_mpu_type_packet_header.mpu_sequence_number;
 		pipe_ffplay_buffer->has_written_init_box = true;
 		pipe_buffer_reader_mutex_unlock(pipe_ffplay_buffer);
@@ -154,12 +154,12 @@ void mpu_push_to_output_buffer(pipe_ffplay_buffer_t* pipe_ffplay_buffer, mmtp_pa
 		}
 
 		pipe_buffer_reader_mutex_lock(pipe_ffplay_buffer);
-		pipe_buffer_push_block(pipe_ffplay_buffer, mmtp_payload->mmtp_mpu_type_packet_header.mpu_data_unit_payload->p_buffer, mmtp_payload->mmtp_mpu_type_packet_header.mpu_data_unit_payload->i_buffer);
+		pipe_buffer_unsafe_push_block(pipe_ffplay_buffer, mmtp_payload->mmtp_mpu_type_packet_header.mpu_data_unit_payload->p_buffer, mmtp_payload->mmtp_mpu_type_packet_header.mpu_data_unit_payload->i_buffer);
 
 		if(mmtp_payload->mmtp_mpu_type_packet_header.mpu_sequence_number != pipe_ffplay_buffer->last_mpu_sequence_number) {
 			//signal here, we will have the first fragment of the next slice in the payload, but its simpler for now...
 			__MMT_MPU_INFO("triggering signal because mpu_sequence changed from %u to %u",  pipe_ffplay_buffer->last_mpu_sequence_number, mmtp_payload->mmtp_mpu_type_packet_header.mpu_sequence_number );
-			pipe_buffer_condition_signal(pipe_ffplay_buffer);
+			pipe_buffer_notify_semaphore_post(pipe_ffplay_buffer);
 		}
 		pipe_ffplay_buffer->last_mpu_sequence_number = mmtp_payload->mmtp_mpu_type_packet_header.mpu_sequence_number;
 
@@ -196,7 +196,7 @@ void mpu_push_to_output_buffer_no_locking(pipe_ffplay_buffer_t* pipe_ffplay_buff
 			goto cleanup;
 		}
 
-		pipe_buffer_push_block(pipe_ffplay_buffer, mmtp_payload->mmtp_mpu_type_packet_header.mpu_data_unit_payload->p_buffer, mmtp_payload->mmtp_mpu_type_packet_header.mpu_data_unit_payload->i_buffer);
+		pipe_buffer_unsafe_push_block(pipe_ffplay_buffer, mmtp_payload->mmtp_mpu_type_packet_header.mpu_data_unit_payload->p_buffer, mmtp_payload->mmtp_mpu_type_packet_header.mpu_data_unit_payload->i_buffer);
 		pipe_ffplay_buffer->last_mpu_sequence_number = mmtp_payload->mmtp_mpu_type_packet_header.mpu_sequence_number;
 		pipe_ffplay_buffer->has_written_init_box = true;
 
@@ -212,7 +212,7 @@ void mpu_push_to_output_buffer_no_locking(pipe_ffplay_buffer_t* pipe_ffplay_buff
 
 		__MMT_MPU_DEBUG("pushing payload fragment for %d fragment_type: %d", mmtp_payload->mmtp_mpu_type_packet_header.mpu_sequence_number, mmtp_payload->mmtp_mpu_type_packet_header.mpu_fragment_type);
 
-		pipe_buffer_push_block(pipe_ffplay_buffer, mmtp_payload->mmtp_mpu_type_packet_header.mpu_data_unit_payload->p_buffer, mmtp_payload->mmtp_mpu_type_packet_header.mpu_data_unit_payload->i_buffer);
+		pipe_buffer_unsafe_push_block(pipe_ffplay_buffer, mmtp_payload->mmtp_mpu_type_packet_header.mpu_data_unit_payload->p_buffer, mmtp_payload->mmtp_mpu_type_packet_header.mpu_data_unit_payload->i_buffer);
 
 		pipe_ffplay_buffer->last_mpu_sequence_number = mmtp_payload->mmtp_mpu_type_packet_header.mpu_sequence_number;
 	}

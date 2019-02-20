@@ -235,24 +235,21 @@ void traverseChildren(AP4_Atom* toCheckAtom) {
             AP4_FormatFourCharsPrintable(name, m_Type2);
             name[4] = '\0';
             
-            printf("atom is: %s\n", name);
-            char* toFindMfhd = "mfhd";
+            //printf("atom is: %s\n", name);
+            const char* toFindMfhd = "mfhd";
             if(strncmp(toFindMfhd, name, 4) == 0) {
                 AP4_MfhdAtom* mfhdAtom = AP4_DYNAMIC_CAST(AP4_MfhdAtom, atom);
                 mfhdAtom->SetSequenceNumber(sequenceNumber++);
             }
             
-            char* toFindTrun = "trun";
-            
-            char* toRemoveTrak = "trak";
-            char* toRemoveTrex = "trex";
+            const char* toFindTrun = "trun";
 
-            
-            char* toRemoveTfdt = "tfdt";
-            
-            char* toRemoveEdts = "edts";
+            const char* toRemoveTrak = "trak";
+            const char* toRemoveTrex = "trex";
+            const char* toRemoveTfdt = "tfdt";
+            const char* toRemoveEdts = "edts";
             //remove tfhd?
-            char* toRemoveTraf = "traf";
+            const char* toRemoveTraf = "traf";
             
             
             //indiscriminate removal

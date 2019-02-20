@@ -21,14 +21,16 @@
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston MA 02110-1301, USA.
  *****************************************************************************/
-#ifndef ATSC3_VECTOR_H
-#define ATSC3_VECTOR_H
 
 #include <stdbool.h>
 #include <stddef.h>
+#include <stdlib.h>
+
+#ifndef ATSC3_VECTOR_H
+#define ATSC3_VECTOR_H
+
 
 #define ATSC3_VECTOR_FAILFLAG_ (~(((size_t) -1) >> 1)) /* only the MSB */
-# define VLC_USED
 
 
 // #include "atsc3_decoupling_vlc_common.h"
