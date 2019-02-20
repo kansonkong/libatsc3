@@ -105,13 +105,7 @@ uint16_t* dst_packet_id_filter = NULL;
 
 //make sure to invoke     mmtp_sub_flow_vector_init(&p_sys->mmtp_sub_flow_vector);
 mmtp_sub_flow_vector_t* mmtp_sub_flow_vector;
-
-//todo - keep track of these by flow and packet_id to detect mpu_sequence_number increment
-uint32_t* last_mpu_sequence_number_received = NULL;
-uint16_t* last_packet_id_received = NULL;
-
-uint32_t* to_evict_mpu_sequence_number_received = NULL;
-uint16_t* to_evict_packet_id_received = NULL;
+udp_flow_latest_mpu_sequence_number_container_t* udp_flow_latest_mpu_sequence_number_container;
 
 //now that are are performing memory management, we can't use this fragment object once the mpu_sequence has been re-assembeled and free'd
 //mmtp_payload_fragments_union_t* mmtp_payload_previous_for_reassembly = NULL;
@@ -175,15 +169,15 @@ void process_packet(u_char *user, const struct pcap_pkthdr *pkthdr, const u_char
 
 	//malloc our udp_packet_header:
 	udp_packet = (udp_packet_t*) calloc(1, sizeof(udp_packet_t));
-	udp_packet->src_ip_addr = ((ip_header[12] & 0xFF) << 24) | ((ip_header[13]  & 0xFF) << 16) | ((ip_header[14]  & 0xFF) << 8) | (ip_header[15] & 0xFF);
-	udp_packet->dst_ip_addr = ((ip_header[16] & 0xFF) << 24) | ((ip_header[17]  & 0xFF) << 16) | ((ip_header[18]  & 0xFF) << 8) | (ip_header[19] & 0xFF);
+	udp_packet->udp_flow.src_ip_addr = ((ip_header[12] & 0xFF) << 24) | ((ip_header[13]  & 0xFF) << 16) | ((ip_header[14]  & 0xFF) << 8) | (ip_header[15] & 0xFF);
+	udp_packet->udp_flow.dst_ip_addr = ((ip_header[16] & 0xFF) << 24) | ((ip_header[17]  & 0xFF) << 16) | ((ip_header[18]  & 0xFF) << 8) | (ip_header[19] & 0xFF);
 
 	for (i = 0; i < 8; i++) {
 		udp_header[i] = packet[udp_header_start + i];
 	}
 
-	udp_packet->src_port = (udp_header[0] << 8) + udp_header[1];
-	udp_packet->dst_port = (udp_header[2] << 8) + udp_header[3];
+	udp_packet->udp_flow.src_port = (udp_header[0] << 8) + udp_header[1];
+	udp_packet->udp_flow.dst_port = (udp_header[2] << 8) + udp_header[3];
 
 	udp_packet->data_length = pkthdr->len - (udp_header_start + 8);
 	if(udp_packet->data_length <=0 || udp_packet->data_length > 1514) {
@@ -202,14 +196,14 @@ void process_packet(u_char *user, const struct pcap_pkthdr *pkthdr, const u_char
 
 	#ifdef _SHOW_PACKET_FLOW
 		__INFO("--- Packet size : %-10d | Counter: %-8d", udp_packet->data_length, PACKET_COUNTER++);
-		__INFO("    Src. Addr   : %d.%d.%d.%d\t(%-10u)\t", ip_header[12], ip_header[13], ip_header[14], ip_header[15], udp_packet->src_ip_addr);
+		__INFO("    Src. Addr   : %d.%d.%d.%d\t(%-10u)\t", ip_header[12], ip_header[13], ip_header[14], ip_header[15], udp_packet->udp_flow.src_ip_addr);
 		__INFO("    Src. Port   : %-5hu ", (uint16_t)((udp_header[0] << 8) + udp_header[1]));
-		__INFO("    Dst. Addr   : %d.%d.%d.%d\t(%-10u)\t", ip_header[16], ip_header[17], ip_header[18], ip_header[19], udp_packet->dst_ip_addr);
+		__INFO("    Dst. Addr   : %d.%d.%d.%d\t(%-10u)\t", ip_header[16], ip_header[17], ip_header[18], ip_header[19], udp_packet->udp_flow.dst_ip_addr);
 		__INFO("    Dst. Port   : %-5hu \t", (uint16_t)((udp_header[2] << 8) + udp_header[3]));
 	#endif
 
 	//dispatch for LLS extraction and dump
-	if(udp_packet->dst_ip_addr == LLS_DST_ADDR && udp_packet->dst_port == LLS_DST_PORT) {
+	if(udp_packet->udp_flow.dst_ip_addr == LLS_DST_ADDR && udp_packet->udp_flow.dst_port == LLS_DST_PORT) {
 		//process as lls
 		lls_table_t* lls = lls_table_create(udp_packet->data, udp_packet->data_length);
 		if(lls) {
@@ -221,21 +215,21 @@ void process_packet(u_char *user, const struct pcap_pkthdr *pkthdr, const u_char
 	}
 
 
-	if(udp_packet->dst_ip_addr <= MIN_ATSC3_MULTICAST_BLOCK || udp_packet->dst_ip_addr >= MAX_ATSC3_MULTICAST_BLOCK) {
+	if(udp_packet->udp_flow.dst_ip_addr <= MIN_ATSC3_MULTICAST_BLOCK || udp_packet->udp_flow.dst_ip_addr >= MAX_ATSC3_MULTICAST_BLOCK) {
 		//out of range, so drop
 
 		goto cleanup;
 	}
 
-	if((dst_ip_addr_filter == NULL && dst_ip_port_filter == NULL) || (udp_packet->dst_ip_addr == *dst_ip_addr_filter && udp_packet->dst_port == *dst_ip_port_filter)) {
+	if((dst_ip_addr_filter == NULL && dst_ip_port_filter == NULL) || (udp_packet->udp_flow.dst_ip_addr == *dst_ip_addr_filter && udp_packet->udp_flow.dst_port == *dst_ip_port_filter)) {
 
 		mmtp_payload_fragments_union_t* mmtp_payload = mmtp_packet_parse(mmtp_sub_flow_vector, udp_packet->data, udp_packet->data_length);
 
 		if(!mmtp_payload) {
 			__ERROR("mmtp_packet_parse: raw packet ptr is null, parsing failed for flow: %d.%d.%d.%d:(%-10u):%-5hu \t ->  %d.%d.%d.%d\t(%-10u)\t:%-5hu",
-					ip_header[12], ip_header[13], ip_header[14], ip_header[15], udp_packet->src_ip_addr,
+					ip_header[12], ip_header[13], ip_header[14], ip_header[15], udp_packet->udp_flow.src_ip_addr,
 					(uint16_t)((udp_header[0] << 8) + udp_header[1]),
-					ip_header[16], ip_header[17], ip_header[18], ip_header[19], udp_packet->dst_ip_addr,
+					ip_header[16], ip_header[17], ip_header[18], ip_header[19], udp_packet->udp_flow.dst_ip_addr,
 					(uint16_t)((udp_header[2] << 8) + udp_header[3])
 					);
 			goto cleanup;
@@ -255,19 +249,32 @@ void process_packet(u_char *user, const struct pcap_pkthdr *pkthdr, const u_char
 
 			if(mmtp_payload->mmtp_mpu_type_packet_header.mpu_timed_flag == 1) {
 
-				__TRACE("Starting processing loop, current mpu_sequence_number is: %d, packet_sequence_number: %d", mmtp_payload->mmtp_mpu_type_packet_header.mpu_sequence_number, mmtp_payload->mmtp_mpu_type_packet_header.packet_sequence_number);
+				__INFO("Starting processing loop, current mpu_sequence_number is: %d, packet_sequence_number: %d", mmtp_payload->mmtp_mpu_type_packet_header.mpu_sequence_number, mmtp_payload->mmtp_mpu_type_packet_header.packet_sequence_number);
 
 				mpu_data_unit_payload_fragments_t* data_unit_payload_types = NULL;
 				mpu_data_unit_payload_fragments_timed_vector_t* data_unit_payload_fragments = NULL; //techincally this is mpu_fragments->media_fragment_unit_vector
 				mpu_data_unit_payload_fragments_t* mpu_metadata_fragments =	NULL;
 				mpu_data_unit_payload_fragments_t* movie_metadata_fragments  = NULL;
 				mmtp_sub_flow_t* mmtp_sub_flow = NULL;
+				int total_fragments = 0;
 
-				if(last_mpu_sequence_number_received && last_packet_id_received && *last_mpu_sequence_number_received != mmtp_payload->mmtp_mpu_type_packet_header.mpu_sequence_number) {
-					__INFO("Starting re-fragmenting because mpu_sequence number changed from %u to %u", *last_mpu_sequence_number_received, mmtp_payload->mmtp_mpu_type_packet_header.mpu_sequence_number);
+				udp_flow_packet_id_mpu_sequence_tuple_t* udp_flow_last_packet_id_mpu_sequence_id = udp_flow_last_mpu_sequence_number_from_packet_id(udp_flow_latest_mpu_sequence_number_container, udp_packet, mmtp_payload->mmtp_mpu_type_packet_header.mmtp_packet_id);
+
+				if(udp_flow_last_packet_id_mpu_sequence_id) {
+					__INFO("before refragment check: ptr: %p, last dst_ip_addr: %u, last dst_port: %hu, last packet_id: %u, last mpu_sequence_number: %u",
+							udp_flow_last_packet_id_mpu_sequence_id,
+							udp_flow_last_packet_id_mpu_sequence_id->udp_flow.dst_ip_addr,
+							udp_flow_last_packet_id_mpu_sequence_id->udp_flow.dst_port,
+							udp_flow_last_packet_id_mpu_sequence_id->packet_id,
+										udp_flow_last_packet_id_mpu_sequence_id->mpu_sequence_number);
+				}
+
+				if(udp_flow_last_packet_id_mpu_sequence_id && udp_flow_last_packet_id_mpu_sequence_id->mpu_sequence_number < mmtp_payload->mmtp_mpu_type_packet_header.mpu_sequence_number) {
+
+					__INFO("Starting re-fragmenting because mpu_sequence number changed from %u to %u", udp_flow_last_packet_id_mpu_sequence_id->mpu_sequence_number, mmtp_payload->mmtp_mpu_type_packet_header.mpu_sequence_number);
 
 					//reassemble previous segment
-					mmtp_sub_flow = mmtp_sub_flow_vector_get_or_set_packet_id(mmtp_sub_flow_vector, *last_packet_id_received);
+					mmtp_sub_flow = mmtp_sub_flow_vector_get_or_set_packet_id(mmtp_sub_flow_vector, udp_flow_last_packet_id_mpu_sequence_id->packet_id);
 
 
 					//hack...mmtp_payload_previous_for_reassembly->mmtp_mpu_type_packet_header.mpu_sequence_number);
@@ -275,8 +282,8 @@ void process_packet(u_char *user, const struct pcap_pkthdr *pkthdr, const u_char
 
 					mpu_metadata_fragments 	 = mmtp_sub_flow->mpu_fragments->mpu_metadata_fragments_vector.data ? mmtp_sub_flow->mpu_fragments->mpu_metadata_fragments_vector.data[0] : NULL;
 
-					movie_metadata_fragments = mpu_data_unit_payload_fragments_find_mpu_sequence_number(&mmtp_sub_flow->mpu_fragments->movie_fragment_metadata_vector, *last_mpu_sequence_number_received);
-					data_unit_payload_types  = mpu_data_unit_payload_fragments_find_mpu_sequence_number(&mmtp_sub_flow->mpu_fragments->media_fragment_unit_vector, *last_mpu_sequence_number_received);
+					movie_metadata_fragments = mpu_data_unit_payload_fragments_find_mpu_sequence_number(&mmtp_sub_flow->mpu_fragments->movie_fragment_metadata_vector, udp_flow_last_packet_id_mpu_sequence_id->mpu_sequence_number);
+					data_unit_payload_types  = mpu_data_unit_payload_fragments_find_mpu_sequence_number(&mmtp_sub_flow->mpu_fragments->media_fragment_unit_vector, udp_flow_last_packet_id_mpu_sequence_id->mpu_sequence_number);
 
 					mmtp_payload_fragments_union_t* mpu_metadata = NULL;
 					uint32_t total_mdat_body_size = 0;
@@ -285,7 +292,7 @@ void process_packet(u_char *user, const struct pcap_pkthdr *pkthdr, const u_char
 						__INFO("MPU Metadata: fragments: %p, size: %lu", mpu_metadata_fragments, mpu_metadata_fragments->timed_fragments_vector.size);
 
 						mpu_metadata = mpu_metadata_fragments->timed_fragments_vector.data[0];
-						__INFO("MPU Metadata: Found at mpu_sequence_number: %u, mpu_metadata packet_id: %d", *last_mpu_sequence_number_received, mpu_metadata->mmtp_packet_header.mmtp_packet_id);
+						__INFO("MPU Metadata: Found at mpu_metadata packet_id: %d, mpu_sequence_number: %u", udp_flow_last_packet_id_mpu_sequence_id->packet_id, mpu_metadata->mmtp_mpu_type_packet_header.mpu_sequence_number);
 
 						pipe_buffer_reader_mutex_lock(pipe_ffplay_buffer);
 
@@ -312,7 +319,7 @@ void process_packet(u_char *user, const struct pcap_pkthdr *pkthdr, const u_char
 					mmtp_payload_fragments_union_t* fragment_metadata = NULL;
 					if(movie_metadata_fragments && movie_metadata_fragments->timed_fragments_vector.size) {
 						fragment_metadata = movie_metadata_fragments->timed_fragments_vector.data[0];
-						__INFO("Movie Fragment Metadata: Found for mpu_sequence_number: %u, fragment_metadata packet_id: %d", *last_mpu_sequence_number_received, fragment_metadata->mmtp_packet_header.mmtp_packet_id);
+						__INFO("Movie Fragment Metadata: Found for fragment_metadata packet_id: %d, mpu_sequence_number: %u", fragment_metadata->mmtp_packet_header.mmtp_packet_id, udp_flow_last_packet_id_mpu_sequence_id->mpu_sequence_number);
 
 					} else {
 						__WARN("Movie Fragment Metadata is NULL!");
@@ -331,7 +338,7 @@ void process_packet(u_char *user, const struct pcap_pkthdr *pkthdr, const u_char
 						goto purge_pending_mfu_and_update_previous_mmtp_payload;
 					}
 
-					int total_fragments = data_unit_payload_fragments->size;
+					total_fragments = data_unit_payload_fragments->size;
 
 					if(fragment_metadata) {
 						pipe_buffer_reader_mutex_lock(pipe_ffplay_buffer);
@@ -341,10 +348,12 @@ void process_packet(u_char *user, const struct pcap_pkthdr *pkthdr, const u_char
 
 						for(int i=0; i < total_fragments; i++) {
 							mmtp_payload_fragments_union_t* packet = data_unit_payload_fragments->data[i];
-							__TRACE("i: %d, p: %p, frag indicator is: %d, mpu_sequence_number: %u, size: %u, packet_counter: %u, data_unit payload: %p, block_t: %p", i, packet,
-									packet->mpu_data_unit_payload_fragments_timed.mpu_fragmentation_indicator, packet->mpu_data_unit_payload_fragments_timed.mpu_sequence_number,
+							__INFO("i: Computing MDAT size: %d, p: %p, frag indicator is: %d, mpu_sequence_number: %u, size: %u, packet_counter: %u, data_unit payload: %p, block_t: %p", i, packet,
+									packet->mpu_data_unit_payload_fragments_timed.mpu_fragmentation_indicator,
+									packet->mpu_data_unit_payload_fragments_timed.mpu_sequence_number,
 									packet->mpu_data_unit_payload_fragments_timed.mpu_data_unit_payload->i_buffer,
-									packet->mpu_data_unit_payload_fragments_timed.packet_counter, packet->mpu_data_unit_payload_fragments_timed.mpu_data_unit_payload,
+									packet->mpu_data_unit_payload_fragments_timed.packet_counter,
+									packet->mpu_data_unit_payload_fragments_timed.mpu_data_unit_payload,
 									packet->mpu_data_unit_payload_fragments_timed.mpu_data_unit_payload->p_buffer);
 
 							total_mdat_body_size += packet->mpu_data_unit_payload_fragments_timed.mpu_data_unit_payload->i_buffer;
@@ -381,133 +390,75 @@ void process_packet(u_char *user, const struct pcap_pkthdr *pkthdr, const u_char
                         //block_Release(&packet->mmtp_mpu_type_packet_header.mpu_data_unit_payload);
 					}
 					__INFO("Data Unit Payload: MPU_sequence_number: %u, pushed %d total fragments, over %u Fragment Metadata bytes, fragment_metadata packet_id: %d",
-							*last_mpu_sequence_number_received, total_fragments, total_mdat_body_size, fragment_metadata->mmtp_packet_header.mmtp_packet_id);
+							udp_flow_last_packet_id_mpu_sequence_id->mpu_sequence_number,
+							total_fragments,
+							total_mdat_body_size,
+							fragment_metadata->mmtp_packet_header.mmtp_packet_id);
 
 					//only trigger a signal if we have our init box and fragment metadata for this cycle
 					if(pipe_ffplay_buffer->has_written_init_box && fragment_metadata) {
 						__INFO("Calling pipe_buffer_condition_signal");
 						pipe_buffer_notify_semaphore_post(pipe_ffplay_buffer);
+						if(udp_flow_last_packet_id_mpu_sequence_id) {
+							udp_flow_last_packet_id_mpu_sequence_id->mpu_sequence_number_last_refragmentation_flush = udp_flow_last_packet_id_mpu_sequence_id->mpu_sequence_number;
+
+							//jdj-2019-02-20 - try and clear all packets flow
+//							__INFO("Calling atsc3_vecor clear for: all_mpu_fragments_vector");
+//							atsc3_vector_clear(&fragment_metadata->mpu_data_unit_payload_fragments_timed.mmtp_sub_flow->mpu_fragments->all_mpu_fragments_vector);
+
+						}
 					}
 					pipe_buffer_reader_mutex_unlock(pipe_ffplay_buffer);
 
 
-				}
 
 purge_pending_mfu_and_update_previous_mmtp_payload:
 
-				//resource deallocation follows here:
-				if(last_mpu_sequence_number_received && *last_mpu_sequence_number_received != mmtp_payload->mmtp_mpu_type_packet_header.mpu_sequence_number &&
-					last_packet_id_received && *last_packet_id_received != mmtp_payload->mmtp_mpu_type_packet_header.mmtp_packet_id) {
 
-					//keep a reference of our last mpu_sequence_number and packet_id received before we "nix" them if this is a short payload...
-					if(!to_evict_mpu_sequence_number_received) {
-						to_evict_mpu_sequence_number_received = (uint32_t*) calloc(1, sizeof(uint32_t));
+					//only perform evictions if our last_mpu and last_packet are different than the last eviction run...
+					if(!udp_flow_last_packet_id_mpu_sequence_id || !udp_flow_last_packet_id_mpu_sequence_id->mpu_sequence_number_last_refragmentation_flush || (udp_flow_last_packet_id_mpu_sequence_id->mpu_sequence_number_last_refragmentation_flush - udp_flow_last_packet_id_mpu_sequence_id->mpu_sequence_number_evict_range_start <= 0)) {
+						//bail on reaping this time...
+						goto update_last_packet_id_and_mpu_sequence_number;
 					}
-					*to_evict_mpu_sequence_number_received = *last_mpu_sequence_number_received;
 
-					if(!to_evict_packet_id_received) {
-						to_evict_packet_id_received = (uint16_t*) calloc(1, sizeof(uint16_t));
-					}
-					*to_evict_packet_id_received = *last_packet_id_received;
-				}
-
-				//keep a reference of our last mpu_sequence_number and packet_id received before we "nix" them if this is a short payload...
-				if(!last_mpu_sequence_number_received) {
-					last_mpu_sequence_number_received = (uint32_t*) calloc(1, sizeof(uint32_t));
-				}
-				*last_mpu_sequence_number_received = mmtp_payload->mmtp_mpu_type_packet_header.mpu_sequence_number;
-
-				if(!last_packet_id_received) {
-					last_packet_id_received = (uint16_t*) calloc(1, sizeof(uint16_t));
-				}
-				*last_packet_id_received = mmtp_payload->mmtp_mpu_type_packet_header.mmtp_packet_id;
-
-				if(!!to_evict_mpu_sequence_number_received || !to_evict_packet_id_received) {
-					goto cleanup;
-				}
-
-				//only perform evictions if our last_mpu and last_packet are different than the last eviction run...
-				if(*to_evict_mpu_sequence_number_received == *last_mpu_sequence_number_received && *to_evict_packet_id_received == *last_packet_id_received) {
-					//bail on reaping this time...
-					goto cleanup;
-				}
-
-				//clear out our "global" packet_id data_unit_payloads from the mpu fragments
-				mpu_fragments_t* mpu_fragments = NULL;
-				if(last_mpu_sequence_number_received && to_evict_packet_id_received) {
+					//clear out our "global" packet_id data_unit_payloads from the mpu fragments
+					mpu_fragments_t* mpu_fragments = NULL;
 					if(!mmtp_sub_flow) {
-						//try and find our packet_id subflow to clean up any intermediate objects
-						mmtp_sub_flow = mmtp_sub_flow_vector_get_or_set_packet_id(mmtp_sub_flow_vector, *to_evict_packet_id_received);
-						__TRACE("mmtp_sub_flow was null, now: %p, resolved from sub_flow_vector and packet_id: %d", mmtp_sub_flow,
-								mmtp_payload_previous_for_reassembly->mmtp_packet_header.mmtp_packet_id);
+							//try and find our packet_id subflow to clean up any intermediate objects
+						mmtp_sub_flow = mmtp_sub_flow_vector_get_or_set_packet_id(mmtp_sub_flow_vector, udp_flow_last_packet_id_mpu_sequence_id->packet_id);
+							__TRACE("mmtp_sub_flow was null, now: %p, resolved from sub_flow_vector and packet_id: %d",
+									mmtp_sub_flow,
+									udp_flow_last_packet_id_mpu_sequence_id->packet_id);
 					}
 
 					if(mmtp_sub_flow) {
-						 mpu_fragments = mpu_fragments_get_or_set_packet_id(mmtp_sub_flow, *to_evict_packet_id_received);
+						 mpu_fragments = mpu_fragments_get_or_set_packet_id(mmtp_sub_flow, udp_flow_last_packet_id_mpu_sequence_id->packet_id);
 					}
 
-					if(!data_unit_payload_fragments && mpu_fragments) {
-						data_unit_payload_types = mpu_data_unit_payload_fragments_find_mpu_sequence_number(&mpu_fragments->media_fragment_unit_vector, *to_evict_mpu_sequence_number_received);
-						if(data_unit_payload_types && data_unit_payload_types->timed_fragments_vector.data) {
-							data_unit_payload_fragments = &data_unit_payload_types->timed_fragments_vector;
-						}
-					}
-				}
+					if(mpu_fragments && udp_flow_last_packet_id_mpu_sequence_id->mpu_sequence_number_evict_range_start) {
+						for(; udp_flow_last_packet_id_mpu_sequence_id->mpu_sequence_number_evict_range_start < udp_flow_last_packet_id_mpu_sequence_id->mpu_sequence_number_last_refragmentation_flush; udp_flow_last_packet_id_mpu_sequence_id->mpu_sequence_number_evict_range_start++) {
+							data_unit_payload_types = mpu_data_unit_payload_fragments_find_mpu_sequence_number(&mpu_fragments->media_fragment_unit_vector, udp_flow_last_packet_id_mpu_sequence_id->mpu_sequence_number_evict_range_start);
 
-
-				if(data_unit_payload_fragments ) {
-					//clear out matching packets from allpackets,
-					ssize_t* all_packets_index = (long*) calloc(1, sizeof(ssize_t));
-
-					//clear out any mfu's in queue if we are here
-					//remove our packets from the subflow and free block allocs, as mpu_push_to_output_buffer_no_locking will copy the p_buffer to a slab
-					for(int i=0; i < data_unit_payload_fragments->size; i++) {
-
-						mmtp_payload_fragments_union_t* packet = data_unit_payload_fragments->data[i];
-
-						__TRACE("freeing payload: %p, packet_counter: %u, packet_sequence_number: %u",
-								mmtp_payload, packet->mmtp_mpu_type_packet_header.packet_counter, packet->mmtp_mpu_type_packet_header.mpu_sequence_number);
-
-
-						//free the sub-flow fragment
-						atsc3_vector_index_of(&mmtp_sub_flow->mpu_fragments->all_mpu_fragments_vector, packet, all_packets_index);
-
-						if(*all_packets_index >-1) {
-							__TRACE("freeing payload from all_mpu_fragments_vector via vector_remove_noshrkink at index: %ld", *all_packets_index);
-							atsc3_vector_remove_noshrink(&mmtp_sub_flow->mpu_fragments->all_mpu_fragments_vector, *all_packets_index);
-						}
-
-						if(mpu_fragments) {
-							//free global fragment
-							atsc3_vector_index_of(&mpu_fragments->all_mpu_fragments_vector, packet, all_packets_index);
-							if(*all_packets_index >-1) {
-								atsc3_vector_remove_noshrink(&mpu_fragments->all_mpu_fragments_vector, *all_packets_index);
-
+							if(data_unit_payload_types && data_unit_payload_types->timed_fragments_vector.data) {
+								data_unit_payload_fragments = &data_unit_payload_types->timed_fragments_vector;
+								if(data_unit_payload_fragments) {
+									__INFO("Beginning eviction pass for mpu: %u, mmtp_sub_flow->mpu_fragments->all_mpu_fragments_vector.size: %lu", udp_flow_last_packet_id_mpu_sequence_id->mpu_sequence_number_evict_range_start, mmtp_sub_flow->mpu_fragments->all_mpu_fragments_vector.size)
+									int evicted_count = atsc3_mmt_mpu_clear_data_unit_payload_fragments(mmtp_sub_flow, mpu_fragments, data_unit_payload_fragments);
+									__INFO("Eviction pass for mpu: %u resulted in %u", udp_flow_last_packet_id_mpu_sequence_id->mpu_sequence_number_evict_range_start, evicted_count);
+								}
 							}
-
-							__TRACE("packet flow all_mpu_Fragments_vector is: %p, size: %lu, mmtp_sub_flow->mpu_fragments is: %p, global mpu_fragments->all_mpu_fragments is: %p, and size is: %lu",
-									&packet->mmtp_mpu_type_packet_header.mmtp_sub_flow->mpu_fragments->all_mpu_fragments_vector,
-									packet->mmtp_mpu_type_packet_header.mmtp_sub_flow->mpu_fragments->all_mpu_fragments_vector.size,
-									&mmtp_sub_flow->mpu_fragments->all_mpu_fragments_vector,
-									&mpu_fragments->all_mpu_fragments_vector,
-									mpu_fragments->all_mpu_fragments_vector.size);
-
 						}
-
-						//clear out any block_t allocs
-						mmtp_payload_fragments_union_free(&packet);
-
 					}
-
-					mpu_fragments_vector_shrink_to_fit(mmtp_sub_flow->mpu_fragments);
-
-					if(mpu_fragments) {
-						mpu_fragments_vector_shrink_to_fit(mpu_fragments);
-					}
-
-					//clear out all of the data uint fragments here...
-					atsc3_vector_clear(data_unit_payload_fragments);
 				}
+update_last_packet_id_and_mpu_sequence_number:
+
+				udp_flow_packet_id_mpu_sequence_tuple_t* last_flow_reference = udp_flow_latest_mpu_sequence_number_add_or_replace(udp_flow_latest_mpu_sequence_number_container, udp_packet, mmtp_payload);
+				__INFO("update_last_packet_id_and_mpu_sequence_number: ptr: %p, last dst_ip_addr: %u, last dst_port: %hu, last packet_id: %u, last mpu_sequence_number: %u",
+						last_flow_reference,
+						last_flow_reference->udp_flow.dst_ip_addr,
+						last_flow_reference->udp_flow.dst_port,
+						last_flow_reference->packet_id,
+						last_flow_reference->mpu_sequence_number);
 
 			} else {
 				//non-timed
@@ -654,6 +605,7 @@ int main(int argc,char **argv) {
     }
     mmtp_sub_flow_vector = (mmtp_sub_flow_vector_t*)calloc(1, sizeof(mmtp_sub_flow_vector_t));
     mmtp_sub_flow_vector_init(mmtp_sub_flow_vector);
+    udp_flow_latest_mpu_sequence_number_container = udp_flow_latest_mpu_sequence_number_container_t_init();
 
     mkdir("mpu", 0777);
 
