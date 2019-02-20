@@ -21,6 +21,24 @@
  *
  *  For MMTP/MPU-delivered services, the bootstrap information includes the destination IP address and destination
  *  port of the MMTP session carrying the MMTP- specific SLS.
+ *
+ *
+ *
+ *  2019-02-19 TODO:
+ *
+ *  find this leak:
+ *
+ *  ==42184== 35,776 (1,224 direct, 34,552 indirect) bytes in 51 blocks are definitely lost in loss record 74 of 75
+==42184==    at 0x1000E36EA: calloc (in /usr/local/Cellar/valgrind/3.14.0/lib/valgrind/vgpreload_memcheck-amd64-darwin.so)
+==42184==    by 0x100001A11: xml_parse_document (xml.c:828)
+==42184==    by 0x10000389B: xml_payload_document_parse (atsc3_lls.c:300)
+==42184==    by 0x100003685: lls_table_create (atsc3_lls.c:190)
+==42184==    by 0x1000011F6: process_packet (atsc3_lls_listener_test.c:212)
+==42184==    by 0x100119F60: pcap_read_bpf (in /usr/lib/libpcap.A.dylib)
+==42184==    by 0x10011DF82: pcap_loop (in /usr/lib/libpcap.A.dylib)
+==42184==    by 0x1000015C0: main (atsc3_lls_listener_test.c:276)
+==42184==
+ *
  */
 
 #include "atsc3_utils.h"
@@ -115,8 +133,6 @@ int __unzip_gzip_payload(uint8_t *input_payload, uint input_payload_size, uint8_
 		do {
 			if(!output_payload) {
 				output_payload = calloc(GZIP_CHUNK_OUTPUT_BUFFER_SIZE + 1, sizeof(uint8_t));
-			} else {
-				output_payload = realloc(output_payload, output_payload_offset + GZIP_CHUNK_OUTPUT_BUFFER_SIZE + 1);
 			}
 
 			if(!output_payload)
@@ -139,6 +155,8 @@ int __unzip_gzip_payload(uint8_t *input_payload, uint input_payload_size, uint8_
 
 			if(strm.avail_out == 0) {
 				output_payload_offset += GZIP_CHUNK_OUTPUT_BUFFER_SIZE;
+				output_payload = realloc(output_payload, output_payload_offset + GZIP_CHUNK_OUTPUT_BUFFER_SIZE + 1);
+
 			}
 		} while (strm.avail_out == 0);
 
@@ -189,11 +207,18 @@ lls_table_t* lls_table_create( uint8_t* lls_packet, int size) {
 	_LLS_TRACE("lls_create_table, raw xml payload is: \n%s", lls_table->raw_xml.xml_payload);
 	xml_document = xml_payload_document_parse(lls_table->raw_xml.xml_payload, lls_table->raw_xml.xml_payload_size);
 
+	if(!xml_document) {
+		_LLS_ERROR("lls_create_table - unable to parse xml document!  raw xml payload is: size: %u, value:\n%s", lls_table->raw_xml.xml_payload_size, lls_table->raw_xml.xml_payload);
+		goto error;
+	}
+
 	//extract the root node
 	xml_root_node = xml_payload_document_extract_root_node(xml_document);
-	if(!xml_root_node)
-			goto cleanup;
+	if(!xml_root_node) {
+		_LLS_ERROR("lls_create_table - unable to build xml root nde,  raw xml payload is: size: %u, value:\n%s", lls_table->raw_xml.xml_payload_size, lls_table->raw_xml.xml_payload);
 
+		goto error;
+	}
 	_LLS_TRACE("lls_create_table: calling lls_create_table_type_instance with xml children count: %zu\n", xml_node_children(xml_root_node));
 
 	res = lls_create_table_type_instance(lls_table, xml_root_node);
@@ -203,19 +228,28 @@ lls_table_t* lls_table_create( uint8_t* lls_packet, int size) {
 		//TODO free our lls_xml_table
 		_LLS_ERROR("lls_table_create: Unable to instantiate lls_table!");
 		lls_table = NULL;
-		goto cleanup;
+		goto error;
 	}
 
-cleanup:
+	return lls_table;
+
+
+error:
+
+	//if we have an xml document, lets force node cleanup here
 
 
 	if(xml_document) {
-		//xml_document_free will release the root node for us... but keep the ra
+		//xml_document_free will release the root node for us... but keep the rest of the objects?
 		xml_document_free(xml_document, false);
 		xml_document = NULL;
 	}
 
-	return lls_table;
+	lls_table_free(lls_table);
+	lls_table = NULL;
+
+
+	return NULL;
 }
 
 void lls_table_free(lls_table_t* lls_table) {

@@ -40,10 +40,6 @@
 #include "xml.h"
 
 
-
-
-
-
 /**
  * [OPAQUE API]
  *
