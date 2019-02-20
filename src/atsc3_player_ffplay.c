@@ -95,15 +95,15 @@ await_semaphore:
 			int bytes_to_write_remaining = pipe_ffplay_buffer->pipe_buffer_writer_pos - i;
 			int to_write_blocksize = bytes_to_write_remaining > __PLAYER_FFPLAY_PIPE_WRITER_BLOCKSIZE ? __PLAYER_FFPLAY_PIPE_WRITER_BLOCKSIZE : bytes_to_write_remaining;
 
-			__PLAYER_FFPLAY_TRACE("WRITING from %p, pos: %d, blocksize: %d, total size: %d", &pipe_ffplay_buffer->pipe_buffer_writer[i], i, to_write_blocksize, pipe_ffplay_buffer->pipe_buffer_writer_pos);
+			__PLAYER_FFPLAY_DEBUG("WRITING from %p, pos: %d, blocksize: %d, total size: %d", &pipe_ffplay_buffer->pipe_buffer_writer[i], i, to_write_blocksize, pipe_ffplay_buffer->pipe_buffer_writer_pos);
 
 			//we may get a sigpipe from this fwrite or flush call, unwind our thread as that usually means ffplay has exited...
 
 			int fwrite_ret = fwrite(&pipe_ffplay_buffer->pipe_buffer_writer[i], to_write_blocksize, 1, pipe_ffplay_buffer->player_pipe);
 			pipe_ffplay_buffer->pipe_write_counts++;
 
-			if(pipe_ffplay_buffer->pipe_write_counts < 25) {
-				usleep(100000); 				//TODO - throttle up our buffer as we catch up to live
+			if(pipe_ffplay_buffer->pipe_write_counts < 500) {
+				usleep(10000); 				//TODO - throttle up our buffer as we catch up to live
 			}
 
 
