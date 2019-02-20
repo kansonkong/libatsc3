@@ -306,15 +306,15 @@ void process_packet(u_char *user, const struct pcap_pkthdr *pkthdr, const u_char
 
 	//malloc our udp_packet_header:
 	udp_packet = calloc(1, sizeof(udp_packet_t));
-	udp_packet->src_ip_addr = ((ip_header[12] & 0xFF) << 24) | ((ip_header[13]  & 0xFF) << 16) | ((ip_header[14]  & 0xFF) << 8) | (ip_header[15] & 0xFF);
-	udp_packet->dst_ip_addr = ((ip_header[16] & 0xFF) << 24) | ((ip_header[17]  & 0xFF) << 16) | ((ip_header[18]  & 0xFF) << 8) | (ip_header[19] & 0xFF);
+	udp_packet->udp_flow.src_ip_addr = ((ip_header[12] & 0xFF) << 24) | ((ip_header[13]  & 0xFF) << 16) | ((ip_header[14]  & 0xFF) << 8) | (ip_header[15] & 0xFF);
+	udp_packet->udp_flow.dst_ip_addr = ((ip_header[16] & 0xFF) << 24) | ((ip_header[17]  & 0xFF) << 16) | ((ip_header[18]  & 0xFF) << 8) | (ip_header[19] & 0xFF);
 
 	for (i = 0; i < 8; i++) {
 		udp_header[i] = packet[udp_header_start + i];
 	}
 
-	udp_packet->src_port = (udp_header[0] << 8) + udp_header[1];
-	udp_packet->dst_port = (udp_header[2] << 8) + udp_header[3];
+	udp_packet->udp_flow.src_port = (udp_header[0] << 8) + udp_header[1];
+	udp_packet->udp_flow.dst_port = (udp_header[2] << 8) + udp_header[3];
 
 	udp_packet->total_packet_length = pkthdr->len;
 	udp_packet->data_length = pkthdr->len - (udp_header_start + 8);
@@ -344,7 +344,7 @@ void process_packet(u_char *user, const struct pcap_pkthdr *pkthdr, const u_char
 	global_stats->packets_total_received++;
 
 	//drop mdNS
-	if(udp_packet->dst_ip_addr == UDP_FILTER_MDNS_IP_ADDRESS && udp_packet->dst_port == UDP_FILTER_MDNS_PORT) {
+	if(udp_packet->udp_flow.dst_ip_addr == UDP_FILTER_MDNS_IP_ADDRESS && udp_packet->udp_flow.dst_port == UDP_FILTER_MDNS_PORT) {
 		global_stats->packet_counter_filtered_ipv4++;
 		//printf("setting dns current_bytes_rx: %d, packets_rx: %d", global_bandwidth_statistics->interval_filtered_current_bytes_rx, global_bandwidth_statistics->interval_filtered_current_packets_rx);
 		global_bandwidth_statistics->interval_filtered_current_bytes_rx += udp_packet->data_length;
@@ -353,7 +353,7 @@ void process_packet(u_char *user, const struct pcap_pkthdr *pkthdr, const u_char
 		goto cleanup;
 	}
 
-	if(udp_packet->dst_ip_addr == LLS_DST_ADDR && udp_packet->dst_port == LLS_DST_PORT) {
+	if(udp_packet->udp_flow.dst_ip_addr == LLS_DST_ADDR && udp_packet->udp_flow.dst_port == LLS_DST_PORT) {
 		global_bandwidth_statistics->interval_lls_current_bytes_rx += udp_packet->data_length;
 		global_bandwidth_statistics->interval_lls_current_packets_rx++;
 
@@ -403,7 +403,7 @@ void process_packet(u_char *user, const struct pcap_pkthdr *pkthdr, const u_char
 
 	//ATSC3/331 Section 6.1 - drop non mulitcast ip ranges - e.g not in  239.255.0.0 to 239.255.255.255
 
-	if(udp_packet->dst_ip_addr <= MIN_ATSC3_MULTICAST_BLOCK || udp_packet->dst_ip_addr >= MAX_ATSC3_MULTICAST_BLOCK) {
+	if(udp_packet->udp_flow.dst_ip_addr <= MIN_ATSC3_MULTICAST_BLOCK || udp_packet->udp_flow.dst_ip_addr >= MAX_ATSC3_MULTICAST_BLOCK) {
 		//out of range, so drop
 		count_packet_as_filtered(udp_packet);
 
@@ -411,7 +411,7 @@ void process_packet(u_char *user, const struct pcap_pkthdr *pkthdr, const u_char
 	}
 
 	//ALC (ROUTE) - If this flow is registered from the SLT, process it as ALC, otherwise run the flow thru MMT
-	lls_slt_alc_session_t* matching_lls_slt_alc_session = lls_slt_alc_session_find_from_udp_packet(lls_session, udp_packet->src_ip_addr, udp_packet->dst_ip_addr, udp_packet->dst_port);
+	lls_slt_alc_session_t* matching_lls_slt_alc_session = lls_slt_alc_session_find_from_udp_packet(lls_session, udp_packet->udp_flow.src_ip_addr, udp_packet->udp_flow.dst_ip_addr, udp_packet->udp_flow.dst_port);
 	if(matching_lls_slt_alc_session) {
 
 		global_bandwidth_statistics->interval_alc_current_bytes_rx += udp_packet->data_length;
@@ -442,7 +442,7 @@ void process_packet(u_char *user, const struct pcap_pkthdr *pkthdr, const u_char
 	}
 
 	//Process flow as MMT, we should only have MMT packets left at this point..
-	if((dst_ip_addr_filter == NULL && dst_ip_port_filter == NULL) || (udp_packet->dst_ip_addr == *dst_ip_addr_filter && udp_packet->dst_port == *dst_ip_port_filter)) {
+	if((dst_ip_addr_filter == NULL && dst_ip_port_filter == NULL) || (udp_packet->udp_flow.dst_ip_addr == *dst_ip_addr_filter && udp_packet->udp_flow.dst_port == *dst_ip_port_filter)) {
 
 		__TRACE("data len: %d", udp_packet->data_length)
 		mmtp_payload_fragments_union_t* mmtp_payload = mmtp_packet_parse(mmtp_sub_flow_vector, udp_packet->data, udp_packet->data_length);
@@ -450,9 +450,9 @@ void process_packet(u_char *user, const struct pcap_pkthdr *pkthdr, const u_char
 		if(!mmtp_payload) {
 			global_stats->packet_counter_mmtp_packets_parsed_error++;
 			__ERROR("mmtp_packet_parse: raw packet ptr is null, parsing failed for flow: %d.%d.%d.%d:(%-10u):%-5hu \t ->  %d.%d.%d.%d\t(%-10u)\t:%-5hu",
-					ip_header[12], ip_header[13], ip_header[14], ip_header[15], udp_packet->src_ip_addr,
+					ip_header[12], ip_header[13], ip_header[14], ip_header[15], udp_packet->udp_flow.src_ip_addr,
 					(uint16_t)((udp_header[0] << 8) + udp_header[1]),
-					ip_header[16], ip_header[17], ip_header[18], ip_header[19], udp_packet->dst_ip_addr,
+					ip_header[16], ip_header[17], ip_header[18], ip_header[19], udp_packet->udp_flow.dst_ip_addr,
 					(uint16_t)((udp_header[2] << 8) + udp_header[3])
 					);
 			goto cleanup;
@@ -501,8 +501,8 @@ void process_packet(u_char *user, const struct pcap_pkthdr *pkthdr, const u_char
 #endif
 
 				//timed
-				//mpu_dump_flow(udp_packet->dst_ip_addr, udp_packet->dst_port, mmtp_payload);
-				//mpu_dump_reconstitued(udp_packet->dst_ip_addr, udp_packet->dst_port, mmtp_payload);
+				//mpu_dump_flow(udp_packet->udp_flow.dst_ip_addr, udp_packet->udp_flow.dst_port, mmtp_payload);
+				//mpu_dump_reconstitued(udp_packet->udp_flow.dst_ip_addr, udp_packet->udp_flow.dst_port, mmtp_payload);
 
 				//write out to ffmpeg pipe...
 
@@ -723,9 +723,9 @@ int main(int argc,char **argv) {
 	//dispatch for LLS extraction and dump
 	#ifdef _SHOW_PACKET_FLOW
 		__INFO("--- Packet size : %-10d | Counter: %-8d", udp_packet->data_length, PACKET_COUNTER++);
-		__INFO("    Src. Addr   : %d.%d.%d.%d\t(%-10u)\t", ip_header[12], ip_header[13], ip_header[14], ip_header[15], udp_packet->src_ip_addr);
+		__INFO("    Src. Addr   : %d.%d.%d.%d\t(%-10u)\t", ip_header[12], ip_header[13], ip_header[14], ip_header[15], udp_packet->udp_flow.src_ip_addr);
 		__INFO("    Src. Port   : %-5hu ", (uint16_t)((udp_header[0] << 8) + udp_header[1]));
-		__INFO("    Dst. Addr   : %d.%d.%d.%d\t(%-10u)\t", ip_header[16], ip_header[17], ip_header[18], ip_header[19], udp_packet->dst_ip_addr);
+		__INFO("    Dst. Addr   : %d.%d.%d.%d\t(%-10u)\t", ip_header[16], ip_header[17], ip_header[18], ip_header[19], udp_packet->udp_flow.dst_ip_addr);
 		__INFO("    Dst. Port   : %-5hu \t", (uint16_t)((udp_header[2] << 8) + udp_header[3]));
 	#endif
  *
@@ -743,9 +743,9 @@ int main(int argc,char **argv) {
  *
 	//4294967295
 	//1234567890
-	__TRACE("Src. Addr  : %d.%d.%d.%d\t(%-10u)\t", ip_header[12], ip_header[13], ip_header[14], ip_header[15], udp_packet->src_ip_addr);
+	__TRACE("Src. Addr  : %d.%d.%d.%d\t(%-10u)\t", ip_header[12], ip_header[13], ip_header[14], ip_header[15], udp_packet->udp_flow.src_ip_addr);
 	__TRACE("Src. Port  : %-5hu ", (udp_header[0] << 8) + udp_header[1]);
-	__TRACE("Dst. Addr  : %d.%d.%d.%d\t(%-10u)\t", ip_header[16], ip_header[17], ip_header[18], ip_header[19], udp_packet->dst_ip_addr);
+	__TRACE("Dst. Addr  : %d.%d.%d.%d\t(%-10u)\t", ip_header[16], ip_header[17], ip_header[18], ip_header[19], udp_packet->udp_flow.dst_ip_addr);
 	__TRACE("Dst. Port  : %-5hu \t", (udp_header[2] << 8) + udp_header[3]);
 
 	__TRACE("Length\t\t\t\t\t%d", (udp_header[4] << 8) + udp_header[5]);
