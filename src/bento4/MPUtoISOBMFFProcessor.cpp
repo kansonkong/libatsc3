@@ -81,18 +81,13 @@ void traverseChildren(AP4_Atom* toCheckAtom, list<AP4_Atom*> atomList) {
             }
             
             const char* toFindTrun = "trun";
-            
             const char* toRemoveTrak = "trak";
             const char* toRemoveTrex = "trex";
-
-            
             const char* toRemoveTfdt = "tfdt";
-            
             const char* toRemoveEdts = "edts";
             //remove tfhd?
             const char* toRemoveTraf = "traf";
-            
-            
+
             if(strncmp(toRemoveEdts, name, 4) == 0) {
                 printf("removing %s\n", name);
                 atom->Detach();
@@ -102,6 +97,7 @@ void traverseChildren(AP4_Atom* toCheckAtom, list<AP4_Atom*> atomList) {
             } else if (strncmp(toRemoveTfdt, name, 4) == 0) {
                 printf("removing %s\n", name);
                 atom->Detach();
+                atom = NULL; //no atom->children to traverse after the Tfdt..
             } else if(strncmp(toFindTrun, name, 4) == 0) {
                 AP4_TrunAtom* trunAtom = AP4_DYNAMIC_CAST(AP4_TrunAtom, atom);
                 //todo check with parent/tfhd.track id==1
