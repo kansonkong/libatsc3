@@ -58,6 +58,30 @@ extern "C" {
  *
  *
  *
+ *A.3.5 Packet Format
+The packet format used by ROUTE follows the ALC packet format per RFC 5775 [27],
+	i.e. the UDP header followed by the LCT header and the source FEC Payload ID followed by the packet payload.
+	The LCT header shall be as defined in the LCT building block in RFC 5651 [26].
+	The source FEC Payload ID in ROUTE is represented by the start_offset field, provided either directly or provided by any FEC scheme.
+	The start_offset field value represents the starting byte position, relative to the first byte of the delivery object,
+	 of the subsequent and contiguous portion of the delivery object carried in the present ROUTE packet.
+
+
+	 A.3.5.1 FEC Payload ID for Source Flows
+The syntax of the FEC Payload ID for the Compact No-Code FEC Scheme used in ROUTE source flows shall be a 32-bit unsigned integer value that expresses the start_offset of the fragment. Figure A.3.3 diagrams the 32-bit start_offset field.
+
+0-31 bits
+0 1 2 3 4 5 6 7 8 9 0 12345678901234567890                      1
++-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+|   start_offset											    |
++-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+
+
+The Congestion Control Information (CCI) field in the LCT header contains the required congestion control information. The packet payload contains data bytes belonging to the delivery object. If more than one object is carried in the session, then the TOI within the LCT header shall be used to identify the object to which the packet payload data pertains.
+The version number field of the LCT header shall be interpreted as the ROUTE version number field. This version of ROUTE implicitly makes use of version 1 of the LCT building block defined in RFC 5651 [26].
+The overall ROUTE packet format shall be as depicted in Figure A.3.2. The packet is an IP packet, either IPv4 or IPv6, and the IP header precedes the UDP header. The ROUTE packet format has no dependencies on the IP version number.
+
+ *
  *
  *                          Note for ATSC3 compat: A/331
  *

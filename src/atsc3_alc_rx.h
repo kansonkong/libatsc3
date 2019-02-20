@@ -37,8 +37,8 @@
 #ifndef _ALC_RX_H_
 #define _ALC_RX_H_
 
-#define __ALC_RX_ENABLE_DEBUG 1
-#define __ALC_RX_ENABLE_TRACE 1
+// #define __ALC_RX_ENABLE_DEBUG 1
+// #define __ALC_RX_ENABLE_TRACE 1
 
 #define println(...) printf(__VA_ARGS__);printf("\n")
 
@@ -50,6 +50,7 @@
 #define ALC_RX_INFO(...)    printf("%s:%d:INFO:",__FILE__,__LINE__);__ALC_RX_PRINTLN(__VA_ARGS__);
 
 #ifdef __ALC_RX_ENABLE_DEBUG
+
 #define ALC_RX_DEBUG(...)   printf("%s:%d:DEBUG:",__FILE__,__LINE__);__ALC_RX_PRINTLN(__VA_ARGS__);
 #define ALC_RX_DEBUGF(...)  printf("%s:%d:DEBUG:",__FILE__,__LINE__);__ALC_RX_PRINTF(__VA_ARGS__);
 #define ALC_RX_DEBUGA(...) 	__PRINTF(__VA_ARGS__);
