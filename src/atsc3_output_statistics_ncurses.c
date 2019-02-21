@@ -78,7 +78,7 @@ void* ncurses_input_run_thread() {
 			wprintw(my_window, "Switching to ALC/ROUTE Capture Mode, press 's' to set tsi, 'o' to set toi init fragment, and 'p' to play, 'x' to return to normal flow monitoring");
 
 			while(1) {
-				char str[10];
+				char str[16];
 
 				ch = wgetch(my_window);
 				if(ch == CTRL('c') || ch == 'q') {
@@ -92,7 +92,35 @@ void* ncurses_input_run_thread() {
 
 				}
 
-				if(ch == 's') {
+
+				if(ch == 'a') {
+					mtl_clear();
+					wprintw(my_window, "Please enter Audio: TSI,InitTOI: ");
+					echo();
+					//wgetstr(my_window, str);
+					mvwgetnstr(my_window, 0, 32, str, 10);
+					noecho();
+					mtl_clear();
+
+					long my_tsi_long = strtol(str, NULL, 0);
+					my_route_tsi = (uint32_t) my_tsi_long;
+					mtl_clear();
+					wprintw(my_window, "Monitoring Audio: %u",  my_route_tsi);
+				} else if(ch == 'v') {
+					mtl_clear();
+					wprintw(my_window, "Please enter Video: TSI,InitTOI: ");
+					echo();
+					//wgetstr(my_window, str);
+					mvwgetnstr(my_window, 0, 32, str, 10);
+					noecho();
+					mtl_clear();
+
+					long my_tsi_long = strtol(str, NULL, 0);
+					my_route_tsi = (uint32_t) my_tsi_long;
+					mtl_clear();
+					wprintw(my_window, "Monitoring Video: %u",  my_route_tsi);
+
+				} else if(ch == 's') {
 					mtl_clear();
 					wprintw(my_window, "Please enter TSI to play back: ");
 					echo();
