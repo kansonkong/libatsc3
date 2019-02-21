@@ -4,6 +4,7 @@
  *  Created on: Feb 10, 2019
  *      Author: jjustman
  */
+#include <stdbool.h>
 #include "atsc3_listener_udp.h"
 
 #include "atsc3_mmtp_types.h"
@@ -48,6 +49,7 @@ typedef struct udp_flow_packet_id_mpu_sequence_tuple {
 
 	uint32_t	mpu_sequence_number_negative_discontinuity;
 	uint32_t	mpu_sequence_number_negative_discontinuity_received_fragments;
+	bool 	has_sent_init_box;
 
 } udp_flow_packet_id_mpu_sequence_tuple_t;
 

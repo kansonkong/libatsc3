@@ -266,7 +266,7 @@ pipe_ffplay_buffer_t* pipe_create_ffplay() {
 	 */
 
 	//use this for capturing the reconstitued mpu for troubleshooting
-	//pipe_ffplay_buffer->player_pipe = fopen("mpu/recon.m4v", "w");
+	pipe_ffplay_buffer->player_pipe = fopen("mpu/recon.m4v", "w");
 
 
 	__PLAYER_FFPLAY_DEBUG("pipe created: file* is %p", pipe_ffplay_buffer->player_pipe);
