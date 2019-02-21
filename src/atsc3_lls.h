@@ -324,7 +324,8 @@ int __unzip_gzip_payload(uint8_t *input_payload, uint input_payload_size, uint8_
 
 #define _LLS_ERROR(...)   printf("%s:%d:ERROR:%.4f: ",__FILE__,__LINE__, gt());_LLS_PRINTLN(__VA_ARGS__);
 #define _LLS_WARN(...)    printf("%s:%d:WARN:%.4f: ",__FILE__,__LINE__, gt());_LLS_PRINTLN(__VA_ARGS__);
-#define _LLS_INFO(...)    printf("%s:%d:INFO:%.4f: ",__FILE__,__LINE__, gt());_LLS_PRINTLN(__VA_ARGS__);
+#define _LLS_INFO(...)
+//printf("%s:%d:INFO:%.4f: ",__FILE__,__LINE__, gt());_LLS_PRINTLN(__VA_ARGS__);
 
 #define _LLS_DEBUG(...)   if(_LLS_DEBUG_ENABLED) { printf("%s:%d:DEBUG:%.4f: ",__FILE__,__LINE__, gt());_LLS_PRINTLN(__VA_ARGS__); }
 #define _LLS_DEBUGF(...)  if(_LLS_DEBUG_ENABLED) { printf("%s:%d:DEBUG:%.4f: ",__FILE__,__LINE__, gt());_LLS_PRINTF(__VA_ARGS__); }
