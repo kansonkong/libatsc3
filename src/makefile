@@ -1,4 +1,4 @@
-all: intermediate_lls intermediate_mmt intermediate_alc intermediate_ffplay libatsc3_core unit_tests listener_tests listener_ncurses mpu_isobmff_bento
+all: intermediate_lls intermediate_mmt intermediate_alc intermediate_ffplay libatsc3_core unit_tests listener_tests listener_ncurses mpu_isobmff_bento isobmfftrackjoiner
 clean:
 	-rm -f *.o
 	-rm -f route/*
@@ -156,6 +156,10 @@ mpu_isobmff_bento:  bento4/MPUProcessor.cpp libatsc3.o
 	g++ -g bento4/MPUProcessor.cpp -I../bento/include/ -L../bento/lib -lap4 -lm -lpthread -o MPUISOBmffProcessor
 	
 #bento4/MPUProcessor.cpp	
+
+
+isobmfftrackjoiner: bento4/ISOBMFFTrackJoiner.cpp bento4/ISOBMFFTrackJoiner.h
+	g++ -g bento4/ISOBMFFTrackJoiner.cpp -I../bento/include/ -L../bento/lib -lap4 -lm -lpthread -o ISOBMFFTrackJoiner
 
 
 

@@ -115,23 +115,29 @@ void parsrseAndBuildJoinedBoxes(ISOBMFFTrackJoinerFileResouces* isoBMFFTrackJoin
 
 
 	/**
+     top level AP4_ContainerAtoms:
+     
 bento4/ISOBMFFTrackJoiner.cpp:363:DEBUG :printBoxType: atom type: ftyp, size: 36
 bento4/ISOBMFFTrackJoiner.cpp:363:DEBUG :printBoxType: atom type: moov, size: 608
 bento4/ISOBMFFTrackJoiner.cpp:363:DEBUG :printBoxType: atom type: styp, size: 24
 bento4/ISOBMFFTrackJoiner.cpp:363:DEBUG :printBoxType: atom type: moof, size: 1220
 bento4/ISOBMFFTrackJoiner.cpp:363:DEBUG :printBoxType: atom type: mdat, size: 96765
-	  steps to combine two tracks:
+	 
+     
+     steps to combine two tracks:
+     ----------------------------
+     in Moov box
+            -> copy mvex box
+            -> Copy trak box
 
-	  in Moov box
-
-	  	  mvex box
-
-		-> Copy trak box
-
-		in Moof box
-			Copy traf box
-
-		Copy mdat box
+     in Moof box
+			-> Copy traf box
+                <- detatch both tfdt boxes
+     
+            -> update trunSecondFile dataOffset from moof->getsize() + moof header size (+8)
+            -> update trunfirstFile dataOffset  from moof->getsize() + moof header size (+8) +2nd mdat size
+     
+      append 1st Copy mdat box
 
 	 */
 
@@ -193,11 +199,18 @@ bento4/ISOBMFFTrackJoiner.cpp:363:DEBUG :printBoxType: atom type: mdat, size: 96
 		if((*it)->GetType() == AP4_ATOM_TYPE_MOOF) {
 			moofSecondFile = AP4_DYNAMIC_CAST(AP4_ContainerAtom, *it);
 			trafSecondFile = AP4_DYNAMIC_CAST(AP4_ContainerAtom, moofSecondFile->GetChild(AP4_ATOM_TYPE_TRAF));
+            AP4_TfdtAtom* tfdtSecondFile = AP4_DYNAMIC_CAST(AP4_TfdtAtom, trafSecondFile->GetChild(AP4_ATOM_TYPE_TFDT));
+            tfdtSecondFile->Detach();
 
 			if(trafFirstFile) {
-				trafFirstFile->Detach();
+                //remove our tfdt's
+                AP4_TfdtAtom* tfdtFirstAtom = AP4_DYNAMIC_CAST(AP4_TfdtAtom, trafFirstFile->GetChild(AP4_ATOM_TYPE_TFDT));
+                tfdtFirstAtom->Detach();
+                
+                trafFirstFile->Detach();
 				moofSecondFile->AddChild(trafFirstFile);
 			}
+            
 			trunSecondFile = AP4_DYNAMIC_CAST(AP4_TrunAtom, trafSecondFile->GetChild(AP4_ATOM_TYPE_TRUN));
 		}
 
