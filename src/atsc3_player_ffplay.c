@@ -234,7 +234,7 @@ pipe_ffplay_buffer_t* pipe_create_ffplay() {
 	pipe_ffplay_buffer->pipe_buffer_writer_size = __PLAYER_FFPLAY_PIPE_INTERNAL_BUFFER_SIZE;
 	pipe_ffplay_buffer->pipe_buffer_writer_pos = 0;
 
-	char* tmpAudioFifo = tmpnam(NULL);
+	//char* tmpAudioFifo = tmpnam(NULL);
 
 	//make a 2nd fifo for audio
 //    int res = mkfifo(tmpAudioFifo, S_IRUSR| S_IWUSR);

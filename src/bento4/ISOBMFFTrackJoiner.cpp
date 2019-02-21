@@ -51,19 +51,40 @@ using namespace std;
  +---------------------------------------------------------------------*/
 #define BANNER "ISOBMFFTrackJoiner - jjustman\n"
 
+
+
+
+
+// Alternative in-process memory buffer reader/writers
+//    AP4_DataBuffer* dataBuffer = new AP4_DataBuffer(65535);
+//    AP4_MemoryByteStream* memoryOutputByteStream = new AP4_MemoryByteStream(dataBuffer);
+//	now go the other way...
+//	  (*it)->Write(*memoryOutputByteStream);
+
+#ifndef __ISOBMFF_LIB
+
 int main(int argc, char** argv) {
+
 	if(argc != 3) {
 		__ISOBMFF_JOINER_INFO("test harness: (file1) (file2)\n\nwill show jointed tracks as text output dump");
 		return 1;
 	}
+	int result = 0;
 
+	//first, we map our 2 input files into uint8_t* payloads,
 	ISOBMFFTrackJoinerFileResouces_t* fileResources = loadFileResources(argv[1], argv[2]);
-	parsrseAndBuildJoinedBoxes(fileResources);
 
+	//then we setup our output writer
+	const char* output_filename = "jjout.m4v";
+	AP4_ByteStream* output_stream = NULL;
+	result = AP4_FileByteStream::Create(output_filename, AP4_FileByteStream::STREAM_MODE_WRITE,output_stream);
+
+	//and remux into one unified fragment.  if you have already sent the initn b
+	parsrseAndBuildJoinedBoxes(fileResources, output_stream);
 
 	return 0;
 }
-
+#endif
 
 ISOBMFFTrackJoinerFileResouces_t* loadFileResources(const char* file1, const char* file2) {
 
@@ -101,7 +122,7 @@ ISOBMFFTrackJoinerFileResouces_t* loadFileResources(const char* file1, const cha
 	return isoBMFFTrackJoinerResources;
 }
 
-void parsrseAndBuildJoinedBoxes(ISOBMFFTrackJoinerFileResouces* isoBMFFTrackJoinerFileResouces) {
+void parsrseAndBuildJoinedBoxes(ISOBMFFTrackJoinerFileResouces* isoBMFFTrackJoinerFileResouces, AP4_ByteStream* output_stream) {
 
 	list<AP4_Atom*> isoBMFFList1  = ISOBMFFTrackParse(isoBMFFTrackJoinerFileResouces->file1_payload, isoBMFFTrackJoinerFileResouces->file1_size);
 
@@ -143,19 +164,19 @@ void parsrseAndBuildJoinedBoxes(ISOBMFFTrackJoinerFileResouces* isoBMFFTrackJoin
 
 	AP4_Result   result;
 
-	AP4_ContainerAtom* mvexAtomToCopy;
-	AP4_TrakAtom* trakAtomToCopy;
+	AP4_ContainerAtom* mvexAtomToCopy = NULL;
+	AP4_TrakAtom* trakAtomToCopy = NULL;
 
-	AP4_AtomParent* moofSecondFile;
+	AP4_AtomParent* moofSecondFile = NULL;;
 
-	AP4_ContainerAtom* trafFirstFile;
-	AP4_TrunAtom* trunFirstFile;
+	AP4_ContainerAtom* trafFirstFile = NULL;;
+	AP4_TrunAtom* trunFirstFile = NULL;;
 
-	AP4_ContainerAtom* trafSecondFile;
-	AP4_TrunAtom* trunSecondFile;
+	AP4_ContainerAtom* trafSecondFile = NULL;;
+	AP4_TrunAtom* trunSecondFile = NULL;;
 
-	AP4_Atom* mdatFirstFile;
-	AP4_Atom* mdatSecondFile;
+	AP4_Atom* mdatFirstFile = NULL;;
+	AP4_Atom* mdatSecondFile = NULL;;
 
 
 	//from isoBMFFList1 list
@@ -223,25 +244,16 @@ void parsrseAndBuildJoinedBoxes(ISOBMFFTrackJoinerFileResouces* isoBMFFTrackJoin
     trunSecondFile->SetDataOffset((AP4_UI32)moofSecondFileAtom->GetSize()+AP4_ATOM_HEADER_SIZE);
     
     //first file is written out last...
-    trunFirstFile->SetDataOffset((AP4_UI32)moofSecondFileAtom->GetSize()+AP4_ATOM_HEADER_SIZE+mdatSecondFile->GetSize());
-
+    if(mdatSecondFile) {
+        trunFirstFile->SetDataOffset((AP4_UI32)moofSecondFileAtom->GetSize()+AP4_ATOM_HEADER_SIZE+mdatSecondFile->GetSize());
+    }
     //apend by hand
-    isoBMFFList2.push_back(mdatFirstFile);
+    if(mdatFirstFile) {
+        isoBMFFList2.push_back(mdatFirstFile);
+    }
     
+    //push our packets to out output_stream writer, and we're done...
     
-
-	//now we write...
-	const char* output_filename = "jjout.m4v";
-	//    AP4_DataBuffer* dataBuffer = new AP4_DataBuffer(65535);
-	//    AP4_MemoryByteStream* memoryOutputByteStream = new AP4_MemoryByteStream(dataBuffer);
-    //	now go the other way...
-	//	  (*it)->Write(*memoryOutputByteStream);
-
-	AP4_ByteStream* output_stream = NULL;
-	result = AP4_FileByteStream::Create(output_filename,
-                                          AP4_FileByteStream::STREAM_MODE_WRITE,
-                                          output_stream);
-
 	for (it = isoBMFFList2.begin(); it != isoBMFFList2.end(); it++) {
         (*it)->Write(*output_stream);
 	}

@@ -34,7 +34,7 @@ typedef struct ISOBMFFTrackJoinerFileResouces {
 list<AP4_Atom*> ISOBMFFTrackParse(uint8_t* full_mpu_payload, uint32_t full_mpu_payload_size);
 
 ISOBMFFTrackJoinerFileResouces_t* loadFileResources(const char*, const char*);
-void parsrseAndBuildJoinedBoxes(ISOBMFFTrackJoinerFileResouces_t*);
+void parsrseAndBuildJoinedBoxes(ISOBMFFTrackJoinerFileResouces_t*, AP4_ByteStream* output_stream);
 
 void dumpFullMetadata(list<AP4_Atom*> atomList);
 void printBoxType(AP4_Atom* atom);
