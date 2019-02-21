@@ -278,6 +278,16 @@ void process_packet(u_char *user, const struct pcap_pkthdr *pkthdr, const u_char
 					block_t* final_muxed_payload = atsc3_isobmff_build_mpu_metadata_ftyp_moof_mdat_box(&udp_packet->udp_flow, udp_flow_latest_mpu_sequence_number_container, mmtp_sub_flow_vector);
 					if(final_muxed_payload) {
 						pipe_buffer_reader_mutex_lock(pipe_ffplay_buffer);
+
+						printf("**** return payload is: first 8 bytes are %x %x %x %x %x %x %x %x",
+								final_muxed_payload->p_buffer[0],
+								final_muxed_payload->p_buffer[1],
+								final_muxed_payload->p_buffer[2],
+								final_muxed_payload->p_buffer[3],
+								final_muxed_payload->p_buffer[4],
+								final_muxed_payload->p_buffer[5],
+								final_muxed_payload->p_buffer[6],
+								final_muxed_payload->p_buffer[7]);
 						pipe_buffer_unsafe_push_block(pipe_ffplay_buffer, final_muxed_payload->p_buffer, final_muxed_payload->i_buffer);
 
 	//					mpu_push_to_output_buffer_no_locking(pipe_ffplay_buffer, mpu_metadata);
