@@ -271,7 +271,7 @@ void process_packet(u_char *user, const struct pcap_pkthdr *pkthdr, const u_char
 
 				if(udp_flow_last_packet_id_mpu_sequence_id && udp_flow_last_packet_id_mpu_sequence_id->mpu_sequence_number < mmtp_payload->mmtp_mpu_type_packet_header.mpu_sequence_number) {
 
-					__INFO("Starting re-fragmenting because mpu_sequence number changed from %u to %u", udp_flow_last_packet_id_mpu_sequence_id->mpu_sequence_number, mmtp_payload->mmtp_mpu_type_packet_header.mpu_sequence_number);
+                    __INFO("Starting re-fragmenting because packet_id:mpu_sequence number changed from %u:%u to %u:%u", udp_flow_last_packet_id_mpu_sequence_id->packet_id, udp_flow_last_packet_id_mpu_sequence_id->mpu_sequence_number, mmtp_payload->mmtp_mpu_type_packet_header.mmtp_packet_id, mmtp_payload->mmtp_mpu_type_packet_header.mpu_sequence_number);
 
 
 					atsc3_isobmff_build_mpu_metadata_ftyp_box(&udp_packet->udp_flow, udp_flow_latest_mpu_sequence_number_container, mmtp_sub_flow_vector);
