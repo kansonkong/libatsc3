@@ -6,7 +6,7 @@ clean:
 	-rm atsc3_mmt_listener_test_bento
 	
 	
-intermediate_lls: atsc3_lls.o atsc3_lls_slt_utils.o  atsc3_lls_alc_utils.o
+intermediate_lls: atsc3_lls.o atsc3_lls_sls_parser.o  atsc3_lls_alc_utils.o
 
 intermediate_mmt: xml.o atsc3_mmtp_parser.o atsc3_mmt_mpu_parser.o atsc3_mmt_signaling_message.o \
  atsc3_mmtp_ntp32_to_pts.o atsc3_utils.o fixups_timespec_get.o \
@@ -38,8 +38,12 @@ atsc3_lls.o: atsc3_utils.h atsc3_lls.h atsc3_lls.c
 atsc3_lls_alc_utils.o: atsc3_lls_alc_utils.h atsc3_lls_alc_utils.c
 	cc -g -c atsc3_lls_alc_utils.c
 	
-atsc3_lls_slt_utils.o: atsc3_lls_slt_utils.h atsc3_lls_slt_utils.c
-	cc -g -c atsc3_lls_slt_utils.c
+atsc3_lls_sls_parser.o: atsc3_lls_sls_parser.h atsc3_lls_sls_parser.c
+	cc -g -c atsc3_lls_sls_parser.c
+
+
+atsc3_lls_slt_parser.o: atsc3_lls_slt_parser.h atsc3_lls_slt_parser.c
+	cc -g -c atsc3_lls_slt_parser.c
 
 
 atsc3_mmtp_parser.o: atsc3_mmtp_types.h atsc3_mmtp_parser.h atsc3_mmtp_parser.c 
@@ -72,8 +76,6 @@ atsc3_alc_utils.o: atsc3_alc_utils.h atsc3_alc_utils.c
 atsc3_player_ffplay.o: atsc3_player_ffplay.h atsc3_player_ffplay.c
 	cc -g -c atsc3_player_ffplay.c
 
-atsc3_isobmff_tools.o: atsc3_isobmff_tools.h atsc3_isobmff_tools.c
-	cc -g -c atsc3_isobmff_tools.c
 		
 # stats modules
 
@@ -87,15 +89,15 @@ atsc3_isobmff_tools.o: atsc3_isobmff_tools.h atsc3_isobmff_tools.c
 #core libatsc3 library gen
 # do not link in atsc3_bandwidth_statistics.o atsc3_packet_statistics.o, late compile them for impl's with ncurses
 
-libatsc3.o: xml.o atsc3_lls.o atsc3_lls_slt_utils.o atsc3_mmtp_parser.o atsc3_mmtp_ntp32_to_pts.o atsc3_utils.o \
+libatsc3.o: xml.o atsc3_lls.o atsc3_lls_slt_parser.o atsc3_lls_sls_parser.o atsc3_mmtp_parser.o atsc3_mmtp_ntp32_to_pts.o atsc3_utils.o \
 		fixups_timespec_get.o atsc3_mmt_signaling_message.o atsc3_mmt_mpu_parser.o alc_channel.o alc_list.o \
 		atsc3_alc_rx.o alc_session.o fec.o null_fec.o rs_fec.o xor_fec.o mad.o mad_rlc.o transport.o atsc3_alc_utils.o \
-		atsc3_lls_alc_utils.o atsc3_mmt_mpu_utils.o atsc3_player_ffplay.o atsc3_isobmff_tools.o
+		atsc3_lls_alc_utils.o atsc3_mmt_mpu_utils.o atsc3_player_ffplay.o atsc3_isobmff_tools.o 
 	
-	ld  -o libatsc3.o -r xml.o atsc3_lls.o atsc3_lls_slt_utils.o atsc3_mmtp_parser.o atsc3_mmtp_ntp32_to_pts.o atsc3_utils.o \
+	ld  -o libatsc3.o -r xml.o atsc3_lls.o atsc3_lls_slt_parser.o  atsc3_lls_sls_parser.o atsc3_mmtp_parser.o atsc3_mmtp_ntp32_to_pts.o atsc3_utils.o \
 		fixups_timespec_get.o atsc3_mmt_signaling_message.o atsc3_mmt_mpu_parser.o alc_channel.o alc_list.o \
 		atsc3_alc_rx.o alc_session.o fec.o null_fec.o rs_fec.o xor_fec.o mad.o mad_rlc.o transport.o atsc3_alc_utils.o \
-		atsc3_lls_alc_utils.o atsc3_mmt_mpu_utils.o atsc3_player_ffplay.o atsc3_isobmff_tools.o
+		atsc3_lls_alc_utils.o atsc3_mmt_mpu_utils.o atsc3_player_ffplay.o 
 		
 # atsc3_bandwidth_statistics.o
 # atsc3_packet_statistics.o
@@ -107,7 +109,7 @@ atsc3_lmt_test: atsc3_lmt_test.c libatsc3.o
 atsc3_lls_test: atsc3_lls_test.c libatsc3.o
 	cc -g atsc3_lls_test.c libatsc3.o -lz  -lm -lpthread -o atsc3_lls_test
 		   		   
-atsc3_lls_slt_parser_test: atsc3_lls_slt_parser_test.c libatsc3.o
+atsc3_lls_slt_parser_test: atsc3_lls_slt_parser_test.c libatsc3.o 
 	cc -g atsc3_lls_slt_parser_test.c libatsc3.o -lz  -lm -lpthread -o atsc3_lls_slt_parser_test 
 
 atsc3_lls_SystemTime_test: atsc3_lls_SystemTime_test.c libatsc3.o
@@ -119,7 +121,7 @@ atsc3_mmt_signaling_message_test: atsc3_mmt_signaling_message_test.c libatsc3.o
 
 
 atsc3_isobmff_box_test: atsc3_isobmff_box_test.c
-	cc -g atsc3_isobmff_box_test.c -o atsc3_isobmff_box_test
+	cc -g atsc3_isobmff_box_test.c -o atsc3_isobmff_box_test 
 
 #integration tests
 
@@ -149,7 +151,7 @@ atsc3_listener_metrics_ncurses: atsc3_listener_metrics_ncurses.c atsc3_bandwidth
 
 
 atsc3_mmt_listener_test_bento: atsc3_mmt_listener_test_bento.c  bento4/MPUtoISOBMFFProcessor.h bento4/MPUtoISOBMFFProcessor.cpp libatsc3.o atsc3_player_ffplay.c
-	g++ -g atsc3_mmt_listener_test_bento.c bento4/MPUtoISOBMFFProcessor.cpp libatsc3.o -I../bento/include/ -L../bento/lib -lap4 -lz -lpcap -lm -lpthread -o atsc3_mmt_listener_test_bento
+	g++ -D __ISOBMFF_LIB=true -g atsc3_mmt_listener_test_bento.c  atsc3_isobmff_tools.c bento4/ISOBMFFTrackJoiner.cpp bento4/MPUtoISOBMFFProcessor.cpp  libatsc3.o -I../bento/include/ -L../bento/lib -I../bento/include/ -L../bento/lib -lap4 -lm -lpthread   -lap4 -lz -lpcap -lm -lpthread -o atsc3_mmt_listener_test_bento
 
 
 mpu_isobmff_bento:  bento4/MPUProcessor.cpp libatsc3.o
@@ -161,6 +163,8 @@ mpu_isobmff_bento:  bento4/MPUProcessor.cpp libatsc3.o
 isobmfftrackjoiner: bento4/ISOBMFFTrackJoiner.cpp bento4/ISOBMFFTrackJoiner.h
 	g++ -g bento4/ISOBMFFTrackJoiner.cpp -I../bento/include/ -L../bento/lib -lap4 -lm -lpthread -o ISOBMFFTrackJoiner
 
+atsc3_isobmff_tools.o: atsc3_isobmff_tools.h atsc3_isobmff_tools.c
+	g++ -g  atsc3_isobmff_tools.c -I../bento/include/ -L../bento/lib -r -o atsc3_isobmff_tools.o
 
 
 

@@ -89,7 +89,7 @@ int PACKET_COUNTER=0;
 #include "atsc3_lls.h"
 #include "atsc3_lls_alc_utils.h"
 
-#include "atsc3_lls_slt_utils.h"
+#include "atsc3_lls_slt_parser.h"
 
 #include "atsc3_mmtp_types.h"
 #include "atsc3_mmtp_parser.h"
@@ -250,7 +250,7 @@ uint16_t* dst_packet_id_filter = NULL;
 
 // lls and alc glue for slt, contains lls_table_slt and lls_slt_alc_session
 
-lls_session_t* lls_session;
+lls_slt_monitor_t* lls_slt_monitor;
 
 //make sure to invoke     mmtp_sub_flow_vector_init(&p_sys->mmtp_sub_flow_vector);
 mmtp_sub_flow_vector_t* mmtp_sub_flow_vector;
@@ -368,32 +368,15 @@ void process_packet(u_char *user, const struct pcap_pkthdr *pkthdr, const u_char
 			if(lls_table->lls_table_id == SLT) {
 
 				global_stats->packet_counter_lls_slt_packets_parsed++;
-				//if we have a lls_slt table, and the group is the same but its a new version, reprocess
-				if(!lls_session->lls_table_slt ||
-					(lls_session->lls_table_slt && lls_session->lls_table_slt->lls_group_id == lls_table->lls_group_id &&
-					lls_session->lls_table_slt->lls_table_version != lls_table->lls_table_version)) {
 
-					int retval = 0;
-					__DEBUG("Beginning processing of SLT from lls_table_slt_update");
+				int retval = lls_slt_table_check_process_update(lls_table, lls_slt_monitor);
 
-					retval = lls_slt_table_process_update(lls_session, lls_table);
-					should_free_lls = false;
 
-					if(!retval) {
-						global_stats->packet_counter_lls_slt_update_processed++;
-						__DEBUG("lls_table_slt_update -- complete");
-					} else {
-						global_stats->packet_counter_lls_packets_parsed_error++;
-						__ERROR("unable to parse LLS table");
-						lls_table_free(lls_table);
-
-						goto cleanup;
-					}
+				if(!retval) {
+					global_stats->packet_counter_lls_slt_update_processed++;
+				} else {
+					global_stats->packet_counter_lls_packets_parsed_error++;
 				}
-			}
-
-			if(should_free_lls) {
-				lls_table_free(lls_table);
 			}
 		}
 
@@ -411,7 +394,7 @@ void process_packet(u_char *user, const struct pcap_pkthdr *pkthdr, const u_char
 	}
 
 	//ALC (ROUTE) - If this flow is registered from the SLT, process it as ALC, otherwise run the flow thru MMT
-	lls_slt_alc_session_t* matching_lls_slt_alc_session = lls_slt_alc_session_find_from_udp_packet(lls_session, udp_packet->udp_flow.src_ip_addr, udp_packet->udp_flow.dst_ip_addr, udp_packet->udp_flow.dst_port);
+	lls_sls_alc_session_t* matching_lls_slt_alc_session = lls_slt_alc_session_find_from_udp_packet(lls_slt_monitor, udp_packet->udp_flow.src_ip_addr, udp_packet->udp_flow.dst_ip_addr, udp_packet->udp_flow.dst_port);
 	if(matching_lls_slt_alc_session) {
 
 		global_bandwidth_statistics->interval_alc_current_bytes_rx += udp_packet->data_length;
@@ -428,7 +411,13 @@ void process_packet(u_char *user, const struct pcap_pkthdr *pkthdr, const u_char
 			int retval = alc_rx_analyze_packet_a331_compliant((char*)udp_packet->data, udp_packet->data_length, &ch, &alc_packet);
 			if(!retval) {
 				global_stats->packet_counter_alc_packets_parsed++;
-				alc_packet_dump_to_object(&alc_packet);
+
+				//don't dump unless this is pointing to our monitor session
+				if(lls_slt_monitor->lls_sls_alc_monitor && lls_slt_monitor->lls_sls_alc_monitor->lls_alc_session->service_id == matching_lls_slt_alc_session->service_id) {
+					alc_packet_dump_to_object(&alc_packet);
+				} else {
+					__LOG_DEBUG("ignoring service_id: %u", matching_lls_slt_alc_session->service_id);
+				}
 				goto cleanup;
 			} else {
 				__ERROR("Error in ALC decode: %d", retval);
@@ -660,7 +649,7 @@ int main(int argc,char **argv) {
 
     mmtp_sub_flow_vector = calloc(1, sizeof(*mmtp_sub_flow_vector));
     mmtp_sub_flow_vector_init(mmtp_sub_flow_vector);
-    lls_session = lls_session_create();
+    lls_slt_monitor = lls_slt_monitor_create();
 
     global_stats = calloc(1, sizeof(*global_stats));
     gettimeofday(&global_stats->program_timeval_start, 0);
@@ -694,7 +683,7 @@ int main(int argc,char **argv) {
 	pthread_create(&global_stats_thread_id, NULL, print_global_statistics_thread, NULL);
 
 	pthread_t global_slt_thread_id;
-	pthread_create(&global_slt_thread_id, NULL, print_lls_instance_table_thread, (void*)lls_session);
+	pthread_create(&global_slt_thread_id, NULL, print_lls_instance_table_thread, (void*)lls_slt_monitor);
 
 	pthread_t global_ncurses_input_thread_id;
 	int ncurses_input_ret = pthread_create(&global_ncurses_input_thread_id, NULL, ncurses_input_run_thread, NULL);

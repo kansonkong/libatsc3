@@ -172,7 +172,7 @@ void process_packet(u_char *user, const struct pcap_pkthdr *pkthdr, const u_char
 		__ERROR("invalid data length of udp packet: %d", udp_packet->data_length);
 		return;
 	}
-	__DEBUGN("Data length: %d", udp_packet->data_length);
+	//__DEBUGN("Data length: %d", udp_packet->data_length);
 	udp_packet->data = malloc(udp_packet->data_length * sizeof(udp_packet->data));
 	memcpy(udp_packet->data, &packet[udp_header_start + 8], udp_packet->data_length);
 

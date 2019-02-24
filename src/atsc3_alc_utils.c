@@ -78,7 +78,7 @@ uint32_t* __ALC_RECON_FILE_PTR_TSI = NULL;
 uint32_t* __ALC_RECON_FILE_PTR_TOI_INIT = NULL;
 
 FILE* __ALC_RECON_FILE_PTR = NULL; //deprecated
-
+lls_sls_alc_monitor_t* __ALC_RECON_MONITOR;
 
 
 char* alc_packet_dump_to_object_get_filename(alc_packet_t* alc_packet) {
@@ -185,7 +185,7 @@ int alc_packet_dump_to_object(alc_packet_t** alc_packet_ptr) {
 		}
 #endif
 
-
+#ifdef __OLD_TOI_MAPPING
 	//push our fragments EXCEPT for the mpu fragment box, we will pull that at the start of a
 	if(__ALC_RECON_FILE_BUFFER_STRUCT && __ALC_RECON_FILE_PTR_TSI && __ALC_RECON_FILE_PTR_TOI_INIT) {
 		__ALC_UTILS_TRACE("checking tsi: %u, toi: %u,  %d", alc_packet->def_lct_hdr->tsi, alc_packet->def_lct_hdr->toi, alc_packet->close_object_flag);
@@ -195,6 +195,18 @@ int alc_packet_dump_to_object(alc_packet_t** alc_packet_ptr) {
 			alc_recon_file_buffer_struct_fragment_with_init_box(__ALC_RECON_FILE_BUFFER_STRUCT, alc_packet);
 		}
 	}
+#endif
+	//__ALC_RECON_MONITOR
+	//push our fragments EXCEPT for the mpu fragment box, we will pull that at the start of a
+		if(__ALC_RECON_FILE_BUFFER_STRUCT && __ALC_RECON_MONITOR) {
+			__ALC_UTILS_TRACE("checking tsi: %u, toi: %u,  %d", alc_packet->def_lct_hdr->tsi, alc_packet->def_lct_hdr->toi, alc_packet->close_object_flag);
+
+			if((alc_packet->def_lct_hdr->tsi == __ALC_RECON_MONITOR->video_tsi && alc_packet->def_lct_hdr->toi != __ALC_RECON_MONITOR->video_toi_init) ||
+					(alc_packet->def_lct_hdr->tsi == __ALC_RECON_MONITOR->audio_tsi && alc_packet->def_lct_hdr->toi != __ALC_RECON_MONITOR->audio_toi_init)) {
+
+					alc_recon_file_buffer_struct_monitor_fragment_with_init_box(__ALC_RECON_FILE_BUFFER_STRUCT, __ALC_RECON_MONITOR, alc_packet);
+			}
+		}
 
 
 cleanup:
@@ -508,6 +520,14 @@ void alc_recon_file_buffer_struct_set_tsi_toi(pipe_ffplay_buffer_t* pipe_ffplay_
 }
 
 
+
+void alc_recon_file_buffer_struct_set_monitor(pipe_ffplay_buffer_t* pipe_ffplay_buffer, lls_sls_alc_monitor_t* lls_sls_alc_monitor) {
+	__ALC_RECON_FILE_BUFFER_STRUCT = pipe_ffplay_buffer;
+	__ALC_RECON_MONITOR = lls_sls_alc_monitor;
+
+}
+
+
 /*** we take this off of disk for the reassembeled fragment metadta and mpu
  *
  *
@@ -620,3 +640,116 @@ cleanup:
 
 	return;
 }
+
+
+void alc_recon_file_buffer_struct_monitor_fragment_with_init_box(pipe_ffplay_buffer_t* pipe_ffplay_buffer, lls_sls_alc_monitor_t* lls_slt_monitor, alc_packet_t* alc_packet) {
+	int flush_ret = 0;
+	if(!__ALC_RECON_FILE_PTR_TSI || !__ALC_RECON_FILE_PTR_TOI_INIT) {
+		__ALC_UTILS_WARN("alc_recon_file_ptr_fragment_with_init_box - NULL: tsi: %p, toi: %p", __ALC_RECON_FILE_PTR_TSI, __ALC_RECON_FILE_PTR_TOI_INIT);
+		return;
+	}
+	//do this for both video_tsi and audio tsi based upon the current toi...?
+	//todo fix me for different toi numbers
+
+	char* file_name = alc_packet_dump_to_object_get_filename(alc_packet);
+	uint32_t toi_init = *__ALC_RECON_FILE_PTR_TOI_INIT;
+	char* init_file_name = calloc(255, sizeof(char));
+
+	__ALC_UTILS_DEBUG("alc_recon_file_buffer_struct_fragment_with_init_box - ENTER - %u, %u,  %d", alc_packet->def_lct_hdr->tsi, alc_packet->def_lct_hdr->toi, alc_packet->close_object_flag);
+
+	snprintf(init_file_name, 255, "%s%u-%u", __ALC_DUMP_OUTPUT_PATH__, *__ALC_RECON_FILE_PTR_TSI, toi_init);
+
+	pipe_buffer_reader_mutex_lock(pipe_ffplay_buffer);
+
+	if(!pipe_ffplay_buffer->has_written_init_box) {
+		if( access( init_file_name, F_OK ) == -1 ) {
+			__ALC_UTILS_ERROR("unable to open init file: %s", init_file_name);
+			goto cleanup;
+		}
+
+		struct stat st;
+		stat(init_file_name, &st);
+
+		uint8_t* init_payload = calloc(st.st_size, sizeof(uint8_t));
+		FILE* init_file = fopen(init_file_name, "r");
+		if(!init_file || st.st_size == 0) {
+			__ALC_UTILS_ERROR("unable to open init file: %s", init_file_name);
+			goto cleanup;
+		}
+
+		fread(init_payload, st.st_size, 1, init_file);
+		fclose(init_file);
+
+		pipe_buffer_unsafe_push_block(pipe_ffplay_buffer, init_payload, st.st_size);
+		pipe_ffplay_buffer->has_written_init_box = true;
+
+	} else {
+		//noop here
+	}
+
+	uint64_t block_size = __PLAYER_FFPLAY_PIPE_WRITER_BLOCKSIZE;
+
+	FILE* m4v_fragment_input_file = fopen(file_name, "r");
+	uint8_t* m4v_payload = calloc(block_size, sizeof(uint8_t));
+	if(!m4v_fragment_input_file) {
+		__ALC_UTILS_ERROR("unable to open m4v fragment input: %s", file_name);
+		goto cleanup;
+	}
+	struct stat fragment_input_stat;
+	stat(file_name, &fragment_input_stat);
+	uint64_t write_count = 0;
+	uint64_t total_bytes_written = 0;
+	bool has_eof = false;
+
+	while(!has_eof) {
+		int read_size = fread(m4v_payload, block_size, 1, m4v_fragment_input_file);
+		uint64_t read_bytes = read_size * block_size;
+		if(!read_bytes && feof(m4v_fragment_input_file)) {
+			read_bytes = fragment_input_stat.st_size - (block_size * write_count);
+			has_eof = true;
+		}
+		total_bytes_written += read_bytes;
+		__ALC_UTILS_TRACE("read bytes: %llu, bytes written: %llu, total filesize: %llu, has eof input: %d", read_bytes, total_bytes_written, fragment_input_stat.st_size, has_eof);
+
+		pipe_buffer_unsafe_push_block(pipe_ffplay_buffer, m4v_payload, read_bytes);
+
+		if(has_eof) {
+			fclose(m4v_fragment_input_file);
+			break;
+		}
+		write_count++;
+
+	}
+
+	//signal and then unlock, docs indicate the only way to ensure a signal is not lost is to send it while holding the lock
+	__ALC_UTILS_DEBUG("alc_recon_file_buffer_struct_fragment_with_init_box - SIGNALING - %u, %u,  %d", alc_packet->def_lct_hdr->tsi, alc_packet->def_lct_hdr->toi, alc_packet->close_object_flag);
+
+	pipe_buffer_notify_semaphore_post(pipe_ffplay_buffer);
+
+	//check to see if we have shutdown
+	pipe_buffer_reader_check_if_shutdown(&pipe_ffplay_buffer);
+
+	pipe_buffer_reader_mutex_unlock(pipe_ffplay_buffer);
+	__ALC_UTILS_DEBUG("alc_recon_file_buffer_struct_fragment_with_init_box - RETURN - %u, %u,  %d", alc_packet->def_lct_hdr->tsi, alc_packet->def_lct_hdr->toi, alc_packet->close_object_flag);
+
+	goto cleanup;
+
+broken_pipe:
+	__ALC_UTILS_ERROR("flush returned: %d, closing pipe", flush_ret);
+	fclose(__ALC_RECON_FILE_PTR);
+	__ALC_RECON_FILE_PTR = NULL;
+
+cleanup:
+	if(m4v_payload) {
+		free(m4v_payload);
+		m4v_payload = NULL;
+	}
+	if(file_name) {
+		free(file_name);
+		file_name = NULL;
+	}
+
+
+	return;
+}
+
