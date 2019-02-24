@@ -23,9 +23,10 @@ void pipe_buffer_reader_mutex_unlock(pipe_ffplay_buffer_t* pipe_ffplay_buffer) {
 }
 
 void* pipe_buffer_writer_thread(void* pipe_ffplay_buffer_p) {
-	pipe_ffplay_buffer_t* pipe_ffplay_buffer = pipe_ffplay_buffer_p;
+	pipe_ffplay_buffer_t* pipe_ffplay_buffer = (pipe_ffplay_buffer_t*)pipe_ffplay_buffer_p;
 
 	while(1) {
+
 
 await_semaphore:
 
@@ -42,13 +43,17 @@ await_semaphore:
 		//wait until we have accumulated at least 5 fragments or we have BUFFER/2 available for writing
 		if(pipe_ffplay_buffer->writer_unlock_count++ < __PLAYER_INITIAL_BUFFER_SEGMENT_COUNT || (!pipe_ffplay_buffer->has_met_minimum_startup_buffer_threshold && pipe_ffplay_buffer->pipe_buffer_reader_pos < __PLAYER_INITIAL_BUFFER_TARGET)) {
 			__PLAYER_FFPLAY_INFO("skipping signal, mutex count %d < %d, buffer reader pos: %u",  pipe_ffplay_buffer->writer_unlock_count, __PLAYER_INITIAL_BUFFER_SEGMENT_COUNT, pipe_ffplay_buffer->pipe_buffer_reader_pos);
-			goto unlock_from_error;
+			//ick
+			pipe_buffer_reader_mutex_unlock(pipe_ffplay_buffer);
+
+			goto await_semaphore;
 		}
 
 		if(!pipe_ffplay_buffer->has_met_minimum_startup_buffer_threshold && pipe_ffplay_buffer->pipe_buffer_reader_pos < __PLAYER_INITIAL_BUFFER_TARGET) {
 			__PLAYER_FFPLAY_INFO("!has_met_minimum_startup_buffer_threshold, buffer level: %d < buffer target: %d", pipe_ffplay_buffer->pipe_buffer_reader_pos,__PLAYER_INITIAL_BUFFER_TARGET );
+			pipe_buffer_reader_mutex_unlock(pipe_ffplay_buffer);
 
-			goto unlock_from_error;
+			goto await_semaphore;
 		} else {
 			pipe_ffplay_buffer->has_met_minimum_startup_buffer_threshold = true;
 			__PLAYER_FFPLAY_INFO("has_met_minimum_startup_buffer_threshold, buffer level: %d > buffer target: %d", pipe_ffplay_buffer->pipe_buffer_reader_pos,__PLAYER_INITIAL_BUFFER_TARGET );
@@ -56,7 +61,11 @@ await_semaphore:
 
 		if(pipe_ffplay_buffer->pipe_buffer_reader_pos < 512) {
 			__PLAYER_FFPLAY_WARN("short read! skipping signal as pipe_buffer_reader_pos is %u", pipe_ffplay_buffer->pipe_buffer_reader_pos);
-			goto unlock_from_error;
+			pipe_buffer_reader_mutex_unlock(pipe_ffplay_buffer);
+
+			pipe_buffer_reader_mutex_unlock(pipe_ffplay_buffer);
+
+			goto await_semaphore;
 		}
 
 		if(pipe_ffplay_buffer->pipe_buffer_writer_pos > 0) {
@@ -209,7 +218,7 @@ void sigpipe_register_action_handler(pipe_ffplay_buffer_t**  pipe_ffplay_buffer_
 pipe_ffplay_buffer_t* pipe_create_ffplay() {
 
 
-	pipe_ffplay_buffer_t* pipe_ffplay_buffer = calloc(1, sizeof(pipe_ffplay_buffer_t));
+	pipe_ffplay_buffer_t* pipe_ffplay_buffer = (pipe_ffplay_buffer_t*)calloc(1, sizeof(pipe_ffplay_buffer_t));
 
 	if (pthread_mutex_init(&pipe_ffplay_buffer->pipe_buffer_reader_mutex_lock, NULL) != 0) {
 		__PLAYER_FFPLAY_ERROR("pipe_buffer_reader_mutex_lock init failed");
@@ -224,12 +233,12 @@ pipe_ffplay_buffer_t* pipe_create_ffplay() {
 	__PLAYER_FFPLAY_ERROR("sem_init returned: %p", pipe_ffplay_buffer->pipe_buffer_semaphore);
 	assert(pipe_ffplay_buffer->pipe_buffer_semaphore);
 
-	pipe_ffplay_buffer->pipe_buffer_reader = calloc(__PLAYER_FFPLAY_PIPE_INTERNAL_BUFFER_SIZE, sizeof(uint8_t));
+	pipe_ffplay_buffer->pipe_buffer_reader = (uint8_t*)calloc(__PLAYER_FFPLAY_PIPE_INTERNAL_BUFFER_SIZE, sizeof(uint8_t));
 	assert(pipe_ffplay_buffer->pipe_buffer_reader);
 	pipe_ffplay_buffer->pipe_buffer_reader_size = __PLAYER_FFPLAY_PIPE_INTERNAL_BUFFER_SIZE;
 	pipe_ffplay_buffer->pipe_buffer_reader_pos = 0;
 
-	pipe_ffplay_buffer->pipe_buffer_writer = calloc(__PLAYER_FFPLAY_PIPE_INTERNAL_BUFFER_SIZE, sizeof(uint8_t));
+	pipe_ffplay_buffer->pipe_buffer_writer = (uint8_t*)calloc(__PLAYER_FFPLAY_PIPE_INTERNAL_BUFFER_SIZE, sizeof(uint8_t));
 	assert(pipe_ffplay_buffer->pipe_buffer_writer);
 	pipe_ffplay_buffer->pipe_buffer_writer_size = __PLAYER_FFPLAY_PIPE_INTERNAL_BUFFER_SIZE;
 	pipe_ffplay_buffer->pipe_buffer_writer_pos = 0;
@@ -347,7 +356,7 @@ int pipe_buffer_unsafe_push_block(pipe_ffplay_buffer_t* pipe_ffplay_buffer, uint
 			__PLAYER_FFPLAY_WARN("realloc of 2x isn't enough! reallocing exactly to: %d", pipe_ffplay_buffer->pipe_buffer_reader_pos + block_size);
 			new_size = pipe_ffplay_buffer->pipe_buffer_reader_pos + block_size;
 		}
-		pipe_ffplay_buffer->pipe_buffer_reader = realloc(pipe_ffplay_buffer->pipe_buffer_reader, new_size);
+		pipe_ffplay_buffer->pipe_buffer_reader = (uint8_t*)realloc(pipe_ffplay_buffer->pipe_buffer_reader, new_size);
 		pipe_ffplay_buffer->pipe_buffer_reader_size = new_size;
 
 		if(!pipe_ffplay_buffer->pipe_buffer_reader) {

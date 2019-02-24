@@ -83,6 +83,9 @@ int PACKET_COUNTER=0;
 #include <ncurses.h>
 #include <limits.h>
 
+extern "C" {
+
+
 #include "atsc3_listener_udp.h"
 #include "atsc3_utils.h"
 
@@ -104,6 +107,7 @@ int PACKET_COUNTER=0;
 #include "atsc3_packet_statistics.h"
 
 #include "atsc3_output_statistics_ncurses.h"
+}
 
 extern int _MPU_DEBUG_ENABLED;
 extern int _MMTP_DEBUG_ENABLED;
@@ -264,7 +268,18 @@ void count_packet_as_filtered(udp_packet_t* udp_packet) {
 }
 
 
+void cleanup(udp_packet_t* udp_packet) {
 
+	if(udp_packet->data) {
+		free(udp_packet->data);
+		udp_packet->data = NULL;
+	}
+
+	if(udp_packet) {
+		free(udp_packet);
+		udp_packet = NULL;
+	}
+}
 void process_packet(u_char *user, const struct pcap_pkthdr *pkthdr, const u_char *packet) {
 
   int i = 0;
@@ -305,7 +320,7 @@ void process_packet(u_char *user, const struct pcap_pkthdr *pkthdr, const u_char
 	}
 
 	//malloc our udp_packet_header:
-	udp_packet = calloc(1, sizeof(udp_packet_t));
+	udp_packet = (udp_packet_t*)calloc(1, sizeof(udp_packet_t));
 	udp_packet->udp_flow.src_ip_addr = ((ip_header[12] & 0xFF) << 24) | ((ip_header[13]  & 0xFF) << 16) | ((ip_header[14]  & 0xFF) << 8) | (ip_header[15] & 0xFF);
 	udp_packet->udp_flow.dst_ip_addr = ((ip_header[16] & 0xFF) << 24) | ((ip_header[17]  & 0xFF) << 16) | ((ip_header[18]  & 0xFF) << 8) | (ip_header[19] & 0xFF);
 
@@ -326,7 +341,7 @@ void process_packet(u_char *user, const struct pcap_pkthdr *pkthdr, const u_char
 		return;
 	}
 	__TRACE("Data length: %d", udp_packet->data_length);
-	udp_packet->data = malloc(udp_packet->data_length * sizeof(udp_packet->data));
+	udp_packet->data = (u_char*)malloc(udp_packet->data_length * sizeof(udp_packet->data));
 	memcpy(udp_packet->data, &packet[udp_header_start + 8], udp_packet->data_length);
 
 	//inefficient as hell for 1 byte at a time, but oh well...
@@ -350,7 +365,9 @@ void process_packet(u_char *user, const struct pcap_pkthdr *pkthdr, const u_char
 		global_bandwidth_statistics->interval_filtered_current_bytes_rx += udp_packet->data_length;
 		global_bandwidth_statistics->interval_filtered_current_packets_rx++;
 
-		goto cleanup;
+		//goto cleanup;
+		return cleanup(udp_packet);
+
 	}
 
 	if(udp_packet->udp_flow.dst_ip_addr == LLS_DST_ADDR && udp_packet->udp_flow.dst_port == LLS_DST_PORT) {
@@ -380,7 +397,9 @@ void process_packet(u_char *user, const struct pcap_pkthdr *pkthdr, const u_char
 			}
 		}
 
-		goto cleanup;
+		//goto cleanup;
+		return cleanup(udp_packet);
+
 	}
 
 
@@ -390,7 +409,8 @@ void process_packet(u_char *user, const struct pcap_pkthdr *pkthdr, const u_char
 		//out of range, so drop
 		count_packet_as_filtered(udp_packet);
 
-		goto cleanup;
+		//goto cleanup;
+		return cleanup(udp_packet);
 	}
 
 	//ALC (ROUTE) - If this flow is registered from the SLT, process it as ALC, otherwise run the flow thru MMT
@@ -597,7 +617,7 @@ int main(int argc,char **argv) {
 
 		//skip ip address filter if our params are * or -
     	if(!(strncmp("*", filter_dst_ip, 1) == 0 || strncmp("-", filter_dst_ip, 1) == 0)) {
-			dst_ip_addr_filter = calloc(1, sizeof(uint32_t));
+			dst_ip_addr_filter = (uint32_t*)calloc(1, sizeof(uint32_t));
 			char* pch = strtok (filter_dst_ip,".");
 			int offset = 24;
 			while (pch != NULL && offset>=0) {
@@ -614,7 +634,7 @@ int main(int argc,char **argv) {
             	__INFO("832:");
 
 				dst_port_filter_int = atoi(filter_dst_port);
-				dst_ip_port_filter = calloc(1, sizeof(uint16_t));
+				dst_ip_port_filter = (uint16_t*)calloc(1, sizeof(uint16_t));
 				*dst_ip_port_filter |= dst_port_filter_int & 0xFFFF;
         	}
     	}
@@ -623,7 +643,7 @@ int main(int argc,char **argv) {
     		filter_packet_id = argv[4];
         	if(!(strncmp("*", filter_packet_id, 1) == 0 || strncmp("-", filter_packet_id, 1) == 0)) {
 				dst_packet_id_filter_int = atoi(filter_packet_id);
-				dst_packet_id_filter = calloc(1, sizeof(uint16_t));
+				dst_packet_id_filter = (uint16_t*)calloc(1, sizeof(uint16_t));
 				*dst_packet_id_filter |= dst_packet_id_filter_int & 0xFFFF;
         	}
     	}
@@ -647,14 +667,14 @@ int main(int argc,char **argv) {
 
     /** setup global structs **/
 
-    mmtp_sub_flow_vector = calloc(1, sizeof(*mmtp_sub_flow_vector));
+    mmtp_sub_flow_vector = (mmtp_sub_flow_vector_t*)calloc(1, sizeof(*mmtp_sub_flow_vector));
     mmtp_sub_flow_vector_init(mmtp_sub_flow_vector);
     lls_slt_monitor = lls_slt_monitor_create();
 
-    global_stats = calloc(1, sizeof(*global_stats));
+    global_stats = (global_atsc3_stats*)calloc(1, sizeof(*global_stats));
     gettimeofday(&global_stats->program_timeval_start, 0);
 
-    global_bandwidth_statistics = calloc(1, sizeof(*global_bandwidth_statistics));
+    global_bandwidth_statistics = (bandwidth_statistics_t*)calloc(1, sizeof(*global_bandwidth_statistics));
 	gettimeofday(&global_bandwidth_statistics->program_timeval_start, NULL);
 
 

@@ -9,14 +9,14 @@
 
 
 lls_sls_alc_monitor_t* lls_sls_alc_monitor_create() {
-	lls_sls_alc_monitor_t* lls_sls_alc_monitor = calloc(1, sizeof(lls_sls_alc_monitor_t));
+	lls_sls_alc_monitor_t* lls_sls_alc_monitor = (lls_sls_alc_monitor_t*)calloc(1, sizeof(lls_sls_alc_monitor_t));
 
 	return lls_sls_alc_monitor;
 }
 
 
 lls_sls_alc_session_vector_t* lls_sls_alc_session_vector_create() {
-	lls_sls_alc_session_vector_t* lls_session = calloc(1, sizeof(*lls_session));
+	lls_sls_alc_session_vector_t* lls_session = (lls_sls_alc_session_vector_t*)calloc(1, sizeof(*lls_session));
 	assert(lls_session);
 
 	//do not instantiate any other lls_table_xxx types, as they will need to be assigned
@@ -38,11 +38,11 @@ void lls_session_free(lls_sls_alc_session_t** lls_session_ptr) {
 }
 
 lls_sls_alc_session_t* lls_slt_alc_session_create(lls_service_t* lls_service) {
-	lls_sls_alc_session_t* lls_slt_alc_session = calloc(1, sizeof(lls_sls_alc_session_t));
+	lls_sls_alc_session_t* lls_slt_alc_session = (lls_sls_alc_session_t*)calloc(1, sizeof(lls_sls_alc_session_t));
 
 	lls_slt_alc_session->service_id = lls_service->service_id;
 
-	lls_slt_alc_session->alc_arguments = calloc(1, sizeof(alc_arguments_t));
+	lls_slt_alc_session->alc_arguments = (alc_arguments_t*)calloc(1, sizeof(alc_arguments_t));
 	lls_slt_alc_session->sls_source_ip_address = parseIpAddressIntoIntval(lls_service->broadcast_svc_signaling.sls_source_ip_address);
 	lls_slt_alc_session->sls_destination_ip_address = parseIpAddressIntoIntval(lls_service->broadcast_svc_signaling.sls_destination_ip_address);
 	lls_slt_alc_session->sls_destination_udp_port = parsePortIntoIntval(lls_service->broadcast_svc_signaling.sls_destination_udp_port);
@@ -152,7 +152,7 @@ lls_sls_alc_session_t* lls_slt_alc_session_find_or_create(lls_sls_alc_session_ve
 		if(lls_sls_alc_session_vector->lls_slt_alc_sessions_n && lls_sls_alc_session_vector->lls_slt_alc_sessions) {
 			__LLSU_TRACE("*before realloc to %p, %i, adding %u", lls_session->lls_slt_alc_sessions, lls_session->lls_slt_alc_sessions_n, lls_service->service_id);
 
-			lls_sls_alc_session_vector->lls_slt_alc_sessions = realloc(lls_sls_alc_session_vector->lls_slt_alc_sessions, (lls_sls_alc_session_vector->lls_slt_alc_sessions_n + 1) * sizeof(lls_sls_alc_session_t*));
+			lls_sls_alc_session_vector->lls_slt_alc_sessions = (lls_sls_alc_session_t**)realloc(lls_sls_alc_session_vector->lls_slt_alc_sessions, (lls_sls_alc_session_vector->lls_slt_alc_sessions_n + 1) * sizeof(lls_sls_alc_session_t*));
 			if(!lls_sls_alc_session_vector->lls_slt_alc_sessions) {
 				abort();
 			}
@@ -168,7 +168,7 @@ lls_sls_alc_session_t* lls_slt_alc_session_find_or_create(lls_sls_alc_session_ve
 			__LLSU_TRACE(" *after realloc to %p, %i, adding %u", lls_slt_alc_session, lls_session->lls_slt_alc_sessions_n, lls_service->service_id);
 
 		} else {
-			lls_sls_alc_session_vector->lls_slt_alc_sessions = calloc(1, sizeof(lls_sls_alc_session_t*));
+			lls_sls_alc_session_vector->lls_slt_alc_sessions = (lls_sls_alc_session_t**)calloc(1, sizeof(lls_sls_alc_session_t*));
 			assert(lls_sls_alc_session_vector->lls_slt_alc_sessions);
 			lls_sls_alc_session_vector->lls_slt_alc_sessions_n = 1;
 

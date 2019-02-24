@@ -74,7 +74,7 @@ char* kvp_collection_get(kvp_collection_t *collection, char* key) {
 
 	//don't forget our null terminator
 	int len = strlen(val) + 1;
-	char* newval = calloc(len, sizeof(char));
+	char* newval = (char*)calloc(len, sizeof(char));
 
 	if(!newval) {
 		_ATSC3_UTILS_ERROR("kvp_collection_get: unable to clone val return!");
@@ -91,7 +91,7 @@ char* kvp_collection_get(kvp_collection_t *collection, char* key) {
 kvp_collection_t* kvp_collection_parse(uint8_t* input_string) {
 	int input_len = strlen((const char*)input_string);
 	_ATSC3_UTILS_TRACE("kvp_parse_string: input string len: %d, input string:\n\n%s\n\n", input_len, input_string);
-	kvp_collection_t *collection = calloc(1, sizeof(kvp_collection_t));
+	kvp_collection_t *collection = (kvp_collection_t*)calloc(1, sizeof(kvp_collection_t));
 
 	//a= is not valid, must be at least 3 chars
 	//return an empty collection
@@ -134,7 +134,7 @@ kvp_collection_t* kvp_collection_parse(uint8_t* input_string) {
 	for(int i=1; i < input_len && kvp_position <= equals_count; i++) {
 		if(!current_kvp) {
 			//alloc our entry
-			collection->kvp_collection[kvp_position] = calloc(1, sizeof(kvp_t));
+			collection->kvp_collection[kvp_position] = (kvp_t*)calloc(1, sizeof(kvp_t));
 			current_kvp = collection->kvp_collection[kvp_position];
 		}
 		if(isspace(input_string[i]) && !quote_depth) {
@@ -186,8 +186,8 @@ kvp_collection_t* kvp_collection_parse(uint8_t* input_string) {
 
 
 block_t* block_Alloc(int len) {
-	block_t* new_block = calloc(1, sizeof(block_t));
-	new_block->p_buffer = calloc(len, sizeof(uint8_t*));
+	block_t* new_block = (block_t*)calloc(1, sizeof(block_t));
+	new_block->p_buffer = (uint8_t*)calloc(len, sizeof(uint8_t*));
 	new_block->i_buffer = len;
 
 	return new_block;
@@ -260,6 +260,6 @@ uint16_t parsePortIntoIntval(char* dst_port) {
 //alloc and copy - note limited to 16k
 char* strlcopy(char* src) {
 	int len = strnlen(src, 16384);
-	char* dest = calloc(len, sizeof(char*));
+	char* dest = (char*)calloc(len, sizeof(char*));
 	return strncpy(dest, src, len);
 }

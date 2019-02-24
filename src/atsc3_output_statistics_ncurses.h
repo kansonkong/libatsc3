@@ -21,7 +21,7 @@
 #define ATSC3_OUTPUT_STATISTICS_NCURSES_H_
 
 void ncurses_init();
-void* ncurses_input_run_thread();
+void* ncurses_input_run_thread(void *vargp);
 
 pthread_mutex_t ncurses_writer_lock;
 void ncurses_mutext_init();

@@ -212,9 +212,9 @@ typedef struct global_atsc3_stats {
 	uint32_t packets_total_received;
 
 	struct timeval program_timeval_start;
-} global_atsc3_stats;
+} global_atsc3_stats_t;
 
-global_atsc3_stats* global_stats;
+global_atsc3_stats_t* global_stats;
 
 packet_id_mmt_stats_t* find_packet_id(uint32_t ip, uint16_t port, uint32_t packet_id);
 packet_id_mmt_stats_t* find_or_create_packet_id(uint32_t ip, uint16_t port, uint32_t packet_id);
