@@ -59,7 +59,7 @@ void mtl_clear() {
 	wmove(my_window, 0, 1);
 }
 
-void* ncurses_input_run_thread() {
+void* ncurses_input_run_thread(void *vargp) {
 	int ch;
 
 	while(1) {

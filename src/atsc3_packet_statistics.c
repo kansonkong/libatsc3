@@ -76,12 +76,12 @@ packet_id_mmt_stats_t* find_or_create_packet_id(uint32_t ip, uint16_t port, uint
 
 			__PS_TRACE("*before realloc to %p, %i, adding %u", global_stats->packet_id_vector, global_stats->packet_id_n, packet_id);
 
-			global_stats->packet_id_vector = realloc(global_stats->packet_id_vector, (global_stats->packet_id_n + 1) * sizeof(packet_id_mmt_stats_t*));
+			global_stats->packet_id_vector = (packet_id_mmt_stats_t**)realloc(global_stats->packet_id_vector, (global_stats->packet_id_n + 1) * sizeof(packet_id_mmt_stats_t*));
 			if(!global_stats->packet_id_vector) {
 				abort();
 			}
 
-			packet_mmt_stats = global_stats->packet_id_vector[global_stats->packet_id_n++] = calloc(1, sizeof(packet_id_mmt_stats_t));
+			packet_mmt_stats = global_stats->packet_id_vector[global_stats->packet_id_n++] = (packet_id_mmt_stats_t*)calloc(1, sizeof(packet_id_mmt_stats_t));
 			if(!packet_mmt_stats) {
 				abort();
 			}
@@ -93,8 +93,8 @@ packet_id_mmt_stats_t* find_or_create_packet_id(uint32_t ip, uint16_t port, uint
 
 		} else {
 			global_stats->packet_id_n = 1;
-			global_stats->packet_id_vector = calloc(1, sizeof(packet_id_mmt_stats_t*));
-			global_stats->packet_id_vector[0] = calloc(1, sizeof(packet_id_mmt_stats_t));
+			global_stats->packet_id_vector = (packet_id_mmt_stats_t**)calloc(1, sizeof(packet_id_mmt_stats_t*));
+			global_stats->packet_id_vector[0] = (packet_id_mmt_stats_t*)calloc(1, sizeof(packet_id_mmt_stats_t));
 
 			if(!global_stats->packet_id_vector) {
 				abort();
@@ -107,13 +107,13 @@ packet_id_mmt_stats_t* find_or_create_packet_id(uint32_t ip, uint16_t port, uint
 		packet_mmt_stats->port = port;
 		packet_mmt_stats->packet_id = packet_id;
 
-		packet_mmt_stats->mpu_stats_timed_sample_interval = 	calloc(1, sizeof(packet_id_mmt_timed_mpu_stats_t));
-		packet_mmt_stats->mpu_stats_nontimed_sample_interval = calloc(1, sizeof(packet_id_mmt_nontimed_mpu_stats_t));
-		packet_mmt_stats->signalling_stats_sample_interval = 	calloc(1, sizeof(packet_id_signalling_stats_t));
+		packet_mmt_stats->mpu_stats_timed_sample_interval = 	(packet_id_mmt_timed_mpu_stats_t*)calloc(1, sizeof(packet_id_mmt_timed_mpu_stats_t));
+		packet_mmt_stats->mpu_stats_nontimed_sample_interval = (packet_id_mmt_nontimed_mpu_stats_t*)calloc(1, sizeof(packet_id_mmt_nontimed_mpu_stats_t));
+		packet_mmt_stats->signalling_stats_sample_interval = 	(packet_id_signalling_stats_t*)calloc(1, sizeof(packet_id_signalling_stats_t));
 
-		packet_mmt_stats->mpu_stats_timed_lifetime = 	calloc(1, sizeof(packet_id_mmt_timed_mpu_stats_t));
-		packet_mmt_stats->mpu_stats_nontimed_lifetime = calloc(1, sizeof(packet_id_mmt_nontimed_mpu_stats_t));
-		packet_mmt_stats->signalling_stats_lifetime = 	calloc(1, sizeof(packet_id_signalling_stats_t));
+		packet_mmt_stats->mpu_stats_timed_lifetime = 	(packet_id_mmt_timed_mpu_stats_t*)calloc(1, sizeof(packet_id_mmt_timed_mpu_stats_t));
+		packet_mmt_stats->mpu_stats_nontimed_lifetime = (packet_id_mmt_nontimed_mpu_stats_t*)calloc(1, sizeof(packet_id_mmt_nontimed_mpu_stats_t));
+		packet_mmt_stats->signalling_stats_lifetime = 	(packet_id_signalling_stats_t*)calloc(1, sizeof(packet_id_signalling_stats_t));
 	}
 
 	return packet_mmt_stats;

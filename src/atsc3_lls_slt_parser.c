@@ -39,12 +39,12 @@ int __LLS_SLT_PARSER_TRACE_ENABLED=0;
 
 //temporary impl
 lls_sls_mmt_monitor_t* lls_sls_mmt_monitor_create() {
-	return calloc(1, sizeof(lls_sls_mmt_monitor_t));
+	return (lls_sls_mmt_monitor_t*)calloc(1, sizeof(lls_sls_mmt_monitor_t));
 
 }
 
 lls_slt_monitor_t* lls_slt_monitor_create() {
-	lls_slt_monitor_t* lls_slt_monitor = calloc(1, sizeof(lls_slt_monitor_t));
+	lls_slt_monitor_t* lls_slt_monitor = (lls_slt_monitor_t*)calloc(1, sizeof(lls_slt_monitor_t));
 
 	//create our sls_monitor_ref
 	lls_slt_monitor->lls_sls_alc_monitor = lls_sls_alc_monitor_create();
@@ -100,7 +100,7 @@ int lls_slt_table_build(lls_table_t *lls_table, xml_node_t *xml_root) {
 		uint8_t* child_row_node_attributes_s = xml_attributes_clone(service_row_node_xml_string);
 		kvp_collection_t* service_attributes_collecton = kvp_collection_parse(child_row_node_attributes_s);
 
-		lls_table->slt_table.service_entry[lls_table->slt_table.service_entry_n-1] = calloc(1, sizeof(lls_service_t));
+		lls_table->slt_table.service_entry[lls_table->slt_table.service_entry_n-1] = (lls_service_t*)calloc(1, sizeof(lls_service_t));
 		lls_service_t* service_entry = lls_table->slt_table.service_entry[lls_table->slt_table.service_entry_n-1];
 		//map in other attributes, e.g
 
@@ -217,7 +217,7 @@ int SLT_BROADCAST_SVC_SIGNALING_build_table(lls_service_t* service_table, xml_no
 	if(!slsProtocol) {
 		_LLS_ERROR("build_SLT_BROADCAST_SVC_SIGNALING_table: missing slsProtocol value");
 		ret = -1;
-		goto cleanup;
+		return -1;
 	}
 
 	int scratch_i=0;

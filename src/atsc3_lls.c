@@ -56,7 +56,7 @@ char* LLS_PROTOCOL_VALUES[] = {"atsc reserved", "ROUTE", "MMTP", "atsc other" };
 static lls_table_t* __lls_create_base_table_raw(uint8_t* lls, int size) {
 
 	//zero out full struct
-	lls_table_t *base_table = calloc(1, sizeof(lls_table_t));
+	lls_table_t *base_table = (lls_table_t*)calloc(1, sizeof(lls_table_t));
 
 	//read first 32 bytes in
 	base_table->lls_table_id = lls[0];
@@ -66,7 +66,7 @@ static lls_table_t* __lls_create_base_table_raw(uint8_t* lls, int size) {
 
 	int remaining_payload_size = (size > 65531) ? 65531 : size;
 
-	uint8_t *temp_gzip_payload = calloc(size, sizeof(uint8_t));
+	uint8_t *temp_gzip_payload = (uint8_t*)calloc(size, sizeof(uint8_t));
 	//FILE *f = fopen("slt.gz", "w");
 
 	for(int i=4; i < remaining_payload_size; i++) {
@@ -133,7 +133,7 @@ int __unzip_gzip_payload(uint8_t *input_payload, uint input_payload_size, uint8_
 
 		do {
 			if(!output_payload) {
-				output_payload = calloc(GZIP_CHUNK_OUTPUT_BUFFER_SIZE + 1, sizeof(uint8_t));
+				output_payload = (uint8_t*)calloc(GZIP_CHUNK_OUTPUT_BUFFER_SIZE + 1, sizeof(uint8_t));
 			}
 
 			if(!output_payload)
@@ -156,7 +156,7 @@ int __unzip_gzip_payload(uint8_t *input_payload, uint input_payload_size, uint8_
 
 			if(strm.avail_out == 0) {
 				output_payload_offset += GZIP_CHUNK_OUTPUT_BUFFER_SIZE;
-				output_payload = realloc(output_payload, output_payload_offset + GZIP_CHUNK_OUTPUT_BUFFER_SIZE + 1);
+				output_payload = (uint8_t*)realloc(output_payload, output_payload_offset + GZIP_CHUNK_OUTPUT_BUFFER_SIZE + 1);
 
 			}
 		} while (strm.avail_out == 0);
