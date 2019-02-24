@@ -10,6 +10,8 @@
 #include "atsc3_alc_utils.h"
 
 extern int _ALC_PACKET_DUMP_TO_OBJECT_ENABLED;
+extern lls_slt_monitor_t* lls_slt_monitor;
+
 
 void ncurses_init() {
 	/** hacks
@@ -46,6 +48,7 @@ void ncurses_init() {
 
 }
 int play_mode = 0;
+uint32_t my_service_id = 0;
 uint32_t my_route_tsi = 0;
 uint32_t my_route_toi_init_fragment = 0;
 pipe_ffplay_buffer_t* pipe_ffplay_buffer = NULL;
@@ -92,8 +95,38 @@ void* ncurses_input_run_thread() {
 
 				}
 
+				if(ch == 's') {
+					mtl_clear();
+					wprintw(my_window, "Please enter Service ID: ");
+					echo();
+					//wgetstr(my_window, str);
+					mvwgetnstr(my_window, 0, 32, str, 10);
+					noecho();
+					mtl_clear();
 
-				if(ch == 'a') {
+					long my_tsi_long = strtol(str, NULL, 0);
+					my_service_id = (uint32_t) my_tsi_long;
+					mtl_clear();
+					wprintw(my_window, "Monitoring Service ID: %u",  my_service_id);
+
+					//find our matching lls_sls and create a monitor entry
+
+					lls_sls_alc_session_t* lls_sls_alc_session = lls_slt_alc_session_find_from_service_id(lls_slt_monitor, my_service_id);
+					if(lls_sls_alc_session) {
+						//build our alc_session map
+						lls_sls_alc_monitor_t* lls_sls_alc_monitor = lls_sls_alc_monitor_create();
+						lls_sls_alc_monitor->lls_alc_session = lls_sls_alc_session;
+
+						//todo - wire up to mbms signaling
+						lls_sls_alc_monitor->video_tsi = 1;
+						lls_sls_alc_monitor->video_toi_init = 2100000000;
+
+						lls_sls_alc_monitor->audio_tsi = 2;
+						lls_sls_alc_monitor->audio_toi_init = 2100000000;
+
+						lls_slt_monitor->lls_sls_alc_monitor = lls_sls_alc_monitor;
+					}
+				} else if(ch == 'a') {
 					mtl_clear();
 					wprintw(my_window, "Please enter Audio: TSI,InitTOI: ");
 					echo();
@@ -120,7 +153,7 @@ void* ncurses_input_run_thread() {
 					mtl_clear();
 					wprintw(my_window, "Monitoring Video: %u",  my_route_tsi);
 
-				} else if(ch == 's') {
+				} else if(ch == 'i') {
 					mtl_clear();
 					wprintw(my_window, "Please enter TSI to play back: ");
 					echo();
@@ -152,14 +185,22 @@ void* ncurses_input_run_thread() {
 					//play stream...
 					if(play_mode == 1) {
 						mtl_clear();
-						wprintw(my_window, "Starting playback for TSI: %u, TOI init frag: %u-%u...",  my_route_tsi, my_route_tsi, my_route_toi_init_fragment);
 
 						if(!pipe_ffplay_buffer) {
 							pipe_ffplay_buffer = pipe_create_ffplay();
 						}
 
-						alc_recon_file_buffer_struct_set_tsi_toi(pipe_ffplay_buffer, my_route_tsi, my_route_toi_init_fragment);
+						if(lls_slt_monitor->lls_sls_alc_monitor) {
+							wprintw(my_window, "Starting playback for service_id: %u, video_tsi: %u, audio_tsi: %u", lls_slt_monitor->lls_sls_alc_monitor->service_id, lls_slt_monitor->lls_sls_alc_monitor->video_tsi, lls_slt_monitor->lls_sls_alc_monitor->audio_tsi);
 
+							alc_recon_file_buffer_struct_set_monitor(pipe_ffplay_buffer, lls_slt_monitor->lls_sls_alc_monitor);
+
+						} else {
+							wprintw(my_window, "Starting playback for TSI: %u, TOI init frag: %u-%u...",  my_route_tsi, my_route_tsi, my_route_toi_init_fragment);
+
+
+							alc_recon_file_buffer_struct_set_tsi_toi(pipe_ffplay_buffer, my_route_tsi, my_route_toi_init_fragment);
+						}
 
 					} else {
 						mtl_clear();
@@ -324,16 +365,17 @@ void handle_winch(int sig)
 
 }
 
-void* print_lls_instance_table_thread(void* lls_session_ptr) {
+void* print_lls_instance_table_thread(void* lls_slt_monitor_ptr) {
 
-	lls_session_t* lls_session = (lls_session_t*)lls_session_ptr;
+	lls_slt_monitor_t* lls_slt_monitor = (lls_slt_monitor_t*)lls_slt_monitor_ptr;
+
 	while(1) {
 		sleep(1);
-		if(lls_session->lls_table_slt) {
+		if(lls_slt_monitor->lls_table_slt) {
 			ncurses_writer_lock_mutex_acquire();
 			__LLS_DUMP_CLEAR();
 			__LLS_REFRESH();
-			lls_dump_instance_table_ncurses(lls_session->lls_table_slt);
+			lls_dump_instance_table_ncurses(lls_slt_monitor->lls_table_slt);
 			__DOUPDATE();
 			__LLS_REFRESH();
 			ncurses_writer_lock_mutex_release();

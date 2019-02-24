@@ -137,7 +137,7 @@ uint16_t* dst_ip_port_filter = NULL;
 
 // lls and alc glue for slt, contains lls_table_slt and lls_slt_alc_session
 
-lls_session_t* lls_session;
+lls_sls_alc_session_t* lls_session;
 
 int lls_slt_table_process_update(lls_table_t* lls) {
 
@@ -548,7 +548,7 @@ int main(int argc,char **argv) {
 
     mmtp_sub_flow_vector = calloc(1, sizeof(*mmtp_sub_flow_vector));
     mmtp_sub_flow_vector_init(mmtp_sub_flow_vector);
-    lls_session = lls_session_create();
+    lls_session = lls_sls_alc_session_create();
 
     global_stats = calloc(1, sizeof(*global_stats));
     gettimeofday(&global_stats->program_timeval_start, 0);

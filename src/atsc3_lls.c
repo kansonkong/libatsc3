@@ -43,6 +43,7 @@
 
 #include "atsc3_utils.h"
 #include "atsc3_lls.h"
+#include "atsc3_lls_slt_parser.h"
 #include "xml.h"
 
 int _LLS_DEBUG_ENABLED = 1;
@@ -355,7 +356,7 @@ int lls_create_table_type_instance(lls_table_t* lls_table, xml_node_t* xml_root)
 	int ret = -1;
 	if(lls_table->lls_table_id == SLT) {
 		//build SLT table
-		ret = build_SLT_table(lls_table, xml_root);
+		ret = lls_slt_table_build(lls_table, xml_root);
 
 	} else if(lls_table->lls_table_id == RRT) {
 		_LLS_ERROR("lls_create_table_type_instance: LLS table RRT not supported yet");
@@ -376,195 +377,6 @@ int lls_create_table_type_instance(lls_table_t* lls_table, xml_node_t* xml_root)
 	return ret;
 }
 
-#define LLS_SLT_SIMULCAST_TSID 				"SimulcastTSID"
-#define LLS_SLT_SVC_CAPABILITIES			"SvcCapabilities"
-#define LLS_SLT_BROADCAST_SVC_SIGNALING 	"BroadcastSvcSignaling"
-#define LLS_SLT_SVC_INET_URL				"SvcInetUrl"
-#define LLS_SLT_OTHER_BSID					"OtherBsid"
-
-int build_SLT_table(lls_table_t *lls_table, xml_node_t *xml_root) {
-	/** bsid **/
-
-	xml_string_t* root_node_name = xml_node_name(xml_root); //root
-	dump_xml_string(root_node_name);
-
-	uint8_t* slt_attributes = xml_attributes_clone(root_node_name);
-	_LLS_DEBUG("build_SLT_table, attributes are: %s", (const char*)slt_attributes);
-
-	kvp_collection_t* slt_attributes_collecton = kvp_collection_parse(slt_attributes);
-	char* bsid_char = kvp_collection_get(slt_attributes_collecton, "bsid");
-	//if there is a space, split and callocif(strnstr(bsid, "", ))
-
-	//TODO: fix me
-	if(bsid_char) {
-		int bsid_i;
-		bsid_i = atoi(bsid_char);
-		freesafe(bsid_char);
-
-		lls_table->slt_table.bsid_n = 1;
-		lls_table->slt_table.bsid =  (int*)calloc(lls_table->slt_table.bsid_n , sizeof(int));
-		lls_table->slt_table.bsid[0] = bsid_i;
-	}
-
-	_LLS_TRACE("build_SLT_table, attributes are: %s\n", slt_attributes);
-
-	int svc_size = xml_node_children(xml_root);
-
-	//build our service rows
-	for(int i=0; i < svc_size; i++) {
-		xml_node_t* service_row_node = xml_node_child(xml_root, i);
-		xml_string_t* service_row_node_xml_string = xml_node_name(service_row_node);
-
-		/** push service row **/
-		lls_table->slt_table.service_entry_n++;
-		//TODO - grow this dynamically to N?
-		if(!lls_table->slt_table.service_entry) {
-			lls_table->slt_table.service_entry = (lls_service_t**)calloc(32, sizeof(lls_service_t**));
-		}
-
-		//service_row_node_xml_string
-		uint8_t* child_row_node_attributes_s = xml_attributes_clone(service_row_node_xml_string);
-		kvp_collection_t* service_attributes_collecton = kvp_collection_parse(child_row_node_attributes_s);
-
-		lls_table->slt_table.service_entry[lls_table->slt_table.service_entry_n-1] = calloc(1, sizeof(lls_service_t));
-		lls_service_t* service_entry = lls_table->slt_table.service_entry[lls_table->slt_table.service_entry_n-1];
-		//map in other attributes, e.g
-
-
-		int scratch_i = 0;
-		char* serviceId = kvp_collection_get(service_attributes_collecton, "serviceId");
-
-		if(!serviceId) {
-			_LLS_ERROR("missing required element - serviceId!");
-			return -1;
-		}
-
-		scratch_i = atoi(serviceId);
-		freesafe(serviceId);
-		service_entry->service_id = scratch_i & 0xFFFF;
-		_LLS_TRACE("service id is: %s, int is: %d, uint_16: %u", serviceId, scratch_i, (scratch_i & 0xFFFF));
-
-		//copy our char* elements
-		service_entry->global_service_id  = kvp_collection_get(service_attributes_collecton, "globalServiceID");
-		service_entry->short_service_name = kvp_collection_get(service_attributes_collecton, "shortServiceName");
-
-		char* majorChannelNo  = kvp_collection_get(service_attributes_collecton, "majorChannelNo");
-		char* minorChannelNo  = kvp_collection_get(service_attributes_collecton, "minorChannelNo");
-		char* serviceCategory = kvp_collection_get(service_attributes_collecton, "serviceCategory");
-		char* sltSvcSeqNum    = kvp_collection_get(service_attributes_collecton, "sltSvcSeqNum");
-
-		//optional parameters here
-		if(majorChannelNo) {
-			scratch_i = atoi(majorChannelNo);
-			service_entry->major_channel_no = scratch_i & 0xFFFF;
-			freesafe(majorChannelNo);
-		}
-
-		if(minorChannelNo) {
-			scratch_i = atoi(minorChannelNo);
-			service_entry->minor_channel_no = scratch_i & 0xFFFF;
-			freesafe(minorChannelNo);
-		}
-
-		if(serviceCategory) {
-			scratch_i = atoi(serviceCategory);
-			service_entry->service_category = scratch_i & 0xFFFF;
-			freesafe(serviceCategory);
-		}
-
-		if(sltSvcSeqNum) {
-			scratch_i = atoi(sltSvcSeqNum);
-			service_entry->slt_svc_seq_num = scratch_i & 0xFFFF;
-			freesafe(sltSvcSeqNum);
-		}
-
-		int svc_child_size = xml_node_children(service_row_node);
-
-		dump_xml_string(service_row_node_xml_string);
-
-		for(int j=0; j < svc_child_size; j++) {
-
-			xml_node_t* child_row_node = xml_node_child(service_row_node, j);
-			xml_string_t* child_row_node_xml_string = xml_node_name(child_row_node);
-
-			//this is a malloc
-			uint8_t* child_row_node_attributes_s = xml_attributes_clone(child_row_node_xml_string);
-			kvp_collection_t* kvp_child_attributes = kvp_collection_parse(child_row_node_attributes_s);
-
-			dump_xml_string(child_row_node_xml_string);
-
-			if(xml_string_equals_ignore_case(child_row_node_xml_string, LLS_SLT_SIMULCAST_TSID)) {
-				_LLS_ERROR("build_SLT_table - not supported: LLS_SLT_SIMULCAST_TSID");
-			} else if(xml_string_equals_ignore_case(child_row_node_xml_string, LLS_SLT_SVC_CAPABILITIES)) {
-				_LLS_ERROR("build_SLT_table - not supported: LLS_SLT_SVC_CAPABILITIES");
-			} else if(xml_string_equals_ignore_case(child_row_node_xml_string, LLS_SLT_BROADCAST_SVC_SIGNALING)) {
-				build_SLT_BROADCAST_SVC_SIGNALING_table(service_entry, service_row_node, kvp_child_attributes);
-
-			} else if(xml_string_equals_ignore_case(child_row_node_xml_string, LLS_SLT_SVC_INET_URL)) {
-				_LLS_ERROR("build_SLT_table - not supported: LLS_SLT_SVC_INET_URL");
-			} else if(xml_string_equals_ignore_case(child_row_node_xml_string, LLS_SLT_OTHER_BSID)) {
-				_LLS_ERROR("build_SLT_table - not supported: LLS_SLT_OTHER_BSID");
-			} else {
-				_LLS_ERROR("build_SLT_table - unknown type: %s\n", xml_string_clone(child_row_node_xml_string));
-			}
-
-			//cleanup
-			free(child_row_node_attributes_s);
-			kvp_collection_free(kvp_child_attributes);
-		}
-
-		//cleanup
-
-		if(service_attributes_collecton) {
-			kvp_collection_free(service_attributes_collecton);
-		}
-		if(child_row_node_attributes_s) {
-			free(child_row_node_attributes_s);
-		}
-	}
-
-	if(slt_attributes) {
-		free(slt_attributes);
-	}
-	if(slt_attributes_collecton) {
-		kvp_collection_free(slt_attributes_collecton);
-	}
-
-	return 0;
-}
-
-int build_SLT_BROADCAST_SVC_SIGNALING_table(lls_service_t* service_table, xml_node_t *service_row_node, kvp_collection_t* kvp_collection) {
-	int ret = 0;
-	xml_string_t* service_row_node_xml_string = xml_node_name(service_row_node);
-	uint8_t *svc_attributes = xml_attributes_clone(service_row_node_xml_string);
-	_LLS_TRACE("build_SLT_BROADCAST_SVC_SIGNALING_table - attributes are: %s", svc_attributes);
-
-	char* slsProtocol = kvp_collection_get(kvp_collection, "slsProtocol");
-	if(!slsProtocol) {
-		_LLS_ERROR("build_SLT_BROADCAST_SVC_SIGNALING_table: missing slsProtocol value");
-		ret = -1;
-		goto cleanup;
-	}
-
-	int scratch_i=0;
-	service_table->broadcast_svc_signaling.sls_protocol = atoi(slsProtocol);
-	freesafe(slsProtocol);
-
-	service_table->broadcast_svc_signaling.sls_destination_ip_address = kvp_collection_get(kvp_collection, "slsDestinationIpAddress");
-	service_table->broadcast_svc_signaling.sls_destination_udp_port = kvp_collection_get(kvp_collection, "slsDestinationUdpPort");
-	service_table->broadcast_svc_signaling.sls_source_ip_address = kvp_collection_get(kvp_collection, "slsSourceIpAddress");
-
-
-	//kvp_find_key(kvp_collection, "slsProtocol";
-
-cleanup:
-	//cleanup
-	if(svc_attributes) {
-		free(svc_attributes);
-	}
-
-	return ret;
-}
 
 /** payload looks like:
  *
