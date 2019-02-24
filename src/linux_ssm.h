@@ -42,7 +42,7 @@
 
 #include "defines.h"
 
-#ifdef __cplusplus
+#ifdef __cplusplusz
 extern "C" {
 #endif
 
@@ -86,7 +86,7 @@ struct group_source_req {
 
 #endif
 
-#ifdef __cplusplus
+#ifdef __cplusplusz
 }; //extern "C"
 #endif
 
