@@ -8,7 +8,9 @@
 #include <string.h>
 #include <stdlib.h>
 #include <stdio.h>
+
 #include "atsc3_utils.h"
+#include "atsc3_lls_types.h"
 #include "zlib.h"
 #include "xml.h"
 
@@ -19,271 +21,9 @@ extern int _LLS_TRACE_ENABLED;
 #define MODULES_DEMUX_MMT_ASTC3_LLS_H_
 
 
+
 #define LLS_DST_ADDR 3758102332
 #define LLS_DST_PORT 4937
-
-/***
- * From < A/331 2017 - Signaling Delivery Sync > https://www.atsc.org/wp-content/uploads/2017/12/A331-2017-Signaling-Deivery-Sync-FEC-3.pdf
- * LLS shall be transported in IP packets with address:
- * 224.0.23.60 and destination port 4937/udp
- *
- *
- *UDP/IP packets delivering LLS data shall be formatted per the bit stream syntax given in Table 6.1 below.
- *UDP/IP The first byte of every UDP/IP packet carrying LLS data shall be the start of an LLS_table().
- *UDP/IP  The maximum length of any LLS table is limited by the largest IP packet that can be delivered from the PHY layer, 65,507 bytes5.
- *UDP/IP
- *      Syntax
- *
-
-Syntax							Bits			Format
-------							----			------
-LLS_table() {
-
-	LLS_table_id 				8
-	LLS_group_id 				8
-	group_count_minus1 			8
-	LLS_table_version 			8
-	switch (LLS_table_id) {
-		case 0x01:
-			SLT					var
-			break;
-		case 0x02:
-			RRT					var
-			break;
-		case 0x03:
-			SystemTime			var
-			break;
-		case 0x04:
-			AEAT 				var
-			break;
-		case 0x05:
-			OnscreenMessageNotification	var
-			break;
-		default:
-			reserved			var
-	}
-}
-
-No. of Bits
-8 8 8 8
-var var var var var var
-Format
-uimsbf uimsbf uimsbf uimsbf
-Sec. 6.3
-See Annex F Sec. 6.4 Sec. 6.5 Sec. 6.6
-     }
- *
- */
-
-
-
-/*
- *
- * To create the proper LLS table type instance, invoke
- *
-
- 	lls_table_t* lls = lls_create_table(binary_payload, binary_payload_size);
-	if(lls) {
-		lls_dump_instance_table(lls);
-	}
-
- */
-
-typedef struct llt_xml_payload {
-	uint8_t *xml_payload_compressed;
-	uint xml_payload_compressed_size;
-	uint8_t *xml_payload;
-	uint xml_payload_size;
-
-
-} lls_xml_payload_t;
-
-/**
- *  |SLT|, attributes len: 70, val: xmlns="tag:atsc.org,2016:XMLSchemas/ATSC3/Delivery/SLT/1.0/" bsid="50"
-children: 569:dump_xml_string::xml_string: len: 7, is_self_closing: 0, val: |Service|, attributes len: 172, val: serviceId="1001" globalServiceID="urn:atsc:serviceid:ateme_mmt_1" majorChannelNo="10" minorChannelNo="1" serviceCategory="1" shortServiceName="ATEME MMT 1" sltSvcSeqNum="0"
-69:dump_xml_string::xml_string: len: 21, is_self_closing: 1, val: |BroadcastSvcSignaling|, attributes len: 118, val: slsProtocol="2" slsDestinationIpAddress="239.255.10.1" slsDestinationUdpPort="51001" slsSourceIpAddress="172.16.200.1"
-69:dump_xml_string::xml_string: len: 7, is_self_closing: 0, val: |Service|, attributes len: 172, val: serviceId="1002" globalServiceID="urn:atsc:serviceid:ateme_mmt_2" majorChannelNo="10" minorChannelNo="2" serviceCategory="1" shortServiceName="ATEME MMT 2" sltSvcSeqNum="0"
-69:dump_xml_string::xml_string: len: 21, is_self_closing: 1, val: |BroadcastSvcSignaling|, attributes len: 118, val: slsProtocol="2" slsDestinationIpAddress="239.255.10.2" slsDestinationUdpPort="51002" slsSourceIpAddress="172.16.200.1"
-69:dump_xml_string::xml_string: len: 7, is_self_closing: 0, val: |Service|, attributes len: 172, val: serviceId="1003" globalServiceID="urn:atsc:serviceid:ateme_mmt_3" majorChannelNo="10" minorChannelNo="3" serviceCategory="1" shortServiceName="ATEME MMT 3" sltSvcSeqNum="0"
-69:dump_xml_string::xml_string: len: 21, is_self_closing: 1, val: |BroadcastSvcSignaling|, attributes len: 118, val: slsProtocol="2" slsDestinationIpAddress="239.255.10.3" slsDestinationUdpPort="51003" slsSourceIpAddress="172.16.200.1"
-69:dump_xml_string::xml_string: len: 7, is_self_closing: 0, val: |Service|, attributes len: 172, val: serviceId="1004" globalServiceID="urn:atsc:serviceid:ateme_mmt_4" majorChannelNo="10" minorChannelNo="4" serviceCategory="1" shortServiceName="ATEME MMT 4" sltSvcSeqNum="0"
-69:dump_xml_string::xml_string: len: 21, is_self_closing: 1, val: |BroadcastSvcSignaling|, attributes len: 118, val: slsProtocol="2" slsDestinationIpAddress="239.255.10.4" slsDestinationUdpPort="51004" slsSourceIpAddress="172.16.200.1"
-69:dump_xml_string::xml_string: len: 7, is_self_closing: 0, val: |Service|, attributes len: 117, val: serviceId="5009" globalServiceID="urn:atsc:serviceid:esg" serviceCategory="4" shortServiceName="ESG" sltSvcSeqNum="0"
-69:dump_xml_string::xml_string: len: 21, is_self_closing: 1, val: |BroadcastSvcSignaling|, attributes len: 118, val: slsProtocol="1" slsDestinationIpAddress="239.255.20.9" slsDestinationUdpPort="52009" slsSourceIpAddress="172.16.200.1"
- */
-
-/*
- * <SLT xmlns="tag:atsc.org,2016:XMLSchemas/ATSC3/Delivery/SLT/1.0/" bsid="50">
- *
- *
- */
-typedef struct slt_entry {
-	uint bsid; //broadcast stream id
-
-} slt_entry_t;
-
-
-
-/*
- *
- * A/331 Section 6.3 Service List Table XML
-
-<?xml version="1.0" encoding="UTF-8"?>
-<SLT xmlns="tag:atsc.org,2016:XMLSchemas/ATSC3/Delivery/SLT/1.0/" bsid="50">
-   <Service serviceId="1001" globalServiceID="urn:atsc:serviceid:ateme_mmt_1" majorChannelNo="10" minorChannelNo="1" serviceCategory="1" shortServiceName="ATEME MMT 1" sltSvcSeqNum="0">
-      <BroadcastSvcSignaling slsProtocol="2" slsDestinationIpAddress="239.255.10.1" slsDestinationUdpPort="51001" slsSourceIpAddress="172.16.200.1" />
-   </Service>
-   <Service serviceId="1002" globalServiceID="urn:atsc:serviceid:ateme_mmt_2" majorChannelNo="10" minorChannelNo="2" serviceCategory="1" shortServiceName="ATEME MMT 2" sltSvcSeqNum="0">
-      <BroadcastSvcSignaling slsProtocol="2" slsDestinationIpAddress="239.255.10.2" slsDestinationUdpPort="51002" slsSourceIpAddress="172.16.200.1" />
-   </Service>
-   <Service serviceId="1003" globalServiceID="urn:atsc:serviceid:ateme_mmt_3" majorChannelNo="10" minorChannelNo="3" serviceCategory="1" shortServiceName="ATEME MMT 3" sltSvcSeqNum="0">
-      <BroadcastSvcSignaling slsProtocol="2" slsDestinationIpAddress="239.255.10.3" slsDestinationUdpPort="51003" slsSourceIpAddress="172.16.200.1" />
-   </Service>
-   <Service serviceId="1004" globalServiceID="urn:atsc:serviceid:ateme_mmt_4" majorChannelNo="10" minorChannelNo="4" serviceCategory="1" shortServiceName="ATEME MMT 4" sltSvcSeqNum="0">
-      <BroadcastSvcSignaling slsProtocol="2" slsDestinationIpAddress="239.255.10.4" slsDestinationUdpPort="51004" slsSourceIpAddress="172.16.200.1" />
-   </Service>
-   <Service serviceId="5009" globalServiceID="urn:atsc:serviceid:esg" serviceCategory="4" shortServiceName="ESG" sltSvcSeqNum="0">
-      <BroadcastSvcSignaling slsProtocol="1" slsDestinationIpAddress="239.255.20.9" slsDestinationUdpPort="52009" slsSourceIpAddress="172.16.200.1" />
-   </Service>
-</SLT>
-
-
- Table 6.4 Code Values for SLT.Service@serviceCategory
-
-
-	serviceCategory 		Meaning
-	---------------			-------------
-	0						ATSC Reserved
-	1						Linear A/V service
-	2						Linear audio only service
-	3						App-based service
-	4						ESG service (program guide)
-	5						EAS service (emergency alert)
-	Other values			ATSC Reserved
-
-  	slsProtocol				Meaning
- 	---------- 				-------------
- 	0 						ATSC Reserved
- 	1						ROUTE
- 	2						MMTP
- 	other values			ATSC Reserved
-
- */
-enum LLS_SERVICE_CATEGORY {
-	SERVICE_CATEGORY_ATSC_RESERVED=0,
-	SERVICE_CATEGORY_LINEAR_AV_SERVICE=1,
-	SERVICE_CATEGORY_LINEAR_AUDIO_ONLY_SERVICE=2,
-	SERVICE_CATEGORY_APP_BASED_SERVICE=3,
-	SERVICE_CATEGORY_ESG_SERVICE=4,
-	SERVICE_CATEGORY_EAS_SERVICE=5,
-	SERVICE_CATEGORY_ATSC_RESERVED_OTHER=-1	};
-
-
-enum LLS_SLS_SERVICE_PROTOCOL {
-	SLS_PROTOCOL_ATSC_RESERVED=0,
-	SLS_PROTOCOL_ROUTE=1,
-	SLS_PROTOCOL_MMTP=2,
-	SLS_PROTOCOL_ATSC_RESERVED_OTHER=-1};
-
-typedef struct broadcast_svc_signaling {
-	int 	sls_protocol;
-	char*	sls_destination_ip_address;
-	char*	sls_destination_udp_port;
-	char*	sls_source_ip_address;
-
-} broadcast_svc_signaling_t;
-/*
- *    <Service serviceId="1001" globalServiceID="urn:atsc:serviceid:ateme_mmt_1" majorChannelNo="10" minorChannelNo="1" serviceCategory="1" shortServiceName="ATEME MMT 1" sltSvcSeqNum="0">
- *
- */
-typedef struct service {
-	uint16_t	service_id;
-	char*		global_service_id;
-	uint		major_channel_no;
-	uint 		minor_channel_no;
-	uint		service_category;
-	char*		short_service_name;
-	uint8_t 	slt_svc_seq_num;  //Version of SLT service info for this service.
-	broadcast_svc_signaling_t broadcast_svc_signaling;
-} lls_service_t;
-
-
-typedef struct slt_table {
-	int*				bsid;			//list
-	int					bsid_n;
-	char*			 	slt_capabilities;
-	int					service_entry_n;
-	lls_service_t**		service_entry; 	//list
-
-} slt_table_t;
-
-typedef struct rrt_table {
-	void* to_implement;
-
-} rrt_table_t;
-
-/** from atsc a/331 section 6.4
- *
-
-6.4 System Time Fragment
-
-System time is delivered in the ATSC PHY layer as a 32-bit count of the number of seconds, a 10-
-bit fraction of a second (in units of milliseconds), and optionally 10-bit microsecond and
-nanosecond components, since January 1, 1970 00:00:00, International Atomic Time (TAI), which
-is the Precision Time Protocol (PTP) epoch as defined in IEEE 1588 [47]. Further time-related
-information is signaled in the XML SystemTime element delivered in LLS.
-
- */
-
-typedef struct system_time_table {
-	int16_t 	current_utc_offset;	//required
-	uint16_t 	ptp_prepend; 		//opt
-	bool		leap59;				//opt
-	bool		leap61;				//opt
-	char*		utc_local_offset;	//required
-	bool		ds_status;			//opt
-	uint8_t		ds_day_of_month;	//opt
-	uint8_t		ds_hour;			//opt
-
-} system_time_table_t;
-
-typedef struct aeat_table {
-	void* to_implement;
-} aeat_table_t;
-typedef struct on_screen_message_notification {
-	void* to_implement;
-} on_screen_message_notification_t;
-typedef struct lls_reserved_table {
-	void* to_implement;
-} lls_reserved_table_t;
-
-typedef enum {
-	SLT = 1,
-	RRT,
-	SystemTime,
-	AEAT,
-	OnscreenMessageNotification,
-	RESERVED
-} lls_table_type_t;
-
-typedef struct lls_table {
-	uint8_t								lls_table_id; //map via lls_table_id_type;
-	uint8_t								lls_group_id;
-	uint8_t 							group_count_minus1;
-	uint8_t								lls_table_version;
-	lls_xml_payload_t					raw_xml;
-
-	union {
-
-		slt_table_t							slt_table;
-		rrt_table_t							rrt_table;
-		system_time_table_t					system_time_table;
-		aeat_table_t						aeat_table;
-		on_screen_message_notification_t	on_screen_message_notification;
-		lls_reserved_table_t				lls_reserved_table;
-	};
-
-} lls_table_t;
 
 
 
@@ -302,14 +42,8 @@ void lls_dump_instance_table(lls_table_t *base_table);
 xml_document_t* xml_payload_document_parse(uint8_t *xml, int xml_size);
 xml_node_t* xml_payload_document_extract_root_node(xml_document_t*);
 
-//etst methods
-char* lls_get_service_category_value(uint service_category);
-char* lls_get_sls_protocol_value(uint protocol);
-
-int build_SLT_table(lls_table_t *lls_table, xml_node_t *xml_root);
 int build_SystemTime_table(lls_table_t* lls_table, xml_node_t* xml_root);
 
-int build_SLT_BROADCAST_SVC_SIGNALING_table(lls_service_t* service_table, xml_node_t *xml_node, kvp_collection_t* kvp_collection);
 
 
 // internal helper methods here
@@ -324,8 +58,7 @@ int __unzip_gzip_payload(uint8_t *input_payload, uint input_payload_size, uint8_
 
 #define _LLS_ERROR(...)   printf("%s:%d:ERROR:%.4f: ",__FILE__,__LINE__, gt());_LLS_PRINTLN(__VA_ARGS__);
 #define _LLS_WARN(...)    printf("%s:%d:WARN:%.4f: ",__FILE__,__LINE__, gt());_LLS_PRINTLN(__VA_ARGS__);
-#define _LLS_INFO(...)
-//printf("%s:%d:INFO:%.4f: ",__FILE__,__LINE__, gt());_LLS_PRINTLN(__VA_ARGS__);
+#define _LLS_INFO(...)    printf("%s:%d:INFO:%.4f: ",__FILE__,__LINE__, gt());_LLS_PRINTLN(__VA_ARGS__);
 
 #define _LLS_DEBUG(...)   if(_LLS_DEBUG_ENABLED) { printf("%s:%d:DEBUG:%.4f: ",__FILE__,__LINE__, gt());_LLS_PRINTLN(__VA_ARGS__); }
 #define _LLS_DEBUGF(...)  if(_LLS_DEBUG_ENABLED) { printf("%s:%d:DEBUG:%.4f: ",__FILE__,__LINE__, gt());_LLS_PRINTF(__VA_ARGS__); }

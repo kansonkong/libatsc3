@@ -231,7 +231,7 @@ void parsrseAndBuildJoinedBoxes(ISOBMFFTrackJoinerFileResouces* isoBMFFTrackJoin
                 trafFirstFile->Detach();
 				moofSecondFile->AddChild(trafFirstFile);
 			}
-            
+
 			trunSecondFile = AP4_DYNAMIC_CAST(AP4_TrunAtom, trafSecondFile->GetChild(AP4_ATOM_TYPE_TRUN));
 		}
 
@@ -239,14 +239,16 @@ void parsrseAndBuildJoinedBoxes(ISOBMFFTrackJoinerFileResouces* isoBMFFTrackJoin
 			mdatSecondFile = (*it);
 		}
 	}
-    
-    AP4_Atom* moofSecondFileAtom = AP4_DYNAMIC_CAST(AP4_Atom, moofSecondFile);
-    trunSecondFile->SetDataOffset((AP4_UI32)moofSecondFileAtom->GetSize()+AP4_ATOM_HEADER_SIZE);
-    
-    //first file is written out last...
-    if(mdatSecondFile) {
-        trunFirstFile->SetDataOffset((AP4_UI32)moofSecondFileAtom->GetSize()+AP4_ATOM_HEADER_SIZE+mdatSecondFile->GetSize());
-    }
+
+	if(moofSecondFile) {
+		AP4_Atom* moofSecondFileAtom = AP4_DYNAMIC_CAST(AP4_Atom, moofSecondFile);
+		trunSecondFile->SetDataOffset((AP4_UI32)moofSecondFileAtom->GetSize()+AP4_ATOM_HEADER_SIZE);
+
+		//first file is written out last...
+		if(mdatSecondFile) {
+			trunFirstFile->SetDataOffset((AP4_UI32)moofSecondFileAtom->GetSize()+AP4_ATOM_HEADER_SIZE+mdatSecondFile->GetSize());
+		}
+	}
     //apend by hand
     if(mdatFirstFile) {
         isoBMFFList2.push_back(mdatFirstFile);
@@ -260,7 +262,7 @@ void parsrseAndBuildJoinedBoxes(ISOBMFFTrackJoinerFileResouces* isoBMFFTrackJoin
     __ISOBMFF_JOINER_INFO("Final output re-muxed MPU:");
     dumpFullMetadata(isoBMFFList2);
 
-    if (output_stream) output_stream->Release();
+//    if (output_stream) output_stream->Release();
 
 }
 

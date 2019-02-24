@@ -15,7 +15,7 @@
 #include <signal.h>
 
 #include "atsc3_lls.h"
-#include "atsc3_lls_slt_utils.h"
+#include "atsc3_lls_slt_parser.h"
 
 #ifndef ATSC3_OUTPUT_STATISTICS_NCURSES_H_
 #define ATSC3_OUTPUT_STATISTICS_NCURSES_H_
