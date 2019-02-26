@@ -1,0 +1,10 @@
+<?xml version="1.0"?>
+<RepairFlow 
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" 
+	xmlns="tag:atsc.org,2016:XMLSchemas/ATSC3/Delivery/S-TSID/1.0/" 
+	xsi:schemaLocation="tag:atsc.org,2016:XMLSchemas/ATSC3/Delivery/S-TSID/1.0/ S-TSID-1.0-20170920.xsd">
+	<FECParameters maximumDelay="5000" overhead="50" minBuffSize="20000000" fecOTI="f0f1f2f3f4f5f6f7f8f9fafb">
+		<ProtectedObject sessionDescription="http://example.com/session7.xml" tsi="7" sourceTOI="20"/>
+		<ProtectedObject sessionDescription="http://example.com/session7.xml" tsi="7" sourceTOI="21"/>
+	</FECParameters>
+</RepairFlow>

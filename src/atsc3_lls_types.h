@@ -345,6 +345,10 @@ typedef struct lls_sls_alc_monitor {
 	lls_sls_alc_session_t* lls_alc_session;
 	uint32_t video_tsi;
 	uint32_t audio_tsi;
+
+	uint32_t last_video_toi;
+	uint32_t last_audio_toi;
+
 	uint32_t video_toi_init;
 	uint32_t audio_toi_init;
 
@@ -354,6 +358,13 @@ typedef struct lls_sls_alc_monitor {
 	uint32_t mpd_tsi;
 	uint32_t held_tsi;
 	uint32_t dwd_tsi;
+	bool has_written_init_box;
+	bool should_flush_output_buffer;
+	uint8_t* audio_output_buffer;
+	uint32_t audio_output_buffer_pos;
+	uint8_t* video_output_buffer;
+	uint32_t video_output_buffer_pos;
+
 
 
 } lls_sls_alc_monitor_t;

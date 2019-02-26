@@ -28,7 +28,16 @@ uint32_t __VIDEO_RECON_FRAGMENT_SIZE = 0;
 uint8_t* __AUDIO_RECON_FRAGMENT = NULL;
 uint32_t __AUDIO_RECON_FRAGMENT_SIZE = 0;
 
+
+void resetBufferPos() {
+	__VIDEO_RECON_FRAGMENT_SIZE = 0;
+	__AUDIO_RECON_FRAGMENT_SIZE = 0;
+}
 void __copy_video_block_t(block_t* video_isobmff_header) {
+
+	if(!__VIDEO_RECON_FRAGMENT) {
+		__VIDEO_RECON_FRAGMENT = (uint8_t*) calloc(__MAX_RECON_BUFFER, sizeof(uint8_t*));
+	}
 
     memcpy(&__VIDEO_RECON_FRAGMENT[__VIDEO_RECON_FRAGMENT_SIZE], video_isobmff_header->p_buffer, video_isobmff_header->i_buffer);
     __VIDEO_RECON_FRAGMENT_SIZE += video_isobmff_header->i_buffer;
@@ -37,12 +46,15 @@ void __copy_video_block_t(block_t* video_isobmff_header) {
 
 void __copy_audio_block_t(block_t* audio_isobmff_header) {
 
+	if(!__AUDIO_RECON_FRAGMENT) {
+		__AUDIO_RECON_FRAGMENT = (uint8_t*)calloc(__MAX_RECON_BUFFER, sizeof(uint8_t*));
+	}
     memcpy(&__AUDIO_RECON_FRAGMENT[__AUDIO_RECON_FRAGMENT_SIZE], audio_isobmff_header->p_buffer, audio_isobmff_header->i_buffer);
     __AUDIO_RECON_FRAGMENT_SIZE += audio_isobmff_header->i_buffer;
 }
 
 
-ISOBMFFTrackJoinerFileResouces_t* loadFileResources() {
+ISOBMFFTrackJoinerFileResouces_t* _l_loadFileResources() {
 
 	ISOBMFFTrackJoinerFileResouces_t* isoBMFFTrackJoinerResources = (ISOBMFFTrackJoinerFileResouces_t*)calloc(1, sizeof(ISOBMFFTrackJoinerFileResouces_t));
 
@@ -233,7 +245,8 @@ block_t* atsc3_isobmff_build_mpu_metadata_ftyp_moof_mdat_box(udp_flow_t* udp_flo
 	AP4_DataBuffer* dataBuffer = new AP4_DataBuffer(1024000);
 	AP4_MemoryByteStream* memoryOutputByteStream = new AP4_MemoryByteStream(dataBuffer);
 
-	ISOBMFFTrackJoinerFileResouces_t* fileResources = loadFileResources();
+	ISOBMFFTrackJoinerFileResouces_t* fileResources = _l_loadFileResources();
+
 
 	parsrseAndBuildJoinedBoxes(fileResources, memoryOutputByteStream);
 

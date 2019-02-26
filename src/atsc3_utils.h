@@ -37,6 +37,10 @@
 #define UDP_FILTER_MDNS_IP_ADDRESS 3758096635
 #define UDP_FILTER_MDNS_PORT 5353
 
+#if defined (__cplusplus)
+extern "C" {
+#endif
+
 
 int is_big_endian(void);
 
@@ -89,6 +93,12 @@ void freeclean(void** tofree);
 uint32_t parseIpAddressIntoIntval(char* dst_ip);
 
 uint16_t parsePortIntoIntval(char* dst_port);
+
+
+
+#if defined (__cplusplus)
+}
+#endif
 
 
 

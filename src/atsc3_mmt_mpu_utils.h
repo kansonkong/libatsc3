@@ -40,6 +40,12 @@ extern int _MMT_MPU_DEBUG_ENABLED;
 #define __MPU_FLOW_NEGATIVE_DISCONTINUITY_SEQUENCE_GAP_THRESHOLD 2
 #define __MPU_FLOW_NEGATIVE_DISCONTINUITY_SEQUENCE_GAP_FRAGMENT_RECV_THRESHOLD 50
 
+
+#if defined (__cplusplus)
+extern "C" {
+#endif
+
+
 typedef struct udp_flow_packet_id_mpu_sequence_tuple {
 	udp_flow_t 	udp_flow;
 	uint16_t	packet_id;
@@ -94,6 +100,13 @@ void mpu_push_to_output_buffer(pipe_ffplay_buffer_t* ffplay_buffer, mmtp_payload
 void mpu_push_to_output_buffer_no_locking(pipe_ffplay_buffer_t* ffplay_buffer, mmtp_payload_fragments_union_t* mmtp_payload);
 
 void mpu_fragments_vector_shrink_to_fit(mpu_fragments_t* mpu_fragments);
+
+
+
+#if defined (__cplusplus)
+}
+#endif
+
 
 #define __MMT_MPU_ERROR(...)   printf("%s:%d:ERROR :",__FILE__,__LINE__);printf(__VA_ARGS__);printf("\n");
 #define __MMT_MPU_WARN(...)    printf("%s:%d:WARN: ",__FILE__,__LINE__);printf(__VA_ARGS__);printf("\n");

@@ -214,7 +214,12 @@ typedef struct global_atsc3_stats {
 	struct timeval program_timeval_start;
 } global_atsc3_stats_t;
 
-global_atsc3_stats_t* global_stats;
+extern global_atsc3_stats_t* global_stats;
+
+
+#if defined (__cplusplus)
+extern "C" {
+#endif
 
 packet_id_mmt_stats_t* find_packet_id(uint32_t ip, uint16_t port, uint32_t packet_id);
 packet_id_mmt_stats_t* find_or_create_packet_id(uint32_t ip, uint16_t port, uint32_t packet_id);
@@ -222,5 +227,11 @@ packet_id_mmt_stats_t* find_or_create_packet_id(uint32_t ip, uint16_t port, uint
 void atsc3_packet_statistics_dump_global_stats();
 void atsc3_packet_statistics_mmt_stats_populate(udp_packet_t* udp_packet, mmtp_payload_fragments_union_t* mmtp_payload);
 void *print_global_statistics_thread(void *vargp);
+
+
+#if defined (__cplusplus)
+}
+#endif
+
 
 #endif /* ATSC3_MMT_PACKET_STATISTICS_H_ */

@@ -1,0 +1,14 @@
+<AEAT xmlns="tag:atsc.org,2016:XMLSchemas/ATSC3/Delivery/AEAT/1.0/" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="tag:atsc.org,2016:XMLSchemas/ATSC3/Delivery/AEAT/1.0/ AEAT-1.0-20170920.xsd">
+	<AEA aeaId="AEA-2017020314005003" issuer="KUSR-TV" audience="public" aeaType="update" refAEAId="AEA-2017020313452000" priority="3" wakeup="false">
+		<Header effective="2017-02-28T14:00:00.000-07:00" expires="2016-09-11T21:00:00.000-07:00">
+			<EventDesc xml:lang="en">School Lockdown</EventDesc>
+			<Location type="FIPS">22012</Location>
+			<Location type="polygon">51.625,-76.0003 50.5157,-75.9998 51.6578,-79.1401 51.6129,-78.921 51.625,-76.0003</Location>
+		</Header>
+		<AEAText xml:lang="en">Update: Authorities have confirmed a shooting incident occurred [approximate time] at [building/location]. Police are on the scene and investigating. A suspect is NOT in custody. If you are campus on follow lockdown procedures, go into the nearest room and lock doors.  Persons not on campus are advised to stay away. Contact Campus Public Safety (Public Safety Campus phone number) if you see anything suspicious or have information. Wait for the all clear from officials or local authorities. For additional information and updates go to (Emergency Website) or stay tuned to (channel) </AEAText>
+		<LiveMedia bsid="47 23" serviceId="3">
+			<ServiceName xml:lang="en">KUSR</ServiceName>
+		</LiveMedia>
+		<Media xml:lang="en" mediaDesc="Message Audio English" mediaType="AEAtextAudio" url="AEAtextAudio/AEAtextAudio-en.mp3" contentType="audio/mp3" contentLength="301024" mediaAssoc="http://www.collegecampus.com/lockdowninstructions.png"/>
+	</AEA>
+</AEAT>

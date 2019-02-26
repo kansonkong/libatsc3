@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<OnScreenMessageNotification
+xmlns="tag:atsc.org,2016:XMLSchemas/ATSC3/Delivery/OSMN/1.0/"
+xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+xsi:schemaLocation= "tag:atsc.org,2016:XMLSchemas/ATSC3/Delivery/OSMN/1.0/ ONSCREEN-1.0-20170920.xsd">
+
+	<KeepScreenClear bsid="3" serviceId="5" serviceIdRange="4" notificationDuration="PT1M" kscFlag="false" version="0"/>
+	
+</OnScreenMessageNotification>
