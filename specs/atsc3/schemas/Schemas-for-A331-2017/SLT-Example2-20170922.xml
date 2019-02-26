@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<slt:SLT bsid="65535" xsi:schemaLocation="tag:atsc.org,2016:XMLSchemas/ATSC3/Delivery/SLT/1.0/ SLT-1.0-20170922.xsd" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:slt="tag:atsc.org,2016:XMLSchemas/ATSC3/Delivery/SLT/1.0/">
+	<slt:SLTCapabilities>String</slt:SLTCapabilities>
+	<slt:SLTInetUrl urlType="255">http://www.wxyz.com</slt:SLTInetUrl>
+	<slt:Service protected="false" majorChannelNo="7" serviceId="23423" globalServiceID="wxyz.com/7.1" minorChannelNo="1" sltSvcSeqNum="1" serviceCategory="255" shortServiceName="WXYZ-7.1">
+		<slt:SimulcastTSID simulcastMinorChannelNo="1" simulcastMajorChannelNo="7">65535</slt:SimulcastTSID>
+		<slt:BroadcastSvcSignaling slsSourceIpAddress="239.255.7.1" slsDestinationUdpPort="1" slsProtocol="1" slsDestinationIpAddress="239.255.7.1"/>
+		<slt:SvcInetUrl urlType="255">http://www.wxyz.com</slt:SvcInetUrl>
+	</slt:Service>
+	<slt:Service protected="false" majorChannelNo="7" serviceId="23424" globalServiceID="wxyz.com/7.2" minorChannelNo="2" essential="true" sltSvcSeqNum="255" serviceCategory="255" shortServiceName="WXYZ-7.2">
+		<slt:SimulcastTSID simulcastMinorChannelNo="2" simulcastMajorChannelNo="7">65535</slt:SimulcastTSID>
+		<slt:BroadcastSvcSignaling slsSourceIpAddress="239.255.7.2" slsDestinationUdpPort="1" slsProtocol="1" slsDestinationIpAddress="239.255.7.2"/>
+		<slt:SvcInetUrl urlType="255">http://www.wxyz.com</slt:SvcInetUrl>
+	</slt:Service>
+	<slt:Service protected="false" majorChannelNo="7" serviceId="23425" globalServiceID="wxyz.com/7.3" minorChannelNo="3" sltSvcSeqNum="6" serviceCategory="255" shortServiceName="WXYZ-7.3">
+		<slt:SimulcastTSID simulcastMinorChannelNo="3" simulcastMajorChannelNo="7">65535</slt:SimulcastTSID>
+		<slt:BroadcastSvcSignaling slsSourceIpAddress="239.255.7.3" slsDestinationUdpPort="1" slsProtocol="1" slsDestinationIpAddress="239.255.7.3"/>
+		<slt:SvcInetUrl urlType="255">http://www.wxyz.com</slt:SvcInetUrl>
+		<slt:OtherBsid type="255">65535</slt:OtherBsid>
+	</slt:Service>
+	<slt:Service protected="false" majorChannelNo="7" serviceId="23426" globalServiceID="wxyz.com/7.4" minorChannelNo="4" sltSvcSeqNum="66" serviceCategory="255" shortServiceName="WXYZ-7.4">
+		<slt:SimulcastTSID simulcastMinorChannelNo="4" simulcastMajorChannelNo="7">65535</slt:SimulcastTSID>
+		<slt:SvcCapabilities>0700</slt:SvcCapabilities>
+		<slt:BroadcastSvcSignaling slsSourceIpAddress="239.255.7.4" slsDestinationUdpPort="1" slsProtocol="1" slsDestinationIpAddress="239.255.7.4"/>
+		<slt:SvcInetUrl urlType="255">http://www.wxyz.com</slt:SvcInetUrl>
+		<slt:OtherBsid type="255">65535</slt:OtherBsid>
+	</slt:Service>
+	<slt:Service protected="false" majorChannelNo="7" serviceId="23427" globalServiceID="wxyz.com/7.5" broadbandAccessRequired="true" minorChannelNo="5" sltSvcSeqNum="14" serviceCategory="255" shortServiceName="WXYZ-7.5">
+		<slt:SimulcastTSID simulcastMinorChannelNo="5" simulcastMajorChannelNo="7">65535</slt:SimulcastTSID>
+		<slt:SvcCapabilities>0700</slt:SvcCapabilities>
+		<slt:BroadcastSvcSignaling slsSourceIpAddress="239.255.7.5" slsDestinationUdpPort="1" slsProtocol="1" slsDestinationIpAddress="239.255.7.5"/>
+		<slt:SvcInetUrl urlType="255">http://www.wxyz.com</slt:SvcInetUrl>
+		<slt:OtherBsid type="255">65535</slt:OtherBsid>
+	</slt:Service>
+</slt:SLT>

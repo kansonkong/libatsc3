@@ -34,6 +34,11 @@ address and destination port of the MMTP session carrying the MMTP- specific SLS
 extern int _LLS_SLT_PARSER_DEBUG_ENABLED;
 extern int _LLS_SLT_PARSER_TRACE_ENABLED;
 
+#if defined (__cplusplus)
+extern "C" {
+#endif
+
+
 lls_slt_monitor_t* lls_slt_monitor_create();
 
 int lls_slt_table_check_process_update(lls_table_t* lls_table, lls_slt_monitor_t* lls_slt_monitor);
@@ -48,6 +53,11 @@ char* lls_get_sls_protocol_value(uint protocol);
 int lls_slt_table_build(lls_table_t* lls_table, xml_node_t *xml_root);
 
 int SLT_BROADCAST_SVC_SIGNALING_build_table(lls_service_t* service_table, xml_node_t *service_row_node, kvp_collection_t* kvp_collection);
+
+
+#if defined (__cplusplus)
+}
+#endif
 
 #define __LLS_SLT_PARSER_PRINTLN(...) printf(__VA_ARGS__);printf("\n")
 #define __LLS_SLT_PARSER_ERROR(...)   printf("%s:%d:ERROR:",__FILE__,__LINE__);__LLS_SLT_PARSER_PRINTLN(__VA_ARGS__);

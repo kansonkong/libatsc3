@@ -44,6 +44,12 @@ extern int _ALC_UTILS_TRACE_ENABLED;
  * deubg toi dump methods
  */
 
+
+#if defined (__cplusplus)
+extern "C" {
+#endif
+
+void resetBufferPosFromMonitor(lls_sls_alc_monitor_t* lls_sls_alc_monitor);
 //this must be set to 1 for dumps to be written to disk
 extern int _ALC_PACKET_DUMP_TO_OBJECT_ENABLED;
 
@@ -65,6 +71,10 @@ void alc_recon_file_buffer_struct_monitor_fragment_with_init_box(pipe_ffplay_buf
 void __alc_prepend_fragment_with_init_box(char* file_name, alc_packet_t* alc_packet);
 void __alc_recon_fragment_with_init_box(char* file_name, alc_packet_t* alc_packet);
 
+
+#if defined (__cplusplus)
+}
+#endif
 
 #define __ALC_UTILS_ERROR(...)   printf("%s:%d:ERROR:%.4f: ",__FILE__,__LINE__, gt()); printf(__VA_ARGS__); printf("\n");
 #define __ALC_UTILS_WARN(...)    printf("%s:%d:WARN:%.4f: ",__FILE__,__LINE__, gt()); printf(__VA_ARGS__); printf("\n");

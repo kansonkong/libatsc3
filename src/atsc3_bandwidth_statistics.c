@@ -8,6 +8,8 @@
 #include "atsc3_output_statistics_ncurses.h"
 #include "atsc3_bandwidth_statistics.h"
 
+bandwidth_statistics_t *global_bandwidth_statistics;
+
 void doBandwidthStatusUpdate();
 
 void *print_bandwidth_statistics_thread(void *vargp)

@@ -83,6 +83,11 @@ int PACKET_COUNTER=0;
 #include <ncurses.h>
 #include <limits.h>
 
+
+#include "atsc3_isobmff_tools.h"
+#include "bento4/ISOBMFFTrackJoiner.h"
+
+
 extern "C" {
 
 
@@ -258,9 +263,49 @@ lls_slt_monitor_t* lls_slt_monitor;
 
 //make sure to invoke     mmtp_sub_flow_vector_init(&p_sys->mmtp_sub_flow_vector);
 mmtp_sub_flow_vector_t* mmtp_sub_flow_vector;
+extern pipe_ffplay_buffer_t* pipe_ffplay_buffer;
+
+//messy
+extern uint8_t* __VIDEO_RECON_FRAGMENT;
+extern uint32_t __VIDEO_RECON_FRAGMENT_SIZE;
+
+extern uint8_t* __AUDIO_RECON_FRAGMENT;
+extern uint32_t __AUDIO_RECON_FRAGMENT_SIZE;
 
 
+ISOBMFFTrackJoinerFileResouces_t* loadFileResources(lls_sls_alc_monitor_t* lls_sls_alc_monitor) {
 
+	ISOBMFFTrackJoinerFileResouces_t* isoBMFFTrackJoinerResources = (ISOBMFFTrackJoinerFileResouces_t*)calloc(1, sizeof(ISOBMFFTrackJoinerFileResouces_t));
+
+	const char* file1 = "35";
+
+	isoBMFFTrackJoinerResources->file1_name = (char*)calloc(strlen(file1)+1, sizeof(char));
+	strncpy(isoBMFFTrackJoinerResources->file1_name, file1, strlen(file1));
+//	printf("**** first 8 bytes are %x %x %x %x %x %x %x %x",
+//			__VIDEO_RECON_FRAGMENT[0],
+//			__VIDEO_RECON_FRAGMENT[1],
+//			__VIDEO_RECON_FRAGMENT[2],
+//			__VIDEO_RECON_FRAGMENT[3],
+//			__VIDEO_RECON_FRAGMENT[4],
+//			__VIDEO_RECON_FRAGMENT[5],
+//			__VIDEO_RECON_FRAGMENT[6],
+//			__VIDEO_RECON_FRAGMENT[7]);
+
+	isoBMFFTrackJoinerResources->file1_payload = lls_sls_alc_monitor->video_output_buffer;
+	isoBMFFTrackJoinerResources->file1_size = lls_sls_alc_monitor->video_output_buffer_pos;
+
+
+	const char* file2 = "36";
+	isoBMFFTrackJoinerResources->file2_name = (char*)calloc(strlen(file2)+1, sizeof(char));
+	strncpy(isoBMFFTrackJoinerResources->file2_name, file2, strlen(file2));
+
+	isoBMFFTrackJoinerResources->file2_payload = lls_sls_alc_monitor->audio_output_buffer;
+	isoBMFFTrackJoinerResources->file2_size = lls_sls_alc_monitor->audio_output_buffer_pos;
+
+	return isoBMFFTrackJoinerResources;
+}
+
+global_atsc3_stats_t* global_stats;
 void count_packet_as_filtered(udp_packet_t* udp_packet) {
 	global_stats->packet_counter_filtered_ipv4++;
 	global_bandwidth_statistics->interval_filtered_current_bytes_rx += udp_packet->data_length;
@@ -433,10 +478,44 @@ void process_packet(u_char *user, const struct pcap_pkthdr *pkthdr, const u_char
 				global_stats->packet_counter_alc_packets_parsed++;
 
 				//don't dump unless this is pointing to our monitor session
-				if(lls_slt_monitor->lls_sls_alc_monitor && lls_slt_monitor->lls_sls_alc_monitor->lls_alc_session->service_id == matching_lls_slt_alc_session->service_id) {
+				//lls_slt_monitor->lls_service &&
+				if(lls_slt_monitor->lls_sls_alc_monitor &&  lls_slt_monitor->lls_sls_alc_monitor->lls_alc_session && lls_slt_monitor->lls_sls_alc_monitor->lls_alc_session->service_id == matching_lls_slt_alc_session->service_id) {
 					alc_packet_dump_to_object(&alc_packet);
+
+					if(lls_slt_monitor->lls_sls_alc_monitor->has_written_init_box && lls_slt_monitor->lls_sls_alc_monitor->should_flush_output_buffer) {
+						AP4_DataBuffer* dataBuffer = new AP4_DataBuffer(4096000);
+						AP4_MemoryByteStream* memoryOutputByteStream = new AP4_MemoryByteStream(dataBuffer);
+
+						ISOBMFFTrackJoinerFileResouces_t* fileResources = loadFileResources(lls_slt_monitor->lls_sls_alc_monitor);
+						__DEBUG("loadFileResources, file1_size: %llu, file2_size: %llu", fileResources->file1_size, fileResources->file2_size);
+
+						parsrseAndBuildJoinedBoxes(fileResources, memoryOutputByteStream);
+						block_t* mpu_metadata_output_block_t = NULL;
+
+
+						__DEBUG("building reutrn alloc of %u", dataBuffer->GetDataSize());
+						mpu_metadata_output_block_t = block_Alloc(dataBuffer->GetDataSize());
+						memcpy(mpu_metadata_output_block_t->p_buffer, dataBuffer->GetData(), dataBuffer->GetDataSize());
+
+						//trying to free this causes segfaults 100% of the time
+
+						free (dataBuffer);
+						pipe_buffer_reader_mutex_lock(pipe_ffplay_buffer);
+
+						pipe_buffer_unsafe_push_block(pipe_ffplay_buffer, mpu_metadata_output_block_t->p_buffer, mpu_metadata_output_block_t->i_buffer);
+
+						pipe_buffer_notify_semaphore_post(pipe_ffplay_buffer);
+
+						//check to see if we have shutdown
+						pipe_buffer_reader_check_if_shutdown(&pipe_ffplay_buffer);
+
+						pipe_buffer_reader_mutex_unlock(pipe_ffplay_buffer);
+						//reset our buffer pos
+						resetBufferPosFromMonitor(lls_slt_monitor->lls_sls_alc_monitor);
+					}
+
 				} else {
-					__LOG_DEBUG("ignoring service_id: %u", matching_lls_slt_alc_session->service_id);
+					__LOG_TRACE("ignoring service_id: %u", matching_lls_slt_alc_session->service_id);
 				}
 				goto cleanup;
 			} else {
@@ -523,7 +602,7 @@ void process_packet(u_char *user, const struct pcap_pkthdr *pkthdr, const u_char
 
 		} else if(mmtp_payload->mmtp_packet_header.mmtp_payload_type == 0x2) {
 
-			signaling_message_dump(mmtp_payload);
+			//signaling_message_dump(mmtp_payload);
 			global_stats->packet_counter_mmt_signaling++;
 
 		} else {

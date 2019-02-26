@@ -69,6 +69,7 @@ RFC 5775               ALC Protocol Instantiation             April 2010
 //shortcut hack
 #include "atsc3_isobmff_tools.h"
 
+
 int _ALC_PACKET_DUMP_TO_OBJECT_ENABLED = 0;
 
 int _ALC_UTILS_DEBUG_ENABLED=0;
@@ -83,6 +84,39 @@ uint32_t* __ALC_RECON_FILE_PTR_TOI_INIT = NULL;
 
 FILE* __ALC_RECON_FILE_PTR = NULL; //deprecated
 lls_sls_alc_monitor_t* __ALC_RECON_MONITOR;
+
+#define __MAX_RECON_BUFFER 4096000
+
+
+void resetBufferPosFromMonitor(lls_sls_alc_monitor_t* lls_sls_alc_monitor) {
+	lls_sls_alc_monitor->video_output_buffer_pos = 0;
+	lls_sls_alc_monitor->audio_output_buffer_pos = 0;
+	lls_sls_alc_monitor->should_flush_output_buffer = false;
+}
+
+
+void __copy_video_block_to_monitor(lls_sls_alc_monitor_t* lls_sls_alc_monitor, block_t* video_isobmff_header) {
+
+	if(!lls_sls_alc_monitor->video_output_buffer) {
+		lls_sls_alc_monitor->video_output_buffer = (uint8_t*) calloc(__MAX_RECON_BUFFER, sizeof(uint8_t*));
+	}
+
+    memcpy(&lls_sls_alc_monitor->video_output_buffer[lls_sls_alc_monitor->video_output_buffer_pos], video_isobmff_header->p_buffer, video_isobmff_header->i_buffer);
+    lls_sls_alc_monitor->video_output_buffer_pos += video_isobmff_header->i_buffer;
+}
+
+
+void __copy_audio_block_to_monitor(lls_sls_alc_monitor_t* lls_sls_alc_monitor, block_t* audio_isobmff_header) {
+
+	if(!lls_sls_alc_monitor->audio_output_buffer) {
+		lls_sls_alc_monitor->audio_output_buffer = (uint8_t*)calloc(__MAX_RECON_BUFFER, sizeof(uint8_t*));
+	}
+    memcpy(&lls_sls_alc_monitor->audio_output_buffer[lls_sls_alc_monitor->audio_output_buffer_pos], audio_isobmff_header->p_buffer, audio_isobmff_header->i_buffer);
+    lls_sls_alc_monitor->audio_output_buffer_pos += audio_isobmff_header->i_buffer;
+}
+
+
+
 
 block_t* get_payload(char* file_name) {
 	if( access(file_name, F_OK ) == -1 ) {
@@ -238,8 +272,8 @@ int alc_packet_dump_to_object(alc_packet_t** alc_packet_ptr) {
 		if(__ALC_RECON_FILE_BUFFER_STRUCT && __ALC_RECON_MONITOR) {
 			__ALC_UTILS_TRACE("checking tsi: %u, toi: %u,  %d", alc_packet->def_lct_hdr->tsi, alc_packet->def_lct_hdr->toi, alc_packet->close_object_flag);
 
-			if((alc_packet->def_lct_hdr->tsi == __ALC_RECON_MONITOR->video_tsi && alc_packet->def_lct_hdr->toi != __ALC_RECON_MONITOR->video_toi_init) ||
-					(alc_packet->def_lct_hdr->tsi == __ALC_RECON_MONITOR->audio_tsi && alc_packet->def_lct_hdr->toi != __ALC_RECON_MONITOR->audio_toi_init)) {
+			if(alc_packet->close_object_flag && ((alc_packet->def_lct_hdr->tsi == __ALC_RECON_MONITOR->video_tsi && alc_packet->def_lct_hdr->toi != __ALC_RECON_MONITOR->video_toi_init) ||
+					(alc_packet->def_lct_hdr->tsi == __ALC_RECON_MONITOR->audio_tsi && alc_packet->def_lct_hdr->toi != __ALC_RECON_MONITOR->audio_toi_init))) {
 
 					alc_recon_file_buffer_struct_monitor_fragment_with_init_box(__ALC_RECON_FILE_BUFFER_STRUCT, __ALC_RECON_MONITOR, alc_packet);
 			}
@@ -679,97 +713,69 @@ cleanup:
 }
 
 
-void alc_recon_file_buffer_struct_monitor_fragment_with_init_box(pipe_ffplay_buffer_t* pipe_ffplay_buffer, lls_sls_alc_monitor_t* lls_slt_monitor, alc_packet_t* alc_packet) {
+void alc_recon_file_buffer_struct_monitor_fragment_with_init_box(pipe_ffplay_buffer_t* pipe_ffplay_buffer, lls_sls_alc_monitor_t* lls_sls_alc_monitor, alc_packet_t* alc_packet) {
 	int flush_ret = 0;
-	if(!__ALC_RECON_FILE_PTR_TSI || !__ALC_RECON_FILE_PTR_TOI_INIT) {
-		__ALC_UTILS_WARN("alc_recon_file_ptr_fragment_with_init_box - NULL: tsi: %p, toi: %p", __ALC_RECON_FILE_PTR_TSI, __ALC_RECON_FILE_PTR_TOI_INIT);
-		return;
-	}
+
 	//do this for both video_tsi and audio tsi based upon the current toi...?
 	//todo fix me for different toi numbers
 
-
-	char* audio_init_file_name = alc_packet_dump_to_object_get_filename_tsi_toi(lls_slt_monitor->audio_tsi, lls_slt_monitor->audio_toi_init);
-	char* video_init_file_name = alc_packet_dump_to_object_get_filename_tsi_toi(lls_slt_monitor->video_tsi, lls_slt_monitor->video_toi_init);
-
-
-	__ALC_UTILS_DEBUG("alc_recon_file_buffer_struct_monitor_fragment_with_init_box - audio: %s, video: %s", audio_init_file_name, video_init_file_name);
-
-
-	pipe_buffer_reader_mutex_lock(pipe_ffplay_buffer);
-
-	if(!pipe_ffplay_buffer->has_written_init_box) {
-		block_t* audio_init_payload = get_payload(audio_init_file_name);
-		block_t* video_init_payload = get_payload(video_init_file_name);
-
-		if(audio_init_payload && video_init_payload) {
-			__copy_video_block_t(audio_init_payload);
-			__copy_video_block_t(video_init_payload);
-
-			pipe_ffplay_buffer->has_written_init_box = true;
-		} else {
-			__ALC_UTILS_ERROR("missing init payloads, audio: %p, video: %p", audio_init_payload, video_init_payload);
-		}
-
-	} else {
-		//noop here
+	//alc_packet->def_lct_hdr->toi hack
+	if(alc_packet->def_lct_hdr->tsi == lls_sls_alc_monitor->video_tsi) {
+		lls_sls_alc_monitor->last_video_toi = alc_packet->def_lct_hdr->toi;
+	}
+	if(alc_packet->def_lct_hdr->tsi == lls_sls_alc_monitor->audio_tsi) {
+		lls_sls_alc_monitor->last_audio_toi = alc_packet->def_lct_hdr->toi;
 	}
 
-	char* audio_fragment_file_name = alc_packet_dump_to_object_get_filename_tsi_toi(lls_slt_monitor->audio_tsi, alc_packet->def_lct_hdr->toi);
-	char* video_fragment_file_name = alc_packet_dump_to_object_get_filename_tsi_toi(lls_slt_monitor->video_tsi, alc_packet->def_lct_hdr->toi);
+	if(lls_sls_alc_monitor->last_video_toi != lls_sls_alc_monitor->last_audio_toi) {
+		__ALC_UTILS_DEBUG("video toi: %u, audio toi: %u", lls_sls_alc_monitor->last_video_toi, lls_sls_alc_monitor->last_audio_toi);
+		goto cleanup;
+	}
+
+	uint32_t audio_toi = lls_sls_alc_monitor->last_audio_toi;
+	uint32_t video_toi = lls_sls_alc_monitor->last_video_toi;
+
+	char* audio_init_file_name = alc_packet_dump_to_object_get_filename_tsi_toi(lls_sls_alc_monitor->audio_tsi, lls_sls_alc_monitor->audio_toi_init);
+	char* video_init_file_name = alc_packet_dump_to_object_get_filename_tsi_toi(lls_sls_alc_monitor->video_tsi, lls_sls_alc_monitor->video_toi_init);
+
+	char* audio_fragment_file_name = alc_packet_dump_to_object_get_filename_tsi_toi(lls_sls_alc_monitor->audio_tsi, audio_toi);
+	char* video_fragment_file_name = alc_packet_dump_to_object_get_filename_tsi_toi(lls_sls_alc_monitor->video_tsi, video_toi);
 
 	block_t* audio_fragment_payload = get_payload(audio_fragment_file_name);
 	block_t* video_fragment_payload = get_payload(video_fragment_file_name);
 
+	if(audio_fragment_payload && video_fragment_payload) {
 
-	__copy_audio_block_t(audio_fragment_payload);
-	__copy_video_block_t(video_fragment_payload);
+		__ALC_UTILS_DEBUG("alc_recon_file_buffer_struct_monitor_fragment_with_init_box - audio: %s, video: %s", audio_init_file_name, video_init_file_name);
+
+		if(!pipe_ffplay_buffer->has_written_init_box) {
+			block_t* audio_init_payload = get_payload(audio_init_file_name);
+			block_t* video_init_payload = get_payload(video_init_file_name);
+
+			if(audio_init_payload && video_init_payload) {
+				__copy_audio_block_to_monitor(lls_sls_alc_monitor, audio_init_payload);
+				__copy_video_block_to_monitor(lls_sls_alc_monitor, video_init_payload);
+
+			} else {
+				__ALC_UTILS_ERROR("missing init payloads, audio: %p, video: %p", audio_init_payload, video_init_payload);
+				goto cleanup;
+			}
+
+		} else {
+			//noop here
+		}
 
 
-//
-//	uint64_t block_size = __PLAYER_FFPLAY_PIPE_WRITER_BLOCKSIZE;
-//
-//	FILE* m4v_fragment_input_file = fopen(file_name, "r");
-//	uint8_t* m4v_payload = calloc(block_size, sizeof(uint8_t));
-//	if(!m4v_fragment_input_file) {
-//		__ALC_UTILS_ERROR("unable to open m4v fragment input: %s", file_name);
-//		goto cleanup;
-//	}
-//	struct stat fragment_input_stat;
-//	stat(file_name, &fragment_input_stat);
-//	uint64_t write_count = 0;
-//	uint64_t total_bytes_written = 0;
-//	bool has_eof = false;
-//
-//	while(!has_eof) {
-//		int read_size = fread(m4v_payload, block_size, 1, m4v_fragment_input_file);
-//		uint64_t read_bytes = read_size * block_size;
-//		if(!read_bytes && feof(m4v_fragment_input_file)) {
-//			read_bytes = fragment_input_stat.st_size - (block_size * write_count);
-//			has_eof = true;
-//		}
-//		total_bytes_written += read_bytes;
-//		__ALC_UTILS_TRACE("read bytes: %llu, bytes written: %llu, total filesize: %llu, has eof input: %d", read_bytes, total_bytes_written, fragment_input_stat.st_size, has_eof);
-//
-//		pipe_buffer_unsafe_push_block(pipe_ffplay_buffer, m4v_payload, read_bytes);
-//
-//		if(has_eof) {
-//			fclose(m4v_fragment_input_file);
-//			break;
-//		}
-//		write_count++;
-//
-//	}
-//
-//	//signal and then unlock, docs indicate the only way to ensure a signal is not lost is to send it while holding the lock
-//	__ALC_UTILS_DEBUG("alc_recon_file_buffer_struct_fragment_with_init_box - SIGNALING - %u, %u,  %d", alc_packet->def_lct_hdr->tsi, alc_packet->def_lct_hdr->toi, alc_packet->close_object_flag);
+		__copy_audio_block_to_monitor(lls_sls_alc_monitor, audio_fragment_payload);
+		__copy_video_block_to_monitor(lls_sls_alc_monitor, video_fragment_payload);
+		pipe_ffplay_buffer->has_written_init_box = true;
+		lls_sls_alc_monitor->has_written_init_box = true;
+		lls_sls_alc_monitor->should_flush_output_buffer = true;
+	}
 
-	pipe_buffer_notify_semaphore_post(pipe_ffplay_buffer);
 
-	//check to see if we have shutdown
-	pipe_buffer_reader_check_if_shutdown(&pipe_ffplay_buffer);
+	//block_t* final_muxed_payload = atsc3_isobmff_build_mpu_metadata_ftyp_moof_mdat_box(&udp_packet->udp_flow, udp_flow_latest_mpu_sequence_number_container, mmtp_sub_flow_vector);
 
-	pipe_buffer_reader_mutex_unlock(pipe_ffplay_buffer);
 	__ALC_UTILS_DEBUG("alc_recon_file_buffer_struct_fragment_with_init_box - RETURN - %u, %u,  %d", alc_packet->def_lct_hdr->tsi, alc_packet->def_lct_hdr->toi, alc_packet->close_object_flag);
 
 	goto cleanup;

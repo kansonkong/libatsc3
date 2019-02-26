@@ -23,6 +23,12 @@
 #ifndef ATSC3_PLAYER_FFPLAY_H_
 #define ATSC3_PLAYER_FFPLAY_H_
 
+
+#if defined (__cplusplus)
+extern "C" {
+#endif
+
+
 extern int _PLAYER_FFPLAY_DEBUG_ENABLED;
 extern int _PLAYER_FFPLAY_TRACE_ENABLED;
 
@@ -94,4 +100,12 @@ int pipe_buffer_unsafe_push_block(	pipe_ffplay_buffer_t* pipe_ffplay_buffer, uin
 
 #define __PLAYER_FFPLAY_TRACE(...)   if(_PLAYER_FFPLAY_TRACE_ENABLED) { printf("%s:%d:TRACE:%.4f: ",__FILE__,__LINE__, gt()); printf(__VA_ARGS__); printf("\n"); }
 #define __PLAYER_FFPLAY_TRACE_WRITER(...)  if(_PLAYER_FFPLAY_TRACE_ENABLED) { printf("%s:%d:TRACE_WRITER:%.4f: ",__FILE__,__LINE__, gt()); printf(__VA_ARGS__); printf("\n"); }
+
+
+
+#if defined (__cplusplus)
+}
+#endif
+
+
 #endif /* ATSC3_PLAYER_FFPLAY_H_ */

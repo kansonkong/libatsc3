@@ -275,9 +275,8 @@ static inline void *vlc_reallocarray(void *ptr, size_t count, size_t size)
  *
  * remove restrict keyword for c++ cross compile restrict
  */
-
-static inline mpu_data_unit_payload_fragments_timed_vector_t*
-atsc3_vector_reallocdata_( mpu_data_unit_payload_fragments_timed_vector_t* *ptr, size_t count, size_t size, size_t*  pcap, size_t* psize)
+static inline void *
+atsc3_vector_reallocdata_(void *ptr, size_t count, size_t size, size_t*  pcap, size_t* psize)
 {
     void *n = vlc_reallocarray(ptr, count, size);
     if (!n)
@@ -286,11 +285,11 @@ atsc3_vector_reallocdata_( mpu_data_unit_payload_fragments_timed_vector_t* *ptr,
          * exceed SIZE_MAX/2 (to prevent overflows), so we can use the MSB to
          * report allocation failure */
         *pcap |= ATSC3_VECTOR_FAILFLAG_;
-        return (mpu_data_unit_payload_fragments_timed_vector_t*)ptr;
+        return ptr;
     }
     *pcap = count;
     *psize = atsc3_vector_min_(*psize, count);
-    return ( mpu_data_unit_payload_fragments_timed_vector_t*)n;
+    return n;
 }
 
 /**

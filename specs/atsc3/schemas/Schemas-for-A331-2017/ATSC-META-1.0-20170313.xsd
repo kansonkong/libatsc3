@@ -1,0 +1,4 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<xs:schema xmlns:afdt="tag:atsc.org,2016:XMLSchemas/ATSC3/Delivery/ATSC-META/1.0/" xmlns:xs="http://www.w3.org/2001/XMLSchema" targetNamespace="tag:atsc.org,2016:XMLSchemas/ATSC3/Delivery/ATSC-META/1.0/" elementFormDefault="qualified">
+	<xs:attribute name="nextURL" type="xs:anyURI"/>
+</xs:schema>
