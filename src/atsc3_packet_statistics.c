@@ -7,7 +7,7 @@
 
 #include "atsc3_listener_udp.h"
 #include "atsc3_packet_statistics.h"
-
+int global_mmt_loss_count;
 
 
 

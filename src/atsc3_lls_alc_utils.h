@@ -29,6 +29,12 @@
 #define __LLSU_TRACE(...)
 //#define __LLSU_TRACE(...) _LLS_PRINTLN(__VA_ARGS__);
 
+
+#if defined (__cplusplus)
+extern "C" {
+#endif
+
+
 lls_sls_alc_monitor_t* lls_sls_alc_monitor_create();
 
 lls_sls_alc_session_vector_t* lls_sls_alc_session_vector_create();
@@ -50,6 +56,10 @@ lls_sls_alc_monitor_t* lls_monitor_sls_alc_session_create(lls_service_t* lls_ser
 
 void lls_session_free(lls_sls_alc_session_t** lls_session_ptr);
 
+
+#if defined (__cplusplus)
+}
+#endif
 
 
 #endif /* ATSC3_LLS_ALC_TOOLS_H_ */

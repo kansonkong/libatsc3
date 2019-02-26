@@ -8,10 +8,11 @@
 #include "atsc3_output_statistics_ncurses.h"
 #include "atsc3_player_ffplay.h"
 #include "atsc3_alc_utils.h"
+#include "atsc3_output_statistics_ncurses_windows.h"
 
 extern int _ALC_PACKET_DUMP_TO_OBJECT_ENABLED;
 extern lls_slt_monitor_t* lls_slt_monitor;
-
+pthread_mutex_t ncurses_writer_lock;
 
 void ncurses_init() {
 	/** hacks
@@ -123,8 +124,10 @@ void* ncurses_input_run_thread(void *vargp) {
 
 						lls_sls_alc_monitor->audio_tsi = 2;
 						lls_sls_alc_monitor->audio_toi_init = 2100000000;
-
+						lls_sls_alc_monitor->has_written_init_box = false;
 						lls_slt_monitor->lls_sls_alc_monitor = lls_sls_alc_monitor;
+						//todo, find our service_id map here
+						//lls_slt_monitor->lls_service =
 					}
 				} else if(ch == 'a') {
 					mtl_clear();

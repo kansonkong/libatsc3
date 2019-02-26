@@ -2,9 +2,6 @@
 <Workspace
    version = "1.0">
    <FileRef
-      location = "group:../../../src">
-   </FileRef>
-   <FileRef
-      location = "self:libatsc3.xcodeproj">
+      location = "container:libatsc3/libatsc3.xcodeproj">
    </FileRef>
 </Workspace>

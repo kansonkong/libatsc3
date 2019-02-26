@@ -258,9 +258,9 @@ pipe_ffplay_buffer_t* pipe_create_ffplay() {
 	//ffmpeg -i input -vf "drawtext=fontfile=Arial.ttf: text='%{frame_num}': start_number=1: x=(w-tw)/2: y=h-(2*lh): fontcolor=black: fontsize=20: box=1: boxcolor=white: boxborderw=5" -c:a copy output
 
 	/* Failed to set value 'drawtext=fontfile=/System/Library/Fonts/Helveticza.ttc: fix_bounds=1: shadowx=2: shadowy=2: timecode_rate=59.94: timecode='00\:00\:00\:00': fontcolor=white: fontsize=96: box=1: boxcolor=black@0.4: x=550:y=h-th-50, drawtext=fontfile=/System/Library/Fonts/Helvetica.ttc: fix_bounds=1: shadowx=2: shadowy=2: text='%{pts}': fontcolor=white: fontsize=96: box=1: boxcolor=black@0.4: x=500-tw:y=h-th-50, drawtext=fontfile=/System/Library/Fonts/Helvetica.ttc: fix_bounds=1: shadowx=2: shadowy=2: text='%{eif\:n/59.94*90000\:d}': fontcolor=white: fontsize=96: box=1: boxcolor=black@0.4: x=500-tw:y=h-th-150, drawtext=fontfile=/System/Library/Fonts/Helvetica.ttc: fix_bounds=1: shadowx=2: shadowy=2: text='%{pict_type}': fontcolor=white: fontsize=96: box=1: boxcolor=black@0.4: x=10-tw:y=th+10' for option 'filter_complex': Option not found
-	 *-framedrop -infbuf setpts=N/(59.94*TB), genpts
+	 *-framedrop -infbuf setpts=N/(59.94*TB), genpts -fs
 	 */
-	char* cmd = "ffplay -loglevel debug -infbuf -err_detect ignore_err -hide_banner -nostats -noborder -left 0 -top 0 -fs -vf \"drawtext=fontfile=/System/Library/Fonts/Helvetica.ttc: fix_bounds=1: shadowx=2: shadowy=2: timecode_rate=59.94: timecode='00\\:00\\:00\\:00': fontcolor=white: fontsize=96: box=1: boxcolor=black@0.4: x=550:y=h-th-50, drawtext=fontfile=/System/Library/Fonts/Helvetica.ttc: fix_bounds=1: shadowx=2: shadowy=2: text='%{pts}': fontcolor=white: fontsize=96: box=1: boxcolor=black@0.4: x=500-tw:y=h-th-50, drawtext=fontfile=/System/Library/Fonts/Helvetica.ttc: fix_bounds=1: shadowx=2: shadowy=2: text='%{eif\\:n/59.94*90000\\:d}': fontcolor=white: fontsize=96: box=1: boxcolor=black@0.4: x=500-tw:y=h-th-150, drawtext=fontfile=/System/Library/Fonts/Helvetica.ttc: fix_bounds=1: shadowx=2: shadowy=2: text='%{pict_type}': fontcolor=white: fontsize=96: box=1: boxcolor=black@0.4: x=10-tw:y=th+10, scale=iw*.5:ih*.5:flags=bicubic\"  - > ffplay.errors 2>&1";
+	char* cmd = "ffplay -loglevel debug -infbuf -err_detect ignore_err -hide_banner -nostats -noborder -left 0 -top 0  -vf \"drawtext=fontfile=/System/Library/Fonts/Helvetica.ttc: fix_bounds=1: shadowx=2: shadowy=2: timecode_rate=59.94: timecode='00\\:00\\:00\\:00': fontcolor=white: fontsize=96: box=1: boxcolor=black@0.4: x=550:y=h-th-50, drawtext=fontfile=/System/Library/Fonts/Helvetica.ttc: fix_bounds=1: shadowx=2: shadowy=2: text='%{pts}': fontcolor=white: fontsize=96: box=1: boxcolor=black@0.4: x=500-tw:y=h-th-50, drawtext=fontfile=/System/Library/Fonts/Helvetica.ttc: fix_bounds=1: shadowx=2: shadowy=2: text='%{eif\\:n/59.94*90000\\:d}': fontcolor=white: fontsize=96: box=1: boxcolor=black@0.4: x=500-tw:y=h-th-150, drawtext=fontfile=/System/Library/Fonts/Helvetica.ttc: fix_bounds=1: shadowx=2: shadowy=2: text='%{pict_type}': fontcolor=white: fontsize=96: box=1: boxcolor=black@0.4: x=10-tw:y=th+10, scale=iw*.5:ih*.5:flags=bicubic\"  - > ffplay.errors 2>&1";
 	if ( !(pipe_ffplay_buffer->player_pipe = popen(cmd, "w")) ) {
 		__PLAYER_FFPLAY_ERROR("unable to create pipe for cmd: %s", cmd);
 		goto error;
@@ -275,7 +275,7 @@ pipe_ffplay_buffer_t* pipe_create_ffplay() {
 	 */
 
 	//use this for capturing the reconstitued mpu for troubleshooting
-	//pipe_ffplay_buffer->player_pipe = fopen("mpu/recon.m4v", "w");
+//	pipe_ffplay_buffer->player_pipe = fopen("mpu/recon.m4v", "w");
 
 
 	__PLAYER_FFPLAY_DEBUG("pipe created: file* is %p", pipe_ffplay_buffer->player_pipe);

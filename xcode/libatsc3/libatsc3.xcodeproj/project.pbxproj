@@ -6,10 +6,71 @@
 	objectVersion = 50;
 	objects = {
 
+/* Begin PBXBuildFile section */
+		30364DB4221C7F20005A903B /* main.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 30364DB3221C7F20005A903B /* main.cpp */; };
+/* End PBXBuildFile section */
+
+/* Begin PBXContainerItemProxy section */
+		30364DB8221C7F61005A903B /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 3051DCDE221A8A9900ED316D /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 30364DAF221C7F1F005A903B;
+			remoteInfo = cmd;
+		};
+/* End PBXContainerItemProxy section */
+
+/* Begin PBXCopyFilesBuildPhase section */
+		30364DAE221C7F1F005A903B /* CopyFiles */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = /usr/share/man/man1/;
+			dstSubfolderSpec = 0;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 1;
+		};
+/* End PBXCopyFilesBuildPhase section */
+
+/* Begin PBXFileReference section */
+		30364DB0221C7F1F005A903B /* cmd */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = cmd; sourceTree = BUILT_PRODUCTS_DIR; };
+		30364DB3221C7F20005A903B /* main.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = main.cpp; sourceTree = "<group>"; };
+		30F56156221A8EDB00183988 /* src */ = {isa = PBXFileReference; lastKnownFileType = folder; name = src; path = ../../src; sourceTree = "<group>"; };
+/* End PBXFileReference section */
+
+/* Begin PBXFrameworksBuildPhase section */
+		30364DAD221C7F1F005A903B /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXFrameworksBuildPhase section */
+
 /* Begin PBXGroup section */
+		30364DB1221C7F1F005A903B /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				30364DB0221C7F1F005A903B /* cmd */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
+		30364DB2221C7F20005A903B /* cmd */ = {
+			isa = PBXGroup;
+			children = (
+				30364DB3221C7F20005A903B /* main.cpp */,
+			);
+			path = cmd;
+			sourceTree = "<group>";
+		};
 		3051DCDD221A8A9900ED316D = {
 			isa = PBXGroup;
 			children = (
+				30F56156221A8EDB00183988 /* src */,
+				30364DB2221C7F20005A903B /* cmd */,
+				30364DB1221C7F1F005A903B /* Products */,
 			);
 			sourceTree = "<group>";
 		};
@@ -18,12 +79,14 @@
 /* Begin PBXLegacyTarget section */
 		3051DCE2221A8A9900ED316D /* libatsc3 */ = {
 			isa = PBXLegacyTarget;
-			buildArgumentsString = "$(ACTION)";
+			buildArgumentsString = "-f makefile clean all";
 			buildConfigurationList = 3051DCE5221A8A9900ED316D /* Build configuration list for PBXLegacyTarget "libatsc3" */;
 			buildPhases = (
 			);
 			buildToolPath = /usr/bin/make;
+			buildWorkingDirectory = /Users/jjustman/Desktop/libatsc3/src;
 			dependencies = (
+				30364DB9221C7F61005A903B /* PBXTargetDependency */,
 			);
 			name = libatsc3;
 			passBuildSettingsInEnvironment = 1;
@@ -31,13 +94,39 @@
 		};
 /* End PBXLegacyTarget section */
 
+/* Begin PBXNativeTarget section */
+		30364DAF221C7F1F005A903B /* cmd */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 30364DB5221C7F20005A903B /* Build configuration list for PBXNativeTarget "cmd" */;
+			buildPhases = (
+				30364DAC221C7F1F005A903B /* Sources */,
+				30364DAD221C7F1F005A903B /* Frameworks */,
+				30364DAE221C7F1F005A903B /* CopyFiles */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = cmd;
+			productName = cmd;
+			productReference = 30364DB0221C7F1F005A903B /* cmd */;
+			productType = "com.apple.product-type.tool";
+		};
+/* End PBXNativeTarget section */
+
 /* Begin PBXProject section */
 		3051DCDE221A8A9900ED316D /* Project object */ = {
 			isa = PBXProject;
 			attributes = {
+				KnownAssetTags = (
+					New,
+				);
 				LastUpgradeCheck = 1010;
 				ORGANIZATIONNAME = "Jason Justman";
 				TargetAttributes = {
+					30364DAF221C7F1F005A903B = {
+						CreatedOnToolsVersion = 10.1;
+					};
 					3051DCE2221A8A9900ED316D = {
 						CreatedOnToolsVersion = 10.1;
 					};
@@ -51,15 +140,62 @@
 				en,
 			);
 			mainGroup = 3051DCDD221A8A9900ED316D;
+			productRefGroup = 30364DB1221C7F1F005A903B /* Products */;
 			projectDirPath = "";
 			projectRoot = "";
 			targets = (
 				3051DCE2221A8A9900ED316D /* libatsc3 */,
+				30364DAF221C7F1F005A903B /* cmd */,
 			);
 		};
 /* End PBXProject section */
 
+/* Begin PBXSourcesBuildPhase section */
+		30364DAC221C7F1F005A903B /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				30364DB4221C7F20005A903B /* main.cpp in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXSourcesBuildPhase section */
+
+/* Begin PBXTargetDependency section */
+		30364DB9221C7F61005A903B /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 30364DAF221C7F1F005A903B /* cmd */;
+			targetProxy = 30364DB8221C7F61005A903B /* PBXContainerItemProxy */;
+		};
+/* End PBXTargetDependency section */
+
 /* Begin XCBuildConfiguration section */
+		30364DB6221C7F20005A903B /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = YES;
+				CODE_SIGN_IDENTITY = "-";
+				CODE_SIGN_STYLE = Automatic;
+				GENERATE_PROFILING_CODE = YES;
+				MACOSX_DEPLOYMENT_TARGET = 10.13;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = macosx;
+			};
+			name = Debug;
+		};
+		30364DB7221C7F20005A903B /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = YES;
+				CODE_SIGN_IDENTITY = "-";
+				CODE_SIGN_STYLE = Automatic;
+				GENERATE_PROFILING_CODE = YES;
+				MACOSX_DEPLOYMENT_TARGET = 10.13;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = macosx;
+			};
+			name = Release;
+		};
 		3051DCE3221A8A9900ED316D /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
@@ -193,6 +329,15 @@
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
+		30364DB5221C7F20005A903B /* Build configuration list for PBXNativeTarget "cmd" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				30364DB6221C7F20005A903B /* Debug */,
+				30364DB7221C7F20005A903B /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
 		3051DCE1221A8A9900ED316D /* Build configuration list for PBXProject "libatsc3" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (

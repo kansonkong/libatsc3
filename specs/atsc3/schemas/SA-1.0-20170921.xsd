@@ -1,0 +1,225 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema"    xmlns:sa="tag:atsc.org,2016:XMLSchemas/ATSC3/SA/1.0/"
+    xmlns:rrt="tag:atsc.org,2016:XMLSchemas/ATSC3/RRT/1.0/"
+    targetNamespace="tag:atsc.org,2016:XMLSchemas/ATSC3/SA/1.0/"
+    elementFormDefault="qualified">
+    <xs:import namespace="http://www.w3.org/XML/1998/namespace"
+        schemaLocation="W3C/xml.xsd"/>
+    <xs:import namespace="tag:atsc.org,2016:XMLSchemas/ATSC3/RRT/1.0/"
+        schemaLocation="RRT-1.0-20170209.xsd"/>
+    <xs:annotation>
+        <xs:documentation>
+            The definition of this schema can also be found in an XML schema file, SA-1.0-20170921.xsd at the  ATSC website.The XML schema file RRT-1.0-20170209.xsd can also be found at the ATSC website.
+        </xs:documentation>
+    </xs:annotation>
+    <xs:element name="Capabilities" type="sa:CapabilitiesType" />
+    <xs:simpleType name="CapabilitiesType"><xs:restriction base="xs:string"/></xs:simpleType>
+    <xs:annotation>
+        <xs:documentation>
+            Name and Description elements in Service and Content Fragments of OMA BCAST service guide will be replaced with following extended elements 
+        </xs:documentation>
+    </xs:annotation>
+    
+    <xs:element name="Name" type="sa:NameDescriptionType" />
+    <xs:element name="Description" type="sa:NameDescriptionType" />
+    
+    <xs:complexType name="NameDescriptionType">
+        <xs:sequence>
+            <xs:element name="SpeechInfoURI" minOccurs="0" maxOccurs="unbounded">
+                <xs:complexType>
+                    <xs:simpleContent>
+                        <xs:extension base="xs:anyURI">
+                            <xs:attribute name="content-type" type="xs:string" use="optional"/>
+                            <xs:attribute name="content-enc" type="xs:string" use="optional"/>
+                            <xs:anyAttribute processContents="skip"/>
+                        </xs:extension>
+                    </xs:simpleContent>
+                </xs:complexType>
+            </xs:element>
+            <xs:element name="SpeechInfo" minOccurs="0" maxOccurs="unbounded">
+                <xs:complexType>
+                    <xs:simpleContent>
+                        <xs:extension base="xs:string">
+                            <xs:attribute name="content-type" type="xs:string" use="optional"/>
+                            <xs:attribute name="content-enc" type="xs:string" use="optional"/>
+                            <xs:anyAttribute processContents="skip"/>
+                        </xs:extension>
+                    </xs:simpleContent>
+                </xs:complexType>
+            </xs:element>
+            <xs:any namespace="##other" processContents="skip" minOccurs="0" maxOccurs="unbounded"/>
+        </xs:sequence>
+        <xs:attribute name="text" type="xs:string" use="required" />
+        <xs:attribute ref="xml:lang" use="optional"/>
+        <xs:anyAttribute processContents="skip"/>
+    </xs:complexType>
+    
+    <xs:element name="ContentAdvisoryRatings" type="sa:CARatingType"/>
+    <xs:complexType name="CARatingType">
+        <xs:sequence>
+            <xs:element name="RegionIdentifier" type="xs:unsignedByte" 
+                minOccurs="0" maxOccurs="1"/>
+            <xs:element name="RatingDescription" maxOccurs="1">
+                <xs:complexType>
+                    <xs:simpleContent>
+                        <xs:extension base="xs:string">
+                            <xs:attribute ref="xml:lang" use="optional" 
+                                default="en"/>
+                            <xs:anyAttribute processContents="skip"/>
+                        </xs:extension>
+                    </xs:simpleContent>
+                </xs:complexType>
+            </xs:element>
+            <xs:element name="RatedDimensions" type="xs:unsignedByte" 
+                minOccurs="0" maxOccurs="1"/>
+            <xs:element name="RatingDimVal" type="sa:RatingDimValType" 
+                minOccurs="1" maxOccurs="unbounded"/>
+            <xs:any namespace="##other" processContents="skip" minOccurs="0" maxOccurs="unbounded"/>
+        </xs:sequence>
+        <xs:anyAttribute processContents="skip"/>
+    </xs:complexType>
+    <xs:complexType name="RatingDimValType">
+        <xs:sequence>
+            <xs:element name="RatingDimension" type="xs:unsignedByte" 
+                minOccurs="0" maxOccurs="1"/>
+            <xs:element name="RatingValueString" type="xs:string" 
+                minOccurs="1"/>
+            <xs:any namespace="##other" processContents="skip" minOccurs="0" maxOccurs="unbounded"/>
+        </xs:sequence>
+        <xs:anyAttribute processContents="skip"/>
+    </xs:complexType>
+    
+    <xs:element name="OtherRatings" type="sa:OtherRatingType"/>
+    <xs:complexType name="OtherRatingType">
+        <xs:sequence>
+            <xs:choice>
+                <xs:element name="RatingInformationString" type="xs:string" minOccurs="1"/>
+                <xs:element name="RatingInformationData" type="sa:RatingContainerType" minOccurs="1"/>
+            </xs:choice>
+            <xs:any namespace="##other" processContents="skip" minOccurs="0" maxOccurs="unbounded"/>
+        </xs:sequence>
+        <xs:attribute name="ratingScheme" type="xs:anyURI" use="required" />
+        <xs:anyAttribute processContents="skip"/>
+    </xs:complexType>
+    <xs:complexType name="RatingContainerType">
+        <xs:sequence>
+            <xs:any namespace="##other" processContents="lax" minOccurs="0" maxOccurs="unbounded"/>
+        </xs:sequence>
+        <xs:anyAttribute processContents="skip"/>
+    </xs:complexType>
+    
+    <xs:element name="ATSC3ServiceExtension" type="sa:ATSC3ServiceExtensionType" >
+        <xs:annotation>
+            <xs:documentation>
+                This element is a wrapper for ATSC service extensions to OMA BCAST SG Service fragments. It shall only be used inside a PrivateExt element within a Service fragment.
+            </xs:documentation>
+        </xs:annotation>
+    </xs:element>
+    
+    <xs:complexType name="ATSC3ServiceExtensionType">
+        <xs:sequence>
+            <xs:element name="Icon" minOccurs="0" maxOccurs="unbounded">
+                <xs:complexType>
+                    <xs:simpleContent>
+                        <xs:extension base="xs:anyURI">
+                            <xs:attribute name="MIMEType" type="xs:string" use="optional" />
+                            <xs:attribute name="width" type="xs:unsignedInt" use="optional" />
+                            <xs:attribute name="height" type="xs:unsignedInt" use="optional" />
+                            <xs:attribute name="dataSize" type="xs:unsignedInt" use="optional" />
+                            <xs:anyAttribute processContents="skip"/>
+                        </xs:extension>
+                    </xs:simpleContent>
+                </xs:complexType>
+            </xs:element>
+            <xs:element name="MajorChannelNum" type="sa:LangString" minOccurs="0" maxOccurs="1"/>
+            <xs:element name="MinorChannelNum" type="sa:LangString" minOccurs="0" maxOccurs="1"/>
+            <xs:element name="RatingRegionTables" type="rrt:RRsType" minOccurs="0" maxOccurs="1"/>
+            <xs:any namespace="##other" processContents="skip" minOccurs="0" maxOccurs="unbounded"/>
+        </xs:sequence>
+    </xs:complexType>
+    
+    <xs:element name="Components" type="sa:ComponentsType" >
+        <xs:annotation>
+            <xs:documentation>
+                This element is a wrapper for ATSC media extensions to OMA BCAST SG Content fragments. It shall only be used inside a PrivateExt element within a Content fragment.
+            </xs:documentation>
+        </xs:annotation>
+    </xs:element>
+    
+    <xs:complexType name="ComponentsType">
+        <xs:sequence>
+            <xs:element name="VideoComponent" type="sa:IndividualComponentType" minOccurs="0" maxOccurs="unbounded"/>
+            <xs:element name="AudioComponent" type="sa:IndividualComponentType" minOccurs="0" maxOccurs="unbounded"/>
+            <xs:element name="CCComponent" type="sa:IndividualComponentType" minOccurs="0" maxOccurs="unbounded"/>
+            <xs:element name="AppComponent" type="sa:IndividualComponentType" minOccurs="0" maxOccurs="unbounded"/>
+            <xs:any namespace="##other" processContents="skip" minOccurs="0" maxOccurs="unbounded"/>
+        </xs:sequence>
+        <xs:anyAttribute processContents="skip"/>
+    </xs:complexType>
+    <xs:complexType name="IndividualComponentType">
+        <xs:complexContent>
+            <xs:extension base="sa:LangString">
+                <xs:attribute name="language" type="xs:string" use="optional" default="en"/>
+                <xs:anyAttribute processContents="skip"/>
+            </xs:extension>
+        </xs:complexContent>
+    </xs:complexType>
+    <xs:complexType name="LangString">
+        <xs:simpleContent>
+            <xs:extension base="xs:string">
+                <xs:attribute ref="xml:lang" use="optional" default="en"/>
+                <xs:anyAttribute processContents="skip"/>
+            </xs:extension>
+        </xs:simpleContent>
+    </xs:complexType>
+    <xs:element name="ContentIcon" >
+        <xs:annotation><xs:documentation>This element is only used inside a PrivateExt element within a Content fragment as defined in Table 5.7 and its cardinality is defined in Table 5.9. </xs:documentation></xs:annotation>
+        <xs:complexType>
+            <xs:simpleContent>
+                <xs:extension base="xs:anyURI">
+                    <xs:attribute name="MIMEType" type="xs:string" use="optional" />
+                    <xs:attribute name="width" type="xs:unsignedInt" use="optional" />
+                    <xs:attribute name="height" type="xs:unsignedInt" use="optional" />
+                    <xs:attribute name="dataSize" type="xs:unsignedInt" use="optional" />
+                    <xs:anyAttribute processContents="skip"/>
+                </xs:extension>
+            </xs:simpleContent>
+        </xs:complexType>
+    </xs:element>
+    
+    <xs:element name="Preview" type="sa:PreviewType" />
+    <xs:complexType name="PreviewType">
+        <xs:sequence>
+            <xs:element name="PreviewIcon" minOccurs="0" maxOccurs="unbounded">
+                <xs:complexType>
+                    <xs:simpleContent>
+                        <xs:extension base="xs:anyURI">
+                            <xs:attribute name="MIMEType" type="xs:string" use="optional" />
+                            <xs:attribute name="width" type="xs:unsignedInt" use="optional" />
+                            <xs:attribute name="height" type="xs:unsignedInt" use="optional" />
+                            <xs:attribute name="dataSize" type="xs:unsignedInt" use="optional" />
+                            <xs:anyAttribute processContents="skip"/>
+                        </xs:extension>
+                    </xs:simpleContent>
+                </xs:complexType>
+            </xs:element>
+            <xs:element name="Description" type="sa:NameDescriptionType" minOccurs="1" maxOccurs="unbounded"/>
+            <xs:element name="PreviewContent"  minOccurs="0" maxOccurs="unbounded">
+                <xs:complexType>
+                    <xs:simpleContent>
+                        <xs:extension base="xs:anyURI">
+                            <xs:attribute name="MIMEType" type="xs:string" use="optional" />
+                            <xs:attribute name="width" type="xs:unsignedInt" use="optional" />
+                            <xs:attribute name="height" type="xs:unsignedInt" use="optional" />
+                            <xs:attribute name="dataSize" type="xs:unsignedInt" use="optional" />
+                            <xs:anyAttribute processContents="skip"/>
+                        </xs:extension>
+                    </xs:simpleContent>
+                </xs:complexType>
+            </xs:element>
+            <xs:any namespace="##other" processContents="skip" minOccurs="0" maxOccurs="unbounded"/>
+        </xs:sequence>
+        <xs:attribute name="usage" type="xs:string" use="optional" default="promo"/>
+        <xs:anyAttribute processContents="skip"/>
+    </xs:complexType>
+</xs:schema>
