@@ -37,20 +37,16 @@ int __LLS_SLT_PARSER_TRACE_ENABLED=0;
 #define LLS_SLT_OTHER_BSID					"OtherBsid"
 
 
-//temporary impl
-lls_sls_mmt_monitor_t* lls_sls_mmt_monitor_create() {
-	return (lls_sls_mmt_monitor_t*)calloc(1, sizeof(lls_sls_mmt_monitor_t));
-
-}
+//defer creating our sls_monitor instances until they are needed
+//create our sls_monitor_ref
+//lls_slt_monitor->lls_sls_alc_monitor = lls_sls_alc_monitor_create();
+//lls_slt_monitor->lls_sls_mmt_monitor = lls_sls_mmt_monitor_create();
 
 lls_slt_monitor_t* lls_slt_monitor_create() {
 	lls_slt_monitor_t* lls_slt_monitor = (lls_slt_monitor_t*)calloc(1, sizeof(lls_slt_monitor_t));
 
-	//create our sls_monitor_ref
-	lls_slt_monitor->lls_sls_alc_monitor = lls_sls_alc_monitor_create();
-	lls_slt_monitor->lls_sls_mmt_monitor = lls_sls_mmt_monitor_create();
-
-	//create our vector reference
+    //create our vector references
+    lls_slt_monitor->lls_sls_mmt_session_vector = lls_sls_mmt_session_vector_create();
 	lls_slt_monitor->lls_sls_alc_session_vector = lls_sls_alc_session_vector_create();
 
 	return lls_slt_monitor;
@@ -282,17 +278,30 @@ int lls_slt_table_process_update(lls_table_t* lls_table, lls_slt_monitor_t* lls_
 		__LLS_SLT_PARSER_DEBUG("checking service: %d", lls_service->service_id);
 
 		if(lls_service->broadcast_svc_signaling.sls_protocol == SLS_PROTOCOL_ROUTE) {
-			__LLS_SLT_PARSER_INFO("adding service: %u", lls_service->service_id);
+            __LLS_SLT_PARSER_INFO("ROUTE: adding service: %u", lls_service->service_id);
 
-			lls_sls_alc_session_t* lls_slt_alc_session = lls_slt_alc_session_find_or_create(lls_slt_monitor->lls_sls_alc_session_vector, lls_service);
+			lls_sls_alc_session_t* lls_sls_alc_session = lls_slt_alc_session_find_or_create(lls_slt_monitor->lls_sls_alc_session_vector, lls_service);
 
 			//TODO - we probably need to clear out any missing ALC sessions?
-			if(!lls_slt_alc_session->alc_session) {
+			if(!lls_sls_alc_session->alc_session) {
 				lls_slt_alc_session_remove(lls_slt_monitor->lls_sls_alc_session_vector, lls_service);
-				__LLS_SLT_PARSER_ERROR("Unable to instantiate alc session for service_id: %d via SLS_PROTOCOL_ROUTE", lls_service->service_id);
+                __LLS_SLT_PARSER_ERROR("ROUTE: Unable to instantiate alc session for service_id: %d via SLS_PROTOCOL_ROUTE", lls_service->service_id);
 				goto cleanup;
 		  	}
 		}
+        
+        if(lls_service->broadcast_svc_signaling.sls_protocol == SLS_PROTOCOL_MMTP) {
+            __LLS_SLT_PARSER_INFO("MMT: adding service: %u", lls_service->service_id);
+            
+            lls_sls_mmt_session_t* lls_sls_mmt_session = lls_slt_mmt_session_find_or_create(lls_slt_monitor->lls_sls_mmt_session_vector, lls_service);
+            
+            //TODO - clear out any dropped mmt sessions?
+            if(!lls_sls_mmt_session) {
+                lls_slt_alc_session_remove(lls_slt_monitor->lls_sls_mmt_session_vector, lls_service);
+                __LLS_SLT_PARSER_ERROR("MMT: Unable to instantiate session for service_id: %d via SLS_PROTOCOL_MMTP", lls_service->service_id);
+                goto cleanup;
+            }
+        }
 	}
 
 	return 0;

@@ -10,7 +10,7 @@
             ignoreCount = "0"
             continueAfterRunningActions = "No"
             filePath = "../../src/atsc3_utils.c"
-            timestampString = "572393127.991773"
+            timestampString = "573243971.688269"
             startingColumnNumber = "9223372036854775807"
             endingColumnNumber = "9223372036854775807"
             startingLineNumber = "209"
@@ -26,7 +26,7 @@
             ignoreCount = "0"
             continueAfterRunningActions = "No"
             filePath = "../../src/atsc3_mmt_listener_test_bento.c"
-            timestampString = "573232962.601228"
+            timestampString = "573243971.688344"
             startingColumnNumber = "9223372036854775807"
             endingColumnNumber = "9223372036854775807"
             startingLineNumber = "535"
@@ -184,7 +184,7 @@
                   moduleName = "atsc3_listener_metrics_ncurses"
                   usesParentBreakpointCondition = "Yes"
                   urlString = "file:///Users/jjustman/Desktop/libatsc3/src/bento4/MPUtoISOBMFFProcessor.cpp"
-                  timestampString = "573232796.058257"
+                  timestampString = "573243978.399279"
                   startingColumnNumber = "9223372036854775807"
                   endingColumnNumber = "9223372036854775807"
                   startingLineNumber = "121"
@@ -199,7 +199,7 @@
                   moduleName = "atsc3_listener_metrics_ncurses"
                   usesParentBreakpointCondition = "Yes"
                   urlString = "file:///Users/jjustman/Desktop/libatsc3/src/bento4/MPUtoISOBMFFProcessor.cpp"
-                  timestampString = "573232796.0602649"
+                  timestampString = "573243978.406121"
                   startingColumnNumber = "9223372036854775807"
                   endingColumnNumber = "9223372036854775807"
                   startingLineNumber = "121"
@@ -264,7 +264,7 @@
             ignoreCount = "0"
             continueAfterRunningActions = "No"
             filePath = "../../src/atsc3_mmt_listener_test_bento.c"
-            timestampString = "573232962.601824"
+            timestampString = "573243971.688954"
             startingColumnNumber = "9223372036854775807"
             endingColumnNumber = "9223372036854775807"
             startingLineNumber = "274"
@@ -280,7 +280,7 @@
             ignoreCount = "0"
             continueAfterRunningActions = "No"
             filePath = "../../src/atsc3_mmt_listener_test_bento.c"
-            timestampString = "573232962.6022201"
+            timestampString = "573243971.689245"
             startingColumnNumber = "9223372036854775807"
             endingColumnNumber = "9223372036854775807"
             startingLineNumber = "277"
@@ -296,7 +296,7 @@
             ignoreCount = "0"
             continueAfterRunningActions = "No"
             filePath = "../../src/atsc3_mmt_listener_test_bento.c"
-            timestampString = "573232962.6025701"
+            timestampString = "573243971.689514"
             startingColumnNumber = "9223372036854775807"
             endingColumnNumber = "9223372036854775807"
             startingLineNumber = "273"
@@ -456,7 +456,7 @@
             ignoreCount = "0"
             continueAfterRunningActions = "No"
             filePath = "../../src/bento4/ISOBMFFTrackJoiner.cpp"
-            timestampString = "572446916.8937351"
+            timestampString = "573243971.689961"
             startingColumnNumber = "9223372036854775807"
             endingColumnNumber = "9223372036854775807"
             startingLineNumber = "80"
@@ -472,12 +472,12 @@
             ignoreCount = "0"
             continueAfterRunningActions = "No"
             filePath = "../../src/bento4/ISOBMFFTrackJoiner.cpp"
-            timestampString = "572446916.89408"
+            timestampString = "573243971.6900131"
             startingColumnNumber = "9223372036854775807"
             endingColumnNumber = "9223372036854775807"
-            startingLineNumber = "205"
-            endingLineNumber = "205"
-            landmarkName = "parsrseAndBuildJoinedBoxes(ISOBMFFTrackJoinerFileResouces* isoBMFFTrackJoinerFileResouces, AP4_ByteStream* output_stream)"
+            startingLineNumber = "215"
+            endingLineNumber = "215"
+            landmarkName = "parsrseAndBuildJoinedBoxesFromMemory(uint8_t* file1_payload, uint32_t file1_size, uint8_t* file2_payload, uint32_t file2_size, AP4_ByteStream* output_stream)"
             landmarkType = "9">
          </BreakpointContent>
       </BreakpointProxy>
@@ -520,12 +520,12 @@
             ignoreCount = "0"
             continueAfterRunningActions = "No"
             filePath = "../../src/atsc3_output_statistics_ncurses.c"
-            timestampString = "573232962.603045"
+            timestampString = "573243971.6901031"
             startingColumnNumber = "9223372036854775807"
             endingColumnNumber = "9223372036854775807"
-            startingLineNumber = "374"
-            endingLineNumber = "374"
-            landmarkName = "create_or_update_window_sizes"
+            startingLineNumber = "442"
+            endingLineNumber = "442"
+            landmarkName = "handle_sighup"
             landmarkType = "9">
          </BreakpointContent>
       </BreakpointProxy>
@@ -536,13 +536,13 @@
             ignoreCount = "0"
             continueAfterRunningActions = "No"
             filePath = "../../src/atsc3_output_statistics_ncurses.c"
-            timestampString = "573232962.603753"
+            timestampString = "573243971.690533"
             startingColumnNumber = "9223372036854775807"
             endingColumnNumber = "9223372036854775807"
-            startingLineNumber = "17"
-            endingLineNumber = "17"
-            landmarkName = "unknown"
-            landmarkType = "0">
+            startingLineNumber = "18"
+            endingLineNumber = "18"
+            landmarkName = "ncurses_init"
+            landmarkType = "9">
          </BreakpointContent>
       </BreakpointProxy>
       <BreakpointProxy
@@ -552,11 +552,11 @@
             ignoreCount = "0"
             continueAfterRunningActions = "No"
             filePath = "../../src/atsc3_output_statistics_ncurses.c"
-            timestampString = "573232962.604326"
+            timestampString = "573243971.690876"
             startingColumnNumber = "9223372036854775807"
             endingColumnNumber = "9223372036854775807"
-            startingLineNumber = "65"
-            endingLineNumber = "65"
+            startingLineNumber = "66"
+            endingLineNumber = "66"
             landmarkName = "ncurses_input_run_thread"
             landmarkType = "9">
          </BreakpointContent>
@@ -568,11 +568,11 @@
             ignoreCount = "0"
             continueAfterRunningActions = "No"
             filePath = "../../src/atsc3_output_statistics_ncurses.c"
-            timestampString = "573232962.604951"
+            timestampString = "573243971.691208"
             startingColumnNumber = "9223372036854775807"
             endingColumnNumber = "9223372036854775807"
-            startingLineNumber = "73"
-            endingLineNumber = "73"
+            startingLineNumber = "140"
+            endingLineNumber = "140"
             landmarkName = "ncurses_input_run_thread"
             landmarkType = "9">
          </BreakpointContent>
@@ -584,11 +584,11 @@
             ignoreCount = "0"
             continueAfterRunningActions = "No"
             filePath = "../../src/atsc3_output_statistics_ncurses.c"
-            timestampString = "573232962.605569"
+            timestampString = "573243971.691538"
             startingColumnNumber = "9223372036854775807"
             endingColumnNumber = "9223372036854775807"
-            startingLineNumber = "43"
-            endingLineNumber = "43"
+            startingLineNumber = "44"
+            endingLineNumber = "44"
             landmarkName = "ncurses_init"
             landmarkType = "9">
          </BreakpointContent>
@@ -600,11 +600,11 @@
             ignoreCount = "0"
             continueAfterRunningActions = "No"
             filePath = "../../src/atsc3_alc_utils.c"
-            timestampString = "573232320.451867"
+            timestampString = "573243971.6918679"
             startingColumnNumber = "9223372036854775807"
             endingColumnNumber = "9223372036854775807"
-            startingLineNumber = "273"
-            endingLineNumber = "273"
+            startingLineNumber = "244"
+            endingLineNumber = "244"
             landmarkName = "alc_packet_dump_to_object"
             landmarkType = "9">
          </BreakpointContent>
@@ -616,11 +616,11 @@
             ignoreCount = "0"
             continueAfterRunningActions = "No"
             filePath = "../../src/atsc3_alc_utils.c"
-            timestampString = "573232320.451925"
+            timestampString = "573243971.6919301"
             startingColumnNumber = "9223372036854775807"
             endingColumnNumber = "9223372036854775807"
-            startingLineNumber = "278"
-            endingLineNumber = "278"
+            startingLineNumber = "249"
+            endingLineNumber = "249"
             landmarkName = "alc_packet_dump_to_object"
             landmarkType = "9">
          </BreakpointContent>
@@ -628,15 +628,15 @@
       <BreakpointProxy
          BreakpointExtensionID = "Xcode.Breakpoint.FileBreakpoint">
          <BreakpointContent
-            shouldBeEnabled = "Yes"
+            shouldBeEnabled = "No"
             ignoreCount = "0"
             continueAfterRunningActions = "No"
             filePath = "../../src/atsc3_listener_metrics_ncurses.c"
-            timestampString = "573232962.606468"
+            timestampString = "573243971.692004"
             startingColumnNumber = "9223372036854775807"
             endingColumnNumber = "9223372036854775807"
-            startingLineNumber = "634"
-            endingLineNumber = "634"
+            startingLineNumber = "602"
+            endingLineNumber = "602"
             landmarkName = "process_packet"
             landmarkType = "9">
          </BreakpointContent>
@@ -648,7 +648,7 @@
             ignoreCount = "0"
             continueAfterRunningActions = "No"
             filePath = "../../src/atsc3_mmtp_parser.c"
-            timestampString = "573232962.606854"
+            timestampString = "573243971.693285"
             startingColumnNumber = "9223372036854775807"
             endingColumnNumber = "9223372036854775807"
             startingLineNumber = "243"
@@ -660,17 +660,113 @@
       <BreakpointProxy
          BreakpointExtensionID = "Xcode.Breakpoint.FileBreakpoint">
          <BreakpointContent
-            shouldBeEnabled = "Yes"
+            shouldBeEnabled = "No"
             ignoreCount = "0"
             continueAfterRunningActions = "No"
             filePath = "../../src/atsc3_listener_metrics_ncurses.c"
-            timestampString = "573232962.6071891"
+            timestampString = "573243971.693344"
             startingColumnNumber = "9223372036854775807"
             endingColumnNumber = "9223372036854775807"
-            startingLineNumber = "403"
-            endingLineNumber = "403"
+            startingLineNumber = "372"
+            endingLineNumber = "372"
             landmarkName = "unknown"
             landmarkType = "0">
+         </BreakpointContent>
+      </BreakpointProxy>
+      <BreakpointProxy
+         BreakpointExtensionID = "Xcode.Breakpoint.FileBreakpoint">
+         <BreakpointContent
+            shouldBeEnabled = "Yes"
+            ignoreCount = "0"
+            continueAfterRunningActions = "No"
+            filePath = "../../src/bento4/ISOBMFFTrackJoiner.h"
+            timestampString = "573243971.694304"
+            startingColumnNumber = "9223372036854775807"
+            endingColumnNumber = "9223372036854775807"
+            startingLineNumber = "50"
+            endingLineNumber = "50"
+            landmarkName = "unknown"
+            landmarkType = "0">
+         </BreakpointContent>
+      </BreakpointProxy>
+      <BreakpointProxy
+         BreakpointExtensionID = "Xcode.Breakpoint.FileBreakpoint">
+         <BreakpointContent
+            shouldBeEnabled = "Yes"
+            ignoreCount = "0"
+            continueAfterRunningActions = "No"
+            filePath = "../../src/atsc3_lls_slt_parser.c"
+            timestampString = "573243971.694368"
+            startingColumnNumber = "9223372036854775807"
+            endingColumnNumber = "9223372036854775807"
+            startingLineNumber = "283"
+            endingLineNumber = "283"
+            landmarkName = "lls_slt_table_process_update"
+            landmarkType = "9">
+         </BreakpointContent>
+      </BreakpointProxy>
+      <BreakpointProxy
+         BreakpointExtensionID = "Xcode.Breakpoint.FileBreakpoint">
+         <BreakpointContent
+            shouldBeEnabled = "Yes"
+            ignoreCount = "0"
+            continueAfterRunningActions = "No"
+            filePath = "../../src/atsc3_lls_slt_parser.c"
+            timestampString = "573243971.694667"
+            startingColumnNumber = "9223372036854775807"
+            endingColumnNumber = "9223372036854775807"
+            startingLineNumber = "287"
+            endingLineNumber = "287"
+            landmarkName = "lls_slt_table_process_update"
+            landmarkType = "9">
+         </BreakpointContent>
+      </BreakpointProxy>
+      <BreakpointProxy
+         BreakpointExtensionID = "Xcode.Breakpoint.FileBreakpoint">
+         <BreakpointContent
+            shouldBeEnabled = "Yes"
+            ignoreCount = "0"
+            continueAfterRunningActions = "No"
+            filePath = "../../src/atsc3_lls_alc_utils.c"
+            timestampString = "573243971.694916"
+            startingColumnNumber = "9223372036854775807"
+            endingColumnNumber = "9223372036854775807"
+            startingLineNumber = "162"
+            endingLineNumber = "162"
+            landmarkName = "lls_slt_alc_session_find_or_create"
+            landmarkType = "9">
+         </BreakpointContent>
+      </BreakpointProxy>
+      <BreakpointProxy
+         BreakpointExtensionID = "Xcode.Breakpoint.FileBreakpoint">
+         <BreakpointContent
+            shouldBeEnabled = "Yes"
+            ignoreCount = "0"
+            continueAfterRunningActions = "No"
+            filePath = "../../src/atsc3_lls_alc_utils.c"
+            timestampString = "573243971.695223"
+            startingColumnNumber = "9223372036854775807"
+            endingColumnNumber = "9223372036854775807"
+            startingLineNumber = "51"
+            endingLineNumber = "51"
+            landmarkName = "lls_slt_alc_session_create"
+            landmarkType = "9">
+         </BreakpointContent>
+      </BreakpointProxy>
+      <BreakpointProxy
+         BreakpointExtensionID = "Xcode.Breakpoint.FileBreakpoint">
+         <BreakpointContent
+            shouldBeEnabled = "Yes"
+            ignoreCount = "0"
+            continueAfterRunningActions = "No"
+            filePath = "../../src/atsc3_lls_alc_utils.c"
+            timestampString = "573243971.695479"
+            startingColumnNumber = "9223372036854775807"
+            endingColumnNumber = "9223372036854775807"
+            startingLineNumber = "184"
+            endingLineNumber = "184"
+            landmarkName = "lls_sls_alc_session_free"
+            landmarkType = "9">
          </BreakpointContent>
       </BreakpointProxy>
    </Breakpoints>

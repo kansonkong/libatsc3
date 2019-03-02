@@ -16,6 +16,7 @@
 #include "alc_channel.h"
 #include "atsc3_player_ffplay.h"
 #include "atsc3_lls_types.h"
+#include "atsc3_lls_sls_monitor_output_buffer.h"
 
 #ifndef ATSC3_ALC_UTILS_H_
 #define ATSC3_ALC_UTILS_H_
@@ -49,7 +50,6 @@ extern int _ALC_UTILS_TRACE_ENABLED;
 extern "C" {
 #endif
 
-void resetBufferPosFromMonitor(lls_sls_alc_monitor_t* lls_sls_alc_monitor);
 //this must be set to 1 for dumps to be written to disk
 extern int _ALC_PACKET_DUMP_TO_OBJECT_ENABLED;
 
