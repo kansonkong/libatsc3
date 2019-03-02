@@ -23,7 +23,10 @@ WINDOW* left_window_outline;
 
 
 WINDOW* right_window_outline;
-	WINDOW* pkt_flow_stats_window;
+	WINDOW* pkt_flow_stats_mmt_window;
+    WINDOW* pkt_flow_stats_route_window;
+
+
 
 WINDOW* bottom_window_outline;
 	WINDOW* pkt_global_loss_window;

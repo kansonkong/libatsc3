@@ -194,6 +194,8 @@ typedef struct global_atsc3_stats {
 	uint32_t packet_counter_mmt_nontimed_mpu;
 	uint32_t packet_counter_mmt_signaling;
 	uint32_t packet_counter_mmt_unknown;
+    
+    
 
 	int packet_flow_n;
 	packet_flow_t** packet_flow_vector; //not used yet
@@ -207,6 +209,7 @@ typedef struct global_atsc3_stats {
 	uint32_t packet_counter_alc_packets_parsed_error;
 
 	uint32_t packet_counter_filtered_ipv4;
+    uint32_t packet_counter_udp_unknown;
 
 	//total count of all udp packets received
 	uint32_t packets_total_received;
