@@ -297,7 +297,7 @@ int lls_slt_table_process_update(lls_table_t* lls_table, lls_slt_monitor_t* lls_
             
             //TODO - clear out any dropped mmt sessions?
             if(!lls_sls_mmt_session) {
-                lls_slt_alc_session_remove(lls_slt_monitor->lls_sls_mmt_session_vector, lls_service);
+                lls_slt_mmt_session_remove(lls_slt_monitor->lls_sls_mmt_session_vector, lls_service);
                 __LLS_SLT_PARSER_ERROR("MMT: Unable to instantiate session for service_id: %d via SLS_PROTOCOL_MMTP", lls_service->service_id);
                 goto cleanup;
             }
