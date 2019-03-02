@@ -16,7 +16,7 @@ lls_sls_mmt_monitor_t* lls_sls_mmt_monitor_create() {
 
 
 lls_sls_mmt_session_vector_t* lls_sls_mmt_session_vector_create() {
-	lls_sls_mmt_session_vector_t* lls_sls_mmt_session_vector = (lls_sls_mmt_session_vector_t*)calloc(1, sizeof(lls_sls_mmt_session_vector_t*));
+	lls_sls_mmt_session_vector_t* lls_sls_mmt_session_vector = (lls_sls_mmt_session_vector_t*)calloc(1, sizeof(lls_sls_mmt_session_vector_t));
 	assert(lls_sls_mmt_session_vector);
 
 	//do not instantiate any other lls_table_xxx types, as they will need to be assigned
@@ -163,7 +163,7 @@ lls_sls_mmt_session_t* lls_slt_mmt_session_find_or_create(lls_sls_mmt_session_ve
 			__LLSU_MMT_TRACE(" *after realloc to %p, %i, adding %u", lls_slt_mmt_session, lls_sls_mmt_session_vector->lls_slt_mmt_sessions_n, lls_service->service_id);
 
 		} else {
-			lls_sls_mmt_session_vector->lls_slt_mmt_sessions = (lls_sls_mmt_session_t**)calloc(1, sizeof(lls_sls_mmt_session_vector->lls_slt_mmt_sessions));
+			lls_sls_mmt_session_vector->lls_slt_mmt_sessions = (lls_sls_mmt_session_t**)calloc(1, sizeof(lls_sls_mmt_session_t**));
 			assert(lls_sls_mmt_session_vector->lls_slt_mmt_sessions);
 			lls_sls_mmt_session_vector->lls_slt_mmt_sessions_n = 1;
 

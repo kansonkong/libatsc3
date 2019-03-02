@@ -782,7 +782,7 @@ int main(int argc,char **argv) {
 	pthread_create(&global_slt_thread_id, NULL, print_lls_instance_table_thread, (void*)lls_slt_monitor);
 
 	pthread_t global_ncurses_input_thread_id;
-	int ncurses_input_ret = pthread_create(&global_ncurses_input_thread_id, NULL, ncurses_input_run_thread, NULL);
+	int ncurses_input_ret = pthread_create(&global_ncurses_input_thread_id, NULL, ncurses_input_run_thread, (void*)lls_slt_monitor);
 	assert(!ncurses_input_ret);
 
 	pthread_t global_pcap_thread_id;
