@@ -132,7 +132,6 @@ extern int _LLS_DEBUG_ENABLED;
 #define __DEBUGA(...) 	__PRINTF(__VA_ARGS__);
 #define __DEBUGN(...)  __PRINTLN(__VA_ARGS__);
 #else
-#define __ALC_UTILS_DEBUG(...)
 #define __DEBUGF(...)
 #define __DEBUGA(...)
 #define __DEBUGN(...)
@@ -150,83 +149,6 @@ int printf(const char *format, ...)  {
 	return 0;
 }
 #endif
-
-//#define __TEST_FFPLAY_MMTP_PIPE_PLAYBACK__
-
-#ifdef __TEST_FFPLAY_MMTP_PIPE_PLAYBACK__
-
-pid_t pid;
-int fd[2];
-//
-//void create_ffplay_pipe() {
-//	pipe(fd);
-//	pid = fork();
-//
-//	if(pid==0)
-//	{
-//	    dup2(fd[WRITE_END], STDOUT_FILENO);
-//	    close(fd[READ_END]);
-//	    close(fd[WRITE_END]);
-//	    execlp(firstcmd, firstcmd, frsarg, (char*) NULL);
-//	    fprintf(stderr, "Failed to execute '%s'\n", firstcmd);
-//	    exit(1);
-//	}
-//	else
-//	{
-//	    pid=fork();
-//
-//	    if(pid==0)
-//	    {
-//	        dup2(fd[READ_END], STDIN_FILENO);
-//	        close(fd[WRITE_END]);
-//	        close(fd[READ_END]);
-//	        execlp(scmd, scmd, secarg,(char*) NULL);
-//	        fprintf(stderr, "Failed to execute '%s'\n", scmd);
-//	        exit(1);
-//	    }
-//	    else
-//	    {
-//	        int status;
-//	        close(fd[READ_END]);
-//	        close(fd[WRITE_END]);
-//	        waitpid(pid, &status, 0);
-//	    }
-//	}
-//}
-
-FILE *file_pipe;
-FILE *player_pipe;
-sig_atomic_t ffplay_consumer_running;
-bool hasSentMPUHeader;
-
-void create_ffplay_pipe() {
-///Applications/VLC.app/Contents/MacOS/VLC --log-verbose 3 --input-repeat 65535 - > vlc.log 2>&
-	//char* cmd = "/usr/local/bin/ffplay -i -";
-	//--demux mp4
-
-	char* cmd = "/Applications/VLC.app/Contents/MacOS/VLC test.mmt";
-	if ( !(player_pipe = popen(cmd, "w")) ) {
-		exit(1);
-	}
-	ffplay_consumer_running = 1;
-}
-
-void push_mfu_block(block_t* block) {
-
-//	int output_size = fwrite(block->p_buffer, 1, block->i_buffer, ffplay_pipe);
-
-//	printf("in: %d, wrote %d bytes", block->i_buffer, output_size);
-
-	int output_size = fwrite(block->p_buffer, block->i_buffer, 1, file_pipe);
-
-	if(!player_pipe) {
-		create_ffplay_pipe();
-	}
-}
-
-#endif
-
-
 
 
 
@@ -264,6 +186,8 @@ lls_slt_monitor_t* lls_slt_monitor;
 //make sure to invoke     mmtp_sub_flow_vector_init(&p_sys->mmtp_sub_flow_vector);
 mmtp_sub_flow_vector_t* mmtp_sub_flow_vector;
 extern pipe_ffplay_buffer_t* pipe_ffplay_buffer;
+udp_flow_latest_mpu_sequence_number_container_t* udp_flow_latest_mpu_sequence_number_container;
+
 
 //messy
 extern uint8_t* __VIDEO_RECON_FRAGMENT;
@@ -325,6 +249,240 @@ void cleanup(udp_packet_t* udp_packet) {
 		udp_packet = NULL;
 	}
 }
+
+mmtp_payload_fragments_union_t* mmtp_parse_from_udp_packet(udp_packet_t *udp_packet) {
+    
+    mmtp_payload_fragments_union_t* mmtp_payload = mmtp_packet_parse(mmtp_sub_flow_vector, udp_packet->data, udp_packet->data_length);
+    
+    if(!mmtp_payload) {
+        global_stats->packet_counter_mmtp_packets_parsed_error++;
+        __ERROR("mmtp_packet_parse: raw packet ptr is null, parsing failed for flow: %d.%d.%d.%d:(%-10u):%-5u \t ->  %d.%d.%d.%d:(%-10u):%-5u ",
+                __toipandportnonstruct(udp_packet->udp_flow.src_ip_addr, udp_packet->udp_flow.src_port),
+                udp_packet->udp_flow.src_ip_addr,
+                __toipandportnonstruct(udp_packet->udp_flow.dst_ip_addr, udp_packet->udp_flow.dst_port),
+                udp_packet->udp_flow.dst_ip_addr);
+        return NULL;
+    }
+    
+    global_bandwidth_statistics->interval_mmt_current_bytes_rx += udp_packet->data_length;
+    global_bandwidth_statistics->interval_mmt_current_packets_rx++;
+    global_stats->packet_counter_mmtp_packets_received++;
+    
+    atsc3_packet_statistics_mmt_stats_populate(udp_packet, mmtp_payload);
+    
+    return mmtp_payload;
+}
+
+mmtp_payload_fragments_union_t* mmtp_process_from_payload(udp_packet_t *udp_packet, mmtp_payload_fragments_union_t** mmtp_payload_p) {
+    mmtp_payload_fragments_union_t* mmtp_payload = * mmtp_payload_p;
+    //dump header, then dump applicable packet type
+    //mmtp_packet_header_dump(mmtp_payload);
+    
+    if(mmtp_payload->mmtp_packet_header.mmtp_payload_type == 0x0) {
+        global_stats->packet_counter_mmt_mpu++;
+        
+        if(mmtp_payload->mmtp_mpu_type_packet_header.mpu_timed_flag == 1) {
+            global_stats->packet_counter_mmt_timed_mpu++;
+            
+            __TRACE("Starting processing loop, current mpu_sequence_number is: %d, packet_sequence_number: %d", mmtp_payload->mmtp_mpu_type_packet_header.mpu_sequence_number, mmtp_payload->mmtp_mpu_type_packet_header.packet_sequence_number);
+
+            mpu_data_unit_payload_fragments_t* data_unit_payload_types = NULL;
+            mpu_data_unit_payload_fragments_timed_vector_t* data_unit_payload_fragments = NULL; //technically this is mpu_fragments->media_fragment_unit_vector
+            mpu_data_unit_payload_fragments_t* mpu_metadata_fragments =    NULL;
+            mpu_data_unit_payload_fragments_t* movie_metadata_fragments  = NULL;
+            mmtp_sub_flow_t* mmtp_sub_flow = NULL;
+            int total_fragments = 0;
+            
+            udp_flow_packet_id_mpu_sequence_tuple_t* udp_flow_last_packet_id_mpu_sequence_id = udp_flow_last_mpu_sequence_number_from_packet_id(udp_flow_latest_mpu_sequence_number_container, udp_packet, mmtp_payload->mmtp_mpu_type_packet_header.mmtp_packet_id);
+            
+            if(udp_flow_last_packet_id_mpu_sequence_id) {
+                __TRACE("before refragment check: ptr: %p, last dst_ip_addr: %u, last dst_port: %hu, last packet_id: %u, last mpu_sequence_number: %u",
+                        udp_flow_last_packet_id_mpu_sequence_id,
+                        udp_flow_last_packet_id_mpu_sequence_id->udp_flow.dst_ip_addr,
+                        udp_flow_last_packet_id_mpu_sequence_id->udp_flow.dst_port,
+                        udp_flow_last_packet_id_mpu_sequence_id->packet_id,
+                        udp_flow_last_packet_id_mpu_sequence_id->mpu_sequence_number);
+            }
+            
+            if(udp_flow_last_packet_id_mpu_sequence_id && udp_flow_last_packet_id_mpu_sequence_id->mpu_sequence_number < mmtp_payload->mmtp_mpu_type_packet_header.mpu_sequence_number) {
+                
+                __INFO("Starting re-fragmenting because packet_id:mpu_sequence number changed from %u:%u to %u:%u", udp_flow_last_packet_id_mpu_sequence_id->packet_id, udp_flow_last_packet_id_mpu_sequence_id->mpu_sequence_number, mmtp_payload->mmtp_mpu_type_packet_header.mmtp_packet_id, mmtp_payload->mmtp_mpu_type_packet_header.mpu_sequence_number);
+                
+                
+                //major refactoring
+                block_t* final_muxed_payload = atsc3_isobmff_build_mpu_metadata_ftyp_moof_mdat_box(&udp_packet->udp_flow, udp_flow_latest_mpu_sequence_number_container, mmtp_sub_flow_vector);
+                if(final_muxed_payload) {
+                    pipe_buffer_reader_mutex_lock(pipe_ffplay_buffer);
+                    
+                    printf("**** return payload is: first 8 bytes are %x %x %x %x %x %x %x %x",
+                           final_muxed_payload->p_buffer[0],
+                           final_muxed_payload->p_buffer[1],
+                           final_muxed_payload->p_buffer[2],
+                           final_muxed_payload->p_buffer[3],
+                           final_muxed_payload->p_buffer[4],
+                           final_muxed_payload->p_buffer[5],
+                           final_muxed_payload->p_buffer[6],
+                           final_muxed_payload->p_buffer[7]);
+                    pipe_buffer_unsafe_push_block(pipe_ffplay_buffer, final_muxed_payload->p_buffer, final_muxed_payload->i_buffer);
+                    
+                    //                    mpu_push_to_output_buffer_no_locking(pipe_ffplay_buffer, mpu_metadata);
+                    pipe_buffer_notify_semaphore_post(pipe_ffplay_buffer);
+                    pipe_buffer_reader_mutex_unlock(pipe_ffplay_buffer);
+                }
+            }
+            
+        purge_pending_mfu_and_update_previous_mmtp_payload:
+            
+#ifdef __REAP
+            //only perform evictions if our last_mpu and last_packet are different than the last eviction run...
+            if(!udp_flow_last_packet_id_mpu_sequence_id || !udp_flow_last_packet_id_mpu_sequence_id->mpu_sequence_number_last_refragmentation_flush || (udp_flow_last_packet_id_mpu_sequence_id->mpu_sequence_number_last_refragmentation_flush - udp_flow_last_packet_id_mpu_sequence_id->mpu_sequence_number_evict_range_start <= 0)) {
+                //bail on reaping this time...
+                goto update_last_packet_id_and_mpu_sequence_number;
+            }
+            
+            //clear out our "global" packet_id data_unit_payloads from the mpu fragments
+            mpu_fragments_t* mpu_fragments = NULL;
+            if(!mmtp_sub_flow) {
+                //try and find our packet_id subflow to clean up any intermediate objects
+                mmtp_sub_flow = mmtp_sub_flow_vector_get_or_set_packet_id(mmtp_sub_flow_vector, udp_flow_last_packet_id_mpu_sequence_id->packet_id);
+                __TRACE("mmtp_sub_flow was null, now: %p, resolved from sub_flow_vector and packet_id: %d",
+                        mmtp_sub_flow,
+                        udp_flow_last_packet_id_mpu_sequence_id->packet_id);
+            }
+            
+            if(mmtp_sub_flow) {
+                mpu_fragments = mpu_fragments_get_or_set_packet_id(mmtp_sub_flow, udp_flow_last_packet_id_mpu_sequence_id->packet_id);
+            }
+            
+            if(mpu_fragments && udp_flow_last_packet_id_mpu_sequence_id->mpu_sequence_number_evict_range_start) {
+                for(; udp_flow_last_packet_id_mpu_sequence_id->mpu_sequence_number_evict_range_start < udp_flow_last_packet_id_mpu_sequence_id->mpu_sequence_number_last_refragmentation_flush; udp_flow_last_packet_id_mpu_sequence_id->mpu_sequence_number_evict_range_start++) {
+                    data_unit_payload_types = mpu_data_unit_payload_fragments_find_mpu_sequence_number(&mpu_fragments->media_fragment_unit_vector, udp_flow_last_packet_id_mpu_sequence_id->mpu_sequence_number_evict_range_start);
+                    
+                    if(data_unit_payload_types && data_unit_payload_types->timed_fragments_vector.data) {
+                        data_unit_payload_fragments = &data_unit_payload_types->timed_fragments_vector;
+                        if(data_unit_payload_fragments) {
+                            //            __INFO("Beginning eviction pass for mpu: %u, mmtp_sub_flow->mpu_fragments->all_mpu_fragments_vector.size: %lu", udp_flow_last_packet_id_mpu_sequence_id->mpu_sequence_number_evict_range_start, mmtp_sub_flow->mpu_fragments->all_mpu_fragments_vector.size)
+                            int evicted_count = atsc3_mmt_mpu_clear_data_unit_payload_fragments(mmtp_sub_flow, mpu_fragments, data_unit_payload_fragments);
+                            //            __INFO("Eviction pass for mpu: %u resulted in %u", udp_flow_last_packet_id_mpu_sequence_id->mpu_sequence_number_evict_range_start, evicted_count);
+                        }
+                    }
+                }
+            }
+            
+        }
+#endif
+        
+        
+    update_last_packet_id_and_mpu_sequence_number:
+        
+        udp_flow_packet_id_mpu_sequence_tuple_t* last_flow_reference = udp_flow_latest_mpu_sequence_number_add_or_replace(udp_flow_latest_mpu_sequence_number_container, udp_packet, mmtp_payload);
+        __TRACE("update_last_packet_id_and_mpu_sequence_number: ptr: %p, last dst_ip_addr: %u, last dst_port: %hu, last packet_id: %u, last mpu_sequence_number: %u",
+                last_flow_reference,
+                last_flow_reference->udp_flow.dst_ip_addr,
+                last_flow_reference->udp_flow.dst_port,
+                last_flow_reference->packet_id,
+                last_flow_reference->mpu_sequence_number);
+        
+        } else {
+            //non-timed
+            global_stats->packet_counter_mmt_nontimed_mpu++;
+        }
+    } else if(mmtp_payload->mmtp_packet_header.mmtp_payload_type == 0x2) {
+        
+        //signaling_message_dump(mmtp_payload);
+            global_stats->packet_counter_mmt_signaling++;
+
+    } else {
+            _MMTP_WARN("mmtp_packet_parse: unknown payload type of 0x%x", mmtp_payload->mmtp_packet_header.mmtp_payload_type);
+            global_stats->packet_counter_mmt_unknown++;
+            goto cleanup;
+    }
+    
+cleanup:
+
+    mmtp_payload_fragments_union_free(mmtp_payload_p);
+    mmtp_payload_p = NULL;
+
+ret:
+    return mmtp_payload;
+
+}
+
+static void route_process_from_alc_packet(alc_packet_t **alc_packet) {
+    alc_packet_dump_to_object(alc_packet);
+    
+    if(lls_slt_monitor->lls_sls_alc_monitor->has_written_init_box && lls_slt_monitor->lls_sls_alc_monitor->should_flush_output_buffer) {
+        AP4_DataBuffer* dataBuffer = new AP4_DataBuffer(4096000);
+        AP4_MemoryByteStream* memoryOutputByteStream = new AP4_MemoryByteStream(dataBuffer);
+        
+        ISOBMFFTrackJoinerFileResouces_t* fileResources = loadFileResources(lls_slt_monitor->lls_sls_alc_monitor);
+        __DEBUG("loadFileResources, file1_size: %llu, file2_size: %llu", fileResources->file1_size, fileResources->file2_size);
+        
+        parsrseAndBuildJoinedBoxes(fileResources, memoryOutputByteStream);
+        block_t* mpu_metadata_output_block_t = NULL;
+        
+        __DEBUG("building reutrn alloc of %u", dataBuffer->GetDataSize());
+        mpu_metadata_output_block_t = block_Alloc(dataBuffer->GetDataSize());
+        memcpy(mpu_metadata_output_block_t->p_buffer, dataBuffer->GetData(), dataBuffer->GetDataSize());
+        
+        //trying to free this causes segfaults 100% of the time
+        
+        free (dataBuffer);
+        pipe_buffer_reader_mutex_lock(pipe_ffplay_buffer);
+        
+        pipe_buffer_unsafe_push_block(pipe_ffplay_buffer, mpu_metadata_output_block_t->p_buffer, mpu_metadata_output_block_t->i_buffer);
+        
+        pipe_buffer_notify_semaphore_post(pipe_ffplay_buffer);
+        
+        //check to see if we have shutdown
+        pipe_buffer_reader_check_if_shutdown(&pipe_ffplay_buffer);
+
+        pipe_buffer_reader_mutex_unlock(pipe_ffplay_buffer);
+        //reset our buffer pos
+        resetBufferPosFromMonitor(lls_slt_monitor->lls_sls_alc_monitor);
+    }
+}
+
+alc_packet_t* route_parse_from_udp_packet(lls_sls_alc_session_t *matching_lls_slt_alc_session, udp_packet_t *udp_packet) {
+    alc_packet_t* alc_packet = NULL;
+
+    //sanity check
+    if(matching_lls_slt_alc_session->alc_session) {
+        //re-inject our alc session
+                alc_channel_t ch;
+        ch.s = matching_lls_slt_alc_session->alc_session;
+        
+        //process ALC streams
+        int retval = alc_rx_analyze_packet_a331_compliant((char*)udp_packet->data, udp_packet->data_length, &ch, &alc_packet);
+        if(!retval) {
+            global_stats->packet_counter_alc_packets_parsed++;
+            
+            //don't dump unless this is pointing to our monitor session
+            //lls_slt_monitor->lls_service &&
+            if(lls_slt_monitor->lls_sls_alc_monitor &&  lls_slt_monitor->lls_sls_alc_monitor->lls_alc_session && lls_slt_monitor->lls_sls_alc_monitor->lls_alc_session->service_id == matching_lls_slt_alc_session->service_id) {
+                goto ret;
+            } else {
+                __LOG_TRACE("ignoring service_id: %u", matching_lls_slt_alc_session->service_id);
+            }
+            goto cleanup;
+        } else {
+            __ERROR("Error in ALC decode: %d", retval);
+            global_stats->packet_counter_alc_packets_parsed_error++;
+            goto cleanup;
+        }
+    } else {
+        __WARN("Have matching ALC session information but ALC client is not active!");
+        goto cleanup;
+    }
+cleanup:
+    alc_packet_free(&alc_packet);
+    alc_packet = NULL;
+
+ret:
+    return alc_packet;
+    
+}
+
 void process_packet(u_char *user, const struct pcap_pkthdr *pkthdr, const u_char *packet) {
 
   int i = 0;
@@ -379,8 +537,6 @@ void process_packet(u_char *user, const struct pcap_pkthdr *pkthdr, const u_char
 	udp_packet->total_packet_length = pkthdr->len;
 	udp_packet->data_length = pkthdr->len - (udp_header_start + 8);
 
-
-
 	if(udp_packet->data_length <=0 || udp_packet->data_length > 1514) {
 		__ERROR("invalid data length of udp packet: %d", udp_packet->data_length);
 		return;
@@ -410,11 +566,8 @@ void process_packet(u_char *user, const struct pcap_pkthdr *pkthdr, const u_char
 		global_bandwidth_statistics->interval_filtered_current_bytes_rx += udp_packet->data_length;
 		global_bandwidth_statistics->interval_filtered_current_packets_rx++;
 
-		//goto cleanup;
 		return cleanup(udp_packet);
-
 	}
-
 	if(udp_packet->udp_flow.dst_ip_addr == LLS_DST_ADDR && udp_packet->udp_flow.dst_port == LLS_DST_PORT) {
 		global_bandwidth_statistics->interval_lls_current_bytes_rx += udp_packet->data_length;
 		global_bandwidth_statistics->interval_lls_current_packets_rx++;
@@ -444,12 +597,10 @@ void process_packet(u_char *user, const struct pcap_pkthdr *pkthdr, const u_char
 
 		//goto cleanup;
 		return cleanup(udp_packet);
-
 	}
 
 
 	//ATSC3/331 Section 6.1 - drop non mulitcast ip ranges - e.g not in  239.255.0.0 to 239.255.255.255
-
 	if(udp_packet->udp_flow.dst_ip_addr <= MIN_ATSC3_MULTICAST_BLOCK || udp_packet->udp_flow.dst_ip_addr >= MAX_ATSC3_MULTICAST_BLOCK) {
 		//out of range, so drop
 		count_packet_as_filtered(udp_packet);
@@ -466,154 +617,29 @@ void process_packet(u_char *user, const struct pcap_pkthdr *pkthdr, const u_char
 		global_bandwidth_statistics->interval_alc_current_packets_rx++;
 		global_stats->packet_counter_alc_recv++;
 
-		if(matching_lls_slt_alc_session->alc_session) {
-			//re-inject our alc session
-			alc_packet_t* alc_packet = NULL;
-			alc_channel_t ch;
-			ch.s = matching_lls_slt_alc_session->alc_session;
-
-			//process ALC streams
-			int retval = alc_rx_analyze_packet_a331_compliant((char*)udp_packet->data, udp_packet->data_length, &ch, &alc_packet);
-			if(!retval) {
-				global_stats->packet_counter_alc_packets_parsed++;
-
-				//don't dump unless this is pointing to our monitor session
-				//lls_slt_monitor->lls_service &&
-				if(lls_slt_monitor->lls_sls_alc_monitor &&  lls_slt_monitor->lls_sls_alc_monitor->lls_alc_session && lls_slt_monitor->lls_sls_alc_monitor->lls_alc_session->service_id == matching_lls_slt_alc_session->service_id) {
-					alc_packet_dump_to_object(&alc_packet);
-
-					if(lls_slt_monitor->lls_sls_alc_monitor->has_written_init_box && lls_slt_monitor->lls_sls_alc_monitor->should_flush_output_buffer) {
-						AP4_DataBuffer* dataBuffer = new AP4_DataBuffer(4096000);
-						AP4_MemoryByteStream* memoryOutputByteStream = new AP4_MemoryByteStream(dataBuffer);
-
-						ISOBMFFTrackJoinerFileResouces_t* fileResources = loadFileResources(lls_slt_monitor->lls_sls_alc_monitor);
-						__DEBUG("loadFileResources, file1_size: %llu, file2_size: %llu", fileResources->file1_size, fileResources->file2_size);
-
-						parsrseAndBuildJoinedBoxes(fileResources, memoryOutputByteStream);
-						block_t* mpu_metadata_output_block_t = NULL;
-
-
-						__DEBUG("building reutrn alloc of %u", dataBuffer->GetDataSize());
-						mpu_metadata_output_block_t = block_Alloc(dataBuffer->GetDataSize());
-						memcpy(mpu_metadata_output_block_t->p_buffer, dataBuffer->GetData(), dataBuffer->GetDataSize());
-
-						//trying to free this causes segfaults 100% of the time
-
-						free (dataBuffer);
-						pipe_buffer_reader_mutex_lock(pipe_ffplay_buffer);
-
-						pipe_buffer_unsafe_push_block(pipe_ffplay_buffer, mpu_metadata_output_block_t->p_buffer, mpu_metadata_output_block_t->i_buffer);
-
-						pipe_buffer_notify_semaphore_post(pipe_ffplay_buffer);
-
-						//check to see if we have shutdown
-						pipe_buffer_reader_check_if_shutdown(&pipe_ffplay_buffer);
-
-						pipe_buffer_reader_mutex_unlock(pipe_ffplay_buffer);
-						//reset our buffer pos
-						resetBufferPosFromMonitor(lls_slt_monitor->lls_sls_alc_monitor);
-					}
-
-				} else {
-					__LOG_TRACE("ignoring service_id: %u", matching_lls_slt_alc_session->service_id);
-				}
-				goto cleanup;
-			} else {
-				__ERROR("Error in ALC decode: %d", retval);
-				global_stats->packet_counter_alc_packets_parsed_error++;
-				goto cleanup;
-			}
-		} else {
-			__WARN("Have matching ALC session information but ALC client is not active!");
-			goto cleanup;
-		}
+        alc_packet_t* alc_packet = route_parse_from_udp_packet(matching_lls_slt_alc_session, udp_packet);
+        if(alc_packet) {
+            route_process_from_alc_packet(&alc_packet);
+            alc_packet_free(&alc_packet);
+        }
+        
+        return cleanup(udp_packet);
 	}
 
 	//Process flow as MMT, we should only have MMT packets left at this point..
 	if((dst_ip_addr_filter == NULL && dst_ip_port_filter == NULL) || (udp_packet->udp_flow.dst_ip_addr == *dst_ip_addr_filter && udp_packet->udp_flow.dst_port == *dst_ip_port_filter)) {
-
-		__TRACE("data len: %d", udp_packet->data_length)
-		mmtp_payload_fragments_union_t* mmtp_payload = mmtp_packet_parse(mmtp_sub_flow_vector, udp_packet->data, udp_packet->data_length);
-
-		if(!mmtp_payload) {
-			global_stats->packet_counter_mmtp_packets_parsed_error++;
-			__ERROR("mmtp_packet_parse: raw packet ptr is null, parsing failed for flow: %d.%d.%d.%d:(%-10u):%-5hu \t ->  %d.%d.%d.%d\t(%-10u)\t:%-5hu",
-					ip_header[12], ip_header[13], ip_header[14], ip_header[15], udp_packet->udp_flow.src_ip_addr,
-					(uint16_t)((udp_header[0] << 8) + udp_header[1]),
-					ip_header[16], ip_header[17], ip_header[18], ip_header[19], udp_packet->udp_flow.dst_ip_addr,
-					(uint16_t)((udp_header[2] << 8) + udp_header[3])
-					);
-			goto cleanup;
-		}
-
-		//for filtering MMT flows by a specific packet_id
-		if(dst_packet_id_filter && *dst_packet_id_filter != mmtp_payload->mmtp_packet_header.mmtp_packet_id) {
-			count_packet_as_filtered(udp_packet);
-			goto cleanup;
-		}
-
-		global_bandwidth_statistics->interval_mmt_current_bytes_rx += udp_packet->data_length;
-		global_bandwidth_statistics->interval_mmt_current_packets_rx++;
-		global_stats->packet_counter_mmtp_packets_received++;
-
-		atsc3_packet_statistics_mmt_stats_populate(udp_packet, mmtp_payload);
-
-		//dump header, then dump applicable packet type
-		//mmtp_packet_header_dump(mmtp_payload);
-
-		if(mmtp_payload->mmtp_packet_header.mmtp_payload_type == 0x0) {
-			global_stats->packet_counter_mmt_mpu++;
-
-			if(mmtp_payload->mmtp_mpu_type_packet_header.mpu_timed_flag == 1) {
-				global_stats->packet_counter_mmt_timed_mpu++;
-
-
-#ifdef __TEST_FFPLAY_MMTP_PIPE_PLAYBACK__
-
-			if(mmtp_payload->mmtp_packet_header.mmtp_packet_id==35 && ip_header[16] == 239 && ip_header[17] == 255 && ip_header[18] == 10 && ip_header[19] == 1) {
-				if(!hasSentMPUHeader) {
-					if(mmtp_payload->mmtp_mpu_type_packet_header.mpu_fragment_type == 0x0) {
-						hasSentMPUHeader = true;
-					} else {
-						goto cleanup;
-					}
-				} else if(mmtp_payload->mmtp_mpu_type_packet_header.mpu_fragment_type == 0x0) {
-					goto cleanup;
-				} else if(mmtp_payload->mmtp_mpu_type_packet_header.mpu_fragment_type == 0x1) {
-					__INFO("got movie fragment metadata: %d, ", mmtp_payload->mmtp_mpu_type_packet_header.packet_sequence_number);
-
-				}
-				__INFO("pushing psn: %d, ", mmtp_payload->mmtp_mpu_type_packet_header.packet_sequence_number);
-				push_mfu_block(mmtp_payload->mmtp_mpu_type_packet_header.mpu_data_unit_payload);
-			}
-#endif
-
-				//timed
-				//mpu_dump_flow(udp_packet->udp_flow.dst_ip_addr, udp_packet->udp_flow.dst_port, mmtp_payload);
-				//mpu_dump_reconstitued(udp_packet->udp_flow.dst_ip_addr, udp_packet->udp_flow.dst_port, mmtp_payload);
-
-				//write out to ffmpeg pipe...
-
-			} else {
-				//non-timed
-				global_stats->packet_counter_mmt_nontimed_mpu++;
-			}
-
-
-		} else if(mmtp_payload->mmtp_packet_header.mmtp_payload_type == 0x2) {
-
-			//signaling_message_dump(mmtp_payload);
-			global_stats->packet_counter_mmt_signaling++;
-
-		} else {
-			_MMTP_WARN("mmtp_packet_parse: unknown payload type of 0x%x", mmtp_payload->mmtp_packet_header.mmtp_payload_type);
-			global_stats->packet_counter_mmt_unknown++;
-			goto cleanup;
-		}
-
-		mmtp_payload_fragments_union_free(&mmtp_payload);
+        __TRACE("data len: %d", udp_packet->data_length)
+        mmtp_payload_fragments_union_t * mmtp_payload = mmtp_parse_from_udp_packet(udp_packet);
+        if(mmtp_payload) {
+            mmtp_process_from_payload(udp_packet, &mmtp_payload);
+            mmtp_payload_fragments_union_free(&mmtp_payload);
+        }
+        return cleanup(udp_packet);
 	}
 
+    //if we get here, we don't know what type of packet it is..
+    global_stats->packet_counter_udp_unknown++;
+    
 cleanup:
 
 	if(udp_packet->data) {
@@ -661,6 +687,7 @@ void* pcap_loop_run_thread(void* dev_pointer) {
     return 0;
 }
 
+
 /**
  *
  * atsc3_mmt_listener_test interface (dst_ip) (dst_port)
@@ -675,9 +702,9 @@ int main(int argc,char **argv) {
 
     char *dev;
 
-    char *filter_dst_ip = "";
-    char *filter_dst_port = "";
-    char *filter_packet_id = "";
+    char *filter_dst_ip = NULL;
+    char *filter_dst_port = NULL;
+    char *filter_packet_id = NULL;
 
     int dst_port_filter_int;
     int dst_ip_port_filter_int;
@@ -748,6 +775,8 @@ int main(int argc,char **argv) {
 
     mmtp_sub_flow_vector = (mmtp_sub_flow_vector_t*)calloc(1, sizeof(*mmtp_sub_flow_vector));
     mmtp_sub_flow_vector_init(mmtp_sub_flow_vector);
+    udp_flow_latest_mpu_sequence_number_container = udp_flow_latest_mpu_sequence_number_container_t_init();
+
     lls_slt_monitor = lls_slt_monitor_create();
 
     global_stats = (global_atsc3_stats*)calloc(1, sizeof(*global_stats));
@@ -792,7 +821,7 @@ int main(int argc,char **argv) {
 	int pcap_ret = pthread_create(&global_pcap_thread_id, NULL, pcap_loop_run_thread, (void*)dev);
 	assert(!pcap_ret);
 
-
+    
 	pthread_join(global_pcap_thread_id, NULL);
 	pthread_join(global_ncurses_input_thread_id, NULL);
 
@@ -803,6 +832,7 @@ int main(int argc,char **argv) {
 
     return 0;
 }
+
 
 /***
  *
