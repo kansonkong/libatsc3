@@ -173,8 +173,14 @@ uint8_t* mmtp_packet_header_parse_from_raw_packet(mmtp_payload_fragments_union_t
 	compute_ntp32_to_seconds_microseconds(mmtp_packet->mmtp_packet_header.mmtp_timestamp, &mmtp_packet->mmtp_packet_header.mmtp_timestamp_s, &mmtp_packet->mmtp_packet_header.mmtp_timestamp_us);
 
 	mmtp_packet->mmtp_packet_header.packet_sequence_number	= mmtp_packet_preamble[8]  << 24 | mmtp_packet_preamble[9]  << 16 | mmtp_packet_preamble[10]  << 8 | mmtp_packet_preamble[11];
-	mmtp_packet->mmtp_packet_header.packet_counter 			= mmtp_packet_preamble[12] << 24 | mmtp_packet_preamble[13] << 16 | mmtp_packet_preamble[14]  << 8 | mmtp_packet_preamble[15];
-
+   
+    if(mmtp_packet->mmtp_packet_header.packet_counter_flag) {
+        mmtp_packet->mmtp_packet_header.packet_counter 			= mmtp_packet_preamble[12] << 24 | mmtp_packet_preamble[13] << 16 | mmtp_packet_preamble[14]  << 8 | mmtp_packet_preamble[15];
+    } else {
+        //walk back our buff by 4 bytes, korean MMT may not set this.
+        buf-=4;
+    }
+    
 	return buf;
 
 error:
