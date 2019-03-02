@@ -116,17 +116,18 @@ void* ncurses_input_run_thread(void *vargp) {
                     
                     lls_sls_mmt_session_t* lls_sls_mmt_session = lls_slt_mmt_session_find_from_service_id(lls_slt_monitor, my_service_id);
                     if(lls_sls_mmt_session) {
+                        //TODO - free and teardown if we already have an active montiro
+
                         //build our alc_session map
+                        
                         lls_sls_mmt_monitor_t* lls_sls_mmt_monitor = lls_sls_mmt_monitor_create();
                         lls_sls_mmt_monitor->lls_mmt_session = lls_sls_mmt_session;
 
                         //todo - wire up to mbms signaling
-                        lls_sls_mmt_monitor->video_tsi = 1;
-                        lls_sls_mmt_monitor->video_toi_init = 2100000000;
+                        lls_sls_mmt_monitor->video_packet_id = 35;
                         
-                        lls_sls_mmt_monitor->audio_tsi = 2;
-                        lls_sls_mmt_monitor->audio_toi_init = 2100000000;
-                        lls_sls_mmt_monitor->has_written_init_box = false;
+                        lls_sls_mmt_monitor->audio_packet_id = 36;
+                        lls_sls_mmt_monitor->lls_sls_monitor_output_buffer.has_written_init_box = false;
                         lls_slt_monitor->lls_sls_mmt_monitor = lls_sls_mmt_monitor;
                         
                         //todo, find our service_id map here
@@ -183,6 +184,7 @@ void* ncurses_input_run_thread(void *vargp) {
 
 					lls_sls_alc_session_t* lls_sls_alc_session = lls_slt_alc_session_find_from_service_id(lls_slt_monitor, my_service_id);
 					if(lls_sls_alc_session) {
+                        //TODO - free and teardown if we already have an active montiro
 						//build our alc_session map
 						lls_sls_alc_monitor_t* lls_sls_alc_monitor = lls_sls_alc_monitor_create();
 						lls_sls_alc_monitor->lls_alc_session = lls_sls_alc_session;
@@ -193,7 +195,7 @@ void* ncurses_input_run_thread(void *vargp) {
 
 						lls_sls_alc_monitor->audio_tsi = 2;
 						lls_sls_alc_monitor->audio_toi_init = 2100000000;
-						lls_sls_alc_monitor->has_written_init_box = false;
+						lls_sls_alc_monitor->lls_sls_monitor_output_buffer.has_written_init_box = false;
 						lls_slt_monitor->lls_sls_alc_monitor = lls_sls_alc_monitor;
 						//todo, find our service_id map here
 						//lls_slt_monitor->lls_service =

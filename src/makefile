@@ -36,17 +36,26 @@ xml.o: xml.c xml.h
 atsc3_lls.o: atsc3_utils.h atsc3_lls.h atsc3_lls.c
 	cc -g -c atsc3_lls.c
 	
+	
+atsc3_lls_mmt_utils.o: atsc3_lls_mmt_utils.h atsc3_lls_mmt_utils.c
+	cc -g -c atsc3_lls_mmt_utils.c
+
 atsc3_lls_alc_utils.o: atsc3_lls_alc_utils.h atsc3_lls_alc_utils.c
 	cc -g -c atsc3_lls_alc_utils.c
 	
 atsc3_lls_sls_parser.o: atsc3_lls_sls_parser.h atsc3_lls_sls_parser.c
 	cc -g -c atsc3_lls_sls_parser.c
 
-
 atsc3_lls_slt_parser.o: atsc3_lls_slt_parser.h atsc3_lls_slt_parser.c
 	cc -g -c atsc3_lls_slt_parser.c
-
-
+	
+atsc3_lls_sls_monitor_output_buffer.o: atsc3_lls_sls_monitor_output_buffer.h atsc3_lls_sls_monitor_output_buffer.c
+	cc -g -c atsc3_lls_sls_monitor_output_buffer.c
+	
+atsc3_lls_sls_monitor_output_buffer_utils.o: atsc3_lls_sls_monitor_output_buffer_utils.h atsc3_lls_sls_monitor_output_buffer_utils.c
+	cc -g -c atsc3_lls_sls_monitor_output_buffer_utils.c
+	
+    
 atsc3_mmtp_parser.o: atsc3_mmtp_types.h atsc3_mmtp_parser.h atsc3_mmtp_parser.c 
 	cc -g -c atsc3_mmtp_parser.c
 	
@@ -74,6 +83,7 @@ atsc3_alc_rx.o:  atsc3_alc_rx.h atsc3_alc_rx.c atsc3_lct_hdr.h
 atsc3_alc_utils.o: atsc3_alc_utils.h atsc3_alc_utils.c
 	cc -g -c atsc3_alc_utils.c -o atsc3_alc_utils.o
 
+
 #atsc3_alc_utils_cpp.o: atsc3_alc_utils.h atsc3_alc_utils.c
 #	g++ -g -c atsc3_alc_utils.c -o atsc3_alc_utils_cpp.o
 		
@@ -99,12 +109,15 @@ atsc3_isobmff_tools.o: atsc3_isobmff_tools.h atsc3_isobmff_tools.cpp
 libatsc3.o: xml.o atsc3_lls.o atsc3_lls_slt_parser.o atsc3_lls_sls_parser.o atsc3_mmtp_parser.o atsc3_mmtp_ntp32_to_pts.o atsc3_utils.o \
 		fixups_timespec_get.o atsc3_mmt_signaling_message.o atsc3_mmt_mpu_parser.o alc_channel.o alc_list.o \
 		atsc3_alc_rx.o alc_session.o fec.o null_fec.o rs_fec.o xor_fec.o mad.o mad_rlc.o transport.o \
-		atsc3_lls_alc_utils.o atsc3_mmt_mpu_utils.o atsc3_player_ffplay.o atsc3_alc_utils.o
+		atsc3_lls_alc_utils.o atsc3_mmt_mpu_utils.o atsc3_player_ffplay.o atsc3_alc_utils.o \
+        atsc3_lls_sls_monitor_output_buffer.o atsc3_lls_sls_monitor_output_buffer_utils.o \
+		atsc3_lls_mmt_utils.o        
 	
 	ld  -o libatsc3.o -r xml.o atsc3_lls.o atsc3_lls_slt_parser.o  atsc3_lls_sls_parser.o atsc3_mmtp_parser.o atsc3_mmtp_ntp32_to_pts.o atsc3_utils.o \
 		fixups_timespec_get.o atsc3_mmt_signaling_message.o atsc3_mmt_mpu_parser.o alc_channel.o alc_list.o \
 		atsc3_alc_rx.o alc_session.o fec.o null_fec.o rs_fec.o xor_fec.o mad.o mad_rlc.o transport.o atsc3_alc_utils.o \
-		atsc3_lls_alc_utils.o atsc3_mmt_mpu_utils.o atsc3_player_ffplay.o 
+		atsc3_lls_alc_utils.o atsc3_mmt_mpu_utils.o atsc3_player_ffplay.o atsc3_lls_sls_monitor_output_buffer.o atsc3_lls_sls_monitor_output_buffer_utils.o \
+		atsc3_lls_mmt_utils.o
 		
 # atsc3_bandwidth_statistics.o
 # atsc3_packet_statistics.o

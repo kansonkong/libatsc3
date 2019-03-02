@@ -98,6 +98,7 @@ extern "C" {
 #include "atsc3_lls_alc_utils.h"
 
 #include "atsc3_lls_slt_parser.h"
+#include "atsc3_lls_sls_monitor_output_buffer_utils.h"
 
 #include "atsc3_mmtp_types.h"
 #include "atsc3_mmtp_parser.h"
@@ -184,8 +185,8 @@ uint16_t* dst_packet_id_filter = NULL;
 lls_slt_monitor_t* lls_slt_monitor;
 
 //make sure to invoke     mmtp_sub_flow_vector_init(&p_sys->mmtp_sub_flow_vector);
-mmtp_sub_flow_vector_t* mmtp_sub_flow_vector;
-extern pipe_ffplay_buffer_t* pipe_ffplay_buffer;
+mmtp_sub_flow_vector_t*                          mmtp_sub_flow_vector;
+extern pipe_ffplay_buffer_t*                     pipe_ffplay_buffer;
 udp_flow_latest_mpu_sequence_number_container_t* udp_flow_latest_mpu_sequence_number_container;
 
 
@@ -196,38 +197,6 @@ extern uint32_t __VIDEO_RECON_FRAGMENT_SIZE;
 extern uint8_t* __AUDIO_RECON_FRAGMENT;
 extern uint32_t __AUDIO_RECON_FRAGMENT_SIZE;
 
-
-ISOBMFFTrackJoinerFileResouces_t* loadFileResources(lls_sls_alc_monitor_t* lls_sls_alc_monitor) {
-
-	ISOBMFFTrackJoinerFileResouces_t* isoBMFFTrackJoinerResources = (ISOBMFFTrackJoinerFileResouces_t*)calloc(1, sizeof(ISOBMFFTrackJoinerFileResouces_t));
-
-	const char* file1 = "35";
-
-	isoBMFFTrackJoinerResources->file1_name = (char*)calloc(strlen(file1)+1, sizeof(char));
-	strncpy(isoBMFFTrackJoinerResources->file1_name, file1, strlen(file1));
-//	printf("**** first 8 bytes are %x %x %x %x %x %x %x %x",
-//			__VIDEO_RECON_FRAGMENT[0],
-//			__VIDEO_RECON_FRAGMENT[1],
-//			__VIDEO_RECON_FRAGMENT[2],
-//			__VIDEO_RECON_FRAGMENT[3],
-//			__VIDEO_RECON_FRAGMENT[4],
-//			__VIDEO_RECON_FRAGMENT[5],
-//			__VIDEO_RECON_FRAGMENT[6],
-//			__VIDEO_RECON_FRAGMENT[7]);
-
-	isoBMFFTrackJoinerResources->file1_payload = lls_sls_alc_monitor->video_output_buffer;
-	isoBMFFTrackJoinerResources->file1_size = lls_sls_alc_monitor->video_output_buffer_pos;
-
-
-	const char* file2 = "36";
-	isoBMFFTrackJoinerResources->file2_name = (char*)calloc(strlen(file2)+1, sizeof(char));
-	strncpy(isoBMFFTrackJoinerResources->file2_name, file2, strlen(file2));
-
-	isoBMFFTrackJoinerResources->file2_payload = lls_sls_alc_monitor->audio_output_buffer;
-	isoBMFFTrackJoinerResources->file2_size = lls_sls_alc_monitor->audio_output_buffer_pos;
-
-	return isoBMFFTrackJoinerResources;
-}
 
 global_atsc3_stats_t* global_stats;
 void count_packet_as_filtered(udp_packet_t* udp_packet) {
@@ -411,14 +380,13 @@ ret:
 static void route_process_from_alc_packet(alc_packet_t **alc_packet) {
     alc_packet_dump_to_object(alc_packet);
     
-    if(lls_slt_monitor->lls_sls_alc_monitor->has_written_init_box && lls_slt_monitor->lls_sls_alc_monitor->should_flush_output_buffer) {
+    if(lls_slt_monitor->lls_sls_alc_monitor->lls_sls_monitor_output_buffer.has_written_init_box && lls_slt_monitor->lls_sls_alc_monitor->lls_sls_monitor_output_buffer.should_flush_output_buffer) {
         AP4_DataBuffer* dataBuffer = new AP4_DataBuffer(4096000);
         AP4_MemoryByteStream* memoryOutputByteStream = new AP4_MemoryByteStream(dataBuffer);
         
-        ISOBMFFTrackJoinerFileResouces_t* fileResources = loadFileResources(lls_slt_monitor->lls_sls_alc_monitor);
-        __DEBUG("loadFileResources, file1_size: %llu, file2_size: %llu", fileResources->file1_size, fileResources->file2_size);
+      
         
-        parsrseAndBuildJoinedBoxes(fileResources, memoryOutputByteStream);
+        ISOBMFF_track_joiner_monitor_output_buffer_parse_and_build_joined_boxes(&lls_slt_monitor->lls_sls_alc_monitor->lls_sls_monitor_output_buffer, memoryOutputByteStream);
         block_t* mpu_metadata_output_block_t = NULL;
         
         __DEBUG("building reutrn alloc of %u", dataBuffer->GetDataSize());
@@ -439,7 +407,7 @@ static void route_process_from_alc_packet(alc_packet_t **alc_packet) {
 
         pipe_buffer_reader_mutex_unlock(pipe_ffplay_buffer);
         //reset our buffer pos
-        resetBufferPosFromMonitor(lls_slt_monitor->lls_sls_alc_monitor);
+        lls_sls_monitor_output_buffer_reset_position(&lls_slt_monitor->lls_sls_alc_monitor->lls_sls_monitor_output_buffer);
     }
 }
 

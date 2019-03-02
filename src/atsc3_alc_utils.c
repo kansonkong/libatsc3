@@ -66,6 +66,7 @@ RFC 5775               ALC Protocol Instantiation             April 2010
 
 #include "atsc3_alc_utils.h"
 
+#include "atsc3_lls_sls_monitor_output_buffer_utils.h"
 //shortcut hack
 #include "atsc3_isobmff_tools.h"
 
@@ -84,36 +85,6 @@ uint32_t* __ALC_RECON_FILE_PTR_TOI_INIT = NULL;
 
 FILE* __ALC_RECON_FILE_PTR = NULL; //deprecated
 lls_sls_alc_monitor_t* __ALC_RECON_MONITOR;
-
-#define __MAX_RECON_BUFFER 4096000
-
-
-void resetBufferPosFromMonitor(lls_sls_alc_monitor_t* lls_sls_alc_monitor) {
-	lls_sls_alc_monitor->video_output_buffer_pos = 0;
-	lls_sls_alc_monitor->audio_output_buffer_pos = 0;
-	lls_sls_alc_monitor->should_flush_output_buffer = false;
-}
-
-
-void __copy_video_block_to_monitor(lls_sls_alc_monitor_t* lls_sls_alc_monitor, block_t* video_isobmff_header) {
-
-	if(!lls_sls_alc_monitor->video_output_buffer) {
-		lls_sls_alc_monitor->video_output_buffer = (uint8_t*) calloc(__MAX_RECON_BUFFER, sizeof(uint8_t*));
-	}
-
-    memcpy(&lls_sls_alc_monitor->video_output_buffer[lls_sls_alc_monitor->video_output_buffer_pos], video_isobmff_header->p_buffer, video_isobmff_header->i_buffer);
-    lls_sls_alc_monitor->video_output_buffer_pos += video_isobmff_header->i_buffer;
-}
-
-
-void __copy_audio_block_to_monitor(lls_sls_alc_monitor_t* lls_sls_alc_monitor, block_t* audio_isobmff_header) {
-
-	if(!lls_sls_alc_monitor->audio_output_buffer) {
-		lls_sls_alc_monitor->audio_output_buffer = (uint8_t*)calloc(__MAX_RECON_BUFFER, sizeof(uint8_t*));
-	}
-    memcpy(&lls_sls_alc_monitor->audio_output_buffer[lls_sls_alc_monitor->audio_output_buffer_pos], audio_isobmff_header->p_buffer, audio_isobmff_header->i_buffer);
-    lls_sls_alc_monitor->audio_output_buffer_pos += audio_isobmff_header->i_buffer;
-}
 
 
 
@@ -753,8 +724,8 @@ void alc_recon_file_buffer_struct_monitor_fragment_with_init_box(pipe_ffplay_buf
 			block_t* video_init_payload = get_payload(video_init_file_name);
 
 			if(audio_init_payload && video_init_payload) {
-				__copy_audio_block_to_monitor(lls_sls_alc_monitor, audio_init_payload);
-				__copy_video_block_to_monitor(lls_sls_alc_monitor, video_init_payload);
+				lls_sls_monitor_output_buffer_copy_audio_block(&lls_sls_alc_monitor->lls_sls_monitor_output_buffer, audio_init_payload);
+				lls_sls_monitor_output_buffer_copy_audio_block(&lls_sls_alc_monitor->lls_sls_monitor_output_buffer, video_init_payload);
 
 			} else {
 				__ALC_UTILS_ERROR("missing init payloads, audio: %p, video: %p", audio_init_payload, video_init_payload);
@@ -766,11 +737,11 @@ void alc_recon_file_buffer_struct_monitor_fragment_with_init_box(pipe_ffplay_buf
 		}
 
 
-		__copy_audio_block_to_monitor(lls_sls_alc_monitor, audio_fragment_payload);
-		__copy_video_block_to_monitor(lls_sls_alc_monitor, video_fragment_payload);
+		lls_sls_monitor_output_buffer_copy_audio_block(&lls_sls_alc_monitor->lls_sls_monitor_output_buffer, audio_fragment_payload);
+		lls_sls_monitor_output_buffer_copy_video_block(&lls_sls_alc_monitor->lls_sls_monitor_output_buffer, video_fragment_payload);
 		pipe_ffplay_buffer->has_written_init_box = true;
-		lls_sls_alc_monitor->has_written_init_box = true;
-		lls_sls_alc_monitor->should_flush_output_buffer = true;
+		lls_sls_alc_monitor->lls_sls_monitor_output_buffer.has_written_init_box = true;
+		lls_sls_alc_monitor->lls_sls_monitor_output_buffer.should_flush_output_buffer = true;
 	}
 
 
