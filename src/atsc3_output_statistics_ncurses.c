@@ -12,7 +12,7 @@
 
 //TODO - get rid of me...
 extern int _ALC_PACKET_DUMP_TO_OBJECT_ENABLED;
-extern lls_slt_monitor_t* lls_slt_monitor;
+
 pthread_mutex_t ncurses_writer_lock;
 
 void ncurses_init() {
@@ -60,10 +60,11 @@ void mtl_clear() {
 	wmove(my_window, 0, 1);
 }
 
-void* ncurses_input_run_thread(void *vargp) {
-	int ch;
+void* ncurses_input_run_thread(void* lls_slt_monitor_ptr) {
+    int ch;
+    lls_slt_monitor_t* lls_slt_monitor = (lls_slt_monitor_t*)lls_slt_monitor_ptr;
 
-	while(1) {
+    while(1) {
 
 		ch = wgetch(my_window);
 		if(ch == CTRL('c') || ch == 'q') {

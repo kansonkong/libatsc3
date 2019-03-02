@@ -41,7 +41,7 @@ extern "C" {
 #endif
 
 
-lls_slt_monitor_t* lls_slt_monitor_create();
+lls_slt_monitor_t* lls_slt_monitor_create(void);
 
 int lls_slt_table_check_process_update(lls_table_t* lls_table, lls_slt_monitor_t* lls_slt_monitor);
 int lls_slt_table_process_update(lls_table_t* lls_table, lls_slt_monitor_t* lls_slt_monitor);
