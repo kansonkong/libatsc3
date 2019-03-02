@@ -383,12 +383,12 @@ void atsc3_packet_statistics_dump_global_stats(){
 		__PS_STATS_FLOW("packet_seq_numbers      : %-10u to %-10u (0x%08x to 0x%08x)    max sequence gap: %-6d ",	packet_mmt_stats->packet_sequence_number_lifetime_start,  packet_mmt_stats->packet_sequence_number, packet_mmt_stats->packet_sequence_number_lifetime_start, packet_mmt_stats->packet_sequence_number, packet_mmt_stats->packet_sequence_number_max_gap);
 		__PS_STATS_FLOW("Total packets RX        : %-6u     missing: %-6u",	packet_mmt_stats->packet_sequence_number_lifetime_processed, packet_mmt_stats->packet_sequence_number_lifetime_missing);
 		int row, col;
-		getyx(pkt_flow_stats_window, row, col);
+		getyx(pkt_flow_stats_mmt_window, row, col);
 	//	printf("----row: %d, col: %d\n", row, col);
-		wmove(pkt_flow_stats_window, row, col+2);
-		wrefresh(pkt_flow_stats_window);
-		whline(pkt_flow_stats_window, ACS_HLINE, 8);
-		wrefresh(pkt_flow_stats_window);
+		wmove(pkt_flow_stats_mmt_window, row, col+2);
+		wrefresh(pkt_flow_stats_mmt_window);
+		whline(pkt_flow_stats_mmt_window, ACS_HLINE, 8);
+		wrefresh(pkt_flow_stats_mmt_window);
 
 		__PS_STATS_HR();
 

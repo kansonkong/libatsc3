@@ -37,6 +37,8 @@ void ncurses_writer_lock_mutex_release();
 void ncurses_writer_lock_mutex_destroy();
 void create_or_update_window_sizes(bool should_reload_term_size);
 void handle_winch(int sig);
+    void handle_sighup(int sig);
+
 
 void* print_lls_instance_table_thread(void*);
 void lls_dump_instance_table_ncurses(lls_table_t* lls_session);
@@ -60,7 +62,7 @@ extern		WINDOW* bw_window_lifetime;
 
 
 extern WINDOW* right_window_outline;
-extern 	WINDOW* pkt_flow_stats_window;
+extern 	WINDOW* pkt_flow_stats_mmt_window;
 
 extern WINDOW* bottom_window_outline;
 extern 	WINDOW* pkt_global_loss_window;
@@ -78,17 +80,17 @@ extern 	WINDOW* pkt_global_loss_window;
 									werase(bw_window_lifetime); \
 
 #define __PS_STATS_NOUPDATE()		wnoutrefresh(pkt_global_stats_window); \
-									wnoutrefresh(pkt_flow_stats_window); \
+									wnoutrefresh(pkt_flow_stats_mmt_window); \
 									wnoutrefresh(pkt_global_loss_window);
 
 #define __PS_STATS_GLOBAL(...) 		wprintw(pkt_global_stats_window, __VA_ARGS__); \
 									wprintw(pkt_global_stats_window,"\n");
 
-#define __PS_STATS_FLOW(...) 		wprintw(pkt_flow_stats_window, __VA_ARGS__); \
-									wprintw(pkt_flow_stats_window,"\n");
+#define __PS_STATS_FLOW(...) 		wprintw(pkt_flow_stats_mmt_window, __VA_ARGS__); \
+									wprintw(pkt_flow_stats_mmt_window,"\n");
 
-#define __PS_STATS_HR()				whline(pkt_flow_stats_window, ACS_BOARD, 15); \
-									wprintw(pkt_flow_stats_window,"\n");
+#define __PS_STATS_HR()				whline(pkt_flow_stats_mmt_window, ACS_BOARD, 15); \
+									wprintw(pkt_flow_stats_mmt_window,"\n");
 
 
 
@@ -99,10 +101,10 @@ extern 	WINDOW* pkt_global_loss_window;
 
 
 #define __PS_REFRESH() 				wrefresh(pkt_global_stats_window); \
-									wrefresh(pkt_flow_stats_window);
+									wrefresh(pkt_flow_stats_mmt_window);
 
 #define __PS_CLEAR() 				werase(pkt_global_stats_window); \
-									werase(pkt_flow_stats_window);
+									werase(pkt_flow_stats_mmt_window);
 
 #define __PS_STATS_GLOBAL_LOSS(...)	wprintw(pkt_global_loss_window, __VA_ARGS__); \
 									wprintw(pkt_global_loss_window,"\n");

@@ -295,29 +295,29 @@ list<AP4_Atom*> ISOBMFFTrackParse(uint8_t* full_mpu_payload, uint32_t full_mpu_p
 
 void dumpFullMetadata(list<AP4_Atom*> atomList) {
 
-	AP4_ByteStream* boxDumpConsoleOutput = NULL;
-	AP4_FileByteStream::Create("-stdout", AP4_FileByteStream::STREAM_MODE_WRITE, boxDumpConsoleOutput);
-	AP4_AtomInspector* inspector = new AP4_PrintInspector(*boxDumpConsoleOutput);
-	inspector->SetVerbosity(3);
-
-	std::list<AP4_Atom*>::iterator it;
-	for (it = atomList.begin(); it != atomList.end(); it++) {
-		(*it)->Inspect(*inspector);
-	}
-
-	if (boxDumpConsoleOutput) boxDumpConsoleOutput->Release();
-	delete inspector;
+//	AP4_ByteStream* boxDumpConsoleOutput = NULL;
+//	AP4_FileByteStream::Create("-stdout", AP4_FileByteStream::STREAM_MODE_WRITE, boxDumpConsoleOutput);
+//	AP4_AtomInspector* inspector = new AP4_PrintInspector(*boxDumpConsoleOutput);
+//	inspector->SetVerbosity(3);
+//
+//	std::list<AP4_Atom*>::iterator it;
+//	for (it = atomList.begin(); it != atomList.end(); it++) {
+//		(*it)->Inspect(*inspector);
+//	}
+//
+//	if (boxDumpConsoleOutput) boxDumpConsoleOutput->Release();
+//	delete inspector;
 
 }
 
 
 void printBoxType(AP4_Atom* atom) {
 
-	AP4_UI32 m_Type = atom->GetType();
-	char name[5];
-	AP4_FormatFourCharsPrintable(name, m_Type);
-
-	name[4] = '\0';
-	__ISOBMFF_JOINER_DEBUG("printBoxType: atom type: %s, size: %llu\n", name, atom->GetSize());
+//	AP4_UI32 m_Type = atom->GetType();
+//	char name[5];
+//	AP4_FormatFourCharsPrintable(name, m_Type);
+//
+//	name[4] = '\0';
+//	__ISOBMFF_JOINER_DEBUG("printBoxType: atom type: %s, size: %llu\n", name, atom->GetSize());
 }
 

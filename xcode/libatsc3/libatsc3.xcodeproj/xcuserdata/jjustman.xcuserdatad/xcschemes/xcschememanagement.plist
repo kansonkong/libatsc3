@@ -24,6 +24,11 @@
 			<key>orderHint</key>
 			<integer>2</integer>
 		</dict>
+		<key>docs.xcscheme_^#shared#^_</key>
+		<dict>
+			<key>orderHint</key>
+			<integer>4</integer>
+		</dict>
 		<key>libatsc3.xcscheme_^#shared#^_</key>
 		<dict>
 			<key>orderHint</key>
@@ -38,6 +43,11 @@
 			<true/>
 		</dict>
 		<key>3051DCE2221A8A9900ED316D</key>
+		<dict>
+			<key>primary</key>
+			<true/>
+		</dict>
+		<key>30B112F7222AB5BA0068F33D</key>
 		<dict>
 			<key>primary</key>
 			<true/>
