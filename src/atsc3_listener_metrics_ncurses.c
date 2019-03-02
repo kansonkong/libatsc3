@@ -280,7 +280,7 @@ mmtp_payload_fragments_union_t* mmtp_process_from_payload(udp_packet_t *udp_pack
                 
                 //major refactoring
                 block_t* final_muxed_payload = atsc3_isobmff_build_mpu_metadata_ftyp_moof_mdat_box(&udp_packet->udp_flow, udp_flow_latest_mpu_sequence_number_container, mmtp_sub_flow_vector);
-                if(final_muxed_payload) {
+                if(final_muxed_payload && pipe_ffplay_buffer) {
                     pipe_buffer_reader_mutex_lock(pipe_ffplay_buffer);
                     
                     printf("**** return payload is: first 8 bytes are %x %x %x %x %x %x %x %x",
@@ -369,7 +369,7 @@ mmtp_payload_fragments_union_t* mmtp_process_from_payload(udp_packet_t *udp_pack
     
 cleanup:
 
-    mmtp_payload_fragments_union_free(mmtp_payload_p);
+ //   mmtp_payload_fragments_union_free(mmtp_payload_p);
     mmtp_payload_p = NULL;
 
 ret:
@@ -595,12 +595,15 @@ void process_packet(u_char *user, const struct pcap_pkthdr *pkthdr, const u_char
 	}
 
 	//Process flow as MMT, we should only have MMT packets left at this point..
-	if((dst_ip_addr_filter == NULL && dst_ip_port_filter == NULL) || (udp_packet->udp_flow.dst_ip_addr == *dst_ip_addr_filter && udp_packet->udp_flow.dst_port == *dst_ip_port_filter)) {
+//    if((dst_ip_addr_filter == NULL && dst_ip_port_filter == NULL) || (udp_packet->udp_flow.dst_ip_addr == *dst_ip_addr_filter && udp_packet->udp_flow.dst_port == *dst_ip_port_filter)) {
+
+    lls_sls_mmt_session_t* matching_lls_slt_mmt_session = lls_slt_mmt_session_find_from_udp_packet(lls_slt_monitor, udp_packet->udp_flow.src_ip_addr, udp_packet->udp_flow.dst_ip_addr, udp_packet->udp_flow.dst_port);
+    if(matching_lls_slt_mmt_session) {
         __TRACE("data len: %d", udp_packet->data_length)
         mmtp_payload_fragments_union_t * mmtp_payload = mmtp_parse_from_udp_packet(udp_packet);
         if(mmtp_payload) {
             mmtp_process_from_payload(udp_packet, &mmtp_payload);
-            mmtp_payload_fragments_union_free(&mmtp_payload);
+           // mmtp_payload_fragments_union_free(&mmtp_payload);
         }
         return cleanup(udp_packet);
 	}
@@ -667,6 +670,8 @@ int main(int argc,char **argv) {
 	_MPU_DEBUG_ENABLED = 0;
 	_MMTP_DEBUG_ENABLED = 0;
 	_LLS_DEBUG_ENABLED = 0;
+    _ISOBMFF_TOOLS_DEBUG_ENABLED = 1;
+
 
     char *dev;
 

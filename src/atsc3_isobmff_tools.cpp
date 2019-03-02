@@ -118,20 +118,30 @@ block_t* atsc3_isobmff_build_mpu_metadata_ftyp_moof_mdat_box(udp_flow_t* udp_flo
 
  		mmtp_sub_flow = mmtp_sub_flow_vector_get_or_set_packet_id(mmtp_sub_flow_vector, udp_flow_packet_id_mpu_sequence_tuple->packet_id);
 
-		if(mmtp_sub_flow) {
-			mpu_metadata_fragments = mmtp_sub_flow->mpu_fragments->mpu_metadata_fragments_vector.data ? mmtp_sub_flow->mpu_fragments->mpu_metadata_fragments_vector.data[0] : NULL;
+		if(mmtp_sub_flow && mmtp_sub_flow->mpu_fragments->mpu_metadata_fragments_vector.size) {
+            int all_mpu_metadata_fragment_walk_count = mmtp_sub_flow->mpu_fragments->mpu_metadata_fragments_vector.size-1;
+            
+            //mmtp_sub_flow->mpu_fragments->mpu_metadata_fragments_vector.data ?
+            while(all_mpu_metadata_fragment_walk_count>1) {
+                mpu_metadata_fragments =  mmtp_sub_flow->mpu_fragments->mpu_metadata_fragments_vector.data[all_mpu_metadata_fragment_walk_count--];
 
-			if(mpu_metadata_fragments) {
-				int fragment_walk_count = 0;
+                if(mpu_metadata_fragments) {
+                    int fragment_walk_count = 0;
+                    bool found_mpu_metadata_fragment = false;
+                    
+                        //&& mpu_metadata_fragments->timed_fragments_vector.
+                        //while(fragment_walk_count < mpu_metadata_fragments->timed_fragments_vector.size) {
+                    while(fragment_walk_count < 1 && mpu_metadata_fragments->timed_fragments_vector.size) {
 
-				//&& mpu_metadata_fragments->timed_fragments_vector.
-				while(fragment_walk_count < mpu_metadata_fragments->timed_fragments_vector.size) {
-					mpu_metadata_fragment = mpu_metadata_fragments->timed_fragments_vector.data[fragment_walk_count++];
-					if(mpu_metadata_fragment && mpu_metadata_fragment->mmtp_mpu_type_packet_header.mpu_data_unit_payload && mpu_metadata_fragment->mmtp_mpu_type_packet_header.mpu_data_unit_payload->i_buffer ) {
-						break;
-					}
-					mpu_metadata_fragment = NULL;
-				}
+                        mpu_metadata_fragment = mpu_metadata_fragments->timed_fragments_vector.data[fragment_walk_count++];
+                        if(mpu_metadata_fragment && mpu_metadata_fragment->mmtp_mpu_type_packet_header.mpu_data_unit_payload && mpu_metadata_fragment->mmtp_mpu_type_packet_header.mpu_data_unit_payload->i_buffer ) {
+                            found_mpu_metadata_fragment = true;
+                            break;
+                        }
+                        mpu_metadata_fragment = NULL;
+                    }
+                }
+           
 				if(!mpu_metadata_fragment) {
 					__ISOBMFF_TOOLS_WARN("Unable to find mpu_metadata from mmt_flows");
 					return NULL;
@@ -140,9 +150,9 @@ block_t* atsc3_isobmff_build_mpu_metadata_ftyp_moof_mdat_box(udp_flow_t* udp_flo
 				__ISOBMFF_TOOLS_DEBUG("Found an mpu_metadata packet_id: %d, mpu_sequence_number: %u", mpu_metadata_fragment->mmtp_mpu_type_packet_header.mmtp_packet_id, mpu_metadata_fragment->mmtp_mpu_type_packet_header.mpu_sequence_number);
 
 				//TODO - fix me to use the proper mbms packet id's for video and audio packet_id's
-				if(mpu_metadata_fragment->mmtp_mpu_type_packet_header.mmtp_packet_id == 35) {
+				if(mpu_metadata_fragment->mmtp_mpu_type_packet_header.mmtp_packet_id == 35 || mpu_metadata_fragment->mmtp_mpu_type_packet_header.mmtp_packet_id == 1) {
 					video_isobmff_header = mpu_metadata_fragment->mmtp_mpu_type_packet_header.mpu_data_unit_payload;
-				} else if(mpu_metadata_fragment->mmtp_mpu_type_packet_header.mmtp_packet_id == 36) {
+				} else if(mpu_metadata_fragment->mmtp_mpu_type_packet_header.mmtp_packet_id == 36 || mpu_metadata_fragment->mmtp_mpu_type_packet_header.mmtp_packet_id == 2) {
 					audio_isobmff_header = mpu_metadata_fragment->mmtp_mpu_type_packet_header.mpu_data_unit_payload;
 				}
 			}
@@ -189,10 +199,10 @@ block_t* atsc3_isobmff_build_mpu_metadata_ftyp_moof_mdat_box(udp_flow_t* udp_flo
 			__ISOBMFF_TOOLS_INFO("Movie Fragment Metadata: Found for fragment_metadata packet_id: %d, mpu_sequence_number: %u", fragment_metadata->mmtp_packet_header.mmtp_packet_id, udp_flow_packet_id_mpu_sequence_tuple->mpu_sequence_number);
 
 			if(!has_sent_init_box) {
-				if(udp_flow_packet_id_mpu_sequence_tuple->packet_id == 35) {
+				if(udp_flow_packet_id_mpu_sequence_tuple->packet_id == 35 || udp_flow_packet_id_mpu_sequence_tuple->packet_id == 1 ) {
 
 					__copy_video_block_t(fragment_metadata->mmtp_mpu_type_packet_header.mpu_data_unit_payload);
-				} else {
+				} else if(udp_flow_packet_id_mpu_sequence_tuple->packet_id == 36 || udp_flow_packet_id_mpu_sequence_tuple->packet_id == 2 ) {
 					__copy_audio_block_t(fragment_metadata->mmtp_mpu_type_packet_header.mpu_data_unit_payload);
 				}
 			}
@@ -215,9 +225,9 @@ block_t* atsc3_isobmff_build_mpu_metadata_ftyp_moof_mdat_box(udp_flow_t* udp_flo
 				mmtp_payload_fragments_union_t* data_unit = data_unit_payload_types->timed_fragments_vector.data[0];
 
 				if(udp_flow_packet_id_mpu_sequence_tuple->packet_id == udp_flow_packet_id_mpu_sequence_tuple->packet_id) {
-					if(udp_flow_packet_id_mpu_sequence_tuple->packet_id == 35) {
+					if(udp_flow_packet_id_mpu_sequence_tuple->packet_id == 35 || udp_flow_packet_id_mpu_sequence_tuple->packet_id == 1) {
 						__copy_video_block_t(data_unit->mmtp_mpu_type_packet_header.mpu_data_unit_payload);
-					} else {
+					} else if(udp_flow_packet_id_mpu_sequence_tuple->packet_id == 36 || udp_flow_packet_id_mpu_sequence_tuple->packet_id == 2 ){
 						__copy_audio_block_t(data_unit->mmtp_mpu_type_packet_header.mpu_data_unit_payload);
 
 					}
@@ -242,7 +252,7 @@ block_t* atsc3_isobmff_build_mpu_metadata_ftyp_moof_mdat_box(udp_flow_t* udp_flo
 	}
 
 
-	AP4_DataBuffer* dataBuffer = new AP4_DataBuffer(1024000);
+	AP4_DataBuffer* dataBuffer = new AP4_DataBuffer(4096000);
 	AP4_MemoryByteStream* memoryOutputByteStream = new AP4_MemoryByteStream(dataBuffer);
 
     //TODO - fix me
