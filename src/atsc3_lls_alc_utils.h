@@ -1,5 +1,5 @@
 /*
- * atsc3_lls_tools.h
+ * atsc3_lls_alc_tools.h
  *
  *  Created on: Feb 6, 2019
  *      Author: jjustman
@@ -35,9 +35,9 @@ extern "C" {
 #endif
 
 
-lls_sls_alc_monitor_t* lls_sls_alc_monitor_create();
+lls_sls_alc_monitor_t* lls_sls_alc_monitor_create(void);
 
-lls_sls_alc_session_vector_t* lls_sls_alc_session_vector_create();
+lls_sls_alc_session_vector_t* lls_sls_alc_session_vector_create(void);
 
 
 lls_sls_alc_session_t* lls_slt_alc_session_create(lls_service_t* lls_service);
@@ -54,7 +54,7 @@ void lls_slt_alc_session_remove(lls_sls_alc_session_vector_t* lls_slt_alc_sessio
 lls_sls_alc_monitor_t* lls_monitor_sls_alc_session_create(lls_service_t* lls_service);
 
 
-void lls_session_free(lls_sls_alc_session_t** lls_session_ptr);
+void lls_sls_alc_session_free(lls_sls_alc_session_t** lls_session_ptr);
 
 
 #if defined (__cplusplus)

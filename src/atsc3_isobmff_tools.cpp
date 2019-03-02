@@ -245,10 +245,11 @@ block_t* atsc3_isobmff_build_mpu_metadata_ftyp_moof_mdat_box(udp_flow_t* udp_flo
 	AP4_DataBuffer* dataBuffer = new AP4_DataBuffer(1024000);
 	AP4_MemoryByteStream* memoryOutputByteStream = new AP4_MemoryByteStream(dataBuffer);
 
+    //TODO - fix me
 	ISOBMFFTrackJoinerFileResouces_t* fileResources = _l_loadFileResources();
 
 
-	parsrseAndBuildJoinedBoxes(fileResources, memoryOutputByteStream);
+	parseAndBuildJoinedBoxes(fileResources, memoryOutputByteStream);
 
 
 	__ISOBMFF_TOOLS_WARN("building reutrn alloc of %u", dataBuffer->GetDataSize());

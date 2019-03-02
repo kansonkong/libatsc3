@@ -15,6 +15,7 @@
 
 #include <sys/types.h>
 
+#include "atsc3_lls_sls_monitor_output_buffer.h"
 #include "alc_session.h"
 
 #ifndef ATSC3_LLS_TYPES_H_
@@ -291,10 +292,67 @@ typedef struct lls_table {
 
 } lls_table_t;
 
+//just to match the alc pattern...
+typedef struct mmt_arguments {
+    void* not_implemented;
+} mmt_arguments_t;
+
+//just to match the alc pattern...
+typedef struct mmt_session {
+    void* not_implemented;
+} mmt_session_t;
+
+/**
+ global_service_id : (null)                                                │
+ major_channel_no   : 2               minor_channel_no  : 2
+ service_category   : 1, linear av    slt_svc_seq_num   : 0
+ short_service_name : MM1
+ broadcast_svc_signaling
+ sls_protocol               : 2, MMTP
+ sls_destination_ip_address : 239.255.1.1:49153
+ sls_source_ip_address      : (null)
+**/
+
+
+typedef struct lls_sls_mmt_session {
+    uint16_t service_id;
+    
+    uint32_t sls_source_ip_address;
+    
+    uint32_t sls_destination_ip_address;
+    uint16_t sls_destination_udp_port;
+    
+    mmt_arguments_t* mmt_arguments;
+    mmt_session_t* mmt_session;
+//    alc_arguments_t* alc_arguments;
+//    alc_session_t* alc_session;
+    
+} lls_sls_mmt_session_t;
+
+
+/**
+ * used to store all mmt active sessions for this flow
+ */
+typedef struct lls_sls_mmt_session_vector {
+    lls_table_t* lls_table_slt;
+    
+    int lls_slt_mmt_sessions_n;
+    lls_sls_mmt_session_t** lls_slt_mmt_sessions;
+    
+} lls_sls_mmt_session_vector_t;
 
 
 
-
+/**
+ global_service_id : (null)
+ major_channel_no   : 1               minor_channel_no  : 1
+ service_category   : 1, linear av    slt_svc_seq_num   : 0
+ short_service_name : RT1
+ broadcast_svc_signaling
+ sls_protocol               : 1, ROUTE
+ sls_destination_ip_address : 239.255.1.1:49152
+ sls_source_ip_address      : 10.1.62.40
+ **/
 
 //alc - assume single session for now
 
@@ -313,6 +371,36 @@ typedef struct lls_sls_alc_session {
 } lls_sls_alc_session_t;
 
 /**
+ 
+ A/331 - Section 7:
+ ...
+ 
+ In the MMTP system, the SLS includes the
+    USBD fragment,
+    the MMT Package (MP) table,
+    the HTML Entry pages Location Description (HELD) (see A/337 [7]), and the
+    Distribution Window Description (DWD) (see A/337 [7]).
+ 
+    For hybrid delivery, the MMTP-specific SLS can further include the MPD for broadband components.
+    Table 7.4 shows the elements and attributes of the MMTP USBD that would be used in practice for ATSC 3.0 service delivery.
+ 
+**/
+typedef struct lls_sls_mmt_monitor {
+    
+    lls_service_t* lls_service;
+    uint16_t service_id;
+    lls_sls_mmt_session_t* lls_mmt_session;
+    uint16_t video_packet_id;
+    uint16_t audio_packet_id;
+    
+    lls_sls_monitor_output_buffer_t lls_sls_monitor_output_buffer;
+
+} lls_sls_mmt_monitor_t;
+
+
+
+
+/**
  * used to store all alc active sessions for this flow
  */
 typedef struct lls_sls_alc_session_vector {
@@ -328,14 +416,16 @@ typedef struct lls_sls_alc_session_vector {
 /**
  * used to store monitor references of current flows
 
- In the ROUTE/DASH system, the SLS includes:
+A/331 - Section 7:
+ ...
+ 
+    In the ROUTE/DASH system, the SLS includes:
 		User Service Bundle Description (USBD),
 		the S-TSID,
 		Associated Procedure Description (APD),
 		the DASH Media Presentation Description (MPD),
 		the HTML Entry pages Location Description (HELD) (see A/337 [7]), and
 		Distribution Window Description (DWD) (see A/337 [7]).
-
  */
 
 typedef struct lls_sls_alc_monitor {
@@ -358,31 +448,18 @@ typedef struct lls_sls_alc_monitor {
 	uint32_t mpd_tsi;
 	uint32_t held_tsi;
 	uint32_t dwd_tsi;
-	bool has_written_init_box;
-	bool should_flush_output_buffer;
-	uint8_t* audio_output_buffer;
-	uint32_t audio_output_buffer_pos;
-	uint8_t* video_output_buffer;
-	uint32_t video_output_buffer_pos;
-
-
+    
+    lls_sls_monitor_output_buffer_t lls_sls_monitor_output_buffer;
 
 } lls_sls_alc_monitor_t;
 
 
-
-typedef struct lls_sls_mmt_monitor {
-	uint not_implemented;
-} lls_sls_mmt_monitor_t;
-
-lls_sls_mmt_monitor_t* lls_sls_mmt_monitor_create();
-
-
 typedef struct lls_slt_monitor {
+    lls_sls_mmt_monitor_t* lls_sls_mmt_monitor;
 	lls_sls_alc_monitor_t* lls_sls_alc_monitor;
-	lls_sls_mmt_monitor_t* lls_sls_mmt_monitor;
 
-	lls_sls_alc_session_vector_t* lls_sls_alc_session_vector;
+    lls_sls_mmt_session_vector_t* lls_sls_mmt_session_vector;
+    lls_sls_alc_session_vector_t* lls_sls_alc_session_vector;
 	lls_service_t* lls_service;
 
 	lls_table_t* lls_table_slt;
