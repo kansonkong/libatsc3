@@ -238,6 +238,7 @@ uint8_t* mmt_mpu_parse_payload(mmtp_sub_flow_vector_t* mmtp_sub_flow_vector, mmt
 					mmtp_packet_header->mpu_data_unit_payload_fragments_timed.dep_counter						= timed_mfu_block[13];
 					uint8_t* rewind_buf = buf;
 
+                    //see if bento4 will handle this?
 					//parse out mmthsample block if this is our first fragment or we are a complete fragment,
 					if(mmtp_packet_header->mpu_data_unit_payload_fragments_timed.mpu_fragment_type == 2 && (mmtp_packet_header->mpu_data_unit_payload_fragments_timed.mpu_fragmentation_indicator == 0 || mmtp_packet_header->mpu_data_unit_payload_fragments_timed.mpu_fragmentation_indicator == 1)) {
 

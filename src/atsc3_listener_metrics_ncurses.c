@@ -190,12 +190,6 @@ extern pipe_ffplay_buffer_t*                     pipe_ffplay_buffer;
 udp_flow_latest_mpu_sequence_number_container_t* udp_flow_latest_mpu_sequence_number_container;
 
 
-//messy
-extern uint8_t* __VIDEO_RECON_FRAGMENT;
-extern uint32_t __VIDEO_RECON_FRAGMENT_SIZE;
-
-extern uint8_t* __AUDIO_RECON_FRAGMENT;
-extern uint32_t __AUDIO_RECON_FRAGMENT_SIZE;
 
 
 global_atsc3_stats_t* global_stats;
@@ -272,8 +266,8 @@ mmtp_payload_fragments_union_t* mmtp_process_from_payload(udp_packet_t *udp_pack
                         udp_flow_last_packet_id_mpu_sequence_id->packet_id,
                         udp_flow_last_packet_id_mpu_sequence_id->mpu_sequence_number);
             }
-            
-            if(udp_flow_last_packet_id_mpu_sequence_id && udp_flow_last_packet_id_mpu_sequence_id->mpu_sequence_number < mmtp_payload->mmtp_mpu_type_packet_header.mpu_sequence_number) {
+            //todo - check for both packet id's before reconstituting
+            if(udp_flow_last_packet_id_mpu_sequence_id && udp_flow_last_packet_id_mpu_sequence_id->mpu_sequence_number-1 < mmtp_payload->mmtp_mpu_type_packet_header.mpu_sequence_number) {
                 
                 __INFO("Starting re-fragmenting because packet_id:mpu_sequence number changed from %u:%u to %u:%u", udp_flow_last_packet_id_mpu_sequence_id->packet_id, udp_flow_last_packet_id_mpu_sequence_id->mpu_sequence_number, mmtp_payload->mmtp_mpu_type_packet_header.mmtp_packet_id, mmtp_payload->mmtp_mpu_type_packet_header.mpu_sequence_number);
                 
@@ -383,8 +377,6 @@ static void route_process_from_alc_packet(alc_packet_t **alc_packet) {
     if(lls_slt_monitor->lls_sls_alc_monitor->lls_sls_monitor_output_buffer.has_written_init_box && lls_slt_monitor->lls_sls_alc_monitor->lls_sls_monitor_output_buffer.should_flush_output_buffer) {
         AP4_DataBuffer* dataBuffer = new AP4_DataBuffer(4096000);
         AP4_MemoryByteStream* memoryOutputByteStream = new AP4_MemoryByteStream(dataBuffer);
-        
-      
         
         ISOBMFF_track_joiner_monitor_output_buffer_parse_and_build_joined_boxes(&lls_slt_monitor->lls_sls_alc_monitor->lls_sls_monitor_output_buffer, memoryOutputByteStream);
         block_t* mpu_metadata_output_block_t = NULL;
