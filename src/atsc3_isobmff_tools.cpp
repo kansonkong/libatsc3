@@ -8,6 +8,8 @@
 #include "atsc3_isobmff_tools.h"
 #include "atsc3_player_ffplay.h"
 #include <stdlib.h>
+#include <stdio.h>
+#include <string.h>
 #include "bento4/ISOBMFFTrackJoiner.h"
 
 int _ISOBMFF_TOOLS_DEBUG_ENABLED = 0;
@@ -27,6 +29,11 @@ uint32_t __VIDEO_RECON_FRAGMENT_SIZE = 0;
 
 uint8_t* __AUDIO_RECON_FRAGMENT = NULL;
 uint32_t __AUDIO_RECON_FRAGMENT_SIZE = 0;
+
+
+int __AUDIO_SEGMENT_RECON_COUNTER = 0;
+int __VIDEO_SEGMENT_RECON_COUNTER = 0;
+int __BOX_SEGMENT_RECON_COUNTER = 0;
 
 
 void resetBufferPos() {
@@ -75,17 +82,36 @@ ISOBMFFTrackJoinerFileResouces_t* _l_loadFileResources() {
 	isoBMFFTrackJoinerResources->file1_payload = __VIDEO_RECON_FRAGMENT;
 	isoBMFFTrackJoinerResources->file1_size = __VIDEO_RECON_FRAGMENT_SIZE;
 
+    char* video_track_dump_filename = (char*)calloc(128, sizeof(char));
+    snprintf(video_track_dump_filename, 127, "mpu/%u.v", __VIDEO_SEGMENT_RECON_COUNTER++);
+
+    FILE* video_track_dump_fp = fopen(video_track_dump_filename, "w");
+    fwrite(__VIDEO_RECON_FRAGMENT, __VIDEO_RECON_FRAGMENT_SIZE, 1, video_track_dump_fp);
+    fclose(video_track_dump_fp);
+    free(video_track_dump_filename);
 
 	const char* file2 = "36";
 	isoBMFFTrackJoinerResources->file2_name = (char*)calloc(strlen(file2)+1, sizeof(char));
 	strncpy(isoBMFFTrackJoinerResources->file2_name, file2, strlen(file2));
 
 	isoBMFFTrackJoinerResources->file2_payload = __AUDIO_RECON_FRAGMENT;
-	isoBMFFTrackJoinerResources->file2_size = __AUDIO_RECON_FRAGMENT_SIZE;;
+	isoBMFFTrackJoinerResources->file2_size = __AUDIO_RECON_FRAGMENT_SIZE;
+    
+    char* audio_track_dump_filename = (char*)calloc(128, sizeof(char));
+    snprintf(audio_track_dump_filename, 127, "mpu/%u.a", __AUDIO_SEGMENT_RECON_COUNTER++);
+    
+    FILE* audio_track_dump_fp = fopen(audio_track_dump_filename, "w");
+    fwrite(__AUDIO_RECON_FRAGMENT, __AUDIO_RECON_FRAGMENT_SIZE, 1, audio_track_dump_fp);
+    fclose(audio_track_dump_fp);
+    free(audio_track_dump_filename);
 
 	return isoBMFFTrackJoinerResources;
 }
 
+/**
+ 
+ todo: move this into lls_slt_monitor and lls_sls_monitor_output_buffer.c
+ **/
 block_t* atsc3_isobmff_build_mpu_metadata_ftyp_moof_mdat_box(udp_flow_t* udp_flow, udp_flow_latest_mpu_sequence_number_container_t* udp_flow_latest_mpu_sequence_number_container, mmtp_sub_flow_vector_t* mmtp_sub_flow_vector) {
 
 	__VIDEO_RECON_FRAGMENT_SIZE = 0;
@@ -120,7 +146,7 @@ block_t* atsc3_isobmff_build_mpu_metadata_ftyp_moof_mdat_box(udp_flow_t* udp_flo
 
 		if(mmtp_sub_flow && mmtp_sub_flow->mpu_fragments->mpu_metadata_fragments_vector.size) {
             int all_mpu_metadata_fragment_walk_count = mmtp_sub_flow->mpu_fragments->mpu_metadata_fragments_vector.size-1;
-            
+ 
             //mmtp_sub_flow->mpu_fragments->mpu_metadata_fragments_vector.data ?
             while(all_mpu_metadata_fragment_walk_count>1) {
                 mpu_metadata_fragments =  mmtp_sub_flow->mpu_fragments->mpu_metadata_fragments_vector.data[all_mpu_metadata_fragment_walk_count--];
@@ -128,7 +154,7 @@ block_t* atsc3_isobmff_build_mpu_metadata_ftyp_moof_mdat_box(udp_flow_t* udp_flo
                 if(mpu_metadata_fragments) {
                     int fragment_walk_count = 0;
                     bool found_mpu_metadata_fragment = false;
-                    
+ 
                         //&& mpu_metadata_fragments->timed_fragments_vector.
                         //while(fragment_walk_count < mpu_metadata_fragments->timed_fragments_vector.size) {
                     while(fragment_walk_count < 1 && mpu_metadata_fragments->timed_fragments_vector.size) {
@@ -141,7 +167,7 @@ block_t* atsc3_isobmff_build_mpu_metadata_ftyp_moof_mdat_box(udp_flow_t* udp_flo
                         mpu_metadata_fragment = NULL;
                     }
                 }
-           
+ 
 				if(!mpu_metadata_fragment) {
 					__ISOBMFF_TOOLS_WARN("Unable to find mpu_metadata from mmt_flows");
 					return NULL;
@@ -185,34 +211,39 @@ block_t* atsc3_isobmff_build_mpu_metadata_ftyp_moof_mdat_box(udp_flow_t* udp_flo
 
     }
 	//just do this statically here for now, packet_id=35 is video, packet_id=36 is audio
+    
 	for(int i=0; i < udp_flow_latest_mpu_sequence_number_container->udp_flows_n; i++) {
 		udp_flow_packet_id_mpu_sequence_tuple_t* udp_flow_packet_id_mpu_sequence_tuple = udp_flow_latest_mpu_sequence_number_container->udp_flows[i];
 
-
+        //remember, subflows are built in case of DU fragmentation - korean MMT samples have this edge case
 		mmtp_sub_flow = mmtp_sub_flow_vector_get_or_set_packet_id(mmtp_sub_flow_vector, udp_flow_packet_id_mpu_sequence_tuple->packet_id);
 
-		movie_metadata_fragments = mpu_data_unit_payload_fragments_find_mpu_sequence_number(&mmtp_sub_flow->mpu_fragments->movie_fragment_metadata_vector, udp_flow_packet_id_mpu_sequence_tuple->mpu_sequence_number);
+        //hack
+		movie_metadata_fragments = mpu_data_unit_payload_fragments_find_mpu_sequence_number(&mmtp_sub_flow->mpu_fragments->movie_fragment_metadata_vector, udp_flow_packet_id_mpu_sequence_tuple->mpu_sequence_number-1);
 
 		mmtp_payload_fragments_union_t* fragment_metadata = NULL;
 		if(movie_metadata_fragments && movie_metadata_fragments->timed_fragments_vector.size) {
-			fragment_metadata = movie_metadata_fragments->timed_fragments_vector.data[0];
-			__ISOBMFF_TOOLS_INFO("Movie Fragment Metadata: Found for fragment_metadata packet_id: %d, mpu_sequence_number: %u", fragment_metadata->mmtp_packet_header.mmtp_packet_id, udp_flow_packet_id_mpu_sequence_tuple->mpu_sequence_number);
+            for(int i=0; i < movie_metadata_fragments->timed_fragments_vector.size; i++) {
+                fragment_metadata = movie_metadata_fragments->timed_fragments_vector.data[i];
+                __ISOBMFF_TOOLS_INFO("Movie Fragment Metadata: Found for fragment_metadata packet_id: %d, mpu_sequence_number: %u, fragmentation_indicator: %u, fragmentation_counter: %u", fragment_metadata->mmtp_packet_header.mmtp_packet_id, udp_flow_packet_id_mpu_sequence_tuple->mpu_sequence_number, fragment_metadata->mmtp_mpu_type_packet_header.mpu_fragmentation_indicator, fragment_metadata->mmtp_mpu_type_packet_header.mpu_fragmentation_counter);
 
-			if(!has_sent_init_box) {
-				if(udp_flow_packet_id_mpu_sequence_tuple->packet_id == 35 || udp_flow_packet_id_mpu_sequence_tuple->packet_id == 1 ) {
+            //	if(!has_sent_init_box) {
+                    if(udp_flow_packet_id_mpu_sequence_tuple->packet_id == 35 || udp_flow_packet_id_mpu_sequence_tuple->packet_id == 1 ) {
 
-					__copy_video_block_t(fragment_metadata->mmtp_mpu_type_packet_header.mpu_data_unit_payload);
-				} else if(udp_flow_packet_id_mpu_sequence_tuple->packet_id == 36 || udp_flow_packet_id_mpu_sequence_tuple->packet_id == 2 ) {
-					__copy_audio_block_t(fragment_metadata->mmtp_mpu_type_packet_header.mpu_data_unit_payload);
-				}
-			}
+                        __copy_video_block_t(fragment_metadata->mmtp_mpu_type_packet_header.mpu_data_unit_payload);
+                    } else if(udp_flow_packet_id_mpu_sequence_tuple->packet_id == 36 || udp_flow_packet_id_mpu_sequence_tuple->packet_id == 2 ) {
+                        __copy_audio_block_t(fragment_metadata->mmtp_mpu_type_packet_header.mpu_data_unit_payload);
+                    }
+                //}
+            }
 		} else {
 			__ISOBMFF_TOOLS_WARN("Movie Fragment Metadata is NULL!");
 			//goto purge_pending_mfu_and_update_previous_mmtp_payload; //for now
 			return NULL;
 		}
 
-		data_unit_payload_types = mpu_data_unit_payload_fragments_find_mpu_sequence_number(&mmtp_sub_flow->mpu_fragments->media_fragment_unit_vector, udp_flow_packet_id_mpu_sequence_tuple->mpu_sequence_number);
+        //hack
+		data_unit_payload_types = mpu_data_unit_payload_fragments_find_mpu_sequence_number(&mmtp_sub_flow->mpu_fragments->media_fragment_unit_vector, udp_flow_packet_id_mpu_sequence_tuple->mpu_sequence_number-1);
 
 		mmtp_payload_fragments_union_t* mpu_data_unit_payload_fragments_timed = NULL;
 
@@ -224,14 +255,14 @@ block_t* atsc3_isobmff_build_mpu_metadata_ftyp_moof_mdat_box(udp_flow_t* udp_flo
 				//mmtp_payload_fragments_union_t* packet = data_unit->data[i];
 				mmtp_payload_fragments_union_t* data_unit = data_unit_payload_types->timed_fragments_vector.data[0];
 
-				if(udp_flow_packet_id_mpu_sequence_tuple->packet_id == udp_flow_packet_id_mpu_sequence_tuple->packet_id) {
+			//	if(udp_flow_packet_id_mpu_sequence_tuple->packet_id == udp_flow_packet_id_mpu_sequence_tuple->packet_id) {
 					if(udp_flow_packet_id_mpu_sequence_tuple->packet_id == 35 || udp_flow_packet_id_mpu_sequence_tuple->packet_id == 1) {
 						__copy_video_block_t(data_unit->mmtp_mpu_type_packet_header.mpu_data_unit_payload);
 					} else if(udp_flow_packet_id_mpu_sequence_tuple->packet_id == 36 || udp_flow_packet_id_mpu_sequence_tuple->packet_id == 2 ){
 						__copy_audio_block_t(data_unit->mmtp_mpu_type_packet_header.mpu_data_unit_payload);
 
 					}
-				}
+			//	}
 			}
 
 		} else {
@@ -271,6 +302,17 @@ block_t* atsc3_isobmff_build_mpu_metadata_ftyp_moof_mdat_box(udp_flow_t* udp_flo
 	free (dataBuffer);
 	has_sent_init_box = true;
 
+    
+    
+    char* box_track_dump_filename = (char*)calloc(128, sizeof(char));
+    snprintf(box_track_dump_filename, 127, "mpu/%u.b", __BOX_SEGMENT_RECON_COUNTER++);
+    
+    FILE* box_track_dump_fp = fopen(box_track_dump_filename, "w");
+    fwrite(mpu_metadata_output_block_t->p_buffer, mpu_metadata_output_block_t->i_buffer, 1, box_track_dump_fp);
+    fclose(box_track_dump_fp);
+    free(box_track_dump_filename);
+    
+    
 	return mpu_metadata_output_block_t;
 }
 
