@@ -470,7 +470,7 @@ void parseAndBuildJoinedBoxesFromMemory(uint8_t* file1_payload, uint32_t file1_s
 	 //apend by hand and update
 	for(itTrunFirst = trunFirstFileList.begin(); itTrunFirst != trunFirstFileList.end(); itTrunFirst++) {
 		//trunFirstFile
-		(*itTrunFirst)->SetDataOffset(mdatSecondFileOffset + (*itTrunFirst)->GetDataOffset());
+		(*itTrunFirst)->SetDataOffset(mdatSecondFileOffset);
 	}
 
     if(mdatFirstFileList.size()) {

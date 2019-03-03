@@ -219,7 +219,7 @@ block_t* atsc3_isobmff_build_mpu_metadata_ftyp_moof_mdat_box(udp_flow_t* udp_flo
 		mmtp_sub_flow = mmtp_sub_flow_vector_get_or_set_packet_id(mmtp_sub_flow_vector, udp_flow_packet_id_mpu_sequence_tuple->packet_id);
 
         //hack
-		movie_metadata_fragments = mpu_data_unit_payload_fragments_find_mpu_sequence_number(&mmtp_sub_flow->mpu_fragments->movie_fragment_metadata_vector, udp_flow_packet_id_mpu_sequence_tuple->mpu_sequence_number-2);
+		movie_metadata_fragments = mpu_data_unit_payload_fragments_find_mpu_sequence_number(&mmtp_sub_flow->mpu_fragments->movie_fragment_metadata_vector, udp_flow_packet_id_mpu_sequence_tuple->mpu_sequence_number - 1);
 
 		mmtp_payload_fragments_union_t* fragment_metadata = NULL;
 		if(movie_metadata_fragments && movie_metadata_fragments->timed_fragments_vector.size) {
@@ -248,7 +248,7 @@ block_t* atsc3_isobmff_build_mpu_metadata_ftyp_moof_mdat_box(udp_flow_t* udp_flo
 		uint32_t video_du_size = 0;
 		uint32_t audio_du_size = 0;
 
-		data_unit_payload_types = mpu_data_unit_payload_fragments_find_mpu_sequence_number(&mmtp_sub_flow->mpu_fragments->media_fragment_unit_vector, udp_flow_packet_id_mpu_sequence_tuple->mpu_sequence_number-2);
+		data_unit_payload_types = mpu_data_unit_payload_fragments_find_mpu_sequence_number(&mmtp_sub_flow->mpu_fragments->media_fragment_unit_vector, udp_flow_packet_id_mpu_sequence_tuple->mpu_sequence_number - 1 );
 
 		mmtp_payload_fragments_union_t* mpu_data_unit_payload_fragments_timed = NULL;
 
@@ -258,7 +258,7 @@ block_t* atsc3_isobmff_build_mpu_metadata_ftyp_moof_mdat_box(udp_flow_t* udp_flo
 			//push to mpu_push_output_buffer
 			for(int i=0; i < total_fragments; i++) {
 				//mmtp_payload_fragments_union_t* packet = data_unit->data[i];
-				mmtp_payload_fragments_union_t* data_unit = data_unit_payload_types->timed_fragments_vector.data[0];
+				mmtp_payload_fragments_union_t* data_unit = data_unit_payload_types->timed_fragments_vector.data[i];
 
 			//	if(udp_flow_packet_id_mpu_sequence_tuple->packet_id == udp_flow_packet_id_mpu_sequence_tuple->packet_id) {
 					if(udp_flow_packet_id_mpu_sequence_tuple->packet_id == 35 || udp_flow_packet_id_mpu_sequence_tuple->packet_id == 1) {
@@ -300,28 +300,28 @@ block_t* atsc3_isobmff_build_mpu_metadata_ftyp_moof_mdat_box(udp_flow_t* udp_flo
 		}
 
 		//	__MMT_MPU_INFO("total_mdat_body_size: %u, total box size: %u", total_mdat_body_size, total_mdat_body_size+8);
-			total_mdat_body_size = audio_du_size +=8;
+		total_mdat_body_size = audio_du_size +=8;
 
-			memcpy(&mdat_box, &__AUDIO_RECON_FRAGMENT[__AUDIO_RECON_FRAGMENT_SIZE-8], 8);
+		memcpy(&mdat_box, &__AUDIO_RECON_FRAGMENT[__AUDIO_RECON_FRAGMENT_SIZE-8], 8);
 
-			if(mdat_box[4] == 'm' && mdat_box[5] == 'd' && mdat_box[6] == 'a' && mdat_box[7] == 't') {
-				mdat_box[0] = (total_mdat_body_size >> 24) & 0xFF;
-				mdat_box[1] = (total_mdat_body_size >> 16) & 0xFF;
-				mdat_box[2] = (total_mdat_body_size >> 8) & 0xFF;
-				mdat_box[3] = (total_mdat_body_size) & 0xFF;
+		if(mdat_box[4] == 'm' && mdat_box[5] == 'd' && mdat_box[6] == 'a' && mdat_box[7] == 't') {
+			mdat_box[0] = (total_mdat_body_size >> 24) & 0xFF;
+			mdat_box[1] = (total_mdat_body_size >> 16) & 0xFF;
+			mdat_box[2] = (total_mdat_body_size >> 8) & 0xFF;
+			mdat_box[3] = (total_mdat_body_size) & 0xFF;
 
 
-				memcpy(&__AUDIO_RECON_FRAGMENT[__AUDIO_RECON_FRAGMENT_SIZE-8], &mdat_box, 4);
-	//			__MMT_MPU_INFO("last 8 bytes of metadata fragment updated to: 0x%02x 0x%02x 0x%02x 0x%02x 0x%02x 0x%02x 0x%02x 0x%02x",
-	//											mdat_box[0], mdat_box[1], mdat_box[2], mdat_box[3], mdat_box[4], mdat_box[5], mdat_box[6], mdat_box[7]);
+			memcpy(&__AUDIO_RECON_FRAGMENT[__AUDIO_RECON_FRAGMENT_SIZE-8], &mdat_box, 4);
+//			__MMT_MPU_INFO("last 8 bytes of metadata fragment updated to: 0x%02x 0x%02x 0x%02x 0x%02x 0x%02x 0x%02x 0x%02x 0x%02x",
+//											mdat_box[0], mdat_box[1], mdat_box[2], mdat_box[3], mdat_box[4], mdat_box[5], mdat_box[6], mdat_box[7]);
 
-			} else {
-				__MMT_MPU_ERROR("fragment metadata packet, cant find trailing mdat!");
-			}
+		} else {
+			__MMT_MPU_ERROR("fragment metadata packet, cant find trailing mdat!");
+		}
 
 
         //hack
-		data_unit_payload_types = mpu_data_unit_payload_fragments_find_mpu_sequence_number(&mmtp_sub_flow->mpu_fragments->media_fragment_unit_vector, udp_flow_packet_id_mpu_sequence_tuple->mpu_sequence_number-2);
+		data_unit_payload_types = mpu_data_unit_payload_fragments_find_mpu_sequence_number(&mmtp_sub_flow->mpu_fragments->media_fragment_unit_vector, udp_flow_packet_id_mpu_sequence_tuple->mpu_sequence_number - 1);
 
 		mpu_data_unit_payload_fragments_timed = NULL;
 
@@ -331,7 +331,7 @@ block_t* atsc3_isobmff_build_mpu_metadata_ftyp_moof_mdat_box(udp_flow_t* udp_flo
 			//push to mpu_push_output_buffer
 			for(int i=0; i < total_fragments; i++) {
 				//mmtp_payload_fragments_union_t* packet = data_unit->data[i];
-				mmtp_payload_fragments_union_t* data_unit = data_unit_payload_types->timed_fragments_vector.data[0];
+				mmtp_payload_fragments_union_t* data_unit = data_unit_payload_types->timed_fragments_vector.data[i];
 
 			//	if(udp_flow_packet_id_mpu_sequence_tuple->packet_id == udp_flow_packet_id_mpu_sequence_tuple->packet_id) {
 					if(udp_flow_packet_id_mpu_sequence_tuple->packet_id == 35 || udp_flow_packet_id_mpu_sequence_tuple->packet_id == 1) {
