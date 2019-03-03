@@ -175,19 +175,39 @@ void parseAndBuildJoinedBoxesFromMemory(uint8_t* file1_payload, uint32_t file1_s
 	AP4_Result   result;
 
 	AP4_ContainerAtom* mvexAtomToCopy = NULL;
-	AP4_TrakAtom* trakAtomToCopy = NULL;
 
-	AP4_AtomParent* moofSecondFile = NULL;;
+	AP4_TrakAtom* trakMediaAtomToCopy = NULL;
+    std::list<AP4_TrakAtom*> trakHintAtomToCopy;
+	std::list<AP4_TrakAtom*>::iterator itHint;
 
-	AP4_ContainerAtom* trafFirstFile = NULL;;
-	AP4_TrunAtom* trunFirstFile = NULL;;
 
-	AP4_ContainerAtom* trafSecondFile = NULL;;
-	AP4_TrunAtom* trunSecondFile = NULL;;
+	std::list<AP4_ContainerAtom*> trafFirstFileList;
+	std::list<AP4_ContainerAtom*>::iterator itTraf;
 
-	AP4_Atom* mdatFirstFile = NULL;;
-	AP4_Atom* mdatSecondFile = NULL;;
+	std::list<AP4_TrunAtom*> trunFirstFileList;
+	std::list<AP4_TrunAtom*>::iterator itTrunFirst;
 
+	std::list<AP4_Atom*> mdatFirstFileList;
+	std::list<AP4_Atom*>::iterator itMdatFirst;
+
+
+	AP4_AtomParent* moofSecondFile = NULL;
+	AP4_Atom* moofSecondFileAtom = NULL;
+
+	AP4_ContainerAtom* trafSecondFile = NULL;
+	AP4_TrunAtom* trunSecondFile = NULL;
+
+	std::list<AP4_Atom*> mdatSecondFileList;
+	std::list<AP4_Atom*>::iterator itMdatSecond;
+	uint64_t mdatSecondFileOffset = 0;
+
+    /**
+     to postion at end:
+     
+     [hdlr] size=12+40
+     handler_type = hint
+     handler_name = Bento4 Hint Handler
+     **/
 
 	//from isoBMFFList1 list
 	std::list<AP4_Atom*>::iterator it;
@@ -198,16 +218,38 @@ void parseAndBuildJoinedBoxesFromMemory(uint8_t* file1_payload, uint32_t file1_s
 			AP4_MoovAtom* moovAtom = AP4_DYNAMIC_CAST(AP4_MoovAtom, *it);
 			mvexAtomToCopy = AP4_DYNAMIC_CAST(AP4_ContainerAtom, moovAtom->GetChild(AP4_ATOM_TYPE_MVEX));
 
-			trakAtomToCopy = AP4_DYNAMIC_CAST(AP4_TrakAtom, moovAtom->GetChild(AP4_ATOM_TYPE_TRAK));
+			AP4_TrakAtom* tmpTrakAtom;
+			int trakIndex = 0;
+			while(tmpTrakAtom = AP4_DYNAMIC_CAST(AP4_TrakAtom, moovAtom->GetChild(AP4_ATOM_TYPE_TRAK, trakIndex++))) {
+
+            //AP4_HdlrAtom* hdlrAtom = AP4_DYNAMIC_CAST(AP4_HdlrAtom, tmpTrakAtom->GetChild(AP4_ATOM_TYPE_HDLR));
+
+				AP4_HdlrAtom* hdlrAtom = AP4_DYNAMIC_CAST(AP4_HdlrAtom, tmpTrakAtom->FindChild("mdia/hdlr", false, false));
+
+				//todo - handle duplicate track id's
+
+				if(hdlrAtom)  {
+					tmpTrakAtom->SetId(tmpTrakAtom->GetId()+10);
+					if(hdlrAtom->GetHandlerType() == AP4_HANDLER_TYPE_VIDE || hdlrAtom->GetHandlerType() == AP4_HANDLER_TYPE_SOUN) {
+						trakMediaAtomToCopy = tmpTrakAtom;
+					} else if(hdlrAtom->GetHandlerType() == AP4_HANDLER_TYPE_HINT) {
+						trakHintAtomToCopy.push_back(tmpTrakAtom);
+					} else {
+						printf("Skipping tmpTrakAtom: %u", tmpTrakAtom->GetType());
+					}
+
+				}//otherwise drop
+			}
 		}
 
 		if((*it)->GetType() == AP4_ATOM_TYPE_MOOF) {
 			AP4_AtomParent* moofAtom = AP4_DYNAMIC_CAST(AP4_ContainerAtom, *it);
-			trafFirstFile = AP4_DYNAMIC_CAST(AP4_ContainerAtom, moofAtom->GetChild(AP4_ATOM_TYPE_TRAF));
-			trunFirstFile = AP4_DYNAMIC_CAST(AP4_TrunAtom, trafFirstFile->GetChild(AP4_ATOM_TYPE_TRUN));
+			AP4_ContainerAtom* trafContainerAtom = AP4_DYNAMIC_CAST(AP4_ContainerAtom, moofAtom->GetChild(AP4_ATOM_TYPE_TRAF));
+			trafFirstFileList.push_back(trafContainerAtom);
+			trunFirstFileList.push_back(AP4_DYNAMIC_CAST(AP4_TrunAtom, trafContainerAtom->GetChild(AP4_ATOM_TYPE_TRUN)));
 		}
 		if((*it)->GetType() == AP4_ATOM_TYPE_MDAT) {
-			mdatFirstFile = (*it);
+			mdatFirstFileList.push_back(*it);
 		}
 	}
 
@@ -221,9 +263,16 @@ void parseAndBuildJoinedBoxesFromMemory(uint8_t* file1_payload, uint32_t file1_s
 				mvexAtomToCopy->Detach();
 				moovAtom->AddChild(mvexAtomToCopy, -1);
 			}
-			if(trakAtomToCopy) {
-				trakAtomToCopy->Detach();
-				moovAtom->AddChild(trakAtomToCopy, -1);
+			//copy over our media track, then copy over our hint tracks
+			if(trakMediaAtomToCopy) {
+				trakMediaAtomToCopy->Detach();
+				moovAtom->AddChild(trakMediaAtomToCopy, -1);
+			}
+			//trakHintAtomToCopy
+
+			for (itHint = trakHintAtomToCopy.begin(); itHint != trakHintAtomToCopy.end(); itHint++) {
+				(*itHint)->Detach();
+				moovAtom->AddChild(*itHint, -1);
 			}
 		}
 
@@ -233,35 +282,48 @@ void parseAndBuildJoinedBoxesFromMemory(uint8_t* file1_payload, uint32_t file1_s
             AP4_TfdtAtom* tfdtSecondFile = AP4_DYNAMIC_CAST(AP4_TfdtAtom, trafSecondFile->GetChild(AP4_ATOM_TYPE_TFDT));
             tfdtSecondFile->Detach();
 
-			if(trafFirstFile) {
-                //remove our tfdt's
-                AP4_TfdtAtom* tfdtFirstAtom = AP4_DYNAMIC_CAST(AP4_TfdtAtom, trafFirstFile->GetChild(AP4_ATOM_TYPE_TFDT));
-                tfdtFirstAtom->Detach();
+			for(itTraf = trafFirstFileList.begin(); itTraf != trafFirstFileList.end(); itTraf++) {
+				//remove our tfdt's
+                AP4_TfdtAtom* tfdtTempAtom = AP4_DYNAMIC_CAST(AP4_TfdtAtom, (*itTraf)->GetChild(AP4_ATOM_TYPE_TFDT));
+				tfdtTempAtom->Detach();
                 
-                trafFirstFile->Detach();
-				moofSecondFile->AddChild(trafFirstFile);
+                (*itTraf)->Detach();
+				moofSecondFile->AddChild(*itTraf);
 			}
 
 			trunSecondFile = AP4_DYNAMIC_CAST(AP4_TrunAtom, trafSecondFile->GetChild(AP4_ATOM_TYPE_TRUN));
 		}
 
 		if((*it)->GetType() == AP4_ATOM_TYPE_MDAT) {
-			mdatSecondFile = (*it);
+			mdatSecondFileList.push_back(*it);
 		}
 	}
 
 	if(moofSecondFile) {
-		AP4_Atom* moofSecondFileAtom = AP4_DYNAMIC_CAST(AP4_Atom, moofSecondFile);
+		moofSecondFileAtom = AP4_DYNAMIC_CAST(AP4_Atom, moofSecondFile);
 		trunSecondFile->SetDataOffset((AP4_UI32)moofSecondFileAtom->GetSize()+AP4_ATOM_HEADER_SIZE);
 
 		//first file is written out last...
-		if(mdatSecondFile) {
-			trunFirstFile->SetDataOffset((AP4_UI32)moofSecondFileAtom->GetSize()+AP4_ATOM_HEADER_SIZE+mdatSecondFile->GetSize());
+//		if(mdatSecondFile) {
+//			trunFirstFile->SetDataOffset((AP4_UI32)moofSecondFileAtom->GetSize()+AP4_ATOM_HEADER_SIZE+mdatSecondFile->GetSize());
+//		}
+
+		//(AP4_UI32)moofSecondFileAtom->GetSize()+AP4_ATOM_HEADER_SIZE+
+		for(itMdatSecond = mdatSecondFileList.begin(); itMdatSecond != mdatSecondFileList.end(); itMdatSecond++) {
+			mdatSecondFileOffset += (*itMdatSecond)->GetSize() + AP4_ATOM_HEADER_SIZE;
 		}
+		mdatSecondFileOffset += moofSecondFileAtom->GetSize();
 	}
-    //apend by hand
-    if(mdatFirstFile) {
-        isoBMFFList2.push_back(mdatFirstFile);
+
+
+	 //apend by hand and update
+	for(itTrunFirst = trunFirstFileList.begin(); itTrunFirst != trunFirstFileList.end(); itTrunFirst++) {
+		//trunFirstFile
+		(*itTrunFirst)->SetDataOffset(mdatSecondFileOffset + (*itTrunFirst)->GetDataOffset());
+	}
+
+    if(mdatFirstFileList.size()) {
+    	isoBMFFList2.insert(isoBMFFList2.end(), mdatFirstFileList.begin(), mdatFirstFileList.end());
     }
     
     //push our packets to out output_stream writer, and we're done...
@@ -269,12 +331,96 @@ void parseAndBuildJoinedBoxesFromMemory(uint8_t* file1_payload, uint32_t file1_s
 	for (it = isoBMFFList2.begin(); it != isoBMFFList2.end(); it++) {
         (*it)->Write(*output_stream);
 	}
+
     __ISOBMFF_JOINER_INFO("Final output re-muxed MPU:");
     dumpFullMetadata(isoBMFFList2);
 
 //    if (output_stream) output_stream->Release();
 
 }
+
+/**
+ * todo: remove mmtp headers
+ * //mfu's have time and un-timed additional DU headers, so recalc to_read_packet_len after doing (uint8_t*)extract
+				//we use the du_header field
+				//parse data unit header here based upon mpu timed flag
+
+				/**
+				* MFU mpu_fragmentation_indicator==1's are prefixed by the following box, need to remove
+				*
+				aligned(8) class MMTHSample {
+				   unsigned int(32) sequence_number;
+				   if (is_timed) {
+
+					//interior block is 152 bits, or 19 bytes
+					  signed int(8) trackrefindex;
+					  unsigned int(32) movie_fragment_sequence_number
+					  unsigned int(32) samplenumber;
+					  unsigned int(8)  priority;
+					  unsigned int(8)  dependency_counter;
+					  unsigned int(32) offset;
+					  unsigned int(32) length;
+					//end interior block
+
+					  multiLayerInfo();
+				} else {
+						//additional 2 bytes to chomp for non timed delivery
+					  unsigned int(16) item_ID;
+				   }
+				}
+
+				aligned(8) class multiLayerInfo extends Box("muli") {
+				   bit(1) multilayer_flag;
+				   bit(7) reserved0;
+				   if (multilayer_flag==1) {
+					   //32 bits
+					  bit(3) dependency_id;
+					  bit(1) depth_flag;
+					  bit(4) reserved1;
+					  bit(3) temporal_id;
+					  bit(1) reserved2;
+					  bit(4) quality_id;
+					  bit(6) priority_id;
+				   }  bit(10) view_id;
+				   else{
+					   //16bits
+					  bit(6) layer_id;
+					  bit(3) temporal_id;
+					  bit(7) reserved3;
+				} }
+
+
+
+
+					//MMTHSample does not subclass box...
+						//buf = (uint8_t*)extract(buf, &mmthsample_len, 1);
+						buf = (uint8_t*)extract(buf, mmthsample_sequence_number, 4);
+
+						uint8_t mmthsample_timed_block[19];
+						buf = (uint8_t*)extract(buf, mmthsample_timed_block, 19);
+
+						//read multilayerinfo
+						uint8_t multilayerinfo_box_length[4];
+						uint8_t multilayerinfo_box_name[4];
+						uint8_t multilayer_flag;
+
+						buf = (uint8_t*)extract(buf, multilayerinfo_box_length, 4);
+						buf = (uint8_t*)extract(buf, multilayerinfo_box_name, 4);
+
+						buf = (uint8_t*)extract(buf, &multilayer_flag, 1);
+
+						int is_multilayer = (multilayer_flag >> 7) & 0x01;
+						//if MSB is 1, then read multilevel struct, otherwise just pull layer info...
+						if(is_multilayer) {
+							uint8_t multilayer_data_block[4];
+							buf = (uint8_t*)extract(buf, multilayer_data_block, 4);
+
+						} else {
+							uint8_t multilayer_layer_id_temporal_id[2];
+							buf = (uint8_t*)extract(buf, multilayer_layer_id_temporal_id, 2);
+						}
+
+				*/
 
 
 
@@ -305,29 +451,29 @@ list<AP4_Atom*> ISOBMFFTrackParse(uint8_t* full_mpu_payload, uint32_t full_mpu_p
 
 void dumpFullMetadata(list<AP4_Atom*> atomList) {
 
-//	AP4_ByteStream* boxDumpConsoleOutput = NULL;
-//	AP4_FileByteStream::Create("-stdout", AP4_FileByteStream::STREAM_MODE_WRITE, boxDumpConsoleOutput);
-//	AP4_AtomInspector* inspector = new AP4_PrintInspector(*boxDumpConsoleOutput);
-//	inspector->SetVerbosity(3);
-//
-//	std::list<AP4_Atom*>::iterator it;
-//	for (it = atomList.begin(); it != atomList.end(); it++) {
-//		(*it)->Inspect(*inspector);
-//	}
-//
-//	if (boxDumpConsoleOutput) boxDumpConsoleOutput->Release();
-//	delete inspector;
+    AP4_ByteStream* boxDumpConsoleOutput = NULL;
+    AP4_FileByteStream::Create("-stderr", AP4_FileByteStream::STREAM_MODE_WRITE, boxDumpConsoleOutput);
+    AP4_AtomInspector* inspector = new AP4_PrintInspector(*boxDumpConsoleOutput);
+    inspector->SetVerbosity(3);
+
+    std::list<AP4_Atom*>::iterator it;
+    for (it = atomList.begin(); it != atomList.end(); it++) {
+        (*it)->Inspect(*inspector);
+    }
+
+    if (boxDumpConsoleOutput) boxDumpConsoleOutput->Release();
+    delete inspector;
 
 }
 
 
 void printBoxType(AP4_Atom* atom) {
 
-//	AP4_UI32 m_Type = atom->GetType();
-//	char name[5];
-//	AP4_FormatFourCharsPrintable(name, m_Type);
-//
-//	name[4] = '\0';
-//	__ISOBMFF_JOINER_DEBUG("printBoxType: atom type: %s, size: %llu\n", name, atom->GetSize());
+    AP4_UI32 m_Type = atom->GetType();
+    char name[5];
+    AP4_FormatFourCharsPrintable(name, m_Type);
+
+    name[4] = '\0';
+    __ISOBMFF_JOINER_DEBUG("printBoxType: atom type: %s, size: %llu\n", name, atom->GetSize());
 }
 
