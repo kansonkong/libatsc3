@@ -52,7 +52,7 @@ using namespace std;
 #define BANNER "ISOBMFFTrackJoiner - jjustman\n"
 
 
-
+#define __DROP_HINT_TRACKS__
 
 
 // Alternative in-process memory buffer reader/writers
@@ -132,6 +132,12 @@ void parseAndBuildJoinedBoxes(ISOBMFFTrackJoinerFileResouces* isoBMFFTrackJoiner
 
     parseAndBuildJoinedBoxesFromMemory(isoBMFFTrackJoinerFileResouces->file1_payload, isoBMFFTrackJoinerFileResouces->file1_size, isoBMFFTrackJoinerFileResouces->file2_payload, isoBMFFTrackJoinerFileResouces->file2_size, output_stream);
 }
+
+//HACK
+
+AP4_UI32 trakMediaAtomSecondFileId = 0;
+AP4_UI32 trakMediaAtomOriginalId = 0;
+
 
 void parseAndBuildJoinedBoxesFromMemory(uint8_t* file1_payload, uint32_t file1_size, uint8_t* file2_payload, uint32_t file2_size, AP4_ByteStream* output_stream) {
 	list<AP4_Atom*> isoBMFFList1  = ISOBMFFTrackParse(file1_payload, file1_size);
@@ -229,13 +235,41 @@ void parseAndBuildJoinedBoxesFromMemory(uint8_t* file1_payload, uint32_t file1_s
 				//todo - handle duplicate track id's
 
 				if(hdlrAtom)  {
-					tmpTrakAtom->SetId(tmpTrakAtom->GetId()+10);
 					if(hdlrAtom->GetHandlerType() == AP4_HANDLER_TYPE_VIDE || hdlrAtom->GetHandlerType() == AP4_HANDLER_TYPE_SOUN) {
 						trakMediaAtomToCopy = tmpTrakAtom;
+						trakMediaAtomOriginalId = tmpTrakAtom->GetId();
+						tmpTrakAtom->SetId(tmpTrakAtom->GetId()+10);
+
 					} else if(hdlrAtom->GetHandlerType() == AP4_HANDLER_TYPE_HINT) {
+#ifndef __DROP_HINT_TRACKS__
+
+						tmpTrakAtom->SetId(tmpTrakAtom->GetId()+10);
+
 						trakHintAtomToCopy.push_back(tmpTrakAtom);
+
+						//if we have a hint ref
+											/**
+											 *[tref] size=8+12
+												  [hint] size=8+4
+													track_id_count = 1
+													track id  = 2
+											 */
+						//tmpTrakAtom->GetChild(AP4_ATOM_TYPE_TREF)
+						AP4_TrefTypeAtom* tmpTrefAtom = AP4_DYNAMIC_CAST(AP4_TrefTypeAtom, tmpTrakAtom->FindChild("tref/hint", false, false)); //(AP4_ATOM_TYPE_TREF));
+                        if(tmpTrefAtom) {
+                            const AP4_Array<AP4_UI32>& trefTrackIds = tmpTrefAtom->GetTrackIds();
+
+                            AP4_TrefTypeAtom* newTempTrefAtom = new AP4_TrefTypeAtom(tmpTrefAtom->GetType());
+                            for(AP4_Cardinal i=0; i < trefTrackIds.ItemCount(); i++) {
+                                newTempTrefAtom->AddTrackId(trefTrackIds[i] + 10);
+                            }
+                            AP4_AtomParent* tmpTrefParent = tmpTrefAtom->GetParent();
+                            tmpTrefAtom->Detach();
+                            tmpTrefParent->AddChild(newTempTrefAtom);
+                        }
+#endif
 					} else {
-						printf("Skipping tmpTrakAtom: %u", tmpTrakAtom->GetType());
+						//printf("Skipping tmpTrakAtom: %u", tmpTrakAtom->GetType());
 					}
 
 				}//otherwise drop
@@ -259,30 +293,147 @@ void parseAndBuildJoinedBoxesFromMemory(uint8_t* file1_payload, uint32_t file1_s
 		//In the moov box->get a ref for the trak box
 		if((*it)->GetType() == AP4_ATOM_TYPE_MOOV) {
 			AP4_MoovAtom* moovAtom = AP4_DYNAMIC_CAST(AP4_MoovAtom, *it);
+
+			//remove our hints
+			AP4_TrakAtom* tmpTrakAtom;
+			int trakIndex = 0;
+			while(tmpTrakAtom = AP4_DYNAMIC_CAST(AP4_TrakAtom, moovAtom->GetChild(AP4_ATOM_TYPE_TRAK, trakIndex++))) {
+
+				AP4_HdlrAtom* hdlrAtom = AP4_DYNAMIC_CAST(AP4_HdlrAtom, tmpTrakAtom->FindChild("mdia/hdlr", false, false));
+
+				//todo - handle duplicate track id's
+				bool shouldDetatch = true;
+				if(hdlrAtom)  {
+					if(hdlrAtom->GetHandlerType() == AP4_HANDLER_TYPE_VIDE || hdlrAtom->GetHandlerType() == AP4_HANDLER_TYPE_SOUN) {
+						//noop
+						trakMediaAtomSecondFileId = tmpTrakAtom->GetId();
+						shouldDetatch = false;
+					}
+				}
+
+				if(shouldDetatch) {
+
+					//clear out any trex here
+
+					tmpTrakAtom->Detach();
+
+				}
+			}
+
+			AP4_ContainerAtom* mvexToClear = AP4_DYNAMIC_CAST(AP4_ContainerAtom, moovAtom->GetChild(AP4_ATOM_TYPE_MVEX));
+
+			AP4_TrexAtom* tmpTrexAtom;
+			int trexIndex = 0;
+			while(tmpTrexAtom = AP4_DYNAMIC_CAST(AP4_TrexAtom, mvexToClear->GetChild(AP4_ATOM_TYPE_TREX, trexIndex++))) {
+				//ugh, there's not SetTrackId method...
+
+				//tmpTrexAtom->AP4_TrexAtom()
+				/*
+				 *   AP4_TrexAtom(AP4_UI32 track_id,
+			 AP4_UI32 default_sample_description_index,
+			 AP4_UI32 default_sample_duration,
+			 AP4_UI32 default_sample_size,
+			 AP4_UI32 default_sample_flags);
+				 */
+				if(tmpTrexAtom->GetTrackId() != trakMediaAtomSecondFileId) {
+					tmpTrexAtom->Detach();
+				}
+			}
+
 			if(mvexAtomToCopy) {
 				mvexAtomToCopy->Detach();
+
+				//update the mvex/trex
+				AP4_TrexAtom* tmpTrexAtom;
+				int trexIndex = 0;
+				while(tmpTrexAtom = AP4_DYNAMIC_CAST(AP4_TrexAtom, mvexAtomToCopy->GetChild(AP4_ATOM_TYPE_TREX, trexIndex++))) {
+					//ugh, there's not SetTrackId method...
+
+					//tmpTrexAtom->AP4_TrexAtom()
+					/*
+					 *   AP4_TrexAtom(AP4_UI32 track_id,
+                 AP4_UI32 default_sample_description_index,
+                 AP4_UI32 default_sample_duration,
+                 AP4_UI32 default_sample_size,
+                 AP4_UI32 default_sample_flags);
+					 */
+					tmpTrexAtom->Detach();
+
+					if(trakMediaAtomOriginalId && trakMediaAtomOriginalId == tmpTrexAtom->GetTrackId()) {
+						tmpTrexAtom = new AP4_TrexAtom(tmpTrexAtom->GetTrackId() + 10,
+								tmpTrexAtom->GetDefaultSampleDescriptionIndex(),
+								tmpTrexAtom->GetDefaultSampleDuration(),
+								tmpTrexAtom->GetDefaultSampleSize(),
+								tmpTrexAtom->GetDefaultSampleFlags());
+						mvexAtomToCopy->AddChild(tmpTrexAtom, trexIndex-1);
+					}
+				}
 				moovAtom->AddChild(mvexAtomToCopy, -1);
 			}
 			//copy over our media track, then copy over our hint tracks
+			//this track index is already offset by +10
 			if(trakMediaAtomToCopy) {
 				trakMediaAtomToCopy->Detach();
+
 				moovAtom->AddChild(trakMediaAtomToCopy, -1);
 			}
-			//trakHintAtomToCopy
 
+			//trakHintAtomToCopy
+			//this track index is already offset by +10
+
+			//looks like there is no actual hint data in these files, don't add in the hint tracks,..
+#ifndef __DROP_HINT_TRACKS__
 			for (itHint = trakHintAtomToCopy.begin(); itHint != trakHintAtomToCopy.end(); itHint++) {
 				(*itHint)->Detach();
 				moovAtom->AddChild(*itHint, -1);
 			}
+#endif
 		}
+
+		/**
+		 * [moof] size=8+2460
+			  [mfhd] size=12+4
+				sequence number = 1
+			  [traf] size=8+1540
+				[tfhd] size=12+4, flags=20000
+				  track ID = 2
+
+		 */
 
 		if((*it)->GetType() == AP4_ATOM_TYPE_MOOF) {
 			moofSecondFile = AP4_DYNAMIC_CAST(AP4_ContainerAtom, *it);
-			trafSecondFile = AP4_DYNAMIC_CAST(AP4_ContainerAtom, moofSecondFile->GetChild(AP4_ATOM_TYPE_TRAF));
-            AP4_TfdtAtom* tfdtSecondFile = AP4_DYNAMIC_CAST(AP4_TfdtAtom, trafSecondFile->GetChild(AP4_ATOM_TYPE_TFDT));
-            tfdtSecondFile->Detach();
+
+            //clear out our traf's if tfhd id != trakMediaAtomSecondFileId
+
+			AP4_ContainerAtom* tmpTrafToClean;
+			int trafIdx = 0;
+			while(tmpTrafToClean = AP4_DYNAMIC_CAST(AP4_ContainerAtom, moofSecondFile->GetChild(AP4_ATOM_TYPE_TRAF, trafIdx++))) {
+                AP4_TfhdAtom* tfhdTempAtom = AP4_DYNAMIC_CAST(AP4_TfhdAtom, tmpTrafToClean->GetChild(AP4_ATOM_TYPE_TFHD));
+                bool shouldDetachTrak = true;
+                if(tfhdTempAtom && tfhdTempAtom->GetTrackId() == trakMediaAtomSecondFileId) {
+                	trafSecondFile = tmpTrafToClean;
+                	shouldDetachTrak = false;
+                	AP4_TfdtAtom* tfdtSecondFile = AP4_DYNAMIC_CAST(AP4_TfdtAtom, tmpTrafToClean->GetChild(AP4_ATOM_TYPE_TFDT));
+                	if(tfdtSecondFile) {
+                		tfdtSecondFile->Detach();
+                	}
+                }
+                if(shouldDetachTrak) {
+                	tmpTrafToClean->Detach();
+                }
+			}
+
+
+
 
 			for(itTraf = trafFirstFileList.begin(); itTraf != trafFirstFileList.end(); itTraf++) {
+				//shift our track id's by +10
+                AP4_TfhdAtom* tfhdTempAtom = AP4_DYNAMIC_CAST(AP4_TfhdAtom, (*itTraf)->GetChild(AP4_ATOM_TYPE_TFHD));
+                if(tfhdTempAtom) {
+                	tfhdTempAtom->SetTrackId(tfhdTempAtom->GetTrackId() + 10);
+                } else {
+                	//error
+                }
 				//remove our tfdt's
                 AP4_TfdtAtom* tfdtTempAtom = AP4_DYNAMIC_CAST(AP4_TfdtAtom, (*itTraf)->GetChild(AP4_ATOM_TYPE_TFDT));
 				tfdtTempAtom->Detach();

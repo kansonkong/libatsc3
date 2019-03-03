@@ -219,7 +219,7 @@ block_t* atsc3_isobmff_build_mpu_metadata_ftyp_moof_mdat_box(udp_flow_t* udp_flo
 		mmtp_sub_flow = mmtp_sub_flow_vector_get_or_set_packet_id(mmtp_sub_flow_vector, udp_flow_packet_id_mpu_sequence_tuple->packet_id);
 
         //hack
-		movie_metadata_fragments = mpu_data_unit_payload_fragments_find_mpu_sequence_number(&mmtp_sub_flow->mpu_fragments->movie_fragment_metadata_vector, udp_flow_packet_id_mpu_sequence_tuple->mpu_sequence_number-1);
+		movie_metadata_fragments = mpu_data_unit_payload_fragments_find_mpu_sequence_number(&mmtp_sub_flow->mpu_fragments->movie_fragment_metadata_vector, udp_flow_packet_id_mpu_sequence_tuple->mpu_sequence_number-2);
 
 		mmtp_payload_fragments_union_t* fragment_metadata = NULL;
 		if(movie_metadata_fragments && movie_metadata_fragments->timed_fragments_vector.size) {
@@ -242,10 +242,88 @@ block_t* atsc3_isobmff_build_mpu_metadata_ftyp_moof_mdat_box(udp_flow_t* udp_flo
 			return NULL;
 		}
 
-        //hack
-		data_unit_payload_types = mpu_data_unit_payload_fragments_find_mpu_sequence_number(&mmtp_sub_flow->mpu_fragments->media_fragment_unit_vector, udp_flow_packet_id_mpu_sequence_tuple->mpu_sequence_number-1);
+
+
+		//double hack to patch the mdat box size
+		uint32_t video_du_size = 0;
+		uint32_t audio_du_size = 0;
+
+		data_unit_payload_types = mpu_data_unit_payload_fragments_find_mpu_sequence_number(&mmtp_sub_flow->mpu_fragments->media_fragment_unit_vector, udp_flow_packet_id_mpu_sequence_tuple->mpu_sequence_number-2);
 
 		mmtp_payload_fragments_union_t* mpu_data_unit_payload_fragments_timed = NULL;
+
+		if(data_unit_payload_types && data_unit_payload_types->timed_fragments_vector.size) {
+			total_fragments = data_unit_payload_types->timed_fragments_vector.size;
+			//mpu_data_unit_payload_fragments_timed = data_unit_payload_types->timed_fragments_vector;
+			//push to mpu_push_output_buffer
+			for(int i=0; i < total_fragments; i++) {
+				//mmtp_payload_fragments_union_t* packet = data_unit->data[i];
+				mmtp_payload_fragments_union_t* data_unit = data_unit_payload_types->timed_fragments_vector.data[0];
+
+			//	if(udp_flow_packet_id_mpu_sequence_tuple->packet_id == udp_flow_packet_id_mpu_sequence_tuple->packet_id) {
+					if(udp_flow_packet_id_mpu_sequence_tuple->packet_id == 35 || udp_flow_packet_id_mpu_sequence_tuple->packet_id == 1) {
+						video_du_size += data_unit->mmtp_mpu_type_packet_header.mpu_data_unit_payload->i_buffer;
+					} else if(udp_flow_packet_id_mpu_sequence_tuple->packet_id == 36 || udp_flow_packet_id_mpu_sequence_tuple->packet_id == 2 ){
+						audio_du_size += data_unit->mmtp_mpu_type_packet_header.mpu_data_unit_payload->i_buffer;
+					}
+			//	}
+			}
+
+		} else {
+			__ISOBMFF_TOOLS_WARN("data unit size is null");
+			//goto purge_pending_mfu_and_update_previous_mmtp_payload; //for now
+			return NULL;
+		}
+
+        if(!__AUDIO_RECON_FRAGMENT_SIZE || !__VIDEO_RECON_FRAGMENT_SIZE) {
+            return NULL;
+        }
+		uint8_t mdat_box[8];
+	//	__MMT_MPU_INFO("total_mdat_body_size: %u, total box size: %u", total_mdat_body_size, total_mdat_body_size+8);
+		uint32_t total_mdat_body_size = video_du_size +=8;
+
+		memcpy(&mdat_box, &__VIDEO_RECON_FRAGMENT[__VIDEO_RECON_FRAGMENT_SIZE-8], 8);
+
+		if(mdat_box[4] == 'm' && mdat_box[5] == 'd' && mdat_box[6] == 'a' && mdat_box[7] == 't') {
+			mdat_box[0] = (total_mdat_body_size >> 24) & 0xFF;
+			mdat_box[1] = (total_mdat_body_size >> 16) & 0xFF;
+			mdat_box[2] = (total_mdat_body_size >> 8) & 0xFF;
+			mdat_box[3] = (total_mdat_body_size) & 0xFF;
+
+
+			memcpy(&__VIDEO_RECON_FRAGMENT[__VIDEO_RECON_FRAGMENT_SIZE-8], &mdat_box, 4);
+//			__MMT_MPU_INFO("last 8 bytes of metadata fragment updated to: 0x%02x 0x%02x 0x%02x 0x%02x 0x%02x 0x%02x 0x%02x 0x%02x",
+//											mdat_box[0], mdat_box[1], mdat_box[2], mdat_box[3], mdat_box[4], mdat_box[5], mdat_box[6], mdat_box[7]);
+
+		} else {
+			__MMT_MPU_ERROR("fragment metadata packet, cant find trailing mdat!");
+		}
+
+		//	__MMT_MPU_INFO("total_mdat_body_size: %u, total box size: %u", total_mdat_body_size, total_mdat_body_size+8);
+			total_mdat_body_size = audio_du_size +=8;
+
+			memcpy(&mdat_box, &__AUDIO_RECON_FRAGMENT[__AUDIO_RECON_FRAGMENT_SIZE-8], 8);
+
+			if(mdat_box[4] == 'm' && mdat_box[5] == 'd' && mdat_box[6] == 'a' && mdat_box[7] == 't') {
+				mdat_box[0] = (total_mdat_body_size >> 24) & 0xFF;
+				mdat_box[1] = (total_mdat_body_size >> 16) & 0xFF;
+				mdat_box[2] = (total_mdat_body_size >> 8) & 0xFF;
+				mdat_box[3] = (total_mdat_body_size) & 0xFF;
+
+
+				memcpy(&__AUDIO_RECON_FRAGMENT[__AUDIO_RECON_FRAGMENT_SIZE-8], &mdat_box, 4);
+	//			__MMT_MPU_INFO("last 8 bytes of metadata fragment updated to: 0x%02x 0x%02x 0x%02x 0x%02x 0x%02x 0x%02x 0x%02x 0x%02x",
+	//											mdat_box[0], mdat_box[1], mdat_box[2], mdat_box[3], mdat_box[4], mdat_box[5], mdat_box[6], mdat_box[7]);
+
+			} else {
+				__MMT_MPU_ERROR("fragment metadata packet, cant find trailing mdat!");
+			}
+
+
+        //hack
+		data_unit_payload_types = mpu_data_unit_payload_fragments_find_mpu_sequence_number(&mmtp_sub_flow->mpu_fragments->media_fragment_unit_vector, udp_flow_packet_id_mpu_sequence_tuple->mpu_sequence_number-2);
+
+		mpu_data_unit_payload_fragments_timed = NULL;
 
 		if(data_unit_payload_types && data_unit_payload_types->timed_fragments_vector.size) {
 			total_fragments = data_unit_payload_types->timed_fragments_vector.size;
