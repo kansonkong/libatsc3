@@ -1,1 +1,3 @@
+rm -f mpu/*
+
 ./atsc3_listener_metrics_ncurses vnic1  2> debug.log
