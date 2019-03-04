@@ -12,6 +12,8 @@
 #include <stdbool.h>
 #include "atsc3_utils.h"
 #include "atsc3_player_ffplay.h"
+#include "atsc3_mmtp_types.h"
+
 
 #define _LLS_SLS_MONITOR_OUTPUT_MAX_INIT_BUFFER 65535
 #define _LLS_SLS_MONITOR_OUTPUT_MAX_MOOV_BUFFER 65535
@@ -34,6 +36,13 @@ typedef struct lls_sls_monitor_buffer_isobmff {
     //always need a fragment, may be just data unit for track
     uint8_t* fragment_box;
     uint32_t fragment_pos;
+
+    //for fragment recovery
+    mmtp_payload_fragments_union_t* last_fragment;
+    //this won't reset unless we do _all
+    mmtp_payload_fragments_union_t* last_mpu_sequence_number_last_fragment;
+
+    uint32_t last_fragment_lost_mfu_count;
 
 } lls_sls_monitor_buffer_isobmff_t;
 
