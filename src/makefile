@@ -1,4 +1,5 @@
-all: intermediate_lls intermediate_mmt intermediate_alc intermediate_ffplay libatsc3_core   listener_ncurses  isobmfftrackjoiner atsc3_listener_metrics_ncurses
+all: intermediate_lls intermediate_mmt intermediate_alc intermediate_ffplay libatsc3_core  isobmfftrackjoiner atsc3_listener_metrics_ncurses
+#listener_ncurses
 #mpu_isobmff_bento # listener_tests unit_tests
 clean:
 	-rm -f *.o
@@ -101,6 +102,14 @@ atsc3_player_ffplay.o: atsc3_player_ffplay.h atsc3_player_ffplay.c
 	
 atsc3_isobmff_tools.o: atsc3_isobmff_tools.h atsc3_isobmff_tools.cpp
 	g++ -g -o atsc3_isobmff_tools.o -c atsc3_isobmff_tools.cpp -I../bento/include/
+
+
+ISOBMFFTrackJoiner.o: bento4/ISOBMFFTrackJoiner.cpp bento4/ISOBMFFTrackJoiner.h
+	g++ -g -D __ISOBMFF_LIB=true -o ISOBMFFTrackJoiner.o -c bento4/ISOBMFFTrackJoiner.cpp -I../bento/include/
+	
+	
+isobmfftrackjoiner: bento4/ISOBMFFTrackJoiner.cpp bento4/ISOBMFFTrackJoiner.h
+	g++ -g bento4/ISOBMFFTrackJoiner.cpp -I../bento/include/ -L../bento/lib -lap4 -lm -lpthread -o isobmfftrackjoiner
 	
 	
 #core libatsc3 library gen
@@ -165,10 +174,11 @@ atsc3_isobmff_box_test: atsc3_isobmff_box_test.c
 	
 atsc3_listener_metrics_ncurses: atsc3_listener_metrics_ncurses.c atsc3_bandwidth_statistics.c \
 								atsc3_packet_statistics.c atsc3_output_statistics_ncurses.h \
-								atsc3_output_statistics_ncurses.c libatsc3.o atsc3_isobmff_tools.o
-	g++  -D __ISOBMFF_LIB=true -D OUTPUT_STATISTICS=NCURSES -g atsc3_listener_metrics_ncurses.c atsc3_output_statistics_ncurses.c \
+								atsc3_output_statistics_ncurses.c libatsc3.o atsc3_isobmff_tools.o \
+								ISOBMFFTrackJoiner.o
+	g++  -D OUTPUT_STATISTICS=NCURSES -g atsc3_listener_metrics_ncurses.c atsc3_output_statistics_ncurses.c \
 							atsc3_bandwidth_statistics.c atsc3_packet_statistics.c \
-                            bento4/ISOBMFFTrackJoiner.cpp bento4/MPUtoISOBMFFProcessor.cpp  libatsc3.o atsc3_isobmff_tools.o \
+                            ISOBMFFTrackJoiner.o libatsc3.o atsc3_isobmff_tools.o \
 							-I../bento/include/ -L../bento/lib -I../bento/include/ -L../bento/lib -lap4 -lm -lpthread -lz -lpcap  \
 							-lncurses -o atsc3_listener_metrics_ncurses
 							
@@ -185,8 +195,6 @@ atsc3_listener_metrics_ncurses: atsc3_listener_metrics_ncurses.c atsc3_bandwidth
 # bento4/MPUProcessor.cpp
 
 
-# isobmfftrackjoiner: bento4/ISOBMFFTrackJoiner.cpp bento4/ISOBMFFTrackJoiner.h
-#	g++ -g bento4/ISOBMFFTrackJoiner.cpp -I../bento/include/ -L../bento/lib -lap4 -lm -lpthread -o ISOBMFFTrackJoiner
 
 
 

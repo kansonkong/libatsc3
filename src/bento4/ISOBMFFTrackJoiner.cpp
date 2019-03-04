@@ -10,6 +10,8 @@
 
 #include "ISOBMFFTrackJoiner.h"
 
+int _ISOBMFFTRACKJOINER_DEBUG_ENABLED = 0;
+int _ISOBMFFTRACKJOINER_TRACE_ENABLED = 0;
 
 
 /*****************************************************************
@@ -80,7 +82,7 @@ int main(int argc, char** argv) {
 	result = AP4_FileByteStream::Create(output_filename, AP4_FileByteStream::STREAM_MODE_WRITE,output_stream);
 
 	//and remux into one unified fragment.  if you have already sent the initn b
-	parsrseAndBuildJoinedBoxes(fileResources, output_stream);
+	parseAndBuildJoinedBoxes(fileResources, output_stream);
 
 	return 0;
 }
