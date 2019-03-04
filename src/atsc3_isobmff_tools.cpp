@@ -58,7 +58,6 @@ lls_sls_monitor_output_buffer_t* atsc3_isobmff_build_mpu_metadata_ftyp_moof_mdat
 	lls_sls_monitor_output_buffer_t* lls_sls_monitor_output_buffer = &lls_sls_mmt_monitor->lls_sls_monitor_output_buffer;
 	lls_sls_monitor_output_buffer_reset_moov_and_fragment_position(lls_sls_monitor_output_buffer);
 
-
 	mpu_data_unit_payload_fragments_t* data_unit_payload_types = NULL;
 	mpu_data_unit_payload_fragments_timed_vector_t* data_unit_payload_fragments = NULL; //technically this is mpu_fragments->media_fragment_unit_vector
 	mpu_data_unit_payload_fragments_t* mpu_metadata_fragments =	NULL;
@@ -75,65 +74,75 @@ lls_sls_monitor_output_buffer_t* atsc3_isobmff_build_mpu_metadata_ftyp_moof_mdat
 	}
 
     //build out ftyp/moov init box
-    if(!lls_sls_mmt_monitor->lls_sls_monitor_output_buffer.has_written_init_box) {
-        __ISOBMFF_TOOLS_TRACE("atsc3_isobmff_build_mpu_metadata_ftyp_box: Starting to create MPU Metadata init box from flow: %u:%u", udp_flow->dst_ip_addr, udp_flow->dst_port);
-        
-        for(int i=0; i < udp_flow_latest_mpu_sequence_number_container->udp_flows_n; i++) {
-            udp_flow_packet_id_mpu_sequence_tuple_t* udp_flow_packet_id_mpu_sequence_tuple = udp_flow_latest_mpu_sequence_number_container->udp_flows[i];
-            bool found_mpu_metadata_fragment = false;
+	__ISOBMFF_TOOLS_TRACE("atsc3_isobmff_build_mpu_metadata_ftyp_box: Starting to create MPU Metadata init box from flow: %u:%u", udp_flow->dst_ip_addr, udp_flow->dst_port);
 
-            __ISOBMFF_TOOLS_DEBUG("atsc3_isobmff_build_mpu_metadata_ftyp_box: Searching for MPU Metadata with %u:%u and packet_id: %u", udp_flow->dst_ip_addr, udp_flow->dst_port, udp_flow_packet_id_mpu_sequence_tuple->packet_id);
+	for(int i=0; i < udp_flow_latest_mpu_sequence_number_container->udp_flows_n; i++) {
+		udp_flow_packet_id_mpu_sequence_tuple_t* udp_flow_packet_id_mpu_sequence_tuple = udp_flow_latest_mpu_sequence_number_container->udp_flows[i];
+		bool found_mpu_metadata_fragment = false;
 
-            mmtp_sub_flow = mmtp_sub_flow_vector_find_packet_id(mmtp_sub_flow_vector, udp_flow_packet_id_mpu_sequence_tuple->packet_id);
+		__ISOBMFF_TOOLS_DEBUG("atsc3_isobmff_build_mpu_metadata_ftyp_box: Searching for MPU Metadata with %u:%u and packet_id: %u", udp_flow->dst_ip_addr, udp_flow->dst_port, udp_flow_packet_id_mpu_sequence_tuple->packet_id);
 
-            if(mmtp_sub_flow && mmtp_sub_flow->mpu_fragments->mpu_metadata_fragments_vector.size) {
-                int all_mpu_metadata_fragment_walk_count = mmtp_sub_flow->mpu_fragments->mpu_metadata_fragments_vector.size-1;
-     
-                //mmtp_sub_flow->mpu_fragments->mpu_metadata_fragments_vector.data ?
-                while(all_mpu_metadata_fragment_walk_count >= 0 && !found_mpu_metadata_fragment) {
-                    mpu_metadata_fragments =  mmtp_sub_flow->mpu_fragments->mpu_metadata_fragments_vector.data[all_mpu_metadata_fragment_walk_count--];
+		mmtp_sub_flow = mmtp_sub_flow_vector_find_packet_id(mmtp_sub_flow_vector, udp_flow_packet_id_mpu_sequence_tuple->packet_id);
 
-                    if(mpu_metadata_fragments) {
-                        mmtp_payload_fragments_union_t* mpu_metadata_fragment = NULL;
+		if(mmtp_sub_flow && mmtp_sub_flow->mpu_fragments->mpu_metadata_fragments_vector.size) {
+			int all_mpu_metadata_fragment_walk_count = mmtp_sub_flow->mpu_fragments->mpu_metadata_fragments_vector.size-1;
 
-                        //rebuild if we are fragmented
-                        for(int i=0; i < mpu_metadata_fragments->timed_fragments_vector.size; i++) {
-                            mpu_metadata_fragment = mpu_metadata_fragments->timed_fragments_vector.data[i];
-                            
-                            if(mpu_metadata_fragment && mpu_metadata_fragment->mmtp_mpu_type_packet_header.mpu_data_unit_payload && mpu_metadata_fragment->mmtp_mpu_type_packet_header.mpu_data_unit_payload->i_pos ) {
-                                
-                                if(mpu_metadata_fragment->mmtp_mpu_type_packet_header.mmtp_packet_id == lls_sls_mmt_monitor->video_packet_id && mpu_metadata_fragment->mmtp_mpu_type_packet_header.mmtp_packet_id == udp_flow_packet_id_mpu_sequence_tuple->packet_id) {
-                                	lls_sls_monitor_output_buffer_copy_video_init_block(lls_sls_monitor_output_buffer, mpu_metadata_fragment->mmtp_mpu_type_packet_header.mpu_data_unit_payload);
-                                    found_mpu_metadata_fragment = true;
-                                    __ISOBMFF_TOOLS_DEBUG("found init box for audio, mpu_metadata packet_id: %d, mpu_sequence_number: %u", mpu_metadata_fragment->mmtp_mpu_type_packet_header.mmtp_packet_id, mpu_metadata_fragment->mmtp_mpu_type_packet_header.mpu_sequence_number);
+			//mmtp_sub_flow->mpu_fragments->mpu_metadata_fragments_vector.data ?
+			while(all_mpu_metadata_fragment_walk_count >= 0 && !found_mpu_metadata_fragment) {
+				mpu_metadata_fragments =  mmtp_sub_flow->mpu_fragments->mpu_metadata_fragments_vector.data[all_mpu_metadata_fragment_walk_count--];
 
-                                } else if(mpu_metadata_fragment->mmtp_mpu_type_packet_header.mmtp_packet_id == lls_sls_mmt_monitor->audio_packet_id && mpu_metadata_fragment->mmtp_mpu_type_packet_header.mmtp_packet_id == udp_flow_packet_id_mpu_sequence_tuple->packet_id) {
-                                	lls_sls_monitor_output_buffer_copy_audio_init_block(lls_sls_monitor_output_buffer, mpu_metadata_fragment->mmtp_mpu_type_packet_header.mpu_data_unit_payload);
-                                    found_mpu_metadata_fragment = true;
-                                    
-                                    __ISOBMFF_TOOLS_DEBUG("found init box for audio, mpu_metadata packet_id: %d, mpu_sequence_number: %u, fragmentation_indicator: %u, fragmentation_counter: %u", mpu_metadata_fragment->mmtp_mpu_type_packet_header.mmtp_packet_id, mpu_metadata_fragment->mmtp_mpu_type_packet_header.mpu_sequence_number, mpu_metadata_fragment->mmtp_mpu_type_packet_header.mpu_fragmentation_indicator, mpu_metadata_fragment->mmtp_mpu_type_packet_header.mpu_fragmentation_counter);
-                                }
-                            }
-                        }
-                    }
-                }
-                
-                if(!found_mpu_metadata_fragment) {
-                    __ISOBMFF_TOOLS_WARN("Unable to find init box, mpu_metadata from mmt_flow, packet_id: %u", udp_flow_packet_id_mpu_sequence_tuple->packet_id);
-                    return NULL;
-                }
-            }
-        }
-        
-        //sanity check to make sure we got our init box
-        if(!lls_sls_mmt_monitor->lls_sls_monitor_output_buffer.audio_output_buffer_isobmff.init_box_pos || !lls_sls_mmt_monitor->lls_sls_monitor_output_buffer.video_output_buffer_isobmff.init_box_pos) {
-            __ISOBMFF_TOOLS_WARN("Returning - int box data unit size is null: audio_recon_fragment_size: %u, video_recon_fragment_size: %u",
-            		lls_sls_mmt_monitor->lls_sls_monitor_output_buffer.audio_output_buffer_isobmff.init_box_pos,
-					lls_sls_mmt_monitor->lls_sls_monitor_output_buffer.video_output_buffer_isobmff.init_box_pos);
-            
-            return NULL;
-        }
-    }
+				if(mpu_metadata_fragments) {
+					mmtp_payload_fragments_union_t* mpu_metadata_fragment = NULL;
+
+					//rebuild if we are fragmented
+					for(int i=0; i < mpu_metadata_fragments->timed_fragments_vector.size; i++) {
+						mpu_metadata_fragment = mpu_metadata_fragments->timed_fragments_vector.data[i];
+
+						if(mpu_metadata_fragment && mpu_metadata_fragment->mmtp_mpu_type_packet_header.mpu_data_unit_payload && mpu_metadata_fragment->mmtp_mpu_type_packet_header.mpu_data_unit_payload->i_pos ) {
+
+							if(mpu_metadata_fragment->mmtp_mpu_type_packet_header.mmtp_packet_id == lls_sls_mmt_monitor->video_packet_id && mpu_metadata_fragment->mmtp_mpu_type_packet_header.mmtp_packet_id == udp_flow_packet_id_mpu_sequence_tuple->packet_id) {
+								if(lls_sls_monitor_output_buffer->video_output_buffer_isobmff.init_box_pos) {
+									//reset if we are not a fragment reassembly
+									if(mpu_metadata_fragment->mmtp_mpu_type_packet_header.mpu_fragmentation_indicator == 0 || mpu_metadata_fragment->mmtp_mpu_type_packet_header.mpu_fragmentation_indicator == 1) {
+										lls_sls_monitor_output_buffer->video_output_buffer_isobmff.init_box_pos = 0;
+									}
+								}
+								lls_sls_monitor_output_buffer_copy_video_init_block(lls_sls_monitor_output_buffer, mpu_metadata_fragment->mmtp_mpu_type_packet_header.mpu_data_unit_payload);
+								found_mpu_metadata_fragment = true;
+								__ISOBMFF_TOOLS_DEBUG("found init box for audio, mpu_metadata packet_id: %d, mpu_sequence_number: %u", mpu_metadata_fragment->mmtp_mpu_type_packet_header.mmtp_packet_id, mpu_metadata_fragment->mmtp_mpu_type_packet_header.mpu_sequence_number);
+
+							} else if(mpu_metadata_fragment->mmtp_mpu_type_packet_header.mmtp_packet_id == lls_sls_mmt_monitor->audio_packet_id && mpu_metadata_fragment->mmtp_mpu_type_packet_header.mmtp_packet_id == udp_flow_packet_id_mpu_sequence_tuple->packet_id) {
+								if(lls_sls_monitor_output_buffer->audio_output_buffer_isobmff.init_box_pos) {
+									//reset if we are not a fragment reassembly
+									if(mpu_metadata_fragment->mmtp_mpu_type_packet_header.mpu_fragmentation_indicator == 0 || mpu_metadata_fragment->mmtp_mpu_type_packet_header.mpu_fragmentation_indicator == 1) {
+										lls_sls_monitor_output_buffer->audio_output_buffer_isobmff.init_box_pos = 0;
+									}
+								}
+								lls_sls_monitor_output_buffer_copy_audio_init_block(lls_sls_monitor_output_buffer, mpu_metadata_fragment->mmtp_mpu_type_packet_header.mpu_data_unit_payload);
+								found_mpu_metadata_fragment = true;
+
+								__ISOBMFF_TOOLS_DEBUG("found init box for audio, mpu_metadata packet_id: %d, mpu_sequence_number: %u, fragmentation_indicator: %u, fragmentation_counter: %u", mpu_metadata_fragment->mmtp_mpu_type_packet_header.mmtp_packet_id, mpu_metadata_fragment->mmtp_mpu_type_packet_header.mpu_sequence_number, mpu_metadata_fragment->mmtp_mpu_type_packet_header.mpu_fragmentation_indicator, mpu_metadata_fragment->mmtp_mpu_type_packet_header.mpu_fragmentation_counter);
+							}
+						}
+					}
+				}
+			}
+
+			if(!found_mpu_metadata_fragment) {
+				__ISOBMFF_TOOLS_WARN("Unable to find init box, mpu_metadata from mmt_flow, packet_id: %u", udp_flow_packet_id_mpu_sequence_tuple->packet_id);
+				return NULL;
+			}
+		}
+	}
+
+	//sanity check to make sure we got our init box
+	if(!lls_sls_mmt_monitor->lls_sls_monitor_output_buffer.audio_output_buffer_isobmff.init_box_pos || !lls_sls_mmt_monitor->lls_sls_monitor_output_buffer.video_output_buffer_isobmff.init_box_pos) {
+		__ISOBMFF_TOOLS_WARN("Returning - int box data unit size is null: audio_recon_fragment_size: %u, video_recon_fragment_size: %u",
+				lls_sls_mmt_monitor->lls_sls_monitor_output_buffer.audio_output_buffer_isobmff.init_box_pos,
+				lls_sls_mmt_monitor->lls_sls_monitor_output_buffer.video_output_buffer_isobmff.init_box_pos);
+
+		return NULL;
+	}
     
 	for(int i=0; i < udp_flow_latest_mpu_sequence_number_container->udp_flows_n; i++) {
         
@@ -229,73 +238,84 @@ lls_sls_monitor_output_buffer_t* atsc3_isobmff_build_mpu_metadata_ftyp_moof_mdat
     }
     
     //build out ftyp/moov init box
-    if(!lls_sls_mmt_monitor->lls_sls_monitor_output_buffer.has_written_init_box) {
-        __ISOBMFF_TOOLS_INFO("atsc3_isobmff_build_mpu_metadata_ftyp_box: Starting to create MPU Metadata init box from flow: %u:%u, mpu_sequence_number_audio: %u, mpu_sequence_number_video: %u",
-                             udp_flow->dst_ip_addr, udp_flow->dst_port,
-                             mpu_sequence_number_audio,
-                             mpu_sequence_number_video);
-        
-        for(int i=0; i < udp_flow_latest_mpu_sequence_number_container->udp_flows_n; i++) {
-            udp_flow_packet_id_mpu_sequence_tuple_t* udp_flow_packet_id_mpu_sequence_tuple = udp_flow_latest_mpu_sequence_number_container->udp_flows[i];
-            bool found_mpu_metadata_fragment = false;
-            
-            __ISOBMFF_TOOLS_DEBUG("atsc3_isobmff_build_mpu_metadata_ftyp_box: Searching for MPU Metadata with %u:%u and packet_id: %u", udp_flow->dst_ip_addr, udp_flow->dst_port, udp_flow_packet_id_mpu_sequence_tuple->packet_id);
-            
-            mmtp_sub_flow = mmtp_sub_flow_vector_find_packet_id(mmtp_sub_flow_vector, udp_flow_packet_id_mpu_sequence_tuple->packet_id);
-            
-            if(mmtp_sub_flow && mmtp_sub_flow->mpu_fragments->mpu_metadata_fragments_vector.size) {
-                int all_mpu_metadata_fragment_walk_count = mmtp_sub_flow->mpu_fragments->mpu_metadata_fragments_vector.size-1;
-                
-                //mmtp_sub_flow->mpu_fragments->mpu_metadata_fragments_vector.data ?
-                while(all_mpu_metadata_fragment_walk_count >= 0 && !found_mpu_metadata_fragment) {
-                    mpu_metadata_fragments =  mmtp_sub_flow->mpu_fragments->mpu_metadata_fragments_vector.data[all_mpu_metadata_fragment_walk_count--];
-                    
-                    if(mpu_metadata_fragments) {
-                        mmtp_payload_fragments_union_t* mpu_metadata_fragment = NULL;
-                        
-                        //rebuild if we are fragmented
-                        for(int i=0; i < mpu_metadata_fragments->timed_fragments_vector.size; i++) {
-                            mpu_metadata_fragment = mpu_metadata_fragments->timed_fragments_vector.data[i];
-                            
-                            if(mpu_metadata_fragment && mpu_metadata_fragment->mmtp_mpu_type_packet_header.mpu_data_unit_payload && mpu_metadata_fragment->mmtp_mpu_type_packet_header.mpu_data_unit_payload->i_pos ) {
-                                
-                                if(mpu_metadata_fragment->mmtp_mpu_type_packet_header.mmtp_packet_id == lls_sls_mmt_monitor->video_packet_id && mpu_metadata_fragment->mmtp_mpu_type_packet_header.mmtp_packet_id == udp_flow_packet_id_mpu_sequence_tuple->packet_id) {
-                                	lls_sls_monitor_output_buffer_copy_video_init_block(lls_sls_monitor_output_buffer, mpu_metadata_fragment->mmtp_mpu_type_packet_header.mpu_data_unit_payload);
-                                    found_mpu_metadata_fragment = true;
-                                    __ISOBMFF_TOOLS_DEBUG("found init box for audio, mpu_metadata packet_id: %d, mpu_sequence_number: %u",
-                                        mpu_metadata_fragment->mmtp_mpu_type_packet_header.mmtp_packet_id,
-                                        mpu_metadata_fragment->mmtp_mpu_type_packet_header.mpu_sequence_number);
-                                    
-                                } else if(mpu_metadata_fragment->mmtp_mpu_type_packet_header.mmtp_packet_id == lls_sls_mmt_monitor->audio_packet_id && mpu_metadata_fragment->mmtp_mpu_type_packet_header.mmtp_packet_id == udp_flow_packet_id_mpu_sequence_tuple->packet_id) {
-                                	lls_sls_monitor_output_buffer_copy_audio_init_block(lls_sls_monitor_output_buffer, mpu_metadata_fragment->mmtp_mpu_type_packet_header.mpu_data_unit_payload);
-                                    found_mpu_metadata_fragment = true;
-                                    
-                                    __ISOBMFF_TOOLS_DEBUG("found init box for audio, mpu_metadata packet_id: %d, mpu_sequence_number: %u, fragmentation_indicator: %u, fragmentation_counter: %u", mpu_metadata_fragment->mmtp_mpu_type_packet_header.mmtp_packet_id,
-                                        mpu_metadata_fragment->mmtp_mpu_type_packet_header.mpu_sequence_number,
-                                        mpu_metadata_fragment->mmtp_mpu_type_packet_header.mpu_fragmentation_indicator,
-                                        mpu_metadata_fragment->mmtp_mpu_type_packet_header.mpu_fragmentation_counter);
-                                }
-                            }
-                        }
-                    }
-                }
-                
-                if(!found_mpu_metadata_fragment) {
-                    __ISOBMFF_TOOLS_WARN("Unable to find init box, mpu_metadata from mmt_flow, packet_id: %u", udp_flow_packet_id_mpu_sequence_tuple->packet_id);
-                    return NULL;
-                }
-            }
-        }
+	__ISOBMFF_TOOLS_INFO("atsc3_isobmff_build_mpu_metadata_ftyp_box: Starting to create MPU Metadata init box from flow: %u:%u, mpu_sequence_number_audio: %u, mpu_sequence_number_video: %u",
+						 udp_flow->dst_ip_addr, udp_flow->dst_port,
+						 mpu_sequence_number_audio,
+						 mpu_sequence_number_video);
 
-        //sanity check to make sure we got our init box
-		if(!lls_sls_mmt_monitor->lls_sls_monitor_output_buffer.audio_output_buffer_isobmff.init_box_pos || !lls_sls_mmt_monitor->lls_sls_monitor_output_buffer.video_output_buffer_isobmff.init_box_pos) {
-		  __ISOBMFF_TOOLS_WARN("Returning - int box data unit size is null: audio_recon_fragment_size: %u, video_recon_fragment_size: %u",
-				lls_sls_mmt_monitor->lls_sls_monitor_output_buffer.audio_output_buffer_isobmff.init_box_pos,
-				lls_sls_mmt_monitor->lls_sls_monitor_output_buffer.video_output_buffer_isobmff.init_box_pos);
+	for(int i=0; i < udp_flow_latest_mpu_sequence_number_container->udp_flows_n; i++) {
+		udp_flow_packet_id_mpu_sequence_tuple_t* udp_flow_packet_id_mpu_sequence_tuple = udp_flow_latest_mpu_sequence_number_container->udp_flows[i];
+		bool found_mpu_metadata_fragment = false;
 
-		  return NULL;
+		__ISOBMFF_TOOLS_DEBUG("atsc3_isobmff_build_mpu_metadata_ftyp_box: Searching for MPU Metadata with %u:%u and packet_id: %u", udp_flow->dst_ip_addr, udp_flow->dst_port, udp_flow_packet_id_mpu_sequence_tuple->packet_id);
+
+		mmtp_sub_flow = mmtp_sub_flow_vector_find_packet_id(mmtp_sub_flow_vector, udp_flow_packet_id_mpu_sequence_tuple->packet_id);
+
+		if(mmtp_sub_flow && mmtp_sub_flow->mpu_fragments->mpu_metadata_fragments_vector.size) {
+			int all_mpu_metadata_fragment_walk_count = mmtp_sub_flow->mpu_fragments->mpu_metadata_fragments_vector.size-1;
+
+			//mmtp_sub_flow->mpu_fragments->mpu_metadata_fragments_vector.data ?
+			while(all_mpu_metadata_fragment_walk_count >= 0 && !found_mpu_metadata_fragment) {
+				mpu_metadata_fragments =  mmtp_sub_flow->mpu_fragments->mpu_metadata_fragments_vector.data[all_mpu_metadata_fragment_walk_count--];
+
+				if(mpu_metadata_fragments) {
+					mmtp_payload_fragments_union_t* mpu_metadata_fragment = NULL;
+
+					//rebuild if we are fragmented
+					for(int i=0; i < mpu_metadata_fragments->timed_fragments_vector.size; i++) {
+						mpu_metadata_fragment = mpu_metadata_fragments->timed_fragments_vector.data[i];
+
+						if(mpu_metadata_fragment && mpu_metadata_fragment->mmtp_mpu_type_packet_header.mpu_data_unit_payload && mpu_metadata_fragment->mmtp_mpu_type_packet_header.mpu_data_unit_payload->i_pos ) {
+
+							if(mpu_metadata_fragment->mmtp_mpu_type_packet_header.mmtp_packet_id == lls_sls_mmt_monitor->video_packet_id && mpu_metadata_fragment->mmtp_mpu_type_packet_header.mmtp_packet_id == udp_flow_packet_id_mpu_sequence_tuple->packet_id) {
+								if(lls_sls_monitor_output_buffer->video_output_buffer_isobmff.init_box_pos) {
+									//reset if we are not a fragment reassembly
+									if(mpu_metadata_fragment->mmtp_mpu_type_packet_header.mpu_fragmentation_indicator == 0 || mpu_metadata_fragment->mmtp_mpu_type_packet_header.mpu_fragmentation_indicator == 1) {
+										lls_sls_monitor_output_buffer->video_output_buffer_isobmff.init_box_pos = 0;
+									}
+								}
+								lls_sls_monitor_output_buffer_copy_video_init_block(lls_sls_monitor_output_buffer, mpu_metadata_fragment->mmtp_mpu_type_packet_header.mpu_data_unit_payload);
+								found_mpu_metadata_fragment = true;
+								__ISOBMFF_TOOLS_DEBUG("found init box for audio, mpu_metadata packet_id: %d, mpu_sequence_number: %u",
+									mpu_metadata_fragment->mmtp_mpu_type_packet_header.mmtp_packet_id,
+									mpu_metadata_fragment->mmtp_mpu_type_packet_header.mpu_sequence_number);
+
+							} else if(mpu_metadata_fragment->mmtp_mpu_type_packet_header.mmtp_packet_id == lls_sls_mmt_monitor->audio_packet_id && mpu_metadata_fragment->mmtp_mpu_type_packet_header.mmtp_packet_id == udp_flow_packet_id_mpu_sequence_tuple->packet_id) {
+								if(lls_sls_monitor_output_buffer->audio_output_buffer_isobmff.init_box_pos) {
+									//reset if we are not a fragment reassembly
+									if(mpu_metadata_fragment->mmtp_mpu_type_packet_header.mpu_fragmentation_indicator == 0 || mpu_metadata_fragment->mmtp_mpu_type_packet_header.mpu_fragmentation_indicator == 1) {
+										lls_sls_monitor_output_buffer->audio_output_buffer_isobmff.init_box_pos = 0;
+									}
+								}
+								lls_sls_monitor_output_buffer_copy_audio_init_block(lls_sls_monitor_output_buffer, mpu_metadata_fragment->mmtp_mpu_type_packet_header.mpu_data_unit_payload);
+								found_mpu_metadata_fragment = true;
+
+								__ISOBMFF_TOOLS_DEBUG("found init box for audio, mpu_metadata packet_id: %d, mpu_sequence_number: %u, fragmentation_indicator: %u, fragmentation_counter: %u", mpu_metadata_fragment->mmtp_mpu_type_packet_header.mmtp_packet_id,
+									mpu_metadata_fragment->mmtp_mpu_type_packet_header.mpu_sequence_number,
+									mpu_metadata_fragment->mmtp_mpu_type_packet_header.mpu_fragmentation_indicator,
+									mpu_metadata_fragment->mmtp_mpu_type_packet_header.mpu_fragmentation_counter);
+							}
+						}
+					}
+				}
+			}
+
+			if(!found_mpu_metadata_fragment) {
+				__ISOBMFF_TOOLS_WARN("Unable to find init box, mpu_metadata from mmt_flow, packet_id: %u", udp_flow_packet_id_mpu_sequence_tuple->packet_id);
+				return NULL;
+			}
 		}
-    }
+	}
+
+	//sanity check to make sure we got our init box
+	if(!lls_sls_mmt_monitor->lls_sls_monitor_output_buffer.audio_output_buffer_isobmff.init_box_pos || !lls_sls_mmt_monitor->lls_sls_monitor_output_buffer.video_output_buffer_isobmff.init_box_pos) {
+	  __ISOBMFF_TOOLS_WARN("Returning - int box data unit size is null: audio_recon_fragment_size: %u, video_recon_fragment_size: %u",
+			lls_sls_mmt_monitor->lls_sls_monitor_output_buffer.audio_output_buffer_isobmff.init_box_pos,
+			lls_sls_mmt_monitor->lls_sls_monitor_output_buffer.video_output_buffer_isobmff.init_box_pos);
+
+	  return NULL;
+	}
+
     
     for(int i=0; i < udp_flow_latest_mpu_sequence_number_container->udp_flows_n; i++) {
         
