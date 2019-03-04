@@ -286,7 +286,8 @@ mmtp_payload_fragments_union_t* mmtp_process_from_payload(udp_packet_t *udp_pack
                         
 						pipe_buffer_unsafe_push_block(lls_slt_monitor->lls_sls_mmt_monitor->lls_sls_monitor_output_buffer_mode.pipe_ffplay_buffer, final_muxed_payload->p_buffer, final_muxed_payload->i_buffer);
 
-						//mpu_push_to_output_buffer_no_locking(pipe_ffplay_buffer, mpu_metadata);
+                            lls_slt_monitor->lls_sls_mmt_monitor->lls_sls_monitor_output_buffer.has_written_init_box = true;
+						//todo - refactor? mpu_push_to_output_buffer_no_locking(pipe_ffplay_buffer, mpu_metadata);
 						pipe_buffer_notify_semaphore_post(lls_slt_monitor->lls_sls_mmt_monitor->lls_sls_monitor_output_buffer_mode.pipe_ffplay_buffer);
                         pipe_buffer_reader_check_if_shutdown(&lls_slt_monitor->lls_sls_mmt_monitor->lls_sls_monitor_output_buffer_mode.pipe_ffplay_buffer);
 
