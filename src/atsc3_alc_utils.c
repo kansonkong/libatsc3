@@ -134,115 +134,122 @@ char* alc_packet_dump_to_object_get_filename_tsi_toi(uint32_t tsi, uint32_t toi)
 	return file_name;
 }
 
+//todo - build this in memory first...
+
+FILE* alc_object_open_or_pre_allocate(char* file_name, alc_packet_t* alc_packet) {
+    if( access( file_name, F_OK ) != -1 ) {
+        FILE* f = fopen(file_name, "r+");
+        if(f) {
+            return f;
+        }
+    }
+    
+    //otherwise, pre_allocate this object
+    return alc_object_pre_allocate(file_name, alc_packet);
+    
+}
+
+FILE* alc_object_pre_allocate(char* file_name, alc_packet_t* alc_packet) {
+    if( access( file_name, F_OK ) != -1 ) {
+        __ALC_UTILS_WARN("pre_allocate: file %s exists, removing", file_name);
+        // file exists
+        remove(file_name);
+    }
+    
+    FILE* f = fopen(file_name, "w");
+    if(!f) {
+        __ALC_UTILS_WARN("pre_allocate: unable to open %s", file_name);
+        return NULL;
+    }
+    
+    uint32_t to_allocate_size = alc_packet->transfer_len;
+    if(to_allocate_size) {
+        __ALC_UTILS_DEBUG("pre_allocate: file %s to size: %d", file_name, to_allocate_size);
+        uint8_t* temp_alloc_mem = (uint8_t*) calloc(to_allocate_size, sizeof(uint8_t));
+        fwrite(temp_alloc_mem, to_allocate_size, 1, f);
+    } else {
+        __ALC_UTILS_WARN("pre_allocate: file %s, transfer_len is 0, not pre allocating", file_name);
+    }
+    fclose(f);
+    f = fopen(file_name, "r+");
+   
+    return f;
+}
+
+int alc_packet_write_fragment(FILE* f, char* file_name, uint32_t offset, alc_packet_t* alc_packet) {
+    
+    __ALC_UTILS_DEBUG("write fragment: tsi: %u, toi: %u, sbn: %x, esi: %x len: %d, complete: %d, file: %p, file name: %s, offset: %u, size: %u",  alc_packet->def_lct_hdr->tsi, alc_packet->def_lct_hdr->toi,
+        alc_packet->sbn, alc_packet->esi, alc_packet->alc_len, alc_packet->close_object_flag,
+        f, file_name, offset, alc_packet->alc_len);
+
+    fseek(f, offset, SEEK_SET);
+    int blocks_written = fwrite(alc_packet->alc_payload, alc_packet->alc_len, 1, f);
+   
+    if(blocks_written != 1) {
+        __ALC_UTILS_WARN("short packet write: blocks: %u", blocks_written);
+        return 0;
+    }
+    
+    return alc_packet->alc_len;
+}
+
 int alc_packet_dump_to_object(alc_packet_t** alc_packet_ptr) {
 
 	alc_packet_t* alc_packet = *alc_packet_ptr;
 	int bytesWritten = 0;
-    char* file_name = alc_packet_dump_to_object_get_filename(alc_packet);
 
 	if(!_ALC_PACKET_DUMP_TO_OBJECT_ENABLED) {
-			return -1;
+        return -1;
     }
+    
+    char* file_name = alc_packet_dump_to_object_get_filename(alc_packet);
     mkdir("route", 0777);
 
-	int filename_pos = 0;
-	__ALC_UTILS_TRACE("have tsi: %u, toi: %u, sbn: %x, esi: %x len: %d",
-			alc_packet->def_lct_hdr->tsi, alc_packet->def_lct_hdr->toi,
-			alc_packet->esi, alc_packet->sbn, alc_packet->alc_len);
+    FILE *f = NULL;
 
-	FILE *f = NULL;
-
-	//if no TSI, this is metadata and create a new object for each payload
-	//The SLS fragments shall be delivered on a dedicated LCT transport channel with TSI = 0.
-
-
-	if(!alc_packet->def_lct_hdr->tsi) {
-		f = fopen(file_name, "w");
-	} else {
-		//esi will not be 0 if this is FEC protected, use sbn (Source block number instead).
-		if(alc_packet->sbn>0) {
-			__ALC_UTILS_TRACE("dumping to file in append mode: %s, esi: %d", file_name, alc_packet->esi);
-			f = fopen(file_name, "a");
-		} else {
-			__ALC_UTILS_TRACE("dumping to file in write mode: %s, esi: %d", file_name, alc_packet->esi);
-			//open as write
-			f = fopen(file_name, "w");
-		}
-	}
-
-	if(!f) {
-		__ALC_UTILS_WARN("UNABLE TO OPEN FILE %s", file_name);
-		return -2;
-	}
-
-	__ALC_UTILS_TRACE("dumping alc packet size: %d to %p", alc_packet->alc_len, f);
-	int blocks_written = fwrite(alc_packet->alc_payload, alc_packet->alc_len, 1, f);
-	if(blocks_written != 1) {
-		__ALC_UTILS_WARN("short packet write!");
-	}
-
-	fclose(f);
-
+    if(alc_packet->use_sbn_esi) {
+        //raptor fec, use the esi to see if we should write out to a new file vs append
+        if(!alc_packet->esi) {
+            f = alc_object_pre_allocate(file_name, alc_packet);
+        } else {
+            f = alc_object_open_or_pre_allocate(file_name, alc_packet);
+        }
+        if(!f) {
+            __ALC_UTILS_WARN("alc_packet_dump_to_object, unable to open file: %s", file_name);
+            return -2;
+        }
+        alc_packet_write_fragment(f, file_name, alc_packet->esi, alc_packet);
+    } else if(alc_packet->use_start_offset){
+        if(!alc_packet->start_offset) {
+            f = alc_object_pre_allocate(file_name, alc_packet);
+        } else {
+            f = alc_object_open_or_pre_allocate(file_name, alc_packet);
+        }
+        if(!f) {
+            __ALC_UTILS_WARN("alc_packet_dump_to_object, unable to open file: %s", file_name);
+            return -2;
+        }
+        
+        alc_packet_write_fragment(f, file_name, alc_packet->start_offset, alc_packet);
+    } else {
+        __ALC_UTILS_WARN("alc_packet_dump_to_object, no alc offset strategy for file: %s", file_name);
+    }
+	
+    if(f) {
+        fclose(f);
+        f = NULL;
+    }
+    
 	//also investigate alc_packet->transfer_len if we dont get a close object tag
 	if(alc_packet->close_object_flag) {
-		__ALC_UTILS_TRACE("dumping to file done: %s, is complete: %d", file_name, alc_packet->close_object_flag);
+		//__ALC_UTILS_DEBUG("dumping to file done: %s, is complete: %d", file_name, alc_packet->close_object_flag);
 	} else {
-		__ALC_UTILS_TRACE("dumping to file step: %s, is complete: %d", file_name, alc_packet->close_object_flag);
+		//__ALC_UTILS_DEBUG("dumping to file step: %s, is complete: %d", file_name, alc_packet->close_object_flag);
 	}
-#if defined(__TESTING_PREPEND_TSI__) && defined(__TESTING_PREPEND_TOI_INIT__)
-	char* tsi_prepend_init = __TESTING_PREPEND_TSI__;
-	char* toi_prepend_init = __TESTING_PREPEND_TOI_INIT__;
-	__ALC_UTILS_DEBUG("checking %s, %s,  %d", alc_packet->tsi_c, alc_packet->toi_c, alc_packet->close_object_flag);
-
-	if(strncmp(alc_packet->tsi_c, tsi_prepend_init, strlen(alc_packet->tsi_c)) == 0 &&
-				strncmp(alc_packet->toi_c, toi_prepend_init, strlen(alc_packet->toi_c)) &&
-				alc_packet->close_object_flag) {
-		__alc_prepend_fragment_with_init_box(file_name, alc_packet);
-
-
-	}
-#endif
-
-
-#if defined(__TESTING_RECON_FILE_POINTER__) && defined(__TESTING_RECONSTITUTED_TSI__) && defined(__TESTING_RECONSTITUTED_TOI_INIT__) && defined(__TESTING_RECONSITIUTED_FILE_NAME__)
-	char* tsi_recon_init = __TESTING_RECONSTITUTED_TSI__;
-	char* toi_recon_init = __TESTING_RECONSTITUTED_TOI_INIT__;
-	__ALC_UTILS_DEBUG("checking %s, %s,  %d", alc_packet->tsi_c, alc_packet->toi_c, alc_packet->close_object_flag);
-
-	if(strncmp(alc_packet->tsi_c, tsi_recon_init, strlen(alc_packet->tsi_c)) == 0 &&
-				strncmp(alc_packet->toi_c, toi_recon_init, strlen(alc_packet->toi_c)) &&
-				alc_packet->close_object_flag) {
-		__alc_recon_fragment_with_init_box(file_name, alc_packet);
-	}
-#endif
-
-#ifdef __TESTING_RECON_WITH_POPEN_FILE_POINTER__
-	if(__ALC_RECON_FILE_BUFFER_STRUCT && __ALC_RECON_FILE_PTR_TSI && __ALC_RECON_FILE_PTR_TOI_INIT) {
-			__ALC_UTILS_DEBUG("checking %s, %s,  %d", alc_packet->tsi_c, alc_packet->toi_c, alc_packet->close_object_flag);
-
-			if(strncmp(alc_packet->tsi_c, __ALC_RECON_FILE_PTR_TSI, strlen(alc_packet->tsi_c)) == 0 &&
-						strncmp(alc_packet->toi_c, __ALC_RECON_FILE_PTR_TOI_INIT, strlen(alc_packet->toi_c)) &&
-						alc_packet->close_object_flag) {
-				alc_recon_file_ptr_fragment_with_init_box(__ALC_RECON_FILE_PTR, alc_packet);
-			}
-		}
-#endif
-
-#ifdef __OLD_TOI_MAPPING
-	//push our fragments EXCEPT for the mpu fragment box, we will pull that at the start of a
-	if(__ALC_RECON_FILE_BUFFER_STRUCT && __ALC_RECON_FILE_PTR_TSI && __ALC_RECON_FILE_PTR_TOI_INIT) {
-		__ALC_UTILS_TRACE("checking tsi: %u, toi: %u,  %d", alc_packet->def_lct_hdr->tsi, alc_packet->def_lct_hdr->toi, alc_packet->close_object_flag);
-
-		if(alc_packet->def_lct_hdr->tsi == *__ALC_RECON_FILE_PTR_TSI && alc_packet->def_lct_hdr->toi != *__ALC_RECON_FILE_PTR_TOI_INIT && alc_packet->close_object_flag) {
-
-			alc_recon_file_buffer_struct_fragment_with_init_box(__ALC_RECON_FILE_BUFFER_STRUCT, alc_packet);
-		}
-	}
-#endif
 	//__ALC_RECON_MONITOR
 	//push our fragments EXCEPT for the mpu fragment box, we will pull that at the start of a
 		if(__ALC_RECON_MONITOR) {
-			__ALC_UTILS_TRACE("checking tsi: %u, toi: %u,  %d", alc_packet->def_lct_hdr->tsi, alc_packet->def_lct_hdr->toi, alc_packet->close_object_flag);
+            __ALC_UTILS_TRACE("checking tsi: %u, toi: %u, close_object_flag: %d", alc_packet->def_lct_hdr->tsi, alc_packet->def_lct_hdr->toi, alc_packet->close_object_flag);
 
 			if(alc_packet->close_object_flag && ((alc_packet->def_lct_hdr->tsi == __ALC_RECON_MONITOR->video_tsi && alc_packet->def_lct_hdr->toi != __ALC_RECON_MONITOR->video_toi_init) ||
 					(alc_packet->def_lct_hdr->tsi == __ALC_RECON_MONITOR->audio_tsi && alc_packet->def_lct_hdr->toi != __ALC_RECON_MONITOR->audio_toi_init))) {

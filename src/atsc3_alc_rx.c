@@ -106,6 +106,47 @@ The main changes that ROUTE introduces to the usage of the LCT building block ar
 • ROUTE limits the usage of the LCT building block to a single channel per session. Congestion control is thus sender-driven in ROUTE.
 The functionality of receiver-driven layered multicast may still be offered by the application, allowing the receiver application to select the appropriate delivery session based on the bandwidth requirement of that session.
  *
+ *
+ *
+ *
+ *The MSB of the PSI shall be set to 1 to indicate a source packet.
+
+o In accordance to ALC, a source FEC Payload ID header is used to identify, for FEC
+purposes, the encoding symbols of the delivery object,
+or a portion thereof, carried by the associated ROUTE packet.
+
+This information may be sent in several ways:
+ As a simple new null FEC scheme with the following usage:
+
+• The value of the source FEC Payload ID header shall be set to 0,
+in case the ROUTE packet contains the entire delivery object, or
+
+• The value of the source FEC Payload ID header shall be set as a
+direct address (start offset) corresponding to the starting byte
+position of the portion of the object carried in this packet using a 32-bit field.
+
+ In a compatible manner to RFC 6330 [28] where the SBN and ESI defines the
+start offset together with the symbol size T.
+ The signaling metadata provides the appropriate parameters to
+indicate any of the above modes using the @srcFecPayloadId attribute.
+
+
+ * Notes:
+ *
+ * Asynchronous Layered Coding (ALC) Protocol Instantiation
+ * 	https://tools.ietf.org/html/rfc5775
+ *
+ * Layered Coding Transport (LCT) Building Block
+ *  https://tools.ietf.org/html/rfc5651
+ *
+ * RaptorQ
+ * 	https://tools.ietf.org/html/rfc6330
+ *
+ *
+ *
+ *
+ *
+ *
  */
 
 typedef struct route_fragment {
@@ -146,7 +187,8 @@ int alc_rx_analyze_packet_a331_compliant(char *data, int len, alc_channel_t *ch,
 	int het = 0;
 	int hel = 0;
 	int exthdrlen = 0;
-	unsigned int word = 0;	
+	unsigned int word = 0;
+    
 	short fec_enc_id = 0; 
 	unsigned long long ull = 0;
 	unsigned long long block_len = 0;
@@ -177,19 +219,15 @@ int alc_rx_analyze_packet_a331_compliant(char *data, int len, alc_channel_t *ch,
 	unsigned short sb_len = 0;
 	unsigned int max_sb_len = 0; /* B */
 	unsigned short max_nb_of_es = 0; /* max_n */
+    
 	int fec_inst_id = 0; /* FEC Instance ID */
-
-	/* FEC Payload ID */
-
-	unsigned int sbn = 0;
-	unsigned int esi = 0;
-
-	trans_obj_t *trans_obj = NULL;
-	trans_block_t *trans_block = NULL;
-	trans_unit_t *trans_unit = NULL;
-	trans_unit_t *tu = NULL;
-	trans_unit_t *next_tu = NULL;
-	wanted_obj_t *wanted_obj = NULL;
+//
+//    trans_obj_t *trans_obj = NULL;
+//    trans_block_t *trans_block = NULL;
+//    trans_unit_t *trans_unit = NULL;
+//    trans_unit_t *tu = NULL;
+//    trans_unit_t *next_tu = NULL;
+//    wanted_obj_t *wanted_obj = NULL;
 
 	char *buf = NULL;
 
@@ -288,7 +326,6 @@ int alc_rx_analyze_packet_a331_compliant(char *data, int len, alc_channel_t *ch,
 		ch->s->state = SAFlagReceived;
 		ALC_RX_DEBUG("flag_a, close session flag: 1 ");
 	}
-
 
 	fec_enc_id = def_lct_hdr->codepoint;
 
@@ -506,32 +543,72 @@ int alc_rx_analyze_packet_a331_compliant(char *data, int len, alc_channel_t *ch,
 		goto error;
 	}
 
-	/*** do not try and process any sbn or esi values here,
-	 * as fec payload id is really the start_offset
-	 *
-	 * fec data is referened by the codepoint lookup
+	/***
+     *
+     A.3.5.1 FEC Payload ID for Source Flows
+     
+     The syntax of the FEC Payload ID for the Compact No-Code FEC Scheme
+     used in ROUTE source flows shall be a 32-bit unsigned integer
+     value that expresses the start_offset of the fragment.
+     
+     Figure A.3.3 diagrams the 32-bit start_offset field.
+     
+      0                   1                   2                   3
+      0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1
+     +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+     |                         start_offset                          |
+     +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+     Figure A.3.3 FEC Payload ID for Source Flows
+     
+     
+     A.3.5.2 FEC Payload ID for Repair Flows
+    
+     In accordance with RFC 6330 [28] Section 3.2, the FEC Payload ID
+     for the RaptorQ FEC Scheme used for repair flows is composed of a
+     Source Block Number (SBN) and an Encoding Symbol ID,
+     formatted as shown in Figure A.3.4.
+     
+      0                   1                   2                   3
+      0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1
+     +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+     |     SBN     |                Encoding Symbol ID               |
+     +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+     Figure A.3.4 FEC Payload ID for Repair Flows
+    
 	 *
 	 */
 
+    alc_packet_t* alc_packet = calloc(1, sizeof(alc_packet_t));
+    *alc_packet_ptr = alc_packet;
 
-	sbn = __readuint32(data, header_pos);
+    alc_packet->def_lct_hdr = def_lct_hdr;
+    alc_packet->fec_encoding_id = fec_enc_id;
+
+    uint32_t fec_payload_id_to_parse;
+	fec_payload_id_to_parse = __readuint32(data, header_pos);
 	header_pos += 4;
+    
+    if(alc_packet->fec_encoding_id == SB_LB_E_FEC_ENC_ID) {
+        alc_packet->use_sbn_esi = true;
+        alc_packet->sbn = (fec_payload_id_to_parse >> 24) & 0xFF;
+        alc_packet->esi = (fec_payload_id_to_parse) & 0x00FFFFFF;
+        ALC_RX_DEBUG("FEC Encoding ID: %i, sbn: %hu, esi: %u", alc_packet->fec_encoding_id, alc_packet->sbn, alc_packet->esi);
+    } else {
+        alc_packet->use_start_offset = true;
+        alc_packet->start_offset = fec_payload_id_to_parse;
+        ALC_RX_DEBUG("ALC start offset: %u", alc_packet->start_offset);
+    }
 
-	alc_packet_t* alc_packet = calloc(1, sizeof(alc_packet_t));
-	*alc_packet_ptr = alc_packet;
-
-	alc_packet->def_lct_hdr = def_lct_hdr;
 	alc_packet->close_object_flag = def_lct_hdr->flag_b;
 	alc_packet->close_session_flag = def_lct_hdr->flag_a;
 
-	alc_packet->transfer_len = transfer_len;
-	alc_packet->sbn = sbn;
 	alc_packet->alc_len = len - header_pos;
+    alc_packet->transfer_len = transfer_len;
 	alc_packet->alc_payload = calloc(alc_packet->alc_len, sizeof(uint8_t));
 
 	memcpy(alc_packet->alc_payload, &data[header_pos], alc_packet->alc_len);
 
-	ALC_RX_DEBUG("alc_packet is now: %p, started at packet header_pos: %u, fragment start block is: %u, fragment length is: %u", alc_packet, header_pos, alc_packet->sbn, alc_packet->alc_len);
+	ALC_RX_TRACE("alc_packet is now: %p, started at packet header_pos: %u, fragment start block is: %u, fragment length is: %u", alc_packet, header_pos, alc_packet->sbn, alc_packet->alc_len);
 	return ALC_OK;
 
 error:
