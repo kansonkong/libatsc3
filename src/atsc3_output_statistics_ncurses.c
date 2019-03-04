@@ -276,12 +276,15 @@ void* ncurses_input_run_thread(void* lls_slt_monitor_ptr) {
                     
                     lls_slt_monitor->lls_sls_mmt_monitor->lls_sls_monitor_output_buffer_mode.pipe_ffplay_buffer = lls_slt_monitor->pipe_ffplay_buffer;
                     
+                    lls_slt_monitor->lls_sls_mmt_monitor->lls_sls_monitor_output_buffer_mode.ffplay_output_enabled = true;
+                    
                 } else if(lls_slt_monitor->lls_sls_alc_monitor) {
                     wprintw(my_window, "ROUTE/DASH: Starting playback for service_id: %u, video_tsi: %u, audio_tsi: %u", lls_slt_monitor->lls_sls_alc_monitor->service_id, lls_slt_monitor->lls_sls_alc_monitor->video_tsi, lls_slt_monitor->lls_sls_alc_monitor->audio_tsi);
                     
                     alc_recon_file_buffer_struct_set_monitor(lls_slt_monitor->pipe_ffplay_buffer, lls_slt_monitor->lls_sls_alc_monitor);
                     
                     lls_slt_monitor->lls_sls_alc_monitor->lls_sls_monitor_output_buffer_mode.pipe_ffplay_buffer = lls_slt_monitor->pipe_ffplay_buffer;
+                     lls_slt_monitor->lls_sls_alc_monitor->lls_sls_monitor_output_buffer_mode.ffplay_output_enabled = true;
                     
                 }
             } else {
