@@ -56,6 +56,11 @@ extern int _ALC_PACKET_DUMP_TO_OBJECT_ENABLED;
 char* alc_packet_dump_to_object_get_filename(alc_packet_t* alc_packet);
 
 int alc_packet_dump_to_object(alc_packet_t** alc_packet_ptr);
+    
+FILE* alc_object_pre_allocate(char* file_name, alc_packet_t* alc_packet);
+int alc_packet_write_fragment(FILE* f, char* file_name, uint32_t offset, alc_packet_t* alc_packet);
+FILE* alc_object_open_or_pre_allocate(char* file_name, alc_packet_t* alc_packet);
+
 
 //deprecated
 void alc_recon_file_ptr_set_tsi_toi(FILE* file_ptr, uint32_t tsi, uint32_t toi_init);
