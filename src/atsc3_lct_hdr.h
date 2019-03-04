@@ -171,7 +171,104 @@ typedef struct atsc3_def_lct_hdr {
    */
   uint8_t hdr_len;
 
-  uint8_t codepoint;		/**< identifier used by payload decoder */
+  uint8_t codepoint;
+    /**
+     A.3.6 LCT Building Block
+     The LCT packet header fields shall be used as defined by the LCT building block in RFC 5651 [26].
+     The semantics and usage of the following LCT header fields shall be further constrained in ROUTE as follows:
+     
+     Codepoint (CP) – This 8-bit field is used to indicate the type of the payload that is carried by this packet,
+     and for ROUTE, is defined as shown below in Table A.3.6 to indicate the type of delivery object carried in
+     the payload of the associated ROUTE packet.
+     
+     Depending on the type of the payload, additional payload header(s) may be added to prefix the payload data.
+     
+     Table A.3.6 Defined Values of Codepoint Field of LCT Header
+     Codepoint value (CP)
+     Semantics
+     
+     @formatId
+     
+     @frag
+     
+     @order
+     0
+     ATSC Reserved (not used)
+     1
+     NRT- File Mode
+     1 (File Mode)
+     0 (arbitrary)
+     true
+     2
+     NRT – Entity Mode
+     2 (Entity Mode)
+     0
+     true
+     3
+     NRT – Unsigned Package Mode
+     3 (Unsigned Package Mode)
+     0
+     true
+     4
+     NRT – Signed Package Mode
+     4 (Signed Package Mode)
+     0
+     true
+     5
+     New IS, timeline changed
+     1 (File Mode)
+     0
+     true
+     6
+     New IS, timeline continued
+     1
+     0
+     true
+     7
+     Redundant IS
+     1
+     0
+     true
+     8
+     Media Segment, File Mode
+     1
+     1 (sample)
+     true
+     9
+     Media Segment, Entity Mode
+     2 (Entity Mode)
+     1
+     true
+     10 – 127
+     ATSC Reserved
+     128 – 255
+     Attributes of this type of packet are signalled by attributes given in the SrcFlow.Payload element associated with the CodePoint vlaue
+     Per Payload element
+     Per Payload element
+     Per Payload element
+     
+     Detailed semantics for each of the defined values of the Codepoint (CP) field, which represents the type of delivery object carried in the associated ROUTE packet, shall be as follows:
+     CP=1: The delivery object is an NRT file or a byte-range portion of such file delivered in ROUTE
+     File Mode, as described by the EFDT element of the source flow delivering this object. CP=2: The delivery object is an NRT file or a byte-range portion of such file delivered in ROUTE
+     Entity Mode.
+     CP=3: The delivery object is a file of type multipart/related or a byte-range portion of such file
+     delivered in ROUTE Unsigned Package Mode.
+     CP=4: The delivery object is a file of type multipart/signed or a byte-range portion of such file
+     delivered in ROUTE Signed Package Mode.
+     CP=5: The delivery object is a DASH Initialization Segment (IS) delivered in ROUTE File Mode
+     which differs from the previously delivered IS and also indicates a new presentation timeline. CP=6: The delivery object is a DASH Initialization Segment delivered in ROUTE File Mode
+     which differs from the previously delivered IS, but maintains the same presentation timeline. CP=7: The delivery object is a DASH Initialization Segment (IS) delivered in ROUTE File Mode
+     that is identical to the previously delivered IS.
+     CP=8: The delivery object is a DASH Media Segment delivered in ROUTE File Mode as described
+     by the EFDT of the source flow delivering its parent object flow.
+     CP=9: The delivery object is a DASH Media Segment delivered in ROUTE Entity Mode as
+     described by the EFDT of the source flow delivering its parent object flow.
+     CP values from 10 to 127: These CP values are reserved for future ATSC use.
+     CP values from 128 to 255: These CP values are used for packets in which the corresponding
+     Payload element in the SrcFlow specifies the attributes @formatId, @frag, and @order. For example, a SrcFlow.Payload element in which @codePoint = 128 will specify the @formatId, @frag, and @order attributes of LCT packets with CP=128.
+     
+     
+     */
 
   uint32_t cci;	/**< congestion control header Congestion Control Information (CCI): 32 bits only in ATSC3 **/
 
