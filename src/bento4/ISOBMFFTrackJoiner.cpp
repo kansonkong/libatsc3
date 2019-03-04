@@ -55,6 +55,7 @@ using namespace std;
 
 
 #define __DROP_HINT_TRACKS__
+#define __DROP_SIDX_BOX__
 
 
 // Alternative in-process memory buffer reader/writers
@@ -182,6 +183,8 @@ void parseAndBuildJoinedBoxesFromMemory(uint8_t* file1_payload, uint32_t file1_s
 	bento4/ISOBMFFTrackJoiner.cpp:363:DEBUG :printBoxType: atom type: mdat, size: 96765
 	 
      
+     remove sidx by defining __DROP_SIDX_BOX__
+
      steps to combine two tracks:
      ----------------------------
      in Moov box
@@ -303,6 +306,7 @@ void parseAndBuildJoinedBoxesFromMemory(uint8_t* file1_payload, uint32_t file1_s
 			trafFirstFileList.push_back(trafContainerAtom);
 			trunFirstFileList.push_back(AP4_DYNAMIC_CAST(AP4_TrunAtom, trafContainerAtom->GetChild(AP4_ATOM_TYPE_TRUN)));
 		}
+
 		if((*it)->GetType() == AP4_ATOM_TYPE_MDAT) {
 			mdatFirstFileList.push_back(*it);
 		}
@@ -468,6 +472,8 @@ void parseAndBuildJoinedBoxesFromMemory(uint8_t* file1_payload, uint32_t file1_s
 		if((*it)->GetType() == AP4_ATOM_TYPE_MDAT) {
 			mdatSecondFileList.push_back(*it);
 		}
+
+
 	}
 
 	if(moofSecondFile) {
@@ -504,7 +510,16 @@ void parseAndBuildJoinedBoxesFromMemory(uint8_t* file1_payload, uint32_t file1_s
     //push our packets to out output_stream writer, and we're done...
     
 	for (it = isoBMFFList2.begin(); it != isoBMFFList2.end(); it++) {
-        (*it)->Write(*output_stream);
+		bool should_write_box = true;
+
+#ifdef __DROP_SIDX_BOX__
+		if((*it)->GetType() == AP4_ATOM_TYPE_SIDX) {
+			should_write_box = false;
+		}
+#endif
+		if(should_write_box) {
+			(*it)->Write(*output_stream);
+		}
 	}
 
     __ISOBMFF_JOINER_INFO("Final output re-muxed MPU:");
