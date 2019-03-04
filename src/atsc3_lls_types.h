@@ -17,6 +17,7 @@
 
 #include "atsc3_lls_sls_monitor_output_buffer.h"
 #include "alc_session.h"
+#include "atsc3_listener_udp.h"
 
 //slight tight coupling...
 #include "atsc3_player_ffplay.h"
@@ -295,6 +296,29 @@ typedef struct lls_table {
 
 } lls_table_t;
 
+
+
+typedef struct udp_flow_packet_id_mpu_sequence_tuple {
+    udp_flow_t     udp_flow;
+    uint16_t    packet_id;
+    uint32_t    mpu_sequence_number;
+    uint32_t    mpu_sequence_number_last_refragmentation_flush;
+    uint32_t    mpu_sequence_number_evict_range_start;
+    
+    uint32_t    mpu_sequence_number_negative_discontinuity;
+    uint32_t    mpu_sequence_number_negative_discontinuity_received_fragments;
+    bool     has_sent_init_box;
+    
+} udp_flow_packet_id_mpu_sequence_tuple_t;
+
+//we'll just keep a linear search of these, it should pretty straightforard to iterate thru for now..
+typedef struct udp_flow_latest_mpu_sequence_number_container {
+    uint32_t udp_flows_n;
+    udp_flow_packet_id_mpu_sequence_tuple_t** udp_flows;
+    
+} udp_flow_latest_mpu_sequence_number_container_t;
+
+
 //just to match the alc pattern...
 typedef struct mmt_arguments {
     void* not_implemented;
@@ -324,6 +348,12 @@ typedef struct lls_sls_mmt_session {
     
     uint32_t sls_destination_ip_address;
     uint16_t sls_destination_udp_port;
+    
+    udp_flow_packet_id_mpu_sequence_tuple_t* last_udp_flow_packet_id_mpu_sequence_tuple_audio;
+    bool last_udp_flow_packet_id_mpu_sequence_tuple_audio_processed;
+    
+    udp_flow_packet_id_mpu_sequence_tuple_t* last_udp_flow_packet_id_mpu_sequence_tuple_video;
+    bool last_udp_flow_packet_id_mpu_sequence_tuple_video_processed;
     
     mmt_arguments_t* mmt_arguments;
     mmt_session_t* mmt_session;
