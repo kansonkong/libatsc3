@@ -190,12 +190,20 @@ void* ncurses_input_run_thread(void* lls_slt_monitor_ptr) {
 						lls_sls_alc_monitor_t* lls_sls_alc_monitor = lls_sls_alc_monitor_create();
 						lls_sls_alc_monitor->lls_alc_session = lls_sls_alc_session;
 
-						//todo - wire up to mbms signaling
-						lls_sls_alc_monitor->video_tsi = 1;
-						lls_sls_alc_monitor->video_toi_init = 2100000000;
+                        if(my_service_id == 1) {
+                            //todo - wire up to mbms signaling
+                            lls_sls_alc_monitor->video_tsi = 1;
+                            lls_sls_alc_monitor->video_toi_init = 2100000000;
 
-						lls_sls_alc_monitor->audio_tsi = 2;
-						lls_sls_alc_monitor->audio_toi_init = 2100000000;
+                            lls_sls_alc_monitor->audio_tsi = 2;
+                            lls_sls_alc_monitor->audio_toi_init = 2100000000;
+                        } else {
+                            lls_sls_alc_monitor->video_tsi = 3000;
+                            lls_sls_alc_monitor->video_toi_init = 2;
+                            
+                            lls_sls_alc_monitor->audio_tsi = 3002;
+                            lls_sls_alc_monitor->audio_toi_init = 2;
+                        }
 						lls_sls_alc_monitor->lls_sls_monitor_output_buffer.has_written_init_box = false;
 						lls_slt_monitor->lls_sls_alc_monitor = lls_sls_alc_monitor;
 						//todo, find our service_id map here
@@ -265,25 +273,21 @@ void* ncurses_input_run_thread(void* lls_slt_monitor_ptr) {
             if(play_mode == 1) {
                 mtl_clear();
                 
-                if(!lls_slt_monitor->pipe_ffplay_buffer) {
-                    lls_slt_monitor->pipe_ffplay_buffer = pipe_create_ffplay();
-                } else {
-                    //close out pipe_ffplay_buffer
-                }
+
                 
                 if(lls_slt_monitor->lls_sls_mmt_monitor) {
                     wprintw(my_window, "MMT: Starting playback for service_id: %u, video packet_id: %u, audio packet_id: %u", lls_slt_monitor->lls_sls_mmt_monitor->service_id, lls_slt_monitor->lls_sls_mmt_monitor->video_packet_id, lls_slt_monitor->lls_sls_mmt_monitor->audio_packet_id);
                     
-                    lls_slt_monitor->lls_sls_mmt_monitor->lls_sls_monitor_output_buffer_mode.pipe_ffplay_buffer = lls_slt_monitor->pipe_ffplay_buffer;
+                    lls_slt_monitor->lls_sls_mmt_monitor->lls_sls_monitor_output_buffer_mode.pipe_ffplay_buffer = pipe_create_ffplay();
                     
                     lls_slt_monitor->lls_sls_mmt_monitor->lls_sls_monitor_output_buffer_mode.ffplay_output_enabled = true;
                     
                 } else if(lls_slt_monitor->lls_sls_alc_monitor) {
                     wprintw(my_window, "ROUTE/DASH: Starting playback for service_id: %u, video_tsi: %u, audio_tsi: %u", lls_slt_monitor->lls_sls_alc_monitor->service_id, lls_slt_monitor->lls_sls_alc_monitor->video_tsi, lls_slt_monitor->lls_sls_alc_monitor->audio_tsi);
+                    lls_slt_monitor->lls_sls_alc_monitor->lls_sls_monitor_output_buffer_mode.pipe_ffplay_buffer = pipe_create_ffplay();
+
+                    alc_recon_file_buffer_struct_set_monitor(lls_slt_monitor->lls_sls_alc_monitor);
                     
-                    alc_recon_file_buffer_struct_set_monitor(lls_slt_monitor->pipe_ffplay_buffer, lls_slt_monitor->lls_sls_alc_monitor);
-                    
-                    lls_slt_monitor->lls_sls_alc_monitor->lls_sls_monitor_output_buffer_mode.pipe_ffplay_buffer = lls_slt_monitor->pipe_ffplay_buffer;
                      lls_slt_monitor->lls_sls_alc_monitor->lls_sls_monitor_output_buffer_mode.ffplay_output_enabled = true;
                     
                 }
