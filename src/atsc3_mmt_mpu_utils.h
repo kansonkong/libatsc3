@@ -7,6 +7,7 @@
 #include <stdbool.h>
 #include "atsc3_listener_udp.h"
 
+#include "atsc3_lls_types.h"
 #include "atsc3_mmtp_types.h"
 #include "atsc3_mmtp_parser.h"
 #include "atsc3_mmt_mpu_parser.h"
@@ -46,26 +47,6 @@ extern "C" {
 #endif
 
 
-typedef struct udp_flow_packet_id_mpu_sequence_tuple {
-	udp_flow_t 	udp_flow;
-	uint16_t	packet_id;
-	uint32_t	mpu_sequence_number;
-	uint32_t	mpu_sequence_number_last_refragmentation_flush;
-	uint32_t	mpu_sequence_number_evict_range_start;
-
-	uint32_t	mpu_sequence_number_negative_discontinuity;
-	uint32_t	mpu_sequence_number_negative_discontinuity_received_fragments;
-	bool 	has_sent_init_box;
-
-} udp_flow_packet_id_mpu_sequence_tuple_t;
-
-//we'll just keep a linear search of these, it should pretty straightforard to iterate thru for now..
-typedef struct udp_flow_latest_mpu_sequence_number_container {
-	uint32_t udp_flows_n;
-	udp_flow_packet_id_mpu_sequence_tuple_t** udp_flows;
-
-} udp_flow_latest_mpu_sequence_number_container_t;
-
 /**
  *  uint32_t		src_ip_addr;
 	uint32_t		dst_ip_addr
@@ -83,7 +64,7 @@ typedef struct udp_flow_latest_mpu_sequence_number_container {
 udp_flow_latest_mpu_sequence_number_container_t* udp_flow_latest_mpu_sequence_number_container_t_init();
 udp_flow_latest_mpu_sequence_number_container_t* udp_flow_find_matching_flows(udp_flow_latest_mpu_sequence_number_container_t* udp_flow_latest_mpu_sequence_number_container, udp_flow_t* udp_flow_to_search);
 void udp_flow_latest_mpu_sequence_number_container_t_release(udp_flow_latest_mpu_sequence_number_container_t* udp_flow_latest_mpu_sequence_number_container);
-udp_flow_packet_id_mpu_sequence_tuple_t* udp_flow_last_mpu_sequence_number_from_packet_id(udp_flow_latest_mpu_sequence_number_container_t* udp_flow_latest_mpu_sequence_number_container, udp_packet_t* udp_packet, uint32_t packet_id);
+udp_flow_packet_id_mpu_sequence_tuple_t* udp_flow_latest_mpu_sequence_number_from_packet_id(udp_flow_latest_mpu_sequence_number_container_t* udp_flow_latest_mpu_sequence_number_container, udp_packet_t* udp_packet, uint32_t packet_id);
 udp_flow_packet_id_mpu_sequence_tuple_t* udp_flow_latest_mpu_sequence_number_add_or_replace(udp_flow_latest_mpu_sequence_number_container_t* udp_flow_latest_mpu_sequence_number_container, udp_packet_t* udp_packet, mmtp_payload_fragments_union_t* mmtp_packet);
 
 void udp_flow_force_negative_mpu_discontinuity_value(udp_flow_packet_id_mpu_sequence_tuple_t* udp_flow_packet_id_mpu_sequence_matching_pkt_id, uint32_t new_old_mpu_sequence_number_to_force, mmtp_payload_fragments_union_t* mmtp_packet_fragments_to_evict);
@@ -101,8 +82,11 @@ void mpu_push_to_output_buffer_no_locking(pipe_ffplay_buffer_t* ffplay_buffer, m
 
 void mpu_fragments_vector_shrink_to_fit(mpu_fragments_t* mpu_fragments);
 
+udp_flow_packet_id_mpu_sequence_tuple_t* udp_flow_packet_id_mpu_sequence_tuple_clone(udp_flow_packet_id_mpu_sequence_tuple_t* from_udp_flow_packet_id_mpu_sequence_tuple);
 
+void udp_flow_packet_id_mpu_sequence_tuple_free_and_clone(udp_flow_packet_id_mpu_sequence_tuple_t** to_udp_flow_packet_id_mpu_sequence_tuple_p, udp_flow_packet_id_mpu_sequence_tuple_t* from_udp_flow_packet_id_mpu_sequence_tuple);
 
+    
 #if defined (__cplusplus)
 }
 #endif

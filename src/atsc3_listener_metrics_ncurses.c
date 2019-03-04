@@ -255,17 +255,11 @@ mmtp_payload_fragments_union_t* mmtp_process_from_payload(udp_packet_t *udp_pack
                         last_flow_reference->packet_id,
                         last_flow_reference->mpu_sequence_number);
 
-                udp_flow_packet_id_mpu_sequence_tuple_t* udp_flow_last_packet_id_mpu_sequence_id = udp_flow_latest_mpu_sequence_number_from_packet_id(udp_flow_latest_mpu_sequence_number_container, udp_packet, mmtp_payload->mmtp_mpu_type_packet_header.mmtp_packet_id);
+// this happens above also...
+//                udp_flow_packet_id_mpu_sequence_tuple_t* udp_flow_last_packet_id_mpu_sequence_id = udp_flow_latest_mpu_sequence_number_from_packet_id(udp_flow_latest_mpu_sequence_number_container, udp_packet, mmtp_payload->mmtp_mpu_type_packet_header.mmtp_packet_id);
                 
-                if(udp_flow_last_packet_id_mpu_sequence_id) {
-                    __TRACE("before refragment check: ptr: %p, last dst_ip_addr: %u, last dst_port: %hu, last packet_id: %u, last mpu_sequence_number: %u",
-                            udp_flow_last_packet_id_mpu_sequence_id,
-                            udp_flow_last_packet_id_mpu_sequence_id->udp_flow.dst_ip_addr,
-                            udp_flow_last_packet_id_mpu_sequence_id->udp_flow.dst_port,
-                            udp_flow_last_packet_id_mpu_sequence_id->packet_id,
-                            udp_flow_last_packet_id_mpu_sequence_id->mpu_sequence_number);
-                }
                 
+                //this is pretty large, we could also query udp_flow_latest_mpu_sequence_number_from_packet_id for both of our monitored packet id's
                 if( matching_lls_slt_mmt_session->last_udp_flow_packet_id_mpu_sequence_tuple_audio &&
                    !matching_lls_slt_mmt_session->last_udp_flow_packet_id_mpu_sequence_tuple_audio_processed &&
                     matching_lls_slt_mmt_session->last_udp_flow_packet_id_mpu_sequence_tuple_video &&
@@ -277,21 +271,26 @@ mmtp_payload_fragments_union_t* mmtp_process_from_payload(udp_packet_t *udp_pack
                     (lls_slt_monitor->lls_sls_mmt_monitor->video_packet_id == matching_lls_slt_mmt_session->last_udp_flow_packet_id_mpu_sequence_tuple_video->packet_id &&
                      mmtp_payload->mmtp_mpu_type_packet_header.mmtp_packet_id == matching_lls_slt_mmt_session->last_udp_flow_packet_id_mpu_sequence_tuple_video->packet_id && matching_lls_slt_mmt_session->last_udp_flow_packet_id_mpu_sequence_tuple_video->mpu_sequence_number < mmtp_payload->mmtp_mpu_type_packet_header.mpu_sequence_number)
                     )) {
-                    
-                    
-                    
-                    //todo - check for both packet id's before reconstituting
-                    if(udp_flow_last_packet_id_mpu_sequence_id && udp_flow_last_packet_id_mpu_sequence_id->mpu_sequence_number < mmtp_payload->mmtp_mpu_type_packet_header.mpu_sequence_number) {
-
-                        __INFO("Starting re-fragmenting because packet_id:mpu_sequence number changed from %u:%u to %u:%u", udp_flow_last_packet_id_mpu_sequence_id->packet_id, udp_flow_last_packet_id_mpu_sequence_id->mpu_sequence_number, mmtp_payload->mmtp_mpu_type_packet_header.mmtp_packet_id, mmtp_payload->mmtp_mpu_type_packet_header.mpu_sequence_number);
+                
+                       __INFO("Starting re-fragmenting because packet_id:mpu_sequence number changed, from a: %u:%u, v: %u:%u with %u:%u",
+                              matching_lls_slt_mmt_session->last_udp_flow_packet_id_mpu_sequence_tuple_audio->packet_id,
+                              matching_lls_slt_mmt_session->last_udp_flow_packet_id_mpu_sequence_tuple_audio->mpu_sequence_number,
+                              matching_lls_slt_mmt_session->last_udp_flow_packet_id_mpu_sequence_tuple_video->packet_id,
+                              matching_lls_slt_mmt_session->last_udp_flow_packet_id_mpu_sequence_tuple_audio->mpu_sequence_number,
+                              mmtp_payload->mmtp_mpu_type_packet_header.mmtp_packet_id,
+                              mmtp_payload->mmtp_mpu_type_packet_header.mpu_sequence_number);
 
 
                         //major refactoring
                         block_t* final_muxed_payload = atsc3_isobmff_build_mpu_metadata_ftyp_moof_mdat_box(&udp_packet->udp_flow, udp_flow_latest_mpu_sequence_number_container, mmtp_sub_flow_vector, lls_slt_monitor->lls_sls_mmt_monitor);
-                        
+                       
                         has_rebuilt_fragments_to_mpu = true;
-                        
+                       
                         if(final_muxed_payload) {
+                            //mark both of these flows as having been processed
+                            matching_lls_slt_mmt_session->last_udp_flow_packet_id_mpu_sequence_tuple_audio_processed = has_rebuilt_fragments_to_mpu;
+                            matching_lls_slt_mmt_session->last_udp_flow_packet_id_mpu_sequence_tuple_video_processed = has_rebuilt_fragments_to_mpu;
+
                             
                             if(lls_slt_monitor->lls_sls_mmt_monitor->lls_sls_monitor_output_buffer_mode.file_dump_enabled) {
                                 //todo, call atsc3_isobmff_build_mpu_metadata_ftyp_moof_mdat_box with forced init box
@@ -301,7 +300,7 @@ mmtp_payload_fragments_union_t* mmtp_process_from_payload(udp_packet_t *udp_pack
 
                                 pipe_buffer_reader_mutex_lock(lls_slt_monitor->lls_sls_mmt_monitor->lls_sls_monitor_output_buffer_mode.pipe_ffplay_buffer);
 
-                                printf("**** return payload is: first 8 bytes are %x %x %x %x %x %x %x %x",
+                                __INFO("**** return payload is: first 8 bytes are %x %x %x %x %x %x %x %x",
                                        final_muxed_payload->p_buffer[0],
                                        final_muxed_payload->p_buffer[1],
                                        final_muxed_payload->p_buffer[2],
@@ -327,20 +326,40 @@ mmtp_payload_fragments_union_t* mmtp_process_from_payload(udp_packet_t *udp_pack
                         }
                     }
                 
-                    //update our last references for mpu_sequence rollover until we process packet_id signaling messages
-                    if(lls_slt_monitor->lls_sls_mmt_monitor->audio_packet_id == last_flow_reference->packet_id) {
-                        matching_lls_slt_mmt_session->last_udp_flow_packet_id_mpu_sequence_tuple_audio = last_flow_reference;
-                        matching_lls_slt_mmt_session->last_udp_flow_packet_id_mpu_sequence_tuple_audio_processed = has_rebuilt_fragments_to_mpu;
-                    } else if(lls_slt_monitor->lls_sls_mmt_monitor->video_packet_id == last_flow_reference->packet_id) {
-                        matching_lls_slt_mmt_session->last_udp_flow_packet_id_mpu_sequence_tuple_video = last_flow_reference;
-                        matching_lls_slt_mmt_session->last_udp_flow_packet_id_mpu_sequence_tuple_video_processed = has_rebuilt_fragments_to_mpu;
-                    }
-                }
-            }
-    
-            
-purge_pending_mfu_and_update_previous_mmtp_payload:
                 
+                //update our last references for mpu_sequence rollover until we process packet_id signaling messages only if our mpu_sequence_number has changed due to malloc/copy the flow reference
+                if(lls_slt_monitor->lls_sls_mmt_monitor->audio_packet_id == last_flow_reference->packet_id &&
+                   (!matching_lls_slt_mmt_session->last_udp_flow_packet_id_mpu_sequence_tuple_audio || matching_lls_slt_mmt_session->last_udp_flow_packet_id_mpu_sequence_tuple_audio->mpu_sequence_number != last_flow_reference->mpu_sequence_number )) {
+                    
+                    __INFO("Updating audio packet_id: %u, matching_lls_slt_mmt_session: %p from %u to %u",
+                           last_flow_reference->packet_id,
+                           matching_lls_slt_mmt_session->last_udp_flow_packet_id_mpu_sequence_tuple_audio,
+                           matching_lls_slt_mmt_session->last_udp_flow_packet_id_mpu_sequence_tuple_audio ? matching_lls_slt_mmt_session->last_udp_flow_packet_id_mpu_sequence_tuple_audio->mpu_sequence_number : -1,
+                           last_flow_reference->mpu_sequence_number
+                           );
+                    
+                    udp_flow_packet_id_mpu_sequence_tuple_free_and_clone(&matching_lls_slt_mmt_session->last_udp_flow_packet_id_mpu_sequence_tuple_audio, last_flow_reference);
+                    matching_lls_slt_mmt_session->last_udp_flow_packet_id_mpu_sequence_tuple_audio_processed = has_rebuilt_fragments_to_mpu;
+
+                } else if(lls_slt_monitor->lls_sls_mmt_monitor->video_packet_id == last_flow_reference->packet_id &&
+                          (!matching_lls_slt_mmt_session->last_udp_flow_packet_id_mpu_sequence_tuple_video || matching_lls_slt_mmt_session->last_udp_flow_packet_id_mpu_sequence_tuple_video->mpu_sequence_number != last_flow_reference->mpu_sequence_number )) {
+                    __INFO("Updating video packet_id: %u, matching_lls_slt_mmt_session: %p from %u to %u",
+                           last_flow_reference->packet_id,
+                           matching_lls_slt_mmt_session->last_udp_flow_packet_id_mpu_sequence_tuple_video,
+                           matching_lls_slt_mmt_session->last_udp_flow_packet_id_mpu_sequence_tuple_video ? matching_lls_slt_mmt_session->last_udp_flow_packet_id_mpu_sequence_tuple_video->mpu_sequence_number : -1 ,
+                           last_flow_reference->mpu_sequence_number
+                           );
+                    udp_flow_packet_id_mpu_sequence_tuple_free_and_clone(&matching_lls_slt_mmt_session->last_udp_flow_packet_id_mpu_sequence_tuple_video, last_flow_reference);
+                    matching_lls_slt_mmt_session->last_udp_flow_packet_id_mpu_sequence_tuple_video_processed = has_rebuilt_fragments_to_mpu;
+                }
+                
+            }
+        } else {
+            //non-timed
+            global_stats->packet_counter_mmt_nontimed_mpu++;
+        }
+            
+        
             
 #ifdef __REAP
             //only perform evictions if our last_mpu and last_packet are different than the last eviction run...
@@ -382,10 +401,7 @@ purge_pending_mfu_and_update_previous_mmtp_payload:
             
       
         
-        } else {
-            //non-timed
-            global_stats->packet_counter_mmt_nontimed_mpu++;
-        }
+       
     } else if(mmtp_payload->mmtp_packet_header.mmtp_payload_type == 0x2) {
         
         //signaling_message_dump(mmtp_payload);

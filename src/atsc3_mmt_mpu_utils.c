@@ -69,7 +69,7 @@ void udp_flow_latest_mpu_sequence_number_container_t_release(udp_flow_latest_mpu
  * will return the highest sequence number stored
  */
 
-udp_flow_packet_id_mpu_sequence_tuple_t* udp_flow_last_mpu_sequence_number_from_packet_id(udp_flow_latest_mpu_sequence_number_container_t* udp_flow_latest_mpu_sequence_number_container, udp_packet_t* udp_packet, uint32_t packet_id) {
+udp_flow_packet_id_mpu_sequence_tuple_t* udp_flow_latest_mpu_sequence_number_from_packet_id(udp_flow_latest_mpu_sequence_number_container_t* udp_flow_latest_mpu_sequence_number_container, udp_packet_t* udp_packet, uint32_t packet_id) {
 
 	udp_flow_packet_id_mpu_sequence_tuple_t* udp_flow_packet_id_mpu_sequence_tuple_in_collection = NULL;
 
@@ -148,8 +148,11 @@ udp_flow_packet_id_mpu_sequence_tuple_t* udp_flow_latest_mpu_sequence_number_add
 
 			return *udp_flow_packet_id_mpu_sequence_matching_pkt_id;
 		} else {
-			//update the tuple with the new mpu_sequence_number
-			(*udp_flow_packet_id_mpu_sequence_matching_pkt_id)->mpu_sequence_number = mmtp_packet->mmtp_mpu_type_packet_header.mpu_sequence_number;
+			//update the tuple with the new mpu_sequence_number, only set this if its changed so we can sete a watch
+            if((*udp_flow_packet_id_mpu_sequence_matching_pkt_id)->mpu_sequence_number != mmtp_packet->mmtp_mpu_type_packet_header.mpu_sequence_number) {
+                (*udp_flow_packet_id_mpu_sequence_matching_pkt_id)->mpu_sequence_number = mmtp_packet->mmtp_mpu_type_packet_header.mpu_sequence_number;
+            }
+            return *udp_flow_packet_id_mpu_sequence_matching_pkt_id;
 		}
 	} else {
 		if(udp_flow_latest_mpu_sequence_number_container->udp_flows_n) {
@@ -172,6 +175,24 @@ udp_flow_packet_id_mpu_sequence_tuple_t* udp_flow_latest_mpu_sequence_number_add
 	}
 
 	return (*udp_flow_packet_id_mpu_sequence_tuple_in_collection);
+}
+
+udp_flow_packet_id_mpu_sequence_tuple_t* udp_flow_packet_id_mpu_sequence_tuple_clone(udp_flow_packet_id_mpu_sequence_tuple_t* from_udp_flow_packet_id_mpu_sequence_tuple) {
+    udp_flow_packet_id_mpu_sequence_tuple_t* to_udp_flow_packet_id_mpu_sequence_tuple = (udp_flow_packet_id_mpu_sequence_tuple_t*) calloc(1, sizeof(udp_flow_packet_id_mpu_sequence_tuple_t));
+    assert(to_udp_flow_packet_id_mpu_sequence_tuple);
+    memcpy(to_udp_flow_packet_id_mpu_sequence_tuple, from_udp_flow_packet_id_mpu_sequence_tuple, sizeof(udp_flow_packet_id_mpu_sequence_tuple_t));
+    
+    return to_udp_flow_packet_id_mpu_sequence_tuple;
+}
+
+
+void udp_flow_packet_id_mpu_sequence_tuple_free_and_clone(udp_flow_packet_id_mpu_sequence_tuple_t** to_udp_flow_packet_id_mpu_sequence_tuple_p, udp_flow_packet_id_mpu_sequence_tuple_t* from_udp_flow_packet_id_mpu_sequence_tuple) {
+    udp_flow_packet_id_mpu_sequence_tuple_t* to_udp_flow_packet_id_mpu_sequence_tuple = *to_udp_flow_packet_id_mpu_sequence_tuple_p;
+    
+    if(to_udp_flow_packet_id_mpu_sequence_tuple) {
+        free(to_udp_flow_packet_id_mpu_sequence_tuple);
+    }
+    *to_udp_flow_packet_id_mpu_sequence_tuple_p = udp_flow_packet_id_mpu_sequence_tuple_clone(from_udp_flow_packet_id_mpu_sequence_tuple);
 }
 
 //this is important as we need to clean up our pending eviction fragments and our current mpu_sequence_number for a clean rollover
