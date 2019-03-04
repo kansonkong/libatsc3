@@ -52,7 +52,6 @@ int play_mode = 0;
 uint32_t my_service_id = 0;
 uint32_t my_route_tsi = 0;
 uint32_t my_route_toi_init_fragment = 0;
-pipe_ffplay_buffer_t* pipe_ffplay_buffer = NULL;
 
 void mtl_clear() {
 	wmove(my_window, 0, 1);
@@ -123,19 +122,16 @@ void* ncurses_input_run_thread(void* lls_slt_monitor_ptr) {
                         
                         lls_sls_mmt_monitor_t* lls_sls_mmt_monitor = lls_sls_mmt_monitor_create();
                         lls_sls_mmt_monitor->lls_mmt_session = lls_sls_mmt_session;
-
+                        lls_sls_mmt_monitor->service_id = my_service_id;
                         //todo - wire up to mbms signaling
-//                        lls_sls_mmt_monitor->video_packet_id = 35;
-//                        lls_sls_mmt_monitor->audio_packet_id = 36;
-//
+
                         lls_sls_mmt_monitor->video_packet_id = 1;
-                        
                         lls_sls_mmt_monitor->audio_packet_id = 2;
                         
                         lls_sls_mmt_monitor->lls_sls_monitor_output_buffer.has_written_init_box = false;
                         lls_slt_monitor->lls_sls_mmt_monitor = lls_sls_mmt_monitor;
                         
-                        //todo, find our service_id map here
+                        //todo, find our service_id instance
                         //lls_slt_monitor->lls_service =
                     }
                 }
@@ -261,20 +257,16 @@ void* ncurses_input_run_thread(void* lls_slt_monitor_ptr) {
 
 				}
 			}
-
 		}
 
-        
         //cheat on fallthru on 'p'
-        
         if(ch == 'p') {
-            
             //play stream...
             if(play_mode == 1) {
                 mtl_clear();
                 
-                if(!pipe_ffplay_buffer) {
-                    pipe_ffplay_buffer = pipe_create_ffplay();
+                if(!lls_slt_monitor->pipe_ffplay_buffer) {
+                    lls_slt_monitor->pipe_ffplay_buffer = pipe_create_ffplay();
                 } else {
                     //close out pipe_ffplay_buffer
                 }
@@ -282,16 +274,46 @@ void* ncurses_input_run_thread(void* lls_slt_monitor_ptr) {
                 if(lls_slt_monitor->lls_sls_mmt_monitor) {
                     wprintw(my_window, "MMT: Starting playback for service_id: %u, video packet_id: %u, audio packet_id: %u", lls_slt_monitor->lls_sls_mmt_monitor->service_id, lls_slt_monitor->lls_sls_mmt_monitor->video_packet_id, lls_slt_monitor->lls_sls_mmt_monitor->audio_packet_id);
                     
+                    lls_slt_monitor->lls_sls_mmt_monitor->lls_sls_monitor_output_buffer_mode.pipe_ffplay_buffer = lls_slt_monitor->pipe_ffplay_buffer;
+                    
                 } else if(lls_slt_monitor->lls_sls_alc_monitor) {
                     wprintw(my_window, "ROUTE/DASH: Starting playback for service_id: %u, video_tsi: %u, audio_tsi: %u", lls_slt_monitor->lls_sls_alc_monitor->service_id, lls_slt_monitor->lls_sls_alc_monitor->video_tsi, lls_slt_monitor->lls_sls_alc_monitor->audio_tsi);
                     
-                    alc_recon_file_buffer_struct_set_monitor(pipe_ffplay_buffer, lls_slt_monitor->lls_sls_alc_monitor);
+                    alc_recon_file_buffer_struct_set_monitor(lls_slt_monitor->pipe_ffplay_buffer, lls_slt_monitor->lls_sls_alc_monitor);
+                    
+                    lls_slt_monitor->lls_sls_alc_monitor->lls_sls_monitor_output_buffer_mode.pipe_ffplay_buffer = lls_slt_monitor->pipe_ffplay_buffer;
+                    
                 }
             } else {
                 mtl_clear();
                 wprintw(my_window, "No monitored MMT or ROUTE Service ID");
                 
                 __NCURSES_WARN("not playing - play mode is: %d", play_mode);
+            }
+        }
+        
+        if(ch == 'd') {
+            //set mode to dump
+            if(lls_slt_monitor->lls_sls_mmt_monitor) {
+                if(!lls_slt_monitor->lls_sls_mmt_monitor->lls_sls_monitor_output_buffer_mode.file_dump_enabled) {
+                    lls_slt_monitor->lls_sls_mmt_monitor->lls_sls_monitor_output_buffer_mode.file_dump_enabled = true;
+                    
+                      wprintw(my_window, "MMT: Starting dump for service_id: %u, video packet_id: %u, audio packet_id: %u", lls_slt_monitor->lls_sls_mmt_monitor->service_id, lls_slt_monitor->lls_sls_mmt_monitor->video_packet_id, lls_slt_monitor->lls_sls_mmt_monitor->audio_packet_id);
+                    
+                } else {
+                    lls_slt_monitor->lls_sls_mmt_monitor->lls_sls_monitor_output_buffer_mode.file_dump_enabled = false;
+                      wprintw(my_window, "MMT: Ending dump for service_id: %u, video packet_id: %u, audio packet_id: %u", lls_slt_monitor->lls_sls_mmt_monitor->service_id, lls_slt_monitor->lls_sls_mmt_monitor->video_packet_id, lls_slt_monitor->lls_sls_mmt_monitor->audio_packet_id);
+                }
+              
+            } else if(lls_slt_monitor->lls_sls_alc_monitor) {
+                if(!lls_slt_monitor->lls_sls_alc_monitor->lls_sls_monitor_output_buffer_mode.file_dump_enabled) {
+                    lls_slt_monitor->lls_sls_alc_monitor->lls_sls_monitor_output_buffer_mode.file_dump_enabled = true;
+                     wprintw(my_window, "ROUTE/DASH: Starting dump for service_id: %u, video_tsi: %u, audio_tsi: %u", lls_slt_monitor->lls_sls_alc_monitor->service_id, lls_slt_monitor->lls_sls_alc_monitor->video_tsi, lls_slt_monitor->lls_sls_alc_monitor->audio_tsi);
+                } else {
+                    lls_slt_monitor->lls_sls_alc_monitor->lls_sls_monitor_output_buffer_mode.file_dump_enabled = true;
+                     wprintw(my_window, "ROUTE/DASH: Ending dump for service_id: %u, video_tsi: %u, audio_tsi: %u", lls_slt_monitor->lls_sls_alc_monitor->service_id, lls_slt_monitor->lls_sls_alc_monitor->video_tsi, lls_slt_monitor->lls_sls_alc_monitor->audio_tsi);
+
+                }
             }
         }
 
