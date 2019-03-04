@@ -45,11 +45,15 @@ typedef struct ISOBMFFTrackJoinerFileResouces {
 
 } ISOBMFFTrackJoinerFileResouces_t;
 
-list<AP4_Atom*> ISOBMFFTrackParse(uint8_t* full_mpu_payload, uint32_t full_mpu_payload_size);
-
-ISOBMFFTrackJoinerFileResouces_t* loadFileResources(const char*, const char*);
-
 void ISOBMFF_track_joiner_monitor_output_buffer_parse_and_build_joined_boxes(lls_sls_monitor_output_buffer_t* lls_sls_monitor_output_buffer, AP4_MemoryByteStream** output_stream);
+
+void parseAndBuildJoinedBoxes_from_lls_sls_monitor_output_buffer(lls_sls_monitor_output_buffer_t* lls_sls_monitor_output_buffer, AP4_MemoryByteStream** output_stream_p);
+
+//list<AP4_Atom*> ISOBMFFTrackParse(uint8_t* full_mpu_payload, uint32_t full_mpu_payload_size);
+list<AP4_Atom*> ISOBMFFTrackParse(block_t* isobmff_track_block);
+
+//ISOBMFFTrackJoinerFileResouces_t* loadFileResources(const char*, const char*);
+
 
 void parseAndBuildJoinedBoxes(ISOBMFFTrackJoinerFileResouces_t*, AP4_ByteStream* output_stream);
 void parseAndBuildJoinedBoxesFromMemory(uint8_t* file1_payload, uint32_t file1_size, uint8_t* file2_payload, uint32_t file2_size, AP4_ByteStream* output_stream);

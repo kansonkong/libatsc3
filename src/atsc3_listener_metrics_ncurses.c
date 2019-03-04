@@ -109,6 +109,7 @@ extern int _ALC_UTILS_DEBUG_ENABLED;
 extern int _ALC_UTILS_TRACE_ENABLED;
 extern int _LLS_DEBUG_ENABLED;
 extern int _PLAYER_FFPLAY_DEBUG_ENABLED;
+extern int _PLAYER_FFPLAY_TRACE_ENABLED;
 
 #define MAX_PCAP_LEN 1514
 
@@ -447,8 +448,8 @@ static void route_process_from_alc_packet(alc_packet_t **alc_packet) {
         
         if(true || lls_slt_monitor->lls_sls_alc_monitor->lls_sls_monitor_output_buffer_mode.file_dump_enabled) {
             lls_sls_monitor_output_buffer_file_dump(lls_sls_monitor_output_buffer_final_muxed_payload, "route/", lls_slt_monitor->lls_sls_alc_monitor->processed_toi);
-
         }
+
         if(lls_slt_monitor->lls_sls_alc_monitor->lls_sls_monitor_output_buffer_mode.ffplay_output_enabled && lls_slt_monitor->lls_sls_alc_monitor->lls_sls_monitor_output_buffer_mode.pipe_ffplay_buffer) {
 
         	pipe_ffplay_buffer_t* pipe_ffplay_buffer = lls_slt_monitor->lls_sls_alc_monitor->lls_sls_monitor_output_buffer_mode.pipe_ffplay_buffer;
@@ -728,7 +729,8 @@ int main(int argc,char **argv) {
 	_MMTP_DEBUG_ENABLED = 0;
 	_LLS_DEBUG_ENABLED = 0;
     _ISOBMFF_TOOLS_DEBUG_ENABLED = 1;
-    _PLAYER_FFPLAY_DEBUG_ENABLED = 0;
+    _PLAYER_FFPLAY_DEBUG_ENABLED = 1;
+    _PLAYER_FFPLAY_TRACE_ENABLED = 1;
     _ALC_UTILS_DEBUG_ENABLED = 1;
     _ALC_UTILS_TRACE_ENABLED = 0;
 
