@@ -108,6 +108,7 @@ block_t* get_payload(char* file_name) {
 	}
 
 	fread(payload->p_buffer, st.st_size, 1, fp);
+    payload->i_pos = st.st_size;
 	fclose(fp);
 
 	return payload;
@@ -141,7 +142,7 @@ int alc_packet_dump_to_object(alc_packet_t** alc_packet_ptr) {
 
 	if(!_ALC_PACKET_DUMP_TO_OBJECT_ENABLED) {
 			return -1;
-	}
+    }
     mkdir("route", 0777);
 
 	int filename_pos = 0;
