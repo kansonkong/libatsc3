@@ -214,9 +214,11 @@ void sigpipe_register_action_handler(pipe_ffplay_buffer_t**  pipe_ffplay_buffer_
 
 /**
  * create our output pipe for pushing mpu's/fragments to ffmpeg
+ *
+ *     //TODO: determine proper fps from trun box
+ *
  */
 pipe_ffplay_buffer_t* pipe_create_ffplay() {
-
 
 	pipe_ffplay_buffer_t* pipe_ffplay_buffer = (pipe_ffplay_buffer_t*)calloc(1, sizeof(pipe_ffplay_buffer_t));
 
@@ -260,7 +262,6 @@ pipe_ffplay_buffer_t* pipe_create_ffplay() {
 	/* Failed to set value 'drawtext=fontfile=/System/Library/Fonts/Helveticza.ttc: fix_bounds=1: shadowx=2: shadowy=2: timecode_rate=59.94: timecode='00\:00\:00\:00': fontcolor=white: fontsize=96: box=1: boxcolor=black@0.4: x=550:y=h-th-50, drawtext=fontfile=/System/Library/Fonts/Helvetica.ttc: fix_bounds=1: shadowx=2: shadowy=2: text='%{pts}': fontcolor=white: fontsize=96: box=1: boxcolor=black@0.4: x=500-tw:y=h-th-50, drawtext=fontfile=/System/Library/Fonts/Helvetica.ttc: fix_bounds=1: shadowx=2: shadowy=2: text='%{eif\:n/59.94*90000\:d}': fontcolor=white: fontsize=96: box=1: boxcolor=black@0.4: x=500-tw:y=h-th-150, drawtext=fontfile=/System/Library/Fonts/Helvetica.ttc: fix_bounds=1: shadowx=2: shadowy=2: text='%{pict_type}': fontcolor=white: fontsize=96: box=1: boxcolor=black@0.4: x=10-tw:y=th+10' for option 'filter_complex': Option not found
 	 *-framedrop -infbuf setpts=N/(59.94*TB), genpts -fs
 	 */
-    //TODO: determine proper fps from trun box
 	char* cmd = "ffplay -loglevel debug -infbuf -err_detect ignore_err -hide_banner -nostats -noborder -left 0 -top 0  -vf \"fps=25,drawtext=fontfile=/System/Library/Fonts/Helvetica.ttc: fix_bounds=1: shadowx=2: shadowy=2: timecode_rate=59.94: timecode='00\\:00\\:00\\:00': fontcolor=white: fontsize=96: box=1: boxcolor=black@0.4: x=550:y=h-th-50, drawtext=fontfile=/System/Library/Fonts/Helvetica.ttc: fix_bounds=1: shadowx=2: shadowy=2: text='%{pts}': fontcolor=white: fontsize=96: box=1: boxcolor=black@0.4: x=500-tw:y=h-th-50, drawtext=fontfile=/System/Library/Fonts/Helvetica.ttc: fix_bounds=1: shadowx=2: shadowy=2: text='%{eif\\:n/25*90000\\:d}': fontcolor=white: fontsize=96: box=1: boxcolor=black@0.4: x=500-tw:y=h-th-150, drawtext=fontfile=/System/Library/Fonts/Helvetica.ttc: fix_bounds=1: shadowx=2: shadowy=2: text='%{pict_type}': fontcolor=white: fontsize=96: box=1: boxcolor=black@0.4: x=10-tw:y=th+10, scale=iw*.5:ih*.5:flags=bicubic\"  - > ffplay.errors 2>&1";
 	if ( !(pipe_ffplay_buffer->player_pipe = popen(cmd, "w")) ) {
 		__PLAYER_FFPLAY_ERROR("unable to create pipe for cmd: %s", cmd);
@@ -325,10 +326,13 @@ void pipe_release_ffplay(pipe_ffplay_buffer_t** pipe_ffplay_buffer_p) {
 	}
 }
 
-void pipe_buffer_reader_check_if_shutdown(pipe_ffplay_buffer_t** pipe_ffplay_buffer_p) {
+bool pipe_buffer_reader_check_if_shutdown(pipe_ffplay_buffer_t** pipe_ffplay_buffer_p) {
 	if((*pipe_ffplay_buffer_p)->pipe_buffer_reader_is_shutdown) {
 		pipe_release_ffplay(pipe_ffplay_buffer_p);
+		pipe_ffplay_buffer_p = NULL;
+		return true;
 	}
+	return false;
 }
 
 /*
@@ -371,18 +375,4 @@ int pipe_buffer_unsafe_push_block(pipe_ffplay_buffer_t* pipe_ffplay_buffer, uint
 
 	return 0;
 }
-
-//
-//void push_mfu_block(block_t* block) {
-//
-////	int output_size = fwrite(block->p_buffer, 1, block->i_buffer, ffplay_pipe);
-//
-////	printf("in: %d, wrote %d bytes", block->i_buffer, output_size);
-//
-//	int output_size = fwrite(block->p_buffer, block->i_buffer, 1, file_pipe);
-//
-//	if(!player_pipe) {
-//		create_ffplay_pipe();
-//	}
-//}
 

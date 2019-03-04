@@ -108,8 +108,8 @@ ISOBMFFTrackJoiner.o: bento4/ISOBMFFTrackJoiner.cpp bento4/ISOBMFFTrackJoiner.h 
 	g++ -g -D __ISOBMFF_LIB=true -o ISOBMFFTrackJoiner.o -c bento4/ISOBMFFTrackJoiner.cpp -I../bento/include/
 	
 	
-isobmfftrackjoiner: bento4/ISOBMFFTrackJoiner.cpp bento4/ISOBMFFTrackJoiner.h atsc3_utils.o atsc3_lls_sls_monitor_output_buffer_utils.o
-	g++ -g bento4/ISOBMFFTrackJoiner.cpp atsc3_utils.o  atsc3_lls_sls_monitor_output_buffer_utils.o -I../bento/include/ -L../bento/lib -lap4 -lm -lpthread -o isobmfftrackjoiner 
+isobmfftrackjoiner: bento4/ISOBMFFTrackJoiner.cpp bento4/ISOBMFFTrackJoiner.h atsc3_utils.o atsc3_lls_sls_monitor_output_buffer_utils.o atsc3_player_ffplay.o
+	g++ -g bento4/ISOBMFFTrackJoiner.cpp atsc3_utils.o  atsc3_lls_sls_monitor_output_buffer_utils.o atsc3_player_ffplay.o -I../bento/include/ -L../bento/lib -lap4 -lm -lpthread -o isobmfftrackjoiner 
 	
 	
 #core libatsc3 library gen
