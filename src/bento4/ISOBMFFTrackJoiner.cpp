@@ -57,16 +57,6 @@ using namespace std;
 #define __DROP_HINT_TRACKS__
 #define __DROP_SIDX_BOX__
 
-//we don't want to do this, as some route streams need the tfdt base media decode time
-//#define __DROP_TFDT_BOX__
-
-
-// Alternative in-process memory buffer reader/writers
-//    AP4_DataBuffer* dataBuffer = new AP4_DataBuffer(65535);
-//    AP4_MemoryByteStream* memoryOutputByteStream = new AP4_MemoryByteStream(dataBuffer);
-//	now go the other way...
-//	  (*it)->Write(*memoryOutputByteStream);
-
 #ifndef __ISOBMFF_LIB
 
 int main(int argc, char** argv) {
@@ -228,7 +218,7 @@ void parseAndBuildJoinedBoxes_from_lls_sls_monitor_output_buffer(lls_sls_monitor
 
      in Moof box
 			-> Copy traf box
-                <- detatch both tfdt boxes
+                <- detatch both tfdt boxes if base_media_decode_time == 0
      
             -> update trunSecondFile dataOffset from moof->getsize() + moof header size (+8)
             -> update trunfirstFile dataOffset  from moof->getsize() + moof header size (+8) +2nd mdat size
@@ -391,12 +381,12 @@ void parseAndBuildJoinedBoxes_from_lls_sls_monitor_output_buffer(lls_sls_monitor
                 	video_trafAtom = tmpTrafToClean;
                 	shouldDetachTrak = false;
 
-#ifdef __DROP_TFDT_BOX__
-                	AP4_TfdtAtom* tfdtSecondFile = AP4_DYNAMIC_CAST(AP4_TfdtAtom, tmpTrafToClean->GetChild(AP4_ATOM_TYPE_TFDT));
-                	if(tfdtSecondFile) {
-                		tfdtSecondFile->Detach();
+                    //remove our tfdt's if base media decode time is 0
+
+                	AP4_TfdtAtom* video_tfdtTempAtom = AP4_DYNAMIC_CAST(AP4_TfdtAtom, tmpTrafToClean->GetChild(AP4_ATOM_TYPE_TFDT));
+                	if(video_tfdtTempAtom && video_tfdtTempAtom->GetBaseMediaDecodeTime() == 0) {
+                		video_tfdtTempAtom->Detach();
                 	}
-#endif
                 }
                 if(shouldDetachTrak) {
                 	tmpTrafToClean->Detach();
@@ -412,14 +402,12 @@ void parseAndBuildJoinedBoxes_from_lls_sls_monitor_output_buffer(lls_sls_monitor
                 	tfhdTempAtom->SetTrackId(tfhdTempAtom->GetTrackId() + 10);
                 }
 
-#ifdef __DROP_TFDT_BOX__
-                //remove our tfdt's
-                AP4_TfdtAtom* tfdtTempAtom = AP4_DYNAMIC_CAST(AP4_TfdtAtom, (*itTraf)->GetChild(AP4_ATOM_TYPE_TFDT));
+                //remove our tfdt's if base media decode time is 0
+                AP4_TfdtAtom* audio_tfdtTempAtom = AP4_DYNAMIC_CAST(AP4_TfdtAtom, (*itTraf)->GetChild(AP4_ATOM_TYPE_TFDT));
 
-                if(tfdtTempAtom) {
-					tfdtTempAtom->Detach();
+                if(audio_tfdtTempAtom && audio_tfdtTempAtom->GetBaseMediaDecodeTime() == 0) {
+                	audio_tfdtTempAtom->Detach();
 				}
-#endif
                 
                 (*itTraf)->Detach();
 				video_moofAtomParent->AddChild(*itTraf);
