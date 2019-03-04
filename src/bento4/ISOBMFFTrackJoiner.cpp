@@ -146,10 +146,10 @@ void parseAndBuildJoinedBoxesFromMemory(uint8_t* file1_payload, uint32_t file1_s
 
 	list<AP4_Atom*> isoBMFFList2 =  ISOBMFFTrackParse(file2_payload, file2_size);
 
-    __ISOBMFF_JOINER_INFO("Dumping box 1: size: %u", file1_size);
+    __ISOBMFF_JOINER_DEBUG("Dumping box 1: size: %u", file1_size);
 	dumpFullMetadata(isoBMFFList1);
 
-	__ISOBMFF_JOINER_INFO("Dumping box 2: %u", file2_size);
+	__ISOBMFF_JOINER_DEBUG("Dumping box 2: %u", file2_size);
 	dumpFullMetadata(isoBMFFList2);
 
 
@@ -607,18 +607,20 @@ list<AP4_Atom*> ISOBMFFTrackParse(uint8_t* full_mpu_payload, uint32_t full_mpu_p
 
 void dumpFullMetadata(list<AP4_Atom*> atomList) {
 
-    AP4_ByteStream* boxDumpConsoleOutput = NULL;
-    AP4_FileByteStream::Create("-stderr", AP4_FileByteStream::STREAM_MODE_WRITE, boxDumpConsoleOutput);
-    AP4_AtomInspector* inspector = new AP4_PrintInspector(*boxDumpConsoleOutput);
-    inspector->SetVerbosity(3);
+	if(_ISOBMFFTRACKJOINER_DEBUG_ENABLED) {
+		AP4_ByteStream* boxDumpConsoleOutput = NULL;
+		AP4_FileByteStream::Create("-stderr", AP4_FileByteStream::STREAM_MODE_WRITE, boxDumpConsoleOutput);
+		AP4_AtomInspector* inspector = new AP4_PrintInspector(*boxDumpConsoleOutput);
+		inspector->SetVerbosity(3);
 
-    std::list<AP4_Atom*>::iterator it;
-    for (it = atomList.begin(); it != atomList.end(); it++) {
-        (*it)->Inspect(*inspector);
-    }
+		std::list<AP4_Atom*>::iterator it;
+		for (it = atomList.begin(); it != atomList.end(); it++) {
+			(*it)->Inspect(*inspector);
+		}
 
-    if (boxDumpConsoleOutput) boxDumpConsoleOutput->Release();
-    delete inspector;
+		if (boxDumpConsoleOutput) boxDumpConsoleOutput->Release();
+		delete inspector;
+	}
 
 }
 
