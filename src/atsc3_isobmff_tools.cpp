@@ -35,6 +35,8 @@ int __VIDEO_SEGMENT_RECON_COUNTER = 0;
 int __BOX_SEGMENT_RECON_COUNTER = 0;
 
 
+
+//todo - remove me!
 void resetBufferPos() {
 	__VIDEO_RECON_FRAGMENT_SIZE = 0;
 	__AUDIO_RECON_FRAGMENT_SIZE = 0;
@@ -42,21 +44,21 @@ void resetBufferPos() {
 void __copy_video_block_t(block_t* video_isobmff_header) {
 
 	if(!__VIDEO_RECON_FRAGMENT) {
-		__VIDEO_RECON_FRAGMENT = (uint8_t*) calloc(__MAX_RECON_BUFFER, sizeof(uint8_t*));
+		__VIDEO_RECON_FRAGMENT = (uint8_t*) calloc(__MAX_RECON_BUFFER, sizeof(uint8_t));
 	}
 
-    memcpy(&__VIDEO_RECON_FRAGMENT[__VIDEO_RECON_FRAGMENT_SIZE], video_isobmff_header->p_buffer, video_isobmff_header->i_buffer);
-    __VIDEO_RECON_FRAGMENT_SIZE += video_isobmff_header->i_buffer;
+    memcpy(&__VIDEO_RECON_FRAGMENT[__VIDEO_RECON_FRAGMENT_SIZE], video_isobmff_header->p_buffer, video_isobmff_header->i_pos);
+    __VIDEO_RECON_FRAGMENT_SIZE += video_isobmff_header->i_pos;
 }
 
 
 void __copy_audio_block_t(block_t* audio_isobmff_header) {
 
 	if(!__AUDIO_RECON_FRAGMENT) {
-		__AUDIO_RECON_FRAGMENT = (uint8_t*)calloc(__MAX_RECON_BUFFER, sizeof(uint8_t*));
+		__AUDIO_RECON_FRAGMENT = (uint8_t*)calloc(__MAX_RECON_BUFFER, sizeof(uint8_t));
 	}
-    memcpy(&__AUDIO_RECON_FRAGMENT[__AUDIO_RECON_FRAGMENT_SIZE], audio_isobmff_header->p_buffer, audio_isobmff_header->i_buffer);
-    __AUDIO_RECON_FRAGMENT_SIZE += audio_isobmff_header->i_buffer;
+    memcpy(&__AUDIO_RECON_FRAGMENT[__AUDIO_RECON_FRAGMENT_SIZE], audio_isobmff_header->p_buffer, audio_isobmff_header->i_pos);
+    __AUDIO_RECON_FRAGMENT_SIZE += audio_isobmff_header->i_pos;
 }
 
 
@@ -174,7 +176,7 @@ block_t* atsc3_isobmff_build_mpu_metadata_ftyp_moof_mdat_box_from_flow(udp_flow_
                         for(int i=0; i < mpu_metadata_fragments->timed_fragments_vector.size; i++) {
                             mpu_metadata_fragment = mpu_metadata_fragments->timed_fragments_vector.data[i];
                             
-                            if(mpu_metadata_fragment && mpu_metadata_fragment->mmtp_mpu_type_packet_header.mpu_data_unit_payload && mpu_metadata_fragment->mmtp_mpu_type_packet_header.mpu_data_unit_payload->i_buffer ) {
+                            if(mpu_metadata_fragment && mpu_metadata_fragment->mmtp_mpu_type_packet_header.mpu_data_unit_payload && mpu_metadata_fragment->mmtp_mpu_type_packet_header.mpu_data_unit_payload->i_pos ) {
                                 
                                 if(mpu_metadata_fragment->mmtp_mpu_type_packet_header.mmtp_packet_id == lls_sls_mmt_monitor->video_packet_id && mpu_metadata_fragment->mmtp_mpu_type_packet_header.mmtp_packet_id == udp_flow_packet_id_mpu_sequence_tuple->packet_id) {
                                     __copy_video_block_t(mpu_metadata_fragment->mmtp_mpu_type_packet_header.mpu_data_unit_payload);
@@ -266,9 +268,9 @@ block_t* atsc3_isobmff_build_mpu_metadata_ftyp_moof_mdat_box_from_flow(udp_flow_
                 mmtp_payload_fragments_union_t* data_unit = data_unit_payload_types->timed_fragments_vector.data[i];
 
                 if(data_unit->mmtp_mpu_type_packet_header.mmtp_packet_id == lls_sls_mmt_monitor->video_packet_id && data_unit->mmtp_mpu_type_packet_header.mmtp_packet_id == udp_flow_packet_id_mpu_sequence_tuple->packet_id) {
-                    video_du_size += data_unit->mmtp_mpu_type_packet_header.mpu_data_unit_payload->i_buffer;
+                    video_du_size += data_unit->mmtp_mpu_type_packet_header.mpu_data_unit_payload->i_pos;
                 } else if(data_unit->mmtp_mpu_type_packet_header.mmtp_packet_id == lls_sls_mmt_monitor->audio_packet_id && data_unit->mmtp_mpu_type_packet_header.mmtp_packet_id == udp_flow_packet_id_mpu_sequence_tuple->packet_id){
-                    audio_du_size += data_unit->mmtp_mpu_type_packet_header.mpu_data_unit_payload->i_buffer;
+                    audio_du_size += data_unit->mmtp_mpu_type_packet_header.mpu_data_unit_payload->i_pos;
                 }
             }
 
@@ -372,9 +374,10 @@ block_t* atsc3_isobmff_build_mpu_metadata_ftyp_moof_mdat_box_from_flow(udp_flow_
 	ISOBMFFTrackJoinerFileResouces_t* fileResources = _l_loadFileResources();
     parseAndBuildJoinedBoxes(fileResources, memoryOutputByteStream);
 
-    __ISOBMFF_TOOLS_WARN("building reutrn alloc of %u", dataBuffer->GetDataSize());
+    __ISOBMFF_TOOLS_WARN("building return alloc of %u", dataBuffer->GetDataSize());
 	mpu_metadata_output_block_t = block_Alloc(dataBuffer->GetDataSize());
-	memcpy(mpu_metadata_output_block_t->p_buffer, dataBuffer->GetData(), dataBuffer->GetDataSize());
+	block_Write(mpu_metadata_output_block_t, (uint8_t*)dataBuffer->GetData(), dataBuffer->GetDataSize());
+
 
 	//trying to free this causes segfaults 100% of the time
 
@@ -384,7 +387,7 @@ block_t* atsc3_isobmff_build_mpu_metadata_ftyp_moof_mdat_box_from_flow(udp_flow_
     snprintf(box_track_dump_filename, 127, "mpu/%u.b", __BOX_SEGMENT_RECON_COUNTER++);
     
     FILE* box_track_dump_fp = fopen(box_track_dump_filename, "w");
-    fwrite(mpu_metadata_output_block_t->p_buffer, mpu_metadata_output_block_t->i_buffer, 1, box_track_dump_fp);
+    fwrite(mpu_metadata_output_block_t->p_buffer, mpu_metadata_output_block_t->i_pos, 1, box_track_dump_fp);
     fclose(box_track_dump_fp);
     free(box_track_dump_filename);
     
@@ -461,7 +464,7 @@ block_t* atsc3_isobmff_build_mpu_metadata_ftyp_moof_mdat_box_from_mpu_sequence_n
                         for(int i=0; i < mpu_metadata_fragments->timed_fragments_vector.size; i++) {
                             mpu_metadata_fragment = mpu_metadata_fragments->timed_fragments_vector.data[i];
                             
-                            if(mpu_metadata_fragment && mpu_metadata_fragment->mmtp_mpu_type_packet_header.mpu_data_unit_payload && mpu_metadata_fragment->mmtp_mpu_type_packet_header.mpu_data_unit_payload->i_buffer ) {
+                            if(mpu_metadata_fragment && mpu_metadata_fragment->mmtp_mpu_type_packet_header.mpu_data_unit_payload && mpu_metadata_fragment->mmtp_mpu_type_packet_header.mpu_data_unit_payload->i_pos ) {
                                 
                                 if(mpu_metadata_fragment->mmtp_mpu_type_packet_header.mmtp_packet_id == lls_sls_mmt_monitor->video_packet_id && mpu_metadata_fragment->mmtp_mpu_type_packet_header.mmtp_packet_id == udp_flow_packet_id_mpu_sequence_tuple->packet_id) {
                                     __copy_video_block_t(mpu_metadata_fragment->mmtp_mpu_type_packet_header.mpu_data_unit_payload);
@@ -583,9 +586,9 @@ block_t* atsc3_isobmff_build_mpu_metadata_ftyp_moof_mdat_box_from_mpu_sequence_n
                 mmtp_payload_fragments_union_t* data_unit = data_unit_payload_types->timed_fragments_vector.data[i];
                 
                 if(data_unit->mmtp_mpu_type_packet_header.mmtp_packet_id == lls_sls_mmt_monitor->video_packet_id && data_unit->mmtp_mpu_type_packet_header.mmtp_packet_id == udp_flow_packet_id_mpu_sequence_tuple->packet_id) {
-                    video_du_size += data_unit->mmtp_mpu_type_packet_header.mpu_data_unit_payload->i_buffer;
+                    video_du_size += data_unit->mmtp_mpu_type_packet_header.mpu_data_unit_payload->i_pos;
                 } else if(data_unit->mmtp_mpu_type_packet_header.mmtp_packet_id == lls_sls_mmt_monitor->audio_packet_id && data_unit->mmtp_mpu_type_packet_header.mmtp_packet_id == udp_flow_packet_id_mpu_sequence_tuple->packet_id){
-                    audio_du_size += data_unit->mmtp_mpu_type_packet_header.mpu_data_unit_payload->i_buffer;
+                    audio_du_size += data_unit->mmtp_mpu_type_packet_header.mpu_data_unit_payload->i_pos;
                 }
             }
             
@@ -707,7 +710,7 @@ block_t* atsc3_isobmff_build_mpu_metadata_ftyp_moof_mdat_box_from_mpu_sequence_n
     snprintf(box_track_dump_filename, 127, "mpu/%u.b", __BOX_SEGMENT_RECON_COUNTER++);
     
     FILE* box_track_dump_fp = fopen(box_track_dump_filename, "w");
-    fwrite(mpu_metadata_output_block_t->p_buffer, mpu_metadata_output_block_t->i_buffer, 1, box_track_dump_fp);
+    fwrite(mpu_metadata_output_block_t->p_buffer, mpu_metadata_output_block_t->i_pos, 1, box_track_dump_fp);
     fclose(box_track_dump_fp);
     free(box_track_dump_filename);
     

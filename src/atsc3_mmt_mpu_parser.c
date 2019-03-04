@@ -146,13 +146,9 @@ uint8_t* mmt_mpu_parse_payload(mmtp_sub_flow_vector_t* mmtp_sub_flow_vector, mmt
 				_MPU_DEBUG("creating tmp_mpu_fragment, setting block_t->i_buffer to: %d", to_read_packet_length);
 
 				buf = (uint8_t*)extract(buf, tmp_mpu_fragment->p_buffer, to_read_packet_length);
-				tmp_mpu_fragment->i_buffer = to_read_packet_length;
+				tmp_mpu_fragment->i_pos = to_read_packet_length;
 
 				mmtp_packet_header->mmtp_mpu_type_packet_header.mpu_data_unit_payload = tmp_mpu_fragment;
-
-
-
-			//	processMpuPacket(p_demux, mmtp_sub_flow, mmtp_packet_header);
 
 				remainingPacketLen = udp_raw_buf_size - (buf - raw_buf);
 				//this should only be non-zero if mpu_aggregration_flag=1
@@ -326,7 +322,7 @@ uint8_t* mmt_mpu_parse_payload(mmtp_sub_flow_vector_t* mmtp_sub_flow_vector, mmt
 				_MPU_TRACE("creating tmp_mpu_fragment, setting block_t->i_buffer to: %d", to_read_packet_length);
 
 				buf = (uint8_t*)extract(buf, tmp_mpu_fragment->p_buffer, to_read_packet_length);
-				tmp_mpu_fragment->i_buffer = to_read_packet_length;
+				tmp_mpu_fragment->i_pos = to_read_packet_length;
 
 
 				mmtp_packet_header->mmtp_mpu_type_packet_header.mpu_data_unit_payload = tmp_mpu_fragment;

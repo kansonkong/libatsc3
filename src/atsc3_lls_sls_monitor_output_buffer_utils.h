@@ -11,14 +11,31 @@
 
 #include "atsc3_lls_types.h"
 
-//4k gets pretty big pretty quick
-#define _LLS_SLS_MONITOR_OUTPUT_MAX_RECON_BUFFER 16384000
+extern int _LLS_SLS_MONITOR_OUTPUT_BUFFER_UTILS_DEBUG_ENABLED;
+extern int _LLS_SLS_MONITOR_OUTPUT_BUFFER_UTILS_TRACE_ENABLED;
 
+void lls_sls_monitor_output_buffer_reset_moov_and_fragment_position(lls_sls_monitor_output_buffer_t* lls_sls_monitor_output_buffer);
+void lls_sls_monitor_output_buffer_reset_all_position(lls_sls_monitor_output_buffer_t* lls_sls_monitor_output_buffer);
 
-void lls_sls_monitor_output_buffer_reset_position(lls_sls_monitor_output_buffer_t* lls_sls_monitor_output_buffer);
+int lls_sls_monitor_output_buffer_copy_audio_init_block(lls_sls_monitor_output_buffer_t* lls_sls_monitor_output_buffer, block_t* audio_isobmff_header);
+int lls_sls_monitor_output_buffer_copy_audio_moov_block(lls_sls_monitor_output_buffer_t* lls_sls_monitor_output_buffer, block_t* audio_isobmff_header);
+int lls_sls_monitor_output_buffer_copy_audio_fragment_block(lls_sls_monitor_output_buffer_t* lls_sls_monitor_output_buffer, block_t* audio_isobmff_header);
 
-void lls_sls_monitor_output_buffer_copy_video_block(lls_sls_monitor_output_buffer_t* lls_sls_monitor_output_buffer, block_t* video_isobmff_header);
+int lls_sls_monitor_output_buffer_copy_video_init_block(lls_sls_monitor_output_buffer_t* lls_sls_monitor_output_buffer, block_t* video_isobmff_header);
+int lls_sls_monitor_output_buffer_copy_video_moov_block(lls_sls_monitor_output_buffer_t* lls_sls_monitor_output_buffer, block_t* video_isobmff_header);
+int lls_sls_monitor_output_buffer_copy_video_fragment_block(lls_sls_monitor_output_buffer_t* lls_sls_monitor_output_buffer, block_t* video_isobmff_header);
 
-void lls_sls_monitor_output_buffer_copy_audio_block(lls_sls_monitor_output_buffer_t* lls_sls_monitor_output_buffer, block_t* audio_isobmff_header);
+block_t* lls_sls_monitor_output_buffer_copy_audio_full_isobmff_box(lls_sls_monitor_output_buffer_t* lls_sls_monitor_output_buffer);
+block_t* lls_sls_monitor_output_buffer_copy_audio_moov_fragment_isobmff_box(lls_sls_monitor_output_buffer_t* lls_sls_monitor_output_buffer);
+
+block_t* lls_sls_monitor_output_buffer_copy_video_full_isobmff_box(lls_sls_monitor_output_buffer_t* lls_sls_monitor_output_buffer);
+block_t* lls_sls_monitor_output_buffer_copy_video_moov_fragment_isobmff_box(lls_sls_monitor_output_buffer_t* lls_sls_monitor_output_buffer);
+
+#define __LLS_SLS_MONITOR_OUTPUT_BUFFER_UTILS_PRINTLN(...) printf(__VA_ARGS__);printf("\n")
+#define __LLS_SLS_MONITOR_OUTPUT_BUFFER_UTILS_ERROR(...)   printf("%s:%d:ERROR :",__FILE__,__LINE__);__LLS_SLS_MONITOR_OUTPUT_BUFFER_UTILS_PRINTLN(__VA_ARGS__);
+#define __LLS_SLS_MONITOR_OUTPUT_BUFFER_UTILS_WARN(...)    printf("%s:%d:WARN :",__FILE__,__LINE__);__LLS_SLS_MONITOR_OUTPUT_BUFFER_UTILS_PRINTLN(__VA_ARGS__);
+#define __LLS_SLS_MONITOR_OUTPUT_BUFFER_UTILS_INFO(...)    printf("%s:%d:INFO :",__FILE__,__LINE__);__LLS_SLS_MONITOR_OUTPUT_BUFFER_UTILS_PRINTLN(__VA_ARGS__);
+#define __LLS_SLS_MONITOR_OUTPUT_BUFFER_UTILS_DEBUG(...)   if(_LLS_SLS_MONITOR_OUTPUT_BUFFER_UTILS_DEBUG_ENABLED) { printf("%s:%d:DEBUG :",__FILE__,__LINE__);__LLS_SLS_MONITOR_OUTPUT_BUFFER_UTILS_PRINTLN(__VA_ARGS__); }
+#define __LLS_SLS_MONITOR_OUTPUT_BUFFER_UTILS_TRACE(...)   if(_LLS_SLS_MONITOR_OUTPUT_BUFFER_UTILS_TRACE_ENABLED) { printf("%s:%d:TRACE :",__FILE__,__LINE__);__LLS_SLS_MONITOR_OUTPUT_BUFFER_UTILS_PRINTLN(__VA_ARGS__); }
 
 #endif /* atsc3_lls_sls_monitor_output_buffer_h */

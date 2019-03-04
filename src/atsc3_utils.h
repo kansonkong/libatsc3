@@ -8,26 +8,24 @@
 #ifndef ATSC3_UTILS_H_
 #define ATSC3_UTILS_H_
 
+#include <assert.h>
+#include <ctype.h>
+#include <fcntl.h>
+
 #include <stdlib.h>
 #include <stdio.h>
 #include <stdint.h>
 #include <signal.h>
-#include <fcntl.h>
-
 #include <string.h>
+#include <strings.h>
+
 #include <time.h>
 #include <sys/time.h>
 
 #include "fixups.h"
 #include "unistd.h"
 
-#define println(...) printf(__VA_ARGS__);printf("\n")
-#define __PRINTLN(...) printf(__VA_ARGS__);printf("\n")
-#define __PRINTF(...)  printf(__VA_ARGS__);
-
-
 #define uS 1000000ULL
-
 
 //ATSC3/331 Section 6.1 - drop non mulitcast ip ranges - e.g not in  239.255.0.0 to 239.255.255.255
 #define MIN_ATSC3_MULTICAST_BLOCK (239 << 24 | 255 << 16)
@@ -53,6 +51,15 @@ double gt();
 #define __toipnonstruct(ip) (ip >> 24) & 0xFF, (ip >> 16) & 0xFF, (ip >> 8) & 0xFF, (ip) & 0xFF
 #define __toipandportnonstruct(ip, port) (ip >> 24) & 0xFF, (ip >> 16) & 0xFF, (ip >> 8) & 0xFF, (ip) & 0xFF, port
 
+#ifndef __MAX
+#   define __MAX(a, b)   ( ((a) > (b)) ? (a) : (b) )
+#endif
+#ifndef __MIN
+#   define __MIN(a, b)   ( ((a) < (b)) ? (a) : (b) )
+#endif
+
+/* clip v in [min, max] */
+#define __CLIP(v, min, max)    __MIN(__MAX((v), (min)), (max))
 
 void* extract(uint8_t *bufPosPtr, uint8_t *dest, int size);
 
@@ -77,10 +84,14 @@ void kvp_collection_free(kvp_collection_t* collection);
 //or block_t as in VLC?
 typedef struct atsc3_block {
 	uint8_t* p_buffer;
-	uint32_t i_buffer;
+	uint32_t p_size;
+	uint32_t i_pos;
 } block_t;
 
 block_t* block_Alloc(int len);
+block_t* block_Write(block_t* dest, uint8_t* buf, uint32_t size);
+block_t* block_Rewind(block_t* dest);
+block_t* block_Resize(block_t* dest, uint32_t dest_size_required);
 block_t* block_Duplicate(block_t* a);
 void block_Release(block_t** a);
 
@@ -101,6 +112,9 @@ uint16_t parsePortIntoIntval(char* dst_port);
 #endif
 
 
+#define println(...) printf(__VA_ARGS__);printf("\n")
+#define __PRINTLN(...) printf(__VA_ARGS__);printf("\n")
+#define __PRINTF(...)  printf(__VA_ARGS__);
 
 #define _ATSC3_UTILS_PRINTLN(...) printf(__VA_ARGS__);printf("\n")
 #define _ATSC3_UTILS_PRINTF(...)  printf(__VA_ARGS__);

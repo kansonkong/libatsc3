@@ -19,11 +19,11 @@
 #include "Ap4.h"
 
 #include "../../bento/include/Ap4Atom.h"
+
+extern "C" {
 #include "../atsc3_utils.h"
-
-#include "../atsc3_lls_sls_monitor_output_buffer.h"
-
-
+#include "../atsc3_lls_sls_monitor_output_buffer_utils.h"
+}
 using namespace std;
 
 #ifndef BENTO4_ISOBMFFTRACKJOINER_H_
