@@ -8,6 +8,72 @@
 
 //todo: use box_t also
 
+/**
+ *
+ *
+ *
+sending all the media units that are contained in that movie fragment.
+At the receiver side, step g.3.i ensures that the movie fragment is
+recovered appropriately by reordering the received data using the
+MPU_sequence_number and the movie_fragment_sequence_number.
+This is necessary if the receiver is operating in the Fragment mode or MPU mode,
+where only complete movie fragments or complete MPUs are forwarded to the application. When operating in the very low delay mode, the receiver will forward every single MFU to the application. In this case, it has to make sure that the content supports this operation, so that MFUs will be self-describing and self-contained. In particular, the receiver should be able to recover the presentation timestamp of that MFU payload using the sample number, fragment_ sequence_number and MPU_sequence_number,
+
+For fragments and items that cannot be recovered correctly by the time the
+fixed end to end delivery delay passes, error concealment is performed on
+the movie fragment or the partially recovered item.
+
+
+5.13 Error resliancce
+
+MMTP is optimized for the delivery of MPUs, which are ISOBMFF files.
+ The delivery of the MPU is performed movie fragment by movie fragment,
+ thus enabling fast start-up delays and fast access to the content.
+ MMTP defines three different payload fragments for error resilience purpose.
+
+— The MPU metadata: This information contains the metadata of the ISOBMFF file and the MPU.
+The MPU metadata thus contains all codec configuration information and is crucial for the consumption of the whole MPU.
+The MPU mode allows to mark the packets of the MPU metadata (usually only one or a few packets), so that the client can
+clearly identify them and recognize if it has received it correctly. To provide for random access and enhance the probability of
+ receiving the MPU metadata, the sender should send the metadata repeatedly and periodically throughout the transmission time of that MPU.
+
+— The fragment metadata: This information contains the “moof” box and the skeleton of the “mdat” box.
+This metadata provides information about the sample sizes and their timing and duration. This information is
+important for all media samples of the current fragment. However, it may be possible to recover from loss of
+fragment metadata and it is also possible to send it out of order. The sender may deliver the fragment metadata
+repeatedly and interleaved with the packets that contain the media samples of that fragment to increase the probability
+of correct reception and to enable random access inside a movie fragment.
+
+— The MFU: An MFU contains a media unit from a sample of a particular movie fragment. The MFU also provides enough
+information such as the sample number, the fragment sequence number and the position inside the media sample to
+position the media unit on the timeline and inside the “mdat” box. It may also contain information about the
+importance of that media unit for the decoding process. Based on that information, the sender, as well as
+intermediate MMT entities, may undertake appropriate steps to enhance error resilience respective to the priority
+and importance of the media unit. A media unit from a SAP is, for instance, more important than a media unit
+for which there are no dependencies.
+
+One of MMTP’s advantages is its ability to enable error robustness at the receiver side by enabling
+the client to recover from packet losses and still generate a compliant MPU when needed.
+
+When the MPU metadata is lost, the client should keep any correctly received data from that MPU until a new
+copy of the MPU metadata is correctly received.
+
+When a fragment metadata is lost, the client should use the information from previous fragments about
+the sample durations to correctly reconstruct the lost “moof” box. It uses information from the received
+MFUs to recover the movie fragment segment number. The offsets of the media data may be recovered later
+using the start of a fragment as the baseline and the sample number and MFU sizes to reconstruct the “mdat” box as well.
+
+When an MFU is lost, the loss can be discovered at the receiver based on the gap in the sequence numbers.
+
+The missing MFU is replaced by a null value array in the “mdat” box, if at least one MFU of the same media sample
+has been received correctly.
+
+If the complete sample is lost, the space occupied by that media sample may be removed
+completely and the information in the containing chunk, the “trun”, should be edited appropriately to adjust the
+sample duration of the previous sample and the sample offsets of the following samples.
+
+ */
+
 #include "atsc3_lls_sls_monitor_output_buffer_utils.h"
 
 int _LLS_SLS_MONITOR_OUTPUT_BUFFER_UTILS_DEBUG_ENABLED = 0;
