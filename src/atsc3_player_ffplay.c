@@ -93,14 +93,15 @@ await_semaphore:
 
         }
         
-		if(pipe_ffplay_buffer->pipe_buffer_writer_pos < 512000) {
-			__PLAYER_FFPLAY_WARN("WARNING - remaining buffer is less than ~512KB, this may cause player underflow! ffplay BEFORE WRITE, to write to pipe: %p, from %p, pos: %d to %d",
+		if(pipe_ffplay_buffer->pipe_buffer_writer_pos < __PLAYER_FFPLAY_BUFFER_WARNING_SIZE) {
+			__PLAYER_FFPLAY_WARN("WARNING - remaining buffer is less than %u, this may cause player underflow! ffplay BEFORE WRITE, to write to pipe: %p, from %p, pos: %d to %d",
+							__PLAYER_FFPLAY_BUFFER_WARNING_SIZE,
 							pipe_ffplay_buffer->player_pipe,
 							pipe_ffplay_buffer->pipe_buffer_writer,
 							0,
 							pipe_ffplay_buffer->pipe_buffer_writer_pos);
 		} else {
-			__PLAYER_FFPLAY_WARN("ffplay BEFORE WRITE, to write to pipe: %p, from %p, pos: %d to %d",
+			__PLAYER_FFPLAY_DEBUG("ffplay BEFORE WRITE, to write to pipe: %p, from %p, pos: %d to %d",
 				pipe_ffplay_buffer->player_pipe,
 				pipe_ffplay_buffer->pipe_buffer_writer,
 				0,
@@ -134,7 +135,7 @@ await_semaphore:
             goto thread_shutdown;
         }
         
-		__PLAYER_FFPLAY_WARN("ffplay AFTER write, to write to pipe: %p complete", pipe_ffplay_buffer->player_pipe);
+        __PLAYER_FFPLAY_DEBUG("ffplay AFTER write, to write to pipe: %p complete", pipe_ffplay_buffer->player_pipe);
 
 		pipe_ffplay_buffer->pipe_buffer_writer_pos = 0;
 		goto await_semaphore;
@@ -143,9 +144,9 @@ await_semaphore:
 		//unlock if we aren't ready to swap and write
 unlock_from_error:
 
-		__PLAYER_FFPLAY_INFO("unlock_from_error, player before mutex_unlock");
+		__PLAYER_FFPLAY_DEBUG("unlock_from_error, player before mutex_unlock");
 		pipe_buffer_reader_mutex_unlock(pipe_ffplay_buffer);
-		__PLAYER_FFPLAY_INFO("unlock_from_error, player before await_semaphore");
+		__PLAYER_FFPLAY_DEBUG("unlock_from_error, player before await_semaphore");
 		goto await_semaphore;
 	}
 
@@ -219,35 +220,21 @@ void __pipe_create_deferred_ffplay(pipe_ffplay_buffer_t* pipe_ffplay_buffer) {
 
 	//set a default value
 	float fps_for_timecode = 59.94;
+	char fps_for_playback_option[16] = "\0";
+
 	if(pipe_ffplay_buffer && pipe_ffplay_buffer->video_output_buffer_isobmff_to_resolve_fps && pipe_ffplay_buffer->video_output_buffer_isobmff_to_resolve_fps->fps_num && pipe_ffplay_buffer->video_output_buffer_isobmff_to_resolve_fps->fps_denom) {
 		fps_for_timecode = ((float)pipe_ffplay_buffer->video_output_buffer_isobmff_to_resolve_fps->fps_denom / (float)pipe_ffplay_buffer->video_output_buffer_isobmff_to_resolve_fps->fps_num);
+		snprintf((char*)&fps_for_playback_option, 16, "fps=%.2f,", fps_for_timecode);
 	}
-	//flags=bicubic
-	//-infbuf -max_delay 5000000 -loglevel debug
-	//ffmpeg -i input -vf "drawtext=fontfile=Arial.ttf: text='%{frame_num}': start_number=1: x=(w-tw)/2: y=h-(2*lh): fontcolor=black: fontsize=20: box=1: boxcolor=white: boxborderw=5" -c:a copy output
-
-	/* Failed to set value 'drawtext=fontfile=/System/Library/Fonts/Helveticza.ttc: fix_bounds=1: shadowx=2: shadowy=2: timecode_rate=59.94: timecode='00\:00\:00\:00': fontcolor=white: fontsize=96: box=1: boxcolor=black@0.4: x=550:y=h-th-50, drawtext=fontfile=/System/Library/Fonts/Helvetica.ttc: fix_bounds=1: shadowx=2: shadowy=2: text='%{pts}': fontcolor=white: fontsize=96: box=1: boxcolor=black@0.4: x=500-tw:y=h-th-50, drawtext=fontfile=/System/Library/Fonts/Helvetica.ttc: fix_bounds=1: shadowx=2: shadowy=2: text='%{eif\:n/59.94*90000\:d}': fontcolor=white: fontsize=96: box=1: boxcolor=black@0.4: x=500-tw:y=h-th-150, drawtext=fontfile=/System/Library/Fonts/Helvetica.ttc: fix_bounds=1: shadowx=2: shadowy=2: text='%{pict_type}': fontcolor=white: fontsize=96: box=1: boxcolor=black@0.4: x=10-tw:y=th+10' for option 'filter_complex': Option not found
-	 *-framedrop -infbuf setpts=N/(59.94*TB), genpts -fs
-	 */
-	//setpts=N/(25*TB)
-	//	char* cmd = "ffplay -loglevel debug -infbuf -err_detect ignore_err -hide_banner -nostats -noborder -left 0 -top 0  -vf \"fps=25,drawtext=fontfile=/System/Library/Fonts/Helvetica.ttc: fix_bounds=1: shadowx=2: shadowy=2: timecode_rate=59.94: timecode='00\\:00\\:00\\:00': fontcolor=watsc3_utils.chite: fontsize=96: box=1: boxcolor=black@0.4: x=550:y=h-th-50, drawtext=fontfile=/System/Library/Fonts/Helvetica.ttc: fix_bounds=1: shadowx=2: shadowy=2: text='%{pts}': fontcolor=white: fontsize=96: box=1: boxcolor=black@0.4: x=500-tw:y=h-th-50, drawtext=fontfile=/System/Library/Fonts/Helvetica.ttc: fix_bounds=1: shadowx=2: shadowy=2: text='%{eif\\:n/25*90000\\:d}': fontcolor=white: fontsize=96: box=1: boxcolor=black@0.4: x=500-tw:y=h-th-150, drawtext=fontfile=/System/Library/Fonts/Helvetica.ttc: fix_bounds=1: shadowx=2: shadowy=2: text='%{pict_type}': fontcolor=white: fontsize=96: box=1: boxcolor=black@0.4: x=10-tw:y=th+10, scale=iw*.5:ih*.5:flags=bicubic\"  - > ffplay.errors 2>&1";
 
 	char cmd[2048];
-	snprintf((char*)cmd, 2048, "ffplay -loglevel debug -infbuf -err_detect ignore_err -hide_banner -nostats -noborder -left 0 -top 0  -vf \"drawtext=fontfile=/System/Library/Fonts/Helvetica.ttc: fix_bounds=1: shadowx=2: shadowy=2: timecode_rate=%.2f: timecode='00\\:00\\:00\\:00': fontcolor=white: fontsize=96: box=1: boxcolor=black@0.4: x=550:y=h-th-50, drawtext=fontfile=/System/Library/Fonts/Helvetica.ttc: fix_bounds=1: shadowx=2: shadowy=2: text='%%{pts}': fontcolor=white: fontsize=96: box=1: boxcolor=black@0.4: x=500-tw:y=h-th-50, drawtext=fontfile=/System/Library/Fonts/Helvetica.ttc: fix_bounds=1: shadowx=2: shadowy=2: text='%%{eif\\:n/25*90000\\:d}': fontcolor=white: fontsize=96: box=1: boxcolor=black@0.4: x=500-tw:y=h-th-150, drawtext=fontfile=/System/Library/Fonts/Helvetica.ttc: fix_bounds=1: shadowx=2: shadowy=2: text='%%{pict_type}': fontcolor=white: fontsize=96: box=1: boxcolor=black@0.4: x=10-tw:y=th+10, scale=iw*.5:ih*.5:flags=bicubic\"  - > ffplay.errors 2>&1", fps_for_timecode);
+	snprintf((char*)cmd, 2048, "ffplay -loglevel debug -infbuf -err_detect ignore_err -hide_banner -nostats -noborder -left 0 -top 0  -vf \"%sdrawtext=fontfile=/System/Library/Fonts/Helvetica.ttc: fix_bounds=1: shadowx=2: shadowy=2: timecode_rate=%.2f: timecode='00\\:00\\:00\\:00': fontcolor=white: fontsize=96: box=1: boxcolor=black@0.4: x=550:y=h-th-50, drawtext=fontfile=/System/Library/Fonts/Helvetica.ttc: fix_bounds=1: shadowx=2: shadowy=2: text='%%{pts}': fontcolor=white: fontsize=96: box=1: boxcolor=black@0.4: x=500-tw:y=h-th-50, drawtext=fontfile=/System/Library/Fonts/Helvetica.ttc: fix_bounds=1: shadowx=2: shadowy=2: text='%%{eif\\:n/25*90000\\:d}': fontcolor=white: fontsize=96: box=1: boxcolor=black@0.4: x=500-tw:y=h-th-150, drawtext=fontfile=/System/Library/Fonts/Helvetica.ttc: fix_bounds=1: shadowx=2: shadowy=2: text='%%{pict_type}': fontcolor=white: fontsize=96: box=1: boxcolor=black@0.4: x=10-tw:y=th+10, scale=iw*.5:ih*.5:flags=bicubic\"  - > ffplay.errors 2>&1", fps_for_playback_option, fps_for_timecode);
     __PLAYER_FFPLAY_INFO("creating player with args: %s", cmd);
     
 	if ( !(pipe_ffplay_buffer->player_pipe = popen(cmd, "w")) ) {
 		__PLAYER_FFPLAY_ERROR("unable to create pipe for cmd: %s", cmd);
 		return;
 	}
-	/**
-	 *
-	 * char* cmd = "ffplay -infbuf -err_detect ignore_err -hide_banner -nostats -vf \"drawtext=fontfile=/System/Library/Fonts/Helvetica.ttc: fix_bounds=1: shadowx=2: shadowy=2: timecode_rate=59.94: timecode='00\\:00\\:00\\:00': fontcolor=white: fontsize=96: box=1: boxcolor=black@0.4: x=550:y=h-th-50, drawtext=fontfile=/System/Library/Fonts/Helvetica.ttc: fix_bounds=1: shadowx=2: shadowy=2: text='%{pts}': fontcolor=white: fontsize=96: box=1: boxcolor=black@0.4: x=500-tw:y=h-th-50, drawtext=fontfile=/System/Library/Fonts/Helvetica.ttc: fix_bounds=1: shadowx=2: shadowy=2: text='%{eif\\:n/59.94*90000\\:d}': fontcolor=white: fontsize=96: box=1: boxcolor=black@0.4: x=500-tw:y=h-th-150, drawtext=fontfile=/System/Library/Fonts/Helvetica.ttc: fix_bounds=1: shadowx=2: shadowy=2: text='%{pict_type}': fontcolor=white: fontsize=96: box=1: boxcolor=black@0.4: x=10-tw:y=th+10\"  - > ffplay.errors 2>&1";
-	if ( !(pipe_ffplay_buffer->player_pipe = popen(cmd, "w")) ) {
-		__PLAYER_FFPLAY_ERROR("unable to create pipe for cmd: %s", cmd);
-		goto error;
-	}
-	 */
 
 	//use this for capturing the reconstitued mpu for troubleshooting
 	//	pipe_ffplay_buffer->player_pipe = fopen("mpu/recon.m4v", "w");
@@ -283,7 +270,7 @@ pipe_ffplay_buffer_t* pipe_create_ffplay_resolve_fps(lls_sls_monitor_buffer_isob
 
     __PLAYER_FFPLAY_INFO("creating semaphore with path: %s", sem_name);
 	pipe_ffplay_buffer->pipe_buffer_semaphore = sem_open(sem_name, O_CREAT, 0644, 0);
-	__PLAYER_FFPLAY_ERROR("sem_init returned: %p", pipe_ffplay_buffer->pipe_buffer_semaphore);
+	__PLAYER_FFPLAY_INFO("sem_init returned: %p", pipe_ffplay_buffer->pipe_buffer_semaphore);
 	assert(pipe_ffplay_buffer->pipe_buffer_semaphore);
 
 	pipe_ffplay_buffer->pipe_buffer_reader = (uint8_t*)calloc(__PLAYER_FFPLAY_PIPE_INTERNAL_BUFFER_SIZE, sizeof(uint8_t));
