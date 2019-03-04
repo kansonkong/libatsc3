@@ -423,9 +423,6 @@ void parseAndBuildJoinedBoxesFromMemory(uint8_t* file1_payload, uint32_t file1_s
                 }
 			}
 
-
-
-
 			for(itTraf = trafFirstFileList.begin(); itTraf != trafFirstFileList.end(); itTraf++) {
 				//shift our track id's by +10
                 AP4_TfhdAtom* tfhdTempAtom = AP4_DYNAMIC_CAST(AP4_TfhdAtom, (*itTraf)->GetChild(AP4_ATOM_TYPE_TFHD));
@@ -442,7 +439,9 @@ void parseAndBuildJoinedBoxesFromMemory(uint8_t* file1_payload, uint32_t file1_s
 				moofSecondFile->AddChild(*itTraf);
 			}
 
-			trunSecondFile = AP4_DYNAMIC_CAST(AP4_TrunAtom, trafSecondFile->GetChild(AP4_ATOM_TYPE_TRUN));
+            if(trafSecondFile) {
+                trunSecondFile = AP4_DYNAMIC_CAST(AP4_TrunAtom, trafSecondFile->GetChild(AP4_ATOM_TYPE_TRUN));
+            }
 		}
 
 		if((*it)->GetType() == AP4_ATOM_TYPE_MDAT) {
@@ -452,8 +451,12 @@ void parseAndBuildJoinedBoxesFromMemory(uint8_t* file1_payload, uint32_t file1_s
 
 	if(moofSecondFile) {
 		moofSecondFileAtom = AP4_DYNAMIC_CAST(AP4_Atom, moofSecondFile);
-		trunSecondFile->SetDataOffset((AP4_UI32)moofSecondFileAtom->GetSize()+AP4_ATOM_HEADER_SIZE);
-
+        if(trunSecondFile) {
+            trunSecondFile->SetDataOffset((AP4_UI32)moofSecondFileAtom->GetSize()+AP4_ATOM_HEADER_SIZE);
+        } else {
+            //this shouldn't happen
+        }
+        
 		//first file is written out last...
 //		if(mdatSecondFile) {
 //			trunFirstFile->SetDataOffset((AP4_UI32)moofSecondFileAtom->GetSize()+AP4_ATOM_HEADER_SIZE+mdatSecondFile->GetSize());
