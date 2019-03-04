@@ -57,6 +57,9 @@ using namespace std;
 #define __DROP_HINT_TRACKS__
 #define __DROP_SIDX_BOX__
 
+//we don't want to do this, as some route streams need the tfdt base media decode time
+//#define __DROP_TFDT_BOX__
+
 
 // Alternative in-process memory buffer reader/writers
 //    AP4_DataBuffer* dataBuffer = new AP4_DataBuffer(65535);
@@ -74,16 +77,16 @@ int main(int argc, char** argv) {
 	}
 	int result = 0;
 
-	//first, we map our 2 input files into uint8_t* payloads,
-	ISOBMFFTrackJoinerFileResouces_t* fileResources = loadFileResources(argv[1], argv[2]);
-
-	//then we setup our output writer
-	const char* output_filename = "jjout.m4v";
-	AP4_ByteStream* output_stream = NULL;
-	result = AP4_FileByteStream::Create(output_filename, AP4_FileByteStream::STREAM_MODE_WRITE,output_stream);
-
-	//and remux into one unified fragment.  if you have already sent the initn b
-	parseAndBuildJoinedBoxes(fileResources, output_stream);
+//	//first, we map our 2 input files into uint8_t* payloads,
+//	ISOBMFFTrackJoinerFileResouces_t* fileResources = loadFileResources(argv[1], argv[2]);
+//
+//	//then we setup our output writer
+//	const char* output_filename = "jjout.m4v";
+//	AP4_ByteStream* output_stream = NULL;
+//	result = AP4_FileByteStream::Create(output_filename, AP4_FileByteStream::STREAM_MODE_WRITE,output_stream);
+//
+//	//and remux into one unified fragment.  if you have already sent the initn b
+//	parseAndBuildJoinedBoxes(fileResources, output_stream);
 
 	return 0;
 }
@@ -128,49 +131,81 @@ ISOBMFFTrackJoinerFileResouces_t* loadFileResources(const char* file1, const cha
 
 void ISOBMFF_track_joiner_monitor_output_buffer_parse_and_build_joined_boxes(lls_sls_monitor_output_buffer_t* lls_sls_monitor_output_buffer, AP4_MemoryByteStream** output_stream_p)
 {
+   // parseAndBuildJoinedBoxesFromMemory(audio_output_buffer->p_buffer, audio_output_buffer->i_pos, video_output_buffer->p_buffer, video_output_buffer->i_pos, memoryOutputByteStream);
+    parseAndBuildJoinedBoxes_from_lls_sls_monitor_output_buffer(lls_sls_monitor_output_buffer, output_stream_p);
+}
+
+
+void parseAndBuildJoinedBoxes(ISOBMFFTrackJoinerFileResouces* isoBMFFTrackJoinerFileResouces, AP4_ByteStream* output_stream) {
+
+   // parseAndBuildJoinedBoxesFromMemory(isoBMFFTrackJoinerFileResouces->file1_payload, isoBMFFTrackJoinerFileResouces->file1_size, isoBMFFTrackJoinerFileResouces->file2_payload, isoBMFFTrackJoinerFileResouces->file2_size, output_stream);
+}
+
+
+
+void parseAndBuildJoinedBoxes_from_lls_sls_monitor_output_buffer(lls_sls_monitor_output_buffer_t* lls_sls_monitor_output_buffer, AP4_MemoryByteStream** output_stream_p) {
+
+	AP4_Result   result;
+
+	AP4_ContainerAtom* audio_mvexAtomToCopy = NULL;
+	AP4_TrakAtom* audio_trakMediaAtomToCopy = NULL;
+
+#ifndef __DROP_HINT_TRACKS__
+
+	//only used if recombining hint tracks
+	std::list<AP4_TrakAtom*> audio_trakHintAtomToCopyList;
+	std::list<AP4_TrakAtom*>::iterator itHint;
+#endif
+
+	std::list<AP4_ContainerAtom*> audio_trafList;
+	std::list<AP4_ContainerAtom*>::iterator itTraf;
+
+	std::list<AP4_TrunAtom*> audio_trunList;
+	std::list<AP4_TrunAtom*>::iterator itTrunFirst;
+
+	std::list<AP4_Atom*> audio_mdatList;
+	std::list<AP4_Atom*>::iterator itMdatFirst;
+
+
+	AP4_AtomParent* video_moofAtomParent = NULL;
+	AP4_Atom* video_moofAtom = NULL;
+
+	AP4_ContainerAtom* video_trafAtom = NULL;
+	AP4_TrunAtom* video_trunAtom = NULL;
+
+	std::list<AP4_Atom*> video_mdatList;
+	std::list<AP4_Atom*>::iterator video_mdatIt;
+	uint64_t video_mdatFileOffset = 0;
+
 	block_t* audio_output_buffer = lls_sls_monitor_output_buffer_copy_audio_full_isobmff_box(lls_sls_monitor_output_buffer);
 	block_t* video_output_buffer = lls_sls_monitor_output_buffer_copy_video_full_isobmff_box(lls_sls_monitor_output_buffer);
 
-    if(!audio_output_buffer || !video_output_buffer) {
-        __ISOBMFF_JOINER_INFO("setting *output_stream_p to null, audio_output_buffer: %p, video_output_buffer: %p", audio_output_buffer, video_output_buffer);
-        *output_stream_p = NULL;
-        return;
-    }
-    
+
+
+	if(!audio_output_buffer || !video_output_buffer) {
+		__ISOBMFF_JOINER_INFO("setting *output_stream_p to null, audio_output_buffer: %p, video_output_buffer: %p", audio_output_buffer, video_output_buffer);
+		*output_stream_p = NULL;
+		return;
+	}
+
 	//we shouldn't be bigger than this for our return..
 	AP4_DataBuffer* dataBuffer = new AP4_DataBuffer(audio_output_buffer->i_pos + video_output_buffer->i_pos );
 	AP4_MemoryByteStream* memoryOutputByteStream = new AP4_MemoryByteStream(dataBuffer);
 
 	*output_stream_p = memoryOutputByteStream;
 
-    parseAndBuildJoinedBoxesFromMemory(audio_output_buffer->p_buffer, audio_output_buffer->i_pos, video_output_buffer->p_buffer, video_output_buffer->i_pos, memoryOutputByteStream);
+	list<AP4_Atom*> audio_isobmff_atom_list  = ISOBMFFTrackParse(audio_output_buffer);
 
-    block_Release(&audio_output_buffer);
-    block_Release(&video_output_buffer);
-}
+	list<AP4_Atom*> video_isobmff_atom_list =  ISOBMFFTrackParse(video_output_buffer);
 
+    __ISOBMFF_JOINER_DEBUG("Dumping audio box: size: %u", audio_output_buffer->i_pos);
+	dumpFullMetadata(audio_isobmff_atom_list);
 
-void parseAndBuildJoinedBoxes(ISOBMFFTrackJoinerFileResouces* isoBMFFTrackJoinerFileResouces, AP4_ByteStream* output_stream) {
+	__ISOBMFF_JOINER_DEBUG("Dumping video box: %u", video_output_buffer->i_pos);
+	dumpFullMetadata(video_isobmff_atom_list);
 
-    parseAndBuildJoinedBoxesFromMemory(isoBMFFTrackJoinerFileResouces->file1_payload, isoBMFFTrackJoinerFileResouces->file1_size, isoBMFFTrackJoinerFileResouces->file2_payload, isoBMFFTrackJoinerFileResouces->file2_size, output_stream);
-}
-
-//HACK
-
-AP4_UI32 trakMediaAtomSecondFileId = 0;
-AP4_UI32 trakMediaAtomOriginalId = 0;
-
-
-void parseAndBuildJoinedBoxesFromMemory(uint8_t* file1_payload, uint32_t file1_size, uint8_t* file2_payload, uint32_t file2_size, AP4_ByteStream* output_stream) {
-	list<AP4_Atom*> isoBMFFList1  = ISOBMFFTrackParse(file1_payload, file1_size);
-
-	list<AP4_Atom*> isoBMFFList2 =  ISOBMFFTrackParse(file2_payload, file2_size);
-
-    __ISOBMFF_JOINER_DEBUG("Dumping box 1: size: %u", file1_size);
-	dumpFullMetadata(isoBMFFList1);
-
-	__ISOBMFF_JOINER_DEBUG("Dumping box 2: %u", file2_size);
-	dumpFullMetadata(isoBMFFList2);
+	block_Release(&audio_output_buffer);
+	block_Release(&video_output_buffer);
 
 
 	/**
@@ -202,34 +237,7 @@ void parseAndBuildJoinedBoxesFromMemory(uint8_t* file1_payload, uint32_t file1_s
 
 	 */
 
-	AP4_Result   result;
 
-	AP4_ContainerAtom* mvexAtomToCopy = NULL;
-
-	AP4_TrakAtom* trakMediaAtomToCopy = NULL;
-    std::list<AP4_TrakAtom*> trakHintAtomToCopy;
-	std::list<AP4_TrakAtom*>::iterator itHint;
-
-
-	std::list<AP4_ContainerAtom*> trafFirstFileList;
-	std::list<AP4_ContainerAtom*>::iterator itTraf;
-
-	std::list<AP4_TrunAtom*> trunFirstFileList;
-	std::list<AP4_TrunAtom*>::iterator itTrunFirst;
-
-	std::list<AP4_Atom*> mdatFirstFileList;
-	std::list<AP4_Atom*>::iterator itMdatFirst;
-
-
-	AP4_AtomParent* moofSecondFile = NULL;
-	AP4_Atom* moofSecondFileAtom = NULL;
-
-	AP4_ContainerAtom* trafSecondFile = NULL;
-	AP4_TrunAtom* trunSecondFile = NULL;
-
-	std::list<AP4_Atom*> mdatSecondFileList;
-	std::list<AP4_Atom*>::iterator itMdatSecond;
-	uint64_t mdatSecondFileOffset = 0;
 
     /**
      to postion at end:
@@ -241,35 +249,32 @@ void parseAndBuildJoinedBoxesFromMemory(uint8_t* file1_payload, uint32_t file1_s
 
 	//from isoBMFFList1 list
 	std::list<AP4_Atom*>::iterator it;
-	for (it = isoBMFFList1.begin(); it != isoBMFFList1.end(); it++) {
+	for (it = audio_isobmff_atom_list.begin(); it != audio_isobmff_atom_list.end(); it++) {
 
 		//In the moov box->get a ref for the trak box
 		if((*it)->GetType() == AP4_ATOM_TYPE_MOOV) {
 			AP4_MoovAtom* moovAtom = AP4_DYNAMIC_CAST(AP4_MoovAtom, *it);
-			mvexAtomToCopy = AP4_DYNAMIC_CAST(AP4_ContainerAtom, moovAtom->GetChild(AP4_ATOM_TYPE_MVEX));
+			audio_mvexAtomToCopy = AP4_DYNAMIC_CAST(AP4_ContainerAtom, moovAtom->GetChild(AP4_ATOM_TYPE_MVEX));
 
 			AP4_TrakAtom* tmpTrakAtom;
 			int trakIndex = 0;
 			while((tmpTrakAtom = AP4_DYNAMIC_CAST(AP4_TrakAtom, moovAtom->GetChild(AP4_ATOM_TYPE_TRAK, trakIndex++)))) {
 
-            //AP4_HdlrAtom* hdlrAtom = AP4_DYNAMIC_CAST(AP4_HdlrAtom, tmpTrakAtom->GetChild(AP4_ATOM_TYPE_HDLR));
-
 				AP4_HdlrAtom* hdlrAtom = AP4_DYNAMIC_CAST(AP4_HdlrAtom, tmpTrakAtom->FindChild("mdia/hdlr", false, false));
 
 				//todo - handle duplicate track id's
 
-				if(hdlrAtom)  {
-					if(hdlrAtom->GetHandlerType() == AP4_HANDLER_TYPE_VIDE || hdlrAtom->GetHandlerType() == AP4_HANDLER_TYPE_SOUN) {
-						trakMediaAtomToCopy = tmpTrakAtom;
-						trakMediaAtomOriginalId = tmpTrakAtom->GetId();
-						tmpTrakAtom->SetId(tmpTrakAtom->GetId()+10);
+				if(hdlrAtom && hdlrAtom->GetHandlerType() == AP4_HANDLER_TYPE_SOUN) {
 
-					} else if(hdlrAtom->GetHandlerType() == AP4_HANDLER_TYPE_HINT) {
+					lls_sls_monitor_output_buffer->audio_output_buffer_isobmff.track_id = tmpTrakAtom->GetId();
+					audio_trakMediaAtomToCopy = tmpTrakAtom;
+
+				} else if(hdlrAtom->GetHandlerType() == AP4_HANDLER_TYPE_HINT) {
 #ifndef __DROP_HINT_TRACKS__
 
 						tmpTrakAtom->SetId(tmpTrakAtom->GetId()+10);
 
-						trakHintAtomToCopy.push_back(tmpTrakAtom);
+						audio_trakHintAtomToCopyList.push_back(tmpTrakAtom);
 
 						//if we have a hint ref
 											/**
@@ -292,28 +297,27 @@ void parseAndBuildJoinedBoxesFromMemory(uint8_t* file1_payload, uint32_t file1_s
                             tmpTrefParent->AddChild(newTempTrefAtom);
                         }
 #endif
-					} else {
-						//printf("Skipping tmpTrakAtom: %u", tmpTrakAtom->GetType());
-					}
+				} else {
+					//printf("Skipping tmpTrakAtom: %u", tmpTrakAtom->GetType());
+				}
 
-				}//otherwise drop
 			}
 		}
 
 		if((*it)->GetType() == AP4_ATOM_TYPE_MOOF) {
 			AP4_AtomParent* moofAtom = AP4_DYNAMIC_CAST(AP4_ContainerAtom, *it);
 			AP4_ContainerAtom* trafContainerAtom = AP4_DYNAMIC_CAST(AP4_ContainerAtom, moofAtom->GetChild(AP4_ATOM_TYPE_TRAF));
-			trafFirstFileList.push_back(trafContainerAtom);
-			trunFirstFileList.push_back(AP4_DYNAMIC_CAST(AP4_TrunAtom, trafContainerAtom->GetChild(AP4_ATOM_TYPE_TRUN)));
+			audio_trafList.push_back(trafContainerAtom);
+			audio_trunList.push_back(AP4_DYNAMIC_CAST(AP4_TrunAtom, trafContainerAtom->GetChild(AP4_ATOM_TYPE_TRUN)));
 		}
 
 		if((*it)->GetType() == AP4_ATOM_TYPE_MDAT) {
-			mdatFirstFileList.push_back(*it);
+			audio_mdatList.push_back(*it);
 		}
 	}
 
 	//now go the other way...
-	for (it = isoBMFFList2.begin(); it != isoBMFFList2.end(); it++) {
+	for (it = video_isobmff_atom_list.begin(); it != video_isobmff_atom_list.end(); it++) {
 
 		//In the moov box->get a ref for the trak box
 		if((*it)->GetType() == AP4_ATOM_TYPE_MOOV) {
@@ -326,22 +330,15 @@ void parseAndBuildJoinedBoxesFromMemory(uint8_t* file1_payload, uint32_t file1_s
 
 				AP4_HdlrAtom* hdlrAtom = AP4_DYNAMIC_CAST(AP4_HdlrAtom, tmpTrakAtom->FindChild("mdia/hdlr", false, false));
 
-				//todo - handle duplicate track id's
 				bool shouldDetatch = true;
-				if(hdlrAtom)  {
-					if(hdlrAtom->GetHandlerType() == AP4_HANDLER_TYPE_VIDE || hdlrAtom->GetHandlerType() == AP4_HANDLER_TYPE_SOUN) {
-						//noop
-						trakMediaAtomSecondFileId = tmpTrakAtom->GetId();
-						shouldDetatch = false;
-					}
+				if(hdlrAtom && hdlrAtom->GetHandlerType() == AP4_HANDLER_TYPE_VIDE) {
+					lls_sls_monitor_output_buffer->video_output_buffer_isobmff.track_id = tmpTrakAtom->GetId();
+					shouldDetatch = false;
 				}
 
 				if(shouldDetatch) {
-
-					//clear out any trex here
-
+					//clear out any hint tracks
 					tmpTrakAtom->Detach();
-
 				}
 			}
 
@@ -350,168 +347,141 @@ void parseAndBuildJoinedBoxesFromMemory(uint8_t* file1_payload, uint32_t file1_s
 			AP4_TrexAtom* tmpTrexAtom;
 			int trexIndex = 0;
 			while((tmpTrexAtom = AP4_DYNAMIC_CAST(AP4_TrexAtom, mvexToClear->GetChild(AP4_ATOM_TYPE_TREX, trexIndex++)))) {
-				//ugh, there's not SetTrackId method...
-
-				//tmpTrexAtom->AP4_TrexAtom()
-				/*
-				 *   AP4_TrexAtom(AP4_UI32 track_id,
-			 AP4_UI32 default_sample_description_index,
-			 AP4_UI32 default_sample_duration,
-			 AP4_UI32 default_sample_size,
-			 AP4_UI32 default_sample_flags);
-				 */
-				if(tmpTrexAtom->GetTrackId() != trakMediaAtomSecondFileId) {
+				if(tmpTrexAtom->GetTrackId() != lls_sls_monitor_output_buffer->video_output_buffer_isobmff.track_id) {
 					tmpTrexAtom->Detach();
 				}
 			}
 
-			if(mvexAtomToCopy) {
-				mvexAtomToCopy->Detach();
-
+			if(audio_mvexAtomToCopy) {
+				audio_mvexAtomToCopy->Detach();
 				//update the mvex/trex
-				AP4_TrexAtom* tmpTrexAtom;
-				int trexIndex = 0;
-				while((tmpTrexAtom = AP4_DYNAMIC_CAST(AP4_TrexAtom, mvexAtomToCopy->GetChild(AP4_ATOM_TYPE_TREX, trexIndex++)))) {
-					//ugh, there's not SetTrackId method...
-
-					//tmpTrexAtom->AP4_TrexAtom()
-					/*
-					 *   AP4_TrexAtom(AP4_UI32 track_id,
-                 AP4_UI32 default_sample_description_index,
-                 AP4_UI32 default_sample_duration,
-                 AP4_UI32 default_sample_size,
-                 AP4_UI32 default_sample_flags);
-					 */
-					tmpTrexAtom->Detach();
-
-					if(trakMediaAtomOriginalId && trakMediaAtomOriginalId == tmpTrexAtom->GetTrackId()) {
-						tmpTrexAtom = new AP4_TrexAtom(tmpTrexAtom->GetTrackId() + 10,
-								tmpTrexAtom->GetDefaultSampleDescriptionIndex(),
-								tmpTrexAtom->GetDefaultSampleDuration(),
-								tmpTrexAtom->GetDefaultSampleSize(),
-								tmpTrexAtom->GetDefaultSampleFlags());
-						mvexAtomToCopy->AddChild(tmpTrexAtom, trexIndex-1);
-					}
-				}
-				moovAtom->AddChild(mvexAtomToCopy, -1);
+				moovAtom->AddChild(audio_mvexAtomToCopy, -1);
 			}
-			//copy over our media track, then copy over our hint tracks
-			//this track index is already offset by +10
-			if(trakMediaAtomToCopy) {
-				trakMediaAtomToCopy->Detach();
 
-				moovAtom->AddChild(trakMediaAtomToCopy, -1);
+			if(audio_trakMediaAtomToCopy) {
+				audio_trakMediaAtomToCopy->Detach();
+				moovAtom->AddChild(audio_trakMediaAtomToCopy, -1);
 			}
+
+#ifndef __DROP_HINT_TRACKS__
 
 			//trakHintAtomToCopy
 			//this track index is already offset by +10
 
 			//looks like there is no actual hint data in these files, don't add in the hint tracks,..
-#ifndef __DROP_HINT_TRACKS__
-			for (itHint = trakHintAtomToCopy.begin(); itHint != trakHintAtomToCopy.end(); itHint++) {
+
+			for (itHint = audio_trakHintAtomToCopyList.begin(); itHint != audio_trakHintAtomToCopyList.end(); itHint++) {
 				(*itHint)->Detach();
 				moovAtom->AddChild(*itHint, -1);
 			}
 #endif
 		}
 
-		/**
-		 * [moof] size=8+2460
-			  [mfhd] size=12+4
-				sequence number = 1
-			  [traf] size=8+1540
-				[tfhd] size=12+4, flags=20000
-				  track ID = 2
-
-		 */
-
 		if((*it)->GetType() == AP4_ATOM_TYPE_MOOF) {
-			moofSecondFile = AP4_DYNAMIC_CAST(AP4_ContainerAtom, *it);
+			video_moofAtomParent = AP4_DYNAMIC_CAST(AP4_ContainerAtom, *it);
 
             //clear out our traf's if tfhd id != trakMediaAtomSecondFileId
 
 			AP4_ContainerAtom* tmpTrafToClean;
 			int trafIdx = 0;
-			while((tmpTrafToClean = AP4_DYNAMIC_CAST(AP4_ContainerAtom, moofSecondFile->GetChild(AP4_ATOM_TYPE_TRAF, trafIdx++)))) {
+			while((tmpTrafToClean = AP4_DYNAMIC_CAST(AP4_ContainerAtom, video_moofAtomParent->GetChild(AP4_ATOM_TYPE_TRAF, trafIdx++)))) {
                 AP4_TfhdAtom* tfhdTempAtom = AP4_DYNAMIC_CAST(AP4_TfhdAtom, tmpTrafToClean->GetChild(AP4_ATOM_TYPE_TFHD));
                 bool shouldDetachTrak = true;
-                if(tfhdTempAtom && tfhdTempAtom->GetTrackId() == trakMediaAtomSecondFileId) {
-                	trafSecondFile = tmpTrafToClean;
+                if(tfhdTempAtom && tfhdTempAtom->GetTrackId() == lls_sls_monitor_output_buffer->video_output_buffer_isobmff.track_id) {
+                	video_trafAtom = tmpTrafToClean;
                 	shouldDetachTrak = false;
+
+#ifdef __DROP_TFDT_BOX__
                 	AP4_TfdtAtom* tfdtSecondFile = AP4_DYNAMIC_CAST(AP4_TfdtAtom, tmpTrafToClean->GetChild(AP4_ATOM_TYPE_TFDT));
-                	if(false && tfdtSecondFile) {
+                	if(tfdtSecondFile) {
                 		tfdtSecondFile->Detach();
                 	}
+#endif
                 }
                 if(shouldDetachTrak) {
                 	tmpTrafToClean->Detach();
                 }
 			}
 
-			for(itTraf = trafFirstFileList.begin(); itTraf != trafFirstFileList.end(); itTraf++) {
-				//shift our track id's by +10
+			for(itTraf = audio_trafList.begin(); itTraf != audio_trafList.end(); itTraf++) {
+
                 AP4_TfhdAtom* tfhdTempAtom = AP4_DYNAMIC_CAST(AP4_TfhdAtom, (*itTraf)->GetChild(AP4_ATOM_TYPE_TFHD));
-                if(tfhdTempAtom) {
+                //shift our track id's by +10 if we are not the audio track id
+                if(tfhdTempAtom && tfhdTempAtom->GetTrackId() != lls_sls_monitor_output_buffer->audio_output_buffer_isobmff.track_id) {
+
                 	tfhdTempAtom->SetTrackId(tfhdTempAtom->GetTrackId() + 10);
-                } else {
-                	//error
                 }
-				//remove our tfdt's
+
+#ifdef __DROP_TFDT_BOX__
+                //remove our tfdt's
                 AP4_TfdtAtom* tfdtTempAtom = AP4_DYNAMIC_CAST(AP4_TfdtAtom, (*itTraf)->GetChild(AP4_ATOM_TYPE_TFDT));
-				if(false) {
+
+                if(tfdtTempAtom) {
 					tfdtTempAtom->Detach();
 				}
+#endif
                 
                 (*itTraf)->Detach();
-				moofSecondFile->AddChild(*itTraf);
+				video_moofAtomParent->AddChild(*itTraf);
 			}
 
-            if(trafSecondFile) {
-                trunSecondFile = AP4_DYNAMIC_CAST(AP4_TrunAtom, trafSecondFile->GetChild(AP4_ATOM_TYPE_TRUN));
+			/**
+			 * TODO: null out any empty broken fragments as per ISO23008-14
+			 */
+
+            if(video_trafAtom) {
+                video_trunAtom = AP4_DYNAMIC_CAST(AP4_TrunAtom, video_trafAtom->GetChild(AP4_ATOM_TYPE_TRUN));
+                if(video_trunAtom) {
+                	//get our first sample duration
+                	const AP4_Array<AP4_TrunAtom::Entry>& video_sampleEntries = video_trunAtom->GetEntries();
+                	bool has_found_sample_duration = false;
+
+                	for(int i=0; !has_found_sample_duration && i < video_sampleEntries.ItemCount(); i++) {
+                		if(video_sampleEntries[i].sample_duration) {
+                			lls_sls_monitor_output_buffer->video_output_buffer_isobmff.fps_num = video_sampleEntries[i].sample_duration;
+                			lls_sls_monitor_output_buffer->video_output_buffer_isobmff.fps_denom = 1000000;
+                			has_found_sample_duration = true;
+                		}
+                	}
+                }
             }
 		}
 
 		if((*it)->GetType() == AP4_ATOM_TYPE_MDAT) {
-			mdatSecondFileList.push_back(*it);
+			video_mdatList.push_back(*it);
 		}
-
-
 	}
 
-	if(moofSecondFile) {
-		moofSecondFileAtom = AP4_DYNAMIC_CAST(AP4_Atom, moofSecondFile);
-        if(trunSecondFile) {
-            trunSecondFile->SetDataOffset((AP4_UI32)moofSecondFileAtom->GetSize()+AP4_ATOM_HEADER_SIZE);
+	if(video_moofAtomParent) {
+		video_moofAtom = AP4_DYNAMIC_CAST(AP4_Atom, video_moofAtomParent);
+        if(video_trunAtom) {
+            video_trunAtom->SetDataOffset((AP4_UI32)video_moofAtom->GetSize()+AP4_ATOM_HEADER_SIZE);
+            video_trunAtom->GetEntries();
         } else {
             //this shouldn't happen
         }
-        
-		//first file is written out last...
-//		if(mdatSecondFile) {
-//			trunFirstFile->SetDataOffset((AP4_UI32)moofSecondFileAtom->GetSize()+AP4_ATOM_HEADER_SIZE+mdatSecondFile->GetSize());
-//		}
 
 		//(AP4_UI32)moofSecondFileAtom->GetSize()+AP4_ATOM_HEADER_SIZE+
-		for(itMdatSecond = mdatSecondFileList.begin(); itMdatSecond != mdatSecondFileList.end(); itMdatSecond++) {
-			mdatSecondFileOffset += (*itMdatSecond)->GetSize() + AP4_ATOM_HEADER_SIZE;
+		for(video_mdatIt = video_mdatList.begin(); video_mdatIt != video_mdatList.end(); video_mdatIt++) {
+			video_mdatFileOffset += (*video_mdatIt)->GetSize() + AP4_ATOM_HEADER_SIZE;
 		}
-		mdatSecondFileOffset += moofSecondFileAtom->GetSize();
+		video_mdatFileOffset += video_moofAtom->GetSize();
 	}
 
 
-	 //apend by hand and update
-	for(itTrunFirst = trunFirstFileList.begin(); itTrunFirst != trunFirstFileList.end(); itTrunFirst++) {
+	//apend by hand and update
+	for(itTrunFirst = audio_trunList.begin(); itTrunFirst != audio_trunList.end(); itTrunFirst++) {
 		//trunFirstFile
-		(*itTrunFirst)->SetDataOffset(mdatSecondFileOffset);
+		(*itTrunFirst)->SetDataOffset(video_mdatFileOffset);
 	}
 
-    if(mdatFirstFileList.size()) {
-    	isoBMFFList2.insert(isoBMFFList2.end(), mdatFirstFileList.begin(), mdatFirstFileList.end());
+    if(audio_mdatList.size()) {
+    	video_isobmff_atom_list.insert(video_isobmff_atom_list.end(), audio_mdatList.begin(), audio_mdatList.end());
     }
     
     //push our packets to out output_stream writer, and we're done...
     
-	for (it = isoBMFFList2.begin(); it != isoBMFFList2.end(); it++) {
+	for (it = video_isobmff_atom_list.begin(); it != video_isobmff_atom_list.end(); it++) {
 		bool should_write_box = true;
 
 #ifdef __DROP_SIDX_BOX__
@@ -520,16 +490,15 @@ void parseAndBuildJoinedBoxesFromMemory(uint8_t* file1_payload, uint32_t file1_s
 		}
 #endif
 		if(should_write_box) {
-			(*it)->Write(*output_stream);
+			(*it)->Write(*memoryOutputByteStream);
 		}
 	}
 
     __ISOBMFF_JOINER_INFO("Final output re-muxed MPU:");
-    dumpFullMetadata(isoBMFFList2);
-
-//    if (output_stream) output_stream->Release();
+    dumpFullMetadata(video_isobmff_atom_list);
 
 }
+
 
 /**
  * todo: remove mmtp headers
@@ -616,14 +585,14 @@ void parseAndBuildJoinedBoxesFromMemory(uint8_t* file1_payload, uint32_t file1_s
 
 
 
-list<AP4_Atom*> ISOBMFFTrackParse(uint8_t* full_mpu_payload, uint32_t full_mpu_payload_size) {
+list<AP4_Atom*> ISOBMFFTrackParse(block_t* isobmff_track_block) {
 
-	__ISOBMFF_JOINER_DEBUG("::ISOBMFFTrackParse: payload size is: %u", full_mpu_payload_size);
+	__ISOBMFF_JOINER_DEBUG("::ISOBMFFTrackParse: payload size is: %u", isobmff_track_block->i_pos);
 
 	list<AP4_Atom*> atomList;
     AP4_Atom* atom;
 
-    AP4_MemoryByteStream* memoryInputByteStream = new AP4_MemoryByteStream(full_mpu_payload, full_mpu_payload_size);
+    AP4_MemoryByteStream* memoryInputByteStream = new AP4_MemoryByteStream(isobmff_track_block->p_buffer, isobmff_track_block->i_pos);
     // inspect the atoms one by one
 
     AP4_DefaultAtomFactory atom_factory;

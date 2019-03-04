@@ -35,6 +35,7 @@ extern "C" {
 #if defined (__cplusplus)
 extern "C" {
 #endif
+#include "atsc3_lls_sls_monitor_output_buffer.h"
 
 
 extern int _PLAYER_FFPLAY_DEBUG_ENABLED;
@@ -43,8 +44,8 @@ extern int _PLAYER_FFPLAY_TRACE_ENABLED;
 #define __PLAYER_INITIAL_BUFFER_SEGMENT_COUNT 3  //wait for at least 4 signals
 #define __PLAYER_INITIAL_BUFFER_TARGET 1024000  //and 1 MB of payload before starting to stream to ffplay
 #define __PLAYER_FFPLAY_PIPE_INTERNAL_BUFFER_SIZE 8192000
-#define __PLAYER_FFPLAY_PIPE_WRITER_BLOCKSIZE 131070
-
+#define __PLAYER_FFPLAY_PIPE_WRITER_BLOCKSIZE 65535
+//131070
 typedef struct pipe_ffplay_buffer {
 	//used to signal pipe writer new data is present
 	sem_t* pipe_buffer_semaphore;
@@ -77,6 +78,7 @@ typedef struct pipe_ffplay_buffer {
 
 	//player pipe for ffplay via popen
 	FILE* player_pipe;
+	struct lls_sls_monitor_buffer_isobmff* video_output_buffer_isobmff_to_resolve_fps;
 
 	//TODO - refactor out attributes for mmt?
 	uint32_t last_mpu_sequence_number;
@@ -84,7 +86,9 @@ typedef struct pipe_ffplay_buffer {
 
 } pipe_ffplay_buffer_t;
 
-pipe_ffplay_buffer_t* pipe_create_ffplay();
+pipe_ffplay_buffer_t* pipe_create_ffplay(void);
+pipe_ffplay_buffer_t* pipe_create_ffplay_resolve_fps(struct lls_sls_monitor_buffer_isobmff* video_output_buffer_isobmff_to_resolve_fps);
+
 void pipe_release_ffplay(pipe_ffplay_buffer_t** pipe_ffplay_buffer);
 
 void pipe_buffer_notify_semaphore_post(pipe_ffplay_buffer_t* pipe_ffplay_buffer);
@@ -95,6 +99,7 @@ bool pipe_buffer_reader_check_if_shutdown(pipe_ffplay_buffer_t** pipe_ffplay_buf
 
 //this method is not protected, you must acuire and release the mutex upstream.
 int pipe_buffer_unsafe_push_block(	pipe_ffplay_buffer_t* pipe_ffplay_buffer, uint8_t* block, uint32_t block_size);
+void __pipe_create_deferred_ffplay(pipe_ffplay_buffer_t* pipe_ffplay_buffer);
 
 #define __PLAYER_FFPLAY_ERROR(...)   printf("%s:%d:ERROR:%.4f: ",__FILE__,__LINE__, gt()); printf(__VA_ARGS__); printf("\n");
 #define __PLAYER_FFPLAY_WARN(...)    printf("%s:%d:WARN:%.4f: ",__FILE__,__LINE__, gt()); printf(__VA_ARGS__); printf("\n");

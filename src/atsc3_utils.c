@@ -222,7 +222,7 @@ block_t* __block_check_bounaries(const char* method_name, block_t* src) {
 		src->i_pos = 0;
 	}
 
-	if(src->i_pos > src->p_size - 1) {
+	if(src->i_pos > src->p_size) {
 		uint32_t new_i_pos = src->p_size - 1;
 		_ATSC3_UTILS_WARN("%s: block: %p, i_pos is past size for p_buffer: %p, p_size is: %u, i_pos: %u, setting to: %u ", method_name, src, src->p_buffer, src->p_size, src->i_pos, new_i_pos);
 		src->i_pos = new_i_pos;
