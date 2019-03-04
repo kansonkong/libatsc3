@@ -178,7 +178,7 @@ FILE* alc_object_pre_allocate(char* file_name, alc_packet_t* alc_packet) {
 
 int alc_packet_write_fragment(FILE* f, char* file_name, uint32_t offset, alc_packet_t* alc_packet) {
     
-    __ALC_UTILS_DEBUG("write fragment: tsi: %u, toi: %u, sbn: %x, esi: %x len: %d, complete: %d, file: %p, file name: %s, offset: %u, size: %u",  alc_packet->def_lct_hdr->tsi, alc_packet->def_lct_hdr->toi,
+    __ALC_UTILS_TRACE("write fragment: tsi: %u, toi: %u, sbn: %x, esi: %x len: %d, complete: %d, file: %p, file name: %s, offset: %u, size: %u",  alc_packet->def_lct_hdr->tsi, alc_packet->def_lct_hdr->toi,
         alc_packet->sbn, alc_packet->esi, alc_packet->alc_len, alc_packet->close_object_flag,
         f, file_name, offset, alc_packet->alc_len);
 
