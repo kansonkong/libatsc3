@@ -439,7 +439,7 @@ void parseAndBuildJoinedBoxesFromMemory(uint8_t* file1_payload, uint32_t file1_s
                 	trafSecondFile = tmpTrafToClean;
                 	shouldDetachTrak = false;
                 	AP4_TfdtAtom* tfdtSecondFile = AP4_DYNAMIC_CAST(AP4_TfdtAtom, tmpTrafToClean->GetChild(AP4_ATOM_TYPE_TFDT));
-                	if(tfdtSecondFile) {
+                	if(false && tfdtSecondFile) {
                 		tfdtSecondFile->Detach();
                 	}
                 }
@@ -458,7 +458,9 @@ void parseAndBuildJoinedBoxesFromMemory(uint8_t* file1_payload, uint32_t file1_s
                 }
 				//remove our tfdt's
                 AP4_TfdtAtom* tfdtTempAtom = AP4_DYNAMIC_CAST(AP4_TfdtAtom, (*itTraf)->GetChild(AP4_ATOM_TYPE_TFDT));
-				tfdtTempAtom->Detach();
+				if(false) {
+					tfdtTempAtom->Detach();
+				}
                 
                 (*itTraf)->Detach();
 				moofSecondFile->AddChild(*itTraf);
