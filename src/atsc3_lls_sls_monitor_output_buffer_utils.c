@@ -263,6 +263,15 @@ void lls_slt_monitor_check_and_handle_pipe_ffplay_buffer_is_shutdown(lls_slt_mon
 	}
 }
 
-void lls_sls_monitor_output_buffer_file_dump(lls_sls_monitor_output_buffer_t* lls_sls_monitor_output_buffer, const char* directory_path) {
+void lls_sls_monitor_output_buffer_file_dump(lls_sls_monitor_output_buffer_t* lls_sls_monitor_output_buffer, const char* directory_path, uint32_t mpu_sequence_number) {
 
+    char* box_track_dump_filename = (char*)calloc(128, sizeof(char));
+    snprintf(box_track_dump_filename, 127, "%s/%u.b", directory_path, mpu_sequence_number);
+
+    FILE* box_track_dump_fp = fopen(box_track_dump_filename, "w");
+    if(box_track_dump_fp) {
+    	fwrite(lls_sls_monitor_output_buffer->joined_isobmff_block->p_buffer, lls_sls_monitor_output_buffer->joined_isobmff_block->i_pos, 1, box_track_dump_fp);
+    	fclose(box_track_dump_fp);
+    	free(box_track_dump_filename);
+    }
 }
