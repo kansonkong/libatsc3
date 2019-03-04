@@ -105,6 +105,7 @@ extern "C" {
 
 extern int _MPU_DEBUG_ENABLED;
 extern int _MMTP_DEBUG_ENABLED;
+extern int _ALC_UTILS_DEBUG_ENABLED;
 extern int _LLS_DEBUG_ENABLED;
 extern int _PLAYER_FFPLAY_DEBUG_ENABLED;
 
@@ -440,29 +441,20 @@ static void route_process_from_alc_packet(alc_packet_t **alc_packet) {
     alc_packet_dump_to_object(alc_packet);
     
     if(lls_slt_monitor->lls_sls_alc_monitor->lls_sls_monitor_output_buffer.has_written_init_box && lls_slt_monitor->lls_sls_alc_monitor->lls_sls_monitor_output_buffer.should_flush_output_buffer) {
-        AP4_MemoryByteStream* ap4_memory_byte_stream;
-
-        ISOBMFF_track_joiner_monitor_output_buffer_parse_and_build_joined_boxes(&lls_slt_monitor->lls_sls_alc_monitor->lls_sls_monitor_output_buffer, &ap4_memory_byte_stream);
-
-    	if(!ap4_memory_byte_stream || !ap4_memory_byte_stream->GetDataSize()) {
-    		__ERROR("route_process_from_alc_packet: returned %p, size: %u, returning NULL", ap4_memory_byte_stream, ap4_memory_byte_stream != NULL ? ap4_memory_byte_stream->GetDataSize() : 0);
-    		return;
-    	}
-    	__DEBUG("building return alloc of %u", ap4_memory_byte_stream->GetDataSize());
-
+     
+        lls_sls_monitor_output_buffer_t* lls_sls_monitor_output_buffer_final_muxed_payload = atsc3_isobmff_build_joined_isobmff_fragment(&lls_slt_monitor->lls_sls_alc_monitor->lls_sls_monitor_output_buffer);
         
-        block_t* mpu_metadata_output_block = block_Alloc(ap4_memory_byte_stream->GetDataSize());
-        block_Write(mpu_metadata_output_block, (uint8_t*)ap4_memory_byte_stream->GetData(), ap4_memory_byte_stream->GetDataSize());
+        if(true || lls_slt_monitor->lls_sls_alc_monitor->lls_sls_monitor_output_buffer_mode.file_dump_enabled) {
+            lls_sls_monitor_output_buffer_file_dump(lls_sls_monitor_output_buffer_final_muxed_payload, "route/", lls_slt_monitor->lls_sls_alc_monitor->processed_toi);
 
-        free (ap4_memory_byte_stream);
-        
+        }
         if(lls_slt_monitor->lls_sls_alc_monitor->lls_sls_monitor_output_buffer_mode.ffplay_output_enabled && lls_slt_monitor->lls_sls_alc_monitor->lls_sls_monitor_output_buffer_mode.pipe_ffplay_buffer) {
 
         	pipe_ffplay_buffer_t* pipe_ffplay_buffer = lls_slt_monitor->lls_sls_alc_monitor->lls_sls_monitor_output_buffer_mode.pipe_ffplay_buffer;
 
         	pipe_buffer_reader_mutex_lock(pipe_ffplay_buffer);
         
-        	pipe_buffer_unsafe_push_block(pipe_ffplay_buffer, mpu_metadata_output_block->p_buffer, mpu_metadata_output_block->i_pos);
+        	pipe_buffer_unsafe_push_block(pipe_ffplay_buffer, lls_sls_monitor_output_buffer_final_muxed_payload->joined_isobmff_block->p_buffer, lls_sls_monitor_output_buffer_final_muxed_payload->joined_isobmff_block->i_pos);
         
         	pipe_buffer_notify_semaphore_post(pipe_ffplay_buffer);
         
@@ -472,7 +464,6 @@ static void route_process_from_alc_packet(alc_packet_t **alc_packet) {
 			pipe_buffer_reader_mutex_unlock(pipe_ffplay_buffer);
 			//reset our buffer pos
 			lls_sls_monitor_output_buffer_reset_moov_and_fragment_position(&lls_slt_monitor->lls_sls_alc_monitor->lls_sls_monitor_output_buffer);
-
         }
     }
 }
@@ -737,7 +728,7 @@ int main(int argc,char **argv) {
 	_LLS_DEBUG_ENABLED = 0;
     _ISOBMFF_TOOLS_DEBUG_ENABLED = 1;
     _PLAYER_FFPLAY_DEBUG_ENABLED = 0;
-
+    _ALC_UTILS_DEBUG_ENABLED = 1;
 
     char *dev;
 

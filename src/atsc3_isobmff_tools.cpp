@@ -16,41 +16,42 @@ int _ISOBMFF_TOOLS_TRACE_ENABLED = 0;
  */
 
 
-/**
+lls_sls_monitor_output_buffer_t* atsc3_isobmff_build_joined_isobmff_fragment(lls_sls_monitor_output_buffer_t* lls_sls_monitor_output_buffer) {
 
- see also: atsc3_isobmff_build_mpu_metadata_ftyp_moof_mdat_box_from_mpu_sequence_numbers
- **/
+    AP4_MemoryByteStream* ap4_memory_byte_stream;
+
+    ISOBMFF_track_joiner_monitor_output_buffer_parse_and_build_joined_boxes(lls_sls_monitor_output_buffer, &ap4_memory_byte_stream);
+
+    if(!ap4_memory_byte_stream || !ap4_memory_byte_stream->GetDataSize()) {
+        __ISOBMFF_TOOLS_ERROR("ISOBMFF_track_joiner: returned %p, size: %u, returning NULL", ap4_memory_byte_stream, ap4_memory_byte_stream != NULL ? ap4_memory_byte_stream->GetDataSize() : 0);
+        return NULL;
+    }
+    __ISOBMFF_TOOLS_DEBUG("building return alloc of %u", ap4_memory_byte_stream->GetDataSize());
+
+    if(!lls_sls_monitor_output_buffer->joined_isobmff_block) {
+        lls_sls_monitor_output_buffer->joined_isobmff_block = block_Alloc(ap4_memory_byte_stream->GetDataSize());
+    } else {
+        block_Rewind(lls_sls_monitor_output_buffer->joined_isobmff_block);
+        
+        if(!block_Resize(lls_sls_monitor_output_buffer->joined_isobmff_block, ap4_memory_byte_stream->GetDataSize())) {
+            block_Release(&lls_sls_monitor_output_buffer->joined_isobmff_block);
+            __ISOBMFF_TOOLS_ERROR("ISOBMFF_track_joiner: block_Resize returned NULL for size: %u, freeing and returning NULL", ap4_memory_byte_stream->GetDataSize());
+            return NULL;
+        }
+    }
+
+    block_Write(lls_sls_monitor_output_buffer->joined_isobmff_block, (uint8_t*)ap4_memory_byte_stream->GetData(), ap4_memory_byte_stream->GetDataSize());
+    free (ap4_memory_byte_stream);
+    return lls_sls_monitor_output_buffer;
+
+}
 
 lls_sls_monitor_output_buffer_t* atsc3_isobmff_build_joined_patched_isobmff_fragment(lls_sls_monitor_output_buffer_t* lls_sls_monitor_output_buffer) {
 	lls_sls_monitor_buffer_isobmff_moov_patch_mdat_box(&lls_sls_monitor_output_buffer->audio_output_buffer_isobmff);
 	lls_sls_monitor_buffer_isobmff_moov_patch_mdat_box(&lls_sls_monitor_output_buffer->video_output_buffer_isobmff);
 
-	AP4_MemoryByteStream* ap4_memory_byte_stream;
 
-	ISOBMFF_track_joiner_monitor_output_buffer_parse_and_build_joined_boxes(lls_sls_monitor_output_buffer, &ap4_memory_byte_stream);
-
-	if(!ap4_memory_byte_stream || !ap4_memory_byte_stream->GetDataSize()) {
-		__ISOBMFF_TOOLS_ERROR("ISOBMFF_track_joiner: returned %p, size: %u, returning NULL", ap4_memory_byte_stream, ap4_memory_byte_stream != NULL ? ap4_memory_byte_stream->GetDataSize() : 0);
-		return NULL;
-	}
-	__ISOBMFF_TOOLS_DEBUG("building return alloc of %u", ap4_memory_byte_stream->GetDataSize());
-
-	if(!lls_sls_monitor_output_buffer->joined_isobmff_block) {
-		lls_sls_monitor_output_buffer->joined_isobmff_block = block_Alloc(ap4_memory_byte_stream->GetDataSize());
-	} else {
-		block_Rewind(lls_sls_monitor_output_buffer->joined_isobmff_block);
-
-		if(!block_Resize(lls_sls_monitor_output_buffer->joined_isobmff_block, ap4_memory_byte_stream->GetDataSize())) {
-			block_Release(&lls_sls_monitor_output_buffer->joined_isobmff_block);
-			__ISOBMFF_TOOLS_ERROR("ISOBMFF_track_joiner: block_Resize returned NULL for size: %u, freeing and returning NULL", ap4_memory_byte_stream->GetDataSize());
-			return NULL;
-		}
-	}
-
-	block_Write(lls_sls_monitor_output_buffer->joined_isobmff_block, (uint8_t*)ap4_memory_byte_stream->GetData(), ap4_memory_byte_stream->GetDataSize());
-	free (ap4_memory_byte_stream);
-
-	return lls_sls_monitor_output_buffer;
+	return atsc3_isobmff_build_joined_isobmff_fragment(lls_sls_monitor_output_buffer);
 }
 
 lls_sls_monitor_output_buffer_t* atsc3_isobmff_build_mpu_metadata_ftyp_moof_mdat_box_from_flow(udp_flow_t* udp_flow, udp_flow_latest_mpu_sequence_number_container_t* udp_flow_latest_mpu_sequence_number_container, mmtp_sub_flow_vector_t* mmtp_sub_flow_vector, lls_sls_mmt_monitor_t* lls_sls_mmt_monitor) {
