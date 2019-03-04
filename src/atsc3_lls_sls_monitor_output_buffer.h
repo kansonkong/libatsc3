@@ -19,6 +19,11 @@
 #define _LLS_SLS_MONITOR_OUTPUT_MAX_FRAGMENT_BUFFER 16384000
 
 typedef struct lls_sls_monitor_buffer_isobmff {
+	uint32_t track_id;
+
+	uint32_t fps_num;
+	uint32_t fps_denom;
+
     uint8_t* init_box;
     uint32_t init_box_pos;
 
@@ -47,7 +52,7 @@ typedef struct lls_sls_monitor_buffer {
 typedef struct lls_sls_monitor_buffer_mode {
     bool file_dump_enabled;
     bool ffplay_output_enabled;
-    pipe_ffplay_buffer_t* pipe_ffplay_buffer;
+    struct pipe_ffplay_buffer* pipe_ffplay_buffer;
 
 } lls_sls_monitor_output_buffer_mode_t;
 
