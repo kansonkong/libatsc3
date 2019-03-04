@@ -724,8 +724,8 @@ void alc_recon_file_buffer_struct_monitor_fragment_with_init_box(pipe_ffplay_buf
 			block_t* video_init_payload = get_payload(video_init_file_name);
 
 			if(audio_init_payload && video_init_payload) {
-				lls_sls_monitor_output_buffer_copy_audio_block(&lls_sls_alc_monitor->lls_sls_monitor_output_buffer, audio_init_payload);
-				lls_sls_monitor_output_buffer_copy_audio_block(&lls_sls_alc_monitor->lls_sls_monitor_output_buffer, video_init_payload);
+				lls_sls_monitor_output_buffer_copy_audio_init_block(&lls_sls_alc_monitor->lls_sls_monitor_output_buffer, audio_init_payload);
+				lls_sls_monitor_output_buffer_copy_video_init_block(&lls_sls_alc_monitor->lls_sls_monitor_output_buffer, video_init_payload);
 
 			} else {
 				__ALC_UTILS_ERROR("missing init payloads, audio: %p, video: %p", audio_init_payload, video_init_payload);
@@ -737,8 +737,8 @@ void alc_recon_file_buffer_struct_monitor_fragment_with_init_box(pipe_ffplay_buf
 		}
 
 
-		lls_sls_monitor_output_buffer_copy_audio_block(&lls_sls_alc_monitor->lls_sls_monitor_output_buffer, audio_fragment_payload);
-		lls_sls_monitor_output_buffer_copy_video_block(&lls_sls_alc_monitor->lls_sls_monitor_output_buffer, video_fragment_payload);
+		lls_sls_monitor_output_buffer_copy_audio_fragment_block(&lls_sls_alc_monitor->lls_sls_monitor_output_buffer, audio_fragment_payload);
+		lls_sls_monitor_output_buffer_copy_video_fragment_block(&lls_sls_alc_monitor->lls_sls_monitor_output_buffer, video_fragment_payload);
 		pipe_ffplay_buffer->has_written_init_box = true;
 		lls_sls_alc_monitor->lls_sls_monitor_output_buffer.has_written_init_box = true;
 		lls_sls_alc_monitor->lls_sls_monitor_output_buffer.should_flush_output_buffer = true;

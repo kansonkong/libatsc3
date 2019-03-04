@@ -320,7 +320,7 @@ mmtp_payload_fragments_union_t* mmtp_process_from_payload(udp_packet_t *udp_pack
                                        final_muxed_payload->p_buffer[6],
                                        final_muxed_payload->p_buffer[7]);
                                 
-                                pipe_buffer_unsafe_push_block(lls_slt_monitor->lls_sls_mmt_monitor->lls_sls_monitor_output_buffer_mode.pipe_ffplay_buffer, final_muxed_payload->p_buffer, final_muxed_payload->i_buffer);
+                                pipe_buffer_unsafe_push_block(lls_slt_monitor->lls_sls_mmt_monitor->lls_sls_monitor_output_buffer_mode.pipe_ffplay_buffer, final_muxed_payload->p_buffer, final_muxed_payload->i_pos);
 
                                     lls_slt_monitor->lls_sls_mmt_monitor->lls_sls_monitor_output_buffer.has_written_init_box = true;
                                 //todo - refactor? mpu_push_to_output_buffer_no_locking(pipe_ffplay_buffer, mpu_metadata);
@@ -331,7 +331,7 @@ mmtp_payload_fragments_union_t* mmtp_process_from_payload(udp_packet_t *udp_pack
                                 //check to see if we have shutdown
                                 
                                 //reset our buffer pos
-                                lls_sls_monitor_output_buffer_reset_position(&lls_slt_monitor->lls_sls_mmt_monitor->lls_sls_monitor_output_buffer);
+                                lls_sls_monitor_output_buffer_reset_moov_and_fragment_position(&lls_slt_monitor->lls_sls_mmt_monitor->lls_sls_monitor_output_buffer);
                             }
                         }
                     }
@@ -466,7 +466,7 @@ static void route_process_from_alc_packet(alc_packet_t **alc_packet) {
         free (dataBuffer);
         pipe_buffer_reader_mutex_lock(lls_slt_monitor->pipe_ffplay_buffer);
         
-        pipe_buffer_unsafe_push_block(lls_slt_monitor->pipe_ffplay_buffer, mpu_metadata_output_block_t->p_buffer, mpu_metadata_output_block_t->i_buffer);
+        pipe_buffer_unsafe_push_block(lls_slt_monitor->pipe_ffplay_buffer, mpu_metadata_output_block_t->p_buffer, mpu_metadata_output_block_t->i_pos);
         
         pipe_buffer_notify_semaphore_post(lls_slt_monitor->pipe_ffplay_buffer);
         
@@ -475,7 +475,7 @@ static void route_process_from_alc_packet(alc_packet_t **alc_packet) {
 
         pipe_buffer_reader_mutex_unlock(lls_slt_monitor->pipe_ffplay_buffer);
         //reset our buffer pos
-        lls_sls_monitor_output_buffer_reset_position(&lls_slt_monitor->lls_sls_alc_monitor->lls_sls_monitor_output_buffer);
+        lls_sls_monitor_output_buffer_reset_moov_and_fragment_position(&lls_slt_monitor->lls_sls_alc_monitor->lls_sls_monitor_output_buffer);
     }
 }
 

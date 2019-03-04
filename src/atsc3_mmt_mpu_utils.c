@@ -376,7 +376,7 @@ void mpu_dump_flow(uint32_t dst_ip, uint16_t dst_port, mmtp_payload_fragments_un
 			return;
 	}
 
-	int blocks_written = fwrite(mmtp_payload->mmtp_mpu_type_packet_header.mpu_data_unit_payload->p_buffer, mmtp_payload->mmtp_mpu_type_packet_header.mpu_data_unit_payload->i_buffer, 1, f);
+	int blocks_written = fwrite(mmtp_payload->mmtp_mpu_type_packet_header.mpu_data_unit_payload->p_buffer, mmtp_payload->mmtp_mpu_type_packet_header.mpu_data_unit_payload->i_pos, 1, f);
 	if(blocks_written != 1) {
 		__MMT_MPU_WARN("Incomplete block written for %s", myFilePathName);
 	}
@@ -414,7 +414,7 @@ void mpu_dump_reconstitued(uint32_t dst_ip, uint16_t dst_port, mmtp_payload_frag
 			return;
 	}
 
-	int blocks_written = fwrite(mmtp_payload->mmtp_mpu_type_packet_header.mpu_data_unit_payload, mmtp_payload->mmtp_mpu_type_packet_header.mpu_data_unit_payload->i_buffer, 1, f);
+	int blocks_written = fwrite(mmtp_payload->mmtp_mpu_type_packet_header.mpu_data_unit_payload, mmtp_payload->mmtp_mpu_type_packet_header.mpu_data_unit_payload->i_pos, 1, f);
 	if(blocks_written != 1) {
 		__MMT_MPU_WARN("Incomplete block written for %s", myFilePathName);
 	}
@@ -423,6 +423,9 @@ void mpu_dump_reconstitued(uint32_t dst_ip, uint16_t dst_port, mmtp_payload_frag
 }
 
 /*
+ *
+ * DEPRECATED - do not use
+ *
  *
  * rules:
  *
@@ -450,7 +453,7 @@ void mpu_push_to_output_buffer(pipe_ffplay_buffer_t* pipe_ffplay_buffer, mmtp_pa
 		}
 
 		pipe_buffer_reader_mutex_lock(pipe_ffplay_buffer);
-		pipe_buffer_unsafe_push_block(pipe_ffplay_buffer, mmtp_payload->mmtp_mpu_type_packet_header.mpu_data_unit_payload->p_buffer, mmtp_payload->mmtp_mpu_type_packet_header.mpu_data_unit_payload->i_buffer);
+		pipe_buffer_unsafe_push_block(pipe_ffplay_buffer, mmtp_payload->mmtp_mpu_type_packet_header.mpu_data_unit_payload->p_buffer, mmtp_payload->mmtp_mpu_type_packet_header.mpu_data_unit_payload->i_pos);
 		pipe_ffplay_buffer->last_mpu_sequence_number = mmtp_payload->mmtp_mpu_type_packet_header.mpu_sequence_number;
 		pipe_ffplay_buffer->has_written_init_box = true;
 		pipe_buffer_reader_mutex_unlock(pipe_ffplay_buffer);
@@ -466,7 +469,7 @@ void mpu_push_to_output_buffer(pipe_ffplay_buffer_t* pipe_ffplay_buffer, mmtp_pa
 		}
 
 		pipe_buffer_reader_mutex_lock(pipe_ffplay_buffer);
-		pipe_buffer_unsafe_push_block(pipe_ffplay_buffer, mmtp_payload->mmtp_mpu_type_packet_header.mpu_data_unit_payload->p_buffer, mmtp_payload->mmtp_mpu_type_packet_header.mpu_data_unit_payload->i_buffer);
+		pipe_buffer_unsafe_push_block(pipe_ffplay_buffer, mmtp_payload->mmtp_mpu_type_packet_header.mpu_data_unit_payload->p_buffer, mmtp_payload->mmtp_mpu_type_packet_header.mpu_data_unit_payload->i_pos);
 
 		if(mmtp_payload->mmtp_mpu_type_packet_header.mpu_sequence_number != pipe_ffplay_buffer->last_mpu_sequence_number) {
 			//signal here, we will have the first fragment of the next slice in the payload, but its simpler for now...
@@ -493,7 +496,7 @@ cleanup:
 
 void mpu_push_to_output_buffer_no_locking(pipe_ffplay_buffer_t* pipe_ffplay_buffer, mmtp_payload_fragments_union_t* mmtp_payload) {
 
-	__MMT_MPU_DEBUG("payload of size: %d payload type: 0x%x", mmtp_payload->mmtp_mpu_type_packet_header.mpu_data_unit_payload->i_buffer, mmtp_payload->mmtp_mpu_type_packet_header.mpu_fragment_type);
+	__MMT_MPU_DEBUG("payload of size: %d payload type: 0x%x", mmtp_payload->mmtp_mpu_type_packet_header.mpu_data_unit_payload->i_pos, mmtp_payload->mmtp_mpu_type_packet_header.mpu_fragment_type);
 
 	//discard if we are not a mpu payload
 	if(mmtp_payload->mmtp_mpu_type_packet_header.mmtp_payload_type != 0x0) {
@@ -508,7 +511,7 @@ void mpu_push_to_output_buffer_no_locking(pipe_ffplay_buffer_t* pipe_ffplay_buff
 			goto cleanup;
 		}
 
-		pipe_buffer_unsafe_push_block(pipe_ffplay_buffer, mmtp_payload->mmtp_mpu_type_packet_header.mpu_data_unit_payload->p_buffer, mmtp_payload->mmtp_mpu_type_packet_header.mpu_data_unit_payload->i_buffer);
+		pipe_buffer_unsafe_push_block(pipe_ffplay_buffer, mmtp_payload->mmtp_mpu_type_packet_header.mpu_data_unit_payload->p_buffer, mmtp_payload->mmtp_mpu_type_packet_header.mpu_data_unit_payload->i_pos);
 		pipe_ffplay_buffer->last_mpu_sequence_number = mmtp_payload->mmtp_mpu_type_packet_header.mpu_sequence_number;
 		pipe_ffplay_buffer->has_written_init_box = true;
 
@@ -524,7 +527,7 @@ void mpu_push_to_output_buffer_no_locking(pipe_ffplay_buffer_t* pipe_ffplay_buff
 
 		__MMT_MPU_DEBUG("pushing payload fragment for %d fragment_type: %d", mmtp_payload->mmtp_mpu_type_packet_header.mpu_sequence_number, mmtp_payload->mmtp_mpu_type_packet_header.mpu_fragment_type);
 
-		pipe_buffer_unsafe_push_block(pipe_ffplay_buffer, mmtp_payload->mmtp_mpu_type_packet_header.mpu_data_unit_payload->p_buffer, mmtp_payload->mmtp_mpu_type_packet_header.mpu_data_unit_payload->i_buffer);
+		pipe_buffer_unsafe_push_block(pipe_ffplay_buffer, mmtp_payload->mmtp_mpu_type_packet_header.mpu_data_unit_payload->p_buffer, mmtp_payload->mmtp_mpu_type_packet_header.mpu_data_unit_payload->i_pos);
 
 		pipe_ffplay_buffer->last_mpu_sequence_number = mmtp_payload->mmtp_mpu_type_packet_header.mpu_sequence_number;
 	}
