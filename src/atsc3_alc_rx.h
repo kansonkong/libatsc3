@@ -31,8 +31,11 @@
  *  delete this exception statement from your version.
  */
 
+#include <stdbool.h>
+
 #include "atsc3_utils.h"
 #include "atsc3_lct_hdr.h"
+
 
 #ifndef _ALC_RX_H_
 #define _ALC_RX_H_
@@ -85,13 +88,23 @@ extern "C" {
 
 typedef struct alc_packet {
 	atsc3_def_lct_hdr_t* def_lct_hdr;
-	uint8_t close_object_flag;
-	uint8_t close_session_flag;
+	uint8_t fec_encoding_id;
+    
+    //for fec_encoding_id == 128, raptor fec
+    bool use_sbn_esi;
+    uint8_t sbn;
+	uint32_t esi; //techincally 24bits
+    
+    //for all other fec values
+    bool use_start_offset;
+    uint32_t start_offset;
+    
+    uint8_t close_object_flag;
+    uint8_t close_session_flag;
+    
+    unsigned int alc_len;
+    unsigned long long transfer_len;
 
-	unsigned long long transfer_len;
-	uint32_t sbn;
-	uint32_t esi;
-	unsigned int  alc_len;
 	uint8_t* alc_payload;
 
 } alc_packet_t;

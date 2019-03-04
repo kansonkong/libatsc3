@@ -106,6 +106,7 @@ extern "C" {
 extern int _MPU_DEBUG_ENABLED;
 extern int _MMTP_DEBUG_ENABLED;
 extern int _ALC_UTILS_DEBUG_ENABLED;
+extern int _ALC_UTILS_TRACE_ENABLED;
 extern int _LLS_DEBUG_ENABLED;
 extern int _PLAYER_FFPLAY_DEBUG_ENABLED;
 
@@ -729,6 +730,7 @@ int main(int argc,char **argv) {
     _ISOBMFF_TOOLS_DEBUG_ENABLED = 1;
     _PLAYER_FFPLAY_DEBUG_ENABLED = 0;
     _ALC_UTILS_DEBUG_ENABLED = 1;
+    _ALC_UTILS_TRACE_ENABLED = 1;
 
     char *dev;
 
