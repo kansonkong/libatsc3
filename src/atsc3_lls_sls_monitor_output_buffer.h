@@ -39,6 +39,8 @@ typedef struct lls_sls_monitor_buffer {
     lls_sls_monitor_buffer_isobmff_t audio_output_buffer_isobmff;
     lls_sls_monitor_buffer_isobmff_t video_output_buffer_isobmff;
 
+    block_t* joined_isobmff_block;
+
 } lls_sls_monitor_output_buffer_t;
 
 

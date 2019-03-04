@@ -10,11 +10,16 @@
 extern "C" {
 #endif
 
+#include <stdlib.h>
+#include <stdio.h>
+#include <string.h>
+
 #include "atsc3_lls_types.h"
 #include "atsc3_utils.h"
 #include "atsc3_listener_udp.h"
 #include "atsc3_mmt_mpu_utils.h"
 #include "atsc3_player_ffplay.h"
+#include "atsc3_lls_sls_monitor_output_buffer.h"
 
 
 #if defined (__cplusplus)
@@ -32,16 +37,8 @@ extern int _ISOBMFF_TOOLS_TRACE_ENABLED;
 extern "C" {
 #endif
 
-
-void resetBufferPos(void);
-
-block_t* atsc3_isobmff_build_mpu_metadata_ftyp_moof_mdat_box_from_flow(udp_flow_t* udp_flow, udp_flow_latest_mpu_sequence_number_container_t* udp_flow_latest_mpu_sequence_number_container, mmtp_sub_flow_vector_t* mmtp_sub_flow_vector, lls_sls_mmt_monitor_t* lls_sls_mmt_monitor);
-    
-block_t* atsc3_isobmff_build_mpu_metadata_ftyp_moof_mdat_box_from_mpu_sequence_numbers(udp_flow_t* udp_flow, udp_flow_latest_mpu_sequence_number_container_t* udp_flow_latest_mpu_sequence_number_container, uint32_t mpu_sequence_number_audio, uint32_t mpu_sequence_number_video, mmtp_sub_flow_vector_t* mmtp_sub_flow_vector, lls_sls_mmt_monitor_t* lls_sls_mmt_monitor);
-
-//todo - deprecate
-void __copy_video_block_t(block_t* video_isobmff_header);
-void __copy_audio_block_t(block_t* audio_isobmff_header);
+lls_sls_monitor_output_buffer_t* atsc3_isobmff_build_mpu_metadata_ftyp_moof_mdat_box_from_flow(udp_flow_t* udp_flow, udp_flow_latest_mpu_sequence_number_container_t* udp_flow_latest_mpu_sequence_number_container, mmtp_sub_flow_vector_t* mmtp_sub_flow_vector, lls_sls_mmt_monitor_t* lls_sls_mmt_monitor);
+lls_sls_monitor_output_buffer_t* atsc3_isobmff_build_mpu_metadata_ftyp_moof_mdat_box_from_mpu_sequence_numbers(udp_flow_t* udp_flow, udp_flow_latest_mpu_sequence_number_container_t* udp_flow_latest_mpu_sequence_number_container, uint32_t mpu_sequence_number_audio, uint32_t mpu_sequence_number_video, mmtp_sub_flow_vector_t* mmtp_sub_flow_vector, lls_sls_mmt_monitor_t* lls_sls_mmt_monitor);
 
 #if defined (__cplusplus)
 }

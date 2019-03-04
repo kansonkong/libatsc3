@@ -110,6 +110,34 @@ int lls_sls_monitor_output_buffer_copy_video_fragment_block(lls_sls_monitor_outp
 }
 
 
+int lls_sls_monitor_buffer_isobmff_moov_patch_mdat_box(lls_sls_monitor_buffer_isobmff_t* lls_sls_monitor_buffer_isobmff_to_patch) {
+	uint8_t mdat_box[8];
+	uint32_t mdat_box_old_size;
+	uint32_t total_mdat_body_size = lls_sls_monitor_buffer_isobmff_to_patch->fragment_pos + 8;
+
+	memcpy(&mdat_box, &lls_sls_monitor_buffer_isobmff_to_patch->moov_box[lls_sls_monitor_buffer_isobmff_to_patch->moov_box_pos-8], 8);
+	mdat_box_old_size = ntohl((uint32_t)mdat_box);
+
+	if(mdat_box[4] == 'm' && mdat_box[5] == 'd' && mdat_box[6] == 'a' && mdat_box[7] == 't') {
+		mdat_box[0] = (total_mdat_body_size >> 24) & 0xFF;
+		mdat_box[1] = (total_mdat_body_size >> 16) & 0xFF;
+		mdat_box[2] = (total_mdat_body_size >> 8) & 0xFF;
+		mdat_box[3] = (total_mdat_body_size) & 0xFF;
+
+
+		memcpy(&lls_sls_monitor_buffer_isobmff_to_patch->moov_box[lls_sls_monitor_buffer_isobmff_to_patch->moov_box_pos-8], &mdat_box, 4);
+		__LLS_SLS_MONITOR_OUTPUT_BUFFER_UTILS_DEBUG("patch mdat box:  metadata packet: %p, size was: %u, now: %u, last 8 bytes of metadata fragment updated to: 0x%02x 0x%02x 0x%02x 0x%02x 0x%02x 0x%02x 0x%02x 0x%02x",
+				lls_sls_monitor_buffer_isobmff_to_patch, mdat_box_old_size, total_mdat_body_size,
+				mdat_box[0], mdat_box[1], mdat_box[2], mdat_box[3], mdat_box[4], mdat_box[5], mdat_box[6], mdat_box[7]);
+
+		return total_mdat_body_size;
+
+	} else {
+		__LLS_SLS_MONITOR_OUTPUT_BUFFER_UTILS_ERROR("patch modat box: metadata packet: %p, cant find trailing mdat!", lls_sls_monitor_buffer_isobmff_to_patch->moov_box);
+		return 0;
+	}
+
+}
 block_t* lls_sls_monitor_output_buffer_copy_audio_full_isobmff_box(lls_sls_monitor_output_buffer_t* lls_sls_monitor_output_buffer) {
 	if(!lls_sls_monitor_output_buffer->audio_output_buffer_isobmff.init_box_pos || !lls_sls_monitor_output_buffer->audio_output_buffer_isobmff.fragment_pos) {
 		__LLS_SLS_MONITOR_OUTPUT_BUFFER_UTILS_ERROR("copy audio full box: error: init_box_pos: %u, fragment_pos: %u, returning NULL", lls_sls_monitor_output_buffer->audio_output_buffer_isobmff.init_box_pos, lls_sls_monitor_output_buffer->audio_output_buffer_isobmff.fragment_pos);
@@ -211,3 +239,30 @@ block_t* lls_sls_monitor_output_buffer_copy_video_moov_fragment_isobmff_box(lls_
 	return isobmff_moov_fragment_block;
 }
 
+
+void lls_slt_monitor_check_and_handle_pipe_ffplay_buffer_is_shutdown(lls_slt_monitor_t* lls_slt_monitor) {
+	if(lls_slt_monitor->lls_sls_alc_monitor) {
+		if(lls_slt_monitor->lls_sls_alc_monitor->lls_sls_monitor_output_buffer_mode.pipe_ffplay_buffer) {
+			bool is_shutdown_alc = pipe_buffer_reader_check_if_shutdown(&lls_slt_monitor->lls_sls_alc_monitor->lls_sls_monitor_output_buffer_mode.pipe_ffplay_buffer);
+			if(is_shutdown_alc) {
+				__LLS_SLS_MONITOR_OUTPUT_BUFFER_UTILS_INFO("lls_slt_monitor: ffplay is shutdown for ALC service_id: %u, setting ffplay_output_enabled = false", lls_slt_monitor->lls_sls_alc_monitor->service_id);
+				lls_slt_monitor->lls_sls_alc_monitor->lls_sls_monitor_output_buffer_mode.ffplay_output_enabled = false;
+			}
+		}
+
+	}
+
+	if(lls_slt_monitor->lls_sls_mmt_monitor) {
+		if(lls_slt_monitor->lls_sls_mmt_monitor->lls_sls_monitor_output_buffer_mode.pipe_ffplay_buffer) {
+			bool is_shutdown_mmt = pipe_buffer_reader_check_if_shutdown(&lls_slt_monitor->lls_sls_mmt_monitor->lls_sls_monitor_output_buffer_mode.pipe_ffplay_buffer);
+			if(is_shutdown_mmt) {
+				__LLS_SLS_MONITOR_OUTPUT_BUFFER_UTILS_INFO("lls_slt_monitor: ffplay is shutdown for MMT service_id: %u, setting ffplay_output_enabled = false", lls_slt_monitor->lls_sls_alc_monitor->service_id);
+				lls_slt_monitor->lls_sls_mmt_monitor->lls_sls_monitor_output_buffer_mode.ffplay_output_enabled = false;
+			}
+		}
+	}
+}
+
+void lls_sls_monitor_output_buffer_file_dump(lls_sls_monitor_output_buffer_t* lls_sls_monitor_output_buffer, const char* directory_path) {
+
+}

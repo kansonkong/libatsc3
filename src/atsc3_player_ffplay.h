@@ -18,7 +18,15 @@
 #include <unistd.h>
 #include <sys/stat.h>
 
+#if defined (__cplusplus)
+extern "C" {
+#endif
+
 #include "atsc3_utils.h"
+
+#if defined (__cplusplus)
+}
+#endif
 
 #ifndef ATSC3_PLAYER_FFPLAY_H_
 #define ATSC3_PLAYER_FFPLAY_H_
@@ -83,7 +91,7 @@ void pipe_buffer_notify_semaphore_post(pipe_ffplay_buffer_t* pipe_ffplay_buffer)
 void pipe_buffer_reader_mutex_lock(pipe_ffplay_buffer_t* pipe_ffplay_buffer);
 void pipe_buffer_reader_mutex_unlock(pipe_ffplay_buffer_t* pipe_ffplay_buffer);
 
-void pipe_buffer_reader_check_if_shutdown(pipe_ffplay_buffer_t** pipe_ffplay_buffer);
+bool pipe_buffer_reader_check_if_shutdown(pipe_ffplay_buffer_t** pipe_ffplay_buffer);
 
 //this method is not protected, you must acuire and release the mutex upstream.
 int pipe_buffer_unsafe_push_block(	pipe_ffplay_buffer_t* pipe_ffplay_buffer, uint8_t* block, uint32_t block_size);

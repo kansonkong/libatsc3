@@ -125,16 +125,23 @@ ISOBMFFTrackJoinerFileResouces_t* loadFileResources(const char* file1, const cha
 }
 
 
-void ISOBMFF_track_joiner_monitor_output_buffer_parse_and_build_joined_boxes(lls_sls_monitor_output_buffer_t* lls_sls_monitor_output_buffer, AP4_ByteStream* output_stream)
+void ISOBMFF_track_joiner_monitor_output_buffer_parse_and_build_joined_boxes(lls_sls_monitor_output_buffer_t* lls_sls_monitor_output_buffer, AP4_MemoryByteStream** output_stream_p)
 {
 	block_t* audio_output_buffer = lls_sls_monitor_output_buffer_copy_audio_full_isobmff_box(lls_sls_monitor_output_buffer);
 	block_t* video_output_buffer = lls_sls_monitor_output_buffer_copy_video_full_isobmff_box(lls_sls_monitor_output_buffer);
 
-    parseAndBuildJoinedBoxesFromMemory(audio_output_buffer->p_buffer, audio_output_buffer->i_pos, video_output_buffer->p_buffer, video_output_buffer->i_pos, output_stream);
+	//we shouldn't be bigger than this for our return..
+	AP4_DataBuffer* dataBuffer = new AP4_DataBuffer(audio_output_buffer->i_pos + video_output_buffer->i_pos );
+	AP4_MemoryByteStream* memoryOutputByteStream = new AP4_MemoryByteStream(dataBuffer);
+
+	*output_stream_p = memoryOutputByteStream;
+
+    parseAndBuildJoinedBoxesFromMemory(audio_output_buffer->p_buffer, audio_output_buffer->i_pos, video_output_buffer->p_buffer, video_output_buffer->i_pos, memoryOutputByteStream);
 
     block_Release(&audio_output_buffer);
     block_Release(&video_output_buffer);
 }
+
 
 void parseAndBuildJoinedBoxes(ISOBMFFTrackJoinerFileResouces* isoBMFFTrackJoinerFileResouces, AP4_ByteStream* output_stream) {
 
@@ -234,7 +241,7 @@ void parseAndBuildJoinedBoxesFromMemory(uint8_t* file1_payload, uint32_t file1_s
 
 			AP4_TrakAtom* tmpTrakAtom;
 			int trakIndex = 0;
-			while(tmpTrakAtom = AP4_DYNAMIC_CAST(AP4_TrakAtom, moovAtom->GetChild(AP4_ATOM_TYPE_TRAK, trakIndex++))) {
+			while((tmpTrakAtom = AP4_DYNAMIC_CAST(AP4_TrakAtom, moovAtom->GetChild(AP4_ATOM_TYPE_TRAK, trakIndex++)))) {
 
             //AP4_HdlrAtom* hdlrAtom = AP4_DYNAMIC_CAST(AP4_HdlrAtom, tmpTrakAtom->GetChild(AP4_ATOM_TYPE_HDLR));
 
@@ -305,7 +312,7 @@ void parseAndBuildJoinedBoxesFromMemory(uint8_t* file1_payload, uint32_t file1_s
 			//remove our hints
 			AP4_TrakAtom* tmpTrakAtom;
 			int trakIndex = 0;
-			while(tmpTrakAtom = AP4_DYNAMIC_CAST(AP4_TrakAtom, moovAtom->GetChild(AP4_ATOM_TYPE_TRAK, trakIndex++))) {
+			while((tmpTrakAtom = AP4_DYNAMIC_CAST(AP4_TrakAtom, moovAtom->GetChild(AP4_ATOM_TYPE_TRAK, trakIndex++)))) {
 
 				AP4_HdlrAtom* hdlrAtom = AP4_DYNAMIC_CAST(AP4_HdlrAtom, tmpTrakAtom->FindChild("mdia/hdlr", false, false));
 
@@ -332,7 +339,7 @@ void parseAndBuildJoinedBoxesFromMemory(uint8_t* file1_payload, uint32_t file1_s
 
 			AP4_TrexAtom* tmpTrexAtom;
 			int trexIndex = 0;
-			while(tmpTrexAtom = AP4_DYNAMIC_CAST(AP4_TrexAtom, mvexToClear->GetChild(AP4_ATOM_TYPE_TREX, trexIndex++))) {
+			while((tmpTrexAtom = AP4_DYNAMIC_CAST(AP4_TrexAtom, mvexToClear->GetChild(AP4_ATOM_TYPE_TREX, trexIndex++)))) {
 				//ugh, there's not SetTrackId method...
 
 				//tmpTrexAtom->AP4_TrexAtom()
@@ -354,7 +361,7 @@ void parseAndBuildJoinedBoxesFromMemory(uint8_t* file1_payload, uint32_t file1_s
 				//update the mvex/trex
 				AP4_TrexAtom* tmpTrexAtom;
 				int trexIndex = 0;
-				while(tmpTrexAtom = AP4_DYNAMIC_CAST(AP4_TrexAtom, mvexAtomToCopy->GetChild(AP4_ATOM_TYPE_TREX, trexIndex++))) {
+				while((tmpTrexAtom = AP4_DYNAMIC_CAST(AP4_TrexAtom, mvexAtomToCopy->GetChild(AP4_ATOM_TYPE_TREX, trexIndex++)))) {
 					//ugh, there's not SetTrackId method...
 
 					//tmpTrexAtom->AP4_TrexAtom()
@@ -415,7 +422,7 @@ void parseAndBuildJoinedBoxesFromMemory(uint8_t* file1_payload, uint32_t file1_s
 
 			AP4_ContainerAtom* tmpTrafToClean;
 			int trafIdx = 0;
-			while(tmpTrafToClean = AP4_DYNAMIC_CAST(AP4_ContainerAtom, moofSecondFile->GetChild(AP4_ATOM_TYPE_TRAF, trafIdx++))) {
+			while((tmpTrafToClean = AP4_DYNAMIC_CAST(AP4_ContainerAtom, moofSecondFile->GetChild(AP4_ATOM_TYPE_TRAF, trafIdx++)))) {
                 AP4_TfhdAtom* tfhdTempAtom = AP4_DYNAMIC_CAST(AP4_TfhdAtom, tmpTrafToClean->GetChild(AP4_ATOM_TYPE_TFHD));
                 bool shouldDetachTrak = true;
                 if(tfhdTempAtom && tfhdTempAtom->GetTrackId() == trakMediaAtomSecondFileId) {
@@ -507,7 +514,6 @@ void parseAndBuildJoinedBoxesFromMemory(uint8_t* file1_payload, uint32_t file1_s
 				//we use the du_header field
 				//parse data unit header here based upon mpu timed flag
 
-				/**
 				* MFU mpu_fragmentation_indicator==1's are prefixed by the following box, need to remove
 				*
 				aligned(8) class MMTHSample {
