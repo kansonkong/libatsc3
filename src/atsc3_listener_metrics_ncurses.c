@@ -730,7 +730,7 @@ int main(int argc,char **argv) {
     _ISOBMFF_TOOLS_DEBUG_ENABLED = 1;
     _PLAYER_FFPLAY_DEBUG_ENABLED = 0;
     _ALC_UTILS_DEBUG_ENABLED = 1;
-    _ALC_UTILS_TRACE_ENABLED = 1;
+    _ALC_UTILS_TRACE_ENABLED = 0;
 
     char *dev;
 
