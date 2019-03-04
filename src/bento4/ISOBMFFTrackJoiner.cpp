@@ -628,6 +628,6 @@ void printBoxType(AP4_Atom* atom) {
     AP4_FormatFourCharsPrintable(name, m_Type);
 
     name[4] = '\0';
-    __ISOBMFF_JOINER_DEBUG("printBoxType: atom type: %s, size: %llu\n", name, atom->GetSize());
+    __ISOBMFF_JOINER_DEBUG("printBoxType: atom type: %s, size: %llu", name, atom->GetSize());
 }
 

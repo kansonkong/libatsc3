@@ -15,6 +15,7 @@
 #define ATSC3_ISOBMFF_TOOLS_H_
 
 extern int _ISOBMFF_TOOLS_DEBUG_ENABLED;
+extern int _ISOBMFF_TOOLS_TRACE_ENABLED;
 
 #if defined (__cplusplus)
 extern "C" {
@@ -40,5 +41,6 @@ void __copy_audio_block_t(block_t* audio_isobmff_header);
 #define __ISOBMFF_TOOLS_INFO(...)    printf("%s:%d: ",__FILE__,__LINE__);printf(__VA_ARGS__);printf("\n");
 #define __ISOBMFF_TOOLS_DEBUG(...)   if(_ISOBMFF_TOOLS_DEBUG_ENABLED) {printf("%s:%d:DEBUG: ",__FILE__,__LINE__);printf(__VA_ARGS__);printf("\n"); }
 
+#define __ISOBMFF_TOOLS_TRACE(...)   if(_ISOBMFF_TOOLS_TRACE_ENABLED) {printf("%s:%d:TRACE: ",__FILE__,__LINE__);printf(__VA_ARGS__);printf("\n"); }
 
 #endif /* ATSC3_ISOBMFF_TOOLS_H_ */
