@@ -502,10 +502,6 @@ typedef struct lls_slt_monitor {
 	lls_service_t* lls_service;
 
 	lls_table_t* lls_table_slt;
-    
-    //todo - deprecate me
-    //reference for active output,
-    pipe_ffplay_buffer_t* pipe_ffplay_buffer;
 
 } lls_slt_monitor_t;
 

@@ -564,8 +564,7 @@ void alc_recon_file_buffer_struct_set_tsi_toi(pipe_ffplay_buffer_t* pipe_ffplay_
 
 
 
-void alc_recon_file_buffer_struct_set_monitor(pipe_ffplay_buffer_t* pipe_ffplay_buffer, lls_sls_alc_monitor_t* lls_sls_alc_monitor) {
-	__ALC_RECON_FILE_BUFFER_STRUCT = pipe_ffplay_buffer;
+void alc_recon_file_buffer_struct_set_monitor(lls_sls_alc_monitor_t* lls_sls_alc_monitor) {
 	__ALC_RECON_MONITOR = lls_sls_alc_monitor;
 
 }
