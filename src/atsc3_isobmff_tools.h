@@ -5,11 +5,22 @@
  *      Author: jjustman
  */
 
+
+#if defined (__cplusplus)
+extern "C" {
+#endif
+
 #include "atsc3_lls_types.h"
 #include "atsc3_utils.h"
 #include "atsc3_listener_udp.h"
 #include "atsc3_mmt_mpu_utils.h"
 #include "atsc3_player_ffplay.h"
+
+
+#if defined (__cplusplus)
+}
+#endif
+
 
 #ifndef ATSC3_ISOBMFF_TOOLS_H_
 #define ATSC3_ISOBMFF_TOOLS_H_
