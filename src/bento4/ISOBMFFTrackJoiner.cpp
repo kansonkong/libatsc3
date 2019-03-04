@@ -130,6 +130,12 @@ void ISOBMFF_track_joiner_monitor_output_buffer_parse_and_build_joined_boxes(lls
 	block_t* audio_output_buffer = lls_sls_monitor_output_buffer_copy_audio_full_isobmff_box(lls_sls_monitor_output_buffer);
 	block_t* video_output_buffer = lls_sls_monitor_output_buffer_copy_video_full_isobmff_box(lls_sls_monitor_output_buffer);
 
+    if(!audio_output_buffer || !video_output_buffer) {
+        __ISOBMFF_JOINER_INFO("setting *output_stream_p to null, audio_output_buffer: %p, video_output_buffer: %p", audio_output_buffer, video_output_buffer);
+        *output_stream_p = NULL;
+        return;
+    }
+    
 	//we shouldn't be bigger than this for our return..
 	AP4_DataBuffer* dataBuffer = new AP4_DataBuffer(audio_output_buffer->i_pos + video_output_buffer->i_pos );
 	AP4_MemoryByteStream* memoryOutputByteStream = new AP4_MemoryByteStream(dataBuffer);

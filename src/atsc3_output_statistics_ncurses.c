@@ -185,7 +185,7 @@ void* ncurses_input_run_thread(void* lls_slt_monitor_ptr) {
 
 					lls_sls_alc_session_t* lls_sls_alc_session = lls_slt_alc_session_find_from_service_id(lls_slt_monitor, my_service_id);
 					if(lls_sls_alc_session) {
-                        //TODO - free and teardown if we already have an active montiro
+                        //TODO - free and teardown if we already have an active monitoring
 						//build our alc_session map
 						lls_sls_alc_monitor_t* lls_sls_alc_monitor = lls_sls_alc_monitor_create();
 						lls_sls_alc_monitor->lls_alc_session = lls_sls_alc_session;

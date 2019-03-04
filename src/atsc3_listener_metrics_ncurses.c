@@ -453,22 +453,27 @@ static void route_process_from_alc_packet(alc_packet_t **alc_packet) {
         
         block_t* mpu_metadata_output_block = block_Alloc(ap4_memory_byte_stream->GetDataSize());
         block_Write(mpu_metadata_output_block, (uint8_t*)ap4_memory_byte_stream->GetData(), ap4_memory_byte_stream->GetDataSize());
-        
-        //trying to free this causes segfaults 100% of the time
-        
-        free (ap4_memory_byte_stream);
-        pipe_buffer_reader_mutex_lock(lls_slt_monitor->pipe_ffplay_buffer);
-        
-        pipe_buffer_unsafe_push_block(lls_slt_monitor->pipe_ffplay_buffer, mpu_metadata_output_block->p_buffer, mpu_metadata_output_block->i_pos);
-        
-        pipe_buffer_notify_semaphore_post(lls_slt_monitor->pipe_ffplay_buffer);
-        
-        //check to see if we have shutdown
-        lls_slt_monitor_check_and_handle_pipe_ffplay_buffer_is_shutdown(lls_slt_monitor);
 
-        pipe_buffer_reader_mutex_unlock(lls_slt_monitor->pipe_ffplay_buffer);
-        //reset our buffer pos
-        lls_sls_monitor_output_buffer_reset_moov_and_fragment_position(&lls_slt_monitor->lls_sls_alc_monitor->lls_sls_monitor_output_buffer);
+        free (ap4_memory_byte_stream);
+        
+        if(lls_slt_monitor->lls_sls_alc_monitor->lls_sls_monitor_output_buffer_mode.ffplay_output_enabled && lls_slt_monitor->lls_sls_alc_monitor->lls_sls_monitor_output_buffer_mode.pipe_ffplay_buffer) {
+
+        	pipe_ffplay_buffer_t* pipe_ffplay_buffer = lls_slt_monitor->lls_sls_alc_monitor->lls_sls_monitor_output_buffer_mode.pipe_ffplay_buffer;
+
+        	pipe_buffer_reader_mutex_lock(pipe_ffplay_buffer);
+        
+        	pipe_buffer_unsafe_push_block(pipe_ffplay_buffer, mpu_metadata_output_block->p_buffer, mpu_metadata_output_block->i_pos);
+        
+        	pipe_buffer_notify_semaphore_post(pipe_ffplay_buffer);
+        
+			//check to see if we have shutdown
+			lls_slt_monitor_check_and_handle_pipe_ffplay_buffer_is_shutdown(lls_slt_monitor);
+
+			pipe_buffer_reader_mutex_unlock(pipe_ffplay_buffer);
+			//reset our buffer pos
+			lls_sls_monitor_output_buffer_reset_moov_and_fragment_position(&lls_slt_monitor->lls_sls_alc_monitor->lls_sls_monitor_output_buffer);
+
+        }
     }
 }
 
@@ -821,16 +826,6 @@ int main(int argc,char **argv) {
     /** ncurses support - valgrind on osx will fail in pthread_create...**/
 
 	ncurses_init();
-
-
-#ifdef __TEST_FFPLAY_MMTP_PIPE_PLAYBACK__
-    //create_ffplay_pipe();
-    hasSentMPUHeader = false;
-
-    file_pipe = fopen("test.mmt", "w");
-    player_pipe = NULL;
-
-#endif
 
 
 #ifndef _TEST_RUN_VALGRIND_OSX_
