@@ -241,13 +241,13 @@ int alc_packet_dump_to_object(alc_packet_t** alc_packet_ptr) {
 #endif
 	//__ALC_RECON_MONITOR
 	//push our fragments EXCEPT for the mpu fragment box, we will pull that at the start of a
-		if(__ALC_RECON_FILE_BUFFER_STRUCT && __ALC_RECON_MONITOR) {
+		if(__ALC_RECON_MONITOR) {
 			__ALC_UTILS_TRACE("checking tsi: %u, toi: %u,  %d", alc_packet->def_lct_hdr->tsi, alc_packet->def_lct_hdr->toi, alc_packet->close_object_flag);
 
 			if(alc_packet->close_object_flag && ((alc_packet->def_lct_hdr->tsi == __ALC_RECON_MONITOR->video_tsi && alc_packet->def_lct_hdr->toi != __ALC_RECON_MONITOR->video_toi_init) ||
 					(alc_packet->def_lct_hdr->tsi == __ALC_RECON_MONITOR->audio_tsi && alc_packet->def_lct_hdr->toi != __ALC_RECON_MONITOR->audio_toi_init))) {
 
-					alc_recon_file_buffer_struct_monitor_fragment_with_init_box(__ALC_RECON_FILE_BUFFER_STRUCT, __ALC_RECON_MONITOR, alc_packet);
+					alc_recon_file_buffer_struct_monitor_fragment_with_init_box(__ALC_RECON_MONITOR, alc_packet);
 			}
 		}
 
@@ -684,7 +684,7 @@ cleanup:
 }
 
 
-void alc_recon_file_buffer_struct_monitor_fragment_with_init_box(pipe_ffplay_buffer_t* pipe_ffplay_buffer, lls_sls_alc_monitor_t* lls_sls_alc_monitor, alc_packet_t* alc_packet) {
+void alc_recon_file_buffer_struct_monitor_fragment_with_init_box(lls_sls_alc_monitor_t* lls_sls_alc_monitor, alc_packet_t* alc_packet) {
 	int flush_ret = 0;
 
 	//do this for both video_tsi and audio tsi based upon the current toi...?
@@ -698,13 +698,26 @@ void alc_recon_file_buffer_struct_monitor_fragment_with_init_box(pipe_ffplay_buf
 		lls_sls_alc_monitor->last_audio_toi = alc_packet->def_lct_hdr->toi;
 	}
 
-	if(lls_sls_alc_monitor->last_video_toi != lls_sls_alc_monitor->last_audio_toi) {
-		__ALC_UTILS_DEBUG("video toi: %u, audio toi: %u", lls_sls_alc_monitor->last_video_toi, lls_sls_alc_monitor->last_audio_toi);
-		goto cleanup;
+    uint32_t audio_toi = lls_sls_alc_monitor->last_audio_toi;
+    uint32_t video_toi = lls_sls_alc_monitor->last_video_toi;
+    
+    if(!audio_toi || !video_toi) {
+        __ALC_UTILS_WARN("audio toi: %u, video toi: %u, bailing", audio_toi, video_toi);
+        goto cleanup;
+    }
+    
+	if(audio_toi != video_toi) {
+        uint32_t min_toi = MIN(audio_toi, video_toi);
+        __ALC_UTILS_WARN("audio toi: %u, video toi: %u, using min: %u", audio_toi, video_toi, min_toi);
+        audio_toi = min_toi;
+        video_toi = min_toi;
 	}
+    
+    if(lls_sls_alc_monitor->processed_toi && (lls_sls_alc_monitor->processed_toi == audio_toi || lls_sls_alc_monitor->processed_toi ==video_toi)) {
+        __ALC_UTILS_WARN("processed toi: %u, audio toi: %u, video toi: %u, bailing for next counterpart", lls_sls_alc_monitor->processed_toi, audio_toi, video_toi);
+        goto cleanup;
+    }
 
-	uint32_t audio_toi = lls_sls_alc_monitor->last_audio_toi;
-	uint32_t video_toi = lls_sls_alc_monitor->last_video_toi;
 
 	char* audio_init_file_name = alc_packet_dump_to_object_get_filename_tsi_toi(lls_sls_alc_monitor->audio_tsi, lls_sls_alc_monitor->audio_toi_init);
 	char* video_init_file_name = alc_packet_dump_to_object_get_filename_tsi_toi(lls_sls_alc_monitor->video_tsi, lls_sls_alc_monitor->video_toi_init);
@@ -719,7 +732,7 @@ void alc_recon_file_buffer_struct_monitor_fragment_with_init_box(pipe_ffplay_buf
 
 		__ALC_UTILS_DEBUG("alc_recon_file_buffer_struct_monitor_fragment_with_init_box - audio: %s, video: %s", audio_init_file_name, video_init_file_name);
 
-		if(!pipe_ffplay_buffer->has_written_init_box) {
+		if(!lls_sls_alc_monitor->lls_sls_monitor_output_buffer.has_written_init_box) {
 			block_t* audio_init_payload = get_payload(audio_init_file_name);
 			block_t* video_init_payload = get_payload(video_init_file_name);
 
@@ -739,9 +752,9 @@ void alc_recon_file_buffer_struct_monitor_fragment_with_init_box(pipe_ffplay_buf
 
 		lls_sls_monitor_output_buffer_copy_audio_fragment_block(&lls_sls_alc_monitor->lls_sls_monitor_output_buffer, audio_fragment_payload);
 		lls_sls_monitor_output_buffer_copy_video_fragment_block(&lls_sls_alc_monitor->lls_sls_monitor_output_buffer, video_fragment_payload);
-		pipe_ffplay_buffer->has_written_init_box = true;
 		lls_sls_alc_monitor->lls_sls_monitor_output_buffer.has_written_init_box = true;
 		lls_sls_alc_monitor->lls_sls_monitor_output_buffer.should_flush_output_buffer = true;
+        lls_sls_alc_monitor->processed_toi = audio_toi;
 	}
 
 
