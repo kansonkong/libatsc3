@@ -16,8 +16,6 @@ void lls_sls_monitor_output_buffer_reset_position(lls_sls_monitor_output_buffer_
     lls_sls_monitor_output_buffer->should_flush_output_buffer = false;
 }
 
-
-
 void lls_sls_monitor_output_buffer_copy_video_block(lls_sls_monitor_output_buffer_t* lls_sls_monitor_output_buffer, block_t* video_isobmff_header) {
     
     if(!lls_sls_monitor_output_buffer->video_output_buffer) {
@@ -27,7 +25,6 @@ void lls_sls_monitor_output_buffer_copy_video_block(lls_sls_monitor_output_buffe
     memcpy(&lls_sls_monitor_output_buffer->video_output_buffer[lls_sls_monitor_output_buffer->video_output_buffer_pos], video_isobmff_header->p_buffer, video_isobmff_header->i_buffer);
     lls_sls_monitor_output_buffer->video_output_buffer_pos += video_isobmff_header->i_buffer;
 }
-
 
 void lls_sls_monitor_output_buffer_copy_audio_block(lls_sls_monitor_output_buffer_t* lls_sls_monitor_output_buffer, block_t* audio_isobmff_header) {
     

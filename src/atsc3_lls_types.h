@@ -18,6 +18,9 @@
 #include "atsc3_lls_sls_monitor_output_buffer.h"
 #include "alc_session.h"
 
+//slight tight coupling...
+#include "atsc3_player_ffplay.h"
+
 #ifndef ATSC3_LLS_TYPES_H_
 #define ATSC3_LLS_TYPES_H_
 
@@ -393,7 +396,9 @@ typedef struct lls_sls_mmt_monitor {
     uint16_t video_packet_id;
     uint16_t audio_packet_id;
     
+    
     lls_sls_monitor_output_buffer_t lls_sls_monitor_output_buffer;
+    lls_sls_monitor_output_buffer_mode_t lls_sls_monitor_output_buffer_mode;
 
 } lls_sls_mmt_monitor_t;
 
@@ -450,6 +455,7 @@ typedef struct lls_sls_alc_monitor {
 	uint32_t dwd_tsi;
     
     lls_sls_monitor_output_buffer_t lls_sls_monitor_output_buffer;
+    lls_sls_monitor_output_buffer_mode_t lls_sls_monitor_output_buffer_mode;
 
 } lls_sls_alc_monitor_t;
 
@@ -463,6 +469,11 @@ typedef struct lls_slt_monitor {
 	lls_service_t* lls_service;
 
 	lls_table_t* lls_table_slt;
+    
+    //todo - deprecate me
+    //reference for active output,
+    pipe_ffplay_buffer_t* pipe_ffplay_buffer;
+
 } lls_slt_monitor_t;
 
 

@@ -19,14 +19,6 @@
   ./atsc3_listener_metrics_test vnic1
 
 
-  TODO: A/331 - Section 8.1.2.1.3 - Constraints on MMTP
-  	  PacketId
-
-
-
-  TODO: A/331 - Section 6.1  IP Address Assignment
-  	  Implement a more robust ip filtering functionality for flow selection
-
   	  6.1 IP Address Assignment
 
 
@@ -53,10 +45,6 @@ shall carry a Destination IP address either
 
 
 
-	for testing:
-	  fprintf(stdout, "left window h: rows: %d, max: %d, %lu, %d,  %d, %d", rows, INT_MAX, sizeof(int), left_window_h, rows*100, (rows*100)/66);
-
-  abort();
 
 */
 
@@ -186,7 +174,6 @@ lls_slt_monitor_t* lls_slt_monitor;
 
 //make sure to invoke     mmtp_sub_flow_vector_init(&p_sys->mmtp_sub_flow_vector);
 mmtp_sub_flow_vector_t*                          mmtp_sub_flow_vector;
-extern pipe_ffplay_buffer_t*                     pipe_ffplay_buffer;
 udp_flow_latest_mpu_sequence_number_container_t* udp_flow_latest_mpu_sequence_number_container;
 
 
@@ -236,7 +223,7 @@ mmtp_payload_fragments_union_t* mmtp_parse_from_udp_packet(udp_packet_t *udp_pac
     return mmtp_payload;
 }
 
-mmtp_payload_fragments_union_t* mmtp_process_from_payload(udp_packet_t *udp_packet, mmtp_payload_fragments_union_t** mmtp_payload_p) {
+mmtp_payload_fragments_union_t* mmtp_process_from_payload(udp_packet_t *udp_packet, mmtp_payload_fragments_union_t** mmtp_payload_p, lls_sls_mmt_session_t* matching_lls_slt_mmt_session) {
     mmtp_payload_fragments_union_t* mmtp_payload = * mmtp_payload_p;
     //dump header, then dump applicable packet type
     //mmtp_packet_header_dump(mmtp_payload);
@@ -247,51 +234,71 @@ mmtp_payload_fragments_union_t* mmtp_process_from_payload(udp_packet_t *udp_pack
         if(mmtp_payload->mmtp_mpu_type_packet_header.mpu_timed_flag == 1) {
             global_stats->packet_counter_mmt_timed_mpu++;
             
-            __TRACE("Starting processing loop, current mpu_sequence_number is: %d, packet_sequence_number: %d", mmtp_payload->mmtp_mpu_type_packet_header.mpu_sequence_number, mmtp_payload->mmtp_mpu_type_packet_header.packet_sequence_number);
+            if(lls_slt_monitor->lls_sls_mmt_monitor && lls_slt_monitor->lls_sls_mmt_monitor->service_id == matching_lls_slt_mmt_session->service_id) {
 
-            mpu_data_unit_payload_fragments_t* data_unit_payload_types = NULL;
-            mpu_data_unit_payload_fragments_timed_vector_t* data_unit_payload_fragments = NULL; //technically this is mpu_fragments->media_fragment_unit_vector
-            mpu_data_unit_payload_fragments_t* mpu_metadata_fragments =    NULL;
-            mpu_data_unit_payload_fragments_t* movie_metadata_fragments  = NULL;
-            mmtp_sub_flow_t* mmtp_sub_flow = NULL;
-            int total_fragments = 0;
-            
-            udp_flow_packet_id_mpu_sequence_tuple_t* udp_flow_last_packet_id_mpu_sequence_id = udp_flow_last_mpu_sequence_number_from_packet_id(udp_flow_latest_mpu_sequence_number_container, udp_packet, mmtp_payload->mmtp_mpu_type_packet_header.mmtp_packet_id);
-            
-            if(udp_flow_last_packet_id_mpu_sequence_id) {
-                __TRACE("before refragment check: ptr: %p, last dst_ip_addr: %u, last dst_port: %hu, last packet_id: %u, last mpu_sequence_number: %u",
-                        udp_flow_last_packet_id_mpu_sequence_id,
-                        udp_flow_last_packet_id_mpu_sequence_id->udp_flow.dst_ip_addr,
-                        udp_flow_last_packet_id_mpu_sequence_id->udp_flow.dst_port,
-                        udp_flow_last_packet_id_mpu_sequence_id->packet_id,
-                        udp_flow_last_packet_id_mpu_sequence_id->mpu_sequence_number);
-            }
-            //todo - check for both packet id's before reconstituting
-            if(udp_flow_last_packet_id_mpu_sequence_id && udp_flow_last_packet_id_mpu_sequence_id->mpu_sequence_number-1 < mmtp_payload->mmtp_mpu_type_packet_header.mpu_sequence_number) {
-                
-                __INFO("Starting re-fragmenting because packet_id:mpu_sequence number changed from %u:%u to %u:%u", udp_flow_last_packet_id_mpu_sequence_id->packet_id, udp_flow_last_packet_id_mpu_sequence_id->mpu_sequence_number, mmtp_payload->mmtp_mpu_type_packet_header.mmtp_packet_id, mmtp_payload->mmtp_mpu_type_packet_header.mpu_sequence_number);
-                
-                
-                //major refactoring
-                block_t* final_muxed_payload = atsc3_isobmff_build_mpu_metadata_ftyp_moof_mdat_box(&udp_packet->udp_flow, udp_flow_latest_mpu_sequence_number_container, mmtp_sub_flow_vector);
-                if(final_muxed_payload && pipe_ffplay_buffer) {
-                    pipe_buffer_reader_mutex_lock(pipe_ffplay_buffer);
+				__TRACE("Starting processing loop, current mpu_sequence_number is: %d, packet_sequence_number: %d", mmtp_payload->mmtp_mpu_type_packet_header.mpu_sequence_number, mmtp_payload->mmtp_mpu_type_packet_header.packet_sequence_number);
+
+				mpu_data_unit_payload_fragments_t* data_unit_payload_types = NULL;
+				mpu_data_unit_payload_fragments_timed_vector_t* data_unit_payload_fragments = NULL; //technically this is mpu_fragments->media_fragment_unit_vector
+				mpu_data_unit_payload_fragments_t* mpu_metadata_fragments =    NULL;
+				mpu_data_unit_payload_fragments_t* movie_metadata_fragments  = NULL;
+				mmtp_sub_flow_t* mmtp_sub_flow = NULL;
+				int total_fragments = 0;
+
+				udp_flow_packet_id_mpu_sequence_tuple_t* udp_flow_last_packet_id_mpu_sequence_id = udp_flow_last_mpu_sequence_number_from_packet_id(udp_flow_latest_mpu_sequence_number_container, udp_packet, mmtp_payload->mmtp_mpu_type_packet_header.mmtp_packet_id);
+
+				if(udp_flow_last_packet_id_mpu_sequence_id) {
+					__TRACE("before refragment check: ptr: %p, last dst_ip_addr: %u, last dst_port: %hu, last packet_id: %u, last mpu_sequence_number: %u",
+							udp_flow_last_packet_id_mpu_sequence_id,
+							udp_flow_last_packet_id_mpu_sequence_id->udp_flow.dst_ip_addr,
+							udp_flow_last_packet_id_mpu_sequence_id->udp_flow.dst_port,
+							udp_flow_last_packet_id_mpu_sequence_id->packet_id,
+							udp_flow_last_packet_id_mpu_sequence_id->mpu_sequence_number);
+				}
+				//todo - check for both packet id's before reconstituting
+				if(udp_flow_last_packet_id_mpu_sequence_id && udp_flow_last_packet_id_mpu_sequence_id->mpu_sequence_number-1 < mmtp_payload->mmtp_mpu_type_packet_header.mpu_sequence_number) {
+
+					__INFO("Starting re-fragmenting because packet_id:mpu_sequence number changed from %u:%u to %u:%u", udp_flow_last_packet_id_mpu_sequence_id->packet_id, udp_flow_last_packet_id_mpu_sequence_id->mpu_sequence_number, mmtp_payload->mmtp_mpu_type_packet_header.mmtp_packet_id, mmtp_payload->mmtp_mpu_type_packet_header.mpu_sequence_number);
+
+
+					//major refactoring
+					block_t* final_muxed_payload = atsc3_isobmff_build_mpu_metadata_ftyp_moof_mdat_box(&udp_packet->udp_flow, udp_flow_latest_mpu_sequence_number_container, mmtp_sub_flow_vector, lls_slt_monitor->lls_sls_mmt_monitor);
                     
-                    printf("**** return payload is: first 8 bytes are %x %x %x %x %x %x %x %x",
-                           final_muxed_payload->p_buffer[0],
-                           final_muxed_payload->p_buffer[1],
-                           final_muxed_payload->p_buffer[2],
-                           final_muxed_payload->p_buffer[3],
-                           final_muxed_payload->p_buffer[4],
-                           final_muxed_payload->p_buffer[5],
-                           final_muxed_payload->p_buffer[6],
-                           final_muxed_payload->p_buffer[7]);
-                    pipe_buffer_unsafe_push_block(pipe_ffplay_buffer, final_muxed_payload->p_buffer, final_muxed_payload->i_buffer);
+                    if(final_muxed_payload && lls_slt_monitor) {
+                        
+                        if(lls_slt_monitor->lls_sls_mmt_monitor->lls_sls_monitor_output_buffer_mode.file_dump_enabled) {
+                            
+                        }
+                        
+                        if(lls_slt_monitor->lls_sls_mmt_monitor->lls_sls_monitor_output_buffer_mode.ffplay_output_enabled && lls_slt_monitor->lls_sls_mmt_monitor->lls_sls_monitor_output_buffer_mode.pipe_ffplay_buffer) {
+
+                        pipe_buffer_reader_mutex_lock(lls_slt_monitor->lls_sls_mmt_monitor->lls_sls_monitor_output_buffer_mode.pipe_ffplay_buffer);
+
+						printf("**** return payload is: first 8 bytes are %x %x %x %x %x %x %x %x",
+							   final_muxed_payload->p_buffer[0],
+							   final_muxed_payload->p_buffer[1],
+							   final_muxed_payload->p_buffer[2],
+							   final_muxed_payload->p_buffer[3],
+							   final_muxed_payload->p_buffer[4],
+							   final_muxed_payload->p_buffer[5],
+							   final_muxed_payload->p_buffer[6],
+							   final_muxed_payload->p_buffer[7]);
+                        
+						pipe_buffer_unsafe_push_block(lls_slt_monitor->lls_sls_mmt_monitor->lls_sls_monitor_output_buffer_mode.pipe_ffplay_buffer, final_muxed_payload->p_buffer, final_muxed_payload->i_buffer);
+
+						//mpu_push_to_output_buffer_no_locking(pipe_ffplay_buffer, mpu_metadata);
+						pipe_buffer_notify_semaphore_post(lls_slt_monitor->lls_sls_mmt_monitor->lls_sls_monitor_output_buffer_mode.pipe_ffplay_buffer);
+                        pipe_buffer_reader_check_if_shutdown(&lls_slt_monitor->lls_sls_mmt_monitor->lls_sls_monitor_output_buffer_mode.pipe_ffplay_buffer);
+
+                        pipe_buffer_reader_mutex_unlock(lls_slt_monitor->lls_sls_mmt_monitor->lls_sls_monitor_output_buffer_mode.pipe_ffplay_buffer);
+                        //check to see if we have shutdown
+                        
+                        //reset our buffer pos
+                        lls_sls_monitor_output_buffer_reset_position(&lls_slt_monitor->lls_sls_mmt_monitor->lls_sls_monitor_output_buffer);
+                        }
                     
-                    //                    mpu_push_to_output_buffer_no_locking(pipe_ffplay_buffer, mpu_metadata);
-                    pipe_buffer_notify_semaphore_post(pipe_ffplay_buffer);
-                    pipe_buffer_reader_mutex_unlock(pipe_ffplay_buffer);
-                }
+                    }
+				}
             }
             
         purge_pending_mfu_and_update_previous_mmtp_payload:
@@ -388,16 +395,16 @@ static void route_process_from_alc_packet(alc_packet_t **alc_packet) {
         //trying to free this causes segfaults 100% of the time
         
         free (dataBuffer);
-        pipe_buffer_reader_mutex_lock(pipe_ffplay_buffer);
+        pipe_buffer_reader_mutex_lock(lls_slt_monitor->pipe_ffplay_buffer);
         
-        pipe_buffer_unsafe_push_block(pipe_ffplay_buffer, mpu_metadata_output_block_t->p_buffer, mpu_metadata_output_block_t->i_buffer);
+        pipe_buffer_unsafe_push_block(lls_slt_monitor->pipe_ffplay_buffer, mpu_metadata_output_block_t->p_buffer, mpu_metadata_output_block_t->i_buffer);
         
-        pipe_buffer_notify_semaphore_post(pipe_ffplay_buffer);
+        pipe_buffer_notify_semaphore_post(lls_slt_monitor->pipe_ffplay_buffer);
         
         //check to see if we have shutdown
-        pipe_buffer_reader_check_if_shutdown(&pipe_ffplay_buffer);
+        pipe_buffer_reader_check_if_shutdown(&lls_slt_monitor->pipe_ffplay_buffer);
 
-        pipe_buffer_reader_mutex_unlock(pipe_ffplay_buffer);
+        pipe_buffer_reader_mutex_unlock(lls_slt_monitor->pipe_ffplay_buffer);
         //reset our buffer pos
         lls_sls_monitor_output_buffer_reset_position(&lls_slt_monitor->lls_sls_alc_monitor->lls_sls_monitor_output_buffer);
     }
@@ -572,7 +579,6 @@ void process_packet(u_char *user, const struct pcap_pkthdr *pkthdr, const u_char
 	//ALC (ROUTE) - If this flow is registered from the SLT, process it as ALC, otherwise run the flow thru MMT
 	lls_sls_alc_session_t* matching_lls_slt_alc_session = lls_slt_alc_session_find_from_udp_packet(lls_slt_monitor, udp_packet->udp_flow.src_ip_addr, udp_packet->udp_flow.dst_ip_addr, udp_packet->udp_flow.dst_port);
 	if(matching_lls_slt_alc_session) {
-
 		global_bandwidth_statistics->interval_alc_current_bytes_rx += udp_packet->data_length;
 		global_bandwidth_statistics->interval_alc_current_packets_rx++;
 		global_stats->packet_counter_alc_recv++;
@@ -594,7 +600,7 @@ void process_packet(u_char *user, const struct pcap_pkthdr *pkthdr, const u_char
         __TRACE("data len: %d", udp_packet->data_length)
         mmtp_payload_fragments_union_t * mmtp_payload = mmtp_parse_from_udp_packet(udp_packet);
         if(mmtp_payload) {
-            mmtp_process_from_payload(udp_packet, &mmtp_payload);
+            mmtp_process_from_payload(udp_packet, &mmtp_payload, matching_lls_slt_mmt_session);
            // mmtp_payload_fragments_union_free(&mmtp_payload);
         }
         return cleanup(udp_packet);
@@ -675,8 +681,6 @@ int main(int argc,char **argv) {
     int dst_ip_port_filter_int;
     int dst_packet_id_filter_int;
 
-
-
     //listen to all flows
     if(argc == 2) {
     	dev = argv[1];
@@ -702,7 +706,6 @@ int main(int argc,char **argv) {
     	if(argc>=4) {
     		filter_dst_port = argv[3];
         	if(!(strncmp("*", filter_dst_port, 1) == 0 || strncmp("-", filter_dst_port, 1) == 0)) {
-            	__INFO("832:");
 
 				dst_port_filter_int = atoi(filter_dst_port);
 				dst_ip_port_filter = (uint16_t*)calloc(1, sizeof(uint16_t));
