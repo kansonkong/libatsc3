@@ -233,7 +233,6 @@ mmtp_payload_fragments_union_t* mmtp_process_from_payload(udp_packet_t *udp_pack
     mpu_data_unit_payload_fragments_t* mpu_metadata_fragments =    NULL;
     mpu_data_unit_payload_fragments_t* movie_metadata_fragments  = NULL;
     mmtp_sub_flow_t* mmtp_sub_flow = NULL;
-    bool has_rebuilt_fragments_to_mpu = false;
     
     //dump header, then dump applicable packet type
     //mmtp_packet_header_dump(mmtp_payload);
@@ -292,11 +291,9 @@ mmtp_payload_fragments_union_t* mmtp_process_from_payload(udp_packet_t *udp_pack
 
 
                         //major refactoring
-                        block_t* final_muxed_payload = atsc3_isobmff_build_mpu_metadata_ftyp_moof_mdat_box_from_mpu_sequence_numbers(&udp_packet->udp_flow, udp_flow_latest_mpu_sequence_number_container, min_mpu_sequence_number, min_mpu_sequence_number, mmtp_sub_flow_vector, lls_slt_monitor->lls_sls_mmt_monitor);
-                       
-                        has_rebuilt_fragments_to_mpu = true;
-                       
-                        if(final_muxed_payload) {
+                       lls_sls_monitor_output_buffer_t* lls_sls_monitor_output_buffer_final_muxed_payload = atsc3_isobmff_build_mpu_metadata_ftyp_moof_mdat_box_from_mpu_sequence_numbers(&udp_packet->udp_flow, udp_flow_latest_mpu_sequence_number_container, min_mpu_sequence_number, min_mpu_sequence_number, mmtp_sub_flow_vector, lls_slt_monitor->lls_sls_mmt_monitor);
+
+                        if(lls_sls_monitor_output_buffer_final_muxed_payload) {
                             //mark both of these flows as having been processed
                             matching_lls_slt_mmt_session->last_udp_flow_packet_id_mpu_sequence_tuple_audio_processed = true;
                             matching_lls_slt_mmt_session->last_udp_flow_packet_id_mpu_sequence_tuple_video_processed = true;
@@ -304,34 +301,24 @@ mmtp_payload_fragments_union_t* mmtp_process_from_payload(udp_packet_t *udp_pack
                             
                             if(lls_slt_monitor->lls_sls_mmt_monitor->lls_sls_monitor_output_buffer_mode.file_dump_enabled) {
                                 //todo, call atsc3_isobmff_build_mpu_metadata_ftyp_moof_mdat_box with forced init box
+                            	//lls_sls_monitor_output_buffer_final_muxed_payload
                             }
                             
                             if(lls_slt_monitor->lls_sls_mmt_monitor->lls_sls_monitor_output_buffer_mode.ffplay_output_enabled && lls_slt_monitor->lls_sls_mmt_monitor->lls_sls_monitor_output_buffer_mode.pipe_ffplay_buffer) {
 
                                 pipe_buffer_reader_mutex_lock(lls_slt_monitor->lls_sls_mmt_monitor->lls_sls_monitor_output_buffer_mode.pipe_ffplay_buffer);
-
-                                __INFO("**** return payload is: first 8 bytes are %x %x %x %x %x %x %x %x",
-                                       final_muxed_payload->p_buffer[0],
-                                       final_muxed_payload->p_buffer[1],
-                                       final_muxed_payload->p_buffer[2],
-                                       final_muxed_payload->p_buffer[3],
-                                       final_muxed_payload->p_buffer[4],
-                                       final_muxed_payload->p_buffer[5],
-                                       final_muxed_payload->p_buffer[6],
-                                       final_muxed_payload->p_buffer[7]);
                                 
-                                pipe_buffer_unsafe_push_block(lls_slt_monitor->lls_sls_mmt_monitor->lls_sls_monitor_output_buffer_mode.pipe_ffplay_buffer, final_muxed_payload->p_buffer, final_muxed_payload->i_pos);
+                                pipe_buffer_unsafe_push_block(lls_slt_monitor->lls_sls_mmt_monitor->lls_sls_monitor_output_buffer_mode.pipe_ffplay_buffer, lls_sls_monitor_output_buffer_final_muxed_payload->joined_isobmff_block->p_buffer, lls_sls_monitor_output_buffer_final_muxed_payload->joined_isobmff_block->i_pos);
 
-                                    lls_slt_monitor->lls_sls_mmt_monitor->lls_sls_monitor_output_buffer.has_written_init_box = true;
-                                //todo - refactor? mpu_push_to_output_buffer_no_locking(pipe_ffplay_buffer, mpu_metadata);
+                                lls_slt_monitor->lls_sls_mmt_monitor->lls_sls_monitor_output_buffer.has_written_init_box = true;
+
                                 pipe_buffer_notify_semaphore_post(lls_slt_monitor->lls_sls_mmt_monitor->lls_sls_monitor_output_buffer_mode.pipe_ffplay_buffer);
-                                pipe_buffer_reader_check_if_shutdown(&lls_slt_monitor->lls_sls_mmt_monitor->lls_sls_monitor_output_buffer_mode.pipe_ffplay_buffer);
+
+                                //check to see if we have shutdown
+                                lls_slt_monitor_check_and_handle_pipe_ffplay_buffer_is_shutdown(lls_slt_monitor);
 
                                 pipe_buffer_reader_mutex_unlock(lls_slt_monitor->lls_sls_mmt_monitor->lls_sls_monitor_output_buffer_mode.pipe_ffplay_buffer);
-                                //check to see if we have shutdown
-                                
-                                //reset our buffer pos
-                                lls_sls_monitor_output_buffer_reset_moov_and_fragment_position(&lls_slt_monitor->lls_sls_mmt_monitor->lls_sls_monitor_output_buffer);
+
                             }
                         }
                     }
@@ -451,27 +438,31 @@ static void route_process_from_alc_packet(alc_packet_t **alc_packet) {
     alc_packet_dump_to_object(alc_packet);
     
     if(lls_slt_monitor->lls_sls_alc_monitor->lls_sls_monitor_output_buffer.has_written_init_box && lls_slt_monitor->lls_sls_alc_monitor->lls_sls_monitor_output_buffer.should_flush_output_buffer) {
-        AP4_DataBuffer* dataBuffer = new AP4_DataBuffer(4096000);
-        AP4_MemoryByteStream* memoryOutputByteStream = new AP4_MemoryByteStream(dataBuffer);
+        AP4_MemoryByteStream* ap4_memory_byte_stream;
+
+        ISOBMFF_track_joiner_monitor_output_buffer_parse_and_build_joined_boxes(&lls_slt_monitor->lls_sls_alc_monitor->lls_sls_monitor_output_buffer, &ap4_memory_byte_stream);
+
+    	if(!ap4_memory_byte_stream || !ap4_memory_byte_stream->GetDataSize()) {
+    		__ERROR("route_process_from_alc_packet: returned %p, size: %u, returning NULL", ap4_memory_byte_stream, ap4_memory_byte_stream != NULL ? ap4_memory_byte_stream->GetDataSize() : 0);
+    		return;
+    	}
+    	__DEBUG("building return alloc of %u", ap4_memory_byte_stream->GetDataSize());
+
         
-        ISOBMFF_track_joiner_monitor_output_buffer_parse_and_build_joined_boxes(&lls_slt_monitor->lls_sls_alc_monitor->lls_sls_monitor_output_buffer, memoryOutputByteStream);
-        block_t* mpu_metadata_output_block_t = NULL;
-        
-        __DEBUG("building reutrn alloc of %u", dataBuffer->GetDataSize());
-        mpu_metadata_output_block_t = block_Alloc(dataBuffer->GetDataSize());
-        memcpy(mpu_metadata_output_block_t->p_buffer, dataBuffer->GetData(), dataBuffer->GetDataSize());
+        block_t* mpu_metadata_output_block = block_Alloc(ap4_memory_byte_stream->GetDataSize());
+        block_Write(mpu_metadata_output_block, (uint8_t*)ap4_memory_byte_stream->GetData(), ap4_memory_byte_stream->GetDataSize());
         
         //trying to free this causes segfaults 100% of the time
         
-        free (dataBuffer);
+        free (ap4_memory_byte_stream);
         pipe_buffer_reader_mutex_lock(lls_slt_monitor->pipe_ffplay_buffer);
         
-        pipe_buffer_unsafe_push_block(lls_slt_monitor->pipe_ffplay_buffer, mpu_metadata_output_block_t->p_buffer, mpu_metadata_output_block_t->i_pos);
+        pipe_buffer_unsafe_push_block(lls_slt_monitor->pipe_ffplay_buffer, mpu_metadata_output_block->p_buffer, mpu_metadata_output_block->i_pos);
         
         pipe_buffer_notify_semaphore_post(lls_slt_monitor->pipe_ffplay_buffer);
         
         //check to see if we have shutdown
-        pipe_buffer_reader_check_if_shutdown(&lls_slt_monitor->pipe_ffplay_buffer);
+        lls_slt_monitor_check_and_handle_pipe_ffplay_buffer_is_shutdown(lls_slt_monitor);
 
         pipe_buffer_reader_mutex_unlock(lls_slt_monitor->pipe_ffplay_buffer);
         //reset our buffer pos
