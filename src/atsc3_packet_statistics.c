@@ -210,20 +210,20 @@ void atsc3_packet_statistics_mmt_stats_populate(udp_packet_t* udp_packet, mmtp_p
 		__PS_REFRESH_LOSS();
 
 		//push this to our missing packet flow for investigation
-		__PS_STATS_STDOUT("packets missing:\t%u.%u.%u.%u\t%u\tpacket_counter_from:\t%u\tpacket_counter_to:\t%u\ttimestamp_from:\t%u\tfrom_s:\t%u\tfrom_us:\t%u\ttimestamp_to:\t%u\tto_s:\t%u\tto_us:\t%u\tpacket_id:\t%u\tPSN_from:\t%u\tPSN_to:\t%u\tTotal_missing:\t%u",
-				__toip(packet_mmt_stats),
-				packet_mmt_stats->packet_counter_value,
-				mmtp_payload->mmtp_packet_header.packet_counter,
-				packet_mmt_stats->timestamp,
-				packet_mmt_stats->timestamp_s,
-				packet_mmt_stats->timestamp_us,
-				mmtp_payload->mmtp_packet_header.mmtp_timestamp,
-				mmtp_payload->mmtp_packet_header.mmtp_timestamp_s,
-				mmtp_payload->mmtp_packet_header.mmtp_timestamp_us,
-				packet_mmt_stats->packet_id,
-				packet_mmt_stats->packet_sequence_number,
-				mmtp_payload->mmtp_packet_header.packet_sequence_number,
-				packet_mmt_stats->packet_sequence_number_last_gap);
+		//__PS_STATS_STDOUT("packets missing:\t%u.%u.%u.%u\t%u\tpacket_counter_from:\t%u\tpacket_counter_to:\t%u\ttimestamp_from:\t%u\tfrom_s:\t%u\tfrom_us:\t%u\ttimestamp_to:\t%u\tto_s:\t%u\tto_us:\t%u\tpacket_id:\t%u\tPSN_from:\t%u\tPSN_to:\t%u\tTotal_missing:\t%u",
+//				__toip(packet_mmt_stats),
+//				packet_mmt_stats->packet_counter_value,
+//				mmtp_payload->mmtp_packet_header.packet_counter,
+//				packet_mmt_stats->timestamp,
+//				packet_mmt_stats->timestamp_s,
+//				packet_mmt_stats->timestamp_us,
+//				mmtp_payload->mmtp_packet_header.mmtp_timestamp,
+//				mmtp_payload->mmtp_packet_header.mmtp_timestamp_s,
+//				mmtp_payload->mmtp_packet_header.mmtp_timestamp_us,
+//				packet_mmt_stats->packet_id,
+//				packet_mmt_stats->packet_sequence_number,
+//				mmtp_payload->mmtp_packet_header.packet_sequence_number,
+//				packet_mmt_stats->packet_sequence_number_last_gap);
 				__PS_REFRESH_LOSS();
 	}
 	//remember, a lot of these values can roll over...
