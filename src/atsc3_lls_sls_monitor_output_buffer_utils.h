@@ -16,6 +16,24 @@
 extern int _LLS_SLS_MONITOR_OUTPUT_BUFFER_UTILS_DEBUG_ENABLED;
 extern int _LLS_SLS_MONITOR_OUTPUT_BUFFER_UTILS_TRACE_ENABLED;
 
+
+//for bento4 support
+typedef struct trun_sample_entry {
+   uint32_t sample_duration;
+   uint32_t sample_size;
+   uint32_t sample_flags;
+   uint32_t sample_composition_time_offset;
+} trun_sample_entry_t;
+
+typedef struct trun_sample_entry_vector {
+	uint32_t size;
+	trun_sample_entry_t** data;
+} trun_sample_entry_vector_t;
+
+trun_sample_entry_vector_t* parseMoofBoxForTrunSampleEntries(block_t* moof_box);
+//end for bento4 support
+
+
 void lls_sls_monitor_output_buffer_reset_moov_and_fragment_position(lls_sls_monitor_output_buffer_t* lls_sls_monitor_output_buffer);
 void lls_sls_monitor_output_buffer_reset_all_position(lls_sls_monitor_output_buffer_t* lls_sls_monitor_output_buffer);
 
@@ -26,6 +44,8 @@ int lls_sls_monitor_output_buffer_copy_and_recover_audio_fragment_block(lls_sls_
 
 int lls_sls_monitor_output_buffer_copy_video_init_block(lls_sls_monitor_output_buffer_t* lls_sls_monitor_output_buffer, block_t* video_isobmff_header);
 int lls_sls_monitor_output_buffer_copy_video_moov_block(lls_sls_monitor_output_buffer_t* lls_sls_monitor_output_buffer, block_t* video_isobmff_header);
+int lls_sls_monitor_output_buffer_copy_and_parse_video_moov_block(lls_sls_monitor_output_buffer_t* lls_sls_monitor_output_buffer, mmtp_payload_fragments_union_t* video_isobmff_moov_fragment);
+
 int lls_sls_monitor_output_buffer_copy_video_fragment_block(lls_sls_monitor_output_buffer_t* lls_sls_monitor_output_buffer, block_t* video_isobmff_header);
 int lls_sls_monitor_output_buffer_copy_and_recover_video_fragment_block(lls_sls_monitor_output_buffer_t* lls_sls_monitor_output_buffer, mmtp_payload_fragments_union_t* video_data_unit);
 

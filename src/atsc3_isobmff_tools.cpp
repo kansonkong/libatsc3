@@ -354,7 +354,7 @@ lls_sls_monitor_output_buffer_t* atsc3_isobmff_build_mpu_metadata_ftyp_moof_mdat
                 
                 //rebuild if we are fragmented
                 if(udp_flow_packet_id_mpu_sequence_tuple->packet_id == lls_sls_mmt_monitor->video_packet_id) {
-					lls_sls_monitor_output_buffer_copy_video_moov_block(lls_sls_monitor_output_buffer, fragment_metadata->mmtp_mpu_type_packet_header.mpu_data_unit_payload);
+                	lls_sls_monitor_output_buffer_copy_and_parse_video_moov_block(lls_sls_monitor_output_buffer, fragment_metadata);
                 } else if(udp_flow_packet_id_mpu_sequence_tuple->packet_id == lls_sls_mmt_monitor->audio_packet_id) {
                 	lls_sls_monitor_output_buffer_copy_audio_moov_block(lls_sls_monitor_output_buffer, fragment_metadata->mmtp_mpu_type_packet_header.mpu_data_unit_payload);
                 }
