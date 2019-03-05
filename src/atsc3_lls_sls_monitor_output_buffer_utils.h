@@ -24,6 +24,7 @@ typedef struct trun_sample_entry {
    uint32_t sample_flags;
    uint32_t sample_composition_time_offset;
    bool to_remove_sample_entry;
+   bool has_matching_sample;
 } trun_sample_entry_t;
 
 typedef struct trun_sample_entry_vector {
@@ -32,6 +33,8 @@ typedef struct trun_sample_entry_vector {
 } trun_sample_entry_vector_t;
 
 trun_sample_entry_vector_t* parseMoofBoxForTrunSampleEntries(block_t* moof_box);
+//trun_sample_entry_vector_t* parseMoofBoxForTrunSampleEntriesWithSampleSize(block_t* moof_box);
+
 //end for bento4 support
 
 
