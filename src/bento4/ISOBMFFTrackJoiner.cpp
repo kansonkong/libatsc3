@@ -118,6 +118,46 @@ ISOBMFFTrackJoinerFileResouces_t* loadFileResources(const char* file1, const cha
 	return isoBMFFTrackJoinerResources;
 }
 
+trun_sample_entry_vector_t* parseMoofBoxForTrunSampleEntries(block_t* moof_box) {
+
+	list<AP4_Atom*> isobmff_atom_list  = ISOBMFFTrackParse(moof_box);
+	AP4_AtomParent* moofAtomParent = NULL;
+	AP4_TrunAtom* trunAtom = NULL;
+
+	trun_sample_entry_vector_t* trun_sample_entry_vector = (trun_sample_entry_vector_t*) calloc(1, sizeof(trun_sample_entry_vector_t));
+
+	std::list<AP4_Atom*>::iterator it;
+	for (it = isobmff_atom_list.begin(); it != isobmff_atom_list.end(); it++) {
+
+		if((*it)->GetType() == AP4_ATOM_TYPE_MOOF) {
+			moofAtomParent = AP4_DYNAMIC_CAST(AP4_ContainerAtom, *it);
+
+			AP4_ContainerAtom* tmpTrafToCheck;
+			int trafIdx = 0;
+			while((tmpTrafToCheck = AP4_DYNAMIC_CAST(AP4_ContainerAtom, moofAtomParent->GetChild(AP4_ATOM_TYPE_TRAF, trafIdx++)))) {
+				 trunAtom = AP4_DYNAMIC_CAST(AP4_TrunAtom, tmpTrafToCheck->GetChild(AP4_ATOM_TYPE_TRUN));
+				 if(trunAtom) {
+					//check for first sample duration
+					const AP4_Array<AP4_TrunAtom::Entry>& sampleEntries = trunAtom->GetEntries();
+					if(sampleEntries.ItemCount() > 0 && sampleEntries[0].sample_size) {
+						trun_sample_entry_vector->data = (trun_sample_entry_t**) calloc(sampleEntries.ItemCount(), sizeof(trun_sample_entry_vector->data));
+
+						for(int i=0; i < sampleEntries.ItemCount(); i++) {
+							trun_sample_entry_vector->data[i] = (trun_sample_entry_t*) calloc(1, sizeof(trun_sample_entry_t));
+							trun_sample_entry_vector->data[i]->sample_composition_time_offset = sampleEntries[i].sample_composition_time_offset;
+							trun_sample_entry_vector->data[i]->sample_duration = sampleEntries[i].sample_duration;
+							trun_sample_entry_vector->data[i]->sample_flags = sampleEntries[i].sample_flags;
+							trun_sample_entry_vector->data[i]->sample_size = sampleEntries[i].sample_size;
+							trun_sample_entry_vector->size++;
+						}
+					}
+				}
+			}
+		}
+	}
+
+	return trun_sample_entry_vector;
+}
 
 void ISOBMFF_track_joiner_monitor_output_buffer_parse_and_build_joined_boxes(lls_sls_monitor_output_buffer_t* lls_sls_monitor_output_buffer, AP4_MemoryByteStream** output_stream_p)
 {
@@ -169,8 +209,6 @@ void parseAndBuildJoinedBoxes_from_lls_sls_monitor_output_buffer(lls_sls_monitor
 
 	block_t* audio_output_buffer = lls_sls_monitor_output_buffer_copy_audio_full_isobmff_box(lls_sls_monitor_output_buffer);
 	block_t* video_output_buffer = lls_sls_monitor_output_buffer_copy_video_full_isobmff_box(lls_sls_monitor_output_buffer);
-
-
 
 	if(!audio_output_buffer || !video_output_buffer) {
 		__ISOBMFF_JOINER_INFO("setting *output_stream_p to null, audio_output_buffer: %p, video_output_buffer: %p", audio_output_buffer, video_output_buffer);

@@ -45,6 +45,7 @@ typedef struct ISOBMFFTrackJoinerFileResouces {
 
 } ISOBMFFTrackJoinerFileResouces_t;
 
+
 void ISOBMFF_track_joiner_monitor_output_buffer_parse_and_build_joined_boxes(lls_sls_monitor_output_buffer_t* lls_sls_monitor_output_buffer, AP4_MemoryByteStream** output_stream);
 
 void parseAndBuildJoinedBoxes_from_lls_sls_monitor_output_buffer(lls_sls_monitor_output_buffer_t* lls_sls_monitor_output_buffer, AP4_MemoryByteStream** output_stream_p);

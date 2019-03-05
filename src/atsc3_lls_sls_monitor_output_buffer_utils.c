@@ -78,6 +78,7 @@ sample duration of the previous sample and the sample offsets of the following s
 
 #include "atsc3_lls_sls_monitor_output_buffer_utils.h"
 
+
 int _LLS_SLS_MONITOR_OUTPUT_BUFFER_UTILS_DEBUG_ENABLED = 0;
 int _LLS_SLS_MONITOR_OUTPUT_BUFFER_UTILS_TRACE_ENABLED = 0;
 
@@ -187,6 +188,23 @@ int lls_sls_monitor_output_buffer_copy_video_moov_block(lls_sls_monitor_output_b
 }
 
 
+int lls_sls_monitor_output_buffer_copy_and_parse_video_moov_block(lls_sls_monitor_output_buffer_t* lls_sls_monitor_output_buffer, mmtp_payload_fragments_union_t* video_isobmff_moov_fragment) {
+
+    if(!lls_sls_monitor_output_buffer->video_output_buffer_isobmff.moov_box) {
+        lls_sls_monitor_output_buffer->video_output_buffer_isobmff.moov_box = (uint8_t*)calloc(_LLS_SLS_MONITOR_OUTPUT_MAX_MOOV_BUFFER, sizeof(uint8_t));
+    }
+    int size = __lls_sls_monitor_output_buffer_check_and_copy(lls_sls_monitor_output_buffer->video_output_buffer_isobmff.moov_box, &lls_sls_monitor_output_buffer->video_output_buffer_isobmff.moov_box_pos, _LLS_SLS_MONITOR_OUTPUT_MAX_MOOV_BUFFER, video_isobmff_moov_fragment->mmtp_mpu_type_packet_header.mpu_data_unit_payload);
+    if(size && (video_isobmff_moov_fragment->mmtp_mpu_type_packet_header.mpu_fragmentation_indicator == 0x0 || video_isobmff_moov_fragment->mmtp_mpu_type_packet_header.mpu_fragmentation_indicator == 0x3)) {
+    	//parse this as a mdat
+    	block_t* moov_box = block_Alloc(lls_sls_monitor_output_buffer->video_output_buffer_isobmff.moov_box_pos);
+    	block_Write(moov_box, lls_sls_monitor_output_buffer->video_output_buffer_isobmff.moov_box, lls_sls_monitor_output_buffer->video_output_buffer_isobmff.moov_box_pos);
+    	trun_sample_entry_vector_t* trun_sample_entry_vector = parseMoofBoxForTrunSampleEntries(moov_box);
+    	lls_sls_monitor_output_buffer->video_output_buffer_isobmff.moof_box_trun_sample_entry_vector = trun_sample_entry_vector;
+    }
+    return size;
+}
+
+
 int lls_sls_monitor_output_buffer_copy_video_fragment_block(lls_sls_monitor_output_buffer_t* lls_sls_monitor_output_buffer, block_t* video_isobmff_fragment) {
 
     if(!lls_sls_monitor_output_buffer->video_output_buffer_isobmff.fragment_box) {
@@ -219,7 +237,12 @@ void __data_unit_recover_null_pad_offset_range_same_sample_id(mmtp_payload_fragm
 	}
 
 
-	uint32_t to_null_size =	data_unit_to->mpu_data_unit_payload_fragments_timed.offset - (data_unit_from->mpu_data_unit_payload_fragments_timed.offset + data_unit_from->mpu_data_unit_payload_fragments_timed.mpu_data_unit_payload->i_pos);
+    uint32_t to_null_size;
+    if(data_unit_from->mmtp_mpu_type_packet_header.data_unit_length) {
+        to_null_size = data_unit_to->mpu_data_unit_payload_fragments_timed.offset - (data_unit_from->mpu_data_unit_payload_fragments_timed.offset + data_unit_from->mpu_data_unit_payload_fragments_timed.data_unit_length);
+    }  else {
+        to_null_size = data_unit_to->mpu_data_unit_payload_fragments_timed.offset - (data_unit_from->mpu_data_unit_payload_fragments_timed.offset + data_unit_from->mpu_data_unit_payload_fragments_timed.mpu_data_unit_payload->i_pos);
+    }
 	__LLS_SLS_MONITOR_OUTPUT_BUFFER_UTILS_WARN("RECOVER: null pad RANGE: adding %u head to %u, to packet_sequence_number: %u, from packet_sequence_number: %u, mpu_sequence_number: %u",
 			to_null_size,
 			data_unit_to->mmtp_mpu_type_packet_header.mpu_data_unit_payload->i_pos,
@@ -230,6 +253,10 @@ void __data_unit_recover_null_pad_offset_range_same_sample_id(mmtp_payload_fragm
 	block_t* temp_mpu_data_unit_payload = block_Alloc(to_null_size + data_unit_to->mmtp_mpu_type_packet_header.mpu_data_unit_payload->i_pos);
 	temp_mpu_data_unit_payload->i_pos = to_null_size;
 	block_Write(temp_mpu_data_unit_payload, data_unit_to->mmtp_mpu_type_packet_header.mpu_data_unit_payload->p_buffer, data_unit_to->mmtp_mpu_type_packet_header.mpu_data_unit_payload->i_pos);
+    
+    //hack - keep track of our old du size
+    data_unit_to->mmtp_mpu_type_packet_header.data_unit_length = data_unit_to->mmtp_mpu_type_packet_header.mpu_data_unit_payload->i_pos;
+    
 	block_Release(&data_unit_to->mmtp_mpu_type_packet_header.mpu_data_unit_payload);
 	data_unit_to->mmtp_mpu_type_packet_header.mpu_data_unit_payload = temp_mpu_data_unit_payload;
 }
@@ -242,6 +269,8 @@ int lls_sls_monitor_output_buffer_copy_and_recover_video_fragment_block(lls_sls_
 
 	lls_sls_monitor_buffer_isobmff_t* lls_sls_monitor_buffer_isobmff = &lls_sls_monitor_output_buffer->video_output_buffer_isobmff;
 	block_t* video_mpu_data_unit_payload = video_data_unit->mmtp_mpu_type_packet_header.mpu_data_unit_payload;
+
+	trun_sample_entry_vector_t* moof_box_trun_sample_entry_vector = lls_sls_monitor_output_buffer->video_output_buffer_isobmff.moof_box_trun_sample_entry_vector;
 
 	if(!lls_sls_monitor_buffer_isobmff->last_fragment) {
 
@@ -281,6 +310,11 @@ int lls_sls_monitor_output_buffer_copy_and_recover_video_fragment_block(lls_sls_
 
 			//we can't null pad this out without interriogating the mdat
 			uint32_t missing_last_packets = lls_sls_monitor_buffer_isobmff->last_fragment->mpu_data_unit_payload_fragments_timed.mpu_fragmentation_counter;
+
+			for(int i=0; i < moof_box_trun_sample_entry_vector->size; i++) {
+				trun_sample_entry_t* trun_sample_entry = moof_box_trun_sample_entry_vector->data[i];
+				__LLS_SLS_MONITOR_OUTPUT_BUFFER_UTILS_WARN("moof sample: %u, sample size: %u, to match fragment sample: %u", i, trun_sample_entry->sample_size, lls_sls_monitor_buffer_isobmff->last_fragment->mpu_data_unit_payload_fragments_timed.sample_number);
+			}
 
 			//we can null pad the offset size
 			uint32_t missing_current_bytes = video_data_unit->mpu_data_unit_payload_fragments_timed.offset;

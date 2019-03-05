@@ -20,6 +20,7 @@
 //4k gets pretty big pretty quick
 #define _LLS_SLS_MONITOR_OUTPUT_MAX_FRAGMENT_BUFFER 16384000
 
+
 typedef struct lls_sls_monitor_buffer_isobmff {
 	uint32_t track_id;
 
@@ -32,6 +33,10 @@ typedef struct lls_sls_monitor_buffer_isobmff {
     //optional, route-dash contains moov + mdat pre-combined, so use the fragment below
     uint8_t* moov_box;
     uint32_t moov_box_pos;
+
+    //
+    struct trun_sample_entry_vector* moof_box_trun_sample_entry_vector;
+
 
     //always need a fragment, may be just data unit for track
     uint8_t* fragment_box;
