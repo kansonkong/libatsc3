@@ -34,6 +34,7 @@ typedef struct lls_sls_monitor_buffer_isobmff {
     uint8_t* moof_box;
     uint32_t moof_box_pos;
     bool moof_box_is_from_last_mpu;
+    bool moof_box_is_from_last_mpu_processed;
 
     //for rebuilding moof boxes if they are lost, we don't clear the buffer so we can recover from a lost fragment.
     uint32_t last_moof_box_pos;
