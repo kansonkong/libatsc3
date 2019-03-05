@@ -1,3 +1,3 @@
 rm -f mpu/*
 rm -f route/*
-./atsc3_listener_metrics_ncurses vnic1  2> debug.log
+./atsc3_listener_metrics_ncurses vnic1 239.255.10.1 51001  2> debug.log

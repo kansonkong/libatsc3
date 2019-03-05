@@ -336,7 +336,38 @@ void parseAndBuildJoinedBoxes_from_lls_sls_monitor_output_buffer(lls_sls_monitor
 			AP4_AtomParent* moofAtom = AP4_DYNAMIC_CAST(AP4_ContainerAtom, *it);
 			AP4_ContainerAtom* trafContainerAtom = AP4_DYNAMIC_CAST(AP4_ContainerAtom, moofAtom->GetChild(AP4_ATOM_TYPE_TRAF));
 			audio_trafList.push_back(trafContainerAtom);
-			audio_trunList.push_back(AP4_DYNAMIC_CAST(AP4_TrunAtom, trafContainerAtom->GetChild(AP4_ATOM_TYPE_TRUN)));
+
+			AP4_TrunAtom* temp_trunAtom = AP4_DYNAMIC_CAST(AP4_TrunAtom, trafContainerAtom->GetChild(AP4_ATOM_TYPE_TRUN));
+
+			//rebuild our trun here
+			if(lls_sls_monitor_output_buffer->audio_output_buffer_isobmff.moof_box_trun_sample_entry_vector && lls_sls_monitor_output_buffer->audio_output_buffer_isobmff.moof_box_trun_sample_entry_vector->size) {
+				AP4_Array<AP4_TrunAtom::Entry>& to_walk_entries = temp_trunAtom->UseEntries();
+				AP4_Array<AP4_TrunAtom::Entry> purged_entries;
+
+				AP4_Array<AP4_TrunAtom::Entry> rebuilt_container;
+
+				if(lls_sls_monitor_output_buffer->audio_output_buffer_isobmff.moof_box_is_from_last_mpu) {
+					//use our same attributes except sample size..
+					for(int i=0; i < lls_sls_monitor_output_buffer->audio_output_buffer_isobmff.moof_box_trun_sample_entry_vector->size; i++) {
+						uint32_t last_sample_size = to_walk_entries[i].sample_size;
+						to_walk_entries[i].sample_size = lls_sls_monitor_output_buffer->audio_output_buffer_isobmff.moof_box_trun_sample_entry_vector->data[i]->sample_size;
+						__ISOBMFF_JOINER_INFO("audio trun: REBUILD: setting sample %u from size: %u to size: %u", i, last_sample_size, to_walk_entries[i].sample_size);
+					}
+
+				} else {
+					for(int i=0; i < lls_sls_monitor_output_buffer->audio_output_buffer_isobmff.moof_box_trun_sample_entry_vector->size; i++) {
+						if(lls_sls_monitor_output_buffer->audio_output_buffer_isobmff.moof_box_trun_sample_entry_vector->data[i]->to_remove_sample_entry) {
+							purged_entries.Append(to_walk_entries[i]);
+						} else {
+							rebuilt_container.Append(to_walk_entries[i]);
+						}
+					}
+					temp_trunAtom->SetEntries(rebuilt_container);
+
+					__ISOBMFF_JOINER_INFO("audio trun: purged %u sample entries, now contains %u entries", purged_entries.ItemCount(), rebuilt_container.ItemCount());
+				}
+			}
+			audio_trunList.push_back(temp_trunAtom);
 		}
 
 		if((*it)->GetType() == AP4_ATOM_TYPE_MDAT) {
@@ -469,6 +500,40 @@ void parseAndBuildJoinedBoxes_from_lls_sls_monitor_output_buffer(lls_sls_monitor
                 			has_found_sample_duration = true;
                 		}
                 	}
+
+                	//copy paste warning
+                	//rebuild our trun here
+					if(lls_sls_monitor_output_buffer->video_output_buffer_isobmff.moof_box_trun_sample_entry_vector && lls_sls_monitor_output_buffer->video_output_buffer_isobmff.moof_box_trun_sample_entry_vector->size) {
+						AP4_Array<AP4_TrunAtom::Entry>& to_walk_entries = video_trunAtom->UseEntries();
+						AP4_Array<AP4_TrunAtom::Entry> purged_entries;
+
+						AP4_Array<AP4_TrunAtom::Entry> rebuilt_container;
+
+						if(lls_sls_monitor_output_buffer->video_output_buffer_isobmff.moof_box_is_from_last_mpu) {
+							//use our same attributes except sample size..
+							for(int i=0; i < lls_sls_monitor_output_buffer->video_output_buffer_isobmff.moof_box_trun_sample_entry_vector->size; i++) {
+								uint32_t last_sample_size = to_walk_entries[i].sample_size;
+								to_walk_entries[i].sample_size = lls_sls_monitor_output_buffer->video_output_buffer_isobmff.moof_box_trun_sample_entry_vector->data[i]->sample_size;
+								__ISOBMFF_JOINER_INFO("video trun: REBUILD: setting sample %u from size: %u to size: %u", i, last_sample_size, to_walk_entries[i].sample_size);
+							}
+
+						} else {
+							for(int i=0; i < lls_sls_monitor_output_buffer->video_output_buffer_isobmff.moof_box_trun_sample_entry_vector->size; i++) {
+								if(lls_sls_monitor_output_buffer->video_output_buffer_isobmff.moof_box_trun_sample_entry_vector->data[i]->to_remove_sample_entry) {
+									purged_entries.Append(to_walk_entries[i]);
+								} else {
+									rebuilt_container.Append(to_walk_entries[i]);
+								}
+							}
+							video_trunAtom->SetEntries(rebuilt_container);
+
+							__ISOBMFF_JOINER_INFO("video trun: purged %u sample entries, now contains %u entries", purged_entries.ItemCount(), rebuilt_container.ItemCount());
+						}
+					}
+
+                	//end copy paste warning
+
+
                 }
             }
 		}
