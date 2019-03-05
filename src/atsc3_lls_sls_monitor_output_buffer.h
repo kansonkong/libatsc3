@@ -16,7 +16,7 @@
 
 
 #define _LLS_SLS_MONITOR_OUTPUT_MAX_INIT_BUFFER 65535
-#define _LLS_SLS_MONITOR_OUTPUT_MAX_MOOV_BUFFER 65535
+#define _LLS_SLS_MONITOR_OUTPUT_MAX_MOOF_BUFFER 65535
 //4k gets pretty big pretty quick
 #define _LLS_SLS_MONITOR_OUTPUT_MAX_FRAGMENT_BUFFER 16384000
 
@@ -30,11 +30,13 @@ typedef struct lls_sls_monitor_buffer_isobmff {
     uint8_t* init_box;
     uint32_t init_box_pos;
 
-    //optional, route-dash contains moov + mdat pre-combined, so use the fragment below
-    uint8_t* moov_box;
-    uint32_t moov_box_pos;
+    //optional, route-dash contains moof + mdat pre-combined, so use the fragment below
+    uint8_t* moof_box;
+    uint32_t moof_box_pos;
+    bool moof_box_is_from_last_mpu;
 
-    //
+    //for rebuilding moof boxes if they are lost, we don't clear the buffer so we can recover from a lost fragment.
+    uint32_t last_moof_box_pos;
     struct trun_sample_entry_vector* moof_box_trun_sample_entry_vector;
 
 
