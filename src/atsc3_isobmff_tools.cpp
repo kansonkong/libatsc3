@@ -356,18 +356,19 @@ lls_sls_monitor_output_buffer_t* atsc3_isobmff_build_mpu_metadata_ftyp_moof_mdat
                 if(udp_flow_packet_id_mpu_sequence_tuple->packet_id == lls_sls_mmt_monitor->video_packet_id) {
                 	lls_sls_monitor_output_buffer_copy_and_parse_video_moof_block(lls_sls_monitor_output_buffer, fragment_metadata);
                 } else if(udp_flow_packet_id_mpu_sequence_tuple->packet_id == lls_sls_mmt_monitor->audio_packet_id) {
-                	lls_sls_monitor_output_buffer_copy_audio_moof_block(lls_sls_monitor_output_buffer, fragment_metadata->mmtp_mpu_type_packet_header.mpu_data_unit_payload);
+                	lls_sls_monitor_output_buffer_copy_and_parse_audio_moof_block(lls_sls_monitor_output_buffer, fragment_metadata);
                 }
             }
         } else {
         	if(udp_flow_packet_id_mpu_sequence_tuple->packet_id == lls_sls_mmt_monitor->video_packet_id && lls_sls_monitor_output_buffer->video_output_buffer_isobmff.moof_box && lls_sls_monitor_output_buffer->video_output_buffer_isobmff.last_moof_box_pos) {
-                __ISOBMFF_TOOLS_WARN("Movie Fragment Metadata is NULL, using previous box size for recon: %u", lls_sls_monitor_output_buffer->video_output_buffer_isobmff.last_moof_box_pos);
+                __ISOBMFF_TOOLS_WARN("Movie Fragment Metadata is NULL, using video previous box size for recon: %u", lls_sls_monitor_output_buffer->video_output_buffer_isobmff.last_moof_box_pos);
                 lls_sls_monitor_output_buffer_recover_from_last_video_moof_box(lls_sls_monitor_output_buffer);
 
-			} else if(udp_flow_packet_id_mpu_sequence_tuple->packet_id == lls_sls_mmt_monitor->audio_packet_id) {
-				//lls_sls_monitor_output_buffer_copy_audio_moof_block(lls_sls_monitor_output_buffer, fragment_metadata->mmtp_mpu_type_packet_header.mpu_data_unit_payload);
-			} else {
+        	} else if(udp_flow_packet_id_mpu_sequence_tuple->packet_id == lls_sls_mmt_monitor->audio_packet_id && lls_sls_monitor_output_buffer->audio_output_buffer_isobmff.moof_box && lls_sls_monitor_output_buffer->audio_output_buffer_isobmff.last_moof_box_pos) {
+				  __ISOBMFF_TOOLS_WARN("Movie Fragment Metadata is NULL, using audio previous box size for recon: %u", lls_sls_monitor_output_buffer->audio_output_buffer_isobmff.last_moof_box_pos);
+				lls_sls_monitor_output_buffer_recover_from_last_audio_moof_box(lls_sls_monitor_output_buffer);
 
+			} else {
 				__ISOBMFF_TOOLS_WARN("Movie Fragment Metadata is NULL for packet_id: %u, mpu_sequence_id; %u", udp_flow_packet_id_mpu_sequence_tuple->packet_id, udp_flow_packet_id_mpu_sequence_tuple->packet_id);
 				//goto purge_pending_mfu_and_update_previous_mmtp_payload; //for now
 				return NULL;

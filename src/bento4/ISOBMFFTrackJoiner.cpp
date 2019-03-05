@@ -510,30 +510,41 @@ void parseAndBuildJoinedBoxes_from_lls_sls_monitor_output_buffer(lls_sls_monitor
 						AP4_Array<AP4_TrunAtom::Entry> rebuilt_container;
 
 						if(lls_sls_monitor_output_buffer->video_output_buffer_isobmff.moof_box_is_from_last_mpu) {
+
 							//use our same attributes except sample size..
 							for(int i=0; i < lls_sls_monitor_output_buffer->video_output_buffer_isobmff.moof_box_trun_sample_entry_vector->size; i++) {
 								uint32_t last_sample_size = to_walk_entries[i].sample_size;
-								to_walk_entries[i].sample_size = lls_sls_monitor_output_buffer->video_output_buffer_isobmff.moof_box_trun_sample_entry_vector->data[i]->sample_size;
+								if(lls_sls_monitor_output_buffer->video_output_buffer_isobmff.moof_box_trun_sample_entry_vector->data[i]->to_remove_sample_entry) {
+									purged_entries.Append(to_walk_entries[i]);
+								} else {
+									to_walk_entries[i].sample_size = lls_sls_monitor_output_buffer->video_output_buffer_isobmff.moof_box_trun_sample_entry_vector->data[i]->sample_size;
+									rebuilt_container.Append(to_walk_entries[i]);
+								}
 								__ISOBMFF_JOINER_INFO("video trun: REBUILD: setting sample %u from size: %u to size: %u", i, last_sample_size, to_walk_entries[i].sample_size);
 							}
+							to_walk_entries.Clear();
+							video_trunAtom->SetEntries(rebuilt_container);
 
 						} else {
+							bool has_purged_entries = false;
 							for(int i=0; i < lls_sls_monitor_output_buffer->video_output_buffer_isobmff.moof_box_trun_sample_entry_vector->size; i++) {
 								if(lls_sls_monitor_output_buffer->video_output_buffer_isobmff.moof_box_trun_sample_entry_vector->data[i]->to_remove_sample_entry) {
 									purged_entries.Append(to_walk_entries[i]);
+									has_purged_entries = true;
 								} else {
 									rebuilt_container.Append(to_walk_entries[i]);
 								}
 							}
-							video_trunAtom->SetEntries(rebuilt_container);
 
-							__ISOBMFF_JOINER_INFO("video trun: purged %u sample entries, now contains %u entries", purged_entries.ItemCount(), rebuilt_container.ItemCount());
+							if(has_purged_entries) {
+								to_walk_entries.Clear();
+								video_trunAtom->SetEntries(rebuilt_container);
+								__ISOBMFF_JOINER_INFO("video trun: purged %u sample entries, now contains %u entries", purged_entries.ItemCount(), rebuilt_container.ItemCount());
+							}
 						}
 					}
 
                 	//end copy paste warning
-
-
                 }
             }
 		}
