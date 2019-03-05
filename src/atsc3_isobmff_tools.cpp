@@ -48,8 +48,8 @@ lls_sls_monitor_output_buffer_t* atsc3_isobmff_build_joined_isobmff_fragment(lls
 }
 
 lls_sls_monitor_output_buffer_t* atsc3_isobmff_build_joined_patched_isobmff_fragment(lls_sls_monitor_output_buffer_t* lls_sls_monitor_output_buffer) {
-	lls_sls_monitor_buffer_isobmff_moov_patch_mdat_box(&lls_sls_monitor_output_buffer->audio_output_buffer_isobmff);
-	lls_sls_monitor_buffer_isobmff_moov_patch_mdat_box(&lls_sls_monitor_output_buffer->video_output_buffer_isobmff);
+	lls_sls_monitor_buffer_isobmff_moof_patch_mdat_box(&lls_sls_monitor_output_buffer->audio_output_buffer_isobmff);
+	lls_sls_monitor_buffer_isobmff_moof_patch_mdat_box(&lls_sls_monitor_output_buffer->video_output_buffer_isobmff);
 
 
 	return atsc3_isobmff_build_joined_isobmff_fragment(lls_sls_monitor_output_buffer);
@@ -58,7 +58,7 @@ lls_sls_monitor_output_buffer_t* atsc3_isobmff_build_joined_patched_isobmff_frag
 lls_sls_monitor_output_buffer_t* atsc3_isobmff_build_mpu_metadata_ftyp_moof_mdat_box_from_flow(udp_flow_t* udp_flow, udp_flow_latest_mpu_sequence_number_container_t* udp_flow_latest_mpu_sequence_number_container, mmtp_sub_flow_vector_t* mmtp_sub_flow_vector, lls_sls_mmt_monitor_t* lls_sls_mmt_monitor) {
 
 	lls_sls_monitor_output_buffer_t* lls_sls_monitor_output_buffer = &lls_sls_mmt_monitor->lls_sls_monitor_output_buffer;
-	lls_sls_monitor_output_buffer_reset_moov_and_fragment_position(lls_sls_monitor_output_buffer);
+	lls_sls_monitor_output_buffer_reset_moof_and_fragment_position(lls_sls_monitor_output_buffer);
 
 	mpu_data_unit_payload_fragments_t* data_unit_payload_types = NULL;
 	mpu_data_unit_payload_fragments_timed_vector_t* data_unit_payload_fragments = NULL; //technically this is mpu_fragments->media_fragment_unit_vector
@@ -167,9 +167,9 @@ lls_sls_monitor_output_buffer_t* atsc3_isobmff_build_mpu_metadata_ftyp_moof_mdat
 
                 //rebuild if we are fragmented
                 if(udp_flow_packet_id_mpu_sequence_tuple->packet_id == lls_sls_mmt_monitor->video_packet_id) {
-					lls_sls_monitor_output_buffer_copy_video_moov_block(lls_sls_monitor_output_buffer, fragment_metadata->mmtp_mpu_type_packet_header.mpu_data_unit_payload);
+					lls_sls_monitor_output_buffer_copy_video_moof_block(lls_sls_monitor_output_buffer, fragment_metadata->mmtp_mpu_type_packet_header.mpu_data_unit_payload);
                 } else if(udp_flow_packet_id_mpu_sequence_tuple->packet_id == lls_sls_mmt_monitor->audio_packet_id) {
-                	lls_sls_monitor_output_buffer_copy_audio_moov_block(lls_sls_monitor_output_buffer, fragment_metadata->mmtp_mpu_type_packet_header.mpu_data_unit_payload);
+                	lls_sls_monitor_output_buffer_copy_audio_moof_block(lls_sls_monitor_output_buffer, fragment_metadata->mmtp_mpu_type_packet_header.mpu_data_unit_payload);
                 }
             }
         } else {
@@ -223,7 +223,7 @@ lls_sls_monitor_output_buffer_t* atsc3_isobmff_build_mpu_metadata_ftyp_moof_mdat
 lls_sls_monitor_output_buffer_t* atsc3_isobmff_build_mpu_metadata_ftyp_moof_mdat_box_from_mpu_sequence_numbers(udp_flow_t* udp_flow, udp_flow_latest_mpu_sequence_number_container_t* udp_flow_latest_mpu_sequence_number_container, uint32_t mpu_sequence_number_audio, uint32_t mpu_sequence_number_video, mmtp_sub_flow_vector_t* mmtp_sub_flow_vector, lls_sls_mmt_monitor_t* lls_sls_mmt_monitor) {
     
 	lls_sls_monitor_output_buffer_t* lls_sls_monitor_output_buffer = &lls_sls_mmt_monitor->lls_sls_monitor_output_buffer;
-	lls_sls_monitor_output_buffer_reset_moov_and_fragment_position(lls_sls_monitor_output_buffer);
+	lls_sls_monitor_output_buffer_reset_moof_and_fragment_position(lls_sls_monitor_output_buffer);
 
 	mpu_data_unit_payload_fragments_t* data_unit_payload_types = NULL;
     mpu_data_unit_payload_fragments_timed_vector_t* data_unit_payload_fragments = NULL; //technically this is mpu_fragments->media_fragment_unit_vector
@@ -354,15 +354,24 @@ lls_sls_monitor_output_buffer_t* atsc3_isobmff_build_mpu_metadata_ftyp_moof_mdat
                 
                 //rebuild if we are fragmented
                 if(udp_flow_packet_id_mpu_sequence_tuple->packet_id == lls_sls_mmt_monitor->video_packet_id) {
-                	lls_sls_monitor_output_buffer_copy_and_parse_video_moov_block(lls_sls_monitor_output_buffer, fragment_metadata);
+                	lls_sls_monitor_output_buffer_copy_and_parse_video_moof_block(lls_sls_monitor_output_buffer, fragment_metadata);
                 } else if(udp_flow_packet_id_mpu_sequence_tuple->packet_id == lls_sls_mmt_monitor->audio_packet_id) {
-                	lls_sls_monitor_output_buffer_copy_audio_moov_block(lls_sls_monitor_output_buffer, fragment_metadata->mmtp_mpu_type_packet_header.mpu_data_unit_payload);
+                	lls_sls_monitor_output_buffer_copy_audio_moof_block(lls_sls_monitor_output_buffer, fragment_metadata->mmtp_mpu_type_packet_header.mpu_data_unit_payload);
                 }
             }
         } else {
-            __ISOBMFF_TOOLS_WARN("Movie Fragment Metadata is NULL for packet_id: %u", udp_flow_packet_id_mpu_sequence_tuple->packet_id);
-            //goto purge_pending_mfu_and_update_previous_mmtp_payload; //for now
-            return NULL;
+        	if(udp_flow_packet_id_mpu_sequence_tuple->packet_id == lls_sls_mmt_monitor->video_packet_id && lls_sls_monitor_output_buffer->video_output_buffer_isobmff.moof_box && lls_sls_monitor_output_buffer->video_output_buffer_isobmff.last_moof_box_pos) {
+                __ISOBMFF_TOOLS_WARN("Movie Fragment Metadata is NULL, using previous box size for recon: %u", lls_sls_monitor_output_buffer->video_output_buffer_isobmff.last_moof_box_pos);
+                lls_sls_monitor_output_buffer_recover_from_last_video_moof_box(lls_sls_monitor_output_buffer);
+
+			} else if(udp_flow_packet_id_mpu_sequence_tuple->packet_id == lls_sls_mmt_monitor->audio_packet_id) {
+				//lls_sls_monitor_output_buffer_copy_audio_moof_block(lls_sls_monitor_output_buffer, fragment_metadata->mmtp_mpu_type_packet_header.mpu_data_unit_payload);
+			} else {
+
+				__ISOBMFF_TOOLS_WARN("Movie Fragment Metadata is NULL for packet_id: %u, mpu_sequence_id; %u", udp_flow_packet_id_mpu_sequence_tuple->packet_id, udp_flow_packet_id_mpu_sequence_tuple->packet_id);
+				//goto purge_pending_mfu_and_update_previous_mmtp_payload; //for now
+				return NULL;
+			}
         }
     }
     

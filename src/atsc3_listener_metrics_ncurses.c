@@ -465,7 +465,7 @@ static void route_process_from_alc_packet(alc_packet_t **alc_packet) {
 
 			pipe_buffer_reader_mutex_unlock(pipe_ffplay_buffer);
 			//reset our buffer pos
-			lls_sls_monitor_output_buffer_reset_moov_and_fragment_position(&lls_slt_monitor->lls_sls_alc_monitor->lls_sls_monitor_output_buffer);
+			lls_sls_monitor_output_buffer_reset_moof_and_fragment_position(&lls_slt_monitor->lls_sls_alc_monitor->lls_sls_monitor_output_buffer);
         }
     }
 }
@@ -635,6 +635,11 @@ void process_packet(u_char *user, const struct pcap_pkthdr *pkthdr, const u_char
 		//goto cleanup;
 		return cleanup(udp_packet);
 	}
+    
+    if((dst_ip_addr_filter && udp_packet->udp_flow.dst_ip_addr != *dst_ip_addr_filter)) {
+        count_packet_as_filtered(udp_packet);
+        return cleanup(udp_packet);
+    }
 
 	//ALC (ROUTE) - If this flow is registered from the SLT, process it as ALC, otherwise run the flow thru MMT
 	lls_sls_alc_session_t* matching_lls_slt_alc_session = lls_slt_alc_session_find_from_udp_packet(lls_slt_monitor, udp_packet->udp_flow.src_ip_addr, udp_packet->udp_flow.dst_ip_addr, udp_packet->udp_flow.dst_port);
@@ -651,9 +656,6 @@ void process_packet(u_char *user, const struct pcap_pkthdr *pkthdr, const u_char
         
         return cleanup(udp_packet);
 	}
-
-	//Process flow as MMT, we should only have MMT packets left at this point..
-//    if((dst_ip_addr_filter == NULL && dst_ip_port_filter == NULL) || (udp_packet->udp_flow.dst_ip_addr == *dst_ip_addr_filter && udp_packet->udp_flow.dst_port == *dst_ip_port_filter)) {
 
     lls_sls_mmt_session_t* matching_lls_slt_mmt_session = lls_slt_mmt_session_find_from_udp_packet(lls_slt_monitor, udp_packet->udp_flow.src_ip_addr, udp_packet->udp_flow.dst_ip_addr, udp_packet->udp_flow.dst_port);
     if(matching_lls_slt_mmt_session) {

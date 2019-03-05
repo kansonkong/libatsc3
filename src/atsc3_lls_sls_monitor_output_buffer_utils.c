@@ -74,6 +74,9 @@ If the complete sample is lost, the space occupied by that media sample may be r
 completely and the information in the containing chunk, the “trun”, should be edited appropriately to adjust the
 sample duration of the previous sample and the sample offsets of the following samples.
 
+
+TODO: atsc3_isobmff_tools.cpp:363:WARN : 1551746974.9445: Movie Fragment Metadata is NULL for packet_id: 36
+
  */
 
 #include "atsc3_lls_sls_monitor_output_buffer_utils.h"
@@ -83,13 +86,44 @@ int _LLS_SLS_MONITOR_OUTPUT_BUFFER_UTILS_DEBUG_ENABLED = 0;
 int _LLS_SLS_MONITOR_OUTPUT_BUFFER_UTILS_TRACE_ENABLED = 0;
 
 
-void lls_sls_monitor_output_buffer_reset_moov_and_fragment_position(lls_sls_monitor_output_buffer_t* lls_sls_monitor_output_buffer) {
-	lls_sls_monitor_output_buffer->audio_output_buffer_isobmff.moov_box_pos = 0;
+int lls_sls_monitor_output_buffer_recover_from_last_video_moof_box(lls_sls_monitor_output_buffer_t* lls_sls_monitor_output_buffer) {
+	if(lls_sls_monitor_output_buffer->video_output_buffer_isobmff.moof_box && lls_sls_monitor_output_buffer->video_output_buffer_isobmff.last_moof_box_pos) {
+		lls_sls_monitor_output_buffer->video_output_buffer_isobmff.moof_box_pos = lls_sls_monitor_output_buffer->video_output_buffer_isobmff.last_moof_box_pos;
+		lls_sls_monitor_output_buffer->video_output_buffer_isobmff.moof_box_is_from_last_mpu = true;
+		//reparse our trun sample table
+		block_t* moof_box = block_Alloc(lls_sls_monitor_output_buffer->video_output_buffer_isobmff.moof_box_pos);
+		block_Write(moof_box, lls_sls_monitor_output_buffer->video_output_buffer_isobmff.moof_box, lls_sls_monitor_output_buffer->video_output_buffer_isobmff.moof_box_pos);
+		trun_sample_entry_vector_t* trun_sample_entry_vector = parseMoofBoxForTrunSampleEntries(moof_box);
+
+		//clear out our sample size to be rebuilt later
+		for(int i=0; i < trun_sample_entry_vector->size; i++) {
+			trun_sample_entry_vector->data[i]->sample_size = 0;
+		}
+
+		lls_sls_monitor_output_buffer->video_output_buffer_isobmff.moof_box_trun_sample_entry_vector = trun_sample_entry_vector;
+	}
+	return 0;
+}
+void lls_sls_monitor_output_buffer_reset_moof_and_fragment_position(lls_sls_monitor_output_buffer_t* lls_sls_monitor_output_buffer) {
+	lls_sls_monitor_output_buffer->audio_output_buffer_isobmff.moof_box_is_from_last_mpu = false;
+	if(lls_sls_monitor_output_buffer->audio_output_buffer_isobmff.moof_box_trun_sample_entry_vector) {
+		free(lls_sls_monitor_output_buffer->audio_output_buffer_isobmff.moof_box_trun_sample_entry_vector);
+		lls_sls_monitor_output_buffer->audio_output_buffer_isobmff.moof_box_trun_sample_entry_vector = NULL;
+	}
+	lls_sls_monitor_output_buffer->audio_output_buffer_isobmff.last_moof_box_pos = lls_sls_monitor_output_buffer->audio_output_buffer_isobmff.moof_box_pos;
+
+	lls_sls_monitor_output_buffer->audio_output_buffer_isobmff.moof_box_pos = 0;
 	lls_sls_monitor_output_buffer->audio_output_buffer_isobmff.fragment_pos = 0;
 	lls_sls_monitor_output_buffer->audio_output_buffer_isobmff.last_fragment = NULL;
 	lls_sls_monitor_output_buffer->audio_output_buffer_isobmff.last_fragment_lost_mfu_count = 0;
 
-	lls_sls_monitor_output_buffer->video_output_buffer_isobmff.moov_box_pos = 0;
+	lls_sls_monitor_output_buffer->video_output_buffer_isobmff.moof_box_is_from_last_mpu = false;
+	if(lls_sls_monitor_output_buffer->video_output_buffer_isobmff.moof_box_trun_sample_entry_vector) {
+		free(lls_sls_monitor_output_buffer->video_output_buffer_isobmff.moof_box_trun_sample_entry_vector);
+		lls_sls_monitor_output_buffer->video_output_buffer_isobmff.moof_box_trun_sample_entry_vector = NULL;
+	}
+	lls_sls_monitor_output_buffer->video_output_buffer_isobmff.last_moof_box_pos = lls_sls_monitor_output_buffer->video_output_buffer_isobmff.moof_box_pos;
+	lls_sls_monitor_output_buffer->video_output_buffer_isobmff.moof_box_pos = 0;
 	lls_sls_monitor_output_buffer->video_output_buffer_isobmff.fragment_pos = 0;
 	lls_sls_monitor_output_buffer->video_output_buffer_isobmff.last_fragment = NULL;
 	lls_sls_monitor_output_buffer->video_output_buffer_isobmff.last_fragment_lost_mfu_count = 0;
@@ -104,7 +138,7 @@ void lls_sls_monitor_output_buffer_reset_all_position(lls_sls_monitor_output_buf
 	lls_sls_monitor_output_buffer->video_output_buffer_isobmff.init_box_pos = 0;
 	lls_sls_monitor_output_buffer->video_output_buffer_isobmff.last_mpu_sequence_number_last_fragment = NULL;
 
-	lls_sls_monitor_output_buffer_reset_moov_and_fragment_position(lls_sls_monitor_output_buffer);
+	lls_sls_monitor_output_buffer_reset_moof_and_fragment_position(lls_sls_monitor_output_buffer);
 }
 
 
@@ -143,12 +177,12 @@ int lls_sls_monitor_output_buffer_copy_audio_init_block(lls_sls_monitor_output_b
 }
 
 
-int lls_sls_monitor_output_buffer_copy_audio_moov_block(lls_sls_monitor_output_buffer_t* lls_sls_monitor_output_buffer, block_t* audio_isobmff_moov) {
+int lls_sls_monitor_output_buffer_copy_audio_moof_block(lls_sls_monitor_output_buffer_t* lls_sls_monitor_output_buffer, block_t* audio_isobmff_moof) {
 
-    if(!lls_sls_monitor_output_buffer->audio_output_buffer_isobmff.moov_box) {
-        lls_sls_monitor_output_buffer->audio_output_buffer_isobmff.moov_box = (uint8_t*)calloc(_LLS_SLS_MONITOR_OUTPUT_MAX_MOOV_BUFFER, sizeof(uint8_t));
+    if(!lls_sls_monitor_output_buffer->audio_output_buffer_isobmff.moof_box) {
+        lls_sls_monitor_output_buffer->audio_output_buffer_isobmff.moof_box = (uint8_t*)calloc(_LLS_SLS_MONITOR_OUTPUT_MAX_MOOF_BUFFER, sizeof(uint8_t));
     }
-    return __lls_sls_monitor_output_buffer_check_and_copy(lls_sls_monitor_output_buffer->audio_output_buffer_isobmff.moov_box, &lls_sls_monitor_output_buffer->audio_output_buffer_isobmff.moov_box_pos, _LLS_SLS_MONITOR_OUTPUT_MAX_MOOV_BUFFER, audio_isobmff_moov);
+    return __lls_sls_monitor_output_buffer_check_and_copy(lls_sls_monitor_output_buffer->audio_output_buffer_isobmff.moof_box, &lls_sls_monitor_output_buffer->audio_output_buffer_isobmff.moof_box_pos, _LLS_SLS_MONITOR_OUTPUT_MAX_MOOF_BUFFER, audio_isobmff_moof);
 }
 
 
@@ -179,26 +213,26 @@ int lls_sls_monitor_output_buffer_copy_video_init_block(lls_sls_monitor_output_b
 }
 
 
-int lls_sls_monitor_output_buffer_copy_video_moov_block(lls_sls_monitor_output_buffer_t* lls_sls_monitor_output_buffer, block_t* video_isobmff_moov) {
+int lls_sls_monitor_output_buffer_copy_video_moof_block(lls_sls_monitor_output_buffer_t* lls_sls_monitor_output_buffer, block_t* video_isobmff_moof) {
 
-    if(!lls_sls_monitor_output_buffer->video_output_buffer_isobmff.moov_box) {
-        lls_sls_monitor_output_buffer->video_output_buffer_isobmff.moov_box = (uint8_t*)calloc(_LLS_SLS_MONITOR_OUTPUT_MAX_MOOV_BUFFER, sizeof(uint8_t));
+    if(!lls_sls_monitor_output_buffer->video_output_buffer_isobmff.moof_box) {
+        lls_sls_monitor_output_buffer->video_output_buffer_isobmff.moof_box = (uint8_t*)calloc(_LLS_SLS_MONITOR_OUTPUT_MAX_MOOF_BUFFER, sizeof(uint8_t));
     }
-    return __lls_sls_monitor_output_buffer_check_and_copy(lls_sls_monitor_output_buffer->video_output_buffer_isobmff.moov_box, &lls_sls_monitor_output_buffer->video_output_buffer_isobmff.moov_box_pos, _LLS_SLS_MONITOR_OUTPUT_MAX_MOOV_BUFFER, video_isobmff_moov);
+    return __lls_sls_monitor_output_buffer_check_and_copy(lls_sls_monitor_output_buffer->video_output_buffer_isobmff.moof_box, &lls_sls_monitor_output_buffer->video_output_buffer_isobmff.moof_box_pos, _LLS_SLS_MONITOR_OUTPUT_MAX_MOOF_BUFFER, video_isobmff_moof);
 }
 
 
-int lls_sls_monitor_output_buffer_copy_and_parse_video_moov_block(lls_sls_monitor_output_buffer_t* lls_sls_monitor_output_buffer, mmtp_payload_fragments_union_t* video_isobmff_moov_fragment) {
+int lls_sls_monitor_output_buffer_copy_and_parse_video_moof_block(lls_sls_monitor_output_buffer_t* lls_sls_monitor_output_buffer, mmtp_payload_fragments_union_t* video_isobmff_moof_fragment) {
 
-    if(!lls_sls_monitor_output_buffer->video_output_buffer_isobmff.moov_box) {
-        lls_sls_monitor_output_buffer->video_output_buffer_isobmff.moov_box = (uint8_t*)calloc(_LLS_SLS_MONITOR_OUTPUT_MAX_MOOV_BUFFER, sizeof(uint8_t));
+    if(!lls_sls_monitor_output_buffer->video_output_buffer_isobmff.moof_box) {
+        lls_sls_monitor_output_buffer->video_output_buffer_isobmff.moof_box = (uint8_t*)calloc(_LLS_SLS_MONITOR_OUTPUT_MAX_MOOF_BUFFER, sizeof(uint8_t));
     }
-    int size = __lls_sls_monitor_output_buffer_check_and_copy(lls_sls_monitor_output_buffer->video_output_buffer_isobmff.moov_box, &lls_sls_monitor_output_buffer->video_output_buffer_isobmff.moov_box_pos, _LLS_SLS_MONITOR_OUTPUT_MAX_MOOV_BUFFER, video_isobmff_moov_fragment->mmtp_mpu_type_packet_header.mpu_data_unit_payload);
-    if(size && (video_isobmff_moov_fragment->mmtp_mpu_type_packet_header.mpu_fragmentation_indicator == 0x0 || video_isobmff_moov_fragment->mmtp_mpu_type_packet_header.mpu_fragmentation_indicator == 0x3)) {
+    int size = __lls_sls_monitor_output_buffer_check_and_copy(lls_sls_monitor_output_buffer->video_output_buffer_isobmff.moof_box, &lls_sls_monitor_output_buffer->video_output_buffer_isobmff.moof_box_pos, _LLS_SLS_MONITOR_OUTPUT_MAX_MOOF_BUFFER, video_isobmff_moof_fragment->mmtp_mpu_type_packet_header.mpu_data_unit_payload);
+    if(size && (video_isobmff_moof_fragment->mmtp_mpu_type_packet_header.mpu_fragmentation_indicator == 0x0 || video_isobmff_moof_fragment->mmtp_mpu_type_packet_header.mpu_fragmentation_indicator == 0x3)) {
     	//parse this as a mdat
-    	block_t* moov_box = block_Alloc(lls_sls_monitor_output_buffer->video_output_buffer_isobmff.moov_box_pos);
-    	block_Write(moov_box, lls_sls_monitor_output_buffer->video_output_buffer_isobmff.moov_box, lls_sls_monitor_output_buffer->video_output_buffer_isobmff.moov_box_pos);
-    	trun_sample_entry_vector_t* trun_sample_entry_vector = parseMoofBoxForTrunSampleEntries(moov_box);
+    	block_t* moof_box = block_Alloc(lls_sls_monitor_output_buffer->video_output_buffer_isobmff.moof_box_pos);
+    	block_Write(moof_box, lls_sls_monitor_output_buffer->video_output_buffer_isobmff.moof_box, lls_sls_monitor_output_buffer->video_output_buffer_isobmff.moof_box_pos);
+    	trun_sample_entry_vector_t* trun_sample_entry_vector = parseMoofBoxForTrunSampleEntries(moof_box);
     	lls_sls_monitor_output_buffer->video_output_buffer_isobmff.moof_box_trun_sample_entry_vector = trun_sample_entry_vector;
     }
     return size;
@@ -213,6 +247,8 @@ int lls_sls_monitor_output_buffer_copy_video_fragment_block(lls_sls_monitor_outp
     return __lls_sls_monitor_output_buffer_check_and_copy(lls_sls_monitor_output_buffer->video_output_buffer_isobmff.fragment_box, &lls_sls_monitor_output_buffer->video_output_buffer_isobmff.fragment_pos, _LLS_SLS_MONITOR_OUTPUT_MAX_FRAGMENT_BUFFER, video_isobmff_fragment);
 }
 
+
+
 void __data_unit_recover_null_pad_offset(mmtp_payload_fragments_union_t* data_unit) {
 	uint32_t to_null_size =	data_unit->mpu_data_unit_payload_fragments_timed.offset;
 	__LLS_SLS_MONITOR_OUTPUT_BUFFER_UTILS_WARN("RECOVER: null pad: adding %u head to %u, mpu_sequence_number: %u, packet_sequence_number: %u",
@@ -224,6 +260,29 @@ void __data_unit_recover_null_pad_offset(mmtp_payload_fragments_union_t* data_un
 	block_t* temp_mpu_data_unit_payload = block_Alloc(to_null_size + data_unit->mmtp_mpu_type_packet_header.mpu_data_unit_payload->i_pos);
 	temp_mpu_data_unit_payload->i_pos = to_null_size;
 	block_Write(temp_mpu_data_unit_payload, data_unit->mmtp_mpu_type_packet_header.mpu_data_unit_payload->p_buffer, data_unit->mmtp_mpu_type_packet_header.mpu_data_unit_payload->i_pos);
+	//hack - keep track of our old du size
+	data_unit->mmtp_mpu_type_packet_header.data_unit_length = data_unit->mmtp_mpu_type_packet_header.mpu_data_unit_payload->i_pos;
+
+	block_Release(&data_unit->mmtp_mpu_type_packet_header.mpu_data_unit_payload);
+	data_unit->mmtp_mpu_type_packet_header.mpu_data_unit_payload = temp_mpu_data_unit_payload;
+}
+
+
+void __data_unit_recover_null_pad_tail(mmtp_payload_fragments_union_t* data_unit, uint32_t tail_pad_size) {
+	__LLS_SLS_MONITOR_OUTPUT_BUFFER_UTILS_WARN("RECOVER: tail pad: adding %u tail to %u, mpu_sequence_number: %u, packet_sequence_number: %u",
+			tail_pad_size,
+			data_unit->mmtp_mpu_type_packet_header.mpu_data_unit_payload->i_pos,
+			data_unit->mmtp_mpu_type_packet_header.mpu_sequence_number,
+			data_unit->mmtp_mpu_type_packet_header.packet_sequence_number);
+
+	uint32_t new_tail_pos = tail_pad_size + data_unit->mmtp_mpu_type_packet_header.mpu_data_unit_payload->i_pos;
+	block_t* temp_mpu_data_unit_payload = block_Alloc(new_tail_pos);
+	block_Write(temp_mpu_data_unit_payload, data_unit->mmtp_mpu_type_packet_header.mpu_data_unit_payload->p_buffer, data_unit->mmtp_mpu_type_packet_header.mpu_data_unit_payload->i_pos);
+	temp_mpu_data_unit_payload->i_pos = new_tail_pos;
+
+    //hack - keep track of our old du size
+	data_unit->mmtp_mpu_type_packet_header.data_unit_length = data_unit->mmtp_mpu_type_packet_header.mpu_data_unit_payload->i_pos;
+
 	block_Release(&data_unit->mmtp_mpu_type_packet_header.mpu_data_unit_payload);
 	data_unit->mmtp_mpu_type_packet_header.mpu_data_unit_payload = temp_mpu_data_unit_payload;
 }
@@ -272,6 +331,20 @@ int lls_sls_monitor_output_buffer_copy_and_recover_video_fragment_block(lls_sls_
 
 	trun_sample_entry_vector_t* moof_box_trun_sample_entry_vector = lls_sls_monitor_output_buffer->video_output_buffer_isobmff.moof_box_trun_sample_entry_vector;
 
+	//we need to rebuild our trun here
+	if(lls_sls_monitor_buffer_isobmff->moof_box_is_from_last_mpu) {
+		uint32_t trun_sample_index = video_data_unit->mpu_data_unit_payload_fragments_timed.sample_number-1;
+		if(trun_sample_index >= moof_box_trun_sample_entry_vector->size) {
+			__LLS_SLS_MONITOR_OUTPUT_BUFFER_UTILS_ERROR("trun sample index %u is greater than size: %u", trun_sample_index, moof_box_trun_sample_entry_vector->size);
+			//TODO - append this in our trun box
+			return -1;
+		}
+		moof_box_trun_sample_entry_vector->data[trun_sample_index]->sample_size += video_data_unit->mpu_data_unit_payload_fragments_timed.mpu_data_unit_payload->i_pos;
+		__LLS_SLS_MONITOR_OUTPUT_BUFFER_UTILS_DEBUG("RECOVERY: REBUILD TRUN: sample index %u is now sample_size: %u", trun_sample_index, moof_box_trun_sample_entry_vector->data[trun_sample_index]->sample_size);
+
+		return moof_box_trun_sample_entry_vector->data[trun_sample_index]->sample_size;
+	}
+
 	if(!lls_sls_monitor_buffer_isobmff->last_fragment) {
 
 		//we should start with sample == 1, offset == 0, otherwise pad this out
@@ -309,15 +382,52 @@ int lls_sls_monitor_output_buffer_copy_and_recover_video_fragment_block(lls_sls_
 			//compute intra fragment variances, remember we should have an MFU inbetween..
 
 			//we can't null pad this out without interriogating the mdat
-			uint32_t missing_last_packets = lls_sls_monitor_buffer_isobmff->last_fragment->mpu_data_unit_payload_fragments_timed.mpu_fragmentation_counter;
 
-			for(int i=0; i < moof_box_trun_sample_entry_vector->size; i++) {
-				trun_sample_entry_t* trun_sample_entry = moof_box_trun_sample_entry_vector->data[i];
-				__LLS_SLS_MONITOR_OUTPUT_BUFFER_UTILS_WARN("moof sample: %u, sample size: %u, to match fragment sample: %u", i, trun_sample_entry->sample_size, lls_sls_monitor_buffer_isobmff->last_fragment->mpu_data_unit_payload_fragments_timed.sample_number);
+			/**
+			 *
+			 * atsc3_lls_sls_monitor_output_buffer_utils.c:327:WARN :DETECT: cross SAMPLE LAST OPEN: current mpu: 6138, last frag counter: 1, last sample: 10, current sample: 11, current offset: 2864
+			 * .sample_number are 1 based while the trun_sample entry is 0 based
+			 *
+			 * atsc3_lls_sls_monitor_output_buffer_utils.c:222:WARN :RECOVER: null pad: adding 2864 head to 653, mpu_sequence_number: 6138, packet_sequence_number: 2917408
+			 *
+			 * null inject, should remove sample from moof/trun
+			 *
+			 */
+
+			uint32_t from_mfu_sample_number = lls_sls_monitor_buffer_isobmff->last_fragment->mpu_data_unit_payload_fragments_timed.sample_number - 1;
+			uint32_t from_mfu_trun_sample_size = 0;
+			uint32_t from_mfu_to_tail_pad_size = 0;
+			trun_sample_entry_t* from_missing_mfu_sample_entry = NULL;
+
+			if(from_mfu_sample_number <= moof_box_trun_sample_entry_vector->size) {
+				from_missing_mfu_sample_entry = moof_box_trun_sample_entry_vector->data[from_mfu_sample_number];
+				from_mfu_trun_sample_size = from_missing_mfu_sample_entry->sample_size;
+
+				//compute our last fragment size against the trun
+				if(lls_sls_monitor_buffer_isobmff->last_fragment->mmtp_mpu_type_packet_header.data_unit_length) {
+					from_mfu_to_tail_pad_size = from_mfu_trun_sample_size - lls_sls_monitor_buffer_isobmff->last_fragment->mpu_data_unit_payload_fragments_timed.offset - lls_sls_monitor_buffer_isobmff->last_fragment->mmtp_mpu_type_packet_header.data_unit_length;
+				} else {
+					from_mfu_to_tail_pad_size = from_mfu_trun_sample_size - lls_sls_monitor_buffer_isobmff->last_fragment->mpu_data_unit_payload_fragments_timed.offset - lls_sls_monitor_buffer_isobmff->last_fragment->mmtp_mpu_type_packet_header.mpu_data_unit_payload->i_pos;
+				}
+
+				__data_unit_recover_null_pad_tail(lls_sls_monitor_buffer_isobmff->last_fragment, from_mfu_to_tail_pad_size);
 			}
 
-			//we can null pad the offset size
-			uint32_t missing_current_bytes = video_data_unit->mpu_data_unit_payload_fragments_timed.offset;
+			uint32_t to_mfu_sample_number = video_data_unit->mpu_data_unit_payload_fragments_timed.sample_number - 1;
+
+			for(int i = from_mfu_sample_number + 1; i < to_mfu_sample_number && i < moof_box_trun_sample_entry_vector->size; i++) {
+				trun_sample_entry_t* missing_mfu_sample_entry = moof_box_trun_sample_entry_vector->data[i];
+				__LLS_SLS_MONITOR_OUTPUT_BUFFER_UTILS_WARN("RECOVER: REMOVE SAMPLE: updating moof_box_trun_sample_entry vector to mark %u as to_remove", i);
+				missing_mfu_sample_entry->to_remove_sample_entry = true;
+			}
+
+
+
+//			for(int i=0; i < moof_box_trun_sample_entry_vector->size; i++) {
+//				trun_sample_entry_t* trun_sample_entry = moof_box_trun_sample_entry_vector->data[i];
+//				__LLS_SLS_MONITOR_OUTPUT_BUFFER_UTILS_WARN("moof sample: %u, sample size: %u, to match fragment sample: %u", i, trun_sample_entry->sample_size, lls_sls_monitor_buffer_isobmff->last_fragment->mpu_data_unit_payload_fragments_timed.sample_number);
+//			}
+
 
 			__LLS_SLS_MONITOR_OUTPUT_BUFFER_UTILS_WARN("DETECT: cross SAMPLE LAST OPEN: current mpu: %u, last frag counter: %u, last sample: %u, current sample: %u, current offset: %u",
 					video_data_unit->mpu_data_unit_payload_fragments_timed.mpu_sequence_number,
@@ -325,6 +435,9 @@ int lls_sls_monitor_output_buffer_copy_and_recover_video_fragment_block(lls_sls_
 					lls_sls_monitor_buffer_isobmff->last_fragment->mpu_data_unit_payload_fragments_timed.sample_number,
 					video_data_unit->mpu_data_unit_payload_fragments_timed.sample_number,
 					video_data_unit->mpu_data_unit_payload_fragments_timed.offset);
+
+			//we can null pad the offset size
+			uint32_t missing_current_bytes = video_data_unit->mpu_data_unit_payload_fragments_timed.offset;
 
 			if(missing_current_bytes) {
 				__data_unit_recover_null_pad_offset(video_data_unit);
@@ -357,12 +470,12 @@ int lls_sls_monitor_output_buffer_copy_and_recover_video_fragment_block(lls_sls_
 }
 
 
-int lls_sls_monitor_buffer_isobmff_moov_patch_mdat_box(lls_sls_monitor_buffer_isobmff_t* lls_sls_monitor_buffer_isobmff_to_patch) {
+int lls_sls_monitor_buffer_isobmff_moof_patch_mdat_box(lls_sls_monitor_buffer_isobmff_t* lls_sls_monitor_buffer_isobmff_to_patch) {
 	uint8_t mdat_box[8];
 	uint32_t mdat_box_old_size;
 	uint32_t total_mdat_body_size = lls_sls_monitor_buffer_isobmff_to_patch->fragment_pos + 8;
 
-	memcpy(&mdat_box, &lls_sls_monitor_buffer_isobmff_to_patch->moov_box[lls_sls_monitor_buffer_isobmff_to_patch->moov_box_pos-8], 8);
+	memcpy(&mdat_box, &lls_sls_monitor_buffer_isobmff_to_patch->moof_box[lls_sls_monitor_buffer_isobmff_to_patch->moof_box_pos-8], 8);
 	mdat_box_old_size = ntohl((uint32_t)mdat_box);
 
 	if(mdat_box[4] == 'm' && mdat_box[5] == 'd' && mdat_box[6] == 'a' && mdat_box[7] == 't') {
@@ -372,7 +485,7 @@ int lls_sls_monitor_buffer_isobmff_moov_patch_mdat_box(lls_sls_monitor_buffer_is
 		mdat_box[3] = (total_mdat_body_size) & 0xFF;
 
 
-		memcpy(&lls_sls_monitor_buffer_isobmff_to_patch->moov_box[lls_sls_monitor_buffer_isobmff_to_patch->moov_box_pos-8], &mdat_box, 4);
+		memcpy(&lls_sls_monitor_buffer_isobmff_to_patch->moof_box[lls_sls_monitor_buffer_isobmff_to_patch->moof_box_pos-8], &mdat_box, 4);
 		__LLS_SLS_MONITOR_OUTPUT_BUFFER_UTILS_DEBUG("patch mdat box:  metadata packet: %p, size was: %u, now: %u, last 8 bytes of metadata fragment updated to: 0x%02x 0x%02x 0x%02x 0x%02x 0x%02x 0x%02x 0x%02x 0x%02x",
 				lls_sls_monitor_buffer_isobmff_to_patch, mdat_box_old_size, total_mdat_body_size,
 				mdat_box[0], mdat_box[1], mdat_box[2], mdat_box[3], mdat_box[4], mdat_box[5], mdat_box[6], mdat_box[7]);
@@ -380,7 +493,7 @@ int lls_sls_monitor_buffer_isobmff_moov_patch_mdat_box(lls_sls_monitor_buffer_is
 		return total_mdat_body_size;
 
 	} else {
-		__LLS_SLS_MONITOR_OUTPUT_BUFFER_UTILS_ERROR("patch modat box: metadata packet: %p, cant find trailing mdat!", lls_sls_monitor_buffer_isobmff_to_patch->moov_box);
+		__LLS_SLS_MONITOR_OUTPUT_BUFFER_UTILS_ERROR("patch modat box: metadata packet: %p, cant find trailing mdat!", lls_sls_monitor_buffer_isobmff_to_patch->moof_box);
 		return 0;
 	}
 
@@ -391,18 +504,18 @@ block_t* lls_sls_monitor_output_buffer_copy_audio_full_isobmff_box(lls_sls_monit
 		return NULL;
 	}
 
-	uint32_t full_box_size = lls_sls_monitor_output_buffer->audio_output_buffer_isobmff.init_box_pos + lls_sls_monitor_output_buffer->audio_output_buffer_isobmff.moov_box_pos + lls_sls_monitor_output_buffer->audio_output_buffer_isobmff.fragment_pos;
+	uint32_t full_box_size = lls_sls_monitor_output_buffer->audio_output_buffer_isobmff.init_box_pos + lls_sls_monitor_output_buffer->audio_output_buffer_isobmff.moof_box_pos + lls_sls_monitor_output_buffer->audio_output_buffer_isobmff.fragment_pos;
 	if(full_box_size <= 0) {
 		__LLS_SLS_MONITOR_OUTPUT_BUFFER_UTILS_ERROR("copy audio full box size <= 0, %u, returning NULL", full_box_size);
 		return NULL;
 	}
 	block_t* isobmff_full_block = block_Alloc(full_box_size);
 
-	__LLS_SLS_MONITOR_OUTPUT_BUFFER_UTILS_DEBUG("copy audio full box: total size: %u, init size: %u, moov size: %u, fragment size: %u", full_box_size, lls_sls_monitor_output_buffer->audio_output_buffer_isobmff.init_box_pos, lls_sls_monitor_output_buffer->audio_output_buffer_isobmff.moov_box_pos, lls_sls_monitor_output_buffer->audio_output_buffer_isobmff.fragment_pos);
+	__LLS_SLS_MONITOR_OUTPUT_BUFFER_UTILS_DEBUG("copy audio full box: total size: %u, init size: %u, moof size: %u, fragment size: %u", full_box_size, lls_sls_monitor_output_buffer->audio_output_buffer_isobmff.init_box_pos, lls_sls_monitor_output_buffer->audio_output_buffer_isobmff.moof_box_pos, lls_sls_monitor_output_buffer->audio_output_buffer_isobmff.fragment_pos);
 	block_Write(isobmff_full_block, lls_sls_monitor_output_buffer->audio_output_buffer_isobmff.init_box, lls_sls_monitor_output_buffer->audio_output_buffer_isobmff.init_box_pos);
 
-	if(lls_sls_monitor_output_buffer->audio_output_buffer_isobmff.moov_box && lls_sls_monitor_output_buffer->audio_output_buffer_isobmff.moov_box_pos) {
-		block_Write(isobmff_full_block, lls_sls_monitor_output_buffer->audio_output_buffer_isobmff.moov_box, lls_sls_monitor_output_buffer->audio_output_buffer_isobmff.moov_box_pos);
+	if(lls_sls_monitor_output_buffer->audio_output_buffer_isobmff.moof_box && lls_sls_monitor_output_buffer->audio_output_buffer_isobmff.moof_box_pos) {
+		block_Write(isobmff_full_block, lls_sls_monitor_output_buffer->audio_output_buffer_isobmff.moof_box, lls_sls_monitor_output_buffer->audio_output_buffer_isobmff.moof_box_pos);
 
 	}
 
@@ -411,28 +524,28 @@ block_t* lls_sls_monitor_output_buffer_copy_audio_full_isobmff_box(lls_sls_monit
 	return isobmff_full_block;
 }
 
-block_t* lls_sls_monitor_output_buffer_copy_audio_moov_fragment_isobmff_box(lls_sls_monitor_output_buffer_t* lls_sls_monitor_output_buffer) {
+block_t* lls_sls_monitor_output_buffer_copy_audio_moof_fragment_isobmff_box(lls_sls_monitor_output_buffer_t* lls_sls_monitor_output_buffer) {
 	if(!lls_sls_monitor_output_buffer->audio_output_buffer_isobmff.fragment_pos) {
-		__LLS_SLS_MONITOR_OUTPUT_BUFFER_UTILS_ERROR("copy audio moov_fragment: error: fragment_pos: %u, returning NULL", lls_sls_monitor_output_buffer->audio_output_buffer_isobmff.fragment_pos);
+		__LLS_SLS_MONITOR_OUTPUT_BUFFER_UTILS_ERROR("copy audio moof_fragment: error: fragment_pos: %u, returning NULL", lls_sls_monitor_output_buffer->audio_output_buffer_isobmff.fragment_pos);
 		return NULL;
 	}
 
-	uint32_t moov_fragment_size = lls_sls_monitor_output_buffer->audio_output_buffer_isobmff.moov_box_pos + lls_sls_monitor_output_buffer->audio_output_buffer_isobmff.fragment_pos;
-	if(moov_fragment_size <= 0) {
-		__LLS_SLS_MONITOR_OUTPUT_BUFFER_UTILS_ERROR("copy audio moov_fragment size <= 0, %u, returning NULL", moov_fragment_size);
+	uint32_t moof_fragment_size = lls_sls_monitor_output_buffer->audio_output_buffer_isobmff.moof_box_pos + lls_sls_monitor_output_buffer->audio_output_buffer_isobmff.fragment_pos;
+	if(moof_fragment_size <= 0) {
+		__LLS_SLS_MONITOR_OUTPUT_BUFFER_UTILS_ERROR("copy audio moof_fragment size <= 0, %u, returning NULL", moof_fragment_size);
 		return NULL;
 	}
-	block_t* isobmff_moov_fragment_block = block_Alloc(moov_fragment_size);
+	block_t* isobmff_moof_fragment_block = block_Alloc(moof_fragment_size);
 
-	__LLS_SLS_MONITOR_OUTPUT_BUFFER_UTILS_DEBUG("copy audio moov_fragment: total size: %u,  moov size: %u, fragment size: %u", moov_fragment_size,  lls_sls_monitor_output_buffer->audio_output_buffer_isobmff.moov_box_pos, lls_sls_monitor_output_buffer->audio_output_buffer_isobmff.fragment_pos);
+	__LLS_SLS_MONITOR_OUTPUT_BUFFER_UTILS_DEBUG("copy audio moof_fragment: total size: %u,  moof size: %u, fragment size: %u", moof_fragment_size,  lls_sls_monitor_output_buffer->audio_output_buffer_isobmff.moof_box_pos, lls_sls_monitor_output_buffer->audio_output_buffer_isobmff.fragment_pos);
 
-	if(lls_sls_monitor_output_buffer->audio_output_buffer_isobmff.moov_box && lls_sls_monitor_output_buffer->audio_output_buffer_isobmff.moov_box_pos) {
-		block_Write(isobmff_moov_fragment_block, lls_sls_monitor_output_buffer->audio_output_buffer_isobmff.moov_box, lls_sls_monitor_output_buffer->audio_output_buffer_isobmff.moov_box_pos);
+	if(lls_sls_monitor_output_buffer->audio_output_buffer_isobmff.moof_box && lls_sls_monitor_output_buffer->audio_output_buffer_isobmff.moof_box_pos) {
+		block_Write(isobmff_moof_fragment_block, lls_sls_monitor_output_buffer->audio_output_buffer_isobmff.moof_box, lls_sls_monitor_output_buffer->audio_output_buffer_isobmff.moof_box_pos);
 	}
 
-	block_Write(isobmff_moov_fragment_block, lls_sls_monitor_output_buffer->audio_output_buffer_isobmff.fragment_box, lls_sls_monitor_output_buffer->audio_output_buffer_isobmff.fragment_pos);
+	block_Write(isobmff_moof_fragment_block, lls_sls_monitor_output_buffer->audio_output_buffer_isobmff.fragment_box, lls_sls_monitor_output_buffer->audio_output_buffer_isobmff.fragment_pos);
 
-	return isobmff_moov_fragment_block;
+	return isobmff_moof_fragment_block;
 }
 
 
@@ -442,18 +555,18 @@ block_t* lls_sls_monitor_output_buffer_copy_video_full_isobmff_box(lls_sls_monit
 		return NULL;
 	}
 
-	uint32_t full_box_size = lls_sls_monitor_output_buffer->video_output_buffer_isobmff.init_box_pos + lls_sls_monitor_output_buffer->video_output_buffer_isobmff.moov_box_pos + lls_sls_monitor_output_buffer->video_output_buffer_isobmff.fragment_pos;
+	uint32_t full_box_size = lls_sls_monitor_output_buffer->video_output_buffer_isobmff.init_box_pos + lls_sls_monitor_output_buffer->video_output_buffer_isobmff.moof_box_pos + lls_sls_monitor_output_buffer->video_output_buffer_isobmff.fragment_pos;
 	if(full_box_size <= 0) {
 		__LLS_SLS_MONITOR_OUTPUT_BUFFER_UTILS_ERROR("copy video full box size <= 0, %u, returning NULL", full_box_size);
 		return NULL;
 	}
 	block_t* isobmff_full_block = block_Alloc(full_box_size);
 
-	__LLS_SLS_MONITOR_OUTPUT_BUFFER_UTILS_DEBUG("copy video full box: total size: %u, init size: %u, moov size: %u, fragment size: %u", full_box_size, lls_sls_monitor_output_buffer->video_output_buffer_isobmff.init_box_pos, lls_sls_monitor_output_buffer->video_output_buffer_isobmff.moov_box_pos, lls_sls_monitor_output_buffer->video_output_buffer_isobmff.fragment_pos);
+	__LLS_SLS_MONITOR_OUTPUT_BUFFER_UTILS_DEBUG("copy video full box: total size: %u, init size: %u, moof size: %u, fragment size: %u", full_box_size, lls_sls_monitor_output_buffer->video_output_buffer_isobmff.init_box_pos, lls_sls_monitor_output_buffer->video_output_buffer_isobmff.moof_box_pos, lls_sls_monitor_output_buffer->video_output_buffer_isobmff.fragment_pos);
 	block_Write(isobmff_full_block, lls_sls_monitor_output_buffer->video_output_buffer_isobmff.init_box, lls_sls_monitor_output_buffer->video_output_buffer_isobmff.init_box_pos);
 
-	if(lls_sls_monitor_output_buffer->video_output_buffer_isobmff.moov_box && lls_sls_monitor_output_buffer->video_output_buffer_isobmff.moov_box_pos) {
-		block_Write(isobmff_full_block, lls_sls_monitor_output_buffer->video_output_buffer_isobmff.moov_box, lls_sls_monitor_output_buffer->video_output_buffer_isobmff.moov_box_pos);
+	if(lls_sls_monitor_output_buffer->video_output_buffer_isobmff.moof_box && lls_sls_monitor_output_buffer->video_output_buffer_isobmff.moof_box_pos) {
+		block_Write(isobmff_full_block, lls_sls_monitor_output_buffer->video_output_buffer_isobmff.moof_box, lls_sls_monitor_output_buffer->video_output_buffer_isobmff.moof_box_pos);
 
 	}
 
@@ -462,28 +575,28 @@ block_t* lls_sls_monitor_output_buffer_copy_video_full_isobmff_box(lls_sls_monit
 	return isobmff_full_block;
 }
 
-block_t* lls_sls_monitor_output_buffer_copy_video_moov_fragment_isobmff_box(lls_sls_monitor_output_buffer_t* lls_sls_monitor_output_buffer) {
+block_t* lls_sls_monitor_output_buffer_copy_video_moof_fragment_isobmff_box(lls_sls_monitor_output_buffer_t* lls_sls_monitor_output_buffer) {
 	if(!lls_sls_monitor_output_buffer->video_output_buffer_isobmff.fragment_pos) {
-		__LLS_SLS_MONITOR_OUTPUT_BUFFER_UTILS_ERROR("copy video moov_fragment: error: fragment_pos: %u, returning NULL", lls_sls_monitor_output_buffer->video_output_buffer_isobmff.fragment_pos);
+		__LLS_SLS_MONITOR_OUTPUT_BUFFER_UTILS_ERROR("copy video moof_fragment: error: fragment_pos: %u, returning NULL", lls_sls_monitor_output_buffer->video_output_buffer_isobmff.fragment_pos);
 		return NULL;
 	}
 
-	uint32_t moov_fragment_size = lls_sls_monitor_output_buffer->video_output_buffer_isobmff.moov_box_pos + lls_sls_monitor_output_buffer->video_output_buffer_isobmff.fragment_pos;
-	if(moov_fragment_size <= 0) {
-		__LLS_SLS_MONITOR_OUTPUT_BUFFER_UTILS_ERROR("copy video moov_fragment size <= 0, %u, returning NULL", moov_fragment_size);
+	uint32_t moof_fragment_size = lls_sls_monitor_output_buffer->video_output_buffer_isobmff.moof_box_pos + lls_sls_monitor_output_buffer->video_output_buffer_isobmff.fragment_pos;
+	if(moof_fragment_size <= 0) {
+		__LLS_SLS_MONITOR_OUTPUT_BUFFER_UTILS_ERROR("copy video moof_fragment size <= 0, %u, returning NULL", moof_fragment_size);
 		return NULL;
 	}
-	block_t* isobmff_moov_fragment_block = block_Alloc(moov_fragment_size);
+	block_t* isobmff_moof_fragment_block = block_Alloc(moof_fragment_size);
 
-	__LLS_SLS_MONITOR_OUTPUT_BUFFER_UTILS_DEBUG("copy video moov_fragment: total size: %u,  moov size: %u, fragment size: %u", moov_fragment_size,  lls_sls_monitor_output_buffer->video_output_buffer_isobmff.moov_box_pos, lls_sls_monitor_output_buffer->video_output_buffer_isobmff.fragment_pos);
+	__LLS_SLS_MONITOR_OUTPUT_BUFFER_UTILS_DEBUG("copy video moof_fragment: total size: %u,  moof size: %u, fragment size: %u", moof_fragment_size,  lls_sls_monitor_output_buffer->video_output_buffer_isobmff.moof_box_pos, lls_sls_monitor_output_buffer->video_output_buffer_isobmff.fragment_pos);
 
-	if(lls_sls_monitor_output_buffer->video_output_buffer_isobmff.moov_box && lls_sls_monitor_output_buffer->video_output_buffer_isobmff.moov_box_pos) {
-		block_Write(isobmff_moov_fragment_block, lls_sls_monitor_output_buffer->video_output_buffer_isobmff.moov_box, lls_sls_monitor_output_buffer->video_output_buffer_isobmff.moov_box_pos);
+	if(lls_sls_monitor_output_buffer->video_output_buffer_isobmff.moof_box && lls_sls_monitor_output_buffer->video_output_buffer_isobmff.moof_box_pos) {
+		block_Write(isobmff_moof_fragment_block, lls_sls_monitor_output_buffer->video_output_buffer_isobmff.moof_box, lls_sls_monitor_output_buffer->video_output_buffer_isobmff.moof_box_pos);
 	}
 
-	block_Write(isobmff_moov_fragment_block, lls_sls_monitor_output_buffer->video_output_buffer_isobmff.fragment_box, lls_sls_monitor_output_buffer->video_output_buffer_isobmff.fragment_pos);
+	block_Write(isobmff_moof_fragment_block, lls_sls_monitor_output_buffer->video_output_buffer_isobmff.fragment_box, lls_sls_monitor_output_buffer->video_output_buffer_isobmff.fragment_pos);
 
-	return isobmff_moov_fragment_block;
+	return isobmff_moof_fragment_block;
 }
 
 
