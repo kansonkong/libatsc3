@@ -63,6 +63,7 @@
 
 #include "atsc3_utils.h"
 #include "atsc3_mmtp_types.h"
+#include "atsc3_gzip.h"
 
 extern int _MMT_SIGNALLING_MESSAGE_DEBUG_ENABLED;
 extern int _MMT_SIGNALLING_MESSAGE_TRACE_ENABLED;
