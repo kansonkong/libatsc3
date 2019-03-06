@@ -629,14 +629,14 @@ void process_packet(u_char *user, const struct pcap_pkthdr *pkthdr, const u_char
 
 
 	//ATSC3/331 Section 6.1 - drop non mulitcast ip ranges - e.g not in  239.255.0.0 to 239.255.255.255
-	if(udp_packet->udp_flow.dst_ip_addr <= MIN_ATSC3_MULTICAST_BLOCK || udp_packet->udp_flow.dst_ip_addr >= MAX_ATSC3_MULTICAST_BLOCK) {
-		//out of range, so drop
-		count_packet_as_filtered(udp_packet);
-
-		//goto cleanup;
-		return cleanup(udp_packet);
-	}
-    
+//    if(udp_packet->udp_flow.dst_ip_addr <= MIN_ATSC3_MULTICAST_BLOCK || udp_packet->udp_flow.dst_ip_addr >= MAX_ATSC3_MULTICAST_BLOCK) {
+//        //out of range, so drop
+//        count_packet_as_filtered(udp_packet);
+//
+//        //goto cleanup;
+//        return cleanup(udp_packet);
+//    }
+//    
     if((dst_ip_addr_filter && udp_packet->udp_flow.dst_ip_addr != *dst_ip_addr_filter)) {
         count_packet_as_filtered(udp_packet);
         return cleanup(udp_packet);
@@ -731,12 +731,12 @@ int main(int argc,char **argv) {
 	_MPU_DEBUG_ENABLED = 0;
 	_MMTP_DEBUG_ENABLED = 0;
 	_LLS_DEBUG_ENABLED = 0;
-    _ISOBMFF_TOOLS_DEBUG_ENABLED = 1;
-    _PLAYER_FFPLAY_DEBUG_ENABLED = 1;
-    _PLAYER_FFPLAY_TRACE_ENABLED = 1;
-    _ALC_UTILS_DEBUG_ENABLED = 1;
+    _ISOBMFF_TOOLS_DEBUG_ENABLED = 0;
+    _PLAYER_FFPLAY_DEBUG_ENABLED = 0;
+    _PLAYER_FFPLAY_TRACE_ENABLED = 0;
+    _ALC_UTILS_DEBUG_ENABLED = 0;
     _ALC_UTILS_TRACE_ENABLED = 0;
-    _ISOBMFFTRACKJOINER_DEBUG_ENABLED = 1;
+    _ISOBMFFTRACKJOINER_DEBUG_ENABLED = 0;
 
     char *dev;
 
