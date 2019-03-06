@@ -108,17 +108,17 @@ uint8_t* si_message_not_supported(mmt_signalling_message_header_and_payload_t* m
 void signaling_message_dump(mmtp_payload_fragments_union_t* si_message);
 void pa_message_dump(mmtp_payload_fragments_union_t* mmtp_payload_fragments);
 void mpi_message_dump(mmtp_payload_fragments_union_t* mmtp_payload_fragments);
-void mpt_message_dump(mmtp_payload_fragments_union_t* mmtp_payload_fragments);
+void mpt_message_dump(mmt_signalling_message_header_and_payload_t* mmt_signalling_message_header_and_payload_t);
 void mmt_atsc3_message_payload_dump(mmt_signalling_message_header_and_payload_t* mmt_signalling_message_header_and_payload);
 
 
 
 #define _MMSM_PRINTLN(...) printf(__VA_ARGS__);printf("\n")
-#define _MMSM_ERROR(...)   printf("%s:%d:ERROR:",__FILE__,__LINE__);_MMSM_PRINTLN(__VA_ARGS__);
-#define _MMSM_WARN(...)    printf("%s:%d:WARN:",__FILE__,__LINE__);_MMSM_PRINTLN(__VA_ARGS__);
-#define _MMSM_INFO(...)    printf("%s:%d:INFO:",__FILE__,__LINE__);_MMSM_PRINTLN(__VA_ARGS__);
-#define _MMSM_DEBUG(...)   if(_MMT_SIGNALLING_MESSAGE_DEBUG_ENABLED) { printf("%s:%d:DEBUG:",__FILE__,__LINE__);_MMSM_PRINTLN(__VA_ARGS__); }
-#define _MMSM_TRACE(...)   if(_MMT_SIGNALLING_MESSAGE_TRACE_ENABLED) { printf("%s:%d:TRACE:",__FILE__,__LINE__);_MMSM_PRINTLN(__VA_ARGS__); }
+#define _MMSM_ERROR(...)   printf("%s:%d:ERROR: ",__FILE__,__LINE__);_MMSM_PRINTLN(__VA_ARGS__);
+#define _MMSM_WARN(...)    printf("%s:%d:WARN: ",__FILE__,__LINE__);_MMSM_PRINTLN(__VA_ARGS__);
+#define _MMSM_INFO(...)    printf("%s:%d:INFO: ",__FILE__,__LINE__);_MMSM_PRINTLN(__VA_ARGS__);
+#define _MMSM_DEBUG(...)   if(_MMT_SIGNALLING_MESSAGE_DEBUG_ENABLED) { printf("%s:%d:DEBUG: ",__FILE__,__LINE__);_MMSM_PRINTLN(__VA_ARGS__); }
+#define _MMSM_TRACE(...)   if(_MMT_SIGNALLING_MESSAGE_TRACE_ENABLED) { printf("%s:%d:TRACE: ",__FILE__,__LINE__);_MMSM_PRINTLN(__VA_ARGS__); }
 
 
 #endif /* MODULES_DEMUX_MMT_ATSC3_MMT_SIGNALING_MESSAGE_H_ */
