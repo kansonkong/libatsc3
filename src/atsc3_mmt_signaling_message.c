@@ -375,6 +375,10 @@ uint8_t* mmt_atsc3_message_payload_parse(mmt_signalling_message_header_and_paylo
 	buf = extract(buf, (uint8_t*)&atsc3_message_content_version, 1);
 	mmt_atsc3_message_payload->atsc3_message_content_version = atsc3_message_content_version;
 
+	uint8_t atsc3_message_content_compression;
+	buf = extract(buf, (uint8_t*)&atsc3_message_content_compression, 1);
+	mmt_atsc3_message_payload->atsc3_message_content_compression = atsc3_message_content_compression;
+
 	uint8_t 	URI_length;
 	buf = extract(buf, (uint8_t*)&URI_length, 1);
 	mmt_atsc3_message_payload->URI_length = __MAX(0, __MIN(255, URI_length));
@@ -434,6 +438,19 @@ uint8_t* si_message_not_supported(mmt_signalling_message_header_and_payload_t* m
 }
 
 
+
+void signaling_message_mmtp_packet_header_dump(mmtp_payload_fragments_union_t* mmtp_payload_fragments) {
+	_MMSM_INFO("------------------");
+	_MMSM_INFO("MMTP Packet Header");
+	_MMSM_INFO("------------------");
+	_MMSM_INFO(" packet version         : %-10d (0x%d%d)", mmtp_payload_fragments->mmtp_packet_header.mmtp_packet_version, ((mmtp_payload_fragments->mmtp_packet_header.mmtp_packet_version >> 1) & 0x1), mmtp_payload_fragments->mmtp_packet_header.mmtp_packet_version & 0x1);
+	_MMSM_INFO(" payload_type           : %-10d (0x%d%d)", mmtp_payload_fragments->mmtp_packet_header.mmtp_payload_type, ((mmtp_payload_fragments->mmtp_packet_header.mmtp_payload_type >> 1) & 0x1), mmtp_payload_fragments->mmtp_packet_header.mmtp_payload_type & 0x1);
+	_MMSM_INFO(" packet_id              : %-10hu (0x%04x)", mmtp_payload_fragments->mmtp_packet_header.mmtp_packet_id, mmtp_payload_fragments->mmtp_packet_header.mmtp_packet_id);
+	_MMSM_INFO(" timestamp              : %-10u (0x%08x)", mmtp_payload_fragments->mmtp_packet_header.mmtp_timestamp, mmtp_payload_fragments->mmtp_packet_header.mmtp_timestamp);
+	_MMSM_INFO(" packet_sequence_number : %-10u (0x%08x)", mmtp_payload_fragments->mmtp_packet_header.packet_sequence_number,mmtp_payload_fragments->mmtp_packet_header.packet_sequence_number);
+	_MMSM_INFO(" packet counter         : %-10u (0x%04x)", mmtp_payload_fragments->mmtp_packet_header.packet_counter, mmtp_payload_fragments->mmtp_packet_header.packet_counter);
+	_MMSM_INFO("------------------");
+}
 void signaling_message_dump(mmtp_payload_fragments_union_t* mmtp_payload_fragments) {
 	if(mmtp_payload_fragments->mmtp_packet_header.mmtp_payload_type != 0x02) {
 		_MMSM_ERROR("signaling_message_dump, payload_type 0x%x != 0x02", mmtp_payload_fragments->mmtp_packet_header.mmtp_payload_type);
@@ -441,7 +458,7 @@ void signaling_message_dump(mmtp_payload_fragments_union_t* mmtp_payload_fragmen
 	}
 
 	//dump mmtp packet header
-	mmtp_packet_header_dump(mmtp_payload_fragments);
+	signaling_message_mmtp_packet_header_dump(mmtp_payload_fragments);
 
 	_MMSM_INFO("-----------------");
 	_MMSM_INFO("Signaling Message");
