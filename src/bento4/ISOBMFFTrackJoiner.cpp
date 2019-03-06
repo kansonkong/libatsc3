@@ -172,6 +172,8 @@ void parseAndBuildJoinedBoxes(ISOBMFFTrackJoinerFileResouces* isoBMFFTrackJoiner
 }
 
 uint32_t __rebuild_trun_sample_box(AP4_TrunAtom* temp_trunAtom, lls_sls_monitor_buffer_isobmff_t* lls_sls_monitor_buffer_isobmff) {
+	return 0;
+
 	uint32_t old_fragments_size = 0;
 	uint32_t new_fragments_size = 0;
 	uint32_t total_sample_duration = 0;
@@ -189,23 +191,28 @@ uint32_t __rebuild_trun_sample_box(AP4_TrunAtom* temp_trunAtom, lls_sls_monitor_
 
 			if (lls_sls_monitor_buffer_isobmff->moof_box_trun_sample_entry_vector->data[i]->to_remove_sample_entry ||
 				!lls_sls_monitor_buffer_isobmff->moof_box_trun_sample_entry_vector->data[i]->has_matching_sample) {
+				__ISOBMFF_JOINER_INFO("track_id: %u: MISSING SAMPLE: setting sample %u from size: %u to size: %u, duration: %u:, sample_flags: 0x%x", lls_sls_monitor_buffer_isobmff->track_id, i, last_sample_size, to_walk_entries[i].sample_size, total_sample_duration, to_walk_entries[i].sample_flags);
 
 				has_updated_entries = true;
 				to_walk_entries[i].sample_size = 0;
 				to_walk_entries[i].sample_composition_time_offset = 0;
+				to_walk_entries[i].sample_flags |= 0x000100;
+				to_walk_entries[i].sample_flags |= 0x000200;
+
 				uint32_t empty_sample_duration = to_walk_entries[i].sample_duration;
+
 //				if(i > 0) {
 //					to_walk_entries[i].sample_duration = 0;
 //					to_walk_entries[i-1].sample_duration += empty_sample_duration;
 //				}
-				__ISOBMFF_JOINER_INFO("track_id: %u: MISSING SAMPLE: setting sample %u from size: %u to size: %u, duration: %u:", lls_sls_monitor_buffer_isobmff->track_id, i, last_sample_size, to_walk_entries[i].sample_size, total_sample_duration);
 
 			} else if (true) { //lls_sls_monitor_buffer_isobmff->moof_box_is_from_last_mpu) {
+				__ISOBMFF_JOINER_INFO("track_id: %u: REBUILD MOOF: setting sample %u from size: %u to size: %u, duration: %u, sample_flags: 0x%x", lls_sls_monitor_buffer_isobmff->track_id, i, last_sample_size, to_walk_entries[i].sample_size, total_sample_duration, to_walk_entries[i].sample_flags);
 
 				has_updated_entries = true;
 				to_walk_entries[i].sample_size = lls_sls_monitor_buffer_isobmff->moof_box_trun_sample_entry_vector->data[i]->sample_size;
+				to_walk_entries[i].sample_flags |= 0x000200;
 
-				__ISOBMFF_JOINER_INFO("track_id: %u: REBUILD MOOF: setting sample %u from size: %u to size: %u, duration: %u", lls_sls_monitor_buffer_isobmff->track_id, i, last_sample_size, to_walk_entries[i].sample_size, total_sample_duration);
 			}
 			rebuilt_container.Append(to_walk_entries[i]);
 		}
