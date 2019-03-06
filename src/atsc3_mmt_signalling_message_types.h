@@ -117,7 +117,7 @@ typedef struct mmt_atsc3_message_payload {
 typedef struct asset_id {
 	uint32_t	asset_id_scheme;
 	uint32_t	asset_id_length;
-	uint8_t*	asset_id_bytes;
+	uint8_t*	asset_id;
 } asset_id_t;
 
 
@@ -172,8 +172,20 @@ typedef struct mp_table_descriptors {
 
 typedef struct mmt_package_id {
 	uint8_t		mmt_package_id_length;
-	uint8_t*	mmt_package_id_byte;
+	uint8_t*	mmt_package_id;
 } mmt_package_id_t;
+
+
+typedef struct mmt_general_location_info {
+	uint8_t location_type;
+	uint16_t packet_id;
+	uint32_t ipv4_src_addr;
+	uint32_t ipv4_dst_addr;
+	uint16_t dst_port;
+	//ignoring ipv6
+	uint16_t message_id;
+
+} mmt_general_location_info_t;
 
 typedef struct mp_table_asset_row {
 	identifier_mapping_t identifier_mapping;
@@ -191,11 +203,10 @@ typedef struct mp_table_asset_row {
 
 	//asset_location (
 	uint8_t		location_count;
-	//mmt_generation_location_info() //?
-
+	mmt_general_location_info_t mmt_general_location_info;
 	//asset_descriptors (
 	uint16_t	asset_descriptors_length;
-	uint8_t		asset_descriptors_byte;
+	uint8_t*	asset_descriptors;
 
 } mp_table_asset_row_t;
 
@@ -215,7 +226,6 @@ typedef struct mp_table {
 	mp_table_asset_row_t* 	mp_table_asset_row;
 
 } mp_table_t;
-
 
 typedef struct mpt_message {
 	uint16_t	message_id;
@@ -240,7 +250,7 @@ typedef struct mmt_signaling_message_mpu_timestamp_descriptor {
 
 typedef union mmt_signalling_message_type {
 	mmt_atsc3_message_payload_t			mmt_atsc3_message_payload;
-
+	mp_table_t							mp_table;
 } mmt_signalling_message_payload_u;
 
 
