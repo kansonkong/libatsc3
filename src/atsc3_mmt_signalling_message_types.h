@@ -103,6 +103,9 @@ typedef struct mmt_atsc3_message_payload {
 	uint32_t	atsc3_message_content_length;
 	uint8_t*	atsc3_message_content;
 
+	uint32_t	atsc3_message_content_length_compressed;
+	uint8_t*	atsc3_message_content_compressed;
+
 	//reserved:	8 bits to pad out length
 	//i < length - 11 - URI_length - atsc3_message_content_length
 } mmt_atsc3_message_payload_t;
