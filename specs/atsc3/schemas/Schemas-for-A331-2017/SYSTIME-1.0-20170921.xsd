@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema" xmlns:time="tag:atsc.org,2016:XMLSchemas/ATSC3/Delivery/SYSTIME/1.0/" targetNamespace="tag:atsc.org,2016:XMLSchemas/ATSC3/Delivery/SYSTIME/1.0/" elementFormDefault="qualified">
+	<xs:element name="SystemTime" type="time:SysTimeType"/>
+	<xs:complexType name="SysTimeType">
+		<xs:attribute name="currentUtcOffset" type="xs:short" use="required"/>
+		<xs:attribute name="ptpPrepend" type="xs:unsignedShort" default="0"/>
+		<xs:attribute name="leap59" type="xs:boolean" default="false"/>
+		<xs:attribute name="leap61" type="xs:boolean" default="false"/>
+		<xs:attribute name="utcLocalOffset" type="xs:duration" use="required"/>
+		<xs:attribute name="dsStatus" type="xs:boolean" default="false"/>
+		<xs:attribute name="dsDayOfMonth" type="time:dayType"/>
+		<xs:attribute name="dsHour" type="time:hourType"/>
+		<xs:anyAttribute processContents="strict"/>
+	</xs:complexType>
+	<xs:simpleType name="dayType">
+		<xs:restriction base="xs:unsignedByte">
+			<xs:minInclusive value="1"/>
+			<xs:maxInclusive value="31"/>
+		</xs:restriction>
+	</xs:simpleType>
+	<xs:simpleType name="hourType">
+		<xs:restriction base="xs:unsignedByte">
+			<xs:maxInclusive value="24"/>
+		</xs:restriction>
+	</xs:simpleType>
+</xs:schema>

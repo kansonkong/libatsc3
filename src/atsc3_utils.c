@@ -6,10 +6,6 @@
  */
 
 #include "atsc3_utils.h"
-#include <stdlib.h>
-#include <ctype.h>
-#include <string.h>
-#include <strings.h>
 
 long long timediff(struct timeval t1, struct timeval t0) {
 	return  (t1.tv_sec-t0.tv_sec)*1000000LL + t1.tv_usec-t0.tv_usec;
@@ -73,7 +69,7 @@ char* kvp_collection_get(kvp_collection_t *collection, char* key) {
 
 	//don't forget our null terminator
 	int len = strlen(val) + 1;
-	char* newval = calloc(len, sizeof(char));
+	char* newval = (char*)calloc(len, sizeof(char));
 
 	if(!newval) {
 		_ATSC3_UTILS_ERROR("kvp_collection_get: unable to clone val return!");
@@ -90,7 +86,7 @@ char* kvp_collection_get(kvp_collection_t *collection, char* key) {
 kvp_collection_t* kvp_collection_parse(uint8_t* input_string) {
 	int input_len = strlen((const char*)input_string);
 	_ATSC3_UTILS_TRACE("kvp_parse_string: input string len: %d, input string:\n\n%s\n\n", input_len, input_string);
-	kvp_collection_t *collection = calloc(1, sizeof(kvp_collection_t));
+	kvp_collection_t *collection = (kvp_collection_t*)calloc(1, sizeof(kvp_collection_t));
 
 	//a= is not valid, must be at least 3 chars
 	//return an empty collection
@@ -133,7 +129,7 @@ kvp_collection_t* kvp_collection_parse(uint8_t* input_string) {
 	for(int i=1; i < input_len && kvp_position <= equals_count; i++) {
 		if(!current_kvp) {
 			//alloc our entry
-			collection->kvp_collection[kvp_position] = calloc(1, sizeof(kvp_t));
+			collection->kvp_collection[kvp_position] = (kvp_t*)calloc(1, sizeof(kvp_t));
 			current_kvp = collection->kvp_collection[kvp_position];
 		}
 		if(isspace(input_string[i]) && !quote_depth) {
@@ -185,33 +181,144 @@ kvp_collection_t* kvp_collection_parse(uint8_t* input_string) {
 
 
 block_t* block_Alloc(int len) {
-	block_t* new_block = calloc(1, sizeof(block_t));
-	new_block->p_buffer = calloc(len, sizeof(uint8_t*));
-	new_block->i_buffer = len;
+	block_t* new_block = (block_t*)calloc(1, sizeof(block_t));
+	assert(new_block);
+
+	new_block->p_buffer = (uint8_t*)calloc(len, sizeof(uint8_t));
+	assert(new_block->p_buffer);
+
+	new_block->p_size = len;
+	new_block->i_pos = 0;
 
 	return new_block;
 }
 
+//todo: make this a marco define?
+block_t* __block_check_bounaries(const char* method_name, block_t* src) {
+	//these are FATAL conditions, return NULL
+
+	if(!src->p_buffer) {
+		_ATSC3_UTILS_ERROR("%s: block: %p, p_buffer is NULL, p_size is: %u, i_pos: %u", method_name, src, src->p_size, src->i_pos);
+		src->p_size = 0;
+		src->i_pos = 0;
+		return NULL;
+	}
+
+	if(src->p_size <= 0) {
+		_ATSC3_UTILS_ERROR("%s: block: %p, invalid p_size for p_buffer: %p, p_size is: %u, i_pos: %u", method_name, src, src->p_buffer, src->p_size, src->i_pos);
+		src->p_size = 0;
+		src->i_pos = 0;
+		if(src->p_buffer) {
+			//let this leak
+		}
+		src->p_buffer = NULL;
+		return NULL;
+	}
+
+	//these are under/over-bounary errors and *may* be problematic
+	//re-clamp this position
+	if(src->i_pos < 0) {
+		_ATSC3_UTILS_WARN("%s: block: %p, invalid i_pos, clamping to 0, for p_buffer: %p, p_size is: %u, i_pos: %u", method_name, src, src->p_buffer, src->p_size, src->i_pos);
+		src->i_pos = 0;
+	}
+
+	if(src->i_pos > src->p_size) {
+		uint32_t new_i_pos = src->p_size - 1;
+		_ATSC3_UTILS_WARN("%s: block: %p, i_pos is past size for p_buffer: %p, p_size is: %u, i_pos: %u, setting to: %u ", method_name, src, src->p_buffer, src->p_size, src->i_pos, new_i_pos);
+		src->i_pos = new_i_pos;
+	}
+
+	return src;
+}
+
+block_t* block_Write(block_t* dest, uint8_t* src_buf, uint32_t src_size) {
+	if(!__block_check_bounaries(__FUNCTION__, dest)) return NULL;
+
+	int dest_size_required = dest->i_pos + src_size;
+	if(dest->p_size < dest_size_required) {
+		block_t* ret_block = block_Resize(dest, dest_size_required);
+		if(!ret_block) {
+			_ATSC3_UTILS_ERROR("block_Write: block: %p, unable to realloc from size: %u to %u, returning NULL", dest, dest->p_size, dest_size_required);
+			return NULL;
+		}
+	}
+	memcpy(&dest->p_buffer[dest->i_pos], src_buf, src_size);
+	dest->i_pos += src_size;
+
+	return dest;
+}
+
+block_t* block_Rewind(block_t* dest) {
+	if(!__block_check_bounaries(__FUNCTION__, dest)) return NULL;
+
+	if(dest->i_pos) {
+		uint32_t to_scrub_len = dest->i_pos > 0 ?  __CLIP(dest->i_pos, 0, dest->p_size) : dest->p_size;
+		_ATSC3_UTILS_TRACE("block_Rewind, block: %p, zeroing out %u bytes", dest, to_scrub_len)
+		memset(dest->p_buffer, 0, to_scrub_len);
+	}
+
+	dest->i_pos = 0;
+	return dest;
+}
 /**
  * todo, fix me to use ** to null out block_t ref
  */
 
-block_t* block_Duplicate(block_t* a) {
-	block_t* b= block_Alloc(a->i_buffer);
-	memcpy(b->p_buffer, a->p_buffer, a->i_buffer);
-	b->i_buffer = a->i_buffer;
+block_t* block_Duplicate(block_t* src) {
+	if(!__block_check_bounaries(__FUNCTION__, src)) return NULL;
 
-	return b;
+	uint32_t to_alloc_size = __MAX(src->p_size, src->i_pos);
+	if(to_alloc_size > src->p_size) {
+		_ATSC3_UTILS_WARN("block_Duplicate: block: %p, p_size was: %u, but i_pos: %u, realloc to size: %u", src, src->p_size, src->i_pos, to_alloc_size);
+	}
+	block_t* dest = block_Alloc(to_alloc_size);
+	memcpy(dest->p_buffer, src->p_buffer, src->i_pos);
+	dest->i_pos = src->i_pos;
+
+	return dest;
 }
 
-void block_Release(block_t* a) {
+//return will be NULL if realloc failed, but src will still be valid
+block_t* block_Resize(block_t* src, uint32_t src_size_requested) {
+	if(!__block_check_bounaries(__FUNCTION__, src)) return NULL;
+
+
+	uint32_t src_size_required = __MAX(64, src_size_requested);
+
+	void* new_block = realloc(src->p_buffer, src_size_required);
+	if(!new_block) {
+		_ATSC3_UTILS_ERROR("block_Resize: block: %p resize to %u failed, returning NULL", src, src_size_required);
+		return NULL;
+	} else {
+		_ATSC3_UTILS_TRACE("block_Resize: block: %p, p_buffer was: %p, now: %p, resize from %u to %u", src, src->p_buffer, new_block, src->p_size, src_size_required);
+		src->p_buffer = (uint8_t*) new_block;
+		src->p_size = src_size_required;
+		uint32_t to_check_new_i_pos = __MIN(src->p_size - 1, src->i_pos);
+		if(to_check_new_i_pos != src->i_pos) {
+			_ATSC3_UTILS_WARN("block_Resize: block: %p resize to %u, old pos %u past end of new size, updating to %u", src, src->p_size, src->i_pos, to_check_new_i_pos);
+			src->i_pos = to_check_new_i_pos;
+		} else {
+			_ATSC3_UTILS_TRACE("block_Resize: block: %p, zeroing out from: %u to %u", src, src->i_pos, src->p_size);
+			uint32_t to_scrub_len = __MAX(0, (src->p_size - 1 - src->i_pos));
+			memset(&src->p_buffer[src->i_pos], 0, to_scrub_len);
+		}
+	}
+
+	return src;
+}
+
+
+void block_Release(block_t** a_ptr) {
+	block_t* a = *a_ptr;
 	if(a) {
-		if(a->p_buffer) {
+		if(a->p_buffer && a->p_size) {
+			a->i_pos = 0;
+			a->p_size = 0;
 			free(a->p_buffer);
 			a->p_buffer = NULL;
 		}
 		free(a);
-		a = NULL;
+		*a_ptr = NULL;
 	}
 }
 
@@ -258,6 +365,6 @@ uint16_t parsePortIntoIntval(char* dst_port) {
 //alloc and copy - note limited to 16k
 char* strlcopy(char* src) {
 	int len = strnlen(src, 16384);
-	char* dest = calloc(len, sizeof(char*));
+	char* dest = (char*)calloc(len, sizeof(char*));
 	return strncpy(dest, src, len);
 }

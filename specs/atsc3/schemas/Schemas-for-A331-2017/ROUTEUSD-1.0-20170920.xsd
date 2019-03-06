@@ -1,0 +1,52 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema" xmlns:routeusd="tag:atsc.org,2016:XMLSchemas/ATSC3/Delivery/ROUTEUSD/1.0/" targetNamespace="tag:atsc.org,2016:XMLSchemas/ATSC3/Delivery/ROUTEUSD/1.0/" elementFormDefault="qualified">
+	<xs:import namespace="http://www.w3.org/XML/1998/namespace" schemaLocation="W3C/xml.xsd"/>
+	<xs:element name="BundleDescriptionROUTE" type="routeusd:BundleDescriptionROUTEType"/>
+	<xs:complexType name="BundleDescriptionROUTEType">
+		<xs:sequence>
+			<xs:element name="UserServiceDescription" type="routeusd:UserServiceDescriptionType"/>
+			<xs:any namespace="##other" processContents="strict" minOccurs="0" maxOccurs="unbounded"/>
+		</xs:sequence>
+	</xs:complexType>
+	<xs:complexType name="UserServiceDescriptionType">
+		<xs:sequence>
+			<xs:element name="Name" type="routeusd:NameType" minOccurs="0" maxOccurs="unbounded"/>
+			<xs:element name="ServiceLanguage" type="routeusd:ServiceLangType" minOccurs="0" maxOccurs="unbounded"/>
+			<xs:element name="DeliveryMethod" type="routeusd:DeliveryMethodType" minOccurs="0" maxOccurs="unbounded"/>
+			<xs:any namespace="##other" processContents="strict" minOccurs="0" maxOccurs="unbounded"/>
+		</xs:sequence>
+		<xs:attribute name="serviceId" type="xs:unsignedShort" use="required"/>
+		<xs:attribute name="serviceStatus" type="xs:boolean" default="true"/>
+		<xs:anyAttribute processContents="strict"/>
+	</xs:complexType>
+	<xs:complexType name="NameType">
+		<xs:simpleContent>
+			<xs:extension base="xs:string">
+				<xs:attribute ref="xml:lang" use="required"/>
+				<xs:anyAttribute processContents="strict"/>
+			</xs:extension>
+		</xs:simpleContent>
+	</xs:complexType>
+	<xs:complexType name="ServiceLangType">
+		<xs:simpleContent>
+			<xs:extension base="xs:string">
+				<xs:anyAttribute processContents="strict"/>
+			</xs:extension>
+		</xs:simpleContent>
+	</xs:complexType>
+	<xs:complexType name="DeliveryMethodType">
+		<xs:sequence>
+			<xs:element name="BroadcastAppService" type="routeusd:AppServiceType" minOccurs="0" maxOccurs="unbounded"/>
+			<xs:element name="UnicastAppService" type="routeusd:AppServiceType" minOccurs="0" maxOccurs="unbounded"/>
+			<xs:any namespace="##other" processContents="strict" minOccurs="0" maxOccurs="unbounded"/>
+		</xs:sequence>
+		<xs:anyAttribute processContents="strict"/>
+	</xs:complexType>
+	<xs:complexType name="AppServiceType">
+		<xs:sequence>
+			<xs:element name="BasePattern" type="xs:string" maxOccurs="unbounded"/>
+			<xs:any namespace="##other" processContents="strict" minOccurs="0" maxOccurs="unbounded"/>
+		</xs:sequence>
+		<xs:anyAttribute processContents="strict"/>
+	</xs:complexType>
+</xs:schema>

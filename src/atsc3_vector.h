@@ -21,15 +21,28 @@
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston MA 02110-1301, USA.
  *****************************************************************************/
-#ifndef ATSC3_VECTOR_H
-#define ATSC3_VECTOR_H
 
 #include <stdbool.h>
 #include <stddef.h>
+#include <stdlib.h>
+
+#ifndef ATSC3_VECTOR_H
+#define ATSC3_VECTOR_H
+
 
 #define ATSC3_VECTOR_FAILFLAG_ (~(((size_t) -1) >> 1)) /* only the MSB */
 
-#include "atsc3_decoupling_vlc_common.h"
+
+// #include "atsc3_decoupling_vlc_common.h"
+
+
+#define container_of(ptr, type, member) \
+    ((type *)(((char *)(ptr)) - offsetof(type, member)))
+
+
+
+
+
 /**
  * \defgroup vector Vector
  * \ingroup cext
@@ -107,8 +120,8 @@
 #define atsc3_vector_clear(pv) \
 ( \
     /* cannot be implemened as do-while(0), called from ATSC3_VECTOR_resize_() */ \
-    ATSC3_VECTOR_destroy(pv), \
-    ATSC3_VECTOR_init(pv) \
+    atsc3_vector_destroy(pv), \
+	atsc3_vector_init(pv) \
 )
 
 /**
@@ -144,6 +157,96 @@ atsc3_vector_enforce_size_t_(size_t value)
 
 #define ATSC3_VECTOR_FAILFLAG_ (~(((size_t) -1) >> 1)) /* only the MSB */
 
+
+
+#include <limits.h>
+
+static inline bool umul_overflow(unsigned a, unsigned b, unsigned *res)
+{
+
+     *res = a * b;
+     return b > 0 && a > (UINT_MAX / b);
+
+}
+
+static inline bool umull_overflow(unsigned long a, unsigned long b,
+                                  unsigned long *res)
+{
+     *res = a * b;
+     return b > 0 && a > (ULONG_MAX / b);
+
+}
+
+static inline bool umulll_overflow(unsigned long long a, unsigned long long b,
+                                   unsigned long long *res)
+{
+     *res = a * b;
+     return b > 0 && a > (ULLONG_MAX / b);
+
+}
+
+
+#ifndef __cplusplus
+
+/**
+ * Overflowing multiplication
+ *
+ * Converts \p a and \p b to the type of \p *r.
+ * Then computes the product of both conversions while checking for overflow.
+ * Finally stores the result in \p *r.
+ *
+ * \param a an integer
+ * \param b an integer
+ * \param r a pointer to an integer [OUT]
+ * \retval false The product did not overflow.
+ * \retval true The product overflowed.
+ */
+#define mul_overflow(a,b,r) \
+    _Generic(*(r), \
+        unsigned: umul_overflow(a, b, (unsigned *)(r)), \
+        unsigned long: umull_overflow(a, b, (unsigned long *)(r)), \
+        unsigned long long: umulll_overflow(a, b, (unsigned long long *)(r)))
+#else
+static inline bool mul_overflow(unsigned a, unsigned b, unsigned *res)
+{
+    return umul_overflow(a, b, res);
+}
+
+static inline bool mul_overflow(unsigned long a, unsigned long b,
+                                unsigned long *res)
+{
+    return umull_overflow(a, b, res);
+}
+
+static inline bool mul_overflow(unsigned long long a, unsigned long long b,
+                                unsigned long long *res)
+{
+    return umulll_overflow(a, b, res);
+}
+#endif
+
+
+
+
+
+//from vlc - atsc3_decoupling_vlc_common
+#define VLC_USED __attribute__ ((warn_unused_result))
+
+VLC_USED
+static inline void *vlc_alloc(size_t count, size_t size)
+{
+    return mul_overflow(count, size, &size) ? NULL : malloc(size);
+}
+
+VLC_USED
+static inline void *vlc_reallocarray(void *ptr, size_t count, size_t size)
+{
+    return mul_overflow(count, size, &size) ? NULL : realloc(ptr, size);
+}
+
+
+
+
 /**
  * Realloc data and update vector fields.
  *
@@ -169,10 +272,11 @@ atsc3_vector_enforce_size_t_(size_t value)
  * \param pcap a pointer to the `cap` field of the vector [IN/OUT]
  * \param psize a pointer to the `size` field of the vector [IN/OUT]
  * \return the reallocated array, or `ptr` if reallocation failed
+ *
+ * remove restrict keyword for c++ cross compile restrict
  */
 static inline void *
-atsc3_vector_reallocdata_(void *ptr, size_t count, size_t size,
-                        size_t *restrict pcap, size_t *restrict psize)
+atsc3_vector_reallocdata_(void *ptr, size_t count, size_t size, size_t*  pcap, size_t* psize)
 {
     void *n = vlc_reallocarray(ptr, count, size);
     if (!n)
