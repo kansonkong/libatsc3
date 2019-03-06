@@ -78,7 +78,6 @@ int PACKET_COUNTER=0;
 
 extern "C" {
 
-
 #include "atsc3_listener_udp.h"
 #include "atsc3_utils.h"
 
@@ -102,70 +101,11 @@ extern "C" {
 
 #include "atsc3_output_statistics_ncurses.h"
 }
+#include "atsc3_logging_externs.h"
 
-extern int _MPU_DEBUG_ENABLED;
-extern int _MMTP_DEBUG_ENABLED;
-extern int _ALC_UTILS_DEBUG_ENABLED;
-extern int _ALC_UTILS_TRACE_ENABLED;
-extern int _LLS_DEBUG_ENABLED;
-extern int _PLAYER_FFPLAY_DEBUG_ENABLED;
-extern int _PLAYER_FFPLAY_TRACE_ENABLED;
-extern int _ISOBMFFTRACKJOINER_DEBUG_ENABLED;
-
-#define MAX_PCAP_LEN 1514
 
 #define _ENABLE_DEBUG true
 
-#define __ERROR(...)   printf("%s:%d:ERROR :","listener",__LINE__);printf(__VA_ARGS__);printf("\n");
-#define __WARN(...)    printf("%s:%d:WARN: ","listener",__LINE__);printf(__VA_ARGS__);printf("\n");
-#define __INFO(...)    printf("%s:%d: ","listener",__LINE__);printf(__VA_ARGS__);printf("\n");
-
-#ifdef _ENABLE_DEBUG
-#define __DEBUG(...)   printf("%s:%d:DEBUG: ","listener",__LINE__);printf(__VA_ARGS__);printf("\n");
-#define __DEBUGF(...)  printf("%s:%d:DEBUG: ","listener",__LINE__);printf(__VA_ARGS__);printf("\n");
-#define __DEBUGA(...) 	__PRINTF(__VA_ARGS__);
-#define __DEBUGN(...)  __PRINTLN(__VA_ARGS__);
-#else
-#define __DEBUGF(...)
-#define __DEBUGA(...)
-#define __DEBUGN(...)
-#endif
-
-
-#ifndef _TEST_RUN_VALGRIND_OSX_
-//overload printf to write to stderr
-int printf(const char *format, ...)  {
-	va_list argptr;
-	va_start(argptr, format);
-	vfprintf(stderr, format, argptr);
-    va_end(argptr);
-
-	return 0;
-}
-#endif
-
-
-
-
-
-#ifdef _ENABLE_TRACE
-#define __TRACE(...)   printf("%s:%d:TRACE:",__FILE__,__LINE__);__PRINTLN(__VA_ARGS__);
-
-void __trace_dump_ip_header_info(u_char* ip_header) {
-    __TRACE("Version\t\t\t\t\t%d", (ip_header[0] >> 4));
-    __TRACE("IHL\t\t\t\t\t\t%d", (ip_header[0] & 0x0F));
-    __TRACE("Type of Service\t\t\t%d", ip_header[1]);
-    __TRACE("Total Length\t\t\t%d", ip_header[2]);
-    __TRACE("Identification\t\t\t0x%02x 0x%02x", ip_header[3], ip_header[4]);
-    __TRACE("Flags\t\t\t\t\t%d", ip_header[5] >> 5);
-    __TRACE("Fragment Offset\t\t\t%d", (((ip_header[5] & 0x1F) << 8) + ip_header[6]));
-    __TRACE("Time To Live\t\t\t%d", ip_header[7]);
-    __TRACE("Header Checksum\t\t\t0x%02x 0x%02x", ip_header[10], ip_header[11]);
-}
-
-#else
-#define __TRACE(...)
-#endif
 
 //commandline stream filtering
 
@@ -295,7 +235,7 @@ mmtp_payload_fragments_union_t* mmtp_process_from_payload(udp_packet_t *udp_pack
 
 
                         //major refactoring
-                       lls_sls_monitor_output_buffer_t* lls_sls_monitor_output_buffer_final_muxed_payload = atsc3_isobmff_build_mpu_metadata_ftyp_moof_mdat_box_from_mpu_sequence_numbers(&udp_packet->udp_flow, udp_flow_latest_mpu_sequence_number_container, min_mpu_sequence_number, min_mpu_sequence_number, mmtp_sub_flow_vector, lls_slt_monitor->lls_sls_mmt_monitor);
+                       lls_sls_monitor_output_buffer_t* lls_sls_monitor_output_buffer_final_muxed_payload = atsc3_isobmff_build_mpu_metadata_ftyp_moof_mdat_box_from_mpu_sequence_numbers(&udp_packet->udp_flow, udp_flow_latest_mpu_sequence_number_container, matching_lls_slt_mmt_session->to_process_udp_flow_packet_id_mpu_sequence_tuple_audio->mpu_sequence_number-2, matching_lls_slt_mmt_session->to_process_udp_flow_packet_id_mpu_sequence_tuple_video->mpu_sequence_number-2, mmtp_sub_flow_vector, lls_slt_monitor->lls_sls_mmt_monitor);
 
                         if(lls_sls_monitor_output_buffer_final_muxed_payload) {
                             //mark both of these flows as having been processed
@@ -512,73 +452,10 @@ ret:
 }
 
 void process_packet(u_char *user, const struct pcap_pkthdr *pkthdr, const u_char *packet) {
-
-  int i = 0;
-  int k = 0;
-  u_char ethernet_packet[14];
-  u_char ip_header[24];
-  u_char udp_header[8];
-  int udp_header_start = 34;
-  udp_packet_t* udp_packet = NULL;
-
-    for (i = 0; i < 14; i++) {
-        ethernet_packet[i] = packet[0 + i];
-    }
-    if (!(ethernet_packet[12] == 0x08 && ethernet_packet[13] == 0x00)) {
-        __TRACE("Source MAC Address\t\t\t%02X:%02X:%02X:%02X:%02X:%02X", ethernet_packet[6], ethernet_packet[7], ethernet_packet[8], ethernet_packet[9], ethernet_packet[10], ethernet_packet[11]);
-        __TRACE("Destination MAC Address\t\t%02X:%02X:%02X:%02X:%02X:%02X", ethernet_packet[0], ethernet_packet[1], ethernet_packet[2], ethernet_packet[3], ethernet_packet[4], ethernet_packet[5]);
-    	__TRACE("Discarding packet with Ethertype unknown");
-    	return;
-    }
-
-    for (i = 0; i < 20; i++) {
-		ip_header[i] = packet[14 + i];
-	}
-
-	//check if we are a UDP packet, otherwise bail
-	if (ip_header[9] != 0x11) {
-		__TRACE("Protocol not UDP, dropping");
+	udp_packet_t* udp_packet = process_packet_from_pcap(user, pkthdr, packet);
+	if(!udp_packet) {
 		return;
 	}
-
-	#ifdef _ENABLE_TRACE
-        __trace_dump_ip_header_info(ip_header);
-	#endif
-
-	if ((ip_header[0] & 0x0F) > 5) {
-		udp_header_start = 48;
-		__TRACE("Options\t\t\t\t\t0x%02x 0x%02x 0x%02x 0x%02x", ip_header[20], ip_header[21], ip_header[22], ip_header[23]);
-	}
-
-	//malloc our udp_packet_header:
-	udp_packet = (udp_packet_t*)calloc(1, sizeof(udp_packet_t));
-	udp_packet->udp_flow.src_ip_addr = ((ip_header[12] & 0xFF) << 24) | ((ip_header[13]  & 0xFF) << 16) | ((ip_header[14]  & 0xFF) << 8) | (ip_header[15] & 0xFF);
-	udp_packet->udp_flow.dst_ip_addr = ((ip_header[16] & 0xFF) << 24) | ((ip_header[17]  & 0xFF) << 16) | ((ip_header[18]  & 0xFF) << 8) | (ip_header[19] & 0xFF);
-
-	for (i = 0; i < 8; i++) {
-		udp_header[i] = packet[udp_header_start + i];
-	}
-
-	udp_packet->udp_flow.src_port = (udp_header[0] << 8) + udp_header[1];
-	udp_packet->udp_flow.dst_port = (udp_header[2] << 8) + udp_header[3];
-
-	udp_packet->total_packet_length = pkthdr->len;
-	udp_packet->data_length = pkthdr->len - (udp_header_start + 8);
-
-	if(udp_packet->data_length <=0 || udp_packet->data_length > 1514) {
-		__ERROR("invalid data length of udp packet: %d", udp_packet->data_length);
-		return;
-	}
-	__TRACE("Data length: %d", udp_packet->data_length);
-	udp_packet->data = (u_char*)malloc(udp_packet->data_length * sizeof(udp_packet->data));
-	memcpy(udp_packet->data, &packet[udp_header_start + 8], udp_packet->data_length);
-
-	//inefficient as hell for 1 byte at a time, but oh well...
-	#ifdef __ENABLE_TRACE
-		for (i = 0; i < udp_packet->data_length; i++) {
-			__TRACE("%02x ", packet[udp_header_start + 8 + i]);
-		}
-	#endif
 
 	//collect global
 	global_bandwidth_statistics->interval_total_current_bytes_rx += udp_packet->total_packet_length;

@@ -15,6 +15,7 @@
 
 #include <assert.h>
 #include <limits.h>
+
 int _MMTP_DEBUG_ENABLED = 1;
 int _MMTP_TRACE_ENABLED = 0;
 
@@ -234,11 +235,11 @@ mmtp_payload_fragments_union_t* mmtp_packet_parse(mmtp_sub_flow_vector_t* mmtp_s
 	} else
 #endif
 	if(mmtp_payload_fragments->mmtp_packet_header.mmtp_payload_type == 0x2) {
-		uint8_t new_size = udp_raw_buf_size - (raw_packet_ptr - udp_raw_buf);
-		raw_packet_ptr = signaling_message_parse_payload_header(mmtp_payload_fragments, raw_packet_ptr, new_size);
+		uint32_t new_size = udp_raw_buf_size - (raw_packet_ptr - udp_raw_buf);
+		raw_packet_ptr = mmt_signaling_message_parse_packet_header(mmtp_payload_fragments, raw_packet_ptr, new_size);
 
 		new_size = udp_raw_buf_size - (raw_packet_ptr - udp_raw_buf);
-		raw_packet_ptr = signaling_message_parse_payload_table(mmtp_payload_fragments, raw_packet_ptr, new_size);
+		raw_packet_ptr = mmt_signaling_message_parse_packet(mmtp_payload_fragments, raw_packet_ptr, new_size);
 
 	} else {
 		_MMTP_WARN("mmtp_packet_parse: unknown payload type of 0x%x for %-10hu (0x%04x)", mmtp_payload_fragments->mmtp_packet_header.mmtp_payload_type,

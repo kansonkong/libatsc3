@@ -359,13 +359,14 @@ int lls_create_table_type_instance(lls_table_t* lls_table, xml_node_t* xml_root)
 		ret = lls_slt_table_build(lls_table, xml_root);
 
 	} else if(lls_table->lls_table_id == RRT) {
-		_LLS_ERROR("lls_create_table_type_instance: LLS table RRT not supported yet");
+		_LLS_DEBUG("lls_create_table_type_instance: LLS table RRT not supported yet");
+        return 0;
 	} else if(lls_table->lls_table_id == SystemTime) {
 		ret = build_SystemTime_table(lls_table, xml_root);
 	} else if(lls_table->lls_table_id == AEAT) {
-		_LLS_ERROR("lls_create_table_type_instance: LLS table AEAT not supported yet");
+		//_LLS_ERROR("lls_create_table_type_instance: LLS table AEAT not supported yet");
 	} else if(lls_table->lls_table_id == OnscreenMessageNotification) {
-		_LLS_ERROR("lls_create_table_type_instance: LLS table OnscreenMessageNotification not supported yet");
+		//_LLS_ERROR("lls_create_table_type_instance: LLS table OnscreenMessageNotification not supported yet");
 	} else {
 		_LLS_ERROR("lls_create_table_type_instance: Unknown LLS table type: %d",  lls_table->lls_table_id);
 
