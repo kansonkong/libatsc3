@@ -596,6 +596,7 @@ void process_packet(u_char *user, const struct pcap_pkthdr *pkthdr, const u_char
 
 		return cleanup(udp_packet);
 	}
+
 	if(udp_packet->udp_flow.dst_ip_addr == LLS_DST_ADDR && udp_packet->udp_flow.dst_port == LLS_DST_PORT) {
 		global_bandwidth_statistics->interval_lls_current_bytes_rx += udp_packet->data_length;
 		global_bandwidth_statistics->interval_lls_current_packets_rx++;
