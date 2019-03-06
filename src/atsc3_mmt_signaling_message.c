@@ -393,19 +393,40 @@ uint8_t* mmt_atsc3_message_payload_parse(mmt_signalling_message_header_and_paylo
 		mmt_atsc3_message_payload->URI_payload = URI_payload;
 	}
 
-	uint32_t atsc3_message_content_length;
-	buf = extract(buf, (uint8_t*)&atsc3_message_content_length, 4);
-	mmt_atsc3_message_payload->atsc3_message_content_length = ntohl(atsc3_message_content_length);
+	uint32_t temp_atsc3_message_content_length;
+	buf = extract(buf, (uint8_t*)&temp_atsc3_message_content_length, 4);
+	temp_atsc3_message_content_length = ntohl(temp_atsc3_message_content_length);
 
-	if(atsc3_message_content_length) {
+	if(temp_atsc3_message_content_length) {
 		//cheat and over-alloc+1 for a null byte
 
-		uint8_t* atsc3_message_content = calloc(atsc3_message_content_length + 1, sizeof(char));
+		uint8_t* temp_atsc3_message_content = calloc(temp_atsc3_message_content_length + 1, sizeof(char));
 		//not efficent, but oh well
-		for(int i=0; i < mmt_atsc3_message_payload->atsc3_message_content_length; i++) {
-			buf = extract(buf, (uint8_t*)&atsc3_message_content[i], 1);
+		for(int i=0; i < temp_atsc3_message_content_length; i++) {
+			buf = extract(buf, (uint8_t*)&temp_atsc3_message_content[i], 1);
 		}
-		mmt_atsc3_message_payload->atsc3_message_content = atsc3_message_content;
+
+
+		if(mmt_atsc3_message_payload->atsc3_message_content_compression == 0x02) {
+			mmt_atsc3_message_payload->atsc3_message_content_length_compressed = temp_atsc3_message_content_length;
+			mmt_atsc3_message_payload->atsc3_message_content_compressed = temp_atsc3_message_content;
+
+			//ungzip
+			uint8_t *decompressed_payload;
+			int32_t ret = atsc3_unzip_gzip_payload(mmt_atsc3_message_payload->atsc3_message_content_compressed, mmt_atsc3_message_payload->atsc3_message_content_length_compressed, &decompressed_payload);
+
+			if(ret > 0) {
+				mmt_atsc3_message_payload->atsc3_message_content_length = ret;
+				mmt_atsc3_message_payload->atsc3_message_content = decompressed_payload;
+			} else {
+				_MMSM_ERROR("atsc3_message_content_compressed, unable to decompress: error is: %u", ret);
+			}
+
+		} else {
+			//treat this as uncompressed for now..
+			mmt_atsc3_message_payload->atsc3_message_content_length = temp_atsc3_message_content_length;
+			mmt_atsc3_message_payload->atsc3_message_content = temp_atsc3_message_content;
+		}
 	}
 
 	return buf;
@@ -425,6 +446,9 @@ void mmt_atsc3_message_payload_dump(mmt_signalling_message_header_and_payload_t*
 	_MMSM_INFO("atsc3_message_content_compression: %u", mmt_atsc3_message_payload->atsc3_message_content_compression);
 	_MMSM_INFO("URI_length:                        %u", mmt_atsc3_message_payload->URI_length);
 	_MMSM_INFO("URI_payload:                       %s", mmt_atsc3_message_payload->URI_payload);
+	if(mmt_atsc3_message_payload->atsc3_message_content_compression == 0x02) {
+		_MMSM_INFO("atsc3_message_content_length_compressed:      %u", mmt_atsc3_message_payload->atsc3_message_content_length_compressed);
+	}
 	_MMSM_INFO("atsc3_message_content_length:      %u", mmt_atsc3_message_payload->atsc3_message_content_length);
 	_MMSM_INFO("atsc3_message_content:             %s", mmt_atsc3_message_payload->atsc3_message_content);
 

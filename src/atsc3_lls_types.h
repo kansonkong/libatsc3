@@ -95,11 +95,10 @@ See Annex F Sec. 6.4 Sec. 6.5 Sec. 6.6
  */
 
 typedef struct llt_xml_payload {
-	uint8_t *xml_payload_compressed;
-	uint xml_payload_compressed_size;
-	uint8_t *xml_payload;
-	uint xml_payload_size;
-
+	uint8_t 	*xml_payload_compressed;
+	uint32_t 	xml_payload_compressed_size;
+	uint8_t 	*xml_payload;
+	uint32_t 	xml_payload_size;
 
 } lls_xml_payload_t;
 
