@@ -298,7 +298,7 @@ typedef struct lls_table {
 
 
 typedef struct udp_flow_packet_id_mpu_sequence_tuple {
-    udp_flow_t     udp_flow;
+    udp_flow_t  udp_flow;
     uint16_t    packet_id;
     uint32_t    mpu_sequence_number;
     uint32_t    mpu_sequence_number_last_refragmentation_flush;
@@ -306,7 +306,7 @@ typedef struct udp_flow_packet_id_mpu_sequence_tuple {
     
     uint32_t    mpu_sequence_number_negative_discontinuity;
     uint32_t    mpu_sequence_number_negative_discontinuity_received_fragments;
-    bool     has_sent_init_box;
+    bool   		has_sent_init_box;
     
 } udp_flow_packet_id_mpu_sequence_tuple_t;
 
@@ -348,6 +348,9 @@ typedef struct lls_sls_mmt_session {
     uint32_t sls_destination_ip_address;
     uint16_t sls_destination_udp_port;
     
+    uint16_t video_packet_id;
+    uint16_t audio_packet_id;
+
     udp_flow_packet_id_mpu_sequence_tuple_t* last_udp_flow_packet_id_mpu_sequence_tuple_audio;
     bool last_udp_flow_packet_id_mpu_sequence_tuple_audio_processed;
     udp_flow_packet_id_mpu_sequence_tuple_t* to_process_udp_flow_packet_id_mpu_sequence_tuple_audio;

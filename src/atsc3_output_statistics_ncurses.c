@@ -152,7 +152,6 @@ void* ncurses_input_run_thread(void* lls_slt_monitor_ptr) {
                     long my_tsi_long = strtol(mmt_input_str, NULL, 0);
                     my_service_id = (uint32_t) my_tsi_long;
                     mtl_clear();
-                    wprintw(my_window, "Monitoring Service ID: %u",  my_service_id);
                     
                     //find our matching lls_sls and create a monitor entry
                     
@@ -165,18 +164,14 @@ void* ncurses_input_run_thread(void* lls_slt_monitor_ptr) {
                         lls_sls_mmt_monitor = lls_sls_mmt_monitor_create();
                         lls_sls_mmt_monitor->lls_mmt_session = lls_sls_mmt_session;
                         lls_sls_mmt_monitor->service_id = my_service_id;
-                        //todo - wire up to mbms signaling
 
-                      lls_sls_mmt_monitor->video_packet_id = 1;
-                      lls_sls_mmt_monitor->audio_packet_id = 2;
-                 //       lls_sls_mmt_monitor->video_packet_id = 35;
-                  //      lls_sls_mmt_monitor->audio_packet_id = 36;
-//
+                        lls_sls_mmt_monitor->video_packet_id = lls_sls_mmt_session->video_packet_id;
+                        lls_sls_mmt_monitor->audio_packet_id = lls_sls_mmt_session->audio_packet_id;
+
                         lls_sls_mmt_monitor->lls_sls_monitor_output_buffer.has_written_init_box = false;
                         lls_slt_monitor->lls_sls_mmt_monitor = lls_sls_mmt_monitor;
                         
-                        //todo, find our service_id instance
-                        //lls_slt_monitor->lls_service =
+                        wprintw(my_window, "Monitoring Service ID: %u, video packet_id: %u, audio packet_id: %u",  my_service_id, lls_sls_mmt_monitor->video_packet_id, lls_sls_mmt_monitor->audio_packet_id);
                     }
                 }
             }
