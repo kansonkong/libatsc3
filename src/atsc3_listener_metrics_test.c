@@ -78,6 +78,8 @@ int PACKET_COUNTER=0;
 
 #include "atsc3_mmtp_types.h"
 #include "atsc3_mmtp_parser.h"
+#include "atsc3_mmt_mpu_utils.h"
+
 #include "atsc3_mmtp_ntp32_to_pts.h"
 
 #include "alc_channel.h"
@@ -135,7 +137,7 @@ uint16_t* dst_ip_port_filter = NULL;
 
 // lls and alc glue for slt, contains lls_table_slt and lls_slt_alc_session
 
-lls_session_t* lls_session;
+lls_sls_alc_session_t* lls_session;
 
 int lls_slt_table_process_update(lls_table_t* lls) {
 
@@ -212,103 +214,6 @@ cleanup:
 
 //make sure to invoke     mmtp_sub_flow_vector_init(&p_sys->mmtp_sub_flow_vector);
 mmtp_sub_flow_vector_t* mmtp_sub_flow_vector;
-void dump_mpu(mmtp_payload_fragments_union_t* mmtp_payload) {
-
-	__ALC_UTILS_DEBUG("------------------");
-
-	if(mmtp_payload->mmtp_mpu_type_packet_header.mpu_timed_flag) {
-		__ALC_UTILS_DEBUG("MFU Packet (Timed)");
-		__ALC_UTILS_DEBUG("-----------------");
-		__ALC_UTILS_DEBUG(" mpu_fragmentation_indicator: %d", mmtp_payload->mpu_data_unit_payload_fragments_timed.mpu_fragment_type);
-		__ALC_UTILS_DEBUG(" movie_fragment_seq_num: %u", mmtp_payload->mpu_data_unit_payload_fragments_timed.movie_fragment_sequence_number);
-		__ALC_UTILS_DEBUG(" sample_num: %u", mmtp_payload->mpu_data_unit_payload_fragments_timed.sample_number);
-		__ALC_UTILS_DEBUG(" offset: %u", mmtp_payload->mpu_data_unit_payload_fragments_timed.offset);
-		__ALC_UTILS_DEBUG(" pri: %d", mmtp_payload->mpu_data_unit_payload_fragments_timed.priority);
-		__ALC_UTILS_DEBUG(" mpu_sequence_number: %u",mmtp_payload->mpu_data_unit_payload_fragments_timed.mpu_sequence_number);
-
-	} else {
-		__ALC_UTILS_DEBUG("MFU Packet (Non-timed)");
-		__ALC_UTILS_DEBUG("---------------------");
-		__ALC_UTILS_DEBUG(" mpu_fragmentation_indicator: %d", mmtp_payload->mpu_data_unit_payload_fragments_nontimed.mpu_fragment_type);
-		__ALC_UTILS_DEBUG(" non_timed_mfu_item_id: %u", mmtp_payload->mpu_data_unit_payload_fragments_nontimed.non_timed_mfu_item_id);
-
-	}
-
-	__ALC_UTILS_DEBUG("-----------------");
-}
-
-void mpu_dump_flow(uint32_t dst_ip, uint16_t dst_port, mmtp_payload_fragments_union_t* mmtp_payload) {
-	//sub_flow_vector is a global
-	dump_mpu(mmtp_payload);
-
-	__ALC_UTILS_DEBUG("::dumpMfu ******* file dump file: %d.%d.%d.%d:%d-p:%d.s:%d.ft:%d",
-			(dst_ip>>24)&0xFF,(dst_ip>>16)&0xFF,(dst_ip>>8)&0xFF,(dst_ip)&0xFF,
-			dst_port,
-			mmtp_payload->mmtp_mpu_type_packet_header.mmtp_packet_id,
-			mmtp_payload->mpu_data_unit_payload_fragments_timed.mpu_sequence_number,
-
-			mmtp_payload->mmtp_mpu_type_packet_header.mpu_fragment_type);
-
-	char *myFilePathName = calloc(64, sizeof(char*));
-	snprintf(myFilePathName, 64, "mpu/%d.%d.%d.%d,%d-p.%d.s,%d.ft,%d",
-			(dst_ip>>24)&0xFF,(dst_ip>>16)&0xFF,(dst_ip>>8)&0xFF,(dst_ip)&0xFF,
-			dst_port,
-			mmtp_payload->mmtp_mpu_type_packet_header.mmtp_packet_id,
-			mmtp_payload->mpu_data_unit_payload_fragments_timed.mpu_sequence_number,
-
-			mmtp_payload->mmtp_mpu_type_packet_header.mpu_fragment_type);
-
-
-	__ALC_UTILS_DEBUG("::dumpMfu ******* file dump file: %s", myFilePathName);
-
-	FILE *f = fopen(myFilePathName, "a");
-	if(!f) {
-		__INFO("::dumpMpu ******* UNABLE TO OPEN FILE %s", myFilePathName);
-			return;
-	}
-
-
-	for(int i=0; i <  mmtp_payload->mmtp_mpu_type_packet_header.mpu_data_unit_payload->i_buffer; i++) {
-		fputc(mmtp_payload->mmtp_mpu_type_packet_header.mpu_data_unit_payload->p_buffer[i], f);
-	}
-	fclose(f);
-}
-
-//assumes in-order delivery
-void mpu_dump_reconstitued(uint32_t dst_ip, uint16_t dst_port, mmtp_payload_fragments_union_t* mmtp_payload) {
-	//sub_flow_vector is a global
-	dump_mpu(mmtp_payload);
-
-	__ALC_UTILS_DEBUG("::dump_mpu_reconstitued ******* file dump file: %d.%d.%d.%d:%d-p:%d.s:%d.ft:%d",
-			(dst_ip>>24)&0xFF,(dst_ip>>16)&0xFF,(dst_ip>>8)&0xFF,(dst_ip)&0xFF,
-			dst_port,
-			mmtp_payload->mmtp_mpu_type_packet_header.mmtp_packet_id,
-			mmtp_payload->mpu_data_unit_payload_fragments_timed.mpu_sequence_number,
-
-			mmtp_payload->mmtp_mpu_type_packet_header.mpu_fragment_type);
-
-	char *myFilePathName = calloc(64, sizeof(char*));
-	snprintf(myFilePathName, 64, "mpu/%d.%d.%d.%d,%d-p.%d.s,%d.ft",
-			(dst_ip>>24)&0xFF,(dst_ip>>16)&0xFF,(dst_ip>>8)&0xFF,(dst_ip)&0xFF,
-			dst_port,
-			mmtp_payload->mmtp_mpu_type_packet_header.mmtp_packet_id,
-			mmtp_payload->mpu_data_unit_payload_fragments_timed.mpu_sequence_number);
-
-
-	__ALC_UTILS_DEBUG("::dumpMfu ******* file dump file: %s", myFilePathName);
-
-	FILE *f = fopen(myFilePathName, "a");
-	if(!f) {
-		__ERROR("::dumpMpu ******* UNABLE TO OPEN FILE %s", myFilePathName);
-			return;
-	}
-
-
-	for(int i=0; i <  mmtp_payload->mmtp_mpu_type_packet_header.mpu_data_unit_payload->i_buffer; i++) {
-		fputc(mmtp_payload->mmtp_mpu_type_packet_header.mpu_data_unit_payload->p_buffer[i], f);
-	}
-	fclose(f);
-}
 
 
 void process_packet(u_char *user, const struct pcap_pkthdr *pkthdr, const u_char *packet) {
@@ -365,21 +270,21 @@ void process_packet(u_char *user, const struct pcap_pkthdr *pkthdr, const u_char
 
 	//malloc our udp_packet_header:
 	udp_packet = calloc(1, sizeof(udp_packet_t));
-	udp_packet->src_ip_addr = ((ip_header[12] & 0xFF) << 24) | ((ip_header[13]  & 0xFF) << 16) | ((ip_header[14]  & 0xFF) << 8) | (ip_header[15] & 0xFF);
-	udp_packet->dst_ip_addr = ((ip_header[16] & 0xFF) << 24) | ((ip_header[17]  & 0xFF) << 16) | ((ip_header[18]  & 0xFF) << 8) | (ip_header[19] & 0xFF);
+	udp_packet->udp_flow.src_ip_addr = ((ip_header[12] & 0xFF) << 24) | ((ip_header[13]  & 0xFF) << 16) | ((ip_header[14]  & 0xFF) << 8) | (ip_header[15] & 0xFF);
+	udp_packet->udp_flow.dst_ip_addr = ((ip_header[16] & 0xFF) << 24) | ((ip_header[17]  & 0xFF) << 16) | ((ip_header[18]  & 0xFF) << 8) | (ip_header[19] & 0xFF);
 
 	for (i = 0; i < 8; i++) {
 		udp_header[i] = packet[udp_header_start + i];
 	}
 
 	udp_packet->src_port = (udp_header[0] << 8) + udp_header[1];
-	udp_packet->dst_port = (udp_header[2] << 8) + udp_header[3];
+	udp_packet->udp_flow.dst_port = (udp_header[2] << 8) + udp_header[3];
 
 	//4294967295
 	//1234567890
-	__DEBUGF("Src. Addr  : %d.%d.%d.%d\t(%-10u)\t", ip_header[12], ip_header[13], ip_header[14], ip_header[15], udp_packet->src_ip_addr);
+	__DEBUGF("Src. Addr  : %d.%d.%d.%d\t(%-10u)\t", ip_header[12], ip_header[13], ip_header[14], ip_header[15], udp_packet->udp_flow.src_ip_addr);
 	__DEBUGN("Src. Port  : %-5hu ", (udp_header[0] << 8) + udp_header[1]);
-	__DEBUGF("Dst. Addr  : %d.%d.%d.%d\t(%-10u)\t", ip_header[16], ip_header[17], ip_header[18], ip_header[19], udp_packet->dst_ip_addr);
+	__DEBUGF("Dst. Addr  : %d.%d.%d.%d\t(%-10u)\t", ip_header[16], ip_header[17], ip_header[18], ip_header[19], udp_packet->udp_flow.dst_ip_addr);
 	__DEBUGA("Dst. Port  : %-5hu \t", (udp_header[2] << 8) + udp_header[3]);
 
 	__TRACE("Length\t\t\t\t\t%d", (udp_header[4] << 8) + udp_header[5]);
@@ -407,9 +312,9 @@ void process_packet(u_char *user, const struct pcap_pkthdr *pkthdr, const u_char
 
 	#ifdef _SHOW_PACKET_FLOW
 		__INFO("--- Packet size : %-10d | Counter: %-8d", udp_packet->data_length, PACKET_COUNTER++);
-		__INFO("    Src. Addr   : %d.%d.%d.%d\t(%-10u)\t", ip_header[12], ip_header[13], ip_header[14], ip_header[15], udp_packet->src_ip_addr);
+		__INFO("    Src. Addr   : %d.%d.%d.%d\t(%-10u)\t", ip_header[12], ip_header[13], ip_header[14], ip_header[15], udp_packet->udp_flow.src_ip_addr);
 		__INFO("    Src. Port   : %-5hu ", (uint16_t)((udp_header[0] << 8) + udp_header[1]));
-		__INFO("    Dst. Addr   : %d.%d.%d.%d\t(%-10u)\t", ip_header[16], ip_header[17], ip_header[18], ip_header[19], udp_packet->dst_ip_addr);
+		__INFO("    Dst. Addr   : %d.%d.%d.%d\t(%-10u)\t", ip_header[16], ip_header[17], ip_header[18], ip_header[19], udp_packet->udp_flow.dst_ip_addr);
 		__INFO("    Dst. Port   : %-5hu \t", (uint16_t)((udp_header[2] << 8) + udp_header[3]));
 	#endif
 
@@ -420,7 +325,7 @@ void process_packet(u_char *user, const struct pcap_pkthdr *pkthdr, const u_char
 	global_stats->packet_counter_total_received++;
 
 	//drop mdNS
-	if(udp_packet->dst_ip_addr == UDP_FILTER_MDNS_IP_ADDRESS && udp_packet->dst_port == UDP_FILTER_MDNS_PORT) {
+	if(udp_packet->udp_flow.dst_ip_addr == UDP_FILTER_MDNS_IP_ADDRESS && udp_packet->udp_flow.dst_port == UDP_FILTER_MDNS_PORT) {
 		global_stats->packet_counter_filtered_ipv4++;
 		__TRACE("setting %s,  %d+=%d,", "interval_filtered_current_rx", global_bandwidth_statistics->interval_filtered_current_rx, udp_packet->data_length);
 		global_bandwidth_statistics->interval_filtered_current_rx += udp_packet->data_length;
@@ -428,7 +333,7 @@ void process_packet(u_char *user, const struct pcap_pkthdr *pkthdr, const u_char
 		goto cleanup;
 	}
 
-	if(udp_packet->dst_ip_addr == LLS_DST_ADDR && udp_packet->dst_port == LLS_DST_PORT) {
+	if(udp_packet->udp_flow.dst_ip_addr == LLS_DST_ADDR && udp_packet->udp_flow.dst_port == LLS_DST_PORT) {
 		global_stats->packet_counter_lls_packets_received++;
 		global_bandwidth_statistics->interval_lls_current_bytes_rx += udp_packet->data_length;
 		__TRACE("setting global_bandwidth_statistics->interval_lls_current_rx += %d", udp_packet->data_length);
@@ -468,7 +373,7 @@ void process_packet(u_char *user, const struct pcap_pkthdr *pkthdr, const u_char
 
 	//ATSC3/331 Section 6.1 - drop non mulitcast ip ranges - e.g not in  239.255.0.0 to 239.255.255.255
 
-	if(udp_packet->dst_ip_addr <= MIN_ATSC3_MULTICAST_BLOCK || udp_packet->dst_ip_addr >= MAX_ATSC3_MULTICAST_BLOCK) {
+	if(udp_packet->udp_flow.dst_ip_addr <= MIN_ATSC3_MULTICAST_BLOCK || udp_packet->udp_flow.dst_ip_addr >= MAX_ATSC3_MULTICAST_BLOCK) {
 		//out of range, so drop
 		global_stats->packet_counter_filtered_ipv4++;
 		global_bandwidth_statistics->interval_filtered_current_rx += udp_packet->data_length;
@@ -477,8 +382,8 @@ void process_packet(u_char *user, const struct pcap_pkthdr *pkthdr, const u_char
 	}
 
 	//ALC (ROUTE) - If this flow is registered from the SLT, process it as ALC, otherwise run the flow thru MMT
-	if(lls_session->lls_slt_alc_session->alc_session &&	(lls_session->lls_slt_alc_session->sls_relax_source_ip_check || lls_session->lls_slt_alc_session->sls_source_ip_address == udp_packet->src_ip_addr) &&
-			lls_session->lls_slt_alc_session->sls_destination_ip_address == udp_packet->dst_ip_addr && lls_session->lls_slt_alc_session->sls_destination_udp_port == udp_packet->dst_port) {
+	if(lls_session->lls_slt_alc_session->alc_session &&	(lls_session->lls_slt_alc_session->sls_relax_source_ip_check || lls_session->lls_slt_alc_session->sls_source_ip_address == udp_packet->udp_flow.src_ip_addr) &&
+			lls_session->lls_slt_alc_session->sls_destination_ip_address == udp_packet->udp_flow.dst_ip_addr && lls_session->lls_slt_alc_session->sls_destination_udp_port == udp_packet->udp_flow.dst_port) {
 		global_stats->packet_counter_alc_recv++;
 
 		global_bandwidth_statistics->interval_alc_current_rx += udp_packet->data_length;
@@ -507,7 +412,7 @@ void process_packet(u_char *user, const struct pcap_pkthdr *pkthdr, const u_char
 	}
 
 	//Process flow as MMT, we should only have MMT packets left at this point..
-	if((dst_ip_addr_filter == NULL && dst_ip_port_filter == NULL) || (udp_packet->dst_ip_addr == *dst_ip_addr_filter && udp_packet->dst_port == *dst_ip_port_filter)) {
+	if((dst_ip_addr_filter == NULL && dst_ip_port_filter == NULL) || (udp_packet->udp_flow.dst_ip_addr == *dst_ip_addr_filter && udp_packet->udp_flow.dst_port == *dst_ip_port_filter)) {
 
 		global_bandwidth_statistics->interval_mmt_current_rx += udp_packet->data_length;
 
@@ -519,9 +424,9 @@ void process_packet(u_char *user, const struct pcap_pkthdr *pkthdr, const u_char
 		if(!mmtp_payload) {
 			global_stats->packet_counter_mmtp_packets_parsed_error++;
 			__ERROR("mmtp_packet_parse: raw packet ptr is null, parsing failed for flow: %d.%d.%d.%d:(%-10u):%-5hu \t ->  %d.%d.%d.%d\t(%-10u)\t:%-5hu",
-					ip_header[12], ip_header[13], ip_header[14], ip_header[15], udp_packet->src_ip_addr,
+					ip_header[12], ip_header[13], ip_header[14], ip_header[15], udp_packet->udp_flow.src_ip_addr,
 					(uint16_t)((udp_header[0] << 8) + udp_header[1]),
-					ip_header[16], ip_header[17], ip_header[18], ip_header[19], udp_packet->dst_ip_addr,
+					ip_header[16], ip_header[17], ip_header[18], ip_header[19], udp_packet->udp_flow.dst_ip_addr,
 					(uint16_t)((udp_header[2] << 8) + udp_header[3])
 					);
 			goto cleanup;
@@ -538,8 +443,8 @@ void process_packet(u_char *user, const struct pcap_pkthdr *pkthdr, const u_char
 				global_stats->packet_counter_mmt_timed_mpu++;
 
 				//timed
-				//mpu_dump_flow(udp_packet->dst_ip_addr, udp_packet->dst_port, mmtp_payload);
-				//mpu_dump_reconstitued(udp_packet->dst_ip_addr, udp_packet->dst_port, mmtp_payload);
+				//mpu_dump_flow(udp_packet->udp_flow.dst_ip_addr, udp_packet->udp_flow.dst_port, mmtp_payload);
+				//mpu_dump_reconstitued(udp_packet->udp_flow.dst_ip_addr, udp_packet->udp_flow.dst_port, mmtp_payload);
 
 			} else {
 				//non-timed
@@ -643,7 +548,7 @@ int main(int argc,char **argv) {
 
     mmtp_sub_flow_vector = calloc(1, sizeof(*mmtp_sub_flow_vector));
     mmtp_sub_flow_vector_init(mmtp_sub_flow_vector);
-    lls_session = lls_session_create();
+    lls_session = lls_sls_alc_session_create();
 
     global_stats = calloc(1, sizeof(*global_stats));
     gettimeofday(&global_stats->program_timeval_start, 0);

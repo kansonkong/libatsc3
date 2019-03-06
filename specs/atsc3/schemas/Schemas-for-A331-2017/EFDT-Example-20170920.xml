@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<FDT-Instance
+xmlns="urn:ietf:params:xml:ns:fdt"
+xmlns:afdt="tag:atsc.org,2016:XMLSchemas/ATSC3/Delivery/ATSC-FDT/1.0/"
+xmlns:xs="http://www.w3.org/2001/XMLSchema" 
+xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+xmlns:mbms2007="urn:3GPP:metadata:2007:MBMS:FLUTE:FDT"
+xmlns:mbms2012="urn:3GPP:metadata:2012:MBMS:FLUTE:FDT"
+xsi:schemaLocation="urn:ietf:params:xml:ns:fdt IETF/RFC6726-FDTInstance.xsd
+	tag:atsc.org,2016:XMLSchemas/ATSC3/Delivery/ATSC-FDT/1.0/ ATSC-FDT-1.0-20170920.xsd
+	urn:3GPP:metadata:2007:MBMS:FLUTE:FDT 3GPP/FLUTE-FDT-3GPP-2007-Extensions.xsd
+	urn:3GPP:metadata:2012:MBMS:FLUTE:FDT 3GPP/FLUTE-FDT-3GPP-2012-Extensions.xsd"
+
+	Expires="1700000000" afdt:efdtVersion="0" afdt:maxExpiresDelta="60" afdt:maxTransportSize="2000000" afdt:appContextIdList="" afdt:fileTemplate="">
+	<File Content-Type="multipart/related" TOI="3" Content-Location="tag:atsc.org,2016:appPackage"
+		afdt:appContextIdList="" afdt:fileFilterCode="">
+		<mbms2007:Cache-Control>
+			<mbms2007:no-cache/>
+		</mbms2007:Cache-Control>
+		<mbms2012:Alternate-Content-Location-1></mbms2012:Alternate-Content-Location-1>
+		<mbms2012:Alternate-Content-Location-2></mbms2012:Alternate-Content-Location-2>
+	</File>
+	<mbms2012:Base-URL-1>http://cdn1.com/</mbms2012:Base-URL-1>
+	<mbms2012:Base-URL-2>http://cdn2.com/</mbms2012:Base-URL-2>
+</FDT-Instance>

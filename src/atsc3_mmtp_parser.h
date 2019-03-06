@@ -52,6 +52,11 @@
  */
 
 
+#if defined (__cplusplus)
+extern "C" {
+#endif
+
+
 mmtp_payload_fragments_union_t* mmtp_packet_parse(mmtp_sub_flow_vector_t* mmtp_sub_flow_vector, uint8_t* udp_raw_buf, int udp_raw_buf_size);
 void mmtp_packet_header_dump(mmtp_payload_fragments_union_t* mmtp_payload_fragments);
 
@@ -89,7 +94,17 @@ void mmtp_sub_flow_vector_init(mmtp_sub_flow_vector_t *mmtp_sub_flow_vector);
 //mpu_sequence_number *SHOULD* only be resolved from the interior all_fragments_vector for tuple lookup
 mmtp_sub_flow_t* mmtp_sub_flow_vector_find_packet_id(mmtp_sub_flow_vector_t *vec, uint16_t mmtp_packet_id);
 mmtp_sub_flow_t* mmtp_sub_flow_vector_get_or_set_packet_id(mmtp_sub_flow_vector_t *vec, uint16_t mmtp_packet_id);
+
 void mmtp_sub_flow_push_mmtp_packet(mmtp_sub_flow_t *mmtp_sub_flow, mmtp_payload_fragments_union_t *mmtp_packet);
+
+//cleanup only if not assigned to a subflow vector
 void mmtp_payload_fragments_union_free(mmtp_payload_fragments_union_t** mmtp_payload);
+
+void mmtp_sub_flow_remove_mmtp_packet(mmtp_sub_flow_t *mmtp_sub_flow, mmtp_payload_fragments_union_t *mmtp_packet);
+
+
+#if defined (__cplusplus)
+}
+#endif
 
 #endif /* MODULES_DEMUX_MMT_MMTP_PARSER_H_ */

@@ -1,0 +1,101 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema" xmlns:mmtusd="tag:atsc.org,2016:XMLSchemas/ATSC3/Delivery/MMTUSD/1.0/" xmlns:sa="tag:atsc.org,2016:XMLSchemas/ATSC3/SA/1.0/" targetNamespace="tag:atsc.org,2016:XMLSchemas/ATSC3/Delivery/MMTUSD/1.0/" elementFormDefault="qualified">
+	<xs:import namespace="http://www.w3.org/XML/1998/namespace" schemaLocation="W3C/xml.xsd"/>
+	<xs:import namespace="tag:atsc.org,2016:XMLSchemas/ATSC3/SA/1.0/" schemaLocation="SA-1.0-20170921.xsd"/>
+	<xs:element name="BundleDescriptionMMT" type="mmtusd:BundleDescrMMTType"/>
+	<xs:complexType name="BundleDescrMMTType">
+		<xs:sequence>
+			<xs:element name="UserServiceDescription" type="mmtusd:UserServiceDescrType"/>
+			<xs:any namespace="##other" processContents="strict" minOccurs="0" maxOccurs="unbounded"/>
+		</xs:sequence>
+		<xs:anyAttribute processContents="strict"/>
+	</xs:complexType>
+	<xs:complexType name="UserServiceDescrType">
+		<xs:sequence>
+			<xs:element name="Name" type="mmtusd:nameType" minOccurs="0" maxOccurs="unbounded"/>
+			<xs:element name="ServiceLanguage" type="mmtusd:serviceLangType" minOccurs="0" maxOccurs="unbounded"/>
+			<xs:element name="ContentAdvisoryRating" type="sa:CARatingType" minOccurs="0" maxOccurs="unbounded"/>
+			<xs:element name="OtherRatings" type="sa:OtherRatingType" minOccurs="0" maxOccurs="unbounded"/>
+			<xs:element name="Channel" type="mmtusd:ChannelType"/>
+			<xs:element name="MPUComponent" type="mmtusd:MPUComponentType" minOccurs="0"/>
+			<xs:element name="ROUTEComponent" type="mmtusd:ROUTEComponentType" minOccurs="0"/>
+			<xs:element name="BroadbandComponent" type="mmtusd:BroadbandComponentType" minOccurs="0"/>
+			<xs:element name="ComponentInfo" type="mmtusd:ComponentInfoType" minOccurs="0" maxOccurs="unbounded"/>
+			<xs:any namespace="##other" processContents="strict" minOccurs="0" maxOccurs="unbounded"/>
+		</xs:sequence>
+		<xs:attribute name="serviceId" type="xs:unsignedShort" use="required"/>
+		<xs:attribute name="serviceStatus" type="xs:boolean" default="true"/>
+		<xs:anyAttribute processContents="strict"/>
+	</xs:complexType>
+	<xs:complexType name="nameType">
+		<xs:simpleContent>
+			<xs:extension base="xs:string">
+				<xs:attribute ref="xml:lang" use="required"/>
+				<xs:anyAttribute processContents="strict"/>
+			</xs:extension>
+		</xs:simpleContent>
+	</xs:complexType>
+	<xs:complexType name="serviceLangType">
+		<xs:simpleContent>
+			<xs:extension base="xs:string">
+				<xs:anyAttribute processContents="strict"/>
+			</xs:extension>
+			<!-- TODO - use xml:lang here -->
+		</xs:simpleContent>
+	</xs:complexType>
+	<xs:complexType name="ChannelType">
+		<xs:sequence>
+			<xs:element name="ServiceDescription" type="mmtusd:ServiceDescriptionType" minOccurs="0" maxOccurs="unbounded"/>
+			<xs:any namespace="##other" processContents="strict" minOccurs="0" maxOccurs="unbounded"/>
+		</xs:sequence>
+		<xs:attribute name="serviceGenre" type="xs:unsignedByte"/>
+		<xs:attribute name="serviceIcon" type="xs:anyURI" use="required"/>
+		<xs:anyAttribute processContents="strict"/>
+	</xs:complexType>
+	<xs:simpleType name="IPv4addressType">
+		<xs:restriction base="xs:token">
+			<xs:pattern value="(([0-9]|[1-9][0-9]|1[0-9][0-9]|2[0-4][0-9]|25[0-5])\.){3}([0-9]|[1-9][0-9]|1[0-9][0-9]|2[0-4][0-9]|25[0-5])"/>
+		</xs:restriction>
+	</xs:simpleType>
+	<xs:simpleType name="PortType">
+		<xs:restriction base="xs:unsignedShort">
+			<xs:minInclusive value="1"/>
+		</xs:restriction>
+	</xs:simpleType>
+	<xs:complexType name="MPUComponentType">
+		<xs:attribute name="mmtPackageId" type="xs:string" use="required"/>
+		<xs:attribute name="contentIdSchemeIdUri" type="xs:anyURI"/>
+		<xs:attribute name="contentIdValue" type="xs:string"/>
+		<xs:attribute name="nextMMTPackageId" type="xs:string"/>
+		<xs:attribute name="nextContentIdSchemeIdUri" type="xs:anyURI"/>
+		<xs:attribute name="nextContentIdValue" type="xs:string"/>
+		<xs:anyAttribute processContents="strict"/>
+	</xs:complexType>
+	<xs:complexType name="ROUTEComponentType">
+		<xs:attribute name="sTSIDUri" type="xs:anyURI" use="required"/>
+		<xs:attribute name="apdUri" type="xs:anyURI"/>
+		<xs:attribute name="sTSIDDestinationIpAddress" type="mmtusd:IPv4addressType"/>
+		<xs:attribute name="sTSIDDestinationUdpPort" type="mmtusd:PortType" use="required"/>
+		<xs:attribute name="sTSIDSourceIpAddress" type="mmtusd:IPv4addressType" use="required"/>
+		<xs:attribute name="sTSIDMajorProtocolVersion" type="xs:unsignedByte" default="1"/>
+		<xs:attribute name="sTSIDMinorProtocolVersion" type="xs:unsignedByte" default="0"/>
+		<xs:anyAttribute processContents="strict"/>
+	</xs:complexType>
+	<xs:complexType name="BroadbandComponentType">
+		<xs:attribute name="fullMPDUri" type="xs:anyURI" use="required"/>
+		<xs:anyAttribute processContents="strict"/>
+	</xs:complexType>
+	<xs:complexType name="ServiceDescriptionType">
+		<xs:attribute name="serviceDescrText" type="xs:string" use="required"/>
+		<xs:attribute name="serviceDescrLang" type="xs:string" default="en"/>
+		<xs:anyAttribute processContents="strict"/>
+	</xs:complexType>
+	<xs:complexType name="ComponentInfoType">
+		<xs:attribute name="componentType" type="xs:unsignedByte" use="required"/>
+		<xs:attribute name="componentRole" type="xs:unsignedByte" use="required"/>
+		<xs:attribute name="componentProtectedFlag" type="xs:boolean" default="false"/>
+		<xs:attribute name="componentId" type="xs:string" use="required"/>
+		<xs:attribute name="componentName" type="xs:string"/>
+		<xs:anyAttribute processContents="strict"/>
+	</xs:complexType>
+</xs:schema>

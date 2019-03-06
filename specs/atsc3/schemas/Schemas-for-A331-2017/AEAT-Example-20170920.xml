@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<AEAT
+	xmlns="tag:atsc.org,2016:XMLSchemas/ATSC3/Delivery/AEAT/1.0/"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation= "tag:atsc.org,2016:XMLSchemas/ATSC3/Delivery/AEAT/1.0/ AEAT-1.0-20170920.xsd">
+	<AEA aeaId="3" issuer="KUSR" audience="public" aeaType="update" refAEAId="3" priority="3" wakeup="true">
+		<Header effective="2016-09-11T13:00:00.000-07:00" expires="2016-09-11T16:00:00.000-07:00">
+			<EventCode type="SAME">EVI</EventCode>
+			<EventDesc xml:lang="en">Tornado Warning</EventDesc>
+			<Location type="FIPS">000000</Location>
+		</Header>
+		<AEAText xml:lang="en">Put your helmet on</AEAText>
+		<LiveMedia bsid="47 23" serviceId="3">
+			<ServiceName xml:lang="en">KUSR</ServiceName>
+		</LiveMedia>
+		<Media xml:lang="en" mediaDesc="Evacuation Map" mediaType="AEAtextAudio" url="http://kusr.com/MyMedia" alternateUrl="http://kusr.com/MyAlternateMedia" contentType="image/png" contentLength="1024" mediaAssoc="http://kusr.com"/>
+	</AEA>
+</AEAT>

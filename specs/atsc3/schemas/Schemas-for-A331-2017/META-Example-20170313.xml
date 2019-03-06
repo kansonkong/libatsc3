@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<metadataEnvelope xmlns="urn:3gpp:metadata:2005:MBMS:envelope"
+	xmlns:meta="tag:atsc.org,2016:XMLSchemas/ATSC3/Delivery/ATSC-META/1.0/"
+	xmlns:xs="http://www.w3.org/2001/XMLSchema" 
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="urn:3gpp:metadata:2005:MBMS:envelope 3GPP/MetadataEnvelope.xsd
+	tag:atsc.org,2016:XMLSchemas/ATSC3/Delivery/ATSC-META/1.0/ ATSC-META-1.0-20170313.xsd">
+
+	<item contentType="application/sdp" metadataURI="http://usd.ex.com/fragments/sdp-1.sdp" 
+		validFrom="2012-03-01T18:53:10Z" validUntil="2012-03-07T18:53:10Z" version="1"
+		meta:nextURL="http://mynexturl.com"/>
+</metadataEnvelope>

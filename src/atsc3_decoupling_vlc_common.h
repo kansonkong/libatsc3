@@ -46,9 +46,6 @@
 #include <inttypes.h>
 #include <stddef.h>
 
-#ifndef __cplusplus
-# include <stdbool.h>
-#endif
 
 /**
  * \defgroup cext C programming language extensions
@@ -710,32 +707,6 @@ VLC_INT_FUNC(popcount)
  *
  * \return The count of non-zero bits.
  */
-# define vlc_popcount(x) \
-    _Generic((x), \
-        signed char:  vlc_popcount((unsigned char)(x)), \
-        signed short: vlc_popcount((unsigned short)(x)), \
-        default: VLC_INT_GENERIC(vlc_popcount ,x))
-#else
-VLC_USED static inline int vlc_popcount(unsigned char x)
-{
-    return vlc_popcount((unsigned)x);
-}
-
-VLC_USED static inline int vlc_popcount(unsigned short x)
-{
-    return vlc_popcount((unsigned)x);
-}
-
-VLC_USED static inline int vlc_popcount(unsigned long x)
-{
-    return vlc_popcountl(x);
-}
-
-VLC_USED static inline int vlc_popcount(unsigned long long x)
-{
-    return vlc_popcountll(x);
-}
-#endif
 
 /** Byte swap (16 bits) */
 VLC_USED

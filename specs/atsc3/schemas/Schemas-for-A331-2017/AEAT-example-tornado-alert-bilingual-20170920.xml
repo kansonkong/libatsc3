@@ -1,0 +1,17 @@
+<AEAT xmlns="tag:atsc.org,2016:XMLSchemas/ATSC3/Delivery/AEAT/1.0/" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="tag:atsc.org,2016:XMLSchemas/ATSC3/Delivery/AEAT/1.0/ AEAT-1.0-20170920.xsd">
+	<AEA aeaId="AEA-2016091113002100" issuer="KUSR-TV" audience="public" aeaType="alert" priority="3" wakeup="true">
+		<Header effective="2016-09-11T13:00:00.000-07:00" expires="2016-09-11T16:00:00.000-07:00">
+			<EventCode type="SAME">TOR</EventCode>
+			<EventDesc xml:lang="en">Tornado Warning</EventDesc>
+			<Location type="FIPS">20150</Location>
+			<Location type="polygon">51.625,-76.0003 50.5157,-75.9998 50.5157,-76 50.5157,-79.5137 50.7219,-79.514 51.4561,-79.5148 51.5319,-79.5821 51.5496,-79.5979 51.7137,-79.4165 51.7106,-79.192 51.6578,-79.1401 51.6129,-78.921 51.625,-76.0003</Location>
+		</Header>
+		<AEAText xml:lang="en">The National Weather Service has issued a Tornado Warning for Spark County.  A Tornado has been spotted on the ground 2 miles south of Smallville.  This tornado is moving Northeast at 40 MPH.  A Tornado is on the ground in the area of Smallville, Tinytown and Route 83. Take cover now. Move to an interior room on the lowest floor of a sturdy building.  Avoid windows.  Move to the closest shelter and protect yourself from flying debris.</AEAText>
+		<AEAText xml:lang="es">El Servicio Meteorolo Nacional emitia Advertencia de Tornado para el Condado de Spark. Un Tornado se ha observado 2 millas al sur de Smallville. Este tornado se est oviendo hacia el noreste a 40 mph. Un tornado est n el suelo en la zona de Smallville, Tinytown y la ruta 83. Tome refugio ahora. Muse a una habitaci nterior en el piso bajo de un edificio robusto. Evite las ventanas. Muse al refugio cercano y protse de los desechos voladores.</AEAText>
+		<LiveMedia bsid="47 23" serviceId="3">
+			<ServiceName xml:lang="en">KUSR</ServiceName>
+		</LiveMedia>
+		<Media xml:lang="en" mediaDesc="Message Audio English" mediaType="AEAtextAudio" url="AEAtextAudio/AEAtextAudio-en.mp3" contentType="audio/mp3" contentLength="301024" mediaAssoc="http://kusr.com/tornadomap-en.png"/>
+		<Media xml:lang="es" mediaDesc="Message Audio Spanish" mediaType="AEAtextAudio" url="AEAtextAudio/AEAtextAudio-es.mp3" contentType="audio/mp3" contentLength="302033" mediaAssoc="http://kusr.com/tornadomap-es.png"/>
+	</AEA>
+</AEAT>

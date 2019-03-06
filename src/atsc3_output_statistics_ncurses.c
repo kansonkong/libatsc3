@@ -8,8 +8,12 @@
 #include "atsc3_output_statistics_ncurses.h"
 #include "atsc3_player_ffplay.h"
 #include "atsc3_alc_utils.h"
+#include "atsc3_output_statistics_ncurses_windows.h"
 
+//TODO - get rid of me...
 extern int _ALC_PACKET_DUMP_TO_OBJECT_ENABLED;
+
+pthread_mutex_t ncurses_writer_lock;
 
 void ncurses_init() {
 	/** hacks
@@ -34,8 +38,7 @@ void ncurses_init() {
 	memset(&sa, 0, sizeof(struct sigaction));
 	sa.sa_handler = handle_winch;
 	sigaction(SIGWINCH, &sa, NULL);
-
-
+    
 	//remap as our printf is redirected to stderr
 	my_screen = newterm(NULL, stdout, stdin);
 	create_or_update_window_sizes(false);
@@ -43,51 +46,334 @@ void ncurses_init() {
 	raw();
 	keypad(my_window, TRUE);		/* We get F1, F2 etc..		*/
 	noecho();						/* Don't echo() while we do getch */
-
 }
+
 int play_mode = 0;
+uint32_t my_service_id = 0;
+uint32_t my_route_tsi = 0;
+uint32_t my_route_toi_init_fragment = 0;
 
-void* ncurses_input_run_thread() {
-	int ch;
+void mtl_clear() {
+	wmove(my_window, 0, 1);
+	wclrtoeol(my_window);
+	wmove(my_window, 0, 1);
+}
 
-	while(1) {
+void* ncurses_input_run_thread(void* lls_slt_monitor_ptr) {
+    int ch;
+    lls_slt_monitor_t* lls_slt_monitor = (lls_slt_monitor_t*)lls_slt_monitor_ptr;
+    lls_sls_mmt_monitor_t* lls_sls_mmt_monitor = NULL;
+    lls_sls_alc_monitor* lls_sls_alc_monitor = NULL;
+
+
+    while(1) {
 
 		ch = wgetch(my_window);
-		if(ch == CTRL('c') || ch == 'q') {
+		if(ch == CTRL('c') || ch == CTRL('q')) {
 			//end and clear screen back to terminal
-			endwin();
-			exit(1);
+			goto endwin;
 		}
-		if(ch == 'p') {
-			//play stream...
-			if(play_mode == 1) {
-				pipe_ffplay_buffer_t* pipe_ffplay_buffer = pipe_create_ffplay();
-				alc_recon_file_buffer_struct_set_tsi_toi(pipe_ffplay_buffer, __TESTING_RECONSTITUTED_TSI__, __TESTING_RECONSTITUTED_TOI_INIT__);
+        
+        if(ch == 'm') {
+            _ALC_PACKET_DUMP_TO_OBJECT_ENABLED = 0;
 
+            mtl_clear();
+            wprintw(my_window, "Switching to MMT Capture Mode, press 's' to select Service ID, 'p' to play, 'x' to return to normal flow monitoring");
+            play_mode = 1;
 
-			} else if(play_mode == 2) {
-				//FILE* pipe_ffmpeg = pipe_create_ffplay();
+            while(1) {
+                char mmt_input_str[16];
+                
+                ch = wgetch(my_window);
+                //fallthru to play down below
+                if(ch == 'p') {
+                    break;
+                }
+                
+                if(ch == CTRL('c') || ch == CTRL('q')) {
+                    goto endwin;
+                } else if (ch == 'x') {
+                    play_mode = 0;
+                    mtl_clear();
+                    wprintw(my_window, "Exiting MMT");
+                    //todo - remove me
+                    alc_recon_file_buffer_struct_set_tsi_toi(NULL, 0, 0);
+                    _ALC_PACKET_DUMP_TO_OBJECT_ENABLED = 0;
+                }
+                if(ch == 'v') {
+                	if(lls_sls_mmt_monitor) {
+						mtl_clear();
+						wprintw(my_window, "Please enter video packet_id: ");
+						echo();
+						//wgetstr(my_window, str);
+						mvwgetnstr(my_window, 0, 32, mmt_input_str, 10);
+						noecho();
+						mtl_clear();
 
-			} else {
-				__NCURSES_WARN("not playing - play mode is: %d", play_mode);
-			}
+						long video_packet_id_l = strtol(mmt_input_str, NULL, 0);
+						lls_sls_mmt_monitor->video_packet_id = (uint32_t) video_packet_id_l;
+						mtl_clear();
+						wprintw(my_window, "Monitoring video packet_id: %u",  lls_sls_mmt_monitor->video_packet_id);
+                	} else {
+						mtl_clear();
+						wprintw(my_window, "Please start with service id selection 's' ");
+						echo();
+					}
+                }
+                if(ch == 'a') {
+					if(lls_sls_mmt_monitor) {
+						mtl_clear();
+						wprintw(my_window, "Please enter audio packet_id: ");
+						echo();
+						//wgetstr(my_window, str);
+						mvwgetnstr(my_window, 0, 32, mmt_input_str, 10);
+						noecho();
+						mtl_clear();
 
-		}
+						long audio_packet_id_l = strtol(mmt_input_str, NULL, 0);
+						lls_sls_mmt_monitor->audio_packet_id = (uint32_t) audio_packet_id_l;
+						mtl_clear();
+						wprintw(my_window, "Monitoring audio packet_id: %u",  lls_sls_mmt_monitor->audio_packet_id);
+					} else {
+						mtl_clear();
+						wprintw(my_window, "Please start with service id selection 's' ");
+						echo();
+					}
+				}
+                if(ch == 's') {
+                    mtl_clear();
+                    wprintw(my_window, "Please enter Service ID: ");
+                    echo();
+                    //wgetstr(my_window, str);
+                    mvwgetnstr(my_window, 0, 32, mmt_input_str, 10);
+                    noecho();
+                    mtl_clear();
+                    
+                    long my_tsi_long = strtol(mmt_input_str, NULL, 0);
+                    my_service_id = (uint32_t) my_tsi_long;
+                    mtl_clear();
+                    wprintw(my_window, "Monitoring Service ID: %u",  my_service_id);
+                    
+                    //find our matching lls_sls and create a monitor entry
+                    
+                    lls_sls_mmt_session_t* lls_sls_mmt_session = lls_slt_mmt_session_find_from_service_id(lls_slt_monitor, my_service_id);
+                    if(lls_sls_mmt_session) {
+                        //TODO - free and teardown if we already have an active montiro
+
+                        //build our alc_session map
+                        
+                        lls_sls_mmt_monitor = lls_sls_mmt_monitor_create();
+                        lls_sls_mmt_monitor->lls_mmt_session = lls_sls_mmt_session;
+                        lls_sls_mmt_monitor->service_id = my_service_id;
+                        //todo - wire up to mbms signaling
+
+                      lls_sls_mmt_monitor->video_packet_id = 1;
+                      lls_sls_mmt_monitor->audio_packet_id = 2;
+                 //       lls_sls_mmt_monitor->video_packet_id = 35;
+                  //      lls_sls_mmt_monitor->audio_packet_id = 36;
+//
+                        lls_sls_mmt_monitor->lls_sls_monitor_output_buffer.has_written_init_box = false;
+                        lls_slt_monitor->lls_sls_mmt_monitor = lls_sls_mmt_monitor;
+                        
+                        //todo, find our service_id instance
+                        //lls_slt_monitor->lls_service =
+                    }
+                }
+            }
+        }
+
 		if(ch == 'r') {
-			__NCURSES_INFO("Switching to ALC/ROUTE Capture Mode");
-			wmove(my_window, 0, 1);
-			_ALC_PACKET_DUMP_TO_OBJECT_ENABLED = 1;
-			wprintw(my_window, "Switching to ALC/ROUTE Capture Mode, press 'p' to play tsi: %s, with toi_init: %s", __TESTING_RECONSTITUTED_TSI__, __TESTING_RECONSTITUTED_TOI_INIT__);
+            mtl_clear();
+            wprintw(my_window, "Switching to ALC/ROUTE Capture Mode, press 's' to set Service ID, 'a','v' for TSI/TOI selection, 'p' to play, 'x' to return to normal flow monitoring");
+
+            _ALC_PACKET_DUMP_TO_OBJECT_ENABLED = 1;
 			//ncurses_switch_to_route();
 			play_mode = 1;
+
+
+			while(1) {
+
+				ch = wgetch(my_window);
+                //fallthru to play down below
+                if(ch == 'p') {
+                    break;
+                }
+                
+				if(ch == CTRL('c') || ch == CTRL('q')) {
+					goto endwin;
+				} else if (ch == 'x') {
+					play_mode = 0;
+					mtl_clear();
+					wprintw(my_window, "Exiting ALC/ROUTE capture mode");
+                    //todo - remove me
+					alc_recon_file_buffer_struct_set_tsi_toi(NULL, 0, 0);
+					_ALC_PACKET_DUMP_TO_OBJECT_ENABLED = 0;
+				}
+                
+                char route_input_str[16];
+				if(ch == 's') {
+					mtl_clear();
+					wprintw(my_window, "Please enter Service ID: ");
+					echo();
+					//wgetstr(my_window, str);
+					mvwgetnstr(my_window, 0, 32, route_input_str, 10);
+					noecho();
+					mtl_clear();
+
+					long my_tsi_long = strtol(route_input_str, NULL, 0);
+					my_service_id = (uint32_t) my_tsi_long;
+					mtl_clear();
+					wprintw(my_window, "Monitoring Service ID: %u",  my_service_id);
+
+					//find our matching lls_sls and create a monitor entry
+
+					lls_sls_alc_session_t* lls_sls_alc_session = lls_slt_alc_session_find_from_service_id(lls_slt_monitor, my_service_id);
+					if(lls_sls_alc_session) {
+                        //TODO - free and teardown if we already have an active monitoring
+						//build our alc_session map
+						lls_sls_alc_monitor = lls_sls_alc_monitor_create();
+						lls_sls_alc_monitor->lls_alc_session = lls_sls_alc_session;
+
+                        if(my_service_id == 1) {
+                            //todo - wire up to mbms signaling
+                            lls_sls_alc_monitor->video_tsi = 1;
+                            lls_sls_alc_monitor->video_toi_init = 2100000000;
+
+                            lls_sls_alc_monitor->audio_tsi = 2;
+                            lls_sls_alc_monitor->audio_toi_init = 2100000000;
+                        } else if(my_service_id == 11 ) {
+                           lls_sls_alc_monitor->video_tsi = 3000;
+							lls_sls_alc_monitor->video_toi_init = 2;
+
+							lls_sls_alc_monitor->audio_tsi = 3002;
+							lls_sls_alc_monitor->audio_toi_init = 5;
+
+                        } else if(my_service_id == 12 ) {
+                            lls_sls_alc_monitor->video_tsi = 3003;
+ 							lls_sls_alc_monitor->video_toi_init = 2;
+
+ 							lls_sls_alc_monitor->audio_tsi = 3009;
+ 							lls_sls_alc_monitor->audio_toi_init = 4;
+
+                         } else {
+                            lls_sls_alc_monitor->video_tsi = 3000;
+                            lls_sls_alc_monitor->video_toi_init = 2;
+                            
+                            lls_sls_alc_monitor->audio_tsi = 3002;
+                            lls_sls_alc_monitor->audio_toi_init = 2;
+                        }
+						lls_sls_alc_monitor->lls_sls_monitor_output_buffer.has_written_init_box = false;
+						lls_slt_monitor->lls_sls_alc_monitor = lls_sls_alc_monitor;
+						//todo, find our service_id map here
+						//lls_slt_monitor->lls_service =
+					}
+				} else if(ch == 'a') {
+					mtl_clear();
+					wprintw(my_window, "Please enter Audio TSI: ");
+					echo();
+					//wgetstr(my_window, str);
+					mvwgetnstr(my_window, 0, 32, route_input_str, 10);
+					noecho();
+					mtl_clear();
+
+					long my_tsi_long = strtol(route_input_str, NULL, 0);
+					lls_sls_alc_monitor->audio_tsi = (uint32_t) my_tsi_long;
+					mtl_clear();
+					wprintw(my_window, "Please enter Audio TOI: ");
+					echo();
+
+					mvwgetnstr(my_window, 0, 63, route_input_str, 10);
+					noecho();
+					mtl_clear();
+
+					long my_toi_init_fragment = strtol(route_input_str, NULL, 0);
+					lls_sls_alc_monitor->audio_toi_init = (uint32_t) my_toi_init_fragment;
+					wprintw(my_window, "Monitoring Audio TSI: %u, TOI: %u",  lls_sls_alc_monitor->audio_tsi, lls_sls_alc_monitor->audio_toi_init);
+
+				} else if(ch == 'v') {
+					mtl_clear();
+					wprintw(my_window, "Please enter Video TSI: ");
+					echo();
+					mvwgetnstr(my_window, 0, 32, route_input_str, 10);
+					noecho();
+					mtl_clear();
+
+					long my_tsi_long = strtol(route_input_str, NULL, 0);
+					lls_sls_alc_monitor->video_tsi = (uint32_t) my_tsi_long;
+					mtl_clear();
+					wprintw(my_window, "Please enter Video TOI: ");
+					echo();
+					//wgetstr(my_window, str);
+					mvwgetnstr(my_window, 0, 32, route_input_str, 10);
+					noecho();
+					mtl_clear();
+
+					long my_toi_init_fragment = strtol(route_input_str, NULL, 0);
+					lls_sls_alc_monitor->video_toi_init = (uint32_t) my_toi_init_fragment;
+					mtl_clear();
+					wprintw(my_window, "Monitoring Video TSI: %u, TOI: %u",  lls_sls_alc_monitor->video_tsi, lls_sls_alc_monitor->video_toi_init);
+
+				}
+			}
 		}
 
-		if(ch == 'm') {
-			//ncurses_switch_to_mmt();
-			_ALC_PACKET_DUMP_TO_OBJECT_ENABLED = 0;
+        //cheat on fallthru on 'p'
+        if(ch == 'p') {
+            //play stream...
+            if(play_mode == 1) {
+                mtl_clear();
+                
 
-			play_mode = 2;
-		}
+                
+                if(lls_slt_monitor->lls_sls_mmt_monitor) {
+                    wprintw(my_window, "MMT: Starting playback for service_id: %u, video packet_id: %u, audio packet_id: %u", lls_slt_monitor->lls_sls_mmt_monitor->service_id, lls_slt_monitor->lls_sls_mmt_monitor->video_packet_id, lls_slt_monitor->lls_sls_mmt_monitor->audio_packet_id);
+                    
+                    lls_slt_monitor->lls_sls_mmt_monitor->lls_sls_monitor_output_buffer_mode.pipe_ffplay_buffer = pipe_create_ffplay_resolve_fps(&lls_slt_monitor->lls_sls_mmt_monitor->lls_sls_monitor_output_buffer.video_output_buffer_isobmff);
+                    
+                    lls_slt_monitor->lls_sls_mmt_monitor->lls_sls_monitor_output_buffer_mode.ffplay_output_enabled = true;
+                    
+                } else if(lls_slt_monitor->lls_sls_alc_monitor) {
+                    wprintw(my_window, "ROUTE/DASH: Starting playback for service_id: %u, video_tsi: %u, audio_tsi: %u", lls_slt_monitor->lls_sls_alc_monitor->service_id, lls_slt_monitor->lls_sls_alc_monitor->video_tsi, lls_slt_monitor->lls_sls_alc_monitor->audio_tsi);
+                    lls_slt_monitor->lls_sls_alc_monitor->lls_sls_monitor_output_buffer_mode.pipe_ffplay_buffer = pipe_create_ffplay_resolve_fps(&lls_slt_monitor->lls_sls_alc_monitor->lls_sls_monitor_output_buffer.video_output_buffer_isobmff);
+
+                    alc_recon_file_buffer_struct_set_monitor(lls_slt_monitor->lls_sls_alc_monitor);
+                    
+                     lls_slt_monitor->lls_sls_alc_monitor->lls_sls_monitor_output_buffer_mode.ffplay_output_enabled = true;
+                    
+                }
+            } else {
+                mtl_clear();
+                wprintw(my_window, "No monitored MMT or ROUTE Service ID");
+                
+                __NCURSES_WARN("not playing - play mode is: %d", play_mode);
+            }
+        }
+        
+        if(ch == 'd') {
+            //set mode to dump
+            if(lls_slt_monitor->lls_sls_mmt_monitor) {
+                if(!lls_slt_monitor->lls_sls_mmt_monitor->lls_sls_monitor_output_buffer_mode.file_dump_enabled) {
+                    lls_slt_monitor->lls_sls_mmt_monitor->lls_sls_monitor_output_buffer_mode.file_dump_enabled = true;
+                    
+                      wprintw(my_window, "MMT: Starting dump for service_id: %u, video packet_id: %u, audio packet_id: %u", lls_slt_monitor->lls_sls_mmt_monitor->service_id, lls_slt_monitor->lls_sls_mmt_monitor->video_packet_id, lls_slt_monitor->lls_sls_mmt_monitor->audio_packet_id);
+                    
+                } else {
+                    lls_slt_monitor->lls_sls_mmt_monitor->lls_sls_monitor_output_buffer_mode.file_dump_enabled = false;
+                      wprintw(my_window, "MMT: Ending dump for service_id: %u, video packet_id: %u, audio packet_id: %u", lls_slt_monitor->lls_sls_mmt_monitor->service_id, lls_slt_monitor->lls_sls_mmt_monitor->video_packet_id, lls_slt_monitor->lls_sls_mmt_monitor->audio_packet_id);
+                }
+              
+            } else if(lls_slt_monitor->lls_sls_alc_monitor) {
+                if(!lls_slt_monitor->lls_sls_alc_monitor->lls_sls_monitor_output_buffer_mode.file_dump_enabled) {
+                    lls_slt_monitor->lls_sls_alc_monitor->lls_sls_monitor_output_buffer_mode.file_dump_enabled = true;
+                     wprintw(my_window, "ROUTE/DASH: Starting dump for service_id: %u, video_tsi: %u, audio_tsi: %u", lls_slt_monitor->lls_sls_alc_monitor->service_id, lls_slt_monitor->lls_sls_alc_monitor->video_tsi, lls_slt_monitor->lls_sls_alc_monitor->audio_tsi);
+                } else {
+                    lls_slt_monitor->lls_sls_alc_monitor->lls_sls_monitor_output_buffer_mode.file_dump_enabled = true;
+                     wprintw(my_window, "ROUTE/DASH: Ending dump for service_id: %u, video_tsi: %u, audio_tsi: %u", lls_slt_monitor->lls_sls_alc_monitor->service_id, lls_slt_monitor->lls_sls_alc_monitor->video_tsi, lls_slt_monitor->lls_sls_alc_monitor->audio_tsi);
+
+                }
+            }
+        }
+
 
 		if(ch == KEY_F(1))		/* Without keypad enabled this will */
 			printw("F1 Key pressed");/*  not get to us either	*/
@@ -101,6 +387,11 @@ void* ncurses_input_run_thread() {
 			attroff(A_BOLD);
 		}
 	}
+
+
+endwin:
+	endwin();
+	exit(1);
 }
 
 void ncurses_mutext_init() {
@@ -129,7 +420,7 @@ void create_or_update_window_sizes(bool should_reload_term_size) {
 			//delete sub wins
 			delwin(pkt_global_loss_window);
 			delwin(bottom_window_outline);
-			delwin(pkt_flow_stats_window);
+			delwin(pkt_flow_stats_mmt_window);
 			delwin(right_window_outline);
 			delwin(bw_window_lifetime);
 			delwin(bw_window_runtime);
@@ -205,7 +496,7 @@ void create_or_update_window_sizes(bool should_reload_term_size) {
 	//pkt_global_loss_window_outline = 	derwin(left_window_outline, pkt_window_height-25, half_cols-4, 22, 1);
 
 	//RIGHT
-	pkt_flow_stats_window =	derwin(right_window_outline, right_window_h-2, right_window_w-3, 1, 1);
+	pkt_flow_stats_mmt_window =	derwin(right_window_outline, right_window_h-2, right_window_w-3, 1, 1);
 
 	//bottom
 	pkt_global_loss_window = 	derwin(bottom_window_outline, bottom_window_h-2, bottom_window_w-2, 1, 1);
@@ -228,16 +519,25 @@ void handle_winch(int sig)
 
 }
 
-void* print_lls_instance_table_thread(void* lls_session_ptr) {
 
-	lls_session_t* lls_session = (lls_session_t*)lls_session_ptr;
+void handle_sighup(int sig)
+{
+    //noop?
+    __NCURSES_INFO("got sighup at: %u", sig);
+    
+}
+
+void* print_lls_instance_table_thread(void* lls_slt_monitor_ptr) {
+
+	lls_slt_monitor_t* lls_slt_monitor = (lls_slt_monitor_t*)lls_slt_monitor_ptr;
+
 	while(1) {
 		sleep(1);
-		if(lls_session->lls_table_slt) {
+		if(lls_slt_monitor->lls_table_slt) {
 			ncurses_writer_lock_mutex_acquire();
 			__LLS_DUMP_CLEAR();
 			__LLS_REFRESH();
-			lls_dump_instance_table_ncurses(lls_session->lls_table_slt);
+			lls_dump_instance_table_ncurses(lls_slt_monitor->lls_table_slt);
 			__DOUPDATE();
 			__LLS_REFRESH();
 			ncurses_writer_lock_mutex_release();
