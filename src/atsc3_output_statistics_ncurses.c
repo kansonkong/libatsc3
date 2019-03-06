@@ -69,7 +69,7 @@ void* ncurses_input_run_thread(void* lls_slt_monitor_ptr) {
     while(1) {
 
 		ch = wgetch(my_window);
-		if(ch == CTRL('c') || ch == CTRL('q')) {
+		if(ch == CTRL('c') || ch == 'q') {
 			//end and clear screen back to terminal
 			goto endwin;
 		}
@@ -90,7 +90,7 @@ void* ncurses_input_run_thread(void* lls_slt_monitor_ptr) {
                     break;
                 }
                 
-                if(ch == CTRL('c') || ch == CTRL('q')) {
+                if(ch == CTRL('c') || ch == 'q') {
                     goto endwin;
                 } else if (ch == 'x') {
                     play_mode = 0;
@@ -199,7 +199,7 @@ void* ncurses_input_run_thread(void* lls_slt_monitor_ptr) {
                     break;
                 }
                 
-				if(ch == CTRL('c') || ch == CTRL('q')) {
+				if(ch == CTRL('c') || ch == 'q') {
 					goto endwin;
 				} else if (ch == 'x') {
 					play_mode = 0;

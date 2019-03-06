@@ -8,40 +8,15 @@
 #ifndef MODULES_DEMUX_MMT_MMTP_TYPES_H_
 #define MODULES_DEMUX_MMT_MMTP_TYPES_H_
 
-#include "atsc3_vector.h"
-#include "atsc3_mmtp_ntp32_to_pts.h"
-//#include <vlc_common.h>
-//#include <vlc_vector.h>
-
 #include <assert.h>
 #include <limits.h>
 
-//#include "libmp4.h"
-//#include "mp4.h"
+#include "atsc3_vector.h"
+#include "atsc3_mmtp_ntp32_to_pts.h"
+#include "atsc3_mmt_signalling_message_types.h"
 
 extern int _MMTP_DEBUG_ENABLED;
 extern int _MMTP_TRACE_ENABLED;
-#define _MMTP_PRINTLN(...) printf(__VA_ARGS__);printf("\n")
-#define _MMTP_ERROR(...)   printf("%s:%d:ERROR:",__FILE__,__LINE__);_MMTP_PRINTLN(__VA_ARGS__);
-#define _MMTP_WARN(...)    printf("%s:%d:WARN:",__FILE__,__LINE__);_MMTP_PRINTLN(__VA_ARGS__);
-#define _MMTP_INFO(...)    //printf("%s:%d:INFO ",__FILE__,__LINE__);_MMTP_PRINTLN(__VA_ARGS__);
-
-#define _MMTP_DEBUG(...)   if(_MMTP_DEBUG_ENABLED) { printf("%s:%d:DEBUG :",__FILE__,__LINE__);_MMTP_PRINTLN(__VA_ARGS__); }
-//logging hack to quiet output....
-//#define _MMTP_DEBUG(...)
-//#define _MMTP_DEBUG(...)
-#define _MMTP_TRACE(...)   if(_MMTP_TRACE_ENABLED) { printf("%s:%d:TRACE :",__FILE__,__LINE__);_MMTP_PRINTLN(__VA_ARGS__); }
-
-#define __LOG_MPU_REASSEMBLY(...) printf(__VA_ARGS__)
-
-#define __LOG_DEBUG(...) printf(__VA_ARGS__)
-//(msg_Info(__VA_ARGS__))
-#define __LOG_TRACE(...)
-#define __PRINTF_DEBUG(...)
-//printf(__VA_ARGS__)
-//(
-#define __PRINTF_TRACE(...)
-//printf(__VA_ARGS__)
 
 
 
@@ -162,12 +137,8 @@ typedef struct {
 	uint8_t		si_aggregation_flag; 		 //1 bit
 	uint8_t		si_fragmentation_counter;    //8 bits
 	uint16_t	si_aggregation_message_length; //only set if si_aggregation_flag==1
+	mmt_signalling_message_vector_t mmt_signalling_message_vector;
 
-	uint16_t	message_id;
-	uint8_t		version;
-	uint32_t	length;
-	void*		extension;			//see atsc3_mmt_signaling_message.h for extension
-	void*		payload;			//and payload types
 } __signalling_message_fragments_t;
 
 //DO NOT REFERENCE INTEREMDIATE STRUCTS DIRECTLY
@@ -303,6 +274,25 @@ typedef struct mmtp_sub_flow {
 
 
 typedef struct ATSC3_VECTOR(mmtp_sub_flow_t*) mmtp_sub_flow_vector_t;
+
+
+#define _MMTP_PRINTLN(...) printf(__VA_ARGS__);printf("\n")
+#define _MMTP_ERROR(...)   printf("%s:%d:ERROR:",__FILE__,__LINE__);_MMTP_PRINTLN(__VA_ARGS__);
+#define _MMTP_WARN(...)    printf("%s:%d:WARN:",__FILE__,__LINE__);_MMTP_PRINTLN(__VA_ARGS__);
+#define _MMTP_INFO(...)    //printf("%s:%d:INFO ",__FILE__,__LINE__);_MMTP_PRINTLN(__VA_ARGS__);
+
+#define _MMTP_DEBUG(...)   if(_MMTP_DEBUG_ENABLED) { printf("%s:%d:DEBUG :",__FILE__,__LINE__);_MMTP_PRINTLN(__VA_ARGS__); }
+#define _MMTP_TRACE(...)   if(_MMTP_TRACE_ENABLED) { printf("%s:%d:TRACE :",__FILE__,__LINE__);_MMTP_PRINTLN(__VA_ARGS__); }
+#define __LOG_MPU_REASSEMBLY(...) printf(__VA_ARGS__)
+
+#define __LOG_DEBUG(...) printf(__VA_ARGS__)
+//(msg_Info(__VA_ARGS__))
+#define __LOG_TRACE(...)
+#define __PRINTF_DEBUG(...)
+//printf(__VA_ARGS__)
+//(
+#define __PRINTF_TRACE(...)
+//printf(__VA_ARGS__)
 
 
 #endif /* MODULES_DEMUX_MMT_MMTP_TYPES_H_ */
