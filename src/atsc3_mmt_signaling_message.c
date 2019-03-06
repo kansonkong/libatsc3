@@ -230,43 +230,78 @@ uint8_t* mmt_signaling_message_parse_id_type(mmtp_payload_fragments_union_t *mmt
 
 	if(mmt_signalling_message_header->message_id == PA_message) {
 		buf = pa_message_parse(mmt_signalling_message_header_and_payload, buf, buf_size);
+		mmt_signalling_message_header_and_payload->message_header.MESSAGE_id_type = PA_message;
+
 	} else if(mmt_signalling_message_header->message_id >= MPI_message_start && mmt_signalling_message_header->message_id < MPI_message_end) {
 		buf = mpi_message_parse(mmt_signalling_message_header_and_payload, buf, buf_size);
+		mmt_signalling_message_header_and_payload->message_header.MESSAGE_id_type = MPI_message;
+
 	} else if(mmt_signalling_message_header->message_id >= MPT_message_start && mmt_signalling_message_header->message_id <= MPT_message_end) {
 		buf = mpt_message_parse(mmt_signalling_message_header_and_payload, buf, buf_size);
+		mmt_signalling_message_header_and_payload->message_header.MESSAGE_id_type = MPT_message;
+
 	} else if(mmt_signalling_message_header->message_id == CRI_message) {
-		//0x200
 		buf = si_message_not_supported(mmt_signalling_message_header_and_payload, buf, buf_size);
+		mmt_signalling_message_header_and_payload->message_header.MESSAGE_id_type = CRI_message;
+
 	} else if(mmt_signalling_message_header->message_id == DCI_message) {
 		buf = si_message_not_supported(mmt_signalling_message_header_and_payload, buf, buf_size);
+		mmt_signalling_message_header_and_payload->message_header.MESSAGE_id_type = DCI_message;
+
 	} else if(mmt_signalling_message_header->message_id == SSWR_message) {
 		buf = si_message_not_supported(mmt_signalling_message_header_and_payload, buf, buf_size);
+		mmt_signalling_message_header_and_payload->message_header.MESSAGE_id_type = SSWR_message;
+
 	} else if(mmt_signalling_message_header->message_id == AL_FEC_message) {
 		buf = si_message_not_supported(mmt_signalling_message_header_and_payload, buf, buf_size);
+		mmt_signalling_message_header_and_payload->message_header.MESSAGE_id_type = AL_FEC_message;
 	} else if(mmt_signalling_message_header->message_id == HRBM_message) {
 		buf = si_message_not_supported(mmt_signalling_message_header_and_payload, buf, buf_size);
+		mmt_signalling_message_header_and_payload->message_header.MESSAGE_id_type = HRBM_message;
 	} else if(mmt_signalling_message_header->message_id == MC_message) {
 		buf = si_message_not_supported(mmt_signalling_message_header_and_payload, buf, buf_size);
+		mmt_signalling_message_header_and_payload->message_header.MESSAGE_id_type = MC_message;
+
 	} else if(mmt_signalling_message_header->message_id == AC_message) {
 		buf = si_message_not_supported(mmt_signalling_message_header_and_payload, buf, buf_size);
+		mmt_signalling_message_header_and_payload->message_header.MESSAGE_id_type = AC_message;
+
 	} else if(mmt_signalling_message_header->message_id == AF_message) {
 		buf = si_message_not_supported(mmt_signalling_message_header_and_payload, buf, buf_size);
+		mmt_signalling_message_header_and_payload->message_header.MESSAGE_id_type = AF_message;
+
 	} else if(mmt_signalling_message_header->message_id == RQF_message) {
 		buf = si_message_not_supported(mmt_signalling_message_header_and_payload, buf, buf_size);
+		mmt_signalling_message_header_and_payload->message_header.MESSAGE_id_type = RQF_message;
+
 	} else if(mmt_signalling_message_header->message_id == ADC_message) {
 		buf = si_message_not_supported(mmt_signalling_message_header_and_payload, buf, buf_size);
+		mmt_signalling_message_header_and_payload->message_header.MESSAGE_id_type = ADC_message;
+
 	} else if(mmt_signalling_message_header->message_id == HRB_removal_message) {
 		buf = si_message_not_supported(mmt_signalling_message_header_and_payload, buf, buf_size);
+		mmt_signalling_message_header_and_payload->message_header.MESSAGE_id_type = HRB_removal_message;
+
 	} else if(mmt_signalling_message_header->message_id == LS_message) {
 		buf = si_message_not_supported(mmt_signalling_message_header_and_payload, buf, buf_size);
+		mmt_signalling_message_header_and_payload->message_header.MESSAGE_id_type = LS_message;
+
 	} else if(mmt_signalling_message_header->message_id == LR_message) {
 		buf = si_message_not_supported(mmt_signalling_message_header_and_payload, buf, buf_size);
+		mmt_signalling_message_header_and_payload->message_header.MESSAGE_id_type = LR_message;
+
 	} else if(mmt_signalling_message_header->message_id == NAMF_message) {
 		buf = si_message_not_supported(mmt_signalling_message_header_and_payload, buf, buf_size);
+		mmt_signalling_message_header_and_payload->message_header.MESSAGE_id_type = NAMF_message;
+
 	} else if(mmt_signalling_message_header->message_id == LDC_message) {
 		buf = si_message_not_supported(mmt_signalling_message_header_and_payload, buf, buf_size);
+		mmt_signalling_message_header_and_payload->message_header.MESSAGE_id_type = LDC_message;
+
 	} else if(mmt_signalling_message_header->message_id == MMT_ATSC3_MESSAGE_ID) {
 		buf = mmt_atsc3_message_payload_parse(mmt_signalling_message_header_and_payload, buf, buf_size);
+		mmt_signalling_message_header_and_payload->message_header.MESSAGE_id_type = MMT_ATSC3_MESSAGE_ID;
+
 	} else {
 		buf = si_message_not_supported(mmt_signalling_message_header_and_payload, buf, buf_size);
 	}
@@ -282,6 +317,7 @@ uint8_t* mmt_signaling_message_parse_id_type(mmtp_payload_fragments_union_t *mmt
 
 uint8_t* pa_message_parse(mmt_signalling_message_header_and_payload_t* mmt_signalling_message_header_and_payload, uint8_t* udp_raw_buf, uint32_t udp_raw_buf_size) {
 	udp_raw_buf = __mmt_signaling_message_parse_length_long(udp_raw_buf, mmt_signalling_message_header_and_payload);
+
 	uint8_t *raw_buf = udp_raw_buf;
 	uint8_t *buf = udp_raw_buf;
 
@@ -290,6 +326,7 @@ uint8_t* pa_message_parse(mmt_signalling_message_header_and_payload_t* mmt_signa
 	return udp_raw_buf;
 }
 uint8_t* mpi_message_parse(mmt_signalling_message_header_and_payload_t* mmt_signalling_message_header_and_payload, uint8_t* udp_raw_buf, uint32_t buf_size) {
+
 	udp_raw_buf = __mmt_signaling_message_parse_length_long(udp_raw_buf, mmt_signalling_message_header_and_payload);
 	uint8_t *raw_buf = udp_raw_buf;
 	uint8_t *buf = udp_raw_buf;
@@ -376,7 +413,6 @@ uint8_t* mpt_message_parse(mmt_signalling_message_header_and_payload_t* mmt_sign
 	udp_raw_buf = __mmt_signaling_message_parse_length_short(udp_raw_buf, mmt_signalling_message_header_and_payload);
 
 	//we have already consumed the mpt_message, now we are processing the mp_table
-
 	uint8_t *raw_buf = udp_raw_buf;
 	uint8_t *buf = udp_raw_buf;
 	mp_table_t* mp_table = &mmt_signalling_message_header_and_payload->message_payload.mp_table;
