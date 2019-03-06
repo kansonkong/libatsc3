@@ -205,7 +205,7 @@ lls_table_t* lls_table_create( uint8_t* lls_packet, int size) {
 	}
 
 	//create the xml document payload
-	_LLS_TRACE("lls_create_table, raw xml payload is: \n%s", lls_table->raw_xml.xml_payload);
+	_LLS_DEBUG("lls_create_table, raw xml payload is: \n%s", lls_table->raw_xml.xml_payload);
 	xml_document = xml_payload_document_parse(lls_table->raw_xml.xml_payload, lls_table->raw_xml.xml_payload_size);
 
 	if(!xml_document) {

@@ -47,6 +47,10 @@ atsc3_lls_listener_test.c:153:DEBUG:Dst. Address : 224.0.23.60 (3758102332)	Dst.
 #include "atsc3_lls.h"
 #include "atsc3_listener_udp.h"
 
+
+
+
+
 #define println(...) printf(__VA_ARGS__);printf("\n")
 
 #define __PRINTLN(...) printf(__VA_ARGS__);printf("\n")
@@ -68,6 +72,7 @@ atsc3_lls_listener_test.c:153:DEBUG:Dst. Address : 224.0.23.60 (3758102332)	Dst.
 #define __DEBUGA(...)
 #define __DEBUGN(...)
 #endif
+
 
 #ifdef _ENABLE_TRACE
 #define __TRACE(...)   printf("%s:%d:TRACE:",__FILE__,__LINE__);__PRINTLN(__VA_ARGS__);
@@ -99,18 +104,18 @@ void process_packet(u_char *user, const struct pcap_pkthdr *pkthdr, const u_char
   u_char udp_header[8];
   int udp_header_start = 34;
   udp_packet_t* udp_packet = NULL;
-
-//dump full packet if needed
-#ifdef _ENABLE_TRACE
-    for (i = 0; i < pkthdr->len; i++) {
-        if ((i % 16) == 0) {
-            __TRACE("%03x0\t", k);
-            k++;
-        }
-        __TRACE("%02x ", packet[i]);
-    }
-#endif
-    __TRACE("*******************************************************");
+//
+////dump full packet if needed
+//#ifdef _ENABLE_TRACE
+//    for (i = 0; i < pkthdr->len; i++) {
+//        if ((i % 16) == 0) {
+//            __TRACE("%03x0\t", k);
+//            k++;
+//        }
+//        __TRACE("%02x ", packet[i]);
+//    }
+//#endif
+//    __TRACE("*******************************************************");
 
     for (i = 0; i < 14; i++) {
         ethernet_packet[i] = packet[0 + i];
@@ -226,6 +231,8 @@ int main(int argc,char **argv) {
     struct bpf_program fp;
     bpf_u_int32 maskp;
     bpf_u_int32 netp;
+
+
 
     if(argc == 2) {
     	dev = argv[1];
