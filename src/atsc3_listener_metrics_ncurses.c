@@ -70,6 +70,7 @@ int PACKET_COUNTER=0;
 #include <sys/ioctl.h>
 #include <ncurses.h>
 #include <limits.h>
+#include <strings.h>
 
 
 #include "atsc3_isobmff_tools.h"
@@ -361,13 +362,39 @@ mmtp_payload_fragments_union_t* mmtp_process_from_payload(udp_packet_t *udp_pack
        
     } else if(mmtp_payload->mmtp_packet_header.mmtp_payload_type == 0x2) {
         
-        //signaling_message_dump(mmtp_payload);
             global_stats->packet_counter_mmt_signaling++;
+            __INFO("mmtp_packet_parse: processing mmt flow: %d.%d.%d.%d:(%u) packet_id: 0, signalling message", __toipandportnonstruct(udp_packet->udp_flow.dst_ip_addr, udp_packet->udp_flow.dst_port));
+            //mmtp_payload->mmtp_signalling_message_fragments.payload
+            signaling_message_dump(mmtp_payload);
+            for(int i=0; i < mmtp_payload->mmtp_signalling_message_fragments.mmt_signalling_message_vector.messages_n; i++) {
+            	mmt_signalling_message_header_and_payload_t* mmt_signalling_message_header_and_payload = mmtp_payload->mmtp_signalling_message_fragments.mmt_signalling_message_vector.messages[i];
+            	if(mmt_signalling_message_header_and_payload->message_header.MESSAGE_id_type == MPT_message) {
+            		mp_table_t* mp_table = &mmt_signalling_message_header_and_payload->message_payload.mp_table;
+            		//update our lls_sls_mmt_session
+            		if(matching_lls_slt_mmt_session && mp_table->number_of_assets) {
+            			for(int i=0; i < mp_table->number_of_assets; i++) {
+            				//slight hack, check the asset types and default_asset = 1
+            				mp_table_asset_row_t* mp_table_asset_row = &mp_table->mp_table_asset_row[i];
+
+            				__INFO("MPT message: checking packet_id: %u, asset_type: %u, default: %u, identifier: %s", mp_table_asset_row->mmt_general_location_info.packet_id, mp_table_asset_row->asset_type, mp_table_asset_row->default_asset_flag, mp_table_asset_row->identifier_mapping.asset_id.asset_id ? (const char*)mp_table_asset_row->identifier_mapping.asset_id.asset_id : "");
+            				if(mp_table_asset_row->identifier_mapping.asset_id.asset_id && strncasecmp("video", (const char*)mp_table_asset_row->identifier_mapping.asset_id.asset_id, 5) == 0) {
+            					matching_lls_slt_mmt_session->video_packet_id = mp_table_asset_row->mmt_general_location_info.packet_id;
+            				} else if(mp_table_asset_row->identifier_mapping.asset_id.asset_id && strncasecmp("audio", (const char*)mp_table_asset_row->identifier_mapping.asset_id.asset_id, 5) == 0) {
+            					matching_lls_slt_mmt_session->audio_packet_id = mp_table_asset_row->mmt_general_location_info.packet_id;
+            				}
+            			}
+            		}
+
+
+            	} else {
+            		__INFO("mmtp_packet_parse: Ignoring signal: 0x%x", mmt_signalling_message_header_and_payload->message_header.MESSAGE_id_type);
+            	}
+            }
 
     } else {
-            _MMTP_WARN("mmtp_packet_parse: unknown payload type of 0x%x", mmtp_payload->mmtp_packet_header.mmtp_payload_type);
-            global_stats->packet_counter_mmt_unknown++;
-            goto cleanup;
+		_MMTP_WARN("mmtp_packet_parse: unknown payload type of 0x%x", mmtp_payload->mmtp_packet_header.mmtp_payload_type);
+		global_stats->packet_counter_mmt_unknown++;
+		goto cleanup;
     }
     
 cleanup:

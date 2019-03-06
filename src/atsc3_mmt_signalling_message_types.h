@@ -13,9 +13,11 @@
 
 #define PA_message 			0x0000
 
+#define MPI_message			0x0001
 #define MPI_message_start 	0x0001
 #define MPI_message_end	 	0x0010
 
+#define MPT_message			0x0011
 #define MPT_message_start	0x0011
 #define MPT_message_end		0x0020
 //		RESERVED			0x0021 ~ 0x01FF
@@ -36,6 +38,7 @@
 #define	NAMF_message		0x020D
 #define	LDC_message			0x020E
 //Reserved for private use 0x8000 ~ 0xFFFF
+#define	MMT_ATSC3_MESSAGE_ID	0x8100
 
 
 //10.2.2 signalling message header
@@ -44,6 +47,7 @@ typedef struct mmt_signalling_message_header {
 	uint16_t 	message_id;
 	uint8_t 	version;
 	uint32_t 	length;
+	uint16_t	MESSAGE_id_type; //see #defines above
 } mmt_signalling_message_header_t;
 
 
@@ -111,7 +115,6 @@ typedef struct mmt_atsc3_message_payload {
 } mmt_atsc3_message_payload_t;
 
 
-#define	MMT_ATSC3_MESSAGE_ID	0x8100
 
 //table 58 - asset id descriptor
 typedef struct asset_id {
