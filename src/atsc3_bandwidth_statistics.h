@@ -75,7 +75,17 @@ typedef struct bandwith_statistics {
 	struct timeval 	program_timeval_start;
 } bandwidth_statistics_t;
 
-bandwidth_statistics_t *global_bandwidth_statistics;
+
+#if defined (__cplusplus)
+extern "C" {
+#endif
+
+extern bandwidth_statistics_t *global_bandwidth_statistics;
 void *print_bandwidth_statistics_thread(void *vargp);
+
+
+#if defined (__cplusplus)
+}
+#endif
 
 #endif /* ATSC3_BANDWIDTH_STATISTICS_H_ */

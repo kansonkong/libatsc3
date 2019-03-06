@@ -194,6 +194,8 @@ typedef struct global_atsc3_stats {
 	uint32_t packet_counter_mmt_nontimed_mpu;
 	uint32_t packet_counter_mmt_signaling;
 	uint32_t packet_counter_mmt_unknown;
+    
+    
 
 	int packet_flow_n;
 	packet_flow_t** packet_flow_vector; //not used yet
@@ -207,14 +209,20 @@ typedef struct global_atsc3_stats {
 	uint32_t packet_counter_alc_packets_parsed_error;
 
 	uint32_t packet_counter_filtered_ipv4;
+    uint32_t packet_counter_udp_unknown;
 
 	//total count of all udp packets received
 	uint32_t packets_total_received;
 
 	struct timeval program_timeval_start;
-} global_atsc3_stats;
+} global_atsc3_stats_t;
 
-global_atsc3_stats* global_stats;
+extern global_atsc3_stats_t* global_stats;
+
+
+#if defined (__cplusplus)
+extern "C" {
+#endif
 
 packet_id_mmt_stats_t* find_packet_id(uint32_t ip, uint16_t port, uint32_t packet_id);
 packet_id_mmt_stats_t* find_or_create_packet_id(uint32_t ip, uint16_t port, uint32_t packet_id);
@@ -222,5 +230,11 @@ packet_id_mmt_stats_t* find_or_create_packet_id(uint32_t ip, uint16_t port, uint
 void atsc3_packet_statistics_dump_global_stats();
 void atsc3_packet_statistics_mmt_stats_populate(udp_packet_t* udp_packet, mmtp_payload_fragments_union_t* mmtp_payload);
 void *print_global_statistics_thread(void *vargp);
+
+
+#if defined (__cplusplus)
+}
+#endif
+
 
 #endif /* ATSC3_MMT_PACKET_STATISTICS_H_ */

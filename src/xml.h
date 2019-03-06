@@ -44,6 +44,7 @@ extern "C" {
 #define _XML_INFO(...)    printf("%s:%d:INFO:",__FILE__,__LINE__);_XML_PRINTLN(__VA_ARGS__);
 #define _XML_DEBUG(...)   printf("%s:%d:DEBUG:",__FILE__,__LINE__);_XML_PRINTLN(__VA_ARGS__);
 
+//#define __ENABLE_XML_TRACE
 #ifdef __ENABLE_XML_TRACE
 #define _XML_TRACE(...)   printf("%s:%d:TRACE:",__FILE__,__LINE__);_XML_PRINTLN(__VA_ARGS__);
 #define _XML_TRACEF(...)  printf("%s:%d:TRACE:",__FILE__,__LINE__);_XML_PRINTF(__VA_ARGS__);

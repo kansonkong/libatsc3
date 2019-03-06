@@ -12,16 +12,19 @@
 #ifndef ATSC3_LISTENER_UDP_H_
 #define ATSC3_LISTENER_UDP_H_
 
-typedef struct udp_packet {
+typedef struct udp_flow {
 	uint32_t		src_ip_addr;
 	uint32_t		dst_ip_addr;
 	uint16_t		src_port;
 	uint16_t		dst_port;
+} udp_flow_t;
+
+typedef struct udp_packet {
+	udp_flow_t		udp_flow;
 
 	//inherit from libpcap type usage
 	int 			data_length;
 	u_char* 		data;
-
 	int				total_packet_length;
 
 } udp_packet_t;

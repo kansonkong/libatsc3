@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<SLT
+xmlns="tag:atsc.org,2016:XMLSchemas/ATSC3/Delivery/SLT/1.0/"
+xmlns:xs="http://www.w3.org/2001/XMLSchema" 
+xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+xsi:schemaLocation= "tag:atsc.org,2016:XMLSchemas/ATSC3/Delivery/SLT/1.0/ SLT-1.0-20170922.xsd"
+bsid="1234 5678">
+	<SLTCapabilities>?????</SLTCapabilities>
+	<SLTInetUrl urlType="1">http://www.user.com</SLTInetUrl>
+	<Service serviceId="1" globalServiceID="mytv.com/8.2" sltSvcSeqNum="0" protected="true" majorChannelNo="8" minorChannelNo="1"
+		 serviceCategory="1" shortServiceName="KUSER" hidden="true" broadbandAccessRequired="true"
+		 essential="true">
+		<SimulcastTSID simulcastMajorChannelNo="2" simulcastMinorChannelNo="1">4321</SimulcastTSID>
+		<SvcCapabilities>?????</SvcCapabilities>
+		<BroadcastSvcSignaling slsProtocol="1" slsMajorProtocolVersion="1" slsMinorProtocolVersion="0"
+			slsDestinationIpAddress="1.2.3.4" slsDestinationUdpPort="99" slsSourceIpAddress="5.6.7.8"/>
+		<SvcInetUrl urlType="1">http://www.user.com</SvcInetUrl>
+		<OtherBsid type="1">4321 9876</OtherBsid>
+	</Service>
+	<Service serviceId="2" sltSvcSeqNum="0" serviceCategory="1"/>
+</SLT>

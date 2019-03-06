@@ -1,0 +1,134 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema" xmlns:aeat="tag:atsc.org,2016:XMLSchemas/ATSC3/Delivery/AEAT/1.0/" targetNamespace="tag:atsc.org,2016:XMLSchemas/ATSC3/Delivery/AEAT/1.0/" elementFormDefault="qualified">
+	<xs:import namespace="http://www.w3.org/XML/1998/namespace" schemaLocation="W3C/xml.xsd"/>
+	<xs:element name="AEAT" type="aeat:AEATType"/>
+	<xs:complexType name="AEATType">
+		<xs:sequence>
+			<xs:element name="AEA" type="aeat:AEAType" maxOccurs="unbounded"/>
+			<xs:any namespace="##other" processContents="strict" minOccurs="0" maxOccurs="unbounded"/>
+		</xs:sequence>
+		<xs:anyAttribute processContents="strict"/>
+	</xs:complexType>
+	<xs:complexType name="AEAType">
+		<xs:sequence>
+			<xs:element name="Header" type="aeat:headerType" minOccurs="0"/>
+			<xs:element name="AEAText" type="aeat:langType" minOccurs="0" maxOccurs="unbounded"/>
+			<xs:element name="LiveMedia" type="aeat:liveMediaType" minOccurs="0"/>
+			<xs:element name="Media" type="aeat:mediaType" minOccurs="0" maxOccurs="unbounded"/>
+			<xs:any namespace="##other" processContents="strict" minOccurs="0" maxOccurs="unbounded"/>
+		</xs:sequence>
+		<xs:attribute name="aeaId" type="aeat:aeaIdType" use="required"/>
+		<xs:attribute name="issuer" type="aeat:issuerType" use="required"/>
+		<xs:attribute name="audience" type="aeat:audienceType" use="required"/>
+		<xs:attribute name="aeaType" type="aeat:AEAtypeType" use="required"/>
+		<xs:attribute name="refAEAId" type="xs:string"/>
+		<xs:attribute name="priority" type="aeat:priorityType"/>
+		<xs:attribute name="wakeup" type="xs:boolean" default="false"/>
+		<xs:anyAttribute processContents="strict"/>
+	</xs:complexType>
+	<xs:complexType name="headerType">
+		<xs:sequence>
+			<xs:element name="EventCode" type="aeat:typeType" minOccurs="0"/>
+			<xs:element name="EventDesc" type="aeat:langType" minOccurs="0" maxOccurs="unbounded"/>
+			<xs:element name="Location" type="aeat:locationType" minOccurs="0" maxOccurs="unbounded"/>
+			<xs:any namespace="##other" processContents="strict" minOccurs="0" maxOccurs="unbounded"/>
+		</xs:sequence>
+		<xs:attribute name="effective" type="xs:dateTime"/>
+		<xs:attribute name="expires" type="xs:dateTime"/>
+		<xs:anyAttribute processContents="strict"/>
+	</xs:complexType>
+	<xs:complexType name="typeType">
+		<xs:simpleContent>
+			<xs:extension base="xs:string">
+				<xs:attribute name="type" type="xs:string"/>
+				<xs:anyAttribute processContents="strict"/>
+			</xs:extension>
+		</xs:simpleContent>
+	</xs:complexType>
+	<xs:complexType name="langType">
+		<xs:simpleContent>
+			<xs:extension base="xs:string">
+				<xs:attribute ref="xml:lang" use="required"/>
+				<xs:anyAttribute processContents="strict"/>
+			</xs:extension>
+		</xs:simpleContent>
+	</xs:complexType>
+	<xs:complexType name="locationType">
+		<xs:simpleContent>
+			<xs:extension base="xs:string">
+				<xs:attribute name="type" type="aeat:locationTypeType" use="required"/>
+				<xs:anyAttribute processContents="strict"/>
+			</xs:extension>
+		</xs:simpleContent>
+	</xs:complexType>
+	<xs:simpleType name="locationTypeType">
+		<xs:restriction base="xs:string">
+			<xs:enumeration value="FIPS"/>
+			<xs:enumeration value="SGC"/>
+			<xs:enumeration value="polygon"/>
+			<xs:enumeration value="circle"/>
+		</xs:restriction>
+	</xs:simpleType>
+	<xs:simpleType name="aeaIdType">
+		<xs:restriction base="xs:string">
+			<!-- TODO create regex -->
+		</xs:restriction>
+	</xs:simpleType>
+	<xs:simpleType name="issuerType">
+		<xs:restriction base="xs:string">
+			<xs:maxLength value="32"/>
+		</xs:restriction>
+	</xs:simpleType>
+	<xs:simpleType name="audienceType">
+		<xs:restriction base="xs:string">
+			<xs:enumeration value="public"/>
+			<xs:enumeration value="restricted"/>
+			<xs:enumeration value="private"/>
+		</xs:restriction>
+	</xs:simpleType>
+	<xs:simpleType name="AEAtypeType">
+		<xs:restriction base="xs:string">
+			<xs:enumeration value="alert"/>
+			<xs:enumeration value="update"/>
+			<xs:enumeration value="cancel"/>
+		</xs:restriction>
+	</xs:simpleType>
+	<xs:simpleType name="priorityType">
+		<xs:restriction base="xs:unsignedByte">
+			<xs:maxInclusive value="4"/>
+		</xs:restriction>
+	</xs:simpleType>
+	<xs:complexType name="liveMediaType">
+		<xs:sequence>
+			<xs:element name="ServiceName" type="aeat:langType" minOccurs="0" maxOccurs="unbounded"/>
+			<xs:any namespace="##other" processContents="strict" minOccurs="0" maxOccurs="unbounded"/>
+		</xs:sequence>
+		<xs:attribute name="bsid" type="aeat:listOfUnsignedShortType" use="required"/>
+		<xs:attribute name="serviceId" type="xs:unsignedShort" use="required"/>
+		<xs:anyAttribute processContents="strict"/>
+	</xs:complexType>
+	<xs:simpleType name="listOfUnsignedShortType">
+		<xs:list itemType="xs:unsignedShort"/>
+	</xs:simpleType>
+	<xs:complexType name="mediaType">
+		<xs:sequence>
+			<xs:any namespace="##other" processContents="strict" minOccurs="0" maxOccurs="unbounded"/>
+		</xs:sequence>
+		<xs:attribute ref="xml:lang"/>
+		<xs:attribute name="mediaDesc" type="xs:string"/>
+		<xs:attribute name="mediaType" type="aeat:mediaTypeType"/>
+		<xs:attribute name="url" type="xs:anyURI" use="required"/>
+		<xs:attribute name="alternateUrl" type="xs:anyURI"/>
+		<xs:attribute name="contentType" type="xs:string"/>
+		<xs:attribute name="contentLength" type="xs:unsignedLong"/>
+		<xs:attribute name="mediaAssoc" type="xs:anyURI"/>
+		<xs:anyAttribute processContents="strict"/>
+	</xs:complexType>
+	<xs:simpleType name="mediaTypeType">
+		<xs:restriction base="xs:string">
+			<xs:enumeration value="EventDescAudio"/>
+			<xs:enumeration value="AEAtextAudio"/>
+			<xs:enumeration value="EventSymbol"/>
+		</xs:restriction>
+	</xs:simpleType>
+</xs:schema>

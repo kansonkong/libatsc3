@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<S-TSID
+xmlns="tag:atsc.org,2016:XMLSchemas/ATSC3/Delivery/S-TSID/1.0/"
+xmlns:afdt="tag:atsc.org,2016:XMLSchemas/ATSC3/Delivery/ATSC-FDT/1.0/"
+xmlns:xs="http://www.w3.org/2001/XMLSchema" 
+xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+xmlns:fdt="urn:ietf:params:xml:ns:fdt"
+xmlns:mbms2007="urn:3GPP:metadata:2007:MBMS:FLUTE:FDT"
+xmlns:mbms2012="urn:3GPP:metadata:2012:MBMS:FLUTE:FDT"
+xsi:schemaLocation="tag:atsc.org,2016:XMLSchemas/ATSC3/Delivery/S-TSID/1.0/ S-TSID-1.0-20170920.xsd
+	tag:atsc.org,2016:XMLSchemas/ATSC3/Delivery/ATSC-FDT/1.0/ ATSC-FDT-1.0-20170920.xsd
+	urn:3GPP:metadata:2007:MBMS:FLUTE:FDT 3GPP/FLUTE-FDT-3GPP-2007-Extensions.xsd
+	urn:3GPP:metadata:2012:MBMS:FLUTE:FDT 3GPP/FLUTE-FDT-3GPP-2012-Extensions.xsd">
+
+	<RS sIpAddr="1.2.3.4" dIpAddr="4.3.2.1" dPort="99">
+		<LS tsi="2" bw="20000000" startTime="2016-09-11T13:00:00.000-07:00"
+			endTime="2016-09-11T14:00:00.000-07:00">
+			<SrcFlow rt="true" minBuffSize="500">
+				<EFDT>
+					<FDT-Instance Expires="1700000000" afdt:efdtVersion="0" afdt:maxExpiresDelta="60" 
+						afdt:maxTransportSize="2000000" afdt:appContextIdList="" afdt:fileTemplate="">
+						<fdt:File Content-Type="multipart/related" TOI="3" Content-Location="tag:atsc.org,2016:appPackage"
+							afdt:appContextIdList="" afdt:fileFilterCode="">
+							<mbms2007:Cache-Control>
+								<mbms2007:no-cache/>
+							</mbms2007:Cache-Control>
+							<mbms2012:Alternate-Content-Location-1></mbms2012:Alternate-Content-Location-1>
+							<mbms2012:Alternate-Content-Location-2></mbms2012:Alternate-Content-Location-2>
+						</fdt:File>
+						<mbms2012:Base-URL-1>http://cdn1.com/</mbms2012:Base-URL-1>
+						<mbms2012:Base-URL-2>http://cdn2.com/</mbms2012:Base-URL-2>
+					</FDT-Instance>
+				</EFDT>
+				<ContentInfo>
+					<MediaInfo startup="true" xml:lang="en" contentType="video" repId="ABCD">
+						<ContentRating schemeIdUri="tag:atsc.org,2016:carating:1" value="1,'TV-PG D-L-S-V', {0 'TV PG'}{1 'D'}{2 'L'}{3 'S'}{4 'V'}, 2,'13+(fr)/14+(en)',{0 '14+'}{1 '13+'}"/>
+					</MediaInfo>
+				</ContentInfo>
+				<Payload codePoint="1" formatId="1" frag="0" order="true" srcFecPayloadId="0" fecParams="f0f1f2f3f4f5f6f7f8f9fafb"/>
+			</SrcFlow>
+			<RepairFlow>
+				<FECParameters maximumDelay="100" overhead="50" minBuffSize="20000000" fecOTI="f0f1f2f3f4f5f6f7f8f9fafb">
+					<ProtectedObject sessionDescription="example" tsi="2" sourceTOI="3" fecTransportObjectSize="200000"/>
+				</FECParameters>
+			</RepairFlow>
+		</LS>
+	</RS>
+</S-TSID>

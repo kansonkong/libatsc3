@@ -7,7 +7,7 @@
 
 #include "atsc3_listener_udp.h"
 #include "atsc3_packet_statistics.h"
-
+int global_mmt_loss_count;
 
 
 
@@ -76,12 +76,12 @@ packet_id_mmt_stats_t* find_or_create_packet_id(uint32_t ip, uint16_t port, uint
 
 			__PS_TRACE("*before realloc to %p, %i, adding %u", global_stats->packet_id_vector, global_stats->packet_id_n, packet_id);
 
-			global_stats->packet_id_vector = realloc(global_stats->packet_id_vector, (global_stats->packet_id_n + 1) * sizeof(packet_id_mmt_stats_t*));
+			global_stats->packet_id_vector = (packet_id_mmt_stats_t**)realloc(global_stats->packet_id_vector, (global_stats->packet_id_n + 1) * sizeof(packet_id_mmt_stats_t*));
 			if(!global_stats->packet_id_vector) {
 				abort();
 			}
 
-			packet_mmt_stats = global_stats->packet_id_vector[global_stats->packet_id_n++] = calloc(1, sizeof(packet_id_mmt_stats_t));
+			packet_mmt_stats = global_stats->packet_id_vector[global_stats->packet_id_n++] = (packet_id_mmt_stats_t*)calloc(1, sizeof(packet_id_mmt_stats_t));
 			if(!packet_mmt_stats) {
 				abort();
 			}
@@ -93,8 +93,8 @@ packet_id_mmt_stats_t* find_or_create_packet_id(uint32_t ip, uint16_t port, uint
 
 		} else {
 			global_stats->packet_id_n = 1;
-			global_stats->packet_id_vector = calloc(1, sizeof(packet_id_mmt_stats_t*));
-			global_stats->packet_id_vector[0] = calloc(1, sizeof(packet_id_mmt_stats_t));
+			global_stats->packet_id_vector = (packet_id_mmt_stats_t**)calloc(1, sizeof(packet_id_mmt_stats_t*));
+			global_stats->packet_id_vector[0] = (packet_id_mmt_stats_t*)calloc(1, sizeof(packet_id_mmt_stats_t));
 
 			if(!global_stats->packet_id_vector) {
 				abort();
@@ -107,13 +107,13 @@ packet_id_mmt_stats_t* find_or_create_packet_id(uint32_t ip, uint16_t port, uint
 		packet_mmt_stats->port = port;
 		packet_mmt_stats->packet_id = packet_id;
 
-		packet_mmt_stats->mpu_stats_timed_sample_interval = 	calloc(1, sizeof(packet_id_mmt_timed_mpu_stats_t));
-		packet_mmt_stats->mpu_stats_nontimed_sample_interval = calloc(1, sizeof(packet_id_mmt_nontimed_mpu_stats_t));
-		packet_mmt_stats->signalling_stats_sample_interval = 	calloc(1, sizeof(packet_id_signalling_stats_t));
+		packet_mmt_stats->mpu_stats_timed_sample_interval = 	(packet_id_mmt_timed_mpu_stats_t*)calloc(1, sizeof(packet_id_mmt_timed_mpu_stats_t));
+		packet_mmt_stats->mpu_stats_nontimed_sample_interval = (packet_id_mmt_nontimed_mpu_stats_t*)calloc(1, sizeof(packet_id_mmt_nontimed_mpu_stats_t));
+		packet_mmt_stats->signalling_stats_sample_interval = 	(packet_id_signalling_stats_t*)calloc(1, sizeof(packet_id_signalling_stats_t));
 
-		packet_mmt_stats->mpu_stats_timed_lifetime = 	calloc(1, sizeof(packet_id_mmt_timed_mpu_stats_t));
-		packet_mmt_stats->mpu_stats_nontimed_lifetime = calloc(1, sizeof(packet_id_mmt_nontimed_mpu_stats_t));
-		packet_mmt_stats->signalling_stats_lifetime = 	calloc(1, sizeof(packet_id_signalling_stats_t));
+		packet_mmt_stats->mpu_stats_timed_lifetime = 	(packet_id_mmt_timed_mpu_stats_t*)calloc(1, sizeof(packet_id_mmt_timed_mpu_stats_t));
+		packet_mmt_stats->mpu_stats_nontimed_lifetime = (packet_id_mmt_nontimed_mpu_stats_t*)calloc(1, sizeof(packet_id_mmt_nontimed_mpu_stats_t));
+		packet_mmt_stats->signalling_stats_lifetime = 	(packet_id_signalling_stats_t*)calloc(1, sizeof(packet_id_signalling_stats_t));
 	}
 
 	return packet_mmt_stats;
@@ -139,7 +139,7 @@ int global_loss_count;
 void atsc3_packet_statistics_mmt_stats_populate(udp_packet_t* udp_packet, mmtp_payload_fragments_union_t* mmtp_payload) {
 
 
-	packet_id_mmt_stats_t* packet_mmt_stats = find_or_create_packet_id(udp_packet->dst_ip_addr, udp_packet->dst_port, mmtp_payload->mmtp_packet_header.mmtp_packet_id);
+	packet_id_mmt_stats_t* packet_mmt_stats = find_or_create_packet_id(udp_packet->udp_flow.dst_ip_addr, udp_packet->udp_flow.dst_port, mmtp_payload->mmtp_packet_header.mmtp_packet_id);
 
 	packet_mmt_stats->packet_sequence_number_sample_interval_processed++;
 	packet_mmt_stats->packet_sequence_number_lifetime_processed++;
@@ -147,7 +147,7 @@ void atsc3_packet_statistics_mmt_stats_populate(udp_packet_t* udp_packet, mmtp_p
 #if defined _DUMP_ALL_MPU_FLOWS_ && _DUMP_ALL_MPU_FLOWS_ == true
 	//push this to our missing packet flow for investigation
 					__PS_STATS_L("packets present:\t%u.%u.%u.%u\t%u\tpacket_counter:\t%u\ttimestamp:\t%u\tpacket_id:\t%u\tpacket_sequence_number:\t%u",
-							__toipandportnonstruct(udp_packet->dst_ip_addr, udp_packet->dst_port),
+							__toipandportnonstruct(udp_packet->udp_flow.dst_ip_addr, udp_packet->udp_flow.dst_port),
 							mmtp_payload->mmtp_packet_header.packet_counter,
 							mmtp_payload->mmtp_packet_header.mmtp_timestamp,
 							mmtp_payload->mmtp_packet_header.mmtp_packet_id,
@@ -210,20 +210,20 @@ void atsc3_packet_statistics_mmt_stats_populate(udp_packet_t* udp_packet, mmtp_p
 		__PS_REFRESH_LOSS();
 
 		//push this to our missing packet flow for investigation
-		__PS_STATS_STDOUT("packets missing:\t%u.%u.%u.%u\t%u\tpacket_counter_from:\t%u\tpacket_counter_to:\t%u\ttimestamp_from:\t%u\tfrom_s:\t%u\tfrom_us:\t%u\ttimestamp_to:\t%u\tto_s:\t%u\tto_us:\t%u\tpacket_id:\t%u\tPSN_from:\t%u\tPSN_to:\t%u\tTotal_missing:\t%u",
-				__toip(packet_mmt_stats),
-				packet_mmt_stats->packet_counter_value,
-				mmtp_payload->mmtp_packet_header.packet_counter,
-				packet_mmt_stats->timestamp,
-				packet_mmt_stats->timestamp_s,
-				packet_mmt_stats->timestamp_us,
-				mmtp_payload->mmtp_packet_header.mmtp_timestamp,
-				mmtp_payload->mmtp_packet_header.mmtp_timestamp_s,
-				mmtp_payload->mmtp_packet_header.mmtp_timestamp_us,
-				packet_mmt_stats->packet_id,
-				packet_mmt_stats->packet_sequence_number,
-				mmtp_payload->mmtp_packet_header.packet_sequence_number,
-				packet_mmt_stats->packet_sequence_number_last_gap);
+		//__PS_STATS_STDOUT("packets missing:\t%u.%u.%u.%u\t%u\tpacket_counter_from:\t%u\tpacket_counter_to:\t%u\ttimestamp_from:\t%u\tfrom_s:\t%u\tfrom_us:\t%u\ttimestamp_to:\t%u\tto_s:\t%u\tto_us:\t%u\tpacket_id:\t%u\tPSN_from:\t%u\tPSN_to:\t%u\tTotal_missing:\t%u",
+//				__toip(packet_mmt_stats),
+//				packet_mmt_stats->packet_counter_value,
+//				mmtp_payload->mmtp_packet_header.packet_counter,
+//				packet_mmt_stats->timestamp,
+//				packet_mmt_stats->timestamp_s,
+//				packet_mmt_stats->timestamp_us,
+//				mmtp_payload->mmtp_packet_header.mmtp_timestamp,
+//				mmtp_payload->mmtp_packet_header.mmtp_timestamp_s,
+//				mmtp_payload->mmtp_packet_header.mmtp_timestamp_us,
+//				packet_mmt_stats->packet_id,
+//				packet_mmt_stats->packet_sequence_number,
+//				mmtp_payload->mmtp_packet_header.packet_sequence_number,
+//				packet_mmt_stats->packet_sequence_number_last_gap);
 				__PS_REFRESH_LOSS();
 	}
 	//remember, a lot of these values can roll over...
@@ -383,12 +383,12 @@ void atsc3_packet_statistics_dump_global_stats(){
 		__PS_STATS_FLOW("packet_seq_numbers      : %-10u to %-10u (0x%08x to 0x%08x)    max sequence gap: %-6d ",	packet_mmt_stats->packet_sequence_number_lifetime_start,  packet_mmt_stats->packet_sequence_number, packet_mmt_stats->packet_sequence_number_lifetime_start, packet_mmt_stats->packet_sequence_number, packet_mmt_stats->packet_sequence_number_max_gap);
 		__PS_STATS_FLOW("Total packets RX        : %-6u     missing: %-6u",	packet_mmt_stats->packet_sequence_number_lifetime_processed, packet_mmt_stats->packet_sequence_number_lifetime_missing);
 		int row, col;
-		getyx(pkt_flow_stats_window, row, col);
+		getyx(pkt_flow_stats_mmt_window, row, col);
 	//	printf("----row: %d, col: %d\n", row, col);
-		wmove(pkt_flow_stats_window, row, col+2);
-		wrefresh(pkt_flow_stats_window);
-		whline(pkt_flow_stats_window, ACS_HLINE, 8);
-		wrefresh(pkt_flow_stats_window);
+		wmove(pkt_flow_stats_mmt_window, row, col+2);
+		wrefresh(pkt_flow_stats_mmt_window);
+		whline(pkt_flow_stats_mmt_window, ACS_HLINE, 8);
+		wrefresh(pkt_flow_stats_mmt_window);
 
 		__PS_STATS_HR();
 

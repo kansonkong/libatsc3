@@ -1,0 +1,15 @@
+<?xml version="1.0"?>
+<RepairFlow 
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" 
+	xmlns="tag:atsc.org,2016:XMLSchemas/ATSC3/Delivery/S-TSID/1.0/" 
+	xsi:schemaLocation="tag:atsc.org,2016:XMLSchemas/ATSC3/Delivery/S-TSID/1.0/ S-TSID-1.0-20170920.xsd">
+	<FECParameters maximumDelay="5000" overhead="50" minBuffSize="20000000" fecOTI="f0f1f2f3f4f5f6f7f8f9fafb">
+	<ProtectedObject sessionDescription="sIpaddr=199.201.100.16,dIpaddr=226.17.97.54,dport=1234,
+		bw=3500000,startTime=32159980800,endTime=32162572800,srcFecPayloadId=177" tsi="4" sourceTOI="40"/>
+	<ProtectedObject sessionDescription="sIpaddr=199.201.100.16,dIpaddr=226.17.97.55,dport=1234,
+		bw=128000,startTime=32159980800, endTime=32162572800,srcFecPayloadId=39" tsi="5" sourceTOI="20"/>
+	<ProtectedObject sessionDescription="sIpaddr=199.201.100.16,dIpaddr=226.17.97.56,dport=1234,
+		bw=1600,startTime=32159980800,endTime=32162572800,srcFecPayloadId=18" tsi="4" sourceTOI="41"/>
+	</FECParameters>
+</RepairFlow>
+
