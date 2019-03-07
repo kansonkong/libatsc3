@@ -11,7 +11,7 @@
 
 #include "atsc3_utils.h"
 #include "atsc3_lls_types.h"
-#include "zlib.h"
+#include "atsc3_gzip.h"
 #include "xml.h"
 
 extern int _LLS_DEBUG_ENABLED;
@@ -28,14 +28,10 @@ extern int _LLS_TRACE_ENABLED;
 
 
 lls_table_t* lls_create_base_table( uint8_t* lls, int size);
-
 lls_table_t* lls_create_xml_table( uint8_t* lls_packet, int size);
-//todo - rename this lls_table_create
 lls_table_t* lls_table_create( uint8_t* lls_packet, int size);
-//todo - rename this lls_table_free
 void lls_table_free(lls_table_t* lls_table);
-int lls_create_table_type_instance(lls_table_t* lls_table, xml_node_t* xml_node);
-
+int  lls_create_table_type_instance(lls_table_t* lls_table, xml_node_t* xml_node);
 void lls_dump_instance_table(lls_table_t *base_table);
 
 //xml parsing methods
@@ -44,10 +40,6 @@ xml_node_t* xml_payload_document_extract_root_node(xml_document_t*);
 
 int build_SystemTime_table(lls_table_t* lls_table, xml_node_t* xml_root);
 
-
-
-// internal helper methods here
-int __unzip_gzip_payload(uint8_t *input_payload, uint input_payload_size, uint8_t **decompressed_payload);
 
 
 
