@@ -1,6 +1,7 @@
-all: intermediate_lls intermediate_mmt intermediate_alc intermediate_ffplay libatsc3_core  isobmfftrackjoiner atsc3_listener_metrics_ncurses listener_tests
+all: intermediate_lls intermediate_mmt intermediate_alc intermediate_ffplay libatsc3_core  isobmfftrackjoiner  listener_tests atsc3_listener_metrics_ncurses
 #listener_ncurses
 #mpu_isobmff_bento # listener_tests unit_tests
+
 clean:
 	-rm -f *.o
 	-rm -f route/*
@@ -23,12 +24,7 @@ libatsc3_core: libatsc3.o
 
 # unit_tests: atsc3_lmt_test atsc3_lls_slt_parser_test atsc3_lls_test atsc3_lls_SystemTime_test atsc3_mmt_signaling_message_test atsc3_isobmff_box_test
 
-# listener_tests: atsc3_alc_listener_test atsc3_lls_listener_test atsc3_mmt_listener_test atsc3_listener_test atsc3_mmt_listener_test_bento
-listener_tests: atsc3_lls_listener_test atsc3_mmt_sls_listener_test
-# atsc3_listener_metrics_test
-
 listener_ncurses: atsc3_listener_metrics_ncurses
-
 
 #intermediate_mmt object gen
 
@@ -171,16 +167,17 @@ atsc3_isobmff_box_test: atsc3_isobmff_box_test.c
 
 #integration tests
 
-# atsc3_alc_listener_test: atsc3_alc_listener_test.c libatsc3.o
-#	cc -g atsc3_alc_listener_test.c libatsc3.o -lz -lpcap  -lm -lpthread -o atsc3_alc_listener_test
 
-atsc3_lls_listener_test: atsc3_lls_listener_test.c libatsc3.o atsc3_gzip.o
-	cc -g atsc3_lls_listener_test.c  -lz -lpcap  -lm -lpthread  xml.o atsc3_lls.o atsc3_lls_slt_parser.o  \
-		atsc3_lls_sls_parser.o atsc3_mmtp_parser.o atsc3_mmtp_ntp32_to_pts.o atsc3_utils.o \
-		fixups_timespec_get.o atsc3_mmt_signaling_message.o atsc3_mmt_mpu_parser.o alc_channel.o alc_list.o \
-		atsc3_alc_rx.o alc_session.o fec.o null_fec.o rs_fec.o xor_fec.o mad.o mad_rlc.o transport.o  \
-		atsc3_lls_alc_utils.o atsc3_mmt_mpu_utils.o atsc3_player_ffplay.o atsc3_lls_sls_monitor_output_buffer.o  \
-		atsc3_lls_mmt_utils.o atsc3_gzip.o -o atsc3_lls_listener_test
+
+# listener_tests: atsc3_alc_listener_test atsc3_lls_listener_test atsc3_mmt_listener_test atsc3_listener_test atsc3_mmt_listener_test_bento atsc3_listener_metrics_test
+listener_tests: atsc3_lls_listener_test atsc3_mmt_sls_listener_test atsc3_alc_listener_test
+
+atsc3_alc_listener_test: atsc3_alc_listener_test.c libatsc3.o
+	cc -g atsc3_alc_listener_test.c libatsc3.o -lz -lpcap  -lm -lpthread -o atsc3_alc_listener_test
+
+listener_t atsc3_lls_listener_test: atsc3_lls_listener_test.c libatsc3.o atsc3_gzip.o
+	cc -g atsc3_lls_listener_test.c  libatsc3.o  -lz -lpcap  -lm -lpthread  -o atsc3_lls_listener_test
+
 	
 atsc3_mmt_sls_listener_test: atsc3_mmt_sls_listener_test.c xml.o atsc3_lls.o atsc3_lls_slt_parser.o  \
 		atsc3_lls_sls_parser.o atsc3_mmtp_parser.o atsc3_mmtp_ntp32_to_pts.o atsc3_utils.o \
