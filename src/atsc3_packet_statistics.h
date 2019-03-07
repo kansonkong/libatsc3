@@ -182,8 +182,11 @@ typedef struct global_atsc3_stats {
 
 	uint32_t packet_counter_lls_packets_received;
 	uint32_t packet_counter_lls_packets_parsed;
+	uint32_t packet_counter_lls_packets_parsed_update;
 	uint32_t packet_counter_lls_packets_parsed_error;
+
 	uint32_t packet_counter_lls_slt_packets_parsed;
+	uint32_t packet_counter_lls_slt_packets_parsed_error;
 	uint32_t packet_counter_lls_slt_update_processed;
 
 	uint32_t packet_counter_mmtp_packets_received;

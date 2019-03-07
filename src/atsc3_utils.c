@@ -184,7 +184,8 @@ block_t* block_Alloc(int len) {
 	block_t* new_block = (block_t*)calloc(1, sizeof(block_t));
 	assert(new_block);
 
-	new_block->p_buffer = (uint8_t*)calloc(len, sizeof(uint8_t));
+	//calloc an extra byte in case we forget to add in null padding for strings, but don't update the p_size with this margin of saftey
+	new_block->p_buffer = (uint8_t*)calloc(len + 8, sizeof(uint8_t));
 	assert(new_block->p_buffer);
 
 	new_block->p_size = len;
@@ -279,13 +280,14 @@ block_t* block_Duplicate(block_t* src) {
 }
 
 //return will be NULL if realloc failed, but src will still be valid
+//this has not been tested with shrinking down the size...
 block_t* block_Resize(block_t* src, uint32_t src_size_requested) {
 	if(!__block_check_bounaries(__FUNCTION__, src)) return NULL;
 
-
 	uint32_t src_size_required = __MAX(64, src_size_requested);
 
-	void* new_block = realloc(src->p_buffer, src_size_required);
+	//always over alloc by 1 byte for a null pad
+	void* new_block = realloc(src->p_buffer, src_size_required + 1);
 	if(!new_block) {
 		_ATSC3_UTILS_ERROR("block_Resize: block: %p resize to %u failed, returning NULL", src, src_size_required);
 		return NULL;
@@ -300,7 +302,7 @@ block_t* block_Resize(block_t* src, uint32_t src_size_requested) {
 		} else {
 			_ATSC3_UTILS_TRACE("block_Resize: block: %p, zeroing out from: %u to %u", src, src->i_pos, src->p_size);
 			uint32_t to_scrub_len = __MAX(0, (src->p_size - 1 - src->i_pos));
-			memset(&src->p_buffer[src->i_pos], 0, to_scrub_len);
+			memset(&src->p_buffer[src->i_pos], 0, to_scrub_len + 1);
 		}
 	}
 

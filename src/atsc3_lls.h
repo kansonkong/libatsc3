@@ -14,23 +14,24 @@
 #include "atsc3_gzip.h"
 #include "xml.h"
 
+extern int _LLS_INFO_ENABLED;
 extern int _LLS_DEBUG_ENABLED;
 extern int _LLS_TRACE_ENABLED;
 
 #ifndef MODULES_DEMUX_MMT_ASTC3_LLS_H_
 #define MODULES_DEMUX_MMT_ASTC3_LLS_H_
 
-
-
 #define LLS_DST_ADDR 3758102332
 #define LLS_DST_PORT 4937
 
-
-
 lls_table_t* lls_create_base_table( uint8_t* lls, int size);
 lls_table_t* lls_create_xml_table( uint8_t* lls_packet, int size);
-lls_table_t* lls_table_create( uint8_t* lls_packet, int size);
-void lls_table_free(lls_table_t* lls_table);
+
+lls_table_t* __lls_table_create( uint8_t* lls_packet, int size);
+lls_table_t* lls_table_create_or_update_from_lls_slt_monitor(lls_slt_monitor_t* lls_slt_monitor, uint8_t* lls_packet, int packet_size);
+lls_table_t* lls_table_create_or_update_from_lls_slt_monitor_with_metrics(lls_slt_monitor_t* lls_slt_monitor, uint8_t* lls_packet, int packet_size, uint32_t* parsed, uint32_t* parsed_update, uint32_t* parsed_error);
+
+void lls_table_free(lls_table_t** lls_table_p);
 int  lls_create_table_type_instance(lls_table_t* lls_table, xml_node_t* xml_node);
 void lls_dump_instance_table(lls_table_t *base_table);
 
@@ -38,11 +39,10 @@ void lls_dump_instance_table(lls_table_t *base_table);
 xml_document_t* xml_payload_document_parse(uint8_t *xml, int xml_size);
 xml_node_t* xml_payload_document_extract_root_node(xml_document_t*);
 
-int build_SystemTime_table(lls_table_t* lls_table, xml_node_t* xml_root);
-
-
-
-
+int build_rrt_table(lls_table_t* lls_table, xml_node_t* xml_root);
+int build_system_time_table(lls_table_t* lls_table, xml_node_t* xml_root);
+int build_aeat_table(lls_table_t* lls_table, xml_node_t* xml_root);
+int build_onscreen_message_notification_table(lls_table_t* lls_table, xml_node_t* xml_root);
 
 
 #define _LLS_PRINTLN(...) printf(__VA_ARGS__);printf("\n")
@@ -50,7 +50,8 @@ int build_SystemTime_table(lls_table_t* lls_table, xml_node_t* xml_root);
 
 #define _LLS_ERROR(...)   printf("%s:%d:ERROR:%.4f: ",__FILE__,__LINE__, gt());_LLS_PRINTLN(__VA_ARGS__);
 #define _LLS_WARN(...)    printf("%s:%d:WARN:%.4f: ",__FILE__,__LINE__, gt());_LLS_PRINTLN(__VA_ARGS__);
-#define _LLS_INFO(...)    printf("%s:%d:INFO:%.4f: ",__FILE__,__LINE__, gt());_LLS_PRINTLN(__VA_ARGS__);
+#define _LLS_INFO(...)    if(_LLS_INFO_ENABLED) { printf("%s:%d:INFO:%.4f: ",__FILE__,__LINE__, gt());_LLS_PRINTLN(__VA_ARGS__); }
+#define _LLS_INFO_I(...)  if(_LLS_INFO_ENABLED) { printf(" "); _LLS_PRINTLN(__VA_ARGS__); }
 
 #define _LLS_DEBUG(...)   if(_LLS_DEBUG_ENABLED) { printf("%s:%d:DEBUG:%.4f: ",__FILE__,__LINE__, gt());_LLS_PRINTLN(__VA_ARGS__); }
 #define _LLS_DEBUGF(...)  if(_LLS_DEBUG_ENABLED) { printf("%s:%d:DEBUG:%.4f: ",__FILE__,__LINE__, gt());_LLS_PRINTF(__VA_ARGS__); }

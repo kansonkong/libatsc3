@@ -8,8 +8,17 @@
 #ifndef ATSC3_LOGGING_EXTERNS_H_
 #define ATSC3_LOGGING_EXTERNS_H_
 
+
+extern int _LLS_INFO_ENABLED;
 extern int _LLS_DEBUG_ENABLED;
 extern int _LLS_TRACE_ENABLED;
+
+extern int _LLS_SLT_PARSER_INFO_ENABLED;
+extern int _LLS_SLT_PARSER_INFO_MMT_ENABLED;
+extern int _LLS_SLT_PARSER_INFO_ROUTE_ENABLED;
+
+extern int _LLS_SLT_PARSER_DEBUG_ENABLED;
+extern int _LLS_SLT_PARSER_TRACE_ENABLED;
 
 extern int _MPU_DEBUG_ENABLED;
 extern int _MMTP_DEBUG_ENABLED;
@@ -24,7 +33,8 @@ extern int _ALC_UTILS_TRACE_ENABLED;
 extern int _PLAYER_FFPLAY_DEBUG_ENABLED;
 extern int _PLAYER_FFPLAY_TRACE_ENABLED;
 
-extern int _ISOBMFFTRACKJOINER_DEBUG_ENABLED;
+//c++ linkage
+//extern int _ISOBMFFTRACKJOINER_DEBUG_ENABLED;
 
 
 #define __ERROR(...)   printf("%s:%d:ERROR :","listener",__LINE__);printf(__VA_ARGS__);printf("\n");
@@ -47,19 +57,6 @@ extern int _ISOBMFFTRACKJOINER_DEBUG_ENABLED;
 
 #else
 #define __TRACE(...)
-#endif
-
-
-#ifndef _TEST_RUN_VALGRIND_OSX_
-//overload printf to write to stderr
-int printf(const char *format, ...)  {
-	va_list argptr;
-	va_start(argptr, format);
-	vfprintf(stderr, format, argptr);
-    va_end(argptr);
-
-	return 0;
-}
 #endif
 
 
