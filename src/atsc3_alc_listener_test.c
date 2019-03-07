@@ -38,219 +38,87 @@ int PACKET_COUNTER=0;
 #include <sys/stat.h>
 
 #include "atsc3_listener_udp.h"
-#include "atsc3_lls.h"
 #include "atsc3_utils.h"
+
+#include "atsc3_lls.h"
+#include "atsc3_lls_alc_utils.h"
 
 #include "atsc3_alc_rx.h"
 #include "alc_channel.h"
 #include "atsc3_alc_utils.h"
+#include "atsc3_listener_udp.h"
+#include "atsc3_logging_externs.h"
 
-extern int _ALC_PACKET_DUMP_TO_OBJECT_ENABLED;
-extern int _ALC_UTILS_TRACE_ENABLED;
+//dummy method for avoiding linking bento4 this unit listener
+struct trun_sample_entry_vector_t* parseMoofBoxForTrunSampleEntries(block_t* moof_box) { return NULL; }
 
-#define println(...) printf(__VA_ARGS__);printf("\n")
-
-#define __PRINTLN(...) printf(__VA_ARGS__);printf("\n")
-#define __PRINTF(...)  printf(__VA_ARGS__);
-
-#define __ERROR(...)   printf("%s:%d:ERROR:",__FILE__,__LINE__);__PRINTLN(__VA_ARGS__);
-#define __WARN(...)    printf("%s:%d:WARN:",__FILE__,__LINE__);__PRINTLN(__VA_ARGS__);
-#define __INFO(...)    printf("%s:%d:INFO:",__FILE__,__LINE__);__PRINTLN(__VA_ARGS__);
-
-#ifdef _ENABLE_DEBUG
-#define __DEBUGF(...)  printf("%s:%d:DEBUG:",__FILE__,__LINE__);__PRINTF(__VA_ARGS__);
-#define __DEBUGA(...) 	__PRINTF(__VA_ARGS__);
-#define __DEBUGN(...)  __PRINTLN(__VA_ARGS__);
-#else
-#define __DEBUGF(...)
-#define __DEBUGA(...)
-#define __DEBUGN(...)
-#endif
-
-#ifdef _ENABLE_TRACE
-#define __TRACE(...)   printf("%s:%d:TRACE:",__FILE__,__LINE__);__PRINTLN(__VA_ARGS__);
-
-void __trace_dump_ip_header_info(u_char* ip_header) {
-    __TRACE("Version\t\t\t\t\t%d", (ip_header[0] >> 4));
-    __TRACE("IHL\t\t\t\t\t\t%d", (ip_header[0] & 0x0F));
-    __TRACE("Type of Service\t\t\t%d", ip_header[1]);
-    __TRACE("Total Length\t\t\t%d", ip_header[2]);
-    __TRACE("Identification\t\t\t0x%02x 0x%02x", ip_header[3], ip_header[4]);
-    __TRACE("Flags\t\t\t\t\t%d", ip_header[5] >> 5);
-    __TRACE("Fragment Offset\t\t\t%d", (((ip_header[5] & 0x1F) << 8) + ip_header[6]));
-    __TRACE("Time To Live\t\t\t%d", ip_header[7]);
-    __TRACE("Header Checksum\t\t\t0x%02x 0x%02x", ip_header[10], ip_header[11]);
-}
-
-#else
-#define __TRACE(...)
-#endif
-
+lls_slt_monitor_t* lls_slt_monitor;
 uint32_t* dst_ip_addr_filter = NULL;
 uint16_t* dst_ip_port_filter = NULL;
 
-alc_session_t* alc_session;
-
 void process_packet(u_char *user, const struct pcap_pkthdr *pkthdr, const u_char *packet) {
-
-  int i = 0;
-  int k = 0;
-  u_char ethernet_packet[14];
-  u_char ip_header[24];
-  u_char udp_header[8];
-  int udp_header_start = 34;
-  udp_packet_t* udp_packet = NULL;
-  alc_packet_t* alc_packet = NULL;
-
-//dump full packet if needed
-#ifdef _ENABLE_TRACE
-    for (i = 0; i < pkthdr->len; i++) {
-        if ((i % 16) == 0) {
-            __TRACE("%03x0\t", k);
-            k++;
-        }
-        __TRACE("%02x ", packet[i]);
-    }
-#endif
-    __TRACE("*******************************************************");
-
-    for (i = 0; i < 14; i++) {
-        ethernet_packet[i] = packet[0 + i];
-    }
-
-    if (!(ethernet_packet[12] == 0x08 && ethernet_packet[13] == 0x00)) {
-        __TRACE("Source MAC Address\t\t\t%02X:%02X:%02X:%02X:%02X:%02X", ethernet_packet[6], ethernet_packet[7], ethernet_packet[8], ethernet_packet[9], ethernet_packet[10], ethernet_packet[11]);
-        __TRACE("Destination MAC Address\t\t%02X:%02X:%02X:%02X:%02X:%02X", ethernet_packet[0], ethernet_packet[1], ethernet_packet[2], ethernet_packet[3], ethernet_packet[4], ethernet_packet[5]);
-    	__TRACE("Discarding packet with Ethertype unknown");
-    	return;
-    }
-
-    for (i = 0; i < 20; i++) {
-		ip_header[i] = packet[14 + i];
-	}
-
-	//check if we are a UDP packet, otherwise bail
-	if (ip_header[9] != 0x11) {
-		__TRACE("Protocol not UDP, dropping");
+	udp_packet_t* udp_packet = process_packet_from_pcap(user, pkthdr, packet);
+	if(!udp_packet) {
 		return;
 	}
-
-	#ifdef _ENABLE_TRACE
-        __trace_dump_ip_header_info(ip_header);
-	#endif
-
-	if ((ip_header[0] & 0x0F) > 5) {
-		udp_header_start = 48;
-		__TRACE("Options\t\t\t\t\t0x%02x 0x%02x 0x%02x 0x%02x", ip_header[20], ip_header[21], ip_header[22], ip_header[23]);
-	}
-
-	//malloc our udp_packet_header:
-	udp_packet = calloc(1, sizeof(udp_packet_t));
-	udp_packet->udp_flow.src_ip_addr = ((ip_header[12] & 0xFF) << 24) | ((ip_header[13]  & 0xFF) << 16) | ((ip_header[14]  & 0xFF) << 8) | (ip_header[15] & 0xFF);
-	udp_packet->udp_flow.dst_ip_addr = ((ip_header[16] & 0xFF) << 24) | ((ip_header[17]  & 0xFF) << 16) | ((ip_header[18]  & 0xFF) << 8) | (ip_header[19] & 0xFF);
-
-	for (i = 0; i < 8; i++) {
-		udp_header[i] = packet[udp_header_start + i];
-	}
-
-	udp_packet->udp_flow.src_port = (udp_header[0] << 8) + udp_header[1];
-	udp_packet->udp_flow.dst_port = (udp_header[2] << 8) + udp_header[3];
-
-	//4294967295
-	//1234567890
-	__DEBUGF("Src. Addr  : %d.%d.%d.%d\t(%-10u)\t", ip_header[12], ip_header[13], ip_header[14], ip_header[15], udp_packet->udp_flow.src_ip_addr);
-	__DEBUGN("Src. Port  : %-5hu ", (udp_header[0] << 8) + udp_header[1]);
-	__DEBUGF("Dst. Addr  : %d.%d.%d.%d\t(%-10u)\t", ip_header[16], ip_header[17], ip_header[18], ip_header[19], udp_packet->udp_flow.dst_ip_addr);
-	__DEBUGA("Dst. Port  : %-5hu \t", (udp_header[2] << 8) + udp_header[3]);
-
-	__TRACE("Length\t\t\t\t\t%d", (udp_header[4] << 8) + udp_header[5]);
-	__TRACE("Checksum\t\t\t\t0x%02x 0x%02x", udp_header[6], udp_header[7]);
-
-	udp_packet->data_length = pkthdr->len - (udp_header_start + 8);
-	if(udp_packet->data_length <=0 || udp_packet->data_length > 1514) {
-		__ERROR("invalid data length of udp packet: %d", udp_packet->data_length);
-		return;
-	}
-	__TRACE("UDP: Data length: %d", udp_packet->data_length);
-	udp_packet->data = malloc(udp_packet->data_length * sizeof(udp_packet->data));
-	memcpy(udp_packet->data, &packet[udp_header_start + 8], udp_packet->data_length);
-
-	//inefficient as hell for 1 byte at a time, but oh well...
-	#ifdef __ENABLE_TRACE
-		for (i = 0; i < udp_packet->data_length; i++) {
-			__TRACE("%02x ", packet[udp_header_start + 8 + i]);
-		}
-	#endif
-
+    alc_packet_t* alc_packet = NULL;
 
 	//dispatch for LLS extraction and dump
 	if(udp_packet->udp_flow.dst_ip_addr == LLS_DST_ADDR && udp_packet->udp_flow.dst_port == LLS_DST_PORT) {
-		//process as lls
-		lls_table_t* lls = lls_table_create(udp_packet->data, udp_packet->data_length);
-		if(lls) {
-			lls_dump_instance_table(lls);
-			lls_table_free(lls);
-		} else {
-			__ERROR("unable to parse LLS table");
-		}
+		lls_table_create_or_update_from_lls_slt_monitor(lls_slt_monitor, udp_packet->data, udp_packet->data_length);
+		
+		return cleanup(&udp_packet);
+	}
 
-	} else if((dst_ip_addr_filter == NULL && dst_ip_port_filter == NULL) || (udp_packet->udp_flow.dst_ip_addr == *dst_ip_addr_filter && udp_packet->udp_flow.dst_port == *dst_ip_port_filter)) {
+	if((dst_ip_addr_filter == NULL && dst_ip_port_filter == NULL) || (udp_packet->udp_flow.dst_ip_addr == *dst_ip_addr_filter && udp_packet->udp_flow.dst_port == *dst_ip_port_filter)) {
 
-	#ifdef _SHOW_PACKET_FLOW
-		__INFO("--- Packet size : %-10d | Counter: %-8d", udp_packet->data_length, PACKET_COUNTER++);
-		__INFO("    Src. Addr   : %d.%d.%d.%d\t(%-10u)\t", ip_header[12], ip_header[13], ip_header[14], ip_header[15], udp_packet->udp_flow.src_ip_addr);
-		__INFO("    Src. Port   : %-5hu ", (uint16_t)((udp_header[0] << 8) + udp_header[1]));
-		__INFO("    Dst. Addr   : %d.%d.%d.%d\t(%-10u)\t", ip_header[16], ip_header[17], ip_header[18], ip_header[19], udp_packet->udp_flow.dst_ip_addr);
-		__INFO("    Dst. Port   : %-5hu \t", (uint16_t)((udp_header[2] << 8) + udp_header[3]));
-	#endif
-		__INFO("Matching flow: data len: %d", udp_packet->data_length);
+		lls_sls_alc_session_t* matching_lls_slt_alc_session = lls_slt_alc_session_find_from_udp_packet(lls_slt_monitor, udp_packet->udp_flow.src_ip_addr, udp_packet->udp_flow.dst_ip_addr, udp_packet->udp_flow.dst_port);
 
-		if(alc_session != NULL) {
-		//	int retval = recv_packet(alc_session);
-			alc_channel_t ch;
-			ch.s = alc_session;
+		if(matching_lls_slt_alc_session != NULL) {
 
-			int retval = alc_rx_analyze_packet_a331_compliant((char*)udp_packet->data, udp_packet->data_length, &ch, &alc_packet);
+	        alc_channel_t ch;
+	        ch.s = matching_lls_slt_alc_session->alc_session;
 
-			if(retval) {
-				__ERROR("Error in alc_analyze_packet: %d", retval);
-				goto cleanup;
-			}
+	        //process ALC streams
+	        int retval = alc_rx_analyze_packet_a331_compliant((char*)udp_packet->data, udp_packet->data_length, &ch, &alc_packet);
+	        if(!retval) {
+				alc_packet_dump_to_object(&alc_packet);
 
-			//write out our alc fragment to disk, no reordering here yet
+				if(!alc_packet->def_lct_hdr->toi) {
 
-			/* TODO: check if instance_id is set --> EXT_FDT header exists in packet */
-			alc_packet_dump_to_object(&alc_packet);
+					//if no TOI, dump our EFDT
+//                    char* toi_file_name = alc_packet_dump_to_object_get_filename(alc_packet);
+//                    block_t* toi_dump_payload = alc_get_payload_from_filename(toi_file_name);
+//                    __INFO("ROUTE FDT-Instance is: \n\n%s", toi_dump_payload->p_buffer);
+//
+//                    block_Release(&toi_dump_payload);
+//                    freesafe(toi_file_name);
 
+				}
+	        } else {
+	            __ERROR("Error in ALC decode: %d", retval);
+	        }
 		}
 	}
 
 cleanup:
-//alc_packet_dump_to_object will free alc packet
-//	if(alc_packet) {
-//		alc_packet_free(alc_packet);
-//	}
+	alc_packet_free(&alc_packet);
+	alc_packet = NULL;
 
-	if(udp_packet->data) {
-		free(udp_packet->data);
-		udp_packet->data = NULL;
-	}
-
-	if(udp_packet) {
-		free(udp_packet);
-		udp_packet = NULL;
-	}
+    return cleanup(&udp_packet);
 }
 
-
-#define MAX_PCAP_LEN 1514
-/**
- *
- * atsc3_alc_rx_test interface (dst_ip) (dst_port)
- *
- * arguments:
- */
 int main(int argc,char **argv) {
+	_LLS_INFO_ENABLED = 1;
+	_LLS_DEBUG_ENABLED = 0;
+
+	_LLS_SLT_PARSER_INFO_ROUTE_ENABLED = 0;
+	_ALC_PACKET_DUMP_TO_OBJECT_ENABLED = 1;
+    _ALC_UTILS_DEBUG_ENABLED = 1;
+    _ALC_UTILS_TRACE_ENABLED = 1;
+
+	_LLS_SLT_PARSER_INFO_MMT_ENABLED = 0;
+
 
     char *dev;
 
@@ -263,9 +131,8 @@ int main(int argc,char **argv) {
     struct bpf_program fp;
     bpf_u_int32 maskp;
     bpf_u_int32 netp;
+    lls_slt_monitor = lls_slt_monitor_create();
 
-    _ALC_PACKET_DUMP_TO_OBJECT_ENABLED = 1;
-    _ALC_UTILS_TRACE_ENABLED = 1;
     //listen to all flows
     if(argc == 2) {
     	dev = argv[1];
@@ -294,9 +161,6 @@ int main(int argc,char **argv) {
     	println("");
     	exit(1);
     }
-
-    alc_arguments_t alc_arguments;
-    alc_session = open_alc_session(&alc_arguments);
 
     mkdir("route", 0777);
 

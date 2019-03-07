@@ -133,18 +133,6 @@ void count_packet_as_filtered(udp_packet_t* udp_packet) {
 }
 
 
-void cleanup(udp_packet_t* udp_packet) {
-
-	if(udp_packet->data) {
-		free(udp_packet->data);
-		udp_packet->data = NULL;
-	}
-
-	if(udp_packet) {
-		free(udp_packet);
-		udp_packet = NULL;
-	}
-}
 
 mmtp_payload_fragments_union_t* mmtp_parse_from_udp_packet(udp_packet_t *udp_packet) {
     
@@ -444,7 +432,8 @@ alc_packet_t* route_parse_from_udp_packet(lls_sls_alc_session_t *matching_lls_sl
     //sanity check
     if(matching_lls_slt_alc_session->alc_session) {
         //re-inject our alc session
-                alc_channel_t ch;
+
+        alc_channel_t ch;
         ch.s = matching_lls_slt_alc_session->alc_session;
         
         //process ALC streams
@@ -453,7 +442,6 @@ alc_packet_t* route_parse_from_udp_packet(lls_sls_alc_session_t *matching_lls_sl
             global_stats->packet_counter_alc_packets_parsed++;
             
             //don't dump unless this is pointing to our monitor session
-            //lls_slt_monitor->lls_service &&
             if(lls_slt_monitor->lls_sls_alc_monitor &&  lls_slt_monitor->lls_sls_alc_monitor->lls_alc_session && lls_slt_monitor->lls_sls_alc_monitor->lls_alc_session->service_id == matching_lls_slt_alc_session->service_id) {
                 goto ret;
             } else {
@@ -498,7 +486,7 @@ void process_packet(u_char *user, const struct pcap_pkthdr *pkthdr, const u_char
 		global_bandwidth_statistics->interval_filtered_current_bytes_rx += udp_packet->data_length;
 		global_bandwidth_statistics->interval_filtered_current_packets_rx++;
 
-		return cleanup(udp_packet);
+		return cleanup(&udp_packet);
 	}
 
 	if(udp_packet->udp_flow.dst_ip_addr == LLS_DST_ADDR && udp_packet->udp_flow.dst_port == LLS_DST_PORT) {
@@ -507,29 +495,25 @@ void process_packet(u_char *user, const struct pcap_pkthdr *pkthdr, const u_char
 
 		global_stats->packet_counter_lls_packets_received++;
 
-		//process as lls
-		lls_table_t* lls_table = lls_table_create(udp_packet->data, udp_packet->data_length);
-		if(lls_table) {
-			global_stats->packet_counter_lls_packets_parsed++;
+		//process as lls, dont free as we keep track of our object in the lls_slt_monitor
 
-			bool should_free_lls = true; //do not free the lls table if we keep a reference in process_lls_table_slt_update
+		lls_table_t* lls_table = lls_table_create_or_update_from_lls_slt_monitor_with_metrics(lls_slt_monitor, udp_packet->data, udp_packet->data_length, &global_stats->packet_counter_lls_packets_parsed, &global_stats->packet_counter_lls_packets_parsed_update, &global_stats->packet_counter_lls_packets_parsed_error);
+		if(lls_table) {
+
 			if(lls_table->lls_table_id == SLT) {
 
 				global_stats->packet_counter_lls_slt_packets_parsed++;
-
 				int retval = lls_slt_table_check_process_update(lls_table, lls_slt_monitor);
-
 
 				if(!retval) {
 					global_stats->packet_counter_lls_slt_update_processed++;
 				} else {
-					global_stats->packet_counter_lls_packets_parsed_error++;
+					global_stats->packet_counter_lls_slt_packets_parsed_error++;
 				}
 			}
 		}
 
-		//goto cleanup;
-		return cleanup(udp_packet);
+		return cleanup(&udp_packet);
 	}
 
 
@@ -544,7 +528,7 @@ void process_packet(u_char *user, const struct pcap_pkthdr *pkthdr, const u_char
 //    
     if((dst_ip_addr_filter && udp_packet->udp_flow.dst_ip_addr != *dst_ip_addr_filter)) {
         count_packet_as_filtered(udp_packet);
-        return cleanup(udp_packet);
+        return cleanup(&udp_packet);
     }
 
 	//ALC (ROUTE) - If this flow is registered from the SLT, process it as ALC, otherwise run the flow thru MMT
@@ -560,7 +544,7 @@ void process_packet(u_char *user, const struct pcap_pkthdr *pkthdr, const u_char
             alc_packet_free(&alc_packet);
         }
         
-        return cleanup(udp_packet);
+        return cleanup(&udp_packet);
 	}
 
     lls_sls_mmt_session_t* matching_lls_slt_mmt_session = lls_slt_mmt_session_find_from_udp_packet(lls_slt_monitor, udp_packet->udp_flow.src_ip_addr, udp_packet->udp_flow.dst_ip_addr, udp_packet->udp_flow.dst_port);
@@ -571,7 +555,7 @@ void process_packet(u_char *user, const struct pcap_pkthdr *pkthdr, const u_char
             mmtp_process_from_payload(udp_packet, &mmtp_payload, matching_lls_slt_mmt_session);
            // mmtp_payload_fragments_union_free(&mmtp_payload);
         }
-        return cleanup(udp_packet);
+        return cleanup(&udp_packet);
 	}
 
     //if we get here, we don't know what type of packet it is..

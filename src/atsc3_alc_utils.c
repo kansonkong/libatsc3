@@ -75,7 +75,7 @@ int _ALC_PACKET_DUMP_TO_OBJECT_ENABLED = 0;
 
 int _ALC_UTILS_DEBUG_ENABLED=0;
 int _ALC_UTILS_TRACE_ENABLED=0;
-
+int _ALC_UTILS_IOTRACE_ENABLED=0;
 
 bool __ALC_RECON_FILE_PTR_HAS_WRITTEN_INIT_BOX = false;
 
@@ -89,7 +89,7 @@ lls_sls_alc_monitor_t* __ALC_RECON_MONITOR;
 
 
 
-block_t* get_payload(char* file_name) {
+block_t* alc_get_payload_from_filename(char* file_name) {
 	if( access(file_name, F_OK ) == -1 ) {
 		__ALC_UTILS_ERROR("unable to open init file: %s", file_name);
 		return NULL;
@@ -149,7 +149,14 @@ FILE* alc_object_open_or_pre_allocate(char* file_name, alc_packet_t* alc_packet)
     
 }
 
+//nothing to see here...
+uint8_t* __TO_PREALLOC_ZERO_SLAB_PTR = NULL;
 FILE* alc_object_pre_allocate(char* file_name, alc_packet_t* alc_packet) {
+	if(!__TO_PREALLOC_ZERO_SLAB_PTR) {
+		__TO_PREALLOC_ZERO_SLAB_PTR = (uint8_t*)malloc(__TO_PREALLOC_ZERO_SLAB_SIZE);
+		memset(__TO_PREALLOC_ZERO_SLAB_PTR, 0, __TO_PREALLOC_ZERO_SLAB_SIZE);
+	}
+
     if( access( file_name, F_OK ) != -1 ) {
         __ALC_UTILS_WARN("pre_allocate: file %s exists, removing", file_name);
         // file exists
@@ -164,9 +171,18 @@ FILE* alc_object_pre_allocate(char* file_name, alc_packet_t* alc_packet) {
     
     uint32_t to_allocate_size = alc_packet->transfer_len;
     if(to_allocate_size) {
-        __ALC_UTILS_DEBUG("pre_allocate: file %s to size: %d", file_name, to_allocate_size);
-        uint8_t* temp_alloc_mem = (uint8_t*) calloc(to_allocate_size, sizeof(uint8_t));
-        fwrite(temp_alloc_mem, to_allocate_size, 1, f);
+        __ALC_UTILS_DEBUG("pre_allocate: before: file %s to size: %d", file_name, to_allocate_size);
+        uint32_t alloc_offset = 0;
+        uint32_t blocksize;
+        uint32_t loop_count = 0;
+        while(alloc_offset < to_allocate_size) {
+        	blocksize = __MIN(__TO_PREALLOC_ZERO_SLAB_SIZE, to_allocate_size - alloc_offset);
+            fwrite(__TO_PREALLOC_ZERO_SLAB_PTR, blocksize, 1, f);
+            alloc_offset += blocksize;
+            loop_count++;
+        }
+        __ALC_UTILS_DEBUG("pre_allocate: after: file %s to size: %d, wrote out: %u in %u fwrite", file_name, to_allocate_size, alloc_offset, loop_count);
+
     } else {
         __ALC_UTILS_WARN("pre_allocate: file %s, transfer_len is 0, not pre allocating", file_name);
     }
@@ -178,7 +194,7 @@ FILE* alc_object_pre_allocate(char* file_name, alc_packet_t* alc_packet) {
 
 int alc_packet_write_fragment(FILE* f, char* file_name, uint32_t offset, alc_packet_t* alc_packet) {
     
-    __ALC_UTILS_TRACE("write fragment: tsi: %u, toi: %u, sbn: %x, esi: %x len: %d, complete: %d, file: %p, file name: %s, offset: %u, size: %u",  alc_packet->def_lct_hdr->tsi, alc_packet->def_lct_hdr->toi,
+	__ALC_UTILS_IOTRACE("write fragment: tsi: %u, toi: %u, sbn: %x, esi: %x len: %d, complete: %d, file: %p, file name: %s, offset: %u, size: %u",  alc_packet->def_lct_hdr->tsi, alc_packet->def_lct_hdr->toi,
         alc_packet->sbn, alc_packet->esi, alc_packet->alc_len, alc_packet->close_object_flag,
         f, file_name, offset, alc_packet->alc_len);
 
@@ -211,6 +227,7 @@ int alc_packet_dump_to_object(alc_packet_t** alc_packet_ptr) {
         //raptor fec, use the esi to see if we should write out to a new file vs append
         if(!alc_packet->esi) {
             f = alc_object_pre_allocate(file_name, alc_packet);
+            __ALC_UTILS_IOTRACE("raptor_fec: done creating new pre-allocation for %s, size: %llu", file_name, alc_packet->transfer_len);
         } else {
             f = alc_object_open_or_pre_allocate(file_name, alc_packet);
         }
@@ -219,9 +236,13 @@ int alc_packet_dump_to_object(alc_packet_t** alc_packet_ptr) {
             return -2;
         }
         alc_packet_write_fragment(f, file_name, alc_packet->esi, alc_packet);
+        __ALC_UTILS_IOTRACE("raptor_fec: done writing out fragment for %s", file_name);
+
     } else if(alc_packet->use_start_offset){
         if(!alc_packet->start_offset) {
             f = alc_object_pre_allocate(file_name, alc_packet);
+            __ALC_UTILS_IOTRACE("done creating new pre-allocation fragment %s, size: %llu", file_name, alc_packet->transfer_len);
+
         } else {
             f = alc_object_open_or_pre_allocate(file_name, alc_packet);
         }
@@ -231,6 +252,8 @@ int alc_packet_dump_to_object(alc_packet_t** alc_packet_ptr) {
         }
         
         alc_packet_write_fragment(f, file_name, alc_packet->start_offset, alc_packet);
+        __ALC_UTILS_IOTRACE("done writing out fragment for %s", file_name);
+
     } else {
         __ALC_UTILS_WARN("alc_packet_dump_to_object, no alc offset strategy for file: %s", file_name);
     }
@@ -249,7 +272,7 @@ int alc_packet_dump_to_object(alc_packet_t** alc_packet_ptr) {
 	//__ALC_RECON_MONITOR
 	//push our fragments EXCEPT for the mpu fragment box, we will pull that at the start of a
 		if(__ALC_RECON_MONITOR) {
-            __ALC_UTILS_TRACE("checking tsi: %u, toi: %u, close_object_flag: %d", alc_packet->def_lct_hdr->tsi, alc_packet->def_lct_hdr->toi, alc_packet->close_object_flag);
+			__ALC_UTILS_IOTRACE("checking tsi: %u, toi: %u, close_object_flag: %d", alc_packet->def_lct_hdr->tsi, alc_packet->def_lct_hdr->toi, alc_packet->close_object_flag);
 
 			if(alc_packet->close_object_flag && ((alc_packet->def_lct_hdr->tsi == __ALC_RECON_MONITOR->video_tsi && alc_packet->def_lct_hdr->toi != __ALC_RECON_MONITOR->video_toi_init) ||
 					(alc_packet->def_lct_hdr->tsi == __ALC_RECON_MONITOR->audio_tsi && alc_packet->def_lct_hdr->toi != __ALC_RECON_MONITOR->audio_toi_init))) {
@@ -262,9 +285,6 @@ int alc_packet_dump_to_object(alc_packet_t** alc_packet_ptr) {
 cleanup:
 	if(file_name) {
 		free(file_name);
-	}
-	if(alc_packet) {
-		alc_packet_free(alc_packet_ptr);
 	}
 
 	return bytesWritten;
@@ -349,10 +369,8 @@ cleanup:
 
 bool __ALC_RECON_HAS_WRITTEN_INIT_BOX = false;
 
-void __alc_recon_fragment_with_init_box(char* file_name, alc_packet_t* alc_packet) {
+void __alc_recon_fragment_with_init_box(char* file_name, alc_packet_t* alc_packet, uint32_t tsi, uint32_t toi_init, const char* to_write_filename) {
 
-	uint32_t tsi_init = __TESTING_RECONSTITUTED_TSI__;
-	uint32_t toi_init = __TESTING_RECONSTITUTED_TOI_INIT__;
 
 	char* init_file_name = (char*)calloc(255, sizeof(char));
 	char* recon_file_name = (char*)calloc(255, sizeof(char)); //.m4v == 4
@@ -360,8 +378,8 @@ void __alc_recon_fragment_with_init_box(char* file_name, alc_packet_t* alc_packe
 
 	__ALC_UTILS_DEBUG(" alc_recon_fragment_with_init_box: %u, %u,  %d", alc_packet->def_lct_hdr->tsi, alc_packet->def_lct_hdr->toi, alc_packet->close_object_flag);
 
-	snprintf(init_file_name, 255, "%s%u-%u", __ALC_DUMP_OUTPUT_PATH__, tsi_init, toi_init);
-	snprintf(recon_file_name, 255, "%s%s", __ALC_DUMP_OUTPUT_PATH__, __TESTING_RECONSITIUTED_FILE_NAME__);
+	snprintf(init_file_name, 255, "%s%u-%u", __ALC_DUMP_OUTPUT_PATH__, tsi, toi_init);
+	snprintf(recon_file_name, 255, "%s%s", __ALC_DUMP_OUTPUT_PATH__, to_write_filename );
 
 	if(!__ALC_RECON_HAS_WRITTEN_INIT_BOX) {
 
@@ -449,7 +467,7 @@ void alc_recon_file_ptr_set_tsi_toi(FILE* file_ptr, uint32_t tsi, uint32_t toi_i
 	*__ALC_RECON_FILE_PTR_TOI_INIT = toi_init;
 }
 
-void alc_recon_file_ptr_fragment_with_init_box(FILE* output_file_ptr, alc_packet_t* alc_packet) {
+void alc_recon_file_ptr_fragment_with_init_box(FILE* output_file_ptr, alc_packet_t* alc_packet, uint32_t to_match_toi_init) {
 	int flush_ret = 0;
 	if(!__ALC_RECON_FILE_PTR_TSI || !__ALC_RECON_FILE_PTR_TOI_INIT) {
 		__ALC_UTILS_WARN("alc_recon_file_ptr_fragment_with_init_box - NULL: tsi: %p, toi: %p", __ALC_RECON_FILE_PTR_TSI, __ALC_RECON_FILE_PTR_TOI_INIT);
@@ -457,7 +475,7 @@ void alc_recon_file_ptr_fragment_with_init_box(FILE* output_file_ptr, alc_packet
 	}
 
 	char* file_name = alc_packet_dump_to_object_get_filename(alc_packet);
-	uint32_t toi_init = __TESTING_RECONSTITUTED_TOI_INIT__;
+	uint32_t toi_init = to_match_toi_init;
 
 	char* init_file_name = (char* )calloc(255, sizeof(char));
 
@@ -693,9 +711,14 @@ cleanup:
 
 void alc_recon_file_buffer_struct_monitor_fragment_with_init_box(lls_sls_alc_monitor_t* lls_sls_alc_monitor, alc_packet_t* alc_packet) {
 	int flush_ret = 0;
-
-	//do this for both video_tsi and audio tsi based upon the current toi...?
-	//todo fix me for different toi numbers
+	char* audio_init_file_name = NULL;
+	char* video_init_file_name = NULL;
+	char* audio_fragment_file_name = NULL;
+	char* video_fragment_file_name = NULL;
+	block_t* audio_fragment_payload = NULL;
+	block_t* video_fragment_payload = NULL;
+	block_t* audio_init_payload = NULL;
+	block_t* video_init_payload = NULL;
 
 	//alc_packet->def_lct_hdr->toi hack
 	if(alc_packet->def_lct_hdr->tsi == lls_sls_alc_monitor->video_tsi) {
@@ -725,23 +748,22 @@ void alc_recon_file_buffer_struct_monitor_fragment_with_init_box(lls_sls_alc_mon
         goto cleanup;
     }
 
+	audio_init_file_name = alc_packet_dump_to_object_get_filename_tsi_toi(lls_sls_alc_monitor->audio_tsi, lls_sls_alc_monitor->audio_toi_init);
+	video_init_file_name = alc_packet_dump_to_object_get_filename_tsi_toi(lls_sls_alc_monitor->video_tsi, lls_sls_alc_monitor->video_toi_init);
 
-	char* audio_init_file_name = alc_packet_dump_to_object_get_filename_tsi_toi(lls_sls_alc_monitor->audio_tsi, lls_sls_alc_monitor->audio_toi_init);
-	char* video_init_file_name = alc_packet_dump_to_object_get_filename_tsi_toi(lls_sls_alc_monitor->video_tsi, lls_sls_alc_monitor->video_toi_init);
+	audio_fragment_file_name = alc_packet_dump_to_object_get_filename_tsi_toi(lls_sls_alc_monitor->audio_tsi, audio_toi);
+	video_fragment_file_name = alc_packet_dump_to_object_get_filename_tsi_toi(lls_sls_alc_monitor->video_tsi, video_toi);
 
-	char* audio_fragment_file_name = alc_packet_dump_to_object_get_filename_tsi_toi(lls_sls_alc_monitor->audio_tsi, audio_toi);
-	char* video_fragment_file_name = alc_packet_dump_to_object_get_filename_tsi_toi(lls_sls_alc_monitor->video_tsi, video_toi);
-
-	block_t* audio_fragment_payload = get_payload(audio_fragment_file_name);
-	block_t* video_fragment_payload = get_payload(video_fragment_file_name);
+	audio_fragment_payload = alc_get_payload_from_filename(audio_fragment_file_name);
+	video_fragment_payload = alc_get_payload_from_filename(video_fragment_file_name);
 
 	if(audio_fragment_payload && video_fragment_payload) {
 
 		__ALC_UTILS_DEBUG("alc_recon_file_buffer_struct_monitor_fragment_with_init_box - audio: %s, video: %s", audio_init_file_name, video_init_file_name);
 
 		if(!lls_sls_alc_monitor->lls_sls_monitor_output_buffer.has_written_init_box) {
-			block_t* audio_init_payload = get_payload(audio_init_file_name);
-			block_t* video_init_payload = get_payload(video_init_file_name);
+			audio_init_payload = alc_get_payload_from_filename(audio_init_file_name);
+			video_init_payload = alc_get_payload_from_filename(video_init_file_name);
 
 			if(audio_init_payload && video_init_payload) {
 				lls_sls_monitor_output_buffer_copy_audio_init_block(&lls_sls_alc_monitor->lls_sls_monitor_output_buffer, audio_init_payload);
@@ -764,28 +786,17 @@ void alc_recon_file_buffer_struct_monitor_fragment_with_init_box(lls_sls_alc_mon
         lls_sls_alc_monitor->processed_toi = audio_toi;
 	}
 
-
-	//block_t* final_muxed_payload = atsc3_isobmff_build_mpu_metadata_ftyp_moof_mdat_box(&udp_packet->udp_flow, udp_flow_latest_mpu_sequence_number_container, mmtp_sub_flow_vector);
-
 	__ALC_UTILS_DEBUG("alc_recon_file_buffer_struct_fragment_with_init_box - RETURN - %u, %u,  %d", alc_packet->def_lct_hdr->tsi, alc_packet->def_lct_hdr->toi, alc_packet->close_object_flag);
 
-	goto cleanup;
-
-broken_pipe:
-	__ALC_UTILS_ERROR("flush returned: %d, closing pipe", flush_ret);
-	fclose(__ALC_RECON_FILE_PTR);
-	__ALC_RECON_FILE_PTR = NULL;
-
 cleanup:
-//	if(m4v_payload) {
-//		free(m4v_payload);
-//		m4v_payload = NULL;
-//	}
-//	if(file_name) {
-//		free(file_name);
-//		file_name = NULL;
-//	}
-
+	freesafe(audio_init_file_name);
+	freesafe(video_init_file_name);
+	freesafe(audio_fragment_file_name);
+	freesafe(video_fragment_file_name);
+	block_Release(&audio_fragment_payload);
+	block_Release(&video_fragment_payload);
+	block_Release(&audio_init_payload);
+	block_Release(&video_init_payload);
 
 	return;
 }

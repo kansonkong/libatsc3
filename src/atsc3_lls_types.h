@@ -21,6 +21,7 @@
 
 //slight tight coupling...
 #include "atsc3_player_ffplay.h"
+#include "xml.h"
 
 #ifndef ATSC3_LLS_TYPES_H_
 #define ATSC3_LLS_TYPES_H_
@@ -292,7 +293,7 @@ typedef struct lls_table {
 		on_screen_message_notification_t	on_screen_message_notification;
 		lls_reserved_table_t				lls_reserved_table;
 	};
-
+	xml_document_t* xml_document;
 } lls_table_t;
 
 

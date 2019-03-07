@@ -741,7 +741,7 @@ void mpt_message_dump(mmt_signalling_message_header_and_payload_t* mmt_signallin
 		//first entry
 		_MMSM_INFO(" asset_descriptors_length   : %u", mp_table_asset_row->asset_descriptors_length);
 		if(mp_table_asset_row->asset_descriptors_length) {
-			_MMSM_INFO(" asset_descriptors : %c", mp_table_asset_row->asset_descriptors);
+			_MMSM_INFO(" asset_descriptors : %s", mp_table_asset_row->asset_descriptors);
 		}
 
 	}
