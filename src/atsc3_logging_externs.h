@@ -8,10 +8,12 @@
 #include <stdio.h>      /* printf */
 #include <stdarg.h>     /* va_list, va_start, va_arg, va_end */
 
-
 #ifndef ATSC3_LOGGING_EXTERNS_H_
 #define ATSC3_LOGGING_EXTERNS_H_
 
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 extern int _LLS_INFO_ENABLED;
 extern int _LLS_DEBUG_ENABLED;
@@ -63,7 +65,9 @@ extern int _PLAYER_FFPLAY_TRACE_ENABLED;
 #define __TRACE(...)
 #endif
 
-
+#ifdef __cplusplus
+}
+#endif
 
 
 #endif /* ATSC3_LOGGING_EXTERNS_H_ */

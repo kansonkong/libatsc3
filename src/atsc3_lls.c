@@ -295,7 +295,7 @@ xml_node_t* xml_payload_document_extract_root_node(xml_document_t* document) {
 		root_node_name = xml_node_name(root); //root
 		dump_xml_string(root_node_name);
 	} else {
-		_LLS_ERROR("xml_payload_document_extract_root_node: unable to parse out ?xml preamble");
+		//_LLS_ERROR("xml_payload_document_extract_root_node: unable to parse out ?xml preamble");
 		return NULL;
 	}
 

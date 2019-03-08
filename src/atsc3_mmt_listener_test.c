@@ -20,9 +20,6 @@
 #include <sys/stat.h>
 #include <pthread.h>
 
-
-extern "C" {
-
 #include "atsc3_listener_udp.h"
 #include "atsc3_utils.h"
 
@@ -36,16 +33,6 @@ extern "C" {
 
 #include "atsc3_player_ffplay.h"
 #include "atsc3_logging_externs.h"
-
-}
-
-
-extern int _PLAYER_FFPLAY_DEBUG_ENABLED;
-extern int _MPU_DEBUG_ENABLED;
-extern int _MMT_MPU_DEBUG_ENABLED;
-
-extern int _MMTP_DEBUG_ENABLED;
-extern int _LLS_DEBUG_ENABLED;
 
 uint32_t* dst_ip_addr_filter = NULL;
 uint16_t* dst_ip_port_filter = NULL;

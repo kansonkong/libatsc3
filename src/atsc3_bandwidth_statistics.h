@@ -83,7 +83,6 @@ extern "C" {
 extern bandwidth_statistics_t *global_bandwidth_statistics;
 void *print_bandwidth_statistics_thread(void *vargp);
 
-
 #if defined (__cplusplus)
 }
 #endif
