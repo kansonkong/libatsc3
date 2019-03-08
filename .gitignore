@@ -2,3 +2,5 @@
 /.DS_Store
 *~
 /.cproject
+route/*
+mpu/*
