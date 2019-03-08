@@ -127,27 +127,32 @@ lls_table_t* lls_table_create_or_update_from_lls_slt_monitor_with_metrics(lls_sl
 
 	(*parsed)++;
 	//check if we should rebuild our signaling, note lls_table_version will roll over at FF
-	if(lls_slt_monitor->lls_table_slt) {
-		if(lls_table_new->lls_table_version > lls_slt_monitor->lls_table_slt->lls_table_version ||
-				(lls_table_new->lls_table_version == 0x00 && lls_slt_monitor->lls_table_slt->lls_table_version == 0xFF)) {
+	if(lls_slt_monitor) {
+		if(lls_slt_monitor->lls_table_slt) {
+			if(lls_table_new->lls_table_version > lls_slt_monitor->lls_table_slt->lls_table_version ||
+					(lls_table_new->lls_table_version == 0x00 && lls_slt_monitor->lls_table_slt->lls_table_version == 0xFF)) {
 
-			//free our old table and keep the new one
-			lls_table_free(&lls_slt_monitor->lls_table_slt);
-			lls_slt_monitor->lls_table_slt = NULL;
+				//free our old table and keep the new one
+				lls_table_free(&lls_slt_monitor->lls_table_slt);
+				lls_slt_monitor->lls_table_slt = NULL;
 
-		} else {
-			//free our new one and keep the old one
-			lls_table_free(&lls_table_new);
+			} else {
+				//free our new one and keep the old one
+				lls_table_free(&lls_table_new);
 
-			return NULL;
+				return NULL;
+			}
 		}
+
+		lls_slt_monitor->lls_table_slt = lls_table_new;
+		lls_slt_table_perform_update(lls_table_new, lls_slt_monitor);
+		(*parsed_update)++;
+		return lls_slt_monitor->lls_table_slt;
+	} else {
+		__ERROR("lls_slt_monitor is null, can't propigate LLS update!");
 	}
+	return NULL;
 
-	lls_slt_monitor->lls_table_slt = lls_table_new;
-    lls_slt_table_perform_update(lls_table_new, lls_slt_monitor);
-
-	(*parsed_update)++;
-	return lls_slt_monitor->lls_table_slt;
 }
 
 lls_table_t* __lls_table_create( uint8_t* lls_packet, int size) {
