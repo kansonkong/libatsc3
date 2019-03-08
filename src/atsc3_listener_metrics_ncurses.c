@@ -122,11 +122,8 @@ lls_slt_monitor_t* lls_slt_monitor;
 //make sure to invoke     mmtp_sub_flow_vector_init(&p_sys->mmtp_sub_flow_vector);
 mmtp_sub_flow_vector_t*                          mmtp_sub_flow_vector;
 udp_flow_latest_mpu_sequence_number_container_t* udp_flow_latest_mpu_sequence_number_container;
-
-
-
-
 global_atsc3_stats_t* global_stats;
+
 void count_packet_as_filtered(udp_packet_t* udp_packet) {
 	global_stats->packet_counter_filtered_ipv4++;
 	global_bandwidth_statistics->interval_filtered_current_bytes_rx += udp_packet->data_length;

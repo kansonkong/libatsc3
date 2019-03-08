@@ -44,8 +44,6 @@ atsc3_lls_listener_test.c:153:DEBUG:Dst. Address : 224.0.23.60 (3758102332)	Dst.
 
 int PACKET_COUNTER = 0;
 lls_slt_monitor_t* lls_slt_monitor;
-//dummy method for avoiding linking bento4 this unit listener
-struct trun_sample_entry_vector_t* parseMoofBoxForTrunSampleEntries(block_t* moof_box) { return NULL; }
 
 void process_packet(u_char *user, const struct pcap_pkthdr *pkthdr, const u_char *packet) {
 	udp_packet_t* udp_packet = process_packet_from_pcap(user, pkthdr, packet);

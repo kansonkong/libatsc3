@@ -16,6 +16,9 @@
 #ifndef ATSC3_LISTENER_UDP_H_
 #define ATSC3_LISTENER_UDP_H_
 
+#ifdef __cplusplus
+extern "C" {
+#endif
 #define MAX_PCAP_LEN 1514
 
 typedef struct udp_flow {
@@ -40,5 +43,7 @@ void cleanup(udp_packet_t** udp_packet_p);
 
 
 #define __LISTENER_UDP_ERROR(...)   printf("%s:%d:ERROR :",__FILE__,__LINE__);printf(__VA_ARGS__);printf("\n");
-
+#ifdef __cplusplus
+}
+#endif
 #endif /* ATSC3_LISTENER_UDP_H_ */
