@@ -40,46 +40,11 @@ int PACKET_COUNTER=0;
 
 #include "atsc3_bandwidth_statistics.h"
 #include "atsc3_packet_statistics.h"
+#include "atsc3_logging_externs.h"
 
 extern int _MPU_DEBUG_ENABLED;
 extern int _MMTP_DEBUG_ENABLED;
 extern int _LLS_DEBUG_ENABLED;
-
-
-#define __ERROR(...)   printf("%s:%d:ERROR :","listener",__LINE__);__PRINTLN(__VA_ARGS__);
-#define __WARN(...)    printf("%s:%d:WARN: ","listener",__LINE__);__PRINTLN(__VA_ARGS__);
-#define __INFO(...)    printf("%s:%d: ","listener",__LINE__);__PRINTLN(__VA_ARGS__);
-
-#ifdef _ENABLE_DEBUG
-#define __ALC_UTILS_DEBUG(...)   printf("%s:%d:DEBUG: ","listener",__LINE__);__PRINTLN(__VA_ARGS__);
-#define __DEBUGF(...)  printf("%s:%d:DEBUG: ","listener",__LINE__);__PRINTF(__VA_ARGS__);
-#define __DEBUGA(...) 	__PRINTF(__VA_ARGS__);
-#define __DEBUGN(...)  __PRINTLN(__VA_ARGS__);
-#else
-#define __ALC_UTILS_DEBUG(...)
-#define __DEBUGF(...)
-#define __DEBUGA(...)
-#define __DEBUGN(...)
-#endif
-
-#ifdef _ENABLE_TRACE
-#define __TRACE(...)   printf("%s:%d:TRACE:",__FILE__,__LINE__);__PRINTLN(__VA_ARGS__);
-
-void __trace_dump_ip_header_info(u_char* ip_header) {
-    __TRACE("Version\t\t\t\t\t%d", (ip_header[0] >> 4));
-    __TRACE("IHL\t\t\t\t\t\t%d", (ip_header[0] & 0x0F));
-    __TRACE("Type of Service\t\t\t%d", ip_header[1]);
-    __TRACE("Total Length\t\t\t%d", ip_header[2]);
-    __TRACE("Identification\t\t\t0x%02x 0x%02x", ip_header[3], ip_header[4]);
-    __TRACE("Flags\t\t\t\t\t%d", ip_header[5] >> 5);
-    __TRACE("Fragment Offset\t\t\t%d", (((ip_header[5] & 0x1F) << 8) + ip_header[6]));
-    __TRACE("Time To Live\t\t\t%d", ip_header[7]);
-    __TRACE("Header Checksum\t\t\t0x%02x 0x%02x", ip_header[10], ip_header[11]);
-}
-
-#else
-#define __TRACE(...)
-#endif
 
 //commandline stream filtering
 
@@ -151,18 +116,6 @@ cleanup:
 }
 
 
-/**
- *
-==83453== 42,754,560 bytes in 83,505 blocks are definitely lost in loss record 78 of 79
-==83453==    at 0x1000D96EA: calloc (in /usr/local/Cellar/valgrind/3.14.0/lib/valgrind/vgpreload_memcheck-amd64-darwin.so)
-==83453==    by 0x100001D06: mpu_dump_reconstitued (atsc3_listener_metrics_test.c:431)
-==83453==    by 0x1000025BD: process_packet (atsc3_listener_metrics_test.c:611)
-==83453==    by 0x10010FF60: pcap_read_bpf (in /usr/lib/libpcap.A.dylib)
-==83453==    by 0x100113F82: pcap_loop (in /usr/lib/libpcap.A.dylib)
-==83453==    by 0x100002A7E: main (atsc3_listener_metrics_test.c:716)
-==83453==
-==83453== LEAK SUMMARY:
- */
 
 //make sure to invoke     mmtp_sub_flow_vector_init(&p_sys->mmtp_sub_flow_vector);
 mmtp_sub_flow_vector_t* mmtp_sub_flow_vector;
