@@ -18,6 +18,9 @@
 #include "atsc3_lls_sls_monitor_output_buffer.h"
 #include "atsc3_lls_sls_monitor_output_buffer_utils.h"
 #include "atsc3_isobmff_tools.h"
+#ifdef __cplusplus
+extern "C" {
+#endif
 extern global_atsc3_stats_t* global_stats;
 
 mmtp_payload_fragments_union_t* mmtp_process_from_payload(mmtp_sub_flow_vector_t* mmtp_sub_flow_vector,
@@ -28,5 +31,7 @@ mmtp_payload_fragments_union_t* mmtp_process_from_payload(mmtp_sub_flow_vector_t
 		lls_sls_mmt_session_t* matching_lls_slt_mmt_session);
 
 
-
+#ifdef __cplusplus
+}
+#endif
 #endif /* ATSC3_MMT_RECONSTITUTION_FROM_MEDIA_SAMPLE_H_ */

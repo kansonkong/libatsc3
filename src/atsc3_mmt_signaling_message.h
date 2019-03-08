@@ -65,6 +65,10 @@
 #include "atsc3_mmtp_types.h"
 #include "atsc3_gzip.h"
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 extern int _MMT_SIGNALLING_MESSAGE_DEBUG_ENABLED;
 extern int _MMT_SIGNALLING_MESSAGE_TRACE_ENABLED;
 
@@ -120,5 +124,8 @@ void mmt_atsc3_message_payload_dump(mmt_signalling_message_header_and_payload_t*
 #define _MMSM_DEBUG(...)   if(_MMT_SIGNALLING_MESSAGE_DEBUG_ENABLED) { printf("%s:%d:DEBUG: ",__FILE__,__LINE__);_MMSM_PRINTLN(__VA_ARGS__); }
 #define _MMSM_TRACE(...)   if(_MMT_SIGNALLING_MESSAGE_TRACE_ENABLED) { printf("%s:%d:TRACE: ",__FILE__,__LINE__);_MMSM_PRINTLN(__VA_ARGS__); }
 
+#ifdef __cplusplus
+}
+#endif
 
 #endif /* MODULES_DEMUX_MMT_ATSC3_MMT_SIGNALING_MESSAGE_H_ */

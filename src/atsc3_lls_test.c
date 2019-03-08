@@ -6,7 +6,7 @@
 
 #include "atsc3_lls.h"
 #include "xml.h"
-
+#include "atsc3_gzip.h"
 
 #define __UNIT_TEST 1
 #ifdef __UNIT_TEST
@@ -109,7 +109,7 @@ int test_lls_create_slt_table(char* base64_payload) {
 
 	__create_binary_payload(base64_payload, &binary_payload, &binary_payload_size);
 
-	lls_table_t* lls = lls_table_create(binary_payload, binary_payload_size);
+	lls_table_t* lls = __lls_table_create(binary_payload, binary_payload_size);
 
 	lls_dump_instance_table(lls);
 
@@ -125,7 +125,7 @@ int test_lls_create_slt_route_dash(char* base64_payload) {
 
 	__create_binary_payload(base64_payload, &binary_payload, &binary_payload_size);
 
-	lls_table_t* lls = lls_table_create(binary_payload, binary_payload_size);
+	lls_table_t* lls = __lls_table_create(binary_payload, binary_payload_size);
 
 	lls_dump_instance_table(lls);
 
@@ -150,7 +150,7 @@ int test_lls_components() {
 	lls_dump_instance_table(parsed_table);
 
 	uint8_t *decompressed_payload;
-	int ret = __unzip_gzip_payload(parsed_table->raw_xml.xml_payload, parsed_table->raw_xml.xml_payload_size, &decompressed_payload);
+	int ret = atsc3_unzip_gzip_payload(parsed_table->raw_xml.xml_payload, parsed_table->raw_xml.xml_payload_size, &decompressed_payload);
 	//both char and %s with '\0' should be the same
 	//printf("gzip ret is: %d\n", ret);
 	for(int i=0; i < ret; i++) {

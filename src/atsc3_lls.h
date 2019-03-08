@@ -14,12 +14,17 @@
 #include "atsc3_gzip.h"
 #include "xml.h"
 
+#ifndef MODULES_DEMUX_MMT_ASTC3_LLS_H_
+#define MODULES_DEMUX_MMT_ASTC3_LLS_H_
+
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 extern int _LLS_INFO_ENABLED;
 extern int _LLS_DEBUG_ENABLED;
 extern int _LLS_TRACE_ENABLED;
 
-#ifndef MODULES_DEMUX_MMT_ASTC3_LLS_H_
-#define MODULES_DEMUX_MMT_ASTC3_LLS_H_
 
 #define LLS_DST_ADDR 3758102332
 #define LLS_DST_PORT 4937
@@ -119,5 +124,7 @@ see atsc3_lls_test.c for base64 string getters of test payloads
  */
 
 
-
+#ifdef __cplusplus
+}
+#endif
 #endif /* MODULES_DEMUX_MMT_ASTC3_LLS_H_ */

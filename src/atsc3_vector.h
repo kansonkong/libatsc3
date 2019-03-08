@@ -41,8 +41,6 @@
 
 
 
-
-
 /**
  * \defgroup vector Vector
  * \ingroup cext

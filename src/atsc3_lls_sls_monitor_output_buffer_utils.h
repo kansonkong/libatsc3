@@ -9,30 +9,21 @@
 #ifndef atsc3_lls_sls_monitor_output_buffer_utils_h
 #define atsc3_lls_sls_monitor_output_buffer_utils_h
 
+#if defined (__cplusplus)
+extern "C" {
+#endif
+
 #include "atsc3_lls_types.h"
 #include "atsc3_mmtp_types.h"
 #include "atsc3_player_ffplay.h"
+#include "atsc3_isobmff_trun_box.h"
+#include "bento4/ISOBMFFTrackJoiner_firewall_gpl.h"
+
 
 extern int _LLS_SLS_MONITOR_OUTPUT_BUFFER_UTILS_DEBUG_ENABLED;
 extern int _LLS_SLS_MONITOR_OUTPUT_BUFFER_UTILS_TRACE_ENABLED;
 
-
-//for bento4 support
-typedef struct trun_sample_entry {
-   uint32_t sample_duration;
-   uint32_t sample_size;
-   uint32_t sample_flags;
-   uint32_t sample_composition_time_offset;
-   bool to_remove_sample_entry;
-   bool has_matching_sample;
-} trun_sample_entry_t;
-
-typedef struct trun_sample_entry_vector {
-	uint32_t size;
-	trun_sample_entry_t** data;
-} trun_sample_entry_vector_t;
-
-trun_sample_entry_vector_t* parseMoofBoxForTrunSampleEntries(block_t* moof_box);
+//extern trun_sample_entry_vector_t* parseMoofBoxForTrunSampleEntries(block_t* moof_box);
 //trun_sample_entry_vector_t* parseMoofBoxForTrunSampleEntriesWithSampleSize(block_t* moof_box);
 
 //end for bento4 support
@@ -71,7 +62,11 @@ void lls_sls_monitor_output_buffer_file_dump(lls_sls_monitor_output_buffer_t* ll
 #define __LLS_SLS_MONITOR_OUTPUT_BUFFER_UTILS_ERROR(...)   printf("%s:%d:ERROR :",__FILE__,__LINE__);__LLS_SLS_MONITOR_OUTPUT_BUFFER_UTILS_PRINTLN(__VA_ARGS__);
 #define __LLS_SLS_MONITOR_OUTPUT_BUFFER_UTILS_WARN(...)    printf("%s:%d:WARN :",__FILE__,__LINE__);__LLS_SLS_MONITOR_OUTPUT_BUFFER_UTILS_PRINTLN(__VA_ARGS__);
 #define __LLS_SLS_MONITOR_OUTPUT_BUFFER_UTILS_INFO(...)    printf("%s:%d:INFO :",__FILE__,__LINE__);__LLS_SLS_MONITOR_OUTPUT_BUFFER_UTILS_PRINTLN(__VA_ARGS__);
-#define __LLS_SLS_MONITOR_OUTPUT_BUFFER_UTILS_DEBUG(...)   if(_LLS_SLS_MONITOR_OUTPUT_BUFFER_UTILS_DEBUG_ENABLED) { printf("%s:%d:DEBUG :",__FILE__,__LINE__);__LLS_SLS_MONITOR_OUTPUT_BUFFER_UTILS_PRINTLN(__VA_ARGS__); }
-#define __LLS_SLS_MONITOR_OUTPUT_BUFFER_UTILS_TRACE(...)   if(_LLS_SLS_MONITOR_OUTPUT_BUFFER_UTILS_TRACE_ENABLED) { printf("%s:%d:TRACE :",__FILE__,__LINE__);__LLS_SLS_MONITOR_OUTPUT_BUFFER_UTILS_PRINTLN(__VA_ARGS__); }
+#define __LLS_SLS_MONITOR_OUTPUT_BUFFER_UTILS_DEBUG(...)   if(_LLS_SLS_MONITOR_OUTPUT_BUFFER_UTILS_DEBUG_ENABLED) { printf("%s:%d:DEBUG :",__FILE__,__LINE__);__LLS_SLS_MONITOR_OUTPUT_BUFFER_UTILS_PRINTLN(__VA_ARGS__); };
+#define __LLS_SLS_MONITOR_OUTPUT_BUFFER_UTILS_TRACE(...)   if(_LLS_SLS_MONITOR_OUTPUT_BUFFER_UTILS_TRACE_ENABLED) { printf("%s:%d:TRACE :",__FILE__,__LINE__);__LLS_SLS_MONITOR_OUTPUT_BUFFER_UTILS_PRINTLN(__VA_ARGS__); };
 
+
+#if defined (__cplusplus)
+}
+#endif
 #endif /* atsc3_lls_sls_monitor_output_buffer_h */

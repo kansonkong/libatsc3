@@ -25,11 +25,11 @@
 #include <pthread.h>
 #include "bento4/MPUtoISOBMFFProcessor.h"
 
-extern "C" {
-
+//#ifdef __cplusplus
+//extern "C" {
+//#endif
 #include "atsc3_listener_udp.h"
 #include "atsc3_utils.h"
-
 #include "atsc3_lls.h"
 #include "atsc3_mmtp_types.h"
 #include "atsc3_mmtp_parser.h"
@@ -40,8 +40,10 @@ extern "C" {
 #include "atsc3_vector.h"
 #include "atsc3_logging_externs.h"
 #include "atsc3_mmt_reconstitution_from_media_sample.h"
+//#ifdef __cplusplus
+//}
+//#endif
 
-}
 
 uint32_t* dst_ip_addr_filter = NULL;
 uint16_t* dst_ip_port_filter = NULL;
@@ -155,8 +157,6 @@ void* pcap_loop_run_thread(void* dev_pointer) {
 
     return 0;
 }
-
-#define MAX_PCAP_LEN 1514
 /**
  *
  * atsc3_mmt_listener_test interface (dst_ip) (dst_port)
@@ -262,21 +262,4 @@ int main(int argc,char **argv) {
 
     return 0;
 }
-
-/**
- *
-void __trace_dump_ip_header_info(u_char* ip_header) {
-    __TRACE("Version\t\t\t\t\t%d", (ip_header[0] >> 4));
-    __TRACE("IHL\t\t\t\t\t\t%d", (ip_header[0] & 0x0F));
-    __TRACE("Type of Service\t\t\t%d", ip_header[1]);
-    __TRACE("Total Length\t\t\t%d", ip_header[2]);
-    __TRACE("Identification\t\t\t0x%02x 0x%02x", ip_header[3], ip_header[4]);
-    __TRACE("Flags\t\t\t\t\t%d", ip_header[5] >> 5);
-    __TRACE("Fragment Offset\t\t\t%d", (((ip_header[5] & 0x1F) << 8) + ip_header[6]));
-    __TRACE("Time To Live\t\t\t%d", ip_header[7]);
-    __TRACE("Header Checksum\t\t\t0x%02x 0x%02x", ip_header[10], ip_header[11]);
-}
- */
-
-
 
