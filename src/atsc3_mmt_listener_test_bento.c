@@ -236,9 +236,12 @@ int main(int argc,char **argv) {
     	println("");
     	exit(1);
     }
+
     mmtp_sub_flow_vector = (mmtp_sub_flow_vector_t*)calloc(1, sizeof(mmtp_sub_flow_vector_t));
     mmtp_sub_flow_vector_init(mmtp_sub_flow_vector);
     udp_flow_latest_mpu_sequence_number_container = udp_flow_latest_mpu_sequence_number_container_t_init();
+    lls_slt_monitor = lls_slt_monitor_create();
+
 
     mkdir("mpu", 0777);
 
