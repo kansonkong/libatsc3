@@ -43,24 +43,19 @@ atsc3_lls_listener_test.c:153:DEBUG:Dst. Address : 224.0.23.60 (3758102332)	Dst.
 #include "atsc3_logging_externs.h"
 
 int PACKET_COUNTER = 0;
-
+lls_slt_monitor_t* lls_slt_monitor;
 //dummy method for avoiding linking bento4 this unit listener
 struct trun_sample_entry_vector_t* parseMoofBoxForTrunSampleEntries(block_t* moof_box) { return NULL; }
 
 void process_packet(u_char *user, const struct pcap_pkthdr *pkthdr, const u_char *packet) {
 	udp_packet_t* udp_packet = process_packet_from_pcap(user, pkthdr, packet);
 	if(!udp_packet) {
-			return;
+		return;
 	}
+
+	//dispatch for LLS extraction and dump
 	if(udp_packet->udp_flow.dst_ip_addr == LLS_DST_ADDR && udp_packet->udp_flow.dst_port == LLS_DST_PORT) {
-		//process as lls
-		lls_table_t* lls = __lls_table_create(udp_packet->data, udp_packet->data_length);
-		if(lls) {
-			lls_dump_instance_table(lls);
-			lls_table_free(&lls);
-		} else {
-			__ERROR("unable to parse LLS table");
-		}
+		lls_table_t* lls_table = lls_table_create_or_update_from_lls_slt_monitor(lls_slt_monitor, udp_packet->data, udp_packet->data_length);
 	}
 
 	if(udp_packet->data) {
