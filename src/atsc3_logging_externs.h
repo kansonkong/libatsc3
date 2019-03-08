@@ -5,6 +5,10 @@
  *      Author: jjustman
  */
 
+#include <stdio.h>      /* printf */
+#include <stdarg.h>     /* va_list, va_start, va_arg, va_end */
+
+
 #ifndef ATSC3_LOGGING_EXTERNS_H_
 #define ATSC3_LOGGING_EXTERNS_H_
 
@@ -58,7 +62,6 @@ extern int _PLAYER_FFPLAY_TRACE_ENABLED;
 #else
 #define __TRACE(...)
 #endif
-
 
 
 

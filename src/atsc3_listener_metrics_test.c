@@ -3,55 +3,7 @@
  *
  *  Created on: Jan 19, 2019
  *      Author: jjustman
- *
- * global listener driver for LLS, MMT and ROUTE / DASH (coming soon)
- *
- *
- * borrowed from https://stackoverflow.com/questions/26275019/how-to-read-and-send-udp-packets-on-mac-os-x
- * uses libpacp for udp mulicast packet listening
- *
- * opt flags:
-  export LDFLAGS="-L/usr/local/opt/libpcap/lib"
-  export CPPFLAGS="-I/usr/local/opt/libpcap/include"
-
-  to invoke test driver, run ala:
-
-  ./atsc3_listener_metrics_test vnic1
-
-
-  TODO: A/331 - Section 8.1.2.1.3 - Constraints on MMTP
-  	  PacketId
-
-
-
-  TODO: A/331 - Section 6.1  IP Address Assignment
-  	  Implement a more robust ip filtering functionality for flow selection
-
-  	  6.1 IP Address Assignment
-
-
-LLS shall be transported in IP packets with address 224.0.23.60 and
-destination port 4937/udp.1 All IP packets other than LLS IP packets
-shall carry a Destination IP address either
-
-	(a) allocated and reserved by a mechanism guaranteeing that the
-	 destination addresses in use are unique in a geographic region2,or
-
-	(b) in the range of 239.255.0.0 to 239.255.255.2553, where the
-	bits in the third octet shall correspond to a value of
-	SLT.Service@majorChannelNo registered to the broadcaster for use
-	in the Service Area4 of the broadcast transmission, with the
-	following caveats:
-
-	• If a broadcast entity operates transmissions carrying different Services
-	on multiple RF frequencies with all or a part of their service area in common,
-	each IP address/port combination shall be unique across all such broadcast emissions;
-
-	•In the case that multiple LLS streams (hence, multiple SLTs) are present in a
-	given broadcast emission, each IP address/port combination in use for non-LLS streams
-	shall be unique across all Services in the aggregate broadcast emission;
 */
-
 
 //#define _ENABLE_TRACE 1
 //#define _SHOW_PACKET_FLOW 1
@@ -217,106 +169,11 @@ mmtp_sub_flow_vector_t* mmtp_sub_flow_vector;
 
 
 void process_packet(u_char *user, const struct pcap_pkthdr *pkthdr, const u_char *packet) {
-
-  int i = 0;
-  int k = 0;
-  u_char ethernet_packet[14];
-  u_char ip_header[24];
-  u_char udp_header[8];
-  int udp_header_start = 34;
-  udp_packet_t* udp_packet = NULL;
-
-//dump full packet if needed
-#ifdef _ENABLE_TRACE
-    for (i = 0; i < pkthdr->len; i++) {
-        if ((i % 16) == 0) {
-            __TRACE("%03x0\t", k);
-            k++;
-        }
-        __TRACE("%02x ", packet[i]);
-    }
-#endif
-    __TRACE("*******************************************************");
-
-    for (i = 0; i < 14; i++) {
-        ethernet_packet[i] = packet[0 + i];
-    }
-
-    if (!(ethernet_packet[12] == 0x08 && ethernet_packet[13] == 0x00)) {
-        __TRACE("Source MAC Address\t\t\t%02X:%02X:%02X:%02X:%02X:%02X", ethernet_packet[6], ethernet_packet[7], ethernet_packet[8], ethernet_packet[9], ethernet_packet[10], ethernet_packet[11]);
-        __TRACE("Destination MAC Address\t\t%02X:%02X:%02X:%02X:%02X:%02X", ethernet_packet[0], ethernet_packet[1], ethernet_packet[2], ethernet_packet[3], ethernet_packet[4], ethernet_packet[5]);
-    	__TRACE("Discarding packet with Ethertype unknown");
-    	return;
-    }
-
-    for (i = 0; i < 20; i++) {
-		ip_header[i] = packet[14 + i];
-	}
-
-	//check if we are a UDP packet, otherwise bail
-	if (ip_header[9] != 0x11) {
-		__TRACE("Protocol not UDP, dropping");
+	udp_packet_t* udp_packet = process_packet_from_pcap(user, pkthdr, packet);
+	if(!udp_packet) {
 		return;
 	}
 
-	#ifdef _ENABLE_TRACE
-        __trace_dump_ip_header_info(ip_header);
-	#endif
-
-	if ((ip_header[0] & 0x0F) > 5) {
-		udp_header_start = 48;
-		__TRACE("Options\t\t\t\t\t0x%02x 0x%02x 0x%02x 0x%02x", ip_header[20], ip_header[21], ip_header[22], ip_header[23]);
-	}
-
-	//malloc our udp_packet_header:
-	udp_packet = calloc(1, sizeof(udp_packet_t));
-	udp_packet->udp_flow.src_ip_addr = ((ip_header[12] & 0xFF) << 24) | ((ip_header[13]  & 0xFF) << 16) | ((ip_header[14]  & 0xFF) << 8) | (ip_header[15] & 0xFF);
-	udp_packet->udp_flow.dst_ip_addr = ((ip_header[16] & 0xFF) << 24) | ((ip_header[17]  & 0xFF) << 16) | ((ip_header[18]  & 0xFF) << 8) | (ip_header[19] & 0xFF);
-
-	for (i = 0; i < 8; i++) {
-		udp_header[i] = packet[udp_header_start + i];
-	}
-
-	udp_packet->src_port = (udp_header[0] << 8) + udp_header[1];
-	udp_packet->udp_flow.dst_port = (udp_header[2] << 8) + udp_header[3];
-
-	//4294967295
-	//1234567890
-	__DEBUGF("Src. Addr  : %d.%d.%d.%d\t(%-10u)\t", ip_header[12], ip_header[13], ip_header[14], ip_header[15], udp_packet->udp_flow.src_ip_addr);
-	__DEBUGN("Src. Port  : %-5hu ", (udp_header[0] << 8) + udp_header[1]);
-	__DEBUGF("Dst. Addr  : %d.%d.%d.%d\t(%-10u)\t", ip_header[16], ip_header[17], ip_header[18], ip_header[19], udp_packet->udp_flow.dst_ip_addr);
-	__DEBUGA("Dst. Port  : %-5hu \t", (udp_header[2] << 8) + udp_header[3]);
-
-	__TRACE("Length\t\t\t\t\t%d", (udp_header[4] << 8) + udp_header[5]);
-	__TRACE("Checksum\t\t\t\t0x%02x 0x%02x", udp_header[6], udp_header[7]);
-
-	udp_packet->data_length = pkthdr->len - (udp_header_start + 8);
-	if(udp_packet->data_length <=0 || udp_packet->data_length > 1514) {
-		__ERROR("invalid data length of udp packet: %d", udp_packet->data_length);
-		return;
-	}
-	__ALC_UTILS_DEBUG("Data length: %d", udp_packet->data_length);
-	udp_packet->data = malloc(udp_packet->data_length * sizeof(udp_packet->data));
-	memcpy(udp_packet->data, &packet[udp_header_start + 8], udp_packet->data_length);
-
-	//inefficient as hell for 1 byte at a time, but oh well...
-	#ifdef __ENABLE_TRACE
-		for (i = 0; i < udp_packet->data_length; i++) {
-			__TRACE("%02x ", packet[udp_header_start + 8 + i]);
-		}
-	#endif
-
-
-	//dispatch for LLS extraction and dump
-
-
-	#ifdef _SHOW_PACKET_FLOW
-		__INFO("--- Packet size : %-10d | Counter: %-8d", udp_packet->data_length, PACKET_COUNTER++);
-		__INFO("    Src. Addr   : %d.%d.%d.%d\t(%-10u)\t", ip_header[12], ip_header[13], ip_header[14], ip_header[15], udp_packet->udp_flow.src_ip_addr);
-		__INFO("    Src. Port   : %-5hu ", (uint16_t)((udp_header[0] << 8) + udp_header[1]));
-		__INFO("    Dst. Addr   : %d.%d.%d.%d\t(%-10u)\t", ip_header[16], ip_header[17], ip_header[18], ip_header[19], udp_packet->udp_flow.dst_ip_addr);
-		__INFO("    Dst. Port   : %-5hu \t", (uint16_t)((udp_header[2] << 8) + udp_header[3]));
-	#endif
 
 	//compute total_rx on all packets
 	__TRACE("updating interval_total_current_rx: %d", udp_packet->data_length)
@@ -333,42 +190,19 @@ void process_packet(u_char *user, const struct pcap_pkthdr *pkthdr, const u_char
 		goto cleanup;
 	}
 
+
+	//dispatch for LLS extraction and dump
 	if(udp_packet->udp_flow.dst_ip_addr == LLS_DST_ADDR && udp_packet->udp_flow.dst_port == LLS_DST_PORT) {
 		global_stats->packet_counter_lls_packets_received++;
 		global_bandwidth_statistics->interval_lls_current_bytes_rx += udp_packet->data_length;
-		__TRACE("setting global_bandwidth_statistics->interval_lls_current_rx += %d", udp_packet->data_length);
 
-		//process as lls
-		lls_table_t* lls = lls_table_create(udp_packet->data, udp_packet->data_length);
-		if(lls) {
-			global_stats->packet_counter_lls_packets_parsed++;
-			__INFO("lls_table_id: %d", lls->lls_table_id);
-			if(lls->lls_table_id == SLT) {
-				global_stats->packet_counter_lls_slt_packets_parsed++;
-				//if we have a lls_slt table, and the group is the same but its a new vewsion, reprocess
-				if(!lls_session->lls_table_slt ||
-					(lls_session->lls_table_slt && lls_session->lls_table_slt->lls_group_id == lls->lls_group_id &&
-					lls_session->lls_table_slt->lls_table_version != lls->lls_table_version)) {
+		lls_table_t* lls_table = lls_table_create_or_update_from_lls_slt_monitor(lls_slt_monitor, udp_packet->data, udp_packet->data_length);
+		if(!lls_table) {
+			global_stats->packet_counter_lls_packets_parsed_error++;
 
-					int retval = 0;
-					__ALC_UTILS_DEBUG("Beginning processing of SLT from lls_table_slt_update");
-
-					retval = lls_slt_table_process_update(lls);
-
-					if(!retval) {
-						__ALC_UTILS_DEBUG("lls_table_slt_update -- complete");
-					} else {
-						global_stats->packet_counter_lls_packets_parsed_error++;
-						__ERROR("unable to parse LLS table");
-						goto cleanup;
-					}
-				}
-			}
 		}
-
-		atsc3_packet_statistics_dump_global_stats();
-		goto cleanup;
 	}
+
 
 
 	//ATSC3/331 Section 6.1 - drop non mulitcast ip ranges - e.g not in  239.255.0.0 to 239.255.255.255
