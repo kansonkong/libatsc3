@@ -36,11 +36,11 @@ atsc3_lls_listener_test.c:153:DEBUG:Dst. Address : 224.0.23.60 (3758102332)	Dst.
 #include <netinet/ip.h>
 #include <string.h>
 
-#include "atsc3_listener_udp.h"
-#include "atsc3_lls.h"
-#include "atsc3_lls_types.h"
-#include "atsc3_listener_udp.h"
-#include "atsc3_logging_externs.h"
+#include "../atsc3_listener_udp.h"
+#include "../atsc3_lls.h"
+#include "../atsc3_lls_types.h"
+#include "../atsc3_listener_udp.h"
+#include "../atsc3_logging_externs.h"
 
 int PACKET_COUNTER = 0;
 lls_slt_monitor_t* lls_slt_monitor;
