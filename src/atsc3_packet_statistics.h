@@ -20,36 +20,10 @@
 #ifndef ATSC3_MMT_PACKET_STATISTICS_H_
 #define ATSC3_MMT_PACKET_STATISTICS_H_
 
-#ifdef _ENABLE_DEBUG
-#define __PS_DEBUG(...)   printf("%s:%d:DEBUG: ",__FILE__,__LINE__);__PRINTLN(__VA_ARGS__);
-#define __PS_DEBUGF(...)  printf("%s:%d:DEBUG: ",__FILE__,__LINE__);__PRINTF(__VA_ARGS__);
-#define __PS_DEBUGA(...)  __PRINTF(__VA_ARGS__);
-#define __PS_DEBUGN(...)  __PRINTLN(__VA_ARGS__);
-#else
-#define __PS_DEBUG(...)
-#define __PS_DEBUGF(...)
-#define __PS_DEBUGA(...)
-#define __PS_DEBUGN(...)
+#if defined (__cplusplus)
+extern "C" {
 #endif
 
-#ifdef _ENABLE_TRACE
-#define __TRACE(...)   printf("%s:%d:TRACE:",__FILE__,__LINE__);__PRINTLN(__VA_ARGS__);
-
-void __trace_dump_ip_header_info(u_char* ip_header) {
-    __TRACE("Version\t\t\t\t\t%d", (ip_header[0] >> 4));
-    __TRACE("IHL\t\t\t\t\t\t%d", (ip_header[0] & 0x0F));
-    __TRACE("Type of Service\t\t\t%d", ip_header[1]);
-    __TRACE("Total Length\t\t\t%d", ip_header[2]);
-    __TRACE("Identification\t\t\t0x%02x 0x%02x", ip_header[3], ip_header[4]);
-    __TRACE("Flags\t\t\t\t\t%d", ip_header[5] >> 5);
-    __TRACE("Fragment Offset\t\t\t%d", (((ip_header[5] & 0x1F) << 8) + ip_header[6]));
-    __TRACE("Time To Live\t\t\t%d", ip_header[7]);
-    __TRACE("Header Checksum\t\t\t0x%02x 0x%02x", ip_header[10], ip_header[11]);
-}
-
-#else
-#define __PS_TRACE(...)
-#endif
 typedef struct packet_id_mpu_stats {
 	uint32_t mpu_sequence_number;
 	uint8_t  mpu_fragementation_counter;
@@ -182,8 +156,11 @@ typedef struct global_atsc3_stats {
 
 	uint32_t packet_counter_lls_packets_received;
 	uint32_t packet_counter_lls_packets_parsed;
+	uint32_t packet_counter_lls_packets_parsed_update;
 	uint32_t packet_counter_lls_packets_parsed_error;
+
 	uint32_t packet_counter_lls_slt_packets_parsed;
+	uint32_t packet_counter_lls_slt_packets_parsed_error;
 	uint32_t packet_counter_lls_slt_update_processed;
 
 	uint32_t packet_counter_mmtp_packets_received;
@@ -220,9 +197,6 @@ typedef struct global_atsc3_stats {
 extern global_atsc3_stats_t* global_stats;
 
 
-#if defined (__cplusplus)
-extern "C" {
-#endif
 
 packet_id_mmt_stats_t* find_packet_id(uint32_t ip, uint16_t port, uint32_t packet_id);
 packet_id_mmt_stats_t* find_or_create_packet_id(uint32_t ip, uint16_t port, uint32_t packet_id);
@@ -231,6 +205,38 @@ void atsc3_packet_statistics_dump_global_stats();
 void atsc3_packet_statistics_mmt_stats_populate(udp_packet_t* udp_packet, mmtp_payload_fragments_union_t* mmtp_payload);
 void *print_global_statistics_thread(void *vargp);
 
+
+
+#ifdef _ENABLE_DEBUG
+#define __PS_DEBUG(...)   printf("%s:%d:DEBUG: ",__FILE__,__LINE__);__PRINTLN(__VA_ARGS__);
+#define __PS_DEBUGF(...)  printf("%s:%d:DEBUG: ",__FILE__,__LINE__);__PRINTF(__VA_ARGS__);
+#define __PS_DEBUGA(...)  __PRINTF(__VA_ARGS__);
+#define __PS_DEBUGN(...)  __PRINTLN(__VA_ARGS__);
+#else
+#define __PS_DEBUG(...)
+#define __PS_DEBUGF(...)
+#define __PS_DEBUGA(...)
+#define __PS_DEBUGN(...)
+#endif
+
+#ifdef _ENABLE_TRACE
+#define __TRACE(...)   printf("%s:%d:TRACE:",__FILE__,__LINE__);__PRINTLN(__VA_ARGS__);
+
+void __trace_dump_ip_header_info(u_char* ip_header) {
+    __TRACE("Version\t\t\t\t\t%d", (ip_header[0] >> 4));
+    __TRACE("IHL\t\t\t\t\t\t%d", (ip_header[0] & 0x0F));
+    __TRACE("Type of Service\t\t\t%d", ip_header[1]);
+    __TRACE("Total Length\t\t\t%d", ip_header[2]);
+    __TRACE("Identification\t\t\t0x%02x 0x%02x", ip_header[3], ip_header[4]);
+    __TRACE("Flags\t\t\t\t\t%d", ip_header[5] >> 5);
+    __TRACE("Fragment Offset\t\t\t%d", (((ip_header[5] & 0x1F) << 8) + ip_header[6]));
+    __TRACE("Time To Live\t\t\t%d", ip_header[7]);
+    __TRACE("Header Checksum\t\t\t0x%02x 0x%02x", ip_header[10], ip_header[11]);
+}
+
+#else
+#define __PS_TRACE(...)
+#endif
 
 #if defined (__cplusplus)
 }

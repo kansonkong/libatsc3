@@ -26,9 +26,12 @@ address and destination port of the MMTP session carrying the MMTP- specific SLS
 #include "atsc3_lls_slt_parser.h"
 #include "atsc3_lls_sls_parser.h"
 
-int __LLS_SLT_PARSER_DEBUG_ENABLED=0;
-int __LLS_SLT_PARSER_TRACE_ENABLED=0;
+int _LLS_SLT_PARSER_INFO_ENABLED=0;
+int _LLS_SLT_PARSER_INFO_MMT_ENABLED=0;
+int _LLS_SLT_PARSER_INFO_ROUTE_ENABLED=0;
 
+int _LLS_SLT_PARSER_DEBUG_ENABLED=0;
+int _LLS_SLT_PARSER_TRACE_ENABLED=0;
 
 #define LLS_SLT_SIMULCAST_TSID 				"SimulcastTSID"
 #define LLS_SLT_SVC_CAPABILITIES			"SvcCapabilities"
@@ -244,49 +247,16 @@ cleanup:
 	return ret;
 }
 
-int lls_slt_table_check_process_update(lls_table_t* lls_table, lls_slt_monitor_t* lls_slt_monitor) {
-	int retval = 0;
-
-	//if we have a lls_slt table, and the group is the same but its a new version, reprocess
-	if(!lls_slt_monitor->lls_table_slt ||
-		(lls_slt_monitor->lls_table_slt && lls_slt_monitor->lls_table_slt->lls_group_id == lls_table->lls_group_id &&
-				lls_slt_monitor->lls_table_slt->lls_table_version != lls_table->lls_table_version)) {
-
-		int update_retval = 0;
-		__LLS_SLT_PARSER_DEBUG("Beginning processing of SLT from lls_table_slt_update");
-
-		update_retval = lls_slt_table_process_update(lls_table, lls_slt_monitor );
-
-		if(!update_retval) {
-			__LLS_SLT_PARSER_DEBUG("lls_table_slt_update -- complete");
-		} else {
-			__LLS_SLT_PARSER_ERROR("unable to parse LLS table");
-			lls_table_free(lls_table);
-
-			retval = -1;
-		}
-	}
-
-	return retval;
-}
 
 
+int lls_slt_table_perform_update(lls_table_t* lls_table, lls_slt_monitor_t* lls_slt_monitor) {
 
-
-int lls_slt_table_process_update(lls_table_t* lls_table, lls_slt_monitor_t* lls_slt_monitor) {
-
-	if(lls_slt_monitor->lls_table_slt) {
-		lls_table_free(lls_slt_monitor->lls_table_slt);
-		lls_slt_monitor->lls_table_slt = NULL;
-	}
-	lls_slt_monitor->lls_table_slt = lls_table;
-
-	for(int i=0; i < lls_table->slt_table.service_entry_n; i++) {
+    for(int i=0; i < lls_table->slt_table.service_entry_n; i++) {
 		lls_service_t* lls_service = lls_table->slt_table.service_entry[i];
 		__LLS_SLT_PARSER_DEBUG("checking service: %d", lls_service->service_id);
 
 		if(lls_service->broadcast_svc_signaling.sls_protocol == SLS_PROTOCOL_ROUTE) {
-            __LLS_SLT_PARSER_INFO("ROUTE: adding service: %u, flow: %s:%s", lls_service->service_id, lls_service->broadcast_svc_signaling.sls_destination_ip_address, lls_service->broadcast_svc_signaling.sls_destination_udp_port);
+            __LLS_SLT_PARSER_INFO_ROUTE("ROUTE: adding service: %u, flow: %s:%s", lls_service->service_id, lls_service->broadcast_svc_signaling.sls_destination_ip_address, lls_service->broadcast_svc_signaling.sls_destination_udp_port);
 
 			lls_sls_alc_session_t* lls_sls_alc_session = lls_slt_alc_session_find_or_create(lls_slt_monitor->lls_sls_alc_session_vector, lls_service);
 
@@ -299,7 +269,7 @@ int lls_slt_table_process_update(lls_table_t* lls_table, lls_slt_monitor_t* lls_
 		}
         
         if(lls_service->broadcast_svc_signaling.sls_protocol == SLS_PROTOCOL_MMTP) {
-            __LLS_SLT_PARSER_INFO("MMT: adding service: %u, flow: %s:%s", lls_service->service_id, lls_service->broadcast_svc_signaling.sls_destination_ip_address, lls_service->broadcast_svc_signaling.sls_destination_udp_port);
+            __LLS_SLT_PARSER_INFO_MMT("MMT: adding service: %u, flow: %s:%s", lls_service->service_id, lls_service->broadcast_svc_signaling.sls_destination_ip_address, lls_service->broadcast_svc_signaling.sls_destination_udp_port);
             
             lls_sls_mmt_session_t* lls_sls_mmt_session = lls_slt_mmt_session_find_or_create(lls_slt_monitor->lls_sls_mmt_session_vector, lls_service);
             

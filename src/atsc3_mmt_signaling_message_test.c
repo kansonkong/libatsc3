@@ -27,8 +27,6 @@ int main() {
 }
 
 
-
-
 int test_mmt_signaling_message_mpu_timestamp_descriptor_table(char* base64_payload) {
 
 	uint8_t* binary_payload;
@@ -46,10 +44,10 @@ int test_mmt_signaling_message_mpu_timestamp_descriptor_table(char* base64_paylo
 		return -1;
 	}
 	uint8_t new_size = binary_payload_size - (raw_packet_ptr - binary_payload);
-	raw_packet_ptr = signaling_message_parse_payload_header(mmtp_payload_fragments, raw_packet_ptr, new_size);
+	raw_packet_ptr = mmt_signaling_message_parse_packet_header(mmtp_payload_fragments, raw_packet_ptr, new_size);
 
 	new_size = binary_payload_size - (raw_packet_ptr - binary_payload);
-	raw_packet_ptr = signaling_message_parse_payload_table(mmtp_payload_fragments, raw_packet_ptr, new_size);
+	raw_packet_ptr = mmt_signaling_message_parse_packet_header(mmtp_payload_fragments, raw_packet_ptr, new_size);
 
 	signaling_message_dump(mmtp_payload_fragments);
 

@@ -69,13 +69,17 @@ and the the actual LMT table as described in A330 Table 7.2.
  */
 //redzone lmt table: { "0": { "plp_id": 0, "lmt": "gCoB//8cDwMDA8CoOz7gABc8E0kTST8AAAAA7/8BAQAAwAA/AAAAAO//AQIAAMABPw==\n" } }
 //converted to base64:
-static char *__get_test_lmt_ces() { return "802a01ffff1c0f030303c0a83b3ee000173c134913493f00000000efff01010000c0003f00000000efff01020000c0013f";}
+static char *__get_test_lmt_ces() { return "801F01FFFF000F0303020A013E28E000173C13491349BF000A013E28EFFF0101C000C000BF00"; }
+
+//http://tomeko.net/online_tools/base64.php?lang=en
+//"802a01ffff1c0f030303c0a83b3ee000173c134913493f00000000efff01010000c0003f00000000efff01020000c0013f";}
+
 
 //curl http://127.0.0.1:8080/networktuner/querylmt
 //cat lmt_table | base64 -d | xxd -p - | tr -d '\n'
 
 //sba
-static char *__get_test_lmt() { return "805101ffff090f03030600000000e000173c000013493f00000000efff210200001f403f00000000efff110100001f403f00000000efff210100001f403f00000000efff2101000023283f00000000efff110200001f403f"; }
+static char *__get_test_lmt() { return "801F01FFFF000F0303020A013E28E000173C13491349BF000A013E28EFFF0101C000C000BF00"; }
   
 int main() {
 

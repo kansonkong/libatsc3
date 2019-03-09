@@ -84,16 +84,14 @@ extern "C" {
 #endif
 
 
-
-
 typedef struct alc_packet {
 	atsc3_def_lct_hdr_t* def_lct_hdr;
 	uint8_t fec_encoding_id;
     
     //for fec_encoding_id == 128, raptor fec
     bool use_sbn_esi;
-    uint8_t sbn;
-	uint32_t esi; //techincally 24bits
+    uint8_t sbn;	//sbn: source block number for fec recovery
+	uint32_t esi; 	//esi: encoding symbol id, our 24bit offset
     
     //for all other fec values
     bool use_start_offset;

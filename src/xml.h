@@ -31,40 +31,6 @@
 #include <string.h>
 #include <stdbool.h>
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
-
-#define _XML_PRINTLN(...) printf(__VA_ARGS__);printf("\n")
-#define _XML_PRINTF(...)  printf(__VA_ARGS__);
-
-#define _XML_ERROR(...)   printf("%s:%d:ERROR:",__FILE__,__LINE__);_XML_PRINTLN(__VA_ARGS__);
-#define _XML_WARN(...)    printf("%s:%d:WARN:",__FILE__,__LINE__);_XML_PRINTLN(__VA_ARGS__);
-#define _XML_INFO(...)    printf("%s:%d:INFO:",__FILE__,__LINE__);_XML_PRINTLN(__VA_ARGS__);
-#define _XML_DEBUG(...)   printf("%s:%d:DEBUG:",__FILE__,__LINE__);_XML_PRINTLN(__VA_ARGS__);
-
-//#define __ENABLE_XML_TRACE
-#ifdef __ENABLE_XML_TRACE
-#define _XML_TRACE(...)   printf("%s:%d:TRACE:",__FILE__,__LINE__);_XML_PRINTLN(__VA_ARGS__);
-#define _XML_TRACEF(...)  printf("%s:%d:TRACE:",__FILE__,__LINE__);_XML_PRINTF(__VA_ARGS__);
-#define _XML_TRACEA(...)  _XML_PRINTF(__VA_ARGS__);
-#else
-#define _XML_TRACE(...)
-#define _XML_TRACEF(...)
-#define _XML_TRACEA(...)
-#endif
-
-#ifdef  __XML_PARSER_FORENSIC__
-#define _XML_FRNSC(...)   printf("%s:%d:FRNSC:",__FILE__,__LINE__);_XML_PRINTLN(__VA_ARGS__);
-#define _XML_FRNSCF(...)  printf("%s:%d:FRNSC:",__FILE__,__LINE__);_XML_PRINTF(__VA_ARGS__);
-#define _XML_FRNSCA(...)  _XML_PRINTF(__VA_ARGS__);
-#else
-#define _XML_FRNSC(...)
-#define _XML_FRNSCF(...)
-#define _XML_FRNSCA(...)
-
-#endif
 /**
  * Opaque structure holding the parsed xml document
  */
@@ -199,9 +165,36 @@ uint8_t* xml_string_clone(xml_string_t* s);
 uint8_t* xml_attributes_clone(xml_string_t* s);
 
 
-#ifdef __cplusplus
-}
+#define _XML_PRINTLN(...) printf(__VA_ARGS__);printf("\n")
+#define _XML_PRINTF(...)  printf(__VA_ARGS__);
+
+#define _XML_ERROR(...)   printf("%s:%d:ERROR:",__FILE__,__LINE__);_XML_PRINTLN(__VA_ARGS__);
+#define _XML_WARN(...)    printf("%s:%d:WARN:",__FILE__,__LINE__);_XML_PRINTLN(__VA_ARGS__);
+#define _XML_INFO(...)    printf("%s:%d:INFO:",__FILE__,__LINE__);_XML_PRINTLN(__VA_ARGS__);
+#define _XML_DEBUG(...)   printf("%s:%d:DEBUG:",__FILE__,__LINE__);_XML_PRINTLN(__VA_ARGS__);
+
+//#define __ENABLE_XML_TRACE
+#ifdef __ENABLE_XML_TRACE
+#define _XML_TRACE(...)   printf("%s:%d:TRACE:",__FILE__,__LINE__);_XML_PRINTLN(__VA_ARGS__);
+#define _XML_TRACEF(...)  printf("%s:%d:TRACE:",__FILE__,__LINE__);_XML_PRINTF(__VA_ARGS__);
+#define _XML_TRACEA(...)  _XML_PRINTF(__VA_ARGS__);
+#else
+#define _XML_TRACE(...)
+#define _XML_TRACEF(...)
+#define _XML_TRACEA(...)
 #endif
 
+#ifdef  __XML_PARSER_FORENSIC__
+#define _XML_FRNSC(...)   printf("%s:%d:FRNSC:",__FILE__,__LINE__);_XML_PRINTLN(__VA_ARGS__);
+#define _XML_FRNSCF(...)  printf("%s:%d:FRNSC:",__FILE__,__LINE__);_XML_PRINTF(__VA_ARGS__);
+#define _XML_FRNSCA(...)  _XML_PRINTF(__VA_ARGS__);
+#else
+#define _XML_FRNSC(...)
+#define _XML_FRNSCF(...)
+#define _XML_FRNSCA(...)
+
+
+
+#endif
 #endif
 
