@@ -18,25 +18,16 @@
 #include <unistd.h>
 #include <sys/stat.h>
 
-#if defined (__cplusplus)
-extern "C" {
-#endif
-
-#include "atsc3_utils.h"
-
-#if defined (__cplusplus)
-}
-#endif
 
 #ifndef ATSC3_PLAYER_FFPLAY_H_
 #define ATSC3_PLAYER_FFPLAY_H_
 
+#include "atsc3_utils.h"
+#include "atsc3_lls_sls_monitor_output_buffer.h"
 
 #if defined (__cplusplus)
 extern "C" {
 #endif
-#include "atsc3_lls_sls_monitor_output_buffer.h"
-
 
 extern int _PLAYER_FFPLAY_DEBUG_ENABLED;
 extern int _PLAYER_FFPLAY_TRACE_ENABLED;

@@ -32,7 +32,7 @@ void ncurses_init() {
 	endwin();
 	*/
 	ncurses_mutext_init();
-
+	def_prog_mode();
 	//wire up resize handler
 	struct sigaction sa;
 	memset(&sa, 0, sizeof(struct sigaction));
@@ -41,10 +41,11 @@ void ncurses_init() {
     
 	//remap as our printf is redirected to stderr
 	my_screen = newterm(NULL, stdout, stdin);
+	set_term(my_screen);
 	create_or_update_window_sizes(false);
 
 	raw();
-	keypad(my_window, TRUE);		/* We get F1, F2 etc..		*/
+	//keypad(my_window, TRUE);		/* We get F1, F2 etc..		*/
 	noecho();						/* Don't echo() while we do getch */
 }
 
@@ -424,13 +425,12 @@ void create_or_update_window_sizes(bool should_reload_term_size) {
 			delwin(pkt_global_stats_window);
 			delwin(left_window_outline);
 			delwin(my_window);
-		    clear();
-		    endwin();
+			clear();
+			endwin();
 			resizeterm(size.ws_row, size.ws_col);
 		}
 	}
 	my_window = newwin(0, 0, 0, 0);
-
 	getmaxyx(my_window, rows, cols);              /* get the number of rows and columns */
 
 	int pct_split_top = 85;

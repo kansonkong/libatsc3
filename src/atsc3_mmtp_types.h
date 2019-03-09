@@ -4,20 +4,20 @@
  *  Created on: Jan 3, 2019
  *      Author: jjustman
  */
+#include <assert.h>
+#include <limits.h>
 
 #ifndef MODULES_DEMUX_MMT_MMTP_TYPES_H_
 #define MODULES_DEMUX_MMT_MMTP_TYPES_H_
 
-#include <assert.h>
-#include <limits.h>
+#include "atsc3_vector.h"
+#include "atsc3_mmtp_ntp32_to_pts.h"
+#include "atsc3_mmt_signalling_message_types.h"
+
 
 #ifdef __cplusplus
 extern "C" {
 #endif
-
-#include "atsc3_vector.h"
-#include "atsc3_mmtp_ntp32_to_pts.h"
-#include "atsc3_mmt_signalling_message_types.h"
 
 extern int _MMTP_DEBUG_ENABLED;
 extern int _MMTP_TRACE_ENABLED;
