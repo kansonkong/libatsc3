@@ -60,3 +60,18 @@ udp_packet_t* process_packet_from_pcap(u_char *user, const struct pcap_pkthdr *p
 
 	return udp_packet;
 }
+
+void cleanup(udp_packet_t** udp_packet_p) {
+	udp_packet_t* udp_packet = *udp_packet_p;
+
+	if(udp_packet->data) {
+		free(udp_packet->data);
+		udp_packet->data = NULL;
+	}
+
+	if(udp_packet) {
+		free(udp_packet);
+		udp_packet = NULL;
+	}
+	*udp_packet_p = NULL;
+}

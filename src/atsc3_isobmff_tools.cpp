@@ -15,8 +15,6 @@ int _ISOBMFF_TOOLS_TRACE_ENABLED = 0;
  * rebuild our combined boxes and tracks
  */
 
-
-
 lls_sls_monitor_output_buffer_t* atsc3_isobmff_build_joined_isobmff_fragment(lls_sls_monitor_output_buffer_t* lls_sls_monitor_output_buffer) {
 
     AP4_MemoryByteStream* ap4_memory_byte_stream;

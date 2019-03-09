@@ -105,7 +105,34 @@ uint32_t parseIpAddressIntoIntval(char* dst_ip);
 
 uint16_t parsePortIntoIntval(char* dst_port);
 
+/*
+ * Concatenate preprocessor tokens A and B without expanding macro definitions
+ * (however, if invoked from a macro, macro arguments are expanded).
+ */
+#define PPCAT_NX(A, B) A ## B
 
+/*
+ * Concatenate preprocessor tokens A and B after macro-expanding them.
+ * e.g. e.g., PPCAT(s, 1) produces the identifier s1.
+ *
+ */
+#define PPCAT(A, B) PPCAT_NX(A, B)
+/*
+ * Turn A into a string literal without expanding macro definitions
+ * (however, if invoked from a macro, macro arguments are expanded).
+ *
+ * e..g.
+ * #define T1 s
+ * #define T2 1
+ * STRINGIZE(PPCAT(T1, T2)) // produces "s1"
+ *
+ */
+#define STRINGIZE_NX(A) #A
+
+/*
+ * Turn A into a string literal after macro-expanding it.
+ */
+#define STRINGIZE(A) STRINGIZE_NX(A)
 
 #if defined (__cplusplus)
 }
