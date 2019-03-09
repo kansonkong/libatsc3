@@ -6,10 +6,12 @@
  */
 
 //linux compat
+//#include <_types/_uint32_t.h>
+//#include <_types/_uint64_t.h>
+//#include <_types/_uint8_t.h>
 
-#include <_types/_uint32_t.h>
-#include <_types/_uint64_t.h>
-#include <_types/_uint8_t.h>
+using namespace std;
+
 #include <list>
 
 #include <stdint.h>
@@ -18,13 +20,12 @@
 #include <string.h>
 #include <sys/stat.h>
 
-#include "../atsc3_utils.h"
+//#include "../atsc3_utils.h"
 #include "../atsc3_isobmff_trun_box.h"
 #include "../atsc3_lls_sls_monitor_output_buffer.h"
 
 #include "Ap4.h"
 #include "Ap4Atom.h"
-using namespace std;
 
 #ifndef BENTO4_ISOBMFFTRACKJOINER_H_
 #define BENTO4_ISOBMFFTRACKJOINER_H_
