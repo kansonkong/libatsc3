@@ -22,25 +22,25 @@ int PACKET_COUNTER=0;
 #include <sys/stat.h>
 #include <time.h>
 
-#include "atsc3_listener_udp.h"
-#include "atsc3_utils.h"
+#include "../atsc3_listener_udp.h"
+#include "../atsc3_utils.h"
 
-#include "atsc3_lls.h"
-#include "atsc3_lls_alc_utils.h"
+#include "../atsc3_lls.h"
+#include "../atsc3_lls_alc_utils.h"
 
-#include "atsc3_mmtp_types.h"
-#include "atsc3_mmtp_parser.h"
-#include "atsc3_mmt_mpu_utils.h"
+#include "../atsc3_mmtp_types.h"
+#include "../atsc3_mmtp_parser.h"
+#include "../atsc3_mmt_mpu_utils.h"
 
-#include "atsc3_mmtp_ntp32_to_pts.h"
+#include "../atsc3_mmtp_ntp32_to_pts.h"
 
-#include "alc_channel.h"
-#include "alc_rx.h"
-#include "atsc3_alc_utils.h"
+#include "../alc_channel.h"
+#include "../alc_rx.h"
+#include "../atsc3_alc_utils.h"
 
-#include "atsc3_bandwidth_statistics.h"
-#include "atsc3_packet_statistics.h"
-#include "atsc3_logging_externs.h"
+#include "../atsc3_bandwidth_statistics.h"
+#include "../atsc3_packet_statistics.h"
+#include "../atsc3_logging_externs.h"
 
 extern int _MPU_DEBUG_ENABLED;
 extern int _MMTP_DEBUG_ENABLED;

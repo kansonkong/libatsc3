@@ -37,17 +37,15 @@ int PACKET_COUNTER=0;
 #include <string.h>
 #include <sys/stat.h>
 
-#include "atsc3_listener_udp.h"
-#include "atsc3_utils.h"
-
-#include "atsc3_lls.h"
-#include "atsc3_lls_alc_utils.h"
-
-#include "atsc3_alc_rx.h"
-#include "alc_channel.h"
-#include "atsc3_alc_utils.h"
-#include "atsc3_listener_udp.h"
-#include "atsc3_logging_externs.h"
+#include "../atsc3_listener_udp.h"
+#include "../atsc3_utils.h"
+#include "../atsc3_lls.h"
+#include "../atsc3_lls_alc_utils.h"
+#include "../atsc3_alc_rx.h"
+#include "../alc_channel.h"
+#include "../atsc3_alc_utils.h"
+#include "../atsc3_listener_udp.h"
+#include "../atsc3_logging_externs.h"
 
 //dummy method for avoiding linking bento4 this unit listener
 struct trun_sample_entry_vector_t* parseMoofBoxForTrunSampleEntries(block_t* moof_box) { return NULL; }

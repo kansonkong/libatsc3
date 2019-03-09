@@ -23,23 +23,23 @@
 #include <string.h>
 #include <sys/stat.h>
 #include <pthread.h>
-#include "bento4/MPUtoISOBMFFProcessor.h"
+#include "../bento4/MPUtoISOBMFFProcessor.h"
 
 //#ifdef __cplusplus
 //extern "C" {
 //#endif
-#include "atsc3_listener_udp.h"
-#include "atsc3_utils.h"
-#include "atsc3_lls.h"
-#include "atsc3_mmtp_types.h"
-#include "atsc3_mmtp_parser.h"
-#include "atsc3_mmt_mpu_parser.h"
-#include "atsc3_mmt_mpu_utils.h"
-#include "atsc3_isobmff_tools.h"
-#include "atsc3_player_ffplay.h"
-#include "atsc3_vector.h"
-#include "atsc3_logging_externs.h"
-#include "atsc3_mmt_reconstitution_from_media_sample.h"
+#include "../atsc3_listener_udp.h"
+#include "../atsc3_utils.h"
+#include "../atsc3_lls.h"
+#include "../atsc3_mmtp_types.h"
+#include "../atsc3_mmtp_parser.h"
+#include "../atsc3_mmt_mpu_parser.h"
+#include "../atsc3_mmt_mpu_utils.h"
+#include "../atsc3_isobmff_tools.h"
+#include "../atsc3_player_ffplay.h"
+#include "../atsc3_vector.h"
+#include "../atsc3_logging_externs.h"
+#include "../atsc3_mmt_reconstitution_from_media_sample.h"
 //#ifdef __cplusplus
 //}
 //#endif

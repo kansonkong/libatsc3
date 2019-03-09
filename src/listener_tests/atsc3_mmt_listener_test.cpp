@@ -20,19 +20,19 @@
 #include <sys/stat.h>
 #include <pthread.h>
 
-#include "atsc3_listener_udp.h"
-#include "atsc3_utils.h"
+#include "../atsc3_listener_udp.h"
+#include "../atsc3_utils.h"
 
-#include "atsc3_lls.h"
-#include "atsc3_lls_slt_parser.h"
-#include "atsc3_mmtp_types.h"
-#include "atsc3_mmtp_parser.h"
-#include "atsc3_mmt_mpu_parser.h"
-#include "atsc3_mmt_mpu_utils.h"
-#include "atsc3_lls_mmt_utils.h"
+#include "../atsc3_lls.h"
+#include "../atsc3_lls_slt_parser.h"
+#include "../atsc3_mmtp_types.h"
+#include "../atsc3_mmtp_parser.h"
+#include "../atsc3_mmt_mpu_parser.h"
+#include "../atsc3_mmt_mpu_utils.h"
+#include "../atsc3_lls_mmt_utils.h"
 
-#include "atsc3_player_ffplay.h"
-#include "atsc3_logging_externs.h"
+#include "../atsc3_player_ffplay.h"
+#include "../atsc3_logging_externs.h"
 
 uint32_t* dst_ip_addr_filter = NULL;
 uint16_t* dst_ip_port_filter = NULL;

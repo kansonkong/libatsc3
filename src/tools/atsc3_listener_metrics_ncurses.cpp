@@ -73,37 +73,37 @@ int PACKET_COUNTER=0;
 #include <strings.h>
 
 
-#include "atsc3_isobmff_tools.h"
-#include "bento4/ISOBMFFTrackJoiner.h"
+#include "../atsc3_isobmff_tools.h"
+#include "../bento4/ISOBMFFTrackJoiner.h"
 
 
 extern "C" {
 
-#include "atsc3_listener_udp.h"
-#include "atsc3_utils.h"
+#include "../atsc3_listener_udp.h"
+#include "../atsc3_utils.h"
 
-#include "atsc3_lls.h"
-#include "atsc3_lls_alc_utils.h"
+#include "../atsc3_lls.h"
+#include "../atsc3_lls_alc_utils.h"
 
-#include "atsc3_lls_slt_parser.h"
-#include "atsc3_lls_sls_monitor_output_buffer_utils.h"
+#include "../atsc3_lls_slt_parser.h"
+#include "../atsc3_lls_sls_monitor_output_buffer_utils.h"
 
-#include "atsc3_mmtp_types.h"
-#include "atsc3_mmtp_parser.h"
-#include "atsc3_mmtp_ntp32_to_pts.h"
-#include "atsc3_mmt_mpu_utils.h"
-#include "atsc3_mmt_reconstitution_from_media_sample.h"
+#include "../atsc3_mmtp_types.h"
+#include "../atsc3_mmtp_parser.h"
+#include "../atsc3_mmtp_ntp32_to_pts.h"
+#include "../atsc3_mmt_mpu_utils.h"
+#include "../atsc3_mmt_reconstitution_from_media_sample.h"
 
-#include "alc_channel.h"
-#include "atsc3_alc_rx.h"
-#include "atsc3_alc_utils.h"
+#include "../alc_channel.h"
+#include "../atsc3_alc_rx.h"
+#include "../atsc3_alc_utils.h"
 
-#include "atsc3_bandwidth_statistics.h"
-#include "atsc3_packet_statistics.h"
+#include "../atsc3_bandwidth_statistics.h"
+#include "../atsc3_packet_statistics.h"
 
-#include "atsc3_output_statistics_ncurses.h"
+#include "../atsc3_output_statistics_ncurses.h"
 }
-#include "atsc3_logging_externs.h"
+#include "../atsc3_logging_externs.h"
 
 
 #define _ENABLE_DEBUG true
