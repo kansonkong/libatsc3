@@ -29,7 +29,7 @@ int32_t atsc3_unzip_gzip_payload(uint8_t* input_payload, uint32_t input_payload_
 	strm.avail_in = 0;
 	strm.next_in = Z_NULL;
 	strm.data_type = Z_TEXT;
-
+    int loop_count=0;
 	//treat this input_payload as gzip not just delfate
 	ret = inflateInit2(&strm, 16+MAX_WBITS);
 
@@ -70,6 +70,7 @@ int32_t atsc3_unzip_gzip_payload(uint8_t* input_payload, uint32_t input_payload_
 			}
 
 			if(strm.avail_out == 0) {
+
 				output_payload_offset += GZIP_CHUNK_OUTPUT_BUFFER_SIZE;
 				output_payload = (uint8_t*)realloc(output_payload, output_payload_offset + GZIP_CHUNK_OUTPUT_BUFFER_SIZE + 1);
 

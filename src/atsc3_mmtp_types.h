@@ -11,6 +11,10 @@
 #include <assert.h>
 #include <limits.h>
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #include "atsc3_vector.h"
 #include "atsc3_mmtp_ntp32_to_pts.h"
 #include "atsc3_mmt_signalling_message_types.h"
@@ -293,6 +297,8 @@ typedef struct ATSC3_VECTOR(mmtp_sub_flow_t*) mmtp_sub_flow_vector_t;
 //(
 #define __PRINTF_TRACE(...)
 //printf(__VA_ARGS__)
-
+#ifdef __cplusplus
+}
+#endif
 
 #endif /* MODULES_DEMUX_MMT_MMTP_TYPES_H_ */

@@ -29,12 +29,11 @@ address and destination port of the MMTP session carrying the MMTP- specific SLS
 
 #include "atsc3_lls_alc_utils.h"
 #include "atsc3_lls_sls_parser.h"
+#include "atsc3_logging_externs.h"
 
 #ifndef ATSC3_LLS_SLT_PARSER_H_
 #define ATSC3_LLS_SLT_PARSER_H_
 
-extern int _LLS_SLT_PARSER_DEBUG_ENABLED;
-extern int _LLS_SLT_PARSER_TRACE_ENABLED;
 
 #if defined (__cplusplus)
 extern "C" {
@@ -44,7 +43,7 @@ extern "C" {
 lls_slt_monitor_t* lls_slt_monitor_create(void);
 
 int lls_slt_table_check_process_update(lls_table_t* lls_table, lls_slt_monitor_t* lls_slt_monitor);
-int lls_slt_table_process_update(lls_table_t* lls_table, lls_slt_monitor_t* lls_slt_monitor);
+int lls_slt_table_perform_update(lls_table_t* lls_table, lls_slt_monitor_t* lls_slt_monitor);
 
 
 //etst methods
@@ -61,12 +60,14 @@ int SLT_BROADCAST_SVC_SIGNALING_build_table(lls_service_t* service_table, xml_no
 }
 #endif
 
-#define __LLS_SLT_PARSER_PRINTLN(...) printf(__VA_ARGS__);printf("\n")
-#define __LLS_SLT_PARSER_ERROR(...)   printf("%s:%d:ERROR:",__FILE__,__LINE__);__LLS_SLT_PARSER_PRINTLN(__VA_ARGS__);
-#define __LLS_SLT_PARSER_WARN(...)    printf("%s:%d:WARN:",__FILE__,__LINE__);__LLS_SLT_PARSER_PRINTLN(__VA_ARGS__);
-#define __LLS_SLT_PARSER_INFO(...)    printf("%s:%d:INFO:",__FILE__,__LINE__);__LLS_SLT_PARSER_PRINTLN(__VA_ARGS__);
+#define __LLS_SLT_PARSER_PRINTLN(...) 	 printf(__VA_ARGS__);printf("\n")
+#define __LLS_SLT_PARSER_ERROR(...)  	 printf("%s:%d:ERROR:",__FILE__,__LINE__);__LLS_SLT_PARSER_PRINTLN(__VA_ARGS__);
+#define __LLS_SLT_PARSER_WARN(...)   	 printf("%s:%d:WARN:",__FILE__,__LINE__);__LLS_SLT_PARSER_PRINTLN(__VA_ARGS__);
+#define __LLS_SLT_PARSER_INFO(...)   	 if(_LLS_SLT_PARSER_INFO_ENABLED) 		{ printf("%s:%d:INFO:",__FILE__,__LINE__);__LLS_SLT_PARSER_PRINTLN(__VA_ARGS__); }
+#define __LLS_SLT_PARSER_INFO_MMT(...)   if(_LLS_SLT_PARSER_INFO_MMT_ENABLED) 	{ printf("%s:%d:INFO:",__FILE__,__LINE__);__LLS_SLT_PARSER_PRINTLN(__VA_ARGS__); }
+#define __LLS_SLT_PARSER_INFO_ROUTE(...) if(_LLS_SLT_PARSER_INFO_ROUTE_ENABLED) { printf("%s:%d:INFO:",__FILE__,__LINE__);__LLS_SLT_PARSER_PRINTLN(__VA_ARGS__); }
 
-#define __LLS_SLT_PARSER_DEBUG(...)   if(__LLS_SLT_PARSER_DEBUG_ENABLED) { printf("%s:%d:DEBUG:",__FILE__,__LINE__);__LLS_SLT_PARSER_PRINTLN(__VA_ARGS__); }
-#define __LLS_SLT_PARSER_TRACE(...)   if(__LLS_SLT_PARSER_TRACE_ENABLED) { printf("%s:%d:TRACE:",__FILE__,__LINE__);__LLS_SLT_PARSER_PRINTLN(__VA_ARGS__); }
+#define __LLS_SLT_PARSER_DEBUG(...)   	if(_LLS_SLT_PARSER_DEBUG_ENABLED) { printf("%s:%d:DEBUG:",__FILE__,__LINE__);__LLS_SLT_PARSER_PRINTLN(__VA_ARGS__); }
+#define __LLS_SLT_PARSER_TRACE(...)  	 if(_LLS_SLT_PARSER_TRACE_ENABLED) { printf("%s:%d:TRACE:",__FILE__,__LINE__);__LLS_SLT_PARSER_PRINTLN(__VA_ARGS__); }
 
 #endif /* ATSC3_LLS_SLT_PARSER_H_ */

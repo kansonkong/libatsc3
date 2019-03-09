@@ -46,6 +46,7 @@
 #include "atsc3_lls_slt_parser.h"
 #include "xml.h"
 
+int _LLS_INFO_ENABLED = 1;
 int _LLS_DEBUG_ENABLED = 1;
 int _LLS_TRACE_ENABLED = 0;
 
@@ -94,16 +95,68 @@ lls_table_t* lls_create_xml_table( uint8_t* lls_packet, int size) {
 	if(ret > 0) {
 		lls_table->raw_xml.xml_payload = decompressed_payload;
 		lls_table->raw_xml.xml_payload_size = ret;
-
 		return lls_table;
 	}
 
 	return NULL;
 }
 
-lls_table_t* lls_table_create( uint8_t* lls_packet, int size) {
+lls_table_t* lls_table_create_or_update_from_lls_slt_monitor(lls_slt_monitor_t* lls_slt_monitor, uint8_t* lls_packet, int packet_size) {
+	uint32_t parsed;
+	uint32_t parsed_update;
+	uint32_t parsed_error;
+
+
+	return lls_table_create_or_update_from_lls_slt_monitor_with_metrics(lls_slt_monitor, lls_packet, packet_size, &parsed, &parsed_update, &parsed_error);
+}
+
+//only return back if lls_table_version has changed
+
+lls_table_t* lls_table_create_or_update_from_lls_slt_monitor_with_metrics(lls_slt_monitor_t* lls_slt_monitor, uint8_t* lls_packet, int packet_size, uint32_t* parsed, uint32_t* parsed_update, uint32_t* parsed_error) {
+
+	lls_table_t* lls_table_new = __lls_table_create(lls_packet, packet_size);
+	if(!lls_table_new) {
+		(*parsed_error)++;
+		return NULL; //parse error or not supported
+	}
+   
+    if(lls_table_new->lls_table_id != SLT) {
+        lls_table_free(&lls_table_new);
+        return NULL;
+    }
+
+	(*parsed)++;
+	//check if we should rebuild our signaling, note lls_table_version will roll over at FF
+	if(lls_slt_monitor) {
+		if(lls_slt_monitor->lls_table_slt) {
+			if(lls_table_new->lls_table_version > lls_slt_monitor->lls_table_slt->lls_table_version ||
+					(lls_table_new->lls_table_version == 0x00 && lls_slt_monitor->lls_table_slt->lls_table_version == 0xFF)) {
+
+				//free our old table and keep the new one
+				lls_table_free(&lls_slt_monitor->lls_table_slt);
+				lls_slt_monitor->lls_table_slt = NULL;
+
+			} else {
+				//free our new one and keep the old one
+				lls_table_free(&lls_table_new);
+
+				return NULL;
+			}
+		}
+
+		lls_slt_monitor->lls_table_slt = lls_table_new;
+		lls_slt_table_perform_update(lls_table_new, lls_slt_monitor);
+		(*parsed_update)++;
+		return lls_slt_monitor->lls_table_slt;
+	} else {
+		__ERROR("lls_slt_monitor is null, can't propigate LLS update!");
+	}
+	return NULL;
+
+}
+
+lls_table_t* __lls_table_create( uint8_t* lls_packet, int size) {
 	int res = 0;
-	xml_document_t* xml_document = NULL;
 	xml_node_t* xml_root_node = NULL;
 
 	lls_table_t* lls_table = lls_create_xml_table(lls_packet, size);
@@ -114,16 +167,17 @@ lls_table_t* lls_table_create( uint8_t* lls_packet, int size) {
 	}
 
 	//create the xml document payload
-	_LLS_DEBUG("lls_create_table, raw xml payload is: \n%s", lls_table->raw_xml.xml_payload);
-	xml_document = xml_payload_document_parse(lls_table->raw_xml.xml_payload, lls_table->raw_xml.xml_payload_size);
+	_LLS_DEBUGN("lls_create_table, raw xml payload is: \n%s", lls_table->raw_xml.xml_payload);
 
-	if(!xml_document) {
+	lls_table->xml_document = xml_payload_document_parse(lls_table->raw_xml.xml_payload, lls_table->raw_xml.xml_payload_size);
+
+	if(!lls_table->xml_document) {
 		_LLS_ERROR("lls_create_table - unable to parse xml document!  raw xml payload is: size: %u, value:\n%s", lls_table->raw_xml.xml_payload_size, lls_table->raw_xml.xml_payload);
 		goto error;
 	}
 
 	//extract the root node
-	xml_root_node = xml_payload_document_extract_root_node(xml_document);
+	xml_root_node = xml_payload_document_extract_root_node(lls_table->xml_document);
 	if(!xml_root_node) {
 		_LLS_ERROR("lls_create_table - unable to build xml root nde,  raw xml payload is: size: %u, value:\n%s", lls_table->raw_xml.xml_payload_size, lls_table->raw_xml.xml_payload);
 
@@ -134,10 +188,8 @@ lls_table_t* lls_table_create( uint8_t* lls_packet, int size) {
 	res = lls_create_table_type_instance(lls_table, xml_root_node);
 
 	if(res) {
-		//unable to instantiate lls_table, set lls_table ptr to null
-		//TODO free our lls_xml_table
+		//unable to instantiate lls_table, go to error
 		_LLS_ERROR("lls_table_create: Unable to instantiate lls_table!");
-		lls_table = NULL;
 		goto error;
 	}
 
@@ -148,23 +200,16 @@ error:
 
 	//if we have an xml document, lets force node cleanup here
 
-
-	if(xml_document) {
-		//xml_document_free will release the root node for us... but keep the rest of the objects?
-		xml_document_free(xml_document, false);
-		xml_document = NULL;
-	}
-
-	lls_table_free(lls_table);
+	lls_table_free(&lls_table);
 	lls_table = NULL;
-
 
 	return NULL;
 }
 
-void lls_table_free(lls_table_t* lls_table) {
+void lls_table_free(lls_table_t** lls_table_p) {
+	lls_table_t* lls_table = *lls_table_p;
 	if(!lls_table) {
-		_LLS_TRACE("lls_table_free: lls_table == NULL");
+		_LLS_ERROR("lls_table_free: lls_table == NULL");
 		return;
 	}
 
@@ -191,7 +236,7 @@ void lls_table_free(lls_table_t* lls_table) {
 			free(lls_table->slt_table.service_entry);
 
 		if(lls_table->slt_table.bsid)
-					free(lls_table->slt_table.bsid);
+			free(lls_table->slt_table.bsid);
 
 	} else if(lls_table->lls_table_id == RRT) {
 	//	_LLS_ERROR("lls_create_table_type_instance: LLS table RRT not supported yet");
@@ -206,10 +251,9 @@ void lls_table_free(lls_table_t* lls_table) {
 	}
 
 
-	//free any cloned xmlstrings
 
-	//free global table object
-	if(lls_table->raw_xml.xml_payload_compressed) {
+
+    if(lls_table->raw_xml.xml_payload_compressed) {
 		free(lls_table->raw_xml.xml_payload_compressed);
 		lls_table->raw_xml.xml_payload_compressed = NULL;
 	}
@@ -217,6 +261,12 @@ void lls_table_free(lls_table_t* lls_table) {
 		free(lls_table->raw_xml.xml_payload);
 		lls_table->raw_xml.xml_payload = NULL;
 	}
+	if(lls_table->xml_document) {
+		xml_document_free(lls_table->xml_document, false);
+		lls_table->xml_document = NULL;
+	}
+
+
 	free(lls_table);
 }
 
@@ -245,7 +295,7 @@ xml_node_t* xml_payload_document_extract_root_node(xml_document_t* document) {
 		root_node_name = xml_node_name(root); //root
 		dump_xml_string(root_node_name);
 	} else {
-		_LLS_ERROR("xml_payload_document_extract_root_node: unable to parse out ?xml preamble");
+		//_LLS_ERROR("xml_payload_document_extract_root_node: unable to parse out ?xml preamble");
 		return NULL;
 	}
 
@@ -266,21 +316,18 @@ int lls_create_table_type_instance(lls_table_t* lls_table, xml_node_t* xml_root)
 	if(lls_table->lls_table_id == SLT) {
 		//build SLT table
 		ret = lls_slt_table_build(lls_table, xml_root);
-
 	} else if(lls_table->lls_table_id == RRT) {
-		_LLS_DEBUG("lls_create_table_type_instance: LLS table RRT not supported yet");
-        return 0;
+        ret = build_rrt_table(lls_table, xml_root);
 	} else if(lls_table->lls_table_id == SystemTime) {
-		ret = build_SystemTime_table(lls_table, xml_root);
+		ret = build_system_time_table(lls_table, xml_root);
 	} else if(lls_table->lls_table_id == AEAT) {
-		//_LLS_ERROR("lls_create_table_type_instance: LLS table AEAT not supported yet");
+        ret = build_aeat_table(lls_table, xml_root);
 	} else if(lls_table->lls_table_id == OnscreenMessageNotification) {
-		//_LLS_ERROR("lls_create_table_type_instance: LLS table OnscreenMessageNotification not supported yet");
+        ret = build_onscreen_message_notification_table(lls_table, xml_root);
 	} else {
 		_LLS_ERROR("lls_create_table_type_instance: Unknown LLS table type: %d",  lls_table->lls_table_id);
-
 	}
-	_LLS_DEBUG("lls_create_table_type_instance: returning ret: %d, lls_table_id: %d, node ptr: %p, name is: %s", ret, lls_table->lls_table_id, root_node_name, node_name);
+	_LLS_TRACE("lls_create_table_type_instance: returning ret: %d, lls_table_id: %d, node ptr: %p, name is: %s", ret, lls_table->lls_table_id, root_node_name, node_name);
 
 	freesafe(node_name);
 
@@ -292,7 +339,7 @@ int lls_create_table_type_instance(lls_table_t* lls_table, xml_node_t* xml_root)
  *
  * <SystemTime xmlns="http://www.atsc.org/XMLSchemas/ATSC3/Delivery/SYSTIME/1.0/" currentUtcOffset="37" utcLocalOffset="-PT5H" dsStatus="false"/>
  */
-int build_SystemTime_table(lls_table_t* lls_table, xml_node_t* xml_root) {
+int build_system_time_table(lls_table_t* lls_table, xml_node_t* xml_root) {
 
 	int ret = 0;
 
@@ -391,47 +438,66 @@ char* lls_get_sls_protocol_value(uint protocol) {
 	}
 }
 
+
+
+int build_rrt_table(lls_table_t* lls_table, xml_node_t* xml_root) {
+    int ret = 0;
+    
+    return ret;
+}
+int build_aeat_table(lls_table_t* lls_table, xml_node_t* xml_root) {
+    int ret = 0;
+    
+    return ret;
+}
+int build_onscreen_message_notification_table(lls_table_t* lls_table, xml_node_t* xml_root) {
+    int ret = 0;
+    
+    return ret;
+}
+
+
 void lls_dump_instance_table(lls_table_t* base_table) {
 	_LLS_TRACE("dump_instance_table: base_table address: %p", base_table);
 
 	_LLS_INFO("");
-	_LLS_INFO("--------------------------");
-	_LLS_INFO(" LLS Base Table:");
-	_LLS_INFO("--------------------------");
-	_LLS_INFO(" lls_table_id             : %d (0x%x)", base_table->lls_table_id, base_table->lls_table_id);
-	_LLS_INFO(" lls_group_id             : %d (0x%x)", base_table->lls_group_id, base_table->lls_group_id);
-	_LLS_INFO(" group_count_minus1       : %d (0x%x)", base_table->group_count_minus1, base_table->group_count_minus1);
-	_LLS_INFO(" lls_table_version        : %d (0x%x)", base_table->lls_table_version, base_table->lls_table_version);
-	_LLS_INFO(" xml decoded payload size : %d", 	base_table->raw_xml.xml_payload_size);
-	_LLS_INFO(" --------------------------");
+	_LLS_INFO_I("--------------------------");
+	_LLS_INFO_I(" LLS Base Table:");
+	_LLS_INFO_I("--------------------------");
+	_LLS_INFO_I(" lls_table_id             : %d (0x%x)", base_table->lls_table_id, base_table->lls_table_id);
+	_LLS_INFO_I(" lls_group_id             : %d (0x%x)", base_table->lls_group_id, base_table->lls_group_id);
+	_LLS_INFO_I(" group_count_minus1       : %d (0x%x)", base_table->group_count_minus1, base_table->group_count_minus1);
+	_LLS_INFO_I(" lls_table_version        : %d (0x%x)", base_table->lls_table_version, base_table->lls_table_version);
+	_LLS_INFO_I(" xml decoded payload size : %d", 	base_table->raw_xml.xml_payload_size);
+	_LLS_INFO_I(" --------------------------");
 
 	if(base_table->raw_xml.xml_payload) {
-		_LLS_INFO("\t%s", base_table->raw_xml.xml_payload);
+		_LLS_INFO_I("\t%s", base_table->raw_xml.xml_payload);
 	}
 
-	_LLS_INFO(" --------------------------");
+	_LLS_INFO_I(" --------------------------");
 
 	if(base_table->lls_table_id == SLT) {
 
-		_LLS_INFO("SLT: Service contains %d entries:", base_table->slt_table.service_entry_n);
+		_LLS_INFO_I("SLT: Service contains %d entries:", base_table->slt_table.service_entry_n);
 
 		for(int i=0l; i < base_table->slt_table.service_entry_n; i++) {
 			lls_service_t* service = base_table->slt_table.service_entry[i];
-			_LLS_INFO(" -----------------------------");
-			_LLS_INFO("  service_id                  : %d", service->service_id);
-			_LLS_INFO("  global_service_id           : %s", service->global_service_id);
-			_LLS_INFO("  major_channel_no            : %d", service->major_channel_no);
-			_LLS_INFO("  minor_channel_no            : %d", service->minor_channel_no);
-			_LLS_INFO("  service_category            : %d", service->service_category);
-			_LLS_INFO("  short_service_name          : %s", service->short_service_name);
-			_LLS_INFO("  slt_svc_seq_num             : %d", service->slt_svc_seq_num);
-			_LLS_INFO(" -----------------------------");
-			_LLS_INFO("  broadcast_svc_signaling");
-			_LLS_INFO(" -----------------------------");
-			_LLS_INFO("    sls_protocol              : %d", service->broadcast_svc_signaling.sls_protocol);
-			_LLS_INFO("    sls_destination_ip_address: %s", service->broadcast_svc_signaling.sls_destination_ip_address);
-			_LLS_INFO("    sls_destination_udp_port  : %s", service->broadcast_svc_signaling.sls_destination_udp_port);
-			_LLS_INFO("    sls_source_ip_address     : %s", service->broadcast_svc_signaling.sls_source_ip_address);
+			_LLS_INFO_I(" -----------------------------");
+			_LLS_INFO_I("  service_id                  : %d", service->service_id);
+			_LLS_INFO_I("  global_service_id           : %s", service->global_service_id);
+			_LLS_INFO_I("  major_channel_no            : %d", service->major_channel_no);
+			_LLS_INFO_I("  minor_channel_no            : %d", service->minor_channel_no);
+			_LLS_INFO_I("  service_category            : %d", service->service_category);
+			_LLS_INFO_I("  short_service_name          : %s", service->short_service_name);
+			_LLS_INFO_I("  slt_svc_seq_num             : %d", service->slt_svc_seq_num);
+			_LLS_INFO_I(" -----------------------------");
+			_LLS_INFO_I("  broadcast_svc_signaling");
+			_LLS_INFO_I(" -----------------------------");
+			_LLS_INFO_I("    sls_protocol              : %d", service->broadcast_svc_signaling.sls_protocol);
+			_LLS_INFO_I("    sls_destination_ip_address: %s", service->broadcast_svc_signaling.sls_destination_ip_address);
+			_LLS_INFO_I("    sls_destination_udp_port  : %s", service->broadcast_svc_signaling.sls_destination_udp_port);
+			_LLS_INFO_I("    sls_source_ip_address     : %s", service->broadcast_svc_signaling.sls_source_ip_address);
 
 		}
 		_LLS_DEBUGN("--------------------------");
@@ -439,17 +505,17 @@ void lls_dump_instance_table(lls_table_t* base_table) {
 
 	//decorate with instance types: hd = int16_t, hu = uint_16t, hhu = uint8_t
 	if(base_table->lls_table_id == SystemTime) {
-		_LLS_INFO(" SystemTime:");
-		_LLS_INFO(" --------------------------");
-		_LLS_INFO("  current_utc_offset       : %hd", base_table->system_time_table.current_utc_offset);
-		_LLS_INFO("  ptp_prepend              : %hu", base_table->system_time_table.ptp_prepend);
-		_LLS_INFO("  leap59                   : %d",  base_table->system_time_table.leap59);
-		_LLS_INFO("  leap61                   : %d",  base_table->system_time_table.leap61);
-		_LLS_INFO("  utc_local_offset         : %s",  base_table->system_time_table.utc_local_offset);
+		_LLS_INFO_I(" SystemTime:");
+		_LLS_INFO_I(" --------------------------");
+		_LLS_INFO_I("  current_utc_offset       : %hd", base_table->system_time_table.current_utc_offset);
+		_LLS_INFO_I("  ptp_prepend              : %hu", base_table->system_time_table.ptp_prepend);
+		_LLS_INFO_I("  leap59                   : %d",  base_table->system_time_table.leap59);
+		_LLS_INFO_I("  leap61                   : %d",  base_table->system_time_table.leap61);
+		_LLS_INFO_I("  utc_local_offset         : %s",  base_table->system_time_table.utc_local_offset);
 
-		_LLS_INFO("  ds_status                : %d",  base_table->system_time_table.ds_status);
-		_LLS_INFO("  ds_day_of_month          : %hhu", base_table->system_time_table.ds_day_of_month);
-		_LLS_INFO("  ds_hour                  : %hhu", base_table->system_time_table.ds_hour);
+		_LLS_INFO_I("  ds_status                : %d",  base_table->system_time_table.ds_status);
+		_LLS_INFO_I("  ds_day_of_month          : %hhu", base_table->system_time_table.ds_day_of_month);
+		_LLS_INFO_I("  ds_hour                  : %hhu", base_table->system_time_table.ds_hour);
 		_LLS_DEBUGN("--------------------------");
 
 	}

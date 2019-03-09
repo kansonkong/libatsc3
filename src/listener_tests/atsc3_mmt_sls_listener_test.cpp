@@ -23,26 +23,25 @@ int PACKET_COUNTER=0;
 #include <ncurses.h>
 #include <limits.h>
 
-#include "atsc3_listener_udp.h"
-#include "atsc3_utils.h"
+#include "../atsc3_listener_udp.h"
+#include "../atsc3_utils.h"
 
-#include "atsc3_lls.h"
-//#include "atsc3_lls_alc_utils.h"
+#include "../atsc3_lls.h"
+//#include "../atsc3_lls_alc_utils.h"
 //#include "alc_channel.h"
-//#include "atsc3_alc_rx.h"
-//#include "atsc3_alc_utils.h"
+//#include "../atsc3_alc_rx.h"
+//#include "../atsc3_alc_utils.h"
 
-#include "atsc3_lls_slt_parser.h"
-#include "atsc3_lls_sls_monitor_output_buffer_utils.h"
+#include "../atsc3_lls_slt_parser.h"
+#include "../atsc3_lls_sls_monitor_output_buffer_utils.h"
 
-#include "atsc3_mmtp_types.h"
-#include "atsc3_mmtp_parser.h"
-#include "atsc3_mmtp_ntp32_to_pts.h"
-#include "atsc3_mmt_mpu_utils.h"
+#include "../atsc3_mmtp_types.h"
+#include "../atsc3_mmtp_parser.h"
+#include "../atsc3_mmtp_ntp32_to_pts.h"
+#include "../atsc3_mmt_mpu_utils.h"
 
-#include "atsc3_logging_externs.h"
-
-#define MAX_PCAP_LEN 1514
+#include "../atsc3_logging_externs.h"
+#include "stubs/atsc3_alc_stubs.h"
 
 #define _ENABLE_DEBUG true
 
@@ -71,22 +70,6 @@ Undefined symbols for architecture x86_64:
       _lls_slt_table_process_update in atsc3_lls_slt_parser.o
 ld: symbol(s) not found for architecture x86_64
  */
-lls_sls_alc_session_vector_t* lls_sls_alc_session_vector_create() { return NULL; }
-lls_sls_alc_session_t* lls_slt_alc_session_find_or_create(lls_sls_alc_session_vector_t* lls_sls_alc_session_vector, lls_service_t* lls_service) { return NULL; }
-void lls_slt_alc_session_remove(lls_sls_alc_session_vector_t* lls_slt_alc_session, lls_service_t* lls_service) { }
-
-void cleanup(udp_packet_t* udp_packet) {
-
-	if(udp_packet->data) {
-		free(udp_packet->data);
-		udp_packet->data = NULL;
-	}
-
-	if(udp_packet) {
-		free(udp_packet);
-		udp_packet = NULL;
-	}
-}
 
 mmtp_payload_fragments_union_t* mmtp_parse_from_udp_packet(udp_packet_t *udp_packet) {
 
@@ -128,29 +111,18 @@ void process_packet(u_char *user, const struct pcap_pkthdr *pkthdr, const u_char
 
 	//drop mdNS
 	if(udp_packet->udp_flow.dst_ip_addr == UDP_FILTER_MDNS_IP_ADDRESS && udp_packet->udp_flow.dst_port == UDP_FILTER_MDNS_PORT) {
-		return cleanup(udp_packet);
+		return cleanup(&udp_packet);
 	}
 
 	if(udp_packet->udp_flow.dst_ip_addr == LLS_DST_ADDR && udp_packet->udp_flow.dst_port == LLS_DST_PORT) {
 				//process as lls
-		lls_table_t* lls_table = lls_table_create(udp_packet->data, udp_packet->data_length);
-		if(lls_table) {
+		lls_table_t* lls_table = lls_table_create_or_update_from_lls_slt_monitor(lls_slt_monitor, udp_packet->data, udp_packet->data_length);
 
-			bool should_free_lls = true; //do not free the lls table if we keep a reference in process_lls_table_slt_update
-			if(lls_table->lls_table_id == SLT) {
-				int retval = lls_slt_table_check_process_update(lls_table, lls_slt_monitor);
-				if(!retval) {
-					//noop
-				} else {
-					__ERROR("unable to parse SLT update");
-				}
-			}
-		}
-		return cleanup(udp_packet);
+		return cleanup(&udp_packet);
 	}
 
     if((dst_ip_addr_filter && udp_packet->udp_flow.dst_ip_addr != *dst_ip_addr_filter)) {
-        return cleanup(udp_packet);
+        return cleanup(&udp_packet);
     }
 
     lls_sls_mmt_session_t* matching_lls_slt_mmt_session = lls_slt_mmt_session_find_from_udp_packet(lls_slt_monitor, udp_packet->udp_flow.src_ip_addr, udp_packet->udp_flow.dst_ip_addr, udp_packet->udp_flow.dst_port);
@@ -162,20 +134,9 @@ void process_packet(u_char *user, const struct pcap_pkthdr *pkthdr, const u_char
         mmtp_payload_fragments_union_free(&mmtp_payload);
         mmtp_payload = NULL;
 
-        return cleanup(udp_packet);
+        return cleanup(&udp_packet);
 	}
 
-cleanup:
-
-	if(udp_packet->data) {
-		free(udp_packet->data);
-		udp_packet->data = NULL;
-	}
-
-	if(udp_packet) {
-		free(udp_packet);
-		udp_packet = NULL;
-	}
 }
 
 

@@ -1,0 +1,18 @@
+
+Namespace									Filename							Citation
+
+http://www.w3.org/XML/1998/namespace		xml.xsd								http://www.w3.org/XML/1998/namespace 
+
+urn:ietf:params:xml:ns:fdt					RFC6726-FDTInstance.xsd				https://www.ietf.org/rfc/rfc6726.txt 
+
+urn:3GPP:metadata:2007:MBMS:FLUTE:FDT		FLUTE-FDT-3GPP-2007-Extensions.xsd	http://www.etsi.org/deliver/etsi_ts/126300_126399/126346/13.06.00_60/ts_126346v130600p.pdf 
+
+urn:3GPP:metadata:2012:MBMS:FLUTE:FDT		FLUTE-FDT-3GPP-2012-Extensions.xsd	http://www.etsi.org/deliver/etsi_ts/126300_126399/126346/13.06.00_60/ts_126346v130600p.pdf
+
+urn:3gpp:metadata:2005:MBMS:envelope		MetadataEnvelope.xsd				http://www.etsi.org/deliver/etsi_ts/126300_126399/126346/13.06.00_60/ts_126346v130600p.pdf
+
+tag:atsc.org,2016:XMLSchemas/ATSC3/SA/1.0/	SA-1.0-20170921.xsd					https://www.atsc.org/atsc-30-standard/a3322017-service-announcement/ 
+
+
+
+

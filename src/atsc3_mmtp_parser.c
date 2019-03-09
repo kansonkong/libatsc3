@@ -7,14 +7,13 @@
  *
  * parses the header of the MMTP packet, and invokes specific methods for MPU and signaling messages
  */
+#include <assert.h>
+#include <limits.h>
 
 #include "atsc3_mmtp_types.h"
 #include "atsc3_mmtp_parser.h"
 #include "atsc3_mmt_mpu_parser.h"
 #include "atsc3_mmt_signaling_message.h"
-
-#include <assert.h>
-#include <limits.h>
 
 int _MMTP_DEBUG_ENABLED = 1;
 int _MMTP_TRACE_ENABLED = 0;

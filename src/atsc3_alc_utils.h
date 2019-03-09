@@ -24,26 +24,16 @@
 extern int _ALC_UTILS_DEBUG_ENABLED;
 extern int _ALC_UTILS_TRACE_ENABLED;
 
+//zero out this slab of memory for a single TOI when pre-allocating
+#define  __TO_PREALLOC_ZERO_SLAB_SIZE 8192000
+
 
 //ALC dump object output path
 #define __ALC_DUMP_OUTPUT_PATH__ "route/"
-
-//prepend fragments with init box (ftyp, mmpu, moov, meta)
-//#define __TESTING_PREPEND_TSI__ 			"003000"
-//#define __TESTING_PREPEND_TOI_INIT__ 		"0000002"
-
-//reconsitiute fragments into single file, init box, for pipe playback...
-#define __TESTING_RECONSTITUTED_TSI__ 		003000
-#define __TESTING_RECONSTITUTED_TOI_INIT__ 	0000002
-
-//write out to file recon
-//#define __TESTING_RECON_FILE_POINTER__
-#define __TESTING_RECONSITIUTED_FILE_NAME__ "3.m4v"
-
-
 /**
  * deubg toi dump methods
  */
+
 
 
 #if defined (__cplusplus)
@@ -64,7 +54,7 @@ FILE* alc_object_open_or_pre_allocate(char* file_name, alc_packet_t* alc_packet)
 
 //deprecated
 void alc_recon_file_ptr_set_tsi_toi(FILE* file_ptr, uint32_t tsi, uint32_t toi_init);
-void alc_recon_file_ptr_fragment_with_init_box(FILE*,  alc_packet_t* alc_packet);
+void alc_recon_file_ptr_fragment_with_init_box(FILE*,  alc_packet_t* alc_packet, uint32_t toi_init);
 
 //new
 void alc_recon_file_buffer_struct_set_monitor(lls_sls_alc_monitor_t* lls_sls_alc_monitor);
@@ -74,19 +64,21 @@ void alc_recon_file_buffer_struct_fragment_with_init_box(pipe_ffplay_buffer_t* p
 char* alc_packet_dump_to_object_get_filename_tsi_toi(uint32_t tsi, uint32_t toi);
 void alc_recon_file_buffer_struct_monitor_fragment_with_init_box(lls_sls_alc_monitor_t* lls_slt_monitor, alc_packet_t* alc_packet);
 void __alc_prepend_fragment_with_init_box(char* file_name, alc_packet_t* alc_packet);
-void __alc_recon_fragment_with_init_box(char* file_name, alc_packet_t* alc_packet);
+void __alc_recon_fragment_with_init_box(char* file_name, alc_packet_t* alc_packet, uint32_t tsi, uint32_t toi_init, const char* to_write_filename);
 
+block_t* alc_get_payload_from_filename(char*);
 
 #if defined (__cplusplus)
 }
 #endif
 
 #define __ALC_UTILS_ERROR(...)   printf("%s:%d:ERROR:%.4f: ",__FILE__,__LINE__, gt()); printf(__VA_ARGS__); printf("\n");
-#define __ALC_UTILS_WARN(...)    printf("%s:%d:WARN:%.4f: ",__FILE__,__LINE__, gt()); printf(__VA_ARGS__); printf("\n");
+#define __ALC_UTILS_WARN(...)    printf("%s:%d:WARN:%.4f : ",__FILE__,__LINE__, gt()); printf(__VA_ARGS__); printf("\n");
 #define __ALC_UTILS_INFO(...)    printf("%s:%d:INFO:%.4f: ",__FILE__,__LINE__, gt()); printf(__VA_ARGS__); printf("\n");
 
 #define __ALC_UTILS_DEBUG(...)   if(_ALC_UTILS_DEBUG_ENABLED) { printf("%s:%d:DEBUG:%.4f: ",__FILE__,__LINE__, gt()); printf(__VA_ARGS__); printf("\n"); }
 #define __ALC_UTILS_TRACE(...)   if(_ALC_UTILS_TRACE_ENABLED) { printf("%s:%d:TRACE:%.4f: ",__FILE__,__LINE__, gt()); printf(__VA_ARGS__); printf("\n"); }
+#define __ALC_UTILS_IOTRACE(...) if(_ALC_UTILS_IOTRACE_ENABLED) { printf("%s:%d:TRACE:%.4f: ",__FILE__,__LINE__, gt()); printf(__VA_ARGS__); printf("\n"); }
 
 
 #endif /* ATSC3_ALC_UTILS_H_ */
