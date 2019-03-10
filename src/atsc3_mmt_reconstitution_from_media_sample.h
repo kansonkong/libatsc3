@@ -31,6 +31,17 @@ mmtp_payload_fragments_union_t* mmtp_process_from_payload(mmtp_sub_flow_vector_t
 		lls_sls_mmt_session_t* matching_lls_slt_mmt_session);
 
 
+extern int _MMT_RECON_FROM_SAMPLE_DEBUG_ENABLED;
+extern int _MMT_RECON_FROM_SAMPLE_TRACE_ENABLED;
+
+#define __MMT_RECON_FROM_SAMPLE_PRINTLN(...) printf(__VA_ARGS__);printf("\n")
+#define __MMT_RECON_FROM_SAMPLE_ERROR(...)   printf("%s:%d:ERROR :",__FILE__,__LINE__);__MMT_RECON_FROM_SAMPLE_PRINTLN(__VA_ARGS__);
+#define __MMT_RECON_FROM_SAMPLE_WARN(...)    printf("%s:%d:WARN :",__FILE__,__LINE__);__MMT_RECON_FROM_SAMPLE_PRINTLN(__VA_ARGS__);
+#define __MMT_RECON_FROM_SAMPLE_INFO(...)    printf("%s:%d:INFO :",__FILE__,__LINE__);__MMT_RECON_FROM_SAMPLE_PRINTLN(__VA_ARGS__);
+#define __MMT_RECON_FROM_SAMPLE_DEBUG(...)   if(_MMT_RECON_FROM_SAMPLE_DEBUG_ENABLED) { printf("%s:%d:DEBUG :",__FILE__,__LINE__);__MMT_RECON_FROM_SAMPLE_PRINTLN(__VA_ARGS__); };
+#define __MMT_RECON_FROM_SAMPLE_TRACE(...)   if(_MMT_RECON_FROM_SAMPLE_TRACE_ENABLED) { printf("%s:%d:TRACE :",__FILE__,__LINE__);__MMT_RECON_FROM_SAMPLE_PRINTLN(__VA_ARGS__); };
+
+
 #ifdef __cplusplus
 }
 #endif

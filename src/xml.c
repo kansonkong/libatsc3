@@ -321,13 +321,11 @@ static void xml_parser_error(struct xml_parser* parser, enum xml_parser_offset o
 	}
 
 	if (NO_CHARACTER != offset) {
-		fprintf(stderr,	"xml_parser_error at %i:%i (is %c): %s\n",
-				row + 1, column, parser->buffer[character], message
-		);
+	  //fprintf(stderr,	"xml_parser_error at %i:%i (is %c): %s\n",
+	  //			row + 1, column, parser->buffer[character], message);
 	} else {
-		fprintf(stderr,	"xml_parser_error at %i:%i: %s\n",
-				row + 1, column, message
-		);
+  //	fprintf(stderr,	"xml_parser_error at %i:%i: %s\n",
+  //				row + 1, column, message);
 	}
 }
 

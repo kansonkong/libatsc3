@@ -188,7 +188,7 @@ void atsc3_packet_statistics_mmt_stats_populate(udp_packet_t* udp_packet, mmtp_p
 			wdeleteln(pkt_global_loss_window);
 			wmove(pkt_global_loss_window, h-1, 0);
 
-			wrefresh(pkt_global_loss_window);
+			//wrefresh(pkt_global_loss_window);
 
 			global_mmt_loss_count--;
 		}
@@ -386,9 +386,9 @@ void atsc3_packet_statistics_dump_global_stats(){
 		getyx(pkt_flow_stats_mmt_window, row, col);
 	//	printf("----row: %d, col: %d\n", row, col);
 		wmove(pkt_flow_stats_mmt_window, row, col+2);
-		wrefresh(pkt_flow_stats_mmt_window);
+		//wrefresh(pkt_flow_stats_mmt_window);
 		whline(pkt_flow_stats_mmt_window, ACS_HLINE, 8);
-		wrefresh(pkt_flow_stats_mmt_window);
+		//wrefresh(pkt_flow_stats_mmt_window);
 
 		__PS_STATS_HR();
 

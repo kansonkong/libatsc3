@@ -6,10 +6,13 @@
 //  Copyright © 2019 Jason Justman. All rights reserved.
 //
 
+
+#include <stdbool.h>
+ #include <arpa/inet.h>
+
 #ifndef atsc3_lls_sls_monitor_output_buffer_h
 #define atsc3_lls_sls_monitor_output_buffer_h
 
-#include <stdbool.h>
 #include "atsc3_utils.h"
 #include "atsc3_player_ffplay.h"
 #include "atsc3_mmtp_types.h"
