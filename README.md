@@ -1,6 +1,7 @@
 libatsc3
 ==========
-ATSC 3.0 NGBP Open Source Library - Parse LMT, LLS and other signaling, object delivery via ROUTE, video playback of MMT and DASH 
+ATSC 3.0 NGBP Open Source Library - Parse LMT, LLS and other signaling, object delivery via ROUTE, video playback of MMT and DASH - 2019-03-10
+
 
 
 https://github.com/jjustman/libatsc3
@@ -21,7 +22,7 @@ The output of the library for MMT is the elementary flows a selected service_id,
  
 The output of the library for ROUTE is the selected flow for a service_id, pre-allocated on disk based as TSI-TOI, using the EXT_FTI or  EXT_TOL (transfer object length) with a null block, and rebuilt as packets are received.  I am in the process of completing the e-fdt and mbms messages, but the tools below allow for reconstituted playback of ROUTE video and audio based upon the TSI/and init TOI objects.
  
-##Listener Tests and Tools
+## Listener Tests and Tools
 
 Tests for specific SLT, MMT, or ROUTE flows by ip, port, packet id or tsi are available for detailed debugging. These are built as individual cli listeners using pcap for all mulicast traffic collection for selective debugging/tracing of the component flows. 
  
