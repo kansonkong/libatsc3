@@ -36,25 +36,27 @@ Pre-requisites:
                 The listener tests and tools require the following:
 * Libraries: ncurses, libpcap, cmake
 If you do not have these libs, or are unsure, they can be installed via
-                                                               i.      sudo apt-get install libncurses5-dev libncursesw5-dev libpcap-dev cmake
+* sudo apt-get install libncurses5-dev libncursesw5-dev libpcap-dev cmake
  
 * Binary: ffplay cli binary on your path
 If you do not have ffplay, most linux distros now have this in their repo’s via:
-                                                               i.      sudo apt-get install ffmpeg
-                                                             ii.      otherwise, static builds with ffplay are available for most platforms here:
+* sudo apt-get install ffmpeg
+*      otherwise, static builds with ffplay are available for most platforms here:
+
 linux: https://johnvansickle.com/ffmpeg/
 https://ffmpeg.zeranoe.com/builds/ 
 
 partial-firewall of GPL bento4 (https://www.bento4.com/) for tool video playback:
+
 Download and build:
-                       *  git clone https://github.com/axiomatic-systems/Bento4.git
-                      *   mkdir cmakebuild
-                    *   cd cmakebuild
-                     *        cmake -DCMAKE_BUILD_TYPE=Debug ..
-                      *        make
+*  git clone https://github.com/axiomatic-systems/Bento4.git
+*   mkdir cmakebuild
+*   cd cmakebuild
+*        cmake -DCMAKE_BUILD_TYPE=Debug ..
+*        make
 Install library in:
-                                                               i.      libatsc3/bento/lib
-This is only linked
+*      libatsc3/bento/lib
+This is only linked for the monitoring tool
  
 # Building:
  
@@ -65,6 +67,7 @@ This is only linked
 * in a separate shell, use tcpreplay to play them to a local or remote mulicast i/f
 * cd tools
 *./run_atsc3_listener_metrics_ncurses multicast_if_here
+
 **Type ‘m’ or ‘r’ for mmt or route, then ‘s’ for service id, optionally ‘v’,’a’ to override video packet_id/tsi, audio packet_id/tsi
  
 ## Open Items
