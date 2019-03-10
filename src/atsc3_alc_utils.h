@@ -21,6 +21,11 @@
 #ifndef ATSC3_ALC_UTILS_H_
 #define ATSC3_ALC_UTILS_H_
 
+
+#if defined (__cplusplus)
+extern "C" {
+#endif
+  
 extern int _ALC_UTILS_DEBUG_ENABLED;
 extern int _ALC_UTILS_TRACE_ENABLED;
 
@@ -36,9 +41,6 @@ extern int _ALC_UTILS_TRACE_ENABLED;
 
 
 
-#if defined (__cplusplus)
-extern "C" {
-#endif
 
 //this must be set to 1 for dumps to be written to disk
 extern int _ALC_PACKET_DUMP_TO_OBJECT_ENABLED;

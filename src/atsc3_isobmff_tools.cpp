@@ -5,8 +5,11 @@
  *      Author: jjustman
  */
 
-#include "atsc3_isobmff_tools.h"
+
 #include "bento4/ISOBMFFTrackJoiner.h"
+
+#include "atsc3_isobmff_tools.h"
+
 
 int _ISOBMFF_TOOLS_DEBUG_ENABLED = 0;
 int _ISOBMFF_TOOLS_TRACE_ENABLED = 0;
