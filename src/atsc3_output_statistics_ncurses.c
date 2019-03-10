@@ -17,6 +17,7 @@ pthread_mutex_t ncurses_writer_lock;
 int initfunc(WINDOW* ripoff_win, int cols) {
   printf("got my_window: %p", ripoff_win);
   my_window = ripoff_win;
+  return 0;
 }
 extern void trace (const unsigned int);
 
