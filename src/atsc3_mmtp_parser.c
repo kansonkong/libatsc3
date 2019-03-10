@@ -59,7 +59,6 @@ int _MMTP_TRACE_ENABLED = 0;
 
 //returns pointer from udp_raw_buf where we completed header parsing
 uint8_t* mmtp_packet_header_parse_from_raw_packet(mmtp_payload_fragments_union_t *mmtp_packet, uint8_t* udp_raw_buf, int udp_raw_buf_size) {
-
 	if(udp_raw_buf_size < 20) {
 		//bail, the min header is at least 20 bytes
 		_MMTP_ERROR("mmtp_packet_header_parse_from_raw_packet, udp_raw_buf size is: %d, need at least 20 bytes", udp_raw_buf_size);
@@ -180,7 +179,7 @@ uint8_t* mmtp_packet_header_parse_from_raw_packet(mmtp_payload_fragments_union_t
         //walk back our buff by 4 bytes, korean MMT may not set this.
         buf-=4;
     }
-    
+
 	return buf;
 
 error:

@@ -411,7 +411,7 @@ main(int argc, char** argv)
     
     // open the output
     AP4_ByteStream* output = NULL;
-    AP4_FileByteStream::Create("-stdout", AP4_FileByteStream::STREAM_MODE_WRITE, output);
+    AP4_FileByteStream::Create("-stderr", AP4_FileByteStream::STREAM_MODE_WRITE, output);
     
     AP4_MemoryByteStream* stream = new AP4_MemoryByteStream(8192000);
     

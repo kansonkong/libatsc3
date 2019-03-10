@@ -53,17 +53,19 @@
  *
  */
 
-#ifndef MODULES_DEMUX_MMT_ATSC3_MMT_SIGNALING_MESSAGE_H_
-#define MODULES_DEMUX_MMT_ATSC3_MMT_SIGNALING_MESSAGE_H_
 
 #include <string.h>
 #include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <arpa/inet.h>
 
 #include "atsc3_utils.h"
 #include "atsc3_mmtp_types.h"
 #include "atsc3_gzip.h"
+
+#ifndef MODULES_DEMUX_MMT_ATSC3_MMT_SIGNALING_MESSAGE_H_
+#define MODULES_DEMUX_MMT_ATSC3_MMT_SIGNALING_MESSAGE_H_
 
 #ifdef __cplusplus
 extern "C" {
