@@ -5,7 +5,6 @@
 # gpl binaries are only built for the test output linkages, e.g. against bento4_gpl.o
 #
 # requirements: bento4 libary, ncurses libary and headers
-clean-all: clean all
 
 all: intermediate_lls intermediate_mmt intermediate_alc intermediate_ffplay \
 		interemediate_gpl_and_mock_linkage  \
@@ -234,9 +233,10 @@ atsc3_listener_metrics_ncurses: tools/atsc3_listener_metrics_ncurses.cpp \
 								atsc3_mmt_reconstitution_from_media_sample.o \
 								libatsc3_bento4_gpl.o
 	g++  -D OUTPUT_STATISTICS=NCURSES -g tools/atsc3_listener_metrics_ncurses.cpp \
+		libatsc3_bento4_gpl.o \
 		atsc3_output_statistics_ncurses.c \
 		atsc3_bandwidth_statistics.c atsc3_packet_statistics.c \
-		atsc3_isobmff_tools.o atsc3_mmt_reconstitution_from_media_sample.o \
-		libatsc3_bento4_gpl.o \
-		-I../bento/include/ -lpcap -lncurses -lpcap -lz -lpthread \
+		atsc3_isobmff_tools.o \
+		atsc3_mmt_reconstitution_from_media_sample.c \
+		-I../bento/include/ -lpcap  -lncurses -lpcap -lz -lpthread \
 		-o tools/atsc3_listener_metrics_ncurses

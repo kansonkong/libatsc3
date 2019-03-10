@@ -76,7 +76,7 @@ mmtp_payload_fragments_union_t* mmtp_process_from_payload(mmtp_sub_flow_vector_t
                         last_flow_reference->udp_flow.dst_port,
                         last_flow_reference->packet_id,
                         last_flow_reference->mpu_sequence_number);
-
+	
 // this happens above also...
 //                udp_flow_packet_id_mpu_sequence_tuple_t* udp_flow_last_packet_id_mpu_sequence_id = udp_flow_latest_mpu_sequence_number_from_packet_id(udp_flow_latest_mpu_sequence_number_container, udp_packet, mmtp_payload->mmtp_mpu_type_packet_header.mmtp_packet_id);
 
@@ -243,7 +243,8 @@ mmtp_payload_fragments_union_t* mmtp_process_from_payload(mmtp_sub_flow_vector_t
             global_stats->packet_counter_mmt_signaling++;
             __MMT_RECON_FROM_SAMPLE_INFO("mmtp_packet_parse: processing mmt flow: %d.%d.%d.%d:(%u) packet_id: 0, signalling message", __toipandportnonstruct(udp_packet->udp_flow.dst_ip_addr, udp_packet->udp_flow.dst_port));
             //mmtp_payload->mmtp_signalling_message_fragments.payload
-            signaling_message_dump(mmtp_payload);
+            return NULL;
+	    signaling_message_dump(mmtp_payload);
             for(int i=0; i < mmtp_payload->mmtp_signalling_message_fragments.mmt_signalling_message_vector.messages_n; i++) {
             	mmt_signalling_message_header_and_payload_t* mmt_signalling_message_header_and_payload = mmtp_payload->mmtp_signalling_message_fragments.mmt_signalling_message_vector.messages[i];
             	if(mmt_signalling_message_header_and_payload->message_header.MESSAGE_id_type == MPT_message) {

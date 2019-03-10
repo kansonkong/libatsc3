@@ -9,11 +9,16 @@
 #include "atsc3_player_ffplay.h"
 #include "atsc3_alc_utils.h"
 #include "atsc3_output_statistics_ncurses_windows.h"
-
+#include <ncurses.h>
 //TODO - get rid of me...
 extern int _ALC_PACKET_DUMP_TO_OBJECT_ENABLED;
 
 pthread_mutex_t ncurses_writer_lock;
+int initfunc(WINDOW* ripoff_win, int cols) {
+  printf("got my_window: %p", ripoff_win);
+  my_window = ripoff_win;
+}
+extern void trace (const unsigned int);
 
 void ncurses_init() {
 	/** hacks
@@ -31,6 +36,7 @@ void ncurses_init() {
 	getch();
 	endwin();
 	*/
+  // trace((const unsigned int)0xFFFF);
 	ncurses_mutext_init();
 	def_prog_mode();
 	//wire up resize handler
@@ -38,15 +44,23 @@ void ncurses_init() {
 	memset(&sa, 0, sizeof(struct sigaction));
 	sa.sa_handler = handle_winch;
 	sigaction(SIGWINCH, &sa, NULL);
-    
-	//remap as our printf is redirected to stderr
-	my_screen = newterm(NULL, stdout, stdin);
-	set_term(my_screen);
-	create_or_update_window_sizes(false);
 
+	//rip off top line
+	ripoffline(1,initfunc);
+	
+	
+	//remap as our printf is redirected to stderr
+	my_screen = newterm("xterm", stdout, stdin);
+	///FILE *f = fopen("/dev/tty", "+r");
+       	//my_screen = newterm(NULL, f, f);
+	set_term(my_screen);
 	raw();
-	//keypad(my_window, TRUE);		/* We get F1, F2 etc..		*/
 	noecho();						/* Don't echo() while we do getch */
+	create_or_update_window_sizes(false);
+	//	scrollok(false);
+
+	//keypad(my_window, TRUE);		/* We get F1, F2 etc..		*/
+	
 }
 
 int play_mode = 0;
@@ -62,6 +76,7 @@ void mtl_clear() {
 
 void* ncurses_input_run_thread(void* lls_slt_monitor_ptr) {
     int ch;
+    ncurses_init();
     lls_slt_monitor_t* lls_slt_monitor = (lls_slt_monitor_t*)lls_slt_monitor_ptr;
     lls_sls_mmt_monitor_t* lls_sls_mmt_monitor = NULL;
     lls_sls_alc_monitor* lls_sls_alc_monitor = NULL;
@@ -496,10 +511,11 @@ void create_or_update_window_sizes(bool should_reload_term_size) {
 	//bottom
 	pkt_global_loss_window = 	derwin(bottom_window_outline, bottom_window_h-2, bottom_window_w-2, 1, 1);
 
-	wrefresh(my_window);
-	wrefresh(left_window_outline);
-	wrefresh(right_window_outline);
-	wrefresh(bottom_window_outline);
+	wnoutrefresh(my_window);
+        wnoutrefresh(left_window_outline);
+	wnoutrefresh(right_window_outline);
+	wnoutrefresh(bottom_window_outline);
+	doupdate();
 
 }
 
@@ -509,6 +525,7 @@ void handle_winch(int sig)
 
     // Needs to be called after an endwin() so ncurses will initialize
     // itself with the new terminal dimensions.
+	abort();
     create_or_update_window_sizes(true);
     ncurses_writer_lock_mutex_release();
 
@@ -535,6 +552,7 @@ void* print_lls_instance_table_thread(void* lls_slt_monitor_ptr) {
 			lls_dump_instance_table_ncurses(lls_slt_monitor->lls_table_slt);
 			__DOUPDATE();
 			__LLS_REFRESH();
+	       
 			ncurses_writer_lock_mutex_release();
 		}
 	}

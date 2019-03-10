@@ -1,1 +1,2 @@
-rm debug.log; sudo ./atsc3_listener_metrics_ncurses $1 2> debug.log
+sudo ./atsc3_listener_metrics_ncurses $1
+
