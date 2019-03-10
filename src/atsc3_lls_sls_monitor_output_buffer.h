@@ -8,6 +8,7 @@
 
 
 #include <stdbool.h>
+ #include <arpa/inet.h>
 
 #ifndef atsc3_lls_sls_monitor_output_buffer_h
 #define atsc3_lls_sls_monitor_output_buffer_h
