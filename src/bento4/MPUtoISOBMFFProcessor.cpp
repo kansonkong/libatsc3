@@ -185,7 +185,7 @@ AP4_DataBuffer* mpuToISOBMFFProcessBoxes(uint8_t* full_mpu_payload, uint32_t ful
 //	fclose(f);
 
 	AP4_ByteStream* boxDumpConsoleOutput = NULL;
-	AP4_FileByteStream::Create("-stdout", AP4_FileByteStream::STREAM_MODE_WRITE, boxDumpConsoleOutput);
+	AP4_FileByteStream::Create("-stderr", AP4_FileByteStream::STREAM_MODE_WRITE, boxDumpConsoleOutput);
 
 	AP4_AtomInspector* inspector = new AP4_PrintInspector(*boxDumpConsoleOutput);
     inspector->SetVerbosity(3);
@@ -263,7 +263,7 @@ AP4_DataBuffer* mpuToDumpISOBMFFBoxes(uint8_t* full_mpu_payload, uint32_t full_m
     //    fclose(f);
     
     AP4_ByteStream* boxDumpConsoleOutput = NULL;
-    AP4_FileByteStream::Create("-stdout", AP4_FileByteStream::STREAM_MODE_WRITE, boxDumpConsoleOutput);
+    AP4_FileByteStream::Create("-stderr", AP4_FileByteStream::STREAM_MODE_WRITE, boxDumpConsoleOutput);
     
     AP4_AtomInspector* inspector = new AP4_PrintInspector(*boxDumpConsoleOutput);
     inspector->SetVerbosity(3);

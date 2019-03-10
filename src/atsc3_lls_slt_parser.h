@@ -29,7 +29,7 @@ address and destination port of the MMTP session carrying the MMTP- specific SLS
 
 #include "atsc3_lls_alc_utils.h"
 #include "atsc3_lls_sls_parser.h"
-#include "atsc3_logging_externs.h"
+
 
 #ifndef ATSC3_LLS_SLT_PARSER_H_
 #define ATSC3_LLS_SLT_PARSER_H_

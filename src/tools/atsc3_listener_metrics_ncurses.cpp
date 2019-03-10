@@ -4,7 +4,7 @@
  *  Created on: Jan 19, 2019
  *      Author: jjustman
  *
- * global listener driver for LLS, MMT and ROUTE / DASH (coming soon)
+ * global listener driver for LLS, MMT and ROUTE / DASH
  *
  *
  * borrowed from https://stackoverflow.com/questions/26275019/how-to-read-and-send-udp-packets-on-mac-os-x
@@ -72,12 +72,8 @@ int PACKET_COUNTER=0;
 #include <limits.h>
 #include <strings.h>
 
-
-#include "../atsc3_isobmff_tools.h"
 #include "../bento4/ISOBMFFTrackJoiner.h"
-
-
-extern "C" {
+#include "../atsc3_isobmff_tools.h"
 
 #include "../atsc3_listener_udp.h"
 #include "../atsc3_utils.h"
@@ -102,7 +98,7 @@ extern "C" {
 #include "../atsc3_packet_statistics.h"
 
 #include "../atsc3_output_statistics_ncurses.h"
-}
+
 #include "../atsc3_logging_externs.h"
 
 
@@ -229,6 +225,7 @@ ret:
 
 void process_packet(u_char *user, const struct pcap_pkthdr *pkthdr, const u_char *packet) {
 	udp_packet_t* udp_packet = process_packet_from_pcap(user, pkthdr, packet);
+
 	if(!udp_packet) {
 		return;
 	}
@@ -313,6 +310,7 @@ void process_packet(u_char *user, const struct pcap_pkthdr *pkthdr, const u_char
     if(matching_lls_slt_mmt_session) {
         __TRACE("data len: %d", udp_packet->data_length)
         mmtp_payload_fragments_union_t * mmtp_payload = mmtp_parse_from_udp_packet(udp_packet);
+
         if(mmtp_payload) {
             mmtp_process_from_payload(mmtp_sub_flow_vector, udp_flow_latest_mpu_sequence_number_container, lls_slt_monitor, udp_packet, &mmtp_payload, matching_lls_slt_mmt_session);
            // mmtp_payload_fragments_union_free(&mmtp_payload);
@@ -475,10 +473,13 @@ int main(int argc,char **argv) {
     //create our background thread for bandwidth calculation
     /** ncurses support - valgrind on osx will fail in pthread_create...**/
 
-	ncurses_init();
 
 
 #ifndef _TEST_RUN_VALGRIND_OSX_
+
+	pthread_t global_ncurses_input_thread_id;
+	int ncurses_input_ret = pthread_create(&global_ncurses_input_thread_id, NULL, ncurses_input_run_thread, (void*)lls_slt_monitor);
+	assert(!ncurses_input_ret);
 
 	pthread_t global_bandwidth_thread_id;
 	pthread_create(&global_bandwidth_thread_id, NULL, print_bandwidth_statistics_thread, NULL);
@@ -489,12 +490,9 @@ int main(int argc,char **argv) {
 	pthread_t global_slt_thread_id;
 	pthread_create(&global_slt_thread_id, NULL, print_lls_instance_table_thread, (void*)lls_slt_monitor);
 
-	pthread_t global_ncurses_input_thread_id;
-	int ncurses_input_ret = pthread_create(&global_ncurses_input_thread_id, NULL, ncurses_input_run_thread, (void*)lls_slt_monitor);
-	assert(!ncurses_input_ret);
-
+	
 	pthread_t global_pcap_thread_id;
-	int pcap_ret = pthread_create(&global_pcap_thread_id, NULL, pcap_loop_run_thread, (void*)dev);
+		int pcap_ret = pthread_create(&global_pcap_thread_id, NULL, pcap_loop_run_thread, (void*)dev);
 	assert(!pcap_ret);
 
     

@@ -18,30 +18,21 @@
 #include <unistd.h>
 #include <sys/stat.h>
 
-#if defined (__cplusplus)
-extern "C" {
-#endif
-
-#include "atsc3_utils.h"
-
-#if defined (__cplusplus)
-}
-#endif
 
 #ifndef ATSC3_PLAYER_FFPLAY_H_
 #define ATSC3_PLAYER_FFPLAY_H_
 
+#include "atsc3_utils.h"
+#include "atsc3_lls_sls_monitor_output_buffer.h"
 
 #if defined (__cplusplus)
 extern "C" {
 #endif
-#include "atsc3_lls_sls_monitor_output_buffer.h"
-
 
 extern int _PLAYER_FFPLAY_DEBUG_ENABLED;
 extern int _PLAYER_FFPLAY_TRACE_ENABLED;
 
-#define __PLAYER_INITIAL_BUFFER_SEGMENT_COUNT 1  //wait for at least 1 signals
+#define __PLAYER_INITIAL_BUFFER_SEGMENT_COUNT 2  //wait for at least 1 signals
 #define __PLAYER_INITIAL_BUFFER_TARGET 512000  //and 1 MB of payload before starting to stream to ffplay
 #define __PLAYER_FFPLAY_BUFFER_WARNING_SIZE 128000
 #define __PLAYER_FFPLAY_PIPE_INTERNAL_BUFFER_SIZE 8192000
