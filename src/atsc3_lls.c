@@ -149,7 +149,7 @@ lls_table_t* lls_table_create_or_update_from_lls_slt_monitor_with_metrics(lls_sl
 		(*parsed_update)++;
 		return lls_slt_monitor->lls_table_slt;
 	} else {
-		__ERROR("lls_slt_monitor is null, can't propigate LLS update!");
+		_LLS_ERROR("lls_slt_monitor is null, can't propigate LLS update!");
 	}
 	return NULL;
 

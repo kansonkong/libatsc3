@@ -4,7 +4,7 @@
  *  Created on: Jan 19, 2019
  *      Author: jjustman
  *
- * global listener driver for LLS, MMT and ROUTE / DASH (coming soon)
+ * global listener driver for LLS, MMT and ROUTE / DASH
  *
  *
  * borrowed from https://stackoverflow.com/questions/26275019/how-to-read-and-send-udp-packets-on-mac-os-x
@@ -72,12 +72,8 @@ int PACKET_COUNTER=0;
 #include <limits.h>
 #include <strings.h>
 
-
-#include "../atsc3_isobmff_tools.h"
 #include "../bento4/ISOBMFFTrackJoiner.h"
-
-
-extern "C" {
+#include "../atsc3_isobmff_tools.h"
 
 #include "../atsc3_listener_udp.h"
 #include "../atsc3_utils.h"
@@ -102,7 +98,7 @@ extern "C" {
 #include "../atsc3_packet_statistics.h"
 
 #include "../atsc3_output_statistics_ncurses.h"
-}
+
 #include "../atsc3_logging_externs.h"
 
 
