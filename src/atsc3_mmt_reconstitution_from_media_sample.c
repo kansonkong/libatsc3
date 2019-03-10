@@ -113,8 +113,8 @@ mmtp_payload_fragments_union_t* mmtp_process_from_payload(mmtp_sub_flow_vector_t
 
 
                         //major refactoring
-                       //TODO - use the proper decoding time
-                       lls_sls_monitor_output_buffer_t* lls_sls_monitor_output_buffer_final_muxed_payload = atsc3_isobmff_build_mpu_metadata_ftyp_moof_mdat_box_from_mpu_sequence_numbers(&udp_packet->udp_flow, udp_flow_latest_mpu_sequence_number_container, matching_lls_slt_mmt_session->to_process_udp_flow_packet_id_mpu_sequence_tuple_audio->mpu_sequence_number-2, matching_lls_slt_mmt_session->to_process_udp_flow_packet_id_mpu_sequence_tuple_video->mpu_sequence_number-2, mmtp_sub_flow_vector, lls_slt_monitor->lls_sls_mmt_monitor);
+                       //TODO - use the proper decoding time instead of mpu_sequence_number
+                       lls_sls_monitor_output_buffer_t* lls_sls_monitor_output_buffer_final_muxed_payload = atsc3_isobmff_build_mpu_metadata_ftyp_moof_mdat_box_from_mpu_sequence_numbers(&udp_packet->udp_flow, udp_flow_latest_mpu_sequence_number_container, matching_lls_slt_mmt_session->to_process_udp_flow_packet_id_mpu_sequence_tuple_audio->mpu_sequence_number-2, matching_lls_slt_mmt_session->to_process_udp_flow_packet_id_mpu_sequence_tuple_video->mpu_sequence_number-1, mmtp_sub_flow_vector, lls_slt_monitor->lls_sls_mmt_monitor);
 
                         if(lls_sls_monitor_output_buffer_final_muxed_payload) {
                             //mark both of these flows as having been processed
