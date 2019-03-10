@@ -76,8 +76,9 @@ extern 	WINDOW* pkt_global_loss_window;
 #define __BW_STATS_LIFETIME(...)	wprintw(bw_window_lifetime, __VA_ARGS__); \
 									wprintw(bw_window_lifetime,"\n");
 
-#define __BW_CLEAR() 				werase(bw_window_runtime); \
-									werase(bw_window_lifetime); \
+#define __BW_CLEAR()
+  //werase(bw_window_runtime);						\
+//									werase(bw_window_lifetime); \
 
 #define __PS_STATS_NOUPDATE()		wnoutrefresh(pkt_global_stats_window); \
 									wnoutrefresh(pkt_flow_stats_mmt_window); \
@@ -97,11 +98,13 @@ extern 	WINDOW* pkt_global_loss_window;
 #define __PS_STATS_LOSS(...) 		wprintw(pkt_global_loss_window, __VA_ARGS__); \
 									wprintw(pkt_global_loss_window,"\n");
 
-#define __PS_REFRESH_LOSS() 		wrefresh(pkt_global_loss_window);
+#define __PS_REFRESH_LOSS()
+  //wrefresh(pkt_global_loss_window);
 
 
-#define __PS_REFRESH() 				wrefresh(pkt_global_stats_window); \
-									wrefresh(pkt_flow_stats_mmt_window);
+#define __PS_REFRESH()
+  //wrefresh(pkt_global_stats_window);					\
+//									wrefresh(pkt_flow_stats_mmt_window);
 
 #define __PS_CLEAR() 				werase(pkt_global_stats_window); \
 									werase(pkt_flow_stats_mmt_window);
@@ -120,13 +123,15 @@ extern 	WINDOW* pkt_global_loss_window;
 #define __LLS_DUMP(...)				wprintw(signaling_global_stats_window, __VA_ARGS__); \
 									wprintw(signaling_global_stats_window,"\n");
 
-#define __LLS_REFRESH()		 		wrefresh(signaling_global_stats_window);
+#define __LLS_REFRESH()
+  //wrefresh(signaling_global_stats_window);
 
 
 
 extern int global_mmt_loss_count;
 
-#define __DOUPDATE()				doupdate();
+#define __DOUPDATE()
+  //doupdate();
 
 
 #ifndef CTRL
