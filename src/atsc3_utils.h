@@ -4,9 +4,7 @@
  *  Created on: Jan 6, 2019
  *      Author: jjustman
  */
-
-#ifndef ATSC3_UTILS_H_
-#define ATSC3_UTILS_H_
+#pragma GCC diagnostic ignored "-Wformat-zero-length"
 
 #include <assert.h>
 #include <ctype.h>
@@ -21,6 +19,9 @@
 
 #include <time.h>
 #include <sys/time.h>
+
+#ifndef ATSC3_UTILS_H_
+#define ATSC3_UTILS_H_
 
 #include "fixups.h"
 #include "unistd.h"

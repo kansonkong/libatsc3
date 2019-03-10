@@ -6,9 +6,12 @@
  */
 
 //linux compat
-#include <_types/_uint32_t.h>
-#include <_types/_uint64_t.h>
-#include <_types/_uint8_t.h>
+//#include <_types/_uint32_t.h>
+//#include <_types/_uint64_t.h>
+//#include <_types/_uint8_t.h>
+
+using namespace std;
+
 #include <list>
 
 #include <stdint.h>
@@ -17,13 +20,12 @@
 #include <string.h>
 #include <sys/stat.h>
 
-#include "../atsc3_utils.h"
+//#include "../atsc3_utils.h"
 #include "../atsc3_isobmff_trun_box.h"
 #include "../atsc3_lls_sls_monitor_output_buffer.h"
 
 #include "Ap4.h"
 #include "Ap4Atom.h"
-using namespace std;
 
 #ifndef BENTO4_ISOBMFFTRACKJOINER_H_
 #define BENTO4_ISOBMFFTRACKJOINER_H_
@@ -46,9 +48,12 @@ void parseAndBuildJoinedBoxesFromMemory(uint8_t* file1_payload, uint32_t file1_s
 void dumpFullMetadata(list<AP4_Atom*> atomList);
 void printBoxType(AP4_Atom* atom);
 
-#define __ISOBMFF_JOINER_PRINTLN(...) printf(__VA_ARGS__);printf("\n")
-#define __ISOBMFF_JOINER_INFO(...)    printf("%s:%d:INFO :",__FILE__,__LINE__);__ISOBMFF_JOINER_PRINTLN(__VA_ARGS__);
-#define __ISOBMFF_JOINER_DEBUG(...) if(_ISOBMFFTRACKJOINER_DEBUG_ENABLED) { printf("%s:%d:DEBUG :",__FILE__,__LINE__);__ISOBMFF_JOINER_PRINTLN(__VA_ARGS__); }
+#define __ISOBMFF_JOINER_PRINTLN(...)
+  //fprintf(stderr, __VA_ARGS__);fprintf(stderr, "\n")
+#define __ISOBMFF_JOINER_INFO(...)
+  //fprintf(stderr, "%s:%d:INFO :",__FILE__,__LINE__);__ISOBMFF_JOINER_PRINTLN(__VA_ARGS__);
+#define __ISOBMFF_JOINER_DEBUG(...)
+  //if(_ISOBMFFTRACKJOINER_DEBUG_ENABLED) { fprintf(stderr, "%s:%d:DEBUG :",__FILE__,__LINE__);__ISOBMFF_JOINER_PRINTLN(__VA_ARGS__); }
 
 #if defined (__cplusplus)
 }

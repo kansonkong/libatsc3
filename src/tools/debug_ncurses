@@ -1,0 +1,4 @@
+
+rm trace; env LD_LIBRARY_PATH=/usr/lib/debug NCURSES_TRACE=0x0020 ./atsc3_listener_metrics_ncurses enp0s6;
+more trace
+
