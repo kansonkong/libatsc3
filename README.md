@@ -8,7 +8,7 @@ https://github.com/jjustman/libatsc3
  
 ## Cross-platform build demo:
  
-                https://www.dropbox.com/s/96qwgel1wp0yptd/timing%20offset%20doesnt%20re-offset%20to%20gps%2C%20nor%20can%20gps%20mode%20a%20replay%20stl.mov?dl=0
+https://www.dropbox.com/s/96qwgel1wp0yptd/timing%20offset%20doesnt%20re-offset%20to%20gps%2C%20nor%20can%20gps%20mode%20a%20replay%20stl.mov?dl=0
  
 ## Project Overview
 
