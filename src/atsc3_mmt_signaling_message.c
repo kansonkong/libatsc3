@@ -151,10 +151,11 @@ uint8_t* mmt_signaling_message_parse_packet(mmtp_payload_fragments_union_t *mmtp
 	uint8_t *buf = udp_raw_buf;
 	uint32_t buf_size = udp_raw_buf_size;
 
-
 	if(mmtp_signalling_packet->mmtp_signalling_message_fragments.si_aggregation_flag) {
 		uint32_t mmtp_aggregation_msg_length;
+		_MMSM_ERROR("AGGREGATED SI NOT SUPPORTED");
 
+		return NULL;
 		while(buf_size) {
 			if(mmtp_signalling_packet->mmtp_signalling_message_fragments.si_additional_length_header) {
 				//read the full 32 bits for MSG_length
@@ -167,12 +168,11 @@ uint8_t* mmt_signaling_message_parse_packet(mmtp_payload_fragments_union_t *mmtp
 				buf = extract(buf, (uint8_t*)&aggregation_msg_length_short, 2);
 				mmtp_aggregation_msg_length = ntohs(aggregation_msg_length_short);
 			}
+
 			//build a msg from buf to buf+mmtp_aggregation_msg_length
 			_MMSM_ERROR("AGGREGATED SI NOT SUPPORTED");
 			buf = mmt_signaling_message_parse_id_type(mmtp_signalling_packet, buf, buf_size);
 			buf_size = udp_raw_buf_size - (buf - udp_raw_buf);
-
-
 		}
 	} else {
 
