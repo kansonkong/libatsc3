@@ -108,6 +108,42 @@ udp_packet_t* process_ip_udp_header(uint8_t* packet, uint32_t packet_length) {
 	return udp_packet;
 }
 
+udp_packet_t* udp_packet_duplicate(udp_packet_t* udp_packet) {
+	udp_packet_t* udp_packet_new = calloc(1, sizeof(udp_packet_t));
+	if(udp_packet->data_length && udp_packet->data) {
+
+		udp_packet_new->data = calloc(udp_packet->data_length, sizeof(u_char));
+		udp_packet_new->data_length = udp_packet->data_length;
+		memcpy(udp_packet_new->data, udp_packet->data, udp_packet->data_length);
+
+		udp_packet_new->udp_flow.src_ip_addr = udp_packet->udp_flow.src_ip_addr;
+		udp_packet_new->udp_flow.src_port	 = udp_packet->udp_flow.src_port;
+		udp_packet_new->udp_flow.dst_ip_addr = udp_packet->udp_flow.dst_ip_addr;
+		udp_packet_new->udp_flow.dst_port 	 = udp_packet->udp_flow.dst_port;
+
+		return udp_packet_new;
+
+	} else {
+		return NULL;
+	}
+
+}
+void udp_packet_free(udp_packet_t** udp_packet_p) {
+	udp_packet_t* udp_packet = *udp_packet_p;
+
+	if(udp_packet->data) {
+		free(udp_packet->data);
+		udp_packet->data = NULL;
+	}
+
+	if(udp_packet) {
+		free(udp_packet);
+		udp_packet = NULL;
+	}
+	*udp_packet_p = NULL;
+}
+
+
 void cleanup(udp_packet_t** udp_packet_p) {
 	udp_packet_t* udp_packet = *udp_packet_p;
 
