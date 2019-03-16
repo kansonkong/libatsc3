@@ -37,8 +37,13 @@ typedef struct udp_packet {
 	int				total_packet_length;
 
 } udp_packet_t;
+//dump packet example
+//__STLTP_PARSER_DEBUG("dst ip:port : %u.%u.%u.%u:%u",__toipandportnonstruct(atsc3_stltp_tunnel_packet->udp_packet->udp_flow.dst_ip_addr, atsc3_stltp_tunnel_packet->udp_packet->udp_flow.dst_port));
+
 
 udp_packet_t* process_packet_from_pcap(u_char *user, const struct pcap_pkthdr *pkthdr, const u_char *packet);
+udp_packet_t* process_ip_udp_header(uint8_t* packet, uint32_t packet_length);
+
 void cleanup(udp_packet_t** udp_packet_p);
 
 
