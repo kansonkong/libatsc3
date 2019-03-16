@@ -36,7 +36,7 @@ listener_ncurses: atsc3_listener_metrics_ncurses
 
 unit_tests: atsc3_lmt_test atsc3_lls_slt_parser_test atsc3_lls_test \
 			atsc3_lls_SystemTime_test atsc3_mmt_signaling_message_test \
-			atsc3_isobmff_box_test atsc3_fdt_test
+			atsc3_isobmff_box_test atsc3_fdt_test atsc3_stltp_parser_test
 
 atsc3_mmt_signaling_message_test: atsc3_mmt_signaling_message_test.c libatsc3.o
 
@@ -117,6 +117,9 @@ atsc3_mmt_reconstitution_from_media_sample.o: atsc3_mmt_reconstitution_from_medi
 
 atsc3_isobmff_tools.o: atsc3_isobmff_tools.h atsc3_isobmff_tools.cpp
 	g++ -g -o atsc3_isobmff_tools.o -c atsc3_isobmff_tools.cpp -I../bento/include/
+	
+atsc3_stltp_parser.o: atsc3_stltp_parser.h atsc3_stltp_parser.c
+	cc -g -c atsc3_stltp_parser.c
 
 # stats modules
 
@@ -182,6 +185,9 @@ atsc3_isobmff_box_test: atsc3_isobmff_box_test.c
 
 atsc3_fdt_test: atsc3_fdt_test.c libatsc3.o
 	cc -g atsc3_fdt_test.c libatsc3.o  -lz  -lm -lpthread -o atsc3_fdt_test
+	
+atsc3_stltp_parser_test: atsc3_stltp_parser_test.c atsc3_stltp_parser.o atsc3_listener_udp.o
+	cc -g atsc3_stltp_parser_test.c atsc3_stltp_parser.o atsc3_listener_udp.o -o atsc3_stltp_parser_test
 
 ### integration tests
 ### TODO: move these into target makefile in listener_test/folder
