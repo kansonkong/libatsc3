@@ -240,9 +240,44 @@ atsc3_stltp_preamble_packet_t* atsc3_stltp_preamble_packet_extract(atsc3_stltp_t
 	uint32_t header_packet_offset = 0;
 	uint32_t rtp_preamble_header_remaining_length = atsc3_stltp_tunnel_packet->udp_packet->data_length;
 
-	//todo - actually read this packet....
+	if(atsc3_stltp_preamble_packet->atsc3_rtp_fixed_header->marker && !atsc3_stltp_tunnel_packet->atsc3_stltp_preamble_packet->fragment_count) {
+		//read the first uint16_t for our preamble length
+		header_packet_offset = 12;
+		rtp_preamble_header_remaining_length -= header_packet_offset;
+		atsc3_stltp_preamble_packet->preamble_payload_length = ntohs(*((uint16_t*)(&atsc3_stltp_tunnel_packet->udp_packet->data[header_packet_offset])));
+		__STLTP_PARSER_DEBUG(" ----preamble packet: new -----");
+		__STLTP_PARSER_DEBUG("     total packet length:  %u",  atsc3_stltp_preamble_packet->preamble_payload_length);
+		__STLTP_PARSER_DEBUG("     fragment 0 length:    %u",  rtp_preamble_header_remaining_length);
 
-	//	if(atsc3_stltp_baseband_packet->atsc3_rtp_fixed_header->marker && !atsc3_stltp_tunnel_packet->atsc3_stltp_baseband_packet->fragment_count) {
+
+		uint32_t preamble_header_packet_length = atsc3_stltp_preamble_packet->preamble_payload_length;
+		assert(preamble_header_packet_length < 65535);
+		atsc3_stltp_preamble_packet->preamble_payload = calloc(preamble_header_packet_length, sizeof(uint8_t));
+
+	} else {
+		__STLTP_PARSER_DEBUG(" ----preamble packet: fragment -----");
+		__STLTP_PARSER_DEBUG("     fragment %u length:   %u",   atsc3_stltp_preamble_packet->fragment_count, rtp_preamble_header_remaining_length);
+
+	}
+
+
+	//	assert(rtp_baseband_header_remaining_length + atsc3_stltp_baseband_packet->baseband_packet_offset <= atsc3_stltp_baseband_packet->baseband_packet_length);
+	//
+	//	atsc3_stltp_tunnel_packet->atsc3_stltp_baseband_packet->fragment_count++;
+
+	atsc3_stltp_tunnel_packet->atsc3_stltp_preamble_packet->fragment_count++;
+	memcpy(&atsc3_stltp_preamble_packet->preamble_payload[atsc3_stltp_preamble_packet->preamble_payload_offset], &atsc3_stltp_tunnel_packet->udp_packet->data[header_packet_offset], rtp_preamble_header_remaining_length);
+	__STLTP_PARSER_DEBUG("     first bytes:         0x%02x 0x%02x", atsc3_stltp_preamble_packet->preamble_payload[atsc3_stltp_preamble_packet->preamble_payload_offset], atsc3_stltp_preamble_packet->preamble_payload[atsc3_stltp_preamble_packet->preamble_payload_offset+1]);
+	atsc3_stltp_preamble_packet->preamble_payload_offset += rtp_preamble_header_remaining_length;
+	__STLTP_PARSER_DEBUG("     packet_offset: %u, preamble_payload_length: %u", atsc3_stltp_preamble_packet->preamble_payload_offset, atsc3_stltp_preamble_packet->preamble_payload_length);
+
+	if(atsc3_stltp_preamble_packet->preamble_payload_offset == atsc3_stltp_preamble_packet->preamble_payload_length) {
+		__STLTP_PARSER_DEBUG(" ----preamble packet: complete-----");
+		atsc3_stltp_tunnel_packet->is_complete = true;
+		//todo - parse thsi into proper l1_...strucuts
+
+	}
+
 
 
 	return atsc3_stltp_preamble_packet;
