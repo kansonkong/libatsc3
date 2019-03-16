@@ -3,6 +3,11 @@
  *
  *  Created on: Mar 16, 2019
  *      Author: jjustman
+ *
+ *
+ *      https://tools.ietf.org/html/rfc3550
+ *
+ *
  */
 
 
@@ -53,6 +58,16 @@ atsc3_stltp_tunnel_packet_t* atsc3_stltp_tunnel_packet_extract_fragment(uint8_t*
 		//marker signifies that we may have a split payload
 		if(atsc3_rtp_fixed_header->marker) {
 			if(atsc3_stltp_tunnel_packet_fragment) {
+
+				if(atsc3_stltp_tunnel_packet_fragment->udp_packet_short_fragment) {
+					__STLTP_PARSER_WARN("--tunnel packet: patching atsc3_stltp_tunnel_packet_fragment udp_packet_short_fragment, length is: %u, copying short fragment", atsc3_stltp_tunnel_packet_fragment->udp_packet_short_fragment->data_length);
+					assert(header_packet_offset > atsc3_stltp_tunnel_packet_fragment->udp_packet_short_fragment->data_length);
+
+					header_packet_offset -= atsc3_stltp_tunnel_packet_fragment->udp_packet_short_fragment->data_length;
+
+					memcpy(&raw_packet_data[header_packet_offset], atsc3_stltp_tunnel_packet_fragment->udp_packet_short_fragment->data, atsc3_stltp_tunnel_packet_fragment->udp_packet->data_length);
+					udp_packet_free(&atsc3_stltp_tunnel_packet_fragment->udp_packet_short_fragment);
+				}
 				//process remaining fragment
 
 				__STLTP_PARSER_DEBUG("--tunnel packet: fragment end, marker present : %u --", ++atsc3_stltp_tunnel_packet_fragment->fragment_count);
@@ -60,9 +75,9 @@ atsc3_stltp_tunnel_packet_t* atsc3_stltp_tunnel_packet_extract_fragment(uint8_t*
 
 				atsc3_stltp_tunnel_packet_fragment->udp_packet->data = &raw_packet_data[header_packet_offset];
 				atsc3_stltp_tunnel_packet_fragment->udp_packet->data_length = atsc3_rtp_fixed_header->packet_offset;
-				atsc3_stltp_tunnel_packet_fragment = atsc3_stltp_tunnel_packet_extract_fragment_encapsulated_payload(atsc3_stltp_tunnel_packet);
+				atsc3_stltp_tunnel_packet_fragment = atsc3_stltp_tunnel_packet_extract_fragment_encapsulated_payload(atsc3_stltp_tunnel_packet_fragment);
 
-				if(!atsc3_stltp_tunnel_packet_fragment->is_complete) {
+				if(atsc3_stltp_tunnel_packet_fragment && !atsc3_stltp_tunnel_packet_fragment->is_complete) {
 					__STLTP_PARSER_DEBUG(" ----tunnel packet: fragment truncated from marker-----");
 
 					atsc3_stltp_tunnel_packet_fragment->is_truncated_from_marker = true;
@@ -144,6 +159,9 @@ atsc3_stltp_tunnel_packet_t* atsc3_stltp_tunnel_packet_extract_fragment_encapsul
 
 	if(atsc3_rtp_fixed_header_payload->payload_type == ATSC3_STLTP_PAYLOAD_TYPE_BASEBAND_PACKET) {
 		atsc3_stltp_baseband_packet_extract(atsc3_stltp_tunnel_packet_fragment, atsc3_rtp_fixed_header_payload);
+	} else if(atsc3_rtp_fixed_header_payload->payload_type == ATSC3_STLTP_PAYLOAD_TYPE_PREAMBLE_PACKET){
+		atsc3_stltp_preamble_packet_extract(atsc3_stltp_tunnel_packet_fragment, atsc3_rtp_fixed_header_payload);
+
 	} else {
 		__STLTP_PARSER_ERROR("Unknown payload type of 0x%2x", atsc3_rtp_fixed_header_payload->payload_type);
 		return NULL;
@@ -206,6 +224,29 @@ atsc3_stltp_baseband_packet_t* atsc3_stltp_baseband_packet_extract(atsc3_stltp_t
 	}
 
 	return atsc3_stltp_baseband_packet;
+}
+
+
+
+atsc3_stltp_preamble_packet_t* atsc3_stltp_preamble_packet_extract(atsc3_stltp_tunnel_packet_t* atsc3_stltp_tunnel_packet, atsc3_rtp_fixed_header_t* atsc3_rtp_fixed_header_tunnel) {
+
+	atsc3_stltp_preamble_packet_t* atsc3_stltp_preamble_packet = atsc3_stltp_tunnel_packet->atsc3_stltp_preamble_packet;
+	if(!atsc3_stltp_preamble_packet) {
+		atsc3_stltp_preamble_packet = calloc(1, sizeof(atsc3_stltp_preamble_packet_t));
+		atsc3_stltp_tunnel_packet->atsc3_stltp_preamble_packet = atsc3_stltp_preamble_packet;
+	}
+
+	atsc3_stltp_preamble_packet->atsc3_rtp_fixed_header = atsc3_rtp_fixed_header_tunnel;
+	uint32_t header_packet_offset = 0;
+	uint32_t rtp_preamble_header_remaining_length = atsc3_stltp_tunnel_packet->udp_packet->data_length;
+
+	//todo - actually read this packet....
+
+	//	if(atsc3_stltp_baseband_packet->atsc3_rtp_fixed_header->marker && !atsc3_stltp_tunnel_packet->atsc3_stltp_baseband_packet->fragment_count) {
+
+
+	return atsc3_stltp_preamble_packet;
+
 }
 
 void atsc3_rtp_fixed_header_dump(atsc3_rtp_fixed_header_t* atsc3_rtp_fixed_header) {
