@@ -43,6 +43,9 @@ typedef struct udp_packet {
 
 udp_packet_t* process_packet_from_pcap(u_char *user, const struct pcap_pkthdr *pkthdr, const u_char *packet);
 udp_packet_t* process_ip_udp_header(uint8_t* packet, uint32_t packet_length);
+udp_packet_t* udp_packet_duplicate(udp_packet_t* udp_packet);
+
+void udp_packet_free(udp_packet_t** udp_packet_p);
 
 void cleanup(udp_packet_t** udp_packet_p);
 
