@@ -64,11 +64,10 @@ Table 8.1 Preamble Payload
 Syntax 							No. of Bits		Format
 	Preamble_Payload () {
 		length 					16			 	uimsbf
-		L1_Basic_signaling() 	200 			Table 9.2 of [3]
-		L1_Detail_signaling() 	var 			Table 9.12 of [3]
+		L1_Basic_signaling() 	200 			Table 9.2 of [3]  //atsc a/322
+		L1_Detail_signaling() 	var 			Table 9.12 of [3] //atsc a/322
 		crc16 					16 				uimsbf
 }
-
 
  *
  * Preamble Payload data structure as described in Table 8.1. The Data Consumer can accumulate
@@ -77,30 +76,60 @@ packet is missed, as determined by a missing sequence number, or if a packet wit
 bit set to ‘1’ is received prematurely, indicating the start of the next Preamble Payload Packet Set,
 then one or more packets have been lost and the entire Preamble Payload data set has been lost.
 Any accumulated data shall be discarded.
+
 The RTP header fields shall follow the syntax defined in RFC 3550 [6], with the following
 additional constraints:
+
 The Padding (P) bit shall conform to the RFC 3550 [6] specification.
+
 The Extension (X) bit shall be set to zero ‘0’, indicating the header contains no extension.
+
 The CSRC Count (CC) shall be set to zero ‘0’, as no CSRC fields are necessary.
+
 The marker (M) bit shall be set to one ‘1’ to indicate that the first byte of the payload is the start of
-the Preamble Payload data. A zero ‘0’ value shall indicate that the payload is a continuation of
-the Preamble Payload data from the previous packet.
+the Preamble Payload data. A zero ‘0’ value shall indicate that the payload is a continuation of the
+Preamble Payload data from the previous packet.
+
 The Payload Type (PT) shall be set to 77 (0x4d), indicating the Preamble Payload type.
+
 The Sequence Number shall conform to the RFC 3550 [6] specification.
 The Timestamp shall be defined as in Table 8.2. The timestamp shall be set to the same value for
 all of the Preamble Payload Packet Set.
+
 The Synchronization Source (SSRC) Identifier shall be set to zero ‘0’. There shall be no other sources
-of Preamble Payload data carried within an STLTP Stream. Any redundant sources can be
+of Preamble Payload data carried within an STLTP Stream.
+
+Any redundant sources can be
 managed using IGMP Source-Specific Multicast (SSM) mechanisms.
 
 **/
 
+typedef struct L1_basic_signaling {
+	uint8_t raw_payload[25];
+} L1_basic_signaling_t;
 
+typedef struct L1_detail_signaling {
+
+} L1_detail_signaling_t;
 
 typedef struct atsc3_stltp_preamble_packet {
 	atsc3_rtp_fixed_header_t* atsc3_rtp_fixed_header;
+
+	uint8_t* 				preamble_payload;
+	uint32_t 				preamble_payload_offset;
+	uint16_t 				preamble_payload_length;
+
+
+	L1_basic_signaling_t 	L1_basic_signaling;
+	L1_detail_signaling_t 	L1_detail_signaling;
+	uint16_t				crc16;
+
 	udp_packet_t* udp_packet;
 	uint32_t fragment_count;
+
+
+
+
 
 } atsc3_stltp_preamble_packet_t;
 
