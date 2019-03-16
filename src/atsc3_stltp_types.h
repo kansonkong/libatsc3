@@ -45,6 +45,8 @@ typedef struct atsc3_stltp_tunnel_packet {
 	uint32_t first_ip_header_length;
 
 	udp_packet_t* udp_packet;
+	udp_packet_t* udp_packet_short_fragment;
+
 	uint32_t fragment_count;
 
 	atsc3_rtp_fixed_header_t* atsc3_rtp_fixed_header_payload;

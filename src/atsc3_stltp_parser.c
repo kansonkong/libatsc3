@@ -14,6 +14,7 @@ atsc3_rtp_fixed_header_t* atsc3_stltp_parse_rtp_fixed_header(uint8_t* data, uint
 	atsc3_rtp_fixed_header_t* atsc3_rtp_fixed_header = calloc(1, sizeof(atsc3_rtp_fixed_header_t));
 	//total bits needed for rtp_fixed_header == 96
 	if(size < 12) {
+		__STLTP_PARSER_ERROR("atsc3_stltp_parse_rtp_fixed_header, size is: %u, data: %p", size, data);
 		return NULL;
 	}
 
@@ -79,12 +80,16 @@ atsc3_stltp_tunnel_packet_t* atsc3_stltp_tunnel_packet_extract_fragment(uint8_t*
 
 			atsc3_stltp_tunnel_packet->first_ip_header = &raw_packet_data[header_packet_offset];
 			atsc3_stltp_tunnel_packet->first_ip_header_length = raw_packet_length - header_packet_offset;
-
+			__STLTP_PARSER_DEBUG("  header packet offset: %u, length: %u, first_ip_header: %p",  header_packet_offset, raw_packet_length, atsc3_stltp_tunnel_packet->first_ip_header);
 			atsc3_rtp_fixed_header_dump(atsc3_stltp_tunnel_packet->atsc3_rtp_fixed_header_tunnel);
 
 			__STLTP_PARSER_DEBUG("  ip header:     0x%x", atsc3_stltp_tunnel_packet->first_ip_header[0]);
 
 			atsc3_stltp_tunnel_packet->udp_packet = process_ip_udp_header(atsc3_stltp_tunnel_packet->first_ip_header, atsc3_stltp_tunnel_packet->first_ip_header_length);
+			if(!atsc3_stltp_tunnel_packet->udp_packet) {
+				__STLTP_PARSER_ERROR("--tunnel packet: unable to parse udp packet from: %p, size: %u", atsc3_stltp_tunnel_packet->first_ip_header, atsc3_stltp_tunnel_packet->first_ip_header_length);
+				return NULL;
+			}
 			__STLTP_PARSER_DEBUG("  dst ip:port :  %u.%u.%u.%u:%u",__toipandportnonstruct(atsc3_stltp_tunnel_packet->udp_packet->udp_flow.dst_ip_addr, atsc3_stltp_tunnel_packet->udp_packet->udp_flow.dst_port));
 			__STLTP_PARSER_DEBUG("  packet length: %u ", atsc3_stltp_tunnel_packet->udp_packet->data_length);
 			__STLTP_PARSER_DEBUG("  packet first byte: 0x%x ", atsc3_stltp_tunnel_packet->udp_packet->data[0]);
@@ -95,6 +100,16 @@ atsc3_stltp_tunnel_packet_t* atsc3_stltp_tunnel_packet_extract_fragment(uint8_t*
 			__STLTP_PARSER_DEBUG("--tunnel packet: fragment: %u --", ++atsc3_stltp_tunnel_packet->fragment_count);
 			//atsc3_rtp_fixed_header_dump(atsc3_stltp_tunnel_packet->atsc3_rtp_fixed_header_tunnel);
 			atsc3_rtp_fixed_header_dump(atsc3_rtp_fixed_header);
+			if(atsc3_stltp_tunnel_packet->udp_packet_short_fragment) {
+				__STLTP_PARSER_WARN("--tunnel packet: patching udp_packet_short_fragment, length is: %u, copying short fragment", atsc3_stltp_tunnel_packet->udp_packet_short_fragment->data_length);
+				assert(header_packet_offset > atsc3_stltp_tunnel_packet->udp_packet_short_fragment->data_length);
+
+				header_packet_offset -= atsc3_stltp_tunnel_packet->udp_packet_short_fragment->data_length;
+
+				memcpy(&raw_packet_data[header_packet_offset], atsc3_stltp_tunnel_packet->udp_packet_short_fragment->data, atsc3_stltp_tunnel_packet->udp_packet->data_length);
+				udp_packet_free(&atsc3_stltp_tunnel_packet->udp_packet_short_fragment);
+			}
+
 			atsc3_stltp_tunnel_packet->udp_packet->data = &raw_packet_data[header_packet_offset];
 			atsc3_stltp_tunnel_packet->udp_packet->data_length = raw_packet_length - header_packet_offset;
 		} else {
@@ -102,8 +117,16 @@ atsc3_stltp_tunnel_packet_t* atsc3_stltp_tunnel_packet_extract_fragment(uint8_t*
 			return NULL;
 		}
 
-		atsc3_stltp_tunnel_packet = atsc3_stltp_tunnel_packet_extract_fragment_encapsulated_payload(atsc3_stltp_tunnel_packet);
+		if(atsc3_stltp_tunnel_packet->udp_packet && atsc3_stltp_tunnel_packet->udp_packet->data_length >= 12) {
+			atsc3_stltp_tunnel_packet = atsc3_stltp_tunnel_packet_extract_fragment_encapsulated_payload(atsc3_stltp_tunnel_packet);
+		} else if(atsc3_stltp_tunnel_packet->udp_packet) {
+			__STLTP_PARSER_WARN("--tunnel packet: remaining fragment length is: %u, copying to tunnel_packet_buffer", atsc3_stltp_tunnel_packet->udp_packet->data_length);
+			atsc3_stltp_tunnel_packet->udp_packet_short_fragment = udp_packet_duplicate(atsc3_stltp_tunnel_packet->udp_packet);
+		} else {
+			__STLTP_PARSER_ERROR("--tunnel packet: unable to parse udp_packet --");
+			return NULL;
 
+		}
 		return atsc3_stltp_tunnel_packet;
 	}
 
