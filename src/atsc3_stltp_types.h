@@ -11,6 +11,9 @@
 #include <stdint.h>
 #include "atsc3_listener_udp.h"
 
+#define ATSC3_STLTP_PAYLOAD_TYPE_TUNNEL 			0x61
+#define ATSC3_STLTP_PAYLOAD_TYPE_BASEBAND_PACKET 	0x4e
+
 typedef struct atsc3_rtp_fixed_header {
 	uint8_t version:2;
 	uint8_t padding:1;
@@ -30,5 +33,14 @@ typedef struct atsc3_stltp_tunnel_packet {
 	udp_packet_t* udp_packet;
 
 } atsc3_stltp_tunnel_packet_t;
+
+
+typedef struct atsc3_stltp_baseband_packet {
+	atsc3_rtp_fixed_header_t* atsc3_rtp_fixed_header;
+	uint8_t* baseband_packet;
+	uint32_t baseband_packet_length;
+	udp_packet_t* udp_packet;
+
+} atsc3_stltp_baseband_packet_t;
 
 #endif /* ATSC3_STLTP_TYPES_H_ */

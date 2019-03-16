@@ -36,5 +36,18 @@ atsc3_rtp_fixed_header_t* atsc3_stltp_parse_rtp_fixed_header(uint8_t* data, uint
 	return atsc3_rtp_fixed_header;
 }
 
+void atsc3_rtp_fixed_header_dump(atsc3_rtp_fixed_header_t* atsc3_rtp_fixed_header) {
+
+	__STLTP_PARSER_DEBUG("version:         %x", atsc3_rtp_fixed_header->version);
+	__STLTP_PARSER_DEBUG("padding:         %x", atsc3_rtp_fixed_header->padding);
+	__STLTP_PARSER_DEBUG("extension:       %x", atsc3_rtp_fixed_header->extension);
+	__STLTP_PARSER_DEBUG("csrc_count:      %x", atsc3_rtp_fixed_header->csrc_count);
+	__STLTP_PARSER_DEBUG("marker:          %x", atsc3_rtp_fixed_header->marker);
+	__STLTP_PARSER_DEBUG("payload_type:    0x%x (%hhu)", atsc3_rtp_fixed_header->payload_type, 	atsc3_rtp_fixed_header->payload_type);
+	__STLTP_PARSER_DEBUG("sequence_number: 0x%x (%u)", atsc3_rtp_fixed_header->sequence_number, atsc3_rtp_fixed_header->sequence_number);
+	__STLTP_PARSER_DEBUG("timestamp:       0x%x (%u)", atsc3_rtp_fixed_header->timestamp, 		atsc3_rtp_fixed_header->timestamp);
+	__STLTP_PARSER_DEBUG("packet_offset:   0x%x (%u)", atsc3_rtp_fixed_header->packet_offset, 	atsc3_rtp_fixed_header->packet_offset);
+
+}
 
 

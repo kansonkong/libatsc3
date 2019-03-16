@@ -43,31 +43,66 @@ int main() {
 
 	atsc3_rtp_fixed_header_t* atsc3_rtp_fixed_header = atsc3_stltp_parse_rtp_fixed_header(binary_payload, binary_payload_length);
 	assert(atsc3_rtp_fixed_header);
+	atsc3_rtp_fixed_header_dump(atsc3_rtp_fixed_header);
 
-	__STLTP_PARSER_DEBUG("version:         %x", atsc3_rtp_fixed_header->version);
-	__STLTP_PARSER_DEBUG("padding:         %x", atsc3_rtp_fixed_header->padding);
-	__STLTP_PARSER_DEBUG("extension:       %x", atsc3_rtp_fixed_header->extension);
-	__STLTP_PARSER_DEBUG("csrc_count:      %x", atsc3_rtp_fixed_header->csrc_count);
-	__STLTP_PARSER_DEBUG("marker:          %x", atsc3_rtp_fixed_header->marker);
-	__STLTP_PARSER_DEBUG("payload_type:    0x%x (%hhu)", atsc3_rtp_fixed_header->payload_type, 	atsc3_rtp_fixed_header->payload_type);
-	__STLTP_PARSER_DEBUG("sequence_number: 0x%x (%u)", atsc3_rtp_fixed_header->sequence_number, atsc3_rtp_fixed_header->sequence_number);
-	__STLTP_PARSER_DEBUG("timestamp:       0x%x (%u)", atsc3_rtp_fixed_header->timestamp, 		atsc3_rtp_fixed_header->timestamp);
-	__STLTP_PARSER_DEBUG("packet_offset:   0x%x (%u)", atsc3_rtp_fixed_header->packet_offset, 	atsc3_rtp_fixed_header->packet_offset);
-
-	//97
-	if(atsc3_rtp_fixed_header->payload_type == 0x61) {
+	//97 - tunnel packet
+	if(atsc3_rtp_fixed_header->payload_type == ATSC3_STLTP_PAYLOAD_TYPE_TUNNEL) {
 		atsc3_stltp_tunnel_packet_t * atsc3_stltp_tunnel_packet = calloc(1, sizeof(atsc3_stltp_tunnel_packet_t));
 		atsc3_stltp_tunnel_packet->atsc3_rtp_fixed_header = atsc3_rtp_fixed_header;
-		uint32_t ip_header_packet_offset = atsc3_stltp_tunnel_packet->atsc3_rtp_fixed_header->packet_offset + 12;
-		assert(ip_header_packet_offset  < binary_payload_length);
-		atsc3_stltp_tunnel_packet->first_ip_header = &binary_payload[ip_header_packet_offset];
-		atsc3_stltp_tunnel_packet->first_ip_header_length = binary_payload_length - ip_header_packet_offset;
+		if(atsc3_rtp_fixed_header->marker) {
 
-		__STLTP_PARSER_DEBUG("----------");
-		__STLTP_PARSER_DEBUG(" ip header: 0x%x", atsc3_stltp_tunnel_packet->first_ip_header[0]);
+			uint32_t ip_header_packet_offset = atsc3_stltp_tunnel_packet->atsc3_rtp_fixed_header->packet_offset + 12;
+			assert(ip_header_packet_offset  < binary_payload_length);
+			atsc3_stltp_tunnel_packet->first_ip_header = &binary_payload[ip_header_packet_offset];
+			atsc3_stltp_tunnel_packet->first_ip_header_length = binary_payload_length - ip_header_packet_offset;
 
-		atsc3_stltp_tunnel_packet->udp_packet = process_ip_udp_header(atsc3_stltp_tunnel_packet->first_ip_header, atsc3_stltp_tunnel_packet->first_ip_header_length);
-		__STLTP_PARSER_DEBUG(" dst ip:port : %u.%u.%u.%u:%u",__toipandportnonstruct(atsc3_stltp_tunnel_packet->udp_packet->udp_flow.dst_ip_addr, atsc3_stltp_tunnel_packet->udp_packet->udp_flow.dst_port));
+			__STLTP_PARSER_DEBUG("--tunnel packet --");
+			__STLTP_PARSER_DEBUG("  ip header:     0x%x", atsc3_stltp_tunnel_packet->first_ip_header[0]);
+
+			atsc3_stltp_tunnel_packet->udp_packet = process_ip_udp_header(atsc3_stltp_tunnel_packet->first_ip_header, atsc3_stltp_tunnel_packet->first_ip_header_length);
+			__STLTP_PARSER_DEBUG("  dst ip:port :  %u.%u.%u.%u:%u",__toipandportnonstruct(atsc3_stltp_tunnel_packet->udp_packet->udp_flow.dst_ip_addr, atsc3_stltp_tunnel_packet->udp_packet->udp_flow.dst_port));
+			__STLTP_PARSER_DEBUG("  packet length: %u ", atsc3_stltp_tunnel_packet->udp_packet->data_length);
+			__STLTP_PARSER_DEBUG("  packet first byte: 0x%x ", atsc3_stltp_tunnel_packet->udp_packet->data[0]);
+
+			//parse rtp again....
+			atsc3_rtp_fixed_header_t* atsc3_rtp_fixed_header_tunnel = atsc3_stltp_parse_rtp_fixed_header(atsc3_stltp_tunnel_packet->udp_packet->data, atsc3_stltp_tunnel_packet->udp_packet->data_length);
+			atsc3_rtp_fixed_header_dump(atsc3_rtp_fixed_header_tunnel);
+
+			if(atsc3_rtp_fixed_header_tunnel->payload_type == ATSC3_STLTP_PAYLOAD_TYPE_BASEBAND_PACKET) {
+				atsc3_stltp_baseband_packet_t* atsc3_stltp_baseband_packet = calloc(1, sizeof(atsc3_stltp_baseband_packet_t));
+				atsc3_stltp_baseband_packet->atsc3_rtp_fixed_header = atsc3_rtp_fixed_header_tunnel;
+
+				if(atsc3_stltp_baseband_packet->atsc3_rtp_fixed_header->marker) {
+					/**
+ATSC A/324:2018 - Section 8.3
+When the marker (M) bit is zero ‘0’, the Synchronization Source (SSRC) Identifier shall be set to zero
+‘0’. When the marker (M) bit is set to one ‘1’, indicating the first packet of the BPPS, the SSRC
+field will contain the total length of the Baseband Packet data structure in bytes. This allows
+the Data Consumer to know how much data is to be delivered within the payloads of the BPPS.
+					 */
+
+					uint32_t baseband_header_packet_length = atsc3_stltp_baseband_packet->atsc3_rtp_fixed_header->packet_offset;
+					assert(baseband_header_packet_length < 65535);
+					atsc3_stltp_baseband_packet->baseband_packet_length = baseband_header_packet_length;
+					atsc3_stltp_baseband_packet->baseband_packet = calloc(baseband_header_packet_length, sizeof(uint8_t));
+
+					uint32_t rtp_baseband_header_remaining_length = atsc3_stltp_tunnel_packet->udp_packet->data_length - 12;
+
+					__STLTP_PARSER_DEBUG(" ----baseband packet-----");
+					__STLTP_PARSER_DEBUG("     total packet length: %u",  atsc3_stltp_baseband_packet->baseband_packet_length);
+					__STLTP_PARSER_DEBUG("     fragment 0 length:   %u",  rtp_baseband_header_remaining_length);
+					memcpy(atsc3_stltp_baseband_packet->baseband_packet, &atsc3_stltp_tunnel_packet->udp_packet->data[12], rtp_baseband_header_remaining_length);
+					__STLTP_PARSER_DEBUG("     first bytes:         0x%2x 0x%2x", atsc3_stltp_baseband_packet->baseband_packet[0], atsc3_stltp_baseband_packet->baseband_packet[1]);
+
+
+
+				}
+
+			}
+
+		} else {
+			//append...
+		}
 
 
 	}
