@@ -44,6 +44,7 @@ typedef struct xml_string xml_string_t;
 
 void dump_xml_string(xml_string_t *node);
 bool xml_string_equals_ignore_case(xml_string_t *a, char* b);
+bool xml_node_equals_ignore_case(xml_node_t *a, char* b);
 
 /**
  * Tries to parse the XML fragment in buffer
@@ -163,6 +164,8 @@ void xml_string_copy(struct xml_string* string, uint8_t* buffer, size_t length);
 
 uint8_t* xml_string_clone(xml_string_t* s);
 uint8_t* xml_attributes_clone(xml_string_t* s);
+uint8_t* xml_attributes_clone_node(xml_node_t* node);
+
 
 
 #define _XML_PRINTLN(...) printf(__VA_ARGS__);printf("\r\n")
@@ -170,19 +173,13 @@ uint8_t* xml_attributes_clone(xml_string_t* s);
 
 #define _XML_ERROR(...)   printf("%s:%d:ERROR:",__FILE__,__LINE__);_XML_PRINTLN(__VA_ARGS__);
 #define _XML_WARN(...)    printf("%s:%d:WARN:",__FILE__,__LINE__);_XML_PRINTLN(__VA_ARGS__);
-#define _XML_INFO(...)    printf("%s:%d:INFO:",__FILE__,__LINE__);_XML_PRINTLN(__VA_ARGS__);
-#define _XML_DEBUG(...)   printf("%s:%d:DEBUG:",__FILE__,__LINE__);_XML_PRINTLN(__VA_ARGS__);
+#define _XML_INFO(...)    if(_XML_INFO_ENABLED)  { printf("%s:%d:INFO : ",__FILE__,__LINE__);_XML_PRINTLN(__VA_ARGS__); }
+#define _XML_DEBUG(...)   if(_XML_DEBUG_ENABLED) { printf("%s:%d:DEBUG: ",__FILE__,__LINE__);_XML_PRINTLN(__VA_ARGS__); }
 
-//#define __ENABLE_XML_TRACE
-#ifdef __ENABLE_XML_TRACE
-#define _XML_TRACE(...)   printf("%s:%d:TRACE:",__FILE__,__LINE__);_XML_PRINTLN(__VA_ARGS__);
-#define _XML_TRACEF(...)  printf("%s:%d:TRACE:",__FILE__,__LINE__);_XML_PRINTF(__VA_ARGS__);
-#define _XML_TRACEA(...)  _XML_PRINTF(__VA_ARGS__);
-#else
-#define _XML_TRACE(...)
-#define _XML_TRACEF(...)
-#define _XML_TRACEA(...)
-#endif
+#define _XML_TRACE(...)   if(_XML_TRACE_ENABLED) { printf("%s:%d:TRACE: ",__FILE__,__LINE__);_XML_PRINTLN(__VA_ARGS__); }
+#define _XML_TRACEF(...)  if(_XML_TRACE_ENABLED) { printf("%s:%d:TRACE: ",__FILE__,__LINE__);_XML_PRINTF(__VA_ARGS__);  }
+#define _XML_TRACEA(...)  if(_XML_TRACE_ENABLED) { _XML_PRINTF(__VA_ARGS__); }
+
 
 #ifdef  __XML_PARSER_FORENSIC__
 #define _XML_FRNSC(...)   printf("%s:%d:FRNSC:",__FILE__,__LINE__);_XML_PRINTLN(__VA_ARGS__);

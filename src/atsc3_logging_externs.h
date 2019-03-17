@@ -15,6 +15,10 @@
 extern "C" {
 #endif
 
+extern int _XML_INFO_ENABLED;
+extern int _XML_DEBUG_ENABLED;
+extern int _XML_TRACE_ENABLED;
+
 extern int _LLS_INFO_ENABLED;
 extern int _LLS_DEBUG_ENABLED;
 extern int _LLS_TRACE_ENABLED;
