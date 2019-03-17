@@ -36,6 +36,9 @@ void ncurses_init() {
 	refresh();
 	getch();
 	endwin();
+
+	///FILE *f = fopen("/dev/tty", "+r");
+       	//my_screen = newterm(NULL, f, f);
 	*/
   // trace((const unsigned int)0xFFFF);
 	ncurses_mutext_init();
@@ -51,9 +54,9 @@ void ncurses_init() {
 	
 	
 	//remap as our printf is redirected to stderr
-	my_screen = newterm("xterm", stdout, stdin);
-	///FILE *f = fopen("/dev/tty", "+r");
-       	//my_screen = newterm(NULL, f, f);
+	//my_screen = newterm("xterm", stdout, stdin);
+	my_screen = newterm(NULL, stdout, stdin);
+
 	set_term(my_screen);
 	raw();
 	noecho();						/* Don't echo() while we do getch */
