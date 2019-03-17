@@ -30,14 +30,22 @@ typedef struct atsc3_rtp_fixed_header {
 	uint32_t packet_offset;
 } atsc3_rtp_fixed_header_t;
 
+//https://www.atsc.org/wp-content/uploads/2016/10/A322-2018-Physical-Layer-Protocol.pdf
 
 typedef struct atsc3_stltp_baseband_packet {
 	atsc3_rtp_fixed_header_t* atsc3_rtp_fixed_header;
-	uint8_t* baseband_packet;
-	uint32_t baseband_packet_offset;
-	uint32_t baseband_packet_length;
-	udp_packet_t* udp_packet;
-	uint32_t fragment_count;
+
+	uint8_t* 		payload;
+	uint32_t 		payload_offset;
+	uint32_t 		payload_length;
+	bool 			is_complete;
+
+	//other baseband alp attributes here
+
+
+
+	udp_packet_t* 	udp_packet;
+	uint32_t 		fragment_count;
 
 } atsc3_stltp_baseband_packet_t;
 
@@ -116,10 +124,10 @@ typedef struct L1_detail_signaling {
 typedef struct atsc3_stltp_preamble_packet {
 	atsc3_rtp_fixed_header_t* atsc3_rtp_fixed_header;
 
-	uint8_t* 				preamble_payload;
-	uint16_t 				preamble_payload_offset;
-	uint16_t 				preamble_payload_length;
-
+	uint8_t* 				payload;
+	uint16_t 				payload_offset;
+	uint16_t 				payload_length;
+	bool is_complete;
 
 	L1_basic_signaling_t 	L1_basic_signaling;
 	L1_detail_signaling_t 	L1_detail_signaling;
@@ -183,9 +191,10 @@ typedef struct error_check_data {
 typedef struct atsc3_stltp_timing_management_packet {
 	atsc3_rtp_fixed_header_t* 	atsc3_rtp_fixed_header;
 
-	uint8_t* 					timing_management_payload;
-	uint16_t 					timing_management_offset;
-	uint16_t 					timing_management_length;
+	uint8_t* 					payload;
+	uint16_t 					payload_offset;
+	uint16_t 					payload_length;
+	bool						is_complete;
 
 	timing_management_packet_t 	timing_management_packet;
 	bootstrap_timing_data_v* 	bootstrap_timing_data_v;
@@ -193,8 +202,8 @@ typedef struct atsc3_stltp_timing_management_packet {
 	packet_release_time_t		packet_release_time;
 	error_check_data_t			error_check_data;
 
-	udp_packet_t* 			udp_packet;
-	uint32_t 				fragment_count;
+	udp_packet_t* 				udp_packet;
+	uint32_t 					fragment_count;
 
 } atsc3_stltp_timing_management_packet_t;
 
@@ -202,22 +211,29 @@ typedef struct atsc3_stltp_timing_management_packet {
 
 typedef struct atsc3_stltp_tunnel_packet {
 	atsc3_rtp_fixed_header_t* atsc3_rtp_fixed_header_tunnel;
-	uint8_t* first_ip_header;
-	uint32_t first_ip_header_length;
+	atsc3_rtp_fixed_header_t* atsc3_rtp_fixed_header_inner_last;
 
-	udp_packet_t* udp_packet;
-	udp_packet_t* udp_packet_short_fragment;
-	uint32_t udp_packet_last_position;;
+	uint8_t* outer_ip_header;
+	uint32_t outer_ip_header_length;
+
+	udp_packet_t* udp_packet_outer;
+	udp_packet_t* udp_packet_inner;
+	udp_packet_t* udp_packet_inner_refragmented;
+
+	udp_packet_t* udp_packet_inner_last_fragment;
+
+
+	uint32_t udp_packet_last_position;
 
 	uint32_t fragment_count;
 
-	atsc3_rtp_fixed_header_t* atsc3_rtp_fixed_header_payload;
 
-	atsc3_stltp_baseband_packet_t* atsc3_stltp_baseband_packet;
-	atsc3_stltp_preamble_packet_t* atsc3_stltp_preamble_packet;
+	atsc3_stltp_baseband_packet_t* 			atsc3_stltp_baseband_packet;
+	atsc3_stltp_preamble_packet_t* 			atsc3_stltp_preamble_packet;
+	atsc3_stltp_timing_management_packet_t* atsc3_stltp_timing_management_packet;
 
-	bool is_truncated_from_marker;
-	bool is_complete;
+	atsc3_rtp_fixed_header_t* 				atsc3_rtp_fixed_header_payload;
+
 
 } atsc3_stltp_tunnel_packet_t;
 
