@@ -240,11 +240,11 @@ mmtp_payload_fragments_union_t* mmtp_process_from_payload(mmtp_sub_flow_vector_t
 
     } else if(mmtp_payload->mmtp_packet_header.mmtp_payload_type == 0x2) {
 
-            global_stats->packet_counter_mmt_signaling++;
-            __MMT_RECON_FROM_SAMPLE_INFO("mmtp_packet_parse: processing mmt flow: %d.%d.%d.%d:(%u) packet_id: 0, signalling message", __toipandportnonstruct(udp_packet->udp_flow.dst_ip_addr, udp_packet->udp_flow.dst_port));
-            //mmtp_payload->mmtp_signalling_message_fragments.payload
-            return NULL;
-	    signaling_message_dump(mmtp_payload);
+		global_stats->packet_counter_mmt_signaling++;
+		__MMT_RECON_FROM_SAMPLE_INFO("mmtp_packet_parse: processing mmt flow: %d.%d.%d.%d:(%u) packet_id: 0, signalling message", __toipandportnonstruct(udp_packet->udp_flow.dst_ip_addr, udp_packet->udp_flow.dst_port));
+		//mmtp_payload->mmtp_signalling_message_fragments.payload
+
+		signaling_message_dump(mmtp_payload);
             for(int i=0; i < mmtp_payload->mmtp_signalling_message_fragments.mmt_signalling_message_vector.messages_n; i++) {
             	mmt_signalling_message_header_and_payload_t* mmt_signalling_message_header_and_payload = mmtp_payload->mmtp_signalling_message_fragments.mmt_signalling_message_vector.messages[i];
             	if(mmt_signalling_message_header_and_payload->message_header.MESSAGE_id_type == MPT_message) {
@@ -263,7 +263,6 @@ mmtp_payload_fragments_union_t* mmtp_process_from_payload(mmtp_sub_flow_vector_t
             				}
             			}
             		}
-
 
             	} else {
             		__MMT_RECON_FROM_SAMPLE_INFO("mmtp_packet_parse: Ignoring signal: 0x%x", mmt_signalling_message_header_and_payload->message_header.MESSAGE_id_type);
