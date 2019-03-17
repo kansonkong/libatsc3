@@ -28,7 +28,6 @@ uint32_t* dst_ip_addr_filter = NULL;
 uint16_t* dst_ip_port_filter = NULL;
 
 atsc3_stltp_tunnel_packet_t* atsc3_stltp_tunnel_packet_processed = NULL;
-atsc3_stltp_tunnel_packet_t* atsc3_stltp_tunnel_packet_new = NULL;
 
 void process_packet(u_char *user, const struct pcap_pkthdr *pkthdr, const u_char *packet) {
 	udp_packet_t* udp_packet = process_packet_from_pcap(user, pkthdr, packet);
@@ -53,13 +52,11 @@ void process_packet(u_char *user, const struct pcap_pkthdr *pkthdr, const u_char
 				__INFO("stltp atsc3_stltp_timing_management_packet packet complete: size: %u",  atsc3_stltp_tunnel_packet_processed->atsc3_stltp_timing_management_packet->payload_length);
 			//todo - free
 			}
-
-
 		} else {
-			//continue appending
+            __ERROR("error processing packet: %p, size: %u",  udp_packet, udp_packet->data_length);
+            
 		}
 
-		atsc3_stltp_tunnel_packet_processed = atsc3_stltp_tunnel_packet_new;
 
 	}
 
