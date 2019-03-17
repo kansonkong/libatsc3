@@ -243,7 +243,7 @@ int atsc3_mmt_mpu_clear_data_unit_from_packet_subflow(mmtp_payload_fragments_uni
 			if(data_unit_payload_types && data_unit_payload_types->timed_fragments_vector.data) {
 				data_unit_payload_fragments = &data_unit_payload_types->timed_fragments_vector;
 				if(data_unit_payload_fragments) {
-					__MMT_MPU_INFO("Beginning eviction pass for mpu: %u, mmtp_sub_flow->mpu_fragments->all_mpu_fragments_vector.size: %lu", evict_range_start, mmtp_sub_flow->mpu_fragments->all_mpu_fragments_vector.size)
+					__MMT_MPU_INFO("Beginning eviction pass for mpu: %u, mmtp_sub_flow->mpu_fragments->all_mpu_fragments_vector.size: %lu", evict_range_start, mmtp_sub_flow->mpu_fragments->all_mpu_fragments_vector.size);
 					int evicted_count = atsc3_mmt_mpu_clear_data_unit_payload_fragments(mmtp_sub_flow, mpu_fragments, data_unit_payload_fragments);
 					__MMT_MPU_INFO("Eviction pass for mpu: %u resulted in %u", evict_range_start, evicted_count);
 				}
