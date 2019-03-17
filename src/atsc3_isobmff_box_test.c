@@ -511,9 +511,8 @@ void* parse_box_from_header(uint8_t** binary_payload, uint8_t* binary_payload_st
 }
 void print_hex(uint8_t* ptr, uint8_t size) {
 	for(int i=0; i < size; i++) {
-		printf("0x%0x ", ptr[i]);
+//		printf("0x%0x ", ptr[i]);
 	}
-	printf("\r%s","\n");
 }
 
 
