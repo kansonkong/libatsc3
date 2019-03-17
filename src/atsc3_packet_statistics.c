@@ -135,7 +135,10 @@ void atsc3_packet_statistics_mmt_timed_mpu_stats_populate(mmtp_payload_fragments
 	packet_mmt_stats->mpu_stats_timed_sample_interval->mpu_fragementation_counter = mmtp_payload->mmtp_mpu_type_packet_header.mpu_fragmentation_counter;
 
 }
+
 int global_loss_count;
+int __INVOKE_ATSC3_PACKET_STATISTICS_MMT_STATS_POPULATE_COUNT = 0;
+
 void atsc3_packet_statistics_mmt_stats_populate(udp_packet_t* udp_packet, mmtp_payload_fragments_union_t* mmtp_payload) {
 
 
@@ -178,36 +181,40 @@ void atsc3_packet_statistics_mmt_stats_populate(udp_packet_t* udp_packet, mmtp_p
 
 
 		//todo clean this up
-		ncurses_writer_lock_mutex_acquire();
-		int row, col, h, w;
-		getbegyx(pkt_global_loss_window, row, col);
-		getmaxyx(pkt_global_loss_window, h, w);
+		if(__INVOKE_ATSC3_PACKET_STATISTICS_MMT_STATS_POPULATE_COUNT++%10) {
+			ncurses_writer_lock_mutex_acquire();
+			int row, col, h, w;
+			getbegyx(pkt_global_loss_window, row, col);
+			getmaxyx(pkt_global_loss_window, h, w);
 
-		if(global_mmt_loss_count > row-3) {
-			wmove(pkt_global_loss_window, 1, 1);
-			wdeleteln(pkt_global_loss_window);
-			wmove(pkt_global_loss_window, h-1, 0);
+			if(global_mmt_loss_count > row-3) {
+				wmove(pkt_global_loss_window, 1, 1);
+				wdeleteln(pkt_global_loss_window);
+				wmove(pkt_global_loss_window, h-1, 0);
 
-			//wrefresh(pkt_global_loss_window);
+				//wrefresh(pkt_global_loss_window);
 
-			global_mmt_loss_count--;
+				global_mmt_loss_count--;
+			}
+
+
+			//todo - refactor this into struct for display scrolling and searching
+			__PS_STATS_GLOBAL_LOSS("Flow: %u.%u.%u.%u:%u, Packet_id: %u, Packet Counter: %u to %u, TS: %u-t%u, PSN: %u-%u, missing: %u",
+							__toip(packet_mmt_stats),
+							packet_mmt_stats->packet_id,
+							packet_mmt_stats->packet_counter_value,
+							mmtp_payload->mmtp_packet_header.packet_counter,
+							packet_mmt_stats->timestamp,
+							mmtp_payload->mmtp_packet_header.mmtp_timestamp,
+							packet_mmt_stats->packet_sequence_number,
+							mmtp_payload->mmtp_packet_header.packet_sequence_number,
+							packet_mmt_stats->packet_sequence_number_last_gap);
+			global_mmt_loss_count++;
+			ncurses_writer_lock_mutex_release();
+
+			__PS_REFRESH_LOSS();
+
 		}
-
-		//todo - refactor this into struct for display scrolling and searching
-		__PS_STATS_GLOBAL_LOSS("Flow: %u.%u.%u.%u:%u, Packet_id: %u, Packet Counter: %u to %u, TS: %u-t%u, PSN: %u-%u, missing: %u",
-						__toip(packet_mmt_stats),
-						packet_mmt_stats->packet_id,
-						packet_mmt_stats->packet_counter_value,
-						mmtp_payload->mmtp_packet_header.packet_counter,
-						packet_mmt_stats->timestamp,
-						mmtp_payload->mmtp_packet_header.mmtp_timestamp,
-						packet_mmt_stats->packet_sequence_number,
-						mmtp_payload->mmtp_packet_header.packet_sequence_number,
-						packet_mmt_stats->packet_sequence_number_last_gap);
-		global_mmt_loss_count++;
-		ncurses_writer_lock_mutex_release();
-
-		__PS_REFRESH_LOSS();
 
 		//push this to our missing packet flow for investigation
 		//__PS_STATS_STDOUT("packets missing:\t%u.%u.%u.%u\t%u\tpacket_counter_from:\t%u\tpacket_counter_to:\t%u\ttimestamp_from:\t%u\tfrom_s:\t%u\tfrom_us:\t%u\ttimestamp_to:\t%u\tto_s:\t%u\tto_us:\t%u\tpacket_id:\t%u\tPSN_from:\t%u\tPSN_to:\t%u\tTotal_missing:\t%u",
