@@ -10,7 +10,6 @@
 //#include <_types/_uint64_t.h>
 //#include <_types/_uint8_t.h>
 
-using namespace std;
 
 #include <list>
 
@@ -19,6 +18,7 @@ using namespace std;
 #include <stdlib.h>
 #include <string.h>
 #include <sys/stat.h>
+using namespace std;
 
 //#include "../atsc3_utils.h"
 #include "../atsc3_isobmff_trun_box.h"
