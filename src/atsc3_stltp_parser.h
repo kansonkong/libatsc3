@@ -31,9 +31,10 @@ atsc3_stltp_timing_management_packet_t* atsc3_stltp_timing_management_packet_ext
 
 
 atsc3_rtp_fixed_header_t* atsc3_stltp_parse_rtp_fixed_header(udp_packet_t* udp_packet);
+void atsc3_rtp_fixed_header_dump_outer(atsc3_rtp_fixed_header_t* atsc3_rtp_fixed_header);
+void atsc3_rtp_fixed_header_dump_inner(atsc3_rtp_fixed_header_t* atsc3_rtp_fixed_header);
 
-void atsc3_rtp_fixed_header_dump(atsc3_rtp_fixed_header_t* atsc3_rtp_fixed_header);
-
+void atsc3_rtp_fixed_header_dump(atsc3_rtp_fixed_header_t* atsc3_rtp_fixed_header, int spaces);
 
 #if defined (__cplusplus)
 }
