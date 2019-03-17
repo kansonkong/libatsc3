@@ -111,7 +111,7 @@ DumpSamples(AP4_Track* track, AP4_ByteStream* dump)
         // print progress info
         if (index%10 == 0) printf(".");
     }
-    printf("\r%s","\n");
+    printf("%s%s","\r","\n")
 }
 
 /*----------------------------------------------------------------------
@@ -156,7 +156,7 @@ DecryptAndDumpSamples(AP4_Track*             track,
         index++;
         if (index%10 == 0) printf(".");
     }
-    printf("\r%s","\n");
+    printf("%s%s","\r","\n")
 }
 
 /*----------------------------------------------------------------------
