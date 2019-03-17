@@ -41,7 +41,7 @@ int PACKET_COUNTER=0;
 #include "../atsc3_mmt_mpu_utils.h"
 
 #include "../atsc3_logging_externs.h"
-#include "stubs/atsc3_alc_stubs.h"
+//#include "../stubs/atsc3_alc_stubs.h"
 
 #define _ENABLE_DEBUG true
 

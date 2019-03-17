@@ -151,10 +151,11 @@ uint8_t* mmt_signaling_message_parse_packet(mmtp_payload_fragments_union_t *mmtp
 	uint8_t *buf = udp_raw_buf;
 	uint32_t buf_size = udp_raw_buf_size;
 
-
 	if(mmtp_signalling_packet->mmtp_signalling_message_fragments.si_aggregation_flag) {
 		uint32_t mmtp_aggregation_msg_length;
+		_MMSM_ERROR("AGGREGATED SI NOT SUPPORTED");
 
+		return NULL;
 		while(buf_size) {
 			if(mmtp_signalling_packet->mmtp_signalling_message_fragments.si_additional_length_header) {
 				//read the full 32 bits for MSG_length
@@ -167,12 +168,11 @@ uint8_t* mmt_signaling_message_parse_packet(mmtp_payload_fragments_union_t *mmtp
 				buf = extract(buf, (uint8_t*)&aggregation_msg_length_short, 2);
 				mmtp_aggregation_msg_length = ntohs(aggregation_msg_length_short);
 			}
+
 			//build a msg from buf to buf+mmtp_aggregation_msg_length
 			_MMSM_ERROR("AGGREGATED SI NOT SUPPORTED");
 			buf = mmt_signaling_message_parse_id_type(mmtp_signalling_packet, buf, buf_size);
 			buf_size = udp_raw_buf_size - (buf - udp_raw_buf);
-
-
 		}
 	} else {
 
@@ -628,6 +628,7 @@ void signaling_message_mmtp_packet_header_dump(mmtp_payload_fragments_union_t* m
 	_MMSM_INFO(" packet counter         : %-10u (0x%04x)", mmtp_payload_fragments->mmtp_packet_header.packet_counter, mmtp_payload_fragments->mmtp_packet_header.packet_counter);
 	_MMSM_INFO("------------------");
 }
+
 void signaling_message_dump(mmtp_payload_fragments_union_t* mmtp_payload_fragments) {
 	if(mmtp_payload_fragments->mmtp_packet_header.mmtp_payload_type != 0x02) {
 		_MMSM_ERROR("signaling_message_dump, payload_type 0x%x != 0x02", mmtp_payload_fragments->mmtp_packet_header.mmtp_payload_type);
@@ -715,6 +716,7 @@ void mpt_message_dump(mmt_signalling_message_header_and_payload_t* mmt_signallin
 		_MMSM_INFO("mp_table_descriptors.val:   : %s", mp_table->mp_table_descriptors.mp_table_descriptors_byte);
 	}
 	_MMSM_INFO("number_of_assets         : %u", mp_table->number_of_assets);
+
 	for(int i=0; i < mp_table->number_of_assets; i++) {
 		mp_table_asset_row_t* mp_table_asset_row = &mp_table->mp_table_asset_row[i];
 		_MMSM_INFO(" asset identifier type     : %u", mp_table_asset_row->identifier_mapping.identifier_type);

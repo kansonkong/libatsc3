@@ -511,9 +511,8 @@ void* parse_box_from_header(uint8_t** binary_payload, uint8_t* binary_payload_st
 }
 void print_hex(uint8_t* ptr, uint8_t size) {
 	for(int i=0; i < size; i++) {
-		printf("0x%0x ", ptr[i]);
+//		printf("0x%0x ", ptr[i]);
 	}
-	printf("\n");
 }
 
 
@@ -533,7 +532,7 @@ typedef struct truncate_box {
 } truncate_box_t;
 
 void dump_box(box_t* box) {
-	printf("box size: %u, label: %c%c%c%c\n", box->size, box->type>>24, box->type>>16, box->type>>8, box->type & 0xFF);
+	//printf("box size: %u, label: %c%c%c%c\n", box->size, box->type>>24, box->type>>16, box->type>>8, box->type & 0xFF);
 }
 //
 //int main() {

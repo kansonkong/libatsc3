@@ -308,7 +308,7 @@
 //
 //
 //
-//#define _MMT_UTILS_PRINTLN(...) printf(__VA_ARGS__);printf("\n")
+//#define _MMT_UTILS_PRINTLN(...) printf(__VA_ARGS__);printf("\r\n")
 //#define _MMT_UTILS_PRINTF(...)  printf(__VA_ARGS__);
 //
 //#define _MMT_UTILS_ERROR(...)   printf("%s:%d:ERROR:",__FILE__,__LINE__);_MMT_UTILS_PRINTLN(__VA_ARGS__);
