@@ -64,7 +64,7 @@ void udp_packet_free(udp_packet_t** udp_packet_p);
 void cleanup(udp_packet_t** udp_packet_p);
 
 
-#define __LISTENER_UDP_ERROR(...)   printf("%s:%d:ERROR :",__FILE__,__LINE__);printf(__VA_ARGS__);printf("\r\n");
+#define __LISTENER_UDP_ERROR(...)   printf("%s:%d:ERROR :",__FILE__,__LINE__);printf(__VA_ARGS__);printf("\r","\n");
 #ifdef __cplusplus
 }
 #endif
