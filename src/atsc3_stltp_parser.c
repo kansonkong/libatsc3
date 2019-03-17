@@ -44,6 +44,7 @@ atsc3_rtp_fixed_header_t* atsc3_stltp_parse_rtp_fixed_header(uint8_t* data, uint
 
 
 atsc3_stltp_tunnel_packet_t* atsc3_stltp_tunnel_packet_extract_fragment(uint8_t* raw_packet_data, uint32_t raw_packet_length, atsc3_stltp_tunnel_packet_t* atsc3_stltp_tunnel_packet_fragment) {
+	__STLTP_PARSER_DEBUG(" ----atsc3_stltp_tunnel_packet_extract_fragment-----");
 
 	atsc3_rtp_fixed_header_t* atsc3_rtp_fixed_header = atsc3_stltp_parse_rtp_fixed_header(raw_packet_data, raw_packet_length);
 	assert(atsc3_rtp_fixed_header);
@@ -57,7 +58,7 @@ atsc3_stltp_tunnel_packet_t* atsc3_stltp_tunnel_packet_extract_fragment(uint8_t*
 
 		//marker signifies that we may have a split payload
 		if(atsc3_rtp_fixed_header->marker) {
-			if(atsc3_stltp_tunnel_packet_fragment) {
+			if(atsc3_stltp_tunnel_packet_fragment && !atsc3_stltp_tunnel_packet_fragment->is_complete) {
 
 				if(atsc3_stltp_tunnel_packet_fragment->udp_packet_short_fragment) {
 					__STLTP_PARSER_WARN("--tunnel packet: patching atsc3_stltp_tunnel_packet_fragment udp_packet_short_fragment, length is: %u, copying short fragment", atsc3_stltp_tunnel_packet_fragment->udp_packet_short_fragment->data_length);
@@ -82,6 +83,10 @@ atsc3_stltp_tunnel_packet_t* atsc3_stltp_tunnel_packet_extract_fragment(uint8_t*
 
 					atsc3_stltp_tunnel_packet_fragment->is_truncated_from_marker = true;
 				}
+
+
+				__STLTP_PARSER_WARN("--tunnel packet: marker: remaining fragment length is: %u, position is: %u", atsc3_stltp_tunnel_packet->udp_packet->data_length, atsc3_stltp_tunnel_packet->udp_packet_last_position);
+
 			}
 
 			__STLTP_PARSER_DEBUG("--tunnel packet: new--");
@@ -134,6 +139,8 @@ atsc3_stltp_tunnel_packet_t* atsc3_stltp_tunnel_packet_extract_fragment(uint8_t*
 
 		if(atsc3_stltp_tunnel_packet->udp_packet && atsc3_stltp_tunnel_packet->udp_packet->data_length >= 12) {
 			atsc3_stltp_tunnel_packet = atsc3_stltp_tunnel_packet_extract_fragment_encapsulated_payload(atsc3_stltp_tunnel_packet);
+			__STLTP_PARSER_WARN("--tunnel packet: remaining fragment length is: %u, position is: %u", atsc3_stltp_tunnel_packet->udp_packet->data_length, atsc3_stltp_tunnel_packet->udp_packet_last_position);
+
 		} else if(atsc3_stltp_tunnel_packet->udp_packet) {
 			__STLTP_PARSER_WARN("--tunnel packet: remaining fragment length is: %u, copying to tunnel_packet_buffer", atsc3_stltp_tunnel_packet->udp_packet->data_length);
 			atsc3_stltp_tunnel_packet->udp_packet_short_fragment = udp_packet_duplicate(atsc3_stltp_tunnel_packet->udp_packet);
@@ -222,6 +229,7 @@ atsc3_stltp_baseband_packet_t* atsc3_stltp_baseband_packet_extract(atsc3_stltp_t
 		__STLTP_PARSER_DEBUG(" ----baseband packet: complete-----");
 		atsc3_stltp_tunnel_packet->is_complete = true;
 	}
+	atsc3_stltp_tunnel_packet->udp_packet_last_position = header_packet_offset + rtp_baseband_header_remaining_length;
 
 	return atsc3_stltp_baseband_packet;
 }
@@ -246,8 +254,8 @@ atsc3_stltp_preamble_packet_t* atsc3_stltp_preamble_packet_extract(atsc3_stltp_t
 		rtp_preamble_header_remaining_length -= header_packet_offset;
 		atsc3_stltp_preamble_packet->preamble_payload_length = ntohs(*((uint16_t*)(&atsc3_stltp_tunnel_packet->udp_packet->data[header_packet_offset])));
 		__STLTP_PARSER_DEBUG(" ----preamble packet: new -----");
-		__STLTP_PARSER_DEBUG("     total packet length:  %u",  atsc3_stltp_preamble_packet->preamble_payload_length);
-		__STLTP_PARSER_DEBUG("     fragment 0 length:    %u",  rtp_preamble_header_remaining_length);
+		__STLTP_PARSER_DEBUG("     preamble length:    %u",  atsc3_stltp_preamble_packet->preamble_payload_length);
+		__STLTP_PARSER_DEBUG("     fragment 0 length:  %u",  rtp_preamble_header_remaining_length);
 
 
 		uint32_t preamble_header_packet_length = atsc3_stltp_preamble_packet->preamble_payload_length;
@@ -256,10 +264,13 @@ atsc3_stltp_preamble_packet_t* atsc3_stltp_preamble_packet_extract(atsc3_stltp_t
 
 	} else {
 		__STLTP_PARSER_DEBUG(" ----preamble packet: fragment -----");
-		__STLTP_PARSER_DEBUG("     fragment %u length:   %u",   atsc3_stltp_preamble_packet->fragment_count, rtp_preamble_header_remaining_length);
-
+		__STLTP_PARSER_DEBUG("     fragment: %u length: %u",   atsc3_stltp_preamble_packet->fragment_count, rtp_preamble_header_remaining_length);
 	}
 
+	if(atsc3_stltp_preamble_packet->preamble_payload_length > atsc3_stltp_preamble_packet->preamble_payload_offset) {
+		rtp_preamble_header_remaining_length = __MIN(rtp_preamble_header_remaining_length, atsc3_stltp_preamble_packet->preamble_payload_length - atsc3_stltp_preamble_packet->preamble_payload_offset);
+	}
+	__STLTP_PARSER_DEBUG("     remaining length: %u",   rtp_preamble_header_remaining_length);
 
 	//	assert(rtp_baseband_header_remaining_length + atsc3_stltp_baseband_packet->baseband_packet_offset <= atsc3_stltp_baseband_packet->baseband_packet_length);
 	//
@@ -274,9 +285,9 @@ atsc3_stltp_preamble_packet_t* atsc3_stltp_preamble_packet_extract(atsc3_stltp_t
 	if(atsc3_stltp_preamble_packet->preamble_payload_offset == atsc3_stltp_preamble_packet->preamble_payload_length) {
 		__STLTP_PARSER_DEBUG(" ----preamble packet: complete-----");
 		atsc3_stltp_tunnel_packet->is_complete = true;
-		//todo - parse thsi into proper l1_...strucuts
 
-	}
+	}	atsc3_stltp_tunnel_packet->udp_packet_last_position = header_packet_offset + rtp_preamble_header_remaining_length;
+
 
 
 
