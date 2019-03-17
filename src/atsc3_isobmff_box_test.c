@@ -533,7 +533,7 @@ typedef struct truncate_box {
 } truncate_box_t;
 
 void dump_box(box_t* box) {
-	printf("box size: %u, label: %c%c%c%c\n", box->size, box->type>>24, box->type>>16, box->type>>8, box->type & 0xFF);
+	//printf("box size: %u, label: %c%c%c%c\n", box->size, box->type>>24, box->type>>16, box->type>>8, box->type & 0xFF);
 }
 //
 //int main() {
