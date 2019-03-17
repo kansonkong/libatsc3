@@ -170,7 +170,7 @@ typedef struct identifier_mapping {
 
 typedef struct mp_table_descriptors {
 	uint16_t	mp_table_descriptors_length;
-	uint8_t*	mp_table_descriptors_byte;
+	uint8_t*		mp_table_descriptors_byte;
 } mp_table_descriptors_t;
 
 typedef struct mmt_package_id {
@@ -190,6 +190,22 @@ typedef struct mmt_general_location_info {
 
 } mmt_general_location_info_t;
 
+
+typedef struct mmt_signaling_message_mpu_tuple {
+    uint32_t mpu_sequence_number;
+    uint64_t mpu_presentation_time;
+} mmt_signaling_message_mpu_tuple_t;
+
+
+//mpu_timestamp_descriptor_tag is 0x0001
+
+typedef struct mmt_signaling_message_mpu_timestamp_descriptor {
+    uint16_t                               descriptor_tag;
+    uint8_t                                descriptor_length;
+    uint8_t                                mpu_tuple_n; //mpu_tuple_n = descriptor_length/12 = (32+64)/8
+    mmt_signaling_message_mpu_tuple_t*     mpu_tuple;
+} mmt_signaling_message_mpu_timestamp_descriptor_t;
+
 typedef struct mp_table_asset_row {
 	identifier_mapping_t identifier_mapping;
 
@@ -207,10 +223,12 @@ typedef struct mp_table_asset_row {
 	//asset_location (
 	uint8_t		location_count;
 	mmt_general_location_info_t mmt_general_location_info;
+    
 	//asset_descriptors (
 	uint16_t	asset_descriptors_length;
-	uint8_t*	asset_descriptors;
-
+	uint8_t*	asset_descriptors_payload;
+    
+    mmt_signaling_message_mpu_timestamp_descriptor_t* mmt_signaling_message_mpu_timestamp_descriptor;
 } mp_table_asset_row_t;
 
 typedef struct mp_table {
@@ -238,17 +256,7 @@ typedef struct mpt_message {
 
 } mpt_message_t;
 
-typedef struct mmt_signaling_message_mpu_tuple {
-	uint32_t mpu_sequence_number;
-	uint64_t mpu_presentation_time;
-} mmt_signaling_message_mpu_tuple_t;
 
-typedef struct mmt_signaling_message_mpu_timestamp_descriptor {
-	uint16_t							descriptor_tag;
-	uint8_t								descriptor_length;
-	uint8_t								mpu_tuple_n; //mpu_tuple_n = descriptor_length/12 = (32+64)/8
-	mmt_signaling_message_mpu_tuple_t*	mpu_tuple;
-} mmt_signaling_message_mpu_timestamp_descriptor_t;
 
 
 typedef union mmt_signalling_message_type {
