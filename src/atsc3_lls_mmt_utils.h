@@ -42,7 +42,7 @@ lls_sls_mmt_monitor_t* lls_monitor_sls_mmt_session_create(lls_service_t* lls_ser
 void lls_sls_mmt_session_free(lls_sls_mmt_session_t** lls_session_ptr);
 
 
-#define _LLS_MMT_PRINTLN(...) printf(__VA_ARGS__);printf("\n")
+#define _LLS_MMT_PRINTLN(...) printf(__VA_ARGS__);printf("\r\n")
 #define _LLS_MMT_PRINTF(...)  printf(__VA_ARGS__);
 
 #define __LLSU_MMT_TRACE(...)
