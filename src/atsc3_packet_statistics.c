@@ -224,7 +224,7 @@ void atsc3_packet_statistics_mmt_stats_populate(udp_packet_t* udp_packet, mmtp_p
 //				packet_mmt_stats->packet_sequence_number,
 //				mmtp_payload->mmtp_packet_header.packet_sequence_number,
 //				packet_mmt_stats->packet_sequence_number_last_gap);
-				__PS_REFRESH_LOSS();
+			//	__PS_REFRESH_LOSS();
 	}
 	//remember, a lot of these values can roll over...
 	packet_mmt_stats->packet_counter_value = mmtp_payload->mmtp_packet_header.packet_counter;
@@ -274,7 +274,7 @@ void atsc3_packet_statistics_mmt_stats_populate(udp_packet_t* udp_packet, mmtp_p
 			compute_ntp32_to_seconds_microseconds(packet_mmt_stats->timestamp_sample_interval_start, &packet_mmt_stats->timestamp_sample_interval_start_s, &packet_mmt_stats->timestamp_sample_interval_start_us);
 			packet_mmt_stats->has_timestamp_sample_interval_start = true;
 		} else {
-			__PS_STATS_STDOUT("Missing sample start timestamp!");
+		//	__PS_STATS_STDOUT("Missing sample start timestamp!");
 			packet_mmt_stats->timestamp_sample_interval_start_s = 0;
 			packet_mmt_stats->timestamp_sample_interval_start_us = 0;
 		}
@@ -287,7 +287,7 @@ void atsc3_packet_statistics_mmt_stats_populate(udp_packet_t* udp_packet, mmtp_p
 			compute_ntp32_to_seconds_microseconds(packet_mmt_stats->timestamp_lifetime_start, &packet_mmt_stats->timestamp_lifetime_start_s, &packet_mmt_stats->timestamp_lifetime_start_us);
 			packet_mmt_stats->has_timestamp_lifetime_start = true;
 		} else {
-			__PS_STATS_STDOUT("Missing sample start timestamp!");
+			//__PS_STATS_STDOUT("Missing sample start timestamp!");
 			packet_mmt_stats->timestamp_lifetime_start_s = 0;
 			packet_mmt_stats->timestamp_lifetime_start_us = 0;
 		}
@@ -360,14 +360,14 @@ void atsc3_packet_statistics_dump_global_stats(){
 		uint16_t microseconds;
 		compute_ntp32_to_seconds_microseconds(packet_mmt_stats->timestamp, &seconds, &microseconds);
 		__PS_STATS_FLOW("Interval Flow           : %u.%u.%u.%u:%u, packet_id: %u, NTP range: %u.%03u to %u.%03u (%-u - %-u)", __toip(packet_mmt_stats),
-																												packet_mmt_stats->packet_id,
-																												packet_mmt_stats->timestamp_sample_interval_start_s,
-																												packet_mmt_stats->timestamp_sample_interval_start_us/100,
+						packet_mmt_stats->packet_id,
+						packet_mmt_stats->timestamp_sample_interval_start_s,
+						packet_mmt_stats->timestamp_sample_interval_start_us/100,
 
-																												seconds,
-																												microseconds/100,
-																												packet_mmt_stats->timestamp_sample_interval_start,
-																												packet_mmt_stats->timestamp);
+						seconds,
+						microseconds/100,
+						packet_mmt_stats->timestamp_sample_interval_start,
+						packet_mmt_stats->timestamp);
 
 
 		__PS_STATS_FLOW("packet_sequence_numbers : %-10u to %-10u (0x%08x to 0x%08x)",		packet_mmt_stats->packet_sequence_number_sample_interval_start, 	packet_mmt_stats->packet_sequence_number, packet_mmt_stats->packet_sequence_number_sample_interval_start,	packet_mmt_stats->packet_sequence_number);
@@ -382,6 +382,7 @@ void atsc3_packet_statistics_dump_global_stats(){
 		__PS_STATS_FLOW("Lifetime NTP            : %u.%03u  to %u.%03u  (%-10u to %-10u)    Loss Pct: %f",packet_mmt_stats->timestamp_lifetime_start_s, packet_mmt_stats->timestamp_lifetime_start_us/100, seconds, microseconds/100, packet_mmt_stats->timestamp_lifetime_start, packet_mmt_stats->timestamp, computed_flow_packet_loss);
 		__PS_STATS_FLOW("packet_seq_numbers      : %-10u to %-10u (0x%08x to 0x%08x)    max sequence gap: %-6d ",	packet_mmt_stats->packet_sequence_number_lifetime_start,  packet_mmt_stats->packet_sequence_number, packet_mmt_stats->packet_sequence_number_lifetime_start, packet_mmt_stats->packet_sequence_number, packet_mmt_stats->packet_sequence_number_max_gap);
 		__PS_STATS_FLOW("Total packets RX        : %-6u     missing: %-6u",	packet_mmt_stats->packet_sequence_number_lifetime_processed, packet_mmt_stats->packet_sequence_number_lifetime_missing);
+
 		int row, col;
 		getyx(pkt_flow_stats_mmt_window, row, col);
 	//	printf("----row: %d, col: %d\n", row, col);
