@@ -79,7 +79,7 @@ extern 	WINDOW* pkt_global_loss_window;
 #define __BW_CLEAR() werase(bw_window_runtime);				\
 									werase(bw_window_lifetime); \
 
-#define __PS_STATS_NOUPDATE()	wnoutrefresh(pkt_global_stats_window);	\
+#define __PS_STATS_NOUPDATE()		wnoutrefresh(pkt_global_stats_window);	\
 									wnoutrefresh(pkt_flow_stats_mmt_window); \
 									wnoutrefresh(pkt_global_loss_window);
 
@@ -92,35 +92,31 @@ extern 	WINDOW* pkt_global_loss_window;
 #define __PS_STATS_HR()				whline(pkt_flow_stats_mmt_window, ACS_BOARD, 15); \
 									wprintw(pkt_flow_stats_mmt_window,"\n");
 
-
-
-#define __PS_STATS_LOSS(...) 		wprintw(pkt_global_loss_window, __VA_ARGS__); \
+#define __PS_STATS_LOSS(...) 		wprintw(pkt_global_loss_window, __VA_ARGS__); 	\
 									wprintw(pkt_global_loss_window,"\n");
 
-#define __PS_REFRESH_LOSS() wrefresh(pkt_global_loss_window);
+#define __PS_REFRESH_LOSS() 		wnoutrefresh(pkt_global_loss_window);
 
 
-#define __PS_REFRESH() wrefresh(pkt_global_stats_window);					\
-									wrefresh(pkt_flow_stats_mmt_window);
+#define __PS_REFRESH() 				wnoutrefresh(pkt_global_stats_window);			\
+									wnoutrefresh(pkt_flow_stats_mmt_window);
 
-#define __PS_CLEAR()  werase(pkt_global_stats_window);					\
+#define __PS_CLEAR()  				werase(pkt_global_stats_window);				\
 									werase(pkt_flow_stats_mmt_window);
 
 #define __PS_STATS_GLOBAL_LOSS(...)	wprintw(pkt_global_loss_window, __VA_ARGS__); \
 									wprintw(pkt_global_loss_window,"\n");
 
-#define __PS_STATS_STDOUT(...)		printf(__VA_ARGS__); \
-									printf("\n");
 
 
-#define __LLS_DUMP_NOUPDATE() wnoutrefresh(signaling_global_stats_window);
+#define __LLS_DUMP_NOUPDATE() 		wnoutrefresh(signaling_global_stats_window);
 
-#define __LLS_DUMP_CLEAR() werase(signaling_global_stats_window);
+#define __LLS_DUMP_CLEAR() 			werase(signaling_global_stats_window);
 
 #define __LLS_DUMP(...)				wprintw(signaling_global_stats_window, __VA_ARGS__); \
 									wprintw(signaling_global_stats_window,"\n");
 
-#define __LLS_REFRESH() wrefresh(signaling_global_stats_window);
+#define __LLS_REFRESH() 			wnoutrefresh(signaling_global_stats_window);
 
 
 
