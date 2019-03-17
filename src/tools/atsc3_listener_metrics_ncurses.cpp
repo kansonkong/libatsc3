@@ -231,9 +231,9 @@ void process_packet(u_char *user, const struct pcap_pkthdr *pkthdr, const u_char
 	}
 
 	//collect global
-	global_bandwidth_statistics->interval_total_current_bytes_rx += udp_packet->total_packet_length;
+	global_bandwidth_statistics->interval_total_current_bytes_rx += udp_packet->raw_packet_length;
 	global_bandwidth_statistics->interval_total_current_packets_rx++;
-	global_bandwidth_statistics->grand_total_bytes_rx += udp_packet->total_packet_length;
+	global_bandwidth_statistics->grand_total_bytes_rx += udp_packet->raw_packet_length;
 	global_bandwidth_statistics->grand_total_packets_rx++;
 	global_stats->packets_total_received++;
 

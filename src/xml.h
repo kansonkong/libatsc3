@@ -165,7 +165,7 @@ uint8_t* xml_string_clone(xml_string_t* s);
 uint8_t* xml_attributes_clone(xml_string_t* s);
 
 
-#define _XML_PRINTLN(...) printf(__VA_ARGS__);printf("\n")
+#define _XML_PRINTLN(...) printf(__VA_ARGS__);printf("\r\n")
 #define _XML_PRINTF(...)  printf(__VA_ARGS__);
 
 #define _XML_ERROR(...)   printf("%s:%d:ERROR:",__FILE__,__LINE__);_XML_PRINTLN(__VA_ARGS__);
