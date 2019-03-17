@@ -776,7 +776,7 @@ void mpt_message_dump(mmt_signalling_message_header_and_payload_t* mmt_signallin
             if(mp_table_asset_row->mmt_signaling_message_mpu_timestamp_descriptor) {
                 for(int i=0; i < mp_table_asset_row->mmt_signaling_message_mpu_timestamp_descriptor->mpu_tuple_n; i++) {
                     _MMSM_INFO("   mpu_timestamp_descriptor %u, mpu_sequence_number: %u", i, mp_table_asset_row->mmt_signaling_message_mpu_timestamp_descriptor->mpu_tuple[i].mpu_sequence_number);
-                     _MMSM_INFO("   mpu_timestamp_descriptor %u, mpu_sequence_number: %u", i, mp_table_asset_row->mmt_signaling_message_mpu_timestamp_descriptor->mpu_tuple[i].mpu_presentation_time);
+                    _MMSM_INFO("   mpu_timestamp_descriptor %u, mpu_presentation_time: %llu", i, mp_table_asset_row->mmt_signaling_message_mpu_timestamp_descriptor->mpu_tuple[i].mpu_presentation_time);
                 }
             }
 		}

@@ -126,15 +126,39 @@
 
 
  */
+typedef struct atsc3_fdt_fec_attributes {
+
+	uint8_t 	fec_oti_fec_encoding_id;
+	uint32_t 	fec_oti_fec_instance_id;
+	uint32_t 	fec_oti_maximum_source_block_length;
+	uint32_t 	fec_oti_encoding_symbol_length;
+	uint32_t 	fec_oti_max_number_of_encoding_symbols;
+	char*	 	fec_oti_sceheme_specific_info;
+} atsc3_fdt_fec_attributes_t;
 
 typedef struct atsc3_fdt_file {
-
+	char* 						content_location;
+	uint32_t 					toi;
+	uint32_t 					content_length;
+	uint32_t 					transfer_length;
+	char*						content_type;
+	char*						content_encoding;
+	char*						content_md5;
+	atsc3_fdt_fec_attributes_t	atsc3_fdt_fec_attributes;
 } atsc3_fdt_file_t;
 
 typedef struct atsc3_fdt_instance {
+	uint32_t 					expires;
+	bool 						complete;
+	char* 						content_type;
+	char* 						content_encoding;
+	atsc3_fdt_fec_attributes_t 	atsc3_fdt_fec_attributes;
 
-	ATSC3_VECTOR_BUILDER(atsc3_fdt_file)
+	ATSC3_VECTOR_BUILDER_STRUCT(atsc3_fdt_file)
 
-} atsc3_fdt_instance;
+} atsc3_fdt_instance_t;
+
+ATSC3_VECTOR_BUILDER_METHODS_INTERFACE(atsc3_fdt_instance, atsc3_fdt_file)
+
 
 #endif /* ATSC3_FDT_H_ */
