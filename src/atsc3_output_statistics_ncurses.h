@@ -129,9 +129,9 @@ extern int global_mmt_loss_count;
 #define CTRL(c) ((c) & 037)
 #endif
 
-#define __NCURSES_ERROR(...)   printf("%s:%d:ERROR :","ncurses",__LINE__);printf(__VA_ARGS__);printf("\r","\n");
-#define __NCURSES_WARN(...)    printf("%s:%d:WARN: ","ncurses",__LINE__);printf(__VA_ARGS__);printf("\r","\n");
-#define __NCURSES_INFO(...)    printf("%s:%d: ","ncurses",__LINE__);printf(__VA_ARGS__);printf("\r","\n");
+#define __NCURSES_ERROR(...)   printf("%s:%d:ERROR :","ncurses",__LINE__);printf(__VA_ARGS__);printf("\r%s","\n");
+#define __NCURSES_WARN(...)    printf("%s:%d:WARN: ","ncurses",__LINE__);printf(__VA_ARGS__);printf("\r%s","\n");
+#define __NCURSES_INFO(...)    printf("%s:%d: ","ncurses",__LINE__);printf(__VA_ARGS__);printf("\r%s","\n");
 
 
 #if defined (__cplusplus)
