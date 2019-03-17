@@ -43,9 +43,9 @@
 // #define __ALC_RX_ENABLE_DEBUG 1
 // #define __ALC_RX_ENABLE_TRACE 1
 
-#define println(...) printf(__VA_ARGS__);printf("\n")
+#define println(...) printf(__VA_ARGS__);printf("\r\n")
 
-#define __ALC_RX_PRINTLN(...) printf(__VA_ARGS__);printf("\n")
+#define __ALC_RX_PRINTLN(...) printf(__VA_ARGS__);printf("\r\n")
 #define __ALC_RX_PRINTF(...)  printf(__VA_ARGS__);
 
 #define ALC_RX_ERROR(...)   printf("%s:%d:ERROR:",__FILE__,__LINE__);__ALC_RX_PRINTLN(__VA_ARGS__);

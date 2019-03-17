@@ -76,7 +76,7 @@ extern 	WINDOW* pkt_global_loss_window;
 #define __BW_STATS_LIFETIME(...)	wprintw(bw_window_lifetime, __VA_ARGS__); \
 									wprintw(bw_window_lifetime,"\n");
 
-#define __BW_CLEAR() werase(bw_window_runtime);				\
+#define __BW_CLEAR() 				werase(bw_window_runtime);				\
 									werase(bw_window_lifetime); \
 
 #define __PS_STATS_NOUPDATE()		wnoutrefresh(pkt_global_stats_window);	\
@@ -129,9 +129,9 @@ extern int global_mmt_loss_count;
 #define CTRL(c) ((c) & 037)
 #endif
 
-#define __NCURSES_ERROR(...)   printf("%s:%d:ERROR :","ncurses",__LINE__);printf(__VA_ARGS__);printf("\n");
-#define __NCURSES_WARN(...)    printf("%s:%d:WARN: ","ncurses",__LINE__);printf(__VA_ARGS__);printf("\n");
-#define __NCURSES_INFO(...)    printf("%s:%d: ","ncurses",__LINE__);printf(__VA_ARGS__);printf("\n");
+#define __NCURSES_ERROR(...)   printf("%s:%d:ERROR :","ncurses",__LINE__);printf(__VA_ARGS__);printf("\r\n");
+#define __NCURSES_WARN(...)    printf("%s:%d:WARN: ","ncurses",__LINE__);printf(__VA_ARGS__);printf("\r\n");
+#define __NCURSES_INFO(...)    printf("%s:%d: ","ncurses",__LINE__);printf(__VA_ARGS__);printf("\r\n");
 
 
 #if defined (__cplusplus)

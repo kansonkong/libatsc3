@@ -48,9 +48,9 @@ extern int _MPU_DEBUG_ENABLED;
 extern int _MMTP_DEBUG_ENABLED;
 extern int _LLS_DEBUG_ENABLED;
 
-#define println(...) printf(__VA_ARGS__);printf("\n")
+#define println(...) printf(__VA_ARGS__);printf("\r\n")
 
-#define __PRINTLN(...) printf(__VA_ARGS__);printf("\n")
+#define __PRINTLN(...) printf(__VA_ARGS__);printf("\r\n")
 #define __PRINTF(...)  printf(__VA_ARGS__);
 
 #define __ERROR(...)   printf("%s:%d:ERROR:",__FILE__,__LINE__);__PRINTLN(__VA_ARGS__);
