@@ -9,6 +9,7 @@
 #include "atsc3_mmtp_parser.h"
 #include "atsc3_mmt_signaling_message.h"
 
+
 int _MMT_SIGNALLING_MESSAGE_DEBUG_ENABLED = 0;
 int _MMT_SIGNALLING_MESSAGE_TRACE_ENABLED = 0;
 
@@ -449,9 +450,18 @@ uint8_t* mpt_message_parse(mmt_signalling_message_header_and_payload_t* mmt_sign
 		mp_table->mmt_package_id.mmt_package_id_length = mmt_package_id_length;
 
 		buf = __read_uint8_len_to_string(buf, mmt_package_id_length, &mp_table->mmt_package_id.mmt_package_id);
-	}
-	uint16_t table_descriptors_length;
-	buf = extract(buf, (uint8_t*)&mp_table->mp_table_descriptors, 2);
+	
+        uint16_t table_descriptors_length;
+        buf = extract(buf, (uint8_t*)&table_descriptors_length, 2);
+        
+        mp_table->mp_table_descriptors.mp_table_descriptors_length = ntohs(table_descriptors_length);
+        if(mp_table->mp_table_descriptors.mp_table_descriptors_length > 0) {
+            //TODO: bounds check this untrusted read..
+            _MMSM_INFO("reading mp_table_descriptors size: %u", mp_table->mp_table_descriptors.mp_table_descriptors_length);
+            mp_table->mp_table_descriptors.mp_table_descriptors_byte = calloc(mp_table->mp_table_descriptors.mp_table_descriptors_length, sizeof(uint8_t));
+            buf = extract(buf, (uint8_t*)&mp_table->mp_table_descriptors.mp_table_descriptors_byte, mp_table->mp_table_descriptors.mp_table_descriptors_length);
+        }
+    }
 
 	uint8_t number_of_assets;
 	buf = extract(buf, &number_of_assets, 1);
@@ -505,11 +515,36 @@ uint8_t* mpt_message_parse(mmt_signalling_message_header_and_payload_t* mmt_sign
 		//build out mmt_general_location_info N times.....
 		buf = __read_mmt_general_location_info(buf, &row->mmt_general_location_info);
 
-		//asset_descriptors
-		buf = extract(buf, (uint8_t*)&row->asset_descriptors_length, 2);
+        //asset_descriptors
+        uint16_t asset_descriptors_length;
+		buf = extract(buf, (uint8_t*)&asset_descriptors_length, 2);    
+        row->asset_descriptors_length = ntohs(asset_descriptors_length);
 
-		buf = __read_uint16_len_to_string(buf, row->asset_descriptors_length, &row->asset_descriptors);
+		buf = __read_uint16_len_to_string(buf, row->asset_descriptors_length, &row->asset_descriptors_payload);
 
+        //peek at
+        if(row->asset_descriptors_length) {
+            if(row->asset_descriptors_payload[0] == 0x00 && row->asset_descriptors_payload[1] == 0x01) {
+                row->mmt_signaling_message_mpu_timestamp_descriptor = calloc(1, sizeof(mmt_signaling_message_mpu_timestamp_descriptor_t));
+                row->mmt_signaling_message_mpu_timestamp_descriptor->descriptor_tag = 0x0001;
+                row->mmt_signaling_message_mpu_timestamp_descriptor->descriptor_length = row->asset_descriptors_payload[2];
+                row->mmt_signaling_message_mpu_timestamp_descriptor->mpu_tuple_n = row->mmt_signaling_message_mpu_timestamp_descriptor->descriptor_length / 12;
+                
+                if(row->mmt_signaling_message_mpu_timestamp_descriptor->mpu_tuple_n) {
+                    row->mmt_signaling_message_mpu_timestamp_descriptor->mpu_tuple = calloc(row->mmt_signaling_message_mpu_timestamp_descriptor->mpu_tuple_n, sizeof(mmt_signaling_message_mpu_tuple_t));
+                    for(int i=0; i < row->mmt_signaling_message_mpu_timestamp_descriptor->mpu_tuple_n; i++) {
+                        uint32_t mpu_sequence_number;
+                        uint64_t mpu_presentation_time;
+                        memcpy(&mpu_sequence_number, &row->asset_descriptors_payload[3 + (i*12)], 4);
+                        memcpy(&mpu_presentation_time, &row->asset_descriptors_payload[7 + (i*12)], 8);
+
+                        row->mmt_signaling_message_mpu_timestamp_descriptor->mpu_tuple[i].mpu_sequence_number = ntohl(mpu_sequence_number);
+                        row->mmt_signaling_message_mpu_timestamp_descriptor->mpu_tuple[i].mpu_presentation_time = ntohll(mpu_presentation_time);
+
+                    }
+                }
+            }
+        }
 	}
 
 
@@ -609,7 +644,7 @@ void mmt_atsc3_message_payload_dump(mmt_signalling_message_header_and_payload_t*
 
 
 uint8_t* si_message_not_supported(mmt_signalling_message_header_and_payload_t* mmt_signalling_message_header_and_payload, uint8_t* udp_raw_buf, uint32_t udp_raw_buf_size) {
-//	_MMSM_WARN("signalling information message id not supported: 0x%04x", mmt_signalling_message_header->message_id);
+	_MMSM_WARN("signalling information message id not supported: 0x%04x", mmt_signalling_message_header_and_payload->message_header.message_id);
 
 	return NULL;
 }
@@ -665,9 +700,7 @@ void signaling_message_dump(mmtp_payload_fragments_union_t* mmtp_payload_fragmen
 		_MMSM_INFO("------------------");
 		_MMSM_INFO(" Payload         : %p", 			&mmt_signalling_message_header_and_payload->message_payload);
 		_MMSM_INFO("------------------");
-		_MMSM_INFO("");
 
-		//_MMSM_INFO("--------------------------------------");
 
 		if(mmt_signalling_message_header_and_payload->message_header.message_id == PA_message) {
 			pa_message_dump(mmtp_payload_fragments);
@@ -682,14 +715,12 @@ void signaling_message_dump(mmtp_payload_fragments_union_t* mmtp_payload_fragmen
 }
 
 void pa_message_dump(mmtp_payload_fragments_union_t* mmtp_payload_fragments) {
-	_MMSM_INFO("-----------------");
 	_MMSM_INFO(" pa_message");
 	_MMSM_INFO("-----------------");
 
 }
 
 void mpi_message_dump(mmtp_payload_fragments_union_t* mmtp_payload_fragments) {
-	_MMSM_INFO("-----------------");
 	_MMSM_INFO(" mpi_message");
 	_MMSM_INFO("-----------------");
 
@@ -697,59 +728,59 @@ void mpi_message_dump(mmtp_payload_fragments_union_t* mmtp_payload_fragments) {
 
 void mpt_message_dump(mmt_signalling_message_header_and_payload_t* mmt_signalling_message_header_and_payload) {
 
-	_MMSM_INFO("-----------------");
 	_MMSM_INFO(" mpt_message");
 	_MMSM_INFO("-----------------");
 
 	mp_table_t* mp_table = &mmt_signalling_message_header_and_payload->message_payload.mp_table;
 
-	_MMSM_INFO("table_id               : %u", mp_table->table_id);
-	_MMSM_INFO("version                : %u", mp_table->version);
-	_MMSM_INFO("length                 : %u", mp_table->length);
-	_MMSM_INFO("mp_table_mode          : %u", mp_table->mp_table_mode);
-	_MMSM_INFO("mmt_package_id.length: : %u", mp_table->mmt_package_id.mmt_package_id_length);
+	_MMSM_INFO(" table_id                    : %u", mp_table->table_id);
+	_MMSM_INFO(" version                     : %u", mp_table->version);
+	_MMSM_INFO(" length                      : %u", mp_table->length);
+	_MMSM_INFO(" mp_table_mode               : %u", mp_table->mp_table_mode);
+	_MMSM_INFO(" mmt_package_id.length:      : %u", mp_table->mmt_package_id.mmt_package_id_length);
 	if(mp_table->mmt_package_id.mmt_package_id_length) {
-		_MMSM_INFO("mmt_package_id.val:   : %s", mp_table->mmt_package_id.mmt_package_id);
+		_MMSM_INFO(" mmt_package_id.val:       : %s", mp_table->mmt_package_id.mmt_package_id);
 	}
-	_MMSM_INFO("mp_table_descriptors.length: : %u", mp_table->mp_table_descriptors.mp_table_descriptors_length);
+	_MMSM_INFO(" mp_table_descriptors.length : %u", mp_table->mp_table_descriptors.mp_table_descriptors_length);
 	if(mp_table->mp_table_descriptors.mp_table_descriptors_length) {
-		_MMSM_INFO("mp_table_descriptors.val:   : %s", mp_table->mp_table_descriptors.mp_table_descriptors_byte);
+		_MMSM_INFO(" mp_table_descriptors.val    : %s", mp_table->mp_table_descriptors.mp_table_descriptors_byte);
 	}
-	_MMSM_INFO("number_of_assets         : %u", mp_table->number_of_assets);
+	_MMSM_INFO(" number_of_assets            : %u", mp_table->number_of_assets);
 
 	for(int i=0; i < mp_table->number_of_assets; i++) {
 		mp_table_asset_row_t* mp_table_asset_row = &mp_table->mp_table_asset_row[i];
-		_MMSM_INFO(" asset identifier type     : %u", mp_table_asset_row->identifier_mapping.identifier_type);
+		_MMSM_INFO(" asset identifier type        : %u", mp_table_asset_row->identifier_mapping.identifier_type);
 		if(mp_table_asset_row->identifier_mapping.identifier_type == 0x00) {
-			_MMSM_INFO(" asset id              : %s", mp_table_asset_row->identifier_mapping.asset_id.asset_id);
+			_MMSM_INFO(" asset id                     : %s", mp_table_asset_row->identifier_mapping.asset_id.asset_id);
 
 		}
-		_MMSM_INFO(" asset type                : %u", mp_table_asset_row->asset_type);
-		_MMSM_INFO(" asset_clock_relation_flag : %u", mp_table_asset_row->asset_clock_relation_flag);
-		_MMSM_INFO(" asset_clock_relation_id   : %u", mp_table_asset_row->asset_clock_relation_id);
-		_MMSM_INFO(" asset_timescale_flag      : %u", mp_table_asset_row->asset_timescale_flag);
-		_MMSM_INFO(" asset_timescale           : %u", mp_table_asset_row->asset_timescale);
-		_MMSM_INFO(" location_count            : %u", mp_table_asset_row->location_count);
+		_MMSM_INFO(" asset type                  : %u", mp_table_asset_row->asset_type);
+		_MMSM_INFO(" asset_clock_relation_flag   : %u", mp_table_asset_row->asset_clock_relation_flag);
+		_MMSM_INFO(" asset_clock_relation_id     : %u", mp_table_asset_row->asset_clock_relation_id);
+		_MMSM_INFO(" asset_timescale_flag        : %u", mp_table_asset_row->asset_timescale_flag);
+		_MMSM_INFO(" asset_timescale             : %u", mp_table_asset_row->asset_timescale);
+		_MMSM_INFO(" location_count              : %u", mp_table_asset_row->location_count);
 //		for(int j=0; j < mp_table_asset_row->location_count; j++) {
 //
 //		}
-		_MMSM_INFO(" mmt_general_location_info location_type: %u", mp_table_asset_row->mmt_general_location_info.location_type);
-		_MMSM_INFO(" mmt_general_location_info pkt_id: %u", mp_table_asset_row->mmt_general_location_info.packet_id);
-		_MMSM_INFO(" mmt_general_location_info ipv4 src addr: %u", mp_table_asset_row->mmt_general_location_info.ipv4_src_addr);
-		_MMSM_INFO(" mmt_general_location_info ipv4 dest addr: %u", mp_table_asset_row->mmt_general_location_info.ipv4_dst_addr);
-		_MMSM_INFO(" mmt_general_location_info ipv4 dest port: %u", mp_table_asset_row->mmt_general_location_info.dst_port);
-		_MMSM_INFO(" mmt_general_location_info message id: %u", mp_table_asset_row->mmt_general_location_info.message_id);
+		_MMSM_INFO(" mmt_general_location_info location_type  : %u", mp_table_asset_row->mmt_general_location_info.location_type);
+		_MMSM_INFO(" mmt_general_location_info pkt_id         : %u", mp_table_asset_row->mmt_general_location_info.packet_id);
+		_MMSM_INFO(" mmt_general_location_info ipv4 src addr  : %u", mp_table_asset_row->mmt_general_location_info.ipv4_src_addr);
+		_MMSM_INFO(" mmt_general_location_info ipv4 dest addr : %u", mp_table_asset_row->mmt_general_location_info.ipv4_dst_addr);
+		_MMSM_INFO(" mmt_general_location_info ipv4 dest port : %u", mp_table_asset_row->mmt_general_location_info.dst_port);
+		_MMSM_INFO(" mmt_general_location_info message id     : %u", mp_table_asset_row->mmt_general_location_info.message_id);
 
 		//first entry
-		_MMSM_INFO(" asset_descriptors_length   : %u", mp_table_asset_row->asset_descriptors_length);
+		_MMSM_INFO(" asset_descriptors_length                 : %u", mp_table_asset_row->asset_descriptors_length);
 		if(mp_table_asset_row->asset_descriptors_length) {
-			_MMSM_INFO(" asset_descriptors : %s", mp_table_asset_row->asset_descriptors);
+            if(mp_table_asset_row->mmt_signaling_message_mpu_timestamp_descriptor) {
+                for(int i=0; i < mp_table_asset_row->mmt_signaling_message_mpu_timestamp_descriptor->mpu_tuple_n; i++) {
+                    _MMSM_INFO("   mpu_timestamp_descriptor %u, mpu_sequence_number: %u", i, mp_table_asset_row->mmt_signaling_message_mpu_timestamp_descriptor->mpu_tuple[i].mpu_sequence_number);
+                     _MMSM_INFO("   mpu_timestamp_descriptor %u, mpu_sequence_number: %u", i, mp_table_asset_row->mmt_signaling_message_mpu_timestamp_descriptor->mpu_tuple[i].mpu_presentation_time);
+                }
+            }
 		}
-
 	}
-
-
-
 
 }
 
