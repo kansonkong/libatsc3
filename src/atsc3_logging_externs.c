@@ -28,8 +28,6 @@ int printf(const char *format, ...)  {
 	va_start(argptr, format);
 	vfprintf(__DEBUG_LOG_FILE, format, argptr);
     va_end(argptr);
-
-    fprintf(__DEBUG_LOG_FILE, "\n");
 	return 0;
 }
 
