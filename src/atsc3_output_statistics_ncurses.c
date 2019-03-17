@@ -61,11 +61,11 @@ void ncurses_init() {
 	set_term(my_screen);
 	raw();
 	noecho();						/* Don't echo() while we do getch */
+	curs_set(0);
 	create_or_update_window_sizes(false);
-	//	scrollok(false);
+	clearok(curscr, false);
+	scrollok(curscr, false);
 
-	//keypad(my_window, TRUE);		/* We get F1, F2 etc..		*/
-	
 }
 
 int play_mode = 0;
@@ -89,7 +89,7 @@ void* ncurses_input_run_thread(void* lls_slt_monitor_ptr) {
 
     while(1) {
 
-		ch = wgetch(my_window);
+      ch = wgetch(curscr);
 		if(ch == CTRL('c') || ch == 'q') {
 			//end and clear screen back to terminal
 			goto endwin;
@@ -444,14 +444,14 @@ void create_or_update_window_sizes(bool should_reload_term_size) {
 			delwin(signaling_global_stats_window);
 			delwin(pkt_global_stats_window);
 			delwin(left_window_outline);
-			delwin(my_window);
+			//			delwin(my_window);
 			clear();
 			endwin();
 			resizeterm(size.ws_row, size.ws_col);
 		}
 	}
-	my_window = newwin(0, 0, 0, 0);
-	getmaxyx(my_window, rows, cols);              /* get the number of rows and columns */
+	//my_window = newwin(0, 0, 0, 0);
+	getmaxyx(curscr, rows, cols);              /* get the number of rows and columns */
 
 	int pct_split_top = 85;
 
@@ -493,10 +493,11 @@ void create_or_update_window_sizes(bool should_reload_term_size) {
 	//WINDOW *derwin(WINDOW *orig, 							int nlines, 	int ncols, 			int begin_y, 		int begin_x);
 	//left
 	pkt_global_stats_window = derwin(left_window_outline, 		left_window_h-12, 44,				 1, 	1);
-
+	scrollok(pkt_global_stats_window, false);
+	
 	//left signaling
 	signaling_global_stats_window = derwin(left_window_outline, left_window_h-11, left_window_w-50, 1, 46 );
-
+	scrollok(signaling_global_stats_window, false);
 	//left
 	//bandwidth window
 	bw_window_outline = 		derwin(left_window_outline, 	8, 			left_window_w-2,  left_window_h-8, 	1);
@@ -507,20 +508,30 @@ void create_or_update_window_sizes(bool should_reload_term_size) {
 
 	bw_window_runtime = 		derwin(bw_window_outline, 6, (left_window_w-2)/2, 1, 1);
 	bw_window_lifetime = 		derwin(bw_window_outline, 6, (left_window_w-3)/2, 1, left_window_w/2-1);
-
+	scrollok(bw_window_runtime, false);
+	scrollok(bw_window_lifetime, false);
+ 
 	//pkt_global_loss_window_outline = 	derwin(left_window_outline, pkt_window_height-25, half_cols-4, 22, 1);
 
 	//RIGHT
 	pkt_flow_stats_mmt_window =	derwin(right_window_outline, right_window_h-2, right_window_w-3, 1, 1);
-
+	scrollok(pkt_flow_stats_mmt_window, false);
 	//bottom
 	pkt_global_loss_window = 	derwin(bottom_window_outline, bottom_window_h-2, bottom_window_w-2, 1, 1);
+	scrollok(pkt_global_loss_window, false);
 
-	wnoutrefresh(my_window);
+	wnoutrefresh(curscr);
         wnoutrefresh(left_window_outline);
 	wnoutrefresh(right_window_outline);
 	wnoutrefresh(bottom_window_outline);
-	doupdate();
+	immedok(curscr, false);
+	immedok(left_window_outline, false);
+	immedok(right_window_outline, false);
+	immedok(bottom_window_outline, false);
+	immedok(left_window_outline, false);
+	immedok(right_window_outline, false);
+	immedok(bottom_window_outline, false);
+	//doupdate();
 
 }
 
@@ -551,8 +562,7 @@ void* print_lls_instance_table_thread(void* lls_slt_monitor_ptr) {
 		sleep(1);
 		if(lls_slt_monitor->lls_table_slt) {
 			ncurses_writer_lock_mutex_acquire();
-			__LLS_DUMP_CLEAR();
-			__LLS_REFRESH();
+			//			__LLS_DUMP_CLEAR();
 			lls_dump_instance_table_ncurses(lls_slt_monitor->lls_table_slt);
 			__DOUPDATE();
 			__LLS_REFRESH();
