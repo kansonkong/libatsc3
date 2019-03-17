@@ -43,7 +43,7 @@ atsc3_mmt_signaling_message_test: atsc3_mmt_signaling_message_test.c libatsc3.o
 # listener_tests: atsc3_alc_listener_test  atsc3_mmt_listener_test atsc3_listener_test atsc3_mmt_listener_test_bento atsc3_listener_metrics_test
 listener_tests: atsc3_alc_listener_test atsc3_lls_listener_test atsc3_mmt_listener_test \
 				atsc3_mmt_listener_test_bento atsc3_mmt_sls_listener_test  \
-				atsc3_stltp_listener_test
+				atsc3_stltp_listener_test 
 
 # real libatsc3 tools for lls, sls, mmt/route and flow analysis
 tools: atsc3_listener_metrics_ncurses
@@ -204,6 +204,13 @@ atsc3_stltp_listener_test: listener_tests/atsc3_stltp_listener_test.cpp libatsc3
 	g++ -g listener_tests/atsc3_stltp_listener_test.cpp libatsc3.o -lpcap -lz -lpthread -o listener_tests/atsc3_stltp_listener_test
 
 
+
+atsc3_mmt_sls_listener_test: listener_tests/atsc3_mmt_sls_listener_test.cpp libatsc3.o
+	g++ -g listener_tests/atsc3_mmt_sls_listener_test.cpp  \
+		libatsc3.o \
+		-lpcap -lz \
+		-o listener_tests/atsc3_mmt_sls_listener_test
+
 # simple MMT listener that builds a single ISOBMFF segment with v/a muxed in for each MPU
 atsc3_mmt_listener_test: listener_tests/atsc3_mmt_listener_test.cpp libatsc3_bento4_gpl.o 
 	g++ -D __ISOBMFF_LIB=true -g listener_tests/atsc3_mmt_listener_test.cpp \
@@ -217,14 +224,8 @@ atsc3_alc_listener_test: listener_tests/atsc3_alc_listener_test.cpp libatsc3_ben
 		libatsc3_bento4_gpl.o \
 		-lz -lpcap -lpthread  -o listener_tests/atsc3_alc_listener_test
 		
+# # interim listener testing for new features like sls and bento4
 
-# interim listener testing for new features like sls and bento4
-#atsc3_mmt_sls_listener_test: atsc3_mmt_sls_listener_test.c libatsc3_bento4_gpl.o \
-#	cc -g atsc3_mmt_sls_listener_test.c  \
-#		libatsc3_bento4_gpl.o \
-#		-lpcap \
-#		-o listener_tests/atsc3_mmt_sls_listener_test
-#
 #atsc3_mmt_listener_test_bento: atsc3_mmt_listener_test_bento.c libatsc3_bento4_gpl.o
 #	g++ -D __ISOBMFF_LIB=true -g atsc3_mmt_listener_test_bento.c  \
 #		atsc3_mmt_reconstitution_from_media_sample.o atsc3_isobmff_tools.o \
