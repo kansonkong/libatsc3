@@ -55,7 +55,8 @@ void ncurses_init() {
 	
 	//remap as our printf is redirected to stderr
 	//my_screen = newterm("xterm", stdout, stdin);
-	my_screen = newterm(NULL, stdout, stdin);
+	char* my_term = (char *)"xterm";
+	my_screen = newterm(my_term, stdout, stdin);
 
 	set_term(my_screen);
 	raw();
