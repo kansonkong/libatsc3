@@ -10,7 +10,7 @@
 #include "atsc3_stltp_parser.h"
 
 
-#define __STLTP_PARSER_TEST_DEBUG(...)  printf("test:%d:DEBUG: ",__LINE__); printf(__VA_ARGS__); printf("\n");
+#define __STLTP_PARSER_TEST_DEBUG(...)  printf("test:%d:DEBUG: ",__LINE__); printf(__VA_ARGS__); printf("\r\n");
 
 void __create_binary_payload(char *test_payload_base64, uint8_t **binary_payload, uint32_t * binary_payload_size) {
 	int test_payload_base64_length = strlen(test_payload_base64);

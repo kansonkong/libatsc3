@@ -22,25 +22,7 @@ int initfunc(WINDOW* ripoff_win, int cols) {
 extern void trace (const unsigned int);
 
 void ncurses_init() {
-	/** hacks
-	*
-	FILE *f = fopen("/dev/tty", "r+");
-	SCREEN *screen = newterm(NULL, f, f);
-	set_term(screen);
-	//this goes to stdout
-	fprintf(stdout, "hello\n");
-	//this goes to the console
-	fprintf(stderr, "some error\n");
-	//this goes to display
-	mvprintw(0, 0, "hello ncurses");
-	refresh();
-	getch();
-	endwin();
 
-	///FILE *f = fopen("/dev/tty", "+r");
-       	//my_screen = newterm(NULL, f, f);
-	*/
-  // trace((const unsigned int)0xFFFF);
 	ncurses_mutext_init();
 	def_prog_mode();
 	//wire up resize handler
@@ -54,18 +36,18 @@ void ncurses_init() {
 	
 	
 	//remap as our printf is redirected to stderr
-	//my_screen = newterm("xterm", stdout, stdin);
 	char* my_term = (char *)"xterm";
 	my_screen = newterm(my_term, stdout, stdin);
 
 	set_term(my_screen);
 	raw();
-	noecho();						/* Don't echo() while we do getch */
+
+	noecho();
+	
 	curs_set(0);
 	create_or_update_window_sizes(false);
 	clearok(curscr, false);
 	scrollok(curscr, false);
-
 }
 
 int play_mode = 0;
