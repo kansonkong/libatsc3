@@ -119,7 +119,7 @@ void mmt_atsc3_message_payload_dump(mmt_signalling_message_header_and_payload_t*
 
 
 
-#define _MMSM_PRINTLN(...) printf(__VA_ARGS__);printf("\r\n")
+#define _MMSM_PRINTLN(...) printf(__VA_ARGS__);printf("%s%s","\r","\n")
 #define _MMSM_ERROR(...)   printf("%s:%d:ERROR: ",__FILE__,__LINE__);_MMSM_PRINTLN(__VA_ARGS__);
 #define _MMSM_WARN(...)    printf("%s:%d:WARN: ",__FILE__,__LINE__);_MMSM_PRINTLN(__VA_ARGS__);
 #define _MMSM_INFO(...)    printf("%s:%d:INFO: ",__FILE__,__LINE__);_MMSM_PRINTLN(__VA_ARGS__);
