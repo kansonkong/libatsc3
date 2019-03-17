@@ -12,10 +12,11 @@
 #include <stdbool.h>
 #include "atsc3_listener_udp.h"
 
-#define ATSC3_STLTP_PAYLOAD_TYPE_TUNNEL 			0x61
+#define ATSC3_STLTP_PAYLOAD_TYPE_TUNNEL 					0x61
 
-#define ATSC3_STLTP_PAYLOAD_TYPE_PREAMBLE_PACKET 	0x4D
-#define ATSC3_STLTP_PAYLOAD_TYPE_BASEBAND_PACKET 	0x4e
+#define ATSC3_STLTP_PAYLOAD_TYPE_TIMING_MANAGEMENT_PACKET 	0x4C
+#define ATSC3_STLTP_PAYLOAD_TYPE_PREAMBLE_PACKET 			0x4D
+#define ATSC3_STLTP_PAYLOAD_TYPE_BASEBAND_PACKET 			0x4E
 
 typedef struct atsc3_rtp_fixed_header {
 	uint8_t version:2;
@@ -116,7 +117,7 @@ typedef struct atsc3_stltp_preamble_packet {
 	atsc3_rtp_fixed_header_t* atsc3_rtp_fixed_header;
 
 	uint8_t* 				preamble_payload;
-	uint32_t 				preamble_payload_offset;
+	uint16_t 				preamble_payload_offset;
 	uint16_t 				preamble_payload_length;
 
 
@@ -124,16 +125,78 @@ typedef struct atsc3_stltp_preamble_packet {
 	L1_detail_signaling_t 	L1_detail_signaling;
 	uint16_t				crc16;
 
-	udp_packet_t* udp_packet;
-	uint32_t fragment_count;
-
-
-
-
+	udp_packet_t* 			udp_packet;
+	uint32_t 				fragment_count;
 
 } atsc3_stltp_preamble_packet_t;
 
 
+typedef struct timing_management_packet {
+	uint8_t		version_major:4;
+	uint8_t		version_minor:4;
+	uint8_t 	maj_log_rep_cnt_pre:4;
+	uint8_t 	maj_log_rep_cnt_tim:4;
+	uint8_t 	bootstrap_major:4;
+	uint8_t 	bootstrap_minor:4;
+	uint8_t 	min_time_to_next:5;
+	uint8_t 	system_bandwidth:2;
+	uint8_t 	bsr_coefficient:7;
+	uint8_t 	preamble_structure:8;
+	uint8_t 	ea_wakeup:2;
+	uint8_t 	num_emission_tim:6;
+	uint8_t 	num_xmtrs_in_group:6;
+	uint8_t 	xmtr_group_num:7;
+	uint8_t 	maj_log_override:3;
+	uint8_t		num_miso_filt_codes:2;
+	uint8_t 	tx_carrier_offset:2;
+	uint8_t 	_reserved:6; 		//1
+
+} timing_management_packet_t;
+
+typedef struct bootstrap_timing_data_emission {
+
+} bootstrap_timing_data_emission_t;
+
+typedef struct bootstrap_timing_data {
+	uint32_t	seconds;
+	uint32_t	nanoseconds;
+} bootstrap_timing_data_v;
+
+typedef struct per_transmitter_data {
+	uint16_t	xmtr_id;
+	uint16_t	tx_time_offset;
+	uint8_t		txid_injection_lvl;
+	uint8_t		miso_filt_code_index;
+	uint32_t	_reserved:29; //1
+} per_transmitter_data_v;
+
+typedef struct packet_release_time {
+	uint8_t		pkt_rls_seconds;
+	uint16_t	pkt_rls_a_miliseconds;
+	uint8_t		_reserved:2;
+} packet_release_time_t;
+
+typedef struct error_check_data {
+	uint16_t	crc16;
+} error_check_data_t;
+
+typedef struct atsc3_stltp_timing_management_packet {
+	atsc3_rtp_fixed_header_t* 	atsc3_rtp_fixed_header;
+
+	uint8_t* 					timing_management_payload;
+	uint16_t 					timing_management_offset;
+	uint16_t 					timing_management_length;
+
+	timing_management_packet_t 	timing_management_packet;
+	bootstrap_timing_data_v* 	bootstrap_timing_data_v;
+	per_transmitter_data_v*		per_transmitter_data_v;
+	packet_release_time_t		packet_release_time;
+	error_check_data_t			error_check_data;
+
+	udp_packet_t* 			udp_packet;
+	uint32_t 				fragment_count;
+
+} atsc3_stltp_timing_management_packet_t;
 
 
 
@@ -144,6 +207,7 @@ typedef struct atsc3_stltp_tunnel_packet {
 
 	udp_packet_t* udp_packet;
 	udp_packet_t* udp_packet_short_fragment;
+	uint32_t udp_packet_last_position;;
 
 	uint32_t fragment_count;
 
