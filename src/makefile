@@ -203,12 +203,9 @@ atsc3_lls_listener_test: listener_tests/atsc3_lls_listener_test.cpp libatsc3.o
 atsc3_stltp_listener_test: listener_tests/atsc3_stltp_listener_test.cpp libatsc3.o
 	g++ -g listener_tests/atsc3_stltp_listener_test.cpp libatsc3.o -lpcap -lz -lpthread -o listener_tests/atsc3_stltp_listener_test
 
-
-
 atsc3_mmt_sls_listener_test: listener_tests/atsc3_mmt_sls_listener_test.cpp libatsc3.o
 	g++ -g listener_tests/atsc3_mmt_sls_listener_test.cpp  \
-		libatsc3.o \
-		-lpcap -lz \
+		libatsc3.o -lpcap -lz -lpthread \
 		-o listener_tests/atsc3_mmt_sls_listener_test
 
 # simple MMT listener that builds a single ISOBMFF segment with v/a muxed in for each MPU
