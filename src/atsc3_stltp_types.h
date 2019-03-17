@@ -168,7 +168,7 @@ typedef struct bootstrap_timing_data_emission {
 typedef struct bootstrap_timing_data {
 	uint32_t	seconds;
 	uint32_t	nanoseconds;
-} bootstrap_timing_data_v;
+} bootstrap_timing_data_vt;
 
 typedef struct per_transmitter_data {
 	uint16_t	xmtr_id;
@@ -176,7 +176,7 @@ typedef struct per_transmitter_data {
 	uint8_t		txid_injection_lvl;
 	uint8_t		miso_filt_code_index;
 	uint32_t	_reserved:29; //1
-} per_transmitter_data_v;
+} per_transmitter_data_vt;
 
 typedef struct packet_release_time {
 	uint8_t		pkt_rls_seconds;
@@ -197,8 +197,8 @@ typedef struct atsc3_stltp_timing_management_packet {
 	bool						is_complete;
 
 	timing_management_packet_t 	timing_management_packet;
-	bootstrap_timing_data_v* 	bootstrap_timing_data_v;
-	per_transmitter_data_v*		per_transmitter_data_v;
+	bootstrap_timing_data_vt* 	bootstrap_timing_data_v;
+	per_transmitter_data_vt*	per_transmitter_data_v;
 	packet_release_time_t		packet_release_time;
 	error_check_data_t			error_check_data;
 
