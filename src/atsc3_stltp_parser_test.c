@@ -48,42 +48,42 @@ int main() {
 	atsc3_stltp_tunnel_packet_t* atsc3_stltp_tunnel_packet_processed = NULL;
 
 	atsc3_stltp_tunnel_packet_t* atsc3_stltp_tunnel_packet_new;
-
-	atsc3_stltp_tunnel_packet_new = atsc3_stltp_tunnel_packet_extract_fragment(binary_payload, binary_payload_length, atsc3_stltp_tunnel_packet_processed);
-	assert(atsc3_stltp_tunnel_packet_new);
-
-	__STLTP_PARSER_DEBUG("-----------------------------");
-
-	__create_binary_payload(__get_test_stltp_fragment_1(), &binary_payload, &binary_payload_length);
-	if(!atsc3_stltp_tunnel_packet_new->is_complete) {
-		atsc3_stltp_tunnel_packet_processed = atsc3_stltp_tunnel_packet_new;
-	}
-	atsc3_stltp_tunnel_packet_new = atsc3_stltp_tunnel_packet_extract_fragment(binary_payload, binary_payload_length, atsc3_stltp_tunnel_packet_processed);
-	__STLTP_PARSER_TEST_DEBUG("");
-
-	__create_binary_payload(__get_test_stltp_fragment_2(), &binary_payload, &binary_payload_length);
-
-	if(!atsc3_stltp_tunnel_packet_new->is_complete) {
-		atsc3_stltp_tunnel_packet_processed = atsc3_stltp_tunnel_packet_new;
-	}
-	atsc3_stltp_tunnel_packet_new = atsc3_stltp_tunnel_packet_extract_fragment(binary_payload, binary_payload_length, atsc3_stltp_tunnel_packet_processed);
-	__STLTP_PARSER_TEST_DEBUG("");
-
-	__create_binary_payload(__get_test_stltp_fragment_3(), &binary_payload, &binary_payload_length);
-
-	if(!atsc3_stltp_tunnel_packet_new->is_complete) {
-			atsc3_stltp_tunnel_packet_processed = atsc3_stltp_tunnel_packet_new;
-	}
-	atsc3_stltp_tunnel_packet_new = atsc3_stltp_tunnel_packet_extract_fragment(binary_payload, binary_payload_length, atsc3_stltp_tunnel_packet_processed);
-	__STLTP_PARSER_TEST_DEBUG("");
-
-	__create_binary_payload(__get_test_stltp_marker_2(), &binary_payload, &binary_payload_length);
-
-	atsc3_stltp_tunnel_packet_new = atsc3_stltp_tunnel_packet_extract_fragment(binary_payload, binary_payload_length, atsc3_stltp_tunnel_packet_processed);
-	__STLTP_PARSER_TEST_DEBUG("");
-
-	assert(atsc3_stltp_tunnel_packet_processed->is_complete);
-
+//
+//	atsc3_stltp_tunnel_packet_new = atsc3_stltp_tunnel_packet_extract_fragment_from_udp_packet(binary_payload, binary_payload_length, atsc3_stltp_tunnel_packet_processed);
+//	assert(atsc3_stltp_tunnel_packet_new);
+//
+//	__STLTP_PARSER_DEBUG("-----------------------------");
+//
+//	__create_binary_payload(__get_test_stltp_fragment_1(), &binary_payload, &binary_payload_length);
+////	if(!atsc3_stltp_tunnel_packet_new->is_complete) {
+//		atsc3_stltp_tunnel_packet_processed = atsc3_stltp_tunnel_packet_new;
+////	}
+//	atsc3_stltp_tunnel_packet_new = atsc3_stltp_tunnel_packet_extract_fragment_from_udp_packet(binary_payload, binary_payload_length, atsc3_stltp_tunnel_packet_processed);
+//	__STLTP_PARSER_TEST_DEBUG("");
+//
+//	__create_binary_payload(__get_test_stltp_fragment_2(), &binary_payload, &binary_payload_length);
+//
+////	if(!atsc3_stltp_tunnel_packet_new->is_complete) {
+//		atsc3_stltp_tunnel_packet_processed = atsc3_stltp_tunnel_packet_new;
+////	}
+//	atsc3_stltp_tunnel_packet_new = atsc3_stltp_tunnel_packet_extract_fragment_from_udp_packet(binary_payload, binary_payload_length, atsc3_stltp_tunnel_packet_processed);
+//	__STLTP_PARSER_TEST_DEBUG("");
+//
+//	__create_binary_payload(__get_test_stltp_fragment_3(), &binary_payload, &binary_payload_length);
+//
+//	//if(!atsc3_stltp_tunnel_packet_new->is_complete) {
+//			atsc3_stltp_tunnel_packet_processed = atsc3_stltp_tunnel_packet_new;
+//	//}
+//	atsc3_stltp_tunnel_packet_new = atsc3_stltp_tunnel_packet_extract_fragment_from_udp_packet(binary_payload, binary_payload_length, atsc3_stltp_tunnel_packet_processed);
+//	__STLTP_PARSER_TEST_DEBUG("");
+//
+//	__create_binary_payload(__get_test_stltp_marker_2(), &binary_payload, &binary_payload_length);
+//
+//	atsc3_stltp_tunnel_packet_new = atsc3_stltp_tunnel_packet_extract_fragment_from_udp_packet(binary_payload, binary_payload_length, atsc3_stltp_tunnel_packet_processed);
+//	__STLTP_PARSER_TEST_DEBUG("");
+//
+//	//assert(atsc3_stltp_tunnel_packet_processed->is_complete);
+//
 
 	return 0;
 }
