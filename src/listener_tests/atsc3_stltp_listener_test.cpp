@@ -38,11 +38,22 @@ void process_packet(u_char *user, const struct pcap_pkthdr *pkthdr, const u_char
 
 	//dispatch for LLS extraction and dump
 	if(udp_packet->udp_flow.dst_ip_addr == *dst_ip_addr_filter && udp_packet->udp_flow.dst_port == *dst_ip_port_filter) {
-		atsc3_stltp_tunnel_packet_new = atsc3_stltp_tunnel_packet_extract_fragment((uint8_t*)udp_packet->data, (uint32_t)udp_packet->data_length, atsc3_stltp_tunnel_packet_processed);
+		atsc3_stltp_tunnel_packet_processed = atsc3_stltp_tunnel_packet_extract_fragment_from_udp_packet(udp_packet, atsc3_stltp_tunnel_packet_processed);
 
-		if(atsc3_stltp_tunnel_packet_processed && atsc3_stltp_tunnel_packet_processed->is_complete) {
-			__INFO("stltp packet complete: type: 0x%2x", atsc3_stltp_tunnel_packet_processed->atsc3_rtp_fixed_header_payload->payload_type);
+		if(atsc3_stltp_tunnel_packet_processed) {
+			if(atsc3_stltp_tunnel_packet_processed->atsc3_stltp_baseband_packet && atsc3_stltp_tunnel_packet_processed->atsc3_stltp_baseband_packet->is_complete) {
+				__INFO("stltp atsc3_stltp_baseband_packet packet complete: size: %u",  atsc3_stltp_tunnel_packet_processed->atsc3_stltp_baseband_packet->payload_length);
 			//todo - free
+			}
+			if(atsc3_stltp_tunnel_packet_processed->atsc3_stltp_preamble_packet && atsc3_stltp_tunnel_packet_processed->atsc3_stltp_preamble_packet->is_complete) {
+				__INFO("stltp atsc3_stltp_preamble_packet packet complete: size: %u",  atsc3_stltp_tunnel_packet_processed->atsc3_stltp_preamble_packet->payload_length);
+			//todo - free
+			}
+			if(atsc3_stltp_tunnel_packet_processed->atsc3_stltp_timing_management_packet && atsc3_stltp_tunnel_packet_processed->atsc3_stltp_timing_management_packet->is_complete) {
+				__INFO("stltp atsc3_stltp_timing_management_packet packet complete: size: %u",  atsc3_stltp_tunnel_packet_processed->atsc3_stltp_timing_management_packet->payload_length);
+			//todo - free
+			}
+
 
 		} else {
 			//continue appending
