@@ -121,6 +121,13 @@ atsc3_isobmff_tools.o: atsc3_isobmff_tools.h atsc3_isobmff_tools.cpp
 	
 atsc3_stltp_parser.o: atsc3_stltp_parser.h atsc3_stltp_parser.c
 	cc -g -c atsc3_stltp_parser.c
+	
+	
+atsc3_fdt.o: atsc3_fdt.h atsc3_fdt.c atsc3_vector_builder.h
+	cc -g -c atsc3_fdt.c  -o atsc3_fdt.o
+
+atsc3_fdt_parser.o: atsc3_fdt.o atsc3_fdt_parser.h atsc3_fdt_parser.c
+	cc -g -c atsc3_fdt_parser.c -o atsc3_fdt_parser.o
 
 # stats modules
 
@@ -146,13 +153,15 @@ libatsc3_intermediate.o: xml.o atsc3_lls.o atsc3_lls_slt_parser.o atsc3_lls_sls_
 		atsc3_alc_rx.o alc_session.o fec.o null_fec.o rs_fec.o xor_fec.o mad.o mad_rlc.o transport.o \
 		atsc3_lls_alc_utils.o atsc3_mmt_mpu_utils.o atsc3_player_ffplay.o atsc3_alc_utils.o \
         atsc3_lls_sls_monitor_output_buffer.o atsc3_lls_sls_monitor_output_buffer_utils.o \
-		atsc3_lls_mmt_utils.o  atsc3_listener_udp.o atsc3_gzip.o atsc3_stltp_parser.o 
+		atsc3_lls_mmt_utils.o  atsc3_listener_udp.o atsc3_gzip.o atsc3_stltp_parser.o \
+		atsc3_fdt.o atsc3_fdt_parser.o
 
 	ld  -o libatsc3_intermediate.o -r xml.o atsc3_lls.o atsc3_lls_slt_parser.o  atsc3_lls_sls_parser.o atsc3_mmtp_parser.o atsc3_mmtp_ntp32_to_pts.o atsc3_utils.o \
 		fixups_timespec_get.o atsc3_mmt_signaling_message.o atsc3_mmt_mpu_parser.o alc_channel.o alc_list.o \
 		atsc3_alc_rx.o alc_session.o fec.o null_fec.o rs_fec.o xor_fec.o mad.o mad_rlc.o transport.o atsc3_alc_utils.o \
 		atsc3_lls_alc_utils.o atsc3_mmt_mpu_utils.o atsc3_player_ffplay.o atsc3_lls_sls_monitor_output_buffer.o atsc3_lls_sls_monitor_output_buffer_utils.o \
-		atsc3_lls_mmt_utils.o atsc3_listener_udp.o atsc3_gzip.o atsc3_stltp_parser.o
+		atsc3_lls_mmt_utils.o atsc3_listener_udp.o atsc3_gzip.o atsc3_stltp_parser.o \
+		atsc3_fdt.o atsc3_fdt_parser.o
 
 libatsc3.o: libatsc3_intermediate.o bento4_mock.o
 	ld  -o libatsc3.o -r libatsc3_intermediate.o bento4_mock.o

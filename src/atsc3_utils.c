@@ -77,8 +77,6 @@ char* kvp_collection_get(kvp_collection_t *collection, char* key) {
 	}
 	memcpy(newval, val, len);
 	_ATSC3_UTILS_TRACE("kvp_collection_get: cloning len: %d, val: %s, newval: %s", len, val, newval);
-
-
 	return newval;
 }
 
