@@ -267,7 +267,7 @@ pipe_ffplay_buffer_t* pipe_create_ffplay_resolve_fps(lls_sls_monitor_buffer_isob
 	sigpipe_register_action_handler(&pipe_ffplay_buffer);
 	char sem_name[31];
 	//sranddev();
-	snprintf((char*)&sem_name, 31, "/atsc3_player_ffplay_%u", random());
+	snprintf((char*)&sem_name, 29, "/atsc3_player_ffplay_%ld", random());
 
     __PLAYER_FFPLAY_INFO("creating semaphore with path: %s", sem_name);
 	pipe_ffplay_buffer->pipe_buffer_semaphore = sem_open(sem_name, O_CREAT, 0644, 0);
