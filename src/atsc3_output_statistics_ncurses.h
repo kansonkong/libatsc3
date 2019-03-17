@@ -122,7 +122,7 @@ extern 	WINDOW* pkt_global_loss_window;
 
 extern int global_mmt_loss_count;
 
-#define __DOUPDATE() doupdate();
+#define __DOUPDATE() printf("------DO UPDATE!"); doupdate(); wrefresh(curscr);
 
 
 #ifndef CTRL
