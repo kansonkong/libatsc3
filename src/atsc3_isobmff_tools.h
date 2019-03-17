@@ -35,13 +35,13 @@ lls_sls_monitor_output_buffer_t* atsc3_isobmff_build_mpu_metadata_ftyp_moof_mdat
 
 
 
-#define __ISOBMFF_TOOLS_ERROR(...)   printf("%s:%d:ERROR: %.4f: ",__FILE__,__LINE__, gt());printf(__VA_ARGS__);printf("\r","\n");
-#define __ISOBMFF_TOOLS_WARN(...)    printf("%s:%d:WARN : %.4f: ",__FILE__,__LINE__, gt());printf(__VA_ARGS__);printf("\r","\n");
-#define __ISOBMFF_TOOLS_INFO(...)    printf("%s:%d:INFO : %.4f: ",__FILE__,__LINE__, gt());printf(__VA_ARGS__);printf("\r","\n");
+#define __ISOBMFF_TOOLS_ERROR(...)   printf("%s:%d:ERROR: %.4f: ",__FILE__,__LINE__, gt());printf(__VA_ARGS__);printf("\r%s","\n");
+#define __ISOBMFF_TOOLS_WARN(...)    printf("%s:%d:WARN : %.4f: ",__FILE__,__LINE__, gt());printf(__VA_ARGS__);printf("\r%s","\n");
+#define __ISOBMFF_TOOLS_INFO(...)    printf("%s:%d:INFO : %.4f: ",__FILE__,__LINE__, gt());printf(__VA_ARGS__);printf("\r%s","\n");
 
-#define __ISOBMFF_TOOLS_DEBUG(...)   if(_ISOBMFF_TOOLS_DEBUG_ENABLED) {printf("%s:%d:DEBUG: %.4f: ",__FILE__,__LINE__, gt());printf(__VA_ARGS__);printf("\r","\n"); }
+#define __ISOBMFF_TOOLS_DEBUG(...)   if(_ISOBMFF_TOOLS_DEBUG_ENABLED) {printf("%s:%d:DEBUG: %.4f: ",__FILE__,__LINE__, gt());printf(__VA_ARGS__);printf("\r%s","\n"); }
 
-#define __ISOBMFF_TOOLS_TRACE(...)   if(_ISOBMFF_TOOLS_TRACE_ENABLED) {printf("%s:%d:TRACE: %.4f: ",__FILE__,__LINE__, gt());printf(__VA_ARGS__);printf("\r","\n"); }
+#define __ISOBMFF_TOOLS_TRACE(...)   if(_ISOBMFF_TOOLS_TRACE_ENABLED) {printf("%s:%d:TRACE: %.4f: ",__FILE__,__LINE__, gt());printf(__VA_ARGS__);printf("\r%s","\n"); }
 
 #if defined (__cplusplus)
 }
