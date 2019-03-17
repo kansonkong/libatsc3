@@ -530,7 +530,6 @@ void handle_winch(int sig)
 
     // Needs to be called after an endwin() so ncurses will initialize
     // itself with the new terminal dimensions.
-	abort();
     create_or_update_window_sizes(true);
     ncurses_writer_lock_mutex_release();
 
