@@ -48,8 +48,8 @@ void ncurses_init() {
 	
 	curs_set(0);
 	create_or_update_window_sizes(false);
-	clearok(curscr, false);
-	scrollok(curscr, false);
+	//clearok(curscr, false);
+	//scrollok(curscr, false);
 }
 
 int play_mode = 0;
@@ -332,7 +332,7 @@ void* ncurses_input_run_thread(void* lls_slt_monitor_ptr) {
                     
                     lls_slt_monitor->lls_sls_mmt_monitor->lls_sls_monitor_output_buffer_mode.ffplay_output_enabled = true;
                     
-                    lls_slt_monitor->lls_sls_mmt_monitor->lls_sls_monitor_output_buffer_mode.http_output_buffer = (http_output_buffer_t*)calloc(1, sizeof(http_output_buffer_t*));
+                    lls_slt_monitor->lls_sls_mmt_monitor->lls_sls_monitor_output_buffer_mode.http_output_buffer = (http_output_buffer_t*)calloc(1, sizeof(http_output_buffer_t));
                     lls_slt_monitor->lls_sls_mmt_monitor->lls_sls_monitor_output_buffer_mode.http_output_buffer->http_payload_buffer_mutex = lls_sls_monitor_reader_mutext_create();
                     lls_slt_monitor->lls_sls_mmt_monitor->lls_sls_monitor_output_buffer_mode.http_output_enabled = true;
 
@@ -509,11 +509,11 @@ void create_or_update_window_sizes(bool should_reload_term_size) {
 	pkt_global_loss_window = 	derwin(bottom_window_outline, bottom_window_h-2, bottom_window_w-2, 1, 1);
 	scrollok(pkt_global_loss_window, false);
 
-	wnoutrefresh(curscr);
-        wnoutrefresh(left_window_outline);
+	//wnoutrefresh(curscr);
+    wnoutrefresh(left_window_outline);
 	wnoutrefresh(right_window_outline);
 	wnoutrefresh(bottom_window_outline);
-	immedok(curscr, false);
+	//immedok(curscr, false);
 	immedok(left_window_outline, false);
 	immedok(right_window_outline, false);
 	immedok(bottom_window_outline, false);
