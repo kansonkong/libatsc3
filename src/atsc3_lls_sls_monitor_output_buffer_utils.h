@@ -58,6 +58,10 @@ block_t* lls_sls_monitor_output_buffer_copy_video_moof_fragment_isobmff_box(lls_
 void lls_slt_monitor_check_and_handle_pipe_ffplay_buffer_is_shutdown(lls_slt_monitor_t* lls_slt_monitor);
 void lls_sls_monitor_output_buffer_file_dump(lls_sls_monitor_output_buffer_t* lls_sls_monitor_output_buffer, const char* directory_path, uint32_t mpu_sequence_number);
 
+pthread_mutex_t* lls_sls_monitor_reader_mutext_create();
+void lls_sls_monitor_reader_mutex_lock(pthread_mutex_t* pthread_mutex);
+void lls_sls_monitor_reader_mutex_unlock(pthread_mutex_t* pthread_mutex);
+
 #define __LLS_SLS_MONITOR_OUTPUT_BUFFER_UTILS_PRINTLN(...) printf(__VA_ARGS__);printf("\r\n")
 #define __LLS_SLS_MONITOR_OUTPUT_BUFFER_UTILS_ERROR(...)   printf("%s:%d:ERROR :",__FILE__,__LINE__);__LLS_SLS_MONITOR_OUTPUT_BUFFER_UTILS_PRINTLN(__VA_ARGS__);
 #define __LLS_SLS_MONITOR_OUTPUT_BUFFER_UTILS_WARN(...)    printf("%s:%d:WARN :",__FILE__,__LINE__);__LLS_SLS_MONITOR_OUTPUT_BUFFER_UTILS_PRINTLN(__VA_ARGS__);
