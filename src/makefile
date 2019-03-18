@@ -10,6 +10,7 @@ all: intermediate_lls intermediate_mmt intermediate_alc intermediate_ffplay \
 		interemediate_gpl_and_mock_linkage  \
 		libatsc3_core   \
 		unit_tests \
+		libmicrohttpd_tests \
 		listener_tests \
 		tools
 
@@ -37,6 +38,10 @@ listener_ncurses: atsc3_listener_metrics_ncurses
 unit_tests: atsc3_lmt_test atsc3_lls_slt_parser_test atsc3_lls_test \
 			atsc3_lls_SystemTime_test atsc3_mmt_signaling_message_test \
 			atsc3_isobmff_box_test atsc3_fdt_test atsc3_stltp_parser_test
+			
+			
+libmicrohttpd_tests: atsc3_libmicrohttpd_test
+
 
 atsc3_mmt_signaling_message_test: atsc3_mmt_signaling_message_test.c libatsc3.o
 
@@ -46,7 +51,7 @@ listener_tests: atsc3_alc_listener_test atsc3_lls_listener_test atsc3_mmt_listen
 				atsc3_stltp_listener_test 
 
 # real libatsc3 tools for lls, sls, mmt/route and flow analysis
-tools: atsc3_listener_metrics_ncurses
+tools: atsc3_listener_metrics_ncurses atsc3_listener_metrics_ncurses_httpd_isobmff
 
 # intermediate object generation for linking into libatsc3.o
 
@@ -122,7 +127,6 @@ atsc3_isobmff_tools.o: atsc3_isobmff_tools.h atsc3_isobmff_tools.cpp
 atsc3_stltp_parser.o: atsc3_stltp_parser.h atsc3_stltp_parser.c
 	cc -g -c atsc3_stltp_parser.c
 	
-	
 atsc3_fdt.o: atsc3_fdt.h atsc3_fdt.c atsc3_vector_builder.h
 	cc -g -c atsc3_fdt.c  -o atsc3_fdt.o
 
@@ -136,6 +140,12 @@ atsc3_bandwidth_statistics.o: atsc3_bandwidth_statistics.h atsc3_bandwidth_stati
 
 atsc3_packet_statistics.o: atsc3_packet_statistics.h atsc3_packet_statistics.c
 	cc -g -c atsc3_packet_statistics.c
+
+atsc3_libmicrohttpd_test: atsc3_libmicrohttpd_test.c 
+	cc atsc3_libmicrohttpd_test.c -o atsc3_libmicrohttpd_test -I../libmicrohttpd/libmicrohttpd-0.9.63/build/include \
+  		-L../libmicrohttpd/libmicrohttpd-0.9.63/build/lib -lmicrohttpd
+	
+
 
 #build a compile time-linked WITHOUT bento4 which should not face license compliance issues
 bento4_mock_link: bento4_mock.o
@@ -262,3 +272,22 @@ atsc3_listener_metrics_ncurses: tools/atsc3_listener_metrics_ncurses.cpp \
 		atsc3_mmt_reconstitution_from_media_sample.c atsc3_logging_externs.o \
 		-I../bento/include/ -lpcap  -lncurses -lpcap -lz -lpthread \
 		-o tools/atsc3_listener_metrics_ncurses
+		
+		
+		
+atsc3_listener_metrics_ncurses_httpd_isobmff: tools/atsc3_listener_metrics_ncurses_httpd_isobmff.cpp \
+								atsc3_bandwidth_statistics.c \
+								atsc3_packet_statistics.c atsc3_output_statistics_ncurses.h \
+								atsc3_output_statistics_ncurses.c  atsc3_isobmff_tools.o \
+								atsc3_mmt_reconstitution_from_media_sample.o atsc3_logging_externs.o \
+								libatsc3_bento4_gpl.o 
+	g++  -D OUTPUT_STATISTICS=NCURSES -g tools/atsc3_listener_metrics_ncurses_httpd_isobmff.cpp \
+		libatsc3_bento4_gpl.o \
+		atsc3_output_statistics_ncurses.c \
+		atsc3_bandwidth_statistics.c atsc3_packet_statistics.c \
+		atsc3_isobmff_tools.o \
+		atsc3_mmt_reconstitution_from_media_sample.c atsc3_logging_externs.o \
+		-I../bento/include/ -lpcap  -lncurses -lpcap -lz -lpthread \
+		-I../libmicrohttpd/libmicrohttpd-0.9.63/build/include \
+  		-L../libmicrohttpd/libmicrohttpd-0.9.63/build/lib -lmicrohttpd \
+		-o tools/atsc3_listener_metrics_ncurses_httpd_isobmff
