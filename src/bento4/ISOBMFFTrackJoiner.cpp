@@ -734,7 +734,7 @@ void parseAndBuildJoinedBoxes_from_lls_sls_monitor_output_buffer(lls_sls_monitor
 
 		AP4_ElstAtom* audio_elst_atom = new AP4_ElstAtom();
 		audio_elst_atom->AddEntry(*audio_elst_entry);
-		AP4_ContainerAtom* audio_edtsAtom = new AP4_ContainerAtom(AP4_ATOM_TYPE_EDTS);
+		audio_edtsAtom = new AP4_ContainerAtom(AP4_ATOM_TYPE_EDTS);
 		audio_edtsAtom->AddChild(audio_elst_atom);
 
 		//now for video
@@ -747,7 +747,7 @@ void parseAndBuildJoinedBoxes_from_lls_sls_monitor_output_buffer(lls_sls_monitor
 
 		AP4_ElstAtom* video_elst_atom = new AP4_ElstAtom();
 		video_elst_atom->AddEntry(*video_elst_entry);
-		AP4_ContainerAtom* video_edtsAtom = new AP4_ContainerAtom(AP4_ATOM_TYPE_EDTS);
+		video_edtsAtom = new AP4_ContainerAtom(AP4_ATOM_TYPE_EDTS);
 		video_edtsAtom->AddChild(video_elst_atom);
 
 	}
