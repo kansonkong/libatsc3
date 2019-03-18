@@ -16,7 +16,6 @@ int _ISOBMFFTRACKJOINER_TRACE_ENABLED = 0;
 
 /*****************************************************************
 |
-    AP4 - MP4 File Dumper
 |
 |    Copyright 2002-2008 Axiomatic Systems, LLC
 |
@@ -47,6 +46,18 @@ using namespace std;
 #ifdef __EMSCRIPTEN__
 #include "emscripten.h"
 #endif
+
+//glue structs...
+
+typedef struct AP4_Atom_And_Offset {
+	AP4_Atom* 	atom;
+	uint32_t	start_offset;
+	uint32_t	end_offset;
+	bool 		write_manually;
+} AP4_Atom_And_Offset_t;
+
+
+
 
 /*----------------------------------------------------------------------
  |   constants
@@ -81,6 +92,27 @@ int main(int argc, char** argv) {
 	return 0;
 }
 #endif
+
+
+
+void dumpFullMetadataAndOffsets(list<AP4_Atom_And_Offset_t*> atomList) {
+
+	if(_ISOBMFFTRACKJOINER_DEBUG_ENABLED) {
+		AP4_ByteStream* boxDumpConsoleOutput = NULL;
+		AP4_FileByteStream::Create("-stderr", AP4_FileByteStream::STREAM_MODE_WRITE, boxDumpConsoleOutput);
+		AP4_AtomInspector* inspector = new AP4_PrintInspector(*boxDumpConsoleOutput);
+		inspector->SetVerbosity(3);
+
+		std::list<AP4_Atom_And_Offset_t*>::iterator it;
+		for (it = atomList.begin(); it != atomList.end(); it++) {
+			(*it)->atom->Inspect(*inspector);
+		}
+
+		if (boxDumpConsoleOutput) boxDumpConsoleOutput->Release();
+		delete inspector;
+	}
+
+}
 
 ISOBMFFTrackJoinerFileResouces_t* loadFileResources(const char* file1, const char* file2) {
 
@@ -237,7 +269,7 @@ uint32_t __rebuild_trun_sample_box(AP4_TrunAtom* temp_trunAtom, lls_sls_monitor_
 	return new_fragments_size;
 }
 
-void parseAndBuildJoinedBoxes_from_lls_sls_monitor_output_buffer(lls_sls_monitor_output_buffer_t* lls_sls_monitor_output_buffer, AP4_MemoryByteStream** output_stream_p) {
+void parseAndBuildJoinedBoxes_multiple_mdat_boxes_from_lls_sls_monitor_output_buffer(lls_sls_monitor_output_buffer_t* lls_sls_monitor_output_buffer, AP4_MemoryByteStream** output_stream_p) {
 
 	AP4_Result   result;
 
@@ -417,7 +449,9 @@ void parseAndBuildJoinedBoxes_from_lls_sls_monitor_output_buffer(lls_sls_monitor
 		}
 	}
 
-	//now go the other way...
+
+
+	//Process our audio track - now go the other way...
 	for (it = video_isobmff_atom_list.begin(); it != video_isobmff_atom_list.end(); it++) {
 
 		//In the moov box->get a ref for the trak box
@@ -602,6 +636,474 @@ void parseAndBuildJoinedBoxes_from_lls_sls_monitor_output_buffer(lls_sls_monitor
 }
 
 
+
+
+list<AP4_Atom_And_Offset*> ISOBMFFTrackParseAndBuildOffset(block_t* isobmff_track_block) {
+
+	__ISOBMFF_JOINER_DEBUG("::ISOBMFFTrackParse: payload size is: %u", isobmff_track_block->i_pos);
+
+	list<AP4_Atom_And_Offset_t*> atomList;
+    AP4_Atom* atom;
+
+    AP4_MemoryByteStream* memoryInputByteStream = new AP4_MemoryByteStream(isobmff_track_block->p_buffer, isobmff_track_block->i_pos);
+
+    // inspect the atoms one by one
+    AP4_Position start_position;
+    AP4_Position end_position;
+
+    AP4_DefaultAtomFactory atom_factory;
+
+    memoryInputByteStream->Tell(start_position);
+
+    while (atom_factory.CreateAtomFromStream(*memoryInputByteStream, atom) == AP4_SUCCESS) {
+        memoryInputByteStream->Tell(end_position);
+        AP4_Atom_And_Offset_t* ap4_atom_and_offset = (AP4_Atom_And_Offset_t*)calloc(1, sizeof(AP4_Atom_And_Offset_t));
+        ap4_atom_and_offset->atom = atom;
+        ap4_atom_and_offset->start_offset = start_position;
+        ap4_atom_and_offset->end_offset = end_position;
+
+        atomList.push_back(ap4_atom_and_offset);
+        printBoxType(atom);
+
+        //re-seek if our printBoxType processed deeper into the box hierarchy
+        memoryInputByteStream->Seek(end_position);
+        start_position = end_position;
+    }
+
+    if (memoryInputByteStream) memoryInputByteStream->Release();
+
+    return atomList;
+}
+
+
+/*
+ *
+ * build into single mdat box
+ */
+
+void parseAndBuildJoinedBoxes_from_lls_sls_monitor_output_buffer(lls_sls_monitor_output_buffer_t* lls_sls_monitor_output_buffer, AP4_MemoryByteStream** output_stream_p) {
+
+	AP4_Result   result;
+
+	AP4_ContainerAtom* audio_mvexAtomToCopy = NULL;
+	AP4_TrakAtom* audio_trakMediaAtomToCopy = NULL;
+
+#ifndef __DROP_HINT_TRACKS__
+
+	//only used if recombining hint tracks
+	std::list<AP4_TrakAtom*> audio_trakHintAtomToCopyList;
+	std::list<AP4_TrakAtom*>::iterator itHint;
+#endif
+
+	std::list<AP4_ContainerAtom*> audio_trafList;
+	std::list<AP4_ContainerAtom*>::iterator itTraf;
+
+	std::list<AP4_TrunAtom*> audio_trunList;
+	std::list<AP4_TrunAtom*>::iterator itTrunFirst;
+
+	std::list<AP4_Atom_And_Offset_t*> audio_mdatList;
+	std::list<AP4_Atom_And_Offset_t*> video_mdatList;
+	std::list<AP4_Atom_And_Offset_t*>::iterator it;
+
+	uint32_t audio_mdat_size_new;
+	uint32_t video_mdat_size_new;
+
+	AP4_AtomParent* video_moofAtomParent = NULL;
+	AP4_Atom* video_moofAtom = NULL;
+
+	AP4_ContainerAtom* video_trafAtom = NULL;
+	AP4_TrunAtom* video_trunAtom = NULL;
+
+	uint64_t video_mdatFileOffset = 0;
+
+	block_t* audio_output_buffer = lls_sls_monitor_output_buffer_copy_audio_full_isobmff_box(lls_sls_monitor_output_buffer);
+	block_t* video_output_buffer = lls_sls_monitor_output_buffer_copy_video_full_isobmff_box(lls_sls_monitor_output_buffer);
+
+	if(!audio_output_buffer || !video_output_buffer) {
+		__ISOBMFF_JOINER_INFO("setting *output_stream_p to null, audio_output_buffer: %p, video_output_buffer: %p", audio_output_buffer, video_output_buffer);
+		*output_stream_p = NULL;
+		return;
+	}
+
+	//we shouldn't be bigger than this for our return..
+	AP4_DataBuffer* dataBuffer = new AP4_DataBuffer(audio_output_buffer->i_pos + video_output_buffer->i_pos );
+	AP4_MemoryByteStream* memoryOutputByteStream = new AP4_MemoryByteStream(dataBuffer);
+
+	*output_stream_p = memoryOutputByteStream;
+
+	list<AP4_Atom_And_Offset_t*> audio_isobmff_atom_list  = ISOBMFFTrackParseAndBuildOffset(audio_output_buffer);
+
+	list<AP4_Atom_And_Offset_t*> video_isobmff_atom_list =  ISOBMFFTrackParseAndBuildOffset(video_output_buffer);
+
+    __ISOBMFF_JOINER_DEBUG("Dumping audio box: size: %u", audio_output_buffer->i_pos);
+	//dumpFullMetadata(audio_isobmff_atom_list);
+
+	__ISOBMFF_JOINER_DEBUG("Dumping video box: %u", video_output_buffer->i_pos);
+	//dumpFullMetadata(video_isobmff_atom_list);
+
+
+
+	/**
+     top level AP4_ContainerAtoms:
+
+	bento4/ISOBMFFTrackJoiner.cpp:363:DEBUG :printBoxType: atom type: ftyp, size: 36
+	bento4/ISOBMFFTrackJoiner.cpp:363:DEBUG :printBoxType: atom type: moov, size: 608
+	bento4/ISOBMFFTrackJoiner.cpp:363:DEBUG :printBoxType: atom type: styp, size: 24
+	bento4/ISOBMFFTrackJoiner.cpp:363:DEBUG :printBoxType: atom type: moof, size: 1220
+	bento4/ISOBMFFTrackJoiner.cpp:363:DEBUG :printBoxType: atom type: mdat, size: 96765
+
+
+     remove sidx by defining __DROP_SIDX_BOX__
+
+     steps to combine two tracks:
+     ----------------------------
+     in Moov box
+            -> copy mvex box
+            -> Copy trak box
+
+     in Moof box
+			-> Copy traf box
+                <- detatch both tfdt boxes if base_media_decode_time == 0
+
+            -> update trunSecondFile dataOffset from moof->getsize() + moof header size (+8)
+            -> update trunfirstFile dataOffset  from moof->getsize() + moof header size (+8) +2nd mdat size
+
+      append 1st Copy mdat box interior into v mdat_box
+
+	 */
+
+
+
+    /**
+     to postion at end:
+
+     [hdlr] size=12+40
+     handler_type = hint
+     handler_name = Bento4 Hint Handler
+     **/
+
+	//from isoBMFFList1 list - audio
+	for (it = audio_isobmff_atom_list.begin(); it != audio_isobmff_atom_list.end(); it++) {
+		AP4_Atom* top_level_atom = (*it)->atom;
+
+		//In the moov box->get a ref for the trak box
+		if(top_level_atom->GetType() == AP4_ATOM_TYPE_MOOV) {
+			AP4_MoovAtom* moovAtom = AP4_DYNAMIC_CAST(AP4_MoovAtom, top_level_atom);
+			audio_mvexAtomToCopy = AP4_DYNAMIC_CAST(AP4_ContainerAtom, moovAtom->GetChild(AP4_ATOM_TYPE_MVEX));
+
+			AP4_TrakAtom* tmpTrakAtom;
+			int trakIndex = 0;
+			while((tmpTrakAtom = AP4_DYNAMIC_CAST(AP4_TrakAtom, moovAtom->GetChild(AP4_ATOM_TYPE_TRAK, trakIndex++)))) {
+
+				AP4_HdlrAtom* hdlrAtom = AP4_DYNAMIC_CAST(AP4_HdlrAtom, tmpTrakAtom->FindChild("mdia/hdlr", false, false));
+
+				//todo - handle duplicate track id's
+
+				if(hdlrAtom && hdlrAtom->GetHandlerType() == AP4_HANDLER_TYPE_SOUN) {
+
+					lls_sls_monitor_output_buffer->audio_output_buffer_isobmff.track_id = tmpTrakAtom->GetId();
+					audio_trakMediaAtomToCopy = tmpTrakAtom;
+
+				} else if(hdlrAtom->GetHandlerType() == AP4_HANDLER_TYPE_HINT) {
+#ifndef __DROP_HINT_TRACKS__
+
+						tmpTrakAtom->SetId(tmpTrakAtom->GetId()+10);
+
+						audio_trakHintAtomToCopyList.push_back(tmpTrakAtom);
+
+						//if we have a hint ref
+											/**
+											 *[tref] size=8+12
+												  [hint] size=8+4
+													track_id_count = 1
+													track id  = 2
+											 */
+						//tmpTrakAtom->GetChild(AP4_ATOM_TYPE_TREF)
+						AP4_TrefTypeAtom* tmpTrefAtom = AP4_DYNAMIC_CAST(AP4_TrefTypeAtom, tmpTrakAtom->FindChild("tref/hint", false, false)); //(AP4_ATOM_TYPE_TREF));
+                        if(tmpTrefAtom) {
+                            const AP4_Array<AP4_UI32>& trefTrackIds = tmpTrefAtom->GetTrackIds();
+
+                            AP4_TrefTypeAtom* newTempTrefAtom = new AP4_TrefTypeAtom(tmpTrefAtom->GetType());
+                            for(AP4_Cardinal i=0; i < trefTrackIds.ItemCount(); i++) {
+                                newTempTrefAtom->AddTrackId(trefTrackIds[i] + 10);
+                            }
+                            AP4_AtomParent* tmpTrefParent = tmpTrefAtom->GetParent();
+                            tmpTrefAtom->Detach();
+                            tmpTrefParent->AddChild(newTempTrefAtom);
+                        }
+#endif
+				} else {
+					//printf("Skipping tmpTrakAtom: %u", tmpTrakAtom->GetType());
+				}
+
+			}
+		}
+
+		if(top_level_atom->GetType() == AP4_ATOM_TYPE_MOOF) {
+			AP4_AtomParent* moofAtom = AP4_DYNAMIC_CAST(AP4_ContainerAtom, top_level_atom);
+			AP4_ContainerAtom* trafContainerAtom = AP4_DYNAMIC_CAST(AP4_ContainerAtom, moofAtom->GetChild(AP4_ATOM_TYPE_TRAF));
+			audio_trafList.push_back(trafContainerAtom);
+
+			AP4_TrunAtom* temp_trunAtom = AP4_DYNAMIC_CAST(AP4_TrunAtom, trafContainerAtom->GetChild(AP4_ATOM_TYPE_TRUN));
+
+			audio_mdat_size_new = __rebuild_trun_sample_box(temp_trunAtom, &lls_sls_monitor_output_buffer->audio_output_buffer_isobmff);
+
+			audio_trunList.push_back(temp_trunAtom);
+		}
+
+		if(top_level_atom->GetType() == AP4_ATOM_TYPE_MDAT) {
+			if(audio_mdat_size_new) {
+				top_level_atom->SetSize32(audio_mdat_size_new + AP4_ATOM_HEADER_SIZE);
+			}
+			audio_mdatList.push_back(*it);
+		}
+	}
+
+	//Video track: now go the other way...
+	for (it = video_isobmff_atom_list.begin(); it != video_isobmff_atom_list.end(); it++) {
+		AP4_Atom* top_level_atom = (*it)->atom;
+
+		//In the moov box->get a ref for the trak box
+		if(top_level_atom->GetType() == AP4_ATOM_TYPE_MOOV) {
+			AP4_MoovAtom* moovAtom = AP4_DYNAMIC_CAST(AP4_MoovAtom, top_level_atom);
+
+			//remove our hints
+			AP4_TrakAtom* tmpTrakAtom;
+			int trakIndex = 0;
+			while((tmpTrakAtom = AP4_DYNAMIC_CAST(AP4_TrakAtom, moovAtom->GetChild(AP4_ATOM_TYPE_TRAK, trakIndex++)))) {
+
+				AP4_HdlrAtom* hdlrAtom = AP4_DYNAMIC_CAST(AP4_HdlrAtom, tmpTrakAtom->FindChild("mdia/hdlr", false, false));
+
+				bool shouldDetatch = true;
+				if(hdlrAtom && hdlrAtom->GetHandlerType() == AP4_HANDLER_TYPE_VIDE) {
+					lls_sls_monitor_output_buffer->video_output_buffer_isobmff.track_id = tmpTrakAtom->GetId();
+					shouldDetatch = false;
+				}
+
+				if(shouldDetatch) {
+					//clear out any hint tracks
+					tmpTrakAtom->Detach();
+				}
+			}
+
+			AP4_ContainerAtom* mvexToClear = AP4_DYNAMIC_CAST(AP4_ContainerAtom, moovAtom->GetChild(AP4_ATOM_TYPE_MVEX));
+
+			AP4_TrexAtom* tmpTrexAtom;
+			int trexIndex = 0;
+			while((tmpTrexAtom = AP4_DYNAMIC_CAST(AP4_TrexAtom, mvexToClear->GetChild(AP4_ATOM_TYPE_TREX, trexIndex++)))) {
+				if(tmpTrexAtom->GetTrackId() != lls_sls_monitor_output_buffer->video_output_buffer_isobmff.track_id) {
+					tmpTrexAtom->Detach();
+				}
+			}
+
+			if(audio_mvexAtomToCopy) {
+				audio_mvexAtomToCopy->Detach();
+				//update the mvex/trex
+				moovAtom->AddChild(audio_mvexAtomToCopy, -1);
+			}
+
+			if(audio_trakMediaAtomToCopy) {
+				audio_trakMediaAtomToCopy->Detach();
+				moovAtom->AddChild(audio_trakMediaAtomToCopy, -1);
+			}
+
+#ifndef __DROP_HINT_TRACKS__
+
+			//trakHintAtomToCopy
+			//this track index is already offset by +10
+
+			//looks like there is no actual hint data in these files, don't add in the hint tracks,..
+
+			for (itHint = audio_trakHintAtomToCopyList.begin(); itHint != audio_trakHintAtomToCopyList.end(); itHint++) {
+				(*itHint)->Detach();
+				moovAtom->AddChild(*itHint, -1);
+			}
+#endif
+		}
+
+		if(top_level_atom->GetType() == AP4_ATOM_TYPE_MOOF) {
+			video_moofAtomParent = AP4_DYNAMIC_CAST(AP4_ContainerAtom, top_level_atom);
+
+            //clear out our traf's if tfhd id != trakMediaAtomSecondFileId
+
+			AP4_ContainerAtom* tmpTrafToClean;
+			int trafIdx = 0;
+			while((tmpTrafToClean = AP4_DYNAMIC_CAST(AP4_ContainerAtom, video_moofAtomParent->GetChild(AP4_ATOM_TYPE_TRAF, trafIdx++)))) {
+                AP4_TfhdAtom* tfhdTempAtom = AP4_DYNAMIC_CAST(AP4_TfhdAtom, tmpTrafToClean->GetChild(AP4_ATOM_TYPE_TFHD));
+                bool shouldDetachTrak = true;
+                if(tfhdTempAtom && tfhdTempAtom->GetTrackId() == lls_sls_monitor_output_buffer->video_output_buffer_isobmff.track_id) {
+                	video_trafAtom = tmpTrafToClean;
+                	shouldDetachTrak = false;
+
+                    //remove our tfdt's if base media decode time is 0
+
+                	AP4_TfdtAtom* video_tfdtTempAtom = AP4_DYNAMIC_CAST(AP4_TfdtAtom, tmpTrafToClean->GetChild(AP4_ATOM_TYPE_TFDT));
+                	if(video_tfdtTempAtom && video_tfdtTempAtom->GetBaseMediaDecodeTime() == 0) {
+                		video_tfdtTempAtom->Detach();
+                	}
+                }
+                if(shouldDetachTrak) {
+                	tmpTrafToClean->Detach();
+                }
+			}
+
+			for(itTraf = audio_trafList.begin(); itTraf != audio_trafList.end(); itTraf++) {
+
+                AP4_TfhdAtom* tfhdTempAtom = AP4_DYNAMIC_CAST(AP4_TfhdAtom, (*itTraf)->GetChild(AP4_ATOM_TYPE_TFHD));
+                //shift our track id's by +10 if we are not the audio track id
+                if(tfhdTempAtom && tfhdTempAtom->GetTrackId() != lls_sls_monitor_output_buffer->audio_output_buffer_isobmff.track_id) {
+
+                	tfhdTempAtom->SetTrackId(tfhdTempAtom->GetTrackId() + 10);
+                }
+
+                //remove our tfdt's if base media decode time is 0
+                AP4_TfdtAtom* audio_tfdtTempAtom = AP4_DYNAMIC_CAST(AP4_TfdtAtom, (*itTraf)->GetChild(AP4_ATOM_TYPE_TFDT));
+
+                if(audio_tfdtTempAtom && audio_tfdtTempAtom->GetBaseMediaDecodeTime() == 0) {
+                	audio_tfdtTempAtom->Detach();
+				}
+
+                (*itTraf)->Detach();
+				video_moofAtomParent->AddChild(*itTraf);
+			}
+
+			/**
+			 * TODO: null out any empty broken fragments as per ISO23008-14
+			 */
+
+            if(video_trafAtom) {
+                video_trunAtom = AP4_DYNAMIC_CAST(AP4_TrunAtom, video_trafAtom->GetChild(AP4_ATOM_TYPE_TRUN));
+                if(video_trunAtom) {
+                	//get our first sample duration
+                	const AP4_Array<AP4_TrunAtom::Entry>& video_sampleEntries = video_trunAtom->GetEntries();
+                	bool has_found_sample_duration = false;
+
+                	for(int i=0; !has_found_sample_duration && i < video_sampleEntries.ItemCount(); i++) {
+                		if(video_sampleEntries[i].sample_duration) {
+                			lls_sls_monitor_output_buffer->video_output_buffer_isobmff.fps_num = video_sampleEntries[i].sample_duration;
+                			lls_sls_monitor_output_buffer->video_output_buffer_isobmff.fps_denom = 1000000;
+                			has_found_sample_duration = true;
+                		}
+                	}
+
+                	//TODO - null out samples here instead of re-computing box size
+        			video_mdat_size_new = __rebuild_trun_sample_box(video_trunAtom, &lls_sls_monitor_output_buffer->video_output_buffer_isobmff);
+                }
+            }
+		}
+
+		/**
+		 * this is the fun part, detatch these and build one concatenated mdat box below,
+		 * we can't get the interor payload of the mdat atom via bento4 as its managed by the samples
+		 */
+
+		if(top_level_atom->GetType() == AP4_ATOM_TYPE_MDAT) {
+
+			//update this size if we've "removed" samples
+			if(video_mdat_size_new) {
+				top_level_atom->SetSize32(video_mdat_size_new + AP4_ATOM_HEADER_SIZE);
+			}
+			video_mdatList.push_back(*it);
+
+			//write us out by hand manually later
+			//top_level_atom->Detach();
+			(*it)->write_manually = true;
+		}
+	}
+
+	if(video_moofAtomParent) {
+		video_moofAtom = AP4_DYNAMIC_CAST(AP4_Atom, video_moofAtomParent);
+        if(video_trunAtom) {
+            video_trunAtom->SetDataOffset((AP4_UI32)video_moofAtom->GetSize()+AP4_ATOM_HEADER_SIZE);
+        } else {
+            //this shouldn't happen
+        }
+//
+//		for(video_mdatIt = video_mdatList.begin(); video_mdatIt != video_mdatList.end(); video_mdatIt++) {
+//			video_mdatFileOffset += (*video_mdatIt)->GetSize() + AP4_ATOM_HEADER_SIZE;
+//		}
+//		video_mdatFileOffset += video_moofAtom->GetSize();
+	}
+
+
+    //push our packets to out output_stream writer, and we're done...
+
+	for (it = video_isobmff_atom_list.begin(); it != video_isobmff_atom_list.end(); it++) {
+		AP4_Atom* top_level_atom = (*it)->atom;
+
+		bool should_write_box = true;
+
+#ifdef __DROP_SIDX_BOX__
+		if(top_level_atom->GetType() == AP4_ATOM_TYPE_SIDX) {
+			should_write_box = false;
+		}
+#endif
+		if(!(*it)->write_manually) {
+			if(should_write_box) {
+				top_level_atom->Write(*memoryOutputByteStream);
+			}
+		}
+	}
+
+	//write the final combined mdat boxes
+	//TODO: evaulate short sample interleaving for http re-fragmented delivery as ffplay complains about an incomplete file
+
+	//first, compute up the size of all of our mdat's
+
+	uint32_t video_mdat_box_size_refragment = 0;
+	uint32_t video_mdat_box_size_bento_parser = 0;
+
+	uint32_t audio_mdat_box_size_refragment = 0;
+	uint32_t audio_mdat_box_size_bento_parser = 0;
+
+	//these should be the same..
+	uint32_t final_mdat_box_size_refragment = 0;
+	uint32_t final_mdat_box_size_bento_parser = 0;
+
+	for(it = video_mdatList.begin(); it != video_mdatList.end(); it++) {
+		video_mdat_box_size_refragment += (*it)->atom->GetSize32();
+		video_mdat_box_size_bento_parser += ((*it)->end_offset - (*it)->start_offset);
+
+		final_mdat_box_size_refragment += (*it)->atom->GetSize32();
+		final_mdat_box_size_bento_parser += ((*it)->end_offset - (*it)->start_offset);
+	}
+	for(it = audio_mdatList.begin(); it != audio_mdatList.end(); it++) {
+		audio_mdat_box_size_refragment += (*it)->atom->GetSize32();
+		audio_mdat_box_size_bento_parser += ((*it)->end_offset - (*it)->start_offset);
+
+		final_mdat_box_size_refragment += (*it)->atom->GetSize32();
+		final_mdat_box_size_bento_parser += ((*it)->end_offset - (*it)->start_offset);
+	}
+
+	memoryOutputByteStream->WriteUI32((AP4_UI32)final_mdat_box_size_refragment + AP4_ATOM_HEADER_SIZE);
+	memoryOutputByteStream->WriteUI32(AP4_ATOM_TYPE_MDAT);
+
+	//now combine the interior samples....
+	uint32_t mdat_to_write_size = 0;
+	for(it = video_mdatList.begin(); it != video_mdatList.end(); it++) {
+		mdat_to_write_size = (*it)->end_offset - (*it)->start_offset;
+		memoryOutputByteStream->Write(&video_output_buffer->p_buffer[(*it)->start_offset], mdat_to_write_size);
+	}
+	for(it = audio_mdatList.begin(); it != audio_mdatList.end(); it++) {
+		mdat_to_write_size = (*it)->end_offset - (*it)->start_offset;
+		memoryOutputByteStream->Write(&audio_output_buffer->p_buffer[(*it)->start_offset], mdat_to_write_size);
+	}
+
+
+    //update audio segment trun box(es)..
+	for(itTrunFirst = audio_trunList.begin(); itTrunFirst != audio_trunList.end(); itTrunFirst++) {
+		//trunFirstFile
+		(*itTrunFirst)->SetDataOffset(video_mdat_box_size_refragment);
+	}
+
+    __ISOBMFF_JOINER_INFO("Final output re-muxed MPU:");
+    dumpFullMetadataAndOffsets(video_isobmff_atom_list);
+
+	block_Release(&audio_output_buffer);
+	block_Release(&video_output_buffer);
+}
+
+
 /**
  * todo: remove mmtp headers
  * //mfu's have time and un-timed additional DU headers, so recalc to_read_packet_len after doing (uint8_t*)extract
@@ -686,7 +1188,6 @@ void parseAndBuildJoinedBoxes_from_lls_sls_monitor_output_buffer(lls_sls_monitor
 
 
 
-
 list<AP4_Atom*> ISOBMFFTrackParse(block_t* isobmff_track_block) {
 
 	__ISOBMFF_JOINER_DEBUG("::ISOBMFFTrackParse: payload size is: %u", isobmff_track_block->i_pos);
@@ -710,6 +1211,8 @@ list<AP4_Atom*> ISOBMFFTrackParse(block_t* isobmff_track_block) {
 
     return atomList;
 }
+
+
 
 void dumpFullMetadata(list<AP4_Atom*> atomList) {
 
