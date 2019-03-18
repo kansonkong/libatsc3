@@ -322,9 +322,6 @@ void* ncurses_input_run_thread(void* lls_slt_monitor_ptr) {
             //play stream...
             if(play_mode == 1) {
                 mtl_clear();
-                
-
-                
                 if(lls_slt_monitor->lls_sls_mmt_monitor) {
                     wprintw(my_window, "MMT: Starting playback for service_id: %u, video packet_id: %u, audio packet_id: %u", lls_slt_monitor->lls_sls_mmt_monitor->service_id, lls_slt_monitor->lls_sls_mmt_monitor->video_packet_id, lls_slt_monitor->lls_sls_mmt_monitor->audio_packet_id);
                     
@@ -336,7 +333,6 @@ void* ncurses_input_run_thread(void* lls_slt_monitor_ptr) {
                     lls_slt_monitor->lls_sls_mmt_monitor->lls_sls_monitor_output_buffer_mode.http_output_buffer->http_payload_buffer_mutex = lls_sls_monitor_reader_mutext_create();
                     lls_slt_monitor->lls_sls_mmt_monitor->lls_sls_monitor_output_buffer_mode.http_output_enabled = true;
 
-
                 } else if(lls_slt_monitor->lls_sls_alc_monitor) {
                     wprintw(my_window, "ROUTE/DASH: Starting playback for service_id: %u, video_tsi: %u, audio_tsi: %u", lls_slt_monitor->lls_sls_alc_monitor->service_id, lls_slt_monitor->lls_sls_alc_monitor->video_tsi, lls_slt_monitor->lls_sls_alc_monitor->audio_tsi);
                     lls_slt_monitor->lls_sls_alc_monitor->lls_sls_monitor_output_buffer_mode.pipe_ffplay_buffer = pipe_create_ffplay_resolve_fps(&lls_slt_monitor->lls_sls_alc_monitor->lls_sls_monitor_output_buffer.video_output_buffer_isobmff);
@@ -344,8 +340,8 @@ void* ncurses_input_run_thread(void* lls_slt_monitor_ptr) {
                     alc_recon_file_buffer_struct_set_monitor(lls_slt_monitor->lls_sls_alc_monitor);
                     
                      lls_slt_monitor->lls_sls_alc_monitor->lls_sls_monitor_output_buffer_mode.ffplay_output_enabled = true;
-                    
                 }
+                wrefresh(my_window);
             } else {
                 mtl_clear();
                 wprintw(my_window, "No monitored MMT or ROUTE Service ID");
@@ -435,7 +431,7 @@ void create_or_update_window_sizes(bool should_reload_term_size) {
 			delwin(left_window_outline);
 			//			delwin(my_window);
 			clear();
-			endwin();
+			//endwin();
 			resizeterm(size.ws_row, size.ws_col);
 		}
 	}
@@ -551,7 +547,9 @@ void* print_lls_instance_table_thread(void* lls_slt_monitor_ptr) {
 		sleep(1);
 		if(lls_slt_monitor->lls_table_slt) {
 			ncurses_writer_lock_mutex_acquire();
-			//			__LLS_DUMP_CLEAR();
+
+			//clear our window so we aren't appending, otherwise it will look as if we are leaking slt
+			__LLS_DUMP_CLEAR();
 			lls_dump_instance_table_ncurses(lls_slt_monitor->lls_table_slt);
 			__DOUPDATE();
 			__LLS_REFRESH();

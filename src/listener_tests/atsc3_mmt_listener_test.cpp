@@ -373,7 +373,7 @@ int main(int argc,char **argv) {
 
     mkdir("mpu", 0777);
 
-    pipe_ffplay_buffer = pipe_create_ffplay();
+    //pipe_ffplay_buffer = pipe_create_ffplay();
 
 #ifndef _TEST_RUN_VALGRIND_OSX_
 
