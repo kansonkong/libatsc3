@@ -415,6 +415,68 @@ lls_sls_monitor_output_buffer_t* atsc3_isobmff_build_mpu_metadata_ftyp_moof_mdat
     }
     
     
+    //check for any mpt messages for mpu_timestamp_descriptor messages
+    //mpu_sequence_number is not exposed on these messages, so iterate over our signalling_message_vector
+
+    for(int f=0; f < udp_flow_latest_mpu_sequence_number_container->udp_flows_n; f++) {
+		__ISOBMFF_TOOLS_WARN("checking flow: %u", f);
+
+        udp_flow_packet_id_mpu_sequence_tuple_t* udp_flow_packet_id_mpu_sequence_tuple = udp_flow_latest_mpu_sequence_number_container->udp_flows[f];
+
+        mmtp_sub_flow = mmtp_sub_flow_vector_find_packet_id(mmtp_sub_flow_vector, udp_flow_packet_id_mpu_sequence_tuple->packet_id);
+
+        mmtp_signalling_message_fragments_vector_t* mmtp_signalling_message_fragments_vector = &mmtp_sub_flow->mmtp_signalling_message_fragements_vector;
+
+		for(int i=0; i < mmtp_signalling_message_fragments_vector->size; i++) {
+			mmt_signalling_message_vector_t* mmt_signalling_message_vector = &mmtp_signalling_message_fragments_vector->data[i]->mmtp_signalling_message_fragments.mmt_signalling_message_vector;
+
+			__ISOBMFF_TOOLS_WARN("checking signaling vector: idx: %u, messages_n is: %u", i, mmt_signalling_message_vector->messages_n);
+
+			for(int j=0; j < mmt_signalling_message_vector->messages_n; j++) {
+				mmt_signalling_message_header_and_payload_t* mmt_signalling_message_header_and_payload = mmt_signalling_message_vector->messages[j];
+				__ISOBMFF_TOOLS_WARN("checking signaling message: j idx: %u, message_id is %u", j, mmt_signalling_message_header_and_payload->message_header.message_id);
+
+				if(mmt_signalling_message_header_and_payload->message_header.MESSAGE_id_type == MPT_message) {
+					mp_table_t* mp_table = &mmt_signalling_message_header_and_payload->message_payload.mp_table;
+
+					if(mp_table->number_of_assets) {
+						for(int k=0; k < mp_table->number_of_assets; k++) {
+							//slight hack, check the asset types and default_asset = 1
+							mp_table_asset_row_t* mp_table_asset_row = &mp_table->mp_table_asset_row[k];
+
+							__ISOBMFF_TOOLS_WARN("MPT message: checking packet_id: %u, asset_type: %u, default: %u, identifier: %s", mp_table_asset_row->mmt_general_location_info.packet_id, mp_table_asset_row->asset_type, mp_table_asset_row->default_asset_flag, mp_table_asset_row->identifier_mapping.asset_id.asset_id ? (const char*)mp_table_asset_row->identifier_mapping.asset_id.asset_id : "");
+
+							if(mp_table_asset_row->mmt_signaling_message_mpu_timestamp_descriptor && mp_table_asset_row->mmt_signaling_message_mpu_timestamp_descriptor->mpu_tuple_n) {
+								for(int l=0; l < mp_table_asset_row->mmt_signaling_message_mpu_timestamp_descriptor->mpu_tuple_n; l++) {
+									mmt_signaling_message_mpu_tuple_t* mmt_signaling_message_mpu_tuple = &mp_table_asset_row->mmt_signaling_message_mpu_timestamp_descriptor->mpu_tuple[l];
+
+									if(mp_table_asset_row->mmt_general_location_info.packet_id == lls_sls_mmt_monitor->audio_packet_id && mp_table_asset_row->mmt_general_location_info.packet_id == udp_flow_packet_id_mpu_sequence_tuple->packet_id &&
+											mmt_signaling_message_mpu_tuple->mpu_sequence_number == mpu_sequence_number_audio) {
+										lls_sls_monitor_output_buffer->audio_output_buffer_isobmff.mpu_presentation_time = mmt_signaling_message_mpu_tuple->mpu_presentation_time;
+
+										__ISOBMFF_TOOLS_WARN("setting audio packet_id: %u, mpu_sequence_number: %u to mpu_presentation_time: %llu",
+												mp_table_asset_row->mmt_general_location_info.packet_id, mpu_sequence_number_audio, lls_sls_monitor_output_buffer->audio_output_buffer_isobmff.mpu_presentation_time );
+
+									} else if(mp_table_asset_row->mmt_general_location_info.packet_id == lls_sls_mmt_monitor->video_packet_id && mp_table_asset_row->mmt_general_location_info.packet_id == udp_flow_packet_id_mpu_sequence_tuple->packet_id &&
+											mmt_signaling_message_mpu_tuple->mpu_sequence_number == mpu_sequence_number_video) {
+
+										lls_sls_monitor_output_buffer->video_output_buffer_isobmff.mpu_presentation_time = mmt_signaling_message_mpu_tuple->mpu_presentation_time;
+
+										__ISOBMFF_TOOLS_WARN("setting video packet_id: %u, mpu_sequence_number: %u to mpu_presentation_time: %llu",
+												mp_table_asset_row->mmt_general_location_info.packet_id, mpu_sequence_number_video, lls_sls_monitor_output_buffer->video_output_buffer_isobmff.mpu_presentation_time );
+
+									}
+								}
+
+							}
+						}
+					}
+				}
+			}
+		}
+    }
+
+
     if(!lls_sls_monitor_output_buffer->audio_output_buffer_isobmff.fragment_pos || !lls_sls_monitor_output_buffer->video_output_buffer_isobmff.fragment_pos) {
            __ISOBMFF_TOOLS_WARN("Returning - data unit size is null: video_du_size: %u, audio_du_size: %u", lls_sls_monitor_output_buffer->audio_output_buffer_isobmff.fragment_pos, lls_sls_monitor_output_buffer->video_output_buffer_isobmff.fragment_pos);
            return NULL;
