@@ -30,6 +30,19 @@ void compute_ntp32_to_seconds_microseconds(uint32_t timestamp, uint16_t *seconds
 	*microseconds = (uint16_t)( (double)tmp_mmtp_fractional_s * 1.0e6 / (double)(1LL<<16) );
 
 }
+
+
+void compute_ntp64_to_seconds_microseconds(uint64_t timestamp, uint32_t *seconds, uint32_t *microseconds) {
+	//->mmtp_packet_header.mmtp_timestamp, &mmtp_packet->mmtp_packet_header.mmtp_timestamp_s, &mmtp_packet->mmtp_packet_header.mmtp_timestamp_us);
+
+	*seconds = (timestamp >> 32) & 0xFFFFFFFF;
+
+	//this is where things get messsy..
+	uint32_t tmp_mmtp_fractional_s =  (timestamp & 0xFFFFFFFF);
+	//1329481807 * (10 ^ 6) / 2 ^ 32 = 309544 (roughtly)
+	*microseconds = (uint32_t)( (double)tmp_mmtp_fractional_s * 1.0e6 / (double)(1LL<<32) );
+
+}
 /*
  *
  * make sure to call above to un-fractionalize fractions
