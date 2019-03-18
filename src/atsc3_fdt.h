@@ -110,6 +110,15 @@
    </xs:schema>
    END
 
+
+A.3.3.2.3 ATSC Extensions to the FDT-Instance Element
+
+ @efdtVersion – An 8-bit unsigned integer value that shall represent the version of this EFDT element.
+   The version shall be increased by one modulo 256 each time the EFDT element is updated.
+   @version is an ATSC-defined extension of the FLUTE FDT as specified in RFC 6726 [30].
+
+
+
    Sample XML payload:
 
 <?xml version="1.0" encoding="UTF-8"?>

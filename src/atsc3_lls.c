@@ -290,7 +290,7 @@ xml_node_t* xml_payload_document_extract_root_node(xml_document_t* document) {
 	xml_node_t* root = xml_document_root(document);
 	xml_string_t* root_node_name = xml_node_name(root); //root
 
-	if(xml_string_equals_ignore_case(root_node_name, "?xml")) {
+	if(xml_string_equals_ignore_case(root_node_name, "xml")) {
 		root = xml_node_child(root, 0);
 		root_node_name = xml_node_name(root); //root
 		dump_xml_string(root_node_name);
