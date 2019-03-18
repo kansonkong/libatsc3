@@ -68,11 +68,27 @@ typedef struct lls_sls_monitor_buffer {
 
 } lls_sls_monitor_output_buffer_t;
 
+//TODO: refactor me
+
+typedef struct http_output_buffer {
+	//used to signal pipe writer new data is present
+	pthread_mutex_t* http_payload_buffer_mutex;
+
+	block_t* http_payload_buffer_incoming;
+	block_t* http_payload_buffer_client_output;
+	bool http_output_conntected;
+
+	sig_atomic_t writer_unlock_count;
+
+} http_output_buffer_t;
 
 typedef struct lls_sls_monitor_buffer_mode {
-    bool file_dump_enabled;
-    bool ffplay_output_enabled;
-    struct pipe_ffplay_buffer* pipe_ffplay_buffer;
+    bool 	file_dump_enabled;
+    bool 	ffplay_output_enabled;
+    bool 	http_output_enabled;
+    struct	pipe_ffplay_buffer* pipe_ffplay_buffer; //needed for circular deps
+    http_output_buffer_t* http_output_buffer;
+
 
 } lls_sls_monitor_output_buffer_mode_t;
 

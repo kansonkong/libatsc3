@@ -783,3 +783,34 @@ void lls_sls_monitor_output_buffer_file_dump(lls_sls_monitor_output_buffer_t* ll
     	free(box_track_dump_filename);
     }
 }
+
+
+//sem_t
+//mutex 	pthread_mutex_t pipe_buffer_reader_mutex_lock;
+
+void lls_sls_monitor_reader_mutex_lock(pthread_mutex_t* pthread_mutex) {
+	pthread_mutex_lock(pthread_mutex);
+}
+
+void lls_sls_monitor_reader_mutex_unlock(pthread_mutex_t* pthread_mutex) {
+	pthread_mutex_unlock(pthread_mutex);
+}
+
+
+pthread_mutex_t* lls_sls_monitor_reader_mutext_create() {
+
+//	char sem_name[31];
+//	snprintf((char*)&sem_name, 29, "/atsc3_http_play_%ld", random());
+
+  //  __PLAYER_FFPLAY_INFO("creating semaphore with path: %s", sem_name);
+	//pthread_mutex_t* sem = sem_open(sem_name, O_CREAT, 0644, 0);
+//	__PLAYER_FFPLAY_INFO("sem_init returned: %p", pipe_ffplay_buffer->pipe_buffer_semaphore);
+
+
+	pthread_mutex_t* pthread_mutex = calloc(1, sizeof(pthread_mutex_t));
+	if (pthread_mutex_init(pthread_mutex, NULL) != 0) {
+		__PLAYER_FFPLAY_ERROR("pthread_mutex init failed");
+		abort();
+	}
+    return pthread_mutex;
+}
