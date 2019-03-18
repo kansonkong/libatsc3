@@ -397,6 +397,9 @@ int main(int argc,char **argv) {
     int dst_ip_port_filter_int;
     int dst_packet_id_filter_int;
 
+    sigset_t player_signal_mask;
+
+
     //listen to all flows
     if(argc == 2) {
     	dev = argv[1];
@@ -476,6 +479,15 @@ int main(int argc,char **argv) {
 
 
 #ifndef _TEST_RUN_VALGRIND_OSX_
+
+	//block sigpipe before creating our threads
+	sigemptyset (&player_signal_mask);
+	sigaddset (&player_signal_mask, SIGPIPE);
+	int rc = pthread_sigmask (SIG_BLOCK, &player_signal_mask, NULL);
+	if(!rc) {
+		  __WARN("Unable to block SIGPIPE, this may result in a runtime crash when closing ffplay!");
+	}
+
 
 	pthread_t global_ncurses_input_thread_id;
 	int ncurses_input_ret = pthread_create(&global_ncurses_input_thread_id, NULL, ncurses_input_run_thread, (void*)lls_slt_monitor);
