@@ -7,6 +7,7 @@
 #include "atsc3_mmtp_types.h"
 #include "atsc3_mmtp_parser.h"
 #include "atsc3_mmt_signaling_message.h"
+#include "atsc3_logging_externs.h"
 
 #include <stdbool.h>
 #include <stdio.h>
@@ -26,6 +27,8 @@ void __create_binary_payload(char *test_payload_base64, uint8_t **binary_payload
 int test_mmt_signaling_message_mpu_timestamp_descriptor_table(char* base64_payload);
 
 int main() {
+	_MMT_SIGNALLING_MESSAGE_DEBUG_ENABLED = 1;
+	_MMT_SIGNALLING_MESSAGE_TRACE_ENABLED = 1;
 //	test_mmt_signaling_message_mpu_timestamp_descriptor_table(__get_test_mmt_signaling_message_mpu_timestamp_descriptor());
     test_mmt_signaling_message_mpu_timestamp_descriptor_table(__get_test_mmt_signaling_message_mpt_table_mpu_timestamp_descriptor_with_ac4_audio());
 

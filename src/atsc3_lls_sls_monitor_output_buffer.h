@@ -26,6 +26,9 @@
 
 typedef struct lls_sls_monitor_buffer_isobmff {
 	uint32_t track_id;
+	uint64_t mpu_presentation_time;
+	uint32_t mpu_presentation_time_s;
+	uint32_t mpu_presentation_time_ms;
 
 	uint32_t fps_num;
 	uint32_t fps_denom;
