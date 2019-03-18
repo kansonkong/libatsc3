@@ -56,7 +56,7 @@ block_t* lls_sls_monitor_output_buffer_copy_video_full_isobmff_box(lls_sls_monit
 block_t* lls_sls_monitor_output_buffer_copy_video_moof_fragment_isobmff_box(lls_sls_monitor_output_buffer_t* lls_sls_monitor_output_buffer);
 
 void lls_slt_monitor_check_and_handle_pipe_ffplay_buffer_is_shutdown(lls_slt_monitor_t* lls_slt_monitor);
-void lls_sls_monitor_output_buffer_file_dump(lls_sls_monitor_output_buffer_t* lls_sls_monitor_output_buffer, const char* directory_path, uint32_t mpu_sequence_number);
+void lls_sls_monitor_output_buffer_file_dump(lls_sls_monitor_output_buffer_t* lls_sls_monitor_output_buffer, const char* directory_path, uint32_t mpu_sequence_number_audio,  uint32_t mpu_sequence_number_video);
 
 pthread_mutex_t* lls_sls_monitor_reader_mutext_create();
 void lls_sls_monitor_reader_mutex_lock(pthread_mutex_t* pthread_mutex);

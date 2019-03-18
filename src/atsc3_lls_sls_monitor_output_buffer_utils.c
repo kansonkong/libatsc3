@@ -771,16 +771,50 @@ void lls_slt_monitor_check_and_handle_pipe_ffplay_buffer_is_shutdown(lls_slt_mon
 	}
 }
 
-void lls_sls_monitor_output_buffer_file_dump(lls_sls_monitor_output_buffer_t* lls_sls_monitor_output_buffer, const char* directory_path, uint32_t mpu_sequence_number) {
+void lls_sls_monitor_output_buffer_file_dump(lls_sls_monitor_output_buffer_t* lls_sls_monitor_output_buffer, const char* directory_path, uint32_t mpu_sequence_number_audio, uint32_t mpu_sequence_number_video) {
 
-    char* box_track_dump_filename = (char*)calloc(128, sizeof(char));
-    snprintf(box_track_dump_filename, 127, "%s/%u.b", directory_path, mpu_sequence_number);
+	__LLS_SLS_MONITOR_OUTPUT_BUFFER_UTILS_INFO("lls_sls_monitor_output_buffer_file_dump: dumping to %s, audio sequence number: %u, video sequence number: %u", directory_path, mpu_sequence_number_audio, mpu_sequence_number_video);
+	//just to be sure...
+	mkdir(directory_path, 0777);
 
-    FILE* box_track_dump_fp = fopen(box_track_dump_filename, "w");
-    if(box_track_dump_fp) {
-    	fwrite(lls_sls_monitor_output_buffer->joined_isobmff_block->p_buffer, lls_sls_monitor_output_buffer->joined_isobmff_block->i_pos, 1, box_track_dump_fp);
-    	fclose(box_track_dump_fp);
-    	free(box_track_dump_filename);
+	//build our recon mpu
+	uint32_t mpu_sequence_number_min = __MIN(mpu_sequence_number_audio, mpu_sequence_number_video);
+    char* box_track_dump_recon_filename = (char*)calloc(128, sizeof(char));
+    snprintf(box_track_dump_recon_filename, 127, "%s/%u.b", directory_path, mpu_sequence_number_min);
+
+    FILE* box_track_dump_recon_fp = fopen(box_track_dump_recon_filename, "w");
+    if(box_track_dump_recon_fp) {
+    	fwrite(lls_sls_monitor_output_buffer->joined_isobmff_block->p_buffer, lls_sls_monitor_output_buffer->joined_isobmff_block->p_size, 1, box_track_dump_recon_fp);
+    	fclose(box_track_dump_recon_fp);
+    	free(box_track_dump_recon_filename);
+    }
+
+    //dump a track
+    char* box_track_dump_a_filename = (char*)calloc(128, sizeof(char));
+    snprintf(box_track_dump_a_filename, 127, "%s/%u.a", directory_path, mpu_sequence_number_audio);
+
+
+    FILE* box_track_dump_a_fp = fopen(box_track_dump_a_filename, "w");
+    if(box_track_dump_a_fp) {
+    	fwrite(lls_sls_monitor_output_buffer->audio_output_buffer_isobmff.init_box, 	lls_sls_monitor_output_buffer->audio_output_buffer_isobmff.init_box_pos, 1, box_track_dump_a_fp);
+    	fwrite(lls_sls_monitor_output_buffer->audio_output_buffer_isobmff.moof_box, 	lls_sls_monitor_output_buffer->audio_output_buffer_isobmff.moof_box_pos, 1, box_track_dump_a_fp);
+    	fwrite(lls_sls_monitor_output_buffer->audio_output_buffer_isobmff.fragment_box, lls_sls_monitor_output_buffer->audio_output_buffer_isobmff.fragment_pos, 1, box_track_dump_a_fp);
+    	fclose(box_track_dump_a_fp);
+    	free(box_track_dump_a_filename);
+    }
+
+    //dump v track
+    char* box_track_dump_v_filename = (char*)calloc(128, sizeof(char));
+    snprintf(box_track_dump_v_filename, 127, "%s/%u.v", directory_path, mpu_sequence_number_video);
+
+    FILE* box_track_dump_v_fp = fopen(box_track_dump_v_filename, "w");
+    if(box_track_dump_v_fp) {
+    	fwrite(lls_sls_monitor_output_buffer->video_output_buffer_isobmff.init_box, lls_sls_monitor_output_buffer->video_output_buffer_isobmff.init_box_pos, 1, box_track_dump_v_fp);
+    	fwrite(lls_sls_monitor_output_buffer->video_output_buffer_isobmff.moof_box, lls_sls_monitor_output_buffer->video_output_buffer_isobmff.moof_box_pos, 1, box_track_dump_v_fp);
+    	fwrite(lls_sls_monitor_output_buffer->video_output_buffer_isobmff.fragment_box, lls_sls_monitor_output_buffer->video_output_buffer_isobmff.fragment_pos, 1, box_track_dump_v_fp);
+
+    	fclose(box_track_dump_v_fp);
+    	free(box_track_dump_v_filename);
     }
 }
 
