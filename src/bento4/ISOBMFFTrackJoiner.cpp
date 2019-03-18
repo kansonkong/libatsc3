@@ -489,6 +489,7 @@ void parseAndBuildJoinedBoxes_multiple_mdat_boxes_from_lls_sls_monitor_output_bu
 
 			if(audio_mvexAtomToCopy) {
 				audio_mvexAtomToCopy->Detach();
+
 				//update the mvex/trex
 				moovAtom->AddChild(audio_mvexAtomToCopy, -1);
 			}
@@ -716,6 +717,40 @@ void parseAndBuildJoinedBoxes_from_lls_sls_monitor_output_buffer(lls_sls_monitor
 
 	uint32_t video_trun_last_offset = 0;
 
+
+	//mpu_presentation_time support
+	AP4_ContainerAtom* audio_edtsAtom = NULL;
+	AP4_ContainerAtom* video_edtsAtom = NULL;
+
+	if(lls_sls_monitor_output_buffer->audio_output_buffer_isobmff.mpu_presentation_time_set && lls_sls_monitor_output_buffer->video_output_buffer_isobmff.mpu_presentation_time_set) {
+
+		//fractional component is already at 1000000 (uS), so just multiply and add the seconds...
+		uint64_t audio_mpu_presentation_time_s = lls_sls_monitor_output_buffer->audio_output_buffer_isobmff.mpu_presentation_time_s * 1000000;
+		uint64_t audio_mpu_presentation_time_ms = lls_sls_monitor_output_buffer->audio_output_buffer_isobmff.mpu_presentation_time_ms % 1000000; //just to be safe..
+		uint64_t audio_mpu_presentation_time_final_uS =  audio_mpu_presentation_time_s + audio_mpu_presentation_time_ms;
+
+		AP4_ElstEntry* audio_elst_entry = new AP4_ElstEntry();
+		audio_elst_entry->m_MediaTime = audio_mpu_presentation_time_final_uS;
+
+		AP4_ElstAtom* audio_elst_atom = new AP4_ElstAtom();
+		audio_elst_atom->AddEntry(*audio_elst_entry);
+		AP4_ContainerAtom* audio_edtsAtom = new AP4_ContainerAtom(AP4_ATOM_TYPE_EDTS);
+		audio_edtsAtom->AddChild(audio_elst_atom);
+
+		//now for video
+		uint64_t video_mpu_presentation_time_s = lls_sls_monitor_output_buffer->video_output_buffer_isobmff.mpu_presentation_time_s * 1000000;
+		uint64_t video_mpu_presentation_time_ms = lls_sls_monitor_output_buffer->video_output_buffer_isobmff.mpu_presentation_time_ms % 1000000; //just to be safe..
+		uint64_t video_mpu_presentation_time_final_uS =  video_mpu_presentation_time_s + video_mpu_presentation_time_ms;
+
+		AP4_ElstEntry* video_elst_entry = new AP4_ElstEntry();
+		video_elst_entry->m_MediaTime = video_mpu_presentation_time_final_uS;
+
+		AP4_ElstAtom* video_elst_atom = new AP4_ElstAtom();
+		video_elst_atom->AddEntry(*video_elst_entry);
+		AP4_ContainerAtom* video_edtsAtom = new AP4_ContainerAtom(AP4_ATOM_TYPE_EDTS);
+		video_edtsAtom->AddChild(video_elst_atom);
+
+	}
 	block_t* audio_output_buffer = lls_sls_monitor_output_buffer_copy_audio_full_isobmff_box(lls_sls_monitor_output_buffer);
 	block_t* video_output_buffer = lls_sls_monitor_output_buffer_copy_video_full_isobmff_box(lls_sls_monitor_output_buffer);
 
@@ -791,19 +826,32 @@ void parseAndBuildJoinedBoxes_from_lls_sls_monitor_output_buffer(lls_sls_monitor
 			AP4_MoovAtom* moovAtom = AP4_DYNAMIC_CAST(AP4_MoovAtom, top_level_atom);
 			audio_mvexAtomToCopy = AP4_DYNAMIC_CAST(AP4_ContainerAtom, moovAtom->GetChild(AP4_ATOM_TYPE_MVEX));
 
+			//filter out any hint tracks in the mvex box
+
+			AP4_TrexAtom* tmpTrexAtom;
+			int trexIndex = 0;
+			while((tmpTrexAtom = AP4_DYNAMIC_CAST(AP4_TrexAtom, audio_mvexAtomToCopy->GetChild(AP4_ATOM_TYPE_TREX, trexIndex++)))) {
+				if(tmpTrexAtom->GetTrackId() != lls_sls_monitor_output_buffer->audio_output_buffer_isobmff.track_id) {
+					tmpTrexAtom->Detach();
+				}
+			}
+
+
 			AP4_TrakAtom* tmpTrakAtom;
 			int trakIndex = 0;
 			while((tmpTrakAtom = AP4_DYNAMIC_CAST(AP4_TrakAtom, moovAtom->GetChild(AP4_ATOM_TYPE_TRAK, trakIndex++)))) {
 
 				AP4_HdlrAtom* hdlrAtom = AP4_DYNAMIC_CAST(AP4_HdlrAtom, tmpTrakAtom->FindChild("mdia/hdlr", false, false));
 
-				//todo - handle duplicate track id's
-
 				if(hdlrAtom && hdlrAtom->GetHandlerType() == AP4_HANDLER_TYPE_SOUN) {
 
 					lls_sls_monitor_output_buffer->audio_output_buffer_isobmff.track_id = tmpTrakAtom->GetId();
 					audio_trakMediaAtomToCopy = tmpTrakAtom;
 
+					//add in our mpu_presentation_time
+					if(audio_edtsAtom) {
+						audio_trakMediaAtomToCopy->AddChild(audio_edtsAtom);
+					}
 				} else if(hdlrAtom->GetHandlerType() == AP4_HANDLER_TYPE_HINT) {
 #ifndef __DROP_HINT_TRACKS__
 
@@ -877,6 +925,10 @@ void parseAndBuildJoinedBoxes_from_lls_sls_monitor_output_buffer(lls_sls_monitor
 				bool shouldDetatch = true;
 				if(hdlrAtom && hdlrAtom->GetHandlerType() == AP4_HANDLER_TYPE_VIDE) {
 					lls_sls_monitor_output_buffer->video_output_buffer_isobmff.track_id = tmpTrakAtom->GetId();
+					//add in our mpu_presentation_time
+					if(video_edtsAtom) {
+						tmpTrakAtom->AddChild(video_edtsAtom);
+					}
 					shouldDetatch = false;
 				}
 
