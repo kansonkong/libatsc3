@@ -437,6 +437,7 @@ void create_or_update_window_sizes(bool should_reload_term_size) {
 	}
 	//my_window = newwin(0, 0, 0, 0);
 	getmaxyx(curscr, rows, cols);              /* get the number of rows and columns */
+	rows -= 1; //move up as my_window is a tear-off for input
 
 	int pct_split_top = 85;
 

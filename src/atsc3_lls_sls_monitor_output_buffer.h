@@ -75,6 +75,8 @@ typedef struct http_output_buffer {
 	pthread_mutex_t* http_payload_buffer_mutex;
 
 	block_t* http_payload_buffer_incoming;
+	uint32_t total_fragments_incoming_written;
+
 	block_t* http_payload_buffer_client_output;
 	bool http_output_conntected;
 
