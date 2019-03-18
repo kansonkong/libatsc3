@@ -31,6 +31,8 @@ extern "C" {
 #endif
 
 void compute_ntp32_to_seconds_microseconds(uint32_t timestamp, uint16_t *seconds, uint16_t *microseconds);
+void compute_ntp64_to_seconds_microseconds(uint64_t timestamp, uint32_t *seconds, uint32_t *microseconds);
+
 uint64_t compute_relative_ntp32_pts(uint64_t first_pts, uint16_t mmtp_timestamp_s, uint16_t mmtp_timestamp_microseconds);
 int64_t rebase_now_with_ntp32(uint16_t mmtp_timestamp_s, uint16_t mmtp_timestamp_microseconds);
 
