@@ -714,7 +714,7 @@ void parseAndBuildJoinedBoxes_from_lls_sls_monitor_output_buffer(lls_sls_monitor
 	AP4_ContainerAtom* video_trafAtom = NULL;
 	AP4_TrunAtom* video_trunAtom = NULL;
 
-	uint64_t video_mdatFileOffset = 0;
+	uint32_t video_trun_last_offset = 0;
 
 	block_t* audio_output_buffer = lls_sls_monitor_output_buffer_copy_audio_full_isobmff_box(lls_sls_monitor_output_buffer);
 	block_t* video_output_buffer = lls_sls_monitor_output_buffer_copy_video_full_isobmff_box(lls_sls_monitor_output_buffer);
@@ -974,6 +974,7 @@ void parseAndBuildJoinedBoxes_from_lls_sls_monitor_output_buffer(lls_sls_monitor
             if(video_trafAtom) {
                 video_trunAtom = AP4_DYNAMIC_CAST(AP4_TrunAtom, video_trafAtom->GetChild(AP4_ATOM_TYPE_TRUN));
                 if(video_trunAtom) {
+
                 	//get our first sample duration
                 	const AP4_Array<AP4_TrunAtom::Entry>& video_sampleEntries = video_trunAtom->GetEntries();
                 	bool has_found_sample_duration = false;
@@ -1006,28 +1007,60 @@ void parseAndBuildJoinedBoxes_from_lls_sls_monitor_output_buffer(lls_sls_monitor
 			video_mdatList.push_back(*it);
 
 			//write us out by hand manually later
-			//top_level_atom->Detach();
+			top_level_atom->Detach();
 			(*it)->write_manually = true;
 		}
 	}
 
+	//set our video trun last offset here, and then set our audio trun DataOffset down below...
 	if(video_moofAtomParent) {
 		video_moofAtom = AP4_DYNAMIC_CAST(AP4_Atom, video_moofAtomParent);
         if(video_trunAtom) {
-            video_trunAtom->SetDataOffset((AP4_UI32)video_moofAtom->GetSize()+AP4_ATOM_HEADER_SIZE);
+        	video_trun_last_offset = (AP4_UI32)video_moofAtom->GetSize()+AP4_ATOM_HEADER_SIZE;
+            video_trunAtom->SetDataOffset(video_trun_last_offset);
         } else {
             //this shouldn't happen
         }
-//
-//		for(video_mdatIt = video_mdatList.begin(); video_mdatIt != video_mdatList.end(); video_mdatIt++) {
-//			video_mdatFileOffset += (*video_mdatIt)->GetSize() + AP4_ATOM_HEADER_SIZE;
-//		}
-//		video_mdatFileOffset += video_moofAtom->GetSize();
 	}
 
 
-    //push our packets to out output_stream writer, and we're done...
+	//final muxed output process
+	//TODO: evaulate short sample interleaving for http re-fragmented delivery as ffplay complains about an incomplete file
 
+	//first, compute up the size of all of our mdat payload sizes
+	uint32_t video_mdat_payload_size_refragment = 0;
+	uint32_t video_mdat_payload_size_bento_parser = 0;
+	uint32_t audio_mdat_payload_size_refragment = 0;
+	uint32_t audio_mdat_payload_size_bento_parser = 0;
+
+	//these should be the same..
+	uint32_t final_mdat_payload_size_refragment = 0;
+	uint32_t final_mdat_payload_size_bento_parser = 0;
+
+
+	//AP4_ATOM_HEADER_SIZE
+	for(it = video_mdatList.begin(); it != video_mdatList.end(); it++) {
+		video_mdat_payload_size_refragment += (*it)->atom->GetSize32() - AP4_ATOM_HEADER_SIZE;
+		video_mdat_payload_size_bento_parser += ((*it)->end_offset - (*it)->start_offset) - AP4_ATOM_HEADER_SIZE;
+
+		final_mdat_payload_size_refragment += (*it)->atom->GetSize32() - AP4_ATOM_HEADER_SIZE;
+		final_mdat_payload_size_bento_parser += ((*it)->end_offset - (*it)->start_offset) - AP4_ATOM_HEADER_SIZE;
+	}
+	for(it = audio_mdatList.begin(); it != audio_mdatList.end(); it++) {
+		audio_mdat_payload_size_refragment += (*it)->atom->GetSize32() - AP4_ATOM_HEADER_SIZE;
+		audio_mdat_payload_size_bento_parser += ((*it)->end_offset - (*it)->start_offset) - AP4_ATOM_HEADER_SIZE;
+
+		final_mdat_payload_size_refragment += (*it)->atom->GetSize32() - AP4_ATOM_HEADER_SIZE;
+		final_mdat_payload_size_bento_parser += ((*it)->end_offset - (*it)->start_offset) - AP4_ATOM_HEADER_SIZE;
+	}
+
+    //update audio segment trun box(es).. before writing them out...
+	for(itTrunFirst = audio_trunList.begin(); itTrunFirst != audio_trunList.end(); itTrunFirst++) {
+		//trunFirstFile
+		(*itTrunFirst)->SetDataOffset(video_trun_last_offset + video_mdat_payload_size_refragment);
+	}
+
+	//write the final combined isobmff boxes except for mdat
 	for (it = video_isobmff_atom_list.begin(); it != video_isobmff_atom_list.end(); it++) {
 		AP4_Atom* top_level_atom = (*it)->atom;
 
@@ -1045,55 +1078,20 @@ void parseAndBuildJoinedBoxes_from_lls_sls_monitor_output_buffer(lls_sls_monitor
 		}
 	}
 
-	//write the final combined mdat boxes
-	//TODO: evaulate short sample interleaving for http re-fragmented delivery as ffplay complains about an incomplete file
+	//now write our final mdat boxes
 
-	//first, compute up the size of all of our mdat's
-
-	uint32_t video_mdat_box_size_refragment = 0;
-	uint32_t video_mdat_box_size_bento_parser = 0;
-
-	uint32_t audio_mdat_box_size_refragment = 0;
-	uint32_t audio_mdat_box_size_bento_parser = 0;
-
-	//these should be the same..
-	uint32_t final_mdat_box_size_refragment = 0;
-	uint32_t final_mdat_box_size_bento_parser = 0;
-
-	for(it = video_mdatList.begin(); it != video_mdatList.end(); it++) {
-		video_mdat_box_size_refragment += (*it)->atom->GetSize32();
-		video_mdat_box_size_bento_parser += ((*it)->end_offset - (*it)->start_offset);
-
-		final_mdat_box_size_refragment += (*it)->atom->GetSize32();
-		final_mdat_box_size_bento_parser += ((*it)->end_offset - (*it)->start_offset);
-	}
-	for(it = audio_mdatList.begin(); it != audio_mdatList.end(); it++) {
-		audio_mdat_box_size_refragment += (*it)->atom->GetSize32();
-		audio_mdat_box_size_bento_parser += ((*it)->end_offset - (*it)->start_offset);
-
-		final_mdat_box_size_refragment += (*it)->atom->GetSize32();
-		final_mdat_box_size_bento_parser += ((*it)->end_offset - (*it)->start_offset);
-	}
-
-	memoryOutputByteStream->WriteUI32((AP4_UI32)final_mdat_box_size_refragment + AP4_ATOM_HEADER_SIZE);
+	memoryOutputByteStream->WriteUI32((AP4_UI32)final_mdat_payload_size_refragment + AP4_ATOM_HEADER_SIZE);
 	memoryOutputByteStream->WriteUI32(AP4_ATOM_TYPE_MDAT);
 
 	//now combine the interior samples....
 	uint32_t mdat_to_write_size = 0;
 	for(it = video_mdatList.begin(); it != video_mdatList.end(); it++) {
-		mdat_to_write_size = (*it)->end_offset - (*it)->start_offset;
-		memoryOutputByteStream->Write(&video_output_buffer->p_buffer[(*it)->start_offset], mdat_to_write_size);
+		mdat_to_write_size = (*it)->end_offset - ((*it)->start_offset + AP4_ATOM_HEADER_SIZE);
+		memoryOutputByteStream->Write(&video_output_buffer->p_buffer[(*it)->start_offset + AP4_ATOM_HEADER_SIZE], mdat_to_write_size);
 	}
 	for(it = audio_mdatList.begin(); it != audio_mdatList.end(); it++) {
-		mdat_to_write_size = (*it)->end_offset - (*it)->start_offset;
-		memoryOutputByteStream->Write(&audio_output_buffer->p_buffer[(*it)->start_offset], mdat_to_write_size);
-	}
-
-
-    //update audio segment trun box(es)..
-	for(itTrunFirst = audio_trunList.begin(); itTrunFirst != audio_trunList.end(); itTrunFirst++) {
-		//trunFirstFile
-		(*itTrunFirst)->SetDataOffset(video_mdat_box_size_refragment);
+		mdat_to_write_size = (*it)->end_offset - ((*it)->start_offset + AP4_ATOM_HEADER_SIZE);
+		memoryOutputByteStream->Write(&audio_output_buffer->p_buffer[(*it)->start_offset + AP4_ATOM_HEADER_SIZE], mdat_to_write_size);
 	}
 
     __ISOBMFF_JOINER_INFO("Final output re-muxed MPU:");
