@@ -457,7 +457,7 @@ uint8_t* mpt_message_parse(mmt_signalling_message_header_and_payload_t* mmt_sign
         mp_table->mp_table_descriptors.mp_table_descriptors_length = ntohs(table_descriptors_length);
         if(mp_table->mp_table_descriptors.mp_table_descriptors_length > 0) {
             //TODO: bounds check this untrusted read..
-            _MMSM_INFO("reading mp_table_descriptors size: %u", mp_table->mp_table_descriptors.mp_table_descriptors_length);
+            _MMSM_DEBUG("reading mp_table_descriptors size: %u", mp_table->mp_table_descriptors.mp_table_descriptors_length);
             mp_table->mp_table_descriptors.mp_table_descriptors_byte = calloc(mp_table->mp_table_descriptors.mp_table_descriptors_length, sizeof(uint8_t));
             buf = extract(buf, (uint8_t*)&mp_table->mp_table_descriptors.mp_table_descriptors_byte, mp_table->mp_table_descriptors.mp_table_descriptors_length);
         }
@@ -625,20 +625,20 @@ void mmt_atsc3_message_payload_dump(mmt_signalling_message_header_and_payload_t*
 
 	mmt_atsc3_message_payload_t* mmt_atsc3_message_payload = &mmt_signalling_message_header_and_payload->message_payload.mmt_atsc3_message_payload;
 
-	_MMSM_INFO("-----------------");
-	_MMSM_INFO("mmt_atsc3_message");
-	_MMSM_INFO("-----------------");
-	_MMSM_INFO("service_id:                        %u", mmt_atsc3_message_payload->service_id);
-	_MMSM_INFO("atsc3_message_content_type:        %u", mmt_atsc3_message_payload->atsc3_message_content_type);
-	_MMSM_INFO("atsc3_message_content_version:     %u", mmt_atsc3_message_payload->atsc3_message_content_version);
-	_MMSM_INFO("atsc3_message_content_compression: %u", mmt_atsc3_message_payload->atsc3_message_content_compression);
-	_MMSM_INFO("URI_length:                        %u", mmt_atsc3_message_payload->URI_length);
-	_MMSM_INFO("URI_payload:                       %s", mmt_atsc3_message_payload->URI_payload);
+	_MMSM_DEBUG("-----------------");
+	_MMSM_DEBUG("mmt_atsc3_message");
+	_MMSM_DEBUG("-----------------");
+	_MMSM_DEBUG("service_id:                        %u", mmt_atsc3_message_payload->service_id);
+	_MMSM_DEBUG("atsc3_message_content_type:        %u", mmt_atsc3_message_payload->atsc3_message_content_type);
+	_MMSM_DEBUG("atsc3_message_content_version:     %u", mmt_atsc3_message_payload->atsc3_message_content_version);
+	_MMSM_DEBUG("atsc3_message_content_compression: %u", mmt_atsc3_message_payload->atsc3_message_content_compression);
+	_MMSM_DEBUG("URI_length:                        %u", mmt_atsc3_message_payload->URI_length);
+	_MMSM_DEBUG("URI_payload:                       %s", mmt_atsc3_message_payload->URI_payload);
 	if(mmt_atsc3_message_payload->atsc3_message_content_compression == 0x02) {
-		_MMSM_INFO("atsc3_message_content_length_compressed:      %u", mmt_atsc3_message_payload->atsc3_message_content_length_compressed);
+		_MMSM_DEBUG("atsc3_message_content_length_compressed:      %u", mmt_atsc3_message_payload->atsc3_message_content_length_compressed);
 	}
-	_MMSM_INFO("atsc3_message_content_length:      %u", mmt_atsc3_message_payload->atsc3_message_content_length);
-	_MMSM_INFO("atsc3_message_content:             %s", mmt_atsc3_message_payload->atsc3_message_content);
+	_MMSM_DEBUG("atsc3_message_content_length:      %u", mmt_atsc3_message_payload->atsc3_message_content_length);
+	_MMSM_DEBUG("atsc3_message_content:             %s", mmt_atsc3_message_payload->atsc3_message_content);
 
 }
 
@@ -652,16 +652,16 @@ uint8_t* si_message_not_supported(mmt_signalling_message_header_and_payload_t* m
 
 
 void signaling_message_mmtp_packet_header_dump(mmtp_payload_fragments_union_t* mmtp_payload_fragments) {
-	_MMSM_INFO("------------------");
-	_MMSM_INFO("MMTP Packet Header");
-	_MMSM_INFO("------------------");
-	_MMSM_INFO(" packet version         : %-10d (0x%d%d)", mmtp_payload_fragments->mmtp_packet_header.mmtp_packet_version, ((mmtp_payload_fragments->mmtp_packet_header.mmtp_packet_version >> 1) & 0x1), mmtp_payload_fragments->mmtp_packet_header.mmtp_packet_version & 0x1);
-	_MMSM_INFO(" payload_type           : %-10d (0x%d%d)", mmtp_payload_fragments->mmtp_packet_header.mmtp_payload_type, ((mmtp_payload_fragments->mmtp_packet_header.mmtp_payload_type >> 1) & 0x1), mmtp_payload_fragments->mmtp_packet_header.mmtp_payload_type & 0x1);
-	_MMSM_INFO(" packet_id              : %-10hu (0x%04x)", mmtp_payload_fragments->mmtp_packet_header.mmtp_packet_id, mmtp_payload_fragments->mmtp_packet_header.mmtp_packet_id);
-	_MMSM_INFO(" timestamp              : %-10u (0x%08x)", mmtp_payload_fragments->mmtp_packet_header.mmtp_timestamp, mmtp_payload_fragments->mmtp_packet_header.mmtp_timestamp);
-	_MMSM_INFO(" packet_sequence_number : %-10u (0x%08x)", mmtp_payload_fragments->mmtp_packet_header.packet_sequence_number,mmtp_payload_fragments->mmtp_packet_header.packet_sequence_number);
-	_MMSM_INFO(" packet counter         : %-10u (0x%04x)", mmtp_payload_fragments->mmtp_packet_header.packet_counter, mmtp_payload_fragments->mmtp_packet_header.packet_counter);
-	_MMSM_INFO("------------------");
+	_MMSM_DEBUG("------------------");
+	_MMSM_DEBUG("MMTP Packet Header");
+	_MMSM_DEBUG("------------------");
+	_MMSM_DEBUG(" packet version         : %-10d (0x%d%d)", mmtp_payload_fragments->mmtp_packet_header.mmtp_packet_version, ((mmtp_payload_fragments->mmtp_packet_header.mmtp_packet_version >> 1) & 0x1), mmtp_payload_fragments->mmtp_packet_header.mmtp_packet_version & 0x1);
+	_MMSM_DEBUG(" payload_type           : %-10d (0x%d%d)", mmtp_payload_fragments->mmtp_packet_header.mmtp_payload_type, ((mmtp_payload_fragments->mmtp_packet_header.mmtp_payload_type >> 1) & 0x1), mmtp_payload_fragments->mmtp_packet_header.mmtp_payload_type & 0x1);
+	_MMSM_DEBUG(" packet_id              : %-10hu (0x%04x)", mmtp_payload_fragments->mmtp_packet_header.mmtp_packet_id, mmtp_payload_fragments->mmtp_packet_header.mmtp_packet_id);
+	_MMSM_DEBUG(" timestamp              : %-10u (0x%08x)", mmtp_payload_fragments->mmtp_packet_header.mmtp_timestamp, mmtp_payload_fragments->mmtp_packet_header.mmtp_timestamp);
+	_MMSM_DEBUG(" packet_sequence_number : %-10u (0x%08x)", mmtp_payload_fragments->mmtp_packet_header.packet_sequence_number,mmtp_payload_fragments->mmtp_packet_header.packet_sequence_number);
+	_MMSM_DEBUG(" packet counter         : %-10u (0x%04x)", mmtp_payload_fragments->mmtp_packet_header.packet_counter, mmtp_payload_fragments->mmtp_packet_header.packet_counter);
+	_MMSM_DEBUG("------------------");
 }
 
 void signaling_message_dump(mmtp_payload_fragments_union_t* mmtp_payload_fragments) {
@@ -673,9 +673,9 @@ void signaling_message_dump(mmtp_payload_fragments_union_t* mmtp_payload_fragmen
 	//dump mmtp packet header
 	signaling_message_mmtp_packet_header_dump(mmtp_payload_fragments);
 
-	_MMSM_INFO("-----------------");
-	_MMSM_INFO("Signaling Message");
-	_MMSM_INFO("-----------------");
+	_MMSM_DEBUG("-----------------");
+	_MMSM_DEBUG("Signaling Message");
+	_MMSM_DEBUG("-----------------");
 	/**
 	 * dump si payload header fields
 	 * 	uint8_t		si_fragmentation_indiciator; //2 bits,
@@ -684,22 +684,22 @@ void signaling_message_dump(mmtp_payload_fragments_union_t* mmtp_payload_fragmen
 		uint8_t		si_fragmentation_counter;    //8 bits
 		uint16_t	si_aggregation_message_length;
 	 */
-	_MMSM_INFO(" fragmentation_indiciator   : %d", 	mmtp_payload_fragments->mmtp_signalling_message_fragments.si_fragmentation_indiciator);
-	_MMSM_INFO(" additional_length_header   : %d", 	mmtp_payload_fragments->mmtp_signalling_message_fragments.si_additional_length_header);
-	_MMSM_INFO(" aggregation_flag           : %d",	mmtp_payload_fragments->mmtp_signalling_message_fragments.si_aggregation_flag);
-	_MMSM_INFO(" fragmentation_counter      : %d",	mmtp_payload_fragments->mmtp_signalling_message_fragments.si_fragmentation_counter);
-	_MMSM_INFO(" aggregation_message_length : %hu",	mmtp_payload_fragments->mmtp_signalling_message_fragments.si_aggregation_message_length);
+	_MMSM_DEBUG(" fragmentation_indiciator   : %d", 	mmtp_payload_fragments->mmtp_signalling_message_fragments.si_fragmentation_indiciator);
+	_MMSM_DEBUG(" additional_length_header   : %d", 	mmtp_payload_fragments->mmtp_signalling_message_fragments.si_additional_length_header);
+	_MMSM_DEBUG(" aggregation_flag           : %d",	mmtp_payload_fragments->mmtp_signalling_message_fragments.si_aggregation_flag);
+	_MMSM_DEBUG(" fragmentation_counter      : %d",	mmtp_payload_fragments->mmtp_signalling_message_fragments.si_fragmentation_counter);
+	_MMSM_DEBUG(" aggregation_message_length : %hu",	mmtp_payload_fragments->mmtp_signalling_message_fragments.si_aggregation_message_length);
 
 	for(int i=0; i < mmtp_payload_fragments->mmtp_signalling_message_fragments.mmt_signalling_message_vector.messages_n; i++) {
 		mmt_signalling_message_header_and_payload_t* mmt_signalling_message_header_and_payload = mmtp_payload_fragments->mmtp_signalling_message_fragments.mmt_signalling_message_vector.messages[i];
 
-		_MMSM_INFO("-----------------");
-		_MMSM_INFO(" Message ID      : %hu (0x%04x)", 	mmt_signalling_message_header_and_payload->message_header.message_id, mmt_signalling_message_header_and_payload->message_header.message_id);
-		_MMSM_INFO(" Version         : %d", 			mmt_signalling_message_header_and_payload->message_header.version);
-		_MMSM_INFO(" Length          : %u", 			mmt_signalling_message_header_and_payload->message_header.length);
-		_MMSM_INFO("------------------");
-		_MMSM_INFO(" Payload         : %p", 			&mmt_signalling_message_header_and_payload->message_payload);
-		_MMSM_INFO("------------------");
+		_MMSM_DEBUG("-----------------");
+		_MMSM_DEBUG(" Message ID      : %hu (0x%04x)", 	mmt_signalling_message_header_and_payload->message_header.message_id, mmt_signalling_message_header_and_payload->message_header.message_id);
+		_MMSM_DEBUG(" Version         : %d", 			mmt_signalling_message_header_and_payload->message_header.version);
+		_MMSM_DEBUG(" Length          : %u", 			mmt_signalling_message_header_and_payload->message_header.length);
+		_MMSM_DEBUG("------------------");
+		_MMSM_DEBUG(" Payload         : %p", 			&mmt_signalling_message_header_and_payload->message_payload);
+		_MMSM_DEBUG("------------------");
 
 
 		if(mmt_signalling_message_header_and_payload->message_header.message_id == PA_message) {
@@ -715,68 +715,68 @@ void signaling_message_dump(mmtp_payload_fragments_union_t* mmtp_payload_fragmen
 }
 
 void pa_message_dump(mmtp_payload_fragments_union_t* mmtp_payload_fragments) {
-	_MMSM_INFO(" pa_message");
-	_MMSM_INFO("-----------------");
+	_MMSM_DEBUG(" pa_message");
+	_MMSM_DEBUG("-----------------");
 
 }
 
 void mpi_message_dump(mmtp_payload_fragments_union_t* mmtp_payload_fragments) {
-	_MMSM_INFO(" mpi_message");
-	_MMSM_INFO("-----------------");
+	_MMSM_DEBUG(" mpi_message");
+	_MMSM_DEBUG("-----------------");
 
 }
 
 void mpt_message_dump(mmt_signalling_message_header_and_payload_t* mmt_signalling_message_header_and_payload) {
 
-	_MMSM_INFO(" mpt_message");
-	_MMSM_INFO("-----------------");
+	_MMSM_DEBUG(" mpt_message");
+	_MMSM_DEBUG("-----------------");
 
 	mp_table_t* mp_table = &mmt_signalling_message_header_and_payload->message_payload.mp_table;
 
-	_MMSM_INFO(" table_id                    : %u", mp_table->table_id);
-	_MMSM_INFO(" version                     : %u", mp_table->version);
-	_MMSM_INFO(" length                      : %u", mp_table->length);
-	_MMSM_INFO(" mp_table_mode               : %u", mp_table->mp_table_mode);
-	_MMSM_INFO(" mmt_package_id.length:      : %u", mp_table->mmt_package_id.mmt_package_id_length);
+	_MMSM_DEBUG(" table_id                    : %u", mp_table->table_id);
+	_MMSM_DEBUG(" version                     : %u", mp_table->version);
+	_MMSM_DEBUG(" length                      : %u", mp_table->length);
+	_MMSM_DEBUG(" mp_table_mode               : %u", mp_table->mp_table_mode);
+	_MMSM_DEBUG(" mmt_package_id.length:      : %u", mp_table->mmt_package_id.mmt_package_id_length);
 	if(mp_table->mmt_package_id.mmt_package_id_length) {
-		_MMSM_INFO(" mmt_package_id.val:       : %s", mp_table->mmt_package_id.mmt_package_id);
+		_MMSM_DEBUG(" mmt_package_id.val:       : %s", mp_table->mmt_package_id.mmt_package_id);
 	}
-	_MMSM_INFO(" mp_table_descriptors.length : %u", mp_table->mp_table_descriptors.mp_table_descriptors_length);
+	_MMSM_DEBUG(" mp_table_descriptors.length : %u", mp_table->mp_table_descriptors.mp_table_descriptors_length);
 	if(mp_table->mp_table_descriptors.mp_table_descriptors_length) {
-		_MMSM_INFO(" mp_table_descriptors.val    : %s", mp_table->mp_table_descriptors.mp_table_descriptors_byte);
+		_MMSM_DEBUG(" mp_table_descriptors.val    : %s", mp_table->mp_table_descriptors.mp_table_descriptors_byte);
 	}
-	_MMSM_INFO(" number_of_assets            : %u", mp_table->number_of_assets);
+	_MMSM_DEBUG(" number_of_assets            : %u", mp_table->number_of_assets);
 
 	for(int i=0; i < mp_table->number_of_assets; i++) {
 		mp_table_asset_row_t* mp_table_asset_row = &mp_table->mp_table_asset_row[i];
-		_MMSM_INFO(" asset identifier type        : %u", mp_table_asset_row->identifier_mapping.identifier_type);
+		_MMSM_DEBUG(" asset identifier type        : %u", mp_table_asset_row->identifier_mapping.identifier_type);
 		if(mp_table_asset_row->identifier_mapping.identifier_type == 0x00) {
-			_MMSM_INFO(" asset id                     : %s", mp_table_asset_row->identifier_mapping.asset_id.asset_id);
+			_MMSM_DEBUG(" asset id                     : %s", mp_table_asset_row->identifier_mapping.asset_id.asset_id);
 
 		}
-		_MMSM_INFO(" asset type                  : %u", mp_table_asset_row->asset_type);
-		_MMSM_INFO(" asset_clock_relation_flag   : %u", mp_table_asset_row->asset_clock_relation_flag);
-		_MMSM_INFO(" asset_clock_relation_id     : %u", mp_table_asset_row->asset_clock_relation_id);
-		_MMSM_INFO(" asset_timescale_flag        : %u", mp_table_asset_row->asset_timescale_flag);
-		_MMSM_INFO(" asset_timescale             : %u", mp_table_asset_row->asset_timescale);
-		_MMSM_INFO(" location_count              : %u", mp_table_asset_row->location_count);
+		_MMSM_DEBUG(" asset type                  : %u", mp_table_asset_row->asset_type);
+		_MMSM_DEBUG(" asset_clock_relation_flag   : %u", mp_table_asset_row->asset_clock_relation_flag);
+		_MMSM_DEBUG(" asset_clock_relation_id     : %u", mp_table_asset_row->asset_clock_relation_id);
+		_MMSM_DEBUG(" asset_timescale_flag        : %u", mp_table_asset_row->asset_timescale_flag);
+		_MMSM_DEBUG(" asset_timescale             : %u", mp_table_asset_row->asset_timescale);
+		_MMSM_DEBUG(" location_count              : %u", mp_table_asset_row->location_count);
 //		for(int j=0; j < mp_table_asset_row->location_count; j++) {
 //
 //		}
-		_MMSM_INFO(" mmt_general_location_info location_type  : %u", mp_table_asset_row->mmt_general_location_info.location_type);
-		_MMSM_INFO(" mmt_general_location_info pkt_id         : %u", mp_table_asset_row->mmt_general_location_info.packet_id);
-		_MMSM_INFO(" mmt_general_location_info ipv4 src addr  : %u", mp_table_asset_row->mmt_general_location_info.ipv4_src_addr);
-		_MMSM_INFO(" mmt_general_location_info ipv4 dest addr : %u", mp_table_asset_row->mmt_general_location_info.ipv4_dst_addr);
-		_MMSM_INFO(" mmt_general_location_info ipv4 dest port : %u", mp_table_asset_row->mmt_general_location_info.dst_port);
-		_MMSM_INFO(" mmt_general_location_info message id     : %u", mp_table_asset_row->mmt_general_location_info.message_id);
+		_MMSM_DEBUG(" mmt_general_location_info location_type  : %u", mp_table_asset_row->mmt_general_location_info.location_type);
+		_MMSM_DEBUG(" mmt_general_location_info pkt_id         : %u", mp_table_asset_row->mmt_general_location_info.packet_id);
+		_MMSM_DEBUG(" mmt_general_location_info ipv4 src addr  : %u", mp_table_asset_row->mmt_general_location_info.ipv4_src_addr);
+		_MMSM_DEBUG(" mmt_general_location_info ipv4 dest addr : %u", mp_table_asset_row->mmt_general_location_info.ipv4_dst_addr);
+		_MMSM_DEBUG(" mmt_general_location_info ipv4 dest port : %u", mp_table_asset_row->mmt_general_location_info.dst_port);
+		_MMSM_DEBUG(" mmt_general_location_info message id     : %u", mp_table_asset_row->mmt_general_location_info.message_id);
 
 		//first entry
-		_MMSM_INFO(" asset_descriptors_length                 : %u", mp_table_asset_row->asset_descriptors_length);
+		_MMSM_DEBUG(" asset_descriptors_length                 : %u", mp_table_asset_row->asset_descriptors_length);
 		if(mp_table_asset_row->asset_descriptors_length) {
             if(mp_table_asset_row->mmt_signaling_message_mpu_timestamp_descriptor) {
                 for(int i=0; i < mp_table_asset_row->mmt_signaling_message_mpu_timestamp_descriptor->mpu_tuple_n; i++) {
-                    _MMSM_INFO("   mpu_timestamp_descriptor %u, mpu_sequence_number: %u", i, mp_table_asset_row->mmt_signaling_message_mpu_timestamp_descriptor->mpu_tuple[i].mpu_sequence_number);
-                    _MMSM_INFO("   mpu_timestamp_descriptor %u, mpu_presentation_time: %llu", i, mp_table_asset_row->mmt_signaling_message_mpu_timestamp_descriptor->mpu_tuple[i].mpu_presentation_time);
+                    _MMSM_DEBUG("   mpu_timestamp_descriptor %u, mpu_sequence_number: %u", i, mp_table_asset_row->mmt_signaling_message_mpu_timestamp_descriptor->mpu_tuple[i].mpu_sequence_number);
+                    _MMSM_DEBUG("   mpu_timestamp_descriptor %u, mpu_presentation_time: %llu", i, mp_table_asset_row->mmt_signaling_message_mpu_timestamp_descriptor->mpu_tuple[i].mpu_presentation_time);
                 }
             }
 		}

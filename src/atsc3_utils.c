@@ -263,16 +263,38 @@ block_t* block_Rewind(block_t* dest) {
  * todo, fix me to use ** to null out block_t ref
  */
 
+/**
+ * note, this will duplicate the full block size and update i_pos in the dest payload
+ * if you need a subset of the payload, use block_Duplicate_from_position
+ */
 block_t* block_Duplicate(block_t* src) {
 	if(!__block_check_bounaries(__FUNCTION__, src)) return NULL;
 
-	uint32_t to_alloc_size = __MAX(src->p_size, src->i_pos);
-	if(to_alloc_size > src->p_size) {
-		_ATSC3_UTILS_WARN("block_Duplicate: block: %p, p_size was: %u, but i_pos: %u, realloc to size: %u", src, src->p_size, src->i_pos, to_alloc_size);
-	}
+	uint32_t to_alloc_size = src->p_size;
+
 	block_t* dest = block_Alloc(to_alloc_size);
-	memcpy(dest->p_buffer, src->p_buffer, src->i_pos);
-	dest->i_pos = src->i_pos;
+	memcpy(dest->p_buffer, src->p_buffer, to_alloc_size);
+	dest->i_pos = 0;
+
+	return dest;
+}
+
+/**
+ *
+ * this will return a new block starting at src->i_pos to the end of the payload size
+ */
+block_t* block_Duplicate_from_position(block_t* src) {
+	if(!__block_check_bounaries(__FUNCTION__, src)) return NULL;
+
+	int32_t to_alloc_size = src->p_size - src->i_pos;
+	if(to_alloc_size < 0) {
+		_ATSC3_UTILS_WARN("block_Duplicate_from_position: block: %p, p_size was: %u, but i_pos: %u, realloc to size: %u, returning NULL", src, src->p_size, src->i_pos, to_alloc_size);
+		return NULL;
+	}
+
+	block_t* dest = block_Alloc(to_alloc_size);
+	memcpy(dest->p_buffer, &src->p_buffer[src->i_pos], to_alloc_size);
+	dest->i_pos = 0;
 
 	return dest;
 }
@@ -285,7 +307,7 @@ block_t* block_Resize(block_t* src, uint32_t src_size_requested) {
 	uint32_t src_size_required = __MAX(64, src_size_requested);
 
 	//always over alloc by 1 byte for a null pad
-	void* new_block = realloc(src->p_buffer, src_size_required + 1);
+	void* new_block = realloc(src->p_buffer, src_size_required + 8);
 	if(!new_block) {
 		_ATSC3_UTILS_ERROR("block_Resize: block: %p resize to %u failed, returning NULL", src, src_size_required);
 		return NULL;
@@ -300,7 +322,7 @@ block_t* block_Resize(block_t* src, uint32_t src_size_requested) {
 		} else {
 			_ATSC3_UTILS_TRACE("block_Resize: block: %p, zeroing out from: %u to %u", src, src->i_pos, src->p_size);
 			uint32_t to_scrub_len = __MAX(0, (src->p_size - 1 - src->i_pos));
-			memset(&src->p_buffer[src->i_pos], 0, to_scrub_len + 1);
+			memset(&src->p_buffer[src->i_pos], 0, to_scrub_len + 8);
 		}
 	}
 
