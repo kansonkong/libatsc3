@@ -12,36 +12,38 @@
 
 //signaling message - message id values:
 
-#define PA_message 			0x0000
+#define PA_message 				0x0000
 
-#define MPI_message			0x0001
-#define MPI_message_start 	0x0001
-#define MPI_message_end	 	0x0010
+#define MPI_message				0x0001
+#define MPI_message_start 		0x0001
+#define MPI_message_end	 		0x0010
 
-#define MPT_message			0x0011
-#define MPT_message_start	0x0011
-#define MPT_message_end		0x0020
-//		RESERVED			0x0021 ~ 0x01FF
+#define MPT_message				0x0011
+#define MPT_message_start		0x0011
+#define MPT_message_end			0x0020
+//		RESERVED				0x0021 ~ 0x01FF
 
-#define	CRI_message			0x0200
-#define	DCI_message			0x0201
-#define	SSWR_message		0x0202
-#define	AL_FEC_message		0x0203
-#define	HRBM_message		0x0204
-#define	MC_message			0x0205
-#define	AC_message			0x0206
-#define	AF_message			0x0207
-#define	RQF_message			0x0208
-#define	ADC_message			0x0209
-#define	HRB_removal_message	0x020A
-#define	LS_message			0x020B
-#define	LR_message			0x020C
-#define	NAMF_message		0x020D
-#define	LDC_message			0x020E
-//Reserved for private use 0x8000 ~ 0xFFFF
+#define	CRI_message				0x0200
+#define	DCI_message				0x0201
+#define	SSWR_message			0x0202
+#define	AL_FEC_message			0x0203
+#define	HRBM_message			0x0204
+#define	MC_message				0x0205
+#define	AC_message				0x0206
+#define	AF_message				0x0207
+#define	RQF_message				0x0208
+#define	ADC_message				0x0209
+#define	HRB_removal_message		0x020A
+#define	LS_message				0x020B
+#define	LR_message				0x020C
+#define	NAMF_message			0x020D
+#define	LDC_message				0x020E
+//Reserved for private use 		0x8000 ~ 0xFFFF
 #define	MMT_ATSC3_MESSAGE_ID	0x8100
 
-#define MMT_SCTE35_Signal	0xF337
+#define MMT_SCTE35_Signal_Message		0xF337	// SCTE35_Signal_Message Type
+#define MMT_SCTE35_Signal_Descriptor	0xF33F	// SCTE35_Signal_Descriptor tag
+
 
 //10.2.2 signalling message header
 
@@ -263,12 +265,12 @@ typedef struct mpt_message {
 0xF337 : SCTE35_Signal message
 
 SCTE35_Signal_Message {
-	message_id 			16
-version 			8
-length   			32
+	message_id 								16
+	version 								8
+	length  		 						32
 
-number_of_SCTE35_Signal_Descriptor 	N1 	8
-SCTE35_Signal_Descriptor()      	var	(per length)
+	number_of_SCTE35_Signal_Descriptor 	N1 	8
+	SCTE35_Signal_Descriptor() 				var	(per length)
 }
 
 SCTE35 Signal Descriptor:
@@ -276,14 +278,15 @@ SCTE35 Signal Descriptor:
 0xF33F: SCTE35_Signal_Descriptor tag
 
 SCTE35_Signal_Descriptor {
-
-descriptor_tag 		16
-descriptor_length		16
-NTP_timestamp 		64
-signal_length 	N1	16
-  for(i=0; i < N1; i++) {
-  	signal_byte[i];
- }
+	descriptor_tag 							16
+	descriptor_length						16
+	NTP_timestamp 							64
+	reserved								7 	'1111111'
+	PTS_timestamp							33
+	signal_length 						N1	16
+	  for(i=0; i < N1; i++) {
+		signal_byte[i];						8
+	 }
 }
  *
  */
@@ -303,8 +306,6 @@ typedef struct mmt_scte35_message_payload {
 	uint32_t	length;
 
 	ATSC3_VECTOR_BUILDER_STRUCT(mmt_scte35_signal_descriptor)
-
-
 } mmt_scte35_message_payload_t;
 
 typedef union mmt_signalling_message_type {
