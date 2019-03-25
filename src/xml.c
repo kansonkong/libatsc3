@@ -182,7 +182,7 @@ enum xml_parser_offset {
 /**
  * [PRIVATE]
  *
- * @return Number of elements in 0-terminated array
+* @return Number of elements in 0-terminated array
  */
 static size_t get_zero_terminated_array_elements(struct xml_node** nodes) {
 	size_t elements = 0;
@@ -249,8 +249,21 @@ bool xml_string_equals_ignore_case(xml_string_t *a, char* b) {
  is still a reference to the full xml document
  **/
 bool xml_node_equals_ignore_case(xml_node_t *a, char* b) {
+    
+    
     xml_string_t* xml_node_name_string = xml_node_name(a);
-    bool res = xml_string_equals_ignore_case(xml_node_name_string, b);
+    bool res = false;
+    
+    //if we contain a namespace specifier, ignore for now...
+    bool namespace_specifier_found = false;
+    for(int i=0; i < xml_node_name_string->length && !namespace_specifier_found; i++) {
+        if(xml_node_name_string->buffer[i] == ':') {
+            xml_node_name_string->buffer += i+1;
+            xml_node_name_string->length -= i+1;
+            namespace_specifier_found = true;
+        }
+    }
+    res = xml_string_equals_ignore_case(xml_node_name_string, b);
     
     return res;
 }
