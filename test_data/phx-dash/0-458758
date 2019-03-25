@@ -1,0 +1,151 @@
+Content-Type: multipart/related; type="application/mbms-envelope+xml"; 
+	boundary="----=_Part_107_1597649067.1551833712921"
+
+------=_Part_107_1597649067.1551833712921
+Content-Type: application/mbms-envelope+xml
+Content-Location: envelope.xml
+
+<?xml version="1.0" encoding="UTF-8"?>
+<metadataEnvelope xmlns="urn:3gpp:metadata:2005:MBMS:envelope">
+   <item metadataURI="mpd80.xml"
+         version="6"
+         contentType="application/dash+xml"/>
+   <item metadataURI="stsid80.xml"
+         version="1"
+         contentType="application/route-s-tsid+xml"/>
+   <item metadataURI="usbd80.xml"
+         version="6"
+         contentType="application/route-usd+xml"/>
+</metadataEnvelope>
+
+------=_Part_107_1597649067.1551833712921
+Content-Type: application/dash+xml
+Content-Location: mpd80.xml
+
+<?xml version="1.0" encoding="UTF-8"?>
+<MPD xmlns="urn:mpeg:dash:schema:mpd:2011"
+     xmlns:cenc="urn:mpeg:cenc:2013"
+     xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+     availabilityStartTime="2019-03-06T00:55:15Z"
+     minBufferTime="PT2S"
+     minimumUpdatePeriod="PT0S"
+     profiles="urn:mpeg:dash:profile:isoff-broadcast:2015"
+     publishTime="2019-03-06T00:55:14Z"
+     type="dynamic"
+     xsi:schemalocation="urn:mpeg:dash:schema:mpd:2011 DASH-MPD.xsd">
+   <Period id="P0" start="PT0S">
+      <AdaptationSet contentType="video"
+                     id="0"
+                     maxFrameRate="60000/1001"
+                     maxHeight="2160"
+                     maxWidth="3840"
+                     mimeType="video/mp4"
+                     minFrameRate="60000/1001"
+                     minHeight="2160"
+                     minWidth="3840"
+                     par="16:9"
+                     segmentAlignment="true"
+                     startWithSAP="1">
+         <Role schemeIdUri="urn:mpeg:dash:role:2011" value="main"/>
+         <Representation bandwidth="10000000"
+                         codecs="hev1.2.4.L153.11"
+                         frameRate="60000/1001"
+                         height="2160"
+                         id="Video1_$ProfileId$"
+                         sar="0:0"
+                         width="3840">
+            <SegmentTemplate duration="2002000"
+                             initialization="video-init.mp4v"
+                             media="video-$Number$.mp4v"
+                             startNumber="1"
+                             timescale="1000000"/>
+         </Representation>
+         <RandomAccess interval="2002000"/>
+         <SupplementalProperty schemeIdUri="urn:mpeg:mpegB:cicp:colourprimaries" value="9"/>
+      </AdaptationSet>
+      <AdaptationSet contentType="audio"
+                     id="1"
+                     lang="und"
+                     mimeType="audio/mp4"
+                     segmentAlignment="true"
+                     startWithSAP="1">
+         <Role schemeIdUri="urn:mpeg:dash:role:2011" value="main"/>
+         <Representation audioSamplingRate="48000"
+                         bandwidth="128000"
+                         codecs="mp4a.40.2"
+                         id="Audio2_2">
+            <AudioChannelConfiguration schemeIdUri="urn:mpeg:dash:23003:3:audio_channel_configuration:2011"
+                                       value="6"/>
+            <SegmentTemplate duration="2002000"
+                             initialization="audio-0-init.mp4a"
+                             media="audio-0-$Number$.mp4a"
+                             startNumber="1"
+                             timescale="1000000"/>
+         </Representation>
+         <RandomAccess interval="2002000"/>
+      </AdaptationSet>
+   </Period>
+</MPD>
+
+
+------=_Part_107_1597649067.1551833712921
+Content-Type: application/route-s-tsid+xml
+Content-Location: stsid80.xml
+
+<?xml version="1.0" encoding="UTF-8"?>
+<S-TSID xmlns="tag:atsc.org,2016:XMLSchemas/ATSC3/Delivery/S-TSID/1.0/"
+        xmlns:afdt="tag:atsc.org,2016:XMLSchemas/ATSC3/Delivery/ATSC-FDT/1.0/"
+        xmlns:fdt="urn:ietf:params:xml:ns:fdt">
+   <RS dIpAddr="239.255.35.14" dPort="3514">
+      <LS tsi="10" startTime="2019-03-06T00:55:15Z">
+         <SrcFlow rt="true">
+            <EFDT>
+               <FDT-Instance Expires="4294967295"
+                             afdt:efdtVersion="0"
+                             afdt:maxTransportSize="4294603588"
+                             afdt:fileTemplate="video-$TOI$.mp4v">
+                  <fdt:File Content-Location="video-init.mp4v" TOI="4294967295"/>
+               </FDT-Instance>
+            </EFDT>
+            <ContentInfo>
+               <MediaInfo repId="Video1_$ProfileId$" contentType="video"/>
+            </ContentInfo>
+            <Payload codePoint="128" formatId="1" frag="0" order="true"/>
+         </SrcFlow>
+      </LS>
+      <LS tsi="20" startTime="2019-03-06T00:55:15Z">
+         <SrcFlow rt="true">
+            <EFDT>
+               <FDT-Instance Expires="4294967295"
+                             afdt:efdtVersion="0"
+                             afdt:maxTransportSize="64064"
+                             afdt:fileTemplate="audio-0-$TOI$.mp4a">
+                  <fdt:File Content-Location="audio-0-init.mp4a" TOI="4294967295"/>
+               </FDT-Instance>
+            </EFDT>
+            <ContentInfo>
+               <MediaInfo repId="Audio2_2" contentType="audio"/>
+            </ContentInfo>
+            <Payload codePoint="128" formatId="1" frag="0" order="true"/>
+         </SrcFlow>
+      </LS>
+   </RS>
+</S-TSID>
+
+------=_Part_107_1597649067.1551833712921
+Content-Type: application/route-usd+xml
+Content-Location: usbd80.xml
+
+<?xml version="1.0" encoding="UTF-8"?>
+<BundleDescriptionROUTE xmlns="tag:atsc.org,2016:XMLSchemas/ATSC3/Delivery/ROUTEUSD/1.0/">
+   <UserServiceDescription serviceId="80">
+      <DeliveryMethod>
+         <BroadcastAppService>
+            <BasePattern>video-</BasePattern>
+            <BasePattern>audio-0-</BasePattern>
+         </BroadcastAppService>
+      </DeliveryMethod>
+   </UserServiceDescription>
+</BundleDescriptionROUTE>
+
+------=_Part_107_1597649067.1551833712921--
