@@ -1,0 +1,92 @@
+Content-Type:Multipart/related;
+boundary="boundary-content";
+type=application/mbms-envelope+xml
+
+--boundary-content
+Content-Type:application/mbms-envelope+xml
+Content-Location:envelope.xml
+
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<metadataEnvelope xmlns="urn:3gpp:metadata:2005:MBMS:envelope">
+   <item metadataURI="usbd.xml" version="1" contentType="application/mbms-user-service-description+xml"/>
+   <item metadataURI="stsid.xml" version="1" contentType="application/s-tsid"/>
+   <item metadataURI="mpd.xml" version="1" contentType="application/dash+xml"/>
+</metadataEnvelope>
+
+--boundary-content
+Content-Type:application/mbms-user-service-description+xml; charset=utf-8
+Content-Location:usbd.xml
+
+<?xml version="1.0" encoding="UTF-8"?>
+<bundleDescriptionROUTE xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns="tag:atsc.org,2016:XMLSchemas/ATSC3/Delivery/ROUTEUSD/1.0/" xmlns:routeusd="http://www.atsc.org/XMLSchemas/ATSC3/Delivery/ROUTEUSD/1.0/" xsi:schemaLocation="http://www.atsc.org/XMLSchemas/ATSC3/Delivery/ROUTEUSD/1.0/ ROUTEUSD.xsd">
+   <userServiceDescription globalServiceID="urn:atsc:serviceid:2" serviceId="2" sTSIDUri="stsid.xml" >
+      <name lang="en">
+         RT1
+      </name>
+      <deliveryMethod>
+         <broadcastAppService>
+            <basePattern>v1-</basePattern>
+            <basePattern>a1-</basePattern>
+         </broadcastAppService>
+      </deliveryMethod>
+   </userServiceDescription>
+</bundleDescriptionROUTE>
+
+--boundary-content
+Content-Type:application/s-tsid; charset=utf-8
+Content-Location:stsid.xml
+
+<?xml version="1.0" encoding="UTF-8"?>
+<S-TSID xmlns="tag:atsc.org,2016:XMLSchemas/ATSC3/Delivery/S-TSID/1.0/" xmlns:afdt="tag:atsc.org,2016:XMLSchemas/ATSC3/Delivery/ATSC-FDT/1.0/" xmlns:fdt="urn:ietf:params:xml:ns:fdt">
+   <RS sIpAddr="10.1.62.40" dIpAddr="239.255.1.1" dPort="49152">
+      <LS tsi="3000" bw="2200000" startTime="2019-02-06T07:47:19Z">
+         <SrcFlow rt="true">
+            <EFDT version="0">
+               <FileTemplate>v1-$TOI$.mp4v</FileTemplate>
+               <FDTParameters>
+                  <fdt:File TOI="2" Content-Location="v1-init.mp4v"/>
+               </FDTParameters>
+            </EFDT>
+            <ContentInfo>v1</ContentInfo>
+            <Payload codePoint="128" formatID="1" frag="0" order="1" srcFecPayloadID="1"/>
+         </SrcFlow>
+      </LS>
+      <LS tsi="3002" bw="140000" startTime="2019-02-06T07:47:19Z">
+         <SrcFlow rt="true">
+            <EFDT version="0">
+               <FileTemplate>a1-$TOI$.mp4a</FileTemplate>
+               <FDTParameters>
+                  <fdt:File TOI="2" Content-Location="a1-init.mp4a"/>
+               </FDTParameters>
+            </EFDT>
+            <ContentInfo>a1</ContentInfo>
+            <Payload codePoint="128" formatID="1" frag="0" order="1" srcFecPayloadID="1"/>
+         </SrcFlow>
+      </LS>
+   </RS>
+</S-TSID>
+
+--boundary-content
+Content-Type:application/dash+xml; charset=utf-8
+Content-Location:mpd.xml
+
+<?xml version="1.0" encoding="UTF-8"?>
+<MPD availabilityStartTime="2019-02-06T07:47:47Z" maxSegmentDuration="PT2S" minBufferTime="PT2S" minimumUpdatePeriod="PT6S" profiles="urn:mpeg:dash:profile:isoff-live:2011" publishTime="2019-02-06T07:47:47Z" timeShiftBufferDepth="PT12S" type="dynamic" xmlns="urn:mpeg:dash:schema:mpd:2011" xmlns:cenc="urn:mpeg:cenc:2013" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemalocation="urn:mpeg:dash:schema:mpd:2011 DASH-MPD.xsd">
+   <Period id="P0" start="PT0S">
+      <AdaptationSet contentType="video" id="0" maxFrameRate="25" maxHeight="720" maxWidth="1280" mimeType="video/mp4" minFrameRate="25" minHeight="720" minWidth="1280" par="16:9" segmentAlignment="true" startWithSAP="1">
+         <Role schemeIdUri="urn:mpeg:dash:role:2011" value="main"/>
+         <Representation bandwidth="2000000" codecs="hev1.2.4.L93.11" frameRate="25" height="720" id="v1" sar="1:1" width="1280">
+            <SegmentTemplate duration="2000000" initialization="v1-init.mp4v" media="v1-$Number$.mp4v" startNumber="1" timescale="1000000"/>
+         </Representation>
+      </AdaptationSet>
+      <AdaptationSet contentType="audio" id="1" lang="fra" mimeType="audio/mp4" segmentAlignment="true" startWithSAP="1">
+         <Role schemeIdUri="urn:mpeg:dash:role:2011" value="main"/>
+         <Representation audioSamplingRate="48000" bandwidth="128000" codecs="mp4a.40.2" id="a1">
+            <AudioChannelConfiguration schemeIdUri="urn:mpeg:dash:23003:3:audio_channel_configuration:2011" value="2"/>
+            <SegmentTemplate duration="2000000" initialization="a1-init.mp4a" media="a1-$Number$.mp4a" startNumber="1" timescale="1000000"/>
+         </Representation>
+      </AdaptationSet>
+   </Period>
+</MPD>
+
+--boundary-content--
