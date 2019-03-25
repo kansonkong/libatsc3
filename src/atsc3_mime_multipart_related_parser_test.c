@@ -23,23 +23,20 @@ int parse_mime_multipart(const char* filename) {
 
 	if(fp) {
 		//validate our struct
-		atsc3_mime_multipart_related_parser(fp);
-//		if(!atsc3_fdt_instance) {
-//			_ATSC3_MIME_MULTIPART_TEST_UTILS_ERROR("atsc3_fdt_instance is null!");
-//			return -1;
-//		}
-//		atsc3_fdt_instance_dump(atsc3_fdt_instance);
-
+		atsc3_mime_multipart_related_instance_t* atsc3_mime_multipart_related_instance = atsc3_mime_multipart_related_parser(fp);
+		if(atsc3_mime_multipart_related_instance) {
+			atsc3_mime_multipart_related_instance_dump(atsc3_mime_multipart_related_instance);
+		} else {
+			_ATSC3_MIME_MULTIPART_TEST_UTILS_ERROR("atsc3_mime_multipart_related_instance is null!");
+			ret = -1;
+		}
 	}
 
 	return ret;
 }
 
 int main(int argc, char* argv[] ) {
-//
-//	 _XML_INFO_ENABLED = 1;
-//	 _XML_DEBUG_ENABLED = 1;
-//	 _XML_TRACE_ENABLED = 1;
+
 
 	 parse_mime_multipart("../test_data/sba-dash/0-4653138"); //application/mbms-envelope+xml
 	 return 0;

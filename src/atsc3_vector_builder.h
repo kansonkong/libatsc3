@@ -64,7 +64,7 @@
 		if(!vector_struct_name->PPCAT(vector_item_name, _v).size || !vector_struct_name->PPCAT(vector_item_name, _v).data) { \
 			/* new alloc */ \
 			vector_struct_name->PPCAT(vector_item_name, _v).data 	= calloc(ATSC3_VECTOR_BUILDER_METHODS_IMPLEMENTATION_DEFAULT_SIZE, sizeof(PPCAT(vector_item_name,_t)**)); \
-			vector_struct_name->PPCAT(vector_item_name, _v).data[0] = vector_item_name;	\
+			(vector_struct_name->PPCAT(vector_item_name, _v).data[0]) = vector_item_name;	\
 			vector_struct_name->PPCAT(vector_item_name, _v).count 	= 1;	\
 			vector_struct_name->PPCAT(vector_item_name, _v).size	= ATSC3_VECTOR_BUILDER_METHODS_IMPLEMENTATION_DEFAULT_SIZE;	\
 		} else if(vector_struct_name->PPCAT(vector_item_name, _v).count < vector_struct_name->PPCAT(vector_item_name, _v).size) {	\
