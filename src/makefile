@@ -151,8 +151,8 @@ atsc3_fdt_parser.o: atsc3_fdt.o atsc3_fdt_parser.h atsc3_fdt_parser.c
 atsc3_stltp_parser_test: atsc3_stltp_parser_test.c atsc3_stltp_parser.o atsc3_listener_udp.o
 	cc -g atsc3_stltp_parser_test.c atsc3_stltp_parser.o atsc3_listener_udp.o -o atsc3_stltp_parser_test
 
-atsc3_mime_multipart_related_parser_test: atsc3_mime_multipart_related_parser_test.c atsc3_mime_multipart_related.o atsc3_mime_multipart_related_parser.o
-	cc -g atsc3_mime_multipart_related_parser_test.c atsc3_mime_multipart_related.o atsc3_mime_multipart_related_parser.o -o atsc3_mime_multipart_related_parser_test
+atsc3_mime_multipart_related_parser_test: atsc3_mime_multipart_related_parser_test.c atsc3_mime_multipart_related.o atsc3_mime_multipart_related_parser.o atsc3_utils.o
+	cc -g atsc3_mime_multipart_related_parser_test.c atsc3_mime_multipart_related.o atsc3_mime_multipart_related_parser.o atsc3_utils.o -o atsc3_mime_multipart_related_parser_test
 
 
 # stats modules

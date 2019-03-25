@@ -99,6 +99,9 @@ void block_Release(block_t** a);
 
 //alloc and copy - note limited to 16k
 char* strlcopy(char*);
+char *_ltrim(char *str);
+char* _rtrim(char *str);
+char* __trim(char *str);
 
 void freesafe(void* tofree);
 void freeclean(void** tofree);
