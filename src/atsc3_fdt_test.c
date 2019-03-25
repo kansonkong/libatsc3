@@ -44,7 +44,7 @@ int main(int argc, char* argv[] ) {
 
 
 	 //parse_fdt("../test_data/xml_fdt/phx-fdt-0-0.xml");
-	 parse_fdt("../test_data/sba-dash/0-0");
+	 parse_fdt("../test_data/sba-dash/0-0"); //application/mbms-envelope+xml
 	 return 0;
 }
 

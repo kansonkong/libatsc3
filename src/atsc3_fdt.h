@@ -132,6 +132,15 @@ A.3.3.2.3 ATSC Extensions to the FDT-Instance Element
          Content-Type="multipart/related"/>
 </FDT-Instance>
 
+ 
+ Alternate EFDT representation
+ 
+ <?xml version="1.0" encoding="UTF-8"?>
+ <EFDT xmlns="tag:atsc.org,2016:XMLSchemas/ATSC3/Delivery/S-TSID/1.0/" xmlns:fdt="urn:ietf:params:xml:ns:fdt" xmlns:afdt="tag:atsc.org,2016:XMLSchemas/ATSC3/Delivery/ATSC-FDT/1.0/">
+    <FDT-Instance afdt:efdtVersion="82" Expires="4074963450">
+        <fdt:File Content-Length="9016" Content-Location="sls" Content-Type="application/mbms-envelope+xml" TOI="4653138"/>
+    </FDT-Instance>
+ </EFDT>
 
 
  */
@@ -158,6 +167,7 @@ typedef struct atsc3_fdt_file {
 
 typedef struct atsc3_fdt_instance {
 	uint32_t 					expires;
+    uint32_t                    adft_efdt_version;
 	bool 						complete;
 	char* 						content_type;
 	char* 						content_encoding;

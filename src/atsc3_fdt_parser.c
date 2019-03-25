@@ -42,10 +42,21 @@ atsc3_fdt_instance_t* atsc3_fdt_instance_parse_from_xml_document(xml_document_t*
         return NULL;
     }
     
-    //we should only be expecting the FDT-Instance node
+    
+    
+    //we should only be expecting either an EFDT or FDT-Instance node here
     size_t num_root_children = xml_node_children(xml_document_root_node);
     for(int i=0; i < num_root_children; i++) {
         xml_node_t* root_child = xml_node_child(xml_document_root_node, i);
+        if(xml_node_equals_ignore_case(root_child, "EFDT")) {
+            //replace root_child with this child
+            if(!xml_node_children(root_child)) {
+                _ATSC3_FDT_PARSER_ERROR("atsc3_fdt_instance_parse_from_xml_document: EDFT contains no children!");
+            } else {
+                root_child = xml_node_child(root_child, 0);
+            }
+        }
+        
         if(xml_node_equals_ignore_case(root_child, "FDT-Instance")) {
             atsc3_fdt_parse_from_xml_fdt_instance(atsc3_fdt_instance, root_child);
             
