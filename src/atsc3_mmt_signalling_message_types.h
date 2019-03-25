@@ -8,6 +8,7 @@
 #ifndef ATSC3_MMT_SIGNALLING_MESSAGE_TYPES_H_
 #define ATSC3_MMT_SIGNALLING_MESSAGE_TYPES_H_
 
+#include "atsc3_vector_builder.h"
 
 //signaling message - message id values:
 
@@ -257,16 +258,59 @@ typedef struct mpt_message {
 
 } mpt_message_t;
 
+/**
+ *
+0xF337 : SCTE35_Signal message
 
+SCTE35_Signal_Message {
+	message_id 			16
+version 			8
+length   			32
 
-typedef union mmt_scte35_message_payload {
+number_of_SCTE35_Signal_Descriptor 	N1 	8
+SCTE35_Signal_Descriptor()      	var	(per length)
+}
+
+SCTE35 Signal Descriptor:
+
+0xF33F: SCTE35_Signal_Descriptor tag
+
+SCTE35_Signal_Descriptor {
+
+descriptor_tag 		16
+descriptor_length		16
+NTP_timestamp 		64
+signal_length 	N1	16
+  for(i=0; i < N1; i++) {
+  	signal_byte[i];
+ }
+}
+ *
+ */
+
+typedef struct mmt_scte35_signal_descriptor {
+	uint16_t	descriptor_tag;
+	uint16_t	descriptor_length;
+	uint64_t	ntp_timestamp;
+	uint16_t	signal_length;
+	uint8_t*    signal_byte;
+
+} mmt_scte35_signal_descriptor_t;
+
+typedef struct mmt_scte35_message_payload {
+	uint16_t	message_id;
+	uint8_t		version;
+	uint32_t	length;
+
+	ATSC3_VECTOR_BUILDER_STRUCT(mmt_scte35_signal_descriptor)
+
 
 } mmt_scte35_message_payload_t;
 
 typedef union mmt_signalling_message_type {
 	mmt_atsc3_message_payload_t			mmt_atsc3_message_payload;
 	mp_table_t							mp_table;
-	mmt_scte35_message_payload_t			mmt_scte35_message_payload;
+	mmt_scte35_message_payload_t		mmt_scte35_message_payload;
 } mmt_signalling_message_payload_u;
 
 
