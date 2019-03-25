@@ -303,6 +303,10 @@ uint8_t* mmt_signaling_message_parse_id_type(mmtp_payload_fragments_union_t *mmt
 		buf = mmt_atsc3_message_payload_parse(mmt_signalling_message_header_and_payload, buf, buf_size);
 		mmt_signalling_message_header_and_payload->message_header.MESSAGE_id_type = MMT_ATSC3_MESSAGE_ID;
 
+	} else if(mmt_signalling_message_header->message_id == MMT_SCTE35_Signal) {
+		buf = mmt_scte35_message_payload_parse(mmt_signalling_message_header_and_payload, buf, buf_size);
+		mmt_signalling_message_header_and_payload->message_header.MESSAGE_id_type = MMT_SCTE35_Signal;
+
 	} else {
 		buf = si_message_not_supported(mmt_signalling_message_header_and_payload, buf, buf_size);
 	}
@@ -618,8 +622,14 @@ uint8_t* mmt_atsc3_message_payload_parse(mmt_signalling_message_header_and_paylo
 	}
 
 	return buf;
-
 }
+
+
+uint8_t* mmt_scte35_message_payload_parse(mmt_signalling_message_header_and_payload_t* mmt_signalling_message_header_and_payload, uint8_t* udp_raw_buf, uint32_t udp_raw_buf_size) {
+
+	return NULL;
+}
+
 
 void mmt_atsc3_message_payload_dump(mmt_signalling_message_header_and_payload_t* mmt_signalling_message_header_and_payload) {
 
