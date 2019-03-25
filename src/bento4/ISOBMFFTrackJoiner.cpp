@@ -817,6 +817,26 @@ void parseAndBuildJoinedBoxes_from_lls_sls_monitor_output_buffer(lls_sls_monitor
      handler_name = Bento4 Hint Handler
      **/
 
+	//find our audio track id first
+	for (it = audio_isobmff_atom_list.begin(); it != audio_isobmff_atom_list.end(); it++) {
+		AP4_Atom* top_level_atom = (*it)->atom;
+		if(top_level_atom->GetType() == AP4_ATOM_TYPE_MOOV) {
+			AP4_MoovAtom* moovAtom = AP4_DYNAMIC_CAST(AP4_MoovAtom, top_level_atom);
+
+			AP4_TrakAtom* tmpTrakAtom;
+			int trakIndex = 0;
+			while((tmpTrakAtom = AP4_DYNAMIC_CAST(AP4_TrakAtom, moovAtom->GetChild(AP4_ATOM_TYPE_TRAK, trakIndex++)))) {
+				AP4_HdlrAtom* hdlrAtom = AP4_DYNAMIC_CAST(AP4_HdlrAtom, tmpTrakAtom->FindChild("mdia/hdlr", false, false));
+
+				if(hdlrAtom && hdlrAtom->GetHandlerType() == AP4_HANDLER_TYPE_SOUN) {
+
+					lls_sls_monitor_output_buffer->audio_output_buffer_isobmff.track_id = tmpTrakAtom->GetId();
+				}
+			}
+		}
+	}
+
+
 	//from isoBMFFList1 list - audio
 	for (it = audio_isobmff_atom_list.begin(); it != audio_isobmff_atom_list.end(); it++) {
 		AP4_Atom* top_level_atom = (*it)->atom;
