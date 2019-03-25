@@ -39,6 +39,9 @@
 
 #include "xml.h"
 
+int _XML_INFO_ENABLED = 0;
+int _XML_DEBUG_ENABLED = 0;
+int _XML_TRACE_ENABLED = 0;
 
 /**
  * [OPAQUE API]
@@ -54,28 +57,6 @@ typedef struct xml_string {
 } xml_string_t;
 
 
-void print_substring(const uint8_t *str, int skip, int tail)
-{
-	int max_len = strlen((const char*)str);
-	for(int i=skip; i < max_len && i < tail; i++)
-		_XML_TRACEA("%c", str[i]);
-
-}
-
-void dump_xml_string(struct xml_string *node) {
-
-	_XML_TRACEF("dump_xml_string::xml_string: len: %d, is_self_closing: %i, val: |", node->length, node->is_self_closing_tag);
-	_XML_TRACEA(node->buffer, 0, node->length);
-	_XML_TRACEA("|");
-
-	if(node->attributes && node->attributes->length) {
-		_XML_TRACEA(", attributes len: %d, val: ", node->attributes->length);
-		print_substring(node->attributes->buffer, 0, node->attributes->length);
-	}
-
-	_XML_TRACEA("\n");
-}
-
 /**
  * [OPAQUE API]
  *
@@ -83,10 +64,10 @@ void dump_xml_string(struct xml_string *node) {
  * children. Moreover it may contain text content.
  */
 typedef struct xml_node {
-	struct xml_string* name;
-	struct xml_string* content;
-	struct xml_string* attributes;
-	struct xml_node** children;
+    struct xml_string* name;
+    struct xml_string* content;
+    struct xml_string* attributes;
+    struct xml_node** children;
 } xml_node_t;
 
 /**
@@ -95,16 +76,86 @@ typedef struct xml_node {
  * An xml_document simply contains the root node and the underlying buffer
  */
 typedef struct xml_document {
-	struct {
-		uint8_t* buffer;
-		size_t length;
-	} buffer;
-
-	struct xml_node* root;
+    struct {
+        uint8_t* buffer;
+        size_t length;
+    } buffer;
+    
+    struct xml_node* root;
 } xml_document_t;
 
 
+/**
+ * [PRIVATE]
+ *
+ * Frees the resources allocated by the string
+ *
+ * @warning `buffer` must _not_ be freed, since it is a reference to the
+ *     document's buffer
+ */
+static void xml_string_free(struct xml_string* string) {
+    //make sure to clear attributes
+    if(string->attributes) {
+        xml_string_free(string->attributes);
+    }
+    
+    free(string);
+}
 
+/**
+ * [PRIVATE]
+ *
+ * Frees the resources allocated by the node
+ */
+static void xml_node_free(struct xml_node* node) {
+    xml_string_free(node->name);
+    
+    if(node->attributes) {
+        xml_string_free(node->attributes);
+    }
+    
+    if (node->content) {
+        xml_string_free(node->content);
+    }
+    
+    struct xml_node** it = node->children;
+    while (*it) {
+        xml_node_free(*it);
+        ++it;
+    }
+    free(node->children);
+    
+    free(node);
+}
+
+void print_substring(const uint8_t *str, int skip, int tail)
+{
+	int max_len = strlen((const char*)str);
+	for(int i=skip; i < max_len && i < tail; i++)
+		_XML_TRACEA("%c", str[i]);
+}
+
+void _print_substring_unsafe(const uint8_t *str, int skip, int tail)
+{
+    for(int i=skip; i < tail; i++)
+        _XML_TRACEA("%c", str[i]);
+    
+}
+
+void dump_xml_string(struct xml_string *node) {
+
+	_XML_TRACEF("dump_xml_string::xml_string: len: %zu, is_self_closing: %i, val: |", node->length, node->is_self_closing_tag);
+    _print_substring_unsafe(node->buffer, 0, node->length);
+
+	_XML_TRACEA("|");
+
+	if(node->attributes && node->attributes->length) {
+		_XML_TRACEA(", attributes len: %zu, val: ", node->attributes->length);
+		_print_substring_unsafe(node->attributes->buffer, 0, node->attributes->length);
+	}
+
+	_XML_TRACEA("\n");
+}
 
 /**
  * [PRIVATE]
@@ -128,14 +179,10 @@ enum xml_parser_offset {
 	NEXT_CHARACTER = 1,
 };
 
-
-
-
-
 /**
  * [PRIVATE]
  *
- * @return Number of elements in 0-terminated array
+* @return Number of elements in 0-terminated array
  */
 static size_t get_zero_terminated_array_elements(struct xml_node** nodes) {
 	size_t elements = 0;
@@ -146,8 +193,6 @@ static size_t get_zero_terminated_array_elements(struct xml_node** nodes) {
 
 	return elements;
 }
-
-
 
 /**
  * [PRIVATE]
@@ -199,6 +244,30 @@ bool xml_string_equals_ignore_case(xml_string_t *a, char* b) {
 	return res;
 }
 
+/**
+ dont free here, as  xml_string_free(xml_node_name_string);
+ is still a reference to the full xml document
+ **/
+bool xml_node_equals_ignore_case(xml_node_t *a, char* b) {
+    
+    
+    xml_string_t* xml_node_name_string = xml_node_name(a);
+    bool res = false;
+    
+    //if we contain a namespace specifier, ignore for now...
+    bool namespace_specifier_found = false;
+    for(int i=0; i < xml_node_name_string->length && !namespace_specifier_found; i++) {
+        if(xml_node_name_string->buffer[i] == ':') {
+            xml_node_name_string->buffer += i+1;
+            xml_node_name_string->length -= i+1;
+            namespace_specifier_found = true;
+        }
+    }
+    res = xml_string_equals_ignore_case(xml_node_name_string, b);
+    
+    return res;
+}
+
 
 /**
  * moving to public
@@ -207,7 +276,6 @@ uint8_t* xml_string_clone(xml_string_t* s) {
 	if (!s) {
 		return 0;
 	}
-
 	uint8_t* clone = calloc(s->length + 1, sizeof(uint8_t));
 
 	xml_string_copy(s, clone, s->length);
@@ -231,54 +299,14 @@ uint8_t* xml_attributes_clone(xml_string_t* s) {
 	return clone;
 }
 
-
-
-/**
- * [PRIVATE]
- *
- * Frees the resources allocated by the string
- *
- * @warning `buffer` must _not_ be freed, since it is a reference to the
- *     document's buffer
- */
-static void xml_string_free(struct xml_string* string) {
-	//make sure to clear attributes
-	if(string->attributes) {
-		xml_string_free(string->attributes);
-	}
-
-	free(string);
+uint8_t* xml_attributes_clone_node(xml_node_t* node) {
+    xml_string_t* xml_string = xml_node_name(node);
+    uint8_t* xml_attributes_clone_ret = xml_attributes_clone(xml_string);
+    
+    free(xml_string);
+    
+    return xml_attributes_clone_ret;
 }
-
-
-
-/**
- * [PRIVATE]
- * 
- * Frees the resources allocated by the node
- */
-static void xml_node_free(struct xml_node* node) {
-	xml_string_free(node->name);
-
-	if(node->attributes) {
-		xml_string_free(node->attributes);
-	}
-
-	if (node->content) {
-		xml_string_free(node->content);
-	}
-
-	struct xml_node** it = node->children;
-	while (*it) {
-		xml_node_free(*it);
-		++it;
-	}
-	free(node->children);
-
-	free(node);
-}
-
-
 
 /**
  * [PRIVATE]
@@ -529,6 +557,11 @@ static struct xml_string* xml_parse_tag_open(struct xml_parser* parser) {
 		return 0;
 	}
 	xml_parser_consume(parser, 1);
+
+    //remove optional ?, e.g. in <?
+    if ('?' == xml_parser_peek(parser, CURRENT_CHARACTER)) {
+        xml_parser_consume(parser, 1);
+    }
 
 	/* Consume tag name
 	 */

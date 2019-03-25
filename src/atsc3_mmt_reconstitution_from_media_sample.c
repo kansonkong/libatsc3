@@ -40,7 +40,6 @@ MPU_timestamp_descriptor: 0x0001
 int _MMT_RECON_FROM_SAMPLE_DEBUG_ENABLED = 0;
 int _MMT_RECON_FROM_SAMPLE_TRACE_ENABLED = 0;
 
-
 mmtp_payload_fragments_union_t* mmtp_process_from_payload(mmtp_sub_flow_vector_t* mmtp_sub_flow_vector,
 		udp_flow_latest_mpu_sequence_number_container_t* udp_flow_latest_mpu_sequence_number_container,
 		lls_slt_monitor_t* lls_slt_monitor,
@@ -111,10 +110,14 @@ mmtp_payload_fragments_union_t* mmtp_process_from_payload(mmtp_sub_flow_vector_t
                               min_mpu_sequence_number
                               );
 
-
+                       int mpu_sequence_number_offset = -2;
                         //major refactoring
                        //TODO - use the proper decoding time instead of mpu_sequence_number
-                       lls_sls_monitor_output_buffer_t* lls_sls_monitor_output_buffer_final_muxed_payload = atsc3_isobmff_build_mpu_metadata_ftyp_moof_mdat_box_from_mpu_sequence_numbers(&udp_packet->udp_flow, udp_flow_latest_mpu_sequence_number_container, matching_lls_slt_mmt_session->to_process_udp_flow_packet_id_mpu_sequence_tuple_audio->mpu_sequence_number-2, matching_lls_slt_mmt_session->to_process_udp_flow_packet_id_mpu_sequence_tuple_video->mpu_sequence_number-1, mmtp_sub_flow_vector, lls_slt_monitor->lls_sls_mmt_monitor);
+                       lls_sls_monitor_output_buffer_t* lls_sls_monitor_output_buffer_final_muxed_payload = atsc3_isobmff_build_mpu_metadata_ftyp_moof_mdat_box_from_mpu_sequence_numbers(&udp_packet->udp_flow,
+                    		   udp_flow_latest_mpu_sequence_number_container,
+                    		   matching_lls_slt_mmt_session->to_process_udp_flow_packet_id_mpu_sequence_tuple_audio->mpu_sequence_number + mpu_sequence_number_offset,
+                    		   matching_lls_slt_mmt_session->to_process_udp_flow_packet_id_mpu_sequence_tuple_video->mpu_sequence_number + mpu_sequence_number_offset,
+							   mmtp_sub_flow_vector, lls_slt_monitor->lls_sls_mmt_monitor);
 
                         if(lls_sls_monitor_output_buffer_final_muxed_payload) {
                             //mark both of these flows as having been processed
@@ -125,10 +128,31 @@ mmtp_payload_fragments_union_t* mmtp_process_from_payload(mmtp_sub_flow_vector_t
                             if(true || lls_slt_monitor->lls_sls_mmt_monitor->lls_sls_monitor_output_buffer_mode.file_dump_enabled) {
                                 //todo, call atsc3_isobmff_build_mpu_metadata_ftyp_moof_mdat_box with forced init box
                             	//lls_sls_monitor_output_buffer_final_muxed_payload
-                            	lls_sls_monitor_output_buffer_file_dump(lls_sls_monitor_output_buffer_final_muxed_payload, "mpu/", min_mpu_sequence_number);
-
+                            	lls_sls_monitor_output_buffer_file_dump(lls_sls_monitor_output_buffer_final_muxed_payload, "mpu/",
+                            		matching_lls_slt_mmt_session->to_process_udp_flow_packet_id_mpu_sequence_tuple_audio->mpu_sequence_number + mpu_sequence_number_offset,
+                             		matching_lls_slt_mmt_session->to_process_udp_flow_packet_id_mpu_sequence_tuple_video->mpu_sequence_number + mpu_sequence_number_offset);
                             }
 
+                            //http support output
+                            if(lls_slt_monitor->lls_sls_mmt_monitor->lls_sls_monitor_output_buffer_mode.http_output_enabled &&
+                            		lls_slt_monitor->lls_sls_mmt_monitor->lls_sls_monitor_output_buffer_mode.http_output_buffer &&
+                            		lls_slt_monitor->lls_sls_mmt_monitor->lls_sls_monitor_output_buffer_mode.http_output_buffer->http_output_conntected) {
+                            	//&& lls_slt_monitor->lls_sls_mmt_monitor->lls_sls_monitor_output_buffer_mode.pipe_ffplay_buffer) {
+
+                            	lls_sls_monitor_reader_mutex_lock(lls_slt_monitor->lls_sls_mmt_monitor->lls_sls_monitor_output_buffer_mode.http_output_buffer->http_payload_buffer_mutex);
+                            	lls_slt_monitor->lls_sls_mmt_monitor->lls_sls_monitor_output_buffer_mode.http_output_buffer->total_fragments_incoming_written++;
+
+								if(!lls_slt_monitor->lls_sls_mmt_monitor->lls_sls_monitor_output_buffer_mode.http_output_buffer->http_payload_buffer_incoming) {
+									lls_slt_monitor->lls_sls_mmt_monitor->lls_sls_monitor_output_buffer_mode.http_output_buffer->http_payload_buffer_incoming =  block_Duplicate(lls_sls_monitor_output_buffer_final_muxed_payload->joined_isobmff_block);
+								} else {
+									  block_Resize(lls_slt_monitor->lls_sls_mmt_monitor->lls_sls_monitor_output_buffer_mode.http_output_buffer->http_payload_buffer_incoming, lls_slt_monitor->lls_sls_mmt_monitor->lls_sls_monitor_output_buffer_mode.http_output_buffer->http_payload_buffer_incoming->p_size + lls_sls_monitor_output_buffer_final_muxed_payload->joined_isobmff_block->p_size);
+									  block_Write(lls_slt_monitor->lls_sls_mmt_monitor->lls_sls_monitor_output_buffer_mode.http_output_buffer->http_payload_buffer_incoming, lls_sls_monitor_output_buffer_final_muxed_payload->joined_isobmff_block->p_buffer, lls_sls_monitor_output_buffer_final_muxed_payload->joined_isobmff_block->p_size);
+								}
+
+								lls_sls_monitor_reader_mutex_unlock(lls_slt_monitor->lls_sls_mmt_monitor->lls_sls_monitor_output_buffer_mode.http_output_buffer->http_payload_buffer_mutex);
+							}
+
+                            //ffplay pipe output
                             if(lls_slt_monitor->lls_sls_mmt_monitor->lls_sls_monitor_output_buffer_mode.ffplay_output_enabled && lls_slt_monitor->lls_sls_mmt_monitor->lls_sls_monitor_output_buffer_mode.pipe_ffplay_buffer) {
 
                                 pipe_buffer_reader_mutex_lock(lls_slt_monitor->lls_sls_mmt_monitor->lls_sls_monitor_output_buffer_mode.pipe_ffplay_buffer);
@@ -245,29 +269,29 @@ mmtp_payload_fragments_union_t* mmtp_process_from_payload(mmtp_sub_flow_vector_t
 		//mmtp_payload->mmtp_signalling_message_fragments.payload
 
 		signaling_message_dump(mmtp_payload);
-            for(int i=0; i < mmtp_payload->mmtp_signalling_message_fragments.mmt_signalling_message_vector.messages_n; i++) {
-            	mmt_signalling_message_header_and_payload_t* mmt_signalling_message_header_and_payload = mmtp_payload->mmtp_signalling_message_fragments.mmt_signalling_message_vector.messages[i];
-            	if(mmt_signalling_message_header_and_payload->message_header.MESSAGE_id_type == MPT_message) {
-            		mp_table_t* mp_table = &mmt_signalling_message_header_and_payload->message_payload.mp_table;
-            		//update our lls_sls_mmt_session
-            		if(matching_lls_slt_mmt_session && mp_table->number_of_assets) {
-            			for(int i=0; i < mp_table->number_of_assets; i++) {
-            				//slight hack, check the asset types and default_asset = 1
-            				mp_table_asset_row_t* mp_table_asset_row = &mp_table->mp_table_asset_row[i];
+		for(int i=0; i < mmtp_payload->mmtp_signalling_message_fragments.mmt_signalling_message_vector.messages_n; i++) {
+			mmt_signalling_message_header_and_payload_t* mmt_signalling_message_header_and_payload = mmtp_payload->mmtp_signalling_message_fragments.mmt_signalling_message_vector.messages[i];
+			if(mmt_signalling_message_header_and_payload->message_header.MESSAGE_id_type == MPT_message) {
+				mp_table_t* mp_table = &mmt_signalling_message_header_and_payload->message_payload.mp_table;
+				//update our lls_sls_mmt_session
+				if(matching_lls_slt_mmt_session && mp_table->number_of_assets) {
+					for(int i=0; i < mp_table->number_of_assets; i++) {
+						//slight hack, check the asset types and default_asset = 1
+						mp_table_asset_row_t* mp_table_asset_row = &mp_table->mp_table_asset_row[i];
 
-            				__MMT_RECON_FROM_SAMPLE_INFO("MPT message: checking packet_id: %u, asset_type: %u, default: %u, identifier: %s", mp_table_asset_row->mmt_general_location_info.packet_id, mp_table_asset_row->asset_type, mp_table_asset_row->default_asset_flag, mp_table_asset_row->identifier_mapping.asset_id.asset_id ? (const char*)mp_table_asset_row->identifier_mapping.asset_id.asset_id : "");
-            				if(mp_table_asset_row->identifier_mapping.asset_id.asset_id && strncasecmp("video", (const char*)mp_table_asset_row->identifier_mapping.asset_id.asset_id, 5) == 0) {
-            					matching_lls_slt_mmt_session->video_packet_id = mp_table_asset_row->mmt_general_location_info.packet_id;
-            				} else if(mp_table_asset_row->identifier_mapping.asset_id.asset_id && strncasecmp("audio", (const char*)mp_table_asset_row->identifier_mapping.asset_id.asset_id, 5) == 0) {
-            					matching_lls_slt_mmt_session->audio_packet_id = mp_table_asset_row->mmt_general_location_info.packet_id;
-            				}
-            			}
-            		}
+						__MMT_RECON_FROM_SAMPLE_INFO("MPT message: checking packet_id: %u, asset_type: %u, default: %u, identifier: %s", mp_table_asset_row->mmt_general_location_info.packet_id, mp_table_asset_row->asset_type, mp_table_asset_row->default_asset_flag, mp_table_asset_row->identifier_mapping.asset_id.asset_id ? (const char*)mp_table_asset_row->identifier_mapping.asset_id.asset_id : "");
+						if(mp_table_asset_row->identifier_mapping.asset_id.asset_id && strncasecmp("video", (const char*)mp_table_asset_row->identifier_mapping.asset_id.asset_id, 5) == 0) {
+							matching_lls_slt_mmt_session->video_packet_id = mp_table_asset_row->mmt_general_location_info.packet_id;
+						} else if(mp_table_asset_row->identifier_mapping.asset_id.asset_id && strncasecmp("audio", (const char*)mp_table_asset_row->identifier_mapping.asset_id.asset_id, 5) == 0) {
+							matching_lls_slt_mmt_session->audio_packet_id = mp_table_asset_row->mmt_general_location_info.packet_id;
+						}
+					}
+				}
 
-            	} else {
-            		__MMT_RECON_FROM_SAMPLE_INFO("mmtp_packet_parse: Ignoring signal: 0x%x", mmt_signalling_message_header_and_payload->message_header.MESSAGE_id_type);
-            	}
-            }
+			} else {
+				__MMT_RECON_FROM_SAMPLE_INFO("mmtp_packet_parse: Ignoring signal: 0x%x", mmt_signalling_message_header_and_payload->message_header.MESSAGE_id_type);
+			}
+		}
 
     } else {
 		__MMT_RECON_FROM_SAMPLE_WARN("mmtp_packet_parse: unknown payload type of 0x%x", mmtp_payload->mmtp_packet_header.mmtp_payload_type);
