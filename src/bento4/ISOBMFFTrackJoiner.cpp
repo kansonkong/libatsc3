@@ -269,6 +269,7 @@ uint32_t __rebuild_trun_sample_box(AP4_TrunAtom* temp_trunAtom, lls_sls_monitor_
 	return new_fragments_size;
 }
 
+#ifdef __old_mdat__
 void parseAndBuildJoinedBoxes_multiple_mdat_boxes_from_lls_sls_monitor_output_buffer(lls_sls_monitor_output_buffer_t* lls_sls_monitor_output_buffer, AP4_MemoryByteStream** output_stream_p) {
 
 	AP4_Result   result;
@@ -636,7 +637,7 @@ void parseAndBuildJoinedBoxes_multiple_mdat_boxes_from_lls_sls_monitor_output_bu
 
 }
 
-
+#endif
 
 
 list<AP4_Atom_And_Offset*> ISOBMFFTrackParseAndBuildOffset(block_t* isobmff_track_block) {
@@ -698,6 +699,7 @@ void parseAndBuildJoinedBoxes_from_lls_sls_monitor_output_buffer(lls_sls_monitor
 
 	std::list<AP4_ContainerAtom*> audio_trafList;
 	std::list<AP4_ContainerAtom*>::iterator itTraf;
+	uint32_t audio_track_id_to_remap = 0;
 
 	std::list<AP4_TrunAtom*> audio_trunList;
 	std::list<AP4_TrunAtom*>::iterator itTrunFirst;
@@ -817,7 +819,7 @@ void parseAndBuildJoinedBoxes_from_lls_sls_monitor_output_buffer(lls_sls_monitor
      handler_name = Bento4 Hint Handler
      **/
 
-	//find our audio track id first
+	//find our audio and video track id's first
 	for (it = audio_isobmff_atom_list.begin(); it != audio_isobmff_atom_list.end(); it++) {
 		AP4_Atom* top_level_atom = (*it)->atom;
 		if(top_level_atom->GetType() == AP4_ATOM_TYPE_MOOV) {
@@ -837,6 +839,32 @@ void parseAndBuildJoinedBoxes_from_lls_sls_monitor_output_buffer(lls_sls_monitor
 	}
 
 
+	//Video track: now go the other way...
+	for (it = video_isobmff_atom_list.begin(); it != video_isobmff_atom_list.end(); it++) {
+		AP4_Atom* top_level_atom = (*it)->atom;
+		if(top_level_atom->GetType() == AP4_ATOM_TYPE_MOOV) {
+			AP4_MoovAtom* moovAtom = AP4_DYNAMIC_CAST(AP4_MoovAtom, top_level_atom);
+
+			AP4_TrakAtom* tmpTrakAtom;
+			int trakIndex = 0;
+			while((tmpTrakAtom = AP4_DYNAMIC_CAST(AP4_TrakAtom, moovAtom->GetChild(AP4_ATOM_TYPE_TRAK, trakIndex++)))) {
+				AP4_HdlrAtom* hdlrAtom = AP4_DYNAMIC_CAST(AP4_HdlrAtom, tmpTrakAtom->FindChild("mdia/hdlr", false, false));
+
+				if(hdlrAtom && hdlrAtom->GetHandlerType() == AP4_HANDLER_TYPE_VIDE) {
+
+					lls_sls_monitor_output_buffer->video_output_buffer_isobmff.track_id = tmpTrakAtom->GetId();
+				}
+			}
+		}
+	}
+
+	if(lls_sls_monitor_output_buffer->audio_output_buffer_isobmff.track_id == lls_sls_monitor_output_buffer->video_output_buffer_isobmff.track_id) {
+		audio_track_id_to_remap = ++lls_sls_monitor_output_buffer->audio_output_buffer_isobmff.track_id;
+
+		__ISOBMFF_JOINER_INFO("Duplicate track_id's for v/a: %u, setting audio track id to: %u", lls_sls_monitor_output_buffer->audio_output_buffer_isobmff.track_id, audio_track_id_to_remap);
+	}
+
+
 	//from isoBMFFList1 list - audio
 	for (it = audio_isobmff_atom_list.begin(); it != audio_isobmff_atom_list.end(); it++) {
 		AP4_Atom* top_level_atom = (*it)->atom;
@@ -853,6 +881,17 @@ void parseAndBuildJoinedBoxes_from_lls_sls_monitor_output_buffer(lls_sls_monitor
 			while((tmpTrexAtom = AP4_DYNAMIC_CAST(AP4_TrexAtom, audio_mvexAtomToCopy->GetChild(AP4_ATOM_TYPE_TREX, trexIndex++)))) {
 				if(tmpTrexAtom->GetTrackId() != lls_sls_monitor_output_buffer->audio_output_buffer_isobmff.track_id) {
 					tmpTrexAtom->Detach();
+				} else if(audio_track_id_to_remap) {
+					//matching track id, detatch tmpTrexAtom and replace
+					tmpTrexAtom->Detach();
+					AP4_TrexAtom* ap4_trexAtom = new AP4_TrexAtom(audio_track_id_to_remap,
+							tmpTrexAtom->GetDefaultSampleDescriptionIndex(),
+							tmpTrexAtom->GetDefaultSampleDuration(),
+							tmpTrexAtom->GetDefaultSampleSize(),
+							tmpTrexAtom->GetDefaultSampleFlags());
+
+					audio_mvexAtomToCopy->AddChild(ap4_trexAtom);
+
 				}
 			}
 
@@ -864,8 +903,9 @@ void parseAndBuildJoinedBoxes_from_lls_sls_monitor_output_buffer(lls_sls_monitor
 				AP4_HdlrAtom* hdlrAtom = AP4_DYNAMIC_CAST(AP4_HdlrAtom, tmpTrakAtom->FindChild("mdia/hdlr", false, false));
 
 				if(hdlrAtom && hdlrAtom->GetHandlerType() == AP4_HANDLER_TYPE_SOUN) {
-
-					lls_sls_monitor_output_buffer->audio_output_buffer_isobmff.track_id = tmpTrakAtom->GetId();
+					if(audio_track_id_to_remap) {
+						tmpTrakAtom->SetId(audio_track_id_to_remap);
+					}
 					audio_trakMediaAtomToCopy = tmpTrakAtom;
 
 					//add in our mpu_presentation_time
@@ -910,10 +950,16 @@ void parseAndBuildJoinedBoxes_from_lls_sls_monitor_output_buffer(lls_sls_monitor
 		if(top_level_atom->GetType() == AP4_ATOM_TYPE_MOOF) {
 			AP4_AtomParent* moofAtom = AP4_DYNAMIC_CAST(AP4_ContainerAtom, top_level_atom);
 			AP4_ContainerAtom* trafContainerAtom = AP4_DYNAMIC_CAST(AP4_ContainerAtom, moofAtom->GetChild(AP4_ATOM_TYPE_TRAF));
+			//tfhd
+
+            AP4_TfhdAtom* tfhdTempAtom = AP4_DYNAMIC_CAST(AP4_TfhdAtom, trafContainerAtom->GetChild(AP4_ATOM_TYPE_TFHD));
+            if(tfhdTempAtom) {
+            	tfhdTempAtom->SetTrackId(audio_track_id_to_remap);
+            }
+
 			audio_trafList.push_back(trafContainerAtom);
 
 			AP4_TrunAtom* temp_trunAtom = AP4_DYNAMIC_CAST(AP4_TrunAtom, trafContainerAtom->GetChild(AP4_ATOM_TYPE_TRUN));
-
 			audio_mdat_size_new = __rebuild_trun_sample_box(temp_trunAtom, &lls_sls_monitor_output_buffer->audio_output_buffer_isobmff);
 
 			audio_trunList.push_back(temp_trunAtom);
