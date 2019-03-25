@@ -764,22 +764,88 @@ void lls_slt_monitor_check_and_handle_pipe_ffplay_buffer_is_shutdown(lls_slt_mon
 		if(lls_slt_monitor->lls_sls_mmt_monitor->lls_sls_monitor_output_buffer_mode.pipe_ffplay_buffer) {
 			bool is_shutdown_mmt = pipe_buffer_reader_check_if_shutdown(&lls_slt_monitor->lls_sls_mmt_monitor->lls_sls_monitor_output_buffer_mode.pipe_ffplay_buffer);
 			if(is_shutdown_mmt) {
-				__LLS_SLS_MONITOR_OUTPUT_BUFFER_UTILS_INFO("lls_slt_monitor: ffplay is shutdown for MMT service_id: %u, setting ffplay_output_enabled = false", lls_slt_monitor->lls_sls_alc_monitor->service_id);
+				__LLS_SLS_MONITOR_OUTPUT_BUFFER_UTILS_INFO("lls_slt_monitor: ffplay is shutdown for MMT service_id: %u, setting ffplay_output_enabled = false",
+						lls_slt_monitor->lls_sls_mmt_monitor->service_id);
 				lls_slt_monitor->lls_sls_mmt_monitor->lls_sls_monitor_output_buffer_mode.ffplay_output_enabled = false;
 			}
 		}
 	}
 }
 
-void lls_sls_monitor_output_buffer_file_dump(lls_sls_monitor_output_buffer_t* lls_sls_monitor_output_buffer, const char* directory_path, uint32_t mpu_sequence_number) {
+void lls_sls_monitor_output_buffer_file_dump(lls_sls_monitor_output_buffer_t* lls_sls_monitor_output_buffer, const char* directory_path, uint32_t mpu_sequence_number_audio, uint32_t mpu_sequence_number_video) {
 
-    char* box_track_dump_filename = (char*)calloc(128, sizeof(char));
-    snprintf(box_track_dump_filename, 127, "%s/%u.b", directory_path, mpu_sequence_number);
+	__LLS_SLS_MONITOR_OUTPUT_BUFFER_UTILS_INFO("lls_sls_monitor_output_buffer_file_dump: dumping to %s, audio sequence number: %u, video sequence number: %u", directory_path, mpu_sequence_number_audio, mpu_sequence_number_video);
+	//just to be sure...
+	mkdir(directory_path, 0777);
 
-    FILE* box_track_dump_fp = fopen(box_track_dump_filename, "w");
-    if(box_track_dump_fp) {
-    	fwrite(lls_sls_monitor_output_buffer->joined_isobmff_block->p_buffer, lls_sls_monitor_output_buffer->joined_isobmff_block->i_pos, 1, box_track_dump_fp);
-    	fclose(box_track_dump_fp);
-    	free(box_track_dump_filename);
+	//build our recon mpu
+	uint32_t mpu_sequence_number_min = __MIN(mpu_sequence_number_audio, mpu_sequence_number_video);
+    char* box_track_dump_recon_filename = (char*)calloc(128, sizeof(char));
+    snprintf(box_track_dump_recon_filename, 127, "%s/%u.b", directory_path, mpu_sequence_number_min);
+
+    FILE* box_track_dump_recon_fp = fopen(box_track_dump_recon_filename, "w");
+    if(box_track_dump_recon_fp) {
+    	fwrite(lls_sls_monitor_output_buffer->joined_isobmff_block->p_buffer, lls_sls_monitor_output_buffer->joined_isobmff_block->p_size, 1, box_track_dump_recon_fp);
+    	fclose(box_track_dump_recon_fp);
+    	free(box_track_dump_recon_filename);
     }
+
+    //dump a track
+    char* box_track_dump_a_filename = (char*)calloc(128, sizeof(char));
+    snprintf(box_track_dump_a_filename, 127, "%s/%u.a", directory_path, mpu_sequence_number_audio);
+
+
+    FILE* box_track_dump_a_fp = fopen(box_track_dump_a_filename, "w");
+    if(box_track_dump_a_fp) {
+    	fwrite(lls_sls_monitor_output_buffer->audio_output_buffer_isobmff.init_box, 	lls_sls_monitor_output_buffer->audio_output_buffer_isobmff.init_box_pos, 1, box_track_dump_a_fp);
+    	fwrite(lls_sls_monitor_output_buffer->audio_output_buffer_isobmff.moof_box, 	lls_sls_monitor_output_buffer->audio_output_buffer_isobmff.moof_box_pos, 1, box_track_dump_a_fp);
+    	fwrite(lls_sls_monitor_output_buffer->audio_output_buffer_isobmff.fragment_box, lls_sls_monitor_output_buffer->audio_output_buffer_isobmff.fragment_pos, 1, box_track_dump_a_fp);
+    	fclose(box_track_dump_a_fp);
+    	free(box_track_dump_a_filename);
+    }
+
+    //dump v track
+    char* box_track_dump_v_filename = (char*)calloc(128, sizeof(char));
+    snprintf(box_track_dump_v_filename, 127, "%s/%u.v", directory_path, mpu_sequence_number_video);
+
+    FILE* box_track_dump_v_fp = fopen(box_track_dump_v_filename, "w");
+    if(box_track_dump_v_fp) {
+    	fwrite(lls_sls_monitor_output_buffer->video_output_buffer_isobmff.init_box, lls_sls_monitor_output_buffer->video_output_buffer_isobmff.init_box_pos, 1, box_track_dump_v_fp);
+    	fwrite(lls_sls_monitor_output_buffer->video_output_buffer_isobmff.moof_box, lls_sls_monitor_output_buffer->video_output_buffer_isobmff.moof_box_pos, 1, box_track_dump_v_fp);
+    	fwrite(lls_sls_monitor_output_buffer->video_output_buffer_isobmff.fragment_box, lls_sls_monitor_output_buffer->video_output_buffer_isobmff.fragment_pos, 1, box_track_dump_v_fp);
+
+    	fclose(box_track_dump_v_fp);
+    	free(box_track_dump_v_filename);
+    }
+}
+
+
+//sem_t
+//mutex 	pthread_mutex_t pipe_buffer_reader_mutex_lock;
+
+void lls_sls_monitor_reader_mutex_lock(pthread_mutex_t* pthread_mutex) {
+	pthread_mutex_lock(pthread_mutex);
+}
+
+void lls_sls_monitor_reader_mutex_unlock(pthread_mutex_t* pthread_mutex) {
+	pthread_mutex_unlock(pthread_mutex);
+}
+
+
+pthread_mutex_t* lls_sls_monitor_reader_mutext_create() {
+
+//	char sem_name[31];
+//	snprintf((char*)&sem_name, 29, "/atsc3_http_play_%ld", random());
+
+  //  __PLAYER_FFPLAY_INFO("creating semaphore with path: %s", sem_name);
+	//pthread_mutex_t* sem = sem_open(sem_name, O_CREAT, 0644, 0);
+//	__PLAYER_FFPLAY_INFO("sem_init returned: %p", pipe_ffplay_buffer->pipe_buffer_semaphore);
+
+
+	pthread_mutex_t* pthread_mutex = calloc(1, sizeof(pthread_mutex_t));
+	if (pthread_mutex_init(pthread_mutex, NULL) != 0) {
+		__PLAYER_FFPLAY_ERROR("pthread_mutex init failed");
+		abort();
+	}
+    return pthread_mutex;
 }

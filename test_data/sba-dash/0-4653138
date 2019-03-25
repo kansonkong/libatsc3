@@ -1,0 +1,130 @@
+Content-Type: multipart/related;
+  type="application/mbms-envelope+xml";
+  boundary="--boundary_at_1550614650679"
+
+
+----boundary_at_1550614650679
+Content-Type: application/mbms-envelope+xml
+Content-Location: envelope.xml
+
+<?xml version="1.0" encoding="UTF-8"?>
+<metadataEnvelope xmlns="urn:3gpp:metadata:2005:MBMS:envelope">
+    <item contentType="application/route-usd+xml" metadataURI="usbd.xml" version="1"/>
+    <item contentType="application/route-s-tsid+xml" metadataURI="stsid.xml" version="1"/>
+    <item contentType="application/dash+xml" metadataURI="mpd.xml" version="82"/>
+    <item contentType="application/atsc-held+xml" metadataURI="held.xml" version="1"/>
+</metadataEnvelope>
+----boundary_at_1550614650679
+Content-Type: application/route-usd+xml
+Content-Location: usbd.xml
+
+<?xml version="1.0" encoding="UTF-8"?>
+<BundleDescriptionROUTE xmlns="tag:atsc.org,2016:XMLSchemas/ATSC3/Delivery/ROUTEUSD/1.0/">
+    <UserServiceDescription serviceId="1">
+        <Name lang="eng">ATCst1</Name>
+        <ServiceLanguage>eng</ServiceLanguage>
+        <DeliveryMethod>
+            <BroadcastAppService>
+                <BasePattern>test-0-</BasePattern>
+                <BasePattern>test-1-</BasePattern>
+            </BroadcastAppService>
+        </DeliveryMethod>
+    </UserServiceDescription>
+</BundleDescriptionROUTE>
+----boundary_at_1550614650679
+Content-Type: application/route-s-tsid+xml
+Content-Location: stsid.xml
+
+<?xml version="1.0" encoding="UTF-8"?>
+<S-TSID xmlns="tag:atsc.org,2016:XMLSchemas/ATSC3/Delivery/S-TSID/1.0/" xmlns:fdt="urn:ietf:params:xml:ns:fdt" xmlns:afdt="tag:atsc.org,2016:XMLSchemas/ATSC3/Delivery/ATSC-FDT/1.0/">
+    <RS dIpAddr="239.255.17.1" dPort="8000" sIpAddr="10.172.1.50">
+        <LS bw="10000000" tsi="1">
+            <SrcFlow rt="true">
+                <EFDT>
+                    <FDT-Instance afdt:efdtVersion="1" Expires="4000000000" afdt:fileTemplate="test-0-$TOI$.mp4v" afdt:maxTransportSize="1926926">
+                        <fdt:File Content-Location="test-0-init.mp4v" TOI="2100000000"/>
+                    </FDT-Instance>
+                </EFDT>
+                <ContentInfo>
+                    <MediaInfo contentType="video" repId="0"/>
+                </ContentInfo>
+                <Payload codePoint="128" formatId="1" frag="0" order="true"/>
+            </SrcFlow>
+        </LS>
+        <LS bw="500000" tsi="2">
+            <SrcFlow rt="true">
+                <EFDT>
+                    <FDT-Instance afdt:efdtVersion="1" Expires="4000000000" afdt:fileTemplate="test-1-$TOI$.mp4a" afdt:maxTransportSize="106531">
+                        <fdt:File Content-Location="test-1-init.mp4a" TOI="2100000000"/>
+                    </FDT-Instance>
+                </EFDT>
+                <ContentInfo>
+                    <MediaInfo contentType="audio" lang="eng" repId="1"/>
+                </ContentInfo>
+                <Payload codePoint="128" formatId="1" frag="0" order="true"/>
+            </SrcFlow>
+        </LS>
+    </RS>
+</S-TSID>
+----boundary_at_1550614650679
+Content-Type: application/dash+xml
+Content-Location: mpd.xml
+
+<?xml version="1.0" encoding="UTF-8"?>
+<MPD availabilityStartTime="2019-02-19T21:40:50Z" maxSegmentDuration="PT2S" minBufferTime="PT2S" minimumUpdatePeriod="PT10S" profiles="urn:mpeg:dash:profile:isoff-live:2011" publishTime="2019-02-19T21:40:50Z" timeShiftBufferDepth="PT20S" type="dynamic" xmlns="urn:mpeg:dash:schema:mpd:2011" xmlns:cenc="urn:mpeg:cenc:2013" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemalocation="urn:mpeg:dash:schema:mpd:2011 DASH-MPD.xsd">
+   <Period id="P21" start="PT2155S" xlink:actuate="onLoad" xlink:href="tag:atsc.org,2016:xlinkhttps://atsc3vod.npgco.com/crengine?clientid=%clientid%&amp;uniqueid=775&amp;thisname=SNPR55030&amp;nextid=774&amp;nextname=SKPR60825" xmlns:xlink="http://www.w3.org/1999/xlink">
+      <AdaptationSet contentType="video" id="0" maxFrameRate="30000/1001" maxHeight="1080" maxWidth="1920" mimeType="video/mp4" minFrameRate="30000/1001" minHeight="1080" minWidth="1920" par="16:9" segmentAlignment="true" startWithSAP="1">
+         <Role schemeIdUri="urn:mpeg:dash:role:2011" value="main"/>
+         <Representation bandwidth="7000000" codecs="hev1.2.4.L120.9" frameRate="30000/1001" height="1080" id="0" sar="1:1" width="1920">
+            <SegmentTemplate duration="2002000" initialization="test-$RepresentationID$-init.mp4v" media="test-$RepresentationID$-$Number$.mp4v" presentationTimeOffset="2155019000" startNumber="1088" timescale="1000000"/>
+         </Representation>
+      </AdaptationSet>
+      <AdaptationSet contentType="audio" id="1" lang="eng" mimeType="audio/mp4" segmentAlignment="true" startWithSAP="1">
+         <Role schemeIdUri="urn:mpeg:dash:role:2011" value="main"/>
+         <Representation audioSamplingRate="48000" bandwidth="387000" codecs="mp4a.40.2" id="1">
+            <AudioChannelConfiguration schemeIdUri="urn:mpeg:dash:23003:3:audio_channel_configuration:2011" value="2"/>
+            <SegmentTemplate duration="2002000" initialization="test-$RepresentationID$-init.mp4a" media="test-$RepresentationID$-$Number$.mp4a" presentationTimeOffset="2155019000" startNumber="1088" timescale="1000000"/>
+         </Representation>
+      </AdaptationSet>
+   </Period>
+   <Period id="P22" start="PT2185S" xlink:actuate="onLoad" xlink:href="tag:atsc.org,2016:xlinkhttps://atsc3vod.npgco.com/crengine?clientid=%clientid%&amp;uniqueid=776&amp;thisname=SKPR60825&amp;nextid=775&amp;nextname=SNPR55030" xmlns:xlink="http://www.w3.org/1999/xlink">
+      <AdaptationSet contentType="video" id="0" maxFrameRate="30000/1001" maxHeight="1080" maxWidth="1920" mimeType="video/mp4" minFrameRate="30000/1001" minHeight="1080" minWidth="1920" par="16:9" segmentAlignment="true" startWithSAP="1">
+         <Role schemeIdUri="urn:mpeg:dash:role:2011" value="main"/>
+         <Representation bandwidth="7000000" codecs="hev1.2.4.L120.9" frameRate="30000/1001" height="1080" id="0" sar="1:1" width="1920">
+            <SegmentTemplate duration="2002000" initialization="test-$RepresentationID$-init.mp4v" media="test-$RepresentationID$-$Number$.mp4v" presentationTimeOffset="2185049000" startNumber="1103" timescale="1000000"/>
+         </Representation>
+      </AdaptationSet>
+      <AdaptationSet contentType="audio" id="1" lang="eng" mimeType="audio/mp4" segmentAlignment="true" startWithSAP="1">
+         <Role schemeIdUri="urn:mpeg:dash:role:2011" value="main"/>
+         <Representation audioSamplingRate="48000" bandwidth="387000" codecs="mp4a.40.2" id="1">
+            <AudioChannelConfiguration schemeIdUri="urn:mpeg:dash:23003:3:audio_channel_configuration:2011" value="2"/>
+            <SegmentTemplate duration="2002000" initialization="test-$RepresentationID$-init.mp4a" media="test-$RepresentationID$-$Number$.mp4a" presentationTimeOffset="2185049000" startNumber="1103" timescale="1000000"/>
+         </Representation>
+      </AdaptationSet>
+   </Period>
+   <Period id="P23" start="PT2215S" xlink:actuate="onLoad" xlink:href="tag:atsc.org,2016:xlinkhttps://atsc3vod.npgco.com/crengine?clientid=%clientid%&amp;uniqueid=777&amp;thisname=SNPR60093&amp;nextid=776&amp;nextname=SKPR60825" xmlns:xlink="http://www.w3.org/1999/xlink">
+      <AdaptationSet contentType="video" id="0" maxFrameRate="30000/1001" maxHeight="1080" maxWidth="1920" mimeType="video/mp4" minFrameRate="30000/1001" minHeight="1080" minWidth="1920" par="16:9" segmentAlignment="true" startWithSAP="1">
+         <Role schemeIdUri="urn:mpeg:dash:role:2011" value="main"/>
+         <Representation bandwidth="7000000" codecs="hev1.2.4.L120.9" frameRate="30000/1001" height="1080" id="0" sar="1:1" width="1920">
+            <SegmentTemplate duration="2002000" initialization="test-$RepresentationID$-init.mp4v" media="test-$RepresentationID$-$Number$.mp4v" presentationTimeOffset="2215112000" startNumber="1119" timescale="1000000"/>
+         </Representation>
+      </AdaptationSet>
+      <AdaptationSet contentType="audio" id="1" lang="eng" mimeType="audio/mp4" segmentAlignment="true" startWithSAP="1">
+         <Role schemeIdUri="urn:mpeg:dash:role:2011" value="main"/>
+         <Representation audioSamplingRate="48000" bandwidth="387000" codecs="mp4a.40.2" id="1">
+            <AudioChannelConfiguration schemeIdUri="urn:mpeg:dash:23003:3:audio_channel_configuration:2011" value="2"/>
+            <SegmentTemplate duration="2002000" initialization="test-$RepresentationID$-init.mp4a" media="test-$RepresentationID$-$Number$.mp4a" presentationTimeOffset="2215112000" startNumber="1119" timescale="1000000"/>
+         </Representation>
+      </AdaptationSet>
+   </Period>
+</MPD>
+
+----boundary_at_1550614650679
+Content-Type: application/atsc-held+xml
+Content-Location: held.xml
+
+<?xml version="1.0" encoding="UTF-8"?>
+<HELD xmlns="tag:atsc.org,2016:XMLSchemas/ATSC3/AppSignaling/HELD/1.0/">
+    <HTMLEntryPackage appContextId="testapp" bbandEntryPageUrl="http://interop201902.openznet.com/home.html"/>
+</HELD>
+----boundary_at_1550614650679--
