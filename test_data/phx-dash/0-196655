@@ -1,0 +1,75 @@
+Content-Type: multipart/related; type="application/mbms-envelope+xml"; 
+	boundary="----=_Part_113_1300029971.1551881720242"
+
+------=_Part_113_1300029971.1551881720242
+Content-Type: application/mbms-envelope+xml
+Content-Location: envelope.xml
+
+<?xml version="1.0" encoding="UTF-8"?>
+<metadataEnvelope xmlns="urn:3gpp:metadata:2005:MBMS:envelope">
+   <item metadataURI="usbd257.xml"
+         version="47"
+         contentType="application/route-usd+xml"/>
+   <item metadataURI="stsid257.xml"
+         version="47"
+         contentType="application/route-s-tsid+xml"/>
+</metadataEnvelope>
+
+------=_Part_113_1300029971.1551881720242
+Content-Type: application/route-usd+xml
+Content-Location: usbd257.xml
+
+<?xml version="1.0" encoding="UTF-8"?>
+<BundleDescriptionROUTE xmlns="tag:atsc.org,2016:XMLSchemas/ATSC3/Delivery/ROUTEUSD/1.0/">
+   <UserServiceDescription serviceId="257"/>
+</BundleDescriptionROUTE>
+
+------=_Part_113_1300029971.1551881720242
+Content-Type: application/route-s-tsid+xml
+Content-Location: stsid257.xml
+
+<?xml version="1.0" encoding="UTF-8"?>
+<S-TSID xmlns="tag:atsc.org,2016:XMLSchemas/ATSC3/Delivery/S-TSID/1.0/"
+        xmlns:afdt="tag:atsc.org,2016:XMLSchemas/ATSC3/Delivery/ATSC-FDT/1.0/"
+        xmlns:fdt="urn:ietf:params:xml:ns:fdt">
+   <RS dIpAddr="239.255.0.254" dPort="8000">
+      <LS tsi="1">
+         <SrcFlow>
+            <EFDT>
+               <FDT-Instance Expires="4294967295">
+                  <fdt:File Content-Location="atsc3esg"
+                            TOI="48"
+                            Transfer-Length="1442"
+                            Content-Length="25825"
+                            Content-Type="application/vnd.oma.bcast.sgdd+xml"
+                            Content-Encoding="gzip"/>
+               </FDT-Instance>
+            </EFDT>
+            <Payload codePoint="128" formatId="1" frag="0" order="false"/>
+         </SrcFlow>
+      </LS>
+      <LS tsi="2">
+         <SrcFlow>
+            <EFDT>
+               <FDT-Instance Expires="4294967295">
+                  <fdt:File Content-Location="serviceFragments"
+                            TOI="95"
+                            Transfer-Length="418"
+                            Content-Length="1797"
+                            Content-Type="application/vnd.oma.bcast.sgdu"
+                            Content-Encoding="gzip"/>
+                  <fdt:File Content-Location="guideFragments"
+                            TOI="96"
+                            Transfer-Length="6673"
+                            Content-Length="82463"
+                            Content-Type="application/vnd.oma.bcast.sgdu"
+                            Content-Encoding="gzip"/>
+               </FDT-Instance>
+            </EFDT>
+            <Payload codePoint="128" formatId="1" frag="0" order="false"/>
+         </SrcFlow>
+      </LS>
+   </RS>
+</S-TSID>
+
+------=_Part_113_1300029971.1551881720242--
