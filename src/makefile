@@ -6,7 +6,8 @@
 #
 # requirements: bento4 libary, ncurses libary and headers
 
-all: intermediate_lls intermediate_mmt intermediate_alc intermediate_ffplay \
+all: 	intermediate_lls intermediate_mbms \
+		intermediate_mmt intermediate_alc intermediate_ffplay \
 		interemediate_gpl_and_mock_linkage  \
 		libatsc3_core   \
 		unit_tests \
@@ -18,7 +19,10 @@ clean:
 	-rm -f *.o
 	-rm -f route/*
 	-rm -f mpu/*
+	
 intermediate_lls: atsc3_lls.o atsc3_lls_sls_parser.o  atsc3_lls_alc_utils.o
+
+intermediate_mbms: atsc3_mime_multipart_related.o atsc3_mime_multipart_related_parser.o 
 
 intermediate_alc: atsc3_alc_rx.c alc_session.c fec.c null_fec.c rs_fec.c xor_fec.o atsc3_alc_utils.o  
 
@@ -37,7 +41,8 @@ listener_ncurses: atsc3_listener_metrics_ncurses
 
 unit_tests: atsc3_lmt_test atsc3_lls_slt_parser_test atsc3_lls_test \
 			atsc3_lls_SystemTime_test atsc3_mmt_signaling_message_test \
-			atsc3_isobmff_box_test atsc3_fdt_test atsc3_stltp_parser_test
+			atsc3_isobmff_box_test atsc3_fdt_test atsc3_stltp_parser_test \
+			atsc3_mime_multipart_related_parser_test
 			
 			
 libmicrohttpd_tests: atsc3_libmicrohttpd_test
@@ -57,6 +62,12 @@ tools: atsc3_listener_metrics_ncurses atsc3_listener_metrics_ncurses_httpd_isobm
 
 xml.o: xml.c xml.h
 	cc -g -c xml.c 
+	
+atsc3_mime_multipart_related.o: atsc3_mime_multipart_related.h atsc3_mime_multipart_related.c
+	cc -g -c atsc3_mime_multipart_related.c 
+
+atsc3_mime_multipart_related_parser.o: atsc3_mime_multipart_related_parser.h atsc3_mime_multipart_related_parser.c
+	cc -g -c atsc3_mime_multipart_related_parser.c 
 
 atsc3_lls.o: atsc3_utils.h atsc3_lls.h atsc3_lls.c
 	cc -g -c atsc3_lls.c
@@ -133,6 +144,17 @@ atsc3_fdt.o: atsc3_fdt.h atsc3_fdt.c atsc3_vector_builder.h
 atsc3_fdt_parser.o: atsc3_fdt.o atsc3_fdt_parser.h atsc3_fdt_parser.c
 	cc -g -c atsc3_fdt_parser.c -o atsc3_fdt_parser.o
 
+
+# unit standalone tests with mock data
+
+
+atsc3_stltp_parser_test: atsc3_stltp_parser_test.c atsc3_stltp_parser.o atsc3_listener_udp.o
+	cc -g atsc3_stltp_parser_test.c atsc3_stltp_parser.o atsc3_listener_udp.o -o atsc3_stltp_parser_test
+
+atsc3_mime_multipart_related_parser_test: atsc3_mime_multipart_related_parser_test.c atsc3_mime_multipart_related.o atsc3_mime_multipart_related_parser.o
+	cc -g atsc3_mime_multipart_related_parser_test.c atsc3_mime_multipart_related.o atsc3_mime_multipart_related_parser.o -o atsc3_mime_multipart_related_parser_test
+
+
 # stats modules
 
 atsc3_bandwidth_statistics.o: atsc3_bandwidth_statistics.h atsc3_bandwidth_statistics.c
@@ -208,9 +230,6 @@ atsc3_isobmff_box_test: atsc3_isobmff_box_test.c
 atsc3_fdt_test: atsc3_fdt_test.c libatsc3.o
 	cc -g atsc3_fdt_test.c libatsc3.o  -lz  -lm -lpthread -o atsc3_fdt_test
 	
-atsc3_stltp_parser_test: atsc3_stltp_parser_test.c atsc3_stltp_parser.o atsc3_listener_udp.o
-	cc -g atsc3_stltp_parser_test.c atsc3_stltp_parser.o atsc3_listener_udp.o -o atsc3_stltp_parser_test
-
 ### integration tests
 ### TODO: move these into target makefile in listener_test/folder
 
