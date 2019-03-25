@@ -106,6 +106,7 @@ uint8_t* pa_message_parse(mmt_signalling_message_header_and_payload_t* mmt_signa
 uint8_t* mpi_message_parse(mmt_signalling_message_header_and_payload_t* mmt_signalling_message_header_and_payload, uint8_t* udp_raw_buf, uint32_t udp_raw_buf_size);
 uint8_t* mpt_message_parse(mmt_signalling_message_header_and_payload_t* mmt_signalling_message_header_and_payload, uint8_t* udp_raw_buf, uint32_t udp_raw_buf_size);
 uint8_t* mmt_atsc3_message_payload_parse(mmt_signalling_message_header_and_payload_t* mmt_signalling_message_header_and_payload, uint8_t* udp_raw_buf, uint32_t udp_raw_buf_size);
+uint8_t* mmt_scte35_message_payload_parse(mmt_signalling_message_header_and_payload_t* mmt_signalling_message_header_and_payload, uint8_t* udp_raw_buf, uint32_t udp_raw_buf_size);
 
 uint8_t* si_message_not_supported(mmt_signalling_message_header_and_payload_t* mmt_signalling_message_header_and_payload, uint8_t* udp_raw_buf, uint32_t udp_raw_buf_size);
 

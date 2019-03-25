@@ -40,6 +40,7 @@
 //Reserved for private use 0x8000 ~ 0xFFFF
 #define	MMT_ATSC3_MESSAGE_ID	0x8100
 
+#define MMT_SCTE35_Signal	0xF337
 
 //10.2.2 signalling message header
 
@@ -258,10 +259,14 @@ typedef struct mpt_message {
 
 
 
+typedef union mmt_scte35_message_payload {
+
+} mmt_scte35_message_payload_t;
 
 typedef union mmt_signalling_message_type {
 	mmt_atsc3_message_payload_t			mmt_atsc3_message_payload;
 	mp_table_t							mp_table;
+	mmt_scte35_message_payload_t			mmt_scte35_message_payload;
 } mmt_signalling_message_payload_u;
 
 

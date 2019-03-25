@@ -224,7 +224,7 @@ void __pipe_create_deferred_ffplay(pipe_ffplay_buffer_t* pipe_ffplay_buffer) {
 
 	if(pipe_ffplay_buffer && pipe_ffplay_buffer->video_output_buffer_isobmff_to_resolve_fps && pipe_ffplay_buffer->video_output_buffer_isobmff_to_resolve_fps->fps_num && pipe_ffplay_buffer->video_output_buffer_isobmff_to_resolve_fps->fps_denom) {
 		fps_for_timecode = ((float)pipe_ffplay_buffer->video_output_buffer_isobmff_to_resolve_fps->fps_denom / (float)pipe_ffplay_buffer->video_output_buffer_isobmff_to_resolve_fps->fps_num);
-		snprintf((char*)&fps_for_playback_option, 16, "fps=%.2f,", fps_for_timecode);
+	//	snprintf((char*)&fps_for_playback_option, 16, "fps=%.2f,", fps_for_timecode);
 	}
 
 	//linux ffplay doesn't like -left 0 or -top 0
