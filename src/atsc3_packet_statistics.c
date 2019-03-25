@@ -585,7 +585,7 @@ void atsc3_packet_statistics_dump_mfu_stats(){
 			wattroff(pkt_flow_stats_mmt_window, COLOR_PAIR(2));
 
 			if(!packet_mmt_stats->mpu_stats_timed_sample_interval->previous_timestamp_mpu_logged) {
-				__PS_STATS_FLOW_LOG("Flow: %u.%u.%u.%u:%u, PktID: %u, MPU_seq_num: %u, 0x0: %u.%03u-%u.%03u, 0x1: %u.%03u", __toip(packet_mmt_stats),
+				__PS_STATS_FLOW_LOG("Flow: %u.%u.%u.%u:%u, PktID: %u, MPU_seq_num: %u, 0x2: %u.%03u-%u.%03u, 0x1: %u.%03u", __toip(packet_mmt_stats),
 							packet_mmt_stats->packet_id,
 							packet_mmt_stats->mpu_stats_timed_sample_interval->previous_mpu_sequence_number,
 							seconds_mfu_first, microseconds_mfu_first/100,
