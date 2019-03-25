@@ -16,17 +16,17 @@
 #ifndef ATSC3_MIME_MULTPART_RELATED_PARSER_H_
 #define ATSC3_MIME_MULTPART_RELATED_PARSER_H_
 
+#include "atsc3_utils.h"
 #include "atsc3_mime_multipart_related.h"
 #include "atsc3_logging_externs.h"
 
-#define ATSC3_MIME_MULTIPART_RELATED_LINE_BUFFER 256
+#define ATSC3_MIME_MULTIPART_RELATED_LINE_BUFFER 1024
 #define ATSC3_MIME_MULTIPART_RELATED_PAYLOAD_BUFFER 65535
 
 
 atsc3_mime_multipart_related_instance_t* atsc3_mime_multipart_related_parser(FILE* fp);
 
-
-
+void atsc3_mime_multipart_related_instance_dump(atsc3_mime_multipart_related_instance_t* atsc3_mime_multipart_related_instance);
 
 
 #define __MIME_PARSER_PRINTLN(...)  printf(__VA_ARGS__);printf("\r\n")

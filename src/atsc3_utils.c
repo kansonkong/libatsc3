@@ -390,3 +390,46 @@ char* strlcopy(char* src) {
 	char* dest = (char*)calloc(len, sizeof(char*));
 	return strncpy(dest, src, len);
 }
+
+
+
+/**
+ * destructive trim
+ *
+//    if (totrim > 0) {
+//        size_t len = strlen(str);
+//        if (totrim == len) {
+//            str[0] = '\0';
+//        }
+//        else {
+//            memmove(str, str + totrim, len + 1 - totrim);
+//        }
+//    }
+ */
+char *_ltrim(char *str)
+{
+    size_t totrim;
+    char* seps = "\t\n\v\f\r ";
+
+    totrim = strspn(str, seps);
+    str += totrim;
+    return str;
+}
+
+char* _rtrim(char *str)
+{
+    int i;
+    char* seps = "\t\n\v\f\r ";
+
+    i = strlen(str) - 1;
+    while (i >= 0 && strchr(seps, str[i]) != NULL) {
+        str[i] = '\0';
+        i--;
+    }
+    return str;
+}
+
+char* __trim(char *str)
+{
+    return _ltrim(_rtrim(str));
+}
