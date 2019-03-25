@@ -859,7 +859,7 @@ void parseAndBuildJoinedBoxes_from_lls_sls_monitor_output_buffer(lls_sls_monitor
 	}
 
 	if(lls_sls_monitor_output_buffer->audio_output_buffer_isobmff.track_id == lls_sls_monitor_output_buffer->video_output_buffer_isobmff.track_id) {
-		audio_track_id_to_remap = ++lls_sls_monitor_output_buffer->audio_output_buffer_isobmff.track_id;
+		audio_track_id_to_remap = lls_sls_monitor_output_buffer->audio_output_buffer_isobmff.track_id + 1;
 
 		__ISOBMFF_JOINER_INFO("Duplicate track_id's for v/a: %u, setting audio track id to: %u", lls_sls_monitor_output_buffer->audio_output_buffer_isobmff.track_id, audio_track_id_to_remap);
 	}
@@ -953,7 +953,7 @@ void parseAndBuildJoinedBoxes_from_lls_sls_monitor_output_buffer(lls_sls_monitor
 			//tfhd
 
             AP4_TfhdAtom* tfhdTempAtom = AP4_DYNAMIC_CAST(AP4_TfhdAtom, trafContainerAtom->GetChild(AP4_ATOM_TYPE_TFHD));
-            if(tfhdTempAtom) {
+            if(tfhdTempAtom && audio_track_id_to_remap) {
             	tfhdTempAtom->SetTrackId(audio_track_id_to_remap);
             }
 
@@ -1214,6 +1214,9 @@ void parseAndBuildJoinedBoxes_from_lls_sls_monitor_output_buffer(lls_sls_monitor
 
     __ISOBMFF_JOINER_INFO("Final output re-muxed MPU:");
     dumpFullMetadataAndOffsets(video_isobmff_atom_list);
+
+	lls_sls_monitor_output_buffer->audio_output_buffer_isobmff.track_id = audio_track_id_to_remap;
+
 
 	block_Release(&audio_output_buffer);
 	block_Release(&video_output_buffer);
