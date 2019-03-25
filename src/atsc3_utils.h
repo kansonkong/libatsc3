@@ -94,10 +94,14 @@ block_t* block_Write(block_t* dest, uint8_t* buf, uint32_t size);
 block_t* block_Rewind(block_t* dest);
 block_t* block_Resize(block_t* dest, uint32_t dest_size_required);
 block_t* block_Duplicate(block_t* a);
+block_t* block_Duplicate_from_position(block_t* a);
 void block_Release(block_t** a);
 
 //alloc and copy - note limited to 16k
 char* strlcopy(char*);
+char *_ltrim(char *str);
+char* _rtrim(char *str);
+char* __trim(char *str);
 
 void freesafe(void* tofree);
 void freeclean(void** tofree);

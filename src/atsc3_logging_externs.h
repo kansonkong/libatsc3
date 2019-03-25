@@ -15,6 +15,10 @@
 extern "C" {
 #endif
 
+extern int _XML_INFO_ENABLED;
+extern int _XML_DEBUG_ENABLED;
+extern int _XML_TRACE_ENABLED;
+
 extern int _LLS_INFO_ENABLED;
 extern int _LLS_DEBUG_ENABLED;
 extern int _LLS_TRACE_ENABLED;
@@ -40,6 +44,11 @@ extern int _PLAYER_FFPLAY_DEBUG_ENABLED;
 extern int _PLAYER_FFPLAY_TRACE_ENABLED;
 
 extern int _STLTP_PARSER_DEBUG_ENABLED;
+
+extern int _MIME_PARSER_INFO_ENABLED;
+extern int _MIME_PARSER_DEBUG_ENABLED;
+extern int _MIME_PARSER_TRACE_ENABLED;
+
 
 
 //c++ linkage

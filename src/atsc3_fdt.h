@@ -110,6 +110,15 @@
    </xs:schema>
    END
 
+
+A.3.3.2.3 ATSC Extensions to the FDT-Instance Element
+
+ @efdtVersion – An 8-bit unsigned integer value that shall represent the version of this EFDT element.
+   The version shall be increased by one modulo 256 each time the EFDT element is updated.
+   @version is an ATSC-defined extension of the FLUTE FDT as specified in RFC 6726 [30].
+
+
+
    Sample XML payload:
 
 <?xml version="1.0" encoding="UTF-8"?>
@@ -123,18 +132,52 @@
          Content-Type="multipart/related"/>
 </FDT-Instance>
 
+ 
+ Alternate EFDT representation
+ 
+ <?xml version="1.0" encoding="UTF-8"?>
+ <EFDT xmlns="tag:atsc.org,2016:XMLSchemas/ATSC3/Delivery/S-TSID/1.0/" xmlns:fdt="urn:ietf:params:xml:ns:fdt" xmlns:afdt="tag:atsc.org,2016:XMLSchemas/ATSC3/Delivery/ATSC-FDT/1.0/">
+    <FDT-Instance afdt:efdtVersion="82" Expires="4074963450">
+        <fdt:File Content-Length="9016" Content-Location="sls" Content-Type="application/mbms-envelope+xml" TOI="4653138"/>
+    </FDT-Instance>
+ </EFDT>
 
 
  */
+typedef struct atsc3_fdt_fec_attributes {
+
+	uint8_t 	fec_oti_fec_encoding_id;
+	uint32_t 	fec_oti_fec_instance_id;
+	uint32_t 	fec_oti_maximum_source_block_length;
+	uint32_t 	fec_oti_encoding_symbol_length;
+	uint32_t 	fec_oti_max_number_of_encoding_symbols;
+	char*	 	fec_oti_sceheme_specific_info;
+} atsc3_fdt_fec_attributes_t;
 
 typedef struct atsc3_fdt_file {
-
+	char* 						content_location;
+	uint32_t 					toi;
+	uint32_t 					content_length;
+	uint32_t 					transfer_length;
+	char*						content_type;
+	char*						content_encoding;
+	char*						content_md5;
+	atsc3_fdt_fec_attributes_t	atsc3_fdt_fec_attributes;
 } atsc3_fdt_file_t;
 
 typedef struct atsc3_fdt_instance {
+	uint32_t 					expires;
+    uint32_t                    adft_efdt_version;
+	bool 						complete;
+	char* 						content_type;
+	char* 						content_encoding;
+	atsc3_fdt_fec_attributes_t 	atsc3_fdt_fec_attributes;
 
-	ATSC3_VECTOR_BUILDER(atsc3_fdt_file)
+	ATSC3_VECTOR_BUILDER_STRUCT(atsc3_fdt_file)
 
-} atsc3_fdt_instance;
+} atsc3_fdt_instance_t;
+
+ATSC3_VECTOR_BUILDER_METHODS_INTERFACE(atsc3_fdt_instance, atsc3_fdt_file)
+
 
 #endif /* ATSC3_FDT_H_ */

@@ -45,6 +45,7 @@ void parseAndBuildJoinedBoxes_from_lls_sls_monitor_output_buffer(lls_sls_monitor
 void parseAndBuildJoinedBoxes(ISOBMFFTrackJoinerFileResouces_t*, AP4_ByteStream* output_stream);
 void parseAndBuildJoinedBoxesFromMemory(uint8_t* file1_payload, uint32_t file1_size, uint8_t* file2_payload, uint32_t file2_size, AP4_ByteStream* output_stream);
 
+
 void dumpFullMetadata(list<AP4_Atom*> atomList);
 void printBoxType(AP4_Atom* atom);
 
