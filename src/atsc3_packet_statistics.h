@@ -37,6 +37,7 @@ typedef struct packet_id_mpu_stats {
 	uint32_t previous_timestamp_first_mfu; //0x02
 	uint32_t previous_timestamp_last_mfu; //0x02
 	uint32_t previous_timestamp_movie_fragment_metadata; //0x01
+	bool 	 previous_timestamp_mpu_logged;
 
 	uint8_t  mpu_fragementation_counter;
 

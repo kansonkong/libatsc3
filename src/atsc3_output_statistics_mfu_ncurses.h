@@ -43,6 +43,8 @@ void handle_sighup(int sig);
 void* print_lls_instance_table_thread(void*);
 void lls_dump_instance_table_ncurses(lls_table_t* lls_session);
 
+void lls_dump_instance_table_mmt_only_ncurses(lls_table_t* lls_session);
+
 #define __BW_STATS_NCURSES true
 #define __PKT_STATS_NCURSES true
 
@@ -53,6 +55,11 @@ extern SCREEN* my_screen;
 extern WINDOW* my_window;
 
 extern WINDOW* left_window_outline;
+
+extern WINDOW* pkt_flow_stats_mmt_log_outline_window;
+extern WINDOW* pkt_flow_stats_mmt_log_window;
+
+
 extern	WINDOW* pkt_global_stats_window;
 extern	WINDOW* signaling_global_stats_window;
 
@@ -67,10 +74,12 @@ extern 	WINDOW* pkt_flow_stats_mmt_window;
 extern WINDOW* bottom_window_outline;
 extern 	WINDOW* pkt_global_loss_window;
 
-#define __BW_STATS_NOUPDATE() wnoutrefresh(bw_window_runtime);					\
+
+
+#define __BW_STATS_NOUPDATE() 		wnoutrefresh(bw_window_runtime);					\
 									wnoutrefresh(bw_window_lifetime);
 
-#define __BW_STATS_RUNTIME(...) wprintw(bw_window_runtime, __VA_ARGS__); \
+#define __BW_STATS_RUNTIME(...) 	wprintw(bw_window_runtime, __VA_ARGS__); \
 									wprintw(bw_window_runtime,"\n");
 
 #define __BW_STATS_LIFETIME(...)	wprintw(bw_window_lifetime, __VA_ARGS__); \
