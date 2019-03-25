@@ -1,7 +1,7 @@
 /*
- * output_statistics_ncurses.h
+ * atsc3_output_statistics_mfu_ncurses.h
  *
- *  Created on: Feb 7, 2019
+ *  Created on: Mar 25, 2019
  *      Author: jjustman
  *
  */
@@ -17,8 +17,8 @@
 #include "atsc3_lls.h"
 #include "atsc3_lls_slt_parser.h"
 
-#ifndef ATSC3_OUTPUT_STATISTICS_NCURSES_H_
-#define ATSC3_OUTPUT_STATISTICS_NCURSES_H_
+#ifndef ATSC3_OUTPUT_STATISTICS_MFU_NCURSES_H_
+#define ATSC3_OUTPUT_STATISTICS_MFU_NCURSES_H_
 
 
 #if defined (__cplusplus)
@@ -89,9 +89,6 @@ extern 	WINDOW* pkt_global_loss_window;
 #define __PS_STATS_FLOW(...) 		wprintw(pkt_flow_stats_mmt_window, __VA_ARGS__); \
 									wprintw(pkt_flow_stats_mmt_window,"\n");
 
-#define __PS_STATS_FLOW_W(...) 		wprintw(pkt_flow_stats_mmt_window, __VA_ARGS__);
-
-
 #define __PS_STATS_HR()				whline(pkt_flow_stats_mmt_window, ACS_BOARD, 15); \
 									wprintw(pkt_flow_stats_mmt_window,"\n");
 
@@ -126,7 +123,6 @@ extern 	WINDOW* pkt_global_loss_window;
 extern int global_mmt_loss_count;
 
 #define __DOUPDATE() 				doupdate(); wrefresh(curscr);
-#define __DOUPDATE_MFU() 			doupdate();
 
 
 #ifndef CTRL
@@ -143,4 +139,4 @@ extern int global_mmt_loss_count;
 #endif
 
 
-#endif /* ATSC3_OUTPUT_STATISTICS_NCURSES_H_ */
+#endif /* ATSC3_OUTPUT_STATISTICS_MFU_NCURSES_H_ */
