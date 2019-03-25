@@ -12,6 +12,7 @@
 #include "atsc3_output_statistics_ncurses_windows.h"
 #include "atsc3_lls_sls_monitor_output_buffer_utils.h"
 
+
 //TODO - get rid of me...
 extern int _ALC_PACKET_DUMP_TO_OBJECT_ENABLED;
 
@@ -353,6 +354,15 @@ void create_or_update_window_sizes(bool should_reload_term_size) {
 	pkt_flow_stats_mmt_window = derwin(left_window_outline, 		left_window_h-12, left_window_w-3,				 1, 	1);
 	scrollok(pkt_flow_stats_mmt_window, false);
 
+	pkt_flow_stats_mmt_log_outline_window = derwin(left_window_outline, 			11, left_window_w-3,				 left_window_h-11, 	1);
+	whline(pkt_flow_stats_mmt_log_outline_window, ACS_HLINE, left_window_w-2);
+
+	char msg_mpu_log[] = "MPU Log";
+	mvwprintw(pkt_flow_stats_mmt_log_outline_window, 0, cols/4 - strlen(msg_mpu_log)/2,"%s", msg_mpu_log);
+
+	pkt_flow_stats_mmt_log_window = derwin(pkt_flow_stats_mmt_log_outline_window, 		9, left_window_w-10,				 1, 	1);
+	scrollok(pkt_flow_stats_mmt_log_window, true);
+
 	//pkt_global_loss_window_outline = 	derwin(left_window_outline, pkt_window_height-25, half_cols-4, 22, 1);
 
 	//RIGHT
@@ -426,7 +436,7 @@ void* print_lls_instance_table_thread(void* lls_slt_monitor_ptr) {
 
 			//clear our window so we aren't appending, otherwise it will look as if we are leaking slt
 			__LLS_DUMP_CLEAR();
-			lls_dump_instance_table_ncurses(lls_slt_monitor->lls_table_slt);
+			lls_dump_instance_table_mmt_only_ncurses(lls_slt_monitor->lls_table_slt);
 			__DOUPDATE();
 			__LLS_REFRESH();
 	       
@@ -475,6 +485,34 @@ void lls_dump_instance_table_ncurses(lls_table_t* base_table) {
 	__LLS_DUMP("  ds_day_of_month          : %hhu", base_table->system_time_table.ds_day_of_month);
 	__LLS_DUMP("  ds_hour                  : %hhu", base_table->system_time_table.ds_hour);
 
+	}
+
+}
+
+
+
+void lls_dump_instance_table_mmt_only_ncurses(lls_table_t* base_table) {
+
+	__LLS_DUMP("LLS Base Table:");
+	if(base_table->lls_table_id == SLT) {
+
+		__LLS_DUMP("SLT: Service contains %d entries: (only showing MMT)", base_table->slt_table.service_entry_n);
+
+		for(int i=0l; i < base_table->slt_table.service_entry_n; i++) {
+			lls_service_t* service = base_table->slt_table.service_entry[i];
+
+			if(service->broadcast_svc_signaling.sls_protocol == 0x2) {
+				__LLS_DUMP("service_id         : %-5d           global_service_id : %s", service->service_id, service->global_service_id);
+				__LLS_DUMP("major_channel_no   : %-5d           minor_channel_no  : %d", service->major_channel_no, service->minor_channel_no);
+				__LLS_DUMP("service_category   : %1d, %-8s    slt_svc_seq_num   : %d", service->service_category, lls_get_service_category_value(service->service_category), service->slt_svc_seq_num);
+				__LLS_DUMP("short_service_name : %s", service->short_service_name);
+				__LLS_DUMP(" broadcast_svc_signaling");
+				__LLS_DUMP("  sls_protocol               : %d, %s", service->broadcast_svc_signaling.sls_protocol, lls_get_sls_protocol_value(service->broadcast_svc_signaling.sls_protocol));
+				__LLS_DUMP("  sls_destination_ip_address : %s:%s", service->broadcast_svc_signaling.sls_destination_ip_address, service->broadcast_svc_signaling.sls_destination_udp_port);
+				__LLS_DUMP("  sls_source_ip_address      : %s", service->broadcast_svc_signaling.sls_source_ip_address);
+				__LLS_DUMP("");
+			}
+		}
 	}
 
 }

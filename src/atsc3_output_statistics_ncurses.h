@@ -92,6 +92,14 @@ extern 	WINDOW* pkt_global_loss_window;
 #define __PS_STATS_FLOW_W(...) 		wprintw(pkt_flow_stats_mmt_window, __VA_ARGS__);
 
 
+extern WINDOW* pkt_flow_stats_mmt_log_window;
+
+#define __PS_STATS_FLOW_LOG(...) 	wprintw(pkt_flow_stats_mmt_log_window, __VA_ARGS__); \
+									wprintw(pkt_flow_stats_mmt_log_window,"\n");
+
+#define __PS_STATS_FLOW_LOG_REFRESH() wrefresh(pkt_flow_stats_mmt_log_window);
+
+
 #define __PS_STATS_HR()				whline(pkt_flow_stats_mmt_window, ACS_BOARD, 15); \
 									wprintw(pkt_flow_stats_mmt_window,"\n");
 
