@@ -639,9 +639,9 @@ uint8_t* mmt_scte35_message_payload_parse(mmt_signalling_message_header_and_payl
 	uint8_t scte35_signal_descriptor_n;
 	buf = extract(buf, (uint8_t*)&scte35_signal_descriptor_n, 1);
 	for(int i=0; i < scte35_signal_descriptor_n && (udp_raw_buf_size > (buf-raw_buf)); i++) {
-		//make sure we have at least 20 bytes available
-		if(20 < udp_raw_buf_size - (buf-raw_buf)) {
-			_MMSM_WARN("mmt_scte35_message_payload_parse: short read for descriptor: %u, need 20 but remaining is: %ld", i, (udp_raw_buf_size - (buf-raw_buf)));
+		//make sure we have at least 19 bytes available (16+16+64+7+33+16)
+		if(19 < udp_raw_buf_size - (buf-raw_buf)) {
+			_MMSM_WARN("mmt_scte35_message_payload_parse: short read for descriptor: %u, need 19 but remaining is: %ld", i, (udp_raw_buf_size - (buf-raw_buf)));
 			goto parse_incomplete;
 		}
 
@@ -650,6 +650,13 @@ uint8_t* mmt_scte35_message_payload_parse(mmt_signalling_message_header_and_payl
 		buf = extract(buf, (uint8_t*)&mmt_scte35_signal_descriptor->descriptor_tag, 2);
 		buf = extract(buf, (uint8_t*)&mmt_scte35_signal_descriptor->descriptor_length, 2);
 		buf = extract(buf, (uint8_t*)&mmt_scte35_signal_descriptor->ntp_timestamp, 8);
+
+		//pts_timestamp is 1+32
+		uint8_t pts_timestamp_block[5];
+		buf = extract(buf, (uint8_t*)&pts_timestamp_block, 5);
+		mmt_scte35_signal_descriptor->pts_timestamp |= ((pts_timestamp_block[0] & 0x1UL) << 33);
+		mmt_scte35_signal_descriptor->pts_timestamp |= ntohl(*(uint32_t*)(&pts_timestamp_block[1]));
+
 		buf = extract(buf, (uint8_t*)&mmt_scte35_signal_descriptor->signal_length, 2);
 
 		if(mmt_scte35_signal_descriptor->signal_length > udp_raw_buf_size - (buf-raw_buf)) {
@@ -659,7 +666,7 @@ uint8_t* mmt_scte35_message_payload_parse(mmt_signalling_message_header_and_payl
 
 		buf = extract(buf, (uint8_t*)&mmt_scte35_signal_descriptor->signal_byte, mmt_scte35_signal_descriptor->signal_length);
 		mmt_scte35_message_payload_add_mmt_scte35_signal_descriptor(&mmt_signalling_message_header_and_payload->message_payload.mmt_scte35_message_payload, mmt_scte35_signal_descriptor);
-		_MMSM_INFO("mmt_scte35_message_payload_parse: adding signal at PTS: %ld",
+		_MMSM_INFO("mmt_scte35_message_payload_parse: adding signal at NTP_timestamp: %llu, PTS: %llu", mmt_scte35_signal_descriptor->ntp_timestamp, mmt_scte35_signal_descriptor->pts_timestamp);
 	}
 
 parse_incomplete:

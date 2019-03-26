@@ -295,6 +295,7 @@ typedef struct mmt_scte35_signal_descriptor {
 	uint16_t	descriptor_tag;
 	uint16_t	descriptor_length;
 	uint64_t	ntp_timestamp;
+	uint64_t	pts_timestamp;
 	uint16_t	signal_length;
 	uint8_t*    signal_byte;
 
