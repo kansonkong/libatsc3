@@ -721,8 +721,8 @@ void parseAndBuildJoinedBoxes_from_lls_sls_monitor_output_buffer(lls_sls_monitor
 
 
 	//mpu_presentation_time support
-	AP4_TfdtAtom* audio_tfdt_atom = NULL;
-	AP4_TfdtAtom* video_tfdt_atom = NULL;
+	AP4_TfdtAtom* audio_tfdt_atom_mdhd_timescale = NULL;
+	AP4_TfdtAtom* video_tfdt_atom_mdhd_timescale = NULL;
 
 	if(lls_sls_monitor_output_buffer->audio_output_buffer_isobmff.mpu_presentation_time_set && lls_sls_monitor_output_buffer->video_output_buffer_isobmff.mpu_presentation_time_set) {
 
@@ -731,14 +731,14 @@ void parseAndBuildJoinedBoxes_from_lls_sls_monitor_output_buffer(lls_sls_monitor
 		uint64_t audio_mpu_presentation_time_ms = lls_sls_monitor_output_buffer->audio_output_buffer_isobmff.mpu_presentation_time_ms % 1000000; //just to be safe..
 		uint64_t audio_mpu_presentation_time_final_uS =  audio_mpu_presentation_time_s + audio_mpu_presentation_time_ms;
 
-		audio_tfdt_atom = new AP4_TfdtAtom(1, audio_mpu_presentation_time_final_uS);
+		audio_tfdt_atom_mdhd_timescale = new AP4_TfdtAtom(1, audio_mpu_presentation_time_final_uS);
 
 		//now for video
 		uint64_t video_mpu_presentation_time_s = lls_sls_monitor_output_buffer->video_output_buffer_isobmff.mpu_presentation_time_s * 1000000;
 		uint64_t video_mpu_presentation_time_ms = lls_sls_monitor_output_buffer->video_output_buffer_isobmff.mpu_presentation_time_ms % 1000000; //just to be safe..
 		uint64_t video_mpu_presentation_time_final_uS =  video_mpu_presentation_time_s + video_mpu_presentation_time_ms;
 
-		video_tfdt_atom = new AP4_TfdtAtom(1, video_mpu_presentation_time_final_uS);
+		video_tfdt_atom_mdhd_timescale = new AP4_TfdtAtom(1, video_mpu_presentation_time_final_uS);
 	}
 
 	block_t* audio_output_buffer = lls_sls_monitor_output_buffer_copy_audio_full_isobmff_box(lls_sls_monitor_output_buffer);
@@ -821,8 +821,20 @@ void parseAndBuildJoinedBoxes_from_lls_sls_monitor_output_buffer(lls_sls_monitor
 				AP4_HdlrAtom* hdlrAtom = AP4_DYNAMIC_CAST(AP4_HdlrAtom, tmpTrakAtom->FindChild("mdia/hdlr", false, false));
 
 				if(hdlrAtom && hdlrAtom->GetHandlerType() == AP4_HANDLER_TYPE_SOUN) {
-
 					lls_sls_monitor_output_buffer->audio_output_buffer_isobmff.track_id = tmpTrakAtom->GetId();
+
+					//try and find our parent's mdhd timescale and re-map as needed
+					AP4_AtomParent* mdiaAtom = hdlrAtom->GetParent();
+					AP4_MdhdAtom* mdhdAtom = AP4_DYNAMIC_CAST(AP4_MdhdAtom, mdiaAtom->FindChild("mdhd"));
+					if(mdhdAtom) {
+						if(!mdhdAtom->GetTimeScale()) {
+							mdhdAtom->SetTimeScale(1000000);
+						} else if(mdhdAtom->GetTimeScale() != 1000000 && audio_tfdt_atom_mdhd_timescale) {
+							//rebase from 1000000 into 1/
+							uint64_t audio_tfdt_atom_mdhd_presentation_time = audio_tfdt_atom_mdhd_timescale->GetBaseMediaDecodeTime();
+							audio_tfdt_atom_mdhd_timescale->SetBaseMediaDecodeTime((audio_tfdt_atom_mdhd_presentation_time * mdhdAtom->GetTimeScale())/1000000);
+						}
+					}
 				}
 			}
 		}
@@ -843,6 +855,20 @@ void parseAndBuildJoinedBoxes_from_lls_sls_monitor_output_buffer(lls_sls_monitor
 				if(hdlrAtom && hdlrAtom->GetHandlerType() == AP4_HANDLER_TYPE_VIDE) {
 
 					lls_sls_monitor_output_buffer->video_output_buffer_isobmff.track_id = tmpTrakAtom->GetId();
+
+					//try and find our parent's mdhd timescale and re-map as needed
+					AP4_AtomParent* mdiaAtom = hdlrAtom->GetParent();
+					AP4_MdhdAtom* mdhdAtom = AP4_DYNAMIC_CAST(AP4_MdhdAtom, mdiaAtom->FindChild("mdhd"));
+					if(mdhdAtom) {
+						if(!mdhdAtom->GetTimeScale()) {
+							mdhdAtom->SetTimeScale(1000000);
+						} else if(mdhdAtom->GetTimeScale() != 1000000 && video_tfdt_atom_mdhd_timescale) {
+							//rebase from 1000000 into 1/
+							uint64_t video_tfdt_atom_mdhd_presentation_time = video_tfdt_atom_mdhd_timescale->GetBaseMediaDecodeTime();
+							video_tfdt_atom_mdhd_timescale->SetBaseMediaDecodeTime((video_tfdt_atom_mdhd_presentation_time * mdhdAtom->GetTimeScale())/1000000);
+						}
+					}
+
 				}
 			}
 		}
@@ -1041,13 +1067,14 @@ void parseAndBuildJoinedBoxes_from_lls_sls_monitor_output_buffer(lls_sls_monitor
                 	AP4_TfdtAtom* video_tfdtTempAtom = AP4_DYNAMIC_CAST(AP4_TfdtAtom, tmpTrafToClean->GetChild(AP4_ATOM_TYPE_TFDT));
 
                 	if(video_tfdtTempAtom && video_tfdtTempAtom->GetBaseMediaDecodeTime() == 0) {
-                		if(video_tfdt_atom) {
-                			video_tfdtTempAtom->SetBaseMediaDecodeTime(video_tfdt_atom->GetBaseMediaDecodeTime());
+                		if(video_tfdt_atom_mdhd_timescale) {
+                			video_tfdtTempAtom->Detach();
+                			tmpTrafToClean->AddChild(video_tfdt_atom_mdhd_timescale, 1);
                 		} else {
                 			video_tfdtTempAtom->Detach();
                 		}
-                	} else if(!video_tfdtTempAtom && video_tfdt_atom) {
-                		tmpTrafToClean->AddChild(video_tfdt_atom);
+                	} else if(!video_tfdtTempAtom && video_tfdt_atom_mdhd_timescale) {
+                		tmpTrafToClean->AddChild(video_tfdt_atom_mdhd_timescale, 1);
                 	}
                 }
                 if(shouldDetachTrak) {
@@ -1063,13 +1090,16 @@ void parseAndBuildJoinedBoxes_from_lls_sls_monitor_output_buffer(lls_sls_monitor
                 AP4_TfdtAtom* audio_tfdtTempAtom = AP4_DYNAMIC_CAST(AP4_TfdtAtom, (*itTraf)->GetChild(AP4_ATOM_TYPE_TFDT));
 
                 if(audio_tfdtTempAtom && audio_tfdtTempAtom->GetBaseMediaDecodeTime() == 0) {
-                	if(audio_tfdt_atom) {
-                		audio_tfdtTempAtom->SetBaseMediaDecodeTime(audio_tfdt_atom->GetBaseMediaDecodeTime());
+                	if(audio_tfdt_atom_mdhd_timescale) {
+                		//audio_tfdtTempAtom->SetBaseMediaDecodeTime(audio_tfdt_atom->GetBaseMediaDecodeTime());
+                		audio_tfdtTempAtom->Detach();
+                		(*itTraf)->AddChild(audio_tfdt_atom_mdhd_timescale, 1);
+
                 	} else {
                 		audio_tfdtTempAtom->Detach();
                 	}
-				} else if(audio_tfdt_atom) {
-					(*itTraf)->AddChild(audio_tfdt_atom);
+				} else if(audio_tfdt_atom_mdhd_timescale) {
+					(*itTraf)->AddChild(audio_tfdt_atom_mdhd_timescale, 1);
 				}
 
                 (*itTraf)->Detach();

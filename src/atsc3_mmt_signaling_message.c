@@ -803,9 +803,9 @@ void mpt_message_dump(mmt_signalling_message_header_and_payload_t* mmt_signallin
 
 	for(int i=0; i < mp_table->number_of_assets; i++) {
 		mp_table_asset_row_t* mp_table_asset_row = &mp_table->mp_table_asset_row[i];
-		_MMSM_DEBUG(" asset identifier type        : %u", mp_table_asset_row->identifier_mapping.identifier_type);
+		_MMSM_DEBUG(" asset identifier type       : %u", mp_table_asset_row->identifier_mapping.identifier_type);
 		if(mp_table_asset_row->identifier_mapping.identifier_type == 0x00) {
-			_MMSM_DEBUG(" asset id                     : %s", mp_table_asset_row->identifier_mapping.asset_id.asset_id);
+			_MMSM_DEBUG(" asset id                    : %s", mp_table_asset_row->identifier_mapping.asset_id.asset_id);
 
 		}
 		_MMSM_DEBUG(" asset type                  : %u", mp_table_asset_row->asset_type);
