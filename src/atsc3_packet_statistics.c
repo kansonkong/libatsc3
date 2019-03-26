@@ -8,8 +8,7 @@
 #include "atsc3_listener_udp.h"
 #include "atsc3_packet_statistics.h"
 int global_mmt_loss_count;
-
-
+bool __LOSS_DISPLAY_ENABLED = true;
 
 void *print_global_statistics_thread(void *vargp)
 {
@@ -21,6 +20,22 @@ void *print_global_statistics_thread(void *vargp)
 		__PS_STATS_NOUPDATE();
 		atsc3_packet_statistics_dump_global_stats();
 		__DOUPDATE();
+		ncurses_writer_lock_mutex_release();
+	}
+}
+
+
+void *print_mfu_statistics_thread(void *vargp)
+{
+	__PS_TRACE("Starting print_mfu_statistics_thread");
+	__LOSS_DISPLAY_ENABLED = false;
+	setlocale(LC_ALL,"");
+	while(true) {
+		usleep(50000);
+		ncurses_writer_lock_mutex_acquire();
+		__PS_STATS_NOUPDATE();
+		atsc3_packet_statistics_dump_mfu_stats();
+		__DOUPDATE_MFU();
 		ncurses_writer_lock_mutex_release();
 	}
 }
@@ -120,11 +135,30 @@ packet_id_mmt_stats_t* find_or_create_packet_id(uint32_t ip, uint16_t port, uint
 }
 void atsc3_packet_statistics_mmt_timed_mpu_stats_populate(mmtp_payload_fragments_union_t* mmtp_payload, packet_id_mmt_stats_t* packet_mmt_stats) {
 	packet_mmt_stats->mpu_stats_timed_sample_interval->mpu_timed_total++;
+
 	if(packet_mmt_stats->mpu_stats_timed_sample_interval->mpu_sequence_number) {
+		if(packet_mmt_stats->mpu_stats_timed_sample_interval->mpu_sequence_number != mmtp_payload->mmtp_mpu_type_packet_header.mpu_sequence_number) {
+
+			packet_mmt_stats->mpu_stats_timed_sample_interval->previous_mpu_sequence_number = packet_mmt_stats->mpu_stats_timed_sample_interval->mpu_sequence_number_last;
+			packet_mmt_stats->mpu_stats_timed_sample_interval->previous_timestamp_mpu_logged = false;
+
+			packet_mmt_stats->mpu_stats_timed_sample_interval->previous_timestamp_mpu_metadata = packet_mmt_stats->mpu_stats_timed_sample_interval->timestamp_mpu_metadata;
+			packet_mmt_stats->mpu_stats_timed_sample_interval->previous_timestamp_first_mfu = packet_mmt_stats->mpu_stats_timed_sample_interval->timestamp_first_mfu; //0x02
+			packet_mmt_stats->mpu_stats_timed_sample_interval->previous_timestamp_last_mfu = packet_mmt_stats->mpu_stats_timed_sample_interval->timestamp_last_mfu; //0x02
+			packet_mmt_stats->mpu_stats_timed_sample_interval->previous_timestamp_movie_fragment_metadata = packet_mmt_stats->mpu_stats_timed_sample_interval->timestamp_movie_fragment_metadata; //0x01
+
+			packet_mmt_stats->mpu_stats_timed_sample_interval->timestamp_mpu_metadata = 0; // 0x00
+			packet_mmt_stats->mpu_stats_timed_sample_interval->timestamp_first_mfu = 0; //0x02
+			packet_mmt_stats->mpu_stats_timed_sample_interval->timestamp_last_mfu = 0; //0x02
+			packet_mmt_stats->mpu_stats_timed_sample_interval->timestamp_movie_fragment_metadata = 0; //0x01
+
+		}
 		packet_mmt_stats->mpu_stats_timed_sample_interval->mpu_sequence_number_last = packet_mmt_stats->mpu_stats_timed_sample_interval->mpu_sequence_number;
 	} else {
 		packet_mmt_stats->mpu_stats_timed_sample_interval->mpu_sequence_number_last = 0;
+
 	}
+
 	packet_mmt_stats->mpu_stats_timed_sample_interval->mpu_sequence_number = mmtp_payload->mmtp_mpu_type_packet_header.mpu_sequence_number;
 
 	if(packet_mmt_stats->mpu_stats_timed_sample_interval->mpu_fragementation_counter) {
@@ -133,6 +167,19 @@ void atsc3_packet_statistics_mmt_timed_mpu_stats_populate(mmtp_payload_fragments
 		packet_mmt_stats->mpu_stats_timed_sample_interval->mpu_fragementation_counter_last = 0;
 	}
 	packet_mmt_stats->mpu_stats_timed_sample_interval->mpu_fragementation_counter = mmtp_payload->mmtp_mpu_type_packet_header.mpu_fragmentation_counter;
+
+	//keep track of only our current stats for mfu timing from our mpu sequence number
+	if(mmtp_payload->mmtp_mpu_type_packet_header.mpu_fragment_type == 0x00) {
+		packet_mmt_stats->mpu_stats_timed_sample_interval->timestamp_mpu_metadata = mmtp_payload->mmtp_mpu_type_packet_header.mmtp_timestamp;
+	} else if(mmtp_payload->mmtp_mpu_type_packet_header.mpu_fragment_type == 0x2) {
+		if(!packet_mmt_stats->mpu_stats_timed_sample_interval->timestamp_first_mfu) {
+			packet_mmt_stats->mpu_stats_timed_sample_interval->timestamp_first_mfu = mmtp_payload->mmtp_mpu_type_packet_header.mmtp_timestamp;
+		}
+		packet_mmt_stats->mpu_stats_timed_sample_interval->timestamp_last_mfu = mmtp_payload->mmtp_mpu_type_packet_header.mmtp_timestamp;
+
+	} else if(mmtp_payload->mmtp_mpu_type_packet_header.mpu_fragment_type == 0x1) {
+		packet_mmt_stats->mpu_stats_timed_sample_interval->timestamp_movie_fragment_metadata = mmtp_payload->mmtp_mpu_type_packet_header.mmtp_timestamp;
+	}
 
 }
 
@@ -159,7 +206,7 @@ void atsc3_packet_statistics_mmt_stats_populate(udp_packet_t* udp_packet, mmtp_p
 
 #endif
 
-//top level flow check from our new mmtp payload packet and our "current" reference packet
+					//top level flow check from our new mmtp payload packet and our "current" reference packet
 
 	if(packet_mmt_stats->has_packet_sequence_number &&
 		mmtp_payload->mmtp_packet_header.packet_sequence_number != packet_mmt_stats->packet_sequence_number + 1) {
@@ -180,40 +227,42 @@ void atsc3_packet_statistics_mmt_stats_populate(udp_packet_t* udp_packet, mmtp_p
 		global_stats->packet_counter_mmtp_packets_missing += packet_mmt_stats->packet_sequence_number_last_gap;
 
 
-		//todo clean this up
-		if(__INVOKE_ATSC3_PACKET_STATISTICS_MMT_STATS_POPULATE_COUNT++%10) {
-			ncurses_writer_lock_mutex_acquire();
-			int row, col, h, w;
-			getbegyx(pkt_global_loss_window, row, col);
-			getmaxyx(pkt_global_loss_window, h, w);
+		if(packet_mmt_stats->packet_id && __LOSS_DISPLAY_ENABLED) {
+			//todo clean this up
+			if(__INVOKE_ATSC3_PACKET_STATISTICS_MMT_STATS_POPULATE_COUNT++%2) {
+				ncurses_writer_lock_mutex_acquire();
+				int row, col, h, w;
+				getbegyx(pkt_global_loss_window, row, col);
+				getmaxyx(pkt_global_loss_window, h, w);
 
-			if(global_mmt_loss_count > row-3) {
-				wmove(pkt_global_loss_window, 1, 1);
-				wdeleteln(pkt_global_loss_window);
-				wmove(pkt_global_loss_window, h-1, 0);
+				if(global_mmt_loss_count > row-3) {
+					wmove(pkt_global_loss_window, 1, 1);
+					wdeleteln(pkt_global_loss_window);
+					wmove(pkt_global_loss_window, h-1, 0);
 
-				//wrefresh(pkt_global_loss_window);
+					//wrefresh(pkt_global_loss_window);
 
-				global_mmt_loss_count--;
+					global_mmt_loss_count--;
+				}
+
+
+				//todo - refactor this into struct for display scrolling and searching
+				__PS_STATS_GLOBAL_LOSS("Flow: %u.%u.%u.%u:%u, Packet_id: %u, Packet Counter: %u to %u, TS: %u-t%u, PSN: %u-%u, missing: %u",
+								__toip(packet_mmt_stats),
+								packet_mmt_stats->packet_id,
+								packet_mmt_stats->packet_counter_value,
+								mmtp_payload->mmtp_packet_header.packet_counter,
+								packet_mmt_stats->timestamp,
+								mmtp_payload->mmtp_packet_header.mmtp_timestamp,
+								packet_mmt_stats->packet_sequence_number,
+								mmtp_payload->mmtp_packet_header.packet_sequence_number,
+								packet_mmt_stats->packet_sequence_number_last_gap);
+				global_mmt_loss_count++;
+				ncurses_writer_lock_mutex_release();
+
+				__PS_REFRESH_LOSS();
+
 			}
-
-
-			//todo - refactor this into struct for display scrolling and searching
-			__PS_STATS_GLOBAL_LOSS("Flow: %u.%u.%u.%u:%u, Packet_id: %u, Packet Counter: %u to %u, TS: %u-t%u, PSN: %u-%u, missing: %u",
-							__toip(packet_mmt_stats),
-							packet_mmt_stats->packet_id,
-							packet_mmt_stats->packet_counter_value,
-							mmtp_payload->mmtp_packet_header.packet_counter,
-							packet_mmt_stats->timestamp,
-							mmtp_payload->mmtp_packet_header.mmtp_timestamp,
-							packet_mmt_stats->packet_sequence_number,
-							mmtp_payload->mmtp_packet_header.packet_sequence_number,
-							packet_mmt_stats->packet_sequence_number_last_gap);
-			global_mmt_loss_count++;
-			ncurses_writer_lock_mutex_release();
-
-			__PS_REFRESH_LOSS();
-
 		}
 
 		//push this to our missing packet flow for investigation
@@ -433,4 +482,136 @@ void atsc3_packet_statistics_dump_global_stats(){
 	//process any gaps or deltas
 
 //	global_stats->packet_id_delta = NULL;
+}
+
+/**
+ * mmt stats:
+ *
+ * only print out the timestamp ordering for:
+ * 0x0: timestamp mpu_metadata
+ * 0x2: timestamp first mfu
+ * 0x1: timestamp movie fragment metadata
+ */
+
+
+void atsc3_packet_statistics_dump_mfu_stats(){
+	bool has_output = false;
+
+	__PS_CLEAR();
+	struct timeval tNow;
+	gettimeofday(&tNow, NULL);
+	long long elapsedDurationUs = timediff(tNow, global_stats->program_timeval_start);
+	__PS_STATS_GLOBAL("Elapsed Duration            : %-.2fs", elapsedDurationUs / 1000000.0);
+	__PS_STATS_GLOBAL("");
+	__PS_STATS_GLOBAL("LLS total packets received  : %'-u", global_stats->packet_counter_lls_packets_received);
+	__PS_STATS_GLOBAL("> parsed good               : %'-u", global_stats->packet_counter_lls_packets_parsed);
+	__PS_STATS_GLOBAL("> parsed error              : %'-u", global_stats->packet_counter_lls_packets_parsed_error);
+	__PS_STATS_GLOBAL("- SLT packets decoded       : %'-u", global_stats->packet_counter_lls_slt_packets_parsed);
+	__PS_STATS_GLOBAL("  - SLT updates processed   : %'-u", global_stats->packet_counter_lls_slt_update_processed);
+	__PS_STATS_GLOBAL("");
+	__PS_STATS_GLOBAL("MMTP total packets received : %'-u", global_stats->packet_counter_mmtp_packets_received);
+	__PS_STATS_GLOBAL("- type=0x0 MPU              : %'-u", global_stats->packet_counter_mmt_mpu);
+	__PS_STATS_GLOBAL("  - timed                   : %'-u", global_stats->packet_counter_mmt_timed_mpu);
+	__PS_STATS_GLOBAL("  - non-timed               : %'-u", global_stats->packet_counter_mmt_nontimed_mpu);
+	__PS_STATS_GLOBAL("- type=0x1 Signaling        : %'-u",	global_stats->packet_counter_mmt_signaling);
+	__PS_STATS_GLOBAL("- type=0x? Other            : %'-u",	global_stats->packet_counter_mmt_unknown);
+	__PS_STATS_GLOBAL("> parsed errors             : %'-u",	global_stats->packet_counter_mmtp_packets_parsed_error);
+	__PS_STATS_GLOBAL("> missing packets           : %'-u",	global_stats->packet_counter_mmtp_packets_missing);
+	__PS_STATS_GLOBAL("");
+	__PS_STATS_GLOBAL("Total Mulicast Packets RX   : %'-u", global_stats->packets_total_received);
+
+	//dump flow status
+	for(int i=0; i < global_stats->packet_id_n; i++ ) {
+		packet_id_mmt_stats_t* packet_mmt_stats = global_stats->packet_id_vector[i];
+		if(!packet_mmt_stats->packet_id)
+			continue;
+
+
+		uint16_t seconds;
+		uint16_t microseconds;
+
+		uint16_t seconds_mfu_first;
+		uint16_t microseconds_mfu_first;
+
+		uint16_t seconds_mfu_last;
+		uint16_t microseconds_mfu_last;
+
+		uint16_t seconds_movie_fragment;
+		uint16_t microseconds_movie_fragment;
+
+		compute_ntp32_to_seconds_microseconds(packet_mmt_stats->timestamp, &seconds, &microseconds);
+		__PS_STATS_FLOW("Interval Flow                 : %u.%u.%u.%u:%u, Packet ID: %u", __toip(packet_mmt_stats),
+						packet_mmt_stats->packet_id);
+
+		__PS_STATS_FLOW("NTP range                     : %u.%03u to %u.%03u", packet_mmt_stats->timestamp_sample_interval_start_s,
+				packet_mmt_stats->timestamp_sample_interval_start_us/100,
+				seconds,
+				microseconds/100);
+		__PS_STATS_FLOW("");
+
+		__PS_STATS_FLOW(" current mpu_sequence_number  : %u", packet_mmt_stats->mpu_stats_timed_sample_interval->mpu_sequence_number);
+		compute_ntp32_to_seconds_microseconds(packet_mmt_stats->mpu_stats_timed_sample_interval->timestamp_mpu_metadata, &seconds, &microseconds);
+		__PS_STATS_FLOW("  0x0: timestamp mpu_metadata : %u.%03u", seconds, microseconds/100);
+
+		//without mutex locks or de-jittering this may be dirty data...
+		compute_ntp32_to_seconds_microseconds(packet_mmt_stats->mpu_stats_timed_sample_interval->timestamp_first_mfu, &seconds_mfu_first, &microseconds_mfu_first);
+		compute_ntp32_to_seconds_microseconds(packet_mmt_stats->mpu_stats_timed_sample_interval->timestamp_last_mfu, &seconds_mfu_last, &microseconds_mfu_last);
+
+		__PS_STATS_FLOW("  0x2: timestamp first mfu    : %u.%03u", seconds_mfu_first, microseconds_mfu_first/100);
+		__PS_STATS_FLOW("  0x2: timestamp last mfu     : %u.%03u", seconds_mfu_last, microseconds_mfu_last/100);
+
+		compute_ntp32_to_seconds_microseconds(packet_mmt_stats->mpu_stats_timed_sample_interval->timestamp_movie_fragment_metadata, &seconds_movie_fragment, &microseconds_movie_fragment);
+		__PS_STATS_FLOW("  0x1: movie fragment metadata: %u.%03u ", seconds_movie_fragment, microseconds_movie_fragment/100);
+
+		__PS_STATS_FLOW("");
+		__PS_STATS_FLOW(" previous mpu_sequence stats  : %u", packet_mmt_stats->mpu_stats_timed_sample_interval->previous_mpu_sequence_number);
+
+		compute_ntp32_to_seconds_microseconds(packet_mmt_stats->mpu_stats_timed_sample_interval->previous_timestamp_mpu_metadata, &seconds, &microseconds);
+		__PS_STATS_FLOW("  0x0: timestamp mpu_metadata : %u.%03u", seconds, microseconds/100);
+
+		compute_ntp32_to_seconds_microseconds(packet_mmt_stats->mpu_stats_timed_sample_interval->previous_timestamp_first_mfu, &seconds_mfu_first, &microseconds_mfu_first);
+		compute_ntp32_to_seconds_microseconds(packet_mmt_stats->mpu_stats_timed_sample_interval->previous_timestamp_last_mfu,  &seconds_mfu_last, &microseconds_mfu_last);
+
+		__PS_STATS_FLOW("  0x2: timestamp first mfu    : %u.%03u", seconds_mfu_first, microseconds_mfu_first/100);
+		__PS_STATS_FLOW("  0x2: timestamp last mfu     : %u.%03u", seconds_mfu_last, microseconds_mfu_last/100);
+
+		compute_ntp32_to_seconds_microseconds(packet_mmt_stats->mpu_stats_timed_sample_interval->previous_timestamp_movie_fragment_metadata, &seconds_movie_fragment, &microseconds_movie_fragment);
+		//if our moof came before the first frame, then this is most likely a MPU delivery
+		if(seconds_movie_fragment < seconds_mfu_first || (seconds_movie_fragment == seconds_mfu_first && microseconds_movie_fragment/100 < microseconds_mfu_first/100)) {
+		//		if(seconds_movie_fragment < seconds_mfu_last || (seconds_movie_fragment == seconds_mfu_last && microseconds_movie_fragment/100 < microseconds_mfu_last/100)) {
+			__PS_STATS_FLOW_W("  0x1: movie fragment metadata: %u.%03u ", seconds_movie_fragment, microseconds_movie_fragment/100);
+			wattron(pkt_flow_stats_mmt_window, COLOR_PAIR(2));
+			__PS_STATS_FLOW("(MPU)");
+			wattroff(pkt_flow_stats_mmt_window, COLOR_PAIR(2));
+
+			if(!packet_mmt_stats->mpu_stats_timed_sample_interval->previous_timestamp_mpu_logged) {
+				__PS_STATS_FLOW_LOG("Flow: %u.%u.%u.%u:%u, PktID: %u, MPU_seq_num: %u, 0x2: %u.%03u-%u.%03u, 0x1: %u.%03u", __toip(packet_mmt_stats),
+							packet_mmt_stats->packet_id,
+							packet_mmt_stats->mpu_stats_timed_sample_interval->previous_mpu_sequence_number,
+							seconds_mfu_first, microseconds_mfu_first/100,
+							seconds_mfu_last, microseconds_mfu_last/100,
+							seconds_movie_fragment, microseconds_movie_fragment/100);
+				__PS_STATS_FLOW_LOG_REFRESH();
+				packet_mmt_stats->mpu_stats_timed_sample_interval->previous_timestamp_mpu_logged = true;
+			}
+
+		} else {
+			__PS_STATS_FLOW_W("  0x1: movie fragment metadata: %u.%03u ", seconds_movie_fragment, microseconds_movie_fragment/100);
+			wattron(pkt_flow_stats_mmt_window, COLOR_PAIR(3) | COLOR_PAIR(0xff) );
+
+			__PS_STATS_FLOW("(MFU)");
+			wattroff(pkt_flow_stats_mmt_window, COLOR_PAIR(3) | COLOR_PAIR(0xff));
+		}
+
+		__PS_STATS_FLOW("");
+
+		//clear out any sample interval attributes
+		packet_mmt_stats->has_timestamp_sample_interval_start = false;
+		packet_mmt_stats->packet_sequence_number_sample_interval_gap = 0;
+		packet_mmt_stats->packet_sequence_number_sample_interval_start = 0;
+		packet_mmt_stats->has_packet_sequence_number_sample_interval_start = false;
+	}
+
+	__PS_REFRESH();
+
 }
