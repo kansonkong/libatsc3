@@ -26,6 +26,19 @@ extern "C" {
 
 typedef struct packet_id_mpu_stats {
 	uint32_t mpu_sequence_number;
+
+	uint32_t timestamp_mpu_metadata; //0x00
+	uint32_t timestamp_first_mfu; //0x02
+	uint32_t timestamp_last_mfu; //0x02
+	uint32_t timestamp_movie_fragment_metadata; //0x01
+
+	uint32_t previous_mpu_sequence_number;
+	uint32_t previous_timestamp_mpu_metadata; //0x00
+	uint32_t previous_timestamp_first_mfu; //0x02
+	uint32_t previous_timestamp_last_mfu; //0x02
+	uint32_t previous_timestamp_movie_fragment_metadata; //0x01
+	bool 	 previous_timestamp_mpu_logged;
+
 	uint8_t  mpu_fragementation_counter;
 
 	uint32_t mpu_sequence_number_last;
@@ -119,7 +132,7 @@ typedef struct packet_id_mmt_stats {
 	packet_id_mmt_nontimed_mpu_stats_t* 	mpu_stats_nontimed_lifetime;
 	packet_id_signalling_stats_t* 			signalling_stats_lifetime;
 
-	uint32_t	packet_counter_value;
+	uint32_t				packet_counter_value;
 	int						packet_id_missing_n;
 	packet_id_missing_t**	packet_id_missing_vector;
 
@@ -202,8 +215,10 @@ packet_id_mmt_stats_t* find_packet_id(uint32_t ip, uint16_t port, uint32_t packe
 packet_id_mmt_stats_t* find_or_create_packet_id(uint32_t ip, uint16_t port, uint32_t packet_id);
 
 void atsc3_packet_statistics_dump_global_stats();
+void atsc3_packet_statistics_dump_mfu_stats();
 void atsc3_packet_statistics_mmt_stats_populate(udp_packet_t* udp_packet, mmtp_payload_fragments_union_t* mmtp_payload);
 void *print_global_statistics_thread(void *vargp);
+void *print_mfu_statistics_thread(void *vargp);
 
 
 

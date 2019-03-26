@@ -303,6 +303,10 @@ uint8_t* mmt_signaling_message_parse_id_type(mmtp_payload_fragments_union_t *mmt
 		buf = mmt_atsc3_message_payload_parse(mmt_signalling_message_header_and_payload, buf, buf_size);
 		mmt_signalling_message_header_and_payload->message_header.MESSAGE_id_type = MMT_ATSC3_MESSAGE_ID;
 
+	} else if(mmt_signalling_message_header->message_id == MMT_SCTE35_Signal_Message) {
+		buf = mmt_scte35_message_payload_parse(mmt_signalling_message_header_and_payload, buf, buf_size);
+		mmt_signalling_message_header_and_payload->message_header.MESSAGE_id_type = MMT_SCTE35_Signal_Message;
+
 	} else {
 		buf = si_message_not_supported(mmt_signalling_message_header_and_payload, buf, buf_size);
 	}
@@ -618,8 +622,58 @@ uint8_t* mmt_atsc3_message_payload_parse(mmt_signalling_message_header_and_paylo
 	}
 
 	return buf;
-
 }
+
+ATSC3_VECTOR_BUILDER_METHODS_IMPLEMENTATION(mmt_scte35_message_payload, mmt_scte35_signal_descriptor)
+
+uint8_t* mmt_scte35_message_payload_parse(mmt_signalling_message_header_and_payload_t* mmt_signalling_message_header_and_payload, uint8_t* udp_raw_buf, uint32_t udp_raw_buf_size) {
+
+	udp_raw_buf = __mmt_signaling_message_parse_length_long(udp_raw_buf, mmt_signalling_message_header_and_payload);
+
+	uint8_t *raw_buf = udp_raw_buf;
+	uint8_t *buf = udp_raw_buf;
+
+	mmt_scte35_message_payload_t* mmt_scte35_message_payload = &mmt_signalling_message_header_and_payload->message_payload.mmt_scte35_message_payload;
+
+	//walk thru each signal descriptor
+	uint8_t scte35_signal_descriptor_n;
+	buf = extract(buf, (uint8_t*)&scte35_signal_descriptor_n, 1);
+	for(int i=0; i < scte35_signal_descriptor_n && (udp_raw_buf_size > (buf-raw_buf)); i++) {
+		//make sure we have at least 19 bytes available (16+16+64+7+33+16)
+		if(19 < udp_raw_buf_size - (buf-raw_buf)) {
+			_MMSM_WARN("mmt_scte35_message_payload_parse: short read for descriptor: %u, need 19 but remaining is: %ld", i, (udp_raw_buf_size - (buf-raw_buf)));
+			goto parse_incomplete;
+		}
+
+		//parse out each descriptor
+		mmt_scte35_signal_descriptor_t* mmt_scte35_signal_descriptor = mmt_scte35_signal_descriptor_new();
+		buf = extract(buf, (uint8_t*)&mmt_scte35_signal_descriptor->descriptor_tag, 2);
+		buf = extract(buf, (uint8_t*)&mmt_scte35_signal_descriptor->descriptor_length, 2);
+		buf = extract(buf, (uint8_t*)&mmt_scte35_signal_descriptor->ntp_timestamp, 8);
+
+		//pts_timestamp is 1+32
+		uint8_t pts_timestamp_block[5];
+		buf = extract(buf, (uint8_t*)&pts_timestamp_block, 5);
+		mmt_scte35_signal_descriptor->pts_timestamp |= ((pts_timestamp_block[0] & 0x1UL) << 33);
+		mmt_scte35_signal_descriptor->pts_timestamp |= ntohl(*(uint32_t*)(&pts_timestamp_block[1]));
+
+		buf = extract(buf, (uint8_t*)&mmt_scte35_signal_descriptor->signal_length, 2);
+
+		if(mmt_scte35_signal_descriptor->signal_length > udp_raw_buf_size - (buf-raw_buf)) {
+			_MMSM_WARN("mmt_scte35_message_payload_parse: signal length for descriptor: %u, need %u but remaining is: %ld", i, mmt_scte35_signal_descriptor->signal_length, (udp_raw_buf_size - (buf-raw_buf)));
+			goto parse_incomplete;
+		}
+
+		buf = extract(buf, (uint8_t*)&mmt_scte35_signal_descriptor->signal_byte, mmt_scte35_signal_descriptor->signal_length);
+		mmt_scte35_message_payload_add_mmt_scte35_signal_descriptor(&mmt_signalling_message_header_and_payload->message_payload.mmt_scte35_message_payload, mmt_scte35_signal_descriptor);
+		_MMSM_INFO("mmt_scte35_message_payload_parse: adding signal at NTP_timestamp: %llu, PTS: %llu", mmt_scte35_signal_descriptor->ntp_timestamp, mmt_scte35_signal_descriptor->pts_timestamp);
+	}
+
+parse_incomplete:
+
+	return buf;
+}
+
 
 void mmt_atsc3_message_payload_dump(mmt_signalling_message_header_and_payload_t* mmt_signalling_message_header_and_payload) {
 
@@ -749,9 +803,9 @@ void mpt_message_dump(mmt_signalling_message_header_and_payload_t* mmt_signallin
 
 	for(int i=0; i < mp_table->number_of_assets; i++) {
 		mp_table_asset_row_t* mp_table_asset_row = &mp_table->mp_table_asset_row[i];
-		_MMSM_DEBUG(" asset identifier type        : %u", mp_table_asset_row->identifier_mapping.identifier_type);
+		_MMSM_DEBUG(" asset identifier type       : %u", mp_table_asset_row->identifier_mapping.identifier_type);
 		if(mp_table_asset_row->identifier_mapping.identifier_type == 0x00) {
-			_MMSM_DEBUG(" asset id                     : %s", mp_table_asset_row->identifier_mapping.asset_id.asset_id);
+			_MMSM_DEBUG(" asset id                    : %s", mp_table_asset_row->identifier_mapping.asset_id.asset_id);
 
 		}
 		_MMSM_DEBUG(" asset type                  : %u", mp_table_asset_row->asset_type);
