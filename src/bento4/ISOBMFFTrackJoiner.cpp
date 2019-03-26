@@ -800,6 +800,8 @@ void parseAndBuildJoinedBoxes_from_lls_sls_monitor_output_buffer(lls_sls_monitor
 
 
     /**
+     *
+     * TODO: handle use case without a MOOV atom...
      to postion at end:
 
      [hdlr] size=12+40
@@ -1056,11 +1058,6 @@ void parseAndBuildJoinedBoxes_from_lls_sls_monitor_output_buffer(lls_sls_monitor
 			for(itTraf = audio_trafList.begin(); itTraf != audio_trafList.end(); itTraf++) {
 
                 AP4_TfhdAtom* tfhdTempAtom = AP4_DYNAMIC_CAST(AP4_TfhdAtom, (*itTraf)->GetChild(AP4_ATOM_TYPE_TFHD));
-                //shift our track id's by +10 if we are not the audio track id
-                if(tfhdTempAtom && tfhdTempAtom->GetTrackId() != lls_sls_monitor_output_buffer->audio_output_buffer_isobmff.track_id) {
-
-                	tfhdTempAtom->SetTrackId(tfhdTempAtom->GetTrackId() + 10);
-                }
 
                 //remove our tfdt's if base media decode time is 0
                 AP4_TfdtAtom* audio_tfdtTempAtom = AP4_DYNAMIC_CAST(AP4_TfdtAtom, (*itTraf)->GetChild(AP4_ATOM_TYPE_TFDT));
@@ -1209,7 +1206,8 @@ void parseAndBuildJoinedBoxes_from_lls_sls_monitor_output_buffer(lls_sls_monitor
     __ISOBMFF_JOINER_INFO("Final output re-muxed MPU:");
     dumpFullMetadataAndOffsets(video_isobmff_atom_list);
 
-	lls_sls_monitor_output_buffer->audio_output_buffer_isobmff.track_id = audio_track_id_to_remap;
+    //don't change this value here, otherwise we will lose reference on our next processing loop
+//	lls_sls_monitor_output_buffer->audio_output_buffer_isobmff.track_id = audio_track_id_to_remap;
 
 
 	block_Release(&audio_output_buffer);

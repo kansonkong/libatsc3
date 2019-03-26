@@ -635,7 +635,7 @@ uint8_t* mmt_scte35_message_payload_parse(mmt_signalling_message_header_and_payl
 
 	mmt_scte35_message_payload_t* mmt_scte35_message_payload = &mmt_signalling_message_header_and_payload->message_payload.mmt_scte35_message_payload;
 
-	//walk thru
+	//walk thru each signal descriptor
 	uint8_t scte35_signal_descriptor_n;
 	buf = extract(buf, (uint8_t*)&scte35_signal_descriptor_n, 1);
 	for(int i=0; i < scte35_signal_descriptor_n && (udp_raw_buf_size > (buf-raw_buf)); i++) {
