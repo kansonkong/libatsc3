@@ -76,46 +76,39 @@ int lls_slt_table_build(lls_table_t *lls_table, xml_node_t *xml_root) {
 
 		lls_table->slt_table.bsid_n = 1;
 		lls_table->slt_table.bsid =  (int*)calloc(lls_table->slt_table.bsid_n , sizeof(int));
-		lls_table->slt_table.bsid[0] = bsid_i;
+		(*lls_table->slt_table.bsid) = bsid_i;
 	}
 
-	__LLS_SLT_PARSER_TRACE("build_SLT_table, attributes are: %s\n", slt_attributes);
 
 	int svc_size = xml_node_children(xml_root);
+	__LLS_SLT_PARSER_TRACE("build_SLT_table, lls_table->slt_table.bsid_n: %u, svc_size: %u, attributes are: %s\n", lls_table->slt_table.bsid_n, svc_size, slt_attributes);
+
+	lls_table->slt_table.service_entry = (lls_service_t**)calloc(svc_size, sizeof(lls_service_t*));
 
 	//build our service rows
 	for(int i=0; i < svc_size; i++) {
+		lls_table->slt_table.service_entry[i] = calloc(1, sizeof(lls_service_t));
+
+		lls_service_t* service_entry = lls_table->slt_table.service_entry[i];
 
 		xml_node_t* service_row_node = xml_node_child(xml_root, i);
 		xml_string_t* service_row_node_xml_string = xml_node_name(service_row_node);
 
 		if(xml_string_equals_ignore_case(service_row_node_xml_string, "Service")) {
-
-			//todo, fix me
 			dump_xml_string(service_row_node_xml_string);
-			//if()
-
-			/** push service row **/
-			lls_table->slt_table.service_entry_n++;
-			//TODO - grow this dynamically to N?
-			if(!lls_table->slt_table.service_entry) {
-				lls_table->slt_table.service_entry = (lls_service_t**)calloc(32, sizeof(lls_service_t**));
-			}
 
 			//service_row_node_xml_string
 			uint8_t* child_row_node_attributes_s = xml_attributes_clone(service_row_node_xml_string);
-			kvp_collection_t* service_attributes_collecton = kvp_collection_parse(child_row_node_attributes_s);
 
-			lls_table->slt_table.service_entry[lls_table->slt_table.service_entry_n-1] = (lls_service_t*)calloc(1, sizeof(lls_service_t));
-			lls_service_t* service_entry = lls_table->slt_table.service_entry[lls_table->slt_table.service_entry_n-1];
-			//map in other attributes, e.g
+			kvp_collection_t* service_attributes_collecton = kvp_collection_parse(child_row_node_attributes_s);
 
 
 			int scratch_i = 0;
 			char* serviceId = kvp_collection_get(service_attributes_collecton, "serviceId");
 
 			if(!serviceId) {
-				__LLS_SLT_PARSER_ERROR("missing required element - serviceId!");
+				//2019-03-26 - dump lls table for diagnostics
+				__LLS_SLT_PARSER_ERROR("missing required element - serviceId! raw xml payload is: \n%s", lls_table->raw_xml.xml_payload);
 				return -1;
 			}
 
@@ -193,6 +186,7 @@ int lls_slt_table_build(lls_table_t *lls_table, xml_node_t *xml_root) {
 				kvp_collection_free(kvp_child_attributes);
 			}
 
+
 			//cleanup
 
 			if(service_attributes_collecton) {
@@ -201,6 +195,9 @@ int lls_slt_table_build(lls_table_t *lls_table, xml_node_t *xml_root) {
 			if(child_row_node_attributes_s) {
 				free(child_row_node_attributes_s);
 			}
+
+			/** push service row **/
+			lls_table->slt_table.service_entry_n++;
 		}
 	}
 
