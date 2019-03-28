@@ -4,6 +4,9 @@
 /.cproject
 route/*
 mpu/*
+src/tools/mpu
+debug.log
+ffplay.errors
 libmicrohttpd-0.9.63
 .vscode
 
