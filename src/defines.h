@@ -107,10 +107,14 @@ extern "C" {
 #define EXT_NOP		0		/**< No-operation extension header defined by LCT */
 #define	EXT_AUTH	1		/**< Authentication extension header defined by LCT */
 #define EXT_TIME	2		/**< Time extension header defined by LCT */
+#define EXT_ROUTE_PRESENTATION_TIME 66 /** A.3.7.1 EXT_ROUTE_PRESENTATION_TIME Header, 32 x 3 bits = 96 **/
+
 #define	EXT_FTI		64		/**< FEC object transmission information extension header defined by ALC */
 
-//2019-02-19 - ATSC 3.0 compat
-#define EXT_TOL 	194
+//2019-02-19 - ATSC 3.0 compat - A/331 - A.4.2.6.1 EXT_TOL Header
+
+#define EXT_TOL_24 	194		//24 bit tol length
+#define EXT_TOL_48 	67		//48 bit tol length
 
 
 #define SENDER		0		/**< Operation mode is sender */	

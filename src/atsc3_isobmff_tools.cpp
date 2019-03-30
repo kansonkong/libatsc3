@@ -458,12 +458,12 @@ lls_sls_monitor_output_buffer_t* atsc3_isobmff_build_mpu_metadata_ftyp_moof_mdat
 											mmt_signaling_message_mpu_tuple->mpu_sequence_number == mpu_sequence_number_audio) {
 										lls_sls_monitor_output_buffer->audio_output_buffer_isobmff.mpu_presentation_time = mmt_signaling_message_mpu_tuple->mpu_presentation_time;
 										lls_sls_monitor_output_buffer->audio_output_buffer_isobmff.mpu_presentation_time_set = true;
-										compute_ntp64_to_seconds_microseconds(lls_sls_monitor_output_buffer->audio_output_buffer_isobmff.mpu_presentation_time, &lls_sls_monitor_output_buffer->audio_output_buffer_isobmff.mpu_presentation_time_s, &lls_sls_monitor_output_buffer->audio_output_buffer_isobmff.mpu_presentation_time_ms);
+										compute_ntp64_to_seconds_microseconds(lls_sls_monitor_output_buffer->audio_output_buffer_isobmff.mpu_presentation_time, &lls_sls_monitor_output_buffer->audio_output_buffer_isobmff.mpu_presentation_time_s, &lls_sls_monitor_output_buffer->audio_output_buffer_isobmff.mpu_presentation_time_us);
 
 										__ISOBMFF_TOOLS_WARN("setting audio packet_id: %u, mpu_sequence_number: %u to mpu_presentation_time: %llu, seconds: %u, ms: %u",
 												mp_table_asset_row->mmt_general_location_info.packet_id, mpu_sequence_number_audio,
 												lls_sls_monitor_output_buffer->audio_output_buffer_isobmff.mpu_presentation_time,
-												lls_sls_monitor_output_buffer->audio_output_buffer_isobmff.mpu_presentation_time_s, lls_sls_monitor_output_buffer->audio_output_buffer_isobmff.mpu_presentation_time_ms);
+												lls_sls_monitor_output_buffer->audio_output_buffer_isobmff.mpu_presentation_time_s, lls_sls_monitor_output_buffer->audio_output_buffer_isobmff.mpu_presentation_time_us);
 
 
 									} else if(mp_table_asset_row->mmt_general_location_info.packet_id == lls_sls_mmt_monitor->video_packet_id && mp_table_asset_row->mmt_general_location_info.packet_id == udp_flow_packet_id_mpu_sequence_tuple->packet_id &&
@@ -472,12 +472,12 @@ lls_sls_monitor_output_buffer_t* atsc3_isobmff_build_mpu_metadata_ftyp_moof_mdat
 										lls_sls_monitor_output_buffer->video_output_buffer_isobmff.mpu_presentation_time = mmt_signaling_message_mpu_tuple->mpu_presentation_time;
 										lls_sls_monitor_output_buffer->video_output_buffer_isobmff.mpu_presentation_time_set = true;
 
-										compute_ntp64_to_seconds_microseconds(lls_sls_monitor_output_buffer->video_output_buffer_isobmff.mpu_presentation_time, &lls_sls_monitor_output_buffer->video_output_buffer_isobmff.mpu_presentation_time_s, &lls_sls_monitor_output_buffer->video_output_buffer_isobmff.mpu_presentation_time_ms);
+										compute_ntp64_to_seconds_microseconds(lls_sls_monitor_output_buffer->video_output_buffer_isobmff.mpu_presentation_time, &lls_sls_monitor_output_buffer->video_output_buffer_isobmff.mpu_presentation_time_s, &lls_sls_monitor_output_buffer->video_output_buffer_isobmff.mpu_presentation_time_us);
 
 										__ISOBMFF_TOOLS_WARN("setting video packet_id: %u, mpu_sequence_number: %u to mpu_presentation_time: %llu, seconds: %u, ms: %u",
 												mp_table_asset_row->mmt_general_location_info.packet_id, mpu_sequence_number_video,
 												lls_sls_monitor_output_buffer->video_output_buffer_isobmff.mpu_presentation_time,
-												lls_sls_monitor_output_buffer->audio_output_buffer_isobmff.mpu_presentation_time_s, lls_sls_monitor_output_buffer->audio_output_buffer_isobmff.mpu_presentation_time_ms);
+												lls_sls_monitor_output_buffer->audio_output_buffer_isobmff.mpu_presentation_time_s, lls_sls_monitor_output_buffer->audio_output_buffer_isobmff.mpu_presentation_time_us);
 
 
 									}

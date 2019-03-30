@@ -32,8 +32,8 @@ extern "C" {
 extern int _PLAYER_FFPLAY_DEBUG_ENABLED;
 extern int _PLAYER_FFPLAY_TRACE_ENABLED;
 
-#define __PLAYER_INITIAL_BUFFER_SEGMENT_COUNT 1  	//wait for at least 1 signals to give us enough to sync the elst inection of mpu_presentation_timestamp
-#define __PLAYER_INITIAL_BUFFER_TARGET 256000  		//TODO:  make this variable based upon 2x MPU for fast startup
+#define __PLAYER_INITIAL_BUFFER_SEGMENT_COUNT 2  	//wait for at least 1 signals to give us enough to sync the elst inection of mpu_presentation_timestamp
+#define __PLAYER_INITIAL_BUFFER_TARGET 512000  		//TODO:  make this variable based upon 2x MPU for fast startup
 #define __PLAYER_FFPLAY_BUFFER_WARNING_SIZE 128000
 #define __PLAYER_FFPLAY_PIPE_INTERNAL_BUFFER_SIZE 8192000
 #define __PLAYER_FFPLAY_PIPE_WRITER_BLOCKSIZE 131070
