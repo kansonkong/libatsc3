@@ -10,6 +10,8 @@
 
 #include "ISOBMFFTrackJoiner.h"
 
+#include "../atsc3_utils.h"
+
 int _ISOBMFFTRACKJOINER_DEBUG_ENABLED = 0;
 int _ISOBMFFTRACKJOINER_TRACE_ENABLED = 0;
 
@@ -107,6 +109,8 @@ void dumpFullMetadataAndOffsets(list<AP4_Atom_And_Offset_t*> atomList) {
 		for (it = atomList.begin(); it != atomList.end(); it++) {
 			(*it)->atom->Inspect(*inspector);
 		}
+
+		boxDumpConsoleOutput->WriteString("---\r\n");
 
 		if (boxDumpConsoleOutput) boxDumpConsoleOutput->Release();
 		delete inspector;
@@ -1368,6 +1372,7 @@ void dumpFullMetadata(list<AP4_Atom*> atomList) {
 			(*it)->Inspect(*inspector);
 		}
 
+		boxDumpConsoleOutput->WriteString("---\r\n");
 		if (boxDumpConsoleOutput) boxDumpConsoleOutput->Release();
 		delete inspector;
 	}
