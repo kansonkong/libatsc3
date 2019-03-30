@@ -91,7 +91,7 @@ lls_sls_alc_monitor_t* __ALC_RECON_MONITOR;
 
 block_t* alc_get_payload_from_filename(char* file_name) {
 	if( access(file_name, F_OK ) == -1 ) {
-		__ALC_UTILS_ERROR("unable to open init file: %s", file_name);
+		__ALC_UTILS_ERROR("alc_get_payload_from_filename: unable to open file: %s", file_name);
 		return NULL;
 	}
 
@@ -103,7 +103,7 @@ block_t* alc_get_payload_from_filename(char* file_name) {
 
 	FILE* fp = fopen(file_name, "r");
 	if(st.st_size == 0) {
-		__ALC_UTILS_ERROR("unable to open init file: %s", file_name);
+		__ALC_UTILS_ERROR("alc_get_payload_from_filename: size: 0 file: %s", file_name);
 		return NULL;
 	}
 
@@ -171,7 +171,7 @@ FILE* alc_object_pre_allocate(char* file_name, alc_packet_t* alc_packet) {
     
     uint32_t to_allocate_size = alc_packet->transfer_len;
     if(to_allocate_size) {
-        __ALC_UTILS_DEBUG("pre_allocate: before: file %s to size: %d", file_name, to_allocate_size);
+    	__ALC_UTILS_IOTRACE("pre_allocate: before: file %s to size: %d", file_name, to_allocate_size);
         uint32_t alloc_offset = 0;
         uint32_t blocksize;
         uint32_t loop_count = 0;
@@ -181,7 +181,7 @@ FILE* alc_object_pre_allocate(char* file_name, alc_packet_t* alc_packet) {
             alloc_offset += blocksize;
             loop_count++;
         }
-        __ALC_UTILS_DEBUG("pre_allocate: after: file %s to size: %d, wrote out: %u in %u fwrite", file_name, to_allocate_size, alloc_offset, loop_count);
+        __ALC_UTILS_IOTRACE("pre_allocate: after: file %s to size: %d, wrote out: %u in %u fwrite", file_name, to_allocate_size, alloc_offset, loop_count);
 
     } else {
         __ALC_UTILS_WARN("pre_allocate: file %s, transfer_len is 0, not pre allocating", file_name);
@@ -721,72 +721,112 @@ void alc_recon_file_buffer_struct_monitor_fragment_with_init_box(lls_sls_alc_mon
 	block_t* video_init_payload = NULL;
 
 	//alc_packet->def_lct_hdr->toi hack
-	if(alc_packet->def_lct_hdr->tsi == lls_sls_alc_monitor->video_tsi) {
-		lls_sls_alc_monitor->last_video_toi = alc_packet->def_lct_hdr->toi;
-	}
 	if(alc_packet->def_lct_hdr->tsi == lls_sls_alc_monitor->audio_tsi) {
-		lls_sls_alc_monitor->last_audio_toi = alc_packet->def_lct_hdr->toi;
+		lls_sls_alc_monitor->last_closed_audio_toi = alc_packet->def_lct_hdr->toi;
+		if(alc_packet->ext_route_presentation_ntp_timestamp_set && !lls_sls_alc_monitor->lls_sls_monitor_output_buffer.audio_output_buffer_isobmff.mpu_presentation_time_set) {
+			lls_sls_alc_monitor->lls_sls_monitor_output_buffer.audio_output_buffer_isobmff.mpu_presentation_time = alc_packet->ext_route_presentation_ntp_timestamp;
+			compute_ntp64_to_seconds_microseconds(lls_sls_alc_monitor->lls_sls_monitor_output_buffer.audio_output_buffer_isobmff.mpu_presentation_time, &lls_sls_alc_monitor->lls_sls_monitor_output_buffer.audio_output_buffer_isobmff.mpu_presentation_time_s, &lls_sls_alc_monitor->lls_sls_monitor_output_buffer.audio_output_buffer_isobmff.mpu_presentation_time_us);
+			lls_sls_alc_monitor->lls_sls_monitor_output_buffer.audio_output_buffer_isobmff.mpu_presentation_time_set = true;
+		}
 	}
 
-    uint32_t audio_toi = lls_sls_alc_monitor->last_audio_toi;
-    uint32_t video_toi = lls_sls_alc_monitor->last_video_toi;
-    
-    if(!audio_toi || !video_toi) {
-        __ALC_UTILS_WARN("audio toi: %u, video toi: %u, bailing", audio_toi, video_toi);
-        goto cleanup;
-    }
-    
-	if(audio_toi != video_toi) {
-        uint32_t min_toi = MIN(audio_toi, video_toi);
-        __ALC_UTILS_WARN("audio toi: %u, video toi: %u, using min: %u", audio_toi, video_toi, min_toi);
-        audio_toi = min_toi;
-        video_toi = min_toi;
+	if(alc_packet->def_lct_hdr->tsi == lls_sls_alc_monitor->video_tsi) {
+		lls_sls_alc_monitor->last_closed_video_toi = alc_packet->def_lct_hdr->toi;
+		if(alc_packet->ext_route_presentation_ntp_timestamp_set && !lls_sls_alc_monitor->lls_sls_monitor_output_buffer.video_output_buffer_isobmff.mpu_presentation_time_set) {
+			lls_sls_alc_monitor->lls_sls_monitor_output_buffer.video_output_buffer_isobmff.mpu_presentation_time = alc_packet->ext_route_presentation_ntp_timestamp;
+			compute_ntp64_to_seconds_microseconds(lls_sls_alc_monitor->lls_sls_monitor_output_buffer.video_output_buffer_isobmff.mpu_presentation_time, &lls_sls_alc_monitor->lls_sls_monitor_output_buffer.video_output_buffer_isobmff.mpu_presentation_time_s, &lls_sls_alc_monitor->lls_sls_monitor_output_buffer.video_output_buffer_isobmff.mpu_presentation_time_us);
+			lls_sls_alc_monitor->lls_sls_monitor_output_buffer.video_output_buffer_isobmff.mpu_presentation_time_set = true;
+
+		}
 	}
+
+	//we may have short audio/video packets, so allow our buffer accumulate and then flush independently after we have written our initbox
+    uint32_t audio_toi = lls_sls_alc_monitor->last_closed_audio_toi;
+    uint32_t video_toi = lls_sls_alc_monitor->last_closed_video_toi;
     
-    if(lls_sls_alc_monitor->processed_toi && (lls_sls_alc_monitor->processed_toi == audio_toi || lls_sls_alc_monitor->processed_toi ==video_toi)) {
-        __ALC_UTILS_WARN("processed toi: %u, audio toi: %u, video toi: %u, bailing for next counterpart", lls_sls_alc_monitor->processed_toi, audio_toi, video_toi);
-        goto cleanup;
-    }
-
-	audio_init_file_name = alc_packet_dump_to_object_get_filename_tsi_toi(lls_sls_alc_monitor->audio_tsi, lls_sls_alc_monitor->audio_toi_init);
-	video_init_file_name = alc_packet_dump_to_object_get_filename_tsi_toi(lls_sls_alc_monitor->video_tsi, lls_sls_alc_monitor->video_toi_init);
-
 	audio_fragment_file_name = alc_packet_dump_to_object_get_filename_tsi_toi(lls_sls_alc_monitor->audio_tsi, audio_toi);
 	video_fragment_file_name = alc_packet_dump_to_object_get_filename_tsi_toi(lls_sls_alc_monitor->video_tsi, video_toi);
 
-	audio_fragment_payload = alc_get_payload_from_filename(audio_fragment_file_name);
-	video_fragment_payload = alc_get_payload_from_filename(video_fragment_file_name);
+	if(!lls_sls_alc_monitor->lls_sls_monitor_output_buffer.has_written_init_box) {
+		audio_init_file_name = alc_packet_dump_to_object_get_filename_tsi_toi(lls_sls_alc_monitor->audio_tsi, lls_sls_alc_monitor->audio_toi_init);
+		video_init_file_name = alc_packet_dump_to_object_get_filename_tsi_toi(lls_sls_alc_monitor->video_tsi, lls_sls_alc_monitor->video_toi_init);
 
-	if(audio_fragment_payload && video_fragment_payload) {
+		audio_init_payload = alc_get_payload_from_filename(audio_init_file_name);
+		video_init_payload = alc_get_payload_from_filename(video_init_file_name);
 
-		__ALC_UTILS_DEBUG("alc_recon_file_buffer_struct_monitor_fragment_with_init_box - audio: %s, video: %s", audio_init_file_name, video_init_file_name);
+		audio_fragment_payload = alc_get_payload_from_filename(audio_fragment_file_name);
+		video_fragment_payload = alc_get_payload_from_filename(video_fragment_file_name);
 
-		if(!lls_sls_alc_monitor->lls_sls_monitor_output_buffer.has_written_init_box) {
-			audio_init_payload = alc_get_payload_from_filename(audio_init_file_name);
-			video_init_payload = alc_get_payload_from_filename(video_init_file_name);
+		if(audio_init_payload && video_init_payload &&
+			audio_fragment_payload && video_fragment_payload) {
 
-			if(audio_init_payload && video_init_payload) {
-				lls_sls_monitor_output_buffer_copy_audio_init_block(&lls_sls_alc_monitor->lls_sls_monitor_output_buffer, audio_init_payload);
-				lls_sls_monitor_output_buffer_copy_video_init_block(&lls_sls_alc_monitor->lls_sls_monitor_output_buffer, video_init_payload);
+			__ALC_UTILS_DEBUG("alc_recon_file_buffer_struct_monitor_fragment_with_init_box - audio: %s, video: %s", audio_init_file_name, video_init_file_name);
 
-			} else {
-				__ALC_UTILS_ERROR("missing init payloads, audio: %p, video: %p", audio_init_payload, video_init_payload);
-				goto cleanup;
-			}
+			lls_sls_monitor_output_buffer_copy_audio_init_block(&lls_sls_alc_monitor->lls_sls_monitor_output_buffer, audio_init_payload);
+			lls_sls_monitor_output_buffer_copy_video_init_block(&lls_sls_alc_monitor->lls_sls_monitor_output_buffer, video_init_payload);
+			lls_sls_monitor_output_buffer_copy_audio_fragment_block(&lls_sls_alc_monitor->lls_sls_monitor_output_buffer, audio_fragment_payload);
+			lls_sls_monitor_output_buffer_copy_video_fragment_block(&lls_sls_alc_monitor->lls_sls_monitor_output_buffer, video_fragment_payload);
+			lls_sls_alc_monitor->lls_sls_monitor_output_buffer.has_written_init_box = true;
+			lls_sls_alc_monitor->lls_sls_monitor_output_buffer.should_flush_output_buffer = true;
+	        lls_sls_alc_monitor->last_closed_audio_toi = 0;
+	        lls_sls_alc_monitor->last_closed_audio_toi = 0;
+
+			lls_sls_alc_monitor->last_pending_flushed_audio_toi = 0;
+			lls_sls_alc_monitor->last_pending_flushed_video_toi = 0;
+
+	        lls_sls_alc_monitor->last_completed_flushed_audio_toi = audio_toi;
+	        lls_sls_alc_monitor->last_completed_flushed_video_toi = video_toi;
+
 
 		} else {
-			//noop here
+			__ALC_UTILS_ERROR("missing init payloads, audio: %p, video: %p", audio_init_payload, video_init_payload);
+			goto cleanup;
+		}
+	} else {
+
+		//append audio if we have an audio frame
+		if(audio_toi && audio_fragment_file_name) {
+			audio_fragment_payload = alc_get_payload_from_filename(audio_fragment_file_name);
+			if(audio_fragment_payload) {
+				lls_sls_monitor_output_buffer_copy_audio_fragment_block(&lls_sls_alc_monitor->lls_sls_monitor_output_buffer, audio_fragment_payload);
+				lls_sls_alc_monitor->last_closed_audio_toi = 0;
+				lls_sls_alc_monitor->last_pending_flushed_audio_toi = audio_toi;
+				__ALC_UTILS_DEBUG("alc_recon_file_buffer_struct_monitor_fragment_with_init_box - pushing audio fragment: %d, file: %s", audio_toi, audio_fragment_file_name);
+			} else {
+				__ALC_UTILS_ERROR("alc_recon_file_buffer_struct_monitor_fragment_with_init_box - missing audio fragment: %d, file: %s", audio_toi, audio_fragment_file_name);
+			}
 		}
 
+		//append video if we have a video frame
+		if(video_toi && video_fragment_file_name) {
+			video_fragment_payload = alc_get_payload_from_filename(video_fragment_file_name);
+			if(video_fragment_payload) {
+				lls_sls_monitor_output_buffer_copy_video_fragment_block(&lls_sls_alc_monitor->lls_sls_monitor_output_buffer, video_fragment_payload);
+				lls_sls_alc_monitor->last_closed_video_toi = 0;
+				lls_sls_alc_monitor->last_pending_flushed_video_toi = video_toi;
 
-		lls_sls_monitor_output_buffer_copy_audio_fragment_block(&lls_sls_alc_monitor->lls_sls_monitor_output_buffer, audio_fragment_payload);
-		lls_sls_monitor_output_buffer_copy_video_fragment_block(&lls_sls_alc_monitor->lls_sls_monitor_output_buffer, video_fragment_payload);
-		lls_sls_alc_monitor->lls_sls_monitor_output_buffer.has_written_init_box = true;
-		lls_sls_alc_monitor->lls_sls_monitor_output_buffer.should_flush_output_buffer = true;
-        lls_sls_alc_monitor->processed_toi = audio_toi;
+				__ALC_UTILS_DEBUG("alc_recon_file_buffer_struct_monitor_fragment_with_init_box - pushing video fragment: %d, file: %s", video_toi, video_fragment_file_name);
+			} else {
+				__ALC_UTILS_ERROR("alc_recon_file_buffer_struct_monitor_fragment_with_init_box - missing video fragment: %d, file: %s", video_toi, video_fragment_file_name);
+			}
+		}
+
+		if(lls_sls_alc_monitor->last_pending_flushed_audio_toi && lls_sls_alc_monitor->last_pending_flushed_video_toi) {
+			lls_sls_alc_monitor->lls_sls_monitor_output_buffer.should_flush_output_buffer = true;
+			__ALC_UTILS_DEBUG("alc_recon_file_buffer_struct_monitor_fragment_with_init_box - setting should_flush output buffer for: audio fragment: %d, video fragment: %d",
+					lls_sls_alc_monitor->last_pending_flushed_audio_toi, lls_sls_alc_monitor->last_pending_flushed_video_toi);
+
+
+
+			lls_sls_alc_monitor->last_completed_flushed_audio_toi = lls_sls_alc_monitor->last_pending_flushed_audio_toi;
+			lls_sls_alc_monitor->last_completed_flushed_video_toi = lls_sls_alc_monitor->last_pending_flushed_video_toi;
+
+			lls_sls_alc_monitor->last_closed_audio_toi = 0;
+			lls_sls_alc_monitor->last_pending_flushed_audio_toi = 0;
+			lls_sls_alc_monitor->last_closed_video_toi = 0;
+			lls_sls_alc_monitor->last_pending_flushed_video_toi = 0;
+		}
 	}
-
-	__ALC_UTILS_DEBUG("alc_recon_file_buffer_struct_fragment_with_init_box - RETURN - %u, %u,  %d", alc_packet->def_lct_hdr->tsi, alc_packet->def_lct_hdr->toi, alc_packet->close_object_flag);
 
 cleanup:
 	freesafe(audio_init_file_name);

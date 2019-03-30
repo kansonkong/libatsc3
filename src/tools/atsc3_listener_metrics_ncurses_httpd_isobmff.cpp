@@ -278,11 +278,17 @@ static void route_process_from_alc_packet(alc_packet_t **alc_packet) {
     alc_packet_dump_to_object(alc_packet);
     
     if(lls_slt_monitor->lls_sls_alc_monitor->lls_sls_monitor_output_buffer.has_written_init_box && lls_slt_monitor->lls_sls_alc_monitor->lls_sls_monitor_output_buffer.should_flush_output_buffer) {
-     
+
         lls_sls_monitor_output_buffer_t* lls_sls_monitor_output_buffer_final_muxed_payload = atsc3_isobmff_build_joined_isobmff_fragment(&lls_slt_monitor->lls_sls_alc_monitor->lls_sls_monitor_output_buffer);
         
+        if(!lls_sls_monitor_output_buffer_final_muxed_payload) {
+        	lls_slt_monitor->lls_sls_alc_monitor->lls_sls_monitor_output_buffer.should_flush_output_buffer = false;
+        	__ERROR("lls_sls_monitor_output_buffer_final_muxed_payload was NULL!");
+        	return;
+        }
+
         if(true || lls_slt_monitor->lls_sls_alc_monitor->lls_sls_monitor_output_buffer_mode.file_dump_enabled) {
-            lls_sls_monitor_output_buffer_file_dump(lls_sls_monitor_output_buffer_final_muxed_payload, "route/", lls_slt_monitor->lls_sls_alc_monitor->processed_toi, lls_slt_monitor->lls_sls_alc_monitor->processed_toi);
+            lls_sls_monitor_output_buffer_file_dump(lls_sls_monitor_output_buffer_final_muxed_payload, "route/", lls_slt_monitor->lls_sls_alc_monitor->last_completed_flushed_audio_toi, lls_slt_monitor->lls_sls_alc_monitor->last_completed_flushed_video_toi);
         }
 
         if(lls_slt_monitor->lls_sls_alc_monitor->lls_sls_monitor_output_buffer_mode.ffplay_output_enabled && lls_slt_monitor->lls_sls_alc_monitor->lls_sls_monitor_output_buffer_mode.pipe_ffplay_buffer) {
@@ -299,7 +305,7 @@ static void route_process_from_alc_packet(alc_packet_t **alc_packet) {
 			lls_slt_monitor_check_and_handle_pipe_ffplay_buffer_is_shutdown(lls_slt_monitor);
 
 			pipe_buffer_reader_mutex_unlock(pipe_ffplay_buffer);
-			//reset our buffer pos
+			//reset our buffer pos and should_flush = false;
 			lls_sls_monitor_output_buffer_reset_moof_and_fragment_position(&lls_slt_monitor->lls_sls_alc_monitor->lls_sls_monitor_output_buffer);
         }
     }
@@ -504,12 +510,15 @@ int main(int argc,char **argv) {
 	_MMT_SIGNALLING_MESSAGE_DEBUG_ENABLED = 0;
 	_MMT_SIGNALLING_MESSAGE_TRACE_ENABLED = 0;
 	_LLS_DEBUG_ENABLED = 0;
-    _ISOBMFF_TOOLS_DEBUG_ENABLED = 0;
-    _PLAYER_FFPLAY_DEBUG_ENABLED = 0;
+    _ISOBMFF_TOOLS_DEBUG_ENABLED = 1;
+    _PLAYER_FFPLAY_DEBUG_ENABLED = 1;
     _PLAYER_FFPLAY_TRACE_ENABLED = 0;
-    _ALC_UTILS_DEBUG_ENABLED = 0;
+
+    _ALC_UTILS_IOTRACE_ENABLED = 0;
+    _ALC_UTILS_DEBUG_ENABLED = 1;
     _ALC_UTILS_TRACE_ENABLED = 0;
-    _ISOBMFFTRACKJOINER_DEBUG_ENABLED = 0;
+    _ALC_RX_DEBUG_ENABLED = 0;
+    _ISOBMFFTRACKJOINER_DEBUG_ENABLED = 1;
 
     char *dev;
 

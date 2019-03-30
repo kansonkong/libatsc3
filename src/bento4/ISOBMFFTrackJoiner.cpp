@@ -10,6 +10,8 @@
 
 #include "ISOBMFFTrackJoiner.h"
 
+#include "../atsc3_utils.h"
+
 int _ISOBMFFTRACKJOINER_DEBUG_ENABLED = 0;
 int _ISOBMFFTRACKJOINER_TRACE_ENABLED = 0;
 
@@ -99,7 +101,7 @@ void dumpFullMetadataAndOffsets(list<AP4_Atom_And_Offset_t*> atomList) {
 
 	if(_ISOBMFFTRACKJOINER_DEBUG_ENABLED) {
 		AP4_ByteStream* boxDumpConsoleOutput = NULL;
-		AP4_FileByteStream::Create("-stderr", AP4_FileByteStream::STREAM_MODE_WRITE, boxDumpConsoleOutput);
+		AP4_FileByteStream::Create("isobmff.debug", AP4_FileByteStream::STREAM_MODE_WRITE, boxDumpConsoleOutput);
 		AP4_AtomInspector* inspector = new AP4_PrintInspector(*boxDumpConsoleOutput);
 		inspector->SetVerbosity(3);
 
@@ -107,6 +109,8 @@ void dumpFullMetadataAndOffsets(list<AP4_Atom_And_Offset_t*> atomList) {
 		for (it = atomList.begin(); it != atomList.end(); it++) {
 			(*it)->atom->Inspect(*inspector);
 		}
+
+		boxDumpConsoleOutput->WriteString("---\r\n");
 
 		if (boxDumpConsoleOutput) boxDumpConsoleOutput->Release();
 		delete inspector;
@@ -728,14 +732,14 @@ void parseAndBuildJoinedBoxes_from_lls_sls_monitor_output_buffer(lls_sls_monitor
 
 		//fractional component is already at 1000000 (uS), so just multiply and add the seconds...
 		uint64_t audio_mpu_presentation_time_s = lls_sls_monitor_output_buffer->audio_output_buffer_isobmff.mpu_presentation_time_s * 1000000;
-		uint64_t audio_mpu_presentation_time_ms = lls_sls_monitor_output_buffer->audio_output_buffer_isobmff.mpu_presentation_time_ms % 1000000; //just to be safe..
+		uint64_t audio_mpu_presentation_time_ms = lls_sls_monitor_output_buffer->audio_output_buffer_isobmff.mpu_presentation_time_us % 1000000; //just to be safe..
 		uint64_t audio_mpu_presentation_time_final_uS =  audio_mpu_presentation_time_s + audio_mpu_presentation_time_ms;
 
 		audio_tfdt_atom_mdhd_timescale = new AP4_TfdtAtom(1, audio_mpu_presentation_time_final_uS);
 
 		//now for video
 		uint64_t video_mpu_presentation_time_s = lls_sls_monitor_output_buffer->video_output_buffer_isobmff.mpu_presentation_time_s * 1000000;
-		uint64_t video_mpu_presentation_time_ms = lls_sls_monitor_output_buffer->video_output_buffer_isobmff.mpu_presentation_time_ms % 1000000; //just to be safe..
+		uint64_t video_mpu_presentation_time_ms = lls_sls_monitor_output_buffer->video_output_buffer_isobmff.mpu_presentation_time_us % 1000000; //just to be safe..
 		uint64_t video_mpu_presentation_time_final_uS =  video_mpu_presentation_time_s + video_mpu_presentation_time_ms;
 
 		video_tfdt_atom_mdhd_timescale = new AP4_TfdtAtom(1, video_mpu_presentation_time_final_uS);
@@ -1169,6 +1173,7 @@ void parseAndBuildJoinedBoxes_from_lls_sls_monitor_output_buffer(lls_sls_monitor
 	//first, compute up the size of all of our mdat payload sizes
 	uint32_t video_mdat_payload_size_refragment = 0;
 	uint32_t video_mdat_payload_size_bento_parser = 0;
+
 	uint32_t audio_mdat_payload_size_refragment = 0;
 	uint32_t audio_mdat_payload_size_bento_parser = 0;
 
@@ -1185,19 +1190,25 @@ void parseAndBuildJoinedBoxes_from_lls_sls_monitor_output_buffer(lls_sls_monitor
 		final_mdat_payload_size_refragment += (*it)->atom->GetSize32() - AP4_ATOM_HEADER_SIZE;
 		final_mdat_payload_size_bento_parser += ((*it)->end_offset - (*it)->start_offset) - AP4_ATOM_HEADER_SIZE;
 	}
-	for(it = audio_mdatList.begin(); it != audio_mdatList.end(); it++) {
+
+    //update audio segment trun box(es).. before writing them out...
+	itTrunFirst = audio_trunList.begin();
+	it = audio_mdatList.begin();
+
+	for(;itTrunFirst != audio_trunList.end() && it != audio_mdatList.end();) {
+		(*itTrunFirst)->SetDataOffset(video_trun_last_offset + video_mdat_payload_size_refragment + audio_mdat_payload_size_bento_parser);
+
 		audio_mdat_payload_size_refragment += (*it)->atom->GetSize32() - AP4_ATOM_HEADER_SIZE;
 		audio_mdat_payload_size_bento_parser += ((*it)->end_offset - (*it)->start_offset) - AP4_ATOM_HEADER_SIZE;
 
 		final_mdat_payload_size_refragment += (*it)->atom->GetSize32() - AP4_ATOM_HEADER_SIZE;
 		final_mdat_payload_size_bento_parser += ((*it)->end_offset - (*it)->start_offset) - AP4_ATOM_HEADER_SIZE;
+
+		itTrunFirst++;
+		it++;
 	}
 
-    //update audio segment trun box(es).. before writing them out...
-	for(itTrunFirst = audio_trunList.begin(); itTrunFirst != audio_trunList.end(); itTrunFirst++) {
-		//trunFirstFile
-		(*itTrunFirst)->SetDataOffset(video_trun_last_offset + video_mdat_payload_size_refragment);
-	}
+
 
 	//write the final combined isobmff boxes except for mdat
 	for (it = video_isobmff_atom_list.begin(); it != video_isobmff_atom_list.end(); it++) {
@@ -1217,7 +1228,7 @@ void parseAndBuildJoinedBoxes_from_lls_sls_monitor_output_buffer(lls_sls_monitor
 		}
 	}
 
-	//now write our final mdat boxes
+	//now write our final mdat boxe
 
 	memoryOutputByteStream->WriteUI32((AP4_UI32)final_mdat_payload_size_refragment + AP4_ATOM_HEADER_SIZE);
 	memoryOutputByteStream->WriteUI32(AP4_ATOM_TYPE_MDAT);
@@ -1228,6 +1239,7 @@ void parseAndBuildJoinedBoxes_from_lls_sls_monitor_output_buffer(lls_sls_monitor
 		mdat_to_write_size = (*it)->end_offset - ((*it)->start_offset + AP4_ATOM_HEADER_SIZE);
 		memoryOutputByteStream->Write(&video_output_buffer->p_buffer[(*it)->start_offset + AP4_ATOM_HEADER_SIZE], mdat_to_write_size);
 	}
+
 	for(it = audio_mdatList.begin(); it != audio_mdatList.end(); it++) {
 		mdat_to_write_size = (*it)->end_offset - ((*it)->start_offset + AP4_ATOM_HEADER_SIZE);
 		memoryOutputByteStream->Write(&audio_output_buffer->p_buffer[(*it)->start_offset + AP4_ATOM_HEADER_SIZE], mdat_to_write_size);
@@ -1359,7 +1371,7 @@ void dumpFullMetadata(list<AP4_Atom*> atomList) {
 
 	if(_ISOBMFFTRACKJOINER_DEBUG_ENABLED) {
 		AP4_ByteStream* boxDumpConsoleOutput = NULL;
-		AP4_FileByteStream::Create("-stderr", AP4_FileByteStream::STREAM_MODE_WRITE, boxDumpConsoleOutput);
+		AP4_FileByteStream::Create("isobmff.debug", AP4_FileByteStream::STREAM_MODE_WRITE, boxDumpConsoleOutput);
 		AP4_AtomInspector* inspector = new AP4_PrintInspector(*boxDumpConsoleOutput);
 		inspector->SetVerbosity(3);
 
@@ -1368,6 +1380,7 @@ void dumpFullMetadata(list<AP4_Atom*> atomList) {
 			(*it)->Inspect(*inspector);
 		}
 
+		boxDumpConsoleOutput->WriteString("---\r\n");
 		if (boxDumpConsoleOutput) boxDumpConsoleOutput->Release();
 		delete inspector;
 	}
