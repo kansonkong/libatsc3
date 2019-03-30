@@ -5,10 +5,13 @@ From foundation to implementation:
 
 ISOBMFF:
 
-	ISO14496-12: 
-		https://mpeg.chiariglione.org/standards/mpeg-4/iso-base-media-file-format/text-isoiec-14496-12-5th-edition
+	ISO14496-12:2015 (fifth edition)
 
-		(an academic rendition is available here: https://l.web.umkc.edu/lizhu/teaching/2016sp.video-communication/ref/mp4.pdf)
+		https://standards.iso.org/ittf/PubliclyAvailableStandards/c068960_ISO_IEC_14496-12_2015.zip
+
+		obsolte references
+			https://mpeg.chiariglione.org/standards/mpeg-4/iso-base-media-file-format/text-isoiec-14496-12-5th-edition
+			an academic rendition is available here: https://l.web.umkc.edu/lizhu/teaching/2016sp.video-communication/ref/mp4.pdf
 
 MMTP:
 

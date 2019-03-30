@@ -7,6 +7,11 @@
 
 #include "atsc3_utils.h"
 
+int _ATSC3_UTILS_INFO_ENABLED = 0;
+int _ATSC3_UTILS_DEBUG_ENABLED = 0;
+int _ATSC3_UTILS_TRACE_ENABLED = 0;
+
+
 long long timediff(struct timeval t1, struct timeval t0) {
 	return  (t1.tv_sec-t0.tv_sec)*1000000LL + t1.tv_usec-t0.tv_usec;
 }

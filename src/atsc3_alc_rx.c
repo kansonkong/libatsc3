@@ -149,6 +149,9 @@ indicate any of the above modes using the @srcFecPayloadId attribute.
  *
  */
 
+int _ALC_RX_DEBUG_ENABLED = 0;
+int _ALC_RX_TRACE_ENABLED = 0;
+
 typedef struct route_fragment {
 	unsigned long long tsi;
 	unsigned long long toi;
@@ -220,6 +223,10 @@ int alc_rx_analyze_packet_a331_compliant(char *data, int len, alc_channel_t *ch,
 	unsigned int max_sb_len = 0; /* B */
 	unsigned short max_nb_of_es = 0; /* max_n */
     
+	/* EXT_ROUTE_PRESENTATION_TIME	 */
+	bool 	 ext_route_presentation_ntp_timestamp_set = false;
+	uint64_t ext_route_presentation_ntp_timestamp = 0;
+
 	int fec_inst_id = 0; /* FEC Instance ID */
 //
 //    trans_obj_t *trans_obj = NULL;
@@ -508,16 +515,79 @@ int alc_rx_analyze_packet_a331_compliant(char *data, int len, alc_channel_t *ch,
 				  exthdrlen -= (hel-1);
 				  break;
 
-			  case EXT_TOL:
-				  /* justman-2019-02-19 - parse out transfer len as there is no close object flag here  - 194*/
-	             //assume we are 24bit transfer len
+			  case EXT_ROUTE_PRESENTATION_TIME:
+				  /* from atsc a/331-2017:
+				   *
+				   *
+					 0                   1                   2                     3
+					 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1
+					+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+					| HET = 66    | HEL           | reserved                        |
+					+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+					| NTP timestamp, most significant word                          |
+					+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+					| NTP timestamp, least significant word                         |
+					+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+					*/
+
+
+				  word = __readuint32(data, header_pos);
+				  header_pos += 4;
+				  exthdrlen-=4;
+				  ext_route_presentation_ntp_timestamp |= (word << 32);
+
+				  word = __readuint32(data, header_pos);
+				  header_pos += 4;
+				  exthdrlen-=4;
+				  ext_route_presentation_ntp_timestamp |= word;
+
+				  ext_route_presentation_ntp_timestamp_set = true;
+
+				  ALC_RX_DEBUG("doing EXT_ROUTE_PRESENTATION_TIME, value is: %llu", ext_route_presentation_ntp_timestamp);
+
+				  break;
+
+			  case EXT_TOL_24:
+				  /* jjustman-2019-02-19 - parse out transfer len as there is no close object flag here
+				   *
+					  0                   1                   2                   3
+					  0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1
+					 +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+					 | HET = 194     | Transfer Length                               |
+					 +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+				   */
 
   				  transfer_len = (word & 0x00FFFFFF);
 
-                  ALC_RX_DEBUG("EXT_TOL, tsi: %u, toi: %u,  het is: %d, hel is: %d, exthdrlen: %d, toi transfer len: %llu", def_lct_hdr->tsi, def_lct_hdr->toi, het,  hel, exthdrlen, transfer_len);
+                  ALC_RX_DEBUG("EXT_TOL (24 bit), tsi: %u, toi: %u,  het is: %d, hel is: %d, exthdrlen: %d, toi transfer len: %llu", def_lct_hdr->tsi, def_lct_hdr->toi, het,  hel, exthdrlen, transfer_len);
 
                   //no additional read performed here, continue the loop
                   break;
+
+			  case EXT_TOL_48:
+				  /*
+				   * jjustman-2019-03-30 - supporting 48 bit tol
+				   *
+				   *
+	 			      0                   1                   2                   3
+			 	 	  0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1
+			 	 	 +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+					 | HET = 67      | HEL           |                               |
+					 +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+                               +
+					 | Transfer Length                                               |
+					 +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+					 Figure A.4.3 EXT_TOL Header 48-bit version
+				   */
+
+				  transfer_len = ((word & 0x0000FFFF) << 32) ;
+				  word = __readuint32(data, header_pos);
+				  transfer_len |= word;
+
+				  header_pos += 4;
+				  exthdrlen-=4;
+				  ALC_RX_DEBUG("EXT_TOL (48 bit), tsi: %u, toi: %u,  het is: %d, hel is: %d, exthdrlen: %d, toi transfer len: %llu", def_lct_hdr->tsi, def_lct_hdr->toi, het,  hel, exthdrlen, transfer_len);
+
+				  break;
 
 			  default:
 				  ALC_RX_ERROR("Unknown LCT Extension header, het: %i", het);
@@ -588,25 +658,36 @@ int alc_rx_analyze_packet_a331_compliant(char *data, int len, alc_channel_t *ch,
 	fec_payload_id_to_parse = __readuint32(data, header_pos);
 	header_pos += 4;
     
+	alc_packet->alc_len = len - header_pos;
+    alc_packet->transfer_len = transfer_len;
+	alc_packet->close_object_flag = def_lct_hdr->flag_b;
+	alc_packet->close_session_flag = def_lct_hdr->flag_a;
+	alc_packet->ext_route_presentation_ntp_timestamp_set = ext_route_presentation_ntp_timestamp_set;
+	alc_packet->ext_route_presentation_ntp_timestamp = ext_route_presentation_ntp_timestamp;
+
+
     if(alc_packet->fec_encoding_id == SB_LB_E_FEC_ENC_ID) {
         alc_packet->use_sbn_esi = true;
         alc_packet->sbn = (fec_payload_id_to_parse >> 24) & 0xFF;
         alc_packet->esi = (fec_payload_id_to_parse) & 0x00FFFFFF;
-        ALC_RX_DEBUG("FEC Encoding ID: %i, sbn: %hu, esi: %u", alc_packet->fec_encoding_id, alc_packet->sbn, alc_packet->esi);
+        //final check to see if we should "force" this object closed, raptorq fec doesn't send a close_object flag...
+        //transfer len should be set on the alc session for this toi, not just on the lct packet...
+        if(transfer_len > 0 && transfer_len == (alc_packet->alc_len + alc_packet->esi)) {
+        	alc_packet->close_object_flag = true;
+        }
+        ALC_RX_DEBUG("FEC Encoding ID: %i, sbn: %hu, esi: %u, transfer_len: %u, alc_len+esi: %u",
+        		alc_packet->fec_encoding_id, alc_packet->sbn, alc_packet->esi,
+				transfer_len, alc_packet->alc_len + alc_packet->esi);
     } else {
         alc_packet->use_start_offset = true;
         alc_packet->start_offset = fec_payload_id_to_parse;
         ALC_RX_DEBUG("ALC start offset: %u", alc_packet->start_offset);
     }
 
-	alc_packet->close_object_flag = def_lct_hdr->flag_b;
-	alc_packet->close_session_flag = def_lct_hdr->flag_a;
-
-	alc_packet->alc_len = len - header_pos;
-    alc_packet->transfer_len = transfer_len;
 	alc_packet->alc_payload = calloc(alc_packet->alc_len, sizeof(uint8_t));
 
 	memcpy(alc_packet->alc_payload, &data[header_pos], alc_packet->alc_len);
+
 
 	ALC_RX_TRACE("alc_packet is now: %p, started at packet header_pos: %u, fragment start block is: %u, fragment length is: %u", alc_packet, header_pos, alc_packet->sbn, alc_packet->alc_len);
 	return ALC_OK;

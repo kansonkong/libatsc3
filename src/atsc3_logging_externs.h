@@ -15,6 +15,10 @@
 extern "C" {
 #endif
 
+extern int _ATSC3_UTILS_INFO_ENABLED;
+extern int _ATSC3_UTILS_DEBUG_ENABLED;
+extern int _ATSC3_UTILS_TRACE_ENABLED;
+
 extern int _XML_INFO_ENABLED;
 extern int _XML_DEBUG_ENABLED;
 extern int _XML_TRACE_ENABLED;
@@ -39,6 +43,11 @@ extern int _MMT_SIGNALLING_MESSAGE_TRACE_ENABLED;
 
 extern int _ALC_UTILS_DEBUG_ENABLED;
 extern int _ALC_UTILS_TRACE_ENABLED;
+extern int _ALC_UTILS_IOTRACE_ENABLED;
+
+extern int _ALC_RX_DEBUG_ENABLED;
+extern int _ALC_RX_TRACE_ENABLED;
+
 
 extern int _PLAYER_FFPLAY_DEBUG_ENABLED;
 extern int _PLAYER_FFPLAY_TRACE_ENABLED;
