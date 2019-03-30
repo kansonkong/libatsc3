@@ -1,0 +1,1 @@
+sudo tcpdump -i enx00249b461c93 -G 600 -s 65535 -w "%Y%m%d.%H%M"

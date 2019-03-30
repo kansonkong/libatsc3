@@ -1,0 +1,9 @@
+while :
+do
+DATE=$(date +%s)
+
+echo ---$DATE---
+curl --silent  http://127.0.0.1:8080/networktuner/querytuner > run-$DATE
+cat run-$DATE | json_reformat | grep "FREQUENCY\|PACKET ERROR"
+sleep 15
+done
