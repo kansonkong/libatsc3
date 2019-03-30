@@ -144,11 +144,11 @@ uint16_t parsePortIntoIntval(char* dst_port);
 #endif
 
 
-#define println(...) printf(__VA_ARGS__);printf("\r\n")
-#define __PRINTLN(...) printf(__VA_ARGS__);printf("\r\n")
+#define println(...) printf(__VA_ARGS__);printf("%s%s","\r","\n")
+#define __PRINTLN(...) printf(__VA_ARGS__);printf("%s%s","\r","\n")
 #define __PRINTF(...)  printf(__VA_ARGS__);
 
-#define _ATSC3_UTILS_PRINTLN(...) printf(__VA_ARGS__);printf("\r\n")
+#define _ATSC3_UTILS_PRINTLN(...) printf(__VA_ARGS__);printf("%s%s","\r","\n")
 #define _ATSC3_UTILS_PRINTF(...)  printf(__VA_ARGS__);
 
 #define _ATSC3_UTILS_ERROR(...)   printf("%s:%d:ERROR:",__FILE__,__LINE__);_ATSC3_UTILS_PRINTLN(__VA_ARGS__);

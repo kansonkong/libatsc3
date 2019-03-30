@@ -29,7 +29,7 @@ atsc3_mime_multipart_related_instance_t* atsc3_mime_multipart_related_parser(FIL
 void atsc3_mime_multipart_related_instance_dump(atsc3_mime_multipart_related_instance_t* atsc3_mime_multipart_related_instance);
 
 
-#define __MIME_PARSER_PRINTLN(...)  printf(__VA_ARGS__);printf("\r\n")
+#define __MIME_PARSER_PRINTLN(...)  printf(__VA_ARGS__);printf("%s%s","\r","\n")
 #define __MIME_PARSER_ERROR(...)  	printf("%s:%d:ERROR:",__FILE__,__LINE__);__MIME_PARSER_PRINTLN(__VA_ARGS__);
 #define __MIME_PARSER_WARN(...)   	printf("%s:%d:WARN:",__FILE__,__LINE__);__MIME_PARSER_PRINTLN(__VA_ARGS__);
 #define __MIME_PARSER_INFO(...)   	if(_MIME_PARSER_INFO_ENABLED)  { printf("%s:%d:INFO:",__FILE__,__LINE__);__MIME_PARSER_PRINTLN(__VA_ARGS__); }
