@@ -40,9 +40,6 @@
 #ifndef _ALC_RX_H_
 #define _ALC_RX_H_
 
-// #define __ALC_RX_ENABLE_DEBUG 1
-// #define __ALC_RX_ENABLE_TRACE 1
-
 #define println(...) printf(__VA_ARGS__);printf("%s%s","\r","\n")
 
 #define __ALC_RX_PRINTLN(...) printf(__VA_ARGS__);printf("%s%s","\r","\n")
@@ -52,24 +49,13 @@
 #define ALC_RX_WARN(...)    printf("%s:%d:WARN:",__FILE__,__LINE__);__ALC_RX_PRINTLN(__VA_ARGS__);
 #define ALC_RX_INFO(...)    printf("%s:%d:INFO:",__FILE__,__LINE__);__ALC_RX_PRINTLN(__VA_ARGS__);
 
-#ifdef __ALC_RX_ENABLE_DEBUG
 
-#define ALC_RX_DEBUG(...)   printf("%s:%d:DEBUG:",__FILE__,__LINE__);__ALC_RX_PRINTLN(__VA_ARGS__);
-#define ALC_RX_DEBUGF(...)  printf("%s:%d:DEBUG:",__FILE__,__LINE__);__ALC_RX_PRINTF(__VA_ARGS__);
-#define ALC_RX_DEBUGA(...) 	__PRINTF(__VA_ARGS__);
-#define ALC_RX_DEBUGN(...)  __PRINTLN(__VA_ARGS__);
-#else
-#define ALC_RX_DEBUG(...)
-#define ALC_RX_DEBUGF(...)
-#define ALC_RX_DEBUGA(...)
-#define ALC_RX_DEBUGN(...)
-#endif
+#define ALC_RX_DEBUG(...)   if(_ALC_RX_DEBUG_ENABLED) { printf("%s:%d:DEBUG:",__FILE__,__LINE__);__ALC_RX_PRINTLN(__VA_ARGS__); }
+#define ALC_RX_DEBUGF(...)  if(_ALC_RX_DEBUG_ENABLED) {  printf("%s:%d:DEBUG:",__FILE__,__LINE__);__ALC_RX_PRINTF(__VA_ARGS__); }
+#define ALC_RX_DEBUGA(...)  if(_ALC_RX_DEBUG_ENABLED) { 	__PRINTF(__VA_ARGS__); }
+#define ALC_RX_DEBUGN(...)  if(_ALC_RX_DEBUG_ENABLED) {  __PRINTLN(__VA_ARGS__); }
 
-#ifdef __ALC_RX_ENABLE_TRACE
-#define ALC_RX_TRACE(...)   printf("%s:%d:TRACE:",__FILE__,__LINE__);__ALC_RX_PRINTLN(__VA_ARGS__);
-#else
-#define ALC_RX_TRACE(...)
-#endif
+#define ALC_RX_TRACE(...)   if(_ALC_RX_TRACE_ENABLED) { printf("%s:%d:TRACE:",__FILE__,__LINE__);__ALC_RX_PRINTLN(__VA_ARGS__); }
 
 
 #include "defines.h"
@@ -99,6 +85,9 @@ typedef struct alc_packet {
     
     uint8_t close_object_flag;
     uint8_t close_session_flag;
+
+    bool 	 ext_route_presentation_ntp_timestamp_set;
+    uint64_t ext_route_presentation_ntp_timestamp;
     
     unsigned int alc_len;
     unsigned long long transfer_len;
