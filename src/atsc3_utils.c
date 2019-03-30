@@ -84,7 +84,7 @@ char* kvp_collection_get(kvp_collection_t *collection, char* key) {
 kvp_collection_t* kvp_collection_parse(uint8_t* input_string) {
 	int input_len = strlen((const char*)input_string);
 	_ATSC3_UTILS_TRACE("kvp_parse_string: input string len: %d, input string:\n\n%s\n\n", input_len, input_string);
-	kvp_collection_t *collection = (kvp_collection_t*)calloc(1, sizeof(kvp_collection_t));
+	kvp_collection_t* collection = (kvp_collection_t*)calloc(1, sizeof(kvp_collection_t));
 
 	//a= is not valid, must be at least 3 chars
 	//return an empty collection
@@ -114,21 +114,20 @@ kvp_collection_t* kvp_collection_parse(uint8_t* input_string) {
 	//if we couldn't parse this, just return the empty (0'd collection)
 	if(!equals_count) return collection;
 
-	collection->kvp_collection = (kvp_t**)calloc(equals_count, sizeof(kvp_t**));
-	collection->size_n = equals_count;
+	collection->kvp_collection = (kvp_t**)calloc(equals_count, sizeof(kvp_t*));
+	collection->size_n = 0;
 
 	quote_depth = 0;
-	int kvp_position = 0;
 	int token_key_start = 0;
 	int token_val_start = 0;
 
 	kvp_t* current_kvp = NULL;
 
-	for(int i=1; i < input_len && kvp_position <= equals_count; i++) {
+	for(int i=1; i < input_len && collection->size_n < equals_count; i++) {
 		if(!current_kvp) {
 			//alloc our entry
-			collection->kvp_collection[kvp_position] = (kvp_t*)calloc(1, sizeof(kvp_t));
-			current_kvp = collection->kvp_collection[kvp_position];
+			collection->kvp_collection[collection->size_n] = (kvp_t*)calloc(1, sizeof(kvp_t));
+			current_kvp = collection->kvp_collection[collection->size_n];
 		}
 		if(isspace(input_string[i]) && !quote_depth) {
 			token_key_start = i + 1; //walk forward
@@ -139,14 +138,15 @@ kvp_collection_t* kvp_collection_parse(uint8_t* input_string) {
 
 					//extract value here
 					int len = i - token_val_start;
-					current_kvp->val = (char*) calloc(len + 1, sizeof(char*));
+					assert(current_kvp);
+
+					current_kvp->val = (char*) calloc(len + 1, sizeof(char));
 					strncpy(current_kvp->val, (const char*)&input_string[token_val_start], len);
 					current_kvp->val[len] = '\0';
 
 					_ATSC3_UTILS_TRACE("parse_kvp_string: marking key: %s, token_val_start: %d, len: %d, val: %s", current_kvp->key, token_val_start, len, current_kvp->val);
 
-					//collection->kvp_collection[kvp_position] = (kvp_t*)calloc(1, sizeof(kvp_t*));
-					kvp_position++;
+					collection->size_n++;
 					current_kvp = NULL;
 
 				} else {
@@ -157,7 +157,7 @@ kvp_collection_t* kvp_collection_parse(uint8_t* input_string) {
 				if(!quote_depth) {
 					//extract key here
 					int len = i - token_key_start;
-
+					assert(current_kvp);
 					current_kvp->key = (char*)calloc(len + 1, sizeof(char));
 					strncpy(current_kvp->key, (const char*)&input_string[token_key_start], len);
 					current_kvp->key[len] = '\0';
