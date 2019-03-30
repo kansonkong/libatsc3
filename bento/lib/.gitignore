@@ -1,1 +1,6 @@
+# Ignore everything in this directory
+*
+# Except this file
+!.gitignore
 /libap4.a
+place_libap4.a_bento_file_here
