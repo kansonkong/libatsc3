@@ -1173,6 +1173,7 @@ void parseAndBuildJoinedBoxes_from_lls_sls_monitor_output_buffer(lls_sls_monitor
 	//first, compute up the size of all of our mdat payload sizes
 	uint32_t video_mdat_payload_size_refragment = 0;
 	uint32_t video_mdat_payload_size_bento_parser = 0;
+
 	uint32_t audio_mdat_payload_size_refragment = 0;
 	uint32_t audio_mdat_payload_size_bento_parser = 0;
 
@@ -1189,19 +1190,25 @@ void parseAndBuildJoinedBoxes_from_lls_sls_monitor_output_buffer(lls_sls_monitor
 		final_mdat_payload_size_refragment += (*it)->atom->GetSize32() - AP4_ATOM_HEADER_SIZE;
 		final_mdat_payload_size_bento_parser += ((*it)->end_offset - (*it)->start_offset) - AP4_ATOM_HEADER_SIZE;
 	}
-	for(it = audio_mdatList.begin(); it != audio_mdatList.end(); it++) {
+
+    //update audio segment trun box(es).. before writing them out...
+	itTrunFirst = audio_trunList.begin();
+	it = audio_mdatList.begin();
+
+	for(;itTrunFirst != audio_trunList.end() && it != audio_mdatList.end();) {
+		(*itTrunFirst)->SetDataOffset(video_trun_last_offset + video_mdat_payload_size_refragment + audio_mdat_payload_size_bento_parser);
+
 		audio_mdat_payload_size_refragment += (*it)->atom->GetSize32() - AP4_ATOM_HEADER_SIZE;
 		audio_mdat_payload_size_bento_parser += ((*it)->end_offset - (*it)->start_offset) - AP4_ATOM_HEADER_SIZE;
 
 		final_mdat_payload_size_refragment += (*it)->atom->GetSize32() - AP4_ATOM_HEADER_SIZE;
 		final_mdat_payload_size_bento_parser += ((*it)->end_offset - (*it)->start_offset) - AP4_ATOM_HEADER_SIZE;
+
+		itTrunFirst++;
+		it++;
 	}
 
-    //update audio segment trun box(es).. before writing them out...
-	for(itTrunFirst = audio_trunList.begin(); itTrunFirst != audio_trunList.end(); itTrunFirst++) {
-		//trunFirstFile
-		(*itTrunFirst)->SetDataOffset(video_trun_last_offset + video_mdat_payload_size_refragment);
-	}
+
 
 	//write the final combined isobmff boxes except for mdat
 	for (it = video_isobmff_atom_list.begin(); it != video_isobmff_atom_list.end(); it++) {
@@ -1221,7 +1228,7 @@ void parseAndBuildJoinedBoxes_from_lls_sls_monitor_output_buffer(lls_sls_monitor
 		}
 	}
 
-	//now write our final mdat boxes
+	//now write our final mdat boxe
 
 	memoryOutputByteStream->WriteUI32((AP4_UI32)final_mdat_payload_size_refragment + AP4_ATOM_HEADER_SIZE);
 	memoryOutputByteStream->WriteUI32(AP4_ATOM_TYPE_MDAT);
@@ -1232,6 +1239,7 @@ void parseAndBuildJoinedBoxes_from_lls_sls_monitor_output_buffer(lls_sls_monitor
 		mdat_to_write_size = (*it)->end_offset - ((*it)->start_offset + AP4_ATOM_HEADER_SIZE);
 		memoryOutputByteStream->Write(&video_output_buffer->p_buffer[(*it)->start_offset + AP4_ATOM_HEADER_SIZE], mdat_to_write_size);
 	}
+
 	for(it = audio_mdatList.begin(); it != audio_mdatList.end(); it++) {
 		mdat_to_write_size = (*it)->end_offset - ((*it)->start_offset + AP4_ATOM_HEADER_SIZE);
 		memoryOutputByteStream->Write(&audio_output_buffer->p_buffer[(*it)->start_offset + AP4_ATOM_HEADER_SIZE], mdat_to_write_size);
