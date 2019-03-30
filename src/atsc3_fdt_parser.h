@@ -6,7 +6,7 @@
  */
 #include <stdio.h>
 #include <string.h>
-#include <xlocale.h>
+//#include <xlocale.h>
 
 #ifndef ATSC3_FDT_PARSER_H_
 #define ATSC3_FDT_PARSER_H_
