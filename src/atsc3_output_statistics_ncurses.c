@@ -234,6 +234,8 @@ void* ncurses_input_run_thread(void* lls_slt_monitor_ptr) {
 						lls_sls_alc_monitor = lls_sls_alc_monitor_create();
 						lls_sls_alc_monitor->lls_alc_session = lls_sls_alc_session;
 
+						lls_sls_alc_monitor->service_id = my_service_id;
+
                         if(my_service_id == 1) {
                             //todo - wire up to mbms signaling
                             lls_sls_alc_monitor->video_tsi = 1;
@@ -264,6 +266,7 @@ void* ncurses_input_run_thread(void* lls_slt_monitor_ptr) {
                         }
 						lls_sls_alc_monitor->lls_sls_monitor_output_buffer.has_written_init_box = false;
 						lls_slt_monitor->lls_sls_alc_monitor = lls_sls_alc_monitor;
+
 						//todo, find our service_id map here
 						//lls_slt_monitor->lls_service =
 					}

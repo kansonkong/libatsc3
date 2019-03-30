@@ -545,28 +545,36 @@ int lls_sls_monitor_output_buffer_copy_and_recover_video_fragment_block(lls_sls_
 
 			uint32_t from_mfu_sample_number = lls_sls_monitor_buffer_isobmff->last_fragment->mpu_data_unit_payload_fragments_timed.sample_number - 1;
 			uint32_t from_mfu_trun_sample_size = 0;
-			uint32_t from_mfu_to_tail_pad_size = 0;
+			int32_t from_mfu_to_tail_pad_size = 0;
 			trun_sample_entry_t* from_missing_mfu_sample_entry = NULL;
 
+			//if we have this sample in-order moof box, then compute offset size...
 			if(from_mfu_sample_number <= moof_box_trun_sample_entry_vector->size) {
 				from_missing_mfu_sample_entry = moof_box_trun_sample_entry_vector->data[from_mfu_sample_number];
 				from_mfu_trun_sample_size = from_missing_mfu_sample_entry->sample_size;
 
-				//compute our last fragment size against the trun
+				//compute our last fragment size against the trun to pad out...
 				if(lls_sls_monitor_buffer_isobmff->last_fragment->mmtp_mpu_type_packet_header.data_unit_length) {
 					from_mfu_to_tail_pad_size = from_mfu_trun_sample_size - lls_sls_monitor_buffer_isobmff->last_fragment->mpu_data_unit_payload_fragments_timed.offset - lls_sls_monitor_buffer_isobmff->last_fragment->mmtp_mpu_type_packet_header.data_unit_length;
 				} else {
 					from_mfu_to_tail_pad_size = from_mfu_trun_sample_size - lls_sls_monitor_buffer_isobmff->last_fragment->mpu_data_unit_payload_fragments_timed.offset - lls_sls_monitor_buffer_isobmff->last_fragment->mmtp_mpu_type_packet_header.mpu_data_unit_payload->i_pos;
 				}
-
-				__data_unit_recover_null_pad_tail(lls_sls_monitor_buffer_isobmff->last_fragment, from_mfu_to_tail_pad_size);
+				if(from_mfu_to_tail_pad_size > 0) {
+					__data_unit_recover_null_pad_tail(lls_sls_monitor_buffer_isobmff->last_fragment, from_mfu_to_tail_pad_size);
+				} else {
+					//we should not get a negative size here unless our moof box is wrong (or missing)...
+					__LLS_SLS_MONITOR_OUTPUT_BUFFER_UTILS_WARN("RECOVER: ERROR: last fragment tail pad from mpu_sequence_number: %u, sample: %u is size: %u",
+							lls_sls_monitor_buffer_isobmff->last_fragment->mmtp_mpu_type_packet_header.mpu_sequence_number,
+							lls_sls_monitor_buffer_isobmff->last_fragment->mpu_data_unit_payload_fragments_timed.sample_number,
+							from_mfu_to_tail_pad_size);
+				}
 			}
 
             uint32_t to_mfu_sample_number = video_data_unit->mpu_data_unit_payload_fragments_timed.sample_number - 1;
 
 			for(int i = from_mfu_sample_number + 1; i < to_mfu_sample_number && i < moof_box_trun_sample_entry_vector->size; i++) {
 				trun_sample_entry_t* missing_mfu_sample_entry = moof_box_trun_sample_entry_vector->data[i];
-				__LLS_SLS_MONITOR_OUTPUT_BUFFER_UTILS_WARN("RECOVER: REMOVE SAMPLE: V: updating moof_box_trun_sample_entry vector to mark %u as to_remove", i);
+				__LLS_SLS_MONITOR_OUTPUT_BUFFER_UTILS_WARN("RECOVER: (TODO FIXME: NOT) REMOVE SAMPLE: V: updating moof_box_trun_sample_entry vector to mark %u as to_remove", i);
 				missing_mfu_sample_entry->to_remove_sample_entry = true;
 			}
 
