@@ -833,10 +833,15 @@ void alc_recon_file_buffer_struct_monitor_fragment_with_init_box(lls_sls_alc_mon
 			__ALC_UTILS_DEBUG("alc_recon_file_buffer_struct_monitor_fragment_with_init_box - setting should_flush output buffer for: audio fragment: %d, video fragment: %d",
 					lls_sls_alc_monitor->last_pending_flushed_audio_toi, lls_sls_alc_monitor->last_pending_flushed_video_toi);
 
+
+
 			lls_sls_alc_monitor->last_completed_flushed_audio_toi = lls_sls_alc_monitor->last_pending_flushed_audio_toi;
 			lls_sls_alc_monitor->last_completed_flushed_video_toi = lls_sls_alc_monitor->last_pending_flushed_video_toi;
 
-
+			lls_sls_alc_monitor->last_closed_audio_toi = 0;
+			lls_sls_alc_monitor->last_pending_flushed_audio_toi = 0;
+			lls_sls_alc_monitor->last_closed_video_toi = 0;
+			lls_sls_alc_monitor->last_pending_flushed_video_toi = 0;
 		}
 	}
 
