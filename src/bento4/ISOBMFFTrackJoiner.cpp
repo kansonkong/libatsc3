@@ -99,7 +99,7 @@ void dumpFullMetadataAndOffsets(list<AP4_Atom_And_Offset_t*> atomList) {
 
 	if(_ISOBMFFTRACKJOINER_DEBUG_ENABLED) {
 		AP4_ByteStream* boxDumpConsoleOutput = NULL;
-		AP4_FileByteStream::Create("-stderr", AP4_FileByteStream::STREAM_MODE_WRITE, boxDumpConsoleOutput);
+		AP4_FileByteStream::Create("isobmff.debug", AP4_FileByteStream::STREAM_MODE_WRITE, boxDumpConsoleOutput);
 		AP4_AtomInspector* inspector = new AP4_PrintInspector(*boxDumpConsoleOutput);
 		inspector->SetVerbosity(3);
 
@@ -728,14 +728,14 @@ void parseAndBuildJoinedBoxes_from_lls_sls_monitor_output_buffer(lls_sls_monitor
 
 		//fractional component is already at 1000000 (uS), so just multiply and add the seconds...
 		uint64_t audio_mpu_presentation_time_s = lls_sls_monitor_output_buffer->audio_output_buffer_isobmff.mpu_presentation_time_s * 1000000;
-		uint64_t audio_mpu_presentation_time_ms = lls_sls_monitor_output_buffer->audio_output_buffer_isobmff.mpu_presentation_time_ms % 1000000; //just to be safe..
+		uint64_t audio_mpu_presentation_time_ms = lls_sls_monitor_output_buffer->audio_output_buffer_isobmff.mpu_presentation_time_us % 1000000; //just to be safe..
 		uint64_t audio_mpu_presentation_time_final_uS =  audio_mpu_presentation_time_s + audio_mpu_presentation_time_ms;
 
 		audio_tfdt_atom_mdhd_timescale = new AP4_TfdtAtom(1, audio_mpu_presentation_time_final_uS);
 
 		//now for video
 		uint64_t video_mpu_presentation_time_s = lls_sls_monitor_output_buffer->video_output_buffer_isobmff.mpu_presentation_time_s * 1000000;
-		uint64_t video_mpu_presentation_time_ms = lls_sls_monitor_output_buffer->video_output_buffer_isobmff.mpu_presentation_time_ms % 1000000; //just to be safe..
+		uint64_t video_mpu_presentation_time_ms = lls_sls_monitor_output_buffer->video_output_buffer_isobmff.mpu_presentation_time_us % 1000000; //just to be safe..
 		uint64_t video_mpu_presentation_time_final_uS =  video_mpu_presentation_time_s + video_mpu_presentation_time_ms;
 
 		video_tfdt_atom_mdhd_timescale = new AP4_TfdtAtom(1, video_mpu_presentation_time_final_uS);
@@ -1359,7 +1359,7 @@ void dumpFullMetadata(list<AP4_Atom*> atomList) {
 
 	if(_ISOBMFFTRACKJOINER_DEBUG_ENABLED) {
 		AP4_ByteStream* boxDumpConsoleOutput = NULL;
-		AP4_FileByteStream::Create("-stderr", AP4_FileByteStream::STREAM_MODE_WRITE, boxDumpConsoleOutput);
+		AP4_FileByteStream::Create("isobmff.debug", AP4_FileByteStream::STREAM_MODE_WRITE, boxDumpConsoleOutput);
 		AP4_AtomInspector* inspector = new AP4_PrintInspector(*boxDumpConsoleOutput);
 		inspector->SetVerbosity(3);
 
