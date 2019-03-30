@@ -146,6 +146,7 @@ void lls_sls_monitor_output_buffer_reset_moof_and_fragment_position(lls_sls_moni
 	lls_sls_monitor_output_buffer->audio_output_buffer_isobmff.fragment_pos = 0;
 	lls_sls_monitor_output_buffer->audio_output_buffer_isobmff.last_fragment = NULL;
 	lls_sls_monitor_output_buffer->audio_output_buffer_isobmff.last_fragment_lost_mfu_count = 0;
+	lls_sls_monitor_output_buffer->audio_output_buffer_isobmff.mpu_presentation_time_set = false;
 
 	lls_sls_monitor_output_buffer->video_output_buffer_isobmff.moof_box_is_from_last_mpu = false;
 	lls_sls_monitor_output_buffer->video_output_buffer_isobmff.moof_box_is_from_last_mpu_processed = false;
@@ -159,6 +160,7 @@ void lls_sls_monitor_output_buffer_reset_moof_and_fragment_position(lls_sls_moni
 	lls_sls_monitor_output_buffer->video_output_buffer_isobmff.fragment_pos = 0;
 	lls_sls_monitor_output_buffer->video_output_buffer_isobmff.last_fragment = NULL;
 	lls_sls_monitor_output_buffer->video_output_buffer_isobmff.last_fragment_lost_mfu_count = 0;
+	lls_sls_monitor_output_buffer->video_output_buffer_isobmff.mpu_presentation_time_set = false;
 
     lls_sls_monitor_output_buffer->should_flush_output_buffer = false;
 }

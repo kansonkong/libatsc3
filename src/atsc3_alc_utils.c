@@ -723,17 +723,20 @@ void alc_recon_file_buffer_struct_monitor_fragment_with_init_box(lls_sls_alc_mon
 	//alc_packet->def_lct_hdr->toi hack
 	if(alc_packet->def_lct_hdr->tsi == lls_sls_alc_monitor->audio_tsi) {
 		lls_sls_alc_monitor->last_closed_audio_toi = alc_packet->def_lct_hdr->toi;
-		if(alc_packet->ext_route_presentation_ntp_timestamp_set) {
+		if(alc_packet->ext_route_presentation_ntp_timestamp_set && !lls_sls_alc_monitor->lls_sls_monitor_output_buffer.audio_output_buffer_isobmff.mpu_presentation_time_set) {
 			lls_sls_alc_monitor->lls_sls_monitor_output_buffer.audio_output_buffer_isobmff.mpu_presentation_time = alc_packet->ext_route_presentation_ntp_timestamp;
 			compute_ntp64_to_seconds_microseconds(lls_sls_alc_monitor->lls_sls_monitor_output_buffer.audio_output_buffer_isobmff.mpu_presentation_time, &lls_sls_alc_monitor->lls_sls_monitor_output_buffer.audio_output_buffer_isobmff.mpu_presentation_time_s, &lls_sls_alc_monitor->lls_sls_monitor_output_buffer.audio_output_buffer_isobmff.mpu_presentation_time_us);
+			lls_sls_alc_monitor->lls_sls_monitor_output_buffer.audio_output_buffer_isobmff.mpu_presentation_time_set = true;
 		}
 	}
 
 	if(alc_packet->def_lct_hdr->tsi == lls_sls_alc_monitor->video_tsi) {
 		lls_sls_alc_monitor->last_closed_video_toi = alc_packet->def_lct_hdr->toi;
-		if(alc_packet->ext_route_presentation_ntp_timestamp_set) {
+		if(alc_packet->ext_route_presentation_ntp_timestamp_set && !lls_sls_alc_monitor->lls_sls_monitor_output_buffer.video_output_buffer_isobmff.mpu_presentation_time_set) {
 			lls_sls_alc_monitor->lls_sls_monitor_output_buffer.video_output_buffer_isobmff.mpu_presentation_time = alc_packet->ext_route_presentation_ntp_timestamp;
 			compute_ntp64_to_seconds_microseconds(lls_sls_alc_monitor->lls_sls_monitor_output_buffer.video_output_buffer_isobmff.mpu_presentation_time, &lls_sls_alc_monitor->lls_sls_monitor_output_buffer.video_output_buffer_isobmff.mpu_presentation_time_s, &lls_sls_alc_monitor->lls_sls_monitor_output_buffer.video_output_buffer_isobmff.mpu_presentation_time_us);
+			lls_sls_alc_monitor->lls_sls_monitor_output_buffer.video_output_buffer_isobmff.mpu_presentation_time_set = true;
+
 		}
 	}
 
@@ -741,26 +744,6 @@ void alc_recon_file_buffer_struct_monitor_fragment_with_init_box(lls_sls_alc_mon
     uint32_t audio_toi = lls_sls_alc_monitor->last_closed_audio_toi;
     uint32_t video_toi = lls_sls_alc_monitor->last_closed_video_toi;
     
-
-//
-//    if(!audio_toi || !video_toi) {
-//        __ALC_UTILS_WARN("audio toi: %u, video toi: %u, bailing", audio_toi, video_toi);
-//        goto cleanup;
-//    }
-//
-//	jjustman-2019-03-30 - do not try and recombine based upon min(toi) values, instead use ntp presentation time (if present)
-//	if(audio_toi != video_toi) {
-//        uint32_t min_toi = MIN(audio_toi, video_toi);
-//        __ALC_UTILS_WARN("audio toi: %u, video toi: %u, using min: %u", audio_toi, video_toi, min_toi);
-//        audio_toi = min_toi;
-//        video_toi = min_toi;
-//	}
-//
-//    if(lls_sls_alc_monitor->processed_toi && (lls_sls_alc_monitor->processed_toi == audio_toi || lls_sls_alc_monitor->processed_toi ==video_toi)) {
-//        __ALC_UTILS_WARN("processed toi: %u, audio toi: %u, video toi: %u, bailing for next counterpart", lls_sls_alc_monitor->processed_toi, audio_toi, video_toi);
-//        goto cleanup;
-//    }
-
 	audio_fragment_file_name = alc_packet_dump_to_object_get_filename_tsi_toi(lls_sls_alc_monitor->audio_tsi, audio_toi);
 	video_fragment_file_name = alc_packet_dump_to_object_get_filename_tsi_toi(lls_sls_alc_monitor->video_tsi, video_toi);
 
