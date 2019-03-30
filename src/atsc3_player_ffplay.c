@@ -272,7 +272,7 @@ pipe_ffplay_buffer_t* pipe_create_ffplay_resolve_fps(lls_sls_monitor_buffer_isob
     __PLAYER_FFPLAY_INFO("creating semaphore with path: %s", sem_name);
 	pipe_ffplay_buffer->pipe_buffer_semaphore = sem_open(sem_name, O_CREAT, 0644, 0);
 	__PLAYER_FFPLAY_INFO("sem_init returned: %p", pipe_ffplay_buffer->pipe_buffer_semaphore);
-	assert(pipe_ffplay_buffer->pipe_buffer_semaphore);
+	assert(pipe_ffplay_buffer->pipe_buffer_semaphore != SEM_FAILED);
 
 	pipe_ffplay_buffer->pipe_buffer_reader = (uint8_t*)calloc(__PLAYER_FFPLAY_PIPE_INTERNAL_BUFFER_SIZE, sizeof(uint8_t));
 	assert(pipe_ffplay_buffer->pipe_buffer_reader);
