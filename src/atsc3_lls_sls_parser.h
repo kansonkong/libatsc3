@@ -61,7 +61,7 @@ extern int _LLS_SLT_UTILS_DEBUG_ENABLED;
 
 
 
-#define _LLS_SLT_UTILS_PRINTLN(...) printf(__VA_ARGS__);printf("\r\n")
+#define _LLS_SLT_UTILS_PRINTLN(...) printf(__VA_ARGS__);printf("%s%s","\r","\n")
 #define _LLS_SLT_UTILS_ERROR(...)   printf("%s:%d:ERROR:",__FILE__,__LINE__);_LLS_SLT_UTILS_PRINTLN(__VA_ARGS__);
 #define _LLS_SLT_UTILS_WARN(...)    printf("%s:%d:WARN:",__FILE__,__LINE__);_LLS_SLT_UTILS_PRINTLN(__VA_ARGS__);
 #define _LLS_SLT_UTILS_INFO(...)    printf("%s:%d:INFO:",__FILE__,__LINE__);_LLS_SLT_UTILS_PRINTLN(__VA_ARGS__);

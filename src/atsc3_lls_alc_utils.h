@@ -23,7 +23,7 @@
 #include "atsc3_lls_sls_parser.h"
 
 
-#define _LLS_PRINTLN(...) printf(__VA_ARGS__);printf("\r\n")
+#define _LLS_PRINTLN(...) printf(__VA_ARGS__);printf("%s%s","\r","\n")
 #define _LLS_PRINTF(...)  printf(__VA_ARGS__);
 
 #define __LLSU_TRACE(...)
