@@ -785,14 +785,15 @@ void alc_recon_file_buffer_struct_monitor_fragment_with_init_box(lls_sls_alc_mon
 			lls_sls_monitor_output_buffer_copy_video_fragment_block(&lls_sls_alc_monitor->lls_sls_monitor_output_buffer, video_fragment_payload);
 			lls_sls_alc_monitor->lls_sls_monitor_output_buffer.has_written_init_box = true;
 			lls_sls_alc_monitor->lls_sls_monitor_output_buffer.should_flush_output_buffer = true;
+	        lls_sls_alc_monitor->last_closed_audio_toi = 0;
+	        lls_sls_alc_monitor->last_closed_audio_toi = 0;
+
 			lls_sls_alc_monitor->last_pending_flushed_audio_toi = 0;
 			lls_sls_alc_monitor->last_pending_flushed_video_toi = 0;
 
 	        lls_sls_alc_monitor->last_completed_flushed_audio_toi = audio_toi;
 	        lls_sls_alc_monitor->last_completed_flushed_video_toi = video_toi;
 
-	        lls_sls_alc_monitor->last_closed_audio_toi = 0;
-	        lls_sls_alc_monitor->last_closed_audio_toi = 0;
 
 		} else {
 			__ALC_UTILS_ERROR("missing init payloads, audio: %p, video: %p", audio_init_payload, video_init_payload);
@@ -800,12 +801,12 @@ void alc_recon_file_buffer_struct_monitor_fragment_with_init_box(lls_sls_alc_mon
 		}
 	} else {
 
-
 		//append audio if we have an audio frame
 		if(audio_toi && audio_fragment_file_name) {
 			audio_fragment_payload = alc_get_payload_from_filename(audio_fragment_file_name);
 			if(audio_fragment_payload) {
 				lls_sls_monitor_output_buffer_copy_audio_fragment_block(&lls_sls_alc_monitor->lls_sls_monitor_output_buffer, audio_fragment_payload);
+				lls_sls_alc_monitor->last_closed_audio_toi = 0;
 				lls_sls_alc_monitor->last_pending_flushed_audio_toi = audio_toi;
 				__ALC_UTILS_DEBUG("alc_recon_file_buffer_struct_monitor_fragment_with_init_box - pushing audio fragment: %d, file: %s", audio_toi, audio_fragment_file_name);
 			} else {
@@ -818,7 +819,9 @@ void alc_recon_file_buffer_struct_monitor_fragment_with_init_box(lls_sls_alc_mon
 			video_fragment_payload = alc_get_payload_from_filename(video_fragment_file_name);
 			if(video_fragment_payload) {
 				lls_sls_monitor_output_buffer_copy_video_fragment_block(&lls_sls_alc_monitor->lls_sls_monitor_output_buffer, video_fragment_payload);
+				lls_sls_alc_monitor->last_closed_video_toi = 0;
 				lls_sls_alc_monitor->last_pending_flushed_video_toi = video_toi;
+
 				__ALC_UTILS_DEBUG("alc_recon_file_buffer_struct_monitor_fragment_with_init_box - pushing video fragment: %d, file: %s", video_toi, video_fragment_file_name);
 			} else {
 				__ALC_UTILS_ERROR("alc_recon_file_buffer_struct_monitor_fragment_with_init_box - missing video fragment: %d, file: %s", video_toi, video_fragment_file_name);
@@ -827,10 +830,12 @@ void alc_recon_file_buffer_struct_monitor_fragment_with_init_box(lls_sls_alc_mon
 
 		if(lls_sls_alc_monitor->last_pending_flushed_audio_toi && lls_sls_alc_monitor->last_pending_flushed_video_toi) {
 			lls_sls_alc_monitor->lls_sls_monitor_output_buffer.should_flush_output_buffer = true;
+			__ALC_UTILS_DEBUG("alc_recon_file_buffer_struct_monitor_fragment_with_init_box - setting should_flush output buffer for: audio fragment: %d, video fragment: %d",
+					lls_sls_alc_monitor->last_pending_flushed_audio_toi, lls_sls_alc_monitor->last_pending_flushed_video_toi);
+
 			lls_sls_alc_monitor->last_completed_flushed_audio_toi = lls_sls_alc_monitor->last_pending_flushed_audio_toi;
 			lls_sls_alc_monitor->last_completed_flushed_video_toi = lls_sls_alc_monitor->last_pending_flushed_video_toi;
-			__ALC_UTILS_DEBUG("alc_recon_file_buffer_struct_monitor_fragment_with_init_box - setting should_flush output buffer for: audio fragment: %d, video fragment: %d",
-					audio_toi, video_toi);
+
 
 		}
 	}
