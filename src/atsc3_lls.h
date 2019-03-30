@@ -50,7 +50,7 @@ int build_aeat_table(lls_table_t* lls_table, xml_node_t* xml_root);
 int build_onscreen_message_notification_table(lls_table_t* lls_table, xml_node_t* xml_root);
 
 
-#define _LLS_PRINTLN(...) printf(__VA_ARGS__);printf("\r\n")
+#define _LLS_PRINTLN(...) printf(__VA_ARGS__);printf("%s%s","\r","\n")
 #define _LLS_PRINTF(...)  printf(__VA_ARGS__);
 
 #define _LLS_ERROR(...)   printf("%s:%d:ERROR:%.4f: ",__FILE__,__LINE__, gt());_LLS_PRINTLN(__VA_ARGS__);
