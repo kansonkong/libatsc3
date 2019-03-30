@@ -278,9 +278,15 @@ static void route_process_from_alc_packet(alc_packet_t **alc_packet) {
     alc_packet_dump_to_object(alc_packet);
     
     if(lls_slt_monitor->lls_sls_alc_monitor->lls_sls_monitor_output_buffer.has_written_init_box && lls_slt_monitor->lls_sls_alc_monitor->lls_sls_monitor_output_buffer.should_flush_output_buffer) {
-     
+
         lls_sls_monitor_output_buffer_t* lls_sls_monitor_output_buffer_final_muxed_payload = atsc3_isobmff_build_joined_isobmff_fragment(&lls_slt_monitor->lls_sls_alc_monitor->lls_sls_monitor_output_buffer);
         
+        if(!lls_sls_monitor_output_buffer_final_muxed_payload) {
+        	lls_slt_monitor->lls_sls_alc_monitor->lls_sls_monitor_output_buffer.should_flush_output_buffer = false;
+        	__ERROR("lls_sls_monitor_output_buffer_final_muxed_payload was NULL!");
+        	return;
+        }
+
         if(true || lls_slt_monitor->lls_sls_alc_monitor->lls_sls_monitor_output_buffer_mode.file_dump_enabled) {
             lls_sls_monitor_output_buffer_file_dump(lls_sls_monitor_output_buffer_final_muxed_payload, "route/", lls_slt_monitor->lls_sls_alc_monitor->last_completed_flushed_audio_toi, lls_slt_monitor->lls_sls_alc_monitor->last_completed_flushed_video_toi);
         }
@@ -299,7 +305,7 @@ static void route_process_from_alc_packet(alc_packet_t **alc_packet) {
 			lls_slt_monitor_check_and_handle_pipe_ffplay_buffer_is_shutdown(lls_slt_monitor);
 
 			pipe_buffer_reader_mutex_unlock(pipe_ffplay_buffer);
-			//reset our buffer pos
+			//reset our buffer pos and should_flush = false;
 			lls_sls_monitor_output_buffer_reset_moof_and_fragment_position(&lls_slt_monitor->lls_sls_alc_monitor->lls_sls_monitor_output_buffer);
         }
     }
