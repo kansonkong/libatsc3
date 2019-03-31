@@ -293,12 +293,57 @@ int lls_sls_monitor_output_buffer_copy_audio_moof_block_from_flow(lls_sls_monito
 
 /**
  * used from atsc3_alc_utils.c
+ *
  */
 int lls_sls_monitor_output_buffer_copy_audio_fragment_block(lls_sls_monitor_output_buffer_t* lls_sls_monitor_output_buffer, block_t* audio_isobmff_fragment) {
     
-    return block_Append(lls_sls_monitor_output_buffer->audio_output_buffer_isobmff.alc_moof_mdat_block,  audio_isobmff_fragment);
+	assert(audio_isobmff_fragment);
+	assert(audio_isobmff_fragment->i_pos);
+
+	if(lls_sls_monitor_output_buffer->audio_output_buffer_isobmff.alc_moof_mdat_block) {
+		block_Release(&lls_sls_monitor_output_buffer->audio_output_buffer_isobmff.alc_moof_mdat_block);
+	}
+	lls_sls_monitor_output_buffer->audio_output_buffer_isobmff.alc_moof_mdat_block = block_Duplicate(audio_isobmff_fragment);
+
+	return lls_sls_monitor_output_buffer->audio_output_buffer_isobmff.alc_moof_mdat_block->i_pos;
 }
 
+/**
+ * used from atsc3_alc_utils.c
+ *
+ * copy and paste from above...
+ */
+int lls_sls_monitor_output_buffer_copy_video_fragment_block(lls_sls_monitor_output_buffer_t* lls_sls_monitor_output_buffer, block_t* video_isobmff_fragment) {
+
+	assert(video_isobmff_fragment);
+	assert(video_isobmff_fragment->i_pos);
+
+	if(lls_sls_monitor_output_buffer->video_output_buffer_isobmff.alc_moof_mdat_block) {
+		block_Release(&lls_sls_monitor_output_buffer->video_output_buffer_isobmff.alc_moof_mdat_block);
+	}
+	lls_sls_monitor_output_buffer->video_output_buffer_isobmff.alc_moof_mdat_block = block_Duplicate(video_isobmff_fragment);
+
+	return lls_sls_monitor_output_buffer->video_output_buffer_isobmff.alc_moof_mdat_block->i_pos;
+}
+
+/*
+ *
+ * support multi-gop route delivery and isobmff concatnation
+ */
+
+int lls_sls_monitor_output_buffer_merge_alc_fragment_block(lls_sls_monitor_buffer_isobmff_t* lls_sls_monitor_buffer_isobmff, block_t* isobmff_fragment) {
+
+	assert(isobmff_fragment);
+	assert(isobmff_fragment->i_pos);
+
+	if(!lls_sls_monitor_buffer_isobmff->alc_moof_mdat_block) {
+		lls_sls_monitor_buffer_isobmff->alc_moof_mdat_block = block_Duplicate(isobmff_fragment);
+	} else {
+		block_Append(lls_sls_monitor_buffer_isobmff->alc_moof_mdat_block, isobmff_fragment);
+	}
+
+	return lls_sls_monitor_buffer_isobmff->alc_moof_mdat_block->i_pos;
+}
 
 
 int lls_sls_monitor_output_buffer_copy_video_init_block(lls_sls_monitor_output_buffer_t* lls_sls_monitor_output_buffer, block_t* video_isobmff_header) {
@@ -328,13 +373,6 @@ int lls_sls_monitor_output_buffer_copy_or_append_moof_block_from_flow(lls_sls_mo
 }
 
 
-/**
- * used from atsc3_alc_utils.c
- */
-
-int lls_sls_monitor_output_buffer_copy_video_fragment_block(lls_sls_monitor_output_buffer_t* lls_sls_monitor_output_buffer, block_t* video_isobmff_fragment) {
-    return block_Append(lls_sls_monitor_output_buffer->video_output_buffer_isobmff.alc_moof_mdat_block, video_isobmff_fragment);
-}
 
 
 
@@ -775,35 +813,6 @@ block_t* lls_sls_monitor_output_buffer_copy_alc_full_isobmff_box(lls_sls_monitor
 
 	return isobmff_alc_full_block;
 }
-
-block_t* lls_sls_monitor_output_buffer_copy_video_alc_full_isobmff_box(lls_sls_monitor_output_buffer_t* lls_sls_monitor_output_buffer) {
-	if(!lls_sls_monitor_output_buffer->video_output_buffer_isobmff.init_block || !lls_sls_monitor_output_buffer->video_output_buffer_isobmff.init_block->i_pos) {
-		__LLS_SLS_MONITOR_OUTPUT_BUFFER_UTILS_ERROR("lls_sls_monitor_output_buffer_copy_video_alc_full_isobmff_box: init box: is: %p or len is 0", lls_sls_monitor_output_buffer->video_output_buffer_isobmff.init_block);
-		return NULL;
-	}
-	if(!lls_sls_monitor_output_buffer->video_output_buffer_isobmff.alc_moof_mdat_block || ! lls_sls_monitor_output_buffer->video_output_buffer_isobmff.alc_moof_mdat_block->i_pos) {
-		__LLS_SLS_MONITOR_OUTPUT_BUFFER_UTILS_ERROR("lls_sls_monitor_output_buffer_copy_video_alc_full_isobmff_box: moof_mdat is: %p or len is 0", lls_sls_monitor_output_buffer->video_output_buffer_isobmff.alc_moof_mdat_block);
-		return NULL;
-	}
-
-	uint32_t full_box_size = lls_sls_monitor_output_buffer->video_output_buffer_isobmff.init_block->i_pos + lls_sls_monitor_output_buffer->video_output_buffer_isobmff.alc_moof_mdat_block->i_pos;
-
-	if(full_box_size <= 0) {
-		__LLS_SLS_MONITOR_OUTPUT_BUFFER_UTILS_ERROR("copy video full box size <= 0, %u, returning NULL", full_box_size);
-		return NULL;
-	}
-	block_t* isobmff_alc_full_block = block_Alloc(full_box_size);
-
-	__LLS_SLS_MONITOR_OUTPUT_BUFFER_UTILS_DEBUG("copy video full box: total size: %u, init size: %u, moof size: %u", full_box_size,
-			lls_sls_monitor_output_buffer->video_output_buffer_isobmff.init_block->i_pos,
-			lls_sls_monitor_output_buffer->video_output_buffer_isobmff.alc_moof_mdat_block->i_pos);
-
-	block_Append(isobmff_alc_full_block, lls_sls_monitor_output_buffer->video_output_buffer_isobmff.init_block);
-	block_Append(isobmff_alc_full_block, lls_sls_monitor_output_buffer->video_output_buffer_isobmff.alc_moof_mdat_block);
-
-	return isobmff_alc_full_block;
-}
-
 
 
 

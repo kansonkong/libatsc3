@@ -410,8 +410,8 @@ void parseAndBuildJoinedBoxes_from_lls_sls_monitor_output_buffer(lls_sls_monitor
 	std::list<AP4_Atom_And_Offset_t*> video_mdatList;
 	std::list<AP4_Atom_And_Offset_t*>::iterator it;
 
-	uint32_t audio_mdat_size_new;
-	uint32_t video_mdat_size_new;
+	uint32_t audio_mdat_size_new = 0;
+	uint32_t video_mdat_size_new = 0;
 
 	AP4_AtomParent* video_moofAtomParent = NULL;
 	AP4_Atom* video_moofAtom = NULL;
@@ -672,6 +672,7 @@ void parseAndBuildJoinedBoxes_from_lls_sls_monitor_output_buffer(lls_sls_monitor
 			audio_trafList.push_back(trafContainerAtom);
 
 			AP4_TrunAtom* temp_trunAtom = AP4_DYNAMIC_CAST(AP4_TrunAtom, trafContainerAtom->GetChild(AP4_ATOM_TYPE_TRUN));
+		
 			audio_trunList.push_back(temp_trunAtom);
 		}
 
