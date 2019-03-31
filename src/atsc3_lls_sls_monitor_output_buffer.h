@@ -37,12 +37,9 @@ typedef struct lls_sls_monitor_buffer_isobmff {
 	uint32_t fps_num;
 	uint32_t fps_denom;
 
-
-
     //isobmff init (ftyp and moov box)
 	block_t* init_block_flow_refragment;
 	block_t* init_block;
-
 
     //combined alc moof and mdat block
     block_t* alc_moof_mdat_block;
@@ -56,13 +53,12 @@ typedef struct lls_sls_monitor_buffer_isobmff {
     block_t* mmt_mdat_block;
 
 
-
     //for fragment recovery
-//    mmtp_payload_fragments_union_t* last_fragment;
+    //mmtp_payload_fragments_union_t* last_fragment;
     //this won't reset unless we do _all
-//    mmtp_payload_fragments_union_t* last_mpu_sequence_number_last_fragment;
+    //mmtp_payload_fragments_union_t* last_mpu_sequence_number_last_fragment;
 
-  //  uint32_t last_fragment_lost_mfu_count;
+    //uint32_t last_fragment_lost_mfu_count;
 
 } lls_sls_monitor_buffer_isobmff_t;
 
