@@ -79,100 +79,134 @@ TODO: atsc3_isobmff_tools.cpp:363:WARN : 1551746974.9445: Movie Fragment Metadat
 
  */
 
+#include "atsc3_lls_sls_monitor_output_buffer.h"
 #include "atsc3_lls_sls_monitor_output_buffer_utils.h"
 
 
 int _LLS_SLS_MONITOR_OUTPUT_BUFFER_UTILS_DEBUG_ENABLED = 0;
 int _LLS_SLS_MONITOR_OUTPUT_BUFFER_UTILS_TRACE_ENABLED = 0;
 
+//
+//int lls_sls_monitor_output_buffer_recover_from_last_video_moof_box(lls_sls_monitor_output_buffer_t* lls_sls_monitor_output_buffer) {
+//	if(lls_sls_monitor_output_buffer->video_output_buffer_isobmff.moof_box && lls_sls_monitor_output_buffer->video_output_buffer_isobmff.last_moof_box_pos) {
+//		lls_sls_monitor_output_buffer->video_output_buffer_isobmff.moof_box_pos = lls_sls_monitor_output_buffer->video_output_buffer_isobmff.last_moof_box_pos;
+//		lls_sls_monitor_output_buffer->video_output_buffer_isobmff.moof_box_is_from_last_mpu = true;
+//		lls_sls_monitor_output_buffer->video_output_buffer_isobmff.moof_box_is_from_last_mpu_processed = false;
+//
+//		//reparse our trun sample table
+//		block_t* moof_box = block_Alloc(lls_sls_monitor_output_buffer->video_output_buffer_isobmff.moof_box_pos);
+//		block_Write(moof_box, lls_sls_monitor_output_buffer->video_output_buffer_isobmff.moof_box, lls_sls_monitor_output_buffer->video_output_buffer_isobmff.moof_box_pos);
+//		trun_sample_entry_vector_t* trun_sample_entry_vector = parseMoofBoxForTrunSampleEntries(moof_box);
+//
+//		//clear out our sample size to be rebuilt later
+//		for(int i=0; i < trun_sample_entry_vector->size; i++) {
+//			trun_sample_entry_vector->data[i]->sample_size = 0;
+//			trun_sample_entry_vector->data[i]->has_matching_sample = false;
+//		}
+//
+//		lls_sls_monitor_output_buffer->video_output_buffer_isobmff.moof_box_trun_sample_entry_vector = trun_sample_entry_vector;
+//	}
+//	return 0;
+//}
 
-int lls_sls_monitor_output_buffer_recover_from_last_video_moof_box(lls_sls_monitor_output_buffer_t* lls_sls_monitor_output_buffer) {
-	if(lls_sls_monitor_output_buffer->video_output_buffer_isobmff.moof_box && lls_sls_monitor_output_buffer->video_output_buffer_isobmff.last_moof_box_pos) {
-		lls_sls_monitor_output_buffer->video_output_buffer_isobmff.moof_box_pos = lls_sls_monitor_output_buffer->video_output_buffer_isobmff.last_moof_box_pos;
-		lls_sls_monitor_output_buffer->video_output_buffer_isobmff.moof_box_is_from_last_mpu = true;
-		lls_sls_monitor_output_buffer->video_output_buffer_isobmff.moof_box_is_from_last_mpu_processed = false;
-
-		//reparse our trun sample table
-		block_t* moof_box = block_Alloc(lls_sls_monitor_output_buffer->video_output_buffer_isobmff.moof_box_pos);
-		block_Write(moof_box, lls_sls_monitor_output_buffer->video_output_buffer_isobmff.moof_box, lls_sls_monitor_output_buffer->video_output_buffer_isobmff.moof_box_pos);
-		trun_sample_entry_vector_t* trun_sample_entry_vector = parseMoofBoxForTrunSampleEntries(moof_box);
-
-		//clear out our sample size to be rebuilt later
-		for(int i=0; i < trun_sample_entry_vector->size; i++) {
-			trun_sample_entry_vector->data[i]->sample_size = 0;
-			trun_sample_entry_vector->data[i]->has_matching_sample = false;
-		}
-
-		lls_sls_monitor_output_buffer->video_output_buffer_isobmff.moof_box_trun_sample_entry_vector = trun_sample_entry_vector;
-	}
-	return 0;
-}
-
-
-int lls_sls_monitor_output_buffer_recover_from_last_audio_moof_box(lls_sls_monitor_output_buffer_t* lls_sls_monitor_output_buffer) {
-	if(lls_sls_monitor_output_buffer->audio_output_buffer_isobmff.moof_box && lls_sls_monitor_output_buffer->audio_output_buffer_isobmff.last_moof_box_pos) {
-		lls_sls_monitor_output_buffer->audio_output_buffer_isobmff.moof_box_pos = lls_sls_monitor_output_buffer->audio_output_buffer_isobmff.last_moof_box_pos;
-		lls_sls_monitor_output_buffer->audio_output_buffer_isobmff.moof_box_is_from_last_mpu = true;
-		lls_sls_monitor_output_buffer->audio_output_buffer_isobmff.moof_box_is_from_last_mpu_processed = false;
-
-		//reparse our trun sample table
-		block_t* moof_box = block_Alloc(lls_sls_monitor_output_buffer->audio_output_buffer_isobmff.moof_box_pos);
-		block_Write(moof_box, lls_sls_monitor_output_buffer->audio_output_buffer_isobmff.moof_box, lls_sls_monitor_output_buffer->audio_output_buffer_isobmff.moof_box_pos);
-		trun_sample_entry_vector_t* trun_sample_entry_vector = parseMoofBoxForTrunSampleEntries(moof_box);
-
-		//clear out our sample size to be rebuilt later
-		for(int i=0; i < trun_sample_entry_vector->size; i++) {
-			trun_sample_entry_vector->data[i]->sample_size = 0;
-			trun_sample_entry_vector->data[i]->has_matching_sample = false;
-		}
-
-		lls_sls_monitor_output_buffer->audio_output_buffer_isobmff.moof_box_trun_sample_entry_vector = trun_sample_entry_vector;
-	}
-	return 0;
-}
+//
+//int lls_sls_monitor_output_buffer_recover_from_last_audio_moof_box(lls_sls_monitor_output_buffer_t* lls_sls_monitor_output_buffer) {
+//	if(lls_sls_monitor_output_buffer->audio_output_buffer_isobmff.moof_box && lls_sls_monitor_output_buffer->audio_output_buffer_isobmff.last_moof_box_pos) {
+//		lls_sls_monitor_output_buffer->audio_output_buffer_isobmff.moof_box_pos = lls_sls_monitor_output_buffer->audio_output_buffer_isobmff.last_moof_box_pos;
+//		lls_sls_monitor_output_buffer->audio_output_buffer_isobmff.moof_box_is_from_last_mpu = true;
+//		lls_sls_monitor_output_buffer->audio_output_buffer_isobmff.moof_box_is_from_last_mpu_processed = false;
+//
+//		//reparse our trun sample table
+//		block_t* moof_box = block_Alloc(lls_sls_monitor_output_buffer->audio_output_buffer_isobmff.moof_box_pos);
+//		block_Write(moof_box, lls_sls_monitor_output_buffer->audio_output_buffer_isobmff.moof_box, lls_sls_monitor_output_buffer->audio_output_buffer_isobmff.moof_box_pos);
+//		trun_sample_entry_vector_t* trun_sample_entry_vector = parseMoofBoxForTrunSampleEntries(moof_box);
+//
+//		//clear out our sample size to be rebuilt later
+//		for(int i=0; i < trun_sample_entry_vector->size; i++) {
+//			trun_sample_entry_vector->data[i]->sample_size = 0;
+//			trun_sample_entry_vector->data[i]->has_matching_sample = false;
+//		}
+//
+//		lls_sls_monitor_output_buffer->audio_output_buffer_isobmff.moof_box_trun_sample_entry_vector = trun_sample_entry_vector;
+//	}
+//	return 0;
+//}
 
 
 void lls_sls_monitor_output_buffer_reset_moof_and_fragment_position(lls_sls_monitor_output_buffer_t* lls_sls_monitor_output_buffer) {
-	lls_sls_monitor_output_buffer->audio_output_buffer_isobmff.moof_box_is_from_last_mpu = false;
-	lls_sls_monitor_output_buffer->audio_output_buffer_isobmff.moof_box_is_from_last_mpu_processed = false;
 
-	if(lls_sls_monitor_output_buffer->audio_output_buffer_isobmff.moof_box_trun_sample_entry_vector) {
-		free(lls_sls_monitor_output_buffer->audio_output_buffer_isobmff.moof_box_trun_sample_entry_vector);
-		lls_sls_monitor_output_buffer->audio_output_buffer_isobmff.moof_box_trun_sample_entry_vector = NULL;
-	}
-	lls_sls_monitor_output_buffer->audio_output_buffer_isobmff.last_moof_box_pos = lls_sls_monitor_output_buffer->audio_output_buffer_isobmff.moof_box_pos;
-
-	lls_sls_monitor_output_buffer->audio_output_buffer_isobmff.moof_box_pos = 0;
-	lls_sls_monitor_output_buffer->audio_output_buffer_isobmff.fragment_pos = 0;
-	lls_sls_monitor_output_buffer->audio_output_buffer_isobmff.last_fragment = NULL;
-	lls_sls_monitor_output_buffer->audio_output_buffer_isobmff.last_fragment_lost_mfu_count = 0;
+	lls_sls_monitor_buffer_isobmff_clear_trun_sample_entry(&lls_sls_monitor_output_buffer->audio_output_buffer_isobmff);
 	lls_sls_monitor_output_buffer->audio_output_buffer_isobmff.mpu_presentation_time_set = false;
 
-	lls_sls_monitor_output_buffer->video_output_buffer_isobmff.moof_box_is_from_last_mpu = false;
-	lls_sls_monitor_output_buffer->video_output_buffer_isobmff.moof_box_is_from_last_mpu_processed = false;
 
-	if(lls_sls_monitor_output_buffer->video_output_buffer_isobmff.moof_box_trun_sample_entry_vector) {
-		free(lls_sls_monitor_output_buffer->video_output_buffer_isobmff.moof_box_trun_sample_entry_vector);
-		lls_sls_monitor_output_buffer->video_output_buffer_isobmff.moof_box_trun_sample_entry_vector = NULL;
-	}
-	lls_sls_monitor_output_buffer->video_output_buffer_isobmff.last_moof_box_pos = lls_sls_monitor_output_buffer->video_output_buffer_isobmff.moof_box_pos;
-	lls_sls_monitor_output_buffer->video_output_buffer_isobmff.moof_box_pos = 0;
-	lls_sls_monitor_output_buffer->video_output_buffer_isobmff.fragment_pos = 0;
-	lls_sls_monitor_output_buffer->video_output_buffer_isobmff.last_fragment = NULL;
-	lls_sls_monitor_output_buffer->video_output_buffer_isobmff.last_fragment_lost_mfu_count = 0;
+
+	block_Release(&lls_sls_monitor_output_buffer->audio_output_buffer_isobmff.alc_moof_mdat_block);
+	block_Release(&lls_sls_monitor_output_buffer->audio_output_buffer_isobmff.mmt_moof_block_reconstituted);
+	block_Release(&lls_sls_monitor_output_buffer->audio_output_buffer_isobmff.mmt_moof_block_from_flow);
+
+	block_Release(&lls_sls_monitor_output_buffer->audio_output_buffer_isobmff.mmt_mdat_block);
+
+
+	lls_sls_monitor_buffer_isobmff_clear_trun_sample_entry(&lls_sls_monitor_output_buffer->video_output_buffer_isobmff);
 	lls_sls_monitor_output_buffer->video_output_buffer_isobmff.mpu_presentation_time_set = false;
+	block_Release(&lls_sls_monitor_output_buffer->video_output_buffer_isobmff.alc_moof_mdat_block);
+	block_Release(&lls_sls_monitor_output_buffer->video_output_buffer_isobmff.mmt_moof_block_reconstituted);
+	block_Release(&lls_sls_monitor_output_buffer->video_output_buffer_isobmff.mmt_moof_block_from_flow);
+
+	block_Release(&lls_sls_monitor_output_buffer->video_output_buffer_isobmff.mmt_mdat_block);
 
     lls_sls_monitor_output_buffer->should_flush_output_buffer = false;
 }
 
-void lls_sls_monitor_output_buffer_reset_all_position(lls_sls_monitor_output_buffer_t* lls_sls_monitor_output_buffer) {
-	lls_sls_monitor_output_buffer->audio_output_buffer_isobmff.init_box_pos = 0;
-	lls_sls_monitor_output_buffer->audio_output_buffer_isobmff.last_mpu_sequence_number_last_fragment = NULL;
 
-	lls_sls_monitor_output_buffer->video_output_buffer_isobmff.init_box_pos = 0;
-	lls_sls_monitor_output_buffer->video_output_buffer_isobmff.last_mpu_sequence_number_last_fragment = NULL;
+void lls_sls_monitor_output_buffer_reset_all_position(lls_sls_monitor_output_buffer_t* lls_sls_monitor_output_buffer) {
+
+	//clear out any in-flight re-fragments
+	//clear out any pending init_refragment_blocks if we have any lost packets
+	block_Release(&lls_sls_monitor_output_buffer->audio_output_buffer_isobmff.init_block_flow_refragment);
+	block_Release(&lls_sls_monitor_output_buffer->video_output_buffer_isobmff.init_block_flow_refragment);
+assert(true);
+
+	block_Release(&lls_sls_monitor_output_buffer->audio_output_buffer_isobmff.init_block);
+	block_Release(&lls_sls_monitor_output_buffer->video_output_buffer_isobmff.init_block);
+
+//	lls_sls_monitor_output_buffer->audio_output_buffer_isobmff.last_mpu_sequence_number_last_fragment = NULL;
+
+//	lls_sls_monitor_output_buffer->video_output_buffer_isobmff.last_mpu_sequence_number_last_fragment = NULL;
 
 	lls_sls_monitor_output_buffer_reset_moof_and_fragment_position(lls_sls_monitor_output_buffer);
+}
+
+
+
+
+bool lls_sls_monitor_output_buffer_init_block_flow_refragment(lls_sls_monitor_buffer_isobmff_t* lls_sls_monitor_buffer_isobmff, mmtp_payload_fragments_union_t* mpu_metadata_fragment) {
+
+	//lls_sls_monitor_output_buffer_copy_video_init_block(lls_sls_monitor_output_buffer, mpu_metadata_fragment->mmtp_mpu_type_packet_header.mpu_data_unit_payload);
+	if(mpu_metadata_fragment->mmtp_mpu_type_packet_header.mpu_fragmentation_indicator == 0) {
+		//this is a full fragment, so copy over
+		lls_sls_monitor_output_buffer_copy_init_block_flow_refragment(lls_sls_monitor_buffer_isobmff, mpu_metadata_fragment->mmtp_mpu_type_packet_header.mpu_data_unit_payload);
+		__LLS_SLS_MONITOR_OUTPUT_BUFFER_UTILS_DEBUG("completing init box for packet_id: %d, mpu_sequence_number: %u", mpu_metadata_fragment->mmtp_mpu_type_packet_header.mmtp_packet_id, mpu_metadata_fragment->mmtp_mpu_type_packet_header.mpu_sequence_number);
+
+		return true;
+	} else if(mpu_metadata_fragment->mmtp_mpu_type_packet_header.mpu_fragmentation_indicator == 1) {
+		//start of a fragment
+		lls_sls_monitor_output_buffer_copy_init_block_flow_refragment(lls_sls_monitor_buffer_isobmff, mpu_metadata_fragment->mmtp_mpu_type_packet_header.mpu_data_unit_payload);
+		__LLS_SLS_MONITOR_OUTPUT_BUFFER_UTILS_DEBUG("found init w/ mpu_fragmentation_indicator=0x1 box for packet_id: %d, mpu_sequence_number: %u", mpu_metadata_fragment->mmtp_mpu_type_packet_header.mmtp_packet_id, mpu_metadata_fragment->mmtp_mpu_type_packet_header.mpu_sequence_number);
+		return false;
+	} else if(mpu_metadata_fragment->mmtp_mpu_type_packet_header.mpu_fragmentation_indicator == 2) {
+		//start of a fragment
+		lls_sls_monitor_output_buffer_append_init_block_flow_refragment(lls_sls_monitor_buffer_isobmff, mpu_metadata_fragment->mmtp_mpu_type_packet_header.mpu_data_unit_payload);
+		__LLS_SLS_MONITOR_OUTPUT_BUFFER_UTILS_DEBUG("found init w/ mpu_fragmentation_indicator=0x2 box for packet_id: %d, mpu_sequence_number: %u", mpu_metadata_fragment->mmtp_mpu_type_packet_header.mmtp_packet_id, mpu_metadata_fragment->mmtp_mpu_type_packet_header.mpu_sequence_number);
+		return false;
+	} else if(mpu_metadata_fragment->mmtp_mpu_type_packet_header.mpu_fragmentation_indicator == 3) {
+			//start of a fragment
+		lls_sls_monitor_output_buffer_append_init_block_flow_refragment(lls_sls_monitor_buffer_isobmff, mpu_metadata_fragment->mmtp_mpu_type_packet_header.mpu_data_unit_payload);
+		__LLS_SLS_MONITOR_OUTPUT_BUFFER_UTILS_DEBUG("completing init w/ mpu_fragmentation_indicator=0x3 box for packet_id: %d, mpu_sequence_number: %u", mpu_metadata_fragment->mmtp_mpu_type_packet_header.mmtp_packet_id, mpu_metadata_fragment->mmtp_mpu_type_packet_header.mpu_sequence_number);
+		return true;
+	}
+
+	return false;
 }
 
 
@@ -202,203 +236,217 @@ int __lls_sls_monitor_output_buffer_check_and_copy(uint8_t* dest_box, uint32_t* 
 	}
 }
 
+int lls_sls_monitor_output_buffer_copy_init_block(lls_sls_monitor_buffer_isobmff_t* lls_sls_monitor_buffer_isobmff, block_t* init_block) {
+	assert(init_block);
+	assert(init_block->i_pos);
+
+	if(lls_sls_monitor_buffer_isobmff->init_block) {
+		block_Release(&lls_sls_monitor_buffer_isobmff->init_block);
+	}
+	lls_sls_monitor_buffer_isobmff->init_block = block_Duplicate(init_block);
+
+	return lls_sls_monitor_buffer_isobmff->init_block->i_pos;
+}
+
+int lls_sls_monitor_output_buffer_copy_init_block_flow_refragment(lls_sls_monitor_buffer_isobmff_t* lls_sls_monitor_buffer_isobmff, block_t* init_block) {
+
+	assert(init_block);
+	assert(init_block->i_pos);
+
+	if(lls_sls_monitor_buffer_isobmff->init_block_flow_refragment) {
+		block_Release(&lls_sls_monitor_buffer_isobmff->init_block_flow_refragment);
+	}
+	lls_sls_monitor_buffer_isobmff->init_block_flow_refragment = block_Duplicate(init_block);
+
+	return lls_sls_monitor_buffer_isobmff->init_block_flow_refragment->i_pos;
+}
+
+
+int lls_sls_monitor_output_buffer_append_init_block_flow_refragment(lls_sls_monitor_buffer_isobmff_t* lls_sls_monitor_buffer_isobmff, block_t* init_block) {
+
+	block_Append(lls_sls_monitor_buffer_isobmff->init_block_flow_refragment, init_block);
+
+	return lls_sls_monitor_buffer_isobmff->init_block_flow_refragment->i_pos;
+}
+
 int lls_sls_monitor_output_buffer_copy_audio_init_block(lls_sls_monitor_output_buffer_t* lls_sls_monitor_output_buffer, block_t* audio_isobmff_header) {
 
-    if(!lls_sls_monitor_output_buffer->audio_output_buffer_isobmff.init_box) {
-        lls_sls_monitor_output_buffer->audio_output_buffer_isobmff.init_box = (uint8_t*)calloc(_LLS_SLS_MONITOR_OUTPUT_MAX_INIT_BUFFER, sizeof(uint8_t));
-    }
-    return __lls_sls_monitor_output_buffer_check_and_copy(lls_sls_monitor_output_buffer->audio_output_buffer_isobmff.init_box, &lls_sls_monitor_output_buffer->audio_output_buffer_isobmff.init_box_pos, _LLS_SLS_MONITOR_OUTPUT_MAX_INIT_BUFFER, audio_isobmff_header);
+	if(lls_sls_monitor_output_buffer->audio_output_buffer_isobmff.init_block) {
+		block_Release(&lls_sls_monitor_output_buffer->audio_output_buffer_isobmff.init_block);
+	}
+	lls_sls_monitor_output_buffer->audio_output_buffer_isobmff.init_block = block_Duplicate(audio_isobmff_header);
+
+	return lls_sls_monitor_output_buffer->audio_output_buffer_isobmff.init_block->i_pos;
 }
 
+//used for mmt 0x1 moof merging
 
-int lls_sls_monitor_output_buffer_copy_audio_moof_block(lls_sls_monitor_output_buffer_t* lls_sls_monitor_output_buffer, block_t* audio_isobmff_moof) {
+int lls_sls_monitor_output_buffer_copy_audio_moof_block_from_flow(lls_sls_monitor_output_buffer_t* lls_sls_monitor_output_buffer, block_t* audio_isobmff_moof) {
 
-    if(!lls_sls_monitor_output_buffer->audio_output_buffer_isobmff.moof_box) {
-        lls_sls_monitor_output_buffer->audio_output_buffer_isobmff.moof_box = (uint8_t*)calloc(_LLS_SLS_MONITOR_OUTPUT_MAX_MOOF_BUFFER, sizeof(uint8_t));
-    }
-    return __lls_sls_monitor_output_buffer_check_and_copy(lls_sls_monitor_output_buffer->audio_output_buffer_isobmff.moof_box, &lls_sls_monitor_output_buffer->audio_output_buffer_isobmff.moof_box_pos, _LLS_SLS_MONITOR_OUTPUT_MAX_MOOF_BUFFER, audio_isobmff_moof);
+	if(lls_sls_monitor_output_buffer->audio_output_buffer_isobmff.mmt_moof_block_from_flow) {
+			block_Release(&lls_sls_monitor_output_buffer->audio_output_buffer_isobmff.mmt_moof_block_from_flow);
+	}
+	lls_sls_monitor_output_buffer->audio_output_buffer_isobmff.mmt_moof_block_from_flow = block_Duplicate(audio_isobmff_moof);
+
+	return lls_sls_monitor_output_buffer->audio_output_buffer_isobmff.mmt_moof_block_from_flow->i_pos;
 }
 
-
+/**
+ * used from atsc3_alc_utils.c
+ */
 int lls_sls_monitor_output_buffer_copy_audio_fragment_block(lls_sls_monitor_output_buffer_t* lls_sls_monitor_output_buffer, block_t* audio_isobmff_fragment) {
     
-    if(!lls_sls_monitor_output_buffer->audio_output_buffer_isobmff.fragment_box) {
-        lls_sls_monitor_output_buffer->audio_output_buffer_isobmff.fragment_box = (uint8_t*)calloc(_LLS_SLS_MONITOR_OUTPUT_MAX_FRAGMENT_BUFFER, sizeof(uint8_t));
-    }
-    return __lls_sls_monitor_output_buffer_check_and_copy(lls_sls_monitor_output_buffer->audio_output_buffer_isobmff.fragment_box, &lls_sls_monitor_output_buffer->audio_output_buffer_isobmff.fragment_pos, _LLS_SLS_MONITOR_OUTPUT_MAX_FRAGMENT_BUFFER, audio_isobmff_fragment);
+    return block_Append(lls_sls_monitor_output_buffer->audio_output_buffer_isobmff.alc_moof_mdat_block,  audio_isobmff_fragment);
 }
+
 
 
 int lls_sls_monitor_output_buffer_copy_video_init_block(lls_sls_monitor_output_buffer_t* lls_sls_monitor_output_buffer, block_t* video_isobmff_header) {
 
-    if(!lls_sls_monitor_output_buffer->video_output_buffer_isobmff.init_box) {
-        lls_sls_monitor_output_buffer->video_output_buffer_isobmff.init_box = (uint8_t*)calloc(_LLS_SLS_MONITOR_OUTPUT_MAX_INIT_BUFFER, sizeof(uint8_t));
-    }
-    return __lls_sls_monitor_output_buffer_check_and_copy(lls_sls_monitor_output_buffer->video_output_buffer_isobmff.init_box, &lls_sls_monitor_output_buffer->video_output_buffer_isobmff.init_box_pos, _LLS_SLS_MONITOR_OUTPUT_MAX_INIT_BUFFER, video_isobmff_header);
+	assert(video_isobmff_header);
+	assert(video_isobmff_header->i_pos);
+
+	if(lls_sls_monitor_output_buffer->video_output_buffer_isobmff.init_block) {
+		block_Release(&lls_sls_monitor_output_buffer->video_output_buffer_isobmff.init_block);
+	}
+	lls_sls_monitor_output_buffer->video_output_buffer_isobmff.init_block = block_Duplicate(video_isobmff_header);
+
+	return lls_sls_monitor_output_buffer->video_output_buffer_isobmff.init_block->i_pos;
 }
 
 
-int lls_sls_monitor_output_buffer_copy_video_moof_block(lls_sls_monitor_output_buffer_t* lls_sls_monitor_output_buffer, block_t* video_isobmff_moof) {
 
-    if(!lls_sls_monitor_output_buffer->video_output_buffer_isobmff.moof_box) {
-        lls_sls_monitor_output_buffer->video_output_buffer_isobmff.moof_box = (uint8_t*)calloc(_LLS_SLS_MONITOR_OUTPUT_MAX_MOOF_BUFFER, sizeof(uint8_t));
-    }
-    return __lls_sls_monitor_output_buffer_check_and_copy(lls_sls_monitor_output_buffer->video_output_buffer_isobmff.moof_box, &lls_sls_monitor_output_buffer->video_output_buffer_isobmff.moof_box_pos, _LLS_SLS_MONITOR_OUTPUT_MAX_MOOF_BUFFER, video_isobmff_moof);
+int lls_sls_monitor_output_buffer_copy_or_append_moof_block_from_flow(lls_sls_monitor_buffer_isobmff_t* lls_sls_monitor_buffer_isobmff, block_t* isobmff_moof_block) {
+
+	if(lls_sls_monitor_buffer_isobmff->mmt_moof_block_from_flow) {
+		block_Append(lls_sls_monitor_buffer_isobmff->mmt_moof_block_from_flow, isobmff_moof_block);
+	} else {
+		lls_sls_monitor_buffer_isobmff->mmt_moof_block_from_flow = block_Duplicate(isobmff_moof_block);
+	}
+
+	return lls_sls_monitor_buffer_isobmff->mmt_moof_block_from_flow->i_pos;
 }
 
 
-int lls_sls_monitor_output_buffer_copy_and_parse_audio_moof_block(lls_sls_monitor_output_buffer_t* lls_sls_monitor_output_buffer, mmtp_payload_fragments_union_t* audio_isobmff_moof_fragment) {
-
-    if(!lls_sls_monitor_output_buffer->audio_output_buffer_isobmff.moof_box) {
-        lls_sls_monitor_output_buffer->audio_output_buffer_isobmff.moof_box = (uint8_t*)calloc(_LLS_SLS_MONITOR_OUTPUT_MAX_MOOF_BUFFER, sizeof(uint8_t));
-    }
-    int size = __lls_sls_monitor_output_buffer_check_and_copy(lls_sls_monitor_output_buffer->audio_output_buffer_isobmff.moof_box, &lls_sls_monitor_output_buffer->audio_output_buffer_isobmff.moof_box_pos, _LLS_SLS_MONITOR_OUTPUT_MAX_MOOF_BUFFER, audio_isobmff_moof_fragment->mmtp_mpu_type_packet_header.mpu_data_unit_payload);
-    if(size && (audio_isobmff_moof_fragment->mmtp_mpu_type_packet_header.mpu_fragmentation_indicator == 0x0 || audio_isobmff_moof_fragment->mmtp_mpu_type_packet_header.mpu_fragmentation_indicator == 0x3)) {
-    	//parse this as a mdat
-    	block_t* moof_box = block_Alloc(lls_sls_monitor_output_buffer->audio_output_buffer_isobmff.moof_box_pos);
-    	block_Write(moof_box, lls_sls_monitor_output_buffer->audio_output_buffer_isobmff.moof_box, lls_sls_monitor_output_buffer->audio_output_buffer_isobmff.moof_box_pos);
-    	trun_sample_entry_vector_t* trun_sample_entry_vector = parseMoofBoxForTrunSampleEntries(moof_box);
-    	lls_sls_monitor_output_buffer->audio_output_buffer_isobmff.moof_box_trun_sample_entry_vector = trun_sample_entry_vector;
-    }
-    return size;
-}
-
-int lls_sls_monitor_output_buffer_copy_and_parse_video_moof_block(lls_sls_monitor_output_buffer_t* lls_sls_monitor_output_buffer, mmtp_payload_fragments_union_t* video_isobmff_moof_fragment) {
-
-    if(!lls_sls_monitor_output_buffer->video_output_buffer_isobmff.moof_box) {
-        lls_sls_monitor_output_buffer->video_output_buffer_isobmff.moof_box = (uint8_t*)calloc(_LLS_SLS_MONITOR_OUTPUT_MAX_MOOF_BUFFER, sizeof(uint8_t));
-    }
-    int size = __lls_sls_monitor_output_buffer_check_and_copy(lls_sls_monitor_output_buffer->video_output_buffer_isobmff.moof_box, &lls_sls_monitor_output_buffer->video_output_buffer_isobmff.moof_box_pos, _LLS_SLS_MONITOR_OUTPUT_MAX_MOOF_BUFFER, video_isobmff_moof_fragment->mmtp_mpu_type_packet_header.mpu_data_unit_payload);
-    if(size && (video_isobmff_moof_fragment->mmtp_mpu_type_packet_header.mpu_fragmentation_indicator == 0x0 || video_isobmff_moof_fragment->mmtp_mpu_type_packet_header.mpu_fragmentation_indicator == 0x3)) {
-    	//parse this as a mdat
-    	block_t* moof_box = block_Alloc(lls_sls_monitor_output_buffer->video_output_buffer_isobmff.moof_box_pos);
-    	block_Write(moof_box, lls_sls_monitor_output_buffer->video_output_buffer_isobmff.moof_box, lls_sls_monitor_output_buffer->video_output_buffer_isobmff.moof_box_pos);
-    	trun_sample_entry_vector_t* trun_sample_entry_vector = parseMoofBoxForTrunSampleEntries(moof_box);
-    	lls_sls_monitor_output_buffer->video_output_buffer_isobmff.moof_box_trun_sample_entry_vector = trun_sample_entry_vector;
-    }
-    return size;
-}
-
+/**
+ * used from atsc3_alc_utils.c
+ */
 
 int lls_sls_monitor_output_buffer_copy_video_fragment_block(lls_sls_monitor_output_buffer_t* lls_sls_monitor_output_buffer, block_t* video_isobmff_fragment) {
-
-    if(!lls_sls_monitor_output_buffer->video_output_buffer_isobmff.fragment_box) {
-        lls_sls_monitor_output_buffer->video_output_buffer_isobmff.fragment_box = (uint8_t*)calloc(_LLS_SLS_MONITOR_OUTPUT_MAX_FRAGMENT_BUFFER, sizeof(uint8_t));
-    }
-    return __lls_sls_monitor_output_buffer_check_and_copy(lls_sls_monitor_output_buffer->video_output_buffer_isobmff.fragment_box, &lls_sls_monitor_output_buffer->video_output_buffer_isobmff.fragment_pos, _LLS_SLS_MONITOR_OUTPUT_MAX_FRAGMENT_BUFFER, video_isobmff_fragment);
+    return block_Append(lls_sls_monitor_output_buffer->video_output_buffer_isobmff.alc_moof_mdat_block, video_isobmff_fragment);
 }
 
 
 
 void __data_unit_recover_null_pad_offset(mmtp_payload_fragments_union_t* data_unit) {
-	uint32_t to_null_size =	data_unit->mpu_data_unit_payload_fragments_timed.offset;
-	__LLS_SLS_MONITOR_OUTPUT_BUFFER_UTILS_WARN("RECOVER: null pad: adding %u head to %u, sample: %u, fragment: %u, mpu_sequence_number: %u, packet_sequence_number: %u",
-			to_null_size,
-			data_unit->mmtp_mpu_type_packet_header.mpu_data_unit_payload->i_pos,
-			data_unit->mpu_data_unit_payload_fragments_timed.sample_number,
-			data_unit->mpu_data_unit_payload_fragments_timed.mpu_fragmentation_counter,
-			data_unit->mmtp_mpu_type_packet_header.mpu_sequence_number,
-			data_unit->mmtp_mpu_type_packet_header.packet_sequence_number);
-
-	block_t* temp_mpu_data_unit_payload = block_Alloc(to_null_size + data_unit->mmtp_mpu_type_packet_header.mpu_data_unit_payload->i_pos);
-	temp_mpu_data_unit_payload->i_pos = to_null_size;
-	block_Write(temp_mpu_data_unit_payload, data_unit->mmtp_mpu_type_packet_header.mpu_data_unit_payload->p_buffer, data_unit->mmtp_mpu_type_packet_header.mpu_data_unit_payload->i_pos);
-	//hack - keep track of our old du size
-	data_unit->mmtp_mpu_type_packet_header.data_unit_length = data_unit->mmtp_mpu_type_packet_header.mpu_data_unit_payload->i_pos;
-
-	block_Release(&data_unit->mmtp_mpu_type_packet_header.mpu_data_unit_payload);
-	data_unit->mmtp_mpu_type_packet_header.mpu_data_unit_payload = temp_mpu_data_unit_payload;
+//	uint32_t to_null_size =	data_unit->mpu_data_unit_payload_fragments_timed.;
+//	__LLS_SLS_MONITOR_OUTPUT_BUFFER_UTILS_WARN("RECOVER: null pad: adding %u head to %u, sample: %u, fragment: %u, mpu_sequence_number: %u, packet_sequence_number: %u",
+//			to_null_size,
+//			data_unit->mmtp_mpu_type_packet_header.mpu_data_unit_payload->i_pos,
+//			data_unit->mpu_data_unit_payload_fragments_timed.sample_number,
+//			data_unit->mpu_data_unit_payload_fragments_timed.mpu_fragmentation_counter,
+//			data_unit->mmtp_mpu_type_packet_header.mpu_sequence_number,
+//			data_unit->mmtp_mpu_type_packet_header.packet_sequence_number);
+//
+//	block_t* temp_mpu_data_unit_payload = block_Alloc(to_null_size + data_unit->mmtp_mpu_type_packet_header.mpu_data_unit_payload->i_pos);
+//	temp_mpu_data_unit_payload->i_pos = to_null_size;
+//	block_Write(temp_mpu_data_unit_payload, data_unit->mmtp_mpu_type_packet_header.mpu_data_unit_payload->p_buffer, data_unit->mmtp_mpu_type_packet_header.mpu_data_unit_payload->i_pos);
+//	//hack - keep track of our old du size
+//	data_unit->mmtp_mpu_type_packet_header.data_unit_length = data_unit->mmtp_mpu_type_packet_header.mpu_data_unit_payload->i_pos;
+//
+//	block_Release(&data_unit->mmtp_mpu_type_packet_header.mpu_data_unit_payload);
+//	data_unit->mmtp_mpu_type_packet_header.mpu_data_unit_payload = temp_mpu_data_unit_payload;
 }
 
 
 void __data_unit_recover_null_pad_tail(mmtp_payload_fragments_union_t* data_unit, uint32_t tail_pad_size) {
-	__LLS_SLS_MONITOR_OUTPUT_BUFFER_UTILS_WARN("RECOVER: tail pad: adding %u tail to %u, sample: %u, fragment: %u, mpu_sequence_number: %u, packet_sequence_number: %u",
-			tail_pad_size,
-			data_unit->mmtp_mpu_type_packet_header.mpu_data_unit_payload->i_pos,
-			data_unit->mpu_data_unit_payload_fragments_timed.sample_number,
-			data_unit->mpu_data_unit_payload_fragments_timed.mpu_fragmentation_counter,
-			data_unit->mmtp_mpu_type_packet_header.mpu_sequence_number,
-			data_unit->mmtp_mpu_type_packet_header.packet_sequence_number);
-
-	uint32_t new_tail_pos = tail_pad_size + data_unit->mmtp_mpu_type_packet_header.mpu_data_unit_payload->i_pos;
-	block_t* temp_mpu_data_unit_payload = block_Alloc(new_tail_pos);
-	block_Write(temp_mpu_data_unit_payload, data_unit->mmtp_mpu_type_packet_header.mpu_data_unit_payload->p_buffer, data_unit->mmtp_mpu_type_packet_header.mpu_data_unit_payload->i_pos);
-	temp_mpu_data_unit_payload->i_pos = new_tail_pos;
-
-    //hack - keep track of our old du size
-	data_unit->mmtp_mpu_type_packet_header.data_unit_length = data_unit->mmtp_mpu_type_packet_header.mpu_data_unit_payload->i_pos;
-
-	block_Release(&data_unit->mmtp_mpu_type_packet_header.mpu_data_unit_payload);
-	data_unit->mmtp_mpu_type_packet_header.mpu_data_unit_payload = temp_mpu_data_unit_payload;
+//	__LLS_SLS_MONITOR_OUTPUT_BUFFER_UTILS_WARN("RECOVER: tail pad: adding %u tail to %u, sample: %u, fragment: %u, mpu_sequence_number: %u, packet_sequence_number: %u",
+//			tail_pad_size,
+//			data_unit->mmtp_mpu_type_packet_header.mpu_data_unit_payload->i_pos,
+//			data_unit->mpu_data_unit_payload_fragments_timed.sample_number,
+//			data_unit->mpu_data_unit_payload_fragments_timed.mpu_fragmentation_counter,
+//			data_unit->mmtp_mpu_type_packet_header.mpu_sequence_number,
+//			data_unit->mmtp_mpu_type_packet_header.packet_sequence_number);
+//
+//	uint32_t new_tail_pos = tail_pad_size + data_unit->mmtp_mpu_type_packet_header.mpu_data_unit_payload->i_pos;
+//	block_t* temp_mpu_data_unit_payload = block_Alloc(new_tail_pos);
+//	block_Write(temp_mpu_data_unit_payload, data_unit->mmtp_mpu_type_packet_header.mpu_data_unit_payload->p_buffer, data_unit->mmtp_mpu_type_packet_header.mpu_data_unit_payload->i_pos);
+//	temp_mpu_data_unit_payload->i_pos = new_tail_pos;
+//
+//    //hack - keep track of our old du size
+//	data_unit->mmtp_mpu_type_packet_header.data_unit_length = data_unit->mmtp_mpu_type_packet_header.mpu_data_unit_payload->i_pos;
+//
+//	block_Release(&data_unit->mmtp_mpu_type_packet_header.mpu_data_unit_payload);
+//	data_unit->mmtp_mpu_type_packet_header.mpu_data_unit_payload = temp_mpu_data_unit_payload;
 }
 
 
 void __data_unit_recover_null_pad_offset_range_same_sample_id(mmtp_payload_fragments_union_t* data_unit_from, mmtp_payload_fragments_union_t* data_unit_to) {
-	if(data_unit_from->mpu_data_unit_payload_fragments_timed.sample_number != data_unit_to->mpu_data_unit_payload_fragments_timed.sample_number ||
-		data_unit_from->mmtp_mpu_type_packet_header.mpu_sequence_number != data_unit_to->mmtp_mpu_type_packet_header.mpu_sequence_number) {
-		__LLS_SLS_MONITOR_OUTPUT_BUFFER_UTILS_WARN("RECOVER: NULL PAD: sample/mpu numbers do not match: %u, %u", data_unit_from->mpu_data_unit_payload_fragments_timed.sample_number, data_unit_to->mpu_data_unit_payload_fragments_timed.sample_number);
-		return;
-	}
+//	if(data_unit_from->mpu_data_unit_payload_fragments_timed.mpu_sample_number != data_unit_to->mpu_data_unit_payload_fragments_timed.mpu_sample_number ||
+//		data_unit_from->mmtp_mpu_type_packet_header.mpu_sequence_number != data_unit_to->mmtp_mpu_type_packet_header.mpu_sequence_number) {
+//		__LLS_SLS_MONITOR_OUTPUT_BUFFER_UTILS_WARN("RECOVER: NULL PAD: sample/mpu numbers do not match: %u, %u", data_unit_from->mpu_data_unit_payload_fragments_timed.sample_number, data_unit_to->mpu_data_unit_payload_fragments_timed.sample_number);
+//		return;
+//	}
 
-
-    uint32_t to_null_size;
-    //todo - fix me
-    /**
-     
-     atsc3_lls_sls_monitor_output_buffer_utils.c:537:WARN :RECOVER: REMOVE SAMPLE: V: updating moof_box_trun_sample_entry vector to mark 6 as to_remove
-     atsc3_lls_sls_monitor_output_buffer_utils.c:546:WARN :DETECT: cross SAMPLE LAST OPEN: current mpu: 811, last frag counter: 18, last sample: 1, current sample: 8, current offset: 0
-     atsc3_lls_sls_monitor_output_buffer_utils.c:319:WARN :RECOVER: tail pad: adding 4844 tail to 1398, sample: 8, fragment: 1, mpu_sequence_number: 811, packet_sequence_number: 226474
-     atsc3_lls_sls_monitor_output_buffer_utils.c:546:WARN :DETECT: cross SAMPLE LAST OPEN: current mpu: 811, last frag counter: 1, last sample: 8, current sample: 1, current offset: 4296
-     atsc3_lls_sls_monitor_output_buffer_utils.c:299:WARN :RECOVER: null pad: adding 4296 head to 1432, sample: 1, fragment: 19, mpu_sequence_number: 811, packet_sequence_number: 225568
-     atsc3_lls_sls_monitor_output_buffer_utils.c:319:WARN :RECOVER: tail pad: adding 313152 tail to 5728, sample: 1, fragment: 19, mpu_sequence_number: 811, packet_sequence_number: 225568
-     atsc3_lls_sls_monitor_output_buffer_utils.c:537:WARN :RECOVER: REMOVE SAMPLE: V: updating moof_box_trun_sample_entry vector to mark 1 as to_remove
-     atsc3_lls_sls_monitor_output_buffer_utils.c:537:WARN :RECOVER: REMOVE SAMPLE: V: updating moof_box_trun_sample_entry vector to mark 2 as to_remove
-     atsc3_lls_sls_monitor_output_buffer_utils.c:537:WARN :RECOVER: REMOVE SAMPLE: V: updating moof_box_trun_sample_entry vector to mark 3 as to_remove
-     atsc3_lls_sls_monitor_output_buffer_utils.c:537:WARN :RECOVER: REMOVE SAMPLE: V: updating moof_box_trun_sample_entry vector to mark 4 as to_remove
-     atsc3_lls_sls_monitor_output_buffer_utils.c:537:WARN :RECOVER: REMOVE SAMPLE: V: updating moof_box_trun_sample_entry vector to mark 5 as to_remove
-     atsc3_lls_sls_monitor_output_buffer_utils.c:537:WARN :RECOVER: REMOVE SAMPLE: V: updating moof_box_trun_sample_entry vector to mark 6 as to_remove
-     atsc3_lls_sls_monitor_output_buffer_utils.c:546:WARN :DETECT: cross SAMPLE LAST OPEN: current mpu: 811, last frag counter: 19, last sample: 1, current sample: 8, current offset: 1432
-     atsc3_lls_sls_monitor_output_buffer_utils.c:299:WARN :RECOVER: null pad: adding 1432 head to 257, sample: 8, fragment: 0, mpu_sequence_number: 811, packet_sequence_number: 226475
-     atsc3_lls_sls_monitor_output_buffer_utils.c:319:WARN :RECOVER: tail pad: adding 4262 tail to 1432, sample: 38, fragment: 5, mpu_sequence_number: 811, packet_sequence_number: 223417
-     atsc3_lls_sls_monitor_output_buffer_utils.c:546:WARN :DETECT: cross SAMPLE LAST OPEN: current mpu: 811, last frag counter: 5, last sample: 38, current sample: 1, current offset: 21480
-     atsc3_lls_sls_monitor_output_buffer_utils.c:299:WARN :RECOVER: null pad: adding 21480 head to 1432, sample: 1, fragment: 17, mpu_sequence_number: 811, packet_sequence_number: 226947
-     atsc3_lls_sls_monitor_output_buffer_utils.c:491:WARN :DETECT: INTRA sample: 1, current packet_sequence_number: 225569, last packet_sequence_number: 226947, missing: 4294965917
-     atsc3_lls_sls_monitor_output_buffer_utils.c:357:WARN :RECOVER: null pad RANGE: from: sample number: 1, offset: 21480, to: sample_number: 1, offset: 5728, adding 4294950112 head to 1432, to packet_sequence_number: 225569, from packet_sequence_number: 226947, mpu_sequence_number: 811
-     atsc3_listener_metrics_ncurses(33521,0x700005b2b000) malloc: *** mach_vm_map(size=18446744073709539328) failed (error code=3)
-     *** error: can't allocate region
-     **/
-    if(data_unit_from->mmtp_mpu_type_packet_header.data_unit_length) {
-        //check for - wraparound
-        int32_t to_null_size_i = data_unit_to->mpu_data_unit_payload_fragments_timed.offset - (data_unit_from->mpu_data_unit_payload_fragments_timed.offset + data_unit_from->mpu_data_unit_payload_fragments_timed.data_unit_length);
-        if(to_null_size_i < 0) {
-            to_null_size = data_unit_to->mpu_data_unit_payload_fragments_timed.offset;
-        } else {
-            to_null_size = to_null_size_i;
-        }
-    }  else {
-        to_null_size = data_unit_to->mpu_data_unit_payload_fragments_timed.offset - (data_unit_from->mpu_data_unit_payload_fragments_timed.offset + data_unit_from->mpu_data_unit_payload_fragments_timed.mpu_data_unit_payload->i_pos);
-    }
-    __LLS_SLS_MONITOR_OUTPUT_BUFFER_UTILS_WARN("RECOVER: null pad RANGE: from: sample number: %u, offset: %u, to: sample_number: %u, offset: %u, adding %u head to %u, to packet_sequence_number: %u, from packet_sequence_number: %u, mpu_sequence_number: %u",
-            data_unit_from->mpu_data_unit_payload_fragments_timed.sample_number,
-            data_unit_from->mpu_data_unit_payload_fragments_timed.offset,
-            data_unit_to->mpu_data_unit_payload_fragments_timed.sample_number,
-            data_unit_to->mpu_data_unit_payload_fragments_timed.offset,
-           to_null_size,
-           data_unit_to->mmtp_mpu_type_packet_header.mpu_data_unit_payload->i_pos,
-			data_unit_to->mmtp_mpu_type_packet_header.packet_sequence_number,
-			data_unit_from->mmtp_mpu_type_packet_header.packet_sequence_number,
-			data_unit_to->mmtp_mpu_type_packet_header.mpu_sequence_number);
-
-    
-	block_t* temp_mpu_data_unit_payload = block_Alloc(to_null_size + data_unit_to->mmtp_mpu_type_packet_header.mpu_data_unit_payload->i_pos);
-	temp_mpu_data_unit_payload->i_pos = to_null_size;
-	block_Write(temp_mpu_data_unit_payload, data_unit_to->mmtp_mpu_type_packet_header.mpu_data_unit_payload->p_buffer, data_unit_to->mmtp_mpu_type_packet_header.mpu_data_unit_payload->i_pos);
-    
-    //hack - keep track of our old du size
-    data_unit_to->mmtp_mpu_type_packet_header.data_unit_length = data_unit_to->mmtp_mpu_type_packet_header.mpu_data_unit_payload->i_pos;
-    
-	block_Release(&data_unit_to->mmtp_mpu_type_packet_header.mpu_data_unit_payload);
-	data_unit_to->mmtp_mpu_type_packet_header.mpu_data_unit_payload = temp_mpu_data_unit_payload;
+//
+//    uint32_t to_null_size;
+//    //todo - fix me
+//    /**
+//
+//     atsc3_lls_sls_monitor_output_buffer_utils.c:537:WARN :RECOVER: REMOVE SAMPLE: V: updating moof_box_trun_sample_entry vector to mark 6 as to_remove
+//     atsc3_lls_sls_monitor_output_buffer_utils.c:546:WARN :DETECT: cross SAMPLE LAST OPEN: current mpu: 811, last frag counter: 18, last sample: 1, current sample: 8, current offset: 0
+//     atsc3_lls_sls_monitor_output_buffer_utils.c:319:WARN :RECOVER: tail pad: adding 4844 tail to 1398, sample: 8, fragment: 1, mpu_sequence_number: 811, packet_sequence_number: 226474
+//     atsc3_lls_sls_monitor_output_buffer_utils.c:546:WARN :DETECT: cross SAMPLE LAST OPEN: current mpu: 811, last frag counter: 1, last sample: 8, current sample: 1, current offset: 4296
+//     atsc3_lls_sls_monitor_output_buffer_utils.c:299:WARN :RECOVER: null pad: adding 4296 head to 1432, sample: 1, fragment: 19, mpu_sequence_number: 811, packet_sequence_number: 225568
+//     atsc3_lls_sls_monitor_output_buffer_utils.c:319:WARN :RECOVER: tail pad: adding 313152 tail to 5728, sample: 1, fragment: 19, mpu_sequence_number: 811, packet_sequence_number: 225568
+//     atsc3_lls_sls_monitor_output_buffer_utils.c:537:WARN :RECOVER: REMOVE SAMPLE: V: updating moof_box_trun_sample_entry vector to mark 1 as to_remove
+//     atsc3_lls_sls_monitor_output_buffer_utils.c:537:WARN :RECOVER: REMOVE SAMPLE: V: updating moof_box_trun_sample_entry vector to mark 2 as to_remove
+//     atsc3_lls_sls_monitor_output_buffer_utils.c:537:WARN :RECOVER: REMOVE SAMPLE: V: updating moof_box_trun_sample_entry vector to mark 3 as to_remove
+//     atsc3_lls_sls_monitor_output_buffer_utils.c:537:WARN :RECOVER: REMOVE SAMPLE: V: updating moof_box_trun_sample_entry vector to mark 4 as to_remove
+//     atsc3_lls_sls_monitor_output_buffer_utils.c:537:WARN :RECOVER: REMOVE SAMPLE: V: updating moof_box_trun_sample_entry vector to mark 5 as to_remove
+//     atsc3_lls_sls_monitor_output_buffer_utils.c:537:WARN :RECOVER: REMOVE SAMPLE: V: updating moof_box_trun_sample_entry vector to mark 6 as to_remove
+//     atsc3_lls_sls_monitor_output_buffer_utils.c:546:WARN :DETECT: cross SAMPLE LAST OPEN: current mpu: 811, last frag counter: 19, last sample: 1, current sample: 8, current offset: 1432
+//     atsc3_lls_sls_monitor_output_buffer_utils.c:299:WARN :RECOVER: null pad: adding 1432 head to 257, sample: 8, fragment: 0, mpu_sequence_number: 811, packet_sequence_number: 226475
+//     atsc3_lls_sls_monitor_output_buffer_utils.c:319:WARN :RECOVER: tail pad: adding 4262 tail to 1432, sample: 38, fragment: 5, mpu_sequence_number: 811, packet_sequence_number: 223417
+//     atsc3_lls_sls_monitor_output_buffer_utils.c:546:WARN :DETECT: cross SAMPLE LAST OPEN: current mpu: 811, last frag counter: 5, last sample: 38, current sample: 1, current offset: 21480
+//     atsc3_lls_sls_monitor_output_buffer_utils.c:299:WARN :RECOVER: null pad: adding 21480 head to 1432, sample: 1, fragment: 17, mpu_sequence_number: 811, packet_sequence_number: 226947
+//     atsc3_lls_sls_monitor_output_buffer_utils.c:491:WARN :DETECT: INTRA sample: 1, current packet_sequence_number: 225569, last packet_sequence_number: 226947, missing: 4294965917
+//     atsc3_lls_sls_monitor_output_buffer_utils.c:357:WARN :RECOVER: null pad RANGE: from: sample number: 1, offset: 21480, to: sample_number: 1, offset: 5728, adding 4294950112 head to 1432, to packet_sequence_number: 225569, from packet_sequence_number: 226947, mpu_sequence_number: 811
+//     atsc3_listener_metrics_ncurses(33521,0x700005b2b000) malloc: *** mach_vm_map(size=18446744073709539328) failed (error code=3)
+//     *** error: can't allocate region
+//     **/
+//    if(data_unit_from->mmtp_mpu_type_packet_header.data_unit_length) {
+//        //check for - wraparound
+//        int32_t to_null_size_i = data_unit_to->mpu_data_unit_payload_fragments_timed.offset - (data_unit_from->mpu_data_unit_payload_fragments_timed.offset + data_unit_from->mpu_data_unit_payload_fragments_timed.data_unit_length);
+//        if(to_null_size_i < 0) {
+//            to_null_size = data_unit_to->mpu_data_unit_payload_fragments_timed.offset;
+//        } else {
+//            to_null_size = to_null_size_i;
+//        }
+//    }  else {
+//        to_null_size = data_unit_to->mpu_data_unit_payload_fragments_timed.offset - (data_unit_from->mpu_data_unit_payload_fragments_timed.offset + data_unit_from->mpu_data_unit_payload_fragments_timed.mpu_data_unit_payload->i_pos);
+//    }
+//    __LLS_SLS_MONITOR_OUTPUT_BUFFER_UTILS_WARN("RECOVER: null pad RANGE: from: sample number: %u, offset: %u, to: sample_number: %u, offset: %u, adding %u head to %u, to packet_sequence_number: %u, from packet_sequence_number: %u, mpu_sequence_number: %u",
+//            data_unit_from->mpu_data_unit_payload_fragments_timed.sample_number,
+//            data_unit_from->mpu_data_unit_payload_fragments_timed.offset,
+//            data_unit_to->mpu_data_unit_payload_fragments_timed.sample_number,
+//            data_unit_to->mpu_data_unit_payload_fragments_timed.offset,
+//           to_null_size,
+//           data_unit_to->mmtp_mpu_type_packet_header.mpu_data_unit_payload->i_pos,
+//			data_unit_to->mmtp_mpu_type_packet_header.packet_sequence_number,
+//			data_unit_from->mmtp_mpu_type_packet_header.packet_sequence_number,
+//			data_unit_to->mmtp_mpu_type_packet_header.mpu_sequence_number);
+//
+//
+//	block_t* temp_mpu_data_unit_payload = block_Alloc(to_null_size + data_unit_to->mmtp_mpu_type_packet_header.mpu_data_unit_payload->i_pos);
+//	temp_mpu_data_unit_payload->i_pos = to_null_size;
+//	block_Write(temp_mpu_data_unit_payload, data_unit_to->mmtp_mpu_type_packet_header.mpu_data_unit_payload->p_buffer, data_unit_to->mmtp_mpu_type_packet_header.mpu_data_unit_payload->i_pos);
+//
+//    //hack - keep track of our old du size
+//    data_unit_to->mmtp_mpu_type_packet_header.data_unit_length = data_unit_to->mmtp_mpu_type_packet_header.mpu_data_unit_payload->i_pos;
+//
+//	block_Release(&data_unit_to->mmtp_mpu_type_packet_header.mpu_data_unit_payload);
+//	data_unit_to->mmtp_mpu_type_packet_header.mpu_data_unit_payload = temp_mpu_data_unit_payload;
 }
 
 //mmtp_payload_fragments_union_t* video_last_data_unit = NULL;
@@ -410,352 +458,353 @@ int lls_sls_monitor_output_buffer_copy_and_recover_audio_fragment_block(lls_sls_
 	lls_sls_monitor_buffer_isobmff_t* lls_sls_monitor_buffer_isobmff = &lls_sls_monitor_output_buffer->audio_output_buffer_isobmff;
 	block_t* audio_mpu_data_unit_payload = audio_data_unit->mmtp_mpu_type_packet_header.mpu_data_unit_payload;
 
-	trun_sample_entry_vector_t* moof_box_trun_sample_entry_vector = lls_sls_monitor_output_buffer->audio_output_buffer_isobmff.moof_box_trun_sample_entry_vector;
+	//find our matching entry and append...
 
-	//we need to rebuild our trun here
-	if(lls_sls_monitor_buffer_isobmff->moof_box_is_from_last_mpu) {
-		uint32_t trun_sample_index = audio_data_unit->mpu_data_unit_payload_fragments_timed.sample_number-1;
-		if(trun_sample_index >= moof_box_trun_sample_entry_vector->size) {
-			__LLS_SLS_MONITOR_OUTPUT_BUFFER_UTILS_ERROR("trun sample index %u is greater than size: %u", trun_sample_index, moof_box_trun_sample_entry_vector->size);
-			//TODO - append this in our trun box
-			return -1;
+	trun_sample_entry_t* trun_sample_entry = NULL;
+
+	for(int i=0; i < lls_sls_monitor_output_buffer->audio_output_buffer_isobmff.trun_sample_entry_v.count; i++) {
+		if(lls_sls_monitor_output_buffer->audio_output_buffer_isobmff.trun_sample_entry_v.data[i]->movie_fragment_sequence_number == audio_data_unit->mpu_data_unit_payload_fragments_timed.mpu_sequence_number) {
+			trun_sample_entry = lls_sls_monitor_output_buffer->audio_output_buffer_isobmff.trun_sample_entry_v.data[i];
 		}
-
-		moof_box_trun_sample_entry_vector->data[trun_sample_index]->sample_size += audio_data_unit->mpu_data_unit_payload_fragments_timed.mpu_data_unit_payload->i_pos;
-    	moof_box_trun_sample_entry_vector->data[trun_sample_index]->has_matching_sample = true;
-
-		__LLS_SLS_MONITOR_OUTPUT_BUFFER_UTILS_INFO("RECOVERY: REBUILD TRUN: A: sample index %u is now sample_size: %u", trun_sample_index, moof_box_trun_sample_entry_vector->data[trun_sample_index]->sample_size);
-
-		goto copy_packet;
 	}
+	if(!trun_sample_entry) {
+		trun_sample_entry = trun_sample_entry_new();
+		trun_sample_entry->movie_fragment_sequence_number = audio_data_unit->mpu_data_unit_payload_fragments_timed.mmth_movie_fragment_sequence_number;
+		trun_sample_entry->sample_offset = audio_data_unit->mpu_data_unit_payload_fragments_timed.mmth_offset;
+		trun_sample_entry->sample_length = audio_data_unit->mpu_data_unit_payload_fragments_timed.mmth_length;
+		trun_sample_entry->sample = block_Alloc(trun_sample_entry->sample_length);
+		lls_sls_monitor_buffer_isobmff_add_trun_sample_entry(&lls_sls_monitor_output_buffer->audio_output_buffer_isobmff, trun_sample_entry);
+	}
+	//null out any missing offsets
+	block_Write(trun_sample_entry->sample, audio_mpu_data_unit_payload->p_buffer, audio_mpu_data_unit_payload->i_pos);
+
+	//from hint box
+	//	trun_sample_entry->sample_duration = audio_data_unit->mpu_data_unit_payload_fragments_timed.sample_duration;
+
+	__LLS_SLS_MONITOR_OUTPUT_BUFFER_UTILS_INFO("added trun entry: sample index %u is now sample_size: %u", lls_sls_monitor_output_buffer->audio_output_buffer_isobmff.trun_sample_entry_v.count, trun_sample_entry->sample_length);
+
+	return trun_sample_entry->sample->i_pos;
+	//alloc out
 
 	//assume audio will lose samples rather than fragments
-
-    if(lls_sls_monitor_buffer_isobmff->last_fragment && audio_data_unit->mpu_data_unit_payload_fragments_timed.mpu_sequence_number == lls_sls_monitor_buffer_isobmff->last_fragment->mpu_data_unit_payload_fragments_timed.mpu_sequence_number &&
-        audio_data_unit->mpu_data_unit_payload_fragments_timed.sample_number-1 != lls_sls_monitor_buffer_isobmff->last_fragment->mpu_data_unit_payload_fragments_timed.sample_number) {
-
-        uint32_t from_mfu_sample_number = lls_sls_monitor_buffer_isobmff->last_fragment->mpu_data_unit_payload_fragments_timed.sample_number + 1;
-
-        uint32_t to_mfu_sample_number = audio_data_unit->mpu_data_unit_payload_fragments_timed.sample_number - 1;
-
-        for(int i = from_mfu_sample_number; i < to_mfu_sample_number && i < moof_box_trun_sample_entry_vector->size; i++) {
-            trun_sample_entry_t* missing_mfu_sample_entry = moof_box_trun_sample_entry_vector->data[i-1];
-            __LLS_SLS_MONITOR_OUTPUT_BUFFER_UTILS_WARN("RECOVER: TRUNCATE SAMPLE: A: updating moof_box_trun_sample_entry vector to mark %u as to_remove", i);
-            missing_mfu_sample_entry->to_remove_sample_entry = true;
-        }
-    } else if(lls_sls_monitor_buffer_isobmff->last_mpu_sequence_number_last_fragment &&
-            audio_data_unit->mpu_data_unit_payload_fragments_timed.mpu_sequence_number != lls_sls_monitor_buffer_isobmff->last_mpu_sequence_number_last_fragment->mpu_data_unit_payload_fragments_timed.mpu_sequence_number &&
-              ((moof_box_trun_sample_entry_vector && moof_box_trun_sample_entry_vector->size > lls_sls_monitor_buffer_isobmff->last_mpu_sequence_number_last_fragment->mpu_data_unit_payload_fragments_timed.sample_number) ||
-            audio_data_unit->mpu_data_unit_payload_fragments_timed.sample_number != 1)) {
-        //compute mpu fragment variances
-
-//        uint32_t missing_packets = audio_data_unit->mpu_data_unit_payload_fragments_timed.packet_sequence_number - lls_sls_monitor_buffer_isobmff->last_mpu_sequence_number_last_fragment->mpu_data_unit_payload_fragments_timed.packet_sequence_number - 1;
-        __LLS_SLS_MONITOR_OUTPUT_BUFFER_UTILS_WARN("DETECT: cross MPU sample mpu: A: current mpu: %u, last mpu: %u, current sample: %u, last sample: %u, current packet_sequence_number: %u, last packet_sequence_number: %u",
-                audio_data_unit->mpu_data_unit_payload_fragments_timed.mpu_sequence_number,
-                lls_sls_monitor_buffer_isobmff->last_mpu_sequence_number_last_fragment->mpu_data_unit_payload_fragments_timed.mpu_sequence_number,
-                audio_data_unit->mpu_data_unit_payload_fragments_timed.sample_number,
-                lls_sls_monitor_buffer_isobmff->last_mpu_sequence_number_last_fragment->mpu_data_unit_payload_fragments_timed.sample_number,
-                audio_data_unit->mpu_data_unit_payload_fragments_timed.packet_sequence_number,
-                lls_sls_monitor_buffer_isobmff->last_mpu_sequence_number_last_fragment->mpu_data_unit_payload_fragments_timed.packet_sequence_number);
-    }
-
-copy_packet:
-    if(!lls_sls_monitor_output_buffer->audio_output_buffer_isobmff.fragment_box) {
-        lls_sls_monitor_output_buffer->audio_output_buffer_isobmff.fragment_box = (uint8_t*)calloc(_LLS_SLS_MONITOR_OUTPUT_MAX_FRAGMENT_BUFFER, sizeof(uint8_t));
-    }
-
-    if(audio_data_unit->mpu_data_unit_payload_fragments_timed.sample_number <= moof_box_trun_sample_entry_vector->size) {
-    	moof_box_trun_sample_entry_vector->data[audio_data_unit->mpu_data_unit_payload_fragments_timed.sample_number-1]->has_matching_sample = true;
-       	moof_box_trun_sample_entry_vector->data[audio_data_unit->mpu_data_unit_payload_fragments_timed.sample_number-1]->sample_size += audio_data_unit->mmtp_mpu_type_packet_header.mpu_data_unit_payload->i_pos;
-
-    }
-
-    lls_sls_monitor_buffer_isobmff->last_fragment = audio_data_unit;
-    lls_sls_monitor_buffer_isobmff->last_mpu_sequence_number_last_fragment = audio_data_unit;
-    return __lls_sls_monitor_output_buffer_check_and_copy(lls_sls_monitor_output_buffer->audio_output_buffer_isobmff.fragment_box, &lls_sls_monitor_output_buffer->audio_output_buffer_isobmff.fragment_pos, _LLS_SLS_MONITOR_OUTPUT_MAX_FRAGMENT_BUFFER, audio_data_unit->mmtp_mpu_type_packet_header.mpu_data_unit_payload);
+//
+//    if(lls_sls_monitor_buffer_isobmff->last_fragment && audio_data_unit->mpu_data_unit_payload_fragments_timed.mpu_sequence_number == lls_sls_monitor_buffer_isobmff->last_fragment->mpu_data_unit_payload_fragments_timed.mpu_sequence_number &&
+//        audio_data_unit->mpu_data_unit_payload_fragments_timed.sample_number-1 != lls_sls_monitor_buffer_isobmff->last_fragment->mpu_data_unit_payload_fragments_timed.sample_number) {
+//
+//        uint32_t from_mfu_sample_number = lls_sls_monitor_buffer_isobmff->last_fragment->mpu_data_unit_payload_fragments_timed.sample_number + 1;
+//
+//        uint32_t to_mfu_sample_number = audio_data_unit->mpu_data_unit_payload_fragments_timed.sample_number - 1;
+//
+//        for(int i = from_mfu_sample_number; i < to_mfu_sample_number && i < moof_box_trun_sample_entry_vector->size; i++) {
+//            trun_sample_entry_t* missing_mfu_sample_entry = moof_box_trun_sample_entry_vector->data[i-1];
+//            __LLS_SLS_MONITOR_OUTPUT_BUFFER_UTILS_WARN("RECOVER: TRUNCATE SAMPLE: A: updating moof_box_trun_sample_entry vector to mark %u as to_remove", i);
+//            missing_mfu_sample_entry->to_remove_sample_entry = true;
+//        }
+//    } else if(lls_sls_monitor_buffer_isobmff->last_mpu_sequence_number_last_fragment &&
+//            audio_data_unit->mpu_data_unit_payload_fragments_timed.mpu_sequence_number != lls_sls_monitor_buffer_isobmff->last_mpu_sequence_number_last_fragment->mpu_data_unit_payload_fragments_timed.mpu_sequence_number &&
+//              ((moof_box_trun_sample_entry_vector && moof_box_trun_sample_entry_vector->size > lls_sls_monitor_buffer_isobmff->last_mpu_sequence_number_last_fragment->mpu_data_unit_payload_fragments_timed.sample_number) ||
+//            audio_data_unit->mpu_data_unit_payload_fragments_timed.sample_number != 1)) {
+//        //compute mpu fragment variances
+//
+////        uint32_t missing_packets = audio_data_unit->mpu_data_unit_payload_fragments_timed.packet_sequence_number - lls_sls_monitor_buffer_isobmff->last_mpu_sequence_number_last_fragment->mpu_data_unit_payload_fragments_timed.packet_sequence_number - 1;
+//        __LLS_SLS_MONITOR_OUTPUT_BUFFER_UTILS_WARN("DETECT: cross MPU sample mpu: A: current mpu: %u, last mpu: %u, current sample: %u, last sample: %u, current packet_sequence_number: %u, last packet_sequence_number: %u",
+//                audio_data_unit->mpu_data_unit_payload_fragments_timed.mpu_sequence_number,
+//                lls_sls_monitor_buffer_isobmff->last_mpu_sequence_number_last_fragment->mpu_data_unit_payload_fragments_timed.mpu_sequence_number,
+//                audio_data_unit->mpu_data_unit_payload_fragments_timed.sample_number,
+//                lls_sls_monitor_buffer_isobmff->last_mpu_sequence_number_last_fragment->mpu_data_unit_payload_fragments_timed.sample_number,
+//                audio_data_unit->mpu_data_unit_payload_fragments_timed.packet_sequence_number,
+//                lls_sls_monitor_buffer_isobmff->last_mpu_sequence_number_last_fragment->mpu_data_unit_payload_fragments_timed.packet_sequence_number);
+//    }
+//
+//copy_packet:
+//    if(!lls_sls_monitor_output_buffer->audio_output_buffer_isobmff.fragment_box) {
+//        lls_sls_monitor_output_buffer->audio_output_buffer_isobmff.fragment_box = (uint8_t*)calloc(_LLS_SLS_MONITOR_OUTPUT_MAX_FRAGMENT_BUFFER, sizeof(uint8_t));
+//    }
+//
+//
+//    lls_sls_monitor_buffer_isobmff->last_fragment = audio_data_unit;
+//    lls_sls_monitor_buffer_isobmff->last_mpu_sequence_number_last_fragment = audio_data_unit;
+//    return __lls_sls_monitor_output_buffer_check_and_copy(lls_sls_monitor_output_buffer->audio_output_buffer_isobmff.fragment_box, &lls_sls_monitor_output_buffer->audio_output_buffer_isobmff.fragment_pos, _LLS_SLS_MONITOR_OUTPUT_MAX_FRAGMENT_BUFFER, audio_data_unit->mmtp_mpu_type_packet_header.mpu_data_unit_payload);
 }
 
 
-int lls_sls_monitor_output_buffer_copy_and_recover_video_fragment_block(lls_sls_monitor_output_buffer_t* lls_sls_monitor_output_buffer, mmtp_payload_fragments_union_t* video_data_unit) {
+//todo - refactor this out
+int lls_sls_monitor_output_buffer_copy_and_recover_sample_fragment_block(lls_sls_monitor_buffer_isobmff_t* lls_sls_monitor_buffer_isobmff, mmtp_payload_fragments_union_t* data_unit) {
 
-	lls_sls_monitor_buffer_isobmff_t* lls_sls_monitor_buffer_isobmff = &lls_sls_monitor_output_buffer->video_output_buffer_isobmff;
-	block_t* video_mpu_data_unit_payload = video_data_unit->mmtp_mpu_type_packet_header.mpu_data_unit_payload;
+	block_t* mpu_data_unit_payload = data_unit->mmtp_mpu_type_packet_header.mpu_data_unit_payload;
 
-	trun_sample_entry_vector_t* moof_box_trun_sample_entry_vector = lls_sls_monitor_output_buffer->video_output_buffer_isobmff.moof_box_trun_sample_entry_vector;
+	trun_sample_entry_t* trun_sample_entry = NULL;
 
-	//we need to rebuild our trun here
-	if(lls_sls_monitor_buffer_isobmff->moof_box_is_from_last_mpu) {
-		uint32_t trun_sample_index = video_data_unit->mpu_data_unit_payload_fragments_timed.sample_number-1;
-		if(trun_sample_index >= moof_box_trun_sample_entry_vector->size) {
-			__LLS_SLS_MONITOR_OUTPUT_BUFFER_UTILS_ERROR("V: trun sample index %u is greater than size: %u", trun_sample_index, moof_box_trun_sample_entry_vector->size);
-			//TODO - append this in our trun box
-			return -1;
-		}
-		moof_box_trun_sample_entry_vector->data[trun_sample_index]->sample_size += video_data_unit->mpu_data_unit_payload_fragments_timed.mpu_data_unit_payload->i_pos;
-		__LLS_SLS_MONITOR_OUTPUT_BUFFER_UTILS_DEBUG("RECOVERY: REBUILD TRUN: V: sample index %u is now sample_size: %u", trun_sample_index, moof_box_trun_sample_entry_vector->data[trun_sample_index]->sample_size);
-
-		goto copy_packet;
-	}
-
-	if(!lls_sls_monitor_buffer_isobmff->last_fragment) {
-
-		//we should start with sample == 1, offset == 0, otherwise pad this out
-		//intra mfu packet loss
-		if(video_data_unit->mpu_data_unit_payload_fragments_timed.sample_number == 1 && video_data_unit->mpu_data_unit_payload_fragments_timed.offset != 0) {
-			uint32_t lost_mfu_packets_count = 1;
-
-			if(lls_sls_monitor_buffer_isobmff->last_mpu_sequence_number_last_fragment) {
-				lost_mfu_packets_count = (video_data_unit->mpu_data_unit_payload_fragments_timed.packet_sequence_number -  lls_sls_monitor_buffer_isobmff->last_mpu_sequence_number_last_fragment->mpu_data_unit_payload_fragments_timed.packet_sequence_number);
-			}
-
-			lls_sls_monitor_buffer_isobmff->last_fragment_lost_mfu_count += lost_mfu_packets_count;
-
-			__data_unit_recover_null_pad_offset(video_data_unit);
-			__LLS_SLS_MONITOR_OUTPUT_BUFFER_UTILS_WARN("DETECT: first MFU: V: lost %u mfu packets, sample_number: 0, offset: %u, building null payload for mdat, new fragment size: %u", lost_mfu_packets_count, video_data_unit->mpu_data_unit_payload_fragments_timed.offset, video_mpu_data_unit_payload->i_pos);
-		} else if(video_data_unit->mpu_data_unit_payload_fragments_timed.sample_number >1 ) {
-			__LLS_SLS_MONITOR_OUTPUT_BUFFER_UTILS_WARN("DETECT: first SAMPLE: V: starting sample: %u, offset: %u",  video_data_unit->mpu_data_unit_payload_fragments_timed.sample_number, video_data_unit->mpu_data_unit_payload_fragments_timed.offset);
-			//TODO - null this out of our mdat box and adjust offset accordingly
-		}
-	} else {
-		//compute intra sample variances
-		if(video_data_unit->mpu_data_unit_payload_fragments_timed.mpu_sequence_number == lls_sls_monitor_buffer_isobmff->last_fragment->mpu_data_unit_payload_fragments_timed.mpu_sequence_number &&
-				video_data_unit->mpu_data_unit_payload_fragments_timed.sample_number == lls_sls_monitor_buffer_isobmff->last_fragment->mpu_data_unit_payload_fragments_timed.sample_number &&
-				video_data_unit->mpu_data_unit_payload_fragments_timed.packet_sequence_number - 1 != lls_sls_monitor_buffer_isobmff->last_fragment->mpu_data_unit_payload_fragments_timed.packet_sequence_number) {
-			uint32_t missing_packets = video_data_unit->mpu_data_unit_payload_fragments_timed.packet_sequence_number - lls_sls_monitor_buffer_isobmff->last_fragment->mpu_data_unit_payload_fragments_timed.packet_sequence_number - 1;
-			__LLS_SLS_MONITOR_OUTPUT_BUFFER_UTILS_WARN("DETECT: INTRA sample: %u, current packet_sequence_number: %u, last packet_sequence_number: %u, missing: %u", video_data_unit->mpu_data_unit_payload_fragments_timed.sample_number , video_data_unit->mpu_data_unit_payload_fragments_timed.packet_sequence_number, lls_sls_monitor_buffer_isobmff->last_fragment->mpu_data_unit_payload_fragments_timed.packet_sequence_number, missing_packets);
-
-			__data_unit_recover_null_pad_offset_range_same_sample_id(lls_sls_monitor_buffer_isobmff->last_fragment, video_data_unit);
-
-		} else if(video_data_unit->mpu_data_unit_payload_fragments_timed.mpu_sequence_number == lls_sls_monitor_buffer_isobmff->last_fragment->mpu_data_unit_payload_fragments_timed.mpu_sequence_number &&
-				video_data_unit->mpu_data_unit_payload_fragments_timed.sample_number != lls_sls_monitor_buffer_isobmff->last_fragment->mpu_data_unit_payload_fragments_timed.sample_number &&
-				lls_sls_monitor_buffer_isobmff->last_fragment->mpu_data_unit_payload_fragments_timed.mpu_fragmentation_counter) {
-
-			//compute intra fragment variances, remember we should have an MFU inbetween..
-
-			//we can't null pad this out without interriogating the mdat
-
-			/**
-			 *
-			 * atsc3_lls_sls_monitor_output_buffer_utils.c:327:WARN :DETECT: cross SAMPLE LAST OPEN: current mpu: 6138, last frag counter: 1, last sample: 10, current sample: 11, current offset: 2864
-			 * .sample_number are 1 based while the trun_sample entry is 0 based
-			 *
-			 * atsc3_lls_sls_monitor_output_buffer_utils.c:222:WARN :RECOVER: null pad: adding 2864 head to 653, mpu_sequence_number: 6138, packet_sequence_number: 2917408
-			 *
-			 * null inject, should remove sample from moof/trun
-			 *
-			 */
-
-			uint32_t from_mfu_sample_number = lls_sls_monitor_buffer_isobmff->last_fragment->mpu_data_unit_payload_fragments_timed.sample_number - 1;
-			uint32_t from_mfu_trun_sample_size = 0;
-			int32_t from_mfu_to_tail_pad_size = 0;
-			trun_sample_entry_t* from_missing_mfu_sample_entry = NULL;
-
-			//if we have this sample in-order moof box, then compute offset size...
-			if(from_mfu_sample_number <= moof_box_trun_sample_entry_vector->size) {
-				from_missing_mfu_sample_entry = moof_box_trun_sample_entry_vector->data[from_mfu_sample_number];
-				from_mfu_trun_sample_size = from_missing_mfu_sample_entry->sample_size;
-
-				//compute our last fragment size against the trun to pad out...
-				if(lls_sls_monitor_buffer_isobmff->last_fragment->mmtp_mpu_type_packet_header.data_unit_length) {
-					from_mfu_to_tail_pad_size = from_mfu_trun_sample_size - lls_sls_monitor_buffer_isobmff->last_fragment->mpu_data_unit_payload_fragments_timed.offset - lls_sls_monitor_buffer_isobmff->last_fragment->mmtp_mpu_type_packet_header.data_unit_length;
-				} else {
-					from_mfu_to_tail_pad_size = from_mfu_trun_sample_size - lls_sls_monitor_buffer_isobmff->last_fragment->mpu_data_unit_payload_fragments_timed.offset - lls_sls_monitor_buffer_isobmff->last_fragment->mmtp_mpu_type_packet_header.mpu_data_unit_payload->i_pos;
-				}
-				if(from_mfu_to_tail_pad_size > 0) {
-					__data_unit_recover_null_pad_tail(lls_sls_monitor_buffer_isobmff->last_fragment, from_mfu_to_tail_pad_size);
-				} else {
-					//we should not get a negative size here unless our moof box is wrong (or missing)...
-					__LLS_SLS_MONITOR_OUTPUT_BUFFER_UTILS_WARN("RECOVER: ERROR: last fragment tail pad from mpu_sequence_number: %u, sample: %u is size: %u",
-							lls_sls_monitor_buffer_isobmff->last_fragment->mmtp_mpu_type_packet_header.mpu_sequence_number,
-							lls_sls_monitor_buffer_isobmff->last_fragment->mpu_data_unit_payload_fragments_timed.sample_number,
-							from_mfu_to_tail_pad_size);
-				}
-			}
-
-            uint32_t to_mfu_sample_number = video_data_unit->mpu_data_unit_payload_fragments_timed.sample_number - 1;
-
-			for(int i = from_mfu_sample_number + 1; i < to_mfu_sample_number && i < moof_box_trun_sample_entry_vector->size; i++) {
-				trun_sample_entry_t* missing_mfu_sample_entry = moof_box_trun_sample_entry_vector->data[i];
-				__LLS_SLS_MONITOR_OUTPUT_BUFFER_UTILS_WARN("RECOVER: (TODO FIXME: NOT) REMOVE SAMPLE: V: updating moof_box_trun_sample_entry vector to mark %u as to_remove", i);
-				missing_mfu_sample_entry->to_remove_sample_entry = true;
-			}
-
-			__LLS_SLS_MONITOR_OUTPUT_BUFFER_UTILS_WARN("DETECT: cross SAMPLE LAST OPEN: current mpu: %u, last frag counter: %u, last sample: %u, current sample: %u, current offset: %u",
-					video_data_unit->mpu_data_unit_payload_fragments_timed.mpu_sequence_number,
-					lls_sls_monitor_buffer_isobmff->last_fragment->mpu_data_unit_payload_fragments_timed.mpu_fragmentation_counter,
-					lls_sls_monitor_buffer_isobmff->last_fragment->mpu_data_unit_payload_fragments_timed.sample_number,
-					video_data_unit->mpu_data_unit_payload_fragments_timed.sample_number,
-					video_data_unit->mpu_data_unit_payload_fragments_timed.offset);
-
-			//we can null pad the offset size
-			uint32_t missing_current_bytes = video_data_unit->mpu_data_unit_payload_fragments_timed.offset;
-
-			if(missing_current_bytes) {
-				__data_unit_recover_null_pad_offset(video_data_unit);
-			}
-
-		} else if(lls_sls_monitor_buffer_isobmff->last_mpu_sequence_number_last_fragment &&
-				video_data_unit->mpu_data_unit_payload_fragments_timed.mpu_sequence_number != lls_sls_monitor_buffer_isobmff->last_mpu_sequence_number_last_fragment->mpu_data_unit_payload_fragments_timed.mpu_sequence_number &&
-				video_data_unit->mpu_data_unit_payload_fragments_timed.packet_sequence_number - 1 != lls_sls_monitor_buffer_isobmff->last_mpu_sequence_number_last_fragment->mpu_data_unit_payload_fragments_timed.packet_sequence_number) {
-			//compute mpu fragment variances
-
-			uint32_t missing_packets = video_data_unit->mpu_data_unit_payload_fragments_timed.packet_sequence_number - lls_sls_monitor_buffer_isobmff->last_mpu_sequence_number_last_fragment->mpu_data_unit_payload_fragments_timed.packet_sequence_number - 1;
-			__LLS_SLS_MONITOR_OUTPUT_BUFFER_UTILS_WARN("DETECT: cross MPU sample mpu: V: current mpu: %u, last mpu: %u, current sample: %u, last sample: %u, current packet_sequence_number: %u, last packet_sequence_number: %u, missing: %u",
-					video_data_unit->mpu_data_unit_payload_fragments_timed.mpu_sequence_number,
-					lls_sls_monitor_buffer_isobmff->last_fragment->mpu_data_unit_payload_fragments_timed.mpu_sequence_number,
-					video_data_unit->mpu_data_unit_payload_fragments_timed.sample_number,
-					lls_sls_monitor_buffer_isobmff->last_fragment->mpu_data_unit_payload_fragments_timed.sample_number,
-					video_data_unit->mpu_data_unit_payload_fragments_timed.packet_sequence_number,
-					lls_sls_monitor_buffer_isobmff->last_fragment->mpu_data_unit_payload_fragments_timed.packet_sequence_number,
-					missing_packets);
+	for(int i=0; i < lls_sls_monitor_buffer_isobmff->trun_sample_entry_v.count; i++) {
+		if(lls_sls_monitor_buffer_isobmff->trun_sample_entry_v.data[i]->movie_fragment_sequence_number == data_unit->mpu_data_unit_payload_fragments_timed.mpu_movie_fragment_sequence_number) {
+			trun_sample_entry = lls_sls_monitor_buffer_isobmff->trun_sample_entry_v.data[i];
 		}
 	}
 
-copy_packet:
-    if(!lls_sls_monitor_output_buffer->video_output_buffer_isobmff.fragment_box) {
-        lls_sls_monitor_output_buffer->video_output_buffer_isobmff.fragment_box = (uint8_t*)calloc(_LLS_SLS_MONITOR_OUTPUT_MAX_FRAGMENT_BUFFER, sizeof(uint8_t));
-    }
+	if(!trun_sample_entry) {
+		trun_sample_entry = trun_sample_entry_new();
+		//use our mmthsample box information if present, otherwise pre-allocate based upon our sample and offset
+		if(data_unit->mpu_data_unit_payload_fragments_timed.mmth_movie_fragment_sequence_number) {
+			trun_sample_entry->movie_fragment_sequence_number = data_unit->mpu_data_unit_payload_fragments_timed.mmth_movie_fragment_sequence_number;
+			trun_sample_entry->sample_offset = data_unit->mpu_data_unit_payload_fragments_timed.mmth_offset;
+			trun_sample_entry->sample_length = data_unit->mpu_data_unit_payload_fragments_timed.mmth_length;
+			trun_sample_entry->sample = block_Alloc(trun_sample_entry->sample_length);
+		} else {
+			trun_sample_entry->mmth_box_missing = true;
+			trun_sample_entry->movie_fragment_sequence_number = data_unit->mpu_data_unit_payload_fragments_timed.mpu_movie_fragment_sequence_number;
+			trun_sample_entry->sample_offset = data_unit->mpu_data_unit_payload_fragments_timed.mpu_offset; //hack if we lost the first Nth sample..
+			trun_sample_entry->sample = block_Alloc(trun_sample_entry->sample_offset + mpu_data_unit_payload->i_pos);
+			block_Seek(trun_sample_entry->sample, mpu_data_unit_payload->i_pos);
+		}
+		lls_sls_monitor_buffer_isobmff_add_trun_sample_entry(lls_sls_monitor_buffer_isobmff, trun_sample_entry);
+	}
+	//null out any missing offsets
+	block_Write(trun_sample_entry->sample, mpu_data_unit_payload->p_buffer, mpu_data_unit_payload->i_pos);
 
-    if(video_data_unit->mpu_data_unit_payload_fragments_timed.sample_number <= moof_box_trun_sample_entry_vector->size) {
-       	moof_box_trun_sample_entry_vector->data[video_data_unit->mpu_data_unit_payload_fragments_timed.sample_number-1]->has_matching_sample = true;
-       	moof_box_trun_sample_entry_vector->data[video_data_unit->mpu_data_unit_payload_fragments_timed.sample_number-1]->sample_size += video_data_unit->mmtp_mpu_type_packet_header.mpu_data_unit_payload->i_pos;
-    }
+	return trun_sample_entry->sample->i_pos;
 
-    lls_sls_monitor_buffer_isobmff->last_fragment = video_data_unit;
-    lls_sls_monitor_buffer_isobmff->last_mpu_sequence_number_last_fragment = video_data_unit;
 
-    return __lls_sls_monitor_output_buffer_check_and_copy(lls_sls_monitor_output_buffer->video_output_buffer_isobmff.fragment_box, &lls_sls_monitor_output_buffer->video_output_buffer_isobmff.fragment_pos, _LLS_SLS_MONITOR_OUTPUT_MAX_FRAGMENT_BUFFER, video_mpu_data_unit_payload);
+
+		//from hint box
+		//	trun_sample_entry->sample_duration = audio_data_unit->mpu_data_unit_payload_fragments_timed.sample_duration;
+
+//	trun_sample_entry_vector_t* moof_box_trun_sample_entry_vector = lls_sls_monitor_output_buffer->video_output_buffer_isobmff.moof_box_trun_sample_entry_vector;
+//
+//	//we need to rebuild our trun here
+//	if(lls_sls_monitor_buffer_isobmff->moof_box_is_from_last_mpu) {
+//		uint32_t trun_sample_index = video_data_unit->mpu_data_unit_payload_fragments_timed.sample_number-1;
+//		if(trun_sample_index >= moof_box_trun_sample_entry_vector->size) {
+//			__LLS_SLS_MONITOR_OUTPUT_BUFFER_UTILS_ERROR("V: trun sample index %u is greater than size: %u", trun_sample_index, moof_box_trun_sample_entry_vector->size);
+//			//TODO - append this in our trun box
+//			return -1;
+//		}
+//		moof_box_trun_sample_entry_vector->data[trun_sample_index]->sample_size += video_data_unit->mpu_data_unit_payload_fragments_timed.mpu_data_unit_payload->i_pos;
+//		__LLS_SLS_MONITOR_OUTPUT_BUFFER_UTILS_DEBUG("RECOVERY: REBUILD TRUN: V: sample index %u is now sample_size: %u", trun_sample_index, moof_box_trun_sample_entry_vector->data[trun_sample_index]->sample_size);
+//
+//		goto copy_packet;
+//	}
+//
+//	if(!lls_sls_monitor_buffer_isobmff->last_fragment) {
+//
+//		//we should start with sample == 1, offset == 0, otherwise pad this out
+//		//intra mfu packet loss
+//		if(video_data_unit->mpu_data_unit_payload_fragments_timed.sample_number == 1 && video_data_unit->mpu_data_unit_payload_fragments_timed.offset != 0) {
+//			uint32_t lost_mfu_packets_count = 1;
+//
+//			if(lls_sls_monitor_buffer_isobmff->last_mpu_sequence_number_last_fragment) {
+//				lost_mfu_packets_count = (video_data_unit->mpu_data_unit_payload_fragments_timed.packet_sequence_number -  lls_sls_monitor_buffer_isobmff->last_mpu_sequence_number_last_fragment->mpu_data_unit_payload_fragments_timed.packet_sequence_number);
+//			}
+//
+//			lls_sls_monitor_buffer_isobmff->last_fragment_lost_mfu_count += lost_mfu_packets_count;
+//
+//			__data_unit_recover_null_pad_offset(video_data_unit);
+//			__LLS_SLS_MONITOR_OUTPUT_BUFFER_UTILS_WARN("DETECT: first MFU: V: lost %u mfu packets, sample_number: 0, offset: %u, building null payload for mdat, new fragment size: %u", lost_mfu_packets_count, video_data_unit->mpu_data_unit_payload_fragments_timed.offset, video_mpu_data_unit_payload->i_pos);
+//		} else if(video_data_unit->mpu_data_unit_payload_fragments_timed.sample_number >1 ) {
+//			__LLS_SLS_MONITOR_OUTPUT_BUFFER_UTILS_WARN("DETECT: first SAMPLE: V: starting sample: %u, offset: %u",  video_data_unit->mpu_data_unit_payload_fragments_timed.sample_number, video_data_unit->mpu_data_unit_payload_fragments_timed.offset);
+//			//TODO - null this out of our mdat box and adjust offset accordingly
+//		}
+//	} else {
+//		//compute intra sample variances
+//		if(video_data_unit->mpu_data_unit_payload_fragments_timed.mpu_sequence_number == lls_sls_monitor_buffer_isobmff->last_fragment->mpu_data_unit_payload_fragments_timed.mpu_sequence_number &&
+//				video_data_unit->mpu_data_unit_payload_fragments_timed.sample_number == lls_sls_monitor_buffer_isobmff->last_fragment->mpu_data_unit_payload_fragments_timed.sample_number &&
+//				video_data_unit->mpu_data_unit_payload_fragments_timed.packet_sequence_number - 1 != lls_sls_monitor_buffer_isobmff->last_fragment->mpu_data_unit_payload_fragments_timed.packet_sequence_number) {
+//			uint32_t missing_packets = video_data_unit->mpu_data_unit_payload_fragments_timed.packet_sequence_number - lls_sls_monitor_buffer_isobmff->last_fragment->mpu_data_unit_payload_fragments_timed.packet_sequence_number - 1;
+//			__LLS_SLS_MONITOR_OUTPUT_BUFFER_UTILS_WARN("DETECT: INTRA sample: %u, current packet_sequence_number: %u, last packet_sequence_number: %u, missing: %u", video_data_unit->mpu_data_unit_payload_fragments_timed.sample_number , video_data_unit->mpu_data_unit_payload_fragments_timed.packet_sequence_number, lls_sls_monitor_buffer_isobmff->last_fragment->mpu_data_unit_payload_fragments_timed.packet_sequence_number, missing_packets);
+//
+//			__data_unit_recover_null_pad_offset_range_same_sample_id(lls_sls_monitor_buffer_isobmff->last_fragment, video_data_unit);
+//
+//		} else if(video_data_unit->mpu_data_unit_payload_fragments_timed.mpu_sequence_number == lls_sls_monitor_buffer_isobmff->last_fragment->mpu_data_unit_payload_fragments_timed.mpu_sequence_number &&
+//				video_data_unit->mpu_data_unit_payload_fragments_timed.sample_number != lls_sls_monitor_buffer_isobmff->last_fragment->mpu_data_unit_payload_fragments_timed.sample_number &&
+//				lls_sls_monitor_buffer_isobmff->last_fragment->mpu_data_unit_payload_fragments_timed.mpu_fragmentation_counter) {
+//
+//			//compute intra fragment variances, remember we should have an MFU inbetween..
+//
+//			//we can't null pad this out without interriogating the mdat
+//
+//			/**
+//			 *
+//			 * atsc3_lls_sls_monitor_output_buffer_utils.c:327:WARN :DETECT: cross SAMPLE LAST OPEN: current mpu: 6138, last frag counter: 1, last sample: 10, current sample: 11, current offset: 2864
+//			 * .sample_number are 1 based while the trun_sample entry is 0 based
+//			 *
+//			 * atsc3_lls_sls_monitor_output_buffer_utils.c:222:WARN :RECOVER: null pad: adding 2864 head to 653, mpu_sequence_number: 6138, packet_sequence_number: 2917408
+//			 *
+//			 * null inject, should remove sample from moof/trun
+//			 *
+//			 */
+//
+//			uint32_t from_mfu_sample_number = lls_sls_monitor_buffer_isobmff->last_fragment->mpu_data_unit_payload_fragments_timed.sample_number - 1;
+//			uint32_t from_mfu_trun_sample_size = 0;
+//			int32_t from_mfu_to_tail_pad_size = 0;
+//			trun_sample_entry_t* from_missing_mfu_sample_entry = NULL;
+//
+//			//if we have this sample in-order moof box, then compute offset size...
+//			if(from_mfu_sample_number <= moof_box_trun_sample_entry_vector->size) {
+//				from_missing_mfu_sample_entry = moof_box_trun_sample_entry_vector->data[from_mfu_sample_number];
+//				from_mfu_trun_sample_size = from_missing_mfu_sample_entry->sample_size;
+//
+//				//compute our last fragment size against the trun to pad out...
+//				if(lls_sls_monitor_buffer_isobmff->last_fragment->mmtp_mpu_type_packet_header.data_unit_length) {
+//					from_mfu_to_tail_pad_size = from_mfu_trun_sample_size - lls_sls_monitor_buffer_isobmff->last_fragment->mpu_data_unit_payload_fragments_timed.offset - lls_sls_monitor_buffer_isobmff->last_fragment->mmtp_mpu_type_packet_header.data_unit_length;
+//				} else {
+//					from_mfu_to_tail_pad_size = from_mfu_trun_sample_size - lls_sls_monitor_buffer_isobmff->last_fragment->mpu_data_unit_payload_fragments_timed.offset - lls_sls_monitor_buffer_isobmff->last_fragment->mmtp_mpu_type_packet_header.mpu_data_unit_payload->i_pos;
+//				}
+//				if(from_mfu_to_tail_pad_size > 0) {
+//					__data_unit_recover_null_pad_tail(lls_sls_monitor_buffer_isobmff->last_fragment, from_mfu_to_tail_pad_size);
+//				} else {
+//					//we should not get a negative size here unless our moof box is wrong (or missing)...
+//					__LLS_SLS_MONITOR_OUTPUT_BUFFER_UTILS_WARN("RECOVER: ERROR: last fragment tail pad from mpu_sequence_number: %u, sample: %u is size: %u",
+//							lls_sls_monitor_buffer_isobmff->last_fragment->mmtp_mpu_type_packet_header.mpu_sequence_number,
+//							lls_sls_monitor_buffer_isobmff->last_fragment->mpu_data_unit_payload_fragments_timed.sample_number,
+//							from_mfu_to_tail_pad_size);
+//				}
+//			}
+//
+//            uint32_t to_mfu_sample_number = video_data_unit->mpu_data_unit_payload_fragments_timed.sample_number - 1;
+//
+//			for(int i = from_mfu_sample_number + 1; i < to_mfu_sample_number && i < moof_box_trun_sample_entry_vector->size; i++) {
+//				trun_sample_entry_t* missing_mfu_sample_entry = moof_box_trun_sample_entry_vector->data[i];
+//				__LLS_SLS_MONITOR_OUTPUT_BUFFER_UTILS_WARN("RECOVER: (TODO FIXME: NOT) REMOVE SAMPLE: V: updating moof_box_trun_sample_entry vector to mark %u as to_remove", i);
+//				missing_mfu_sample_entry->to_remove_sample_entry = true;
+//			}
+//
+//			__LLS_SLS_MONITOR_OUTPUT_BUFFER_UTILS_WARN("DETECT: cross SAMPLE LAST OPEN: current mpu: %u, last frag counter: %u, last sample: %u, current sample: %u, current offset: %u",
+//					video_data_unit->mpu_data_unit_payload_fragments_timed.mpu_sequence_number,
+//					lls_sls_monitor_buffer_isobmff->last_fragment->mpu_data_unit_payload_fragments_timed.mpu_fragmentation_counter,
+//					lls_sls_monitor_buffer_isobmff->last_fragment->mpu_data_unit_payload_fragments_timed.sample_number,
+//					video_data_unit->mpu_data_unit_payload_fragments_timed.sample_number,
+//					video_data_unit->mpu_data_unit_payload_fragments_timed.offset);
+//
+//			//we can null pad the offset size
+//			uint32_t missing_current_bytes = video_data_unit->mpu_data_unit_payload_fragments_timed.offset;
+//
+//			if(missing_current_bytes) {
+//				__data_unit_recover_null_pad_offset(video_data_unit);
+//			}
+//
+//		} else if(lls_sls_monitor_buffer_isobmff->last_mpu_sequence_number_last_fragment &&
+//				video_data_unit->mpu_data_unit_payload_fragments_timed.mpu_sequence_number != lls_sls_monitor_buffer_isobmff->last_mpu_sequence_number_last_fragment->mpu_data_unit_payload_fragments_timed.mpu_sequence_number &&
+//				video_data_unit->mpu_data_unit_payload_fragments_timed.packet_sequence_number - 1 != lls_sls_monitor_buffer_isobmff->last_mpu_sequence_number_last_fragment->mpu_data_unit_payload_fragments_timed.packet_sequence_number) {
+//			//compute mpu fragment variances
+//
+//			uint32_t missing_packets = video_data_unit->mpu_data_unit_payload_fragments_timed.packet_sequence_number - lls_sls_monitor_buffer_isobmff->last_mpu_sequence_number_last_fragment->mpu_data_unit_payload_fragments_timed.packet_sequence_number - 1;
+//			__LLS_SLS_MONITOR_OUTPUT_BUFFER_UTILS_WARN("DETECT: cross MPU sample mpu: V: current mpu: %u, last mpu: %u, current sample: %u, last sample: %u, current packet_sequence_number: %u, last packet_sequence_number: %u, missing: %u",
+//					video_data_unit->mpu_data_unit_payload_fragments_timed.mpu_sequence_number,
+//					lls_sls_monitor_buffer_isobmff->last_fragment->mpu_data_unit_payload_fragments_timed.mpu_sequence_number,
+//					video_data_unit->mpu_data_unit_payload_fragments_timed.sample_number,
+//					lls_sls_monitor_buffer_isobmff->last_fragment->mpu_data_unit_payload_fragments_timed.sample_number,
+//					video_data_unit->mpu_data_unit_payload_fragments_timed.packet_sequence_number,
+//					lls_sls_monitor_buffer_isobmff->last_fragment->mpu_data_unit_payload_fragments_timed.packet_sequence_number,
+//					missing_packets);
+//		}
+//	}
+//
+//copy_packet:
+//    if(!lls_sls_monitor_output_buffer->video_output_buffer_isobmff.fragment_box) {
+//        lls_sls_monitor_output_buffer->video_output_buffer_isobmff.fragment_box = (uint8_t*)calloc(_LLS_SLS_MONITOR_OUTPUT_MAX_FRAGMENT_BUFFER, sizeof(uint8_t));
+//    }
+//
+//    //TODO - fix me
+//    if(moof_box_trun_sample_entry_vector && video_data_unit->mpu_data_unit_payload_fragments_timed.sample_number <= moof_box_trun_sample_entry_vector->size) {
+//       	moof_box_trun_sample_entry_vector->data[video_data_unit->mpu_data_unit_payload_fragments_timed.sample_number-1]->has_matching_sample = true;
+//       	moof_box_trun_sample_entry_vector->data[video_data_unit->mpu_data_unit_payload_fragments_timed.sample_number-1]->sample_size += video_data_unit->mmtp_mpu_type_packet_header.mpu_data_unit_payload->i_pos;
+//    }
+//
+//    lls_sls_monitor_buffer_isobmff->last_fragment = video_data_unit;
+//    lls_sls_monitor_buffer_isobmff->last_mpu_sequence_number_last_fragment = video_data_unit;
+
+
+
+  //  return block_Append((lls_sls_monitor_output_buffer->video_output_buffer_isobmff.fragment_box, &lls_sls_monitor_output_buffer->video_output_buffer_isobmff.fragment_pos, _LLS_SLS_MONITOR_OUTPUT_MAX_FRAGMENT_BUFFER, video_mpu_data_unit_payload);
 }
 
 
-int lls_sls_monitor_buffer_isobmff_moof_patch_mdat_box(lls_sls_monitor_buffer_isobmff_t* lls_sls_monitor_buffer_isobmff_to_patch) {
-	uint8_t mdat_box[8];
-	uint32_t mdat_box_old_size;
-	uint32_t total_mdat_body_size = lls_sls_monitor_buffer_isobmff_to_patch->fragment_pos + 8;
+int lls_sls_monitor_buffer_isobmff_create_mdat_from_trun_sample_entries(lls_sls_monitor_buffer_isobmff_t* lls_sls_monitor_buffer_isobmff_to_create_mdat) {
 
-	memcpy(&mdat_box, &lls_sls_monitor_buffer_isobmff_to_patch->moof_box[lls_sls_monitor_buffer_isobmff_to_patch->moof_box_pos-8], 8);
-	mdat_box_old_size = ntohl((uint32_t)mdat_box);
-
-	if(mdat_box[4] == 'm' && mdat_box[5] == 'd' && mdat_box[6] == 'a' && mdat_box[7] == 't') {
-		mdat_box[0] = (total_mdat_body_size >> 24) & 0xFF;
-		mdat_box[1] = (total_mdat_body_size >> 16) & 0xFF;
-		mdat_box[2] = (total_mdat_body_size >> 8) & 0xFF;
-		mdat_box[3] = (total_mdat_body_size) & 0xFF;
-
-
-		memcpy(&lls_sls_monitor_buffer_isobmff_to_patch->moof_box[lls_sls_monitor_buffer_isobmff_to_patch->moof_box_pos-8], &mdat_box, 4);
-		__LLS_SLS_MONITOR_OUTPUT_BUFFER_UTILS_DEBUG("patch mdat box:  metadata packet: %p, size was: %u, now: %u, last 8 bytes of metadata fragment updated to: 0x%02x 0x%02x 0x%02x 0x%02x 0x%02x 0x%02x 0x%02x 0x%02x",
-				lls_sls_monitor_buffer_isobmff_to_patch, mdat_box_old_size, total_mdat_body_size,
-				mdat_box[0], mdat_box[1], mdat_box[2], mdat_box[3], mdat_box[4], mdat_box[5], mdat_box[6], mdat_box[7]);
-
-		return total_mdat_body_size;
-
-	} else {
-		__LLS_SLS_MONITOR_OUTPUT_BUFFER_UTILS_ERROR("patch modat box: metadata packet: %p, cant find trailing mdat!", lls_sls_monitor_buffer_isobmff_to_patch->moof_box);
+	if(!lls_sls_monitor_buffer_isobmff_to_create_mdat->trun_sample_entry_v.count) {
+		__LLS_SLS_MONITOR_OUTPUT_BUFFER_UTILS_ERROR("lls_sls_monitor_buffer_isobmff_create_mdat_from_trun_sample_entries count is 0: track_id: %u", lls_sls_monitor_buffer_isobmff_to_create_mdat->track_id);
 		return 0;
 	}
 
+	uint32_t mdat_size = 0;
+	for(int i=0; i < lls_sls_monitor_buffer_isobmff_to_create_mdat->trun_sample_entry_v.count; i++) {
+		trun_sample_entry_t* trun_sample_entry = lls_sls_monitor_buffer_isobmff_to_create_mdat->trun_sample_entry_v.data[i];
+		mdat_size += trun_sample_entry->sample_length;
+	}
+
+	lls_sls_monitor_buffer_isobmff_to_create_mdat->mmt_moof_block_reconstituted = block_Alloc(mdat_size + 8);
+
+	uint32_t mdat_size_nl = htonl(mdat_size);
+	//write out our box size
+	block_Write(lls_sls_monitor_buffer_isobmff_to_create_mdat->mmt_moof_block_reconstituted, (uint8_t*)&mdat_size_nl, 4);
+	const char* MDAT_ATOM = "mdat";
+	block_Write(lls_sls_monitor_buffer_isobmff_to_create_mdat->mmt_moof_block_reconstituted, (uint8_t*)MDAT_ATOM, 4);
+
+	//copy all of our alloc'd fragments
+	for(int i=0; i < lls_sls_monitor_buffer_isobmff_to_create_mdat->trun_sample_entry_v.count; i++) {
+		trun_sample_entry_t* trun_sample_entry = lls_sls_monitor_buffer_isobmff_to_create_mdat->trun_sample_entry_v.data[i];
+		block_Append(lls_sls_monitor_buffer_isobmff_to_create_mdat->mmt_moof_block_reconstituted, trun_sample_entry->sample);
+	}
+
+	return mdat_size;
 }
-block_t* lls_sls_monitor_output_buffer_copy_audio_full_isobmff_box(lls_sls_monitor_output_buffer_t* lls_sls_monitor_output_buffer) {
-	if(!lls_sls_monitor_output_buffer->audio_output_buffer_isobmff.init_box_pos || !lls_sls_monitor_output_buffer->audio_output_buffer_isobmff.fragment_pos) {
-		__LLS_SLS_MONITOR_OUTPUT_BUFFER_UTILS_ERROR("copy audio full box: error: init_box_pos: %u, fragment_pos: %u, returning NULL", lls_sls_monitor_output_buffer->audio_output_buffer_isobmff.init_box_pos, lls_sls_monitor_output_buffer->audio_output_buffer_isobmff.fragment_pos);
+
+block_t* lls_sls_monitor_output_buffer_copy_alc_full_isobmff_box(lls_sls_monitor_buffer_isobmff_t* lls_sls_monitor_buffer_isobmff) {
+	if(!lls_sls_monitor_buffer_isobmff->init_block || !lls_sls_monitor_buffer_isobmff->init_block->i_pos) {
+		__LLS_SLS_MONITOR_OUTPUT_BUFFER_UTILS_ERROR("lls_sls_monitor_output_buffer_copy_audio_alc_full_isobmff_box: init box: is: %p or len is 0", lls_sls_monitor_buffer_isobmff->init_block);
+		return NULL;
+	}
+	if(!lls_sls_monitor_buffer_isobmff->alc_moof_mdat_block || ! lls_sls_monitor_buffer_isobmff->alc_moof_mdat_block->i_pos) {
+		__LLS_SLS_MONITOR_OUTPUT_BUFFER_UTILS_ERROR("lls_sls_monitor_output_buffer_copy_audio_alc_full_isobmff_box: moof_mdat is: %p or len is 0", lls_sls_monitor_buffer_isobmff->alc_moof_mdat_block);
 		return NULL;
 	}
 
-	uint32_t full_box_size = lls_sls_monitor_output_buffer->audio_output_buffer_isobmff.init_box_pos + lls_sls_monitor_output_buffer->audio_output_buffer_isobmff.moof_box_pos + lls_sls_monitor_output_buffer->audio_output_buffer_isobmff.fragment_pos;
+	uint32_t full_box_size = lls_sls_monitor_buffer_isobmff->init_block->i_pos + lls_sls_monitor_buffer_isobmff->alc_moof_mdat_block->i_pos;
+
 	if(full_box_size <= 0) {
 		__LLS_SLS_MONITOR_OUTPUT_BUFFER_UTILS_ERROR("copy audio full box size <= 0, %u, returning NULL", full_box_size);
 		return NULL;
 	}
-	block_t* isobmff_full_block = block_Alloc(full_box_size);
+	block_t* isobmff_alc_full_block = block_Alloc(full_box_size);
 
-	__LLS_SLS_MONITOR_OUTPUT_BUFFER_UTILS_DEBUG("copy audio full box: total size: %u, init size: %u, moof size: %u, fragment size: %u", full_box_size, lls_sls_monitor_output_buffer->audio_output_buffer_isobmff.init_box_pos, lls_sls_monitor_output_buffer->audio_output_buffer_isobmff.moof_box_pos, lls_sls_monitor_output_buffer->audio_output_buffer_isobmff.fragment_pos);
-	block_Write(isobmff_full_block, lls_sls_monitor_output_buffer->audio_output_buffer_isobmff.init_box, lls_sls_monitor_output_buffer->audio_output_buffer_isobmff.init_box_pos);
+	__LLS_SLS_MONITOR_OUTPUT_BUFFER_UTILS_DEBUG("copy audio full box: total size: %u, init size: %u, moof size: %u", full_box_size,
+			lls_sls_monitor_buffer_isobmff->init_block->i_pos,
+			lls_sls_monitor_buffer_isobmff->alc_moof_mdat_block->i_pos);
 
-	if(lls_sls_monitor_output_buffer->audio_output_buffer_isobmff.moof_box && lls_sls_monitor_output_buffer->audio_output_buffer_isobmff.moof_box_pos) {
-		block_Write(isobmff_full_block, lls_sls_monitor_output_buffer->audio_output_buffer_isobmff.moof_box, lls_sls_monitor_output_buffer->audio_output_buffer_isobmff.moof_box_pos);
+	block_Append(isobmff_alc_full_block, lls_sls_monitor_buffer_isobmff->init_block);
+	block_Append(isobmff_alc_full_block, lls_sls_monitor_buffer_isobmff->alc_moof_mdat_block);
 
-	}
-
-	block_Write(isobmff_full_block, lls_sls_monitor_output_buffer->audio_output_buffer_isobmff.fragment_box, lls_sls_monitor_output_buffer->audio_output_buffer_isobmff.fragment_pos);
-
-	return isobmff_full_block;
+	return isobmff_alc_full_block;
 }
 
-block_t* lls_sls_monitor_output_buffer_copy_audio_moof_fragment_isobmff_box(lls_sls_monitor_output_buffer_t* lls_sls_monitor_output_buffer) {
-	if(!lls_sls_monitor_output_buffer->audio_output_buffer_isobmff.fragment_pos) {
-		__LLS_SLS_MONITOR_OUTPUT_BUFFER_UTILS_ERROR("copy audio moof_fragment: error: fragment_pos: %u, returning NULL", lls_sls_monitor_output_buffer->audio_output_buffer_isobmff.fragment_pos);
+block_t* lls_sls_monitor_output_buffer_copy_video_alc_full_isobmff_box(lls_sls_monitor_output_buffer_t* lls_sls_monitor_output_buffer) {
+	if(!lls_sls_monitor_output_buffer->video_output_buffer_isobmff.init_block || !lls_sls_monitor_output_buffer->video_output_buffer_isobmff.init_block->i_pos) {
+		__LLS_SLS_MONITOR_OUTPUT_BUFFER_UTILS_ERROR("lls_sls_monitor_output_buffer_copy_video_alc_full_isobmff_box: init box: is: %p or len is 0", lls_sls_monitor_output_buffer->video_output_buffer_isobmff.init_block);
+		return NULL;
+	}
+	if(!lls_sls_monitor_output_buffer->video_output_buffer_isobmff.alc_moof_mdat_block || ! lls_sls_monitor_output_buffer->video_output_buffer_isobmff.alc_moof_mdat_block->i_pos) {
+		__LLS_SLS_MONITOR_OUTPUT_BUFFER_UTILS_ERROR("lls_sls_monitor_output_buffer_copy_video_alc_full_isobmff_box: moof_mdat is: %p or len is 0", lls_sls_monitor_output_buffer->video_output_buffer_isobmff.alc_moof_mdat_block);
 		return NULL;
 	}
 
-	uint32_t moof_fragment_size = lls_sls_monitor_output_buffer->audio_output_buffer_isobmff.moof_box_pos + lls_sls_monitor_output_buffer->audio_output_buffer_isobmff.fragment_pos;
-	if(moof_fragment_size <= 0) {
-		__LLS_SLS_MONITOR_OUTPUT_BUFFER_UTILS_ERROR("copy audio moof_fragment size <= 0, %u, returning NULL", moof_fragment_size);
-		return NULL;
-	}
-	block_t* isobmff_moof_fragment_block = block_Alloc(moof_fragment_size);
+	uint32_t full_box_size = lls_sls_monitor_output_buffer->video_output_buffer_isobmff.init_block->i_pos + lls_sls_monitor_output_buffer->video_output_buffer_isobmff.alc_moof_mdat_block->i_pos;
 
-	__LLS_SLS_MONITOR_OUTPUT_BUFFER_UTILS_DEBUG("copy audio moof_fragment: total size: %u,  moof size: %u, fragment size: %u", moof_fragment_size,  lls_sls_monitor_output_buffer->audio_output_buffer_isobmff.moof_box_pos, lls_sls_monitor_output_buffer->audio_output_buffer_isobmff.fragment_pos);
-
-	if(lls_sls_monitor_output_buffer->audio_output_buffer_isobmff.moof_box && lls_sls_monitor_output_buffer->audio_output_buffer_isobmff.moof_box_pos) {
-		block_Write(isobmff_moof_fragment_block, lls_sls_monitor_output_buffer->audio_output_buffer_isobmff.moof_box, lls_sls_monitor_output_buffer->audio_output_buffer_isobmff.moof_box_pos);
-	}
-
-	block_Write(isobmff_moof_fragment_block, lls_sls_monitor_output_buffer->audio_output_buffer_isobmff.fragment_box, lls_sls_monitor_output_buffer->audio_output_buffer_isobmff.fragment_pos);
-
-	return isobmff_moof_fragment_block;
-}
-
-
-block_t* lls_sls_monitor_output_buffer_copy_video_full_isobmff_box(lls_sls_monitor_output_buffer_t* lls_sls_monitor_output_buffer) {
-	if(!lls_sls_monitor_output_buffer->video_output_buffer_isobmff.init_box_pos || !lls_sls_monitor_output_buffer->video_output_buffer_isobmff.fragment_pos) {
-		__LLS_SLS_MONITOR_OUTPUT_BUFFER_UTILS_ERROR("copy video full box: error: init_box_pos: %u, fragment_pos: %u, returning NULL", lls_sls_monitor_output_buffer->video_output_buffer_isobmff.init_box_pos, lls_sls_monitor_output_buffer->video_output_buffer_isobmff.fragment_pos);
-		return NULL;
-	}
-
-	uint32_t full_box_size = lls_sls_monitor_output_buffer->video_output_buffer_isobmff.init_box_pos + lls_sls_monitor_output_buffer->video_output_buffer_isobmff.moof_box_pos + lls_sls_monitor_output_buffer->video_output_buffer_isobmff.fragment_pos;
 	if(full_box_size <= 0) {
 		__LLS_SLS_MONITOR_OUTPUT_BUFFER_UTILS_ERROR("copy video full box size <= 0, %u, returning NULL", full_box_size);
 		return NULL;
 	}
-	block_t* isobmff_full_block = block_Alloc(full_box_size);
+	block_t* isobmff_alc_full_block = block_Alloc(full_box_size);
 
-	__LLS_SLS_MONITOR_OUTPUT_BUFFER_UTILS_DEBUG("copy video full box: total size: %u, init size: %u, moof size: %u, fragment size: %u", full_box_size, lls_sls_monitor_output_buffer->video_output_buffer_isobmff.init_box_pos, lls_sls_monitor_output_buffer->video_output_buffer_isobmff.moof_box_pos, lls_sls_monitor_output_buffer->video_output_buffer_isobmff.fragment_pos);
-	block_Write(isobmff_full_block, lls_sls_monitor_output_buffer->video_output_buffer_isobmff.init_box, lls_sls_monitor_output_buffer->video_output_buffer_isobmff.init_box_pos);
+	__LLS_SLS_MONITOR_OUTPUT_BUFFER_UTILS_DEBUG("copy video full box: total size: %u, init size: %u, moof size: %u", full_box_size,
+			lls_sls_monitor_output_buffer->video_output_buffer_isobmff.init_block->i_pos,
+			lls_sls_monitor_output_buffer->video_output_buffer_isobmff.alc_moof_mdat_block->i_pos);
 
-	if(lls_sls_monitor_output_buffer->video_output_buffer_isobmff.moof_box && lls_sls_monitor_output_buffer->video_output_buffer_isobmff.moof_box_pos) {
-		block_Write(isobmff_full_block, lls_sls_monitor_output_buffer->video_output_buffer_isobmff.moof_box, lls_sls_monitor_output_buffer->video_output_buffer_isobmff.moof_box_pos);
+	block_Append(isobmff_alc_full_block, lls_sls_monitor_output_buffer->video_output_buffer_isobmff.init_block);
+	block_Append(isobmff_alc_full_block, lls_sls_monitor_output_buffer->video_output_buffer_isobmff.alc_moof_mdat_block);
 
-	}
-
-	block_Write(isobmff_full_block, lls_sls_monitor_output_buffer->video_output_buffer_isobmff.fragment_box, lls_sls_monitor_output_buffer->video_output_buffer_isobmff.fragment_pos);
-
-	return isobmff_full_block;
+	return isobmff_alc_full_block;
 }
 
-block_t* lls_sls_monitor_output_buffer_copy_video_moof_fragment_isobmff_box(lls_sls_monitor_output_buffer_t* lls_sls_monitor_output_buffer) {
-	if(!lls_sls_monitor_output_buffer->video_output_buffer_isobmff.fragment_pos) {
-		__LLS_SLS_MONITOR_OUTPUT_BUFFER_UTILS_ERROR("copy video moof_fragment: error: fragment_pos: %u, returning NULL", lls_sls_monitor_output_buffer->video_output_buffer_isobmff.fragment_pos);
-		return NULL;
-	}
 
-	uint32_t moof_fragment_size = lls_sls_monitor_output_buffer->video_output_buffer_isobmff.moof_box_pos + lls_sls_monitor_output_buffer->video_output_buffer_isobmff.fragment_pos;
-	if(moof_fragment_size <= 0) {
-		__LLS_SLS_MONITOR_OUTPUT_BUFFER_UTILS_ERROR("copy video moof_fragment size <= 0, %u, returning NULL", moof_fragment_size);
-		return NULL;
-	}
-	block_t* isobmff_moof_fragment_block = block_Alloc(moof_fragment_size);
-
-	__LLS_SLS_MONITOR_OUTPUT_BUFFER_UTILS_DEBUG("copy video moof_fragment: total size: %u,  moof size: %u, fragment size: %u", moof_fragment_size,  lls_sls_monitor_output_buffer->video_output_buffer_isobmff.moof_box_pos, lls_sls_monitor_output_buffer->video_output_buffer_isobmff.fragment_pos);
-
-	if(lls_sls_monitor_output_buffer->video_output_buffer_isobmff.moof_box && lls_sls_monitor_output_buffer->video_output_buffer_isobmff.moof_box_pos) {
-		block_Write(isobmff_moof_fragment_block, lls_sls_monitor_output_buffer->video_output_buffer_isobmff.moof_box, lls_sls_monitor_output_buffer->video_output_buffer_isobmff.moof_box_pos);
-	}
-
-	block_Write(isobmff_moof_fragment_block, lls_sls_monitor_output_buffer->video_output_buffer_isobmff.fragment_box, lls_sls_monitor_output_buffer->video_output_buffer_isobmff.fragment_pos);
-
-	return isobmff_moof_fragment_block;
-}
 
 
 void lls_slt_monitor_check_and_handle_pipe_ffplay_buffer_is_shutdown(lls_slt_monitor_t* lls_slt_monitor) {
@@ -782,9 +831,9 @@ void lls_slt_monitor_check_and_handle_pipe_ffplay_buffer_is_shutdown(lls_slt_mon
 	}
 }
 
-void lls_sls_monitor_output_buffer_file_dump(lls_sls_monitor_output_buffer_t* lls_sls_monitor_output_buffer, const char* directory_path, uint32_t mpu_sequence_number_audio, uint32_t mpu_sequence_number_video) {
+void lls_sls_monitor_output_buffer_alc_file_dump(lls_sls_monitor_output_buffer_t* lls_sls_monitor_output_buffer, const char* directory_path, uint32_t mpu_sequence_number_audio, uint32_t mpu_sequence_number_video) {
 
-	__LLS_SLS_MONITOR_OUTPUT_BUFFER_UTILS_INFO("lls_sls_monitor_output_buffer_file_dump: dumping to %s, audio sequence number: %u, video sequence number: %u", directory_path, mpu_sequence_number_audio, mpu_sequence_number_video);
+	__LLS_SLS_MONITOR_OUTPUT_BUFFER_UTILS_INFO("lls_sls_monitor_output_buffer_alc_file_dump: dumping to %s, audio sequence number: %u, video sequence number: %u", directory_path, mpu_sequence_number_audio, mpu_sequence_number_video);
 	//just to be sure...
 	mkdir(directory_path, 0777);
 
@@ -807,9 +856,8 @@ void lls_sls_monitor_output_buffer_file_dump(lls_sls_monitor_output_buffer_t* ll
 
     FILE* box_track_dump_a_fp = fopen(box_track_dump_a_filename, "w");
     if(box_track_dump_a_fp) {
-    	fwrite(lls_sls_monitor_output_buffer->audio_output_buffer_isobmff.init_box, 	lls_sls_monitor_output_buffer->audio_output_buffer_isobmff.init_box_pos, 1, box_track_dump_a_fp);
-    	fwrite(lls_sls_monitor_output_buffer->audio_output_buffer_isobmff.moof_box, 	lls_sls_monitor_output_buffer->audio_output_buffer_isobmff.moof_box_pos, 1, box_track_dump_a_fp);
-    	fwrite(lls_sls_monitor_output_buffer->audio_output_buffer_isobmff.fragment_box, lls_sls_monitor_output_buffer->audio_output_buffer_isobmff.fragment_pos, 1, box_track_dump_a_fp);
+    	fwrite(lls_sls_monitor_output_buffer->audio_output_buffer_isobmff.init_block->p_buffer, 		  lls_sls_monitor_output_buffer->audio_output_buffer_isobmff.init_block->i_pos, 1, box_track_dump_a_fp);
+    	fwrite(lls_sls_monitor_output_buffer->audio_output_buffer_isobmff.alc_moof_mdat_block->p_buffer , lls_sls_monitor_output_buffer->audio_output_buffer_isobmff.alc_moof_mdat_block->i_pos, 1, box_track_dump_a_fp);
     	fclose(box_track_dump_a_fp);
     	free(box_track_dump_a_filename);
     }
@@ -820,13 +868,97 @@ void lls_sls_monitor_output_buffer_file_dump(lls_sls_monitor_output_buffer_t* ll
 
     FILE* box_track_dump_v_fp = fopen(box_track_dump_v_filename, "w");
     if(box_track_dump_v_fp) {
-    	fwrite(lls_sls_monitor_output_buffer->video_output_buffer_isobmff.init_box, lls_sls_monitor_output_buffer->video_output_buffer_isobmff.init_box_pos, 1, box_track_dump_v_fp);
-    	fwrite(lls_sls_monitor_output_buffer->video_output_buffer_isobmff.moof_box, lls_sls_monitor_output_buffer->video_output_buffer_isobmff.moof_box_pos, 1, box_track_dump_v_fp);
-    	fwrite(lls_sls_monitor_output_buffer->video_output_buffer_isobmff.fragment_box, lls_sls_monitor_output_buffer->video_output_buffer_isobmff.fragment_pos, 1, box_track_dump_v_fp);
+    	fwrite(lls_sls_monitor_output_buffer->video_output_buffer_isobmff.init_block->p_buffer, 		  lls_sls_monitor_output_buffer->video_output_buffer_isobmff.init_block->i_pos, 1, box_track_dump_v_fp);
+    	fwrite(lls_sls_monitor_output_buffer->video_output_buffer_isobmff.alc_moof_mdat_block->p_buffer , lls_sls_monitor_output_buffer->video_output_buffer_isobmff.alc_moof_mdat_block->i_pos, 1, box_track_dump_v_fp);
 
     	fclose(box_track_dump_v_fp);
     	free(box_track_dump_v_filename);
     }
+}
+
+
+
+void lls_sls_monitor_output_buffer_mmt_file_dump(lls_sls_monitor_output_buffer_t* lls_sls_monitor_output_buffer, const char* directory_path, uint32_t mpu_sequence_number_audio, uint32_t mpu_sequence_number_video) {
+
+	__LLS_SLS_MONITOR_OUTPUT_BUFFER_UTILS_INFO("lls_sls_monitor_output_buffer_mmt_file_dump: dumping to %s, audio sequence number: %u, video sequence number: %u", directory_path, mpu_sequence_number_audio, mpu_sequence_number_video);
+	//just to be sure...
+	mkdir(directory_path, 0777);
+
+	//build our recon mpu
+	uint32_t mpu_sequence_number_min = __MIN(mpu_sequence_number_audio, mpu_sequence_number_video);
+    char* box_track_dump_recon_filename = (char*)calloc(128, sizeof(char));
+    snprintf(box_track_dump_recon_filename, 127, "%s/%u.b", directory_path, mpu_sequence_number_min);
+
+    FILE* box_track_dump_recon_fp = fopen(box_track_dump_recon_filename, "w");
+    if(box_track_dump_recon_fp) {
+    	fwrite(lls_sls_monitor_output_buffer->joined_isobmff_block->p_buffer, lls_sls_monitor_output_buffer->joined_isobmff_block->p_size, 1, box_track_dump_recon_fp);
+    	fclose(box_track_dump_recon_fp);
+    	free(box_track_dump_recon_filename);
+    }
+
+    //dump a track with original moof
+    char* box_track_dump_moof_flow_a_filename = (char*)calloc(128, sizeof(char));
+    snprintf(box_track_dump_moof_flow_a_filename, 127, "%s/%u.moof_flow.a", directory_path, mpu_sequence_number_audio);
+
+
+    FILE* box_track_dump_moof_flow_a_fp = fopen(box_track_dump_moof_flow_a_filename, "w");
+    if(box_track_dump_moof_flow_a_fp) {
+    	fwrite(lls_sls_monitor_output_buffer->audio_output_buffer_isobmff.init_block->p_buffer, 		  		lls_sls_monitor_output_buffer->audio_output_buffer_isobmff.init_block->i_pos, 1, box_track_dump_moof_flow_a_fp);
+    	fwrite(lls_sls_monitor_output_buffer->audio_output_buffer_isobmff.mmt_moof_block_from_flow->p_buffer, 	lls_sls_monitor_output_buffer->audio_output_buffer_isobmff.mmt_moof_block_from_flow->i_pos, 1, box_track_dump_moof_flow_a_fp);
+    	fwrite(lls_sls_monitor_output_buffer->audio_output_buffer_isobmff.mmt_mdat_block->p_buffer, 			lls_sls_monitor_output_buffer->audio_output_buffer_isobmff.mmt_mdat_block->i_pos, 1, box_track_dump_moof_flow_a_fp);
+
+    	fclose(box_track_dump_moof_flow_a_fp);
+    	free(box_track_dump_moof_flow_a_filename);
+    }
+
+
+    //dump a track with rebuilt moof
+    char* box_track_dump_moof_rebuilt_a_filename = (char*)calloc(128, sizeof(char));
+    snprintf(box_track_dump_moof_rebuilt_a_filename, 127, "%s/%u.moof_rebuilt.a", directory_path, mpu_sequence_number_audio);
+
+
+    FILE* box_track_dump_moof_rebuilt_a_fp = fopen(box_track_dump_moof_rebuilt_a_filename, "w");
+	if(box_track_dump_moof_rebuilt_a_fp) {
+		fwrite(lls_sls_monitor_output_buffer->audio_output_buffer_isobmff.init_block->p_buffer, 		  			lls_sls_monitor_output_buffer->audio_output_buffer_isobmff.init_block->i_pos, 1, box_track_dump_moof_rebuilt_a_fp);
+
+    	fwrite(lls_sls_monitor_output_buffer->audio_output_buffer_isobmff.mmt_moof_block_reconstituted->p_buffer, 	lls_sls_monitor_output_buffer->audio_output_buffer_isobmff.mmt_moof_block_reconstituted->i_pos, 1, box_track_dump_moof_flow_a_fp);
+    	fwrite(lls_sls_monitor_output_buffer->audio_output_buffer_isobmff.mmt_mdat_block->p_buffer, 				lls_sls_monitor_output_buffer->audio_output_buffer_isobmff.mmt_mdat_block->i_pos, 1, box_track_dump_moof_flow_a_fp);
+
+		fclose(box_track_dump_moof_rebuilt_a_fp);
+		free(box_track_dump_moof_rebuilt_a_filename);
+	}
+
+    //dump v track
+    char* box_track_dump_moof_flow_v_filename = (char*)calloc(128, sizeof(char));
+    snprintf(box_track_dump_moof_flow_v_filename, 127, "%s/%u.moof_flow.v", directory_path, mpu_sequence_number_video);
+
+    FILE* box_track_dump_moof_flow_v_fp = fopen(box_track_dump_moof_flow_v_filename, "w");
+    if(box_track_dump_moof_flow_v_fp) {
+    	fwrite(lls_sls_monitor_output_buffer->video_output_buffer_isobmff.init_block->p_buffer, 				lls_sls_monitor_output_buffer->video_output_buffer_isobmff.init_block->i_pos, 1, box_track_dump_moof_flow_v_fp);
+    	fwrite(lls_sls_monitor_output_buffer->video_output_buffer_isobmff.mmt_moof_block_from_flow->p_buffer, 	lls_sls_monitor_output_buffer->video_output_buffer_isobmff.mmt_moof_block_from_flow->i_pos, 1, box_track_dump_moof_flow_a_fp);
+
+    	fwrite(lls_sls_monitor_output_buffer->video_output_buffer_isobmff.mmt_mdat_block->p_buffer ,			lls_sls_monitor_output_buffer->video_output_buffer_isobmff.mmt_mdat_block->i_pos, 1, box_track_dump_moof_flow_v_fp);
+
+    	fclose(box_track_dump_moof_flow_v_fp);
+    	free(box_track_dump_moof_flow_v_filename);
+    }
+
+
+
+    //dump v track
+    char* box_track_dump_moof_rebuilt_v_filename = (char*)calloc(128, sizeof(char));
+    snprintf(box_track_dump_moof_rebuilt_v_filename, 127, "%s/%u.moof_flow.v", directory_path, mpu_sequence_number_video);
+
+    FILE* box_track_dump_moof_rebuilt_v_fp = fopen(box_track_dump_moof_rebuilt_v_filename, "w");
+    if(box_track_dump_moof_rebuilt_v_fp) {
+    	fwrite(lls_sls_monitor_output_buffer->video_output_buffer_isobmff.init_block->p_buffer, 		 			 lls_sls_monitor_output_buffer->video_output_buffer_isobmff.init_block->i_pos, 1, box_track_dump_moof_rebuilt_v_fp);
+    	fwrite(lls_sls_monitor_output_buffer->video_output_buffer_isobmff.mmt_moof_block_reconstituted->p_buffer, 	lls_sls_monitor_output_buffer->video_output_buffer_isobmff.mmt_moof_block_reconstituted->i_pos, 1, box_track_dump_moof_flow_a_fp);
+    	fwrite(lls_sls_monitor_output_buffer->video_output_buffer_isobmff.mmt_mdat_block->p_buffer, 				lls_sls_monitor_output_buffer->video_output_buffer_isobmff.mmt_mdat_block->i_pos, 1, box_track_dump_moof_rebuilt_v_fp);
+
+    	fclose(box_track_dump_moof_rebuilt_v_fp);
+    	free(box_track_dump_moof_rebuilt_v_filename);
+    }
+
 }
 
 
