@@ -183,9 +183,10 @@ static void route_process_from_alc_packet(alc_packet_t **alc_packet) {
 			lls_slt_monitor_check_and_handle_pipe_ffplay_buffer_is_shutdown(lls_slt_monitor);
 
 			pipe_buffer_reader_mutex_unlock(pipe_ffplay_buffer);
-			//reset our buffer pos and should_flush = false
-			lls_sls_monitor_output_buffer_reset_moof_and_fragment_position(&lls_slt_monitor->lls_sls_alc_monitor->lls_sls_monitor_output_buffer);
         }
+
+		lls_sls_monitor_output_buffer_reset_moof_and_fragment_position(&lls_slt_monitor->lls_sls_alc_monitor->lls_sls_monitor_output_buffer);
+
     }
 }
 

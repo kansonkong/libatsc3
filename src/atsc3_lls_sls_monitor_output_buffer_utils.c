@@ -139,7 +139,6 @@ void lls_sls_monitor_output_buffer_reset_moof_and_fragment_position(lls_sls_moni
 	lls_sls_monitor_output_buffer->audio_output_buffer_isobmff.mpu_presentation_time_set = false;
 
 
-
 	block_Release(&lls_sls_monitor_output_buffer->audio_output_buffer_isobmff.alc_moof_mdat_block);
 	block_Release(&lls_sls_monitor_output_buffer->audio_output_buffer_isobmff.mmt_moof_block_reconstituted);
 	block_Release(&lls_sls_monitor_output_buffer->audio_output_buffer_isobmff.mmt_moof_block_from_flow);
@@ -823,6 +822,7 @@ void lls_slt_monitor_check_and_handle_pipe_ffplay_buffer_is_shutdown(lls_slt_mon
 			if(is_shutdown_alc) {
 				__LLS_SLS_MONITOR_OUTPUT_BUFFER_UTILS_INFO("lls_slt_monitor: ffplay is shutdown for ALC service_id: %u, setting ffplay_output_enabled = false", lls_slt_monitor->lls_sls_alc_monitor->service_id);
 				lls_slt_monitor->lls_sls_alc_monitor->lls_sls_monitor_output_buffer_mode.ffplay_output_enabled = false;
+				lls_slt_monitor->lls_sls_alc_monitor->lls_sls_monitor_output_buffer.should_flush_output_buffer = false;
 			}
 		}
 
