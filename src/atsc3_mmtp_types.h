@@ -127,14 +127,14 @@ typedef struct {
 	uint8_t 	mpu_dep_counter;
 
 	//MMTHSample hint fields
-	uint32_t mmth_sequence_number;
-	uint8_t mmth_trackrefindex;
-	uint32_t mmth_movie_fragment_sequence_number;
-	uint32_t mmth_samplenumber;
-	uint8_t  mmth_priority;
-	uint8_t  mmth_dependency_counter;
-	uint32_t mmth_offset;
-	uint32_t mmth_length;
+	uint32_t 	mmth_sequence_number;
+	uint8_t 	mmth_trackrefindex;
+	uint32_t 	mmth_movie_fragment_sequence_number;
+	uint32_t 	mmth_samplenumber;
+	uint8_t  	mmth_priority;
+	uint8_t  	mmth_dependency_counter;
+	uint32_t 	mmth_offset;
+	uint32_t 	mmth_length;
 	mmthsample_muli_box_t mmth_muli;
 
 	uint64_t pts;

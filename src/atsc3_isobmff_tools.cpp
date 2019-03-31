@@ -230,7 +230,8 @@ lls_sls_monitor_output_buffer_t* atsc3_isobmff_build_mpu_metadata_ftyp_moof_mdat
 		mmtp_sub_flow = mmtp_sub_flow_vector_find_packet_id(mmtp_sub_flow_vector, udp_flow_packet_id_mpu_sequence_tuple->packet_id);
 
 		//hack for the previous sequence number which should be complete
-		data_unit_payload_types = mpu_data_unit_payload_fragments_find_mpu_sequence_number(&mmtp_sub_flow->mpu_fragments->media_fragment_unit_vector, udp_flow_packet_id_mpu_sequence_tuple->mpu_sequence_number);
+		data_unit_payload_types = mpu_data_unit_payload_fragments_find_mpu_sequence_number(&mmtp_sub_flow->mpu_fragments->media_fragment_unit_vector,
+				udp_flow_packet_id_mpu_sequence_tuple->mpu_sequence_number - 1 );
 
 		if(data_unit_payload_types && data_unit_payload_types->timed_fragments_vector.size) {
 			total_fragments = data_unit_payload_types->timed_fragments_vector.size;
@@ -239,7 +240,8 @@ lls_sls_monitor_output_buffer_t* atsc3_isobmff_build_mpu_metadata_ftyp_moof_mdat
 				mmtp_payload_fragments_union_t* data_unit = data_unit_payload_types->timed_fragments_vector.data[i];
 
 				//only push to our correct mpu flow....
-				if(data_unit->mmtp_mpu_type_packet_header.mmtp_packet_id == lls_sls_mmt_monitor->video_packet_id && data_unit->mmtp_mpu_type_packet_header.mmtp_packet_id == udp_flow_packet_id_mpu_sequence_tuple->packet_id) {
+				if(data_unit->mmtp_mpu_type_packet_header.mmtp_packet_id == lls_sls_mmt_monitor->video_packet_id &&
+						data_unit->mmtp_mpu_type_packet_header.mmtp_packet_id == udp_flow_packet_id_mpu_sequence_tuple->packet_id) {
 
 					lls_sls_monitor_output_buffer_copy_and_recover_sample_fragment_block(&lls_sls_monitor_output_buffer->video_output_buffer_isobmff, data_unit);
 
@@ -267,17 +269,21 @@ lls_sls_monitor_output_buffer_t* atsc3_isobmff_build_mpu_metadata_ftyp_moof_mdat
 
 lls_sls_monitor_output_buffer_t* atsc3_isobmff_build_mpu_metadata_ftyp_moof_mdat_box_from_mpu_sequence_numbers(udp_flow_t* udp_flow, udp_flow_latest_mpu_sequence_number_container_t* udp_flow_latest_mpu_sequence_number_container, uint32_t mpu_sequence_number_audio, uint32_t mpu_sequence_number_video, mmtp_sub_flow_vector_t* mmtp_sub_flow_vector, lls_sls_mmt_monitor_t* lls_sls_mmt_monitor) {
     
-	__ISOBMFF_TOOLS_DEBUG("atsc3_isobmff_build_mpu_metadata_ftyp_moof_mdat_box_from_mpu_sequence_numbers: Starting to create ftyp_moof_mdat_box_from_flow: %u:%u", udp_flow->dst_ip_addr, udp_flow->dst_port);
+	__ISOBMFF_TOOLS_DEBUG("atsc3_isobmff_build_mpu_metadata_ftyp_moof_mdat_box_from_mpu_sequence_numbers: Starting to create ftyp_moof_mdat_box_from_flow: %u:%u, a: %u, v: %u",
+			udp_flow->dst_ip_addr, udp_flow->dst_port,
+			mpu_sequence_number_audio,
+			mpu_sequence_number_video
+			);
 
 	//hack
-	mpu_sequence_number_audio = __MAX(mpu_sequence_number_audio - 1, 0);
-	mpu_sequence_number_video = __MAX(mpu_sequence_number_video - 1, 0);
+	mpu_sequence_number_audio = mpu_sequence_number_audio ? mpu_sequence_number_audio - 2 : 0;
+
+	mpu_sequence_number_video = mpu_sequence_number_video ? mpu_sequence_number_video - 2 : 0;
 
 	lls_sls_monitor_output_buffer_t* lls_sls_monitor_output_buffer = &lls_sls_mmt_monitor->lls_sls_monitor_output_buffer;
-//do not clear so we can flush out mpu's quickly
+	//do not clear so we can flush out mpu's quickly
 	//until we can support mfu recon
 	//lls_sls_monitor_output_buffer_reset_moof_and_fragment_position(lls_sls_monitor_output_buffer);
-
 
 	mpu_data_unit_payload_fragments_t* data_unit_payload_types = NULL;
     mpu_data_unit_payload_fragments_timed_vector_t* data_unit_payload_fragments = NULL; //technically this is mpu_fragments->media_fragment_unit_vector
@@ -484,14 +490,22 @@ lls_sls_monitor_output_buffer_t* atsc3_isobmff_build_mpu_metadata_ftyp_moof_mdat
 
     if((mpu_sequence_number_audio && !lls_sls_monitor_output_buffer->audio_output_buffer_isobmff.trun_sample_entry_v.count) ||
     	(mpu_sequence_number_video && !lls_sls_monitor_output_buffer->video_output_buffer_isobmff.trun_sample_entry_v.count)) {
-           __ISOBMFF_TOOLS_WARN("Returning - data unit size is null: audio_du_size: %u, video_du_size: %u",
+           __ISOBMFF_TOOLS_WARN("short - data unit size is null: audio: mpu_sequence_number: %u, du_size: %u, video: mpu_sequence_number: %u, video_du_size: %u",
+        		   mpu_sequence_number_audio,
         		   lls_sls_monitor_output_buffer->audio_output_buffer_isobmff.trun_sample_entry_v.count,
+				   mpu_sequence_number_video,
 				   lls_sls_monitor_output_buffer->video_output_buffer_isobmff.trun_sample_entry_v.count);
            return NULL;
     }
     
     if(lls_sls_monitor_output_buffer->audio_output_buffer_isobmff.trun_sample_entry_v.count && lls_sls_monitor_output_buffer->video_output_buffer_isobmff.trun_sample_entry_v.count) {
     	lls_sls_monitor_output_buffer->should_flush_output_buffer = true;
+
+    	  __ISOBMFF_TOOLS_INFO("Returning - data unit size: audio: mpu_sequence_number: %u, du_size: %u, video: mpu_sequence_number: %u, video_du_size: %u",
+    	        		   mpu_sequence_number_audio,
+    	        		   lls_sls_monitor_output_buffer->audio_output_buffer_isobmff.trun_sample_entry_v.count,
+    					   mpu_sequence_number_video,
+    					   lls_sls_monitor_output_buffer->video_output_buffer_isobmff.trun_sample_entry_v.count);
     	return atsc3_isobmff_build_joined_patched_isobmff_fragment(lls_sls_monitor_output_buffer);
     } else {
     	return NULL;
