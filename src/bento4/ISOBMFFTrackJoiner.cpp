@@ -941,12 +941,24 @@ void parseAndBuildJoinedBoxes_from_lls_sls_monitor_output_buffer(lls_sls_monitor
     __ISOBMFF_JOINER_INFO("Final output re-muxed MPU:");
     dumpFullMetadataAndOffsets(video_isobmff_atom_list);
 
-    //don't change this value here, otherwise we will lose reference on our next processing loop
-//	lls_sls_monitor_output_buffer->audio_output_buffer_isobmff.track_id = audio_track_id_to_remap;
-
-
 	block_Release(&audio_output_buffer);
 	block_Release(&video_output_buffer);
+
+	for (it = audio_isobmff_atom_list.begin(); it != audio_isobmff_atom_list.end(); it++) {
+		if((*it)->atom) {
+			delete (*it)->atom;
+		}
+		free (*it);
+	}
+
+	for (it = video_isobmff_atom_list.begin(); it != video_isobmff_atom_list.end(); it++) {
+		if((*it)->atom) {
+			delete (*it)->atom;
+		}
+		free (*it);
+	}
+
+
 }
 
 
