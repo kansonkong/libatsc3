@@ -47,7 +47,10 @@ lls_sls_monitor_output_buffer_t* atsc3_isobmff_build_joined_alc_isobmff_fragment
     }
 
     block_Write(lls_sls_monitor_output_buffer->joined_isobmff_block, (uint8_t*)ap4_memory_byte_stream->GetData(), ap4_memory_byte_stream->GetDataSize());
-    free (ap4_memory_byte_stream);
+
+    //release our handoe for bento4 for the memory byte stream
+    ap4_memory_byte_stream->Release();
+
     return lls_sls_monitor_output_buffer;
 
 }
