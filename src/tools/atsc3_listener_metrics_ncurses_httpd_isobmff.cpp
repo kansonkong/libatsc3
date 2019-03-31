@@ -279,7 +279,7 @@ static void route_process_from_alc_packet(alc_packet_t **alc_packet) {
     
     if(lls_slt_monitor->lls_sls_alc_monitor->lls_sls_monitor_output_buffer.has_written_init_box && lls_slt_monitor->lls_sls_alc_monitor->lls_sls_monitor_output_buffer.should_flush_output_buffer) {
 
-        lls_sls_monitor_output_buffer_t* lls_sls_monitor_output_buffer_final_muxed_payload = atsc3_isobmff_build_joined_isobmff_fragment(&lls_slt_monitor->lls_sls_alc_monitor->lls_sls_monitor_output_buffer);
+        lls_sls_monitor_output_buffer_t* lls_sls_monitor_output_buffer_final_muxed_payload = atsc3_isobmff_build_joined_alc_isobmff_fragment(&lls_slt_monitor->lls_sls_alc_monitor->lls_sls_monitor_output_buffer);
         
         if(!lls_sls_monitor_output_buffer_final_muxed_payload) {
         	lls_slt_monitor->lls_sls_alc_monitor->lls_sls_monitor_output_buffer.should_flush_output_buffer = false;
@@ -288,7 +288,7 @@ static void route_process_from_alc_packet(alc_packet_t **alc_packet) {
         }
 
         if(true || lls_slt_monitor->lls_sls_alc_monitor->lls_sls_monitor_output_buffer_mode.file_dump_enabled) {
-            lls_sls_monitor_output_buffer_file_dump(lls_sls_monitor_output_buffer_final_muxed_payload, "route/", lls_slt_monitor->lls_sls_alc_monitor->last_completed_flushed_audio_toi, lls_slt_monitor->lls_sls_alc_monitor->last_completed_flushed_video_toi);
+            lls_sls_monitor_output_buffer_alc_file_dump(lls_sls_monitor_output_buffer_final_muxed_payload, "route/", lls_slt_monitor->lls_sls_alc_monitor->last_completed_flushed_audio_toi, lls_slt_monitor->lls_sls_alc_monitor->last_completed_flushed_video_toi);
         }
 
         if(lls_slt_monitor->lls_sls_alc_monitor->lls_sls_monitor_output_buffer_mode.ffplay_output_enabled && lls_slt_monitor->lls_sls_alc_monitor->lls_sls_monitor_output_buffer_mode.pipe_ffplay_buffer) {
@@ -509,6 +509,10 @@ int main(int argc,char **argv) {
 	_MMTP_DEBUG_ENABLED = 0;
 	_MMT_SIGNALLING_MESSAGE_DEBUG_ENABLED = 0;
 	_MMT_SIGNALLING_MESSAGE_TRACE_ENABLED = 0;
+
+	_MMT_RECON_FROM_SAMPLE_DEBUG_ENABLED = 1;
+	_MMT_RECON_FROM_SAMPLE_TRACE_ENABLED = 1;
+
 	_LLS_DEBUG_ENABLED = 0;
     _ISOBMFF_TOOLS_DEBUG_ENABLED = 1;
     _PLAYER_FFPLAY_DEBUG_ENABLED = 1;
@@ -519,6 +523,7 @@ int main(int argc,char **argv) {
     _ALC_UTILS_TRACE_ENABLED = 0;
     _ALC_RX_DEBUG_ENABLED = 0;
     _ISOBMFFTRACKJOINER_DEBUG_ENABLED = 1;
+    _LLS_SLS_MONITOR_OUTPUT_BUFFER_UTILS_DEBUG_ENABLED = 1;
 
     char *dev;
 
