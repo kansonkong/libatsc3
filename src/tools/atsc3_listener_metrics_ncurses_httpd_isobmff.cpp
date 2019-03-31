@@ -273,23 +273,22 @@ mmtp_payload_fragments_union_t* mmtp_parse_from_udp_packet(udp_packet_t *udp_pac
     return mmtp_payload;
 }
 
+/**
+ * only build our atsc3_isobmff_build_joined_alc_isobmff_fragment if we have ffplay output active
+ */
 
 static void route_process_from_alc_packet(alc_packet_t **alc_packet) {
     alc_packet_dump_to_object(alc_packet);
     
     if(lls_slt_monitor->lls_sls_alc_monitor->lls_sls_monitor_output_buffer.has_written_init_box && lls_slt_monitor->lls_sls_alc_monitor->lls_sls_monitor_output_buffer.should_flush_output_buffer) {
 
-        lls_sls_monitor_output_buffer_t* lls_sls_monitor_output_buffer_final_muxed_payload = atsc3_isobmff_build_joined_alc_isobmff_fragment(&lls_slt_monitor->lls_sls_alc_monitor->lls_sls_monitor_output_buffer);
-        
-        if(!lls_sls_monitor_output_buffer_final_muxed_payload) {
-        	lls_slt_monitor->lls_sls_alc_monitor->lls_sls_monitor_output_buffer.should_flush_output_buffer = false;
-        	__ERROR("lls_sls_monitor_output_buffer_final_muxed_payload was NULL!");
-        	return;
-        }
+    	lls_sls_monitor_output_buffer_t* lls_sls_monitor_output_buffer_final_muxed_payload = atsc3_isobmff_build_joined_alc_isobmff_fragment(&lls_slt_monitor->lls_sls_alc_monitor->lls_sls_monitor_output_buffer);
 
-        if(true || lls_slt_monitor->lls_sls_alc_monitor->lls_sls_monitor_output_buffer_mode.file_dump_enabled) {
-            lls_sls_monitor_output_buffer_alc_file_dump(lls_sls_monitor_output_buffer_final_muxed_payload, "route/", lls_slt_monitor->lls_sls_alc_monitor->last_completed_flushed_audio_toi, lls_slt_monitor->lls_sls_alc_monitor->last_completed_flushed_video_toi);
-        }
+		if(!lls_sls_monitor_output_buffer_final_muxed_payload) {
+			lls_slt_monitor->lls_sls_alc_monitor->lls_sls_monitor_output_buffer.should_flush_output_buffer = false;
+			__ERROR("lls_sls_monitor_output_buffer_final_muxed_payload was NULL!");
+			return;
+		}
 
         if(lls_slt_monitor->lls_sls_alc_monitor->lls_sls_monitor_output_buffer_mode.ffplay_output_enabled && lls_slt_monitor->lls_sls_alc_monitor->lls_sls_monitor_output_buffer_mode.pipe_ffplay_buffer) {
 
@@ -306,8 +305,12 @@ static void route_process_from_alc_packet(alc_packet_t **alc_packet) {
 
 			pipe_buffer_reader_mutex_unlock(pipe_ffplay_buffer);
 			//reset our buffer pos and should_flush = false;
-			lls_sls_monitor_output_buffer_reset_moof_and_fragment_position(&lls_slt_monitor->lls_sls_alc_monitor->lls_sls_monitor_output_buffer);
+        } else if(false && lls_slt_monitor->lls_sls_alc_monitor->lls_sls_monitor_output_buffer_mode.file_dump_enabled) {
+        	//don't double write to disk for route objects as we do this already in the route alc refrag client
+            lls_sls_monitor_output_buffer_alc_file_dump(lls_sls_monitor_output_buffer_final_muxed_payload, "route/", lls_slt_monitor->lls_sls_alc_monitor->last_completed_flushed_audio_toi, lls_slt_monitor->lls_sls_alc_monitor->last_completed_flushed_video_toi);
         }
+
+		lls_sls_monitor_output_buffer_reset_moof_and_fragment_position(&lls_slt_monitor->lls_sls_alc_monitor->lls_sls_monitor_output_buffer);
     }
 }
 
