@@ -216,6 +216,8 @@ int alc_rx_analyze_packet_a331_compliant(char *data, int len, alc_channel_t *ch,
 	/* EXT_FTI */
 
 	unsigned long long transfer_len = 0; /* L */
+	uint64_t	transfer_len_scratch_64t;
+
 	unsigned char finite_field = 0; /* m */
 	unsigned char nb_of_es_per_group = 0; /* G */
 	unsigned short es_len = 0; /* E */
@@ -226,6 +228,7 @@ int alc_rx_analyze_packet_a331_compliant(char *data, int len, alc_channel_t *ch,
 	/* EXT_ROUTE_PRESENTATION_TIME	 */
 	bool 	 ext_route_presentation_ntp_timestamp_set = false;
 	uint64_t ext_route_presentation_ntp_timestamp = 0;
+	uint64_t ext_route_scratch_64t;
 
 	int fec_inst_id = 0; /* FEC Instance ID */
 //
@@ -531,10 +534,10 @@ int alc_rx_analyze_packet_a331_compliant(char *data, int len, alc_channel_t *ch,
 					*/
 
 
-				  word = __readuint32(data, header_pos);
+				  ext_route_scratch_64t = __readuint32(data, header_pos);
 				  header_pos += 4;
 				  exthdrlen-=4;
-				  ext_route_presentation_ntp_timestamp |= (word << 32);
+				  ext_route_presentation_ntp_timestamp |= (ext_route_scratch_64t << 32);
 
 				  word = __readuint32(data, header_pos);
 				  header_pos += 4;
@@ -579,7 +582,9 @@ int alc_rx_analyze_packet_a331_compliant(char *data, int len, alc_channel_t *ch,
 					 Figure A.4.3 EXT_TOL Header 48-bit version
 				   */
 
-				  transfer_len = ((word & 0x0000FFFF) << 32) ;
+				  transfer_len_scratch_64t = (word & 0x0000FFFF);
+
+				  transfer_len = (transfer_len_scratch_64t<< 32) ;
 				  word = __readuint32(data, header_pos);
 				  transfer_len |= word;
 
@@ -675,7 +680,7 @@ int alc_rx_analyze_packet_a331_compliant(char *data, int len, alc_channel_t *ch,
         if(transfer_len > 0 && transfer_len == (alc_packet->alc_len + alc_packet->esi)) {
         	alc_packet->close_object_flag = true;
         }
-        ALC_RX_DEBUG("FEC Encoding ID: %i, sbn: %hu, esi: %u, transfer_len: %u, alc_len+esi: %u",
+        ALC_RX_DEBUG("FEC Encoding ID: %i, sbn: %u, esi: %u, transfer_len: %llu, alc_len+esi: %u",
         		alc_packet->fec_encoding_id, alc_packet->sbn, alc_packet->esi,
 				transfer_len, alc_packet->alc_len + alc_packet->esi);
     } else {

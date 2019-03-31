@@ -40,6 +40,7 @@
 
 #define ATSC3_VECTOR_BUILDER_METHODS_INTERFACE(vector_struct_name, vector_item_name) \
 	PPCAT(vector_item_name,_t)* PPCAT(vector_item_name,_new)(); \
+	void PPCAT(vector_struct_name,PPCAT(_clear_,vector_item_name))(PPCAT(vector_struct_name,_t)*); \
 	void PPCAT(vector_struct_name,PPCAT(_add_,vector_item_name))(PPCAT(vector_struct_name,_t)*, PPCAT(vector_item_name,_t)*);
 
 /**
@@ -58,6 +59,17 @@
 	PPCAT(vector_item_name,_t)* PPCAT(vector_item_name,_new)() { \
 		PPCAT(vector_item_name,_t)* vector_item_name = calloc(1, sizeof(PPCAT(vector_item_name,_t))); \
 		return vector_item_name; \
+	} \
+	\
+	void PPCAT(vector_struct_name,PPCAT(_clear_, vector_item_name))(PPCAT(vector_struct_name,_t)* vector_struct_name) { \
+		for(int i=0; i < vector_struct_name->PPCAT(vector_item_name, _v).count; i++) { \
+			if(vector_struct_name->PPCAT(vector_item_name, _v).data[i]) { \
+				free(vector_struct_name->PPCAT(vector_item_name, _v).data[i]); \
+				vector_struct_name->PPCAT(vector_item_name, _v).data[i] = NULL; \
+			} \
+		} \
+		vector_struct_name->PPCAT(vector_item_name, _v).count 	= 0; \
+		\
 	} \
 	\
 	void PPCAT(vector_struct_name,PPCAT(_add_, vector_item_name))(PPCAT(vector_struct_name,_t)* vector_struct_name, PPCAT(vector_item_name,_t)* vector_item_name) { \

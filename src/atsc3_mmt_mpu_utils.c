@@ -329,10 +329,10 @@ void mpu_dump_header(mmtp_payload_fragments_union_t* mmtp_payload) {
 		__MMT_MPU_DEBUG("MFU Packet (Timed)");
 		__MMT_MPU_DEBUG("-----------------");
 		__MMT_MPU_DEBUG(" mpu_fragmentation_indicator: %d", mmtp_payload->mpu_data_unit_payload_fragments_timed.mpu_fragment_type);
-		__MMT_MPU_DEBUG(" movie_fragment_seq_num: %u", mmtp_payload->mpu_data_unit_payload_fragments_timed.movie_fragment_sequence_number);
-		__MMT_MPU_DEBUG(" sample_num: %u", mmtp_payload->mpu_data_unit_payload_fragments_timed.sample_number);
-		__MMT_MPU_DEBUG(" offset: %u", mmtp_payload->mpu_data_unit_payload_fragments_timed.offset);
-		__MMT_MPU_DEBUG(" pri: %d", mmtp_payload->mpu_data_unit_payload_fragments_timed.priority);
+		__MMT_MPU_DEBUG(" movie_fragment_seq_num: %u", mmtp_payload->mpu_data_unit_payload_fragments_timed.mpu_movie_fragment_sequence_number);
+		__MMT_MPU_DEBUG(" sample_num: %u", mmtp_payload->mpu_data_unit_payload_fragments_timed.mpu_sample_number);
+		__MMT_MPU_DEBUG(" offset: %u", mmtp_payload->mpu_data_unit_payload_fragments_timed.mpu_offset);
+		__MMT_MPU_DEBUG(" pri: %d", mmtp_payload->mpu_data_unit_payload_fragments_timed.mpu_priority);
 		__MMT_MPU_DEBUG(" mpu_sequence_number: %u",mmtp_payload->mpu_data_unit_payload_fragments_timed.mpu_sequence_number);
 
 	} else {
