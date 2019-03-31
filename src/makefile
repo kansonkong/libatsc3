@@ -51,7 +51,8 @@ libmicrohttpd_tests: atsc3_libmicrohttpd_test
 atsc3_mmt_signaling_message_test: atsc3_mmt_signaling_message_test.c libatsc3.o
 
 # listener_tests: atsc3_alc_listener_test  atsc3_mmt_listener_test atsc3_listener_test atsc3_mmt_listener_test_bento atsc3_listener_metrics_test
-listener_tests: atsc3_alc_listener_test atsc3_lls_listener_test atsc3_mmt_listener_test \
+listener_tests: atsc3_alc_listener_test atsc3_alc_listener_test_valgrind \
+				atsc3_lls_listener_test atsc3_mmt_listener_test \
 				atsc3_mmt_listener_test_bento atsc3_mmt_sls_listener_test  \
 				atsc3_stltp_listener_test
 
@@ -237,6 +238,7 @@ atsc3_fdt_test: atsc3_fdt_test.c libatsc3.o
 atsc3_lls_listener_test: listener_tests/atsc3_lls_listener_test.cpp libatsc3.o 
 	g++ -g listener_tests/atsc3_lls_listener_test.cpp libatsc3.o -lpcap -lz -lpthread -o listener_tests/atsc3_lls_listener_test
 
+
 # stltp listener test
 atsc3_stltp_listener_test: listener_tests/atsc3_stltp_listener_test.cpp libatsc3.o
 	g++ -g listener_tests/atsc3_stltp_listener_test.cpp libatsc3.o -lpcap -lz -lpthread -o listener_tests/atsc3_stltp_listener_test
@@ -258,6 +260,14 @@ atsc3_alc_listener_test: listener_tests/atsc3_alc_listener_test.cpp libatsc3_ben
 	g++ -g listener_tests/atsc3_alc_listener_test.cpp \
 		libatsc3_bento4_gpl.o \
 		-lz -lpcap -lpthread  -o listener_tests/atsc3_alc_listener_test
+		
+# simple ALC/DASH listener that builds a single ISOBMFF segment with v/a muxed in for each MPU
+atsc3_alc_listener_test_valgrind: listener_tests/atsc3_alc_listener_test.cpp libatsc3_bento4_gpl.o
+	g++ 		-D _TEST_RUN_VALGRIND_OSX_=true -g listener_tests/atsc3_alc_listener_test.cpp \
+		libatsc3_bento4_gpl.o \
+		-lz -lpcap -lpthread  -o listener_tests/atsc3_alc_listener_test_valgrind
+
+		
 		
 # # interim listener testing for new features like sls and bento4
 
