@@ -35,6 +35,7 @@ typedef struct ISOBMFFTrackJoinerFileResouces {
 
 //extern trun_sample_entry_vector_t* parseMoofBoxForTrunSampleEntries(block_t* moof_box);
 block_t* lls_sls_monitor_output_buffer_copy_alc_full_isobmff_box(lls_sls_monitor_buffer_isobmff_t* lls_sls_monitor_buffer_isobmff);
+block_t* lls_sls_monitor_output_buffer_copy_mmt_moof_from_flow_isobmff_box(lls_sls_monitor_buffer_isobmff_t* lls_sls_monitor_buffer_isobmff);
 
 
 #if defined (__cplusplus)

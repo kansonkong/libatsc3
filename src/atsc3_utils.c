@@ -244,7 +244,7 @@ uint32_t block_Seek(block_t* block, int32_t seek_pos) {
 		_ATSC3_UTILS_WARN("block_Seek: block: %p, invalid seek_pos to: %u, clamping to 0",
 				block->p_buffer, seek_pos);
 		block->i_pos = 0;
-	} else if(block->p_size > seek_pos) {
+	} else if(seek_pos > block->p_size) {
 		_ATSC3_UTILS_WARN("block_Seek: block: %p, invalid seek_pos to: %u, clamping to %u",
 				block->p_buffer, seek_pos, block->p_size);
 		block->i_pos = block->p_size;
@@ -254,7 +254,6 @@ uint32_t block_Seek(block_t* block, int32_t seek_pos) {
 
 	return block->i_pos;
 }
-
 
 
 block_t* block_Write(block_t* dest, uint8_t* src_buf, uint32_t src_size) {

@@ -218,11 +218,19 @@ void ISOBMFF_track_joiner_monitor_output_buffer_parse_and_build_joined_alc_boxes
  *
  */
 
+#define __ENABLE_OOO_MFU_REBUILD__ false
 void ISOBMFF_track_joiner_monitor_output_buffer_parse_and_build_joined_mmt_boxes(lls_sls_monitor_output_buffer_t* lls_sls_monitor_output_buffer, AP4_MemoryByteStream** output_stream_p)
 {
 	/** tood - magic happens here **/
-	block_t* audio_output_buffer; // = lls_sls_monitor_output_buffer_copy_alc_full_isobmff_box(lls_sls_monitor_output_buffer);
-	block_t* video_output_buffer; // = lls_sls_monitor_output_buffer_copy_video_alc_full_isobmff_box(lls_sls_monitor_output_buffer);
+	block_t* audio_output_buffer = NULL; // = lls_sls_monitor_output_buffer_copy_alc_full_isobmff_box(lls_sls_monitor_output_buffer);
+	block_t* video_output_buffer = NULL; // = lls_sls_monitor_output_buffer_copy_video_alc_full_isobmff_box(lls_sls_monitor_output_buffer);
+
+	if(__ENABLE_OOO_MFU_REBUILD__) {
+
+	} else {
+		audio_output_buffer = lls_sls_monitor_output_buffer_copy_mmt_moof_from_flow_isobmff_box(&lls_sls_monitor_output_buffer->audio_output_buffer_isobmff);
+		video_output_buffer = lls_sls_monitor_output_buffer_copy_mmt_moof_from_flow_isobmff_box(&lls_sls_monitor_output_buffer->video_output_buffer_isobmff);
+	}
 
     parseAndBuildJoinedBoxes_from_lls_sls_monitor_output_buffer(lls_sls_monitor_output_buffer, audio_output_buffer, video_output_buffer, output_stream_p);
 }
