@@ -788,7 +788,7 @@ void alc_recon_file_buffer_struct_monitor_fragment_with_init_box(lls_sls_alc_mon
 		if(audio_toi && audio_fragment_file_name) {
 			audio_fragment_payload = alc_get_payload_from_filename(audio_fragment_file_name);
 			if(audio_fragment_payload) {
-				lls_sls_monitor_output_buffer_copy_audio_fragment_block(&lls_sls_alc_monitor->lls_sls_monitor_output_buffer, audio_fragment_payload);
+				lls_sls_monitor_output_buffer_merge_alc_fragment_block(&lls_sls_alc_monitor->lls_sls_monitor_output_buffer.audio_output_buffer_isobmff, audio_fragment_payload);
 				lls_sls_alc_monitor->last_closed_audio_toi = 0;
 				lls_sls_alc_monitor->last_pending_flushed_audio_toi = audio_toi;
 				__ALC_UTILS_DEBUG("alc_recon_file_buffer_struct_monitor_fragment_with_init_box - pushing audio fragment: %d, file: %s", audio_toi, audio_fragment_file_name);
@@ -801,7 +801,8 @@ void alc_recon_file_buffer_struct_monitor_fragment_with_init_box(lls_sls_alc_mon
 		if(video_toi && video_fragment_file_name) {
 			video_fragment_payload = alc_get_payload_from_filename(video_fragment_file_name);
 			if(video_fragment_payload) {
-				lls_sls_monitor_output_buffer_copy_video_fragment_block(&lls_sls_alc_monitor->lls_sls_monitor_output_buffer, video_fragment_payload);
+				lls_sls_monitor_output_buffer_merge_alc_fragment_block(&lls_sls_alc_monitor->lls_sls_monitor_output_buffer.video_output_buffer_isobmff, video_fragment_payload);
+
 				lls_sls_alc_monitor->last_closed_video_toi = 0;
 				lls_sls_alc_monitor->last_pending_flushed_video_toi = video_toi;
 
