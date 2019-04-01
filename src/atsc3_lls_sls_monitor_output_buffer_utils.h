@@ -28,6 +28,8 @@ extern int _LLS_SLS_MONITOR_OUTPUT_BUFFER_UTILS_TRACE_ENABLED;
 
 //end for bento4 support
 
+//void lls_sls_monitor_output_buffer_reset_audio_moof_and_fragment_position(lls_sls_monitor_output_buffer_t* lls_sls_monitor_output_buffer);
+void lls_sls_monitor_output_buffer_reset_trun(lls_sls_monitor_buffer_isobmff_t* lls_sls_monitor_buffer_isobmff);
 
 void lls_sls_monitor_output_buffer_reset_moof_and_fragment_position(lls_sls_monitor_output_buffer_t* lls_sls_monitor_output_buffer);
 void lls_sls_monitor_output_buffer_reset_all_position(lls_sls_monitor_output_buffer_t* lls_sls_monitor_output_buffer);

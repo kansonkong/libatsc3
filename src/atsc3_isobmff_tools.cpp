@@ -71,7 +71,8 @@ lls_sls_monitor_output_buffer_t* atsc3_isobmff_build_joined_mmt_isobmff_fragment
     if(!lls_sls_monitor_output_buffer->joined_isobmff_block) {
         lls_sls_monitor_output_buffer->joined_isobmff_block = block_Alloc(ap4_memory_byte_stream->GetDataSize());
     } else {
-        block_Rewind(lls_sls_monitor_output_buffer->joined_isobmff_block);
+    	//rewind so our final output will be a clean mux
+      	block_Rewind(lls_sls_monitor_output_buffer->joined_isobmff_block);
 
         if(!block_Resize(lls_sls_monitor_output_buffer->joined_isobmff_block, ap4_memory_byte_stream->GetDataSize())) {
             block_Release(&lls_sls_monitor_output_buffer->joined_isobmff_block);
@@ -88,7 +89,11 @@ lls_sls_monitor_output_buffer_t* atsc3_isobmff_build_joined_mmt_isobmff_fragment
 
 lls_sls_monitor_output_buffer_t* atsc3_isobmff_build_joined_patched_isobmff_fragment(lls_sls_monitor_output_buffer_t* lls_sls_monitor_output_buffer) {
 	lls_sls_monitor_buffer_isobmff_create_mdat_from_trun_sample_entries(&lls_sls_monitor_output_buffer->audio_output_buffer_isobmff);
+	lls_sls_monitor_output_buffer_reset_trun(&lls_sls_monitor_output_buffer->audio_output_buffer_isobmff);
+
 	lls_sls_monitor_buffer_isobmff_create_mdat_from_trun_sample_entries(&lls_sls_monitor_output_buffer->video_output_buffer_isobmff);
+	lls_sls_monitor_output_buffer_reset_trun(&lls_sls_monitor_output_buffer->audio_output_buffer_isobmff);
+
 
 
 	return atsc3_isobmff_build_joined_mmt_isobmff_fragment(lls_sls_monitor_output_buffer);
@@ -488,28 +493,50 @@ lls_sls_monitor_output_buffer_t* atsc3_isobmff_build_mpu_metadata_ftyp_moof_mdat
     }
 
 
-    if((mpu_sequence_number_audio && !lls_sls_monitor_output_buffer->audio_output_buffer_isobmff.trun_sample_entry_v.count) ||
-    	(mpu_sequence_number_video && !lls_sls_monitor_output_buffer->video_output_buffer_isobmff.trun_sample_entry_v.count)) {
-           __ISOBMFF_TOOLS_WARN("short - data unit size is null: audio: mpu_sequence_number: %u, du_size: %u, video: mpu_sequence_number: %u, video_du_size: %u",
-        		   mpu_sequence_number_audio,
-        		   lls_sls_monitor_output_buffer->audio_output_buffer_isobmff.trun_sample_entry_v.count,
-				   mpu_sequence_number_video,
-				   lls_sls_monitor_output_buffer->video_output_buffer_isobmff.trun_sample_entry_v.count);
-           return NULL;
-    }
+//    if(!(mpu_sequence_number_audio && !lls_sls_monitor_output_buffer->audio_output_buffer_isobmff.trun_sample_entry_v.count) ||
+//    	(mpu_sequence_number_video && !lls_sls_monitor_output_buffer->video_output_buffer_isobmff.trun_sample_entry_v.count)) {
+//           __ISOBMFF_TOOLS_WARN("short - data unit size is null: audio: mpu_sequence_number: %u, du_size: %u, video: mpu_sequence_number: %u, video_du_size: %u",
+//        		   mpu_sequence_number_audio,
+//        		   lls_sls_monitor_output_buffer->audio_output_buffer_isobmff.trun_sample_entry_v.count,
+//				   mpu_sequence_number_video,
+//				   lls_sls_monitor_output_buffer->video_output_buffer_isobmff.trun_sample_entry_v.count);
+//           return NULL;
+//    }
     
-    if(lls_sls_monitor_output_buffer->audio_output_buffer_isobmff.trun_sample_entry_v.count && lls_sls_monitor_output_buffer->video_output_buffer_isobmff.trun_sample_entry_v.count) {
+    if(lls_sls_monitor_output_buffer->joined_isobmff_block ||
+    		(lls_sls_monitor_output_buffer->audio_output_buffer_isobmff.trun_sample_entry_v.count &&
+    				lls_sls_monitor_output_buffer->video_output_buffer_isobmff.trun_sample_entry_v.count)) {
     	lls_sls_monitor_output_buffer->should_flush_output_buffer = true;
 
-    	  __ISOBMFF_TOOLS_INFO("Returning - data unit size: audio: mpu_sequence_number: %u, du_size: %u, video: mpu_sequence_number: %u, video_du_size: %u",
+    	  __ISOBMFF_TOOLS_INFO("Returning: should_flush_output_buffer: true - data unit size: audio: mpu_sequence_number: %u, du_size: %u, video: mpu_sequence_number: %u, video_du_size: %u",
     	        		   mpu_sequence_number_audio,
     	        		   lls_sls_monitor_output_buffer->audio_output_buffer_isobmff.trun_sample_entry_v.count,
     					   mpu_sequence_number_video,
     					   lls_sls_monitor_output_buffer->video_output_buffer_isobmff.trun_sample_entry_v.count);
     	return atsc3_isobmff_build_joined_patched_isobmff_fragment(lls_sls_monitor_output_buffer);
     } else {
+    	//enqueue mdat for next mpu only if we just did a audio track...
+//    	if(lls_sls_monitor_output_buffer->audio_output_buffer_isobmff.trun_sample_entry_v.count) {
+//    		__ISOBMFF_TOOLS_INFO("enqueing audio");
+//       	 	 lls_sls_monitor_buffer_isobmff_create_mdat_from_trun_sample_entries(&lls_sls_monitor_output_buffer->audio_output_buffer_isobmff);
+//     		block_t* queue_audio_output_buffer = lls_sls_monitor_output_buffer_copy_mmt_moof_from_flow_isobmff_box(&lls_sls_monitor_output_buffer->audio_output_buffer_isobmff);
+//     		//append this into lls_sls_monitor_output_buffer->audio_output_buffer_isobmff
+//     		if(lls_sls_monitor_output_buffer->joined_isobmff_block) {
+//         		block_Append(lls_sls_monitor_output_buffer->joined_isobmff_block, queue_audio_output_buffer);
+//
+//     		} else {
+//     			lls_sls_monitor_output_buffer->joined_isobmff_block = block_Duplicate(queue_audio_output_buffer);
+//     		}
+//     		lls_sls_monitor_output_buffer_reset_audio_moof_and_fragment_position(lls_sls_monitor_output_buffer);
+//    	} else if(lls_sls_monitor_output_buffer->video_output_buffer_isobmff.trun_sample_entry_v.count) {
+//    		__ISOBMFF_TOOLS_INFO("enqueing video");
+//         	lls_sls_monitor_buffer_isobmff_create_mdat_from_trun_sample_entries(&lls_sls_monitor_output_buffer->video_output_buffer_isobmff);
+//     		//video_output_buffer = lls_sls_monitor_output_buffer_copy_mmt_moof_from_flow_isobmff_box(&lls_sls_monitor_output_buffer->video_output_buffer_isobmff);
+//
+//    	}
+    	}
     	return NULL;
-    }
+   // }
 }
 
 

@@ -133,6 +133,15 @@ int _LLS_SLS_MONITOR_OUTPUT_BUFFER_UTILS_TRACE_ENABLED = 0;
 //}
 
 
+
+
+void lls_sls_monitor_output_buffer_reset_trun(lls_sls_monitor_buffer_isobmff_t* lls_sls_monitor_buffer_isobmff) {
+
+	lls_sls_monitor_buffer_isobmff_clear_trun_sample_entry(lls_sls_monitor_buffer_isobmff);
+
+
+}
+
 void lls_sls_monitor_output_buffer_reset_moof_and_fragment_position(lls_sls_monitor_output_buffer_t* lls_sls_monitor_output_buffer) {
 
 	lls_sls_monitor_buffer_isobmff_clear_trun_sample_entry(&lls_sls_monitor_output_buffer->audio_output_buffer_isobmff);
@@ -827,23 +836,29 @@ int lls_sls_monitor_buffer_isobmff_create_mdat_from_trun_sample_entries(lls_sls_
 		}
 	}
 
+
 	uint32_t mdat_size = sample_offset_plus_last_length + 8;
-	lls_sls_monitor_buffer_isobmff_to_create_mdat->mmt_mdat_block = block_Alloc(mdat_size);
+	block_t* temp_mmt_mdat = block_Alloc(mdat_size);
+
 
 	uint32_t mdat_size_nl = htonl(mdat_size);
 	//write out our box size
-	block_Write(lls_sls_monitor_buffer_isobmff_to_create_mdat->mmt_mdat_block, (uint8_t*)&mdat_size_nl, 4);
+	block_Write(temp_mmt_mdat, (uint8_t*)&mdat_size_nl, 4);
 	const char* MDAT_ATOM = "mdat";
-	block_Write(lls_sls_monitor_buffer_isobmff_to_create_mdat->mmt_mdat_block, (uint8_t*)MDAT_ATOM, 4);
+	block_Write(temp_mmt_mdat, (uint8_t*)MDAT_ATOM, 4);
 
 	//copy all of our alloc'd fragments
 	uint32_t last_sample_offset = 8;
 	for(int i=0; i < lls_sls_monitor_buffer_isobmff_to_create_mdat->trun_sample_entry_v.count; i++) {
 		trun_sample_entry_t* trun_sample_entry = lls_sls_monitor_buffer_isobmff_to_create_mdat->trun_sample_entry_v.data[i];
-		block_Seek(lls_sls_monitor_buffer_isobmff_to_create_mdat->mmt_mdat_block, last_sample_offset);
-		block_Append(lls_sls_monitor_buffer_isobmff_to_create_mdat->mmt_mdat_block, trun_sample_entry->sample);
+		block_Seek(temp_mmt_mdat, last_sample_offset);
+		block_Append(temp_mmt_mdat, trun_sample_entry->sample);
 		last_sample_offset = 8 + trun_sample_entry->sample_offset + trun_sample_entry->sample_length;
 	}
+
+
+	lls_sls_monitor_buffer_isobmff_to_create_mdat->mmt_mdat_block = temp_mmt_mdat;
+	__LLS_SLS_MONITOR_OUTPUT_BUFFER_UTILS_INFO("lls_sls_monitor_buffer_isobmff_create_mdat_from_trun_sample_entries: setting new mdat size: %u", mdat_size);
 
 	return mdat_size;
 }
