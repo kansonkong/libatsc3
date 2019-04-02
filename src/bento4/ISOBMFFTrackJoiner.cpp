@@ -412,6 +412,8 @@ void parseAndBuildJoinedBoxes_from_lls_sls_monitor_output_buffer(lls_sls_monitor
 	uint32_t audio_track_id_to_remap = 0;
 
 	std::list<AP4_TrunAtom*> audio_trunList;
+	std::list<AP4_TrunAtom*> video_trunList;
+
 	std::list<AP4_TrunAtom*>::iterator itTrunFirst;
 
 	std::list<AP4_Atom_And_Offset_t*> audio_mdatList;
@@ -784,11 +786,18 @@ void parseAndBuildJoinedBoxes_from_lls_sls_monitor_output_buffer(lls_sls_monitor
                 		tmpTrafToClean->AddChild(video_tfdt_atom_mdhd_timescale, 1);
                 	}
                 }
+
                 if(shouldDetachTrak) {
                 	tmpTrafToClean->Detach();
+                } else {
+                	//append this into our video_trunList
+                	AP4_TrunAtom* temp_trunAtom = AP4_DYNAMIC_CAST(AP4_TrunAtom, tmpTrafToClean->GetChild(AP4_ATOM_TYPE_TRUN));
+
+                	video_trunList.push_back(temp_trunAtom);
                 }
 			}
 
+			//add our audio tracks into the moofAtom
 			for(itTraf = audio_trafList.begin(); itTraf != audio_trafList.end(); itTraf++) {
 
                 AP4_TfhdAtom* tfhdTempAtom = AP4_DYNAMIC_CAST(AP4_TfhdAtom, (*itTraf)->GetChild(AP4_ATOM_TYPE_TFHD));
@@ -884,12 +893,20 @@ void parseAndBuildJoinedBoxes_from_lls_sls_monitor_output_buffer(lls_sls_monitor
 
 
 	//AP4_ATOM_HEADER_SIZE
-	for(it = video_mdatList.begin(); it != video_mdatList.end(); it++) {
+	//we may have multiple video mdat's combined here..
+	itTrunFirst = video_trunList.begin();
+
+	it = video_mdatList.begin();
+	for(; itTrunFirst != video_trunList.end() && it != video_mdatList.end(); ) {
+		(*itTrunFirst)->SetDataOffset(video_trun_last_offset + video_mdat_payload_size_refragment);
+
 		video_mdat_payload_size_refragment += (*it)->atom->GetSize32() - AP4_ATOM_HEADER_SIZE;
 		video_mdat_payload_size_bento_parser += ((*it)->end_offset - (*it)->start_offset) - AP4_ATOM_HEADER_SIZE;
 
 		final_mdat_payload_size_refragment += (*it)->atom->GetSize32() - AP4_ATOM_HEADER_SIZE;
 		final_mdat_payload_size_bento_parser += ((*it)->end_offset - (*it)->start_offset) - AP4_ATOM_HEADER_SIZE;
+		itTrunFirst++;
+		it++;
 	}
 
     //update audio segment trun box(es).. before writing them out...
