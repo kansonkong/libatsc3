@@ -18,6 +18,9 @@
 #define _ATSC3_MIME_MULTIPART_TEST_UTILS_INFO(...)    printf("%s:%d:INFO:",__FILE__,__LINE__);_ATSC3_UTILS_PRINTLN(__VA_ARGS__);
 #define _ATSC3_MIME_MULTIPART_TEST_UTILS_DEBUG(...)   printf("%s:%d:DEBUG:",__FILE__,__LINE__);_ATSC3_UTILS_PRINTLN(__VA_ARGS__);
 
+extern int _XML_INFO_ENABLED;
+extern int _XML_DEBUG_ENABLED;
+
 int parse_mime_multipart(const char* filename) {
 	int ret = 0;
 	FILE *fp = fopen(filename, "r");
@@ -43,6 +46,9 @@ int parse_mime_multipart(const char* filename) {
 }
 
 int main(int argc, char* argv[] ) {
+	_XML_INFO_ENABLED = 1;
+	_XML_DEBUG_ENABLED = 1;
+	_XML_TRACE_ENABLED = 1;
 
 
 	 parse_mime_multipart("../test_data/sba-dash/0-4653138"); //application/mbms-envelope+xml

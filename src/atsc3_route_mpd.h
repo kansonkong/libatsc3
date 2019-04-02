@@ -230,6 +230,8 @@ atsc3_route_adaptation_set_t* atsc3_route_mpd_parse_representation_set(xml_node_
 atsc3_route_adaptation_set_t* atsc3_route_mpd_parse_audio_channel_configuration_set(xml_node_t*  xml_node, atsc3_route_adaptation_set_t* atsc3_route_adaptation_set);
 atsc3_route_adaptation_set_t* atsc3_route_mpd_parse_segment_template_set(xml_node_t* xml_node,  atsc3_route_adaptation_set_t* atsc3_route_adaptation_set);
 
+void atsc3_route_mpd_dump(atsc3_route_mpd_t* atsc3_route_mpd);
+
 
 #define _ATSC3_ROUTE_MPD_PARSER_ERROR(...)   printf("%s:%d:ERROR:",__FILE__,__LINE__);_ATSC3_UTILS_PRINTLN(__VA_ARGS__);
 #define _ATSC3_ROUTE_MPD_PARSER_WARN(...)    printf("%s:%d:WARN:",__FILE__,__LINE__);_ATSC3_UTILS_PRINTLN(__VA_ARGS__);
