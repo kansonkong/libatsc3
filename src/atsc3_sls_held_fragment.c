@@ -56,7 +56,7 @@ atsc3_sls_held_fragment_t* atsc3_sls_held_fragment_parse_from_payload(char* payl
 					atsc3_sls_html_entry_package_t* atsc3_sls_html_entry_package = atsc3_sls_html_entry_package_new();
 
 					uint8_t* xml_attributes = xml_attributes_clone_node(html_entry_packages_node);
-					_ATSC3_HELD_PARSER_DEBUG("attributes: %s", xml_attributes);
+					//_ATSC3_HELD_PARSER_DEBUG("attributes: %s", xml_attributes);
 					kvp_collection_t* kvp_collection = kvp_collection_parse(xml_attributes);
 
 					char* matching_attribute = NULL;
@@ -111,7 +111,8 @@ atsc3_sls_held_fragment_t* atsc3_sls_held_fragment_parse_from_payload(char* payl
 }
 
 void atsc3_sls_held_fragment_dump(atsc3_sls_held_fragment_t* atsc3_sls_held_fragment) {
-	for(int i=0; i > atsc3_sls_held_fragment->atsc3_sls_html_entry_package_v.count; i++) {
+	_ATSC3_HELD_PARSER_INFO("---dumping held");
+	for(int i=0; i < atsc3_sls_held_fragment->atsc3_sls_html_entry_package_v.count; i++) {
 		atsc3_sls_html_entry_package_t* atsc3_sls_html_entry_package = atsc3_sls_held_fragment->atsc3_sls_html_entry_package_v.data[i];
 		_ATSC3_HELD_PARSER_INFO("Dumping HELD: %i, appContextId: %s, bbandEntryPageUrl: %s",
 				i, atsc3_sls_html_entry_package->app_context_id, atsc3_sls_html_entry_package->bband_entry_page_url);
