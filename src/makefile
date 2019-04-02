@@ -7,6 +7,7 @@
 # requirements: bento4 libary, ncurses libary and headers
 
 all: 	intermediate_lls intermediate_mbms \
+		intermediate_sls \
 		intermediate_mmt intermediate_alc \
 		intermediate_a337 \
 		intermediate_ffplay \
@@ -26,6 +27,8 @@ intermediate_lls: atsc3_lls.o atsc3_lls_sls_parser.o  atsc3_lls_alc_utils.o
 
 intermediate_mbms: atsc3_mime_multipart_related.o atsc3_mime_multipart_related_parser.o \
 					atsc3_route_usbd.o 
+					
+intermediate_sls: atsc3_sls_metadata_fragment_types_parser.o					
 
 intermediate_alc: atsc3_alc_rx.c alc_session.c fec.c null_fec.c rs_fec.c xor_fec.o atsc3_alc_utils.o  
 
@@ -156,15 +159,29 @@ atsc3_route_usbd.o: atsc3_route_usbd.h atsc3_route_usbd.c
 atsc3_sls_held_fragment.o: atsc3_sls_held_fragment.h atsc3_sls_held_fragment.c
 	cc -g -c atsc3_sls_held_fragment.c -o atsc3_sls_held_fragment.o	
 
+atsc3_sls_metadata_fragment_types_parser.o: atsc3_sls_metadata_fragment_types_parser.h atsc3_sls_metadata_fragment_types_parser.c
+	cc -g -c atsc3_sls_metadata_fragment_types_parser.c -o atsc3_sls_metadata_fragment_types_parser.o
+
 # unit standalone tests with mock data
 
 
 atsc3_stltp_parser_test: atsc3_stltp_parser_test.c atsc3_stltp_parser.o atsc3_listener_udp.o
 	cc -g atsc3_stltp_parser_test.c atsc3_stltp_parser.o atsc3_listener_udp.o -o atsc3_stltp_parser_test
 
-atsc3_mime_multipart_related_parser_test: atsc3_mime_multipart_related_parser_test.c atsc3_mime_multipart_related.o atsc3_mime_multipart_related_parser.o atsc3_utils.o
-	cc -g atsc3_mime_multipart_related_parser_test.c atsc3_mime_multipart_related.o atsc3_mime_multipart_related_parser.o atsc3_utils.o -o atsc3_mime_multipart_related_parser_test
-
+atsc3_mime_multipart_related_parser_test: atsc3_mime_multipart_related_parser_test.c \
+	atsc3_mime_multipart_related.o \
+	atsc3_mime_multipart_related_parser.o \
+	atsc3_sls_metadata_fragment_types_parser.o \
+	atsc3_sls_held_fragment.o \
+	atsc3_utils.o \
+	xml.o
+	cc -g atsc3_mime_multipart_related_parser_test.c \
+	atsc3_mime_multipart_related.o \
+	atsc3_mime_multipart_related_parser.o \
+	atsc3_sls_metadata_fragment_types_parser.o \
+	atsc3_sls_held_fragment.o \
+	xml.o \
+	atsc3_utils.o -o atsc3_mime_multipart_related_parser_test
 
 # stats modules
 

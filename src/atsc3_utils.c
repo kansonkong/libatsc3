@@ -197,6 +197,13 @@ block_t* block_Alloc(int len) {
 	return new_block;
 }
 
+block_t* block_Promote(char* string) {
+	int string_len = strlen(string);
+	block_t* new_block = block_Alloc(string_len);
+	block_Write(new_block, (uint8_t*)string, string_len);
+
+	return new_block;
+}
 //todo: make this a marco define?
 block_t* __block_check_bounaries(const char* method_name, block_t* src) {
 	//these are FATAL conditions, return NULL
