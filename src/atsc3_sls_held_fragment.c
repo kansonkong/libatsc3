@@ -66,11 +66,36 @@ atsc3_sls_held_fragment_t* atsc3_sls_held_fragment_parse_from_payload(char* payl
 					}
 
 					if((matching_attribute = kvp_collection_get(kvp_collection,  "appRendering"))) {
-						atsc3_sls_html_entry_package->app_rendering = true;
+						atsc3_sls_html_entry_package->app_rendering = strncmp("true", matching_attribute, 4);
 					} else {
 						atsc3_sls_html_entry_package->app_rendering = false;
 					}
 
+					if((matching_attribute = kvp_collection_get(kvp_collection,  "clearAppContextCacheDate"))) {
+						atsc3_sls_html_entry_package->clear_app_context_cache_date_s = matching_attribute;
+					}
+
+					if((matching_attribute = kvp_collection_get(kvp_collection,  "bcastEntryPackageUrl"))) {
+						atsc3_sls_html_entry_package->bcast_entry_package_url = matching_attribute;
+					}
+					if((matching_attribute = kvp_collection_get(kvp_collection,  "bcastEntryPageUrl"))) {
+						atsc3_sls_html_entry_package->bcast_entry_page_url = matching_attribute;
+					}
+					if((matching_attribute = kvp_collection_get(kvp_collection,  "bbandEntryPageUrl"))) {
+						atsc3_sls_html_entry_package->bband_entry_page_url = matching_attribute;
+					}
+					if((matching_attribute = kvp_collection_get(kvp_collection,  "validFrom"))) {
+						atsc3_sls_html_entry_package->valid_from_s = matching_attribute;
+					}
+					if((matching_attribute = kvp_collection_get(kvp_collection,  "validUntil"))) {
+						atsc3_sls_html_entry_package->valid_until_s = matching_attribute;
+					}
+					if((matching_attribute = kvp_collection_get(kvp_collection,  "coupledServices"))) {
+						atsc3_sls_html_entry_package->coupled_services_s = matching_attribute;
+					}
+					if((matching_attribute = kvp_collection_get(kvp_collection,  "lctTSIRef"))) {
+						atsc3_sls_html_entry_package->lct_tsi_ref = matching_attribute;
+					}
 
 					if(atsc3_sls_html_entry_package) {
 						atsc3_sls_held_fragment_add_atsc3_sls_html_entry_package(atsc3_sls_held_fragment, atsc3_sls_html_entry_package);
