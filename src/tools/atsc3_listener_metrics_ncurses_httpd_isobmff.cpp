@@ -305,7 +305,9 @@ static void route_process_from_alc_packet(alc_packet_t **alc_packet) {
 
 			pipe_buffer_reader_mutex_unlock(pipe_ffplay_buffer);
 			//reset our buffer pos and should_flush = false;
-        } else if(false && lls_slt_monitor->lls_sls_alc_monitor->lls_sls_monitor_output_buffer_mode.file_dump_enabled) {
+        }
+
+        if(true || lls_slt_monitor->lls_sls_alc_monitor->lls_sls_monitor_output_buffer_mode.file_dump_enabled) {
         	//don't double write to disk for route objects as we do this already in the route alc refrag client
             lls_sls_monitor_output_buffer_alc_file_dump(lls_sls_monitor_output_buffer_final_muxed_payload, "route/", lls_slt_monitor->lls_sls_alc_monitor->last_completed_flushed_audio_toi, lls_slt_monitor->lls_sls_alc_monitor->last_completed_flushed_video_toi);
         }
