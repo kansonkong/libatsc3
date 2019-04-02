@@ -234,6 +234,8 @@ atsc3_mime_multipart_related_instance_t* atsc3_mime_multipart_related_parser(FIL
 		 * try and parse out header attributes first, e.g.:
 			Content-Type: application/atsc-held+xml
 			Content-Location: held.xml
+
+			//this should actually be block_t as its easer to work with...
 		*/
 
 		while(!feof(fp) && !payload_header_complete) {
