@@ -8,7 +8,9 @@
 #include "atsc3_mime_multipart_related.h"
 #include "atsc3_sls_metadata_fragment_types_parser.h"
 
-#define ATSC3_SLS_HELD_FRAGMENT_TYPE "application/atsc-held+xml"
+#define ATSC3_ROUTE_MPD_TYPE			"application/dash+xml"
+#define ATSC3_SLS_HELD_FRAGMENT_TYPE	"application/atsc-held+xml"
+
 
 atsc3_sls_metadata_fragments_t* atsc3_sls_metadata_fragment_types_parse_from_mime_multipart_related_instance(atsc3_mime_multipart_related_instance_t* atsc3_mime_multipart_related_instance) {
 	if(!atsc3_mime_multipart_related_instance->atsc3_mime_multipart_related_payload_v.count) {
@@ -26,10 +28,14 @@ atsc3_sls_metadata_fragments_t* atsc3_sls_metadata_fragment_types_parse_from_mim
 		__MIME_PARSER_DEBUG("payload  :\n%s", atsc3_mime_multipart_related_payload->payload);
 
 
+		//HELD fragment creation
+		if(!strncmp(ATSC3_ROUTE_MPD_TYPE, atsc3_mime_multipart_related_payload->content_type, strlen(ATSC3_ROUTE_MPD_TYPE))) {
+			atsc3_sls_metadata_fragments->atsc3_route_mpd = atsc3_route_mpd_parse_from_payload(atsc3_mime_multipart_related_payload->payload, atsc3_mime_multipart_related_payload->content_location);
+		}
 
-		//branch out for our instance creation here
+
+		//HELD fragment creation
 		if(!strncmp(ATSC3_SLS_HELD_FRAGMENT_TYPE, atsc3_mime_multipart_related_payload->content_type, strlen(ATSC3_SLS_HELD_FRAGMENT_TYPE))) {
-
 			atsc3_sls_metadata_fragments->atsc3_sls_held_fragment = atsc3_sls_held_fragment_parse_from_payload(atsc3_mime_multipart_related_payload->payload, atsc3_mime_multipart_related_payload->content_location);
 		}
 
