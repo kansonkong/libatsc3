@@ -23,12 +23,20 @@ typedef struct atsc3_sls_html_entry_package {
 	char* 		app_context_id;
 	atsc3_sls_html_entry_package_required_capabilities_t* atsc3_sls_html_entry_package_required_capabilities;
 	bool 		app_rendering;
+
+	char* 		clear_app_context_cache_date_s;
 	struct tm 	clear_app_context_cache_date;
+
 	char* 		bcast_entry_package_url;
 	char* 		bcast_entry_page_url;
 	char* 		bband_entry_page_url;
+
+	char*		valid_from_s;
 	struct tm 	valid_from;
+
+	char*		valid_until_s;
 	struct tm 	valid_util;
+
 	char* 		coupled_services_s; //with spaces inbetween uint16_t;
 	char*		lct_tsi_ref;	//with spaces of uint32_t;
 
