@@ -180,6 +180,7 @@ uint8_t* xml_attributes_clone_node(xml_node_t* node);
 #define _XML_TRACEF(...)  if(_XML_TRACE_ENABLED) { printf("%s:%d:TRACE: ",__FILE__,__LINE__);_XML_PRINTF(__VA_ARGS__);  }
 #define _XML_TRACEA(...)  if(_XML_TRACE_ENABLED) { _XML_PRINTF(__VA_ARGS__); }
 
+#define  __XML_PARSER_FORENSIC__ jj
 
 #ifdef  __XML_PARSER_FORENSIC__
 #define _XML_FRNSC(...)   printf("%s:%d:FRNSC:",__FILE__,__LINE__);_XML_PRINTLN(__VA_ARGS__);
