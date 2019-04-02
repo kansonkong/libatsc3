@@ -28,9 +28,10 @@ atsc3_sls_metadata_fragments_t* atsc3_sls_metadata_fragment_types_parse_from_mim
 		__MIME_PARSER_DEBUG("payload  :\n%s", atsc3_mime_multipart_related_payload->payload);
 
 
-		//HELD fragment creation
+		//ROUTE MPD fragment creation
 		if(!strncmp(ATSC3_ROUTE_MPD_TYPE, atsc3_mime_multipart_related_payload->content_type, strlen(ATSC3_ROUTE_MPD_TYPE))) {
 			atsc3_sls_metadata_fragments->atsc3_route_mpd = atsc3_route_mpd_parse_from_payload(atsc3_mime_multipart_related_payload->payload, atsc3_mime_multipart_related_payload->content_location);
+			atsc3_route_mpd_dump(atsc3_sls_metadata_fragments->atsc3_route_mpd);
 		}
 
 
@@ -38,7 +39,6 @@ atsc3_sls_metadata_fragments_t* atsc3_sls_metadata_fragment_types_parse_from_mim
 		if(!strncmp(ATSC3_SLS_HELD_FRAGMENT_TYPE, atsc3_mime_multipart_related_payload->content_type, strlen(ATSC3_SLS_HELD_FRAGMENT_TYPE))) {
 			atsc3_sls_metadata_fragments->atsc3_sls_held_fragment = atsc3_sls_held_fragment_parse_from_payload(atsc3_mime_multipart_related_payload->payload, atsc3_mime_multipart_related_payload->content_location);
 			//dump to make sure we got everything
-
 			atsc3_sls_held_fragment_dump(atsc3_sls_metadata_fragments->atsc3_sls_held_fragment);
 		}
 
