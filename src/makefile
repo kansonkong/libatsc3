@@ -30,7 +30,8 @@ intermediate_mbms: atsc3_mime_multipart_related.o atsc3_mime_multipart_related_p
 					
 intermediate_sls: atsc3_sls_metadata_fragment_types_parser.o					
 
-intermediate_alc: atsc3_alc_rx.c alc_session.c fec.c null_fec.c rs_fec.c xor_fec.o atsc3_alc_utils.o  
+intermediate_alc: atsc3_alc_rx.c alc_session.c fec.c null_fec.c rs_fec.c xor_fec.o atsc3_alc_utils.o \
+					atsc3_route_mpd.o
 
 intermediate_mmt: xml.o atsc3_mmtp_parser.o atsc3_mmt_mpu_parser.o atsc3_mmt_signaling_message.o \
 					atsc3_mmtp_ntp32_to_pts.o atsc3_utils.o fixups_timespec_get.o \
@@ -162,6 +163,9 @@ atsc3_sls_held_fragment.o: atsc3_sls_held_fragment.h atsc3_sls_held_fragment.c
 atsc3_sls_metadata_fragment_types_parser.o: atsc3_sls_metadata_fragment_types_parser.h atsc3_sls_metadata_fragment_types_parser.c
 	cc -g -c atsc3_sls_metadata_fragment_types_parser.c -o atsc3_sls_metadata_fragment_types_parser.o
 
+atsc3_route_mpd.o: atsc3_route_mpd.h atsc3_route_mpd.c
+	cc -g -c atsc3_route_mpd.c -o atsc3_route_mpd.o
+	
 # unit standalone tests with mock data
 
 
@@ -174,12 +178,14 @@ atsc3_mime_multipart_related_parser_test: atsc3_mime_multipart_related_parser_te
 	atsc3_sls_metadata_fragment_types_parser.o \
 	atsc3_sls_held_fragment.o \
 	atsc3_utils.o \
+	atsc3_route_mpd.o \
 	xml.o
 	cc -g atsc3_mime_multipart_related_parser_test.c \
 	atsc3_mime_multipart_related.o \
 	atsc3_mime_multipart_related_parser.o \
 	atsc3_sls_metadata_fragment_types_parser.o \
 	atsc3_sls_held_fragment.o \
+	atsc3_route_mpd.o \
 	xml.o \
 	atsc3_utils.o -o atsc3_mime_multipart_related_parser_test
 
