@@ -83,10 +83,10 @@ typedef struct atsc3_route_session {
 
 typedef struct atsc3_route_s_tsid {
 
-	ATSC3_VECTOR_BUILDER_STRUCT(atsc3_route_s_tsid_t, atsc3_route_session)
+	ATSC3_VECTOR_BUILDER_STRUCT(atsc3_route_session)
 } atsc3_route_s_tsid_t;
 
 
-ATSC3_VECTOR_BUILDER_INTERFACE(atsc3_route_s_tsid_t, atsc3_route_session)
+ATSC3_VECTOR_BUILDER_METHODS_INTERFACE(atsc3_route_s_tsid, atsc3_route_session)
 
 #endif /* ATSC3_ROUTE_S_TSID_H_ */

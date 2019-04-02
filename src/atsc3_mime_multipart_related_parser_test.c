@@ -10,6 +10,7 @@
 
 #include "atsc3_utils.h"
 #include "atsc3_mime_multipart_related_parser.h"
+#include "atsc3_sls_metadata_fragment_types_parser.h"
 #include "atsc3_logging_externs.h"
 
 #define _ATSC3_MIME_MULTIPART_TEST_UTILS_ERROR(...)   printf("%s:%d:ERROR:",__FILE__,__LINE__);_ATSC3_UTILS_PRINTLN(__VA_ARGS__);
@@ -28,6 +29,8 @@ int parse_mime_multipart(const char* filename) {
 			atsc3_mime_multipart_related_instance_dump(atsc3_mime_multipart_related_instance);
 
 			//build out the atsc3_sls_metadata_fragment_types
+
+			atsc3_sls_metadata_fragments_t* atsc3_sls_metadata_fragments = atsc3_sls_metadata_fragment_types_parse_from_mime_multipart_related_instance(atsc3_mime_multipart_related_instance);
 
 
 		} else {

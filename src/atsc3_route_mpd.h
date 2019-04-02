@@ -64,7 +64,9 @@ ATSC3_VECTOR_BUILDER_STRUCT
  *  xlink:href="tag:atsc.org,2016:xlinkhttps://atsc3vod.npgco.com/crengine?clientid=%clientid%&amp;uniqueid=775&amp;thisname=SNPR55030&amp;nextid=774&amp;nextname=SKPR60825"
  *    xmlns:xlink="http://www.w3.org/1999/xlink">
  */
+
 typedef struct atsc3_xlink {
+
 	char* actuate;
 	char* href;
 	char* xlink;
@@ -160,9 +162,13 @@ typedef struct atsc3_route_period {
 	char* 			id;
 	char*			start;
 	atsc3_xlink_t* 	atsc3_xlink;
-	ATSC3_VECTOR_BUILDER_STRUCT(atsc3_route_period, atsc3_route_adaptation_set)
+	ATSC3_VECTOR_BUILDER_STRUCT(atsc3_route_adaptation_set)
 
 } atsc3_route_period_t;
+
+
+
+ATSC3_VECTOR_BUILDER_METHODS_INTERFACE(atsc3_route_period, atsc3_route_adaptation_set)
 
 //<MPD availabilityStartTime="2019-02-19T21:40:50Z" maxSegmentDuration="PT2S" minBufferTime="PT2S" minimumUpdatePeriod="PT10S"
 //profiles="urn:mpeg:dash:profile:isoff-live:2011" publishTime="2019-02-19T21:40:50Z" timeShiftBufferDepth="PT20S" type="dynamic"
@@ -179,9 +185,13 @@ typedef struct atsc3_route_mpd {
 	char* time_shift_buffer_depth;
 	char* type;
 
-	ATSC3_VECTOR_BUILDER_STRUCT(atsc3_route_mpd, atsc3_route_period)
+	ATSC3_VECTOR_BUILDER_STRUCT(atsc3_route_period)
 
 } atsc3_route_mpd_t;
+
+ATSC3_VECTOR_BUILDER_METHODS_INTERFACE(atsc3_route_mpd, atsc3_route_period)
+
+
 
 
 #include "atsc3_utils.h"

@@ -40,6 +40,7 @@
 
 #define ATSC3_VECTOR_BUILDER_METHODS_INTERFACE(vector_struct_name, vector_item_name) \
 	PPCAT(vector_item_name,_t)* PPCAT(vector_item_name,_new)(); \
+	PPCAT(vector_struct_name,_t)* PPCAT(vector_struct_name,_new)(); \
 	void PPCAT(vector_struct_name,PPCAT(_clear_,vector_item_name))(PPCAT(vector_struct_name,_t)*); \
 	void PPCAT(vector_struct_name,PPCAT(_add_,vector_item_name))(PPCAT(vector_struct_name,_t)*, PPCAT(vector_item_name,_t)*);
 
@@ -54,6 +55,14 @@
  *	todo: prealloc to N as needed
  */
 #define ATSC3_VECTOR_BUILDER_METHODS_IMPLEMENTATION_DEFAULT_SIZE 10
+
+#define ATSC3_VECTOR_BUILDER_METHODS_PARENT_IMPLEMENTATION(vector_struct_name) \
+	PPCAT(vector_struct_name,_t)* PPCAT(vector_struct_name,_new)() { \
+		PPCAT(vector_struct_name,_t)* vector_struct_name = calloc(1, sizeof(PPCAT(vector_struct_name,_t))); \
+		return vector_struct_name; \
+	} \
+	\
+\
 
 #define ATSC3_VECTOR_BUILDER_METHODS_IMPLEMENTATION(vector_struct_name, vector_item_name) \
 	PPCAT(vector_item_name,_t)* PPCAT(vector_item_name,_new)() { \
