@@ -7,7 +7,9 @@
 # requirements: bento4 libary, ncurses libary and headers
 
 all: 	intermediate_lls intermediate_mbms \
-		intermediate_mmt intermediate_alc intermediate_ffplay \
+		intermediate_mmt intermediate_alc \
+		intermediate_a337 \
+		intermediate_ffplay \
 		interemediate_gpl_and_mock_linkage  \
 		libatsc3_core   \
 		unit_tests \
@@ -22,13 +24,16 @@ clean:
 	
 intermediate_lls: atsc3_lls.o atsc3_lls_sls_parser.o  atsc3_lls_alc_utils.o
 
-intermediate_mbms: atsc3_mime_multipart_related.o atsc3_mime_multipart_related_parser.o 
+intermediate_mbms: atsc3_mime_multipart_related.o atsc3_mime_multipart_related_parser.o \
+					atsc3_route_usbd.o 
 
 intermediate_alc: atsc3_alc_rx.c alc_session.c fec.c null_fec.c rs_fec.c xor_fec.o atsc3_alc_utils.o  
 
 intermediate_mmt: xml.o atsc3_mmtp_parser.o atsc3_mmt_mpu_parser.o atsc3_mmt_signaling_message.o \
 					atsc3_mmtp_ntp32_to_pts.o atsc3_utils.o fixups_timespec_get.o \
 					atsc3_bandwidth_statistics.o atsc3_mmt_mpu_utils.o
+					
+intermediate_a337:	atsc3_sls_held_fragment.o					
 
 intermediate_ffplay: atsc3_player_ffplay.o
 interemediate_gpl_and_mock_linkage: bento4_gpl_link \
@@ -145,6 +150,11 @@ atsc3_fdt.o: atsc3_fdt.h atsc3_fdt.c atsc3_vector_builder.h
 atsc3_fdt_parser.o: atsc3_fdt.o atsc3_fdt_parser.h atsc3_fdt_parser.c
 	cc -g -c atsc3_fdt_parser.c -o atsc3_fdt_parser.o
 
+atsc3_route_usbd.o: atsc3_route_usbd.h atsc3_route_usbd.c
+	cc -g -c atsc3_route_usbd.c -o atsc3_route_usbd.o
+	
+atsc3_sls_held_fragment.o: atsc3_sls_held_fragment.h atsc3_sls_held_fragment.c
+	cc -g -c atsc3_sls_held_fragment.c -o atsc3_sls_held_fragment.o	
 
 # unit standalone tests with mock data
 
@@ -187,7 +197,7 @@ libatsc3_intermediate.o: xml.o atsc3_lls.o atsc3_lls_slt_parser.o atsc3_lls_sls_
 		atsc3_lls_alc_utils.o atsc3_mmt_mpu_utils.o atsc3_player_ffplay.o atsc3_alc_utils.o \
         atsc3_lls_sls_monitor_output_buffer.o atsc3_lls_sls_monitor_output_buffer_utils.o \
 		atsc3_lls_mmt_utils.o  atsc3_listener_udp.o atsc3_gzip.o atsc3_stltp_parser.o \
-		atsc3_fdt.o atsc3_fdt_parser.o
+		atsc3_fdt.o atsc3_fdt_parser.o atsc3_route_usbd.o
 
 	ld  -o libatsc3_intermediate.o -r xml.o atsc3_lls.o atsc3_lls_slt_parser.o  atsc3_lls_sls_parser.o atsc3_mmtp_parser.o atsc3_mmtp_ntp32_to_pts.o atsc3_utils.o \
 		fixups_timespec_get.o atsc3_mmt_signaling_message.o atsc3_mmt_mpu_parser.o alc_channel.o alc_list.o \

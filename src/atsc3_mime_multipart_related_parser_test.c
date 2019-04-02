@@ -26,6 +26,10 @@ int parse_mime_multipart(const char* filename) {
 		atsc3_mime_multipart_related_instance_t* atsc3_mime_multipart_related_instance = atsc3_mime_multipart_related_parser(fp);
 		if(atsc3_mime_multipart_related_instance) {
 			atsc3_mime_multipart_related_instance_dump(atsc3_mime_multipart_related_instance);
+
+			//build out the atsc3_sls_metadata_fragment_types
+
+
 		} else {
 			_ATSC3_MIME_MULTIPART_TEST_UTILS_ERROR("atsc3_mime_multipart_related_instance is null!");
 			ret = -1;
