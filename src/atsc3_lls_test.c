@@ -21,15 +21,23 @@ static char* __get_test_system_time_message()	{ return "030100011f8b08089717185c
 
 static char* _get_2019_01_07_slt_route_dash()	{ return "010100151f8b08080000000000ff534c5400cd92514bc3301485df05ff43c8b3a64d66c73a5ac7dc10065b19b4135f631bba489acc241beedf7bb756870a437df2e9c239f7de9cfb9164f4da28b413d649a3534c498891d0a5a9a4ae53bc2aeeaf071839cf75c595d122c57be1f0e8f6f222c9e7058259ed52ec793de4de95c4d8fa8a85b43f7c5cccf3722d1aee8271914f7ac1542809afec03180be09500a32727ab148718962184925cd89d2c05726d9d814729460d7f3676b2e65a0b959914df44a049fd4983b66e6ac2bda88dddb7dada58dfadcd7803e1b37191cdc1503edf95b978c9b6cd29c121c49d35bc2ab93bfab2d65c0107e8774b6bbc298d6a172bb738c47a171f3ef0b5de21de372f3c7a53e1bcd4dc8334db8cabca0a0700592f262c8a0825f46bd7aada2ce10c383ca6113bbab9d95a00741aa73123b43f20514cfa0c071dd0a03bfd0c5ff633beec377cd9bfe6cbcef2edfd916f72f8d650df00f37a26b44e030000"; }
 
+static char* _get_2019_04_03_skt_test1() 		{ return "030100011f8b0808714f2c5c000353797374656d54696d6500358dcb0ac2301000ef7e45d8bb5da5071ff481a8a0d0a2900a7a0ce9f6016d2ac9c6dabfb717af033313a5dfbe131fb2ae1d4c0ceb6005828c1ecad6d43178ae965b4893452427c7d4176d4f62168c8ba1617eef11c7710c143b1d0cb6c6679e49dd50af1c1e0a790cf1445d3bc727942f595cf333ce0304a1bdb564f8c1fa56558e38867003c2b3ce06adba3fbb17bb0b88d24956ece763a53a4780c9e207ef022c62b5000000"; }
+
+static char* _get_2019_04_03_skt_test2() 		{ return "010100031f8b08086b4f2c5c0003534c54005d50cb6ec23010bcf72b2c9f5b3b0e0a822809a2e45024404849a5de2a13bb892b3fa86d50f9fb2e10a912173f66677766a758fc1a8dced207e56c8919493092b67342d9bec4a7f8f532c38beaa968362d02a60d258ebccf790c1d71be7f4e1336cd3fb69ba61ba4e1812edb6635a1b5d40a665e28b4519849313a04254a9c25b82a1ae9cfaa9328dcef35e02c491846bd7607aec7f2ba067d6f6f52f948552237267e0e0223c3bf9d5f0ddc5aa9770e2600a4ec2334f6ad7894bdf3973b36381f47911d37b2c4db6d8bde6aa8e8d89cbb46feec4ea6c429587df58e8b8e871bae7acb35e402bcb0f72ebacee92bedfaaf6588caf20829ae8f4b21bc0c10553a999334cb489610f6487b17c73d18814ceecb43b571270f8bfff7b3794ad87446e064134cab828ebeafaf4d5b3dfd01bca71b4fbf010000"; }
 
 int test_lls_create_xml_table(char* base64_payload);
 void test_kvp_extraction();
 
-int main() {
+int main(int argc, char* argv[]) {
 
-	//test_lls_create_xml_table(__get_test_slt());
-//	test_lls_create_slt_table(__get_test_slt());
-	test_lls_create_slt_route_dash(_get_2019_01_07_slt_route_dash());
+	if(argc==2) {
+		//use this as our text
+
+		test_lls_create_slt_route_dash(argv[1]);
+
+	} else {
+		printf("%s - lls_hex_payload_for_decode", argv[0]);
+	}
 	//test_kvp_extraction();
 	return 0;
 }
@@ -127,15 +135,20 @@ int test_lls_create_slt_route_dash(char* base64_payload) {
 
 	lls_table_t* lls = __lls_table_create(binary_payload, binary_payload_size);
 
-	lls_dump_instance_table(lls);
-
+	if(!lls) {
+		printf("error creating lls table for %s", base64_payload);
+	} else {
+		lls_dump_instance_table(lls);
+	}
 	return 0;
 }
+
 int test_lls_components() {
 
 	char* test_payload_base64;
 
-	test_payload_base64 = __get_test_slt();
+	//test_payload_base64 = __get_test_slt();
+	//test_payload_base64 = _get_2019_4_03_skt_test1();
 	int test_payload_base64_length = strlen(test_payload_base64);
 	int test_payload_binary_size = test_payload_base64_length/2;
 
