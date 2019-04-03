@@ -30,11 +30,15 @@ static char* __get_test_mmt_signaling_message_mpt_table_mpu_timestamp_descriptor
 void __create_binary_payload(char *test_payload_base64, uint8_t **binary_payload, int * binary_payload_size);
 int test_mmt_signaling_message_mpu_timestamp_descriptor_table(char* base64_payload);
 
-int main() {
+int main(int argc, char* argv[]) {
 	_MMT_SIGNALLING_MESSAGE_DEBUG_ENABLED = 1;
 	_MMT_SIGNALLING_MESSAGE_TRACE_ENABLED = 1;
-//	test_mmt_signaling_message_mpu_timestamp_descriptor_table(__get_test_mmt_signaling_message_mpu_timestamp_descriptor());
-    test_mmt_signaling_message_mpu_timestamp_descriptor_table(__get_test_mmt_signaling_message_mpt_table_mpu_timestamp_descriptor_with_ac4_audio());
+
+	if(argc==2) {
+		test_mmt_signaling_message_mpu_timestamp_descriptor_table(argv[1]);
+	} else {
+		printf("%s - base64_mmt_signaling_message_here", argv[0]);
+	}
 
     return 0;
 }

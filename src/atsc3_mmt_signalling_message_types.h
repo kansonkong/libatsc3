@@ -210,11 +210,14 @@ typedef struct mmt_signaling_message_mpu_timestamp_descriptor {
     mmt_signaling_message_mpu_tuple_t*     mpu_tuple;
 } mmt_signaling_message_mpu_timestamp_descriptor_t;
 
+#define ATSC3_MP_TABLE_ASSET_ROW_HEVC_ID "hev1"
+#define ATSC3_MP_TABLE_ASSET_ROW_MP4A_ID "mp4a"
+
 typedef struct mp_table_asset_row {
 	identifier_mapping_t identifier_mapping;
 
 	//identifer_mapping()
-	uint32_t	asset_type;
+	char		asset_type[4];
 	//6 bits reserved
 	uint8_t		default_asset_flag;
 
