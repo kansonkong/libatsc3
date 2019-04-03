@@ -496,9 +496,8 @@ uint8_t* mpt_message_parse(mmt_signalling_message_header_and_payload_t* mmt_sign
 			//build url
 
 		}
-		uint32_t asset_type;
-		buf = extract(buf, (uint8_t*)&asset_type, 4);
-		row->asset_type = ntohl(asset_type);
+		uint8_t asset_type;
+		buf = extract(buf, (uint8_t*)&row->asset_type, 4);
 
 		uint8_t reserved_default_asset_flag;
 		buf = extract(buf, (uint8_t*)&reserved_default_asset_flag, 1);
@@ -808,7 +807,7 @@ void mpt_message_dump(mmt_signalling_message_header_and_payload_t* mmt_signallin
 			_MMSM_DEBUG(" asset id                    : %s", mp_table_asset_row->identifier_mapping.asset_id.asset_id);
 
 		}
-		_MMSM_DEBUG(" asset type                  : %u", mp_table_asset_row->asset_type);
+		_MMSM_DEBUG(" asset type                  : %s", mp_table_asset_row->asset_type);
 		_MMSM_DEBUG(" asset_clock_relation_flag   : %u", mp_table_asset_row->asset_clock_relation_flag);
 		_MMSM_DEBUG(" asset_clock_relation_id     : %u", mp_table_asset_row->asset_clock_relation_id);
 		_MMSM_DEBUG(" asset_timescale_flag        : %u", mp_table_asset_row->asset_timescale_flag);
