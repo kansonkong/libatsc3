@@ -8,7 +8,7 @@
 
 #include "atsc3_route_mpd.h"
 
-int _ROUTE_MPD_PARSER_INFO_ENABLED = 1;
+int _ROUTE_MPD_PARSER_INFO_ENABLED  = 0;
 int _ROUTE_MPD_PARSER_DEBUG_ENABLED = 0;
 
 
