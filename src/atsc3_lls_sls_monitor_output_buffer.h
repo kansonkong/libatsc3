@@ -38,17 +38,26 @@ typedef struct lls_sls_monitor_buffer_isobmff {
 	uint32_t fps_denom;
 
     //isobmff init (ftyp and moov box)
+	//inflight refragment, abandonded if there is packet loss
 	block_t* init_block_flow_refragment;
+
+	//current mpu init, kept in case of any packet loss
 	block_t* init_block;
 
-    //combined alc moof and mdat block
+
+    //combined alc moof and mdat block for rOUTE
     block_t* alc_moof_mdat_block;
 
     //mmt - for building moof and mdat blocks
     ATSC3_VECTOR_BUILDER_STRUCT(trun_sample_entry)
-    block_t* mmt_moof_block_reconstituted;
+    block_t* mmt_moof_block;
+
     //ooo won't have flow until our mdat is complete
     block_t* mmt_moof_block_from_flow;
+
+    //todo - not sure if neededooo won't have flow until our mdat is complete
+    block_t* mmt_moof_block_previous_mpu;
+
 
     block_t* mmt_mdat_block;
 

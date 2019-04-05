@@ -70,209 +70,122 @@ mmtp_payload_fragments_union_t* mmtp_process_from_payload(mmtp_sub_flow_vector_t
 
             if(lls_slt_monitor && lls_slt_monitor->lls_sls_mmt_monitor && lls_slt_monitor->lls_sls_mmt_monitor->service_id == matching_lls_slt_mmt_session->service_id) {
 
-        //        __MMT_RECON_FROM_SAMPLE_TRACE("Starting processing loop, current mpu_sequence_number is: %d, packet_sequence_number: %d", mmtp_payload->mmtp_mpu_type_packet_header.mpu_sequence_number, mmtp_payload->mmtp_mpu_type_packet_header.packet_sequence_number);
+            	udp_flow_packet_id_mpu_sequence_tuple_t* last_flow_reference = udp_flow_latest_mpu_sequence_number_add_or_replace(udp_flow_latest_mpu_sequence_number_container, udp_packet, mmtp_payload);
+
+            	//see if we are an audio packet that rolled over
+				if(lls_slt_monitor->lls_sls_mmt_monitor->audio_packet_id == mmtp_payload->mmtp_mpu_type_packet_header.mmtp_packet_id) {
+					//see if we have incremented our mpu_sequence_number with current mmtp_payload
+
+					if(matching_lls_slt_mmt_session->last_udp_flow_packet_id_mpu_sequence_tuple_audio && matching_lls_slt_mmt_session->last_udp_flow_packet_id_mpu_sequence_tuple_audio->mpu_sequence_number < mmtp_payload->mmtp_mpu_type_packet_header.mpu_sequence_number) {
+						lls_sls_monitor_buffer_isobmff_t* lls_sls_monitor_buffer_isobmff_pending_mux = atsc3_isobmff_build_mpu_from_single_sequence_number(&udp_packet->udp_flow,
+														   udp_flow_latest_mpu_sequence_number_container,
+														   matching_lls_slt_mmt_session->last_udp_flow_packet_id_mpu_sequence_tuple_audio->packet_id,
+														   matching_lls_slt_mmt_session->last_udp_flow_packet_id_mpu_sequence_tuple_audio->mpu_sequence_number,
+														   mmtp_sub_flow_vector,
+														   &lls_slt_monitor->lls_sls_mmt_monitor->lls_sls_monitor_output_buffer.audio_output_buffer_isobmff);
 
 
-                udp_flow_packet_id_mpu_sequence_tuple_t* last_flow_reference = udp_flow_latest_mpu_sequence_number_add_or_replace(udp_flow_latest_mpu_sequence_number_container, udp_packet, mmtp_payload);
-//                __MMT_RECON_FROM_SAMPLE_TRACE("update_last_packet_id_and_mpu_sequence_number: ptr: %p, last dst_ip_addr: %u, last dst_port: %hu, last packet_id: %u, last mpu_sequence_number: %u",
-//                        last_flow_reference,
-//                        last_flow_reference->udp_flow.dst_ip_addr,
-//                        last_flow_reference->udp_flow.dst_port,
-//                        last_flow_reference->packet_id,
-//                        last_flow_reference->mpu_sequence_number);
-//
+						lls_sls_monitor_buffer_isobmff_intermediate_mmt_file_dump(lls_sls_monitor_buffer_isobmff_pending_mux, "mpu/",
+								matching_lls_slt_mmt_session->last_udp_flow_packet_id_mpu_sequence_tuple_audio->mpu_sequence_number,
+								"a");
 
+					}
+					udp_flow_packet_id_mpu_sequence_tuple_free_and_clone(&matching_lls_slt_mmt_session->last_udp_flow_packet_id_mpu_sequence_tuple_audio, last_flow_reference);
 
-                //this is pretty large, we could also query udp_flow_latest_mpu_sequence_number_from_packet_id for both of our monitored packet id's
-//                   !matching_lls_slt_mmt_session->last_udp_flow_packet_id_mpu_sequence_tuple_audio_processed &&
-//                   !matching_lls_slt_mmt_session->last_udp_flow_packet_id_mpu_sequence_tuple_video_processed &&
-//
-//                if((matching_lls_slt_mmt_session->last_udp_flow_packet_id_mpu_sequence_tuple_audio && matching_lls_slt_mmt_session->to_process_udp_flow_packet_id_mpu_sequence_tuple_audio) ||
-//                                (matching_lls_slt_mmt_session->last_udp_flow_packet_id_mpu_sequence_tuple_video && matching_lls_slt_mmt_session->to_process_udp_flow_packet_id_mpu_sequence_tuple_video)) {
-//
-//                if((matching_lls_slt_mmt_session->last_udp_flow_packet_id_mpu_sequence_tuple_audio && matching_lls_slt_mmt_session->to_process_udp_flow_packet_id_mpu_sequence_tuple_audio) ||
-//                    (matching_lls_slt_mmt_session->last_udp_flow_packet_id_mpu_sequence_tuple_video && matching_lls_slt_mmt_session->to_process_udp_flow_packet_id_mpu_sequence_tuple_video)) {
-//
-//(lls_slt_monitor->lls_sls_mmt_monitor->audio_packet_id == matching_lls_slt_mmt_session->last_udp_flow_packet_id_mpu_sequence_tuple_audio->packet_id &&
-//                        mmtp_payload->mmtp_mpu_type_packet_header.mmtp_packet_id == matching_lls_slt_mmt_session->last_udp_flow_packet_id_mpu_sequence_tuple_audio->packet_id) ||
-//
-//                       (lls_slt_monitor->lls_sls_mmt_monitor->video_packet_id == matching_lls_slt_mmt_session->last_udp_flow_packet_id_mpu_sequence_tuple_video->packet_id &&
-//                        mmtp_payload->mmtp_mpu_type_packet_header.mmtp_packet_id == matching_lls_slt_mmt_session->last_udp_flow_packet_id_mpu_sequence_tuple_video->packet_id)
-                    	//matching_lls_slt_mmt_session->last_udp_flow_packet_id_mpu_sequence_tuple_audio->mpu_sequence_number < mmtp_payload->mmtp_mpu_type_packet_header.mpu_sequence_numbe
-//matching_lls_slt_mmt_session->last_udp_flow_packet_id_mpu_sequence_tuple_video->mpu_sequence_number < mmtp_payload->mmtp_mpu_type_packet_header.mpu_sequence_number
-/**
- *
-						__MMT_RECON_FROM_SAMPLE_INFO("Starting re-fragmenting because packet_id:mpu_sequence number changed, from a: %u:%u, v: %u:%u with %u:%u, processing a: %u:%u, v: %u:%u",
-												  matching_lls_slt_mmt_session->last_udp_flow_packet_id_mpu_sequence_tuple_audio->packet_id,
-												  matching_lls_slt_mmt_session->last_udp_flow_packet_id_mpu_sequence_tuple_audio->mpu_sequence_number,
-												  matching_lls_slt_mmt_session->last_udp_flow_packet_id_mpu_sequence_tuple_video->packet_id,
-												  matching_lls_slt_mmt_session->last_udp_flow_packet_id_mpu_sequence_tuple_audio->mpu_sequence_number,
-												  mmtp_payload->mmtp_mpu_type_packet_header.mmtp_packet_id,
-												  mmtp_payload->mmtp_mpu_type_packet_header.mpu_sequence_number,
-												  matching_lls_slt_mmt_session->to_process_udp_flow_packet_id_mpu_sequence_tuple_audio->packet_id,
-												  audio_mpu_sequence_number_to_process,
-												  matching_lls_slt_mmt_session->to_process_udp_flow_packet_id_mpu_sequence_tuple_video->packet_id,
-												  video_mpu_sequence_number_to_process);
- *
- */
+				} else if(lls_slt_monitor->lls_sls_mmt_monitor->video_packet_id == mmtp_payload->mmtp_mpu_type_packet_header.mmtp_packet_id) {
+					//see if we have incremented our mpu_sequence_number with current mmtp_payload
 
-                	uint32_t audio_mpu_sequence_number_to_process = 0;
-					uint32_t video_mpu_sequence_number_to_process = 0;
+					if(matching_lls_slt_mmt_session->last_udp_flow_packet_id_mpu_sequence_tuple_video && matching_lls_slt_mmt_session->last_udp_flow_packet_id_mpu_sequence_tuple_video->mpu_sequence_number < mmtp_payload->mmtp_mpu_type_packet_header.mpu_sequence_number) {
+						lls_sls_monitor_buffer_isobmff_t* lls_sls_monitor_buffer_isobmff_pending_mux = atsc3_isobmff_build_mpu_from_single_sequence_number(&udp_packet->udp_flow,
+														   udp_flow_latest_mpu_sequence_number_container,
+														   matching_lls_slt_mmt_session->last_udp_flow_packet_id_mpu_sequence_tuple_video->packet_id,
+														   matching_lls_slt_mmt_session->last_udp_flow_packet_id_mpu_sequence_tuple_video->mpu_sequence_number,
+														   mmtp_sub_flow_vector,
+														   &lls_slt_monitor->lls_sls_mmt_monitor->lls_sls_monitor_output_buffer.video_output_buffer_isobmff);
 
-					//todo: fix me
-					//matching_lls_slt_mmt_session->last_udp_flow_packet_id_mpu_sequence_tuple_audio_processed
-					//!matching_lls_slt_mmt_session->last_udp_flow_packet_id_mpu_sequence_tuple_video_processed ||
-
-					//last_flow_reference will not be complete, so go back -1
-
-
-					if((lls_slt_monitor->lls_sls_mmt_monitor->audio_packet_id == mmtp_payload->mmtp_mpu_type_packet_header.mmtp_packet_id) &&
-							(!matching_lls_slt_mmt_session->last_udp_flow_packet_id_mpu_sequence_tuple_audio ||
-									(matching_lls_slt_mmt_session->last_udp_flow_packet_id_mpu_sequence_tuple_audio->mpu_sequence_number < mmtp_payload->mmtp_mpu_type_packet_header.mpu_sequence_number))) {
-						audio_mpu_sequence_number_to_process = mmtp_payload->mmtp_mpu_type_packet_header.mpu_sequence_number;
-						matching_lls_slt_mmt_session->to_process_udp_flow_packet_id_mpu_sequence_tuple_audio = last_flow_reference;
-
-						//matching_lls_slt_mmt_session->to_process_udp_flow_packet_id_mpu_sequence_tuple_audio->mpu_sequence_number
-						__MMT_RECON_FROM_SAMPLE_INFO("re-fragment: pushing audio mpu %u:%u",
-																		  mmtp_payload->mmtp_mpu_type_packet_header.mmtp_packet_id,
-																		  mmtp_payload->mmtp_mpu_type_packet_header.mpu_sequence_number);
-
-					} else if(
-							(lls_slt_monitor->lls_sls_mmt_monitor->video_packet_id == mmtp_payload->mmtp_mpu_type_packet_header.mmtp_packet_id) &&
-							(!matching_lls_slt_mmt_session->last_udp_flow_packet_id_mpu_sequence_tuple_video ||
-									(matching_lls_slt_mmt_session->last_udp_flow_packet_id_mpu_sequence_tuple_video->mpu_sequence_number < mmtp_payload->mmtp_mpu_type_packet_header.mpu_sequence_number))) {
-						video_mpu_sequence_number_to_process = mmtp_payload->mmtp_mpu_type_packet_header.mpu_sequence_number; //matching_lls_slt_mmt_session->to_process_udp_flow_packet_id_mpu_sequence_tuple_video->mpu_sequence_number
-
-						matching_lls_slt_mmt_session->to_process_udp_flow_packet_id_mpu_sequence_tuple_video = last_flow_reference;
-						__MMT_RECON_FROM_SAMPLE_INFO("re-fragment: pushing video mpu %u:%u",
-												  mmtp_payload->mmtp_mpu_type_packet_header.mmtp_packet_id,
-												  mmtp_payload->mmtp_mpu_type_packet_header.mpu_sequence_number);
-
-
-
+						lls_sls_monitor_buffer_isobmff_intermediate_mmt_file_dump(lls_sls_monitor_buffer_isobmff_pending_mux, "mpu/",
+														matching_lls_slt_mmt_session->last_udp_flow_packet_id_mpu_sequence_tuple_video->mpu_sequence_number,
+														"v");
 					} else {
-						//mismatch
-						if(!matching_lls_slt_mmt_session->last_udp_flow_packet_id_mpu_sequence_tuple_audio || !matching_lls_slt_mmt_session->last_udp_flow_packet_id_mpu_sequence_tuple_video) {
-							  __MMT_RECON_FROM_SAMPLE_INFO("Skipping refragment - to_process_udp_flow_packet_id_mpu_sequence_tuple_audio: %p,  last_udp_flow_packet_id_mpu_sequence_tuple_video: %p - null",
-									  matching_lls_slt_mmt_session->to_process_udp_flow_packet_id_mpu_sequence_tuple_audio,
-									  matching_lls_slt_mmt_session->to_process_udp_flow_packet_id_mpu_sequence_tuple_video);
-
-						} else {
-
-//						  __MMT_RECON_FROM_SAMPLE_TRACE("Skipping re-fragmenting because packet_id:mpu_sequence number not changed, current packet_id: %u, current mpu_sequence_number: %u, last audio: %u, last video: %u",
-//								  mmtp_payload->mmtp_mpu_type_packet_header.mmtp_packet_id,
-//								  mmtp_payload->mmtp_mpu_type_packet_header.mpu_sequence_number,
-//								  matching_lls_slt_mmt_session->last_udp_flow_packet_id_mpu_sequence_tuple_audio->mpu_sequence_number,
-//								  matching_lls_slt_mmt_session->last_udp_flow_packet_id_mpu_sequence_tuple_video->mpu_sequence_number);
-						}
-//						  , from a: %u:%u, v: %u:%u with %u:%u, processing a: %u:%u, v: %u:%u",
-//													  matching_lls_slt_mmt_session->last_udp_flow_packet_id_mpu_sequence_tuple_audio->packet_id,
-//													  matching_lls_slt_mmt_session->last_udp_flow_packet_id_mpu_sequence_tuple_audio->mpu_sequence_number,
-//													  matching_lls_slt_mmt_session->last_udp_flow_packet_id_mpu_sequence_tuple_video->packet_id,
-//													  matching_lls_slt_mmt_session->last_udp_flow_packet_id_mpu_sequence_tuple_audio->mpu_sequence_number,
-//													  mmtp_payload->mmtp_mpu_type_packet_header.mmtp_packet_id,
-//													  mmtp_payload->mmtp_mpu_type_packet_header.mpu_sequence_number,
-//													  matching_lls_slt_mmt_session->to_process_udp_flow_packet_id_mpu_sequence_tuple_audio->packet_id,
-//													  matching_lls_slt_mmt_session->to_process_udp_flow_packet_id_mpu_sequence_tuple_audio->mpu_sequence_number,
-//													  matching_lls_slt_mmt_session->to_process_udp_flow_packet_id_mpu_sequence_tuple_video->packet_id,
-//													  matching_lls_slt_mmt_session->to_process_udp_flow_packet_id_mpu_sequence_tuple_video->mpu_sequence_number);
-						goto cleanup;
+						//noop
 					}
 
-
-
-
-				   lls_sls_monitor_output_buffer_t* lls_sls_monitor_output_buffer_final_muxed_payload = atsc3_isobmff_build_mpu_metadata_ftyp_moof_mdat_box_from_mpu_sequence_numbers(&udp_packet->udp_flow,
-						   udp_flow_latest_mpu_sequence_number_container,
-						   audio_mpu_sequence_number_to_process,
-						   video_mpu_sequence_number_to_process,
-						   mmtp_sub_flow_vector, lls_slt_monitor->lls_sls_mmt_monitor);
-
-					if(lls_slt_monitor->lls_sls_mmt_monitor->lls_sls_monitor_output_buffer.should_flush_output_buffer && lls_sls_monitor_output_buffer_final_muxed_payload) {
-						//mark both of these flows as having been processed
-						matching_lls_slt_mmt_session->last_udp_flow_packet_id_mpu_sequence_tuple_audio_processed = true;
-						matching_lls_slt_mmt_session->last_udp_flow_packet_id_mpu_sequence_tuple_video_processed = true;
-
-
-						if(true || lls_slt_monitor->lls_sls_mmt_monitor->lls_sls_monitor_output_buffer_mode.file_dump_enabled) {
-							//todo, call atsc3_isobmff_build_mpu_metadata_ftyp_moof_mdat_box with forced init box
-							//lls_sls_monitor_output_buffer_final_muxed_payload
-							lls_sls_monitor_output_buffer_mmt_file_dump(lls_sls_monitor_output_buffer_final_muxed_payload, "mpu/",
-								matching_lls_slt_mmt_session->to_process_udp_flow_packet_id_mpu_sequence_tuple_audio->mpu_sequence_number,
-								matching_lls_slt_mmt_session->to_process_udp_flow_packet_id_mpu_sequence_tuple_video->mpu_sequence_number);
-						}
-
-						//http support output
-						if(lls_slt_monitor->lls_sls_mmt_monitor->lls_sls_monitor_output_buffer_mode.http_output_enabled &&
-								lls_slt_monitor->lls_sls_mmt_monitor->lls_sls_monitor_output_buffer_mode.http_output_buffer &&
-								lls_slt_monitor->lls_sls_mmt_monitor->lls_sls_monitor_output_buffer_mode.http_output_buffer->http_output_conntected) {
-							//&& lls_slt_monitor->lls_sls_mmt_monitor->lls_sls_monitor_output_buffer_mode.pipe_ffplay_buffer) {
-
-							lls_sls_monitor_reader_mutex_lock(lls_slt_monitor->lls_sls_mmt_monitor->lls_sls_monitor_output_buffer_mode.http_output_buffer->http_payload_buffer_mutex);
-							lls_slt_monitor->lls_sls_mmt_monitor->lls_sls_monitor_output_buffer_mode.http_output_buffer->total_fragments_incoming_written++;
-
-							if(!lls_slt_monitor->lls_sls_mmt_monitor->lls_sls_monitor_output_buffer_mode.http_output_buffer->http_payload_buffer_incoming) {
-								lls_slt_monitor->lls_sls_mmt_monitor->lls_sls_monitor_output_buffer_mode.http_output_buffer->http_payload_buffer_incoming =  block_Duplicate(lls_sls_monitor_output_buffer_final_muxed_payload->joined_isobmff_block);
-							} else {
-								block_Resize(lls_slt_monitor->lls_sls_mmt_monitor->lls_sls_monitor_output_buffer_mode.http_output_buffer->http_payload_buffer_incoming, lls_slt_monitor->lls_sls_mmt_monitor->lls_sls_monitor_output_buffer_mode.http_output_buffer->http_payload_buffer_incoming->p_size + lls_sls_monitor_output_buffer_final_muxed_payload->joined_isobmff_block->p_size);
-								block_Write(lls_slt_monitor->lls_sls_mmt_monitor->lls_sls_monitor_output_buffer_mode.http_output_buffer->http_payload_buffer_incoming, lls_sls_monitor_output_buffer_final_muxed_payload->joined_isobmff_block->p_buffer, lls_sls_monitor_output_buffer_final_muxed_payload->joined_isobmff_block->p_size);
-							}
-
-							lls_sls_monitor_reader_mutex_unlock(lls_slt_monitor->lls_sls_mmt_monitor->lls_sls_monitor_output_buffer_mode.http_output_buffer->http_payload_buffer_mutex);
-						}
-
-						//ffplay pipe output
-						if(lls_slt_monitor->lls_sls_mmt_monitor->lls_sls_monitor_output_buffer_mode.ffplay_output_enabled && lls_slt_monitor->lls_sls_mmt_monitor->lls_sls_monitor_output_buffer_mode.pipe_ffplay_buffer) {
-
-							pipe_buffer_reader_mutex_lock(lls_slt_monitor->lls_sls_mmt_monitor->lls_sls_monitor_output_buffer_mode.pipe_ffplay_buffer);
-
-							pipe_buffer_unsafe_push_block(lls_slt_monitor->lls_sls_mmt_monitor->lls_sls_monitor_output_buffer_mode.pipe_ffplay_buffer, lls_sls_monitor_output_buffer_final_muxed_payload->joined_isobmff_block->p_buffer, lls_sls_monitor_output_buffer_final_muxed_payload->joined_isobmff_block->i_pos);
-
-							lls_slt_monitor->lls_sls_mmt_monitor->lls_sls_monitor_output_buffer.has_written_init_box = true;
-
-							pipe_buffer_notify_semaphore_post(lls_slt_monitor->lls_sls_mmt_monitor->lls_sls_monitor_output_buffer_mode.pipe_ffplay_buffer);
-
-							//check to see if we have shutdown
-							lls_slt_monitor_check_and_handle_pipe_ffplay_buffer_is_shutdown(lls_slt_monitor);
-
-							pipe_buffer_reader_mutex_unlock(lls_slt_monitor->lls_sls_mmt_monitor->lls_sls_monitor_output_buffer_mode.pipe_ffplay_buffer);
-
-						}
-
-						lls_sls_monitor_output_buffer_reset_moof_and_fragment_position(&lls_slt_monitor->lls_sls_mmt_monitor->lls_sls_monitor_output_buffer);
-
-						matching_lls_slt_mmt_session->last_udp_flow_packet_id_mpu_sequence_tuple_audio_processed = true;
-						matching_lls_slt_mmt_session->last_udp_flow_packet_id_mpu_sequence_tuple_video_processed = true;
-	           			udp_flow_packet_id_mpu_sequence_tuple_free_and_clone(&matching_lls_slt_mmt_session->last_udp_flow_packet_id_mpu_sequence_tuple_audio, last_flow_reference);
-	           			udp_flow_packet_id_mpu_sequence_tuple_free_and_clone(&matching_lls_slt_mmt_session->last_udp_flow_packet_id_mpu_sequence_tuple_video, last_flow_reference);
-
-
-					} else {
-						if(audio_mpu_sequence_number_to_process) {
-
-							udp_flow_packet_id_mpu_sequence_tuple_free_and_clone(&matching_lls_slt_mmt_session->last_udp_flow_packet_id_mpu_sequence_tuple_audio, last_flow_reference);
-
-
-							__MMT_RECON_FROM_SAMPLE_INFO("re-fragment: complete pushing audio mpu %u:%u",
-																			  mmtp_payload->mmtp_mpu_type_packet_header.mmtp_packet_id,
-																			  mmtp_payload->mmtp_mpu_type_packet_header.mpu_sequence_number);
-						}
-
-						if(video_mpu_sequence_number_to_process) {
-
-							//matching_lls_slt_mmt_session->last_udp_flow_packet_id_mpu_sequence_tuple_video = last_flow_reference; //matching_lls_slt_mmt_session->to_process_udp_flow_packet_id_mpu_sequence_tuple_video;
-		           			udp_flow_packet_id_mpu_sequence_tuple_free_and_clone(&matching_lls_slt_mmt_session->last_udp_flow_packet_id_mpu_sequence_tuple_video, last_flow_reference);
-
-							__MMT_RECON_FROM_SAMPLE_INFO("re-fragment: complete pushing video mpu %u:%u",
-																			  mmtp_payload->mmtp_mpu_type_packet_header.mmtp_packet_id,
-																			  mmtp_payload->mmtp_mpu_type_packet_header.mpu_sequence_number);
-						}
-
-						lls_slt_monitor->lls_sls_mmt_monitor->lls_sls_monitor_output_buffer.should_flush_output_buffer = false;
-					}
-
+					//keep track of our last mpu_sequence_number...
+           			udp_flow_packet_id_mpu_sequence_tuple_free_and_clone(&matching_lls_slt_mmt_session->last_udp_flow_packet_id_mpu_sequence_tuple_video, last_flow_reference);
 				}
+
+
+
+
+
+//				   lls_sls_monitor_output_buffer_t* lls_sls_monitor_output_buffer_final_muxed_payload = atsc3_isobmff_build_mpu_metadata_ftyp_moof_mdat_box_from_mpu_sequence_numbers(&udp_packet->udp_flow,
+//						   udp_flow_latest_mpu_sequence_number_container,
+//						   audio_mpu_sequence_number_to_process,
+//						   video_mpu_sequence_number_to_process,
+//						   mmtp_sub_flow_vector, lls_slt_monitor->lls_sls_mmt_monitor);
 //
+//					if(lls_slt_monitor->lls_sls_mmt_monitor->lls_sls_monitor_output_buffer.should_flush_output_buffer && lls_sls_monitor_output_buffer_final_muxed_payload) {
+//						//mark both of these flows as having been processed
+//						matching_lls_slt_mmt_session->last_udp_flow_packet_id_mpu_sequence_tuple_audio_processed = true;
+//						matching_lls_slt_mmt_session->last_udp_flow_packet_id_mpu_sequence_tuple_video_processed = true;
+//
+//
+//						if(true || lls_slt_monitor->lls_sls_mmt_monitor->lls_sls_monitor_output_buffer_mode.file_dump_enabled) {
+//							//todo, call atsc3_isobmff_build_mpu_metadata_ftyp_moof_mdat_box with forced init box
+//							//lls_sls_monitor_output_buffer_final_muxed_payload
+//							lls_sls_monitor_output_buffer_mmt_file_dump(lls_sls_monitor_output_buffer_final_muxed_payload, "mpu/",
+//								matching_lls_slt_mmt_session->to_process_udp_flow_packet_id_mpu_sequence_tuple_audio->mpu_sequence_number,
+//								matching_lls_slt_mmt_session->to_process_udp_flow_packet_id_mpu_sequence_tuple_video->mpu_sequence_number);
+//						}
+//
+//						//http support output
+//						if(lls_slt_monitor->lls_sls_mmt_monitor->lls_sls_monitor_output_buffer_mode.http_output_enabled &&
+//								lls_slt_monitor->lls_sls_mmt_monitor->lls_sls_monitor_output_buffer_mode.http_output_buffer &&
+//								lls_slt_monitor->lls_sls_mmt_monitor->lls_sls_monitor_output_buffer_mode.http_output_buffer->http_output_conntected) {
+//							//&& lls_slt_monitor->lls_sls_mmt_monitor->lls_sls_monitor_output_buffer_mode.pipe_ffplay_buffer) {
+//
+//							lls_sls_monitor_reader_mutex_lock(lls_slt_monitor->lls_sls_mmt_monitor->lls_sls_monitor_output_buffer_mode.http_output_buffer->http_payload_buffer_mutex);
+//							lls_slt_monitor->lls_sls_mmt_monitor->lls_sls_monitor_output_buffer_mode.http_output_buffer->total_fragments_incoming_written++;
+//
+//							if(!lls_slt_monitor->lls_sls_mmt_monitor->lls_sls_monitor_output_buffer_mode.http_output_buffer->http_payload_buffer_incoming) {
+//								lls_slt_monitor->lls_sls_mmt_monitor->lls_sls_monitor_output_buffer_mode.http_output_buffer->http_payload_buffer_incoming =  block_Duplicate(lls_sls_monitor_output_buffer_final_muxed_payload->joined_isobmff_block);
+//							} else {
+//								block_Resize(lls_slt_monitor->lls_sls_mmt_monitor->lls_sls_monitor_output_buffer_mode.http_output_buffer->http_payload_buffer_incoming, lls_slt_monitor->lls_sls_mmt_monitor->lls_sls_monitor_output_buffer_mode.http_output_buffer->http_payload_buffer_incoming->p_size + lls_sls_monitor_output_buffer_final_muxed_payload->joined_isobmff_block->p_size);
+//								block_Write(lls_slt_monitor->lls_sls_mmt_monitor->lls_sls_monitor_output_buffer_mode.http_output_buffer->http_payload_buffer_incoming, lls_sls_monitor_output_buffer_final_muxed_payload->joined_isobmff_block->p_buffer, lls_sls_monitor_output_buffer_final_muxed_payload->joined_isobmff_block->p_size);
+//							}
+//
+//							lls_sls_monitor_reader_mutex_unlock(lls_slt_monitor->lls_sls_mmt_monitor->lls_sls_monitor_output_buffer_mode.http_output_buffer->http_payload_buffer_mutex);
+//						}
+//
+//						//ffplay pipe output
+//						if(lls_slt_monitor->lls_sls_mmt_monitor->lls_sls_monitor_output_buffer_mode.ffplay_output_enabled && lls_slt_monitor->lls_sls_mmt_monitor->lls_sls_monitor_output_buffer_mode.pipe_ffplay_buffer) {
+//
+//							pipe_buffer_reader_mutex_lock(lls_slt_monitor->lls_sls_mmt_monitor->lls_sls_monitor_output_buffer_mode.pipe_ffplay_buffer);
+//
+//							pipe_buffer_unsafe_push_block(lls_slt_monitor->lls_sls_mmt_monitor->lls_sls_monitor_output_buffer_mode.pipe_ffplay_buffer, lls_sls_monitor_output_buffer_final_muxed_payload->joined_isobmff_block->p_buffer, lls_sls_monitor_output_buffer_final_muxed_payload->joined_isobmff_block->i_pos);
+//
+//							lls_slt_monitor->lls_sls_mmt_monitor->lls_sls_monitor_output_buffer.has_written_init_box = true;
+//
+//							pipe_buffer_notify_semaphore_post(lls_slt_monitor->lls_sls_mmt_monitor->lls_sls_monitor_output_buffer_mode.pipe_ffplay_buffer);
+//
+//							//check to see if we have shutdown
+//							lls_slt_monitor_check_and_handle_pipe_ffplay_buffer_is_shutdown(lls_slt_monitor);
+//
+//							pipe_buffer_reader_mutex_unlock(lls_slt_monitor->lls_sls_mmt_monitor->lls_sls_monitor_output_buffer_mode.pipe_ffplay_buffer);
+//
+//						}
+//
+//						lls_sls_monitor_output_buffer_reset_moof_and_fragment_position(&lls_slt_monitor->lls_sls_mmt_monitor->lls_sls_monitor_output_buffer);
+//
+//						matching_lls_slt_mmt_session->last_udp_flow_packet_id_mpu_sequence_tuple_audio_processed = true;
+//						matching_lls_slt_mmt_session->last_udp_flow_packet_id_mpu_sequence_tuple_video_processed = true;
+//	           			udp_flow_packet_id_mpu_sequence_tuple_free_and_clone(&matching_lls_slt_mmt_session->last_udp_flow_packet_id_mpu_sequence_tuple_audio, last_flow_reference);
+//	           			udp_flow_packet_id_mpu_sequence_tuple_free_and_clone(&matching_lls_slt_mmt_session->last_udp_flow_packet_id_mpu_sequence_tuple_video, last_flow_reference);
+//
+//
+//					}
+//				}
+////
 
 
 //                //update our last references for mpu_sequence rollover until we process packet_id signaling messages only if our mpu_sequence_number has changed due to malloc/copy the flow reference
@@ -316,10 +229,11 @@ mmtp_payload_fragments_union_t* mmtp_process_from_payload(mmtp_sub_flow_vector_t
 //                }
 
             //}
-        } else {
-            //non-timed
-            global_stats->packet_counter_mmt_nontimed_mpu++;
-        }
+		}
+	} else {
+		//non-timed
+		global_stats->packet_counter_mmt_nontimed_mpu++;
+	}
 
 
 
