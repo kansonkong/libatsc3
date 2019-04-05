@@ -337,7 +337,12 @@ void* ncurses_input_run_thread(void* lls_slt_monitor_ptr) {
                     lls_slt_monitor->lls_sls_mmt_monitor->lls_sls_monitor_output_buffer_mode.http_output_enabled = true;
 
                 } else if(lls_slt_monitor->lls_sls_alc_monitor) {
-                    wprintw(my_window, "ROUTE/DASH: Starting playback for service_id: %u, video_tsi: %u, audio_tsi: %u", lls_slt_monitor->lls_sls_alc_monitor->service_id, lls_slt_monitor->lls_sls_alc_monitor->video_tsi, lls_slt_monitor->lls_sls_alc_monitor->audio_tsi);
+                    wprintw(my_window, "ROUTE/DASH: Starting playback for service_id: %u, video: tsi: %u, toi_init: %u, audio: tsi: %u, toi_init: %u",
+                    		lls_slt_monitor->lls_sls_alc_monitor->service_id,
+							lls_slt_monitor->lls_sls_alc_monitor->video_tsi,
+							lls_slt_monitor->lls_sls_alc_monitor->video_toi_init,
+							lls_slt_monitor->lls_sls_alc_monitor->audio_tsi,
+							lls_slt_monitor->lls_sls_alc_monitor->audio_toi_init);
                     lls_slt_monitor->lls_sls_alc_monitor->lls_sls_monitor_output_buffer_mode.pipe_ffplay_buffer = pipe_create_ffplay_resolve_fps(&lls_slt_monitor->lls_sls_alc_monitor->lls_sls_monitor_output_buffer.video_output_buffer_isobmff);
                     
                     lls_slt_monitor->lls_sls_alc_monitor->lls_sls_monitor_output_buffer_mode.ffplay_output_enabled = true;
