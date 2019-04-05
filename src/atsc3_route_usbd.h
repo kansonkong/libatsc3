@@ -88,6 +88,7 @@
 #define ATSC3_ROUTE_USBD_H_
 
 #include "atsc3_utils.h"
+#include "xml.h"
 #include "atsc3_vector_builder.h"
 
 
@@ -97,6 +98,7 @@
 atsc3_mime_multipart_related_parser.c:318:DEBUG:type     : application/route-usd+xml
 atsc3_mime_multipart_related_parser.c:319:DEBUG:location : usbd.xml
 atsc3_mime_multipart_related_parser.c:320:DEBUG:payload  :
+
 <?xml version="1.0" encoding="UTF-8"?>
 <BundleDescriptionROUTE xmlns="tag:atsc.org,2016:XMLSchemas/ATSC3/Delivery/ROUTEUSD/1.0/">
     <UserServiceDescription serviceId="1">
@@ -157,10 +159,23 @@ ATSC3_VECTOR_BUILDER_METHODS_INTERFACE(atsc3_user_service_unicast_app_service, a
 
 
 typedef struct atsc3_route_user_service_bundle_description {
-	atsc3_user_service_description_t atsc3_user_service_description;
-
+	atsc3_user_service_description_t* atsc3_user_service_description;
 } atsc3_route_user_service_bundle_description_t;
 
+
+atsc3_route_user_service_bundle_description_t* atsc3_route_user_service_bundle_description_parse_from_payload(char* payload, char* content_locationt);
+atsc3_user_service_description_t* atsc3_route_usbd_parse_from_usd(xml_node_t* xml_node, atsc3_route_user_service_bundle_description_t* atsc3_route_user_service_bundle_description);
+
+
+void atsc3_route_usb_dump(atsc3_route_user_service_bundle_description_t* atsc3_route_user_service_bundle_description);
+
+
+
+
+#define _ATSC3_ROUTE_USBD_PARSER_ERROR(...)   printf("%s:%d:ERROR:",__FILE__,__LINE__);_ATSC3_UTILS_PRINTLN(__VA_ARGS__);
+#define _ATSC3_ROUTE_USBD_PARSER_WARN(...)    printf("%s:%d:WARN:",__FILE__,__LINE__);_ATSC3_UTILS_PRINTLN(__VA_ARGS__);
+#define _ATSC3_ROUTE_USBD_PARSER_INFO(...)    printf("%s:%d:INFO:",__FILE__,__LINE__);_ATSC3_UTILS_PRINTLN(__VA_ARGS__);
+#define _ATSC3_ROUTE_USBD_PARSER_DEBUG(...)   printf("%s:%d:DEBUG:",__FILE__,__LINE__);_ATSC3_UTILS_PRINTLN(__VA_ARGS__);
 
 
 

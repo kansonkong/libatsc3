@@ -51,17 +51,136 @@ atsc3_mime_multipart_related_parser.c:320:DEBUG:payload  :
 #include "atsc3_utils.h"
 #include "xml.h"
 #include "atsc3_vector_builder.h"
-
-typedef struct atsc3_route_session_source_flow {
-
-
-} atsc3_route_session_source_flow_t;
-
-typedef struct atsc3_route_session_repair_flow {
+#include "atsc3_fdt.h"
 
 
-} atsc3_route_session_repair_flow_t;
+/**
+ *
+	<xs:complexType name="EFDTType">
+		<xs:sequence>
+			<xs:element name="FDT-Instance" type="fdt:FDT-InstanceType" minOccurs="0"/>
+			<xs:any namespace="##other" processContents="strict" minOccurs="0" maxOccurs="unbounded"/>
+		</xs:sequence>
+		<xs:anyAttribute namespace="##other" processContents="strict"/>
+	</xs:complexType>
+	**/
 
+//use from atsc3_fdt?
+
+
+/*
+ * <xs:complexType name="MediaInfoType">
+		<xs:sequence>
+			<xs:element name="ContentRating" type="stsid:ContentRatingType"/>
+			<xs:any namespace="##other" processContents="strict" minOccurs="0" maxOccurs="unbounded"/>
+		</xs:sequence>
+		<xs:attribute name="startup" type="xs:boolean"/>
+		<xs:attribute ref="xml:lang"/>
+		<xs:attribute name="contentType" type="stsid:contentTypeType"/>
+		<xs:attribute name="repId" type="stsid:StringNoWhitespaceType" use="required"/>
+		<xs:anyAttribute namespace="##other" processContents="strict"/>
+	</xs:complexType>
+ */
+typedef struct atsc3_route_s_tsid_RS_LS_SrcFlow_ContentInfo_MediaInfo {
+	char* 	content_type;
+	char*	rep_id;
+	bool 	startup;
+	//content_rating...
+
+} atsc3_route_s_tsid_RS_LS_SrcFlow_ContentInfo_MediaInfo_t;
+
+/*
+ * <!-- AEA Media Content -->
+	<xs:complexType name="AEAMediaType">
+		<xs:sequence>
+			<xs:element name="AEAId" type="xs:string" minOccurs="0" maxOccurs="unbounded"/>
+			<xs:any namespace="##other" processContents="strict" minOccurs="0" maxOccurs="unbounded"/>
+		</xs:sequence>
+		<xs:anyAttribute namespace="##other" processContents="strict"/>
+	</xs:complexType>
+ */
+typedef struct atsc3_route_s_tsid_RS_LS_SrcFlow_ContentInfo_AEAMedia {
+	char* aea_id;
+} atsc3_route_s_tsid_RS_LS_SrcFlow_ContentInfo_AEAMedia_t;
+
+/*
+	<!-- ContentInfo Type -->
+	<xs:complexType name="ContentInfoType">
+		<xs:choice>
+			<xs:element name="MediaInfo" type="stsid:MediaInfoType"/>
+			<xs:element name="AEAMedia" type="stsid:AEAMediaType"/>
+			<xs:any namespace="##other" processContents="strict" minOccurs="0" maxOccurs="unbounded"/>
+		</xs:choice>
+		<xs:anyAttribute namespace="##other" processContents="strict"/>
+	</xs:complexType>
+
+ */
+typedef struct atsc3_route_s_tsid_RS_LS_SrcFlow_ContentInfo {
+	atsc3_route_s_tsid_RS_LS_SrcFlow_ContentInfo_MediaInfo_t*	atsc3_route_s_tsid_RS_LS_SrcFlow_ContentInfo_MediaInfo;
+	atsc3_route_s_tsid_RS_LS_SrcFlow_ContentInfo_AEAMedia_t*	atsc3_route_s_tsid_RS_LS_SrcFlow_ContentInfo_AEAMedia;
+} atsc3_route_s_tsid_RS_LS_SrcFlow_ContentInfo_t;
+
+
+/*
+ * <xs:complexType name="PayloadType">
+		<xs:attribute name="codePoint" type="xs:unsignedByte" default="0"/>
+		<xs:attribute name="formatId" type="stsid:formatIdType" use="required"/>
+		<xs:attribute name="frag" type="stsid:fragType" default="0"/>
+		<xs:attribute name="order" type="xs:boolean" default="0"/>
+		<xs:attribute name="srcFecPayloadId" type="stsid:srcFecPayloadIdType" use="required"/>
+		<xs:attribute name="fecParams" type="stsid:fecOTIType"/>
+		<xs:anyAttribute processContents="strict"/>
+	</xs:complexType>
+ */
+typedef struct atsc3_route_s_tsid_RS_LS_SrcFlow_Payload {
+	uint8_t code_point;
+	uint8_t format_id;
+	uint8_t frag;
+	bool	order;
+	uint8_t	src_fec_payload_id;
+	/**
+	 * todo
+	 * <xs:simpleType name="fecOTIType">
+		<xs:restriction base="xs:hexBinary">
+			<xs:length value="12"/>
+		</xs:restriction>
+	</xs:simpleType>
+	 */
+	char* fec_parms;
+
+} atsc3_route_s_tsid_RS_LS_SrcFlow_Payload_t;
+
+/*
+ *
+ * 		<xs:attribute name="rt" type="xs:boolean" default="false"/>
+		<xs:attribute name="minBuffSize" type="xs:unsignedInt"/>
+		..
+		<xs:element name="EFDT" type="stsid:EFDTType" minOccurs="0"/>
+		<xs:element name="ContentInfo" type="stsid:ContentInfoType" minOccurs="0"/>
+		<xs:element name="Payload" type="stsid:PayloadType" maxOccurs="unbounded"/>
+		<xs:any namespace="##other" processContents="strict" minOccurs="0" maxOccurs="unbounded"/>
+ *
+ */
+typedef struct atsc3_route_s_tsid_RS_LS_SrcFlow {
+	bool 											rt;
+	uint32_t 										min_buff_size;
+	atsc3_fdt_instance_t*							atsc3_fdt_instance; //EFDT
+	atsc3_route_s_tsid_RS_LS_SrcFlow_ContentInfo_t*	atsc3_route_s_tsid_RS_LS_SrcFlow_ContentInfo;
+	atsc3_route_s_tsid_RS_LS_SrcFlow_Payload_t*		atsc3_route_s_tsid_RS_LS_SrcFlow_Payload;
+
+} atsc3_route_s_tsid_RS_LS_SrcFlow_t;
+
+typedef struct atsc3_route_s_tsid_RS_LS_RepairFlow {
+
+
+} atsc3_route_s_tsid_RS_LS_RepairFlow_t;
+
+/**
+ 	 	<xs:attribute name="tsi" type="xs:unsignedInt" use="required"/>
+		<xs:attribute name="bw" type="xs:unsignedInt"/>
+		<xs:attribute name="startTime" type="xs:dateTime"/>
+		<xs:attribute name="endTime" type="xs:dateTime"/>
+ */
 typedef struct atsc3_route_s_tsid_RS_LS {
 	uint32_t 	tsi;
 	uint32_t	bw;
@@ -69,8 +188,8 @@ typedef struct atsc3_route_s_tsid_RS_LS {
 	//todo - correct these mappings
 	char*		start_time;
 	char*		end_time;
-	atsc3_route_session_source_flow_t atsc3_route_session_source_flow;
-	atsc3_route_session_repair_flow_t atsc3_route_session_repairflow;
+	atsc3_route_s_tsid_RS_LS_SrcFlow_t*		atsc3_route_s_tsid_RS_LS_SrcFlow;
+	atsc3_route_s_tsid_RS_LS_RepairFlow_t*	atsc3_route_s_tsid_RS_LS_RepairFlow;
 
 } atsc3_route_s_tsid_RS_LS_t;
 
@@ -92,13 +211,19 @@ ATSC3_VECTOR_BUILDER_METHODS_INTERFACE(atsc3_route_s_tsid, atsc3_route_s_tsid_RS
 
 
 atsc3_route_s_tsid_t* atsc3_route_s_tsid_parse_from_payload(char* payload, char* content_location);
-atsc3_route_s_tsid_t* atsc3_route_s_tsid_parse_RS(xml_node_t* xml_rs_node, atsc3_route_s_tsid_t* atsc3_route_s_tsid);
-atsc3_route_s_tsid_RS_t* atsc3_route_s_tsid_parse_RS_LS(xml_node_t* xml_rs_node, atsc3_route_s_tsid_RS_t* atsc3_route_s_tsid_RS);
+atsc3_route_s_tsid_t* atsc3_route_s_tsid_parse_RS(xml_node_t* xml_node, atsc3_route_s_tsid_t* atsc3_route_s_tsid);
+atsc3_route_s_tsid_RS_t* atsc3_route_s_tsid_parse_RS_LS(xml_node_t* xml_node, atsc3_route_s_tsid_RS_t* atsc3_route_s_tsid_RS);
+atsc3_route_s_tsid_RS_LS_t* atsc3_route_s_tsid_parse_RS_LS_SrcFlow(xml_node_t* xml_node, atsc3_route_s_tsid_RS_LS_t* atsc3_route_s_tsid_RS_LS);
+atsc3_route_s_tsid_RS_LS_t* atsc3_route_s_tsid_parse_RS_LS_RepairFlow(xml_node_t* xml_node, atsc3_route_s_tsid_RS_LS_t* atsc3_route_s_tsid_RS_LS);
+atsc3_route_s_tsid_RS_LS_SrcFlow_t* atsc3_route_s_tsid_parse_RS_LS_SrcFlow_EFDT(xml_node_t* xml_node, atsc3_route_s_tsid_RS_LS_SrcFlow_t* atsc3_route_s_tsid_RS_LS_SrcFlow);
+
+atsc3_route_s_tsid_RS_LS_SrcFlow_t* atsc3_route_s_tsid_parse_RS_LS_SrcFlow_ContentInfo(xml_node_t* xml_node, atsc3_route_s_tsid_RS_LS_SrcFlow_t* atsc3_route_s_tsid_RS_LS_SrcFlow);
+atsc3_route_s_tsid_RS_LS_SrcFlow_ContentInfo_MediaInfo_t* atsc3_route_s_tsid_parse_RS_LS_SrcFlow_ContentInfo_MediaInfo(xml_node_t* xml_node, atsc3_route_s_tsid_RS_LS_SrcFlow_ContentInfo_t* atsc3_route_s_tsid_RS_LS_SrcFlow_ContentInfo);
+atsc3_route_s_tsid_RS_LS_SrcFlow_ContentInfo_AEAMedia_t*  atsc3_route_s_tsid_parse_RS_LS_SrcFlow_ContentInfo_AEAMedia(xml_node_t* xml_node, atsc3_route_s_tsid_RS_LS_SrcFlow_ContentInfo_t* atsc3_route_s_tsid_RS_LS_SrcFlow_ContentInfo);
+
+atsc3_route_s_tsid_RS_LS_SrcFlow_Payload_t* atsc3_route_s_tsid_parse_RS_LS_SrcFlow_Payload(xml_node_t* xml_node, atsc3_route_s_tsid_RS_LS_SrcFlow_t* atsc3_route_s_tsid_RS_LS_SrcFlow);
 
 void atsc3_route_s_tsid_dump(atsc3_route_s_tsid_t* atsc3_route_s_tsid);
-
-
-
 
 
 #define _ATSC3_ROUTE_S_TSID_PARSER_ERROR(...)   printf("%s:%d:ERROR:",__FILE__,__LINE__);_ATSC3_UTILS_PRINTLN(__VA_ARGS__);

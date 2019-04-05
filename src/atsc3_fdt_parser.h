@@ -16,10 +16,13 @@
 #include "atsc3_fdt.h"
 #include "atsc3_logging_externs.h"
 
-atsc3_fdt_instance_t* atsc3_fdt_instance_parse_from_xml_document(xml_document_t* xml_document);
+atsc3_fdt_instance_t* 	atsc3_fdt_instance_parse_from_xml_document(xml_document_t* xml_document);
 
-atsc3_fdt_instance_t* atsc3_fdt_parse_from_xml_fdt_instance(atsc3_fdt_instance_t* atsc3_fdt_instance, xml_node_t* node);
-atsc3_fdt_file_t* atsc3_fdt_file_parse_from_xml_fdt_instance(xml_node_t* node);
+//internal builders
+atsc3_fdt_instance_t* 	atsc3_efdt_instance_parse_from_xml_node(xml_node_t* xml_efdt_node);
+
+atsc3_fdt_instance_t* 	atsc3_fdt_parse_from_xml_fdt_instance(atsc3_fdt_instance_t* atsc3_fdt_instance, xml_node_t* node);
+atsc3_fdt_file_t* 		atsc3_fdt_file_parse_from_xml_fdt_instance(xml_node_t* node);
 
 void atsc3_fdt_instance_dump(atsc3_fdt_instance_t* atsc3_fdt_instance);
 
