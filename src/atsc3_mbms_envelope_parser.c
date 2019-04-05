@@ -9,7 +9,6 @@
 #include "atsc3_mbms_envelope_parser.h"
 
 
-
 uint32_t* atsc3_mbms_envelope_find_toi_from_fdt(atsc3_fdt_instance_t* atsc3_fdt_instance) {
 
 	for(int i=0; i < atsc3_fdt_instance->atsc3_fdt_file_v.count; i++) {
@@ -27,7 +26,7 @@ uint32_t* atsc3_mbms_envelope_find_toi_from_fdt(atsc3_fdt_instance_t* atsc3_fdt_
 }
 
 
-v* atsc3_mbms_envelope_to_sls_metadata_fragments_parse_from_fdt_fp(FILE* atsc3_fdt_instance_fp) {
+atsc3_sls_metadata_fragments_t* atsc3_mbms_envelope_to_sls_metadata_fragments_parse_from_fdt_fp(FILE* atsc3_fdt_instance_fp) {
 
 	atsc3_sls_metadata_fragments_t* atsc3_sls_metadata_fragments = NULL;
 
@@ -41,13 +40,11 @@ v* atsc3_mbms_envelope_to_sls_metadata_fragments_parse_from_fdt_fp(FILE* atsc3_f
 		atsc3_mime_multipart_related_instance_dump(atsc3_mime_multipart_related_instance);
 
 		//build out the atsc3_sls_metadata_fragment_types
-
 		atsc3_sls_metadata_fragments = atsc3_sls_metadata_fragment_types_parse_from_mime_multipart_related_instance(atsc3_mime_multipart_related_instance);
 
-
 	} else {
-		_ATSC3_MIME_MULTIPART_TEST_UTILS_ERROR("atsc3_mime_multipart_related_instance is null!");
-		ret = -1;
+		_ATSC3_ROUTE_MBMS_ENVELOPE_PARSER_ERROR("atsc3_mime_multipart_related_instance is null!");
+		return NULL;
 	}
 
 	return atsc3_sls_metadata_fragments;

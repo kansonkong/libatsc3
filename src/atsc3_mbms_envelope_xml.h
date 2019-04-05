@@ -26,7 +26,11 @@ or
 #ifndef ATSC3_MBMS_ENVELOPE_XML_H_
 #define ATSC3_MBMS_ENVELOPE_XML_H_
 
-#define ATSC3_MBMS_ENVELOPE_CONTENT_TYPE application/mbms-envelope+xml
+#include "atsc3_utils.h"
+#include "atsc3_vector_builder.h"
+
+#define ATSC3_MBMS_ENVELOPE_CONTENT_TYPE "application/mbms-envelope+xml"
+
 
 typedef struct atsc3_mbms_metadata_item {
 	char* content_type;
