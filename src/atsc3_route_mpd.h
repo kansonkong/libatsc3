@@ -62,11 +62,9 @@ ATSC3_VECTOR_BUILDER_STRUCT
 #ifndef ATSC3_ROUTE_MPD_H_
 #define ATSC3_ROUTE_MPD_H_
 
-
 #include "atsc3_utils.h"
 
 #include "xml.h"
-#include "atsc3_utils.h"
 #include "atsc3_vector_builder.h"
 
 /**

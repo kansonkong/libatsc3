@@ -447,7 +447,7 @@ lls_sls_monitor_output_buffer_t* atsc3_isobmff_build_mpu_metadata_ftyp_moof_mdat
 							//slight hack, check the asset types and default_asset = 1
 							mp_table_asset_row_t* mp_table_asset_row = &mp_table->mp_table_asset_row[k];
 
-							__ISOBMFF_TOOLS_SIGNALLING_DEBUG("MPT message: checking packet_id: %u, asset_type: %u, default: %u, identifier: %s", mp_table_asset_row->mmt_general_location_info.packet_id, mp_table_asset_row->asset_type, mp_table_asset_row->default_asset_flag, mp_table_asset_row->identifier_mapping.asset_id.asset_id ? (const char*)mp_table_asset_row->identifier_mapping.asset_id.asset_id : "");
+							__ISOBMFF_TOOLS_SIGNALLING_DEBUG("MPT message: checking packet_id: %u, asset_type: %c, default: %u, identifier: %s", mp_table_asset_row->mmt_general_location_info.packet_id, mp_table_asset_row->asset_type, mp_table_asset_row->default_asset_flag, mp_table_asset_row->identifier_mapping.asset_id.asset_id ? (const char*)mp_table_asset_row->identifier_mapping.asset_id.asset_id : "");
 
 							if(mp_table_asset_row->mmt_signaling_message_mpu_timestamp_descriptor && mp_table_asset_row->mmt_signaling_message_mpu_timestamp_descriptor->mpu_tuple_n) {
 								for(int l=0; l < mp_table_asset_row->mmt_signaling_message_mpu_timestamp_descriptor->mpu_tuple_n; l++) {
@@ -697,7 +697,7 @@ lls_sls_monitor_output_buffer_t* atsc3_isobmff_build_mpu_metadata_ftyp_moof_mdat
 							//slight hack, check the asset types and default_asset = 1
 							mp_table_asset_row_t* mp_table_asset_row = &mp_table->mp_table_asset_row[k];
 
-							__ISOBMFF_TOOLS_WARN("MPT message: checking packet_id: %u, asset_type: %u, default: %u, identifier: %s", mp_table_asset_row->mmt_general_location_info.packet_id, mp_table_asset_row->asset_type, mp_table_asset_row->default_asset_flag, mp_table_asset_row->identifier_mapping.asset_id.asset_id ? (const char*)mp_table_asset_row->identifier_mapping.asset_id.asset_id : "");
+							__ISOBMFF_TOOLS_WARN("MPT message: checking packet_id: %u, asset_type: %s, default: %u, identifier: %s", mp_table_asset_row->mmt_general_location_info.packet_id, mp_table_asset_row->asset_type, mp_table_asset_row->default_asset_flag, mp_table_asset_row->identifier_mapping.asset_id.asset_id ? (const char*)mp_table_asset_row->identifier_mapping.asset_id.asset_id : "");
 
 							if(mp_table_asset_row->mmt_signaling_message_mpu_timestamp_descriptor && mp_table_asset_row->mmt_signaling_message_mpu_timestamp_descriptor->mpu_tuple_n) {
 								for(int l=0; l < mp_table_asset_row->mmt_signaling_message_mpu_timestamp_descriptor->mpu_tuple_n; l++) {

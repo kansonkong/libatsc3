@@ -49,6 +49,7 @@ atsc3_mime_multipart_related_parser.c:320:DEBUG:payload  :
 #define ATSC3_ROUTE_S_TSID_H_
 
 #include "atsc3_utils.h"
+#include "xml.h"
 #include "atsc3_vector_builder.h"
 
 typedef struct atsc3_route_session_source_flow {
@@ -61,7 +62,7 @@ typedef struct atsc3_route_session_repair_flow {
 
 } atsc3_route_session_repair_flow_t;
 
-typedef struct atsc3_route_session_layered_coding_transport {
+typedef struct atsc3_route_s_tsid_RS_LS {
 	uint32_t 	tsi;
 	uint32_t	bw;
 
@@ -71,22 +72,39 @@ typedef struct atsc3_route_session_layered_coding_transport {
 	atsc3_route_session_source_flow_t atsc3_route_session_source_flow;
 	atsc3_route_session_repair_flow_t atsc3_route_session_repairflow;
 
-} atsc3_route_session_layered_coding_transport_t;
+} atsc3_route_s_tsid_RS_LS_t;
 
-typedef struct atsc3_route_session {
+typedef struct atsc3_route_s_tsid_RS {
 	uint32_t	dest_ip_addr;
 	uint16_t	dest_port;
 	uint32_t	src_ip_addr;
-	atsc3_route_session_layered_coding_transport_t atsc3_route_session_layered_coding_transport;
+	ATSC3_VECTOR_BUILDER_STRUCT(atsc3_route_s_tsid_RS_LS);
 
-} atsc3_route_session_t;
+} atsc3_route_s_tsid_RS_t;
+ATSC3_VECTOR_BUILDER_METHODS_INTERFACE(atsc3_route_s_tsid_RS, atsc3_route_s_tsid_RS_LS)
 
 typedef struct atsc3_route_s_tsid {
 
-	ATSC3_VECTOR_BUILDER_STRUCT(atsc3_route_session)
+	ATSC3_VECTOR_BUILDER_STRUCT(atsc3_route_s_tsid_RS)
 } atsc3_route_s_tsid_t;
 
+ATSC3_VECTOR_BUILDER_METHODS_INTERFACE(atsc3_route_s_tsid, atsc3_route_s_tsid_RS)
 
-ATSC3_VECTOR_BUILDER_METHODS_INTERFACE(atsc3_route_s_tsid, atsc3_route_session)
+
+atsc3_route_s_tsid_t* atsc3_route_s_tsid_parse_from_payload(char* payload, char* content_location);
+atsc3_route_s_tsid_t* atsc3_route_s_tsid_parse_RS(xml_node_t* xml_rs_node, atsc3_route_s_tsid_t* atsc3_route_s_tsid);
+atsc3_route_s_tsid_RS_t* atsc3_route_s_tsid_parse_RS_LS(xml_node_t* xml_rs_node, atsc3_route_s_tsid_RS_t* atsc3_route_s_tsid_RS);
+
+void atsc3_route_s_tsid_dump(atsc3_route_s_tsid_t* atsc3_route_s_tsid);
+
+
+
+
+
+#define _ATSC3_ROUTE_S_TSID_PARSER_ERROR(...)   printf("%s:%d:ERROR:",__FILE__,__LINE__);_ATSC3_UTILS_PRINTLN(__VA_ARGS__);
+#define _ATSC3_ROUTE_S_TSID_PARSER_WARN(...)    printf("%s:%d:WARN:",__FILE__,__LINE__);_ATSC3_UTILS_PRINTLN(__VA_ARGS__);
+#define _ATSC3_ROUTE_S_TSID_PARSER_INFO(...)    printf("%s:%d:INFO:",__FILE__,__LINE__);_ATSC3_UTILS_PRINTLN(__VA_ARGS__);
+#define _ATSC3_ROUTE_S_TSID_PARSER_DEBUG(...)   printf("%s:%d:DEBUG:",__FILE__,__LINE__);_ATSC3_UTILS_PRINTLN(__VA_ARGS__);
+
 
 #endif /* ATSC3_ROUTE_S_TSID_H_ */
