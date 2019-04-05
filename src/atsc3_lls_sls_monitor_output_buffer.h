@@ -61,6 +61,7 @@ typedef struct lls_sls_monitor_buffer_isobmff {
 
     block_t* mmt_mdat_block;
 
+    block_t* mmt_mpu_rebuilt;
 
     //for fragment recovery
     //mmtp_payload_fragments_union_t* last_fragment;
