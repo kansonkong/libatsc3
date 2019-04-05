@@ -80,7 +80,7 @@ void process_packet(u_char *user, const struct pcap_pkthdr *pkthdr, const u_char
 	        //process ALC streams
 	        int retval = alc_rx_analyze_packet_a331_compliant((char*)udp_packet->data, udp_packet->data_length, &ch, &alc_packet);
 	        if(!retval) {
-				alc_packet_dump_to_object(&alc_packet);
+				alc_packet_dump_to_object(&alc_packet, lls_slt_monitor->lls_sls_alc_monitor);
 
 				if(!alc_packet->def_lct_hdr->toi) {
 
