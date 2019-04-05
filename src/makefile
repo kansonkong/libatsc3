@@ -182,6 +182,7 @@ atsc3_route_sls_processor.o: atsc3_route_sls_processor.h atsc3_route_sls_process
 atsc3_stltp_parser_test: atsc3_stltp_parser_test.c atsc3_stltp_parser.o atsc3_listener_udp.o
 	cc -g atsc3_stltp_parser_test.c atsc3_stltp_parser.o atsc3_listener_udp.o -o atsc3_stltp_parser_test
 
+#todo - link against libatsc3 intermediate as these are almost integration tests
 atsc3_mime_multipart_related_parser_test: atsc3_mime_multipart_related_parser_test.c \
 	atsc3_mime_multipart_related.o \
 	atsc3_mime_multipart_related_parser.o \
@@ -193,6 +194,7 @@ atsc3_mime_multipart_related_parser_test: atsc3_mime_multipart_related_parser_te
 	atsc3_fdt_parser.o \
 	atsc3_fdt.o \
 	atsc3_route_usbd.o \
+	atsc3_mbms_envelope_parser.o \
 	xml.o
 	cc -g atsc3_mime_multipart_related_parser_test.c \
 	atsc3_mime_multipart_related.o \
@@ -204,6 +206,7 @@ atsc3_mime_multipart_related_parser_test: atsc3_mime_multipart_related_parser_te
 	atsc3_fdt_parser.o \
 	atsc3_fdt.o \
 	atsc3_route_usbd.o \
+	atsc3_mbms_envelope_parser.o \
 	xml.o \
 	atsc3_utils.o -o atsc3_mime_multipart_related_parser_test
 	
@@ -218,6 +221,7 @@ atsc3_fdt_mbms_envelope_test: atsc3_fdt_mbms_envelope_test.c \
 	atsc3_fdt_parser.o \
 	atsc3_fdt.o \
 	atsc3_route_usbd.o \
+	atsc3_mbms_envelope_parser.o \
 	xml.o
 	cc -g atsc3_mime_multipart_related_parser_test.c \
 	atsc3_mime_multipart_related.o \
@@ -229,6 +233,7 @@ atsc3_fdt_mbms_envelope_test: atsc3_fdt_mbms_envelope_test.c \
 	atsc3_fdt_parser.o \
 	atsc3_fdt.o \
 	atsc3_route_usbd.o \
+	atsc3_mbms_envelope_parser.o \
 	xml.o \
 	atsc3_utils.o -o atsc3_fdt_mbms_envelope_test
 	

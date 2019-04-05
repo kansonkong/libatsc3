@@ -255,17 +255,30 @@ bool xml_node_equals_ignore_case(xml_node_t *a, char* b) {
     bool res = false;
     
     //if we contain a namespace specifier, ignore for now...
-    bool namespace_specifier_found = false;
+    bool 	namespace_specifier_found = false;
+	size_t 	namespace_offset = 0;
+
     for(int i=0; i < xml_node_name_string->length && !namespace_specifier_found; i++) {
 
         if(xml_node_name_string->buffer[i] == ':') {
+        	//FIXME - use real namespace support when searching for a node name
+
             xml_node_name_string->buffer += i+1;
             xml_node_name_string->length -= i+1;
+
+            namespace_offset = i;
             namespace_specifier_found = true;
+            break;
         }
     }
     res = xml_string_equals_ignore_case(xml_node_name_string, b);
     
+    if(namespace_specifier_found) {
+    	//reset
+    	xml_node_name_string->buffer -= namespace_offset+1;
+    	xml_node_name_string->length += namespace_offset+1;
+    }
+
     return res;
 }
 
