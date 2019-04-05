@@ -48,8 +48,8 @@ uint32_t* atsc3_mbms_envelope_find_toi_from_fdt(atsc3_fdt_instance_t* atsc3_fdt_
 
 atsc3_mbms_metadata_envelope_t* atsc3_mbms_envelope_parse_from_payload(char* payload, char* content_location) {
 	atsc3_mbms_metadata_envelope_t* atsc3_mbms_metadata_envelope = NULL;
-	block_t* usbd_fragment_block = block_Promote(payload);
-	xml_document_t* xml_document = xml_parse_document(usbd_fragment_block->p_buffer, usbd_fragment_block->i_pos);
+	block_t* metadata_envelope_fragment_block = block_Promote(payload);
+	xml_document_t* xml_document = xml_parse_document(metadata_envelope_fragment_block->p_buffer, metadata_envelope_fragment_block->i_pos);
 	if(!xml_document) {
 		return NULL;
 	}
@@ -57,9 +57,8 @@ atsc3_mbms_metadata_envelope_t* atsc3_mbms_envelope_parse_from_payload(char* pay
 	xml_string_t* xml_document_root_node_name = xml_node_name(xml_document_root_node);
 
 	//opening header should be xml
-	dump_xml_string(xml_document_root_node_name);
 	if(!xml_string_equals_ignore_case(xml_document_root_node_name, "xml")) {
-		_ATSC3_ROUTE_USBD_PARSER_ERROR("atsc3_mbms_envelope_parse_from_payload: opening tag missing xml preamble");
+		_ATSC3_ROUTE_S_TSID_PARSER_ERROR("atsc3_mbms_envelope_parse_from_payload: opening tag missing xml preamble");
 		return NULL;
 	}
 
@@ -68,8 +67,9 @@ atsc3_mbms_metadata_envelope_t* atsc3_mbms_envelope_parse_from_payload(char* pay
 		xml_node_t* root_child = xml_node_child(xml_document_root_node, i);
 		xml_string_t* root_child_name = xml_node_name(root_child);
 
-		_ATSC3_ROUTE_USBD_PARSER_DEBUG("checking root_child tag at: %i, val", i);
-		dump_xml_string(root_child_name);
+		uint8_t* root_child_name_string = xml_string_clone(root_child_name);
+		_ATSC3_ROUTE_S_TSID_PARSER_DEBUG("checking root_child tag at: %i, val: %s", i, root_child_name_string);
+		freeclean_uint8_t(&root_child_name_string);
 
 		if(xml_node_equals_ignore_case(root_child, "metadataEnvelope")) {
 			atsc3_mbms_metadata_envelope = atsc3_mbms_metadata_envelope_new();
@@ -84,7 +84,7 @@ atsc3_mbms_metadata_envelope_t* atsc3_mbms_envelope_parse_from_payload(char* pay
 
 					//assign any of our attributes here
 					uint8_t* xml_attributes = xml_attributes_clone_node(envelope_child);
-					_ATSC3_ROUTE_USBD_PARSER_DEBUG("metadataEnvelope.item.attributes: %s", xml_attributes);
+					_ATSC3_ROUTE_S_TSID_PARSER_DEBUG("metadataEnvelope.item.attributes: %s", xml_attributes);
 
 					kvp_collection_t* kvp_collection = kvp_collection_parse(xml_attributes);
 					char* matching_attribute = NULL;
@@ -133,7 +133,7 @@ void atsc3_mbms_metadata_envelope_dump(atsc3_mbms_metadata_envelope_t* atsc3_mbm
 		atsc3_mbms_metadata_item->next_url);
 	}
 
-	_ATSC3_ROUTE_USBD_PARSER_DEBUG("--atsc3_mbms_metadata_envelope_t");
+	_ATSC3_ROUTE_S_TSID_PARSER_DEBUG("--atsc3_mbms_metadata_envelope_t");
 
 }
 

@@ -115,7 +115,7 @@ atsc3_mime_multipart_related_instance_t* atsc3_mime_multipart_related_parser(FIL
 				trim_line_buffer = _rtrim(trim_line_buffer);
 				int remaining_trim_line_buffer_len = strlen(trim_line_buffer);
 				if(remaining_trim_line_buffer_len) {
-					__MIME_PARSER_WARN("atsc3_mime_multipart_related_parser: line: %u, missing closing semicolon on type, using len: %u", line_count, remaining_trim_line_buffer_len);
+					__MIME_PARSER_INFO("atsc3_mime_multipart_related_parser: line: %u, missing closing semicolon on type, using len: %u", line_count, remaining_trim_line_buffer_len);
 					semicolon_pos = trim_line_buffer + remaining_trim_line_buffer_len;
 				} else {
 					__MIME_PARSER_ERROR("atsc3_mime_multipart_related_parser: line: %u, missing closing semicolon on type, no strlen remaining", line_count);
