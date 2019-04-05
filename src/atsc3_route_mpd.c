@@ -178,7 +178,6 @@ atsc3_route_period_t* atsc3_route_mpd_parse_adaption_set(xml_node_t* xml_period_
 	if((matching_attribute = kvp_collection_get(kvp_collection,  "min_frame_str"))) {
 		atsc3_route_adaptation_set->min_frame_str = matching_attribute;
 	}
-
 	if((matching_attribute = kvp_collection_get(kvp_collection,  "min_height"))) {
 		atsc3_route_adaptation_set->min_height = atoi(matching_attribute);
 	}
@@ -195,7 +194,7 @@ atsc3_route_period_t* atsc3_route_mpd_parse_adaption_set(xml_node_t* xml_period_
 		atsc3_route_adaptation_set->start_with_sap = strncmp("true", matching_attribute, 4);;
 	}
 
-	_ATSC3_ROUTE_MPD_PARSER_INFO("doing Role and Represetnation startNumber (start_number) to: %p",xml_period_node );
+	_ATSC3_ROUTE_MPD_PARSER_INFO("doing Role and Representation startNumber (start_number) to: %p",xml_period_node );
 
 	size_t num_mpd_entry_row_children = xml_node_children(xml_period_node);
 	for(int j=0; j < num_mpd_entry_row_children; j++) {
@@ -219,7 +218,9 @@ atsc3_route_adaptation_set_t* atsc3_route_mpd_parse_role_set(xml_node_t* xml_nod
 
 	if((matching_attribute = kvp_collection_get(kvp_collection,  "value"))) {
 		atsc3_route_adaptation_set->atsc3_route_role.value = matching_attribute;
-	} else if((matching_attribute = kvp_collection_get(kvp_collection,  "schemeIdUri"))) {
+	}
+
+	if((matching_attribute = kvp_collection_get(kvp_collection,  "schemeIdUri"))) {
 		atsc3_route_adaptation_set->atsc3_route_role.scheme_id_uri = matching_attribute;
 	}
 
@@ -236,11 +237,17 @@ atsc3_route_adaptation_set_t* atsc3_route_mpd_parse_representation_set(xml_node_
 
 	if((matching_attribute = kvp_collection_get(kvp_collection,  "audioSamplingRate"))) {
 		atsc3_route_adaptation_set->atsc3_route_representation.audio_sampling_rate = atoi(matching_attribute);
-	} else if((matching_attribute = kvp_collection_get(kvp_collection,  "bandwidth"))) {
+	}
+
+	if((matching_attribute = kvp_collection_get(kvp_collection,  "bandwidth"))) {
 		atsc3_route_adaptation_set->atsc3_route_representation.bandwidth = atoi(matching_attribute);
-	} else if((matching_attribute = kvp_collection_get(kvp_collection,  "codecs"))) {
+	}
+
+	if((matching_attribute = kvp_collection_get(kvp_collection,  "codecs"))) {
 		atsc3_route_adaptation_set->atsc3_route_representation.codecs = matching_attribute;
-	} else if((matching_attribute = kvp_collection_get(kvp_collection,  "id"))) {
+	}
+
+	if((matching_attribute = kvp_collection_get(kvp_collection,  "id"))) {
 		atsc3_route_adaptation_set->atsc3_route_representation.id = atoi(matching_attribute);
 	}
 
@@ -250,13 +257,14 @@ atsc3_route_adaptation_set_t* atsc3_route_mpd_parse_representation_set(xml_node_
 		xml_node_t* mpd_entry_row_children = xml_node_child(xml_node, j);
 		if(xml_node_equals_ignore_case(mpd_entry_row_children, "AudioChannelConfiguration")) {
 			atsc3_route_mpd_parse_audio_channel_configuration_set(mpd_entry_row_children, atsc3_route_adaptation_set);
-		} else if(xml_node_equals_ignore_case(mpd_entry_row_children, "SegmentTemplate")) {
+		}
+
+		if(xml_node_equals_ignore_case(mpd_entry_row_children, "SegmentTemplate")) {
 			atsc3_route_mpd_parse_segment_template_set(mpd_entry_row_children, atsc3_route_adaptation_set);
 		}
 	}
 	return atsc3_route_adaptation_set;
 }
-
 
 atsc3_route_adaptation_set_t* atsc3_route_mpd_parse_audio_channel_configuration_set(xml_node_t*  xml_node, atsc3_route_adaptation_set_t* atsc3_route_adaptation_set) {
 	//assign any of our attributes here via atsc3_route_audio_channel_configuration_t
@@ -266,7 +274,9 @@ atsc3_route_adaptation_set_t* atsc3_route_mpd_parse_audio_channel_configuration_
 	char* matching_attribute = NULL;
 	if((matching_attribute = kvp_collection_get(kvp_collection, "schemeIdUri"))) {
 		atsc3_route_adaptation_set->atsc3_route_representation.atsc3_route_audio_channel_configuration.scheme_id_uri = matching_attribute;
-	} else if((matching_attribute = kvp_collection_get(kvp_collection, "value"))) {
+	}
+
+	if((matching_attribute = kvp_collection_get(kvp_collection, "value"))) {
 		atsc3_route_adaptation_set->atsc3_route_representation.atsc3_route_audio_channel_configuration.value = atoi(matching_attribute); //?
 	}
 
@@ -285,9 +295,9 @@ atsc3_route_adaptation_set_t* atsc3_route_mpd_parse_audio_channel_configuration_
  */
 atsc3_route_adaptation_set_t* atsc3_route_mpd_parse_segment_template_set(xml_node_t* xml_node,  atsc3_route_adaptation_set_t* atsc3_route_adaptation_set) {
 
-
-	//assign any of our attributes here
 	uint8_t* xml_attributes = xml_attributes_clone_node(xml_node);
+
+
 	_ATSC3_ROUTE_MPD_PARSER_DEBUG("atsc3_route_mpd_parse_segment_template_set: %s", xml_attributes);
 	kvp_collection_t* kvp_collection = kvp_collection_parse(xml_attributes);
 	char* matching_attribute = NULL;
@@ -295,20 +305,27 @@ atsc3_route_adaptation_set_t* atsc3_route_mpd_parse_segment_template_set(xml_nod
 	if((matching_attribute = kvp_collection_get(kvp_collection,  "duration"))) {
 		atsc3_route_adaptation_set->atsc3_route_representation.atsc3_route_segment_template.duration = atoi(matching_attribute);
 
-	} else if((matching_attribute = kvp_collection_get(kvp_collection,  "initialization"))) {
+	}
+
+	if((matching_attribute = kvp_collection_get(kvp_collection,  "initialization"))) {
 		atsc3_route_adaptation_set->atsc3_route_representation.atsc3_route_segment_template.initialization = matching_attribute;
 
-	} else if((matching_attribute = kvp_collection_get(kvp_collection,  "media"))) {
+	}
+
+	if((matching_attribute = kvp_collection_get(kvp_collection,  "media"))) {
 		atsc3_route_adaptation_set->atsc3_route_representation.atsc3_route_segment_template.media = matching_attribute;
 		_ATSC3_ROUTE_MPD_PARSER_INFO("setting media (media) to: %s", matching_attribute );
+	}
 
-
-	} else if((matching_attribute = kvp_collection_get(kvp_collection,  "presentationTimeOffset"))) {
+	if((matching_attribute = kvp_collection_get(kvp_collection,  "presentationTimeOffset"))) {
 		atsc3_route_adaptation_set->atsc3_route_representation.atsc3_route_segment_template.presentation_time_offset = atoi(matching_attribute);
+	}
 
-	}	else if((matching_attribute = kvp_collection_get(kvp_collection,  "startNumber"))) {
+	if((matching_attribute = kvp_collection_get(kvp_collection,  "startNumber"))) {
 			atsc3_route_adaptation_set->atsc3_route_representation.atsc3_route_segment_template.start_number = atoi(matching_attribute);
-	}	else if((matching_attribute = kvp_collection_get(kvp_collection,  "timescale"))) {
+	}
+
+	if((matching_attribute = kvp_collection_get(kvp_collection,  "timescale"))) {
 		atsc3_route_adaptation_set->atsc3_route_representation.atsc3_route_segment_template.timescale = atoi(matching_attribute);
 	}
 	return atsc3_route_adaptation_set;
