@@ -268,6 +268,10 @@ uint32_t ISOBMFF_rebuild_moof_from_sample_data(lls_sls_monitor_buffer_isobmff_t*
 		uint64_t mpu_presentation_time_final_uS =  mpu_presentation_time_s + mpu_presentation_time_ms;
 
 		tfdt_atom_mdhd_timescale = new AP4_TfdtAtom(1, mpu_presentation_time_final_uS);
+		__ISOBMFF_JOINER_INFO("ISOBMFF_rebuild_moof_from_sample_data - setting mpu_presentation_time to: %llu", mpu_presentation_time_final_uS);
+
+	} else {
+		__ISOBMFF_JOINER_INFO("WARN: ISOBMFF_rebuild_moof_from_sample_data - mpu_presentation_time is NOT SET!");
 	}
 
 	AP4_DataBuffer* dataBuffer = new AP4_DataBuffer(temp_output_buffer->i_pos);
@@ -318,7 +322,20 @@ uint32_t ISOBMFF_rebuild_moof_from_sample_data(lls_sls_monitor_buffer_isobmff_t*
 			AP4_AtomParent* moofAtom = AP4_DYNAMIC_CAST(AP4_ContainerAtom, top_level_atom);
 			AP4_ContainerAtom* trafContainerAtom = AP4_DYNAMIC_CAST(AP4_ContainerAtom, moofAtom->GetChild(AP4_ATOM_TYPE_TRAF));
 			AP4_TfhdAtom* tfhdAtom = AP4_DYNAMIC_CAST(AP4_TfhdAtom, trafContainerAtom->GetChild(AP4_ATOM_TYPE_TFHD));
+        	AP4_TfdtAtom* tfdtAtom = AP4_DYNAMIC_CAST(AP4_TfdtAtom, trafContainerAtom->GetChild(AP4_ATOM_TYPE_TFDT));
 			AP4_TrunAtom* trunAtom = AP4_DYNAMIC_CAST(AP4_TrunAtom, trafContainerAtom->GetChild(AP4_ATOM_TYPE_TRUN));
+
+			//set our baseMediaDecodeTime...
+        	if(tfdtAtom && tfdtAtom->GetBaseMediaDecodeTime() == 0) {
+        		if(tfdt_atom_mdhd_timescale) {
+        			tfdtAtom->Detach();
+        			trafContainerAtom->AddChild(tfdt_atom_mdhd_timescale, 1);
+        		} else {
+        			tfdtAtom->Detach();
+        		}
+        	} else if(!tfdtAtom && tfdt_atom_mdhd_timescale) {
+        		trafContainerAtom->AddChild(tfdt_atom_mdhd_timescale, 1);
+        	}
 
 			if (lls_sls_monitor_buffer_isobmff->trun_sample_entry_v.count) {
 				AP4_Array<AP4_TrunAtom::Entry>& to_walk_entries = trunAtom->UseEntries();
