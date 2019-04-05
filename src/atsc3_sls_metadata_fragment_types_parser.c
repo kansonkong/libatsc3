@@ -5,9 +5,9 @@
  *      Author: jjustman
  */
 
-#include "atsc3_mime_multipart_related.h"
 #include "atsc3_sls_metadata_fragment_types_parser.h"
 
+#define ATSC3_ROUTE_MBMS_ENVELOPE_TYPE	"application/mbms-envelope+xml"
 #define	ATSC3_ROUTE_USD_TYPE	 		"application/route-usd+xml"
 #define ATSC3_ROUTE_S_TSID_TYPE			"application/route-s-tsid+xml"
 #define ATSC3_ROUTE_MPD_TYPE			"application/dash+xml"
@@ -29,6 +29,11 @@ atsc3_sls_metadata_fragments_t* atsc3_sls_metadata_fragment_types_parse_from_mim
 		__MIME_PARSER_DEBUG("location : %s", atsc3_mime_multipart_related_payload->content_location);
 		__MIME_PARSER_DEBUG("payload  :\n%s", atsc3_mime_multipart_related_payload->payload);
 
+		//ROUTE MBMS envelope fragment creation
+		if(!strncmp(ATSC3_ROUTE_MBMS_ENVELOPE_TYPE, atsc3_mime_multipart_related_payload->content_type, strlen(ATSC3_ROUTE_MBMS_ENVELOPE_TYPE))) {
+			atsc3_sls_metadata_fragments->atsc3_mbms_metadata_envelope = atsc3_mbms_envelope_parse_from_payload(atsc3_mime_multipart_related_payload->payload, atsc3_mime_multipart_related_payload->content_location);
+			atsc3_mbms_metadata_envelope_dump(atsc3_sls_metadata_fragments->atsc3_mbms_metadata_envelope);
+		}
 		//USBD fragment creation
 		if(!strncmp(ATSC3_ROUTE_USD_TYPE, atsc3_mime_multipart_related_payload->content_type, strlen(ATSC3_ROUTE_USD_TYPE))) {
 			atsc3_sls_metadata_fragments->atsc3_route_user_service_bundle_description = atsc3_route_user_service_bundle_description_parse_from_payload(atsc3_mime_multipart_related_payload->payload, atsc3_mime_multipart_related_payload->content_location);
