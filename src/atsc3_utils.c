@@ -317,7 +317,8 @@ block_t* block_Rewind(block_t* dest) {
 
 /**
  * note, this will duplicate the full block size and update i_pos in the dest payload
- * if you need a subset of the payload, use block_Duplicate_from_position
+ * if you need a head trimmed version of the payload at i_pos, use block_Duplicate_from_position
+ * if you need a tail trimmed version of the payload N bytes long, block_Duplicate_to_size
  */
 block_t* block_Duplicate(block_t* src) {
 	if(!__block_check_bounaries(__FUNCTION__, src)) return NULL;
@@ -330,6 +331,8 @@ block_t* block_Duplicate(block_t* src) {
 
 	return dest;
 }
+
+
 
 /**
  *
@@ -350,6 +353,25 @@ block_t* block_Duplicate_from_position(block_t* src) {
 
 	return dest;
 }
+
+
+/**
+ *
+ * this will return a new block starting 0 up to target_len
+ */
+
+block_t* block_Duplicate_to_size(block_t* src, uint32_t target_len) {
+	if(!__block_check_bounaries(__FUNCTION__, src)) return NULL;
+
+	uint32_t to_alloc_size = __CLIP(target_len, 8, src->p_size);
+
+	block_t* dest = block_Alloc(to_alloc_size);
+	memcpy(dest->p_buffer, src->p_buffer, to_alloc_size);
+	dest->i_pos = to_alloc_size;
+
+	return dest;
+}
+
 
 //return will be NULL if realloc failed, but src will still be valid
 //this has not been tested with shrinking down the size...

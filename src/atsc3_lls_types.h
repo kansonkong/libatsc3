@@ -432,6 +432,7 @@ typedef struct lls_sls_mmt_monitor {
     lls_service_t* lls_service;
     uint16_t service_id;
     lls_sls_mmt_session_t* lls_mmt_session;
+
     uint16_t video_packet_id;
     uint16_t audio_packet_id;
     
