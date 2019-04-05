@@ -789,6 +789,8 @@ void alc_recon_file_buffer_struct_monitor_fragment_with_init_box(alc_packet_t* a
 		}
 	} else {
 
+		//TODO - determine if we should pre-pend the most recent init box?
+
 		//append audio if we have an audio frame
 		if(audio_toi && audio_fragment_file_name) {
 			audio_fragment_payload = alc_get_payload_from_filename(audio_fragment_file_name);

@@ -98,6 +98,8 @@ block_t* block_Rewind(block_t* dest);
 block_t* block_Resize(block_t* dest, uint32_t dest_size_required);
 block_t* block_Duplicate(block_t* a);
 block_t* block_Duplicate_from_position(block_t* a);
+block_t* block_Duplicate_to_size(block_t* src, uint32_t target_len);
+
 void block_Release(block_t** a);
 
 //alloc and copy - note limited to 16k
