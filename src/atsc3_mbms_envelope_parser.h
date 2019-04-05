@@ -8,11 +8,19 @@
 #ifndef ATSC3_MBMS_ENVELOPE_PARSER_H_
 #define ATSC3_MBMS_ENVELOPE_PARSER_H_
 
-
+#include "atsc3_utils.h"
 #include "atsc3_mbms_envelope_xml.h"
-#include "atsc3_fdt_h"
+#include "atsc3_fdt.h"
+#include "atsc3_sls_metadata_fragment_types.h"
+#include "atsc3_mime_multipart_related_parser.h"
+#include "atsc3_sls_metadata_fragment_types_parser.h"
 
-atsc3_mbms_metadata_envelope_t* atsc3_mbms_envelope_parse_from_fdt(atsc3_fdt_instance_t* atsc3_fdt_instance);
+uint32_t* atsc3_mbms_envelope_find_toi_from_fdt(atsc3_fdt_instance_t* atsc3_fdt_instance);
+
+//atsc3_mbms_metadata_envelope_t* atsc3_mbms_envelope_parse_from_fdt(atsc3_fdt_instance_t* atsc3_fdt_instance);
+atsc3_sls_metadata_fragments_t* atsc3_mbms_envelope_to_sls_metadata_fragments_parse_from_fdt_fp(FILE* atsc3_fdt_instance_fp);
+
+
 
 
 

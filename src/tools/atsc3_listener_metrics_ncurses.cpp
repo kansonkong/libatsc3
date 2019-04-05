@@ -153,7 +153,7 @@ mmtp_payload_fragments_union_t* mmtp_parse_from_udp_packet(udp_packet_t *udp_pac
 
 
 static void route_process_from_alc_packet(alc_packet_t **alc_packet) {
-    alc_packet_dump_to_object(alc_packet);
+    alc_packet_dump_to_object(alc_packet, lls_slt_monitor->lls_sls_alc_monitor);
     
     if(lls_slt_monitor->lls_sls_alc_monitor->lls_sls_monitor_output_buffer.has_written_init_box && lls_slt_monitor->lls_sls_alc_monitor->lls_sls_monitor_output_buffer.should_flush_output_buffer) {
      

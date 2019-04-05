@@ -8,7 +8,8 @@
 
 all: 	intermediate_lls intermediate_mbms \
 		intermediate_sls \
-		intermediate_mmt intermediate_alc \
+		intermediate_mmt \
+		intermediate_alc \
 		intermediate_a337 \
 		intermediate_ffplay \
 		interemediate_gpl_and_mock_linkage  \
@@ -26,11 +27,12 @@ clean:
 intermediate_lls: atsc3_lls.o atsc3_lls_sls_parser.o  atsc3_lls_alc_utils.o
 
 intermediate_mbms: atsc3_mime_multipart_related.o atsc3_mime_multipart_related_parser.o \
-					atsc3_route_usbd.o 
+					atsc3_route_usbd.o atsc3_mbms_envelope_parser.o
 					
 intermediate_sls: atsc3_route_mpd.o atsc3_route_s_tsid.o atsc3_sls_metadata_fragment_types_parser.o	
 
-intermediate_alc: atsc3_alc_rx.c alc_session.c fec.c null_fec.c rs_fec.c xor_fec.o atsc3_alc_utils.o
+intermediate_alc: atsc3_alc_rx.c alc_session.c fec.c null_fec.c rs_fec.c xor_fec.o atsc3_alc_utils.o \
+					 atsc3_route_sls_processor.o
 
 intermediate_mmt: xml.o atsc3_mmtp_parser.o atsc3_mmt_mpu_parser.o atsc3_mmt_signaling_message.o \
 					atsc3_mmtp_ntp32_to_pts.o atsc3_utils.o fixups_timespec_get.o \
@@ -168,6 +170,11 @@ atsc3_route_s_tsid.o: atsc3_route_s_tsid.h atsc3_route_s_tsid.c
 atsc3_sls_metadata_fragment_types_parser.o: atsc3_sls_metadata_fragment_types_parser.h atsc3_sls_metadata_fragment_types_parser.c
 	cc -g -c atsc3_sls_metadata_fragment_types_parser.c -o atsc3_sls_metadata_fragment_types_parser.o
 
+atsc3_mbms_envelope_parser.o: atsc3_mbms_envelope_parser.h atsc3_mbms_envelope_parser.c
+	cc -g -c atsc3_mbms_envelope_parser.c -o atsc3_mbms_envelope_parser.o
+
+atsc3_route_sls_processor.o: atsc3_route_sls_processor.h atsc3_route_sls_processor.c
+	cc -g -c atsc3_route_sls_processor.c -o atsc3_route_sls_processor.o
 	
 # unit standalone tests with mock data
 
@@ -256,14 +263,20 @@ libatsc3_intermediate.o: xml.o atsc3_lls.o atsc3_lls_slt_parser.o atsc3_lls_sls_
 		atsc3_lls_alc_utils.o atsc3_mmt_mpu_utils.o atsc3_player_ffplay.o atsc3_alc_utils.o \
         atsc3_lls_sls_monitor_output_buffer.o atsc3_lls_sls_monitor_output_buffer_utils.o \
 		atsc3_lls_mmt_utils.o  atsc3_listener_udp.o atsc3_gzip.o atsc3_stltp_parser.o \
-		atsc3_fdt.o atsc3_fdt_parser.o atsc3_route_usbd.o
+		atsc3_fdt.o atsc3_fdt_parser.o \
+		atsc3_route_mpd.o atsc3_route_usbd.o atsc3_route_s_tsid.o atsc3_route_sls_processor.o \
+		atsc3_sls_held_fragment.o  \
+		atsc3_sls_metadata_fragment_types_parser.o atsc3_mime_multipart_related.o atsc3_mime_multipart_related_parser.o atsc3_mbms_envelope_parser.o
 
 	ld  -o libatsc3_intermediate.o -r xml.o atsc3_lls.o atsc3_lls_slt_parser.o  atsc3_lls_sls_parser.o atsc3_mmtp_parser.o atsc3_mmtp_ntp32_to_pts.o atsc3_utils.o \
 		fixups_timespec_get.o atsc3_mmt_signaling_message.o atsc3_mmt_mpu_parser.o alc_channel.o alc_list.o \
 		atsc3_alc_rx.o alc_session.o fec.o null_fec.o rs_fec.o xor_fec.o mad.o mad_rlc.o transport.o atsc3_alc_utils.o \
 		atsc3_lls_alc_utils.o atsc3_mmt_mpu_utils.o atsc3_player_ffplay.o atsc3_lls_sls_monitor_output_buffer.o atsc3_lls_sls_monitor_output_buffer_utils.o \
 		atsc3_lls_mmt_utils.o atsc3_listener_udp.o atsc3_gzip.o atsc3_stltp_parser.o \
-		atsc3_fdt.o atsc3_fdt_parser.o
+		atsc3_fdt.o atsc3_fdt_parser.o \
+		atsc3_route_mpd.o atsc3_route_usbd.o atsc3_route_s_tsid.o atsc3_route_sls_processor.o \
+		atsc3_sls_held_fragment.o  \
+		atsc3_sls_metadata_fragment_types_parser.o atsc3_mime_multipart_related.o atsc3_mime_multipart_related_parser.o atsc3_mbms_envelope_parser.o
 
 libatsc3.o: libatsc3_intermediate.o bento4_mock.o
 	ld  -o libatsc3.o -r libatsc3_intermediate.o bento4_mock.o
