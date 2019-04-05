@@ -15,6 +15,8 @@
 #include "atsc3_alc_utils.h"
 #include "atsc3_fdt_parser.h"
 #include "atsc3_mbms_envelope_parser.h"
+#include "atsc3_mime_multipart_related_parser.h"
+
 
 
 
