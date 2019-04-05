@@ -335,9 +335,6 @@ void atsc3_route_s_tsid_dump(atsc3_route_s_tsid_t* atsc3_route_s_tsid) {
 						atsc3_fdt_instance->content_type,
 						atsc3_fdt_instance->file_template);
 
-
-
-
 				for(int k=0; k < atsc3_fdt_instance->atsc3_fdt_file_v.count; k++) {
 					atsc3_fdt_file_t* atsc3_fdt_file = atsc3_fdt_instance->atsc3_fdt_file_v.data[k];
 
@@ -349,15 +346,9 @@ void atsc3_route_s_tsid_dump(atsc3_route_s_tsid_t* atsc3_route_s_tsid) {
 							atsc3_fdt_file->content_type,
 							atsc3_fdt_file->content_encoding);
 				}
-
 			}
-
 		}
-
-
 	}
-
-
 }
 
 
