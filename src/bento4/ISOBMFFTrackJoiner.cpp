@@ -257,6 +257,19 @@ uint32_t ISOBMFF_rebuild_moof_from_sample_data(lls_sls_monitor_buffer_isobmff_t*
 		return 0;
 	}
 
+	//process or mpu_presentaiton_time
+	AP4_TfdtAtom* tfdt_atom_mdhd_timescale = NULL;
+
+	if(lls_sls_monitor_buffer_isobmff->mpu_presentation_time_set) {
+
+		//fractional component is already at 1000000 (uS), so just multiply and add the seconds...
+		uint64_t mpu_presentation_time_s = lls_sls_monitor_buffer_isobmff->mpu_presentation_time_s * 1000000;
+		uint64_t mpu_presentation_time_ms = lls_sls_monitor_buffer_isobmff->mpu_presentation_time_us % 1000000; //just to be safe..
+		uint64_t mpu_presentation_time_final_uS =  mpu_presentation_time_s + mpu_presentation_time_ms;
+
+		tfdt_atom_mdhd_timescale = new AP4_TfdtAtom(1, mpu_presentation_time_final_uS);
+	}
+
 	AP4_DataBuffer* dataBuffer = new AP4_DataBuffer(temp_output_buffer->i_pos);
 	AP4_MemoryByteStream* memoryOutputByteStream = new AP4_MemoryByteStream(dataBuffer);
 
@@ -270,6 +283,36 @@ uint32_t ISOBMFF_rebuild_moof_from_sample_data(lls_sls_monitor_buffer_isobmff_t*
 
 	for (it = isobmff_atom_list.begin(); it != isobmff_atom_list.end(); it++) {
 		AP4_Atom* top_level_atom = (*it)->atom;
+
+		//timescale capture
+		if(top_level_atom->GetType() == AP4_ATOM_TYPE_MOOV) {
+			AP4_MoovAtom* moovAtom = AP4_DYNAMIC_CAST(AP4_MoovAtom, top_level_atom);
+
+			AP4_TrakAtom* tmpTrakAtom;
+			int trakIndex = 0;
+			while((tmpTrakAtom = AP4_DYNAMIC_CAST(AP4_TrakAtom, moovAtom->GetChild(AP4_ATOM_TYPE_TRAK, trakIndex++)))) {
+				AP4_HdlrAtom* hdlrAtom = AP4_DYNAMIC_CAST(AP4_HdlrAtom, tmpTrakAtom->FindChild("mdia/hdlr", false, false));
+
+				if(hdlrAtom && (hdlrAtom->GetHandlerType() == AP4_HANDLER_TYPE_SOUN || hdlrAtom->GetHandlerType() == AP4_HANDLER_TYPE_VIDE)) {
+
+					//try and find our parent's mdhd timescale and re-map as needed
+					AP4_AtomParent* mdiaAtom = hdlrAtom->GetParent();
+					AP4_MdhdAtom* mdhdAtom = AP4_DYNAMIC_CAST(AP4_MdhdAtom, mdiaAtom->FindChild("mdhd"));
+					if(mdhdAtom) {
+						if(!mdhdAtom->GetTimeScale()) {
+							mdhdAtom->SetTimeScale(1000000);
+						} else if(mdhdAtom->GetTimeScale() != 1000000 && tfdt_atom_mdhd_timescale) {
+							//rebase from 1000000 into 1/
+							uint64_t tfdt_atom_mdhd_presentation_time = tfdt_atom_mdhd_timescale->GetBaseMediaDecodeTime();
+							tfdt_atom_mdhd_timescale->SetBaseMediaDecodeTime((tfdt_atom_mdhd_presentation_time * mdhdAtom->GetTimeScale())/1000000);
+						}
+					}
+				}
+			}
+		}
+
+
+		//track rebuilding
 		if(top_level_atom->GetType() == AP4_ATOM_TYPE_MOOF) {
 
 			AP4_AtomParent* moofAtom = AP4_DYNAMIC_CAST(AP4_ContainerAtom, top_level_atom);
@@ -291,7 +334,7 @@ uint32_t ISOBMFF_rebuild_moof_from_sample_data(lls_sls_monitor_buffer_isobmff_t*
 				}
 
 				//handle any missing samples by zeroing out size
-				for(int j = lls_sls_monitor_buffer_isobmff->trun_sample_entry_v.count-1; j < to_walk_entries.ItemCount(); j++) {
+				for(int j = lls_sls_monitor_buffer_isobmff->trun_sample_entry_v.count; j < to_walk_entries.ItemCount(); j++) {
 					__ISOBMFF_JOINER_INFO("REBUILD MOOF: end of trun, setting sample %u from size: %u to size: %u," j, to_walk_entries[j].sample_size, 0);
 
 					to_walk_entries[j].sample_size = 0;
