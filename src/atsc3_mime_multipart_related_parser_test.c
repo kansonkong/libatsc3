@@ -67,13 +67,54 @@ int main(int argc, char* argv[] ) {
 	_XML_DEBUG_ENABLED = 1;
 	_XML_TRACE_ENABLED = 1;
 #endif
-	_ATSC3_MIME_MULTIPART_TEST_UTILS_INFO("---");
+	_ATSC3_MIME_MULTIPART_TEST_UTILS_INFO("---%s---", argv[0]);
 
-	//test 1
-	char* test1_filename = "../test_data/sba-dash/0-4653138";
-	_ATSC3_MIME_MULTIPART_TEST_UTILS_INFO("Running test: %s", test1_filename);
-	int ret_test1 = parse_mime_multipart(test1_filename);
-	assert(ret_test1 == 5);
+	/**
+	 * test group 1 - from santa barbara plugfest
+	 *
+	 * 	0-4653134
+	 * 	0-4653135
+	 * 	0-4653136
+	 * 	0-4653137
+	 * 	0-4653138
+	 * 	0-4653139
+	 * 	0-4653140
+	 * 	0-4653141
+	 * 	0-4653142
+	 *
+	 */
+
+	#define __SBA_DASH_PATH__ ../test_data/sba-dash/
+
+	char* test_sba_filenames[] = {	"../test_data/sba-dash/0-4653134",
+									"../test_data/sba-dash/0-4653135",
+									"../test_data/sba-dash/0-4653136",
+									"../test_data/sba-dash/0-4653137",
+									"../test_data/sba-dash/0-4653138",
+									"../test_data/sba-dash/0-4653139",
+									"../test_data/sba-dash/0-4653140",
+									"../test_data/sba-dash/0-4653141",
+									"../test_data/sba-dash/0-4653142" };
+
+
+	_ATSC3_MIME_MULTIPART_TEST_UTILS_INFO("---starting sba test---");
+
+	for(int i=0; i < 9; i++) {
+		char* sba_test_filename = test_sba_filenames[i];
+		_ATSC3_MIME_MULTIPART_TEST_UTILS_INFO("Running test: %s", sba_test_filename);
+		int ret_test1 = parse_mime_multipart(sba_test_filename);
+
+		//first test data file is a partial alc
+		if(i == 0) {
+			assert(ret_test1 == 3);
+		} else if(i == 5 || i == 6) {
+			//the 4653139 and 4653140 test data files are missing the first alc packet, and thus can't be parsed.
+			assert(ret_test1 == -1);
+		} else {
+			assert(ret_test1 == 5);
+		}
+	}
+
 
 	_ATSC3_MIME_MULTIPART_TEST_UTILS_INFO("---");
 
@@ -91,6 +132,8 @@ int main(int argc, char* argv[] ) {
 	_ATSC3_MIME_MULTIPART_TEST_UTILS_INFO("Running test: %s", test3_filename);
 	int ret_test3 = parse_mime_multipart(test3_filename);
 	assert(ret_test3 == 3);
+
+
 
 	_ATSC3_MIME_MULTIPART_TEST_UTILS_INFO("---");
 	_ATSC3_MIME_MULTIPART_TEST_UTILS_INFO("mime_multipart_related_parser test complete");
