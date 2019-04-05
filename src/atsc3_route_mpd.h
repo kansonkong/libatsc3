@@ -219,7 +219,7 @@ typedef struct atsc3_route_mpd {
 ATSC3_VECTOR_BUILDER_METHODS_INTERFACE(atsc3_route_mpd, atsc3_route_period)
 
 
-atsc3_route_mpd_t* atsc3_route_mpd_parse_from_payload(char* payload, char* content_locationt);
+atsc3_route_mpd_t* atsc3_route_mpd_parse_from_payload(char* payload, char* content_location);
 atsc3_route_mpd_t* atsc3_route_mpd_parse_period(xml_node_t* period_node, atsc3_route_mpd_t* atsc3_route_mpd);
 atsc3_route_period_t* atsc3_route_mpd_parse_adaption_set(xml_node_t* xml_period_node, atsc3_route_period_t* atsc3_route_period);
 atsc3_route_adaptation_set_t* atsc3_route_mpd_parse_role_set(xml_node_t*  xml_node, atsc3_route_adaptation_set_t* atsc3_route_adaptation_set);

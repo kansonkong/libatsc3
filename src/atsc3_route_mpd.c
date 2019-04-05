@@ -15,9 +15,7 @@ ATSC3_VECTOR_BUILDER_METHODS_IMPLEMENTATION(atsc3_route_period, atsc3_route_adap
 ATSC3_VECTOR_BUILDER_METHODS_IMPLEMENTATION(atsc3_route_mpd, atsc3_route_period);
 
 
-atsc3_route_mpd_t* atsc3_route_mpd_parse_from_payload(char* payload, char* content_locationt) {
-
-	atsc3_route_mpd_t* atsc3_route_mpd;
+atsc3_route_mpd_t* atsc3_route_mpd_parse_from_payload(char* payload, char* content_location) {
 
 	block_t* mpd_fragment_block = block_Promote(payload);
 	xml_document_t* xml_document = xml_parse_document(mpd_fragment_block->p_buffer, mpd_fragment_block->i_pos);
@@ -34,6 +32,8 @@ atsc3_route_mpd_t* atsc3_route_mpd_parse_from_payload(char* payload, char* conte
 		_ATSC3_ROUTE_MPD_PARSER_ERROR("atsc3_route_mpd_parse_from_payload: opening tag missing xml preamble");
 		return NULL;
 	}
+
+	atsc3_route_mpd_t* atsc3_route_mpd;
 
 	size_t num_root_children = xml_node_children(xml_document_root_node);
 	for(int i=0; i < num_root_children; i++) {
@@ -188,10 +188,10 @@ atsc3_route_period_t* atsc3_route_mpd_parse_adaption_set(xml_node_t* xml_period_
 		atsc3_route_adaptation_set->par = matching_attribute;
 	}
 	if((matching_attribute = kvp_collection_get(kvp_collection,  "segmentAlignment"))) {
-		atsc3_route_adaptation_set->segment_alignment = strncmp("true", matching_attribute, 4);
+		atsc3_route_adaptation_set->segment_alignment = strncmp("true", matching_attribute, 4) == 0;
 	}
 	if((matching_attribute = kvp_collection_get(kvp_collection,  "startWithSAP"))) {
-		atsc3_route_adaptation_set->start_with_sap = strncmp("true", matching_attribute, 4);;
+		atsc3_route_adaptation_set->start_with_sap = strncmp("true", matching_attribute, 4) == 0;
 	}
 
 	_ATSC3_ROUTE_MPD_PARSER_INFO("doing Role and Representation startNumber (start_number) to: %p",xml_period_node );
