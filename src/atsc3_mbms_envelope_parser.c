@@ -8,6 +8,9 @@
 
 #include "atsc3_mbms_envelope_parser.h"
 
+int _ROUTE_MBMS_ENVELOPE_PARSER_INFO_ENABLED = 0;
+int _ROUTE_MBMS_ENVELOPE_PARSER_DEBUG_ENABLED = 0;
+
 ATSC3_VECTOR_BUILDER_METHODS_PARENT_IMPLEMENTATION(atsc3_mbms_metadata_envelope)
 ATSC3_VECTOR_BUILDER_METHODS_IMPLEMENTATION(atsc3_mbms_metadata_envelope, atsc3_mbms_metadata_item);
 

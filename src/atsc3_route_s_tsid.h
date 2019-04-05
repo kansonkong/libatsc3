@@ -52,6 +52,7 @@ atsc3_mime_multipart_related_parser.c:320:DEBUG:payload  :
 #include "xml.h"
 #include "atsc3_vector_builder.h"
 #include "atsc3_fdt.h"
+#include "atsc3_logging_externs.h"
 
 
 /**
@@ -232,8 +233,8 @@ void atsc3_route_s_tsid_dump(atsc3_route_s_tsid_t* atsc3_route_s_tsid);
 
 #define _ATSC3_ROUTE_S_TSID_PARSER_ERROR(...)   printf("%s:%d:ERROR:",__FILE__,__LINE__);_ATSC3_UTILS_PRINTLN(__VA_ARGS__);
 #define _ATSC3_ROUTE_S_TSID_PARSER_WARN(...)    printf("%s:%d:WARN:",__FILE__,__LINE__);_ATSC3_UTILS_PRINTLN(__VA_ARGS__);
-#define _ATSC3_ROUTE_S_TSID_PARSER_INFO(...)    printf("%s:%d:INFO:",__FILE__,__LINE__);_ATSC3_UTILS_PRINTLN(__VA_ARGS__);
-#define _ATSC3_ROUTE_S_TSID_PARSER_DEBUG(...)   printf("%s:%d:DEBUG:",__FILE__,__LINE__);_ATSC3_UTILS_PRINTLN(__VA_ARGS__);
+#define _ATSC3_ROUTE_S_TSID_PARSER_INFO(...)    if(_ROUTE_S_TSID_PARSER_INFO_ENABLED)  { printf("%s:%d:INFO :",__FILE__,__LINE__);_ATSC3_UTILS_PRINTLN(__VA_ARGS__); }
+#define _ATSC3_ROUTE_S_TSID_PARSER_DEBUG(...)   if(_ROUTE_S_TSID_PARSER_DEBUG_ENABLED) { printf("%s:%d:DEBUG:",__FILE__,__LINE__);_ATSC3_UTILS_PRINTLN(__VA_ARGS__); }
 
 
 #endif /* ATSC3_ROUTE_S_TSID_H_ */

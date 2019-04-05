@@ -24,6 +24,8 @@
 
 #include "atsc3_fdt_parser.h"
 
+int _FDT_PARSER_DEBUG_ENABLED = 0;
+
 //TODO: EFDT is a superclass of FDT-instance..
 
 atsc3_fdt_instance_t* atsc3_efdt_instance_parse_from_xml_node(xml_node_t* xml_efdt_node) {

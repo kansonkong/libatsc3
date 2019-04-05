@@ -8,10 +8,12 @@
 
 #include "atsc3_route_mpd.h"
 
+int _ROUTE_MPD_PARSER_INFO_ENABLED = 1;
+int _ROUTE_MPD_PARSER_DEBUG_ENABLED = 0;
+
+
 ATSC3_VECTOR_BUILDER_METHODS_PARENT_IMPLEMENTATION(atsc3_route_mpd);
-
 ATSC3_VECTOR_BUILDER_METHODS_IMPLEMENTATION(atsc3_route_period, atsc3_route_adaptation_set);
-
 ATSC3_VECTOR_BUILDER_METHODS_IMPLEMENTATION(atsc3_route_mpd, atsc3_route_period);
 
 
@@ -48,7 +50,7 @@ atsc3_route_mpd_t* atsc3_route_mpd_parse_from_payload(char* payload, char* conte
 
 			//assign any of our attributes here
 			uint8_t* xml_attributes = xml_attributes_clone_node(root_child);
-			_ATSC3_ROUTE_MPD_PARSER_DEBUG("attributes: %s", xml_attributes);
+			_ATSC3_ROUTE_MPD_PARSER_INFO("mpd.attributes: %s", xml_attributes);
 			kvp_collection_t* kvp_collection = kvp_collection_parse(xml_attributes);
 
 			char* matching_attribute = NULL;
@@ -105,13 +107,13 @@ atsc3_route_mpd_t* atsc3_route_mpd_parse_from_payload(char* payload, char* conte
 	return atsc3_route_mpd;
 }
 
-atsc3_route_mpd_t* atsc3_route_mpd_parse_period(xml_node_t* xml_period_node, atsc3_route_mpd_t* atsc3_route_mpd) {
+atsc3_route_mpd_t* atsc3_route_mpd_parse_period(xml_node_t* xml_node, atsc3_route_mpd_t* atsc3_route_mpd) {
 
 	atsc3_route_period_t* atsc3_route_period = atsc3_route_period_new();
 
 	//assign any of our attributes here
-	uint8_t* xml_attributes = xml_attributes_clone_node(xml_period_node);
-	_ATSC3_ROUTE_MPD_PARSER_DEBUG("period.attributes: %s", xml_attributes);
+	uint8_t* xml_attributes = xml_attributes_clone_node(xml_node);
+	_ATSC3_ROUTE_MPD_PARSER_INFO("period.attributes: %s", xml_attributes);
 	kvp_collection_t* kvp_collection = kvp_collection_parse(xml_attributes);
 	char* matching_attribute = NULL;
 
@@ -131,12 +133,11 @@ atsc3_route_mpd_t* atsc3_route_mpd_parse_period(xml_node_t* xml_period_node, ats
 
 	atsc3_route_mpd_add_atsc3_route_period(atsc3_route_mpd, atsc3_route_period);
 
-	size_t num_mpd_entry_row_children = xml_node_children(xml_period_node);
+	size_t num_mpd_entry_row_children = xml_node_children(xml_node);
 	for(int j=0; j < num_mpd_entry_row_children; j++) {
-		xml_node_t* mpd_entry_row_children = xml_node_child(xml_period_node, j);
+		xml_node_t* mpd_entry_row_children = xml_node_child(xml_node, j);
 		if(xml_node_equals_ignore_case(mpd_entry_row_children, "AdaptationSet")) {
 			atsc3_route_mpd_parse_adaption_set(mpd_entry_row_children, atsc3_route_period);
-
 		}
 	}
 
@@ -145,21 +146,20 @@ atsc3_route_mpd_t* atsc3_route_mpd_parse_period(xml_node_t* xml_period_node, ats
 
 
 
-atsc3_route_period_t* atsc3_route_mpd_parse_adaption_set(xml_node_t* xml_period_node, atsc3_route_period_t* atsc3_route_period) {
+atsc3_route_period_t* atsc3_route_mpd_parse_adaption_set(xml_node_t* xml_node, atsc3_route_period_t* atsc3_route_period) {
 
 	atsc3_route_adaptation_set_t* atsc3_route_adaptation_set = atsc3_route_adaptation_set_new();
 	atsc3_route_period_add_atsc3_route_adaptation_set(atsc3_route_period, atsc3_route_adaptation_set);
 
 	//assign any of our attributes here
-	uint8_t* xml_attributes = xml_attributes_clone_node(xml_period_node);
-	_ATSC3_ROUTE_MPD_PARSER_DEBUG("period.attributes: %s", xml_attributes);
+	uint8_t* xml_attributes = xml_attributes_clone_node(xml_node);
+	_ATSC3_ROUTE_MPD_PARSER_INFO("adaptationSet.attributes: %s", xml_attributes);
 	kvp_collection_t* kvp_collection = kvp_collection_parse(xml_attributes);
 	char* matching_attribute = NULL;
 
 	if((matching_attribute = kvp_collection_get(kvp_collection,  "contentType"))) {
 		atsc3_route_adaptation_set->content_type = matching_attribute;
 	}
-
 	if((matching_attribute = kvp_collection_get(kvp_collection,  "id"))) {
 		atsc3_route_adaptation_set->id = matching_attribute;
 	}
@@ -194,11 +194,11 @@ atsc3_route_period_t* atsc3_route_mpd_parse_adaption_set(xml_node_t* xml_period_
 		atsc3_route_adaptation_set->start_with_sap = strncmp("true", matching_attribute, 4) == 0;
 	}
 
-	_ATSC3_ROUTE_MPD_PARSER_INFO("doing Role and Representation startNumber (start_number) to: %p",xml_period_node );
+	_ATSC3_ROUTE_MPD_PARSER_DEBUG("doing Role and Representation startNumber (start_number) to: %p",xml_node );
 
-	size_t num_mpd_entry_row_children = xml_node_children(xml_period_node);
+	size_t num_mpd_entry_row_children = xml_node_children(xml_node);
 	for(int j=0; j < num_mpd_entry_row_children; j++) {
-		xml_node_t* mpd_entry_row_children = xml_node_child(xml_period_node, j);
+		xml_node_t* mpd_entry_row_children = xml_node_child(xml_node, j);
 		if(xml_node_equals_ignore_case(mpd_entry_row_children, "Role")) {
 			atsc3_route_mpd_parse_role_set(mpd_entry_row_children, atsc3_route_adaptation_set);
 		} else if(xml_node_equals_ignore_case(mpd_entry_row_children, "Representation")) {
@@ -212,7 +212,7 @@ atsc3_route_adaptation_set_t* atsc3_route_mpd_parse_role_set(xml_node_t* xml_nod
 
 	//assign any of our attributes here
 	uint8_t* xml_attributes = xml_attributes_clone_node(xml_node);
-	_ATSC3_ROUTE_MPD_PARSER_DEBUG("atsc3_route_mpd_parse_role_set: %s", xml_attributes);
+	_ATSC3_ROUTE_MPD_PARSER_INFO("role.attributes: %s", xml_attributes);
 	kvp_collection_t* kvp_collection = kvp_collection_parse(xml_attributes);
 	char* matching_attribute = NULL;
 
@@ -231,7 +231,7 @@ atsc3_route_adaptation_set_t* atsc3_route_mpd_parse_representation_set(xml_node_
 
 	//assign any of our attributes here
 	uint8_t* xml_attributes = xml_attributes_clone_node(xml_node);
-	_ATSC3_ROUTE_MPD_PARSER_DEBUG("atsc3_route_mpd_parse_representation_set: %s", xml_attributes);
+	_ATSC3_ROUTE_MPD_PARSER_INFO("representationSet.attributes: %s", xml_attributes);
 	kvp_collection_t* kvp_collection = kvp_collection_parse(xml_attributes);
 	char* matching_attribute = NULL;
 
@@ -267,13 +267,12 @@ atsc3_route_adaptation_set_t* atsc3_route_mpd_parse_representation_set(xml_node_
 atsc3_route_adaptation_set_t* atsc3_route_mpd_parse_audio_channel_configuration_set(xml_node_t*  xml_node, atsc3_route_adaptation_set_t* atsc3_route_adaptation_set) {
 	//assign any of our attributes here via atsc3_route_audio_channel_configuration_t
 	uint8_t* xml_attributes = xml_attributes_clone_node(xml_node);
-	_ATSC3_ROUTE_MPD_PARSER_DEBUG("period.atsc3_route_mpd_parse_audio_channel_configuration_set: %s", xml_attributes);
+	_ATSC3_ROUTE_MPD_PARSER_INFO("AudioChannelConfiguration.attributes: %s", xml_attributes);
 	kvp_collection_t* kvp_collection = kvp_collection_parse(xml_attributes);
 	char* matching_attribute = NULL;
 	if((matching_attribute = kvp_collection_get(kvp_collection, "schemeIdUri"))) {
 		atsc3_route_adaptation_set->atsc3_route_representation.atsc3_route_audio_channel_configuration.scheme_id_uri = matching_attribute;
 	}
-
 	if((matching_attribute = kvp_collection_get(kvp_collection, "value"))) {
 		atsc3_route_adaptation_set->atsc3_route_representation.atsc3_route_audio_channel_configuration.value = atoi(matching_attribute); //?
 	}
@@ -295,24 +294,21 @@ atsc3_route_adaptation_set_t* atsc3_route_mpd_parse_segment_template_set(xml_nod
 
 	uint8_t* xml_attributes = xml_attributes_clone_node(xml_node);
 
-
-	_ATSC3_ROUTE_MPD_PARSER_DEBUG("atsc3_route_mpd_parse_segment_template_set: %s", xml_attributes);
+	_ATSC3_ROUTE_MPD_PARSER_INFO("SegmentTemplate.attributes: %s", xml_attributes);
 	kvp_collection_t* kvp_collection = kvp_collection_parse(xml_attributes);
 	char* matching_attribute = NULL;
 
 	if((matching_attribute = kvp_collection_get(kvp_collection,  "duration"))) {
 		atsc3_route_adaptation_set->atsc3_route_representation.atsc3_route_segment_template.duration = atoi(matching_attribute);
-
 	}
 
 	if((matching_attribute = kvp_collection_get(kvp_collection,  "initialization"))) {
 		atsc3_route_adaptation_set->atsc3_route_representation.atsc3_route_segment_template.initialization = matching_attribute;
-
 	}
 
 	if((matching_attribute = kvp_collection_get(kvp_collection,  "media"))) {
 		atsc3_route_adaptation_set->atsc3_route_representation.atsc3_route_segment_template.media = matching_attribute;
-		_ATSC3_ROUTE_MPD_PARSER_INFO("setting media (media) to: %s", matching_attribute );
+		_ATSC3_ROUTE_MPD_PARSER_DEBUG("setting media (media) to: %s", matching_attribute );
 	}
 
 	if((matching_attribute = kvp_collection_get(kvp_collection,  "presentationTimeOffset"))) {
@@ -328,8 +324,6 @@ atsc3_route_adaptation_set_t* atsc3_route_mpd_parse_segment_template_set(xml_nod
 	}
 	return atsc3_route_adaptation_set;
 }
-
-
 
 
 void atsc3_route_mpd_dump(atsc3_route_mpd_t* atsc3_route_mpd) {
