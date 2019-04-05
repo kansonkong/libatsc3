@@ -315,6 +315,7 @@ void atsc3_route_s_tsid_dump(atsc3_route_s_tsid_t* atsc3_route_s_tsid) {
 	for(int i=0; i < atsc3_route_s_tsid->atsc3_route_s_tsid_RS_v.count; i++) {
 		atsc3_route_s_tsid_RS_t*  atsc3_route_s_tsid_RS = atsc3_route_s_tsid->atsc3_route_s_tsid_RS_v.data[i];
 		_ATSC3_ROUTE_S_TSID_PARSER_DEBUG("S-TSID.RS: RS: dIpAddr: %u, dPort: %u, sIpAddr: %u", atsc3_route_s_tsid_RS->dest_ip_addr, atsc3_route_s_tsid_RS->dest_port, atsc3_route_s_tsid_RS->src_ip_addr);
+
 		for(int j=0; j < atsc3_route_s_tsid_RS->atsc3_route_s_tsid_RS_LS_v.count; j++) {
 			atsc3_route_s_tsid_RS_LS_t* atsc3_route_s_tsid_RS_LS_t = atsc3_route_s_tsid_RS->atsc3_route_s_tsid_RS_LS_v.data[j];
 			_ATSC3_ROUTE_S_TSID_PARSER_DEBUG(" S-TSID.RS.LS: bw: %u, tsi: %u, start_time: %s, end_time: %s", atsc3_route_s_tsid_RS_LS_t->bw, atsc3_route_s_tsid_RS_LS_t->tsi, atsc3_route_s_tsid_RS_LS_t->start_time, atsc3_route_s_tsid_RS_LS_t->end_time);
@@ -322,6 +323,7 @@ void atsc3_route_s_tsid_dump(atsc3_route_s_tsid_t* atsc3_route_s_tsid) {
 			if(atsc3_route_s_tsid_RS_LS_t->atsc3_route_s_tsid_RS_LS_SrcFlow) {
 
 				if(atsc3_route_s_tsid_RS_LS_t->atsc3_route_s_tsid_RS_LS_SrcFlow->atsc3_route_s_tsid_RS_LS_SrcFlow_ContentInfo && atsc3_route_s_tsid_RS_LS_t->atsc3_route_s_tsid_RS_LS_SrcFlow->atsc3_route_s_tsid_RS_LS_SrcFlow_ContentInfo->atsc3_route_s_tsid_RS_LS_SrcFlow_ContentInfo_MediaInfo) {
+
 					_ATSC3_ROUTE_S_TSID_PARSER_DEBUG("   S-TSID.RS.LS.SrcFlow.ContentInfo: contentType: %s, repId: %s, startup: %u",
 							atsc3_route_s_tsid_RS_LS_t->atsc3_route_s_tsid_RS_LS_SrcFlow->atsc3_route_s_tsid_RS_LS_SrcFlow_ContentInfo->atsc3_route_s_tsid_RS_LS_SrcFlow_ContentInfo_MediaInfo->content_type,
 							atsc3_route_s_tsid_RS_LS_t->atsc3_route_s_tsid_RS_LS_SrcFlow->atsc3_route_s_tsid_RS_LS_SrcFlow_ContentInfo->atsc3_route_s_tsid_RS_LS_SrcFlow_ContentInfo_MediaInfo->rep_id,

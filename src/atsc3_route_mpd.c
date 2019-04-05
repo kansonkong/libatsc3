@@ -257,9 +257,7 @@ atsc3_route_adaptation_set_t* atsc3_route_mpd_parse_representation_set(xml_node_
 		xml_node_t* mpd_entry_row_children = xml_node_child(xml_node, j);
 		if(xml_node_equals_ignore_case(mpd_entry_row_children, "AudioChannelConfiguration")) {
 			atsc3_route_mpd_parse_audio_channel_configuration_set(mpd_entry_row_children, atsc3_route_adaptation_set);
-		}
-
-		if(xml_node_equals_ignore_case(mpd_entry_row_children, "SegmentTemplate")) {
+		} else if(xml_node_equals_ignore_case(mpd_entry_row_children, "SegmentTemplate")) {
 			atsc3_route_mpd_parse_segment_template_set(mpd_entry_row_children, atsc3_route_adaptation_set);
 		}
 	}

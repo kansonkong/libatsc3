@@ -14,6 +14,7 @@
 #include "atsc3_route_s_tsid.h"
 #include "atsc3_route_mpd.h"
 #include "atsc3_mime_multipart_related.h"
+#include "atsc3_mbms_envelope_parser.h"
 
 /***
  *
