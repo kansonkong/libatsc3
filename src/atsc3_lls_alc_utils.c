@@ -8,6 +8,9 @@
 #include "atsc3_lls_alc_utils.h"
 
 
+int _LLS_ALC_UTILS_INFO_ENABLED = 0;
+int _LLS_ALC_UTILS_DEBUG_ENABLED = 0;
+
 lls_sls_alc_monitor_t* lls_sls_alc_monitor_create() {
 	lls_sls_alc_monitor_t* lls_sls_alc_monitor = (lls_sls_alc_monitor_t*)calloc(1, sizeof(lls_sls_alc_monitor_t));
 
@@ -271,7 +274,6 @@ void lls_sls_alc_update_tsi_toi_from_route_s_tsid(lls_sls_alc_monitor_t* lls_sls
 								atsc3_route_s_tsid_RS_LS->tsi,
 								atsc3_fdt_file->content_location);
 					}
-					_ATSC3_LLS_ALC_UTILS_ERROR("missing src_flow_content_info_content_type for content-location: %s", atsc3_fdt_file->content_location);
 
 					_ATSC3_LLS_ALC_UTILS_DEBUG("     S-TSID.RS.LS.source_flow.fdt-instance.file: content-location: %s, toi: %u, content_length: %u, transfer_length: %u, content_type; %s, content_encoding: %s",
 							atsc3_fdt_file->content_location,

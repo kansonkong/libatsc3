@@ -7,11 +7,10 @@
 
 #include "atsc3_sls_metadata_fragment_types_parser.h"
 
-#define ATSC3_ROUTE_MBMS_ENVELOPE_TYPE	"application/mbms-envelope+xml"
-#define	ATSC3_ROUTE_USD_TYPE	 		"application/route-usd+xml"
-#define ATSC3_ROUTE_S_TSID_TYPE			"application/route-s-tsid+xml"
-#define ATSC3_ROUTE_MPD_TYPE			"application/dash+xml"
-#define ATSC3_SLS_HELD_FRAGMENT_TYPE	"application/atsc-held+xml"
+
+int _SLS_METADATA_FRAGMENT_PARSER_INFO_ENABLED  = 0;
+int _SLS_METADATA_FRAGMENT_PARSER_DEBUG_ENABLED = 0;
+int _SLS_METADATA_FRAGMENT_PARSER_TRACE_ENABLED = 0;
 
 
 atsc3_sls_metadata_fragments_t* atsc3_sls_metadata_fragment_types_parse_from_mime_multipart_related_instance(atsc3_mime_multipart_related_instance_t* atsc3_mime_multipart_related_instance) {
@@ -25,9 +24,9 @@ atsc3_sls_metadata_fragments_t* atsc3_sls_metadata_fragment_types_parse_from_mim
 	for(int i=0; i < atsc3_mime_multipart_related_instance->atsc3_mime_multipart_related_payload_v.count; i++) {
 		atsc3_mime_multipart_related_payload = atsc3_mime_multipart_related_instance->atsc3_mime_multipart_related_payload_v.data[i];
 
-		__MIME_PARSER_DEBUG("type     : %s", atsc3_mime_multipart_related_payload->content_type);
-		__MIME_PARSER_DEBUG("location : %s", atsc3_mime_multipart_related_payload->content_location);
-		__MIME_PARSER_DEBUG("payload  :\n%s", atsc3_mime_multipart_related_payload->payload);
+		__SLS_METADATA_FRAGMENT_PARSER_DEBUG("type     : %s", atsc3_mime_multipart_related_payload->content_type);
+		__SLS_METADATA_FRAGMENT_PARSER_DEBUG("location : %s", atsc3_mime_multipart_related_payload->content_location);
+		__SLS_METADATA_FRAGMENT_PARSER_DEBUG("payload  :\n%s", atsc3_mime_multipart_related_payload->payload);
 
 		//ROUTE MBMS envelope fragment creation
 		if(!strncmp(ATSC3_ROUTE_MBMS_ENVELOPE_TYPE, atsc3_mime_multipart_related_payload->content_type, strlen(ATSC3_ROUTE_MBMS_ENVELOPE_TYPE))) {
