@@ -50,7 +50,7 @@ listener_ncurses: atsc3_listener_metrics_ncurses
 unit_tests: atsc3_lmt_test atsc3_lls_slt_parser_test atsc3_lls_test \
 			atsc3_lls_SystemTime_test atsc3_mmt_signaling_message_test \
 			atsc3_isobmff_box_test atsc3_fdt_test atsc3_stltp_parser_test \
-			atsc3_mime_multipart_related_parser_test
+			atsc3_mime_multipart_related_parser_test atsc3_fdt_mbms_envelope_test
 			
 			
 libmicrohttpd_tests: atsc3_libmicrohttpd_test
@@ -199,7 +199,32 @@ atsc3_mime_multipart_related_parser_test: atsc3_mime_multipart_related_parser_te
 	atsc3_route_usbd.o \
 	xml.o \
 	atsc3_utils.o -o atsc3_mime_multipart_related_parser_test
-
+	
+atsc3_fdt_mbms_envelope_test: atsc3_fdt_mbms_envelope_test.c \
+	atsc3_mime_multipart_related.o \
+	atsc3_mime_multipart_related_parser.o \
+	atsc3_sls_metadata_fragment_types_parser.o \
+	atsc3_sls_held_fragment.o \
+	atsc3_utils.o \
+	atsc3_route_mpd.o \
+	atsc3_route_s_tsid.o \
+	atsc3_fdt_parser.o \
+	atsc3_fdt.o \
+	atsc3_route_usbd.o \
+	xml.o
+	cc -g atsc3_mime_multipart_related_parser_test.c \
+	atsc3_mime_multipart_related.o \
+	atsc3_mime_multipart_related_parser.o \
+	atsc3_sls_metadata_fragment_types_parser.o \
+	atsc3_sls_held_fragment.o \
+	atsc3_route_mpd.o \
+	atsc3_route_s_tsid.o \
+	atsc3_fdt_parser.o \
+	atsc3_fdt.o \
+	atsc3_route_usbd.o \
+	xml.o \
+	atsc3_utils.o -o atsc3_fdt_mbms_envelope_test
+	
 # stats modules
 
 atsc3_bandwidth_statistics.o: atsc3_bandwidth_statistics.h atsc3_bandwidth_statistics.c
