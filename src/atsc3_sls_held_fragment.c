@@ -66,9 +66,7 @@ atsc3_sls_held_fragment_t* atsc3_sls_held_fragment_parse_from_payload(char* payl
 					}
 
 					if((matching_attribute = kvp_collection_get(kvp_collection,  "appRendering"))) {
-						atsc3_sls_html_entry_package->app_rendering = strncmp("true", matching_attribute, 4);
-					} else {
-						atsc3_sls_html_entry_package->app_rendering = false;
+						atsc3_sls_html_entry_package->app_rendering = strncmp("true", matching_attribute, 4) == 0;
 					}
 
 					if((matching_attribute = kvp_collection_get(kvp_collection,  "clearAppContextCacheDate"))) {

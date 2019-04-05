@@ -24,9 +24,50 @@
 
 #include "atsc3_fdt_parser.h"
 
-atsc3_fdt_instance_t* atsc3_fdt_instance_parse_from_xml_document(xml_document_t* xml_document) {
+//TODO: EFDT is a superclass of FDT-instance..
+
+atsc3_fdt_instance_t* atsc3_efdt_instance_parse_from_xml_node(xml_node_t* xml_efdt_node) {
 	atsc3_fdt_instance_t* atsc3_fdt_instance = calloc(1, sizeof(atsc3_fdt_instance_t));
 	assert(atsc3_fdt_instance);
+
+	//we should only be expecting either an EFDT or FDT-Instance node here
+	size_t num_root_children = xml_node_children(xml_efdt_node);
+	for (int i = 0; i < num_root_children; i++) {
+		xml_node_t* root_child = xml_node_child(xml_efdt_node, i);
+		if (xml_node_equals_ignore_case(root_child, "EFDT")) {
+			//replace root_child with this child
+			if (!xml_node_children(root_child)) {
+				_ATSC3_FDT_PARSER_ERROR("atsc3_efdt_xml_node_parse: EDFT contains no children!");
+			} else {
+				root_child = xml_node_child(root_child, 0);
+			}
+		}
+
+		if (xml_node_equals_ignore_case(root_child, "FDT-Instance")) {
+			atsc3_fdt_parse_from_xml_fdt_instance(atsc3_fdt_instance, root_child);
+			size_t num_fdt_children = xml_node_children(root_child);
+			for (int j = 0; j < num_fdt_children; j++) {
+				xml_node_t* fdt_child = xml_node_child(root_child, j);
+				if (xml_node_equals_ignore_case(fdt_child, "File")) {
+					atsc3_fdt_file_t* atsc3_fdt_file = atsc3_fdt_file_parse_from_xml_fdt_instance(fdt_child);
+					if (atsc3_fdt_file) {
+						_ATSC3_FDT_PARSER_DEBUG("atsc3_fdt_parse_from_xml_fdt_instance: adding file: %u, toi: %u, location: %s, length: %u, type: %s",
+								i, atsc3_fdt_file->toi,
+								atsc3_fdt_file->content_location,
+								atsc3_fdt_file->content_length,
+								atsc3_fdt_file->content_type);
+						//add to atsc3_fdt_instance
+						atsc3_fdt_instance_add_atsc3_fdt_file(atsc3_fdt_instance, atsc3_fdt_file);
+					}
+				}
+			}
+		}
+	}
+
+	return atsc3_fdt_instance;
+}
+
+atsc3_fdt_instance_t* atsc3_fdt_instance_parse_from_xml_document(xml_document_t* xml_document) {
 
 	if(!xml_document) {
 		return NULL;
@@ -41,41 +82,10 @@ atsc3_fdt_instance_t* atsc3_fdt_instance_parse_from_xml_document(xml_document_t*
         _ATSC3_FDT_PARSER_ERROR("atsc3_fdt_instance_parse_from_xml_document: opening tag missing xml preamble");
         return NULL;
     }
-    
-    
-    
+
     //we should only be expecting either an EFDT or FDT-Instance node here
-    size_t num_root_children = xml_node_children(xml_document_root_node);
-    for(int i=0; i < num_root_children; i++) {
-        xml_node_t* root_child = xml_node_child(xml_document_root_node, i);
-        if(xml_node_equals_ignore_case(root_child, "EFDT")) {
-            //replace root_child with this child
-            if(!xml_node_children(root_child)) {
-                _ATSC3_FDT_PARSER_ERROR("atsc3_fdt_instance_parse_from_xml_document: EDFT contains no children!");
-            } else {
-                root_child = xml_node_child(root_child, 0);
-            }
-        }
-        
-        if(xml_node_equals_ignore_case(root_child, "FDT-Instance")) {
-            atsc3_fdt_parse_from_xml_fdt_instance(atsc3_fdt_instance, root_child);
-            
-            size_t num_fdt_children = xml_node_children(root_child);
-            for(int j=0; j < num_fdt_children; j++) {
-                xml_node_t* fdt_child = xml_node_child(root_child, j);
-                if(xml_node_equals_ignore_case(fdt_child, "File")) {
-                    atsc3_fdt_file_t* atsc3_fdt_file = atsc3_fdt_file_parse_from_xml_fdt_instance(fdt_child);
-                    if(atsc3_fdt_file) {
-                        _ATSC3_FDT_PARSER_DEBUG("atsc3_fdt_parse_from_xml_fdt_instance: adding file: %u, toi: %u, location: %s, length: %u, type: %s",
-                        		i, atsc3_fdt_file->toi, atsc3_fdt_file->content_location, atsc3_fdt_file->content_length, atsc3_fdt_file->content_type);
-                        
-                        //add to atsc3_fdt_instance
-                        atsc3_fdt_instance_add_atsc3_fdt_file(atsc3_fdt_instance, atsc3_fdt_file);
-                    }
-                }
-            }
-        }
-    }
+    atsc3_fdt_instance_t* atsc3_fdt_instance = atsc3_efdt_instance_parse_from_xml_node(xml_document_root_node);
+
 	return atsc3_fdt_instance;
 }
 
@@ -107,6 +117,42 @@ atsc3_fdt_instance_t* atsc3_fdt_parse_from_xml_fdt_instance(atsc3_fdt_instance_t
     }
     
     //TODO: remainder of elements are FEC related
+
+	/*atsc-fdt/1.0 attributes here*/
+    //TODO: fix with proper namespace mapping...e.g. resolve against  xmlns:afdt="tag:atsc.org,2016:XMLSchemas/ATSC3/Delivery/ATSC-FDT/1.0/"
+
+    if((matching_attribute = kvp_collection_get(kvp_collection,  "afdt:efdt_vesion"))) {
+    	atsc3_fdt_instance->content_encoding = matching_attribute;
+    }
+    if((matching_attribute = kvp_collection_get(kvp_collection,  "afdt:maxExpiresDelta"))) {
+    	atsc3_fdt_instance->max_expires_delta = atoi(matching_attribute);
+    }
+    if((matching_attribute = kvp_collection_get(kvp_collection,  "afdt:maxTransportSize"))) {
+    	atsc3_fdt_instance->max_transport_size = atoi(matching_attribute);
+    }
+    if((matching_attribute = kvp_collection_get(kvp_collection,  "afdt:fileTemplate"))) {
+    	atsc3_fdt_instance->file_template = matching_attribute;
+    }
+    if((matching_attribute = kvp_collection_get(kvp_collection,  "afdt:appContextIdList"))) {
+    	atsc3_fdt_instance->app_context_id_list = matching_attribute;
+    }
+    if((matching_attribute = kvp_collection_get(kvp_collection,  "afdt:filterCodes"))) {
+    	atsc3_fdt_instance->filter_codes = matching_attribute;
+    }
+
+
+
+
+    if((matching_attribute = kvp_collection_get(kvp_collection,  "content-encoding"))) {
+          atsc3_fdt_instance->content_encoding = matching_attribute;
+      }  if((matching_attribute = kvp_collection_get(kvp_collection,  "content-encoding"))) {
+          atsc3_fdt_instance->content_encoding = matching_attribute;
+      }  if((matching_attribute = kvp_collection_get(kvp_collection,  "content-encoding"))) {
+          atsc3_fdt_instance->content_encoding = matching_attribute;
+      }  if((matching_attribute = kvp_collection_get(kvp_collection,  "content-encoding"))) {
+          atsc3_fdt_instance->content_encoding = matching_attribute;
+      }
+
 
 
     free(xml_attributes);    
@@ -174,7 +220,7 @@ atsc3_fdt_file_t* atsc3_fdt_file_parse_from_xml_fdt_instance(xml_node_t* node) {
     char* matching_attribute = NULL;
     
     
-    if((matching_attribute = kvp_collection_get(kvp_collection,  "Content-Location"))) {
+    if((matching_attribute = kvp_collection_get(kvp_collection, "Content-Location"))) {
         atsc3_fdt_file->content_location = matching_attribute;
     }
     

@@ -183,6 +183,9 @@ atsc3_mime_multipart_related_parser_test: atsc3_mime_multipart_related_parser_te
 	atsc3_utils.o \
 	atsc3_route_mpd.o \
 	atsc3_route_s_tsid.o \
+	atsc3_fdt_parser.o \
+	atsc3_fdt.o \
+	atsc3_route_usbd.o \
 	xml.o
 	cc -g atsc3_mime_multipart_related_parser_test.c \
 	atsc3_mime_multipart_related.o \
@@ -191,6 +194,9 @@ atsc3_mime_multipart_related_parser_test: atsc3_mime_multipart_related_parser_te
 	atsc3_sls_held_fragment.o \
 	atsc3_route_mpd.o \
 	atsc3_route_s_tsid.o \
+	atsc3_fdt_parser.o \
+	atsc3_fdt.o \
+	atsc3_route_usbd.o \
 	xml.o \
 	atsc3_utils.o -o atsc3_mime_multipart_related_parser_test
 
