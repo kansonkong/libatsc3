@@ -381,10 +381,10 @@ mmtp_payload_fragments_union_t* mmtp_process_from_payload(mmtp_sub_flow_vector_t
 						//slight hack, check the asset types and default_asset = 1
 						mp_table_asset_row_t* mp_table_asset_row = &mp_table->mp_table_asset_row[i];
 
-						__MMT_RECON_FROM_SAMPLE_SIGNAL_INFO("MPT message: checking packet_id: %u, asset_type: %u, default: %u, identifier: %s", mp_table_asset_row->mmt_general_location_info.packet_id, mp_table_asset_row->asset_type, mp_table_asset_row->default_asset_flag, mp_table_asset_row->identifier_mapping.asset_id.asset_id ? (const char*)mp_table_asset_row->identifier_mapping.asset_id.asset_id : "");
-						if(mp_table_asset_row->identifier_mapping.asset_id.asset_id && strncasecmp("video", (const char*)mp_table_asset_row->identifier_mapping.asset_id.asset_id, 5) == 0) {
+						__MMT_RECON_FROM_SAMPLE_SIGNAL_INFO("MPT message: checking packet_id: %u, asset_type: %s, default: %u, identifier: %s", mp_table_asset_row->mmt_general_location_info.packet_id, mp_table_asset_row->asset_type, mp_table_asset_row->default_asset_flag, mp_table_asset_row->identifier_mapping.asset_id.asset_id ? (const char*)mp_table_asset_row->identifier_mapping.asset_id.asset_id : "");
+						if(strncasecmp(ATSC3_MP_TABLE_ASSET_ROW_HEVC_ID, mp_table_asset_row->asset_type, 4) == 0) {
 							matching_lls_slt_mmt_session->video_packet_id = mp_table_asset_row->mmt_general_location_info.packet_id;
-						} else if(mp_table_asset_row->identifier_mapping.asset_id.asset_id && strncasecmp("audio", (const char*)mp_table_asset_row->identifier_mapping.asset_id.asset_id, 5) == 0) {
+						} else if(strncasecmp(ATSC3_MP_TABLE_ASSET_ROW_MP4A_ID, mp_table_asset_row->asset_type, 4) == 0) {
 							matching_lls_slt_mmt_session->audio_packet_id = mp_table_asset_row->mmt_general_location_info.packet_id;
 						}
 					}

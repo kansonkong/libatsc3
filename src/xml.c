@@ -257,6 +257,7 @@ bool xml_node_equals_ignore_case(xml_node_t *a, char* b) {
     //if we contain a namespace specifier, ignore for now...
     bool namespace_specifier_found = false;
     for(int i=0; i < xml_node_name_string->length && !namespace_specifier_found; i++) {
+
         if(xml_node_name_string->buffer[i] == ':') {
             xml_node_name_string->buffer += i+1;
             xml_node_name_string->length -= i+1;
@@ -313,7 +314,7 @@ uint8_t* xml_attributes_clone_node(xml_node_t* node) {
  *
  * Echos the parsers call stack for debugging purposes
  */
-#define XML_PARSER_VERBOSE 1
+#define XML_PARSER_VERBOSE
 #ifdef XML_PARSER_VERBOSE
 static void xml_parser_info(struct xml_parser* parser, char const* message) {
 	_XML_FRNSC("xml_parser_info: %s", message);
