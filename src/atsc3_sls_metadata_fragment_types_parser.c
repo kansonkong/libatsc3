@@ -35,7 +35,6 @@ atsc3_sls_metadata_fragments_t* atsc3_sls_metadata_fragment_types_parse_from_mim
 			atsc3_route_usb_dump(atsc3_sls_metadata_fragments->atsc3_route_user_service_bundle_description);
 		}
 
-
 		//S-TSID fragment creation
 		if(!strncmp(ATSC3_ROUTE_S_TSID_TYPE, atsc3_mime_multipart_related_payload->content_type, strlen(ATSC3_ROUTE_S_TSID_TYPE))) {
 			atsc3_sls_metadata_fragments->atsc3_route_s_tsid = atsc3_route_s_tsid_parse_from_payload(atsc3_mime_multipart_related_payload->payload, atsc3_mime_multipart_related_payload->content_location);

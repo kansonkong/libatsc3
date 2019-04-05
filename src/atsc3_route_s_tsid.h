@@ -176,6 +176,7 @@ typedef struct atsc3_route_s_tsid_RS_LS_RepairFlow {
 } atsc3_route_s_tsid_RS_LS_RepairFlow_t;
 
 /**
+ * LCT channel
  	 	<xs:attribute name="tsi" type="xs:unsignedInt" use="required"/>
 		<xs:attribute name="bw" type="xs:unsignedInt"/>
 		<xs:attribute name="startTime" type="xs:dateTime"/>
@@ -193,6 +194,9 @@ typedef struct atsc3_route_s_tsid_RS_LS {
 
 } atsc3_route_s_tsid_RS_LS_t;
 
+/*
+ * RS: Route sessions
+ */
 typedef struct atsc3_route_s_tsid_RS {
 	uint32_t	dest_ip_addr;
 	uint16_t	dest_port;
