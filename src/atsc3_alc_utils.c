@@ -261,14 +261,22 @@ int alc_packet_dump_to_object(alc_packet_t** alc_packet_ptr, lls_sls_alc_monitor
     
     //both codepoint=0 and codepoint=128 will set close_object_flag when we have finished delivery of the object
 	if(alc_packet->close_object_flag) {
-		//__ALC_UTILS_TRACE("dumping to file done: %s, is complete: %d", file_name, alc_packet->close_object_flag);
+		__ALC_UTILS_IOTRACE("dumping to file done: %s, is complete: %d", file_name, alc_packet->close_object_flag);
+
+		//update our sls here
 		if(alc_packet->def_lct_hdr->tsi == 0) {
 			atsc3_route_sls_process_from_alc_packet_and_file(alc_packet, lls_sls_alc_monitor);
-			alc_recon_file_buffer_struct_monitor_fragment_with_init_box(alc_packet, lls_sls_alc_monitor);
 
+		} else {
+			//only push to our output buffer video and audio flows
+			if(alc_packet->def_lct_hdr->tsi == lls_sls_alc_monitor->audio_tsi || alc_packet->def_lct_hdr->tsi == lls_sls_alc_monitor->video_tsi) {
+				alc_recon_file_buffer_struct_monitor_fragment_with_init_box(alc_packet, lls_sls_alc_monitor);
+			} else {
+				__ALC_UTILS_INFO("tsi: %u, toi: %u, not video or audio payload", alc_packet->def_lct_hdr->tsi, alc_packet->def_lct_hdr->toi);
+			}
 		}
 	} else {
-		//__ALC_UTILS_TRACE("dumping to file step: %s, is complete: %d", file_name, alc_packet->close_object_flag);
+		__ALC_UTILS_IOTRACE("dumping to file step: %s, is complete: %d", file_name, alc_packet->close_object_flag);
 	}
 
 	__ALC_UTILS_IOTRACE("checking tsi: %u, toi: %u, close_object_flag: %d", alc_packet->def_lct_hdr->tsi, alc_packet->def_lct_hdr->toi, alc_packet->close_object_flag);
