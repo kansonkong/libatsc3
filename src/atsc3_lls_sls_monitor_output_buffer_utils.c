@@ -75,8 +75,6 @@ completely and the information in the containing chunk, the “trun”, should b
 sample duration of the previous sample and the sample offsets of the following samples.
 
 
-TODO: atsc3_isobmff_tools.cpp:363:WARN : 1551746974.9445: Movie Fragment Metadata is NULL for packet_id: 36
-
  */
 
 #include "atsc3_lls_sls_monitor_output_buffer.h"
@@ -195,6 +193,31 @@ void lls_sls_monitor_output_buffer_reset_moof_and_fragment_position(lls_sls_moni
     lls_sls_monitor_output_buffer->should_flush_output_buffer = false;
 }
 
+
+void lls_sls_monitor_output_buffer_reset_rebuilt_mpu_moof_and_fragment_position(lls_sls_monitor_output_buffer_t* lls_sls_monitor_output_buffer) {
+
+	lls_sls_monitor_buffer_isobmff_clear_trun_sample_entry(&lls_sls_monitor_output_buffer->audio_output_buffer_isobmff);
+	lls_sls_monitor_output_buffer->audio_output_buffer_isobmff.mpu_presentation_time_set = false;
+
+
+	block_Release(&lls_sls_monitor_output_buffer->audio_output_buffer_isobmff.alc_moof_mdat_block);
+	block_Release(&lls_sls_monitor_output_buffer->audio_output_buffer_isobmff.mmt_moof_block);
+	block_Release(&lls_sls_monitor_output_buffer->audio_output_buffer_isobmff.mmt_moof_block_from_flow);
+
+	block_Release(&lls_sls_monitor_output_buffer->audio_output_buffer_isobmff.mmt_mdat_block);
+	block_Release(&lls_sls_monitor_output_buffer->audio_output_buffer_isobmff.mmt_mpu_rebuilt);
+
+
+	lls_sls_monitor_buffer_isobmff_clear_trun_sample_entry(&lls_sls_monitor_output_buffer->video_output_buffer_isobmff);
+	lls_sls_monitor_output_buffer->video_output_buffer_isobmff.mpu_presentation_time_set = false;
+	block_Release(&lls_sls_monitor_output_buffer->video_output_buffer_isobmff.alc_moof_mdat_block);
+	block_Release(&lls_sls_monitor_output_buffer->video_output_buffer_isobmff.mmt_moof_block);
+	block_Release(&lls_sls_monitor_output_buffer->video_output_buffer_isobmff.mmt_moof_block_from_flow);
+	block_Release(&lls_sls_monitor_output_buffer->video_output_buffer_isobmff.mmt_mpu_rebuilt);
+
+	block_Release(&lls_sls_monitor_output_buffer->video_output_buffer_isobmff.mmt_mdat_block);
+
+}
 
 void lls_sls_monitor_output_buffer_reset_all_position(lls_sls_monitor_output_buffer_t* lls_sls_monitor_output_buffer) {
 
@@ -958,6 +981,52 @@ block_t* lls_sls_monitor_output_buffer_copy_mmt_moof_from_flow_isobmff_box(lls_s
 }
 
 
+//moof blocks will have already been patched earlier...
+block_t* lls_sls_monitor_output_buffer_copy_mmt_moof_from_flow_isobmff_box_no_patching_trailing_mdat(lls_sls_monitor_buffer_isobmff_t* lls_sls_monitor_buffer_isobmff) {
+	if(!lls_sls_monitor_buffer_isobmff->init_block || !lls_sls_monitor_buffer_isobmff->init_block->i_pos) {
+		__LLS_SLS_MONITOR_OUTPUT_BUFFER_UTILS_ERROR("lls_sls_monitor_output_buffer_copy_mmt_full_isobmff_box: init box: is: %p or len is 0", lls_sls_monitor_buffer_isobmff->init_block);
+		return NULL;
+	}
+
+	block_t* target_moof_block = NULL;
+
+	if(lls_sls_monitor_buffer_isobmff->mmt_moof_block_from_flow && lls_sls_monitor_buffer_isobmff->mmt_moof_block_from_flow->i_pos) {
+		target_moof_block = lls_sls_monitor_buffer_isobmff->mmt_moof_block_from_flow;
+	} else if(lls_sls_monitor_buffer_isobmff->mmt_moof_block_previous_mpu && lls_sls_monitor_buffer_isobmff->mmt_moof_block_previous_mpu->i_pos) {
+		target_moof_block = lls_sls_monitor_buffer_isobmff->mmt_moof_block_previous_mpu;
+	} else {
+		//TODO: build a dummy moof block here..
+
+		__LLS_SLS_MONITOR_OUTPUT_BUFFER_UTILS_ERROR("lls_sls_monitor_output_buffer_copy_mmt_moof_from_flow_isobmff_box_no_patching_trailing_mdat: mmt_moof_block_from_flow is: %p or len is 0", lls_sls_monitor_buffer_isobmff->mmt_moof_block_from_flow);
+		return NULL;
+	}
+
+	if(!lls_sls_monitor_buffer_isobmff->mmt_mdat_block || ! lls_sls_monitor_buffer_isobmff->mmt_mdat_block->i_pos) {
+		__LLS_SLS_MONITOR_OUTPUT_BUFFER_UTILS_ERROR("lls_sls_monitor_output_buffer_copy_mmt_moof_from_flow_isobmff_box_no_patching_trailing_mdat: mmt_mdat_block is: %p or len is 0", lls_sls_monitor_buffer_isobmff->mmt_mdat_block);
+		return NULL;
+	}
+
+	uint32_t full_box_size = lls_sls_monitor_buffer_isobmff->init_block->i_pos + target_moof_block->i_pos + lls_sls_monitor_buffer_isobmff->mmt_mdat_block->i_pos;
+
+	if(full_box_size <= 0) {
+		__LLS_SLS_MONITOR_OUTPUT_BUFFER_UTILS_ERROR("lls_sls_monitor_output_buffer_copy_mmt_moof_from_flow_isobmff_box_no_patching_trailing_mdat size <= 0, %u, returning NULL", full_box_size);
+		return NULL;
+	}
+	block_t* isobmff_mmt_full_flow_block = block_Alloc(full_box_size);
+
+	__LLS_SLS_MONITOR_OUTPUT_BUFFER_UTILS_DEBUG("copy lls_sls_monitor_output_buffer_copy_mmt_moof_from_flow_isobmff_box_no_patching_trailing_mdat: total size: %u, init size: %u, moof size: %u, mdat size: %u",
+			full_box_size,
+			lls_sls_monitor_buffer_isobmff->init_block->i_pos,
+			target_moof_block->i_pos,
+			lls_sls_monitor_buffer_isobmff->mmt_mdat_block->i_pos);
+
+	block_Append(isobmff_mmt_full_flow_block, lls_sls_monitor_buffer_isobmff->init_block);
+	block_Append(isobmff_mmt_full_flow_block, target_moof_block);
+	block_Append(isobmff_mmt_full_flow_block, lls_sls_monitor_buffer_isobmff->mmt_mdat_block);
+
+	return isobmff_mmt_full_flow_block;
+}
+
 
 void lls_slt_monitor_check_and_handle_pipe_ffplay_buffer_is_shutdown(lls_slt_monitor_t* lls_slt_monitor) {
 	if(lls_slt_monitor->lls_sls_alc_monitor) {
@@ -1059,6 +1128,25 @@ void lls_sls_monitor_buffer_isobmff_intermediate_mmt_file_dump(lls_sls_monitor_b
 
 }
 
+
+void ls_sls_monitor_buffer_isobmff_mmt_mpu_rebuilt_file_dump(lls_sls_monitor_buffer_isobmff_t* lls_sls_monitor_buffer_isobmff, const char* directory_path, uint32_t mpu_sequence_number, const char* prefix) {
+	__LLS_SLS_MONITOR_OUTPUT_BUFFER_UTILS_INFO("ls_sls_monitor_buffer_isobmff_mmt_mpu_rebuilt_file_dump: dumping to %s, mpu_sequence_number: %u, prefix: %s", directory_path, mpu_sequence_number, prefix);
+	//just to be sure...
+	mkdir(directory_path, 0777);
+
+	//build our recon mpu
+	char* track_dump_file_name = (char*)calloc(128, sizeof(char));
+	snprintf(track_dump_file_name, 127, "%s/%u.%s", directory_path, mpu_sequence_number, prefix);
+
+	FILE* track_dump_recon_fp = fopen(track_dump_file_name, "w");
+	if(track_dump_recon_fp) {
+		fwrite(lls_sls_monitor_buffer_isobmff->mmt_mpu_rebuilt->p_buffer, lls_sls_monitor_buffer_isobmff->mmt_mpu_rebuilt->p_size, 1, track_dump_recon_fp);
+		fclose(track_dump_recon_fp);
+		free(track_dump_file_name);
+	}
+
+
+}
 
 
 void lls_sls_monitor_output_buffer_mmt_file_dump(lls_sls_monitor_output_buffer_t* lls_sls_monitor_output_buffer, const char* directory_path, uint32_t mpu_sequence_number_audio, uint32_t mpu_sequence_number_video) {

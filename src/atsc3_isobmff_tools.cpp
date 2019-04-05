@@ -88,6 +88,68 @@ lls_sls_monitor_output_buffer_t* atsc3_isobmff_build_joined_mmt_isobmff_fragment
 
 }
 
+
+//
+
+
+lls_sls_monitor_output_buffer_t* atsc3_isobmff_build_joined_mmt_rebuilt_boxes(lls_sls_monitor_output_buffer_t* lls_sls_monitor_output_buffer) {
+
+    AP4_MemoryByteStream* ap4_memory_byte_stream;
+
+    ISOBMFF_track_joiner_monitor_output_buffer_parse_and_build_joined_mmt_rebuilt_boxes(lls_sls_monitor_output_buffer, &ap4_memory_byte_stream);
+
+    if(!ap4_memory_byte_stream || !ap4_memory_byte_stream->GetDataSize()) {
+        __ISOBMFF_TOOLS_ERROR("atsc3_isobmff_build_joined_mmt_rebuilt_boxes: returned %p, size: %u, returning NULL", ap4_memory_byte_stream, ap4_memory_byte_stream != NULL ? ap4_memory_byte_stream->GetDataSize() : 0);
+        return NULL;
+    }
+    __ISOBMFF_TOOLS_DEBUG("atsc3_isobmff_build_joined_mmt_rebuilt_boxes: building return alloc of %u", ap4_memory_byte_stream->GetDataSize());
+
+    if(!lls_sls_monitor_output_buffer->joined_isobmff_block) {
+        lls_sls_monitor_output_buffer->joined_isobmff_block = block_Alloc(ap4_memory_byte_stream->GetDataSize());
+    } else {
+    	//rewind so our final output will be a clean mux
+      	block_Rewind(lls_sls_monitor_output_buffer->joined_isobmff_block);
+
+        if(!block_Resize(lls_sls_monitor_output_buffer->joined_isobmff_block, ap4_memory_byte_stream->GetDataSize())) {
+            block_Release(&lls_sls_monitor_output_buffer->joined_isobmff_block);
+            __ISOBMFF_TOOLS_ERROR("atsc3_isobmff_build_joined_mmt_isobmff_fragment: block_Resize returned NULL for size: %u, freeing and returning NULL", ap4_memory_byte_stream->GetDataSize());
+            return NULL;
+        }
+    }
+
+    block_Write(lls_sls_monitor_output_buffer->joined_isobmff_block, (uint8_t*)ap4_memory_byte_stream->GetData(), ap4_memory_byte_stream->GetDataSize());
+    free (ap4_memory_byte_stream);
+    return lls_sls_monitor_output_buffer;
+
+}
+
+lls_sls_monitor_buffer_isobmff_t* atsc3_isobmff_rebuild_track_mpu_from_sample_data(lls_sls_monitor_buffer_isobmff_t* lls_sls_monitor_buffer_isobmff) {
+
+    AP4_MemoryByteStream* ap4_memory_byte_stream;
+
+    ISOBMFF_rebuild_moof_from_sample_data(lls_sls_monitor_buffer_isobmff, &ap4_memory_byte_stream);
+
+    if(!ap4_memory_byte_stream || !ap4_memory_byte_stream->GetDataSize()) {
+        __ISOBMFF_TOOLS_ERROR("atsc3_isobmff_build_joined_mmt_isobmff_fragment: returned %p, size: %u, returning NULL", ap4_memory_byte_stream, ap4_memory_byte_stream != NULL ? ap4_memory_byte_stream->GetDataSize() : 0);
+        return NULL;
+    }
+
+    if(!lls_sls_monitor_buffer_isobmff->mmt_mpu_rebuilt) {
+        __ISOBMFF_TOOLS_INFO("atsc3_isobmff_build_joined_mmt_isobmff_fragment: building return alloc of %u", ap4_memory_byte_stream->GetDataSize());
+
+    	lls_sls_monitor_buffer_isobmff->mmt_mpu_rebuilt = block_Alloc(ap4_memory_byte_stream->GetDataSize());
+    } else {
+    	//otherwise append..
+        __ISOBMFF_TOOLS_INFO("atsc3_isobmff_build_joined_mmt_isobmff_fragment: appending return alloc of %u", ap4_memory_byte_stream->GetDataSize());
+
+    }
+
+    block_Write(lls_sls_monitor_buffer_isobmff->mmt_mpu_rebuilt, (uint8_t*)ap4_memory_byte_stream->GetData(), ap4_memory_byte_stream->GetDataSize());
+    free (ap4_memory_byte_stream);
+    return lls_sls_monitor_buffer_isobmff;
+
+}
+
 /*
  *
  * patch just this track_id and moof box as needed?
@@ -236,7 +298,9 @@ if(!found_mpu_metadata_fragment_video && !lls_sls_mmt_monitor->lls_sls_monitor_o
 
 
 
-lls_sls_monitor_buffer_isobmff_t* atsc3_isobmff_build_mpu_from_single_sequence_number(udp_flow_t* udp_flow, udp_flow_latest_mpu_sequence_number_container_t* udp_flow_latest_mpu_sequence_number_container,
+
+
+lls_sls_monitor_buffer_isobmff_t* atsc3_isobmff_build_raw_mpu_from_single_sequence_number(udp_flow_t* udp_flow, udp_flow_latest_mpu_sequence_number_container_t* udp_flow_latest_mpu_sequence_number_container,
 		uint16_t packet_id, uint32_t mpu_sequence_number, mmtp_sub_flow_vector_t* mmtp_sub_flow_vector, lls_sls_monitor_buffer_isobmff_t* lls_sls_monitor_buffer_isobmff) {
 
 	__ISOBMFF_TOOLS_DEBUG("atsc3_isobmff_build_mpu_from_single_sequence_number: Starting to create MPU from flow: packet_id: %u, mpu_sequence_number: %u",
