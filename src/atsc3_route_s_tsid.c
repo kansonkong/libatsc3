@@ -41,12 +41,10 @@ atsc3_route_s_tsid_t* atsc3_route_s_tsid_parse_from_payload(char* payload, char*
 	for(int i=0; i < num_root_children; i++) {
 		xml_node_t* root_child = xml_node_child(xml_document_root_node, i);
 		xml_string_t* root_child_name = xml_node_name(root_child);
+
 		uint8_t* root_child_name_string = xml_string_clone(root_child_name);
-
 		_ATSC3_ROUTE_S_TSID_PARSER_DEBUG("checking root_child tag at: %i, val: %s", i, root_child_name_string);
-		freeclean(&root_child_name_string);
-
-		dump_xml_string(root_child_name);
+		freeclean_uint8_t(&root_child_name_string);
 
 		if(xml_node_equals_ignore_case(root_child, "S-TSID")) {
 			atsc3_route_s_tsid = atsc3_route_s_tsid_new();

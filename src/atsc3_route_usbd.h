@@ -90,6 +90,7 @@
 #include "atsc3_utils.h"
 #include "xml.h"
 #include "atsc3_vector_builder.h"
+#include "atsc3_logging_externs.h"
 
 
 /**
@@ -174,8 +175,8 @@ void atsc3_route_usb_dump(atsc3_route_user_service_bundle_description_t* atsc3_r
 
 #define _ATSC3_ROUTE_USBD_PARSER_ERROR(...)   printf("%s:%d:ERROR:",__FILE__,__LINE__);_ATSC3_UTILS_PRINTLN(__VA_ARGS__);
 #define _ATSC3_ROUTE_USBD_PARSER_WARN(...)    printf("%s:%d:WARN:",__FILE__,__LINE__);_ATSC3_UTILS_PRINTLN(__VA_ARGS__);
-#define _ATSC3_ROUTE_USBD_PARSER_INFO(...)    printf("%s:%d:INFO:",__FILE__,__LINE__);_ATSC3_UTILS_PRINTLN(__VA_ARGS__);
-#define _ATSC3_ROUTE_USBD_PARSER_DEBUG(...)   printf("%s:%d:DEBUG:",__FILE__,__LINE__);_ATSC3_UTILS_PRINTLN(__VA_ARGS__);
+#define _ATSC3_ROUTE_USBD_PARSER_INFO(...)    if(_ROUTE_USBD_PARSER_INFO_ENABLED)  { printf("%s:%d:INFO:",__FILE__,__LINE__);_ATSC3_UTILS_PRINTLN(__VA_ARGS__);  }
+#define _ATSC3_ROUTE_USBD_PARSER_DEBUG(...)   if(_ROUTE_USBD_PARSER_DEBUG_ENABLED) { printf("%s:%d:DEBUG:",__FILE__,__LINE__);_ATSC3_UTILS_PRINTLN(__VA_ARGS__); }
 
 
 
