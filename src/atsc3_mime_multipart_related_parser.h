@@ -19,6 +19,7 @@
 #include "atsc3_utils.h"
 #include "atsc3_mime_multipart_related.h"
 #include "atsc3_sls_metadata_fragment_types.h"
+#include "atsc3_sls_metadata_fragment_types_parser.h"
 #include "atsc3_logging_externs.h"
 
 #define ATSC3_MIME_MULTIPART_RELATED_LINE_BUFFER 1024

@@ -40,7 +40,7 @@ atsc3_route_mpd_t* atsc3_route_mpd_parse_from_payload(char* payload, char* conte
 		xml_node_t* root_child = xml_node_child(xml_document_root_node, i);
 		xml_string_t* root_child_name = xml_node_name(root_child);
 
-		_ATSC3_ROUTE_MPD_PARSER_INFO("checking root_child tag at: %i, valr", i);
+		_ATSC3_ROUTE_MPD_PARSER_INFO("checking root_child tag at: %i, val", i);
 		dump_xml_string(root_child_name);
 
 		if(xml_node_equals_ignore_case(root_child, "MPD")) {
