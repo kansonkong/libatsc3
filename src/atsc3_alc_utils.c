@@ -714,8 +714,14 @@ void alc_recon_file_buffer_struct_monitor_fragment_with_init_box(alc_packet_t* a
 	block_t* audio_init_payload = NULL;
 	block_t* video_init_payload = NULL;
 
-	//alc_packet->def_lct_hdr->toi hack
+	//tsi matching for audio and video fragments
 	if(alc_packet->def_lct_hdr->tsi == lls_sls_alc_monitor->audio_tsi) {
+		//don't flush out init boxes here..
+		if(alc_packet->def_lct_hdr->toi == lls_sls_alc_monitor->audio_toi_init) {
+			__ALC_UTILS_DEBUG("alc_recon_file_buffer_struct_monitor_fragment_with_init_box, got audo init box: tsi: %u, toi: %u, ignoring", alc_packet->def_lct_hdr->tsi, alc_packet->def_lct_hdr->toi);
+			return;
+		}
+
 		lls_sls_alc_monitor->last_closed_audio_toi = alc_packet->def_lct_hdr->toi;
 		if(alc_packet->ext_route_presentation_ntp_timestamp_set && !lls_sls_alc_monitor->lls_sls_monitor_output_buffer.audio_output_buffer_isobmff.mpu_presentation_time_set) {
 			lls_sls_alc_monitor->lls_sls_monitor_output_buffer.audio_output_buffer_isobmff.mpu_presentation_time = alc_packet->ext_route_presentation_ntp_timestamp;
@@ -725,6 +731,11 @@ void alc_recon_file_buffer_struct_monitor_fragment_with_init_box(alc_packet_t* a
 	}
 
 	if(alc_packet->def_lct_hdr->tsi == lls_sls_alc_monitor->video_tsi) {
+		if(alc_packet->def_lct_hdr->toi == lls_sls_alc_monitor->video_toi_init) {
+			__ALC_UTILS_DEBUG("alc_recon_file_buffer_struct_monitor_fragment_with_init_box, got video init box: tsi: %u, toi: %u, ignoring", alc_packet->def_lct_hdr->tsi, alc_packet->def_lct_hdr->toi);
+			return;
+		}
+
 		lls_sls_alc_monitor->last_closed_video_toi = alc_packet->def_lct_hdr->toi;
 		if(alc_packet->ext_route_presentation_ntp_timestamp_set && !lls_sls_alc_monitor->lls_sls_monitor_output_buffer.video_output_buffer_isobmff.mpu_presentation_time_set) {
 			lls_sls_alc_monitor->lls_sls_monitor_output_buffer.video_output_buffer_isobmff.mpu_presentation_time = alc_packet->ext_route_presentation_ntp_timestamp;
