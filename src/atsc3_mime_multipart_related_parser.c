@@ -9,9 +9,9 @@
 #include "strnstr.c"
 #include "atsc3_mime_multipart_related_parser.h"
 
-int _MIME_PARSER_INFO_ENABLED = 1;
-int _MIME_PARSER_DEBUG_ENABLED = 1;
-int _MIME_PARSER_TRACE_ENABLED = 1;
+int _MIME_PARSER_INFO_ENABLED  = 0;
+int _MIME_PARSER_DEBUG_ENABLED = 0;
+int _MIME_PARSER_TRACE_ENABLED = 0;
 
 
 /**

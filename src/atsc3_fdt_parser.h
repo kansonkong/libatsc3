@@ -28,9 +28,9 @@ void atsc3_fdt_instance_dump(atsc3_fdt_instance_t* atsc3_fdt_instance);
 
 
 #define _ATSC3_FDT_PARSER_ERROR(...)   printf("%s:%d:ERROR:",__FILE__,__LINE__);_ATSC3_UTILS_PRINTLN(__VA_ARGS__);
-#define _ATSC3_FDT_PARSER_WARN(...)    printf("%s:%d:WARN:",__FILE__,__LINE__);_ATSC3_UTILS_PRINTLN(__VA_ARGS__);
-#define _ATSC3_FDT_PARSER_INFO(...)    printf("%s:%d:INFO:",__FILE__,__LINE__);_ATSC3_UTILS_PRINTLN(__VA_ARGS__);
-#define _ATSC3_FDT_PARSER_DEBUG(...)   printf("%s:%d:DEBUG:",__FILE__,__LINE__);_ATSC3_UTILS_PRINTLN(__VA_ARGS__);
+#define _ATSC3_FDT_PARSER_WARN(...)    printf("%s:%d:WARN :",__FILE__,__LINE__);_ATSC3_UTILS_PRINTLN(__VA_ARGS__);
+#define _ATSC3_FDT_PARSER_INFO(...)    printf("%s:%d:INFO :",__FILE__,__LINE__);_ATSC3_UTILS_PRINTLN(__VA_ARGS__);
+#define _ATSC3_FDT_PARSER_DEBUG(...)   if(_FDT_PARSER_DEBUG_ENABLED) { printf("%s:%d:DEBUG:",__FILE__,__LINE__);_ATSC3_UTILS_PRINTLN(__VA_ARGS__); }
 
 
 #endif /* ATSC3_FDT_PARSER_H_ */

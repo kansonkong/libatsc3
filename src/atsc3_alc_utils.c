@@ -167,7 +167,7 @@ FILE* alc_object_pre_allocate(char* file_name, alc_packet_t* alc_packet) {
     
     uint32_t to_allocate_size = alc_packet->transfer_len;
     if(to_allocate_size) {
-    	__ALC_UTILS_WARN("pre_allocate: before: file %s to size: %d", file_name, to_allocate_size);
+    	__ALC_UTILS_INFO("pre_allocate: before: file %s to size: %d", file_name, to_allocate_size);
         uint32_t alloc_offset = 0;
         uint32_t blocksize;
         uint32_t loop_count = 0;

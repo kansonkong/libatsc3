@@ -410,6 +410,13 @@ void freeclean(void** tofree) {
 }
 
 
+void freeclean_uint8_t(uint8_t** tofree) {
+	if(*tofree) {
+		free(*tofree);
+		tofree = NULL;
+	}
+}
+
 uint32_t parseIpAddressIntoIntval(char* dst_ip_original) {
 	uint32_t ipAddressAsInteger = 0;
 	char* dst_ip = strlcopy(dst_ip_original);

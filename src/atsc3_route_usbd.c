@@ -41,9 +41,9 @@ atsc3_route_user_service_bundle_description_t* atsc3_route_user_service_bundle_d
 	for(int i=0; i < num_root_children; i++) {
 		xml_node_t* root_child = xml_node_child(xml_document_root_node, i);
 		xml_string_t* root_child_name = xml_node_name(root_child);
-
-		_ATSC3_ROUTE_USBD_PARSER_INFO("checking root_child tag at: %i, val", i);
-		dump_xml_string(root_child_name);
+		uint8_t* root_child_name_string = xml_string_clone(root_child_name);
+		_ATSC3_ROUTE_USBD_PARSER_INFO("checking root_child tag at: %i, val: %s", i, root_child_name_string);
+		freeclean_uint8_t(&root_child_name_string);
 
 		if(xml_node_equals_ignore_case(root_child, "BundleDescriptionROUTE")) {
 			size_t bundle_children = xml_node_children(root_child);

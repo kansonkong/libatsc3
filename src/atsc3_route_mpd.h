@@ -63,10 +63,9 @@ ATSC3_VECTOR_BUILDER_STRUCT
 #define ATSC3_ROUTE_MPD_H_
 
 #include "atsc3_utils.h"
-
 #include "xml.h"
 #include "atsc3_vector_builder.h"
-
+#include "atsc3_logging_externs.h"
 /**
  *  xlink:href="tag:atsc.org,2016:xlinkhttps://atsc3vod.npgco.com/crengine?clientid=%clientid%&amp;uniqueid=775&amp;thisname=SNPR55030&amp;nextid=774&amp;nextname=SKPR60825"
  *    xmlns:xlink="http://www.w3.org/1999/xlink">
@@ -231,10 +230,10 @@ atsc3_route_adaptation_set_t* atsc3_route_mpd_parse_segment_template_set(xml_nod
 void atsc3_route_mpd_dump(atsc3_route_mpd_t* atsc3_route_mpd);
 
 
-#define _ATSC3_ROUTE_MPD_PARSER_ERROR(...)   printf("%s:%d:ERROR:",__FILE__,__LINE__);_ATSC3_UTILS_PRINTLN(__VA_ARGS__);
-#define _ATSC3_ROUTE_MPD_PARSER_WARN(...)    printf("%s:%d:WARN:",__FILE__,__LINE__);_ATSC3_UTILS_PRINTLN(__VA_ARGS__);
-#define _ATSC3_ROUTE_MPD_PARSER_INFO(...)    printf("%s:%d:INFO:",__FILE__,__LINE__);_ATSC3_UTILS_PRINTLN(__VA_ARGS__);
-#define _ATSC3_ROUTE_MPD_PARSER_DEBUG(...)   printf("%s:%d:DEBUG:",__FILE__,__LINE__);_ATSC3_UTILS_PRINTLN(__VA_ARGS__);
+#define _ATSC3_ROUTE_MPD_PARSER_ERROR(...)  printf("%s:%d:ERROR:",__FILE__,__LINE__);_ATSC3_UTILS_PRINTLN(__VA_ARGS__);
+#define _ATSC3_ROUTE_MPD_PARSER_WARN(...)   printf("%s:%d:WARN:",__FILE__,__LINE__);_ATSC3_UTILS_PRINTLN(__VA_ARGS__);
+#define _ATSC3_ROUTE_MPD_PARSER_INFO(...)   if(_ROUTE_MPD_PARSER_INFO_ENABLED)  { printf("%s:%d:INFO :",__FILE__,__LINE__);_ATSC3_UTILS_PRINTLN(__VA_ARGS__); }
+#define _ATSC3_ROUTE_MPD_PARSER_DEBUG(...)  if(_ROUTE_MPD_PARSER_DEBUG_ENABLED) { printf("%s:%d:DEBUG:",__FILE__,__LINE__);_ATSC3_UTILS_PRINTLN(__VA_ARGS__); }
 
 
 #endif /* ATSC3_ROUTE_MPD_H_ */

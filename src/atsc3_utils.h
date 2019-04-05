@@ -108,6 +108,7 @@ char* __trim(char *str);
 
 void freesafe(void* tofree);
 void freeclean(void** tofree);
+void freeclean_uint8_t(uint8_t** tofree);
 
 uint32_t parseIpAddressIntoIntval(char* dst_ip);
 
