@@ -8,8 +8,8 @@
 #include "atsc3_lls_alc_utils.h"
 
 
-int _LLS_ALC_UTILS_INFO_ENABLED = 0;
-int _LLS_ALC_UTILS_DEBUG_ENABLED = 0;
+int _LLS_ALC_UTILS_INFO_ENABLED = 1;
+int _LLS_ALC_UTILS_DEBUG_ENABLED = 1;
 
 lls_sls_alc_monitor_t* lls_sls_alc_monitor_create() {
 	lls_sls_alc_monitor_t* lls_sls_alc_monitor = (lls_sls_alc_monitor_t*)calloc(1, sizeof(lls_sls_alc_monitor_t));
