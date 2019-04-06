@@ -197,6 +197,13 @@ block_t* block_Alloc(int len) {
 	return new_block;
 }
 
+block_t* block_Promote(char* string) {
+	int string_len = strlen(string);
+	block_t* new_block = block_Alloc(string_len);
+	block_Write(new_block, (uint8_t*)string, string_len);
+
+	return new_block;
+}
 //todo: make this a marco define?
 block_t* __block_check_bounaries(const char* method_name, block_t* src) {
 	//these are FATAL conditions, return NULL
@@ -235,6 +242,27 @@ block_t* __block_check_bounaries(const char* method_name, block_t* src) {
 	return src;
 }
 
+uint32_t block_Seek(block_t* block, int32_t seek_pos) {
+	if(!__block_check_bounaries(__FUNCTION__, block)) {
+		block->i_pos = 0;
+	}
+
+	if(seek_pos < 0 ) {
+		_ATSC3_UTILS_WARN("block_Seek: block: %p, invalid seek_pos to: %u, clamping to 0",
+				block->p_buffer, seek_pos);
+		block->i_pos = 0;
+	} else if(seek_pos > block->p_size) {
+		_ATSC3_UTILS_WARN("block_Seek: block: %p, invalid seek_pos to: %u, clamping to %u",
+				block->p_buffer, seek_pos, block->p_size);
+		block->i_pos = block->p_size;
+	} else {
+		block->i_pos = seek_pos;
+	}
+
+	return block->i_pos;
+}
+
+
 block_t* block_Write(block_t* dest, uint8_t* src_buf, uint32_t src_size) {
 	if(!__block_check_bounaries(__FUNCTION__, dest)) return NULL;
 
@@ -251,6 +279,25 @@ block_t* block_Write(block_t* dest, uint8_t* src_buf, uint32_t src_size) {
 
 	return dest;
 }
+
+
+uint32_t block_Append(block_t* dest, block_t* src) {
+	if(!__block_check_bounaries(__FUNCTION__, dest)) return 0;
+
+	int dest_size_required = dest->i_pos + src->i_pos;
+	if(dest->p_size < dest_size_required) {
+		block_t* ret_block = block_Resize(dest, dest_size_required);
+		if(!ret_block) {
+			_ATSC3_UTILS_ERROR("block_Write: block: %p, unable to realloc from size: %u to %u, returning NULL", dest, dest->p_size, dest_size_required);
+			return 0;
+		}
+	}
+	memcpy(&dest->p_buffer[dest->i_pos], src->p_buffer, src->i_pos);
+	dest->i_pos += src->i_pos;
+
+	return dest->i_pos;
+}
+
 
 block_t* block_Rewind(block_t* dest) {
 	if(!__block_check_bounaries(__FUNCTION__, dest)) return NULL;
@@ -270,7 +317,8 @@ block_t* block_Rewind(block_t* dest) {
 
 /**
  * note, this will duplicate the full block size and update i_pos in the dest payload
- * if you need a subset of the payload, use block_Duplicate_from_position
+ * if you need a head trimmed version of the payload at i_pos, use block_Duplicate_from_position
+ * if you need a tail trimmed version of the payload N bytes long, block_Duplicate_to_size
  */
 block_t* block_Duplicate(block_t* src) {
 	if(!__block_check_bounaries(__FUNCTION__, src)) return NULL;
@@ -279,10 +327,12 @@ block_t* block_Duplicate(block_t* src) {
 
 	block_t* dest = block_Alloc(to_alloc_size);
 	memcpy(dest->p_buffer, src->p_buffer, to_alloc_size);
-	dest->i_pos = 0;
+	dest->i_pos = src->i_pos;
 
 	return dest;
 }
+
+
 
 /**
  *
@@ -303,6 +353,25 @@ block_t* block_Duplicate_from_position(block_t* src) {
 
 	return dest;
 }
+
+
+/**
+ *
+ * this will return a new block starting 0 up to target_len
+ */
+
+block_t* block_Duplicate_to_size(block_t* src, uint32_t target_len) {
+	if(!__block_check_bounaries(__FUNCTION__, src)) return NULL;
+
+	uint32_t to_alloc_size = __CLIP(target_len, 8, src->p_size);
+
+	block_t* dest = block_Alloc(to_alloc_size);
+	memcpy(dest->p_buffer, src->p_buffer, to_alloc_size);
+	dest->i_pos = to_alloc_size;
+
+	return dest;
+}
+
 
 //return will be NULL if realloc failed, but src will still be valid
 //this has not been tested with shrinking down the size...
@@ -362,6 +431,13 @@ void freeclean(void** tofree) {
 	}
 }
 
+
+void freeclean_uint8_t(uint8_t** tofree) {
+	if(*tofree) {
+		free(*tofree);
+		tofree = NULL;
+	}
+}
 
 uint32_t parseIpAddressIntoIntval(char* dst_ip_original) {
 	uint32_t ipAddressAsInteger = 0;

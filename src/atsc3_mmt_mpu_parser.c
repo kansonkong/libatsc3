@@ -155,6 +155,14 @@ uint8_t* mmt_mpu_parse_payload(mmtp_sub_flow_vector_t* mmtp_sub_flow_vector, mmt
 				//__LOG_INFO(p_demux, "%d::mpu_fragment_type: %hu, remainingPacketLen: %d", __LINE__, mpu_fragment_type, remainingPacketLen);
 
 			} else {
+
+				/**
+				 *
+				 * jdj-2019-03-30 - TODO: fix me to read proper box sizes.....
+				 *
+				 *
+				 */
+
 				//mfu's have time and un-timed additional DU headers, so recalc to_read_packet_len after doing (uint8_t*)extract
 				//we use the du_header field
 				//parse data unit header here based upon mpu timed flag
@@ -227,23 +235,39 @@ uint8_t* mmt_mpu_parse_payload(mmtp_sub_flow_vector_t* mmtp_sub_flow_vector, mmt
 					uint8_t timed_mfu_block[14];
 					buf = (uint8_t*)extract(buf, timed_mfu_block, 14);
 
-					mmtp_packet_header->mpu_data_unit_payload_fragments_timed.movie_fragment_sequence_number 	= (timed_mfu_block[0] << 24) | (timed_mfu_block[1] << 16) | (timed_mfu_block[2]  << 8) | (timed_mfu_block[3]);
-					mmtp_packet_header->mpu_data_unit_payload_fragments_timed.sample_number				 	  	= (timed_mfu_block[4] << 24) | (timed_mfu_block[5] << 16) | (timed_mfu_block[6]  << 8) | (timed_mfu_block[7]);
-					mmtp_packet_header->mpu_data_unit_payload_fragments_timed.offset     					  	= (timed_mfu_block[8] << 24) | (timed_mfu_block[9] << 16) | (timed_mfu_block[10] << 8) | (timed_mfu_block[11]);
-					mmtp_packet_header->mpu_data_unit_payload_fragments_timed.priority 							= timed_mfu_block[12];
-					mmtp_packet_header->mpu_data_unit_payload_fragments_timed.dep_counter						= timed_mfu_block[13];
+					mmtp_packet_header->mpu_data_unit_payload_fragments_timed.mpu_movie_fragment_sequence_number 	= (timed_mfu_block[0] << 24) | (timed_mfu_block[1] << 16) | (timed_mfu_block[2]  << 8) | (timed_mfu_block[3]);
+					mmtp_packet_header->mpu_data_unit_payload_fragments_timed.mpu_sample_number				 	  	= (timed_mfu_block[4] << 24) | (timed_mfu_block[5] << 16) | (timed_mfu_block[6]  << 8) | (timed_mfu_block[7]);
+					mmtp_packet_header->mpu_data_unit_payload_fragments_timed.mpu_offset     					  	= (timed_mfu_block[8] << 24) | (timed_mfu_block[9] << 16) | (timed_mfu_block[10] << 8) | (timed_mfu_block[11]);
+					mmtp_packet_header->mpu_data_unit_payload_fragments_timed.mpu_priority 							= timed_mfu_block[12];
+					mmtp_packet_header->mpu_data_unit_payload_fragments_timed.mpu_dep_counter						= timed_mfu_block[13];
 					uint8_t* rewind_buf = buf;
 
                     //see if bento4 will handle this?
 					//parse out mmthsample block if this is our first fragment or we are a complete fragment,
-					if(mmtp_packet_header->mpu_data_unit_payload_fragments_timed.mpu_fragment_type == 2 && (mmtp_packet_header->mpu_data_unit_payload_fragments_timed.mpu_fragmentation_indicator == 0 || mmtp_packet_header->mpu_data_unit_payload_fragments_timed.mpu_fragmentation_indicator == 1)) {
+					if(mmtp_packet_header->mpu_data_unit_payload_fragments_timed.mpu_fragment_type == 2 &&
+							(mmtp_packet_header->mpu_data_unit_payload_fragments_timed.mpu_fragmentation_indicator == 0 ||
+									mmtp_packet_header->mpu_data_unit_payload_fragments_timed.mpu_fragmentation_indicator == 1)) {
 
 						//MMTHSample does not subclass box...
 						//buf = (uint8_t*)extract(buf, &mmthsample_len, 1);
 						buf = (uint8_t*)extract(buf, mmthsample_sequence_number, 4);
+						mmtp_packet_header->mpu_data_unit_payload_fragments_timed.mmth_sequence_number = ntohl(*(uint32_t*)(mmthsample_sequence_number));
 
 						uint8_t mmthsample_timed_block[19];
 						buf = (uint8_t*)extract(buf, mmthsample_timed_block, 19);
+						int mmth_position=0;
+						mmtp_packet_header->mpu_data_unit_payload_fragments_timed.mmth_trackrefindex = mmthsample_timed_block[mmth_position++];
+						mmtp_packet_header->mpu_data_unit_payload_fragments_timed.mmth_movie_fragment_sequence_number = ntohl(*(uint32_t*)(&mmthsample_timed_block[mmth_position]));
+						mmth_position+=4;
+						mmtp_packet_header->mpu_data_unit_payload_fragments_timed.mmth_samplenumber = ntohl(*(uint32_t*)(&mmthsample_timed_block[mmth_position]));
+						mmth_position+=4;
+						mmtp_packet_header->mpu_data_unit_payload_fragments_timed.mmth_priority = mmthsample_timed_block[mmth_position++];
+						mmtp_packet_header->mpu_data_unit_payload_fragments_timed.mmth_dependency_counter = mmthsample_timed_block[mmth_position++];
+						mmtp_packet_header->mpu_data_unit_payload_fragments_timed.mmth_offset = ntohl(*(uint32_t*)(&mmthsample_timed_block[mmth_position]));
+						mmth_position+=4;
+						mmtp_packet_header->mpu_data_unit_payload_fragments_timed.mmth_length = ntohl(*(uint32_t*)(&mmthsample_timed_block[mmth_position]));
+
+
 
 						//read multilayerinfo
 						uint8_t multilayerinfo_box_length[4];
@@ -268,21 +292,21 @@ uint8_t* mmt_mpu_parse_payload(mmtp_sub_flow_vector_t* mmtp_sub_flow_vector, mmt
 
 						_MPU_DEBUG("mpu mode (0x02), timed MFU, mpu_fragmentation_indicator: %d, movie_fragment_seq_num: %u, sample_num: %u, offset: %u, pri: %d, dep_counter: %d, multilayer: %d, mpu_sequence_number: %u",
 							mmtp_packet_header->mpu_data_unit_payload_fragments_timed.mpu_fragmentation_indicator,
-							mmtp_packet_header->mpu_data_unit_payload_fragments_timed.movie_fragment_sequence_number,
-							mmtp_packet_header->mpu_data_unit_payload_fragments_timed.sample_number,
-							mmtp_packet_header->mpu_data_unit_payload_fragments_timed.offset,
-							mmtp_packet_header->mpu_data_unit_payload_fragments_timed.priority,
-							mmtp_packet_header->mpu_data_unit_payload_fragments_timed.dep_counter,
+							mmtp_packet_header->mpu_data_unit_payload_fragments_timed.mpu_movie_fragment_sequence_number,
+							mmtp_packet_header->mpu_data_unit_payload_fragments_timed.mpu_sample_number,
+							mmtp_packet_header->mpu_data_unit_payload_fragments_timed.mpu_offset,
+							mmtp_packet_header->mpu_data_unit_payload_fragments_timed.mpu_priority,
+							mmtp_packet_header->mpu_data_unit_payload_fragments_timed.mpu_dep_counter,
 							is_multilayer,
 							mmtp_packet_header->mpu_data_unit_payload_fragments_timed.mpu_sequence_number);
 					} else {
 						_MPU_DEBUG("mpu mode (0x02), timed MFU, mpu_fragmentation_indicator: %d, movie_fragment_seq_num: %u, sample_num: %u, offset: %u, pri: %d, dep_counter: %d, mpu_sequence_number: %u",
 							mmtp_packet_header->mpu_data_unit_payload_fragments_timed.mpu_fragmentation_indicator,
-							mmtp_packet_header->mpu_data_unit_payload_fragments_timed.movie_fragment_sequence_number,
-							mmtp_packet_header->mpu_data_unit_payload_fragments_timed.sample_number,
-							mmtp_packet_header->mpu_data_unit_payload_fragments_timed.offset,
-							mmtp_packet_header->mpu_data_unit_payload_fragments_timed.priority,
-							mmtp_packet_header->mpu_data_unit_payload_fragments_timed.dep_counter,
+							mmtp_packet_header->mpu_data_unit_payload_fragments_timed.mpu_movie_fragment_sequence_number,
+							mmtp_packet_header->mpu_data_unit_payload_fragments_timed.mpu_sample_number,
+							mmtp_packet_header->mpu_data_unit_payload_fragments_timed.mpu_offset,
+							mmtp_packet_header->mpu_data_unit_payload_fragments_timed.mpu_priority,
+							mmtp_packet_header->mpu_data_unit_payload_fragments_timed.mpu_dep_counter,
 							mmtp_packet_header->mpu_data_unit_payload_fragments_timed.mpu_sequence_number);
 					}
 					//end mfu box read

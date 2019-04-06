@@ -7,7 +7,11 @@
 # requirements: bento4 libary, ncurses libary and headers
 
 all: 	intermediate_lls intermediate_mbms \
-		intermediate_mmt intermediate_alc intermediate_ffplay \
+		intermediate_sls \
+		intermediate_mmt \
+		intermediate_alc \
+		intermediate_a337 \
+		intermediate_ffplay \
 		interemediate_gpl_and_mock_linkage  \
 		libatsc3_core   \
 		unit_tests \
@@ -22,13 +26,19 @@ clean:
 	
 intermediate_lls: atsc3_lls.o atsc3_lls_sls_parser.o  atsc3_lls_alc_utils.o
 
-intermediate_mbms: atsc3_mime_multipart_related.o atsc3_mime_multipart_related_parser.o 
+intermediate_mbms: atsc3_mime_multipart_related.o atsc3_mime_multipart_related_parser.o \
+					atsc3_route_usbd.o atsc3_mbms_envelope_parser.o
+					
+intermediate_sls: atsc3_route_mpd.o atsc3_route_s_tsid.o atsc3_sls_metadata_fragment_types_parser.o	
 
-intermediate_alc: atsc3_alc_rx.c alc_session.c fec.c null_fec.c rs_fec.c xor_fec.o atsc3_alc_utils.o  
+intermediate_alc: atsc3_alc_rx.c alc_session.c fec.c null_fec.c rs_fec.c xor_fec.o atsc3_alc_utils.o \
+					 atsc3_route_sls_processor.o
 
 intermediate_mmt: xml.o atsc3_mmtp_parser.o atsc3_mmt_mpu_parser.o atsc3_mmt_signaling_message.o \
 					atsc3_mmtp_ntp32_to_pts.o atsc3_utils.o fixups_timespec_get.o \
 					atsc3_bandwidth_statistics.o atsc3_mmt_mpu_utils.o
+					
+intermediate_a337:	atsc3_sls_held_fragment.o					
 
 intermediate_ffplay: atsc3_player_ffplay.o
 interemediate_gpl_and_mock_linkage: bento4_gpl_link \
@@ -42,7 +52,7 @@ listener_ncurses: atsc3_listener_metrics_ncurses
 unit_tests: atsc3_lmt_test atsc3_lls_slt_parser_test atsc3_lls_test \
 			atsc3_lls_SystemTime_test atsc3_mmt_signaling_message_test \
 			atsc3_isobmff_box_test atsc3_fdt_test atsc3_stltp_parser_test \
-			atsc3_mime_multipart_related_parser_test
+			atsc3_mime_multipart_related_parser_test atsc3_fdt_mbms_envelope_test
 			
 			
 libmicrohttpd_tests: atsc3_libmicrohttpd_test
@@ -51,7 +61,8 @@ libmicrohttpd_tests: atsc3_libmicrohttpd_test
 atsc3_mmt_signaling_message_test: atsc3_mmt_signaling_message_test.c libatsc3.o
 
 # listener_tests: atsc3_alc_listener_test  atsc3_mmt_listener_test atsc3_listener_test atsc3_mmt_listener_test_bento atsc3_listener_metrics_test
-listener_tests: atsc3_alc_listener_test atsc3_lls_listener_test atsc3_mmt_listener_test \
+listener_tests: atsc3_alc_listener_test atsc3_alc_listener_test_valgrind \
+				atsc3_lls_listener_test atsc3_mmt_listener_test \
 				atsc3_mmt_listener_test_bento atsc3_mmt_sls_listener_test  \
 				atsc3_stltp_listener_test
 
@@ -144,17 +155,88 @@ atsc3_fdt.o: atsc3_fdt.h atsc3_fdt.c atsc3_vector_builder.h
 atsc3_fdt_parser.o: atsc3_fdt.o atsc3_fdt_parser.h atsc3_fdt_parser.c
 	cc -g -c atsc3_fdt_parser.c -o atsc3_fdt_parser.o
 
+atsc3_route_usbd.o: atsc3_route_usbd.h atsc3_route_usbd.c
+	cc -g -c atsc3_route_usbd.c -o atsc3_route_usbd.o
+	
+atsc3_sls_held_fragment.o: atsc3_sls_held_fragment.h atsc3_sls_held_fragment.c
+	cc -g -c atsc3_sls_held_fragment.c -o atsc3_sls_held_fragment.o	
+	
+atsc3_route_mpd.o: atsc3_route_mpd.h atsc3_route_mpd.c
+	cc -g -c atsc3_route_mpd.c -o atsc3_route_mpd.o
+	
+atsc3_route_s_tsid.o: atsc3_route_s_tsid.h atsc3_route_s_tsid.c
+	cc -g -c atsc3_route_s_tsid.c -o atsc3_route_s_tsid.o
 
+atsc3_sls_metadata_fragment_types_parser.o: atsc3_sls_metadata_fragment_types_parser.h atsc3_sls_metadata_fragment_types_parser.c
+	cc -g -c atsc3_sls_metadata_fragment_types_parser.c -o atsc3_sls_metadata_fragment_types_parser.o
+
+atsc3_mbms_envelope_parser.o: atsc3_mbms_envelope_parser.h atsc3_mbms_envelope_parser.c
+	cc -g -c atsc3_mbms_envelope_parser.c -o atsc3_mbms_envelope_parser.o
+
+atsc3_route_sls_processor.o: atsc3_route_sls_processor.h atsc3_route_sls_processor.c
+	cc -g -c atsc3_route_sls_processor.c -o atsc3_route_sls_processor.o
+	
 # unit standalone tests with mock data
 
 
 atsc3_stltp_parser_test: atsc3_stltp_parser_test.c atsc3_stltp_parser.o atsc3_listener_udp.o
 	cc -g atsc3_stltp_parser_test.c atsc3_stltp_parser.o atsc3_listener_udp.o -o atsc3_stltp_parser_test
 
-atsc3_mime_multipart_related_parser_test: atsc3_mime_multipart_related_parser_test.c atsc3_mime_multipart_related.o atsc3_mime_multipart_related_parser.o atsc3_utils.o
-	cc -g atsc3_mime_multipart_related_parser_test.c atsc3_mime_multipart_related.o atsc3_mime_multipart_related_parser.o atsc3_utils.o -o atsc3_mime_multipart_related_parser_test
-
-
+#todo - link against libatsc3 intermediate as these are almost integration tests
+atsc3_mime_multipart_related_parser_test: atsc3_mime_multipart_related_parser_test.c \
+	atsc3_mime_multipart_related.o \
+	atsc3_mime_multipart_related_parser.o \
+	atsc3_sls_metadata_fragment_types_parser.o \
+	atsc3_sls_held_fragment.o \
+	atsc3_utils.o \
+	atsc3_route_mpd.o \
+	atsc3_route_s_tsid.o \
+	atsc3_fdt_parser.o \
+	atsc3_fdt.o \
+	atsc3_route_usbd.o \
+	atsc3_mbms_envelope_parser.o \
+	xml.o
+	cc -g atsc3_mime_multipart_related_parser_test.c \
+	atsc3_mime_multipart_related.o \
+	atsc3_mime_multipart_related_parser.o \
+	atsc3_sls_metadata_fragment_types_parser.o \
+	atsc3_sls_held_fragment.o \
+	atsc3_route_mpd.o \
+	atsc3_route_s_tsid.o \
+	atsc3_fdt_parser.o \
+	atsc3_fdt.o \
+	atsc3_route_usbd.o \
+	atsc3_mbms_envelope_parser.o \
+	xml.o \
+	atsc3_utils.o -o atsc3_mime_multipart_related_parser_test
+	
+atsc3_fdt_mbms_envelope_test: atsc3_fdt_mbms_envelope_test.c \
+	atsc3_mime_multipart_related.o \
+	atsc3_mime_multipart_related_parser.o \
+	atsc3_sls_metadata_fragment_types_parser.o \
+	atsc3_sls_held_fragment.o \
+	atsc3_utils.o \
+	atsc3_route_mpd.o \
+	atsc3_route_s_tsid.o \
+	atsc3_fdt_parser.o \
+	atsc3_fdt.o \
+	atsc3_route_usbd.o \
+	atsc3_mbms_envelope_parser.o \
+	xml.o
+	cc -g atsc3_mime_multipart_related_parser_test.c \
+	atsc3_mime_multipart_related.o \
+	atsc3_mime_multipart_related_parser.o \
+	atsc3_sls_metadata_fragment_types_parser.o \
+	atsc3_sls_held_fragment.o \
+	atsc3_route_mpd.o \
+	atsc3_route_s_tsid.o \
+	atsc3_fdt_parser.o \
+	atsc3_fdt.o \
+	atsc3_route_usbd.o \
+	atsc3_mbms_envelope_parser.o \
+	xml.o \
+	atsc3_utils.o -o atsc3_fdt_mbms_envelope_test
+	
 # stats modules
 
 atsc3_bandwidth_statistics.o: atsc3_bandwidth_statistics.h atsc3_bandwidth_statistics.c
@@ -186,14 +268,20 @@ libatsc3_intermediate.o: xml.o atsc3_lls.o atsc3_lls_slt_parser.o atsc3_lls_sls_
 		atsc3_lls_alc_utils.o atsc3_mmt_mpu_utils.o atsc3_player_ffplay.o atsc3_alc_utils.o \
         atsc3_lls_sls_monitor_output_buffer.o atsc3_lls_sls_monitor_output_buffer_utils.o \
 		atsc3_lls_mmt_utils.o  atsc3_listener_udp.o atsc3_gzip.o atsc3_stltp_parser.o \
-		atsc3_fdt.o atsc3_fdt_parser.o
+		atsc3_fdt.o atsc3_fdt_parser.o \
+		atsc3_route_mpd.o atsc3_route_usbd.o atsc3_route_s_tsid.o atsc3_route_sls_processor.o \
+		atsc3_sls_held_fragment.o  \
+		atsc3_sls_metadata_fragment_types_parser.o atsc3_mime_multipart_related.o atsc3_mime_multipart_related_parser.o atsc3_mbms_envelope_parser.o
 
 	ld  -o libatsc3_intermediate.o -r xml.o atsc3_lls.o atsc3_lls_slt_parser.o  atsc3_lls_sls_parser.o atsc3_mmtp_parser.o atsc3_mmtp_ntp32_to_pts.o atsc3_utils.o \
 		fixups_timespec_get.o atsc3_mmt_signaling_message.o atsc3_mmt_mpu_parser.o alc_channel.o alc_list.o \
 		atsc3_alc_rx.o alc_session.o fec.o null_fec.o rs_fec.o xor_fec.o mad.o mad_rlc.o transport.o atsc3_alc_utils.o \
 		atsc3_lls_alc_utils.o atsc3_mmt_mpu_utils.o atsc3_player_ffplay.o atsc3_lls_sls_monitor_output_buffer.o atsc3_lls_sls_monitor_output_buffer_utils.o \
 		atsc3_lls_mmt_utils.o atsc3_listener_udp.o atsc3_gzip.o atsc3_stltp_parser.o \
-		atsc3_fdt.o atsc3_fdt_parser.o
+		atsc3_fdt.o atsc3_fdt_parser.o \
+		atsc3_route_mpd.o atsc3_route_usbd.o atsc3_route_s_tsid.o atsc3_route_sls_processor.o \
+		atsc3_sls_held_fragment.o  \
+		atsc3_sls_metadata_fragment_types_parser.o atsc3_mime_multipart_related.o atsc3_mime_multipart_related_parser.o atsc3_mbms_envelope_parser.o
 
 libatsc3.o: libatsc3_intermediate.o bento4_mock.o
 	ld  -o libatsc3.o -r libatsc3_intermediate.o bento4_mock.o
@@ -237,6 +325,7 @@ atsc3_fdt_test: atsc3_fdt_test.c libatsc3.o
 atsc3_lls_listener_test: listener_tests/atsc3_lls_listener_test.cpp libatsc3.o 
 	g++ -g listener_tests/atsc3_lls_listener_test.cpp libatsc3.o -lpcap -lz -lpthread -o listener_tests/atsc3_lls_listener_test
 
+
 # stltp listener test
 atsc3_stltp_listener_test: listener_tests/atsc3_stltp_listener_test.cpp libatsc3.o
 	g++ -g listener_tests/atsc3_stltp_listener_test.cpp libatsc3.o -lpcap -lz -lpthread -o listener_tests/atsc3_stltp_listener_test
@@ -258,6 +347,14 @@ atsc3_alc_listener_test: listener_tests/atsc3_alc_listener_test.cpp libatsc3_ben
 	g++ -g listener_tests/atsc3_alc_listener_test.cpp \
 		libatsc3_bento4_gpl.o \
 		-lz -lpcap -lpthread  -o listener_tests/atsc3_alc_listener_test
+		
+# simple ALC/DASH listener that builds a single ISOBMFF segment with v/a muxed in for each MPU
+atsc3_alc_listener_test_valgrind: listener_tests/atsc3_alc_listener_test.cpp libatsc3_bento4_gpl.o
+	g++ 		-D _TEST_RUN_VALGRIND_OSX_=true -g listener_tests/atsc3_alc_listener_test.cpp \
+		libatsc3_bento4_gpl.o \
+		-lz -lpcap -lpthread  -o listener_tests/atsc3_alc_listener_test_valgrind
+
+		
 		
 # # interim listener testing for new features like sls and bento4
 

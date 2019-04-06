@@ -203,7 +203,7 @@ static size_t get_zero_terminated_array_elements(struct xml_node** nodes) {
  */
 static _Bool xml_string_equals(struct xml_string* a, struct xml_string* b) {
 
-	_XML_FRNSC("%d:xml_string_equals: a.len: %d, b.len: %d, values:\n", __LINE__, a->length, b->length);
+	_XML_FRNSC("%d:xml_string_equals: a.len: %zu, b.len: %zd, values:\n", __LINE__, a->length, b->length);
 	if (a->length != b->length) {
 		dump_xml_string(a);
 		dump_xml_string(b);
@@ -255,16 +255,30 @@ bool xml_node_equals_ignore_case(xml_node_t *a, char* b) {
     bool res = false;
     
     //if we contain a namespace specifier, ignore for now...
-    bool namespace_specifier_found = false;
+    bool 	namespace_specifier_found = false;
+	size_t 	namespace_offset = 0;
+
     for(int i=0; i < xml_node_name_string->length && !namespace_specifier_found; i++) {
+
         if(xml_node_name_string->buffer[i] == ':') {
+        	//FIXME - use real namespace support when searching for a node name
+
             xml_node_name_string->buffer += i+1;
             xml_node_name_string->length -= i+1;
+
+            namespace_offset = i;
             namespace_specifier_found = true;
+            break;
         }
     }
     res = xml_string_equals_ignore_case(xml_node_name_string, b);
     
+    if(namespace_specifier_found) {
+    	//reset
+    	xml_node_name_string->buffer -= namespace_offset+1;
+    	xml_node_name_string->length += namespace_offset+1;
+    }
+
     return res;
 }
 
@@ -313,7 +327,7 @@ uint8_t* xml_attributes_clone_node(xml_node_t* node) {
  *
  * Echos the parsers call stack for debugging purposes
  */
-#define XML_PARSER_VERBOSE 1
+#define XML_PARSER_VERBOSE
 #ifdef XML_PARSER_VERBOSE
 static void xml_parser_info(struct xml_parser* parser, char const* message) {
 	_XML_FRNSC("xml_parser_info: %s", message);
@@ -466,7 +480,7 @@ static void xml_skip_whitespace(struct xml_parser* parser) {
  */
 static struct xml_string* xml_parse_tag_end(struct xml_parser* parser) {
 
-	_XML_FRNSC("xml_parse_tag_end::enter, parser is at: %c, n: %d\n",parser->buffer[parser->position], parser->position);
+	_XML_FRNSC("xml_parse_tag_end::enter, parser is at: %c, n: %zu\n",parser->buffer[parser->position], parser->position);
 
 	xml_parser_info(parser, "tag_end");
 	size_t start_name_start = parser->position;;
@@ -503,7 +517,7 @@ static struct xml_string* xml_parse_tag_end(struct xml_parser* parser) {
 	if(attribute_start == -1 && !attribute_len) {
 		start_name_length = length;
 	}
-	_XML_FRNSC("xml_parse_tag_end::found '>' on start+length: %d\n", start_name_start+length);
+	_XML_FRNSC("xml_parse_tag_end::found '>' on start+length: %lu\n", start_name_start+length);
 
 
 	/* Consume `>'
@@ -514,6 +528,7 @@ static struct xml_string* xml_parse_tag_end(struct xml_parser* parser) {
 	}
 	xml_parser_consume(parser, 1);
 
+
 	/* Return parsed tag name
 	 */
 	struct xml_string* name = calloc(1, sizeof(struct xml_string));
@@ -523,7 +538,7 @@ static struct xml_string* xml_parse_tag_end(struct xml_parser* parser) {
 		name->buffer = &parser->buffer[start_name_start];
 		name->length = start_name_length;
 		name->is_self_closing_tag = last_char == '/';
-		_XML_FRNSC("***** %d, len: %d", attribute_start, attribute_len);
+		_XML_FRNSC("***** %d, len: %zu", attribute_start, attribute_len);
 		if(attribute_start != -1 && attribute_len) {
 			name->attributes->buffer = &parser->buffer[attribute_start];
 			name->attributes->length = name->is_self_closing_tag ? attribute_len -1 : attribute_len;
@@ -602,6 +617,8 @@ static struct xml_string* xml_parse_tag_close(struct xml_parser* parser) {
 
 	/* Consume tag name
 	 */
+	_XML_FRNSC("xml_parse_tag_close: 605");
+
 	return xml_parse_tag_end(parser);
 }
 
@@ -722,7 +739,7 @@ static struct xml_node* xml_parse_node(struct xml_parser* parser) {
 	 */
 	if ('<' != xml_parser_peek(parser, CURRENT_CHARACTER)) {
 
-		_XML_FRNSC("%d::xml_parse_node - before xml_parse_content\n");
+		_XML_FRNSC("xml_parse_node - before xml_parse_content\n");
 
 		content = xml_parse_content(parser);
 
@@ -738,7 +755,7 @@ static struct xml_node* xml_parse_node(struct xml_parser* parser) {
 
 		/* Parse child node
 		 */
-		_XML_FRNSC("xml_parse_node, calling recursive xml_parse_node, pos: %d, len: %d, repeat: %d\n", parser->position, parser->length, (parser->position < parser->length - 3));
+		_XML_FRNSC("xml_parse_node, calling recursive xml_parse_node, pos: %zu, len: %zd, repeat: %d\n", parser->position, parser->length, (parser->position < parser->length - 3));
 		struct xml_node* child = xml_parse_node(parser);
 		if (!child) {
 			xml_parser_error(parser, NEXT_CHARACTER, "xml_parse_node::child");
@@ -757,13 +774,15 @@ static struct xml_node* xml_parse_node(struct xml_parser* parser) {
 		children[new_elements] = 0;
 
 		last_child = child;
+		xml_skip_whitespace(parser);
+
 	}
 
 
 	/* Parse close tag
 	 */
 		if(parser->position < parser->length - 2) {
-			_XML_FRNSC("%d::xml_parse_node - before xml_parse_tag_close\n");
+			_XML_FRNSC("xml_parse_node - before xml_parse_tag_close, pos: %zu, length: %zu", parser->position, parser->length);
 
 		tag_close = xml_parse_tag_close(parser);
 		if (!tag_close) {
@@ -775,7 +794,7 @@ static struct xml_node* xml_parse_node(struct xml_parser* parser) {
 
 	/* Close tag has to match open tag
 	 */
-	_XML_FRNSC("%d::xml_parse_node - before xml_string_equals: tag_open: %p, tag_closed: %p\n", tag_open, tag_close);
+	_XML_FRNSC("xml_parse_node - before xml_string_equals: tag_open: %p, tag_closed: %p\n", tag_open, tag_close);
 
 	if(tag_open && tag_close) {
 		if (!xml_string_equals(tag_open, tag_close)) {

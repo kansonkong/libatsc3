@@ -144,6 +144,8 @@ A.3.3.2.3 ATSC Extensions to the FDT-Instance Element
 
 
  */
+
+
 typedef struct atsc3_fdt_fec_attributes {
 
 	uint8_t 	fec_oti_fec_encoding_id;
@@ -154,6 +156,48 @@ typedef struct atsc3_fdt_fec_attributes {
 	char*	 	fec_oti_sceheme_specific_info;
 } atsc3_fdt_fec_attributes_t;
 
+/**
+ * https://www.etsi.org/deliver/etsi_ts/126300_126399/126346/13.06.00_60/ts_126346v130600p.pdf
+ *
+ *<xs:complexType name="FileType">
+ <xs:sequence>
+ <xs:element ref="mbms2007:Cache-Control" minOccurs="0"/>
+ <xs:element ref="sv:delimiter"/>
+ <xs:element ref="mbms2012:Alternate-Content-Location-1" minOccurs="0"
+maxOccurs="unbounded"/>
+ <xs:element ref="mbms2012:Alternate-Content-Location-2" minOccurs="0"
+maxOccurs="unbounded"/>
+ <xs:element ref="sv:delimiter"/>
+ <xs:any namespace="##other" processContents="skip" minOccurs="0" maxOccurs="unbounded"/>
+ <xs:element name="Group" type="mbms2005:groupIdType" minOccurs="0"
+maxOccurs="unbounded"/>
+ <xs:element name="MBMS-Session-Identity" type="mbms2005:MBMS-Session-Identity-Type"
+minOccurs="0" maxOccurs="unbounded"/>
+ </xs:sequence>
+
+ <xs:attribute name="Content-Location" type="xs:anyURI" use="required"/>
+ <xs:attribute name="TOI" type="xs:positiveInteger" use="required"/>
+ <xs:attribute name="Content-Length" type="xs:unsignedLong" use="optional"/>
+ <xs:attribute name="Transfer-Length" type="xs:unsignedLong" use="optional"/>
+ <xs:attribute name="Content-Type" type="xs:string" use="optional"/>
+ <xs:attribute name="Content-Encoding" type="xs:string" use="optional"/>
+ <xs:attribute name="Content-MD5" type="xs:base64Binary" use="optional"/>
+ <xs:attribute name="FEC-OTI-FEC-Encoding-ID" type="xs:unsignedLong" use="optional"/>
+ <xs:attribute name="FEC-OTI-FEC-Instance-ID" type="xs:unsignedLong" use="optional"/>
+ <xs:attribute name="FEC-OTI-Maximum-Source-Block-Length" type="xs:unsignedLong"
+use="optional"/>
+ <xs:attribute name="FEC-OTI-Encoding-Symbol-Length" type="xs:unsignedLong" use="optional"/>
+ <xs:attribute name="FEC-OTI-Max-Number-of-Encoding-Symbols" type="xs:unsignedLong"
+use="optional"/>
+ <xs:attribute name="FEC-OTI-Scheme-Specific-Info" type="xs:base64Binary" use="optional"/>
+ <xs:attribute ref="mbms2009:Decryption-KEY-URI" use="optional"/>
+ <xs:attribute ref="mbms2012:FEC-Redundancy-Level" use="optional"/>
+ <xs:attribute ref="mbms2012:File-ETag" use="optional"/>
+ <xs:attribute ref="mbms2015:IndependentUnitPositions" use="optional"/>
+ <xs:anyAttribute processContents="skip"/>
+ </xs:complexType>
+
+ */
 typedef struct atsc3_fdt_file {
 	char* 						content_location;
 	uint32_t 					toi;
@@ -162,16 +206,49 @@ typedef struct atsc3_fdt_file {
 	char*						content_type;
 	char*						content_encoding;
 	char*						content_md5;
+
+
 	atsc3_fdt_fec_attributes_t	atsc3_fdt_fec_attributes;
 } atsc3_fdt_file_t;
 
+/*
+ *
+ xmlns:afdt="tag:atsc.org,2016:XMLSchemas/ATSC3/Delivery/ATSC-FDT/1.0/"
+
+    <xs:attribute name="efdtVersion" type="xs:unsignedByte"/>
+	<xs:attribute name="maxExpiresDelta" type="xs:unsignedInt"/>
+	<xs:attribute name="maxTransportSize" type="xs:unsignedInt"/>
+	<xs:attribute name="fileTemplate" type="afdt:fileTemplateType"/>
+	<xs:attribute name="appContextIdList" type="afdt:uriListType"/>
+	<xs:attribute name="filterCodes" type="afdt:listOfUnsignedIntType"/>
+
+
+	<xs:simpleType name="uriListType">
+		<xs:list itemType="xs:anyURI"/>
+	</xs:simpleType>
+	<xs:simpleType name="fileTemplateType">
+		<xs:restriction base="xs:string"/>
+	</xs:simpleType>
+	<xs:simpleType name="listOfUnsignedIntType">
+		<xs:list itemType="xs:unsignedInt"/>
+	</xs:simpleType>
+ *
+ */
+
 typedef struct atsc3_fdt_instance {
 	uint32_t 					expires;
-    uint32_t                    adft_efdt_version;
 	bool 						complete;
 	char* 						content_type;
 	char* 						content_encoding;
 	atsc3_fdt_fec_attributes_t 	atsc3_fdt_fec_attributes;
+
+	/*atsc-fdt/1.0*/
+	uint8_t						efdt_vesion;
+	uint32_t					max_expires_delta;
+	uint32_t					max_transport_size;
+	char*						file_template;
+	char*						app_context_id_list;
+	char*						filter_codes;
 
 	ATSC3_VECTOR_BUILDER_STRUCT(atsc3_fdt_file)
 

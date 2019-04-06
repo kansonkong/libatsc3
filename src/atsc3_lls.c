@@ -46,8 +46,8 @@
 #include "atsc3_lls_slt_parser.h"
 #include "xml.h"
 
-int _LLS_INFO_ENABLED = 1;
-int _LLS_DEBUG_ENABLED = 1;
+int _LLS_INFO_ENABLED  = 0;
+int _LLS_DEBUG_ENABLED = 0;
 int _LLS_TRACE_ENABLED = 0;
 
 char* LLS_SERVICE_CATEGORY_VALUES[] = {"atsc reserved", "linear av", "linear audio", "app based svc.", "esg service", "eas service", "atsc other" };
@@ -162,7 +162,7 @@ lls_table_t* __lls_table_create( uint8_t* lls_packet, int size) {
 	lls_table_t* lls_table = lls_create_xml_table(lls_packet, size);
 
 	if(!lls_table) {
-		_LLS_ERROR("lls_create_table - error creating instance of LLS table and subclass");
+		_LLS_ERROR("lls_create_table - error creating instance of LLS table and subclass, return from lls_create_xml_table was null");
 		return NULL;
 	}
 
