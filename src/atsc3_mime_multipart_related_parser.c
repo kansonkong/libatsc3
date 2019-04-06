@@ -9,9 +9,9 @@
 #include "strnstr.c"
 #include "atsc3_mime_multipart_related_parser.h"
 
-int _MIME_PARSER_INFO_ENABLED = 1;
-int _MIME_PARSER_DEBUG_ENABLED = 1;
-int _MIME_PARSER_TRACE_ENABLED = 1;
+int _MIME_PARSER_INFO_ENABLED  = 0;
+int _MIME_PARSER_DEBUG_ENABLED = 0;
+int _MIME_PARSER_TRACE_ENABLED = 0;
 
 
 /**
@@ -43,7 +43,7 @@ Content-Location: usbd.xml
  */
 #define ATSC3_MIME_MULTIPART_RELATED_HEADER_CONTENT_TYPE "Content-Type:"
 #define ATSC3_MIME_MULTIPART_RELATED_HEADER_CONTENT_LOCATION "Content-Location:"
-#define ATSC3_MIME_MULTIPART_RELATED_HEADER_MULTIPART_RELATED "multipart/related"
+#define ATSC3_MIME_MULTIPART_RELATED_HEADER_MULTIPART_RELATED "multipart/related;"
 
 atsc3_mime_multipart_related_instance_t* atsc3_mime_multipart_related_parser(FILE* fp) {
 	if(!fp) {
@@ -58,40 +58,45 @@ atsc3_mime_multipart_related_instance_t* atsc3_mime_multipart_related_parser(FIL
 
 	int ret;
 	int token_len;
+	int line_count = 0;
+	bool has_read_content_type = false;
 	bool has_completed_header = false;
 
-	//parse out Content-Type: multipart/related;
-	fgets(line_buffer, ATSC3_MIME_MULTIPART_RELATED_LINE_BUFFER, fp);
-	token_len = __MIN(strlen(ATSC3_MIME_MULTIPART_RELATED_HEADER_CONTENT_TYPE), strlen(line_buffer));
-	ret = strncasecmp(ATSC3_MIME_MULTIPART_RELATED_HEADER_CONTENT_TYPE, line_buffer, token_len);
-
-	if(ret) {
-		__MIME_PARSER_ERROR("atsc3_mime_multipart_related_parser: first line isn't Content-Type, ret: %u val:\n%s", ret, line_buffer);
-		goto error;
-	}
-	line_buffer += token_len;
-	line_buffer = _ltrim(line_buffer);
-	token_len = __MIN(strlen(ATSC3_MIME_MULTIPART_RELATED_HEADER_MULTIPART_RELATED), strlen(line_buffer));
-	ret = strncasecmp(ATSC3_MIME_MULTIPART_RELATED_HEADER_MULTIPART_RELATED, line_buffer, token_len);
-
-	if(ret) {
-		__MIME_PARSER_ERROR("atsc3_mime_multipart_related_parser: first line isn't multipart/related, ret: %u val:\n%s", ret, line_buffer);
-		goto error;
-	}
-
-	//find our type block
-	//atsc3_mime_multipart_related_parser.c:100:INFO:atsc3_mime_multipart_related_parser: parsing line:   type="application/mbms-envelope+xml";
-
+	//begin parsing header, starting with
+	//Content-Type: Multipart/Related; boundary=boundary-content;
 
 	while(!feof(fp) && !has_completed_header) {
 		fgets(line_buffer, ATSC3_MIME_MULTIPART_RELATED_LINE_BUFFER, fp);
+		line_count++;
+
+		if(!has_read_content_type) {
+			token_len = __MIN(strlen(ATSC3_MIME_MULTIPART_RELATED_HEADER_CONTENT_TYPE), strlen(line_buffer));
+			ret = strncasecmp(ATSC3_MIME_MULTIPART_RELATED_HEADER_CONTENT_TYPE, line_buffer, token_len);
+
+			if(ret) {
+				__MIME_PARSER_ERROR("atsc3_mime_multipart_related_parser: line: %u (should be first) isn't Content-Type, ret: %u val:\n%s", line_count, ret, line_buffer);
+				goto error;
+			}
+			line_buffer += token_len;
+			line_buffer = _ltrim(line_buffer);
+			token_len = __MIN(strlen(ATSC3_MIME_MULTIPART_RELATED_HEADER_MULTIPART_RELATED), strlen(line_buffer));
+			ret = strncasecmp(ATSC3_MIME_MULTIPART_RELATED_HEADER_MULTIPART_RELATED, line_buffer, token_len);
+
+			if(ret) {
+				__MIME_PARSER_ERROR("atsc3_mime_multipart_related_parser: line: %u (should be first) isn't multipart/related, ret: %u val:\n%s", line_count, ret, line_buffer);
+				goto error;
+			}
+			line_buffer += token_len;
+			has_read_content_type = true;
+			//continue reading any other markers here
+		}
 
 		char* trim_line_buffer = _ltrim(line_buffer);
 		if(trim_line_buffer == line_buffer) {
-			__MIME_PARSER_INFO("atsc3_mime_multipart_related_parser: header doesn't have space");
+			__MIME_PARSER_INFO("atsc3_mime_multipart_related_parser: line: %u, header doesn't have space", line_count);
 
 		}
-		__MIME_PARSER_INFO("atsc3_mime_multipart_related_parser: parsing line: %s", line_buffer);
+		__MIME_PARSER_INFO("atsc3_mime_multipart_related_parser: line: %u, parsing trimmed: |%s|, original line: %s", line_count, trim_line_buffer, line_buffer);
 
 		// type="application/mbms-envelope+xml";
 
@@ -110,10 +115,10 @@ atsc3_mime_multipart_related_instance_t* atsc3_mime_multipart_related_parser(FIL
 				trim_line_buffer = _rtrim(trim_line_buffer);
 				int remaining_trim_line_buffer_len = strlen(trim_line_buffer);
 				if(remaining_trim_line_buffer_len) {
-					__MIME_PARSER_WARN("atsc3_mime_multipart_related_parser: missing closing semicolon on type, using len: %u", remaining_trim_line_buffer_len);
+					__MIME_PARSER_INFO("atsc3_mime_multipart_related_parser: line: %u, missing closing semicolon on type, using len: %u", line_count, remaining_trim_line_buffer_len);
 					semicolon_pos = trim_line_buffer + remaining_trim_line_buffer_len;
 				} else {
-					__MIME_PARSER_ERROR("atsc3_mime_multipart_related_parser: missing closing semicolon on type, no strlen remaining");
+					__MIME_PARSER_ERROR("atsc3_mime_multipart_related_parser: line: %u, missing closing semicolon on type, no strlen remaining", line_count);
 					goto error;
 				}
 			}
@@ -124,14 +129,15 @@ atsc3_mime_multipart_related_instance_t* atsc3_mime_multipart_related_parser(FIL
 
 			int len = semicolon_pos - trim_line_buffer;
 			if(!len) {
-				__MIME_PARSER_ERROR("atsc3_mime_multipart_related_parser: missing type length");
+				__MIME_PARSER_ERROR("atsc3_mime_multipart_related_parser: line: %u, missing type length", line_count);
 				goto error;
 			}
 
 			if(trim_line_buffer < semicolon_pos && len) {
-				atsc3_mime_multipart_related_instance->type = calloc(len, sizeof(char));
+				//don't forget null pad
+				atsc3_mime_multipart_related_instance->type = calloc(len+1, sizeof(char));
 				strncpy(atsc3_mime_multipart_related_instance->type, trim_line_buffer, len);
-				__MIME_PARSER_INFO("atsc3_mime_multipart_related_parser: type is: %s", atsc3_mime_multipart_related_instance->type);
+				__MIME_PARSER_INFO("atsc3_mime_multipart_related_parser: line: %u, type is: %s", line_count, atsc3_mime_multipart_related_instance->type);
 			}
 
 		}
@@ -153,10 +159,10 @@ atsc3_mime_multipart_related_instance_t* atsc3_mime_multipart_related_parser(FIL
 
 				int remaining_trim_line_buffer_len = strlen(trim_line_buffer);
 				if(remaining_trim_line_buffer_len) {
-					__MIME_PARSER_WARN("atsc3_mime_multipart_related_parser: missing closing semicolon on boundary, using len: %u", remaining_trim_line_buffer_len);
+					__MIME_PARSER_WARN("atsc3_mime_multipart_related_parser: line: %u, missing closing semicolon on boundary, using len: %u", line_count, remaining_trim_line_buffer_len);
 					semicolon_pos = trim_line_buffer + remaining_trim_line_buffer_len;
 				} else {
-					__MIME_PARSER_ERROR("atsc3_mime_multipart_related_parser: missing closing semicolon on boundary, no strlen remaining");
+					__MIME_PARSER_ERROR("atsc3_mime_multipart_related_parser: line: %u, missing closing semicolon on boundary, no strlen remaining", line_count);
 					goto error;
 				}
 			}
@@ -167,14 +173,16 @@ atsc3_mime_multipart_related_instance_t* atsc3_mime_multipart_related_parser(FIL
 
 			int len = semicolon_pos - trim_line_buffer;
 			if(!len) {
-				__MIME_PARSER_ERROR("atsc3_mime_multipart_related_parser: missing boundary length");
+				__MIME_PARSER_ERROR("atsc3_mime_multipart_related_parser: line: %u, missing boundary length", line_count);
 				goto error;
 			}
 
 			if(trim_line_buffer < semicolon_pos && len) {
-				atsc3_mime_multipart_related_instance->boundary = calloc(len, sizeof(char));
+				//don't forget null pad
+
+				atsc3_mime_multipart_related_instance->boundary = calloc(len+1, sizeof(char));
 				strncpy(atsc3_mime_multipart_related_instance->boundary, trim_line_buffer, len);
-				__MIME_PARSER_INFO("atsc3_mime_multipart_related_parser: boundary is: %s", atsc3_mime_multipart_related_instance->boundary);
+				__MIME_PARSER_INFO("atsc3_mime_multipart_related_parser: line: %u, boundary is: %s", line_count, atsc3_mime_multipart_related_instance->boundary);
 			}
 		}
 
@@ -184,37 +192,38 @@ atsc3_mime_multipart_related_instance_t* atsc3_mime_multipart_related_parser(FIL
 	}
 
 	if(!has_completed_header) {
-		__MIME_PARSER_ERROR("atsc3_mime_multipart_related_parser: header is incomplete");
+		__MIME_PARSER_ERROR("atsc3_mime_multipart_related_parser: line: %u, header is incomplete", line_count);
 		goto error;
 	}
 
-	//chomp open header
-	fgets(line_buffer, ATSC3_MIME_MULTIPART_RELATED_LINE_BUFFER, fp);
-	line_buffer = __trim(line_buffer);
+	bool has_consumed_up_to_first_dashdash = false;
 
-	if(strlen(line_buffer)) {
-		__MIME_PARSER_ERROR("atsc3_mime_multipart_related_parser: payload line 1 is not \\r\\n, val: %s", line_buffer);
-		goto error;
+	//the first line after the header should be blank, keep going until we get -- indiciating the start of a block
+	while(!has_consumed_up_to_first_dashdash) {
+		fgets(line_buffer, ATSC3_MIME_MULTIPART_RELATED_LINE_BUFFER, fp);
+		line_count++;
+		line_buffer = __trim(line_buffer);
+
+		if(strlen(line_buffer)>1) {
+			if(line_buffer[0] == '-' && line_buffer[1] == '-') {
+				has_consumed_up_to_first_dashdash = true;
+			} else {
+				__MIME_PARSER_WARN("atsc3_mime_multipart_related_parser: line: %u, garbage payload: %s", line_count, line_buffer);
+				//try to continue parsing, otherwise goto error;
+			}
+		}
 	}
-	fgets(line_buffer, ATSC3_MIME_MULTIPART_RELATED_LINE_BUFFER, fp);
-	line_buffer = __trim(line_buffer);
 
-	if(strlen(line_buffer)) {
-		__MIME_PARSER_ERROR("atsc3_mime_multipart_related_parser: payload line 2 is not \\r\\n, val: %s", line_buffer);
-		goto error;
-	}
-
-	//open block
-	fgets(line_buffer, ATSC3_MIME_MULTIPART_RELATED_LINE_BUFFER, fp);
-	//first 2 chars should be --
+	//first 2 chars should be --, this should never happen unless we hit the end of file?
 	if(strncmp("--", line_buffer, 2)) {
-		__MIME_PARSER_ERROR("atsc3_mime_multipart_related_parser: payload boundary open is not --, instead: %s", line_buffer);
+		__MIME_PARSER_ERROR("atsc3_mime_multipart_related_parser: line: %u, payload boundary open is not --, instead: %s", line_count, line_buffer);
 		goto error;
 	}
+
 	line_buffer+=2;
 	line_buffer = __trim(line_buffer);
 	if(strncmp(atsc3_mime_multipart_related_instance->boundary, line_buffer, strlen(atsc3_mime_multipart_related_instance->boundary))) {
-		__MIME_PARSER_ERROR("atsc3_mime_multipart_related_parser: payload boundary open is not boundary |%s|, instead: |%s|", atsc3_mime_multipart_related_instance->boundary, line_buffer);
+		__MIME_PARSER_ERROR("atsc3_mime_multipart_related_parser: line: %u, payload boundary open is not boundary |%s|, instead: |%s|", line_count, atsc3_mime_multipart_related_instance->boundary, line_buffer);
 		goto error;
 	}
 
@@ -234,10 +243,13 @@ atsc3_mime_multipart_related_instance_t* atsc3_mime_multipart_related_parser(FIL
 		 * try and parse out header attributes first, e.g.:
 			Content-Type: application/atsc-held+xml
 			Content-Location: held.xml
+
+			//this should actually be block_t as its easer to work with...
 		*/
 
 		while(!feof(fp) && !payload_header_complete) {
 			fgets(line_buffer, ATSC3_MIME_MULTIPART_RELATED_LINE_BUFFER, fp);
+			line_count++;
 
 			if(!strncmp(ATSC3_MIME_MULTIPART_RELATED_HEADER_CONTENT_TYPE, line_buffer, strlen(ATSC3_MIME_MULTIPART_RELATED_HEADER_CONTENT_TYPE))) {
 				line_buffer += strlen(ATSC3_MIME_MULTIPART_RELATED_HEADER_CONTENT_TYPE);
@@ -255,7 +267,7 @@ atsc3_mime_multipart_related_instance_t* atsc3_mime_multipart_related_parser(FIL
 				if(!strlen(line_buffer)) {
 					payload_header_complete = true;
 				} else {
-					__MIME_PARSER_INFO("atsc3_mime_multipart_related_parser: ignoring payload header entry: %s", line_buffer);
+					__MIME_PARSER_INFO("atsc3_mime_multipart_related_parser: line: %u, ignoring payload header entry: %s", line_count, line_buffer);
 				}
 			}
 		}
@@ -263,11 +275,12 @@ atsc3_mime_multipart_related_instance_t* atsc3_mime_multipart_related_parser(FIL
 
 		while(!feof(fp) && !payload_entry_complete) {
 			fgets(line_buffer, ATSC3_MIME_MULTIPART_RELATED_LINE_BUFFER, fp);
+			line_count++;
 			//check to see if we should close out boundary
 
 			//first 2 chars should be --
 			if(!strncmp("--", line_buffer, 2)) {
-				__MIME_PARSER_TRACE("atsc3_mime_multipart_related_parser: checking start of boundary closed %s", line_buffer);
+				__MIME_PARSER_TRACE("atsc3_mime_multipart_related_parser: line: %u, checking start of boundary closed %s", line_count, line_buffer);
 
 				line_buffer += 2;
 				if(!strncmp(atsc3_mime_multipart_related_instance->boundary, line_buffer, strlen(atsc3_mime_multipart_related_instance->boundary))) {
@@ -278,7 +291,7 @@ atsc3_mime_multipart_related_instance_t* atsc3_mime_multipart_related_parser(FIL
 					memcpy(atsc3_mime_multipart_related_payload->payload, multipart_buffer, multipart_buffer_pos);
 					atsc3_mime_multipart_related_payload->payload_length = multipart_buffer_pos;
 					atsc3_mime_multipart_related_instance_add_atsc3_mime_multipart_related_payload(atsc3_mime_multipart_related_instance, atsc3_mime_multipart_related_payload);
-					__MIME_PARSER_TRACE("atsc3_mime_multipart_related_parser: payload boundary pushing new entry: %s",  atsc3_mime_multipart_related_payload->payload);
+					__MIME_PARSER_TRACE("atsc3_mime_multipart_related_parser: line: %u, payload boundary pushing new entry: %s", line_count, atsc3_mime_multipart_related_payload->payload);
 					//if remaining string length is --, then we are done..
 				} else {
 					line_buffer -= 2;
@@ -288,7 +301,7 @@ atsc3_mime_multipart_related_instance_t* atsc3_mime_multipart_related_parser(FIL
 			if(!payload_entry_complete) {
 				uint32_t line_buffer_len = strlen(line_buffer);
 
-				__MIME_PARSER_TRACE("atsc3_mime_multipart_related_parser: pushing to buffer at pos: %u, len: %u, line buffer: %s", multipart_buffer_pos, line_buffer_len, line_buffer);
+				__MIME_PARSER_TRACE("atsc3_mime_multipart_related_parser: line: %u, pushing to buffer at pos: %u, len: %u, line buffer: %s", line_count, multipart_buffer_pos, line_buffer_len, line_buffer);
 
 				//push to buffer
 				memcpy(&multipart_buffer[multipart_buffer_pos], line_buffer, line_buffer_len);
@@ -307,6 +320,32 @@ error:
 	}
 	return NULL;
 }
+
+
+atsc3_sls_metadata_fragments_t* atsc3_mbms_envelope_to_sls_metadata_fragments_parse_from_fdt_fp(FILE* atsc3_fdt_instance_fp) {
+
+	atsc3_sls_metadata_fragments_t* atsc3_sls_metadata_fragments = NULL;
+
+	if(!atsc3_fdt_instance_fp) {
+		_ATSC3_ROUTE_MBMS_ENVELOPE_PARSER_ERROR("atsc3_fdt_instance_fp is null!");
+		return NULL;
+	}
+
+	atsc3_mime_multipart_related_instance_t* atsc3_mime_multipart_related_instance = atsc3_mime_multipart_related_parser(atsc3_fdt_instance_fp);
+	if(atsc3_mime_multipart_related_instance) {
+		atsc3_mime_multipart_related_instance_dump(atsc3_mime_multipart_related_instance);
+
+		//build out the atsc3_sls_metadata_fragment_types
+		atsc3_sls_metadata_fragments = atsc3_sls_metadata_fragment_types_parse_from_mime_multipart_related_instance(atsc3_mime_multipart_related_instance);
+
+	} else {
+		_ATSC3_ROUTE_MBMS_ENVELOPE_PARSER_ERROR("atsc3_mime_multipart_related_instance is null!");
+		return NULL;
+	}
+
+	return atsc3_sls_metadata_fragments;
+}
+
 
 void atsc3_mime_multipart_related_instance_dump(atsc3_mime_multipart_related_instance_t* atsc3_mime_multipart_related_instance) {
 	__MIME_PARSER_DEBUG("------------------");

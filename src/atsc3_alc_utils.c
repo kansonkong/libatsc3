@@ -84,10 +84,6 @@ uint32_t* __ALC_RECON_FILE_PTR_TSI = NULL;
 uint32_t* __ALC_RECON_FILE_PTR_TOI_INIT = NULL;
 
 FILE* __ALC_RECON_FILE_PTR = NULL; //deprecated
-lls_sls_alc_monitor_t* __ALC_RECON_MONITOR;
-
-
-
 
 block_t* alc_get_payload_from_filename(char* file_name) {
 	if( access(file_name, F_OK ) == -1 ) {
@@ -158,7 +154,8 @@ FILE* alc_object_pre_allocate(char* file_name, alc_packet_t* alc_packet) {
 	}
 
     if( access( file_name, F_OK ) != -1 ) {
-        __ALC_UTILS_WARN("pre_allocate: file %s exists, removing", file_name);
+    	__ALC_UTILS_IOTRACE("pre_allocate: file %s exists, removing", file_name);
+        //__ALC_UTILS_WARN("pre_allocate: file %s exists, removing", file_name);
         // file exists
         remove(file_name);
     }
@@ -209,7 +206,7 @@ int alc_packet_write_fragment(FILE* f, char* file_name, uint32_t offset, alc_pac
     return alc_packet->alc_len;
 }
 
-int alc_packet_dump_to_object(alc_packet_t** alc_packet_ptr) {
+int alc_packet_dump_to_object(alc_packet_t** alc_packet_ptr, lls_sls_alc_monitor_t* lls_sls_alc_monitor) {
 
 	alc_packet_t* alc_packet = *alc_packet_ptr;
 	int bytesWritten = 0;
@@ -263,24 +260,27 @@ int alc_packet_dump_to_object(alc_packet_t** alc_packet_ptr) {
         f = NULL;
     }
     
-	//also investigate alc_packet->transfer_len if we dont get a close object tag
+    //both codepoint=0 and codepoint=128 will set close_object_flag when we have finished delivery of the object
 	if(alc_packet->close_object_flag) {
-		//__ALC_UTILS_DEBUG("dumping to file done: %s, is complete: %d", file_name, alc_packet->close_object_flag);
-	} else {
-		//__ALC_UTILS_DEBUG("dumping to file step: %s, is complete: %d", file_name, alc_packet->close_object_flag);
-	}
-	//__ALC_RECON_MONITOR
-	//push our fragments EXCEPT for the mpu fragment box, we will pull that at the start of a
-		if(__ALC_RECON_MONITOR) {
-			__ALC_UTILS_IOTRACE("checking tsi: %u, toi: %u, close_object_flag: %d", alc_packet->def_lct_hdr->tsi, alc_packet->def_lct_hdr->toi, alc_packet->close_object_flag);
+		__ALC_UTILS_IOTRACE("dumping to file done: %s, is complete: %d", file_name, alc_packet->close_object_flag);
 
-			if(alc_packet->close_object_flag && ((alc_packet->def_lct_hdr->tsi == __ALC_RECON_MONITOR->video_tsi && alc_packet->def_lct_hdr->toi != __ALC_RECON_MONITOR->video_toi_init) ||
-					(alc_packet->def_lct_hdr->tsi == __ALC_RECON_MONITOR->audio_tsi && alc_packet->def_lct_hdr->toi != __ALC_RECON_MONITOR->audio_toi_init))) {
+		//update our sls here
+		if(alc_packet->def_lct_hdr->tsi == 0) {
+			atsc3_route_sls_process_from_alc_packet_and_file(alc_packet, lls_sls_alc_monitor);
 
-					alc_recon_file_buffer_struct_monitor_fragment_with_init_box(__ALC_RECON_MONITOR, alc_packet);
+		} else {
+			//only push to our output buffer video and audio flows
+			if(alc_packet->def_lct_hdr->tsi == lls_sls_alc_monitor->audio_tsi || alc_packet->def_lct_hdr->tsi == lls_sls_alc_monitor->video_tsi) {
+				alc_recon_file_buffer_struct_monitor_fragment_with_init_box(alc_packet, lls_sls_alc_monitor);
+			} else {
+				__ALC_UTILS_INFO("tsi: %u, toi: %u, not video or audio payload", alc_packet->def_lct_hdr->tsi, alc_packet->def_lct_hdr->toi);
 			}
 		}
+	} else {
+		__ALC_UTILS_IOTRACE("dumping to file step: %s, is complete: %d", file_name, alc_packet->close_object_flag);
+	}
 
+	__ALC_UTILS_IOTRACE("checking tsi: %u, toi: %u, close_object_flag: %d", alc_packet->def_lct_hdr->tsi, alc_packet->def_lct_hdr->toi, alc_packet->close_object_flag);
 
 cleanup:
 	if(file_name) {
@@ -589,12 +589,6 @@ void alc_recon_file_buffer_struct_set_tsi_toi(pipe_ffplay_buffer_t* pipe_ffplay_
 
 
 
-void alc_recon_file_buffer_struct_set_monitor(lls_sls_alc_monitor_t* lls_sls_alc_monitor) {
-	__ALC_RECON_MONITOR = lls_sls_alc_monitor;
-
-}
-
-
 /*** we take this off of disk for the reassembeled fragment metadta and mpu
  *
  *
@@ -709,7 +703,7 @@ cleanup:
 }
 
 
-void alc_recon_file_buffer_struct_monitor_fragment_with_init_box(lls_sls_alc_monitor_t* lls_sls_alc_monitor, alc_packet_t* alc_packet) {
+void alc_recon_file_buffer_struct_monitor_fragment_with_init_box(alc_packet_t* alc_packet, lls_sls_alc_monitor_t* lls_sls_alc_monitor) {
 	int flush_ret = 0;
 	char* audio_init_file_name = NULL;
 	char* video_init_file_name = NULL;
@@ -720,8 +714,14 @@ void alc_recon_file_buffer_struct_monitor_fragment_with_init_box(lls_sls_alc_mon
 	block_t* audio_init_payload = NULL;
 	block_t* video_init_payload = NULL;
 
-	//alc_packet->def_lct_hdr->toi hack
+	//tsi matching for audio and video fragments
 	if(alc_packet->def_lct_hdr->tsi == lls_sls_alc_monitor->audio_tsi) {
+		//don't flush out init boxes here..
+		if(alc_packet->def_lct_hdr->toi == lls_sls_alc_monitor->audio_toi_init) {
+			__ALC_UTILS_DEBUG("alc_recon_file_buffer_struct_monitor_fragment_with_init_box, got audo init box: tsi: %u, toi: %u, ignoring", alc_packet->def_lct_hdr->tsi, alc_packet->def_lct_hdr->toi);
+			return;
+		}
+
 		lls_sls_alc_monitor->last_closed_audio_toi = alc_packet->def_lct_hdr->toi;
 		if(alc_packet->ext_route_presentation_ntp_timestamp_set && !lls_sls_alc_monitor->lls_sls_monitor_output_buffer.audio_output_buffer_isobmff.mpu_presentation_time_set) {
 			lls_sls_alc_monitor->lls_sls_monitor_output_buffer.audio_output_buffer_isobmff.mpu_presentation_time = alc_packet->ext_route_presentation_ntp_timestamp;
@@ -731,6 +731,11 @@ void alc_recon_file_buffer_struct_monitor_fragment_with_init_box(lls_sls_alc_mon
 	}
 
 	if(alc_packet->def_lct_hdr->tsi == lls_sls_alc_monitor->video_tsi) {
+		if(alc_packet->def_lct_hdr->toi == lls_sls_alc_monitor->video_toi_init) {
+			__ALC_UTILS_DEBUG("alc_recon_file_buffer_struct_monitor_fragment_with_init_box, got video init box: tsi: %u, toi: %u, ignoring", alc_packet->def_lct_hdr->tsi, alc_packet->def_lct_hdr->toi);
+			return;
+		}
+
 		lls_sls_alc_monitor->last_closed_video_toi = alc_packet->def_lct_hdr->toi;
 		if(alc_packet->ext_route_presentation_ntp_timestamp_set && !lls_sls_alc_monitor->lls_sls_monitor_output_buffer.video_output_buffer_isobmff.mpu_presentation_time_set) {
 			lls_sls_alc_monitor->lls_sls_monitor_output_buffer.video_output_buffer_isobmff.mpu_presentation_time = alc_packet->ext_route_presentation_ntp_timestamp;
@@ -784,11 +789,13 @@ void alc_recon_file_buffer_struct_monitor_fragment_with_init_box(lls_sls_alc_mon
 		}
 	} else {
 
+		//TODO - determine if we should pre-pend the most recent init box?
+
 		//append audio if we have an audio frame
 		if(audio_toi && audio_fragment_file_name) {
 			audio_fragment_payload = alc_get_payload_from_filename(audio_fragment_file_name);
 			if(audio_fragment_payload) {
-				lls_sls_monitor_output_buffer_copy_audio_fragment_block(&lls_sls_alc_monitor->lls_sls_monitor_output_buffer, audio_fragment_payload);
+				lls_sls_monitor_output_buffer_merge_alc_fragment_block(&lls_sls_alc_monitor->lls_sls_monitor_output_buffer.audio_output_buffer_isobmff, audio_fragment_payload);
 				lls_sls_alc_monitor->last_closed_audio_toi = 0;
 				lls_sls_alc_monitor->last_pending_flushed_audio_toi = audio_toi;
 				__ALC_UTILS_DEBUG("alc_recon_file_buffer_struct_monitor_fragment_with_init_box - pushing audio fragment: %d, file: %s", audio_toi, audio_fragment_file_name);
@@ -801,7 +808,8 @@ void alc_recon_file_buffer_struct_monitor_fragment_with_init_box(lls_sls_alc_mon
 		if(video_toi && video_fragment_file_name) {
 			video_fragment_payload = alc_get_payload_from_filename(video_fragment_file_name);
 			if(video_fragment_payload) {
-				lls_sls_monitor_output_buffer_copy_video_fragment_block(&lls_sls_alc_monitor->lls_sls_monitor_output_buffer, video_fragment_payload);
+				lls_sls_monitor_output_buffer_merge_alc_fragment_block(&lls_sls_alc_monitor->lls_sls_monitor_output_buffer.video_output_buffer_isobmff, video_fragment_payload);
+
 				lls_sls_alc_monitor->last_closed_video_toi = 0;
 				lls_sls_alc_monitor->last_pending_flushed_video_toi = video_toi;
 

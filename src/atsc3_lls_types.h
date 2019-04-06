@@ -23,9 +23,13 @@
 #include "atsc3_player_ffplay.h"
 #include "xml.h"
 
+
+
 #ifndef ATSC3_LLS_TYPES_H_
 #define ATSC3_LLS_TYPES_H_
 
+#include "atsc3_fdt.h"
+#include "atsc3_sls_metadata_fragment_types.h"
 
 
 /***
@@ -428,6 +432,7 @@ typedef struct lls_sls_mmt_monitor {
     lls_service_t* lls_service;
     uint16_t service_id;
     lls_sls_mmt_session_t* lls_mmt_session;
+
     uint16_t video_packet_id;
     uint16_t audio_packet_id;
     
@@ -497,6 +502,9 @@ typedef struct lls_sls_alc_monitor {
     
     lls_sls_monitor_output_buffer_t lls_sls_monitor_output_buffer;
     lls_sls_monitor_output_buffer_mode_t lls_sls_monitor_output_buffer_mode;
+
+    atsc3_fdt_instance_t* atsc3_fdt_instance;
+    atsc3_sls_metadata_fragments_t* atsc3_sls_metadata_fragments;
 
 } lls_sls_alc_monitor_t;
 

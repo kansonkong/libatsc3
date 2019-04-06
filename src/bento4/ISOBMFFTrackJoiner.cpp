@@ -59,12 +59,12 @@ typedef struct AP4_Atom_And_Offset {
 } AP4_Atom_And_Offset_t;
 
 
-
+list<AP4_Atom_And_Offset*> ISOBMFFTrackParseAndBuildOffset(block_t* isobmff_track_block);
 
 /*----------------------------------------------------------------------
  |   constants
  +---------------------------------------------------------------------*/
-#define BANNER "ISOBMFFTrackJoiner - jjustman\n"
+#define BANNER "ISOBMFFTrackJoiner - libatsc3 player output\n"
 
 
 #define __DROP_HINT_TRACKS__
@@ -153,58 +153,237 @@ ISOBMFFTrackJoinerFileResouces_t* loadFileResources(const char* file1, const cha
 
 	return isoBMFFTrackJoinerResources;
 }
+//
+//trun_sample_entry_vector_t* parseMoofBoxForTrunSampleEntries(block_t* moof_box) {
+//
+//	list<AP4_Atom*> isobmff_atom_list  = ISOBMFFTrackParse(moof_box);
+//	AP4_AtomParent* moofAtomParent = NULL;
+//	AP4_TrunAtom* trunAtom = NULL;
+//
+//	trun_sample_entry_vector_t* trun_sample_entry_vector = (trun_sample_entry_vector_t*) calloc(1, sizeof(trun_sample_entry_vector_t));
+//
+//	std::list<AP4_Atom*>::iterator it;
+//	for (it = isobmff_atom_list.begin(); it != isobmff_atom_list.end(); it++) {
+//
+//		if((*it)->GetType() == AP4_ATOM_TYPE_MOOF) {
+//			moofAtomParent = AP4_DYNAMIC_CAST(AP4_ContainerAtom, *it);
+//
+//			AP4_ContainerAtom* tmpTrafToCheck;
+//			int trafIdx = 0;
+//			while((tmpTrafToCheck = AP4_DYNAMIC_CAST(AP4_ContainerAtom, moofAtomParent->GetChild(AP4_ATOM_TYPE_TRAF, trafIdx++)))) {
+//				 trunAtom = AP4_DYNAMIC_CAST(AP4_TrunAtom, tmpTrafToCheck->GetChild(AP4_ATOM_TYPE_TRUN));
+//				 if(trunAtom) {
+//					//check for first sample duration
+//					const AP4_Array<AP4_TrunAtom::Entry>& sampleEntries = trunAtom->GetEntries();
+//					if(sampleEntries.ItemCount() > 0 && sampleEntries[0].sample_size) {
+//						trun_sample_entry_vector->data = (trun_sample_entry_t**) calloc(sampleEntries.ItemCount(), sizeof(trun_sample_entry_vector->data));
+//
+//						for(int i=0; i < sampleEntries.ItemCount(); i++) {
+//							trun_sample_entry_vector->data[i] = (trun_sample_entry_t*) calloc(1, sizeof(trun_sample_entry_t));
+//							trun_sample_entry_vector->data[i]->sample_composition_time_offset = sampleEntries[i].sample_composition_time_offset;
+//							trun_sample_entry_vector->data[i]->sample_duration = sampleEntries[i].sample_duration;
+//							trun_sample_entry_vector->data[i]->sample_flags = sampleEntries[i].sample_flags;
+//							trun_sample_entry_vector->data[i]->sample_size = 0; //sampleEntries[i].sample_size;
+//							trun_sample_entry_vector->size++;
+//						}
+//					}
+//				}
+//			}
+//		}
+//	}
+//
+//	return trun_sample_entry_vector;
+//}
 
-trun_sample_entry_vector_t* parseMoofBoxForTrunSampleEntries(block_t* moof_box) {
+/**
+ *
+ * ISOBMFF_track_joiner_monitor_output_buffer_parse_and_build_joined_alc_boxes
+ *
+ * prebuilt moof/trun with alc for single isobmff fragmented player output
+ *
+ */
+void ISOBMFF_track_joiner_monitor_output_buffer_parse_and_build_joined_alc_boxes(lls_sls_monitor_output_buffer_t* lls_sls_monitor_output_buffer, AP4_MemoryByteStream** output_stream_p)
+{
+	block_t* audio_output_buffer = lls_sls_monitor_output_buffer_copy_alc_full_isobmff_box(&lls_sls_monitor_output_buffer->audio_output_buffer_isobmff);
+	block_t* video_output_buffer = lls_sls_monitor_output_buffer_copy_alc_full_isobmff_box(&lls_sls_monitor_output_buffer->video_output_buffer_isobmff);
 
-	list<AP4_Atom*> isobmff_atom_list  = ISOBMFFTrackParse(moof_box);
-	AP4_AtomParent* moofAtomParent = NULL;
-	AP4_TrunAtom* trunAtom = NULL;
+    parseAndBuildJoinedBoxes_from_lls_sls_monitor_output_buffer(lls_sls_monitor_output_buffer, audio_output_buffer, video_output_buffer, output_stream_p);
+}
 
-	trun_sample_entry_vector_t* trun_sample_entry_vector = (trun_sample_entry_vector_t*) calloc(1, sizeof(trun_sample_entry_vector_t));
 
-	std::list<AP4_Atom*>::iterator it;
+/*
+ * ISOBMFF_track_joiner_monitor_output_buffer_parse_and_build_joined_mmt_boxes
+ *
+ * dynamically built moof/trun with mmt for single isobmff fragmented player output (MPU reassembly)
+ *
+ */
+
+#define __ENABLE_OOO_MFU_REBUILD__ false
+
+void ISOBMFF_track_joiner_monitor_output_buffer_parse_and_build_joined_mmt_boxes(lls_sls_monitor_output_buffer_t* lls_sls_monitor_output_buffer, AP4_MemoryByteStream** output_stream_p)
+{
+	/** tood - magic happens here **/
+	block_t* audio_output_buffer = NULL; // = lls_sls_monitor_output_buffer_copy_alc_full_isobmff_box(lls_sls_monitor_output_buffer);
+	block_t* video_output_buffer = NULL; // = lls_sls_monitor_output_buffer_copy_video_alc_full_isobmff_box(lls_sls_monitor_output_buffer);
+
+	if(__ENABLE_OOO_MFU_REBUILD__) {
+
+	} else {
+		audio_output_buffer = lls_sls_monitor_output_buffer_copy_mmt_moof_from_flow_isobmff_box(&lls_sls_monitor_output_buffer->audio_output_buffer_isobmff);
+		video_output_buffer = lls_sls_monitor_output_buffer_copy_mmt_moof_from_flow_isobmff_box(&lls_sls_monitor_output_buffer->video_output_buffer_isobmff);
+	}
+
+    parseAndBuildJoinedBoxes_from_lls_sls_monitor_output_buffer(lls_sls_monitor_output_buffer, audio_output_buffer, video_output_buffer, output_stream_p);
+}
+
+
+void ISOBMFF_track_joiner_monitor_output_buffer_parse_and_build_joined_mmt_rebuilt_boxes(lls_sls_monitor_output_buffer_t* lls_sls_monitor_output_buffer, AP4_MemoryByteStream** output_stream_p)
+{
+	/** tood - magic happens here **/
+	block_t* audio_output_buffer = block_Duplicate(lls_sls_monitor_output_buffer->audio_output_buffer_isobmff.mmt_mpu_rebuilt);
+	block_t* video_output_buffer = block_Duplicate(lls_sls_monitor_output_buffer->video_output_buffer_isobmff.mmt_mpu_rebuilt);
+
+
+    parseAndBuildJoinedBoxes_from_lls_sls_monitor_output_buffer(lls_sls_monitor_output_buffer, audio_output_buffer, video_output_buffer, output_stream_p);
+}
+
+
+//todo: add in mpu_presentation time logic...
+uint32_t ISOBMFF_rebuild_moof_from_sample_data(lls_sls_monitor_buffer_isobmff_t* lls_sls_monitor_buffer_isobmff, AP4_MemoryByteStream** output_stream_p) {
+
+	block_t* temp_output_buffer = lls_sls_monitor_output_buffer_copy_mmt_moof_from_flow_isobmff_box_no_patching_trailing_mdat(lls_sls_monitor_buffer_isobmff);
+	if(!temp_output_buffer) {
+		__ISOBMFF_JOINER_INFO("rebuilding moof from sample, lls_sls_monitor_output_buffer_copy_mmt_moof_from_flow_isobmff_box_no_patching_trailing_mdat returned null");
+		return 0;
+	}
+
+	//process or mpu_presentaiton_time
+	AP4_TfdtAtom* tfdt_atom_mdhd_timescale = NULL;
+
+	if(lls_sls_monitor_buffer_isobmff->mpu_presentation_time_set) {
+
+		//fractional component is already at 1000000 (uS), so just multiply and add the seconds...
+		uint64_t mpu_presentation_time_s = lls_sls_monitor_buffer_isobmff->mpu_presentation_time_s * 1000000;
+		uint64_t mpu_presentation_time_ms = lls_sls_monitor_buffer_isobmff->mpu_presentation_time_us % 1000000; //just to be safe..
+		uint64_t mpu_presentation_time_final_uS =  mpu_presentation_time_s + mpu_presentation_time_ms;
+
+		tfdt_atom_mdhd_timescale = new AP4_TfdtAtom(1, mpu_presentation_time_final_uS);
+		__ISOBMFF_JOINER_INFO("ISOBMFF_rebuild_moof_from_sample_data - setting mpu_presentation_time to: %llu", mpu_presentation_time_final_uS);
+
+	} else {
+		__ISOBMFF_JOINER_INFO("WARN: ISOBMFF_rebuild_moof_from_sample_data - mpu_presentation_time is NOT SET!");
+	}
+
+	AP4_DataBuffer* dataBuffer = new AP4_DataBuffer(temp_output_buffer->i_pos);
+	AP4_MemoryByteStream* memoryOutputByteStream = new AP4_MemoryByteStream(dataBuffer);
+
+	*output_stream_p = memoryOutputByteStream;
+
+	uint32_t final_mdat_size = 0;
+
+	list<AP4_Atom_And_Offset_t*> isobmff_atom_list = ISOBMFFTrackParseAndBuildOffset(temp_output_buffer);
+	std::list<AP4_Atom_And_Offset_t*>::iterator it;
+	AP4_Atom* moofAtom = NULL;
+
 	for (it = isobmff_atom_list.begin(); it != isobmff_atom_list.end(); it++) {
+		AP4_Atom* top_level_atom = (*it)->atom;
 
-		if((*it)->GetType() == AP4_ATOM_TYPE_MOOF) {
-			moofAtomParent = AP4_DYNAMIC_CAST(AP4_ContainerAtom, *it);
+		//timescale capture
+		if(top_level_atom->GetType() == AP4_ATOM_TYPE_MOOV) {
+			AP4_MoovAtom* moovAtom = AP4_DYNAMIC_CAST(AP4_MoovAtom, top_level_atom);
 
-			AP4_ContainerAtom* tmpTrafToCheck;
-			int trafIdx = 0;
-			while((tmpTrafToCheck = AP4_DYNAMIC_CAST(AP4_ContainerAtom, moofAtomParent->GetChild(AP4_ATOM_TYPE_TRAF, trafIdx++)))) {
-				 trunAtom = AP4_DYNAMIC_CAST(AP4_TrunAtom, tmpTrafToCheck->GetChild(AP4_ATOM_TYPE_TRUN));
-				 if(trunAtom) {
-					//check for first sample duration
-					const AP4_Array<AP4_TrunAtom::Entry>& sampleEntries = trunAtom->GetEntries();
-					if(sampleEntries.ItemCount() > 0 && sampleEntries[0].sample_size) {
-						trun_sample_entry_vector->data = (trun_sample_entry_t**) calloc(sampleEntries.ItemCount(), sizeof(trun_sample_entry_vector->data));
+			AP4_TrakAtom* tmpTrakAtom;
+			int trakIndex = 0;
+			while((tmpTrakAtom = AP4_DYNAMIC_CAST(AP4_TrakAtom, moovAtom->GetChild(AP4_ATOM_TYPE_TRAK, trakIndex++)))) {
+				AP4_HdlrAtom* hdlrAtom = AP4_DYNAMIC_CAST(AP4_HdlrAtom, tmpTrakAtom->FindChild("mdia/hdlr", false, false));
 
-						for(int i=0; i < sampleEntries.ItemCount(); i++) {
-							trun_sample_entry_vector->data[i] = (trun_sample_entry_t*) calloc(1, sizeof(trun_sample_entry_t));
-							trun_sample_entry_vector->data[i]->sample_composition_time_offset = sampleEntries[i].sample_composition_time_offset;
-							trun_sample_entry_vector->data[i]->sample_duration = sampleEntries[i].sample_duration;
-							trun_sample_entry_vector->data[i]->sample_flags = sampleEntries[i].sample_flags;
-							trun_sample_entry_vector->data[i]->sample_size = 0; //sampleEntries[i].sample_size;
-							trun_sample_entry_vector->size++;
+				if(hdlrAtom && (hdlrAtom->GetHandlerType() == AP4_HANDLER_TYPE_SOUN || hdlrAtom->GetHandlerType() == AP4_HANDLER_TYPE_VIDE)) {
+
+					//try and find our parent's mdhd timescale and re-map as needed
+					AP4_AtomParent* mdiaAtom = hdlrAtom->GetParent();
+					AP4_MdhdAtom* mdhdAtom = AP4_DYNAMIC_CAST(AP4_MdhdAtom, mdiaAtom->FindChild("mdhd"));
+					if(mdhdAtom) {
+						if(!mdhdAtom->GetTimeScale()) {
+							mdhdAtom->SetTimeScale(1000000);
+						} else if(mdhdAtom->GetTimeScale() != 1000000 && tfdt_atom_mdhd_timescale) {
+							//rebase from 1000000 into 1/
+							uint64_t tfdt_atom_mdhd_presentation_time = tfdt_atom_mdhd_timescale->GetBaseMediaDecodeTime();
+							tfdt_atom_mdhd_timescale->SetBaseMediaDecodeTime((tfdt_atom_mdhd_presentation_time * mdhdAtom->GetTimeScale())/1000000);
 						}
 					}
 				}
 			}
 		}
+
+
+		//track rebuilding
+		if(top_level_atom->GetType() == AP4_ATOM_TYPE_MOOF) {
+
+			AP4_AtomParent* moofAtom = AP4_DYNAMIC_CAST(AP4_ContainerAtom, top_level_atom);
+			AP4_ContainerAtom* trafContainerAtom = AP4_DYNAMIC_CAST(AP4_ContainerAtom, moofAtom->GetChild(AP4_ATOM_TYPE_TRAF));
+			AP4_TfhdAtom* tfhdAtom = AP4_DYNAMIC_CAST(AP4_TfhdAtom, trafContainerAtom->GetChild(AP4_ATOM_TYPE_TFHD));
+        	AP4_TfdtAtom* tfdtAtom = AP4_DYNAMIC_CAST(AP4_TfdtAtom, trafContainerAtom->GetChild(AP4_ATOM_TYPE_TFDT));
+			AP4_TrunAtom* trunAtom = AP4_DYNAMIC_CAST(AP4_TrunAtom, trafContainerAtom->GetChild(AP4_ATOM_TYPE_TRUN));
+
+			//set our baseMediaDecodeTime...
+        	if(tfdtAtom && tfdtAtom->GetBaseMediaDecodeTime() == 0) {
+        		if(tfdt_atom_mdhd_timescale) {
+        			tfdtAtom->Detach();
+        			trafContainerAtom->AddChild(tfdt_atom_mdhd_timescale, 1);
+        		} else {
+        			tfdtAtom->Detach();
+        		}
+        	} else if(!tfdtAtom && tfdt_atom_mdhd_timescale) {
+        		trafContainerAtom->AddChild(tfdt_atom_mdhd_timescale, 1);
+        	}
+
+			if (lls_sls_monitor_buffer_isobmff->trun_sample_entry_v.count) {
+				AP4_Array<AP4_TrunAtom::Entry>& to_walk_entries = trunAtom->UseEntries();
+
+				for (int i = 0;	i < lls_sls_monitor_buffer_isobmff->trun_sample_entry_v.count; i++) {
+					trun_sample_entry_t* trun_sample_entry = lls_sls_monitor_buffer_isobmff->trun_sample_entry_v.data[i];
+
+					if(to_walk_entries[i].sample_size != trun_sample_entry->sample_length) {
+						__ISOBMFF_JOINER_INFO("REBUILD MOOF: setting sample %u from size: %u to size: %u," i, to_walk_entries[i].sample_size, trun_sample_entry->sample_length);
+					}
+					to_walk_entries[i].sample_size = trun_sample_entry->sample_length;
+					final_mdat_size += to_walk_entries[i].sample_size;
+				}
+
+				//handle any missing samples by zeroing out size
+				for(int j = lls_sls_monitor_buffer_isobmff->trun_sample_entry_v.count; j < to_walk_entries.ItemCount(); j++) {
+					__ISOBMFF_JOINER_INFO("REBUILD MOOF: end of trun, setting sample %u from size: %u to size: %u," j, to_walk_entries[j].sample_size, 0);
+
+					to_walk_entries[j].sample_size = 0;
+				}
+			}
+		}
 	}
 
-	return trun_sample_entry_vector;
-}
+	/**todo:
+	 * if(lls_sls_monitor_output_buffer->audio_output_buffer_isobmff.mpu_presentation_time_set && lls_sls_monitor_output_buffer->video_output_buffer_isobmff.mpu_presentation_time_set) {
 
-void ISOBMFF_track_joiner_monitor_output_buffer_parse_and_build_joined_boxes(lls_sls_monitor_output_buffer_t* lls_sls_monitor_output_buffer, AP4_MemoryByteStream** output_stream_p)
-{
-   // parseAndBuildJoinedBoxesFromMemory(audio_output_buffer->p_buffer, audio_output_buffer->i_pos, video_output_buffer->p_buffer, video_output_buffer->i_pos, memoryOutputByteStream);
-    parseAndBuildJoinedBoxes_from_lls_sls_monitor_output_buffer(lls_sls_monitor_output_buffer, output_stream_p);
-}
+		//fractional component is already at 1000000 (uS), so just multiply and add the seconds...
+		uint64_t audio_mpu_presentation_time_s = lls_sls_monitor_output_buffer->audio_output_buffer_isobmff.mpu_presentation_time_s * 1000000;
+		uint64_t audio_mpu_presentation_time_ms = lls_sls_monitor_output_buffer->audio_output_buffer_isobmff.mpu_presentation_time_us % 1000000; //just to be safe..
+		uint64_t audio_mpu_presentation_time_final_uS =  audio_mpu_presentation_time_s + audio_mpu_presentation_time_ms;
+
+		audio_tfdt_atom_mdhd_timescale = new AP4_TfdtAtom(1, audio_mpu_presentation_time_final_uS);
+	 *
+	 */
+
+	//re-write out our isobmff track..
+
+	for (it = isobmff_atom_list.begin(); it != isobmff_atom_list.end(); it++) {
+		AP4_Atom* top_level_atom = (*it)->atom;
+		top_level_atom->Write(*memoryOutputByteStream);
+
+	}
+
+	block_Release(&temp_output_buffer);
 
 
-void parseAndBuildJoinedBoxes(ISOBMFFTrackJoinerFileResouces* isoBMFFTrackJoinerFileResouces, AP4_ByteStream* output_stream) {
-
-   // parseAndBuildJoinedBoxesFromMemory(isoBMFFTrackJoinerFileResouces->file1_payload, isoBMFFTrackJoinerFileResouces->file1_size, isoBMFFTrackJoinerFileResouces->file2_payload, isoBMFFTrackJoinerFileResouces->file2_size, output_stream);
+	return final_mdat_size;
 }
 
 uint32_t __rebuild_trun_sample_box(AP4_TrunAtom* temp_trunAtom, lls_sls_monitor_buffer_isobmff_t* lls_sls_monitor_buffer_isobmff) {
@@ -214,19 +393,21 @@ uint32_t __rebuild_trun_sample_box(AP4_TrunAtom* temp_trunAtom, lls_sls_monitor_
 	uint32_t new_fragments_size = 0;
 	uint32_t total_sample_duration = 0;
 
-	if (lls_sls_monitor_buffer_isobmff->moof_box_trun_sample_entry_vector && lls_sls_monitor_buffer_isobmff->moof_box_trun_sample_entry_vector->size) {
+	if (lls_sls_monitor_buffer_isobmff->trun_sample_entry_v.count) {
 		AP4_Array<AP4_TrunAtom::Entry>& to_walk_entries = temp_trunAtom->UseEntries();
 		AP4_Array<AP4_TrunAtom::Entry> rebuilt_container;
 
 		bool has_updated_entries = false;
 
-		for (int i = 0;	i < lls_sls_monitor_buffer_isobmff->moof_box_trun_sample_entry_vector->size; i++) {
+		for (int i = 0;	i < lls_sls_monitor_buffer_isobmff->trun_sample_entry_v.count; i++) {
+			trun_sample_entry_t* trun_sample_entry = lls_sls_monitor_buffer_isobmff->trun_sample_entry_v.data[i];
+
 			uint32_t last_sample_size = to_walk_entries[i].sample_size;
 			old_fragments_size += last_sample_size;
 			total_sample_duration += to_walk_entries[i].sample_duration;
 
-			if (lls_sls_monitor_buffer_isobmff->moof_box_trun_sample_entry_vector->data[i]->to_remove_sample_entry ||
-				!lls_sls_monitor_buffer_isobmff->moof_box_trun_sample_entry_vector->data[i]->has_matching_sample) {
+			if (trun_sample_entry->to_remove_sample_entry ||
+				!trun_sample_entry->has_matching_sample) {
 				__ISOBMFF_JOINER_INFO("track_id: %u: MISSING SAMPLE: setting sample %u from size: %u to size: %u, duration: %u:, sample_flags: 0x%x", lls_sls_monitor_buffer_isobmff->track_id, i, last_sample_size, to_walk_entries[i].sample_size, total_sample_duration, to_walk_entries[i].sample_flags);
 
 				has_updated_entries = true;
@@ -246,7 +427,7 @@ uint32_t __rebuild_trun_sample_box(AP4_TrunAtom* temp_trunAtom, lls_sls_monitor_
 				__ISOBMFF_JOINER_INFO("track_id: %u: REBUILD MOOF: setting sample %u from size: %u to size: %u, duration: %u, sample_flags: 0x%x", lls_sls_monitor_buffer_isobmff->track_id, i, last_sample_size, to_walk_entries[i].sample_size, total_sample_duration, to_walk_entries[i].sample_flags);
 
 				has_updated_entries = true;
-				to_walk_entries[i].sample_size = lls_sls_monitor_buffer_isobmff->moof_box_trun_sample_entry_vector->data[i]->sample_size;
+				to_walk_entries[i].sample_size = trun_sample_entry->sample_length;
 				to_walk_entries[i].sample_flags |= 0x000200;
 
 			}
@@ -272,377 +453,6 @@ uint32_t __rebuild_trun_sample_box(AP4_TrunAtom* temp_trunAtom, lls_sls_monitor_
 
 	return new_fragments_size;
 }
-
-#ifdef __old_mdat__
-void parseAndBuildJoinedBoxes_multiple_mdat_boxes_from_lls_sls_monitor_output_buffer(lls_sls_monitor_output_buffer_t* lls_sls_monitor_output_buffer, AP4_MemoryByteStream** output_stream_p) {
-
-	AP4_Result   result;
-
-	AP4_ContainerAtom* audio_mvexAtomToCopy = NULL;
-	AP4_TrakAtom* audio_trakMediaAtomToCopy = NULL;
-
-#ifndef __DROP_HINT_TRACKS__
-
-	//only used if recombining hint tracks
-	std::list<AP4_TrakAtom*> audio_trakHintAtomToCopyList;
-	std::list<AP4_TrakAtom*>::iterator itHint;
-#endif
-
-	std::list<AP4_ContainerAtom*> audio_trafList;
-	std::list<AP4_ContainerAtom*>::iterator itTraf;
-
-	std::list<AP4_TrunAtom*> audio_trunList;
-	std::list<AP4_TrunAtom*>::iterator itTrunFirst;
-
-	std::list<AP4_Atom*> audio_mdatList;
-	std::list<AP4_Atom*>::iterator itMdatFirst;
-	uint32_t audio_mdat_size_new;
-	uint32_t video_mdat_size_new;
-
-	AP4_AtomParent* video_moofAtomParent = NULL;
-	AP4_Atom* video_moofAtom = NULL;
-
-	AP4_ContainerAtom* video_trafAtom = NULL;
-	AP4_TrunAtom* video_trunAtom = NULL;
-
-	std::list<AP4_Atom*> video_mdatList;
-	std::list<AP4_Atom*>::iterator video_mdatIt;
-	uint64_t video_mdatFileOffset = 0;
-
-	block_t* audio_output_buffer = lls_sls_monitor_output_buffer_copy_audio_full_isobmff_box(lls_sls_monitor_output_buffer);
-	block_t* video_output_buffer = lls_sls_monitor_output_buffer_copy_video_full_isobmff_box(lls_sls_monitor_output_buffer);
-
-	if(!audio_output_buffer || !video_output_buffer) {
-		__ISOBMFF_JOINER_INFO("setting *output_stream_p to null, audio_output_buffer: %p, video_output_buffer: %p", audio_output_buffer, video_output_buffer);
-		*output_stream_p = NULL;
-		return;
-	}
-
-	//we shouldn't be bigger than this for our return..
-	AP4_DataBuffer* dataBuffer = new AP4_DataBuffer(audio_output_buffer->i_pos + video_output_buffer->i_pos );
-	AP4_MemoryByteStream* memoryOutputByteStream = new AP4_MemoryByteStream(dataBuffer);
-
-	*output_stream_p = memoryOutputByteStream;
-
-	list<AP4_Atom*> audio_isobmff_atom_list  = ISOBMFFTrackParse(audio_output_buffer);
-
-	list<AP4_Atom*> video_isobmff_atom_list =  ISOBMFFTrackParse(video_output_buffer);
-
-    __ISOBMFF_JOINER_DEBUG("Dumping audio box: size: %u", audio_output_buffer->i_pos);
-	//dumpFullMetadata(audio_isobmff_atom_list);
-
-	__ISOBMFF_JOINER_DEBUG("Dumping video box: %u", video_output_buffer->i_pos);
-	//dumpFullMetadata(video_isobmff_atom_list);
-
-	block_Release(&audio_output_buffer);
-	block_Release(&video_output_buffer);
-
-
-	/**
-     top level AP4_ContainerAtoms:
-     
-	bento4/ISOBMFFTrackJoiner.cpp:363:DEBUG :printBoxType: atom type: ftyp, size: 36
-	bento4/ISOBMFFTrackJoiner.cpp:363:DEBUG :printBoxType: atom type: moov, size: 608
-	bento4/ISOBMFFTrackJoiner.cpp:363:DEBUG :printBoxType: atom type: styp, size: 24
-	bento4/ISOBMFFTrackJoiner.cpp:363:DEBUG :printBoxType: atom type: moof, size: 1220
-	bento4/ISOBMFFTrackJoiner.cpp:363:DEBUG :printBoxType: atom type: mdat, size: 96765
-	 
-     
-     remove sidx by defining __DROP_SIDX_BOX__
-
-     steps to combine two tracks:
-     ----------------------------
-     in Moov box
-            -> copy mvex box
-            -> Copy trak box
-
-     in Moof box
-			-> Copy traf box
-                <- detatch both tfdt boxes if base_media_decode_time == 0
-     
-            -> update trunSecondFile dataOffset from moof->getsize() + moof header size (+8)
-            -> update trunfirstFile dataOffset  from moof->getsize() + moof header size (+8) +2nd mdat size
-     
-      append 1st Copy mdat box
-
-	 */
-
-
-
-    /**
-     to postion at end:
-     
-     [hdlr] size=12+40
-     handler_type = hint
-     handler_name = Bento4 Hint Handler
-     **/
-
-	//from isoBMFFList1 list
-	std::list<AP4_Atom*>::iterator it;
-	for (it = audio_isobmff_atom_list.begin(); it != audio_isobmff_atom_list.end(); it++) {
-
-		//In the moov box->get a ref for the trak box
-		if((*it)->GetType() == AP4_ATOM_TYPE_MOOV) {
-			AP4_MoovAtom* moovAtom = AP4_DYNAMIC_CAST(AP4_MoovAtom, *it);
-			audio_mvexAtomToCopy = AP4_DYNAMIC_CAST(AP4_ContainerAtom, moovAtom->GetChild(AP4_ATOM_TYPE_MVEX));
-
-			AP4_TrakAtom* tmpTrakAtom;
-			int trakIndex = 0;
-			while((tmpTrakAtom = AP4_DYNAMIC_CAST(AP4_TrakAtom, moovAtom->GetChild(AP4_ATOM_TYPE_TRAK, trakIndex++)))) {
-
-				AP4_HdlrAtom* hdlrAtom = AP4_DYNAMIC_CAST(AP4_HdlrAtom, tmpTrakAtom->FindChild("mdia/hdlr", false, false));
-
-				//todo - handle duplicate track id's
-
-				if(hdlrAtom && hdlrAtom->GetHandlerType() == AP4_HANDLER_TYPE_SOUN) {
-
-					lls_sls_monitor_output_buffer->audio_output_buffer_isobmff.track_id = tmpTrakAtom->GetId();
-					audio_trakMediaAtomToCopy = tmpTrakAtom;
-
-				} else if(hdlrAtom->GetHandlerType() == AP4_HANDLER_TYPE_HINT) {
-#ifndef __DROP_HINT_TRACKS__
-
-						tmpTrakAtom->SetId(tmpTrakAtom->GetId()+10);
-
-						audio_trakHintAtomToCopyList.push_back(tmpTrakAtom);
-
-						//if we have a hint ref
-											/**
-											 *[tref] size=8+12
-												  [hint] size=8+4
-													track_id_count = 1
-													track id  = 2
-											 */
-						//tmpTrakAtom->GetChild(AP4_ATOM_TYPE_TREF)
-						AP4_TrefTypeAtom* tmpTrefAtom = AP4_DYNAMIC_CAST(AP4_TrefTypeAtom, tmpTrakAtom->FindChild("tref/hint", false, false)); //(AP4_ATOM_TYPE_TREF));
-                        if(tmpTrefAtom) {
-                            const AP4_Array<AP4_UI32>& trefTrackIds = tmpTrefAtom->GetTrackIds();
-
-                            AP4_TrefTypeAtom* newTempTrefAtom = new AP4_TrefTypeAtom(tmpTrefAtom->GetType());
-                            for(AP4_Cardinal i=0; i < trefTrackIds.ItemCount(); i++) {
-                                newTempTrefAtom->AddTrackId(trefTrackIds[i] + 10);
-                            }
-                            AP4_AtomParent* tmpTrefParent = tmpTrefAtom->GetParent();
-                            tmpTrefAtom->Detach();
-                            tmpTrefParent->AddChild(newTempTrefAtom);
-                        }
-#endif
-				} else {
-					//printf("Skipping tmpTrakAtom: %u", tmpTrakAtom->GetType());
-				}
-
-			}
-		}
-
-		if((*it)->GetType() == AP4_ATOM_TYPE_MOOF) {
-			AP4_AtomParent* moofAtom = AP4_DYNAMIC_CAST(AP4_ContainerAtom, *it);
-			AP4_ContainerAtom* trafContainerAtom = AP4_DYNAMIC_CAST(AP4_ContainerAtom, moofAtom->GetChild(AP4_ATOM_TYPE_TRAF));
-			audio_trafList.push_back(trafContainerAtom);
-
-			AP4_TrunAtom* temp_trunAtom = AP4_DYNAMIC_CAST(AP4_TrunAtom, trafContainerAtom->GetChild(AP4_ATOM_TYPE_TRUN));
-
-			audio_mdat_size_new = __rebuild_trun_sample_box(temp_trunAtom, &lls_sls_monitor_output_buffer->audio_output_buffer_isobmff);
-
-			audio_trunList.push_back(temp_trunAtom);
-		}
-
-		if((*it)->GetType() == AP4_ATOM_TYPE_MDAT) {
-			if(audio_mdat_size_new) {
-				(*it)->SetSize32(audio_mdat_size_new + AP4_ATOM_HEADER_SIZE);
-			}
-			audio_mdatList.push_back(*it);
-		}
-	}
-
-
-
-	//Process our audio track - now go the other way...
-	for (it = video_isobmff_atom_list.begin(); it != video_isobmff_atom_list.end(); it++) {
-
-		//In the moov box->get a ref for the trak box
-		if((*it)->GetType() == AP4_ATOM_TYPE_MOOV) {
-			AP4_MoovAtom* moovAtom = AP4_DYNAMIC_CAST(AP4_MoovAtom, *it);
-
-			//remove our hints
-			AP4_TrakAtom* tmpTrakAtom;
-			int trakIndex = 0;
-			while((tmpTrakAtom = AP4_DYNAMIC_CAST(AP4_TrakAtom, moovAtom->GetChild(AP4_ATOM_TYPE_TRAK, trakIndex++)))) {
-
-				AP4_HdlrAtom* hdlrAtom = AP4_DYNAMIC_CAST(AP4_HdlrAtom, tmpTrakAtom->FindChild("mdia/hdlr", false, false));
-
-				bool shouldDetatch = true;
-				if(hdlrAtom && hdlrAtom->GetHandlerType() == AP4_HANDLER_TYPE_VIDE) {
-					lls_sls_monitor_output_buffer->video_output_buffer_isobmff.track_id = tmpTrakAtom->GetId();
-					shouldDetatch = false;
-				}
-
-				if(shouldDetatch) {
-					//clear out any hint tracks
-					tmpTrakAtom->Detach();
-				}
-			}
-
-			AP4_ContainerAtom* mvexToClear = AP4_DYNAMIC_CAST(AP4_ContainerAtom, moovAtom->GetChild(AP4_ATOM_TYPE_MVEX));
-
-			AP4_TrexAtom* tmpTrexAtom;
-			int trexIndex = 0;
-			while((tmpTrexAtom = AP4_DYNAMIC_CAST(AP4_TrexAtom, mvexToClear->GetChild(AP4_ATOM_TYPE_TREX, trexIndex++)))) {
-				if(tmpTrexAtom->GetTrackId() != lls_sls_monitor_output_buffer->video_output_buffer_isobmff.track_id) {
-					tmpTrexAtom->Detach();
-				}
-			}
-
-			if(audio_mvexAtomToCopy) {
-				audio_mvexAtomToCopy->Detach();
-
-				//update the mvex/trex
-				moovAtom->AddChild(audio_mvexAtomToCopy, -1);
-			}
-
-			if(audio_trakMediaAtomToCopy) {
-				audio_trakMediaAtomToCopy->Detach();
-				moovAtom->AddChild(audio_trakMediaAtomToCopy, -1);
-			}
-
-#ifndef __DROP_HINT_TRACKS__
-
-			//trakHintAtomToCopy
-			//this track index is already offset by +10
-
-			//looks like there is no actual hint data in these files, don't add in the hint tracks,..
-
-			for (itHint = audio_trakHintAtomToCopyList.begin(); itHint != audio_trakHintAtomToCopyList.end(); itHint++) {
-				(*itHint)->Detach();
-				moovAtom->AddChild(*itHint, -1);
-			}
-#endif
-		}
-
-		if((*it)->GetType() == AP4_ATOM_TYPE_MOOF) {
-			video_moofAtomParent = AP4_DYNAMIC_CAST(AP4_ContainerAtom, *it);
-
-            //clear out our traf's if tfhd id != trakMediaAtomSecondFileId
-
-			AP4_ContainerAtom* tmpTrafToClean;
-			int trafIdx = 0;
-			while((tmpTrafToClean = AP4_DYNAMIC_CAST(AP4_ContainerAtom, video_moofAtomParent->GetChild(AP4_ATOM_TYPE_TRAF, trafIdx++)))) {
-                AP4_TfhdAtom* tfhdTempAtom = AP4_DYNAMIC_CAST(AP4_TfhdAtom, tmpTrafToClean->GetChild(AP4_ATOM_TYPE_TFHD));
-                bool shouldDetachTrak = true;
-                if(tfhdTempAtom && tfhdTempAtom->GetTrackId() == lls_sls_monitor_output_buffer->video_output_buffer_isobmff.track_id) {
-                	video_trafAtom = tmpTrafToClean;
-                	shouldDetachTrak = false;
-
-                    //remove our tfdt's if base media decode time is 0
-
-                	AP4_TfdtAtom* video_tfdtTempAtom = AP4_DYNAMIC_CAST(AP4_TfdtAtom, tmpTrafToClean->GetChild(AP4_ATOM_TYPE_TFDT));
-                	if(video_tfdtTempAtom && video_tfdtTempAtom->GetBaseMediaDecodeTime() == 0) {
-                		video_tfdtTempAtom->Detach();
-                	}
-                }
-                if(shouldDetachTrak) {
-                	tmpTrafToClean->Detach();
-                }
-			}
-
-			for(itTraf = audio_trafList.begin(); itTraf != audio_trafList.end(); itTraf++) {
-
-                AP4_TfhdAtom* tfhdTempAtom = AP4_DYNAMIC_CAST(AP4_TfhdAtom, (*itTraf)->GetChild(AP4_ATOM_TYPE_TFHD));
-                //shift our track id's by +10 if we are not the audio track id
-                if(tfhdTempAtom && tfhdTempAtom->GetTrackId() != lls_sls_monitor_output_buffer->audio_output_buffer_isobmff.track_id) {
-
-                	tfhdTempAtom->SetTrackId(tfhdTempAtom->GetTrackId() + 10);
-                }
-
-                //remove our tfdt's if base media decode time is 0
-                AP4_TfdtAtom* audio_tfdtTempAtom = AP4_DYNAMIC_CAST(AP4_TfdtAtom, (*itTraf)->GetChild(AP4_ATOM_TYPE_TFDT));
-
-                if(audio_tfdtTempAtom && audio_tfdtTempAtom->GetBaseMediaDecodeTime() == 0) {
-                	audio_tfdtTempAtom->Detach();
-				}
-                
-                (*itTraf)->Detach();
-				video_moofAtomParent->AddChild(*itTraf);
-			}
-
-			/**
-			 * TODO: null out any empty broken fragments as per ISO23008-14
-			 */
-
-            if(video_trafAtom) {
-                video_trunAtom = AP4_DYNAMIC_CAST(AP4_TrunAtom, video_trafAtom->GetChild(AP4_ATOM_TYPE_TRUN));
-                if(video_trunAtom) {
-                	//get our first sample duration
-                	const AP4_Array<AP4_TrunAtom::Entry>& video_sampleEntries = video_trunAtom->GetEntries();
-                	bool has_found_sample_duration = false;
-
-                	for(int i=0; !has_found_sample_duration && i < video_sampleEntries.ItemCount(); i++) {
-                		if(video_sampleEntries[i].sample_duration) {
-                			lls_sls_monitor_output_buffer->video_output_buffer_isobmff.fps_num = video_sampleEntries[i].sample_duration;
-                			lls_sls_monitor_output_buffer->video_output_buffer_isobmff.fps_denom = 1000000;
-                			has_found_sample_duration = true;
-                		}
-                	}
-
-        			video_mdat_size_new = __rebuild_trun_sample_box(video_trunAtom, &lls_sls_monitor_output_buffer->video_output_buffer_isobmff);
-                }
-            }
-		}
-
-		if((*it)->GetType() == AP4_ATOM_TYPE_MDAT) {
-			if(video_mdat_size_new) {
-				(*it)->SetSize32(video_mdat_size_new + AP4_ATOM_HEADER_SIZE);
-			}
-			video_mdatList.push_back(*it);
-		}
-	}
-
-	if(video_moofAtomParent) {
-		video_moofAtom = AP4_DYNAMIC_CAST(AP4_Atom, video_moofAtomParent);
-        if(video_trunAtom) {
-            video_trunAtom->SetDataOffset((AP4_UI32)video_moofAtom->GetSize()+AP4_ATOM_HEADER_SIZE);
-        } else {
-            //this shouldn't happen
-        }
-
-		for(video_mdatIt = video_mdatList.begin(); video_mdatIt != video_mdatList.end(); video_mdatIt++) {
-			video_mdatFileOffset += (*video_mdatIt)->GetSize() + AP4_ATOM_HEADER_SIZE;
-		}
-		video_mdatFileOffset += video_moofAtom->GetSize();
-	}
-
-
-	//apend by hand and update
-	for(itTrunFirst = audio_trunList.begin(); itTrunFirst != audio_trunList.end(); itTrunFirst++) {
-		//trunFirstFile
-		(*itTrunFirst)->SetDataOffset(video_mdatFileOffset);
-	}
-
-    if(audio_mdatList.size()) {
-    	video_isobmff_atom_list.insert(video_isobmff_atom_list.end(), audio_mdatList.begin(), audio_mdatList.end());
-    }
-    
-    //push our packets to out output_stream writer, and we're done...
-    
-	for (it = video_isobmff_atom_list.begin(); it != video_isobmff_atom_list.end(); it++) {
-		bool should_write_box = true;
-
-#ifdef __DROP_SIDX_BOX__
-		if((*it)->GetType() == AP4_ATOM_TYPE_SIDX) {
-			should_write_box = false;
-		}
-#endif
-		if(should_write_box) {
-			(*it)->Write(*memoryOutputByteStream);
-		}
-	}
-
-    __ISOBMFF_JOINER_INFO("Final output re-muxed MPU:");
-    dumpFullMetadata(video_isobmff_atom_list);
-
-}
-
-#endif
-
 
 list<AP4_Atom_And_Offset*> ISOBMFFTrackParseAndBuildOffset(block_t* isobmff_track_block) {
 
@@ -682,12 +492,57 @@ list<AP4_Atom_And_Offset*> ISOBMFFTrackParseAndBuildOffset(block_t* isobmff_trac
 }
 
 
+/**
+ *
+ * create dynamic moof box for mmt mfu support
+ *
+ * todo: validate  null out any empty broken fragments as per ISO23008-14
+ *
+ *
+ *
+
+        			video_mdat_size_new = __rebuild_trun_sample_box(video_trunAtom, &lls_sls_monitor_output_buffer->video_output_buffer_isobmff);
+ *
+ *
+ * if(top_level_atom->GetType() == AP4_ATOM_TYPE_MOOF) {
+			AP4_AtomParent* moofAtom = AP4_DYNAMIC_CAST(AP4_ContainerAtom, top_level_atom);
+			AP4_ContainerAtom* trafContainerAtom = AP4_DYNAMIC_CAST(AP4_ContainerAtom, moofAtom->GetChild(AP4_ATOM_TYPE_TRAF));
+			//tfhd
+
+            AP4_TfhdAtom* tfhdTempAtom = AP4_DYNAMIC_CAST(AP4_TfhdAtom, trafContainerAtom->GetChild(AP4_ATOM_TYPE_TFHD));
+            if(tfhdTempAtom && audio_track_id_to_remap) {
+            	tfhdTempAtom->SetTrackId(audio_track_id_to_remap);
+            }
+
+			audio_trafList.push_back(trafContainerAtom);
+
+			AP4_TrunAtom* temp_trunAtom = AP4_DYNAMIC_CAST(AP4_TrunAtom, trafContainerAtom->GetChild(AP4_ATOM_TYPE_TRUN));
+			audio_mdat_size_new = __rebuild_trun_sample_box(temp_trunAtom, &lls_sls_monitor_output_buffer->audio_output_buffer_isobmff);
+
+			audio_trunList.push_back(temp_trunAtom);
+		}
+ *
+ */
+
 /*
  *
  * build into single mdat box
+ *
+ * from either alc:
+ *
+	block_t* audio_output_buffer = lls_sls_monitor_output_buffer_copy_audio_alc_full_isobmff_box(lls_sls_monitor_output_buffer);
+	block_t* video_output_buffer = lls_sls_monitor_output_buffer_copy_video_alc_full_isobmff_box(lls_sls_monitor_output_buffer);
+
+	or mmt recon:
+
+	...
+	block_t* audio_output_buffer = lls_sls_monitor_output_buffer_copy_audio_..._full_isobmff_box(lls_sls_monitor_output_buffer);
+	block_t* video_output_buffer = lls_sls_monitor_output_buffer_copy_video_.._full_isobmff_box(lls_sls_monitor_output_buffer);
+
+ *
  */
 
-void parseAndBuildJoinedBoxes_from_lls_sls_monitor_output_buffer(lls_sls_monitor_output_buffer_t* lls_sls_monitor_output_buffer, AP4_MemoryByteStream** output_stream_p) {
+void parseAndBuildJoinedBoxes_from_lls_sls_monitor_output_buffer(lls_sls_monitor_output_buffer_t* lls_sls_monitor_output_buffer, block_t* audio_output_buffer, block_t* video_output_buffer, AP4_MemoryByteStream** output_stream_p) {
 
 	AP4_Result   result;
 
@@ -706,14 +561,16 @@ void parseAndBuildJoinedBoxes_from_lls_sls_monitor_output_buffer(lls_sls_monitor
 	uint32_t audio_track_id_to_remap = 0;
 
 	std::list<AP4_TrunAtom*> audio_trunList;
+	std::list<AP4_TrunAtom*> video_trunList;
+
 	std::list<AP4_TrunAtom*>::iterator itTrunFirst;
 
 	std::list<AP4_Atom_And_Offset_t*> audio_mdatList;
 	std::list<AP4_Atom_And_Offset_t*> video_mdatList;
 	std::list<AP4_Atom_And_Offset_t*>::iterator it;
 
-	uint32_t audio_mdat_size_new;
-	uint32_t video_mdat_size_new;
+	uint32_t audio_mdat_size_new = 0;
+	uint32_t video_mdat_size_new = 0;
 
 	AP4_AtomParent* video_moofAtomParent = NULL;
 	AP4_Atom* video_moofAtom = NULL;
@@ -723,6 +580,7 @@ void parseAndBuildJoinedBoxes_from_lls_sls_monitor_output_buffer(lls_sls_monitor
 
 	uint32_t video_trun_last_offset = 0;
 
+	AP4_MdhdAtom* video_mdhdAtom;
 
 	//mpu_presentation_time support
 	AP4_TfdtAtom* audio_tfdt_atom_mdhd_timescale = NULL;
@@ -744,9 +602,6 @@ void parseAndBuildJoinedBoxes_from_lls_sls_monitor_output_buffer(lls_sls_monitor
 
 		video_tfdt_atom_mdhd_timescale = new AP4_TfdtAtom(1, video_mpu_presentation_time_final_uS);
 	}
-
-	block_t* audio_output_buffer = lls_sls_monitor_output_buffer_copy_audio_full_isobmff_box(lls_sls_monitor_output_buffer);
-	block_t* video_output_buffer = lls_sls_monitor_output_buffer_copy_video_full_isobmff_box(lls_sls_monitor_output_buffer);
 
 	if(!audio_output_buffer || !video_output_buffer) {
 		__ISOBMFF_JOINER_INFO("setting *output_stream_p to null, audio_output_buffer: %p, video_output_buffer: %p", audio_output_buffer, video_output_buffer);
@@ -862,14 +717,14 @@ void parseAndBuildJoinedBoxes_from_lls_sls_monitor_output_buffer(lls_sls_monitor
 
 					//try and find our parent's mdhd timescale and re-map as needed
 					AP4_AtomParent* mdiaAtom = hdlrAtom->GetParent();
-					AP4_MdhdAtom* mdhdAtom = AP4_DYNAMIC_CAST(AP4_MdhdAtom, mdiaAtom->FindChild("mdhd"));
-					if(mdhdAtom) {
-						if(!mdhdAtom->GetTimeScale()) {
-							mdhdAtom->SetTimeScale(1000000);
-						} else if(mdhdAtom->GetTimeScale() != 1000000 && video_tfdt_atom_mdhd_timescale) {
+					video_mdhdAtom = AP4_DYNAMIC_CAST(AP4_MdhdAtom, mdiaAtom->FindChild("mdhd"));
+					if(video_mdhdAtom) {
+						if(!video_mdhdAtom->GetTimeScale()) {
+							video_mdhdAtom->SetTimeScale(1000000);
+						} else if(video_mdhdAtom->GetTimeScale() != 1000000 && video_tfdt_atom_mdhd_timescale) {
 							//rebase from 1000000 into 1/
 							uint64_t video_tfdt_atom_mdhd_presentation_time = video_tfdt_atom_mdhd_timescale->GetBaseMediaDecodeTime();
-							video_tfdt_atom_mdhd_timescale->SetBaseMediaDecodeTime((video_tfdt_atom_mdhd_presentation_time * mdhdAtom->GetTimeScale())/1000000);
+							video_tfdt_atom_mdhd_timescale->SetBaseMediaDecodeTime((video_tfdt_atom_mdhd_presentation_time * video_mdhdAtom->GetTimeScale())/1000000);
 						}
 					}
 
@@ -976,8 +831,7 @@ void parseAndBuildJoinedBoxes_from_lls_sls_monitor_output_buffer(lls_sls_monitor
 			audio_trafList.push_back(trafContainerAtom);
 
 			AP4_TrunAtom* temp_trunAtom = AP4_DYNAMIC_CAST(AP4_TrunAtom, trafContainerAtom->GetChild(AP4_ATOM_TYPE_TRUN));
-			audio_mdat_size_new = __rebuild_trun_sample_box(temp_trunAtom, &lls_sls_monitor_output_buffer->audio_output_buffer_isobmff);
-
+		
 			audio_trunList.push_back(temp_trunAtom);
 		}
 
@@ -1081,11 +935,18 @@ void parseAndBuildJoinedBoxes_from_lls_sls_monitor_output_buffer(lls_sls_monitor
                 		tmpTrafToClean->AddChild(video_tfdt_atom_mdhd_timescale, 1);
                 	}
                 }
+
                 if(shouldDetachTrak) {
                 	tmpTrafToClean->Detach();
+                } else {
+                	//append this into our video_trunList
+                	AP4_TrunAtom* temp_trunAtom = AP4_DYNAMIC_CAST(AP4_TrunAtom, tmpTrafToClean->GetChild(AP4_ATOM_TYPE_TRUN));
+
+                	video_trunList.push_back(temp_trunAtom);
                 }
 			}
 
+			//add our audio tracks into the moofAtom
 			for(itTraf = audio_trafList.begin(); itTraf != audio_trafList.end(); itTraf++) {
 
                 AP4_TfhdAtom* tfhdTempAtom = AP4_DYNAMIC_CAST(AP4_TfhdAtom, (*itTraf)->GetChild(AP4_ATOM_TYPE_TFHD));
@@ -1110,28 +971,26 @@ void parseAndBuildJoinedBoxes_from_lls_sls_monitor_output_buffer(lls_sls_monitor
 				video_moofAtomParent->AddChild(*itTraf);
 			}
 
-			/**
-			 * TODO: null out any empty broken fragments as per ISO23008-14
-			 */
 
-            if(video_trafAtom) {
+			if(video_trafAtom) {
                 video_trunAtom = AP4_DYNAMIC_CAST(AP4_TrunAtom, video_trafAtom->GetChild(AP4_ATOM_TYPE_TRUN));
                 if(video_trunAtom) {
 
-                	//get our first sample duration
+                	//get our first sample duration to get an ~estimate of our fps
                 	const AP4_Array<AP4_TrunAtom::Entry>& video_sampleEntries = video_trunAtom->GetEntries();
                 	bool has_found_sample_duration = false;
 
                 	for(int i=0; !has_found_sample_duration && i < video_sampleEntries.ItemCount(); i++) {
                 		if(video_sampleEntries[i].sample_duration) {
                 			lls_sls_monitor_output_buffer->video_output_buffer_isobmff.fps_num = video_sampleEntries[i].sample_duration;
-                			lls_sls_monitor_output_buffer->video_output_buffer_isobmff.fps_denom = 1000000;
+                			if(video_mdhdAtom) {
+                				lls_sls_monitor_output_buffer->video_output_buffer_isobmff.fps_denom = video_mdhdAtom->GetTimeScale();
+                			} else {
+                				lls_sls_monitor_output_buffer->video_output_buffer_isobmff.fps_denom = 1000000;
+                			}
                 			has_found_sample_duration = true;
                 		}
                 	}
-
-                	//TODO - null out samples here instead of re-computing box size
-        			video_mdat_size_new = __rebuild_trun_sample_box(video_trunAtom, &lls_sls_monitor_output_buffer->video_output_buffer_isobmff);
                 }
             }
 		}
@@ -1183,12 +1042,20 @@ void parseAndBuildJoinedBoxes_from_lls_sls_monitor_output_buffer(lls_sls_monitor
 
 
 	//AP4_ATOM_HEADER_SIZE
-	for(it = video_mdatList.begin(); it != video_mdatList.end(); it++) {
+	//we may have multiple video mdat's combined here..
+	itTrunFirst = video_trunList.begin();
+
+	it = video_mdatList.begin();
+	for(; itTrunFirst != video_trunList.end() && it != video_mdatList.end(); ) {
+		(*itTrunFirst)->SetDataOffset(video_trun_last_offset + video_mdat_payload_size_refragment);
+
 		video_mdat_payload_size_refragment += (*it)->atom->GetSize32() - AP4_ATOM_HEADER_SIZE;
 		video_mdat_payload_size_bento_parser += ((*it)->end_offset - (*it)->start_offset) - AP4_ATOM_HEADER_SIZE;
 
 		final_mdat_payload_size_refragment += (*it)->atom->GetSize32() - AP4_ATOM_HEADER_SIZE;
 		final_mdat_payload_size_bento_parser += ((*it)->end_offset - (*it)->start_offset) - AP4_ATOM_HEADER_SIZE;
+		itTrunFirst++;
+		it++;
 	}
 
     //update audio segment trun box(es).. before writing them out...
@@ -1248,12 +1115,24 @@ void parseAndBuildJoinedBoxes_from_lls_sls_monitor_output_buffer(lls_sls_monitor
     __ISOBMFF_JOINER_INFO("Final output re-muxed MPU:");
     dumpFullMetadataAndOffsets(video_isobmff_atom_list);
 
-    //don't change this value here, otherwise we will lose reference on our next processing loop
-//	lls_sls_monitor_output_buffer->audio_output_buffer_isobmff.track_id = audio_track_id_to_remap;
-
-
 	block_Release(&audio_output_buffer);
 	block_Release(&video_output_buffer);
+
+	for (it = audio_isobmff_atom_list.begin(); it != audio_isobmff_atom_list.end(); it++) {
+		if((*it)->atom) {
+			delete (*it)->atom;
+		}
+		free (*it);
+	}
+
+	for (it = video_isobmff_atom_list.begin(); it != video_isobmff_atom_list.end(); it++) {
+		if((*it)->atom) {
+			delete (*it)->atom;
+		}
+		free (*it);
+	}
+
+
 }
 
 

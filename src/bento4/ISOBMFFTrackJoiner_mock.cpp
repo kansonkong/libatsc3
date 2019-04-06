@@ -17,7 +17,7 @@ int _ISOBMFFTRACKJOINER_TRACE_ENABLED = 0;
 ISOBMFFTrackJoinerFileResouces_t* loadFileResources(const char* file1, const char* file2) {
 	return NULL;
 }
-
-trun_sample_entry_vector_t* parseMoofBoxForTrunSampleEntries(block_t* moof_box) {
-	return NULL;
-}
+//
+//trun_sample_entry_vector_t* parseMoofBoxForTrunSampleEntries(block_t* moof_box) {
+//	return NULL;
+//}
