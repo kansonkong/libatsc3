@@ -90,11 +90,16 @@ typedef struct atsc3_block {
 } block_t;
 
 block_t* block_Alloc(int len);
+block_t* block_Promote(char*);
 block_t* block_Write(block_t* dest, uint8_t* buf, uint32_t size);
+uint32_t block_Append(block_t* dest, block_t* src);
+uint32_t block_Seek(block_t* block, int32_t seek_pos);
 block_t* block_Rewind(block_t* dest);
 block_t* block_Resize(block_t* dest, uint32_t dest_size_required);
 block_t* block_Duplicate(block_t* a);
 block_t* block_Duplicate_from_position(block_t* a);
+block_t* block_Duplicate_to_size(block_t* src, uint32_t target_len);
+
 void block_Release(block_t** a);
 
 //alloc and copy - note limited to 16k
@@ -105,6 +110,7 @@ char* __trim(char *str);
 
 void freesafe(void* tofree);
 void freeclean(void** tofree);
+void freeclean_uint8_t(uint8_t** tofree);
 
 uint32_t parseIpAddressIntoIntval(char* dst_ip);
 

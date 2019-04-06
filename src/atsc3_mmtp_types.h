@@ -108,12 +108,35 @@ typedef struct {
 
 //DO NOT REFERENCE INTEREMDIATE STRUCTS DIRECTLY
 typedef struct {
+	uint8_t multilayer_flag:1;
+	uint8_t reserved;
+
+} mmthsample_muli_box_t;
+/**
+ * iso23008 - section 8.3 - sample format
+ * from mmthsample anononmous box
+ *
+ */
+typedef struct {
 	_MMTP_MPU_TYPE_PACKET_HEADER_FIELDS;
-	uint32_t movie_fragment_sequence_number;
-	uint32_t sample_number;
-	uint32_t offset;
-	uint8_t priority;
-	uint8_t dep_counter;
+
+	uint32_t 	mpu_movie_fragment_sequence_number;
+	uint32_t	mpu_sample_number;
+	uint32_t	mpu_offset;
+	uint8_t		mpu_priority;
+	uint8_t 	mpu_dep_counter;
+
+	//MMTHSample hint fields
+	uint32_t 	mmth_sequence_number;
+	uint8_t 	mmth_trackrefindex;
+	uint32_t 	mmth_movie_fragment_sequence_number;
+	uint32_t 	mmth_samplenumber;
+	uint8_t  	mmth_priority;
+	uint8_t  	mmth_dependency_counter;
+	uint32_t 	mmth_offset;
+	uint32_t 	mmth_length;
+	mmthsample_muli_box_t mmth_muli;
+
 	uint64_t pts;
 	uint64_t last_pts;
 } __mpu_data_unit_payload_fragments_timed_t;

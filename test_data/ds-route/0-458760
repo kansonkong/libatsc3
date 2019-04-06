@@ -1,0 +1,103 @@
+Content-Type: Multipart/Related; boundary=boundary-content;
+        type="application/mbms-envelope+xml"
+
+--boundary-content
+Content-Type: application/mbms-envelope+xml
+Content-Location: envelope.xml
+
+<?xml version="1.0" encoding="UTF-8"?>
+<metadataEnvelope xmlns="urn:3gpp:metadata:2005:MBMS:envelope">
+	<item metadataURI="usbd_50.rusd" version="8" contentType="application/route-usd+xml"/>
+	<item metadataURI="stsid_50.sls" version="8" contentType="application/route-s-tsid+xml"/>
+	<item metadataURI="dash_50.mpd" version="8" contentType="application/dash+xml"/>
+</metadataEnvelope>
+
+
+--boundary-content
+Content-Type: application/route-usd+xml
+Content-Location: usbd_50.rusd
+
+<?xml version="1.0" encoding="UTF-8"?>
+<BundleDescriptionROUTE xmlns="tag:atsc.org,2016:XMLSchemas/ATSC3/Delivery/ROUTEUSD/1.0/">
+	<UserServiceDescription serviceId="50" serviceStatus="true">
+		<DeliveryMethod>
+			<BroadcastAppService>
+				<BasePattern>50_aster_stream1_</BasePattern>
+				<BasePattern>50_aster_stream2_</BasePattern>
+			</BroadcastAppService>
+		</DeliveryMethod>
+	</UserServiceDescription>
+</BundleDescriptionROUTE>
+
+
+--boundary-content
+Content-Type: application/route-s-tsid+xml
+Content-Location: stsid_50.sls
+
+<?xml version="1.0" encoding="UTF-8"?>
+<S-TSID xmlns="tag:atsc.org,2016:XMLSchemas/ATSC3/Delivery/S-TSID/1.0/"
+        xmlns:afdt="tag:atsc.org,2016:XMLSchemas/ATSC3/Delivery/ATSC-FDT/1.0/"
+        xmlns:fdt="urn:ietf:params:xml:ns:fdt">
+	<RS sIpAddr="0.0.0.0" dIpAddr="239.255.50.1" dPort="1001">
+		<LS tsi="1">
+			<SrcFlow rt="true">
+				<EFDT>
+					<FDT-Instance Expires="4294967295" afdt:efdtVersion="0" afdt:maxTransportSize="801983" afdt:fileTemplate="50_aster_stream1_$TOI$.m4s">
+						<fdt:File TOI="2" Content-Location="50_aster_stream1_init.mp4"/>
+					</FDT-Instance>
+				</EFDT>
+				<ContentInfo>
+					<MediaInfo startUp="true" contentType="video" repId="1"/>
+				</ContentInfo>
+				<Payload codePoint="128" formatId="1" frag="0" order="true" srcFecPayloadId="0"/>
+			</SrcFlow>
+		</LS>
+		<LS tsi="2">
+			<SrcFlow rt="true">
+				<EFDT>
+					<FDT-Instance Expires="4294967295" afdt:efdtVersion="0" afdt:maxTransportSize="22534" afdt:fileTemplate="50_aster_stream2_$TOI$.m4s">
+						<fdt:File TOI="2" Content-Location="50_aster_stream2_init.mp4"/>
+					</FDT-Instance>
+				</EFDT>
+				<ContentInfo>
+					<MediaInfo startUp="true" contentType="audio" repId="2"/>
+				</ContentInfo>
+				<Payload codePoint="128" formatId="1" frag="0" order="true" srcFecPayloadId="0"/>
+			</SrcFlow>
+		</LS>
+	</RS>
+</S-TSID>
+
+
+--boundary-content
+Content-Type: application/dash+xml
+Content-Location: dash_50.mpd
+
+<?xml version="1.0" encoding="utf-8"?>
+<MPD xmlns="urn:mpeg:dash:schema:mpd:2011"
+	availabilityStartTime="2019-03-27T17:09:01.642"
+	minBufferTime="PT0.934267S"
+	minimumUpdatePeriod="PT86400S"
+	profiles="urn:hbbtv:dash:profile:isoff-live:2012,urn:mpeg:dash:profile:isoff-live:2011"
+	publishTime="2019-03-27T17:09:01"
+	type="dynamic"
+	suggestedPresentationDelay="PT1.500S">
+	<Period id="0" start="PT0.0S">
+		<AdaptationSet contentType="video" segmentAlignment="true" bitstreamSwitching="true">
+			<Representation id="1" mimeType="video/mp4" codecs="hev1" bandwidth="3159000" width="1280" height="720" frameRate="60000/1001">
+				<SegmentTemplate timescale="240000" duration="224224" initialization="50_aster_stream$RepresentationID$_init.mp4" media="50_aster_stream$RepresentationID$_$Number$.m4s" startNumber="3"/>
+			</Representation>
+		</AdaptationSet>
+		<AdaptationSet lang="" contentType="audio" segmentAlignment="true" bitstreamSwitching="true">
+			<Role schemeIdUri="urn:mpeg:dash:role" value="main" />
+			<Representation id="2" mimeType="audio/mp4" codecs="mp4a.40" bandwidth="128000" audioSamplingRate="48000">
+				<AudioChannelConfiguration schemeIdUri="urn:mpeg:dash:23003:3:a" value="0"/>
+				<SegmentTemplate timescale="240000" duration="81920" initialization="50_aster_stream$RepresentationID$_init.mp4" media="50_aster_stream$RepresentationID$_$Number$.m4s" startNumber="3"/>
+			</Representation>
+		</AdaptationSet>
+	</Period>
+</MPD>
+
+
+--boundary-content--
+

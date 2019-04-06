@@ -18,11 +18,15 @@
 
 #include "atsc3_utils.h"
 #include "atsc3_mime_multipart_related.h"
+#include "atsc3_sls_metadata_fragment_types.h"
+#include "atsc3_sls_metadata_fragment_types_parser.h"
 #include "atsc3_logging_externs.h"
 
 #define ATSC3_MIME_MULTIPART_RELATED_LINE_BUFFER 1024
 #define ATSC3_MIME_MULTIPART_RELATED_PAYLOAD_BUFFER 65535
 
+//this is a bit of a misnomer, its actually the multipart mbms and child envelope parers..
+atsc3_sls_metadata_fragments_t* atsc3_mbms_envelope_to_sls_metadata_fragments_parse_from_fdt_fp(FILE* atsc3_fdt_instance_fp);
 
 atsc3_mime_multipart_related_instance_t* atsc3_mime_multipart_related_parser(FILE* fp);
 

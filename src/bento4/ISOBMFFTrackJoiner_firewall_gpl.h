@@ -6,6 +6,8 @@
  */
 
 #include "../atsc3_utils.h"
+#include "../atsc3_lls_types.h"
+
 #include "../atsc3_isobmff_trun_box.h"
 #include "../atsc3_lls_sls_monitor_output_buffer.h"
 
@@ -31,9 +33,10 @@ typedef struct ISOBMFFTrackJoinerFileResouces {
 } ISOBMFFTrackJoinerFileResouces_t;
 
 
-extern trun_sample_entry_vector_t* parseMoofBoxForTrunSampleEntries(block_t* moof_box);
-block_t* lls_sls_monitor_output_buffer_copy_audio_full_isobmff_box(lls_sls_monitor_output_buffer_t* lls_sls_monitor_output_buffer);
-block_t* lls_sls_monitor_output_buffer_copy_video_full_isobmff_box(lls_sls_monitor_output_buffer_t* lls_sls_monitor_output_buffer);
+//extern trun_sample_entry_vector_t* parseMoofBoxForTrunSampleEntries(block_t* moof_box);
+block_t* lls_sls_monitor_output_buffer_copy_alc_full_isobmff_box(lls_sls_monitor_buffer_isobmff_t* lls_sls_monitor_buffer_isobmff);
+block_t* lls_sls_monitor_output_buffer_copy_mmt_moof_from_flow_isobmff_box(lls_sls_monitor_buffer_isobmff_t* lls_sls_monitor_buffer_isobmff);
+block_t* lls_sls_monitor_output_buffer_copy_mmt_moof_from_flow_isobmff_box_no_patching_trailing_mdat(lls_sls_monitor_buffer_isobmff_t* lls_sls_monitor_buffer_isobmff);
 
 #if defined (__cplusplus)
 }
