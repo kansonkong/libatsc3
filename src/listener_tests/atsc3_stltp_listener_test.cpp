@@ -103,6 +103,7 @@ int main(int argc,char **argv) {
 		filter_dst_ip = argv[2];
 		filter_dst_port = argv[3];
 
+
     	//parse ip
     	dst_ip_addr_filter = (uint32_t*)calloc(1, sizeof(uint32_t));
 		char* pch = strtok (filter_dst_ip,".");
@@ -122,6 +123,8 @@ int main(int argc,char **argv) {
 
     }
 
+
+	println("%s - a udp mulitcast listener test harness for atsc3 stltp payloads, listening on dev: %s", argv[0], argv[1]);
 
     pcap_lookupnet(dev, &netp, &maskp, errbuf);
     descr = pcap_open_live(dev, MAX_PCAP_LEN, 1, 0, errbuf);
