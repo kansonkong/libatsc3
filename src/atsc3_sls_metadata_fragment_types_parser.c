@@ -8,9 +8,9 @@
 #include "atsc3_sls_metadata_fragment_types_parser.h"
 
 
-int _SLS_METADATA_FRAGMENT_PARSER_INFO_ENABLED  = 0;
-int _SLS_METADATA_FRAGMENT_PARSER_DEBUG_ENABLED = 0;
-int _SLS_METADATA_FRAGMENT_PARSER_TRACE_ENABLED = 0;
+int _SLS_METADATA_FRAGMENT_PARSER_INFO_ENABLED  = 1;
+int _SLS_METADATA_FRAGMENT_PARSER_DEBUG_ENABLED = 1;
+int _SLS_METADATA_FRAGMENT_PARSER_TRACE_ENABLED = 1;
 
 
 atsc3_sls_metadata_fragments_t* atsc3_sls_metadata_fragment_types_parse_from_mime_multipart_related_instance(atsc3_mime_multipart_related_instance_t* atsc3_mime_multipart_related_instance) {

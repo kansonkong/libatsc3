@@ -73,8 +73,8 @@ RFC 5775               ALC Protocol Instantiation             April 2010
 
 int _ALC_PACKET_DUMP_TO_OBJECT_ENABLED = 0;
 
-int _ALC_UTILS_DEBUG_ENABLED=0;
-int _ALC_UTILS_TRACE_ENABLED=0;
+int _ALC_UTILS_DEBUG_ENABLED=1;
+int _ALC_UTILS_TRACE_ENABLED=1;
 int _ALC_UTILS_IOTRACE_ENABLED=0;
 
 bool __ALC_RECON_FILE_PTR_HAS_WRITTEN_INIT_BOX = false;
@@ -262,10 +262,11 @@ int alc_packet_dump_to_object(alc_packet_t** alc_packet_ptr, lls_sls_alc_monitor
     
     //both codepoint=0 and codepoint=128 will set close_object_flag when we have finished delivery of the object
 	if(alc_packet->close_object_flag) {
-		__ALC_UTILS_IOTRACE("dumping to file done: %s, is complete: %d", file_name, alc_packet->close_object_flag);
+		__ALC_UTILS_ERROR("dumping to file done: %s, is complete: %d", file_name, alc_packet->close_object_flag);
 
 		//update our sls here
 		if(alc_packet->def_lct_hdr->tsi == 0) {
+			__ALC_UTILS_ERROR("------ TSI of 0, calling atsc3_route_sls_process_from_alc_packet_and_file");
 			atsc3_route_sls_process_from_alc_packet_and_file(alc_packet, lls_sls_alc_monitor);
 
 		} else {
