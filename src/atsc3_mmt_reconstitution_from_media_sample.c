@@ -113,7 +113,7 @@ mmtp_payload_fragments_union_t* mmtp_process_from_payload(mmtp_sub_flow_vector_t
 														"v");
 						atsc3_isobmff_rebuild_track_mpu_from_sample_data(lls_sls_monitor_buffer_isobmff_pending_mux);
 						ls_sls_monitor_buffer_isobmff_mmt_mpu_rebuilt_file_dump(lls_sls_monitor_buffer_isobmff_pending_mux, "mpu/",
-														matching_lls_slt_mmt_session->last_udp_flow_packet_id_mpu_sequence_tuple_audio->mpu_sequence_number,
+														matching_lls_slt_mmt_session->last_udp_flow_packet_id_mpu_sequence_tuple_video->mpu_sequence_number,
 														"v.rebuilt");
 
 					} else {
@@ -298,7 +298,7 @@ mmtp_payload_fragments_union_t* mmtp_process_from_payload(mmtp_sub_flow_vector_t
 						__MMT_RECON_FROM_SAMPLE_SIGNAL_INFO("MPT message: checking packet_id: %u, asset_type: %s, default: %u, identifier: %s", mp_table_asset_row->mmt_general_location_info.packet_id, mp_table_asset_row->asset_type, mp_table_asset_row->default_asset_flag, mp_table_asset_row->identifier_mapping.asset_id.asset_id ? (const char*)mp_table_asset_row->identifier_mapping.asset_id.asset_id : "");
 						if(strncasecmp(ATSC3_MP_TABLE_ASSET_ROW_HEVC_ID, mp_table_asset_row->asset_type, 4) == 0) {
 							matching_lls_slt_mmt_session->video_packet_id = mp_table_asset_row->mmt_general_location_info.packet_id;
-						} else if(strncasecmp(ATSC3_MP_TABLE_ASSET_ROW_MP4A_ID, mp_table_asset_row->asset_type, 4) == 0) {
+						} else if(strncasecmp(ATSC3_MP_TABLE_ASSET_ROW_MP4A_ID, mp_table_asset_row->asset_type, 4) == 0 || strncasecmp(ATSC3_MP_TABLE_ASSET_ROW_AC_4_ID, mp_table_asset_row->asset_type, 4) == 0) {
 							matching_lls_slt_mmt_session->audio_packet_id = mp_table_asset_row->mmt_general_location_info.packet_id;
 						}
 					}
