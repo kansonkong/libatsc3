@@ -276,9 +276,13 @@ void atsc3_mmt_reconstitution_free_from_udp_flow(mmtp_sub_flow_vector_t* mmtp_su
         if(data_unit_payload_types && data_unit_payload_types->timed_fragments_vector.data) {
             data_unit_payload_fragments = &data_unit_payload_types->timed_fragments_vector;
             if(data_unit_payload_fragments) {
-                __MMT_RECON_FROM_SAMPLE_INFO("Beginning eviction pass for mpu: %u, mmtp_sub_flow->mpu_fragments->all_mpu_fragments_vector.size: %lu", last_udp_flow_packet_id_mpu_sequence_tuple->mpu_sequence_number, mmtp_sub_flow->mpu_fragments->all_mpu_fragments_vector.size)
+                __MMT_RECON_FROM_SAMPLE_INFO("Beginning eviction pass for packet_id: %u, mpu: %u, mmtp_sub_flow->mpu_fragments->all_mpu_fragments_vector.size: %lu",
+                                             last_udp_flow_packet_id_mpu_sequence_tuple->packet_id,
+                                             last_udp_flow_packet_id_mpu_sequence_tuple->mpu_sequence_number, mmtp_sub_flow->mpu_fragments->all_mpu_fragments_vector.size)
                 int evicted_count = atsc3_mmt_mpu_clear_data_unit_payload_fragments(mmtp_sub_flow, mpu_fragments, data_unit_payload_fragments);
-                __MMT_RECON_FROM_SAMPLE_INFO("Eviction pass for mpu: %u resulted in %u", last_udp_flow_packet_id_mpu_sequence_tuple->mpu_sequence_number, evicted_count);
+                __MMT_RECON_FROM_SAMPLE_INFO("Eviction pass for packet_id: %u, mpu: %u resulted in %u",
+                last_udp_flow_packet_id_mpu_sequence_tuple->packet_id,
+                last_udp_flow_packet_id_mpu_sequence_tuple->mpu_sequence_number, evicted_count);
             }
         }
     }
