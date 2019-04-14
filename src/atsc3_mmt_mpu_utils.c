@@ -120,15 +120,17 @@ udp_flow_packet_id_mpu_sequence_tuple_t* udp_flow_latest_mpu_sequence_number_add
 			int mpu_sequence_number_negative_discontinuity_gap = (*udp_flow_packet_id_mpu_sequence_matching_pkt_id)->mpu_sequence_number - mmtp_packet->mmtp_mpu_type_packet_header.mpu_sequence_number;
 
 			if(mpu_sequence_number_negative_discontinuity_gap >= __MPU_FLOW_NEGATIVE_DISCONTINUITY_SEQUENCE_GAP_THRESHOLD) {
-				__MMT_MPU_WARN("Negative mpu_sequence_number discontinuity detected: UDP FLOW persisted mpu_sequence_number: %u, current mmtp_packet mpu_sequence_number: %u, fragment recv threshold: %u",
-						(*udp_flow_packet_id_mpu_sequence_matching_pkt_id)->mpu_sequence_number,
+                __MMT_MPU_WARN("Negative mpu_sequence_number discontinuity detected: packet_id: %u, UDP FLOW persisted mpu_sequence_number: %u, current mmtp_packet mpu_sequence_number: %u, fragment recv threshold: %u",
+                        mmtp_packet->mmtp_mpu_type_packet_header.mmtp_packet_id,
+                        (*udp_flow_packet_id_mpu_sequence_matching_pkt_id)->mpu_sequence_number,
 						mmtp_packet->mmtp_mpu_type_packet_header.mpu_sequence_number,
 						++(*udp_flow_packet_id_mpu_sequence_matching_pkt_id)->mpu_sequence_number_negative_discontinuity_received_fragments);
 
 				if((*udp_flow_packet_id_mpu_sequence_matching_pkt_id)->mpu_sequence_number_negative_discontinuity_received_fragments > __MPU_FLOW_NEGATIVE_DISCONTINUITY_SEQUENCE_GAP_FRAGMENT_RECV_THRESHOLD) {
 
 					//change our mpu_sequence_number to to the lesser value and clear out our discontinuity flags
-					__MMT_MPU_WARN("Negative mpu_sequence_number discontinuity switchover change: UDP FLOW persisted mpu_sequence_number: %u, updating back to  mpu_sequence_number: %u, fragment recv threshold: %u",
+                    __MMT_MPU_WARN("Negative mpu_sequence_number discontinuity switchover change: packet_id: %u, UDP FLOW persisted mpu_sequence_number: %u, updating back to  mpu_sequence_number: %u, fragment recv threshold: %u",
+                                   mmtp_packet->mmtp_mpu_type_packet_header.mmtp_packet_id,
 														(*udp_flow_packet_id_mpu_sequence_matching_pkt_id)->mpu_sequence_number,
 														(*udp_flow_packet_id_mpu_sequence_matching_pkt_id)->mpu_sequence_number_negative_discontinuity,
 														++(*udp_flow_packet_id_mpu_sequence_matching_pkt_id)->mpu_sequence_number_negative_discontinuity_received_fragments);
