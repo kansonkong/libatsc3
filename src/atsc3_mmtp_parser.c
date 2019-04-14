@@ -388,7 +388,7 @@ void mmtp_sub_flow_push_mmtp_packet(mmtp_sub_flow_t *mmtp_sub_flow, mmtp_payload
 void mmtp_sub_flow_remove_mmtp_packet(mmtp_sub_flow_t *mmtp_sub_flow, mmtp_payload_fragments_union_t *mmtp_packet) {
 	mmtp_packet->mmtp_packet_header.mmtp_sub_flow = mmtp_sub_flow;
 
-	ssize_t index;
+    ssize_t index = -1;
 
 	//	__PRINTF_TRACE("%d:, packet_counter: %d, packet_id: %d, mmtp_payload_type: 0x%x\n", __LINE__, mmtp_packet->mmtp_packet_header.packet_counter, mmtp_packet->mmtp_packet_header.mmtp_packet_id, mmtp_packet->mmtp_packet_header.mmtp_payload_type);
 	if(mmtp_packet->mmtp_packet_header.mmtp_payload_type == 0x00) {
