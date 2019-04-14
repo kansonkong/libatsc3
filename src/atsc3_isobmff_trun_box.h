@@ -30,6 +30,7 @@ typedef struct trun_sample_entry {
 
 	uint32_t 	sample_length;					//how many bytes this sampe comprises for pre-alloc
 	uint32_t 	sample_offset;					//position in mdat for sample
+
 	uint32_t 	sample_duration;
 
 	uint32_t sample_flags;
