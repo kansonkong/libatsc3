@@ -127,10 +127,10 @@ lls_sls_monitor_buffer_isobmff_t* atsc3_isobmff_rebuild_track_mpu_from_sample_da
 
     AP4_MemoryByteStream* ap4_memory_byte_stream;
 
-    ISOBMFF_rebuild_moof_from_sample_data(lls_sls_monitor_buffer_isobmff, &ap4_memory_byte_stream);
+    uint32_t mdat_size_computed = ISOBMFF_rebuild_moof_from_sample_data(lls_sls_monitor_buffer_isobmff, &ap4_memory_byte_stream);
 
-    if(!ap4_memory_byte_stream || !ap4_memory_byte_stream->GetDataSize()) {
-        __ISOBMFF_TOOLS_ERROR("atsc3_isobmff_build_joined_mmt_isobmff_fragment: returned %p, size: %u, returning NULL", ap4_memory_byte_stream, ap4_memory_byte_stream != NULL ? ap4_memory_byte_stream->GetDataSize() : 0);
+    if(!mdat_size_computed || !ap4_memory_byte_stream || !ap4_memory_byte_stream->GetDataSize()) {
+        __ISOBMFF_TOOLS_ERROR("atsc3_isobmff_build_joined_mmt_isobmff_fragment: returned mdat size: %u, ap4_memory_byte_stream: %p, returning NULL", mdat_size_computed, ap4_memory_byte_stream);
         return NULL;
     }
 

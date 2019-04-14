@@ -126,6 +126,7 @@ typedef struct {
 	uint8_t		mpu_priority;
 	uint8_t 	mpu_dep_counter;
 
+    uint32_t    mfu_mmth_sample_header_size;
 	//MMTHSample hint fields
 	uint32_t 	mmth_sequence_number;
 	uint8_t 	mmth_trackrefindex;
