@@ -362,19 +362,19 @@ lls_sls_monitor_buffer_isobmff_t* atsc3_isobmff_build_raw_mpu_from_single_sequen
     }
 
 	if(found_mpu_metadata_fragment) {
-		__ISOBMFF_TOOLS_INFO("found_mpu_metadata_fragment, copying to lls_sls_monitor_buffer_isobmff.init_block");
+		__ISOBMFF_TOOLS_DEBUG("found_mpu_metadata_fragment, copying to lls_sls_monitor_buffer_isobmff.init_block");
 		lls_sls_monitor_output_buffer_copy_init_block(lls_sls_monitor_buffer_isobmff, lls_sls_monitor_buffer_isobmff->init_block_flow_refragment);
 	} else {
 		if(lls_sls_monitor_buffer_isobmff->init_block) {
-			__ISOBMFF_TOOLS_WARN("init_block used from previous MPU!"); //todo - recover from last init frame
+			__ISOBMFF_TOOLS_INFO("init_block used from previous MPU!"); //todo - recover from last init frame
 		} else {
 			__ISOBMFF_TOOLS_WARN("init_block missing!");
 			return NULL;
 		}
 	}
 
-
-    for(int i=0; i < udp_flow_latest_mpu_sequence_number_container->udp_flows_n; i++) {
+    bool found_movie_fragment_metadata = false;
+    for(int i=0; i < udp_flow_latest_mpu_sequence_number_container->udp_flows_n && !found_movie_fragment_metadata; i++) {
 
         udp_flow_packet_id_mpu_sequence_tuple_t* udp_flow_packet_id_mpu_sequence_tuple = udp_flow_latest_mpu_sequence_number_container->udp_flows[i];
 
@@ -382,7 +382,7 @@ lls_sls_monitor_buffer_isobmff_t* atsc3_isobmff_build_raw_mpu_from_single_sequen
         mmtp_sub_flow = mmtp_sub_flow_vector_find_packet_id(mmtp_sub_flow_vector, packet_id);
 
         if(!mmtp_sub_flow) {
-            __ISOBMFF_TOOLS_WARN("mmtp_sub_flow %u for packet_id: %u is null", i, packet_id);
+            __ISOBMFF_TOOLS_INFO("mmtp_sub_flow %u for packet_id: %u is null", i, packet_id);
             //keep going, this is ok
             continue;
         }
@@ -390,25 +390,28 @@ lls_sls_monitor_buffer_isobmff_t* atsc3_isobmff_build_raw_mpu_from_single_sequen
         if(udp_flow_packet_id_mpu_sequence_tuple->packet_id == packet_id) {
             movie_metadata_fragments = mpu_data_unit_payload_fragments_find_mpu_sequence_number(&mmtp_sub_flow->mpu_fragments->movie_fragment_metadata_vector, mpu_sequence_number);
         } else {
-            __ISOBMFF_TOOLS_WARN("data unit recon - unknown packet_id: %u", udp_flow_packet_id_mpu_sequence_tuple->packet_id);
+            __ISOBMFF_TOOLS_INFO("data unit recon - unknown packet_id: %u", udp_flow_packet_id_mpu_sequence_tuple->packet_id);
             continue;
         }
 
         mmtp_payload_fragments_union_t* fragment_metadata = NULL;
         if(movie_metadata_fragments && movie_metadata_fragments->timed_fragments_vector.size) {
-            for(int i=0; i < movie_metadata_fragments->timed_fragments_vector.size; i++) {
+            for(int i=0; i < movie_metadata_fragments->timed_fragments_vector.size && !found_movie_fragment_metadata; i++) {
                 fragment_metadata = movie_metadata_fragments->timed_fragments_vector.data[i];
-                __ISOBMFF_TOOLS_INFO("Movie Fragment Metadata: Found for fragment_metadata packet_id: %d, mpu_sequence_number: %u, fragmentation_indicator: %u, fragmentation_counter: %u",
-                                     fragment_metadata->mmtp_packet_header.mmtp_packet_id,
-                                     fragment_metadata->mmtp_mpu_type_packet_header.mpu_sequence_number,
-                                     fragment_metadata->mmtp_mpu_type_packet_header.mpu_fragmentation_indicator,
-                                     fragment_metadata->mmtp_mpu_type_packet_header.mpu_fragmentation_counter);
-
+              
                 //rebuild if we are fragmented
                 if(fragment_metadata->mmtp_packet_header.mmtp_packet_id == packet_id) {
                 	lls_sls_monitor_output_buffer_copy_or_append_moof_block_from_flow(lls_sls_monitor_buffer_isobmff, fragment_metadata->mmtp_mpu_type_packet_header.mpu_data_unit_payload);
+                    found_movie_fragment_metadata = true;
+                    __ISOBMFF_TOOLS_DEBUG("Movie Fragment Metadata: Searching mpu_seq_num: %u, Found for fragment_metadata packet_id: %d, mpu_sequence_number: %u, fragmentation_indicator: %u, fragmentation_counter: %u",
+                                         mpu_sequence_number,
+                                         fragment_metadata->mmtp_packet_header.mmtp_packet_id,
+                                         fragment_metadata->mmtp_mpu_type_packet_header.mpu_sequence_number,
+                                         fragment_metadata->mmtp_mpu_type_packet_header.mpu_fragmentation_indicator,
+                                         fragment_metadata->mmtp_mpu_type_packet_header.mpu_fragmentation_counter);
+
                 } else {
-                    __ISOBMFF_TOOLS_WARN("Movie Fragment Metadata recon - unknown packet_id: %u, requested packet_id: %u", udp_flow_packet_id_mpu_sequence_tuple->packet_id, packet_id);
+                    __ISOBMFF_TOOLS_DEBUG("Movie Fragment Metadata recon - unknown packet_id: %u, requested packet_id: %u", udp_flow_packet_id_mpu_sequence_tuple->packet_id, packet_id);
                 }
             }
         } else {
@@ -426,7 +429,7 @@ lls_sls_monitor_buffer_isobmff_t* atsc3_isobmff_build_raw_mpu_from_single_sequen
         if(udp_flow_packet_id_mpu_sequence_tuple->packet_id == packet_id) {
             data_unit_payload_types = mpu_data_unit_payload_fragments_find_mpu_sequence_number(&mmtp_sub_flow->mpu_fragments->media_fragment_unit_vector, mpu_sequence_number);
         } else {
-            __ISOBMFF_TOOLS_WARN("data unit recon - unknown packet_id: %u when requesting packet_id: %u", udp_flow_packet_id_mpu_sequence_tuple->packet_id, packet_id);
+            __ISOBMFF_TOOLS_DEBUG("data unit recon - unknown packet_id: %u when requesting packet_id: %u", udp_flow_packet_id_mpu_sequence_tuple->packet_id, packet_id);
             data_unit_payload_types = NULL;
             continue;
         }
@@ -442,7 +445,7 @@ lls_sls_monitor_buffer_isobmff_t* atsc3_isobmff_build_raw_mpu_from_single_sequen
                 if(data_unit->mmtp_mpu_type_packet_header.mmtp_packet_id == packet_id) {
 					lls_sls_monitor_output_buffer_copy_and_recover_sample_fragment_block(lls_sls_monitor_buffer_isobmff, data_unit);
                 } else {
-                    __ISOBMFF_TOOLS_WARN("data unit recon - unknown packet_id: %u when processing data_unit_payload_types: %u", data_unit->mmtp_mpu_type_packet_header.mmtp_packet_id, packet_id);
+                    __ISOBMFF_TOOLS_DEBUG("data unit recon - unknown packet_id: %u when processing data_unit_payload_types: %u", data_unit->mmtp_mpu_type_packet_header.mmtp_packet_id, packet_id);
                 }
             }
         }

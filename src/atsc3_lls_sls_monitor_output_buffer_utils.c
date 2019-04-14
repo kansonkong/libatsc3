@@ -968,7 +968,7 @@ int lls_sls_monitor_buffer_isobmff_create_mdat_from_trun_sample_entries(lls_sls_
 
 	uint32_t sample_length_cumulative = 0;
 	uint32_t sample_offset_plus_last_length = 0;
-
+    
 	for(int i=0; i < lls_sls_monitor_buffer_isobmff_to_create_mdat->trun_sample_entry_v.count; i++) {
 		trun_sample_entry_t* trun_sample_entry = lls_sls_monitor_buffer_isobmff_to_create_mdat->trun_sample_entry_v.data[i];
 		sample_length_cumulative += trun_sample_entry->sample_length;
@@ -1004,12 +1004,16 @@ int lls_sls_monitor_buffer_isobmff_create_mdat_from_trun_sample_entries(lls_sls_
 	for(int i=0; i < lls_sls_monitor_buffer_isobmff_to_create_mdat->trun_sample_entry_v.count; i++) {
 		trun_sample_entry_t* trun_sample_entry = lls_sls_monitor_buffer_isobmff_to_create_mdat->trun_sample_entry_v.data[i];
 		block_Seek(temp_mmt_mdat, trun_sample_entry->sample_offset);
-        __LLS_SLS_MONITOR_OUTPUT_BUFFER_UTILS_INFO("lls_sls_monitor_buffer_isobmff_create_mdat_from_trun_sample_entries: appending sample %u at offset: %u, sample length: %u block_t length: %u",  trun_sample_entry->samplenumber,
+        __LLS_SLS_MONITOR_OUTPUT_BUFFER_UTILS_INFO("lls_sls_monitor_buffer_isobmff_create_mdat_from_trun_sample_entries: appending sample %u at offset: %u, using sample length: %u, block_t i_pos: %u, block_t p_size: %u",  trun_sample_entry->samplenumber,
                                             trun_sample_entry->sample_offset,
                                                    trun_sample_entry->sample_length,
-                                                   trun_sample_entry->sample->i_pos);
+                                                   trun_sample_entry->sample->i_pos,
+                                                   trun_sample_entry->sample->p_size);
         
-		block_Append(temp_mmt_mdat, trun_sample_entry->sample);
+		//we can't block_append here because our samples might be short and cause NAL errors
+        //block_Append(temp_mmt_mdat, trun_sample_entry->sample);
+        assert(trun_sample_entry->sample->p_size >= trun_sample_entry->sample_length);
+        block_Write(temp_mmt_mdat, trun_sample_entry->sample->p_buffer, trun_sample_entry->sample_length);
 		//last_sample_offset = trun_sample_entry->sample_offset + trun_sample_entry->sample_length;
 	}
 
