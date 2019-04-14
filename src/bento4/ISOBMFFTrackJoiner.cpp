@@ -12,7 +12,7 @@
 
 #include "../atsc3_utils.h"
 
-int _ISOBMFFTRACKJOINER_DEBUG_ENABLED = 0;
+int _ISOBMFFTRACKJOINER_DEBUG_ENABLED = 1;
 int _ISOBMFFTRACKJOINER_TRACE_ENABLED = 0;
 
 
@@ -398,38 +398,62 @@ void ISOBMFF_track_joiner_monitor_output_buffer_parse_and_build_joined_mmt_rebui
                     trafContainerAtom->AddChild(tfdt_atom_mdhd_timescale, 1);
                 }
 
+                /**
+                 * two use cases to consider, either less frames in our trun_sample_entry_v (most likely), or more than our current trunAtom reference...
+                 *
+                 * assume less frames and 0 out sample length for any missing interior until we push directly to a decoder buffer
+                 *
+                 */
                 if (lls_sls_monitor_buffer_isobmff->trun_sample_entry_v.count) {
                     AP4_Array<AP4_TrunAtom::Entry>& to_walk_entries = trunAtom->UseEntries();
-                    to_walk_entries.SetItemCount(lls_sls_monitor_buffer_isobmff->trun_sample_entry_v.count);
+                    AP4_Cardinal to_walk_entries_size = to_walk_entries.ItemCount();
+                    uint32_t last_trun_id = 0;
+                    uint32_t last_sample_duration = 0;
+                    uint32_t last_sample_flags = 0;
+
+                    //omitting frames
+                    //to_walk_entries.SetItemCount(lls_sls_monitor_buffer_isobmff->trun_sample_entry_v.count);
 
                     __ISOBMFF_JOINER_DEBUG("REBUILD MOOF: trun_sample_entry_v.count: %u, to_walk_entries: %u", lls_sls_monitor_buffer_isobmff->trun_sample_entry_v.count, to_walk_entries.ItemCount());
 
                     for (int i = 0;	i < lls_sls_monitor_buffer_isobmff->trun_sample_entry_v.count; i++) {
                         trun_sample_entry_t* trun_sample_entry = lls_sls_monitor_buffer_isobmff->trun_sample_entry_v.data[i];
+                        
+                        uint32_t trun_id = trun_sample_entry->samplenumber - 1;
+                        if(to_walk_entries_size > trun_id && trun_id >= 0) {
+                        	if(to_walk_entries[trun_id].sample_size != trun_sample_entry->sample_length) {
+                        		  __ISOBMFF_JOINER_DEBUG("REBUILD MOOF: setting sample %u from size: %u to size: %u,", i, to_walk_entries[trun_id].sample_size, trun_sample_entry->sample_length);
+                        		  to_walk_entries[trun_id].sample_size = trun_sample_entry->sample_length;
+                        	}
 
-                        if(to_walk_entries[i].sample_size != trun_sample_entry->sample_length) {
-                            __ISOBMFF_JOINER_DEBUG("REBUILD MOOF: setting sample %u from size: %u to size: %u,", i, to_walk_entries[i].sample_size, trun_sample_entry->sample_length);
+                        	//cleanup invalid offsets
+                        	if(to_walk_entries[trun_id].sample_composition_time_offset == 0xFFFFFFFF) {
+								to_walk_entries[trun_id].sample_composition_time_offset = 0;
+							}
+                        	last_sample_duration = to_walk_entries[trun_id].sample_duration;
+                        	last_sample_flags = to_walk_entries[trun_id].sample_flags;
                         }
-                        to_walk_entries[i].sample_size = trun_sample_entry->sample_length;
-                        if(to_walk_entries[i].sample_composition_time_offset == 0xFFFFFFFF) {
-                            to_walk_entries[i].sample_composition_time_offset = 0;
+
+                        for (int j=last_trun_id; j < trun_id; j++) {
+                        	if(to_walk_entries_size > j) {
+                      		  __ISOBMFF_JOINER_DEBUG("REBUILD MOOF: zeroing sample %u from size: %u to size: %u,", j, to_walk_entries[j].sample_size, 0);
+
+                        		to_walk_entries[j].sample_size = 0;
+                        	} else {
+                                trun_sample_entry_t* trun_sample_entry_to_add = lls_sls_monitor_buffer_isobmff->trun_sample_entry_v.data[j];
+
+                                __ISOBMFF_JOINER_INFO("REBUILD MOOF: WARN - adding trun entry: %u, sample_size: %u", j, trun_sample_entry_to_add->sample_length);
+                                AP4_TrunAtom::Entry* item = new AP4_TrunAtom::Entry();
+                                item->sample_size = trun_sample_entry_to_add->sample_length;
+                                item->sample_duration = last_sample_duration;
+                                item->sample_flags = last_sample_flags;
+                                to_walk_entries.Append(*item);
+
+                        	}
                         }
-                        final_mdat_size += to_walk_entries[i].sample_size;
+
+                        final_mdat_size += trun_sample_entry->sample_length;
                     }
-
-                    //handle any missing samples by zeroing out size -
-                    //AAC audio seems to complain, so truncate the to_walk_entries size instead..
-                    
-//                    for(int j = lls_sls_monitor_buffer_isobmff->trun_sample_entry_v.count; j < to_walk_entries.ItemCount(); j++) {
-//                        __ISOBMFF_JOINER_DEBUG("REBUILD MOOF: end of trun, setting sample %u from size: %u to size: %u,", j, to_walk_entries[j].sample_size, 0);
-//
-//                        to_walk_entries[j].sample_size = 0;
-//                        //do not clear the duration, try and let the player hold the sample/frame
-//                        //for time recovery..
-//                        //to_walk_entries[j].sample_duration = 0;
-//
-//                        to_walk_entries[j].sample_composition_time_offset = 0;
-//                    }
                 }
             }
 		}
