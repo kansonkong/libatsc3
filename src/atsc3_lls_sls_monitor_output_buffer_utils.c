@@ -198,25 +198,25 @@ void lls_sls_monitor_output_buffer_reset_rebuilt_mpu_moof_and_fragment_position(
 
 	lls_sls_monitor_buffer_isobmff_clear_trun_sample_entry(&lls_sls_monitor_output_buffer->audio_output_buffer_isobmff);
 	lls_sls_monitor_output_buffer->audio_output_buffer_isobmff.mpu_presentation_time_set = false;
-
-
+    lls_sls_monitor_output_buffer->audio_output_buffer_isobmff.trun_mmthsample_missing_offset_mdat_box = false;
+    
 	block_Release(&lls_sls_monitor_output_buffer->audio_output_buffer_isobmff.alc_moof_mdat_block);
 	block_Release(&lls_sls_monitor_output_buffer->audio_output_buffer_isobmff.mmt_moof_block);
 	block_Release(&lls_sls_monitor_output_buffer->audio_output_buffer_isobmff.mmt_moof_block_from_flow);
-
-	block_Release(&lls_sls_monitor_output_buffer->audio_output_buffer_isobmff.mmt_mdat_block);
 	block_Release(&lls_sls_monitor_output_buffer->audio_output_buffer_isobmff.mmt_mpu_rebuilt);
-
+    block_Release(&lls_sls_monitor_output_buffer->audio_output_buffer_isobmff.mmt_mdat_block);
 
 	lls_sls_monitor_buffer_isobmff_clear_trun_sample_entry(&lls_sls_monitor_output_buffer->video_output_buffer_isobmff);
 	lls_sls_monitor_output_buffer->video_output_buffer_isobmff.mpu_presentation_time_set = false;
+    lls_sls_monitor_output_buffer->video_output_buffer_isobmff.trun_mmthsample_missing_offset_mdat_box = false;
+
 	block_Release(&lls_sls_monitor_output_buffer->video_output_buffer_isobmff.alc_moof_mdat_block);
 	block_Release(&lls_sls_monitor_output_buffer->video_output_buffer_isobmff.mmt_moof_block);
 	block_Release(&lls_sls_monitor_output_buffer->video_output_buffer_isobmff.mmt_moof_block_from_flow);
 	block_Release(&lls_sls_monitor_output_buffer->video_output_buffer_isobmff.mmt_mpu_rebuilt);
-
 	block_Release(&lls_sls_monitor_output_buffer->video_output_buffer_isobmff.mmt_mdat_block);
-
+    
+    block_Release(&lls_sls_monitor_output_buffer->joined_isobmff_block);
 }
 
 void lls_sls_monitor_output_buffer_reset_all_position(lls_sls_monitor_output_buffer_t* lls_sls_monitor_output_buffer) {

@@ -38,8 +38,8 @@ extern int _MMT_MPU_DEBUG_ENABLED;
  *  	This should also address the edge case of a mpu_sequence_number rollover from uint32_t to 0, which is allowed
  */
 
-#define __MPU_FLOW_NEGATIVE_DISCONTINUITY_SEQUENCE_GAP_THRESHOLD 2
-#define __MPU_FLOW_NEGATIVE_DISCONTINUITY_SEQUENCE_GAP_FRAGMENT_RECV_THRESHOLD 20
+#define __MPU_FLOW_NEGATIVE_DISCONTINUITY_SEQUENCE_GAP_THRESHOLD 3
+#define __MPU_FLOW_NEGATIVE_DISCONTINUITY_SEQUENCE_GAP_FRAGMENT_RECV_THRESHOLD 10
 
 
 #if defined (__cplusplus)

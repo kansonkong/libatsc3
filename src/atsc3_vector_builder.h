@@ -74,7 +74,7 @@
 		for(int i=0; i < vector_struct_name->PPCAT(vector_item_name, _v).count; i++) { \
 			if(vector_struct_name->PPCAT(vector_item_name, _v).data[i]) { \
 				free(vector_struct_name->PPCAT(vector_item_name, _v).data[i]); \
-				vector_struct_name->PPCAT(vector_item_name, _v).data[i] = NULL; \
+                vector_struct_name->PPCAT(vector_item_name, _v).data[i] = NULL; \
 			} \
 		} \
 		vector_struct_name->PPCAT(vector_item_name, _v).count 	= 0; \
