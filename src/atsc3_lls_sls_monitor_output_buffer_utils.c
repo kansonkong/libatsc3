@@ -646,8 +646,9 @@ int lls_sls_monitor_output_buffer_copy_and_recover_sample_fragment_block(lls_sls
 	uint32_t next_sample_offset_calculated = 0;
 	
     //check if we need to add in +8 for mdat box length not captured in mmthsample offset
+    //needed for DS-MMT IO 3point5mb 720p5994.pcap
     if(data_unit->mpu_data_unit_payload_fragments_timed.mmth_samplenumber == 1 && data_unit->mpu_data_unit_payload_fragments_timed.mmth_offset < 8) {
-        __LLS_SLS_MONITOR_OUTPUT_BUFFER_UTILS_TRACE("trun_sample_entry: mpu_sequence_number: %u, samplenumber: %u, mmth_offset is: %u, setting trun_mmthsample_missing_offset_mdat_box to true",
+        __LLS_SLS_MONITOR_OUTPUT_BUFFER_UTILS_WARN("trun_sample_entry: mpu_sequence_number: %u, samplenumber: %u, mmth_offset is: %u, setting trun_mmthsample_missing_offset_mdat_box to true",
                                                     data_unit->mpu_data_unit_payload_fragments_timed.mpu_sequence_number,
                                                     data_unit->mpu_data_unit_payload_fragments_timed.mmth_offset,
                                                     data_unit->mpu_data_unit_payload_fragments_timed.mpu_sample_number);
@@ -716,9 +717,11 @@ int lls_sls_monitor_output_buffer_copy_and_recover_sample_fragment_block(lls_sls
 	}
 
 	uint32_t mpu_offset = data_unit->mpu_data_unit_payload_fragments_timed.mpu_offset; //0-based...
-    if(mpu_offset > trun_sample_entry->mfu_mmth_sample_header_size) {
-        mpu_offset -= trun_sample_entry->mfu_mmth_sample_header_size;
-    }
+    
+    //not needed for DS-MMT IO 3point5mb 720p5994.pcap
+//    if(mpu_offset > trun_sample_entry->mfu_mmth_sample_header_size) {
+//        mpu_offset -= trun_sample_entry->mfu_mmth_sample_header_size;
+//    }
     
 	if(trun_sample_entry->sample->p_size < mpu_offset + data_unit->mpu_data_unit_payload_fragments_timed.mpu_data_unit_payload->i_pos) {
 		//realloc us so we can seek to the proper next sample fragment position
