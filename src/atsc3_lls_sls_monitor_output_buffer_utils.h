@@ -23,7 +23,7 @@ extern "C" {
 extern int _LLS_SLS_MONITOR_OUTPUT_BUFFER_UTILS_DEBUG_ENABLED;
 extern int _LLS_SLS_MONITOR_OUTPUT_BUFFER_UTILS_TRACE_ENABLED;
 
-
+void lls_sls_lls_sls_monitor_buffer_persist_moof(lls_sls_monitor_buffer_isobmff_t* lls_sls_monitor_buffer_isobmff);
 void lls_sls_monitor_buffer_isobmff_intermediate_mmt_file_dump(lls_sls_monitor_buffer_isobmff_t* lls_sls_monitor_buffer_isobmff, const char* directory_path, uint32_t mpu_sequence_number, const char* prefix);
 void ls_sls_monitor_buffer_isobmff_mmt_mpu_rebuilt_file_dump(lls_sls_monitor_buffer_isobmff_t* lls_sls_monitor_buffer_isobmff, const char* directory_path, uint32_t mpu_sequence_number, const char* prefix);
 block_t* lls_sls_monitor_output_buffer_copy_mmt_moof_from_flow_isobmff_box_no_patching_trailing_mdat(lls_sls_monitor_buffer_isobmff_t* lls_sls_monitor_buffer_isobmff);
