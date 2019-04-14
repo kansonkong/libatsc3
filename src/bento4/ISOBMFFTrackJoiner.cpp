@@ -434,7 +434,7 @@ void ISOBMFF_track_joiner_monitor_output_buffer_parse_and_build_joined_mmt_rebui
                         	last_sample_flags = to_walk_entries[trun_id].sample_flags;
                         }
 
-                        for (int j=last_trun_id; j < trun_id; j++) {
+                        for (int j=last_trun_id+1; j < trun_id; j++) {
                         	if(to_walk_entries_size > j) {
                       		  __ISOBMFF_JOINER_DEBUG("REBUILD MOOF: zeroing sample %u from size: %u to size: %u,", j, to_walk_entries[j].sample_size, 0);
 
@@ -451,7 +451,7 @@ void ISOBMFF_track_joiner_monitor_output_buffer_parse_and_build_joined_mmt_rebui
 
                         	}
                         }
-
+                        last_trun_id = trun_id;
                         final_mdat_size += trun_sample_entry->sample_length;
                     }
                 }
