@@ -53,10 +53,12 @@ void parseAndBuildJoinedBoxesFromMemory(uint8_t* file1_payload, uint32_t file1_s
 void dumpFullMetadata(list<AP4_Atom*> atomList);
 void printBoxType(AP4_Atom* atom);
 
-#define __ISOBMFF_JOINER_PRINTLN(...) fprintf(stderr, __VA_ARGS__);fprintf(stderr, "\n")
+#define __ISOBMFF_JOINER_PRINTLN(...)
+    //fprintf(stderr, __VA_ARGS__);fprintf(stderr, "\n")
 #define __ISOBMFF_JOINER_INFO(...)
   //fprintf(stderr, "%s:%d:INFO :",__FILE__,__LINE__);__ISOBMFF_JOINER_PRINTLN(__VA_ARGS__);
-#define __ISOBMFF_JOINER_DEBUG(...) if(_ISOBMFFTRACKJOINER_DEBUG_ENABLED) { fprintf(stderr, "%s:%d:DEBUG :",__FILE__,__LINE__);__ISOBMFF_JOINER_PRINTLN(__VA_ARGS__); }
+#define __ISOBMFF_JOINER_DEBUG(...)
+    //if(_ISOBMFFTRACKJOINER_DEBUG_ENABLED) { fprintf(stderr, "%s:%d:DEBUG :",__FILE__,__LINE__);__ISOBMFF_JOINER_PRINTLN(__VA_ARGS__); }
 
 #if defined (__cplusplus)
 }
