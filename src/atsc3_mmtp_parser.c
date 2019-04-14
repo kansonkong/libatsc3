@@ -231,7 +231,7 @@ mmtp_payload_fragments_union_t* mmtp_packet_parse(mmtp_sub_flow_vector_t* mmtp_s
 	} else
 #if _ISO230081_1_MMTP_GFD_SUPPORT_
 	if(mmtp_payload_fragments->mmtp_packet_header.mmtp_payload_type == 0x1) {
-		_MMTP_WARN("MMTP_GFD: not supported for packet_id: %-10hu (0x%04x)", mmtp_payload_fragments->mmtp_packet_header.mmtp_packet_id, mmtp_payload_fragments->mmtp_packet_header.mmtp_packet_id);
+		_MMSM_ERROR_23008_1("MMTP_GFD: not supported for packet_id: %-10hu (0x%04x)", mmtp_payload_fragments->mmtp_packet_header.mmtp_packet_id, mmtp_payload_fragments->mmtp_packet_header.mmtp_packet_id);
 		goto failed;
 	} else
 #endif

@@ -647,26 +647,28 @@ int lls_sls_monitor_output_buffer_copy_and_recover_sample_fragment_block(lls_sls
 
 	block_t* mpu_data_unit_payload = data_unit->mmtp_mpu_type_packet_header.mpu_data_unit_payload;
     trun_sample_entry_t* trun_sample_entry = NULL;
+    bool trun_sample_entry_created = false;
 	uint32_t next_sample_offset_calculated = 0;
 	
     //hacks
     //check if we need to add in +8 for mdat box length not captured in mmthsample offset
     //needed for DS-MMT IO 3point5mb 720p5994.pcap
     if(data_unit->mpu_data_unit_payload_fragments_timed.mmth_samplenumber == 1 && data_unit->mpu_data_unit_payload_fragments_timed.mmth_offset < 8) {
-        __LLS_SLS_MONITOR_OUTPUT_BUFFER_UTILS_WARN("trun_sample_entry: mpu_sequence_number: %u, samplenumber: %u, mmth_offset is: %u, setting trun_mmthsample_missing_offset_mdat_box to true",
-                                                    data_unit->mpu_data_unit_payload_fragments_timed.mpu_sequence_number,
-                                                    data_unit->mpu_data_unit_payload_fragments_timed.mmth_offset,
-                                                    data_unit->mpu_data_unit_payload_fragments_timed.mpu_sample_number);
+        __LLS_SLS_MONITOR_OUTPUT_BUFFER_UTILS_WARN("mmthsample box: patching : mpu_seq_num: %u, mpu_sample_num: %3u, mpu_frag: %3u, mmth_offset is: %6u, setting trun_mmthsample_missing_offset_mdat_box to true",
+                                                   data_unit->mpu_data_unit_payload_fragments_timed.mpu_sequence_number,
+                                                   data_unit->mpu_data_unit_payload_fragments_timed.mpu_sample_number,
+                                                   data_unit->mpu_data_unit_payload_fragments_timed.mpu_fragmentation_counter,
+                                                   data_unit->mpu_data_unit_payload_fragments_timed.mmth_offset);
         lls_sls_monitor_buffer_isobmff->trun_mmthsample_missing_offset_mdat_box = true;
         
     }
     
     for(int i=0; i < lls_sls_monitor_buffer_isobmff->trun_sample_entry_v.count && !trun_sample_entry; i++) {
-//        __LLS_SLS_MONITOR_OUTPUT_BUFFER_UTILS_TRACE("vector pos: %u, checking trun_sample_entry: %u against mpu_sample_number: %u",
-//                i,
-//                lls_sls_monitor_buffer_isobmff->trun_sample_entry_v.data[i]->samplenumber,
-//                data_unit->mpu_data_unit_payload_fragments_timed.mpu_sample_number);
-//
+        //        __LLS_SLS_MONITOR_OUTPUT_BUFFER_UTILS_TRACE("vector pos: %u, checking trun_sample_entry: %u against mpu_sample_number: %u",
+        //                i,
+        //                lls_sls_monitor_buffer_isobmff->trun_sample_entry_v.data[i]->samplenumber,
+        //                data_unit->mpu_data_unit_payload_fragments_timed.mpu_sample_number);
+        //
         //hacks
         //needed for 2018-12-17-mmt-airwavz-recalc-trimmed-155s.pcap
         if(lls_sls_monitor_buffer_isobmff->trun_sample_entry_v.data[i]->samplenumber == data_unit->mpu_data_unit_payload_fragments_timed.mpu_sample_number) {
@@ -677,9 +679,11 @@ int lls_sls_monitor_output_buffer_copy_and_recover_sample_fragment_block(lls_sls
             if(trun_sample_entry->mfu_mmth_last_offset <= 8 && trun_sample_entry->mfu_mmth_last_sample_size  &&
                ((trun_sample_entry->mfu_mmth_last_header_sample_size + trun_sample_entry->mfu_mmth_last_sample_size) == data_unit->mpu_data_unit_payload_fragments_timed.mpu_offset)) {
                 
-                __LLS_SLS_MONITOR_OUTPUT_BUFFER_UTILS_WARN("setting trun_mmthsample_offset_includes_header: true, mpu_seq_num: %u, mpu_sample_num: %u, mmth_last_offset: %u, last_header_sample_size: %u, last_sample_size: %u, mpu offset: %u",
+                __LLS_SLS_MONITOR_OUTPUT_BUFFER_UTILS_WARN("mmthsample box: patching : mpu_seq_num: %u, mpu_sample_num: %3u, mpu_frag: %3u, mmth_last_offset: %6u, last_header_sample_size: %6u, last_sample_size: %6u, mpu offset: %u, setting trun_mmthsample_offset_includes_header: true",
                                                            data_unit->mpu_data_unit_payload_fragments_timed.mpu_sequence_number,
                                                            data_unit->mpu_data_unit_payload_fragments_timed.mpu_sample_number,
+                                                           data_unit->mpu_data_unit_payload_fragments_timed.mpu_fragmentation_counter,
+
                                                            trun_sample_entry->mfu_mmth_last_offset,
                                                            trun_sample_entry->mfu_mmth_last_header_sample_size,
                                                            trun_sample_entry->mfu_mmth_last_sample_size,
@@ -715,12 +719,16 @@ int lls_sls_monitor_output_buffer_copy_and_recover_sample_fragment_block(lls_sls
 			trun_sample_entry->sample_length = data_unit->mpu_data_unit_payload_fragments_timed.mmth_length;
             
 			trun_sample_entry->sample = block_Alloc(trun_sample_entry->sample_length);
-            __LLS_SLS_MONITOR_OUTPUT_BUFFER_UTILS_INFO("Present mmthsample box: sequence_number: %u, samplenumber: %u, sample_offset: %u, sample_length: %u, mfu_mmth_sample_header_size length: %u",
-							trun_sample_entry->sequence_number,
+            __LLS_SLS_MONITOR_OUTPUT_BUFFER_UTILS_INFO("mmthsample box: building : mpu_seq_num: %u, mpu_sample_num: %3u, mpu_frag: %3u, sample seq_num: %3u, samplenum: %3u, sample_offset: %6u, sample_length: %6u, mfu_mmth_sample_header_size length: %u",
+                            data_unit->mpu_data_unit_payload_fragments_timed.mpu_sequence_number,
+                            data_unit->mpu_data_unit_payload_fragments_timed.mpu_sample_number,
+                            data_unit->mpu_data_unit_payload_fragments_timed.mpu_fragmentation_counter,
+                            trun_sample_entry->sequence_number,
 							trun_sample_entry->samplenumber,
 							trun_sample_entry->sample_offset,
 							trun_sample_entry->sample_length,
                             data_unit->mpu_data_unit_payload_fragments_timed.mfu_mmth_sample_header_size);
+            trun_sample_entry_created = true;
 		} else {
 			trun_sample_entry->mmth_box_missing = true;
             trun_sample_entry->mfu_mmth_sample_header_size = 0; //unknown
@@ -733,8 +741,11 @@ int lls_sls_monitor_output_buffer_copy_and_recover_sample_fragment_block(lls_sls
             //mpu_offset includes mfu_mmth_sample_header_size but we don't know our actual header size
 			trun_sample_entry->sample = block_Alloc(data_unit->mpu_data_unit_payload_fragments_timed.mpu_offset + mpu_data_unit_payload->i_pos);
 
-			__LLS_SLS_MONITOR_OUTPUT_BUFFER_UTILS_WARN("Missing mmthsample box: sequence_number: %u, samplenumber: %u, setting sample_offset to: %u",
-					trun_sample_entry->sequence_number,
+            __LLS_SLS_MONITOR_OUTPUT_BUFFER_UTILS_WARN("mmthsample box: MISSING  : mpu_seq_num: %u, mpu_sample_num: %3u, mpu_frag: %3u, sequence_number: %u, samplenum: %3u, setting sample_offset to: %6u",
+                   data_unit->mpu_data_unit_payload_fragments_timed.mpu_sequence_number,
+                   data_unit->mpu_data_unit_payload_fragments_timed.mpu_sample_number,
+                   data_unit->mpu_data_unit_payload_fragments_timed.mpu_fragmentation_counter,
+                   trun_sample_entry->sequence_number,
 					trun_sample_entry->samplenumber,
 					trun_sample_entry->sample_offset);
 
@@ -770,9 +781,11 @@ int lls_sls_monitor_output_buffer_copy_and_recover_sample_fragment_block(lls_sls
     
     //offset by mfu_mmth_sample_header_size as mpu_offset includes this data payloads
 	block_Seek(trun_sample_entry->sample, mpu_offset);
-    __LLS_SLS_MONITOR_OUTPUT_BUFFER_UTILS_INFO("appending mpu_seq_num: %u, mpu_sample_number: %u, sample seq_num: %u, samplenum: %u, movie_fragment_sequence_num: %u, sample_offset: %u, original mpu_offset: %u, recalc mpu_offset: %u, sample_len: %u, du len: %u",
+    if(!trun_sample_entry_created) {
+        __LLS_SLS_MONITOR_OUTPUT_BUFFER_UTILS_INFO("mmthsample box: appending: mpu_seq_num: %u, mpu_sample_num: %3u, mpu_frag: %3u, sample seq_num: %3u, samplenum: %3u, movie_fragment_sequence_num: %3u, sample_offset: %6u, original mpu_offset: %6u, recalc mpu_offset: %6u, sample_len: %6u, du len: %6u",
                                 data_unit->mpu_data_unit_payload_fragments_timed.mpu_sequence_number,
                                 data_unit->mpu_data_unit_payload_fragments_timed.mpu_sample_number,
+                                data_unit->mpu_data_unit_payload_fragments_timed.mpu_fragmentation_counter,
                                 trun_sample_entry->sequence_number,
 								trun_sample_entry->samplenumber,
                                 trun_sample_entry->movie_fragment_sequence_number,
@@ -781,6 +794,7 @@ int lls_sls_monitor_output_buffer_copy_and_recover_sample_fragment_block(lls_sls
 								mpu_offset,
                                 trun_sample_entry->sample_length,
 								data_unit->mpu_data_unit_payload_fragments_timed.mpu_data_unit_payload->i_pos);
+    }
 
 	block_Append(trun_sample_entry->sample, data_unit->mpu_data_unit_payload_fragments_timed.mpu_data_unit_payload);
 
@@ -789,6 +803,7 @@ int lls_sls_monitor_output_buffer_copy_and_recover_sample_fragment_block(lls_sls
 
 	return trun_sample_entry->sample->i_pos;
 
+}
 
 
 		//from hint box
@@ -941,7 +956,7 @@ int lls_sls_monitor_output_buffer_copy_and_recover_sample_fragment_block(lls_sls
 
 
   //  return block_Append((lls_sls_monitor_output_buffer->video_output_buffer_isobmff.fragment_box, &lls_sls_monitor_output_buffer->video_output_buffer_isobmff.fragment_pos, _LLS_SLS_MONITOR_OUTPUT_MAX_FRAGMENT_BUFFER, video_mpu_data_unit_payload);
-}
+//}
 
 
 int lls_sls_monitor_buffer_isobmff_create_mdat_from_trun_sample_entries(lls_sls_monitor_buffer_isobmff_t* lls_sls_monitor_buffer_isobmff_to_create_mdat) {
