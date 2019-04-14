@@ -44,7 +44,6 @@ typedef struct lls_sls_monitor_buffer_isobmff {
 	//current mpu init, kept in case of any packet loss
 	block_t* init_block;
 
-
     //combined alc moof and mdat block for rOUTE
     block_t* alc_moof_mdat_block;
 
