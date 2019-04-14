@@ -9,7 +9,7 @@
 #include "atsc3_mmtp_parser.h"
 #include "atsc3_mmt_signaling_message.h"
 #include "endianess.c"
-
+int _MMT_SIGNALLING_MESSAGE_ERROR_23008_1_ENABLED = 0;
 int _MMT_SIGNALLING_MESSAGE_DEBUG_ENABLED = 0;
 int _MMT_SIGNALLING_MESSAGE_TRACE_ENABLED = 0;
 
@@ -121,7 +121,7 @@ uint8_t* mmt_signaling_message_parse_packet_header(mmtp_payload_fragments_union_
 	mmtp_packet->mmtp_signalling_message_fragments.si_fragmentation_indiciator = (mmtp_payload_header[0] >> 6) & 0x03;
 	//next 4 bits are 0x0000 reserved
 	if((mmtp_payload_header[0] >> 2) & 0xF) {
-        _MMTP_INFO("mmt_signaling_message_parse_packet_header: signaling message mmtp header bits 2-5 are not reserved '0'");
+        _MMSM_ERROR_23008_1("mmt_signaling_message_parse_packet_header: signaling message mmtp header bits 2-5 are not reserved '0'");
 	}
 
 	//bit 6 is additional Header
@@ -440,7 +440,7 @@ uint8_t* mpt_message_parse(mmt_signalling_message_header_and_payload_t* mmt_sign
 	uint8_t reserved_mp_table_mode;
 	buf = extract(buf, &reserved_mp_table_mode, 1);
 	if((reserved_mp_table_mode >> 2) != 0x3F) {
-		_MMSM_INFO("mp_table RESERVED 6 bits are not set '111111' - message_id: 0x%04x, table_id: 0x%02x", mmt_signalling_message_header_and_payload->message_header.message_id, mp_table->table_id);
+		_MMSM_ERROR_23008_1("mp_table RESERVED 6 bits are not set '111111' - message_id: 0x%04x, table_id: 0x%02x", mmt_signalling_message_header_and_payload->message_header.message_id, mp_table->table_id);
 		//goto cleanup;
 	}
 	//set MP_table_mode
