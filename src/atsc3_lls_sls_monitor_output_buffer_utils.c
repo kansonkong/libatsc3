@@ -757,7 +757,8 @@ int lls_sls_monitor_output_buffer_copy_and_recover_sample_fragment_block(lls_sls
 	if(trun_sample_entry->mmth_box_missing) {
         //trun_sample_entry->sample_offset
 		trun_sample_entry->sample_length += data_unit->mpu_data_unit_payload_fragments_timed.mpu_data_unit_payload->i_pos;
-	}
+        block_Resize(trun_sample_entry->sample, trun_sample_entry->sample_length);
+    }
     
     //hacks
     if(trun_sample_entry->trun_mmthsample_offset_includes_header) {
@@ -775,6 +776,20 @@ int lls_sls_monitor_output_buffer_copy_and_recover_sample_fragment_block(lls_sls
 	uint32_t mpu_offset = data_unit->mpu_data_unit_payload_fragments_timed.mpu_offset; //0-based...
     
 	if(trun_sample_entry->sample->p_size < mpu_offset + data_unit->mpu_data_unit_payload_fragments_timed.mpu_data_unit_payload->i_pos) {
+        
+        __LLS_SLS_MONITOR_OUTPUT_BUFFER_UTILS_INFO("mmthsample box: resizing : mpu_seq_num: %u, mpu_sample_num: %3u, mpu_frag: %3u, sample seq_num: %3u, samplenum: %3u, movie_fragment_sequence_num: %3u, sample_offset: %6u, original mpu_offset: %6u, recalc mpu_offset: %6u, sample_len: %6u, du len: %6u",
+                                                   data_unit->mpu_data_unit_payload_fragments_timed.mpu_sequence_number,
+                                                   data_unit->mpu_data_unit_payload_fragments_timed.mpu_sample_number,
+                                                   data_unit->mpu_data_unit_payload_fragments_timed.mpu_fragmentation_counter,
+                                                   trun_sample_entry->sequence_number,
+                                                   trun_sample_entry->samplenumber,
+                                                   trun_sample_entry->movie_fragment_sequence_number,
+                                                   trun_sample_entry->sample_offset,
+                                                   data_unit->mpu_data_unit_payload_fragments_timed.mpu_offset,
+                                                   mpu_offset,
+                                                   trun_sample_entry->sample_length,
+                                                   data_unit->mpu_data_unit_payload_fragments_timed.mpu_data_unit_payload->i_pos);
+
 		//realloc us so we can seek to the proper next sample fragment position
 		block_Resize(trun_sample_entry->sample, mpu_offset + data_unit->mpu_data_unit_payload_fragments_timed.mpu_data_unit_payload->i_pos);
 	}
@@ -804,159 +819,6 @@ int lls_sls_monitor_output_buffer_copy_and_recover_sample_fragment_block(lls_sls
 	return trun_sample_entry->sample->i_pos;
 
 }
-
-
-		//from hint box
-		//	trun_sample_entry->sample_duration = audio_data_unit->mpu_data_unit_payload_fragments_timed.sample_duration;
-
-//	trun_sample_entry_vector_t* moof_box_trun_sample_entry_vector = lls_sls_monitor_output_buffer->video_output_buffer_isobmff.moof_box_trun_sample_entry_vector;
-//
-//	//we need to rebuild our trun here
-//	if(lls_sls_monitor_buffer_isobmff->moof_box_is_from_last_mpu) {
-//		uint32_t trun_sample_index = video_data_unit->mpu_data_unit_payload_fragments_timed.sample_number-1;
-//		if(trun_sample_index >= moof_box_trun_sample_entry_vector->size) {
-//			__LLS_SLS_MONITOR_OUTPUT_BUFFER_UTILS_ERROR("V: trun sample index %u is greater than size: %u", trun_sample_index, moof_box_trun_sample_entry_vector->size);
-//			//TODO - append this in our trun box
-//			return -1;
-//		}
-//		moof_box_trun_sample_entry_vector->data[trun_sample_index]->sample_size += video_data_unit->mpu_data_unit_payload_fragments_timed.mpu_data_unit_payload->i_pos;
-//		__LLS_SLS_MONITOR_OUTPUT_BUFFER_UTILS_DEBUG("RECOVERY: REBUILD TRUN: V: sample index %u is now sample_size: %u", trun_sample_index, moof_box_trun_sample_entry_vector->data[trun_sample_index]->sample_size);
-//
-//		goto copy_packet;
-//	}
-//
-//	if(!lls_sls_monitor_buffer_isobmff->last_fragment) {
-//
-//		//we should start with sample == 1, offset == 0, otherwise pad this out
-//		//intra mfu packet loss
-//		if(video_data_unit->mpu_data_unit_payload_fragments_timed.sample_number == 1 && video_data_unit->mpu_data_unit_payload_fragments_timed.offset != 0) {
-//			uint32_t lost_mfu_packets_count = 1;
-//
-//			if(lls_sls_monitor_buffer_isobmff->last_mpu_sequence_number_last_fragment) {
-//				lost_mfu_packets_count = (video_data_unit->mpu_data_unit_payload_fragments_timed.packet_sequence_number -  lls_sls_monitor_buffer_isobmff->last_mpu_sequence_number_last_fragment->mpu_data_unit_payload_fragments_timed.packet_sequence_number);
-//			}
-//
-//			lls_sls_monitor_buffer_isobmff->last_fragment_lost_mfu_count += lost_mfu_packets_count;
-//
-//			__data_unit_recover_null_pad_offset(video_data_unit);
-//			__LLS_SLS_MONITOR_OUTPUT_BUFFER_UTILS_WARN("DETECT: first MFU: V: lost %u mfu packets, sample_number: 0, offset: %u, building null payload for mdat, new fragment size: %u", lost_mfu_packets_count, video_data_unit->mpu_data_unit_payload_fragments_timed.offset, video_mpu_data_unit_payload->i_pos);
-//		} else if(video_data_unit->mpu_data_unit_payload_fragments_timed.sample_number >1 ) {
-//			__LLS_SLS_MONITOR_OUTPUT_BUFFER_UTILS_WARN("DETECT: first SAMPLE: V: starting sample: %u, offset: %u",  video_data_unit->mpu_data_unit_payload_fragments_timed.sample_number, video_data_unit->mpu_data_unit_payload_fragments_timed.offset);
-//			//TODO - null this out of our mdat box and adjust offset accordingly
-//		}
-//	} else {
-//		//compute intra sample variances
-//		if(video_data_unit->mpu_data_unit_payload_fragments_timed.mpu_sequence_number == lls_sls_monitor_buffer_isobmff->last_fragment->mpu_data_unit_payload_fragments_timed.mpu_sequence_number &&
-//				video_data_unit->mpu_data_unit_payload_fragments_timed.sample_number == lls_sls_monitor_buffer_isobmff->last_fragment->mpu_data_unit_payload_fragments_timed.sample_number &&
-//				video_data_unit->mpu_data_unit_payload_fragments_timed.packet_sequence_number - 1 != lls_sls_monitor_buffer_isobmff->last_fragment->mpu_data_unit_payload_fragments_timed.packet_sequence_number) {
-//			uint32_t missing_packets = video_data_unit->mpu_data_unit_payload_fragments_timed.packet_sequence_number - lls_sls_monitor_buffer_isobmff->last_fragment->mpu_data_unit_payload_fragments_timed.packet_sequence_number - 1;
-//			__LLS_SLS_MONITOR_OUTPUT_BUFFER_UTILS_WARN("DETECT: INTRA sample: %u, current packet_sequence_number: %u, last packet_sequence_number: %u, missing: %u", video_data_unit->mpu_data_unit_payload_fragments_timed.sample_number , video_data_unit->mpu_data_unit_payload_fragments_timed.packet_sequence_number, lls_sls_monitor_buffer_isobmff->last_fragment->mpu_data_unit_payload_fragments_timed.packet_sequence_number, missing_packets);
-//
-//			__data_unit_recover_null_pad_offset_range_same_sample_id(lls_sls_monitor_buffer_isobmff->last_fragment, video_data_unit);
-//
-//		} else if(video_data_unit->mpu_data_unit_payload_fragments_timed.mpu_sequence_number == lls_sls_monitor_buffer_isobmff->last_fragment->mpu_data_unit_payload_fragments_timed.mpu_sequence_number &&
-//				video_data_unit->mpu_data_unit_payload_fragments_timed.sample_number != lls_sls_monitor_buffer_isobmff->last_fragment->mpu_data_unit_payload_fragments_timed.sample_number &&
-//				lls_sls_monitor_buffer_isobmff->last_fragment->mpu_data_unit_payload_fragments_timed.mpu_fragmentation_counter) {
-//
-//			//compute intra fragment variances, remember we should have an MFU inbetween..
-//
-//			//we can't null pad this out without interriogating the mdat
-//
-//			/**
-//			 *
-//			 * atsc3_lls_sls_monitor_output_buffer_utils.c:327:WARN :DETECT: cross SAMPLE LAST OPEN: current mpu: 6138, last frag counter: 1, last sample: 10, current sample: 11, current offset: 2864
-//			 * .sample_number are 1 based while the trun_sample entry is 0 based
-//			 *
-//			 * atsc3_lls_sls_monitor_output_buffer_utils.c:222:WARN :RECOVER: null pad: adding 2864 head to 653, mpu_sequence_number: 6138, packet_sequence_number: 2917408
-//			 *
-//			 * null inject, should remove sample from moof/trun
-//			 *
-//			 */
-//
-//			uint32_t from_mfu_sample_number = lls_sls_monitor_buffer_isobmff->last_fragment->mpu_data_unit_payload_fragments_timed.sample_number - 1;
-//			uint32_t from_mfu_trun_sample_size = 0;
-//			int32_t from_mfu_to_tail_pad_size = 0;
-//			trun_sample_entry_t* from_missing_mfu_sample_entry = NULL;
-//
-//			//if we have this sample in-order moof box, then compute offset size...
-//			if(from_mfu_sample_number <= moof_box_trun_sample_entry_vector->size) {
-//				from_missing_mfu_sample_entry = moof_box_trun_sample_entry_vector->data[from_mfu_sample_number];
-//				from_mfu_trun_sample_size = from_missing_mfu_sample_entry->sample_size;
-//
-//				//compute our last fragment size against the trun to pad out...
-//				if(lls_sls_monitor_buffer_isobmff->last_fragment->mmtp_mpu_type_packet_header.data_unit_length) {
-//					from_mfu_to_tail_pad_size = from_mfu_trun_sample_size - lls_sls_monitor_buffer_isobmff->last_fragment->mpu_data_unit_payload_fragments_timed.offset - lls_sls_monitor_buffer_isobmff->last_fragment->mmtp_mpu_type_packet_header.data_unit_length;
-//				} else {
-//					from_mfu_to_tail_pad_size = from_mfu_trun_sample_size - lls_sls_monitor_buffer_isobmff->last_fragment->mpu_data_unit_payload_fragments_timed.offset - lls_sls_monitor_buffer_isobmff->last_fragment->mmtp_mpu_type_packet_header.mpu_data_unit_payload->i_pos;
-//				}
-//				if(from_mfu_to_tail_pad_size > 0) {
-//					__data_unit_recover_null_pad_tail(lls_sls_monitor_buffer_isobmff->last_fragment, from_mfu_to_tail_pad_size);
-//				} else {
-//					//we should not get a negative size here unless our moof box is wrong (or missing)...
-//					__LLS_SLS_MONITOR_OUTPUT_BUFFER_UTILS_WARN("RECOVER: ERROR: last fragment tail pad from mpu_sequence_number: %u, sample: %u is size: %u",
-//							lls_sls_monitor_buffer_isobmff->last_fragment->mmtp_mpu_type_packet_header.mpu_sequence_number,
-//							lls_sls_monitor_buffer_isobmff->last_fragment->mpu_data_unit_payload_fragments_timed.sample_number,
-//							from_mfu_to_tail_pad_size);
-//				}
-//			}
-//
-//            uint32_t to_mfu_sample_number = video_data_unit->mpu_data_unit_payload_fragments_timed.sample_number - 1;
-//
-//			for(int i = from_mfu_sample_number + 1; i < to_mfu_sample_number && i < moof_box_trun_sample_entry_vector->size; i++) {
-//				trun_sample_entry_t* missing_mfu_sample_entry = moof_box_trun_sample_entry_vector->data[i];
-//				__LLS_SLS_MONITOR_OUTPUT_BUFFER_UTILS_WARN("RECOVER: (TODO FIXME: NOT) REMOVE SAMPLE: V: updating moof_box_trun_sample_entry vector to mark %u as to_remove", i);
-//				missing_mfu_sample_entry->to_remove_sample_entry = true;
-//			}
-//
-//			__LLS_SLS_MONITOR_OUTPUT_BUFFER_UTILS_WARN("DETECT: cross SAMPLE LAST OPEN: current mpu: %u, last frag counter: %u, last sample: %u, current sample: %u, current offset: %u",
-//					video_data_unit->mpu_data_unit_payload_fragments_timed.mpu_sequence_number,
-//					lls_sls_monitor_buffer_isobmff->last_fragment->mpu_data_unit_payload_fragments_timed.mpu_fragmentation_counter,
-//					lls_sls_monitor_buffer_isobmff->last_fragment->mpu_data_unit_payload_fragments_timed.sample_number,
-//					video_data_unit->mpu_data_unit_payload_fragments_timed.sample_number,
-//					video_data_unit->mpu_data_unit_payload_fragments_timed.offset);
-//
-//			//we can null pad the offset size
-//			uint32_t missing_current_bytes = video_data_unit->mpu_data_unit_payload_fragments_timed.offset;
-//
-//			if(missing_current_bytes) {
-//				__data_unit_recover_null_pad_offset(video_data_unit);
-//			}
-//
-//		} else if(lls_sls_monitor_buffer_isobmff->last_mpu_sequence_number_last_fragment &&
-//				video_data_unit->mpu_data_unit_payload_fragments_timed.mpu_sequence_number != lls_sls_monitor_buffer_isobmff->last_mpu_sequence_number_last_fragment->mpu_data_unit_payload_fragments_timed.mpu_sequence_number &&
-//				video_data_unit->mpu_data_unit_payload_fragments_timed.packet_sequence_number - 1 != lls_sls_monitor_buffer_isobmff->last_mpu_sequence_number_last_fragment->mpu_data_unit_payload_fragments_timed.packet_sequence_number) {
-//			//compute mpu fragment variances
-//
-//			uint32_t missing_packets = video_data_unit->mpu_data_unit_payload_fragments_timed.packet_sequence_number - lls_sls_monitor_buffer_isobmff->last_mpu_sequence_number_last_fragment->mpu_data_unit_payload_fragments_timed.packet_sequence_number - 1;
-//			__LLS_SLS_MONITOR_OUTPUT_BUFFER_UTILS_WARN("DETECT: cross MPU sample mpu: V: current mpu: %u, last mpu: %u, current sample: %u, last sample: %u, current packet_sequence_number: %u, last packet_sequence_number: %u, missing: %u",
-//					video_data_unit->mpu_data_unit_payload_fragments_timed.mpu_sequence_number,
-//					lls_sls_monitor_buffer_isobmff->last_fragment->mpu_data_unit_payload_fragments_timed.mpu_sequence_number,
-//					video_data_unit->mpu_data_unit_payload_fragments_timed.sample_number,
-//					lls_sls_monitor_buffer_isobmff->last_fragment->mpu_data_unit_payload_fragments_timed.sample_number,
-//					video_data_unit->mpu_data_unit_payload_fragments_timed.packet_sequence_number,
-//					lls_sls_monitor_buffer_isobmff->last_fragment->mpu_data_unit_payload_fragments_timed.packet_sequence_number,
-//					missing_packets);
-//		}
-//	}
-//
-//copy_packet:
-//    if(!lls_sls_monitor_output_buffer->video_output_buffer_isobmff.fragment_box) {
-//        lls_sls_monitor_output_buffer->video_output_buffer_isobmff.fragment_box = (uint8_t*)calloc(_LLS_SLS_MONITOR_OUTPUT_MAX_FRAGMENT_BUFFER, sizeof(uint8_t));
-//    }
-//
-//    //TODO - fix me
-//    if(moof_box_trun_sample_entry_vector && video_data_unit->mpu_data_unit_payload_fragments_timed.sample_number <= moof_box_trun_sample_entry_vector->size) {
-//       	moof_box_trun_sample_entry_vector->data[video_data_unit->mpu_data_unit_payload_fragments_timed.sample_number-1]->has_matching_sample = true;
-//       	moof_box_trun_sample_entry_vector->data[video_data_unit->mpu_data_unit_payload_fragments_timed.sample_number-1]->sample_size += video_data_unit->mmtp_mpu_type_packet_header.mpu_data_unit_payload->i_pos;
-//    }
-//
-//    lls_sls_monitor_buffer_isobmff->last_fragment = video_data_unit;
-//    lls_sls_monitor_buffer_isobmff->last_mpu_sequence_number_last_fragment = video_data_unit;
-
-
-
-  //  return block_Append((lls_sls_monitor_output_buffer->video_output_buffer_isobmff.fragment_box, &lls_sls_monitor_output_buffer->video_output_buffer_isobmff.fragment_pos, _LLS_SLS_MONITOR_OUTPUT_MAX_FRAGMENT_BUFFER, video_mpu_data_unit_payload);
-//}
 
 
 int lls_sls_monitor_buffer_isobmff_create_mdat_from_trun_sample_entries(lls_sls_monitor_buffer_isobmff_t* lls_sls_monitor_buffer_isobmff_to_create_mdat) {
@@ -1012,7 +874,7 @@ int lls_sls_monitor_buffer_isobmff_create_mdat_from_trun_sample_entries(lls_sls_
         
 		//we can't block_append here because our samples might be short and cause NAL errors
         //block_Append(temp_mmt_mdat, trun_sample_entry->sample);
-        assert(trun_sample_entry->sample->p_size >= trun_sample_entry->sample_length);
+    assert(trun_sample_entry->sample->p_size >= trun_sample_entry->sample_length);
         block_Write(temp_mmt_mdat, trun_sample_entry->sample->p_buffer, trun_sample_entry->sample_length);
 		//last_sample_offset = trun_sample_entry->sample_offset + trun_sample_entry->sample_length;
 	}

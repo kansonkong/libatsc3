@@ -405,11 +405,12 @@ void ISOBMFF_track_joiner_monitor_output_buffer_parse_and_build_joined_mmt_rebui
                             __ISOBMFF_JOINER_DEBUG("REBUILD MOOF: end of trun, setting sample %u from size: %u to size: %u,", j, to_walk_entries[j].sample_size, 0);
 
                             to_walk_entries[j].sample_size = 0;
-                            to_walk_entries[j].sample_duration = 0;
+                            //do not clear the duration, try and let the player hold the sample/frame
+                            //for time recovery..
+                            //to_walk_entries[j].sample_duration = 0;
                             to_walk_entries[j].sample_flags = 0;
 
-                            to_walk_entries[j].sample_composition_time_offset = 0;
-                            
+                            to_walk_entries[j].sample_composition_time_offset = 0;                            
                         }
                     }
                 }
