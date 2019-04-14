@@ -14,7 +14,7 @@
 #include "atsc3_mmt_mpu_parser.h"
 
 int _MPU_DEBUG_ENABLED = 1;
-int _MPU_TRACE_ENABLED = 1;
+int _MPU_TRACE_ENABLED = 0;
 
 uint8_t* mmt_mpu_parse_payload(mmtp_sub_flow_vector_t* mmtp_sub_flow_vector, mmtp_payload_fragments_union_t* mmtp_packet_header, uint8_t* udp_raw_buf, int udp_raw_buf_size) {
 

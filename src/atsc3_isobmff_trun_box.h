@@ -16,6 +16,14 @@ typedef struct trun_sample_entry {
     //keep track of our sample mfu mmth header box size on mpu_fragment_type == 2 && (mpu_fragmentation_indicator == 0 || mpu_fragmentation_indicator == 1)
     uint32_t mfu_mmth_sample_header_size;
     
+    //keep track of our first sample du size to determine if offset needs to be corrected
+    bool trun_mmthsample_offset_includes_header;
+    uint32_t mfu_mmth_cum_header_sample_size;
+    uint32_t mfu_mmth_last_header_sample_size;
+    uint32_t mfu_mmth_last_sample_size;
+    uint32_t mfu_mmth_last_offset;
+    
+    
 	//sample length and offset will be unknown if our mmth_box is missing, so be prepared to recompute
 	bool 	mmth_box_missing;
 
