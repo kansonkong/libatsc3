@@ -629,36 +629,49 @@ void __data_unit_recover_null_pad_offset_range_same_sample_id(mmtp_payload_fragm
 //todo - refactor this out
 
 /**
+ * rebuild trun sample entries from the mmthsample header
+ * note: some pcaps (e.g. some in-order) may not have a proper +8 offset
  *
- * movie_fragment_sequence_number: per fragment gop:
+ * offset − the offset of the media data contained in this MFU.
+ * The offset base is the beginning of the containing “mdat” box.
+ * MFU shall be placed at the position that offset indicates.
  *
  *
  */
+
 int lls_sls_monitor_output_buffer_copy_and_recover_sample_fragment_block(lls_sls_monitor_buffer_isobmff_t* lls_sls_monitor_buffer_isobmff, mmtp_payload_fragments_union_t* data_unit) {
 
 	block_t* mpu_data_unit_payload = data_unit->mmtp_mpu_type_packet_header.mpu_data_unit_payload;
-
-	trun_sample_entry_t* trun_sample_entry = NULL;
+    trun_sample_entry_t* trun_sample_entry = NULL;
 	uint32_t next_sample_offset_calculated = 0;
-	for(int i=0; i < lls_sls_monitor_buffer_isobmff->trun_sample_entry_v.count && !trun_sample_entry; i++) {
-		__LLS_SLS_MONITOR_OUTPUT_BUFFER_UTILS_TRACE("checking trun_sample_entry: n: %u, %u, against mpu_sample_number: %u",
+	
+    //check if we need to add in +8 for mdat box length not captured in mmthsample offset
+    if(data_unit->mpu_data_unit_payload_fragments_timed.mmth_samplenumber == 1 && data_unit->mpu_data_unit_payload_fragments_timed.mmth_offset < 8) {
+        __LLS_SLS_MONITOR_OUTPUT_BUFFER_UTILS_TRACE("trun_sample_entry: mpu_sequence_number: %u, samplenumber: %u, mmth_offset is: %u, setting trun_mmthsample_missing_offset_mdat_box to true",
+                                                    data_unit->mpu_data_unit_payload_fragments_timed.mpu_sequence_number,
+                                                    data_unit->mpu_data_unit_payload_fragments_timed.mmth_offset,
+                                                    data_unit->mpu_data_unit_payload_fragments_timed.mpu_sample_number);
+        lls_sls_monitor_buffer_isobmff->trun_mmthsample_missing_offset_mdat_box = true;
+    }
+    
+    for(int i=0; i < lls_sls_monitor_buffer_isobmff->trun_sample_entry_v.count && !trun_sample_entry; i++) {
+        __LLS_SLS_MONITOR_OUTPUT_BUFFER_UTILS_TRACE("vector pos: %u, checking trun_sample_entry: %u against mpu_sample_number: %u",
 				i,
 				lls_sls_monitor_buffer_isobmff->trun_sample_entry_v.data[i]->samplenumber,
 				data_unit->mpu_data_unit_payload_fragments_timed.mpu_sample_number);
-
+       
 		if(lls_sls_monitor_buffer_isobmff->trun_sample_entry_v.data[i]->samplenumber == data_unit->mpu_data_unit_payload_fragments_timed.mpu_sample_number) {
 			trun_sample_entry = lls_sls_monitor_buffer_isobmff->trun_sample_entry_v.data[i];
 		}
 
         next_sample_offset_calculated = lls_sls_monitor_buffer_isobmff->trun_sample_entry_v.data[i]->sample_offset + lls_sls_monitor_buffer_isobmff->trun_sample_entry_v.data[i]->sample_length;
-        //        //if(!lls_sls_monitor_buffer_isobmff->trun_sample_entry_v.data[i]->mmth_box_missing) {
-//		} else {
-			//mmth box is missing, use the mpu offset plus mdat size 8
-//  		next_sample_offset_calculated += data_unit->mpu_data_unit_payload_fragments_timed.mpu_offset;
-//		}
 	}
-
+    
 	if(!trun_sample_entry) {
+        if(lls_sls_monitor_buffer_isobmff->trun_mmthsample_missing_offset_mdat_box) {
+            data_unit->mpu_data_unit_payload_fragments_timed.mmth_offset += 8;
+        }
+        
 		trun_sample_entry = trun_sample_entry_new();
 		//use our mmthsample box information if present, otherwise pre-allocate based upon our sample and offset
 		if(data_unit->mpu_data_unit_payload_fragments_timed.mmth_samplenumber) {
@@ -668,8 +681,8 @@ int lls_sls_monitor_output_buffer_copy_and_recover_sample_fragment_block(lls_sls
 			trun_sample_entry->sequence_number = data_unit->mpu_data_unit_payload_fragments_timed.mmth_sequence_number;
 			trun_sample_entry->movie_fragment_sequence_number = data_unit->mpu_data_unit_payload_fragments_timed.mmth_movie_fragment_sequence_number;
 			trun_sample_entry->sample_offset = data_unit->mpu_data_unit_payload_fragments_timed.mmth_offset;  //used for recompositing the full mdat box
-            
 			trun_sample_entry->sample_length = data_unit->mpu_data_unit_payload_fragments_timed.mmth_length;
+            
 			trun_sample_entry->sample = block_Alloc(trun_sample_entry->sample_length);
             __LLS_SLS_MONITOR_OUTPUT_BUFFER_UTILS_INFO("Present mmthsample box: sequence_number: %u, samplenumber: %u, sample_offset: %u, sample_length: %u, mfu_mmth_sample_header_size length: %u",
 							trun_sample_entry->sequence_number,
@@ -685,6 +698,7 @@ int lls_sls_monitor_output_buffer_copy_and_recover_sample_fragment_block(lls_sls
 			trun_sample_entry->movie_fragment_sequence_number = data_unit->mpu_data_unit_payload_fragments_timed.mpu_movie_fragment_sequence_number;
 			trun_sample_entry->sample_offset 	= next_sample_offset_calculated + 8; // we won't know until we rebuild the box
 			trun_sample_entry->sample_length	= 0; // will be added in later
+            
             //mpu_offset includes mfu_mmth_sample_header_size but we don't know our actual header size
 			trun_sample_entry->sample = block_Alloc(data_unit->mpu_data_unit_payload_fragments_timed.mpu_offset + mpu_data_unit_payload->i_pos);
 
