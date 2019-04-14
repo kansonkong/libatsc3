@@ -147,7 +147,7 @@ void process_packet(u_char *user, const struct pcap_pkthdr *pkthdr, const u_char
 	}
 
 	//malloc our udp_packet_header:
-	udp_packet = calloc(1, sizeof(udp_packet_t));
+	udp_packet = (udp_packet_t*) calloc(1, sizeof(udp_packet_t));
 	udp_packet->udp_flow.src_ip_addr = ((ip_header[12] & 0xFF) << 24) | ((ip_header[13]  & 0xFF) << 16) | ((ip_header[14]  & 0xFF) << 8) | (ip_header[15] & 0xFF);
 	udp_packet->udp_flow.dst_ip_addr = ((ip_header[16] & 0xFF) << 24) | ((ip_header[17]  & 0xFF) << 16) | ((ip_header[18]  & 0xFF) << 8) | (ip_header[19] & 0xFF);
 
@@ -174,7 +174,7 @@ void process_packet(u_char *user, const struct pcap_pkthdr *pkthdr, const u_char
 		return;
 	}
 	__ALC_UTILS_DEBUG("Data length: %d", udp_packet->data_length);
-	udp_packet->data = malloc(udp_packet->data_length * sizeof(udp_packet->data));
+	udp_packet->data = (u_char*)malloc(udp_packet->data_length * sizeof(udp_packet->data));
 	memcpy(udp_packet->data, &packet[udp_header_start + 8], udp_packet->data_length);
 
 	//inefficient as hell for 1 byte at a time, but oh well...
@@ -198,10 +198,10 @@ void process_packet(u_char *user, const struct pcap_pkthdr *pkthdr, const u_char
 
 	if(udp_packet->udp_flow.dst_ip_addr == LLS_DST_ADDR && udp_packet->udp_flow.dst_port == LLS_DST_PORT) {
 		//process as lls
-		lls_table_t* lls = lls_table_create(udp_packet->data, udp_packet->data_length);
+		lls_table_t* lls = __lls_table_create(udp_packet->data, udp_packet->data_length);
 		if(lls) {
 			lls_dump_instance_table(lls);
-			lls_table_free(lls);
+			lls_table_free(&lls);
 		} else {
 			__ERROR("unable to parse LLS table");
 		}
@@ -304,7 +304,7 @@ int main(int argc,char **argv) {
     	println("");
     	exit(1);
     }
-    mmtp_sub_flow_vector = calloc(1, sizeof(mmtp_sub_flow_vector_t));
+    mmtp_sub_flow_vector = (mmtp_sub_flow_vector_t*) calloc(1, sizeof(mmtp_sub_flow_vector_t));
     mmtp_sub_flow_vector_init(mmtp_sub_flow_vector);
 
     mkdir("mpu", 0777);
