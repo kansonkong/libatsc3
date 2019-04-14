@@ -629,6 +629,10 @@ void __data_unit_recover_null_pad_offset_range_same_sample_id(mmtp_payload_fragm
 //todo - refactor this out
 
 /**
+ * lls_sls_monitor_output_buffer_copy_and_recover_sample_fragment_block
+ *
+ * NOTE: This method will modifty the lls_sls_monitor_buffer_isobmff trun_sample_entry_v that MAY result in incorrect sample offset calculation if called multiple times!
+ *
  * rebuild trun sample entries from the mmthsample header
  * note: some pcaps (e.g. some in-order) may not have a proper +8 offset
  *
