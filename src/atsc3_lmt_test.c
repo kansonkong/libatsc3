@@ -80,13 +80,16 @@ static char *__get_test_lmt_ces() { return "801F01FFFF000F0303020A013E28E000173C
 
 //sba
 static char *__get_test_lmt() { return "801F01FFFF000F0303020A013E28E000173C13491349BF000A013E28EFFF0101C000C000BF00"; }
+
+static char *__get_nab_lmt() { return "804601ffff020f07030400000000e000173c000013493f00000000efff32010000c7393f00000000efff32020000c73a3f00000000e10000250000bfd73f070100000000efff32030000cb213f"; }
+
   
 int main() {
 
 	uint8_t *binary_payload;
 	int binary_payload_size;
 
-	__create_binary_payload(__get_test_lmt(), &binary_payload, &binary_payload_size);
+	__create_binary_payload(__get_nab_lmt(), &binary_payload, &binary_payload_size);
 	uint8_t *binary_payload_start = binary_payload;
 
 	printf("LMT (link_mapping_table) dump\n");

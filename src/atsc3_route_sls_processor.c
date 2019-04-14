@@ -33,12 +33,14 @@ void atsc3_route_sls_process_from_alc_packet_and_file(alc_packet_t* alc_packet, 
 				return;
 			}
 			atsc3_fdt_instance_dump(atsc3_fdt_instance);
-			lls_sls_alc_monitor->atsc3_fdt_instance = atsc3_fdt_instance;
+			if(lls_sls_alc_monitor) {
+				lls_sls_alc_monitor->atsc3_fdt_instance = atsc3_fdt_instance;
+			}
 		}
 	} else {
 		//keep a reference for our mbms toi
 
-		if(lls_sls_alc_monitor->atsc3_fdt_instance) {
+		if(lls_sls_alc_monitor && lls_sls_alc_monitor->atsc3_fdt_instance) {
 			uint32_t* mbms_toi = atsc3_mbms_envelope_find_toi_from_fdt(lls_sls_alc_monitor->atsc3_fdt_instance);
 			if(!mbms_toi) {
 				_ATSC3_ROUTE_SLS_PROCESSOR_ERROR("Unable to find MBMS TOI");
