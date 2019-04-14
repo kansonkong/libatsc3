@@ -112,9 +112,9 @@ uint8_t* mmtp_packet_header_parse_from_raw_packet(mmtp_payload_fragments_union_t
 		//bitmask is 0000 00
 		//0000 0100
 		//V1CF EXRQ
-		mmtp_packet->mmtp_packet_header.mmtp_header_extension_flag = mmtp_packet_preamble[0] & 0x4 >> 2; //X
-		mmtp_packet->mmtp_packet_header.mmtp_rap_flag = (mmtp_packet_preamble[0] & 0x2) >> 1;				//RAP
-		mmtp_packet->mmtp_packet_header.mmtp_qos_flag = mmtp_packet_preamble[0] & 0x1;					//QOS
+		mmtp_packet->mmtp_packet_header.mmtp_header_extension_flag = (mmtp_packet_preamble[0] & 0x4) >> 2;    //X
+		mmtp_packet->mmtp_packet_header.mmtp_rap_flag = (mmtp_packet_preamble[0] & 0x2) >> 1;			    //RAP
+        mmtp_packet->mmtp_packet_header.mmtp_qos_flag = mmtp_packet_preamble[0] & 0x1;					    //Q: QOS
 		//0000 0000
 		//FEBI TYPE
 		//4 bits for preamble right aligned
@@ -125,15 +125,18 @@ uint8_t* mmtp_packet_header_parse_from_raw_packet(mmtp_payload_fragments_union_t
 		mmtp_packet->mmtp_packet_header.mmtp_indicator_ref_header_flag = ((mmtp_packet_preamble[1]) & 0x10) >> 4;	//I
 
 		mmtp_packet->mmtp_packet_header.mmtp_payload_type = mmtp_packet_preamble[1] & 0xF;
-
+        
+        if(!((mmtp_packet_preamble[16] >> 7) & 0x1)) {
+            _MMTP_WARN("mmtp_demuxer: mmtp_packet_preamble byte[16] 'r' bit is not 1!");
+        }
 		//TB 2 bits
 		mmtp_packet->mmtp_packet_header.mmtp_type_of_bitrate = ((mmtp_packet_preamble[16] & 0x40) >> 6) | ((mmtp_packet_preamble[16] & 0x20) >> 5);
 
 		//DS 3 bits
-		mmtp_packet->mmtp_packet_header.mmtp_delay_sensitivity = ((mmtp_packet_preamble[16] & 0x10) >> 4) | ((mmtp_packet_preamble[16] & 0x8) >> 3) | ((mmtp_packet_preamble[16] & 0x4) >> 2);
-
+        mmtp_packet->mmtp_packet_header.mmtp_delay_sensitivity = ((mmtp_packet_preamble[16] >> 2) & 0x7);
+           
 		//TP 3 bits
-		mmtp_packet->mmtp_packet_header.mmtp_transmission_priority =(( mmtp_packet_preamble[16] & 0x02) << 2) | ((mmtp_packet_preamble[16] & 0x1) << 1) | ((mmtp_packet_preamble[17] & 0x80) >>7);
+		mmtp_packet->mmtp_packet_header.mmtp_transmission_priority = ((mmtp_packet_preamble[16] & 0x03) << 1) | ((mmtp_packet_preamble[17] >> 7) & 0x1);
 
 		mmtp_packet->mmtp_packet_header.flow_label = mmtp_packet_preamble[17] & 0x7f;
 
