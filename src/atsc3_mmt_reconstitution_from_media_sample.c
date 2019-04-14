@@ -101,6 +101,7 @@ mmtp_payload_fragments_union_t* mmtp_process_from_payload(mmtp_sub_flow_vector_t
 					//see if we have incremented our mpu_sequence_number with current mmtp_payload
 
 					if(matching_lls_slt_mmt_session->last_udp_flow_packet_id_mpu_sequence_tuple_video && matching_lls_slt_mmt_session->last_udp_flow_packet_id_mpu_sequence_tuple_video->mpu_sequence_number < mmtp_payload->mmtp_mpu_type_packet_header.mpu_sequence_number) {
+                        
 						lls_sls_monitor_buffer_isobmff_t* lls_sls_monitor_buffer_isobmff_pending_mux = atsc3_isobmff_build_raw_mpu_from_single_sequence_number(&udp_packet->udp_flow,
 														   udp_flow_latest_mpu_sequence_number_container,
 														   matching_lls_slt_mmt_session->last_udp_flow_packet_id_mpu_sequence_tuple_video->packet_id,
