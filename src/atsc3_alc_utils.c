@@ -271,7 +271,7 @@ int alc_packet_dump_to_object(alc_packet_t** alc_packet_ptr, lls_sls_alc_monitor
 
 		} else {
 			//only push to our output buffer video and audio flows
-			if(alc_packet->def_lct_hdr->tsi == lls_sls_alc_monitor->audio_tsi || alc_packet->def_lct_hdr->tsi == lls_sls_alc_monitor->video_tsi) {
+			if(lls_sls_alc_monitor && (alc_packet->def_lct_hdr->tsi == lls_sls_alc_monitor->audio_tsi || alc_packet->def_lct_hdr->tsi == lls_sls_alc_monitor->video_tsi)) {
 				alc_recon_file_buffer_struct_monitor_fragment_with_init_box(alc_packet, lls_sls_alc_monitor);
 			} else {
 				__ALC_UTILS_INFO("tsi: %u, toi: %u, not video or audio payload", alc_packet->def_lct_hdr->tsi, alc_packet->def_lct_hdr->toi);

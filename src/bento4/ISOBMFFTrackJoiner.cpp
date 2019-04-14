@@ -283,7 +283,14 @@ uint32_t ISOBMFF_rebuild_moof_from_sample_data(lls_sls_monitor_buffer_isobmff_t*
 
 	list<AP4_Atom_And_Offset_t*> isobmff_atom_list = ISOBMFFTrackParseAndBuildOffset(temp_output_buffer);
 	std::list<AP4_Atom_And_Offset_t*>::iterator it;
-	AP4_Atom* moofAtom = NULL;
+	
+    AP4_AtomParent* moofAtomParent = NULL;
+    AP4_Atom* moofAtom = NULL;
+    
+    AP4_TrunAtom* trunAtom = NULL;
+    uint32_t trun_last_offset = 0;
+
+
 
 	for (it = isobmff_atom_list.begin(); it != isobmff_atom_list.end(); it++) {
 		AP4_Atom* top_level_atom = (*it)->atom;
@@ -319,11 +326,14 @@ uint32_t ISOBMFF_rebuild_moof_from_sample_data(lls_sls_monitor_buffer_isobmff_t*
 		//track rebuilding
 		if(top_level_atom->GetType() == AP4_ATOM_TYPE_MOOF) {
 
-			AP4_AtomParent* moofAtom = AP4_DYNAMIC_CAST(AP4_ContainerAtom, top_level_atom);
-			AP4_ContainerAtom* trafContainerAtom = AP4_DYNAMIC_CAST(AP4_ContainerAtom, moofAtom->GetChild(AP4_ATOM_TYPE_TRAF));
+			moofAtomParent = AP4_DYNAMIC_CAST(AP4_ContainerAtom, top_level_atom);
+			
+            AP4_ContainerAtom* trafContainerAtom = AP4_DYNAMIC_CAST(AP4_ContainerAtom, moofAtomParent->GetChild(AP4_ATOM_TYPE_TRAF));
 			AP4_TfhdAtom* tfhdAtom = AP4_DYNAMIC_CAST(AP4_TfhdAtom, trafContainerAtom->GetChild(AP4_ATOM_TYPE_TFHD));
         	AP4_TfdtAtom* tfdtAtom = AP4_DYNAMIC_CAST(AP4_TfdtAtom, trafContainerAtom->GetChild(AP4_ATOM_TYPE_TFDT));
-			AP4_TrunAtom* trunAtom = AP4_DYNAMIC_CAST(AP4_TrunAtom, trafContainerAtom->GetChild(AP4_ATOM_TYPE_TRUN));
+           
+            //single trun atom fix...todo: make sure we are working on proper track_ids
+            trunAtom = AP4_DYNAMIC_CAST(AP4_TrunAtom, trafContainerAtom->GetChild(AP4_ATOM_TYPE_TRUN));
 
 			//set our baseMediaDecodeTime...
         	if(tfdtAtom && tfdtAtom->GetBaseMediaDecodeTime() == 0) {
@@ -347,6 +357,9 @@ uint32_t ISOBMFF_rebuild_moof_from_sample_data(lls_sls_monitor_buffer_isobmff_t*
 						__ISOBMFF_JOINER_INFO("REBUILD MOOF: setting sample %u from size: %u to size: %u," i, to_walk_entries[i].sample_size, trun_sample_entry->sample_length);
 					}
 					to_walk_entries[i].sample_size = trun_sample_entry->sample_length;
+                    if(to_walk_entries[i].sample_composition_time_offset == 0xFFFFFFFF) {
+                        to_walk_entries[i].sample_composition_time_offset = 0;
+                    }
 					final_mdat_size += to_walk_entries[i].sample_size;
 				}
 
@@ -372,7 +385,16 @@ uint32_t ISOBMFF_rebuild_moof_from_sample_data(lls_sls_monitor_buffer_isobmff_t*
 	 *
 	 */
 
-	//re-write out our isobmff track..
+    //correct our trun/data_offset if we dropped a box...
+    if(moofAtomParent) {
+        moofAtom = AP4_DYNAMIC_CAST(AP4_Atom, moofAtomParent);
+        if(trunAtom) {
+            trun_last_offset = (AP4_UI32)moofAtom->GetSize()+AP4_ATOM_HEADER_SIZE;
+            trunAtom->SetDataOffset(trun_last_offset);
+        }
+    }
+
+    //re-write out our isobmff track..
 
 	for (it = isobmff_atom_list.begin(); it != isobmff_atom_list.end(); it++) {
 		AP4_Atom* top_level_atom = (*it)->atom;

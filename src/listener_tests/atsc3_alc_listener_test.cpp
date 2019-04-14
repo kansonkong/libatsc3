@@ -70,12 +70,12 @@ void process_packet(u_char *user, const struct pcap_pkthdr *pkthdr, const u_char
 
 	if((dst_ip_addr_filter == NULL && dst_ip_port_filter == NULL) || (udp_packet->udp_flow.dst_ip_addr == *dst_ip_addr_filter && udp_packet->udp_flow.dst_port == *dst_ip_port_filter)) {
 
-		lls_sls_alc_session_t* matching_lls_slt_alc_session = lls_slt_alc_session_find_from_udp_packet(lls_slt_monitor, udp_packet->udp_flow.src_ip_addr, udp_packet->udp_flow.dst_ip_addr, udp_packet->udp_flow.dst_port);
+//		lls_sls_alc_session_t* matching_lls_slt_alc_session = lls_slt_alc_session_find_from_udp_packet(lls_slt_monitor, udp_packet->udp_flow.src_ip_addr, udp_packet->udp_flow.dst_ip_addr, udp_packet->udp_flow.dst_port);
 
-		if(matching_lls_slt_alc_session != NULL) {
+		if(true) { //matching_lls_slt_alc_session != NULL) {
 
 	        alc_channel_t ch;
-	        ch.s = matching_lls_slt_alc_session->alc_session;
+	    //    ch.s = matching_lls_slt_alc_session->alc_session;
 
 	        //process ALC streams
 	        int retval = alc_rx_analyze_packet_a331_compliant((char*)udp_packet->data, udp_packet->data_length, &ch, &alc_packet);
@@ -118,7 +118,12 @@ int main(int argc,char **argv) {
 	_LLS_SLT_PARSER_INFO_MMT_ENABLED = 0;
 
 
-    char *dev;
+	_ALC_UTILS_IOTRACE_ENABLED=1;
+
+	_ALC_RX_DEBUG_ENABLED = 1;
+	_ALC_RX_TRACE_ENABLED = 1;
+
+	char *dev;
 
     char *dst_ip = NULL;
     char *dst_port = NULL;

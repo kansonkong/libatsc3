@@ -14,7 +14,7 @@
 #include "atsc3_mmt_mpu_parser.h"
 
 int _MPU_DEBUG_ENABLED = 1;
-int _MPU_TRACE_ENABLED = 0;
+int _MPU_TRACE_ENABLED = 1;
 
 uint8_t* mmt_mpu_parse_payload(mmtp_sub_flow_vector_t* mmtp_sub_flow_vector, mmtp_payload_fragments_union_t* mmtp_packet_header, uint8_t* udp_raw_buf, int udp_raw_buf_size) {
 
@@ -245,7 +245,7 @@ uint8_t* mmt_mpu_parse_payload(mmtp_sub_flow_vector_t* mmtp_sub_flow_vector, mmt
                     //see if bento4 will handle this?
 					//parse out mmthsample block if this is our first fragment or we are a complete fragment,
 					if(mmtp_packet_header->mpu_data_unit_payload_fragments_timed.mpu_fragment_type == 2 &&
-							(mmtp_packet_header->mpu_data_unit_payload_fragments_timed.mpu_fragmentation_indicator == 0 ||
+                        (mmtp_packet_header->mpu_data_unit_payload_fragments_timed.mpu_fragmentation_indicator == 0 ||
 									mmtp_packet_header->mpu_data_unit_payload_fragments_timed.mpu_fragmentation_indicator == 1)) {
 
 						//MMTHSample does not subclass box...
@@ -263,18 +263,28 @@ uint8_t* mmt_mpu_parse_payload(mmtp_sub_flow_vector_t* mmtp_sub_flow_vector, mmt
 						mmth_position+=4;
 						mmtp_packet_header->mpu_data_unit_payload_fragments_timed.mmth_priority = mmthsample_timed_block[mmth_position++];
 						mmtp_packet_header->mpu_data_unit_payload_fragments_timed.mmth_dependency_counter = mmthsample_timed_block[mmth_position++];
-						mmtp_packet_header->mpu_data_unit_payload_fragments_timed.mmth_offset = ntohl(*(uint32_t*)(&mmthsample_timed_block[mmth_position]));
+						//offset is from base of the containing mdat box (e.g. samplenumber 1 should have an offset of 8
+                        mmtp_packet_header->mpu_data_unit_payload_fragments_timed.mmth_offset = ntohl(*(uint32_t*)(&mmthsample_timed_block[mmth_position]));
 						mmth_position+=4;
 						mmtp_packet_header->mpu_data_unit_payload_fragments_timed.mmth_length = ntohl(*(uint32_t*)(&mmthsample_timed_block[mmth_position]));
 
-
+  						//hi skt!
+                        if(mmthsample_sequence_number[0] == 'S' && mmthsample_sequence_number[1] == 'K' && mmthsample_sequence_number[2] == 'T') {
+                            mmtp_packet_header->mpu_data_unit_payload_fragments_timed.mmth_sequence_number = mmtp_packet_header->mpu_data_unit_payload_fragments_timed.mpu_sequence_number;
+                            mmtp_packet_header->mpu_data_unit_payload_fragments_timed.mmth_samplenumber = mmtp_packet_header->mpu_data_unit_payload_fragments_timed.mpu_sample_number;
+                            mmtp_packet_header->mpu_data_unit_payload_fragments_timed.mmth_movie_fragment_sequence_number = mmtp_packet_header->mpu_data_unit_payload_fragments_timed.mpu_movie_fragment_sequence_number;
+                            mmtp_packet_header->mpu_data_unit_payload_fragments_timed.mmth_offset = mmtp_packet_header->mpu_data_unit_payload_fragments_timed.mpu_offset + 8;
+                        }
 
 						//read multilayerinfo
-						uint8_t multilayerinfo_box_length[4];
+						uint8_t multilayerinfo_box_length_block[4];
+                        uint32_t multilayerinfo_box_length = 0;
 						uint8_t multilayerinfo_box_name[4];
 						uint8_t multilayer_flag;
 
-						buf = (uint8_t*)extract(buf, multilayerinfo_box_length, 4);
+						buf = (uint8_t*)extract(buf, multilayerinfo_box_length_block, 4);
+                        multilayerinfo_box_length = ntohl(*(uint32_t*)(&multilayerinfo_box_length_block));
+                                //TODO - fix me to read muli box length properly...
 						buf = (uint8_t*)extract(buf, multilayerinfo_box_name, 4);
 
 						buf = (uint8_t*)extract(buf, &multilayer_flag, 1);
@@ -290,7 +300,9 @@ uint8_t* mmt_mpu_parse_payload(mmtp_sub_flow_vector_t* mmtp_sub_flow_vector, mmt
 							buf = (uint8_t*)extract(buf, multilayer_layer_id_temporal_id, 2);
 						}
 
-						_MPU_DEBUG("mpu mode (0x02), timed MFU, mpu_fragmentation_indicator: %d, movie_fragment_seq_num: %u, sample_num: %u, offset: %u, pri: %d, dep_counter: %d, multilayer: %d, mpu_sequence_number: %u",
+                        mmtp_packet_header->mpu_data_unit_payload_fragments_timed.mfu_mmth_sample_header_size = 4 + 19 + multilayerinfo_box_length;
+                            _MPU_DEBUG("mpu mode (0x02), timed MFU, mfu_mmth_sample_header_size: %u, mpu_fragmentation_indicator: %d, movie_fragment_seq_num: %u, sample_num: %u, offset: %u, pri: %d, dep_counter: %d, multilayer: %d, mpu_sequence_number: %u",
+                            mmtp_packet_header->mpu_data_unit_payload_fragments_timed.mfu_mmth_sample_header_size,
 							mmtp_packet_header->mpu_data_unit_payload_fragments_timed.mpu_fragmentation_indicator,
 							mmtp_packet_header->mpu_data_unit_payload_fragments_timed.mpu_movie_fragment_sequence_number,
 							mmtp_packet_header->mpu_data_unit_payload_fragments_timed.mpu_sample_number,
