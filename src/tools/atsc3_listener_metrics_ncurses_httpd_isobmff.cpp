@@ -457,18 +457,6 @@ void process_packet(u_char *user, const struct pcap_pkthdr *pkthdr, const u_char
 
     //if we get here, we don't know what type of packet it is..
     global_stats->packet_counter_udp_unknown++;
-    
-cleanup:
-
-	if(udp_packet->data) {
-		free(udp_packet->data);
-		udp_packet->data = NULL;
-	}
-
-	if(udp_packet) {
-		free(udp_packet);
-		udp_packet = NULL;
-	}
 }
 
 
