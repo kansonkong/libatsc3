@@ -246,7 +246,7 @@ int atsc3_mmt_mpu_clear_data_unit_from_packet_subflow(mmtp_payload_fragments_uni
 				data_unit_payload_fragments = &data_unit_payload_types->timed_fragments_vector;
 				if(data_unit_payload_fragments) {
 					__MMT_MPU_INFO("Beginning eviction pass for mpu: %u, mmtp_sub_flow->mpu_fragments->all_mpu_fragments_vector.size: %lu", evict_range_start, mmtp_sub_flow->mpu_fragments->all_mpu_fragments_vector.size);
-					int evicted_count = atsc3_mmt_mpu_clear_data_unit_payload_fragments(mmtp_sub_flow, mpu_fragments, data_unit_payload_fragments);
+					int evicted_count = atsc3_mmt_mpu_clear_data_unit_payload_fragments(mmtp_payload_fragments_union->mmtp_mpu_type_packet_header.mmtp_packet_id, mmtp_sub_flow, mpu_fragments, data_unit_payload_fragments);
 					__MMT_MPU_INFO("Eviction pass for mpu: %u resulted in %u", evict_range_start, evicted_count);
 				}
 			}
@@ -264,9 +264,10 @@ int atsc3_mmt_mpu_remove_packet_fragment_from_flows(mmtp_sub_flow_t* mmtp_sub_fl
     
     //free the sub-flow fragment
     atsc3_vector_index_of(&mmtp_sub_flow->mpu_fragments->all_mpu_fragments_vector, packet, &all_packets_index);
-    __MMT_MPU_DEBUG("freeing container: mmtp_sub_flow->mpu_fragments->all_mpu_fragments_vector: %p, payload : %p, packet_counter: %u, mpu_sequence_number: %u, at index: %ld",
+    __MMT_MPU_DEBUG("atsc3_vector_index_of container: mmtp_sub_flow->mpu_fragments->all_mpu_fragments_vector: %p, payload : %p, packet_id: %u, packet_counter: %u, mpu_sequence_number: %u, at index: %ld",
                     &mmtp_sub_flow->mpu_fragments->all_mpu_fragments_vector,
                     packet,
+                    packet->mmtp_mpu_type_packet_header.mmtp_packet_id,
                     packet->mmtp_mpu_type_packet_header.packet_counter,
                     packet->mmtp_mpu_type_packet_header.mpu_sequence_number,
                     all_packets_index);
@@ -278,11 +279,14 @@ int atsc3_mmt_mpu_remove_packet_fragment_from_flows(mmtp_sub_flow_t* mmtp_sub_fl
     }
     
     if(mpu_fragments) {
+        
+        
         //free global fragment
         atsc3_vector_index_of(&mpu_fragments->all_mpu_fragments_vector, packet, &all_packets_index);
-        __MMT_MPU_DEBUG("freeing container: mpu_fragments->all_mpu_fragments_vector: %p, payload : %p, packet_counter: %u, mpu_sequence_number: %u, at index: %ld",
+        __MMT_MPU_DEBUG("atsc3_vector_index_of container: mpu_fragments->all_mpu_fragments_vector: %p, payload : %p, packet_id: %u, packet_counter: %u, mpu_sequence_number: %u, at index: %ld",
                         &mpu_fragments->all_mpu_fragments_vector,
                         packet,
+                        packet->mmtp_mpu_type_packet_header.mmtp_packet_id,
                         packet->mmtp_mpu_type_packet_header.packet_counter,
                         packet->mmtp_mpu_type_packet_header.mpu_sequence_number,
                         all_packets_index);
@@ -298,12 +302,28 @@ int atsc3_mmt_mpu_remove_packet_fragment_from_flows(mmtp_sub_flow_t* mmtp_sub_fl
             atsc3_vector_remove_noshrink(&mpu_fragments->all_mpu_fragments_vector, all_packets_index);
             evicted_count++;
         }
+        
+        /**
+         
+         free from mpu types
+         
+         
+         //todo - fix me against types
+         //    if(mmtp_payload->mmtp_mpu_type_packet_header.mpu_fragment_type == 0x00) {
+         //        my_evicted_count += atsc3_mmt_mpu_remove_packet_fragment_from_flows(mmtp_payload->mmtp_packet_header.mmtp_sub_flow, &mmtp_payload->mmtp_packet_header.mmtp_sub_flow->mpu_fragments->mpu_metadata_fragments_vector, mmtp_payload);
+         //    } else if(mmtp_payload->mmtp_mpu_type_packet_header.mpu_fragment_type == 0x01) {
+         //        my_evicted_count += atsc3_mmt_mpu_remove_packet_fragment_from_flows(mmtp_payload->mmtp_packet_header.mmtp_sub_flow, &mmtp_payload->mmtp_packet_header.mmtp_sub_flow->mpu_fragments->movie_fragment_metadata_vector, mmtp_payload);
+         //    } if(mmtp_payload->mmtp_mpu_type_packet_header.mpu_fragment_type == 0x02) {
+         //        my_evicted_count += atsc3_mmt_mpu_remove_packet_fragment_from_flows(mmtp_payload->mmtp_packet_header.mmtp_sub_flow, &mmtp_payload->mmtp_packet_header.mmtp_sub_flow->mpu_fragments->media_fragment_unit_vector, mmtp_payload);
+         //    }
+         
+         **/
     }
     
     return evicted_count;
 }
 
-int atsc3_mmt_mpu_clear_data_unit_payload_fragments(mmtp_sub_flow_t* mmtp_sub_flow, mpu_fragments_t* mpu_fragments, mpu_data_unit_payload_fragments_timed_vector_t* data_unit_payload_fragments) {
+int atsc3_mmt_mpu_clear_data_unit_payload_fragments(uint16_t to_filter_packet_id, mmtp_sub_flow_t* mmtp_sub_flow, mpu_fragments_t* mpu_fragments, mpu_data_unit_payload_fragments_timed_vector_t* data_unit_payload_fragments) {
 
     uint32_t evicted_count = 0;
     
@@ -312,9 +332,11 @@ int atsc3_mmt_mpu_clear_data_unit_payload_fragments(mmtp_sub_flow_t* mmtp_sub_fl
 	for(int i=0; i < data_unit_payload_fragments->size; i++) {
 
 		mmtp_payload_fragments_union_t* packet = data_unit_payload_fragments->data[i];
-        if(packet) {
-            evicted_count += atsc3_mmt_mpu_remove_packet_fragment_from_flows(mmtp_sub_flow, mpu_fragments, packet);
-           
+        if(packet && packet->mmtp_packet_header.mmtp_packet_id == to_filter_packet_id) {
+            uint32_t my_evicted_count = atsc3_mmt_mpu_remove_packet_fragment_from_flows(mmtp_sub_flow, mpu_fragments, packet);
+            evicted_count += my_evicted_count;
+            __MMT_MPU_DEBUG("atsc3_mmt_mpu_clear_data_unit_payload_fragments: index: %u, packet: %p, packet_id: %u, packet_counter: %u, resulted in %u evictions, total evictions: %u", i, packet, packet->mmtp_packet_header.mmtp_packet_id, packet->mmtp_packet_header.packet_counter, my_evicted_count, evicted_count);
+            
             //clear out any block_t allocs
             mmtp_payload_fragments_union_free(&packet);
             
