@@ -58,6 +58,7 @@ mmtp_payload_fragments_union_t* mmtp_process_from_payload(mmtp_sub_flow_vector_t
     mpu_data_unit_payload_fragments_t* mpu_metadata_fragments =    NULL;
     mpu_data_unit_payload_fragments_t* movie_metadata_fragments  = NULL;
     mmtp_sub_flow_t* mmtp_sub_flow = NULL;
+    int my_evicted_count = 0;
 
     //dump header, then dump applicable packet type
     //mmtp_packet_header_dump(mmtp_payload);
@@ -97,8 +98,9 @@ mmtp_payload_fragments_union_t* mmtp_process_from_payload(mmtp_sub_flow_vector_t
 						ls_sls_monitor_buffer_isobmff_mmt_mpu_rebuilt_file_dump(lls_sls_monitor_buffer_isobmff_pending_mux, "mpu/",
 														matching_lls_slt_mmt_session->last_udp_flow_packet_id_mpu_sequence_tuple_audio->mpu_sequence_number,
 														"a.rebuilt");
-                        atsc3_mmt_reconstitution_free_from_udp_flow(mmtp_sub_flow_vector, last_flow_reference);
-
+                        if(matching_lls_slt_mmt_session->last_udp_flow_packet_id_mpu_sequence_tuple_audio) {
+                            atsc3_mmt_reconstitution_free_from_udp_flow(mmtp_sub_flow_vector, matching_lls_slt_mmt_session->last_udp_flow_packet_id_mpu_sequence_tuple_audio);
+                        }
 
 					}
 					udp_flow_packet_id_mpu_sequence_tuple_free_and_clone(&matching_lls_slt_mmt_session->last_udp_flow_packet_id_mpu_sequence_tuple_audio, last_flow_reference);
@@ -125,8 +127,9 @@ mmtp_payload_fragments_union_t* mmtp_process_from_payload(mmtp_sub_flow_vector_t
 						ls_sls_monitor_buffer_isobmff_mmt_mpu_rebuilt_file_dump(lls_sls_monitor_buffer_isobmff_pending_mux, "mpu/",
 														matching_lls_slt_mmt_session->last_udp_flow_packet_id_mpu_sequence_tuple_video->mpu_sequence_number,
 														"v.rebuilt");
-                        atsc3_mmt_reconstitution_free_from_udp_flow(mmtp_sub_flow_vector, last_flow_reference);
-
+                        if(matching_lls_slt_mmt_session->last_udp_flow_packet_id_mpu_sequence_tuple_video) {
+                            atsc3_mmt_reconstitution_free_from_udp_flow(mmtp_sub_flow_vector, matching_lls_slt_mmt_session->last_udp_flow_packet_id_mpu_sequence_tuple_video);
+                        }
 
 					} else {
 						//noop
@@ -249,9 +252,15 @@ mmtp_payload_fragments_union_t* mmtp_process_from_payload(mmtp_sub_flow_vector_t
     }
 
 packet_cleanup:
-
-    mmtp_payload_fragments_union_free(&mmtp_payload);
-    mmtp_payload_p = NULL;
+//mmtp_sub_flow
+    //TODO: fix me
+    
+//    my_evicted_count += atsc3_mmt_mpu_remove_packet_fragment_from_flows(mmtp_payload->mmtp_packet_header.mmtp_sub_flow, mmtp_payload->mmtp_packet_header.mmtp_sub_flow->mpu_fragments, mmtp_payload);
+//
+//    __MMT_RECON_FROM_SAMPLE_WARN("mmtp_packet_parse: atsc3_mmt_mpu_remove_packet_fragment_from_flows: resulted in %u evictions", my_evicted_count);
+//
+//    mmtp_payload_fragments_union_free(&mmtp_payload);
+//    mmtp_payload_p = NULL;
 
 ret:
     return mmtp_payload;
@@ -276,6 +285,7 @@ void atsc3_mmt_reconstitution_free_from_udp_flow(mmtp_sub_flow_vector_t* mmtp_su
     
     if(mmtp_sub_flow) {
         mpu_fragments = mpu_fragments_get_or_set_packet_id(mmtp_sub_flow, last_udp_flow_packet_id_mpu_sequence_tuple->packet_id);
+        //we lose our context of packet_id here...?
         data_unit_payload_types = mpu_data_unit_payload_fragments_find_mpu_sequence_number(&mpu_fragments->media_fragment_unit_vector, last_udp_flow_packet_id_mpu_sequence_tuple->mpu_sequence_number);
         
         if(data_unit_payload_types && data_unit_payload_types->timed_fragments_vector.data) {
@@ -284,7 +294,7 @@ void atsc3_mmt_reconstitution_free_from_udp_flow(mmtp_sub_flow_vector_t* mmtp_su
                 __MMT_RECON_FROM_SAMPLE_INFO("Beginning eviction pass for packet_id: %u, mpu: %u, mmtp_sub_flow->mpu_fragments->all_mpu_fragments_vector.size: %lu",
                                              last_udp_flow_packet_id_mpu_sequence_tuple->packet_id,
                                              last_udp_flow_packet_id_mpu_sequence_tuple->mpu_sequence_number, mmtp_sub_flow->mpu_fragments->all_mpu_fragments_vector.size)
-                int evicted_count = atsc3_mmt_mpu_clear_data_unit_payload_fragments(mmtp_sub_flow, mpu_fragments, data_unit_payload_fragments);
+                int evicted_count = atsc3_mmt_mpu_clear_data_unit_payload_fragments(last_udp_flow_packet_id_mpu_sequence_tuple->packet_id, mmtp_sub_flow, mpu_fragments, data_unit_payload_fragments);
                 __MMT_RECON_FROM_SAMPLE_INFO("Eviction pass for packet_id: %u, mpu: %u resulted in %u",
                 last_udp_flow_packet_id_mpu_sequence_tuple->packet_id,
                 last_udp_flow_packet_id_mpu_sequence_tuple->mpu_sequence_number, evicted_count);

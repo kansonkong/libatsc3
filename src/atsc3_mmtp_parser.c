@@ -277,6 +277,7 @@ void mmtp_payload_fragments_union_free(mmtp_payload_fragments_union_t** mmtp_pay
                 mmt_mpu_free_payload(mmtp_payload_fragment);
             }
 
+            _MMTP_INFO("mmtp_sub_flow_vector_init: calling freesafe with: %p", mmtp_payload_fragment);
             freesafe(mmtp_payload_fragment);
             mmtp_payload_fragment = NULL;
             *mmtp_payload_fragments_p = NULL;

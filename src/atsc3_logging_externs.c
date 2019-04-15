@@ -24,10 +24,11 @@ int printf(const char *format, ...)  {
     }
   }
     
-  va_list argptr;
+    va_list argptr;
 	va_start(argptr, format);
 	vfprintf(__DEBUG_LOG_FILE, format, argptr);
     va_end(argptr);
+    fflush(__DEBUG_LOG_FILE);
 	return 0;
 }
 
