@@ -321,6 +321,8 @@ void process_packet(u_char *user, const struct pcap_pkthdr *pkthdr, const u_char
 
         if(mmtp_payload) {
             mmtp_process_from_payload(mmtp_sub_flow_vector, udp_flow_latest_mpu_sequence_number_container, lls_slt_monitor, udp_packet, &mmtp_payload, matching_lls_slt_mmt_session);
+            
+            //don't free our payload here, as it is needed by the sub_flow_vector
            // mmtp_payload_fragments_union_free(&mmtp_payload);
         }
         return cleanup(&udp_packet);

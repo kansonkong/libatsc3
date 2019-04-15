@@ -256,59 +256,74 @@ int atsc3_mmt_mpu_clear_data_unit_from_packet_subflow(mmtp_payload_fragments_uni
 	return evicted_count;
 }
 
+int atsc3_mmt_mpu_remove_packet_fragment_from_flows(mmtp_sub_flow_t* mmtp_sub_flow, mpu_fragments_t* mpu_fragments, mmtp_payload_fragments_union_t* packet) {
+    
+    //clear out matching packets from allpackets,
+    ssize_t all_packets_index = 0;
+    int evicted_count = 0;
+    
+    //free the sub-flow fragment
+    atsc3_vector_index_of(&mmtp_sub_flow->mpu_fragments->all_mpu_fragments_vector, packet, &all_packets_index);
+    __MMT_MPU_DEBUG("freeing container: mmtp_sub_flow->mpu_fragments->all_mpu_fragments_vector: %p, payload : %p, packet_counter: %u, mpu_sequence_number: %u, at index: %ld",
+                    &mmtp_sub_flow->mpu_fragments->all_mpu_fragments_vector,
+                    packet,
+                    packet->mmtp_mpu_type_packet_header.packet_counter,
+                    packet->mmtp_mpu_type_packet_header.mpu_sequence_number,
+                    all_packets_index);
+    
+    if(all_packets_index >-1) {
+        __MMT_MPU_DEBUG("freeing payload from all_mpu_fragments_vector via vector_remove_noshrkink at index: %ld", all_packets_index);
+        atsc3_vector_remove_noshrink(&mmtp_sub_flow->mpu_fragments->all_mpu_fragments_vector, all_packets_index);
+        evicted_count++;
+    }
+    
+    if(mpu_fragments) {
+        //free global fragment
+        atsc3_vector_index_of(&mpu_fragments->all_mpu_fragments_vector, packet, &all_packets_index);
+        __MMT_MPU_DEBUG("freeing container: mpu_fragments->all_mpu_fragments_vector: %p, payload : %p, packet_counter: %u, mpu_sequence_number: %u, at index: %ld",
+                        &mpu_fragments->all_mpu_fragments_vector,
+                        packet,
+                        packet->mmtp_mpu_type_packet_header.packet_counter,
+                        packet->mmtp_mpu_type_packet_header.mpu_sequence_number,
+                        all_packets_index);
+        
+        if(all_packets_index >-1) {
+            __MMT_MPU_DEBUG("packet flow all_mpu_Fragments_vector is: %p, size: %lu, mmtp_sub_flow->mpu_fragments is: %p, global mpu_fragments->all_mpu_fragments is: %p, and size is: %lu",
+                            &packet->mmtp_mpu_type_packet_header.mmtp_sub_flow->mpu_fragments->all_mpu_fragments_vector,
+                            packet->mmtp_mpu_type_packet_header.mmtp_sub_flow->mpu_fragments->all_mpu_fragments_vector.size,
+                            &mmtp_sub_flow->mpu_fragments->all_mpu_fragments_vector,
+                            &mpu_fragments->all_mpu_fragments_vector,
+                            mpu_fragments->all_mpu_fragments_vector.size);
+            
+            atsc3_vector_remove_noshrink(&mpu_fragments->all_mpu_fragments_vector, all_packets_index);
+            evicted_count++;
+        }
+    }
+    
+    return evicted_count;
+}
 
 int atsc3_mmt_mpu_clear_data_unit_payload_fragments(mmtp_sub_flow_t* mmtp_sub_flow, mpu_fragments_t* mpu_fragments, mpu_data_unit_payload_fragments_timed_vector_t* data_unit_payload_fragments) {
-	//clear out matching packets from allpackets,
-	ssize_t* all_packets_index = (long*) calloc(1, sizeof(ssize_t));
-	int evicted_count = 0;
 
+    uint32_t evicted_count = 0;
+    
 	//clear out any mfu's in queue if we are here
 	//remove our packets from the subflow and free block allocs, as mpu_push_to_output_buffer_no_locking will copy the p_buffer to a slab
 	for(int i=0; i < data_unit_payload_fragments->size; i++) {
 
 		mmtp_payload_fragments_union_t* packet = data_unit_payload_fragments->data[i];
+        if(packet) {
+            evicted_count += atsc3_mmt_mpu_remove_packet_fragment_from_flows(mmtp_sub_flow, mpu_fragments, packet);
+           
+            //clear out any block_t allocs
+            mmtp_payload_fragments_union_free(&packet);
+            
+            //force clean up?
+            data_unit_payload_fragments->data[i] = NULL;
+        } else {
+            __MMT_MPU_ERROR("atsc3_mmt_mpu_clear_data_unit_payload_fragments: remaining packet in data_unit_payload_fragments: %p, index: %u", data_unit_payload_fragments, i);
+        }
 
-
-		//free the sub-flow fragment
-		atsc3_vector_index_of(&mmtp_sub_flow->mpu_fragments->all_mpu_fragments_vector, packet, all_packets_index);
-		__MMT_MPU_DEBUG("freeing container: mmtp_sub_flow->mpu_fragments->all_mpu_fragments_vector: %p, payload : %p, packet_counter: %u, mpu_sequence_number: %u, at index: %ld",
-										&mmtp_sub_flow->mpu_fragments->all_mpu_fragments_vector,
-										packet,
-										packet->mmtp_mpu_type_packet_header.packet_counter,
-										packet->mmtp_mpu_type_packet_header.mpu_sequence_number,
-										*all_packets_index);
-
-		if(*all_packets_index >-1) {
-			__MMT_MPU_DEBUG("freeing payload from all_mpu_fragments_vector via vector_remove_noshrkink at index: %ld", *all_packets_index);
-			atsc3_vector_remove_noshrink(&mmtp_sub_flow->mpu_fragments->all_mpu_fragments_vector, *all_packets_index);
-			evicted_count++;
-		}
-
-		if(mpu_fragments) {
-			//free global fragment
-			atsc3_vector_index_of(&mpu_fragments->all_mpu_fragments_vector, packet, all_packets_index);
-			__MMT_MPU_DEBUG("freeing container: mpu_fragments->all_mpu_fragments_vector: %p, payload : %p, packet_counter: %u, mpu_sequence_number: %u, at index: %ld",
-													&mpu_fragments->all_mpu_fragments_vector,
-													packet,
-													packet->mmtp_mpu_type_packet_header.packet_counter,
-													packet->mmtp_mpu_type_packet_header.mpu_sequence_number,
-													*all_packets_index);
-
-			if(*all_packets_index >-1) {
-				atsc3_vector_remove_noshrink(&mpu_fragments->all_mpu_fragments_vector, *all_packets_index);
-				evicted_count++;
-			}
-			__MMT_MPU_DEBUG("packet flow all_mpu_Fragments_vector is: %p, size: %lu, mmtp_sub_flow->mpu_fragments is: %p, global mpu_fragments->all_mpu_fragments is: %p, and size is: %lu",
-					&packet->mmtp_mpu_type_packet_header.mmtp_sub_flow->mpu_fragments->all_mpu_fragments_vector,
-					packet->mmtp_mpu_type_packet_header.mmtp_sub_flow->mpu_fragments->all_mpu_fragments_vector.size,
-					&mmtp_sub_flow->mpu_fragments->all_mpu_fragments_vector,
-					&mpu_fragments->all_mpu_fragments_vector,
-					mpu_fragments->all_mpu_fragments_vector.size);
-
-		}
-
-		//clear out any block_t allocs
-		mmtp_payload_fragments_union_free(&packet);
 	}
 
 	mpu_fragments_vector_shrink_to_fit(mmtp_sub_flow->mpu_fragments);
