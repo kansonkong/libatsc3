@@ -80,11 +80,14 @@ void mpu_push_to_output_buffer(pipe_ffplay_buffer_t* ffplay_buffer, mmtp_payload
 
 void mpu_push_to_output_buffer_no_locking(pipe_ffplay_buffer_t* ffplay_buffer, mmtp_payload_fragments_union_t* mmtp_payload);
 
-void mpu_fragments_vector_shrink_to_fit(mpu_fragments_t* mpu_fragments);
-
 udp_flow_packet_id_mpu_sequence_tuple_t* udp_flow_packet_id_mpu_sequence_tuple_clone(udp_flow_packet_id_mpu_sequence_tuple_t* from_udp_flow_packet_id_mpu_sequence_tuple);
 
+void mpu_fragments_vector_shrink_to_fit(mpu_fragments_t* mpu_fragments);
+
 void udp_flow_packet_id_mpu_sequence_tuple_free_and_clone(udp_flow_packet_id_mpu_sequence_tuple_t** to_udp_flow_packet_id_mpu_sequence_tuple_p, udp_flow_packet_id_mpu_sequence_tuple_t* from_udp_flow_packet_id_mpu_sequence_tuple);
+    
+int atsc3_mmt_mpu_remove_packet_fragment_from_flows(mmtp_sub_flow_t* mmtp_sub_flow, mpu_fragments_t* mpu_fragments, mmtp_payload_fragments_union_t* packet);
+
 
     
 #if defined (__cplusplus)

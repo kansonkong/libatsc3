@@ -127,7 +127,7 @@ uint8_t* mmtp_packet_header_parse_from_raw_packet(mmtp_payload_fragments_union_t
 		mmtp_packet->mmtp_packet_header.mmtp_payload_type = mmtp_packet_preamble[1] & 0xF;
         
         if(!((mmtp_packet_preamble[16] >> 7) & 0x1)) {
-            _MMTP_WARN("mmtp_demuxer: mmtp_packet_preamble byte[16] 'r' bit is not 1!");
+            _MMTP_DEBUG("mmtp_demuxer: ISO23008-1: mmtp_packet_preamble byte[16] 'r' bit is not 1!");
         }
 		//TB 2 bits
 		mmtp_packet->mmtp_packet_header.mmtp_type_of_bitrate = ((mmtp_packet_preamble[16] & 0x40) >> 6) | ((mmtp_packet_preamble[16] & 0x20) >> 5);
@@ -270,14 +270,17 @@ void mmtp_payload_fragments_union_free(mmtp_payload_fragments_union_t** mmtp_pay
     if(mmtp_payload_fragments_p) {
         mmtp_payload_fragments_union_t* mmtp_payload_fragment = *mmtp_payload_fragments_p;
         if(mmtp_payload_fragment) {
+            mmtp_sub_flow_remove_mmtp_packet(mmtp_payload_fragment->mmtp_packet_header.mmtp_sub_flow, mmtp_payload_fragment);
+            
             if(mmtp_payload_fragment->mmtp_packet_header.mmtp_payload_type == 0x0) {
                 //clean up data block allocs
                 mmt_mpu_free_payload(mmtp_payload_fragment);
             }
 
-            mmtp_sub_flow_remove_mmtp_packet(mmtp_payload_fragment->mmtp_packet_header.mmtp_sub_flow, mmtp_payload_fragment);
-            free(mmtp_payload_fragment);
+            freesafe(mmtp_payload_fragment);
+            mmtp_payload_fragment = NULL;
             *mmtp_payload_fragments_p = NULL;
+            mmtp_payload_fragments_p = NULL;
         }
     }
 }
