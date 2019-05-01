@@ -24,3 +24,4 @@ atsc3_stltp_listener_test
 atsc3_listener_metrics_ncurses
 atsc3_listener_metrics_ncurses_httpd_isobmff
 atsc3_mmt_mfu_monitor
+/route-mux/

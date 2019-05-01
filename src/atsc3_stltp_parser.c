@@ -63,19 +63,39 @@ udp_packet_t* atsc3_stltp_udp_packet_inner_prepend_fragment(atsc3_stltp_tunnel_p
 
 
 udp_packet_t* atsc3_stltp_udp_packet_fragment_check_marker(atsc3_stltp_tunnel_packet_t* atsc3_stltp_tunnel_packet) {
-	udp_packet_seek(atsc3_stltp_tunnel_packet->udp_packet_outer, atsc3_stltp_tunnel_packet->atsc3_rtp_fixed_header_tunnel->packet_offset + 12);
 
     if(atsc3_stltp_tunnel_packet->atsc3_rtp_fixed_header_tunnel->marker) {
+    	udp_packet_seek(atsc3_stltp_tunnel_packet->udp_packet_outer, atsc3_stltp_tunnel_packet->atsc3_rtp_fixed_header_tunnel->packet_offset + 12);
+
 		__STLTP_PARSER_DEBUG("seeking udp_packet_outer: %p, to: %u", atsc3_stltp_tunnel_packet->udp_packet_outer, atsc3_stltp_tunnel_packet->udp_packet_outer->data_position);
 
 		atsc3_stltp_tunnel_packet->udp_packet_inner = udp_packet_process_from_ptr(udp_packet_get_ptr(atsc3_stltp_tunnel_packet->udp_packet_outer), udp_packet_get_remaining_bytes(atsc3_stltp_tunnel_packet->udp_packet_outer));
 		if(!atsc3_stltp_tunnel_packet->udp_packet_inner) {
-			__STLTP_PARSER_ERROR("unable to parse outer packet");
+			__STLTP_PARSER_ERROR("unable to parse inner packet packet");
 			return NULL;
+		} else {
+			return atsc3_stltp_tunnel_packet->udp_packet_inner;
 		}
 	} else {
+		__STLTP_PARSER_WARN("atsc3_stltp_udp_packet_fragment_check_marker, no marker set using outer packet as inner fragment!");
+
 		atsc3_stltp_tunnel_packet->udp_packet_inner = udp_packet_duplicate(atsc3_stltp_tunnel_packet->udp_packet_outer);
 	}
+    return NULL;
+}
+
+
+
+udp_packet_t* atsc3_stltp_udp_packet_inner_parse_ip_udp_header(atsc3_stltp_tunnel_packet_t* atsc3_stltp_tunnel_packet) {
+
+	__STLTP_PARSER_DEBUG("atsc3_stltp_udp_packet_inner_parse_ip_udp_header: parsing udp_packet_inner: %p, to: %u", atsc3_stltp_tunnel_packet->udp_packet_inner, atsc3_stltp_tunnel_packet->udp_packet_inner->data_position);
+
+	atsc3_stltp_tunnel_packet->udp_packet_inner = udp_packet_process_from_ptr(udp_packet_get_ptr(atsc3_stltp_tunnel_packet->udp_packet_inner), udp_packet_get_remaining_bytes(atsc3_stltp_tunnel_packet->udp_packet_inner));
+	if(!atsc3_stltp_tunnel_packet->udp_packet_inner) {
+		__STLTP_PARSER_ERROR("unable to parse inner packet packet");
+		return NULL;
+	}
+
 	return atsc3_stltp_tunnel_packet->udp_packet_inner;
 }
 
@@ -137,10 +157,21 @@ atsc3_stltp_tunnel_packet_t* atsc3_stltp_tunnel_packet_extract_fragment_from_udp
         return atsc3_stltp_tunnel_packet;
     }
 
-	atsc3_stltp_udp_packet_fragment_check_marker(atsc3_stltp_tunnel_packet);
+    //build a inner packet from a marker if present
+	udp_packet_t* last_packet_was_marker = atsc3_stltp_udp_packet_fragment_check_marker(atsc3_stltp_tunnel_packet);
 
 	atsc3_rtp_fixed_header_t* atsc3_rtp_fixed_header_inner = NULL;
-	while(udp_packet_get_remaining_bytes(atsc3_stltp_tunnel_packet->udp_packet_inner) > 12) {
+	while(udp_packet_get_remaining_bytes(atsc3_stltp_tunnel_packet->udp_packet_inner) > (12+20)) {
+
+		if(!last_packet_was_marker) {
+			__STLTP_PARSER_DEBUG("inner parsing loop: parsing full inner ip_udp_header: remaining: pos: %d, len: %d", atsc3_stltp_tunnel_packet->udp_packet_inner->data_position, atsc3_stltp_tunnel_packet->udp_packet_inner->data_length);
+
+			atsc3_stltp_udp_packet_inner_parse_ip_udp_header(atsc3_stltp_tunnel_packet);
+		} else {
+			__STLTP_PARSER_DEBUG("inner parsing loop: only parsing rtp_fixed_header: remaining: pos: %d, len: %d", atsc3_stltp_tunnel_packet->udp_packet_inner->data_position, atsc3_stltp_tunnel_packet->udp_packet_inner->data_length);
+
+			last_packet_was_marker = NULL;
+		}
 
 		//parse header
 		atsc3_rtp_fixed_header_inner = atsc3_stltp_parse_rtp_fixed_header(atsc3_stltp_tunnel_packet->udp_packet_inner);
