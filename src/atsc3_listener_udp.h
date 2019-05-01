@@ -47,7 +47,7 @@ typedef struct udp_packet {
 #define udp_packet_get_ptr(udp_packet) (udp_packet->data_position < udp_packet->data_length ? &udp_packet->data[udp_packet->data_position] : NULL)
 #define udp_packet_get_ptr_offset(udp_packet, offset) (udp_packet->data_position + offset < udp_packet->data_length ? &udp_packet->data[udp_packet->data_position + offset] : NULL)
 #define udp_packet_seek_offset(udp_packet, offset) (udp_packet->data_position + offset <= udp_packet->data_length ? udp_packet->data_position += offset : -1)
-#define udp_packet_seek(udp_packet, position) (position <= udp_packet->data_length ? udp_packet->data_position = position : -1)
+#define udp_packet_seek(udp_packet, position) (position <= udp_packet->data_length ? udp_packet->data_position = position : -1); __LISTENER_UDP_ERROR("udp packet seek to position: %u", udp_packet->data_position);
 
 //dump packet example
 //__STLTP_PARSER_DEBUG("dst ip:port : %u.%u.%u.%u:%u",__toipandportnonstruct(atsc3_stltp_tunnel_packet->udp_packet->udp_flow.dst_ip_addr, atsc3_stltp_tunnel_packet->udp_packet->udp_flow.dst_port));

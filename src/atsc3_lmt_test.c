@@ -3,8 +3,8 @@
  * atsc3_lmt.c: test driver for ATSC 3.0 LMT parsing for ALP
  *
  */
-
-#include "atsc3_lls.h"
+#include "atsc3_utils.h"
+#include "atsc3_alp_types.h"
 #include "xml.h"
 
 
@@ -22,45 +22,6 @@ void __create_binary_payload(char *test_payload_base64, uint8_t **binary_payload
 	*binary_payload = test_payload_binary;
 	*binary_payload_size = test_payload_binary_size;
 }
-
-
-//endian warning, don't try and cast unless you mask..
-typedef struct alp_packet_header  {
-	uint8_t packet_type;
-	uint8_t payload_configuration;
-	uint8_t header_mode;
-	uint8_t length;
-
-} alp_packet_header_t;
-
-typedef struct lmt_table_header {
-	uint8_t num_PLPs_minus1;		/**< LCT version number */
-	uint8_t reserved;	/**< congestion control flag */
-
-} lmt_table_header_t;
-
-typedef struct lmt_table_plp {
-	uint8_t PLP_ID;			/**jdj-2019-01-07  -    Protocol-Specific Indication (PSI): 2 bits **/
-	uint8_t	reserved;
-	uint8_t num_multicasts;
-} lmt_table_plp_t;
-
-typedef struct lmt_table_multicast {
-	uint32_t		src_ip_add;
-	uint32_t		dst_ip_add;
-	uint16_t		src_udp_port;
-	uint16_t		dst_udp_port;
-	uint8_t 		sid_flag:1;
-	uint8_t 		compressed_flag:1;
-	uint8_t			reserved:6;
-	/*
-	 * optional char if sid_flag==1
-	 	 unsigned char	SID;
-	   optional char if compressed_flag==1
-		unsigned char	context_id;
-	 *
-	 */
-} lmt_table_multicast_t;
 
 /**
 After base64 decoding the values returned include the entire ALP packet including the 2
@@ -103,32 +64,37 @@ int main() {
 	alp_packet_header_t alp_packet_header;
 	alp_packet_header.packet_type = (alp_packet_header_byte_1 >> 5) & 0x7;
 	alp_packet_header.payload_configuration = (alp_packet_header_byte_1 >> 4) & 0x1;
-	alp_packet_header.header_mode = (alp_packet_header_byte_1 >> 3) & 0x01;
-	alp_packet_header.length = (alp_packet_header_byte_1 & 0x7) << 8 | alp_packet_header_byte_2;
-
 	printf("ALP packet type: : 0x%x (should be 0x4 - x100 - LLP signaling packet)\n", alp_packet_header.packet_type);
 	printf("payload config   : %d\n", alp_packet_header.payload_configuration);
-	printf("header mode      : %d\n", alp_packet_header.header_mode);
-	printf("ALP header length: %d\n", alp_packet_header.length);
-	printf("-----------------------------\n");
+
+	if(alp_packet_header.payload_configuration == 0) {
+		alp_packet_header.alp_packet_header_mode.header_mode = (alp_packet_header_byte_1 >> 3) & 0x01;
+		alp_packet_header.alp_packet_header_mode.length = (alp_packet_header_byte_1 & 0x7) << 8 | alp_packet_header_byte_2;
+		printf("header mode      : %d\n", alp_packet_header.alp_packet_header_mode.header_mode);
+		printf("ALP header length: %d\n", alp_packet_header.alp_packet_header_mode.length);
+		printf("-----------------------------\n");
+
+		if(alp_packet_header.payload_configuration == 0 && alp_packet_header.alp_packet_header_mode.header_mode == 0) {
+				//no additional header size
+				printf(" no additional ALP header bytes\n");
+		} else if (alp_packet_header.payload_configuration == 0 && alp_packet_header.alp_packet_header_mode.header_mode == 1) {
+			//one byte additional header
+			uint8_t alp_additional_header_byte_1 = *binary_payload+=1;
+			printf(" one additional ALP header byte: 0x%x\n", alp_additional_header_byte_1);
+		} else if (alp_packet_header.payload_configuration == 1) {
+			uint8_t alp_additional_header_byte_1 = *binary_payload+=1;
+			printf(" one additional header byte -  0x%x\n", alp_additional_header_byte_1);
+		}
+		printf("-----------------------------\n");
+
+	}
 
 	//a/330 table 5.3
-	if(alp_packet_header.payload_configuration == 0 && alp_packet_header.header_mode == 0) {
-		//no additional header size
-		printf(" no additional ALP header bytes\n");
 
-	} else if (alp_packet_header.payload_configuration == 0 && alp_packet_header.header_mode == 1) {
-		//one byte additional header
-		uint8_t alp_additional_header_byte_1 = *binary_payload+=1;
-		printf(" one additional ALP header byte: 0x%x\n", alp_additional_header_byte_1);
-	} else if (alp_packet_header.payload_configuration == 1) {
-		uint8_t alp_additional_header_byte_1 = *binary_payload+=1;
-		printf(" one additional header byte -  0x%x\n", alp_additional_header_byte_1);
-	}
-	printf("-----------------------------\n");
 
 	/**
 	 * 5.10 additional header for signaling:
+
 signaling_information_hdr() {
 	signaling_type 				8 uimsbf
 	signaling_type_extension 	16 bslbf
@@ -136,9 +102,9 @@ signaling_information_hdr() {
 	signaling_format 			2 uimsbf
 	signaling_encoding 			2 uimsbf
 	reserved 					4 ‘1111’
+}
 
 	---40 bits total = 5 bytes
-}
 	 */
 
 	uint8_t *signaling_information_hdr_bytes = binary_payload;
