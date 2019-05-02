@@ -21,10 +21,41 @@ void atsc3_alp_parse_stltp_baseband_packet(atsc3_stltp_baseband_packet_t* atsc3_
 	alp_packet_header_t alp_packet_header;
 	alp_packet_header.packet_type = (alp_packet_header_byte_1 >> 5) & 0x7;
 	alp_packet_header.payload_configuration = (alp_packet_header_byte_1 >> 4) & 0x1;
-	__ALP_PARSER_INFO("		ALP packet type: : 0x%x (should be 0x4 - x100 - LLP signaling packet)\n", alp_packet_header.packet_type);
-	__ALP_PARSER_INFO("		payload config   : %d\n", alp_packet_header.payload_configuration);
+	__ALP_PARSER_INFO("		ALP packet type: : 0x%x", alp_packet_header.packet_type);
+	__ALP_PARSER_INFO("		payload config   : %d", alp_packet_header.payload_configuration);
+
+	if(alp_packet_header.payload_configuration == 0) {
+		alp_packet_header.alp_packet_header_mode.header_mode = (alp_packet_header_byte_1 >> 3) & 0x01;
+		alp_packet_header.alp_packet_header_mode.length = (alp_packet_header_byte_1 & 0x7) << 8 | alp_packet_header_byte_2;
+		__ALP_PARSER_INFO("header mode      : %d", alp_packet_header.alp_packet_header_mode.header_mode);
+		__ALP_PARSER_INFO("ALP header length: %d", alp_packet_header.alp_packet_header_mode.length);
+		__ALP_PARSER_INFO("-----------------------------");
+
+		if(alp_packet_header.payload_configuration == 0 && alp_packet_header.alp_packet_header_mode.header_mode == 0) {
+				//no additional header size
+			__ALP_PARSER_INFO(" no additional ALP header bytes");
+		} else if (alp_packet_header.payload_configuration == 0 && alp_packet_header.alp_packet_header_mode.header_mode == 1) {
+			//one byte additional header
+			uint8_t alp_additional_header_byte_1 = *binary_payload+=1;
+			__ALP_PARSER_INFO(" one additional ALP header byte: 0x%x (header_mode==1)", alp_additional_header_byte_1);
+		} else if (alp_packet_header.payload_configuration == 1) {
+			uint8_t alp_additional_header_byte_1 = *binary_payload+=1;
+			__ALP_PARSER_INFO(" one additional header byte -  0x%x (header_mode==0)", alp_additional_header_byte_1);
+		}
+		__ALP_PARSER_INFO("-----------------------------");
+
+	} else if(alp_packet_header.payload_configuration == 1) {
+		alp_packet_header.alp_packet_segmentation_concatenation.segmentation_concatenation = (alp_packet_header_byte_1 >> 3) & 0x01;
+		alp_packet_header.alp_packet_segmentation_concatenation.length = (alp_packet_header_byte_1 & 0x7) << 8 | alp_packet_header_byte_2;
+		__ALP_PARSER_INFO("segmentation_concatenation: %d", alp_packet_header.alp_packet_segmentation_concatenation.segmentation_concatenation);
+		__ALP_PARSER_INFO("ALP header length	     : %d", alp_packet_header.alp_packet_segmentation_concatenation.length);
+		__ALP_PARSER_INFO("-----------------------------");
+
+
+	}
 
 }
+
 
 
 /**
