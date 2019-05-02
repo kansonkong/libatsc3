@@ -125,7 +125,7 @@ lls_sls_monitor_output_buffer_t* atsc3_isobmff_build_joined_mmt_rebuilt_boxes(ll
 
 lls_sls_monitor_buffer_isobmff_t* atsc3_isobmff_rebuild_track_mpu_from_sample_data(lls_sls_monitor_buffer_isobmff_t* lls_sls_monitor_buffer_isobmff) {
 
-    AP4_MemoryByteStream* ap4_memory_byte_stream;
+    AP4_MemoryByteStream* ap4_memory_byte_stream = NULL;
 
     uint32_t mdat_size_computed = ISOBMFF_rebuild_moof_from_sample_data(lls_sls_monitor_buffer_isobmff, &ap4_memory_byte_stream);
 
