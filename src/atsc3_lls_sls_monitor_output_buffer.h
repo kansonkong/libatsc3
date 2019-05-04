@@ -44,12 +44,13 @@ typedef struct lls_sls_monitor_buffer_isobmff {
 	//current mpu init, kept in case of any packet loss
 	block_t* init_block;
 
-
     //combined alc moof and mdat block for rOUTE
     block_t* alc_moof_mdat_block;
 
     //mmt - for building moof and mdat blocks
     ATSC3_VECTOR_BUILDER_STRUCT(trun_sample_entry)
+    bool trun_mmthsample_missing_offset_mdat_box;
+    
     block_t* mmt_moof_block;
 
     //ooo won't have flow until our mdat is complete

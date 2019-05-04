@@ -448,6 +448,8 @@ void process_packet(u_char *user, const struct pcap_pkthdr *pkthdr, const u_char
 
         if(mmtp_payload) {
             mmtp_process_from_payload(mmtp_sub_flow_vector, udp_flow_latest_mpu_sequence_number_container, lls_slt_monitor, udp_packet, &mmtp_payload, matching_lls_slt_mmt_session);
+            
+            //don't free our payload here, as it is needed by the sub_flow_vector
            // mmtp_payload_fragments_union_free(&mmtp_payload);
         }
         return cleanup(&udp_packet);
@@ -455,18 +457,6 @@ void process_packet(u_char *user, const struct pcap_pkthdr *pkthdr, const u_char
 
     //if we get here, we don't know what type of packet it is..
     global_stats->packet_counter_udp_unknown++;
-    
-cleanup:
-
-	if(udp_packet->data) {
-		free(udp_packet->data);
-		udp_packet->data = NULL;
-	}
-
-	if(udp_packet) {
-		free(udp_packet);
-		udp_packet = NULL;
-	}
 }
 
 

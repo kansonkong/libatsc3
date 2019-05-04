@@ -5,7 +5,7 @@
  *      Author: jjustman
  */
 #include <stdint.h>
-#include "Ap4.h"
+#include "../../bento4/include/Ap4.h"
 
 
 #ifndef BENTO4_MPUTOISOBMFFPROCESSOR_H_
