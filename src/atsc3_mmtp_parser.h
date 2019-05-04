@@ -96,11 +96,11 @@ mmtp_sub_flow_t* mmtp_sub_flow_vector_find_packet_id(mmtp_sub_flow_vector_t *vec
 mmtp_sub_flow_t* mmtp_sub_flow_vector_get_or_set_packet_id(mmtp_sub_flow_vector_t *vec, uint16_t mmtp_packet_id);
 
 void mmtp_sub_flow_push_mmtp_packet(mmtp_sub_flow_t *mmtp_sub_flow, mmtp_payload_fragments_union_t *mmtp_packet);
-
-//cleanup only if not assigned to a subflow vector
-void mmtp_payload_fragments_union_free(mmtp_payload_fragments_union_t** mmtp_payload);
-
 void mmtp_sub_flow_remove_mmtp_packet(mmtp_sub_flow_t *mmtp_sub_flow, mmtp_payload_fragments_union_t *mmtp_packet);
+
+    
+//cleanup packet and any subflow associations
+    void mmtp_payload_fragments_union_free(mmtp_payload_fragments_union_t** mmtp_payload);
 
 
 #if defined (__cplusplus)

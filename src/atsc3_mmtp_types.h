@@ -126,6 +126,7 @@ typedef struct {
 	uint8_t		mpu_priority;
 	uint8_t 	mpu_dep_counter;
 
+    uint32_t    mfu_mmth_sample_header_size;
 	//MMTHSample hint fields
 	uint32_t 	mmth_sequence_number;
 	uint8_t 	mmth_trackrefindex;
@@ -305,8 +306,8 @@ typedef struct ATSC3_VECTOR(mmtp_sub_flow_t*) mmtp_sub_flow_vector_t;
 
 #define _MMTP_PRINTLN(...) printf(__VA_ARGS__);printf("%s%s","\r","\n")
 #define _MMTP_ERROR(...)   printf("%s:%d:ERROR:",__FILE__,__LINE__);_MMTP_PRINTLN(__VA_ARGS__);
-#define _MMTP_WARN(...)    printf("%s:%d:WARN:",__FILE__,__LINE__);_MMTP_PRINTLN(__VA_ARGS__);
-#define _MMTP_INFO(...)    //printf("%s:%d:INFO ",__FILE__,__LINE__);_MMTP_PRINTLN(__VA_ARGS__);
+#define _MMTP_WARN(...)    printf("%s:%d:WARN :",__FILE__,__LINE__);_MMTP_PRINTLN(__VA_ARGS__);
+#define _MMTP_INFO(...)    printf("%s:%d:INFO :",__FILE__,__LINE__);_MMTP_PRINTLN(__VA_ARGS__);
 
 #define _MMTP_DEBUG(...)   if(_MMTP_DEBUG_ENABLED) { printf("%s:%d:DEBUG :",__FILE__,__LINE__);_MMTP_PRINTLN(__VA_ARGS__); }
 #define _MMTP_TRACE(...)   if(_MMTP_TRACE_ENABLED) { printf("%s:%d:TRACE :",__FILE__,__LINE__);_MMTP_PRINTLN(__VA_ARGS__); }
