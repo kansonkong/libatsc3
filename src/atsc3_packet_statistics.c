@@ -407,6 +407,11 @@ void atsc3_packet_statistics_dump_global_stats(){
 	//dump flow status
 	for(int i=0; i < global_stats->packet_id_n; i++ ) {
 		packet_id_mmt_stats_t* packet_mmt_stats = global_stats->packet_id_vector[i];
+        //sanity check
+        if(!packet_mmt_stats) {
+            __ERROR("index: %u, packet_mmt_stats is NULL", i);
+            continue;
+        }
 
 		double computed_flow_packet_loss = 0;
 		if(packet_mmt_stats->packet_sequence_number_lifetime_processed && packet_mmt_stats->packet_sequence_number_lifetime_missing) {
