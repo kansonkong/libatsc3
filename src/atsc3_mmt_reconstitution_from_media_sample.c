@@ -73,9 +73,14 @@ mmtp_payload_fragments_union_t* mmtp_process_from_payload(mmtp_sub_flow_vector_t
                 goto packet_cleanup;
             }
             
-            if(lls_slt_monitor && lls_slt_monitor->lls_sls_mmt_monitor && lls_slt_monitor->lls_sls_mmt_monitor->service_id == matching_lls_slt_mmt_session->service_id) {
+            if(lls_slt_monitor && lls_slt_monitor->lls_sls_mmt_monitor &&
+            		lls_slt_monitor->lls_sls_mmt_monitor->service_id == matching_lls_slt_mmt_session->service_id &&
+            		lls_slt_monitor->lls_sls_mmt_monitor->lls_mmt_session->sls_destination_ip_address == udp_packet->udp_flow.dst_ip_addr &&
+            		lls_slt_monitor->lls_sls_mmt_monitor->lls_mmt_session->sls_destination_udp_port == udp_packet->udp_flow.dst_port
+            ) {
 
             	udp_flow_packet_id_mpu_sequence_tuple_t* last_flow_reference = udp_flow_latest_mpu_sequence_number_add_or_replace(udp_flow_latest_mpu_sequence_number_container, udp_packet, mmtp_payload);
+        		__MMT_RECON_FROM_SAMPLE_DEBUG("mmtp_packet_parse: processing mmt flow: %d.%d.%d.%d:(%u) packet_id: 0, mpu", __toipandportnonstruct(udp_packet->udp_flow.dst_ip_addr, udp_packet->udp_flow.dst_port));
 
             	//see if we are an audio packet that rolled over
 				if(lls_slt_monitor->lls_sls_mmt_monitor->audio_packet_id == mmtp_payload->mmtp_mpu_type_packet_header.mmtp_packet_id) {

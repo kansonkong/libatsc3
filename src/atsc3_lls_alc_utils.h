@@ -64,7 +64,7 @@ void lls_sls_alc_session_free(lls_sls_alc_session_t** lls_session_ptr);
 #define _LLS_PRINTLN(...) printf(__VA_ARGS__);printf("%s%s","\r","\n")
 #define _LLS_PRINTF(...)  printf(__VA_ARGS__);
 
-#define __LLSU_TRACE(...)
+//#define __LLSU_TRACE(...)
 //#define __LLSU_TRACE(...) _LLS_PRINTLN(__VA_ARGS__);
 
 
