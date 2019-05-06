@@ -72,7 +72,7 @@ lls_sls_mmt_session_t* lls_slt_mmt_session_find(lls_sls_mmt_session_vector_t* ll
 
 		__LLSU_MMT_TRACE("lls_slt_mmt_session_find lls_service: service_id: %hu, src: %s (%u), dest: %s:%s (%u:%u), checking against %hu, dest: %u.%u.%u.%u:%u (%u:%u)",
 				lls_service->service_id,
-				lls_service->broadcast_svc_signaling.sls_source_ip_address,
+				(lls_service->broadcast_svc_signaling.sls_source_ip_address ? lls_service->broadcast_svc_signaling.sls_source_ip_address : ""),
 				sls_source_ip_address,
 				lls_service->broadcast_svc_signaling.sls_destination_ip_address,
 				lls_service->broadcast_svc_signaling.sls_destination_udp_port,
@@ -108,7 +108,7 @@ lls_sls_mmt_session_t* lls_slt_mmt_session_find_from_udp_packet(lls_slt_monitor_
 
 		if(lls_slt_mmt_session->sls_destination_ip_address == dst_ip_addr &&
 			lls_slt_mmt_session->sls_destination_udp_port == dst_port) {
-			__LLSU_MMT_TRACE("matching, returning with %p", lls_slt_mmt_session);
+			__LLSU_MMT_TRACE("matching, returning with %p, dst_ip: %u, dst_port: %u", lls_slt_mmt_session, dst_ip_addr, dst_port);
 			return lls_slt_mmt_session;
 		}
 	}
