@@ -332,7 +332,7 @@ lls_sls_monitor_buffer_isobmff_t* atsc3_isobmff_build_raw_mpu_from_single_sequen
 
     	__ISOBMFF_TOOLS_DEBUG("Searching for MPU Metadata with %u:%u and packet_id: %u", udp_flow->dst_ip_addr, udp_flow->dst_port, packet_id);
 
-    	mmtp_sub_flow = mmtp_sub_flow_vector_find_packet_id(mmtp_sub_flow_vector, packet_id);
+    	mmtp_sub_flow = mmtp_sub_flow_vector_find_packet_id(mmtp_sub_flow_vector, udp_flow, packet_id);
 
     	if(mmtp_sub_flow && mmtp_sub_flow->mpu_fragments->mpu_metadata_fragments_vector.size) {
     		int all_mpu_metadata_fragment_walk_count = mmtp_sub_flow->mpu_fragments->mpu_metadata_fragments_vector.size-1;
@@ -379,7 +379,7 @@ lls_sls_monitor_buffer_isobmff_t* atsc3_isobmff_build_raw_mpu_from_single_sequen
         udp_flow_packet_id_mpu_sequence_tuple_t* udp_flow_packet_id_mpu_sequence_tuple = udp_flow_latest_mpu_sequence_number_container->udp_flows[i];
 
         //remember, subflows are built in case of DU fragmentation - korean MMT samples have this edge case
-        mmtp_sub_flow = mmtp_sub_flow_vector_find_packet_id(mmtp_sub_flow_vector, packet_id);
+        mmtp_sub_flow = mmtp_sub_flow_vector_find_packet_id(mmtp_sub_flow_vector, udp_flow, packet_id);
 
         if(!mmtp_sub_flow) {
             __ISOBMFF_TOOLS_INFO("mmtp_sub_flow %u for packet_id: %u is null", i, packet_id);
@@ -422,8 +422,8 @@ lls_sls_monitor_buffer_isobmff_t* atsc3_isobmff_build_raw_mpu_from_single_sequen
 
     for(int i=0; i < udp_flow_latest_mpu_sequence_number_container->udp_flows_n; i++) {
         udp_flow_packet_id_mpu_sequence_tuple_t* udp_flow_packet_id_mpu_sequence_tuple = udp_flow_latest_mpu_sequence_number_container->udp_flows[i];
-
-        mmtp_sub_flow = mmtp_sub_flow_vector_find_packet_id(mmtp_sub_flow_vector, packet_id);
+        __ISOBMFF_TOOLS_WARN("***** udp_flow_packet_id_mpu_sequence_tuple: ip: %u:%d, packet_id: %d", udp_flow_packet_id_mpu_sequence_tuple->udp_flow.dst_ip_addr, udp_flow_packet_id_mpu_sequence_tuple->udp_flow.dst_port, packet_id);
+        mmtp_sub_flow = mmtp_sub_flow_vector_find_packet_id(mmtp_sub_flow_vector, udp_flow, packet_id);
 
         //hack for the previous sequence number which should be complete
         if(udp_flow_packet_id_mpu_sequence_tuple->packet_id == packet_id) {
@@ -443,6 +443,8 @@ lls_sls_monitor_buffer_isobmff_t* atsc3_isobmff_build_raw_mpu_from_single_sequen
 
                 //sanity check
                 if(data_unit->mmtp_mpu_type_packet_header.mmtp_packet_id == packet_id) {
+                    __ISOBMFF_TOOLS_DEBUG("data unit recon, ip: %u:%d, packet_id: %d", udp_flow_packet_id_mpu_sequence_tuple->udp_flow.dst_ip_addr, udp_flow_packet_id_mpu_sequence_tuple->udp_flow.dst_port, packet_id);
+
 					lls_sls_monitor_output_buffer_copy_and_recover_sample_fragment_block(lls_sls_monitor_buffer_isobmff, data_unit);
                 } else {
                     __ISOBMFF_TOOLS_DEBUG("data unit recon - unknown packet_id: %u when processing data_unit_payload_types: %u", data_unit->mmtp_mpu_type_packet_header.mmtp_packet_id, packet_id);
@@ -458,7 +460,7 @@ lls_sls_monitor_buffer_isobmff_t* atsc3_isobmff_build_raw_mpu_from_single_sequen
 
         udp_flow_packet_id_mpu_sequence_tuple_t* udp_flow_packet_id_mpu_sequence_tuple = udp_flow_latest_mpu_sequence_number_container->udp_flows[f];
 
-        mmtp_sub_flow = mmtp_sub_flow_vector_find_packet_id(mmtp_sub_flow_vector, packet_id);
+        mmtp_sub_flow = mmtp_sub_flow_vector_find_packet_id(mmtp_sub_flow_vector, udp_flow, packet_id);
         if(!mmtp_sub_flow) {
 			__ISOBMFF_TOOLS_SIGNALLING_DEBUG("signaling: no sub flow for packet_id: %u",  packet_id);
         	continue;

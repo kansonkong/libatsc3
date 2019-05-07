@@ -12,6 +12,7 @@
 #include "atsc3_vector.h"
 #include "atsc3_mmtp_ntp32_to_pts.h"
 #include "atsc3_mmt_signaling_message.h"
+#include "atsc3_listener_udp.h"
 
 //#include <vlc_common.h>
 //#include <vlc_vector.h>
@@ -57,7 +58,8 @@ extern "C" {
 #endif
 
 
-mmtp_payload_fragments_union_t* mmtp_packet_parse(mmtp_sub_flow_vector_t* mmtp_sub_flow_vector, uint8_t* udp_raw_buf, int udp_raw_buf_size);
+mmtp_payload_fragments_union_t* mmtp_packet_parse(mmtp_sub_flow_vector_t* mmtp_sub_flow_vector, udp_packet_t *udp_packet);
+
 void mmtp_packet_header_dump(mmtp_payload_fragments_union_t* mmtp_payload_fragments);
 
 /**
@@ -92,8 +94,8 @@ void mmtp_sub_flow_vector_init(mmtp_sub_flow_vector_t *mmtp_sub_flow_vector);
 //push this to mpu_fragments_vector->all_fragments_vector first,
 // 	then re-assign once fragment_type and fragmentation info are parsed
 //mpu_sequence_number *SHOULD* only be resolved from the interior all_fragments_vector for tuple lookup
-mmtp_sub_flow_t* mmtp_sub_flow_vector_find_packet_id(mmtp_sub_flow_vector_t *vec, uint16_t mmtp_packet_id);
-mmtp_sub_flow_t* mmtp_sub_flow_vector_get_or_set_packet_id(mmtp_sub_flow_vector_t *vec, uint16_t mmtp_packet_id);
+mmtp_sub_flow_t* mmtp_sub_flow_vector_find_packet_id(mmtp_sub_flow_vector_t *vec, udp_flow_t* udp_flow, uint16_t mmtp_packet_id);
+mmtp_sub_flow_t* mmtp_sub_flow_vector_get_or_set_packet_id(mmtp_sub_flow_vector_t *vec, udp_flow_t* udp_flow, uint16_t mmtp_packet_id);
 
 void mmtp_sub_flow_push_mmtp_packet(mmtp_sub_flow_t *mmtp_sub_flow, mmtp_payload_fragments_union_t *mmtp_packet);
 void mmtp_sub_flow_remove_mmtp_packet(mmtp_sub_flow_t *mmtp_sub_flow, mmtp_payload_fragments_union_t *mmtp_packet);
