@@ -87,7 +87,7 @@ void count_packet_as_filtered(udp_packet_t* udp_packet) {
 
 mmtp_payload_fragments_union_t* mmtp_parse_from_udp_packet(udp_packet_t *udp_packet) {
     
-    mmtp_payload_fragments_union_t* mmtp_payload = mmtp_packet_parse(mmtp_sub_flow_vector, udp_packet->data, udp_packet->data_length);
+    mmtp_payload_fragments_union_t* mmtp_payload = mmtp_packet_parse(mmtp_sub_flow_vector, udp_packet);
     
     if(!mmtp_payload) {
         global_stats->packet_counter_mmtp_packets_parsed_error++;
