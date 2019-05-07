@@ -27,6 +27,7 @@
 
 
 typedef struct lls_sls_monitor_buffer_isobmff {
+	uint16_t packet_id;
 	uint32_t track_id;
 
 	bool	 mpu_presentation_time_set;
