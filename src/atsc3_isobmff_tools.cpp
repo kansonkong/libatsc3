@@ -310,6 +310,9 @@ lls_sls_monitor_buffer_isobmff_t* atsc3_isobmff_build_raw_mpu_from_single_sequen
 	//only clear out trun sample, mdat and the current moof box
 	lls_sls_lls_sls_monitor_buffer_isobmff_reset_moof_and_mdat_position(lls_sls_monitor_buffer_isobmff);
 
+	lls_sls_monitor_buffer_isobmff->packet_id = packet_id;
+
+
 	mpu_data_unit_payload_fragments_t* data_unit_payload_types = NULL;
     mpu_data_unit_payload_fragments_timed_vector_t* data_unit_payload_fragments = NULL; //technically this is mpu_fragments->media_fragment_unit_vector
     mpu_data_unit_payload_fragments_t* mpu_metadata_fragments =    NULL;
@@ -352,6 +355,8 @@ lls_sls_monitor_buffer_isobmff_t* atsc3_isobmff_build_raw_mpu_from_single_sequen
 
 							if(mpu_metadata_fragment->mmtp_mpu_type_packet_header.mmtp_packet_id == packet_id &&
 									 mpu_metadata_fragment->mmtp_mpu_type_packet_header.mpu_sequence_number == mpu_sequence_number ) {
+						    	__ISOBMFF_TOOLS_DEBUG("Found MPU Metadata with %u:%u and packet_id: %u, mpu_sequence_number: %u, fragment_indicator: %u", udp_flow->dst_ip_addr, udp_flow->dst_port, packet_id, mpu_sequence_number, mpu_metadata_fragment->mmtp_mpu_type_packet_header.mpu_fragmentation_indicator);
+
 								found_mpu_metadata_fragment = lls_sls_monitor_output_buffer_init_block_flow_refragment(lls_sls_monitor_buffer_isobmff, mpu_metadata_fragment);
 							}
 						}
@@ -382,7 +387,7 @@ lls_sls_monitor_buffer_isobmff_t* atsc3_isobmff_build_raw_mpu_from_single_sequen
         mmtp_sub_flow = mmtp_sub_flow_vector_find_packet_id(mmtp_sub_flow_vector, udp_flow, packet_id);
 
         if(!mmtp_sub_flow) {
-            __ISOBMFF_TOOLS_INFO("mmtp_sub_flow %u for packet_id: %u is null", i, packet_id);
+            __ISOBMFF_TOOLS_INFO("Movie Fragment Metadat: mmtp_sub_flow %u for packet_id: %u is null", i, packet_id);
             //keep going, this is ok
             continue;
         }
@@ -390,7 +395,7 @@ lls_sls_monitor_buffer_isobmff_t* atsc3_isobmff_build_raw_mpu_from_single_sequen
         if(udp_flow_packet_id_mpu_sequence_tuple->packet_id == packet_id) {
             movie_metadata_fragments = mpu_data_unit_payload_fragments_find_mpu_sequence_number(&mmtp_sub_flow->mpu_fragments->movie_fragment_metadata_vector, mpu_sequence_number);
         } else {
-            __ISOBMFF_TOOLS_INFO("data unit recon - unknown packet_id: %u", udp_flow_packet_id_mpu_sequence_tuple->packet_id);
+            __ISOBMFF_TOOLS_INFO("Movie Fragment Metadata: unknown packet_id: %u", udp_flow_packet_id_mpu_sequence_tuple->packet_id);
             continue;
         }
 
@@ -402,9 +407,13 @@ lls_sls_monitor_buffer_isobmff_t* atsc3_isobmff_build_raw_mpu_from_single_sequen
                 //rebuild if we are fragmented
                 if(fragment_metadata->mmtp_packet_header.mmtp_packet_id == packet_id) {
                 	lls_sls_monitor_output_buffer_copy_or_append_moof_block_from_flow(lls_sls_monitor_buffer_isobmff, fragment_metadata->mmtp_mpu_type_packet_header.mpu_data_unit_payload);
-                    found_movie_fragment_metadata = true;
-                    __ISOBMFF_TOOLS_DEBUG("Movie Fragment Metadata: Searching mpu_seq_num: %u, Found for fragment_metadata packet_id: %d, mpu_sequence_number: %u, fragmentation_indicator: %u, fragmentation_counter: %u",
+                	//only set this to true if our fragment_metadata->mmtp_mpu_type_packet_header.mpu_fragmentation_indicator == 0 || 3
+                	if(fragment_metadata->mmtp_mpu_type_packet_header.mpu_fragmentation_indicator == 0 || fragment_metadata->mmtp_mpu_type_packet_header.mpu_fragmentation_indicator == 3) {
+                	 	found_movie_fragment_metadata = true;
+                	}
+                    __ISOBMFF_TOOLS_DEBUG("Movie Fragment Metadata: Searching mpu_seq_num: %u, Found for fragment_metadata: %d, packet_id: %d, mpu_sequence_number: %u, fragmentation_indicator: %u, fragmentation_counter: %u",
                                          mpu_sequence_number,
+										 found_movie_fragment_metadata,
                                          fragment_metadata->mmtp_packet_header.mmtp_packet_id,
                                          fragment_metadata->mmtp_mpu_type_packet_header.mpu_sequence_number,
                                          fragment_metadata->mmtp_mpu_type_packet_header.mpu_fragmentation_indicator,
@@ -422,14 +431,14 @@ lls_sls_monitor_buffer_isobmff_t* atsc3_isobmff_build_raw_mpu_from_single_sequen
 
     for(int i=0; i < udp_flow_latest_mpu_sequence_number_container->udp_flows_n; i++) {
         udp_flow_packet_id_mpu_sequence_tuple_t* udp_flow_packet_id_mpu_sequence_tuple = udp_flow_latest_mpu_sequence_number_container->udp_flows[i];
-        __ISOBMFF_TOOLS_WARN("***** udp_flow_packet_id_mpu_sequence_tuple: ip: %u:%d, packet_id: %d", udp_flow_packet_id_mpu_sequence_tuple->udp_flow.dst_ip_addr, udp_flow_packet_id_mpu_sequence_tuple->udp_flow.dst_port, packet_id);
+        __ISOBMFF_TOOLS_DEBUG("data unit recon: udp_flow_packet_id_mpu_sequence_tuple: ip: %u:%d, packet_id: %d", udp_flow_packet_id_mpu_sequence_tuple->udp_flow.dst_ip_addr, udp_flow_packet_id_mpu_sequence_tuple->udp_flow.dst_port, packet_id);
         mmtp_sub_flow = mmtp_sub_flow_vector_find_packet_id(mmtp_sub_flow_vector, udp_flow, packet_id);
 
         //hack for the previous sequence number which should be complete
         if(udp_flow_packet_id_mpu_sequence_tuple->packet_id == packet_id) {
             data_unit_payload_types = mpu_data_unit_payload_fragments_find_mpu_sequence_number(&mmtp_sub_flow->mpu_fragments->media_fragment_unit_vector, mpu_sequence_number);
         } else {
-            __ISOBMFF_TOOLS_DEBUG("data unit recon - unknown packet_id: %u when requesting packet_id: %u", udp_flow_packet_id_mpu_sequence_tuple->packet_id, packet_id);
+            __ISOBMFF_TOOLS_DEBUG("data unit recon: unknown packet_id: %u when requesting packet_id: %u", udp_flow_packet_id_mpu_sequence_tuple->packet_id, packet_id);
             data_unit_payload_types = NULL;
             continue;
         }
