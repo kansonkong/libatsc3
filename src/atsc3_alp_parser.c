@@ -86,7 +86,6 @@ void atsc3_alp_parse_stltp_baseband_packet(atsc3_stltp_baseband_packet_t* atsc3_
 	//a/330 table 5.3
 
 
-	/**
 	 * 5.10 additional header for signaling:
 
 signaling_information_hdr() {

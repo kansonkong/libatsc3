@@ -8,7 +8,7 @@
 #include "atsc3_mmt_mpu_utils.h"
 
 int _MMT_MPU_DEBUG_ENABLED = 1;
-
+int _MMT_MPU_TRACE_ENABLED = 0;
 
 udp_flow_latest_mpu_sequence_number_container_t* udp_flow_latest_mpu_sequence_number_container_t_init() {
 	udp_flow_latest_mpu_sequence_number_container_t* udp_flow_latest_mpu_sequence_number_container = calloc(1, sizeof(udp_flow_latest_mpu_sequence_number_container_t));
@@ -264,7 +264,7 @@ int atsc3_mmt_mpu_remove_packet_fragment_from_flows(mmtp_sub_flow_t* mmtp_sub_fl
     
     //free the sub-flow fragment
     atsc3_vector_index_of(&mmtp_sub_flow->mpu_fragments->all_mpu_fragments_vector, packet, &all_packets_index);
-    __MMT_MPU_DEBUG("atsc3_vector_index_of container: mmtp_sub_flow->mpu_fragments->all_mpu_fragments_vector: %p, payload : %p, packet_id: %u, packet_counter: %u, mpu_sequence_number: %u, at index: %ld",
+    __MMT_MPU_TRACE("atsc3_vector_index_of container: mmtp_sub_flow->mpu_fragments->all_mpu_fragments_vector: %p, payload : %p, packet_id: %u, packet_counter: %u, mpu_sequence_number: %u, at index: %ld",
                     &mmtp_sub_flow->mpu_fragments->all_mpu_fragments_vector,
                     packet,
                     packet->mmtp_mpu_type_packet_header.mmtp_packet_id,
@@ -273,7 +273,7 @@ int atsc3_mmt_mpu_remove_packet_fragment_from_flows(mmtp_sub_flow_t* mmtp_sub_fl
                     all_packets_index);
     
     if(all_packets_index >-1) {
-        __MMT_MPU_DEBUG("freeing payload from all_mpu_fragments_vector via vector_remove_noshrkink at index: %ld", all_packets_index);
+        __MMT_MPU_TRACE("freeing payload from all_mpu_fragments_vector via vector_remove_noshrkink at index: %ld", all_packets_index);
         atsc3_vector_remove_noshrink(&mmtp_sub_flow->mpu_fragments->all_mpu_fragments_vector, all_packets_index);
         evicted_count++;
     }
@@ -283,7 +283,7 @@ int atsc3_mmt_mpu_remove_packet_fragment_from_flows(mmtp_sub_flow_t* mmtp_sub_fl
         
         //free global fragment
         atsc3_vector_index_of(&mpu_fragments->all_mpu_fragments_vector, packet, &all_packets_index);
-        __MMT_MPU_DEBUG("atsc3_vector_index_of container: mpu_fragments->all_mpu_fragments_vector: %p, payload : %p, packet_id: %u, packet_counter: %u, mpu_sequence_number: %u, at index: %ld",
+        __MMT_MPU_TRACE("atsc3_vector_index_of container: mpu_fragments->all_mpu_fragments_vector: %p, payload : %p, packet_id: %u, packet_counter: %u, mpu_sequence_number: %u, at index: %ld",
                         &mpu_fragments->all_mpu_fragments_vector,
                         packet,
                         packet->mmtp_mpu_type_packet_header.mmtp_packet_id,
@@ -292,7 +292,7 @@ int atsc3_mmt_mpu_remove_packet_fragment_from_flows(mmtp_sub_flow_t* mmtp_sub_fl
                         all_packets_index);
         
         if(all_packets_index >-1) {
-            __MMT_MPU_DEBUG("packet flow all_mpu_Fragments_vector is: %p, size: %lu, mmtp_sub_flow->mpu_fragments is: %p, global mpu_fragments->all_mpu_fragments is: %p, and size is: %lu",
+            __MMT_MPU_TRACE("packet flow all_mpu_Fragments_vector is: %p, size: %lu, mmtp_sub_flow->mpu_fragments is: %p, global mpu_fragments->all_mpu_fragments is: %p, and size is: %lu",
                             &packet->mmtp_mpu_type_packet_header.mmtp_sub_flow->mpu_fragments->all_mpu_fragments_vector,
                             packet->mmtp_mpu_type_packet_header.mmtp_sub_flow->mpu_fragments->all_mpu_fragments_vector.size,
                             &mmtp_sub_flow->mpu_fragments->all_mpu_fragments_vector,
@@ -335,7 +335,7 @@ int atsc3_mmt_mpu_clear_data_unit_payload_fragments(uint16_t to_filter_packet_id
         if(packet && packet->mmtp_packet_header.mmtp_packet_id == to_filter_packet_id) {
             uint32_t my_evicted_count = atsc3_mmt_mpu_remove_packet_fragment_from_flows(mmtp_sub_flow, mpu_fragments, packet);
             evicted_count += my_evicted_count;
-            __MMT_MPU_DEBUG("atsc3_mmt_mpu_clear_data_unit_payload_fragments: index: %u, packet: %p, packet_id: %u, packet_counter: %u, resulted in %u evictions, total evictions: %u", i, packet, packet->mmtp_packet_header.mmtp_packet_id, packet->mmtp_packet_header.packet_counter, my_evicted_count, evicted_count);
+            __MMT_MPU_TRACE("atsc3_mmt_mpu_clear_data_unit_payload_fragments: index: %u, packet: %p, packet_id: %u, packet_counter: %u, resulted in %u evictions, total evictions: %u", i, packet, packet->mmtp_packet_header.mmtp_packet_id, packet->mmtp_packet_header.packet_counter, my_evicted_count, evicted_count);
             
             //clear out any block_t allocs
             mmtp_payload_fragments_union_free(&packet);
