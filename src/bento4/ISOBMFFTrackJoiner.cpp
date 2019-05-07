@@ -12,9 +12,14 @@
 
 #include "../atsc3_utils.h"
 
-int _ISOBMFFTRACKJOINER_INFO_ENABLED = 0;
-int _ISOBMFFTRACKJOINER_DEBUG_ENABLED = 0;
-int _ISOBMFFTRACKJOINER_TRACE_ENABLED = 0;
+int _ISOBMFFTRACKJOINER_INFO_ENABLED = 1;
+int _ISOBMFFTRACKJOINER_DEBUG_ENABLED = 1;
+int _ISOBMFFTRACKJOINER_TRACE_ENABLED = 1;
+
+extern FILE* __ISOBMFFTRACKJOINER_DEBUG_LOG_FILE = NULL;
+extern bool  __ISOBMFFTRACKJOINER_DEBUG_LOG_AVAILABLE = true;
+
+
 
 
 /*****************************************************************
@@ -99,6 +104,8 @@ int main(int argc, char** argv) {
 
 
 void dumpFullMetadataAndOffsets(list<AP4_Atom_And_Offset_t*> atomList) {
+
+	__ISOBMFF_JOINER_INFO("dumpFullMetadataAndOffsets: %u", _ISOBMFFTRACKJOINER_DEBUG_ENABLED);
 
 	if(_ISOBMFFTRACKJOINER_DEBUG_ENABLED) {
 		AP4_ByteStream* boxDumpConsoleOutput = NULL;
@@ -415,16 +422,21 @@ void ISOBMFF_track_joiner_monitor_output_buffer_parse_and_build_joined_mmt_rebui
                     //omitting frames
                     //to_walk_entries.SetItemCount(lls_sls_monitor_buffer_isobmff->trun_sample_entry_v.count);
 
-                    __ISOBMFF_JOINER_DEBUG("REBUILD MOOF: trun_sample_entry_v.count: %u, to_walk_entries: %u", lls_sls_monitor_buffer_isobmff->trun_sample_entry_v.count, to_walk_entries.ItemCount());
+                    __ISOBMFF_JOINER_DEBUG("REBUILD MOOF: packet_id: %u, trun_sample_entry_v.count: %u, to_walk_entries: %u", lls_sls_monitor_buffer_isobmff->packet_id, lls_sls_monitor_buffer_isobmff->trun_sample_entry_v.count, to_walk_entries.ItemCount());
 
                     for (int i = 0;	i < lls_sls_monitor_buffer_isobmff->trun_sample_entry_v.count; i++) {
                         trun_sample_entry_t* trun_sample_entry = lls_sls_monitor_buffer_isobmff->trun_sample_entry_v.data[i];
                         
                         uint32_t trun_id = trun_sample_entry->samplenumber - 1;
                         if(to_walk_entries_size > trun_id && trun_id >= 0) {
+
+                        	//assume we need to set duration and flags..since its not in the mmthsample hint
                         	if(to_walk_entries[trun_id].sample_size != trun_sample_entry->sample_length) {
-                        		  __ISOBMFF_JOINER_DEBUG("REBUILD MOOF: setting sample %u from size: %u to size: %u,", i, to_walk_entries[trun_id].sample_size, trun_sample_entry->sample_length);
+                        		  __ISOBMFF_JOINER_DEBUG("REBUILD MOOF: packet_id: %u, setting sample %u from size: %u to size: %u,", lls_sls_monitor_buffer_isobmff->packet_id, i, to_walk_entries[trun_id].sample_size, trun_sample_entry->sample_length);
                         		  to_walk_entries[trun_id].sample_size = trun_sample_entry->sample_length;
+                        		  to_walk_entries[trun_id].sample_duration = last_sample_duration;
+                        		  to_walk_entries[trun_id].sample_flags = last_sample_flags;
+                        		  to_walk_entries[trun_id].sample_composition_time_offset = 0;
                         	}
 
                         	//cleanup invalid offsets
@@ -437,17 +449,18 @@ void ISOBMFF_track_joiner_monitor_output_buffer_parse_and_build_joined_mmt_rebui
 
                         for (int j=last_trun_id; j < trun_id; j++) {
                         	if(to_walk_entries_size > j) {
-                                __ISOBMFF_JOINER_DEBUG("REBUILD MOOF: intra:   zeroing sample %u from size: %u to size: %u,", j, to_walk_entries[j].sample_size, 0);
+                                __ISOBMFF_JOINER_DEBUG("REBUILD MOOF: packet_id: %u, intra: zeroing sample %u from size: %u to size: %u,", lls_sls_monitor_buffer_isobmff->packet_id, j, to_walk_entries[j].sample_size, 0);
 
                         		to_walk_entries[j].sample_size = 0;
                         	} else {
                                 trun_sample_entry_t* trun_sample_entry_to_add = lls_sls_monitor_buffer_isobmff->trun_sample_entry_v.data[j];
 
-                                __ISOBMFF_JOINER_INFO("REBUILD MOOF: WARN - adding trun entry: %u, sample_size: %u", j, trun_sample_entry_to_add->sample_length);
+                                __ISOBMFF_JOINER_INFO("REBUILD MOOF: packet_id: %u, WARN - adding trun entry: %u, sample_size: %u", lls_sls_monitor_buffer_isobmff->packet_id, j, trun_sample_entry_to_add->sample_length);
                                 AP4_TrunAtom::Entry* item = new AP4_TrunAtom::Entry();
                                 item->sample_size = trun_sample_entry_to_add->sample_length;
                                 item->sample_duration = last_sample_duration;
                                 item->sample_flags = last_sample_flags;
+                                item->sample_composition_time_offset = 0;
                                 to_walk_entries.Append(*item);
 
                         	}

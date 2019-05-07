@@ -36,6 +36,9 @@ using namespace std;
 extern "C" {
 #endif
 
+extern FILE* __ISOBMFFTRACKJOINER_DEBUG_LOG_FILE;
+extern bool  __ISOBMFFTRACKJOINER_DEBUG_LOG_AVAILABLE;
+
 extern int _ISOBMFFTRACKJOINER_INFO_ENABLED;
 extern int _ISOBMFFTRACKJOINER_DEBUG_ENABLED;
 extern int _ISOBMFFTRACKJOINER_TRACE_ENABLED;
@@ -54,9 +57,19 @@ void parseAndBuildJoinedBoxesFromMemory(uint8_t* file1_payload, uint32_t file1_s
 void dumpFullMetadata(list<AP4_Atom*> atomList);
 void printBoxType(AP4_Atom* atom);
 
-#define __ISOBMFF_JOINER_PRINTLN(...) fprintf(stderr, __VA_ARGS__);fprintf(stderr, "\r%s","\n")
-#define __ISOBMFF_JOINER_INFO(...)  if(_ISOBMFFTRACKJOINER_INFO_ENABLED) {  fprintf(stderr, "%s:%d:INFO :",__FILE__,__LINE__);__ISOBMFF_JOINER_PRINTLN(__VA_ARGS__); }
-#define __ISOBMFF_JOINER_DEBUG(...) if(_ISOBMFFTRACKJOINER_DEBUG_ENABLED) { fprintf(stderr, "%s:%d:DEBUG :",__FILE__,__LINE__);__ISOBMFF_JOINER_PRINTLN(__VA_ARGS__); }
+#define __ISOBMFF_JOINER_PRINTLN(level, ...) if(__ISOBMFFTRACKJOINER_DEBUG_LOG_AVAILABLE && !__ISOBMFFTRACKJOINER_DEBUG_LOG_FILE) { \
+		__ISOBMFFTRACKJOINER_DEBUG_LOG_FILE = fopen("isobmff.debug", "w"); \
+			if(!__ISOBMFFTRACKJOINER_DEBUG_LOG_FILE) { \
+				__ISOBMFFTRACKJOINER_DEBUG_LOG_AVAILABLE = false; \
+				__ISOBMFFTRACKJOINER_DEBUG_LOG_FILE = stderr; \
+			} \
+	} \
+	fprintf(__ISOBMFFTRACKJOINER_DEBUG_LOG_FILE, "%s:%d:%s :",__FILE__,__LINE__, level); \
+	fprintf(__ISOBMFFTRACKJOINER_DEBUG_LOG_FILE, __VA_ARGS__);\
+	fprintf(__ISOBMFFTRACKJOINER_DEBUG_LOG_FILE, "\r%s","\n")
+
+#define __ISOBMFF_JOINER_INFO(...)  if(_ISOBMFFTRACKJOINER_INFO_ENABLED) {  __ISOBMFF_JOINER_PRINTLN("INFO :", __VA_ARGS__); }
+#define __ISOBMFF_JOINER_DEBUG(...) if(_ISOBMFFTRACKJOINER_DEBUG_ENABLED) { __ISOBMFF_JOINER_PRINTLN("DEBUG:", __VA_ARGS__); }
 
 #if defined (__cplusplus)
 }
