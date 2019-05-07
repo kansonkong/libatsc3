@@ -82,7 +82,7 @@ sample duration of the previous sample and the sample offsets of the following s
 
 
 int _LLS_SLS_MONITOR_OUTPUT_BUFFER_UTILS_DEBUG_ENABLED = 1;
-int _LLS_SLS_MONITOR_OUTPUT_BUFFER_UTILS_TRACE_ENABLED = 1;
+int _LLS_SLS_MONITOR_OUTPUT_BUFFER_UTILS_TRACE_ENABLED = 0;
 
 //
 //int lls_sls_monitor_output_buffer_recover_from_last_video_moof_box(lls_sls_monitor_output_buffer_t* lls_sls_monitor_output_buffer) {
@@ -755,7 +755,7 @@ int lls_sls_monitor_output_buffer_copy_and_recover_sample_fragment_block(lls_sls
             
 			trun_sample_entry->sample = block_Alloc(trun_sample_entry->sample_length);
 
-            __LLS_SLS_MONITOR_OUTPUT_BUFFER_UTILS_INFO("mmthsample box: building : mpu_seq_num: %u, mpu_sample_num: %3u, mpu_frag: %3u, sample seq_num: %3u, samplenum: %3u, sample_offset: %6u, sample_length: %6u, mfu_mmth_sample_header_size length: %u",
+            __LLS_SLS_MONITOR_OUTPUT_BUFFER_UTILS_TRACE("mmthsample box: building : mpu_seq_num: %u, mpu_sample_num: %3u, mpu_frag: %3u, sample seq_num: %3u, samplenum: %3u, sample_offset: %6u, sample_length: %6u, mfu_mmth_sample_header_size length: %u",
                             data_unit->mpu_data_unit_payload_fragments_timed.mpu_sequence_number,
                             data_unit->mpu_data_unit_payload_fragments_timed.mpu_sample_number,
                             data_unit->mpu_data_unit_payload_fragments_timed.mpu_fragmentation_counter,
@@ -874,7 +874,7 @@ int lls_sls_monitor_output_buffer_copy_and_recover_sample_fragment_block(lls_sls
     //offset by mfu_mmth_sample_header_size as mpu_offset includes this data payloads
 	block_Seek(trun_sample_entry->sample, mpu_offset);
     if(!trun_sample_entry_added) {
-        __LLS_SLS_MONITOR_OUTPUT_BUFFER_UTILS_INFO("mmthsample box: appending: mpu_seq_num: %u, mpu_sample_num: %3u, mpu_frag: %3u, sample seq_num: %3u, samplenum: %3u, movie_fragment_sequence_num: %3u, sample_offset: %6u, original mpu_offset: %6u, recalc mpu_offset: %6u, sample_len: %6u, du len: %6u",
+        __LLS_SLS_MONITOR_OUTPUT_BUFFER_UTILS_TRACE("mmthsample box: appending: mpu_seq_num: %u, mpu_sample_num: %3u, mpu_frag: %3u, sample seq_num: %3u, samplenum: %3u, movie_fragment_sequence_num: %3u, sample_offset: %6u, original mpu_offset: %6u, recalc mpu_offset: %6u, sample_len: %6u, du len: %6u",
                                 data_unit->mpu_data_unit_payload_fragments_timed.mpu_sequence_number,
                                 data_unit->mpu_data_unit_payload_fragments_timed.mpu_sample_number,
                                 data_unit->mpu_data_unit_payload_fragments_timed.mpu_fragmentation_counter,
@@ -951,7 +951,7 @@ int lls_sls_monitor_buffer_isobmff_create_mdat_from_trun_sample_entries(lls_sls_
 	for(int i=0; i < lls_sls_monitor_buffer_isobmff_to_create_mdat->trun_sample_entry_v.count; i++) {
 		trun_sample_entry_t* trun_sample_entry = lls_sls_monitor_buffer_isobmff_to_create_mdat->trun_sample_entry_v.data[i];
 		block_Seek(temp_mmt_mdat, trun_sample_entry->sample_offset);
-        __LLS_SLS_MONITOR_OUTPUT_BUFFER_UTILS_INFO("lls_sls_monitor_buffer_isobmff_create_mdat_from_trun_sample_entries: appending sample %u at offset: %u, using sample length: %u, block_t i_pos: %u, block_t p_size: %u",
+        __LLS_SLS_MONITOR_OUTPUT_BUFFER_UTILS_TRACE("lls_sls_monitor_buffer_isobmff_create_mdat_from_trun_sample_entries: appending sample %u at offset: %u, using sample length: %u, block_t i_pos: %u, block_t p_size: %u",
                                                    trun_sample_entry->samplenumber,
                                                    trun_sample_entry->sample_offset,
                                                    trun_sample_entry->sample_length,

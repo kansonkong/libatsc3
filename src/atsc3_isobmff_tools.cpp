@@ -443,7 +443,7 @@ lls_sls_monitor_buffer_isobmff_t* atsc3_isobmff_build_raw_mpu_from_single_sequen
 
                 //sanity check
                 if(data_unit->mmtp_mpu_type_packet_header.mmtp_packet_id == packet_id) {
-                    __ISOBMFF_TOOLS_DEBUG("data unit recon, ip: %u:%d, packet_id: %d", udp_flow_packet_id_mpu_sequence_tuple->udp_flow.dst_ip_addr, udp_flow_packet_id_mpu_sequence_tuple->udp_flow.dst_port, packet_id);
+                    __ISOBMFF_TOOLS_TRACE("data unit recon, ip: %u:%d, packet_id: %d", udp_flow_packet_id_mpu_sequence_tuple->udp_flow.dst_ip_addr, udp_flow_packet_id_mpu_sequence_tuple->udp_flow.dst_port, packet_id);
 
 					lls_sls_monitor_output_buffer_copy_and_recover_sample_fragment_block(lls_sls_monitor_buffer_isobmff, data_unit);
                 } else {

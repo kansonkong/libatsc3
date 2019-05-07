@@ -16,7 +16,6 @@
 #ifndef ATSC3_MMT_MPU_UTILS_H_
 #define ATSC3_MMT_MPU_UTILS_H_
 
-extern int _MMT_MPU_DEBUG_ENABLED;
 
 /**
  *
@@ -46,6 +45,8 @@ extern int _MMT_MPU_DEBUG_ENABLED;
 extern "C" {
 #endif
 
+extern int _MMT_MPU_DEBUG_ENABLED;
+extern int _MMT_MPU_TRACE_ENABLED;
 
 /**
  *  uint32_t		src_ip_addr;
@@ -99,5 +100,6 @@ int atsc3_mmt_mpu_remove_packet_fragment_from_flows(mmtp_sub_flow_t* mmtp_sub_fl
 #define __MMT_MPU_WARN(...)    printf("%s:%d:WARN: ",__FILE__,__LINE__);printf(__VA_ARGS__);printf("%s%s","\r","\n")
 #define __MMT_MPU_INFO(...)    printf("%s:%d: ",__FILE__,__LINE__);printf(__VA_ARGS__);printf("%s%s","\r","\n")
 #define __MMT_MPU_DEBUG(...)   if(_MMT_MPU_DEBUG_ENABLED) {printf("%s:%d:DEBUG: ",__FILE__,__LINE__);printf(__VA_ARGS__);printf("%s%s","\r","\n"); }
+#define __MMT_MPU_TRACE(...)   if(_MMT_MPU_TRACE_ENABLED) {printf("%s:%d:TRACE: ",__FILE__,__LINE__);printf(__VA_ARGS__);printf("%s%s","\r","\n"); }
 
 #endif /* ATSC3_MMT_MPU_UTILS_H_ */
