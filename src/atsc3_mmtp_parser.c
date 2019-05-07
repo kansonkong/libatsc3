@@ -203,10 +203,13 @@ void mmtp_packet_header_dump(mmtp_payload_fragments_union_t* mmtp_payload_fragme
 	_MMTP_INFO("------------------");
 }
 
-mmtp_payload_fragments_union_t* mmtp_packet_parse(mmtp_sub_flow_vector_t* mmtp_sub_flow_vector, uint8_t* udp_raw_buf, int udp_raw_buf_size) {
+mmtp_payload_fragments_union_t* mmtp_packet_parse(mmtp_sub_flow_vector_t* mmtp_sub_flow_vector, udp_packet_t *udp_packet) {
 
 	mmtp_sub_flow_t *mmtp_sub_flow = NULL;
 	uint8_t* raw_packet_ptr = NULL;
+
+	uint8_t* udp_raw_buf = udp_packet->data;
+	int udp_raw_buf_size = udp_packet->data_length;
 
 	_MMTP_DEBUG("mmtp_packet_parse: udp raw buf size: %d, raw_packet_ptr: %p, udp_raw_buf: %p", udp_raw_buf_size, raw_packet_ptr, udp_raw_buf);
 
@@ -220,14 +223,17 @@ mmtp_payload_fragments_union_t* mmtp_packet_parse(mmtp_sub_flow_vector_t* mmtp_s
 		goto failed;
 	}
 
-	mmtp_sub_flow = mmtp_sub_flow_vector_get_or_set_packet_id(mmtp_sub_flow_vector, mmtp_payload_fragments->mmtp_packet_header.mmtp_packet_id);
+	/**
+	 * TODO: fix me with ip:port:packet_id tuple
+	 */
+	mmtp_sub_flow = mmtp_sub_flow_vector_get_or_set_packet_id(mmtp_sub_flow_vector, &udp_packet->udp_flow, mmtp_payload_fragments->mmtp_packet_header.mmtp_packet_id);
 	mmtp_sub_flow_push_mmtp_packet(mmtp_sub_flow, mmtp_payload_fragments);
 
 	if(mmtp_payload_fragments->mmtp_packet_header.mmtp_payload_type == 0x0) {
 		_MMTP_DEBUG("before: mmt_parse_payload: udp raw buf size: %d, raw_packet_ptr: %p, udp_raw_buf: %p", udp_raw_buf_size, raw_packet_ptr, udp_raw_buf);
 		int new_size = udp_raw_buf_size - (raw_packet_ptr - udp_raw_buf);
 
-		mmt_mpu_parse_payload(mmtp_sub_flow_vector, mmtp_payload_fragments, raw_packet_ptr, new_size);
+		mmt_mpu_parse_payload(mmtp_sub_flow_vector, mmtp_payload_fragments, &udp_packet->udp_flow, raw_packet_ptr, new_size);
 	} else
 #if _ISO230081_1_MMTP_GFD_SUPPORT_
 	if(mmtp_payload_fragments->mmtp_packet_header.mmtp_payload_type == 0x1) {
@@ -286,11 +292,11 @@ void mmtp_payload_fragments_union_free(mmtp_payload_fragments_union_t** mmtp_pay
     }
 }
 
-mmtp_sub_flow_t* mmtp_sub_flow_vector_find_packet_id(mmtp_sub_flow_vector_t *vec, uint16_t mmtp_packet_id) {
+mmtp_sub_flow_t* mmtp_sub_flow_vector_find_packet_id(mmtp_sub_flow_vector_t *vec, udp_flow_t* udp_flow, uint16_t mmtp_packet_id) {
 	for (size_t i = 0; i < vec->size; ++i) {
 		mmtp_sub_flow_t *mmtp_sub_flow = vec->data[i];
 
-		if (mmtp_sub_flow->mmtp_packet_id == mmtp_packet_id) {
+		if (mmtp_sub_flow->dst_ip == udp_flow->dst_ip_addr && mmtp_sub_flow->dst_port == udp_flow->dst_port && mmtp_sub_flow->mmtp_packet_id == mmtp_packet_id) {
 			return mmtp_sub_flow;
 		}
 	}
@@ -298,13 +304,16 @@ mmtp_sub_flow_t* mmtp_sub_flow_vector_find_packet_id(mmtp_sub_flow_vector_t *vec
 }
 
 
-mmtp_sub_flow_t* mmtp_sub_flow_vector_get_or_set_packet_id(mmtp_sub_flow_vector_t *vec, uint16_t mmtp_packet_id) {
+mmtp_sub_flow_t* mmtp_sub_flow_vector_get_or_set_packet_id(mmtp_sub_flow_vector_t *vec, udp_flow_t* udp_flow, uint16_t mmtp_packet_id) {
 
-	mmtp_sub_flow_t *entry = mmtp_sub_flow_vector_find_packet_id(vec, mmtp_packet_id);
+	mmtp_sub_flow_t *entry = mmtp_sub_flow_vector_find_packet_id(vec, udp_flow, mmtp_packet_id);
 
 	if(!entry) {
 		entry = calloc(1, sizeof(mmtp_sub_flow_t));
+		entry->dst_ip = udp_flow->dst_ip_addr;
+		entry->dst_port = udp_flow->dst_port;
 		entry->mmtp_packet_id = mmtp_packet_id;
+
 		mmtp_sub_flow_mpu_fragments_allocate(entry);
 		atsc3_vector_init(&entry->mmtp_generic_object_fragments_vector);
 		atsc3_vector_init(&entry->mmtp_signalling_message_fragements_vector);

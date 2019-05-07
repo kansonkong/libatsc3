@@ -16,7 +16,7 @@
 int _MPU_DEBUG_ENABLED = 1;
 int _MPU_TRACE_ENABLED = 0;
 
-uint8_t* mmt_mpu_parse_payload(mmtp_sub_flow_vector_t* mmtp_sub_flow_vector, mmtp_payload_fragments_union_t* mmtp_packet_header, uint8_t* udp_raw_buf, int udp_raw_buf_size) {
+uint8_t* mmt_mpu_parse_payload(mmtp_sub_flow_vector_t* mmtp_sub_flow_vector, mmtp_payload_fragments_union_t* mmtp_packet_header, udp_flow_t* udp_flow, uint8_t* udp_raw_buf, int udp_raw_buf_size) {
 
 	mmtp_sub_flow_t *mmtp_sub_flow = NULL;
 	block_t *mmtp_raw_packet_block;
@@ -35,7 +35,7 @@ uint8_t* mmt_mpu_parse_payload(mmtp_sub_flow_vector_t* mmtp_sub_flow_vector, mmt
 			buf,
 			raw_buf);
 
-	mmtp_sub_flow = mmtp_sub_flow_vector_get_or_set_packet_id(mmtp_sub_flow_vector, mmtp_packet_header->mmtp_packet_header.mmtp_packet_id);
+	mmtp_sub_flow = mmtp_sub_flow_vector_get_or_set_packet_id(mmtp_sub_flow_vector, udp_flow, mmtp_packet_header->mmtp_packet_header.mmtp_packet_id);
 	_MPU_DEBUG("mmtp_demuxer - mmtp_sub_flow is: %p, mmtp_sub_flow->mpu_fragments: %p", mmtp_sub_flow, mmtp_sub_flow->mpu_fragments);
 
 	//push this to
@@ -498,15 +498,15 @@ void mpu_fragments_assign_to_payload_vector(mmtp_sub_flow_t* mmtp_sub_flow, mmtp
 
 	}
 }
-
-mpu_fragments_t* mpu_fragments_find_packet_id(mmtp_sub_flow_vector_t *vec, uint16_t mmtp_packet_id) {
-	mmtp_sub_flow_t *entry = mmtp_sub_flow_vector_find_packet_id(vec, mmtp_packet_id);
-	if(entry) {
-		return entry->mpu_fragments;
-	}
-
-	return NULL;
-}
+//deprecated 2019-05-06
+//mpu_fragments_t* mpu_fragments_find_packet_id(mmtp_sub_flow_vector_t *vec, uint16_t mmtp_packet_id) {
+//	mmtp_sub_flow_t *entry = mmtp_sub_flow_vector_find_packet_id(vec, mmtp_packet_id);
+//	if(entry) {
+//		return entry->mpu_fragments;
+//	}
+//
+//	return NULL;
+//}
 
 //internal use only
 void mmt_mpu_free_payload(mmtp_payload_fragments_union_t* mmtp_payload_fragments) {
