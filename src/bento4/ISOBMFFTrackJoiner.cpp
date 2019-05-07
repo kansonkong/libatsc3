@@ -12,9 +12,9 @@
 
 #include "../atsc3_utils.h"
 
-int _ISOBMFFTRACKJOINER_INFO_ENABLED = 0;
-int _ISOBMFFTRACKJOINER_DEBUG_ENABLED = 0;
-int _ISOBMFFTRACKJOINER_TRACE_ENABLED = 0;
+int _ISOBMFFTRACKJOINER_INFO_ENABLED = 1;
+int _ISOBMFFTRACKJOINER_DEBUG_ENABLED = 1;
+int _ISOBMFFTRACKJOINER_TRACE_ENABLED = 1;
 
 
 /*****************************************************************
@@ -99,6 +99,8 @@ int main(int argc, char** argv) {
 
 
 void dumpFullMetadataAndOffsets(list<AP4_Atom_And_Offset_t*> atomList) {
+
+	__ISOBMFF_JOINER_INFO("dumpFullMetadataAndOffsets: %u", _ISOBMFFTRACKJOINER_DEBUG_ENABLED);
 
 	if(_ISOBMFFTRACKJOINER_DEBUG_ENABLED) {
 		AP4_ByteStream* boxDumpConsoleOutput = NULL;
@@ -422,9 +424,14 @@ void ISOBMFF_track_joiner_monitor_output_buffer_parse_and_build_joined_mmt_rebui
                         
                         uint32_t trun_id = trun_sample_entry->samplenumber - 1;
                         if(to_walk_entries_size > trun_id && trun_id >= 0) {
+
+                        	//assume we need to set duration and flags..since its not in the mmthsample hint
                         	if(to_walk_entries[trun_id].sample_size != trun_sample_entry->sample_length) {
                         		  __ISOBMFF_JOINER_DEBUG("REBUILD MOOF: setting sample %u from size: %u to size: %u,", i, to_walk_entries[trun_id].sample_size, trun_sample_entry->sample_length);
                         		  to_walk_entries[trun_id].sample_size = trun_sample_entry->sample_length;
+                        		  to_walk_entries[trun_id].sample_duration = last_sample_duration;
+                        		  to_walk_entries[trun_id].sample_flags = last_sample_flags;
+                        		  to_walk_entries[trun_id].sample_composition_time_offset = 0;
                         	}
 
                         	//cleanup invalid offsets
@@ -448,6 +455,7 @@ void ISOBMFF_track_joiner_monitor_output_buffer_parse_and_build_joined_mmt_rebui
                                 item->sample_size = trun_sample_entry_to_add->sample_length;
                                 item->sample_duration = last_sample_duration;
                                 item->sample_flags = last_sample_flags;
+                                item->sample_composition_time_offset = 0;
                                 to_walk_entries.Append(*item);
 
                         	}

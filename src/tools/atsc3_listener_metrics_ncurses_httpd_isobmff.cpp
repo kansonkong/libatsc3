@@ -527,7 +527,7 @@ int main(int argc,char **argv) {
     _FDT_PARSER_DEBUG_ENABLED=1;
 
     //if this is disabled, be sure to run this driver with stderr redirect
-    _ISOBMFFTRACKJOINER_DEBUG_ENABLED = 0;
+    _ISOBMFFTRACKJOINER_DEBUG_ENABLED = 1;
 
     char *dev;
 
