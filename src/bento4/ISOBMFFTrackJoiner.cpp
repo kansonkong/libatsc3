@@ -16,6 +16,11 @@ int _ISOBMFFTRACKJOINER_INFO_ENABLED = 1;
 int _ISOBMFFTRACKJOINER_DEBUG_ENABLED = 1;
 int _ISOBMFFTRACKJOINER_TRACE_ENABLED = 1;
 
+extern FILE* __ISOBMFFTRACKJOINER_DEBUG_LOG_FILE = NULL;
+extern bool  __ISOBMFFTRACKJOINER_DEBUG_LOG_AVAILABLE = true;
+
+
+
 
 /*****************************************************************
 |
