@@ -278,6 +278,8 @@ typedef struct {
 
 
 typedef struct mmtp_sub_flow {
+	uint32_t dst_ip;
+	uint16_t dst_port;
 	uint16_t mmtp_packet_id;
 
 	//mmtp payload type collections for reconstruction/recovery of payload types

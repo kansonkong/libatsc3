@@ -30,10 +30,8 @@ mmtp_payload_fragments_union_t* mmtp_process_from_payload(mmtp_sub_flow_vector_t
 		mmtp_payload_fragments_union_t** mmtp_payload_p,
 		lls_sls_mmt_session_t* matching_lls_slt_mmt_session);
 
-void atsc3_mmt_reconstitution_free_from_udp_flow(mmtp_sub_flow_vector_t* mmtp_sub_flow_vector, udp_flow_packet_id_mpu_sequence_tuple_t* last_udp_flow_packet_id_mpu_sequence_tuple);
+void atsc3_mmt_reconstitution_free_from_udp_flow(mmtp_sub_flow_vector_t* mmtp_sub_flow_vector, udp_flow_t* udp_flow, udp_flow_packet_id_mpu_sequence_tuple_t* last_udp_flow_packet_id_mpu_sequence_tuple);
 
-
-    
     
 extern int _MMT_RECON_FROM_SAMPLE_DEBUG_ENABLED;
 extern int _MMT_RECON_FROM_SAMPLE_TRACE_ENABLED;
