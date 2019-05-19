@@ -47,6 +47,7 @@ lls_slt_monitor_t* lls_slt_monitor;
 
 void process_packet(u_char *user, const struct pcap_pkthdr *pkthdr, const u_char *packet) {
 	udp_packet_t* udp_packet = process_packet_from_pcap(user, pkthdr, packet);
+
 	if(!udp_packet) {
 		return;
 	}
@@ -69,7 +70,10 @@ void process_packet(u_char *user, const struct pcap_pkthdr *pkthdr, const u_char
 
 int main(int argc,char **argv) {
 
+
 	_LLS_INFO_ENABLED = 1;
+	_LLS_DEBUG_ENABLED = 1;
+	_LLS_TRACE_ENABLED = 1;
 
     char *dev;
     char errbuf[PCAP_ERRBUF_SIZE];
@@ -110,6 +114,8 @@ int main(int argc,char **argv) {
         exit(1);
 
     }
+
+	println("Starting with dev: %s", dev);
 
     pcap_loop(descr,-1,process_packet,NULL);
 
