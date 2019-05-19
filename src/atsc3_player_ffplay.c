@@ -6,7 +6,7 @@
  */
 #include "atsc3_player_ffplay.h"
 
-int _PLAYER_FFPLAY_DEBUG_ENABLED = 1;
+int _PLAYER_FFPLAY_DEBUG_ENABLED = 0;
 int _PLAYER_FFPLAY_TRACE_ENABLED = 0;
 
 void pipe_buffer_notify_semaphore_post(pipe_ffplay_buffer_t* pipe_ffplay_buffer) {
