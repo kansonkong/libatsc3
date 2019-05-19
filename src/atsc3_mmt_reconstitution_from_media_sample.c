@@ -80,8 +80,8 @@ mmtp_payload_fragments_union_t* mmtp_process_from_payload(mmtp_sub_flow_vector_t
             ) {
 
             	udp_flow_packet_id_mpu_sequence_tuple_t* last_flow_reference = udp_flow_latest_mpu_sequence_number_add_or_replace(udp_flow_latest_mpu_sequence_number_container, udp_packet, mmtp_payload);
-        		__MMT_RECON_FROM_SAMPLE_TRACE("mmtp_packet_parse: processing mmt flow: %d.%d.%d.%d:(%u) packet_id: %d",
-        				__toipandportnonstruct(udp_packet->udp_flow.dst_ip_addr, udp_packet->udp_flow.dst_port), mmtp_payload->mmtp_mpu_type_packet_header.mmtp_packet_id);
+//        		__MMT_RECON_FROM_SAMPLE_TRACE("mmtp_packet_parse: processing mmt flow: %d.%d.%d.%d:(%u) packet_id: %d",
+//        				__toipandportnonstruct(udp_packet->udp_flow.dst_ip_addr, udp_packet->udp_flow.dst_port), mmtp_payload->mmtp_mpu_type_packet_header.mmtp_packet_id);
 
             	//see if we are an audio packet that rolled over
 				if(lls_slt_monitor->lls_sls_mmt_monitor->audio_packet_id == mmtp_payload->mmtp_mpu_type_packet_header.mmtp_packet_id) {

@@ -508,7 +508,7 @@ int main(int argc,char **argv) {
 	_MMT_SIGNALLING_MESSAGE_TRACE_ENABLED = 0;
 
 	_MMT_RECON_FROM_SAMPLE_DEBUG_ENABLED = 1;
-	_MMT_RECON_FROM_SAMPLE_TRACE_ENABLED = 0;
+	_MMT_RECON_FROM_SAMPLE_TRACE_ENABLED = 1;
 
 	_LLS_DEBUG_ENABLED = 0;
     _ISOBMFF_TOOLS_DEBUG_ENABLED = 1;
@@ -520,7 +520,7 @@ int main(int argc,char **argv) {
    	_XML_TRACE_ENABLED = 0;
 
     _ALC_UTILS_IOTRACE_ENABLED = 0;
-    _ALC_UTILS_DEBUG_ENABLED = 1;
+    _ALC_UTILS_DEBUG_ENABLED = 0;
     _ALC_UTILS_TRACE_ENABLED = 0;
     _ALC_RX_DEBUG_ENABLED = 0;
     _LLS_SLS_MONITOR_OUTPUT_BUFFER_UTILS_DEBUG_ENABLED = 1;
@@ -528,6 +528,11 @@ int main(int argc,char **argv) {
 
     //if this is disabled, be sure to run this driver with stderr redirect
     _ISOBMFFTRACKJOINER_DEBUG_ENABLED = 1;
+
+    //recon debugging
+    _LLS_SLS_MONITOR_OUTPUT_BUFFER_UTILS_TRACE_ENABLED = 1;
+    _LLS_SLS_MONITOR_OUTPUT_BUFFER_UTILS_DEBUG_ENABLED = 1;
+
 
     char *dev;
 
