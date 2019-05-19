@@ -13,7 +13,7 @@
 #include "atsc3_mmtp_parser.h"
 #include "atsc3_mmt_mpu_parser.h"
 
-int _MPU_DEBUG_ENABLED = 1;
+int _MPU_DEBUG_ENABLED = 0;
 int _MPU_TRACE_ENABLED = 0;
 
 
