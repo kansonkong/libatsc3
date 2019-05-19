@@ -502,6 +502,7 @@ void* pcap_loop_run_thread(void* dev_pointer) {
  */
 int main(int argc,char **argv) {
 
+#ifdef __LOTS_OF_DEBUGGING__
 	_MPU_DEBUG_ENABLED = 0;
 	_MMTP_DEBUG_ENABLED = 0;
 	_MMT_SIGNALLING_MESSAGE_DEBUG_ENABLED = 0;
@@ -533,6 +534,7 @@ int main(int argc,char **argv) {
     _LLS_SLS_MONITOR_OUTPUT_BUFFER_UTILS_TRACE_ENABLED = 1;
     _LLS_SLS_MONITOR_OUTPUT_BUFFER_UTILS_DEBUG_ENABLED = 1;
 
+#endif
 
     char *dev;
 
