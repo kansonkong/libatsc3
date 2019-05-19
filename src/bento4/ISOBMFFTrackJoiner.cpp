@@ -335,6 +335,13 @@ void ISOBMFF_track_joiner_monitor_output_buffer_parse_and_build_joined_mmt_rebui
 							tfdt_atom_mdhd_timescale->SetBaseMediaDecodeTime((tfdt_atom_mdhd_presentation_time * mdhdAtom->GetTimeScale())/1000000);
 						}
 					}
+
+					//hack - clear out duration...
+					AP4_TkhdAtom* tkhdAtom = AP4_DYNAMIC_CAST(AP4_TkhdAtom, tmpTrakAtom->FindChild("tkhd", false, false));
+					if(tkhdAtom) {
+						tkhdAtom->SetDuration(0);
+					}
+
                 } else {
                     //detatch
                     tmpTrakAtom->Detach();
@@ -480,6 +487,8 @@ void ISOBMFF_track_joiner_monitor_output_buffer_parse_and_build_joined_mmt_rebui
 		}
         
         if(top_level_atom->GetType() == AP4_ATOM_TYPE_MDAT) {
+        	//always add in the atom header size
+        	final_mdat_size += AP4_ATOM_HEADER_SIZE;
             __ISOBMFF_JOINER_DEBUG("REBUILD MDAT: setting size to: %u", final_mdat_size);
             top_level_atom->SetSize32(final_mdat_size);
             mdat_atom_and_offset_parsed = *it;
