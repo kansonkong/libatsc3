@@ -955,32 +955,25 @@ int lls_sls_monitor_buffer_isobmff_create_mdat_from_trun_sample_entries(lls_sls_
 	}
 
 	uint32_t sample_length_cumulative = 0;
-	uint32_t sample_offset_plus_last_length = 0;
+	uint32_t max_sample_offset_plus_last_length = 0;
     
 	for(int i=0; i < lls_sls_monitor_buffer_isobmff_to_create_mdat->trun_sample_entry_v.count; i++) {
 		trun_sample_entry_t* trun_sample_entry = lls_sls_monitor_buffer_isobmff_to_create_mdat->trun_sample_entry_v.data[i];
 		sample_length_cumulative += trun_sample_entry->sample_length;
         
 		uint32_t current_sample_offset_end = trun_sample_entry->sample_offset + trun_sample_entry->sample_length;
-        //strip mdat box header from sample_offset as it's added below..
-        if(current_sample_offset_end > 8) {
-            current_sample_offset_end -= 8;
-        }
-		if(current_sample_offset_end > sample_offset_plus_last_length) {
-			sample_offset_plus_last_length = current_sample_offset_end;
+
+		if(current_sample_offset_end > max_sample_offset_plus_last_length) {
+			max_sample_offset_plus_last_length = current_sample_offset_end;
 		}
 	}
-    
-    
 
-
-	uint32_t mdat_size = sample_offset_plus_last_length + 8;
+	uint32_t mdat_size = max_sample_offset_plus_last_length;
     
-    
-    __LLS_SLS_MONITOR_OUTPUT_BUFFER_UTILS_INFO("lls_sls_monitor_buffer_isobmff_create_mdat_from_trun_sample_entries: building mdat size actual: %u, sample_length_cumulative: %u, sample_offset_plus_last_length: %u",
+    __LLS_SLS_MONITOR_OUTPUT_BUFFER_UTILS_INFO("lls_sls_monitor_buffer_isobmff_create_mdat_from_trun_sample_entries: building mdat (+8) size: %u, sample_length_cumulative: %u, sample_offset_plus_last_length: %u",
                                                mdat_size,
                                                sample_length_cumulative,
-                                               sample_offset_plus_last_length);
+											   max_sample_offset_plus_last_length);
     
 	block_t* temp_mmt_mdat = block_Alloc(mdat_size);
 
