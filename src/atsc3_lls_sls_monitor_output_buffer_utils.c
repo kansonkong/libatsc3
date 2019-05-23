@@ -81,7 +81,7 @@ sample duration of the previous sample and the sample offsets of the following s
 #include "atsc3_lls_sls_monitor_output_buffer_utils.h"
 
 
-int _LLS_SLS_MONITOR_OUTPUT_BUFFER_UTILS_DEBUG_ENABLED = 1;
+int _LLS_SLS_MONITOR_OUTPUT_BUFFER_UTILS_DEBUG_ENABLED = 0;
 int _LLS_SLS_MONITOR_OUTPUT_BUFFER_UTILS_TRACE_ENABLED = 0;
 
 //
