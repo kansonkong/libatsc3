@@ -15,7 +15,7 @@
 #include "atsc3_mmt_mpu_parser.h"
 #include "atsc3_mmt_signaling_message.h"
 
-int _MMTP_DEBUG_ENABLED = 1;
+int _MMTP_DEBUG_ENABLED = 0;
 int _MMTP_TRACE_ENABLED = 0;
 
 /*

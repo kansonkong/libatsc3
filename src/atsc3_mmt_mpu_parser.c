@@ -13,7 +13,7 @@
 #include "atsc3_mmtp_parser.h"
 #include "atsc3_mmt_mpu_parser.h"
 
-int _MPU_DEBUG_ENABLED = 1;
+int _MPU_DEBUG_ENABLED = 0;
 int _MPU_TRACE_ENABLED = 0;
 
 
@@ -280,25 +280,88 @@ uint8_t* mmt_mpu_parse_payload(mmtp_sub_flow_vector_t* mmtp_sub_flow_vector, mmt
 						//read multilayerinfo
 						uint8_t multilayerinfo_box_length_block[4];
                         uint32_t multilayerinfo_box_length = 0;
-						uint8_t multilayerinfo_box_name[4];
+						uint32_t multilayerinfo_box_name;
 						uint8_t multilayer_flag;
+
+						uint32_t box_parsed_position = 0;
 
 						buf = (uint8_t*)extract(buf, multilayerinfo_box_length_block, 4);
                         multilayerinfo_box_length = ntohl(*(uint32_t*)(&multilayerinfo_box_length_block));
-                                //TODO - fix me to read muli box length properly...
-						buf = (uint8_t*)extract(buf, multilayerinfo_box_name, 4);
+						box_parsed_position+=4;
+
+
+                        buf = (uint8_t*)extract(buf, (uint8_t*)&multilayerinfo_box_name, 4);
+                        multilayerinfo_box_name = ntohl(*(uint32_t*)(&multilayerinfo_box_name));
+
+                        box_parsed_position+=4;
+
+                        //make sure multilayerinfo_box_name == muli
+                        assert(multilayerinfo_box_name == _BOX_MFU_MULI);
 
 						buf = (uint8_t*)extract(buf, &multilayer_flag, 1);
+						box_parsed_position++;
 
 						int is_multilayer = (multilayer_flag >> 7) & 0x01;
 						//if MSB is 1, then read multilevel struct, otherwise just pull layer info...
 						if(is_multilayer) {
 							uint8_t multilayer_data_block[4];
 							buf = (uint8_t*)extract(buf, multilayer_data_block, 4);
+							box_parsed_position+=4;
 
 						} else {
 							uint8_t multilayer_layer_id_temporal_id[2];
 							buf = (uint8_t*)extract(buf, multilayer_layer_id_temporal_id, 2);
+							box_parsed_position+=2;
+						}
+
+						//we need at least 8 bytes for a proper isobmff box child
+						while(box_parsed_position < multilayerinfo_box_length - 8) {
+
+							//try and parse out known 'private' isobmff boxes prepended to this sample
+							uint8_t private_box_length_block[4];
+							uint32_t private_box_length;
+
+							uint32_t private_box_name;
+
+							buf = (uint8_t*)extract(buf, private_box_length_block, 4);
+							box_parsed_position+=4;
+
+							private_box_length = ntohl(*(uint32_t*)(&private_box_length_block));
+	                        buf = (uint8_t*)extract(buf, (uint8_t*)&private_box_name, 4);
+	                        private_box_name = ntohl(*(uint32_t*)(&private_box_name));
+
+	                        box_parsed_position+=4;
+
+	                        _MPU_INFO("mpu mode (0x02), packet_seq_num: %u, packet_id: %u, timed mfu has child box size: %u, name: %c%c%c%c", mmtp_packet_header->mmtp_mpu_type_packet_header.mmtp_packet_id, mmtp_packet_header->mmtp_mpu_type_packet_header.packet_sequence_number, private_box_length, ((private_box_name >> 24) & 0xFF), ((private_box_name >> 16) & 0xFF), ((private_box_name >> 8) & 0xFF), (private_box_name & 0xFF));
+
+	                        if(private_box_name == _BOX_MFU_MJSD) {
+	                        	//parse out timing information and child boxes
+	                        	uint8_t sample_presentation_time_block[8];
+	                        	uint64_t sample_presentation_time;
+
+	                        	uint8_t sample_decode_time_block[8];
+	                        	uint64_t sample_decode_time;
+
+								buf = (uint8_t*)extract(buf, sample_presentation_time_block, 8);
+								sample_presentation_time = ntohll(*(uint64_t*)(&sample_presentation_time_block));
+
+								box_parsed_position+=8;
+
+								buf = (uint8_t*)extract(buf, sample_decode_time_block, 8);
+								sample_decode_time = ntohll(*(uint64_t*)(&sample_decode_time_block));
+
+								box_parsed_position+=8;
+
+		                        _MPU_INFO("mpu mode (0x02), MJSD, remaining child box size is: %u",  (multilayerinfo_box_length - box_parsed_position));
+	                        }
+						}
+
+                        _MPU_INFO("mpu mode (0x02), timed mfu has remaining payload: %u", (multilayerinfo_box_length - box_parsed_position));
+
+						//for any remaining muli box size, ignore as possibly corrupt
+						for(int i = box_parsed_position; i < multilayerinfo_box_length; i++) {
+							uint8_t muli_box_incomplete_byte;
+							buf = (uint8_t*)extract(buf, &muli_box_incomplete_byte, 1);
 						}
 
                         mmtp_packet_header->mpu_data_unit_payload_fragments_timed.mfu_mmth_sample_header_size = 4 + 19 + multilayerinfo_box_length;
