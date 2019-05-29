@@ -149,7 +149,7 @@ lls_table_t* lls_table_create_or_update_from_lls_slt_monitor_with_metrics(lls_sl
 		(*parsed_update)++;
 		return lls_slt_monitor->lls_table_slt;
 	} else {
-		_LLS_ERROR("lls_slt_monitor is null, can't propigate LLS update!");
+		_LLS_ERROR("lls_slt_monitor is null, can't propagate LLS update!");
 	}
 	return NULL;
 
@@ -239,19 +239,14 @@ void lls_table_free(lls_table_t** lls_table_p) {
 			free(lls_table->slt_table.bsid);
 
 	} else if(lls_table->lls_table_id == RRT) {
-	//	_LLS_ERROR("lls_create_table_type_instance: LLS table RRT not supported yet");
+		_LLS_WARN("lls_create_table_type_instance: LLS table RRT not supported yet");
 	} else if(lls_table->lls_table_id == SystemTime) {
 		freesafe(lls_table->system_time_table.utc_local_offset);
-
-	//	ret = build_SystemTime_table(lls_table, xml_root);
 	} else if(lls_table->lls_table_id == AEAT) {
-	//	_LLS_ERROR("lls_create_table_type_instance: LLS table AEAT not supported yet");
+		_LLS_WARN("lls_create_table_type_instance: LLS table AEAT not supported yet");
 	} else if(lls_table->lls_table_id == OnscreenMessageNotification) {
-	//	_LLS_ERROR("lls_create_table_type_instance: LLS table OnscreenMessageNotification not supported yet");
+		_LLS_WARN("lls_create_table_type_instance: LLS table OnscreenMessageNotification not supported yet");
 	}
-
-
-
 
     if(lls_table->raw_xml.xml_payload_compressed) {
 		free(lls_table->raw_xml.xml_payload_compressed);
@@ -266,8 +261,8 @@ void lls_table_free(lls_table_t** lls_table_p) {
 		lls_table->xml_document = NULL;
 	}
 
-
 	free(lls_table);
+	lls_table_p = NULL;
 }
 
 /**
@@ -438,21 +433,21 @@ char* lls_get_sls_protocol_value(uint protocol) {
 	}
 }
 
-
-
 int build_rrt_table(lls_table_t* lls_table, xml_node_t* xml_root) {
     int ret = 0;
-    
+    _LLS_WARN("build_rrt_table: NOT IMPLEMENTED");
     return ret;
 }
+
 int build_aeat_table(lls_table_t* lls_table, xml_node_t* xml_root) {
     int ret = 0;
-    
+    _LLS_WARN("build_aeat_table: NOT IMPLEMENTED");
     return ret;
 }
+
 int build_onscreen_message_notification_table(lls_table_t* lls_table, xml_node_t* xml_root) {
     int ret = 0;
-    
+    _LLS_WARN("build_onscreen_message_notification_table: NOT IMPLEMENTED");
     return ret;
 }
 

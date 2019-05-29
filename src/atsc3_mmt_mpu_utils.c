@@ -7,7 +7,7 @@
 
 #include "atsc3_mmt_mpu_utils.h"
 
-int _MMT_MPU_DEBUG_ENABLED = 1;
+int _MMT_MPU_DEBUG_ENABLED = 0;
 int _MMT_MPU_TRACE_ENABLED = 0;
 
 udp_flow_latest_mpu_sequence_number_container_t* udp_flow_latest_mpu_sequence_number_container_t_init() {
