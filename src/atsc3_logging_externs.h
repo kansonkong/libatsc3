@@ -38,8 +38,6 @@ extern int _SLS_METADATA_FRAGMENT_PARSER_INFO_ENABLED;
 extern int _SLS_METADATA_FRAGMENT_PARSER_DEBUG_ENABLED;
 extern int _SLS_METADATA_FRAGMENT_PARSER_TRACE_ENABLED;
 
-
-
 extern int _FDT_PARSER_DEBUG_ENABLED;
 
 extern int _LLS_SLT_PARSER_DEBUG_ENABLED;
@@ -48,7 +46,9 @@ extern int _LLS_SLT_PARSER_TRACE_ENABLED;
 extern int _LLS_ALC_UTILS_INFO_ENABLED;
 extern int _LLS_ALC_UTILS_DEBUG_ENABLED;
 
+extern int _LLSU_TRACE_ENABLED;
 extern int _LLSU_MMT_TRACE_ENABLED;
+
 
 
 extern int _ROUTE_MBMS_ENVELOPE_PARSER_INFO_ENABLED;
@@ -113,6 +113,7 @@ extern int _MIME_PARSER_TRACE_ENABLED;
 #define __DEBUGA(...) 	__PRINTF(__VA_ARGS__);
 #define __DEBUGN(...)  __PRINTLN(__VA_ARGS__);
 #else
+#define __DEBUG(...)
 #define __DEBUGF(...)
 #define __DEBUGA(...)
 #define __DEBUGN(...)
