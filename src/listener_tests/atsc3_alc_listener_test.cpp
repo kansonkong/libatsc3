@@ -54,6 +54,9 @@ lls_slt_monitor_t* lls_slt_monitor;
 uint32_t* dst_ip_addr_filter = NULL;
 uint16_t* dst_ip_port_filter = NULL;
 
+alc_channel_t ch;
+alc_arguments_t* alc_arguments;
+
 void process_packet(u_char *user, const struct pcap_pkthdr *pkthdr, const u_char *packet) {
 	udp_packet_t* udp_packet = process_packet_from_pcap(user, pkthdr, packet);
 	if(!udp_packet) {
@@ -64,38 +67,19 @@ void process_packet(u_char *user, const struct pcap_pkthdr *pkthdr, const u_char
 	//dispatch for LLS extraction and dump
 	if(udp_packet->udp_flow.dst_ip_addr == LLS_DST_ADDR && udp_packet->udp_flow.dst_port == LLS_DST_PORT) {
 		lls_table_create_or_update_from_lls_slt_monitor(lls_slt_monitor, udp_packet->data, udp_packet->data_length);
-		
 		return cleanup(&udp_packet);
 	}
 
-	if((dst_ip_addr_filter == NULL && dst_ip_port_filter == NULL) || (udp_packet->udp_flow.dst_ip_addr == *dst_ip_addr_filter && udp_packet->udp_flow.dst_port == *dst_ip_port_filter)) {
-
-//		lls_sls_alc_session_t* matching_lls_slt_alc_session = lls_slt_alc_session_find_from_udp_packet(lls_slt_monitor, udp_packet->udp_flow.src_ip_addr, udp_packet->udp_flow.dst_ip_addr, udp_packet->udp_flow.dst_port);
-
-		if(true) { //matching_lls_slt_alc_session != NULL) {
-
-	        alc_channel_t ch;
-	    //    ch.s = matching_lls_slt_alc_session->alc_session;
-
-	        //process ALC streams
-	        int retval = alc_rx_analyze_packet_a331_compliant((char*)udp_packet->data, udp_packet->data_length, &ch, &alc_packet);
-	        if(!retval) {
-				alc_packet_dump_to_object(&alc_packet, lls_slt_monitor->lls_sls_alc_monitor);
-
-				if(!alc_packet->def_lct_hdr->toi) {
-
-					//if no TOI, dump our EFDT
-//                    char* toi_file_name = alc_packet_dump_to_object_get_filename(alc_packet);
-//                    block_t* toi_dump_payload = alc_get_payload_from_filename(toi_file_name);
-//                    __INFO("ROUTE FDT-Instance is: \n\n%s", toi_dump_payload->p_buffer);
-//
-//                    block_Release(&toi_dump_payload);
-//                    freesafe(toi_file_name);
-
-				}
-	        } else {
-	            __ERROR("Error in ALC decode: %d", retval);
-	        }
+	lls_sls_alc_session_t* matching_lls_slt_alc_session = lls_slt_alc_session_find_from_udp_packet(lls_slt_monitor, udp_packet->udp_flow.src_ip_addr, udp_packet->udp_flow.dst_ip_addr, udp_packet->udp_flow.dst_port);
+	if(matching_lls_slt_alc_session ||
+			((dst_ip_addr_filter != NULL && dst_ip_port_filter != NULL) && (udp_packet->udp_flow.dst_ip_addr == *dst_ip_addr_filter && udp_packet->udp_flow.dst_port == *dst_ip_port_filter))) {
+		//process ALC streams
+		int retval = alc_rx_analyze_packet_a331_compliant((char*)udp_packet->data, udp_packet->data_length, &ch, &alc_packet);
+		if(!retval) {
+			//dump out for fragment inspection
+			//alc_packet_dump_to_object(&alc_packet, lls_slt_monitor->lls_sls_alc_monitor);
+		} else {
+			__ERROR("Error in ALC decode: %d", retval);
 		}
 	}
 
@@ -107,21 +91,25 @@ cleanup:
 }
 
 int main(int argc,char **argv) {
-	_LLS_INFO_ENABLED = 1;
-	_LLS_DEBUG_ENABLED = 0;
 
-	_LLS_SLT_PARSER_INFO_ROUTE_ENABLED = 0;
+	_LLS_SLT_PARSER_INFO_ROUTE_ENABLED = 1;
+    _ALC_UTILS_DEBUG_ENABLED = 1;
+	_ALC_RX_DEBUG_ENABLED = 1;
+
+#ifdef __LOTS_OF_DEBUGGING__
+
+	_LLS_INFO_ENABLED = 1;
+	_LLS_DEBUG_ENABLED = 1;
+
+	_LLS_SLT_PARSER_INFO_ROUTE_ENABLED = 1;
 	_ALC_PACKET_DUMP_TO_OBJECT_ENABLED = 1;
     _ALC_UTILS_DEBUG_ENABLED = 1;
     _ALC_UTILS_TRACE_ENABLED = 1;
 
-	_LLS_SLT_PARSER_INFO_MMT_ENABLED = 0;
-
-
 	_ALC_UTILS_IOTRACE_ENABLED=1;
-
 	_ALC_RX_DEBUG_ENABLED = 1;
 	_ALC_RX_TRACE_ENABLED = 1;
+#endif
 
 	char *dev;
 
@@ -134,7 +122,7 @@ int main(int argc,char **argv) {
     struct bpf_program fp;
     bpf_u_int32 maskp;
     bpf_u_int32 netp;
-    lls_slt_monitor = lls_slt_monitor_create();
+
 
     //listen to all flows
     if(argc == 2) {
@@ -166,6 +154,11 @@ int main(int argc,char **argv) {
     }
 
     mkdir("route", 0777);
+
+    lls_slt_monitor = lls_slt_monitor_create();
+	alc_arguments = (alc_arguments_t*)calloc(1, sizeof(alc_arguments_t));
+
+    ch.s = open_alc_session(alc_arguments);
 
     pcap_lookupnet(dev, &netp, &maskp, errbuf);
     descr = pcap_open_live(dev, MAX_PCAP_LEN, 1, 0, errbuf);

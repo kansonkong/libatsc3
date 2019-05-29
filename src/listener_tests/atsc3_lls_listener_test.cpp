@@ -37,13 +37,12 @@ atsc3_lls_listener_test.c:153:DEBUG:Dst. Address : 224.0.23.60 (3758102332)	Dst.
 #include <string.h>
 
 #include "../atsc3_listener_udp.h"
+
 #include "../atsc3_lls.h"
 #include "../atsc3_lls_types.h"
-#include "../atsc3_listener_udp.h"
-#include "../atsc3_logging_externs.h"
+#include "../atsc3_lls_slt_parser.h"
 
-int PACKET_COUNTER = 0;
-lls_slt_monitor_t* lls_slt_monitor;
+#include "../atsc3_logging_externs.h"
 
 void process_packet(u_char *user, const struct pcap_pkthdr *pkthdr, const u_char *packet) {
 	udp_packet_t* udp_packet = process_packet_from_pcap(user, pkthdr, packet);
@@ -54,7 +53,16 @@ void process_packet(u_char *user, const struct pcap_pkthdr *pkthdr, const u_char
 
 	//dispatch for LLS extraction and dump
 	if(udp_packet->udp_flow.dst_ip_addr == LLS_DST_ADDR && udp_packet->udp_flow.dst_port == LLS_DST_PORT) {
-		lls_table_t* lls_table = lls_table_create_or_update_from_lls_slt_monitor(lls_slt_monitor, udp_packet->data, udp_packet->data_length);
+		lls_table_t* lls_table = __lls_table_create(udp_packet->data, udp_packet->data_length);
+
+		if(lls_table) {
+			printf("---\n");
+			lls_dump_instance_table(lls_table);
+			printf("---\n\n");
+			lls_table_free(&lls_table);
+		} else {
+			__WARN("Error parsing LLS payload, data len: %u", udp_packet->data_length);
+		}
 	}
 
 	if(udp_packet->data) {
@@ -70,10 +78,14 @@ void process_packet(u_char *user, const struct pcap_pkthdr *pkthdr, const u_char
 
 int main(int argc,char **argv) {
 
-
 	_LLS_INFO_ENABLED = 1;
+
+#ifdef __LOTS_OF_DEBUGGING__
+
 	_LLS_DEBUG_ENABLED = 1;
 	_LLS_TRACE_ENABLED = 1;
+
+#endif
 
     char *dev;
     char errbuf[PCAP_ERRBUF_SIZE];
@@ -93,7 +105,6 @@ int main(int argc,char **argv) {
 
 		exit(1);
     }
-
 
     pcap_lookupnet(dev, &netp, &maskp, errbuf);
     descr = pcap_open_live(dev, MAX_PCAP_LEN, 1, 0, errbuf);

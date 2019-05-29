@@ -73,8 +73,8 @@ RFC 5775               ALC Protocol Instantiation             April 2010
 
 int _ALC_PACKET_DUMP_TO_OBJECT_ENABLED = 0;
 
-int _ALC_UTILS_DEBUG_ENABLED=1;
-int _ALC_UTILS_TRACE_ENABLED=1;
+int _ALC_UTILS_DEBUG_ENABLED=0;
+int _ALC_UTILS_TRACE_ENABLED=0;
 int _ALC_UTILS_IOTRACE_ENABLED=0;
 
 bool __ALC_RECON_FILE_PTR_HAS_WRITTEN_INIT_BOX = false;
@@ -798,7 +798,7 @@ void alc_recon_file_buffer_struct_monitor_fragment_with_init_box(alc_packet_t* a
 
 
 		} else {
-			__ALC_UTILS_ERROR("missing init/moof payloads, audio init: %s (%p), audio moof: %s (%p), video init: %s (%), video moof: %s (%p)",
+			__ALC_UTILS_ERROR("missing init/moof payloads, audio init: %s (%p), audio moof: %s (%p), video init: %s (%p), video moof: %s (%p)",
 					audio_init_file_name,
 					audio_init_payload,
 					audio_fragment_file_name,
