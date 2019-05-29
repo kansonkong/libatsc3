@@ -9,6 +9,7 @@
 
 
 int _LLSU_MMT_TRACE_ENABLED = 0;
+int _LLSU_TRACE_ENABLED = 0;
 
 lls_sls_mmt_monitor_t* lls_sls_mmt_monitor_create() {
 	lls_sls_mmt_monitor_t* lls_sls_mmt_monitor = (lls_sls_mmt_monitor_t*)calloc(1, sizeof(lls_sls_mmt_monitor_t));
