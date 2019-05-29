@@ -410,6 +410,8 @@ typedef struct lls_sls_alc_session {
 	alc_arguments_t* alc_arguments;
 	alc_session_t* alc_session;
 
+	//jdj-2019-05-29 - hack for resolving monitor tsi/toi
+
 } lls_sls_alc_session_t;
 
 /**
@@ -480,6 +482,14 @@ typedef struct lls_sls_alc_monitor {
 	lls_sls_alc_session_t* lls_alc_session;
 	uint32_t video_tsi;
 	uint32_t audio_tsi;
+
+	/**
+	* jdj-2019-05-29: TODO - use a sparse array lookup (https://github.com/ned14/nedtries) for resolution to proper transfer_object_length to back-patch close flag
+	*/
+	uint32_t last_video_toi;
+	uint32_t last_video_toi_length;
+	uint32_t last_audio_toi;
+	uint32_t last_audio_toi_length;
 
 	uint32_t last_closed_video_toi;
 	uint32_t last_closed_audio_toi;

@@ -315,6 +315,7 @@ typedef struct ATSC3_VECTOR(mmtp_sub_flow_t*) mmtp_sub_flow_vector_t;
 #define _MMTP_TRACE(...)   if(_MMTP_TRACE_ENABLED) { printf("%s:%d:TRACE :",__FILE__,__LINE__);_MMTP_PRINTLN(__VA_ARGS__); }
 #define __LOG_MPU_REASSEMBLY(...) printf(__VA_ARGS__)
 
+//TODO - jdj-2019-05-29 REMOVE ME!
 #define __LOG_DEBUG(...) printf(__VA_ARGS__)
 //(msg_Info(__VA_ARGS__))
 #define __LOG_TRACE(...)

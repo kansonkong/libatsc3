@@ -356,7 +356,7 @@ uint8_t* mmt_mpu_parse_payload(mmtp_sub_flow_vector_t* mmtp_sub_flow_vector, mmt
 	                        }
 						}
 
-                        _MPU_INFO("mpu mode (0x02), timed mfu has remaining payload: %u", (multilayerinfo_box_length - box_parsed_position));
+                        _MPU_TRACE("mpu mode (0x02), timed mfu has remaining payload: %u", (multilayerinfo_box_length - box_parsed_position));
 
 						//for any remaining muli box size, ignore as possibly corrupt
 						for(int i = box_parsed_position; i < multilayerinfo_box_length; i++) {

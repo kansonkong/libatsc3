@@ -211,6 +211,7 @@ int alc_packet_dump_to_object(alc_packet_t** alc_packet_ptr, lls_sls_alc_monitor
 	alc_packet_t* alc_packet = *alc_packet_ptr;
 	int bytesWritten = 0;
 
+	//TODO - query me from lls_sls_alc_monitor
 	if(!_ALC_PACKET_DUMP_TO_OBJECT_ENABLED) {
         return -1;
     }
@@ -235,12 +236,23 @@ int alc_packet_dump_to_object(alc_packet_t** alc_packet_ptr, lls_sls_alc_monitor
         alc_packet_write_fragment(f, file_name, alc_packet->esi, alc_packet);
         __ALC_UTILS_IOTRACE("raptor_fec: done writing out fragment for %s", file_name);
 
-    } else if(alc_packet->use_start_offset){
+    } else if(alc_packet->use_start_offset) {
         if(!alc_packet->start_offset) {
             f = alc_object_pre_allocate(file_name, alc_packet);
-            __ALC_UTILS_IOTRACE("done creating new pre-allocation fragment %s, size: %llu", file_name, alc_packet->transfer_len);
+            __ALC_UTILS_IOTRACE("ALC: tsi: %u, toi: %u, done creating new pre-allocation fragment %s, size: %llu",
+            		alc_packet->def_lct_hdr->tsi,
+					alc_packet->def_lct_hdr->toi,
+					file_name,
+					alc_packet->transfer_len);
 
         } else {
+            __ALC_UTILS_IOTRACE("ALC: tsi: %u, toi: %u, using existing pre-alloc fragment %s, offset: %u, size: %llu",
+            		alc_packet->def_lct_hdr->tsi,
+					alc_packet->def_lct_hdr->toi,
+            		file_name,
+					alc_packet->start_offset,
+					alc_packet->transfer_len);
+
             f = alc_object_open_or_pre_allocate(file_name, alc_packet);
         }
         if(!f) {
@@ -262,19 +274,20 @@ int alc_packet_dump_to_object(alc_packet_t** alc_packet_ptr, lls_sls_alc_monitor
     
     //both codepoint=0 and codepoint=128 will set close_object_flag when we have finished delivery of the object
 	if(alc_packet->close_object_flag) {
-		__ALC_UTILS_ERROR("dumping to file done: %s, is complete: %d", file_name, alc_packet->close_object_flag);
+		__ALC_UTILS_IOTRACE("dumping to file done: %s, is complete: %d", file_name, alc_packet->close_object_flag);
 
 		//update our sls here
 		if(alc_packet->def_lct_hdr->tsi == 0) {
-			__ALC_UTILS_ERROR("------ TSI of 0, calling atsc3_route_sls_process_from_alc_packet_and_file");
+			__ALC_UTILS_IOTRACE("------ TSI of 0, calling atsc3_route_sls_process_from_alc_packet_and_file");
 			atsc3_route_sls_process_from_alc_packet_and_file(alc_packet, lls_sls_alc_monitor);
 
 		} else {
 			//only push to our output buffer video and audio flows
 			if(lls_sls_alc_monitor && (alc_packet->def_lct_hdr->tsi == lls_sls_alc_monitor->audio_tsi || alc_packet->def_lct_hdr->tsi == lls_sls_alc_monitor->video_tsi)) {
+				__ALC_UTILS_IOTRACE("------ TSI of %d, toi: %u, calling alc_recon_file_buffer_struct_monitor_fragment_with_init_box", alc_packet->def_lct_hdr->tsi, alc_packet->def_lct_hdr->toi);
 				alc_recon_file_buffer_struct_monitor_fragment_with_init_box(alc_packet, lls_sls_alc_monitor);
 			} else {
-				__ALC_UTILS_INFO("tsi: %u, toi: %u, not video or audio payload", alc_packet->def_lct_hdr->tsi, alc_packet->def_lct_hdr->toi);
+				__ALC_UTILS_ERROR("tsi: %u, toi: %u, not video or audio payload", alc_packet->def_lct_hdr->tsi, alc_packet->def_lct_hdr->toi);
 			}
 		}
 	} else {
@@ -719,7 +732,7 @@ void alc_recon_file_buffer_struct_monitor_fragment_with_init_box(alc_packet_t* a
 	if(alc_packet->def_lct_hdr->tsi == lls_sls_alc_monitor->audio_tsi) {
 		//don't flush out init boxes here..
 		if(alc_packet->def_lct_hdr->toi == lls_sls_alc_monitor->audio_toi_init) {
-			__ALC_UTILS_DEBUG("alc_recon_file_buffer_struct_monitor_fragment_with_init_box, got audo init box: tsi: %u, toi: %u, ignoring", alc_packet->def_lct_hdr->tsi, alc_packet->def_lct_hdr->toi);
+			__ALC_UTILS_DEBUG("alc_recon_file_buffer_struct_monitor_fragment_with_init_box, got audio init box: tsi: %u, toi: %u, ignoring", alc_packet->def_lct_hdr->tsi, alc_packet->def_lct_hdr->toi);
 			return;
 		}
 
@@ -785,7 +798,16 @@ void alc_recon_file_buffer_struct_monitor_fragment_with_init_box(alc_packet_t* a
 
 
 		} else {
-			__ALC_UTILS_ERROR("missing init payloads, audio: %p, video: %p", audio_init_payload, video_init_payload);
+			__ALC_UTILS_ERROR("missing init/moof payloads, audio init: %s (%p), audio moof: %s (%p), video init: %s (%), video moof: %s (%p)",
+					audio_init_file_name,
+					audio_init_payload,
+					audio_fragment_file_name,
+					audio_fragment_payload,
+					video_init_file_name,
+					video_init_payload,
+					video_fragment_file_name,
+					video_fragment_payload);
+
 			goto cleanup;
 		}
 	} else {

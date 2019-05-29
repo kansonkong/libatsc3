@@ -314,13 +314,15 @@ int alc_rx_analyze_packet_a331_compliant(char *data, int len, alc_channel_t *ch,
 	header_pos++;
 
 	def_lct_hdr->codepoint = data[header_pos];
-	ALC_RX_DEBUG("Codepoint is: %hhu", def_lct_hdr->codepoint);
 
 	//byte 5
 	header_pos++;
 
 	def_lct_hdr->cci = __readuint32(data, header_pos);
-	ALC_RX_DEBUG("def_lct_hdr->flag_c: %d, header_len is: %d, cci is: %u", def_lct_hdr->flag_c, header_pos, def_lct_hdr->cci);
+	ALC_RX_DEBUG("ALC: tsi: %u, toi: %u, def_lct_hdr->flag_c: %d, header_len is: %d, cci is: %u",
+			def_lct_hdr->tsi,
+			def_lct_hdr->toi,
+			def_lct_hdr->flag_c, header_pos, def_lct_hdr->cci);
 	header_pos += 4;
 
 	def_lct_hdr->tsi = __readuint32(data, header_pos);
@@ -329,7 +331,7 @@ int alc_rx_analyze_packet_a331_compliant(char *data, int len, alc_channel_t *ch,
 	def_lct_hdr->toi = __readuint32(data, header_pos);
 	header_pos += 4;
 
-	ALC_RX_DEBUG("tsi_id: %u, toi_id: %u", def_lct_hdr->tsi , def_lct_hdr->toi);
+	ALC_RX_DEBUG("ALC: tsi: %u, toi: %u, codepoint: %u", def_lct_hdr->tsi , def_lct_hdr->toi, def_lct_hdr->codepoint);
 
 
 	if(def_lct_hdr->flag_a == 1) {
@@ -339,11 +341,13 @@ int alc_rx_analyze_packet_a331_compliant(char *data, int len, alc_channel_t *ch,
 
 	fec_enc_id = def_lct_hdr->codepoint;
 
+	//for any codepoint <=128...
 	if(!(fec_enc_id == COM_NO_C_FEC_ENC_ID || fec_enc_id == RS_FEC_ENC_ID ||
 		fec_enc_id == SB_SYS_FEC_ENC_ID || fec_enc_id == SIMPLE_XOR_FEC_ENC_ID)) {
-			ALC_RX_DEBUG("FEC Encoding ID: %i is not supported, ignoring!", fec_enc_id);
-//            retval = HDR_ERROR;
-//            goto error;
+			ALC_RX_DEBUG("ALC: tsi: %u, toi: %u, FEC Encoding ID: %i is not supported, ignoring!",
+					def_lct_hdr->tsi,
+					def_lct_hdr->toi,
+					fec_enc_id);
 	}
 
 	//if we have extra data in the header we haven't read yet, process it as an extension
@@ -444,6 +448,9 @@ int alc_rx_analyze_packet_a331_compliant(char *data, int len, alc_channel_t *ch,
 				  header_pos+=4;
 				  exthdrlen-=4;
 				  ALC_RX_TRACE("def_lct_hdr->hdr_len: %d, exthdrlen: %d, header_pos:%d, het: %d, hel: %d", def_lct_hdr->hdr_len, exthdrlen, header_pos, het, hel);
+				  //jdj-2019-05-29 - replace our FEC instance id with the EXT_FTI value rather than the codepoint definition
+				  fec_enc_id = (word >> 16) & 0xFF;
+
 
 				  if(fec_enc_id == RS_FEC_ENC_ID) {
 					  finite_field = (word & 0xFF000000) >> 24;
@@ -604,8 +611,7 @@ int alc_rx_analyze_packet_a331_compliant(char *data, int len, alc_channel_t *ch,
 
 	if(header_pos != def_lct_hdr->hdr_len) {
 		/* Wrong header length */
-		ALC_RX_WARN("analyze_packet: packet header length %d, should be %d", header_pos,
-			def_lct_hdr->hdr_len);
+		ALC_RX_WARN("analyze_packet: packet header length %d, should be %d", header_pos, def_lct_hdr->hdr_len);
 		  retval = HDR_ERROR;
 		  goto error;
 	}
@@ -680,13 +686,32 @@ int alc_rx_analyze_packet_a331_compliant(char *data, int len, alc_channel_t *ch,
         if(transfer_len > 0 && transfer_len == (alc_packet->alc_len + alc_packet->esi)) {
         	alc_packet->close_object_flag = true;
         }
-        ALC_RX_DEBUG("FEC Encoding ID: %i, sbn: %u, esi: %u, transfer_len: %llu, alc_len+esi: %u",
-        		alc_packet->fec_encoding_id, alc_packet->sbn, alc_packet->esi,
+        ALC_RX_DEBUG("ALC: tsi: %u, toi: %u, FEC Encoding ID: %i, sbn: %u, esi: %u, transfer_len: %llu, alc_len+esi: %u",
+         		alc_packet->def_lct_hdr->tsi,
+   				alc_packet->def_lct_hdr->toi,
+        		alc_packet->fec_encoding_id,
+				alc_packet->sbn,
+				alc_packet->esi,
 				transfer_len, alc_packet->alc_len + alc_packet->esi);
     } else {
         alc_packet->use_start_offset = true;
         alc_packet->start_offset = fec_payload_id_to_parse;
-        ALC_RX_DEBUG("ALC start offset: %u", alc_packet->start_offset);
+        ALC_RX_DEBUG("ALC: tsi: %u, toi: %u, start offset: %u",
+        		alc_packet->def_lct_hdr->tsi,
+				alc_packet->def_lct_hdr->toi,
+				alc_packet->start_offset);
+
+        //jdj-2019-05-29 - hack for missing close_object flag on a single ALC payload toi
+        if(alc_packet->transfer_len && alc_packet->transfer_len <= alc_packet->alc_len) {
+            ALC_RX_DEBUG("ALC: tsi: %u, toi: %u, hack: setting close_object_flag because transfer len: %llu is <= alc_len: %u (start_offset: %u)",
+            		alc_packet->def_lct_hdr->tsi,
+					alc_packet->def_lct_hdr->toi,
+					alc_packet->transfer_len,
+					alc_packet->alc_len,
+					alc_packet->start_offset);
+            alc_packet->close_object_flag = true;
+
+        }
     }
 
 	alc_packet->alc_payload = calloc(alc_packet->alc_len, sizeof(uint8_t));
@@ -694,7 +719,10 @@ int alc_rx_analyze_packet_a331_compliant(char *data, int len, alc_channel_t *ch,
 	memcpy(alc_packet->alc_payload, &data[header_pos], alc_packet->alc_len);
 
 
-	ALC_RX_TRACE("alc_packet is now: %p, started at packet header_pos: %u, fragment start block is: %u, fragment length is: %u", alc_packet, header_pos, alc_packet->sbn, alc_packet->alc_len);
+	ALC_RX_TRACE("ALC: tsi: %u, toi: %u, alc_packet is now: %p, started at packet header_pos: %u, fragment start block is: %u, fragment length is: %u",
+			alc_packet->def_lct_hdr->tsi,
+			alc_packet->def_lct_hdr->toi,
+			alc_packet, header_pos, alc_packet->sbn, alc_packet->alc_len);
 	return ALC_OK;
 
 error:
