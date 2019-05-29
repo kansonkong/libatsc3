@@ -278,7 +278,59 @@ mmtp_payload_fragments_union_t* mmtp_parse_from_udp_packet(udp_packet_t *udp_pac
  */
 
 static void route_process_from_alc_packet(alc_packet_t **alc_packet) {
-    alc_packet_dump_to_object(alc_packet, lls_slt_monitor->lls_sls_alc_monitor);
+	/**
+	 * jdj-2019-05-29: TODO - refactor out for EXT_FTI processing that may be missing a close object flag,
+	 * 							 use a sparse array lookup (https://github.com/ned14/nedtries) for resolution to proper transfer_object_length to back-patch close flag
+	 */
+	if((*alc_packet)->use_start_offset && lls_slt_monitor->lls_sls_alc_monitor && lls_slt_monitor->lls_sls_alc_monitor->video_tsi && lls_slt_monitor->lls_sls_alc_monitor->audio_tsi) {
+		uint32_t tsi = (*alc_packet)->def_lct_hdr->tsi;
+		uint32_t toi = (*alc_packet)->def_lct_hdr->toi;
+
+		//only process non init toi's under the assumption they will be LESS THAN  ALC packet size!
+		if(toi != lls_slt_monitor->lls_sls_alc_monitor->video_toi_init && toi != lls_slt_monitor->lls_sls_alc_monitor->audio_toi_init) {
+
+			uint32_t toi_length = (*alc_packet)->transfer_len;
+
+			//track our transfer_len if EXT_FTI  is only present on the initial ALC packet
+			if(toi_length) {
+				if(tsi == lls_slt_monitor->lls_sls_alc_monitor->video_tsi) {
+					lls_slt_monitor->lls_sls_alc_monitor->last_video_toi = toi;
+					lls_slt_monitor->lls_sls_alc_monitor->last_video_toi_length = toi_length;
+					__DEBUG("ALC: tsi: %u, toi: %u, setting last_video_toi: %u, last_video_toi_length: %u", tsi, toi, toi, toi_length);
+				} else if (tsi == lls_slt_monitor->lls_sls_alc_monitor->audio_tsi) {
+					lls_slt_monitor->lls_sls_alc_monitor->last_audio_toi = toi;
+					lls_slt_monitor->lls_sls_alc_monitor->last_audio_toi_length = toi_length;
+					__DEBUG("ALC: tsi: %u, toi: %u, setting last_audio_toi: %u, last_audio_toi_length: %u", tsi, toi, toi, toi_length);
+				}
+			}
+
+			//check if we should set close flag here
+			uint32_t alc_start_offset = (*alc_packet)->start_offset;
+			uint32_t alc_packet_length = (*alc_packet)->alc_len;
+
+			if(tsi == lls_slt_monitor->lls_sls_alc_monitor->video_tsi && toi == lls_slt_monitor->lls_sls_alc_monitor->last_video_toi) {
+				__DEBUG("ALC: tsi: %u, toi: %u, checking last_video_toi_length: %u against start_offset: %u, alc_packet_length: %u (total: %u)",
+						tsi, toi,  lls_slt_monitor->lls_sls_alc_monitor->last_video_toi_length, alc_start_offset, alc_packet_length, alc_start_offset + alc_packet_length);
+
+				if(lls_slt_monitor->lls_sls_alc_monitor->last_video_toi_length && lls_slt_monitor->lls_sls_alc_monitor->last_video_toi_length <= (alc_start_offset + alc_packet_length)) {
+					(*alc_packet)->close_object_flag = true;
+					__DEBUG("ALC: tsi: %u, toi: %u, setting video: close_object_flag: true",
+						tsi, toi);
+				}
+			} else if(tsi == lls_slt_monitor->lls_sls_alc_monitor->audio_tsi && toi == lls_slt_monitor->lls_sls_alc_monitor->last_audio_toi) {
+				__DEBUG("ALC: tsi: %u, toi: %u, checking last_audio_toi_length: %u against start_offset: %u, alc_packet_length: %u (total: %u)",
+						tsi, toi,  lls_slt_monitor->lls_sls_alc_monitor->last_audio_toi_length, alc_start_offset, alc_packet_length, alc_start_offset + alc_packet_length);
+
+				if(lls_slt_monitor->lls_sls_alc_monitor->last_audio_toi_length && lls_slt_monitor->lls_sls_alc_monitor->last_audio_toi_length <= (alc_start_offset + alc_packet_length)) {
+					(*alc_packet)->close_object_flag = true;
+					__DEBUG("ALC: tsi: %u, toi: %u, setting audio: close_object_flag: true",
+						tsi, toi);
+				}
+			}
+		}
+	}
+
+	alc_packet_dump_to_object(alc_packet, lls_slt_monitor->lls_sls_alc_monitor);
     
     if(lls_slt_monitor->lls_sls_alc_monitor->lls_sls_monitor_output_buffer.has_written_init_box && lls_slt_monitor->lls_sls_alc_monitor->lls_sls_monitor_output_buffer.should_flush_output_buffer) {
 
@@ -520,10 +572,12 @@ int main(int argc,char **argv) {
    	_XML_DEBUG_ENABLED = 0;
    	_XML_TRACE_ENABLED = 0;
 
-    _ALC_UTILS_IOTRACE_ENABLED = 0;
-    _ALC_UTILS_DEBUG_ENABLED = 0;
-    _ALC_UTILS_TRACE_ENABLED = 0;
-    _ALC_RX_DEBUG_ENABLED = 0;
+    _ALC_UTILS_IOTRACE_ENABLED = 1;
+    _ALC_UTILS_DEBUG_ENABLED = 1;
+    _ALC_UTILS_TRACE_ENABLED = 1;
+    _ALC_RX_DEBUG_ENABLED = 1;
+    _ALC_RX_TRACE_ENABLED = 1;
+
     _LLS_SLS_MONITOR_OUTPUT_BUFFER_UTILS_DEBUG_ENABLED = 1;
     _FDT_PARSER_DEBUG_ENABLED=1;
 
