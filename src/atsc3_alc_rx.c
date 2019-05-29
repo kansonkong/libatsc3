@@ -319,7 +319,7 @@ int alc_rx_analyze_packet_a331_compliant(char *data, int len, alc_channel_t *ch,
 	header_pos++;
 
 	def_lct_hdr->cci = __readuint32(data, header_pos);
-	ALC_RX_DEBUG("ALC: tsi: %u, toi: %u, def_lct_hdr->flag_c: %d, header_len is: %d, cci is: %u",
+	ALC_RX_TRACE("ALC: tsi: %u, toi: %u, def_lct_hdr->flag_c: %d, header_len is: %d, cci is: %u",
 			def_lct_hdr->tsi,
 			def_lct_hdr->toi,
 			def_lct_hdr->flag_c, header_pos, def_lct_hdr->cci);
@@ -331,12 +331,12 @@ int alc_rx_analyze_packet_a331_compliant(char *data, int len, alc_channel_t *ch,
 	def_lct_hdr->toi = __readuint32(data, header_pos);
 	header_pos += 4;
 
-	ALC_RX_DEBUG("ALC: tsi: %u, toi: %u, codepoint: %u", def_lct_hdr->tsi , def_lct_hdr->toi, def_lct_hdr->codepoint);
+	ALC_RX_TRACE("ALC: tsi: %u, toi: %u, codepoint: %u", def_lct_hdr->tsi , def_lct_hdr->toi, def_lct_hdr->codepoint);
 
 
 	if(def_lct_hdr->flag_a == 1) {
 		ch->s->state = SAFlagReceived;
-		ALC_RX_DEBUG("flag_a, close session flag: 1 ");
+		ALC_RX_TRACE("flag_a, close session flag: 1 ");
 	}
 
 	fec_enc_id = def_lct_hdr->codepoint;
@@ -344,7 +344,7 @@ int alc_rx_analyze_packet_a331_compliant(char *data, int len, alc_channel_t *ch,
 	//for any codepoint <=128...
 	if(!(fec_enc_id == COM_NO_C_FEC_ENC_ID || fec_enc_id == RS_FEC_ENC_ID ||
 		fec_enc_id == SB_SYS_FEC_ENC_ID || fec_enc_id == SIMPLE_XOR_FEC_ENC_ID)) {
-			ALC_RX_DEBUG("ALC: tsi: %u, toi: %u, FEC Encoding ID: %i is not supported, ignoring!",
+			ALC_RX_TRACE("ALC: tsi: %u, toi: %u, FEC Encoding ID: %i is not supported, ignoring!",
 					def_lct_hdr->tsi,
 					def_lct_hdr->toi,
 					fec_enc_id);
@@ -357,7 +357,7 @@ int alc_rx_analyze_packet_a331_compliant(char *data, int len, alc_channel_t *ch,
 		go through all possible EH */
 
 		exthdrlen = def_lct_hdr->hdr_len - header_pos;
-		ALC_RX_DEBUG("def_lct_hdr->hdr_len: %d, exthdrlen: %d, header_pos:%d", def_lct_hdr->hdr_len, exthdrlen, header_pos);
+		ALC_RX_TRACE("ALC: tsi: %u, toi: %u, ext header loop, def_lct_hdr->hdr_len: %d, exthdrlen: %d, header_pos:%d", def_lct_hdr->tsi, def_lct_hdr->toi, def_lct_hdr->hdr_len, exthdrlen, header_pos);
 
 		while(exthdrlen > 0) {
 			word = 0x00000000;
@@ -376,25 +376,25 @@ int alc_rx_analyze_packet_a331_compliant(char *data, int len, alc_channel_t *ch,
 			}
 			exthdrlen-=4;
 
-			ALC_RX_DEBUG("def_lct_hdr->hdr_len: %d, exthdrlen: %d, hdrlen:%d, het: %d, hel: %d", def_lct_hdr->hdr_len, exthdrlen, header_pos, het, hel);
+			ALC_RX_TRACE("ALC: tsi: %u, toi: %u, def_lct_hdr->hdr_len: %d, exthdrlen: %d, hdrlen:%d, het: %d, hel: %d",  def_lct_hdr->tsi, def_lct_hdr->toi, def_lct_hdr->hdr_len, exthdrlen, header_pos, het, hel);
 
 			switch(het) {
 
 			  case EXT_FDT:
-				  ALC_RX_DEBUG("EXT_FDT: def_lct_hdr->hdr_len: %d, exthdrlen: %d, hdrlen:%d, het: %d, hel: %d", def_lct_hdr->hdr_len, exthdrlen, header_pos, het, hel);
+				  ALC_RX_DEBUG("ALC: tsi: %u, toi: %u, EXT_FDT: def_lct_hdr->hdr_len: %d, exthdrlen: %d, hdrlen:%d, het: %d, hel: %d", def_lct_hdr->tsi, def_lct_hdr->toi, def_lct_hdr->hdr_len, exthdrlen, header_pos, het, hel);
 
 				  flute_version = (word & 0x00F00000) >> 20;
 				  fdt_instance_id = (word & 0x000FFFFF);
 
 				  if(flute_version != FLUTE_VERSION) {
-					  ALC_RX_WARN("FLUTE version: %i is not supported", flute_version);
+					  ALC_RX_WARN("ALC: tsi: %u, toi: %u, FLUTE version: %i is not supported",  def_lct_hdr->tsi, def_lct_hdr->toi, flute_version);
 					  retval = HDR_ERROR;
 					  goto error;
 				  }
 				  break;
 
 			  case EXT_CENC:
-				  ALC_RX_DEBUG("EXT_CENC: def_lct_hdr->hdr_len: %d, exthdrlen: %d, hdrlen:%d, het: %d, hel: %d", def_lct_hdr->hdr_len, exthdrlen, header_pos, het, hel);
+				  ALC_RX_DEBUG("EXT_CENC: tsi: %u, toi: %u, def_lct_hdr->hdr_len: %d, exthdrlen: %d, hdrlen:%d, het: %d, hel: %d",  def_lct_hdr->tsi, def_lct_hdr->toi, def_lct_hdr->hdr_len, exthdrlen, header_pos, het, hel);
 
 				  content_enc_algo = (word & 0x00FF0000) >> 16;
 				  reserved = (word & 0x0000FFFF);
@@ -426,7 +426,7 @@ int alc_rx_analyze_packet_a331_compliant(char *data, int len, alc_channel_t *ch,
 				   * https://tools.ietf.org/html/rfc3926 - FLUTE
 				   */
 
-				  ALC_RX_TRACE("EXT_FTI: %i, def_lct_hdr->hdr_len: %d, exthdrlen: %d, header_pos:%d, het: %d, hel: %d", hel, def_lct_hdr->hdr_len, exthdrlen, header_pos, het, hel);
+				  ALC_RX_TRACE("ALC: tsi: %u, toi: %u, EXT_FTI: %i, def_lct_hdr->hdr_len: %d, exthdrlen: %d, header_pos:%d, het: %d, hel: %d",  def_lct_hdr->tsi, def_lct_hdr->toi, hel, def_lct_hdr->hdr_len, exthdrlen, header_pos, het, hel);
 
 				  if(hel != 4) {
 					  ALC_RX_WARN("Bad FTI header extension, length: %i", hel);
@@ -440,9 +440,8 @@ int alc_rx_analyze_packet_a331_compliant(char *data, int len, alc_channel_t *ch,
 				  transfer_len |= __readuint32(data, header_pos);
 				  header_pos+=4;
 				  exthdrlen-=4;
-				  ALC_RX_DEBUG("Reading FTI TSI: transfer len: %llu", transfer_len);
-				  ALC_RX_TRACE("def_lct_hdr->hdr_len: %d, exthdrlen: %d, header_pos:%d, het: %d, hel: %d", def_lct_hdr->hdr_len, exthdrlen, header_pos, het, hel);
-
+				  ALC_RX_TRACE("Reading FTI TSI: transfer len: %llu", transfer_len);
+				  ALC_RX_TRACE("ALC: tsi: %u, toi: %u, transfer_len: %llu, def_lct_hdr->hdr_len: %d, exthdrlen: %d, header_pos:%d, het: %d, hel: %d", def_lct_hdr->tsi, def_lct_hdr->toi, transfer_len, def_lct_hdr->hdr_len, exthdrlen, header_pos, het, hel);
 
 				  word = __readuint32(data, header_pos);
 				  header_pos+=4;
@@ -482,7 +481,7 @@ int alc_rx_analyze_packet_a331_compliant(char *data, int len, alc_channel_t *ch,
 					  	  es_len = (word & 0x0000FFFF);
 
 						  max_sb_len = __readuint32(data, header_pos);
-						  ALC_RX_DEBUG("doing max_sb_len %d", max_sb_len);
+						  ALC_RX_TRACE("ALC: tsi: %u, toi: %u, doing max_sb_len %d", def_lct_hdr->tsi, def_lct_hdr->toi, max_sb_len);
 
 						  header_pos += 4;
 						  exthdrlen -=4;
@@ -494,7 +493,7 @@ int alc_rx_analyze_packet_a331_compliant(char *data, int len, alc_channel_t *ch,
 
 					  max_sb_len = ((word & 0xFFFF0000) >> 16);
 					  max_nb_of_es = (word & 0x0000FFFF);
-					  ALC_RX_DEBUG("doing RS_FEC_ENC_ID/SB_SYS_FEC_ENC_ID, max_sb_len: %d, max_nb_of_es: %d", max_sb_len, max_nb_of_es);
+					  ALC_RX_TRACE("ALC: tsi: %u, toi: %u, doing RS_FEC_ENC_ID/SB_SYS_FEC_ENC_ID, max_sb_len: %d, max_nb_of_es: %d",  def_lct_hdr->tsi, def_lct_hdr->toi, max_sb_len, max_nb_of_es);
 
 					  header_pos += 4;
 					  exthdrlen-=4;
@@ -503,7 +502,7 @@ int alc_rx_analyze_packet_a331_compliant(char *data, int len, alc_channel_t *ch,
 
 			  case EXT_AUTH:
 				  /* ignore */
-				  ALC_RX_DEBUG("doing EXT_AUTH");
+				  ALC_RX_DEBUG("ignoring EXT_AUTH: tsi: %u, toi: %u",  def_lct_hdr->tsi, def_lct_hdr->toi);
 
 				  //magic?
 				  header_pos += (hel-1) << 2;
@@ -512,14 +511,14 @@ int alc_rx_analyze_packet_a331_compliant(char *data, int len, alc_channel_t *ch,
 
 			  case EXT_NOP:
 				  /* ignore */
-				  ALC_RX_DEBUG("doing EXT_NOP");
+				  ALC_RX_DEBUG("ignoring EXT_NOP: tsi: %u, toi: %u",  def_lct_hdr->tsi, def_lct_hdr->toi);
 				  header_pos += (hel-1) << 2;
 				  exthdrlen -= (hel-1);
 				  break;
 
 			  case EXT_TIME:
 				  /* ignore */
-				  ALC_RX_DEBUG("doing EXT_TIME");
+				  ALC_RX_DEBUG("ignoring EXT_TIME: tsi: %u, toi: %u",  def_lct_hdr->tsi, def_lct_hdr->toi);
 
 				  header_pos += (hel-1) << 2;
 				  exthdrlen -= (hel-1);
@@ -553,7 +552,7 @@ int alc_rx_analyze_packet_a331_compliant(char *data, int len, alc_channel_t *ch,
 
 				  ext_route_presentation_ntp_timestamp_set = true;
 
-				  ALC_RX_DEBUG("doing EXT_ROUTE_PRESENTATION_TIME, value is: %llu", ext_route_presentation_ntp_timestamp);
+				  ALC_RX_DEBUG("ALC: tsi: %u, toi: %u, EXT_ROUTE_PRESENTATION_TIME, value is: %llu",  def_lct_hdr->tsi, def_lct_hdr->toi, ext_route_presentation_ntp_timestamp);
 
 				  break;
 
@@ -611,7 +610,7 @@ int alc_rx_analyze_packet_a331_compliant(char *data, int len, alc_channel_t *ch,
 
 	if(header_pos != def_lct_hdr->hdr_len) {
 		/* Wrong header length */
-		ALC_RX_WARN("analyze_packet: packet header length %d, should be %d", header_pos, def_lct_hdr->hdr_len);
+		ALC_RX_WARN("ALC: analyze_packet: tsi: %u, toi: %u, packet header length %d, should be %d",  def_lct_hdr->tsi, def_lct_hdr->toi, header_pos, def_lct_hdr->hdr_len);
 		  retval = HDR_ERROR;
 		  goto error;
 	}
@@ -619,7 +618,7 @@ int alc_rx_analyze_packet_a331_compliant(char *data, int len, alc_channel_t *ch,
 	/* Check if we have an empty packet without FEC Payload ID */
 	if(header_pos == len) {
 		retval = EMPTY_PACKET;
-		ALC_RX_WARN("analyze_packet: empty packet!");
+		ALC_RX_WARN("ALC: analyze_packet: tsi: %u, toi: %u, empty packet!",  def_lct_hdr->tsi, def_lct_hdr->toi);
 
 		goto error;
 	}
@@ -686,7 +685,7 @@ int alc_rx_analyze_packet_a331_compliant(char *data, int len, alc_channel_t *ch,
         if(transfer_len > 0 && transfer_len == (alc_packet->alc_len + alc_packet->esi)) {
         	alc_packet->close_object_flag = true;
         }
-        ALC_RX_DEBUG("ALC: tsi: %u, toi: %u, FEC Encoding ID: %i, sbn: %u, esi: %u, transfer_len: %llu, alc_len+esi: %u",
+        ALC_RX_TRACE("ALC: tsi: %u, toi: %u, FEC Encoding ID: %i, sbn: %u, esi: %u, transfer_len: %llu, alc_len+esi: %u",
          		alc_packet->def_lct_hdr->tsi,
    				alc_packet->def_lct_hdr->toi,
         		alc_packet->fec_encoding_id,
@@ -696,14 +695,14 @@ int alc_rx_analyze_packet_a331_compliant(char *data, int len, alc_channel_t *ch,
     } else {
         alc_packet->use_start_offset = true;
         alc_packet->start_offset = fec_payload_id_to_parse;
-        ALC_RX_DEBUG("ALC: tsi: %u, toi: %u, start offset: %u",
+        ALC_RX_TRACE("ALC: tsi: %u, toi: %u, start offset: %u",
         		alc_packet->def_lct_hdr->tsi,
 				alc_packet->def_lct_hdr->toi,
 				alc_packet->start_offset);
 
         //jdj-2019-05-29 - hack for missing close_object flag on a single ALC payload toi
         if(alc_packet->transfer_len && alc_packet->transfer_len <= alc_packet->alc_len) {
-            ALC_RX_DEBUG("ALC: tsi: %u, toi: %u, hack: setting close_object_flag because transfer len: %llu is <= alc_len: %u (start_offset: %u)",
+        	ALC_RX_TRACE("ALC: tsi: %u, toi: %u, hack: setting close_object_flag because transfer len: %llu is <= alc_len: %u (start_offset: %u)",
             		alc_packet->def_lct_hdr->tsi,
 					alc_packet->def_lct_hdr->toi,
 					alc_packet->transfer_len,
@@ -718,11 +717,21 @@ int alc_rx_analyze_packet_a331_compliant(char *data, int len, alc_channel_t *ch,
 
 	memcpy(alc_packet->alc_payload, &data[header_pos], alc_packet->alc_len);
 
-
-	ALC_RX_TRACE("ALC: tsi: %u, toi: %u, alc_packet is now: %p, started at packet header_pos: %u, fragment start block is: %u, fragment length is: %u",
+	//header_pos: %u,
+	ALC_RX_DEBUG("ALC: tsi: %u, toi: %u, fec_encoding_id: %u, SBN: %u, esi: %u, packet length: %u, start_offset: %u, transfer_len: %llu, codepoint: %u, close_session: %u, close_object: %u, ext_route_presentation_ntp_timestamp: %llu",
 			alc_packet->def_lct_hdr->tsi,
 			alc_packet->def_lct_hdr->toi,
-			alc_packet, header_pos, alc_packet->sbn, alc_packet->alc_len);
+			alc_packet->fec_encoding_id,
+			alc_packet->sbn,
+			alc_packet->esi,
+			alc_packet->alc_len,
+			alc_packet->start_offset,
+			alc_packet->transfer_len,
+			alc_packet->def_lct_hdr->codepoint,
+			alc_packet->close_session_flag,
+			alc_packet->close_object_flag,
+			alc_packet->ext_route_presentation_ntp_timestamp);
+
 	return ALC_OK;
 
 error:
