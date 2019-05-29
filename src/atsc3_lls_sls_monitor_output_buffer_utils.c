@@ -705,7 +705,7 @@ int lls_sls_monitor_output_buffer_copy_and_recover_sample_fragment_block(lls_sls
             if(trun_sample_entry->mfu_mmth_last_offset <= 8 && trun_sample_entry->mfu_mmth_last_sample_size  &&
                ((trun_sample_entry->mfu_mmth_last_header_sample_size + trun_sample_entry->mfu_mmth_last_sample_size) == data_unit->mpu_data_unit_payload_fragments_timed.mpu_offset)) {
                 
-                __LLS_SLS_MONITOR_OUTPUT_BUFFER_UTILS_WARN("mmthsample box: patching : mpu_seq_num: %u, mpu_sample_num: %3u, mpu_frag: %3u, sample seq_num: %3u, samplenum: %3u, sample_offset: %6u, mmth_last_offset: %6u, last_header_sample_size: %6u, last_sample_size: %6u, mpu offset: %u, setting trun_mmthsample_offset_includes_header: true",
+            	__LLS_SLS_MONITOR_OUTPUT_BUFFER_UTILS_DEBUG("mmthsample box: patching : mpu_seq_num: %u, mpu_sample_num: %3u, mpu_frag: %3u, sample seq_num: %3u, samplenum: %3u, sample_offset: %6u, mmth_last_offset: %6u, last_header_sample_size: %6u, last_sample_size: %6u, mpu offset: %u, setting trun_mmthsample_offset_includes_header: true",
                                                            data_unit->mpu_data_unit_payload_fragments_timed.mpu_sequence_number,
                                                            data_unit->mpu_data_unit_payload_fragments_timed.mpu_sample_number,
                                                            data_unit->mpu_data_unit_payload_fragments_timed.mpu_fragmentation_counter,
@@ -970,7 +970,7 @@ int lls_sls_monitor_buffer_isobmff_create_mdat_from_trun_sample_entries(lls_sls_
 
 	uint32_t mdat_size = max_sample_offset_plus_last_length;
     
-    __LLS_SLS_MONITOR_OUTPUT_BUFFER_UTILS_INFO("lls_sls_monitor_buffer_isobmff_create_mdat_from_trun_sample_entries: building mdat (+8) size: %u, sample_length_cumulative: %u, sample_offset_plus_last_length: %u",
+    __LLS_SLS_MONITOR_OUTPUT_BUFFER_UTILS_DEBUG("lls_sls_monitor_buffer_isobmff_create_mdat_from_trun_sample_entries: building mdat (+8) size: %u, sample_length_cumulative: %u, sample_offset_plus_last_length: %u",
                                                mdat_size,
                                                sample_length_cumulative,
 											   max_sample_offset_plus_last_length);
@@ -1008,7 +1008,7 @@ int lls_sls_monitor_buffer_isobmff_create_mdat_from_trun_sample_entries(lls_sls_
 	}
 
 	lls_sls_monitor_buffer_isobmff_to_create_mdat->mmt_mdat_block = temp_mmt_mdat;
-	__LLS_SLS_MONITOR_OUTPUT_BUFFER_UTILS_INFO("lls_sls_monitor_buffer_isobmff_create_mdat_from_trun_sample_entries: setting new mdat size: %u", mdat_size);
+	__LLS_SLS_MONITOR_OUTPUT_BUFFER_UTILS_DEBUG("lls_sls_monitor_buffer_isobmff_create_mdat_from_trun_sample_entries: setting new mdat size: %u", mdat_size);
 
 	return mdat_size;
 }

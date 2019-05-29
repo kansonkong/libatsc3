@@ -135,12 +135,12 @@ lls_sls_monitor_buffer_isobmff_t* atsc3_isobmff_rebuild_track_mpu_from_sample_da
     }
 
     if(!lls_sls_monitor_buffer_isobmff->mmt_mpu_rebuilt) {
-        __ISOBMFF_TOOLS_INFO("atsc3_isobmff_build_joined_mmt_isobmff_fragment: building return alloc of %u", ap4_memory_byte_stream->GetDataSize());
+        __ISOBMFF_TOOLS_DEBUG("atsc3_isobmff_build_joined_mmt_isobmff_fragment: building return alloc of %u", ap4_memory_byte_stream->GetDataSize());
 
     	lls_sls_monitor_buffer_isobmff->mmt_mpu_rebuilt = block_Alloc(ap4_memory_byte_stream->GetDataSize());
     } else {
     	//otherwise append..
-        __ISOBMFF_TOOLS_INFO("atsc3_isobmff_build_joined_mmt_isobmff_fragment: appending return alloc of %u", ap4_memory_byte_stream->GetDataSize());
+    	__ISOBMFF_TOOLS_DEBUG("atsc3_isobmff_build_joined_mmt_isobmff_fragment: appending return alloc of %u", ap4_memory_byte_stream->GetDataSize());
 
     }
 
@@ -205,7 +205,7 @@ lls_sls_monitor_buffer_isobmff_t* atsc3_isobmff_build_patched_mdat_fragment(lls_
 					lls_sls_monitor_buffer_isobmff->mmt_moof_block_from_flow->p_buffer[moof_size-2]=='a' &&
 					lls_sls_monitor_buffer_isobmff->mmt_moof_block_from_flow->p_buffer[moof_size-1]=='t') {
 
-				__ISOBMFF_TOOLS_INFO("atsc3_isobmff_build_patched_mdat_fragment: removing trailing mdat from moof block from flow, original size: %u, new size: %u", moof_size, moof_size-8);
+				__ISOBMFF_TOOLS_DEBUG("atsc3_isobmff_build_patched_mdat_fragment: removing trailing mdat from moof block from flow, original size: %u, new size: %u", moof_size, moof_size-8);
 
 				//truncate the mdat box
 				block_t* new_moof_from_flow = block_Duplicate_to_size(lls_sls_monitor_buffer_isobmff->mmt_moof_block_from_flow, moof_size-8);
@@ -528,7 +528,7 @@ lls_sls_monitor_buffer_isobmff_t* atsc3_isobmff_build_raw_mpu_from_single_sequen
     }
 
     if(lls_sls_monitor_buffer_isobmff->trun_sample_entry_v.count) {
-    	__ISOBMFF_TOOLS_INFO("Returning: packet_id: %u, mpu_sequence_number: %u, du_count: %u",
+    	__ISOBMFF_TOOLS_DEBUG("Returning: packet_id: %u, mpu_sequence_number: %u, du_count: %u",
 				  packet_id,
 				  mpu_sequence_number,
 				  lls_sls_monitor_buffer_isobmff->trun_sample_entry_v.count);
