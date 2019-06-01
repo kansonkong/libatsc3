@@ -629,10 +629,6 @@ int main(int argc,char **argv) {
 
 		lls_service->global_service_id = &slt_svc_id[0];
 
-
-
-
-
 		lls_slt_alc_session_find_or_create(lls_slt_monitor->lls_sls_alc_session_vector, lls_service);
 	}
 
