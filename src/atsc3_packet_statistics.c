@@ -247,16 +247,16 @@ void atsc3_packet_statistics_mmt_stats_populate(udp_packet_t* udp_packet, mmtp_p
 
 
 				//todo - refactor this into struct for display scrolling and searching
-				__PS_STATS_GLOBAL_LOSS("Flow: %u.%u.%u.%u:%u, Packet_id: %u, Packet Counter: %u to %u, TS: %u-t%u, PSN: %u-%u, missing: %u",
-								__toip(packet_mmt_stats),
-								packet_mmt_stats->packet_id,
-								packet_mmt_stats->packet_counter_value,
-								mmtp_payload->mmtp_packet_header.packet_counter,
-								packet_mmt_stats->timestamp,
-								mmtp_payload->mmtp_packet_header.mmtp_timestamp,
-								packet_mmt_stats->packet_sequence_number,
-								mmtp_payload->mmtp_packet_header.packet_sequence_number,
-								packet_mmt_stats->packet_sequence_number_last_gap);
+//				__PS_STATS_GLOBAL_LOSS("Flow: %u.%u.%u.%u:%u, Packet_id: %u, Packet Counter: %u to %u, TS: %u-t%u, PSN: %u-%u, missing: %u",
+//								__toip(packet_mmt_stats),
+//								packet_mmt_stats->packet_id,
+//								packet_mmt_stats->packet_counter_value,
+//								mmtp_payload->mmtp_packet_header.packet_counter,
+//								packet_mmt_stats->timestamp,
+//								mmtp_payload->mmtp_packet_header.mmtp_timestamp,
+//								packet_mmt_stats->packet_sequence_number,
+//								mmtp_payload->mmtp_packet_header.packet_sequence_number,
+//								packet_mmt_stats->packet_sequence_number_last_gap);
 				global_mmt_loss_count++;
 				ncurses_writer_lock_mutex_release();
 
