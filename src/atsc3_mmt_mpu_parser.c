@@ -379,12 +379,10 @@ uint8_t* mmt_mpu_parse_payload(mmtp_sub_flow_vector_t* mmtp_sub_flow_vector, mmt
 							is_multilayer,
 							mmtp_packet_header->mpu_data_unit_payload_fragments_timed.mpu_sequence_number);
 					} else {
-                        //jdj-2019-06-13 -- HACK -- mpu offset is incorrectly set at -34 bytes for fixed header, but we may be varilable here
-//                        if(mmtp_packet_header->mpu_data_unit_payload_fragments_timed.mpu_offset ) {
-//                            mmtp_packet_header->mpu_data_unit_payload_fragments_timed.mpu_offset = 1222;
-//                        }
-                        mmtp_packet_header->mpu_data_unit_payload_fragments_timed.mpu_offset -= 24;
-                        
+                        //jdj-2019-06-13 -- HACK -- mpu offset is incorrectly set at 34 bytes for fixed header, but we need to honor muli box size here
+						mmtp_packet_header->mpu_data_unit_payload_fragments_timed.mpu_offset -= 24;
+						//jdj-2019-06-13 -- end HACK --
+
 						_MPU_DEBUG("mpu mode (0x02), timed MFU, mpu_fragmentation_indicator: %d, movie_fragment_seq_num: %u, sample_num: %u, offset: %u, pri: %d, dep_counter: %d, mpu_sequence_number: %u",
 							mmtp_packet_header->mpu_data_unit_payload_fragments_timed.mpu_fragmentation_indicator,
 							mmtp_packet_header->mpu_data_unit_payload_fragments_timed.mpu_movie_fragment_sequence_number,
