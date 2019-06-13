@@ -332,7 +332,10 @@ uint8_t* mmt_mpu_parse_payload(mmtp_sub_flow_vector_t* mmtp_sub_flow_vector, mmt
 
 	                        box_parsed_position+=4;
 
-	                        _MPU_INFO("mpu mode (0x02), packet_seq_num: %u, packet_id: %u, timed mfu has child box size: %u, name: %c%c%c%c", mmtp_packet_header->mmtp_mpu_type_packet_header.mmtp_packet_id, mmtp_packet_header->mmtp_mpu_type_packet_header.packet_sequence_number, private_box_length, ((private_box_name >> 24) & 0xFF), ((private_box_name >> 16) & 0xFF), ((private_box_name >> 8) & 0xFF), (private_box_name & 0xFF));
+                            _MPU_INFO("mpu mode (0x02), packet_id: %u, packet_seq_num: %u, timed mfu has child box size: %u, name: %c%c%c%c", mmtp_packet_header->mmtp_mpu_type_packet_header.mmtp_packet_id,
+                                mmtp_packet_header->mmtp_mpu_type_packet_header.packet_sequence_number,
+                                private_box_length,
+                                ((private_box_name >> 24) & 0xFF), ((private_box_name >> 16) & 0xFF), ((private_box_name >> 8) & 0xFF), (private_box_name & 0xFF));
 
 	                        if(private_box_name == _BOX_MFU_MJSD) {
 	                        	//parse out timing information and child boxes
@@ -376,6 +379,12 @@ uint8_t* mmt_mpu_parse_payload(mmtp_sub_flow_vector_t* mmtp_sub_flow_vector, mmt
 							is_multilayer,
 							mmtp_packet_header->mpu_data_unit_payload_fragments_timed.mpu_sequence_number);
 					} else {
+                        //jdj-2019-06-13 -- HACK -- mpu offset is incorrectly set at -34 bytes for fixed header, but we may be varilable here
+//                        if(mmtp_packet_header->mpu_data_unit_payload_fragments_timed.mpu_offset ) {
+//                            mmtp_packet_header->mpu_data_unit_payload_fragments_timed.mpu_offset = 1222;
+//                        }
+                        mmtp_packet_header->mpu_data_unit_payload_fragments_timed.mpu_offset -= 24;
+                        
 						_MPU_DEBUG("mpu mode (0x02), timed MFU, mpu_fragmentation_indicator: %d, movie_fragment_seq_num: %u, sample_num: %u, offset: %u, pri: %d, dep_counter: %d, mpu_sequence_number: %u",
 							mmtp_packet_header->mpu_data_unit_payload_fragments_timed.mpu_fragmentation_indicator,
 							mmtp_packet_header->mpu_data_unit_payload_fragments_timed.mpu_movie_fragment_sequence_number,
