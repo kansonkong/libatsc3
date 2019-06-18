@@ -48,7 +48,7 @@
 
 #include "alc_session.h"
 #include "mad_rlc.h"
-#include "alc_rx.h"
+#include "atsc3_alc_rx.h"
 //#include "alc_tx.h"
 #include "transport.h"
 #include "alc_channel.h"
