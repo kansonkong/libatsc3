@@ -422,7 +422,7 @@ atsc3_listener_metrics_ncurses_httpd_isobmff: tools/atsc3_listener_metrics_ncurs
 		libatsc3_bento4_gpl.o \
 		atsc3_output_statistics_ncurses.c \
 		atsc3_bandwidth_statistics.c \
-		atsc3_packet_statistics.c \		
+		atsc3_packet_statistics.c \	
 		atsc3_isobmff_tools.o \
 		atsc3_mmt_reconstitution_from_media_sample.c atsc3_logging_externs.o \
 		-I../bento/include/ -lpcap  -lncurses -lpcap -lz -lpthread \
