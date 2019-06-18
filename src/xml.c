@@ -327,7 +327,8 @@ uint8_t* xml_attributes_clone_node(xml_node_t* node) {
  *
  * Echos the parsers call stack for debugging purposes
  */
-#define XML_PARSER_VERBOSE
+//#define XML_PARSER_VERBOSE
+
 #ifdef XML_PARSER_VERBOSE
 static void xml_parser_info(struct xml_parser* parser, char const* message) {
 	_XML_FRNSC("xml_parser_info: %s", message);
