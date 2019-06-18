@@ -14,6 +14,8 @@
 #include "atsc3_sls_metadata_fragment_types.h"
 #include "atsc3_logging_externs.h"
 
+#define ATSC3_FDT_MULTIPART_RELATED "multipart/related"
+
 uint32_t* atsc3_mbms_envelope_find_toi_from_fdt(atsc3_fdt_instance_t* atsc3_fdt_instance);
 
 //this is the actual atsc3_mbms_metadata_envelope parser

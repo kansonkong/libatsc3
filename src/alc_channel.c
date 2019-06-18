@@ -48,7 +48,7 @@
 #include "alc_channel.h"
 //#include "alc_socket.h"
 #include "alc_list.h"
-#include "alc_rx.h"
+#include "atsc3_alc_rx.h"
 
 int open_alc_channel(alc_channel_t *ch, alc_session_t *s, const char *port,
 		     const char *addr, const char *intface, const char *intface_name, int tx_rate) {
