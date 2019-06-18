@@ -239,13 +239,13 @@ void lls_table_free(lls_table_t** lls_table_p) {
 			free(lls_table->slt_table.bsid);
 
 	} else if(lls_table->lls_table_id == RRT) {
-		_LLS_WARN("lls_create_table_type_instance: LLS table RRT not supported yet");
+        _LLS_TRACE("free: lls_create_table_type_instance: LLS table RRT not supported yet");
 	} else if(lls_table->lls_table_id == SystemTime) {
 		freesafe(lls_table->system_time_table.utc_local_offset);
 	} else if(lls_table->lls_table_id == AEAT) {
-		_LLS_WARN("lls_create_table_type_instance: LLS table AEAT not supported yet");
+        _LLS_TRACE("free: lls_create_table_type_instance: LLS table AEAT not supported yet");
 	} else if(lls_table->lls_table_id == OnscreenMessageNotification) {
-		_LLS_WARN("lls_create_table_type_instance: LLS table OnscreenMessageNotification not supported yet");
+        _LLS_TRACE("free: lls_create_table_type_instance: LLS table OnscreenMessageNotification not supported yet");
 	}
 
     if(lls_table->raw_xml.xml_payload_compressed) {

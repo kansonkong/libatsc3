@@ -31,7 +31,6 @@ or
 
 #define ATSC3_MBMS_ENVELOPE_CONTENT_TYPE "application/mbms-envelope+xml"
 
-
 typedef struct atsc3_mbms_metadata_item {
 	char* content_type;
 	char* metadata_uri;
