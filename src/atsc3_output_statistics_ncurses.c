@@ -17,7 +17,7 @@ extern int _ALC_PACKET_DUMP_TO_OBJECT_ENABLED;
 
 pthread_mutex_t ncurses_writer_lock;
 int initfunc(WINDOW* ripoff_win, int cols) {
-  printf("got my_window: %p", ripoff_win);
+	//printf("got my_window: %p", ripoff_win);
   my_window = ripoff_win;
   return 0;
 }
