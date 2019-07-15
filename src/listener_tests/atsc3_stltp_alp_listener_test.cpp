@@ -31,14 +31,14 @@ uint16_t* dst_ip_port_filter = NULL;
 atsc3_stltp_tunnel_packet_t* atsc3_stltp_tunnel_packet_processed = NULL;
 
 void process_packet(u_char *user, const struct pcap_pkthdr *pkthdr, const u_char *packet) {
-	udp_packet_t* udp_packet = process_packet_from_pcap(user, pkthdr, packet);
-	if(!udp_packet) {
+	ip_udp_rtp_packet_t* ip_udp_rtp_packet = atsc3_ip_udp_rtp_process_packet_from_pcap(user, pkthdr, packet);
+	if(!ip_udp_rtp_packet) {
 		return;
 	}
 
 	//dispatch for LLS extraction and dump
-	if(udp_packet->udp_flow.dst_ip_addr == *dst_ip_addr_filter && udp_packet->udp_flow.dst_port == *dst_ip_port_filter) {
-		atsc3_stltp_tunnel_packet_processed = atsc3_stltp_tunnel_packet_extract_fragment_from_udp_packet(udp_packet, atsc3_stltp_tunnel_packet_processed);
+	if(ip_udp_rtp_packet->udp_flow.dst_ip_addr == *dst_ip_addr_filter && ip_udp_rtp_packet->udp_flow.dst_port == *dst_ip_port_filter) {
+		atsc3_stltp_tunnel_packet_processed = atsc3_stltp_tunnel_packet_extract_fragment_from_udp_packet(ip_udp_rtp_packet, atsc3_stltp_tunnel_packet_processed);
 
 		__INFO("***atsc3_stltp_tunnel_packet_processed: %p", atsc3_stltp_tunnel_packet_processed);
 
@@ -59,22 +59,21 @@ void process_packet(u_char *user, const struct pcap_pkthdr *pkthdr, const u_char
 			//todo - free
 			}
 		} else {
-            __ERROR("error processing packet: %p, size: %u",  udp_packet, udp_packet->data_length);
+            __ERROR("error processing packet: %p, size: %u",  ip_udp_rtp_packet, ip_udp_rtp_packet->data->p_size);
             
 		}
 
 
 	}
 
-	if(udp_packet->data) {
-		free(udp_packet->data);
-		udp_packet->data = NULL;
-	}
-
-	if(udp_packet) {
-		free(udp_packet);
-		udp_packet = NULL;
-	}
+    if(ip_udp_rtp_packet->data) {
+        block_Release(&ip_udp_rtp_packet->data);
+    }
+    
+    if(ip_udp_rtp_packet) {
+        free(ip_udp_rtp_packet);
+        ip_udp_rtp_packet = NULL;
+    }
 }
 
 int main(int argc,char **argv) {
