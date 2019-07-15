@@ -207,6 +207,10 @@ block_t* block_Promote(char* string) {
 //todo: make this a marco define?
 block_t* __block_check_bounaries(const char* method_name, block_t* src) {
 	//these are FATAL conditions, return NULL
+    if(!src) {
+        _ATSC3_UTILS_ERROR("%s: block_t is null: %p", method_name, src);
+        return NULL;
+    }
 
 	if(!src->p_buffer) {
 		_ATSC3_UTILS_ERROR("%s: block: %p, p_buffer is NULL, p_size is: %u, i_pos: %u", method_name, src, src->p_size, src->i_pos);
@@ -262,7 +266,6 @@ uint32_t block_Seek(block_t* block, int32_t seek_pos) {
 	return block->i_pos;
 }
 
-
 block_t* block_Write(block_t* dest, uint8_t* src_buf, uint32_t src_size) {
 	if(!__block_check_bounaries(__FUNCTION__, dest)) return NULL;
 
@@ -301,13 +304,6 @@ uint32_t block_Append(block_t* dest, block_t* src) {
 
 block_t* block_Rewind(block_t* dest) {
 	if(!__block_check_bounaries(__FUNCTION__, dest)) return NULL;
-
-	if(dest->i_pos) {
-		uint32_t to_scrub_len = dest->i_pos > 0 ?  __CLIP(dest->i_pos, 0, dest->p_size) : dest->p_size;
-		_ATSC3_UTILS_TRACE("block_Rewind, block: %p, zeroing out %u bytes", dest, to_scrub_len)
-		memset(dest->p_buffer, 0, to_scrub_len);
-	}
-
 	dest->i_pos = 0;
 	return dest;
 }
@@ -354,6 +350,11 @@ block_t* block_Duplicate_from_position(block_t* src) {
 	return dest;
 }
 
+uint8_t* block_Get(block_t* src) {
+    if(!__block_check_bounaries(__FUNCTION__, src)) return NULL;
+
+    return &src->p_buffer[src->i_pos];
+}
 
 /**
  *
@@ -370,6 +371,13 @@ block_t* block_Duplicate_to_size(block_t* src, uint32_t target_len) {
 	dest->i_pos = to_alloc_size;
 
 	return dest;
+}
+
+// create new block_t from *data and size
+block_t* block_Duplicate_from_ptr(uint8_t* data, uint32_t size) {
+    block_t* block_t = block_Alloc(size);
+    block_Write(block_t, data, size);
+    return block_t;
 }
 
 
@@ -402,6 +410,17 @@ block_t* block_Resize(block_t* src, uint32_t src_size_requested) {
 
 	return src;
 }
+
+uint32_t block_Remaining_size(block_t* src) {
+    if(!__block_check_bounaries(__FUNCTION__, src)) return 0;
+    return src->p_size - src->i_pos;
+}
+
+bool block_Valid(block_t* src) {
+    if(!__block_check_bounaries(__FUNCTION__, src)) return false;
+    return true;
+}
+
 
 
 void block_Release(block_t** a_ptr) {

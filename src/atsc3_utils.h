@@ -19,12 +19,14 @@
 
 #include <time.h>
 #include <sys/time.h>
+#include <stdbool.h>
 
 #ifndef ATSC3_UTILS_H_
 #define ATSC3_UTILS_H_
 
 #include "fixups.h"
 #include "unistd.h"
+
 
 #define uS 1000000ULL
 
@@ -99,6 +101,10 @@ block_t* block_Resize(block_t* dest, uint32_t dest_size_required);
 block_t* block_Duplicate(block_t* a);
 block_t* block_Duplicate_from_position(block_t* a);
 block_t* block_Duplicate_to_size(block_t* src, uint32_t target_len);
+block_t* block_Duplicate_from_ptr(uint8_t* data, uint32_t size);
+uint32_t block_Remaining_size(block_t* src);
+bool block_Valid(block_t* src);
+uint8_t* block_Get(block_t* src);
 
 void block_Release(block_t** a);
 

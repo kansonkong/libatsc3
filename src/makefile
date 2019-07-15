@@ -96,6 +96,9 @@ atsc3_lls.o: atsc3_utils.h atsc3_lls.h atsc3_lls.c
 atsc3_listener_udp.o: atsc3_listener_udp.h atsc3_listener_udp.c
 	cc -g -c atsc3_listener_udp.c
 
+atsc3_ip_udp_rtp_parser.o: atsc3_ip_udp_rtp_parser.h atsc3_ip_udp_rtp_parser.c atsc3_ip_udp_rtp_types.h
+	cc -g -c atsc3_ip_udp_rtp_parser.c
+
 atsc3_lls_mmt_utils.o: atsc3_lls_mmt_utils.h atsc3_lls_mmt_utils.c
 	cc -g -c atsc3_lls_mmt_utils.c
 
@@ -188,8 +191,17 @@ atsc3_route_sls_processor.o: atsc3_route_sls_processor.h atsc3_route_sls_process
 # unit standalone tests with mock data
 
 
-atsc3_stltp_parser_test: atsc3_stltp_parser_test.c atsc3_stltp_parser.o atsc3_listener_udp.o
-	cc -g atsc3_stltp_parser_test.c atsc3_stltp_parser.o atsc3_listener_udp.o -o atsc3_stltp_parser_test
+atsc3_stltp_parser_test: atsc3_stltp_parser_test.c \
+	atsc3_stltp_parser.o \
+	atsc3_listener_udp.o \
+	atsc3_ip_udp_rtp_parser.o \
+	atsc3_utils.o
+	cc -g atsc3_stltp_parser_test.c \
+	atsc3_stltp_parser.o \
+	atsc3_ip_udp_rtp_parser.o \
+	atsc3_listener_udp.o \
+	atsc3_utils.o \
+	-o atsc3_stltp_parser_test
 
 #todo - link against libatsc3 intermediate as these are almost integration tests
 atsc3_mime_multipart_related_parser_test: atsc3_mime_multipart_related_parser_test.c \
@@ -269,30 +281,96 @@ bento4_mock.o: bento4/ISOBMFFTrackJoiner.h bento4/ISOBMFFTrackJoiner_mock.cpp
 
 # only link in atsc3_logging_externs.o if you are using ncurses
 
-libatsc3_intermediate.o: xml.o atsc3_lls.o atsc3_lls_slt_parser.o atsc3_lls_sls_parser.o \
+libatsc3_intermediate.o: atsc3_lls.o \
+		atsc3_lls_slt_parser.o \
+		atsc3_lls_sls_parser.o \
 		atsc3_alp_parser.o \
-		atsc3_mmtp_parser.o atsc3_mmtp_ntp32_to_pts.o atsc3_utils.o \
-		fixups_timespec_get.o atsc3_mmt_signaling_message.o atsc3_mmt_mpu_parser.o alc_channel.o alc_list.o \
-		atsc3_alc_rx.o alc_session.o fec.o null_fec.o rs_fec.o xor_fec.o mad.o mad_rlc.o transport.o \
-		atsc3_lls_alc_utils.o atsc3_mmt_mpu_utils.o atsc3_player_ffplay.o atsc3_alc_utils.o \
-        atsc3_lls_sls_monitor_output_buffer.o atsc3_lls_sls_monitor_output_buffer_utils.o \
-		atsc3_lls_mmt_utils.o  atsc3_listener_udp.o atsc3_gzip.o atsc3_stltp_parser.o \
-		atsc3_fdt.o atsc3_fdt_parser.o \
-		atsc3_route_mpd.o atsc3_route_usbd.o atsc3_route_s_tsid.o atsc3_route_sls_processor.o \
+		atsc3_mmtp_parser.o \
+		atsc3_mmtp_ntp32_to_pts.o \
+		atsc3_utils.o \
+		atsc3_mmt_signaling_message.o \
+		atsc3_mmt_mpu_parser.o \
+		atsc3_alc_rx.o \
+		atsc3_lls_alc_utils.o \
+		atsc3_mmt_mpu_utils.o \
+		atsc3_player_ffplay.o \
+		atsc3_alc_utils.o \
+        atsc3_lls_sls_monitor_output_buffer.o \
+        atsc3_lls_sls_monitor_output_buffer_utils.o \
+		atsc3_lls_mmt_utils.o \
+		atsc3_listener_udp.o \
+		atsc3_ip_udp_rtp_parser.o \
+		atsc3_gzip.o \
+		atsc3_stltp_parser.o \
+		atsc3_fdt.o \
+		atsc3_fdt_parser.o \
+		atsc3_route_mpd.o \
+		atsc3_route_usbd.o \
+		atsc3_route_s_tsid.o \
+		atsc3_route_sls_processor.o \
 		atsc3_sls_held_fragment.o  \
-		atsc3_sls_metadata_fragment_types_parser.o atsc3_mime_multipart_related.o atsc3_mime_multipart_related_parser.o atsc3_mbms_envelope_parser.o
+		atsc3_sls_metadata_fragment_types_parser.o \
+		atsc3_mime_multipart_related.o \
+		atsc3_mime_multipart_related_parser.o \
+		atsc3_mbms_envelope_parser.o \
+		xml.o \
+		fixups_timespec_get.o \
+		alc_session.o \
+		fec.o \
+		null_fec.o \
+		rs_fec.o \
+		xor_fec.o \
+		mad.o \
+		mad_rlc.o \
+		transport.o \
+		alc_channel.o \
+		alc_list.o
 
-	ld  -o libatsc3_intermediate.o -r xml.o atsc3_lls.o atsc3_lls_slt_parser.o  atsc3_lls_sls_parser.o \
+	ld  -o libatsc3_intermediate.o -r atsc3_lls.o \
+		atsc3_lls_slt_parser.o \
+		atsc3_lls_sls_parser.o \
 		atsc3_alp_parser.o \
-		atsc3_mmtp_parser.o atsc3_mmtp_ntp32_to_pts.o atsc3_utils.o \
-		fixups_timespec_get.o atsc3_mmt_signaling_message.o atsc3_mmt_mpu_parser.o alc_channel.o alc_list.o \
-		atsc3_alc_rx.o alc_session.o fec.o null_fec.o rs_fec.o xor_fec.o mad.o mad_rlc.o transport.o atsc3_alc_utils.o \
-		atsc3_lls_alc_utils.o atsc3_mmt_mpu_utils.o atsc3_player_ffplay.o atsc3_lls_sls_monitor_output_buffer.o atsc3_lls_sls_monitor_output_buffer_utils.o \
-		atsc3_lls_mmt_utils.o atsc3_listener_udp.o atsc3_gzip.o atsc3_stltp_parser.o \
-		atsc3_fdt.o atsc3_fdt_parser.o \
-		atsc3_route_mpd.o atsc3_route_usbd.o atsc3_route_s_tsid.o atsc3_route_sls_processor.o \
+		atsc3_mmtp_parser.o \
+		atsc3_mmtp_ntp32_to_pts.o \
+		atsc3_utils.o \
+		atsc3_mmt_signaling_message.o \
+		atsc3_mmt_mpu_parser.o \
+		atsc3_alc_rx.o \
+		atsc3_lls_alc_utils.o \
+		atsc3_mmt_mpu_utils.o \
+		atsc3_player_ffplay.o \
+		atsc3_alc_utils.o \
+		atsc3_lls_sls_monitor_output_buffer.o \
+		atsc3_lls_sls_monitor_output_buffer_utils.o \
+		atsc3_lls_mmt_utils.o \
+		atsc3_listener_udp.o \
+		atsc3_ip_udp_rtp_parser.o \
+		atsc3_gzip.o \
+		atsc3_stltp_parser.o \
+		atsc3_fdt.o \
+		atsc3_fdt_parser.o \
+		atsc3_route_mpd.o \
+		atsc3_route_usbd.o \
+		atsc3_route_s_tsid.o \
+		atsc3_route_sls_processor.o \
 		atsc3_sls_held_fragment.o  \
-		atsc3_sls_metadata_fragment_types_parser.o atsc3_mime_multipart_related.o atsc3_mime_multipart_related_parser.o atsc3_mbms_envelope_parser.o
+		atsc3_sls_metadata_fragment_types_parser.o \
+		atsc3_mime_multipart_related.o \
+		atsc3_mime_multipart_related_parser.o \
+		atsc3_mbms_envelope_parser.o \
+		xml.o \
+		fixups_timespec_get.o \
+		alc_session.o \
+		fec.o \
+		null_fec.o \
+		rs_fec.o \
+		xor_fec.o \
+		mad.o \
+		mad_rlc.o \
+		transport.o \
+		alc_channel.o \
+		alc_list.o
+
 
 libatsc3.o: libatsc3_intermediate.o bento4_mock.o
 	ld  -o libatsc3.o -r libatsc3_intermediate.o bento4_mock.o

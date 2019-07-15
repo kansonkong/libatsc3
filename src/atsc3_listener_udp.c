@@ -19,12 +19,12 @@ udp_packet_t* process_packet_from_pcap(u_char *user, const struct pcap_pkthdr *p
 	for (i = 0; i < 14; i++) {
 		ethernet_packet[i] = packet[0 + i];
 	}
-	if (!(ethernet_packet[12] == 0x08 && ethernet_packet[13] == 0x00)) {
+    if (!(ethernet_packet[12] == 0x08 && ethernet_packet[13] == 0x00)) {        __LISTENER_UDP_ERROR("udp_packet_process_from_ptr: invalid ethernet frame");
 		return NULL;
 	}
 
 	for (i = 0; i < 20; i++) {
-	ip_header[i] = packet[14 + i];
+        ip_header[i] = packet[14 + i];
 	}
 
 	//check if we are a UDP packet, otherwise bail
@@ -63,8 +63,6 @@ udp_packet_t* process_packet_from_pcap(u_char *user, const struct pcap_pkthdr *p
 	return udp_packet;
 }
 
-
-
 udp_packet_t* udp_packet_process_from_ptr_raw_ethernet_packet(uint8_t* raw_packet, uint32_t raw_packet_length) {
 
 	int i = 0;
@@ -80,7 +78,6 @@ udp_packet_t* udp_packet_process_from_ptr_raw_ethernet_packet(uint8_t* raw_packe
 	}
 	if (!(ethernet_packet[12] == 0x08 && ethernet_packet[13] == 0x00)) {
 		__LISTENER_UDP_ERROR("udp_packet_process_from_ptr: invalid ethernet frame");
-
 		return NULL;
 	}
 
@@ -124,7 +121,6 @@ udp_packet_t* udp_packet_process_from_ptr_raw_ethernet_packet(uint8_t* raw_packe
 	return udp_packet;
 }
 
-
 //process ip header and copy packet data
 udp_packet_t* udp_packet_process_from_ptr(uint8_t* packet, uint32_t packet_length) {
 	int i = 0;
@@ -141,7 +137,6 @@ udp_packet_t* udp_packet_process_from_ptr(uint8_t* packet, uint32_t packet_lengt
 	//check if we are a UDP packet, otherwise bail
 	if (ip_header[9] != 0x11) {
 		__LISTENER_UDP_ERROR("udp_packet_process_from_ptr: not a UDP packet!");
-
 		return NULL;
 	}
 
@@ -230,13 +225,11 @@ udp_packet_t* udp_packet_prepend_if_not_null(udp_packet_t* from_packet, udp_pack
 	}
 
 	udp_packet_new->data_position = 0;
-
-
+    
 	udp_packet_new->udp_flow.src_ip_addr = to_packet->udp_flow.src_ip_addr;
 	udp_packet_new->udp_flow.src_port	 = to_packet->udp_flow.src_port;
 	udp_packet_new->udp_flow.dst_ip_addr = to_packet->udp_flow.dst_ip_addr;
 	udp_packet_new->udp_flow.dst_port 	 = to_packet->udp_flow.dst_port;
-
 
 	return udp_packet_new;
 }

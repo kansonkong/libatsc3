@@ -11,6 +11,9 @@
 #include <stdint.h>
 #include <stdbool.h>
 #include "atsc3_listener_udp.h"
+#include "atsc3_ip_udp_rtp_types.h"
+#include "atsc3_ip_udp_rtp_parser.h"
+
 
 #define ATSC3_STLTP_PAYLOAD_TYPE_TUNNEL 					0x61
 
@@ -18,34 +21,21 @@
 #define ATSC3_STLTP_PAYLOAD_TYPE_PREAMBLE_PACKET 			0x4D
 #define ATSC3_STLTP_PAYLOAD_TYPE_BASEBAND_PACKET 			0x4E
 
-typedef struct atsc3_rtp_fixed_header {
-	uint8_t version:2;
-	uint8_t padding:1;
-	uint8_t extension:1;
-	uint8_t csrc_count:4;
-	uint8_t marker:1;
-	uint8_t payload_type:7;
-	uint16_t sequence_number;
-	uint32_t timestamp;
-	uint32_t packet_offset;
-} atsc3_rtp_fixed_header_t;
 
 //https://www.atsc.org/wp-content/uploads/2016/10/A322-2018-Physical-Layer-Protocol.pdf
 
 typedef struct atsc3_stltp_baseband_packet {
 	atsc3_rtp_fixed_header_t* atsc3_rtp_fixed_header;
 
-	uint8_t* 		payload;
-	uint32_t 		payload_offset;
-	uint32_t 		payload_length;
-	bool 			is_complete;
+	uint8_t* 	        	payload;
+    uint32_t 	        	payload_offset;
+	uint32_t 	        	payload_length;
+	bool 		        	is_complete;
 
 	//other baseband alp attributes here
 
-
-
-	udp_packet_t* 	udp_packet;
-	uint32_t 		fragment_count;
+    ip_udp_rtp_packet_t* 	ip_udp_rtp_packet;
+	uint32_t 		        fragment_count;
 
 } atsc3_stltp_baseband_packet_t;
 
@@ -133,7 +123,7 @@ typedef struct atsc3_stltp_preamble_packet {
 	L1_detail_signaling_t 	L1_detail_signaling;
 	uint16_t				crc16;
 
-	udp_packet_t* 			udp_packet;
+	ip_udp_rtp_packet_t* 	ip_udp_rtp_packet;
 	uint32_t 				fragment_count;
 
 } atsc3_stltp_preamble_packet_t;
@@ -202,7 +192,7 @@ typedef struct atsc3_stltp_timing_management_packet {
 	packet_release_time_t		packet_release_time;
 	error_check_data_t			error_check_data;
 
-	udp_packet_t* 				udp_packet;
+	ip_udp_rtp_packet_t* 		ip_udp_rtp_packet;
 	uint32_t 					fragment_count;
 
 } atsc3_stltp_timing_management_packet_t;
@@ -210,30 +200,30 @@ typedef struct atsc3_stltp_timing_management_packet {
 
 
 typedef struct atsc3_stltp_tunnel_packet {
-	atsc3_rtp_fixed_header_t* atsc3_rtp_fixed_header_tunnel;
+	atsc3_rtp_fixed_header_t* atsc3_rtp_fixed_header_outer_tunnel;
 	atsc3_rtp_fixed_header_t* atsc3_rtp_fixed_header_inner_last;
 
 	uint8_t* outer_ip_header;
 	uint32_t outer_ip_header_length;
 
-	udp_packet_t* udp_packet_outer;
-	udp_packet_t* udp_packet_inner;
-	udp_packet_t* udp_packet_inner_refragmented;
-
-	udp_packet_t* udp_packet_inner_last_fragment;
-
+	ip_udp_rtp_packet_t* ip_udp_rtp_packet_outer;
+	ip_udp_rtp_packet_t* ip_udp_rtp_packet_inner;
+	ip_udp_rtp_packet_t* ip_udp_rtp_packet_inner_refragmented;
+	ip_udp_rtp_packet_t* ip_udp_rtp_packet_inner_last_fragment;
 
 	uint32_t udp_packet_last_position;
-
-	uint32_t fragment_count;
-
+    uint32_t fragment_count;
 
 	atsc3_stltp_baseband_packet_t* 			atsc3_stltp_baseband_packet;
+    atsc3_stltp_baseband_packet_t*          atsc3_stltp_baseband_packet_pending;
+    
 	atsc3_stltp_preamble_packet_t* 			atsc3_stltp_preamble_packet;
+    atsc3_stltp_preamble_packet_t*          atsc3_stltp_preamble_packet_pending;
+    
 	atsc3_stltp_timing_management_packet_t* atsc3_stltp_timing_management_packet;
+    atsc3_stltp_timing_management_packet_t* atsc3_stltp_timing_management_packet_pending;
 
 	atsc3_rtp_fixed_header_t* 				atsc3_rtp_fixed_header_payload;
-
 
 } atsc3_stltp_tunnel_packet_t;
 
