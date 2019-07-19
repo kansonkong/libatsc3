@@ -963,16 +963,20 @@ void parseAndBuildJoinedBoxes_from_lls_sls_monitor_output_buffer(lls_sls_monitor
 			AP4_ContainerAtom* trafContainerAtom = AP4_DYNAMIC_CAST(AP4_ContainerAtom, moofAtom->GetChild(AP4_ATOM_TYPE_TRAF));
 			//tfhd
 
-            AP4_TfhdAtom* tfhdTempAtom = AP4_DYNAMIC_CAST(AP4_TfhdAtom, trafContainerAtom->GetChild(AP4_ATOM_TYPE_TFHD));
-            if(tfhdTempAtom && audio_track_id_to_remap) {
-            	tfhdTempAtom->SetTrackId(audio_track_id_to_remap);
-            }
+			if(trafContainerAtom) {
+				AP4_TfhdAtom* tfhdTempAtom = AP4_DYNAMIC_CAST(AP4_TfhdAtom, trafContainerAtom->GetChild(AP4_ATOM_TYPE_TFHD));
+				if(tfhdTempAtom && audio_track_id_to_remap) {
+					tfhdTempAtom->SetTrackId(audio_track_id_to_remap);
+				}
 
-			audio_trafList.push_back(trafContainerAtom);
+				audio_trafList.push_back(trafContainerAtom);
 
-			AP4_TrunAtom* temp_trunAtom = AP4_DYNAMIC_CAST(AP4_TrunAtom, trafContainerAtom->GetChild(AP4_ATOM_TYPE_TRUN));
-		
-			audio_trunList.push_back(temp_trunAtom);
+				AP4_TrunAtom* temp_trunAtom = AP4_DYNAMIC_CAST(AP4_TrunAtom, trafContainerAtom->GetChild(AP4_ATOM_TYPE_TRUN));
+
+				audio_trunList.push_back(temp_trunAtom);
+			} else {
+				__ISOBMFF_JOINER_ERROR("trafContainerAtom is null!");
+			}
 		}
 
 		if(top_level_atom->GetType() == AP4_ATOM_TYPE_MDAT) {

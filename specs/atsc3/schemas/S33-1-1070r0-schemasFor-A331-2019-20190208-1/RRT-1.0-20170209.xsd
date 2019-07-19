@@ -1,0 +1,61 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<xs:schema 
+	xmlns:xs="http://www.w3.org/2001/XMLSchema" 
+	xmlns:rrt="tag:atsc.org,2016:XMLSchemas/ATSC3/RRT/1.0/" 
+	targetNamespace="tag:atsc.org,2016:XMLSchemas/ATSC3/RRT/1.0/" elementFormDefault="qualified">
+	<xs:import namespace="http://www.w3.org/XML/1998/namespace" schemaLocation="W3C/xml.xsd"/>
+	<xs:element name="RatingRegionTables" type="rrt:RRsType"/>
+	<xs:complexType name="RRsType">
+		<xs:sequence>
+			<xs:element name="RatingRegionTable" type="rrt:RatingRegionTableType" maxOccurs="2"/>
+			<xs:any namespace="##other" processContents="strict" minOccurs="0" maxOccurs="unbounded"/>
+		</xs:sequence>
+		<xs:anyAttribute processContents="strict"/>
+	</xs:complexType>
+	<xs:complexType name="RatingRegionTableType">
+		<xs:sequence>
+			<xs:element name="RegionIdText" type="rrt:TextType" maxOccurs="unbounded"/>
+			<xs:element name="Dimension" type="rrt:DimensionType" maxOccurs="unbounded"/>
+			<xs:any namespace="##other" processContents="strict" minOccurs="0" maxOccurs="unbounded"/>
+		</xs:sequence>
+		<xs:attribute name="regionIdentifier" type="rrt:RIType" use="required"/>
+		<xs:anyAttribute processContents="strict"/>
+	</xs:complexType>
+	<xs:simpleType name="RIType">
+		<xs:restriction base="xs:unsignedByte">
+			<xs:minInclusive value="1"/>
+		</xs:restriction>
+	</xs:simpleType>
+	<xs:complexType name="DimensionType">
+		<xs:sequence>
+			<xs:element name="DimensionTitle" type="rrt:TextType" minOccurs="0" maxOccurs="unbounded"/>
+			<xs:element name="Rating" type="rrt:RatingType" maxOccurs="unbounded"/>
+			<xs:any namespace="##other" processContents="strict" minOccurs="0" maxOccurs="unbounded"/>
+		</xs:sequence>
+		<xs:attribute name="dimensionLevels" type="rrt:DimLevelType" use="required"/>
+		<xs:attribute name="dimensionGraduated" type="xs:boolean" default="false"/>
+		<xs:anyAttribute processContents="strict"/>
+	</xs:complexType>
+	<xs:simpleType name="DimLevelType">
+		<xs:restriction base="xs:unsignedByte">
+			<xs:minInclusive value="1"/>
+		</xs:restriction>
+	</xs:simpleType>
+	<xs:complexType name="RatingType">
+		<xs:sequence>
+			<xs:element name="RatingValueAbbrev" type="rrt:TextType" maxOccurs="unbounded"/>
+			<xs:element name="RatingValueString" type="rrt:TextType" maxOccurs="unbounded"/>
+			<xs:any namespace="##other" processContents="strict" minOccurs="0" maxOccurs="unbounded"/>
+		</xs:sequence>
+		<xs:attribute name="ratingValue" type="xs:unsignedByte" use="required"/>
+		<xs:anyAttribute processContents="strict"/>
+	</xs:complexType>
+	<xs:complexType name="TextType">
+		<xs:simpleContent>
+			<xs:extension base="xs:string">
+				<xs:attribute ref="xml:lang" default="EN"/>
+				<xs:anyAttribute processContents="strict"/>
+			</xs:extension>
+		</xs:simpleContent>
+	</xs:complexType>
+</xs:schema>

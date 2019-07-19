@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<xs:schema 
+	xmlns="tag:atsc.org,2016:XMLSchemas/ATSC3/Delivery/APD/1.0/" 
+	xmlns:xs="http://www.w3.org/2001/XMLSchema" 
+	targetNamespace="tag:atsc.org,2016:XMLSchemas/ATSC3/Delivery/APD/1.0/" elementFormDefault="qualified">
+	<xs:element name="AssociatedProcedureDescription" type="APDType"/>
+	<xs:complexType name="APDType">
+		<xs:sequence>
+			<xs:element name="PostFileRepair" type="postFileType"/>
+			<xs:any namespace="##other" processContents="strict" minOccurs="0" maxOccurs="unbounded"/>
+		</xs:sequence>
+		<xs:anyAttribute processContents="skip"/>
+	</xs:complexType>
+	<xs:complexType name="postFileType">
+		<xs:attribute name="offsetTime" type="xs:unsignedLong"/>
+		<xs:attribute name="randomTimePeriod" type="xs:unsignedLong" use="required"/>
+		<xs:anyAttribute processContents="strict"/>
+	</xs:complexType>
+</xs:schema>

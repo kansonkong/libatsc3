@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<RatingRegionTables
+	xmlns="tag:atsc.org,2016:XMLSchemas/ATSC3/RRT/1.0/"
+	xmlns:xs="http://www.w3.org/2001/XMLSchema" 
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="tag:atsc.org,2016:XMLSchemas/ATSC3/RRT/1.0/ RRT-1.0-20170209.xsd">
+
+	<RatingRegionTable regionIdentifier="1">
+		<RegionIdText xml:lang="en">Canada</RegionIdText>
+		<Dimension dimensionLevels="1" dimensionGraduated="true">
+			<DimensionTitle xml:lang="en">Bad</DimensionTitle>
+			<Rating ratingValue="1">
+				<RatingValueAbbrev xml:lang="en">MV</RatingValueAbbrev>
+				<RatingValueString xml:lang="en">Mild Violence</RatingValueString>
+			</Rating>
+		</Dimension>
+	</RatingRegionTable>
+</RatingRegionTables>
