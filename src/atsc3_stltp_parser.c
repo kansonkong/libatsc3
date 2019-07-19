@@ -28,11 +28,23 @@ ip_udp_rtp_packet_t* atsc3_stltp_udp_packet_inner_prepend_fragment(atsc3_stltp_t
 //when marker == 1, The packet_offset is the number of bytes after the RTP header where the first byte of the first tunneled IP header resides within the Tunnel Packet
 //base of IP/UDP/RTP = 40 bytes, not 12 (RTP only) ???
 ip_udp_rtp_packet_t* atsc3_stltp_udp_packet_outer_fragment_check_marker(atsc3_stltp_tunnel_packet_t* atsc3_stltp_tunnel_packet) {
+    if(block_Remaining_size(atsc3_stltp_tunnel_packet->ip_udp_rtp_packet_outer->data) <= ATSC_STLTP_IP_UDP_RTP_HEADER_SIZE) {
+        __STLTP_PARSER_ERROR("atsc3_stltp_udp_packet_outer_fragment_check_marker: short packet: %u", block_Remaining_size(atsc3_stltp_tunnel_packet->ip_udp_rtp_packet_outer->data) );
 
+        return NULL;
+    }
     if(atsc3_stltp_tunnel_packet->atsc3_rtp_fixed_header_outer_tunnel->marker) {
+        
         uint32_t outer_data_pos = atsc3_stltp_tunnel_packet->ip_udp_rtp_packet_outer->data->i_pos;
+    
         
     	block_Seek(atsc3_stltp_tunnel_packet->ip_udp_rtp_packet_outer->data, atsc3_stltp_tunnel_packet->atsc3_rtp_fixed_header_outer_tunnel->packet_offset + ATSC_STLTP_IP_UDP_RTP_HEADER_SIZE);
+        
+        if(block_Remaining_size(atsc3_stltp_tunnel_packet->ip_udp_rtp_packet_outer->data) <= ATSC_STLTP_IP_UDP_RTP_HEADER_SIZE) {
+            __STLTP_PARSER_ERROR("atsc3_stltp_udp_packet_outer_fragment_check_marker: short packet: %u", block_Remaining_size(atsc3_stltp_tunnel_packet->ip_udp_rtp_packet_outer->data) );
+            
+            return NULL;
+        }
 
 		__STLTP_PARSER_DEBUG("seeking udp_packet_outer: %p, from %u to: %u", atsc3_stltp_tunnel_packet->ip_udp_rtp_packet_outer->data, outer_data_pos, atsc3_stltp_tunnel_packet->ip_udp_rtp_packet_outer->data->i_pos);
 
@@ -106,14 +118,17 @@ atsc3_stltp_tunnel_packet_t* atsc3_stltp_tunnel_packet_extract_fragment_from_udp
 	}
 
     //if we have a pending fragment, append with previous inner rtp header
-	atsc3_stltp_tunnel_packet->ip_udp_rtp_packet_inner_refragmented = atsc3_stltp_udp_packet_inner_prepend_fragment(atsc3_stltp_tunnel_packet);
+//	atsc3_stltp_tunnel_packet->ip_udp_rtp_packet_inner_refragmented = atsc3_stltp_udp_packet_inner_prepend_fragment(atsc3_stltp_tunnel_packet);
 
-	if(atsc3_stltp_tunnel_packet->ip_udp_rtp_packet_inner_refragmented &&
-       block_Valid(atsc3_stltp_tunnel_packet->ip_udp_rtp_packet_inner_refragmented->data) &&
-       block_Remaining_size(atsc3_stltp_tunnel_packet->ip_udp_rtp_packet_inner_refragmented->data)  && atsc3_stltp_tunnel_packet->atsc3_rtp_fixed_header_inner_last) {
+//    if(atsc3_stltp_tunnel_packet->ip_udp_rtp_packet_inner_refragmented &&
+//       block_Valid(atsc3_stltp_tunnel_packet->ip_udp_rtp_packet_inner_refragmented->data) &&
+//       block_Remaining_size(atsc3_stltp_tunnel_packet->ip_udp_rtp_packet_inner_refragmented->data)  && atsc3_stltp_tunnel_packet->atsc3_rtp_fixed_header_inner_last) {
 
+    if(atsc3_stltp_tunnel_packet->ip_udp_rtp_packet_inner_last_fragment && block_Remaining_size(atsc3_stltp_tunnel_packet->ip_udp_rtp_packet_inner_last_fragment->data) > 0 && block_Remaining_size(atsc3_stltp_tunnel_packet->ip_udp_rtp_packet_inner_last_fragment->data) < ATSC_STLTP_IP_UDP_RTP_HEADER_SIZE) {
+  
+            atsc3_stltp_tunnel_packet->ip_udp_rtp_packet_inner_refragmented = atsc3_stltp_udp_packet_inner_prepend_fragment(atsc3_stltp_tunnel_packet);
 		//re-fragment
-		__STLTP_PARSER_WARN("--tunnel packet: processing from fragment: %u, length is: %u",
+		__STLTP_PARSER_WARN("--tunnel packet: processing short fragment payload type: %u, fragment length is: %u",
                             atsc3_stltp_tunnel_packet->atsc3_rtp_fixed_header_inner_last->payload_type,
                             block_Remaining_size(atsc3_stltp_tunnel_packet->ip_udp_rtp_packet_inner_refragmented->data));
 
@@ -123,14 +138,20 @@ atsc3_stltp_tunnel_packet_t* atsc3_stltp_tunnel_packet_extract_fragment_from_udp
 		atsc3_stltp_tunnel_packet_extract_fragment_encapsulated_payload(atsc3_stltp_tunnel_packet, atsc3_stltp_tunnel_packet->ip_udp_rtp_packet_inner_refragmented);
         
 		//out of data for refragmenting
-		if(block_Remaining_size(atsc3_stltp_tunnel_packet->ip_udp_rtp_packet_inner_refragmented->data) <= 12) {
+		if(block_Remaining_size(atsc3_stltp_tunnel_packet->ip_udp_rtp_packet_inner_refragmented->data) <= 40) {
             if(block_Remaining_size(atsc3_stltp_tunnel_packet->ip_udp_rtp_packet_inner_refragmented->data) > 0) {
                 atsc3_stltp_tunnel_packet->ip_udp_rtp_packet_inner_last_fragment = atsc3_stltp_tunnel_packet->ip_udp_rtp_packet_inner_refragmented;
             }
             return atsc3_stltp_tunnel_packet;
 		}
-	}
-   
+    } else if(atsc3_stltp_tunnel_packet->atsc3_rtp_fixed_header_inner_last) {
+        ip_udp_rtp_packet->atsc3_rtp_fixed_header = atsc3_stltp_tunnel_packet->atsc3_rtp_fixed_header_inner_last;
+        //process this full frame
+        atsc3_stltp_tunnel_packet_t* atsc3_stltp_tunnel_packet_result = atsc3_stltp_tunnel_packet_extract_fragment_encapsulated_payload(atsc3_stltp_tunnel_packet, ip_udp_rtp_packet);
+
+    }
+    atsc3_stltp_tunnel_packet->ip_udp_rtp_packet_inner_last_fragment = NULL;
+    
     if(!atsc3_stltp_tunnel_packet->atsc3_rtp_fixed_header_outer_tunnel->marker) {
         __STLTP_PARSER_WARN("--tunnel packet: completed refragmentation but no new marker");
 
@@ -146,19 +167,27 @@ atsc3_stltp_tunnel_packet_t* atsc3_stltp_tunnel_packet_extract_fragment_from_udp
         atsc3_stltp_tunnel_packet_t* atsc3_stltp_tunnel_packet_result = atsc3_stltp_tunnel_packet_extract_fragment_encapsulated_payload(atsc3_stltp_tunnel_packet, ip_udp_inner_from_outer_packet_marker);
         atsc3_rtp_fixed_header_inner = ip_udp_inner_from_outer_packet_marker->atsc3_rtp_fixed_header;
         atsc3_rtp_fixed_header_inner->marker = 0; //force trigger offset to 0
+    } else {
+        //if we have a marker, but we didnt process, then push back and loop
+        if(atsc3_stltp_tunnel_packet->atsc3_rtp_fixed_header_outer_tunnel->marker) {
+            atsc3_stltp_tunnel_packet->ip_udp_rtp_packet_inner_last_fragment = atsc3_stltp_tunnel_packet->ip_udp_rtp_packet_inner;
+            return atsc3_stltp_tunnel_packet;
+        }
+        //parse inner payload
+        ip_udp_inner_from_outer_packet_marker = atsc3_stltp_tunnel_packet->ip_udp_rtp_packet_inner;
     }
     
     //parse headers for additional inner marker
-	while(atsc3_stltp_tunnel_packet->ip_udp_rtp_packet_inner && block_Remaining_size(atsc3_stltp_tunnel_packet->ip_udp_rtp_packet_inner->data) > (40)) {
+	while(ip_udp_inner_from_outer_packet_marker && block_Remaining_size(ip_udp_inner_from_outer_packet_marker->data) > (40)) {
 
-		atsc3_rtp_fixed_header_inner = atsc3_stltp_parse_rtp_fixed_header_block_t(atsc3_stltp_tunnel_packet->ip_udp_rtp_packet_inner->data);
+		atsc3_rtp_fixed_header_inner = atsc3_stltp_parse_rtp_fixed_header_block_t(ip_udp_inner_from_outer_packet_marker->data);
 
 		if(atsc3_rtp_fixed_header_inner) {
 			atsc3_rtp_fixed_header_dump_inner(atsc3_rtp_fixed_header_inner);
 
-			__STLTP_PARSER_DEBUG("--tunnel packet: processing from fragment: %u, length is: %u", atsc3_rtp_fixed_header_inner->payload_type, block_Remaining_size(atsc3_stltp_tunnel_packet->ip_udp_rtp_packet_inner->data));
+			__STLTP_PARSER_DEBUG("--tunnel packet: processing from fragment: %u, length is: %u", atsc3_rtp_fixed_header_inner->payload_type, block_Remaining_size(atsc3_stltp_tunnel_packet->ip_udp_rtp_packet_outer->data));
 
-			atsc3_stltp_tunnel_packet_t* atsc3_stltp_tunnel_packet_result = atsc3_stltp_tunnel_packet_extract_fragment_encapsulated_payload(atsc3_stltp_tunnel_packet, atsc3_stltp_tunnel_packet->ip_udp_rtp_packet_inner);
+			atsc3_stltp_tunnel_packet_t* atsc3_stltp_tunnel_packet_result = atsc3_stltp_tunnel_packet_extract_fragment_encapsulated_payload(atsc3_stltp_tunnel_packet, ip_udp_inner_from_outer_packet_marker);
 			if(!atsc3_stltp_tunnel_packet_result) {
 				__STLTP_PARSER_ERROR("--tunnel packet: error processing atsc3_stltp_tunnel_packet_extract_fragment_encapsulated_payload");
 				break;
@@ -169,8 +198,9 @@ atsc3_stltp_tunnel_packet_t* atsc3_stltp_tunnel_packet_extract_fragment_from_udp
 		}
 	}
     
-    //out of data for refragmenting
-    if(atsc3_stltp_tunnel_packet->ip_udp_rtp_packet_inner_refragmented && block_Remaining_size(atsc3_stltp_tunnel_packet->ip_udp_rtp_packet_inner_refragmented->data) <= 12) {
+    //out of data for refragmenting        //hold over this payload
+
+    if(atsc3_stltp_tunnel_packet->ip_udp_rtp_packet_inner_refragmented && block_Remaining_size(atsc3_stltp_tunnel_packet->ip_udp_rtp_packet_inner_refragmented->data) <= 40) {
         if(block_Remaining_size(atsc3_stltp_tunnel_packet->ip_udp_rtp_packet_inner_refragmented->data) > 0) {
             atsc3_stltp_tunnel_packet->ip_udp_rtp_packet_inner_last_fragment = atsc3_stltp_tunnel_packet->ip_udp_rtp_packet_inner;
         }
@@ -181,9 +211,9 @@ atsc3_stltp_tunnel_packet_t* atsc3_stltp_tunnel_packet_extract_fragment_from_udp
     
     //if we are out of data and not complete, then carry over this as inner_last_fragment
     //todo: does it matter what size we have?
-    if(atsc3_stltp_tunnel_packet->ip_udp_rtp_packet_inner  && block_Remaining_size(atsc3_stltp_tunnel_packet->ip_udp_rtp_packet_inner->data) <= 40) {
-        atsc3_stltp_tunnel_packet->ip_udp_rtp_packet_inner_last_fragment = atsc3_stltp_tunnel_packet->ip_udp_rtp_packet_inner;
-    }
+//    if(atsc3_stltp_tunnel_packet->ip_udp_rtp_packet_inner  && block_Remaining_size(atsc3_stltp_tunnel_packet->ip_udp_rtp_packet_inner->data) <= 40) {
+//        atsc3_stltp_tunnel_packet->ip_udp_rtp_packet_inner_last_fragment = atsc3_stltp_tunnel_packet->ip_udp_rtp_packet_inner;
+//    }
 
 	return atsc3_stltp_tunnel_packet;
 
@@ -306,11 +336,11 @@ atsc3_stltp_tunnel_packet_t* atsc3_stltp_tunnel_packet_extract_fragment_encapsul
 //atsc3_stltp_baseband_packet_t* atsc3_stltp_baseband_packet_extract(atsc3_stltp_tunnel_packet_t* atsc3_stltp_tunnel_packet, atsc3_rtp_fixed_header_t* atsc3_rtp_fixed_header_tunnel) {
 atsc3_stltp_baseband_packet_t* atsc3_stltp_baseband_packet_extract(atsc3_stltp_tunnel_packet_t* atsc3_stltp_tunnel_packet, ip_udp_rtp_packet_t* ip_udp_rtp_packet_inner, atsc3_rtp_fixed_header_t* atsc3_rtp_fixed_header_inner) {
 
-    if(ip_udp_rtp_packet_inner->atsc3_rtp_fixed_header->marker && atsc3_stltp_tunnel_packet->atsc3_stltp_baseband_packet_pending) {
-        //force clear out pending packet
-        free(atsc3_stltp_tunnel_packet->atsc3_stltp_baseband_packet_pending);
-        atsc3_stltp_tunnel_packet->atsc3_stltp_baseband_packet_pending = NULL;
-    }
+//    if(ip_udp_rtp_packet_inner->atsc3_rtp_fixed_header->marker && atsc3_stltp_tunnel_packet->atsc3_stltp_baseband_packet_pending) {
+//        //force clear out pending packet
+//        free(atsc3_stltp_tunnel_packet->atsc3_stltp_baseband_packet_pending);
+//        atsc3_stltp_tunnel_packet->atsc3_stltp_baseband_packet_pending = NULL;
+//    }
 
     atsc3_stltp_baseband_packet_t* atsc3_stltp_baseband_packet_pending = atsc3_stltp_tunnel_packet->atsc3_stltp_baseband_packet_pending;
     
@@ -342,7 +372,7 @@ atsc3_stltp_baseband_packet_t* atsc3_stltp_baseband_packet_extract(atsc3_stltp_t
 		assert(baseband_header_packet_length < 65535);
 		atsc3_stltp_baseband_packet_pending->payload_length = baseband_header_packet_length;
 		atsc3_stltp_baseband_packet_pending->payload = calloc(baseband_header_packet_length, sizeof(uint8_t));
-
+        assert(atsc3_stltp_baseband_packet_pending->payload);
 
 		__STLTP_PARSER_DEBUG(" ----baseband packet: new -----");
 		__STLTP_PARSER_DEBUG("     total packet length:  %u",  atsc3_stltp_baseband_packet_pending->payload_length);
@@ -370,7 +400,7 @@ atsc3_stltp_baseband_packet_t* atsc3_stltp_baseband_packet_extract(atsc3_stltp_t
         atsc3_stltp_tunnel_packet->atsc3_stltp_baseband_packet_pending = NULL;
 	}
            
-	block_Seek(packet, block_remaining_length);
+	block_Seek(packet, packet->i_pos + block_remaining_length);
 
 	return atsc3_stltp_baseband_packet_pending;
 }
@@ -389,45 +419,30 @@ atsc3_stltp_preamble_packet_t* atsc3_stltp_preamble_packet_extract(atsc3_stltp_t
 	if(!atsc3_stltp_preamble_packet_pending) {
 		atsc3_stltp_preamble_packet_pending = calloc(1, sizeof(atsc3_stltp_preamble_packet_t));
         atsc3_stltp_preamble_packet_pending->atsc3_rtp_fixed_header = atsc3_rtp_fixed_header_inner;
-        atsc3_stltp_preamble_packet_pending->payload_length = atsc3_rtp_fixed_header_inner->packet_offset;
 
 		atsc3_stltp_tunnel_packet->atsc3_stltp_preamble_packet_pending = atsc3_stltp_preamble_packet_pending;
 	}
 
 	atsc3_stltp_preamble_packet_pending->atsc3_rtp_fixed_header = atsc3_rtp_fixed_header_inner;
     block_t* packet = ip_udp_rtp_packet_inner->data;
-    uint32_t block_remaining_length = block_Remaining_size(packet);
 
-    //limit to the max of our payload_length
-    if(block_remaining_length + atsc3_stltp_preamble_packet_pending->payload_offset > atsc3_stltp_preamble_packet_pending->payload_length ) {
-        block_remaining_length = __MIN(block_remaining_length, atsc3_stltp_preamble_packet_pending->payload_length - atsc3_stltp_preamble_packet_pending->payload_offset);
-    }
-    
 	if(atsc3_stltp_preamble_packet_pending->atsc3_rtp_fixed_header->marker && !atsc3_stltp_tunnel_packet->atsc3_stltp_preamble_packet_pending->fragment_count) {
 		//read the first uint16_t for our preamble length
 
-		atsc3_stltp_preamble_packet_pending->payload_length = ntohs(*((uint16_t*)(block_Get(packet))));
+        //The length field shall contain the number of bytes in the Preamble Payload data structure following the length field excluding the crc16 bytes
+		atsc3_stltp_preamble_packet_pending->payload_length = ntohs(*((uint16_t*)(block_Get(packet)))) +2;
 		__STLTP_PARSER_DEBUG(" ----preamble packet: new -----");
 		__STLTP_PARSER_DEBUG("     preamble length:    %u",  atsc3_stltp_preamble_packet_pending->payload_length);
-		__STLTP_PARSER_DEBUG("     fragment 0 length:  %u",  block_remaining_length);
+		__STLTP_PARSER_DEBUG("     fragment 0 length:  %u",  block_Remaining_size(packet));
+        
+		atsc3_stltp_preamble_packet_pending->payload = calloc(atsc3_stltp_preamble_packet_pending->payload_length, sizeof(uint8_t));
 
-
-		uint32_t preamble_header_packet_length = atsc3_stltp_preamble_packet_pending->payload_length;
-		assert(preamble_header_packet_length < 65535);
-		atsc3_stltp_preamble_packet_pending->payload = calloc(preamble_header_packet_length, sizeof(uint8_t));
-
-	} else {
-		__STLTP_PARSER_DEBUG(" ----preamble packet: fragment -----");
-		__STLTP_PARSER_DEBUG("     fragment: %u length: %u",   atsc3_stltp_preamble_packet_pending->fragment_count, block_remaining_length);
 	}
     
-    memcpy(&atsc3_stltp_preamble_packet_pending->payload[atsc3_stltp_preamble_packet_pending->payload_offset], block_Get(packet), block_remaining_length);
+    memcpy(&atsc3_stltp_preamble_packet_pending->payload[atsc3_stltp_preamble_packet_pending->payload_offset], block_Get(packet), atsc3_stltp_preamble_packet_pending->payload_length);
 	__STLTP_PARSER_DEBUG("     first bytes:         0x%02x 0x%02x", atsc3_stltp_preamble_packet_pending->payload[atsc3_stltp_preamble_packet_pending->payload_offset], atsc3_stltp_preamble_packet_pending->payload[atsc3_stltp_preamble_packet_pending->payload_offset+1]);
 
-    atsc3_stltp_preamble_packet_pending->fragment_count++;
-
-	atsc3_stltp_preamble_packet_pending->payload_offset += block_remaining_length;
-    __STLTP_PARSER_DEBUG("     payload_offset now: %u, preamble_payload_length: %u", atsc3_stltp_preamble_packet_pending->payload_offset, atsc3_stltp_preamble_packet_pending->payload_length);
+    __STLTP_PARSER_DEBUG("      preamble_payload_length: %u", atsc3_stltp_preamble_packet_pending->payload_length);
 
 	if(atsc3_stltp_preamble_packet_pending->payload_offset >= atsc3_stltp_preamble_packet_pending->payload_length) {
 
@@ -435,9 +450,8 @@ atsc3_stltp_preamble_packet_t* atsc3_stltp_preamble_packet_extract(atsc3_stltp_t
 		__STLTP_PARSER_DEBUG(" ----preamble packet: complete-----");
 		atsc3_stltp_preamble_packet_pending->is_complete = true;
         atsc3_stltp_tunnel_packet->atsc3_stltp_preamble_packet = atsc3_stltp_preamble_packet_pending;
-        atsc3_stltp_tunnel_packet->atsc3_stltp_preamble_packet_pending  = NULL;
+        block_Seek(packet, packet->i_pos + atsc3_stltp_tunnel_packet->atsc3_stltp_preamble_packet->payload_length);
 	}
-	block_Seek(packet, block_remaining_length);
 
 	return atsc3_stltp_preamble_packet_pending;
 }
@@ -454,46 +468,29 @@ atsc3_stltp_timing_management_packet_t* atsc3_stltp_timing_management_packet_ext
 	if(!atsc3_stltp_timing_management_packet_pending) {
 		atsc3_stltp_timing_management_packet_pending = calloc(1, sizeof(atsc3_stltp_timing_management_packet_t));
         atsc3_stltp_timing_management_packet_pending->atsc3_rtp_fixed_header = atsc3_rtp_fixed_header_inner;
-        atsc3_stltp_timing_management_packet_pending->payload_length = atsc3_rtp_fixed_header_inner->packet_offset;
-
 		atsc3_stltp_tunnel_packet->atsc3_stltp_timing_management_packet_pending = atsc3_stltp_timing_management_packet_pending;
 	}
 
 	atsc3_stltp_timing_management_packet_pending->atsc3_rtp_fixed_header = atsc3_rtp_fixed_header_inner;
 	uint32_t header_packet_offset = 0;
     block_t* packet = ip_udp_rtp_packet_inner->data;
-    uint32_t inner_remaining_length = block_Remaining_size(packet);
 
-	if(atsc3_stltp_timing_management_packet_pending->atsc3_rtp_fixed_header->marker && !atsc3_stltp_tunnel_packet->atsc3_stltp_timing_management_packet_pending->fragment_count) {
+    if(atsc3_stltp_timing_management_packet_pending->atsc3_rtp_fixed_header->marker && !atsc3_stltp_tunnel_packet->atsc3_stltp_timing_management_packet_pending->fragment_count) {
 		//read the first uint16_t for our preamble length
 
 		atsc3_stltp_timing_management_packet_pending->payload_length = ntohs(*((uint16_t*)(block_Get(packet))));
 		__STLTP_PARSER_DEBUG(" ----timing_management packet: new -----");
 		__STLTP_PARSER_DEBUG("     preamble length:    %u",  atsc3_stltp_timing_management_packet_pending->payload_length);
-		__STLTP_PARSER_DEBUG("     fragment 0 length:  %u",  inner_remaining_length);
-
-
-		uint32_t preamble_header_packet_length = atsc3_stltp_timing_management_packet_pending->payload_length;
-		assert(preamble_header_packet_length < 65535);
-		atsc3_stltp_timing_management_packet_pending->payload = calloc(preamble_header_packet_length, sizeof(uint8_t));
-
-	} else {
-		__STLTP_PARSER_DEBUG(" ----timing_management packet: fragment -----");
-		__STLTP_PARSER_DEBUG("     fragment: %u length: %u",   atsc3_stltp_timing_management_packet_pending->fragment_count, inner_remaining_length);
+        __STLTP_PARSER_DEBUG("     fragment 0 length:  %u",  block_Remaining_size(packet));
+		atsc3_stltp_timing_management_packet_pending->payload = calloc(atsc3_stltp_timing_management_packet_pending->payload_length, sizeof(uint8_t));
 	}
     
-    if(inner_remaining_length + atsc3_stltp_timing_management_packet_pending->payload_offset > atsc3_stltp_timing_management_packet_pending->payload_length ) {
-        inner_remaining_length = __MIN(inner_remaining_length, atsc3_stltp_timing_management_packet_pending->payload_length - atsc3_stltp_timing_management_packet_pending->payload_offset);
-    }
-    
-	__STLTP_PARSER_DEBUG("     remaining length: %u",   inner_remaining_length);
 
 	atsc3_stltp_timing_management_packet_pending->fragment_count++;
-	memcpy(&atsc3_stltp_timing_management_packet_pending->payload[atsc3_stltp_timing_management_packet_pending->payload_offset], block_Get(packet), inner_remaining_length);
-    if(inner_remaining_length > 1) {
+	memcpy(&atsc3_stltp_timing_management_packet_pending->payload[atsc3_stltp_timing_management_packet_pending->payload_offset], block_Get(packet), atsc3_stltp_timing_management_packet_pending->payload_length );
+    if(atsc3_stltp_timing_management_packet_pending->payload_length  > 1) {
         __STLTP_PARSER_DEBUG("     first bytes:         0x%02x 0x%02x", atsc3_stltp_timing_management_packet_pending->payload[atsc3_stltp_timing_management_packet_pending->payload_offset], atsc3_stltp_timing_management_packet_pending->payload[atsc3_stltp_timing_management_packet_pending->payload_offset+1]);
     }
-	atsc3_stltp_timing_management_packet_pending->payload_offset += inner_remaining_length;
 	__STLTP_PARSER_DEBUG("     payload_offset now: %u, preamble_payload_length: %u", atsc3_stltp_timing_management_packet_pending->payload_offset, atsc3_stltp_timing_management_packet_pending->payload_length);
 
 	if(atsc3_stltp_timing_management_packet_pending->payload_offset >= atsc3_stltp_timing_management_packet_pending->payload_length) {
@@ -502,12 +499,11 @@ atsc3_stltp_timing_management_packet_t* atsc3_stltp_timing_management_packet_ext
 		__STLTP_PARSER_DEBUG(" ----timing_management packet: complete-----");
 		atsc3_stltp_timing_management_packet_pending->is_complete = true;
         atsc3_stltp_tunnel_packet->atsc3_stltp_timing_management_packet = atsc3_stltp_timing_management_packet_pending;
-        atsc3_stltp_tunnel_packet->atsc3_stltp_timing_management_packet_pending = NULL;
+        block_Seek(packet, packet->i_pos + atsc3_stltp_tunnel_packet->atsc3_stltp_timing_management_packet->payload_length );
+
 	}
-	block_Seek(packet, inner_remaining_length);
 
 	return atsc3_stltp_timing_management_packet_pending;
-
 }
 
 /**

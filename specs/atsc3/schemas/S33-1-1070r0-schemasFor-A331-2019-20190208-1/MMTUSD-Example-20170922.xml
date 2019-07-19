@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<BundleDescriptionMMT
+xmlns="tag:atsc.org,2016:XMLSchemas/ATSC3/Delivery/MMTUSD/1.0/"
+xmlns:sa="tag:atsc.org,2016:XMLSchemas/ATSC3/SA/1.0/"
+xmlns:xs="http://www.w3.org/2001/XMLSchema" 
+xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+xsi:schemaLocation= "tag:atsc.org,2016:XMLSchemas/ATSC3/Delivery/MMTUSD/1.0/ MMTUSD-1.0-20170922.xsd">
+
+	<UserServiceDescription serviceId="44">
+		<Name xml:lang="en">KUSR</Name>
+		<ServiceLanguage>en</ServiceLanguage>
+		<ContentAdvisoryRating>
+			<sa:RegionIdentifier>1</sa:RegionIdentifier>
+			<sa:RatingDescription xml:lang="en">????</sa:RatingDescription>
+			<sa:RatedDimensions>1</sa:RatedDimensions>
+			<sa:RatingDimVal>
+				<sa:RatingDimension>1</sa:RatingDimension>
+				<sa:RatingValueString>G</sa:RatingValueString>
+			</sa:RatingDimVal>
+		</ContentAdvisoryRating>
+		<Channel serviceGenre="2" serviceIcon="http://kusr.com/myService/incon.png">
+			<ServiceDescription serviceDescrText="My Service" serviceDescrLang="en"/>
+		</Channel>
+		<MPUComponent mmtPackageId="????" contentIdSchemeIdUri="????" contentIdValue="????"
+			nextMMTPackageId="????" nextContentIdSchemeIdUri="????" nextContentIdValue="????"/>
+		<ROUTEComponent sTSIDUri="????" apdUri="????" sTSIDDestinationIpAddress="1.2.3.4"
+			sTSIDDestinationUdpPort="44" sTSIDSourceIpAddress="5.6.7.8" sTSIDMajorProtocolVersion="1"
+			sTSIDMinorProtocolVersion="0"/>
+		<BroadbandComponent fullMPDUri="http://kusr.com/MyService/myservice.mpd"/>
+		<ComponentInfo componentType="1" componentRole="0" componentProtectedFlag="true"
+			componentId="????" componentName="????"/>
+	</UserServiceDescription>
+</BundleDescriptionMMT>

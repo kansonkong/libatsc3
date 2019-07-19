@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<HELD xmlns="tag:atsc.org,2016:XMLSchemas/ATSC3/AppSignaling/HELD/1.0/" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="tag:atsc.org,2016:XMLSchemas/ATSC3/AppSignaling/HELD/1.0/
+HELD-1.0-20190122.xsd">
+	<HTMLEntryPackage appContextId="A.xyz.com" bcastEntryPackageUrl="app" bcastEntryPageUrl="/p1/index.html" validUntil="2016-07-17T09:30:47Z"/>
+	<HTMLEntryPackage appContextId="A.xyz.com" bcastEntryPackageUrl="app" bcastEntryPageUrl="/p1a/index.html" requiredCapabilities="0700"
+		validUntil="2016-07-17T09:30:47Z"/>
+	<HTMLEntryPackage appContextId="A.xyz.com" bcastEntryPackageUrl="app" bcastEntryPageUrl="/p2/index.html" validFrom="2016-07-17T09:30:47Z"
+		validUntil="2016-07-17T12:00:47Z"/>
+	<HTMLEntryPackage appContextId="A.xyz.com" bcastEntryPackageUrl="app" bcastEntryPageUrl="/p2a/index.html" requiredCapabilities="0700" 
+		validFrom="2016-07-17T09:30:47Z" validUntil="2016-07-17T12:00:47Z"/>
+</HELD>
