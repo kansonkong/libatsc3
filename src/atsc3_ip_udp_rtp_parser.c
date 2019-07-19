@@ -136,8 +136,8 @@ atsc3_rtp_fixed_header_t* atsc3_stltp_parse_rtp_fixed_header_udp_packet_t(udp_pa
 
 
 atsc3_rtp_fixed_header_t* atsc3_stltp_parse_rtp_fixed_header_block_t(block_t* data) {
-    if(block_Valid(data)) {
-        __IP_UDP_RTP_PARSER_ERROR("fragment: atsc3_stltp_parse_rtp_fixed_header_block_t, udp_packet is null!");
+    if(!block_Valid(data)) {
+        __IP_UDP_RTP_PARSER_ERROR("fragment: atsc3_stltp_parse_rtp_fixed_header_block_t, !block_Valid(data)");
         return NULL;
     }
     uint8_t* block_data = block_Get(data);
@@ -225,8 +225,11 @@ ip_udp_rtp_packet_t* atsc3_ip_udp_rtp_packet_prepend_if_not_null(ip_udp_rtp_pack
     }
     
     ip_udp_rtp_packet_new->data = block_Alloc(block_size);
+    __IP_UDP_RTP_PARSER_INFO("atsc3_ip_udp_rtp_packet_prepend_if_not_null: block_size: %u", block_size);
       
     if(block_Valid(from_packet->data)) {
+        __IP_UDP_RTP_PARSER_INFO("atsc3_ip_udp_rtp_packet_prepend_if_not_null: appending from_packet %p, size: %u", from_packet->data, block_Remaining_size(from_packet->data));
+
         block_Append(ip_udp_rtp_packet_new->data, from_packet->data);
     }
 
@@ -234,6 +237,7 @@ ip_udp_rtp_packet_t* atsc3_ip_udp_rtp_packet_prepend_if_not_null(ip_udp_rtp_pack
      TODO: limit this to min(inner->offset, data->p_size)
      */
     if(block_Valid(to_packet->data)) {
+          __IP_UDP_RTP_PARSER_INFO("atsc3_ip_udp_rtp_packet_prepend_if_not_null: appending to_packet %p, size: %u", to_packet->data, block_Remaining_size(to_packet->data));
         block_Append(ip_udp_rtp_packet_new->data, to_packet->data);
     }
     

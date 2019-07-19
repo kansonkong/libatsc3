@@ -33,7 +33,8 @@ ip_udp_rtp_packet_t* atsc3_ip_udp_rtp_packet_prepend_if_not_null(ip_udp_rtp_pack
 
 #define __IP_UDP_RTP_PARSER_ERROR(...)          printf("%s:%d:ERROR: ",__FILE__,__LINE__); printf(__VA_ARGS__); printf("%s%s","\r","\n")
 #define __IP_UDP_RTP_PARSER_WARN(...)          printf("%s:%d:WARN : ",__FILE__,__LINE__); printf(__VA_ARGS__); printf("%s%s","\r","\n")
-    
+#define __IP_UDP_RTP_PARSER_INFO(...)          printf("%s:%d:INFO : ",__FILE__,__LINE__); printf(__VA_ARGS__); printf("%s%s","\r","\n")
+
 #define __IP_UDP_RTP_PARSER_DEBUG(...)          if(_IP_UDP_RTP_PARSER_DEBUG_ENABLED) { printf("%s:%d:DEBUG:%.4f: ",__FILE__,__LINE__, gt()); printf(__VA_ARGS__); printf("%s%s","\r","\n") }
 
 #ifdef __cplusplus
