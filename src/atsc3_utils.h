@@ -94,7 +94,8 @@ typedef struct atsc3_block {
 block_t* block_Alloc(int len);
 block_t* block_Promote(char*);
 block_t* block_Write(block_t* dest, uint8_t* buf, uint32_t size);
-uint32_t block_Append(block_t* dest, block_t* src);
+uint32_t block_Append(block_t* dest, block_t* src); //combine two blocks at i_pos, i_pos, return end position
+uint32_t block_Merge(block_t* dest, block_t* src); //combine two blocks from p_size, p_size, return new merged p_size,
 uint32_t block_Seek(block_t* block, int32_t seek_pos);
 uint32_t block_Seek_Relative(block_t* block, int32_t relative_pos);
 block_t* block_Rewind(block_t* dest);
