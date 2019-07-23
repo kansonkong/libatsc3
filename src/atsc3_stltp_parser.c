@@ -98,47 +98,6 @@ block_t* atsc3_stltp_read_from_outer_packet(atsc3_ip_udp_rtp_packet_t* ip_udp_rt
 }
 
 
-
-//when marker == 1, The packet_offset is the number of bytes after the RTP header where the first byte of the first tunneled IP header resides within the Tunnel Packet
-//base of IP/UDP/RTP = 40 bytes, not 12 (RTP only) ???
-atsc3_ip_udp_rtp_packet_t* atsc3_stltp_udp_packet_outer_fragment_check_marker(atsc3_stltp_tunnel_packet_t* atsc3_stltp_tunnel_packet) {
-//    if(block_Remaining_size(atsc3_stltp_tunnel_packet->ip_udp_rtp_packet_outer->data) <= ATSC_STLTP_IP_UDP_RTP_HEADER_SIZE) {
-//        __STLTP_PARSER_ERROR("atsc3_stltp_udp_packet_outer_fragment_check_marker: short packet: %u", block_Remaining_size(atsc3_stltp_tunnel_packet->ip_udp_rtp_packet_outer->data) );
-//
-//        return NULL;
-//    }
-//    if(atsc3_stltp_tunnel_packet->atsc3_rtp_header_outer_tunnel->marker) {
-//
-//        uint32_t outer_data_pos = atsc3_stltp_tunnel_packet->ip_udp_rtp_packet_outer->data->i_pos;
-//
-//
-//        block_Seek(atsc3_stltp_tunnel_packet->ip_udp_rtp_packet_outer->data, atsc3_stltp_tunnel_packet->atsc3_rtp_header_outer_tunnel->packet_offset + ATSC_STLTP_IP_UDP_RTP_HEADER_SIZE);
-//
-//        if(block_Remaining_size(atsc3_stltp_tunnel_packet->ip_udp_rtp_packet_outer->data) <= ATSC_STLTP_IP_UDP_RTP_HEADER_SIZE) {
-//            __STLTP_PARSER_ERROR("atsc3_stltp_udp_packet_outer_fragment_check_marker: short packet: %u", block_Remaining_size(atsc3_stltp_tunnel_packet->ip_udp_rtp_packet_outer->data) );
-//
-//            return NULL;
-//        }
-//
-//        __STLTP_PARSER_DEBUG("seeking udp_packet_outer: %p, from %u to: %u", atsc3_stltp_tunnel_packet->ip_udp_rtp_packet_outer->data, outer_data_pos, atsc3_stltp_tunnel_packet->ip_udp_rtp_packet_outer->data->i_pos);
-//
-//        atsc3_stltp_tunnel_packet->ip_udp_rtp_packet_inner = atsc3_ip_udp_rtp_packet_process_from_blockt_pos(atsc3_stltp_tunnel_packet->ip_udp_rtp_packet_outer->data);
-//
-//        if(!atsc3_stltp_tunnel_packet->ip_udp_rtp_packet_inner) {
-//            __STLTP_PARSER_ERROR("unable to parse inner packet packet");
-//            return NULL;
-//        } else {
-//            return atsc3_stltp_tunnel_packet->ip_udp_rtp_packet_inner;
-//        }
-//    } else {
-//        __STLTP_PARSER_WARN("atsc3_stltp_udp_packet_fragment_check_marker, no marker set using outer packet as inner fragment!");
-//
-//        atsc3_stltp_tunnel_packet->ip_udp_rtp_packet_inner = atsc3_ip_udp_rtp_packet_duplicate(atsc3_stltp_tunnel_packet->ip_udp_rtp_packet_outer);
-//    }
-    return NULL;
-}
-
-
 /*
  only use this for re-fragmentation parsing, which block_t is duplicated (not original pointer)
  */
