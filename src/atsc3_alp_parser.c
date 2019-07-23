@@ -91,16 +91,12 @@ void atsc3_alp_parse_stltp_baseband_packet(atsc3_stltp_baseband_packet_t* atsc3_
     }
     __ALP_PARSER_INFO("-----------------------------");
     __ALP_PARSER_INFO("Baseband Packet Header");
-    __ALP_PARSER_INFO("base field modec  : %x",  atsc3_baseband_packet_header->base_field_mode);
+    __ALP_PARSER_INFO("base field mode   : %x",  atsc3_baseband_packet_header->base_field_mode);
     __ALP_PARSER_INFO("base field pointer: 0x%x",  atsc3_baseband_packet_header->base_field_pointer);
     __ALP_PARSER_INFO("option field mode : 0x%x",  atsc3_baseband_packet_header->option_field_mode);
     __ALP_PARSER_INFO("ext type          : 0x%x",  atsc3_baseband_packet_header->ext_type);
     __ALP_PARSER_INFO("ext len           : 0x%x",  atsc3_baseband_packet_header->ext_len);
     __ALP_PARSER_INFO("-----------------------------");
-
-
-                                                          
-    
 
 	uint8_t alp_packet_header_byte_1 = *binary_payload++;
 	uint8_t alp_packet_header_byte_2 = *binary_payload++;

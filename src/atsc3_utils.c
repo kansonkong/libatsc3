@@ -313,7 +313,7 @@ uint32_t block_Append(block_t* dest, block_t* src) {
 	if(dest->p_size < dest_size_required) {
 		block_t* ret_block = block_Resize(dest, dest_size_required);
 		if(!ret_block) {
-			_ATSC3_UTILS_ERROR("block_Write: block: %p, unable to realloc from size: %u to %u, returning NULL", dest, dest->p_size, dest_size_required);
+			_ATSC3_UTILS_ERROR("block_Append: block: %p, unable to realloc from size: %u to %u, returning NULL", dest, dest->p_size, dest_size_required);
 			return 0;
 		}
 	}
@@ -321,6 +321,29 @@ uint32_t block_Append(block_t* dest, block_t* src) {
 	dest->i_pos += src->i_pos;
 
 	return dest->i_pos;
+}
+
+
+uint32_t block_Merge(block_t* dest, block_t* src) {
+    if(!__block_check_bounaries(__FUNCTION__, dest)) return 0;
+
+    //seek us forward so we maintain both block_t full payloads
+    dest->i_pos = dest->p_size;
+    int dest_original_size = dest->p_size;
+    int dest_size_required = dest->p_size + src->p_size;
+    
+    if(dest->p_size < dest_size_required) {
+        block_t* ret_block = block_Resize(dest, dest_size_required);
+        if(!ret_block) {
+            _ATSC3_UTILS_ERROR("block_Merge: block: %p, unable to realloc from size: %u to %u, returning NULL", dest, dest->p_size, dest_size_required);
+            return 0;
+        }
+    }
+    memcpy(&dest->p_buffer[dest_original_size], src->p_buffer, src->p_size);
+    //rewind
+    dest->i_pos = 0;
+    
+    return dest->p_size;
 }
 
 
@@ -404,13 +427,18 @@ block_t* block_Duplicate_from_ptr(uint8_t* data, uint32_t size) {
 
 
 //return will be NULL if realloc failed, but src will still be valid
-//this has not been tested with shrinking down the size...
+//grow or shrink a block,
+//  if growing, null out new payload, maintain i_pos
+//  if shrinking, discard end payload, i_pos will reset to 0
+
 block_t* block_Resize(block_t* src, uint32_t src_size_requested) {
 	if(!__block_check_bounaries(__FUNCTION__, src)) return NULL;
-
+    int src_size_original = src->p_size;
+    int src_i_pos_original = src->i_pos;
+    
 	uint32_t src_size_required = __MAX(64, src_size_requested);
 
-	//always over alloc by 1 byte for a null pad
+	//always over alloc by X bytes for a null pad
 	void* new_block = realloc(src->p_buffer, src_size_required + 8);
 	if(!new_block) {
 		_ATSC3_UTILS_ERROR("block_Resize: block: %p resize to %u failed, returning NULL", src, src_size_required);
@@ -424,9 +452,17 @@ block_t* block_Resize(block_t* src, uint32_t src_size_requested) {
 			_ATSC3_UTILS_WARN("block_Resize: block: %p resize to %u, old pos %u past end of new size, updating to %u", src, src->p_size, src->i_pos, to_check_new_i_pos);
 			src->i_pos = to_check_new_i_pos;
 		} else {
-			_ATSC3_UTILS_TRACE("block_Resize: block: %p, zeroing out from: %u to %u", src, src->i_pos, src->p_size);
-			uint32_t to_scrub_len = __MAX(0, (src->p_size - 1 - src->i_pos));
-			memset(&src->p_buffer[src->i_pos], 0, to_scrub_len + 8);
+            if(src_size_original > src_size_required) {
+                //shrink
+                src->i_pos = 0;
+            } else {
+                //grow
+                src->i_pos = src_size_original;
+                _ATSC3_UTILS_TRACE("block_Resize: grow block: %p, zeroing out from: %u to %u", src, src->i_pos, src->p_size);
+                uint32_t to_scrub_len = __MAX(0, (src->p_size - 1 - src->i_pos));
+                memset(&src->p_buffer[src->i_pos], 0, to_scrub_len + 8);
+                src->i_pos = src_i_pos_original;
+            }
 		}
 	}
 

@@ -72,8 +72,8 @@ block_t* atsc3_stltp_read_from_outer_packet(atsc3_ip_udp_rtp_packet_t* ip_udp_rt
             //return partial block_t
             block_Seek(ip_udp_rtp_packet_outer->data, ATSC_STLTP_IP_UDP_RTP_HEADER_SIZE);
             inner_packet_data = block_Duplicate_from_position(ip_udp_rtp_packet_outer->data); //clone this block explicity
-            block_Resize(inner_packet_data, ip_udp_rtp_packet_outer->rtp_header->packet_offset);
-            block_Seek(ip_udp_rtp_packet_outer->data, ip_udp_rtp_packet_outer->rtp_header->packet_offset);
+            block_Resize(inner_packet_data, ip_udp_rtp_packet_outer->rtp_header->packet_offset); //trim up to the marker boundary for inner packet
+            block_Seek(ip_udp_rtp_packet_outer->data, ip_udp_rtp_packet_outer->rtp_header->packet_offset); //move our outer to the marker position
             
             return inner_packet_data;
         } else {
@@ -224,6 +224,7 @@ atsc3_stltp_tunnel_packet_t* atsc3_stltp_raw_packet_extract_inner_from_outer_pac
         //first, try and parse any remaining bytes in atsc3_stltp_tunnel_packet_last that did not get an inner packet started
         int last_outer_packet_bytes_remaining_to_parse = block_Remaining_size(atsc3_stltp_tunnel_packet_last->ip_udp_rtp_packet_outer->data);
         if(last_outer_packet_bytes_remaining_to_parse > 0) {
+            __STLTP_PARSER_INFO("atsc3_stltp_tunnel_packet_extract_inner_from_outer_packet: re-fragmentation from previous packet fragment of len: %u", last_outer_packet_bytes_remaining_to_parse);
             //check to make sure our last outer sequence number == current sequence number +1
             
             atsc3_stltp_tunnel_packet_current->ip_udp_rtp_packet_inner = atsc3_ip_udp_rtp_packet_duplicate(atsc3_stltp_tunnel_packet_last->ip_udp_rtp_packet_outer); //this will create our new inner packet from the remaining fragment from our previous packet
@@ -232,7 +233,7 @@ atsc3_stltp_tunnel_packet_t* atsc3_stltp_raw_packet_extract_inner_from_outer_pac
             block_t* inner_payload_current = atsc3_stltp_read_from_outer_packet(atsc3_stltp_tunnel_packet_current->ip_udp_rtp_packet_outer, false);
             
             if(inner_payload_current) {
-                block_Append(atsc3_stltp_tunnel_packet_current->ip_udp_rtp_packet_inner->data, inner_payload_current);
+                block_Merge(atsc3_stltp_tunnel_packet_current->ip_udp_rtp_packet_inner->data, inner_payload_current);
                 block_Release(&inner_payload_current);
             } else {
                 //todo: figure out what to do here
@@ -250,7 +251,7 @@ atsc3_stltp_tunnel_packet_t* atsc3_stltp_raw_packet_extract_inner_from_outer_pac
                 return NULL;
             }
             
-            __STLTP_PARSER_INFO("atsc3_stltp_tunnel_packet_extract_inner_from_outer_packet: re-fragmentation from previous packet fragment of len: %u, fragment payload type: %u, fragment length is: %u",
+            __STLTP_PARSER_INFO("atsc3_stltp_tunnel_packet_extract_inner_from_outer_packet: re-fragmentation from previous packet fragment of len: %u, fragment payload type: %u, merged length is: %u",
                                 last_outer_packet_bytes_remaining_to_parse,
                                 atsc3_stltp_tunnel_packet_current->ip_udp_rtp_packet_inner->rtp_header->payload_type,
                                 atsc3_stltp_tunnel_packet_current->ip_udp_rtp_packet_inner->data->p_size);
