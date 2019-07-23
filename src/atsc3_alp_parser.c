@@ -137,6 +137,13 @@ void atsc3_alp_parse_stltp_baseband_packet(atsc3_stltp_baseband_packet_t* atsc3_
 
 
 	}
+    
+    
+    //cleanup
+    if(atsc3_baseband_packet_header) {
+        free(atsc3_baseband_packet_header);
+        atsc3_baseband_packet_header = NULL;
+    }
 
 }
 
