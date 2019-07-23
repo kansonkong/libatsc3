@@ -159,6 +159,9 @@ atsc3_mmt_reconstitution_from_media_sample.o: atsc3_mmt_reconstitution_from_medi
 atsc3_isobmff_tools.o: atsc3_isobmff_tools.h atsc3_isobmff_tools.cpp
 	g++ -g -o atsc3_isobmff_tools.o -c atsc3_isobmff_tools.cpp -I../bento/include/
 
+atsc3_stltp_types.o: atsc3_stltp_types.h atsc3_stltp_types.c
+	cc -g -c atsc3_stltp_types.c
+	
 atsc3_stltp_parser.o: atsc3_stltp_parser.h atsc3_stltp_parser.c
 	cc -g -c atsc3_stltp_parser.c
 
@@ -192,11 +195,13 @@ atsc3_route_sls_processor.o: atsc3_route_sls_processor.h atsc3_route_sls_process
 
 
 atsc3_stltp_parser_test: atsc3_stltp_parser_test.c \
+	atsc3_stltp_types.o \
 	atsc3_stltp_parser.o \
 	atsc3_listener_udp.o \
 	atsc3_ip_udp_rtp_parser.o \
 	atsc3_utils.o
 	cc -g atsc3_stltp_parser_test.c \
+	atsc3_stltp_types.o \
 	atsc3_stltp_parser.o \
 	atsc3_ip_udp_rtp_parser.o \
 	atsc3_listener_udp.o \
@@ -301,6 +306,7 @@ libatsc3_intermediate.o: atsc3_lls.o \
 		atsc3_listener_udp.o \
 		atsc3_ip_udp_rtp_parser.o \
 		atsc3_gzip.o \
+		atsc3_stltp_types.o \
 		atsc3_stltp_parser.o \
 		atsc3_fdt.o \
 		atsc3_fdt_parser.o \
@@ -346,6 +352,7 @@ libatsc3_intermediate.o: atsc3_lls.o \
 		atsc3_listener_udp.o \
 		atsc3_ip_udp_rtp_parser.o \
 		atsc3_gzip.o \
+		atsc3_stltp_types.o \
 		atsc3_stltp_parser.o \
 		atsc3_fdt.o \
 		atsc3_fdt_parser.o \

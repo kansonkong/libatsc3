@@ -10,10 +10,10 @@
 
 #include <stdint.h>
 #include <stdbool.h>
+#include "atsc3_vector_builder.h"
 #include "atsc3_listener_udp.h"
 #include "atsc3_ip_udp_rtp_types.h"
 #include "atsc3_ip_udp_rtp_parser.h"
-
 
 #define ATSC3_STLTP_PAYLOAD_TYPE_TUNNEL 					0x61
 
@@ -210,17 +210,25 @@ typedef struct atsc3_stltp_tunnel_packet {
     
     atsc3_ip_udp_rtp_packet_t* ip_udp_rtp_packet_inner;
 
-    //jjustman-2019-07-23 - todo: move these to vector _t's
-	atsc3_stltp_baseband_packet_t* 			atsc3_stltp_baseband_packet;
+	//atsc3_stltp_baseband_packet_t* 		atsc3_stltp_baseband_packet;
+    ATSC3_VECTOR_BUILDER_STRUCT(atsc3_stltp_baseband_packet);
     atsc3_stltp_baseband_packet_t*          atsc3_stltp_baseband_packet_pending;
     
-	atsc3_stltp_preamble_packet_t* 			atsc3_stltp_preamble_packet;
+	//atsc3_stltp_preamble_packet_t* 		atsc3_stltp_preamble_packet;
+    ATSC3_VECTOR_BUILDER_STRUCT(atsc3_stltp_preamble_packet);
     atsc3_stltp_preamble_packet_t*          atsc3_stltp_preamble_packet_pending;
     
-	atsc3_stltp_timing_management_packet_t* atsc3_stltp_timing_management_packet;
+    //atsc3_stltp_timing_management_packet_t* atsc3_stltp_timing_management_packet;
+    ATSC3_VECTOR_BUILDER_STRUCT(atsc3_stltp_timing_management_packet);
     atsc3_stltp_timing_management_packet_t* atsc3_stltp_timing_management_packet_pending;
 
 } atsc3_stltp_tunnel_packet_t;
+
+ATSC3_VECTOR_BUILDER_METHODS_INTERFACE(atsc3_stltp_tunnel_packet, atsc3_stltp_baseband_packet);
+ATSC3_VECTOR_BUILDER_METHODS_INTERFACE(atsc3_stltp_tunnel_packet, atsc3_stltp_preamble_packet);
+ATSC3_VECTOR_BUILDER_METHODS_INTERFACE(atsc3_stltp_tunnel_packet, atsc3_stltp_timing_management_packet);
+
+
 
 
 #endif /* ATSC3_STLTP_TYPES_H_ */
