@@ -266,6 +266,28 @@ uint32_t block_Seek(block_t* block, int32_t seek_pos) {
 	return block->i_pos;
 }
 
+
+uint32_t block_Seek_Relative(block_t* block, int32_t seek_pos) {
+    if(!__block_check_bounaries(__FUNCTION__, block)) {
+        block->i_pos = 0;
+    }
+    int32_t new_seek_pos = block->i_pos + seek_pos;
+    
+    if(new_seek_pos < 0 ) {
+        _ATSC3_UTILS_WARN("block_Seek: block: %p, invalid seek_pos to: %u, clamping to 0",
+                          block->p_buffer, seek_pos);
+        block->i_pos = 0;
+    } else if(new_seek_pos > block->p_size) {
+        _ATSC3_UTILS_WARN("block_Seek: block: %p, invalid seek_pos to: %u, clamping to %u",
+                          block->p_buffer, seek_pos, block->p_size);
+        block->i_pos = block->p_size;
+    } else {
+        block->i_pos = new_seek_pos;
+    }
+    
+    return block->i_pos;
+}
+
 block_t* block_Write(block_t* dest, uint8_t* src_buf, uint32_t src_size) {
 	if(!__block_check_bounaries(__FUNCTION__, dest)) return NULL;
 

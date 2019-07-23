@@ -31,19 +31,19 @@ uint16_t* dst_ip_port_filter = NULL;
 atsc3_stltp_tunnel_packet_t* atsc3_stltp_tunnel_packet_processed = NULL;
 
 void process_packet(u_char *user, const struct pcap_pkthdr *pkthdr, const u_char *packet) {
-	ip_udp_rtp_packet_t* ip_udp_rtp_packet = atsc3_ip_udp_rtp_process_packet_from_pcap(user, pkthdr, packet);
+    //extract our outer ip/udp/rtp packet
+	atsc3_ip_udp_rtp_packet_t* ip_udp_rtp_packet = atsc3_ip_udp_rtp_process_packet_from_pcap(user, pkthdr, packet);
 	if(!ip_udp_rtp_packet) {
 		return;
 	}
+    //TODO - add SMPTE-2022.1 FEC decoding (see fork of prompeg-decoder - https://github.com/jjustman/prompeg-decoder)
 
 	//dispatch for LLS extraction and dump
 	if(ip_udp_rtp_packet->udp_flow.dst_ip_addr == *dst_ip_addr_filter && ip_udp_rtp_packet->udp_flow.dst_port == *dst_ip_port_filter) {
-		atsc3_stltp_tunnel_packet_processed = atsc3_stltp_tunnel_packet_extract_fragment_from_udp_packet(ip_udp_rtp_packet, atsc3_stltp_tunnel_packet_processed);
-
-		__INFO("***atsc3_stltp_tunnel_packet_processed: %p", atsc3_stltp_tunnel_packet_processed);
+		atsc3_stltp_tunnel_packet_processed = atsc3_stltp_raw_packet_extract_inner_from_outer_packet(ip_udp_rtp_packet, atsc3_stltp_tunnel_packet_processed);
 
 		if(atsc3_stltp_tunnel_packet_processed) {
-			__INFO("***atsc3_stltp_tunnel_packet_processed->atsc3_stltp_baseband_packet: %p", atsc3_stltp_tunnel_packet_processed->atsc3_stltp_baseband_packet);
+//			__INFO("***atsc3_stltp_tunnel_packet_processed->atsc3_stltp_baseband_packet: %p", atsc3_stltp_tunnel_packet_processed->atsc3_stltp_baseband_packet);
 
 			if(atsc3_stltp_tunnel_packet_processed->atsc3_stltp_baseband_packet && atsc3_stltp_tunnel_packet_processed->atsc3_stltp_baseband_packet->is_complete) {
 				__INFO("***stltp atsc3_stltp_baseband_packet packet complete: size: %u",  atsc3_stltp_tunnel_packet_processed->atsc3_stltp_baseband_packet->payload_length);
@@ -78,6 +78,8 @@ void process_packet(u_char *user, const struct pcap_pkthdr *pkthdr, const u_char
 
 int main(int argc,char **argv) {
 
+    
+    _IP_UDP_RTP_PARSER_DEBUG_ENABLED = 1;
     char *dev;
     char *filter_dst_ip = NULL;
     char *filter_dst_port = NULL;
