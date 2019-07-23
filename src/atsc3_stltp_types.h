@@ -11,6 +11,7 @@
 #include <stdint.h>
 #include <stdbool.h>
 #include "atsc3_vector_builder.h"
+#include "atsc3_logging_externs.h"
 #include "atsc3_listener_udp.h"
 #include "atsc3_ip_udp_rtp_types.h"
 #include "atsc3_ip_udp_rtp_parser.h"
@@ -25,15 +26,14 @@
 //https://www.atsc.org/wp-content/uploads/2016/10/A322-2018-Physical-Layer-Protocol.pdf
 
 typedef struct atsc3_stltp_baseband_packet {
-	atsc3_rtp_header_t*     rtp_header;
+	atsc3_rtp_header_t*         rtp_header;
 
-	uint8_t* 	        	payload;
-    uint32_t 	        	payload_offset;
-	uint32_t 	        	payload_length;
-	bool 		        	is_complete;
+	uint8_t* 	        	    payload;
+    uint32_t 	        	    payload_offset;
+	uint32_t 	        	    payload_length;
+	bool 		        	    is_complete;
 
 	//other baseband alp attributes here
-
     atsc3_ip_udp_rtp_packet_t* 	ip_udp_rtp_packet;
 	uint32_t 		            fragment_count;
 
@@ -112,19 +112,19 @@ typedef struct L1_detail_signaling {
 } L1_detail_signaling_t;
 
 typedef struct atsc3_stltp_preamble_packet {
-	atsc3_rtp_header_t*     rtp_header;
+	atsc3_rtp_header_t*         rtp_header;
 
-	uint8_t* 				payload;
-	uint16_t 				payload_offset;
-	uint16_t 				payload_length;
-	bool is_complete;
+	uint8_t* 			    	payload;
+	uint16_t 			    	payload_offset;
+	uint16_t 		    		payload_length;
+	bool                        is_complete;
 
-	L1_basic_signaling_t 	L1_basic_signaling;
-	L1_detail_signaling_t 	L1_detail_signaling;
-	uint16_t				crc16;
+	L1_basic_signaling_t 	    L1_basic_signaling;
+	L1_detail_signaling_t 	    L1_detail_signaling;
+	uint16_t				    crc16;
 
 	atsc3_ip_udp_rtp_packet_t* 	ip_udp_rtp_packet;
-	uint32_t 				fragment_count;
+	uint32_t 				    fragment_count;
 
 } atsc3_stltp_preamble_packet_t;
 
@@ -228,6 +228,18 @@ ATSC3_VECTOR_BUILDER_METHODS_INTERFACE(atsc3_stltp_tunnel_packet, atsc3_stltp_ba
 ATSC3_VECTOR_BUILDER_METHODS_INTERFACE(atsc3_stltp_tunnel_packet, atsc3_stltp_preamble_packet);
 ATSC3_VECTOR_BUILDER_METHODS_INTERFACE(atsc3_stltp_tunnel_packet, atsc3_stltp_timing_management_packet);
 
+
+void atsc3_stltp_baseband_packet_free(atsc3_stltp_baseband_packet_t** atsc3_stltp_baseband_packet_p);
+void atsc3_stltp_preamble_packet_free(atsc3_stltp_preamble_packet_t** atsc3_stltp_preamble_packet_p);
+void atsc3_stltp_timing_management_packet_free(atsc3_stltp_timing_management_packet_t** atsc3_stltp_timing_management_packet_p);
+
+
+
+#define __STLTP_TYPES_ERROR(...)          printf("%s:%d:ERROR: ",__FILE__,__LINE__); printf(__VA_ARGS__); printf("%s%s","\r","\n")
+#define __STLTP_TYPES_WARN(...)           printf("%s:%d:WARN : ",__FILE__,__LINE__); printf(__VA_ARGS__); printf("%s%s","\r","\n")
+#define __STLTP_TYPES_INFO(...)           printf("%s:%d:INFO : ",__FILE__,__LINE__); printf(__VA_ARGS__); printf("%s%s","\r","\n")
+#define __STLTP_TYPES_DEBUG(...)          if(_STLTP_TYPES_DEBUG_ENABLED) { printf("%s:%d:DEBUG: ",__FILE__,__LINE__); printf(__VA_ARGS__); printf("%s%s","\r","\n"); }
+#define __STLTP_TYPES_TRACE(...)          if(_STLTP_TYPES_TRACE_ENABLED) { printf("%s:%d:TRACE: ",__FILE__,__LINE__); printf(__VA_ARGS__); printf("%s%s","\r","\n"); }
 
 
 

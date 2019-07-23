@@ -195,7 +195,6 @@ atsc3_stltp_tunnel_packet_t* atsc3_stltp_raw_packet_extract_inner_from_outer_pac
                          ip_udp_rtp_packet->data->p_size,
                          ip_udp_rtp_packet->data);
 
-    atsc3_stltp_tunnel_packet_clear_completed_inner_packets(atsc3_stltp_tunnel_packet_last);
     
     atsc3_stltp_tunnel_packet_t* atsc3_stltp_tunnel_packet_current = calloc(1, sizeof(atsc3_stltp_tunnel_packet_t));
     
@@ -393,8 +392,9 @@ atsc3_stltp_baseband_packet_t* atsc3_stltp_baseband_packet_extract(atsc3_stltp_t
         }
 
         atsc3_stltp_baseband_packet_pending = calloc(1, sizeof(atsc3_stltp_baseband_packet_t));
-        atsc3_stltp_baseband_packet_pending->rtp_header = atsc3_stltp_tunnel_packet_current->ip_udp_rtp_packet_inner->rtp_header;
-        atsc3_stltp_baseband_packet_pending->payload_length = atsc3_stltp_tunnel_packet_current->ip_udp_rtp_packet_inner->rtp_header->packet_offset;
+        atsc3_stltp_baseband_packet_pending->rtp_header = atsc3_rtp_header_duplicate(atsc3_stltp_tunnel_packet_current->ip_udp_rtp_packet_inner->rtp_header);
+        
+        atsc3_stltp_baseband_packet_pending->payload_length = atsc3_stltp_baseband_packet_pending->rtp_header->packet_offset;
         
         atsc3_stltp_tunnel_packet_current->atsc3_stltp_baseband_packet_pending = atsc3_stltp_baseband_packet_pending;
 	}
@@ -483,7 +483,7 @@ atsc3_stltp_preamble_packet_t* atsc3_stltp_preamble_packet_extract(atsc3_stltp_t
 		atsc3_stltp_tunnel_packet_current->atsc3_stltp_preamble_packet_pending = atsc3_stltp_preamble_packet_pending;
 	}
 
-    atsc3_stltp_preamble_packet_pending->rtp_header = atsc3_stltp_tunnel_packet_current->ip_udp_rtp_packet_inner->rtp_header;
+    atsc3_stltp_preamble_packet_pending->rtp_header = atsc3_rtp_header_duplicate(atsc3_stltp_tunnel_packet_current->ip_udp_rtp_packet_inner->rtp_header);
     block_t* packet = atsc3_stltp_tunnel_packet_current->ip_udp_rtp_packet_inner->data;
 
 	if(atsc3_stltp_preamble_packet_pending->rtp_header->marker && !atsc3_stltp_tunnel_packet_current->atsc3_stltp_preamble_packet_pending->fragment_count) {
@@ -576,7 +576,7 @@ atsc3_stltp_timing_management_packet_t* atsc3_stltp_timing_management_packet_ext
 		atsc3_stltp_tunnel_packet_current->atsc3_stltp_timing_management_packet_pending = atsc3_stltp_timing_management_packet_pending;
 	}
 
-    atsc3_stltp_timing_management_packet_pending->rtp_header = atsc3_stltp_tunnel_packet_current->ip_udp_rtp_packet_inner->rtp_header;
+    atsc3_stltp_timing_management_packet_pending->rtp_header = atsc3_rtp_header_duplicate(atsc3_stltp_tunnel_packet_current->ip_udp_rtp_packet_inner->rtp_header);
 
     block_t* packet = atsc3_stltp_tunnel_packet_current->ip_udp_rtp_packet_inner->data;
 
@@ -640,16 +640,24 @@ atsc3_stltp_timing_management_packet_t* atsc3_stltp_timing_management_packet_ext
 void atsc3_stltp_tunnel_packet_clear_completed_inner_packets(atsc3_stltp_tunnel_packet_t* atsc3_stltp_tunnel_packet) {
     if(atsc3_stltp_tunnel_packet) {
         if(atsc3_stltp_tunnel_packet->atsc3_stltp_baseband_packet_v.count) {
+            for(int i=0; i < atsc3_stltp_tunnel_packet->atsc3_stltp_baseband_packet_v.count; i++) {
+                atsc3_stltp_baseband_packet_free(&atsc3_stltp_tunnel_packet->atsc3_stltp_baseband_packet_v.data[i]);
+            }
         	atsc3_stltp_tunnel_packet_clear_atsc3_stltp_baseband_packet(atsc3_stltp_tunnel_packet);
         }
 
         if(atsc3_stltp_tunnel_packet->atsc3_stltp_preamble_packet_v.count) {
+            for(int i=0; i < atsc3_stltp_tunnel_packet->atsc3_stltp_preamble_packet_v.count; i++) {
+                atsc3_stltp_preamble_packet_free(&atsc3_stltp_tunnel_packet->atsc3_stltp_preamble_packet_v.data[i]);
+            }
         	atsc3_stltp_tunnel_packet_clear_atsc3_stltp_preamble_packet(atsc3_stltp_tunnel_packet);
         }
 
         if(atsc3_stltp_tunnel_packet->atsc3_stltp_timing_management_packet_v.count) {
+            for(int i=0; i < atsc3_stltp_tunnel_packet->atsc3_stltp_timing_management_packet_v.count; i++) {
+                atsc3_stltp_timing_management_packet_free(&atsc3_stltp_tunnel_packet->atsc3_stltp_timing_management_packet_v.data[i]);
+            }
         	atsc3_stltp_tunnel_packet_clear_atsc3_stltp_timing_management_packet(atsc3_stltp_tunnel_packet);
-
         }
     }
 }
