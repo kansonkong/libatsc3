@@ -28,14 +28,19 @@ atsc3_ip_udp_rtp_packet_t* atsc3_ip_udp_rtp_packet_process_from_blockt_pos(block
 /** jjustman-2019-07-21 todo: remove these for context of outer/inner parsing block, e.g. 1. outer (use Marker bit for identification) and inner(s) based upon size **/
     
 atsc3_rtp_header_t* atsc3_stltp_parse_rtp_header_block(block_t* data);
-atsc3_rtp_header_t* atsc3_stltp_parse_rtp_header_udp_packet(udp_packet_t* udp_packet);
 atsc3_rtp_header_t* atsc3_ip_udp_rtp_parse_header(uint8_t* data, uint32_t size);
 
+    
+atsc3_rtp_header_t* atsc3_rtp_header_duplicate(atsc3_rtp_header_t* atsc3_rtp_header_from);
+void atsc3_rtp_header_free(atsc3_rtp_header_t** atsc3_rtp_header_p);
+
+        
 atsc3_ip_udp_rtp_packet_t* atsc3_ip_udp_rtp_packet_duplicate(atsc3_ip_udp_rtp_packet_t* ip_udp_rtp_packet);
 atsc3_ip_udp_rtp_packet_t* atsc3_ip_udp_rtp_packet_duplicate_no_data_block_t(atsc3_ip_udp_rtp_packet_t* ip_udp_rtp_packet);
 
 atsc3_ip_udp_rtp_packet_t* atsc3_ip_udp_rtp_packet_prepend_if_not_null(atsc3_ip_udp_rtp_packet_t* from_packet, atsc3_ip_udp_rtp_packet_t* to_packet);
     
+
 void atsc3_ip_udp_rtp_packet_free(atsc3_ip_udp_rtp_packet_t** ip_udp_rtp_packet_p);
 void atsc3_ip_udp_rtp_packet_and_data_free(atsc3_ip_udp_rtp_packet_t** ip_udp_rtp_packet_p);
 
