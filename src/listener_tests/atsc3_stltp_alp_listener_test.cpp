@@ -43,14 +43,12 @@ void process_packet(u_char *user, const struct pcap_pkthdr *pkthdr, const u_char
 		atsc3_stltp_tunnel_packet_processed = atsc3_stltp_raw_packet_extract_inner_from_outer_packet(ip_udp_rtp_packet, atsc3_stltp_tunnel_packet_processed);
 
 		if(atsc3_stltp_tunnel_packet_processed) {
-
 			if(atsc3_stltp_tunnel_packet_processed->atsc3_stltp_baseband_packet_v.count) {
 				__INFO(">>>stltp atsc3_stltp_baseband_packet packet complete: count: %u",  atsc3_stltp_tunnel_packet_processed->atsc3_stltp_baseband_packet_v.count);
 				for(int i=0; i < atsc3_stltp_tunnel_packet_processed->atsc3_stltp_baseband_packet_v.count; i++) {
 					atsc3_stltp_baseband_packet_t* atsc3_stltp_baseband_packet = atsc3_stltp_tunnel_packet_processed->atsc3_stltp_baseband_packet_v.data[i];
 					atsc3_alp_parse_stltp_baseband_packet(atsc3_stltp_baseband_packet);
 				}
-				//todo - free
 			}
 			if(atsc3_stltp_tunnel_packet_processed->atsc3_stltp_preamble_packet_v.count) {
 				__INFO(">>>stltp atsc3_stltp_preamble_packet packet complete: count: %u",  atsc3_stltp_tunnel_packet_processed->atsc3_stltp_preamble_packet_v.count);
@@ -58,7 +56,6 @@ void process_packet(u_char *user, const struct pcap_pkthdr *pkthdr, const u_char
 					atsc3_stltp_preamble_packet_t* atsc3_stltp_preamble_packet = atsc3_stltp_tunnel_packet_processed->atsc3_stltp_preamble_packet_v.data[i];
 					//atsc3_alp_parse_stltp_preamble_packet(atsc3_stltp_preamble_packet);
 				}
-				//todo - free
 			}
 			if(atsc3_stltp_tunnel_packet_processed->atsc3_stltp_timing_management_packet_v.count) {
 				__INFO(">>>stltp atsc3_stltp_timing_management_packet packet complete: count: %u",  atsc3_stltp_tunnel_packet_processed->atsc3_stltp_timing_management_packet_v.count);
@@ -66,7 +63,6 @@ void process_packet(u_char *user, const struct pcap_pkthdr *pkthdr, const u_char
 					atsc3_stltp_timing_management_packet_t* atsc3_stltp_timing_management_packet = atsc3_stltp_tunnel_packet_processed->atsc3_stltp_timing_management_packet_v.data[i];
 					//atsc3_alp_parse_stltp_baseband_packet(atsc3_stltp_baseband_packet);
 				}
-				//todo - free
 			}
             
             atsc3_stltp_tunnel_packet_clear_completed_inner_packets(atsc3_stltp_tunnel_packet_processed);
