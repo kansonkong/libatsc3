@@ -29,6 +29,11 @@
 			<key>orderHint</key>
 			<integer>7</integer>
 		</dict>
+		<key>atsc3_stltp_alp_listener_test vnic1 239.0.0.6 30000.xcscheme_^#shared#^_</key>
+		<dict>
+			<key>orderHint</key>
+			<integer>11</integer>
+		</dict>
 		<key>cmd.xcscheme_^#shared#^_</key>
 		<dict>
 			<key>orderHint</key>

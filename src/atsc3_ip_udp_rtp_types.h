@@ -10,7 +10,7 @@
 #define ATSC3_IP_UDP_RTP_PARSER_TYPES_H
 
 
-typedef struct atsc3_rtp_fixed_header {
+typedef struct atsc3_rtp_header {
     uint8_t version:2;
     uint8_t padding:1;
     uint8_t extension:1;
@@ -20,19 +20,18 @@ typedef struct atsc3_rtp_fixed_header {
     uint16_t sequence_number;
     uint32_t timestamp;
     uint32_t packet_offset;
-} atsc3_rtp_fixed_header_t;
+} atsc3_rtp_header_t;
 
-typedef struct ip_udp_rtp_packet {
-    udp_flow_t                  udp_flow;
-    atsc3_rtp_fixed_header_t*   atsc3_rtp_fixed_header;
-    
+typedef struct atsc3_ip_udp_rtp_packet {
+    udp_flow_t              udp_flow;
+    atsc3_rtp_header_t*     rtp_header;
+    bool                    is_in_marker;
+
     //note - data will be the payload after the following packet headers removed:
     //[ethernet, ip, udp, rtp]
-    block_t*                    data;
+    block_t*                        data;
+    struct atsc3_ip_udp_rtp_packet* last_atsc3_ip_udp_rtp_packet;
     
-    //internals
-    int                         raw_packet_length;
-
-} ip_udp_rtp_packet_t;
+} atsc3_ip_udp_rtp_packet_t;
 
 #endif /* ATSC3_IP_UDP_RTP_PARSER_TYPES_H */
