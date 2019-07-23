@@ -40,17 +40,18 @@ void process_packet(u_char *user, const struct pcap_pkthdr *pkthdr, const u_char
 		atsc3_stltp_tunnel_packet_processed = atsc3_stltp_raw_packet_extract_inner_from_outer_packet(ip_udp_rtp_packet, atsc3_stltp_tunnel_packet_processed);
 
 		if(atsc3_stltp_tunnel_packet_processed) {
-			if(atsc3_stltp_tunnel_packet_processed->atsc3_stltp_baseband_packet && atsc3_stltp_tunnel_packet_processed->atsc3_stltp_baseband_packet->is_complete) {
-				__INFO("stltp atsc3_stltp_baseband_packet packet complete: size: %u",  atsc3_stltp_tunnel_packet_processed->atsc3_stltp_baseband_packet->payload_length);
-			//todo - free
+			if(atsc3_stltp_tunnel_packet_processed->atsc3_stltp_baseband_packet_v.count) {
+				__INFO("stltp atsc3_stltp_baseband_packet packet complete: count: %u",  atsc3_stltp_tunnel_packet_processed->atsc3_stltp_baseband_packet_v.count);
+
+				//todo - free
 			}
-			if(atsc3_stltp_tunnel_packet_processed->atsc3_stltp_preamble_packet && atsc3_stltp_tunnel_packet_processed->atsc3_stltp_preamble_packet->is_complete) {
-				__INFO("stltp atsc3_stltp_preamble_packet packet complete: size: %u",  atsc3_stltp_tunnel_packet_processed->atsc3_stltp_preamble_packet->payload_length);
-			//todo - free
+			if(atsc3_stltp_tunnel_packet_processed->atsc3_stltp_preamble_packet_v.count) {
+				__INFO("stltp atsc3_stltp_preamble_packet packet complete: count: %u",  atsc3_stltp_tunnel_packet_processed->atsc3_stltp_preamble_packet_v.count);
+				//todo - free
 			}
-			if(atsc3_stltp_tunnel_packet_processed->atsc3_stltp_timing_management_packet && atsc3_stltp_tunnel_packet_processed->atsc3_stltp_timing_management_packet->is_complete) {
-				__INFO("stltp atsc3_stltp_timing_management_packet packet complete: size: %u",  atsc3_stltp_tunnel_packet_processed->atsc3_stltp_timing_management_packet->payload_length);
-			//todo - free
+			if(atsc3_stltp_tunnel_packet_processed->atsc3_stltp_timing_management_packet_v.count) {
+				__INFO("stltp atsc3_stltp_timing_management_packet packet complete: count: %u",  atsc3_stltp_tunnel_packet_processed->atsc3_stltp_timing_management_packet_v.count);
+				//todo - free
 			}
 		} else {
             __ERROR("error processing packet: %p, size: %u",  ip_udp_rtp_packet, ip_udp_rtp_packet->data->p_size);
