@@ -53,22 +53,14 @@ void process_packet(u_char *user, const struct pcap_pkthdr *pkthdr, const u_char
 				__INFO("stltp atsc3_stltp_timing_management_packet packet complete: count: %u",  atsc3_stltp_tunnel_packet_processed->atsc3_stltp_timing_management_packet_v.count);
 				//todo - free
 			}
+            atsc3_stltp_tunnel_packet_clear_completed_inner_packets(atsc3_stltp_tunnel_packet_processed);
+
 		} else {
             __ERROR("error processing packet: %p, size: %u",  ip_udp_rtp_packet, ip_udp_rtp_packet->data->p_size);
             
 		}
-
-
 	}
-
-	if(ip_udp_rtp_packet->data) {
-        block_Release(&ip_udp_rtp_packet->data);
-	}
-
-	if(ip_udp_rtp_packet) {
-		free(ip_udp_rtp_packet);
-		ip_udp_rtp_packet = NULL;
-	}
+    atsc3_ip_udp_rtp_packet_and_data_free(&ip_udp_rtp_packet);
 }
 
 int main(int argc,char **argv) {

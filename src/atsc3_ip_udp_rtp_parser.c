@@ -105,21 +105,6 @@ atsc3_ip_udp_rtp_packet_t* atsc3_ip_udp_rtp_packet_process_from_blockt_pos(block
     return ip_udp_rtp_packet_new;
 }
 
-atsc3_rtp_header_t* atsc3_stltp_parse_rtp_header_udp_packet(udp_packet_t* udp_packet) {
-    
-    //total bits needed for rtp_fixed_header == 96, so this is a fragment
-    if(!udp_packet) {
-        __IP_UDP_RTP_PARSER_ERROR("fragment: atsc3_stltp_parse_rtp_header_udp_packet, udp_packet is null!");
-        return NULL;
-    }
-    if(udp_packet_get_remaining_bytes(udp_packet) < 12) {
-        __IP_UDP_RTP_PARSER_WARN("fragment: atsc3_stltp_parse_rtp_header_udp_packet, position: %u, size is: %u, data: %p", udp_packet->data_position, udp_packet->data_length, udp_packet->data);
-        return NULL;
-    }
-
-    return atsc3_ip_udp_rtp_parse_header(udp_packet_get_ptr(udp_packet), udp_packet_get_remaining_bytes(udp_packet));
-}
-
 
 atsc3_rtp_header_t* atsc3_stltp_parse_rtp_header_block(block_t* data) {
     if(!block_Valid(data)) {
@@ -144,6 +129,7 @@ atsc3_rtp_header_t* atsc3_stltp_parse_rtp_header_block(block_t* data) {
 }
 
 atsc3_rtp_header_t* atsc3_ip_udp_rtp_parse_header(uint8_t* data, uint32_t size) {
+    assert(size > RTP_HEADER_LENGTH);
         
     atsc3_rtp_header_t* atsc3_rtp_header = calloc(1, sizeof(atsc3_rtp_header_t));
     
@@ -254,6 +240,23 @@ atsc3_ip_udp_rtp_packet_t* atsc3_ip_udp_rtp_packet_prepend_if_not_null(atsc3_ip_
     return ip_udp_rtp_packet_new;
 }
 
+
+atsc3_rtp_header_t* atsc3_rtp_header_duplicate(atsc3_rtp_header_t* atsc3_rtp_header_from) {
+    atsc3_rtp_header_t* atsc3_rtp_header_new = calloc(1, sizeof(atsc3_rtp_header_t));
+    memcpy(atsc3_rtp_header_new, atsc3_rtp_header_from, sizeof(atsc3_rtp_header_t));
+    
+    return atsc3_rtp_header_new;
+}
+
+void atsc3_rtp_header_free(atsc3_rtp_header_t** atsc3_rtp_header_p) {
+    atsc3_rtp_header_t* atsc3_rtp_header = *atsc3_rtp_header_p;
+    if(atsc3_rtp_header) {
+        __IP_UDP_RTP_PARSER_TRACE("atsc3_rtp_header_free: freeing: %p", atsc3_rtp_header);
+        memset(atsc3_rtp_header, 0, sizeof(atsc3_rtp_header_p));
+        free(atsc3_rtp_header);
+        *atsc3_rtp_header_p = NULL;
+    }
+}
 
 void atsc3_ip_udp_rtp_packet_free(atsc3_ip_udp_rtp_packet_t** ip_udp_rtp_packet_p) {
     if(ip_udp_rtp_packet_p) {
