@@ -7,3 +7,10 @@
 /atsc3_listener_metrics_ncurses_httpd_isobmff.dSYM/
 /atsc3_mmt_mfu_monitor.dSYM/
 /.DS_Store
+/isobmff.debug
+/ncurses.console
+/stdout
+/z
+/zz
+/debug2
+/fix
