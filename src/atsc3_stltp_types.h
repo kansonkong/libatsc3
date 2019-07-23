@@ -25,7 +25,7 @@
 //https://www.atsc.org/wp-content/uploads/2016/10/A322-2018-Physical-Layer-Protocol.pdf
 
 typedef struct atsc3_stltp_baseband_packet {
-	atsc3_rtp_fixed_header_t* atsc3_rtp_fixed_header;
+	atsc3_rtp_header_t*     rtp_header;
 
 	uint8_t* 	        	payload;
     uint32_t 	        	payload_offset;
@@ -34,8 +34,8 @@ typedef struct atsc3_stltp_baseband_packet {
 
 	//other baseband alp attributes here
 
-    ip_udp_rtp_packet_t* 	ip_udp_rtp_packet;
-	uint32_t 		        fragment_count;
+    atsc3_ip_udp_rtp_packet_t* 	ip_udp_rtp_packet;
+	uint32_t 		            fragment_count;
 
 } atsc3_stltp_baseband_packet_t;
 
@@ -112,7 +112,7 @@ typedef struct L1_detail_signaling {
 } L1_detail_signaling_t;
 
 typedef struct atsc3_stltp_preamble_packet {
-	atsc3_rtp_fixed_header_t* atsc3_rtp_fixed_header;
+	atsc3_rtp_header_t*     rtp_header;
 
 	uint8_t* 				payload;
 	uint16_t 				payload_offset;
@@ -123,7 +123,7 @@ typedef struct atsc3_stltp_preamble_packet {
 	L1_detail_signaling_t 	L1_detail_signaling;
 	uint16_t				crc16;
 
-	ip_udp_rtp_packet_t* 	ip_udp_rtp_packet;
+	atsc3_ip_udp_rtp_packet_t* 	ip_udp_rtp_packet;
 	uint32_t 				fragment_count;
 
 } atsc3_stltp_preamble_packet_t;
@@ -179,7 +179,7 @@ typedef struct error_check_data {
 } error_check_data_t;
 
 typedef struct atsc3_stltp_timing_management_packet {
-	atsc3_rtp_fixed_header_t* 	atsc3_rtp_fixed_header;
+	atsc3_rtp_header_t* 	    rtp_header;
 
 	uint8_t* 					payload;
 	uint16_t 					payload_offset;
@@ -192,28 +192,25 @@ typedef struct atsc3_stltp_timing_management_packet {
 	packet_release_time_t		packet_release_time;
 	error_check_data_t			error_check_data;
 
-	ip_udp_rtp_packet_t* 		ip_udp_rtp_packet;
+	atsc3_ip_udp_rtp_packet_t* 	ip_udp_rtp_packet;
 	uint32_t 					fragment_count;
 
 } atsc3_stltp_timing_management_packet_t;
 
 
+/*
+ jjustman-2019-07-23: note: when parsing the stltp tunnel outer/inner, only seek against packet_outer,
+                            use inner when parsing out baseband/preamble/timing packet handoffs only
+ */
+
 
 typedef struct atsc3_stltp_tunnel_packet {
-	atsc3_rtp_fixed_header_t* atsc3_rtp_fixed_header_outer_tunnel;
-	atsc3_rtp_fixed_header_t* atsc3_rtp_fixed_header_inner_last;
 
-	uint8_t* outer_ip_header;
-	uint32_t outer_ip_header_length;
+	atsc3_ip_udp_rtp_packet_t* ip_udp_rtp_packet_outer;
+    
+    atsc3_ip_udp_rtp_packet_t* ip_udp_rtp_packet_inner;
 
-	ip_udp_rtp_packet_t* ip_udp_rtp_packet_outer;
-	ip_udp_rtp_packet_t* ip_udp_rtp_packet_inner;
-	ip_udp_rtp_packet_t* ip_udp_rtp_packet_inner_refragmented;
-	ip_udp_rtp_packet_t* ip_udp_rtp_packet_inner_last_fragment;
-
-	uint32_t udp_packet_last_position;
-    uint32_t fragment_count;
-
+    //jjustman-2019-07-23 - todo: move these to vector _t's
 	atsc3_stltp_baseband_packet_t* 			atsc3_stltp_baseband_packet;
     atsc3_stltp_baseband_packet_t*          atsc3_stltp_baseband_packet_pending;
     
@@ -222,8 +219,6 @@ typedef struct atsc3_stltp_tunnel_packet {
     
 	atsc3_stltp_timing_management_packet_t* atsc3_stltp_timing_management_packet;
     atsc3_stltp_timing_management_packet_t* atsc3_stltp_timing_management_packet_pending;
-
-	atsc3_rtp_fixed_header_t* 				atsc3_rtp_fixed_header_payload;
 
 } atsc3_stltp_tunnel_packet_t;
 
