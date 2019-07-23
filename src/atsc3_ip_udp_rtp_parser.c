@@ -157,8 +157,8 @@ atsc3_ip_udp_rtp_packet_t* atsc3_ip_udp_rtp_packet_duplicate(atsc3_ip_udp_rtp_pa
     if(ip_udp_rtp_packet && block_Valid(ip_udp_rtp_packet->data)) {
        atsc3_ip_udp_rtp_packet_t* ip_udp_rtp_packet_new = calloc(1, sizeof(atsc3_ip_udp_rtp_packet_t));
         if(!ip_udp_rtp_packet_new) return NULL;
-        ip_udp_rtp_packet_new->rtp_header = calloc(1, sizeof(atsc3_rtp_header_t));
-        memcpy(ip_udp_rtp_packet_new->rtp_header, ip_udp_rtp_packet->rtp_header, sizeof(atsc3_rtp_header_t));
+        
+        ip_udp_rtp_packet_new->rtp_header = atsc3_rtp_header_duplicate(ip_udp_rtp_packet->rtp_header);
         ip_udp_rtp_packet_new->data = block_Duplicate_from_position(ip_udp_rtp_packet->data);
         
         ip_udp_rtp_packet_new->udp_flow.src_ip_addr   = ip_udp_rtp_packet->udp_flow.src_ip_addr;
@@ -177,9 +177,9 @@ atsc3_ip_udp_rtp_packet_t* atsc3_ip_udp_rtp_packet_duplicate_no_data_block_t(ats
     if(ip_udp_rtp_packet && block_Valid(ip_udp_rtp_packet->data)) {
         atsc3_ip_udp_rtp_packet_t* ip_udp_rtp_packet_new = calloc(1, sizeof(atsc3_ip_udp_rtp_packet_t));
         if(!ip_udp_rtp_packet_new) return NULL;
-        ip_udp_rtp_packet_new->rtp_header = calloc(1, sizeof(atsc3_rtp_header_t));
-        memcpy(ip_udp_rtp_packet_new->rtp_header, ip_udp_rtp_packet->rtp_header, sizeof(atsc3_rtp_header_t));
-        
+
+        ip_udp_rtp_packet_new->rtp_header = atsc3_rtp_header_duplicate(ip_udp_rtp_packet->rtp_header);
+
         ip_udp_rtp_packet_new->udp_flow.src_ip_addr   = ip_udp_rtp_packet->udp_flow.src_ip_addr;
         ip_udp_rtp_packet_new->udp_flow.src_port      = ip_udp_rtp_packet->udp_flow.src_port;
         ip_udp_rtp_packet_new->udp_flow.dst_ip_addr   = ip_udp_rtp_packet->udp_flow.dst_ip_addr;
