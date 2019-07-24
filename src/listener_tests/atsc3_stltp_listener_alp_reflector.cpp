@@ -129,7 +129,7 @@ int main(int argc,char **argv) {
     
     
     _IP_UDP_RTP_PARSER_DEBUG_ENABLED = 1;
-    _ATSC3_UTILS_TRACE_ENABLED = 1;
+    _ATSC3_UTILS_TRACE_ENABLED = 0;
     char *dev;
     char *devInject;
     char *filter_dst_ip = NULL;

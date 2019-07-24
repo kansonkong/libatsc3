@@ -85,7 +85,7 @@ block_t* atsc3_stltp_read_from_outer_packet(atsc3_ip_udp_rtp_packet_t* ip_udp_rt
             ip_udp_rtp_packet_outer->is_in_marker = true;
         }
     }
-    inner_packet_data = block_Refcount(ip_udp_rtp_packet_outer->data); //return a reference
+    inner_packet_data = ip_udp_rtp_packet_outer->data; //don't return a reference here as transient
     
     return inner_packet_data;
 }
@@ -117,8 +117,9 @@ atsc3_ip_udp_rtp_packet_t* atsc3_stltp_tunnel_packet_inner_parse_ip_udp_header_i
 
 atsc3_ip_udp_rtp_packet_t* atsc3_stltp_tunnel_packet_inner_parse_ip_udp_header_outer_data(atsc3_stltp_tunnel_packet_t* atsc3_stltp_tunnel_packet) {
     
-    __STLTP_PARSER_DEBUG("atsc3_stltp_tunnel_packet_inner_parse_ip_udp_header_outer_data: parsing ip_udp_rtp_packet_outer: %p, to: %u", atsc3_stltp_tunnel_packet->ip_udp_rtp_packet_outer, atsc3_stltp_tunnel_packet->ip_udp_rtp_packet_outer->data->i_pos);
-    
+    __STLTP_PARSER_DEBUG("atsc3_stltp_tunnel_packet_inner_parse_ip_udp_header_outer_data: parsing ip_udp_rtp_packet_outer: %p, outer position: %u, outer packet len: %u", atsc3_stltp_tunnel_packet->ip_udp_rtp_packet_outer, atsc3_stltp_tunnel_packet->ip_udp_rtp_packet_outer->data->i_pos,
+        atsc3_stltp_tunnel_packet->ip_udp_rtp_packet_outer->data->p_size);
+
     //todo - refactor to not create a duplicate data block_t
     atsc3_ip_udp_rtp_packet_t* ip_udp_rtp_packet_inner_new = atsc3_ip_udp_rtp_packet_process_from_blockt_pos(atsc3_stltp_tunnel_packet->ip_udp_rtp_packet_outer->data);
     
@@ -255,15 +256,9 @@ atsc3_stltp_tunnel_packet_t* atsc3_stltp_raw_packet_extract_inner_from_outer_pac
         block_Seek(atsc3_stltp_tunnel_packet_current->ip_udp_rtp_packet_outer->data, ATSC_STLTP_IP_UDP_RTP_HEADER_SIZE);
         
         //duplicate our ip_udp_rtp header so we won't get a doublefree
-        //atsc3_stltp_tunnel_packet_current->ip_udp_rtp_packet_inner = atsc3_ip_udp_rtp_packet_duplicate_no_data_block_t(atsc3_stltp_tunnel_packet_last->ip_udp_rtp_packet_inner);
         //hack-2019-07-24
         atsc3_stltp_tunnel_packet_current->ip_udp_rtp_packet_inner = atsc3_ip_udp_rtp_packet_duplicate_no_data_block_t(atsc3_stltp_tunnel_packet_last->ip_udp_rtp_packet_inner);
-
-
-//        atsc3_stltp_tunnel_packet_current->ip_udp_rtp_packet_inner = atsc3_stltp_tunnel_packet_last->ip_udp_rtp_packet_inner;
-////        atsc3_stltp_tunnel_packet_last->ip_udp_rtp_packet_inner = NULL;
-//
-//        atsc3_stltp_tunnel_packet_current->ip_udp_rtp_packet_inner->data = block_Refcount(atsc3_stltp_tunnel_packet_current->ip_udp_rtp_packet_outer->data);
+        atsc3_stltp_tunnel_packet_current->ip_udp_rtp_packet_inner->data = block_Refcount(atsc3_stltp_tunnel_packet_current->ip_udp_rtp_packet_outer->data);
         
         int current_outer_packet_bytes_remaining_to_parse = block_Remaining_size(atsc3_stltp_tunnel_packet_current->ip_udp_rtp_packet_outer->data);
         if(current_outer_packet_bytes_remaining_to_parse > 0) {
@@ -295,7 +290,7 @@ atsc3_stltp_tunnel_packet_t* atsc3_stltp_raw_packet_extract_inner_from_outer_pac
     //if we don't have an inner payload yet due to marker, then we still need to parse 2x headers
     while(block_Remaining_size(atsc3_stltp_tunnel_packet_current->ip_udp_rtp_packet_outer->data) >
           (atsc3_stltp_tunnel_packet_current->ip_udp_rtp_packet_outer->rtp_header->marker && atsc3_stltp_tunnel_packet_current->ip_udp_rtp_packet_outer->rtp_header->packet_offset > atsc3_stltp_tunnel_packet_current->ip_udp_rtp_packet_outer->data->i_pos ? ATSC_STLTP_IP_UDP_RTP_HEADER_SIZE * 2 : ATSC_STLTP_IP_UDP_RTP_HEADER_SIZE)) {
-        //read from outer packet data,
+        //read from outer packet data to build an inner payload
         block_t* outer_reference_inner_payload_current = atsc3_stltp_read_from_outer_packet(atsc3_stltp_tunnel_packet_current->ip_udp_rtp_packet_outer, true);
         if(outer_reference_inner_payload_current) {
             
@@ -322,9 +317,14 @@ atsc3_stltp_tunnel_packet_t* atsc3_stltp_raw_packet_extract_inner_from_outer_pac
     if(block_Remaining_size(atsc3_stltp_tunnel_packet_current->ip_udp_rtp_packet_outer->data)  > 0) {
         __STLTP_PARSER_TRACE("block remaining size: %u, inner: %p", block_Remaining_size(atsc3_stltp_tunnel_packet_current->ip_udp_rtp_packet_outer->data), atsc3_stltp_tunnel_packet_current->ip_udp_rtp_packet_inner);
     } else {
-        //forcibly clean our inner/outer atsc3_stltp_tunnel_packet_current
-        atsc3_stltp_tunnel_packet_outer_inner_destroy(atsc3_stltp_tunnel_packet_current);
-        
+        //if we have no pending inner payloads, clear out our full tunnel packet, otherwise keep the inner around as needed
+        if(!atsc3_stltp_tunnel_packet_current->atsc3_stltp_baseband_packet_pending && !atsc3_stltp_tunnel_packet_current->atsc3_stltp_preamble_packet_pending && !atsc3_stltp_tunnel_packet_current->atsc3_stltp_timing_management_packet_pending) {
+            //forcibly clean our inner/outer atsc3_stltp_tunnel_packet_current
+            atsc3_stltp_tunnel_packet_outer_inner_destroy(atsc3_stltp_tunnel_packet_current);
+        } else {
+            //we have pending payloads that we can't drop the inner rtp header, so don't clear them out yet
+            atsc3_stltp_tunnel_packet_outer_destroy(atsc3_stltp_tunnel_packet_current);
+        }
     }
     
     return atsc3_stltp_tunnel_packet_current;
@@ -407,30 +407,39 @@ atsc3_stltp_baseband_packet_t* atsc3_stltp_baseband_packet_extract(atsc3_stltp_t
 		uint32_t baseband_header_packet_length = atsc3_stltp_baseband_packet_pending->rtp_header->packet_offset; //SSRC packet length
 		assert(baseband_header_packet_length < 65535);
 		atsc3_stltp_baseband_packet_pending->payload_length = baseband_header_packet_length;
-
-		__STLTP_PARSER_DEBUG(" ----baseband packet: new -----");
-		__STLTP_PARSER_DEBUG("     total packet length:  %u",  atsc3_stltp_baseband_packet_pending->payload_length);
-        __STLTP_PARSER_DEBUG("     fragment 0 length:    %u (payload: %p)",  block_remaining_length, atsc3_stltp_baseband_packet_pending->payload);
-        
         atsc3_stltp_baseband_packet_pending->payload = calloc(baseband_header_packet_length, sizeof(uint8_t));
         assert(atsc3_stltp_baseband_packet_pending->payload);
+
+		__STLTP_PARSER_DEBUG(" ----baseband packet: new -----");
+		__STLTP_PARSER_DEBUG("     total packet length: %u    first bytes: 0x%02x 0x%02x 0x%02x 0x%02x",  atsc3_stltp_baseband_packet_pending->payload_length,
+                                                                atsc3_stltp_baseband_packet_pending->payload[atsc3_stltp_baseband_packet_pending->payload_offset],
+                                                                atsc3_stltp_baseband_packet_pending->payload[atsc3_stltp_baseband_packet_pending->payload_offset+1],
+                                                                atsc3_stltp_baseband_packet_pending->payload[atsc3_stltp_baseband_packet_pending->payload_offset+2],
+                                                                atsc3_stltp_baseband_packet_pending->payload[atsc3_stltp_baseband_packet_pending->payload_offset+3]);
+        
 	} else {
 		__STLTP_PARSER_DEBUG(" ----baseband packet: fragment-----");
-        __STLTP_PARSER_DEBUG("     fragment %u, offset: %u, length:   %u",   atsc3_stltp_baseband_packet_pending->fragment_count, atsc3_stltp_baseband_packet_pending->payload_offset, block_remaining_length);
-	}
+    }
+    
+    __STLTP_PARSER_DEBUG("     fragment: %u, offset: %u, length: %u, bbp_bytes remaining: %u, inner data pos: before seek: %u, after seek: %u, inner data len: %u, inner data len remaining: %u",
+                         atsc3_stltp_baseband_packet_pending->fragment_count,
+                         atsc3_stltp_baseband_packet_pending->payload_offset,
+                         block_remaining_length,
+                         atsc3_stltp_baseband_packet_pending->payload_length - atsc3_stltp_baseband_packet_pending->payload_offset - block_remaining_length,
+                         packet->i_pos,
+                         packet->i_pos + block_remaining_length,
+                         packet->p_size,
+                         packet->p_size - (packet->i_pos + block_remaining_length));
     
 	memcpy(&atsc3_stltp_baseband_packet_pending->payload[atsc3_stltp_baseband_packet_pending->payload_offset], block_Get(packet), block_remaining_length);
-	__STLTP_PARSER_DEBUG("     first bytes:         0x%02x 0x%02x 0x%02x 0x%02x", atsc3_stltp_baseband_packet_pending->payload[atsc3_stltp_baseband_packet_pending->payload_offset], atsc3_stltp_baseband_packet_pending->payload[atsc3_stltp_baseband_packet_pending->payload_offset+1],
-        atsc3_stltp_baseband_packet_pending->payload[atsc3_stltp_baseband_packet_pending->payload_offset+2],
-        atsc3_stltp_baseband_packet_pending->payload[atsc3_stltp_baseband_packet_pending->payload_offset+3]);
-    
+	
     atsc3_stltp_baseband_packet_pending->fragment_count++;
 	atsc3_stltp_baseband_packet_pending->payload_offset += block_remaining_length;
-	__STLTP_PARSER_DEBUG("     payload_offset now: %u, baseband_packet_length: %u", atsc3_stltp_baseband_packet_pending->payload_offset, atsc3_stltp_baseband_packet_pending->payload_length);
 
 	if(atsc3_stltp_baseband_packet_pending->payload_offset >= atsc3_stltp_baseband_packet_pending->payload_length) {
 		__STLTP_PARSER_DEBUG(" ----baseband packet: complete-----");
 		atsc3_stltp_baseband_packet_pending->is_complete = true;
+        
         //hack
         if(atsc3_stltp_baseband_packet_pending->ip_udp_rtp_packet && atsc3_stltp_baseband_packet_pending->ip_udp_rtp_packet->data) {
             block_Destroy(&atsc3_stltp_baseband_packet_pending->ip_udp_rtp_packet->data);
@@ -441,7 +450,7 @@ atsc3_stltp_baseband_packet_t* atsc3_stltp_baseband_packet_extract(atsc3_stltp_t
 	}
            
 	block_Seek_Relative(packet, block_remaining_length);
-    __STLTP_PARSER_DEBUG(" ----baseband packet: return, position is: %u, size: %u -----", packet->i_pos, packet->p_size);
+    __STLTP_PARSER_DEBUG(" ----baseband packet: return, seeking: %u, new position is: %u, size: %u -----", block_remaining_length, packet->i_pos, packet->p_size);
 
 	return atsc3_stltp_baseband_packet_pending;
 }
@@ -746,25 +755,44 @@ void atsc3_stltp_tunnel_packet_destroy(atsc3_stltp_tunnel_packet_t** atsc3_stltp
 }
 
 
-//hard destrory of inner/outer packets
-void atsc3_stltp_tunnel_packet_outer_inner_destroy(atsc3_stltp_tunnel_packet_t* atsc3_stltp_tunnel_packet) {
+//hard destrory of outer packets and corresponding data block_t*'s
+//do not destroy the inner ip_udp_rtp packet payload, as we will need it if we are un-segmenting inner packets
+void atsc3_stltp_tunnel_packet_outer_destroy(atsc3_stltp_tunnel_packet_t* atsc3_stltp_tunnel_packet) {
     if(atsc3_stltp_tunnel_packet) {
         
-        //check to make sure we don't doublefree inner/outer -> data
+        //check to make sure we don't doublefree inner/outer -> data, so only free one instance of block_t but update both as being cleared
         if(atsc3_stltp_tunnel_packet->ip_udp_rtp_packet_outer && atsc3_stltp_tunnel_packet->ip_udp_rtp_packet_inner &&
            atsc3_stltp_tunnel_packet->ip_udp_rtp_packet_outer->data == atsc3_stltp_tunnel_packet->ip_udp_rtp_packet_inner->data) {
             block_Destroy(&atsc3_stltp_tunnel_packet->ip_udp_rtp_packet_outer->data);
             atsc3_stltp_tunnel_packet->ip_udp_rtp_packet_inner->data = NULL;
         }
-        
-        if(atsc3_stltp_tunnel_packet->ip_udp_rtp_packet_inner) {
-            atsc3_ip_udp_rtp_packet_destroy(&atsc3_stltp_tunnel_packet->ip_udp_rtp_packet_inner);
-            atsc3_stltp_tunnel_packet->ip_udp_rtp_packet_inner = NULL;
-        }
-        
         if(atsc3_stltp_tunnel_packet->ip_udp_rtp_packet_outer) {
             atsc3_ip_udp_rtp_packet_destroy(&atsc3_stltp_tunnel_packet->ip_udp_rtp_packet_outer);
             atsc3_stltp_tunnel_packet->ip_udp_rtp_packet_outer = NULL;
+        }
+    }
+}
+
+
+
+//hard destrory of INNER and outer packets and corresponding data block_t*'s
+//do not destroy the inner ip_udp_rtp packet payload, as we will need it if we are un-segmenting inner packets
+void atsc3_stltp_tunnel_packet_outer_inner_destroy(atsc3_stltp_tunnel_packet_t* atsc3_stltp_tunnel_packet) {
+    if(atsc3_stltp_tunnel_packet) {
+        
+        //check to make sure we don't doublefree inner/outer -> data, so only free one instance of block_t but update both as being cleared
+        if(atsc3_stltp_tunnel_packet->ip_udp_rtp_packet_outer && atsc3_stltp_tunnel_packet->ip_udp_rtp_packet_inner &&
+           atsc3_stltp_tunnel_packet->ip_udp_rtp_packet_outer->data == atsc3_stltp_tunnel_packet->ip_udp_rtp_packet_inner->data) {
+            block_Destroy(&atsc3_stltp_tunnel_packet->ip_udp_rtp_packet_outer->data);
+            atsc3_stltp_tunnel_packet->ip_udp_rtp_packet_inner->data = NULL;
+        }
+        if(atsc3_stltp_tunnel_packet->ip_udp_rtp_packet_outer) {
+            atsc3_ip_udp_rtp_packet_destroy(&atsc3_stltp_tunnel_packet->ip_udp_rtp_packet_outer);
+            atsc3_stltp_tunnel_packet->ip_udp_rtp_packet_outer = NULL;
+        }
+        if(atsc3_stltp_tunnel_packet->ip_udp_rtp_packet_inner) {
+            atsc3_ip_udp_rtp_packet_destroy(&atsc3_stltp_tunnel_packet->ip_udp_rtp_packet_inner);
+            atsc3_stltp_tunnel_packet->ip_udp_rtp_packet_inner = NULL;
         }
     }
 }
