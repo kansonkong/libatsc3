@@ -10,6 +10,9 @@
 int _ALP_PARSER_INFO_ENABLED = 1;
 int _ALP_PARSER_DEBUG_ENABLED = 1;
 
+pcap_t* descrInject = NULL;
+
+
 /**
  A/322-2018 - Section 5.2 Baseband Formatting:
  ..The baseband formatting block creates one or more PLPs as directed by the Scheduler. At the output of the baseband formatting block, each PLP consists of a stream of Baseband Packets and there is exactly one Baseband Packet per defined FEC Frame...
@@ -55,44 +58,71 @@ void atsc3_alp_parse_stltp_baseband_packet(atsc3_stltp_baseband_packet_t* atsc3_
     atsc3_baseband_packet_header->base_field_mode = (*binary_payload >> 7) &0x1;
     atsc3_baseband_packet_header->base_field_pointer = (*binary_payload++) &0x7F;
     
-    if(atsc3_baseband_packet_header->base_field_mode) {
+    __ALP_PARSER_INFO("-----------------------------");
+    __ALP_PARSER_INFO("Baseband Packet Header");
+    __ALP_PARSER_INFO("base field mode   : %x",    atsc3_baseband_packet_header->base_field_mode);
+    __ALP_PARSER_INFO("base field pointer: 0x%x",  atsc3_baseband_packet_header->base_field_pointer);
+    int bbp_pointer_count = 0;
+    
+    if(!atsc3_baseband_packet_header->base_field_mode) {
+        for(bbp_pointer_count=0; bbp_pointer_count < atsc3_baseband_packet_header->base_field_pointer; bbp_pointer_count++) {
+            binary_payload++;
+        }
+        __ALP_PARSER_INFO(" -> seeking ptr: %d", bbp_pointer_count);
+      
+        
+    } else {
         atsc3_baseband_packet_header->base_field_pointer |= (((*binary_payload >>2) &0x3F) << 7);
         atsc3_baseband_packet_header->option_field_mode = (*binary_payload++) & 0x02;
         
+        //no option field, no extension field, resolve from base_field_pointer
+        for(bbp_pointer_count=0; bbp_pointer_count < atsc3_baseband_packet_header->base_field_pointer; bbp_pointer_count++) {
+            binary_payload++;
+        }
+        __ALP_PARSER_INFO(" -> seeking ptr: %d", bbp_pointer_count);
+        
+        
         if(atsc3_baseband_packet_header->option_field_mode == 0x00) {
-            //no option field, no extension field
-            
+            //noop
+            __ALP_PARSER_INFO(" -> no extension");
+      
         } else {
+            
             atsc3_baseband_packet_header->ext_type = (*binary_payload >> 5) & 0x7;
             atsc3_baseband_packet_header->ext_len = (*binary_payload++) & 0x1F;
             
             if(atsc3_baseband_packet_header->option_field_mode == 0x01) {
                 //short extension mode - 1 byte
-                for(int i=0; i < atsc3_baseband_packet_header->ext_len; i++) {
+                for(bbp_pointer_count=0; bbp_pointer_count < atsc3_baseband_packet_header->ext_len; bbp_pointer_count++) {
                     binary_payload++;
-                }                    
+                }
+                __ALP_PARSER_INFO(" -> ext 0x01: %d", bbp_pointer_count);
+
             } else if(atsc3_baseband_packet_header->option_field_mode == 0x02) {
                 //long extension mode - 2 bytes
                 atsc3_baseband_packet_header->ext_len |= (((*binary_payload++) & 0xFF) << 5);
 
-                for(int i=0; i < atsc3_baseband_packet_header->ext_len; i++) {
+                for(bbp_pointer_count=0; bbp_pointer_count < atsc3_baseband_packet_header->ext_len; bbp_pointer_count++) {
                     binary_payload++;
                 }
+                
+                __ALP_PARSER_INFO(" -> ext 0x02: %d", bbp_pointer_count);
+
                 
             } if(atsc3_baseband_packet_header->option_field_mode == 0x03) {
                 //mixed extension bode - 2 bytes
                 atsc3_baseband_packet_header->ext_len |= (((*binary_payload++) & 0xFF) << 5);
 
-                for(int i=0; i < atsc3_baseband_packet_header->ext_len; i++) {
+                for(bbp_pointer_count=0; bbp_pointer_count < atsc3_baseband_packet_header->ext_len; bbp_pointer_count++) {
                     binary_payload++;
                 }
+                
+                __ALP_PARSER_INFO(" -> ext 0x03: %d", bbp_pointer_count);
+
             }
         }
     }
-    __ALP_PARSER_INFO("-----------------------------");
-    __ALP_PARSER_INFO("Baseband Packet Header");
-    __ALP_PARSER_INFO("base field mode   : %x",  atsc3_baseband_packet_header->base_field_mode);
-    __ALP_PARSER_INFO("base field pointer: 0x%x",  atsc3_baseband_packet_header->base_field_pointer);
+  
     __ALP_PARSER_INFO("option field mode : 0x%x",  atsc3_baseband_packet_header->option_field_mode);
     __ALP_PARSER_INFO("ext type          : 0x%x",  atsc3_baseband_packet_header->ext_type);
     __ALP_PARSER_INFO("ext len           : 0x%x",  atsc3_baseband_packet_header->ext_len);
@@ -105,15 +135,18 @@ void atsc3_alp_parse_stltp_baseband_packet(atsc3_stltp_baseband_packet_t* atsc3_
 	alp_packet_header.packet_type = (alp_packet_header_byte_1 >> 5) & 0x7;
 	alp_packet_header.payload_configuration = (alp_packet_header_byte_1 >> 4) & 0x1;
     __ALP_PARSER_INFO("-----------------------------");
-    __ALP_PARSER_INFO("ALP packet type: 0x%x", alp_packet_header.packet_type);
-	__ALP_PARSER_INFO("payload config : %d", alp_packet_header.payload_configuration);
+    __ALP_PARSER_INFO("ALP packet type     : 0x%x", alp_packet_header.packet_type);
+	__ALP_PARSER_INFO("payload config      : %d", alp_packet_header.payload_configuration);
 
+    uint32_t alp_payload_length = 0;
+    
 	if(alp_packet_header.payload_configuration == 0) {
 		alp_packet_header.alp_packet_header_mode.header_mode = (alp_packet_header_byte_1 >> 3) & 0x01;
 		alp_packet_header.alp_packet_header_mode.length = (alp_packet_header_byte_1 & 0x7) << 8 | alp_packet_header_byte_2;
-		__ALP_PARSER_INFO("header mode      : %d", alp_packet_header.alp_packet_header_mode.header_mode);
-		__ALP_PARSER_INFO("ALP header length: %d", alp_packet_header.alp_packet_header_mode.length);
+		__ALP_PARSER_INFO("header mode        : %d", alp_packet_header.alp_packet_header_mode.header_mode);
+		__ALP_PARSER_INFO("length             : %d", alp_packet_header.alp_packet_header_mode.length);
 		__ALP_PARSER_INFO("-----------------------------");
+        alp_payload_length = alp_packet_header.alp_packet_header_mode.length;
 
 		if(alp_packet_header.payload_configuration == 0 && alp_packet_header.alp_packet_header_mode.header_mode == 0) {
 				//no additional header size
@@ -131,14 +164,80 @@ void atsc3_alp_parse_stltp_baseband_packet(atsc3_stltp_baseband_packet_t* atsc3_
 	} else if(alp_packet_header.payload_configuration == 1) {
 		alp_packet_header.alp_packet_segmentation_concatenation.segmentation_concatenation = (alp_packet_header_byte_1 >> 3) & 0x01;
 		alp_packet_header.alp_packet_segmentation_concatenation.length = (alp_packet_header_byte_1 & 0x7) << 8 | alp_packet_header_byte_2;
-		__ALP_PARSER_INFO("segmentation_concatenation: %d", alp_packet_header.alp_packet_segmentation_concatenation.segmentation_concatenation);
-		__ALP_PARSER_INFO("ALP header length	     : %d", alp_packet_header.alp_packet_segmentation_concatenation.length);
+        
+		__ALP_PARSER_INFO("segmentation_concatenation : %d", alp_packet_header.alp_packet_segmentation_concatenation.segmentation_concatenation);
+		__ALP_PARSER_INFO("length	                  : %d", alp_packet_header.alp_packet_segmentation_concatenation.length);
 		__ALP_PARSER_INFO("-----------------------------");
+        alp_payload_length = alp_packet_header.alp_packet_segmentation_concatenation.length;
 
-
+        if(alp_packet_header.alp_packet_segmentation_concatenation.segmentation_concatenation == 0) {
+            //segmentation_hdr
+            __ALP_PARSER_INFO("segmentation_hdr()");
+            uint8_t additional_header_byte_1 = *binary_payload++;
+            alp_packet_header.alp_packet_segmentation_concatenation.alp_segmentation_header.segment_sequence_number = (additional_header_byte_1 >> 3) & 0x1F;
+            alp_packet_header.alp_packet_segmentation_concatenation.alp_segmentation_header.last_segment_indicator = (additional_header_byte_1 >> 2) & 0x1;
+            alp_packet_header.alp_packet_segmentation_concatenation.alp_segmentation_header.SIF = (additional_header_byte_1 >> 1) & 0x1;
+            alp_packet_header.alp_packet_segmentation_concatenation.alp_segmentation_header.HEF = (additional_header_byte_1) & 0x1;
+            __ALP_PARSER_INFO("segment_sequence_number     : 0x%x", alp_packet_header.alp_packet_segmentation_concatenation.alp_segmentation_header.segment_sequence_number);
+            __ALP_PARSER_INFO("last_segment_indicator      : 0x%x", alp_packet_header.alp_packet_segmentation_concatenation.alp_segmentation_header.last_segment_indicator);
+            __ALP_PARSER_INFO("SIF                         : 0x%x", alp_packet_header.alp_packet_segmentation_concatenation.alp_segmentation_header.SIF);
+            __ALP_PARSER_INFO("HEF                         : 0x%x", alp_packet_header.alp_packet_segmentation_concatenation.alp_segmentation_header.HEF);
+            __ALP_PARSER_INFO("-----------------------------");
+            
+        } else {
+            //concatenation_hdr
+            __ALP_PARSER_INFO("concatenation_hdr()");
+        }
 	}
     
+    if(alp_payload_length && descrInject) {
+        uint32_t eth_frame_size = alp_payload_length + 14;
+        uint8_t* eth_frame = calloc(eth_frame_size, sizeof(uint8_t));
+        
+        eth_frame[0]=1;
+        eth_frame[1]=1;
+        eth_frame[2]=1;
+        eth_frame[3]=1;
+        eth_frame[4]=1;
+        eth_frame[5]=1;
+        
+        /* set mac source to 2:2:2:2:2:2 */
+        eth_frame[6]=2;
+        eth_frame[7]=2;
+        eth_frame[8]=2;
+        eth_frame[9]=2;
+        eth_frame[10]=2;
+        eth_frame[11]=2;
+        eth_frame[12]=0x08;
+        eth_frame[13]=0x00;
+
+        memcpy(&eth_frame[14], binary_payload, alp_payload_length);
+        
+        if (pcap_sendpacket(descrInject, eth_frame, eth_frame_size) != 0) {
+            __ALP_PARSER_ERROR("error sending the packet: %s", pcap_geterr(descrInject));
+            return;
+        }
+    }
     
+//
+//    __ALP_PARSER_INFO("ALP: 0x%x 0x%x 0x%x 0x%x   0x%x 0x%x 0x%x 0x%x   0x%x 0x%x 0x%x 0x%x   0x%x 0x%x 0x%x 0x%x",
+//                      *binary_payload++,
+//                      *binary_payload++,
+//                      *binary_payload++,
+//                      *binary_payload++,
+//                      *binary_payload++,
+//                      *binary_payload++,
+//                      *binary_payload++,
+//                      *binary_payload++,
+//                      *binary_payload++,
+//                      *binary_payload++,
+//                      *binary_payload++,
+//                      *binary_payload++,
+//                      *binary_payload++,
+//                      *binary_payload++,
+//                      *binary_payload++,
+//                      *binary_payload++);
+
     //cleanup
     if(atsc3_baseband_packet_header) {
         free(atsc3_baseband_packet_header);

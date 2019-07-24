@@ -372,6 +372,7 @@ atsc3_stltp_baseband_packet_t* atsc3_stltp_baseband_packet_extract(atsc3_stltp_t
         }
 
         atsc3_stltp_baseband_packet_pending = calloc(1, sizeof(atsc3_stltp_baseband_packet_t));
+        atsc3_stltp_baseband_packet_pending->ip_udp_rtp_packet = atsc3_ip_udp_rtp_packet_duplicate(atsc3_stltp_tunnel_packet_current->ip_udp_rtp_packet_inner);
         atsc3_stltp_baseband_packet_pending->rtp_header = atsc3_rtp_header_duplicate(atsc3_stltp_tunnel_packet_current->ip_udp_rtp_packet_inner->rtp_header);
         
         atsc3_stltp_baseband_packet_pending->payload_length = atsc3_stltp_baseband_packet_pending->rtp_header->packet_offset;

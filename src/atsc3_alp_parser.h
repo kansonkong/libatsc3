@@ -8,6 +8,9 @@
 #ifndef ATSC3_ALP_PARSER_H_
 #define ATSC3_ALP_PARSER_H_
 
+#include <pcap.h>
+#include <string.h>
+
 #include "atsc3_utils.h"
 #include "atsc3_logging_externs.h"
 #include "atsc3_alp_types.h"
@@ -42,16 +45,20 @@ typedef struct atsc3_baseband_packet_header {
     
 void atsc3_alp_parse_stltp_baseband_packet(atsc3_stltp_baseband_packet_t* atsc3_stltp_baseband_packet);
 
+//stltp reflection
 
+extern pcap_t* descrInject;
+
+    
 
 #if defined (__cplusplus)
 }
 #endif
 
-#define __ALP_PARSER_ERROR(...)  		printf("%s:%d:ERROR: ",__FILE__,__LINE__); printf(__VA_ARGS__); printf("%s%s","\r","\n")
-#define __ALP_PARSER_WARN(...)  		printf("%s:%d:WARN : ",__FILE__,__LINE__); printf(__VA_ARGS__); printf("%s%s","\r","\n")
+#define __ALP_PARSER_ERROR(...)  		printf("%s:%4d:ERROR: ",__FILE__,__LINE__); printf(__VA_ARGS__); printf("%s%s","\r","\n")
+#define __ALP_PARSER_WARN(...)  		printf("%s:%4d:WARN : ",__FILE__,__LINE__); printf(__VA_ARGS__); printf("%s%s","\r","\n")
 
-#define __ALP_PARSER_INFO(...)  		if(_ALP_PARSER_INFO_ENABLED) { printf("%s:%d:INFO:%.4f: ",__FILE__,__LINE__, gt()); printf(__VA_ARGS__); printf("%s%s","\r","\n"); }
-#define __ALP_PARSER_DEBUG(...)  		if(_ALP_PARSER_DEBUG_ENABLED) { printf("%s:%d:DEBUG: ",__FILE__,__LINE__); printf(__VA_ARGS__); printf("%s%s","\r","\n"); }
+#define __ALP_PARSER_INFO(...)  		if(_ALP_PARSER_INFO_ENABLED) { printf("%s:%4d:INFO:%.4f: ",__FILE__,__LINE__, gt()); printf(__VA_ARGS__); printf("%s%s","\r","\n"); }
+#define __ALP_PARSER_DEBUG(...)  		if(_ALP_PARSER_DEBUG_ENABLED) { printf("%s:%4d:DEBUG: ",__FILE__,__LINE__); printf(__VA_ARGS__); printf("%s%s","\r","\n"); }
 
 #endif /* ATSC3_ALP_PARSER_H_ */
