@@ -55,10 +55,9 @@ extern pcap_t* descrInject;
 }
 #endif
 
-#define __ALP_PARSER_ERROR(...)  		printf("%s:%4d:ERROR: ",__FILE__,__LINE__); printf(__VA_ARGS__); printf("%s%s","\r","\n")
-#define __ALP_PARSER_WARN(...)  		printf("%s:%4d:WARN : ",__FILE__,__LINE__); printf(__VA_ARGS__); printf("%s%s","\r","\n")
-
-#define __ALP_PARSER_INFO(...)  		if(_ALP_PARSER_INFO_ENABLED) { printf("%s:%4d:INFO:%.4f: ",__FILE__,__LINE__, gt()); printf(__VA_ARGS__); printf("%s%s","\r","\n"); }
-#define __ALP_PARSER_DEBUG(...)  		if(_ALP_PARSER_DEBUG_ENABLED) { printf("%s:%4d:DEBUG: ",__FILE__,__LINE__); printf(__VA_ARGS__); printf("%s%s","\r","\n"); }
+#define __ALP_PARSER_ERROR(...) __LIBATSC3_TIMESTAMP_ERROR(__VA_ARGS__);
+#define __ALP_PARSER_WARN(...)  __LIBATSC3_TIMESTAMP_WARN(__VA_ARGS__);
+#define __ALP_PARSER_INFO(...)  if(_ALP_PARSER_INFO_ENABLED)  { __LIBATSC3_TIMESTAMP_INFO(__VA_ARGS__); }
+#define __ALP_PARSER_DEBUG(...) if(_ALP_PARSER_DEBUG_ENABLED) { __LIBATSC3_TIMESTAMP_DEBUG(__VA_ARGS__); }
 
 #endif /* ATSC3_ALP_PARSER_H_ */

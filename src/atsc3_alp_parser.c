@@ -58,7 +58,7 @@ void atsc3_alp_parse_stltp_baseband_packet(atsc3_stltp_baseband_packet_t* atsc3_
     atsc3_baseband_packet_header->base_field_mode = (*binary_payload >> 7) &0x1;
     atsc3_baseband_packet_header->base_field_pointer = (*binary_payload++) &0x7F;
     
-    __ALP_PARSER_INFO("-----------------------------");
+    __ALP_PARSER_INFO("---------------------------------------");
     __ALP_PARSER_INFO("Baseband Packet Header");
     __ALP_PARSER_INFO("base field mode   : %x",    atsc3_baseband_packet_header->base_field_mode);
     int bbp_pointer_count = 0;
@@ -106,7 +106,8 @@ void atsc3_alp_parse_stltp_baseband_packet(atsc3_stltp_baseband_packet_t* atsc3_
          atsc3_alp_parser.c: 157:INFO:1563954261.9413: -----------------------------
          **/
         if(bbp_pointer_count == 8191) {
-            __ALP_PARSER_INFO(" -> bail ptr: %d", bbp_pointer_count);
+            __ALP_PARSER_INFO(" -> squelching padding, ptr: %d", bbp_pointer_count);
+            __ALP_PARSER_INFO("---------------------------------------");
             goto cleanup;
         }
         
@@ -152,7 +153,6 @@ void atsc3_alp_parse_stltp_baseband_packet(atsc3_stltp_baseband_packet_t* atsc3_
     __ALP_PARSER_INFO("option field mode : 0x%x",  atsc3_baseband_packet_header->option_field_mode);
     __ALP_PARSER_INFO("ext type          : 0x%x",  atsc3_baseband_packet_header->ext_type);
     __ALP_PARSER_INFO("ext len           : 0x%x",  atsc3_baseband_packet_header->ext_len);
-    __ALP_PARSER_INFO("-----------------------------");
 
 	uint8_t alp_packet_header_byte_1 = *binary_payload++;
 	uint8_t alp_packet_header_byte_2 = *binary_payload++;
@@ -160,9 +160,9 @@ void atsc3_alp_parse_stltp_baseband_packet(atsc3_stltp_baseband_packet_t* atsc3_
 	alp_packet_header_t alp_packet_header;
 	alp_packet_header.packet_type = (alp_packet_header_byte_1 >> 5) & 0x7;
 	alp_packet_header.payload_configuration = (alp_packet_header_byte_1 >> 4) & 0x1;
-    __ALP_PARSER_INFO("-----------------------------");
-    __ALP_PARSER_INFO("ALP packet type     : 0x%x", alp_packet_header.packet_type);
-	__ALP_PARSER_INFO("payload config      : %d", alp_packet_header.payload_configuration);
+    __ALP_PARSER_INFO("---------------------------------------");
+    __ALP_PARSER_INFO("ALP packet type    : 0x%x", alp_packet_header.packet_type);
+	__ALP_PARSER_INFO("payload config     : %d", alp_packet_header.payload_configuration);
 
     uint32_t alp_payload_length = 0;
     
@@ -191,8 +191,8 @@ void atsc3_alp_parse_stltp_baseband_packet(atsc3_stltp_baseband_packet_t* atsc3_
 		alp_packet_header.alp_packet_segmentation_concatenation.segmentation_concatenation = (alp_packet_header_byte_1 >> 3) & 0x01;
 		alp_packet_header.alp_packet_segmentation_concatenation.length = (alp_packet_header_byte_1 & 0x7) << 8 | alp_packet_header_byte_2;
         
-		__ALP_PARSER_INFO("segmentation_concatenation : %d", alp_packet_header.alp_packet_segmentation_concatenation.segmentation_concatenation);
-		__ALP_PARSER_INFO("length	                  : %d", alp_packet_header.alp_packet_segmentation_concatenation.length);
+		__ALP_PARSER_INFO("segmentation_concatenation: %d", alp_packet_header.alp_packet_segmentation_concatenation.segmentation_concatenation);
+		__ALP_PARSER_INFO("length	                 : %d", alp_packet_header.alp_packet_segmentation_concatenation.length);
 		__ALP_PARSER_INFO("-----------------------------");
         alp_payload_length = alp_packet_header.alp_packet_segmentation_concatenation.length;
 
@@ -204,11 +204,11 @@ void atsc3_alp_parse_stltp_baseband_packet(atsc3_stltp_baseband_packet_t* atsc3_
             alp_packet_header.alp_packet_segmentation_concatenation.alp_segmentation_header.last_segment_indicator = (additional_header_byte_1 >> 2) & 0x1;
             alp_packet_header.alp_packet_segmentation_concatenation.alp_segmentation_header.SIF = (additional_header_byte_1 >> 1) & 0x1;
             alp_packet_header.alp_packet_segmentation_concatenation.alp_segmentation_header.HEF = (additional_header_byte_1) & 0x1;
-            __ALP_PARSER_INFO("segment_sequence_number     : 0x%x", alp_packet_header.alp_packet_segmentation_concatenation.alp_segmentation_header.segment_sequence_number);
-            __ALP_PARSER_INFO("last_segment_indicator      : 0x%x", alp_packet_header.alp_packet_segmentation_concatenation.alp_segmentation_header.last_segment_indicator);
-            __ALP_PARSER_INFO("SIF                         : 0x%x", alp_packet_header.alp_packet_segmentation_concatenation.alp_segmentation_header.SIF);
-            __ALP_PARSER_INFO("HEF                         : 0x%x", alp_packet_header.alp_packet_segmentation_concatenation.alp_segmentation_header.HEF);
-            __ALP_PARSER_INFO("-----------------------------");
+            __ALP_PARSER_INFO("segment_sequence_number: 0x%x", alp_packet_header.alp_packet_segmentation_concatenation.alp_segmentation_header.segment_sequence_number);
+            __ALP_PARSER_INFO("last_segment_indicator : 0x%x", alp_packet_header.alp_packet_segmentation_concatenation.alp_segmentation_header.last_segment_indicator);
+            __ALP_PARSER_INFO("SIF                    : 0x%x", alp_packet_header.alp_packet_segmentation_concatenation.alp_segmentation_header.SIF);
+            __ALP_PARSER_INFO("HEF                    : 0x%x", alp_packet_header.alp_packet_segmentation_concatenation.alp_segmentation_header.HEF);
+            __ALP_PARSER_INFO("---------------------------------------");
             
         } else {
             //concatenation_hdr
@@ -238,7 +238,8 @@ void atsc3_alp_parse_stltp_baseband_packet(atsc3_stltp_baseband_packet_t* atsc3_
         eth_frame[13]=0x00;
 
         memcpy(&eth_frame[14], binary_payload, alp_payload_length);
-        
+        __ALP_PARSER_INFO("STLTP reflector: sending payload size: %u", eth_frame_size);
+       
         if (pcap_sendpacket(descrInject, eth_frame, eth_frame_size) != 0) {
             __ALP_PARSER_ERROR("error sending the packet: %s", pcap_geterr(descrInject));
         }
