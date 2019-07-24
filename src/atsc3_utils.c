@@ -524,8 +524,8 @@ void block_Destroy(block_t** a_ptr) {
             a->p_size = 0;
             free(a->p_buffer);
             a->p_buffer = NULL;
+            free(a);
         }
-        free(a);
         a = NULL;
         *a_ptr = NULL;
     }
