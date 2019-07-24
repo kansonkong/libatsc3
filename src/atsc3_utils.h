@@ -84,14 +84,20 @@ char* kvp_collection_get(kvp_collection_t *collection, char* key);
 char* kvp_collection_get_reference_p(kvp_collection_t *collection, char* key);
 void kvp_collection_free(kvp_collection_t* collection);
 
-//or block_t as in VLC?
 typedef struct atsc3_block {
 	uint8_t* p_buffer;
 	uint32_t p_size;
 	uint32_t i_pos;
+    uint8_t  _refcnt;
 } block_t;
 
 block_t* block_Alloc(int len);
+
+#define block_Refcount(a) ({ if(a) { a->_refcnt++;    _ATSC3_UTILS_TRACE("UTRACE:INCR:%p:%s, block_Refcount: incrementing to: %d, block: %p (p_buffer: %p)", a, __FUNCTION__, a->_refcnt, a, a->p_buffer); }  a; })
+    
+    
+//block_t* _block_Refcount(block_t*); //used for sharing pointers between ref's
+    
 block_t* block_Promote(char*);
 block_t* block_Write(block_t* dest, uint8_t* buf, uint32_t size);
 uint32_t block_Append(block_t* dest, block_t* src); //combine two blocks at i_pos, i_pos, return end position
@@ -108,7 +114,9 @@ uint32_t block_Remaining_size(block_t* src);
 bool block_Valid(block_t* src);
 uint8_t* block_Get(block_t* src);
 
-void block_Release(block_t** a);
+#define block_Release(a) ({ _ATSC3_UTILS_TRACE("UTRACE:DECR:%p:%s, block_Refcount: decrementing to: %d, block: %p (p_buffer: %p)", *a, __FUNCTION__, (*a->_refcnt)-1, *a, *a->p_buffer);  _block_Release(a); })
+
+void _block_Release(block_t** a); //_refcnt MUST == 0 for p_buffer to be freed, see block_Refcount
 
 //alloc and copy - note limited to 16k
 char* strlcopy(char*);

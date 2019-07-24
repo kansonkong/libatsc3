@@ -69,8 +69,6 @@ void atsc3_alp_parse_stltp_baseband_packet(atsc3_stltp_baseband_packet_t* atsc3_
             binary_payload++;
         }
         __ALP_PARSER_INFO(" -> seeking ptr: %d", bbp_pointer_count);
-      
-        
     } else {
         atsc3_baseband_packet_header->base_field_pointer |= (((*binary_payload >>2) &0x3F) << 7);
         atsc3_baseband_packet_header->option_field_mode = (*binary_payload++) & 0x02;
@@ -85,8 +83,7 @@ void atsc3_alp_parse_stltp_baseband_packet(atsc3_stltp_baseband_packet_t* atsc3_
         if(atsc3_baseband_packet_header->option_field_mode == 0x00) {
             //noop
             __ALP_PARSER_INFO(" -> no extension");
-      
-        } else {
+              } else {
             
             atsc3_baseband_packet_header->ext_type = (*binary_payload >> 5) & 0x7;
             atsc3_baseband_packet_header->ext_len = (*binary_payload++) & 0x1F;
@@ -215,28 +212,11 @@ void atsc3_alp_parse_stltp_baseband_packet(atsc3_stltp_baseband_packet_t* atsc3_
         
         if (pcap_sendpacket(descrInject, eth_frame, eth_frame_size) != 0) {
             __ALP_PARSER_ERROR("error sending the packet: %s", pcap_geterr(descrInject));
-            return;
         }
+        free(eth_frame);
+        eth_frame = NULL;
+        
     }
-    
-//
-//    __ALP_PARSER_INFO("ALP: 0x%x 0x%x 0x%x 0x%x   0x%x 0x%x 0x%x 0x%x   0x%x 0x%x 0x%x 0x%x   0x%x 0x%x 0x%x 0x%x",
-//                      *binary_payload++,
-//                      *binary_payload++,
-//                      *binary_payload++,
-//                      *binary_payload++,
-//                      *binary_payload++,
-//                      *binary_payload++,
-//                      *binary_payload++,
-//                      *binary_payload++,
-//                      *binary_payload++,
-//                      *binary_payload++,
-//                      *binary_payload++,
-//                      *binary_payload++,
-//                      *binary_payload++,
-//                      *binary_payload++,
-//                      *binary_payload++,
-//                      *binary_payload++);
 
     //cleanup
     if(atsc3_baseband_packet_header) {

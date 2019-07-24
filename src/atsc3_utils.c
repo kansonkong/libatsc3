@@ -193,6 +193,7 @@ block_t* block_Alloc(int len) {
 
 	new_block->p_size = len;
 	new_block->i_pos = 0;
+    new_block->_refcnt++;
 
 	return new_block;
 }
@@ -479,19 +480,34 @@ bool block_Valid(block_t* src) {
     return true;
 }
 
+//
+//block_t* _block_Refcount(block_t* a) {
+//    if(a) {
+//        a->_refcnt++;
+//        _ATSC3_UTILS_TRACE("block_Refcount: incrementing to: %d, block: %p (p_buffer: %p)", a->_refcnt, a, a->p_buffer);
+//    }
+//    return a;
+//}
 
-
-void block_Release(block_t** a_ptr) {
+//adding in lazy refcounting to try and avoid doublefrees
+void _block_Release(block_t** a_ptr) {
 	block_t* a = *a_ptr;
 	if(a) {
-		if(a->p_buffer && a->p_size) {
-			a->i_pos = 0;
-			a->p_size = 0;
-			free(a->p_buffer);
-			a->p_buffer = NULL;
-		}
-		free(a);
-		*a_ptr = NULL;
+        if(a->_refcnt-- == 0) {
+            _ATSC3_UTILS_TRACE("block_Release: freeing block: %p (p_buffer: %p)", a, a->p_buffer);
+
+            if(a->p_buffer && a->p_size) {
+                a->i_pos = 0;
+                a->p_size = 0;
+                free(a->p_buffer);
+                a->p_buffer = NULL;
+            }
+            free(a);
+            *a_ptr = NULL;
+
+        } else {
+            _ATSC3_UTILS_TRACE("block_Release: refcount decremented to: %d, block: %p (p_buffer: %p)", a->_refcnt, a, a->p_buffer);
+        }
 	}
 }
 
