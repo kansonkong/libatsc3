@@ -74,10 +74,13 @@ void process_packet(u_char *user, const struct pcap_pkthdr *pkthdr, const u_char
                 
                 for(int i=0; i < atsc3_stltp_tunnel_packet_processed->atsc3_stltp_baseband_packet_v.count; i++) {
                     atsc3_stltp_baseband_packet_t* atsc3_stltp_baseband_packet = atsc3_stltp_tunnel_packet_processed->atsc3_stltp_baseband_packet_v.data[i];
+                    
+                    /**
                     __INFO("Baseband packet: src: %u.%u.%u.%u:%u, dest: %u.%u.%u.%u:%u", __toipandportnonstruct(atsc3_stltp_baseband_packet->ip_udp_rtp_packet->udp_flow.src_ip_addr,
                                                                                                                 atsc3_stltp_baseband_packet->ip_udp_rtp_packet->udp_flow.src_port),
                            
                                                                                         __toipandportnonstruct(atsc3_stltp_baseband_packet->ip_udp_rtp_packet->udp_flow.dst_ip_addr, atsc3_stltp_baseband_packet->ip_udp_rtp_packet->udp_flow.dst_port));
+                     **/
                     
                     /*
                      injection occurs from having descrInject wired up for now

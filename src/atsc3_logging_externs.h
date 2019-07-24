@@ -99,6 +99,7 @@ extern int _IP_UDP_RTP_PARSER_TRACE_ENABLED;
 
 extern int _STLTP_TYPES_DEBUG_ENABLED;
 extern int _STLTP_TYPES_TRACE_ENABLED;
+extern int _STLTP_PARSER_TRACE_ENABLED;
 
 
 //c++ linkage

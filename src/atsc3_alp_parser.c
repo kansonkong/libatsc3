@@ -61,16 +61,19 @@ void atsc3_alp_parse_stltp_baseband_packet(atsc3_stltp_baseband_packet_t* atsc3_
     __ALP_PARSER_INFO("-----------------------------");
     __ALP_PARSER_INFO("Baseband Packet Header");
     __ALP_PARSER_INFO("base field mode   : %x",    atsc3_baseband_packet_header->base_field_mode);
-    __ALP_PARSER_INFO("base field pointer: 0x%x",  atsc3_baseband_packet_header->base_field_pointer);
     int bbp_pointer_count = 0;
     
     if(!atsc3_baseband_packet_header->base_field_mode) {
+        __ALP_PARSER_INFO("base field pointer: 0x%x",  atsc3_baseband_packet_header->base_field_pointer);
+
         for(bbp_pointer_count=0; bbp_pointer_count < atsc3_baseband_packet_header->base_field_pointer; bbp_pointer_count++) {
             binary_payload++;
         }
         __ALP_PARSER_INFO(" -> seeking ptr: %d", bbp_pointer_count);
     } else {
         atsc3_baseband_packet_header->base_field_pointer |= (((*binary_payload >>2) &0x3F) << 7);
+        __ALP_PARSER_INFO("base field pointer: 0x%x",  atsc3_baseband_packet_header->base_field_pointer);
+
         atsc3_baseband_packet_header->option_field_mode = (*binary_payload++) & 0x02;
         
         //no option field, no extension field, resolve from base_field_pointer
@@ -78,6 +81,34 @@ void atsc3_alp_parse_stltp_baseband_packet(atsc3_stltp_baseband_packet_t* atsc3_
             binary_payload++;
         }
         __ALP_PARSER_INFO(" -> seeking ptr: %d", bbp_pointer_count);
+
+        //A322 - 5.2.2.1 - if we have a pointer value of 8191 (2 byte base heder offset)
+        //->no ALP packet starting within that baseband packet
+        /**
+         
+         atsc3_alp_parser.c:  61:INFO:1563954261.9410: -----------------------------
+         atsc3_alp_parser.c:  62:INFO:1563954261.9410: Baseband Packet Header
+         atsc3_alp_parser.c:  63:INFO:1563954261.9411: base field mode   : 1
+         atsc3_alp_parser.c:  64:INFO:1563954261.9411: base field pointer: 0x7f
+         atsc3_alp_parser.c:  80:INFO:1563954261.9411:  -> seeking ptr: 8191
+         atsc3_alp_parser.c:  84:INFO:1563954261.9411:  -> no extension
+         atsc3_alp_parser.c: 121:INFO:1563954261.9411: option field mode : 0x0
+         atsc3_alp_parser.c: 122:INFO:1563954261.9411: ext type          : 0x0
+         atsc3_alp_parser.c: 123:INFO:1563954261.9411: ext len           : 0x0
+         atsc3_alp_parser.c: 124:INFO:1563954261.9412: -----------------------------
+         atsc3_alp_parser.c: 132:INFO:1563954261.9412: -----------------------------
+         atsc3_alp_parser.c: 133:INFO:1563954261.9412: ALP packet type     : 0x0
+         atsc3_alp_parser.c: 134:INFO:1563954261.9412: payload config      : 0
+         atsc3_alp_parser.c: 141:INFO:1563954261.9412: header mode        : 0
+         atsc3_alp_parser.c: 142:INFO:1563954261.9412: length             : 0
+         atsc3_alp_parser.c: 143:INFO:1563954261.9412: -----------------------------
+         atsc3_alp_parser.c: 148:INFO:1563954261.9412:  no additional ALP header bytes
+         atsc3_alp_parser.c: 157:INFO:1563954261.9413: -----------------------------
+         **/
+        if(bbp_pointer_count == 8191) {
+            __ALP_PARSER_INFO(" -> bail ptr: %d", bbp_pointer_count);
+            goto cleanup;
+        }
         
         if(atsc3_baseband_packet_header->option_field_mode == 0x00) {
             //noop
@@ -214,7 +245,8 @@ void atsc3_alp_parse_stltp_baseband_packet(atsc3_stltp_baseband_packet_t* atsc3_
         free(eth_frame);
         eth_frame = NULL;
     }
-
+    
+cleanup:
     //cleanup
     if(atsc3_baseband_packet_header) {
         if(atsc3_baseband_packet_header->extension) {
