@@ -52,13 +52,12 @@ void process_packet(u_char *user, const struct pcap_pkthdr *pkthdr, const u_char
                     __INFO("Baseband packet: src: %u.%u.%u.%u:%u, dest: %u.%u.%u.%u:%u", __toipandportnonstruct(atsc3_stltp_baseband_packet->ip_udp_rtp_packet->udp_flow.src_ip_addr, atsc3_stltp_baseband_packet->ip_udp_rtp_packet->udp_flow.src_port),
                            __toipandportnonstruct(atsc3_stltp_baseband_packet->ip_udp_rtp_packet->udp_flow.dst_ip_addr, atsc3_stltp_baseband_packet->ip_udp_rtp_packet->udp_flow.dst_port));
                     
-                    atsc3_alp_parse_stltp_baseband_packet(atsc3_stltp_baseband_packet);
                     /*
-                     
+                     injection occurs from having descrInject wired up for now
+
                      Injecting packets
                      If  you have the required privileges, you can inject packets onto a network with a pcap_t for a live capture, using pcap_inject() or pcap_sendpacket().  (The
                      two routines exist for compatibility with both OpenBSD and WinPcap; they perform the same function, but have different return values.)
-                     
                      Routines
                      
                      pcap_inject(3PCAP)
@@ -67,7 +66,7 @@ void process_packet(u_char *user, const struct pcap_pkthdr *pkthdr, const u_char
                      
                      https://www.winpcap.org/docs/docs_40_2/html/group__wpcap__tut8.html
                      **/
-                    
+                    atsc3_alp_parse_stltp_baseband_packet(atsc3_stltp_baseband_packet);
                 }
             }
             if(atsc3_stltp_tunnel_packet_processed->atsc3_stltp_preamble_packet_v.count) {
@@ -93,13 +92,14 @@ void process_packet(u_char *user, const struct pcap_pkthdr *pkthdr, const u_char
     }
     
     
-    atsc3_ip_udp_rtp_packet_and_data_free(&ip_udp_rtp_packet);
+    atsc3_ip_udp_rtp_packet_free(&ip_udp_rtp_packet);
 }
 
 int main(int argc,char **argv) {
     
     
     _IP_UDP_RTP_PARSER_DEBUG_ENABLED = 1;
+    _ATSC3_UTILS_TRACE_ENABLED = 1;
     char *dev;
     char *devInject;
     char *filter_dst_ip = NULL;

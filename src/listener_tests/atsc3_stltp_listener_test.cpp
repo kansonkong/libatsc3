@@ -60,7 +60,7 @@ void process_packet(u_char *user, const struct pcap_pkthdr *pkthdr, const u_char
             
 		}
 	}
-    atsc3_ip_udp_rtp_packet_and_data_free(&ip_udp_rtp_packet);
+    atsc3_ip_udp_rtp_packet_free(&ip_udp_rtp_packet);
 }
 
 int main(int argc,char **argv) {
