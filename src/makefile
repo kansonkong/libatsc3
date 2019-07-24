@@ -71,7 +71,8 @@ listener_tests: atsc3_alc_listener_test \
 				atsc3_mmt_listener_test_bento \
 				atsc3_mmt_sls_listener_test  \
 				atsc3_stltp_listener_test \
-				atsc3_stltp_alp_listener_test
+				atsc3_stltp_alp_listener_test \
+				atsc3_stltp_alp_listener_reflector_test
 
 # real libatsc3 tools for lls, sls, mmt/route and flow analysis
 tools: atsc3_listener_metrics_ncurses atsc3_listener_metrics_ncurses_httpd_isobmff atsc3_mmt_mfu_monitor
@@ -394,25 +395,25 @@ libatsc3_bento4_gpl.o: libatsc3_intermediate.o bento4_gpl.o
 ###  unit test generation
 
 atsc3_lmt_test: atsc3_lmt_test.c libatsc3.o 
-	cc -g atsc3_lmt_test.c libatsc3.o -lz -lm -lpthread -o atsc3_lmt_test
+	cc -g atsc3_lmt_test.c libatsc3.o -lz -lm -lpthread -lpcap -o atsc3_lmt_test 
 
 atsc3_lls_test: atsc3_lls_test.c libatsc3.o
-	cc -g atsc3_lls_test.c libatsc3.o -lz  -lm -lpthread -o atsc3_lls_test
+	cc -g atsc3_lls_test.c libatsc3.o -lz  -lm -lpthread -lpcap -o atsc3_lls_test
 
 atsc3_lls_slt_parser_test: atsc3_lls_slt_parser_test.c libatsc3.o 
-	cc -g atsc3_lls_slt_parser_test.c libatsc3.o -lz  -lm -lpthread -o atsc3_lls_slt_parser_test 
+	cc -g atsc3_lls_slt_parser_test.c libatsc3.o -lz -lm -lpthread -lpcap -o atsc3_lls_slt_parser_test 
 
 atsc3_lls_SystemTime_test: atsc3_lls_SystemTime_test.c libatsc3.o
-	cc -g atsc3_lls_SystemTime_test.c libatsc3.o -lz  -lm -lpthread -o atsc3_lls_SystemTime_test 
+	cc -g atsc3_lls_SystemTime_test.c libatsc3.o -lz  -lm -lpthread -lpcap -o atsc3_lls_SystemTime_test 
 
 atsc3_mmt_signaling_message_test: atsc3_mmt_signaling_message_test.c
-	cc -g atsc3_mmt_signaling_message_test.c libatsc3.o -lz  -lm -lpthread  -o atsc3_mmt_signaling_message_test
+	cc -g atsc3_mmt_signaling_message_test.c libatsc3.o -lz  -lm -lpthread -lpcap -o atsc3_mmt_signaling_message_test
 
 atsc3_isobmff_box_test: atsc3_isobmff_box_test.c
-	cc -g atsc3_isobmff_box_test.c  -lz  -lm -lpthread -o atsc3_isobmff_box_test 
+	cc -g atsc3_isobmff_box_test.c  -lz  -lm -lpthread -lpcap -o atsc3_isobmff_box_test 
 
 atsc3_fdt_test: atsc3_fdt_test.c libatsc3.o
-	cc -g atsc3_fdt_test.c libatsc3.o  -lz  -lm -lpthread -o atsc3_fdt_test
+	cc -g atsc3_fdt_test.c libatsc3.o  -lz  -lm -lpthread -lpcap -o atsc3_fdt_test
 
 ### integration tests
 ### TODO: move these into target makefile in listener_test/folder
@@ -430,6 +431,10 @@ atsc3_stltp_listener_test: listener_tests/atsc3_stltp_listener_test.cpp libatsc3
 # stltp and alp listener test
 atsc3_stltp_alp_listener_test: listener_tests/atsc3_stltp_alp_listener_test.cpp libatsc3.o
 	g++ -g listener_tests/atsc3_stltp_alp_listener_test.cpp libatsc3.o -lpcap -lz -lpthread -o listener_tests/atsc3_stltp_alp_listener_test
+
+# todo: fix naming
+atsc3_stltp_alp_listener_reflector_test: listener_tests/atsc3_stltp_listener_alp_reflector.cpp libatsc3.o
+	g++ -g listener_tests/atsc3_stltp_listener_alp_reflector.cpp libatsc3.o -lpcap -lz -lpthread -o listener_tests/atsc3_stltp_alp_listener_reflector_test
 
 
 atsc3_mmt_sls_listener_test: listener_tests/atsc3_mmt_sls_listener_test.cpp libatsc3.o
