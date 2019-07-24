@@ -7,7 +7,7 @@ MMT: Out-of-order support for parsing MMTHSample and trun box building for ISOBM
 
 
 ## Updates - 2019-03-17
-NAB is right around the corner, and I've fixed a few bugs with Linux ncurses tools - and added initial STLTP and MMT MPT signaling messages.  Starting to see some AC-4 audio tracks in the wild, please note ffplay won't be able to decode this format...
+I've fixed a few bugs with Linux ncurses tools - and added initial STLTP and MMT MPT signaling messages.  Starting to see some AC-4 audio tracks in the wild, please note ffplay won't be able to decode this format...
 
 
 https://github.com/jjustman/libatsc3
