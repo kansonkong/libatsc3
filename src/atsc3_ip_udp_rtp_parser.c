@@ -44,7 +44,7 @@ block_t* atsc3_pcap_parse_ethernet_frame(const struct pcap_pkthdr *pkthdr, const
     
     block_t* ip_udp_rtp = block_Alloc(ip_udp_rtp_size);
     block_Write(ip_udp_rtp, (uint8_t*)&packet[14], ip_udp_rtp_size);
-    
+    block_RefZero(ip_udp_rtp);
     return ip_udp_rtp;
 }
 
@@ -101,7 +101,7 @@ atsc3_ip_udp_rtp_packet_t* atsc3_ip_udp_rtp_packet_process_from_blockt_pos(block
     ip_udp_rtp_packet_new->rtp_header = rtp_header;
     
     block_Seek_Relative(from, ATSC_STLTP_IP_UDP_RTP_HEADER_SIZE);
-    ip_udp_rtp_packet_new->data = from;
+    ip_udp_rtp_packet_new->data = block_Refcount(from);
     return ip_udp_rtp_packet_new;
 }
 
@@ -277,4 +277,27 @@ void atsc3_ip_udp_rtp_packet_free(atsc3_ip_udp_rtp_packet_t** ip_udp_rtp_packet_
         }
         *ip_udp_rtp_packet_p = NULL;
     }        
+}
+
+
+//destroy: hard free at the end of the main pcap loop
+void atsc3_ip_udp_rtp_packet_destroy(atsc3_ip_udp_rtp_packet_t** ip_udp_rtp_packet_p) {
+    if(ip_udp_rtp_packet_p) {
+        atsc3_ip_udp_rtp_packet_t* ip_udp_rtp_packet = *ip_udp_rtp_packet_p;
+        if(ip_udp_rtp_packet) {
+            __IP_UDP_RTP_PARSER_TRACE("atsc3_ip_udp_rtp_packet_destroy: freeing ip_udp_rtp_packet->rtp_header: %p", ip_udp_rtp_packet->rtp_header);
+            
+            if(ip_udp_rtp_packet->data) {
+                __IP_UDP_RTP_PARSER_TRACE("atsc3_ip_udp_rtp_packet_destroy: freeing ip_udp_rtp_packet->data: %p", ip_udp_rtp_packet->data);
+                block_Destroy(&ip_udp_rtp_packet->data);
+            }
+            
+            freesafe(ip_udp_rtp_packet->rtp_header);
+            ip_udp_rtp_packet->rtp_header = NULL;
+            free(ip_udp_rtp_packet);
+            ip_udp_rtp_packet = NULL;
+            
+        }
+        *ip_udp_rtp_packet_p = NULL;
+    }
 }
