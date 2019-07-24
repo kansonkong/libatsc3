@@ -193,7 +193,7 @@ block_t* block_Alloc(int len) {
 
 	new_block->p_size = len;
 	new_block->i_pos = 0;
-    new_block->_refcnt++;
+    new_block->_refcnt = 1;
 
 	return new_block;
 }
@@ -493,8 +493,8 @@ bool block_Valid(block_t* src) {
 void _block_Release(block_t** a_ptr) {
 	block_t* a = *a_ptr;
 	if(a) {
-        if(a->_refcnt-- == 0) {
-            _ATSC3_UTILS_TRACE("block_Release: freeing block: %p (p_buffer: %p)", a, a->p_buffer);
+        if(--a->_refcnt == 0) {
+            _ATSC3_UTILS_TRACE("block_Release:FREE: block: %p (p_buffer: %p)", a, a->p_buffer);
 
             if(a->p_buffer && a->p_size) {
                 a->i_pos = 0;
@@ -506,9 +506,29 @@ void _block_Release(block_t** a_ptr) {
             *a_ptr = NULL;
 
         } else {
-            _ATSC3_UTILS_TRACE("block_Release: refcount decremented to: %d, block: %p (p_buffer: %p)", a->_refcnt, a, a->p_buffer);
+            _ATSC3_UTILS_TRACE("block_Release:DEC: refcount decremented to: %d, block: %p (p_buffer: %p)", a->_refcnt, a, a->p_buffer);
         }
 	}
+}
+void _block_Refcount(block_t* a_ptr) {
+    a_ptr->_refcnt++;
+}
+
+void block_Destroy(block_t** a_ptr) {
+    block_t* a = *a_ptr;
+    if(a) {
+        _ATSC3_UTILS_TRACE("block_Destroy: hard freeing block: %p (p_buffer: %p)", a, a->p_buffer);
+            
+        if(a->p_buffer && a->p_size) {
+            a->i_pos = 0;
+            a->p_size = 0;
+            free(a->p_buffer);
+            a->p_buffer = NULL;
+        }
+        free(a);
+        a = NULL;
+        *a_ptr = NULL;
+    }
 }
 
 void freesafe(void* tofree) {

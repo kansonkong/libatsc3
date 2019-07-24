@@ -21,6 +21,10 @@ ATSC3_VECTOR_BUILDER_METHODS_IMPLEMENTATION(atsc3_stltp_tunnel_packet, atsc3_stl
 //copy/paste warning...
 void atsc3_stltp_baseband_packet_free_v(atsc3_stltp_baseband_packet_t* atsc3_stltp_baseband_packet) {
     if(atsc3_stltp_baseband_packet) {
+        if(atsc3_stltp_baseband_packet->ip_udp_rtp_packet) {
+            atsc3_ip_udp_rtp_packet_free(&atsc3_stltp_baseband_packet->ip_udp_rtp_packet);
+        }
+
         if(atsc3_stltp_baseband_packet->rtp_header) {
             __STLTP_TYPES_TRACE("atsc3_stltp_baseband_packet_free: freeing atsc3_stltp_baseband_packet->rtp_header: %p", atsc3_stltp_baseband_packet->rtp_header);
             atsc3_rtp_header_free(&atsc3_stltp_baseband_packet->rtp_header);
@@ -29,11 +33,6 @@ void atsc3_stltp_baseband_packet_free_v(atsc3_stltp_baseband_packet_t* atsc3_stl
             free(atsc3_stltp_baseband_packet->payload);
             atsc3_stltp_baseband_packet->payload = NULL;
         }
-        if(atsc3_stltp_baseband_packet->ip_udp_rtp_packet) {
-            atsc3_ip_udp_rtp_packet_free(&atsc3_stltp_baseband_packet->ip_udp_rtp_packet);
-        }
-        //let vector_v initiate the pointer free
-        //free(atsc3_stltp_baseband_packet);
     }
 }
 

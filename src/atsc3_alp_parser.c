@@ -79,11 +79,10 @@ void atsc3_alp_parse_stltp_baseband_packet(atsc3_stltp_baseband_packet_t* atsc3_
         }
         __ALP_PARSER_INFO(" -> seeking ptr: %d", bbp_pointer_count);
         
-        
         if(atsc3_baseband_packet_header->option_field_mode == 0x00) {
             //noop
             __ALP_PARSER_INFO(" -> no extension");
-              } else {
+        } else {
             
             atsc3_baseband_packet_header->ext_type = (*binary_payload >> 5) & 0x7;
             atsc3_baseband_packet_header->ext_len = (*binary_payload++) & 0x1F;
@@ -115,7 +114,6 @@ void atsc3_alp_parse_stltp_baseband_packet(atsc3_stltp_baseband_packet_t* atsc3_
                 }
                 
                 __ALP_PARSER_INFO(" -> ext 0x03: %d", bbp_pointer_count);
-
             }
         }
     }
@@ -215,15 +213,22 @@ void atsc3_alp_parse_stltp_baseband_packet(atsc3_stltp_baseband_packet_t* atsc3_
         }
         free(eth_frame);
         eth_frame = NULL;
-        
     }
 
     //cleanup
     if(atsc3_baseband_packet_header) {
+        if(atsc3_baseband_packet_header->extension) {
+            free(atsc3_baseband_packet_header->extension);
+            atsc3_baseband_packet_header = NULL;
+        }
+        
         free(atsc3_baseband_packet_header);
         atsc3_baseband_packet_header = NULL;
     }
-
+    
+    //cleanup of the atsc3_stltp_baseband_packet->payload occurs in
+    //atsc3_stltp_baseband_packet_free_v, which is called from
+    //atsc3_stltp_tunnel_packet_clear_completed_inner_packets
 }
 
 
