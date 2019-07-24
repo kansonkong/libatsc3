@@ -50,12 +50,10 @@ void atsc3_stltp_tunnel_packet_outer_inner_destroy(atsc3_stltp_tunnel_packet_t* 
 }
 #endif
 
-#define __STLTP_PARSER_ERROR(...)  		printf("%s:%d:ERROR: ",__FILE__,__LINE__); printf(__VA_ARGS__); printf("%s%s","\r","\n")
-#define __STLTP_PARSER_WARN(...)  		printf("%s:%d:WARN : ",__FILE__,__LINE__); printf(__VA_ARGS__); printf("%s%s","\r","\n")
-#define __STLTP_PARSER_INFO(...)        printf("%s:%d:INFO : ",__FILE__,__LINE__); printf(__VA_ARGS__); printf("%s%s","\r","\n")
-
-//#define __STLTP_PARSER_DEBUG(...)  	If(_STLTP_PARSER_DEBUG_ENABLED) { printf("%s:%d:DEBUG:%.4f: ",__FILE__,__LINE__, gt()); printf(__VA_ARGS__); printf("%s%s","\r","\n") }
-#define __STLTP_PARSER_DEBUG(...)  		if(_STLTP_PARSER_DEBUG_ENABLED) { printf("%s:%d:DEBUG: ",__FILE__,__LINE__); printf(__VA_ARGS__); printf("%s%s","\r","\n"); }
-#define __STLTP_PARSER_TRACE(...)       if(_STLTP_PARSER_TRACE_ENABLED) { printf("%s:%d:TRACE: ",__FILE__,__LINE__); printf(__VA_ARGS__); printf("%s%s","\r","\n"); }
+#define __STLTP_PARSER_ERROR(...)  		__LIBATSC3_TIMESTAMP_ERROR(__VA_ARGS__);
+#define __STLTP_PARSER_WARN(...)  		__LIBATSC3_TIMESTAMP_WARN(__VA_ARGS__);
+#define __STLTP_PARSER_INFO(...)        __LIBATSC3_TIMESTAMP_INFO(__VA_ARGS__);
+#define __STLTP_PARSER_DEBUG(...)  		if(_STLTP_PARSER_DEBUG_ENABLED) { __LIBATSC3_TIMESTAMP_DEBUG(__VA_ARGS__); }
+#define __STLTP_PARSER_TRACE(...)       if(_STLTP_PARSER_TRACE_ENABLED) { __LIBATSC3_TIMESTAMP_TRACE(__VA_ARGS__); }
 
 #endif /* ATSC3_STLTP_PARSER_H_ */

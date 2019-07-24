@@ -232,10 +232,10 @@ void atsc3_stltp_baseband_packet_free_v(atsc3_stltp_baseband_packet_t* atsc3_stl
 void atsc3_stltp_preamble_packet_free_v(atsc3_stltp_preamble_packet_t* atsc3_stltp_preamble_packet);
 void atsc3_stltp_timing_management_packet_free_v(atsc3_stltp_timing_management_packet_t* atsc3_stltp_timing_management_packet);
 
-#define __STLTP_TYPES_ERROR(...)          printf("%s:%d:ERROR: ",__FILE__,__LINE__); printf(__VA_ARGS__); printf("%s%s","\r","\n")
-#define __STLTP_TYPES_WARN(...)           printf("%s:%d:WARN : ",__FILE__,__LINE__); printf(__VA_ARGS__); printf("%s%s","\r","\n")
-#define __STLTP_TYPES_INFO(...)           printf("%s:%d:INFO : ",__FILE__,__LINE__); printf(__VA_ARGS__); printf("%s%s","\r","\n")
-#define __STLTP_TYPES_DEBUG(...)          if(_STLTP_TYPES_DEBUG_ENABLED) { printf("%s:%d:DEBUG: ",__FILE__,__LINE__); printf(__VA_ARGS__); printf("%s%s","\r","\n"); }
-#define __STLTP_TYPES_TRACE(...)          if(_STLTP_TYPES_TRACE_ENABLED) { printf("%s:%d:TRACE: ",__FILE__,__LINE__); printf(__VA_ARGS__); printf("%s%s","\r","\n"); }
+#define __STLTP_TYPES_ERROR(...)    __LIBATSC3_TIMESTAMP_ERROR(__VA_ARGS_);
+#define __STLTP_TYPES_WARN(...)     __LIBATSC3_TIMESTAMP_WARN(__VA_ARGS__);
+#define __STLTP_TYPES_INFO(...)     __LIBATSC3_TIMESTAMP_INFO(__VA_ARGS__);
+#define __STLTP_TYPES_DEBUG(...)    if(_STLTP_TYPES_DEBUG_ENABLED) { __LIBATSC3_TIMESTAMP_DEBUG(__VA_ARGS__); }
+#define __STLTP_TYPES_TRACE(...)    if(_STLTP_TYPES_TRACE_ENABLED) { __LIBATSC3_TIMESTAMP_TRACE(__VA_ARGS__); }
 
 #endif /* ATSC3_STLTP_TYPES_H_ */

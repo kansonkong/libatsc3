@@ -105,13 +105,20 @@ extern int _STLTP_PARSER_TRACE_ENABLED;
 //c++ linkage
 //extern int _ISOBMFFTRACKJOINER_DEBUG_ENABLED;
 
+//jjustman-2019-07-24 - normaolized debug logging format
+    
+#define __LIBATSC3_TIMESTAMP_ERROR(...)     printf("%-16s:%4d:ERROR:%.4f:",__FILE__,__LINE__, gt()); printf(__VA_ARGS__); printf("%s%s","\r","\n");
+#define __LIBATSC3_TIMESTAMP_WARN(...)      printf("%-16s:%4d:WARN :%.4f:",__FILE__,__LINE__, gt()); printf(__VA_ARGS__); printf("%s%s","\r","\n");
+#define __LIBATSC3_TIMESTAMP_INFO(...)      printf("%-16s:%4d:INFO :%.4f:",__FILE__,__LINE__, gt()); printf(__VA_ARGS__); printf("%s%s","\r","\n");
+#define __LIBATSC3_TIMESTAMP_DEBUG(...)     printf("%-16s:%4d:DEBUG:%.4f:",__FILE__,__LINE__, gt()); printf(__VA_ARGS__); printf("%s%s","\r","\n");
+#define __LIBATSC3_TIMESTAMP_TRACE(...)     printf("%-16s:%4d:TRACE:%.4f:",__FILE__,__LINE__, gt()); printf(__VA_ARGS__); printf("%s%s","\r","\n");
 
-#define __ERROR(...)   printf("%s:%d:ERROR :","listener",__LINE__);printf(__VA_ARGS__);printf("%s%s","\r","\n")
-#define __WARN(...)    printf("%s:%d:WARN: ","listener",__LINE__);printf(__VA_ARGS__);printf("%s%s","\r","\n")
-#define __INFO(...)    printf("%s:%d: ","listener",__LINE__);printf(__VA_ARGS__);printf("%s%s","\r","\n")
+#define __ERROR(...)   __LIBATSC3_TIMESTAMP_ERROR(__VA_ARGS__);
+#define __WARN(...)    __LIBATSC3_TIMESTAMP_WARN(__VA_ARGS__);
+#define __INFO(...)    __LIBATSC3_TIMESTAMP_INFO(__VA_ARGS__);
 
 #ifdef _ENABLE_DEBUG
-#define __DEBUG(...)   printf("%s:%d:DEBUG: ","listener",__LINE__);printf(__VA_ARGS__);printf("%s%s","\r","\n")
+#define __DEBUG(...)   __LIBATSC3_TIMESTAMP_DEBUG(__VA_ARGS__);
 #define __DEBUGF(...)  printf("%s:%d:DEBUG: ","listener",__LINE__);printf(__VA_ARGS__);printf("%s%s","\r","\n")
 #define __DEBUGA(...) 	__PRINTF(__VA_ARGS__);
 #define __DEBUGN(...)  __PRINTLN(__VA_ARGS__);
@@ -123,7 +130,7 @@ extern int _STLTP_PARSER_TRACE_ENABLED;
 #endif
 
 #ifdef _ENABLE_TRACE
-#define __TRACE(...)   printf("%s:%d:TRACE:",__FILE__,__LINE__);__PRINTLN(__VA_ARGS__);
+#define __TRACE(...)   __LIBATSC3_TIMESTAMP_TRACE(__VA_ARGS__);
 
 #else
 #define __TRACE(...)
