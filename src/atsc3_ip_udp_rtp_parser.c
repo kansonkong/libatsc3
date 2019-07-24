@@ -174,7 +174,7 @@ atsc3_ip_udp_rtp_packet_t* atsc3_ip_udp_rtp_packet_duplicate(atsc3_ip_udp_rtp_pa
 
 
 atsc3_ip_udp_rtp_packet_t* atsc3_ip_udp_rtp_packet_duplicate_no_data_block_t(atsc3_ip_udp_rtp_packet_t* ip_udp_rtp_packet) {
-    if(ip_udp_rtp_packet && block_Valid(ip_udp_rtp_packet->data)) {
+    if(ip_udp_rtp_packet) {
         atsc3_ip_udp_rtp_packet_t* ip_udp_rtp_packet_new = calloc(1, sizeof(atsc3_ip_udp_rtp_packet_t));
         if(!ip_udp_rtp_packet_new) return NULL;
 
