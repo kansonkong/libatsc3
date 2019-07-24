@@ -262,35 +262,19 @@ void atsc3_ip_udp_rtp_packet_free(atsc3_ip_udp_rtp_packet_t** ip_udp_rtp_packet_
     if(ip_udp_rtp_packet_p) {
         atsc3_ip_udp_rtp_packet_t* ip_udp_rtp_packet = *ip_udp_rtp_packet_p;
         if(ip_udp_rtp_packet) {
-            //do not free data here, as it is shared with inner packets
             __IP_UDP_RTP_PARSER_TRACE("atsc3_ip_udp_rtp_packet_free: freeing ip_udp_rtp_packet->rtp_header: %p", ip_udp_rtp_packet->rtp_header);
-            
-            freesafe(ip_udp_rtp_packet->rtp_header);
-            ip_udp_rtp_packet->rtp_header = NULL;
-            free(ip_udp_rtp_packet);
-        }
-        ip_udp_rtp_packet = NULL;
-        *ip_udp_rtp_packet_p = NULL;
-    }        
-}
-
-
-
-void atsc3_ip_udp_rtp_packet_and_data_free(atsc3_ip_udp_rtp_packet_t** ip_udp_rtp_packet_p) {
-    if(ip_udp_rtp_packet_p) {
-        atsc3_ip_udp_rtp_packet_t* ip_udp_rtp_packet = *ip_udp_rtp_packet_p;
-        if(ip_udp_rtp_packet) {
-            __IP_UDP_RTP_PARSER_TRACE("atsc3_ip_udp_rtp_packet_free: freeing ip_udp_rtp_packet->rtp_header: %p", ip_udp_rtp_packet->rtp_header);
+            //rely on reference counting for outer/inner pointer sharing
             if(ip_udp_rtp_packet->data) {
-                   __IP_UDP_RTP_PARSER_TRACE("atsc3_ip_udp_rtp_packet_free: freeing ip_udp_rtp_packet->data: %p", ip_udp_rtp_packet->data);
+                __IP_UDP_RTP_PARSER_TRACE("atsc3_ip_udp_rtp_packet_free: freeing ip_udp_rtp_packet->data: %p", ip_udp_rtp_packet->data);
                 block_Release(&ip_udp_rtp_packet->data);
             }
             
             freesafe(ip_udp_rtp_packet->rtp_header);
             ip_udp_rtp_packet->rtp_header = NULL;
             free(ip_udp_rtp_packet);
+            ip_udp_rtp_packet = NULL;
+
         }
-        ip_udp_rtp_packet = NULL;
         *ip_udp_rtp_packet_p = NULL;
-    }
+    }        
 }

@@ -228,9 +228,9 @@ ATSC3_VECTOR_BUILDER_METHODS_INTERFACE(atsc3_stltp_tunnel_packet, atsc3_stltp_ba
 ATSC3_VECTOR_BUILDER_METHODS_INTERFACE(atsc3_stltp_tunnel_packet, atsc3_stltp_preamble_packet);
 ATSC3_VECTOR_BUILDER_METHODS_INTERFACE(atsc3_stltp_tunnel_packet, atsc3_stltp_timing_management_packet);
 
-void atsc3_stltp_baseband_packet_free_v(atsc3_stltp_baseband_packet_t** atsc3_stltp_baseband_packet_p);
-void atsc3_stltp_preamble_packet_free_v(atsc3_stltp_preamble_packet_t** atsc3_stltp_preamble_packet_p);
-void atsc3_stltp_timing_management_packet_free_v(atsc3_stltp_timing_management_packet_t** atsc3_stltp_timing_management_packet_p);
+void atsc3_stltp_baseband_packet_free_v(atsc3_stltp_baseband_packet_t* atsc3_stltp_baseband_packet);
+void atsc3_stltp_preamble_packet_free_v(atsc3_stltp_preamble_packet_t* atsc3_stltp_preamble_packet);
+void atsc3_stltp_timing_management_packet_free_v(atsc3_stltp_timing_management_packet_t* atsc3_stltp_timing_management_packet);
 
 #define __STLTP_TYPES_ERROR(...)          printf("%s:%d:ERROR: ",__FILE__,__LINE__); printf(__VA_ARGS__); printf("%s%s","\r","\n")
 #define __STLTP_TYPES_WARN(...)           printf("%s:%d:WARN : ",__FILE__,__LINE__); printf(__VA_ARGS__); printf("%s%s","\r","\n")
