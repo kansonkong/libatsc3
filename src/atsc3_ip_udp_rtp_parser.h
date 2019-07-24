@@ -43,6 +43,10 @@ atsc3_ip_udp_rtp_packet_t* atsc3_ip_udp_rtp_packet_prepend_if_not_null(atsc3_ip_
 //will use refcounting for block_t free determination
 void atsc3_ip_udp_rtp_packet_free(atsc3_ip_udp_rtp_packet_t** ip_udp_rtp_packet_p);
 
+//destroy: hard free at the end of the main pcap loop
+void atsc3_ip_udp_rtp_packet_destroy(atsc3_ip_udp_rtp_packet_t** ip_udp_rtp_packet_p);
+
+    
 #define __IP_UDP_RTP_PARSER_ERROR(...)         printf("%s:%d:ERROR: ",__FILE__,__LINE__); printf(__VA_ARGS__); printf("%s%s","\r","\n")
 #define __IP_UDP_RTP_PARSER_WARN(...)          printf("%s:%d:WARN : ",__FILE__,__LINE__); printf(__VA_ARGS__); printf("%s%s","\r","\n")
 #define __IP_UDP_RTP_PARSER_INFO(...)          printf("%s:%d:INFO : ",__FILE__,__LINE__); printf(__VA_ARGS__); printf("%s%s","\r","\n")

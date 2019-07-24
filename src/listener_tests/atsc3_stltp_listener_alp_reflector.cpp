@@ -23,6 +23,30 @@
 #include "../atsc3_alp_parser.h"
 #include "../atsc3_logging_externs.h"
 
+
+FILE* __DEBUG_LOG_FILE = NULL;
+bool  __DEBUG_LOG_AVAILABLE = true;
+
+//overload printf to write to stderr
+int printf(const char *format, ...)  {
+    
+    if(__DEBUG_LOG_AVAILABLE && !__DEBUG_LOG_FILE) {
+        __DEBUG_LOG_FILE = fopen("debug.log", "w");
+        if(!__DEBUG_LOG_FILE) {
+            __DEBUG_LOG_AVAILABLE = false;
+            __DEBUG_LOG_FILE = stderr;
+        }
+    }
+    
+    va_list argptr;
+    va_start(argptr, format);
+    vfprintf(__DEBUG_LOG_FILE, format, argptr);
+    va_end(argptr);
+    fflush(__DEBUG_LOG_FILE);
+    return 0;
+}
+
+
 int PACKET_COUNTER = 0;
 
 uint32_t* dst_ip_addr_filter = NULL;
@@ -40,17 +64,20 @@ void process_packet(u_char *user, const struct pcap_pkthdr *pkthdr, const u_char
     }
     //TODO - add SMPTE-2022.1 FEC decoding (see fork of prompeg-decoder - https://github.com/jjustman/prompeg-decoder)
     
-    //dispatch for LLS extraction and dump
+    //dispatch for STLTP decoding and reflection
     if(ip_udp_rtp_packet->udp_flow.dst_ip_addr == *dst_ip_addr_filter && ip_udp_rtp_packet->udp_flow.dst_port == *dst_ip_port_filter) {
         atsc3_stltp_tunnel_packet_processed = atsc3_stltp_raw_packet_extract_inner_from_outer_packet(ip_udp_rtp_packet, atsc3_stltp_tunnel_packet_processed);
         
         if(atsc3_stltp_tunnel_packet_processed) {
             if(atsc3_stltp_tunnel_packet_processed->atsc3_stltp_baseband_packet_v.count) {
                 __INFO(">>>stltp atsc3_stltp_baseband_packet packet complete: count: %u",  atsc3_stltp_tunnel_packet_processed->atsc3_stltp_baseband_packet_v.count);
+                
                 for(int i=0; i < atsc3_stltp_tunnel_packet_processed->atsc3_stltp_baseband_packet_v.count; i++) {
                     atsc3_stltp_baseband_packet_t* atsc3_stltp_baseband_packet = atsc3_stltp_tunnel_packet_processed->atsc3_stltp_baseband_packet_v.data[i];
-                    __INFO("Baseband packet: src: %u.%u.%u.%u:%u, dest: %u.%u.%u.%u:%u", __toipandportnonstruct(atsc3_stltp_baseband_packet->ip_udp_rtp_packet->udp_flow.src_ip_addr, atsc3_stltp_baseband_packet->ip_udp_rtp_packet->udp_flow.src_port),
-                           __toipandportnonstruct(atsc3_stltp_baseband_packet->ip_udp_rtp_packet->udp_flow.dst_ip_addr, atsc3_stltp_baseband_packet->ip_udp_rtp_packet->udp_flow.dst_port));
+                    __INFO("Baseband packet: src: %u.%u.%u.%u:%u, dest: %u.%u.%u.%u:%u", __toipandportnonstruct(atsc3_stltp_baseband_packet->ip_udp_rtp_packet->udp_flow.src_ip_addr,
+                                                                                                                atsc3_stltp_baseband_packet->ip_udp_rtp_packet->udp_flow.src_port),
+                           
+                                                                                        __toipandportnonstruct(atsc3_stltp_baseband_packet->ip_udp_rtp_packet->udp_flow.dst_ip_addr, atsc3_stltp_baseband_packet->ip_udp_rtp_packet->udp_flow.dst_port));
                     
                     /*
                      injection occurs from having descrInject wired up for now
@@ -92,7 +119,7 @@ void process_packet(u_char *user, const struct pcap_pkthdr *pkthdr, const u_char
     }
     
     
-    atsc3_ip_udp_rtp_packet_free(&ip_udp_rtp_packet);
+    atsc3_ip_udp_rtp_packet_destroy(&ip_udp_rtp_packet);
 }
 
 int main(int argc,char **argv) {

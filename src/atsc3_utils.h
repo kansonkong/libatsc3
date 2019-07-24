@@ -93,7 +93,9 @@ typedef struct atsc3_block {
 
 block_t* block_Alloc(int len);
 
-#define block_Refcount(a) ({ if(a) { a->_refcnt++;    _ATSC3_UTILS_TRACE("UTRACE:INCR:%p:%s, block_Refcount: incrementing to: %d, block: %p (p_buffer: %p)", a, __FUNCTION__, a->_refcnt, a, a->p_buffer); }  a; })
+#define block_Refcount(a) ({ if(a) { _block_Refcount(a);  \
+    _ATSC3_UTILS_TRACE("UTRACE:INCR:%p:%s, block_Refcount: incrementing to: %d, block: %p (p_buffer: %p)", a, __FUNCTION__, a->_refcnt, a, a->p_buffer); } \
+    a; })
     
     
 //block_t* _block_Refcount(block_t*); //used for sharing pointers between ref's
@@ -114,10 +116,14 @@ uint32_t block_Remaining_size(block_t* src);
 bool block_Valid(block_t* src);
 uint8_t* block_Get(block_t* src);
 
+#define block_RefZero(a) ({ a->_refcnt = 0; })
 #define block_Release(a) ({ _ATSC3_UTILS_TRACE("UTRACE:DECR:%p:%s, block_Refcount: decrementing to: %d, block: %p (p_buffer: %p)", *a, __FUNCTION__, (*a->_refcnt)-1, *a, *a->p_buffer);  _block_Release(a); })
 
 void _block_Release(block_t** a); //_refcnt MUST == 0 for p_buffer to be freed, see block_Refcount
+void _block_Refcount(block_t* a);
 
+void block_Destroy(block_t** a); //hard destroy overriding GC
+    
 //alloc and copy - note limited to 16k
 char* strlcopy(char*);
 char *_ltrim(char *str);

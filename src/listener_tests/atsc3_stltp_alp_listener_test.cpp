@@ -66,14 +66,13 @@ void process_packet(u_char *user, const struct pcap_pkthdr *pkthdr, const u_char
 			}
             
             atsc3_stltp_tunnel_packet_clear_completed_inner_packets(atsc3_stltp_tunnel_packet_processed);
-           // atsc3_stltp_tunnel_packet_free(&atsc3_stltp_tunnel_packet_processed);
 		} else {
             __ERROR("error processing packet: %p, size: %u",  ip_udp_rtp_packet, ip_udp_rtp_packet->data->p_size);
 		}
 	}
 
 
-    atsc3_ip_udp_rtp_packet_free(&ip_udp_rtp_packet);
+    atsc3_ip_udp_rtp_packet_destroy(&ip_udp_rtp_packet);
 }
 
 int main(int argc,char **argv) {
