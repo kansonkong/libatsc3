@@ -154,17 +154,18 @@ void atsc3_alp_parse_stltp_baseband_packet(atsc3_stltp_baseband_packet_t* atsc3_
         }
         __ALP_PARSER_INFO(" -> after seeking ptr : %d, payload: %p (bytes: %lu)", bbp_pointer_count, binary_payload, (binary_payload - baseband_payload_start));
     }
-    __ALP_PARSER_INFO("---------------------------------------");
-    __ALP_PARSER_INFO("ALP Packet: pointer: %p", binary_payload);
+    uint8_t* alp_binary_payload_start = binary_payload;
 
-
-	uint8_t alp_packet_header_byte_1 = *binary_payload++;
+    uint8_t alp_packet_header_byte_1 = *binary_payload++;
 	uint8_t alp_packet_header_byte_2 = *binary_payload++;
+    
+    __ALP_PARSER_INFO("------------------------------------------------");
+    __ALP_PARSER_INFO("ALP Packet: pointer: %p, first 2 bytes: 0x%02X, 0x%02X",
+                      alp_binary_payload_start, alp_packet_header_byte_1, alp_packet_header_byte_2);
 
 	alp_packet_header_t alp_packet_header;
 	alp_packet_header.packet_type = (alp_packet_header_byte_1 >> 5) & 0x7;
-	alp_packet_header.payload_configuration = (alp_packet_header_byte_1 >> 4) & 0x1;
-    __ALP_PARSER_INFO("---------------------------------------");
+    __ALP_PARSER_INFO("-----------------------------------------------");
     if(alp_packet_header.packet_type == 0x0) {
 
         __ALP_PARSER_INFO("ALP packet type            : 0x%x (IPv4)", alp_packet_header.packet_type);
@@ -183,7 +184,9 @@ void atsc3_alp_parse_stltp_baseband_packet(atsc3_stltp_baseband_packet_t* atsc3_
     } else {
         __ALP_PARSER_INFO("ALP packet type            : 0x%x (reserved/other)", alp_packet_header.packet_type);
     }
-        
+    
+    alp_packet_header.payload_configuration = (alp_packet_header_byte_1 >> 4) & 0x1;
+
     __ALP_PARSER_INFO("payload config             : %d", alp_packet_header.payload_configuration);
 
     uint32_t alp_payload_length = 0;
