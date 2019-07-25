@@ -52,25 +52,42 @@ pcap_t* descrInject = NULL;
 void atsc3_alp_parse_stltp_baseband_packet(atsc3_stltp_baseband_packet_t* atsc3_stltp_baseband_packet) {
 
 	uint8_t *binary_payload = atsc3_stltp_baseband_packet->payload;
+    uint8_t *binary_payload_start = binary_payload;
+    
     __ALP_PARSER_INFO("---------------------------------------");
-    __ALP_PARSER_INFO("Baseband Packet Header");
+    __ALP_PARSER_INFO("Baseband Packet Header:  length: %u", atsc3_stltp_baseband_packet->payload_length);
     __ALP_PARSER_INFO("Raw hex: 0x%02hhX 0x%02hhX 0x%02hhX 0x%02hhX", binary_payload[0], binary_payload[1], binary_payload[2], binary_payload[3]);
     __ALP_PARSER_INFO("---------------------------------------");
 
     atsc3_baseband_packet_header_t* atsc3_baseband_packet_header = calloc(1, sizeof(atsc3_baseband_packet_header_t));
+    //base field byte 1
+    atsc3_baseband_packet_header->base_field_mode = (*binary_payload >> 7) & 0x1;
+    atsc3_baseband_packet_header->base_field_pointer = (*binary_payload)   & 0x7F;
     
-    atsc3_baseband_packet_header->base_field_mode = (*binary_payload >> 7) &0x1;
-    atsc3_baseband_packet_header->base_field_pointer = (*binary_payload++) &0x7F;
-    
-    __ALP_PARSER_INFO("base field mode         : %x",    atsc3_baseband_packet_header->base_field_mode);
+    __ALP_PARSER_INFO("base field mode          : %x",    atsc3_baseband_packet_header->base_field_mode);
     int bbp_pointer_count = 0;
     
-    if(!atsc3_baseband_packet_header->base_field_mode) {
-        __ALP_PARSER_INFO("base field pointer (7b)  : 0x%X",  atsc3_baseband_packet_header->base_field_pointer);
-    } else {
-        //base field mode == 1
+    if(atsc3_baseband_packet_header->base_field_mode == 0) {
+        __ALP_PARSER_INFO("base field pointer (7b)  : 0x%02X (%d bytes)",  atsc3_baseband_packet_header->base_field_pointer, atsc3_baseband_packet_header->base_field_pointer);
+        //read our pointer here
+        uint8_t* baseband_payload_start = binary_payload;
+        __ALP_PARSER_INFO(" -> before seeking ptr, payload position: %p", binary_payload);
+        //no option field, no extension field, resolve from base_field_pointer
+        for(bbp_pointer_count=0; bbp_pointer_count < atsc3_baseband_packet_header->base_field_pointer; bbp_pointer_count++) {
+            binary_payload++;
+        }
+        __ALP_PARSER_INFO(" -> after seeking ptr : %d, payload: %p (diff: %ld)", bbp_pointer_count, binary_payload, (binary_payload - baseband_payload_start));
+        
+    } else { //base field mode == 1
+        
+        //base field byte 2
+        binary_payload++;
+
+        //A322 - 5.2.2.1 - if we have a pointer value of 8191 (2 byte base heder offset)
+        //->no ALP packet starting within that baseband packet
+
         atsc3_baseband_packet_header->base_field_pointer |= (((*binary_payload >>2) &0x3F) << 7);
-        __ALP_PARSER_INFO("base field pointer (13b) : 0x%X",  atsc3_baseband_packet_header->base_field_pointer);
+        __ALP_PARSER_INFO("base field pointer (13b) : 0x%04X (%d bytes)",  atsc3_baseband_packet_header->base_field_pointer, atsc3_baseband_packet_header->base_field_pointer);
 
         if(atsc3_baseband_packet_header->base_field_pointer  == 8191) {
             __ALP_PARSER_INFO(" -> squelching padding, ptr: %d", bbp_pointer_count);
@@ -78,32 +95,7 @@ void atsc3_alp_parse_stltp_baseband_packet(atsc3_stltp_baseband_packet_t* atsc3_
             goto cleanup;
         }
         
-        atsc3_baseband_packet_header->option_field_mode = (*binary_payload++) & 0x02;
-        
-        //A322 - 5.2.2.1 - if we have a pointer value of 8191 (2 byte base heder offset)
-        //->no ALP packet starting within that baseband packet
-        /**
-         
-         atsc3_alp_parser.c:  61:INFO:1563954261.9410: -----------------------------
-         atsc3_alp_parser.c:  62:INFO:1563954261.9410: Baseband Packet Header
-         atsc3_alp_parser.c:  63:INFO:1563954261.9411: base field mode   : 1
-         atsc3_alp_parser.c:  64:INFO:1563954261.9411: base field pointer: 0x7f
-         atsc3_alp_parser.c:  80:INFO:1563954261.9411:  -> seeking ptr: 8191
-         atsc3_alp_parser.c:  84:INFO:1563954261.9411:  -> no extension
-         atsc3_alp_parser.c: 121:INFO:1563954261.9411: option field mode : 0x0
-         atsc3_alp_parser.c: 122:INFO:1563954261.9411: ext type          : 0x0
-         atsc3_alp_parser.c: 123:INFO:1563954261.9411: ext len           : 0x0
-         atsc3_alp_parser.c: 124:INFO:1563954261.9412: -----------------------------
-         atsc3_alp_parser.c: 132:INFO:1563954261.9412: -----------------------------
-         atsc3_alp_parser.c: 133:INFO:1563954261.9412: ALP packet type     : 0x0
-         atsc3_alp_parser.c: 134:INFO:1563954261.9412: payload config      : 0
-         atsc3_alp_parser.c: 141:INFO:1563954261.9412: header mode        : 0
-         atsc3_alp_parser.c: 142:INFO:1563954261.9412: length             : 0
-         atsc3_alp_parser.c: 143:INFO:1563954261.9412: -----------------------------
-         atsc3_alp_parser.c: 148:INFO:1563954261.9412:  no additional ALP header bytes
-         atsc3_alp_parser.c: 157:INFO:1563954261.9413: -----------------------------
-         **/
-       
+        atsc3_baseband_packet_header->option_field_mode = (*binary_payload) & 0x02;
         
         /**
          OFI
@@ -113,54 +105,55 @@ void atsc3_alp_parse_stltp_baseband_packet(atsc3_stltp_baseband_packet_t* atsc3_
          01      0x1   Short extension mode
          10      0x2   Long Extension mode
          11      0x3   Mixed Extension mode
-         
          **/
         
-        if(atsc3_baseband_packet_header->option_field_mode == 0x0) {
-            __ALP_PARSER_INFO("option field mode       : 0x%x (No extension mode)",  atsc3_baseband_packet_header->option_field_mode);
-        } else if(atsc3_baseband_packet_header->option_field_mode == 0x1) {
-            __ALP_PARSER_INFO("option field mode       : 0x%x (Short extension mode)",  atsc3_baseband_packet_header->option_field_mode);
-        } else if(atsc3_baseband_packet_header->option_field_mode == 0x2) {
-            __ALP_PARSER_INFO("option field mode       : 0x%x (Long extension mode)",  atsc3_baseband_packet_header->option_field_mode);
-        } else if(atsc3_baseband_packet_header->option_field_mode == 0x3) {
-            __ALP_PARSER_INFO("option field mode       : 0x%x (Mixed extension mode)",  atsc3_baseband_packet_header->option_field_mode);
-        }
-        
         if(atsc3_baseband_packet_header->option_field_mode == 0x00) {
-            //noop
-            __ALP_PARSER_INFO("extension mode         : none");
+            __ALP_PARSER_INFO("option field mode        : 0x%x (No extension mode)",  atsc3_baseband_packet_header->option_field_mode);
+            __ALP_PARSER_INFO("extension mode           : n/a");
+            __ALP_PARSER_INFO("extension len            : n/a");
         } else {
+            //option field byte 1
+            binary_payload++;
             atsc3_baseband_packet_header->ext_type = (*binary_payload >> 5) & 0x7;
-            atsc3_baseband_packet_header->ext_len = (*binary_payload++) & 0x1F;
+            atsc3_baseband_packet_header->ext_len = (*binary_payload) & 0x1F;
             
             if(atsc3_baseband_packet_header->option_field_mode == 0x01) {
-                __ALP_PARSER_INFO("extension type        : 0x%x", atsc3_baseband_packet_header->ext_type);
-                __ALP_PARSER_INFO("extension len         : 0x%x", atsc3_baseband_packet_header->ext_len);
-              
+                __ALP_PARSER_INFO("option field mode        : 0x%x (Short extension mode)",  atsc3_baseband_packet_header->option_field_mode);
+                __ALP_PARSER_INFO("extension type           : 0x%x", atsc3_baseband_packet_header->ext_type);
+                __ALP_PARSER_INFO("extension len            : 0x%x", atsc3_baseband_packet_header->ext_len);
             } else if(atsc3_baseband_packet_header->option_field_mode == 0x02) {
-                __ALP_PARSER_INFO("extension type         : 0x%x", atsc3_baseband_packet_header->ext_type);
-
-                //long extension mode - 2 bytes
-                atsc3_baseband_packet_header->ext_len |= (((*binary_payload++) & 0xFF) << 5);
-                __ALP_PARSER_INFO("extension len          : 0x%x", atsc3_baseband_packet_header->ext_len);
-                
+                //option field byte 2
+                binary_payload++;
+                __ALP_PARSER_INFO("option field mode        : 0x%x (Long extension mode)",  atsc3_baseband_packet_header->option_field_mode);
+                __ALP_PARSER_INFO("extension type           : 0x%x", atsc3_baseband_packet_header->ext_type);
+                atsc3_baseband_packet_header->ext_len |= (((*binary_payload) & 0xFF) << 5);
+                __ALP_PARSER_INFO("extension len            : 0x%x", atsc3_baseband_packet_header->ext_len);
             } if(atsc3_baseband_packet_header->option_field_mode == 0x03) {
-                __ALP_PARSER_INFO("extension type         : 0x%x", atsc3_baseband_packet_header->ext_type);
-
-                //mixed extension bode - 2 bytes
-                atsc3_baseband_packet_header->ext_len |= (((*binary_payload++) & 0xFF) << 5);
-                __ALP_PARSER_INFO("extension len         : 0x%x", atsc3_baseband_packet_header->ext_len);
+                //option field byte 2
+                binary_payload++;
+                __ALP_PARSER_INFO("option field mode        : 0x%x (Mixed extension mode)",  atsc3_baseband_packet_header->option_field_mode);
+                __ALP_PARSER_INFO("num_ext                  : 0x%x", atsc3_baseband_packet_header->ext_type);
+                atsc3_baseband_packet_header->ext_len |= (((*binary_payload) & 0xFF) << 5);
+                __ALP_PARSER_INFO("extension len            : 0x%x", atsc3_baseband_packet_header->ext_len);
             }
+            
+            //read our extension fields here
+            uint8_t* extension_block_start = binary_payload;
+            __ALP_PARSER_INFO(" -> before reading extension block, payload position: %p, extension len: %hu", binary_payload, atsc3_baseband_packet_header->ext_len);
+            for(bbp_pointer_count=0; bbp_pointer_count < atsc3_baseband_packet_header->ext_len; bbp_pointer_count++) {
+                binary_payload++;
+            }
+            __ALP_PARSER_INFO(" -> after reading extension block, payload position : %p, diff: %lu", binary_payload, (binary_payload - extension_block_start));
         }
+        
+        uint8_t* baseband_payload_start = binary_payload;
+        __ALP_PARSER_INFO(" -> before seeking ptr, base field ptr: %d, payload: %p", atsc3_baseband_packet_header->base_field_pointer, binary_payload);
+        for(bbp_pointer_count=0; bbp_pointer_count < atsc3_baseband_packet_header->base_field_pointer; bbp_pointer_count++) {
+            binary_payload++;
+        }
+        __ALP_PARSER_INFO(" -> after seeking ptr : %d, payload: %p (bytes: %lu)", bbp_pointer_count, binary_payload, (binary_payload - baseband_payload_start));
     }
-    
-    __ALP_PARSER_INFO(" -> before seeking ptr, base field: %d, ext len: %d, payload: %p",  atsc3_baseband_packet_header->base_field_pointer, atsc3_baseband_packet_header->ext_len, binary_payload);
-
-    //no option field, no extension field, resolve from base_field_pointer
-    for(bbp_pointer_count=0; bbp_pointer_count < (atsc3_baseband_packet_header->base_field_pointer + atsc3_baseband_packet_header->ext_len); bbp_pointer_count++) {
-        *binary_payload++;
-    }
-    __ALP_PARSER_INFO(" -> after seeking ptr : %d, payload: %p", bbp_pointer_count, binary_payload);
+  
 
 	uint8_t alp_packet_header_byte_1 = *binary_payload++;
 	uint8_t alp_packet_header_byte_2 = *binary_payload++;
@@ -188,15 +181,15 @@ void atsc3_alp_parse_stltp_baseband_packet(atsc3_stltp_baseband_packet_t* atsc3_
         __ALP_PARSER_INFO("ALP packet type            : 0x%x (reserved/other)", alp_packet_header.packet_type);
     }
         
-    __ALP_PARSER_INFO("payload config               : %d", alp_packet_header.payload_configuration);
+    __ALP_PARSER_INFO("payload config             : %d", alp_packet_header.payload_configuration);
 
     uint32_t alp_payload_length = 0;
     
 	if(alp_packet_header.payload_configuration == 0) {
 		alp_packet_header.alp_packet_header_mode.header_mode = (alp_packet_header_byte_1 >> 3) & 0x01;
 		alp_packet_header.alp_packet_header_mode.length = (alp_packet_header_byte_1 & 0x7) << 8 | alp_packet_header_byte_2;
-		__ALP_PARSER_INFO("header mode             : %d", alp_packet_header.alp_packet_header_mode.header_mode);
-		__ALP_PARSER_INFO("length                  : %d", alp_packet_header.alp_packet_header_mode.length);
+		__ALP_PARSER_INFO("header mode               : %d", alp_packet_header.alp_packet_header_mode.header_mode);
+		__ALP_PARSER_INFO("length                    : %d", alp_packet_header.alp_packet_header_mode.length);
 		__ALP_PARSER_INFO("-----------------------------");
         alp_payload_length = alp_packet_header.alp_packet_header_mode.length;
 
@@ -222,33 +215,7 @@ void atsc3_alp_parse_stltp_baseband_packet(atsc3_stltp_baseband_packet_t* atsc3_
 		__ALP_PARSER_INFO("-----------------------------");
         alp_payload_length = alp_packet_header.alp_packet_segmentation_concatenation.length;
 
-        /**
-         _listener_alp_reflector.cpp:  73:INFO :1563977335.5082:>>>stltp atsc3_stltp_baseband_packet packet complete: count: 2
-         atsc3_alp_parser.c:  61:INFO :1563977335.5082:---------------------------------------
-         atsc3_alp_parser.c:  62:INFO :1563977335.5082:Baseband Packet Header
-         atsc3_alp_parser.c:  63:INFO :1563977335.5082:base field mode         : 1
-         atsc3_alp_parser.c:  75:INFO :1563977335.5082:base field pointer      : 0x59
-         atsc3_alp_parser.c:  83:INFO :1563977335.5082: -> seeking ptr      : 89
-         atsc3_alp_parser.c: 137:INFO :1563977335.5082: -> ext 0x02     : 3705
-         atsc3_alp_parser.c: 153:INFO :1563977335.5082:option field mode      : 0x2
-         atsc3_alp_parser.c: 154:INFO :1563977335.5086:ext type               : 0x1
-         atsc3_alp_parser.c: 155:INFO :1563977335.5086:ext len                : 0xe79
-         atsc3_alp_parser.c: 163:INFO :1563977335.5086:---------------------------------------
-         atsc3_alp_parser.c: 164:INFO :1563977335.5086:ALP packet type         : 0x1
-         atsc3_alp_parser.c: 165:INFO :1563977335.5086:payload config          : 1
-         atsc3_alp_parser.c: 194:INFO :1563977335.5086:segmentation_concatenation: 0
-         atsc3_alp_parser.c: 195:INFO :1563977335.5086:length                    : 1128
-         atsc3_alp_parser.c: 196:INFO :1563977335.5086:-----------------------------
-      
-         atsc3_alp_parser.c: 196:INFO :1563977335.5086:-----------------------------
-         atsc3_alp_parser.c: 201:INFO :1563977432.3360:segmentation_hdr()
-         atsc3_alp_parser.c: 207:INFO :1563977439.4766:segment_sequence_number: 0x0
-         atsc3_alp_parser.c: 208:INFO :1563977440.1783:last_segment_indicator : 0x0
-         atsc3_alp_parser.c: 209:INFO :1563977451.9190:SIF                    : 0x0
-         atsc3_alp_parser.c: 210:INFO :1563977453.0708:HEF                    : 0x0
-         atsc3_alp_parser.c: 211:INFO :1563977453.8461:---------------------------------------
-         
-         **/
+        
         if(alp_packet_header.alp_packet_segmentation_concatenation.segmentation_concatenation == 0) {
             //segmentation_hdr
             __ALP_PARSER_INFO("segmentation_hdr()");
@@ -263,13 +230,82 @@ void atsc3_alp_parse_stltp_baseband_packet(atsc3_stltp_baseband_packet_t* atsc3_
             __ALP_PARSER_INFO("HEF                    : 0x%x", alp_packet_header.alp_packet_segmentation_concatenation.alp_segmentation_header.HEF);
             __ALP_PARSER_INFO("---------------------------------------");
             
+            if(alp_packet_header.alp_packet_segmentation_concatenation.alp_segmentation_header.HEF) {
+                uint8_t hef_type = *binary_payload++;
+                uint8_t hef_length_minus1 = *binary_payload++;
+                __ALP_PARSER_INFO("extension type: 0x%x, extension length: %u", hef_type, hef_length_minus1);
+                for(int i=0; i < hef_length_minus1; i++) {
+                    binary_payload++;
+                }
+            }
         } else {
             //concatenation_hdr
             __ALP_PARSER_INFO("concatenation_hdr()");
         }
 	}
     
-    if(alp_payload_length && descrInject) {
+    if(alp_packet_header.packet_type == 0x4) {
+        //See A/330 - Figure 5.6 Structure of ALP signaling packets (Base Header and Additional Header).
+        
+        if(alp_packet_header.payload_configuration == 0 && alp_packet_header.alp_packet_header_mode.header_mode == 0) {
+            //read 5.2.1 Additional Header for Signaling Information - 40 bytes
+            uint8_t si_header[5];
+            memcpy(&si_header, binary_payload, 5);
+            binary_payload+=5;
+            
+            alp_packet_header.alp_additional_header_for_signaling_information.signaling_type = si_header[0];
+            alp_packet_header.alp_additional_header_for_signaling_information.signaling_type_extension = (si_header[1] << 8) | si_header[2];
+            alp_packet_header.alp_additional_header_for_signaling_information.signaling_version = si_header[3];
+            alp_packet_header.alp_additional_header_for_signaling_information.signaling_format = (si_header[4] >> 6) & 0x3;
+            alp_packet_header.alp_additional_header_for_signaling_information.signaling_encoding = (si_header[4] >> 4) & 0x3;
+            alp_packet_header.alp_additional_header_for_signaling_information.reserved = (si_header[4]) & 0xF;
+            __ALP_PARSER_INFO("---------------------------------------");
+            __ALP_PARSER_INFO("LLS Packet");
+            if(alp_packet_header.alp_additional_header_for_signaling_information.signaling_type == 0x1) {
+                __ALP_PARSER_INFO("Signaling type: 0x%0x (LMT)", alp_packet_header.alp_additional_header_for_signaling_information.signaling_type);
+            } else {
+                __ALP_PARSER_INFO("Signaling type: 0x%0x (other)", alp_packet_header.alp_additional_header_for_signaling_information.signaling_type);
+            }
+            
+            __ALP_PARSER_INFO("Signaling type extension: 0x%04x", alp_packet_header.alp_additional_header_for_signaling_information.signaling_type_extension);
+            __ALP_PARSER_INFO("Signaling version       : 0x%02x", alp_packet_header.alp_additional_header_for_signaling_information.signaling_version);
+            if(alp_packet_header.alp_additional_header_for_signaling_information.signaling_format == 0) {
+                __ALP_PARSER_INFO("Signaling format      : 0x0 (binary)");
+            } else if(alp_packet_header.alp_additional_header_for_signaling_information.signaling_format == 1) {
+                __ALP_PARSER_INFO("Signaling format      : 0x1 (xml)");
+            } else if(alp_packet_header.alp_additional_header_for_signaling_information.signaling_format == 2) {
+                __ALP_PARSER_INFO("Signaling format      : 0x2 (json)");
+            } else {
+                __ALP_PARSER_INFO("Signaling format      : 0x3 (reserved)");
+            }
+            
+            if(alp_packet_header.alp_additional_header_for_signaling_information.signaling_encoding == 0) {
+                __ALP_PARSER_INFO("Signaling encoding      : 0x0 (no compression)");
+            } else if(alp_packet_header.alp_additional_header_for_signaling_information.signaling_encoding == 1) {
+                __ALP_PARSER_INFO("Signaling encoding      : 0x01 (deflate)");
+            } else {
+                __ALP_PARSER_INFO("Signaling encoding      : 0x%x (reserved)", alp_packet_header.alp_additional_header_for_signaling_information.signaling_encoding);
+            }
+            __ALP_PARSER_INFO("Signaling reserved bits     : %d%d%d%d", alp_packet_header.alp_additional_header_for_signaling_information.reserved >> 3 & 0x1,
+                                                                        alp_packet_header.alp_additional_header_for_signaling_information.reserved >> 2 & 0x1,
+                                                                        alp_packet_header.alp_additional_header_for_signaling_information.reserved >> 1 & 0x1,
+                                                                        alp_packet_header.alp_additional_header_for_signaling_information.reserved & 0x1);
+            
+
+            
+        } else {
+            //read:
+            //pc=0 ^ hc = 1: additional header for single packets
+            //pc=1 ^ hc = 0: additional header for segmentation
+            //pc=1 ^ hc = 1: additional header for concatenation
+            
+            //then
+            //read 5.2.1 Additional Header for Signaling Information
+        }
+    }
+    
+    //if we are an IP packet, push this via pcap
+    if(alp_packet_header.packet_type == 0x0 && alp_payload_length && descrInject) {
         uint32_t eth_frame_size = alp_payload_length + 14;
         uint8_t* eth_frame = calloc(eth_frame_size, sizeof(uint8_t));
         
