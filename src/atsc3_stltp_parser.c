@@ -257,6 +257,9 @@ atsc3_stltp_tunnel_packet_t* atsc3_stltp_raw_packet_extract_inner_from_outer_pac
         
         //duplicate our ip_udp_rtp header so we won't get a doublefree
         //hack-2019-07-24
+        
+        //fix me
+        
         atsc3_stltp_tunnel_packet_current->ip_udp_rtp_packet_inner = atsc3_ip_udp_rtp_packet_duplicate_no_data_block_t(atsc3_stltp_tunnel_packet_last->ip_udp_rtp_packet_inner);
         atsc3_stltp_tunnel_packet_current->ip_udp_rtp_packet_inner->data = block_Refcount(atsc3_stltp_tunnel_packet_current->ip_udp_rtp_packet_outer->data);
         
