@@ -188,8 +188,8 @@ void atsc3_alp_parse_stltp_baseband_packet(atsc3_stltp_baseband_packet_t* atsc3_
 	if(alp_packet_header.payload_configuration == 0) {
 		alp_packet_header.alp_packet_header_mode.header_mode = (alp_packet_header_byte_1 >> 3) & 0x01;
 		alp_packet_header.alp_packet_header_mode.length = (alp_packet_header_byte_1 & 0x7) << 8 | alp_packet_header_byte_2;
-		__ALP_PARSER_INFO("header mode               : %d", alp_packet_header.alp_packet_header_mode.header_mode);
-		__ALP_PARSER_INFO("length                    : %d", alp_packet_header.alp_packet_header_mode.length);
+		__ALP_PARSER_INFO("header mode                : %d", alp_packet_header.alp_packet_header_mode.header_mode);
+		__ALP_PARSER_INFO("length                     : %d", alp_packet_header.alp_packet_header_mode.length);
 		__ALP_PARSER_INFO("-----------------------------");
         alp_payload_length = alp_packet_header.alp_packet_header_mode.length;
 
@@ -198,10 +198,10 @@ void atsc3_alp_parse_stltp_baseband_packet(atsc3_stltp_baseband_packet_t* atsc3_
 			__ALP_PARSER_INFO(" no additional ALP header bytes");
 		} else if (alp_packet_header.payload_configuration == 0 && alp_packet_header.alp_packet_header_mode.header_mode == 1) {
 			//one byte additional header
-			uint8_t alp_additional_header_byte_1 = *binary_payload+=1;
+            uint8_t alp_additional_header_byte_1 = *binary_payload;
 			__ALP_PARSER_INFO(" one additional ALP header byte: 0x%x (header_mode==1)", alp_additional_header_byte_1);
 		} else if (alp_packet_header.payload_configuration == 1) {
-			uint8_t alp_additional_header_byte_1 = *binary_payload+=1;
+            uint8_t alp_additional_header_byte_1 = *binary_payload;
 			__ALP_PARSER_INFO(" one additional header byte -  0x%x (header_mode==0)", alp_additional_header_byte_1);
 		}
 		__ALP_PARSER_INFO("-----------------------------");
@@ -246,6 +246,18 @@ void atsc3_alp_parse_stltp_baseband_packet(atsc3_stltp_baseband_packet_t* atsc3_
     
     if(alp_packet_header.packet_type == 0x4) {
         //See A/330 - Figure 5.6 Structure of ALP signaling packets (Base Header and Additional Header).
+        
+        if(alp_packet_header.payload_configuration == 0 && alp_packet_header.alp_packet_header_mode.header_mode == 1) {
+            alp_packet_header.alp_packet_header_mode.alp_single_packet_header.length_MSB = (*binary_payload >> 3) & 0x1F;
+            alp_packet_header.alp_packet_header_mode.alp_single_packet_header.reserved = 1;
+            alp_packet_header.alp_packet_header_mode.alp_single_packet_header.SIF = (*binary_payload >> 1) & 0x1;
+            alp_packet_header.alp_packet_header_mode.alp_single_packet_header.HEF = (*binary_payload) & 0x1;
+            __ALP_PARSER_INFO("Additional header for single packet:");
+            __ALP_PARSER_INFO("length MSB: %d", alp_packet_header.alp_packet_header_mode.alp_single_packet_header.length_MSB);
+            __ALP_PARSER_INFO("SIF: %d", alp_packet_header.alp_packet_header_mode.alp_single_packet_header.SIF );
+            __ALP_PARSER_INFO("HEF: %d", alp_packet_header.alp_packet_header_mode.alp_single_packet_header.HEF);
+
+        }
         
         if(alp_packet_header.payload_configuration == 0 && alp_packet_header.alp_packet_header_mode.header_mode == 0) {
             //read 5.2.1 Additional Header for Signaling Information - 40 bytes
