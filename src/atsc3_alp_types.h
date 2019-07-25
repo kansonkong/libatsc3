@@ -147,6 +147,10 @@ typedef struct alp_packet_header  {
 		alp_packet_header_mode_t 				alp_packet_header_mode; //payload_configuration == 0
 		alp_packet_segmentation_concatenation_t	alp_packet_segmentation_concatenation; //payload_configuration == 1
 	};
+    
+    //for payload_type == 4 (bits: 100)
+    alp_additional_header_for_signaling_information_t alp_additional_header_for_signaling_information;
+    
 } alp_packet_header_t;
 
 typedef struct lmt_table_header {
