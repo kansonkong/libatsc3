@@ -66,7 +66,9 @@ block_t* atsc3_stltp_read_from_outer_packet(atsc3_ip_udp_rtp_packet_t* ip_udp_rt
             block_Seek(ip_udp_rtp_packet_outer->data, ATSC_STLTP_IP_UDP_RTP_HEADER_SIZE);
             inner_packet_data = block_Duplicate_from_position(ip_udp_rtp_packet_outer->data); //clone this block explicity
             block_Resize(inner_packet_data, ip_udp_rtp_packet_outer->rtp_header->packet_offset); //trim up to the marker boundary for inner packet
-            block_Seek(ip_udp_rtp_packet_outer->data, ip_udp_rtp_packet_outer->rtp_header->packet_offset); //move our outer to the marker position
+            //do not seek to marker position here, this will happen on next call with after_refragment=true
+            
+            //block_Seek(ip_udp_rtp_packet_outer->data, ip_udp_rtp_packet_outer->rtp_header->packet_offset); //move our outer to the marker position
             
             return inner_packet_data;
         } else {
