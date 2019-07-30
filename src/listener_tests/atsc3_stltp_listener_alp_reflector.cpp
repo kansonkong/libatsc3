@@ -123,6 +123,24 @@ void process_packet(u_char *user, const struct pcap_pkthdr *pkthdr, const u_char
                                 __INFO("atsc3_baseband_packet: pushed:  bb pre_pointer frame bytes remaining: %d, bb pre_pointer size: %d",
                                        remaining_baseband_frame_bytes,
                                        atsc3_baseband_packet->alp_payload_pre_pointer->p_size);
+                                
+                                if(remaining_baseband_frame_bytes) {
+                                    
+                                    //push remaining bytes to post-pointer,
+                                   
+                                    if(atsc3_baseband_packet->alp_payload_post_pointer) {
+                                        __INFO("atsc3_baseband_packet: prepending alp_payload_pre_pointer with alp_payload_post_pointer");
+                                        block_t* alp_payload_post_pointer_orig = atsc3_baseband_packet->alp_payload_post_pointer;
+                                        
+                                          atsc3_baseband_packet->alp_payload_post_pointer = block_Duplicate_from_position(atsc3_baseband_packet->alp_payload_pre_pointer);
+                                        
+                                        block_Merge(atsc3_baseband_packet->alp_payload_post_pointer, alp_payload_post_pointer_orig);
+                                        block_Release(&alp_payload_post_pointer_orig);
+                                    } else {
+                                        atsc3_baseband_packet->alp_payload_post_pointer = block_Duplicate_from_position(atsc3_baseband_packet->alp_payload_pre_pointer);
+                                        block_Release(&atsc3_baseband_packet->alp_payload_pre_pointer);
+                                    }
+                                }
                             }
                         }
                         
