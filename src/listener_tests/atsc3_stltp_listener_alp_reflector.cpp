@@ -81,7 +81,7 @@ void process_packet(u_char *user, const struct pcap_pkthdr *pkthdr, const u_char
                     //make sure we get a packet back, base field pointer (13b) : 0x1FFF (8191 bytes) will return NULL
                     atsc3_baseband_packet_t* atsc3_baseband_packet = atsc3_stltp_parse_baseband_packet(atsc3_stltp_baseband_packet);
                     if(atsc3_baseband_packet) {
-                        
+                    
                         //if we have a pending packet and a block before our payload pointer
                         if(atsc3_alp_packet_collection->atsc3_alp_packet_pending && atsc3_baseband_packet->alp_payload_pre_pointer) {
                             //merge block_t pre_pointer by computing the difference...

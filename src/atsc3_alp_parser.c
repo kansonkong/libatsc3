@@ -203,12 +203,37 @@ atsc3_baseband_packet_t* atsc3_stltp_parse_baseband_packet(atsc3_stltp_baseband_
             }
             
             //else, other extension field, e.g. counter or reserved, read here for payload...
-            uint8_t* extension_block_start = binary_payload;
-            __ALP_PARSER_INFO(" -> before reading extension block, payload position: %p, extension len: %hu", binary_payload, atsc3_baseband_packet->ext_len);
-            for(bbp_pointer_count=0; bbp_pointer_count < atsc3_baseband_packet->ext_len; bbp_pointer_count++) {
-                binary_payload++;
+            if(atsc3_baseband_packet->ext_type == 0x7) {
+                uint8_t* old_binary_payload = binary_payload;
+                binary_payload += atsc3_baseband_packet->ext_len;
+                
+                __ALP_PARSER_INFO("seeking past padding (ext_type == 111), from: %p, bytes: %d, to: %p", old_binary_payload, atsc3_baseband_packet->ext_len, binary_payload);
+            } else {
+                uint8_t* extension_block_start = binary_payload;
+                __ALP_PARSER_WARN(" -> UNKNOWN EXTENSION TYPE: 0x%x, before reading extension block, payload position: %p, extension len: %hu",
+                                  atsc3_baseband_packet->ext_type,
+                                  binary_payload, atsc3_baseband_packet->ext_len);
+                for(bbp_pointer_count=0; bbp_pointer_count < atsc3_baseband_packet->ext_len; bbp_pointer_count++) {
+                            binary_payload++;
+                }
+                __ALP_PARSER_INFO(" -> after reading extension block, payload position : %p, diff: %lu", binary_payload, (binary_payload - extension_block_start));
             }
-            __ALP_PARSER_INFO(" -> after reading extension block, payload position : %p, diff: %lu", binary_payload, (binary_payload - extension_block_start));
+            
+            if(atsc3_baseband_packet->base_field_pointer) {
+                //TODO: see if this is right
+                //move forward pointer, then return payload.
+                uint8_t* old_binary_payload = binary_payload;
+                binary_payload += atsc3_baseband_packet->base_field_pointer;
+                int32_t baseband_bytes_remaining_len = binary_payload_length - (binary_payload - binary_payload_start);
+
+                atsc3_baseband_packet->alp_payload_pre_pointer = block_Alloc(baseband_bytes_remaining_len);
+                block_Write(atsc3_baseband_packet->alp_payload_pre_pointer, binary_payload, baseband_bytes_remaining_len);
+                block_Rewind(atsc3_baseband_packet->alp_payload_pre_pointer);
+
+                __ALP_PARSER_INFO(" padding+base_pointer: returning pre_pointer: %p, length: %d", atsc3_baseband_packet->alp_payload_pre_pointer, baseband_bytes_remaining_len);
+                return atsc3_baseband_packet;
+
+            }
         }
         
         baseband_pre_pointer_payload_start = binary_payload;
