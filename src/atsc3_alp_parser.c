@@ -83,6 +83,26 @@ ATSC3_VECTOR_BUILDER_METHODS_IMPLEMENTATION(atsc3_alp_packet_collection, atsc3_a
  12/15 12792 168 12928 32 12960 0 3240 12960
  13/15 13872 168 14008 32 14040 0 2160 14040
  
+ 
+ Since ALP packets may be split across Baseband Packets, the start of the payload of a Baseband
+ Packet does not necessarily signify the start of an ALP packet.
+ 
+ The Base Field of a Baseband
+ Packet shall provide the start position of the first ALP packet that begins in the Baseband Packet
+ through a pointer.
+ 
+ The value of the pointer shall be the offset (in bytes) from the beginning of the payload to the
+ start of the first ALP packet that begins in that Baseband Packet.
+ 
+ When an ALP packet begins at
+ the start of the payload portion of a Baseband Packet, the value of the pointer shall be 0. When
+ there is no ALP packet starting within that Baseband Packet, the value of the pointer shall be 8191
+ and a 2 byte Base Field shall be used.
+ 
+ When there are no ALP packets and only padding is present,
+ the value of the pointer shall also be 8191 and a 2 byte Base Field shall be used, together with any
+ necessary Optional Fields and Extension Fields as signaled by the OFI (Optional Field Indicator)
+ field.
  **/
  
 atsc3_baseband_packet_t* atsc3_stltp_parse_baseband_packet(atsc3_stltp_baseband_packet_t* atsc3_stltp_baseband_packet) {
@@ -130,7 +150,11 @@ atsc3_baseband_packet_t* atsc3_stltp_parse_baseband_packet(atsc3_stltp_baseband_
         if(atsc3_baseband_packet->base_field_pointer == 8191) {
             if(atsc3_baseband_packet->option_field_mode == 0) {
                 /**
-                 The value of the pointer shall be the offset (in bytes) from the beginning of the payload to the start of the first ALP packet that begins in that Baseband Packet. When an ALP packet begins at the start of the payload portion of a Baseband Packet, the value of the pointer shall be 0. When there is no ALP packet starting within that Baseband Packet, the value of the pointer shall be 8191 and a 2 byte base header shall be used. When there are no ALP packets and only padding is present, the value of the pointer shall also be 8191 and a 2 byte base header shall be used, together with any necessary optional and extension fields as signaled by the OFI (Optional Field Indicator) field.
+                 The value of the pointer shall be the offset (in bytes) from the beginning of the payload to the start of the first ALP packet that begins in that Baseband Packet.
+                 
+                 When an ALP packet begins at the start of the payload portion of a Baseband Packet, the value of the pointer shall be 0. When there is no ALP packet starting within that Baseband Packet, the value of the pointer shall be 8191 and a 2 byte base header shall be used.
+                 
+                 When there are no ALP packets and only padding is present, the value of the pointer shall also be 8191 and a 2 byte base header shall be used, together with any necessary optional and extension fields as signaled by the OFI (Optional Field Indicator) field.
                  **/
                 uint32_t baseband_packet_size_to_copy = binary_payload_length - (binary_payload - binary_payload_start);
                 __ALP_PARSER_INFO(" base_field_pointer=8191, but option_field_mode=0, copying full packet into alp_payload_pre_pointer, size: %d, binary_payload_length: %d", baseband_packet_size_to_copy, binary_payload_length);
@@ -139,11 +163,6 @@ atsc3_baseband_packet_t* atsc3_stltp_parse_baseband_packet(atsc3_stltp_baseband_
                 block_Write(atsc3_baseband_packet->alp_payload_pre_pointer, binary_payload, baseband_packet_size_to_copy);
                 block_Rewind(atsc3_baseband_packet->alp_payload_pre_pointer);
                 return atsc3_baseband_packet;
-            } else {
-                __ALP_PARSER_INFO(" -> option_field_mode: 0x%x, squelching padding, ptr: %d", atsc3_baseband_packet->option_field_mode, bbp_pointer_count);
-//                __ALP_PARSER_INFO("---------------------------------------");
-//                goto cleanup;
-                baseband_packet_is_padding = true;
             }
         }
         
@@ -189,7 +208,7 @@ atsc3_baseband_packet_t* atsc3_stltp_parse_baseband_packet(atsc3_stltp_baseband_
                 binary_payload++;
             }
             
-            if(baseband_packet_is_padding && atsc3_baseband_packet->ext_type == 0x7) { //ext_type = 111
+            if(atsc3_baseband_packet->base_field_pointer == 8191 && atsc3_baseband_packet->ext_type == 0x7) { //ext_type = 111
                 uint32_t baseband_packet_remaining_size = binary_payload_length - (binary_payload - binary_payload_start);
 
                 if(atsc3_baseband_packet->ext_len == baseband_packet_remaining_size) {
@@ -236,8 +255,9 @@ atsc3_baseband_packet_t* atsc3_stltp_parse_baseband_packet(atsc3_stltp_baseband_
         baseband_pre_pointer_payload_start = binary_payload;
     }
     
-    int32_t bytes_pre_pointer_remaining_len = binary_payload_length - (baseband_pre_pointer_payload_start - binary_payload_start);
+    //build pre-pointer and post-pointer payloads
     
+    int32_t bytes_pre_pointer_remaining_len = binary_payload_length - (baseband_pre_pointer_payload_start - binary_payload_start);
     
     if(!bytes_pre_pointer_remaining_len) {
         __ALP_PARSER_ERROR(" no bytes remaining for baseband pre_pointer packet_payload! binary_payload_length: %d, ptr: start: %p, baseband_pre_pointer_payload_start: %p",
@@ -248,18 +268,26 @@ atsc3_baseband_packet_t* atsc3_stltp_parse_baseband_packet(atsc3_stltp_baseband_
         goto cleanup;
     }
     
-    __ALP_PARSER_INFO(" -> before ptr, base field ptr: %d, payload position : %p, pre_pointer bytes remaining: %d",                      atsc3_baseband_packet->base_field_pointer,
+    __ALP_PARSER_INFO(" -> before ptr, base field ptr: %d, payload position : %p, pre_pointer bytes remaining: %d",
+                      atsc3_baseband_packet->base_field_pointer,
                       baseband_pre_pointer_payload_start,
                       bytes_pre_pointer_remaining_len);
    
     
     if(atsc3_baseband_packet->base_field_pointer && bytes_pre_pointer_remaining_len) {
-        __ALP_PARSER_INFO(" copying block_t into alp_payload_pre_pointer");
+        __ALP_PARSER_INFO(" copying block_t into alp_payload_pre_pointer, from %p to %p (len: %d)",
+                          baseband_pre_pointer_payload_start,
+                          baseband_pre_pointer_payload_start + atsc3_baseband_packet->base_field_pointer,
+                          atsc3_baseband_packet->base_field_pointer);
+        
         atsc3_baseband_packet->alp_payload_pre_pointer = block_Alloc(atsc3_baseband_packet->base_field_pointer);
         block_Write(atsc3_baseband_packet->alp_payload_pre_pointer, baseband_pre_pointer_payload_start, atsc3_baseband_packet->base_field_pointer);
         block_Rewind(atsc3_baseband_packet->alp_payload_pre_pointer);        
     }
+    //end our pre-pointer
     
+    //build our post-pointer
+    //start our pointer payload at pre_payload + base_field_pointer
     uint8_t* baseband_pointer_payload_start = baseband_pre_pointer_payload_start + atsc3_baseband_packet->base_field_pointer;
     
     int32_t bytes_remaining_len = binary_payload_length - (baseband_pointer_payload_start - binary_payload_start);
@@ -272,9 +300,13 @@ atsc3_baseband_packet_t* atsc3_stltp_parse_baseband_packet(atsc3_stltp_baseband_
         goto cleanup;
     }
     
-    __ALP_PARSER_INFO(" -> post_pointer: size: %d, payload: %p",
+    __ALP_PARSER_INFO(" -> post_pointer: start at: %p, size: %d, payload: 0x%02x 0x%02x 0x%02x 0x%02x",
+                      baseband_pointer_payload_start,
                       bytes_remaining_len,
-                      binary_payload);
+                      baseband_pointer_payload_start[0],
+                      baseband_pointer_payload_start[1],
+                      baseband_pointer_payload_start[2],
+                      baseband_pointer_payload_start[3]);
     
     atsc3_baseband_packet->alp_payload_post_pointer = block_Alloc(bytes_remaining_len);
     block_Write(atsc3_baseband_packet->alp_payload_post_pointer, baseband_pointer_payload_start, bytes_remaining_len);
@@ -506,7 +538,9 @@ atsc3_alp_packet_t* atsc3_alp_packet_parse(block_t* baseband_packet_payload) {
                           baseband_packet_payload->i_pos + (binary_payload - alp_binary_payload_start),
                           baseband_packet_payload->p_size);
         
-        block_Seek_Relative(baseband_packet_payload, remaining_binary_payload_bytes);
+        //hack to eof
+        baseband_packet_payload->i_pos = baseband_packet_payload->p_size;
+        
         return NULL;
     }
                           
@@ -520,7 +554,6 @@ atsc3_alp_packet_t* atsc3_alp_packet_parse(block_t* baseband_packet_payload) {
     }
     block_Write(alp_packet->alp_payload, binary_payload, alp_payload_bytes_to_write);
     block_Seek_Relative(baseband_packet_payload, alp_payload_bytes_to_write + (binary_payload - alp_binary_payload_start));
-    
     
     __ALP_PARSER_INFO("writing ALP payload to: %p, alp_payload_bytes_to_write: %d MIN(alp_payload_length: %d, baseband_packet_payload bytes: %d), remaining ALP bytes: %d, remaining baseband bytes: %d",
                       alp_packet,
