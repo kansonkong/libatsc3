@@ -20,26 +20,23 @@
 extern "C" {
 #endif
 
-typedef struct atsc3_baseband_packet_collection {
-    pcap_t* descrInject; //optional descriptor for alp injection
-
-    ATSC3_VECTOR_BUILDER_STRUCT(atsc3_baseband_packet_header);
-    ATSC3_VECTOR_BUILDER_STRUCT(atsc3_baseband_packet_refragmented_complete);
     
-} atsc3_baseband_packet_collection_t;
-
-ATSC3_VECTOR_BUILDER_METHODS_INTERFACE(atsc3_baseband_packet_collection, atsc3_baseband_packet_header);
-ATSC3_VECTOR_BUILDER_METHODS_INTERFACE(atsc3_baseband_packet_collection, atsc3_baseband_packet_refragmented_complete);
-
-
-void atsc3_alp_parse_stltp_baseband_packet(atsc3_stltp_baseband_packet_t* atsc3_stltp_baseband_packet, atsc3_baseband_packet_collection_t* atsc3_baseband_packet_collection);
+typedef struct atsc3_alp_packet_collection {
+    pcap_t*                         descrInject; //optional descriptor for alp injection
+    atsc3_baseband_packet_t*        baseband_packet;
     
+    ATSC3_VECTOR_BUILDER_STRUCT(atsc3_alp_packet);
+    atsc3_alp_packet_t*             atsc3_alp_packet_pending; //incomplete packet for fragmentation
+
+} atsc3_alp_packet_collection_t;
     
-void atsc3_alp_reflect_baseband_packet_collection_completed(atsc3_baseband_packet_collection_t* atsc3_baseband_packet_collection);
+ATSC3_VECTOR_BUILDER_METHODS_INTERFACE(atsc3_alp_packet_collection, atsc3_alp_packet);
+    
+atsc3_baseband_packet_t* atsc3_stltp_parse_baseband_packet(atsc3_stltp_baseband_packet_t* atsc3_stltp_baseband_packet);
+void atsc3_baseband_packet_free(atsc3_baseband_packet_t** atsc3_baseband_packet);
 
-alp_packet_t* atsc3_alp_packet_parse(block_t* baseband_packet_payload);
-
-
+atsc3_alp_packet_t* atsc3_alp_packet_parse(block_t* baseband_packet_payload);
+void atsc3_reflect_alp_packet_collection(atsc3_alp_packet_collection_t* atsc3_alp_packet_collection);
 
 #if defined (__cplusplus)
 }

@@ -23,7 +23,7 @@
  
  **/
 
-typedef struct atsc3_baseband_packet_header {
+typedef struct atsc3_baseband_packet {
     uint8_t     base_field_mode;    //1 bit
     uint16_t    base_field_pointer; //either 7 bits or 13 bits
     uint8_t     option_field_mode;  //                  2 bits
@@ -32,12 +32,7 @@ typedef struct atsc3_baseband_packet_header {
     uint8_t*    extension;          // 0-31 bytes, or 0-full BBP
     block_t*    alp_payload_pre_pointer;
     block_t*    alp_payload_post_pointer;
-} atsc3_baseband_packet_header_t;
-
-typedef struct atsc3_baseband_packet_refragmented_complete {
-    block_t*    alp_payload_refragmented_complete;
-} atsc3_baseband_packet_refragmented_complete_t;
-
+} atsc3_baseband_packet_t;
 
 typedef struct alp_single_packet_header_sub_stream_identification {
 	uint8_t SID;
@@ -182,10 +177,11 @@ typedef struct alp_packet_header  {
     
 } alp_packet_header_t;
 
-typedef struct alp_packet {
+typedef struct atsc3_alp_packet {
     alp_packet_header_t alp_packet_header;
     block_t*            alp_payload;
-} alp_packet_t;
+    bool                is_alp_payload_complete;
+} atsc3_alp_packet_t;
 
 typedef struct lmt_table_header {
 	uint8_t num_PLPs_minus1;		/**< LCT version number */
