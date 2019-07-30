@@ -55,7 +55,7 @@ uint16_t* dst_ip_port_filter = NULL;
 extern pcap_t* descrInject;
 
 atsc3_stltp_tunnel_packet_t* atsc3_stltp_tunnel_packet_processed = NULL;
-atsc3_baseband_packet_collection_t* atsc3_baseband_packet_collection = NULL;
+atsc3_alp_packet_collection_t* atsc3_alp_packet_collection = NULL;
 
 void process_packet(u_char *user, const struct pcap_pkthdr *pkthdr, const u_char *packet) {
     //extract our outer ip/udp/rtp packet
@@ -75,36 +75,31 @@ void process_packet(u_char *user, const struct pcap_pkthdr *pkthdr, const u_char
                 
                 for(int i=0; i < atsc3_stltp_tunnel_packet_processed->atsc3_stltp_baseband_packet_v.count; i++) {
                     atsc3_stltp_baseband_packet_t* atsc3_stltp_baseband_packet = atsc3_stltp_tunnel_packet_processed->atsc3_stltp_baseband_packet_v.data[i];
-                    
-                    /**
-                    __INFO("Baseband packet: src: %u.%u.%u.%u:%u, dest: %u.%u.%u.%u:%u", __toipandportnonstruct(atsc3_stltp_baseband_packet->ip_udp_rtp_packet->udp_flow.src_ip_addr,
-                                                                                                                atsc3_stltp_baseband_packet->ip_udp_rtp_packet->udp_flow.src_port),
-                           
-                                                                                        __toipandportnonstruct(atsc3_stltp_baseband_packet->ip_udp_rtp_packet->udp_flow.dst_ip_addr, atsc3_stltp_baseband_packet->ip_udp_rtp_packet->udp_flow.dst_port));
-                     **/
-                    
-                    /*
-                     injection occurs from having descrInject wired up for now
 
-                     Injecting packets
-                     If  you have the required privileges, you can inject packets onto a network with a pcap_t for a live capture, using pcap_inject() or pcap_sendpacket().  (The
-                     two routines exist for compatibility with both OpenBSD and WinPcap; they perform the same function, but have different return values.)
-                     Routines
-                     
-                     pcap_inject(3PCAP)
-                     pcap_sendpacket(3PCAP)
-                     transmit a packet
-                     
-                     https://www.winpcap.org/docs/docs_40_2/html/group__wpcap__tut8.html
-                     **/
-                    atsc3_alp_parse_stltp_baseband_packet(atsc3_stltp_baseband_packet, atsc3_baseband_packet_collection);
-                    
-                    //reflect completed packets atsc3_baseband_packet_collection
-                    
-                    //todo - refactor out alp parsing
-                    atsc3_alp_reflect_baseband_packet_collection_completed(atsc3_baseband_packet_collection);
+                    atsc3_baseband_packet_t* atsc3_baseband_packet = atsc3_stltp_parse_baseband_packet(atsc3_stltp_baseband_packet);
+
+                    atsc3_alp_packet_t* atsc3_alp_packet = NULL;
+                    if(atsc3_alp_packet_collection->atsc3_alp_packet_pending && atsc3_baseband_packet->alp_payload_pre_pointer) {
+                        //merge block_t pre_pointer
+                        block_Merge(atsc3_alp_packet_collection->atsc3_alp_packet_pending->alp_payload, atsc3_baseband_packet->alp_payload_pre_pointer);
+                        atsc3_alp_packet_collection_add_atsc3_alp_packet(atsc3_alp_packet_collection, atsc3_alp_packet);
+                        atsc3_alp_packet_collection->atsc3_alp_packet_pending = NULL;
+                    }
+                
+                    while((atsc3_alp_packet = atsc3_alp_packet_parse(atsc3_baseband_packet->alp_payload_post_pointer))) {
+                        if(atsc3_alp_packet->is_alp_payload_complete) {
+                            atsc3_alp_packet_collection_add_atsc3_alp_packet(atsc3_alp_packet_collection, atsc3_alp_packet);
+                        } else {
+                            atsc3_alp_packet_collection->atsc3_alp_packet_pending = atsc3_alp_packet;
+                            break;
+                        }
+                    }
+
+                    atsc3_reflect_alp_packet_collection(atsc3_alp_packet_collection);
+                    atsc3_alp_packet_collection_clear_atsc3_alp_packet(atsc3_alp_packet_collection);
                 }
             }
+            
             if(atsc3_stltp_tunnel_packet_processed->atsc3_stltp_preamble_packet_v.count) {
                 __INFO(">>>stltp atsc3_stltp_preamble_packet packet complete: count: %u",  atsc3_stltp_tunnel_packet_processed->atsc3_stltp_preamble_packet_v.count);
                 for(int i=0; i < atsc3_stltp_tunnel_packet_processed->atsc3_stltp_preamble_packet_v.count; i++) {
@@ -112,6 +107,7 @@ void process_packet(u_char *user, const struct pcap_pkthdr *pkthdr, const u_char
                     //atsc3_alp_parse_stltp_preamble_packet(atsc3_stltp_preamble_packet);
                 }
             }
+            
             if(atsc3_stltp_tunnel_packet_processed->atsc3_stltp_timing_management_packet_v.count) {
                 __INFO(">>>stltp atsc3_stltp_timing_management_packet packet complete: count: %u",  atsc3_stltp_tunnel_packet_processed->atsc3_stltp_timing_management_packet_v.count);
                 for(int i=0; i < atsc3_stltp_tunnel_packet_processed->atsc3_stltp_timing_management_packet_v.count; i++) {
@@ -126,7 +122,6 @@ void process_packet(u_char *user, const struct pcap_pkthdr *pkthdr, const u_char
             __ERROR("error processing packet: %p, size: %u",  ip_udp_rtp_packet, ip_udp_rtp_packet->data->p_size);
         }
     }
-    
     
     atsc3_ip_udp_rtp_packet_destroy(&ip_udp_rtp_packet);
 }
@@ -157,10 +152,8 @@ int main(int argc,char **argv) {
     bpf_u_int32 maskpInject;
     bpf_u_int32 netpInject;
     
-    atsc3_baseband_packet_collection = atsc3_baseband_packet_collection_new();
+    atsc3_alp_packet_collection = atsc3_alp_packet_collection_new();
 
-
-    
     if(argc != 5) {
         println("%s - an atsc3 stltp udp mulitcast reflector ", argv[0]);
         println("---");
@@ -169,7 +162,6 @@ int main(int argc,char **argv) {
         println(" ip        : ip address for stltp");
         println(" port      : port for single stltp");
         println(" devInject : device to inject for ALP IP reflection");
-        
         
         exit(1);
     } else {
@@ -221,7 +213,7 @@ int main(int argc,char **argv) {
     //inject
     pcap_lookupnet(devInject, &netpInject, &maskpInject, errbufInject);
     pcap_t* descrInject = pcap_open_live(devInject, MAX_PCAP_LEN, 1, 0, errbufInject);
-    atsc3_baseband_packet_collection->descrInject = descrInject;
+    atsc3_alp_packet_collection->descrInject = descrInject;
     
     pcap_loop(descr, -1, process_packet, NULL);
     
