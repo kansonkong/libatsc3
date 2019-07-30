@@ -23,6 +23,13 @@ double gt() {
 	return time_now.tv_sec + time_now.tv_usec / 1000000.0;
 }
 
+long gtl() {
+    struct timeval time_now;
+    gettimeofday(&time_now, NULL);
+        
+    return time_now.tv_sec * 1000 + time_now.tv_usec / 1000;
+}
+
 //walk thru [] of uint8*s and move our pointer for N elements
 void* extract(uint8_t *bufPosPtr, uint8_t *dest, int size) {
 	for(int i=0; i < size; i++) {

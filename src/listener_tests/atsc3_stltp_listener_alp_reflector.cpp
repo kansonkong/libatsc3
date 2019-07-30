@@ -76,7 +76,7 @@ void process_packet(u_char *user, const struct pcap_pkthdr *pkthdr, const u_char
                 for(int i=0; i < atsc3_stltp_tunnel_packet_processed->atsc3_stltp_baseband_packet_v.count; i++) {
                     atsc3_alp_packet_t* atsc3_alp_packet = NULL;
                     atsc3_stltp_baseband_packet_t* atsc3_stltp_baseband_packet = atsc3_stltp_tunnel_packet_processed->atsc3_stltp_baseband_packet_v.data[i];
-                    __INFO("atsc3_baseband_packet: port: %d", atsc3_stltp_baseband_packet->ip_udp_rtp_packet->udp_flow.dst_port);
+                    __INFO("atsc3_baseband_packet: sequence_num: %d, port: %d", atsc3_stltp_baseband_packet->ip_udp_rtp_packet->rtp_header->sequence_number, atsc3_stltp_baseband_packet->ip_udp_rtp_packet->udp_flow.dst_port);
 
                     //make sure we get a packet back, base field pointer (13b) : 0x1FFF (8191 bytes) will return NULL
                     atsc3_baseband_packet_t* atsc3_baseband_packet = atsc3_stltp_parse_baseband_packet(atsc3_stltp_baseband_packet);
@@ -118,8 +118,17 @@ void process_packet(u_char *user, const struct pcap_pkthdr *pkthdr, const u_char
                                 atsc3_alp_packet_collection_add_atsc3_alp_packet(atsc3_alp_packet_collection, atsc3_alp_packet);
                                 atsc3_alp_packet_collection->atsc3_alp_packet_pending = NULL;
                                 atsc3_alp_packet = NULL;
+                                
+                                uint32_t remaining_baseband_frame_bytes = block_Remaining_size(atsc3_baseband_packet->alp_payload_pre_pointer);
+                                __INFO("atsc3_baseband_packet: pushed:  bb pre_pointer frame bytes remaining: %d, bb pre_pointer size: %d",
+                                       remaining_baseband_frame_bytes,
+                                       atsc3_baseband_packet->alp_payload_pre_pointer->p_size);
                             }
                         }
+                        
+                        
+                        
+                        
                         
                         //hack to carry over 1 byte payload that is too small
                         if(atsc3_stltp_tunnel_packet_processed->atsc3_baseband_packet_short_fragment) {
@@ -177,7 +186,7 @@ void process_packet(u_char *user, const struct pcap_pkthdr *pkthdr, const u_char
                             }
                             
                         } else {
-                            __INFO("atsc3_baseband_packet: no alp_payload_post_pointer - ignoring as padding");
+                            __INFO("atsc3_baseband_packet: no alp_payload_post_pointer - carrying over pkt: %p", atsc3_alp_packet_collection->atsc3_alp_packet_pending);
                      
                         }
                     }
