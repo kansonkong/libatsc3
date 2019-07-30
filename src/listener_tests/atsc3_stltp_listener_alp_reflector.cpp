@@ -81,6 +81,8 @@ void process_packet(u_char *user, const struct pcap_pkthdr *pkthdr, const u_char
                     //make sure we get a packet back, base field pointer (13b) : 0x1FFF (8191 bytes) will return NULL
                     atsc3_baseband_packet_t* atsc3_baseband_packet = atsc3_stltp_parse_baseband_packet(atsc3_stltp_baseband_packet);
                     if(atsc3_baseband_packet) {
+                        
+                        //if we have a pending packet and a block before our payload pointer
                         if(atsc3_alp_packet_collection->atsc3_alp_packet_pending && atsc3_baseband_packet->alp_payload_pre_pointer) {
                             //merge block_t pre_pointer by computing the difference...
                             uint32_t remaining_packet_pending_bytes = block_Remaining_size(atsc3_alp_packet_collection->atsc3_alp_packet_pending->alp_payload);
@@ -96,16 +98,17 @@ void process_packet(u_char *user, const struct pcap_pkthdr *pkthdr, const u_char
                             
                             atsc3_alp_packet = atsc3_alp_packet_collection->atsc3_alp_packet_pending;
                             block_Append(atsc3_alp_packet->alp_payload, atsc3_baseband_packet->alp_payload_pre_pointer);
-                            uint32_t final_alp_packet_bytes_remaining = block_Remaining_size(atsc3_alp_packet_collection->atsc3_alp_packet_pending->alp_payload);
-                            if(final_alp_packet_bytes_remaining) {
+                            uint32_t final_alp_packet_short_bytes_remaining = block_Remaining_size(atsc3_alp_packet_collection->atsc3_alp_packet_pending->alp_payload);
+
+                            if(final_alp_packet_short_bytes_remaining) {
                                 if(atsc3_baseband_packet->alp_payload_post_pointer) {
-                                    //ignore and discard
-                                    __WARN("atsc3_baseband_packet: discarding pending packet: %d bytes still remaining", final_alp_packet_bytes_remaining);
+                                    //ignore and discard, as our base pointer should have contained this overrun
+                                    __WARN("atsc3_baseband_packet: discarding pending packet: short and no post pointer: %d bytes still remaining", final_alp_packet_short_bytes_remaining);
                                     atsc3_alp_packet_collection->atsc3_alp_packet_pending = NULL;
                                     atsc3_alp_packet = NULL;
 
                                 } else {
-                                    __INFO("atsc3_baseband_packet: carray over pending packet: %d bytes still remaining", final_alp_packet_bytes_remaining);
+                                    __INFO("atsc3_baseband_packet: carry over pending packet: short:  %d bytes still remaining", final_alp_packet_short_bytes_remaining);
                                     atsc3_alp_packet_collection->atsc3_alp_packet_pending = atsc3_alp_packet;
                                     atsc3_alp_packet->is_alp_payload_complete  = false;
                                 }
@@ -123,8 +126,11 @@ void process_packet(u_char *user, const struct pcap_pkthdr *pkthdr, const u_char
                             
                             block_Merge(atsc3_stltp_tunnel_packet_processed->atsc3_baseband_packet_short_fragment, atsc3_baseband_packet->alp_payload_pre_pointer);
                             
+                            block_Release(&atsc3_baseband_packet->alp_payload_pre_pointer);
+                            atsc3_baseband_packet->alp_payload_pre_pointer = atsc3_stltp_tunnel_packet_processed->atsc3_baseband_packet_short_fragment;
+                            
                             while((atsc3_alp_packet = atsc3_alp_packet_parse(atsc3_baseband_packet->alp_payload_pre_pointer))) {
-                                __INFO("  atsc3_baseband_packet: carry over  parse alp_payload_pre_pointer: pos: %d, size: %d",
+                                __INFO("  atsc3_baseband_packet: carry over:  parse alp_payload_pre_pointer: pos: %d, size: %d",
                                        atsc3_baseband_packet->alp_payload_pre_pointer->i_pos,
                                        atsc3_baseband_packet->alp_payload_pre_pointer->p_size);
                                 
