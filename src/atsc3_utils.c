@@ -331,7 +331,7 @@ uint32_t block_Append(block_t* dest, block_t* src) {
 	return dest->i_pos;
 }
 
-
+//combine 2 separate block_t's into one full payload, using p_size, rather than i_pos for appending
 uint32_t block_Merge(block_t* dest, block_t* src) {
     if(!__block_check_bounaries(__FUNCTION__, dest)) return 0;
 

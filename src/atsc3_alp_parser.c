@@ -190,14 +190,28 @@ atsc3_baseband_packet_t* atsc3_stltp_parse_baseband_packet(atsc3_stltp_baseband_
             }
             
             if(baseband_packet_is_padding && atsc3_baseband_packet->ext_type == 0x7) { //ext_type = 111
-                uint32_t baseband_packet_size_to_copy = binary_payload_length - (binary_payload - binary_payload_start);
-                __ALP_PARSER_INFO(" base_field_pointer=8191, copying full packet into alp_payload_pre_pointer, size: %d, binary_payload_length: %d, baseband packet trailing padding: %d",
-                                baseband_packet_size_to_copy,
-                                  binary_payload_length,
-                                  atsc3_baseband_packet->ext_len);
+                uint32_t baseband_packet_remaining_size = binary_payload_length - (binary_payload - binary_payload_start);
+
+                if(atsc3_baseband_packet->ext_len == baseband_packet_remaining_size) {
+                    __ALP_PARSER_INFO(" base_field_pointer=8191, only padding present, ext_len == baseband_packet_remaining_size: %d",  atsc3_baseband_packet->ext_len);
+                    return NULL;
+                } else if(baseband_packet_remaining_size > atsc3_baseband_packet->ext_len) {
+                    
+                    binary_payload += atsc3_baseband_packet->ext_len;
+                    baseband_packet_remaining_size -= atsc3_baseband_packet->ext_len;
+                    __ALP_PARSER_INFO(" base_field_pointer=8191, copying trimmed extension packet into alp_payload_pre_pointer, size: %d, binary_payload_length: %d, ext_len: %d",
+                                      baseband_packet_remaining_size,
+                                      binary_payload_length,
+                                      atsc3_baseband_packet->ext_len);
+
+                } else {
+                    __ALP_PARSER_INFO(" base_field_pointer=8191, copying full packet into alp_payload_pre_pointer, size: %d, binary_payload_length: %d, no ext_len",
+                                      baseband_packet_remaining_size,
+                                      binary_payload_length);
+                }
                 
-                atsc3_baseband_packet->alp_payload_pre_pointer = block_Alloc(baseband_packet_size_to_copy);
-                block_Write(atsc3_baseband_packet->alp_payload_pre_pointer, binary_payload, baseband_packet_size_to_copy);
+                atsc3_baseband_packet->alp_payload_pre_pointer = block_Alloc(baseband_packet_remaining_size);
+                block_Write(atsc3_baseband_packet->alp_payload_pre_pointer, binary_payload, baseband_packet_remaining_size);
                 block_Rewind(atsc3_baseband_packet->alp_payload_pre_pointer);
                 return atsc3_baseband_packet;
             }
