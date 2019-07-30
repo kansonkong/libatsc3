@@ -83,7 +83,7 @@ void process_packet(u_char *user, const struct pcap_pkthdr *pkthdr, const u_char
                         if(atsc3_alp_packet_collection->atsc3_alp_packet_pending && atsc3_baseband_packet->alp_payload_pre_pointer) {
                             //merge block_t pre_pointer
                             atsc3_alp_packet = atsc3_alp_packet_collection->atsc3_alp_packet_pending;
-                            block_Merge(atsc3_alp_packet->alp_payload, atsc3_baseband_packet->alp_payload_pre_pointer);
+                            block_Append(atsc3_alp_packet->alp_payload, atsc3_baseband_packet->alp_payload_pre_pointer);
                             atsc3_alp_packet_collection_add_atsc3_alp_packet(atsc3_alp_packet_collection, atsc3_alp_packet);
                             atsc3_alp_packet_collection->atsc3_alp_packet_pending = NULL;
                             atsc3_alp_packet = NULL;
