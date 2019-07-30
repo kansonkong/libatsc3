@@ -213,6 +213,7 @@ typedef struct atsc3_stltp_tunnel_packet {
 	//atsc3_stltp_baseband_packet_t* 		atsc3_stltp_baseband_packet;
     ATSC3_VECTOR_BUILDER_STRUCT(atsc3_stltp_baseband_packet);
     atsc3_stltp_baseband_packet_t*          atsc3_stltp_baseband_packet_pending;
+    block_t*                                atsc3_baseband_packet_short_fragment;
     
 	//atsc3_stltp_preamble_packet_t* 		atsc3_stltp_preamble_packet;
     ATSC3_VECTOR_BUILDER_STRUCT(atsc3_stltp_preamble_packet);

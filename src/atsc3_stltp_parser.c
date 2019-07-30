@@ -388,6 +388,13 @@ bool atsc3_stltp_tunnel_packet_extract_fragment_encapsulated_payload(atsc3_stltp
 
 /**
  When the marker (M) bit is ‘0’, the Synchronization Source (SSRC) Identifier shall be set to ‘0’. When the marker (M) bit is set to ‘1’, indicating the first packet of the BPPS, the SSRC field shall contain the total length of the Baseband Packet data structure in bytes. This allows the Data Consumer to know how much data is to be delivered within the payloads of the BPPS.
+ 
+ 
+ dst_ip_addr    uint32_t    4009767728
+ 
+the payload data for each RTP/UDP/IP multicast packet shall be either a fragment of or the entire Baseband Packet data structure as defined in [3]. The collection of packet(s) representing a single Baseband Packet is referred to hereafter as the Baseband Packetizer Packet Set (BPPS). The resultant packet Stream shall have IP destination address 239.0.51.48 and IP destination ports 30000 through 30063, corresponding to the PLPs numbered from 0 through 63, respectively.
+
+
  **/
 
 

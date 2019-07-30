@@ -306,7 +306,7 @@ block_t* block_Write(block_t* dest, uint8_t* src_buf, uint32_t src_size) {
 	return dest;
 }
 
-
+//use src i_pos to append before
 uint32_t block_Append(block_t* dest, block_t* src) {
 	if(!__block_check_bounaries(__FUNCTION__, dest)) return 0;
 
