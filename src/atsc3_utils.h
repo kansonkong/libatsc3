@@ -47,6 +47,7 @@ int is_big_endian(void);
 
 long long timediff(struct timeval t1, struct timeval t0);
 double gt();
+long gtl();
 
 //convert struct { uint32_t ip, uint16_t port} to bitsift representation
 //printf format: //%u.%u.%u.%u:%u
