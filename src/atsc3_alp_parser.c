@@ -204,6 +204,7 @@ atsc3_baseband_packet_t* atsc3_stltp_parse_baseband_packet(atsc3_stltp_baseband_
         __ALP_PARSER_INFO(" copying block_t into alp_payload_pre_pointer");
         atsc3_baseband_packet_header->alp_payload_pre_pointer = block_Alloc(atsc3_baseband_packet_header->base_field_pointer);
         block_Write(atsc3_baseband_packet_header->alp_payload_pre_pointer, baseband_pre_pointer_payload_start, atsc3_baseband_packet_header->base_field_pointer);
+        block_Rewind(atsc3_baseband_packet_header->alp_payload_pre_pointer);        
     }
     
     uint8_t* baseband_pointer_payload_start = baseband_pre_pointer_payload_start + atsc3_baseband_packet_header->base_field_pointer;
@@ -224,7 +225,8 @@ atsc3_baseband_packet_t* atsc3_stltp_parse_baseband_packet(atsc3_stltp_baseband_
     
     atsc3_baseband_packet_header->alp_payload_post_pointer = block_Alloc(bytes_remaining_len);
     block_Write(atsc3_baseband_packet_header->alp_payload_post_pointer, baseband_pointer_payload_start, bytes_remaining_len);
-
+    block_Rewind(atsc3_baseband_packet_header->alp_payload_post_pointer);
+    
     return atsc3_baseband_packet_header;
 
 cleanup:
@@ -255,6 +257,16 @@ void atsc3_baseband_packet_free(atsc3_baseband_packet_t** atsc3_baseband_packet_
 
 //parse relative position of baseband_packet_payload,
 atsc3_alp_packet_t* atsc3_alp_packet_parse(block_t* baseband_packet_payload) {
+    uint32_t starting_block_size = block_Remaining_size(baseband_packet_payload);
+    
+    if(starting_block_size < 2) {
+        __ALP_PARSER_ERROR("atsc3_alp_packet_parse: remaining size less than 2 bytes, ptr: %p, pos: %d, size: %d",
+                           baseband_packet_payload,
+                           baseband_packet_payload->i_pos,
+                           baseband_packet_payload->p_size);
+        
+        return NULL;
+    }
     
     uint8_t* alp_binary_payload_start =  block_Get(baseband_packet_payload);//binary_payload;
     uint8_t* binary_payload = alp_binary_payload_start;
@@ -432,7 +444,7 @@ atsc3_alp_packet_t* atsc3_alp_packet_parse(block_t* baseband_packet_payload) {
     //atsc3_stltp_baseband_packet_free_v, which is called from
     //atsc3_stltp_tunnel_packet_clear_completed_inner_packets
     
-    int32_t remaining_binary_payload_bytes = binary_payload - alp_binary_payload_start;
+    int32_t remaining_binary_payload_bytes = starting_block_size - (binary_payload - alp_binary_payload_start);
 
     __ALP_PARSER_INFO("writing ALP payload to: %p, alp_payload_length: %d, remaining baseband_packet_payload bytes: %d",
                       alp_packet,
