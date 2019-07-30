@@ -29,6 +29,7 @@ uint32_t* dst_ip_addr_filter = NULL;
 uint16_t* dst_ip_port_filter = NULL;
 
 atsc3_stltp_tunnel_packet_t* atsc3_stltp_tunnel_packet_processed = NULL;
+atsc3_baseband_packet_collection_t* atsc3_baseband_packet_collection = NULL;
 
 void process_packet(u_char *user, const struct pcap_pkthdr *pkthdr, const u_char *packet) {
     //extract our outer ip/udp/rtp packet
@@ -47,7 +48,8 @@ void process_packet(u_char *user, const struct pcap_pkthdr *pkthdr, const u_char
 				__INFO(">>>stltp atsc3_stltp_baseband_packet packet complete: count: %u",  atsc3_stltp_tunnel_packet_processed->atsc3_stltp_baseband_packet_v.count);
 				for(int i=0; i < atsc3_stltp_tunnel_packet_processed->atsc3_stltp_baseband_packet_v.count; i++) {
 					atsc3_stltp_baseband_packet_t* atsc3_stltp_baseband_packet = atsc3_stltp_tunnel_packet_processed->atsc3_stltp_baseband_packet_v.data[i];
-					atsc3_alp_parse_stltp_baseband_packet(atsc3_stltp_baseband_packet);
+					atsc3_alp_parse_stltp_baseband_packet(atsc3_stltp_baseband_packet, atsc3_baseband_packet_collection);
+                    atsc3_alp_reflect_baseband_packet_collection_completed(atsc3_baseband_packet_collection);
 				}
 			}
 			if(atsc3_stltp_tunnel_packet_processed->atsc3_stltp_preamble_packet_v.count) {
@@ -76,8 +78,6 @@ void process_packet(u_char *user, const struct pcap_pkthdr *pkthdr, const u_char
 }
 
 int main(int argc,char **argv) {
-
-    
     _IP_UDP_RTP_PARSER_DEBUG_ENABLED = 1;
     char *dev;
     char *filter_dst_ip = NULL;
@@ -94,6 +94,8 @@ int main(int argc,char **argv) {
     struct bpf_program fp;
     bpf_u_int32 maskp;
     bpf_u_int32 netp;
+    
+    atsc3_baseband_packet_collection = atsc3_baseband_packet_collection_new();
 
     if(argc != 4) {
     	println("%s - a udp mulitcast listener test harness for atsc3 stltp payloads", argv[0]);
