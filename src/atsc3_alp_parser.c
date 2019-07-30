@@ -534,18 +534,30 @@ void atsc3_reflect_alp_packet_collection(atsc3_alp_packet_collection_t* atsc3_al
                 eth_frame[4]=1;
                 eth_frame[5]=1;
                 
-                /* set mac source to 2:2:2:2:2:2 */
-                eth_frame[6]=2;
-                eth_frame[7]=2;
-                eth_frame[8]=2;
-                eth_frame[9]=2;
-                eth_frame[10]=2;
-                eth_frame[11]=2;
+                /* set mac source to local timestamp */
+                long replay_timestamp = gtl();
+                
+                eth_frame[6]  = (replay_timestamp >> 10) & 0xFF;
+                eth_frame[7]  = (replay_timestamp >> 8) & 0xFF;
+                eth_frame[8]  = (replay_timestamp >> 6) & 0xFF;
+                eth_frame[9]  = (replay_timestamp >> 4) & 0xFF;
+                eth_frame[10] = (replay_timestamp >> 2) & 0xFF;
+                eth_frame[11] = replay_timestamp & 0xFF;
+                
+                //ipv4 type
                 eth_frame[12]=0x08;
                 eth_frame[13]=0x00;
                 
                 memcpy(&eth_frame[14], alp_payload, alp_payload_length);
-                __ALP_PARSER_INFO("STLTP reflector: sending packet_type: %d, payload size: %u", atsc3_alp_packet->alp_packet_header.packet_type, eth_frame_size);
+                
+                __ALP_PARSER_INFO("[%2x:%2x:%2x:%2x:%2x:%2x] STLTP reflector: sending packet_type: %d, payload size: %u",
+                                  eth_frame[6],
+                                  eth_frame[7],
+                                  eth_frame[8],
+                                  eth_frame[9],
+                                  eth_frame[10],
+                                  eth_frame[11],
+                                  atsc3_alp_packet->alp_packet_header.packet_type, eth_frame_size);
                 
                 if (pcap_sendpacket(atsc3_alp_packet_collection->descrInject, eth_frame, eth_frame_size) != 0) {
                     __ALP_PARSER_ERROR("error sending the packet: %s", pcap_geterr(atsc3_alp_packet_collection->descrInject));
