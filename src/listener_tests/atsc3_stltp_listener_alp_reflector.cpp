@@ -55,6 +55,7 @@ uint16_t* dst_ip_port_filter = NULL;
 extern pcap_t* descrInject;
 
 atsc3_stltp_tunnel_packet_t* atsc3_stltp_tunnel_packet_processed = NULL;
+atsc3_baseband_packet_collection_t* atsc3_baseband_packet_collection = NULL;
 
 void process_packet(u_char *user, const struct pcap_pkthdr *pkthdr, const u_char *packet) {
     //extract our outer ip/udp/rtp packet
@@ -96,7 +97,12 @@ void process_packet(u_char *user, const struct pcap_pkthdr *pkthdr, const u_char
                      
                      https://www.winpcap.org/docs/docs_40_2/html/group__wpcap__tut8.html
                      **/
-                    atsc3_alp_parse_stltp_baseband_packet(atsc3_stltp_baseband_packet);
+                    atsc3_alp_parse_stltp_baseband_packet(atsc3_stltp_baseband_packet, atsc3_baseband_packet_collection);
+                    
+                    //reflect completed packets atsc3_baseband_packet_collection
+                    
+                    //todo - refactor out alp parsing
+                    atsc3_alp_reflect_baseband_packet_collection_completed(atsc3_baseband_packet_collection);
                 }
             }
             if(atsc3_stltp_tunnel_packet_processed->atsc3_stltp_preamble_packet_v.count) {
@@ -126,10 +132,9 @@ void process_packet(u_char *user, const struct pcap_pkthdr *pkthdr, const u_char
 }
 
 int main(int argc,char **argv) {
-    
-    
     _IP_UDP_RTP_PARSER_DEBUG_ENABLED = 1;
     _ATSC3_UTILS_TRACE_ENABLED = 0;
+    
     char *dev;
     char *devInject;
     char *filter_dst_ip = NULL;
@@ -151,6 +156,9 @@ int main(int argc,char **argv) {
     struct bpf_program fpInject;
     bpf_u_int32 maskpInject;
     bpf_u_int32 netpInject;
+    
+    atsc3_baseband_packet_collection = atsc3_baseband_packet_collection_new();
+
 
     
     if(argc != 5) {
@@ -186,7 +194,6 @@ int main(int argc,char **argv) {
         dst_port_filter_int = atoi(filter_dst_port);
         dst_ip_port_filter = (uint16_t*)calloc(1, sizeof(uint16_t));
         *dst_ip_port_filter |= dst_port_filter_int & 0xFFFF;
-        
     }
     
     
@@ -209,13 +216,12 @@ int main(int argc,char **argv) {
     if(pcap_setfilter(descr,&fp) == -1) {
         fprintf(stderr,"Error setting filter");
         exit(1);
-        
     }
    
     //inject
     pcap_lookupnet(devInject, &netpInject, &maskpInject, errbufInject);
-    descrInject = pcap_open_live(devInject, MAX_PCAP_LEN, 1, 0, errbufInject);
-
+    pcap_t* descrInject = pcap_open_live(devInject, MAX_PCAP_LEN, 1, 0, errbufInject);
+    atsc3_baseband_packet_collection->descrInject = descrInject;
     
     pcap_loop(descr, -1, process_packet, NULL);
     
