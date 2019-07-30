@@ -82,8 +82,38 @@ void process_packet(u_char *user, const struct pcap_pkthdr *pkthdr, const u_char
                     //make sure we get a packet back, base field pointer (13b) : 0x1FFF (8191 bytes) will return NULL
                     atsc3_baseband_packet_t* atsc3_baseband_packet = atsc3_stltp_parse_baseband_packet(atsc3_stltp_baseband_packet);
                     if(atsc3_baseband_packet) {
+                        
+                        //hack to carry over 1 (or N) byte payload(s) that is too small from our last run...trumps pending packets
+                        if(atsc3_stltp_tunnel_packet_processed->atsc3_baseband_packet_short_fragment) {
+                            if(atsc3_baseband_packet->alp_payload_pre_pointer) {
+                                uint32_t holdover_alp_payload_size = atsc3_stltp_tunnel_packet_processed->atsc3_baseband_packet_short_fragment->p_size;
+                                uint32_t old_alp_payload_size = atsc3_baseband_packet->alp_payload_pre_pointer->p_size;
+                                block_Merge(atsc3_stltp_tunnel_packet_processed->atsc3_baseband_packet_short_fragment, atsc3_baseband_packet->alp_payload_pre_pointer);
+                                block_Release(&atsc3_baseband_packet->alp_payload_pre_pointer);
+                                atsc3_baseband_packet->alp_payload_pre_pointer = atsc3_stltp_tunnel_packet_processed->atsc3_baseband_packet_short_fragment;
+
+                                __INFO("atsc3_baseband_packet: carry over: atsc3_baseband_packet_short_fragment: size: %d, alp_payload_pre_pointer: before append size: %d, new size: %d, sequence: %d, port: %d",
+                                       holdover_alp_payload_size,
+                                       old_alp_payload_size,
+                                       atsc3_baseband_packet->alp_payload_pre_pointer->p_size,
+                                       atsc3_stltp_baseband_packet->ip_udp_rtp_packet->rtp_header->sequence_number,
+                                       atsc3_stltp_baseband_packet->ip_udp_rtp_packet->udp_flow.dst_port);
+                            } else {
+                                uint32_t holdover_alp_payload_size = atsc3_stltp_tunnel_packet_processed->atsc3_baseband_packet_short_fragment->p_size;
+                                uint32_t old_alp_payload_size = atsc3_baseband_packet->alp_payload_post_pointer->p_size;
+                                block_Merge(atsc3_stltp_tunnel_packet_processed->atsc3_baseband_packet_short_fragment, atsc3_baseband_packet->alp_payload_post_pointer);
+                                block_Release(&atsc3_baseband_packet->alp_payload_post_pointer);
+                                atsc3_baseband_packet->alp_payload_post_pointer = atsc3_stltp_tunnel_packet_processed->atsc3_baseband_packet_short_fragment;
+                                __INFO("atsc3_baseband_packet: carry over: atsc3_baseband_packet_short_fragment: size: %d, alp_payload_post_pointer: before append size: %d, new size: %d, sequence: %d, port: %d",
+                                       holdover_alp_payload_size,
+                                       old_alp_payload_size,
+                                       atsc3_baseband_packet->alp_payload_post_pointer->p_size,
+                                       atsc3_stltp_baseband_packet->ip_udp_rtp_packet->rtp_header->sequence_number,
+                                       atsc3_stltp_baseband_packet->ip_udp_rtp_packet->udp_flow.dst_port);
+                            }
+                        }
                     
-                        //if we have a pending packet and a block before our payload pointer
+                        //if we have a pending packet and a pre-pointer baseband frame block
                         if(atsc3_alp_packet_collection->atsc3_alp_packet_pending && atsc3_baseband_packet->alp_payload_pre_pointer) {
                             //merge block_t pre_pointer by computing the difference...
                             uint32_t remaining_packet_pending_bytes = block_Remaining_size(atsc3_alp_packet_collection->atsc3_alp_packet_pending->alp_payload);
@@ -143,12 +173,7 @@ void process_packet(u_char *user, const struct pcap_pkthdr *pkthdr, const u_char
                             }
                         }
                         
-                        //hack to carry over 1 (or N) byte payload(s) that is too small
-                        if(atsc3_stltp_tunnel_packet_processed->atsc3_baseband_packet_short_fragment) {
-                            block_Merge(atsc3_stltp_tunnel_packet_processed->atsc3_baseband_packet_short_fragment, atsc3_baseband_packet->alp_payload_pre_pointer);
-                            block_Release(&atsc3_baseband_packet->alp_payload_pre_pointer);
-                            atsc3_baseband_packet->alp_payload_pre_pointer = atsc3_stltp_tunnel_packet_processed->atsc3_baseband_packet_short_fragment;
-                        }
+                    
                         
                         //process our pre_pointers from a baseband fragment for alp
                         if(atsc3_baseband_packet->alp_payload_pre_pointer && block_Remaining_size(atsc3_baseband_packet->alp_payload_pre_pointer)) {
