@@ -74,30 +74,35 @@ void process_packet(u_char *user, const struct pcap_pkthdr *pkthdr, const u_char
                 __INFO(">>>stltp atsc3_stltp_baseband_packet packet complete: count: %u",  atsc3_stltp_tunnel_packet_processed->atsc3_stltp_baseband_packet_v.count);
                 
                 for(int i=0; i < atsc3_stltp_tunnel_packet_processed->atsc3_stltp_baseband_packet_v.count; i++) {
+                    atsc3_alp_packet_t* atsc3_alp_packet = NULL;
                     atsc3_stltp_baseband_packet_t* atsc3_stltp_baseband_packet = atsc3_stltp_tunnel_packet_processed->atsc3_stltp_baseband_packet_v.data[i];
 
+                    //make sure we get a packet back, base field pointer (13b) : 0x1FFF (8191 bytes) will return NULL
                     atsc3_baseband_packet_t* atsc3_baseband_packet = atsc3_stltp_parse_baseband_packet(atsc3_stltp_baseband_packet);
-
-                    atsc3_alp_packet_t* atsc3_alp_packet = NULL;
-                    if(atsc3_alp_packet_collection->atsc3_alp_packet_pending && atsc3_baseband_packet->alp_payload_pre_pointer) {
-                        //merge block_t pre_pointer
-                        block_Merge(atsc3_alp_packet_collection->atsc3_alp_packet_pending->alp_payload, atsc3_baseband_packet->alp_payload_pre_pointer);
-                        atsc3_alp_packet_collection_add_atsc3_alp_packet(atsc3_alp_packet_collection, atsc3_alp_packet);
-                        atsc3_alp_packet_collection->atsc3_alp_packet_pending = NULL;
-                    }
-                
-                    while((atsc3_alp_packet = atsc3_alp_packet_parse(atsc3_baseband_packet->alp_payload_post_pointer))) {
-                        if(atsc3_alp_packet->is_alp_payload_complete) {
+                    if(atsc3_baseband_packet) {
+                        if(atsc3_alp_packet_collection->atsc3_alp_packet_pending && atsc3_baseband_packet->alp_payload_pre_pointer) {
+                            //merge block_t pre_pointer
+                            atsc3_alp_packet = atsc3_alp_packet_collection->atsc3_alp_packet_pending;
+                            block_Merge(atsc3_alp_packet->alp_payload, atsc3_baseband_packet->alp_payload_pre_pointer);
                             atsc3_alp_packet_collection_add_atsc3_alp_packet(atsc3_alp_packet_collection, atsc3_alp_packet);
-                        } else {
-                            atsc3_alp_packet_collection->atsc3_alp_packet_pending = atsc3_alp_packet;
-                            break;
+                            atsc3_alp_packet_collection->atsc3_alp_packet_pending = NULL;
+                            atsc3_alp_packet = NULL;
+                        }
+                    
+                        while((atsc3_alp_packet = atsc3_alp_packet_parse(atsc3_baseband_packet->alp_payload_post_pointer))) {
+                            if(atsc3_alp_packet->is_alp_payload_complete) {
+                                atsc3_alp_packet_collection_add_atsc3_alp_packet(atsc3_alp_packet_collection, atsc3_alp_packet);
+                            } else {
+                                atsc3_alp_packet_collection->atsc3_alp_packet_pending = atsc3_alp_packet;
+                                atsc3_alp_packet = NULL;
+                                break;
+                            }
                         }
                     }
-
-                    atsc3_reflect_alp_packet_collection(atsc3_alp_packet_collection);
-                    atsc3_alp_packet_collection_clear_atsc3_alp_packet(atsc3_alp_packet_collection);
                 }
+                
+                atsc3_reflect_alp_packet_collection(atsc3_alp_packet_collection);
+                atsc3_alp_packet_collection_clear_atsc3_alp_packet(atsc3_alp_packet_collection);
             }
             
             if(atsc3_stltp_tunnel_packet_processed->atsc3_stltp_preamble_packet_v.count) {
