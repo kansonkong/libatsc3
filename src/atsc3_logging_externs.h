@@ -107,11 +107,11 @@ extern int _STLTP_PARSER_TRACE_ENABLED;
 
 //jjustman-2019-07-24 - normaolized debug logging format
     
-#define __LIBATSC3_TIMESTAMP_ERROR(...)     printf("%-.24s:%4d:ERROR:%.4f:",__FILE__,__LINE__, gt()); printf(__VA_ARGS__); printf("%s%s","\r","\n");
-#define __LIBATSC3_TIMESTAMP_WARN(...)      printf("%-.24s:%4d:WARN :%.4f:",__FILE__,__LINE__, gt()); printf(__VA_ARGS__); printf("%s%s","\r","\n");
-#define __LIBATSC3_TIMESTAMP_INFO(...)      printf("%-.24s:%4d:INFO :%.4f:",__FILE__,__LINE__, gt()); printf(__VA_ARGS__); printf("%s%s","\r","\n");
-#define __LIBATSC3_TIMESTAMP_DEBUG(...)     printf("%-.24s:%4d:DEBUG:%.4f:",__FILE__,__LINE__, gt()); printf(__VA_ARGS__); printf("%s%s","\r","\n");
-#define __LIBATSC3_TIMESTAMP_TRACE(...)     printf("%-.24s:%4d:TRACE:%.4f:",__FILE__,__LINE__, gt()); printf(__VA_ARGS__); printf("%s%s","\r","\n");
+#define __LIBATSC3_TIMESTAMP_ERROR(...)     printf("%-24.24s:%4d:ERROR:%.4f:",__FILE__,__LINE__, gt()); printf(__VA_ARGS__); printf("%s%s","\r","\n");
+#define __LIBATSC3_TIMESTAMP_WARN(...)      printf("%-24.24s:%4d:WARN :%.4f:",__FILE__,__LINE__, gt()); printf(__VA_ARGS__); printf("%s%s","\r","\n");
+#define __LIBATSC3_TIMESTAMP_INFO(...)      printf("%-24.24s:%4d:INFO :%.4f:",__FILE__,__LINE__, gt()); printf(__VA_ARGS__); printf("%s%s","\r","\n");
+#define __LIBATSC3_TIMESTAMP_DEBUG(...)     printf("%-24.24s:%4d:DEBUG:%.4f:",__FILE__,__LINE__, gt()); printf(__VA_ARGS__); printf("%s%s","\r","\n");
+#define __LIBATSC3_TIMESTAMP_TRACE(...)     printf("%-24.24s:%4d:TRACE:%.4f:",__FILE__,__LINE__, gt()); printf(__VA_ARGS__); printf("%s%s","\r","\n");
 
 #define __ERROR(...)   __LIBATSC3_TIMESTAMP_ERROR(__VA_ARGS__);
 #define __WARN(...)    __LIBATSC3_TIMESTAMP_WARN(__VA_ARGS__);

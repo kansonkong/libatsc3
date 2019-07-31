@@ -35,8 +35,8 @@ atsc3_stltp_timing_management_packet_t* atsc3_stltp_timing_management_packet_ext
 
 void atsc3_stltp_tunnel_packet_clear_completed_inner_packets(atsc3_stltp_tunnel_packet_t* atsc3_stltp_tunnel_packet);
     
-void atsc3_rtp_header_dump_outer(atsc3_rtp_header_t* atsc3_rtp_header);
-void atsc3_rtp_header_dump_inner(atsc3_rtp_header_t* atsc3_rtp_header);
+void atsc3_rtp_header_dump_outer(atsc3_stltp_tunnel_packet_t* atsc3_stltp_tunnel_packet);
+void atsc3_rtp_header_dump_inner(atsc3_stltp_tunnel_packet_t* atsc3_stltp_tunnel_packet);
 
 void atsc3_rtp_header_dump(atsc3_rtp_header_t* atsc3_rtp_header, int spaces);
 
