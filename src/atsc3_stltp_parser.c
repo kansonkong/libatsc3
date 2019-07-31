@@ -156,6 +156,7 @@ atsc3_stltp_tunnel_packet_t* atsc3_stltp_raw_packet_extract_inner_from_outer_pac
     if(atsc3_stltp_tunnel_packet_last) {
         //map any pending packets over to our packet_current
         atsc3_stltp_tunnel_packet_current->atsc3_stltp_baseband_packet_pending = atsc3_stltp_tunnel_packet_last->atsc3_stltp_baseband_packet_pending;
+        atsc3_stltp_tunnel_packet_current->atsc3_baseband_packet_short_fragment = atsc3_stltp_tunnel_packet_last->atsc3_baseband_packet_short_fragment;
         atsc3_stltp_tunnel_packet_current->atsc3_stltp_preamble_packet_pending = atsc3_stltp_tunnel_packet_last->atsc3_stltp_preamble_packet_pending;
         atsc3_stltp_tunnel_packet_current->atsc3_stltp_timing_management_packet_pending = atsc3_stltp_tunnel_packet_last->atsc3_stltp_timing_management_packet_pending;
         atsc3_stltp_tunnel_packet_last->atsc3_stltp_preamble_packet_pending = NULL;

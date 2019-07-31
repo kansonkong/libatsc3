@@ -221,10 +221,9 @@ void process_packet(u_char *user, const struct pcap_pkthdr *pkthdr, const u_char
                             //anything remaining in post_pointer needs to be carried over for next alp_packet processing
                             uint32_t remaining_size = block_Remaining_size(atsc3_baseband_packet->alp_payload_post_pointer);
                             if(remaining_size) {
-                                __INFO(" !!!TODO: Carrying over one byte in alp_payload_post_pointer: %d", remaining_size);
-                                atsc3_stltp_tunnel_packet_processed->atsc3_baseband_packet_short_fragment = atsc3_baseband_packet->alp_payload_post_pointer;
-                            }
-                            
+                                atsc3_stltp_tunnel_packet_processed->atsc3_baseband_packet_short_fragment = block_Duplicate_from_position(atsc3_baseband_packet->alp_payload_post_pointer);
+                                __INFO(" !!!TODO: Carrying over one byte in alp_payload_post_pointer: %d, peek: 0x%02x", remaining_size, atsc3_stltp_tunnel_packet_processed->atsc3_baseband_packet_short_fragment->p_buffer[0]);
+                            }                            
                         } else {
                             __INFO("atsc3_baseband_packet: no alp_payload_post_pointer - carrying over pkt: %p", atsc3_alp_packet_collection->atsc3_alp_packet_pending);
                      
