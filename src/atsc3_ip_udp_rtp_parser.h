@@ -45,6 +45,9 @@ void atsc3_ip_udp_rtp_packet_free(atsc3_ip_udp_rtp_packet_t** ip_udp_rtp_packet_
 
 //destroy: hard free at the end of the main pcap loop
 void atsc3_ip_udp_rtp_packet_destroy(atsc3_ip_udp_rtp_packet_t** ip_udp_rtp_packet_p);
+    
+//destroy hard free at the end of main pcap outer/inner loop for block_t
+void atsc3_ip_udp_rtp_packet_destroy_outer_inner(atsc3_ip_udp_rtp_packet_t** ip_udp_rtp_packet_outer_p, atsc3_ip_udp_rtp_packet_t** ip_udp_rtp_packet_inner_p);
 
     
 #define __IP_UDP_RTP_PARSER_ERROR(...)         printf("%s:%d:ERROR: ",__FILE__,__LINE__); printf(__VA_ARGS__); printf("%s%s","\r","\n")

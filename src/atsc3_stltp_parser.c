@@ -816,14 +816,9 @@ void atsc3_stltp_tunnel_packet_destroy(atsc3_stltp_tunnel_packet_t** atsc3_stltp
     if(atsc3_stltp_tunnel_packet_p) {
         atsc3_stltp_tunnel_packet_t* atsc3_stltp_tunnel_packet = *atsc3_stltp_tunnel_packet_p;
         if(atsc3_stltp_tunnel_packet) {
-            if(atsc3_stltp_tunnel_packet->ip_udp_rtp_packet_inner) {
-                atsc3_ip_udp_rtp_packet_destroy(&atsc3_stltp_tunnel_packet->ip_udp_rtp_packet_inner);
-            }
             
-            if(atsc3_stltp_tunnel_packet->ip_udp_rtp_packet_outer) {
-                atsc3_ip_udp_rtp_packet_destroy(&atsc3_stltp_tunnel_packet->ip_udp_rtp_packet_outer);
-            }
-
+            atsc3_ip_udp_rtp_packet_destroy_outer_inner(&atsc3_stltp_tunnel_packet->ip_udp_rtp_packet_outer, &atsc3_stltp_tunnel_packet->ip_udp_rtp_packet_inner);
+            
             atsc3_stltp_tunnel_packet_clear_completed_inner_packets(atsc3_stltp_tunnel_packet);
             free(atsc3_stltp_tunnel_packet);
             atsc3_stltp_tunnel_packet = NULL;

@@ -299,3 +299,52 @@ void atsc3_ip_udp_rtp_packet_destroy(atsc3_ip_udp_rtp_packet_t** ip_udp_rtp_pack
         *ip_udp_rtp_packet_p = NULL;
     }
 }
+
+
+
+//destroy: hard free at the end of the main pcap loop for outer_inner which may have shared block_t*
+void atsc3_ip_udp_rtp_packet_destroy_outer_inner(atsc3_ip_udp_rtp_packet_t** ip_udp_rtp_packet_outer_p, atsc3_ip_udp_rtp_packet_t** ip_udp_rtp_packet_inner_p) {
+    
+    block_t* shared_outer_inner_block_t_to_check = NULL;
+    
+    if(ip_udp_rtp_packet_outer_p) {
+        atsc3_ip_udp_rtp_packet_t* ip_udp_rtp_packet_outer = *ip_udp_rtp_packet_outer_p;
+        if(ip_udp_rtp_packet_outer) {
+            __IP_UDP_RTP_PARSER_TRACE("atsc3_ip_udp_rtp_packet_destroy: freeing ip_udp_rtp_packet_outer->rtp_header: %p", ip_udp_rtp_packet_outer->rtp_header);
+            
+            if(ip_udp_rtp_packet_outer->data) {
+                __IP_UDP_RTP_PARSER_TRACE("atsc3_ip_udp_rtp_packet_destroy: freeing ip_udp_rtp_packet_outer->data: %p", ip_udp_rtp_packet_outer->data);
+                shared_outer_inner_block_t_to_check = ip_udp_rtp_packet_outer->data;
+                block_Destroy(&ip_udp_rtp_packet_outer->data);
+            }
+            
+            freesafe(ip_udp_rtp_packet_outer->rtp_header);
+            ip_udp_rtp_packet_outer->rtp_header = NULL;
+            free(ip_udp_rtp_packet_outer);
+            ip_udp_rtp_packet_outer = NULL;
+            
+        }
+        *ip_udp_rtp_packet_outer_p = NULL;
+    }
+    
+    if(ip_udp_rtp_packet_inner_p) {
+        atsc3_ip_udp_rtp_packet_t* ip_udp_rtp_packet_inner = *ip_udp_rtp_packet_inner_p;
+        if(ip_udp_rtp_packet_inner) {
+            __IP_UDP_RTP_PARSER_TRACE("atsc3_ip_udp_rtp_packet_destroy: freeing ip_udp_rtp_packet_inner->rtp_header: %p", ip_udp_rtp_packet_inner->rtp_header);
+            
+            if(ip_udp_rtp_packet_inner->data) {
+                if(shared_outer_inner_block_t_to_check && shared_outer_inner_block_t_to_check != ip_udp_rtp_packet_inner->data) {
+                    __IP_UDP_RTP_PARSER_TRACE("atsc3_ip_udp_rtp_packet_destroy: freeing ip_udp_rtp_packet_inner->data: %p", ip_udp_rtp_packet_inner->data);
+                    block_Destroy(&ip_udp_rtp_packet_inner->data);
+                }
+            }
+            
+            freesafe(ip_udp_rtp_packet_inner->rtp_header);
+            ip_udp_rtp_packet_inner->rtp_header = NULL;
+            free(ip_udp_rtp_packet_inner);
+            ip_udp_rtp_packet_inner = NULL;
+            
+        }
+        *ip_udp_rtp_packet_inner_p = NULL;
+    }
+}

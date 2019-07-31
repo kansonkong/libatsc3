@@ -28,7 +28,7 @@ clean:
 
 intermediate_lls: atsc3_lls.o atsc3_lls_sls_parser.o atsc3_lls_alc_utils.o
 
-intermediate_alp: atsc3_alp_parser.o
+intermediate_alp: atsc3_alp_types.o atsc3_alp_parser.o
 
 intermediate_mbms: atsc3_mime_multipart_related.o atsc3_mime_multipart_related_parser.o \
 					atsc3_route_usbd.o atsc3_mbms_envelope_parser.o
@@ -81,6 +81,9 @@ tools: atsc3_listener_metrics_ncurses atsc3_listener_metrics_ncurses_httpd_isobm
 
 xml.o: xml.c xml.h
 	cc -g -c xml.c 
+
+atsc3_alp_types.o: atsc3_alp_types.h atsc3_alp_types.c
+	cc -g -c atsc3_alp_types.c 
 
 atsc3_alp_parser.o: atsc3_alp_types.h atsc3_alp_parser.h atsc3_alp_parser.c
 	cc -g -c atsc3_alp_parser.c 
@@ -290,6 +293,7 @@ bento4_mock.o: bento4/ISOBMFFTrackJoiner.h bento4/ISOBMFFTrackJoiner_mock.cpp
 libatsc3_intermediate.o: atsc3_lls.o \
 		atsc3_lls_slt_parser.o \
 		atsc3_lls_sls_parser.o \
+		atsc3_alp_types.o \
 		atsc3_alp_parser.o \
 		atsc3_mmtp_parser.o \
 		atsc3_mmtp_ntp32_to_pts.o \
@@ -336,6 +340,7 @@ libatsc3_intermediate.o: atsc3_lls.o \
 	ld  -o libatsc3_intermediate.o -r atsc3_lls.o \
 		atsc3_lls_slt_parser.o \
 		atsc3_lls_sls_parser.o \
+		atsc3_alp_types.o \
 		atsc3_alp_parser.o \
 		atsc3_mmtp_parser.o \
 		atsc3_mmtp_ntp32_to_pts.o \
