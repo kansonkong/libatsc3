@@ -29,7 +29,7 @@ typedef struct atsc3_ip_udp_rtp_packet {
 
     //note - data will be the payload after the following packet headers removed:
     //[ethernet, ip, udp, rtp]
-    block_t*                        data;
+    block_t*                data;
     
 } atsc3_ip_udp_rtp_packet_t;
 
