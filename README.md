@@ -6,16 +6,20 @@ ATSC 3.0 NGBP Open Source Library - Parse LMT, LLS and other signaling, object d
 STLTP:  Added new STLTP De-encapsulator/Reflector listener test tool to enable local replay of ATSC 3.0 STLTP pcaps for emission of ALP IP packets.
 
 To run:
-*start a test STLTP replay (sample artifacts here: https://github.com/jjustman/atsc-3.0-mmt-pcaps)
 
-*Run the stltp reflector from the src/listener_tests folder as follows:
+* start a test STLTP replay
+** sample artifacts here: https://github.com/jjustman/atsc-3.0-mmt-pcaps)
 
-atsc3_stltp_alp_listener_reflector_test vnic1 239.0.1.3 30000 vnic0 > debug.log
+* Run the stltp reflector from the src/listener_tests folder as follows:
 
-vnic1: multicast input interface
-239.0.1.3 mulicast destination
-30000 mulicast port
-vnic0: unicast output interface for ATSC 3.0 ALP IP packet reflection
+** atsc3_stltp_alp_listener_reflector_test vnic1 239.0.1.3 30000 vnic0 > debug.log
+
+** vnic1: multicast input interface
+** 239.0.1.3 mulicast destination
+** 30000 mulicast port
+** vnic0: unicast output interface for ATSC 3.0 ALP IP packet reflection
+
+Note: The STLTP Outer, STLTP Inner, Baseband, and ALP IP de-encapsulation leaks will be fixed ASAP.
 
 
 ## Updates - 2019-05-09
