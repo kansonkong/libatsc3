@@ -41,3 +41,9 @@
 /2019-03-05-route/
 /atsc3_fdt_mbms_envelope_test
 /run_atsc3_listener_metrics_ncurses_dirty.239.255.10.1
+/atsc3_fdt_mbms_envelope_test.dSYM/
+/atsc3_fdt_test.dSYM/
+/atsc3_mime_multipart_related_parser_test.dSYM/
+/atsc3_mmt_sls_listener_test.dSYM/
+/atsc3_stltp_parser_test.dSYM/
+/stderr

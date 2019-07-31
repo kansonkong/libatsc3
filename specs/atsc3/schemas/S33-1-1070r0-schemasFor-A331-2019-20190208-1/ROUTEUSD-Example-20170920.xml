@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<BundleDescriptionROUTE
+	xmlns="tag:atsc.org,2016:XMLSchemas/ATSC3/Delivery/ROUTEUSD/1.0/"
+	xmlns:xs="http://www.w3.org/2001/XMLSchema" 
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation= "tag:atsc.org,2016:XMLSchemas/ATSC3/Delivery/ROUTEUSD/1.0/ ROUTEUSD-1.0-20170920.xsd">
+
+	<UserServiceDescription serviceId="44" serviceStatus="true">
+		<Name xml:lang="en">KUSR</Name>
+		<ServiceLanguage>en</ServiceLanguage>
+		<DeliveryMethod>
+			<BroadcastAppService>
+				<BasePattern>http://kusr.com/KUSR</BasePattern>
+			</BroadcastAppService>
+			<UnicastAppService>
+				<BasePattern>http://kusr.com</BasePattern>
+			</UnicastAppService>
+		</DeliveryMethod>
+	</UserServiceDescription>
+</BundleDescriptionROUTE>

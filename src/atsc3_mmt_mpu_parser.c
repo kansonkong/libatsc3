@@ -356,6 +356,24 @@ uint8_t* mmt_mpu_parse_payload(mmtp_sub_flow_vector_t* mmtp_sub_flow_vector, mmt
 								box_parsed_position+=8;
 
 		                        _MPU_INFO("mpu mode (0x02), MJSD, remaining child box size is: %u",  (multilayerinfo_box_length - box_parsed_position));
+
+					if((multilayerinfo_box_length - box_parsed_position) > 8) {
+
+					  buf = (uint8_t*)extract(buf, private_box_length_block, 4);
+					  box_parsed_position+=4;
+
+					  private_box_length = ntohl(*(uint32_t*)(&private_box_length_block));
+					  buf = (uint8_t*)extract(buf, (uint8_t*)&private_box_name, 4);
+					  private_box_name = ntohl(*(uint32_t*)(&private_box_name));
+
+					  box_parsed_position+=4;
+_MPU_INFO("!!!mpu mode (0x02), packet_id: %u, packet_seq_num: %u, MJSD  child box size: %u, name: %c%c%c%c", mmtp_packet_header->mmtp_mpu_type_packet_header.mmtp_packet_id,
+                                mmtp_packet_header->mmtp_mpu_type_packet_header.packet_sequence_number,
+                                private_box_length,
+                                ((private_box_name >> 24) & 0xFF), ((private_box_name >> 16) & 0xFF), ((private_box_name >> 8) & 0xFF), (private_box_name & 0xFF));
+				
+
+					}
 	                        }
 						}
 

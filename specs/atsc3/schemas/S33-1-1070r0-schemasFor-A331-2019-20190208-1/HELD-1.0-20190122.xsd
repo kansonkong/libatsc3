@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- edited with XMLSpy v2007 (http://www.altova.com) by Jun Hui Lee (LG Electronics Inc.) -->
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema" xmlns:held="tag:atsc.org,2016:XMLSchemas/ATSC3/AppSignaling/HELD/1.0/" xmlns:sa="tag:atsc.org,2016:XMLSchemas/ATSC3/SA/1.0/" targetNamespace="tag:atsc.org,2016:XMLSchemas/ATSC3/AppSignaling/HELD/1.0/" elementFormDefault="qualified">
+	<xs:import namespace="tag:atsc.org,2016:XMLSchemas/ATSC3/SA/1.0/" schemaLocation="SA-1.0-20170921.xsd"/>
+	<xs:element name="HELD" type="held:HELDType"/>
+	<xs:complexType name="HELDType">
+		<xs:sequence>
+			<xs:element name="HTMLEntryPackage" type="held:HTMLEntryPackageType" maxOccurs="unbounded"/>
+			<xs:any namespace="##other" processContents="strict" minOccurs="0" maxOccurs="unbounded"/>
+		</xs:sequence>
+		<xs:anyAttribute processContents="strict"/>
+	</xs:complexType>
+	<xs:complexType name="HTMLEntryPackageType">
+		<xs:sequence>
+			<xs:any namespace="##other" processContents="strict" minOccurs="0" maxOccurs="unbounded"/>
+		</xs:sequence>
+		<xs:attribute name="appContextId" type="xs:anyURI" use="required"/>
+		<xs:attribute name="requiredCapabilities" type="sa:CapabilitiesType"/>
+		<xs:attribute name="appRendering" type="xs:boolean"/>
+		<xs:attribute name="clearAppContextCacheDate" type="xs:dateTime"/>
+		<xs:attribute name="bcastEntryPackageUrl" type="xs:anyURI"/>
+		<xs:attribute name="bcastEntryPageUrl" type="xs:anyURI"/>
+		<xs:attribute name="bbandEntryPageUrl" type="xs:anyURI"/>
+		<xs:attribute name="validFrom" type="xs:dateTime"/>
+		<xs:attribute name="validUntil" type="xs:dateTime"/>
+		<xs:attribute name="coupledServices" type="held:listOfUnsignedShort"/>
+		<xs:attribute name="lctTSIRef" type="held:listOfUnsignedInt"/>
+		<xs:anyAttribute processContents="strict"/>
+	</xs:complexType>
+	<xs:simpleType name="listOfUnsignedShort">
+		<xs:list itemType="xs:unsignedShort"/>
+	</xs:simpleType>
+	<xs:simpleType name="listOfUnsignedInt">
+		<xs:list itemType="xs:unsignedInt"/>
+	</xs:simpleType>
+</xs:schema>

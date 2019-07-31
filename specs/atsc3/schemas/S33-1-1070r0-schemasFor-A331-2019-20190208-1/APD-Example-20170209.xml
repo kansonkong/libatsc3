@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<AssociatedProcedureDescription
+xmlns="tag:atsc.org,2016:XMLSchemas/ATSC3/Delivery/APD/1.0/"
+xmlns:xs="http://www.w3.org/2001/XMLSchema" 
+xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+xsi:schemaLocation= "tag:atsc.org,2016:XMLSchemas/ATSC3/Delivery/APD/1.0/ APD-1.0-20170209.xsd">
+
+	<PostFileRepair offsetTime="0" randomTimePeriod="99"/>
+
+</AssociatedProcedureDescription>
