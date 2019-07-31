@@ -135,14 +135,30 @@ atsc3_baseband_packet_t* atsc3_stltp_parse_baseband_packet(atsc3_stltp_baseband_
         __ALP_PARSER_INFO("base field pointer (7b)  : 0x%02X (%d bytes)",  atsc3_baseband_packet->base_field_pointer, atsc3_baseband_packet->base_field_pointer);
         baseband_pre_pointer_payload_start = binary_payload;
         
-    } else { //base field mode == 1
+    } else {
+        //base field mode == 1
         //A322 - 5.2.2.1 - if we have a pointer value of 8191 (2 byte base heder offset)
         //->no ALP packet starting within that baseband packet
 
         atsc3_baseband_packet->base_field_pointer |= (((*binary_payload >>2) &0x3F) << 7);
         __ALP_PARSER_INFO("base field pointer (13b) : 0x%04X (%d bytes)",  atsc3_baseband_packet->base_field_pointer, atsc3_baseband_packet->base_field_pointer);
 
-        atsc3_baseband_packet->option_field_mode = (*binary_payload) & 0x02;
+        /*  A/322:2018 - Section 5.2.2 - Baseband Packet Header
+            Optional Field - OFI
+
+         Mode: 1
+         Pointer MSB: 2 LSB
+         
+          2LSB  Description             Fields
+         -----  -----------             ----------
+            00  No optional field
+            01  Short extension mode    |EXT_TYPE: 3b, EXT_LEN: 5b|     |EXT..0-31bytes|
+            10  Long Extension mode     |EXT_TYPE: 3b, EXT_LEN: 5b LSB| |EXT_LEN 8b MSB| |EXT..0-fullbb|
+            11  Mixed Extension mode    |NUM_EXT:  3b, EXT_LEN: 5b LSB| |EXT_LEN 8b MSB| |EXT..0-fullbb|
+         
+         */
+        atsc3_baseband_packet->option_field_mode = (*binary_payload) & 0x3;
+        
         //base field byte 2
         binary_payload++;
 
@@ -303,10 +319,10 @@ atsc3_baseband_packet_t* atsc3_stltp_parse_baseband_packet(atsc3_stltp_baseband_
     __ALP_PARSER_INFO(" -> post_pointer: start at: %p, size: %d, payload: 0x%02x 0x%02x 0x%02x 0x%02x",
                       baseband_pointer_payload_start,
                       bytes_remaining_len,
-                      baseband_pointer_payload_start[0],
-                      baseband_pointer_payload_start[1],
-                      baseband_pointer_payload_start[2],
-                      baseband_pointer_payload_start[3]);
+                      (bytes_remaining_len > 0 ? baseband_pointer_payload_start[0] : 0),
+                      (bytes_remaining_len > 1 ? baseband_pointer_payload_start[1] : 0),
+                      (bytes_remaining_len > 2 ? baseband_pointer_payload_start[2] : 0),
+                      (bytes_remaining_len > 3 ? baseband_pointer_payload_start[3] : 0));
     
     atsc3_baseband_packet->alp_payload_post_pointer = block_Alloc(bytes_remaining_len);
     block_Write(atsc3_baseband_packet->alp_payload_post_pointer, baseband_pointer_payload_start, bytes_remaining_len);
