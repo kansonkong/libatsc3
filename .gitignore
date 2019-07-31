@@ -25,3 +25,5 @@ atsc3_listener_metrics_ncurses
 atsc3_listener_metrics_ncurses_httpd_isobmff
 atsc3_mmt_mfu_monitor
 /route-mux/
+/mpu-ac4/
+/route/

@@ -34,6 +34,8 @@ typedef struct udp_packet {
 	udp_flow_t		udp_flow;
 
 	//inherit from libpcap type usage
+    //note - data will be the payload after the following packet headers removed:
+    //[ethernet, ip, udp]
 	u_char* 		data;
 	int 			data_length;
 	int				data_position;
@@ -42,6 +44,8 @@ typedef struct udp_packet {
 	int				raw_packet_length;
 
 } udp_packet_t;
+    
+    
 
 #define udp_packet_get_remaining_bytes(udp_packet) (__MAX(0, udp_packet->data_length - udp_packet->data_position ))
 #define udp_packet_get_ptr(udp_packet) (udp_packet->data_position < udp_packet->data_length ? &udp_packet->data[udp_packet->data_position] : NULL)
@@ -57,6 +61,7 @@ udp_packet_t* process_packet_from_pcap(u_char *user, const struct pcap_pkthdr *p
 udp_packet_t* udp_packet_process_from_ptr_raw_ethernet_packet(uint8_t* packet, uint32_t packet_length);
 
 udp_packet_t* udp_packet_process_from_ptr(uint8_t* packet, uint32_t packet_length);
+
 udp_packet_t* udp_packet_duplicate(udp_packet_t* udp_packet);
 udp_packet_t* udp_packet_prepend_if_not_null(udp_packet_t* from_packet, udp_packet_t* to_packet);
 

@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema" xmlns:dwd="tag:atsc.org,2016:XMLSchemas/ATSC3/AppSignaling/DWD/1.0/" targetNamespace="tag:atsc.org,2016:XMLSchemas/ATSC3/AppSignaling/DWD/1.0/" elementFormDefault="qualified">
+	<xs:element name="DWD" type="dwd:DWDType"/>
+	<xs:complexType name="DWDType">
+		<xs:sequence>
+			<xs:element name="DistributionWindow" type="dwd:DistributionWindowType" maxOccurs="unbounded"/>
+			<xs:any namespace="##other" processContents="strict" minOccurs="0" maxOccurs="unbounded"/>
+		</xs:sequence>
+		<xs:anyAttribute processContents="strict"/>
+	</xs:complexType>
+	<xs:complexType name="DistributionWindowType">
+		<xs:sequence>
+			<xs:element name="AppContextId" type="dwd:AppContextIdType" minOccurs="0" maxOccurs="unbounded"/>
+			<xs:any namespace="##other" processContents="strict" minOccurs="0" maxOccurs="unbounded"/>
+		</xs:sequence>
+		<xs:attribute name="contentLabel" type="xs:unsignedInt"/>
+		<xs:attribute name="startTime" type="xs:dateTime" use="required"/>
+		<xs:attribute name="endTime" type="xs:dateTime" use="required"/>
+		<xs:attribute name="lctTSIRef" type="dwd:listOfUnsignedInt" use="required"/>
+		<xs:anyAttribute processContents="strict"/>
+	</xs:complexType>
+	<xs:complexType name="AppContextIdType">
+		<xs:simpleContent>
+			<xs:extension base="xs:anyURI">
+				<xs:attribute name="dwFilterCode" type="dwd:listOfUnsignedInt"/>
+				<xs:anyAttribute processContents="strict"/>
+			</xs:extension>
+		</xs:simpleContent>
+	</xs:complexType>
+	<xs:simpleType name="listOfUnsignedInt">
+		<xs:list itemType="xs:unsignedInt"/>
+	</xs:simpleType>
+</xs:schema>
