@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<SystemTime
+xmlns="tag:atsc.org,2016:XMLSchemas/ATSC3/Delivery/SYSTIME/1.0/"
+xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+xsi:schemaLocation= "tag:atsc.org,2016:XMLSchemas/ATSC3/Delivery/SYSTIME/1.0/ SYSTIME-1.0-20170921.xsd"
+
+currentUtcOffset="60"
+ptpPrepend="12345"
+leap59="true"
+utcLocalOffset="-PT8H"
+dsStatus="true"
+dsDayOfMonth="16"
+dsHour="15"
+/>

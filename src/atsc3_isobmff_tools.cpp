@@ -387,7 +387,7 @@ lls_sls_monitor_buffer_isobmff_t* atsc3_isobmff_build_raw_mpu_from_single_sequen
         mmtp_sub_flow = mmtp_sub_flow_vector_find_packet_id(mmtp_sub_flow_vector, udp_flow, packet_id);
 
         if(!mmtp_sub_flow) {
-            __ISOBMFF_TOOLS_INFO("Movie Fragment Metadat: mmtp_sub_flow %u for packet_id: %u is null", i, packet_id);
+            __ISOBMFF_TOOLS_INFO("Movie Fragment Metadata: mmtp_sub_flow %u for packet_id: %u is null", i, packet_id);
             //keep going, this is ok
             continue;
         }

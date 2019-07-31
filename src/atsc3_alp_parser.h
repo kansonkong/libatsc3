@@ -8,6 +8,9 @@
 #ifndef ATSC3_ALP_PARSER_H_
 #define ATSC3_ALP_PARSER_H_
 
+#include <pcap.h>
+#include <string.h>
+
 #include "atsc3_utils.h"
 #include "atsc3_logging_externs.h"
 #include "atsc3_alp_types.h"
@@ -17,18 +20,31 @@
 extern "C" {
 #endif
 
-void atsc3_alp_parse_stltp_baseband_packet(atsc3_stltp_baseband_packet_t* atsc3_stltp_baseband_packet);
+    
+typedef struct atsc3_alp_packet_collection {
+    pcap_t*                         descrInject; //optional descriptor for alp injection
+    atsc3_baseband_packet_t*        baseband_packet;
+    
+    ATSC3_VECTOR_BUILDER_STRUCT(atsc3_alp_packet);
+    atsc3_alp_packet_t*             atsc3_alp_packet_pending; //incomplete packet for fragmentation
 
+} atsc3_alp_packet_collection_t;
+    
+ATSC3_VECTOR_BUILDER_METHODS_INTERFACE(atsc3_alp_packet_collection, atsc3_alp_packet);
+    
+atsc3_baseband_packet_t* atsc3_stltp_parse_baseband_packet(atsc3_stltp_baseband_packet_t* atsc3_stltp_baseband_packet);
+void atsc3_baseband_packet_free(atsc3_baseband_packet_t** atsc3_baseband_packet);
 
+atsc3_alp_packet_t* atsc3_alp_packet_parse(block_t* baseband_packet_payload);
+void atsc3_reflect_alp_packet_collection(atsc3_alp_packet_collection_t* atsc3_alp_packet_collection);
 
 #if defined (__cplusplus)
 }
 #endif
 
-#define __ALP_PARSER_ERROR(...)  		printf("%s:%d:ERROR: ",__FILE__,__LINE__); printf(__VA_ARGS__); printf("%s%s","\r","\n")
-#define __ALP_PARSER_WARN(...)  		printf("%s:%d:WARN : ",__FILE__,__LINE__); printf(__VA_ARGS__); printf("%s%s","\r","\n")
-
-#define __ALP_PARSER_INFO(...)  		if(_ALP_PARSER_INFO_ENABLED) { printf("%s:%d:INFO:%.4f: ",__FILE__,__LINE__, gt()); printf(__VA_ARGS__); printf("%s%s","\r","\n"); }
-#define __ALP_PARSER_DEBUG(...)  		if(_ALP_PARSER_DEBUG_ENABLED) { printf("%s:%d:DEBUG: ",__FILE__,__LINE__); printf(__VA_ARGS__); printf("%s%s","\r","\n"); }
+#define __ALP_PARSER_ERROR(...) __LIBATSC3_TIMESTAMP_ERROR(__VA_ARGS__);
+#define __ALP_PARSER_WARN(...)  __LIBATSC3_TIMESTAMP_WARN(__VA_ARGS__);
+#define __ALP_PARSER_INFO(...)  if(_ALP_PARSER_INFO_ENABLED)  { __LIBATSC3_TIMESTAMP_INFO(__VA_ARGS__); }
+#define __ALP_PARSER_DEBUG(...) if(_ALP_PARSER_DEBUG_ENABLED) { __LIBATSC3_TIMESTAMP_DEBUG(__VA_ARGS__); }
 
 #endif /* ATSC3_ALP_PARSER_H_ */

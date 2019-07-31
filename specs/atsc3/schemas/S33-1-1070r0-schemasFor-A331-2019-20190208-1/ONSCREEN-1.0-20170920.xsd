@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema" xmlns:osmn="tag:atsc.org,2016:XMLSchemas/ATSC3/Delivery/OSMN/1.0/" targetNamespace="tag:atsc.org,2016:XMLSchemas/ATSC3/Delivery/OSMN/1.0/" elementFormDefault="qualified">
+	<xs:element name="OnScreenMessageNotification" type="osmn:OSMNType"/>
+	<xs:complexType name="OSMNType">
+		<xs:sequence>
+			<xs:element name="KeepScreenClear" type="osmn:clearType" minOccurs="0" maxOccurs="unbounded"/>
+			<xs:any namespace="##other" processContents="strict" minOccurs="0" maxOccurs="unbounded"/>
+		</xs:sequence>
+		<xs:anyAttribute processContents="strict"/>
+	</xs:complexType>
+	<xs:complexType name="clearType">
+		<xs:sequence>
+			<xs:any namespace="##other" processContents="strict" minOccurs="0" maxOccurs="unbounded"/>
+		</xs:sequence>
+		<xs:attribute name="bsid" type="xs:unsignedShort" use="required"/>
+		<xs:attribute name="serviceId" type="xs:unsignedShort"/>
+		<xs:attribute name="serviceIdRange" type="xs:unsignedShort" default="0"/>
+		<xs:attribute name="notificationDuration" type="xs:duration" default="PT1M"/>
+		<xs:attribute name="kscFlag" type="xs:boolean" default="true"/>
+		<xs:attribute name="version" type="xs:unsignedByte" use="required"/>
+		<xs:anyAttribute processContents="strict"/>
+	</xs:complexType>
+</xs:schema>

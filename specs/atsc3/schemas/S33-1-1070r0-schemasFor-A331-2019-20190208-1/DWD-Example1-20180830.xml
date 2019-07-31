@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<DWD xmlns="tag:atsc.org,2016:XMLSchemas/ATSC3/AppSignaling/DWD/1.0/" 
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" 
+	xsi:schemaLocation="tag:atsc.org,2016:XMLSchemas/ATSC3/AppSignaling/DWD/1.0/ DWD-1.0-20180830.xsd">
+	<DistributionWindow startTime="2016-07-17T12:00:47Z" endTime="2016-07-18T12:00:47Z" lctTSIRef="43 44">
+	</DistributionWindow>
+</DWD>

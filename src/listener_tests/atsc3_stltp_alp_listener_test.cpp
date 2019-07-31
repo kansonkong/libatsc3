@@ -1,5 +1,5 @@
 /*
- * atsc3_stltp_listener_test.c
+ * atsc3_stltp_alp_listener_test.c
  *
  *  Created on: Mar 16, 2019
  *      Author: jjustman
@@ -29,56 +29,55 @@ uint32_t* dst_ip_addr_filter = NULL;
 uint16_t* dst_ip_port_filter = NULL;
 
 atsc3_stltp_tunnel_packet_t* atsc3_stltp_tunnel_packet_processed = NULL;
+atsc3_alp_packet_collection_t* atsc3_alp_packet_collection = NULL;
 
 void process_packet(u_char *user, const struct pcap_pkthdr *pkthdr, const u_char *packet) {
-	udp_packet_t* udp_packet = process_packet_from_pcap(user, pkthdr, packet);
-	if(!udp_packet) {
+    //extract our outer ip/udp/rtp packet
+	atsc3_ip_udp_rtp_packet_t* ip_udp_rtp_packet = atsc3_ip_udp_rtp_process_packet_from_pcap(user, pkthdr, packet);
+	if(!ip_udp_rtp_packet) {
 		return;
 	}
+    //TODO - add SMPTE-2022.1 FEC decoding (see fork of prompeg-decoder - https://github.com/jjustman/prompeg-decoder)
 
 	//dispatch for LLS extraction and dump
-	if(udp_packet->udp_flow.dst_ip_addr == *dst_ip_addr_filter && udp_packet->udp_flow.dst_port == *dst_ip_port_filter) {
-		atsc3_stltp_tunnel_packet_processed = atsc3_stltp_tunnel_packet_extract_fragment_from_udp_packet(udp_packet, atsc3_stltp_tunnel_packet_processed);
-
-		__INFO("***atsc3_stltp_tunnel_packet_processed: %p", atsc3_stltp_tunnel_packet_processed);
+	if(ip_udp_rtp_packet->udp_flow.dst_ip_addr == *dst_ip_addr_filter && ip_udp_rtp_packet->udp_flow.dst_port == *dst_ip_port_filter) {
+		atsc3_stltp_tunnel_packet_processed = atsc3_stltp_raw_packet_extract_inner_from_outer_packet(ip_udp_rtp_packet, atsc3_stltp_tunnel_packet_processed);
 
 		if(atsc3_stltp_tunnel_packet_processed) {
-			__INFO("***atsc3_stltp_tunnel_packet_processed->atsc3_stltp_baseband_packet: %p", atsc3_stltp_tunnel_packet_processed->atsc3_stltp_baseband_packet);
-
-			if(atsc3_stltp_tunnel_packet_processed->atsc3_stltp_baseband_packet && atsc3_stltp_tunnel_packet_processed->atsc3_stltp_baseband_packet->is_complete) {
-				__INFO("***stltp atsc3_stltp_baseband_packet packet complete: size: %u",  atsc3_stltp_tunnel_packet_processed->atsc3_stltp_baseband_packet->payload_length);
-				atsc3_alp_parse_stltp_baseband_packet(atsc3_stltp_tunnel_packet_processed->atsc3_stltp_baseband_packet);
-			//todo - free
+			if(atsc3_stltp_tunnel_packet_processed->atsc3_stltp_baseband_packet_v.count) {
+				__INFO(">>>stltp atsc3_stltp_baseband_packet packet complete: count: %u",  atsc3_stltp_tunnel_packet_processed->atsc3_stltp_baseband_packet_v.count);
+				for(int i=0; i < atsc3_stltp_tunnel_packet_processed->atsc3_stltp_baseband_packet_v.count; i++) {
+					atsc3_stltp_baseband_packet_t* atsc3_stltp_baseband_packet = atsc3_stltp_tunnel_packet_processed->atsc3_stltp_baseband_packet_v.data[i];
+					atsc3_baseband_packet_t* atsc3_baseband_packet = atsc3_stltp_parse_baseband_packet(atsc3_stltp_baseband_packet);
+				}
 			}
-			if(atsc3_stltp_tunnel_packet_processed->atsc3_stltp_preamble_packet && atsc3_stltp_tunnel_packet_processed->atsc3_stltp_preamble_packet->is_complete) {
-				__INFO("stltp atsc3_stltp_preamble_packet packet complete: size: %u",  atsc3_stltp_tunnel_packet_processed->atsc3_stltp_preamble_packet->payload_length);
-			//todo - free
+			if(atsc3_stltp_tunnel_packet_processed->atsc3_stltp_preamble_packet_v.count) {
+				__INFO(">>>stltp atsc3_stltp_preamble_packet packet complete: count: %u",  atsc3_stltp_tunnel_packet_processed->atsc3_stltp_preamble_packet_v.count);
+				for(int i=0; i < atsc3_stltp_tunnel_packet_processed->atsc3_stltp_preamble_packet_v.count; i++) {
+					atsc3_stltp_preamble_packet_t* atsc3_stltp_preamble_packet = atsc3_stltp_tunnel_packet_processed->atsc3_stltp_preamble_packet_v.data[i];
+					//atsc3_alp_parse_stltp_preamble_packet(atsc3_stltp_preamble_packet);
+				}
 			}
-			if(atsc3_stltp_tunnel_packet_processed->atsc3_stltp_timing_management_packet && atsc3_stltp_tunnel_packet_processed->atsc3_stltp_timing_management_packet->is_complete) {
-				__INFO("stltp atsc3_stltp_timing_management_packet packet complete: size: %u",  atsc3_stltp_tunnel_packet_processed->atsc3_stltp_timing_management_packet->payload_length);
-			//todo - free
+			if(atsc3_stltp_tunnel_packet_processed->atsc3_stltp_timing_management_packet_v.count) {
+				__INFO(">>>stltp atsc3_stltp_timing_management_packet packet complete: count: %u",  atsc3_stltp_tunnel_packet_processed->atsc3_stltp_timing_management_packet_v.count);
+				for(int i=0; i < atsc3_stltp_tunnel_packet_processed->atsc3_stltp_timing_management_packet_v.count; i++) {
+					atsc3_stltp_timing_management_packet_t* atsc3_stltp_timing_management_packet = atsc3_stltp_tunnel_packet_processed->atsc3_stltp_timing_management_packet_v.data[i];
+					//atsc3_alp_parse_stltp_baseband_packet(atsc3_stltp_baseband_packet);
+				}
 			}
-		} else {
-            __ERROR("error processing packet: %p, size: %u",  udp_packet, udp_packet->data_length);
             
+            atsc3_stltp_tunnel_packet_clear_completed_inner_packets(atsc3_stltp_tunnel_packet_processed);
+		} else {
+            __ERROR("error processing packet: %p, size: %u",  ip_udp_rtp_packet, ip_udp_rtp_packet->data->p_size);
 		}
-
-
 	}
 
-	if(udp_packet->data) {
-		free(udp_packet->data);
-		udp_packet->data = NULL;
-	}
 
-	if(udp_packet) {
-		free(udp_packet);
-		udp_packet = NULL;
-	}
+    atsc3_ip_udp_rtp_packet_destroy(&ip_udp_rtp_packet);
 }
 
 int main(int argc,char **argv) {
-
+    _IP_UDP_RTP_PARSER_DEBUG_ENABLED = 1;
     char *dev;
     char *filter_dst_ip = NULL;
     char *filter_dst_port = NULL;
@@ -94,6 +93,8 @@ int main(int argc,char **argv) {
     struct bpf_program fp;
     bpf_u_int32 maskp;
     bpf_u_int32 netp;
+    
+    atsc3_alp_packet_collection = atsc3_alp_packet_collection_new();
 
     if(argc != 4) {
     	println("%s - a udp mulitcast listener test harness for atsc3 stltp payloads", argv[0]);

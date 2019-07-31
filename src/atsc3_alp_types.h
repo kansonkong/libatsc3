@@ -9,6 +9,30 @@
 #define ATSC3_ALP_TYPES_H_
 
 
+/* TODO: move this to atsc3_baseband_types.h
+ A/322 PLP - 5.2.2.1 Base Field
+ Since ALP packets may be split across Baseband Packets, the start of the payload of a Baseband Packet does not necessarily signify the start of an ALP packet. The Base Field of a Baseband Packet shall provide the start position of the first ALP packet that begins in the Baseband Packet through a pointer.
+ 
+ The value of the pointer shall be the offset (in bytes) from the beginning of the payload to the start of the first ALP packet that begins in that Baseband Packet.
+ 
+ When an ALP packet begins at the start of the payload portion of a Baseband Packet, the value of the pointer shall be 0.
+ 
+ When there is no ALP packet starting within that Baseband Packet, the value of the pointer shall be 8191 and a 2 byte Base Field shall be used.
+ 
+ When there are no ALP packets and only padding is present, the value of the pointer shall also be 8191 and a 2 byte Base Field shall be used, together with any necessary Optional Fields and Extension Fields as signaled by the OFI (Optional Field Indicator) field.
+ 
+ **/
+
+typedef struct atsc3_baseband_packet {
+    uint8_t     base_field_mode;    //1 bit
+    uint16_t    base_field_pointer; //either 7 bits or 13 bits
+    uint8_t     option_field_mode;  //                  2 bits
+    uint8_t     ext_type;           //                        3 bits
+    uint16_t    ext_len;            //
+    uint8_t*    extension;          // 0-31 bytes, or 0-full BBP
+    block_t*    alp_payload_pre_pointer;
+    block_t*    alp_payload_post_pointer;
+} atsc3_baseband_packet_t;
 
 typedef struct alp_single_packet_header_sub_stream_identification {
 	uint8_t SID;
@@ -147,7 +171,17 @@ typedef struct alp_packet_header  {
 		alp_packet_header_mode_t 				alp_packet_header_mode; //payload_configuration == 0
 		alp_packet_segmentation_concatenation_t	alp_packet_segmentation_concatenation; //payload_configuration == 1
 	};
+    
+    //for payload_type == 4 (bits: 100)
+    alp_additional_header_for_signaling_information_t alp_additional_header_for_signaling_information;
+    
 } alp_packet_header_t;
+
+typedef struct atsc3_alp_packet {
+    alp_packet_header_t alp_packet_header;
+    block_t*            alp_payload;
+    bool                is_alp_payload_complete;
+} atsc3_alp_packet_t;
 
 typedef struct lmt_table_header {
 	uint8_t num_PLPs_minus1;		/**< LCT version number */
@@ -177,6 +211,9 @@ typedef struct lmt_table_multicast {
 	 *
 	 */
 } lmt_table_multicast_t;
+
+
+
 
 
 

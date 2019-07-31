@@ -1,0 +1,4 @@
+rm valgrind.log
+
+valgrind --leak-check=full --show-leak-kinds=all ./atsc3_listener_metrics_ncurses_httpd_isobmff enp0s5 2> valgrind.log
+

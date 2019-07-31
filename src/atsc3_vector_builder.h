@@ -73,7 +73,7 @@
 	void PPCAT(vector_struct_name,PPCAT(_clear_, vector_item_name))(PPCAT(vector_struct_name,_t)* vector_struct_name) { \
 		for(int i=0; i < vector_struct_name->PPCAT(vector_item_name, _v).count; i++) { \
 			if(vector_struct_name->PPCAT(vector_item_name, _v).data[i]) { \
-				free(vector_struct_name->PPCAT(vector_item_name, _v).data[i]); \
+				freesafe(vector_struct_name->PPCAT(vector_item_name, _v).data[i]); \
                 vector_struct_name->PPCAT(vector_item_name, _v).data[i] = NULL; \
 			} \
 		} \

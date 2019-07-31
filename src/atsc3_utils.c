@@ -23,6 +23,13 @@ double gt() {
 	return time_now.tv_sec + time_now.tv_usec / 1000000.0;
 }
 
+long gtl() {
+    struct timeval time_now;
+    gettimeofday(&time_now, NULL);
+        
+    return time_now.tv_sec * 1000 + time_now.tv_usec / 1000;
+}
+
 //walk thru [] of uint8*s and move our pointer for N elements
 void* extract(uint8_t *bufPosPtr, uint8_t *dest, int size) {
 	for(int i=0; i < size; i++) {
@@ -193,6 +200,7 @@ block_t* block_Alloc(int len) {
 
 	new_block->p_size = len;
 	new_block->i_pos = 0;
+    new_block->_refcnt = 1;
 
 	return new_block;
 }
@@ -207,6 +215,10 @@ block_t* block_Promote(char* string) {
 //todo: make this a marco define?
 block_t* __block_check_bounaries(const char* method_name, block_t* src) {
 	//these are FATAL conditions, return NULL
+    if(!src) {
+        _ATSC3_UTILS_ERROR("%s: block_t is null: %p", method_name, src);
+        return NULL;
+    }
 
 	if(!src->p_buffer) {
 		_ATSC3_UTILS_ERROR("%s: block: %p, p_buffer is NULL, p_size is: %u, i_pos: %u", method_name, src, src->p_size, src->i_pos);
@@ -263,6 +275,27 @@ uint32_t block_Seek(block_t* block, int32_t seek_pos) {
 }
 
 
+uint32_t block_Seek_Relative(block_t* block, int32_t seek_pos) {
+    if(!__block_check_bounaries(__FUNCTION__, block)) {
+        block->i_pos = 0;
+    }
+    int32_t new_seek_pos = block->i_pos + seek_pos;
+    
+    if(new_seek_pos < 0 ) {
+        _ATSC3_UTILS_WARN("block_Seek: block: %p, invalid seek_pos to: %u, clamping to 0",
+                          block->p_buffer, seek_pos);
+        block->i_pos = 0;
+    } else if(new_seek_pos > block->p_size) {
+        _ATSC3_UTILS_WARN("block_Seek: block: %p, invalid seek_pos to: %u, clamping to %u",
+                          block->p_buffer, seek_pos, block->p_size);
+        block->i_pos = block->p_size;
+    } else {
+        block->i_pos = new_seek_pos;
+    }
+    
+    return block->i_pos;
+}
+
 block_t* block_Write(block_t* dest, uint8_t* src_buf, uint32_t src_size) {
 	if(!__block_check_bounaries(__FUNCTION__, dest)) return NULL;
 
@@ -280,7 +313,7 @@ block_t* block_Write(block_t* dest, uint8_t* src_buf, uint32_t src_size) {
 	return dest;
 }
 
-
+//use src i_pos to append before
 uint32_t block_Append(block_t* dest, block_t* src) {
 	if(!__block_check_bounaries(__FUNCTION__, dest)) return 0;
 
@@ -288,7 +321,7 @@ uint32_t block_Append(block_t* dest, block_t* src) {
 	if(dest->p_size < dest_size_required) {
 		block_t* ret_block = block_Resize(dest, dest_size_required);
 		if(!ret_block) {
-			_ATSC3_UTILS_ERROR("block_Write: block: %p, unable to realloc from size: %u to %u, returning NULL", dest, dest->p_size, dest_size_required);
+			_ATSC3_UTILS_ERROR("block_Append: block: %p, unable to realloc from size: %u to %u, returning NULL", dest, dest->p_size, dest_size_required);
 			return 0;
 		}
 	}
@@ -298,16 +331,32 @@ uint32_t block_Append(block_t* dest, block_t* src) {
 	return dest->i_pos;
 }
 
+//combine 2 separate block_t's into one full payload, using p_size, rather than i_pos for appending
+uint32_t block_Merge(block_t* dest, block_t* src) {
+    if(!__block_check_bounaries(__FUNCTION__, dest)) return 0;
+
+    //seek us forward so we maintain both block_t full payloads
+    dest->i_pos = dest->p_size;
+    int dest_original_size = dest->p_size;
+    int dest_size_required = dest->p_size + src->p_size;
+    
+    if(dest->p_size < dest_size_required) {
+        block_t* ret_block = block_Resize(dest, dest_size_required);
+        if(!ret_block) {
+            _ATSC3_UTILS_ERROR("block_Merge: block: %p, unable to realloc from size: %u to %u, returning NULL", dest, dest->p_size, dest_size_required);
+            return 0;
+        }
+    }
+    memcpy(&dest->p_buffer[dest_original_size], src->p_buffer, src->p_size);
+    //rewind
+    dest->i_pos = 0;
+    
+    return dest->p_size;
+}
+
 
 block_t* block_Rewind(block_t* dest) {
 	if(!__block_check_bounaries(__FUNCTION__, dest)) return NULL;
-
-	if(dest->i_pos) {
-		uint32_t to_scrub_len = dest->i_pos > 0 ?  __CLIP(dest->i_pos, 0, dest->p_size) : dest->p_size;
-		_ATSC3_UTILS_TRACE("block_Rewind, block: %p, zeroing out %u bytes", dest, to_scrub_len)
-		memset(dest->p_buffer, 0, to_scrub_len);
-	}
-
 	dest->i_pos = 0;
 	return dest;
 }
@@ -354,6 +403,11 @@ block_t* block_Duplicate_from_position(block_t* src) {
 	return dest;
 }
 
+uint8_t* block_Get(block_t* src) {
+    if(!__block_check_bounaries(__FUNCTION__, src)) return NULL;
+
+    return &src->p_buffer[src->i_pos];
+}
 
 /**
  *
@@ -372,15 +426,27 @@ block_t* block_Duplicate_to_size(block_t* src, uint32_t target_len) {
 	return dest;
 }
 
+// create new block_t from *data and size
+block_t* block_Duplicate_from_ptr(uint8_t* data, uint32_t size) {
+    block_t* block_t = block_Alloc(size);
+    block_Write(block_t, data, size);
+    return block_t;
+}
+
 
 //return will be NULL if realloc failed, but src will still be valid
-//this has not been tested with shrinking down the size...
+//grow or shrink a block,
+//  if growing, null out new payload, maintain i_pos
+//  if shrinking, discard end payload, i_pos will reset to 0
+
 block_t* block_Resize(block_t* src, uint32_t src_size_requested) {
 	if(!__block_check_bounaries(__FUNCTION__, src)) return NULL;
-
+    int src_size_original = src->p_size;
+    int src_i_pos_original = src->i_pos;
+    
 	uint32_t src_size_required = __MAX(64, src_size_requested);
 
-	//always over alloc by 1 byte for a null pad
+	//always over alloc by X bytes for a null pad
 	void* new_block = realloc(src->p_buffer, src_size_required + 8);
 	if(!new_block) {
 		_ATSC3_UTILS_ERROR("block_Resize: block: %p resize to %u failed, returning NULL", src, src_size_required);
@@ -394,28 +460,82 @@ block_t* block_Resize(block_t* src, uint32_t src_size_requested) {
 			_ATSC3_UTILS_WARN("block_Resize: block: %p resize to %u, old pos %u past end of new size, updating to %u", src, src->p_size, src->i_pos, to_check_new_i_pos);
 			src->i_pos = to_check_new_i_pos;
 		} else {
-			_ATSC3_UTILS_TRACE("block_Resize: block: %p, zeroing out from: %u to %u", src, src->i_pos, src->p_size);
-			uint32_t to_scrub_len = __MAX(0, (src->p_size - 1 - src->i_pos));
-			memset(&src->p_buffer[src->i_pos], 0, to_scrub_len + 8);
+            if(src_size_original > src_size_required) {
+                //shrink
+                src->i_pos = 0;
+            } else {
+                //grow
+                src->i_pos = src_size_original;
+                _ATSC3_UTILS_TRACE("block_Resize: grow block: %p, zeroing out from: %u to %u", src, src->i_pos, src->p_size);
+                uint32_t to_scrub_len = __MAX(0, (src->p_size - 1 - src->i_pos));
+                memset(&src->p_buffer[src->i_pos], 0, to_scrub_len + 8);
+                src->i_pos = src_i_pos_original;
+            }
 		}
 	}
 
 	return src;
 }
 
+uint32_t block_Remaining_size(block_t* src) {
+    if(!__block_check_bounaries(__FUNCTION__, src)) return 0;
+    return src->p_size - src->i_pos;
+}
 
-void block_Release(block_t** a_ptr) {
+bool block_Valid(block_t* src) {
+    if(!__block_check_bounaries(__FUNCTION__, src)) return false;
+    return true;
+}
+
+//
+//block_t* _block_Refcount(block_t* a) {
+//    if(a) {
+//        a->_refcnt++;
+//        _ATSC3_UTILS_TRACE("block_Refcount: incrementing to: %d, block: %p (p_buffer: %p)", a->_refcnt, a, a->p_buffer);
+//    }
+//    return a;
+//}
+
+//adding in lazy refcounting to try and avoid doublefrees
+void _block_Release(block_t** a_ptr) {
 	block_t* a = *a_ptr;
 	if(a) {
-		if(a->p_buffer && a->p_size) {
-			a->i_pos = 0;
-			a->p_size = 0;
-			free(a->p_buffer);
-			a->p_buffer = NULL;
-		}
-		free(a);
-		*a_ptr = NULL;
+        if(--a->_refcnt == 0) {
+            _ATSC3_UTILS_TRACE("block_Release:FREE: block: %p (p_buffer: %p)", a, a->p_buffer);
+
+            if(a->p_buffer && a->p_size) {
+                a->i_pos = 0;
+                a->p_size = 0;
+                free(a->p_buffer);
+                a->p_buffer = NULL;
+            }
+            free(a);
+            *a_ptr = NULL;
+
+        } else {
+            _ATSC3_UTILS_TRACE("block_Release:DEC: refcount decremented to: %d, block: %p (p_buffer: %p)", a->_refcnt, a, a->p_buffer);
+        }
 	}
+}
+void _block_Refcount(block_t* a_ptr) {
+    a_ptr->_refcnt++;
+}
+
+void block_Destroy(block_t** a_ptr) {
+    block_t* a = *a_ptr;
+    if(a) {
+        _ATSC3_UTILS_TRACE("block_Destroy: hard freeing block: %p (p_buffer: %p)", a, a->p_buffer);
+            
+        if(a->p_buffer && a->p_size) {
+            a->i_pos = 0;
+            a->p_size = 0;
+            free(a->p_buffer);
+            a->p_buffer = NULL;
+            free(a);
+        }
+        a = NULL;
+        *a_ptr = NULL;
+    }
 }
 
 void freesafe(void* tofree) {

@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<HELD xmlns="tag:atsc.org,2016:XMLSchemas/ATSC3/AppSignaling/HELD/1.0/" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="tag:atsc.org,2016:XMLSchemas/ATSC3/AppSignaling/HELD/1.0/
+HELD-1.0-20190122.xsd">
+	<HTMLEntryPackage appContextId="A.xyz.com" bcastEntryPackageUrl="app" bcastEntryPageUrl="/index.html"/>
+</HELD>
