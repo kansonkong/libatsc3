@@ -171,6 +171,7 @@
 		30ABE641222AE81C00CAC414 /* atsc3_lls_mmt_utils.c in Sources */ = {isa = PBXBuildFile; fileRef = 30ABE640222AE81C00CAC414 /* atsc3_lls_mmt_utils.c */; };
 		30ABE645222AEF0200CAC414 /* atsc3_lls_sls_monitor_output_buffer.c in Sources */ = {isa = PBXBuildFile; fileRef = 30ABE644222AEF0200CAC414 /* atsc3_lls_sls_monitor_output_buffer.c */; };
 		30ABE64B222AF6BE00CAC414 /* atsc3_lls_sls_monitor_output_buffer_utils.c in Sources */ = {isa = PBXBuildFile; fileRef = 30ABE64A222AF6BE00CAC414 /* atsc3_lls_sls_monitor_output_buffer_utils.c */; };
+		30CF0E2622F194DC00E117C8 /* atsc3_alp_types.c in Sources */ = {isa = PBXBuildFile; fileRef = 30CF0E2522F16F2100E117C8 /* atsc3_alp_types.c */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXCopyFilesBuildPhase section */
@@ -972,6 +973,7 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				30CF0E2622F194DC00E117C8 /* atsc3_alp_types.c in Sources */,
 				304CC07B22E78B0100D4C7F6 /* atsc3_ip_udp_rtp_parser.h in Sources */,
 				304CC07C22E78B0100D4C7F6 /* atsc3_ip_udp_rtp_parser.c in Sources */,
 				304CC07D22E78B0100D4C7F6 /* atsc3_ip_udp_rtp_types.h in Sources */,
