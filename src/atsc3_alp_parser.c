@@ -10,10 +10,6 @@
 int _ALP_PARSER_INFO_ENABLED = 1;
 int _ALP_PARSER_DEBUG_ENABLED = 1;
 
-ATSC3_VECTOR_BUILDER_METHODS_PARENT_IMPLEMENTATION(atsc3_alp_packet_collection);
-ATSC3_VECTOR_BUILDER_METHODS_IMPLEMENTATION(atsc3_alp_packet_collection, atsc3_alp_packet);
-
-
 /**
  A/322-2018 - Section 5.2 Baseband Formatting:
  ..The baseband formatting block creates one or more PLPs as directed by the Scheduler. At the output of the baseband formatting block, each PLP consists of a stream of Baseband Packets and there is exactly one Baseband Packet per defined FEC Frame...
@@ -571,7 +567,7 @@ atsc3_alp_packet_t* atsc3_alp_packet_parse(block_t* baseband_packet_payload) {
     block_Write(alp_packet->alp_payload, binary_payload, alp_payload_bytes_to_write);
     block_Seek_Relative(baseband_packet_payload, alp_payload_bytes_to_write + (binary_payload - alp_binary_payload_start));
     
-    __ALP_PARSER_INFO("writing ALP payload to: %p, alp_payload_bytes_to_write: %d MIN(alp_payload_length: %d, baseband_packet_payload bytes: %d), remaining ALP bytes: %d, remaining baseband bytes: %d",
+    __ALP_PARSER_INFO("alp_packet->alp_payload: building block_t: ALP payload to: %p, alp_payload_bytes_to_write: %d MIN(alp_payload_length: %d, baseband_packet_payload bytes: %d), remaining ALP bytes: %d, remaining baseband bytes: %d",
                       alp_packet,
                       alp_payload_bytes_to_write,
                       alp_payload_length,
@@ -638,6 +634,13 @@ void atsc3_reflect_alp_packet_collection(atsc3_alp_packet_collection_t* atsc3_al
             }
         }
     }
+
+    //clear out our inner payloads, then let collection_clear free the object instance
+    for(int i=0; i < atsc3_alp_packet_collection->atsc3_alp_packet_v.count; i++) {
+        atsc3_alp_packet_t* atsc3_alp_packet = atsc3_alp_packet_collection->atsc3_alp_packet_v.data[i];
+        atsc3_alp_packet_free_alp_payload(atsc3_alp_packet);
+    }
+        
     atsc3_alp_packet_collection_clear_atsc3_alp_packet(atsc3_alp_packet_collection);
 }
 

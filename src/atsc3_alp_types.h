@@ -5,8 +5,19 @@
  *      Author: jjustman
  */
 
+#include <string.h>
+
 #ifndef ATSC3_ALP_TYPES_H_
 #define ATSC3_ALP_TYPES_H_
+
+#include "atsc3_utils.h"
+#include "atsc3_logging_externs.h"
+#include "atsc3_alp_types.h"
+#include "atsc3_stltp_types.h"
+
+#if defined (__cplusplus)
+extern "C" {
+#endif
 
 
 /* TODO: move this to atsc3_baseband_types.h
@@ -43,6 +54,8 @@ typedef struct alp_single_packet_header_header_extension {
 	uint8_t 	extension_length_minus1;
 	uint8_t*	extension_byte;
 } alp_single_packet_header_header_extension_t;
+
+
 /**
  * <A330-2016 Table 5.3 - Payload Configuration Field Value and Total Header Length>
  * 									Next Field
@@ -214,6 +227,21 @@ typedef struct lmt_table_multicast {
 
 
 
+typedef struct atsc3_alp_packet_collection {
+    pcap_t*                         descrInject; //optional descriptor for alp injection
+    atsc3_baseband_packet_t*        baseband_packet;
+    ATSC3_VECTOR_BUILDER_STRUCT(atsc3_alp_packet);
+    atsc3_alp_packet_t*             atsc3_alp_packet_pending; //incomplete packet for fragmentation
+} atsc3_alp_packet_collection_t;
+
+ATSC3_VECTOR_BUILDER_METHODS_INTERFACE(atsc3_alp_packet_collection, atsc3_alp_packet);
+
+void atsc3_alp_packet_free_alp_payload(atsc3_alp_packet_t* atsc3_alp_packet);
+
+
+#if defined (__cplusplus)
+}
+#endif
 
 
 
