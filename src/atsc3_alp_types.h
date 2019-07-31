@@ -41,6 +41,7 @@ typedef struct atsc3_baseband_packet {
     uint8_t     ext_type;           //                        3 bits
     uint16_t    ext_len;            //
     uint8_t*    extension;          // 0-31 bytes, or 0-full BBP
+    
     block_t*    alp_payload_pre_pointer;
     block_t*    alp_payload_post_pointer;
 } atsc3_baseband_packet_t;
@@ -229,14 +230,21 @@ typedef struct lmt_table_multicast {
 
 typedef struct atsc3_alp_packet_collection {
     pcap_t*                         descrInject; //optional descriptor for alp injection
-    atsc3_baseband_packet_t*        baseband_packet;
-    ATSC3_VECTOR_BUILDER_STRUCT(atsc3_alp_packet);
+
+    ATSC3_VECTOR_BUILDER_STRUCT(atsc3_baseband_packet); //re-fragmented baseband packets for alp de-encapsulation
+    ATSC3_VECTOR_BUILDER_STRUCT(atsc3_alp_packet);      //completed ALP output packets for emission
+    
     atsc3_alp_packet_t*             atsc3_alp_packet_pending; //incomplete packet for fragmentation
 } atsc3_alp_packet_collection_t;
 
+ATSC3_VECTOR_BUILDER_METHODS_INTERFACE(atsc3_alp_packet_collection, atsc3_baseband_packet);
 ATSC3_VECTOR_BUILDER_METHODS_INTERFACE(atsc3_alp_packet_collection, atsc3_alp_packet);
 
+atsc3_alp_packet_t* atsc3_alp_packet_clone(atsc3_alp_packet_t* atsc3_alp_packet);
+    
 void atsc3_alp_packet_free_alp_payload(atsc3_alp_packet_t* atsc3_alp_packet);
+void atsc3_baseband_packet_free_v(atsc3_baseband_packet_t* atsc3_baseband_packet);
+void atsc3_baseband_packet_free(atsc3_baseband_packet_t** atsc3_baseband_packet);
 
 
 #if defined (__cplusplus)

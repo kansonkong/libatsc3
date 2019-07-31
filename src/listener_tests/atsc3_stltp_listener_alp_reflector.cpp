@@ -82,6 +82,7 @@ void process_packet(u_char *user, const struct pcap_pkthdr *pkthdr, const u_char
                     //make sure we get a packet back, base field pointer (13b) : 0x1FFF (8191 bytes) will return NULL
                     atsc3_baseband_packet_t* atsc3_baseband_packet = atsc3_stltp_parse_baseband_packet(atsc3_stltp_baseband_packet);
                     if(atsc3_baseband_packet) {
+                        atsc3_alp_packet_collection_add_atsc3_baseband_packet(atsc3_alp_packet_collection, atsc3_baseband_packet);
                         
                         //hack to carry over 1 (or N) byte payload(s) that is too small from our last run...trumps pending packets
                         if(atsc3_stltp_tunnel_packet_processed->atsc3_baseband_packet_short_fragment) {
@@ -139,7 +140,7 @@ void process_packet(u_char *user, const struct pcap_pkthdr *pkthdr, const u_char
                                 } else {
                                     __INFO("atsc3_baseband_packet: carry over pending packet: short:  %d bytes still remaining", final_alp_packet_short_bytes_remaining);
                                 }
-                                atsc3_alp_packet_collection->atsc3_alp_packet_pending = atsc3_alp_packet;
+                                atsc3_alp_packet_collection->atsc3_alp_packet_pending = atsc3_alp_packet_clone(atsc3_alp_packet);
                                 atsc3_alp_packet->is_alp_payload_complete  = false;
 
                             } else {
@@ -173,8 +174,6 @@ void process_packet(u_char *user, const struct pcap_pkthdr *pkthdr, const u_char
                             }
                         }
                         
-                    
-                        
                         //process our pre_pointers from a baseband fragment for alp
                         if(atsc3_baseband_packet->alp_payload_pre_pointer && block_Remaining_size(atsc3_baseband_packet->alp_payload_pre_pointer)) {
 
@@ -188,7 +187,7 @@ void process_packet(u_char *user, const struct pcap_pkthdr *pkthdr, const u_char
                                 } else {
                                     __WARN("  incomplete fragment for alp_payload_pre_pointer");
                                     
-                                    atsc3_alp_packet_collection->atsc3_alp_packet_pending = atsc3_alp_packet;
+                                    atsc3_alp_packet_collection->atsc3_alp_packet_pending = atsc3_alp_packet_clone(atsc3_alp_packet);
                                     atsc3_alp_packet = NULL;
                                     break;
                                 }
@@ -212,7 +211,7 @@ void process_packet(u_char *user, const struct pcap_pkthdr *pkthdr, const u_char
                                 if(atsc3_alp_packet->is_alp_payload_complete) {
                                     atsc3_alp_packet_collection_add_atsc3_alp_packet(atsc3_alp_packet_collection, atsc3_alp_packet);
                                 } else {
-                                    atsc3_alp_packet_collection->atsc3_alp_packet_pending = atsc3_alp_packet;
+                                    atsc3_alp_packet_collection->atsc3_alp_packet_pending = atsc3_alp_packet_clone(atsc3_alp_packet);
                                     atsc3_alp_packet = NULL;
                                     break;
                                 }
@@ -225,14 +224,26 @@ void process_packet(u_char *user, const struct pcap_pkthdr *pkthdr, const u_char
                                 __INFO(" !!!TODO: Carrying over one byte in alp_payload_post_pointer: %d, peek: 0x%02x", remaining_size, atsc3_stltp_tunnel_packet_processed->atsc3_baseband_packet_short_fragment->p_buffer[0]);
                             }                            
                         } else {
-                            __INFO("atsc3_baseband_packet: no alp_payload_post_pointer - carrying over pkt: %p", atsc3_alp_packet_collection->atsc3_alp_packet_pending);
+                            __INFO("atsc3_alp_packet_pending: no alp_payload_post_pointer - carrying over pkt: %p", atsc3_alp_packet_collection->atsc3_alp_packet_pending);
                      
                         }
                     }
                 }
-                
+
+                //send our ALP IP packets, then clear the collection
                 atsc3_reflect_alp_packet_collection(atsc3_alp_packet_collection);
+                
+                //clear out our inner payloads, then let collection_clear free the object instance
+                for(int i=0; i < atsc3_alp_packet_collection->atsc3_alp_packet_v.count; i++) {
+                    atsc3_alp_packet_t* atsc3_alp_packet = atsc3_alp_packet_collection->atsc3_alp_packet_v.data[i];
+                    atsc3_alp_packet_free_alp_payload(atsc3_alp_packet);
+                }
+                for(int i=0; i < atsc3_alp_packet_collection->atsc3_baseband_packet_v.count; i++) {
+                    atsc3_baseband_packet_t* atsc3_baseband_packet = atsc3_alp_packet_collection->atsc3_baseband_packet_v.data[i];
+                    atsc3_baseband_packet_free_v(atsc3_baseband_packet);
+                }
                 atsc3_alp_packet_collection_clear_atsc3_alp_packet(atsc3_alp_packet_collection);
+                atsc3_alp_packet_collection_clear_atsc3_baseband_packet(atsc3_alp_packet_collection);
             }
             
             if(atsc3_stltp_tunnel_packet_processed->atsc3_stltp_preamble_packet_v.count) {

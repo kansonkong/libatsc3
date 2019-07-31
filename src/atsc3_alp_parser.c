@@ -331,26 +331,6 @@ cleanup:
     return NULL;
 }
 
-void atsc3_baseband_packet_free(atsc3_baseband_packet_t** atsc3_baseband_packet_p) {
-    atsc3_baseband_packet_t* atsc3_baseband_packet = *atsc3_baseband_packet_p;
-    if(atsc3_baseband_packet) {
-        if(atsc3_baseband_packet->extension) {
-            free(atsc3_baseband_packet->extension);
-            atsc3_baseband_packet->extension = NULL;
-        }
-        if(atsc3_baseband_packet->alp_payload_pre_pointer) {
-            block_Release(&atsc3_baseband_packet->alp_payload_pre_pointer);
-        }
-        if(atsc3_baseband_packet->alp_payload_post_pointer) {
-            block_Release(&atsc3_baseband_packet->alp_payload_post_pointer);
-        }
-        
-        free(atsc3_baseband_packet);
-        atsc3_baseband_packet = NULL;
-    }
-    *atsc3_baseband_packet_p = NULL;
-}
-
 
 //parse relative position of baseband_packet_payload,
 atsc3_alp_packet_t* atsc3_alp_packet_parse(block_t* baseband_packet_payload) {
@@ -634,14 +614,6 @@ void atsc3_reflect_alp_packet_collection(atsc3_alp_packet_collection_t* atsc3_al
             }
         }
     }
-
-    //clear out our inner payloads, then let collection_clear free the object instance
-    for(int i=0; i < atsc3_alp_packet_collection->atsc3_alp_packet_v.count; i++) {
-        atsc3_alp_packet_t* atsc3_alp_packet = atsc3_alp_packet_collection->atsc3_alp_packet_v.data[i];
-        atsc3_alp_packet_free_alp_payload(atsc3_alp_packet);
-    }
-        
-    atsc3_alp_packet_collection_clear_atsc3_alp_packet(atsc3_alp_packet_collection);
 }
 
 

@@ -238,7 +238,6 @@ typedef struct atsc3_stltp_timing_management_packet {
                             use inner when parsing out baseband/preamble/timing packet handoffs only
  */
 
-
 typedef struct atsc3_stltp_tunnel_packet {
 
 	atsc3_ip_udp_rtp_packet_t* ip_udp_rtp_packet_outer;
@@ -260,16 +259,30 @@ typedef struct atsc3_stltp_tunnel_packet {
 } atsc3_stltp_tunnel_packet_t;
 
 ATSC3_VECTOR_BUILDER_METHODS_INTERFACE(atsc3_stltp_tunnel_packet, atsc3_stltp_baseband_packet);
-ATSC3_VECTOR_BUILDER_METHODS_INTERFACE(atsc3_stltp_tunnel_packet, atsc3_stltp_preamble_packet);
-ATSC3_VECTOR_BUILDER_METHODS_INTERFACE(atsc3_stltp_tunnel_packet, atsc3_stltp_timing_management_packet);
-
 atsc3_stltp_baseband_packet_t* atsc3_stltp_baseband_packet_new_and_init(atsc3_stltp_tunnel_packet_t* atsc3_stltp_tunnel_packet);
 
+ATSC3_VECTOR_BUILDER_METHODS_INTERFACE(atsc3_stltp_tunnel_packet, atsc3_stltp_preamble_packet);
+ATSC3_VECTOR_BUILDER_METHODS_INTERFACE(atsc3_stltp_tunnel_packet, atsc3_stltp_timing_management_packet);
+void atsc3_stltp_tunnel_packet_clear_completed_inner_packets(atsc3_stltp_tunnel_packet_t* atsc3_stltp_tunnel_packet);
+
+void atsc3_stltp_tunnel_packet_free(atsc3_stltp_tunnel_packet_t** atsc3_stltp_tunnel_packet);
+void atsc3_stltp_tunnel_packet_destroy(atsc3_stltp_tunnel_packet_t** atsc3_stltp_tunnel_packet);
+void atsc3_stltp_tunnel_packet_outer_destroy(atsc3_stltp_tunnel_packet_t* atsc3_stltp_tunnel_packet);
+void atsc3_stltp_tunnel_packet_inner_destroy(atsc3_stltp_tunnel_packet_t* atsc3_stltp_tunnel_packet);
+void atsc3_stltp_tunnel_packet_outer_inner_destroy(atsc3_stltp_tunnel_packet_t* atsc3_stltp_tunnel_packet);
+
+//release inner packet concerete types
+void atsc3_stltp_baseband_packet_free_v(atsc3_stltp_baseband_packet_t* atsc3_stltp_baseband_packet);
 void atsc3_stltp_baseband_packet_free_inner_outer_data(atsc3_stltp_baseband_packet_t* atsc3_stltp_baseband_packet);
 
-void atsc3_stltp_baseband_packet_free_v(atsc3_stltp_baseband_packet_t* atsc3_stltp_baseband_packet);
 void atsc3_stltp_preamble_packet_free_v(atsc3_stltp_preamble_packet_t* atsc3_stltp_preamble_packet);
 void atsc3_stltp_timing_management_packet_free_v(atsc3_stltp_timing_management_packet_t* atsc3_stltp_timing_management_packet);
+
+//utility methods for dumping outer/inner/rtp header payloads
+void atsc3_rtp_header_dump_outer(atsc3_stltp_tunnel_packet_t* atsc3_stltp_tunnel_packet);
+void atsc3_rtp_header_dump_inner(atsc3_stltp_tunnel_packet_t* atsc3_stltp_tunnel_packet);
+void atsc3_rtp_header_dump(atsc3_rtp_header_t* atsc3_rtp_header, int spaces);
+
 
 #define __STLTP_TYPES_ERROR(...)    __LIBATSC3_TIMESTAMP_ERROR(__VA_ARGS_);
 #define __STLTP_TYPES_WARN(...)     __LIBATSC3_TIMESTAMP_WARN(__VA_ARGS__);
