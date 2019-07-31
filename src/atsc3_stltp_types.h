@@ -33,7 +33,6 @@ typedef struct atsc3_stltp_baseband_packet {
 	uint32_t 	        	    payload_length;
 	bool 		        	    is_complete;
 
-	//other baseband alp attributes here
     atsc3_ip_udp_rtp_packet_t* 	ip_udp_rtp_packet;
 	uint32_t 		            fragment_count;
 
