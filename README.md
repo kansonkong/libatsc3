@@ -9,11 +9,8 @@ To run:
 
 * start a test STLTP replay
 ** sample artifacts here: https://github.com/jjustman/atsc-3.0-mmt-pcaps)
-
 * Run the stltp reflector from the src/listener_tests folder as follows:
-
 ** atsc3_stltp_alp_listener_reflector_test vnic1 239.0.1.3 30000 vnic0 > debug.log
-
 ** vnic1: multicast input interface
 ** 239.0.1.3 mulicast destination
 ** 30000 mulicast port
