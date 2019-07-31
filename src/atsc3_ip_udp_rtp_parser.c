@@ -36,7 +36,8 @@ block_t* atsc3_pcap_parse_ethernet_frame(const struct pcap_pkthdr *pkthdr, const
     for (i = 0; i < 14; i++) {
         ethernet_packet[i] = packet[0 + i];
     }
-    if (!(ethernet_packet[12] == 0x08 && ethernet_packet[13] == 0x00)) {        __LISTENER_UDP_ERROR("udp_packet_process_from_ptr: invalid ethernet frame");
+    if (!(ethernet_packet[12] == 0x08 && ethernet_packet[13] == 0x00)) {
+        __LISTENER_UDP_ERROR("udp_packet_process_from_ptr: invalid ethernet frame");
         return NULL;
     }
     
