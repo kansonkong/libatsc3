@@ -10,12 +10,17 @@
 
 #include <stdint.h>
 #include <stdbool.h>
+
 #include "atsc3_vector_builder.h"
 #include "atsc3_logging_externs.h"
 #include "atsc3_listener_udp.h"
 #include "atsc3_ip_udp_rtp_types.h"
 #include "atsc3_ip_udp_rtp_parser.h"
+#include "atsc3_baseband_packet_types.h"
 
+#if defined (__cplusplus)
+extern "C" {
+#endif
 
 /*
  see ATSC A/324:2018 - for overview of STL and CTP
@@ -57,19 +62,21 @@ https://www.atsc.org/wp-content/uploads/2016/10/A322-2018-Physical-Layer-Protoco
 
 typedef struct atsc3_stltp_baseband_packet {
     atsc3_ip_udp_rtp_packet_t*     ip_udp_rtp_packet_outer;
-    atsc3_rtp_header_t*            rtp_header_outer; //pointer from ip_udp_rtp_packet_outer->rtp_header
+    //atsc3_rtp_header_t*            rtp_header_outer; //pointer from ip_udp_rtp_packet_outer->rtp_header
     
     atsc3_ip_udp_rtp_packet_t*     ip_udp_rtp_packet_inner;
-    atsc3_rtp_header_t*            rtp_header_inner; //pointer from ip_udp_rtp_packet_outer->rtp_header
+    //atsc3_rtp_header_t*            rtp_header_inner; //pointer from ip_udp_rtp_packet_outer->rtp_header
+
+    uint32_t                       fragment_count;
+    bool                           is_complete;
 
     //TODO: refactor this to block_t for payload/offset/length
     uint8_t* 	        	       payload;
     uint32_t 	        	       payload_offset;
 	uint32_t 	        	       payload_length;
-    
-	bool 		        	       is_complete;
 
-	uint32_t 		               fragment_count;
+    //for reference between stltp inner -> baseband -> alp
+    atsc3_baseband_packet_t        atsc3_baseband_packet;
 
 } atsc3_stltp_baseband_packet_t;
 
@@ -142,29 +149,217 @@ typedef struct L1_basic_signaling {
 	uint8_t raw_payload[25];
 } L1_basic_signaling_t;
 
-typedef struct L1_detail_signaling {
+/*
+ 
+ A/322:2018 - Physical Layer Protocol - Table 9.8 - L1-Detail Signaling Fields and Syntax
+ 
+*/
+    
+typedef struct L1D_bonded_bsid_block {
+    uint16_t    L1D_bonded_bsid;
+    uint8_t     reserved:3;
+} L1D_bonded_bsid_block_t;
 
+//if(L1B_time_info_flag != 00)
+typedef struct L1D_time_sec_block {
+    uint32_t    L1D_time_sec;
+    uint16_t    L1D_time_msec:10;
+    //if(L1B_time_info_flag != 01)
+    uint16_t    L1D_time_usec:10;
+    //if(L1B_time_info_flag != 10)
+    uint16_t    L1D_time_nsec:10;
+} L1D_time_sec_block_t;
+    
+    
+typedef struct L1D_plp_bonded_rf_id {
+    uint8_t     L1D_plp_bonded_rf_id:3;
+} L1D_plp_bonded_rf_id_t;
+
+    
+typedef struct L1D_plp_HTI_num_fec_blocks {
+    uint16_t    L1D_plp_HTI_num_fec_blocks:12;
+} L1D_plp_HTI_num_fec_blocks_t;
+    
+typedef struct L1D_PLP_parameters {
+//{
+    uint8_t     L1D_plp_id:6;
+    uint8_t     L1D_plp_lls_flag:1;
+    uint8_t     L1D_plp_layer:2;
+    uint32_t    L1D_plp_start:24;
+    uint32_t    L1D_plp_size:24;
+    uint8_t     L1D_plp_scrambler_type:2;
+    uint8_t     L1D_plp_fec_type:4;
+    
+    //if (L1D_plp_fec_type∈{0,1,2,3,4,5}) {
+    uint8_t     L1D_plp_mod:4;
+    uint8_t     L1D_plp_cod:4;
+    //}
+    
+    uint8_t     L1D_plp_TI_mode:2;
+    
+    //if (L1D_plp_TI_mode=00) {
+    uint16_t    L1D_plp_fec_block_start:15;
+    //} else if (L1D_plp_TI_mode=01) {
+    uint32_t    L1D_plp_CTI_fec_block_start:22;
+    //}
+    
+    //if (L1D_num_rf>0) {
+    uint8_t     L1D_plp_num_channel_bonded:3;
+        //if (L1D_plp_num_channel_bonded>0) {
+    uint8_t     L1D_plp_channel_bonding_format:2;
+            //for (k=0..L1D_plp_num_channel_bonded) {
+    ATSC3_VECTOR_BUILDER_STRUCT(L1D_plp_bonded_rf_id);
+            //}
+        //}
+    //}
+    
+    //if (i=0 && L1B_first_sub_mimo=1) || (i >0 && L1D_mimo=1) {
+    uint8_t     L1D_plp_mimo_stream_combining:1;
+    uint8_t     L1D_plp_mimo_IQ_interleaving:1;
+    uint8_t     L1D_plp_mimo_PH:1;
+    //}
+    
+    //if (L1D_plp_layer=0) {
+    uint8_t     L1D_plp_type:1;
+        //if (L1D_plp_type=1) {
+    uint16_t    L1D_plp_num_subslices:14;
+    uint32_t    L1D_plp_subslice_interval:24;
+        //}
+        //if (((L1D_plp_TI_mode=01) || (L1D_plp_TI_mode=10))&&(L1D_plp_mod=0000)) {
+    uint8_t     L1D_plp_TI_extended_interleaving:1;
+        //}
+        //if (L1D_plp_TI_mode=01) {
+    uint8_t     L1D_plp_CTI_depth:3;
+    uint16_t    L1D_plp_CTI_start_row:11;
+        //}else if (L1D_plp_TI_mode=10) {
+    uint8_t     L1D_plp_HTI_inter_subframe:1;
+    uint8_t     L1D_plp_HTI_num_ti_blocks:4;
+    uint16_t    L1D_plp_HTI_num_fec_blocks_max:12;
+            //if (L1D_plp_HTI_inter_subframe=0) {
+    uint16_t    L1D_plp_HTI_num_fec_blocks:12;
+            //} else {
+                //for (k=0..L1D_plp_HTI_num_ti_blocks) {
+    ATSC3_VECTOR_BUILDER_STRUCT(L1D_plp_HTI_num_fec_blocks);
+                //}
+            //}
+    uint8_t     L1D_plp_HTI_cell_interleaver:1;
+        //}
+    //} else {
+    uint8_t     L1D_plp_ldm_injection_level:5;
+    //}
+//}
+    
+} L1D_PLP_parameters_t;
+
+//for (i=0 .. L1B_num_subframes)
+typedef struct L1D_subframe_parameters {
+    //if(i>0)
+    uint8_t     L1D_mimo:1;
+    uint8_t     L1D_miso:2;
+    uint8_t     L1D_fft_size:2;
+    uint8_t     L1D_reduced_carriers:3;
+    uint8_t     L1D_guard_interval:4;
+    uint16_t    L1D_num_ofdm_symbols:11;
+    uint8_t     L1D_scattered_pilot_pattern:5;
+    uint8_t     L1D_scattered_pilot_boost:3;
+    uint8_t     L1D_sbs_first:1;
+    uint8_t     L1D_sbs_last:1;
+    //}
+    
+    //if(L1B_num_subframes>0)
+    uint8_t     L1D_subframe_multiplex:1;
+    //}
+    
+    uint8_t     L1D_frequency_interleaver:1;
+    
+    /*
+     if (((i=0)&&(L1B_first_sub_sbs_first || L1B_first_sub_sbs_last)) || ((i>0)&&(L1D_sbs_first | L1D_sbs_last))) {
+     */
+    uint16_t    L1D_sbs_null_cells:13;
+    //}
+    
+    uint8_t     L1D_num_plp;
+    
+    //for (j=0 .. L1D_num_plp) {
+    ATSC3_VECTOR_BUILDER_STRUCT(L1D_PLP_parameters);
+    //}
+} L1D_subframe_parameters_t;
+
+ATSC3_VECTOR_BUILDER_METHODS_INTERFACE(L1D_subframe_parameters, L1D_PLP_parameters);
+
+    
+typedef struct L1_detail_signaling {
+    uint8_t                 L1D_version:4;
+    uint8_t                 L1D_num_rf:3;
+    ATSC3_VECTOR_BUILDER_STRUCT(L1D_bonded_bsid_block);
+    
+    //if(L1B_time_info_flag != 00)
+    L1D_time_sec_block_t    L1D_time_sec_block;
+
+    //for (i=0 .. L1B_num_subframes)
+    ATSC3_VECTOR_BUILDER_STRUCT(L1D_subframe_parameters);
+    
+    uint16_t        L1D_bsid;
+    uint8_t*        L1D_reserved; //for future payload use cases in L1D payload
+    uint32_t        L1D_crc;
 } L1_detail_signaling_t;
 
+ATSC3_VECTOR_BUILDER_METHODS_INTERFACE(L1_detail_signaling, L1D_bonded_bsid_block);
+ATSC3_VECTOR_BUILDER_METHODS_INTERFACE(L1_detail_signaling, L1D_subframe_parameters);
+
 typedef struct atsc3_stltp_preamble_packet {
-	atsc3_rtp_header_t*         rtp_header;
-
-	uint8_t* 			    	payload;
-	uint16_t 			    	payload_offset;
-	uint16_t 		    		payload_length;
-	bool                        is_complete;
-
-	L1_basic_signaling_t 	    L1_basic_signaling;
-	L1_detail_signaling_t 	    L1_detail_signaling;
-	uint16_t				    crc16;
-
-	atsc3_ip_udp_rtp_packet_t* 	ip_udp_rtp_packet;
-	uint32_t 				    fragment_count;
-
+    
+    atsc3_ip_udp_rtp_packet_t*      ip_udp_rtp_packet_outer;
+    //atsc3_rtp_header_t*             rtp_header_outer; //pointer from ip_udp_rtp_packet_outer->rtp_header
+    
+    atsc3_ip_udp_rtp_packet_t*      ip_udp_rtp_packet_inner;
+    //atsc3_rtp_header_t*             rtp_header_inner; //pointer from ip_udp_rtp_packet_outer->rtp_header
+    
+    uint32_t                        fragment_count;
+    bool                            is_complete;
+    
+    //TODO: refactor this to block_t for payload/offset/length
+    uint8_t*                         payload;
+    uint16_t                         payload_offset;
+    uint16_t                         payload_length;
+   
+    //TODO: implement L1 basic/L1 detail
+    L1_basic_signaling_t 	         L1_basic_signaling;
+	L1_detail_signaling_t 	         L1_detail_signaling;
+	uint16_t				         crc16;
 } atsc3_stltp_preamble_packet_t;
 
+    
+//ATSC A/324:2018 - STL
+//Table 8.3 - Timing and Management Stream Packet Payload
 
+typedef struct bootstrap_timing_data {
+    uint32_t    seconds;
+    uint32_t    nanoseconds;
+} bootstrap_timing_data_t;
+    
+typedef struct per_transmitter_data {
+    uint16_t    xmtr_id;
+    uint16_t    tx_time_offset;
+    uint8_t     txid_injection_lvl;
+    uint8_t     miso_filt_code_index;
+    uint32_t    _reserved:29; //1
+} per_transmitter_data_t;
+
+typedef struct packet_release_time {
+    uint8_t     pkt_rls_seconds;
+    uint16_t    pkt_rls_a_miliseconds;
+    uint8_t     _reserved:2;
+} packet_release_time_t;
+    
+typedef struct error_check_data {
+    uint16_t    crc16;
+} error_check_data_t;
+
+//Table 8.3 - Timing and Management Stream Packet Payload
+    
 typedef struct timing_management_packet {
+    //Structure_Data() {
 	uint8_t		version_major:4;
 	uint8_t		version_minor:4;
 	uint8_t 	maj_log_rep_cnt_pre:4;
@@ -182,53 +377,57 @@ typedef struct timing_management_packet {
 	uint8_t 	maj_log_override:3;
 	uint8_t		num_miso_filt_codes:2;
 	uint8_t 	tx_carrier_offset:2;
-	uint8_t 	_reserved:6; 		//1
+	uint8_t 	_reserved:6; 		//for (i=0; i<6; i++) ‘1’
+    //}
 
+    //Bootstrap_Timing_Data() {
+        //for (i=0; i<=num_emission_tim; i++) {
+    ATSC3_VECTOR_BUILDER_STRUCT(bootstrap_timing_data);
+        //}
+    //}
+    
+    //Per_Transmitter_Data () {
+        //for (i=0; i<=num_xmtrs_in_group; i++) {
+    ATSC3_VECTOR_BUILDER_STRUCT(per_transmitter_data);
+        //}
+    //}
+    
+    //Packet_Release_Time() {
+    packet_release_time_t   packet_release_time;
+    //}
+    
+    //Error_Check_Data () {
+    error_check_data_t error_check_data;
+    //}
+    
 } timing_management_packet_t;
 
-typedef struct bootstrap_timing_data_emission {
-
-} bootstrap_timing_data_emission_t;
-
-typedef struct bootstrap_timing_data {
-	uint32_t	seconds;
-	uint32_t	nanoseconds;
-} bootstrap_timing_data_vt;
-
-typedef struct per_transmitter_data {
-	uint16_t	xmtr_id;
-	uint16_t	tx_time_offset;
-	uint8_t		txid_injection_lvl;
-	uint8_t		miso_filt_code_index;
-	uint32_t	_reserved:29; //1
-} per_transmitter_data_vt;
-
-typedef struct packet_release_time {
-	uint8_t		pkt_rls_seconds;
-	uint16_t	pkt_rls_a_miliseconds;
-	uint8_t		_reserved:2;
-} packet_release_time_t;
-
-typedef struct error_check_data {
-	uint16_t	crc16;
-} error_check_data_t;
+ATSC3_VECTOR_BUILDER_METHODS_INTERFACE(timing_management_packet, bootstrap_timing_data);
+ATSC3_VECTOR_BUILDER_METHODS_INTERFACE(timing_management_packet, per_transmitter_data);
 
 typedef struct atsc3_stltp_timing_management_packet {
-	atsc3_rtp_header_t* 	    rtp_header;
+    atsc3_ip_udp_rtp_packet_t*      ip_udp_rtp_packet_outer;
+    //atsc3_rtp_header_t*             rtp_header_outer; //pointer from ip_udp_rtp_packet_outer->rtp_header
+    
+    atsc3_ip_udp_rtp_packet_t*      ip_udp_rtp_packet_inner;
+    //atsc3_rtp_header_t*             rtp_header_inner; //pointer from ip_udp_rtp_packet_outer->rtp_header
 
-	uint8_t* 					payload;
-	uint16_t 					payload_offset;
-	uint16_t 					payload_length;
-	bool						is_complete;
+    uint32_t                        fragment_count;
+    bool                            is_complete;
 
-	timing_management_packet_t 	timing_management_packet;
-	bootstrap_timing_data_vt* 	bootstrap_timing_data_v;
-	per_transmitter_data_vt*	per_transmitter_data_v;
-	packet_release_time_t		packet_release_time;
-	error_check_data_t			error_check_data;
+    //TODO: refactor this to block_t for payload/offset/length
+	uint8_t* 					    payload;
+	uint16_t 					    payload_offset;
+	uint16_t 					    payload_length;
 
-	atsc3_ip_udp_rtp_packet_t* 	ip_udp_rtp_packet;
-	uint32_t 					fragment_count;
+	timing_management_packet_t      timing_management_packet;
+    
+    
+//  members are now included in timing_management_packet_t
+//    bootstrap_timing_data_vt*     bootstrap_timing_data_v;
+//    per_transmitter_data_vt*    per_transmitter_data_v;
+//    packet_release_time_t        packet_release_time;
+//    error_check_data_t            error_check_data;
 
 } atsc3_stltp_timing_management_packet_t;
 
@@ -237,8 +436,6 @@ typedef struct atsc3_stltp_timing_management_packet {
  jjustman-2019-07-23: note: when parsing the stltp tunnel outer/inner, only seek against packet_outer,
                             use inner when parsing out baseband/preamble/timing packet handoffs only
  */
-
-
 typedef struct atsc3_stltp_tunnel_packet {
 
 	atsc3_ip_udp_rtp_packet_t* ip_udp_rtp_packet_outer;
@@ -260,16 +457,42 @@ typedef struct atsc3_stltp_tunnel_packet {
 } atsc3_stltp_tunnel_packet_t;
 
 ATSC3_VECTOR_BUILDER_METHODS_INTERFACE(atsc3_stltp_tunnel_packet, atsc3_stltp_baseband_packet);
-ATSC3_VECTOR_BUILDER_METHODS_INTERFACE(atsc3_stltp_tunnel_packet, atsc3_stltp_preamble_packet);
-ATSC3_VECTOR_BUILDER_METHODS_INTERFACE(atsc3_stltp_tunnel_packet, atsc3_stltp_timing_management_packet);
-
 atsc3_stltp_baseband_packet_t* atsc3_stltp_baseband_packet_new_and_init(atsc3_stltp_tunnel_packet_t* atsc3_stltp_tunnel_packet);
 
-void atsc3_stltp_baseband_packet_free_inner_outer_data(atsc3_stltp_baseband_packet_t* atsc3_stltp_baseband_packet);
+ATSC3_VECTOR_BUILDER_METHODS_INTERFACE(atsc3_stltp_tunnel_packet, atsc3_stltp_preamble_packet);
+ATSC3_VECTOR_BUILDER_METHODS_INTERFACE(atsc3_stltp_tunnel_packet, atsc3_stltp_timing_management_packet);
+void atsc3_stltp_tunnel_packet_clear_completed_inner_packets(atsc3_stltp_tunnel_packet_t* atsc3_stltp_tunnel_packet);
 
+void atsc3_stltp_tunnel_packet_free(atsc3_stltp_tunnel_packet_t** atsc3_stltp_tunnel_packet);
+void atsc3_stltp_tunnel_packet_destroy(atsc3_stltp_tunnel_packet_t** atsc3_stltp_tunnel_packet);
+void atsc3_stltp_tunnel_packet_outer_destroy(atsc3_stltp_tunnel_packet_t* atsc3_stltp_tunnel_packet);
+void atsc3_stltp_tunnel_packet_inner_destroy(atsc3_stltp_tunnel_packet_t* atsc3_stltp_tunnel_packet);
+void atsc3_stltp_tunnel_packet_outer_inner_destroy(atsc3_stltp_tunnel_packet_t* atsc3_stltp_tunnel_packet);
+
+//release outer/inner data payloads
+void atsc3_stltp_baseband_packet_free_outer_inner_data(atsc3_stltp_baseband_packet_t* atsc3_stltp_baseband_packet);    
+void atsc3_stltp_preamble_packet_free_outer_inner_data(atsc3_stltp_preamble_packet_t* atsc3_stltp_preamble_packet);
+void atsc3_stltp_timing_management_packet_free_outer_inner_data(atsc3_stltp_timing_management_packet_t* atsc3_stltp_timing_management_packet);
+
+
+
+//release inner packet concerete types
 void atsc3_stltp_baseband_packet_free_v(atsc3_stltp_baseband_packet_t* atsc3_stltp_baseband_packet);
 void atsc3_stltp_preamble_packet_free_v(atsc3_stltp_preamble_packet_t* atsc3_stltp_preamble_packet);
 void atsc3_stltp_timing_management_packet_free_v(atsc3_stltp_timing_management_packet_t* atsc3_stltp_timing_management_packet);
+
+
+    
+//utility methods for dumping outer/inner/rtp header payloads
+void atsc3_rtp_header_dump_outer(atsc3_stltp_tunnel_packet_t* atsc3_stltp_tunnel_packet);
+void atsc3_rtp_header_dump_inner(atsc3_stltp_tunnel_packet_t* atsc3_stltp_tunnel_packet);
+void atsc3_rtp_header_dump(atsc3_rtp_header_t* atsc3_rtp_header, int spaces);
+
+    
+
+#if defined (__cplusplus)
+}
+#endif
 
 #define __STLTP_TYPES_ERROR(...)    __LIBATSC3_TIMESTAMP_ERROR(__VA_ARGS_);
 #define __STLTP_TYPES_WARN(...)     __LIBATSC3_TIMESTAMP_WARN(__VA_ARGS__);

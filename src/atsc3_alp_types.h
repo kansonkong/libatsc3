@@ -5,34 +5,18 @@
  *      Author: jjustman
  */
 
+#include <string.h>
+
 #ifndef ATSC3_ALP_TYPES_H_
 #define ATSC3_ALP_TYPES_H_
 
+#include "atsc3_utils.h"
+#include "atsc3_logging_externs.h"
+#include "atsc3_stltp_types.h"
 
-/* TODO: move this to atsc3_baseband_types.h
- A/322 PLP - 5.2.2.1 Base Field
- Since ALP packets may be split across Baseband Packets, the start of the payload of a Baseband Packet does not necessarily signify the start of an ALP packet. The Base Field of a Baseband Packet shall provide the start position of the first ALP packet that begins in the Baseband Packet through a pointer.
- 
- The value of the pointer shall be the offset (in bytes) from the beginning of the payload to the start of the first ALP packet that begins in that Baseband Packet.
- 
- When an ALP packet begins at the start of the payload portion of a Baseband Packet, the value of the pointer shall be 0.
- 
- When there is no ALP packet starting within that Baseband Packet, the value of the pointer shall be 8191 and a 2 byte Base Field shall be used.
- 
- When there are no ALP packets and only padding is present, the value of the pointer shall also be 8191 and a 2 byte Base Field shall be used, together with any necessary Optional Fields and Extension Fields as signaled by the OFI (Optional Field Indicator) field.
- 
- **/
-
-typedef struct atsc3_baseband_packet {
-    uint8_t     base_field_mode;    //1 bit
-    uint16_t    base_field_pointer; //either 7 bits or 13 bits
-    uint8_t     option_field_mode;  //                  2 bits
-    uint8_t     ext_type;           //                        3 bits
-    uint16_t    ext_len;            //
-    uint8_t*    extension;          // 0-31 bytes, or 0-full BBP
-    block_t*    alp_payload_pre_pointer;
-    block_t*    alp_payload_post_pointer;
-} atsc3_baseband_packet_t;
+#if defined (__cplusplus)
+extern "C" {
+#endif
 
 typedef struct alp_single_packet_header_sub_stream_identification {
 	uint8_t SID;
@@ -43,6 +27,8 @@ typedef struct alp_single_packet_header_header_extension {
 	uint8_t 	extension_length_minus1;
 	uint8_t*	extension_byte;
 } alp_single_packet_header_header_extension_t;
+
+
 /**
  * <A330-2016 Table 5.3 - Payload Configuration Field Value and Total Header Length>
  * 									Next Field
@@ -214,6 +200,28 @@ typedef struct lmt_table_multicast {
 
 
 
+typedef struct atsc3_alp_packet_collection {
+    pcap_t*                         descrInject; //optional descriptor for alp injection
+
+    ATSC3_VECTOR_BUILDER_STRUCT(atsc3_baseband_packet); //re-fragmented baseband packets for alp de-encapsulation
+    ATSC3_VECTOR_BUILDER_STRUCT(atsc3_alp_packet);      //completed ALP output packets for emission
+    
+    atsc3_alp_packet_t*             atsc3_alp_packet_pending; //incomplete packet for fragmentation
+} atsc3_alp_packet_collection_t;
+
+ATSC3_VECTOR_BUILDER_METHODS_INTERFACE(atsc3_alp_packet_collection, atsc3_baseband_packet);
+ATSC3_VECTOR_BUILDER_METHODS_INTERFACE(atsc3_alp_packet_collection, atsc3_alp_packet);
+
+atsc3_alp_packet_t* atsc3_alp_packet_clone(atsc3_alp_packet_t* atsc3_alp_packet);
+    
+void atsc3_alp_packet_free_alp_payload(atsc3_alp_packet_t* atsc3_alp_packet);
+void atsc3_baseband_packet_free_v(atsc3_baseband_packet_t* atsc3_baseband_packet);
+void atsc3_baseband_packet_free(atsc3_baseband_packet_t** atsc3_baseband_packet);
+
+
+#if defined (__cplusplus)
+}
+#endif
 
 
 
