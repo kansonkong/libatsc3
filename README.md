@@ -2,10 +2,31 @@ libatsc3
 ==========
 ATSC 3.0 NGBP Open Source Library - Parse LMT, LLS and other signaling, object delivery via ROUTE, video playback of MMT and DASH
 
-## Updates - 2019-07-31 
+## August, 2019: "Virtual" ATSC 3.0 Airchain with ALP IP Multicast "reflection"
+
+
+Designed for real-time inspection, analysis and confidence monitoring
+of STLTP flows, with full ALP IP de-encapsulation and playback support.
+
+In this demo, a Virtual NIC is replaying a STLTP .PCAP capture which is 
+received by the A/324 Reflector tool in real-time.  The reflector tool will unwrap 
+the STLTP single multicast IP:Port emission, and produce re-fragmented 
+ALP IP payloads emitted to a second Virtual NIC, including decoding of 
+Baseband, Preamble and T&M packets.
+
+For confidence monitoring of content, the reflector tool will fully parse 
+the tunnel payload consisting of A/324 Outer/Inner Tunneled packets,
+ A/321 Baseband Packets, A/330 ALP packets, and emitting the IP output
+on an independent Virtual NIC for service playback.
+
+
+2019-08-01 
+jjustman@ngbp.org
+
+More details:
+
 STLTP:  Added new STLTP De-encapsulator/Reflector listener test tool to enable local replay of ATSC 3.0 STLTP pcaps for emission of ALP IP packets.
 
-<video src="https://www.dropbox.com/s/6ngusfiyslr6g1a/20190801-NGBP-ATSC3.0%20Virtual%20STLTP%20Reflector%20and%20MMT%20Playback.mov?raw=1" width="960" height="540" controls preload></video>
 
 
 To run:
