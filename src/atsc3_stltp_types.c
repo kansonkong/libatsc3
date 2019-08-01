@@ -11,9 +11,17 @@
 int _STLTP_TYPES_DEBUG_ENABLED = 1;
 int _STLTP_TYPES_TRACE_ENABLED = 1;
 
+//L1_detail vector(s)
+
+ATSC3_VECTOR_BUILDER_METHODS_PARENT_IMPLEMENTATION(L1_detail_signaling);
+ATSC3_VECTOR_BUILDER_METHODS_IMPLEMENTATION(L1_detail_signaling, L1D_bonded_bsid_block);
+
+ATSC3_VECTOR_BUILDER_METHODS_PARENT_IMPLEMENTATION(timing_management_packet)
+ATSC3_VECTOR_BUILDER_METHODS_IMPLEMENTATION(timing_management_packet, bootstrap_timing_data);
+ATSC3_VECTOR_BUILDER_METHODS_IMPLEMENTATION(timing_management_packet, per_transmitter_data);
+
 
 ATSC3_VECTOR_BUILDER_METHODS_PARENT_IMPLEMENTATION(atsc3_stltp_tunnel_packet)
-
 ATSC3_VECTOR_BUILDER_METHODS_IMPLEMENTATION(atsc3_stltp_tunnel_packet, atsc3_stltp_baseband_packet);
 ATSC3_VECTOR_BUILDER_METHODS_IMPLEMENTATION(atsc3_stltp_tunnel_packet, atsc3_stltp_preamble_packet);
 ATSC3_VECTOR_BUILDER_METHODS_IMPLEMENTATION(atsc3_stltp_tunnel_packet, atsc3_stltp_timing_management_packet);
@@ -246,34 +254,37 @@ void atsc3_stltp_preamble_packet_free_v(atsc3_stltp_preamble_packet_t* atsc3_stl
     }
 }
 
-//copy-paste warning
+/**
+ 
+ atsc3_ip_udp_rtp_packet_t*      ip_udp_rtp_packet_outer;
+ atsc3_rtp_header_t*             rtp_header_outer; //pointer from ip_udp_rtp_packet_outer->rtp_header
+ 
+ atsc3_ip_udp_rtp_packet_t*      ip_udp_rtp_packet_inner;
+ atsc3_rtp_header_t*             rtp_header_inner; //pointer from ip_udp_rtp_packet_outer->rtp_header
+
+ **/
 void atsc3_stltp_timing_management_packet_free_v(atsc3_stltp_timing_management_packet_t* atsc3_stltp_timing_management_packet) {
-    if(atsc3_stltp_timing_management_packet) {
-        if(atsc3_stltp_timing_management_packet->rtp_header) {
-            //todo - memset 0 this block
-            __STLTP_TYPES_TRACE("atsc3_stltp_baseband_packet_free: freeing atsc3_stltp_timing_management_packet->rtp_header: %p", atsc3_stltp_timing_management_packet->rtp_header);
-            atsc3_rtp_header_free(&atsc3_stltp_timing_management_packet->rtp_header);
-        }
+    if(atsc3_stltp_timing_management_packet) {    
+        //this shoudl be all boilerplate
+        atsc3_rtp_header_free(&atsc3_stltp_timing_management_packet->rtp_header_outer);
+        atsc3_ip_udp_rtp_packet_free(&atsc3_stltp_timing_management_packet->ip_udp_rtp_packet_outer);
+        atsc3_rtp_header_free(&atsc3_stltp_timing_management_packet->rtp_header_inner);
+        atsc3_ip_udp_rtp_packet_free(&atsc3_stltp_timing_management_packet->ip_udp_rtp_packet_inner);
+
         if(atsc3_stltp_timing_management_packet->payload) {
             free(atsc3_stltp_timing_management_packet->payload);
             atsc3_stltp_timing_management_packet->payload = NULL;
         }
-        if(atsc3_stltp_timing_management_packet->ip_udp_rtp_packet) {
-            atsc3_ip_udp_rtp_packet_free(&atsc3_stltp_timing_management_packet->ip_udp_rtp_packet);
-        }
-        
-        //let vector_v initiate the pointer free
-        //free(atsc3_stltp_timing_management_packet);
     }
 }
 
 
-atsc3_rtp_header_dump_outer(atsc3_stltp_tunnel_packet_t* atsc3_stltp_tunnel_packet) {
+void atsc3_rtp_header_dump_outer(atsc3_stltp_tunnel_packet_t* atsc3_stltp_tunnel_packet) {
     atsc3_ip_udp_rtp_packet_t* atsc3_ip_udp_rtp_packet_outer = atsc3_stltp_tunnel_packet->ip_udp_rtp_packet_outer;
     atsc3_rtp_header_t* atsc3_rtp_header = atsc3_ip_udp_rtp_packet_outer->rtp_header;
     udp_flow_t atsc3_udp_flow = atsc3_ip_udp_rtp_packet_outer->udp_flow;
     
-    __STLTP_PARSER_DEBUG(" --- outer: payload_type: %s (%hhu), sequence_number: %d, dst: %u.%u.%u.%u:%u",
+    __STLTP_TYPES_DEBUG(" --- outer: payload_type: %s (%hhu), sequence_number: %d, dst: %u.%u.%u.%u:%u",
                          ATSC3_CTP_STL_PAYLOAD_TYPE_TO_STRING(atsc3_rtp_header->payload_type),
                          atsc3_rtp_header->payload_type,
                          atsc3_rtp_header->sequence_number,
@@ -286,7 +297,7 @@ void atsc3_rtp_header_dump_inner(atsc3_stltp_tunnel_packet_t* atsc3_stltp_tunnel
     atsc3_rtp_header_t* atsc3_rtp_header = atsc3_ip_udp_rtp_packet_inner->rtp_header;
     udp_flow_t atsc3_udp_flow = atsc3_ip_udp_rtp_packet_inner->udp_flow;
     
-    __STLTP_PARSER_DEBUG("     --- inner: payload_type: %s  (%hhu), sequence_number: %d, dst: %u.%u.%u.%u:%u",
+    __STLTP_TYPES_DEBUG("     --- inner: payload_type: %s  (%hhu), sequence_number: %d, dst: %u.%u.%u.%u:%u",
                          ATSC3_CTP_STL_PAYLOAD_TYPE_TO_STRING(atsc3_rtp_header->payload_type),
                          atsc3_rtp_header->payload_type,
                          atsc3_rtp_header->sequence_number,
@@ -296,17 +307,17 @@ void atsc3_rtp_header_dump_inner(atsc3_stltp_tunnel_packet_t* atsc3_stltp_tunnel
 
 void atsc3_rtp_header_dump(atsc3_rtp_header_t* atsc3_rtp_header, int spaces) {
     
-    __STLTP_PARSER_DEBUG("%*sversion        : %x, padding: %x, extension: %x, csrc_count: %x, marker: %x", spaces, "",
+    __STLTP_TYPES_DEBUG("%*sversion        : %x, padding: %x, extension: %x, csrc_count: %x, marker: %x", spaces, "",
                          atsc3_rtp_header->version, atsc3_rtp_header->padding, atsc3_rtp_header->extension, atsc3_rtp_header->csrc_count, atsc3_rtp_header->marker);
     
     if(atsc3_rtp_header->payload_type == 0x61) {
         
-        __STLTP_PARSER_DEBUG("%*ssequence_number: 0x%x (%u), timestamp: 0x%x (%u)  packet_offset: 0x%x (%u)", spaces, "",
+        __STLTP_TYPES_DEBUG("%*ssequence_number: 0x%x (%u), timestamp: 0x%x (%u)  packet_offset: 0x%x (%u)", spaces, "",
                              atsc3_rtp_header->sequence_number, atsc3_rtp_header->sequence_number,
                              atsc3_rtp_header->timestamp, atsc3_rtp_header->timestamp,
                              atsc3_rtp_header->packet_offset, atsc3_rtp_header->packet_offset);
     } else {
-        __STLTP_PARSER_DEBUG("%*ssequence_number: 0x%x (%u), timestamp: 0x%x (%u)  packet length: 0x%x (%u)", spaces, "",
+        __STLTP_TYPES_DEBUG("%*ssequence_number: 0x%x (%u), timestamp: 0x%x (%u)  packet length: 0x%x (%u)", spaces, "",
                              atsc3_rtp_header->sequence_number, atsc3_rtp_header->sequence_number,
                              atsc3_rtp_header->timestamp, atsc3_rtp_header->timestamp,
                              atsc3_rtp_header->packet_offset, atsc3_rtp_header->packet_offset);
