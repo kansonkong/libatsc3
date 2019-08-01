@@ -25,7 +25,27 @@ clean:
 	-rm -f *.o
 	-rm -f route/*
 	-rm -f mpu/*
-
+	-rm atsc3_lmt_test
+	-rm atsc3_lls_slt_parser_test
+	-rm atsc3_lls_test
+	-rm atsc3_lls_SystemTime_test
+	-rm atsc3_mmt_signaling_message_test
+	-rm atsc3_fdt_test
+	-rm atsc3_stltp_parser_test
+	-rm atsc3_mime_multipart_related_parser_test
+	-rm atsc3_fdt_mbms_envelope_test
+	-rm listener_tests/atsc3_alc_listener_test
+	-rm listener_tests/atsc3_alc_listener_test_valgrind
+	-rm listener_tests/atsc3_lls_listener_test
+	-rm listener_tests/atsc3_mmt_listener_test
+	-rm listener_tests/atsc3_mmt_sls_listener_test
+	-rm listener_tests/atsc3_stltp_listener_test
+	-rm listener_tests/atsc3_stltp_alp_listener_test
+	-rm listener_tests/atsc3_stltp_alp_listener_reflector_test
+	-rm tools/atsc3_listener_metrics_ncurses
+	-rm tools/atsc3_listener_metrics_ncurses_httpd_isobmff
+	-rm tools/atsc3_mmt_mfu_monitor
+	 
 intermediate_lls: atsc3_lls.o atsc3_lls_sls_parser.o atsc3_lls_alc_utils.o
 
 intermediate_alp: atsc3_alp_types.o atsc3_alp_parser.o
