@@ -358,8 +358,10 @@ atsc3_stltp_tunnel_packet_t* atsc3_stltp_raw_packet_extract_inner_from_outer_pac
             atsc3_stltp_tunnel_packet_outer_inner_destroy(atsc3_stltp_tunnel_packet_current);
         } else {
             //we have pending payloads that we can't drop the inner rtp header, so don't clear them out yet
-            //true?atsc3_stltp_tunnel_packet_outer_destroy(atsc3_stltp_tunnel_packet_current);
-            atsc3_stltp_tunnel_packet_outer_inner_destroy(atsc3_stltp_tunnel_packet_current);
+            //true?
+            //todo->change this to a logical disposed
+            atsc3_stltp_tunnel_packet_outer_destroy(atsc3_stltp_tunnel_packet_current);
+            ///atsc3_stltp_tunnel_packet_outer_inner_destroy(atsc3_stltp_tunnel_packet_current);
 
         }
     }
