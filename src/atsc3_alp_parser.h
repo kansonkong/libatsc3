@@ -4,12 +4,11 @@
  *  Created on: May 1, 2019
  *      Author: jjustman
  */
+#include <pcap.h>
+#include <string.h>
 
 #ifndef ATSC3_ALP_PARSER_H_
 #define ATSC3_ALP_PARSER_H_
-
-#include <pcap.h>
-#include <string.h>
 
 #include "atsc3_utils.h"
 #include "atsc3_logging_externs.h"
@@ -20,22 +19,9 @@
 extern "C" {
 #endif
 
-    
-typedef struct atsc3_alp_packet_collection {
-    pcap_t*                         descrInject; //optional descriptor for alp injection
-    atsc3_baseband_packet_t*        baseband_packet;
-    
-    ATSC3_VECTOR_BUILDER_STRUCT(atsc3_alp_packet);
-    atsc3_alp_packet_t*             atsc3_alp_packet_pending; //incomplete packet for fragmentation
-
-} atsc3_alp_packet_collection_t;
-    
-ATSC3_VECTOR_BUILDER_METHODS_INTERFACE(atsc3_alp_packet_collection, atsc3_alp_packet);
-    
 atsc3_baseband_packet_t* atsc3_stltp_parse_baseband_packet(atsc3_stltp_baseband_packet_t* atsc3_stltp_baseband_packet);
-void atsc3_baseband_packet_free(atsc3_baseband_packet_t** atsc3_baseband_packet);
-
-atsc3_alp_packet_t* atsc3_alp_packet_parse(block_t* baseband_packet_payload);
+atsc3_alp_packet_t*     atsc3_alp_packet_parse(block_t* baseband_packet_payload);
+    
 void atsc3_reflect_alp_packet_collection(atsc3_alp_packet_collection_t* atsc3_alp_packet_collection);
 
 #if defined (__cplusplus)
