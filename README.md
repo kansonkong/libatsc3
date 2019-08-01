@@ -1,9 +1,11 @@
-libatsc3
+libatsc3 Overview
 ==========
 ATSC 3.0 NGBP Open Source Library - Parse LMT, LLS and other signaling, object delivery via ROUTE, video playback of MMT and DASH
 
-## August, 2019: "Virtual" ATSC 3.0 Airchain with ALP IP Multicast "reflection"
-
+{::nomarkdown}
+<video src="https://www.dropbox.com/s/6ngusfiyslr6g1a/20190801-NGBP-ATSC3.0%20Virtual%20STLTP%20Reflector%20and%20MMT%20Playback.mov?raw=1" width="960" height="540" controls preload></video>
+{:/}
+## August, 2019 Update: "Virtual" ATSC 3.0 Airchain with ALP IP Multicast "reflection"
 
 Designed for real-time inspection, analysis and confidence monitoring
 of STLTP flows, with full ALP IP de-encapsulation and playback support.
