@@ -645,11 +645,11 @@ atsc3_stltp_timing_management_packet_t* atsc3_stltp_timing_management_packet_ext
 		atsc3_stltp_tunnel_packet_current->atsc3_stltp_timing_management_packet_pending = atsc3_stltp_timing_management_packet_pending;
 	}
 
-    atsc3_stltp_timing_management_packet_pending->rtp_header = atsc3_rtp_header_duplicate(atsc3_stltp_tunnel_packet_current->ip_udp_rtp_packet_inner->rtp_header);
+    atsc3_stltp_timing_management_packet_pending->rtp_header_inner = atsc3_rtp_header_duplicate(atsc3_stltp_tunnel_packet_current->ip_udp_rtp_packet_inner->rtp_header);
 
     block_t* packet = block_Refcount(atsc3_stltp_tunnel_packet_current->ip_udp_rtp_packet_inner->data);
 
-    if(atsc3_stltp_timing_management_packet_pending->rtp_header->marker && !atsc3_stltp_tunnel_packet_current->atsc3_stltp_timing_management_packet_pending->fragment_count) {
+    if(atsc3_stltp_timing_management_packet_pending->rtp_header_inner->marker && !atsc3_stltp_tunnel_packet_current->atsc3_stltp_timing_management_packet_pending->fragment_count) {
 		//read the first uint16_t for our preamble length
 
 		atsc3_stltp_timing_management_packet_pending->payload_length = ntohs(*((uint16_t*)(block_Get(packet))));
@@ -688,10 +688,7 @@ atsc3_stltp_timing_management_packet_t* atsc3_stltp_timing_management_packet_ext
 		__STLTP_PARSER_DEBUG("     ----timing_management packet: complete-----");
 		atsc3_stltp_timing_management_packet_pending->is_complete = true;
         
-        //hack
-        if(atsc3_stltp_timing_management_packet_pending->ip_udp_rtp_packet && atsc3_stltp_timing_management_packet_pending->ip_udp_rtp_packet->data) {
-            block_Destroy(&atsc3_stltp_timing_management_packet_pending->ip_udp_rtp_packet->data);
-        }
+        atsc3_ip_udp_rtp_packet_free(&atsc3_stltp_timing_management_packet_pending->ip_udp_rtp_packet_inner);
         
 		atsc3_stltp_tunnel_packet_add_atsc3_stltp_timing_management_packet(atsc3_stltp_tunnel_packet_current, atsc3_stltp_timing_management_packet_pending);
 		atsc3_stltp_tunnel_packet_current->atsc3_stltp_timing_management_packet_pending = NULL;
@@ -706,9 +703,6 @@ atsc3_stltp_timing_management_packet_t* atsc3_stltp_timing_management_packet_ext
 	return atsc3_stltp_timing_management_packet_pending;
 }
 
-
-
-void
 
 
 
