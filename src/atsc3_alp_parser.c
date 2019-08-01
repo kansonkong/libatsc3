@@ -10,10 +10,6 @@
 int _ALP_PARSER_INFO_ENABLED = 1;
 int _ALP_PARSER_DEBUG_ENABLED = 1;
 
-ATSC3_VECTOR_BUILDER_METHODS_PARENT_IMPLEMENTATION(atsc3_alp_packet_collection);
-ATSC3_VECTOR_BUILDER_METHODS_IMPLEMENTATION(atsc3_alp_packet_collection, atsc3_alp_packet);
-
-
 /**
  A/322-2018 - Section 5.2 Baseband Formatting:
  ..The baseband formatting block creates one or more PLPs as directed by the Scheduler. At the output of the baseband formatting block, each PLP consists of a stream of Baseband Packets and there is exactly one Baseband Packet per defined FEC Frame...
@@ -115,7 +111,7 @@ atsc3_baseband_packet_t* atsc3_stltp_parse_baseband_packet(atsc3_stltp_baseband_
     __ALP_PARSER_INFO("---------------------------------------");
     __ALP_PARSER_INFO("Baseband Packet Header: pointer: %p, sequence_number: %d, port: %d, length: %u",
                       binary_payload,
-                      atsc3_stltp_baseband_packet->rtp_header_inner->sequence_number,
+                      atsc3_stltp_baseband_packet->ip_udp_rtp_packet_inner->rtp_header->sequence_number,
                       atsc3_stltp_baseband_packet->ip_udp_rtp_packet_inner->udp_flow.dst_port,
                       atsc3_stltp_baseband_packet->payload_length);
     __ALP_PARSER_INFO("Raw hex: 0x%02hhX 0x%02hhX 0x%02hhX 0x%02hhX", binary_payload[0], binary_payload[1], binary_payload[2], binary_payload[3]);
@@ -335,26 +331,6 @@ cleanup:
     return NULL;
 }
 
-void atsc3_baseband_packet_free(atsc3_baseband_packet_t** atsc3_baseband_packet_p) {
-    atsc3_baseband_packet_t* atsc3_baseband_packet = *atsc3_baseband_packet_p;
-    if(atsc3_baseband_packet) {
-        if(atsc3_baseband_packet->extension) {
-            free(atsc3_baseband_packet->extension);
-            atsc3_baseband_packet->extension = NULL;
-        }
-        if(atsc3_baseband_packet->alp_payload_pre_pointer) {
-            block_Release(&atsc3_baseband_packet->alp_payload_pre_pointer);
-        }
-        if(atsc3_baseband_packet->alp_payload_post_pointer) {
-            block_Release(&atsc3_baseband_packet->alp_payload_post_pointer);
-        }
-        
-        free(atsc3_baseband_packet);
-        atsc3_baseband_packet = NULL;
-    }
-    *atsc3_baseband_packet_p = NULL;
-}
-
 
 //parse relative position of baseband_packet_payload,
 atsc3_alp_packet_t* atsc3_alp_packet_parse(block_t* baseband_packet_payload) {
@@ -571,7 +547,7 @@ atsc3_alp_packet_t* atsc3_alp_packet_parse(block_t* baseband_packet_payload) {
     block_Write(alp_packet->alp_payload, binary_payload, alp_payload_bytes_to_write);
     block_Seek_Relative(baseband_packet_payload, alp_payload_bytes_to_write + (binary_payload - alp_binary_payload_start));
     
-    __ALP_PARSER_INFO("writing ALP payload to: %p, alp_payload_bytes_to_write: %d MIN(alp_payload_length: %d, baseband_packet_payload bytes: %d), remaining ALP bytes: %d, remaining baseband bytes: %d",
+    __ALP_PARSER_INFO("alp_packet->alp_payload: building block_t: ALP payload to: %p, alp_payload_bytes_to_write: %d MIN(alp_payload_length: %d, baseband_packet_payload bytes: %d), remaining ALP bytes: %d, remaining baseband bytes: %d",
                       alp_packet,
                       alp_payload_bytes_to_write,
                       alp_payload_length,
@@ -638,7 +614,6 @@ void atsc3_reflect_alp_packet_collection(atsc3_alp_packet_collection_t* atsc3_al
             }
         }
     }
-    atsc3_alp_packet_collection_clear_atsc3_alp_packet(atsc3_alp_packet_collection);
 }
 
 

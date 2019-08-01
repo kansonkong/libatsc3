@@ -17,7 +17,7 @@ atsc3_ip_udp_rtp_packet_t* atsc3_ip_udp_rtp_process_packet_from_pcap(u_char *use
     block_t* ip_udp_rtp_raw_block = atsc3_pcap_parse_ethernet_frame(pkthdr, packet);
     if(ip_udp_rtp_raw_block) {
         block_Rewind(ip_udp_rtp_raw_block);
-        ip_udp_rtp_packet = atsc3_ip_udp_rtp_packet_process_from_blockt_pos(ip_udp_rtp_raw_block);
+ip_udp_rtp_packet = atsc3_ip_udp_rtp_packet_process_from_blockt_pos(ip_udp_rtp_raw_block);
     }
     return ip_udp_rtp_packet;
 }
@@ -262,13 +262,11 @@ void atsc3_ip_udp_rtp_packet_free(atsc3_ip_udp_rtp_packet_t** ip_udp_rtp_packet_
     if(ip_udp_rtp_packet_p) {
         atsc3_ip_udp_rtp_packet_t* ip_udp_rtp_packet = *ip_udp_rtp_packet_p;
         if(ip_udp_rtp_packet) {
-            __IP_UDP_RTP_PARSER_TRACE("atsc3_ip_udp_rtp_packet_free: freeing ip_udp_rtp_packet->rtp_header: %p", ip_udp_rtp_packet->rtp_header);
             //rely on reference counting for outer/inner pointer sharing
             if(ip_udp_rtp_packet->data) {
                 __IP_UDP_RTP_PARSER_TRACE("atsc3_ip_udp_rtp_packet_free: freeing ip_udp_rtp_packet->data: %p", ip_udp_rtp_packet->data);
                 block_Release(&ip_udp_rtp_packet->data);
             }
-            
             atsc3_rtp_header_free(&ip_udp_rtp_packet->rtp_header);
             free(ip_udp_rtp_packet);
             ip_udp_rtp_packet = NULL;
@@ -283,19 +281,77 @@ void atsc3_ip_udp_rtp_packet_destroy(atsc3_ip_udp_rtp_packet_t** ip_udp_rtp_pack
     if(ip_udp_rtp_packet_p) {
         atsc3_ip_udp_rtp_packet_t* ip_udp_rtp_packet = *ip_udp_rtp_packet_p;
         if(ip_udp_rtp_packet) {
-            __IP_UDP_RTP_PARSER_TRACE("atsc3_ip_udp_rtp_packet_destroy: freeing ip_udp_rtp_packet->rtp_header: %p", ip_udp_rtp_packet->rtp_header);
             
             if(ip_udp_rtp_packet->data) {
                 __IP_UDP_RTP_PARSER_TRACE("atsc3_ip_udp_rtp_packet_destroy: freeing ip_udp_rtp_packet->data: %p", ip_udp_rtp_packet->data);
                 block_Destroy(&ip_udp_rtp_packet->data);
             }
             
-            freesafe(ip_udp_rtp_packet->rtp_header);
+            if(ip_udp_rtp_packet->rtp_header) {
+                __IP_UDP_RTP_PARSER_TRACE("atsc3_ip_udp_rtp_packet_destroy: freeing ip_udp_rtp_packet->rtp_header: %p", ip_udp_rtp_packet->rtp_header);
+                freesafe(ip_udp_rtp_packet->rtp_header);
+            }
             ip_udp_rtp_packet->rtp_header = NULL;
             free(ip_udp_rtp_packet);
             ip_udp_rtp_packet = NULL;
             
         }
         *ip_udp_rtp_packet_p = NULL;
+    }
+}
+
+
+
+//destroy: hard free at the end of the main pcap loop for outer_inner which may have shared block_t*
+void atsc3_ip_udp_rtp_packet_destroy_outer_inner(atsc3_ip_udp_rtp_packet_t** ip_udp_rtp_packet_outer_p, atsc3_ip_udp_rtp_packet_t** ip_udp_rtp_packet_inner_p) {
+    
+    block_t* shared_outer_inner_block_t_to_check = NULL;
+    atsc3_rtp_header_t* shared_outer_inner_rtp_header_t_to_check = NULL;
+    
+    if(ip_udp_rtp_packet_outer_p) {
+        atsc3_ip_udp_rtp_packet_t* ip_udp_rtp_packet_outer = *ip_udp_rtp_packet_outer_p;
+        if(ip_udp_rtp_packet_outer) {
+            
+            if(ip_udp_rtp_packet_outer->data) {
+                __IP_UDP_RTP_PARSER_TRACE("atsc3_ip_udp_rtp_packet_destroy: freeing ip_udp_rtp_packet_outer->data: %p", ip_udp_rtp_packet_outer->data);
+                shared_outer_inner_block_t_to_check = ip_udp_rtp_packet_outer->data;
+                block_Destroy(&ip_udp_rtp_packet_outer->data);
+            }
+            
+            if(ip_udp_rtp_packet_outer->rtp_header) {
+                __IP_UDP_RTP_PARSER_TRACE("atsc3_ip_udp_rtp_packet_destroy: freeing ip_udp_rtp_packet_outer->rtp_header: %p", ip_udp_rtp_packet_outer->rtp_header);
+                shared_outer_inner_rtp_header_t_to_check = ip_udp_rtp_packet_outer->rtp_header;
+                freesafe(ip_udp_rtp_packet_outer->rtp_header);
+
+            }
+            ip_udp_rtp_packet_outer->rtp_header = NULL;
+            free(ip_udp_rtp_packet_outer);
+            ip_udp_rtp_packet_outer = NULL;
+            
+        }
+        *ip_udp_rtp_packet_outer_p = NULL;
+    }
+    
+    if(ip_udp_rtp_packet_inner_p) {
+        atsc3_ip_udp_rtp_packet_t* ip_udp_rtp_packet_inner = *ip_udp_rtp_packet_inner_p;
+        if(ip_udp_rtp_packet_inner) {
+            __IP_UDP_RTP_PARSER_TRACE("atsc3_ip_udp_rtp_packet_destroy: freeing ip_udp_rtp_packet_inner->rtp_header: %p", ip_udp_rtp_packet_inner->rtp_header);
+            
+            if(ip_udp_rtp_packet_inner->data) {
+                if(shared_outer_inner_block_t_to_check && shared_outer_inner_block_t_to_check != ip_udp_rtp_packet_inner->data) {
+                    __IP_UDP_RTP_PARSER_TRACE("atsc3_ip_udp_rtp_packet_destroy: freeing ip_udp_rtp_packet_inner->data: %p", ip_udp_rtp_packet_inner->data);
+                    block_Destroy(&ip_udp_rtp_packet_inner->data);
+                }
+            }
+            
+            if(shared_outer_inner_rtp_header_t_to_check && shared_outer_inner_rtp_header_t_to_check != ip_udp_rtp_packet_inner->rtp_header) {
+                freesafe(ip_udp_rtp_packet_inner->rtp_header);
+                ip_udp_rtp_packet_inner->rtp_header = NULL;
+            }
+            free(ip_udp_rtp_packet_inner);
+            ip_udp_rtp_packet_inner = NULL;
+            
+        }
+        *ip_udp_rtp_packet_inner_p = NULL;
     }
 }
