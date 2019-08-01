@@ -111,7 +111,7 @@ atsc3_baseband_packet_t* atsc3_stltp_parse_baseband_packet(atsc3_stltp_baseband_
     __ALP_PARSER_INFO("---------------------------------------");
     __ALP_PARSER_INFO("Baseband Packet Header: pointer: %p, sequence_number: %d, port: %d, length: %u",
                       binary_payload,
-                      atsc3_stltp_baseband_packet->rtp_header_inner->sequence_number,
+                      atsc3_stltp_baseband_packet->ip_udp_rtp_packet_inner->rtp_header->sequence_number,
                       atsc3_stltp_baseband_packet->ip_udp_rtp_packet_inner->udp_flow.dst_port,
                       atsc3_stltp_baseband_packet->payload_length);
     __ALP_PARSER_INFO("Raw hex: 0x%02hhX 0x%02hhX 0x%02hhX 0x%02hhX", binary_payload[0], binary_payload[1], binary_payload[2], binary_payload[3]);

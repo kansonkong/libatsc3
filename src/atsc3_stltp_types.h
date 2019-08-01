@@ -62,10 +62,10 @@ https://www.atsc.org/wp-content/uploads/2016/10/A322-2018-Physical-Layer-Protoco
 
 typedef struct atsc3_stltp_baseband_packet {
     atsc3_ip_udp_rtp_packet_t*     ip_udp_rtp_packet_outer;
-    atsc3_rtp_header_t*            rtp_header_outer; //pointer from ip_udp_rtp_packet_outer->rtp_header
+    //atsc3_rtp_header_t*            rtp_header_outer; //pointer from ip_udp_rtp_packet_outer->rtp_header
     
     atsc3_ip_udp_rtp_packet_t*     ip_udp_rtp_packet_inner;
-    atsc3_rtp_header_t*            rtp_header_inner; //pointer from ip_udp_rtp_packet_outer->rtp_header
+    //atsc3_rtp_header_t*            rtp_header_inner; //pointer from ip_udp_rtp_packet_outer->rtp_header
 
     uint32_t                       fragment_count;
     bool                           is_complete;
@@ -308,20 +308,25 @@ ATSC3_VECTOR_BUILDER_METHODS_INTERFACE(L1_detail_signaling, L1D_bonded_bsid_bloc
 ATSC3_VECTOR_BUILDER_METHODS_INTERFACE(L1_detail_signaling, L1D_subframe_parameters);
 
 typedef struct atsc3_stltp_preamble_packet {
-	atsc3_rtp_header_t*         rtp_header;
-
-	uint8_t* 			    	payload;
-	uint16_t 			    	payload_offset;
-	uint16_t 		    		payload_length;
-	bool                        is_complete;
-
-	L1_basic_signaling_t 	    L1_basic_signaling;
-	L1_detail_signaling_t 	    L1_detail_signaling;
-	uint16_t				    crc16;
-
-	atsc3_ip_udp_rtp_packet_t* 	ip_udp_rtp_packet;
-	uint32_t 				    fragment_count;
-
+    
+    atsc3_ip_udp_rtp_packet_t*      ip_udp_rtp_packet_outer;
+    //atsc3_rtp_header_t*             rtp_header_outer; //pointer from ip_udp_rtp_packet_outer->rtp_header
+    
+    atsc3_ip_udp_rtp_packet_t*      ip_udp_rtp_packet_inner;
+    //atsc3_rtp_header_t*             rtp_header_inner; //pointer from ip_udp_rtp_packet_outer->rtp_header
+    
+    uint32_t                        fragment_count;
+    bool                            is_complete;
+    
+    //TODO: refactor this to block_t for payload/offset/length
+    uint8_t*                         payload;
+    uint16_t                         payload_offset;
+    uint16_t                         payload_length;
+   
+    //TODO: implement L1 basic/L1 detail
+    L1_basic_signaling_t 	         L1_basic_signaling;
+	L1_detail_signaling_t 	         L1_detail_signaling;
+	uint16_t				         crc16;
 } atsc3_stltp_preamble_packet_t;
 
     
@@ -402,10 +407,10 @@ ATSC3_VECTOR_BUILDER_METHODS_INTERFACE(timing_management_packet, per_transmitter
 
 typedef struct atsc3_stltp_timing_management_packet {
     atsc3_ip_udp_rtp_packet_t*      ip_udp_rtp_packet_outer;
-    atsc3_rtp_header_t*             rtp_header_outer; //pointer from ip_udp_rtp_packet_outer->rtp_header
+    //atsc3_rtp_header_t*             rtp_header_outer; //pointer from ip_udp_rtp_packet_outer->rtp_header
     
     atsc3_ip_udp_rtp_packet_t*      ip_udp_rtp_packet_inner;
-    atsc3_rtp_header_t*             rtp_header_inner; //pointer from ip_udp_rtp_packet_outer->rtp_header
+    //atsc3_rtp_header_t*             rtp_header_inner; //pointer from ip_udp_rtp_packet_outer->rtp_header
 
     uint32_t                        fragment_count;
     bool                            is_complete;
@@ -464,13 +469,20 @@ void atsc3_stltp_tunnel_packet_outer_destroy(atsc3_stltp_tunnel_packet_t* atsc3_
 void atsc3_stltp_tunnel_packet_inner_destroy(atsc3_stltp_tunnel_packet_t* atsc3_stltp_tunnel_packet);
 void atsc3_stltp_tunnel_packet_outer_inner_destroy(atsc3_stltp_tunnel_packet_t* atsc3_stltp_tunnel_packet);
 
+//release outer/inner data payloads
+void atsc3_stltp_baseband_packet_free_outer_inner_data(atsc3_stltp_baseband_packet_t* atsc3_stltp_baseband_packet);    
+void atsc3_stltp_preamble_packet_free_outer_inner_data(atsc3_stltp_preamble_packet_t* atsc3_stltp_preamble_packet);
+void atsc3_stltp_timing_management_packet_free_outer_inner_data(atsc3_stltp_timing_management_packet_t* atsc3_stltp_timing_management_packet);
+
+
+
 //release inner packet concerete types
 void atsc3_stltp_baseband_packet_free_v(atsc3_stltp_baseband_packet_t* atsc3_stltp_baseband_packet);
-void atsc3_stltp_baseband_packet_free_inner_outer_data(atsc3_stltp_baseband_packet_t* atsc3_stltp_baseband_packet);
-
 void atsc3_stltp_preamble_packet_free_v(atsc3_stltp_preamble_packet_t* atsc3_stltp_preamble_packet);
 void atsc3_stltp_timing_management_packet_free_v(atsc3_stltp_timing_management_packet_t* atsc3_stltp_timing_management_packet);
 
+
+    
 //utility methods for dumping outer/inner/rtp header payloads
 void atsc3_rtp_header_dump_outer(atsc3_stltp_tunnel_packet_t* atsc3_stltp_tunnel_packet);
 void atsc3_rtp_header_dump_inner(atsc3_stltp_tunnel_packet_t* atsc3_stltp_tunnel_packet);

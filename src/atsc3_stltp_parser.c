@@ -456,7 +456,7 @@ atsc3_stltp_baseband_packet_t* atsc3_stltp_baseband_packet_extract(atsc3_stltp_t
 		the Data Consumer to know how much data is to be delivered within the payloads of the BPPS.
 		 */
         
-        uint32_t baseband_header_packet_length = atsc3_stltp_baseband_packet_pending->rtp_header_inner->packet_offset; //SSRC packet length
+        uint32_t baseband_header_packet_length = atsc3_stltp_baseband_packet_pending->ip_udp_rtp_packet_inner->rtp_header->packet_offset; //SSRC packet length
         //jdj-2019-07-31 - hack for A324 - 2019 compatability
         baseband_header_packet_length &= 0xFFFF;
         assert(baseband_header_packet_length);
@@ -498,7 +498,7 @@ atsc3_stltp_baseband_packet_t* atsc3_stltp_baseband_packet_extract(atsc3_stltp_t
 		atsc3_stltp_baseband_packet_pending->is_complete = true;
         
         //clean up baseband packet inner/outer payload data
-        atsc3_stltp_baseband_packet_free_inner_outer_data(atsc3_stltp_baseband_packet_pending);
+        atsc3_stltp_baseband_packet_free_outer_inner_data(atsc3_stltp_baseband_packet_pending);
         
         //append to our refragmented stltp payload baseband container
 		atsc3_stltp_tunnel_packet_add_atsc3_stltp_baseband_packet(atsc3_stltp_tunnel_packet_current, atsc3_stltp_baseband_packet_pending);
@@ -515,7 +515,6 @@ atsc3_stltp_baseband_packet_t* atsc3_stltp_baseband_packet_extract(atsc3_stltp_t
 
 
 /*
- 
  The RTP header fields of the Preamble Payload Packet Set shall be as described below, configured with the marker (M) bit of the packet containing the beginning of a Preamble Payload data structure set to ‘1’. The marker (M) bits of remaining packets shall be set to ‘0’. This allows the Transmission system on the Data Consumer end of the STL to reconstruct the Preamble Payload data structure after any resequencing takes place. The timestamps of the packets of a given Preamble Payload Packet Set shall have the same values. The timestamp values are derived from a subset of the “Bootstrap_Timing_Data ()” appearing in Table 8.3, providing a mechanism to uniquely associate each of the Preamble Payload packets with a specific Physical Layer frame. The format of the timestamp field is described in Table 8.2.
  
   The resultant Stream of Preamble Payload packets shall have destination address 239.0.51.48 and destination port 30064 before application of channel number offset of the port number in the case of multichannel carriage within a single STL Tunnel Packet Stream.
@@ -544,10 +543,10 @@ atsc3_stltp_preamble_packet_t* atsc3_stltp_preamble_packet_extract(atsc3_stltp_t
 		atsc3_stltp_tunnel_packet_current->atsc3_stltp_preamble_packet_pending = atsc3_stltp_preamble_packet_pending;
 	}
 
-    atsc3_stltp_preamble_packet_pending->rtp_header = atsc3_rtp_header_duplicate(atsc3_stltp_tunnel_packet_current->ip_udp_rtp_packet_inner->rtp_header);
+    atsc3_stltp_preamble_packet_pending->ip_udp_rtp_packet_inner = atsc3_ip_udp_rtp_packet_duplicate(atsc3_stltp_tunnel_packet_current->ip_udp_rtp_packet_inner);
     block_t* packet = block_Refcount(atsc3_stltp_tunnel_packet_current->ip_udp_rtp_packet_inner->data);
 
-	if(atsc3_stltp_preamble_packet_pending->rtp_header->marker && !atsc3_stltp_tunnel_packet_current->atsc3_stltp_preamble_packet_pending->fragment_count) {
+	if(atsc3_stltp_preamble_packet_pending->ip_udp_rtp_packet_inner->rtp_header->marker && !atsc3_stltp_tunnel_packet_current->atsc3_stltp_preamble_packet_pending->fragment_count) {
 		//read the first uint16_t for our preamble length
 
         //The length field shall contain the number of bytes in the Preamble Payload data structure following the length field excluding the crc16 bytes
@@ -577,14 +576,13 @@ atsc3_stltp_preamble_packet_t* atsc3_stltp_preamble_packet_extract(atsc3_stltp_t
 		//process the preamble data structures
 		__STLTP_PARSER_DEBUG("       ----preamble packet: complete-----");
 		atsc3_stltp_preamble_packet_pending->is_complete = true;
-        //hack
-        if(atsc3_stltp_preamble_packet_pending->ip_udp_rtp_packet && atsc3_stltp_preamble_packet_pending->ip_udp_rtp_packet->data) {
-            block_Destroy(&atsc3_stltp_preamble_packet_pending->ip_udp_rtp_packet->data);
-        }
+        
+        //clean up baseband packet inner/outer payload data
+        atsc3_stltp_preamble_packet_free_outer_inner_data(atsc3_stltp_preamble_packet_pending);
+        
 		atsc3_stltp_tunnel_packet_add_atsc3_stltp_preamble_packet(atsc3_stltp_tunnel_packet_current, atsc3_stltp_preamble_packet_pending);
-
         atsc3_stltp_tunnel_packet_current->atsc3_stltp_preamble_packet_pending = NULL;
-        atsc3_ip_udp_rtp_packet_free(&atsc3_stltp_tunnel_packet_current->ip_udp_rtp_packet_inner); //clear our inner rtp header reference when complete
+        //atsc3_ip_udp_rtp_packet_free(&atsc3_stltp_tunnel_packet_current->ip_udp_rtp_packet_inner); //clear our inner rtp header reference when complete
 	}
 
     block_Seek_Relative(atsc3_stltp_tunnel_packet_current->ip_udp_rtp_packet_outer->data, block_remaining_length);
@@ -645,11 +643,11 @@ atsc3_stltp_timing_management_packet_t* atsc3_stltp_timing_management_packet_ext
 		atsc3_stltp_tunnel_packet_current->atsc3_stltp_timing_management_packet_pending = atsc3_stltp_timing_management_packet_pending;
 	}
 
-    atsc3_stltp_timing_management_packet_pending->rtp_header_inner = atsc3_rtp_header_duplicate(atsc3_stltp_tunnel_packet_current->ip_udp_rtp_packet_inner->rtp_header);
+    atsc3_stltp_timing_management_packet_pending->ip_udp_rtp_packet_inner = atsc3_ip_udp_rtp_packet_duplicate(atsc3_stltp_tunnel_packet_current->ip_udp_rtp_packet_inner);
 
     block_t* packet = block_Refcount(atsc3_stltp_tunnel_packet_current->ip_udp_rtp_packet_inner->data);
 
-    if(atsc3_stltp_timing_management_packet_pending->rtp_header_inner->marker && !atsc3_stltp_tunnel_packet_current->atsc3_stltp_timing_management_packet_pending->fragment_count) {
+    if(atsc3_stltp_timing_management_packet_pending->ip_udp_rtp_packet_inner->rtp_header->marker && !atsc3_stltp_tunnel_packet_current->atsc3_stltp_timing_management_packet_pending->fragment_count) {
 		//read the first uint16_t for our preamble length
 
 		atsc3_stltp_timing_management_packet_pending->payload_length = ntohs(*((uint16_t*)(block_Get(packet))));
