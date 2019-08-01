@@ -77,7 +77,7 @@ void process_packet(u_char *user, const struct pcap_pkthdr *pkthdr, const u_char
                 for(int i=0; i < atsc3_stltp_tunnel_packet_processed->atsc3_stltp_baseband_packet_v.count; i++) {
                     atsc3_alp_packet_t* atsc3_alp_packet = NULL;
                     atsc3_stltp_baseband_packet_t* atsc3_stltp_baseband_packet = atsc3_stltp_tunnel_packet_processed->atsc3_stltp_baseband_packet_v.data[i];
-                    __INFO("atsc3_baseband_packet: sequence_num: %d, port: %d", atsc3_stltp_baseband_packet->rtp_header_inner->sequence_number, atsc3_stltp_baseband_packet->ip_udp_rtp_packet_inner->udp_flow.dst_port);
+                    __INFO("atsc3_baseband_packet: sequence_num: %d, port: %d", atsc3_stltp_baseband_packet->ip_udp_rtp_packet_inner->rtp_header->sequence_number, atsc3_stltp_baseband_packet->ip_udp_rtp_packet_inner->udp_flow.dst_port);
 
                     //make sure we get a packet back, base field pointer (13b) : 0x1FFF (8191 bytes) will return NULL
                     atsc3_baseband_packet_t* atsc3_baseband_packet = atsc3_stltp_parse_baseband_packet(atsc3_stltp_baseband_packet);
@@ -92,12 +92,13 @@ void process_packet(u_char *user, const struct pcap_pkthdr *pkthdr, const u_char
                                 block_Merge(atsc3_stltp_tunnel_packet_processed->atsc3_baseband_packet_short_fragment, atsc3_baseband_packet->alp_payload_pre_pointer);
                                 block_Release(&atsc3_baseband_packet->alp_payload_pre_pointer);
                                 atsc3_baseband_packet->alp_payload_pre_pointer = atsc3_stltp_tunnel_packet_processed->atsc3_baseband_packet_short_fragment;
+                                atsc3_stltp_tunnel_packet_processed->atsc3_baseband_packet_short_fragment = NULL; //null instead of clone/release since we just blcok_merged
 
                                 __INFO("atsc3_baseband_packet: carry over: atsc3_baseband_packet_short_fragment: size: %d, alp_payload_pre_pointer: before append size: %d, new size: %d, sequence: %d, port: %d",
                                        holdover_alp_payload_size,
                                        old_alp_payload_size,
                                        atsc3_baseband_packet->alp_payload_pre_pointer->p_size,
-                                       atsc3_stltp_baseband_packet->rtp_header_inner->sequence_number,
+                                       atsc3_stltp_baseband_packet->ip_udp_rtp_packet_inner->rtp_header->sequence_number,
                                        atsc3_stltp_baseband_packet->ip_udp_rtp_packet_inner->udp_flow.dst_port);
                             } else {
                                 uint32_t holdover_alp_payload_size = atsc3_stltp_tunnel_packet_processed->atsc3_baseband_packet_short_fragment->p_size;
@@ -105,11 +106,13 @@ void process_packet(u_char *user, const struct pcap_pkthdr *pkthdr, const u_char
                                 block_Merge(atsc3_stltp_tunnel_packet_processed->atsc3_baseband_packet_short_fragment, atsc3_baseband_packet->alp_payload_post_pointer);
                                 block_Release(&atsc3_baseband_packet->alp_payload_post_pointer);
                                 atsc3_baseband_packet->alp_payload_post_pointer = atsc3_stltp_tunnel_packet_processed->atsc3_baseband_packet_short_fragment;
+                                atsc3_stltp_tunnel_packet_processed->atsc3_baseband_packet_short_fragment = NULL; //null instead of clone/release since we just blcok_merged
+
                                 __INFO("atsc3_baseband_packet: carry over: atsc3_baseband_packet_short_fragment: size: %d, alp_payload_post_pointer: before append size: %d, new size: %d, sequence: %d, port: %d",
                                        holdover_alp_payload_size,
                                        old_alp_payload_size,
                                        atsc3_baseband_packet->alp_payload_post_pointer->p_size,
-                                       atsc3_stltp_baseband_packet->rtp_header_inner->sequence_number,
+                                       atsc3_stltp_baseband_packet->ip_udp_rtp_packet_inner->rtp_header->sequence_number,
                                        atsc3_stltp_baseband_packet->ip_udp_rtp_packet_inner->udp_flow.dst_port);
                             }
                         }
@@ -162,7 +165,7 @@ void process_packet(u_char *user, const struct pcap_pkthdr *pkthdr, const u_char
                                         __INFO("atsc3_baseband_packet: prepending alp_payload_pre_pointer with alp_payload_post_pointer");
                                         block_t* alp_payload_post_pointer_orig = atsc3_baseband_packet->alp_payload_post_pointer;
                                         
-                                          atsc3_baseband_packet->alp_payload_post_pointer = block_Duplicate_from_position(atsc3_baseband_packet->alp_payload_pre_pointer);
+                                        atsc3_baseband_packet->alp_payload_post_pointer = block_Duplicate_from_position(atsc3_baseband_packet->alp_payload_pre_pointer);
                                         
                                         block_Merge(atsc3_baseband_packet->alp_payload_post_pointer, alp_payload_post_pointer_orig);
                                         block_Release(&alp_payload_post_pointer_orig);
