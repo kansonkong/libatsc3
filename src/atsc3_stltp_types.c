@@ -48,7 +48,7 @@ atsc3_stltp_baseband_packet_t* atsc3_stltp_baseband_packet_new_and_init(atsc3_st
     atsc3_stltp_baseband_packet_t* atsc3_stltp_baseband_packet = atsc3_stltp_baseband_packet_new();
     
     //ref ip_udp_rtp_packet_outer w/ rtp_header_outer
-    atsc3_stltp_baseband_packet->ip_udp_rtp_packet_outer = atsc3_ip_udp_rtp_packet_duplicate(atsc3_stltp_tunnel_packet->ip_udp_rtp_packet_inner);
+    atsc3_stltp_baseband_packet->ip_udp_rtp_packet_outer = atsc3_ip_udp_rtp_packet_duplicate(atsc3_stltp_tunnel_packet->ip_udp_rtp_packet_outer);
 
     //ref ip_udp_rtp_packet_inner w/ rtp_header_inner
     atsc3_stltp_baseband_packet->ip_udp_rtp_packet_inner = atsc3_ip_udp_rtp_packet_duplicate(atsc3_stltp_tunnel_packet->ip_udp_rtp_packet_inner);
@@ -101,7 +101,11 @@ void atsc3_stltp_tunnel_packet_clear_completed_inner_packets(atsc3_stltp_tunnel_
 /**
  free both inner and outer packets if inner/outer data block_t don't match (refragmentation or concatenation/segmentation),
  oterwise only block_release one _t
+
+ THIS METHOD IS DANGEROUS 
+
  **/
+
 
 void atsc3_stltp_tunnel_packet_free(atsc3_stltp_tunnel_packet_t** atsc3_stltp_tunnel_packet_p) {
     if(atsc3_stltp_tunnel_packet_p) {
@@ -180,12 +184,12 @@ void atsc3_stltp_tunnel_packet_inner_destroy(atsc3_stltp_tunnel_packet_t* atsc3_
 void atsc3_stltp_tunnel_packet_outer_inner_destroy(atsc3_stltp_tunnel_packet_t* atsc3_stltp_tunnel_packet) {
     if(atsc3_stltp_tunnel_packet) {
         
-        //check to make sure we don't doublefree inner/outer -> data, so only free one instance of block_t but update both as being cleared
-        if(atsc3_stltp_tunnel_packet->ip_udp_rtp_packet_outer && atsc3_stltp_tunnel_packet->ip_udp_rtp_packet_inner &&
-           atsc3_stltp_tunnel_packet->ip_udp_rtp_packet_outer->data == atsc3_stltp_tunnel_packet->ip_udp_rtp_packet_inner->data) {
-            block_Destroy(&atsc3_stltp_tunnel_packet->ip_udp_rtp_packet_outer->data);
-            atsc3_stltp_tunnel_packet->ip_udp_rtp_packet_inner->data = NULL;
-        }
+//        //check to make sure we don't doublefree inner/outer -> data, so only free one instance of block_t but update both as being cleared
+//        if(atsc3_stltp_tunnel_packet->ip_udp_rtp_packet_outer && atsc3_stltp_tunnel_packet->ip_udp_rtp_packet_inner &&
+//           atsc3_stltp_tunnel_packet->ip_udp_rtp_packet_outer->data == atsc3_stltp_tunnel_packet->ip_udp_rtp_packet_inner->data) {
+//            block_Destroy(&atsc3_stltp_tunnel_packet->ip_udp_rtp_packet_outer->data);
+//            atsc3_stltp_tunnel_packet->ip_udp_rtp_packet_inner->data = NULL;
+//        }
         if(atsc3_stltp_tunnel_packet->ip_udp_rtp_packet_outer) {
             atsc3_ip_udp_rtp_packet_destroy(&atsc3_stltp_tunnel_packet->ip_udp_rtp_packet_outer);
             atsc3_stltp_tunnel_packet->ip_udp_rtp_packet_outer = NULL;
@@ -305,12 +309,14 @@ void atsc3_rtp_header_dump_outer(atsc3_stltp_tunnel_packet_t* atsc3_stltp_tunnel
     atsc3_rtp_header_t* atsc3_rtp_header = atsc3_ip_udp_rtp_packet_outer->rtp_header;
     udp_flow_t atsc3_udp_flow = atsc3_ip_udp_rtp_packet_outer->udp_flow;
     
-    __STLTP_TYPES_DEBUG(" --- outer: payload_type: %s (%hhu), sequence_number: %d, dst: %u.%u.%u.%u:%u",
+    __STLTP_TYPES_DEBUG(" ---outer: payload_type: %s (%hhu), sequence_number: %d (p: %p), dst: %u.%u.%u.%u:%u---",
                          ATSC3_CTP_STL_PAYLOAD_TYPE_TO_STRING(atsc3_rtp_header->payload_type),
                          atsc3_rtp_header->payload_type,
                          atsc3_rtp_header->sequence_number,
+                         atsc3_ip_udp_rtp_packet_outer,
                          __toipandportnonstruct(atsc3_udp_flow.dst_ip_addr, atsc3_udp_flow.dst_port));
     atsc3_rtp_header_dump(atsc3_rtp_header, 5);
+    __STLTP_TYPES_DEBUG(" ---outer: end---");
 }
 
 void atsc3_rtp_header_dump_inner(atsc3_stltp_tunnel_packet_t* atsc3_stltp_tunnel_packet) {
@@ -318,19 +324,27 @@ void atsc3_rtp_header_dump_inner(atsc3_stltp_tunnel_packet_t* atsc3_stltp_tunnel
     atsc3_rtp_header_t* atsc3_rtp_header = atsc3_ip_udp_rtp_packet_inner->rtp_header;
     udp_flow_t atsc3_udp_flow = atsc3_ip_udp_rtp_packet_inner->udp_flow;
     
-    __STLTP_TYPES_DEBUG("     --- inner: payload_type: %s  (%hhu), sequence_number: %d, dst: %u.%u.%u.%u:%u",
+    __STLTP_TYPES_DEBUG("  ---inner: payload_type: %s  (%hhu), sequence_number: %d, dst: %u.%u.%u.%u:%u---",
                          ATSC3_CTP_STL_PAYLOAD_TYPE_TO_STRING(atsc3_rtp_header->payload_type),
                          atsc3_rtp_header->payload_type,
                          atsc3_rtp_header->sequence_number,
                          __toipandportnonstruct(atsc3_udp_flow.dst_ip_addr, atsc3_udp_flow.dst_port));
     atsc3_rtp_header_dump(atsc3_rtp_header, 9);
+    __STLTP_TYPES_DEBUG(" ---inner: end---");
+
 }
 
 void atsc3_rtp_header_dump(atsc3_rtp_header_t* atsc3_rtp_header, int spaces) {
     
-    __STLTP_TYPES_DEBUG("%*sversion        : %x, padding: %x, extension: %x, csrc_count: %x, marker: %x", spaces, "",
-                         atsc3_rtp_header->version, atsc3_rtp_header->padding, atsc3_rtp_header->extension, atsc3_rtp_header->csrc_count, atsc3_rtp_header->marker);
+    __STLTP_TYPES_DEBUG("%*smarker: %x,  version: %x, padding: %x, extension: %x, csrc_count: %x",
+                        spaces, "",
+                        atsc3_rtp_header->marker,
+                        atsc3_rtp_header->version,
+                        atsc3_rtp_header->padding,
+                        atsc3_rtp_header->extension,
+                        atsc3_rtp_header->csrc_count);
     
+    //tunnel packet has packet offset
     if(atsc3_rtp_header->payload_type == 0x61) {
         
         __STLTP_TYPES_DEBUG("%*ssequence_number: 0x%x (%u), timestamp: 0x%x (%u)  packet_offset: 0x%x (%u)", spaces, "",

@@ -17,7 +17,7 @@ atsc3_ip_udp_rtp_packet_t* atsc3_ip_udp_rtp_process_packet_from_pcap(u_char *use
     block_t* ip_udp_rtp_raw_block = atsc3_pcap_parse_ethernet_frame(pkthdr, packet);
     if(ip_udp_rtp_raw_block) {
         block_Rewind(ip_udp_rtp_raw_block);
-ip_udp_rtp_packet = atsc3_ip_udp_rtp_packet_process_from_blockt_pos(ip_udp_rtp_raw_block);
+        ip_udp_rtp_packet = atsc3_ip_udp_rtp_packet_process_from_blockt_pos(ip_udp_rtp_raw_block);
     }
     return ip_udp_rtp_packet;
 }
