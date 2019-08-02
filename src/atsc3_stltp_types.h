@@ -441,6 +441,13 @@ typedef struct atsc3_stltp_tunnel_packet {
 	atsc3_ip_udp_rtp_packet_t* ip_udp_rtp_packet_outer;
     atsc3_ip_udp_rtp_packet_t* ip_udp_rtp_packet_inner;
 
+    //only set this when we have a short packet read (e.g. less than 40 bytes) at the end of a payload,
+    //we need to re-fragement it when more outer data is available
+    atsc3_ip_udp_rtp_packet_t* ip_udp_rtp_packet_pending_refragmentation_outer;
+    
+    //only set this when we have a pending baseband/preamble/timing_managent packet and always duplicate and free
+    atsc3_ip_udp_rtp_packet_t* ip_udp_rtp_packet_pending_concatenation_inner;
+
 	//atsc3_stltp_baseband_packet_t* 		atsc3_stltp_baseband_packet;
     ATSC3_VECTOR_BUILDER_STRUCT(atsc3_stltp_baseband_packet);
     atsc3_stltp_baseband_packet_t*          atsc3_stltp_baseband_packet_pending;
