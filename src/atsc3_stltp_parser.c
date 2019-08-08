@@ -231,9 +231,8 @@ atsc3_stltp_tunnel_packet_t* atsc3_stltp_raw_packet_extract_inner_from_outer_pac
             }
             
             if(!inner_packet) {
-                __STLTP_PARSER_ERROR("atsc3_stltp_tunnel_packet_extract_inner_from_outer_packet: re-fragmentation from previous packet fragment failed, last len: %u, current rebuilt len: %u",
-                                    last_outer_packet_bytes_remaining_to_parse,
-                                    atsc3_stltp_tunnel_packet_current->ip_udp_rtp_packet_inner->data->p_size);
+                __STLTP_PARSER_ERROR("atsc3_stltp_tunnel_packet_extract_inner_from_outer_packet: re-fragmentation from previous packet fragment failed, last len: %u, inner_packet is null",
+                                    last_outer_packet_bytes_remaining_to_parse);
                 return NULL;
             }
             
@@ -303,7 +302,7 @@ atsc3_stltp_tunnel_packet_t* atsc3_stltp_raw_packet_extract_inner_from_outer_pac
                             block_Remaining_size(atsc3_stltp_tunnel_packet_current->ip_udp_rtp_packet_outer->data));
         
         int current_outer_packet_bytes_remaining_to_parse = block_Remaining_size(atsc3_stltp_tunnel_packet_current->ip_udp_rtp_packet_outer->data);
-        if( current_outer_packet_bytes_remaining_to_parse > 0) {
+        if(atsc3_stltp_tunnel_packet_last->ip_udp_rtp_packet_pending_concatenation_inner &&  current_outer_packet_bytes_remaining_to_parse > 0) {
 
             //copy header but not data block
             atsc3_stltp_tunnel_packet_current->ip_udp_rtp_packet_inner = atsc3_ip_udp_rtp_packet_duplicate_no_data_block_t(atsc3_stltp_tunnel_packet_last->ip_udp_rtp_packet_pending_concatenation_inner); //this will create our new inner packet, without data fragment, from the remaining fragment from our previous packet
