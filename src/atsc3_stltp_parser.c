@@ -250,8 +250,18 @@ atsc3_stltp_tunnel_packet_t* atsc3_stltp_raw_packet_extract_inner_from_outer_pac
                 processed_refragmentation_or_concatenation_tunnel_packet = true;
                 
                 //hack - seek to the proper location of bytes consumed from inner_payload_current_size for marker positioning on parsing next inner packet
-                block_Seek_Relative(atsc3_stltp_tunnel_packet_current->ip_udp_rtp_packet_outer->data, -1 * last_outer_packet_bytes_remaining_to_parse);
+                block_Seek_Relative(atsc3_stltp_tunnel_packet_current->ip_udp_rtp_packet_outer->data, ATSC_STLTP_IP_UDP_RTP_HEADER_SIZE -  last_outer_packet_bytes_remaining_to_parse);
                 //todo: end - refactor this common pattern out here
+                
+                if(atsc3_stltp_tunnel_packet_current->ip_udp_rtp_packet_outer->data->i_pos != atsc3_stltp_tunnel_packet_current->ip_udp_rtp_packet_outer->data->p_size)  {
+                    __STLTP_PARSER_WARN("atsc3_stltp_tunnel_packet_extract_inner_from_outer_packet: final ip_udp_rtp_packet_outer does not match pos: %u, size: %u",
+                                    atsc3_stltp_tunnel_packet_current->ip_udp_rtp_packet_outer->data->i_pos,
+                                    atsc3_stltp_tunnel_packet_current->ip_udp_rtp_packet_outer->data->p_size);
+                } else {
+                    __STLTP_PARSER_INFO("atsc3_stltp_tunnel_packet_extract_inner_from_outer_packet: final ip_udp_rtp_packet_outer match pos: %u, size: %u",
+                                    atsc3_stltp_tunnel_packet_current->ip_udp_rtp_packet_outer->data->i_pos,
+                                    atsc3_stltp_tunnel_packet_current->ip_udp_rtp_packet_outer->data->p_size);
+                }
             } else {
                 //sequence gap
                 __STLTP_PARSER_ERROR("atsc3_stltp_tunnel_packet_extract_inner_from_outer_packet: re-fragmentation sequence gap, from: %u to %u",
@@ -499,14 +509,7 @@ atsc3_stltp_baseband_packet_t* atsc3_stltp_baseband_packet_extract(atsc3_stltp_t
         atsc3_ip_udp_rtp_packet_free(&atsc3_stltp_tunnel_packet_current->ip_udp_rtp_packet_pending_concatenation_inner);
     }
     atsc3_stltp_tunnel_packet_current->ip_udp_rtp_packet_pending_concatenation_inner = atsc3_ip_udp_rtp_packet_duplicate(atsc3_stltp_tunnel_packet_current->ip_udp_rtp_packet_inner);
-
-    block_t* packet = atsc3_stltp_tunnel_packet_current->ip_udp_rtp_packet_inner->data; //don't ref with just a local var
-    uint32_t block_remaining_length = block_Remaining_size(packet);
     
-    if(block_remaining_length + atsc3_stltp_baseband_packet_pending->payload_offset > atsc3_stltp_baseband_packet_pending->payload_length ) {
-        block_remaining_length = __MIN(block_remaining_length, atsc3_stltp_baseband_packet_pending->payload_length - atsc3_stltp_baseband_packet_pending->payload_offset);
-    }
-   
 	if(atsc3_stltp_tunnel_packet_current->ip_udp_rtp_packet_inner->rtp_header->marker) {
 		/**
 		ATSC A/324:2018 - Section 8.3
@@ -530,7 +533,16 @@ atsc3_stltp_baseband_packet_t* atsc3_stltp_baseband_packet_extract(atsc3_stltp_t
         __STLTP_PARSER_DEBUG("      ----baseband packet: append, offset: %u, length: %u -----", atsc3_stltp_baseband_packet_pending->payload_offset, atsc3_stltp_baseband_packet_pending->payload_length);
     }
     
-    __STLTP_PARSER_DEBUG("      bbp: fragment number: %u, offset: %u, fragment size: %u, computed bbp bytes remaining: %u",
+    
+    block_t* packet = atsc3_stltp_tunnel_packet_current->ip_udp_rtp_packet_inner->data; //don't ref with just a local var
+    uint32_t packet_remaining_length = block_Remaining_size(packet);
+    
+    //clamp to the smaller of our phy frame (packet_remaining_length) or the remaining bbp packet length
+    uint32_t block_remaining_length = __MIN(packet_remaining_length, (atsc3_stltp_baseband_packet_pending->payload_length - atsc3_stltp_baseband_packet_pending->payload_offset));
+    
+    
+    
+    __STLTP_PARSER_DEBUG("      bbp: fragment number: %u, offset: %u, fragment size: %u, computed bbp bytes remaining after append fragment: %u",
                          atsc3_stltp_baseband_packet_pending->fragment_count,
                          atsc3_stltp_baseband_packet_pending->payload_offset,
                          block_remaining_length,
@@ -792,10 +804,13 @@ atsc3_stltp_timing_management_packet_t* atsc3_stltp_timing_management_packet_ext
 
 		atsc3_stltp_timing_management_packet_pending->payload_length = ntohs(*((uint16_t*)(block_Get(packet))));
 		__STLTP_PARSER_DEBUG("       ----timing_management packet: new -----");
-        __STLTP_PARSER_DEBUG("       t&m length:    %u (payload: %p)",  atsc3_stltp_timing_management_packet_pending->payload_length, atsc3_stltp_timing_management_packet_pending->payload);
 		atsc3_stltp_timing_management_packet_pending->payload = calloc(atsc3_stltp_timing_management_packet_pending->payload_length, sizeof(uint8_t));
+    } else {
+        __STLTP_PARSER_DEBUG("       ----timing_management packet: append -----");
     }
-   
+    __STLTP_PARSER_DEBUG("       t&m length:    %u (payload: %p)",  atsc3_stltp_timing_management_packet_pending->payload_length, atsc3_stltp_timing_management_packet_pending->payload);
+
+    
     uint32_t block_remaining_length = block_Remaining_size(packet);
 
     if(block_remaining_length + atsc3_stltp_timing_management_packet_pending->payload_offset > atsc3_stltp_timing_management_packet_pending->payload_length ) {
