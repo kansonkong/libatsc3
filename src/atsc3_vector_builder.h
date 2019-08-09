@@ -53,6 +53,8 @@
  *  	atsc3_fdt_instance_add_atsc3_fdt_file(atsc3_fdt_instance_t*, atsc3_fdt_file*)
  *
  *	todo: prealloc to N as needed
+ 
+ * jjustman:2019-08-09: todo - add a free method
  */
 #define ATSC3_VECTOR_BUILDER_METHODS_IMPLEMENTATION_DEFAULT_SIZE 10
 
