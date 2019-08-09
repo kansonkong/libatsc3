@@ -438,7 +438,11 @@ typedef struct atsc3_stltp_timing_management_packet {
  */
 typedef struct atsc3_stltp_tunnel_packet {
 
+    //outer RTP packet pointer, make sure to seek 40 bytes for IP/UDP/RTP header offset
 	atsc3_ip_udp_rtp_packet_t* ip_udp_rtp_packet_outer;
+    
+    //floating inner packet, may be delinated either by outer->rtp_header->marker OR
+    //by reading inner packet length until remaining_bytes==0 for next inner packet
     atsc3_ip_udp_rtp_packet_t* ip_udp_rtp_packet_inner;
 
     //only set this when we have a short packet read (e.g. less than 40 bytes) at the end of a payload,
@@ -456,10 +460,13 @@ typedef struct atsc3_stltp_tunnel_packet {
 	//atsc3_stltp_preamble_packet_t* 		atsc3_stltp_preamble_packet;
     ATSC3_VECTOR_BUILDER_STRUCT(atsc3_stltp_preamble_packet);
     atsc3_stltp_preamble_packet_t*          atsc3_stltp_preamble_packet_pending;
+    //todo: add short fragment re-assembly for preamble (if needed)
     
     //atsc3_stltp_timing_management_packet_t* atsc3_stltp_timing_management_packet;
     ATSC3_VECTOR_BUILDER_STRUCT(atsc3_stltp_timing_management_packet);
     atsc3_stltp_timing_management_packet_t* atsc3_stltp_timing_management_packet_pending;
+    //todo: add short fragment re-assembly for TMP (timing&management)
+
 
 } atsc3_stltp_tunnel_packet_t;
 
