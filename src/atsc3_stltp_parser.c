@@ -178,14 +178,17 @@ atsc3_stltp_tunnel_packet_t* atsc3_stltp_raw_packet_extract_inner_from_outer_pac
     //rewind raw packet buffer to outer packet
     block_Rewind(ip_udp_rtp_packet->data);
     
-    //todo - only duplicate if we need to re-fragment?
-	atsc3_stltp_tunnel_packet_current->ip_udp_rtp_packet_outer = atsc3_ip_udp_rtp_packet_duplicate(ip_udp_rtp_packet);
-
+    atsc3_stltp_tunnel_packet_current->ip_udp_rtp_packet_outer = atsc3_ip_udp_rtp_packet_duplicate(ip_udp_rtp_packet);
+    
 	if(!atsc3_stltp_tunnel_packet_current->ip_udp_rtp_packet_outer) {
 		__STLTP_PARSER_ERROR("atsc3_stltp_tunnel_packet_extract_inner_from_outer_packet: atsc3_stltp_tunnel_packet_current->udp_packet_outer is null");
 		return NULL;
 	}
+
     
+    //seek past the outer packet header data, as we have already parsed this data..
+    block_Seek(atsc3_stltp_tunnel_packet_current->ip_udp_rtp_packet_outer->data, ATSC_STLTP_IP_UDP_RTP_HEADER_SIZE);
+
     atsc3_rtp_header_dump_outer(atsc3_stltp_tunnel_packet_current);
 
     //make sure our outer packet is type: 97 - tunnel packet
@@ -305,7 +308,7 @@ atsc3_stltp_tunnel_packet_t* atsc3_stltp_raw_packet_extract_inner_from_outer_pac
         }
         
         //seek past the outer packet header data, as we are re-using our inner ip_udp_rtp header from our last inner packet
-        block_Seek(atsc3_stltp_tunnel_packet_current->ip_udp_rtp_packet_outer->data, ATSC_STLTP_IP_UDP_RTP_HEADER_SIZE);
+     //   block_Seek(atsc3_stltp_tunnel_packet_current->ip_udp_rtp_packet_outer->data, ATSC_STLTP_IP_UDP_RTP_HEADER_SIZE);
 
         __STLTP_PARSER_INFO(" atsc3_stltp_tunnel_packet_last->ip_udp_rtp_packet_inner present: concatenating, outer pos: %u, outer remaining len: %u",
                             atsc3_stltp_tunnel_packet_current->ip_udp_rtp_packet_outer->data->i_pos,
