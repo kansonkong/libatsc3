@@ -309,12 +309,14 @@ void atsc3_rtp_header_dump_outer(atsc3_stltp_tunnel_packet_t* atsc3_stltp_tunnel
     atsc3_rtp_header_t* atsc3_rtp_header = atsc3_ip_udp_rtp_packet_outer->rtp_header;
     udp_flow_t atsc3_udp_flow = atsc3_ip_udp_rtp_packet_outer->udp_flow;
     
-    __STLTP_TYPES_DEBUG(" ---outer: payload_type: %s (%hhu), sequence_number: %d (p: %p), dst: %u.%u.%u.%u:%u---",
+    __STLTP_TYPES_DEBUG(" ---outer: payload_type: %s (%hhu), sequence_number: %d (p: %p), dst: %u.%u.%u.%u:%u, pos: %d, size: %d---",
                          ATSC3_CTP_STL_PAYLOAD_TYPE_TO_STRING(atsc3_rtp_header->payload_type),
                          atsc3_rtp_header->payload_type,
                          atsc3_rtp_header->sequence_number,
                          atsc3_ip_udp_rtp_packet_outer,
-                         __toipandportnonstruct(atsc3_udp_flow.dst_ip_addr, atsc3_udp_flow.dst_port));
+                         __toipandportnonstruct(atsc3_udp_flow.dst_ip_addr, atsc3_udp_flow.dst_port),
+                        atsc3_ip_udp_rtp_packet_outer->data ? atsc3_ip_udp_rtp_packet_outer->data->i_pos : -1,
+                        atsc3_ip_udp_rtp_packet_outer->data ? atsc3_ip_udp_rtp_packet_outer->data->p_size : -1);
     atsc3_rtp_header_dump(atsc3_rtp_header, 5);
     __STLTP_TYPES_DEBUG(" ---outer: end---");
 }
