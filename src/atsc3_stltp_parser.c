@@ -602,23 +602,21 @@ atsc3_stltp_preamble_packet_t* atsc3_stltp_preamble_packet_extract(atsc3_stltp_t
     
     atsc3_stltp_preamble_packet_t* atsc3_stltp_preamble_packet_pending = atsc3_stltp_tunnel_packet_current->atsc3_stltp_preamble_packet_pending;
 
-    //force clear out pending packet
+    //if our inner tunnel packet has a marker set, and we have a pending packet - force clear out pending packet
     if(atsc3_stltp_tunnel_packet_current->ip_udp_rtp_packet_inner->rtp_header->marker && atsc3_stltp_tunnel_packet_current->atsc3_stltp_preamble_packet_pending) {
         __STLTP_PARSER_ERROR("atsc3_stltp_preamble_packet_extract: force clearing preamble pending packet due to inner marker");
-
         atsc3_stltp_preamble_packet_free(&atsc3_stltp_tunnel_packet_current->atsc3_stltp_preamble_packet_pending);
         atsc3_stltp_preamble_packet_pending = NULL;
     }
     
+    //create a new preamble pending packet if we have a marker
     if(!atsc3_stltp_preamble_packet_pending && atsc3_stltp_tunnel_packet_current->ip_udp_rtp_packet_inner->rtp_header->marker) {
 		atsc3_stltp_preamble_packet_pending = calloc(1, sizeof(atsc3_stltp_preamble_packet_t));
-
         atsc3_stltp_preamble_packet_pending->ip_udp_rtp_packet_inner = atsc3_ip_udp_rtp_packet_duplicate(atsc3_stltp_tunnel_packet_current->ip_udp_rtp_packet_inner);
-    
 		atsc3_stltp_tunnel_packet_current->atsc3_stltp_preamble_packet_pending = atsc3_stltp_preamble_packet_pending;
        
     } else if(atsc3_stltp_preamble_packet_pending != NULL && atsc3_stltp_preamble_packet_pending->payload) {
-        __STLTP_PARSER_INFO("atsc3_stltp_preamble_packet_extract: using pending preamble packet: %p, data: %p", atsc3_stltp_preamble_packet_pending, atsc3_stltp_preamble_packet_pending->payload);
+        __STLTP_PARSER_DEBUG("atsc3_stltp_preamble_packet_extract: appending to pending preamble packet: %p, data: %p", atsc3_stltp_preamble_packet_pending, atsc3_stltp_preamble_packet_pending->payload);
     } else {
         //error cases for no preamble packet pending (and no marker) or missing inner payload
         //TODO: if we have an outer marker, seek to this position?
@@ -628,7 +626,6 @@ atsc3_stltp_preamble_packet_t* atsc3_stltp_preamble_packet_extract(atsc3_stltp_t
             __STLTP_PARSER_ERROR("      ----preamble packet: atsc3_stltp_preamble_packet_pending->payload is null, discarding, preamble_packet_pending: %p, discarding -----", atsc3_stltp_preamble_packet_pending);
         } else {
             __STLTP_PARSER_ERROR("atsc3_stltp_preamble_packet_extract: failure in atsc3_stltp_preamble_packet_pending");
-            assert(false);
         }
         
         if(atsc3_stltp_tunnel_packet_current->ip_udp_rtp_packet_pending_concatenation_inner) {
@@ -639,14 +636,11 @@ atsc3_stltp_preamble_packet_t* atsc3_stltp_preamble_packet_extract(atsc3_stltp_t
         return NULL;
     }
     
-    //keep a temporary reference to our rtp header via ip_udp_rtp_packet_pending_concatenation_inner dismbiguation
-    //concatenation use case when concatentating outer/outer/inner
-    //free and steal if anyone else is in midst of concatenation without a marker
-    //finally, free if our packet is competed concatenation
+    //keep a temporary reference to our rtp header via ip_udp_rtp_packet_pending_concatenation_inner dismbiguation, concatenation use case when concatentating outer/outer/inner
+    //free and steal if anyone else is in midst of concatenation without a marker, carry over our pending concatenation if needed
     if(atsc3_stltp_tunnel_packet_current->ip_udp_rtp_packet_pending_concatenation_inner) {
         atsc3_ip_udp_rtp_packet_free(&atsc3_stltp_tunnel_packet_current->ip_udp_rtp_packet_pending_concatenation_inner);
     }
-    //carry over our pending concatenation if needed
     atsc3_stltp_tunnel_packet_current->ip_udp_rtp_packet_pending_concatenation_inner = atsc3_ip_udp_rtp_packet_duplicate(atsc3_stltp_tunnel_packet_current->ip_udp_rtp_packet_inner);
     
     block_t* packet = atsc3_stltp_tunnel_packet_current->ip_udp_rtp_packet_inner->data; //don't ref with just a local var
@@ -659,12 +653,11 @@ atsc3_stltp_preamble_packet_t* atsc3_stltp_preamble_packet_extract(atsc3_stltp_t
 		atsc3_stltp_preamble_packet_pending->payload = calloc(atsc3_stltp_preamble_packet_pending->payload_length, sizeof(uint8_t));
         atsc3_stltp_preamble_packet_pending->ip_udp_rtp_packet_inner->rtp_header->marker = 0; //hack so we don't wipe our our concatenating payloads
         __STLTP_PARSER_DEBUG("      ----preamble packet: new -----");
-        __STLTP_PARSER_DEBUG("       preamble length:    %u (payload: %p)",  atsc3_stltp_preamble_packet_pending->payload_length, atsc3_stltp_preamble_packet_pending->payload);
     } else {
         __STLTP_PARSER_DEBUG("      ----preamble packet: append -----");
-        __STLTP_PARSER_DEBUG("       preamble length:    %u (payload: %p)",  atsc3_stltp_preamble_packet_pending->payload_length, atsc3_stltp_preamble_packet_pending->payload);
     }
-    
+    __STLTP_PARSER_DEBUG("       preamble length:    %u (payload: %p)",  atsc3_stltp_preamble_packet_pending->payload_length, atsc3_stltp_preamble_packet_pending->payload);
+
     uint32_t block_remaining_length = block_Remaining_size(packet);
     
     if(block_remaining_length + atsc3_stltp_preamble_packet_pending->payload_offset > atsc3_stltp_preamble_packet_pending->payload_length ) {
@@ -737,41 +730,40 @@ atsc3_stltp_preamble_packet_t* atsc3_stltp_preamble_packet_extract(atsc3_stltp_t
      }
  **/
 
+//jjustman-2019-08-08 - workaround for TMP packets not containing inner marker flag
+#define _ATSC3_D_HACK_TMP_PACKET_MARKER true
+
 atsc3_stltp_timing_management_packet_t* atsc3_stltp_timing_management_packet_extract(atsc3_stltp_tunnel_packet_t* atsc3_stltp_tunnel_packet_current) {
     
     atsc3_stltp_timing_management_packet_t* atsc3_stltp_timing_management_packet_pending = atsc3_stltp_tunnel_packet_current->atsc3_stltp_timing_management_packet_pending;
     
+    //if our inner tunnel packet has a marker set, and we have a pending packet - force clear out pending packet
     if(atsc3_stltp_tunnel_packet_current->ip_udp_rtp_packet_inner->rtp_header->marker && atsc3_stltp_tunnel_packet_current->atsc3_stltp_timing_management_packet_pending) {
-        //force clear out pending packet
         __STLTP_PARSER_ERROR("atsc3_stltp_timing_management_packet_extract: force clearing timing_management pending packet due to inner marker");
         atsc3_stltp_timing_management_packet_free(&atsc3_stltp_tunnel_packet_current->atsc3_stltp_timing_management_packet_pending);
         atsc3_stltp_timing_management_packet_pending = NULL;
     }
-    //jjustman-2019-08-08 - hack
-    atsc3_stltp_tunnel_packet_current->ip_udp_rtp_packet_inner->rtp_header->marker = 1;
     
+#ifdef _ATSC3_D_HACK_TMP_PACKET_MARKER
+    atsc3_stltp_tunnel_packet_current->ip_udp_rtp_packet_inner->rtp_header->marker = 1;
+#endif
+    
+    //create a new TMP pending packet if we have a marker
 	if(!atsc3_stltp_timing_management_packet_pending && atsc3_stltp_tunnel_packet_current->ip_udp_rtp_packet_inner->rtp_header->marker) {
 		atsc3_stltp_timing_management_packet_pending = calloc(1, sizeof(atsc3_stltp_timing_management_packet_t));
-        
-        atsc3_stltp_timing_management_packet_pending->ip_udp_rtp_packet_outer = atsc3_ip_udp_rtp_packet_duplicate(atsc3_stltp_tunnel_packet_current->ip_udp_rtp_packet_outer);
         atsc3_stltp_timing_management_packet_pending->ip_udp_rtp_packet_inner = atsc3_ip_udp_rtp_packet_duplicate(atsc3_stltp_tunnel_packet_current->ip_udp_rtp_packet_inner);
-        atsc3_stltp_timing_management_packet_pending->ip_udp_rtp_packet_inner->rtp_header->marker = 0; //hack so we don't wipe our our concatenating payloads
 		atsc3_stltp_tunnel_packet_current->atsc3_stltp_timing_management_packet_pending = atsc3_stltp_timing_management_packet_pending;
     } else if(atsc3_stltp_timing_management_packet_pending && atsc3_stltp_timing_management_packet_pending->payload) {
-        __STLTP_PARSER_INFO("atsc3_stltp_baseband_packet_extract: using pending timing_management packet: %p, data: %p", atsc3_stltp_timing_management_packet_pending, atsc3_stltp_timing_management_packet_pending->payload);
+        __STLTP_PARSER_INFO("atsc3_stltp_baseband_packet_extract: appending pending timing_management packet: %p, data: %p", atsc3_stltp_timing_management_packet_pending, atsc3_stltp_timing_management_packet_pending->payload);
     } else {
         uint32_t tm_remaining_bytes = block_Remaining_size(atsc3_stltp_tunnel_packet_current->ip_udp_rtp_packet_inner->data);
-
+        //error cases for no TMP packet pending (and no marker) or missing inner payload
         if(!atsc3_stltp_timing_management_packet_pending){
             __STLTP_PARSER_ERROR("      ----timing_management packet: atsc3_stltp_timing_management_packet_pending is null, discarding -----");
-            
         } else if(!atsc3_stltp_timing_management_packet_pending->payload) {
             __STLTP_PARSER_ERROR("      ----timing_management packet: atsc3_stltp_timing_management_packet_pending->payload is null, discarding -----");
-
         } else {
             __STLTP_PARSER_ERROR("      ----timing_management packet: failure in atsc3_stltp_timing_management_packet_extract");
-            assert(false);
-
         }
         
         if(atsc3_stltp_tunnel_packet_current->ip_udp_rtp_packet_pending_concatenation_inner) {
@@ -782,27 +774,28 @@ atsc3_stltp_timing_management_packet_t* atsc3_stltp_timing_management_packet_ext
         return NULL;
     }
 
-        //carry over for any re-fragmentation needed with
+    //keep a temporary reference to our rtp header via ip_udp_rtp_packet_pending_concatenation_inner dismbiguation, concatenation use case when concatentating outer/outer/inner
+    //free and steal if anyone else is in midst of concatenation without a marker, carry over our pending concatenation if needed
     if(atsc3_stltp_tunnel_packet_current->ip_udp_rtp_packet_pending_concatenation_inner) {
         atsc3_ip_udp_rtp_packet_free(&atsc3_stltp_tunnel_packet_current->ip_udp_rtp_packet_pending_concatenation_inner);
     }
     atsc3_stltp_tunnel_packet_current->ip_udp_rtp_packet_pending_concatenation_inner = atsc3_ip_udp_rtp_packet_duplicate(atsc3_stltp_tunnel_packet_current->ip_udp_rtp_packet_inner);
-    atsc3_stltp_timing_management_packet_pending->ip_udp_rtp_packet_inner = atsc3_ip_udp_rtp_packet_duplicate(atsc3_stltp_tunnel_packet_current->ip_udp_rtp_packet_inner);
+    
+    block_t* packet = atsc3_stltp_tunnel_packet_current->ip_udp_rtp_packet_inner->data; //don't ref with just a local var
 
-    block_t* packet = block_Refcount(atsc3_stltp_tunnel_packet_current->ip_udp_rtp_packet_inner->data);
-
-    if(atsc3_stltp_timing_management_packet_pending->ip_udp_rtp_packet_inner->rtp_header->marker && !atsc3_stltp_tunnel_packet_current->atsc3_stltp_timing_management_packet_pending->fragment_count) {
+    //&& !atsc3_stltp_tunnel_packet_current->atsc3_stltp_timing_management_packet_pending->fragment_count
+    if(atsc3_stltp_timing_management_packet_pending->ip_udp_rtp_packet_inner->rtp_header->marker ) {
 		//read the first uint16_t for our preamble length
-
 		atsc3_stltp_timing_management_packet_pending->payload_length = ntohs(*((uint16_t*)(block_Get(packet))));
-		__STLTP_PARSER_DEBUG("       ----timing_management packet: new -----");
 		atsc3_stltp_timing_management_packet_pending->payload = calloc(atsc3_stltp_timing_management_packet_pending->payload_length, sizeof(uint8_t));
+        atsc3_stltp_timing_management_packet_pending->ip_udp_rtp_packet_inner->rtp_header->marker = 0; //hack so we don't wipe our our concatenating payloads
+        __STLTP_PARSER_DEBUG("       ----timing_management packet: new -----");
+
     } else {
         __STLTP_PARSER_DEBUG("       ----timing_management packet: append -----");
     }
-    __STLTP_PARSER_DEBUG("       t&m length:    %u (payload: %p)",  atsc3_stltp_timing_management_packet_pending->payload_length, atsc3_stltp_timing_management_packet_pending->payload);
+    __STLTP_PARSER_DEBUG("       TMP length:    %u (payload: %p)",  atsc3_stltp_timing_management_packet_pending->payload_length, atsc3_stltp_timing_management_packet_pending->payload);
 
-    
     uint32_t block_remaining_length = block_Remaining_size(packet);
 
     if(block_remaining_length + atsc3_stltp_timing_management_packet_pending->payload_offset > atsc3_stltp_timing_management_packet_pending->payload_length ) {
@@ -845,12 +838,6 @@ atsc3_stltp_timing_management_packet_t* atsc3_stltp_timing_management_packet_ext
     
 	return atsc3_stltp_timing_management_packet_pending;
 }
-
-
-
-
-
-
 
 
 
