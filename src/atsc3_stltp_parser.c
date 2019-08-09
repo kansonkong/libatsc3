@@ -124,7 +124,6 @@ atsc3_ip_udp_rtp_packet_t* atsc3_stltp_tunnel_packet_inner_parse_ip_udp_header_o
     __STLTP_PARSER_DEBUG("  atsc3_stltp_tunnel_packet_inner_parse_ip_udp_header_outer_data: parsing ip_udp_rtp_packet_outer: %p, outer position: %u, outer packet len: %u", atsc3_stltp_tunnel_packet->ip_udp_rtp_packet_outer, atsc3_stltp_tunnel_packet->ip_udp_rtp_packet_outer->data->i_pos,
         atsc3_stltp_tunnel_packet->ip_udp_rtp_packet_outer->data->p_size);
 
-    //todo - refactor to not create a duplicate data block_t
     atsc3_ip_udp_rtp_packet_t* ip_udp_rtp_packet_inner_new = atsc3_ip_udp_rtp_packet_process_from_blockt_pos(atsc3_stltp_tunnel_packet->ip_udp_rtp_packet_outer->data);
     
     if(!ip_udp_rtp_packet_inner_new) {
@@ -133,13 +132,12 @@ atsc3_ip_udp_rtp_packet_t* atsc3_stltp_tunnel_packet_inner_parse_ip_udp_header_o
     }
     
     if(atsc3_stltp_tunnel_packet->ip_udp_rtp_packet_inner) {
-     //   atsc3_ip_udp_rtp_packet_free(&atsc3_stltp_tunnel_packet->ip_udp_rtp_packet_inner);
+        __STLTP_PARSER_DEBUG(" atsc3_stltp_tunnel_packet_inner_parse_ip_udp_header_outer_data: atsc3_stltp_tunnel_packet->ip_udp_rtp_packet_inner is: %p, freeing", atsc3_stltp_tunnel_packet->ip_udp_rtp_packet_inner);
+       atsc3_ip_udp_rtp_packet_free(&atsc3_stltp_tunnel_packet->ip_udp_rtp_packet_inner);
     }
     
     ip_udp_rtp_packet_inner_new->data = block_Duplicate_from_position(atsc3_stltp_tunnel_packet->ip_udp_rtp_packet_outer->data);
-    
     atsc3_stltp_tunnel_packet->ip_udp_rtp_packet_inner = ip_udp_rtp_packet_inner_new;
-    
     return atsc3_stltp_tunnel_packet->ip_udp_rtp_packet_inner;
 }
 
@@ -614,11 +612,8 @@ atsc3_stltp_preamble_packet_t* atsc3_stltp_preamble_packet_extract(atsc3_stltp_t
     
     if(!atsc3_stltp_preamble_packet_pending && atsc3_stltp_tunnel_packet_current->ip_udp_rtp_packet_inner->rtp_header->marker) {
 		atsc3_stltp_preamble_packet_pending = calloc(1, sizeof(atsc3_stltp_preamble_packet_t));
-        
-        //TODO - refactor this out
-        atsc3_stltp_preamble_packet_pending->ip_udp_rtp_packet_outer = atsc3_ip_udp_rtp_packet_duplicate(atsc3_stltp_tunnel_packet_current->ip_udp_rtp_packet_outer);
+
         atsc3_stltp_preamble_packet_pending->ip_udp_rtp_packet_inner = atsc3_ip_udp_rtp_packet_duplicate(atsc3_stltp_tunnel_packet_current->ip_udp_rtp_packet_inner);
-        atsc3_stltp_preamble_packet_pending->ip_udp_rtp_packet_inner->rtp_header->marker = 0; //hack so we don't wipe our our concatenating payloads
     
 		atsc3_stltp_tunnel_packet_current->atsc3_stltp_preamble_packet_pending = atsc3_stltp_preamble_packet_pending;
        
@@ -651,23 +646,23 @@ atsc3_stltp_preamble_packet_t* atsc3_stltp_preamble_packet_extract(atsc3_stltp_t
     if(atsc3_stltp_tunnel_packet_current->ip_udp_rtp_packet_pending_concatenation_inner) {
         atsc3_ip_udp_rtp_packet_free(&atsc3_stltp_tunnel_packet_current->ip_udp_rtp_packet_pending_concatenation_inner);
     }
-    
     //carry over our pending concatenation if needed
     atsc3_stltp_tunnel_packet_current->ip_udp_rtp_packet_pending_concatenation_inner = atsc3_ip_udp_rtp_packet_duplicate(atsc3_stltp_tunnel_packet_current->ip_udp_rtp_packet_inner);
     
-    atsc3_stltp_preamble_packet_pending->ip_udp_rtp_packet_inner = atsc3_ip_udp_rtp_packet_duplicate(atsc3_stltp_tunnel_packet_current->ip_udp_rtp_packet_inner);
-    
-    block_t* packet = block_Refcount(atsc3_stltp_tunnel_packet_current->ip_udp_rtp_packet_inner->data);
+    block_t* packet = atsc3_stltp_tunnel_packet_current->ip_udp_rtp_packet_inner->data; //don't ref with just a local var
 
-	if(atsc3_stltp_preamble_packet_pending->ip_udp_rtp_packet_inner->rtp_header->marker && !atsc3_stltp_tunnel_packet_current->atsc3_stltp_preamble_packet_pending->fragment_count) {
+    //&& !atsc3_stltp_tunnel_packet_current->atsc3_stltp_preamble_packet_pending->fragment_count
+	if(atsc3_stltp_preamble_packet_pending->ip_udp_rtp_packet_inner->rtp_header->marker) {
 		//read the first uint16_t for our preamble length
-
         //The length field shall contain the number of bytes in the Preamble Payload data structure following the length field excluding the crc16 bytes
 		atsc3_stltp_preamble_packet_pending->payload_length = ntohs(*((uint16_t*)(block_Get(packet)))) + 2 + 2; //extra +2 is for the crc16 not included in the length field
-		__STLTP_PARSER_DEBUG("      ----preamble packet: new -----");
-        __STLTP_PARSER_DEBUG("       preamble length:    %u (payload: %p)",  atsc3_stltp_preamble_packet_pending->payload_length, atsc3_stltp_preamble_packet_pending->payload);
-        
 		atsc3_stltp_preamble_packet_pending->payload = calloc(atsc3_stltp_preamble_packet_pending->payload_length, sizeof(uint8_t));
+        atsc3_stltp_preamble_packet_pending->ip_udp_rtp_packet_inner->rtp_header->marker = 0; //hack so we don't wipe our our concatenating payloads
+        __STLTP_PARSER_DEBUG("      ----preamble packet: new -----");
+        __STLTP_PARSER_DEBUG("       preamble length:    %u (payload: %p)",  atsc3_stltp_preamble_packet_pending->payload_length, atsc3_stltp_preamble_packet_pending->payload);
+    } else {
+        __STLTP_PARSER_DEBUG("      ----preamble packet: append -----");
+        __STLTP_PARSER_DEBUG("       preamble length:    %u (payload: %p)",  atsc3_stltp_preamble_packet_pending->payload_length, atsc3_stltp_preamble_packet_pending->payload);
     }
     
     uint32_t block_remaining_length = block_Remaining_size(packet);
@@ -679,7 +674,6 @@ atsc3_stltp_preamble_packet_t* atsc3_stltp_preamble_packet_extract(atsc3_stltp_t
 
     memcpy(&atsc3_stltp_preamble_packet_pending->payload[atsc3_stltp_preamble_packet_pending->payload_offset], block_Get(packet), block_remaining_length);
 	__STLTP_PARSER_DEBUG("       first bytes:         0x%02x 0x%02x", atsc3_stltp_preamble_packet_pending->payload[atsc3_stltp_preamble_packet_pending->payload_offset], atsc3_stltp_preamble_packet_pending->payload[atsc3_stltp_preamble_packet_pending->payload_offset+1]);
-
     __STLTP_PARSER_DEBUG("       preamble_payload_length: %u", atsc3_stltp_preamble_packet_pending->payload_length);
 
     atsc3_stltp_preamble_packet_pending->fragment_count++;

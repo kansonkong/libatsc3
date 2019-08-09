@@ -86,12 +86,14 @@ void process_packet(u_char *user, const struct pcap_pkthdr *pkthdr, const u_char
             for(int i=0; i < atsc3_stltp_tunnel_packet_processed->atsc3_stltp_baseband_packet_v.count; i++) {
                 atsc3_alp_packet_t* atsc3_alp_packet = NULL;
                 atsc3_stltp_baseband_packet_t* atsc3_stltp_baseband_packet = atsc3_stltp_tunnel_packet_processed->atsc3_stltp_baseband_packet_v.data[i];
-                __INFO("atsc3_baseband_packet: sequence_num: %d, port: %d", atsc3_stltp_baseband_packet->ip_udp_rtp_packet_inner->rtp_header->sequence_number, atsc3_stltp_baseband_packet->ip_udp_rtp_packet_inner->udp_flow.dst_port);
+                __INFO("atsc3_baseband_packet: sequence_num: %d, port: %d",
+                       atsc3_stltp_baseband_packet->ip_udp_rtp_packet_inner->rtp_header->sequence_number,
+                       atsc3_stltp_baseband_packet->ip_udp_rtp_packet_inner->udp_flow.dst_port);
 
                 //make sure we get a packet back, base field pointer (13b) : 0x1FFF (8191 bytes) will return NULL
                 atsc3_baseband_packet_t* atsc3_baseband_packet = atsc3_stltp_parse_baseband_packet(atsc3_stltp_baseband_packet);
                 if(!atsc3_baseband_packet) {
-                    __ERROR("no baseband packet returned!");
+                    __INFO("no baseband packet returned, ^^^ should be only padding");
                 }
                 
                 if(atsc3_baseband_packet) {

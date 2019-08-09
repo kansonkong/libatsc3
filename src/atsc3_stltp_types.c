@@ -297,10 +297,10 @@ void atsc3_stltp_timing_management_packet_free_outer_inner_data(atsc3_stltp_timi
 void atsc3_stltp_preamble_packet_free_v(atsc3_stltp_preamble_packet_t* atsc3_stltp_preamble_packet) {
     if(atsc3_stltp_preamble_packet) {
         
-        //this shoudl be all boilerplate
+        //this should be all boilerplate
         atsc3_ip_udp_rtp_packet_free(&atsc3_stltp_preamble_packet->ip_udp_rtp_packet_outer);
         atsc3_ip_udp_rtp_packet_free(&atsc3_stltp_preamble_packet->ip_udp_rtp_packet_inner);
-        //this shoudl be all boilerplate
+        //this should be all boilerplate
     
         if(atsc3_stltp_preamble_packet->payload) {
             free(atsc3_stltp_preamble_packet->payload);
