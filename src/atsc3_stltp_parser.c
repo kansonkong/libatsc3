@@ -757,8 +757,10 @@ atsc3_stltp_timing_management_packet_t* atsc3_stltp_timing_management_packet_ext
         atsc3_stltp_timing_management_packet_pending = NULL;
         atsc3_stltp_tunnel_packet_current->atsc3_stltp_timing_management_packet_pending = NULL;
     }
+    //jjustman-2019-08-08 - hack
+    atsc3_stltp_tunnel_packet_current->ip_udp_rtp_packet_inner->rtp_header->marker = 1;
     
-	if(!atsc3_stltp_timing_management_packet_pending) {
+	if(!atsc3_stltp_timing_management_packet_pending && atsc3_stltp_tunnel_packet_current->ip_udp_rtp_packet_inner->rtp_header->marker) {
 		atsc3_stltp_timing_management_packet_pending = calloc(1, sizeof(atsc3_stltp_timing_management_packet_t));
         
         atsc3_stltp_timing_management_packet_pending->ip_udp_rtp_packet_outer = atsc3_ip_udp_rtp_packet_duplicate(atsc3_stltp_tunnel_packet_current->ip_udp_rtp_packet_outer);
