@@ -225,7 +225,8 @@ atsc3_baseband_packet_t* atsc3_stltp_parse_baseband_packet(atsc3_stltp_baseband_
 
                 if(atsc3_baseband_packet->ext_len == baseband_packet_remaining_size) {
                     __ALP_PARSER_INFO(" base_field_pointer=8191, only padding present, ext_len == baseband_packet_remaining_size: %d",  atsc3_baseband_packet->ext_len);
-                    return NULL;
+                    goto cleanup;
+                    
                 } else if(baseband_packet_remaining_size > atsc3_baseband_packet->ext_len) {
                     
                     binary_payload += atsc3_baseband_packet->ext_len;
@@ -541,8 +542,7 @@ atsc3_alp_packet_t* atsc3_alp_packet_parse(block_t* baseband_packet_payload) {
         
         //hack to eof
         baseband_packet_payload->i_pos = baseband_packet_payload->p_size;
-        
-        return NULL;
+        goto cleanup;
     }
                           
 
@@ -564,6 +564,14 @@ atsc3_alp_packet_t* atsc3_alp_packet_parse(block_t* baseband_packet_payload) {
                       alp_payload_length - alp_payload_bytes_to_write,
                       block_Remaining_size(baseband_packet_payload));
     return alp_packet;
+    
+cleanup:
+    if(alp_packet) {
+        free(alp_packet);
+        alp_packet = NULL;
+    }
+    
+    return NULL;
 }
 
 

@@ -102,7 +102,7 @@ void mmtp_sub_flow_remove_mmtp_packet(mmtp_sub_flow_t *mmtp_sub_flow, mmtp_paylo
 
     
 //cleanup packet and any subflow associations
-    void mmtp_payload_fragments_union_free(mmtp_payload_fragments_union_t** mmtp_payload);
+void mmtp_payload_fragments_union_free(mmtp_payload_fragments_union_t** mmtp_payload);
 
 
 #if defined (__cplusplus)
