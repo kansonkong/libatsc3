@@ -281,6 +281,12 @@ void mmtp_payload_fragments_union_free(mmtp_payload_fragments_union_t** mmtp_pay
             if(mmtp_payload_fragment->mmtp_packet_header.mmtp_payload_type == 0x0) {
                 //clean up data block allocs
                 mmt_mpu_free_payload(mmtp_payload_fragment);
+            } else if(mmtp_payload_fragment->mmtp_packet_header.mmtp_payload_type == 0x2) {
+                //clean up signalling message instances
+                for(int i=0; i < mmtp_payload_fragment->mmtp_signalling_message_fragments.mmt_signalling_message_vector.messages_n; i++) {
+                    mmt_signalling_message_header_and_payload_t* mmt_signalling_message_header_and_payload = mmtp_payload_fragment->mmtp_signalling_message_fragments.mmt_signalling_message_vector.messages[i];
+                    mmt_signalling_message_header_and_payload_free(&mmt_signalling_message_header_and_payload);
+                }
             }
 
             _MMTP_TRACE("mmtp_sub_flow_vector_init: calling freesafe with: %p", mmtp_payload_fragment);
