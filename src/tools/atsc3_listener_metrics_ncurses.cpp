@@ -322,6 +322,16 @@ void process_packet(u_char *user, const struct pcap_pkthdr *pkthdr, const u_char
         if(mmtp_payload) {
             mmtp_process_from_payload(mmtp_sub_flow_vector, udp_flow_latest_mpu_sequence_number_container, lls_slt_monitor, udp_packet, &mmtp_payload, matching_lls_slt_mmt_session);
             
+            bool should_free = true;
+            if(lls_slt_monitor && lls_slt_monitor->lls_sls_mmt_monitor && lls_slt_monitor->lls_sls_mmt_monitor->lls_mmt_session) {
+                should_free = !(lls_slt_monitor->lls_sls_mmt_monitor->lls_mmt_session->sls_destination_ip_address == matching_lls_slt_mmt_session->sls_destination_ip_address &&
+                                lls_slt_monitor->lls_sls_mmt_monitor->lls_mmt_session->sls_destination_udp_port == matching_lls_slt_mmt_session->sls_destination_udp_port &&
+                                lls_slt_monitor->lls_sls_mmt_monitor->lls_mmt_session->service_id == matching_lls_slt_mmt_session->service_id);
+            }
+            
+            if(should_free) {
+                mmtp_payload_fragments_union_free(&mmtp_payload);
+            }
             //don't free our payload here, as it is needed by the sub_flow_vector
            // mmtp_payload_fragments_union_free(&mmtp_payload);
         }

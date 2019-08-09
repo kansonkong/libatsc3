@@ -10,3 +10,16 @@
 #include "atsc3_lls_sls_monitor_output_buffer.h"
 
 ATSC3_VECTOR_BUILDER_METHODS_IMPLEMENTATION(lls_sls_monitor_buffer_isobmff, trun_sample_entry)
+
+
+void lls_sls_monitor_buffer_isobmff_clear_trun_sample_entry_instances(lls_sls_monitor_buffer_isobmff_t* lls_sls_monitor_buffer_isobmff) {
+    for(int i=0; i < lls_sls_monitor_buffer_isobmff->trun_sample_entry_v.count; i++) {
+        trun_sample_entry_t* trun_sample_entry = lls_sls_monitor_buffer_isobmff->trun_sample_entry_v.data[i];
+        if(trun_sample_entry->sample) {
+            block_Destroy(&trun_sample_entry->sample);
+        }
+    }
+    
+    lls_sls_monitor_buffer_isobmff_clear_trun_sample_entry(lls_sls_monitor_buffer_isobmff);
+}
+
