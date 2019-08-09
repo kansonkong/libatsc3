@@ -79,6 +79,11 @@ void atsc3_stltp_tunnel_packet_clear_completed_inner_packets(atsc3_stltp_tunnel_
             atsc3_stltp_tunnel_packet_clear_atsc3_stltp_baseband_packet(atsc3_stltp_tunnel_packet);
         }
         
+        if(atsc3_stltp_tunnel_packet->atsc3_stltp_baseband_packet_v.data) {
+            free(atsc3_stltp_tunnel_packet->atsc3_stltp_baseband_packet_v.data);
+            atsc3_stltp_tunnel_packet->atsc3_stltp_baseband_packet_v.data = NULL;
+        }
+        
         if(atsc3_stltp_tunnel_packet->atsc3_stltp_preamble_packet_v.count) {
             for(int i=0; i < atsc3_stltp_tunnel_packet->atsc3_stltp_preamble_packet_v.count; i++) {
                 atsc3_stltp_preamble_packet_free_v(atsc3_stltp_tunnel_packet->atsc3_stltp_preamble_packet_v.data[i]);

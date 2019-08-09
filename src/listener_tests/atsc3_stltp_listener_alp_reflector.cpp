@@ -262,6 +262,8 @@ void process_packet(u_char *user, const struct pcap_pkthdr *pkthdr, const u_char
             }
             atsc3_alp_packet_collection_clear_atsc3_alp_packet(atsc3_alp_packet_collection);
             atsc3_alp_packet_collection_clear_atsc3_baseband_packet(atsc3_alp_packet_collection);
+            
+           
         }
         
         if(atsc3_stltp_tunnel_packet_processed->atsc3_stltp_preamble_packet_v.count) {
