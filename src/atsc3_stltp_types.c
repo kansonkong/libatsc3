@@ -102,7 +102,11 @@ void atsc3_stltp_tunnel_packet_clear_completed_inner_packets(atsc3_stltp_tunnel_
  free both inner and outer packets if inner/outer data block_t don't match (refragmentation or concatenation/segmentation),
  oterwise only block_release one _t
 
- THIS METHOD IS DANGEROUS 
+ THIS METHOD IS DANGEROUS
+ 
+ full destroy of all member*'s
+ 
+ make sure to clone before re-assigning ptr vals to another tunnel packet reference
 
  **/
 
@@ -114,9 +118,23 @@ void atsc3_stltp_tunnel_packet_free(atsc3_stltp_tunnel_packet_t** atsc3_stltp_tu
             if(atsc3_stltp_tunnel_packet->ip_udp_rtp_packet_inner) {
                 atsc3_ip_udp_rtp_packet_free(&atsc3_stltp_tunnel_packet->ip_udp_rtp_packet_inner);
             }
+            
             if(atsc3_stltp_tunnel_packet->ip_udp_rtp_packet_outer) {
                 atsc3_ip_udp_rtp_packet_free(&atsc3_stltp_tunnel_packet->ip_udp_rtp_packet_outer);
             }
+            
+            if(atsc3_stltp_tunnel_packet->ip_udp_rtp_packet_pending_refragmentation_outer) {
+                atsc3_ip_udp_rtp_packet_free(&atsc3_stltp_tunnel_packet->ip_udp_rtp_packet_pending_refragmentation_outer);
+            }
+            
+            if(atsc3_stltp_tunnel_packet->ip_udp_rtp_packet_pending_concatenation_inner) {
+                atsc3_ip_udp_rtp_packet_free(&atsc3_stltp_tunnel_packet->ip_udp_rtp_packet_pending_concatenation_inner);
+            }
+            
+            if(atsc3_stltp_tunnel_packet->atsc3_baseband_packet_short_fragment) {
+                block_Destroy(&atsc3_stltp_tunnel_packet->atsc3_baseband_packet_short_fragment);
+            }
+            
             
             atsc3_stltp_tunnel_packet_clear_completed_inner_packets(atsc3_stltp_tunnel_packet);
             free(atsc3_stltp_tunnel_packet);
