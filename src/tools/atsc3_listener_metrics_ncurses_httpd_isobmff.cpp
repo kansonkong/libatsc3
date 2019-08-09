@@ -80,7 +80,7 @@ lls_slt_monitor_t* lls_slt_monitor;
 //make sure to invoke     mmtp_sub_flow_vector_init(&p_sys->mmtp_sub_flow_vector);
 mmtp_sub_flow_vector_t*                          mmtp_sub_flow_vector;
 udp_flow_latest_mpu_sequence_number_container_t* udp_flow_latest_mpu_sequence_number_container;
-global_atsc3_stats_t* global_stats;
+global_atsc3_stats_t*                            global_stats;
 
 
 /**
@@ -218,6 +218,37 @@ static int http_output_response_from_player_pipe (void *cls,
 	MHD_destroy_response (response);
 
 	return ret;
+}
+
+void* global_autoplay_run_thread(void*p) {
+    uint16_t my_service_id = 3;
+    lls_sls_mmt_monitor_t* lls_sls_mmt_monitor = NULL;
+
+    while(true) {
+        sleep(2);
+        lls_sls_mmt_session_t* lls_sls_mmt_session = lls_slt_mmt_session_find_from_service_id(lls_slt_monitor, my_service_id);
+        if(lls_sls_mmt_session) {
+            lls_sls_mmt_monitor = lls_sls_mmt_monitor_create();
+            lls_sls_mmt_monitor->lls_mmt_session = lls_sls_mmt_session;
+            lls_sls_mmt_monitor->service_id = my_service_id;
+            
+            lls_sls_mmt_monitor->video_packet_id = lls_sls_mmt_session->video_packet_id;
+            lls_sls_mmt_monitor->audio_packet_id = lls_sls_mmt_session->audio_packet_id;
+            
+            lls_sls_mmt_monitor->lls_sls_monitor_output_buffer.has_written_init_box = false;
+            lls_slt_monitor->lls_sls_mmt_monitor = lls_sls_mmt_monitor;
+            sleep(2);
+
+            lls_slt_monitor->lls_sls_mmt_monitor->lls_sls_monitor_output_buffer_mode.pipe_ffplay_buffer = pipe_create_ffplay_resolve_fps(&lls_slt_monitor->lls_sls_mmt_monitor->lls_sls_monitor_output_buffer.video_output_buffer_isobmff);
+            
+            lls_slt_monitor->lls_sls_mmt_monitor->lls_sls_monitor_output_buffer_mode.ffplay_output_enabled = true;
+            
+            lls_slt_monitor->lls_sls_mmt_monitor->lls_sls_monitor_output_buffer_mode.http_output_buffer = (http_output_buffer_t*)calloc(1, sizeof(http_output_buffer_t));
+            lls_slt_monitor->lls_sls_mmt_monitor->lls_sls_monitor_output_buffer_mode.http_output_buffer->http_payload_buffer_mutex = lls_sls_monitor_reader_mutext_create();
+            lls_slt_monitor->lls_sls_mmt_monitor->lls_sls_monitor_output_buffer_mode.http_output_enabled = true;
+            break;
+        }
+    }
 }
 
 void* global_httpd_run_thread(void* lls_slt_monitor_ptr) {
@@ -501,6 +532,16 @@ void process_packet(u_char *user, const struct pcap_pkthdr *pkthdr, const u_char
         if(mmtp_payload) {
             mmtp_process_from_payload(mmtp_sub_flow_vector, udp_flow_latest_mpu_sequence_number_container, lls_slt_monitor, udp_packet, &mmtp_payload, matching_lls_slt_mmt_session);
             
+            bool should_free = true;
+            if(lls_slt_monitor && lls_slt_monitor->lls_sls_mmt_monitor && lls_slt_monitor->lls_sls_mmt_monitor->lls_mmt_session) {
+                should_free = !(lls_slt_monitor->lls_sls_mmt_monitor->lls_mmt_session->sls_destination_ip_address == matching_lls_slt_mmt_session->sls_destination_ip_address &&
+                                lls_slt_monitor->lls_sls_mmt_monitor->lls_mmt_session->sls_destination_udp_port == matching_lls_slt_mmt_session->sls_destination_udp_port &&
+                                lls_slt_monitor->lls_sls_mmt_monitor->lls_mmt_session->service_id == matching_lls_slt_mmt_session->service_id);
+            }
+            
+            if(should_free) {
+                mmtp_payload_fragments_union_free(&mmtp_payload);
+            }
             //don't free our payload here, as it is needed by the sub_flow_vector
            // mmtp_payload_fragments_union_free(&mmtp_payload);
         }
@@ -710,6 +751,10 @@ int main(int argc,char **argv) {
 	assert(!pcap_ret);
 
     
+    pthread_t global_autoplay_thread_id;
+    pthread_create(&global_autoplay_thread_id, NULL, global_autoplay_run_thread, NULL);
+
+
 	pthread_join(global_pcap_thread_id, NULL);
 	pthread_join(global_ncurses_input_thread_id, NULL);
 

@@ -77,6 +77,9 @@ typedef struct lls_sls_monitor_buffer_isobmff {
 
 ATSC3_VECTOR_BUILDER_METHODS_INTERFACE(lls_sls_monitor_buffer_isobmff, trun_sample_entry)
 
+void lls_sls_monitor_buffer_isobmff_clear_trun_sample_entry_instances(lls_sls_monitor_buffer_isobmff_t* lls_sls_monitor_buffer_isobmff);
+
+    
 typedef struct lls_sls_monitor_buffer {
     bool has_written_init_box;
     bool should_flush_output_buffer;
