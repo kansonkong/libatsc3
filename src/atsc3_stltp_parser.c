@@ -473,9 +473,8 @@ atsc3_stltp_baseband_packet_t* atsc3_stltp_baseband_packet_extract(atsc3_stltp_t
                                 atsc3_stltp_baseband_packet_pending->payload_offset,
                                 atsc3_stltp_baseband_packet_pending->payload_length);
 
-        atsc3_stltp_baseband_packet_free_v(atsc3_stltp_baseband_packet_pending);
+        atsc3_stltp_baseband_packet_free(&atsc3_stltp_tunnel_packet_current->atsc3_stltp_baseband_packet_pending);
         atsc3_stltp_baseband_packet_pending = NULL;
-        atsc3_stltp_tunnel_packet_current->atsc3_stltp_baseband_packet_pending = NULL;
     }
 
     if(!atsc3_stltp_baseband_packet_pending && atsc3_stltp_tunnel_packet_current->ip_udp_rtp_packet_inner->rtp_header->marker) {
@@ -609,9 +608,8 @@ atsc3_stltp_preamble_packet_t* atsc3_stltp_preamble_packet_extract(atsc3_stltp_t
     if(atsc3_stltp_tunnel_packet_current->ip_udp_rtp_packet_inner->rtp_header->marker && atsc3_stltp_tunnel_packet_current->atsc3_stltp_preamble_packet_pending) {
         __STLTP_PARSER_ERROR("atsc3_stltp_preamble_packet_extract: force clearing preamble pending packet due to inner marker");
 
-        free(atsc3_stltp_tunnel_packet_current->atsc3_stltp_preamble_packet_pending);
+        atsc3_stltp_preamble_packet_free(&atsc3_stltp_tunnel_packet_current->atsc3_stltp_preamble_packet_pending);
         atsc3_stltp_preamble_packet_pending = NULL;
-        atsc3_stltp_tunnel_packet_current->atsc3_stltp_preamble_packet_pending = NULL;
     }
     
     if(!atsc3_stltp_preamble_packet_pending && atsc3_stltp_tunnel_packet_current->ip_udp_rtp_packet_inner->rtp_header->marker) {
@@ -752,10 +750,8 @@ atsc3_stltp_timing_management_packet_t* atsc3_stltp_timing_management_packet_ext
     if(atsc3_stltp_tunnel_packet_current->ip_udp_rtp_packet_inner->rtp_header->marker && atsc3_stltp_tunnel_packet_current->atsc3_stltp_timing_management_packet_pending) {
         //force clear out pending packet
         __STLTP_PARSER_ERROR("atsc3_stltp_timing_management_packet_extract: force clearing timing_management pending packet due to inner marker");
-
-        free(atsc3_stltp_tunnel_packet_current->atsc3_stltp_timing_management_packet_pending);
+        atsc3_stltp_timing_management_packet_free(&atsc3_stltp_tunnel_packet_current->atsc3_stltp_timing_management_packet_pending);
         atsc3_stltp_timing_management_packet_pending = NULL;
-        atsc3_stltp_tunnel_packet_current->atsc3_stltp_timing_management_packet_pending = NULL;
     }
     //jjustman-2019-08-08 - hack
     atsc3_stltp_tunnel_packet_current->ip_udp_rtp_packet_inner->rtp_header->marker = 1;
