@@ -265,7 +265,6 @@ void atsc3_ip_udp_rtp_packet_free(atsc3_ip_udp_rtp_packet_t** ip_udp_rtp_packet_
             //rely on reference counting for outer/inner pointer sharing
             if(ip_udp_rtp_packet->data) {
                 __IP_UDP_RTP_PARSER_TRACE("atsc3_ip_udp_rtp_packet_free: freeing ip_udp_rtp_packet->data: %p", ip_udp_rtp_packet->data);
-                //block_Release(&ip_udp_rtp_packet->data);
                 block_Destroy(&ip_udp_rtp_packet->data);
             }
             atsc3_rtp_header_free(&ip_udp_rtp_packet->rtp_header);
