@@ -81,6 +81,8 @@ void process_packet(u_char *user, const struct pcap_pkthdr *pkthdr, const u_char
         if(atsc3_stltp_tunnel_packet_processed->atsc3_stltp_baseband_packet_v.count) {
             __INFO(">>>stltp atsc3_stltp_baseband_packet packet complete: count: %u",  atsc3_stltp_tunnel_packet_processed->atsc3_stltp_baseband_packet_v.count);
             
+            //TODO: jjustman-2019-08-09 refactor stltp baseband to alp processing logic out
+            
             for(int i=0; i < atsc3_stltp_tunnel_packet_processed->atsc3_stltp_baseband_packet_v.count; i++) {
                 atsc3_alp_packet_t* atsc3_alp_packet = NULL;
                 atsc3_stltp_baseband_packet_t* atsc3_stltp_baseband_packet = atsc3_stltp_tunnel_packet_processed->atsc3_stltp_baseband_packet_v.data[i];
@@ -261,9 +263,16 @@ void process_packet(u_char *user, const struct pcap_pkthdr *pkthdr, const u_char
                 atsc3_baseband_packet_free_v(atsc3_baseband_packet);
             }
             atsc3_alp_packet_collection_clear_atsc3_alp_packet(atsc3_alp_packet_collection);
+            //todo: refactor to _free(..) for vector_t
+            if(atsc3_alp_packet_collection->atsc3_alp_packet_v.data) {
+                free(atsc3_alp_packet_collection->atsc3_alp_packet_v.data);
+                atsc3_alp_packet_collection->atsc3_alp_packet_v.data = NULL;
+            }
             atsc3_alp_packet_collection_clear_atsc3_baseband_packet(atsc3_alp_packet_collection);
-            
-           
+            if(atsc3_alp_packet_collection->atsc3_baseband_packet_v.data) {
+                free(atsc3_alp_packet_collection->atsc3_baseband_packet_v.data);
+                atsc3_alp_packet_collection->atsc3_baseband_packet_v.data = NULL;
+            }
         }
         
         if(atsc3_stltp_tunnel_packet_processed->atsc3_stltp_preamble_packet_v.count) {
@@ -282,6 +291,7 @@ void process_packet(u_char *user, const struct pcap_pkthdr *pkthdr, const u_char
             }
         }
         
+        //this method will clear _v.data inner references
         atsc3_stltp_tunnel_packet_clear_completed_inner_packets(atsc3_stltp_tunnel_packet_processed);
     }
     
