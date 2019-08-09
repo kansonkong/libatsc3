@@ -260,11 +260,11 @@ void atsc3_stltp_baseband_packet_free_v(atsc3_stltp_baseband_packet_t* atsc3_stl
 void atsc3_stltp_baseband_packet_free_outer_inner_data(atsc3_stltp_baseband_packet_t* atsc3_stltp_baseband_packet) {
     
     if(atsc3_stltp_baseband_packet->ip_udp_rtp_packet_outer && atsc3_stltp_baseband_packet->ip_udp_rtp_packet_outer->data) {
-        block_Release(&atsc3_stltp_baseband_packet->ip_udp_rtp_packet_outer->data);
+        block_Destroy(&atsc3_stltp_baseband_packet->ip_udp_rtp_packet_outer->data);
     }
     
     if(atsc3_stltp_baseband_packet->ip_udp_rtp_packet_inner && atsc3_stltp_baseband_packet->ip_udp_rtp_packet_inner->data) {
-        block_Release(&atsc3_stltp_baseband_packet->ip_udp_rtp_packet_inner->data);
+        block_Destroy(&atsc3_stltp_baseband_packet->ip_udp_rtp_packet_inner->data);
     }
 }
 
@@ -272,11 +272,11 @@ void atsc3_stltp_baseband_packet_free_outer_inner_data(atsc3_stltp_baseband_pack
 void atsc3_stltp_preamble_packet_free_outer_inner_data(atsc3_stltp_preamble_packet_t* atsc3_stltp_preamble_packet) {
     
     if(atsc3_stltp_preamble_packet->ip_udp_rtp_packet_outer && atsc3_stltp_preamble_packet->ip_udp_rtp_packet_outer->data) {
-        block_Release(&atsc3_stltp_preamble_packet->ip_udp_rtp_packet_outer->data);
+        block_Destroy(&atsc3_stltp_preamble_packet->ip_udp_rtp_packet_outer->data);
     }
     
     if(atsc3_stltp_preamble_packet->ip_udp_rtp_packet_inner && atsc3_stltp_preamble_packet->ip_udp_rtp_packet_inner->data) {
-        block_Release(&atsc3_stltp_preamble_packet->ip_udp_rtp_packet_inner->data);
+        block_Destroy(&atsc3_stltp_preamble_packet->ip_udp_rtp_packet_inner->data);
     }
 }
 
@@ -284,11 +284,11 @@ void atsc3_stltp_preamble_packet_free_outer_inner_data(atsc3_stltp_preamble_pack
 void atsc3_stltp_timing_management_packet_free_outer_inner_data(atsc3_stltp_timing_management_packet_t* atsc3_stltp_timing_management_packet) {
     
     if(atsc3_stltp_timing_management_packet->ip_udp_rtp_packet_outer && atsc3_stltp_timing_management_packet->ip_udp_rtp_packet_outer->data) {
-        block_Release(&atsc3_stltp_timing_management_packet->ip_udp_rtp_packet_outer->data);
+        block_Destroy(&atsc3_stltp_timing_management_packet->ip_udp_rtp_packet_outer->data);
     }
     
     if(atsc3_stltp_timing_management_packet->ip_udp_rtp_packet_inner && atsc3_stltp_timing_management_packet->ip_udp_rtp_packet_inner->data) {
-        block_Release(&atsc3_stltp_timing_management_packet->ip_udp_rtp_packet_inner->data);
+        block_Destroy(&atsc3_stltp_timing_management_packet->ip_udp_rtp_packet_inner->data);
     }
 }
 
@@ -335,6 +335,50 @@ void atsc3_stltp_timing_management_packet_free_v(atsc3_stltp_timing_management_p
         }
     }
 }
+
+/*
+ free complete object including ptr*this
+*/
+void atsc3_stltp_baseband_packet_free(atsc3_stltp_baseband_packet_t** atsc3_stltp_baseband_packet_p) {
+    if(atsc3_stltp_baseband_packet_p) {
+        atsc3_stltp_baseband_packet_t* atsc3_stltp_baseband_packet = *atsc3_stltp_baseband_packet_p;
+        if(atsc3_stltp_baseband_packet) {
+            atsc3_stltp_baseband_packet_free_v(atsc3_stltp_baseband_packet);
+            free(atsc3_stltp_baseband_packet);
+            atsc3_stltp_baseband_packet = NULL;
+        }
+        *atsc3_stltp_baseband_packet_p = NULL;
+    }
+}
+
+void atsc3_stltp_preamble_packet_free(atsc3_stltp_preamble_packet_t** atsc3_stltp_preamble_packet_p) {
+    if(atsc3_stltp_preamble_packet_p) {
+        atsc3_stltp_preamble_packet_t* atsc3_stltp_preamble_packet = *atsc3_stltp_preamble_packet_p;
+        if(atsc3_stltp_preamble_packet) {
+            atsc3_stltp_preamble_packet_free_v(atsc3_stltp_preamble_packet);
+            free(atsc3_stltp_preamble_packet);
+            atsc3_stltp_preamble_packet = NULL;
+        }
+        *atsc3_stltp_preamble_packet_p = NULL;
+    }
+}
+
+void atsc3_stltp_timing_management_packet_free(atsc3_stltp_timing_management_packet_t** atsc3_stltp_timing_management_packet_p) {
+    if(atsc3_stltp_timing_management_packet_p) {
+        atsc3_stltp_timing_management_packet_t* atsc3_stltp_timing_management_packet = *atsc3_stltp_timing_management_packet_p;
+        if(atsc3_stltp_timing_management_packet) {
+            atsc3_stltp_timing_management_packet_free_v(atsc3_stltp_timing_management_packet);
+            free(atsc3_stltp_timing_management_packet);
+            atsc3_stltp_timing_management_packet = NULL;
+        }
+        *atsc3_stltp_timing_management_packet_p = NULL;
+    }
+}
+
+
+/**
+ header dump methods
+ **/
 
 
 void atsc3_rtp_header_dump_outer(atsc3_stltp_tunnel_packet_t* atsc3_stltp_tunnel_packet) {
