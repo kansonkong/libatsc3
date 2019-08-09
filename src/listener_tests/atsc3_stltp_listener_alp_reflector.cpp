@@ -221,8 +221,16 @@ void process_packet(u_char *user, const struct pcap_pkthdr *pkthdr, const u_char
                             if(atsc3_alp_packet->is_alp_payload_complete) {
                                 atsc3_alp_packet_collection_add_atsc3_alp_packet(atsc3_alp_packet_collection, atsc3_alp_packet);
                             } else {
-                                atsc3_alp_packet_collection->atsc3_alp_packet_pending = atsc3_alp_packet_clone(atsc3_alp_packet);
-                                atsc3_alp_packet = NULL;
+                                
+                                //jjustman-2019-08-08 - free before stoping on pending payload reference
+                                if(atsc3_alp_packet_collection->atsc3_alp_packet_pending) {
+                                    atsc3_alp_packet_free(&atsc3_alp_packet_collection->atsc3_alp_packet_pending);
+                                }
+                                if(atsc3_alp_packet) {
+                                    atsc3_alp_packet_collection->atsc3_alp_packet_pending = atsc3_alp_packet_clone(atsc3_alp_packet);
+                                    atsc3_alp_packet_free(&atsc3_alp_packet);
+                                }
+
                                 break;
                             }
                         }
