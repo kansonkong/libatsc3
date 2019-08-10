@@ -20,6 +20,35 @@
 #define MIN_MMTP_SIZE 32
 #define MAX_MMTP_SIZE 1514
 
+
+/*
+ * MMTP as specified in Clause 9 of ISO/IEC23008-1 [37] shall be used to deliver MPUs. The following constraints shall be applied to MMTP:
+   The value of the version field of MMTP packets shall be '01'.
+ */
+
+#define _ISO23008_1_MMTP_VERSION_0x00_SUPPORT_ false
+
+
+/*
+ * The value of the packet_id field of MMTP packets shall be between 0x0010 and 0x1FFE for easy conversion of an MMTP stream to an MPEG-2 TS.
+ * The value of the packet_id field of MMTP packets for each content component can be randomly assigned, but the value of the packet_id field of
+ * MMTP packets carrying two different components shall not be the same in a single MMTP session.
+ *
+ * See A/331 Section 7.2.3 for exceptions regarding signaling flow for SLS which shall be 0x0000
+ *
+ * korean samples have this defect
+ */
+
+//#define _ATSC3_MMT_PACKET_ID_MPEGTS_COMPATIBILITY_ true
+
+/*
+ * The value of ‘0x01’ for the type field of an MMTP packet header shall not be used, i.e. the Generic File Delivery (GFD) mode specified in
+ * subclauses 9.3.3 and 9.4.3 of [37] shall not be used.
+ *
+ * jjustman-2019-02-05 - I think this was a poor choice for real-time interactive object delivery use cases and experiences.
+ */
+#define _ISO230081_1_MMTP_GFD_SUPPORT_ false
+
 /**
  *
  * MMTP packet parsing
@@ -55,7 +84,7 @@ extern "C" {
 #endif
 
 
-mmtp_packet_header_t* mmtp_packet_parse(udp_packet_t *udp_packet);
+mmtp_packet_header_t* mmtp_packet_header_parse_from_block_t(block_t* udp_packet);
 void mmtp_packet_header_dump(mmtp_packet_header_t* mmtp_packet_header);
 
 /**
@@ -64,7 +93,6 @@ void mmtp_packet_header_dump(mmtp_packet_header_t* mmtp_packet_header);
 
 
 //returns pointer from udp_raw_buf where we completed header parsing
-mmtp_packet_header_t* mmtp_packet_header_parse_from_block_t(block_t* udp_packet);
 
 //TODO: purge
 ////think of this as castable to the base fields as they are the same size layouts
