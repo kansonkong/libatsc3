@@ -306,7 +306,7 @@ if(!found_mpu_metadata_fragment_video && !lls_sls_mmt_monitor->lls_sls_monitor_o
 
 
 lls_sls_monitor_buffer_isobmff_t* atsc3_isobmff_build_raw_mpu_from_single_sequence_number(udp_flow_t* udp_flow, udp_flow_latest_mpu_sequence_number_container_t* udp_flow_latest_mpu_sequence_number_container,
-		uint16_t packet_id, uint32_t mpu_sequence_number, mmtp_sub_flow_vector_t* mmtp_sub_flow_vector, lls_sls_monitor_buffer_isobmff_t* lls_sls_monitor_buffer_isobmff) {
+		uint16_t packet_id, uint32_t mpu_sequence_number,  lls_sls_monitor_buffer_isobmff_t* lls_sls_monitor_buffer_isobmff) {
 
 	__ISOBMFF_TOOLS_DEBUG("atsc3_isobmff_build_mpu_from_single_sequence_number: Starting to create MPU from flow: packet_id: %u, mpu_sequence_number: %u",
 			packet_id,
@@ -317,16 +317,10 @@ lls_sls_monitor_buffer_isobmff_t* atsc3_isobmff_build_raw_mpu_from_single_sequen
 
 	lls_sls_monitor_buffer_isobmff->packet_id = packet_id;
 
-	mpu_data_unit_payload_fragments_t* data_unit_payload_types = NULL;
-    mpu_data_unit_payload_fragments_timed_vector_t* data_unit_payload_fragments = NULL; //technically this is mpu_fragments->media_fragment_unit_vector
-    mpu_data_unit_payload_fragments_t* mpu_metadata_fragments =    NULL;
-    mpu_data_unit_payload_fragments_t* movie_metadata_fragments  = NULL;
-    mmtp_sub_flow_t* mmtp_sub_flow = NULL;
     int total_fragments = 0;
 
     block_t* mpu_metadata_output_block_t = NULL;
 
-    udp_flow_latest_mpu_sequence_number_container_t* udp_flow_matching_flows = udp_flow_find_matching_flows(udp_flow_latest_mpu_sequence_number_container, udp_flow);
 
     if(!udp_flow_latest_mpu_sequence_number_container || !udp_flow_latest_mpu_sequence_number_container->udp_flows_n) {
         __ISOBMFF_TOOLS_ERROR("atsc3_isobmff_build_mpu_from_single_sequence_number: Unable to find flows for MPU metadata creation from %u:%u", udp_flow->dst_ip_addr, udp_flow->dst_port);

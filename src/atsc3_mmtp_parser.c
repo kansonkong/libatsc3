@@ -29,7 +29,7 @@ int _MMTP_TRACE_ENABLED = 0;
 mmtp_packet_header_t* mmtp_packet_header_parse_from_udp_packet_t(udp_packet_t* udp_packet) {
 	block_t* udp_packet_block = block_Alloc(udp_packet->data_length);
 	block_Write(udp_packet_block, udp_packet->data, udp_packet->data_length);
-
+    block_Seek(udp_packet_block, 0);
 	mmtp_packet_header_t* mmtp_packet_header = mmtp_packet_header_parse_from_block_t(udp_packet_block);
 	udp_packet->data = block_Get(udp_packet_block);
 	udp_packet->data_length = block_Remaining_size(udp_packet_block);

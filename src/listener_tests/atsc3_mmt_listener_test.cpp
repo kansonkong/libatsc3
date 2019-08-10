@@ -83,6 +83,8 @@ void process_packet(u_char *user, const struct pcap_pkthdr *pkthdr, const u_char
 				goto cleanup;
 			}
 
+            mmtp_packet_header_dump(mmtp_packet_header);
+            
 			//dump header, then dump applicable packet type
 			if(mmtp_packet_header->mmtp_payload_type == 0x0) {
 				mmtp_mpu_packet_t* mmtp_mpu_packet = mmtp_mpu_packet_parse_from_udp_packet_t(mmtp_packet_header, udp_packet);
@@ -95,7 +97,10 @@ void process_packet(u_char *user, const struct pcap_pkthdr *pkthdr, const u_char
 			} else if(mmtp_packet_header->mmtp_payload_type == 0x2) {
 
 				mmtp_signalling_packet_t* mmtp_signalling_packet = mmt_signalling_message_parse_packet_header_udp_packet_t(mmtp_packet_header, udp_packet);
-				signalling_message_dump(mmtp_signalling_packet);
+                uint8_t* buff_ptr = mmt_signalling_message_parse_packet_udp_packet_t(mmtp_signalling_packet, udp_packet);
+                if(buff_ptr) {
+                    signalling_message_dump(mmtp_signalling_packet);
+                }
 
 			} else {
 				__ATSC3_WARN("mmtp_packet_parse: unknown payload type of 0x%x", mmtp_packet_header->mmtp_payload_type);
@@ -172,7 +177,8 @@ int main(int argc,char **argv) {
     int dst_packet_id_filter_int;
 
     _MMT_MPU_DEBUG_ENABLED = 1;
-    _PLAYER_FFPLAY_DEBUG_ENABLED = 1;
+    _MMT_SIGNALLING_MESSAGE_DEBUG_ENABLED = 1;
+
     _MMTP_DEBUG_ENABLED = 0;
     _MPU_DEBUG_ENABLED = 0;
     _LLS_DEBUG_ENABLED = 0;

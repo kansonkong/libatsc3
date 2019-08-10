@@ -43,6 +43,7 @@ raw base64 payload:
 mmtp_signalling_packet_t* mmt_signalling_message_parse_packet_header_udp_packet_t(mmtp_packet_header_t* mmtp_packet_header, udp_packet_t* udp_packet) {
 	block_t* udp_packet_block = block_Alloc(udp_packet->data_length);
 	block_Write(udp_packet_block, udp_packet->data, udp_packet->data_length);
+    block_Seek(udp_packet_block, 0);
 
 	mmtp_signalling_packet_t* mmtp_signalling_packet = mmt_signalling_message_parse_packet_header(mmtp_packet_header, udp_packet_block);
 	udp_packet->data = block_Get(udp_packet_block);
@@ -105,6 +106,19 @@ mmtp_signalling_packet_t* mmt_signalling_message_parse_packet_header(mmtp_packet
 /**
  *
  */
+
+uint8_t* mmt_signalling_message_parse_packet_udp_packet_t(mmtp_signalling_packet_t* mmtp_signalling_packet, udp_packet_t* udp_packet) {
+    block_t* udp_packet_block = block_Alloc(udp_packet->data_length);
+    block_Write(udp_packet_block, udp_packet->data, udp_packet->data_length);
+    block_Seek(udp_packet_block, 0);
+    
+    uint8_t* buff_ptr = mmt_signalling_message_parse_packet(mmtp_signalling_packet, udp_packet_block);
+    udp_packet->data = block_Get(udp_packet_block);
+    udp_packet->data_length = block_Remaining_size(udp_packet_block);
+    
+    return buff_ptr;
+}
+
 uint8_t* mmt_signalling_message_parse_packet(mmtp_signalling_packet_t* mmtp_signalling_packet, block_t* udp_packet) {
 
 	if(mmtp_signalling_packet->mmtp_payload_type != 0x02) {
