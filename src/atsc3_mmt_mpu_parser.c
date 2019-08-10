@@ -37,6 +37,7 @@ mmtp_mpu_packet_t* mmtp_mpu_packet_parse_from_block_t(mmtp_packet_header_t* mmtp
 	}
 
 	mmtp_mpu_packet_t* mmtp_mpu_packet = mmtp_mpu_packet_new();
+	memcpy(mmtp_mpu_packet, mmtp_packet_header, sizeof(mmtp_packet_header_t));
 
 	int mmtp_mpu_payload_length = block_Remaining_size(udp_packet);
 	uint8_t* udp_raw_buf = block_Get(udp_packet);
@@ -51,29 +52,6 @@ mmtp_mpu_packet_t* mmtp_mpu_packet_parse_from_block_t(mmtp_packet_header_t* mmtp
 		mmtp_packet_header->mmtp_payload_type,
 		mmtp_packet_header->packet_counter);
 
-
-	if(mmtp_packet_header->mmtp_header_extension_flag & 0x1) {
-		//clamp mmtp_header_extension_length to max length of our mpu
-		mmtp_packet_header->mmtp_header_extension_length = MIN(mmtp_packet_header->mmtp_header_extension_length, mmtp_mpu_payload_length - (buf - udp_raw_buf));
-
-		__MMT_MPU_PARSER_DEBUG("mmtp_mpu_packet_parse_from_block_t: mmtp_header_extension_flag, header extension size: %d, packet version: %d, payload_type: 0x%X, packet_id 0x%hu, timestamp: 0x%X, packet_sequence_number: 0x%X, packet_counter: 0x%X",
-				mmtp_packet_header->mmtp_packet_version,
-				mmtp_packet_header->mmtp_header_extension_length,
-				mmtp_packet_header->mmtp_payload_type,
-				mmtp_packet_header->mmtp_packet_id,
-				mmtp_packet_header->mmtp_timestamp,
-				mmtp_packet_header->packet_sequence_number,
-				mmtp_packet_header->packet_counter);
-
-		mmtp_packet_header->mmtp_header_extension = block_Alloc(mmtp_packet_header->mmtp_header_extension_length);
-		block_Write(mmtp_packet_header->mmtp_header_extension, buf, mmtp_packet_header->mmtp_header_extension_length);
-		buf += mmtp_packet_header->mmtp_header_extension_length;
-		int32_t mmtp_mpu_payload_remaining_length = mmtp_mpu_payload_length - (buf - udp_raw_buf);
-		if(mmtp_mpu_payload_remaining_length < 1) {
-			__MMT_MPU_PARSER_ERROR("mmtp_mpu_packet_parse_from_block_t: reading mmtp_header_extension_length, remaining size too small: %d", mmtp_mpu_payload_remaining_length);
-			goto error;
-		}
-	}
 
 	if(mmtp_packet_header->mmtp_payload_type == 0x0) {
 		//pull the mpu and frag iformation
