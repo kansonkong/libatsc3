@@ -37,6 +37,7 @@ typedef struct atsc3_mmt_multiLayerInfoBox {
         //uint8_t   temporal_id:3;
         uint8_t     reserved3:7;
 /* } */
+
 } atsc3_mmt_multiLayerInfoBox_t;
 
 typedef struct mmthsample_header {
@@ -53,6 +54,9 @@ typedef struct mmthsample_header {
 /* } else { */
         uint16_t                        item_id;
 /* } */
+
+	//derived internal libatsc3 value
+	uint32_t    mfu_mmth_sample_header_size;
 } mmthsample_header_t;
 
 

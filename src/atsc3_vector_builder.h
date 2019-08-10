@@ -132,8 +132,8 @@
 
 
 //provide a default
-#define ATSC3_VECTOR_BUILDER_METHODS_ITEM_FREE(vector_struct_name, vector_item_name) \
-	void PPCAT(vector_item_name,_free)(PPCAT(vector_item_name,_t)** PPCAT(vector_item_name,_p)); { \
+#define ATSC3_VECTOR_BUILDER_METHODS_ITEM_FREE(vector_item_name) \
+	void PPCAT(vector_item_name,_free)(PPCAT(vector_item_name,_t)** PPCAT(vector_item_name,_p)) { \
 		if(PPCAT(vector_item_name,_p)) {	\
 			PPCAT(vector_item_name,_t)* vector_item_name = *PPCAT(vector_item_name,_p);	\
 			if(vector_item_name) { \
