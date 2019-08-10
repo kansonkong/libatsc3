@@ -14,7 +14,7 @@ extern "C" {
 #endif
 
 #include "atsc3_lls_types.h"
-#include "atsc3_mmtp_types.h"
+#include "atsc3_mmtp_packet_types.h"
 #include "atsc3_player_ffplay.h"
 #include "atsc3_isobmff_trun_box.h"
 #include "bento4/ISOBMFFTrackJoiner_firewall_gpl.h"
