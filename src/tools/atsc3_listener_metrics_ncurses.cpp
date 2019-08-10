@@ -126,10 +126,7 @@ void count_packet_as_filtered(udp_packet_t* udp_packet) {
 	global_bandwidth_statistics->interval_filtered_current_packets_rx++;
 }
 
-
-
 void update_global_mmtp_statistics_from_udp_packet_t(udp_packet_t *udp_packet) {
-    
 	global_bandwidth_statistics->interval_mmt_current_bytes_rx += udp_packet->data_length;
 
 	mmtp_packet_header_t* mmtp_packet_header = mmtp_packet_header_parse_from_udp_packet_t(udp_packet);
@@ -140,6 +137,7 @@ void update_global_mmtp_statistics_from_udp_packet_t(udp_packet_t *udp_packet) {
 
 	//for filtering MMT flows by a specific packet_id
 	if(dst_packet_id_filter && *dst_packet_id_filter != mmtp_packet_header->mmtp_packet_id) {
+		count_packet_as_filtered(udp_packet);
 		goto cleanup;
 	}
 
@@ -190,7 +188,6 @@ void update_global_mmtp_statistics_from_udp_packet_t(udp_packet_t *udp_packet) {
  	 ;
 
 }
-
 
 static void route_process_from_alc_packet(alc_packet_t **alc_packet) {
     alc_packet_dump_to_object(alc_packet, lls_slt_monitor->lls_sls_alc_monitor);
@@ -356,7 +353,9 @@ void process_packet(u_char *user, const struct pcap_pkthdr *pkthdr, const u_char
 	//find our matching MMT flow and push it to reconsitution
     lls_sls_mmt_session_t* matching_lls_slt_mmt_session = lls_slt_mmt_session_find_from_udp_packet(lls_slt_monitor, udp_packet->udp_flow.src_ip_addr, udp_packet->udp_flow.dst_ip_addr, udp_packet->udp_flow.dst_port);
     if(matching_lls_slt_mmt_session) {
-        __TRACE("data len: %d", udp_packet->data_length)
+        __TRACE("data len: %d", udp_packet->data_length);
+
+        update_global_mmtp_statistics_from_udp_packet_t(udp_packet);
 
 	}
 
