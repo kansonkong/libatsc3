@@ -317,6 +317,7 @@ typedef struct mmt_scte35_message_payload {
 
 	ATSC3_VECTOR_BUILDER_STRUCT(mmt_scte35_signal_descriptor)
 } mmt_scte35_message_payload_t;
+ATSC3_VECTOR_BUILDER_METHODS_INTERFACE(mmt_scte35_message_payload, mmt_scte35_signal_descriptor);
 
 /*..fix me..*/
 
