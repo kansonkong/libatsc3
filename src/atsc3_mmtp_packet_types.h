@@ -229,6 +229,8 @@ typedef struct {
     ATSC3_VECTOR_BUILDER_STRUCT(mmtp_mpu_packet);
 } mpu_sequence_number_mmtp_mpu_packet_t;
 
+ATSC3_VECTOR_BUILDER_METHODS_INTERFACE(mpu_sequence_number_mmtp_mpu_packet, mmtp_mpu_packet);
+
 typedef struct mmtp_signalling_packet {
 	_MMTP_PACKET_HEADER_FIELDS;
 
@@ -243,6 +245,7 @@ typedef struct mmtp_signalling_packet {
     ATSC3_VECTOR_BUILDER_STRUCT(mmt_signalling_message_header_and_payload);
 } mmtp_signalling_packet_t;
 
+ATSC3_VECTOR_BUILDER_METHODS_INTERFACE(mmtp_signalling_packet, mmt_signalling_message_header_and_payload);
 
 //atsc3 does not use nontimed mpu's, so...just for posterity's sake
 typedef struct mmtp_mpu_nontimed_packet {
@@ -272,6 +275,12 @@ typedef struct mmtp_packet_id_packets_container {
     ATSC3_VECTOR_BUILDER_STRUCT(mmtp_repair_symbol_packet);
 } mmtp_packet_id_packets_container_t;
 
+ATSC3_VECTOR_BUILDER_METHODS_INTERFACE(mmtp_packet_id_packets_container, mpu_sequence_number_mmtp_mpu_packet);
+ATSC3_VECTOR_BUILDER_METHODS_INTERFACE(mmtp_packet_id_packets_container, mmtp_signalling_packet);
+ATSC3_VECTOR_BUILDER_METHODS_INTERFACE(mmtp_packet_id_packets_container, mmtp_mpu_nontimed_packet);
+ATSC3_VECTOR_BUILDER_METHODS_INTERFACE(mmtp_packet_id_packets_container, mmtp_generic_object_packet);
+ATSC3_VECTOR_BUILDER_METHODS_INTERFACE(mmtp_packet_id_packets_container, mmtp_repair_symbol_packet);
+
 
 //forward declare for child/parent relationship
 typedef struct mmtp_asset_flow mmtp_asset_flow_t;
@@ -284,6 +293,8 @@ typedef struct mmtp_asset {
     
 } mmtp_asset_t;
 
+ATSC3_VECTOR_BUILDER_METHODS_INTERFACE(mmtp_asset, mmtp_packet_id_packets_container);
+
 typedef struct mmtp_asset_flow {
 	uint32_t dst_ip;
 	uint16_t dst_port;
@@ -292,10 +303,12 @@ typedef struct mmtp_asset_flow {
 
 } mmtp_asset_flow_t;
 
+ATSC3_VECTOR_BUILDER_METHODS_INTERFACE(mmtp_asset_flow, mmtp_asset);
+
+
 #ifdef __cplusplus
 }
 #endif
-
 
 #define __MMTP_ERROR(...)   __LIBATSC3_TIMESTAMP_ERROR(__VA_ARGS__);
 #define __MMTP_WARN(...)    __LIBATSC3_TIMESTAMP_WARN(__VA_ARGS__);
@@ -303,7 +316,5 @@ typedef struct mmtp_asset_flow {
 
 #define __MMTP_DEBUG(...)   if(_MMTP_DEBUG_ENABLED) { __LIBATSC3_TIMESTAMP_DEBUG(__VA_ARGS__); }
 #define __MMTP_TRACE(...)   if(_MMTP_TRACE_ENABLED) { __LIBATSC3_TIMESTAMP_TRACE(__VA_ARGS__); }
-
-
 
 #endif /* ATSC3_MMTP_PACKET_TYPES_H_ */
