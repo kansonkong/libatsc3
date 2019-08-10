@@ -225,7 +225,7 @@ void* global_autoplay_run_thread(void*p) {
     lls_sls_mmt_monitor_t* lls_sls_mmt_monitor = NULL;
 
     while(true) {
-        sleep(2);
+        sleep(1);
         lls_sls_mmt_session_t* lls_sls_mmt_session = lls_slt_mmt_session_find_from_service_id(lls_slt_monitor, my_service_id);
         if(lls_sls_mmt_session) {
             lls_sls_mmt_monitor = lls_sls_mmt_monitor_create();
@@ -237,7 +237,7 @@ void* global_autoplay_run_thread(void*p) {
             
             lls_sls_mmt_monitor->lls_sls_monitor_output_buffer.has_written_init_box = false;
             lls_slt_monitor->lls_sls_mmt_monitor = lls_sls_mmt_monitor;
-            sleep(2);
+            sleep(3);
 
             lls_slt_monitor->lls_sls_mmt_monitor->lls_sls_monitor_output_buffer_mode.pipe_ffplay_buffer = pipe_create_ffplay_resolve_fps(&lls_slt_monitor->lls_sls_mmt_monitor->lls_sls_monitor_output_buffer.video_output_buffer_isobmff);
             
@@ -249,6 +249,8 @@ void* global_autoplay_run_thread(void*p) {
             break;
         }
     }
+    
+    return NULL;
 }
 
 void* global_httpd_run_thread(void* lls_slt_monitor_ptr) {
@@ -538,12 +540,11 @@ void process_packet(u_char *user, const struct pcap_pkthdr *pkthdr, const u_char
                                 lls_slt_monitor->lls_sls_mmt_monitor->lls_mmt_session->sls_destination_udp_port == matching_lls_slt_mmt_session->sls_destination_udp_port &&
                                 lls_slt_monitor->lls_sls_mmt_monitor->lls_mmt_session->service_id == matching_lls_slt_mmt_session->service_id);
             }
-            
+
+            //only free if we aren't in a monitored lls_mmt_session, otherwise packet will be released in atsc3_mmt_reconstitution_free_from_udp_flow
             if(should_free) {
                 mmtp_payload_fragments_union_free(&mmtp_payload);
             }
-            //don't free our payload here, as it is needed by the sub_flow_vector
-           // mmtp_payload_fragments_union_free(&mmtp_payload);
         }
         return cleanup(&udp_packet);
 	}
@@ -594,6 +595,8 @@ void* pcap_loop_run_thread(void* dev_pointer) {
  * arguments:
  */
 int main(int argc,char **argv) {
+    _MPU_DEBUG_ENABLED = 1;
+    _MMTP_DEBUG_ENABLED = 1;
 
 
 #ifdef __LOTS_OF_DEBUGGING__
@@ -749,11 +752,9 @@ int main(int argc,char **argv) {
 	pthread_t global_pcap_thread_id;
 	int pcap_ret = pthread_create(&global_pcap_thread_id, NULL, pcap_loop_run_thread, (void*)dev);
 	assert(!pcap_ret);
-
     
     pthread_t global_autoplay_thread_id;
     pthread_create(&global_autoplay_thread_id, NULL, global_autoplay_run_thread, NULL);
-
 
 	pthread_join(global_pcap_thread_id, NULL);
 	pthread_join(global_ncurses_input_thread_id, NULL);

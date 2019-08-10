@@ -731,7 +731,7 @@ atsc3_stltp_preamble_packet_t* atsc3_stltp_preamble_packet_extract(atsc3_stltp_t
  **/
 
 //jjustman-2019-08-08 - workaround for TMP packets not containing inner marker flag
-#define _ATSC3_D_HACK_TMP_PACKET_MARKER true
+//#define _ATSC3_D_HACK_TMP_PACKET_MARKER true
 
 atsc3_stltp_timing_management_packet_t* atsc3_stltp_timing_management_packet_extract(atsc3_stltp_tunnel_packet_t* atsc3_stltp_tunnel_packet_current) {
     
