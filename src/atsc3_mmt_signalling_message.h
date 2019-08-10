@@ -65,6 +65,8 @@
 #include "atsc3_gzip.h"
 #include "atsc3_logging_externs.h"
 #include "atsc3_mmtp_packet_types.h"
+#include "atsc3_mmtp_parser.h"
+#include "endianess.c"
 
 #ifndef ATSC3_MMT_SIGNALLING_MESSAGE_H
 #define ATSC3_MMT_SIGNALLING_MESSAGE_H
@@ -94,9 +96,14 @@ raw base64 payload:
 mmt_signalling_message_header_and_payload_t* mmt_signalling_message_header_and_payload_create(uint16_t message_id, uint8_t version);
 
 
-uint8_t* mmt_signaling_message_parse_packet_header(mmtp_packet_header_t* mmtp_packet_header, uint8_t* udp_raw_buf, uint32_t udp_raw_buf_size);
-uint8_t* mmt_signaling_message_parse_packet(mmtp_signalling_packet_t* mmtp_signalling_packet, uint8_t* udp_raw_buf, uint32_t udp_raw_buf_size);
+mmtp_signalling_packet_t* mmt_signaling_message_parse_packet_header(mmtp_packet_header_t* mmtp_packet_header, block_t* udp_packet);
+
+uint8_t* mmt_signaling_message_parse_packet(mmtp_signalling_packet_t* mmtp_signalling_packet, block_t* udp_packet);
+
+//todo: migrate this to block_t
+//uint8_t* mmt_signaling_message_parse_id_type(mmtp_signalling_packet_t* mmtp_signalling_packet, block_t* udp_packete);
 uint8_t* mmt_signaling_message_parse_id_type(mmtp_signalling_packet_t* mmtp_signalling_packet, uint8_t* udp_raw_buf, uint32_t udp_raw_buf_size);
+
 
 uint8_t* pa_message_parse(mmt_signalling_message_header_and_payload_t* mmt_signalling_message_header_and_payload, uint8_t* udp_raw_buf, uint32_t udp_raw_buf_size);
 uint8_t* mpi_message_parse(mmt_signalling_message_header_and_payload_t* mmt_signalling_message_header_and_payload, uint8_t* udp_raw_buf, uint32_t udp_raw_buf_size);
@@ -109,25 +116,23 @@ ATSC3_VECTOR_BUILDER_METHODS_INTERFACE(mmt_scte35_message_payload, mmt_scte35_si
 uint8_t* si_message_not_supported(mmt_signalling_message_header_and_payload_t* mmt_signalling_message_header_and_payload, uint8_t* udp_raw_buf, uint32_t udp_raw_buf_size);
 
 void signaling_message_dump(mmtp_signalling_packet_t* mmtp_signalling_packet);
-void pa_message_dump(mmtp_signalling_packet_t* mmtp_signalling_packet);
-void mpi_message_dump(mmtp_signalling_packet_t* mmtp_signalling_packet);
-void mpt_message_dump(mmt_signalling_message_header_and_payload_t* mmt_signalling_message_header_and_payload_t);
+void pa_message_dump(mmt_signalling_message_header_and_payload_t* mmt_signalling_message_header_and_payload);
+void mpi_message_dump(mmt_signalling_message_header_and_payload_t* mmt_signalling_message_header_and_payload);
+void mpt_message_dump(mmt_signalling_message_header_and_payload_t* mmt_signalling_message_header_and_payload);
 void mmt_atsc3_message_payload_dump(mmt_signalling_message_header_and_payload_t* mmt_signalling_message_header_and_payload);
 
 #ifdef __cplusplus
 }
 #endif
 
+#define __MMSM_ERROR(...)   		__LIBATSC3_TIMESTAMP_ERROR(__VA_ARGS__);
+#define __MMSM_ERROR_23008_1(...)  	if(_MMT_SIGNALLING_MESSAGE_ERROR_23008_1_ENABLED) { __LIBATSC3_TIMESTAMP_ERROR(__VA_ARGS__);}
 
-
-#define __MMSM_ERROR(...)   __LIBATSC3_TIMESTAMP_ERROR(__VA_ARGS__);
-#define __MMSM_ERROR_23008_1(...)  if(_MMT_SIGNALLING_MESSAGE_ERROR_23008_1_ENABLED) { __LIBATSC3_TIMESTAMP_ERROR(__VA_ARGS__);}
-
-#define __MMSM_WARN(...)   	__LIBATSC3_TIMESTAMP_WARN(__VA_ARGS__);
-#define __MMSM_INFO(...)    __LIBATSC3_TIMESTAMP_INFO(__VA_ARGS__);
+#define __MMSM_WARN(...)   			__LIBATSC3_TIMESTAMP_WARN(__VA_ARGS__);
+#define __MMSM_INFO(...)   			__LIBATSC3_TIMESTAMP_INFO(__VA_ARGS__);
     
-#define __MMSM_DEBUG(...)   if(_MMT_SIGNALLING_MESSAGE_DEBUG_ENABLED) { __LIBATSC3_TIMESTAMP_DEBUG(__VA_ARGS__); }
-#define __MMSM_TRACE(...)   if(_MMT_SIGNALLING_MESSAGE_TRACE_ENABLED) { __LIBATSC3_TIMESTAMP_TRACE(__VA_ARGS__); }
+#define __MMSM_DEBUG(...)   		if(_MMT_SIGNALLING_MESSAGE_DEBUG_ENABLED) { __LIBATSC3_TIMESTAMP_DEBUG(__VA_ARGS__); }
+#define __MMSM_TRACE(...)   		if(_MMT_SIGNALLING_MESSAGE_TRACE_ENABLED) { __LIBATSC3_TIMESTAMP_TRACE(__VA_ARGS__); }
 
 
 #endif /* ATSC3_MMT_SIGNALLING_MESSAGE_H */
