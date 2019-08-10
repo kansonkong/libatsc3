@@ -15,6 +15,8 @@
 #include "atsc3_mmt_mpu_parser.h"
 #include "atsc3_mmt_signaling_message.h"
 
+#include "atsc3_mmt_mpu_utils.h"
+
 int _MMTP_DEBUG_ENABLED = 0;
 int _MMTP_TRACE_ENABLED = 0;
 
@@ -265,18 +267,21 @@ failed:
 
 }
 
-
 void mmtp_sub_flow_vector_init(mmtp_sub_flow_vector_t *mmtp_sub_flow_vector) {
 	__PRINTF_DEBUG("%d:mmtp_sub_flow_vector_init: %p\n", __LINE__, mmtp_sub_flow_vector);
 	atsc3_vector_init(mmtp_sub_flow_vector);
 	__PRINTF_DEBUG("%d:mmtp_sub_flow_vector_init: %p\n", __LINE__, mmtp_sub_flow_vector);
 }
 
+//only use this if you are sure there are no other reference to this mmtp_payload_fragments_union_t
 void mmtp_payload_fragments_union_free(mmtp_payload_fragments_union_t** mmtp_payload_fragments_p) {
     if(mmtp_payload_fragments_p) {
         mmtp_payload_fragments_union_t* mmtp_payload_fragment = *mmtp_payload_fragments_p;
         if(mmtp_payload_fragment) {
             mmtp_sub_flow_remove_mmtp_packet(mmtp_payload_fragment->mmtp_packet_header.mmtp_sub_flow, mmtp_payload_fragment);
+
+            //additional global mpu flow cleanup
+            atsc3_mmt_mpu_remove_packet_fragment_from_flows(mmtp_payload_fragment->mmtp_packet_header.mmtp_sub_flow, mmtp_payload_fragment->mmtp_packet_header.mmtp_sub_flow->mpu_fragments, mmtp_payload_fragment);
             
             if(mmtp_payload_fragment->mmtp_packet_header.mmtp_payload_type == 0x0) {
                 //clean up data block allocs
@@ -405,13 +410,16 @@ void mmtp_sub_flow_push_mmtp_packet(mmtp_sub_flow_t *mmtp_sub_flow, mmtp_payload
  * see atsc3_mmt_listener_bento.c for other places these packets may be apptended to
  */
 void mmtp_sub_flow_remove_mmtp_packet(mmtp_sub_flow_t *mmtp_sub_flow, mmtp_payload_fragments_union_t *mmtp_packet) {
+    if(!mmtp_sub_flow) {
+        _MMTP_TRACE("mmtp_sub_flow_remove_mmtp_packet: mmtp_sub_flow is null, mmtp_packet: %p", mmtp_packet);
+    }
+
 	mmtp_packet->mmtp_packet_header.mmtp_sub_flow = mmtp_sub_flow;
 
     ssize_t index = -1;
 
 	//	__PRINTF_TRACE("%d:, packet_counter: %d, packet_id: %d, mmtp_payload_type: 0x%x\n", __LINE__, mmtp_packet->mmtp_packet_header.packet_counter, mmtp_packet->mmtp_packet_header.mmtp_packet_id, mmtp_packet->mmtp_packet_header.mmtp_payload_type);
 	if(mmtp_packet->mmtp_packet_header.mmtp_payload_type == 0x00) {
-        
 		mpu_fragments_t* mpu_fragments = mmtp_sub_flow->mpu_fragments;
 		if(mpu_fragments && mpu_fragments->all_mpu_fragments_vector.size) {
             atsc3_vector_index_of(&mpu_fragments->all_mpu_fragments_vector, mmtp_packet, &index);
@@ -441,14 +449,13 @@ void mmtp_sub_flow_remove_mmtp_packet(mmtp_sub_flow_t *mmtp_sub_flow, mmtp_paylo
     
     //don't remove these here, it wil offset the container size
     //
-    //			mpu_data_unit_payload_fragments_t* data_unit_payload_types =	mpu_data_unit_payload_fragments_find_mpu_sequence_number(&mmtp_sub_flow->mpu_fragments->media_fragment_unit_vector,	mmtp_packet->mmtp_mpu_type_packet_header.mpu_sequence_number);
-    //
-    //			atsc3_vector_index_of(&data_unit_payload_types->timed_fragments_vector, mmtp_packet, index);
-    //			if(*index >-1) {
-    //				atsc3_vector_remove_noshrink(&data_unit_payload_types->timed_fragments_vector, *index);
-    //			}
-
-        //	}
+        mpu_data_unit_payload_fragments_t* data_unit_payload_types = mpu_data_unit_payload_fragments_find_mpu_sequence_number(&mmtp_sub_flow->mpu_fragments->media_fragment_unit_vector, mmtp_packet->mmtp_mpu_type_packet_header.mpu_sequence_number);
+        if(data_unit_payload_types && data_unit_payload_types->timed_fragments_vector.size) {
+            atsc3_vector_index_of(&data_unit_payload_types->timed_fragments_vector, mmtp_packet, &index);
+            if(index >-1) {
+                atsc3_vector_remove_noshrink(&data_unit_payload_types->timed_fragments_vector, index);
+            }
+        }
 
 	} else if(mmtp_packet->mmtp_packet_header.mmtp_payload_type == 0x01) {
 		atsc3_vector_index_of(&mmtp_sub_flow->mmtp_generic_object_fragments_vector, mmtp_packet, &index);
