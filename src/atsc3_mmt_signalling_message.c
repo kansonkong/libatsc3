@@ -5,9 +5,9 @@
  *      Author: jjustman
  */
 
-#include "atsc3_mmtp_parser.h"
-#include "atsc3_mmt_signaling_message.h"
+#include "atsc3_mmt_signalling_message.h"
 
+#include "atsc3_mmtp_parser.h"
 #include "atsc3_mmtp_packet_types.h"
 #include "endianess.c"
 int _MMT_SIGNALLING_MESSAGE_ERROR_23008_1_ENABLED = 0;
@@ -15,21 +15,7 @@ int _MMT_SIGNALLING_MESSAGE_DEBUG_ENABLED = 0;
 int _MMT_SIGNALLING_MESSAGE_TRACE_ENABLED = 0;
 
 
-mmt_signalling_message_vector_t* mmt_signalling_message_vector_create() {
-	mmt_signalling_message_vector_t* mmt_signalling_message_vector = calloc(1, sizeof(mmt_signalling_message_vector_t*));
-	assert(mmt_signalling_message_vector);
 
-	return mmt_signalling_message_vector;
-}
-
-mmt_signalling_message_vector_t* mmt_signalling_message_vector_add(mmt_signalling_message_vector_t* mmt_signalling_message_vector, mmt_signalling_message_header_and_payload_t* mmt_signalling_message_header_and_payload) {
-	mmt_signalling_message_vector->messages = realloc(mmt_signalling_message_vector->messages, sizeof(mmt_signalling_message_header_and_payload_t*));
-	assert(mmt_signalling_message_vector->messages);
-
-	mmt_signalling_message_vector->messages[mmt_signalling_message_vector->messages_n++] = mmt_signalling_message_header_and_payload;
-
-	return mmt_signalling_message_vector;
-}
 
 
 mmt_signalling_message_header_and_payload_t* mmt_signalling_message_header_and_payload_create(uint16_t message_id, uint8_t version) {
@@ -40,43 +26,6 @@ mmt_signalling_message_header_and_payload_t* mmt_signalling_message_header_and_p
 	return mmt_signalling_message_header_and_payload;
 }
 
-//todo, we will probably need to iterate over each one of these entries
-void mmt_signalling_message_vector_free(mmt_signalling_message_vector_t** mmt_signalling_message_vector_p) {
-	mmt_signalling_message_vector_t* mmt_signalling_message_vector = *mmt_signalling_message_vector_p;
-	if(mmt_signalling_message_vector) {
-		for(int i=0; i < mmt_signalling_message_vector->messages_n; mmt_signalling_message_vector++) {
-			mmt_signalling_message_header_and_payload_t* mmt_signalling_message_header_and_payload = mmt_signalling_message_vector->messages[i];
-			mmt_signalling_message_header_and_payload_free(&mmt_signalling_message_header_and_payload);
-		}
-
-		free(mmt_signalling_message_vector);
-		mmt_signalling_message_vector = NULL;
-		*mmt_signalling_message_vector_p = NULL;
-	}
-}
-
-void mmt_signalling_message_header_and_payload_free(mmt_signalling_message_header_and_payload_t** mmt_signalling_message_header_and_payload_p) {
-	mmt_signalling_message_header_and_payload_t* mmt_signalling_message_header_and_payload = *mmt_signalling_message_header_and_payload_p;
-	if(mmt_signalling_message_header_and_payload) {
-
-		//determine if we have any internal mallocs to clear
-		if(mmt_signalling_message_header_and_payload->message_header.message_id == MMT_ATSC3_MESSAGE_ID) {
-			if(mmt_signalling_message_header_and_payload->message_payload.mmt_atsc3_message_payload.URI_payload) {
-				free(mmt_signalling_message_header_and_payload->message_payload.mmt_atsc3_message_payload.URI_payload);
-				mmt_signalling_message_header_and_payload->message_payload.mmt_atsc3_message_payload.URI_payload = NULL;
-			}
-			if(mmt_signalling_message_header_and_payload->message_payload.mmt_atsc3_message_payload.atsc3_message_content) {
-				free(mmt_signalling_message_header_and_payload->message_payload.mmt_atsc3_message_payload.atsc3_message_content);
-				mmt_signalling_message_header_and_payload->message_payload.mmt_atsc3_message_payload.atsc3_message_content = NULL;
-			}
-		}
-
-finally:
-	free(mmt_signalling_message_header_and_payload);
-	*mmt_signalling_message_header_and_payload_p = NULL;
-
-	}
-}
 
 
 /**
@@ -211,7 +160,8 @@ uint8_t* mmt_signaling_message_parse_id_type(mmtp_payload_fragments_union_t *mmt
 	buf = extract(buf, &version, 1);
 
 	mmt_signalling_message_header_and_payload_t* mmt_signalling_message_header_and_payload = mmt_signalling_message_header_and_payload_create(message_id, version);
-	mmt_signalling_message_vector_add(&mmtp_signalling_packet->mmtp_signalling_message_fragments.mmt_signalling_message_vector, mmt_signalling_message_header_and_payload);
+	mmtp_signalling_packet_add_mmt_signalling_message_header_and_payload(mmt_signalling_message_header_and_payload);
+
 	mmt_signalling_message_header_t* mmt_signalling_message_header = &mmt_signalling_message_header_and_payload->message_header;
 	mmt_signalling_message_payload_u* mmt_signalling_message_payload = &mmt_signalling_message_header_and_payload->message_payload;
 
