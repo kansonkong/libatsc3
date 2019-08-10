@@ -129,7 +129,7 @@ mmtp_packet_header_t* mmtp_packet_header_parse_from_block_t(block_t* udp_packet)
 		mmtp_packet_header->mmtp_payload_type = mmtp_packet_preamble[1] & 0xF;
         
         if(!((mmtp_packet_preamble[16] >> 7) & 0x1)) {
-            _MMTP_DEBUG("mmtp_demuxer: ISO23008-1: mmtp_packet_preamble byte[16] 'r' bit is not 1!");
+        	__MMTP_PARSER_DEBUG("mmtp_demuxer: ISO23008-1: mmtp_packet_preamble byte[16] 'r' bit is not 1!");
         }
 		//TB 2 bits
 		mmtp_packet_header->mmtp_type_of_bitrate = ((mmtp_packet_preamble[16] & 0x40) >> 6) | ((mmtp_packet_preamble[16] & 0x20) >> 5);
@@ -146,7 +146,7 @@ mmtp_packet_header_t* mmtp_packet_header_parse_from_block_t(block_t* udp_packet)
 		if(mmtp_packet_header->mmtp_header_extension_flag & 0x1) {
 			mmtp_packet_header->mmtp_header_extension_type = (mmtp_packet_preamble[18] << 8) | mmtp_packet_preamble[19];
 
-			_MMTP_TRACE("mmtp_demuxer - dping mmtp_header_extension_length_bytes: %d",  mmtp_packet_header->mmtp_header_extension_type);
+			__MMTP_PARSER_TRACE("mmtp_demuxer - dping mmtp_header_extension_length_bytes: %d",  mmtp_packet_header->mmtp_header_extension_type);
 
 			uint8_t mmtp_header_extension_length_bytes[2];
 			buf = extract(buf, mmtp_header_extension_length_bytes, 2);
@@ -157,7 +157,7 @@ mmtp_packet_header_t* mmtp_packet_header_parse_from_block_t(block_t* udp_packet)
 			buf-=2;
 		}
 	} else {
-		_MMTP_ERROR("mmtp_demuxer - unknown packet version of 0x%X", mmtp_packet_header->mmtp_packet_version);
+		__MMTP_PARSER_ERROR("mmtp_demuxer - unknown packet version of 0x%X", mmtp_packet_header->mmtp_packet_version);
 		goto error;
 	}
 
