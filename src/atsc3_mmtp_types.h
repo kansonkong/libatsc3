@@ -37,7 +37,6 @@ extern int _MMTP_TRACE_ENABLED;
  * clang doesn't know how to inherit from structs, e.g. -fms-extensions, so use a define instead
  * see https://stackoverflow.com/questions/1114349/struct-inheritance-in-c
  *
- * typedef struct mmtp_packet_header {
  *
  * todo, ptr back to chain to mmtp_packet_id
  */
@@ -45,7 +44,7 @@ extern int _MMTP_TRACE_ENABLED;
 
 typedef struct mmtp_sub_flow mmtp_sub_flow_t;
 
-//base header fields for separate mmt data type payloads
+//base header fields for separate mmt data type packets
 //TODO: jjustman-2019-08-10 - re-factor mmtp_sub_flow_t* to a more sane re-fragmentation hierarchical model
     
 #define _MMTP_PACKET_HEADER_FIELDS 						                    \
@@ -99,7 +98,7 @@ typedef struct mmtp_packet_header {
                                                         \
 	_MMTP_PACKET_HEADER_FIELDS;				            \
                                                         \
-	uint16_t    mpu_payload_length;			            \
+	uint16_t    mpu_packet_length;			            \
     uint8_t     mpu_fragment_type:4;	                \
                                                         \
     /* note, iso23008-1 is NOT NORMATIVE when    */     \
@@ -125,12 +124,12 @@ typedef struct mmtp_packet_header {
 	uint8_t     mpu_fragment_counter;		            \
 	uint32_t    mpu_sequence_number;			        \
 	uint16_t    data_unit_length;                       \
-    block_t*    mpu_data_unit_payload;
+    block_t*    mpu_data_unit_packet;
 
 
 /* only use temporarly */
 typedef struct mmtp_mpu_packet_header {
-	_MMTP_MPU_TYPE_PACKET_HEADER_FIELDS;
+	_MMTP_MPU_PACKET_HEADER_FIELDS;
 } mmtp_mpu_packet_header_t;
 
 /**
@@ -154,7 +153,8 @@ typedef struct atsc3_mmt_multiLayerInfoBox {
         uint16_t    view_id:10;
 /* } else { */
         uint8_t     layer_id:6;
-        uint8_t     temporal_id:3;
+        //            duplicated above
+        //uint8_t     temporal_id:3;
         uint8_t     reserved3:7;
 /* } */
 } atsc3_mmt_multiLayerInfoBox_t;
@@ -175,54 +175,40 @@ typedef struct mmthsample_header {
 /* } */
 } mmthsample_header_t;
     
-    
-//
-//typedef struct {
-//
-//    uint32_t     mmth_sequence_number;
-//    uint8_t     mmth_trackrefindex;
-//    uint32_t     mmth_movie_fragment_sequence_number;
-//    uint32_t     mmth_samplenumber;
-//    uint8_t      mmth_priority;
-//    uint8_t      mmth_dependency_counter;
-//    uint32_t     mmth_offset;
-//    uint32_t     mmth_length;
-//    mmthsample_muli_box_t mmth_muli;
-//
-//    uint64_t pts;
-//    uint64_t last_pts;
-//} __mpu_data_unit_payload_fragments_timed_t;
-
 /**
  
- MMTP payload vs. packet philosophy:
+ MMTP packet vs. payload philosophy:
  
-    raw structs are fragment payloads
-    re-fragmented logical units are 'packets'
+    raw structs are fragment packets
+    re-fragmented logical units are 'payload'
  
     For payload_type = 0x0 - MPU, the structure is as follows:
  
  An Asset (asset_id) {
     which contains a collection of:
  
-    mmtp_packet (packet_id) {
+    mmtp_packet(s) (packet_id) {
         which contains a collection of:
  
-        mpu_sequence (mpu_sequence_number) {
+        mpu_sequence(s) (mpu_sequence_number) {
             which contains a collection of:
  
-            mfu_sample (samplenumber) {
+            mfu_sample(s) (samplenumber) {
                 which contains a collection of:
  
-                mfu_fragment (fragment_counter) {
+                mfu_fragment(s) (fragment_counter) {
                     which contains a collection of:
  
                     block_t bytes;
  
+ 
+ Defer worrying about FT=0, FT=2....FT=1, as we want to process these emissions in flow,
+ rather than re-constituion of the full MPU
+ 
  **/
     
-typedef struct mmtp_mpu_payload {
-    _MMTP_MPU_TYPE_PACKET_HEADER_FIELDS;
+typedef struct mmtp_mpu_packet {
+    _MMTP_MPU_PACKET_HEADER_FIELDS;
     uint32_t    movie_fragment_sequence_number;
     uint32_t    sample_number;
     uint32_t    offset;
@@ -232,7 +218,12 @@ typedef struct mmtp_mpu_payload {
     //todo: other attributes for re-fragmentation should be under the
     //  mpu_sample,
     //      and then mpu_fragments based upon mpu_fragmentation_counter
-} mmtp_mpu_payload_t;
+} mmtp_mpu_packet_t;
+    
+typedef struct {
+    uint32_t mpu_sequence_number;
+    ATSC3_VECTOR_BUILDER_STRUCT(mmtp_mpu_packet);
+} mpu_sequence_number_mmtp_mpu_packet_t;
 
 typedef struct mmtp_signalling_packet {
 	_MMTP_PACKET_HEADER_FIELDS;
@@ -248,12 +239,12 @@ typedef struct mmtp_signalling_packet {
     ATSC3_VECTOR_BUILDER_STRUCT(mmt_signalling_message_header_and_payload);
 } mmtp_signalling_packet_t;
 
-    
+
 //atsc3 does not use nontimed mpu's, so...just for posterity's sake
-typedef struct mmtp_mpu_packet_nontimed {
-    _MMTP_MPU_TYPE_PACKET_HEADER_FIELDS;
+typedef struct mmtp_mpu_nontimed_packet {
+    _MMTP_MPU_PACKET_HEADER_FIELDS;
     uint32_t        non_timed_mfu_item_id;
-} mmtp_mpu_packet_nontimed_t;
+} mmtp_mpu_nontimed_packet_t;
 
 //atsc3 does not use generic_object, so...just for posterity's sake
 typedef struct mmtp_generic_object_packet {
@@ -261,138 +252,41 @@ typedef struct mmtp_generic_object_packet {
 } mmtp_generic_object_packet_t;
 
 //atsc3 does not use generic_object, so...just for posterity's sake
-typedef struct mmtp_repair_symbol {
+typedef struct mmtp_repair_symbol_packet {
 	_MMTP_PACKET_HEADER_FIELDS;
 } mmtp_repair_symbol_packet_t;
 
-typedef union mmtp_packet_id_payload_container {
-    uint16_t    packet_id;
+typedef struct mmtp_packet_id_packets_container {
+    uint16_t            packet_id;
     
+    ATSC3_VECTOR_BUILDER_STRUCT(mpu_sequence_number_mmtp_mpu_packet);
+    ATSC3_VECTOR_BUILDER_STRUCT(mmtp_signalling_packet);
     
-    //mmtp_packet_header_t		        mmtp_packet_header;
-	//mmtp_mpu_packet_header_t			mmtp_mpu_type_packet_header;
-
-	__mpu_data_unit_payload_fragments_timed_t 		mpu_data_unit_payload_fragments_timed;
-	__mpu_data_unit_payload_fragments_nontimed_t	mpu_data_unit_payload_fragments_nontimed;
-
-	//add in the other mmtp types here
-	__generic_object_fragments_t 					mmtp_generic_object_fragments;
-	__signalling_message_fragments_t				mmtp_signalling_message_fragments;
-	__repair_symbol_t								mmtp_repair_symbol;
-} mmtp_payload_fragments_union_t;
-
-typedef struct ATSC3_VECTOR(mmtp_payload_fragments_union_t *) 	mpu_type_packet_header_fields_vector_t;
-typedef struct ATSC3_VECTOR(mmtp_payload_fragments_union_t *) 	mpu_data_unit_payload_fragments_timed_vector_t;
-typedef struct ATSC3_VECTOR(mmtp_payload_fragments_union_t *)	mpu_data_unit_payload_fragments_nontimed_vector_t;
-typedef struct ATSC3_VECTOR(mmtp_payload_fragments_union_t *) 	mmtp_generic_object_fragments_vector_t;
-typedef struct ATSC3_VECTOR(mmtp_payload_fragments_union_t *) 	mmtp_signalling_message_fragments_vector_t;
-typedef struct ATSC3_VECTOR(mmtp_payload_fragments_union_t *) 	mmtp_repair_symbol_vector_t;
-
-//todo, make this union
-typedef struct {
-	uint32_t mpu_sequence_number;
-	mpu_data_unit_payload_fragments_timed_vector_t 		timed_fragments_vector;
-	mpu_data_unit_payload_fragments_nontimed_vector_t 	nontimed_fragments_vector;
-
-} mpu_data_unit_payload_fragments_t;
-
-typedef struct ATSC3_VECTOR(mpu_data_unit_payload_fragments_t *) mpu_data_unit_payload_fragments_vector_t;
+    //others not used in atsc3.0
+    ATSC3_VECTOR_BUILDER_STRUCT(mmtp_mpu_nontimed_packet);
+    ATSC3_VECTOR_BUILDER_STRUCT(mmtp_generic_object_packet);
+    ATSC3_VECTOR_BUILDER_STRUCT(mmtp_repair_symbol_packet);
+} mmtp_packet_id_packets_container_t;
 
 
-//partial refactoring from vlc to libatsc3
-#ifndef LIBATSC3_MPU_ISOBMFF_FRAGMENT_PARAMETERS_T_
-#define LIBATSC3_MPU_ISOBMFF_FRAGMENT_PARAMETERS_T_
+//forward declare for child/parent relationship
+typedef struct mmtp_asset_flow mmtp_asset_flow_t;
+    
+typedef struct mmtp_asset {
+    uint16_t            mmtp_packet_id;
+    mmtp_asset_flow_t*   parent_mmtp_asset_flow;
+    
+    ATSC3_VECTOR_BUILDER_STRUCT(mmtp_packet_id_packets_container);
+    
+} mmtp_asset_t;
 
-typedef struct {
-	void*			mpu_demux_track;
-	block_t*		p_mpu_block;
-	uint32_t     	i_timescale;          /* movie time scale */
-	uint64_t     	i_moov_duration;
-	uint64_t     	i_cumulated_duration; /* Same as above, but not from probing, (movie time scale) */
-	uint64_t     	i_duration;           /* Declared fragmented duration (movie time scale) */
-	unsigned int 	i_tracks;       /* number of tracks */
-	void*		  	*track;         /* array of track */
-	bool        	b_fragmented;   /* fMP4 */
-	bool         	b_seekable;
-
-	/**
-	 * declared in vlc_libatsc3_types.h for impl
-
-	block_t* 		tmp_mpu_fragment_block_t;
-	block_t* 		mpu_fragment_block_t;  //capture our MPU Metadat box
-
-	MP4_Box_t*		mpu_fragments_p_root_box;
-	MP4_Box_t*		mpu_fragments_p_moov;
-
-	//reconstitue per movie fragment as needed
-	block_t* 		mp4_movie_fragment_block_t;
-	MP4_Box_t*		mpu_fragments_p_moof;
-
-
-	struct
-	{
-		 uint32_t        i_current_box_type;
-		 MP4_Box_t      *p_fragment_atom;
-		 uint64_t        i_post_mdat_offset;
-		 uint32_t        i_lastseqnumber;
-	} context;
-	*/
-} mpu_isobmff_fragment_parameters_t;
-#endif
-
-typedef struct {
-	mmtp_sub_flow_t *mmtp_sub_flow;
-	uint16_t mmtp_packet_id;
-
-	mpu_type_packet_header_fields_vector_t 		all_mpu_fragments_vector;
-
-	//MPU Fragment type collections for reconstruction/recovery of fragments
-
-	//MPU metadata, 							mpu_fragment_type==0x00
-	mpu_data_unit_payload_fragments_vector_t 	mpu_metadata_fragments_vector;
-
-	//Movie fragment metadata, 					mpu_fragment_type==0x01
-	mpu_data_unit_payload_fragments_vector_t	movie_fragment_metadata_vector;
-
-	//MPU (media fragment_unit),				mpu_fragment_type==0x02
-	mpu_data_unit_payload_fragments_vector_t	media_fragment_unit_vector;
-
-	mpu_isobmff_fragment_parameters_t			mpu_isobmff_fragment_parameters;
-
-} mpu_fragments_t;
-
-/**
- * todo:  impl's
- */
-
-
-typedef struct mmtp_sub_flow {
+typedef struct mmtp_asset_flow {
 	uint32_t dst_ip;
 	uint16_t dst_port;
-	uint16_t mmtp_packet_id;
+	
+    ATSC3_VECTOR_BUILDER_STRUCT(mmtp_asset);
 
-	//mmtp payload type collections for reconstruction/recovery of payload types
-
-	//mpu (media_processing_unit):				paylod_type==0x00
-	//mpu_fragments_vector_t 					mpu_fragments_vector;
-	mpu_fragments_t								*mpu_fragments;
-
-	//generic object:							payload_type==0x01
-    mmtp_generic_object_fragments_vector_t 		mmtp_generic_object_fragments_vector;
-
-	//signalling message: 						payload_type=0x02
-	mmtp_signalling_message_fragments_vector_t 	mmtp_signalling_message_fragements_vector;
-
-	//repair symbol:							payload_type==0x03
-	mmtp_repair_symbol_vector_t 				mmtp_repair_symbol_vector;
-
-} mmtp_sub_flow_t;
-
-
-//todo - refactor mpu_fragments to vector, create a new tuple class for mmtp_sub_flow_sequence
-
-
-typedef struct ATSC3_VECTOR(mmtp_sub_flow_t*) mmtp_sub_flow_vector_t;
+} mmtp_asset_flow_t;
 
 
 #define _MMTP_PRINTLN(...) printf(__VA_ARGS__);printf("%s%s","\r","\n")
