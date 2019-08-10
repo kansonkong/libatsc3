@@ -8,7 +8,6 @@
 #ifndef MODULES_DEMUX_MMT_MMTP_PARSER_H_
 #define MODULES_DEMUX_MMT_MMTP_PARSER_H_
 
-#include "atsc3_mmtp_types.h"
 #include "atsc3_vector.h"
 #include "atsc3_mmtp_ntp32_to_pts.h"
 #include "atsc3_mmt_signaling_message.h"
@@ -19,6 +18,7 @@
 
 #include <assert.h>
 #include <limits.h>
+#include "atsc3_mmtp_packet_types.h"
 
 #define MIN_MMTP_SIZE 32
 #define MAX_MMTP_SIZE 1514
