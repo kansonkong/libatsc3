@@ -60,6 +60,9 @@ mmtp_signalling_packet_t* mmt_signalling_message_parse_packet_header(mmtp_packet
 
 	mmtp_signalling_packet_t* mmtp_signalling_packet = mmtp_signalling_packet_new();
 
+	//hack-ish, probably not endian safe...
+	memcpy(mmtp_signalling_packet, mmtp_packet_header, sizeof(mmtp_packet_header_t));
+
 	uint32_t udp_packet_size = block_Remaining_size(udp_packet);
 	uint8_t* udp_raw_buf = block_Get(udp_packet);
 	uint8_t* buf = udp_raw_buf;
