@@ -8,6 +8,8 @@
 #ifndef ATSC3_MMT_MPU_PARSER_H_
 #define ATSC3_MMT_MPU_PARSER_H_
 
+#include "atsc3_mmtp_parser.h"
+#include "atsc3_mmtp_packet_types.h"
 
 //packet type=v0/v1 have an upper bound of ~1432
 #define UPPER_BOUND_MPU_FRAGMENT_SIZE 1432
@@ -44,10 +46,10 @@
 	aligned(8) class mjae_scte35_binary_payload extends Box ("mjgp"){
 		unsigned bit(7) reserved '1111111' unsigned bit(33) pts_timestamp;
 	bit(8) signal_data[];
-pts_timestamp
-indicates the MPEG-TS clock reference (90,000Hz)of the SCTE35_signal muxed in relation to the sample_presentation_time in the parent box
-signal_data
-binary payload of the raw SCTE35 splice command
+	pts_timestamp
+	indicates the MPEG-TS clock reference (90,000Hz)of the SCTE35_signal muxed in relation to the sample_presentation_time in the parent box
+	signal_data
+	binary payload of the raw SCTE35 splice command
  *
  */
 
@@ -57,9 +59,9 @@ binary payload of the raw SCTE35 splice command
 extern "C" {
 #endif
 
+mmtp_mpu_packet_t* mmtp_mpu_packet_parse_from_block_t(block_t* udp_packet, mmtp_packet_header_t* mmtp_packet_header);
 
-mmtp_mpu_packet_t* mmt_mpu_parse_payload(mmtp_mpu_packet_header_t* mmtp_mpu_packet_header, uint8_t* udp_raw_buf, int udp_raw_buf_size);
-//
+
 //mpu_data_unit_payload_fragments_t* mpu_data_unit_payload_fragments_find_mpu_sequence_number(mpu_data_unit_payload_fragments_vector_t *vec, uint32_t mpu_sequence_number);
 //mpu_data_unit_payload_fragments_t* mpu_data_unit_payload_fragments_get_or_set_mpu_sequence_number_from_packet(mpu_data_unit_payload_fragments_vector_t *vec, mmtp_payload_fragments_union_t *mpu_type_packet);
 //
@@ -74,13 +76,11 @@ void mmt_mpu_free_payload(mmtp_mpu_packet_t* mmtp_mpu_packet);
 #endif
 
 
-#define __MPU_ERROR(...)   __LIBATSC3_TIMESTAMP_ERROR(__VA_ARGS__);
-#define __MPU_WARN(...)    __LIBATSC3_TIMESTAMP_WARN(__VA_ARGS__);
-#define __MPU_INFO(...)    __LIBATSC3_TIMESTAMP_INFO(__VA_ARGS__);
+#define __MMT_MPU_PARSER_ERROR(...)   __LIBATSC3_TIMESTAMP_ERROR(__VA_ARGS__);
+#define __MMT_MPU_PARSER_WARN(...)    __LIBATSC3_TIMESTAMP_WARN(__VA_ARGS__);
+#define __MMT_MPU_PARSER_INFO(...)    __LIBATSC3_TIMESTAMP_INFO(__VA_ARGS__);
 
-#define __MPU_DEBUG(...)   if(_MPU_DEBUG_ENABLED) { __LIBATSC3_TIMESTAMP_DEBUG(__VA_ARGS__); }
-#define __MPU_TRACE(...)   if(_MPU_TRACE_ENABLED) { __LIBATSC3_TIMESTAMP_TRACE(__VA_ARGS__); }
-
-
+#define __MMT_MPU_PARSER_DEBUG(...)   if(_MPU_DEBUG_ENABLED) { __LIBATSC3_TIMESTAMP_DEBUG(__VA_ARGS__); }
+#define __MMT_MPU_PARSER_TRACE(...)   if(_MPU_TRACE_ENABLED) { __LIBATSC3_TIMESTAMP_TRACE(__VA_ARGS__); }
 
 #endif /* ATSC3_MMT_MPU_PARSER_H_ */
