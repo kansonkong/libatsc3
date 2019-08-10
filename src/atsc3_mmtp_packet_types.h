@@ -11,6 +11,11 @@
 #ifndef ATSC3_MMTP_PACKET_TYPES_H_
 #define ATSC3_MMTP_PACKET_TYPES_H_
 
+#if defined (__cplusplus)
+extern "C" {
+#endif
+
+
 #include <assert.h>
 #include <limits.h>
 
@@ -19,10 +24,6 @@
 
 #include "atsc3_mmtp_ntp32_to_pts.h"
 #include "atsc3_mmt_signalling_message_types.h"
-
-#ifdef __cplusplus
-extern "C" {
-#endif
 
 extern int _MMTP_DEBUG_ENABLED;
 extern int _MMTP_TRACE_ENABLED;
@@ -102,6 +103,39 @@ void mmtp_packet_header_free(mmtp_packet_header_t** mmtp_packet_header_p);
 
 //define for mpu type common header fields for struct inheritance
 
+
+/**
+
+ MMTP packet vs. payload philosophy:
+
+    raw structs are fragment packets
+    re-fragmented logical units are 'payload'
+
+    For payload_type = 0x0 - MPU, the structure is as follows:
+
+ An Asset (asset_id) {
+    which contains a collection of:
+
+    mmtp_packet(s) (packet_id) {
+        which contains a collection of:
+
+        mpu_sequence(s) (mpu_sequence_number) {
+            which contains a collection of:
+
+            mfu_sample(s) (samplenumber) {
+                which contains a collection of:
+
+                mfu_fragment(s) (fragment_counter) {
+                    which contains a collection of:
+
+                    block_t bytes;
+
+
+ Defer worrying about FT=0, FT=2....FT=1, as we want to process these emissions in flow,
+ rather than re-constituion of the full MPU
+
+ **/
+
 #define _MMTP_MPU_PACKET_HEADER_FIELDS                  \
                                                         \
 	_MMTP_PACKET_HEADER_FIELDS;				            \
@@ -138,38 +172,6 @@ void mmtp_packet_header_free(mmtp_packet_header_t** mmtp_packet_header_p);
     block_t*	du_mfu_block;			 /* 0x2 */
 
 
-/**
- 
- MMTP packet vs. payload philosophy:
- 
-    raw structs are fragment packets
-    re-fragmented logical units are 'payload'
- 
-    For payload_type = 0x0 - MPU, the structure is as follows:
- 
- An Asset (asset_id) {
-    which contains a collection of:
- 
-    mmtp_packet(s) (packet_id) {
-        which contains a collection of:
- 
-        mpu_sequence(s) (mpu_sequence_number) {
-            which contains a collection of:
- 
-            mfu_sample(s) (samplenumber) {
-                which contains a collection of:
- 
-                mfu_fragment(s) (fragment_counter) {
-                    which contains a collection of:
- 
-                    block_t bytes;
- 
- 
- Defer worrying about FT=0, FT=2....FT=1, as we want to process these emissions in flow,
- rather than re-constituion of the full MPU
- 
- **/
-    
 typedef struct mmtp_mpu_packet {
     _MMTP_MPU_PACKET_HEADER_FIELDS;
     uint32_t    movie_fragment_sequence_number;

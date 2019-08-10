@@ -252,7 +252,7 @@ void lls_sls_monitor_output_buffer_reset_all_position(lls_sls_monitor_output_buf
 
 
 
-bool lls_sls_monitor_output_buffer_init_block_flow_refragment(lls_sls_monitor_buffer_isobmff_t* lls_sls_monitor_buffer_isobmff, mmtp_payload_fragments_union_t* mpu_metadata_fragment) {
+bool lls_sls_monitor_output_buffer_init_block_flow_refragment(lls_sls_monitor_buffer_isobmff_t* lls_sls_monitor_buffer_isobmff, mpu_sequence_number_mmtp_mpu_packet_t* mpu_sequence_number_mmtp_mpu_packet) {
 
 	//lls_sls_monitor_output_buffer_copy_video_init_block(lls_sls_monitor_output_buffer, mpu_metadata_fragment->mmtp_mpu_type_packet_header.mpu_data_unit_payload);
 	if(mpu_metadata_fragment->mmtp_mpu_type_packet_header.mpu_fragmentation_indicator == 0) {
