@@ -93,10 +93,16 @@ listener_ncurses: atsc3_listener_metrics_ncurses
 # unit tests are standalone drivers with default or CLI parameters for processing relevant 
 # ATSC 3.0 data structs, signalling messages, etc
 
-unit_tests: atsc3_lmt_test atsc3_lls_slt_parser_test atsc3_lls_test \
-			atsc3_lls_SystemTime_test atsc3_mmt_signaling_message_test \
-			atsc3_isobmff_box_test atsc3_fdt_test atsc3_stltp_parser_test \
-			atsc3_mime_multipart_related_parser_test atsc3_fdt_mbms_envelope_test
+unit_tests: atsc3_lmt_test \
+			atsc3_lls_slt_parser_test \
+			atsc3_lls_test \
+			atsc3_lls_SystemTime_test \
+			atsc3_mmt_signaling_message_test \
+			atsc3_isobmff_box_test \
+			atsc3_fdt_test \
+			atsc3_stltp_parser_test \
+			atsc3_mime_multipart_related_parser_test \
+			atsc3_fdt_mbms_envelope_test
 
 libmicrohttpd_tests: atsc3_libmicrohttpd_test
 
@@ -174,8 +180,11 @@ atsc3_mmtp_parser.o: atsc3_mmtp_packet_types.h atsc3_mmtp_parser.h atsc3_mmtp_pa
 atsc3_mmt_mpu_parser.o: atsc3_mmtp_packet_types.h atsc3_mmtp_parser.h atsc3_mmt_mpu_parser.c
 	cc -g -c atsc3_mmt_mpu_parser.c
 
-atsc3_mmt_signaling_message.o: atsc3_mmt_signaling_message.c atsc3_mmt_signaling_message.h
-	cc -g -c atsc3_mmt_signaling_message.c
+atsc3_mmt_signalling_message_type.o:atsc3_mmt_signalling_message_type.h atsc3_mmt_signalling_message_type.c
+	cc -g -c atsc3_mmt_signalling_message_type.c
+
+atsc3_mmt_signalling_message.o:atsc3_mmt_signalling_message_types.h atsc3_mmt_signalling_message.h atsc3_mmt_signalling_message.c 
+	cc -g -c atsc3_mmt_signalling_message.c
 
 atsc3_mmtp_ntp32_to_pts.o: atsc3_mmtp_ntp32_to_pts.c atsc3_mmtp_ntp32_to_pts.h
 	cc -g -c atsc3_mmtp_ntp32_to_pts.c
@@ -347,7 +356,8 @@ libatsc3_intermediate.o: atsc3_lls.o \
 		atsc3_mmtp_parser.o \
 		atsc3_mmtp_ntp32_to_pts.o \
 		atsc3_utils.o \
-		atsc3_mmt_signaling_message.o \
+		atsc3_mmt_signalling_message_types.o \
+		atsc3_mmt_signalling_message.o \
 		atsc3_mmt_mpu_parser.o \
 		atsc3_alc_rx.o \
 		atsc3_lls_alc_utils.o \
@@ -395,7 +405,8 @@ libatsc3_intermediate.o: atsc3_lls.o \
 		atsc3_mmtp_parser.o \
 		atsc3_mmtp_ntp32_to_pts.o \
 		atsc3_utils.o \
-		atsc3_mmt_signaling_message.o \
+		atsc3_mmt_signalling_message_types.o \
+		atsc3_mmt_signalling_message.o \
 		atsc3_mmt_mpu_parser.o \
 		atsc3_alc_rx.o \
 		atsc3_lls_alc_utils.o \

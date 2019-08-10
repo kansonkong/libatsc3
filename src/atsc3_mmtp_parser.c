@@ -12,9 +12,8 @@
 
 #include "atsc3_mmtp_parser.h"
 #include "atsc3_mmt_mpu_parser.h"
-#include "atsc3_mmt_signaling_message.h"
-
 #include "atsc3_mmt_mpu_utils.h"
+#include "atsc3_mmt_signalling_message.h"
 #include "atsc3_mmtp_packet_types.h"
 
 int _MMTP_DEBUG_ENABLED = 0;
