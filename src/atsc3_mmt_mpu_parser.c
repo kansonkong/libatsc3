@@ -470,19 +470,6 @@ _MPU_INFO("!!!mpu mode (0x02), packet_id: %u, packet_seq_num: %u, MJSD  child bo
 
 
 
-void mmtp_sub_flow_mpu_fragments_allocate(mmtp_sub_flow_t* entry) {
-	entry->mpu_fragments = (mpu_fragments_t*)calloc(1, sizeof(mpu_fragments_t));
-	entry->mpu_fragments->mmtp_sub_flow = entry;
-	entry->mpu_fragments->mmtp_packet_id = entry->mmtp_packet_id;
-
-	atsc3_vector_init(&entry->mpu_fragments->all_mpu_fragments_vector);
-
-	atsc3_vector_init(&entry->mpu_fragments->mpu_metadata_fragments_vector);
-	atsc3_vector_init(&entry->mpu_fragments->movie_fragment_metadata_vector);
-	atsc3_vector_init(&entry->mpu_fragments->media_fragment_unit_vector);
-}
-
-
 
 mpu_data_unit_payload_fragments_t* mpu_data_unit_payload_fragments_find_mpu_sequence_number(mpu_data_unit_payload_fragments_vector_t *vec, uint32_t mpu_sequence_number) {
 	for (size_t i = 0; i < vec->size; ++i) {

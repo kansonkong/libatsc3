@@ -64,7 +64,7 @@ void mmtp_packet_header_dump(mmtp_packet_header_t* mmtp_packet_header);
 
 
 //returns pointer from udp_raw_buf where we completed header parsing
-uint8_t* mmtp_packet_header_parse_from_raw_packet(mmtp_packet_header_t* mmtp_packet_header, uint8_t* udp_raw_buf, int udp_raw_buf_size);
+mmtp_packet_header_t* mmtp_packet_header_parse_from_block_t(block_t* udp_packet);
 
 //TODO: purge
 ////think of this as castable to the base fields as they are the same size layouts
@@ -89,5 +89,13 @@ uint8_t* mmtp_packet_header_parse_from_raw_packet(mmtp_packet_header_t* mmtp_pac
 #if defined (__cplusplus)
 }
 #endif
+
+#define __MMTP_PARSER_ERROR(...)   __LIBATSC3_TIMESTAMP_ERROR(__VA_ARGS__);
+#define __MMTP_PARSER_WARN(...)    __LIBATSC3_TIMESTAMP_WARN(__VA_ARGS__);
+#define __MMTP_PARSER_INFO(...)    __LIBATSC3_TIMESTAMP_INFO(__VA_ARGS__);
+
+#define __MMTP_PARSER_DEBUG(...)   if(_MMTP_DEBUG_ENABLED) { __LIBATSC3_TIMESTAMP_DEBUG(__VA_ARGS__); }
+#define __MMTP_PARSER_TRACE(...)   if(_MMTP_TRACE_ENABLED) { __LIBATSC3_TIMESTAMP_TRACE(__VA_ARGS__); }
+
 
 #endif /* MODULES_DEMUX_MMT_MMTP_PARSER_H_ */

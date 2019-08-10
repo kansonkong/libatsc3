@@ -7,6 +7,10 @@
 
 #include "atsc3_mmtp_packet_types.h"
 
+mmtp_packet_header_t* mmtp_packet_header_new() {
+	return calloc(1, sizeof(mmtp_packet_header_t));
+}
+
 //for mpu_sequence_number_mmtp_mpu_packet_t
 ATSC3_VECTOR_BUILDER_METHODS_IMPLEMENTATION(mpu_sequence_number_mmtp_mpu_packet, mmtp_mpu_packet);
 

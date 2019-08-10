@@ -95,6 +95,8 @@ extern int _MMTP_TRACE_ENABLED;
 typedef struct mmtp_packet_header {
 	_MMTP_PACKET_HEADER_FIELDS;
 } mmtp_packet_header_t;
+//todo, streamline this
+mmtp_packet_header_t* mmtp_packet_header_new();
 
 //define for mpu type common header fields for struct inheritance
 
