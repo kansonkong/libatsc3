@@ -70,7 +70,7 @@ mmtp_signalling_packet_t* mmt_signaling_message_parse_packet_header(mmtp_packet_
 
 	//next 4 bits are 0x0000 reserved, output error message if we are validating against 23008-1:2017
 	if((mmtp_si_payload_header[0] >> 2) & 0xF) {
-		___MMSM_ERROR_23008_1("mmt_signaling_message_parse_packet_header: signaling message mmtp header bits 2-5 are not reserved '0'");
+		__MMSM_ERROR_23008_1("mmt_signaling_message_parse_packet_header: signaling message mmtp header bits 2-5 are not reserved '0'");
 	}
 
 	//bit 6 is additional Header
@@ -559,7 +559,7 @@ uint8_t* mmt_atsc3_message_payload_parse(mmt_signalling_message_header_and_paylo
 				mmt_atsc3_message_payload->atsc3_message_content_length = ret;
 				mmt_atsc3_message_payload->atsc3_message_content = decompressed_payload;
 			} else {
-				_MMSM_ERROR("atsc3_message_content_compressed, unable to decompress: error is: %u", ret);
+				__MMSM_ERROR("atsc3_message_content_compressed, unable to decompress: error is: %u", ret);
 			}
 
 		} else {
@@ -589,7 +589,7 @@ uint8_t* mmt_scte35_message_payload_parse(mmt_signalling_message_header_and_payl
 	for(int i=0; i < scte35_signal_descriptor_n && (udp_raw_buf_size > (buf-raw_buf)); i++) {
 		//make sure we have at least 19 bytes available (16+16+64+7+33+16)
 		if(19 < udp_raw_buf_size - (buf-raw_buf)) {
-			_MMSM_WARN("mmt_scte35_message_payload_parse: short read for descriptor: %u, need 19 but remaining is: %ld", i, (udp_raw_buf_size - (buf-raw_buf)));
+			__MMSM_WARN("mmt_scte35_message_payload_parse: short read for descriptor: %u, need 19 but remaining is: %ld", i, (udp_raw_buf_size - (buf-raw_buf)));
 			goto parse_incomplete;
 		}
 
@@ -608,13 +608,13 @@ uint8_t* mmt_scte35_message_payload_parse(mmt_signalling_message_header_and_payl
 		buf = extract(buf, (uint8_t*)&mmt_scte35_signal_descriptor->signal_length, 2);
 
 		if(mmt_scte35_signal_descriptor->signal_length > udp_raw_buf_size - (buf-raw_buf)) {
-			_MMSM_WARN("mmt_scte35_message_payload_parse: signal length for descriptor: %u, need %u but remaining is: %ld", i, mmt_scte35_signal_descriptor->signal_length, (udp_raw_buf_size - (buf-raw_buf)));
+			__MMSM_WARN("mmt_scte35_message_payload_parse: signal length for descriptor: %u, need %u but remaining is: %ld", i, mmt_scte35_signal_descriptor->signal_length, (udp_raw_buf_size - (buf-raw_buf)));
 			goto parse_incomplete;
 		}
 
 		buf = extract(buf, (uint8_t*)&mmt_scte35_signal_descriptor->signal_byte, mmt_scte35_signal_descriptor->signal_length);
 		mmt_scte35_message_payload_add_mmt_scte35_signal_descriptor(&mmt_signalling_message_header_and_payload->message_payload.mmt_scte35_message_payload, mmt_scte35_signal_descriptor);
-		_MMSM_INFO("mmt_scte35_message_payload_parse: adding signal at NTP_timestamp: %llu, PTS: %llu", mmt_scte35_signal_descriptor->ntp_timestamp, mmt_scte35_signal_descriptor->pts_timestamp);
+		__MMSM_INFO("mmt_scte35_message_payload_parse: adding signal at NTP_timestamp: %llu, PTS: %llu", mmt_scte35_signal_descriptor->ntp_timestamp, mmt_scte35_signal_descriptor->pts_timestamp);
 	}
 
 parse_incomplete:
@@ -648,10 +648,10 @@ void mmt_atsc3_message_payload_dump(mmt_signalling_message_header_and_payload_t*
 uint8_t* si_message_not_supported(mmt_signalling_message_header_and_payload_t* mmt_signalling_message_header_and_payload, uint8_t* udp_raw_buf, uint32_t udp_raw_buf_size) {
 	if(mmt_signalling_message_header_and_payload->message_header.message_id == 0x0204 || mmt_signalling_message_header_and_payload->message_header.message_id == 0x020A) {
 		//hrmb messages
-		_MMSM_TRACE("signalling information message id not supported: 0x%04x", mmt_signalling_message_header_and_payload->message_header.message_id);
+		__MMSM_TRACE("signalling information message id not supported: 0x%04x", mmt_signalling_message_header_and_payload->message_header.message_id);
 
 	} else {
-		_MMSM_WARN("signalling information message id not supported: 0x%04x", mmt_signalling_message_header_and_payload->message_header.message_id);
+		__MMSM_WARN("signalling information message id not supported: 0x%04x", mmt_signalling_message_header_and_payload->message_header.message_id);
 	}
 	return NULL;
 }
