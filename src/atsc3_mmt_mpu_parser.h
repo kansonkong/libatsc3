@@ -59,7 +59,8 @@
 extern "C" {
 #endif
 
-mmtp_mpu_packet_t* mmtp_mpu_packet_parse_from_block_t(block_t* udp_packet, mmtp_packet_header_t* mmtp_packet_header);
+mmtp_mpu_packet_t* mmtp_mpu_packet_parse_from_udp_packet_t(mmtp_packet_header_t* mmtp_packet_header, udp_packet_t* udp_packet);
+mmtp_mpu_packet_t* mmtp_mpu_packet_parse_from_block_t(mmtp_packet_header_t* mmtp_packet_header, block_t* udp_packet);
 
 
 //mpu_data_unit_payload_fragments_t* mpu_data_unit_payload_fragments_find_mpu_sequence_number(mpu_data_unit_payload_fragments_vector_t *vec, uint32_t mpu_sequence_number);

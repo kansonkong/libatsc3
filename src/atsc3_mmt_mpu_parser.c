@@ -13,7 +13,18 @@
 int _MPU_DEBUG_ENABLED = 0;
 int _MPU_TRACE_ENABLED = 0;
 
-mmtp_mpu_packet_t* mmtp_mpu_packet_parse_from_block_t(block_t* udp_packet, mmtp_packet_header_t* mmtp_packet_header) {
+mmtp_mpu_packet_t* mmtp_mpu_packet_parse_from_udp_packet_t(mmtp_packet_header_t* mmtp_packet_header, udp_packet_t* udp_packet) {
+	block_t* udp_packet_block = block_Alloc(udp_packet->data_length);
+	block_Write(udp_packet_block, udp_packet->data, udp_packet->data_length);
+
+	mmtp_mpu_packet_t* mmtp_mpu_packet = mmtp_mpu_packet_parse_from_block_t(mmtp_packet_header, udp_packet_block);
+	udp_packet->data = block_Get(udp_packet_block);
+	udp_packet->data_length = block_Remaining_size(udp_packet_block);
+
+	return mmtp_mpu_packet;
+}
+
+mmtp_mpu_packet_t* mmtp_mpu_packet_parse_from_block_t(mmtp_packet_header_t* mmtp_packet_header, block_t* udp_packet) {
 
 	if(!mmtp_packet_header) {
 		__MMT_MPU_PARSER_ERROR("mmtp_mpu_packet_parse_from_block_t: mmtp_packet_header is NULL!");

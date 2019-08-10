@@ -27,6 +27,7 @@
 #include "fixups.h"
 #include "unistd.h"
 
+#include "atsc3_logging_externs.h"
 
 #define uS 1000000ULL
 
@@ -172,20 +173,27 @@ uint16_t parsePortIntoIntval(char* dst_port);
 }
 #endif
 
+//global logging hooks
+#define __ATSC3_ERROR(...)	__LIBATSC3_TIMESTAMP_ERROR(__VA_ARGS__);
+#define __ATSC3_WARN(...) 	__LIBATSC3_TIMESTAMP_WARN(__VA_ARGS__);
+#define __ATSC3_INFO(...) 	__LIBATSC3_TIMESTAMP_INFO(__VA_ARGS__);
+#define __ATSC3_DEBUG(...) 	__LIBATSC3_TIMESTAMP_DEBUG(__VA_ARGS__);
+#define __ATSC3_TRACE(...) 	__LIBATSC3_TIMESTAMP_TRACE(__VA_ARGS__);
 
+//local logging hooks
+#define _ATSC3_UTILS_ERROR(...)  									__LIBATSC3_TIMESTAMP_ERROR(__VA_ARGS__);
+#define _ATSC3_UTILS_WARN(...)    									__LIBATSC3_TIMESTAMP_WARN(__VA_ARGS__);
+#define _ATSC3_UTILS_INFO(...)    if(_ATSC3_UTILS_INFO_ENABLED)  { 	__LIBATSC3_TIMESTAMP_INFO(__VA_ARGS__); }
+#define _ATSC3_UTILS_DEBUG(...)   if(_ATSC3_UTILS_DEBUG_ENABLED) { 	__LIBATSC3_TIMESTAMP_DEBUG(__VA_ARGS__); }
+#define _ATSC3_UTILS_TRACE(...)   if(_ATSC3_UTILS_TRACE_ENABLED) {	__LIBATSC3_TIMESTAMP_TRACE(__VA_ARGS__); }
+
+
+//todo: flatten
 #define println(...) printf(__VA_ARGS__);printf("%s%s","\r","\n")
 #define __PRINTLN(...) printf(__VA_ARGS__);printf("%s%s","\r","\n")
 #define __PRINTF(...)  printf(__VA_ARGS__);
-
 #define _ATSC3_UTILS_PRINTLN(...) printf(__VA_ARGS__);printf("%s%s","\r","\n")
 #define _ATSC3_UTILS_PRINTF(...)  printf(__VA_ARGS__);
-
-#define _ATSC3_UTILS_ERROR(...)   printf("%s:%d:ERROR:",__FILE__,__LINE__);_ATSC3_UTILS_PRINTLN(__VA_ARGS__);
-#define _ATSC3_UTILS_WARN(...)    printf("%s:%d:WARN:",__FILE__,__LINE__);_ATSC3_UTILS_PRINTLN(__VA_ARGS__);
-#define _ATSC3_UTILS_INFO(...)    if(_ATSC3_UTILS_INFO_ENABLED) { printf("%s:%d:INFO:",__FILE__,__LINE__);_ATSC3_UTILS_PRINTLN(__VA_ARGS__); }
-#define _ATSC3_UTILS_DEBUG(...)   if(_ATSC3_UTILS_DEBUG_ENABLED) { printf("%s:%d:DEBUG:",__FILE__,__LINE__);_ATSC3_UTILS_PRINTLN(__VA_ARGS__); }
-
-#define _ATSC3_UTILS_TRACE(...)   if(_ATSC3_UTILS_TRACE_ENABLED) { printf("%s:%d:TRACE:",__FILE__,__LINE__);_ATSC3_UTILS_PRINTLN(__VA_ARGS__); }
 #define _ATSC3_UTILS_TRACEF(...)  if(_ATSC3_UTILS_TRACE_ENABLED) { printf("%s:%d:TRACE:",__FILE__,__LINE__);_ATSC3_UTILS_PRINTF(__VA_ARGS__); }
 #define _ATSC3_UTILS_TRACEA(...)  if(_ATSC3_UTILS_TRACE_ENABLED) { _ATSC3_UTILS_PRINTF(__VA_ARGS__); }
 #define _ATSC3_UTILS_TRACEN(...)  if(_ATSC3_UTILS_TRACE_ENABLED) { _ATSC3_UTILS_PRINTLN(__VA_ARGS__); }
