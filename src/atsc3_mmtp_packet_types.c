@@ -11,6 +11,24 @@ mmtp_packet_header_t* mmtp_packet_header_new() {
 	return calloc(1, sizeof(mmtp_packet_header_t));
 }
 
+void mmtp_mpu_packet_free(mmtp_mpu_packet_t** mmtp_mpu_packet_p) {
+	if(mmtp_mpu_packet_p) {
+		mmtp_mpu_packet_t* mmtp_mpu_packet = *mmtp_mpu_packet_p;
+
+		if(mmtp_mpu_packet) {
+			block_Destroy(&mmtp_mpu_packet->raw_packet);
+			block_Destroy(&mmtp_mpu_packet->mmtp_header_extension);
+			block_Destroy(&mmtp_mpu_packet->du_mpu_metadata_block);
+			block_Destroy(&mmtp_mpu_packet->du_movie_fragment_block);
+			block_Destroy(&mmtp_mpu_packet->du_mfu_block);
+
+			freesafe(mmtp_mpu_packet);
+			mmtp_mpu_packet = NULL;
+		}
+		*mmtp_mpu_packet_p = NULL;
+	}
+}
+
 //for mpu_sequence_number_mmtp_mpu_packet_t
 ATSC3_VECTOR_BUILDER_METHODS_IMPLEMENTATION(mpu_sequence_number_mmtp_mpu_packet, mmtp_mpu_packet);
 

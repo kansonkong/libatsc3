@@ -80,7 +80,7 @@ extern int _MMTP_TRACE_ENABLED;
                                                                             \
     uint16_t            mmtp_header_extension_type; /* opt hdr_ex block*/   \
     uint16_t            mmtp_header_extension_length;                       \
-    uint8_t*            mmtp_header_extension_value;                        \
+    block_t*            mmtp_header_extension;                       		\
                                                                             \
     uint8_t 		    mmtp_qos_flag:1;            /* Q */		            \
     uint8_t 		    mmtp_flow_identifer_flag:1; /* F */		            \
@@ -95,8 +95,10 @@ extern int _MMTP_TRACE_ENABLED;
 typedef struct mmtp_packet_header {
 	_MMTP_PACKET_HEADER_FIELDS;
 } mmtp_packet_header_t;
+
 //todo, streamline this
 mmtp_packet_header_t* mmtp_packet_header_new();
+void mmtp_packet_header_free(mmtp_packet_header_t** mmtp_packet_header_p);
 
 //define for mpu type common header fields for struct inheritance
 
@@ -130,57 +132,12 @@ mmtp_packet_header_t* mmtp_packet_header_new();
 	uint8_t     mpu_fragment_counter;		            \
 	uint32_t    mpu_sequence_number;			        \
 	uint16_t    data_unit_length;                       \
-    block_t*    mpu_data_unit_packet;
+														\
+    block_t*    du_mpu_metadata_block;	 /* 0x0 */		\
+    block_t*	du_movie_fragment_block; /* (OOO)0x1 */ \
+    block_t*	du_mfu_block;			 /* 0x2 */
 
 
-/* only use temporarly */
-typedef struct mmtp_mpu_packet_header {
-	_MMTP_MPU_PACKET_HEADER_FIELDS;
-} mmtp_mpu_packet_header_t;
-
-/**
-TODO: move this into atsc3_mmtp_mpu_sample_types.h
- does not belong as __mpu_data_unit_payload_fragments_timed_t
- **/
-    
-    /* ISO23008-1:2017, Section 8.3 - Sample Format */
-    
-typedef struct atsc3_mmt_multiLayerInfoBox {
-    uint8_t multilayer_flag:1;
-    uint8_t reserved0:7;
-/* if (multilayer_flag == 1) { */
-        uint8_t     dependency_id:3;
-        uint8_t     depth_flag:1;
-        uint8_t     reserved1:4;
-        uint8_t     temporal_id:3;
-        uint8_t     reserved2:1;
-        uint8_t     quality_id:4;
-        uint8_t     priority_id:6;
-        uint16_t    view_id:10;
-/* } else { */
-        uint8_t     layer_id:6;
-        //            duplicated above
-        //uint8_t     temporal_id:3;
-        uint8_t     reserved3:7;
-/* } */
-} atsc3_mmt_multiLayerInfoBox_t;
-    
-typedef struct mmthsample_header {
-    uint32_t    sequence_number;
-/* if timed { */
-        int8_t                          trackrefindex;
-        uint32_t                        movie_fragment_sequence_number;
-        uint32_t                        samplenumber;
-        uint8_t                         priority;
-        uint8_t                         dependency_counter;
-        uint32_t                        offset;
-        uint32_t                        length;
-        atsc3_mmt_multiLayerInfoBox_t   atsc3_mmt_multiLayerInfoBox;
-/* } else { */
-        uint16_t                        item_id;
-/* } */
-} mmthsample_header_t;
-    
 /**
  
  MMTP packet vs. payload philosophy:
