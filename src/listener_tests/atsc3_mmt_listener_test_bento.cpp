@@ -31,7 +31,6 @@
 #include "../atsc3_listener_udp.h"
 #include "../atsc3_utils.h"
 #include "../atsc3_lls.h"
-#include "../atsc3_mmtp_types.h"
 #include "../atsc3_mmtp_parser.h"
 #include "../atsc3_mmt_mpu_parser.h"
 #include "../atsc3_mmt_mpu_utils.h"
@@ -40,6 +39,7 @@
 #include "../atsc3_vector.h"
 #include "../atsc3_logging_externs.h"
 #include "../atsc3_mmt_reconstitution_from_media_sample.h"
+#include "../atsc3_mmtp_packet_types.h"
 //#ifdef __cplusplus
 //}
 //#endif

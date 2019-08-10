@@ -41,7 +41,7 @@ int PACKET_COUNTER=0;
 #include "../atsc3_lls_slt_parser.h"
 #include "../atsc3_lls_sls_monitor_output_buffer_utils.h"
 
-#include "../atsc3_mmtp_types.h"
+#include "../atsc3_mmtp_packet_types.h"
 #include "../atsc3_mmtp_parser.h"
 #include "../atsc3_mmtp_ntp32_to_pts.h"
 #include "../atsc3_mmt_mpu_utils.h"

@@ -15,7 +15,7 @@
 
 #include "atsc3_utils.h"
 #include "atsc3_player_ffplay.h"
-#include "atsc3_mmtp_types.h"
+#include "atsc3_mmtp_packet_types.h"
 #include "atsc3_vector_builder.h"
 #include "atsc3_isobmff_trun_box.h"
 

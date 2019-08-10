@@ -1,18 +1,22 @@
 /*
- * mmtp_types.h
+ * atsc3_mmtp_packet_types.h
  *
  *  Created on: Jan 3, 2019
  *      Author: jjustman
+ *
+ *  Refactored on: Aug 10, 2019
+ *
  */
+
+#ifndef ATSC3_MMTP_PACKET_TYPES_H_
+#define ATSC3_MMTP_PACKET_TYPES_H_
+
 #include <assert.h>
 #include <limits.h>
 
-#ifndef MODULES_DEMUX_MMT_MMTP_TYPES_H_
-#define MODULES_DEMUX_MMT_MMTP_TYPES_H_
-
-//#include "atsc3_vector.h"
-
+#include "atsc3_logging_externs.h"
 #include "atsc3_vector_builder.h"
+
 #include "atsc3_mmtp_ntp32_to_pts.h"
 #include "atsc3_mmt_signalling_message_types.h"
 
@@ -288,27 +292,18 @@ typedef struct mmtp_asset_flow {
 
 } mmtp_asset_flow_t;
 
-
-#define _MMTP_PRINTLN(...) printf(__VA_ARGS__);printf("%s%s","\r","\n")
-#define _MMTP_ERROR(...)   printf("%s:%d:ERROR:",__FILE__,__LINE__);_MMTP_PRINTLN(__VA_ARGS__);
-#define _MMTP_WARN(...)    printf("%s:%d:WARN :",__FILE__,__LINE__);_MMTP_PRINTLN(__VA_ARGS__);
-#define _MMTP_INFO(...)    printf("%s:%d:INFO :",__FILE__,__LINE__);_MMTP_PRINTLN(__VA_ARGS__);
-
-#define _MMTP_DEBUG(...)   if(_MMTP_DEBUG_ENABLED) { printf("%s:%d:DEBUG :",__FILE__,__LINE__);_MMTP_PRINTLN(__VA_ARGS__); }
-#define _MMTP_TRACE(...)   if(_MMTP_TRACE_ENABLED) { printf("%s:%d:TRACE :",__FILE__,__LINE__);_MMTP_PRINTLN(__VA_ARGS__); }
-#define __LOG_MPU_REASSEMBLY(...) printf(__VA_ARGS__)
-
-//TODO - jdj-2019-05-29 REMOVE ME!
-#define __LOG_DEBUG(...) printf(__VA_ARGS__)
-//(msg_Info(__VA_ARGS__))
-#define __LOG_TRACE(...)
-#define __PRINTF_DEBUG(...)
-//printf(__VA_ARGS__)
-//(
-#define __PRINTF_TRACE(...)
-//printf(__VA_ARGS__)
 #ifdef __cplusplus
 }
 #endif
 
-#endif /* MODULES_DEMUX_MMT_MMTP_TYPES_H_ */
+
+#define __MMTP_ERROR(...)   __LIBATSC3_TIMESTAMP_ERROR(__VA_ARGS__);
+#define __MMTP_WARN(...)    __LIBATSC3_TIMESTAMP_WARN(__VA_ARGS__);
+#define __MMTP_INFO(...)    __LIBATSC3_TIMESTAMP_INFO(__VA_ARGS__);
+
+#define __MMTP_DEBUG(...)   if(_MMTP_DEBUG_ENABLED) { __LIBATSC3_TIMESTAMP_DEBUG(__VA_ARGS__); }
+#define __MMTP_TRACE(...)   if(_MMTP_TRACE_ENABLED) { __LIBATSC3_TIMESTAMP_TRACE(__VA_ARGS__); }
+
+
+
+#endif /* ATSC3_MMTP_PACKET_TYPES_H_ */

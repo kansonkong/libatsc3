@@ -61,9 +61,9 @@
 #include <arpa/inet.h>
 
 #include "atsc3_utils.h"
-#include "atsc3_mmtp_types.h"
 #include "atsc3_gzip.h"
 #include "atsc3_logging_externs.h"
+#include "atsc3_mmtp_packet_types.h"
 
 #ifndef MODULES_DEMUX_MMT_ATSC3_MMT_SIGNALING_MESSAGE_H_
 #define MODULES_DEMUX_MMT_ATSC3_MMT_SIGNALING_MESSAGE_H_

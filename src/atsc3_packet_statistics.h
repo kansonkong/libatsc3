@@ -14,7 +14,7 @@
 #include <locale.h>
 #include "atsc3_utils.h"
 #include "atsc3_lls.h"
-#include "atsc3_mmtp_types.h"
+#include "atsc3_mmtp_packet_types.h"
 #include "atsc3_output_statistics_ncurses.h"
 
 #ifndef ATSC3_MMT_PACKET_STATISTICS_H_
