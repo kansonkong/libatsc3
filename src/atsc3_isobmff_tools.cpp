@@ -409,7 +409,7 @@ lls_sls_monitor_buffer_isobmff_t* atsc3_isobmff_build_raw_mpu_from_single_sequen
                 fragment_metadata = movie_metadata_fragments->timed_fragments_vector.data[i];
               
                 //rebuild if we are fragmented
-                if(fragment_metadata->mmtp_packet_header.mmtp_packet_id == packet_id) {
+                if(fragment_metadata->mmtp_packet_header->mmtp_packet_id == packet_id) {
                 	lls_sls_monitor_output_buffer_copy_or_append_moof_block_from_flow(lls_sls_monitor_buffer_isobmff, fragment_metadata->mmtp_mpu_type_packet_header.mpu_data_unit_payload);
                 	//only set this to true if our fragment_metadata->mmtp_mpu_type_packet_header.mpu_fragmentation_indicator == 0 || 3
                 	if(fragment_metadata->mmtp_mpu_type_packet_header.mpu_fragmentation_indicator == 0 || fragment_metadata->mmtp_mpu_type_packet_header.mpu_fragmentation_indicator == 3) {
@@ -418,7 +418,7 @@ lls_sls_monitor_buffer_isobmff_t* atsc3_isobmff_build_raw_mpu_from_single_sequen
                     __ISOBMFF_TOOLS_DEBUG("Movie Fragment Metadata: Searching mpu_seq_num: %u, Found for fragment_metadata: %d, packet_id: %d, mpu_sequence_number: %u, fragmentation_indicator: %u, fragmentation_counter: %u",
                                          mpu_sequence_number,
 										 found_movie_fragment_metadata,
-                                         fragment_metadata->mmtp_packet_header.mmtp_packet_id,
+                                         fragment_metadata->mmtp_packet_header->mmtp_packet_id,
                                          fragment_metadata->mmtp_mpu_type_packet_header.mpu_sequence_number,
                                          fragment_metadata->mmtp_mpu_type_packet_header.mpu_fragmentation_indicator,
                                          fragment_metadata->mmtp_mpu_type_packet_header.mpu_fragmentation_counter);
@@ -597,7 +597,7 @@ lls_sls_monitor_output_buffer_t* atsc3_isobmff_build_mpu_metadata_ftyp_moof_mdat
 		if(movie_metadata_fragments && movie_metadata_fragments->timed_fragments_vector.size) {
             for(int i=0; i < movie_metadata_fragments->timed_fragments_vector.size; i++) {
                 fragment_metadata = movie_metadata_fragments->timed_fragments_vector.data[i];
-                __ISOBMFF_TOOLS_INFO("Movie Fragment Metadata: Found for fragment_metadata packet_id: %d, mpu_sequence_number: %u, fragmentation_indicator: %u, fragmentation_counter: %u", fragment_metadata->mmtp_packet_header.mmtp_packet_id, udp_flow_packet_id_mpu_sequence_tuple->mpu_sequence_number, fragment_metadata->mmtp_mpu_type_packet_header.mpu_fragmentation_indicator, fragment_metadata->mmtp_mpu_type_packet_header.mpu_fragmentation_counter);
+                __ISOBMFF_TOOLS_INFO("Movie Fragment Metadata: Found for fragment_metadata packet_id: %d, mpu_sequence_number: %u, fragmentation_indicator: %u, fragmentation_counter: %u", fragment_metadata->mmtp_packet_header->mmtp_packet_id, udp_flow_packet_id_mpu_sequence_tuple->mpu_sequence_number, fragment_metadata->mmtp_mpu_type_packet_header.mpu_fragmentation_indicator, fragment_metadata->mmtp_mpu_type_packet_header.mpu_fragmentation_counter);
 
                 //rebuild if we are fragmented
                 if(udp_flow_packet_id_mpu_sequence_tuple->packet_id == lls_sls_mmt_monitor->video_packet_id) {
@@ -740,7 +740,7 @@ lls_sls_monitor_output_buffer_t* atsc3_isobmff_build_mpu_metadata_ftyp_moof_mdat
             for(int i=0; i < movie_metadata_fragments->timed_fragments_vector.size; i++) {
                 fragment_metadata = movie_metadata_fragments->timed_fragments_vector.data[i];
                 __ISOBMFF_TOOLS_INFO("Movie Fragment Metadata: Found for fragment_metadata packet_id: %d, mpu_sequence_number: %u, fragmentation_indicator: %u, fragmentation_counter: %u",
-                                     fragment_metadata->mmtp_packet_header.mmtp_packet_id,
+                                     fragment_metadata->mmtp_packet_header->mmtp_packet_id,
                                      fragment_metadata->mmtp_mpu_type_packet_header.mpu_sequence_number,
                                      fragment_metadata->mmtp_mpu_type_packet_header.mpu_fragmentation_indicator,
                                      fragment_metadata->mmtp_mpu_type_packet_header.mpu_fragmentation_counter);
@@ -997,7 +997,7 @@ lls_sls_monitor_output_buffer_t* atsc3_isobmff_build_mpu_metadata_ftyp_moof_mdat
             for(int i=0; i < movie_metadata_fragments->timed_fragments_vector.size; i++) {
                 fragment_metadata = movie_metadata_fragments->timed_fragments_vector.data[i];
                 __ISOBMFF_TOOLS_INFO("Movie Fragment Metadata: Found for fragment_metadata packet_id: %d, mpu_sequence_number: %u, fragmentation_indicator: %u, fragmentation_counter: %u",
-                                     fragment_metadata->mmtp_packet_header.mmtp_packet_id,
+                                     fragment_metadata->mmtp_packet_header->mmtp_packet_id,
                                      fragment_metadata->mmtp_mpu_type_packet_header.mpu_sequence_number,
                                      fragment_metadata->mmtp_mpu_type_packet_header.mpu_fragmentation_indicator,
                                      fragment_metadata->mmtp_mpu_type_packet_header.mpu_fragmentation_counter);

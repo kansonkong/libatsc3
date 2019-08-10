@@ -189,7 +189,7 @@ int __INVOKE_ATSC3_PACKET_STATISTICS_MMT_STATS_POPULATE_COUNT = 0;
 void atsc3_packet_statistics_mmt_stats_populate(udp_packet_t* udp_packet, mmtp_payload_fragments_union_t* mmtp_payload) {
 
 
-	packet_id_mmt_stats_t* packet_mmt_stats = find_or_create_packet_id(udp_packet->udp_flow.dst_ip_addr, udp_packet->udp_flow.dst_port, mmtp_payload->mmtp_packet_header.mmtp_packet_id);
+	packet_id_mmt_stats_t* packet_mmt_stats = find_or_create_packet_id(udp_packet->udp_flow.dst_ip_addr, udp_packet->udp_flow.dst_port, mmtp_payload->mmtp_packet_header->mmtp_packet_id);
 
 	packet_mmt_stats->packet_sequence_number_sample_interval_processed++;
 	packet_mmt_stats->packet_sequence_number_lifetime_processed++;
@@ -198,10 +198,10 @@ void atsc3_packet_statistics_mmt_stats_populate(udp_packet_t* udp_packet, mmtp_p
 	//push this to our missing packet flow for investigation
 					__PS_STATS_L("packets present:\t%u.%u.%u.%u\t%u\tpacket_counter:\t%u\ttimestamp:\t%u\tpacket_id:\t%u\tpacket_sequence_number:\t%u",
 							__toipandportnonstruct(udp_packet->udp_flow.dst_ip_addr, udp_packet->udp_flow.dst_port),
-							mmtp_payload->mmtp_packet_header.packet_counter,
-							mmtp_payload->mmtp_packet_header.mmtp_timestamp,
-							mmtp_payload->mmtp_packet_header.mmtp_packet_id,
-							mmtp_payload->mmtp_packet_header.packet_sequence_number
+							mmtp_payload->mmtp_packet_header->packet_counter,
+							mmtp_payload->mmtp_packet_header->mmtp_timestamp,
+							mmtp_payload->mmtp_packet_header->mmtp_packet_id,
+							mmtp_payload->mmtp_packet_header->packet_sequence_number
 							);
 
 #endif
@@ -209,10 +209,10 @@ void atsc3_packet_statistics_mmt_stats_populate(udp_packet_t* udp_packet, mmtp_p
 					//top level flow check from our new mmtp payload packet and our "current" reference packet
 
 	if(packet_mmt_stats->has_packet_sequence_number &&
-		mmtp_payload->mmtp_packet_header.packet_sequence_number != packet_mmt_stats->packet_sequence_number + 1) {
+		mmtp_payload->mmtp_packet_header->packet_sequence_number != packet_mmt_stats->packet_sequence_number + 1) {
 
 		//compute our intra packet gap, remember to add 1 because we have the anchor packets
-		packet_mmt_stats->packet_sequence_number_last_gap = mmtp_payload->mmtp_packet_header.packet_sequence_number - packet_mmt_stats->packet_sequence_number - 1;
+		packet_mmt_stats->packet_sequence_number_last_gap = mmtp_payload->mmtp_packet_header->packet_sequence_number - packet_mmt_stats->packet_sequence_number - 1;
 
 		//compute our sample interval gap
 		packet_mmt_stats->packet_sequence_number_sample_interval_gap += packet_mmt_stats->packet_sequence_number_last_gap;
@@ -251,11 +251,11 @@ void atsc3_packet_statistics_mmt_stats_populate(udp_packet_t* udp_packet, mmtp_p
 //								__toip(packet_mmt_stats),
 //								packet_mmt_stats->packet_id,
 //								packet_mmt_stats->packet_counter_value,
-//								mmtp_payload->mmtp_packet_header.packet_counter,
+//								mmtp_payload->mmtp_packet_header->packet_counter,
 //								packet_mmt_stats->timestamp,
-//								mmtp_payload->mmtp_packet_header.mmtp_timestamp,
+//								mmtp_payload->mmtp_packet_header->mmtp_timestamp,
 //								packet_mmt_stats->packet_sequence_number,
-//								mmtp_payload->mmtp_packet_header.packet_sequence_number,
+//								mmtp_payload->mmtp_packet_header->packet_sequence_number,
 //								packet_mmt_stats->packet_sequence_number_last_gap);
 				global_mmt_loss_count++;
 				ncurses_writer_lock_mutex_release();
@@ -269,21 +269,21 @@ void atsc3_packet_statistics_mmt_stats_populate(udp_packet_t* udp_packet, mmtp_p
 		//__PS_STATS_STDOUT("packets missing:\t%u.%u.%u.%u\t%u\tpacket_counter_from:\t%u\tpacket_counter_to:\t%u\ttimestamp_from:\t%u\tfrom_s:\t%u\tfrom_us:\t%u\ttimestamp_to:\t%u\tto_s:\t%u\tto_us:\t%u\tpacket_id:\t%u\tPSN_from:\t%u\tPSN_to:\t%u\tTotal_missing:\t%u",
 //				__toip(packet_mmt_stats),
 //				packet_mmt_stats->packet_counter_value,
-//				mmtp_payload->mmtp_packet_header.packet_counter,
+//				mmtp_payload->mmtp_packet_header->packet_counter,
 //				packet_mmt_stats->timestamp,
 //				packet_mmt_stats->timestamp_s,
 //				packet_mmt_stats->timestamp_us,
-//				mmtp_payload->mmtp_packet_header.mmtp_timestamp,
-//				mmtp_payload->mmtp_packet_header.mmtp_timestamp_s,
-//				mmtp_payload->mmtp_packet_header.mmtp_timestamp_us,
+//				mmtp_payload->mmtp_packet_header->mmtp_timestamp,
+//				mmtp_payload->mmtp_packet_header->mmtp_timestamp_s,
+//				mmtp_payload->mmtp_packet_header->mmtp_timestamp_us,
 //				packet_mmt_stats->packet_id,
 //				packet_mmt_stats->packet_sequence_number,
-//				mmtp_payload->mmtp_packet_header.packet_sequence_number,
+//				mmtp_payload->mmtp_packet_header->packet_sequence_number,
 //				packet_mmt_stats->packet_sequence_number_last_gap);
 			//	__PS_REFRESH_LOSS();
 	}
 	//remember, a lot of these values can roll over...
-	packet_mmt_stats->packet_counter_value = mmtp_payload->mmtp_packet_header.packet_counter;
+	packet_mmt_stats->packet_counter_value = mmtp_payload->mmtp_packet_header->packet_counter;
 
 	//if we have a "current" packet sequence number, set it to our last value
 	if(packet_mmt_stats->has_packet_sequence_number) {
@@ -295,19 +295,19 @@ void atsc3_packet_statistics_mmt_stats_populate(udp_packet_t* udp_packet, mmtp_p
 
 	//if we should reset our sample interval packet sequence number, i.e. NOT !packet_mmt_stats->has_packet_sequence_number_sample_interval_start
 	if(!packet_mmt_stats->has_packet_sequence_number_sample_interval_start) {
-		packet_mmt_stats->packet_sequence_number_sample_interval_start = mmtp_payload->mmtp_packet_header.packet_sequence_number;
+		packet_mmt_stats->packet_sequence_number_sample_interval_start = mmtp_payload->mmtp_packet_header->packet_sequence_number;
 		packet_mmt_stats->has_packet_sequence_number_sample_interval_start = true;
 	}
 
 	//if we haven't set our lifetime packet sequence number
 	if(!packet_mmt_stats->has_packet_sequence_number_lifetime_start) {
-		packet_mmt_stats->packet_sequence_number_lifetime_start = mmtp_payload->mmtp_packet_header.packet_sequence_number;
+		packet_mmt_stats->packet_sequence_number_lifetime_start = mmtp_payload->mmtp_packet_header->packet_sequence_number;
 		packet_mmt_stats->has_packet_sequence_number_lifetime_start = true;
 	}
 
 	//update our "current" packet sequence number
 	packet_mmt_stats->has_packet_sequence_number = true;
-	packet_mmt_stats->packet_sequence_number = mmtp_payload->mmtp_packet_header.packet_sequence_number;
+	packet_mmt_stats->packet_sequence_number = mmtp_payload->mmtp_packet_header->packet_sequence_number;
 
 	if(packet_mmt_stats->has_timestamp) {
 		packet_mmt_stats->has_timestamp_last = true;
@@ -317,15 +317,15 @@ void atsc3_packet_statistics_mmt_stats_populate(udp_packet_t* udp_packet, mmtp_p
 	}
 
 	//set our timestamp
-	packet_mmt_stats->timestamp = mmtp_payload->mmtp_packet_header.mmtp_timestamp;
-	packet_mmt_stats->timestamp_s = mmtp_payload->mmtp_packet_header.mmtp_timestamp_s;
-	packet_mmt_stats->timestamp_us = mmtp_payload->mmtp_packet_header.mmtp_timestamp_us;
+	packet_mmt_stats->timestamp = mmtp_payload->mmtp_packet_header->mmtp_timestamp;
+	packet_mmt_stats->timestamp_s = mmtp_payload->mmtp_packet_header->mmtp_timestamp_s;
+	packet_mmt_stats->timestamp_us = mmtp_payload->mmtp_packet_header->mmtp_timestamp_us;
 
 	packet_mmt_stats->has_timestamp = true;
 
 	//keep track of our starting timestamp sample interval for this flow - has_timestamp_sample_interval_start
 	if(!packet_mmt_stats->has_timestamp_sample_interval_start) {
-		packet_mmt_stats->timestamp_sample_interval_start = mmtp_payload->mmtp_packet_header.mmtp_timestamp;
+		packet_mmt_stats->timestamp_sample_interval_start = mmtp_payload->mmtp_packet_header->mmtp_timestamp;
 		if(packet_mmt_stats->timestamp_sample_interval_start) {
 			compute_ntp32_to_seconds_microseconds(packet_mmt_stats->timestamp_sample_interval_start, &packet_mmt_stats->timestamp_sample_interval_start_s, &packet_mmt_stats->timestamp_sample_interval_start_us);
 			packet_mmt_stats->has_timestamp_sample_interval_start = true;
@@ -338,7 +338,7 @@ void atsc3_packet_statistics_mmt_stats_populate(udp_packet_t* udp_packet, mmtp_p
 
 	//keep track of our starting timestamp lifetime for this flow - has_timestamp_lifetime_start
 	if(!packet_mmt_stats->has_timestamp_lifetime_start) {
-		packet_mmt_stats->timestamp_lifetime_start = mmtp_payload->mmtp_packet_header.mmtp_timestamp;
+		packet_mmt_stats->timestamp_lifetime_start = mmtp_payload->mmtp_packet_header->mmtp_timestamp;
 		if(packet_mmt_stats->timestamp_lifetime_start) {
 			compute_ntp32_to_seconds_microseconds(packet_mmt_stats->timestamp_lifetime_start, &packet_mmt_stats->timestamp_lifetime_start_s, &packet_mmt_stats->timestamp_lifetime_start_us);
 			packet_mmt_stats->has_timestamp_lifetime_start = true;
@@ -350,7 +350,7 @@ void atsc3_packet_statistics_mmt_stats_populate(udp_packet_t* udp_packet, mmtp_p
 	}
 
 	//mpu metadata
-	if(mmtp_payload->mmtp_packet_header.mmtp_payload_type == 0x0) {
+	if(mmtp_payload->mmtp_packet_header->mmtp_payload_type == 0x0) {
 
 		//assign our timed mpu stats
 		if(mmtp_payload->mmtp_mpu_type_packet_header.mpu_timed_flag == 1) {
@@ -360,7 +360,7 @@ void atsc3_packet_statistics_mmt_stats_populate(udp_packet_t* udp_packet, mmtp_p
 			//assign our non-timed stats here
 			packet_mmt_stats->mpu_stats_nontimed_sample_interval->mpu_nontimed_total++;
 		}
-	} else if(mmtp_payload->mmtp_packet_header.mmtp_payload_type == 0x2) {
+	} else if(mmtp_payload->mmtp_packet_header->mmtp_payload_type == 0x2) {
 		//assign our signalling stats here
 		packet_mmt_stats->signalling_stats_sample_interval->signalling_messages_total++;
 	}

@@ -63,7 +63,7 @@ mmtp_payload_fragments_union_t* mmtp_process_from_payload(mmtp_sub_flow_vector_t
     //dump header, then dump applicable packet type
     //mmtp_packet_header_dump(mmtp_payload);
 
-    if(mmtp_payload->mmtp_packet_header.mmtp_payload_type == 0x0) {
+    if(mmtp_payload->mmtp_packet_header->mmtp_payload_type == 0x0) {
         global_stats->packet_counter_mmt_mpu++;
 
         if(mmtp_payload->mmtp_mpu_type_packet_header.mpu_timed_flag == 1) {
@@ -214,7 +214,7 @@ mmtp_payload_fragments_union_t* mmtp_process_from_payload(mmtp_sub_flow_vector_t
         
         goto ret;
         
-    } else if(mmtp_payload->mmtp_packet_header.mmtp_payload_type == 0x2) {
+    } else if(mmtp_payload->mmtp_packet_header->mmtp_payload_type == 0x2) {
 
 		global_stats->packet_counter_mmt_signaling++;
 		__MMT_RECON_FROM_SAMPLE_SIGNAL_INFO("mmtp_packet_parse: processing mmt flow: %d.%d.%d.%d:(%u) packet_id: 0, signalling message", __toipandportnonstruct(udp_packet->udp_flow.dst_ip_addr, udp_packet->udp_flow.dst_port));
@@ -246,7 +246,7 @@ mmtp_payload_fragments_union_t* mmtp_process_from_payload(mmtp_sub_flow_vector_t
 		}
 
     } else {
-		__MMT_RECON_FROM_SAMPLE_WARN("mmtp_packet_parse: unknown payload type of 0x%x", mmtp_payload->mmtp_packet_header.mmtp_payload_type);
+		__MMT_RECON_FROM_SAMPLE_WARN("mmtp_packet_parse: unknown payload type of 0x%x", mmtp_payload->mmtp_packet_header->mmtp_payload_type);
 		global_stats->packet_counter_mmt_unknown++;
 		goto packet_cleanup;
     }
@@ -255,7 +255,7 @@ packet_cleanup:
 //mmtp_sub_flow
     //TODO: fix me
     
-//    my_evicted_count += atsc3_mmt_mpu_remove_packet_fragment_from_flows(mmtp_payload->mmtp_packet_header.mmtp_sub_flow, mmtp_payload->mmtp_packet_header.mmtp_sub_flow->mpu_fragments, mmtp_payload);
+//    my_evicted_count += atsc3_mmt_mpu_remove_packet_fragment_from_flows(mmtp_payload->mmtp_packet_header->mmtp_sub_flow, mmtp_payload->mmtp_packet_header->mmtp_sub_flow->mpu_fragments, mmtp_payload);
 //
 //    __MMT_RECON_FROM_SAMPLE_WARN("mmtp_packet_parse: atsc3_mmt_mpu_remove_packet_fragment_from_flows: resulted in %u evictions", my_evicted_count);
 //
@@ -324,7 +324,7 @@ mmtp_payload_fragments_union_t* mmtp_process_from_payload_synchronous_mpu_sequen
     //dump header, then dump applicable packet type
     //mmtp_packet_header_dump(mmtp_payload);
 
-    if(mmtp_payload->mmtp_packet_header.mmtp_payload_type == 0x0) {
+    if(mmtp_payload->mmtp_packet_header->mmtp_payload_type == 0x0) {
         global_stats->packet_counter_mmt_mpu++;
 
         if(mmtp_payload->mmtp_mpu_type_packet_header.mpu_timed_flag == 1) {
@@ -529,7 +529,7 @@ mmtp_payload_fragments_union_t* mmtp_process_from_payload_synchronous_mpu_sequen
 
         
 
-    } else if(mmtp_payload->mmtp_packet_header.mmtp_payload_type == 0x2) {
+    } else if(mmtp_payload->mmtp_packet_header->mmtp_payload_type == 0x2) {
 
 		global_stats->packet_counter_mmt_signaling++;
 		__MMT_RECON_FROM_SAMPLE_INFO("mmtp_packet_parse: processing mmt flow: %d.%d.%d.%d:(%u) packet_id: 0, signalling message", __toipandportnonstruct(udp_packet->udp_flow.dst_ip_addr, udp_packet->udp_flow.dst_port));
@@ -561,7 +561,7 @@ mmtp_payload_fragments_union_t* mmtp_process_from_payload_synchronous_mpu_sequen
 		}
 
     } else {
-		__MMT_RECON_FROM_SAMPLE_WARN("mmtp_packet_parse: unknown payload type of 0x%x", mmtp_payload->mmtp_packet_header.mmtp_payload_type);
+		__MMT_RECON_FROM_SAMPLE_WARN("mmtp_packet_parse: unknown payload type of 0x%x", mmtp_payload->mmtp_packet_header->mmtp_payload_type);
 		global_stats->packet_counter_mmt_unknown++;
 		goto cleanup;
     }

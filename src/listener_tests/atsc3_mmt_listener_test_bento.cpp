@@ -92,8 +92,8 @@ void process_packet(u_char *user, const struct pcap_pkthdr *pkthdr, const u_char
 		}
 
 		//for filtering MMT flows by a specific packet_id
-		if(dst_packet_id_filter && *dst_packet_id_filter != mmtp_payload->mmtp_packet_header.mmtp_packet_id) {
-			__TRACE("dropping packet id: %d", mmtp_payload->mmtp_packet_header.mmtp_packet_id);
+		if(dst_packet_id_filter && *dst_packet_id_filter != mmtp_payload->mmtp_packet_header->mmtp_packet_id) {
+			__TRACE("dropping packet id: %d", mmtp_payload->mmtp_packet_header->mmtp_packet_id);
             mmtp_payload_fragments_union_free(&mmtp_payload);
 
             return cleanup(&udp_packet);
