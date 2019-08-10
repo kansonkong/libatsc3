@@ -252,8 +252,8 @@ ATSC3_VECTOR_BUILDER_METHODS_INTERFACE(mmtp_packet_id_packets_container, mmtp_re
 typedef struct mmtp_asset_flow mmtp_asset_flow_t;
     
 typedef struct mmtp_asset {
-    uint16_t            mmtp_packet_id;
-    mmtp_asset_flow_t*   parent_mmtp_asset_flow;
+    uint16_t			mmtp_packet_id;
+    mmtp_asset_flow_t*  parent_mmtp_asset_flow;
     
     ATSC3_VECTOR_BUILDER_STRUCT(mmtp_packet_id_packets_container);
     
