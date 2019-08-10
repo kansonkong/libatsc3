@@ -8,7 +8,8 @@
 
 /**
  *
- * Borrowed from A/331 Section 7.2.3
+ * Citiation from from A/331 Section 7.2.3
+ *
  * ATSC A/331:2017 Signaling, Delivery, Synchronization, and Error Protection 6 December 2017
  *
  * MMTP-Specific Signaling Message
@@ -91,16 +92,12 @@ raw base64 payload:
  *
  */
 
-mmt_signalling_message_vector_t* mmt_signalling_message_vector_create();
-mmt_signalling_message_vector_t* mmt_signalling_message_vector_add(mmt_signalling_message_vector_t* mmt_signalling_message_vector, mmt_signalling_message_header_and_payload_t* mmt_signalling_message_header_and_payload);
 mmt_signalling_message_header_and_payload_t* mmt_signalling_message_header_and_payload_create(uint16_t message_id, uint8_t version);
 
-void mmt_signalling_message_vector_free(mmt_signalling_message_vector_t**);
 
 uint8_t* mmt_signaling_message_parse_packet_header(mmtp_payload_fragments_union_t* si_message, uint8_t* udp_raw_buf, uint32_t udp_raw_buf_size);
 uint8_t* mmt_signaling_message_parse_packet(mmtp_payload_fragments_union_t *si_message, uint8_t* udp_raw_buf, uint32_t udp_raw_buf_size);
 uint8_t* mmt_signaling_message_parse_id_type(mmtp_payload_fragments_union_t *si_message, uint8_t* udp_raw_buf, uint32_t udp_raw_buf_size);
-void mmt_signalling_message_header_and_payload_free(mmt_signalling_message_header_and_payload_t**);
 
 uint8_t* pa_message_parse(mmt_signalling_message_header_and_payload_t* mmt_signalling_message_header_and_payload, uint8_t* udp_raw_buf, uint32_t udp_raw_buf_size);
 uint8_t* mpi_message_parse(mmt_signalling_message_header_and_payload_t* mmt_signalling_message_header_and_payload, uint8_t* udp_raw_buf, uint32_t udp_raw_buf_size);

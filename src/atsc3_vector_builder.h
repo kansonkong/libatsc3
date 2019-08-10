@@ -31,18 +31,29 @@
  *
  *		ATSC3_VECTOR_BUILDER_METHODS_INTERFACE(atsc3_fdt_instance, atsc3_fdt_file)
  *
- *	results in:
- *		atsc3_fdt_file_t* atsc3_fdt_file_new();
- *  	atsc3_fdt_instance_add_atsc3_fdt_file(atsc3_fdt_instance_t*, atsc3_fdt_file*)
+ *	results in method signatures for:
+ *		atsc3_fdt_instance* atsc3_fdt_instance_new()
+ *		atsc3_fdt_file_t* 	atsc3_fdt_file_new();
+ *
+ *  	atsc3_fdt_instance_add_atsc3_fdt_file(atsc3_fdt_instance_t*, atsc3_fdt_file*);
+ *		atsc3_fdt_instance_clear_atsc3_fdt_file(atsc3_fdt_instance_t*); //empty out container, leaving pointer ref's alive
+ *		atsc3_fdt_instance_free_atsc3_fdt_file(atsc3_fdt_instance_t*);	//invoke atsc3_fdt_file_free, and empty out container
+ *
+ * 	 	void atsc3_fdt_file_free(atsc3_fdt_file_t**);
+ * 			- default impl can be built by calling ATSC3_VECTOR_BUILDER_METHODS_ITEM_FREE(atsc3_fdt_file)
+ * 	 		- otherwise, you must impl this signature by hand for more complex free(&ptr) use cases
  *
  */
 
 
 #define ATSC3_VECTOR_BUILDER_METHODS_INTERFACE(vector_struct_name, vector_item_name) \
-	PPCAT(vector_item_name,_t)* PPCAT(vector_item_name,_new)(); \
+	PPCAT(vector_item_name,_t)*   PPCAT(vector_item_name,_new)(); \
 	PPCAT(vector_struct_name,_t)* PPCAT(vector_struct_name,_new)(); \
+	void PPCAT(vector_struct_name,PPCAT(_add_,vector_item_name))(PPCAT(vector_struct_name,_t)*, PPCAT(vector_item_name,_t)*); \
 	void PPCAT(vector_struct_name,PPCAT(_clear_,vector_item_name))(PPCAT(vector_struct_name,_t)*); \
-	void PPCAT(vector_struct_name,PPCAT(_add_,vector_item_name))(PPCAT(vector_struct_name,_t)*, PPCAT(vector_item_name,_t)*);
+	void PPCAT(vector_struct_name,PPCAT(_free_,vector_item_name))(PPCAT(vector_struct_name,_t)*); \
+	void PPCAT(vector_item_name,_free)(PPCAT(vector_item_name,_t)** PPCAT(vector_item_name,_p));
+
 
 /**
  *
@@ -70,21 +81,11 @@
 	\
 \
 
+
 #define ATSC3_VECTOR_BUILDER_METHODS_IMPLEMENTATION(vector_struct_name, vector_item_name) \
 	PPCAT(vector_item_name,_t)* PPCAT(vector_item_name,_new)() { \
 		PPCAT(vector_item_name,_t)* vector_item_name = calloc(1, sizeof(PPCAT(vector_item_name,_t))); \
 		return vector_item_name; \
-	} \
-	\
-	void PPCAT(vector_struct_name,PPCAT(_clear_, vector_item_name))(PPCAT(vector_struct_name,_t)* vector_struct_name) { \
-		for(int i=0; i < vector_struct_name->PPCAT(vector_item_name, _v).count; i++) { \
-			if(vector_struct_name->PPCAT(vector_item_name, _v).data[i]) { \
-				freesafe(vector_struct_name->PPCAT(vector_item_name, _v).data[i]); \
-                vector_struct_name->PPCAT(vector_item_name, _v).data[i] = NULL; \
-			} \
-		} \
-		vector_struct_name->PPCAT(vector_item_name, _v).count 	= 0; \
-		\
 	} \
 	\
 	void PPCAT(vector_struct_name,PPCAT(_add_, vector_item_name))(PPCAT(vector_struct_name,_t)* vector_struct_name, PPCAT(vector_item_name,_t)* vector_item_name) { \
@@ -108,7 +109,39 @@
 		}	\
 		/* PPCAT(name,_t)* name = calloc(1, sizeof(PPCAT(name,_t))); */ \
 		/* return name; */ \
-	}
+	} \
+	void PPCAT(vector_struct_name,PPCAT(_clear_, vector_item_name))(PPCAT(vector_struct_name,_t)* vector_struct_name) { \
+		for(int i=0; i < vector_struct_name->PPCAT(vector_item_name, _v).count; i++) { \
+			if(vector_struct_name->PPCAT(vector_item_name, _v).data[i]) { \
+				freesafe(vector_struct_name->PPCAT(vector_item_name, _v).data[i]); \
+				vector_struct_name->PPCAT(vector_item_name, _v).data[i] = NULL; \
+			} \
+		} \
+		vector_struct_name->PPCAT(vector_item_name, _v).count 	= 0; \
+		\
+	} \
+	void PPCAT(vector_struct_name,PPCAT(_free_, vector_item_name))(PPCAT(vector_struct_name,_t)* vector_struct_name) { \
+		for(int i=0; i < vector_struct_name->PPCAT(vector_item_name, _v).count; i++) { \
+			if(vector_struct_name->PPCAT(vector_item_name, _v).data[i]) { \
+				PPCAT(vector_item_name,_free)(&vector_struct_name->PPCAT(vector_item_name, _v).data[i]); \
+			} \
+		} \
+		vector_struct_name->PPCAT(vector_item_name, _v).count 	= 0; \
+		\
+	} \
 
+
+//provide a default
+#define ATSC3_VECTOR_BUILDER_METHODS_ITEM_FREE(vector_struct_name, vector_item_name) \
+	void PPCAT(vector_item_name,_free)(PPCAT(vector_item_name,_t)** PPCAT(vector_item_name,_p)); { \
+		if(PPCAT(vector_item_name,_p)) {	\
+			PPCAT(vector_item_name,_t)* vector_item_name = *PPCAT(vector_item_name,_p);	\
+			if(vector_item_name) { \
+				freesafe(vector_item_name);	\
+				vector_item_name = NULL;	\
+			}	\
+			*PPCAT(vector_item_name,_p) = NULL;	\
+		}	\
+	}
 
 #endif /* ATSC3_VECTOR_BUILDER_H_ */

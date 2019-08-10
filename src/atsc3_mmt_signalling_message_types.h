@@ -327,4 +327,7 @@ typedef struct mmt_signalling_message_header_and_payload {
 } mmt_signalling_message_header_and_payload_t;
 
 
+void mmt_signalling_message_header_and_payload_free(mmt_signalling_message_header_and_payload_t**);
+
+
 #endif /* ATSC3_MMT_SIGNALLING_MESSAGE_TYPES_H_ */
