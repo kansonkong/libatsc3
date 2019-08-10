@@ -48,8 +48,8 @@ raw base64 payload:
 
 uint8_t* mmt_signaling_message_parse_packet_header(mmtp_payload_fragments_union_t* mmtp_packet, uint8_t* udp_raw_buf, uint32_t udp_raw_buf_size) {
 
-	if(mmtp_packet->mmtp_packet_header->mmtp_payload_type != 0x02) {
-		_MMSM_ERROR("signaling_message_parse_payload_header: mmtp_payload_type 0x02 != 0x%x", mmtp_packet->mmtp_packet_header->mmtp_payload_type);
+	if(mmtp_packet_header->mmtp_payload_type != 0x02) {
+		_MMSM_ERROR("signaling_message_parse_payload_header: mmtp_payload_type 0x02 != 0x%x", mmtp_packet_header->mmtp_payload_type);
 		return NULL;
 	}
 
@@ -68,22 +68,22 @@ uint8_t* mmt_signaling_message_parse_packet_header(mmtp_payload_fragments_union_
 	 * 0x11 = payload contains the last fragment of a signaling message
 	 */
 
-	mmtp_packet->mmtp_signalling_message_fragments.si_fragmentation_indiciator = (mmtp_payload_header[0] >> 6) & 0x03;
+	mmtp_signalling_message_fragments.si_fragmentation_indiciator = (mmtp_payload_header[0] >> 6) & 0x03;
 	//next 4 bits are 0x0000 reserved
 	if((mmtp_payload_header[0] >> 2) & 0xF) {
         _MMSM_ERROR_23008_1("mmt_signaling_message_parse_packet_header: signaling message mmtp header bits 2-5 are not reserved '0'");
 	}
 
 	//bit 6 is additional Header
-	mmtp_packet->mmtp_signalling_message_fragments.si_additional_length_header = ((mmtp_payload_header[0] >> 1) & 0x1);
+	mmtp_signalling_message_fragments.si_additional_length_header = ((mmtp_payload_header[0] >> 1) & 0x1);
 
 	//bit 7 is Aggregation
-	mmtp_packet->mmtp_signalling_message_fragments.si_aggregation_flag = (mmtp_payload_header[0] & 0x1);
+	mmtp_signalling_message_fragments.si_aggregation_flag = (mmtp_payload_header[0] & 0x1);
 
 	//count of for how many fragments follow this message, e.g si_fragmentation_indiciator != 0
 	//note, packets are not allowed to be both aggregated and fragmented
 
-	mmtp_packet->mmtp_signalling_message_fragments.si_fragmentation_counter = mmtp_payload_header[1];
+	mmtp_signalling_message_fragments.si_fragmentation_counter = mmtp_payload_header[1];
 
 	return buf;
 }

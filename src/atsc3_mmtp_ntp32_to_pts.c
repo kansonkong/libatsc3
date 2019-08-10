@@ -20,7 +20,7 @@
  */
 
 void compute_ntp32_to_seconds_microseconds(uint32_t timestamp, uint16_t *seconds, uint16_t *microseconds) {
-	//->mmtp_packet_header->mmtp_timestamp, &mmtp_packet->mmtp_packet_header->mmtp_timestamp_s, &mmtp_packet->mmtp_packet_header->mmtp_timestamp_us);
+	//->mmtp_packet_header->mmtp_timestamp, &mmtp_packet_header->mmtp_timestamp_s, &mmtp_packet_header->mmtp_timestamp_us);
 
 	*seconds = (timestamp >> 16) & 0xFFFF;
 
@@ -33,7 +33,7 @@ void compute_ntp32_to_seconds_microseconds(uint32_t timestamp, uint16_t *seconds
 
 
 void compute_ntp64_to_seconds_microseconds(uint64_t timestamp, uint32_t *seconds, uint32_t *microseconds) {
-	//->mmtp_packet_header->mmtp_timestamp, &mmtp_packet->mmtp_packet_header->mmtp_timestamp_s, &mmtp_packet->mmtp_packet_header->mmtp_timestamp_us);
+	//->mmtp_packet_header->mmtp_timestamp, &mmtp_packet_header->mmtp_timestamp_s, &mmtp_packet_header->mmtp_timestamp_us);
 
 	*seconds = (timestamp >> 32) & 0xFFFFFFFF;
 
