@@ -223,7 +223,7 @@ void process_packet(u_char *user, const struct pcap_pkthdr *pkthdr, const u_char
 		//dump header, then dump applicable packet type
 		//mmtp_packet_header_dump(mmtp_payload);
 
-		if(mmtp_payload->mmtp_packet_header.mmtp_payload_type == 0x0) {
+		if(mmtp_payload->mmtp_packet_header->mmtp_payload_type == 0x0) {
 			global_stats->packet_counter_mmt_mpu++;
 
 			if(mmtp_payload->mmtp_mpu_type_packet_header.mpu_timed_flag == 1) {
@@ -239,13 +239,13 @@ void process_packet(u_char *user, const struct pcap_pkthdr *pkthdr, const u_char
 
 			}
 
-		} else if(mmtp_payload->mmtp_packet_header.mmtp_payload_type == 0x2) {
+		} else if(mmtp_payload->mmtp_packet_header->mmtp_payload_type == 0x2) {
 
 			signaling_message_dump(mmtp_payload);
 			global_stats->packet_counter_mmt_signaling++;
 
 		} else {
-			_MMTP_WARN("mmtp_packet_parse: unknown payload type of 0x%x", mmtp_payload->mmtp_packet_header.mmtp_payload_type);
+			_MMTP_WARN("mmtp_packet_parse: unknown payload type of 0x%x", mmtp_payload->mmtp_packet_header->mmtp_payload_type);
 			global_stats->packet_counter_mmt_unknown++;
 			goto cleanup;
 		}

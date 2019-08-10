@@ -28,40 +28,40 @@ uint8_t* mmt_mpu_parse_payload(mmtp_sub_flow_vector_t* mmtp_sub_flow_vector, mmt
 
 	//create a sub_flow with this packet_id
 	_MPU_DEBUG( "mmtp_demuxer, after mmtp_packet_header_parse_from_raw_packet, mmtp_packet_id is: %d, mmtp_payload_type: 0x%x, packet_counter: %d, remaining len: %lu, mmtp_raw_packet_size: %d, buf: %p, raw_buf:%p",
-			mmtp_packet_header->mmtp_packet_header.mmtp_packet_id,
-			mmtp_packet_header->mmtp_packet_header.mmtp_payload_type,
-			mmtp_packet_header->mmtp_packet_header.packet_counter,
+			mmtp_packet_header->mmtp_packet_header->mmtp_packet_id,
+			mmtp_packet_header->mmtp_packet_header->mmtp_payload_type,
+			mmtp_packet_header->mmtp_packet_header->packet_counter,
 			(udp_raw_buf_size - (buf - raw_buf)),
 			udp_raw_buf_size,
 			buf,
 			raw_buf);
 
-	mmtp_sub_flow = mmtp_sub_flow_vector_get_or_set_packet_id(mmtp_sub_flow_vector, udp_flow, mmtp_packet_header->mmtp_packet_header.mmtp_packet_id);
+	mmtp_sub_flow = mmtp_sub_flow_vector_get_or_set_packet_id(mmtp_sub_flow_vector, udp_flow, mmtp_packet_header->mmtp_packet_header->mmtp_packet_id);
 	_MPU_DEBUG("mmtp_demuxer - mmtp_sub_flow is: %p, mmtp_sub_flow->mpu_fragments: %p", mmtp_sub_flow, mmtp_sub_flow->mpu_fragments);
 
 	//push this to
 	//if our header extension length is set, then block (uint8_t*)extract the header extension length, adn we should be at our payload data
 	uint8_t *mmtp_header_extension_value = NULL;
 
-	if(mmtp_packet_header->mmtp_packet_header.mmtp_header_extension_flag & 0x1) {
+	if(mmtp_packet_header->mmtp_packet_header->mmtp_header_extension_flag & 0x1) {
 		//clamp mmtp_header_extension_length
-		mmtp_packet_header->mmtp_packet_header.mmtp_header_extension_length = MIN(mmtp_packet_header->mmtp_packet_header.mmtp_header_extension_length, 2^16);
+		mmtp_packet_header->mmtp_packet_header->mmtp_header_extension_length = MIN(mmtp_packet_header->mmtp_packet_header->mmtp_header_extension_length, 2^16);
 
 		_MPU_DEBUG( "mmtp_header_extension_flag, header extension size: %d, packet version: %d, payload_type: 0x%X, packet_id 0x%hu, timestamp: 0x%X, packet_sequence_number: 0x%X, packet_counter: 0x%X",
-				mmtp_packet_header->mmtp_packet_header.mmtp_packet_version,
-				mmtp_packet_header->mmtp_packet_header.mmtp_header_extension_length,
-				mmtp_packet_header->mmtp_packet_header.mmtp_payload_type,
-				mmtp_packet_header->mmtp_packet_header.mmtp_packet_id,
-				mmtp_packet_header->mmtp_packet_header.mmtp_timestamp,
-				mmtp_packet_header->mmtp_packet_header.packet_sequence_number,
-				mmtp_packet_header->mmtp_packet_header.packet_counter);
+				mmtp_packet_header->mmtp_packet_header->mmtp_packet_version,
+				mmtp_packet_header->mmtp_packet_header->mmtp_header_extension_length,
+				mmtp_packet_header->mmtp_packet_header->mmtp_payload_type,
+				mmtp_packet_header->mmtp_packet_header->mmtp_packet_id,
+				mmtp_packet_header->mmtp_packet_header->mmtp_timestamp,
+				mmtp_packet_header->mmtp_packet_header->packet_sequence_number,
+				mmtp_packet_header->mmtp_packet_header->packet_counter);
 
-		mmtp_packet_header->mmtp_packet_header.mmtp_header_extension_value = (uint8_t*)malloc(mmtp_packet_header->mmtp_packet_header.mmtp_header_extension_length);
+		mmtp_packet_header->mmtp_packet_header->mmtp_header_extension_value = (uint8_t*)malloc(mmtp_packet_header->mmtp_packet_header->mmtp_header_extension_length);
 		//read the header extension value up to the extension length field 2^16
-		buf = (uint8_t*)extract(buf, (uint8_t*)&mmtp_packet_header->mmtp_packet_header.mmtp_header_extension_value, mmtp_packet_header->mmtp_packet_header.mmtp_header_extension_length);
+		buf = (uint8_t*)extract(buf, (uint8_t*)&mmtp_packet_header->mmtp_packet_header->mmtp_header_extension_value, mmtp_packet_header->mmtp_packet_header->mmtp_header_extension_length);
 	}
 
-	if(mmtp_packet_header->mmtp_packet_header.mmtp_payload_type == 0x0) {
+	if(mmtp_packet_header->mmtp_packet_header->mmtp_payload_type == 0x0) {
 		//VECTOR:  TODO - refactor this into helper method
 
 		//pull the mpu and frag iformation
@@ -542,7 +542,7 @@ void mpu_fragments_assign_to_payload_vector(mmtp_sub_flow_t* mmtp_sub_flow, mmtp
 	if(mpu_type_packet->mmtp_mpu_type_packet_header.mpu_fragment_type == 0x00) {
 		//push to mpu_metadata fragments vector
 
-		__PRINTF_TRACE("%d:mpu_fragments_assign_to_payload_vector - MPU fragment type == %x, packet_counter: %u, packet_id: %d, sequence_number: %d, fragment type: %d, mpu_fragments is: %p, all_mpu_frags_vector.size: %zu\n", __LINE__, mpu_type_packet->mmtp_mpu_type_packet_header.mpu_fragment_type, mpu_type_packet->mmtp_packet_header.packet_counter, mpu_type_packet->mmtp_mpu_type_packet_header.mmtp_packet_id,  mpu_type_packet->mmtp_mpu_type_packet_header.mpu_sequence_number, mpu_type_packet->mmtp_mpu_type_packet_header.mpu_fragment_type, mpu_fragments, mpu_fragments->all_mpu_fragments_vector.size);
+		__PRINTF_TRACE("%d:mpu_fragments_assign_to_payload_vector - MPU fragment type == %x, packet_counter: %u, packet_id: %d, sequence_number: %d, fragment type: %d, mpu_fragments is: %p, all_mpu_frags_vector.size: %zu\n", __LINE__, mpu_type_packet->mmtp_mpu_type_packet_header.mpu_fragment_type, mpu_type_packet->mmtp_packet_header->packet_counter, mpu_type_packet->mmtp_mpu_type_packet_header.mmtp_packet_id,  mpu_type_packet->mmtp_mpu_type_packet_header.mpu_sequence_number, mpu_type_packet->mmtp_mpu_type_packet_header.mpu_fragment_type, mpu_fragments, mpu_fragments->all_mpu_fragments_vector.size);
 		to_assign_payload_vector = mpu_data_unit_payload_fragments_get_or_set_mpu_sequence_number_from_packet(&mpu_fragments->mpu_metadata_fragments_vector, mpu_type_packet);
 
 	} else if(mpu_type_packet->mmtp_mpu_type_packet_header.mpu_fragment_type == 0x01) {
@@ -556,7 +556,7 @@ void mpu_fragments_assign_to_payload_vector(mmtp_sub_flow_t* mmtp_sub_flow, mmtp
 				__LINE__,
 				to_assign_payload_vector->mpu_sequence_number,
 				mpu_type_packet->mmtp_mpu_type_packet_header.mpu_fragment_type,
-				mpu_type_packet->mmtp_packet_header.packet_counter, mpu_type_packet->mmtp_mpu_type_packet_header.mmtp_packet_id,
+				mpu_type_packet->mmtp_packet_header->packet_counter, mpu_type_packet->mmtp_mpu_type_packet_header.mmtp_packet_id,
 				mpu_type_packet->mmtp_mpu_type_packet_header.mpu_sequence_number,
 				mpu_type_packet->mmtp_mpu_type_packet_header.mpu_fragment_type, mpu_fragments, mpu_fragments->all_mpu_fragments_vector.size);
 
@@ -564,7 +564,7 @@ void mpu_fragments_assign_to_payload_vector(mmtp_sub_flow_t* mmtp_sub_flow, mmtp
 
 
 	if(to_assign_payload_vector) {
-		_MPU_DEBUG("%d:mpu_fragments_assign_to_payload_vector: %p - packet_counter: %u, packet_id: %d, sequence_number: %d, fragment type: %d, mpu_fragments is: %p, all_mpu_frags_vector.size: %zu\n", __LINE__, to_assign_payload_vector, mpu_type_packet->mmtp_packet_header.packet_counter, mpu_type_packet->mmtp_mpu_type_packet_header.mmtp_packet_id,  mpu_type_packet->mmtp_mpu_type_packet_header.mpu_sequence_number, mpu_type_packet->mmtp_mpu_type_packet_header.mpu_fragment_type, mpu_fragments, mpu_fragments->all_mpu_fragments_vector.size);
+		_MPU_DEBUG("%d:mpu_fragments_assign_to_payload_vector: %p - packet_counter: %u, packet_id: %d, sequence_number: %d, fragment type: %d, mpu_fragments is: %p, all_mpu_frags_vector.size: %zu\n", __LINE__, to_assign_payload_vector, mpu_type_packet->mmtp_packet_header->packet_counter, mpu_type_packet->mmtp_mpu_type_packet_header.mmtp_packet_id,  mpu_type_packet->mmtp_mpu_type_packet_header.mpu_sequence_number, mpu_type_packet->mmtp_mpu_type_packet_header.mpu_fragment_type, mpu_fragments, mpu_fragments->all_mpu_fragments_vector.size);
 
 		//__PRINTF_TRACE("%d: to_assign_payload_vector, sequence_number: %d, size is: %zu\n", __LINE__, mpu_type_packet->mmtp_mpu_type_packet_header.mpu_sequence_number, to_assign_payload_vector->timed_fragments_vector.size);
 		if(mpu_type_packet->mmtp_mpu_type_packet_header.mpu_timed_flag) {
@@ -573,7 +573,7 @@ void mpu_fragments_assign_to_payload_vector(mmtp_sub_flow_t* mmtp_sub_flow, mmtp
 			_MPU_DEBUG("%d:mpu_fragments_assign_to_payload_vector: mpu_fragments_assign_to_payload_vector, vector size: %zu for MPU fragment type == %x, packet_counter: %u, packet_id: %d, sequence_number: %d, fragment type: %d, mpu_fragments is: %p, all_mpu_frags_vector.size: %zu\n", __LINE__,
 					to_assign_payload_vector->timed_fragments_vector.size,
 					mpu_type_packet->mmtp_mpu_type_packet_header.mpu_fragment_type,
-					mpu_type_packet->mmtp_packet_header.packet_counter,
+					mpu_type_packet->mmtp_packet_header->packet_counter,
 					mpu_type_packet->mmtp_mpu_type_packet_header.mmtp_packet_id,
 					mpu_type_packet->mmtp_mpu_type_packet_header.mpu_sequence_number,
 					mpu_type_packet->mmtp_mpu_type_packet_header.mpu_fragment_type,
@@ -600,21 +600,21 @@ void mpu_fragments_assign_to_payload_vector(mmtp_sub_flow_t* mmtp_sub_flow, mmtp
 void mmt_mpu_free_payload(mmtp_payload_fragments_union_t* mmtp_payload_fragments) {
 
 	//free raw data block allocs
-	if(mmtp_payload_fragments && mmtp_payload_fragments->mmtp_packet_header.mmtp_payload_type == 0x0) {
-		if(mmtp_payload_fragments->mmtp_mpu_type_packet_header.raw_packet) {
-			_MMTP_TRACE("mmt_mpu_free_payload: raw_packet: calling block_Release with: %p", &mmtp_payload_fragments->mmtp_mpu_type_packet_header.raw_packet);
+	if(mmtp_payload_fragments && mmtp_packet_header->mmtp_payload_type == 0x0) {
+		if(mmtp_mpu_type_packet_header.raw_packet) {
+			_MMTP_TRACE("mmt_mpu_free_payload: raw_packet: calling block_Release with: %p", &mmtp_mpu_type_packet_header.raw_packet);
 
-			block_Release(&mmtp_payload_fragments->mmtp_mpu_type_packet_header.raw_packet);
-			mmtp_payload_fragments->mmtp_mpu_type_packet_header.raw_packet = NULL;
+			block_Release(&mmtp_mpu_type_packet_header.raw_packet);
+			mmtp_mpu_type_packet_header.raw_packet = NULL;
 		}
 
-		if(mmtp_payload_fragments->mmtp_mpu_type_packet_header.mpu_data_unit_payload) {
-			_MMTP_TRACE("mmtp_payload_fragments->mmtp_mpu_type_packet_header.mpu_data_unit_payload BEFORE : %p", mmtp_payload_fragments->mmtp_mpu_type_packet_header.mpu_data_unit_payload);
+		if(mmtp_mpu_type_packet_header.mpu_data_unit_payload) {
+			_MMTP_TRACE("mmtp_mpu_type_packet_header.mpu_data_unit_payload BEFORE : %p", mmtp_mpu_type_packet_header.mpu_data_unit_payload);
             
-			_MMTP_TRACE("mmt_mpu_free_payload: mpu_data_unit_payload: calling block_Release with: %p", &mmtp_payload_fragments->mmtp_mpu_type_packet_header.mpu_data_unit_payload);
+			_MMTP_TRACE("mmt_mpu_free_payload: mpu_data_unit_payload: calling block_Release with: %p", &mmtp_mpu_type_packet_header.mpu_data_unit_payload);
 
-			block_Release(&mmtp_payload_fragments->mmtp_mpu_type_packet_header.mpu_data_unit_payload);
-			mmtp_payload_fragments->mmtp_mpu_type_packet_header.mpu_data_unit_payload = NULL;
+			block_Release(&mmtp_mpu_type_packet_header.mpu_data_unit_payload);
+			mmtp_mpu_type_packet_header.mpu_data_unit_payload = NULL;
 		}
 	}
 

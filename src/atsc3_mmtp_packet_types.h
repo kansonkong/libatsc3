@@ -46,20 +46,20 @@ extern int _MMTP_TRACE_ENABLED;
  */
 
 
-typedef struct mmtp_sub_flow mmtp_sub_flow_t;
 
 //base header fields for separate mmt data type packets
 //TODO: jjustman-2019-08-10 - re-factor mmtp_sub_flow_t* to a more sane re-fragmentation hierarchical model
+//	mmtp_sub_flow_t*	mmtp_sub_flow;					                    \
+
     
 #define _MMTP_PACKET_HEADER_FIELDS 						                    \
                                                                             \
 	block_t*			raw_packet;						                    \
-	mmtp_sub_flow_t*	mmtp_sub_flow;					                    \
                                                                             \
     uint8_t 		    mmtp_packet_version:2; 			                    \
     uint8_t 		    packet_counter_flag:1; /* C */                      \
     uint8_t 		    fec_type:2;                                         \
-    uint8_t             __reserved_r:1;                                      \
+    uint8_t             __reserved_r:1;                                     \
                                                                             \
     uint8_t             mmtp_header_extension_flag:1;                       \
     uint8_t             mmtp_rap_flag:1;                                    \
