@@ -11,9 +11,6 @@
 int _ROUTE_MBMS_ENVELOPE_PARSER_INFO_ENABLED = 0;
 int _ROUTE_MBMS_ENVELOPE_PARSER_DEBUG_ENABLED = 0;
 
-ATSC3_VECTOR_BUILDER_METHODS_PARENT_IMPLEMENTATION(atsc3_mbms_metadata_envelope)
-ATSC3_VECTOR_BUILDER_METHODS_IMPLEMENTATION(atsc3_mbms_metadata_envelope, atsc3_mbms_metadata_item);
-
 uint32_t* atsc3_mbms_envelope_find_toi_from_fdt(atsc3_fdt_instance_t* atsc3_fdt_instance) {
 
 	for(int i=0; i < atsc3_fdt_instance->atsc3_fdt_file_v.count; i++) {

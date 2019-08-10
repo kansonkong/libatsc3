@@ -53,7 +53,8 @@ intermediate_alp: atsc3_alp_types.o atsc3_alp_parser.o
 
 intermediate_baseband: atsc3_baseband_packet_types.o 
 
-intermediate_mbms: 	atsc3_mime_multipart_related.o \
+intermediate_mbms: 	atsc3_mbms_envelope_xml.o \
+					atsc3_mime_multipart_related.o \
 					atsc3_mime_multipart_related_parser.o \
 					atsc3_route_usbd.o \
 					atsc3_mbms_envelope_parser.o
@@ -136,6 +137,9 @@ atsc3_baseband_packet_types.o: atsc3_baseband_packet_types.h atsc3_baseband_pack
 
 atsc3_alp_parser.o: atsc3_alp_types.h atsc3_alp_parser.h atsc3_alp_parser.c
 	cc -g -c atsc3_alp_parser.c 
+
+atsc3_mbms_envelope_xml.o: atsc3_mbms_envelope_xml.h atsc3_mbms_envelope_xml.c
+	cc -g -c atsc3_mbms_envelope_xml.c 
 
 atsc3_mime_multipart_related.o: atsc3_mime_multipart_related.h atsc3_mime_multipart_related.c
 	cc -g -c atsc3_mime_multipart_related.c 
@@ -270,6 +274,7 @@ atsc3_stltp_parser_test: atsc3_stltp_parser_test.c \
 
 #todo - link against libatsc3 intermediate as these are almost integration tests
 atsc3_mime_multipart_related_parser_test: atsc3_mime_multipart_related_parser_test.c \
+	atsc3_mbms_envelope_xml.o	\
 	atsc3_mime_multipart_related.o \
 	atsc3_mime_multipart_related_parser.o \
 	atsc3_sls_metadata_fragment_types_parser.o \
@@ -283,6 +288,7 @@ atsc3_mime_multipart_related_parser_test: atsc3_mime_multipart_related_parser_te
 	atsc3_mbms_envelope_parser.o \
 	xml.o
 	cc -g atsc3_mime_multipart_related_parser_test.c \
+	atsc3_mbms_envelope_xml.o	\
 	atsc3_mime_multipart_related.o \
 	atsc3_mime_multipart_related_parser.o \
 	atsc3_sls_metadata_fragment_types_parser.o \
@@ -297,6 +303,7 @@ atsc3_mime_multipart_related_parser_test: atsc3_mime_multipart_related_parser_te
 	atsc3_utils.o -o atsc3_mime_multipart_related_parser_test
 
 atsc3_fdt_mbms_envelope_test: atsc3_fdt_mbms_envelope_test.c \
+	atsc3_mbms_envelope_xml.o	\
 	atsc3_mime_multipart_related.o \
 	atsc3_mime_multipart_related_parser.o \
 	atsc3_sls_metadata_fragment_types_parser.o \
@@ -310,6 +317,7 @@ atsc3_fdt_mbms_envelope_test: atsc3_fdt_mbms_envelope_test.c \
 	atsc3_mbms_envelope_parser.o \
 	xml.o
 	cc -g atsc3_mime_multipart_related_parser_test.c \
+	atsc3_mbms_envelope_xml.o	\
 	atsc3_mime_multipart_related.o \
 	atsc3_mime_multipart_related_parser.o \
 	atsc3_sls_metadata_fragment_types_parser.o \
@@ -380,6 +388,7 @@ libatsc3_intermediate.o: atsc3_lls.o \
 		atsc3_route_sls_processor.o \
 		atsc3_sls_held_fragment.o  \
 		atsc3_sls_metadata_fragment_types_parser.o \
+		atsc3_mbms_envelope_xml.o	\	
 		atsc3_mime_multipart_related.o \
 		atsc3_mime_multipart_related_parser.o \
 		atsc3_mbms_envelope_parser.o \
@@ -429,6 +438,7 @@ libatsc3_intermediate.o: atsc3_lls.o \
 		atsc3_route_sls_processor.o \
 		atsc3_sls_held_fragment.o  \
 		atsc3_sls_metadata_fragment_types_parser.o \
+		atsc3_mbms_envelope_xml.o	\	
 		atsc3_mime_multipart_related.o \
 		atsc3_mime_multipart_related_parser.o \
 		atsc3_mbms_envelope_parser.o \
