@@ -83,8 +83,9 @@
 extern "C" {
 #endif
 
-
+mmtp_packet_header_t* mmtp_packet_header_parse_from_udp_packet_t(udp_packet_t* udp_packet);
 mmtp_packet_header_t* mmtp_packet_header_parse_from_block_t(block_t* udp_packet);
+
 void mmtp_packet_header_dump(mmtp_packet_header_t* mmtp_packet_header);
 
 /**

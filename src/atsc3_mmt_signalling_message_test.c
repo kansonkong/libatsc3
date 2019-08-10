@@ -52,22 +52,23 @@ int test_mmt_signaling_message_mpu_timestamp_descriptor_table(char* base64_paylo
 
 	__create_binary_payload(base64_payload, &binary_payload, &binary_payload_size);
 
-	mmtp_payload_fragments_union_t* mmtp_payload_fragments = calloc(1, sizeof(mmtp_payload_fragments_union_t));
+	block_t* binary_payload_block = block_Alloc(binary_payload_size);
+	block_Write(binary_payload_block, binary_payload, binary_payload_size);
 
 	uint8_t* raw_packet_ptr = NULL;
-	raw_packet_ptr = mmtp_packet_header_parse_from_raw_packet(mmtp_payload_fragments, binary_payload, binary_payload_size);
+	mmtp_packet_header_t* mmtp_packet_header = mmtp_packet_header_parse_from_block_t(binary_payload_block);
 
 	if(!raw_packet_ptr) {
-		_MMSM_ERROR("test_mmt_signaling_message_mpu_timestamp_descriptor_table - raw packet ptr is null!");
+		__MMSM_ERROR("test_mmt_signaling_message_mpu_timestamp_descriptor_table - raw packet ptr is null!");
 		return -1;
 	}
-	uint8_t new_size = binary_payload_size - (raw_packet_ptr - binary_payload);
-	raw_packet_ptr = mmt_signaling_message_parse_packet_header(mmtp_payload_fragments, raw_packet_ptr, new_size);
+	uint8_t new_size = block_Remaining_size(binary_payload_block);
 
-	new_size = binary_payload_size - (raw_packet_ptr - binary_payload);
-	raw_packet_ptr = mmt_signaling_message_parse_packet(mmtp_payload_fragments, raw_packet_ptr, new_size);
+	mmtp_signalling_packet_t* mmtp_signalling_packet = mmt_signalling_message_parse_packet_header(mmtp_packet_header, binary_payload_block);
 
-	signaling_message_dump(mmtp_payload_fragments);
+	mmt_signalling_message_parse_packet(mmtp_signalling_packet, binary_payload_block);
+
+	signalling_message_dump(mmtp_signalling_packet);
 
 	return 0;
 }
