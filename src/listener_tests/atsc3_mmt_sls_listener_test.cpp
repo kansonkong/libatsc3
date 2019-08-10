@@ -51,31 +51,13 @@ uint32_t* dst_ip_addr_filter = NULL;
 uint16_t* dst_ip_port_filter = NULL;
 uint16_t* dst_packet_id_filter = NULL;
 
-// lls and alc glue for slt, contains lls_table_slt and lls_slt_alc_session
-
 lls_slt_monitor_t* lls_slt_monitor;
 
-//make sure to invoke     mmtp_sub_flow_vector_init(&p_sys->mmtp_sub_flow_vector);
-mmtp_sub_flow_vector_t*                          mmtp_sub_flow_vector;
-udp_flow_latest_mpu_sequence_number_container_t* udp_flow_latest_mpu_sequence_number_container;
+mmtp_packet_header_t*  mmtp_parse_header_from_udp_packet(udp_packet_t* udp_packet) {
 
-/** create some dummy stub symbols so we don't link in the full alc processing
- *
-Undefined symbols for architecture x86_64:
-  "_lls_sls_alc_session_vector_create", referenced from:
-      _lls_slt_monitor_create in atsc3_lls_slt_parser.o
-  "_lls_slt_alc_session_find_or_create", referenced from:
-      _lls_slt_table_process_update in atsc3_lls_slt_parser.o
-  "_lls_slt_alc_session_remove", referenced from:
-      _lls_slt_table_process_update in atsc3_lls_slt_parser.o
-ld: symbol(s) not found for architecture x86_64
- */
+	mmtp_packet_header_t* mmtp_packet_header = mmtp_packet_header_parse_from_udp_packet_t(udp_packet);
 
-mmtp_payload_fragments_union_t* mmtp_parse_from_udp_packet(udp_packet_t *udp_packet) {
-
-    mmtp_payload_fragments_union_t* mmtp_payload = mmtp_packet_parse(mmtp_sub_flow_vector, udp_packet);
-
-    if(!mmtp_payload) {
+    if(!mmtp_packet_header) {
         __ERROR("mmtp_packet_parse: raw packet ptr is null, parsing failed for flow: %d.%d.%d.%d:(%-10u):%-5u \t ->  %d.%d.%d.%d:(%-10u):%-5u ",
                 __toipandportnonstruct(udp_packet->udp_flow.src_ip_addr, udp_packet->udp_flow.src_port),
                 udp_packet->udp_flow.src_ip_addr,
@@ -84,22 +66,17 @@ mmtp_payload_fragments_union_t* mmtp_parse_from_udp_packet(udp_packet_t *udp_pac
         return NULL;
     }
 
-    return mmtp_payload;
+    return mmtp_packet_header;
 }
 
-void mmtp_process_sls_from_payload(udp_packet_t *udp_packet, mmtp_payload_fragments_union_t** mmtp_payload_p, lls_sls_mmt_session_t* matching_lls_slt_mmt_session) {
-	mmtp_payload_fragments_union_t* mmtp_payload = * mmtp_payload_p;
-//
-//    mpu_data_unit_payload_fragments_t* data_unit_payload_types = NULL;
-//    mpu_data_unit_payload_fragments_timed_vector_t* data_unit_payload_fragments = NULL; //technically this is mpu_fragments->media_fragment_unit_vector
-//    mpu_data_unit_payload_fragments_t* mpu_metadata_fragments =    NULL;
-//    mpu_data_unit_payload_fragments_t* movie_metadata_fragments  = NULL;
-//    mmtp_sub_flow_t* mmtp_sub_flow = NULL;
-//
-	__INFO("processing mmt flow: %d.%d.%d.%d:(%u) packet_id: 0, signalling message", __toipandportnonstruct(udp_packet->udp_flow.dst_ip_addr, udp_packet->udp_flow.dst_port));
-	//mmtp_payload->mmtp_signalling_message_fragments.payload
-	signaling_message_dump(mmtp_payload);
+void mmtp_process_sls_from_payload(udp_packet_t *udp_packet, mmtp_signalling_packet_t* mmtp_signalling_packet, lls_sls_mmt_session_t* matching_lls_slt_mmt_session) {
 
+	__INFO("processing mmt flow: %d.%d.%d.%d:(%u) packet_id: %d, signalling message: %p",
+			__toipandportnonstruct(udp_packet->udp_flow.dst_ip_addr, udp_packet->udp_flow.dst_port),
+			mmtp_signalling_packet->mmtp_packet_id,
+			mmtp_signalling_packet);
+
+	signalling_message_dump(mmtp_signalling_packet);
 }
 
 void process_packet(u_char *user, const struct pcap_pkthdr *pkthdr, const u_char *packet) {
@@ -127,13 +104,13 @@ void process_packet(u_char *user, const struct pcap_pkthdr *pkthdr, const u_char
 
     lls_sls_mmt_session_t* matching_lls_slt_mmt_session = lls_slt_mmt_session_find_from_udp_packet(lls_slt_monitor, udp_packet->udp_flow.src_ip_addr, udp_packet->udp_flow.dst_ip_addr, udp_packet->udp_flow.dst_port);
     if(matching_lls_slt_mmt_session) {
-        mmtp_payload_fragments_union_t * mmtp_payload = mmtp_parse_from_udp_packet(udp_packet);
-        if(mmtp_payload && mmtp_payload->mmtp_packet_header->mmtp_payload_type == 0x02) {
-        	// && mmtp_payload->mmtp_signalling_message_fragments.mmtp_packet_id == 0) {
-            mmtp_process_sls_from_payload(udp_packet, &mmtp_payload, matching_lls_slt_mmt_session);
+
+    	mmtp_packet_header_t* mmtp_packet_header = mmtp_parse_header_from_udp_packet(udp_packet);
+        if(mmtp_packet_header && mmtp_packet_header->mmtp_payload_type == 0x02) {
+
+        	mmtp_signalling_packet_t* mmtp_signalling_packet = mmt_signalling_message_parse_packet_header_udp_packet_t(mmtp_packet_header, udp_packet);
+        	mmtp_process_sls_from_payload(udp_packet, mmtp_signalling_packet, matching_lls_slt_mmt_session);
         }
-        mmtp_payload_fragments_union_free(&mmtp_payload);
-        mmtp_payload = NULL;
 
         return cleanup(&udp_packet);
 	}
@@ -258,10 +235,6 @@ int main(int argc,char **argv) {
     }
 
     /** setup global structs **/
-
-    mmtp_sub_flow_vector = (mmtp_sub_flow_vector_t*)calloc(1, sizeof(*mmtp_sub_flow_vector));
-    mmtp_sub_flow_vector_init(mmtp_sub_flow_vector);
-    udp_flow_latest_mpu_sequence_number_container = udp_flow_latest_mpu_sequence_number_container_t_init();
 
     lls_slt_monitor = lls_slt_monitor_create();
 
