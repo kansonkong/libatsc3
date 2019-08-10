@@ -10,10 +10,11 @@
 #ifndef MODULES_DEMUX_MMT_MMTP_TYPES_H_
 #define MODULES_DEMUX_MMT_MMTP_TYPES_H_
 
-#include "atsc3_vector.h"
+//#include "atsc3_vector.h"
+
+#include "atsc3_vector_builder.h"
 #include "atsc3_mmtp_ntp32_to_pts.h"
 #include "atsc3_mmt_signalling_message_types.h"
-
 
 #ifdef __cplusplus
 extern "C" {
@@ -22,22 +23,13 @@ extern "C" {
 extern int _MMTP_DEBUG_ENABLED;
 extern int _MMTP_TRACE_ENABLED;
 
-
-
 #define MIN_MMTP_SIZE 32
 #define MAX_MMTP_SIZE 1514
 
 //packet type=v0/v1 have an upper bound of ~1432
 #define UPPER_BOUND_MPU_FRAGMENT_SIZE 1432
 
-//
 #define MPU_REASSEMBLE_MAX_BUFFER 8192000
-
-/**
- *
- * these sizes aren't bit-aligned to the 23008-1 spec, but they are right-shifted to LSB values
- *
- */
 
 /**
  * base mmtp_packet_header fields
@@ -53,135 +45,232 @@ extern int _MMTP_TRACE_ENABLED;
 
 typedef struct mmtp_sub_flow mmtp_sub_flow_t;
 
-#define _MMTP_PACKET_HEADER_FIELDS 						\
-	block_t*			raw_packet;						\
-	mmtp_sub_flow_t*	mmtp_sub_flow;					\
-	uint8_t 		    mmtp_packet_version; 			\
-	uint8_t 		    packet_counter_flag; 			\
-	uint8_t 		    fec_type; 						\
-	uint8_t 		    mmtp_payload_type;				\
-	uint8_t			    mmtp_header_extension_flag;		\
-	uint8_t 		    mmtp_rap_flag;					\
-	uint8_t 		    mmtp_qos_flag;					\
-	uint8_t 		    mmtp_flow_identifer_flag;		\
-	uint8_t 		    mmtp_flow_extension_flag;		\
-	uint8_t 		    mmtp_header_compression;		\
-	uint8_t			    mmtp_indicator_ref_header_flag;	\
-	uint8_t 		    mmtp_type_of_bitrate;			\
-	uint8_t 		    mmtp_delay_sensitivity;			\
-	uint8_t 		    mmtp_transmission_priority;		\
-	uint8_t 		    flow_label;						\
-	uint16_t		    mmtp_header_extension_type;		\
-	uint16_t		    mmtp_header_extension_length;	\
-	uint8_t*		    mmtp_header_extension_value;	\
-	uint16_t		    mmtp_packet_id; 				\
-	uint32_t		    mmtp_timestamp;					\
-	uint16_t		    mmtp_timestamp_s;				\
-	uint16_t		    mmtp_timestamp_us;				\
-	uint32_t		    packet_sequence_number;			\
-	uint32_t		    packet_counter;					\
-
-//DO NOT REFERENCE INTEREMDIATE STRUCTS DIRECTLY
-typedef struct {
+//base header fields for separate mmt data type payloads
+//TODO: jjustman-2019-08-10 - re-factor mmtp_sub_flow_t* to a more sane re-fragmentation hierarchical model
+    
+#define _MMTP_PACKET_HEADER_FIELDS 						                    \
+                                                                            \
+	block_t*			raw_packet;						                    \
+	mmtp_sub_flow_t*	mmtp_sub_flow;					                    \
+                                                                            \
+    uint8_t 		    mmtp_packet_version:2; 			                    \
+    uint8_t 		    packet_counter_flag:1; /* C */                      \
+    uint8_t 		    fec_type:2;                                         \
+    uint8_t             __reserved_r:1;                                      \
+                                                                            \
+    uint8_t             mmtp_header_extension_flag:1;                       \
+    uint8_t             mmtp_rap_flag:1;                                    \
+    uint8_t             __reserved_res:2;                                   \
+                                                                            \
+    uint8_t             mmtp_header_compression:1;                          \
+    uint8_t             mmtp_indicator_ref_header_flag:1;                   \
+    uint8_t 		    mmtp_payload_type:6; /*for v=0 compat*/	            \
+    uint16_t            mmtp_packet_id;                                     \
+    uint32_t            packet_sequence_number;                             \
+    uint32_t            mmtp_timestamp;                                     \
+                                                                            \
+    uint16_t            mmtp_timestamp_s; /*ntp-mapped into s*/             \
+    uint16_t            mmtp_timestamp_us; /*ntp-frac.into ms*/             \
+                                                                            \
+    uint32_t            packet_counter; /* opt, reqires C abv*/             \
+    uint32_t            source_fec_payload_id; /* opt, req fec_type=1 */    \
+                                                                            \
+    uint16_t            mmtp_header_extension_type; /* opt hdr_ex block*/   \
+    uint16_t            mmtp_header_extension_length;                       \
+    uint8_t*            mmtp_header_extension_value;                        \
+                                                                            \
+    uint8_t 		    mmtp_qos_flag:1;            /* Q */		            \
+    uint8_t 		    mmtp_flow_identifer_flag:1; /* F */		            \
+    uint8_t 		    mmtp_flow_extension_flag:1;	/* E */     	        \
+    uint8_t             mmtp_reliability_flag:1;    /* r */                 \
+    uint8_t             mmtp_type_of_bitrate:2;     /* TB */                \
+    uint8_t             mmtp_delay_sensitivity:3;   /* DS */                \
+                                                                            \
+    uint8_t             mmtp_transmission_priority:3; /* TP */              \
+    uint8_t 		    flow_label:7;
+    
+typedef struct mmtp_packet_header {
 	_MMTP_PACKET_HEADER_FIELDS;
-} __mmtp_packet_header_fields_t;
+} mmtp_packet_header_t;
 
 //define for mpu type common header fields for struct inheritance
-//todo: add in MMTHSample box
 
-#define _MMTP_MPU_TYPE_PACKET_HEADER_FIELDS \
-	_MMTP_PACKET_HEADER_FIELDS;				\
-	uint16_t mpu_payload_length;			\
-	uint8_t mpu_fragment_type;				\
-	uint8_t mpu_timed_flag;					\
-	uint8_t mpu_fragmentation_indicator;	\
-	uint8_t mpu_aggregation_flag;			\
-	uint8_t mpu_fragmentation_counter;		\
-	uint32_t mpu_sequence_number;			\
-	uint16_t data_unit_length;				\
-	block_t* mpu_data_unit_payload;			\
+#define _MMTP_MPU_PACKET_HEADER_FIELDS                  \
+                                                        \
+	_MMTP_PACKET_HEADER_FIELDS;				            \
+                                                        \
+	uint16_t    mpu_payload_length;			            \
+    uint8_t     mpu_fragment_type:4;	                \
+                                                        \
+    /* note, iso23008-1 is NOT NORMATIVE when    */     \
+    /* defining FT ordering, it SHOULD be:       */     \
+    /*                                           */     \
+    /* FT=0     MPU Metadata                     */     \
+    /* FT=2     MFU Emission (sample/frame)      */     \
+    /* FT=2     MFU Emission (sample/frame)      */     \
+    /* ...      ....                             */     \
+    /* FT=1     Movie Fragment Metadata          */     \
+    /* ----     -----------------------          */     \
+    /* NOTE     FT=1 fragment type can be built  */     \
+    /*          from the MFU mmthsample hint     */     \
+    /*          header payload that prefixes     */     \
+    /*          every MFU sample payload (fi=0)  */     \
+    /*          and FT=1 IS NOT NEEDED FOR       */     \
+    /*          MMT OOO MODE!                    */     \
+                                                        \
+    uint8_t     mpu_timed_flag:1;	           /* T  */ \
+    uint8_t     mpu_fragmentation_indicator:2; /* fi */	\
+                                                        \
+    uint8_t     mpu_aggregation_flag:1;        /* A */  \
+	uint8_t     mpu_fragment_counter;		            \
+	uint32_t    mpu_sequence_number;			        \
+	uint16_t    data_unit_length;                       \
+    block_t*    mpu_data_unit_payload;
 
-//DO NOT REFERENCE INTEREMDIATE STRUCTS DIRECTLY
-typedef struct {
+
+/* only use temporarly */
+typedef struct mmtp_mpu_packet_header {
 	_MMTP_MPU_TYPE_PACKET_HEADER_FIELDS;
-} __mmtp_mpu_type_packet_header_fields_t;
+} mmtp_mpu_packet_header_t;
 
-//DO NOT REFERENCE INTEREMDIATE STRUCTS DIRECTLY
-typedef struct {
-	uint8_t multilayer_flag:1;
-	uint8_t reserved;
-
-} mmthsample_muli_box_t;
 /**
- * iso23008 - section 8.3 - sample format
- * from mmthsample anononmous box
- *
- */
-typedef struct {
-	_MMTP_MPU_TYPE_PACKET_HEADER_FIELDS;
+TODO: move this into atsc3_mmtp_mpu_sample_types.h
+ does not belong as __mpu_data_unit_payload_fragments_timed_t
+ **/
+    
+    /* ISO23008-1:2017, Section 8.3 - Sample Format */
+    
+typedef struct atsc3_mmt_multiLayerInfoBox {
+    uint8_t multilayer_flag:1;
+    uint8_t reserved0:7;
+/* if (multilayer_flag == 1) { */
+        uint8_t     dependency_id:3;
+        uint8_t     depth_flag:1;
+        uint8_t     reserved1:4;
+        uint8_t     temporal_id:3;
+        uint8_t     reserved2:1;
+        uint8_t     quality_id:4;
+        uint8_t     priority_id:6;
+        uint16_t    view_id:10;
+/* } else { */
+        uint8_t     layer_id:6;
+        uint8_t     temporal_id:3;
+        uint8_t     reserved3:7;
+/* } */
+} atsc3_mmt_multiLayerInfoBox_t;
+    
+typedef struct mmthsample_header {
+    uint32_t    sequence_number;
+/* if timed { */
+        int8_t                          trackrefindex;
+        uint32_t                        movie_fragment_sequence_number;
+        uint32_t                        samplenumber;
+        uint8_t                         priority;
+        uint8_t                         dependency_counter;
+        uint32_t                        offset;
+        uint32_t                        length;
+        atsc3_mmt_multiLayerInfoBox_t   atsc3_mmt_multiLayerInfoBox;
+/* } else { */
+        uint16_t                        item_id;
+/* } */
+} mmthsample_header_t;
+    
+    
+//
+//typedef struct {
+//
+//    uint32_t     mmth_sequence_number;
+//    uint8_t     mmth_trackrefindex;
+//    uint32_t     mmth_movie_fragment_sequence_number;
+//    uint32_t     mmth_samplenumber;
+//    uint8_t      mmth_priority;
+//    uint8_t      mmth_dependency_counter;
+//    uint32_t     mmth_offset;
+//    uint32_t     mmth_length;
+//    mmthsample_muli_box_t mmth_muli;
+//
+//    uint64_t pts;
+//    uint64_t last_pts;
+//} __mpu_data_unit_payload_fragments_timed_t;
 
-	uint32_t 	mpu_movie_fragment_sequence_number;
-	uint32_t	mpu_sample_number;
-	uint32_t	mpu_offset;
-	uint8_t		mpu_priority;
-	uint8_t 	mpu_dep_counter;
+/**
+ 
+ MMTP payload vs. packet philosophy:
+ 
+    raw structs are fragment payloads
+    re-fragmented logical units are 'packets'
+ 
+    For payload_type = 0x0 - MPU, the structure is as follows:
+ 
+ An Asset (asset_id) {
+    which contains a collection of:
+ 
+    mmtp_packet (packet_id) {
+        which contains a collection of:
+ 
+        mpu_sequence (mpu_sequence_number) {
+            which contains a collection of:
+ 
+            mfu_sample (samplenumber) {
+                which contains a collection of:
+ 
+                mfu_fragment (fragment_counter) {
+                    which contains a collection of:
+ 
+                    block_t bytes;
+ 
+ **/
+    
+typedef struct mmtp_mpu_payload {
+    _MMTP_MPU_TYPE_PACKET_HEADER_FIELDS;
+    uint32_t    movie_fragment_sequence_number;
+    uint32_t    sample_number;
+    uint32_t    offset;
+    uint8_t     priority;
+    uint8_t     dep_counter;
+    
+    //todo: other attributes for re-fragmentation should be under the
+    //  mpu_sample,
+    //      and then mpu_fragments based upon mpu_fragmentation_counter
+} mmtp_mpu_payload_t;
 
-    uint32_t    mfu_mmth_sample_header_size;
-	//MMTHSample hint fields
-	uint32_t 	mmth_sequence_number;
-	uint8_t 	mmth_trackrefindex;
-	uint32_t 	mmth_movie_fragment_sequence_number;
-	uint32_t 	mmth_samplenumber;
-	uint8_t  	mmth_priority;
-	uint8_t  	mmth_dependency_counter;
-	uint32_t 	mmth_offset;
-	uint32_t 	mmth_length;
-	mmthsample_muli_box_t mmth_muli;
-
-	uint64_t pts;
-	uint64_t last_pts;
-} __mpu_data_unit_payload_fragments_timed_t;
-
-//DO NOT REFERENCE INTEREMDIATE STRUCTS DIRECTLY
-typedef struct {
-	_MMTP_MPU_TYPE_PACKET_HEADER_FIELDS;
-	uint32_t non_timed_mfu_item_id;
-
-} __mpu_data_unit_payload_fragments_nontimed_t;
-
-//DO NOT REFERENCE INTEREMDIATE STRUCTS DIRECTLY
-typedef struct {
+typedef struct mmtp_signalling_packet {
 	_MMTP_PACKET_HEADER_FIELDS;
 
-} __generic_object_fragments_t;
+    uint8_t		si_fragmentation_indiciator:2;  /* f_i */
+    uint8_t     si_res:4;                       /* res */
+    uint8_t		si_additional_length_header:1;  /* H */
+    uint8_t		si_aggregation_flag:1; 		    /* A */
+    uint8_t		si_fragmentation_counter:8;     /* frag_counter */
+    uint16_t	si_aggregation_message_length;  /* if A==0, field is omitted, otherwise,
+                                                    16 + 16*H bits is repeated after every MSG_payload */
+   //mmt_signalling_message_vector_t mmt_signalling_message_vector;
+    ATSC3_VECTOR_BUILDER_STRUCT(mmt_signalling_message_header_and_payload);
+} mmtp_signalling_packet_t;
 
-//DO NOT REFERENCE INTEREMDIATE STRUCTS DIRECTLY
-typedef struct {
+    
+//atsc3 does not use nontimed mpu's, so...just for posterity's sake
+typedef struct mmtp_mpu_packet_nontimed {
+    _MMTP_MPU_TYPE_PACKET_HEADER_FIELDS;
+    uint32_t        non_timed_mfu_item_id;
+} mmtp_mpu_packet_nontimed_t;
+
+//atsc3 does not use generic_object, so...just for posterity's sake
+typedef struct mmtp_generic_object_packet {
+    _MMTP_PACKET_HEADER_FIELDS;
+} mmtp_generic_object_packet_t;
+
+//atsc3 does not use generic_object, so...just for posterity's sake
+typedef struct mmtp_repair_symbol {
 	_MMTP_PACKET_HEADER_FIELDS;
+} mmtp_repair_symbol_packet_t;
 
-	//special mmtp payload header fields, these do not align with the bit specs in 23008-1, but are in logical order
-	uint8_t		si_fragmentation_indiciator; //2 bits,
-	uint8_t		si_additional_length_header; //1 bit
-	uint8_t		si_aggregation_flag; 		 //1 bit
-	uint8_t		si_fragmentation_counter;    //8 bits
-	uint16_t	si_aggregation_message_length; //only set if si_aggregation_flag==1
-	mmt_signalling_message_vector_t mmt_signalling_message_vector;
-
-} __signalling_message_fragments_t;
-
-//DO NOT REFERENCE INTEREMDIATE STRUCTS DIRECTLY
-typedef struct {
-	_MMTP_PACKET_HEADER_FIELDS;
-
-} __repair_symbol_t;
-//DO NOT REFERENCE INTEREMDIATE STRUCTS DIRECTLY
-
-
-//YOU CAN REFERENCE mmtp_payload_fragments_union_t* ONLY
-//todo - convert this to discriminated union
-typedef union mmtp_payload_fragments_union {
-	__mmtp_packet_header_fields_t					mmtp_packet_header;
-	__mmtp_mpu_type_packet_header_fields_t			mmtp_mpu_type_packet_header;
+typedef union mmtp_packet_id_payload_container {
+    uint16_t    packet_id;
+    
+    
+    //mmtp_packet_header_t		        mmtp_packet_header;
+	//mmtp_mpu_packet_header_t			mmtp_mpu_type_packet_header;
 
 	__mpu_data_unit_payload_fragments_timed_t 		mpu_data_unit_payload_fragments_timed;
 	__mpu_data_unit_payload_fragments_nontimed_t	mpu_data_unit_payload_fragments_nontimed;

@@ -313,21 +313,18 @@ typedef struct mmt_scte35_message_payload {
 	ATSC3_VECTOR_BUILDER_STRUCT(mmt_scte35_signal_descriptor)
 } mmt_scte35_message_payload_t;
 
+/*..fix me..*/
+
 typedef union mmt_signalling_message_type {
 	mmt_atsc3_message_payload_t			mmt_atsc3_message_payload;
 	mp_table_t							mp_table;
 	mmt_scte35_message_payload_t		mmt_scte35_message_payload;
 } mmt_signalling_message_payload_u;
 
-
-typedef struct mmt_signalling_message_id_type {
+typedef struct mmt_signalling_message_header_and_payload {
 	mmt_signalling_message_header_t 	message_header;
 	mmt_signalling_message_payload_u 	message_payload;
 } mmt_signalling_message_header_and_payload_t;
 
-typedef struct mmt_signalling_message_vector {
-	int 											messages_n;
-	mmt_signalling_message_header_and_payload_t** 	messages;
-} mmt_signalling_message_vector_t;
 
 #endif /* ATSC3_MMT_SIGNALLING_MESSAGE_TYPES_H_ */

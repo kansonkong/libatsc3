@@ -505,7 +505,6 @@ void ISOBMFF_track_joiner_monitor_output_buffer_parse_and_build_joined_mmt_rebui
     }
 
     //re-write out our isobmff track..
-
 	for (it = isobmff_atom_list.begin(); it != isobmff_atom_list.end(); it++) {
 		AP4_Atom* top_level_atom = (*it)->atom;
         if(top_level_atom->GetType() == AP4_ATOM_TYPE_MDAT) {
@@ -514,6 +513,14 @@ void ISOBMFF_track_joiner_monitor_output_buffer_parse_and_build_joined_mmt_rebui
 		top_level_atom->Write(*memoryOutputByteStream);
 	}
      
+     //release isobmff_atom_list entries and container
+     for (it = isobmff_atom_list.begin(); it != isobmff_atom_list.end(); it++) {
+         if((*it)->atom) {
+             delete (*it)->atom;
+         }
+         delete (*it);
+    }
+    isobmff_atom_list.clear();
      
     if(!mdat_atom_and_offset_written) {
         __ISOBMFF_JOINER_DEBUG("WARNING: mdat_atom_and_offset_written is NULL, manually writing out last known good MDAT!");
@@ -603,8 +610,6 @@ list<AP4_Atom_And_Offset*> ISOBMFFTrackParseAndBuildOffset(AP4_MemoryByteStream*
     AP4_Atom* atom;
 
     //AP4_DataBuffer* dataBuffer = new AP4_DataBuffer(isobmff_track_block->p_buffer, isobmff_track_block->i_pos);
-
-
     // inspect the atoms one by one
     AP4_Position start_position;
     AP4_Position end_position;
@@ -1277,16 +1282,17 @@ void parseAndBuildJoinedBoxes_from_lls_sls_monitor_output_buffer(lls_sls_monitor
 		if((*it)->atom) {
 			delete (*it)->atom;
 		}
-		free (*it);
+		delete (*it);
 	}
+    audio_isobmff_atom_list.clear();
 
 	for (it = video_isobmff_atom_list.begin(); it != video_isobmff_atom_list.end(); it++) {
 		if((*it)->atom) {
 			delete (*it)->atom;
 		}
-		free (*it);
+		delete (*it);
 	}
-
+    video_isobmff_atom_list.clear();
     
     //cleanup
     delete (AP4_ByteStream*) audioOutputMemoryByteStream;
