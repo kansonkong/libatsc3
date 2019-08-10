@@ -96,9 +96,10 @@ raw base64 payload:
 mmt_signalling_message_header_and_payload_t* mmt_signalling_message_header_and_payload_create(uint16_t message_id, uint8_t version);
 
 mmtp_signalling_packet_t* mmt_signalling_message_parse_packet_header_udp_packet_t(mmtp_packet_header_t* mmtp_packet_header, udp_packet_t* udp_packet);
-mmtp_signalling_packet_t* mmt_signalling_message_parse_packet_header(mmtp_packet_header_t* mmtp_packet_header, block_t* udp_packet);
+mmtp_signalling_packet_t* mmt_signalling_message_parse_packet_header(mmtp_packet_header_t* mmtp_packet_header, block_t* udp_packet_block);
 
-uint8_t* mmt_signalling_message_parse_packet(mmtp_signalling_packet_t* mmtp_signalling_packet, block_t* udp_packet);
+uint8_t* mmt_signalling_message_parse_packet_udp_packet_t(mmtp_signalling_packet_t* mmtp_signalling_packet, udp_packet_t* udp_packet);
+uint8_t* mmt_signalling_message_parse_packet(mmtp_signalling_packet_t* mmtp_signalling_packet, block_t* udp_packet_block);
 
 //todo: migrate this to block_t
 //uint8_t* mmt_signaling_message_parse_id_type(mmtp_signalling_packet_t* mmtp_signalling_packet, block_t* udp_packete);
