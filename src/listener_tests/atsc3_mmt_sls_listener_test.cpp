@@ -128,7 +128,7 @@ void process_packet(u_char *user, const struct pcap_pkthdr *pkthdr, const u_char
     lls_sls_mmt_session_t* matching_lls_slt_mmt_session = lls_slt_mmt_session_find_from_udp_packet(lls_slt_monitor, udp_packet->udp_flow.src_ip_addr, udp_packet->udp_flow.dst_ip_addr, udp_packet->udp_flow.dst_port);
     if(matching_lls_slt_mmt_session) {
         mmtp_payload_fragments_union_t * mmtp_payload = mmtp_parse_from_udp_packet(udp_packet);
-        if(mmtp_payload && mmtp_payload->mmtp_packet_header.mmtp_payload_type == 0x02) {
+        if(mmtp_payload && mmtp_payload->mmtp_packet_header->mmtp_payload_type == 0x02) {
         	// && mmtp_payload->mmtp_signalling_message_fragments.mmtp_packet_id == 0) {
             mmtp_process_sls_from_payload(udp_packet, &mmtp_payload, matching_lls_slt_mmt_session);
         }

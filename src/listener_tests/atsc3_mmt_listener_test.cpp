@@ -80,25 +80,25 @@ void process_packet(u_char *user, const struct pcap_pkthdr *pkthdr, const u_char
 
 
 			//for filtering MMT flows by a specific packet_id
-			if(dst_packet_id_filter && *dst_packet_id_filter != mmtp_payload->mmtp_packet_header.mmtp_packet_id) {
+			if(dst_packet_id_filter && *dst_packet_id_filter != mmtp_payload->mmtp_packet_header->mmtp_packet_id) {
 				goto cleanup;
 			}
 
 			//dump header, then dump applicable packet type
 			//mmtp_packet_header_dump(mmtp_payload);
 
-			if(mmtp_payload->mmtp_packet_header.mmtp_payload_type == 0x0) {
+			if(mmtp_payload->mmtp_packet_header->mmtp_payload_type == 0x0) {
 
 				if(mmtp_payload->mmtp_mpu_type_packet_header.mpu_timed_flag == 1) {
 					mpu_dump_header(mmtp_payload);
 				} else {
 					//non-timed
-					_MMTP_WARN("mmtp_packet_parse: non-timed payload: packet_id: %u", mmtp_payload->mmtp_packet_header.mmtp_packet_id);
+					_MMTP_WARN("mmtp_packet_parse: non-timed payload: packet_id: %u", mmtp_payload->mmtp_packet_header->mmtp_packet_id);
 				}
-			} else if(mmtp_payload->mmtp_packet_header.mmtp_payload_type == 0x2) {
+			} else if(mmtp_payload->mmtp_packet_header->mmtp_payload_type == 0x2) {
 				signaling_message_dump(mmtp_payload);
 			} else {
-				_MMTP_WARN("mmtp_packet_parse: unknown payload type of 0x%x", mmtp_payload->mmtp_packet_header.mmtp_payload_type);
+				_MMTP_WARN("mmtp_packet_parse: unknown payload type of 0x%x", mmtp_payload->mmtp_packet_header->mmtp_payload_type);
 				goto cleanup;
 			}
 		}

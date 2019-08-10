@@ -604,15 +604,15 @@
 //    //create a sub_flow with this packet_id
 //    __LOG_DEBUG( p_demux, "%d:mmtp_demuxer, after mmtp_packet_header_parse_from_raw_packet, mmtp_packet_id is: %d, mmtp_payload_type: 0x%x, packet_counter: %d, remaining len: %d, mmtp_raw_packet_size: %d, buf: %p, raw_buf:%p",
 //            __LINE__,
-//            mmtp_packet_header->mmtp_packet_header.mmtp_packet_id,
-//            mmtp_packet_header->mmtp_packet_header.mmtp_payload_type,
-//            mmtp_packet_header->mmtp_packet_header.packet_counter,
+//            mmtp_packet_header->mmtp_packet_header->mmtp_packet_id,
+//            mmtp_packet_header->mmtp_packet_header->mmtp_payload_type,
+//            mmtp_packet_header->mmtp_packet_header->packet_counter,
 //            (mmtp_raw_packet_size - (buf - raw_buf)),
 //            mmtp_raw_packet_size,
 //            buf,
 //            raw_buf);
 //
-//    mmtp_sub_flow = mmtp_sub_flow_vector_get_or_set_packet_id(mmtp_sub_flow_vector, mmtp_packet_header->mmtp_packet_header.mmtp_packet_id);
+//    mmtp_sub_flow = mmtp_sub_flow_vector_get_or_set_packet_id(mmtp_sub_flow_vector, mmtp_packet_header->mmtp_packet_header->mmtp_packet_id);
 //    __LOG_DEBUG( p_demux, "%d:mmtp_demuxer - mmtp_sub_flow is: %p, mmtp_sub_flow->mpu_fragments: %p", __LINE__, mmtp_sub_flow, mmtp_sub_flow->mpu_fragments);
 //
 //    //push this to the proper fragment container, continue parsing below
@@ -621,35 +621,35 @@
 //    //if our header extension length is set, then block extract the header extension length, adn we should be at our payload data
 //    uint8_t *mmtp_header_extension_value = NULL;
 //
-//    if(mmtp_packet_header->mmtp_packet_header.mmtp_header_extension_flag & 0x1) {
+//    if(mmtp_packet_header->mmtp_packet_header->mmtp_header_extension_flag & 0x1) {
 //        //clamp mmtp_header_extension_length
-//        mmtp_packet_header->mmtp_packet_header.mmtp_header_extension_length = MIN(mmtp_packet_header->mmtp_packet_header.mmtp_header_extension_length, 2^16);
+//        mmtp_packet_header->mmtp_packet_header->mmtp_header_extension_length = MIN(mmtp_packet_header->mmtp_packet_header->mmtp_header_extension_length, 2^16);
 //
 //        __LOG_DEBUG( p_demux, "mmtp_header_extension_flag, header extension size: %d, packet version: %d, payload_type: 0x%X, packet_id 0x%hu, timestamp: 0x%X, packet_sequence_number: 0x%X, packet_counter: 0x%X",
-//                mmtp_packet_header->mmtp_packet_header.mmtp_packet_version,
-//                mmtp_packet_header->mmtp_packet_header.mmtp_header_extension_length,
-//                mmtp_packet_header->mmtp_packet_header.mmtp_payload_type,
-//                mmtp_packet_header->mmtp_packet_header.mmtp_packet_id,
-//                mmtp_packet_header->mmtp_packet_header.mmtp_timestamp,
-//                mmtp_packet_header->mmtp_packet_header.packet_sequence_number,
-//                mmtp_packet_header->mmtp_packet_header.packet_counter);
+//                mmtp_packet_header->mmtp_packet_header->mmtp_packet_version,
+//                mmtp_packet_header->mmtp_packet_header->mmtp_header_extension_length,
+//                mmtp_packet_header->mmtp_packet_header->mmtp_payload_type,
+//                mmtp_packet_header->mmtp_packet_header->mmtp_packet_id,
+//                mmtp_packet_header->mmtp_packet_header->mmtp_timestamp,
+//                mmtp_packet_header->mmtp_packet_header->packet_sequence_number,
+//                mmtp_packet_header->mmtp_packet_header->packet_counter);
 //
-//        mmtp_packet_header->mmtp_packet_header.mmtp_header_extension_value = malloc(mmtp_packet_header->mmtp_packet_header.mmtp_header_extension_length);
+//        mmtp_packet_header->mmtp_packet_header->mmtp_header_extension_value = malloc(mmtp_packet_header->mmtp_packet_header->mmtp_header_extension_length);
 //        //read the header extension value up to the extension length field 2^16
-//        buf = extract(buf, &mmtp_packet_header->mmtp_packet_header.mmtp_header_extension_value, mmtp_packet_header->mmtp_packet_header.mmtp_header_extension_length);
+//        buf = extract(buf, &mmtp_packet_header->mmtp_packet_header->mmtp_header_extension_value, mmtp_packet_header->mmtp_packet_header->mmtp_header_extension_length);
 //    }
 //
-//    if(mmtp_packet_header->mmtp_packet_header.mmtp_payload_type == 0x1) {
+//    if(mmtp_packet_header->mmtp_packet_header->mmtp_payload_type == 0x1) {
 //        msg_Warn(p_demux, "%d:mmtp_payload_type: DROPPING payload: 0x1 - generic object", __LINE__);
 //        goto done;
 //    }
 //
-//    if(mmtp_packet_header->mmtp_packet_header.mmtp_payload_type == 0x2) {
+//    if(mmtp_packet_header->mmtp_packet_header->mmtp_payload_type == 0x2) {
 //        msg_Warn(p_demux, "%d:mmtp_payload_type: DROPPING payload: 0x2 - signalling message", __LINE__);
 //        goto done;
 //    }
 //
-//    if(mmtp_packet_header->mmtp_packet_header.mmtp_payload_type == 0x0) {
+//    if(mmtp_packet_header->mmtp_packet_header->mmtp_payload_type == 0x0) {
 //        //VECTOR:  TODO - refactor this into helper method
 //
 //        //pull the mpu and frag iformation
@@ -1330,7 +1330,7 @@
 //
 //        //raise(SIGABRT);
 //
-//        mmtp_sub_flow_t* packet_subflow = mpu_type_packet->mmtp_packet_header.mmtp_sub_flow;
+//        mmtp_sub_flow_t* packet_subflow = mpu_type_packet->mmtp_packet_header->mmtp_sub_flow;
 //        __LOG_MPU_REASSEMBLY(p_obj, "%d:processMpuPacket - reassemble", __LINE__);
 //
 //        mpu_data_unit_payload_fragments_t *data_unit_payload_types = mpu_data_unit_payload_fragments_find_mpu_sequence_number(&packet_subflow->mpu_fragments->media_fragment_unit_vector, mpu_type_packet->mmtp_mpu_type_packet_header.mpu_sequence_number);
