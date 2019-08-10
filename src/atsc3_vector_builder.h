@@ -58,6 +58,10 @@
  */
 #define ATSC3_VECTOR_BUILDER_METHODS_IMPLEMENTATION_DEFAULT_SIZE 10
 
+/* note, if vector_struct_name is also used as vector_item_name,
+ * you do not need a METHODS_PARENT_IMPLEMENTATION for now, it will be
+ * created automatically in the METHODS_IMPLEMENTATION
+ */
 #define ATSC3_VECTOR_BUILDER_METHODS_PARENT_IMPLEMENTATION(vector_struct_name) \
 	PPCAT(vector_struct_name,_t)* PPCAT(vector_struct_name,_new)() { \
 		PPCAT(vector_struct_name,_t)* vector_struct_name = calloc(1, sizeof(PPCAT(vector_struct_name,_t))); \

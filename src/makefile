@@ -53,17 +53,34 @@ intermediate_alp: atsc3_alp_types.o atsc3_alp_parser.o
 
 intermediate_baseband: atsc3_baseband_packet_types.o 
 
-intermediate_mbms: atsc3_mime_multipart_related.o atsc3_mime_multipart_related_parser.o \
-					atsc3_route_usbd.o atsc3_mbms_envelope_parser.o
+intermediate_mbms: 	atsc3_mime_multipart_related.o \
+					atsc3_mime_multipart_related_parser.o \
+					atsc3_route_usbd.o \
+					atsc3_mbms_envelope_parser.o
 
-intermediate_sls: atsc3_route_mpd.o atsc3_route_s_tsid.o atsc3_sls_metadata_fragment_types_parser.o	
+intermediate_sls: 	atsc3_route_mpd.o \
+					atsc3_route_s_tsid.o \
+					atsc3_sls_metadata_fragment_types_parser.o	
 
-intermediate_alc: atsc3_alc_rx.c alc_session.c fec.c null_fec.c rs_fec.c xor_fec.o atsc3_alc_utils.o \
-					 atsc3_route_sls_processor.o
+intermediate_alc: 	alc_session.c \
+					fec.c \
+					null_fec.c \
+					rs_fec.c \
+					xor_fec.o \
+					atsc3_alc_rx.c \
+					atsc3_alc_utils.o \
+					atsc3_route_sls_processor.o
 
-intermediate_mmt: xml.o atsc3_mmtp_parser.o atsc3_mmt_mpu_parser.o atsc3_mmt_signaling_message.o \
-					atsc3_mmtp_ntp32_to_pts.o atsc3_utils.o fixups_timespec_get.o \
-					atsc3_bandwidth_statistics.o atsc3_mmt_mpu_utils.o
+intermediate_mmt: 	xml.o \
+					atsc3_mmtp_packet_types.o \
+					atsc3_mmtp_parser.o \
+					atsc3_mmt_mpu_parser.o \
+					atsc3_mmt_signaling_message.o \
+					atsc3_mmtp_ntp32_to_pts.o \
+					atsc3_utils.o \
+					fixups_timespec_get.o \
+					atsc3_mmt_mpu_utils.o \
+					atsc3_bandwidth_statistics.o \
 
 intermediate_a337:	atsc3_sls_held_fragment.o					
 
@@ -147,10 +164,14 @@ atsc3_lls_sls_monitor_output_buffer.o: atsc3_lls_sls_monitor_output_buffer.h ats
 atsc3_lls_sls_monitor_output_buffer_utils.o: atsc3_lls_sls_monitor_output_buffer_utils.h atsc3_lls_sls_monitor_output_buffer_utils.c
 	cc -g -c atsc3_lls_sls_monitor_output_buffer_utils.c
 
-atsc3_mmtp_parser.o: atsc3_mmtp_types.h atsc3_mmtp_parser.h atsc3_mmtp_parser.c 
+
+atsc3_mmtp_packet_types.o: atsc3_mmtp_packet_types.h atsc3_mmtp_packet_types.c
+	cc -g -c atsc3_mmtp_packet_types.c
+
+atsc3_mmtp_parser.o: atsc3_mmtp_packet_types.h atsc3_mmtp_parser.h atsc3_mmtp_parser.c 
 	cc -g -c atsc3_mmtp_parser.c
 
-atsc3_mmt_mpu_parser.o: atsc3_mmtp_types.h atsc3_mmtp_parser.h atsc3_mmt_mpu_parser.c
+atsc3_mmt_mpu_parser.o: atsc3_mmtp_packet_types.h atsc3_mmtp_parser.h atsc3_mmt_mpu_parser.c
 	cc -g -c atsc3_mmt_mpu_parser.c
 
 atsc3_mmt_signaling_message.o: atsc3_mmt_signaling_message.c atsc3_mmt_signaling_message.h
@@ -322,6 +343,7 @@ libatsc3_intermediate.o: atsc3_lls.o \
 		atsc3_alp_types.o \
 		atsc3_alp_parser.o \
 		atsc3_baseband_packet_types.o \
+		atsc3_mmtp_packet_types.o \
 		atsc3_mmtp_parser.o \
 		atsc3_mmtp_ntp32_to_pts.o \
 		atsc3_utils.o \
