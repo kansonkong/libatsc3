@@ -30,7 +30,7 @@ clean:
 	-rm -f atsc3_lls_slt_parser_test
 	-rm -f  atsc3_lls_test
 	-rm -f  atsc3_lls_SystemTime_test
-	-rm -f  atsc3_mmt_signaling_message_test
+	-rm -f  atsc3_mmt_signalling_message_test
 	-rm -f  atsc3_fdt_test
 	-rm -f  atsc3_stltp_parser_test
 	-rm -f  atsc3_mime_multipart_related_parser_test
@@ -98,7 +98,7 @@ unit_tests: atsc3_lmt_test \
 			atsc3_lls_slt_parser_test \
 			atsc3_lls_test \
 			atsc3_lls_SystemTime_test \
-			atsc3_mmt_signaling_message_test \
+			atsc3_mmt_signalling_message_test \
 			atsc3_isobmff_box_test \
 			atsc3_fdt_test \
 			atsc3_stltp_parser_test \
@@ -108,7 +108,7 @@ unit_tests: atsc3_lmt_test \
 libmicrohttpd_tests: atsc3_libmicrohttpd_test
 
 
-atsc3_mmt_signaling_message_test: atsc3_mmt_signaling_message_test.c libatsc3.o
+atsc3_mmt_signalling_message_test: atsc3_mmt_signalling_message_test.c libatsc3.o
 
 # listener_tests: atsc3_alc_listener_test  atsc3_mmt_listener_test atsc3_listener_test atsc3_mmt_listener_test_bento atsc3_listener_metrics_test
 listener_tests: atsc3_alc_listener_test \
@@ -483,8 +483,8 @@ atsc3_lls_slt_parser_test: atsc3_lls_slt_parser_test.c libatsc3.o
 atsc3_lls_SystemTime_test: atsc3_lls_SystemTime_test.c libatsc3.o
 	cc -g atsc3_lls_SystemTime_test.c libatsc3.o -lz  -lm -lpthread -lpcap -o atsc3_lls_SystemTime_test 
 
-atsc3_mmt_signaling_message_test: atsc3_mmt_signaling_message_test.c
-	cc -g atsc3_mmt_signaling_message_test.c libatsc3.o -lz  -lm -lpthread -lpcap -o atsc3_mmt_signaling_message_test
+atsc3_mmt_signalling_message_test: atsc3_mmt_signalling_message_test.c
+	cc -g atsc3_mmt_signalling_message_test.c libatsc3.o -lz  -lm -lpthread -lpcap -o atsc3_mmt_signalling_message_test
 
 atsc3_isobmff_box_test: atsc3_isobmff_box_test.c
 	cc -g atsc3_isobmff_box_test.c  -lz  -lm -lpthread -lpcap -o atsc3_isobmff_box_test 

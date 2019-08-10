@@ -40,10 +40,10 @@ uint16_t* dst_packet_id_filter = NULL;
 lls_slt_monitor_t* lls_slt_monitor;
 
 //make sure to invoke     mmtp_sub_flow_vector_init(&p_sys->mmtp_sub_flow_vector);
-mmtp_sub_flow_vector_t* mmtp_sub_flow_vector;
+//mmtp_sub_flow_vector_t* mmtp_sub_flow_vector;
 
 //todo - keep track of these by flow and packet_id to detect mpu_sequence_number increment
-mmtp_payload_fragments_union_t* mmtp_payload_previous_for_reassembly = NULL;
+//mmtp_payload_fragments_union_t* mmtp_payload_previous_for_reassembly = NULL;
 uint32_t __SEQUENCE_NUMBER_COUNT=0;
 
 pipe_ffplay_buffer_t* pipe_ffplay_buffer = NULL;
@@ -71,34 +71,34 @@ void process_packet(u_char *user, const struct pcap_pkthdr *pkthdr, const u_char
 
 		lls_sls_mmt_session_t* matching_lls_slt_mmt_session = lls_slt_mmt_session_find_from_udp_packet(lls_slt_monitor, udp_packet->udp_flow.src_ip_addr, udp_packet->udp_flow.dst_ip_addr, udp_packet->udp_flow.dst_port);
 	    if(matching_lls_slt_mmt_session) {
-	    	mmtp_payload_fragments_union_t* mmtp_payload = mmtp_packet_parse(mmtp_sub_flow_vector, udp_packet);
 
-			if(!mmtp_payload) {
+	    	mmtp_packet_header_t* mmtp_packet_header = mmtp_packet_header_parse_from_udp_packet_t(udp_packet);
 
+	    	if(!mmtp_packet_header) {
 				return cleanup(&udp_packet);
 			}
 
-
 			//for filtering MMT flows by a specific packet_id
-			if(dst_packet_id_filter && *dst_packet_id_filter != mmtp_payload->mmtp_packet_header->mmtp_packet_id) {
+			if(dst_packet_id_filter && *dst_packet_id_filter != mmtp_packet_header->mmtp_packet_id) {
 				goto cleanup;
 			}
 
 			//dump header, then dump applicable packet type
-			//mmtp_packet_header_dump(mmtp_payload);
-
-			if(mmtp_payload->mmtp_packet_header->mmtp_payload_type == 0x0) {
-
-				if(mmtp_payload->mmtp_mpu_type_packet_header.mpu_timed_flag == 1) {
-					mpu_dump_header(mmtp_payload);
+			if(mmtp_packet_header->mmtp_payload_type == 0x0) {
+				mmtp_mpu_packet_t* mmtp_mpu_packet = mmtp_mpu_packet_parse_from_udp_packet_t(mmtp_packet_header, udp_packet);
+				if(mmtp_mpu_packet->mpu_timed_flag == 1) {
+					mmtp_mpu_dump_header(mmtp_mpu_packet);
 				} else {
 					//non-timed
-					_MMTP_WARN("mmtp_packet_parse: non-timed payload: packet_id: %u", mmtp_payload->mmtp_packet_header->mmtp_packet_id);
+					__ATSC3_WARN("mmtp_packet_parse: non-timed payload: packet_id: %u", mmtp_packet_header->mmtp_packet_id);
 				}
-			} else if(mmtp_payload->mmtp_packet_header->mmtp_payload_type == 0x2) {
-				signaling_message_dump(mmtp_payload);
+			} else if(mmtp_packet_header->mmtp_payload_type == 0x2) {
+
+				mmtp_signalling_packet_t* mmtp_signalling_packet = mmt_signalling_message_parse_packet_header_udp_packet_t(mmtp_packet_header, udp_packet);
+				signalling_message_dump(mmtp_signalling_packet);
+
 			} else {
-				_MMTP_WARN("mmtp_packet_parse: unknown payload type of 0x%x", mmtp_payload->mmtp_packet_header->mmtp_payload_type);
+				__ATSC3_WARN("mmtp_packet_parse: unknown payload type of 0x%x", mmtp_packet_header->mmtp_payload_type);
 				goto cleanup;
 			}
 		}
@@ -232,8 +232,7 @@ int main(int argc,char **argv) {
     	println("");
     	exit(1);
     }
-    mmtp_sub_flow_vector = (mmtp_sub_flow_vector_t*)calloc(1, sizeof(mmtp_sub_flow_vector_t));
-    mmtp_sub_flow_vector_init(mmtp_sub_flow_vector);
+
     lls_slt_monitor = lls_slt_monitor_create();
 
     mkdir("mpu", 0777);

@@ -502,9 +502,9 @@ lls_sls_monitor_buffer_isobmff_t* atsc3_isobmff_build_raw_mpu_from_single_sequen
 									mp_table_asset_row->asset_type, mp_table_asset_row->default_asset_flag,
 									mp_table_asset_row->identifier_mapping.asset_id.asset_id ? (const char*)mp_table_asset_row->identifier_mapping.asset_id.asset_id : "");
 
-							if(mp_table_asset_row->mmt_signaling_message_mpu_timestamp_descriptor && mp_table_asset_row->mmt_signaling_message_mpu_timestamp_descriptor->mpu_tuple_n) {
-								for(int l=0; l < mp_table_asset_row->mmt_signaling_message_mpu_timestamp_descriptor->mpu_tuple_n; l++) {
-									mmt_signaling_message_mpu_tuple_t* mmt_signaling_message_mpu_tuple = &mp_table_asset_row->mmt_signaling_message_mpu_timestamp_descriptor->mpu_tuple[l];
+							if(mp_table_asset_row->mmt_signalling_message_mpu_timestamp_descriptor && mp_table_asset_row->mmt_signalling_message_mpu_timestamp_descriptor->mpu_tuple_n) {
+								for(int l=0; l < mp_table_asset_row->mmt_signalling_message_mpu_timestamp_descriptor->mpu_tuple_n; l++) {
+									mmt_signalling_message_mpu_tuple_t* mmt_signaling_message_mpu_tuple = &mp_table_asset_row->mmt_signalling_message_mpu_timestamp_descriptor->mpu_tuple[l];
 
 									if(mp_table_asset_row->mmt_general_location_info.packet_id == packet_id &&	mmt_signaling_message_mpu_tuple->mpu_sequence_number == mpu_sequence_number) {
 										lls_sls_monitor_buffer_isobmff->mpu_presentation_time = mmt_signaling_message_mpu_tuple->mpu_presentation_time;
@@ -847,9 +847,9 @@ lls_sls_monitor_output_buffer_t* atsc3_isobmff_build_mpu_metadata_ftyp_moof_mdat
 
 							__ISOBMFF_TOOLS_SIGNALLING_DEBUG("MPT message: checking packet_id: %u, asset_type: %s, default: %u, identifier: %s", mp_table_asset_row->mmt_general_location_info.packet_id, mp_table_asset_row->asset_type, mp_table_asset_row->default_asset_flag, mp_table_asset_row->identifier_mapping.asset_id.asset_id ? (const char*)mp_table_asset_row->identifier_mapping.asset_id.asset_id : "");
 
-							if(mp_table_asset_row->mmt_signaling_message_mpu_timestamp_descriptor && mp_table_asset_row->mmt_signaling_message_mpu_timestamp_descriptor->mpu_tuple_n) {
-								for(int l=0; l < mp_table_asset_row->mmt_signaling_message_mpu_timestamp_descriptor->mpu_tuple_n; l++) {
-									mmt_signaling_message_mpu_tuple_t* mmt_signaling_message_mpu_tuple = &mp_table_asset_row->mmt_signaling_message_mpu_timestamp_descriptor->mpu_tuple[l];
+							if(mp_table_asset_row->mmt_signalling_message_mpu_timestamp_descriptor && mp_table_asset_row->mmt_signalling_message_mpu_timestamp_descriptor->mpu_tuple_n) {
+								for(int l=0; l < mp_table_asset_row->mmt_signalling_message_mpu_timestamp_descriptor->mpu_tuple_n; l++) {
+									mmt_signalling_message_mpu_tuple_t* mmt_signaling_message_mpu_tuple = &mp_table_asset_row->mmt_signalling_message_mpu_timestamp_descriptor->mpu_tuple[l];
 
 
 
@@ -1097,9 +1097,9 @@ lls_sls_monitor_output_buffer_t* atsc3_isobmff_build_mpu_metadata_ftyp_moof_mdat
 
 							__ISOBMFF_TOOLS_WARN("MPT message: checking packet_id: %u, asset_type: %s, default: %u, identifier: %s", mp_table_asset_row->mmt_general_location_info.packet_id, mp_table_asset_row->asset_type, mp_table_asset_row->default_asset_flag, mp_table_asset_row->identifier_mapping.asset_id.asset_id ? (const char*)mp_table_asset_row->identifier_mapping.asset_id.asset_id : "");
 
-							if(mp_table_asset_row->mmt_signaling_message_mpu_timestamp_descriptor && mp_table_asset_row->mmt_signaling_message_mpu_timestamp_descriptor->mpu_tuple_n) {
-								for(int l=0; l < mp_table_asset_row->mmt_signaling_message_mpu_timestamp_descriptor->mpu_tuple_n; l++) {
-									mmt_signaling_message_mpu_tuple_t* mmt_signaling_message_mpu_tuple = &mp_table_asset_row->mmt_signaling_message_mpu_timestamp_descriptor->mpu_tuple[l];
+							if(mp_table_asset_row->mmt_signalling_message_mpu_timestamp_descriptor && mp_table_asset_row->mmt_signalling_message_mpu_timestamp_descriptor->mpu_tuple_n) {
+								for(int l=0; l < mp_table_asset_row->mmt_signalling_message_mpu_timestamp_descriptor->mpu_tuple_n; l++) {
+									mmt_signalling_message_mpu_tuple_t* mmt_signaling_message_mpu_tuple = &mp_table_asset_row->mmt_signalling_message_mpu_timestamp_descriptor->mpu_tuple[l];
 
 
 

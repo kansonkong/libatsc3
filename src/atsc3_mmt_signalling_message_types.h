@@ -203,7 +203,7 @@ typedef struct mmt_general_location_info {
 typedef struct mmt_signaling_message_mpu_tuple {
     uint32_t mpu_sequence_number;
     uint64_t mpu_presentation_time;
-} mmt_signaling_message_mpu_tuple_t;
+} mmt_signalling_message_mpu_tuple_t;
 
 
 //mpu_timestamp_descriptor_tag is 0x0001
@@ -212,8 +212,8 @@ typedef struct mmt_signaling_message_mpu_timestamp_descriptor {
     uint16_t                               descriptor_tag;
     uint8_t                                descriptor_length;
     uint8_t                                mpu_tuple_n; //mpu_tuple_n = descriptor_length/12 = (32+64)/8
-    mmt_signaling_message_mpu_tuple_t*     mpu_tuple;
-} mmt_signaling_message_mpu_timestamp_descriptor_t;
+    mmt_signalling_message_mpu_tuple_t*     mpu_tuple;
+} mmt_signalling_message_mpu_timestamp_descriptor_t;
 
 #define ATSC3_MP_TABLE_ASSET_ROW_HEVC_ID "hev1"
 #define ATSC3_MP_TABLE_ASSET_ROW_MP4A_ID "mp4a"
@@ -241,7 +241,7 @@ typedef struct mp_table_asset_row {
 	uint16_t	asset_descriptors_length;
 	uint8_t*	asset_descriptors_payload;
     
-    mmt_signaling_message_mpu_timestamp_descriptor_t* mmt_signaling_message_mpu_timestamp_descriptor;
+    mmt_signalling_message_mpu_timestamp_descriptor_t* mmt_signalling_message_mpu_timestamp_descriptor;
 } mp_table_asset_row_t;
 
 typedef struct mp_table {

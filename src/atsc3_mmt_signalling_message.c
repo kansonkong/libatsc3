@@ -1,5 +1,5 @@
 /*
- * atsc3_mmt_signaling_message.h
+ * atsc3_mmt_signalling_message.h
  *
  *  Created on: Jan 21, 2019
  *      Author: jjustman
@@ -40,11 +40,21 @@ raw base64 payload:
  *
  */
 
+mmtp_signalling_packet_t* mmt_signalling_message_parse_packet_header_udp_packet_t(mmtp_packet_header_t* mmtp_packet_header, udp_packet_t* udp_packet) {
+	block_t* udp_packet_block = block_Alloc(udp_packet->data_length);
+	block_Write(udp_packet_block, udp_packet->data, udp_packet->data_length);
 
-mmtp_signalling_packet_t* mmt_signaling_message_parse_packet_header(mmtp_packet_header_t* mmtp_packet_header, block_t* udp_packet) {
+	mmtp_signalling_packet_t* mmtp_signalling_packet = mmt_signalling_message_parse_packet_header(mmtp_packet_header, udp_packet_block);
+	udp_packet->data = block_Get(udp_packet_block);
+	udp_packet->data_length = block_Remaining_size(udp_packet_block);
+
+	return mmtp_signalling_packet;
+}
+
+mmtp_signalling_packet_t* mmt_signalling_message_parse_packet_header(mmtp_packet_header_t* mmtp_packet_header, block_t* udp_packet) {
 
 	if(mmtp_packet_header->mmtp_payload_type != 0x02) {
-		__MMSM_ERROR("signaling_message_parse_payload_header: mmtp_payload_type 0x02 != 0x%x", mmtp_packet_header->mmtp_payload_type);
+		__MMSM_ERROR("signalling_message_parse_payload_header: mmtp_payload_type 0x02 != 0x%x", mmtp_packet_header->mmtp_payload_type);
 		return NULL;
 	}
 
@@ -54,23 +64,23 @@ mmtp_signalling_packet_t* mmt_signaling_message_parse_packet_header(mmtp_packet_
 	uint8_t* udp_raw_buf = block_Get(udp_packet);
 	uint8_t* buf = udp_raw_buf;
 
-	//parse the mmtp_si_payload_header header for signaling message mode
+	//parse the mmtp_si_payload_header header for signalling message mode
 	uint8_t	mmtp_si_payload_header[2];
 	buf = extract(buf, mmtp_si_payload_header, 2);
 
 	/* TODO:
 	 * f_i: bits 0-1 fragmentation indicator:
-	 * 0x00 = payload contains one or more complete signaling messages
-	 * 0x01 = payload contains the first fragment of a signaling message
-	 * 0x10 = payload contains a fragment of a signaling message that is neither first/last
-	 * 0x11 = payload contains the last fragment of a signaling message
+	 * 0x00 = payload contains one or more complete signalling messages
+	 * 0x01 = payload contains the first fragment of a signalling message
+	 * 0x10 = payload contains a fragment of a signalling message that is neither first/last
+	 * 0x11 = payload contains the last fragment of a signalling message
 	 */
 
 	mmtp_signalling_packet->si_fragmentation_indiciator = (mmtp_si_payload_header[0] >> 6) & 0x03;
 
 	//next 4 bits are 0x0000 reserved, output error message if we are validating against 23008-1:2017
 	if((mmtp_si_payload_header[0] >> 2) & 0xF) {
-		__MMSM_ERROR_23008_1("mmt_signaling_message_parse_packet_header: signaling message mmtp header bits 2-5 are not reserved '0'");
+		__MMSM_ERROR_23008_1("mmt_signalling_message_parse_packet_header: signalling message mmtp header bits 2-5 are not reserved '0'");
 	}
 
 	//bit 6 is additional Header
@@ -92,10 +102,10 @@ mmtp_signalling_packet_t* mmt_signaling_message_parse_packet_header(mmtp_packet_
 /**
  *
  */
-uint8_t* mmt_signaling_message_parse_packet(mmtp_signalling_packet_t* mmtp_signalling_packet, block_t* udp_packet) {
+uint8_t* mmt_signalling_message_parse_packet(mmtp_signalling_packet_t* mmtp_signalling_packet, block_t* udp_packet) {
 
 	if(mmtp_signalling_packet->mmtp_payload_type != 0x02) {
-		__MMSM_ERROR("signaling_message_parse_payload_header: mmtp_payload_type 0x02 != 0x%x", mmtp_signalling_packet->mmtp_payload_type);
+		__MMSM_ERROR("signalling_message_parse_payload_header: mmtp_payload_type 0x02 != 0x%x", mmtp_signalling_packet->mmtp_payload_type);
 		return NULL;
 	}
 
@@ -105,7 +115,7 @@ uint8_t* mmt_signaling_message_parse_packet(mmtp_signalling_packet_t* mmtp_signa
 
 	if(mmtp_signalling_packet->si_aggregation_flag) {
 		uint32_t mmtp_aggregation_msg_length;
-		__MMSM_ERROR("mmt_signaling_message_parse_packet: AGGREGATED SI is UNTESTED!");
+		__MMSM_ERROR("mmt_signalling_message_parse_packet: AGGREGATED SI is UNTESTED!");
 
 		while(buf_size) {
 			if(mmtp_signalling_packet->si_additional_length_header) {
@@ -121,37 +131,37 @@ uint8_t* mmt_signaling_message_parse_packet(mmtp_signalling_packet_t* mmtp_signa
 			}
 
 			//build a msg from buf to buf+mmtp_aggregation_msg_length
-			__MMSM_ERROR("mmt_signaling_message_parse_packet: AGGREGATED SI is UNTESTED!");
-			buf = mmt_signaling_message_parse_id_type(mmtp_signalling_packet, buf, buf_size);
+			__MMSM_ERROR("mmt_signalling_message_parse_packet: AGGREGATED SI is UNTESTED!");
+			buf = mmt_signalling_message_parse_id_type(mmtp_signalling_packet, buf, buf_size);
 			buf_size = buf_size - (buf - udp_raw_buf);
 		}
 	} else {
 		//parse a single message
-		buf = mmt_signaling_message_parse_id_type(mmtp_signalling_packet, buf, buf_size);
+		buf = mmt_signalling_message_parse_id_type(mmtp_signalling_packet, buf, buf_size);
 	}
 	return buf;
 }
 
-uint8_t* __mmt_signaling_message_parse_length_long(uint8_t* buf, mmt_signalling_message_header_and_payload_t* mmt_signalling_message_header_and_payload) {
+uint8_t* __mmt_signalling_message_parse_length_long(uint8_t* buf, mmt_signalling_message_header_and_payload_t* mmt_signalling_message_header_and_payload) {
 	uint32_t mmtp_msg_length_long;
 	buf = extract(buf, (uint8_t*)&mmtp_msg_length_long, 4);
 	mmt_signalling_message_header_and_payload->message_header.length = ntohl(mmtp_msg_length_long);
 	return buf;
 }
 
-uint8_t* __mmt_signaling_message_parse_length_short(uint8_t* buf, mmt_signalling_message_header_and_payload_t* mmt_signalling_message_header_and_payload) {
+uint8_t* __mmt_signalling_message_parse_length_short(uint8_t* buf, mmt_signalling_message_header_and_payload_t* mmt_signalling_message_header_and_payload) {
 	uint16_t mmtp_msg_length_short;
 	buf = extract(buf, (uint8_t*)&mmtp_msg_length_short, 2);
 	mmt_signalling_message_header_and_payload->message_header.length = ntohs(mmtp_msg_length_short);
 	return buf;
 }
 
-uint8_t* mmt_signaling_message_parse_id_type(mmtp_signalling_packet_t* mmtp_signalling_packet, uint8_t* udp_raw_buf, uint32_t udp_raw_buf_size) {
+uint8_t* mmt_signalling_message_parse_id_type(mmtp_signalling_packet_t* mmtp_signalling_packet, uint8_t* udp_raw_buf, uint32_t udp_raw_buf_size) {
 
 	uint8_t *raw_buf = udp_raw_buf;
 	uint8_t *buf = udp_raw_buf;
 
-	//create general signaling message format
+	//create general signalling message format
 	uint16_t  message_id;
 	buf = extract(buf, (uint8_t*)&message_id, 2);
 	message_id = ntohs(message_id);
@@ -168,12 +178,12 @@ uint8_t* mmt_signaling_message_parse_id_type(mmtp_signalling_packet_t* mmtp_sign
 	mmt_signalling_message_payload_u* mmt_signalling_message_payload = &mmt_signalling_message_header_and_payload->message_payload;
 
 	/** each message parser is required to call either
-	 * PA: 				__mmt_signaling_message_parse_length_long
-	 * MPI: 			__mmt_signaling_message_parse_length_long
-	 * mmt_atsc3_msg: 	__mmt_signaling_message_parse_length_long
+	 * PA: 				__mmt_signalling_message_parse_length_long
+	 * MPI: 			__mmt_signalling_message_parse_length_long
+	 * mmt_atsc3_msg: 	__mmt_signalling_message_parse_length_long
 	 *
 	 * -all others-:
-	 *	__mmt_signaling_message_parse_length_short
+	 *	__mmt_signalling_message_parse_length_short
 	 *
 	 * length – this field indicates the length of the signalling message.
 	 * This field for all signalling messages except PA messages and MPI message is 2 bytes long.
@@ -270,7 +280,7 @@ uint8_t* mmt_signaling_message_parse_id_type(mmtp_signalling_packet_t* mmtp_sign
 
 
 uint8_t* pa_message_parse(mmt_signalling_message_header_and_payload_t* mmt_signalling_message_header_and_payload, uint8_t* udp_raw_buf, uint32_t udp_raw_buf_size) {
-	udp_raw_buf = __mmt_signaling_message_parse_length_long(udp_raw_buf, mmt_signalling_message_header_and_payload);
+	udp_raw_buf = __mmt_signalling_message_parse_length_long(udp_raw_buf, mmt_signalling_message_header_and_payload);
 
 	uint8_t *raw_buf = udp_raw_buf;
 	uint8_t *buf = udp_raw_buf;
@@ -281,7 +291,7 @@ uint8_t* pa_message_parse(mmt_signalling_message_header_and_payload_t* mmt_signa
 }
 uint8_t* mpi_message_parse(mmt_signalling_message_header_and_payload_t* mmt_signalling_message_header_and_payload, uint8_t* udp_raw_buf, uint32_t buf_size) {
 
-	udp_raw_buf = __mmt_signaling_message_parse_length_long(udp_raw_buf, mmt_signalling_message_header_and_payload);
+	udp_raw_buf = __mmt_signalling_message_parse_length_long(udp_raw_buf, mmt_signalling_message_header_and_payload);
 	uint8_t *raw_buf = udp_raw_buf;
 	uint8_t *buf = udp_raw_buf;
 
@@ -364,7 +374,7 @@ uint8_t* __read_mmt_general_location_info(uint8_t* buf, mmt_general_location_inf
 
 
 uint8_t* mpt_message_parse(mmt_signalling_message_header_and_payload_t* mmt_signalling_message_header_and_payload, uint8_t* udp_raw_buf, uint32_t buf_size) {
-	udp_raw_buf = __mmt_signaling_message_parse_length_short(udp_raw_buf, mmt_signalling_message_header_and_payload);
+	udp_raw_buf = __mmt_signalling_message_parse_length_short(udp_raw_buf, mmt_signalling_message_header_and_payload);
 
 	//we have already consumed the mpt_message, now we are processing the mp_table
 	uint8_t *raw_buf = udp_raw_buf;
@@ -477,21 +487,21 @@ uint8_t* mpt_message_parse(mmt_signalling_message_header_and_payload_t* mmt_sign
         //peek at
         if(row->asset_descriptors_length) {
             if(row->asset_descriptors_payload[0] == 0x00 && row->asset_descriptors_payload[1] == 0x01) {
-                row->mmt_signaling_message_mpu_timestamp_descriptor = calloc(1, sizeof(mmt_signaling_message_mpu_timestamp_descriptor_t));
-                row->mmt_signaling_message_mpu_timestamp_descriptor->descriptor_tag = 0x0001;
-                row->mmt_signaling_message_mpu_timestamp_descriptor->descriptor_length = row->asset_descriptors_payload[2];
-                row->mmt_signaling_message_mpu_timestamp_descriptor->mpu_tuple_n = row->mmt_signaling_message_mpu_timestamp_descriptor->descriptor_length / 12;
+                row->mmt_signalling_message_mpu_timestamp_descriptor = calloc(1, sizeof(mmt_signalling_message_mpu_timestamp_descriptor_t));
+                row->mmt_signalling_message_mpu_timestamp_descriptor->descriptor_tag = 0x0001;
+                row->mmt_signalling_message_mpu_timestamp_descriptor->descriptor_length = row->asset_descriptors_payload[2];
+                row->mmt_signalling_message_mpu_timestamp_descriptor->mpu_tuple_n = row->mmt_signalling_message_mpu_timestamp_descriptor->descriptor_length / 12;
                 
-                if(row->mmt_signaling_message_mpu_timestamp_descriptor->mpu_tuple_n) {
-                    row->mmt_signaling_message_mpu_timestamp_descriptor->mpu_tuple = calloc(row->mmt_signaling_message_mpu_timestamp_descriptor->mpu_tuple_n, sizeof(mmt_signaling_message_mpu_tuple_t));
-                    for(int i=0; i < row->mmt_signaling_message_mpu_timestamp_descriptor->mpu_tuple_n; i++) {
+                if(row->mmt_signalling_message_mpu_timestamp_descriptor->mpu_tuple_n) {
+                    row->mmt_signalling_message_mpu_timestamp_descriptor->mpu_tuple = calloc(row->mmt_signalling_message_mpu_timestamp_descriptor->mpu_tuple_n, sizeof(mmt_signalling_message_mpu_tuple_t));
+                    for(int i=0; i < row->mmt_signalling_message_mpu_timestamp_descriptor->mpu_tuple_n; i++) {
                         uint32_t mpu_sequence_number;
                         uint64_t mpu_presentation_time;
                         memcpy(&mpu_sequence_number, &row->asset_descriptors_payload[3 + (i*12)], 4);
                         memcpy(&mpu_presentation_time, &row->asset_descriptors_payload[7 + (i*12)], 8);
 
-                        row->mmt_signaling_message_mpu_timestamp_descriptor->mpu_tuple[i].mpu_sequence_number = ntohl(mpu_sequence_number);
-                        row->mmt_signaling_message_mpu_timestamp_descriptor->mpu_tuple[i].mpu_presentation_time = ntohll(mpu_presentation_time);
+                        row->mmt_signalling_message_mpu_timestamp_descriptor->mpu_tuple[i].mpu_sequence_number = ntohl(mpu_sequence_number);
+                        row->mmt_signalling_message_mpu_timestamp_descriptor->mpu_tuple[i].mpu_presentation_time = ntohll(mpu_presentation_time);
 
                     }
                 }
@@ -506,7 +516,7 @@ cleanup:
 }
 
 uint8_t* mmt_atsc3_message_payload_parse(mmt_signalling_message_header_and_payload_t* mmt_signalling_message_header_and_payload, uint8_t* udp_raw_buf, uint32_t udp_raw_buf_size) {
-	udp_raw_buf = __mmt_signaling_message_parse_length_long(udp_raw_buf, mmt_signalling_message_header_and_payload);
+	udp_raw_buf = __mmt_signalling_message_parse_length_long(udp_raw_buf, mmt_signalling_message_header_and_payload);
 
 	uint8_t *raw_buf = udp_raw_buf;
 	uint8_t *buf = udp_raw_buf;
@@ -577,7 +587,7 @@ ATSC3_VECTOR_BUILDER_METHODS_ITEM_FREE(mmt_scte35_signal_descriptor);
 
 uint8_t* mmt_scte35_message_payload_parse(mmt_signalling_message_header_and_payload_t* mmt_signalling_message_header_and_payload, uint8_t* udp_raw_buf, uint32_t udp_raw_buf_size) {
 
-	udp_raw_buf = __mmt_signaling_message_parse_length_long(udp_raw_buf, mmt_signalling_message_header_and_payload);
+	udp_raw_buf = __mmt_signalling_message_parse_length_long(udp_raw_buf, mmt_signalling_message_header_and_payload);
 
 	uint8_t *raw_buf = udp_raw_buf;
 	uint8_t *buf = udp_raw_buf;
@@ -657,11 +667,9 @@ uint8_t* si_message_not_supported(mmt_signalling_message_header_and_payload_t* m
 	return NULL;
 }
 
-
-
-void signaling_message_mmtp_packet_header_dump(mmtp_packet_header_t* mmtp_packet_header) {
+void signalling_message_mmtp_packet_header_dump(mmtp_packet_header_t* mmtp_packet_header) {
 	__MMSM_DEBUG("------------------");
-	__MMSM_DEBUG("MMTP Packet Header: Signaling Message: ptr: %p", mmtp_packet_header);
+	__MMSM_DEBUG("MMTP Packet Header: Signalling Message: ptr: %p", mmtp_packet_header);
 	__MMSM_DEBUG("------------------");
 	__MMSM_DEBUG(" packet version         : %-10d (0x%d%d)", 	mmtp_packet_header->mmtp_packet_version, ((mmtp_packet_header->mmtp_packet_version >> 1) & 0x1), mmtp_packet_header->mmtp_packet_version & 0x1);
 	__MMSM_DEBUG(" payload_type           : %-10d (0x%d%d)", 	mmtp_packet_header->mmtp_payload_type, ((mmtp_packet_header->mmtp_payload_type >> 1) & 0x1), mmtp_packet_header->mmtp_payload_type & 0x1);
@@ -672,18 +680,18 @@ void signaling_message_mmtp_packet_header_dump(mmtp_packet_header_t* mmtp_packet
 	__MMSM_DEBUG("------------------");
 }
 
-void signaling_message_dump(mmtp_signalling_packet_t* mmtp_signalling_packet) {
+void signalling_message_dump(mmtp_signalling_packet_t* mmtp_signalling_packet) {
 	if(mmtp_signalling_packet->mmtp_payload_type != 0x02) {
-		__MMSM_ERROR("signaling_message_dump, payload_type 0x%x != 0x02", mmtp_signalling_packet->mmtp_payload_type);
+		__MMSM_ERROR("signalling_message_dump, payload_type 0x%x != 0x02", mmtp_signalling_packet->mmtp_payload_type);
 		return;
 	}
 
 	//dump mmtp packet header
-	signaling_message_mmtp_packet_header_dump((mmtp_packet_header_t*)mmtp_signalling_packet);
+	signalling_message_mmtp_packet_header_dump((mmtp_packet_header_t*)mmtp_signalling_packet);
 
-	__MMSM_DEBUG("-----------------");
-	__MMSM_DEBUG("Signaling Message");
-	__MMSM_DEBUG("-----------------");
+	__MMSM_DEBUG("------------------");
+	__MMSM_DEBUG("Signalling Message");
+	__MMSM_DEBUG("------------------");
 	/**
 	 * dump si payload header fields
 	 * 	uint8_t		si_fragmentation_indiciator; //2 bits,
@@ -781,10 +789,10 @@ void mpt_message_dump(mmt_signalling_message_header_and_payload_t* mmt_signallin
 		//first entry
 		__MMSM_DEBUG(" asset_descriptors_length                 : %u", mp_table_asset_row->asset_descriptors_length);
 		if(mp_table_asset_row->asset_descriptors_length) {
-            if(mp_table_asset_row->mmt_signaling_message_mpu_timestamp_descriptor) {
-                for(int i=0; i < mp_table_asset_row->mmt_signaling_message_mpu_timestamp_descriptor->mpu_tuple_n; i++) {
-                    __MMSM_DEBUG("   mpu_timestamp_descriptor %u, mpu_sequence_number: %u", i, mp_table_asset_row->mmt_signaling_message_mpu_timestamp_descriptor->mpu_tuple[i].mpu_sequence_number);
-                    __MMSM_DEBUG("   mpu_timestamp_descriptor %u, mpu_presentation_time: %llu", i, mp_table_asset_row->mmt_signaling_message_mpu_timestamp_descriptor->mpu_tuple[i].mpu_presentation_time);
+            if(mp_table_asset_row->mmt_signalling_message_mpu_timestamp_descriptor) {
+                for(int i=0; i < mp_table_asset_row->mmt_signalling_message_mpu_timestamp_descriptor->mpu_tuple_n; i++) {
+                    __MMSM_DEBUG("   mpu_timestamp_descriptor %u, mpu_sequence_number: %u", i, mp_table_asset_row->mmt_signalling_message_mpu_timestamp_descriptor->mpu_tuple[i].mpu_sequence_number);
+                    __MMSM_DEBUG("   mpu_timestamp_descriptor %u, mpu_presentation_time: %llu", i, mp_table_asset_row->mmt_signalling_message_mpu_timestamp_descriptor->mpu_tuple[i].mpu_presentation_time);
                 }
             }
 		}
