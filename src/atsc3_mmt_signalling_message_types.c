@@ -6,21 +6,21 @@
  */
 
 #include "atsc3_mmt_signalling_message_types.h"
-
-//todo, we will probably need to iterate over each one of these entries
-void mmt_signalling_message_vector_free(mmt_signalling_message_vector_t** mmt_signalling_message_vector_p) {
-	mmt_signalling_message_vector_t* mmt_signalling_message_vector = *mmt_signalling_message_vector_p;
-	if(mmt_signalling_message_vector) {
-		for(int i=0; i < mmt_signalling_message_vector->messages_n; mmt_signalling_message_vector++) {
-			mmt_signalling_message_header_and_payload_t* mmt_signalling_message_header_and_payload = mmt_signalling_message_vector->messages[i];
-			mmt_signalling_message_header_and_payload_free(&mmt_signalling_message_header_and_payload);
-		}
-
-		free(mmt_signalling_message_vector);
-		mmt_signalling_message_vector = NULL;
-		*mmt_signalling_message_vector_p = NULL;
-	}
-}
+//
+////todo, we will probably need to iterate over each one of these entries
+//void mmt_signalling_message_vector_free(mmtp_signalling_packet_t** mmtp_signalling_packet_p) {
+//	mmt_signalling_message_vector_t* mmt_signalling_message_vector = *mmt_signalling_message_vector_p;
+//	if(mmt_signalling_message_vector) {
+//		for(int i=0; i < mmt_signalling_message_vector->messages_n; mmt_signalling_message_vector++) {
+//			mmt_signalling_message_header_and_payload_t* mmt_signalling_message_header_and_payload = mmt_signalling_message_vector->messages[i];
+//			mmt_signalling_message_header_and_payload_free(&mmt_signalling_message_header_and_payload);
+//		}
+//
+//		free(mmt_signalling_message_vector);
+//		mmt_signalling_message_vector = NULL;
+//		*mmt_signalling_message_vector_p = NULL;
+//	}
+//}
 
 void mmt_signalling_message_header_and_payload_free(mmt_signalling_message_header_and_payload_t** mmt_signalling_message_header_and_payload_p) {
 	mmt_signalling_message_header_and_payload_t* mmt_signalling_message_header_and_payload = *mmt_signalling_message_header_and_payload_p;

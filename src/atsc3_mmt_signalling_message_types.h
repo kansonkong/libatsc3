@@ -8,7 +8,12 @@
 #ifndef ATSC3_MMT_SIGNALLING_MESSAGE_TYPES_H_
 #define ATSC3_MMT_SIGNALLING_MESSAGE_TYPES_H_
 
+#if defined (__cplusplus)
+extern "C" {
+#endif
+
 #include "atsc3_vector_builder.h"
+#include "atsc3_mmtp_packet_types.h"
 
 //signaling message - message id values:
 
@@ -329,5 +334,9 @@ typedef struct mmt_signalling_message_header_and_payload {
 
 void mmt_signalling_message_header_and_payload_free(mmt_signalling_message_header_and_payload_t**);
 
+
+#if defined (__cplusplus)
+}
+#endif
 
 #endif /* ATSC3_MMT_SIGNALLING_MESSAGE_TYPES_H_ */

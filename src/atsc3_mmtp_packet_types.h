@@ -24,6 +24,7 @@ extern "C" {
 
 #include "atsc3_mmtp_ntp32_to_pts.h"
 #include "atsc3_mmt_signalling_message_types.h"
+#include "atsc3_mmt_mpu_sample_format_type.h"
 
 extern int _MMTP_DEBUG_ENABLED;
 extern int _MMTP_TRACE_ENABLED;
@@ -183,6 +184,8 @@ typedef struct mmtp_mpu_packet {
     //todo: other attributes for re-fragmentation should be under the
     //  mpu_sample,
     //      and then mpu_fragments based upon mpu_fragmentation_counter
+    mmthsample_header_t* mmthsample_header;
+
 } mmtp_mpu_packet_t;
     
 typedef struct {
@@ -192,6 +195,8 @@ typedef struct {
 
 ATSC3_VECTOR_BUILDER_METHODS_INTERFACE(mpu_sequence_number_mmtp_mpu_packet, mmtp_mpu_packet);
 
+//forward declare, as this struct definition is in atsc3_mmt_signalling_packet_types.h
+typedef struct mmt_signalling_message_header_and_payload mmt_signalling_message_header_and_payload_t;
 typedef struct mmtp_signalling_packet {
 	_MMTP_PACKET_HEADER_FIELDS;
 
