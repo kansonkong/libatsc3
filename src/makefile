@@ -75,7 +75,7 @@ intermediate_mmt: 	xml.o \
 					atsc3_mmtp_packet_types.o \
 					atsc3_mmtp_parser.o \
 					atsc3_mmt_mpu_parser.o \
-					atsc3_mmt_signaling_message.o \
+					atsc3_mmt_signalling_message.o \
 					atsc3_mmtp_ntp32_to_pts.o \
 					atsc3_utils.o \
 					fixups_timespec_get.o \
