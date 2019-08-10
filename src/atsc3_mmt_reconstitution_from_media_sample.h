@@ -23,14 +23,15 @@ extern "C" {
 #endif
 extern global_atsc3_stats_t* global_stats;
 
-mmtp_payload_fragments_union_t* mmtp_process_from_payload(mmtp_sub_flow_vector_t* mmtp_sub_flow_vector,
+//mmtp_sub_flow_vector_t* mmtp_sub_flow_vector,
+//mmtp_payload_fragments_union_t** mmtp_payload_p,
+void mmtp_process_from_payload(mmtp_mpu_packet_t* mmtp_mpu_packet,
 		udp_flow_latest_mpu_sequence_number_container_t* udp_flow_latest_mpu_sequence_number_container,
 		lls_slt_monitor_t* lls_slt_monitor,
 		udp_packet_t *udp_packet,
-		mmtp_payload_fragments_union_t** mmtp_payload_p,
 		lls_sls_mmt_session_t* matching_lls_slt_mmt_session);
 
-void atsc3_mmt_reconstitution_free_from_udp_flow(mmtp_sub_flow_vector_t* mmtp_sub_flow_vector, udp_flow_t* udp_flow, udp_flow_packet_id_mpu_sequence_tuple_t* last_udp_flow_packet_id_mpu_sequence_tuple);
+//void atsc3_mmt_reconstitution_free_from_udp_flow(mmtp_sub_flow_vector_t* mmtp_sub_flow_vector, udp_flow_t* udp_flow, udp_flow_packet_id_mpu_sequence_tuple_t* last_udp_flow_packet_id_mpu_sequence_tuple);
 
     
 extern int _MMT_RECON_FROM_SAMPLE_DEBUG_ENABLED;
