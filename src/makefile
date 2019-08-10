@@ -26,26 +26,26 @@ clean:
 	-rm -f *.o
 	-rm -f route/*
 	-rm -f mpu/*
-	-rm atsc3_lmt_test
-	-rm atsc3_lls_slt_parser_test
-	-rm atsc3_lls_test
-	-rm atsc3_lls_SystemTime_test
-	-rm atsc3_mmt_signaling_message_test
-	-rm atsc3_fdt_test
-	-rm atsc3_stltp_parser_test
-	-rm atsc3_mime_multipart_related_parser_test
-	-rm atsc3_fdt_mbms_envelope_test
-	-rm listener_tests/atsc3_alc_listener_test
-	-rm listener_tests/atsc3_alc_listener_test_valgrind
-	-rm listener_tests/atsc3_lls_listener_test
-	-rm listener_tests/atsc3_mmt_listener_test
-	-rm listener_tests/atsc3_mmt_sls_listener_test
-	-rm listener_tests/atsc3_stltp_listener_test
-	-rm listener_tests/atsc3_stltp_alp_listener_test
-	-rm listener_tests/atsc3_stltp_alp_listener_reflector_test
-	-rm tools/atsc3_listener_metrics_ncurses
-	-rm tools/atsc3_listener_metrics_ncurses_httpd_isobmff
-	-rm tools/atsc3_mmt_mfu_monitor
+	-rm -f atsc3_lmt_test
+	-rm -f atsc3_lls_slt_parser_test
+	-rm -f  atsc3_lls_test
+	-rm -f  atsc3_lls_SystemTime_test
+	-rm -f  atsc3_mmt_signaling_message_test
+	-rm -f  atsc3_fdt_test
+	-rm -f  atsc3_stltp_parser_test
+	-rm -f  atsc3_mime_multipart_related_parser_test
+	-rm -f  atsc3_fdt_mbms_envelope_test
+	-rm -f  listener_tests/atsc3_alc_listener_test
+	-rm -f  listener_tests/atsc3_alc_listener_test_valgrind
+	-rm -f  listener_tests/atsc3_lls_listener_test
+	-rm -f  listener_tests/atsc3_mmt_listener_test
+	-rm -f  listener_tests/atsc3_mmt_sls_listener_test
+	-rm -f  listener_tests/atsc3_stltp_listener_test
+	-rm -f  listener_tests/atsc3_stltp_alp_listener_test
+	-rm -f  listener_tests/atsc3_stltp_alp_listener_reflector_test
+	-rm -f  tools/atsc3_listener_metrics_ncurses
+	-rm -f  tools/atsc3_listener_metrics_ncurses_httpd_isobmff
+	-rm -f  tools/atsc3_mmt_mfu_monitor
 	 
 intermediate_lls: atsc3_lls.o atsc3_lls_sls_parser.o atsc3_lls_alc_utils.o
 
@@ -388,7 +388,7 @@ libatsc3_intermediate.o: atsc3_lls.o \
 		atsc3_route_sls_processor.o \
 		atsc3_sls_held_fragment.o  \
 		atsc3_sls_metadata_fragment_types_parser.o \
-		atsc3_mbms_envelope_xml.o	\	
+		atsc3_mbms_envelope_xml.o	\
 		atsc3_mime_multipart_related.o \
 		atsc3_mime_multipart_related_parser.o \
 		atsc3_mbms_envelope_parser.o \
@@ -411,6 +411,7 @@ libatsc3_intermediate.o: atsc3_lls.o \
 		atsc3_alp_types.o \
 		atsc3_alp_parser.o \
 		atsc3_baseband_packet_types.o \
+		atsc3_mmtp_packet_types.o \
 		atsc3_mmtp_parser.o \
 		atsc3_mmtp_ntp32_to_pts.o \
 		atsc3_utils.o \
@@ -438,7 +439,7 @@ libatsc3_intermediate.o: atsc3_lls.o \
 		atsc3_route_sls_processor.o \
 		atsc3_sls_held_fragment.o  \
 		atsc3_sls_metadata_fragment_types_parser.o \
-		atsc3_mbms_envelope_xml.o	\	
+		atsc3_mbms_envelope_xml.o	\
 		atsc3_mime_multipart_related.o \
 		atsc3_mime_multipart_related_parser.o \
 		atsc3_mbms_envelope_parser.o \

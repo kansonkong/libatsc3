@@ -14,7 +14,9 @@ int _ROUTE_MPD_PARSER_DEBUG_ENABLED = 0;
 
 ATSC3_VECTOR_BUILDER_METHODS_PARENT_IMPLEMENTATION(atsc3_route_mpd);
 ATSC3_VECTOR_BUILDER_METHODS_IMPLEMENTATION(atsc3_route_period, atsc3_route_adaptation_set);
+ATSC3_VECTOR_BUILDER_METHODS_ITEM_FREE(atsc3_route_adaptation_set);
 ATSC3_VECTOR_BUILDER_METHODS_IMPLEMENTATION(atsc3_route_mpd, atsc3_route_period);
+ATSC3_VECTOR_BUILDER_METHODS_ITEM_FREE(atsc3_route_period);
 
 
 atsc3_route_mpd_t* atsc3_route_mpd_parse_from_payload(char* payload, char* content_location) {
