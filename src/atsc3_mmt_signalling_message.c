@@ -280,7 +280,7 @@ uint8_t mmt_signalling_message_parse_id_type(mmtp_signalling_packet_t* mmtp_sign
 		buf = si_message_not_supported(mmt_signalling_message_header_and_payload, udp_packet);
 	}
 
-	return buf;
+	return (buf != raw_buf);
 
 }
 
