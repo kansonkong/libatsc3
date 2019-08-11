@@ -100,10 +100,13 @@ int test_lls_create_xml_table(char* base64_payload) {
 	int binary_payload_size;
 
 	__create_binary_payload(base64_payload, &binary_payload, &binary_payload_size);
-
-	lls_table_t *lls_table = lls_create_xml_table(binary_payload, binary_payload_size);
+	block_t* lls_packet_block = block_Alloc(binary_payload_size);
+	block_Write(lls_packet_block, binary_payload, binary_payload_size);
+	lls_table_t *lls_table = lls_create_xml_table(lls_packet_block);
 
 	lls_dump_instance_table(lls_table);
+
+	block_Destroy(&lls_packet_block);
 
 	return 0;
 }
@@ -116,10 +119,13 @@ int test_lls_create_slt_table(char* base64_payload) {
 	int binary_payload_size;
 
 	__create_binary_payload(base64_payload, &binary_payload, &binary_payload_size);
+	block_t* lls_packet_block = block_Alloc(binary_payload_size);
+	block_Write(lls_packet_block, binary_payload, binary_payload_size);
 
-	lls_table_t* lls = __lls_table_create(binary_payload, binary_payload_size);
+	lls_table_t* lls = __lls_table_create(lls_packet_block);
 
 	lls_dump_instance_table(lls);
+	block_Destroy(&lls_packet_block);
 
 	return 0;
 }
@@ -132,14 +138,18 @@ int test_lls_create_slt_route_dash(char* base64_payload) {
 	int binary_payload_size;
 
 	__create_binary_payload(base64_payload, &binary_payload, &binary_payload_size);
+	block_t* lls_packet_block = block_Alloc(binary_payload_size);
+	block_Write(lls_packet_block, binary_payload, binary_payload_size);
 
-	lls_table_t* lls = __lls_table_create(binary_payload, binary_payload_size);
+	lls_table_t* lls = __lls_table_create(lls_packet_block);
 
 	if(!lls) {
 		printf("error creating lls table for %s", base64_payload);
 	} else {
 		lls_dump_instance_table(lls);
 	}
+	block_Destroy(&lls_packet_block);
+
 	return 0;
 }
 
@@ -159,7 +169,10 @@ int test_lls_components() {
 	        test_payload_base64 += 2;
 	}
 
-	lls_table_t *parsed_table = lls_create_xml_table(test_payload_binary, test_payload_binary_size);
+	block_t* lls_packet_block = block_Alloc(test_payload_binary_size);
+	block_Write(lls_packet_block, test_payload_binary, test_payload_binary_size);
+	lls_table_t *parsed_table = lls_create_xml_table(lls_packet_block);
+
 	lls_dump_instance_table(parsed_table);
 
 	uint8_t *decompressed_payload;
@@ -171,6 +184,7 @@ int test_lls_components() {
 	}
 
 	printf("%s", decompressed_payload);
+	block_Destroy(&lls_packet_block);
 
 	return 0;
 }

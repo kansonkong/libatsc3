@@ -53,7 +53,8 @@ void process_packet(u_char *user, const struct pcap_pkthdr *pkthdr, const u_char
 
 	//dispatch for LLS extraction and dump
 	if(udp_packet->udp_flow.dst_ip_addr == LLS_DST_ADDR && udp_packet->udp_flow.dst_port == LLS_DST_PORT) {
-		lls_table_t* lls_table = __lls_table_create(udp_packet->data, udp_packet->data_length);
+
+		lls_table_t* lls_table = __lls_table_create(udp_packet->data);
 
 		if(lls_table) {
 			printf("---\n");
@@ -61,7 +62,7 @@ void process_packet(u_char *user, const struct pcap_pkthdr *pkthdr, const u_char
 			printf("---\n\n");
 			lls_table_free(&lls_table);
 		} else {
-			__WARN("Error parsing LLS payload, data len: %u", udp_packet->data_length);
+			__WARN("Error parsing LLS payload, data len: %u", block_Remaining_size(udp_packet->data));
 		}
 	}
 

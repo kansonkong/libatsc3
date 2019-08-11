@@ -122,14 +122,14 @@ global_atsc3_stats_t* global_stats;
 
 void count_packet_as_filtered(udp_packet_t* udp_packet) {
 	global_stats->packet_counter_filtered_ipv4++;
-	global_bandwidth_statistics->interval_filtered_current_bytes_rx += udp_packet->data_length;
+	global_bandwidth_statistics->interval_filtered_current_bytes_rx += udp_packet->data->p_size;
 	global_bandwidth_statistics->interval_filtered_current_packets_rx++;
 }
 
 void update_global_mmtp_statistics_from_udp_packet_t(udp_packet_t *udp_packet) {
-	global_bandwidth_statistics->interval_mmt_current_bytes_rx += udp_packet->data_length;
+	global_bandwidth_statistics->interval_mmt_current_bytes_rx += udp_packet->data->p_size;
 
-	mmtp_packet_header_t* mmtp_packet_header = mmtp_packet_header_parse_from_udp_packet_t(udp_packet);
+	mmtp_packet_header_t* mmtp_packet_header = mmtp_packet_header_parse_from_block_t(udp_packet->data);
 
 	if(!mmtp_packet_header) {
 		goto error;
@@ -142,7 +142,7 @@ void update_global_mmtp_statistics_from_udp_packet_t(udp_packet_t *udp_packet) {
 	}
 
 	if(mmtp_packet_header->mmtp_payload_type == 0x0) {
-		mmtp_mpu_packet_t* mmtp_mpu_packet = mmtp_mpu_packet_parse_from_udp_packet_t(mmtp_packet_header, udp_packet);
+		mmtp_mpu_packet_t* mmtp_mpu_packet = mmtp_mpu_packet_parse_from_block_t(mmtp_packet_header, udp_packet->data);
 		if(!mmtp_mpu_packet) {
 			goto error;
 		}
@@ -157,9 +157,9 @@ void update_global_mmtp_statistics_from_udp_packet_t(udp_packet_t *udp_packet) {
 		}
 	} else if(mmtp_packet_header->mmtp_payload_type == 0x2) {
 
-		mmtp_signalling_packet_t* mmtp_signalling_packet = mmt_signalling_message_parse_packet_header_udp_packet_t(mmtp_packet_header, udp_packet);
-		uint8_t* buff_ptr = mmt_signalling_message_parse_packet_udp_packet_t(mmtp_signalling_packet, udp_packet);
-		if(buff_ptr) {
+		mmtp_signalling_packet_t* mmtp_signalling_packet = mmt_signalling_message_parse_packet_header(mmtp_packet_header, udp_packet->data);
+		uint8_t parsed_count = mmt_signalling_message_parse_packet(mmtp_signalling_packet, udp_packet->data);
+		if(parsed_count) {
 			signalling_message_dump(mmtp_signalling_packet);
 		} else {
 			goto error;
@@ -239,7 +239,7 @@ alc_packet_t* route_parse_from_udp_packet(lls_sls_alc_session_t *matching_lls_sl
         ch.s = matching_lls_slt_alc_session->alc_session;
         
         //process ALC streams
-        int retval = alc_rx_analyze_packet_a331_compliant((char*)udp_packet->data, udp_packet->data_length, &ch, &alc_packet);
+        int retval = alc_rx_analyze_packet_a331_compliant((char*)block_Get(udp_packet->data), block_Remaining_size(udp_packet->data), &ch, &alc_packet);
         if(!retval) {
             global_stats->packet_counter_alc_packets_parsed++;
             
@@ -286,21 +286,21 @@ void process_packet(u_char *user, const struct pcap_pkthdr *pkthdr, const u_char
 	if(udp_packet->udp_flow.dst_ip_addr == UDP_FILTER_MDNS_IP_ADDRESS && udp_packet->udp_flow.dst_port == UDP_FILTER_MDNS_PORT) {
 		global_stats->packet_counter_filtered_ipv4++;
 		//printf("setting dns current_bytes_rx: %d, packets_rx: %d", global_bandwidth_statistics->interval_filtered_current_bytes_rx, global_bandwidth_statistics->interval_filtered_current_packets_rx);
-		global_bandwidth_statistics->interval_filtered_current_bytes_rx += udp_packet->data_length;
+		global_bandwidth_statistics->interval_filtered_current_bytes_rx += udp_packet->data->p_size;
 		global_bandwidth_statistics->interval_filtered_current_packets_rx++;
 
-		return cleanup(&udp_packet);
+		return udp_packet_free(&udp_packet);
 	}
 
 	if(udp_packet->udp_flow.dst_ip_addr == LLS_DST_ADDR && udp_packet->udp_flow.dst_port == LLS_DST_PORT) {
-		global_bandwidth_statistics->interval_lls_current_bytes_rx += udp_packet->data_length;
+		global_bandwidth_statistics->interval_lls_current_bytes_rx += udp_packet->data->p_size;
 		global_bandwidth_statistics->interval_lls_current_packets_rx++;
 
 		global_stats->packet_counter_lls_packets_received++;
 
 		//process as lls.sst, dont free as we keep track of our object in the lls_slt_monitor
 
-		lls_table_t* lls_table = lls_table_create_or_update_from_lls_slt_monitor_with_metrics(lls_slt_monitor, udp_packet->data, udp_packet->data_length, &global_stats->packet_counter_lls_packets_parsed, &global_stats->packet_counter_lls_packets_parsed_update, &global_stats->packet_counter_lls_packets_parsed_error);
+		lls_table_t* lls_table = lls_table_create_or_update_from_lls_slt_monitor_with_metrics(lls_slt_monitor, udp_packet->data, &global_stats->packet_counter_lls_packets_parsed, &global_stats->packet_counter_lls_packets_parsed_update, &global_stats->packet_counter_lls_packets_parsed_error);
 		if(lls_table) {
 
 			if(lls_table->lls_table_id == SLT) {
@@ -316,7 +316,7 @@ void process_packet(u_char *user, const struct pcap_pkthdr *pkthdr, const u_char
 			}
 		}
 
-		return cleanup(&udp_packet);
+		return udp_packet_free(&udp_packet);
 	}
 
 
@@ -326,18 +326,18 @@ void process_packet(u_char *user, const struct pcap_pkthdr *pkthdr, const u_char
 //        count_packet_as_filtered(udp_packet);
 //
 //        //goto cleanup;
-//        return cleanup(udp_packet);
+//        return udp_packet_free(udp_packet);
 //    }
 //    
     if((dst_ip_addr_filter && udp_packet->udp_flow.dst_ip_addr != *dst_ip_addr_filter)) {
         count_packet_as_filtered(udp_packet);
-        return cleanup(&udp_packet);
+        return udp_packet_free(&udp_packet);
     }
 
 	//ALC (ROUTE) - If this flow is registered from the SLT, process it as ALC, otherwise run the flow thru MMT
 	lls_sls_alc_session_t* matching_lls_slt_alc_session = lls_slt_alc_session_find_from_udp_packet(lls_slt_monitor, udp_packet->udp_flow.src_ip_addr, udp_packet->udp_flow.dst_ip_addr, udp_packet->udp_flow.dst_port);
 	if(matching_lls_slt_alc_session) {
-		global_bandwidth_statistics->interval_alc_current_bytes_rx += udp_packet->data_length;
+		global_bandwidth_statistics->interval_alc_current_bytes_rx += udp_packet->data->p_size;
 		global_bandwidth_statistics->interval_alc_current_packets_rx++;
 		global_stats->packet_counter_alc_recv++;
 
@@ -347,7 +347,7 @@ void process_packet(u_char *user, const struct pcap_pkthdr *pkthdr, const u_char
             alc_packet_free(&alc_packet);
         }
         
-        return cleanup(&udp_packet);
+        return udp_packet_free(&udp_packet);
 	}
 
 	//find our matching MMT flow and push it to reconsitution

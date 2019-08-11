@@ -523,6 +523,7 @@ typedef struct lls_slt_monitor {
     lls_sls_mmt_monitor_t* lls_sls_mmt_monitor;
 	lls_sls_alc_monitor_t* lls_sls_alc_monitor;
 
+    //jjustman-2019-08-10 - TODO - change this over to ATSC3_VECTOR_BUILDER
     lls_sls_mmt_session_vector_t* lls_sls_mmt_session_vector;
     lls_sls_alc_session_vector_t* lls_sls_alc_session_vector;
 	lls_service_t* lls_service;

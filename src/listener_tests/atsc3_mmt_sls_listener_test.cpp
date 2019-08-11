@@ -55,7 +55,7 @@ lls_slt_monitor_t* lls_slt_monitor;
 
 mmtp_packet_header_t*  mmtp_parse_header_from_udp_packet(udp_packet_t* udp_packet) {
 
-	mmtp_packet_header_t* mmtp_packet_header = mmtp_packet_header_parse_from_udp_packet_t(udp_packet);
+	mmtp_packet_header_t* mmtp_packet_header = mmtp_packet_header_parse_from_block_t(udp_packet->data);
 
     if(!mmtp_packet_header) {
         __ERROR("mmtp_packet_parse: raw packet ptr is null, parsing failed for flow: %d.%d.%d.%d:(%-10u):%-5u \t ->  %d.%d.%d.%d:(%-10u):%-5u ",
@@ -88,18 +88,18 @@ void process_packet(u_char *user, const struct pcap_pkthdr *pkthdr, const u_char
 
 	//drop mdNS
 	if(udp_packet->udp_flow.dst_ip_addr == UDP_FILTER_MDNS_IP_ADDRESS && udp_packet->udp_flow.dst_port == UDP_FILTER_MDNS_PORT) {
-		return cleanup(&udp_packet);
+		return udp_packet_free(&udp_packet);
 	}
 
 	if(udp_packet->udp_flow.dst_ip_addr == LLS_DST_ADDR && udp_packet->udp_flow.dst_port == LLS_DST_PORT) {
 				//process as lls
-		lls_table_t* lls_table = lls_table_create_or_update_from_lls_slt_monitor(lls_slt_monitor, udp_packet->data, udp_packet->data_length);
+		lls_table_t* lls_table = lls_table_create_or_update_from_lls_slt_monitor(lls_slt_monitor, udp_packet->data);
 
-		return cleanup(&udp_packet);
+		return udp_packet_free(&udp_packet);
 	}
 
     if((dst_ip_addr_filter && udp_packet->udp_flow.dst_ip_addr != *dst_ip_addr_filter)) {
-        return cleanup(&udp_packet);
+        return udp_packet_free(&udp_packet);
     }
 
     lls_sls_mmt_session_t* matching_lls_slt_mmt_session = lls_slt_mmt_session_find_from_udp_packet(lls_slt_monitor, udp_packet->udp_flow.src_ip_addr, udp_packet->udp_flow.dst_ip_addr, udp_packet->udp_flow.dst_port);
@@ -108,11 +108,11 @@ void process_packet(u_char *user, const struct pcap_pkthdr *pkthdr, const u_char
     	mmtp_packet_header_t* mmtp_packet_header = mmtp_parse_header_from_udp_packet(udp_packet);
         if(mmtp_packet_header && mmtp_packet_header->mmtp_payload_type == 0x02) {
 
-        	mmtp_signalling_packet_t* mmtp_signalling_packet = mmt_signalling_message_parse_packet_header_udp_packet_t(mmtp_packet_header, udp_packet);
+        	mmtp_signalling_packet_t* mmtp_signalling_packet = mmt_signalling_message_parse_packet_header(mmtp_packet_header, udp_packet->data);
         	mmtp_process_sls_from_payload(udp_packet, mmtp_signalling_packet, matching_lls_slt_mmt_session);
         }
 
-        return cleanup(&udp_packet);
+        return udp_packet_free(&udp_packet);
 	}
 
 }
