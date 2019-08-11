@@ -62,8 +62,8 @@ udp_packet_t* process_packet_from_pcap(u_char *user, const struct pcap_pkthdr *p
     
     udp_packet->data = block_Alloc(data_length);
     block_Write(udp_packet->data, (uint8_t*)&packet[udp_header_start + 8], data_length);
-
-	return udp_packet;
+    block_Rewind(udp_packet->data);
+    return udp_packet;
 }
 
 udp_packet_t* udp_packet_process_from_ptr_raw_ethernet_packet(uint8_t* raw_packet, uint32_t raw_packet_length) {
@@ -122,6 +122,7 @@ udp_packet_t* udp_packet_process_from_ptr_raw_ethernet_packet(uint8_t* raw_packe
 
 	udp_packet->data = block_Alloc(data_length);
     block_Write(udp_packet->data, (uint8_t*)&raw_packet[udp_header_start + 8], data_length);
+    block_Rewind(udp_packet->data);
 
 	return udp_packet;
 }
@@ -170,6 +171,7 @@ udp_packet_t* udp_packet_process_from_ptr(uint8_t* packet, uint32_t packet_lengt
 
 	udp_packet->data = block_Alloc(data_length);
 	block_Write(udp_packet->data, (uint8_t*)&packet[udp_header_start + 8], data_length);
+    block_Rewind(udp_packet->data);
 
 	return udp_packet;
 }
@@ -223,6 +225,7 @@ udp_packet_t* udp_packet_prepend_if_not_null(udp_packet_t* from_packet, udp_pack
 	if(to_packet) {
 		block_Write(udp_packet_new->data, block_Get(to_packet->data), block_Remaining_size(to_packet->data));
 	}
+    block_Rewind(udp_packet_new->data);
 
 	udp_packet_new->raw_packet_length = udp_packet_new->data->p_size;
     
