@@ -40,17 +40,6 @@ raw base64 payload:
  *
  */
 
-mmtp_signalling_packet_t* mmt_signalling_message_parse_packet_header_udp_packet_t(mmtp_packet_header_t* mmtp_packet_header, udp_packet_t* udp_packet) {
-	block_t* udp_packet_block = block_Alloc(udp_packet->data_length);
-	block_Write(udp_packet_block, udp_packet->data, udp_packet->data_length);
-    block_Seek(udp_packet_block, 0);
-
-	mmtp_signalling_packet_t* mmtp_signalling_packet = mmt_signalling_message_parse_packet_header(mmtp_packet_header, udp_packet_block);
-	udp_packet->data = block_Get(udp_packet_block);
-	udp_packet->data_length = block_Remaining_size(udp_packet_block);
-
-	return mmtp_signalling_packet;
-}
 
 mmtp_signalling_packet_t* mmt_signalling_message_parse_packet_header(mmtp_packet_header_t* mmtp_packet_header, block_t* udp_packet) {
 
@@ -105,36 +94,29 @@ mmtp_signalling_packet_t* mmt_signalling_message_parse_packet_header(mmtp_packet
 
 /**
  *
+ * return -1 for error extracting mmt_signaling_message payloads
  */
 
-uint8_t* mmt_signalling_message_parse_packet_udp_packet_t(mmtp_signalling_packet_t* mmtp_signalling_packet, udp_packet_t* udp_packet) {
-    block_t* udp_packet_block = block_Alloc(udp_packet->data_length);
-    block_Write(udp_packet_block, udp_packet->data, udp_packet->data_length);
-    block_Seek(udp_packet_block, 0);
-    
-    uint8_t* buff_ptr = mmt_signalling_message_parse_packet(mmtp_signalling_packet, udp_packet_block);
-    udp_packet->data = block_Get(udp_packet_block);
-    udp_packet->data_length = block_Remaining_size(udp_packet_block);
-    
-    return buff_ptr;
-}
 
-uint8_t* mmt_signalling_message_parse_packet(mmtp_signalling_packet_t* mmtp_signalling_packet, block_t* udp_packet) {
+uint8_t mmt_signalling_message_parse_packet(mmtp_signalling_packet_t* mmtp_signalling_packet, block_t* udp_packet) {
+	int8_t processed_messages_count = -1;
+
+	uint32_t udp_packet_size = block_Remaining_size(udp_packet);
+	uint8_t* udp_raw_buf = block_Get(udp_packet);
+	uint8_t* buf = udp_raw_buf;
 
 	if(mmtp_signalling_packet->mmtp_payload_type != 0x02) {
 		__MMSM_ERROR("signalling_message_parse_payload_header: mmtp_payload_type 0x02 != 0x%x", mmtp_signalling_packet->mmtp_payload_type);
-		return NULL;
+		return processed_messages_count;
 	}
 
-	int32_t buf_size = block_Remaining_size(udp_packet);
-	uint8_t *udp_raw_buf = block_Get(udp_packet);
-	uint8_t *buf = udp_raw_buf;
+	int32_t si_message_size_remaining = block_Remaining_size(udp_packet);
 
 	if(mmtp_signalling_packet->si_aggregation_flag) {
 		uint32_t mmtp_aggregation_msg_length;
 		__MMSM_ERROR("mmt_signalling_message_parse_packet: AGGREGATED SI is UNTESTED!");
 
-		while(buf_size) {
+		while(block_Remaining_size(udp_packet)) {
 			if(mmtp_signalling_packet->si_additional_length_header) {
 				//read the full 32 bits for MSG_length
 				buf = extract(buf, (uint8_t*)&mmtp_aggregation_msg_length, 4);
@@ -149,34 +131,41 @@ uint8_t* mmt_signalling_message_parse_packet(mmtp_signalling_packet_t* mmtp_sign
 
 			//build a msg from buf to buf+mmtp_aggregation_msg_length
 			__MMSM_ERROR("mmt_signalling_message_parse_packet: AGGREGATED SI is UNTESTED!");
-			buf = mmt_signalling_message_parse_id_type(mmtp_signalling_packet, buf, buf_size);
-			buf_size = buf_size - (buf - udp_raw_buf);
+			processed_messages_count += mmt_signalling_message_parse_id_type(mmtp_signalling_packet, udp_packet);
+			udp_packet_size = udp_packet_size - (buf - udp_raw_buf);
 		}
-	} else {
+	} else if(si_message_size_remaining) {
 		//parse a single message
-		buf = mmt_signalling_message_parse_id_type(mmtp_signalling_packet, buf, buf_size);
+		processed_messages_count = mmt_signalling_message_parse_id_type(mmtp_signalling_packet, udp_packet);
 	}
-	return buf;
+
+	return processed_messages_count;
 }
 
-uint8_t* __mmt_signalling_message_parse_length_long(uint8_t* buf, mmt_signalling_message_header_and_payload_t* mmt_signalling_message_header_and_payload) {
+mmt_signalling_message_header_and_payload_t* __mmt_signalling_message_parse_length_long(block_t* udp_packet, mmt_signalling_message_header_and_payload_t* mmt_signalling_message_header_and_payload) {
 	uint32_t mmtp_msg_length_long;
+	uint8_t* buf = block_Get(udp_packet);
 	buf = extract(buf, (uint8_t*)&mmtp_msg_length_long, 4);
 	mmt_signalling_message_header_and_payload->message_header.length = ntohl(mmtp_msg_length_long);
-	return buf;
+	block_Seek_Relative(udp_packet, 4);
+	return mmt_signalling_message_header_and_payload;
 }
 
-uint8_t* __mmt_signalling_message_parse_length_short(uint8_t* buf, mmt_signalling_message_header_and_payload_t* mmt_signalling_message_header_and_payload) {
+mmt_signalling_message_header_and_payload_t* __mmt_signalling_message_parse_length_short(block_t* udp_packet, mmt_signalling_message_header_and_payload_t* mmt_signalling_message_header_and_payload) {
 	uint16_t mmtp_msg_length_short;
+	uint8_t* buf = block_Get(udp_packet);
 	buf = extract(buf, (uint8_t*)&mmtp_msg_length_short, 2);
 	mmt_signalling_message_header_and_payload->message_header.length = ntohs(mmtp_msg_length_short);
-	return buf;
+	block_Seek_Relative(udp_packet, 4);
+
+	return mmt_signalling_message_header_and_payload;
 }
 
-uint8_t* mmt_signalling_message_parse_id_type(mmtp_signalling_packet_t* mmtp_signalling_packet, uint8_t* udp_raw_buf, uint32_t udp_raw_buf_size) {
+uint8_t mmt_signalling_message_parse_id_type(mmtp_signalling_packet_t* mmtp_signalling_packet, block_t* udp_packet) {
 
-	uint8_t *raw_buf = udp_raw_buf;
-	uint8_t *buf = udp_raw_buf;
+	int32_t	udp_raw_buf_size = block_Remaining_size(udp_packet);
+	uint8_t *raw_buf = block_Get(udp_packet);
+	uint8_t *buf = raw_buf;
 
 	//create general signalling message format
 	uint16_t  message_id;
@@ -186,7 +175,7 @@ uint8_t* mmt_signalling_message_parse_id_type(mmtp_signalling_packet_t* mmtp_sig
 	uint8_t version;
 	buf = extract(buf, &version, 1);
 
-	int32_t buf_size = udp_raw_buf_size -  (buf - raw_buf);
+	int32_t buf_size = udp_raw_buf_size - (buf - raw_buf);
 
 	mmt_signalling_message_header_and_payload_t* mmt_signalling_message_header_and_payload = mmt_signalling_message_header_and_payload_create(message_id, version);
 	mmtp_signalling_packet_add_mmt_signalling_message_header_and_payload(mmtp_signalling_packet, mmt_signalling_message_header_and_payload);
@@ -210,85 +199,85 @@ uint8_t* mmt_signalling_message_parse_id_type(mmtp_signalling_packet_t* mmtp_sig
 	 */
 
 	if(mmt_signalling_message_header->message_id == PA_message) {
-		buf = pa_message_parse(mmt_signalling_message_header_and_payload, buf, buf_size);
+		buf = pa_message_parse(mmt_signalling_message_header_and_payload, udp_packet);
 		mmt_signalling_message_header_and_payload->message_header.MESSAGE_id_type = PA_message;
 
 	} else if(mmt_signalling_message_header->message_id >= MPI_message_start && mmt_signalling_message_header->message_id < MPI_message_end) {
-		buf = mpi_message_parse(mmt_signalling_message_header_and_payload, buf, buf_size);
+		buf = mpi_message_parse(mmt_signalling_message_header_and_payload, udp_packet);
 		mmt_signalling_message_header_and_payload->message_header.MESSAGE_id_type = MPI_message;
 
 	} else if(mmt_signalling_message_header->message_id >= MPT_message_start && mmt_signalling_message_header->message_id <= MPT_message_end) {
-		buf = mpt_message_parse(mmt_signalling_message_header_and_payload, buf, buf_size);
+		buf = mpt_message_parse(mmt_signalling_message_header_and_payload, udp_packet);
 		mmt_signalling_message_header_and_payload->message_header.MESSAGE_id_type = MPT_message;
 
 	} else if(mmt_signalling_message_header->message_id == CRI_message) {
-		buf = si_message_not_supported(mmt_signalling_message_header_and_payload, buf, buf_size);
+		buf = si_message_not_supported(mmt_signalling_message_header_and_payload, udp_packet);
 		mmt_signalling_message_header_and_payload->message_header.MESSAGE_id_type = CRI_message;
 
 	} else if(mmt_signalling_message_header->message_id == DCI_message) {
-		buf = si_message_not_supported(mmt_signalling_message_header_and_payload, buf, buf_size);
+		buf = si_message_not_supported(mmt_signalling_message_header_and_payload, udp_packet);
 		mmt_signalling_message_header_and_payload->message_header.MESSAGE_id_type = DCI_message;
 
 	} else if(mmt_signalling_message_header->message_id == SSWR_message) {
-		buf = si_message_not_supported(mmt_signalling_message_header_and_payload, buf, buf_size);
+		buf = si_message_not_supported(mmt_signalling_message_header_and_payload, udp_packet);
 		mmt_signalling_message_header_and_payload->message_header.MESSAGE_id_type = SSWR_message;
 
 	} else if(mmt_signalling_message_header->message_id == AL_FEC_message) {
-		buf = si_message_not_supported(mmt_signalling_message_header_and_payload, buf, buf_size);
+		buf = si_message_not_supported(mmt_signalling_message_header_and_payload, udp_packet);
 		mmt_signalling_message_header_and_payload->message_header.MESSAGE_id_type = AL_FEC_message;
 	} else if(mmt_signalling_message_header->message_id == HRBM_message) {
-		buf = si_message_not_supported(mmt_signalling_message_header_and_payload, buf, buf_size);
+		buf = si_message_not_supported(mmt_signalling_message_header_and_payload, udp_packet);
 		mmt_signalling_message_header_and_payload->message_header.MESSAGE_id_type = HRBM_message;
 	} else if(mmt_signalling_message_header->message_id == MC_message) {
-		buf = si_message_not_supported(mmt_signalling_message_header_and_payload, buf, buf_size);
+		buf = si_message_not_supported(mmt_signalling_message_header_and_payload, udp_packet);
 		mmt_signalling_message_header_and_payload->message_header.MESSAGE_id_type = MC_message;
 
 	} else if(mmt_signalling_message_header->message_id == AC_message) {
-		buf = si_message_not_supported(mmt_signalling_message_header_and_payload, buf, buf_size);
+		buf = si_message_not_supported(mmt_signalling_message_header_and_payload, udp_packet);
 		mmt_signalling_message_header_and_payload->message_header.MESSAGE_id_type = AC_message;
 
 	} else if(mmt_signalling_message_header->message_id == AF_message) {
-		buf = si_message_not_supported(mmt_signalling_message_header_and_payload, buf, buf_size);
+		buf = si_message_not_supported(mmt_signalling_message_header_and_payload, udp_packet);
 		mmt_signalling_message_header_and_payload->message_header.MESSAGE_id_type = AF_message;
 
 	} else if(mmt_signalling_message_header->message_id == RQF_message) {
-		buf = si_message_not_supported(mmt_signalling_message_header_and_payload, buf, buf_size);
+		buf = si_message_not_supported(mmt_signalling_message_header_and_payload, udp_packet);
 		mmt_signalling_message_header_and_payload->message_header.MESSAGE_id_type = RQF_message;
 
 	} else if(mmt_signalling_message_header->message_id == ADC_message) {
-		buf = si_message_not_supported(mmt_signalling_message_header_and_payload, buf, buf_size);
+		buf = si_message_not_supported(mmt_signalling_message_header_and_payload, udp_packet);
 		mmt_signalling_message_header_and_payload->message_header.MESSAGE_id_type = ADC_message;
 
 	} else if(mmt_signalling_message_header->message_id == HRB_removal_message) {
-		buf = si_message_not_supported(mmt_signalling_message_header_and_payload, buf, buf_size);
+		buf = si_message_not_supported(mmt_signalling_message_header_and_payload, udp_packet);
 		mmt_signalling_message_header_and_payload->message_header.MESSAGE_id_type = HRB_removal_message;
 
 	} else if(mmt_signalling_message_header->message_id == LS_message) {
-		buf = si_message_not_supported(mmt_signalling_message_header_and_payload, buf, buf_size);
+		buf = si_message_not_supported(mmt_signalling_message_header_and_payload, udp_packet);
 		mmt_signalling_message_header_and_payload->message_header.MESSAGE_id_type = LS_message;
 
 	} else if(mmt_signalling_message_header->message_id == LR_message) {
-		buf = si_message_not_supported(mmt_signalling_message_header_and_payload, buf, buf_size);
+		buf = si_message_not_supported(mmt_signalling_message_header_and_payload, udp_packet);
 		mmt_signalling_message_header_and_payload->message_header.MESSAGE_id_type = LR_message;
 
 	} else if(mmt_signalling_message_header->message_id == NAMF_message) {
-		buf = si_message_not_supported(mmt_signalling_message_header_and_payload, buf, buf_size);
+		buf = si_message_not_supported(mmt_signalling_message_header_and_payload, udp_packet);
 		mmt_signalling_message_header_and_payload->message_header.MESSAGE_id_type = NAMF_message;
 
 	} else if(mmt_signalling_message_header->message_id == LDC_message) {
-		buf = si_message_not_supported(mmt_signalling_message_header_and_payload, buf, buf_size);
+		buf = si_message_not_supported(mmt_signalling_message_header_and_payload, udp_packet);
 		mmt_signalling_message_header_and_payload->message_header.MESSAGE_id_type = LDC_message;
 
 	} else if(mmt_signalling_message_header->message_id == MMT_ATSC3_MESSAGE_ID) {
-		buf = mmt_atsc3_message_payload_parse(mmt_signalling_message_header_and_payload, buf, buf_size);
+		buf = mmt_atsc3_message_payload_parse(mmt_signalling_message_header_and_payload, udp_packet);
 		mmt_signalling_message_header_and_payload->message_header.MESSAGE_id_type = MMT_ATSC3_MESSAGE_ID;
 
 	} else if(mmt_signalling_message_header->message_id == MMT_SCTE35_Signal_Message) {
-		buf = mmt_scte35_message_payload_parse(mmt_signalling_message_header_and_payload, buf, buf_size);
+		buf = mmt_scte35_message_payload_parse(mmt_signalling_message_header_and_payload, udp_packet);
 		mmt_signalling_message_header_and_payload->message_header.MESSAGE_id_type = MMT_SCTE35_Signal_Message;
 
 	} else {
-		buf = si_message_not_supported(mmt_signalling_message_header_and_payload, buf, buf_size);
+		buf = si_message_not_supported(mmt_signalling_message_header_and_payload, udp_packet);
 	}
 
 	return buf;
@@ -296,25 +285,19 @@ uint8_t* mmt_signalling_message_parse_id_type(mmtp_signalling_packet_t* mmtp_sig
 }
 
 
-uint8_t* pa_message_parse(mmt_signalling_message_header_and_payload_t* mmt_signalling_message_header_and_payload, uint8_t* udp_raw_buf, uint32_t udp_raw_buf_size) {
-	udp_raw_buf = __mmt_signalling_message_parse_length_long(udp_raw_buf, mmt_signalling_message_header_and_payload);
-
-	uint8_t *raw_buf = udp_raw_buf;
-	uint8_t *buf = udp_raw_buf;
+uint8_t* pa_message_parse(mmt_signalling_message_header_and_payload_t* mmt_signalling_message_header_and_payload, block_t* udp_packet) {
+	__mmt_signalling_message_parse_length_long(udp_packet, mmt_signalling_message_header_and_payload);
 
 	__MMSM_WARN("signalling information message id not supported: 0x%04x", mmt_signalling_message_header_and_payload->message_header.message_id);
 
-	return udp_raw_buf;
+	return block_Get(udp_packet);
 }
-uint8_t* mpi_message_parse(mmt_signalling_message_header_and_payload_t* mmt_signalling_message_header_and_payload, uint8_t* udp_raw_buf, uint32_t buf_size) {
-
-	udp_raw_buf = __mmt_signalling_message_parse_length_long(udp_raw_buf, mmt_signalling_message_header_and_payload);
-	uint8_t *raw_buf = udp_raw_buf;
-	uint8_t *buf = udp_raw_buf;
+uint8_t* mpi_message_parse(mmt_signalling_message_header_and_payload_t* mmt_signalling_message_header_and_payload, block_t* udp_packet) {
+	__mmt_signalling_message_parse_length_long(udp_packet, mmt_signalling_message_header_and_payload);
 
 	__MMSM_WARN("signalling information message id not supported: 0x%04x", mmt_signalling_message_header_and_payload->message_header.message_id);
 
-	return udp_raw_buf;
+	return block_Get(udp_packet);
 }
 
 uint8_t* __read_uint8_len_to_string(uint8_t* buf, uint8_t len, uint8_t** dest_p) {
@@ -390,12 +373,12 @@ uint8_t* __read_mmt_general_location_info(uint8_t* buf, mmt_general_location_inf
 }
 
 
-uint8_t* mpt_message_parse(mmt_signalling_message_header_and_payload_t* mmt_signalling_message_header_and_payload, uint8_t* udp_raw_buf, uint32_t buf_size) {
-	udp_raw_buf = __mmt_signalling_message_parse_length_short(udp_raw_buf, mmt_signalling_message_header_and_payload);
+uint8_t* mpt_message_parse(mmt_signalling_message_header_and_payload_t* mmt_signalling_message_header_and_payload, block_t* udp_packet) {
+	__mmt_signalling_message_parse_length_short(udp_packet, mmt_signalling_message_header_and_payload);
 
 	//we have already consumed the mpt_message, now we are processing the mp_table
-	uint8_t *raw_buf = udp_raw_buf;
-	uint8_t *buf = udp_raw_buf;
+	uint8_t *raw_buf = block_Get(udp_packet);
+	uint8_t *buf = raw_buf;
 	mp_table_t* mp_table = &mmt_signalling_message_header_and_payload->message_payload.mp_table;
 
 	uint8_t table_id;
@@ -532,11 +515,11 @@ cleanup:
 	return NULL;
 }
 
-uint8_t* mmt_atsc3_message_payload_parse(mmt_signalling_message_header_and_payload_t* mmt_signalling_message_header_and_payload, uint8_t* udp_raw_buf, uint32_t udp_raw_buf_size) {
-	udp_raw_buf = __mmt_signalling_message_parse_length_long(udp_raw_buf, mmt_signalling_message_header_and_payload);
+uint8_t* mmt_atsc3_message_payload_parse(mmt_signalling_message_header_and_payload_t* mmt_signalling_message_header_and_payload, block_t* udp_packet) {
+	__mmt_signalling_message_parse_length_long(udp_packet, mmt_signalling_message_header_and_payload);
 
-	uint8_t *raw_buf = udp_raw_buf;
-	uint8_t *buf = udp_raw_buf;
+	uint8_t *raw_buf = block_Get(udp_packet);
+	uint8_t *buf = raw_buf;
 
 	mmt_atsc3_message_payload_t* mmt_atsc3_message_payload = &mmt_signalling_message_header_and_payload->message_payload.mmt_atsc3_message_payload;
 
@@ -602,12 +585,13 @@ uint8_t* mmt_atsc3_message_payload_parse(mmt_signalling_message_header_and_paylo
 ATSC3_VECTOR_BUILDER_METHODS_IMPLEMENTATION(mmt_scte35_message_payload, mmt_scte35_signal_descriptor)
 ATSC3_VECTOR_BUILDER_METHODS_ITEM_FREE(mmt_scte35_signal_descriptor);
 
-uint8_t* mmt_scte35_message_payload_parse(mmt_signalling_message_header_and_payload_t* mmt_signalling_message_header_and_payload, uint8_t* udp_raw_buf, uint32_t udp_raw_buf_size) {
+uint8_t* mmt_scte35_message_payload_parse(mmt_signalling_message_header_and_payload_t* mmt_signalling_message_header_and_payload, block_t* udp_packet) {
 
-	udp_raw_buf = __mmt_signalling_message_parse_length_long(udp_raw_buf, mmt_signalling_message_header_and_payload);
+	__mmt_signalling_message_parse_length_long(udp_packet, mmt_signalling_message_header_and_payload);
 
-	uint8_t *raw_buf = udp_raw_buf;
-	uint8_t *buf = udp_raw_buf;
+	uint32_t udp_raw_buf_size = block_Remaining_size(udp_packet);
+	uint8_t *raw_buf = block_Get(udp_packet);
+	uint8_t *buf = raw_buf;
 
 	mmt_scte35_message_payload_t* mmt_scte35_message_payload = &mmt_signalling_message_header_and_payload->message_payload.mmt_scte35_message_payload;
 
@@ -673,7 +657,7 @@ void mmt_atsc3_message_payload_dump(mmt_signalling_message_header_and_payload_t*
 }
 
 
-uint8_t* si_message_not_supported(mmt_signalling_message_header_and_payload_t* mmt_signalling_message_header_and_payload, uint8_t* udp_raw_buf, uint32_t udp_raw_buf_size) {
+uint8_t* si_message_not_supported(mmt_signalling_message_header_and_payload_t* mmt_signalling_message_header_and_payload, block_t* udp_packet) {
 	if(mmt_signalling_message_header_and_payload->message_header.message_id == 0x0204 || mmt_signalling_message_header_and_payload->message_header.message_id == 0x020A) {
 		//hrmb messages
 		__MMSM_TRACE("signalling information message id not supported: 0x%04x", mmt_signalling_message_header_and_payload->message_header.message_id);

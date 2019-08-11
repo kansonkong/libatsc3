@@ -58,7 +58,7 @@ void process_packet(u_char *user, const struct pcap_pkthdr *pkthdr, const u_char
 
 	//dispatch for LLS extraction and dump
 	if(udp_packet->udp_flow.dst_ip_addr == LLS_DST_ADDR && udp_packet->udp_flow.dst_port == LLS_DST_PORT) {
-		lls_table_t* lls_table = lls_table_create_or_update_from_lls_slt_monitor(lls_slt_monitor, udp_packet->data, udp_packet->data_length);
+		lls_table_t* lls_table = lls_table_create_or_update_from_lls_slt_monitor(lls_slt_monitor, udp_packet->data);
 	}
 
 	if(udp_packet->udp_flow.dst_ip_addr <= MIN_ATSC3_MULTICAST_BLOCK || udp_packet->udp_flow.dst_ip_addr >= MAX_ATSC3_MULTICAST_BLOCK) {
@@ -72,10 +72,10 @@ void process_packet(u_char *user, const struct pcap_pkthdr *pkthdr, const u_char
 		lls_sls_mmt_session_t* matching_lls_slt_mmt_session = lls_slt_mmt_session_find_from_udp_packet(lls_slt_monitor, udp_packet->udp_flow.src_ip_addr, udp_packet->udp_flow.dst_ip_addr, udp_packet->udp_flow.dst_port);
 	    if(matching_lls_slt_mmt_session) {
 
-	    	mmtp_packet_header_t* mmtp_packet_header = mmtp_packet_header_parse_from_udp_packet_t(udp_packet);
+	    	mmtp_packet_header_t* mmtp_packet_header = mmtp_packet_header_parse_from_block_t(udp_packet->data);
 
 	    	if(!mmtp_packet_header) {
-				return cleanup(&udp_packet);
+				return udp_packet_free(&udp_packet);
 			}
 
 			//for filtering MMT flows by a specific packet_id
@@ -87,7 +87,7 @@ void process_packet(u_char *user, const struct pcap_pkthdr *pkthdr, const u_char
             
 			//dump header, then dump applicable packet type
 			if(mmtp_packet_header->mmtp_payload_type == 0x0) {
-				mmtp_mpu_packet_t* mmtp_mpu_packet = mmtp_mpu_packet_parse_from_udp_packet_t(mmtp_packet_header, udp_packet);
+				mmtp_mpu_packet_t* mmtp_mpu_packet = mmtp_mpu_packet_parse_from_block_t(mmtp_packet_header, udp_packet->data);
 				if(mmtp_mpu_packet->mpu_timed_flag == 1) {
 					mmtp_mpu_dump_header(mmtp_mpu_packet);
 				} else {
@@ -96,9 +96,9 @@ void process_packet(u_char *user, const struct pcap_pkthdr *pkthdr, const u_char
 				}
 			} else if(mmtp_packet_header->mmtp_payload_type == 0x2) {
 
-				mmtp_signalling_packet_t* mmtp_signalling_packet = mmt_signalling_message_parse_packet_header_udp_packet_t(mmtp_packet_header, udp_packet);
-                uint8_t* buff_ptr = mmt_signalling_message_parse_packet_udp_packet_t(mmtp_signalling_packet, udp_packet);
-                if(buff_ptr) {
+				mmtp_signalling_packet_t* mmtp_signalling_packet = mmt_signalling_message_parse_packet_header(mmtp_packet_header, udp_packet->data);
+                uint8_t parsed_count = mmt_signalling_message_parse_packet(mmtp_signalling_packet, udp_packet->data);
+                if(parsed_count) {
                     signalling_message_dump(mmtp_signalling_packet);
                 }
 
