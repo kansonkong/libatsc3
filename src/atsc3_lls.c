@@ -54,10 +54,13 @@ char* LLS_SERVICE_CATEGORY_VALUES[] = {"atsc reserved", "linear av", "linear aud
 char* LLS_PROTOCOL_VALUES[] = {"atsc reserved", "ROUTE", "MMTP", "atsc other" };
 
 
-static lls_table_t* __lls_create_base_table_raw(uint8_t* lls, int size) {
+static lls_table_t* __lls_create_base_table_raw(block_t* lls_packet_block) {
 
 	//zero out full struct
 	lls_table_t* base_table = (lls_table_t*)calloc(1, sizeof(lls_table_t));
+	uint8_t lls[4];
+	memcpy(&lls, block_Get(lls_packet_block), 4);
+	block_Seek_Relative(lls_packet_block, 4);
 
 	//read first 32 bytes in
 	base_table->lls_table_id = lls[0];
@@ -65,19 +68,15 @@ static lls_table_t* __lls_create_base_table_raw(uint8_t* lls, int size) {
 	base_table->group_count_minus1 = lls[2];
 	base_table->lls_table_version = lls[3];
 
-	int remaining_payload_size = (size > 65531) ? 65531 : size;
+	int remaining_payload_size = __MIN(65535, block_Remaining_size(lls_packet_block));
 
-	uint8_t *temp_gzip_payload = (uint8_t*)calloc(remaining_payload_size - 4, sizeof(uint8_t));
+	uint8_t *temp_gzip_payload = (uint8_t*)calloc(remaining_payload_size, sizeof(uint8_t));
 	//FILE *f = fopen("slt.gz", "w");
+	memcpy(temp_gzip_payload, block_Get(lls_packet_block), remaining_payload_size);
+	block_Seek_Relative(lls_packet_block, remaining_payload_size);
 
-	for(int i=4; i < remaining_payload_size; i++) {
-		//printf("i:0x%x ", lls[i]);
-		//fwrite(&lls[i], 1, 1, f);
-		temp_gzip_payload[i-4] = lls[i];
-	}
 	base_table->raw_xml.xml_payload_compressed = temp_gzip_payload;
 	base_table->raw_xml.xml_payload_compressed_size = remaining_payload_size - 4;
-
 
 	//printf("first 4 hex: 0x%x 0x%x 0x%x 0x%x", temp_gzip_payload[0], temp_gzip_payload[1], temp_gzip_payload[2], temp_gzip_payload[3]);
 
@@ -86,8 +85,8 @@ static lls_table_t* __lls_create_base_table_raw(uint8_t* lls, int size) {
 
 
 
-lls_table_t* lls_create_xml_table( uint8_t* lls_packet, int size) {
-	lls_table_t *lls_table = __lls_create_base_table_raw(lls_packet, size);
+lls_table_t* lls_create_xml_table(block_t* lls_packet_block) {
+	lls_table_t *lls_table = __lls_create_base_table_raw(lls_packet_block);
 
 	uint8_t *decompressed_payload;
 	int32_t ret = atsc3_unzip_gzip_payload(lls_table->raw_xml.xml_payload_compressed, lls_table->raw_xml.xml_payload_compressed_size, &decompressed_payload);
@@ -101,20 +100,20 @@ lls_table_t* lls_create_xml_table( uint8_t* lls_packet, int size) {
 	return NULL;
 }
 
-lls_table_t* lls_table_create_or_update_from_lls_slt_monitor(lls_slt_monitor_t* lls_slt_monitor, uint8_t* lls_packet, int packet_size) {
+lls_table_t* lls_table_create_or_update_from_lls_slt_monitor(lls_slt_monitor_t* lls_slt_monitor, block_t* lls_packet_block) {
 	uint32_t parsed;
 	uint32_t parsed_update;
 	uint32_t parsed_error;
 
 
-	return lls_table_create_or_update_from_lls_slt_monitor_with_metrics(lls_slt_monitor, lls_packet, packet_size, &parsed, &parsed_update, &parsed_error);
+	return lls_table_create_or_update_from_lls_slt_monitor_with_metrics(lls_slt_monitor, lls_packet_block, &parsed, &parsed_update, &parsed_error);
 }
 
 //only return back if lls_table_version has changed
 
-lls_table_t* lls_table_create_or_update_from_lls_slt_monitor_with_metrics(lls_slt_monitor_t* lls_slt_monitor, uint8_t* lls_packet, int packet_size, uint32_t* parsed, uint32_t* parsed_update, uint32_t* parsed_error) {
+lls_table_t* lls_table_create_or_update_from_lls_slt_monitor_with_metrics(lls_slt_monitor_t* lls_slt_monitor, block_t* lls_packet_block, uint32_t* parsed, uint32_t* parsed_update, uint32_t* parsed_error) {
 
-	lls_table_t* lls_table_new = __lls_table_create(lls_packet, packet_size);
+	lls_table_t* lls_table_new = __lls_table_create(lls_packet_block);
 	if(!lls_table_new) {
 		(*parsed_error)++;
 		return NULL; //parse error or not supported
@@ -155,11 +154,11 @@ lls_table_t* lls_table_create_or_update_from_lls_slt_monitor_with_metrics(lls_sl
 
 }
 
-lls_table_t* __lls_table_create( uint8_t* lls_packet, int size) {
+lls_table_t* __lls_table_create(block_t* lls_packet_block) {
 	int res = 0;
 	xml_node_t* xml_root_node = NULL;
 
-	lls_table_t* lls_table = lls_create_xml_table(lls_packet, size);
+	lls_table_t* lls_table = lls_create_xml_table(lls_packet_block);
 
 	if(!lls_table) {
 		_LLS_ERROR("lls_create_table - error creating instance of LLS table and subclass, return from lls_create_xml_table was null");

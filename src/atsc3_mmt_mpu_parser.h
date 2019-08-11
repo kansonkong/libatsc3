@@ -59,7 +59,6 @@
 extern "C" {
 #endif
 
-mmtp_mpu_packet_t* mmtp_mpu_packet_parse_from_udp_packet_t(mmtp_packet_header_t* mmtp_packet_header, udp_packet_t* udp_packet);
 mmtp_mpu_packet_t* mmtp_mpu_packet_parse_from_block_t(mmtp_packet_header_t* mmtp_packet_header, block_t* udp_packet);
 
 

@@ -32,19 +32,15 @@ typedef struct udp_flow {
 
 typedef struct udp_packet {
 	udp_flow_t		udp_flow;
-
-	//inherit from libpcap type usage
+    
     //note - data will be the payload after the following packet headers removed:
     //[ethernet, ip, udp]
-	u_char* 		data;
-	int 			data_length;
-	int				data_position;
-
+    block_t*        data;
+    
 	//internals
 	int				raw_packet_length;
 
 } udp_packet_t;
-    
     
 
 #define udp_packet_get_remaining_bytes(udp_packet) (__MAX(0, udp_packet->data_length - udp_packet->data_position ))
