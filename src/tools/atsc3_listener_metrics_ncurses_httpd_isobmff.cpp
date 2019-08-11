@@ -305,6 +305,11 @@ void update_global_mmtp_statistics_from_udp_packet_t(udp_packet_t *udp_packet) {
 		if(mmtp_mpu_packet->mpu_timed_flag == 1) {
 		    atsc3_packet_statistics_mmt_stats_populate(udp_packet, mmtp_mpu_packet);
 
+            block_Destroy(&mmtp_mpu_packet->du_mpu_metadata_block);
+            block_Destroy(&mmtp_mpu_packet->du_mfu_block);
+            block_Destroy(&mmtp_mpu_packet->du_movie_fragment_block);
+
+            //
 			//mmtp_mpu_dump_header(mmtp_mpu_packet);
 		} else {
 			//non-timed
@@ -316,6 +321,8 @@ void update_global_mmtp_statistics_from_udp_packet_t(udp_packet_t *udp_packet) {
 		uint8_t parsed_count = mmt_signalling_message_parse_packet(mmtp_signalling_packet, udp_packet->data);
 		if(parsed_count) {
 			signalling_message_dump(mmtp_signalling_packet);
+			//temp hack until we are managing flows better
+			mmtp_signalling_packet_free(&mmtp_signalling_packet);
 		} else {
 			goto error;
 		}
@@ -621,12 +628,12 @@ void* pcap_loop_run_thread(void* dev_pointer) {
 int main(int argc,char **argv) {
     _MPU_DEBUG_ENABLED = 1;
     _MMTP_DEBUG_ENABLED = 1;
+    _MMT_SIGNALLING_MESSAGE_DEBUG_ENABLED = 1;
 
 
 #ifdef __LOTS_OF_DEBUGGING__
 	_MPU_DEBUG_ENABLED = 0;
 	_MMTP_DEBUG_ENABLED = 0;
-	_MMT_SIGNALLING_MESSAGE_DEBUG_ENABLED = 0;
 	_MMT_SIGNALLING_MESSAGE_TRACE_ENABLED = 0;
 
 	_MMT_RECON_FROM_SAMPLE_DEBUG_ENABLED = 1;
