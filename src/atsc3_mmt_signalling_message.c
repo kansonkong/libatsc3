@@ -109,9 +109,7 @@ uint8_t mmt_signalling_message_parse_packet(mmtp_signalling_packet_t* mmtp_signa
 		__MMSM_ERROR("signalling_message_parse_payload_header: mmtp_payload_type 0x02 != 0x%x", mmtp_signalling_packet->mmtp_payload_type);
 		return processed_messages_count;
 	}
-
-	int32_t si_message_size_remaining = block_Remaining_size(udp_packet);
-
+    
 	if(mmtp_signalling_packet->si_aggregation_flag) {
 		uint32_t mmtp_aggregation_msg_length;
 		__MMSM_ERROR("mmt_signalling_message_parse_packet: AGGREGATED SI is UNTESTED!");
@@ -134,7 +132,7 @@ uint8_t mmt_signalling_message_parse_packet(mmtp_signalling_packet_t* mmtp_signa
 			processed_messages_count += mmt_signalling_message_parse_id_type(mmtp_signalling_packet, udp_packet);
 			udp_packet_size = udp_packet_size - (buf - udp_raw_buf);
 		}
-	} else if(si_message_size_remaining) {
+	} else if(udp_packet_size) {
 		//parse a single message
 		processed_messages_count = mmt_signalling_message_parse_id_type(mmtp_signalling_packet, udp_packet);
 	}
@@ -174,7 +172,10 @@ uint8_t mmt_signalling_message_parse_id_type(mmtp_signalling_packet_t* mmtp_sign
 
 	uint8_t version;
 	buf = extract(buf, &version, 1);
-
+    
+    //keep our block_t in sync...by 3 bytes
+    block_Seek_Relative(udp_packet, 3);
+    
 	int32_t buf_size = udp_raw_buf_size - (buf - raw_buf);
 
 	mmt_signalling_message_header_and_payload_t* mmt_signalling_message_header_and_payload = mmt_signalling_message_header_and_payload_create(message_id, version);
