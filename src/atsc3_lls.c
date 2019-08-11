@@ -76,9 +76,9 @@ static lls_table_t* __lls_create_base_table_raw(block_t* lls_packet_block) {
 	block_Seek_Relative(lls_packet_block, remaining_payload_size);
 
 	base_table->raw_xml.xml_payload_compressed = temp_gzip_payload;
-	base_table->raw_xml.xml_payload_compressed_size = remaining_payload_size - 4;
+	base_table->raw_xml.xml_payload_compressed_size = remaining_payload_size;
 
-	//printf("first 4 hex: 0x%x 0x%x 0x%x 0x%x", temp_gzip_payload[0], temp_gzip_payload[1], temp_gzip_payload[2], temp_gzip_payload[3]);
+	__LLS_SLT_PARSER_TRACE("first 4 hex: 0x%x 0x%x 0x%x 0x%x", temp_gzip_payload[0], temp_gzip_payload[1], temp_gzip_payload[2], temp_gzip_payload[3]);
 
 	return base_table;
 }
