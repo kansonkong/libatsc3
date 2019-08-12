@@ -11,7 +11,7 @@ void mmt_signalling_message_header_and_payload_free(mmt_signalling_message_heade
 	mmt_signalling_message_header_and_payload_t* mmt_signalling_message_header_and_payload = *mmt_signalling_message_header_and_payload_p;
     if(mmt_signalling_message_header_and_payload) {
 		//determine if we have any internal mallocs to clear
-		if(mmt_signalling_message_header_and_payload->message_header.message_id == MMT_ATSC3_MESSAGE_ID) {
+		if(mmt_signalling_message_header_and_payload->message_header.MESSAGE_id_type == MMT_ATSC3_MESSAGE_ID) {
 			//free structs from mmt_atsc3_message_payload_t
 			if(mmt_signalling_message_header_and_payload->message_payload.mmt_atsc3_message_payload.URI_payload) {
 				free(mmt_signalling_message_header_and_payload->message_payload.mmt_atsc3_message_payload.URI_payload);
@@ -25,6 +25,31 @@ void mmt_signalling_message_header_and_payload_free(mmt_signalling_message_heade
 				free(mmt_signalling_message_header_and_payload->message_payload.mmt_atsc3_message_payload.atsc3_message_content_compressed);
 				mmt_signalling_message_header_and_payload->message_payload.mmt_atsc3_message_payload.atsc3_message_content_compressed = NULL;
 			}
+		} else if(mmt_signalling_message_header_and_payload->message_header.MESSAGE_id_type == MPT_message) {
+			//clear out mp_table
+			for(int i=0; i < mmt_signalling_message_header_and_payload->message_payload.mp_table.number_of_assets; i++) {
+				mp_table_asset_row_t* mp_table_asset_row = &mmt_signalling_message_header_and_payload->message_payload.mp_table.mp_table_asset_row[i];
+				if(mp_table_asset_row) {
+					if(mp_table_asset_row->asset_descriptors_payload) {
+						//mp_table_asset_row->asset_descriptors_length?
+						mp_table_asset_row->asset_descriptors_length = 0;
+						free(mp_table_asset_row->asset_descriptors_payload);
+						mp_table_asset_row->asset_descriptors_payload = NULL;
+					}
+
+				}
+			}
+
+			free(mmt_signalling_message_header_and_payload->message_payload.mp_table.mp_table_asset_row);
+			mmt_signalling_message_header_and_payload->message_payload.mp_table.mp_table_asset_row = NULL;
+
+			if(mmt_signalling_message_header_and_payload->message_payload.mp_table.mp_table_descriptors.mp_table_descriptors_byte) {
+				free(mmt_signalling_message_header_and_payload->message_payload.mp_table.mp_table_descriptors.mp_table_descriptors_byte);
+				mmt_signalling_message_header_and_payload->message_payload.mp_table.mp_table_descriptors.mp_table_descriptors_byte = NULL;
+				mmt_signalling_message_header_and_payload->message_payload.mp_table.mp_table_descriptors.mp_table_descriptors_length = 0;
+			}
+
+
 		}
 
 		free(mmt_signalling_message_header_and_payload);

@@ -51,33 +51,63 @@ int test_parse_mp_item() {
 	return 0;
 }
 
-int test_parse_mp_table() {
+/*
+ * 239.255.1.1.49152.6426.14453.mpt.0.bin
+ * 210 bytes
+ *
+ */
 
+
+int test_parse_mp_table_no_factory() {
+
+
+	const char* TEST_ATSC3_MMT_MESSAGE_FILENAME = "testdata/mmt/signalling_info/239.255.1.1.49152.6426.14453.mpt.0.bin";
+	__MMSM_INFO("test_parse_atsc3_mmt_message_no_factoy: opening file: %s", TEST_ATSC3_MMT_MESSAGE_FILENAME);
+
+	block_t* test_atsc3_mmt_message_payload = get_ip_frame_payload_from_raw_ether_filename(TEST_ATSC3_MMT_MESSAGE_FILENAME);
+	assert(test_atsc3_mmt_message_payload);
+	__MMSM_INFO("test_parse_atsc3_mmt_message_no_factoy: i_pos: %d, p_size: %d", test_atsc3_mmt_message_payload->i_pos, test_atsc3_mmt_message_payload->p_size);
+
+	//START: method under test
+
+	for(int i=0; i < LEAK_CHECK_RUN_COUNT; i++) {
+		block_Rewind(test_atsc3_mmt_message_payload);
+		mmtp_packet_header_t* mmtp_packet_header = mmtp_packet_header_parse_from_block_t(test_atsc3_mmt_message_payload);
+
+		mmtp_packet_header_dump(mmtp_packet_header);
+
+		mmtp_signalling_packet_t* mmtp_signalling_packet = mmt_signalling_message_parse_packet_header(mmtp_packet_header, test_atsc3_mmt_message_payload);
+		uint8_t mmt_SI_messages_processed = mmt_signalling_message_parse_packet(mmtp_signalling_packet, test_atsc3_mmt_message_payload);
+
+		mmt_signalling_message_dump(mmtp_signalling_packet);
+
+		//free our alloc(s)
+		mmt_signalling_message_free(&mmtp_signalling_packet);
+		mmtp_packet_header_free(&mmtp_packet_header);
+	}
+
+
+	//END: method under test
+	block_Release(&test_atsc3_mmt_message_payload);
+
+	return 0;
 
 	return 0;
 }
 /*
  * 239.155.1.1.49152.6425.9816.33024.atsc3_mmt_message.bin
+ * 427 bytes
  *
- *
- * 2019-08-12 - valgrind results:
-==26527== 799,920 bytes in 9,999 blocks are definitely lost in loss record 60 of 61
-==26527==    at 0x1001586EA: calloc (in /usr/local/Cellar/valgrind/3.14.0/lib/valgrind/vgpreload_memcheck-amd64-darwin.so)
-==26527==    by 0x1000091DF: mmtp_signalling_packet_add_mmt_signalling_message_header_and_payload (atsc3_mmtp_packet_types.c:113)
-==26527==    by 0x10000E12D: mmt_signalling_message_parse_id_type (atsc3_mmt_signalling_message.c:171)
-==26527==    by 0x10000E014: mmt_signalling_message_parse_packet (atsc3_mmt_signalling_message.c:126)
-==26527==    by 0x100000F51: test_parse_atsc3_mmt_message_no_factoy (atsc3_mmt_signalling_packet_test.c:82)
-==26527==    by 0x1000010E8: main (atsc3_mmt_signalling_packet_test.c:119)
-==26527==
-==26527== 3,439,312 bytes in 9,998 blocks are definitely lost in loss record 61 of 61
-==26527==    at 0x1001586EA: calloc (in /usr/local/Cellar/valgrind/3.14.0/lib/valgrind/vgpreload_memcheck-amd64-darwin.so)
-==26527==    by 0x10000FA92: __read_uint32_len_to_string (atsc3_mmt_signalling_message.c:353)
-==26527==    by 0x10000F2F6: mmt_atsc3_message_payload_parse (atsc3_mmt_signalling_message.c:578)
-==26527==    by 0x10000E50E: mmt_signalling_message_parse_id_type (atsc3_mmt_signalling_message.c:262)
-==26527==    by 0x10000E014: mmt_signalling_message_parse_packet (atsc3_mmt_signalling_message.c:126)
-==26527==    by 0x100000F51: test_parse_atsc3_mmt_message_no_factoy (atsc3_mmt_signalling_packet_test.c:82)
-==26527==    by 0x1000010E8: main (atsc3_mmt_signalling_packet_test.c:119)
-==26527==
+==27735==
+==27735== LEAK SUMMARY:
+==27735==    definitely lost: 5,276 bytes in 11 blocks
+==27735==    indirectly lost: 6,972 bytes in 11 blocks
+==27735==      possibly lost: 48 bytes in 2 blocks
+==27735==    still reachable: 384 bytes in 9 blocks
+==27735==         suppressed: 11,033 bytes in 143 blocks
+==27735== Reachable blocks (those to which a pointer was found) are not shown.
+==27735== To see them, rerun with: --leak-check=full --show-leak-kinds=all
+==27735==
  *
  *
  */
@@ -136,7 +166,13 @@ int main(int argc, char* argv[] ) {
 
 
 	__MMSM_INFO("---starting unit test---");
-	__MMSM_INFO("test_parse_atsc3_mmt_message_no_factory")
-	test_parse_atsc3_mmt_message_no_factoy();
+	if(false) {
+		__MMSM_INFO("test_parse_atsc3_mmt_message_no_factory");
+		test_parse_atsc3_mmt_message_no_factoy();
+	}
 
+	if(true) {
+		__MMSM_INFO("test_parse_mp_table_no_factory");
+		test_parse_mp_table_no_factory();
+	}
 }
