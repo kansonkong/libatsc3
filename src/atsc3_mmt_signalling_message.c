@@ -82,7 +82,7 @@ mmtp_signalling_packet_t* mmt_signalling_message_parse_packet_header(mmtp_packet
 }
 
 /**
- *
+ * TODO - move block_t pointer
  * return -1 for error extracting mmt_signaling_message payloads
  */
 
@@ -102,12 +102,12 @@ uint8_t mmt_signalling_message_parse_packet(mmtp_signalling_packet_t* mmtp_signa
 	if(mmtp_signalling_packet->si_aggregation_flag) {
 		uint32_t mmtp_aggregation_msg_length;
 		__MMSM_ERROR("mmt_signalling_message_parse_packet: AGGREGATED SI is UNTESTED!");
-
 		while(block_Remaining_size(udp_packet)) {
 			if(mmtp_signalling_packet->si_additional_length_header) {
 				//read the full 32 bits for MSG_length
 				buf = extract(buf, (uint8_t*)&mmtp_aggregation_msg_length, 4);
 				mmtp_aggregation_msg_length = ntohl(mmtp_aggregation_msg_length);
+                
 
 			} else {
 				//only read 16 bits for MSG_length
@@ -143,8 +143,7 @@ mmt_signalling_message_header_and_payload_t* __mmt_signalling_message_parse_leng
 	uint8_t* buf = block_Get(udp_packet);
 	buf = extract(buf, (uint8_t*)&mmtp_msg_length_short, 2);
 	mmt_signalling_message_header_and_payload->message_header.length = ntohs(mmtp_msg_length_short);
-	block_Seek_Relative(udp_packet, 4);
-
+	block_Seek_Relative(udp_packet, 2);
 	return mmt_signalling_message_header_and_payload;
 }
 
@@ -401,6 +400,7 @@ uint8_t* mpt_message_parse(mmt_signalling_message_header_and_payload_t* mmt_sign
 	uint8_t *buf = raw_buf;
 	mp_table_t* mp_table = &mmt_signalling_message_header_and_payload->message_payload.mp_table;
 
+    //jjustman-2019-08-12 - mp_table.id: 8 bit
 	uint8_t table_id;
 	buf = extract(buf, &table_id, 1);
 	mp_table->table_id = table_id;
