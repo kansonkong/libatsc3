@@ -98,6 +98,7 @@ unit_tests: test/atsc3_lmt_test \
 			test/atsc3_lls_slt_parser_test \
 			test/atsc3_lls_test \
 			test/atsc3_lls_SystemTime_test \
+			test/atsc3_mmt_mpu_packet_test \
 			test/atsc3_mmt_signalling_message_test \
 			test/atsc3_mmt_signalling_packet_test \
 			test/atsc3_isobmff_box_test \
@@ -432,6 +433,11 @@ test/atsc3_mmt_signalling_packet_test: test/atsc3_mmt_signalling_packet_test.c a
 	cc -g3 -O0 test/atsc3_mmt_signalling_packet_test.c libatsc3.o -lz -lpcap -o test/atsc3_mmt_signalling_packet_test
 	echo "valgrind --leak-check=full  ./atsc3_mmt_signalling_packet_test" > test/atsc3_mmt_signalling_packet_test_valgrind
 	chmod +x test/atsc3_mmt_signalling_packet_test_valgrind
+	
+test/atsc3_mmt_mpu_packet_test: test/atsc3_mmt_mpu_packet_test.c atsc3_utils.o
+	cc -g3 -O0 test/atsc3_mmt_mpu_packet_test.c libatsc3.o -lz -lpcap -o test/atsc3_mmt_mpu_packet_test
+	echo "valgrind --leak-check=full  ./atsc3_mmt_mpu_packet_test" > test/atsc3_mmt_mpu_packet_test_valgrind
+	chmod +x test/atsc3_mmt_mpu_packet_test_valgrind
 	
 	
 test/atsc3_isobmff_box_test: test/atsc3_isobmff_box_test.c

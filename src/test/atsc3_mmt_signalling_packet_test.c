@@ -180,7 +180,6 @@ int test_parse_atsc3_mmt_message_no_factoy() {
 		mmtp_packet_header_free(&mmtp_packet_header);
 	}
 
-
 	//END: method under test
 	block_Release(&test_atsc3_mmt_message_payload);
 
