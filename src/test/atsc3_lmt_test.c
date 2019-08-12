@@ -3,9 +3,9 @@
  * atsc3_lmt.c: test driver for ATSC 3.0 LMT parsing for ALP
  *
  */
-#include "atsc3_utils.h"
-#include "atsc3_alp_types.h"
-#include "xml.h"
+#include "../atsc3_utils.h"
+#include "../atsc3_alp_types.h"
+#include "../xml.h"
 
 
 void __create_binary_payload(char *test_payload_base64, uint8_t **binary_payload, int * binary_payload_size) {

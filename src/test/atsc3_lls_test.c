@@ -4,9 +4,7 @@
  *
  */
 
-#include "atsc3_lls.h"
-#include "xml.h"
-#include "atsc3_gzip.h"
+#include "../atsc3_lls.h"
 
 #define __UNIT_TEST 1
 #ifdef __UNIT_TEST

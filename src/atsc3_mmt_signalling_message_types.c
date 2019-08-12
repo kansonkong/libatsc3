@@ -24,8 +24,10 @@
 
 void mmt_signalling_message_header_and_payload_free(mmt_signalling_message_header_and_payload_t** mmt_signalling_message_header_and_payload_p) {
 	mmt_signalling_message_header_and_payload_t* mmt_signalling_message_header_and_payload = *mmt_signalling_message_header_and_payload_p;
-	if(mmt_signalling_message_header_and_payload) {
+    printf("27, %p", mmt_signalling_message_header_and_payload);
+    if(mmt_signalling_message_header_and_payload) {
 
+        printf("27, %p", mmt_signalling_message_header_and_payload);
 		//determine if we have any internal mallocs to clear
 		if(mmt_signalling_message_header_and_payload->message_header.message_id == MMT_ATSC3_MESSAGE_ID) {
 			if(mmt_signalling_message_header_and_payload->message_payload.mmt_atsc3_message_payload.URI_payload) {

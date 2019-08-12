@@ -28,8 +28,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-#include "atsc3_lls.h"
-#include "xml.h"
+#include "../atsc3_lls.h"
 
 #define __UNIT_TEST 1
 #ifdef __UNIT_TEST

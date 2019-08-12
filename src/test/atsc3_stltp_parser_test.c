@@ -3,11 +3,12 @@
  * atsc3_stltp_parser_test.c
  * test driver for STLTP parsing
  *
+ * jjustman-2019-08-12 - backport the listener_tests/alp reflector
  *
  */
 
-#include "atsc3_utils.h"
-#include "atsc3_stltp_parser.h"
+#include "../atsc3_utils.h"
+#include "../atsc3_stltp_parser.h"
 
 
 #define __STLTP_PARSER_TEST_DEBUG(...)  printf("test:%d:DEBUG: ",__LINE__); printf(__VA_ARGS__); printf("%s%s","\r","\n")
