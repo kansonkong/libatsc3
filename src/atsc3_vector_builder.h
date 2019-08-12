@@ -81,7 +81,7 @@
 	\
 \
 
-
+//TODO: make sure we don't duplicate over an existing struct without at least clearing the prior instance
 #define ATSC3_VECTOR_BUILDER_METHODS_IMPLEMENTATION(vector_struct_name, vector_item_name) \
 	PPCAT(vector_item_name,_t)* PPCAT(vector_item_name,_new)() { \
 		PPCAT(vector_item_name,_t)* vector_item_name = calloc(1, sizeof(PPCAT(vector_item_name,_t))); \
@@ -110,27 +110,34 @@
 		/* PPCAT(name,_t)* name = calloc(1, sizeof(PPCAT(name,_t))); */ \
 		/* return name; */ \
 	} \
+	/* de-alloc vector AND _free item instances */ \
 	void PPCAT(vector_struct_name,PPCAT(_clear_, vector_item_name))(PPCAT(vector_struct_name,_t)* vector_struct_name) { \
-		for(int i=0; i < vector_struct_name->PPCAT(vector_item_name, _v).count; i++) { \
-			if(vector_struct_name->PPCAT(vector_item_name, _v).data[i]) { \
-				freesafe(vector_struct_name->PPCAT(vector_item_name, _v).data[i]); \
-				vector_struct_name->PPCAT(vector_item_name, _v).data[i] = NULL; \
+		if(vector_struct_name->PPCAT(vector_item_name, _v).data) {	\
+			for(int i=0; i < vector_struct_name->PPCAT(vector_item_name, _v).count; i++) { \
+				if(vector_struct_name->PPCAT(vector_item_name, _v).data[i]) { \
+					freesafe(vector_struct_name->PPCAT(vector_item_name, _v).data[i]); \
+					vector_struct_name->PPCAT(vector_item_name, _v).data[i] = NULL; \
+				} \
 			} \
+			vector_struct_name->PPCAT(vector_item_name, _v).count = 0; \
+			\
 		} \
-		vector_struct_name->PPCAT(vector_item_name, _v).count 	= 0; \
-		\
 	} \
 	void PPCAT(vector_struct_name,PPCAT(_free_, vector_item_name))(PPCAT(vector_struct_name,_t)* vector_struct_name) { \
-		for(int i=0; i < vector_struct_name->PPCAT(vector_item_name, _v).count; i++) { \
-printf("doing line 125: %d, %p", i, vector_struct_name->PPCAT(vector_item_name, _v).data[i]);\
-            if(vector_struct_name->PPCAT(vector_item_name, _v).data[i]) { \
-printf("doing line 127: %d, %p", i, vector_struct_name->PPCAT(vector_item_name, _v).data[i]); \
-				PPCAT(vector_item_name,_free)(&vector_struct_name->PPCAT(vector_item_name, _v).data[i]); \
+		if(vector_struct_name->PPCAT(vector_item_name, _v).data) {	\
+			for(int i=0; i < vector_struct_name->PPCAT(vector_item_name, _v).count; i++) { \
+	printf("doing line 125: %d, %p", i, vector_struct_name->PPCAT(vector_item_name, _v).data[i]);\
+				if(vector_struct_name->PPCAT(vector_item_name, _v).data[i]) { \
+	printf("doing line 127: %d, %p", i, vector_struct_name->PPCAT(vector_item_name, _v).data[i]); \
+					PPCAT(vector_item_name,_free)(&vector_struct_name->PPCAT(vector_item_name, _v).data[i]); \
+				} \
 			} \
+			vector_struct_name->PPCAT(vector_item_name, _v).count = 0; \
+			vector_struct_name->PPCAT(vector_item_name, _v).size  = 0; \
+			free(vector_struct_name->PPCAT(vector_item_name, _v).data); \
+			vector_struct_name->PPCAT(vector_item_name, _v).data = NULL; \
 		} \
-		vector_struct_name->PPCAT(vector_item_name, _v).count 	= 0; \
-		\
-	} \
+	};
 
 
 //provide a default
@@ -144,6 +151,6 @@ printf("doing line 127: %d, %p", i, vector_struct_name->PPCAT(vector_item_name, 
 			}	\
 			*PPCAT(vector_item_name,_p) = NULL;	\
 		}	\
-	}
+	};
 
 #endif /* ATSC3_VECTOR_BUILDER_H_ */

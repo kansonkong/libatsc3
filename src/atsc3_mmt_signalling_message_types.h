@@ -321,7 +321,7 @@ ATSC3_VECTOR_BUILDER_METHODS_INTERFACE(mmt_scte35_message_payload, mmt_scte35_si
 
 /*..fix me..*/
 
-typedef union mmt_signalling_message_type {
+typedef union mmt_signalling_message_payload {
 	mmt_atsc3_message_payload_t			mmt_atsc3_message_payload;
 	mp_table_t							mp_table;
 	mmt_scte35_message_payload_t		mmt_scte35_message_payload;
