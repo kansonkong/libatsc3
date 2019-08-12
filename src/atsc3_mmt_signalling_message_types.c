@@ -37,8 +37,16 @@ void mmt_signalling_message_header_and_payload_free(mmt_signalling_message_heade
 							mp_table_asset_row->identifier_mapping.asset_id.asset_id = NULL;
 						}
 					}
-					if(mp_table_asset_row->asset_descriptors_payload) { //mp_table_asset_row->asset_descriptors_length?
+					if(mp_table_asset_row->mmt_signalling_message_mpu_timestamp_descriptor) {
+						if(mp_table_asset_row->mmt_signalling_message_mpu_timestamp_descriptor->mpu_tuple) {
+							free(mp_table_asset_row->mmt_signalling_message_mpu_timestamp_descriptor->mpu_tuple);
+							mp_table_asset_row->mmt_signalling_message_mpu_timestamp_descriptor->mpu_tuple = NULL;
+						}
+						free(mp_table_asset_row->mmt_signalling_message_mpu_timestamp_descriptor);
+						mp_table_asset_row->mmt_signalling_message_mpu_timestamp_descriptor = NULL;
+					}
 
+					if(mp_table_asset_row->asset_descriptors_payload) { //mp_table_asset_row->asset_descriptors_length?
 						mp_table_asset_row->asset_descriptors_length = 0;
 						free(mp_table_asset_row->asset_descriptors_payload);
 						mp_table_asset_row->asset_descriptors_payload = NULL;
