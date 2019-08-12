@@ -122,7 +122,9 @@
 	} \
 	void PPCAT(vector_struct_name,PPCAT(_free_, vector_item_name))(PPCAT(vector_struct_name,_t)* vector_struct_name) { \
 		for(int i=0; i < vector_struct_name->PPCAT(vector_item_name, _v).count; i++) { \
-			if(vector_struct_name->PPCAT(vector_item_name, _v).data[i]) { \
+printf("doing line 125: %d, %p", i, vector_struct_name->PPCAT(vector_item_name, _v).data[i]);\
+            if(vector_struct_name->PPCAT(vector_item_name, _v).data[i]) { \
+printf("doing line 127: %d, %p", i, vector_struct_name->PPCAT(vector_item_name, _v).data[i]); \
 				PPCAT(vector_item_name,_free)(&vector_struct_name->PPCAT(vector_item_name, _v).data[i]); \
 			} \
 		} \

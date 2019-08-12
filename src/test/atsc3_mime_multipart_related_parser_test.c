@@ -8,10 +8,9 @@
 #include <stdio.h>
 #include <string.h>
 
-#include "atsc3_utils.h"
-#include "atsc3_mime_multipart_related_parser.h"
-#include "atsc3_sls_metadata_fragment_types_parser.h"
-#include "atsc3_logging_externs.h"
+#include "../atsc3_utils.h"
+#include "../atsc3_mime_multipart_related_parser.h"
+#include "../atsc3_sls_metadata_fragment_types_parser.h"
 
 // #define __TRACE__
 
