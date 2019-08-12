@@ -61,19 +61,22 @@
 #include <stdlib.h>
 #include <arpa/inet.h>
 
+
+#ifndef ATSC3_MMT_SIGNALLING_MESSAGE_H
+#define ATSC3_MMT_SIGNALLING_MESSAGE_H
+
+
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+
 #include "atsc3_utils.h"
 #include "atsc3_gzip.h"
 #include "atsc3_logging_externs.h"
 #include "atsc3_mmtp_packet_types.h"
 #include "atsc3_mmtp_parser.h"
 #include "endianess.c"
-
-#ifndef ATSC3_MMT_SIGNALLING_MESSAGE_H
-#define ATSC3_MMT_SIGNALLING_MESSAGE_H
-
-#ifdef __cplusplus
-extern "C" {
-#endif
 
 
 /**
@@ -93,13 +96,14 @@ raw base64 payload:
  *
  */
 
+//parse mmtp_packet_header for signalling_message extraction
 mmtp_signalling_packet_t* mmt_signalling_message_parse_packet_header(mmtp_packet_header_t* mmtp_packet_header, block_t* udp_packet_block);
 
+//parse mmtp_signalling_packet_t, calls mmt_signalling_message_parse_id_type
 uint8_t mmt_signalling_message_parse_packet(mmtp_signalling_packet_t* mmtp_signalling_packet, block_t* udp_packet_block);
-
-mmt_signalling_message_header_and_payload_t* mmt_signalling_message_header_and_payload_create(uint16_t message_id, uint8_t version);
-
 uint8_t mmt_signalling_message_parse_id_type(mmtp_signalling_packet_t* mmtp_signalling_packet, block_t* udp_packet_block);
+    
+mmt_signalling_message_header_and_payload_t* mmt_signalling_message_header_and_payload_create(uint16_t message_id, uint8_t version);
 
 uint8_t* pa_message_parse(mmt_signalling_message_header_and_payload_t* mmt_signalling_message_header_and_payload, block_t* udp_packet_block);
 uint8_t* mpi_message_parse(mmt_signalling_message_header_and_payload_t* mmt_signalling_message_header_and_payload, block_t* udp_packet_block);
