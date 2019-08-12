@@ -10,7 +10,9 @@
 #ifndef ATSC3_MMT_MPU_SAMPLE_FORMAT_TYPE_H_
 #define ATSC3_MMT_MPU_SAMPLE_FORMAT_TYPE_H_
 
+#include "atsc3_utils.h"
 #include "atsc3_logging_externs.h"
+
 
 #ifdef __cplusplus
 extern "C" {
