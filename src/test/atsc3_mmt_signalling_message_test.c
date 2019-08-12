@@ -68,7 +68,7 @@ int test_mmt_signaling_message_mpu_timestamp_descriptor_table(char* base64_paylo
 
 	mmt_signalling_message_parse_packet(mmtp_signalling_packet, binary_payload_block);
 
-	signalling_message_dump(mmtp_signalling_packet);
+	mmt_signalling_message_dump(mmtp_signalling_packet);
 
 	return 0;
 }
