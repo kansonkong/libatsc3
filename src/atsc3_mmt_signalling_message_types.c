@@ -30,18 +30,30 @@ void mmt_signalling_message_header_and_payload_free(mmt_signalling_message_heade
 			for(int i=0; i < mmt_signalling_message_header_and_payload->message_payload.mp_table.number_of_assets; i++) {
 				mp_table_asset_row_t* mp_table_asset_row = &mmt_signalling_message_header_and_payload->message_payload.mp_table.mp_table_asset_row[i];
 				if(mp_table_asset_row) {
-					if(mp_table_asset_row->asset_descriptors_payload) {
-						//mp_table_asset_row->asset_descriptors_length?
+					if(mp_table_asset_row->identifier_mapping.identifier_type == 0x00) {
+						if(mp_table_asset_row->identifier_mapping.asset_id.asset_id) { //mp_table_asset_row->identifier_mapping.asset_id.asset_id_length
+							mp_table_asset_row->identifier_mapping.asset_id.asset_id_length = 0 ;
+							free(mp_table_asset_row->identifier_mapping.asset_id.asset_id);
+							mp_table_asset_row->identifier_mapping.asset_id.asset_id = NULL;
+						}
+					}
+					if(mp_table_asset_row->asset_descriptors_payload) { //mp_table_asset_row->asset_descriptors_length?
+
 						mp_table_asset_row->asset_descriptors_length = 0;
 						free(mp_table_asset_row->asset_descriptors_payload);
 						mp_table_asset_row->asset_descriptors_payload = NULL;
 					}
-
 				}
 			}
 
 			free(mmt_signalling_message_header_and_payload->message_payload.mp_table.mp_table_asset_row);
 			mmt_signalling_message_header_and_payload->message_payload.mp_table.mp_table_asset_row = NULL;
+
+			if(mmt_signalling_message_header_and_payload->message_payload.mp_table.mmt_package_id.mmt_package_id) {
+				free(mmt_signalling_message_header_and_payload->message_payload.mp_table.mmt_package_id.mmt_package_id);
+				mmt_signalling_message_header_and_payload->message_payload.mp_table.mmt_package_id.mmt_package_id = NULL;
+				mmt_signalling_message_header_and_payload->message_payload.mp_table.mmt_package_id.mmt_package_id_length = 0;
+			}
 
 			if(mmt_signalling_message_header_and_payload->message_payload.mp_table.mp_table_descriptors.mp_table_descriptors_byte) {
 				free(mmt_signalling_message_header_and_payload->message_payload.mp_table.mp_table_descriptors.mp_table_descriptors_byte);
