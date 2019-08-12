@@ -101,8 +101,21 @@ mmtp_signalling_packet_t* mmt_signalling_message_parse_packet_header(mmtp_packet
 
 //parse mmtp_signalling_packet_t, calls mmt_signalling_message_parse_id_type
 uint8_t mmt_signalling_message_parse_packet(mmtp_signalling_packet_t* mmtp_signalling_packet, block_t* udp_packet_block);
-uint8_t mmt_signalling_message_parse_id_type(mmtp_signalling_packet_t* mmtp_signalling_packet, block_t* udp_packet_block);
     
+void mmt_signalling_message_free(mmtp_signalling_packet_t** mmtp_signalling_packet_p);
+
+void mmt_signalling_message_dump(mmtp_signalling_packet_t* mmtp_signalling_packet);
+void pa_message_dump(mmt_signalling_message_header_and_payload_t* mmt_signalling_message_header_and_payload);
+void mpi_message_dump(mmt_signalling_message_header_and_payload_t* mmt_signalling_message_header_and_payload);
+void mpt_message_dump(mmt_signalling_message_header_and_payload_t* mmt_signalling_message_header_and_payload);
+void mmt_atsc3_message_payload_dump(mmt_signalling_message_header_and_payload_t* mmt_signalling_message_header_and_payload);
+
+
+/**
+ * Internal MMT-SI processing methods
+ */
+uint8_t mmt_signalling_message_parse_id_type(mmtp_signalling_packet_t* mmtp_signalling_packet, block_t* udp_packet_block);
+
 mmt_signalling_message_header_and_payload_t* mmt_signalling_message_header_and_payload_create(uint16_t message_id, uint8_t version);
 
 uint8_t* pa_message_parse(mmt_signalling_message_header_and_payload_t* mmt_signalling_message_header_and_payload, block_t* udp_packet_block);
@@ -112,12 +125,6 @@ uint8_t* mmt_atsc3_message_payload_parse(mmt_signalling_message_header_and_paylo
 uint8_t* mmt_scte35_message_payload_parse(mmt_signalling_message_header_and_payload_t* mmt_signalling_message_header_and_payload, block_t* udp_packet_block);
 
 uint8_t* si_message_not_supported(mmt_signalling_message_header_and_payload_t* mmt_signalling_message_header_and_payload, block_t* udp_packet_block);
-
-void signalling_message_dump(mmtp_signalling_packet_t* mmtp_signalling_packet);
-void pa_message_dump(mmt_signalling_message_header_and_payload_t* mmt_signalling_message_header_and_payload);
-void mpi_message_dump(mmt_signalling_message_header_and_payload_t* mmt_signalling_message_header_and_payload);
-void mpt_message_dump(mmt_signalling_message_header_and_payload_t* mmt_signalling_message_header_and_payload);
-void mmt_atsc3_message_payload_dump(mmt_signalling_message_header_and_payload_t* mmt_signalling_message_header_and_payload);
 
 #ifdef __cplusplus
 }

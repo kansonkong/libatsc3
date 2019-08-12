@@ -99,7 +99,7 @@ void process_packet(u_char *user, const struct pcap_pkthdr *pkthdr, const u_char
 				mmtp_signalling_packet_t* mmtp_signalling_packet = mmt_signalling_message_parse_packet_header(mmtp_packet_header, udp_packet->data);
                 uint8_t parsed_count = mmt_signalling_message_parse_packet(mmtp_signalling_packet, udp_packet->data);
                 if(parsed_count) {
-                    signalling_message_dump(mmtp_signalling_packet);
+                    mmt_signalling_message_dump(mmtp_signalling_packet);
                 }
 
 			} else {

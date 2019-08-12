@@ -12,17 +12,6 @@ int _MMT_SIGNALLING_MESSAGE_DEBUG_ENABLED = 0;
 int _MMT_SIGNALLING_MESSAGE_TRACE_ENABLED = 0;
 
 
-mmt_signalling_message_header_and_payload_t* mmt_signalling_message_header_and_payload_create(uint16_t message_id, uint8_t version) {
-	mmt_signalling_message_header_and_payload_t* mmt_signalling_message_header_and_payload = calloc(1, sizeof(mmt_signalling_message_header_and_payload_t));
-	mmt_signalling_message_header_and_payload->message_header.message_id = message_id;
-	mmt_signalling_message_header_and_payload->message_header.version = version;
-
-	return mmt_signalling_message_header_and_payload;
-}
-//TODO: add free
-
-
-
 /**
  *
  * MPU_timestamp_descriptor message example
@@ -284,6 +273,36 @@ uint8_t mmt_signalling_message_parse_id_type(mmtp_signalling_packet_t* mmtp_sign
 	return (buf != raw_buf);
 
 }
+
+
+mmt_signalling_message_header_and_payload_t* mmt_signalling_message_header_and_payload_create(uint16_t message_id, uint8_t version) {
+	mmt_signalling_message_header_and_payload_t* mmt_signalling_message_header_and_payload = calloc(1, sizeof(mmt_signalling_message_header_and_payload_t));
+	mmt_signalling_message_header_and_payload->message_header.message_id = message_id;
+	mmt_signalling_message_header_and_payload->message_header.version = version;
+
+	return mmt_signalling_message_header_and_payload;
+}
+
+
+void mmt_signalling_message_free(mmtp_signalling_packet_t** mmtp_signalling_packet_p) {
+	if(mmtp_signalling_packet_p) {
+		mmtp_signalling_packet_t* mmtp_signalling_packet = *mmtp_signalling_packet_p;
+		if(mmtp_signalling_packet) {
+			//clean up any inner malloc's
+			block_Release(&mmtp_signalling_packet->raw_packet);
+			block_Release(&mmtp_signalling_packet->mmtp_header_extension);
+
+			//clear our inner struct reference and chained destructors, this will invoke mmt_signalling_message_header_and_payload_free
+			mmtp_signalling_packet_free_mmt_signalling_message_header_and_payload(mmtp_signalling_packet);
+
+			free(mmtp_signalling_packet);
+			mmtp_signalling_packet = NULL;
+		}
+		*mmtp_signalling_packet_p = NULL;
+	}
+}
+
+
 
 
 uint8_t* pa_message_parse(mmt_signalling_message_header_and_payload_t* mmt_signalling_message_header_and_payload, block_t* udp_packet) {
@@ -682,7 +701,7 @@ void signalling_message_mmtp_packet_header_dump(mmtp_packet_header_t* mmtp_packe
 	__MMSM_DEBUG("------------------");
 }
 
-void signalling_message_dump(mmtp_signalling_packet_t* mmtp_signalling_packet) {
+void mmt_signalling_message_dump(mmtp_signalling_packet_t* mmtp_signalling_packet) {
 	if(mmtp_signalling_packet->mmtp_payload_type != 0x02) {
 		__MMSM_ERROR("signalling_message_dump, payload_type 0x%x != 0x02", mmtp_signalling_packet->mmtp_payload_type);
 		return;

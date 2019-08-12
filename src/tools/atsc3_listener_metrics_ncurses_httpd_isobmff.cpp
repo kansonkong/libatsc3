@@ -320,7 +320,7 @@ void update_global_mmtp_statistics_from_udp_packet_t(udp_packet_t *udp_packet) {
 		mmtp_signalling_packet_t* mmtp_signalling_packet = mmt_signalling_message_parse_packet_header(mmtp_packet_header, udp_packet->data);
 		uint8_t parsed_count = mmt_signalling_message_parse_packet(mmtp_signalling_packet, udp_packet->data);
 		if(parsed_count) {
-			signalling_message_dump(mmtp_signalling_packet);
+			mmt_signalling_message_dump(mmtp_signalling_packet);
 			//temp hack until we are managing flows better
 			mmtp_signalling_packet_free(&mmtp_signalling_packet);
 		} else {

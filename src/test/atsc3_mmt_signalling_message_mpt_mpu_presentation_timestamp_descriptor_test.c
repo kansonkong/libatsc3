@@ -49,7 +49,7 @@ int test_mmt_signaling_message_mpu_timestamp_descriptor_table(char* base64_paylo
 	new_size = binary_payload_size - (raw_packet_ptr - binary_payload);
 	raw_packet_ptr = mmt_signalling_message_parse_packet_header(mmtp_payload_fragments, raw_packet_ptr, new_size);
 
-	signalling_message_dump(mmtp_payload_fragments);
+	mmt_signalling_message_dump(mmtp_payload_fragments);
 
 	return 0;
 }
