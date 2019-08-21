@@ -22,7 +22,12 @@
 #include "atsc3_sls_metadata_fragment_types_parser.h"
 #include "atsc3_logging_externs.h"
 
-#define ATSC3_MIME_MULTIPART_RELATED_LINE_BUFFER 1024
+//jjustman - 2019-08-20 RFC 2045 says:
+//   "7bit data" refers to data that is all represented as relatively
+//   short lines with 998 octets or less between CRLF line separation
+//   but has been observed to be far greater in some defective signaler applications
+
+#define ATSC3_MIME_MULTIPART_RELATED_LINE_BUFFER 8192
 #define ATSC3_MIME_MULTIPART_RELATED_PAYLOAD_BUFFER 65535
 
 //this is a bit of a misnomer, its actually the multipart mbms and child envelope parers..
