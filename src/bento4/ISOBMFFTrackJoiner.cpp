@@ -55,17 +55,16 @@ using namespace std;
 #include "emscripten.h"
 #endif
 
-//glue structs...
-
+//glue-structs for isobmff processing - must be placed in a c++ linkage
 typedef struct AP4_Atom_And_Offset {
-	AP4_Atom* 	atom;
-	uint32_t	start_offset;
-	uint32_t	end_offset;
-	bool 		write_manually;
+    AP4_Atom*     atom;
+    uint32_t    start_offset;
+    uint32_t    end_offset;
+    bool         write_manually;
 } AP4_Atom_And_Offset_t;
 
 
-list<AP4_Atom_And_Offset*> ISOBMFFTrackParseAndBuildOffset(block_t* isobmff_track_block);
+list<AP4_Atom_And_Offset*> ISOBMFFTrackParseAndBuildOffset(AP4_MemoryByteStream* memoryByteStream);
 
 /*----------------------------------------------------------------------
  |   constants
@@ -210,12 +209,12 @@ ISOBMFFTrackJoinerFileResouces_t* loadFileResources(const char* file1, const cha
  * prebuilt moof/trun with alc for single isobmff fragmented player output
  *
  */
-void ISOBMFF_track_joiner_monitor_output_buffer_parse_and_build_joined_alc_boxes(lls_sls_monitor_output_buffer_t* lls_sls_monitor_output_buffer, AP4_MemoryByteStream** output_stream_p)
+void ISOBMFF_track_joiner_monitor_output_buffer_parse_and_build_joined_alc_boxes(lls_sls_monitor_output_buffer_t* lls_sls_monitor_output_buffer, AP4_DataBuffer** output_data_buffer_p, AP4_MemoryByteStream** output_stream_p)
 {
 	block_t* audio_output_buffer = lls_sls_monitor_output_buffer_copy_alc_full_isobmff_box(&lls_sls_monitor_output_buffer->audio_output_buffer_isobmff);
 	block_t* video_output_buffer = lls_sls_monitor_output_buffer_copy_alc_full_isobmff_box(&lls_sls_monitor_output_buffer->video_output_buffer_isobmff);
 
-    parseAndBuildJoinedBoxes_from_lls_sls_monitor_output_buffer(lls_sls_monitor_output_buffer, audio_output_buffer, video_output_buffer, output_stream_p);
+    parseAndBuildJoinedBoxes_from_lls_sls_monitor_output_buffer(lls_sls_monitor_output_buffer, audio_output_buffer, video_output_buffer, output_data_buffer_p, output_stream_p);
 }
 
 
@@ -228,7 +227,7 @@ void ISOBMFF_track_joiner_monitor_output_buffer_parse_and_build_joined_alc_boxes
 
 #define __ENABLE_OOO_MFU_REBUILD__ false
 
-void ISOBMFF_track_joiner_monitor_output_buffer_parse_and_build_joined_mmt_boxes(lls_sls_monitor_output_buffer_t* lls_sls_monitor_output_buffer, AP4_MemoryByteStream** output_stream_p)
+void ISOBMFF_track_joiner_monitor_output_buffer_parse_and_build_joined_mmt_boxes(lls_sls_monitor_output_buffer_t* lls_sls_monitor_output_buffer, AP4_DataBuffer** output_data_buffer_p, AP4_MemoryByteStream** output_stream_p)
 {
 	/** tood - magic happens here **/
 	block_t* audio_output_buffer = NULL; // = lls_sls_monitor_output_buffer_copy_alc_full_isobmff_box(lls_sls_monitor_output_buffer);
@@ -241,18 +240,17 @@ void ISOBMFF_track_joiner_monitor_output_buffer_parse_and_build_joined_mmt_boxes
 		video_output_buffer = lls_sls_monitor_output_buffer_copy_mmt_moof_from_flow_isobmff_box(&lls_sls_monitor_output_buffer->video_output_buffer_isobmff);
 	}
 
-    parseAndBuildJoinedBoxes_from_lls_sls_monitor_output_buffer(lls_sls_monitor_output_buffer, audio_output_buffer, video_output_buffer, output_stream_p);
+    parseAndBuildJoinedBoxes_from_lls_sls_monitor_output_buffer(lls_sls_monitor_output_buffer, audio_output_buffer, video_output_buffer, output_data_buffer_p, output_stream_p);
 }
 
 
-void ISOBMFF_track_joiner_monitor_output_buffer_parse_and_build_joined_mmt_rebuilt_boxes(lls_sls_monitor_output_buffer_t* lls_sls_monitor_output_buffer, AP4_MemoryByteStream** output_stream_p)
+void ISOBMFF_track_joiner_monitor_output_buffer_parse_and_build_joined_mmt_rebuilt_boxes(lls_sls_monitor_output_buffer_t* lls_sls_monitor_output_buffer, AP4_DataBuffer** output_data_buffer_p, AP4_MemoryByteStream** output_stream_p)
 {
 	/** tood - magic happens here **/
 	block_t* audio_output_buffer = block_Duplicate(lls_sls_monitor_output_buffer->audio_output_buffer_isobmff.mmt_mpu_rebuilt);
 	block_t* video_output_buffer = block_Duplicate(lls_sls_monitor_output_buffer->video_output_buffer_isobmff.mmt_mpu_rebuilt);
 
-
-    parseAndBuildJoinedBoxes_from_lls_sls_monitor_output_buffer(lls_sls_monitor_output_buffer, audio_output_buffer, video_output_buffer, output_stream_p);
+    parseAndBuildJoinedBoxes_from_lls_sls_monitor_output_buffer(lls_sls_monitor_output_buffer, audio_output_buffer, video_output_buffer, output_data_buffer_p, output_stream_p);
 }
 
 
@@ -262,7 +260,7 @@ void ISOBMFF_track_joiner_monitor_output_buffer_parse_and_build_joined_mmt_rebui
  rebuild a single output track with re-computed trun box data, injected mpu_presentation_time and normalized atom output
  
  */
- uint32_t ISOBMFF_rebuild_moof_from_sample_data(lls_sls_monitor_buffer_isobmff_t* lls_sls_monitor_buffer_isobmff, AP4_MemoryByteStream** output_stream_p) {
+ uint32_t ISOBMFF_rebuild_moof_from_sample_data(lls_sls_monitor_buffer_isobmff_t* lls_sls_monitor_buffer_isobmff, AP4_DataBuffer** output_data_buffer_p, AP4_MemoryByteStream** output_stream_p) {
 
      
 	block_t* temp_output_buffer = lls_sls_monitor_output_buffer_copy_mmt_moof_from_flow_isobmff_box_no_patching_trailing_mdat(lls_sls_monitor_buffer_isobmff);
@@ -289,13 +287,16 @@ void ISOBMFF_track_joiner_monitor_output_buffer_parse_and_build_joined_mmt_rebui
 	}
 
 	AP4_DataBuffer* dataBuffer = new AP4_DataBuffer(temp_output_buffer->i_pos);
-	AP4_MemoryByteStream* memoryOutputByteStream = new AP4_MemoryByteStream(dataBuffer);
-
+    *output_data_buffer_p = dataBuffer;
+     
+	AP4_MemoryByteStream* memoryOutputByteStream = new AP4_MemoryByteStream(*dataBuffer);
 	*output_stream_p = memoryOutputByteStream;
 
 	uint32_t final_mdat_size = 0;
-
-	list<AP4_Atom_And_Offset_t*> isobmff_atom_list = ISOBMFFTrackParseAndBuildOffset(temp_output_buffer);
+     
+    AP4_MemoryByteStream* memoryInputByteStream = new AP4_MemoryByteStream(temp_output_buffer->p_buffer, temp_output_buffer->i_pos);
+    list<AP4_Atom_And_Offset_t*> isobmff_atom_list = ISOBMFFTrackParseAndBuildOffset(memoryInputByteStream);
+     
 	std::list<AP4_Atom_And_Offset_t*>::iterator it;
 	
     AP4_AtomParent* moofAtomParent = NULL;
@@ -482,7 +483,6 @@ void ISOBMFF_track_joiner_monitor_output_buffer_parse_and_build_joined_mmt_rebui
                     __ISOBMFF_JOINER_DEBUG("REBUILD MOOF: trailing: zeroing sample %u from size: %u to size: %u,", k, to_walk_entries[k].sample_size, 0);
                     to_walk_entries[k].sample_size = 0;
                 }
-                
             }
 		}
         
@@ -521,8 +521,9 @@ void ISOBMFF_track_joiner_monitor_output_buffer_parse_and_build_joined_mmt_rebui
     }
 
 	block_Release(&temp_output_buffer);
-    __ISOBMFF_JOINER_DEBUG("returning final_mdat_size: %u", final_mdat_size);
-
+    delete (AP4_ByteStream*) memoryInputByteStream;
+     
+     __ISOBMFF_JOINER_DEBUG("returning final_mdat_size: %u", final_mdat_size);
 	return final_mdat_size;
 }
 
@@ -594,14 +595,15 @@ uint32_t __rebuild_trun_sample_box(AP4_TrunAtom* temp_trunAtom, lls_sls_monitor_
 	return new_fragments_size;
 }
 
-list<AP4_Atom_And_Offset*> ISOBMFFTrackParseAndBuildOffset(block_t* isobmff_track_block) {
+list<AP4_Atom_And_Offset*> ISOBMFFTrackParseAndBuildOffset(AP4_MemoryByteStream* memoryInputByteStream) {
 
-	__ISOBMFF_JOINER_DEBUG("::ISOBMFFTrackParse: payload size is: %u", isobmff_track_block->i_pos);
+    __ISOBMFF_JOINER_DEBUG("::ISOBMFFTrackParse: payload size is: %u", memoryInputByteStream->GetDataSize());
 
 	list<AP4_Atom_And_Offset_t*> atomList;
     AP4_Atom* atom;
 
-    AP4_MemoryByteStream* memoryInputByteStream = new AP4_MemoryByteStream(isobmff_track_block->p_buffer, isobmff_track_block->i_pos);
+    //AP4_DataBuffer* dataBuffer = new AP4_DataBuffer(isobmff_track_block->p_buffer, isobmff_track_block->i_pos);
+
 
     // inspect the atoms one by one
     AP4_Position start_position;
@@ -626,8 +628,13 @@ list<AP4_Atom_And_Offset*> ISOBMFFTrackParseAndBuildOffset(block_t* isobmff_trac
         start_position = end_position;
     }
 
-    if (memoryInputByteStream) memoryInputByteStream->Release();
-
+    //can't delete here until we are completed with processing this atomList due to reference counting
+//    if (memoryInputByteStream) {
+//        memoryInputByteStream->Release();
+//        delete (AP4_ByteStream*)memoryInputByteStream;
+//
+//    }
+    
     return atomList;
 }
 
@@ -682,7 +689,7 @@ list<AP4_Atom_And_Offset*> ISOBMFFTrackParseAndBuildOffset(block_t* isobmff_trac
  *
  */
 
-void parseAndBuildJoinedBoxes_from_lls_sls_monitor_output_buffer(lls_sls_monitor_output_buffer_t* lls_sls_monitor_output_buffer, block_t* audio_output_buffer, block_t* video_output_buffer, AP4_MemoryByteStream** output_stream_p) {
+void parseAndBuildJoinedBoxes_from_lls_sls_monitor_output_buffer(lls_sls_monitor_output_buffer_t* lls_sls_monitor_output_buffer, block_t* audio_output_buffer, block_t* video_output_buffer, AP4_DataBuffer** output_data_buffer_p, AP4_MemoryByteStream** output_stream_p) {
 
 	AP4_Result   result;
 
@@ -751,13 +758,16 @@ void parseAndBuildJoinedBoxes_from_lls_sls_monitor_output_buffer(lls_sls_monitor
 
 	//we shouldn't be bigger than this for our return..
 	AP4_DataBuffer* dataBuffer = new AP4_DataBuffer(audio_output_buffer->i_pos + video_output_buffer->i_pos );
-	AP4_MemoryByteStream* memoryOutputByteStream = new AP4_MemoryByteStream(dataBuffer);
+    *output_data_buffer_p = dataBuffer;
+	AP4_MemoryByteStream* memoryOutputByteStream = new AP4_MemoryByteStream(*dataBuffer);
 
 	*output_stream_p = memoryOutputByteStream;
 
-	list<AP4_Atom_And_Offset_t*> audio_isobmff_atom_list  = ISOBMFFTrackParseAndBuildOffset(audio_output_buffer);
-
-	list<AP4_Atom_And_Offset_t*> video_isobmff_atom_list =  ISOBMFFTrackParseAndBuildOffset(video_output_buffer);
+    AP4_MemoryByteStream* audioOutputMemoryByteStream = new AP4_MemoryByteStream(audio_output_buffer->p_buffer, audio_output_buffer->i_pos);
+    AP4_MemoryByteStream* videoOutputMemoryByteStream = new AP4_MemoryByteStream(video_output_buffer->p_buffer, video_output_buffer->i_pos);
+	
+    list<AP4_Atom_And_Offset_t*> audio_isobmff_atom_list  = ISOBMFFTrackParseAndBuildOffset(audioOutputMemoryByteStream);
+	list<AP4_Atom_And_Offset_t*> video_isobmff_atom_list =  ISOBMFFTrackParseAndBuildOffset(videoOutputMemoryByteStream);
 
     __ISOBMFF_JOINER_DEBUG("Dumping audio box: size: %u", audio_output_buffer->i_pos);
 	//dumpFullMetadata(audio_isobmff_atom_list);
@@ -1277,7 +1287,10 @@ void parseAndBuildJoinedBoxes_from_lls_sls_monitor_output_buffer(lls_sls_monitor
 		free (*it);
 	}
 
-
+    
+    //cleanup
+    delete (AP4_ByteStream*) audioOutputMemoryByteStream;
+    delete (AP4_ByteStream*) videoOutputMemoryByteStream;
 }
 
 

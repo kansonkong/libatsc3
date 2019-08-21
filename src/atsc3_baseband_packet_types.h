@@ -39,10 +39,14 @@ typedef struct atsc3_baseband_packet {
     uint16_t    ext_len;            //
     uint8_t*    extension;          // 0-31 bytes, or 0-full BBP
 
-    block_t*    alp_payload_pre_pointer;
+    block_t*    alp_payload_pre_pointer; //TODO: jjustman-2019-08-09 - is this the right place for the pre/post ALP pointers?
     block_t*    alp_payload_post_pointer;
 } atsc3_baseband_packet_t;
 
+
+void atsc3_baseband_packet_free_v(atsc3_baseband_packet_t* atsc3_baseband_packet);
+void atsc3_baseband_packet_free(atsc3_baseband_packet_t** atsc3_baseband_packet);
+void atsc3_baseband_packet_free_no_alp_pointer_release(atsc3_baseband_packet_t** atsc3_baseband_packet);
 
 #if defined (__cplusplus)
 }
