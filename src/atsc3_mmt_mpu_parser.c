@@ -75,7 +75,6 @@ mmtp_mpu_packet_t* mmtp_mpu_packet_parse_from_block_t(mmtp_packet_header_t* mmtp
 
 		//re-fanagle
 		uint8_t mpu_sequence_number_block[4];
-
 		buf = (uint8_t*)extract(buf, (uint8_t*)&mpu_sequence_number_block, 4);
 		mmtp_mpu_packet->mpu_sequence_number = ntohl(*((uint32_t*)(&mpu_sequence_number_block[0])));
 

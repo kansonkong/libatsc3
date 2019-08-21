@@ -71,7 +71,7 @@ void process_packet(u_char *user, const struct pcap_pkthdr *pkthdr, const u_char
     
     //dispatch for STLTP decoding and reflection
     if(ip_udp_rtp_packet->udp_flow.dst_ip_addr == *dst_ip_addr_filter && ip_udp_rtp_packet->udp_flow.dst_port == *dst_ip_port_filter) {
-        atsc3_stltp_tunnel_packet_processed = atsc3_stltp_raw_packet_extract_inner_from_outer_packet(ip_udp_rtp_packet, atsc3_stltp_tunnel_packet_processed);
+        atsc3_stltp_tunnel_packet_processed = atsc3_stltp_raw_packet_extract_inner_from_outer_packet(ip_udp_rtp_packet, atsc3_stltp_tunnel_packet_processed, 30000);
         
         if(!atsc3_stltp_tunnel_packet_processed) {
             __ERROR("process_packet: atsc3_stltp_tunnel_packet_processed is null, error processing packet: %p, size: %u",  ip_udp_rtp_packet, ip_udp_rtp_packet->data->p_size);
@@ -89,6 +89,12 @@ void process_packet(u_char *user, const struct pcap_pkthdr *pkthdr, const u_char
                 __INFO("atsc3_baseband_packet: sequence_num: %d, port: %d",
                        atsc3_stltp_baseband_packet->ip_udp_rtp_packet_inner->rtp_header->sequence_number,
                        atsc3_stltp_baseband_packet->ip_udp_rtp_packet_inner->udp_flow.dst_port);
+                
+                if(atsc3_stltp_baseband_packet->ip_udp_rtp_packet_inner->udp_flow.dst_port != 30000) {
+                    __INFO("ignorning stltp_baseband_packet port: %d",  atsc3_stltp_baseband_packet->ip_udp_rtp_packet_inner->udp_flow.dst_port);
+                    //atsc3_stltp_baseband_packet_free(&atsc3_stltp_baseband_packet);
+                    continue;
+                }
 
                 //make sure we get a packet back, base field pointer (13b) : 0x1FFF (8191 bytes) will return NULL
                 atsc3_baseband_packet_t* atsc3_baseband_packet = atsc3_stltp_parse_baseband_packet(atsc3_stltp_baseband_packet);
