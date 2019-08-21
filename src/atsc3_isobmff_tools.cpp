@@ -24,9 +24,10 @@ int _ISOBMFF_TOOLS_SIGNALLING_DEBUG_ENABLED = 0;
 
 lls_sls_monitor_output_buffer_t* atsc3_isobmff_build_joined_alc_isobmff_fragment(lls_sls_monitor_output_buffer_t* lls_sls_monitor_output_buffer) {
 
+    AP4_DataBuffer* ap4_data_buffer;
     AP4_MemoryByteStream* ap4_memory_byte_stream;
 
-    ISOBMFF_track_joiner_monitor_output_buffer_parse_and_build_joined_alc_boxes(lls_sls_monitor_output_buffer, &ap4_memory_byte_stream);
+    ISOBMFF_track_joiner_monitor_output_buffer_parse_and_build_joined_alc_boxes(lls_sls_monitor_output_buffer, &ap4_data_buffer, &ap4_memory_byte_stream);
 
     if(!ap4_memory_byte_stream || !ap4_memory_byte_stream->GetDataSize()) {
         __ISOBMFF_TOOLS_ERROR("ISOBMFF_track_joiner: returned %p, size: %u, returning NULL", ap4_memory_byte_stream, ap4_memory_byte_stream != NULL ? ap4_memory_byte_stream->GetDataSize() : 0);
@@ -48,20 +49,21 @@ lls_sls_monitor_output_buffer_t* atsc3_isobmff_build_joined_alc_isobmff_fragment
 
     block_Write(lls_sls_monitor_output_buffer->joined_isobmff_block, (uint8_t*)ap4_memory_byte_stream->GetData(), ap4_memory_byte_stream->GetDataSize());
 
-    //release our handoe for bento4 for the memory byte stream
+    //release our handle for bento4 for the memory byte stream
     ap4_memory_byte_stream->Release();
+    delete ap4_data_buffer;
 
     return lls_sls_monitor_output_buffer;
-
 }
 
 
 
 lls_sls_monitor_output_buffer_t* atsc3_isobmff_build_joined_mmt_isobmff_fragment(lls_sls_monitor_output_buffer_t* lls_sls_monitor_output_buffer) {
 
+    AP4_DataBuffer* ap4_data_buffer;
     AP4_MemoryByteStream* ap4_memory_byte_stream;
 
-    ISOBMFF_track_joiner_monitor_output_buffer_parse_and_build_joined_mmt_boxes(lls_sls_monitor_output_buffer, &ap4_memory_byte_stream);
+    ISOBMFF_track_joiner_monitor_output_buffer_parse_and_build_joined_mmt_boxes(lls_sls_monitor_output_buffer, &ap4_data_buffer, &ap4_memory_byte_stream);
 
     if(!ap4_memory_byte_stream || !ap4_memory_byte_stream->GetDataSize()) {
         __ISOBMFF_TOOLS_ERROR("atsc3_isobmff_build_joined_mmt_isobmff_fragment: returned %p, size: %u, returning NULL", ap4_memory_byte_stream, ap4_memory_byte_stream != NULL ? ap4_memory_byte_stream->GetDataSize() : 0);
@@ -83,20 +85,19 @@ lls_sls_monitor_output_buffer_t* atsc3_isobmff_build_joined_mmt_isobmff_fragment
     }
 
     block_Write(lls_sls_monitor_output_buffer->joined_isobmff_block, (uint8_t*)ap4_memory_byte_stream->GetData(), ap4_memory_byte_stream->GetDataSize());
-    free (ap4_memory_byte_stream);
+    ap4_memory_byte_stream->Release();
+    delete ap4_data_buffer;
+    
     return lls_sls_monitor_output_buffer;
-
 }
-
-
-//
 
 
 lls_sls_monitor_output_buffer_t* atsc3_isobmff_build_joined_mmt_rebuilt_boxes(lls_sls_monitor_output_buffer_t* lls_sls_monitor_output_buffer) {
 
+    AP4_DataBuffer* ap4_data_buffer;
     AP4_MemoryByteStream* ap4_memory_byte_stream;
 
-    ISOBMFF_track_joiner_monitor_output_buffer_parse_and_build_joined_mmt_rebuilt_boxes(lls_sls_monitor_output_buffer, &ap4_memory_byte_stream);
+    ISOBMFF_track_joiner_monitor_output_buffer_parse_and_build_joined_mmt_rebuilt_boxes(lls_sls_monitor_output_buffer, &ap4_data_buffer, &ap4_memory_byte_stream);
 
     if(!ap4_memory_byte_stream || !ap4_memory_byte_stream->GetDataSize()) {
         __ISOBMFF_TOOLS_ERROR("atsc3_isobmff_build_joined_mmt_rebuilt_boxes: returned %p, size: %u, returning NULL", ap4_memory_byte_stream, ap4_memory_byte_stream != NULL ? ap4_memory_byte_stream->GetDataSize() : 0);
@@ -118,16 +119,18 @@ lls_sls_monitor_output_buffer_t* atsc3_isobmff_build_joined_mmt_rebuilt_boxes(ll
     }
 
     block_Write(lls_sls_monitor_output_buffer->joined_isobmff_block, (uint8_t*)ap4_memory_byte_stream->GetData(), ap4_memory_byte_stream->GetDataSize());
-    free (ap4_memory_byte_stream);
+    ap4_memory_byte_stream->Release();
+    delete ap4_data_buffer;
     return lls_sls_monitor_output_buffer;
 
 }
 
 lls_sls_monitor_buffer_isobmff_t* atsc3_isobmff_rebuild_track_mpu_from_sample_data(lls_sls_monitor_buffer_isobmff_t* lls_sls_monitor_buffer_isobmff) {
 
+    AP4_DataBuffer* ap4_data_buffer = NULL;
     AP4_MemoryByteStream* ap4_memory_byte_stream = NULL;
 
-    uint32_t mdat_size_computed = ISOBMFF_rebuild_moof_from_sample_data(lls_sls_monitor_buffer_isobmff, &ap4_memory_byte_stream);
+    uint32_t mdat_size_computed = ISOBMFF_rebuild_moof_from_sample_data(lls_sls_monitor_buffer_isobmff, &ap4_data_buffer, &ap4_memory_byte_stream);
 
     if(!mdat_size_computed || !ap4_memory_byte_stream || !ap4_memory_byte_stream->GetDataSize()) {
         __ISOBMFF_TOOLS_ERROR("atsc3_isobmff_build_joined_mmt_isobmff_fragment: returned mdat size: %u, ap4_memory_byte_stream: %p, returning NULL", mdat_size_computed, ap4_memory_byte_stream);
@@ -145,7 +148,9 @@ lls_sls_monitor_buffer_isobmff_t* atsc3_isobmff_rebuild_track_mpu_from_sample_da
     }
 
     block_Write(lls_sls_monitor_buffer_isobmff->mmt_mpu_rebuilt, (uint8_t*)ap4_memory_byte_stream->GetData(), ap4_memory_byte_stream->GetDataSize());
-    free (ap4_memory_byte_stream);
+    ap4_memory_byte_stream->Release();
+    delete ap4_data_buffer;
+
     return lls_sls_monitor_buffer_isobmff;
 
 }
@@ -312,7 +317,6 @@ lls_sls_monitor_buffer_isobmff_t* atsc3_isobmff_build_raw_mpu_from_single_sequen
 
 	lls_sls_monitor_buffer_isobmff->packet_id = packet_id;
 
-
 	mpu_data_unit_payload_fragments_t* data_unit_payload_types = NULL;
     mpu_data_unit_payload_fragments_timed_vector_t* data_unit_payload_fragments = NULL; //technically this is mpu_fragments->media_fragment_unit_vector
     mpu_data_unit_payload_fragments_t* mpu_metadata_fragments =    NULL;
@@ -427,7 +431,6 @@ lls_sls_monitor_buffer_isobmff_t* atsc3_isobmff_build_raw_mpu_from_single_sequen
             __ISOBMFF_TOOLS_WARN("Movie Fragment Metadata: no timed fragments in this payload: packet_id: %u, mpu_sequence_number: %u", packet_id, mpu_sequence_number);
 	   }
 	}
-
 
     for(int i=0; i < udp_flow_latest_mpu_sequence_number_container->udp_flows_n; i++) {
         udp_flow_packet_id_mpu_sequence_tuple_t* udp_flow_packet_id_mpu_sequence_tuple = udp_flow_latest_mpu_sequence_number_container->udp_flows[i];

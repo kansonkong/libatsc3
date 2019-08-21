@@ -212,11 +212,12 @@ typedef struct atsc3_alp_packet_collection {
 ATSC3_VECTOR_BUILDER_METHODS_INTERFACE(atsc3_alp_packet_collection, atsc3_baseband_packet);
 ATSC3_VECTOR_BUILDER_METHODS_INTERFACE(atsc3_alp_packet_collection, atsc3_alp_packet);
 
+//TODO: jjustman-2019-08-08 - fixme: clone is a shallow clone (memcpy) and MAY leave dangling pointer references
 atsc3_alp_packet_t* atsc3_alp_packet_clone(atsc3_alp_packet_t* atsc3_alp_packet);
-    
+
+//always free if created from atsc3_alp_packet_clone when no longer needed
+void atsc3_alp_packet_free(atsc3_alp_packet_t** atsc3_alp_packet_p);
 void atsc3_alp_packet_free_alp_payload(atsc3_alp_packet_t* atsc3_alp_packet);
-void atsc3_baseband_packet_free_v(atsc3_baseband_packet_t* atsc3_baseband_packet);
-void atsc3_baseband_packet_free(atsc3_baseband_packet_t** atsc3_baseband_packet);
 
 
 #if defined (__cplusplus)
