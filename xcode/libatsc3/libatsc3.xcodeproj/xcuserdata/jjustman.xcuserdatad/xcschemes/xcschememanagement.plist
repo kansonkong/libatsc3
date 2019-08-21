@@ -101,6 +101,21 @@
 			<key>orderHint</key>
 			<integer>0</integer>
 		</dict>
+		<key>test-atsc3_mmt_mpu_packet_test.xcscheme_^#shared#^_</key>
+		<dict>
+			<key>orderHint</key>
+			<integer>16</integer>
+		</dict>
+		<key>test-atsc3_mmt_signallilng_packet_test.xcscheme_^#shared#^_</key>
+		<dict>
+			<key>orderHint</key>
+			<integer>15</integer>
+		</dict>
+		<key>test/atsc3_mmt_signallilng_packet_test.xcscheme_^#shared#^_</key>
+		<dict>
+			<key>orderHint</key>
+			<integer>15</integer>
+		</dict>
 		<key>xml_fdt_test.xcscheme_^#shared#^_</key>
 		<dict>
 			<key>isShown</key>
@@ -112,6 +127,11 @@
 	<key>SuppressBuildableAutocreation</key>
 	<dict>
 		<key>30364DAF221C7F1F005A903B</key>
+		<dict>
+			<key>primary</key>
+			<true/>
+		</dict>
+		<key>3037E5AC23017B3700EAAA5C</key>
 		<dict>
 			<key>primary</key>
 			<true/>
