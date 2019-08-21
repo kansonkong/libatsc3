@@ -147,7 +147,9 @@ atsc3_ip_udp_rtp_packet_t* atsc3_stltp_tunnel_packet_inner_parse_ip_udp_header_o
 
 /*
  
- jjustman-2019-08-20 - adding inner port for multi-plp emissions...
+ jjustman-2019-08-20 - investigate inner port for multi-plp emissions...
+ extracted in driver for baseband re-constitution/alp parsing
+ 
  if(atsc3_stltp_tunnel_packet_current->ip_udp_rtp_packet_inner->udp_flow.dst_port != inner_port) {
  __STLTP_PARSER_WARN("atsc3_stltp_tunnel_packet_extract_inner_from_outer_packet: inner port mismatch: %d, expected: %d",
  atsc3_stltp_tunnel_packet_current->ip_udp_rtp_packet_inner->udp_flow.dst_port,
@@ -156,7 +158,7 @@ atsc3_ip_udp_rtp_packet_t* atsc3_stltp_tunnel_packet_inner_parse_ip_udp_header_o
  goto concatenation_check_for_outer_marker;
  }
 **/
-atsc3_stltp_tunnel_packet_t* atsc3_stltp_raw_packet_extract_inner_from_outer_packet(atsc3_ip_udp_rtp_packet_t* ip_udp_rtp_packet, atsc3_stltp_tunnel_packet_t* atsc3_stltp_tunnel_packet_last, uint16_t inner_port) {
+atsc3_stltp_tunnel_packet_t* atsc3_stltp_raw_packet_extract_inner_from_outer_packet(atsc3_ip_udp_rtp_packet_t* ip_udp_rtp_packet, atsc3_stltp_tunnel_packet_t* atsc3_stltp_tunnel_packet_last) {
    
     __STLTP_PARSER_DEBUG("  atsc3_stltp_tunnel_packet_extract_inner_from_outer_packet: OUTER: packet: %p, sequence_number: %d, dst: %u.%u.%u.%u:%u, size: %u, pkt: %p",
                          ip_udp_rtp_packet,
