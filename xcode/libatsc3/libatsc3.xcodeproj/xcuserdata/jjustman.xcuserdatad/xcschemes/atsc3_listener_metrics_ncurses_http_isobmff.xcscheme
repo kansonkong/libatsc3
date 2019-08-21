@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <Scheme
    LastUpgradeVersion = "1010"
-   version = "1.7">
+   version = "2.0">
    <BuildAction
       parallelizeBuildables = "YES"
       buildImplicitDependencies = "YES">
@@ -44,16 +44,19 @@
       buildConfiguration = "Debug"
       selectedDebuggerIdentifier = "Xcode.DebuggerFoundation.Debugger.LLDB"
       selectedLauncherIdentifier = "Xcode.DebuggerFoundation.Launcher.LLDB"
+      debugAsWhichUser = "root"
       enableASanStackUseAfterReturn = "YES"
       disableMainThreadChecker = "YES"
       launchStyle = "1"
       useCustomWorkingDirectory = "YES"
       customWorkingDirectory = "/Users/jjustman/Desktop/libatsc3"
-      ignoresPersistentStateOnLaunch = "YES"
-      debugDocumentVersioning = "YES"
+      ignoresPersistentStateOnLaunch = "NO"
+      debugDocumentVersioning = "NO"
+      debugXPCServices = "NO"
       stopOnEveryMainThreadCheckerIssue = "YES"
       debugServiceExtension = "internal"
-      allowLocationSimulation = "YES">
+      allowLocationSimulation = "NO"
+      queueDebuggingEnabled = "No">
       <PathRunnable
          runnableDebuggingMode = "0"
          FilePath = "/Users/jjustman/Desktop/libatsc3/src/tools/atsc3_listener_metrics_ncurses_httpd_isobmff">
@@ -80,22 +83,12 @@
             isEnabled = "YES">
          </AdditionalOption>
          <AdditionalOption
-            key = "DYLD_INSERT_LIBRARIES"
-            value = "/usr/lib/libgmalloc.dylib"
-            isEnabled = "YES">
-         </AdditionalOption>
-         <AdditionalOption
-            key = "PrefersMallocStackLoggingLite"
+            key = "DYLD_PRINT_LIBRARIES"
             value = ""
             isEnabled = "YES">
          </AdditionalOption>
          <AdditionalOption
-            key = "MallocGuardEdges"
-            value = ""
-            isEnabled = "YES">
-         </AdditionalOption>
-         <AdditionalOption
-            key = "MallocScribble"
+            key = "DYLD_PRINT_APIS"
             value = ""
             isEnabled = "YES">
          </AdditionalOption>
@@ -108,10 +101,10 @@
    <ProfileAction
       buildConfiguration = "Debug"
       shouldUseLaunchSchemeArgsEnv = "YES"
-      savedToolIdentifier = ""
+      savedToolIdentifier = "Leaks"
       useCustomWorkingDirectory = "YES"
       customWorkingDirectory = "/Users/jjustman/Desktop/libatsc3/src/tools"
-      debugDocumentVersioning = "YES">
+      debugDocumentVersioning = "NO">
       <PathRunnable
          runnableDebuggingMode = "0"
          FilePath = "/Users/jjustman/Desktop/libatsc3/src/tools/atsc3_listener_metrics_ncurses_httpd_isobmff">
