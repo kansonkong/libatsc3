@@ -253,16 +253,26 @@ void lls_sls_alc_update_tsi_toi_from_route_s_tsid(lls_sls_alc_monitor_t* lls_sls
 
 					if(src_flow_content_info_content_type && atsc3_fdt_file->toi && atsc3_route_s_tsid_RS_LS->tsi) {
 
-						if(strncasecmp("audio", src_flow_content_info_content_type, 5) == 0) {
-							//update our audio tsi and toi accordingly
-							lls_sls_alc_monitor->audio_toi_init = atsc3_fdt_file->toi;
-							lls_sls_alc_monitor->audio_tsi = atsc3_route_s_tsid_RS_LS->tsi;
+						if(strncasecmp("audio", src_flow_content_info_content_type, 5) == 0 && !lls_sls_alc_monitor->audio_tsi_manual_override) {
+                            if(!lls_sls_alc_monitor->audio_tsi_manual_override)  {
+                                //update our audio tsi and toi accordingly
+                                lls_sls_alc_monitor->audio_toi_init = atsc3_fdt_file->toi;
+                                lls_sls_alc_monitor->audio_tsi = atsc3_route_s_tsid_RS_LS->tsi;
+                            } else {
+                                _ATSC3_LLS_ALC_UTILS_DEBUG("lls_sls_alc_update_tsi_toi_from_route_s_tsid: not replacing audio tsi/toi_init, as manual override set: %d, %d",
+                                                           lls_sls_alc_monitor->audio_tsi,
+                                                           lls_sls_alc_monitor->audio_toi_init);
+                            }
 
 						} else if(strncasecmp("video", src_flow_content_info_content_type, 5) == 0) {
-							lls_sls_alc_monitor->video_toi_init = atsc3_fdt_file->toi;
-							lls_sls_alc_monitor->video_tsi = atsc3_route_s_tsid_RS_LS->tsi;
-
-
+                            if(!lls_sls_alc_monitor->video_tsi_manual_override)  {
+                                lls_sls_alc_monitor->video_toi_init = atsc3_fdt_file->toi;
+                                lls_sls_alc_monitor->video_tsi = atsc3_route_s_tsid_RS_LS->tsi;
+                            } else {
+                                _ATSC3_LLS_ALC_UTILS_DEBUG("lls_sls_alc_update_tsi_toi_from_route_s_tsid: not replacing video tsi/toi_init, as manual override set: %d, %d",
+                                                     lls_sls_alc_monitor->video_tsi,
+                                                     lls_sls_alc_monitor->video_toi_init);
+                            }
 						} else {
 							_ATSC3_LLS_ALC_UTILS_ERROR("unknown src_flow_content_info_content_type: %s", src_flow_content_info_content_type);
 						}

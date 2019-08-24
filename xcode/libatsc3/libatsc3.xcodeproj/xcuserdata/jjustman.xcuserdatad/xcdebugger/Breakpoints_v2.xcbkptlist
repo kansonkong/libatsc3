@@ -509,8 +509,8 @@
             endingColumnNumber = "9223372036854775807"
             startingLineNumber = "18"
             endingLineNumber = "18"
-            landmarkName = "unknown"
-            landmarkType = "0">
+            landmarkName = "initfunc()"
+            landmarkType = "9">
          </BreakpointContent>
       </BreakpointProxy>
       <BreakpointProxy
@@ -667,7 +667,7 @@
             endingColumnNumber = "9223372036854775807"
             startingLineNumber = "164"
             endingLineNumber = "164"
-            landmarkName = "lls_slt_alc_session_find_or_create"
+            landmarkName = "lls_slt_alc_session_find_or_create()"
             landmarkType = "9">
          </BreakpointContent>
       </BreakpointProxy>
@@ -683,7 +683,7 @@
             endingColumnNumber = "9223372036854775807"
             startingLineNumber = "51"
             endingLineNumber = "51"
-            landmarkName = "lls_slt_alc_session_create"
+            landmarkName = "lls_slt_alc_session_create()"
             landmarkType = "9">
          </BreakpointContent>
       </BreakpointProxy>
@@ -699,7 +699,7 @@
             endingColumnNumber = "9223372036854775807"
             startingLineNumber = "186"
             endingLineNumber = "186"
-            landmarkName = "lls_sls_alc_session_free"
+            landmarkName = "lls_sls_alc_session_free()"
             landmarkType = "9">
          </BreakpointContent>
       </BreakpointProxy>

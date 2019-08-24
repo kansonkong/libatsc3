@@ -1,24 +1,12 @@
 /*
- * atsc3_alc_listener_test.c
+ * atsc3_alc_listener_mde_writer.cpp
  *
- *  Created on: Jan 29, 2019
+ *  Created on: Aug 23rd, 2019
  *      Author: jjustman
  *
+ * single <ip, udp> flow ALC media delivery event (mde) writer for debugging/analysis
+ * ignores SLT service <ip, udp> flows for ROUTE emissions, as to aid in low-level ALC investigation
  *
- * borrowed from https://stackoverflow.com/questions/26275019/how-to-read-and-send-udp-packets-on-mac-os-x
- * uses libpacp for udp mulicast packet listening
- *
- * opt flags:
- *
-  export LDFLAGS="-L/usr/local/opt/libpcap/lib"
-  export CPPFLAGS="-I/usr/local/opt/libpcap/include"
-
- * to invoke test driver, run ala:
-
-  ./atsc3_alc_listener_test vnic1
-
-	ROUTE fragments (no re-assembly or fec support yet) will be available in route
-
 */
 
 //#define _ENABLE_TRACE 1
@@ -64,20 +52,12 @@ void process_packet(u_char *user, const struct pcap_pkthdr *pkthdr, const u_char
 	}
     alc_packet_t* alc_packet = NULL;
 
-	//dispatch for LLS extraction and dump
-	if(udp_packet->udp_flow.dst_ip_addr == LLS_DST_ADDR && udp_packet->udp_flow.dst_port == LLS_DST_PORT) {
-		lls_table_create_or_update_from_lls_slt_monitor(lls_slt_monitor, udp_packet->data);
-		return udp_packet_free(&udp_packet);
-	}
-
-	lls_sls_alc_session_t* matching_lls_slt_alc_session = lls_slt_alc_session_find_from_udp_packet(lls_slt_monitor, udp_packet->udp_flow.src_ip_addr, udp_packet->udp_flow.dst_ip_addr, udp_packet->udp_flow.dst_port);
-	if(matching_lls_slt_alc_session ||
-			((dst_ip_addr_filter != NULL && dst_ip_port_filter != NULL) && (udp_packet->udp_flow.dst_ip_addr == *dst_ip_addr_filter && udp_packet->udp_flow.dst_port == *dst_ip_port_filter))) {
+	if(udp_packet->udp_flow.dst_ip_addr == *dst_ip_addr_filter && udp_packet->udp_flow.dst_port == *dst_ip_port_filter) {
 		//process ALC streams
 		int retval = alc_rx_analyze_packet_a331_compliant((char*)block_Get(udp_packet->data), block_Remaining_size(udp_packet->data), &ch, &alc_packet);
 		if(!retval) {
 			//dump out for fragment inspection
-			//alc_packet_dump_to_object(&alc_packet, lls_slt_monitor->lls_sls_alc_monitor);
+			alc_packet_dump_to_object(&alc_packet, lls_slt_monitor->lls_sls_alc_monitor);
 		} else {
 			__ERROR("Error in ALC decode: %d", retval);
 		}
@@ -124,10 +104,7 @@ int main(int argc,char **argv) {
 
 
     //listen to all flows
-    if(argc == 2) {
-    	dev = argv[1];
-	    __ALC_UTILS_DEBUG("listening on dev: %s", dev);
-    } else if(argc==4) {
+    if(argc==4) {
     	//listen to a selected flow
 		dev = argv[1];
 		dst_ip = argv[2];
@@ -142,12 +119,12 @@ int main(int argc,char **argv) {
 		dst_ip_port_filter = &dst_port_int;
 
     } else {
-    	println("%s - a udp mulitcast listener test harness for atsc3 ALC ROUTE flows", argv[0]);
+    	println("%s - a udp mulitcast ALC listener for writing out MDE fragments to ROUTE objects", argv[0]);
     	println("---");
-    	println("args: dev (dst_ip) (dst_port)");
-    	println(" dev: device to listen for udp multicast, default listen to 0.0.0.0:0");
-    	println(" (dst_ip): optional, filter to specific ip address");
-    	println(" (dst_port): optional, filter to specific port");
+    	println("args: dev dst_ip dst_port");
+    	println(" dev: device to listen for udp multicast");
+    	println(" dst_ip: restrict ALC flow capture to specific ip address");
+    	println(" dst_port: restrict ALC flow capture to specific port");
     	println("");
     	exit(1);
     }
@@ -156,7 +133,9 @@ int main(int argc,char **argv) {
 
     lls_slt_monitor = lls_slt_monitor_create();
 	alc_arguments = (alc_arguments_t*)calloc(1, sizeof(alc_arguments_t));
-
+    lls_slt_monitor->lls_sls_alc_monitor = lls_sls_alc_monitor_create();
+    lls_slt_monitor->lls_sls_alc_monitor->lls_sls_monitor_output_buffer_mode.file_dump_enabled = true;
+    
     ch.s = open_alc_session(alc_arguments);
 
     pcap_lookupnet(dev, &netp, &maskp, errbuf);
@@ -176,7 +155,6 @@ int main(int argc,char **argv) {
     if(pcap_setfilter(descr,&fp) == -1) {
         fprintf(stderr,"Error setting filter");
         exit(1);
-
     }
 
     pcap_loop(descr,-1,process_packet,NULL);

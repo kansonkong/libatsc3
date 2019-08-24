@@ -43,6 +43,7 @@ clean:
 	-rm -f  listener_tests/atsc3_stltp_listener_test
 	-rm -f  listener_tests/atsc3_stltp_alp_listener_test
 	-rm -f  listener_tests/atsc3_stltp_alp_listener_reflector_test
+	-rm -f  tools/atsc3_alc_listener_mde_writer
 	-rm -f  tools/atsc3_listener_metrics_ncurses
 	-rm -f  tools/atsc3_listener_metrics_ncurses_httpd_isobmff
 	-rm -f  tools/atsc3_mmt_mfu_monitor
@@ -123,7 +124,10 @@ listener_tests: atsc3_alc_listener_test \
 				atsc3_stltp_alp_listener_reflector_test
 
 # real libatsc3 tools for lls, sls, mmt/route and flow analysis
-tools: atsc3_listener_metrics_ncurses atsc3_listener_metrics_ncurses_httpd_isobmff atsc3_mmt_mfu_monitor
+tools: atsc3_listener_metrics_ncurses \
+	atsc3_listener_metrics_ncurses_httpd_isobmff \
+	atsc3_mmt_mfu_monitor \
+	atsc3_alc_listener_mde_writer
 
 # intermediate object generation for linking into libatsc3.o
 
@@ -627,3 +631,11 @@ atsc3_mmt_mfu_monitor: tools/atsc3_mmt_mfu_monitor.cpp  \
 		atsc3_mmt_reconstitution_from_media_sample.c atsc3_logging_externs.o \
 		-I../bento/include/ -lpcap  -lncurses -lpcap -lz -lpthread \
 		-o tools/atsc3_mmt_mfu_monitor
+		
+		
+atsc3_alc_listener_mde_writer: tools/atsc3_alc_listener_mde_writer.cpp	libatsc3_bento4_gpl.o
+	g++  -D OUTPUT_STATISTICS=NCURSES -g tools/atsc3_alc_listener_mde_writer.cpp \
+		libatsc3_bento4_gpl.o \
+		-I../bento/include/ -lpcap  -lncurses -lpcap -lz -lpthread \
+		-o tools/atsc3_mmt_mfu_monitor
+		
