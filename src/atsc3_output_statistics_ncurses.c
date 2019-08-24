@@ -12,9 +12,6 @@
 #include "atsc3_output_statistics_ncurses_windows.h"
 #include "atsc3_lls_sls_monitor_output_buffer_utils.h"
 
-//TODO - get rid of me...
-extern int _ALC_PACKET_DUMP_TO_OBJECT_ENABLED;
-
 pthread_mutex_t ncurses_writer_lock;
 int initfunc(WINDOW* ripoff_win, int cols) {
 	//printf("got my_window: %p", ripoff_win);
@@ -80,7 +77,9 @@ void* ncurses_input_run_thread(void* lls_slt_monitor_ptr) {
 		}
         
         if(ch == 'm') {
-            _ALC_PACKET_DUMP_TO_OBJECT_ENABLED = 0;
+            if(lls_slt_monitor && lls_slt_monitor->lls_sls_alc_monitor) {
+                lls_slt_monitor->lls_sls_alc_monitor->lls_sls_monitor_output_buffer_mode.file_dump_enabled = false;
+            }
 
             mtl_clear();
             wprintw(my_window, "Switching to MMT Capture Mode, press 's' to select Service ID, 'p' to play, 'x' to return to normal flow monitoring");
@@ -101,9 +100,6 @@ void* ncurses_input_run_thread(void* lls_slt_monitor_ptr) {
                     play_mode = 0;
                     mtl_clear();
                     wprintw(my_window, "Exiting MMT");
-                    //todo - remove me
-                    alc_recon_file_buffer_struct_set_tsi_toi(NULL, 0, 0);
-                    _ALC_PACKET_DUMP_TO_OBJECT_ENABLED = 0;
                 }
                 if(ch == 'v') {
                 	if(lls_sls_mmt_monitor) {
@@ -186,13 +182,13 @@ void* ncurses_input_run_thread(void* lls_slt_monitor_ptr) {
             mtl_clear();
             wprintw(my_window, "Switching to ALC/ROUTE Capture Mode, press 's' to set Service ID, 'a','v' for TSI/TOI selection, 'p' to play, 'x' to return to normal flow monitoring");
 
-            _ALC_PACKET_DUMP_TO_OBJECT_ENABLED = 1;
+            if(lls_slt_monitor && lls_slt_monitor->lls_sls_alc_monitor) {
+                lls_slt_monitor->lls_sls_alc_monitor->lls_sls_monitor_output_buffer_mode.file_dump_enabled = true;
+            }
 			//ncurses_switch_to_route();
 			play_mode = 1;
 
-
 			while(1) {
-
 				ch = wgetch(my_window);
                 //fallthru to play down below
                 if(ch == 'p') {
@@ -207,7 +203,9 @@ void* ncurses_input_run_thread(void* lls_slt_monitor_ptr) {
 					wprintw(my_window, "Exiting ALC/ROUTE capture mode");
                     //todo - remove me
 					alc_recon_file_buffer_struct_set_tsi_toi(NULL, 0, 0);
-					_ALC_PACKET_DUMP_TO_OBJECT_ENABLED = 0;
+                    if(lls_slt_monitor && lls_slt_monitor->lls_sls_alc_monitor) {
+                        lls_slt_monitor->lls_sls_alc_monitor->lls_sls_monitor_output_buffer_mode.file_dump_enabled = false;
+                    }
 				}
                 
                 char route_input_str[16];
@@ -273,9 +271,18 @@ void* ncurses_input_run_thread(void* lls_slt_monitor_ptr) {
 					} else {
 						lls_sls_alc_monitor = lls_sls_alc_monitor_create();
 						lls_slt_monitor->lls_sls_alc_monitor = lls_sls_alc_monitor;
-
 					}
+                    lls_sls_alc_monitor->audio_tsi_manual_override = false;
+                    lls_sls_alc_monitor->video_tsi_manual_override = false;
 				} else if(ch == 'a') {
+                    if(!lls_sls_alc_monitor) {
+                        lls_sls_alc_monitor = lls_sls_alc_monitor_create();
+                        lls_slt_monitor->lls_sls_alc_monitor = lls_sls_alc_monitor;
+                    }
+
+                    //set this first, as mbms rs flows may come in at any time
+                    lls_sls_alc_monitor->audio_tsi_manual_override = true;
+
 					mtl_clear();
 					wprintw(my_window, "Please enter Audio TSI: ");
 					echo();
@@ -299,6 +306,13 @@ void* ncurses_input_run_thread(void* lls_slt_monitor_ptr) {
 					wprintw(my_window, "Monitoring Audio TSI: %u, TOI: %u",  lls_sls_alc_monitor->audio_tsi, lls_sls_alc_monitor->audio_toi_init);
 
 				} else if(ch == 'v') {
+                    if(!lls_sls_alc_monitor) {
+                        lls_sls_alc_monitor = lls_sls_alc_monitor_create();
+                        lls_slt_monitor->lls_sls_alc_monitor = lls_sls_alc_monitor;
+                    }
+                    
+                    //set this first, as mbms rs flows may come in at any time
+                    lls_sls_alc_monitor->video_tsi_manual_override = true;
 					mtl_clear();
 					wprintw(my_window, "Please enter Video TSI: ");
 					echo();
@@ -320,7 +334,6 @@ void* ncurses_input_run_thread(void* lls_slt_monitor_ptr) {
 					lls_sls_alc_monitor->video_toi_init = (uint32_t) my_toi_init_fragment;
 					mtl_clear();
 					wprintw(my_window, "Monitoring Video TSI: %u, TOI: %u",  lls_sls_alc_monitor->video_tsi, lls_sls_alc_monitor->video_toi_init);
-
 				}
 			}
 		}

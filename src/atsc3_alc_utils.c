@@ -70,9 +70,6 @@ RFC 5775               ALC Protocol Instantiation             April 2010
 //shortcut hack
 #include "atsc3_isobmff_tools.h"
 
-
-int _ALC_PACKET_DUMP_TO_OBJECT_ENABLED = 0;
-
 int _ALC_UTILS_DEBUG_ENABLED=0;
 int _ALC_UTILS_TRACE_ENABLED=0;
 int _ALC_UTILS_IOTRACE_ENABLED=0;
@@ -211,11 +208,10 @@ int alc_packet_dump_to_object(alc_packet_t** alc_packet_ptr, lls_sls_alc_monitor
 	alc_packet_t* alc_packet = *alc_packet_ptr;
 	int bytesWritten = 0;
 
-	//TODO - query me from lls_sls_alc_monitor
-	if(!_ALC_PACKET_DUMP_TO_OBJECT_ENABLED) {
+    if(lls_sls_alc_monitor && !lls_sls_alc_monitor->lls_sls_monitor_output_buffer_mode.file_dump_enabled) {
         return -1;
     }
-    
+
     char* file_name = alc_packet_dump_to_object_get_filename(alc_packet);
     mkdir("route", 0777);
 
@@ -276,8 +272,8 @@ int alc_packet_dump_to_object(alc_packet_t** alc_packet_ptr, lls_sls_alc_monitor
 	if(alc_packet->close_object_flag) {
 		__ALC_UTILS_IOTRACE("dumping to file done: %s, is complete: %d", file_name, alc_packet->close_object_flag);
 
-		//update our sls here
-		if(alc_packet->def_lct_hdr->tsi == 0) {
+		//update our sls here if we have a service we are listenting to
+		if(lls_sls_alc_monitor && lls_sls_alc_monitor->lls_service &&  alc_packet->def_lct_hdr->tsi == 0) {
 			__ALC_UTILS_IOTRACE("------ TSI of 0, calling atsc3_route_sls_process_from_alc_packet_and_file");
 			atsc3_route_sls_process_from_alc_packet_and_file(alc_packet, lls_sls_alc_monitor);
 
