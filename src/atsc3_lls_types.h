@@ -478,11 +478,15 @@ A/331 - Section 7:
 typedef struct lls_sls_alc_monitor {
 	lls_service_t* lls_service;
 	uint16_t service_id;
-
+    
 	lls_sls_alc_session_t* lls_alc_session;
-	uint32_t video_tsi;
-	uint32_t audio_tsi;
+    
+    uint32_t audio_tsi;
+    bool audio_tsi_manual_override;
 
+    uint32_t video_tsi;
+    bool video_tsi_manual_override;
+    
 	/**
 	* jdj-2019-05-29: TODO - use a sparse array lookup (https://github.com/ned14/nedtries) for resolution to proper transfer_object_length to back-patch close flag
 	*/
@@ -518,7 +522,6 @@ typedef struct lls_sls_alc_monitor {
 
 } lls_sls_alc_monitor_t;
 
-
 typedef struct lls_slt_monitor {
     lls_sls_mmt_monitor_t* lls_sls_mmt_monitor;
 	lls_sls_alc_monitor_t* lls_sls_alc_monitor;
@@ -531,8 +534,6 @@ typedef struct lls_slt_monitor {
 	lls_table_t* lls_table_slt;
 
 } lls_slt_monitor_t;
-
-
 
 
 #endif /* ATSC3_LLS_TYPES_H_ */
