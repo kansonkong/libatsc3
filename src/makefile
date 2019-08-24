@@ -637,5 +637,5 @@ atsc3_alc_listener_mde_writer: tools/atsc3_alc_listener_mde_writer.cpp	libatsc3_
 	g++  -D OUTPUT_STATISTICS=NCURSES -g tools/atsc3_alc_listener_mde_writer.cpp \
 		libatsc3_bento4_gpl.o \
 		-I../bento/include/ -lpcap  -lncurses -lpcap -lz -lpthread \
-		-o tools/atsc3_mmt_mfu_monitor
+		-o tools/atsc3_alc_listener_mde_writer
 		
