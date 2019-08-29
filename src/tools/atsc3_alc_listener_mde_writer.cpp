@@ -75,6 +75,7 @@ int main(int argc,char **argv) {
 	_LLS_SLT_PARSER_INFO_ROUTE_ENABLED = 1;
     _ALC_UTILS_DEBUG_ENABLED = 1;
 	_ALC_RX_DEBUG_ENABLED = 1;
+    _ALC_UTILS_DEBUG_ENABLED = 1;
 
 #ifdef __LOTS_OF_DEBUGGING__
 
