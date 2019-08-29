@@ -1,3 +1,6 @@
 [submodule "Collections-C"]
 	path = Collections-C
 	url = https://github.com/srdja/Collections-C.git
+[submodule "openHEVC"]
+	path = openHEVC
+	url = git://github.com/OpenHEVC/openHEVC.git
