@@ -182,9 +182,7 @@ void* ncurses_input_run_thread(void* lls_slt_monitor_ptr) {
             mtl_clear();
             wprintw(my_window, "Switching to ALC/ROUTE Capture Mode, press 's' to set Service ID, 'a','v' for TSI/TOI selection, 'p' to play, 'x' to return to normal flow monitoring");
 
-            if(lls_slt_monitor && lls_slt_monitor->lls_sls_alc_monitor) {
-                lls_slt_monitor->lls_sls_alc_monitor->lls_sls_monitor_output_buffer_mode.file_dump_enabled = true;
-            }
+          
 			//ncurses_switch_to_route();
 			play_mode = 1;
 
@@ -274,6 +272,11 @@ void* ncurses_input_run_thread(void* lls_slt_monitor_ptr) {
 					}
                     lls_sls_alc_monitor->audio_tsi_manual_override = false;
                     lls_sls_alc_monitor->video_tsi_manual_override = false;
+                    
+                    if(lls_slt_monitor && lls_slt_monitor->lls_sls_alc_monitor) {
+                        lls_slt_monitor->lls_sls_alc_monitor->lls_sls_monitor_output_buffer_mode.file_dump_enabled = true;
+                    }
+                    
 				} else if(ch == 'a') {
                     if(!lls_sls_alc_monitor) {
                         lls_sls_alc_monitor = lls_sls_alc_monitor_create();
