@@ -76,8 +76,10 @@ intermediate_alc: 	alc_session.c \
 
 intermediate_mmt: 	xml.o \
 					atsc3_mmtp_packet_types.o \
+					atsc3_mmtp_packet_utils.o \
 					atsc3_mmtp_parser.o \
 					atsc3_mmt_mpu_parser.o \
+					atsc3_mmt_mpu_sample_format_type.o \					
 					atsc3_mmt_signalling_message.o \
 					atsc3_mmtp_ntp32_to_pts.o \
 					atsc3_utils.o \
@@ -181,15 +183,20 @@ atsc3_lls_sls_monitor_output_buffer.o: atsc3_lls_sls_monitor_output_buffer.h ats
 atsc3_lls_sls_monitor_output_buffer_utils.o: atsc3_lls_sls_monitor_output_buffer_utils.h atsc3_lls_sls_monitor_output_buffer_utils.c
 	cc -g -c atsc3_lls_sls_monitor_output_buffer_utils.c
 
-
 atsc3_mmtp_packet_types.o: atsc3_mmtp_packet_types.h atsc3_mmtp_packet_types.c
 	cc -g -c atsc3_mmtp_packet_types.c
+
+atsc3_mmtp_packet_utils.o: atsc3_mmtp_packet_utils.h atsc3_mmtp_packet_utils.c
+	cc -g -c atsc3_mmtp_packet_utils.c
 
 atsc3_mmtp_parser.o: atsc3_mmtp_packet_types.h atsc3_mmtp_parser.h atsc3_mmtp_parser.c 
 	cc -g -c atsc3_mmtp_parser.c
 
 atsc3_mmt_mpu_parser.o: atsc3_mmtp_packet_types.h atsc3_mmtp_parser.h atsc3_mmt_mpu_parser.c
 	cc -g -c atsc3_mmt_mpu_parser.c
+	
+atsc3_mmt_mpu_sample_format_type.o: atsc3_mmt_mpu_sample_format_type.h atsc3_mmt_mpu_sample_format_type.c
+	cc -g -c atsc3_mmt_mpu_sample_format_type.c
 
 atsc3_mmt_signalling_message_type.o:atsc3_mmt_signalling_message_type.h atsc3_mmt_signalling_message_type.c
 	cc -g -c atsc3_mmt_signalling_message_type.c
@@ -310,12 +317,14 @@ libatsc3_intermediate.o: atsc3_lls.o \
 		atsc3_alp_parser.o \
 		atsc3_baseband_packet_types.o \
 		atsc3_mmtp_packet_types.o \
+		atsc3_mmtp_packet_utils.o \
 		atsc3_mmtp_parser.o \
 		atsc3_mmtp_ntp32_to_pts.o \
 		atsc3_utils.o \
 		atsc3_mmt_signalling_message_types.o \
 		atsc3_mmt_signalling_message.o \
 		atsc3_mmt_mpu_parser.o \
+		atsc3_mmt_mpu_sample_format_type.o \
 		atsc3_alc_rx.o \
 		atsc3_lls_alc_utils.o \
 		atsc3_mmt_mpu_utils.o \
@@ -361,12 +370,14 @@ libatsc3_intermediate.o: atsc3_lls.o \
 		atsc3_alp_parser.o \
 		atsc3_baseband_packet_types.o \
 		atsc3_mmtp_packet_types.o \
+		atsc3_mmtp_packet_utils.o \
 		atsc3_mmtp_parser.o \
 		atsc3_mmtp_ntp32_to_pts.o \
 		atsc3_utils.o \
 		atsc3_mmt_signalling_message_types.o \
 		atsc3_mmt_signalling_message.o \
 		atsc3_mmt_mpu_parser.o \
+		atsc3_mmt_mpu_sample_format_type.o \
 		atsc3_alc_rx.o \
 		atsc3_lls_alc_utils.o \
 		atsc3_mmt_mpu_utils.o \
