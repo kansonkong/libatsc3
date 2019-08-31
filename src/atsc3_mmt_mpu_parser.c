@@ -120,15 +120,24 @@ mmtp_mpu_packet_t* mmtp_mpu_packet_parse_from_block_t(mmtp_packet_header_t* mmtp
 
 				mmtp_mpu_packet->du_mpu_metadata_block = block_Alloc(to_read_packet_length);
 				block_Write(mmtp_mpu_packet->du_mpu_metadata_block, buf, to_read_packet_length);
-			} else if(mmtp_mpu_packet->mpu_fragment_type == 0x1) {
+			} else if(mmtp_mpu_packet->mpu_fragment_type == 0x2) {
+                /**
+                 process timed and mmthsample box here
+                 **/
+                
+                block_t* temp_timed_buffer = block_Alloc(to_read_packet_length);
+                block_Write(temp_timed_buffer, buf, to_read_packet_length);
+
+                atsc3_mmt_mpu_sample_format_parse(mmtp_mpu_packet, temp_timed_buffer);
+                
+                mmtp_mpu_packet->du_mfu_block = block_Duplicate_from_position(temp_timed_buffer);
+                
 				__MMT_MPU_PARSER_TRACE("mmtp_mpu_packet_parse_from_block_t: writing to du_mfu_block, mpu_fragement_type is: 0x%x, len: %d, buf: %p",
 										mmtp_mpu_packet->mpu_fragment_type,
-										to_read_packet_length,
-										buf);
+										mmtp_mpu_packet->du_mfu_block->p_size,
+										mmtp_mpu_packet->du_mfu_block);
 
-				mmtp_mpu_packet->du_mfu_block = block_Alloc(to_read_packet_length);
-				block_Write(mmtp_mpu_packet->du_mfu_block, buf, to_read_packet_length);
-			} else if(mmtp_mpu_packet->mpu_fragment_type == 0x2) {
+			} else if(mmtp_mpu_packet->mpu_fragment_type == 0x1) {
 				__MMT_MPU_PARSER_TRACE("mmtp_mpu_packet_parse_from_block_t: writing to du_movie_fragment_block, mpu_fragement_type is: 0x%x, len: %d, buf: %p",
 										mmtp_mpu_packet->mpu_fragment_type,
 										to_read_packet_length,

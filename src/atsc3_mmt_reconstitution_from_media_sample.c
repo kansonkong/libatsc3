@@ -64,10 +64,13 @@ void mmtp_process_from_payload(mmtp_mpu_packet_t* mmtp_mpu_packet,
     
     mmtp_asset_flow_t* mmtp_asset_flow = mmtp_flow_find_or_create_from_udp_packet(mmtp_flow, udp_packet);
     mmtp_asset_t* mmtp_asset = mmtp_asset_flow_find_or_create_asset_from_lls_sls_mmt_session(mmtp_asset_flow, matching_lls_slt_mmt_session);
+    
+    mmtp_packet_id_packets_container_t* mmtp_packet_id_packets_container = mmtp_asset_find_or_create_packets_container_from_mmt_mpu_packet(mmtp_asset, mmtp_mpu_packet);
 
-//    mmtp_asset_t* mmtp_asset = mmtp_asset_flow_find_or_create_asset_from_mmt_mpu_packet(mmtp_asset_flow, mmtp_mpu_packet);
+    mpu_sequence_number_mmtp_mpu_packet_collection_t* mpu_sequence_number_mmtp_mpu_packet_collection = mmtp_packet_id_packets_container_find_or_create_mpu_sequence_number_mmtp_mpu_packet_collection_from_mmt_mpu_packet(mmtp_packet_id_packets_container, mmtp_mpu_packet);
 
-    mmtp_asset_add_mmtp_mpu_packet(mmtp_asset, mmtp_mpu_packet);
+    //persist our mmtp_mpu_packet for mpu reconstitution as per original libatsc3 design
+    mpu_sequence_number_mmtp_mpu_packet_collection_add_mmtp_mpu_packet(mpu_sequence_number_mmtp_mpu_packet_collection, mmtp_mpu_packet);
     
     int my_evicted_count = 0;
 
@@ -102,7 +105,8 @@ void mmtp_process_from_payload(mmtp_mpu_packet_t* mmtp_mpu_packet,
 														   udp_flow_latest_mpu_sequence_number_container,
 														   matching_lls_slt_mmt_session->last_udp_flow_packet_id_mpu_sequence_tuple_audio->packet_id,
 														   matching_lls_slt_mmt_session->last_udp_flow_packet_id_mpu_sequence_tuple_audio->mpu_sequence_number,
-														   &lls_slt_monitor->lls_sls_mmt_monitor->lls_sls_monitor_output_buffer.audio_output_buffer_isobmff);
+														   &lls_slt_monitor->lls_sls_mmt_monitor->lls_sls_monitor_output_buffer.audio_output_buffer_isobmff,
+                                                           mmtp_packet_id_packets_container);
 						//mmtp_sub_flow_vector
 
 						lls_sls_monitor_buffer_isobmff_intermediate_mmt_file_dump(lls_sls_monitor_buffer_isobmff_pending_mux, "mpu/",
@@ -131,8 +135,8 @@ void mmtp_process_from_payload(mmtp_mpu_packet_t* mmtp_mpu_packet,
 														   udp_flow_latest_mpu_sequence_number_container,
 														   matching_lls_slt_mmt_session->last_udp_flow_packet_id_mpu_sequence_tuple_video->packet_id,
 														   matching_lls_slt_mmt_session->last_udp_flow_packet_id_mpu_sequence_tuple_video->mpu_sequence_number,
-														   &lls_slt_monitor->lls_sls_mmt_monitor->lls_sls_monitor_output_buffer.video_output_buffer_isobmff);
-//                                                           mmtp_sub_flow_vector,
+														   &lls_slt_monitor->lls_sls_mmt_monitor->lls_sls_monitor_output_buffer.video_output_buffer_isobmff,
+                                                           mmtp_packet_id_packets_container);
 
 						lls_sls_monitor_buffer_isobmff_intermediate_mmt_file_dump(lls_sls_monitor_buffer_isobmff_pending_mux, "mpu/",
 														matching_lls_slt_mmt_session->last_udp_flow_packet_id_mpu_sequence_tuple_video->mpu_sequence_number,

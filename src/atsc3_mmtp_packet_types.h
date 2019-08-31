@@ -193,9 +193,9 @@ typedef struct mmtp_mpu_packet {
 typedef struct {
     uint32_t mpu_sequence_number;
     ATSC3_VECTOR_BUILDER_STRUCT(mmtp_mpu_packet);
-} mpu_sequence_number_mmtp_mpu_packet_t;
+} mpu_sequence_number_mmtp_mpu_packet_collection_t;
 
-ATSC3_VECTOR_BUILDER_METHODS_INTERFACE(mpu_sequence_number_mmtp_mpu_packet, mmtp_mpu_packet);
+ATSC3_VECTOR_BUILDER_METHODS_INTERFACE(mpu_sequence_number_mmtp_mpu_packet_collection, mmtp_mpu_packet);
 
 //forward declare, as this struct definition is in atsc3_mmt_signalling_packet_types.h
 typedef struct mmt_signalling_message_header_and_payload mmt_signalling_message_header_and_payload_t;
@@ -234,8 +234,8 @@ typedef struct mmtp_repair_symbol_packet {
 typedef struct mmtp_packet_id_packets_container {
     uint16_t            packet_id;
     
-    ATSC3_VECTOR_BUILDER_STRUCT(mpu_sequence_number_mmtp_mpu_packet);
-    ATSC3_VECTOR_BUILDER_STRUCT(mmtp_signalling_packet);
+    ATSC3_VECTOR_BUILDER_STRUCT(mpu_sequence_number_mmtp_mpu_packet_collection);
+ATSC3_VECTOR_BUILDER_STRUCT(mmtp_signalling_packet); //todo - figure out if this should be first class or overloaded
     
     //others not used in atsc3.0
     ATSC3_VECTOR_BUILDER_STRUCT(mmtp_mpu_nontimed_packet);
@@ -243,7 +243,7 @@ typedef struct mmtp_packet_id_packets_container {
     ATSC3_VECTOR_BUILDER_STRUCT(mmtp_repair_symbol_packet);
 } mmtp_packet_id_packets_container_t;
 
-ATSC3_VECTOR_BUILDER_METHODS_INTERFACE(mmtp_packet_id_packets_container, mpu_sequence_number_mmtp_mpu_packet);
+ATSC3_VECTOR_BUILDER_METHODS_INTERFACE(mmtp_packet_id_packets_container, mpu_sequence_number_mmtp_mpu_packet_collection);
 ATSC3_VECTOR_BUILDER_METHODS_INTERFACE(mmtp_packet_id_packets_container, mmtp_signalling_packet);
 ATSC3_VECTOR_BUILDER_METHODS_INTERFACE(mmtp_packet_id_packets_container, mmtp_mpu_nontimed_packet);
 ATSC3_VECTOR_BUILDER_METHODS_INTERFACE(mmtp_packet_id_packets_container, mmtp_generic_object_packet);

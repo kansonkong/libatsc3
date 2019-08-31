@@ -25,16 +25,16 @@ void mmtp_packet_header_free(mmtp_packet_header_t** mmtp_packet_header_p) {
 
 
 
-void mpu_sequence_number_mmtp_mpu_packet_free(mpu_sequence_number_mmtp_mpu_packet_t** mpu_sequence_number_mmtp_mpu_packet_p) {
-	if(mpu_sequence_number_mmtp_mpu_packet_p) {
-		mpu_sequence_number_mmtp_mpu_packet_t* mpu_sequence_number_mmtp_mpu_packet = *mpu_sequence_number_mmtp_mpu_packet_p;
+void mpu_sequence_number_mmtp_mpu_packet_collection_free(mpu_sequence_number_mmtp_mpu_packet_collection_t** mpu_sequence_number_mmtp_mpu_packet_collection_p) {
+	if(mpu_sequence_number_mmtp_mpu_packet_collection_p) {
+		mpu_sequence_number_mmtp_mpu_packet_collection_t* mpu_sequence_number_mmtp_mpu_packet_collection = *mpu_sequence_number_mmtp_mpu_packet_collection_p;
 
-		if(mpu_sequence_number_mmtp_mpu_packet) {
-			mpu_sequence_number_mmtp_mpu_packet_free_mmtp_mpu_packet(mpu_sequence_number_mmtp_mpu_packet);
-			freesafe(mpu_sequence_number_mmtp_mpu_packet);
-			mpu_sequence_number_mmtp_mpu_packet = NULL;
+		if(mpu_sequence_number_mmtp_mpu_packet_collection) {
+			mpu_sequence_number_mmtp_mpu_packet_collection_free_mmtp_mpu_packet(mpu_sequence_number_mmtp_mpu_packet_collection);
+			freesafe(mpu_sequence_number_mmtp_mpu_packet_collection);
+			mpu_sequence_number_mmtp_mpu_packet_collection = NULL;
 		}
-		*mpu_sequence_number_mmtp_mpu_packet_p = NULL;
+		*mpu_sequence_number_mmtp_mpu_packet_collection_p = NULL;
 	}
 }
 
@@ -76,7 +76,7 @@ void mmtp_packet_id_packets_container_free(mmtp_packet_id_packets_container_t** 
 		mmtp_packet_id_packets_container_t* mmtp_packet_id_packets_container = *mmtp_packet_id_packets_container_p;
 
 		if(mmtp_packet_id_packets_container) {
-			mmtp_packet_id_packets_container_free_mpu_sequence_number_mmtp_mpu_packet(mmtp_packet_id_packets_container);
+			mmtp_packet_id_packets_container_free_mpu_sequence_number_mmtp_mpu_packet_collection(mmtp_packet_id_packets_container);
 			mmtp_packet_id_packets_container_free_mmtp_signalling_packet(mmtp_packet_id_packets_container);
 			mmtp_packet_id_packets_container_free_mmtp_mpu_nontimed_packet(mmtp_packet_id_packets_container);
 			mmtp_packet_id_packets_container_free_mmtp_generic_object_packet(mmtp_packet_id_packets_container);
@@ -104,14 +104,14 @@ void mmtp_asset_free(mmtp_asset_t** mmtp_asset_p) {
 }
 
 //for mpu_sequence_number_mmtp_mpu_packet_t
-ATSC3_VECTOR_BUILDER_METHODS_IMPLEMENTATION(mpu_sequence_number_mmtp_mpu_packet, mmtp_mpu_packet);
+ATSC3_VECTOR_BUILDER_METHODS_IMPLEMENTATION(mpu_sequence_number_mmtp_mpu_packet_collection, mmtp_mpu_packet);
 
 //for mmtp_signalling_packet_t
 ATSC3_VECTOR_BUILDER_METHODS_IMPLEMENTATION(mmtp_signalling_packet, mmt_signalling_message_header_and_payload);
 
 //mpu_sequence_number_mmtp_mpu_packet_new
 //for mmtp_packet_id_packets_container_t
-ATSC3_VECTOR_BUILDER_METHODS_IMPLEMENTATION(mmtp_packet_id_packets_container, mpu_sequence_number_mmtp_mpu_packet);
+ATSC3_VECTOR_BUILDER_METHODS_IMPLEMENTATION(mmtp_packet_id_packets_container, mpu_sequence_number_mmtp_mpu_packet_collection);
 ATSC3_VECTOR_BUILDER_METHODS_IMPLEMENTATION(mmtp_packet_id_packets_container, mmtp_signalling_packet);
 
 ATSC3_VECTOR_BUILDER_METHODS_IMPLEMENTATION(mmtp_packet_id_packets_container, mmtp_mpu_nontimed_packet);
