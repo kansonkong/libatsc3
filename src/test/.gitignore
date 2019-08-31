@@ -7,3 +7,5 @@
 /atsc3_mmt_signalling_packet_test
 /.DS_Store
 /atsc3_mmt_mpu_packet_test
+/atsc3_mmt_mpu_packet_test_valgrind
+/atsc3_mmt_signalling_packet_test_valgrind
