@@ -40,6 +40,11 @@
 			<key>orderHint</key>
 			<integer>14</integer>
 		</dict>
+		<key>atsc3_mmt_listener_to_http_hls_fmp4.xcscheme_^#shared#^_</key>
+		<dict>
+			<key>orderHint</key>
+			<integer>17</integer>
+		</dict>
 		<key>atsc3_mmt_signaling_message_test.xcscheme_^#shared#^_</key>
 		<dict>
 			<key>isShown</key>
