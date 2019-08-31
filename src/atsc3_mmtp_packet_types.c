@@ -7,10 +7,7 @@
 
 #include "atsc3_mmtp_packet_types.h"
 
-mmtp_packet_header_t* mmtp_packet_header_new() {
-	return calloc(1, sizeof(mmtp_packet_header_t));
-}
-
+//cleanup macro impl's
 void mmtp_packet_header_free(mmtp_packet_header_t** mmtp_packet_header_p) {
 	if(mmtp_packet_header_p) {
 		mmtp_packet_header_t* mmtp_packet_header = *mmtp_packet_header_p;
@@ -130,7 +127,13 @@ ATSC3_VECTOR_BUILDER_METHODS_ITEM_FREE(mmtp_repair_symbol_packet);
 ATSC3_VECTOR_BUILDER_METHODS_IMPLEMENTATION(mmtp_asset, mmtp_packet_id_packets_container);
 
 //for mmtp_asset_flow
-ATSC3_VECTOR_BUILDER_METHODS_PARENT_IMPLEMENTATION(mmtp_asset_flow);
 ATSC3_VECTOR_BUILDER_METHODS_IMPLEMENTATION(mmtp_asset_flow, mmtp_asset);
+
+//for mmtp_flow
+ATSC3_VECTOR_BUILDER_METHODS_PARENT_IMPLEMENTATION(mmtp_flow);
+ATSC3_VECTOR_BUILDER_METHODS_IMPLEMENTATION(mmtp_flow, mmtp_asset_flow);
+
+//interim free
+ATSC3_VECTOR_BUILDER_METHODS_ITEM_FREE(mmtp_asset_flow);
 
 

@@ -71,6 +71,7 @@ uint16_t* dst_packet_id_filter = NULL;
 // lls and alc glue for slt, contains lls_table_slt and lls_slt_alc_session
 
 lls_slt_monitor_t* lls_slt_monitor;
+mmtp_flow_t* mmtp_flow;
 
 //make sure to invoke     mmtp_sub_flow_vector_init(&p_sys->mmtp_sub_flow_vector);
 udp_flow_latest_mpu_sequence_number_container_t* udp_flow_latest_mpu_sequence_number_container;
@@ -101,7 +102,7 @@ void mmtp_parse_from_udp_packet(udp_packet_t *udp_packet, lls_sls_mmt_session_t*
 
 		if(mmtp_mpu_packet->mpu_timed_flag == 1) {
 			atsc3_packet_statistics_mmt_stats_populate(udp_packet, mmtp_mpu_packet);
-			mmtp_process_from_payload(mmtp_mpu_packet, udp_flow_latest_mpu_sequence_number_container, lls_slt_monitor, udp_packet, matching_lls_slt_mmt_session);
+			mmtp_process_from_payload(mmtp_mpu_packet, mmtp_flow, lls_slt_monitor, udp_packet, udp_flow_latest_mpu_sequence_number_container, matching_lls_slt_mmt_session);
 
 		} else {
 			//non-timed
@@ -364,6 +365,7 @@ int main(int argc,char **argv) {
     /** setup global structs **/
 
     lls_slt_monitor = lls_slt_monitor_create();
+    mmtp_flow = mmtp_flow_new();
 
     gettimeofday(&global_stats->program_timeval_start, 0);
 

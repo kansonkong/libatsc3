@@ -25,6 +25,8 @@ extern "C" {
 #include "atsc3_mmtp_ntp32_to_pts.h"
 #include "atsc3_mmt_signalling_message_types.h"
 #include "atsc3_mmt_mpu_sample_format_type.h"
+    
+#include "atsc3_listener_udp.h"
 
 extern int _MMTP_DEBUG_ENABLED;
 extern int _MMTP_TRACE_ENABLED;
@@ -252,7 +254,17 @@ ATSC3_VECTOR_BUILDER_METHODS_INTERFACE(mmtp_packet_id_packets_container, mmtp_re
 typedef struct mmtp_asset_flow mmtp_asset_flow_t;
     
 typedef struct mmtp_asset {
-    uint16_t			mmtp_packet_id;
+    /* TODO: jjustman-2019-08-31
+     
+     map this to proper iso23008-1:
+     
+     uint32_t   asset_id_scheme
+     uint32_t   asset_id_length
+     uint8_t*   asset_id_value
+     
+     in the interim, use ATSC A/331 service_id as our "interim" key
+     */
+    uint16_t			atsc3_service_id;
     mmtp_asset_flow_t*  parent_mmtp_asset_flow;
     
     ATSC3_VECTOR_BUILDER_STRUCT(mmtp_packet_id_packets_container);
@@ -262,7 +274,7 @@ typedef struct mmtp_asset {
 ATSC3_VECTOR_BUILDER_METHODS_INTERFACE(mmtp_asset, mmtp_packet_id_packets_container);
 
 typedef struct mmtp_asset_flow {
-	uint32_t dst_ip;
+	uint32_t dst_ip_addr;
 	uint16_t dst_port;
 	
     ATSC3_VECTOR_BUILDER_STRUCT(mmtp_asset);
@@ -271,7 +283,13 @@ typedef struct mmtp_asset_flow {
 
 ATSC3_VECTOR_BUILDER_METHODS_INTERFACE(mmtp_asset_flow, mmtp_asset);
 
-
+typedef struct mmtp_flow {
+    ATSC3_VECTOR_BUILDER_STRUCT(mmtp_asset_flow);
+} mmtp_flow_t;
+    
+ATSC3_VECTOR_BUILDER_METHODS_INTERFACE(mmtp_flow, mmtp_asset_flow);
+    
+    
 #ifdef __cplusplus
 }
 #endif

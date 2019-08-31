@@ -304,8 +304,10 @@ if(!found_mpu_metadata_fragment_video && !lls_sls_mmt_monitor->lls_sls_monitor_o
 
 
 
+//udp_flow_latest_mpu_sequence_number_container_t* udp_flow_latest_mpu_sequence_number_container,
 
-lls_sls_monitor_buffer_isobmff_t* atsc3_isobmff_build_raw_mpu_from_single_sequence_number(udp_flow_t* udp_flow, udp_flow_latest_mpu_sequence_number_container_t* udp_flow_latest_mpu_sequence_number_container,
+lls_sls_monitor_buffer_isobmff_t* atsc3_isobmff_build_raw_mpu_from_single_sequence_number(udp_flow_t* udp_flow,
+                                                                                          udp_flow_latest_mpu_sequence_number_container_t* udp_flow_latest_mpu_sequence_number_container,
 		uint16_t packet_id, uint32_t mpu_sequence_number,  lls_sls_monitor_buffer_isobmff_t* lls_sls_monitor_buffer_isobmff) {
 
 	__ISOBMFF_TOOLS_DEBUG("atsc3_isobmff_build_mpu_from_single_sequence_number: Starting to create MPU from flow: packet_id: %u, mpu_sequence_number: %u",
@@ -321,17 +323,13 @@ lls_sls_monitor_buffer_isobmff_t* atsc3_isobmff_build_raw_mpu_from_single_sequen
 
     block_t* mpu_metadata_output_block_t = NULL;
 
-
-    if(!udp_flow_latest_mpu_sequence_number_container || !udp_flow_latest_mpu_sequence_number_container->udp_flows_n) {
-        __ISOBMFF_TOOLS_ERROR("atsc3_isobmff_build_mpu_from_single_sequence_number: Unable to find flows for MPU metadata creation from %u:%u", udp_flow->dst_ip_addr, udp_flow->dst_port);
-    }
-
     bool found_mpu_metadata_fragment = false;
 
     for(int i=0; i < udp_flow_latest_mpu_sequence_number_container->udp_flows_n; i++) {
     	udp_flow_packet_id_mpu_sequence_tuple_t* udp_flow_packet_id_mpu_sequence_tuple = udp_flow_latest_mpu_sequence_number_container->udp_flows[i];
 
     	__ISOBMFF_TOOLS_DEBUG("Searching for MPU Metadata with %u:%u and packet_id: %u", udp_flow->dst_ip_addr, udp_flow->dst_port, packet_id);
+
 /**
  *
  * jjustman-2019-08-10 - disabling until refactoring... for MFU..
