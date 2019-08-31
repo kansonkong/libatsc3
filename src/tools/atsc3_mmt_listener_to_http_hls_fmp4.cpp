@@ -304,14 +304,15 @@ void atsc3_mmt_hls_fmp4_write_file(const char* filename, const char* payload, ui
     }
     
 }
-
+//hvc1.2.4.L123.B0
+//hvc1.2.4.L150.B0
 void atsc3_mmt_hls_fmp4_write_master_manifest() {
     
     const char* master_manifest_payload = "#EXTM3U\n"
         "#EXT-X-VERSION:7\n"
         "#EXT-X-INDEPENDENT-SEGMENTS\n"
         "#EXT-X-MEDIA:TYPE=AUDIO,GROUP-ID=\"a1\",NAME=\"English\",LANGUAGE=\"en-US\",AUTOSELECT=YES,DEFAULT=YES,CHANNELS=\"2\",URI=\"a.m3u8\"\n"
-        "#EXT-X-STREAM-INF:AVERAGE-BANDWIDTH=1966314,BANDWIDTH=2164328,CODECS=\"hvc1.2.4.L123.B0,mp4a.40.2\",RESOLUTION=960x540,FRAME-RATE=60.000,AUDIO=\"a1\"\n"
+        "#EXT-X-STREAM-INF:AVERAGE-BANDWIDTH=1966314,BANDWIDTH=2164328,CODECS=\"hvc1.2.4.L150.B0,mp4a.40.2\",RESOLUTION=1920x1080,FRAME-RATE=60.000,AUDIO=\"a1\"\n"
         "v.m3u8\n";
     
     mkdir(MMT_HLS_FMP4_DIRECTORY_PATH, 0777);
@@ -319,14 +320,14 @@ void atsc3_mmt_hls_fmp4_write_master_manifest() {
 }
 const char* variant_manifest_audio_header = "#EXTM3U\n"
 "#EXT-X-VERSION:7\n"
-"#EXT-X-TARGETDURATION:2\n"
+"#EXT-X-TARGETDURATION:10\n"
 "#EXT-X-INDEPENDENT-SEGMENTS\n"
 "#EXT-X-MAP:URI=\"a.init.mp4\"\n"
 "#EXT-X-MEDIA-SEQUENCE:%d\n\n";
 
 const char* variant_manifest_video_header = "#EXTM3U\n"
 "#EXT-X-VERSION:7\n"
-"#EXT-X-TARGETDURATION:4\n"
+"#EXT-X-TARGETDURATION:10\n"
 "#EXT-X-INDEPENDENT-SEGMENTS\n"
 "#EXT-X-MAP:URI=\"v.init.mp4\"\n"
 "#EXT-X-MEDIA-SEQUENCE:%d\n\n";
@@ -348,7 +349,7 @@ void atsc3_mmt_hls_fmp4_write_variant_manifest(const char* variant_path, const c
     for(int i = ringbuffer_idx; i < ringbuffer_idx + MAX_FMP4_SEGMENTS; i++) {
         char* temp_hls_fragment_payload = fmp4_segments[ i % MAX_FMP4_SEGMENTS];
         if(temp_hls_fragment_payload) {
-            snprintf(payload + strlen(payload), PAYLOAD_MAX_LEN - strlen(payload), "#EXTINF:4.000000\n%s\n", temp_hls_fragment_payload);
+            snprintf(payload + strlen(payload), PAYLOAD_MAX_LEN - strlen(payload), "#EXTINF:10.000000\n%s\n", temp_hls_fragment_payload);
         }
     }
     
@@ -369,7 +370,9 @@ void atsc3_mmt_hls_fmp4_copy_file(const char* from, const char* to) {
     
     uint8_t* block = (uint8_t*) calloc(size, sizeof(uint8_t));
     FILE* file_from_fp = fopen(from, "r");
-    FILE* file_to_fp = fopen(to, "w");
+    char path_to[128];
+    snprintf(path_to, 128, "hls/%s", to);
+    FILE* file_to_fp = fopen(path_to, "w");
     
     if(file_from_fp && file_to_fp) {
         fread(block, size, 1, file_from_fp);
@@ -390,9 +393,10 @@ void atsc3_mmt_hls_fmp4_update_manifest(lls_sls_mmt_session_t* lls_sls_mmt_sessi
         }
         
         //nore sure why -1...
+        //MMT_HLS_FMP4_DIRECTORY_PATH,
         char* tmp_segment = (char*) calloc(1024, sizeof(char));
-        snprintf(tmp_segment, 1024, "%s/%s.%d.%d.m4s",
-                 MMT_HLS_FMP4_DIRECTORY_PATH, "a",
+        snprintf(tmp_segment, 1024, "%s.%d.%d.m4s",
+                 "a",
                  lls_sls_mmt_session->last_udp_flow_packet_id_mpu_sequence_tuple_audio->packet_id,
                  lls_sls_mmt_session->last_udp_flow_packet_id_mpu_sequence_tuple_audio->mpu_sequence_number - 1);
 
@@ -400,15 +404,17 @@ void atsc3_mmt_hls_fmp4_update_manifest(lls_sls_mmt_session_t* lls_sls_mmt_sessi
         
         //magic string in atsc3_lls_sls_monitor_output_buffer_utils.c, e.g. 1.570.v.orig
         char* track_dump_file_name = (char*)calloc(128, sizeof(char));
-        snprintf(track_dump_file_name, 127, "%s/%u.%u.%s", "mpu",
-                 lls_sls_mmt_session->last_udp_flow_packet_id_mpu_sequence_tuple_audio->packet_id,
-                 lls_sls_mmt_session->last_udp_flow_packet_id_mpu_sequence_tuple_audio->mpu_sequence_number - 1, "a.orig");
+//        snprintf(track_dump_file_name, 127, "%s/%u.%u.%s", "mpu",
+//                 lls_sls_mmt_session->last_udp_flow_packet_id_mpu_sequence_tuple_audio->packet_id,
+//                 lls_sls_mmt_session->last_udp_flow_packet_id_mpu_sequence_tuple_audio->mpu_sequence_number - 1, "a.orig");
+        snprintf(track_dump_file_name, 127, "%s/%u.%s", "mpu",
+                 lls_sls_mmt_session->last_udp_flow_packet_id_mpu_sequence_tuple_audio->mpu_sequence_number - 1, "v.rebuilt");
 
         atsc3_mmt_hls_fmp4_copy_file(track_dump_file_name, tmp_segment);
 
         //copy fmp4 segment over, see lls_sls_monitor_buffer_isobmff_intermediate_mmt_file_dump
         //fix me for packet_id's
-        atsc3_mmt_hls_fmp4_copy_file("mpu/2.init.mp4", MMT_HLS_FMP4_DIRECTORY_PATH "/a.init.mp4");
+        atsc3_mmt_hls_fmp4_copy_file("mpu/2.init.mp4", "a.init.mp4");
 
         a_fmp4_segments_ringbuffer_idx++;
         atsc3_mmt_hls_fmp4_write_variant_manifest(MMT_HLS_FMP4_AUDIO_VARIANT_NAME, variant_manifest_audio_header, a_fmp4_segments_ringbuffer_idx, a_fmp4_segments);
@@ -417,9 +423,10 @@ void atsc3_mmt_hls_fmp4_update_manifest(lls_sls_mmt_session_t* lls_sls_mmt_sessi
         if(v_fmp4_segments[v_fmp4_segments_ringbuffer_idx % MAX_FMP4_SEGMENTS]) {
             free(v_fmp4_segments[v_fmp4_segments_ringbuffer_idx % MAX_FMP4_SEGMENTS]);
         }
+        //MMT_HLS_FMP4_DIRECTORY_PATH
         char* tmp_segment_v = (char*) calloc(1024, sizeof(char));
-        snprintf(tmp_segment_v, 1024, "%s/%s.%d.%d.m4s",
-                 MMT_HLS_FMP4_DIRECTORY_PATH, "v",
+        snprintf(tmp_segment_v, 1024, "%s.%d.%d.m4s",
+                 "v",
                  lls_sls_mmt_session->last_udp_flow_packet_id_mpu_sequence_tuple_video->packet_id,
                  lls_sls_mmt_session->last_udp_flow_packet_id_mpu_sequence_tuple_video->mpu_sequence_number - 1);
         
@@ -427,14 +434,17 @@ void atsc3_mmt_hls_fmp4_update_manifest(lls_sls_mmt_session_t* lls_sls_mmt_sessi
         
         //magic string in atsc3_lls_sls_monitor_output_buffer_utils.c, e.g. 1.570.v.orig
         char* track_dump_file_name_v = (char*)calloc(128, sizeof(char));
-        snprintf(track_dump_file_name_v, 127, "%s/%u.%u.%s", "mpu",
-                 lls_sls_mmt_session->last_udp_flow_packet_id_mpu_sequence_tuple_video->packet_id,
-                 lls_sls_mmt_session->last_udp_flow_packet_id_mpu_sequence_tuple_video->mpu_sequence_number - 1, "v.orig");
-        
-        atsc3_mmt_hls_fmp4_copy_file(track_dump_file_name_v, tmp_segment);
+//        snprintf(track_dump_file_name_v, 127, "%s/%u.%u.%s", "mpu",
+//                 lls_sls_mmt_session->last_udp_flow_packet_id_mpu_sequence_tuple_video->packet_id,
+//                 lls_sls_mmt_session->last_udp_flow_packet_id_mpu_sequence_tuple_video->mpu_sequence_number - 1, "v.orig");
+
+        snprintf(track_dump_file_name_v, 127, "%s/%u.%s", "mpu",
+                 lls_sls_mmt_session->last_udp_flow_packet_id_mpu_sequence_tuple_video->mpu_sequence_number - 1, "v.rebuilt");
+
+        atsc3_mmt_hls_fmp4_copy_file(track_dump_file_name_v, tmp_segment_v);
         
         //copy fmp4 segment over, see lls_sls_monitor_buffer_isobmff_intermediate_mmt_file_dump
-        atsc3_mmt_hls_fmp4_copy_file("mpu/1.init.mp4", MMT_HLS_FMP4_DIRECTORY_PATH "/v.init.mp4");
+        atsc3_mmt_hls_fmp4_copy_file("mpu/1.init.mp4", "v.init.mp4");
         v_fmp4_segments_ringbuffer_idx++;
 
         atsc3_mmt_hls_fmp4_write_variant_manifest(MMT_HLS_FMP4_VIDEO_VARIANT_NAME, variant_manifest_video_header, v_fmp4_segments_ringbuffer_idx, v_fmp4_segments);
