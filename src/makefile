@@ -47,6 +47,7 @@ clean:
 	-rm -f  tools/atsc3_listener_metrics_ncurses
 	-rm -f  tools/atsc3_listener_metrics_ncurses_httpd_isobmff
 	-rm -f  tools/atsc3_mmt_mfu_monitor
+	-rm -f  tools/atsc3_mmt_listener_to_http_hls_fmp4
 	 
 intermediate_lls: atsc3_lls.o atsc3_lls_sls_parser.o atsc3_lls_alc_utils.o
 
@@ -127,7 +128,8 @@ listener_tests: atsc3_alc_listener_test \
 tools: atsc3_listener_metrics_ncurses \
 	atsc3_listener_metrics_ncurses_httpd_isobmff \
 	atsc3_mmt_mfu_monitor \
-	atsc3_alc_listener_mde_writer
+	atsc3_alc_listener_mde_writer \
+	atsc3_mmt_listener_to_http_hls_fmp4
 
 # intermediate object generation for linking into libatsc3.o
 
@@ -639,3 +641,16 @@ atsc3_alc_listener_mde_writer: tools/atsc3_alc_listener_mde_writer.cpp	libatsc3_
 		-I../bento/include/ -lpcap  -lncurses -lpcap -lz -lpthread \
 		-o tools/atsc3_alc_listener_mde_writer
 		
+atsc3_mmt_listener_to_http_hls_fmp4: tools/atsc3_mmt_listener_to_http_hls_fmp4.cpp \
+								atsc3_isobmff_tools.o \
+								atsc3_mmt_reconstitution_from_media_sample.o  \
+								atsc3_logging_externs.o \
+								libatsc3_bento4_gpl.o 
+	g++  -D OUTPUT_STATISTICS=NCURSES -g tools/atsc3_mmt_listener_to_http_hls_fmp4.cpp \
+		libatsc3_bento4_gpl.o \
+		atsc3_isobmff_tools.o \
+		atsc3_mmt_reconstitution_from_media_sample.c atsc3_logging_externs.o \
+		-I../bento/include/ -lpcap  -lncurses -lpcap -lz -lpthread \
+		-I../libmicrohttpd/libmicrohttpd-0.9.63/build/include \
+		-L../libmicrohttpd/libmicrohttpd-0.9.63/build/lib -lmicrohttpd \
+		-o tools/atsc3_mmt_listener_to_http_hls_fmp4		

@@ -26,6 +26,7 @@
 
 #include "fixups.h"
 #include "unistd.h"
+#include "endianess.c"
 
 #include "atsc3_logging_externs.h"
 
