@@ -291,11 +291,22 @@ void process_mmtp_payload(udp_packet_t *udp_packet, lls_sls_mmt_session_t* match
 			goto error;
 		}
 
-        //hack for mpu re-assembly
-        
+        //use MPU re-assembly for HLS distribution
         
 		if(mmtp_mpu_packet->mpu_timed_flag == 1) {
             mmtp_process_from_payload(mmtp_mpu_packet, mmtp_flow, lls_slt_monitor, udp_packet, udp_flow_latest_mpu_sequence_number_container, matching_lls_sls_mmt_session);
+            if(matching_lls_sls_mmt_session && matching_lls_sls_mmt_session->last_udp_flow_packet_id_mpu_sequence_tuple_audio && matching_lls_sls_mmt_session->last_udp_flow_packet_id_mpu_sequence_tuple_video) {
+                
+                __ATSC3_DEBUG("audio flow: packet_id: %d, mpu_sequence_number: %d, updated: %d, video flow: packet_id: %d, mpu_sequence_number: %d, updated: %d",
+                         matching_lls_sls_mmt_session->last_udp_flow_packet_id_mpu_sequence_tuple_audio->packet_id,
+                         matching_lls_sls_mmt_session->last_udp_flow_packet_id_mpu_sequence_tuple_audio->mpu_sequence_number,
+                         matching_lls_sls_mmt_session->last_udp_flow_packet_id_mpu_sequence_tuple_audio_processed,
+                              
+                         matching_lls_sls_mmt_session->last_udp_flow_packet_id_mpu_sequence_tuple_video->packet_id,
+                         matching_lls_sls_mmt_session->last_udp_flow_packet_id_mpu_sequence_tuple_video->mpu_sequence_number,
+                         matching_lls_sls_mmt_session->last_udp_flow_packet_id_mpu_sequence_tuple_video_processed);
+            }
+
 //
 //            block_Destroy(&mmtp_mpu_packet->du_mpu_metadata_block);
 //            block_Destroy(&mmtp_mpu_packet->du_mfu_block);
@@ -308,7 +319,6 @@ void process_mmtp_payload(udp_packet_t *udp_packet, lls_sls_mmt_session_t* match
 		}
 	} else if(mmtp_packet_header->mmtp_payload_type == 0x2) {
 
-        
 		mmtp_signalling_packet_t* mmtp_signalling_packet = mmt_signalling_message_parse_packet_header(mmtp_packet_header, udp_packet->data);
 		uint8_t parsed_count = mmt_signalling_message_parse_packet(mmtp_signalling_packet, udp_packet->data);
 		if(parsed_count) {
