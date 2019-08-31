@@ -30,6 +30,7 @@ mpu_sequence_number_mmtp_mpu_packet_collection_t*                 mmtp_packet_id
    
 //mmtp_asset_t*       mmtp_asset_flow_find_or_create_asset_from_mmt_mpu_packet(mmtp_asset_flow_t* mmtp_asset_flow, mmtp_mpu_packet_t* mmtp_mpu_packet);
 
+void mmtp_packet_id_packets_container_remove_mpu_sequence_number_mmtp_mpu_packet_collection(mmtp_packet_id_packets_container_t* mmtp_packet_id_packets_container, mpu_sequence_number_mmtp_mpu_packet_collection_t* mpu_sequence_number_mmtp_mpu_packet_collection_to_remove);
 
 void mmtp_asset_flow_set_flow_from_udp_packet(mmtp_asset_flow_t* mmtp_asset_flow, udp_packet_t* udp_packet);
 

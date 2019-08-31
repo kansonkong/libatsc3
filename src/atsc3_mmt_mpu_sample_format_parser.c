@@ -1,16 +1,15 @@
 /*
- * atsc3_mmt_mpu_sample_format_type.c
+ * atsc3_mmt_mpu_sample_format_parser.c
  *
  *  Created on: Aug 10, 2019
  *      Author: jjustman
  */
 
-#include "atsc3_mmt_mpu_sample_format_type.h"
+#include "atsc3_mmt_mpu_sample_format_parser.h"
 
 
 int _MMTP_MPU_SAMPLE_FORMAT_DEBUG_ENABLED = 0;
 int _MMTP_MPU_SAMPLE_FORMAT_TRACE_ENABLED = 0;
-
 
 
 //mfu's have time and un-timed additional DU headers, so recalc to_read_packet_len after doing (uint8_t*)extract
@@ -68,9 +67,9 @@ void atsc3_mmt_mpu_sample_format_parse(mmtp_mpu_packet_t* mmtp_mpu_packet, block
     
     int mmtp_mpu_payload_length = block_Remaining_size(raw_packet);
     uint8_t* udp_raw_buf = block_Get(raw_packet);
-    uint8_t *buf = udp_raw_buf;
+    uint8_t* buf = udp_raw_buf;
 
-    if(mmtp_mpu_packet.mpu_timed_flag) {
+    if(mmtp_mpu_packet->mpu_timed_flag) {
         
         //112 bits in aggregate, 14 bytes
         uint8_t timed_mfu_block[14];
@@ -95,30 +94,30 @@ void atsc3_mmt_mpu_sample_format_parse(mmtp_mpu_packet_t* mmtp_mpu_packet, block
             uint8_t mmthsample_sequence_number[4];
             
             buf = (uint8_t*)extract(buf, mmthsample_sequence_number, 4);
-            mmtp_mpu_packet->mmthsample_header.sequence_number = ntohl(*(uint32_t*)(mmthsample_sequence_number));
+            mmtp_mpu_packet->mmthsample_header->sequence_number = ntohl(*(uint32_t*)(mmthsample_sequence_number));
 
             uint8_t mmthsample_timed_block[19];
             buf = (uint8_t*)extract(buf, mmthsample_timed_block, 19);
             int mmth_position=0;
             
-            mmtp_mpu_packet->mmthsample_header.trackrefindex = mmthsample_timed_block[mmth_position++];
-            mmtp_mpu_packet->mmthsample_header.movie_fragment_sequence_number = ntohl(*(uint32_t*)(&mmthsample_timed_block[mmth_position]));
+            mmtp_mpu_packet->mmthsample_header->trackrefindex = mmthsample_timed_block[mmth_position++];
+            mmtp_mpu_packet->mmthsample_header->movie_fragment_sequence_number = ntohl(*(uint32_t*)(&mmthsample_timed_block[mmth_position]));
             mmth_position+=4;
-            mmtp_mpu_packet->mmthsample_header.samplenumber = ntohl(*(uint32_t*)(&mmthsample_timed_block[mmth_position]));
+            mmtp_mpu_packet->mmthsample_header->samplenumber = ntohl(*(uint32_t*)(&mmthsample_timed_block[mmth_position]));
             mmth_position+=4;
-            mmtp_mpu_packet->mmthsample_header.priority = mmthsample_timed_block[mmth_position++];
-            mmtp_mpu_packet->mmthsample_header.dependency_counter = mmthsample_timed_block[mmth_position++];
+            mmtp_mpu_packet->mmthsample_header->priority = mmthsample_timed_block[mmth_position++];
+            mmtp_mpu_packet->mmthsample_header->dependency_counter = mmthsample_timed_block[mmth_position++];
             //offset is from base of the containing mdat box (e.g. samplenumber 1 should have an offset of 8
-            mmtp_mpu_packet->mmthsample_header.offset = ntohl(*(uint32_t*)(&mmthsample_timed_block[mmth_position]));
+            mmtp_mpu_packet->mmthsample_header->offset = ntohl(*(uint32_t*)(&mmthsample_timed_block[mmth_position]));
             mmth_position+=4;
-            mmtp_mpu_packet->mmthsample_header.length = ntohl(*(uint32_t*)(&mmthsample_timed_block[mmth_position]));
+            mmtp_mpu_packet->mmthsample_header->length = ntohl(*(uint32_t*)(&mmthsample_timed_block[mmth_position]));
 
                 //hi skt!
             if(mmthsample_sequence_number[0] == 'S' && mmthsample_sequence_number[1] == 'K' && mmthsample_sequence_number[2] == 'T') {
-                mmtp_mpu_packet->mmthsample_header.sequence_number  = mpu_data_unit_payload_fragments_timed.mpu_sequence_number;
-                mmtp_mpu_packet->mmthsample_header.samplenumber = mpu_data_unit_payload_fragments_timed.mpu_sample_number;
-                mmtp_mpu_packet->mmthsample_header.movie_fragment_sequence_number = mpu_data_unit_payload_fragments_timed.mpu_movie_fragment_sequence_number;
-                mmtp_mpu_packet->mmthsample_header.offset = mpu_data_unit_payload_fragments_timed.mpu_offset + 8;
+                mmtp_mpu_packet->mmthsample_header->sequence_number  = mmtp_mpu_packet->mpu_sequence_number;
+                mmtp_mpu_packet->mmthsample_header->samplenumber = mmtp_mpu_packet->sample_number;
+                mmtp_mpu_packet->mmthsample_header->movie_fragment_sequence_number = mmtp_mpu_packet->movie_fragment_sequence_number;
+                mmtp_mpu_packet->mmthsample_header->offset = mmtp_mpu_packet->offset + 8;
             }
 
             //read multilayerinfo
@@ -175,7 +174,8 @@ void atsc3_mmt_mpu_sample_format_parse(mmtp_mpu_packet_t* mmtp_mpu_packet, block
 
                 box_parsed_position+=4;
 
-                _MPU_TRACE("mpu mode (0x02), packet_id: %u, packet_seq_num: %u, timed mfu has child box size: %u, name: %c%c%c%c", mmtp_mpu_type_packet_header.mmtp_packet_id,
+                __MMTP_MPU_SAMPLE_FORMAT_TRACE("mpu mode (0x02), packet_id: %u, packet_seq_num: %u, timed mfu has child box size: %u, name: %c%c%c%c",
+                	mmtp_mpu_packet->mmtp_packet_id,
                     mmtp_mpu_packet->packet_sequence_number,
                     private_box_length,
                     ((private_box_name >> 24) & 0xFF), ((private_box_name >> 16) & 0xFF), ((private_box_name >> 8) & 0xFF), (private_box_name & 0xFF));
@@ -198,7 +198,7 @@ void atsc3_mmt_mpu_sample_format_parse(mmtp_mpu_packet_t* mmtp_mpu_packet, block
 
                     box_parsed_position+=8;
 
-                    _MPU_TRACE("mpu mode (0x02), MJSD, remaining child box size is: %u",  (multilayerinfo_box_length - box_parsed_position));
+                    __MMTP_MPU_SAMPLE_FORMAT_TRACE("mpu mode (0x02), MJSD, remaining child box size is: %u",  (multilayerinfo_box_length - box_parsed_position));
 
                     if((multilayerinfo_box_length - box_parsed_position) > 8) {
 
@@ -210,7 +210,8 @@ void atsc3_mmt_mpu_sample_format_parse(mmtp_mpu_packet_t* mmtp_mpu_packet, block
                         private_box_name = ntohl(*(uint32_t*)(&private_box_name));
 
                         box_parsed_position+=4;
-                        _MPU_INFO("!!!mpu mode (0x02), packet_id: %u, packet_seq_num: %u, MJSD  child box size: %u, name: %c%c%c%c", mmtp_mpu_type_packet_header.mmtp_packet_id,
+                        __MMTP_MPU_SAMPLE_FORMAT_INFO("mpu mode (0x02), packet_id: %u, packet_seq_num: %u, MJSD  child box size: %u, name: %c%c%c%c",
+                        		mmtp_mpu_packet->mmtp_packet_id,
                                 mmtp_mpu_packet->packet_sequence_number,
                                 private_box_length,
                                 ((private_box_name >> 24) & 0xFF), ((private_box_name >> 16) & 0xFF), ((private_box_name >> 8) & 0xFF), (private_box_name & 0xFF));
@@ -220,7 +221,7 @@ void atsc3_mmt_mpu_sample_format_parse(mmtp_mpu_packet_t* mmtp_mpu_packet, block
                 }
             }
 
-            _MPU_TRACE("mpu mode (0x02), timed mfu has remaining payload: %u", (multilayerinfo_box_length - box_parsed_position));
+            __MMTP_MPU_SAMPLE_FORMAT_TRACE("mpu mode (0x02), timed mfu has remaining payload: %u", (multilayerinfo_box_length - box_parsed_position));
 
             //for any remaining muli box size, ignore as possibly corrupt
             for(int i = box_parsed_position; i < multilayerinfo_box_length; i++) {
@@ -228,15 +229,15 @@ void atsc3_mmt_mpu_sample_format_parse(mmtp_mpu_packet_t* mmtp_mpu_packet, block
                 buf = (uint8_t*)extract(buf, &muli_box_incomplete_byte, 1);
             }
 
-            mmtp_mpu_packet->mmthsample_header.mfu_mmth_sample_header_size = 4 + 19 + multilayerinfo_box_length;
-                _MPU_DEBUG("mpu mode (0x02), timed MFU, mfu_mmth_sample_header_size: %u, mpu_fragmentation_indicator: %d, movie_fragment_seq_num: %u, sample_num: %u, offset: %u, pri: %d, dep_counter: %d, multilayer: %d, mpu_sequence_number: %u",
-                mmtp_mpu_packet->mmthsample_header.mfu_mmth_sample_header_size,
+            mmtp_mpu_packet->mmthsample_header->mfu_mmth_sample_header_size = 4 + 19 + multilayerinfo_box_length;
+            	__MMTP_MPU_SAMPLE_FORMAT_DEBUG("mpu mode (0x02), timed MFU, mfu_mmth_sample_header_size: %u, mpu_fragmentation_indicator: %d, movie_fragment_seq_num: %u, sample_num: %u, offset: %u, pri: %d, dep_counter: %d, multilayer: %d, mpu_sequence_number: %u",
+                mmtp_mpu_packet->mmthsample_header->mfu_mmth_sample_header_size,
                 mmtp_mpu_packet->mpu_fragmentation_indicator,
-                mmtp_mpu_packet->mpu_movie_fragment_sequence_number,
-                mmtp_mpu_packet->.mpu_sample_number,
-                mmtp_mpu_packet->mpu_offset,
-                mmtp_mpu_packet->mpu_priority,
-                mmtp_mpu_packet->mpu_dep_counter,
+                mmtp_mpu_packet->movie_fragment_sequence_number,
+                mmtp_mpu_packet->sample_number,
+                mmtp_mpu_packet->offset,
+                mmtp_mpu_packet->priority,
+                mmtp_mpu_packet->dep_counter,
                 is_multilayer,
                 mmtp_mpu_packet->mpu_sequence_number);
         } else {
@@ -244,18 +245,17 @@ void atsc3_mmt_mpu_sample_format_parse(mmtp_mpu_packet_t* mmtp_mpu_packet, block
             //mpu_data_unit_payload_fragments_timed.mpu_offset -= 24;
             //jdj-2019-06-13 -- end HACK --
 
-            _MPU_DEBUG("mpu mode (0x02), timed MFU, mpu_fragmentation_indicator: %d, movie_fragment_seq_num: %u, sample_num: %u, offset: %u, pri: %d, dep_counter: %d, mpu_sequence_number: %u",
+        	__MMTP_MPU_SAMPLE_FORMAT_DEBUG("mpu mode (0x02), timed MFU, mpu_fragmentation_indicator: %d, movie_fragment_seq_num: %u, sample_num: %u, offset: %u, pri: %d, dep_counter: %d, mpu_sequence_number: %u",
                 mmtp_mpu_packet->mpu_fragmentation_indicator,
-                mmtp_mpu_packet->mpu_movie_fragment_sequence_number,
-                mmtp_mpu_packet->mpu_sample_number,
-                mmtp_mpu_packet->mpu_offset,
-                mmtp_mpu_packet->mpu_priority,
-                mmtp_mpu_packet->mpu_dep_counter,
+                mmtp_mpu_packet->movie_fragment_sequence_number,
+                mmtp_mpu_packet->sample_number,
+                mmtp_mpu_packet->offset,
+                mmtp_mpu_packet->priority,
+                mmtp_mpu_packet->dep_counter,
                 mmtp_mpu_packet->mpu_sequence_number);
         }
         //end mfu box read
 
-        to_read_packet_length = udp_raw_buf_size - (buf - raw_buf);
     } else {
 //        uint8_t non_timed_mfu_block[4];
 //        uint32_t non_timed_mfu_item_id;
