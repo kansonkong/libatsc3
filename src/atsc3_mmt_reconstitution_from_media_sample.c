@@ -41,6 +41,10 @@ int _MMT_RECON_FROM_SAMPLE_SIGNAL_INFO_ENABLED = 0;
 int _MMT_RECON_FROM_SAMPLE_DEBUG_ENABLED = 0;
 int _MMT_RECON_FROM_SAMPLE_TRACE_ENABLED = 0;
 
+static global_atsc3_stats_t global_stats_internal;
+global_atsc3_stats_t* global_stats = &global_stats_internal;
+
+
 /**
  * jjustman-2019-03-30 - combine pending mpu_sequence_numbers until we have at least 1a and 1v packet to flush for decoder...
 mmtp_sub_flow_vector_t* mmtp_sub_flow_vector,

@@ -21,8 +21,10 @@
 #ifdef __cplusplus
 extern "C" {
 #endif
-extern global_atsc3_stats_t* global_stats;
 
+//jjustman-2019-08-30 - TODO - refactor me
+extern global_atsc3_stats_t* global_stats;
+    
 //mmtp_sub_flow_vector_t* mmtp_sub_flow_vector,
 //mmtp_payload_fragments_union_t** mmtp_payload_p,
 void mmtp_process_from_payload(mmtp_mpu_packet_t* mmtp_mpu_packet,
