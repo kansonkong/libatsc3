@@ -261,7 +261,6 @@ void ISOBMFF_track_joiner_monitor_output_buffer_parse_and_build_joined_mmt_rebui
  
  */
  uint32_t ISOBMFF_rebuild_moof_from_sample_data(lls_sls_monitor_buffer_isobmff_t* lls_sls_monitor_buffer_isobmff, AP4_DataBuffer** output_data_buffer_p, AP4_MemoryByteStream** output_stream_p) {
-
      
 	block_t* temp_output_buffer = lls_sls_monitor_output_buffer_copy_mmt_moof_from_flow_isobmff_box_no_patching_trailing_mdat(lls_sls_monitor_buffer_isobmff);
 	if(!temp_output_buffer) {
@@ -286,7 +285,7 @@ void ISOBMFF_track_joiner_monitor_output_buffer_parse_and_build_joined_mmt_rebui
 		__ISOBMFF_JOINER_INFO("WARN: ISOBMFF_rebuild_moof_from_sample_data - mpu_presentation_time is NOT SET!");
 	}
 
-	AP4_DataBuffer* dataBuffer = new AP4_DataBuffer(temp_output_buffer->i_pos);
+	AP4_DataBuffer* dataBuffer = new AP4_DataBuffer(temp_output_buffer->p_size);
     *output_data_buffer_p = dataBuffer;
      
 	AP4_MemoryByteStream* memoryOutputByteStream = new AP4_MemoryByteStream(*dataBuffer);
@@ -524,7 +523,7 @@ void ISOBMFF_track_joiner_monitor_output_buffer_parse_and_build_joined_mmt_rebui
      
     if(!mdat_atom_and_offset_written) {
         __ISOBMFF_JOINER_DEBUG("WARNING: mdat_atom_and_offset_written is NULL, manually writing out last known good MDAT!");
-        memoryOutputByteStream->Write(lls_sls_monitor_buffer_isobmff->mmt_mdat_block->p_buffer, lls_sls_monitor_buffer_isobmff->mmt_mdat_block->i_pos);
+        memoryOutputByteStream->Write(lls_sls_monitor_buffer_isobmff->mmt_mdat_block->p_buffer, lls_sls_monitor_buffer_isobmff->mmt_mdat_block->p_size);
     }
 
 	block_Release(&temp_output_buffer);
@@ -762,22 +761,22 @@ void parseAndBuildJoinedBoxes_from_lls_sls_monitor_output_buffer(lls_sls_monitor
 	}
 
 	//we shouldn't be bigger than this for our return..
-	AP4_DataBuffer* dataBuffer = new AP4_DataBuffer(audio_output_buffer->i_pos + video_output_buffer->i_pos );
+	AP4_DataBuffer* dataBuffer = new AP4_DataBuffer(audio_output_buffer->p_size + video_output_buffer->p_size);
     *output_data_buffer_p = dataBuffer;
 	AP4_MemoryByteStream* memoryOutputByteStream = new AP4_MemoryByteStream(*dataBuffer);
 
 	*output_stream_p = memoryOutputByteStream;
 
-    AP4_MemoryByteStream* audioOutputMemoryByteStream = new AP4_MemoryByteStream(audio_output_buffer->p_buffer, audio_output_buffer->i_pos);
-    AP4_MemoryByteStream* videoOutputMemoryByteStream = new AP4_MemoryByteStream(video_output_buffer->p_buffer, video_output_buffer->i_pos);
+    AP4_MemoryByteStream* audioOutputMemoryByteStream = new AP4_MemoryByteStream(audio_output_buffer->p_buffer, audio_output_buffer->p_size);
+    AP4_MemoryByteStream* videoOutputMemoryByteStream = new AP4_MemoryByteStream(video_output_buffer->p_buffer, video_output_buffer->p_size);
 	
     list<AP4_Atom_And_Offset_t*> audio_isobmff_atom_list  = ISOBMFFTrackParseAndBuildOffset(audioOutputMemoryByteStream);
 	list<AP4_Atom_And_Offset_t*> video_isobmff_atom_list =  ISOBMFFTrackParseAndBuildOffset(videoOutputMemoryByteStream);
 
-    __ISOBMFF_JOINER_DEBUG("Dumping audio box: size: %u", audio_output_buffer->i_pos);
+    __ISOBMFF_JOINER_DEBUG("Dumping audio box: size: %u", audio_output_buffer->p_size);
 	//dumpFullMetadata(audio_isobmff_atom_list);
 
-	__ISOBMFF_JOINER_DEBUG("Dumping video box: %u", video_output_buffer->i_pos);
+	__ISOBMFF_JOINER_DEBUG("Dumping video box: %u", video_output_buffer->p_size);
 	//dumpFullMetadata(video_isobmff_atom_list);
 
 
@@ -1386,12 +1385,12 @@ void parseAndBuildJoinedBoxes_from_lls_sls_monitor_output_buffer(lls_sls_monitor
 
 list<AP4_Atom*> ISOBMFFTrackParse(block_t* isobmff_track_block) {
 
-	__ISOBMFF_JOINER_DEBUG("::ISOBMFFTrackParse: payload size is: %u", isobmff_track_block->i_pos);
+	__ISOBMFF_JOINER_DEBUG("::ISOBMFFTrackParse: payload size is: %u", isobmff_track_block->p_size);
 
 	list<AP4_Atom*> atomList;
     AP4_Atom* atom;
 
-    AP4_MemoryByteStream* memoryInputByteStream = new AP4_MemoryByteStream(isobmff_track_block->p_buffer, isobmff_track_block->i_pos);
+    AP4_MemoryByteStream* memoryInputByteStream = new AP4_MemoryByteStream(isobmff_track_block->p_buffer, isobmff_track_block->p_size);
     // inspect the atoms one by one
 
     AP4_DefaultAtomFactory atom_factory;

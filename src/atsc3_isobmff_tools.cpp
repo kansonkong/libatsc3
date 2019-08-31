@@ -203,7 +203,7 @@ lls_sls_monitor_buffer_isobmff_t* atsc3_isobmff_rebuild_track_mpu_from_sample_da
 lls_sls_monitor_buffer_isobmff_t* atsc3_isobmff_build_patched_mdat_fragment(lls_sls_monitor_buffer_isobmff_t* lls_sls_monitor_buffer_isobmff) {
 	lls_sls_monitor_buffer_isobmff_create_mdat_from_trun_sample_entries(lls_sls_monitor_buffer_isobmff);
 	if(lls_sls_monitor_buffer_isobmff->mmt_moof_block_from_flow) {
-		uint32_t moof_size = lls_sls_monitor_buffer_isobmff->mmt_moof_block_from_flow->i_pos;
+		uint32_t moof_size = lls_sls_monitor_buffer_isobmff->mmt_moof_block_from_flow->p_size;
 		if(moof_size > 8) {
 			if(lls_sls_monitor_buffer_isobmff->mmt_moof_block_from_flow->p_buffer[moof_size-4]=='m' &&
 					lls_sls_monitor_buffer_isobmff->mmt_moof_block_from_flow->p_buffer[moof_size-3]=='d' &&
