@@ -506,6 +506,12 @@ void ISOBMFF_track_joiner_monitor_output_buffer_parse_and_build_joined_mmt_rebui
     //re-write out our isobmff track..
 	for (it = isobmff_atom_list.begin(); it != isobmff_atom_list.end(); it++) {
 		AP4_Atom* top_level_atom = (*it)->atom;
+        
+        //don't write out ftyp/moov init for fMP4 with HLS...
+        //hack
+        if(top_level_atom->GetType() == AP4_ATOM_TYPE_FTYP || top_level_atom->GetType() == AP4_ATOM_TYPE_MOOV) {
+            continue;
+        }
         if(top_level_atom->GetType() == AP4_ATOM_TYPE_MDAT) {
             mdat_atom_and_offset_written = *it;
         }
