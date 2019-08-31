@@ -75,6 +75,13 @@ uint16_t* dst_packet_id_filter = NULL;
 lls_slt_monitor_t* lls_slt_monitor = NULL;
 lls_sls_mmt_monitor_t* lls_sls_mmt_monitor = NULL;
 
+mmtp_flow_t* mmtp_flow;
+
+//todo: refactor me out for mpu recon persitance
+
+udp_flow_latest_mpu_sequence_number_container_t* udp_flow_latest_mpu_sequence_number_container;
+
+
 /**
  *
  * httpd listener testing
@@ -284,6 +291,10 @@ void process_mmtp_payload(udp_packet_t *udp_packet, lls_sls_mmt_session_t* match
 			goto error;
 		}
 
+        //hack for mpu re-assembly
+        
+        mmtp_process_from_payload(mmtp_mpu_packet, mmtp_flow, lls_slt_monitor, udp_packet, udp_flow_latest_mpu_sequence_number_container, matching_lls_sls_mmt_session);
+        
 		if(mmtp_mpu_packet->mpu_timed_flag == 1) {
 		    block_Destroy(&mmtp_mpu_packet->du_mpu_metadata_block);
             block_Destroy(&mmtp_mpu_packet->du_mfu_block);
@@ -574,6 +585,9 @@ int main(int argc,char **argv) {
     /** setup global structs **/
 
     lls_slt_monitor = lls_slt_monitor_create();
+    mmtp_flow = mmtp_flow_new();
+    
+    udp_flow_latest_mpu_sequence_number_container = udp_flow_latest_mpu_sequence_number_container_t_init();
 
     /** ncurses support - valgrind on osx will fail in pthread_create...**/
 

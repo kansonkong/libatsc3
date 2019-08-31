@@ -49,14 +49,26 @@ global_atsc3_stats_t* global_stats = &global_stats_internal;
  * jjustman-2019-03-30 - combine pending mpu_sequence_numbers until we have at least 1a and 1v packet to flush for decoder...
 mmtp_sub_flow_vector_t* mmtp_sub_flow_vector,
 		mmtp_payload_fragments_union_t** mmtp_payload_p,
+ 
+ TODO: refactor udp_flow_latest_mpu_sequence_number_container_t* udp_flow_latest_mpu_sequence_number_container for mpu recon storage
 
  */
 void mmtp_process_from_payload(mmtp_mpu_packet_t* mmtp_mpu_packet,
-		udp_flow_latest_mpu_sequence_number_container_t* udp_flow_latest_mpu_sequence_number_container,
-		lls_slt_monitor_t* lls_slt_monitor,
-		udp_packet_t *udp_packet,
-		lls_sls_mmt_session_t* matching_lls_slt_mmt_session) {
+                               mmtp_flow_t *mmtp_flow,
+                               lls_slt_monitor_t* lls_slt_monitor,
+                               udp_packet_t *udp_packet,
+                               udp_flow_latest_mpu_sequence_number_container_t* udp_flow_latest_mpu_sequence_number_container,
+                               lls_sls_mmt_session_t* matching_lls_slt_mmt_session) {
 
+    //jjustman-2019-08-31 - new atsc3_mmtp_packet_types.h refactoring here...
+    
+    mmtp_asset_flow_t* mmtp_asset_flow = mmtp_flow_find_or_create_from_udp_packet(mmtp_flow, udp_packet);
+    mmtp_asset_t* mmtp_asset = mmtp_asset_flow_find_or_create_asset_from_lls_sls_mmt_session(mmtp_asset_flow, matching_lls_slt_mmt_session);
+
+//    mmtp_asset_t* mmtp_asset = mmtp_asset_flow_find_or_create_asset_from_mmt_mpu_packet(mmtp_asset_flow, mmtp_mpu_packet);
+
+    mmtp_asset_add_mmtp_mpu_packet(mmtp_asset, mmtp_mpu_packet);
+    
     int my_evicted_count = 0;
 
     //dump header, then dump applicable packet type
@@ -77,7 +89,7 @@ void mmtp_process_from_payload(mmtp_mpu_packet_t* mmtp_mpu_packet,
             		lls_slt_monitor->lls_sls_mmt_monitor->lls_mmt_session->sls_destination_ip_address == udp_packet->udp_flow.dst_ip_addr &&
             		lls_slt_monitor->lls_sls_mmt_monitor->lls_mmt_session->sls_destination_udp_port == udp_packet->udp_flow.dst_port) {
 
-            	//udp_flow_packet_id_mpu_sequence_tuple_t* last_flow_reference = udp_flow_latest_mpu_sequence_number_add_or_replace(udp_flow_latest_mpu_sequence_number_container, udp_packet, mmtp_payload);
+            	udp_flow_packet_id_mpu_sequence_tuple_t* last_flow_reference = udp_flow_latest_mpu_sequence_number_add_or_replace(udp_flow_latest_mpu_sequence_number_container, udp_packet, mmtp_mpu_packet);
 //        		__MMT_RECON_FROM_SAMPLE_TRACE("mmtp_packet_parse: processing mmt flow: %d.%d.%d.%d:(%u) packet_id: %d",
 //        		__toipandportnonstruct(udp_packet->udp_flow.dst_ip_addr, udp_packet->udp_flow.dst_port), mmtp_mpu_packet->mmtp_packet_id);
 
@@ -108,7 +120,7 @@ void mmtp_process_from_payload(mmtp_mpu_packet_t* mmtp_mpu_packet,
                         }
 
 					}
-					//udp_flow_packet_id_mpu_sequence_tuple_free_and_clone(&matching_lls_slt_mmt_session->last_udp_flow_packet_id_mpu_sequence_tuple_audio, last_flow_reference);
+					udp_flow_packet_id_mpu_sequence_tuple_free_and_clone(&matching_lls_slt_mmt_session->last_udp_flow_packet_id_mpu_sequence_tuple_audio, last_flow_reference);
                     
 				} else if(lls_slt_monitor->lls_sls_mmt_monitor->video_packet_id == mmtp_mpu_packet->mmtp_packet_id) {
 					//see if we have incremented our mpu_sequence_number with current mmtp_payload
@@ -140,7 +152,7 @@ void mmtp_process_from_payload(mmtp_mpu_packet_t* mmtp_mpu_packet,
 					}
 
 					//keep track of our last mpu_sequence_number...
-//           			udp_flow_packet_id_mpu_sequence_tuple_free_and_clone(&matching_lls_slt_mmt_session->last_udp_flow_packet_id_mpu_sequence_tuple_video, last_flow_reference);
+           			udp_flow_packet_id_mpu_sequence_tuple_free_and_clone(&matching_lls_slt_mmt_session->last_udp_flow_packet_id_mpu_sequence_tuple_video, last_flow_reference);
 				}
 
 				//if we have at least one block in the following, push it to the isobmff track joiner as usual
