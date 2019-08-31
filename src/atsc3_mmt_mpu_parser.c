@@ -127,6 +127,7 @@ mmtp_mpu_packet_t* mmtp_mpu_packet_parse_from_block_t(mmtp_packet_header_t* mmtp
                 
                 block_t* temp_timed_buffer = block_Alloc(to_read_packet_length);
                 block_Write(temp_timed_buffer, buf, to_read_packet_length);
+                block_Rewind(temp_timed_buffer);
 
                 atsc3_mmt_mpu_sample_format_parse(mmtp_mpu_packet, temp_timed_buffer);
                 

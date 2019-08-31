@@ -14,12 +14,6 @@
 extern "C" {
 #endif
 
-#include "atsc3_utils.h"
-#include "atsc3_logging_externs.h"
-
-extern int _MMTP_MPU_SAMPLE_FORMAT_DEBUG_ENABLED;
-extern int _MMTP_MPU_SAMPLE_FORMAT_TRACE_ENABLED;
-
 typedef struct atsc3_mmt_multiLayerInfoBox {
     uint8_t multilayer_flag:1;
     uint8_t reserved0:7;
@@ -59,15 +53,6 @@ typedef struct mmthsample_header {
 	//derived internal libatsc3 value
 	uint32_t    mfu_mmth_sample_header_size;
 } mmthsample_header_t;
-
-
-
-#define __MMTP_MPU_SAMPLE_FORMAT_ERROR(...)   __LIBATSC3_TIMESTAMP_ERROR(__VA_ARGS__);
-#define __MMTP_MPU_SAMPLE_FORMAT_WARN(...)    __LIBATSC3_TIMESTAMP_WARN(__VA_ARGS__);
-#define __MMTP_MPU_SAMPLE_FORMAT_INFO(...)    __LIBATSC3_TIMESTAMP_INFO(__VA_ARGS__);
-
-#define __MMTP_MPU_SAMPLE_FORMAT_DEBUG(...)   if(_MMTP_MPU_SAMPLE_FORMAT_DEBUG_ENABLED) { __LIBATSC3_TIMESTAMP_DEBUG(__VA_ARGS__); }
-#define __MMTP_MPU_SAMPLE_FORMAT_TRACE(...)   if(_MMTP_MPU_SAMPLE_FORMAT_TRACE_ENABLED) { __LIBATSC3_TIMESTAMP_TRACE(__VA_ARGS__); }
 
 
 #ifdef __cplusplus

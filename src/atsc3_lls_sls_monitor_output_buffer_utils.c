@@ -310,7 +310,7 @@ int __lls_sls_monitor_output_buffer_check_and_copy(uint8_t* dest_box, uint32_t* 
 
 int lls_sls_monitor_output_buffer_copy_init_block(lls_sls_monitor_buffer_isobmff_t* lls_sls_monitor_buffer_isobmff, block_t* init_block) {
 	assert(init_block);
-	assert(init_block->i_pos);
+	assert(init_block->p_size);
 
 	if(lls_sls_monitor_buffer_isobmff->init_block) {
 		block_Release(&lls_sls_monitor_buffer_isobmff->init_block);
@@ -323,7 +323,7 @@ int lls_sls_monitor_output_buffer_copy_init_block(lls_sls_monitor_buffer_isobmff
 int lls_sls_monitor_output_buffer_copy_init_block_flow_refragment(lls_sls_monitor_buffer_isobmff_t* lls_sls_monitor_buffer_isobmff, block_t* init_block) {
 
 	assert(init_block);
-	assert(init_block->i_pos);
+    assert(init_block->p_size);
 
 	if(lls_sls_monitor_buffer_isobmff->init_block_flow_refragment) {
 		block_Release(&lls_sls_monitor_buffer_isobmff->init_block_flow_refragment);
@@ -934,7 +934,7 @@ int lls_sls_monitor_output_buffer_copy_and_recover_sample_fragment_block(lls_sls
 								mmtp_mpu_packet->du_mfu_block->i_pos);
     }
 
-	block_Append(trun_sample_entry->sample, mmtp_mpu_packet->du_mfu_block);
+	block_AppendFull(trun_sample_entry->sample, mmtp_mpu_packet->du_mfu_block);
 
 	//skip over any missing sample packets
 	//block_Write(&trun_sample_entry->sample[mpu_offset], mpu_data_unit_payload->p_buffer, mpu_data_unit_payload->i_pos);

@@ -33,6 +33,8 @@ mmtp_asset_t* mmtp_asset_flow_find_or_create_asset_from_lls_sls_mmt_session(mmtp
         mmtp_asset = mmtp_asset_flow->mmtp_asset_v.data[i];
         if(mmtp_asset->atsc3_service_id == lls_sls_mmt_session->service_id) {
             break;
+        } else {
+            mmtp_asset = NULL;
         }
     }
 
@@ -55,6 +57,8 @@ mmtp_packet_id_packets_container_t* mmtp_asset_find_or_create_packets_container_
         mmtp_packet_id_packets_container = mmtp_asset->mmtp_packet_id_packets_container_v.data[i];
         if(mmtp_packet_id_packets_container->packet_id == mmtp_mpu_packet->mmtp_packet_id) {
             break;
+        } else {
+            mmtp_packet_id_packets_container = NULL;
         }
     }
 
@@ -76,12 +80,15 @@ mpu_sequence_number_mmtp_mpu_packet_collection_t* mmtp_packet_id_packets_contain
         mpu_sequence_number_mmtp_mpu_packet_collection = mmtp_packet_id_packets_container->mpu_sequence_number_mmtp_mpu_packet_collection_v.data[i];
         if(mpu_sequence_number_mmtp_mpu_packet_collection->mpu_sequence_number == mmtp_mpu_packet->mpu_sequence_number) {
             break;
+        } else {
+            mpu_sequence_number_mmtp_mpu_packet_collection = NULL;
         }
     }
     
     if(!mpu_sequence_number_mmtp_mpu_packet_collection) {
         mpu_sequence_number_mmtp_mpu_packet_collection = mpu_sequence_number_mmtp_mpu_packet_collection_new();
         mpu_sequence_number_mmtp_mpu_packet_collection->mpu_sequence_number = mmtp_mpu_packet->mpu_sequence_number;
+        mpu_sequence_number_mmtp_mpu_packet_collection->packet_id = mmtp_mpu_packet->mmtp_packet_id;
         
         mmtp_packet_id_packets_container_add_mpu_sequence_number_mmtp_mpu_packet_collection(mmtp_packet_id_packets_container, mpu_sequence_number_mmtp_mpu_packet_collection);
     }
@@ -96,10 +103,37 @@ mpu_sequence_number_mmtp_mpu_packet_collection_t* mmtp_packet_id_packets_contain
         mpu_sequence_number_mmtp_mpu_packet_collection = mmtp_packet_id_packets_container->mpu_sequence_number_mmtp_mpu_packet_collection_v.data[i];
         if(mpu_sequence_number_mmtp_mpu_packet_collection->mpu_sequence_number == mpu_sequence_number) {
             break;
+        } else {
+            mpu_sequence_number_mmtp_mpu_packet_collection = NULL;
         }
     }
     
     return mpu_sequence_number_mmtp_mpu_packet_collection;
+}
+
+
+void mmtp_packet_id_packets_container_remove_mpu_sequence_number_mmtp_mpu_packet_collection(mmtp_packet_id_packets_container_t* mmtp_packet_id_packets_container, mpu_sequence_number_mmtp_mpu_packet_collection_t* mpu_sequence_number_mmtp_mpu_packet_collection_to_remove) {
+    mpu_sequence_number_mmtp_mpu_packet_collection_t* mpu_sequence_number_mmtp_mpu_packet_collection = NULL;
+    bool removed_mmtp_mpu_packet_collection_entry = false;
+    int i=0;
+    
+    for(; i < mmtp_packet_id_packets_container->mpu_sequence_number_mmtp_mpu_packet_collection_v.count; i++) {
+        mpu_sequence_number_mmtp_mpu_packet_collection = mmtp_packet_id_packets_container->mpu_sequence_number_mmtp_mpu_packet_collection_v.data[i];
+        
+        if(mpu_sequence_number_mmtp_mpu_packet_collection == mpu_sequence_number_mmtp_mpu_packet_collection_to_remove) {
+            mpu_sequence_number_mmtp_mpu_packet_collection_free(&mpu_sequence_number_mmtp_mpu_packet_collection);
+            removed_mmtp_mpu_packet_collection_entry = true;
+            break;
+        }
+    }
+    
+    if(removed_mmtp_mpu_packet_collection_entry) {
+        mmtp_packet_id_packets_container->mpu_sequence_number_mmtp_mpu_packet_collection_v.count--;
+        for(; i < mmtp_packet_id_packets_container->mpu_sequence_number_mmtp_mpu_packet_collection_v.count; i++) {
+            mmtp_packet_id_packets_container->mpu_sequence_number_mmtp_mpu_packet_collection_v.data[i] = mmtp_packet_id_packets_container->mpu_sequence_number_mmtp_mpu_packet_collection_v.data[i+1];
+        }
+        mmtp_packet_id_packets_container->mpu_sequence_number_mmtp_mpu_packet_collection_v.data[i] = NULL;
+    }
 }
 
 

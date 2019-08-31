@@ -107,7 +107,6 @@ void mmtp_process_from_payload(mmtp_mpu_packet_t* mmtp_mpu_packet,
 														   matching_lls_slt_mmt_session->last_udp_flow_packet_id_mpu_sequence_tuple_audio->mpu_sequence_number,
 														   &lls_slt_monitor->lls_sls_mmt_monitor->lls_sls_monitor_output_buffer.audio_output_buffer_isobmff,
                                                            mmtp_packet_id_packets_container);
-						//mmtp_sub_flow_vector
 
 						lls_sls_monitor_buffer_isobmff_intermediate_mmt_file_dump(lls_sls_monitor_buffer_isobmff_pending_mux, "mpu/",
 								matching_lls_slt_mmt_session->last_udp_flow_packet_id_mpu_sequence_tuple_audio->mpu_sequence_number,
@@ -118,11 +117,10 @@ void mmtp_process_from_payload(mmtp_mpu_packet_t* mmtp_mpu_packet,
 														matching_lls_slt_mmt_session->last_udp_flow_packet_id_mpu_sequence_tuple_audio->mpu_sequence_number,
 														"a.rebuilt");
                         
-                        //inner subflow free
-                        if(matching_lls_slt_mmt_session->last_udp_flow_packet_id_mpu_sequence_tuple_audio) {
-                            //atsc3_mmt_reconstitution_free_from_udp_flow(mmtp_sub_flow_vector, &udp_packet->udp_flow, matching_lls_slt_mmt_session->last_udp_flow_packet_id_mpu_sequence_tuple_audio);
-                        }
-
+//                        mpu_sequence_number_mmtp_mpu_packet_collection_t* mpu_sequence_number_mmtp_mpu_packet_collection = mmtp_packet_id_packets_container_find_mpu_sequence_number_mmtp_mpu_packet_collection_from_mpu_sequence_number(mmtp_packet_id_packets_container, matching_lls_slt_mmt_session->last_udp_flow_packet_id_mpu_sequence_tuple_audio->mpu_sequence_number);
+//                        mpu_sequence_number_mmtp_mpu_packet_collection_free(&mpu_sequence_number_mmtp_mpu_packet_collection);
+                        mpu_sequence_number_mmtp_mpu_packet_collection_t* mpu_sequence_number_mmtp_mpu_packet_collection = mmtp_packet_id_packets_container_find_mpu_sequence_number_mmtp_mpu_packet_collection_from_mpu_sequence_number(mmtp_packet_id_packets_container, matching_lls_slt_mmt_session->last_udp_flow_packet_id_mpu_sequence_tuple_audio->mpu_sequence_number);
+                        mmtp_packet_id_packets_container_remove_mpu_sequence_number_mmtp_mpu_packet_collection(mmtp_packet_id_packets_container, mpu_sequence_number_mmtp_mpu_packet_collection);
 					}
 					udp_flow_packet_id_mpu_sequence_tuple_free_and_clone(&matching_lls_slt_mmt_session->last_udp_flow_packet_id_mpu_sequence_tuple_audio, last_flow_reference);
                     
@@ -145,12 +143,8 @@ void mmtp_process_from_payload(mmtp_mpu_packet_t* mmtp_mpu_packet,
 						ls_sls_monitor_buffer_isobmff_mmt_mpu_rebuilt_file_dump(lls_sls_monitor_buffer_isobmff_pending_mux, "mpu/",
 														matching_lls_slt_mmt_session->last_udp_flow_packet_id_mpu_sequence_tuple_video->mpu_sequence_number,
 														"v.rebuilt");
-                        
-                        //inner mpu sub flow free
-                        if(matching_lls_slt_mmt_session->last_udp_flow_packet_id_mpu_sequence_tuple_video) {
-                       //     atsc3_mmt_reconstitution_free_from_udp_flow(mmtp_sub_flow_vector, &udp_packet->udp_flow, matching_lls_slt_mmt_session->last_udp_flow_packet_id_mpu_sequence_tuple_video);
-                        }
-
+                        mpu_sequence_number_mmtp_mpu_packet_collection_t* mpu_sequence_number_mmtp_mpu_packet_collection = mmtp_packet_id_packets_container_find_mpu_sequence_number_mmtp_mpu_packet_collection_from_mpu_sequence_number(mmtp_packet_id_packets_container, matching_lls_slt_mmt_session->last_udp_flow_packet_id_mpu_sequence_tuple_video->mpu_sequence_number);
+                        mmtp_packet_id_packets_container_remove_mpu_sequence_number_mmtp_mpu_packet_collection(mmtp_packet_id_packets_container, mpu_sequence_number_mmtp_mpu_packet_collection);
 					} else {
 						//noop
 					}
