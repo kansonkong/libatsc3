@@ -285,7 +285,7 @@ const char* mmt_hls_fmp4_master_manifest_path   = "hls/master.m3u8";
 #define MMT_HLS_FMP4_AUDIO_VARIANT_NAME     "hls/a.m3u8"
 #define MMT_HLS_FMP4_VIDEO_VARIANT_NAME     "hls/v.m3u8"
 
-#define MAX_FMP4_SEGMENTS 4
+#define MAX_FMP4_SEGMENTS 6
 
 char* a_fmp4_segments[MAX_FMP4_SEGMENTS] = {0};
 int a_fmp4_segments_ringbuffer_idx = 0;
@@ -408,7 +408,7 @@ void atsc3_mmt_hls_fmp4_update_manifest(lls_sls_mmt_session_t* lls_sls_mmt_sessi
 //                 lls_sls_mmt_session->last_udp_flow_packet_id_mpu_sequence_tuple_audio->packet_id,
 //                 lls_sls_mmt_session->last_udp_flow_packet_id_mpu_sequence_tuple_audio->mpu_sequence_number - 1, "a.orig");
         snprintf(track_dump_file_name, 127, "%s/%u.%s", "mpu",
-                 lls_sls_mmt_session->last_udp_flow_packet_id_mpu_sequence_tuple_audio->mpu_sequence_number - 1, "v.rebuilt");
+                 lls_sls_mmt_session->last_udp_flow_packet_id_mpu_sequence_tuple_audio->mpu_sequence_number - 1, "a.rebuilt");
 
         atsc3_mmt_hls_fmp4_copy_file(track_dump_file_name, tmp_segment);
 
