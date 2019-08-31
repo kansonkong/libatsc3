@@ -59,35 +59,35 @@ extern int _MMT_MPU_TRACE_ENABLED;
 #define udp_flow_match_from_udp_flow_t(a, b)  ((a->udp_flow.dst_ip_addr == b->dst_ip_addr) && (a->udp_flow.dst_port == b->dst_port))
 #define udp_flow_and_packet_id_match(a, b) (udp_flow_match(a, b) && a->packet_id == b->packet_id)
 
-//
+    // jjustman-2019-08-31 - TODO: refactor this out
 ////i miss stl containers...
 //
-//udp_flow_latest_mpu_sequence_number_container_t* udp_flow_latest_mpu_sequence_number_container_t_init();
-//udp_flow_latest_mpu_sequence_number_container_t* udp_flow_find_matching_flows(udp_flow_latest_mpu_sequence_number_container_t* udp_flow_latest_mpu_sequence_number_container, udp_flow_t* udp_flow_to_search);
+udp_flow_latest_mpu_sequence_number_container_t* udp_flow_latest_mpu_sequence_number_container_t_init();
+udp_flow_latest_mpu_sequence_number_container_t* udp_flow_find_matching_flows(udp_flow_latest_mpu_sequence_number_container_t* udp_flow_latest_mpu_sequence_number_container, udp_flow_t* udp_flow_to_search);
 //void udp_flow_latest_mpu_sequence_number_container_t_release(udp_flow_latest_mpu_sequence_number_container_t* udp_flow_latest_mpu_sequence_number_container);
 //udp_flow_packet_id_mpu_sequence_tuple_t* udp_flow_latest_mpu_sequence_number_from_packet_id(udp_flow_latest_mpu_sequence_number_container_t* udp_flow_latest_mpu_sequence_number_container, udp_packet_t* udp_packet, uint32_t packet_id);
-//udp_flow_packet_id_mpu_sequence_tuple_t* udp_flow_latest_mpu_sequence_number_add_or_replace(udp_flow_latest_mpu_sequence_number_container_t* udp_flow_latest_mpu_sequence_number_container, udp_packet_t* udp_packet, mmtp_payload_fragments_union_t* mmtp_packet);
+udp_flow_packet_id_mpu_sequence_tuple_t* udp_flow_latest_mpu_sequence_number_add_or_replace(udp_flow_latest_mpu_sequence_number_container_t* udp_flow_latest_mpu_sequence_number_container, udp_packet_t* udp_packet, mmtp_mpu_packet_t* mmtp_mpu_packet);
 //
-//void udp_flow_force_negative_mpu_discontinuity_value(udp_flow_packet_id_mpu_sequence_tuple_t* udp_flow_packet_id_mpu_sequence_matching_pkt_id, uint32_t new_old_mpu_sequence_number_to_force, mmtp_payload_fragments_union_t* mmtp_packet_fragments_to_evict);
-//void udp_flow_reset_negative_mpu_discontinuity_counters(udp_flow_packet_id_mpu_sequence_tuple_t* udp_flow_packet_id_mpu_sequence_matching_pkt_id);
+void udp_flow_force_negative_mpu_discontinuity_value(udp_flow_packet_id_mpu_sequence_tuple_t* udp_flow_packet_id_mpu_sequence_matching_pkt_id, uint32_t new_old_mpu_sequence_number_to_force, mmtp_mpu_packet_t* mmtp_mpu_packet_to_evict);
+void udp_flow_reset_negative_mpu_discontinuity_counters(udp_flow_packet_id_mpu_sequence_tuple_t* udp_flow_packet_id_mpu_sequence_matching_pkt_id);
 
-//int atsc3_mmt_mpu_clear_data_unit_from_packet_subflow(mmtp_payload_fragments_union_t* mmtp_payload_fragments_union, uint32_t evict_range_start, uint32_t evict_range_end);
-//int atsc3_mmt_mpu_clear_data_unit_payload_fragments(uint16_t packet_id, mmtp_sub_flow_t* mmtp_sub_flow, mpu_fragments_t* mpu_fragments, mpu_data_unit_payload_fragments_timed_vector_t* data_unit_payload_fragments);
+//int atsc3_mmt_mpu_clear_data_unit_from_packet_subflow(mmtp_mpu_packet_t* mmtp_mpu_packet, uint32_t evict_range_start, uint32_t evict_range_end);
+//int atsc3_mmt_mpu_clear_data_unit_payload_fragments(uint16_t packet_id, mmtp_sub_flow_t* mmtp_sub_flow, mmtp_mpu_packet_t* mmtp_mpu_packet, mpu_data_unit_payload_fragments_timed_vector_t* data_unit_payload_fragments);
 
 void mmtp_mpu_dump_header(mmtp_mpu_packet_t* mmtp_mpu_packet);
 void mmtp_mpu_dump_flow(uint32_t dst_ip, uint16_t dst_port, mmtp_mpu_packet_t* mmtp_mpu_packet);
-//void mpu_dump_reconstitued(uint32_t dst_ip, uint16_t dst_port, mmtp_payload_fragments_union_t* mmtp_payload);
+//void mpu_dump_reconstitued(uint32_t dst_ip, uint16_t dst_port, mmtp_mpu_packet_t* mmtp_mpu_packet);
 
 void mmtp_mfu_push_to_output_buffer(pipe_ffplay_buffer_t* ffplay_buffer, mmtp_mpu_packet_t* mmtp_mpu_packet);
 //void mmtp_mfu_push_to_output_buffer_no_locking(pipe_ffplay_buffer_t* ffplay_buffer, mmtp_mpu_packet_t* mmtp_mpu_packet);
 
 udp_flow_packet_id_mpu_sequence_tuple_t* udp_flow_packet_id_mpu_sequence_tuple_clone(udp_flow_packet_id_mpu_sequence_tuple_t* from_udp_flow_packet_id_mpu_sequence_tuple);
 
-//void mpu_fragments_vector_shrink_to_fit(mpu_fragments_t* mpu_fragments);
+//void mpu_fragments_vector_shrink_to_fit(mmtp_mpu_packet_t* mmtp_mpu_packet);
 
 void udp_flow_packet_id_mpu_sequence_tuple_free_and_clone(udp_flow_packet_id_mpu_sequence_tuple_t** to_udp_flow_packet_id_mpu_sequence_tuple_p, udp_flow_packet_id_mpu_sequence_tuple_t* from_udp_flow_packet_id_mpu_sequence_tuple);
     
-//int atsc3_mmt_mpu_remove_packet_fragment_from_flows(mmtp_sub_flow_t* mmtp_sub_flow, mpu_fragments_t* mpu_fragments, mmtp_payload_fragments_union_t* packet);
+//int atsc3_mmt_mpu_remove_packet_fragment_from_flows(mmtp_sub_flow_t* mmtp_sub_flow, mpu_fragments_t* mpu_fragments, mmtp_mpu_packet_t* mmtp_mpu_packet);
 
 
     

@@ -86,7 +86,7 @@ udp_flow_packet_id_mpu_sequence_tuple_t* udp_flow_latest_mpu_sequence_number_fro
  *
  *  Additionally, running MMT loops will cause the mpu_sequence_numbers to loop around and cause a failure of evictions.
  *  Instead, we will use a discontinuity window of at least a 2 mpu_sequence gap,
- *  	e.g. udp_flow_packet_id_mpu_sequence_matching_pkt_id)->mpu_sequence_number - mmtp_mpu_type_packet_header.mpu_sequence_number >=4,
+ *  	e.g. udp_flow_packet_id_mpu_sequence_matching_pkt_id)->mpu_sequence_number - mmtp_mpu_packet->mpu_sequence_number >=4,
  *  	with a cumulative count of at least 50 fragments before going back in time.
  *
  * See:
@@ -97,85 +97,85 @@ udp_flow_packet_id_mpu_sequence_tuple_t* udp_flow_latest_mpu_sequence_number_fro
 
  *
  */
-//
-//udp_flow_packet_id_mpu_sequence_tuple_t* udp_flow_latest_mpu_sequence_number_add_or_replace(udp_flow_latest_mpu_sequence_number_container_t* udp_flow_latest_mpu_sequence_number_container,  udp_packet_t* udp_packet, mmtp_payload_fragments_union_t* mmtp_packet) {
-//	udp_flow_packet_id_mpu_sequence_tuple_t** udp_flow_packet_id_mpu_sequence_tuple_in_collection = NULL;
-//	udp_flow_packet_id_mpu_sequence_tuple_t** udp_flow_packet_id_mpu_sequence_matching_pkt_id = NULL;
-//
-//
-//    for(int i=0; i < udp_flow_latest_mpu_sequence_number_container->udp_flows_n; i++) {
-//		udp_flow_packet_id_mpu_sequence_tuple_in_collection = &udp_flow_latest_mpu_sequence_number_container->udp_flows[i];
-//
-//		if(udp_flow_match((*udp_flow_packet_id_mpu_sequence_tuple_in_collection), udp_packet) && ((*udp_flow_packet_id_mpu_sequence_tuple_in_collection)->packet_id == mmtp_mpu_type_packet_header.mmtp_packet_id)) {
-//			udp_flow_packet_id_mpu_sequence_matching_pkt_id = udp_flow_packet_id_mpu_sequence_tuple_in_collection;
-//		}
-//	}
-//
-//	//if we have a candidate <dip, dport, packet_id>, then check who has the largest mpu_sequence_number
-//	if(udp_flow_packet_id_mpu_sequence_matching_pkt_id) {
-//		if((*udp_flow_packet_id_mpu_sequence_matching_pkt_id)->mpu_sequence_number > mmtp_mpu_type_packet_header.mpu_sequence_number) {
-//
-//			int mpu_sequence_number_negative_discontinuity_gap = (*udp_flow_packet_id_mpu_sequence_matching_pkt_id)->mpu_sequence_number - mmtp_mpu_type_packet_header.mpu_sequence_number;
-//
-//			if(mpu_sequence_number_negative_discontinuity_gap >= __MPU_FLOW_NEGATIVE_DISCONTINUITY_SEQUENCE_GAP_THRESHOLD) {
-//                __MMT_MPU_WARN("Negative mpu_sequence_number discontinuity detected: packet_id: %u, UDP FLOW persisted mpu_sequence_number: %u, current mmtp_packet mpu_sequence_number: %u, fragment recv threshold: %u",
-//                        mmtp_mpu_type_packet_header.mmtp_packet_id,
-//                        (*udp_flow_packet_id_mpu_sequence_matching_pkt_id)->mpu_sequence_number,
-//						mmtp_mpu_type_packet_header.mpu_sequence_number,
-//						++(*udp_flow_packet_id_mpu_sequence_matching_pkt_id)->mpu_sequence_number_negative_discontinuity_received_fragments);
-//
-//				if((*udp_flow_packet_id_mpu_sequence_matching_pkt_id)->mpu_sequence_number_negative_discontinuity_received_fragments > __MPU_FLOW_NEGATIVE_DISCONTINUITY_SEQUENCE_GAP_FRAGMENT_RECV_THRESHOLD) {
-//
-//					//change our mpu_sequence_number to to the lesser value and clear out our discontinuity flags
-//                    __MMT_MPU_WARN("Negative mpu_sequence_number discontinuity switchover change: packet_id: %u, UDP FLOW persisted mpu_sequence_number: %u, updating back to  mpu_sequence_number: %u, fragment recv threshold: %u",
-//                                   mmtp_mpu_type_packet_header.mmtp_packet_id,
-//														(*udp_flow_packet_id_mpu_sequence_matching_pkt_id)->mpu_sequence_number,
-//														(*udp_flow_packet_id_mpu_sequence_matching_pkt_id)->mpu_sequence_number_negative_discontinuity,
-//														++(*udp_flow_packet_id_mpu_sequence_matching_pkt_id)->mpu_sequence_number_negative_discontinuity_received_fragments);
-//
-//					udp_flow_force_negative_mpu_discontinuity_value(*udp_flow_packet_id_mpu_sequence_matching_pkt_id, (*udp_flow_packet_id_mpu_sequence_matching_pkt_id)->mpu_sequence_number_negative_discontinuity, mmtp_packet);
-//
-//				} else {
-//					(*udp_flow_packet_id_mpu_sequence_matching_pkt_id)->mpu_sequence_number_negative_discontinuity = mmtp_mpu_type_packet_header.mpu_sequence_number;
-//					__MMT_MPU_WARN("Negative mpu_sequence_number discontinuity detected: UDP FLOW persisted mpu_sequence_number: %u, current mmtp_packet mpu_sequence_number: %u, fragment recv threshold: %u",
-//										(*udp_flow_packet_id_mpu_sequence_matching_pkt_id)->mpu_sequence_number,
-//										mmtp_mpu_type_packet_header.mpu_sequence_number,
-//										++(*udp_flow_packet_id_mpu_sequence_matching_pkt_id)->mpu_sequence_number_negative_discontinuity_received_fragments);
-//				}
-//			}  else {
-//				udp_flow_reset_negative_mpu_discontinuity_counters(*udp_flow_packet_id_mpu_sequence_matching_pkt_id);
-//			}
-//
-//			return *udp_flow_packet_id_mpu_sequence_matching_pkt_id;
-//		} else {
-//			//update the tuple with the new mpu_sequence_number, only set this if its changed so we can sete a watch
-//            if((*udp_flow_packet_id_mpu_sequence_matching_pkt_id)->mpu_sequence_number != mmtp_mpu_type_packet_header.mpu_sequence_number) {
-//                (*udp_flow_packet_id_mpu_sequence_matching_pkt_id)->mpu_sequence_number = mmtp_mpu_type_packet_header.mpu_sequence_number;
-//            }
-//            return *udp_flow_packet_id_mpu_sequence_matching_pkt_id;
-//		}
-//	} else {
-//		if(udp_flow_latest_mpu_sequence_number_container->udp_flows_n) {
-//			udp_flow_latest_mpu_sequence_number_container->udp_flows = realloc(udp_flow_latest_mpu_sequence_number_container->udp_flows, (udp_flow_latest_mpu_sequence_number_container->udp_flows_n + 1) * sizeof(udp_flow_latest_mpu_sequence_number_container->udp_flows));
-//			//realloc here
-//		} else {
-//			udp_flow_latest_mpu_sequence_number_container->udp_flows = calloc(1, sizeof(*udp_flow_latest_mpu_sequence_number_container->udp_flows));
-//		}
-//		udp_flow_latest_mpu_sequence_number_container->udp_flows[udp_flow_latest_mpu_sequence_number_container->udp_flows_n] = calloc(1, sizeof(udp_flow_packet_id_mpu_sequence_tuple_t));
-//		udp_flow_packet_id_mpu_sequence_tuple_in_collection = &udp_flow_latest_mpu_sequence_number_container->udp_flows[udp_flow_latest_mpu_sequence_number_container->udp_flows_n];
-//		(*udp_flow_packet_id_mpu_sequence_tuple_in_collection)->udp_flow.src_ip_addr = udp_packet->udp_flow.src_ip_addr;
-//		(*udp_flow_packet_id_mpu_sequence_tuple_in_collection)->udp_flow.dst_ip_addr = udp_packet->udp_flow.dst_ip_addr;
-//		(*udp_flow_packet_id_mpu_sequence_tuple_in_collection)->udp_flow.src_port = udp_packet->udp_flow.src_port;
-//		(*udp_flow_packet_id_mpu_sequence_tuple_in_collection)->udp_flow.dst_port = udp_packet->udp_flow.dst_port;
-//		(*udp_flow_packet_id_mpu_sequence_tuple_in_collection)->packet_id = mmtp_mpu_type_packet_header.mmtp_packet_id;
-//		(*udp_flow_packet_id_mpu_sequence_tuple_in_collection)->mpu_sequence_number = mmtp_mpu_type_packet_header.mpu_sequence_number;
-//		(*udp_flow_packet_id_mpu_sequence_tuple_in_collection)->mpu_sequence_number_evict_range_start = mmtp_mpu_type_packet_header.mpu_sequence_number;
-//
-//		udp_flow_latest_mpu_sequence_number_container->udp_flows_n++;
-//	}
-//
-//	return (*udp_flow_packet_id_mpu_sequence_tuple_in_collection);
-//}
+
+udp_flow_packet_id_mpu_sequence_tuple_t* udp_flow_latest_mpu_sequence_number_add_or_replace(udp_flow_latest_mpu_sequence_number_container_t* udp_flow_latest_mpu_sequence_number_container,  udp_packet_t* udp_packet, mmtp_mpu_packet_t* mmtp_mpu_packet) {
+    udp_flow_packet_id_mpu_sequence_tuple_t** udp_flow_packet_id_mpu_sequence_tuple_in_collection = NULL;
+    udp_flow_packet_id_mpu_sequence_tuple_t** udp_flow_packet_id_mpu_sequence_matching_pkt_id = NULL;
+
+
+    for(int i=0; i < udp_flow_latest_mpu_sequence_number_container->udp_flows_n; i++) {
+        udp_flow_packet_id_mpu_sequence_tuple_in_collection = &udp_flow_latest_mpu_sequence_number_container->udp_flows[i];
+
+        if(udp_flow_match((*udp_flow_packet_id_mpu_sequence_tuple_in_collection), udp_packet) && ((*udp_flow_packet_id_mpu_sequence_tuple_in_collection)->packet_id == mmtp_mpu_packet->mmtp_packet_id)) {
+            udp_flow_packet_id_mpu_sequence_matching_pkt_id = udp_flow_packet_id_mpu_sequence_tuple_in_collection;
+        }
+    }
+
+    //if we have a candidate <dip, dport, packet_id>, then check who has the largest mpu_sequence_number
+    if(udp_flow_packet_id_mpu_sequence_matching_pkt_id) {
+        if((*udp_flow_packet_id_mpu_sequence_matching_pkt_id)->mpu_sequence_number > mmtp_mpu_packet->mpu_sequence_number) {
+
+            int mpu_sequence_number_negative_discontinuity_gap = (*udp_flow_packet_id_mpu_sequence_matching_pkt_id)->mpu_sequence_number - mmtp_mpu_packet->mpu_sequence_number;
+
+            if(mpu_sequence_number_negative_discontinuity_gap >= __MPU_FLOW_NEGATIVE_DISCONTINUITY_SEQUENCE_GAP_THRESHOLD) {
+                __MMT_MPU_WARN("Negative mpu_sequence_number discontinuity detected: packet_id: %u, UDP FLOW persisted mpu_sequence_number: %u, current mmtp_packet mpu_sequence_number: %u, fragment recv threshold: %u",
+                        mmtp_mpu_packet->mmtp_packet_id,
+                        (*udp_flow_packet_id_mpu_sequence_matching_pkt_id)->mpu_sequence_number,
+                        mmtp_mpu_packet->mpu_sequence_number,
+                        ++(*udp_flow_packet_id_mpu_sequence_matching_pkt_id)->mpu_sequence_number_negative_discontinuity_received_fragments);
+
+                if((*udp_flow_packet_id_mpu_sequence_matching_pkt_id)->mpu_sequence_number_negative_discontinuity_received_fragments > __MPU_FLOW_NEGATIVE_DISCONTINUITY_SEQUENCE_GAP_FRAGMENT_RECV_THRESHOLD) {
+
+                    //change our mpu_sequence_number to to the lesser value and clear out our discontinuity flags
+                    __MMT_MPU_WARN("Negative mpu_sequence_number discontinuity switchover change: packet_id: %u, UDP FLOW persisted mpu_sequence_number: %u, updating back to  mpu_sequence_number: %u, fragment recv threshold: %u",
+                                   mmtp_mpu_packet->mmtp_packet_id,
+                                                        (*udp_flow_packet_id_mpu_sequence_matching_pkt_id)->mpu_sequence_number,
+                                                        (*udp_flow_packet_id_mpu_sequence_matching_pkt_id)->mpu_sequence_number_negative_discontinuity,
+                                                        ++(*udp_flow_packet_id_mpu_sequence_matching_pkt_id)->mpu_sequence_number_negative_discontinuity_received_fragments);
+
+                    udp_flow_force_negative_mpu_discontinuity_value(*udp_flow_packet_id_mpu_sequence_matching_pkt_id, (*udp_flow_packet_id_mpu_sequence_matching_pkt_id)->mpu_sequence_number_negative_discontinuity, mmtp_mpu_packet);
+
+                } else {
+                    (*udp_flow_packet_id_mpu_sequence_matching_pkt_id)->mpu_sequence_number_negative_discontinuity = mmtp_mpu_packet->mpu_sequence_number;
+                    __MMT_MPU_WARN("Negative mpu_sequence_number discontinuity detected: UDP FLOW persisted mpu_sequence_number: %u, current mmtp_packet mpu_sequence_number: %u, fragment recv threshold: %u",
+                                        (*udp_flow_packet_id_mpu_sequence_matching_pkt_id)->mpu_sequence_number,
+                                        mmtp_mpu_packet->mpu_sequence_number,
+                                        ++(*udp_flow_packet_id_mpu_sequence_matching_pkt_id)->mpu_sequence_number_negative_discontinuity_received_fragments);
+                }
+            }  else {
+                udp_flow_reset_negative_mpu_discontinuity_counters(*udp_flow_packet_id_mpu_sequence_matching_pkt_id);
+            }
+
+            return *udp_flow_packet_id_mpu_sequence_matching_pkt_id;
+        } else {
+            //update the tuple with the new mpu_sequence_number, only set this if its changed so we can sete a watch
+            if((*udp_flow_packet_id_mpu_sequence_matching_pkt_id)->mpu_sequence_number != mmtp_mpu_packet->mpu_sequence_number) {
+                (*udp_flow_packet_id_mpu_sequence_matching_pkt_id)->mpu_sequence_number = mmtp_mpu_packet->mpu_sequence_number;
+            }
+            return *udp_flow_packet_id_mpu_sequence_matching_pkt_id;
+        }
+    } else {
+        if(udp_flow_latest_mpu_sequence_number_container->udp_flows_n) {
+            udp_flow_latest_mpu_sequence_number_container->udp_flows = realloc(udp_flow_latest_mpu_sequence_number_container->udp_flows, (udp_flow_latest_mpu_sequence_number_container->udp_flows_n + 1) * sizeof(udp_flow_latest_mpu_sequence_number_container->udp_flows));
+            //realloc here
+        } else {
+            udp_flow_latest_mpu_sequence_number_container->udp_flows = calloc(1, sizeof(*udp_flow_latest_mpu_sequence_number_container->udp_flows));
+        }
+        udp_flow_latest_mpu_sequence_number_container->udp_flows[udp_flow_latest_mpu_sequence_number_container->udp_flows_n] = calloc(1, sizeof(udp_flow_packet_id_mpu_sequence_tuple_t));
+        udp_flow_packet_id_mpu_sequence_tuple_in_collection = &udp_flow_latest_mpu_sequence_number_container->udp_flows[udp_flow_latest_mpu_sequence_number_container->udp_flows_n];
+        (*udp_flow_packet_id_mpu_sequence_tuple_in_collection)->udp_flow.src_ip_addr = udp_packet->udp_flow.src_ip_addr;
+        (*udp_flow_packet_id_mpu_sequence_tuple_in_collection)->udp_flow.dst_ip_addr = udp_packet->udp_flow.dst_ip_addr;
+        (*udp_flow_packet_id_mpu_sequence_tuple_in_collection)->udp_flow.src_port = udp_packet->udp_flow.src_port;
+        (*udp_flow_packet_id_mpu_sequence_tuple_in_collection)->udp_flow.dst_port = udp_packet->udp_flow.dst_port;
+        (*udp_flow_packet_id_mpu_sequence_tuple_in_collection)->packet_id = mmtp_mpu_packet->mmtp_packet_id;
+        (*udp_flow_packet_id_mpu_sequence_tuple_in_collection)->mpu_sequence_number = mmtp_mpu_packet->mpu_sequence_number;
+        (*udp_flow_packet_id_mpu_sequence_tuple_in_collection)->mpu_sequence_number_evict_range_start = mmtp_mpu_packet->mpu_sequence_number;
+
+        udp_flow_latest_mpu_sequence_number_container->udp_flows_n++;
+    }
+
+    return (*udp_flow_packet_id_mpu_sequence_tuple_in_collection);
+}
 
 udp_flow_packet_id_mpu_sequence_tuple_t* udp_flow_packet_id_mpu_sequence_tuple_clone(udp_flow_packet_id_mpu_sequence_tuple_t* from_udp_flow_packet_id_mpu_sequence_tuple) {
     udp_flow_packet_id_mpu_sequence_tuple_t* to_udp_flow_packet_id_mpu_sequence_tuple = (udp_flow_packet_id_mpu_sequence_tuple_t*) calloc(1, sizeof(udp_flow_packet_id_mpu_sequence_tuple_t));
@@ -196,24 +196,24 @@ void udp_flow_packet_id_mpu_sequence_tuple_free_and_clone(udp_flow_packet_id_mpu
 }
 //
 ////this is important as we need to clean up our pending eviction fragments and our current mpu_sequence_number for a clean rollover
-//void udp_flow_force_negative_mpu_discontinuity_value(udp_flow_packet_id_mpu_sequence_tuple_t* udp_flow_packet_id_mpu_sequence_matching_pkt_id, uint32_t new_old_mpu_sequence_number_to_force, mmtp_payload_fragments_union_t* mmtp_packet_fragments_to_evict) {
-//	uint32_t eviction_range_start = udp_flow_packet_id_mpu_sequence_matching_pkt_id->mpu_sequence_number_evict_range_start;
-//	uint32_t eviction_range_end = mmtp_packet_fragments_to_evict->mmtp_mpu_type_packet_header.mpu_sequence_number;
-//
-//	atsc3_mmt_mpu_clear_data_unit_from_packet_subflow(mmtp_packet_fragments_to_evict, eviction_range_start, eviction_range_end);
-//
-//	//for(int i=eviction_range_start)
-//
-//		//force the "old" packet id
-//	udp_flow_packet_id_mpu_sequence_matching_pkt_id->mpu_sequence_number = new_old_mpu_sequence_number_to_force;
-//
-//	udp_flow_packet_id_mpu_sequence_matching_pkt_id->mpu_sequence_number_evict_range_start = new_old_mpu_sequence_number_to_force;
-//	udp_flow_packet_id_mpu_sequence_matching_pkt_id->mpu_sequence_number_last_refragmentation_flush = new_old_mpu_sequence_number_to_force;
-//
-//	udp_flow_reset_negative_mpu_discontinuity_counters(udp_flow_packet_id_mpu_sequence_matching_pkt_id);
-//
-//
-//}
+void udp_flow_force_negative_mpu_discontinuity_value(udp_flow_packet_id_mpu_sequence_tuple_t* udp_flow_packet_id_mpu_sequence_matching_pkt_id, uint32_t new_old_mpu_sequence_number_to_force, mmtp_mpu_packet_t* mmtp_mpu_packet) {
+    uint32_t eviction_range_start = udp_flow_packet_id_mpu_sequence_matching_pkt_id->mpu_sequence_number_evict_range_start;
+ //   uint32_t eviction_range_end = mmtp_packet_fragments_to_evict->mmtp_mpu_packet->mpu_sequence_number;
+
+   // atsc3_mmt_mpu_clear_data_unit_from_packet_subflow(mmtp_packet_fragments_to_evict, eviction_range_start, eviction_range_end);
+
+    //for(int i=eviction_range_start)
+
+        //force the "old" packet id
+    udp_flow_packet_id_mpu_sequence_matching_pkt_id->mpu_sequence_number = new_old_mpu_sequence_number_to_force;
+
+    udp_flow_packet_id_mpu_sequence_matching_pkt_id->mpu_sequence_number_evict_range_start = new_old_mpu_sequence_number_to_force;
+    udp_flow_packet_id_mpu_sequence_matching_pkt_id->mpu_sequence_number_last_refragmentation_flush = new_old_mpu_sequence_number_to_force;
+
+    udp_flow_reset_negative_mpu_discontinuity_counters(udp_flow_packet_id_mpu_sequence_matching_pkt_id);
+
+
+}
 
 void udp_flow_reset_negative_mpu_discontinuity_counters(udp_flow_packet_id_mpu_sequence_tuple_t* udp_flow_packet_id_mpu_sequence_matching_pkt_id) {
 	udp_flow_packet_id_mpu_sequence_matching_pkt_id->mpu_sequence_number_negative_discontinuity = 0;
@@ -224,14 +224,14 @@ void udp_flow_reset_negative_mpu_discontinuity_counters(udp_flow_packet_id_mpu_s
 //int atsc3_mmt_mpu_clear_data_unit_from_packet_subflow(mmtp_payload_fragments_union_t* mmtp_payload_fragments_union, uint32_t evict_range_start, uint32_t evict_range_end) {
 //
 //	int evicted_count = 0;
-//	mmtp_sub_flow_t* mmtp_sub_flow = mmtp_payload_fragments_union->mmtp_mpu_type_packet_header.mmtp_sub_flow;
+//	mmtp_sub_flow_t* mmtp_sub_flow = mmtp_payload_fragments_union->mmtp_mpu_packet->mmtp_sub_flow;
 //	mpu_data_unit_payload_fragments_t* data_unit_payload_types = NULL;
 //	mpu_data_unit_payload_fragments_timed_vector_t* data_unit_payload_fragments = NULL; //techincally this is mpu_fragments->media_fragment_unit_vector
 //
 //	mpu_fragments_t* mpu_fragments = NULL;
 //
 //	if(mmtp_sub_flow) {
-//		 mpu_fragments = mpu_fragments_get_or_set_packet_id(mmtp_sub_flow, mmtp_payload_fragments_union->mmtp_mpu_type_packet_header.mmtp_packet_id);
+//		 mpu_fragments = mpu_fragments_get_or_set_packet_id(mmtp_sub_flow, mmtp_payload_fragments_union->mmtp_mpu_packet->mmtp_packet_id);
 //	}
 //
 //	if(mpu_fragments && evict_range_start) {
@@ -243,7 +243,7 @@ void udp_flow_reset_negative_mpu_discontinuity_counters(udp_flow_packet_id_mpu_s
 //				data_unit_payload_fragments = &data_unit_payload_types->timed_fragments_vector;
 //				if(data_unit_payload_fragments) {
 //					__MMT_MPU_INFO("Beginning eviction pass for mpu: %u, mmtp_sub_flow->mpu_fragments->all_mpu_fragments_vector.size: %lu", evict_range_start, mmtp_sub_flow->mpu_fragments->all_mpu_fragments_vector.size);
-//					int evicted_count = atsc3_mmt_mpu_clear_data_unit_payload_fragments(mmtp_payload_fragments_union->mmtp_mpu_type_packet_header.mmtp_packet_id, mmtp_sub_flow, mpu_fragments, data_unit_payload_fragments);
+//					int evicted_count = atsc3_mmt_mpu_clear_data_unit_payload_fragments(mmtp_payload_fragments_union->mmtp_mpu_packet->mmtp_packet_id, mmtp_sub_flow, mpu_fragments, data_unit_payload_fragments);
 //					__MMT_MPU_INFO("Eviction pass for mpu: %u resulted in %u", evict_range_start, evicted_count);
 //				}
 //			}
@@ -264,9 +264,9 @@ void udp_flow_reset_negative_mpu_discontinuity_counters(udp_flow_packet_id_mpu_s
 //    __MMT_MPU_TRACE("atsc3_vector_index_of container: mmtp_sub_flow->mpu_fragments->all_mpu_fragments_vector: %p, payload : %p, packet_id: %u, packet_counter: %u, mpu_sequence_number: %u, at index: %ld",
 //                    &mmtp_sub_flow->mpu_fragments->all_mpu_fragments_vector,
 //                    packet,
-//                    packet->mmtp_mpu_type_packet_header.mmtp_packet_id,
-//                    packet->mmtp_mpu_type_packet_header.packet_counter,
-//                    packet->mmtp_mpu_type_packet_header.mpu_sequence_number,
+//                    packet->mmtp_mpu_packet->mmtp_packet_id,
+//                    packet->mmtp_mpu_packet->packet_counter,
+//                    packet->mmtp_mpu_packet->mpu_sequence_number,
 //                    all_packets_index);
 //
 //    if(all_packets_index >-1) {
@@ -281,15 +281,15 @@ void udp_flow_reset_negative_mpu_discontinuity_counters(udp_flow_packet_id_mpu_s
 //        __MMT_MPU_TRACE("atsc3_vector_index_of container: mpu_fragments->all_mpu_fragments_vector: %p, payload : %p, packet_id: %u, packet_counter: %u, mpu_sequence_number: %u, at index: %ld",
 //                        &mpu_fragments->all_mpu_fragments_vector,
 //                        packet,
-//                        packet->mmtp_mpu_type_packet_header.mmtp_packet_id,
-//                        packet->mmtp_mpu_type_packet_header.packet_counter,
-//                        packet->mmtp_mpu_type_packet_header.mpu_sequence_number,
+//                        packet->mmtp_mpu_packet->mmtp_packet_id,
+//                        packet->mmtp_mpu_packet->packet_counter,
+//                        packet->mmtp_mpu_packet->mpu_sequence_number,
 //                        all_packets_index);
 //
 //        if(all_packets_index >-1) {
 //            __MMT_MPU_TRACE("packet flow all_mpu_Fragments_vector is: %p, size: %lu, mmtp_sub_flow->mpu_fragments is: %p, global mpu_fragments->all_mpu_fragments is: %p, and size is: %lu",
-//                            &packet->mmtp_mpu_type_packet_header.mmtp_sub_flow->mpu_fragments->all_mpu_fragments_vector,
-//                            packet->mmtp_mpu_type_packet_header.mmtp_sub_flow->mpu_fragments->all_mpu_fragments_vector.size,
+//                            &packet->mmtp_mpu_packet->mmtp_sub_flow->mpu_fragments->all_mpu_fragments_vector,
+//                            packet->mmtp_mpu_packet->mmtp_sub_flow->mpu_fragments->all_mpu_fragments_vector.size,
 //                            &mmtp_sub_flow->mpu_fragments->all_mpu_fragments_vector,
 //                            &mpu_fragments->all_mpu_fragments_vector,
 //                            mpu_fragments->all_mpu_fragments_vector.size);
