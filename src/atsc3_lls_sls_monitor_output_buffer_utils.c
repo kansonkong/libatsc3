@@ -1197,7 +1197,9 @@ void lls_sls_monitor_output_buffer_alc_file_dump(lls_sls_monitor_output_buffer_t
 }
 
 
-
+/**
+ split up for init and fragment for HLS fmp4 use case
+ **/
 void lls_sls_monitor_buffer_isobmff_intermediate_mmt_file_dump(lls_sls_monitor_buffer_isobmff_t* lls_sls_monitor_buffer_isobmff, const char* directory_path, uint16_t packet_id, uint32_t mpu_sequence_number, const char* suffix) {
     if(!lls_sls_monitor_buffer_isobmff || !lls_sls_monitor_buffer_isobmff->init_block || !lls_sls_monitor_buffer_isobmff->mmt_mdat_block) {
         __LLS_SLS_MONITOR_OUTPUT_BUFFER_UTILS_WARN("lls_sls_monitor_buffer_isobmff_mmt_file_dump: lls_sls_monitor_buffer_isobmff missing: %p", lls_sls_monitor_buffer_isobmff);
@@ -1217,7 +1219,7 @@ void lls_sls_monitor_buffer_isobmff_intermediate_mmt_file_dump(lls_sls_monitor_b
     FILE* init_dump_fp = fopen(init_dump_file_name, "w");
     if(init_dump_fp) {
         fwrite(lls_sls_monitor_buffer_isobmff->init_block->p_buffer, lls_sls_monitor_buffer_isobmff->init_block->p_size, 1, init_dump_fp);
-        
+       
         fclose(init_dump_fp);
         free(init_dump_file_name);
     }
@@ -1229,14 +1231,16 @@ void lls_sls_monitor_buffer_isobmff_intermediate_mmt_file_dump(lls_sls_monitor_b
 
     FILE* track_dump_recon_fp = fopen(track_dump_file_name, "w");
     if(track_dump_recon_fp) {
-    	fwrite(lls_sls_monitor_buffer_isobmff->init_block->p_buffer, lls_sls_monitor_buffer_isobmff->init_block->p_size, 1, track_dump_recon_fp);
-    	if(lls_sls_monitor_buffer_isobmff->mmt_moof_block) {
-    		fwrite(lls_sls_monitor_buffer_isobmff->mmt_moof_block->p_buffer, lls_sls_monitor_buffer_isobmff->mmt_moof_block->p_size, 1, track_dump_recon_fp);
-    	} else if(lls_sls_monitor_buffer_isobmff->mmt_moof_block_from_flow) {
-    		fwrite(lls_sls_monitor_buffer_isobmff->mmt_moof_block_from_flow->p_buffer, lls_sls_monitor_buffer_isobmff->mmt_moof_block_from_flow->p_size, 1, track_dump_recon_fp);
 
-    	}
-    	if(lls_sls_monitor_buffer_isobmff->mmt_mdat_block) {
+        //        fwrite(lls_sls_monitor_buffer_isobmff->init_block->p_buffer, lls_sls_monitor_buffer_isobmff->init_block->p_size, 1, track_dump_recon_fp);
+        
+        if(lls_sls_monitor_buffer_isobmff->mmt_moof_block) {
+            fwrite(lls_sls_monitor_buffer_isobmff->mmt_moof_block->p_buffer, lls_sls_monitor_buffer_isobmff->mmt_moof_block->p_size, 1, track_dump_recon_fp);
+        } else if(lls_sls_monitor_buffer_isobmff->mmt_moof_block_from_flow) {
+            fwrite(lls_sls_monitor_buffer_isobmff->mmt_moof_block_from_flow->p_buffer, lls_sls_monitor_buffer_isobmff->mmt_moof_block_from_flow->p_size, 1, track_dump_recon_fp);
+        }
+
+        if(lls_sls_monitor_buffer_isobmff->mmt_mdat_block) {
     		fwrite(lls_sls_monitor_buffer_isobmff->mmt_mdat_block->p_buffer, lls_sls_monitor_buffer_isobmff->mmt_mdat_block->p_size, 1, track_dump_recon_fp);
     	}
     	fclose(track_dump_recon_fp);
