@@ -316,11 +316,14 @@ typedef struct udp_flow_packet_id_mpu_sequence_tuple {
 } udp_flow_packet_id_mpu_sequence_tuple_t;
 
 //we'll just keep a linear search of these, it should pretty straightforard to iterate thru for now..
+
+//jjustman-2019-08-30 - DEPRECATED
 typedef struct udp_flow_latest_mpu_sequence_number_container {
     uint32_t udp_flows_n;
     udp_flow_packet_id_mpu_sequence_tuple_t** udp_flows;
     
 } udp_flow_latest_mpu_sequence_number_container_t;
+//jjustman-2019-08-30 - DEPRECATED
 
 
 //just to match the alc pattern...

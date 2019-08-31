@@ -76,7 +76,7 @@ extern "C" {
 #include "atsc3_logging_externs.h"
 #include "atsc3_mmtp_packet_types.h"
 #include "atsc3_mmtp_parser.h"
-#include "endianess.c"
+#include "atsc3_lls_types.h"
 
 
 /**
@@ -101,6 +101,8 @@ mmtp_signalling_packet_t* mmt_signalling_message_parse_packet_header(mmtp_packet
 
 //parse mmtp_signalling_packet_t, calls mmt_signalling_message_parse_id_type
 uint8_t mmt_signalling_message_parse_packet(mmtp_signalling_packet_t* mmtp_signalling_packet, block_t* udp_packet_block);
+    
+void mmt_signalling_message_update_lls_sls_mmt_session(mmtp_signalling_packet_t* mmtp_signalling_packet, lls_sls_mmt_session_t* matching_lls_sls_mmt_session);
     
 void mmt_signalling_message_free(mmtp_signalling_packet_t** mmtp_signalling_packet_p);
 

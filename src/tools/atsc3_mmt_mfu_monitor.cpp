@@ -74,7 +74,7 @@ lls_slt_monitor_t* lls_slt_monitor;
 
 //make sure to invoke     mmtp_sub_flow_vector_init(&p_sys->mmtp_sub_flow_vector);
 udp_flow_latest_mpu_sequence_number_container_t* udp_flow_latest_mpu_sequence_number_container;
-global_atsc3_stats_t* global_stats;
+extern global_atsc3_stats_t* global_stats;
 
 void count_packet_as_filtered(udp_packet_t* udp_packet) {
 	global_stats->packet_counter_filtered_ipv4++;
@@ -365,7 +365,6 @@ int main(int argc,char **argv) {
 
     lls_slt_monitor = lls_slt_monitor_create();
 
-    global_stats = (global_atsc3_stats*)calloc(1, sizeof(*global_stats));
     gettimeofday(&global_stats->program_timeval_start, 0);
 
     global_bandwidth_statistics = (bandwidth_statistics_t*)calloc(1, sizeof(*global_bandwidth_statistics));

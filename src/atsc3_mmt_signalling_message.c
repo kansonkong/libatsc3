@@ -688,6 +688,33 @@ uint8_t* si_message_not_supported(mmt_signalling_message_header_and_payload_t* m
 	return NULL;
 }
 
+
+void mmt_signalling_message_update_lls_sls_mmt_session(mmtp_signalling_packet_t* mmtp_signalling_packet, lls_sls_mmt_session_t* matching_lls_sls_mmt_session) {
+    for(int i=0; i < mmtp_signalling_packet->mmt_signalling_message_header_and_payload_v.count; i++) {
+        mmt_signalling_message_header_and_payload_t* mmt_signalling_message_header_and_payload = mmtp_signalling_packet->mmt_signalling_message_header_and_payload_v.data[i];
+        if(mmt_signalling_message_header_and_payload->message_header.MESSAGE_id_type == MPT_message) {
+            mp_table_t* mp_table = &mmt_signalling_message_header_and_payload->message_payload.mp_table;
+        
+            //update our lls_sls_mmt_session
+            if(matching_lls_sls_mmt_session && mp_table->number_of_assets) {
+                for(int i=0; i < mp_table->number_of_assets; i++) {
+                    //slight hack, check the asset types and default_asset = 1
+                    mp_table_asset_row_t* mp_table_asset_row = &mp_table->mp_table_asset_row[i];
+                    
+                    __MMSM_INFO("MPT message: checking packet_id: %u, asset_type: %s, default: %u, identifier: %s", mp_table_asset_row->mmt_general_location_info.packet_id, mp_table_asset_row->asset_type, mp_table_asset_row->default_asset_flag, mp_table_asset_row->identifier_mapping.asset_id.asset_id ? (const char*)mp_table_asset_row->identifier_mapping.asset_id.asset_id : "");
+                    if(strncasecmp(ATSC3_MP_TABLE_ASSET_ROW_HEVC_ID, mp_table_asset_row->asset_type, 4) == 0) {
+                        matching_lls_sls_mmt_session->video_packet_id = mp_table_asset_row->mmt_general_location_info.packet_id;
+                    } else if(strncasecmp(ATSC3_MP_TABLE_ASSET_ROW_MP4A_ID, mp_table_asset_row->asset_type, 4) == 0 || strncasecmp(ATSC3_MP_TABLE_ASSET_ROW_AC_4_ID, mp_table_asset_row->asset_type, 4) == 0) {
+                        matching_lls_sls_mmt_session->audio_packet_id = mp_table_asset_row->mmt_general_location_info.packet_id;
+                    }
+                }
+            }
+        } else {
+            __MMSM_INFO("mmtp_packet_parse: Ignoring signal: 0x%x", mmt_signalling_message_header_and_payload->message_header.MESSAGE_id_type);
+        }
+    }
+}
+
 void signalling_message_mmtp_packet_header_dump(mmtp_packet_header_t* mmtp_packet_header) {
 	__MMSM_DEBUG("------------------");
 	__MMSM_DEBUG("MMTP Packet Header: Signalling Message: ptr: %p", mmtp_packet_header);
