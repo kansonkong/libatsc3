@@ -272,6 +272,180 @@ void* global_httpd_run_thread(void* lls_slt_monitor_ptr) {
     }
 }
 
+/*
+ write out our master manifest,
+ 
+ for each v/a emission, update the relevant variant manifest
+ 
+ */
+#define MMT_HLS_FMP4_DIRECTORY_PATH         "hls"
+
+const char* mmt_hls_fmp4_master_manifest_path   = "hls/master.m3u8";
+
+#define MMT_HLS_FMP4_AUDIO_VARIANT_NAME     "hls/a.m3u8"
+#define MMT_HLS_FMP4_VIDEO_VARIANT_NAME     "hls/v.m3u8"
+
+#define MAX_FMP4_SEGMENTS 4
+
+char* a_fmp4_segments[MAX_FMP4_SEGMENTS] = {0};
+int a_fmp4_segments_ringbuffer_idx = 0;
+
+char* v_fmp4_segments[MAX_FMP4_SEGMENTS] = {0};
+int v_fmp4_segments_ringbuffer_idx = 0;
+
+
+void atsc3_mmt_hls_fmp4_write_file(const char* filename, const char* payload, uint32_t payload_size) {
+    //snprintf(track_dump_file_name, 127, "%s/%u.%s", directory_path, mpu_sequence_number, prefix);
+    
+    FILE* payload_fp = fopen(filename, "w");
+    if(payload_fp) {
+        fwrite(payload, payload_size, 1, payload_fp);
+        fclose(payload_fp);
+    }
+    
+}
+
+void atsc3_mmt_hls_fmp4_write_master_manifest() {
+    
+    const char* master_manifest_payload = "#EXTM3U\n"
+        "#EXT-X-VERSION:7\n"
+        "#EXT-X-INDEPENDENT-SEGMENTS\n"
+        "#EXT-X-MEDIA:TYPE=AUDIO,GROUP-ID=\"a1\",NAME=\"English\",LANGUAGE=\"en-US\",AUTOSELECT=YES,DEFAULT=YES,CHANNELS=\"2\",URI=\"a.m3u8\"\n"
+        "#EXT-X-STREAM-INF:AVERAGE-BANDWIDTH=1966314,BANDWIDTH=2164328,CODECS=\"hvc1.2.4.L123.B0,mp4a.40.2\",RESOLUTION=960x540,FRAME-RATE=60.000,AUDIO=\"a1\"\n"
+        "v.m3u8\n";
+    
+    mkdir(MMT_HLS_FMP4_DIRECTORY_PATH, 0777);
+    atsc3_mmt_hls_fmp4_write_file(mmt_hls_fmp4_master_manifest_path, master_manifest_payload, strlen(master_manifest_payload));
+}
+const char* variant_manifest_audio_header = "#EXTM3U\n"
+"#EXT-X-VERSION:7\n"
+"#EXT-X-TARGETDURATION:2\n"
+"#EXT-X-INDEPENDENT-SEGMENTS\n"
+"#EXT-X-MAP:URI=\"a.init.mp4\"\n"
+"#EXT-X-MEDIA-SEQUENCE:%d\n\n";
+
+const char* variant_manifest_video_header = "#EXTM3U\n"
+"#EXT-X-VERSION:7\n"
+"#EXT-X-TARGETDURATION:4\n"
+"#EXT-X-INDEPENDENT-SEGMENTS\n"
+"#EXT-X-MAP:URI=\"v.init.mp4\"\n"
+"#EXT-X-MEDIA-SEQUENCE:%d\n\n";
+
+
+//#EXTINF:1.000000
+//0.m4s
+//#EXTINF:1.000000
+//1.m4s
+//#EXT-X-ENDLIST
+//"
+#define PAYLOAD_MAX_LEN 4096
+
+void atsc3_mmt_hls_fmp4_write_variant_manifest(const char* variant_path, const char* header, int ringbuffer_idx, char** fmp4_segments) {
+    char* payload = (char*)calloc(PAYLOAD_MAX_LEN, sizeof(char*));
+    strncpy(payload, header, strlen(header));
+    snprintf(payload, PAYLOAD_MAX_LEN, header, __MAX(0, ringbuffer_idx - MAX_FMP4_SEGMENTS));
+    
+    for(int i = ringbuffer_idx; i < ringbuffer_idx + MAX_FMP4_SEGMENTS; i++) {
+        char* temp_hls_fragment_payload = fmp4_segments[ i % MAX_FMP4_SEGMENTS];
+        if(temp_hls_fragment_payload) {
+            snprintf(payload + strlen(payload), PAYLOAD_MAX_LEN - strlen(payload), "#EXTINF:4.000000\n%s\n", temp_hls_fragment_payload);
+        }
+    }
+    
+    snprintf(payload + strlen(payload), PAYLOAD_MAX_LEN - strlen(payload), "\n");
+    
+    FILE* file_to_fp = fopen(variant_path, "w");
+    if(file_to_fp) {
+        fwrite(payload, strlen(payload), 1, file_to_fp);
+        fclose(file_to_fp);
+        free(payload);
+    }
+}
+
+void atsc3_mmt_hls_fmp4_copy_file(const char* from, const char* to) {
+    struct stat st;
+    stat(from, &st);
+    off_t size = st.st_size;
+    
+    uint8_t* block = (uint8_t*) calloc(size, sizeof(uint8_t));
+    FILE* file_from_fp = fopen(from, "r");
+    FILE* file_to_fp = fopen(to, "w");
+    
+    if(file_from_fp && file_to_fp) {
+        fread(block, size, 1, file_from_fp);
+        fwrite(block, size, 1, file_to_fp);
+        fclose(file_from_fp);
+        fclose(file_to_fp);
+    }
+}
+
+void atsc3_mmt_hls_fmp4_update_manifest(lls_sls_mmt_session_t* lls_sls_mmt_session) {
+    
+    atsc3_mmt_hls_fmp4_write_master_manifest();
+    
+    if(lls_sls_mmt_session->last_udp_flow_packet_id_mpu_sequence_tuple_audio_processed && lls_sls_mmt_session->last_udp_flow_packet_id_mpu_sequence_tuple_video_processed) {
+
+        if(a_fmp4_segments[a_fmp4_segments_ringbuffer_idx % MAX_FMP4_SEGMENTS]) {
+            free(a_fmp4_segments[a_fmp4_segments_ringbuffer_idx % MAX_FMP4_SEGMENTS]);
+        }
+        
+        //nore sure why -1...
+        char* tmp_segment = (char*) calloc(1024, sizeof(char));
+        snprintf(tmp_segment, 1024, "%s/%s.%d.%d.m4s",
+                 MMT_HLS_FMP4_DIRECTORY_PATH, "a",
+                 lls_sls_mmt_session->last_udp_flow_packet_id_mpu_sequence_tuple_audio->packet_id,
+                 lls_sls_mmt_session->last_udp_flow_packet_id_mpu_sequence_tuple_audio->mpu_sequence_number - 1);
+
+        a_fmp4_segments[a_fmp4_segments_ringbuffer_idx % MAX_FMP4_SEGMENTS] = tmp_segment;
+        
+        //magic string in atsc3_lls_sls_monitor_output_buffer_utils.c, e.g. 1.570.v.orig
+        char* track_dump_file_name = (char*)calloc(128, sizeof(char));
+        snprintf(track_dump_file_name, 127, "%s/%u.%u.%s", "mpu",
+                 lls_sls_mmt_session->last_udp_flow_packet_id_mpu_sequence_tuple_audio->packet_id,
+                 lls_sls_mmt_session->last_udp_flow_packet_id_mpu_sequence_tuple_audio->mpu_sequence_number - 1, "a.orig");
+
+        atsc3_mmt_hls_fmp4_copy_file(track_dump_file_name, tmp_segment);
+
+        //copy fmp4 segment over, see lls_sls_monitor_buffer_isobmff_intermediate_mmt_file_dump
+        //fix me for packet_id's
+        atsc3_mmt_hls_fmp4_copy_file("mpu/2.init.mp4", MMT_HLS_FMP4_DIRECTORY_PATH "/a.init.mp4");
+
+        a_fmp4_segments_ringbuffer_idx++;
+        atsc3_mmt_hls_fmp4_write_variant_manifest(MMT_HLS_FMP4_AUDIO_VARIANT_NAME, variant_manifest_audio_header, a_fmp4_segments_ringbuffer_idx, a_fmp4_segments);
+        
+        //video segments here
+        if(v_fmp4_segments[v_fmp4_segments_ringbuffer_idx % MAX_FMP4_SEGMENTS]) {
+            free(v_fmp4_segments[v_fmp4_segments_ringbuffer_idx % MAX_FMP4_SEGMENTS]);
+        }
+        char* tmp_segment_v = (char*) calloc(1024, sizeof(char));
+        snprintf(tmp_segment_v, 1024, "%s/%s.%d.%d.m4s",
+                 MMT_HLS_FMP4_DIRECTORY_PATH, "v",
+                 lls_sls_mmt_session->last_udp_flow_packet_id_mpu_sequence_tuple_video->packet_id,
+                 lls_sls_mmt_session->last_udp_flow_packet_id_mpu_sequence_tuple_video->mpu_sequence_number - 1);
+        
+        v_fmp4_segments[v_fmp4_segments_ringbuffer_idx % MAX_FMP4_SEGMENTS] = tmp_segment_v;
+        
+        //magic string in atsc3_lls_sls_monitor_output_buffer_utils.c, e.g. 1.570.v.orig
+        char* track_dump_file_name_v = (char*)calloc(128, sizeof(char));
+        snprintf(track_dump_file_name_v, 127, "%s/%u.%u.%s", "mpu",
+                 lls_sls_mmt_session->last_udp_flow_packet_id_mpu_sequence_tuple_video->packet_id,
+                 lls_sls_mmt_session->last_udp_flow_packet_id_mpu_sequence_tuple_video->mpu_sequence_number - 1, "v.orig");
+        
+        atsc3_mmt_hls_fmp4_copy_file(track_dump_file_name_v, tmp_segment);
+        
+        //copy fmp4 segment over, see lls_sls_monitor_buffer_isobmff_intermediate_mmt_file_dump
+        atsc3_mmt_hls_fmp4_copy_file("mpu/1.init.mp4", MMT_HLS_FMP4_DIRECTORY_PATH "/v.init.mp4");
+        v_fmp4_segments_ringbuffer_idx++;
+
+        atsc3_mmt_hls_fmp4_write_variant_manifest(MMT_HLS_FMP4_VIDEO_VARIANT_NAME, variant_manifest_video_header, v_fmp4_segments_ringbuffer_idx, v_fmp4_segments);
+        
+    }
+    
+    
+}
+
+
+
 void process_mmtp_payload(udp_packet_t *udp_packet, lls_sls_mmt_session_t* matching_lls_sls_mmt_session) {
 
 	mmtp_packet_header_t* mmtp_packet_header = mmtp_packet_header_parse_from_block_t(udp_packet->data);
@@ -291,7 +465,7 @@ void process_mmtp_payload(udp_packet_t *udp_packet, lls_sls_mmt_session_t* match
 			goto error;
 		}
 
-        //use MPU re-assembly for HLS distribution
+        //use MPU re-assembly for HLS distribution, update manifest with separate video and audio essenses when tuple_a/v_processed is true
         
 		if(mmtp_mpu_packet->mpu_timed_flag == 1) {
             mmtp_process_from_payload(mmtp_mpu_packet, mmtp_flow, lls_slt_monitor, udp_packet, udp_flow_latest_mpu_sequence_number_container, matching_lls_sls_mmt_session);
@@ -305,6 +479,10 @@ void process_mmtp_payload(udp_packet_t *udp_packet, lls_sls_mmt_session_t* match
                          matching_lls_sls_mmt_session->last_udp_flow_packet_id_mpu_sequence_tuple_video->packet_id,
                          matching_lls_sls_mmt_session->last_udp_flow_packet_id_mpu_sequence_tuple_video->mpu_sequence_number,
                          matching_lls_sls_mmt_session->last_udp_flow_packet_id_mpu_sequence_tuple_video_processed);
+                
+                if(matching_lls_sls_mmt_session->last_udp_flow_packet_id_mpu_sequence_tuple_audio_processed || matching_lls_sls_mmt_session->last_udp_flow_packet_id_mpu_sequence_tuple_video_processed) {
+                    atsc3_mmt_hls_fmp4_update_manifest(matching_lls_sls_mmt_session);
+                }
             }
 
 //
