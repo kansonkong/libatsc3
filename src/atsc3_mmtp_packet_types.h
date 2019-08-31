@@ -192,6 +192,8 @@ typedef struct mmtp_mpu_packet {
     
 typedef struct {
     uint32_t mpu_sequence_number;
+    uint16_t            packet_id;
+
     ATSC3_VECTOR_BUILDER_STRUCT(mmtp_mpu_packet);
 } mpu_sequence_number_mmtp_mpu_packet_collection_t;
 
@@ -235,7 +237,7 @@ typedef struct mmtp_packet_id_packets_container {
     uint16_t            packet_id;
     
     ATSC3_VECTOR_BUILDER_STRUCT(mpu_sequence_number_mmtp_mpu_packet_collection);
-ATSC3_VECTOR_BUILDER_STRUCT(mmtp_signalling_packet); //todo - figure out if this should be first class or overloaded
+    ATSC3_VECTOR_BUILDER_STRUCT(mmtp_signalling_packet); //todo - figure out if this should be first class or overloaded
     
     //others not used in atsc3.0
     ATSC3_VECTOR_BUILDER_STRUCT(mmtp_mpu_nontimed_packet);
