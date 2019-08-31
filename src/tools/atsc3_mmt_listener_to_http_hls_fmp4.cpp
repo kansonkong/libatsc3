@@ -217,39 +217,39 @@ static int http_output_response_from_player_pipe (void *cls,
 
 	return ret;
 }
-
-void* global_autoplay_run_thread(void*p) {
-    uint16_t my_service_id = 3;
-    lls_sls_mmt_monitor_t* lls_sls_mmt_monitor = NULL;
-
-    while(true) {
-        sleep(1);
-        lls_sls_mmt_session_t* lls_sls_mmt_session = lls_slt_mmt_session_find_from_service_id(lls_slt_monitor, my_service_id);
-        if(lls_sls_mmt_session) {
-            lls_sls_mmt_monitor = lls_sls_mmt_monitor_create();
-            lls_sls_mmt_monitor->lls_mmt_session = lls_sls_mmt_session;
-            lls_sls_mmt_monitor->service_id = my_service_id;
-            
-            lls_sls_mmt_monitor->video_packet_id = lls_sls_mmt_session->video_packet_id;
-            lls_sls_mmt_monitor->audio_packet_id = lls_sls_mmt_session->audio_packet_id;
-            
-            lls_sls_mmt_monitor->lls_sls_monitor_output_buffer.has_written_init_box = false;
-            lls_slt_monitor->lls_sls_mmt_monitor = lls_sls_mmt_monitor;
-            sleep(3);
-
-            lls_slt_monitor->lls_sls_mmt_monitor->lls_sls_monitor_output_buffer_mode.pipe_ffplay_buffer = pipe_create_ffplay_resolve_fps(&lls_slt_monitor->lls_sls_mmt_monitor->lls_sls_monitor_output_buffer.video_output_buffer_isobmff);
-            
-            lls_slt_monitor->lls_sls_mmt_monitor->lls_sls_monitor_output_buffer_mode.ffplay_output_enabled = true;
-            
-            lls_slt_monitor->lls_sls_mmt_monitor->lls_sls_monitor_output_buffer_mode.http_output_buffer = (http_output_buffer_t*)calloc(1, sizeof(http_output_buffer_t));
-            lls_slt_monitor->lls_sls_mmt_monitor->lls_sls_monitor_output_buffer_mode.http_output_buffer->http_payload_buffer_mutex = lls_sls_monitor_reader_mutext_create();
-            lls_slt_monitor->lls_sls_mmt_monitor->lls_sls_monitor_output_buffer_mode.http_output_enabled = true;
-            break;
-        }
-    }
-    
-    return NULL;
-}
+//
+//void* global_autoplay_run_thread(void*p) {
+//    uint16_t my_service_id = 3;
+//    lls_sls_mmt_monitor_t* lls_sls_mmt_monitor = NULL;
+//
+//    while(true) {
+//        sleep(1);
+//        lls_sls_mmt_session_t* lls_sls_mmt_session = lls_slt_mmt_session_find_from_service_id(lls_slt_monitor, my_service_id);
+//        if(lls_sls_mmt_session) {
+//            lls_sls_mmt_monitor = lls_sls_mmt_monitor_create();
+//            lls_sls_mmt_monitor->lls_mmt_session = lls_sls_mmt_session;
+//            lls_sls_mmt_monitor->service_id = my_service_id;
+//
+//            lls_sls_mmt_monitor->video_packet_id = lls_sls_mmt_session->video_packet_id;
+//            lls_sls_mmt_monitor->audio_packet_id = lls_sls_mmt_session->audio_packet_id;
+//
+//            lls_sls_mmt_monitor->lls_sls_monitor_output_buffer.has_written_init_box = false;
+//            lls_slt_monitor->lls_sls_mmt_monitor = lls_sls_mmt_monitor;
+//            sleep(3);
+//
+//            lls_slt_monitor->lls_sls_mmt_monitor->lls_sls_monitor_output_buffer_mode.pipe_ffplay_buffer = pipe_create_ffplay_resolve_fps(&lls_slt_monitor->lls_sls_mmt_monitor->lls_sls_monitor_output_buffer.video_output_buffer_isobmff);
+//
+//            lls_slt_monitor->lls_sls_mmt_monitor->lls_sls_monitor_output_buffer_mode.ffplay_output_enabled = true;
+//
+//            lls_slt_monitor->lls_sls_mmt_monitor->lls_sls_monitor_output_buffer_mode.http_output_buffer = (http_output_buffer_t*)calloc(1, sizeof(http_output_buffer_t));
+//            lls_slt_monitor->lls_sls_mmt_monitor->lls_sls_monitor_output_buffer_mode.http_output_buffer->http_payload_buffer_mutex = lls_sls_monitor_reader_mutext_create();
+//            lls_slt_monitor->lls_sls_mmt_monitor->lls_sls_monitor_output_buffer_mode.http_output_enabled = true;
+//            break;
+//        }
+//    }
+//
+//    return NULL;
+//}
 
 void* global_httpd_run_thread(void* lls_slt_monitor_ptr) {
 
@@ -306,13 +306,14 @@ void atsc3_mmt_hls_fmp4_write_file(const char* filename, const char* payload, ui
 }
 //hvc1.2.4.L123.B0
 //hvc1.2.4.L150.B0
+//hvc1.2.4.L123.B0,mp4a.40.2
 void atsc3_mmt_hls_fmp4_write_master_manifest() {
     
     const char* master_manifest_payload = "#EXTM3U\n"
         "#EXT-X-VERSION:7\n"
         "#EXT-X-INDEPENDENT-SEGMENTS\n"
         "#EXT-X-MEDIA:TYPE=AUDIO,GROUP-ID=\"a1\",NAME=\"English\",LANGUAGE=\"en-US\",AUTOSELECT=YES,DEFAULT=YES,CHANNELS=\"2\",URI=\"a.m3u8\"\n"
-        "#EXT-X-STREAM-INF:AVERAGE-BANDWIDTH=1966314,BANDWIDTH=2164328,CODECS=\"hvc1.2.4.L150.B0,mp4a.40.2\",RESOLUTION=1920x1080,FRAME-RATE=60.000,AUDIO=\"a1\"\n"
+        "#EXT-X-STREAM-INF:AVERAGE-BANDWIDTH=1966314,BANDWIDTH=2164328,CODECS=\"hvc1.2.4.L123.B0,mp4a.40.2\",RESOLUTION=1920x1080,FRAME-RATE=60.000,AUDIO=\"a1\"\n"
         "v.m3u8\n";
     
     mkdir(MMT_HLS_FMP4_DIRECTORY_PATH, 0777);
@@ -320,14 +321,14 @@ void atsc3_mmt_hls_fmp4_write_master_manifest() {
 }
 const char* variant_manifest_audio_header = "#EXTM3U\n"
 "#EXT-X-VERSION:7\n"
-"#EXT-X-TARGETDURATION:10\n"
+"#EXT-X-TARGETDURATION:2\n"
 "#EXT-X-INDEPENDENT-SEGMENTS\n"
 "#EXT-X-MAP:URI=\"a.init.mp4\"\n"
 "#EXT-X-MEDIA-SEQUENCE:%d\n\n";
 
 const char* variant_manifest_video_header = "#EXTM3U\n"
 "#EXT-X-VERSION:7\n"
-"#EXT-X-TARGETDURATION:10\n"
+"#EXT-X-TARGETDURATION:2\n"
 "#EXT-X-INDEPENDENT-SEGMENTS\n"
 "#EXT-X-MAP:URI=\"v.init.mp4\"\n"
 "#EXT-X-MEDIA-SEQUENCE:%d\n\n";
@@ -349,7 +350,7 @@ void atsc3_mmt_hls_fmp4_write_variant_manifest(const char* variant_path, const c
     for(int i = ringbuffer_idx; i < ringbuffer_idx + MAX_FMP4_SEGMENTS; i++) {
         char* temp_hls_fragment_payload = fmp4_segments[ i % MAX_FMP4_SEGMENTS];
         if(temp_hls_fragment_payload) {
-            snprintf(payload + strlen(payload), PAYLOAD_MAX_LEN - strlen(payload), "#EXTINF:10.000000\n%s\n", temp_hls_fragment_payload);
+            snprintf(payload + strlen(payload), PAYLOAD_MAX_LEN - strlen(payload), "#EXTINF:2.000000\n%s\n", temp_hls_fragment_payload);
         }
     }
     
@@ -414,7 +415,7 @@ void atsc3_mmt_hls_fmp4_update_manifest(lls_sls_mmt_session_t* lls_sls_mmt_sessi
 
         //copy fmp4 segment over, see lls_sls_monitor_buffer_isobmff_intermediate_mmt_file_dump
         //fix me for packet_id's
-        atsc3_mmt_hls_fmp4_copy_file("mpu/2.init.mp4", "a.init.mp4");
+       // atsc3_mmt_hls_fmp4_copy_file("mpu/2.init.mp4", "a.init.mp4");
 
         a_fmp4_segments_ringbuffer_idx++;
         atsc3_mmt_hls_fmp4_write_variant_manifest(MMT_HLS_FMP4_AUDIO_VARIANT_NAME, variant_manifest_audio_header, a_fmp4_segments_ringbuffer_idx, a_fmp4_segments);
@@ -444,7 +445,7 @@ void atsc3_mmt_hls_fmp4_update_manifest(lls_sls_mmt_session_t* lls_sls_mmt_sessi
         atsc3_mmt_hls_fmp4_copy_file(track_dump_file_name_v, tmp_segment_v);
         
         //copy fmp4 segment over, see lls_sls_monitor_buffer_isobmff_intermediate_mmt_file_dump
-        atsc3_mmt_hls_fmp4_copy_file("mpu/1.init.mp4", "v.init.mp4");
+      //  atsc3_mmt_hls_fmp4_copy_file("mpu/1.init.mp4", "v.init.mp4");
         v_fmp4_segments_ringbuffer_idx++;
 
         atsc3_mmt_hls_fmp4_write_variant_manifest(MMT_HLS_FMP4_VIDEO_VARIANT_NAME, variant_manifest_video_header, v_fmp4_segments_ringbuffer_idx, v_fmp4_segments);
@@ -512,10 +513,21 @@ void process_mmtp_payload(udp_packet_t *udp_packet, lls_sls_mmt_session_t* match
 		if(parsed_count) {
 			mmt_signalling_message_dump(mmtp_signalling_packet);
             
+            /* keep this packet around for processing **/
+            //assign our mmtp_mpu_packet to asset/packet_id/mpu_sequence_number flow
+            mmtp_asset_flow_t* mmtp_asset_flow = mmtp_flow_find_or_create_from_udp_packet(mmtp_flow, udp_packet);
+            mmtp_asset_t* mmtp_asset = mmtp_asset_flow_find_or_create_asset_from_lls_sls_mmt_session(mmtp_asset_flow, matching_lls_sls_mmt_session);
+            //hack
+            mmtp_mpu_packet_t* mmtp_mpu_packet = mmtp_mpu_packet_new();
+            mmtp_mpu_packet->mmtp_packet_id = mmtp_signalling_packet->mmtp_packet_id;
+            
+            mmtp_packet_id_packets_container_t* mmtp_packet_id_packets_container = mmtp_asset_find_or_create_packets_container_from_mmt_mpu_packet(mmtp_asset, mmtp_mpu_packet);
+            mmtp_packet_id_packets_container_add_mmtp_signalling_packet(mmtp_packet_id_packets_container, mmtp_signalling_packet);
+            
             //update our sls_mmt_session info
             mmt_signalling_message_update_lls_sls_mmt_session(mmtp_signalling_packet, matching_lls_sls_mmt_session);
 
-            mmtp_signalling_packet_free(&mmtp_signalling_packet);
+        //    mmtp_signalling_packet_free(&mmtp_signalling_packet);
 		} else {
 			goto error;
 		}
@@ -807,8 +819,8 @@ int main(int argc,char **argv) {
 	int pcap_ret = pthread_create(&global_pcap_thread_id, NULL, pcap_loop_run_thread, (void*)dev);
 	assert(!pcap_ret);
     
-    pthread_t global_autoplay_thread_id;
-    pthread_create(&global_autoplay_thread_id, NULL, global_autoplay_run_thread, NULL);
+//    pthread_t global_autoplay_thread_id;
+//    pthread_create(&global_autoplay_thread_id, NULL, global_autoplay_run_thread, NULL);
 
 	pthread_join(global_pcap_thread_id, NULL);
 
