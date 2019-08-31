@@ -10,13 +10,12 @@
 #ifndef ATSC3_MMT_MPU_SAMPLE_FORMAT_TYPE_H_
 #define ATSC3_MMT_MPU_SAMPLE_FORMAT_TYPE_H_
 
-#include "atsc3_utils.h"
-#include "atsc3_logging_externs.h"
-
-
 #ifdef __cplusplus
 extern "C" {
 #endif
+
+#include "atsc3_utils.h"
+#include "atsc3_logging_externs.h"
 
 extern int _MMTP_MPU_SAMPLE_FORMAT_DEBUG_ENABLED;
 extern int _MMTP_MPU_SAMPLE_FORMAT_TRACE_ENABLED;
@@ -62,9 +61,6 @@ typedef struct mmthsample_header {
 } mmthsample_header_t;
 
 
-#ifdef __cplusplus
-}
-#endif
 
 #define __MMTP_MPU_SAMPLE_FORMAT_ERROR(...)   __LIBATSC3_TIMESTAMP_ERROR(__VA_ARGS__);
 #define __MMTP_MPU_SAMPLE_FORMAT_WARN(...)    __LIBATSC3_TIMESTAMP_WARN(__VA_ARGS__);
@@ -73,4 +69,8 @@ typedef struct mmthsample_header {
 #define __MMTP_MPU_SAMPLE_FORMAT_DEBUG(...)   if(_MMTP_MPU_SAMPLE_FORMAT_DEBUG_ENABLED) { __LIBATSC3_TIMESTAMP_DEBUG(__VA_ARGS__); }
 #define __MMTP_MPU_SAMPLE_FORMAT_TRACE(...)   if(_MMTP_MPU_SAMPLE_FORMAT_TRACE_ENABLED) { __LIBATSC3_TIMESTAMP_TRACE(__VA_ARGS__); }
 
+
+#ifdef __cplusplus
+}
+#endif
 #endif /* ATSC3_MMT_MPU_SAMPLE_FORMAT_TYPE_H_ */

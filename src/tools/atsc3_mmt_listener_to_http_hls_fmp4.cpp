@@ -293,12 +293,13 @@ void process_mmtp_payload(udp_packet_t *udp_packet, lls_sls_mmt_session_t* match
 
         //hack for mpu re-assembly
         
-        mmtp_process_from_payload(mmtp_mpu_packet, mmtp_flow, lls_slt_monitor, udp_packet, udp_flow_latest_mpu_sequence_number_container, matching_lls_sls_mmt_session);
         
 		if(mmtp_mpu_packet->mpu_timed_flag == 1) {
-		    block_Destroy(&mmtp_mpu_packet->du_mpu_metadata_block);
-            block_Destroy(&mmtp_mpu_packet->du_mfu_block);
-            block_Destroy(&mmtp_mpu_packet->du_movie_fragment_block);
+            mmtp_process_from_payload(mmtp_mpu_packet, mmtp_flow, lls_slt_monitor, udp_packet, udp_flow_latest_mpu_sequence_number_container, matching_lls_sls_mmt_session);
+//
+//            block_Destroy(&mmtp_mpu_packet->du_mpu_metadata_block);
+//            block_Destroy(&mmtp_mpu_packet->du_mfu_block);
+//            block_Destroy(&mmtp_mpu_packet->du_movie_fragment_block);
 
 			//mmtp_mpu_dump_header(mmtp_mpu_packet);
 		} else {

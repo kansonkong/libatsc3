@@ -673,7 +673,7 @@ int lls_sls_monitor_output_buffer_copy_and_recover_sample_fragment_block(lls_sls
     //hacks
     //check if we need to add in +8 for mdat box length not captured in mmthsample offset
     //needed for DS-MMT IO 3point5mb 720p5994.pcap
-    if(mmtp_mpu_packet->mmthsample_header->samplenumber == 1 && mmtp_mpu_packet->mmthsample_header->offset < 8) {
+    if(mmtp_mpu_packet->mmthsample_header && mmtp_mpu_packet->mmthsample_header->samplenumber == 1 && mmtp_mpu_packet->mmthsample_header->offset < 8) {
         __LLS_SLS_MONITOR_OUTPUT_BUFFER_UTILS_WARN("mmthsample box: patching : mpu_seq_num: %u, mpu_sample_num: %3u, mpu_frag: %3u, mmth_offset is: %6u, setting trun_mmthsample_missing_offset_mdat_box to true",
                                                    mmtp_mpu_packet->mpu_sequence_number,
                                                    mmtp_mpu_packet->sample_number,
@@ -732,7 +732,7 @@ int lls_sls_monitor_output_buffer_copy_and_recover_sample_fragment_block(lls_sls
      	trun_sample_entry = trun_sample_entry_new();
         
 		//use our mmthsample box information if present, otherwise try to recover by our best guess of previous offset
-		if(mmtp_mpu_packet->mmthsample_header->samplenumber && (mmtp_mpu_packet->mpu_fragmentation_indicator == 0x0 || mmtp_mpu_packet->mpu_fragmentation_indicator == 0x1)) {
+		if(mmtp_mpu_packet->mmthsample_header && mmtp_mpu_packet->mmthsample_header->samplenumber && (mmtp_mpu_packet->mpu_fragmentation_indicator == 0x0 || mmtp_mpu_packet->mpu_fragmentation_indicator == 0x1)) {
 
             //hack - hv - keep around if we have to offset payload data due to mmth spec interepetation gaps..
             trun_sample_entry->mfu_mmth_last_header_sample_size = mmtp_mpu_packet->mmthsample_header->mfu_mmth_sample_header_size;
