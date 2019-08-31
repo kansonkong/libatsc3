@@ -18,6 +18,8 @@
 #include "atsc3_lls_sls_monitor_output_buffer.h"
 #include "atsc3_lls_sls_monitor_output_buffer_utils.h"
 
+#include "atsc3_mmtp_packet_utils.h"
+
 #ifndef ATSC3_ISOBMFF_TOOLS_H_
 #define ATSC3_ISOBMFF_TOOLS_H_
 
@@ -31,7 +33,7 @@ extern int _ISOBMFF_TOOLS_SIGNALLING_DEBUG_ENABLED;
 
 //jdj-2019-04-05
 lls_sls_monitor_buffer_isobmff_t* atsc3_isobmff_build_raw_mpu_from_single_sequence_number(udp_flow_t* udp_flow, udp_flow_latest_mpu_sequence_number_container_t* udp_flow_latest_mpu_sequence_number_container,
-		uint16_t packet_id, uint32_t mpu_sequence_number, lls_sls_monitor_buffer_isobmff_t* lls_sls_monitor_buffer_isobmff);
+		uint16_t packet_id, uint32_t mpu_sequence_number, lls_sls_monitor_buffer_isobmff_t* lls_sls_monitor_buffer_isobmff, mmtp_packet_id_packets_container_t* mmtp_packet_id_packets_container);
 
 lls_sls_monitor_buffer_isobmff_t* atsc3_isobmff_rebuild_track_mpu_from_sample_data(lls_sls_monitor_buffer_isobmff_t* lls_sls_monitor_buffer_isobmff);
 
