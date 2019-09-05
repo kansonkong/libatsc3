@@ -7,6 +7,7 @@
 
 #include "atsc3_mmt_mpu_utils.h"
 
+//jjustman-2019-09-05 - todo: rename this to _MMT_MPU_UTILS_DEBUG_ENABLED
 int _MMT_MPU_DEBUG_ENABLED = 0;
 int _MMT_MPU_TRACE_ENABLED = 0;
 

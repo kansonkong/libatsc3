@@ -8,6 +8,7 @@
 #ifndef ATSC3_MMT_MPU_PARSER_H_
 #define ATSC3_MMT_MPU_PARSER_H_
 
+#include "atsc3_logging_externs.h"
 #include "atsc3_mmtp_parser.h"
 #include "atsc3_mmtp_packet_types.h"
 #include "atsc3_mmt_mpu_sample_format_parser.h"
@@ -61,6 +62,7 @@ extern "C" {
 #endif
 
 mmtp_mpu_packet_t* mmtp_mpu_packet_parse_from_block_t(mmtp_packet_header_t* mmtp_packet_header, block_t* udp_packet);
+mmtp_mpu_packet_t* mmtp_mpu_packet_parse_and_free_packet_header_from_block_t(mmtp_packet_header_t** mmtp_packet_header_p, block_t* udp_packet);
 
 
 //mpu_data_unit_payload_fragments_t* mpu_data_unit_payload_fragments_find_mpu_sequence_number(mpu_data_unit_payload_fragments_vector_t *vec, uint32_t mpu_sequence_number);
@@ -81,7 +83,7 @@ void mmt_mpu_free_payload(mmtp_mpu_packet_t* mmtp_mpu_packet);
 #define __MMT_MPU_PARSER_WARN(...)    __LIBATSC3_TIMESTAMP_WARN(__VA_ARGS__);
 #define __MMT_MPU_PARSER_INFO(...)    __LIBATSC3_TIMESTAMP_INFO(__VA_ARGS__);
 
-#define __MMT_MPU_PARSER_DEBUG(...)   if(_MPU_DEBUG_ENABLED) { __LIBATSC3_TIMESTAMP_DEBUG(__VA_ARGS__); }
-#define __MMT_MPU_PARSER_TRACE(...)   if(_MPU_TRACE_ENABLED) { __LIBATSC3_TIMESTAMP_TRACE(__VA_ARGS__); }
+#define __MMT_MPU_PARSER_DEBUG(...)   if(_MMT_MPU_PARSER_DEBUG_ENABLED) { __LIBATSC3_TIMESTAMP_DEBUG(__VA_ARGS__); }
+#define __MMT_MPU_PARSER_TRACE(...)   if(_MMT_MPU_PARSER_TRACE_ENABLED) { __LIBATSC3_TIMESTAMP_TRACE(__VA_ARGS__); }
 
 #endif /* ATSC3_MMT_MPU_PARSER_H_ */

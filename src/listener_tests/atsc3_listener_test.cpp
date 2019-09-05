@@ -44,10 +44,6 @@ int PACKET_COUNTER=0;
 #include "atsc3_mmtp_parser.h"
 #include "atsc3_mmt_mpu_utils.h"
 
-extern int _MPU_DEBUG_ENABLED;
-extern int _MMTP_DEBUG_ENABLED;
-extern int _LLS_DEBUG_ENABLED;
-
 #define println(...) printf(__VA_ARGS__);printf("%s%s","\r","\n")
 
 #define __PRINTLN(...) printf(__VA_ARGS__);printf("%s%s","\r","\n")
@@ -265,7 +261,7 @@ cleanup:
  */
 int main(int argc,char **argv) {
 
-	_MPU_DEBUG_ENABLED = 0;
+	_MMT_MPU_PARSER_DEBUG_ENABLED = 0;
 	_MMTP_DEBUG_ENABLED = 0;
 	_LLS_DEBUG_ENABLED = 0;
 
