@@ -111,11 +111,13 @@ void mmtp_asset_free(mmtp_asset_t** mmtp_asset_p) {
 ATSC3_VECTOR_BUILDER_METHODS_IMPLEMENTATION(mpu_sequence_number_mmtp_mpu_packet_collection, mmtp_mpu_packet);
 
 //for mmtp_signalling_packet_t
+//invokes mmt_signalling_message_header_and_payload_free as a chained destructor
 ATSC3_VECTOR_BUILDER_METHODS_IMPLEMENTATION(mmtp_signalling_packet, mmt_signalling_message_header_and_payload);
 
 //mpu_sequence_number_mmtp_mpu_packet_new
 //for mmtp_packet_id_packets_container_t
 ATSC3_VECTOR_BUILDER_METHODS_IMPLEMENTATION(mmtp_packet_id_packets_container, mpu_sequence_number_mmtp_mpu_packet_collection);
+//invokes mmt_signalling_message_free as chained destructor
 ATSC3_VECTOR_BUILDER_METHODS_IMPLEMENTATION(mmtp_packet_id_packets_container, mmtp_signalling_packet);
 
 ATSC3_VECTOR_BUILDER_METHODS_IMPLEMENTATION(mmtp_packet_id_packets_container, mmtp_mpu_nontimed_packet);
