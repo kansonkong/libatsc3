@@ -499,17 +499,9 @@ void process_mmtp_payload(udp_packet_t *udp_packet, lls_sls_mmt_session_t* match
                 
                 if(matching_lls_sls_mmt_session->last_udp_flow_packet_id_mpu_sequence_tuple_audio_processed || matching_lls_sls_mmt_session->last_udp_flow_packet_id_mpu_sequence_tuple_video_processed) {
                     atsc3_mmt_hls_fmp4_update_manifest(matching_lls_sls_mmt_session);
-                    
-                    
                 }
             }
 
-//
-//            block_Destroy(&mmtp_mpu_packet->du_mpu_metadata_block);
-//            block_Destroy(&mmtp_mpu_packet->du_mfu_block);
-//            block_Destroy(&mmtp_mpu_packet->du_movie_fragment_block);
-
-			//mmtp_mpu_dump_header(mmtp_mpu_packet);
 		} else {
 			//non-timed
 			__ATSC3_WARN("mmtp_packet_parse: non-timed payload: packet_id: %u", mmtp_packet_header->mmtp_packet_id);
@@ -539,8 +531,9 @@ void process_mmtp_payload(udp_packet_t *udp_packet, lls_sls_mmt_session_t* match
             //update our sls_mmt_session info
             mmt_signalling_message_update_lls_sls_mmt_session(mmtp_signalling_packet, matching_lls_sls_mmt_session);
 
-        //    mmtp_signalling_packet_free(&mmtp_signalling_packet);
 		} else {
+            //jjustman-2019-09-05 - unsupported signalling message type, so free immediately
+            mmtp_signalling_packet_free(&mmtp_signalling_packet);
 			goto error;
 		}
 

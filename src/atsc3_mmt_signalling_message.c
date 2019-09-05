@@ -282,6 +282,8 @@ mmt_signalling_message_header_and_payload_t* mmt_signalling_message_header_and_p
 	return mmt_signalling_message_header_and_payload;
 }
 
+//see atsc3_mmmtp_packet_types.c - duplicate?
+//void mmtp_signalling_packet_free(mmtp_signalling_packet_t** mmtp_signalling_packet_p) {
 
 void mmt_signalling_message_free(mmtp_signalling_packet_t** mmtp_signalling_packet_p) {
 	if(mmtp_signalling_packet_p) {
