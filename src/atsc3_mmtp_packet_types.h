@@ -192,7 +192,7 @@ typedef struct mmtp_mpu_packet {
     
 typedef struct {
     uint32_t mpu_sequence_number;
-    uint16_t            packet_id;
+    uint16_t packet_id;
 
     ATSC3_VECTOR_BUILDER_STRUCT(mmtp_mpu_packet);
 } mpu_sequence_number_mmtp_mpu_packet_collection_t;
