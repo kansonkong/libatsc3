@@ -68,6 +68,9 @@ extern int _MPU_DEBUG_ENABLED;
 extern int _MMTP_DEBUG_ENABLED;
 extern int _MMTP_TRACE_ENABLED;
 
+extern int _MMT_MPU_PARSER_DEBUG_ENABLED;
+extern int _MMT_MPU_PARSER_TRACE_ENABLED;
+    
 extern int _MMT_MPU_DEBUG_ENABLED;
 extern int _MMT_MPU_TRACE_ENABLED;
 

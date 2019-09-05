@@ -31,7 +31,8 @@ extern global_atsc3_stats_t* global_stats;
 //mmtp_payload_fragments_union_t** mmtp_payload_p,
     //        udp_flow_latest_mpu_sequence_number_container_t* udp_flow_latest_mpu_sequence_number_container,
 
-void mmtp_process_from_payload(mmtp_mpu_packet_t* mmtp_mpu_packet,
+//we will return mmtp_mpu_packet if it was successfully persisted, otherwise it will be null'd out
+mmtp_mpu_packet_t* mmtp_process_from_payload(mmtp_mpu_packet_t* mmtp_mpu_packet,
                                mmtp_flow_t *mmtp_flow,
                                lls_slt_monitor_t* lls_slt_monitor,
                                udp_packet_t *udp_packet,

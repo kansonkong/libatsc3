@@ -10,11 +10,22 @@
 
 #include "atsc3_mmt_mpu_parser.h"
 
-int _MPU_DEBUG_ENABLED = 0;
-int _MPU_TRACE_ENABLED = 0;
+int _MMT_MPU_PARSER_DEBUG_ENABLED = 0;
+int _MMT_MPU_PARSER_TRACE_ENABLED = 0;
+
+mmtp_mpu_packet_t* mmtp_mpu_packet_parse_and_free_packet_header_from_block_t(mmtp_packet_header_t** mmtp_packet_header_p, block_t* udp_packet) {
+    mmtp_packet_header_t* mmtp_packet_header = *mmtp_packet_header_p;
+    mmtp_mpu_packet_t* mmtp_mpu_packet = NULL;
+    if(mmtp_packet_header) {
+        mmtp_mpu_packet = mmtp_mpu_packet_parse_from_block_t(mmtp_packet_header, udp_packet);
+        mmtp_packet_header_free(mmtp_packet_header_p);
+    }
+    
+    return mmtp_mpu_packet;
+}
 
 mmtp_mpu_packet_t* mmtp_mpu_packet_parse_from_block_t(mmtp_packet_header_t* mmtp_packet_header, block_t* udp_packet) {
-
+    
 	if(!mmtp_packet_header) {
 		__MMT_MPU_PARSER_ERROR("mmtp_mpu_packet_parse_from_block_t: mmtp_packet_header is NULL!");
 		return NULL;
@@ -137,6 +148,8 @@ mmtp_mpu_packet_t* mmtp_mpu_packet_parse_from_block_t(mmtp_packet_header_t* mmtp
 										mmtp_mpu_packet->mpu_fragment_type,
 										mmtp_mpu_packet->du_mfu_block->p_size,
 										mmtp_mpu_packet->du_mfu_block);
+                
+                block_Destroy(&temp_timed_buffer);
 
 			} else if(mmtp_mpu_packet->mpu_fragment_type == 0x1) {
 				__MMT_MPU_PARSER_TRACE("mmtp_mpu_packet_parse_from_block_t: writing to du_movie_fragment_block, mpu_fragement_type is: 0x%x, len: %d, buf: %p",

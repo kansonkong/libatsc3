@@ -418,7 +418,7 @@ void* pcap_loop_run_thread(void* dev_pointer) {
  */
 int main(int argc,char **argv) {
 
-	_MPU_DEBUG_ENABLED = 1;
+	_MMT_MPU_PARSER_DEBUG_ENABLED = 1;
 	_MMTP_DEBUG_ENABLED = 1;
 	_LLS_DEBUG_ENABLED = 0;
     _ISOBMFF_TOOLS_DEBUG_ENABLED = 1;

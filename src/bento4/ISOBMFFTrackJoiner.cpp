@@ -737,7 +737,7 @@ void parseAndBuildJoinedBoxes_from_lls_sls_monitor_output_buffer(lls_sls_monitor
 
 	uint32_t video_trun_last_offset = 0;
 
-	AP4_MdhdAtom* video_mdhdAtom;
+    AP4_MdhdAtom* video_mdhdAtom = NULL;
 
 	//mpu_presentation_time support
 	AP4_TfdtAtom* audio_tfdt_atom_mdhd_timescale = NULL;

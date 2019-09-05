@@ -381,6 +381,8 @@ void atsc3_mmt_hls_fmp4_copy_file(const char* from, const char* to) {
         fclose(file_from_fp);
         fclose(file_to_fp);
     }
+    free(block);
+    block = NULL;
 }
 
 void atsc3_mmt_hls_fmp4_update_manifest(lls_sls_mmt_session_t* lls_sls_mmt_session) {
@@ -391,6 +393,7 @@ void atsc3_mmt_hls_fmp4_update_manifest(lls_sls_mmt_session_t* lls_sls_mmt_sessi
 
         if(a_fmp4_segments[a_fmp4_segments_ringbuffer_idx % MAX_FMP4_SEGMENTS]) {
             free(a_fmp4_segments[a_fmp4_segments_ringbuffer_idx % MAX_FMP4_SEGMENTS]);
+            a_fmp4_segments[a_fmp4_segments_ringbuffer_idx % MAX_FMP4_SEGMENTS] = NULL;
         }
         
         //nore sure why -1...
@@ -423,6 +426,7 @@ void atsc3_mmt_hls_fmp4_update_manifest(lls_sls_mmt_session_t* lls_sls_mmt_sessi
         //video segments here
         if(v_fmp4_segments[v_fmp4_segments_ringbuffer_idx % MAX_FMP4_SEGMENTS]) {
             free(v_fmp4_segments[v_fmp4_segments_ringbuffer_idx % MAX_FMP4_SEGMENTS]);
+            v_fmp4_segments[v_fmp4_segments_ringbuffer_idx % MAX_FMP4_SEGMENTS] = NULL;
         }
         //MMT_HLS_FMP4_DIRECTORY_PATH
         char* tmp_segment_v = (char*) calloc(1024, sizeof(char));
@@ -450,6 +454,8 @@ void atsc3_mmt_hls_fmp4_update_manifest(lls_sls_mmt_session_t* lls_sls_mmt_sessi
 
         atsc3_mmt_hls_fmp4_write_variant_manifest(MMT_HLS_FMP4_VIDEO_VARIANT_NAME, variant_manifest_video_header, v_fmp4_segments_ringbuffer_idx, v_fmp4_segments);
         
+        //free(tmp_segment);
+        //free(tmp_segment_v);
     }
     
     
@@ -471,7 +477,7 @@ void process_mmtp_payload(udp_packet_t *udp_packet, lls_sls_mmt_session_t* match
 	}
 
 	if(mmtp_packet_header->mmtp_payload_type == 0x0) {
-		mmtp_mpu_packet_t* mmtp_mpu_packet = mmtp_mpu_packet_parse_from_block_t(mmtp_packet_header, udp_packet->data);
+		mmtp_mpu_packet_t* mmtp_mpu_packet = mmtp_mpu_packet_parse_and_free_packet_header_from_block_t(&mmtp_packet_header, udp_packet->data);
 		if(!mmtp_mpu_packet) {
 			goto error;
 		}
@@ -479,8 +485,8 @@ void process_mmtp_payload(udp_packet_t *udp_packet, lls_sls_mmt_session_t* match
         //use MPU re-assembly for HLS distribution, update manifest with separate video and audio essenses when tuple_a/v_processed is true
         
 		if(mmtp_mpu_packet->mpu_timed_flag == 1) {
-            mmtp_process_from_payload(mmtp_mpu_packet, mmtp_flow, lls_slt_monitor, udp_packet, udp_flow_latest_mpu_sequence_number_container, matching_lls_sls_mmt_session);
-            if(matching_lls_sls_mmt_session && matching_lls_sls_mmt_session->last_udp_flow_packet_id_mpu_sequence_tuple_audio && matching_lls_sls_mmt_session->last_udp_flow_packet_id_mpu_sequence_tuple_video) {
+            mmtp_mpu_packet = mmtp_process_from_payload(mmtp_mpu_packet, mmtp_flow, lls_slt_monitor, udp_packet, udp_flow_latest_mpu_sequence_number_container, matching_lls_sls_mmt_session);
+            if(mmtp_mpu_packet && matching_lls_sls_mmt_session && matching_lls_sls_mmt_session->last_udp_flow_packet_id_mpu_sequence_tuple_audio && matching_lls_sls_mmt_session->last_udp_flow_packet_id_mpu_sequence_tuple_video) {
                 
                 __ATSC3_DEBUG("audio flow: packet_id: %d, mpu_sequence_number: %d, updated: %d, video flow: packet_id: %d, mpu_sequence_number: %d, updated: %d",
                          matching_lls_sls_mmt_session->last_udp_flow_packet_id_mpu_sequence_tuple_audio->packet_id,
@@ -493,6 +499,8 @@ void process_mmtp_payload(udp_packet_t *udp_packet, lls_sls_mmt_session_t* match
                 
                 if(matching_lls_sls_mmt_session->last_udp_flow_packet_id_mpu_sequence_tuple_audio_processed || matching_lls_sls_mmt_session->last_udp_flow_packet_id_mpu_sequence_tuple_video_processed) {
                     atsc3_mmt_hls_fmp4_update_manifest(matching_lls_sls_mmt_session);
+                    
+                    
                 }
             }
 
@@ -517,12 +525,16 @@ void process_mmtp_payload(udp_packet_t *udp_packet, lls_sls_mmt_session_t* match
             //assign our mmtp_mpu_packet to asset/packet_id/mpu_sequence_number flow
             mmtp_asset_flow_t* mmtp_asset_flow = mmtp_flow_find_or_create_from_udp_packet(mmtp_flow, udp_packet);
             mmtp_asset_t* mmtp_asset = mmtp_asset_flow_find_or_create_asset_from_lls_sls_mmt_session(mmtp_asset_flow, matching_lls_sls_mmt_session);
-            //hack
+           
+            //TODO: FIX ME!!! HACK - jjustman-2019-09-05
             mmtp_mpu_packet_t* mmtp_mpu_packet = mmtp_mpu_packet_new();
             mmtp_mpu_packet->mmtp_packet_id = mmtp_signalling_packet->mmtp_packet_id;
             
             mmtp_packet_id_packets_container_t* mmtp_packet_id_packets_container = mmtp_asset_find_or_create_packets_container_from_mmt_mpu_packet(mmtp_asset, mmtp_mpu_packet);
             mmtp_packet_id_packets_container_add_mmtp_signalling_packet(mmtp_packet_id_packets_container, mmtp_signalling_packet);
+            
+            //TODO: FIX ME!!! HACK - jjustman-2019-09-05
+            mmtp_mpu_packet_free(&mmtp_mpu_packet);
             
             //update our sls_mmt_session info
             mmt_signalling_message_update_lls_sls_mmt_session(mmtp_signalling_packet, matching_lls_sls_mmt_session);
@@ -683,13 +695,14 @@ void* pcap_loop_run_thread(void* dev_pointer) {
  * arguments:
  */
 int main(int argc,char **argv) {
-    _MPU_DEBUG_ENABLED = 1;
     _MMTP_DEBUG_ENABLED = 1;
+    _MMT_MPU_PARSER_DEBUG_ENABLED = 1;
+    _MMT_MPU_PARSER_TRACE_ENABLED = 1;
     _MMT_SIGNALLING_MESSAGE_DEBUG_ENABLED = 1;
 
 #define __LOTS_OF_DEBUGGING__
 #ifdef __LOTS_OF_DEBUGGING__
-	_MPU_DEBUG_ENABLED = 0;
+	_MMT_MPU_PARSER_DEBUG_ENABLED = 0;
 	_MMTP_DEBUG_ENABLED = 0;
 	_MMT_SIGNALLING_MESSAGE_TRACE_ENABLED = 0;
 

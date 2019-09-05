@@ -42,10 +42,6 @@ int PACKET_COUNTER=0;
 #include "../atsc3_packet_statistics.h"
 #include "../atsc3_logging_externs.h"
 
-extern int _MPU_DEBUG_ENABLED;
-extern int _MMTP_DEBUG_ENABLED;
-extern int _LLS_DEBUG_ENABLED;
-
 //commandline stream filtering
 
 uint32_t* dst_ip_addr_filter = NULL;
@@ -278,7 +274,7 @@ cleanup:
  */
 int main(int argc,char **argv) {
 
-	_MPU_DEBUG_ENABLED = 0;
+	_MMT_MPU_PARSER_DEBUG_ENABLED = 0;
 	_MMTP_DEBUG_ENABLED = 0;
 	_LLS_DEBUG_ENABLED = 0;
 
