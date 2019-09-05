@@ -587,7 +587,10 @@ uint8_t* mmt_atsc3_message_payload_parse(mmt_signalling_message_header_and_paylo
 
 			if(ret > 0) {
 				mmt_atsc3_message_payload->atsc3_message_content_length = ret;
-				mmt_atsc3_message_payload->atsc3_message_content = decompressed_payload;
+                mmt_atsc3_message_payload->atsc3_message_content = calloc(ret, sizeof(char));
+                memcpy(mmt_atsc3_message_payload->atsc3_message_content, decompressed_payload, ret);
+                free(decompressed_payload);
+                decompressed_payload = NULL;
 			} else {
 				__MMSM_ERROR("atsc3_message_content_compressed, unable to decompress: error is: %u", ret);
 			}

@@ -180,7 +180,7 @@ int main(int argc,char **argv) {
     _MMT_SIGNALLING_MESSAGE_DEBUG_ENABLED = 1;
 
     _MMTP_DEBUG_ENABLED = 0;
-    _MPU_DEBUG_ENABLED = 0;
+    _MMT_MPU_PARSER_DEBUG_ENABLED = 0;
     _LLS_DEBUG_ENABLED = 0;
 
     //listen to all flows

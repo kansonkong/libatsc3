@@ -324,7 +324,9 @@ lls_sls_monitor_buffer_isobmff_t* atsc3_isobmff_build_raw_mpu_from_single_sequen
 
     int total_fragments = 0;
 
-    block_t* mpu_metadata_output_block_t = NULL;
+    block_t* mpu_metadata_fragment = NULL;
+    block_t* movie_fragment_metadata = NULL;
+    block_t* mfu_mdat = NULL;
     
     __ISOBMFF_TOOLS_DEBUG("Searching for MPU Metadata with %u:%u and packet_id: %u, mpu_sequence_number: %u", udp_flow->dst_ip_addr, udp_flow->dst_port, packet_id, mpu_sequence_number);
 
@@ -334,8 +336,6 @@ lls_sls_monitor_buffer_isobmff_t* atsc3_isobmff_build_raw_mpu_from_single_sequen
        
         return NULL;
     }
-    
-    block_t* mpu_metadata_fragment = NULL;
     
     for(int i=0; i < mpu_sequence_number_mmtp_mpu_packet_collection->mmtp_mpu_packet_v.count; i++) {
         mmtp_mpu_packet_t* mmtp_mpu_packet = mpu_sequence_number_mmtp_mpu_packet_collection->mmtp_mpu_packet_v.data[i];
@@ -367,12 +367,11 @@ lls_sls_monitor_buffer_isobmff_t* atsc3_isobmff_build_raw_mpu_from_single_sequen
 			__ISOBMFF_TOOLS_INFO("init_block used from previous MPU!"); //todo - recover from last init frame
 		} else {
 			__ISOBMFF_TOOLS_WARN("init_block missing!");
-			return NULL;
+            goto fail;
 		}
 	}
 
     
-    block_t* movie_fragment_metadata = NULL;
     
     for(int i=0; i < mpu_sequence_number_mmtp_mpu_packet_collection->mmtp_mpu_packet_v.count; i++) {
         mmtp_mpu_packet_t* mmtp_mpu_packet = mpu_sequence_number_mmtp_mpu_packet_collection->mmtp_mpu_packet_v.data[i];
@@ -394,13 +393,12 @@ lls_sls_monitor_buffer_isobmff_t* atsc3_isobmff_build_raw_mpu_from_single_sequen
     
     if(!movie_fragment_metadata) {
         __ISOBMFF_TOOLS_WARN("movie_fragment_metadata missing!");
-        return NULL;
+        goto fail;
     }
     
     lls_sls_monitor_output_buffer_copy_or_append_moof_block_from_flow(lls_sls_monitor_buffer_isobmff, movie_fragment_metadata);
     
     __ISOBMFF_TOOLS_DEBUG("data unit recon: ip: %u:%d, packet_id: %d, mpu_sequence_number: %d", udp_flow->dst_ip_addr, udp_flow->dst_port, packet_id, mpu_sequence_number);
-    block_t* mfu_mdat = NULL;
     
     for(int i=0; i < mpu_sequence_number_mmtp_mpu_packet_collection->mmtp_mpu_packet_v.count; i++) {
         mmtp_mpu_packet_t* mmtp_mpu_packet = mpu_sequence_number_mmtp_mpu_packet_collection->mmtp_mpu_packet_v.data[i];
@@ -415,6 +413,8 @@ lls_sls_monitor_buffer_isobmff_t* atsc3_isobmff_build_raw_mpu_from_single_sequen
     }
     
     __ISOBMFF_TOOLS_SIGNALLING_DEBUG("signaling: checking flow");
+    
+    //TODO: jjustman-2019-09-05 - clear this flow...
     
     for(int i=0; i < mmtp_packet_id_packets_container->mmtp_signalling_packet_v.count; i++) {
         mmtp_signalling_packet_t* mmtp_signalling_packet = mmtp_packet_id_packets_container->mmtp_signalling_packet_v.data[i];
@@ -471,9 +471,36 @@ lls_sls_monitor_buffer_isobmff_t* atsc3_isobmff_build_raw_mpu_from_single_sequen
 				  mpu_sequence_number,
 				  lls_sls_monitor_buffer_isobmff->trun_sample_entry_v.count);
 
-    	 return atsc3_isobmff_build_patched_mdat_fragment(lls_sls_monitor_buffer_isobmff);
+        lls_sls_monitor_buffer_isobmff_t* lls_sls_monitor_buffer_isobmff_pending_mux = atsc3_isobmff_build_patched_mdat_fragment(lls_sls_monitor_buffer_isobmff);
+        
+        if(mpu_metadata_fragment) {
+            block_Destroy(&mpu_metadata_fragment);
+        }
+        
+        if(movie_fragment_metadata) {
+            block_Destroy(&movie_fragment_metadata);
+        }
+        
+        if(mfu_mdat) {
+            block_Destroy(&mfu_mdat);
+        }
+
+        return lls_sls_monitor_buffer_isobmff_pending_mux;
     }
 
+fail:
+    if(mpu_metadata_fragment) {
+        block_Destroy(&mpu_metadata_fragment);
+    }
+    
+    if(movie_fragment_metadata) {
+        block_Destroy(&movie_fragment_metadata);
+    }
+    
+    if(mfu_mdat) {
+        block_Destroy(&mfu_mdat);
+    }
+    
     //otherwise, we were unable to rebuild this mpu
     __ISOBMFF_TOOLS_WARN("unable to rebuild: packet_id: %u, mpu_sequence_number: %u",
         	    			  packet_id,

@@ -53,37 +53,44 @@ mmtp_sub_flow_vector_t* mmtp_sub_flow_vector,
  TODO: refactor udp_flow_latest_mpu_sequence_number_container_t* udp_flow_latest_mpu_sequence_number_container for mpu recon storage
 
  //jjustman-2019-08-31 - new atsc3_mmtp_packet_types.h refactoring here...
-
  */
-void mmtp_process_from_payload(mmtp_mpu_packet_t* mmtp_mpu_packet,
+
+mmtp_mpu_packet_t* mmtp_process_from_payload(mmtp_mpu_packet_t* mmtp_mpu_packet,
                                mmtp_flow_t *mmtp_flow,
                                lls_slt_monitor_t* lls_slt_monitor,
                                udp_packet_t *udp_packet,
                                udp_flow_latest_mpu_sequence_number_container_t* udp_flow_latest_mpu_sequence_number_container,
                                lls_sls_mmt_session_t* matching_lls_slt_mmt_session) {
 
+    //forward declare so our goto will compile
+    mmtp_asset_flow_t* mmtp_asset_flow = NULL;
+    mmtp_asset_t* mmtp_asset = NULL;
+    mmtp_packet_id_packets_container_t* mmtp_packet_id_packets_container = NULL;
+    mpu_sequence_number_mmtp_mpu_packet_collection_t* mpu_sequence_number_mmtp_mpu_packet_collection = NULL;
+    
+    if(!lls_slt_monitor || !lls_slt_monitor->lls_sls_mmt_monitor || !(lls_slt_monitor->lls_sls_mmt_monitor->service_id == matching_lls_slt_mmt_session->service_id)) {
+        goto packet_cleanup;
+    }
+    
     //clear out our last flow processed status
     matching_lls_slt_mmt_session->last_udp_flow_packet_id_mpu_sequence_tuple_audio_processed = false;
     matching_lls_slt_mmt_session->last_udp_flow_packet_id_mpu_sequence_tuple_video_processed = false;
 
     //assign our mmtp_mpu_packet to asset/packet_id/mpu_sequence_number flow
-    mmtp_asset_flow_t* mmtp_asset_flow = mmtp_flow_find_or_create_from_udp_packet(mmtp_flow, udp_packet);
-    mmtp_asset_t* mmtp_asset = mmtp_asset_flow_find_or_create_asset_from_lls_sls_mmt_session(mmtp_asset_flow, matching_lls_slt_mmt_session);
-    mmtp_packet_id_packets_container_t* mmtp_packet_id_packets_container = mmtp_asset_find_or_create_packets_container_from_mmt_mpu_packet(mmtp_asset, mmtp_mpu_packet);
-    mpu_sequence_number_mmtp_mpu_packet_collection_t* mpu_sequence_number_mmtp_mpu_packet_collection = mmtp_packet_id_packets_container_find_or_create_mpu_sequence_number_mmtp_mpu_packet_collection_from_mmt_mpu_packet(mmtp_packet_id_packets_container, mmtp_mpu_packet);
+    mmtp_asset_flow = mmtp_flow_find_or_create_from_udp_packet(mmtp_flow, udp_packet);
+    mmtp_asset = mmtp_asset_flow_find_or_create_asset_from_lls_sls_mmt_session(mmtp_asset_flow, matching_lls_slt_mmt_session);
+    mmtp_packet_id_packets_container = mmtp_asset_find_or_create_packets_container_from_mmt_mpu_packet(mmtp_asset, mmtp_mpu_packet);
+    mpu_sequence_number_mmtp_mpu_packet_collection = mmtp_packet_id_packets_container_find_or_create_mpu_sequence_number_mmtp_mpu_packet_collection_from_mmt_mpu_packet(mmtp_packet_id_packets_container, mmtp_mpu_packet);
 
     //persist our mmtp_mpu_packet for mpu reconstitution as per original libatsc3 design
     mpu_sequence_number_mmtp_mpu_packet_collection_add_mmtp_mpu_packet(mpu_sequence_number_mmtp_mpu_packet_collection, mmtp_mpu_packet);
     
+    //TODO - this should never happen with this strong type
     if(mmtp_mpu_packet->mmtp_payload_type == 0x0) {
         global_stats->packet_counter_mmt_mpu++;
 
         if(mmtp_mpu_packet->mpu_timed_flag == 1) {
             global_stats->packet_counter_mmt_timed_mpu++;
-
-            if(!lls_slt_monitor || !lls_slt_monitor->lls_sls_mmt_monitor || !(lls_slt_monitor->lls_sls_mmt_monitor->service_id == matching_lls_slt_mmt_session->service_id)) {
-                goto packet_cleanup;
-            }
             
             if(lls_slt_monitor && lls_slt_monitor->lls_sls_mmt_monitor &&
             		lls_slt_monitor->lls_sls_mmt_monitor->service_id == matching_lls_slt_mmt_session->service_id &&
@@ -229,9 +236,14 @@ void mmtp_process_from_payload(mmtp_mpu_packet_t* mmtp_mpu_packet,
     }
 
 packet_cleanup:
-    //TODO
-ret: ;
-   // return mmtp_payload;
+    if(mmtp_mpu_packet) {
+        __MMT_RECON_FROM_SAMPLE_WARN("Cleaning up packet: %p", mmtp_mpu_packet);
+        mmtp_mpu_packet_free(&mmtp_mpu_packet);
+    }
+    return NULL;
 
+ret:
+
+    return mmtp_mpu_packet;
 }
 

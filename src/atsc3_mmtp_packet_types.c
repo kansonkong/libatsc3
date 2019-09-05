@@ -63,6 +63,10 @@ void mmtp_mpu_packet_free(mmtp_mpu_packet_t** mmtp_mpu_packet_p) {
 			block_Destroy(&mmtp_mpu_packet->du_mpu_metadata_block);
 			block_Destroy(&mmtp_mpu_packet->du_movie_fragment_block);
 			block_Destroy(&mmtp_mpu_packet->du_mfu_block);
+            if(mmtp_mpu_packet->mmthsample_header) {
+                free(mmtp_mpu_packet->mmthsample_header);
+                mmtp_mpu_packet->mmthsample_header = NULL;
+            }
 
 			freesafe(mmtp_mpu_packet);
 			mmtp_mpu_packet = NULL;
