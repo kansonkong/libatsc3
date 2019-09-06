@@ -319,6 +319,8 @@ void atsc3_mmt_hls_fmp4_write_master_manifest() {
     mkdir(MMT_HLS_FMP4_DIRECTORY_PATH, 0777);
     atsc3_mmt_hls_fmp4_write_file(mmt_hls_fmp4_master_manifest_path, master_manifest_payload, strlen(master_manifest_payload));
 }
+
+#define A_VARIANT_INIT_MP4 "a.init.mp4"
 const char* variant_manifest_audio_header = "#EXTM3U\n"
 "#EXT-X-VERSION:7\n"
 "#EXT-X-TARGETDURATION:2\n"
@@ -326,6 +328,7 @@ const char* variant_manifest_audio_header = "#EXTM3U\n"
 "#EXT-X-MAP:URI=\"a.init.mp4\"\n"
 "#EXT-X-MEDIA-SEQUENCE:%d\n\n";
 
+#define V_VARIANT_INIT_MP4 "v.init.mp4"
 const char* variant_manifest_video_header = "#EXTM3U\n"
 "#EXT-X-VERSION:7\n"
 "#EXT-X-TARGETDURATION:2\n"
@@ -385,6 +388,76 @@ void atsc3_mmt_hls_fmp4_copy_file(const char* from, const char* to) {
     block = NULL;
 }
 
+
+/*
+ 
+ read the inital boxes in our re-constituted output until we get to the moof box
+ 
+ */
+
+void atsc3_mmt_hls_fmp4_copy_file_and_extract_init_fragment(const char* from, const char* init_filename, const char* to) {
+    uint8_t box_header[8];
+    uint32_t box_size = 0;
+    uint32_t box_moof_and_mdat_size = 0;
+    
+    struct stat st;
+    stat(from, &st);
+    off_t size = st.st_size;
+    
+    //max isobmff moov fragment size
+    uint8_t* block = (uint8_t*) calloc(size, sizeof(uint8_t));
+    FILE* file_from_fp = fopen(from, "r");
+    
+    char path_to_init_filename[128];
+    snprintf(path_to_init_filename, 128, "hls/%s", init_filename);
+    FILE* file_to_init_fp = fopen(path_to_init_filename, "w");
+
+    //moof fragment path
+    char path_to[128];
+    snprintf(path_to, 128, "hls/%s", to);
+    FILE* file_to_fp = fopen(path_to, "w");
+
+    bool has_found_moof_box = false;
+    
+    if(file_from_fp && file_to_init_fp && file_to_fp) {
+        while(!has_found_moof_box && ftell(file_from_fp) < size) {
+            fread(&box_header, 8, 1, file_from_fp);
+            box_size = ntohl(*(uint32_t*)(box_header));
+            box_size -= 8; //since we already read the first 8 bytes..
+            if(box_header[4] == 'm' && box_header[5] == 'o' && box_header[6] == 'o' && box_header[7] == 'f') {
+                has_found_moof_box = true;
+                fseek(file_from_fp, -8, SEEK_CUR);
+                box_moof_and_mdat_size = size - ftell(file_from_fp);
+            } else {
+                fwrite(box_header, 8, 1, file_to_init_fp);
+                uint8_t* box_contents = (uint8_t*) calloc(box_size, sizeof(uint8_t));
+                fread(box_contents, box_size, 1, file_from_fp);
+                fwrite(box_contents, box_size, 1, file_to_init_fp);
+                free(box_contents);
+            }
+        }
+        
+        if(has_found_moof_box) {
+            fread(block, box_moof_and_mdat_size, 1, file_from_fp);
+            fwrite(block, box_moof_and_mdat_size, 1, file_to_fp);
+            fclose(file_from_fp);
+            fclose(file_to_fp);
+        }
+        
+        if(file_from_fp) {
+            fclose(file_from_fp);
+        }
+        if(file_to_fp) {
+            fclose(file_to_fp);
+        }
+        if(file_to_init_fp) {
+            fclose(file_to_init_fp);
+        }
+    }
+    free(block);
+    block = NULL;
+}
+
 void atsc3_mmt_hls_fmp4_update_manifest(lls_sls_mmt_session_t* lls_sls_mmt_session) {
     
     atsc3_mmt_hls_fmp4_write_master_manifest();
@@ -414,8 +487,9 @@ void atsc3_mmt_hls_fmp4_update_manifest(lls_sls_mmt_session_t* lls_sls_mmt_sessi
         snprintf(track_dump_file_name, 127, "%s/%u.%s", "mpu",
                  lls_sls_mmt_session->last_udp_flow_packet_id_mpu_sequence_tuple_audio->mpu_sequence_number - 1, "a.rebuilt");
 
-        atsc3_mmt_hls_fmp4_copy_file(track_dump_file_name, tmp_segment);
-
+        //atsc3_mmt_hls_fmp4_copy_file(track_dump_file_name, tmp_segment);
+        atsc3_mmt_hls_fmp4_copy_file_and_extract_init_fragment(track_dump_file_name, A_VARIANT_INIT_MP4, tmp_segment);
+        
         //copy fmp4 segment over, see lls_sls_monitor_buffer_isobmff_intermediate_mmt_file_dump
         //fix me for packet_id's
        // atsc3_mmt_hls_fmp4_copy_file("mpu/2.init.mp4", "a.init.mp4");
@@ -446,19 +520,18 @@ void atsc3_mmt_hls_fmp4_update_manifest(lls_sls_mmt_session_t* lls_sls_mmt_sessi
         snprintf(track_dump_file_name_v, 127, "%s/%u.%s", "mpu",
                  lls_sls_mmt_session->last_udp_flow_packet_id_mpu_sequence_tuple_video->mpu_sequence_number - 1, "v.rebuilt");
 
-        atsc3_mmt_hls_fmp4_copy_file(track_dump_file_name_v, tmp_segment_v);
-        
+        //atsc3_mmt_hls_fmp4_copy_file(track_dump_file_name_v, tmp_segment_v);
+        atsc3_mmt_hls_fmp4_copy_file_and_extract_init_fragment(track_dump_file_name_v, V_VARIANT_INIT_MP4, tmp_segment_v);
+
         //copy fmp4 segment over, see lls_sls_monitor_buffer_isobmff_intermediate_mmt_file_dump
-      //  atsc3_mmt_hls_fmp4_copy_file("mpu/1.init.mp4", "v.init.mp4");
+        //atsc3_mmt_hls_fmp4_copy_file("mpu/1.init.mp4", "v.init.mp4");
         v_fmp4_segments_ringbuffer_idx++;
 
         atsc3_mmt_hls_fmp4_write_variant_manifest(MMT_HLS_FMP4_VIDEO_VARIANT_NAME, variant_manifest_video_header, v_fmp4_segments_ringbuffer_idx, v_fmp4_segments);
-        
-        //free(tmp_segment);
-        //free(tmp_segment_v);
+     
+        free(track_dump_file_name);
+        free(track_dump_file_name_v);
     }
-    
-    
 }
 
 
