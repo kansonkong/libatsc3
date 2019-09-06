@@ -475,6 +475,11 @@ void process_mmtp_payload(udp_packet_t *udp_packet, lls_sls_mmt_session_t* match
 	if(dst_packet_id_filter && *dst_packet_id_filter != mmtp_packet_header->mmtp_packet_id) {
 		goto cleanup;
 	}
+    
+    //check if we are monitoring this service_id by flow
+    if(!lls_slt_monitor || !lls_slt_monitor->lls_sls_mmt_monitor || !(lls_slt_monitor->lls_sls_mmt_monitor->service_id == matching_lls_sls_mmt_session->service_id)) {
+        goto cleanup;
+    }
 
 	if(mmtp_packet_header->mmtp_payload_type == 0x0) {
 		mmtp_mpu_packet_t* mmtp_mpu_packet = mmtp_mpu_packet_parse_and_free_packet_header_from_block_t(&mmtp_packet_header, udp_packet->data);
@@ -507,7 +512,7 @@ void process_mmtp_payload(udp_packet_t *udp_packet, lls_sls_mmt_session_t* match
 			__ATSC3_WARN("mmtp_packet_parse: non-timed payload: packet_id: %u", mmtp_packet_header->mmtp_packet_id);
 		}
 	} else if(mmtp_packet_header->mmtp_payload_type == 0x2) {
-
+        
 		mmtp_signalling_packet_t* mmtp_signalling_packet = mmtp_signalling_packet_parse_and_free_packet_header_from_block_t(&mmtp_packet_header, udp_packet->data);
 		uint8_t parsed_count = mmt_signalling_message_parse_packet(mmtp_signalling_packet, udp_packet->data);
 		if(parsed_count) {
@@ -552,8 +557,10 @@ void process_mmtp_payload(udp_packet_t *udp_packet, lls_sls_mmt_session_t* match
 				udp_packet->udp_flow.dst_ip_addr);
     
  cleanup:
-
- 	 ;
+    
+    if(mmtp_packet_header) {
+        mmtp_packet_header_free(&mmtp_packet_header);
+    }
 
 }
 
@@ -585,10 +592,14 @@ void process_packet(u_char *user, const struct pcap_pkthdr *pkthdr, const u_char
                             if(lls_sls_mmt_monitor) {
                                 //re-configure
                             } else {
+                                //TODO:  make sure
+                                //lls_service->broadcast_svc_signaling.sls_destination_ip_address && lls_service->broadcast_svc_signaling.sls_destination_udp_port
+                                //match our dst_ip_addr_filter && udp_packet->udp_flow.dst_ip_addr != *dst_ip_addr_filter and port filter
                                 __INFO("Adding service: %d", lls_service->service_id);
 
                                 lls_sls_mmt_monitor = lls_sls_mmt_monitor_create();
-                                
+                                lls_slt_monitor->lls_sls_mmt_monitor = lls_sls_mmt_monitor;
+
                                 //we may not be initialized yet, so re-check again later
                                 lls_sls_mmt_session_t* lls_sls_mmt_session = lls_slt_mmt_session_find_from_service_id(lls_slt_monitor, lls_service->service_id);
                                 lls_sls_mmt_monitor->lls_mmt_session = lls_sls_mmt_session;
@@ -610,10 +621,14 @@ void process_packet(u_char *user, const struct pcap_pkthdr *pkthdr, const u_char
             
             if(lls_sls_mmt_monitor->video_packet_id) {
                 lls_sls_mmt_monitor->lls_sls_monitor_output_buffer.has_written_init_box = false;
-                lls_slt_monitor->lls_sls_mmt_monitor = lls_sls_mmt_monitor;
                 lls_slt_monitor->lls_sls_mmt_monitor->lls_sls_monitor_output_buffer_mode.file_dump_enabled = true;
-                lls_slt_monitor->lls_sls_mmt_monitor->lls_sls_monitor_output_buffer_mode.http_output_buffer = (http_output_buffer_t*)calloc(1, sizeof(http_output_buffer_t));
-                lls_slt_monitor->lls_sls_mmt_monitor->lls_sls_monitor_output_buffer_mode.http_output_buffer->http_payload_buffer_mutex = lls_sls_monitor_reader_mutext_create();
+                
+                //todo - jjustman-2019-09-05 - refactor this logic out
+                
+                if(!lls_slt_monitor->lls_sls_mmt_monitor->lls_sls_monitor_output_buffer_mode.http_output_buffer) {
+                    lls_slt_monitor->lls_sls_mmt_monitor->lls_sls_monitor_output_buffer_mode.http_output_buffer = (http_output_buffer_t*)calloc(1, sizeof(http_output_buffer_t));
+                    lls_slt_monitor->lls_sls_mmt_monitor->lls_sls_monitor_output_buffer_mode.http_output_buffer->http_payload_buffer_mutex = lls_sls_monitor_reader_mutext_create();
+                }
                 lls_slt_monitor->lls_sls_mmt_monitor->lls_sls_monitor_output_buffer_mode.http_output_enabled = true;
             }
         }
