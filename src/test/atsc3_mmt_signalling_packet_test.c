@@ -71,7 +71,7 @@ int test_parse_mp_table_single_item_no_factory() {
 
 		mmtp_packet_header_dump(mmtp_packet_header);
 
-		mmtp_signalling_packet_t* mmtp_signalling_packet = mmt_signalling_message_parse_packet_header(mmtp_packet_header, test_atsc3_mmt_message_payload);
+		mmtp_signalling_packet_t* mmtp_signalling_packet = mmtp_signalling_packet_parse_from_block_t(mmtp_packet_header, test_atsc3_mmt_message_payload);
 		uint8_t mmt_SI_messages_processed = mmt_signalling_message_parse_packet(mmtp_signalling_packet, test_atsc3_mmt_message_payload);
 
 		mmt_signalling_message_dump(mmtp_signalling_packet);
@@ -122,7 +122,7 @@ int test_parse_mp_table_no_factory() {
 
 		mmtp_packet_header_dump(mmtp_packet_header);
 
-		mmtp_signalling_packet_t* mmtp_signalling_packet = mmt_signalling_message_parse_packet_header(mmtp_packet_header, test_atsc3_mmt_message_payload);
+		mmtp_signalling_packet_t* mmtp_signalling_packet = mmtp_signalling_packet_parse_from_block_t(mmtp_packet_header, test_atsc3_mmt_message_payload);
 		uint8_t mmt_SI_messages_processed = mmt_signalling_message_parse_packet(mmtp_signalling_packet, test_atsc3_mmt_message_payload);
 
 		mmt_signalling_message_dump(mmtp_signalling_packet);
@@ -172,7 +172,7 @@ int test_parse_atsc3_mmt_message_no_factoy() {
 
 		mmtp_packet_header_dump(mmtp_packet_header);
 
-		mmtp_signalling_packet_t* mmtp_signalling_packet = mmt_signalling_message_parse_packet_header(mmtp_packet_header, test_atsc3_mmt_message_payload);
+		mmtp_signalling_packet_t* mmtp_signalling_packet = mmtp_signalling_packet_parse_from_block_t(mmtp_packet_header, test_atsc3_mmt_message_payload);
 		uint8_t mmt_SI_messages_processed = mmt_signalling_message_parse_packet(mmtp_signalling_packet, test_atsc3_mmt_message_payload);
 
 		mmt_signalling_message_dump(mmtp_signalling_packet);

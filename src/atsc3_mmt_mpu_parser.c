@@ -13,6 +13,7 @@
 int _MMT_MPU_PARSER_DEBUG_ENABLED = 0;
 int _MMT_MPU_PARSER_TRACE_ENABLED = 0;
 
+//release our packet_header once we have a concrete object type
 mmtp_mpu_packet_t* mmtp_mpu_packet_parse_and_free_packet_header_from_block_t(mmtp_packet_header_t** mmtp_packet_header_p, block_t* udp_packet) {
     mmtp_packet_header_t* mmtp_packet_header = *mmtp_packet_header_p;
     mmtp_mpu_packet_t* mmtp_mpu_packet = NULL;

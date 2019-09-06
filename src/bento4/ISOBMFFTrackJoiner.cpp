@@ -243,6 +243,7 @@ void ISOBMFF_track_joiner_monitor_output_buffer_parse_and_build_joined_mmt_boxes
     parseAndBuildJoinedBoxes_from_lls_sls_monitor_output_buffer(lls_sls_monitor_output_buffer, audio_output_buffer, video_output_buffer, output_data_buffer_p, output_stream_p);
 }
 
+//jjustman-2019-09-05 - this is probably not needed now that other leaks with Detach have been cleaned up
 int atom_delete_children_recursive_depth = 0;
 void atom_delete_children_recursive(AP4_Atom* atom) {
 
