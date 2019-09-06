@@ -108,7 +108,7 @@ void process_packet(u_char *user, const struct pcap_pkthdr *pkthdr, const u_char
     	mmtp_packet_header_t* mmtp_packet_header = mmtp_parse_header_from_udp_packet(udp_packet);
         if(mmtp_packet_header && mmtp_packet_header->mmtp_payload_type == 0x02) {
 
-        	mmtp_signalling_packet_t* mmtp_signalling_packet = mmt_signalling_message_parse_packet_header(mmtp_packet_header, udp_packet->data);
+        	mmtp_signalling_packet_t* mmtp_signalling_packet = mmtp_signalling_packet_parse_and_free_packet_header_from_block_t(&mmtp_packet_header, udp_packet->data);
         	mmtp_process_sls_from_payload(udp_packet, mmtp_signalling_packet, matching_lls_slt_mmt_session);
         }
 

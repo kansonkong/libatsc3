@@ -110,7 +110,7 @@ void mmtp_parse_from_udp_packet(udp_packet_t *udp_packet, lls_sls_mmt_session_t*
 		}
 	} else if(mmtp_packet_header->mmtp_payload_type == 0x2) {
 
-		mmtp_signalling_packet_t* mmtp_signalling_packet = mmt_signalling_message_parse_packet_header(mmtp_packet_header, udp_packet->data);
+		mmtp_signalling_packet_t* mmtp_signalling_packet = mmtp_signalling_packet_parse_and_free_packet_header_from_block_t(&mmtp_packet_header, udp_packet->data);
 		uint8_t parsed_count = mmt_signalling_message_parse_packet(mmtp_signalling_packet, udp_packet->data);
 		if(parsed_count) {
 			mmt_signalling_message_dump(mmtp_signalling_packet);

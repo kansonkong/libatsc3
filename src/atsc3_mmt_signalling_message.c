@@ -29,9 +29,19 @@ raw base64 payload:
  *
  */
 
+//release our packet_header once we have a concrete object type
+mmtp_signalling_packet_t* mmtp_signalling_packet_parse_and_free_packet_header_from_block_t(mmtp_packet_header_t** mmtp_packet_header_p, block_t* udp_packet) {
+    mmtp_packet_header_t* mmtp_packet_header = *mmtp_packet_header_p;
+    mmtp_signalling_packet_t* mmtp_signalling_packet = NULL;
+    if(mmtp_packet_header) {
+        mmtp_signalling_packet = mmtp_signalling_packet_parse_from_block_t(mmtp_packet_header, udp_packet);
+        mmtp_packet_header_free(mmtp_packet_header_p);
+    }
+    
+    return mmtp_signalling_packet;
+}
 
-mmtp_signalling_packet_t* mmt_signalling_message_parse_packet_header(mmtp_packet_header_t* mmtp_packet_header, block_t* udp_packet) {
-
+mmtp_signalling_packet_t* mmtp_signalling_packet_parse_from_block_t(mmtp_packet_header_t* mmtp_packet_header, block_t* udp_packet) {
 	if(mmtp_packet_header->mmtp_payload_type != 0x02) {
 		__MMSM_ERROR("signalling_message_parse_payload_header: mmtp_payload_type 0x02 != 0x%x", mmtp_packet_header->mmtp_payload_type);
 		return NULL;
@@ -294,7 +304,7 @@ mmt_signalling_message_header_and_payload_t* mmt_signalling_message_header_and_p
 //            block_Release(&mmtp_signalling_packet->mmtp_header_extension);
 //
 //            __MMSM_WARN("mmt_signalling_message_free, packet_id: %d", mmtp_signalling_packet->mmtp_packet_id);
-//            
+//
 //            //clear our inner struct reference and chained destructors, this will invoke mmt_signalling_message_header_and_payload_free
 //            mmtp_signalling_packet_free_mmt_signalling_message_header_and_payload(mmtp_signalling_packet);
 //
