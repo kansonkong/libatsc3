@@ -217,8 +217,14 @@ mmtp_mpu_packet_t* mmtp_process_from_payload(mmtp_mpu_packet_t* mmtp_mpu_packet,
                         }
 
                         lls_sls_monitor_output_buffer_reset_rebuilt_mpu_moof_and_fragment_position(&lls_slt_monitor->lls_sls_mmt_monitor->lls_sls_monitor_output_buffer);
-                        
                     }
+                    //jjustman-2019-09-05 - TODO: fix this hack
+                    //clear out packet_id=0
+                    mmtp_mpu_packet_t* mmtp_mpu_packet = mmtp_mpu_packet_new();
+                    mmtp_mpu_packet->mmtp_packet_id = 0;
+                    
+                    mmtp_packet_id_packets_container_t* mmtp_packet_id_packets_container_packet_zero = mmtp_asset_find_or_create_packets_container_from_mmt_mpu_packet(mmtp_asset, mmtp_mpu_packet);
+                    mmtp_packet_id_packets_container_free_mmtp_signalling_packet(mmtp_packet_id_packets_container_packet_zero);
                 }
             }
         } else {

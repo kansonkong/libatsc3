@@ -243,6 +243,49 @@ void ISOBMFF_track_joiner_monitor_output_buffer_parse_and_build_joined_mmt_boxes
     parseAndBuildJoinedBoxes_from_lls_sls_monitor_output_buffer(lls_sls_monitor_output_buffer, audio_output_buffer, video_output_buffer, output_data_buffer_p, output_stream_p);
 }
 
+void atom_delete_children_recursive(AP4_Atom* atom) {
+
+    AP4_ContainerAtom* containerAtom = NULL;
+    if((containerAtom = AP4_DYNAMIC_CAST(AP4_ContainerAtom, atom))) {
+        AP4_List<AP4_Atom>& childAtoms = containerAtom->GetChildren();
+    	for(int i=0; i < childAtoms.ItemCount(); i++) {
+            AP4_Atom* childAtom;
+            childAtoms.Get(i, childAtom);
+
+            __ISOBMFF_JOINER_DEBUG("atom_delete_children_recursive - item index: %d,  containerAtom: %p, %c%c%c%c",
+                                   i,
+                                   childAtom,
+                                   (childAtom->GetType() >> 24) & 0xFF,
+                                   (childAtom->GetType() >> 16) & 0xFF,
+                                   (childAtom->GetType() >> 8) & 0xFF,
+                                   (childAtom->GetType()) & 0xFF);
+            childAtom->Detach();
+    		atom_delete_children_recursive(childAtom);
+            
+    	}
+        __ISOBMFF_JOINER_DEBUG("atom_delete_children_recursive - deleting containerAtom: %p, %c%c%c%c", atom,
+                               (containerAtom->GetType() >> 24) & 0xFF,
+                               (containerAtom->GetType() >> 16) & 0xFF,
+                               (containerAtom->GetType() >> 8) & 0xFF,
+                               (containerAtom->GetType()) & 0xFF);
+        //atom->Detach();
+        //childAtoms.DeleteReferences();
+      
+        delete atom;
+        
+
+    } else {
+		//atom->Detach();
+        __ISOBMFF_JOINER_DEBUG("atom_delete_children_recursive - deleting single atom: %p, %c%c%c%c", atom,
+                               (atom->GetType() >> 24) & 0xFF,
+                               (atom->GetType() >> 16) & 0xFF,
+                               (atom->GetType() >> 8) & 0xFF,
+                               (atom->GetType()) & 0xFF);
+        //atom->Detach();
+        delete atom;
+
+    }
+}
 
 void ISOBMFF_track_joiner_monitor_output_buffer_parse_and_build_joined_mmt_rebuilt_boxes(lls_sls_monitor_output_buffer_t* lls_sls_monitor_output_buffer, AP4_DataBuffer** output_data_buffer_p, AP4_MemoryByteStream** output_stream_p)
 {
@@ -507,11 +550,12 @@ void ISOBMFF_track_joiner_monitor_output_buffer_parse_and_build_joined_mmt_rebui
 	for (it = isobmff_atom_list.begin(); it != isobmff_atom_list.end(); it++) {
 		AP4_Atom* top_level_atom = (*it)->atom;
         
+        //fmp4 hacks...
         //don't write out ftyp/moov init for fMP4 with HLS...
         //hack
-        if(top_level_atom->GetType() == AP4_ATOM_TYPE_FTYP || top_level_atom->GetType() == AP4_ATOM_TYPE_MOOV) {
-            continue;
-        }
+//        if(top_level_atom->GetType() == AP4_ATOM_TYPE_FTYP || top_level_atom->GetType() == AP4_ATOM_TYPE_MOOV) {
+//            continue;
+//        }
         if(top_level_atom->GetType() == AP4_ATOM_TYPE_MDAT) {
             mdat_atom_and_offset_written = *it;
         }
@@ -521,7 +565,9 @@ void ISOBMFF_track_joiner_monitor_output_buffer_parse_and_build_joined_mmt_rebui
      //release isobmff_atom_list entries and container
      for (it = isobmff_atom_list.begin(); it != isobmff_atom_list.end(); it++) {
          if((*it)->atom) {
-             delete (*it)->atom;
+             AP4_Atom* top_level_atom = (*it)->atom;
+             atom_delete_children_recursive(top_level_atom);
+             
          }
          delete (*it);
     }
@@ -627,6 +673,8 @@ list<AP4_Atom_And_Offset*> ISOBMFFTrackParseAndBuildOffset(AP4_MemoryByteStream*
         memoryInputByteStream->Tell(end_position);
         AP4_Atom_And_Offset_t* ap4_atom_and_offset = (AP4_Atom_And_Offset_t*)calloc(1, sizeof(AP4_Atom_And_Offset_t));
         ap4_atom_and_offset->atom = atom;
+        __ISOBMFF_JOINER_DEBUG("ISOBMFFTrackParseAndBuildOffset:CreateAtomFromStream - creating atom: %p", atom);
+        
         ap4_atom_and_offset->start_offset = start_position;
         ap4_atom_and_offset->end_offset = end_position;
 
