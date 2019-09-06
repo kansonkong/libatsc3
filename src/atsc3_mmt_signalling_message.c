@@ -284,25 +284,27 @@ mmt_signalling_message_header_and_payload_t* mmt_signalling_message_header_and_p
 
 //see atsc3_mmmtp_packet_types.c - duplicate?
 //void mmtp_signalling_packet_free(mmtp_signalling_packet_t** mmtp_signalling_packet_p) {
-
-void mmt_signalling_message_free(mmtp_signalling_packet_t** mmtp_signalling_packet_p) {
-	if(mmtp_signalling_packet_p) {
-		mmtp_signalling_packet_t* mmtp_signalling_packet = *mmtp_signalling_packet_p;
-		if(mmtp_signalling_packet) {
-			//clean up any inner malloc's
-			block_Release(&mmtp_signalling_packet->raw_packet);
-			block_Release(&mmtp_signalling_packet->mmtp_header_extension);
-
-			//clear our inner struct reference and chained destructors, this will invoke mmt_signalling_message_header_and_payload_free
-			mmtp_signalling_packet_free_mmt_signalling_message_header_and_payload(mmtp_signalling_packet);
-
-			free(mmtp_signalling_packet);
-			mmtp_signalling_packet = NULL;
-		}
-		*mmtp_signalling_packet_p = NULL;
-	}
-}
-
+//
+//void mmt_signalling_message_free(mmtp_signalling_packet_t** mmtp_signalling_packet_p) {
+//    if(mmtp_signalling_packet_p) {
+//        mmtp_signalling_packet_t* mmtp_signalling_packet = *mmtp_signalling_packet_p;
+//        if(mmtp_signalling_packet) {
+//            //clean up any inner malloc's
+//            block_Release(&mmtp_signalling_packet->raw_packet);
+//            block_Release(&mmtp_signalling_packet->mmtp_header_extension);
+//
+//            __MMSM_WARN("mmt_signalling_message_free, packet_id: %d", mmtp_signalling_packet->mmtp_packet_id);
+//            
+//            //clear our inner struct reference and chained destructors, this will invoke mmt_signalling_message_header_and_payload_free
+//            mmtp_signalling_packet_free_mmt_signalling_message_header_and_payload(mmtp_signalling_packet);
+//
+//            free(mmtp_signalling_packet);
+//            mmtp_signalling_packet = NULL;
+//        }
+//        *mmtp_signalling_packet_p = NULL;
+//    }
+//}
+//
 
 
 
