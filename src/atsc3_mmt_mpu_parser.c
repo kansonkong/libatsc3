@@ -63,7 +63,7 @@ mmtp_mpu_packet_t* mmtp_mpu_packet_parse_from_block_t(mmtp_packet_header_t* mmtp
 		buf = (uint8_t*)extract(buf, (uint8_t*)&mpu_payload_length_block, 2);
 		mmtp_mpu_packet->data_unit_length = (mpu_payload_length_block[0] << 8) | mpu_payload_length_block[1];
 		__MMT_MPU_PARSER_TRACE("mmtp_mpu_packet_parse_from_block_t: doing mpu_payload_length: %hu (0x%X 0x%X)",
-				mpu_payload_length, mpu_payload_length_block[0], mpu_payload_length_block[1]);
+				mmtp_mpu_packet->data_unit_length, mpu_payload_length_block[0], mpu_payload_length_block[1]);
 
 		uint8_t mpu_fragmentation_info;
 		buf = (uint8_t*)extract(buf, &mpu_fragmentation_info, 1);
