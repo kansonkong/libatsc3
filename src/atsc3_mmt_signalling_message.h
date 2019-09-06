@@ -96,15 +96,15 @@ raw base64 payload:
  *
  */
 
-//parse mmtp_packet_header for signalling_message extraction
-mmtp_signalling_packet_t* mmt_signalling_message_parse_packet_header(mmtp_packet_header_t* mmtp_packet_header, block_t* udp_packet_block);
+//parse mmtp_packet_header for signalling_message extraction, freeing packet_header with concrete object
+mmtp_signalling_packet_t* mmtp_signalling_packet_parse_and_free_packet_header_from_block_t(mmtp_packet_header_t** mmtp_packet_header_p, block_t* udp_packet);
 
+mmtp_signalling_packet_t* mmtp_signalling_packet_parse_from_block_t(mmtp_packet_header_t* mmtp_packet_header, block_t* udp_packet);
 //parse mmtp_signalling_packet_t, calls mmt_signalling_message_parse_id_type
 uint8_t mmt_signalling_message_parse_packet(mmtp_signalling_packet_t* mmtp_signalling_packet, block_t* udp_packet_block);
     
 void mmt_signalling_message_update_lls_sls_mmt_session(mmtp_signalling_packet_t* mmtp_signalling_packet, lls_sls_mmt_session_t* matching_lls_sls_mmt_session);
     
-//void mmt_signalling_message_free(mmtp_signalling_packet_t** mmtp_signalling_packet_p);
 
 void mmt_signalling_message_dump(mmtp_signalling_packet_t* mmtp_signalling_packet);
 void pa_message_dump(mmt_signalling_message_header_and_payload_t* mmt_signalling_message_header_and_payload);
