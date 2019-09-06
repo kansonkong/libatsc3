@@ -11,9 +11,11 @@
 
 #include "../atsc3_utils.h"
 #include "../atsc3_logging_externs.h"
+#include "../atsc3_mmtp_packet_types.h"
 #include "../atsc3_mmt_signalling_message_types.h"
 #include "../atsc3_mmt_signalling_message.h"
 #include "../atsc3_mmtp_parser.h"
+
 
 #define LEAK_CHECK_RUN_COUNT 1000
 
@@ -75,7 +77,7 @@ int test_parse_mp_table_single_item_no_factory() {
 		mmt_signalling_message_dump(mmtp_signalling_packet);
 
 		//free our alloc(s)
-		mmt_signalling_message_free(&mmtp_signalling_packet);
+		mmtp_signalling_packet_free(&mmtp_signalling_packet);
 		mmtp_packet_header_free(&mmtp_packet_header);
 	}
 
@@ -126,7 +128,7 @@ int test_parse_mp_table_no_factory() {
 		mmt_signalling_message_dump(mmtp_signalling_packet);
 
 		//free our alloc(s)
-		mmt_signalling_message_free(&mmtp_signalling_packet);
+		mmtp_signalling_packet_free(&mmtp_signalling_packet);
 		mmtp_packet_header_free(&mmtp_packet_header);
 	}
 
@@ -176,7 +178,7 @@ int test_parse_atsc3_mmt_message_no_factoy() {
 		mmt_signalling_message_dump(mmtp_signalling_packet);
 
 		//free our alloc(s)
-		mmt_signalling_message_free(&mmtp_signalling_packet);
+		mmtp_signalling_packet_free(&mmtp_signalling_packet);
 		mmtp_packet_header_free(&mmtp_packet_header);
 	}
 

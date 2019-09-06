@@ -530,8 +530,8 @@ void process_mmtp_payload(udp_packet_t *udp_packet, lls_sls_mmt_session_t* match
             
             //update our sls_mmt_session info
             mmt_signalling_message_update_lls_sls_mmt_session(mmtp_signalling_packet, matching_lls_sls_mmt_session);
+        } else {
 
-		} else {
             //jjustman-2019-09-05 - unsupported signalling message type, so free immediately
             mmtp_signalling_packet_free(&mmtp_signalling_packet);
 			goto error;

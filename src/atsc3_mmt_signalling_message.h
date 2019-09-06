@@ -104,7 +104,7 @@ uint8_t mmt_signalling_message_parse_packet(mmtp_signalling_packet_t* mmtp_signa
     
 void mmt_signalling_message_update_lls_sls_mmt_session(mmtp_signalling_packet_t* mmtp_signalling_packet, lls_sls_mmt_session_t* matching_lls_sls_mmt_session);
     
-void mmt_signalling_message_free(mmtp_signalling_packet_t** mmtp_signalling_packet_p);
+//void mmt_signalling_message_free(mmtp_signalling_packet_t** mmtp_signalling_packet_p);
 
 void mmt_signalling_message_dump(mmtp_signalling_packet_t* mmtp_signalling_packet);
 void pa_message_dump(mmt_signalling_message_header_and_payload_t* mmt_signalling_message_header_and_payload);
