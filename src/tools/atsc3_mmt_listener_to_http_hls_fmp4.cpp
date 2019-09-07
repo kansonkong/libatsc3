@@ -309,12 +309,35 @@ void atsc3_mmt_hls_fmp4_write_file(const char* filename, const char* payload, ui
 //hvc1.2.4.L123.B0,mp4a.40.2
 void atsc3_mmt_hls_fmp4_write_master_manifest() {
     
+//    const char* master_manifest_payload = "#EXTM3U\n"
+//        "#EXT-X-VERSION:7\n"
+//        "#EXT-X-INDEPENDENT-SEGMENTS\n"
+//        "#EXT-X-MEDIA:TYPE=AUDIO,GROUP-ID=\"a1\",NAME=\"English\",LANGUAGE=\"en-US\",AUTOSELECT=YES,DEFAULT=YES,CHANNELS=\"2\",URI=\"a.m3u8\"\n"
+//        "#EXT-X-STREAM-INF:AVERAGE-BANDWIDTH=1966314,BANDWIDTH=2164328,CODECS=\"hvc1.2.4.L123.B0,mp4a.40.2\",RESOLUTION=1920x1080,FRAME-RATE=60.000,AUDIO=\"a1\"\n"
+//        "v.m3u8\n";
+    
+//    const char* master_manifest_payload = "#EXTM3U\n"
+//    "#EXT-X-VERSION:6\n"
+//    "#EXT-X-INDEPENDENT-SEGMENTS\n"
+//    "#EXT-X-MEDIA:TYPE=AUDIO,GROUP-ID=\"a1\",NAME=\"English\",LANGUAGE=\"en-US\",AUTOSELECT=YES,DEFAULT=YES,CHANNELS=\"2\",URI=\"a.m3u8\"\n"
+//    "#EXT-X-STREAM-INF:AVERAGE-BANDWIDTH=3000000,BANDWIDTH=4500000,CODECS=\"hvc1.1.4.L126.B0,mp4a.40.2\",RESOLUTION=1280x720,FRAME-RATE=59.94,AUDIO=\"a1\"\n"
+//    "v.m3u8\n\n";
+
+    //#EXT-X-STREAM-INF:RESOLUTION=416x234,BANDWIDTH=471244,CODECS="mp4a.40.5,avc1.42000d",FRAME-RATE=30.000,AUDIO="aac",CLOSED-CAPTIONS="ccs",AVERAGE-BANDWIDTH=350949
+//    const char* master_manifest_payload = "#EXTM3U\n"
+//    "#EXT-X-VERSION:6\n"
+//    "#EXT-X-INDEPENDENT-SEGMENTS\n"
+//    "#EXT-X-STREAM-INF:RESOLUTION=1280x720,AVERAGE-BANDWIDTH=3000000,BANDWIDTH=4500000,CODECS=\"hvc1.1.4.L126.B0,mp4a.40.2\",FRAME-RATE=59.94\n"
+//    "http://192.168.0.11:8000/v.m3u8\n\n";
+
+    //CODECS=\"mp4a.40.5,hvc1\"
     const char* master_manifest_payload = "#EXTM3U\n"
-        "#EXT-X-VERSION:7\n"
-        "#EXT-X-INDEPENDENT-SEGMENTS\n"
-        "#EXT-X-MEDIA:TYPE=AUDIO,GROUP-ID=\"a1\",NAME=\"English\",LANGUAGE=\"en-US\",AUTOSELECT=YES,DEFAULT=YES,CHANNELS=\"2\",URI=\"a.m3u8\"\n"
-        "#EXT-X-STREAM-INF:AVERAGE-BANDWIDTH=1966314,BANDWIDTH=2164328,CODECS=\"hvc1.2.4.L123.B0,mp4a.40.2\",RESOLUTION=1920x1080,FRAME-RATE=60.000,AUDIO=\"a1\"\n"
-        "v.m3u8\n";
+    "#EXT-X-VERSION:7\n"
+    "#EXT-X-INDEPENDENT-SEGMENTS\n"
+    "#EXT-X-MEDIA:TYPE=AUDIO,GROUP-ID=\"a1\",NAME=\"English\",LANGUAGE=\"en-US\",AUTOSELECT=YES,DEFAULT=YES,CHANNELS=\"2\",URI=\"a.m3u8\"\n"
+    "#EXT-X-STREAM-INF:RESOLUTION=1280x720,BANDWIDTH=4000000,FRAME-RATE=60.000,AUDIO=\"a1\",AVERAGE-BANDWIDTH=4000000\n"
+    "v.m3u8\n\n";
+
     
     mkdir(MMT_HLS_FMP4_DIRECTORY_PATH, 0777);
     atsc3_mmt_hls_fmp4_write_file(mmt_hls_fmp4_master_manifest_path, master_manifest_payload, strlen(master_manifest_payload));
@@ -323,7 +346,7 @@ void atsc3_mmt_hls_fmp4_write_master_manifest() {
 #define A_VARIANT_INIT_MP4 "a.init.mp4"
 const char* variant_manifest_audio_header = "#EXTM3U\n"
 "#EXT-X-VERSION:7\n"
-"#EXT-X-TARGETDURATION:2\n"
+"#EXT-X-TARGETDURATION:1\n"
 "#EXT-X-INDEPENDENT-SEGMENTS\n"
 "#EXT-X-MAP:URI=\"a.init.mp4\"\n"
 "#EXT-X-MEDIA-SEQUENCE:%d\n\n";
@@ -331,7 +354,7 @@ const char* variant_manifest_audio_header = "#EXTM3U\n"
 #define V_VARIANT_INIT_MP4 "v.init.mp4"
 const char* variant_manifest_video_header = "#EXTM3U\n"
 "#EXT-X-VERSION:7\n"
-"#EXT-X-TARGETDURATION:2\n"
+"#EXT-X-TARGETDURATION:1\n"
 "#EXT-X-INDEPENDENT-SEGMENTS\n"
 "#EXT-X-MAP:URI=\"v.init.mp4\"\n"
 "#EXT-X-MEDIA-SEQUENCE:%d\n\n";
@@ -353,7 +376,7 @@ void atsc3_mmt_hls_fmp4_write_variant_manifest(const char* variant_path, const c
     for(int i = ringbuffer_idx; i < ringbuffer_idx + MAX_FMP4_SEGMENTS; i++) {
         char* temp_hls_fragment_payload = fmp4_segments[ i % MAX_FMP4_SEGMENTS];
         if(temp_hls_fragment_payload) {
-            snprintf(payload + strlen(payload), PAYLOAD_MAX_LEN - strlen(payload), "#EXTINF:2.000000\n%s\n", temp_hls_fragment_payload);
+            snprintf(payload + strlen(payload), PAYLOAD_MAX_LEN - strlen(payload), "#EXTINF:1.000000\n%s\n", temp_hls_fragment_payload);
         }
     }
     
@@ -472,7 +495,9 @@ void atsc3_mmt_hls_fmp4_update_manifest(lls_sls_mmt_session_t* lls_sls_mmt_sessi
         //nore sure why -1...
         //MMT_HLS_FMP4_DIRECTORY_PATH,
         char* tmp_segment = (char*) calloc(1024, sizeof(char));
-        snprintf(tmp_segment, 1024, "%s.%d.%d.m4s",
+        //        snprintf(tmp_segment, 1024, "%s.%d.%d.m4s",
+
+        snprintf(tmp_segment, 1024, "%s.%d.%d.mp4",
                  "a",
                  lls_sls_mmt_session->last_udp_flow_packet_id_mpu_sequence_tuple_audio->packet_id,
                  lls_sls_mmt_session->last_udp_flow_packet_id_mpu_sequence_tuple_audio->mpu_sequence_number - 1);
@@ -504,7 +529,9 @@ void atsc3_mmt_hls_fmp4_update_manifest(lls_sls_mmt_session_t* lls_sls_mmt_sessi
         }
         //MMT_HLS_FMP4_DIRECTORY_PATH
         char* tmp_segment_v = (char*) calloc(1024, sizeof(char));
-        snprintf(tmp_segment_v, 1024, "%s.%d.%d.m4s",
+        //        snprintf(tmp_segment_v, 1024, "%s.%d.%d.m4s",
+
+        snprintf(tmp_segment_v, 1024, "%s.%d.%d.mp4",
                  "v",
                  lls_sls_mmt_session->last_udp_flow_packet_id_mpu_sequence_tuple_video->packet_id,
                  lls_sls_mmt_session->last_udp_flow_packet_id_mpu_sequence_tuple_video->mpu_sequence_number - 1);
