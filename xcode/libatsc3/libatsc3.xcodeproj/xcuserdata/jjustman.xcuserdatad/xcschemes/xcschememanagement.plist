@@ -16,6 +16,11 @@
 			<key>orderHint</key>
 			<integer>4</integer>
 		</dict>
+		<key>atsc3_fmp4_player.xcscheme_^#shared#^_</key>
+		<dict>
+			<key>orderHint</key>
+			<integer>18</integer>
+		</dict>
 		<key>atsc3_listener_metrics_ncurses.xcscheme_^#shared#^_</key>
 		<dict>
 			<key>isShown</key>
