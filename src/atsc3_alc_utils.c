@@ -199,7 +199,7 @@ char* alc_packet_dump_to_object_get_s_tsid_filename(udp_flow_t* udp_flow, alc_pa
 	if(!content_location) {
 
 		if(alc_packet->def_lct_hdr) {
-
+            content_location = alc_packet_dump_to_object_get_temporary_filename(udp_flow, alc_packet);
 
 			__ALC_UTILS_INFO("alc_packet_dump_to_object_get_s_tsid_filename: no content_location to return for alp_packet: %p, falling back to %s", alc_packet, content_location);
 		} else {
@@ -305,8 +305,8 @@ int alc_packet_dump_to_object(udp_flow_t* udp_flow, alc_packet_t** alc_packet_pt
     }
 
     char* temporary_filename = alc_packet_dump_to_object_get_temporary_filename(udp_flow, alc_packet);
-    char* s_tsid_content_location = alc_packet_dump_to_object_get_s_tsid_filename(udp_flow, alc_packet, lls_sls_alc_monitor);
-
+    char* s_tsid_content_location = NULL;
+    
     mkdir("route", 0777);
 
     FILE *f = NULL;
@@ -364,7 +364,9 @@ int alc_packet_dump_to_object(udp_flow_t* udp_flow, alc_packet_t** alc_packet_pt
     
     //both codepoint=0 and codepoint=128 will set close_object_flag when we have finished delivery of the object
 	if(alc_packet->close_object_flag) {
-		__ALC_UTILS_IOTRACE("dumping to temporary_filename: %s, is complete: %d", temporary_filename, alc_packet->close_object_flag);
+        s_tsid_content_location = alc_packet_dump_to_object_get_s_tsid_filename(udp_flow, alc_packet, lls_sls_alc_monitor);
+ 
+        __ALC_UTILS_IOTRACE("moving from to temporary_filename: %s to: %s, is complete: %d", temporary_filename, s_tsid_content_location, alc_packet->close_object_flag);
 
 		//update our sls here if we have a service we are listenting to
 		if(lls_sls_alc_monitor && lls_sls_alc_monitor->lls_service &&  alc_packet->def_lct_hdr->tsi == 0) {
