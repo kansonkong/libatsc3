@@ -57,7 +57,7 @@ void process_packet(u_char *user, const struct pcap_pkthdr *pkthdr, const u_char
 		int retval = alc_rx_analyze_packet_a331_compliant((char*)block_Get(udp_packet->data), block_Remaining_size(udp_packet->data), &ch, &alc_packet);
 		if(!retval) {
 			//dump out for fragment inspection
-			alc_packet_dump_to_object(&alc_packet, lls_slt_monitor->lls_sls_alc_monitor);
+			alc_packet_dump_to_object(&udp_packet->udp_flow, &alc_packet, lls_slt_monitor->lls_sls_alc_monitor);
 		} else {
 			__ERROR("Error in ALC decode: %d", retval);
 		}

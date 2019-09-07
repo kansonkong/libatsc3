@@ -189,8 +189,8 @@ void update_global_mmtp_statistics_from_udp_packet_t(udp_packet_t *udp_packet) {
 
 }
 
-static void route_process_from_alc_packet(alc_packet_t **alc_packet) {
-    alc_packet_dump_to_object(alc_packet, lls_slt_monitor->lls_sls_alc_monitor);
+static void route_process_from_alc_packet(udp_flow_t* udp_flow, alc_packet_t **alc_packet) {
+    alc_packet_dump_to_object(udp_flow, alc_packet, lls_slt_monitor->lls_sls_alc_monitor);
     
     if(lls_slt_monitor->lls_sls_alc_monitor->lls_sls_monitor_output_buffer.has_written_init_box && lls_slt_monitor->lls_sls_alc_monitor->lls_sls_monitor_output_buffer.should_flush_output_buffer) {
      
@@ -343,7 +343,7 @@ void process_packet(u_char *user, const struct pcap_pkthdr *pkthdr, const u_char
 
         alc_packet_t* alc_packet = route_parse_from_udp_packet(matching_lls_slt_alc_session, udp_packet);
         if(alc_packet) {
-            route_process_from_alc_packet(&alc_packet);
+            route_process_from_alc_packet(&udp_packet->udp_flow, &alc_packet);
             alc_packet_free(&alc_packet);
         }
         
