@@ -10,14 +10,14 @@
 #include "atsc3_lls_alc_utils.h"
 
 
-void atsc3_route_sls_process_from_alc_packet_and_file(alc_packet_t* alc_packet, lls_sls_alc_monitor_t* lls_sls_alc_monitor) {
+void atsc3_route_sls_process_from_alc_packet_and_file(udp_flow_t* udp_flow, alc_packet_t* alc_packet, lls_sls_alc_monitor_t* lls_sls_alc_monitor) {
 
 	//check if our toi == 0, if so, reprocess our sls fdt in preperation for an upcoming actual mbms emission
 	_ATSC3_ROUTE_SLS_PROCESSOR_INFO("alc_packet tsi/toi:%u/%u", alc_packet->def_lct_hdr->tsi, alc_packet->def_lct_hdr->toi);
 
 	if(alc_packet->def_lct_hdr->toi == 0) {
 
-	    char* file_name = alc_packet_dump_to_object_get_filename(alc_packet);
+	    char* file_name = alc_packet_dump_to_object_get_temporary_filename(udp_flow, alc_packet);
 
 		FILE *fp = fopen(file_name, "r");
 		if(!fp) {
