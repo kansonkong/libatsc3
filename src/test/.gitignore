@@ -9,3 +9,6 @@
 /atsc3_mmt_mpu_packet_test
 /atsc3_mmt_mpu_packet_test_valgrind
 /atsc3_mmt_signalling_packet_test_valgrind
+/atsc3_fdt_mbms_envelope_test_2019-09-07-esg-e.1.1.7
+/atsc3_fdt_test_2019-09-07-esg-e.1.1.7
+/atsc3_fdt_test_2019-09-07-esg-e.1.1.7-valgrind

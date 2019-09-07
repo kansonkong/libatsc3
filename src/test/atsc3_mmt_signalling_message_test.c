@@ -8,12 +8,10 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-#include "../atsc3_mmt_signalling_message.h"
-
-#include "../atsc3_mmtp_parser.h"
 #include "../atsc3_logging_externs.h"
 #include "../atsc3_mmtp_packet_types.h"
-
+#include "../atsc3_mmtp_parser.h"
+#include "../atsc3_mmt_signalling_message.h"
 
 #define __UNIT_TEST 1
 #ifdef __UNIT_TEST
@@ -64,7 +62,7 @@ int test_mmt_signaling_message_mpu_timestamp_descriptor_table(char* base64_paylo
 	}
 	uint8_t new_size = block_Remaining_size(binary_payload_block);
 
-	mmtp_signalling_packet_t* mmtp_signalling_packet = mmt_signalling_message_parse_packet_header(mmtp_packet_header, binary_payload_block);
+	mmtp_signalling_packet_t* mmtp_signalling_packet = mmtp_signalling_packet_parse_and_free_packet_header_from_block_t(&mmtp_packet_header, binary_payload_block);
 
 	mmt_signalling_message_parse_packet(mmtp_signalling_packet, binary_payload_block);
 

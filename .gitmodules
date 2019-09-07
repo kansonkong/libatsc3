@@ -4,3 +4,9 @@
 [submodule "openHEVC"]
 	path = openHEVC
 	url = git://github.com/OpenHEVC/openHEVC.git
+[submodule "ffmpeg"]
+	path = ffmpeg
+	url = https://git.ffmpeg.org/ffmpeg.git
+[submodule "libwebsockets"]
+	path = libwebsockets
+	url = https://libwebsockets.org/repo/libwebsockets

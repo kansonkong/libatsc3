@@ -26,28 +26,30 @@ clean:
 	-rm -f *.o
 	-rm -f route/*
 	-rm -f mpu/*
-	-rm -f atsc3_lmt_test
-	-rm -f atsc3_lls_slt_parser_test
-	-rm -f  atsc3_lls_test
-	-rm -f  atsc3_lls_SystemTime_test
-	-rm -f  atsc3_mmt_signalling_message_test
-	-rm -f  atsc3_fdt_test
-	-rm -f  atsc3_stltp_parser_test
-	-rm -f  atsc3_mime_multipart_related_parser_test
-	-rm -f  atsc3_fdt_mbms_envelope_test
-	-rm -f  listener_tests/atsc3_alc_listener_test
-	-rm -f  listener_tests/atsc3_alc_listener_test_valgrind
-	-rm -f  listener_tests/atsc3_lls_listener_test
-	-rm -f  listener_tests/atsc3_mmt_listener_test
-	-rm -f  listener_tests/atsc3_mmt_sls_listener_test
-	-rm -f  listener_tests/atsc3_stltp_listener_test
-	-rm -f  listener_tests/atsc3_stltp_alp_listener_test
-	-rm -f  listener_tests/atsc3_stltp_alp_listener_reflector_test
-	-rm -f  tools/atsc3_alc_listener_mde_writer
-	-rm -f  tools/atsc3_listener_metrics_ncurses
-	-rm -f  tools/atsc3_listener_metrics_ncurses_httpd_isobmff
-	-rm -f  tools/atsc3_mmt_mfu_monitor
-	-rm -f  tools/atsc3_mmt_listener_to_http_hls_fmp4
+	-rm -f test/atsc3_lmt_test
+	-rm -f test/atsc3_lls_slt_parser_test
+	-rm -f test/atsc3_lls_test
+	-rm -f test/atsc3_lls_SystemTime_test
+	-rm -f test/atsc3_mmt_signalling_message_test
+	-rm -f test/atsc3_fdt_test
+	-rm -f test/atsc3_fdt_test_2019-09-07-esg-e.1.1.7
+	-rm -f test/atsc3_stltp_parser_test
+	-rm -f test/atsc3_mime_multipart_related_parser_test
+	-rm -f test/atsc3_fdt_mbms_envelope_test
+	-rm -f test/atsc3_fdt_mbms_envelope_test_2019-09-07-esg-e.1.1.7
+	-rm -f listener_tests/atsc3_alc_listener_test
+	-rm -f listener_tests/atsc3_alc_listener_test_valgrind
+	-rm -f listener_tests/atsc3_lls_listener_test
+	-rm -f listener_tests/atsc3_mmt_listener_test
+	-rm -f listener_tests/atsc3_mmt_sls_listener_test
+	-rm -f listener_tests/atsc3_stltp_listener_test
+	-rm -f listener_tests/atsc3_stltp_alp_listener_test
+	-rm -f listener_tests/atsc3_stltp_alp_listener_reflector_test
+	-rm -f tools/atsc3_alc_listener_mde_writer
+	-rm -f tools/atsc3_listener_metrics_ncurses
+	-rm -f tools/atsc3_listener_metrics_ncurses_httpd_isobmff
+	-rm -f tools/atsc3_mmt_mfu_monitor
+	-rm -f tools/atsc3_mmt_listener_to_http_hls_fmp4
 	 
 intermediate_lls: atsc3_lls.o atsc3_lls_sls_parser.o atsc3_lls_alc_utils.o
 
@@ -107,12 +109,13 @@ unit_tests: test/atsc3_lmt_test \
 			test/atsc3_mmt_signalling_packet_test \
 			test/atsc3_isobmff_box_test \
 			test/atsc3_fdt_test \
+			test/atsc3_fdt_test_2019-09-07-esg-e.1.1.7 \
 			test/atsc3_stltp_parser_test \
 			test/atsc3_mime_multipart_related_parser_test \
-			test/atsc3_fdt_mbms_envelope_test
+			test/atsc3_fdt_mbms_envelope_test \
+			test/atsc3_fdt_mbms_envelope_test_2019-09-07-esg-e.1.1.7
 
 libmicrohttpd_tests: atsc3_libmicrohttpd_test
-
 
 
 # listener_tests: atsc3_alc_listener_test  atsc3_mmt_listener_test atsc3_listener_test atsc3_mmt_listener_test_bento atsc3_listener_metrics_test
@@ -463,6 +466,9 @@ test/atsc3_isobmff_box_test: test/atsc3_isobmff_box_test.c
 test/atsc3_fdt_test: test/atsc3_fdt_test.c libatsc3.o
 	cc -g test/atsc3_fdt_test.c libatsc3.o  -lz  -lm -lpthread -lpcap -o test/atsc3_fdt_test
 
+test/atsc3_fdt_test_2019-09-07-esg-e.1.1.7: test/atsc3_fdt_test_2019-09-07-esg-e.1.1.7.c libatsc3.o
+	cc -g test/atsc3_fdt_test_2019-09-07-esg-e.1.1.7.c libatsc3.o  -lz  -lm -lpthread -lpcap -o test/atsc3_fdt_test_2019-09-07-esg-e.1.1.7
+
 test/atsc3_libmicrohttpd_test: test/atsc3_libmicrohttpd_test.c 
 	cc -g /test/atsc3_libmicrohttpd_test.c  \
 		-I../libmicrohttpd/libmicrohttpd-0.9.63/build/include \
@@ -528,7 +534,34 @@ test/atsc3_fdt_mbms_envelope_test: test/atsc3_fdt_mbms_envelope_test.c \
 	xml.o \
 	atsc3_utils.o -o test/atsc3_fdt_mbms_envelope_test
 
-
+test/atsc3_fdt_mbms_envelope_test_2019-09-07-esg-e.1.1.7: test/atsc3_fdt_mbms_envelope_test_2019-09-07-esg-e.1.1.7.c \
+	atsc3_mbms_envelope_xml.o	\
+	atsc3_mime_multipart_related.o \
+	atsc3_mime_multipart_related_parser.o \
+	atsc3_sls_metadata_fragment_types_parser.o \
+	atsc3_sls_held_fragment.o \
+	atsc3_utils.o \
+	atsc3_route_mpd.o \
+	atsc3_route_s_tsid.o \
+	atsc3_fdt_parser.o \
+	atsc3_fdt.o \
+	atsc3_route_usbd.o \
+	atsc3_mbms_envelope_parser.o \
+	xml.o
+	cc -g test/atsc3_fdt_mbms_envelope_test_2019-09-07-esg-e.1.1.7.c \
+	atsc3_mbms_envelope_xml.o	\
+	atsc3_mime_multipart_related.o \
+	atsc3_mime_multipart_related_parser.o \
+	atsc3_sls_metadata_fragment_types_parser.o \
+	atsc3_sls_held_fragment.o \
+	atsc3_route_mpd.o \
+	atsc3_route_s_tsid.o \
+	atsc3_fdt_parser.o \
+	atsc3_fdt.o \
+	atsc3_route_usbd.o \
+	atsc3_mbms_envelope_parser.o \
+	xml.o \
+	atsc3_utils.o -o test/atsc3_fdt_mbms_envelope_test_2019-09-07-esg-e.1.1.7
 
 ### integration tests
 ### TODO: move these into target makefile in listener_test/folder

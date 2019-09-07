@@ -8,6 +8,12 @@
 
 /* Begin PBXBuildFile section */
 		3012705222DBABD4000072DF /* atsc3_ip_udp_rtp_parser.c in Sources */ = {isa = PBXBuildFile; fileRef = 3012705122DBABD4000072DF /* atsc3_ip_udp_rtp_parser.c */; };
+		30192A96232300140075679E /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 30192A95232300140075679E /* AppDelegate.swift */; };
+		30192A98232300140075679E /* ViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 30192A97232300140075679E /* ViewController.swift */; };
+		30192A9B232300140075679E /* Main.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 30192A99232300140075679E /* Main.storyboard */; };
+		30192A9D232300180075679E /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 30192A9C232300180075679E /* Assets.xcassets */; };
+		30192AA8232300180075679E /* atsc3_fmp4_playerTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 30192AA7232300180075679E /* atsc3_fmp4_playerTests.swift */; };
+		30192AB3232300180075679E /* atsc3_fmp4_playerUITests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 30192AB2232300180075679E /* atsc3_fmp4_playerUITests.swift */; };
 		3035B6A722FF79DE00C76DC7 /* atsc3_mbms_envelope_xml.c in Sources */ = {isa = PBXBuildFile; fileRef = 3035B69D22FF79A700C76DC7 /* atsc3_mbms_envelope_xml.c */; };
 		3035B6A822FF79DE00C76DC7 /* atsc3_mmt_mpu_sample_format_type.c in Sources */ = {isa = PBXBuildFile; fileRef = 3035B6A622FF79A800C76DC7 /* atsc3_mmt_mpu_sample_format_type.c */; };
 		3035B6A922FF79DE00C76DC7 /* atsc3_mmt_mpu_sample_format_type.h in Sources */ = {isa = PBXBuildFile; fileRef = 3035B69F22FF79A700C76DC7 /* atsc3_mmt_mpu_sample_format_type.h */; };
@@ -193,6 +199,23 @@
 		30DD4F58231AA6140049F710 /* atsc3_mmt_mpu_sample_format_parser.h in Sources */ = {isa = PBXBuildFile; fileRef = 30DD4F56231AA60A0049F710 /* atsc3_mmt_mpu_sample_format_parser.h */; };
 /* End PBXBuildFile section */
 
+/* Begin PBXContainerItemProxy section */
+		30192AA4232300180075679E /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 3051DCDE221A8A9900ED316D /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 30192A92232300140075679E;
+			remoteInfo = atsc3_fmp4_player;
+		};
+		30192AAF232300180075679E /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 3051DCDE221A8A9900ED316D /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 30192A92232300140075679E;
+			remoteInfo = atsc3_fmp4_player;
+		};
+/* End PBXContainerItemProxy section */
+
 /* Begin PBXCopyFilesBuildPhase section */
 		30364DAE221C7F1F005A903B /* CopyFiles */ = {
 			isa = PBXCopyFilesBuildPhase;
@@ -220,6 +243,18 @@
 		3012705022DBABD4000072DF /* atsc3_ip_udp_rtp_parser.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = atsc3_ip_udp_rtp_parser.h; sourceTree = "<group>"; };
 		3012705122DBABD4000072DF /* atsc3_ip_udp_rtp_parser.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = atsc3_ip_udp_rtp_parser.c; sourceTree = "<group>"; };
 		3012705322DBACF6000072DF /* atsc3_ip_udp_rtp_types.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = atsc3_ip_udp_rtp_types.h; sourceTree = "<group>"; };
+		30192A93232300140075679E /* atsc3_fmp4_player.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = atsc3_fmp4_player.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		30192A95232300140075679E /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppDelegate.swift; sourceTree = "<group>"; };
+		30192A97232300140075679E /* ViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ViewController.swift; sourceTree = "<group>"; };
+		30192A9A232300140075679E /* Base */ = {isa = PBXFileReference; lastKnownFileType = file.storyboard; name = Base; path = Base.lproj/Main.storyboard; sourceTree = "<group>"; };
+		30192A9C232300180075679E /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
+		30192A9E232300180075679E /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
+		30192AA3232300180075679E /* atsc3_fmp4_playerTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = atsc3_fmp4_playerTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		30192AA7232300180075679E /* atsc3_fmp4_playerTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = atsc3_fmp4_playerTests.swift; sourceTree = "<group>"; };
+		30192AA9232300180075679E /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
+		30192AAE232300180075679E /* atsc3_fmp4_playerUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = atsc3_fmp4_playerUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		30192AB2232300180075679E /* atsc3_fmp4_playerUITests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = atsc3_fmp4_playerUITests.swift; sourceTree = "<group>"; };
+		30192AB4232300180075679E /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		3035B69D22FF79A700C76DC7 /* atsc3_mbms_envelope_xml.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = atsc3_mbms_envelope_xml.c; path = ../../../src/atsc3_mbms_envelope_xml.c; sourceTree = "<group>"; };
 		3035B69E22FF79A700C76DC7 /* atsc3_mmt_signalling_message.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = atsc3_mmt_signalling_message.c; path = ../../../src/atsc3_mmt_signalling_message.c; sourceTree = "<group>"; };
 		3035B69F22FF79A700C76DC7 /* atsc3_mmt_mpu_sample_format_type.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = atsc3_mmt_mpu_sample_format_type.h; path = ../../../src/atsc3_mmt_mpu_sample_format_type.h; sourceTree = "<group>"; };
@@ -547,6 +582,27 @@
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
+		30192A90232300140075679E /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		30192AA0232300180075679E /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		30192AAB232300180075679E /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		30364DAD221C7F1F005A903B /* Frameworks */ = {
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
@@ -566,11 +622,44 @@
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
+		30192A94232300140075679E /* atsc3_fmp4_player */ = {
+			isa = PBXGroup;
+			children = (
+				30192A95232300140075679E /* AppDelegate.swift */,
+				30192A97232300140075679E /* ViewController.swift */,
+				30192A99232300140075679E /* Main.storyboard */,
+				30192A9C232300180075679E /* Assets.xcassets */,
+				30192A9E232300180075679E /* Info.plist */,
+			);
+			path = atsc3_fmp4_player;
+			sourceTree = "<group>";
+		};
+		30192AA6232300180075679E /* atsc3_fmp4_playerTests */ = {
+			isa = PBXGroup;
+			children = (
+				30192AA7232300180075679E /* atsc3_fmp4_playerTests.swift */,
+				30192AA9232300180075679E /* Info.plist */,
+			);
+			path = atsc3_fmp4_playerTests;
+			sourceTree = "<group>";
+		};
+		30192AB1232300180075679E /* atsc3_fmp4_playerUITests */ = {
+			isa = PBXGroup;
+			children = (
+				30192AB2232300180075679E /* atsc3_fmp4_playerUITests.swift */,
+				30192AB4232300180075679E /* Info.plist */,
+			);
+			path = atsc3_fmp4_playerUITests;
+			sourceTree = "<group>";
+		};
 		30364DB1221C7F1F005A903B /* Products */ = {
 			isa = PBXGroup;
 			children = (
 				30364DB0221C7F1F005A903B /* atsc3_listener_metrics_ncurses_httpd_isobmff */,
 				30B112F8222AB5BA0068F33D /* docs */,
+				30192A93232300140075679E /* atsc3_fmp4_player.app */,
+				30192AA3232300180075679E /* atsc3_fmp4_playerTests.xctest */,
+				30192AAE232300180075679E /* atsc3_fmp4_playerUITests.xctest */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -611,6 +700,9 @@
 				30ABE5B4222AB9DB00CAC414 /* makefile */,
 				30ABE52B222AB98800CAC414 /* src */,
 				3037E5AE23017B3700EAAA5C /* test/atsc3_mmt_signallilng_packet_test */,
+				30192A94232300140075679E /* atsc3_fmp4_player */,
+				30192AA6232300180075679E /* atsc3_fmp4_playerTests */,
+				30192AB1232300180075679E /* atsc3_fmp4_playerUITests */,
 				30364DB1221C7F1F005A903B /* Products */,
 				305E82552263673400E136C1 /* Frameworks */,
 			);
@@ -993,6 +1085,59 @@
 /* End PBXLegacyTarget section */
 
 /* Begin PBXNativeTarget section */
+		30192A92232300140075679E /* atsc3_fmp4_player */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 30192ABB232300180075679E /* Build configuration list for PBXNativeTarget "atsc3_fmp4_player" */;
+			buildPhases = (
+				30192A8F232300140075679E /* Sources */,
+				30192A90232300140075679E /* Frameworks */,
+				30192A91232300140075679E /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = atsc3_fmp4_player;
+			productName = atsc3_fmp4_player;
+			productReference = 30192A93232300140075679E /* atsc3_fmp4_player.app */;
+			productType = "com.apple.product-type.application";
+		};
+		30192AA2232300180075679E /* atsc3_fmp4_playerTests */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 30192ABC232300180075679E /* Build configuration list for PBXNativeTarget "atsc3_fmp4_playerTests" */;
+			buildPhases = (
+				30192A9F232300180075679E /* Sources */,
+				30192AA0232300180075679E /* Frameworks */,
+				30192AA1232300180075679E /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				30192AA5232300180075679E /* PBXTargetDependency */,
+			);
+			name = atsc3_fmp4_playerTests;
+			productName = atsc3_fmp4_playerTests;
+			productReference = 30192AA3232300180075679E /* atsc3_fmp4_playerTests.xctest */;
+			productType = "com.apple.product-type.bundle.unit-test";
+		};
+		30192AAD232300180075679E /* atsc3_fmp4_playerUITests */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 30192ABD232300180075679E /* Build configuration list for PBXNativeTarget "atsc3_fmp4_playerUITests" */;
+			buildPhases = (
+				30192AAA232300180075679E /* Sources */,
+				30192AAB232300180075679E /* Frameworks */,
+				30192AAC232300180075679E /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				30192AB0232300180075679E /* PBXTargetDependency */,
+			);
+			name = atsc3_fmp4_playerUITests;
+			productName = atsc3_fmp4_playerUITests;
+			productReference = 30192AAE232300180075679E /* atsc3_fmp4_playerUITests.xctest */;
+			productType = "com.apple.product-type.bundle.ui-testing";
+		};
 		30364DAF221C7F1F005A903B /* cmd */ = {
 			isa = PBXNativeTarget;
 			buildConfigurationList = 30364DB5221C7F20005A903B /* Build configuration list for PBXNativeTarget "cmd" */;
@@ -1036,9 +1181,21 @@
 				KnownAssetTags = (
 					New,
 				);
+				LastSwiftUpdateCheck = 1030;
 				LastUpgradeCheck = 1010;
 				ORGANIZATIONNAME = "Jason Justman";
 				TargetAttributes = {
+					30192A92232300140075679E = {
+						CreatedOnToolsVersion = 10.3;
+					};
+					30192AA2232300180075679E = {
+						CreatedOnToolsVersion = 10.3;
+						TestTargetID = 30192A92232300140075679E;
+					};
+					30192AAD232300180075679E = {
+						CreatedOnToolsVersion = 10.3;
+						TestTargetID = 30192A92232300140075679E;
+					};
 					30364DAF221C7F1F005A903B = {
 						CreatedOnToolsVersion = 10.1;
 					};
@@ -1056,6 +1213,7 @@
 			hasScannedForEncodings = 0;
 			knownRegions = (
 				en,
+				Base,
 			);
 			mainGroup = 3051DCDD221A8A9900ED316D;
 			productRefGroup = 30364DB1221C7F1F005A903B /* Products */;
@@ -1065,11 +1223,65 @@
 				3051DCE2221A8A9900ED316D /* libatsc3 */,
 				30364DAF221C7F1F005A903B /* cmd */,
 				30B112F7222AB5BA0068F33D /* docs */,
+				30192A92232300140075679E /* atsc3_fmp4_player */,
+				30192AA2232300180075679E /* atsc3_fmp4_playerTests */,
+				30192AAD232300180075679E /* atsc3_fmp4_playerUITests */,
 			);
 		};
 /* End PBXProject section */
 
+/* Begin PBXResourcesBuildPhase section */
+		30192A91232300140075679E /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				30192A9D232300180075679E /* Assets.xcassets in Resources */,
+				30192A9B232300140075679E /* Main.storyboard in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		30192AA1232300180075679E /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		30192AAC232300180075679E /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXResourcesBuildPhase section */
+
 /* Begin PBXSourcesBuildPhase section */
+		30192A8F232300140075679E /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				30192A98232300140075679E /* ViewController.swift in Sources */,
+				30192A96232300140075679E /* AppDelegate.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		30192A9F232300180075679E /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				30192AA8232300180075679E /* atsc3_fmp4_playerTests.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		30192AAA232300180075679E /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				30192AB3232300180075679E /* atsc3_fmp4_playerUITests.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		30364DAC221C7F1F005A903B /* Sources */ = {
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
@@ -1267,7 +1479,178 @@
 		};
 /* End PBXSourcesBuildPhase section */
 
+/* Begin PBXTargetDependency section */
+		30192AA5232300180075679E /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 30192A92232300140075679E /* atsc3_fmp4_player */;
+			targetProxy = 30192AA4232300180075679E /* PBXContainerItemProxy */;
+		};
+		30192AB0232300180075679E /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 30192A92232300140075679E /* atsc3_fmp4_player */;
+			targetProxy = 30192AAF232300180075679E /* PBXContainerItemProxy */;
+		};
+/* End PBXTargetDependency section */
+
+/* Begin PBXVariantGroup section */
+		30192A99232300140075679E /* Main.storyboard */ = {
+			isa = PBXVariantGroup;
+			children = (
+				30192A9A232300140075679E /* Base */,
+			);
+			name = Main.storyboard;
+			sourceTree = "<group>";
+		};
+/* End PBXVariantGroup section */
+
 /* Begin XCBuildConfiguration section */
+		30192AB5232300180075679E /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = "App Icon & Top Shelf Image";
+				ASSETCATALOG_COMPILER_LAUNCHIMAGE_NAME = LaunchImage;
+				CODE_SIGN_STYLE = Automatic;
+				DEVELOPMENT_TEAM = 38HDA9F9LL;
+				INFOPLIST_FILE = atsc3_fmp4_player/Info.plist;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = "org.nbgp.atsc3-fmp4-player";
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = appletvos;
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = DEBUG;
+				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = 3;
+				TVOS_DEPLOYMENT_TARGET = 12.4;
+			};
+			name = Debug;
+		};
+		30192AB6232300180075679E /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = "App Icon & Top Shelf Image";
+				ASSETCATALOG_COMPILER_LAUNCHIMAGE_NAME = LaunchImage;
+				CODE_SIGN_STYLE = Automatic;
+				DEVELOPMENT_TEAM = 38HDA9F9LL;
+				INFOPLIST_FILE = atsc3_fmp4_player/Info.plist;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = "org.nbgp.atsc3-fmp4-player";
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = appletvos;
+				SWIFT_COMPILATION_MODE = wholemodule;
+				SWIFT_OPTIMIZATION_LEVEL = "-O";
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = 3;
+				TVOS_DEPLOYMENT_TARGET = 12.4;
+				VALIDATE_PRODUCT = YES;
+			};
+			name = Release;
+		};
+		30192AB7232300180075679E /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_EMBED_SWIFT_STANDARD_LIBRARIES = YES;
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				CODE_SIGN_STYLE = Automatic;
+				DEVELOPMENT_TEAM = 38HDA9F9LL;
+				INFOPLIST_FILE = atsc3_fmp4_playerTests/Info.plist;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@loader_path/Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = "org.nbgp.atsc3-fmp4-playerTests";
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = appletvos;
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = DEBUG;
+				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = 3;
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/atsc3_fmp4_player.app/atsc3_fmp4_player";
+				TVOS_DEPLOYMENT_TARGET = 12.4;
+			};
+			name = Debug;
+		};
+		30192AB8232300180075679E /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_EMBED_SWIFT_STANDARD_LIBRARIES = YES;
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				CODE_SIGN_STYLE = Automatic;
+				DEVELOPMENT_TEAM = 38HDA9F9LL;
+				INFOPLIST_FILE = atsc3_fmp4_playerTests/Info.plist;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@loader_path/Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = "org.nbgp.atsc3-fmp4-playerTests";
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = appletvos;
+				SWIFT_COMPILATION_MODE = wholemodule;
+				SWIFT_OPTIMIZATION_LEVEL = "-O";
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = 3;
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/atsc3_fmp4_player.app/atsc3_fmp4_player";
+				TVOS_DEPLOYMENT_TARGET = 12.4;
+				VALIDATE_PRODUCT = YES;
+			};
+			name = Release;
+		};
+		30192AB9232300180075679E /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_EMBED_SWIFT_STANDARD_LIBRARIES = YES;
+				CODE_SIGN_STYLE = Automatic;
+				DEVELOPMENT_TEAM = 38HDA9F9LL;
+				INFOPLIST_FILE = atsc3_fmp4_playerUITests/Info.plist;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@loader_path/Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = "org.nbgp.atsc3-fmp4-playerUITests";
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = appletvos;
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = DEBUG;
+				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = 3;
+				TEST_TARGET_NAME = atsc3_fmp4_player;
+				TVOS_DEPLOYMENT_TARGET = 12.4;
+			};
+			name = Debug;
+		};
+		30192ABA232300180075679E /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_EMBED_SWIFT_STANDARD_LIBRARIES = YES;
+				CODE_SIGN_STYLE = Automatic;
+				DEVELOPMENT_TEAM = 38HDA9F9LL;
+				INFOPLIST_FILE = atsc3_fmp4_playerUITests/Info.plist;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@loader_path/Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = "org.nbgp.atsc3-fmp4-playerUITests";
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = appletvos;
+				SWIFT_COMPILATION_MODE = wholemodule;
+				SWIFT_OPTIMIZATION_LEVEL = "-O";
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = 3;
+				TEST_TARGET_NAME = atsc3_fmp4_player;
+				TVOS_DEPLOYMENT_TARGET = 12.4;
+				VALIDATE_PRODUCT = YES;
+			};
+			name = Release;
+		};
 		30364DB6221C7F20005A903B /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
@@ -1459,6 +1842,33 @@
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
+		30192ABB232300180075679E /* Build configuration list for PBXNativeTarget "atsc3_fmp4_player" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				30192AB5232300180075679E /* Debug */,
+				30192AB6232300180075679E /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+		30192ABC232300180075679E /* Build configuration list for PBXNativeTarget "atsc3_fmp4_playerTests" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				30192AB7232300180075679E /* Debug */,
+				30192AB8232300180075679E /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+		30192ABD232300180075679E /* Build configuration list for PBXNativeTarget "atsc3_fmp4_playerUITests" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				30192AB9232300180075679E /* Debug */,
+				30192ABA232300180075679E /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
 		30364DB5221C7F20005A903B /* Build configuration list for PBXNativeTarget "cmd" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
