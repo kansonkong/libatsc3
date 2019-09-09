@@ -50,7 +50,7 @@ clean:
 	-rm -f tools/atsc3_listener_metrics_ncurses_httpd_isobmff
 	-rm -f tools/atsc3_mmt_mfu_monitor
 	-rm -f tools/atsc3_mmt_listener_to_http_hls_fmp4
-	 
+
 intermediate_lls: atsc3_lls.o atsc3_lls_sls_parser.o atsc3_lls_alc_utils.o
 
 intermediate_alp: atsc3_alp_types.o atsc3_alp_parser.o
@@ -197,7 +197,7 @@ atsc3_mmtp_parser.o: atsc3_mmtp_packet_types.h atsc3_mmtp_parser.h atsc3_mmtp_pa
 
 atsc3_mmt_mpu_parser.o: atsc3_mmtp_packet_types.h atsc3_mmtp_parser.h atsc3_mmt_mpu_parser.c
 	cc -g -c atsc3_mmt_mpu_parser.c
-	
+
 atsc3_mmt_mpu_sample_format_parser.o: atsc3_mmt_mpu_sample_format_type.h atsc3_mmt_mpu_sample_format_parser.h atsc3_mmt_mpu_sample_format_parser.c
 	cc -g -c atsc3_mmt_mpu_sample_format_parser.c
 
@@ -242,7 +242,7 @@ atsc3_isobmff_tools.o: atsc3_isobmff_tools.h atsc3_isobmff_tools.cpp
 
 atsc3_stltp_types.o: atsc3_stltp_types.h atsc3_stltp_types.c
 	cc -g -c atsc3_stltp_types.c
-	
+
 atsc3_stltp_parser.o: atsc3_stltp_parser.h atsc3_stltp_parser.c
 	cc -g -c atsc3_stltp_parser.c
 
@@ -450,16 +450,15 @@ test/atsc3_mmt_signalling_message_test: test/atsc3_mmt_signalling_message_test.c
 	cc -g test/atsc3_mmt_signalling_message_test.c libatsc3.o -lz  -lm -lpthread -lpcap -o test/atsc3_mmt_signalling_message_test
 
 test/atsc3_mmt_signalling_packet_test: test/atsc3_mmt_signalling_packet_test.c atsc3_utils.o
-	cc -g3 -O0 test/atsc3_mmt_signalling_packet_test.c libatsc3.o -lz -lpcap -o test/atsc3_mmt_signalling_packet_test
+	cc -g3 -O0 test/atsc3_mmt_signalling_packet_test.c libatsc3.o -lz -lm -lpthread -lpcap -o test/atsc3_mmt_signalling_packet_test
 	echo "valgrind --leak-check=full  ./atsc3_mmt_signalling_packet_test" > test/atsc3_mmt_signalling_packet_test_valgrind
 	chmod +x test/atsc3_mmt_signalling_packet_test_valgrind
-	
+
 test/atsc3_mmt_mpu_packet_test: test/atsc3_mmt_mpu_packet_test.c atsc3_utils.o
-	cc -g3 -O0 test/atsc3_mmt_mpu_packet_test.c libatsc3.o -lz -lpcap -o test/atsc3_mmt_mpu_packet_test
+	cc -g3 -O0 test/atsc3_mmt_mpu_packet_test.c libatsc3.o -lz -lm -lpthread -lpcap -o test/atsc3_mmt_mpu_packet_test
 	echo "valgrind --leak-check=full  ./atsc3_mmt_mpu_packet_test" > test/atsc3_mmt_mpu_packet_test_valgrind
 	chmod +x test/atsc3_mmt_mpu_packet_test_valgrind
-	
-	
+
 test/atsc3_isobmff_box_test: test/atsc3_isobmff_box_test.c
 	cc -g test/atsc3_isobmff_box_test.c  -lz  -lm -lpthread -lpcap -o test/atsc3_isobmff_box_test 
 
@@ -677,14 +676,13 @@ atsc3_mmt_mfu_monitor: tools/atsc3_mmt_mfu_monitor.cpp  \
 		atsc3_mmt_reconstitution_from_media_sample.c atsc3_logging_externs.o \
 		-I../bento/include/ -lpcap  -lncurses -lpcap -lz -lpthread \
 		-o tools/atsc3_mmt_mfu_monitor
-		
-		
+
 atsc3_alc_listener_mde_writer: tools/atsc3_alc_listener_mde_writer.cpp	libatsc3_bento4_gpl.o
 	g++  -D OUTPUT_STATISTICS=NCURSES -g tools/atsc3_alc_listener_mde_writer.cpp \
 		libatsc3_bento4_gpl.o \
 		-I../bento/include/ -lpcap  -lncurses -lpcap -lz -lpthread \
 		-o tools/atsc3_alc_listener_mde_writer
-		
+
 atsc3_mmt_listener_to_http_hls_fmp4: tools/atsc3_mmt_listener_to_http_hls_fmp4.cpp \
 								atsc3_isobmff_tools.o \
 								atsc3_mmt_reconstitution_from_media_sample.o  \
