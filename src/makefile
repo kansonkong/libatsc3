@@ -13,6 +13,7 @@ all: 	intermediate_lls \
 		intermediate_sls \
 		intermediate_mmt \
 		intermediate_alc \
+		intermediate_a324 \
 		intermediate_a337 \
 		intermediate_ffplay \
 		interemediate_gpl_and_mock_linkage  \
@@ -20,6 +21,7 @@ all: 	intermediate_lls \
 		unit_tests \
 		libmicrohttpd_tests \
 		listener_tests \
+		a324_tests \
 		tools
 
 clean:
@@ -45,6 +47,7 @@ clean:
 	-rm -f listener_tests/atsc3_stltp_listener_test
 	-rm -f listener_tests/atsc3_stltp_alp_listener_test
 	-rm -f listener_tests/atsc3_stltp_alp_listener_reflector_test
+	-rm -f a324_tests/a32_dstp_lls_aeat_emission_test	
 	-rm -f tools/atsc3_alc_listener_mde_writer
 	-rm -f tools/atsc3_listener_metrics_ncurses
 	-rm -f tools/atsc3_listener_metrics_ncurses_httpd_isobmff
@@ -89,8 +92,10 @@ intermediate_mmt: 	xml.o \
 					atsc3_mmt_mpu_utils.o \
 					atsc3_bandwidth_statistics.o
 
-intermediate_a337:	atsc3_sls_held_fragment.o					
+intermediate_a324: 	atsc3_dstp_types.o
 
+intermediate_a337:	atsc3_sls_held_fragment.o				
+	
 intermediate_ffplay: atsc3_player_ffplay.o
 interemediate_gpl_and_mock_linkage: bento4_gpl_link \
 									bento4_mock_link
@@ -128,6 +133,8 @@ listener_tests: atsc3_alc_listener_test \
 				atsc3_stltp_listener_test \
 				atsc3_stltp_alp_listener_test \
 				atsc3_stltp_alp_listener_reflector_test
+
+a324_tests: a32_dstp_lls_aeat_emission_test
 
 # real libatsc3 tools for lls, sls, mmt/route and flow analysis
 tools: atsc3_listener_metrics_ncurses \
@@ -272,6 +279,9 @@ atsc3_mbms_envelope_parser.o: atsc3_mbms_envelope_parser.h atsc3_mbms_envelope_p
 atsc3_route_sls_processor.o: atsc3_route_sls_processor.h atsc3_route_sls_processor.c
 	cc -g -c atsc3_route_sls_processor.c -o atsc3_route_sls_processor.o
 
+atsc3_dstp_types.o: atsc3_dstp_types.h atsc3_dstp_types.c
+	cc -g -c atsc3_dstp_types.c -o atsc3_dstp_types.o
+
 # unit standalone tests with mock data
 
 
@@ -364,7 +374,8 @@ libatsc3_intermediate.o: atsc3_lls.o \
 		mad_rlc.o \
 		transport.o \
 		alc_channel.o \
-		alc_list.o
+		alc_list.o \
+		atsc3_dstp_types.o
 
 	ld  -o libatsc3_intermediate.o -r atsc3_lls.o \
 		atsc3_lls_slt_parser.o \
@@ -417,8 +428,8 @@ libatsc3_intermediate.o: atsc3_lls.o \
 		mad_rlc.o \
 		transport.o \
 		alc_channel.o \
-		alc_list.o
-
+		alc_list.o \
+		atsc3_dstp_types.o
 
 libatsc3.o: libatsc3_intermediate.o bento4_mock.o
 	ld  -o libatsc3.o -r libatsc3_intermediate.o bento4_mock.o
@@ -604,7 +615,7 @@ atsc3_alc_listener_test: listener_tests/atsc3_alc_listener_test.cpp libatsc3_ben
 
 # simple ALC/DASH listener that builds a single ISOBMFF segment with v/a muxed in for each MPU
 atsc3_alc_listener_test_valgrind: listener_tests/atsc3_alc_listener_test.cpp libatsc3_bento4_gpl.o
-	g++ 		-D _TEST_RUN_VALGRIND_OSX_=true -g listener_tests/atsc3_alc_listener_test.cpp \
+	g++ -D _TEST_RUN_VALGRIND_OSX_=true -g listener_tests/atsc3_alc_listener_test.cpp \
 		libatsc3_bento4_gpl.o \
 		-lz -lpcap -lpthread  -o listener_tests/atsc3_alc_listener_test_valgrind
 
@@ -618,6 +629,15 @@ atsc3_alc_listener_test_valgrind: listener_tests/atsc3_alc_listener_test.cpp lib
 #		-o atsc3_mmt_listener_test_bento		
 # this one has some ncurses inclusion to support 		
 # -D _TEST_RUN_VALGRIND_OSX_=true to disable pthread_create on osx due to issues with lldb startup bug
+
+
+# a324_tests
+
+a32_dstp_lls_aeat_emission_test: a324_tests/a324_dstp_lls_aeat_emission_test.cpp libatsc3_bento4_gpl.o
+	g++ -g a324_tests/a324_dstp_lls_aeat_emission_test.cpp \
+		libatsc3_bento4_gpl.o \
+		-lz -lpcap -lpthread \
+		-o a324_tests/a324_dstp_lls_aeat_emission_test
 
 # misc utils	
 # isobmfftrackjoiner: bento4/ISOBMFFTrackJoiner.cpp bento4/ISOBMFFTrackJoiner.h atsc3_utils.o \
