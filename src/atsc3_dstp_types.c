@@ -22,7 +22,7 @@ atsc3_rtp_dstp_header_t* atsc3_rtp_dstp_header_new() {
 	atsc3_rtp_dstp_header->marker = 0;					//'0'
 
 	atsc3_rtp_dstp_header->payload_type.prefix = 0x5; 	//'101'
-	atsc3_rtp_dstp_header->payload_type.reserved = 0x3; //'11'
+	atsc3_rtp_dstp_header->payload_type.reserved = 0x0; // - changed to 0 in ATSC S32-266r37 Revision of A/324:2018, Scheduler / Studio to Transmitter Link 23 May 2019
 
 	return atsc3_rtp_dstp_header;
 }
