@@ -188,8 +188,11 @@ eth->h_source[5] = (unsigned char)(ifreq_c.ifr_hwaddr.sa_data[5]); 
 	uint16_t ip_payload_size = udp_payload_size + 20;
 	*((uint16_t*)&eth_frame[16]) = htons(ip_payload_size);
 
+	//this will already be in endianness, no need for htons
+
 	uint16_t checksum = atsc3_ip_compute_checksum(&eth_frame[14], 20);
-	*((uint16_t*)&eth_frame[24]) = htons(checksum);
+	eth_frame[24] = (checksum >> 8) & 0xFF;
+	eth_frame[25] = (checksum) & 0xFF;
 
 
 	block_Write(ip_udp_dtp_dstp_eth_phy_packet, &eth_frame[0], 42);
