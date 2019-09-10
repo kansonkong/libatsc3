@@ -30,7 +30,7 @@ atsc3_rtp_dstp_header_t* atsc3_rtp_dstp_header_new() {
 atsc3_ip_udp_rtp_dstp_packet_t* atsc3_ip_udp_rtp_dstp_packet_new() {
 	atsc3_ip_udp_rtp_dstp_packet_t* atsc3_ip_udp_rtp_dstp_packet = calloc(1, sizeof(atsc3_ip_udp_rtp_dstp_packet_t));
 
-	atsc3_ip_udp_rtp_dstp_packet->rtp_header = calloc(1, sizeof(atsc3_rtp_dstp_header_t));
+    atsc3_ip_udp_rtp_dstp_packet->rtp_header = atsc3_rtp_dstp_header_new();
 	atsc3_ip_udp_rtp_dstp_packet->data = block_Alloc(0);
 
 	return atsc3_ip_udp_rtp_dstp_packet;
@@ -40,6 +40,7 @@ atsc3_ip_udp_rtp_dstp_packet_t* atsc3_ip_udp_rtp_dstp_packet_new_from_flow(udp_f
 
 	atsc3_ip_udp_rtp_dstp_packet_t* atsc3_ip_udp_rtp_dstp_packet = atsc3_ip_udp_rtp_dstp_packet_new();
 	memcpy(&atsc3_ip_udp_rtp_dstp_packet->udp_flow, udp_flow, sizeof(udp_flow_t));
+    atsc3_ip_udp_rtp_dstp_packet->data = block_Alloc(0);
 	return atsc3_ip_udp_rtp_dstp_packet;
 }
 
@@ -49,7 +50,7 @@ block_t* atsc3_rtp_dstp_header_write_to_block_t(atsc3_rtp_dstp_header_t* atsc3_r
 	uint8_t payload[12] = { 0 };
 
 	payload[0] |= (atsc3_rtp_dstp_header->version & 0x3) << 6;
-	payload[0] |= (atsc3_rtp_dstp_header->padding & 0x1)   << 5;
+	payload[0] |= (atsc3_rtp_dstp_header->padding & 0x1) << 5;
 	payload[0] |= (atsc3_rtp_dstp_header->extension & 0x1) << 4;
 	payload[0] |= (atsc3_rtp_dstp_header->csrc_count & 0xF);
 
@@ -59,11 +60,11 @@ block_t* atsc3_rtp_dstp_header_write_to_block_t(atsc3_rtp_dstp_header_t* atsc3_r
 	payload[1] |= (atsc3_rtp_dstp_header->payload_type.wakeup_control.wakeup_active & 0x1) << 1;
 	payload[1] |= (atsc3_rtp_dstp_header->payload_type.wakeup_control.aeat_wakeup_alert & 0x1);
 
-	*(&payload[2]) = htons(atsc3_rtp_dstp_header->sequence_number);
+	*((uint16_t*)&payload[2]) = htons(atsc3_rtp_dstp_header->sequence_number);
 
-	*(&payload[4]) = htonl(atsc3_rtp_dstp_header->timestamp_min.seconds << 16 | atsc3_rtp_dstp_header->timestamp_min.fraction);
+	*((uint32_t*)&payload[4]) = htonl(atsc3_rtp_dstp_header->timestamp_min.seconds << 16 | atsc3_rtp_dstp_header->timestamp_min.fraction);
 
-	*(&payload[8]) = htonl(atsc3_rtp_dstp_header->timestamp_max.seconds << 16 | atsc3_rtp_dstp_header->timestamp_max.fraction);
+	*((uint32_t*)&payload[8]) = htonl(atsc3_rtp_dstp_header->timestamp_max.seconds << 16 | atsc3_rtp_dstp_header->timestamp_max.fraction);
 
 	block_Write(rtp_dstp_header, &payload[0], 12);
 	return rtp_dstp_header;
@@ -140,14 +141,14 @@ eth->h_source[5] = (unsigned char)(ifreq_c.ifr_hwaddr.sa_data[5]); 
 	eth_frame[25] = 0x00;
 
 	//ip.src addr
-	*(&eth_frame[26]) = htonl(atsc3_ip_udp_rtp_dstp_packet->udp_flow.src_ip_addr); //bytes 26-29
+	*((uint32_t*)&eth_frame[26]) = htonl(atsc3_ip_udp_rtp_dstp_packet->udp_flow.src_ip_addr); //bytes 26-29
 	//ip.dst addr
-	*(&eth_frame[30]) = htonl(atsc3_ip_udp_rtp_dstp_packet->udp_flow.dst_ip_addr); //bytes 30-33
+	*((uint32_t*)&eth_frame[30]) = htonl(atsc3_ip_udp_rtp_dstp_packet->udp_flow.dst_ip_addr); //bytes 30-33
 
 	//udp
 
-	*(&eth_frame[34]) = htons(atsc3_ip_udp_rtp_dstp_packet->udp_flow.src_port); //bytes 34-35
-	*(&eth_frame[36]) = htons(atsc3_ip_udp_rtp_dstp_packet->udp_flow.dst_port); //bytes 36-37
+	*((uint16_t*)&eth_frame[34]) = htons(atsc3_ip_udp_rtp_dstp_packet->udp_flow.src_port); //bytes 34-35
+	*((uint16_t*)&eth_frame[36]) = htons(atsc3_ip_udp_rtp_dstp_packet->udp_flow.dst_port); //bytes 36-37
 
 	//bytes 38-39 are udp.len
 	eth_frame[38] = 0x00;
@@ -160,10 +161,10 @@ eth->h_source[5] = (unsigned char)(ifreq_c.ifr_hwaddr.sa_data[5]); 
 	block_t* rtp_header_block = atsc3_rtp_dstp_header_write_to_block_t(atsc3_ip_udp_rtp_dstp_packet->rtp_header);
 
 	uint16_t udp_payload_size = rtp_header_block->p_size + atsc3_ip_udp_rtp_dstp_packet->data->p_size + 8;
-	*(&eth_frame[38]) = htons(udp_payload_size);
+	*((uint16_t*)&eth_frame[38]) = htons(udp_payload_size);
 
 	uint16_t ip_payload_size = udp_payload_size + 20;
-	*(&eth_frame[16]) = htons(ip_payload_size);
+	*((uint16_t*)&eth_frame[16]) = htons(ip_payload_size);
 
 
 	block_Write(ip_udp_dtp_dstp_eth_phy_packet, &eth_frame[0], 42);
