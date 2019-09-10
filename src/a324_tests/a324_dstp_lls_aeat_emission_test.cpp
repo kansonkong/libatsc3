@@ -113,6 +113,14 @@ int main(int argc,char **argv) {
 
 			uint8_t* block = (uint8_t*) calloc(size, sizeof(uint8_t));
 			fread(block, size, 1, fp);
+			//build our ad-hoc LLS table here
+			uint8_t lls_table_header[4];
+			lls_table_header[0] = 0x04;
+			lls_table_header[1] = 0;
+			lls_table_header[2] = 0;
+			lls_table_header[3] = 1;
+
+			block_Write(atsc3_ip_udp_rtp_dstp_packet->data, &lls_table_header[0], 4);
 			block_Write(atsc3_ip_udp_rtp_dstp_packet->data, block, size);
 			free(block);
 
