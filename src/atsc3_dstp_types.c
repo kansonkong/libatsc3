@@ -143,7 +143,9 @@ eth->h_source[5] = (unsigned char)(ifreq_c.ifr_hwaddr.sa_data[5]); 
 	eth_frame[17] = 0x00;
 
 	//ip.id
-	uint32_t ip_id = arc4random();
+	//was arc4random
+	srandom(time(NULL));
+	uint32_t ip_id = random();
 	eth_frame[18] = (ip_id >> 8) & 0xFF;
 	eth_frame[19] = (ip_id) & 0xFF;
 
