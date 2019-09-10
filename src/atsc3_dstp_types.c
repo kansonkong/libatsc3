@@ -70,8 +70,7 @@ block_t* atsc3_rtp_dstp_header_write_to_block_t(atsc3_rtp_dstp_header_t* atsc3_r
 	return rtp_dstp_header;
 }
 
-uint16_t atsc3_ip_compute_checksum(const void *buf, size_t hdr_len)
-{
+uint16_t atsc3_ip_compute_checksum(const void *buf, size_t hdr_len) {
          unsigned long sum = 0;
          const uint16_t *ip1;
 
@@ -89,6 +88,44 @@ uint16_t atsc3_ip_compute_checksum(const void *buf, size_t hdr_len)
 
          return(~sum);
 }
+
+uint16_t atsc3_udp_compute_checksum(const void *buff, size_t len, in_addr_t src_addr, in_addr_t dest_addr){
+         const uint16_t *buf=buff;
+         uint16_t *ip_src=(void *)&src_addr, *ip_dst=(void *)&dest_addr;
+         uint32_t sum;
+         size_t length=len;
+
+         // Calculate the sum                                            //
+         sum = 0;
+         while (len > 1) {
+                 sum += *buf++;
+                 if (sum & 0x80000000)
+                         sum = (sum & 0xFFFF) + (sum >> 16);
+                 len -= 2;
+         }
+
+         if ( len & 1 )
+                 // Add the padding if the packet lenght is odd          //
+                 sum += *((uint8_t *)buf);
+
+         // Add the pseudo-header                                        //
+         sum += *(ip_src++);
+         sum += *ip_src;
+
+         sum += *(ip_dst++);
+         sum += *ip_dst;
+
+         sum += htons(IPPROTO_UDP);
+         sum += htons(length);
+
+         // Add the carries                                              //
+         while (sum >> 16)
+                 sum = (sum & 0xFFFF) + (sum >> 16);
+
+         // Return the one's complement of sum                           //
+         return ( (uint16_t)(~sum)  );
+}
+
 
 block_t* atsc3_ip_udp_rtp_dstp_write_to_eth_phy_packet_block_t(atsc3_ip_udp_rtp_dstp_packet_t* atsc3_ip_udp_rtp_dstp_packet) {
 	/**
@@ -190,11 +227,13 @@ eth->h_source[5] = (unsigned char)(ifreq_c.ifr_hwaddr.sa_data[5]); 
 
 	//manually flip endianess
 
-	uint16_t checksum = atsc3_ip_compute_checksum(&eth_frame[14], 20);
-	eth_frame[24] = (checksum) & 0xFF;
-	eth_frame[25] = (checksum >> 8) & 0xFF;
+	uint16_t ip_checksum = atsc3_ip_compute_checksum(&eth_frame[14], 20);
+	eth_frame[24] = (ip_checksum) & 0xFF;
+	eth_frame[25] = (ip_checksum >> 8) & 0xFF;
 
-
+	uint16_t udp_checksum = atsc3_udp_compute_checksum(&eth_frame[34], udp_payload_size, (uint32_t*)&eth_frame[26], (uint32_t*)&eth_frame[30]);
+	eth_frame[40] = (udp_checksum) & 0xFF;
+	eth_frame[41] = (udp_checksum >> 8) & 0xFF;
 
 	block_Write(ip_udp_dtp_dstp_eth_phy_packet, &eth_frame[0], 42);
 	block_Merge(ip_udp_dtp_dstp_eth_phy_packet, rtp_header_block);
