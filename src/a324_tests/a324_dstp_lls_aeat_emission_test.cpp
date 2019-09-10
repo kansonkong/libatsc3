@@ -112,6 +112,8 @@ int main(int argc,char **argv) {
 			atsc3_ip_udp_rtp_dstp_packet_t* atsc3_ip_udp_rtp_dstp_packet = atsc3_ip_udp_rtp_dstp_packet_new_from_flow(&flow);
 
 			uint8_t* block = (uint8_t*) calloc(size, sizeof(uint8_t));
+			uint8_t* block_gz = (uint8_t*) calloc(size, sizeof(uint8_t));
+
 			fread(block, size, 1, fp);
 			//build our ad-hoc LLS table here
 			uint8_t lls_table_header[4];
@@ -121,8 +123,12 @@ int main(int argc,char **argv) {
 			lls_table_header[3] = 1;
 
 			block_Write(atsc3_ip_udp_rtp_dstp_packet->data, &lls_table_header[0], 4);
-			block_Write(atsc3_ip_udp_rtp_dstp_packet->data, block, size);
+
+			uint32_t gz_payload_size = atsc3_compress_gzip_payload(block, size, block_gz, size);
+
+			block_Write(atsc3_ip_udp_rtp_dstp_packet->data, block_gz, gz_payload_size);
 			free(block);
+			free(block_gz);
 
 			atsc3_ip_udp_rtp_dstp_packet->rtp_header->payload_type.wakeup_control.aeat_wakeup_alert = 1;
 			atsc3_ip_udp_rtp_dstp_packet->rtp_header->payload_type.wakeup_control.wakeup_active = 1;
