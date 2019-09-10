@@ -113,7 +113,6 @@ int main(int argc,char **argv) {
 
 			uint8_t* block = (uint8_t*) calloc(size, sizeof(uint8_t));
 			fread(block, size, 1, fp);
-			block_t* payload = block_Alloc(size);
 			block_Write(atsc3_ip_udp_rtp_dstp_packet->data, block, size);
 			free(block);
 
