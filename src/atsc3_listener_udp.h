@@ -61,6 +61,10 @@ udp_packet_t* udp_packet_process_from_ptr(uint8_t* packet, uint32_t packet_lengt
 udp_packet_t* udp_packet_duplicate(udp_packet_t* udp_packet);
 udp_packet_t* udp_packet_prepend_if_not_null(udp_packet_t* from_packet, udp_packet_t* to_packet);
 
+//WRITING:
+//see: block_t* atsc3_ip_udp_rtp_dstp_write_to_block_t(atsc3_ip_udp_rtp_dstp_packet_t* atsc3_ip_udp_rtp_dstp_packet) {
+
+
 void udp_packet_free(udp_packet_t** udp_packet_p);
 void cleanup(udp_packet_t** udp_packet_p);
 
