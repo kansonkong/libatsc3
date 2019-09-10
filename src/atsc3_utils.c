@@ -461,8 +461,10 @@ block_t* block_Resize(block_t* src, uint32_t src_size_requested) {
 	if(!__block_check_bounaries(__FUNCTION__, src)) return NULL;
     int src_size_original = src->p_size;
     int src_i_pos_original = src->i_pos;
-    
-	uint32_t src_size_required = __MAX(64, src_size_requested);
+
+    //uint32_t src_size_required = __MAX(64, src_size_requested);
+    //do not change our size, as this can cause us to leak unexpectedly
+    uint32_t src_size_required = src_size_requested;
 
 	//always over alloc by X bytes for a null pad
 	void* new_block = realloc(src->p_buffer, src_size_required + 8);
