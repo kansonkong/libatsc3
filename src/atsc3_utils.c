@@ -227,7 +227,7 @@ block_t* __block_check_bounaries(const char* method_name, block_t* src) {
 		return NULL;
 	}
 
-	if(src->p_size <= 0) {
+	if(src->p_size < 0) {
 		_ATSC3_UTILS_ERROR("%s: block: %p, invalid p_size for p_buffer: %p, p_size is: %u, i_pos: %u", method_name, src, src->p_buffer, src->p_size, src->i_pos);
 		src->p_size = 0;
 		src->i_pos = 0;
