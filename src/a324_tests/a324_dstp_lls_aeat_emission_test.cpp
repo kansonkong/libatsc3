@@ -99,52 +99,63 @@ int main(int argc,char **argv) {
 	stat(xmlFilename, &st);
 	off_t size = st.st_size;
 
+	uint16_t dstp_sequence_number = 1;
+
 	if(size > 0) {
-		FILE* fp = fopen(xmlFilename, "r");
-		if(fp) {
-			udp_flow_t flow;
-			flow.src_ip_addr = (192 << 24) | (168 << 16) | (254 << 8) | 100;
-			flow.src_port = 31337;
+		while(true) {
 
-			flow.dst_ip_addr = LLS_DST_ADDR;
-			flow.dst_port = LLS_DST_PORT;
 
-			atsc3_ip_udp_rtp_dstp_packet_t* atsc3_ip_udp_rtp_dstp_packet = atsc3_ip_udp_rtp_dstp_packet_new_from_flow(&flow);
+			FILE* fp = fopen(xmlFilename, "r");
+			if(fp) {
+				udp_flow_t flow;
+				flow.src_ip_addr = (192 << 24) | (168 << 16) | (254 << 8) | 100;
+				flow.src_port = 31337;
 
-			uint8_t* block = (uint8_t*) calloc(size, sizeof(uint8_t));
-			uint8_t* block_gz = (uint8_t*) calloc(size, sizeof(uint8_t));
+				flow.dst_ip_addr = LLS_DST_ADDR;
+				flow.dst_port = LLS_DST_PORT;
 
-			fread(block, size, 1, fp);
-			//build our ad-hoc LLS table here
-			uint8_t lls_table_header[4];
-			lls_table_header[0] = 0x04;
-			lls_table_header[1] = 0;
-			lls_table_header[2] = 0;
-			lls_table_header[3] = 1;
+				atsc3_ip_udp_rtp_dstp_packet_t* atsc3_ip_udp_rtp_dstp_packet = atsc3_ip_udp_rtp_dstp_packet_new_from_flow(&flow);
 
-			block_Write(atsc3_ip_udp_rtp_dstp_packet->data, &lls_table_header[0], 4);
+				uint8_t* block = (uint8_t*) calloc(size, sizeof(uint8_t));
+				uint8_t* block_gz = (uint8_t*) calloc(size, sizeof(uint8_t));
 
-			uint32_t gz_payload_size = atsc3_compress_gzip_payload(block, size, block_gz, size);
+				fread(block, size, 1, fp);
+				//build our ad-hoc LLS table here
+				uint8_t lls_table_header[4];
+				lls_table_header[0] = 0x04;
+				lls_table_header[1] = 0;
+				lls_table_header[2] = 0;
+				lls_table_header[3] = 1;
 
-			block_Write(atsc3_ip_udp_rtp_dstp_packet->data, block_gz, gz_payload_size);
-			free(block);
-			free(block_gz);
+				block_Write(atsc3_ip_udp_rtp_dstp_packet->data, &lls_table_header[0], 4);
 
-			atsc3_ip_udp_rtp_dstp_packet->rtp_header->payload_type.wakeup_control.aeat_wakeup_alert = 1;
-			atsc3_ip_udp_rtp_dstp_packet->rtp_header->payload_type.wakeup_control.wakeup_active = 1;
+				uint32_t gz_payload_size = atsc3_compress_gzip_payload(block, size, block_gz, size);
 
-			block_t* final_eth_payload = atsc3_ip_udp_rtp_dstp_write_to_eth_phy_packet_block_t(atsc3_ip_udp_rtp_dstp_packet);
-			block_Rewind(final_eth_payload);
+				block_Write(atsc3_ip_udp_rtp_dstp_packet->data, block_gz, gz_payload_size);
+				free(block);
+				block = NULL;
+				free(block_gz);
+				block_gz = NULL;
 
-		    if (pcap_sendpacket(descrInject, block_Get(final_eth_payload), final_eth_payload->p_size) != 0) {
-		    	__ERROR("error sending the packet: %s", pcap_geterr(descrInject));
-		    } else {
-		    	__INFO("sent packet %p, len: %d", block_Get(final_eth_payload), final_eth_payload->p_size);
-		    }
+				atsc3_ip_udp_rtp_dstp_packet->rtp_header->payload_type.wakeup_control.aeat_wakeup_alert = 1;
+				atsc3_ip_udp_rtp_dstp_packet->rtp_header->payload_type.wakeup_control.wakeup_active = 1;
+				atsc3_ip_udp_rtp_dstp_packet->rtp_header->sequence_number = dstp_sequence_number++;
 
-		    free(final_eth_payload);
+				block_t* final_eth_payload = atsc3_ip_udp_rtp_dstp_write_to_eth_phy_packet_block_t(atsc3_ip_udp_rtp_dstp_packet);
+				block_Rewind(final_eth_payload);
 
-			fclose(fp);
+				if (pcap_sendpacket(descrInject, block_Get(final_eth_payload), final_eth_payload->p_size) != 0) {
+					__ERROR("error sending the packet: %s", pcap_geterr(descrInject));
+				} else {
+					__INFO("sent packet %p, len: %d", block_Get(final_eth_payload), final_eth_payload->p_size);
+				}
+
+				atsc3_ip_udp_rtp_dstp_packet_free(&atsc3_ip_udp_rtp_dstp_packet);
+				block_Destroy(&final_eth_payload);
+
+				fclose(fp);
+			}
+			sleep(1);
 		}
 
 
