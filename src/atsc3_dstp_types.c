@@ -70,6 +70,26 @@ block_t* atsc3_rtp_dstp_header_write_to_block_t(atsc3_rtp_dstp_header_t* atsc3_r
 	return rtp_dstp_header;
 }
 
+uint16_t atsc3_ip_compute_checksum(const void *buf, size_t hdr_len)
+{
+         unsigned long sum = 0;
+         const uint16_t *ip1;
+
+         ip1 = buf;
+         while (hdr_len > 1)
+         {
+                 sum += *ip1++;
+                 if (sum & 0x80000000)
+                         sum = (sum & 0xFFFF) + (sum >> 16);
+                 hdr_len -= 2;
+         }
+
+         while (sum >> 16)
+                 sum = (sum & 0xFFFF) + (sum >> 16);
+
+         return(~sum);
+}
+
 block_t* atsc3_ip_udp_rtp_dstp_write_to_eth_phy_packet_block_t(atsc3_ip_udp_rtp_dstp_packet_t* atsc3_ip_udp_rtp_dstp_packet) {
 	/**
 	 *
@@ -165,6 +185,9 @@ eth->h_source[5] = (unsigned char)(ifreq_c.ifr_hwaddr.sa_data[5]); 
 
 	uint16_t ip_payload_size = udp_payload_size + 20;
 	*((uint16_t*)&eth_frame[16]) = htons(ip_payload_size);
+
+	uint16_t checksum = atsc3_ip_compute_checksum(&eth_frame[14], 20);
+	*((uint16_t*)&eth_frame[24]) = htons(checksum);
 
 
 	block_Write(ip_udp_dtp_dstp_eth_phy_packet, &eth_frame[0], 42);

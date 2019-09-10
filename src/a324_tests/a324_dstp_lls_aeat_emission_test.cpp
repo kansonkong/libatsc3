@@ -128,9 +128,12 @@ int main(int argc,char **argv) {
 			atsc3_ip_udp_rtp_dstp_packet->rtp_header->payload_type.wakeup_control.wakeup_active = 1;
 
 			block_t* final_eth_payload = atsc3_ip_udp_rtp_dstp_write_to_eth_phy_packet_block_t(atsc3_ip_udp_rtp_dstp_packet);
+			block_Rewind(final_eth_payload);
 
 		    if (pcap_sendpacket(descrInject, block_Get(final_eth_payload), final_eth_payload->p_size) != 0) {
 		    	__ERROR("error sending the packet: %s", pcap_geterr(descrInject));
+		    } else {
+		    	__INFO("sent packet %p, len: %d", block_Get(final_eth_payload), final_eth_payload->p_size);
 		    }
 
 		    free(final_eth_payload);
