@@ -481,7 +481,7 @@ test/atsc3_fdt_test_2019-09-07-esg-e.1.1.7: test/atsc3_fdt_test_2019-09-07-esg-e
 	cc -g test/atsc3_fdt_test_2019-09-07-esg-e.1.1.7.c libatsc3.o  -lz  -lm -lpthread -lpcap -o test/atsc3_fdt_test_2019-09-07-esg-e.1.1.7
 
 test/atsc3_libmicrohttpd_test: test/atsc3_libmicrohttpd_test.c 
-	cc -g /test/atsc3_libmicrohttpd_test.c  \
+	cc -g test/atsc3_libmicrohttpd_test.c  \
 		-I../libmicrohttpd/libmicrohttpd-0.9.63/build/include \
 		-L../libmicrohttpd/libmicrohttpd-0.9.63/build/lib -lmicrohttpd \
 		-o test/atsc3_libmicrohttpd_test
