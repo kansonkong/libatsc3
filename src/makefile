@@ -39,6 +39,7 @@ clean:
 	-rm -f test/atsc3_mime_multipart_related_parser_test
 	-rm -f test/atsc3_fdt_mbms_envelope_test
 	-rm -f test/atsc3_fdt_mbms_envelope_test_2019-09-07-esg-e.1.1.7
+	-rm -f test/atsc3_libmicrohttpd_test
 	-rm -f listener_tests/atsc3_alc_listener_test
 	-rm -f listener_tests/atsc3_alc_listener_test_valgrind
 	-rm -f listener_tests/atsc3_lls_listener_test
@@ -120,7 +121,7 @@ unit_tests: test/atsc3_lmt_test \
 			test/atsc3_fdt_mbms_envelope_test \
 			test/atsc3_fdt_mbms_envelope_test_2019-09-07-esg-e.1.1.7
 
-libmicrohttpd_tests: atsc3_libmicrohttpd_test
+libmicrohttpd_tests: test/atsc3_libmicrohttpd_test
 
 
 # listener_tests: atsc3_alc_listener_test  atsc3_mmt_listener_test atsc3_listener_test atsc3_mmt_listener_test_bento atsc3_listener_metrics_test
