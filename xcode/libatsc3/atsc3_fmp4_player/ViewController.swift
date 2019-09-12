@@ -18,7 +18,7 @@ class ViewController: UIViewController {
     }
 
     @IBAction func playVideo(_ sender: Any) {
-        guard let url = URL(string: "http://10.199.150.143:8000/master.m3u8") else {
+        guard let url = URL(string: "http://192.168.0.52:8000/master.m3u8") else {
             return
         }
         // Create an AVPlayer, passing it the HTTP Live Streaming URL.

@@ -16,10 +16,20 @@
 			<key>orderHint</key>
 			<integer>4</integer>
 		</dict>
-		<key>atsc3_fmp4_player.xcscheme_^#shared#^_</key>
+		<key>a324_dstp_lls_aeat_emission_test.xcscheme_^#shared#^_</key>
+		<dict>
+			<key>orderHint</key>
+			<integer>19</integer>
+		</dict>
+		<key>atsc3_alc_listener_mde_writer vnic0 239.255.1.1 49153.xcscheme_^#shared#^_</key>
 		<dict>
 			<key>orderHint</key>
 			<integer>18</integer>
+		</dict>
+		<key>atsc3_fmp4_player.xcscheme_^#shared#^_</key>
+		<dict>
+			<key>orderHint</key>
+			<integer>20</integer>
 		</dict>
 		<key>atsc3_listener_metrics_ncurses.xcscheme_^#shared#^_</key>
 		<dict>
@@ -136,6 +146,11 @@
 	</dict>
 	<key>SuppressBuildableAutocreation</key>
 	<dict>
+		<key>30192A92232300140075679E</key>
+		<dict>
+			<key>primary</key>
+			<true/>
+		</dict>
 		<key>30364DAF221C7F1F005A903B</key>
 		<dict>
 			<key>primary</key>

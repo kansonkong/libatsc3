@@ -190,6 +190,10 @@
 		30ABE641222AE81C00CAC414 /* atsc3_lls_mmt_utils.c in Sources */ = {isa = PBXBuildFile; fileRef = 30ABE640222AE81C00CAC414 /* atsc3_lls_mmt_utils.c */; };
 		30ABE645222AEF0200CAC414 /* atsc3_lls_sls_monitor_output_buffer.c in Sources */ = {isa = PBXBuildFile; fileRef = 30ABE644222AEF0200CAC414 /* atsc3_lls_sls_monitor_output_buffer.c */; };
 		30ABE64B222AF6BE00CAC414 /* atsc3_lls_sls_monitor_output_buffer_utils.c in Sources */ = {isa = PBXBuildFile; fileRef = 30ABE64A222AF6BE00CAC414 /* atsc3_lls_sls_monitor_output_buffer_utils.c */; };
+		30B0949523275C5500152DCC /* a324_dstp_lls_aeat_emission_test.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 30B0949423275C4200152DCC /* a324_dstp_lls_aeat_emission_test.cpp */; };
+		30B094A02327830C00152DCC /* atsc3_a344_receiver_query_api.h in Sources */ = {isa = PBXBuildFile; fileRef = 30B0949E232782FD00152DCC /* atsc3_a344_receiver_query_api.h */; };
+		30B094A12327830C00152DCC /* atsc3_dstp_types.c in Sources */ = {isa = PBXBuildFile; fileRef = 30B0949F232782FD00152DCC /* atsc3_dstp_types.c */; };
+		30B094A22327830C00152DCC /* atsc3_dstp_types.h in Sources */ = {isa = PBXBuildFile; fileRef = 30B09496232782FD00152DCC /* atsc3_dstp_types.h */; };
 		30CF0E2622F194DC00E117C8 /* atsc3_alp_types.c in Sources */ = {isa = PBXBuildFile; fileRef = 30CF0E2522F16F2100E117C8 /* atsc3_alp_types.c */; };
 		30D4B0D42301FD6700BAF398 /* atsc3_mmt_mpu_packet_test.c in Sources */ = {isa = PBXBuildFile; fileRef = 30D4B0D32301FCF200BAF398 /* atsc3_mmt_mpu_packet_test.c */; };
 		30DD4F50231A1E5E0049F710 /* atsc3_mmt_listener_to_http_hls_fmp4.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 30DD4F4F231A1E4D0049F710 /* atsc3_mmt_listener_to_http_hls_fmp4.cpp */; };
@@ -517,6 +521,11 @@
 		30ABE646222AEF2A00CAC414 /* atsc3_lls_sls_monitor_output_buffer.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = atsc3_lls_sls_monitor_output_buffer.h; path = ../../../src/atsc3_lls_sls_monitor_output_buffer.h; sourceTree = "<group>"; };
 		30ABE647222AF67600CAC414 /* atsc3_lls_sls_monitor_output_buffer_utils.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = atsc3_lls_sls_monitor_output_buffer_utils.h; path = ../../../src/atsc3_lls_sls_monitor_output_buffer_utils.h; sourceTree = "<group>"; };
 		30ABE64A222AF6BE00CAC414 /* atsc3_lls_sls_monitor_output_buffer_utils.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = atsc3_lls_sls_monitor_output_buffer_utils.c; path = ../../../src/atsc3_lls_sls_monitor_output_buffer_utils.c; sourceTree = "<group>"; };
+		30B0949423275C4200152DCC /* a324_dstp_lls_aeat_emission_test.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = a324_dstp_lls_aeat_emission_test.cpp; sourceTree = "<group>"; };
+		30B09496232782FD00152DCC /* atsc3_dstp_types.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = atsc3_dstp_types.h; path = ../../../src/atsc3_dstp_types.h; sourceTree = "<group>"; };
+		30B09499232782FD00152DCC /* a324_aeat_example_test_1.xml */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.xml; path = a324_aeat_example_test_1.xml; sourceTree = "<group>"; };
+		30B0949E232782FD00152DCC /* atsc3_a344_receiver_query_api.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = atsc3_a344_receiver_query_api.h; path = ../../../src/atsc3_a344_receiver_query_api.h; sourceTree = "<group>"; };
+		30B0949F232782FD00152DCC /* atsc3_dstp_types.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = atsc3_dstp_types.c; path = ../../../src/atsc3_dstp_types.c; sourceTree = "<group>"; };
 		30B112F8222AB5BA0068F33D /* docs */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = docs; sourceTree = BUILT_PRODUCTS_DIR; };
 		30CF0E2522F16F2100E117C8 /* atsc3_alp_types.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = atsc3_alp_types.c; path = ../../../src/atsc3_alp_types.c; sourceTree = "<group>"; };
 		30D4B0D32301FCF200BAF398 /* atsc3_mmt_mpu_packet_test.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = atsc3_mmt_mpu_packet_test.c; path = ../../../../src/test/atsc3_mmt_mpu_packet_test.c; sourceTree = "<group>"; };
@@ -868,6 +877,10 @@
 		30ABE52B222AB98800CAC414 /* src */ = {
 			isa = PBXGroup;
 			children = (
+				30B09497232782FD00152DCC /* a324_tests */,
+				30B0949E232782FD00152DCC /* atsc3_a344_receiver_query_api.h */,
+				30B0949F232782FD00152DCC /* atsc3_dstp_types.c */,
+				30B09496232782FD00152DCC /* atsc3_dstp_types.h */,
 				30DD4F55231AA60A0049F710 /* atsc3_mmt_mpu_sample_format_parser.c */,
 				30DD4F56231AA60A0049F710 /* atsc3_mmt_mpu_sample_format_parser.h */,
 				30DD4F52231A74D50049F710 /* atsc3_mmtp_packet_utils.c */,
@@ -1047,6 +1060,16 @@
 			name = bento4;
 			path = ../../bento/include;
 			sourceTree = SOURCE_ROOT;
+		};
+		30B09497232782FD00152DCC /* a324_tests */ = {
+			isa = PBXGroup;
+			children = (
+				30B0949423275C4200152DCC /* a324_dstp_lls_aeat_emission_test.cpp */,
+				30B09499232782FD00152DCC /* a324_aeat_example_test_1.xml */,
+			);
+			name = a324_tests;
+			path = ../../../src/a324_tests;
+			sourceTree = "<group>";
 		};
 		30F42C05225AD5D4008CBDBF /* listener_tests */ = {
 			isa = PBXGroup;
@@ -1286,6 +1309,10 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				30B094A02327830C00152DCC /* atsc3_a344_receiver_query_api.h in Sources */,
+				30B094A12327830C00152DCC /* atsc3_dstp_types.c in Sources */,
+				30B094A22327830C00152DCC /* atsc3_dstp_types.h in Sources */,
+				30B0949523275C5500152DCC /* a324_dstp_lls_aeat_emission_test.cpp in Sources */,
 				30DD4F57231AA6140049F710 /* atsc3_mmt_mpu_sample_format_parser.c in Sources */,
 				30DD4F58231AA6140049F710 /* atsc3_mmt_mpu_sample_format_parser.h in Sources */,
 				30DD4F53231A74E40049F710 /* atsc3_mmtp_packet_utils.c in Sources */,
