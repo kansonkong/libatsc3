@@ -7,6 +7,9 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		300F885B2332536800053806 /* atsc3_aeat_parser.c in Sources */ = {isa = PBXBuildFile; fileRef = 300F88582332534B00053806 /* atsc3_aeat_parser.c */; };
+		300F885C2332536800053806 /* atsc3_aeat_parser.h in Sources */ = {isa = PBXBuildFile; fileRef = 300F885A2332534B00053806 /* atsc3_aeat_parser.h */; };
+		300F885D2332536800053806 /* atsc3_aeat_types.h in Sources */ = {isa = PBXBuildFile; fileRef = 300F88592332534B00053806 /* atsc3_aeat_types.h */; };
 		3012705222DBABD4000072DF /* atsc3_ip_udp_rtp_parser.c in Sources */ = {isa = PBXBuildFile; fileRef = 3012705122DBABD4000072DF /* atsc3_ip_udp_rtp_parser.c */; };
 		30192A96232300140075679E /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 30192A95232300140075679E /* AppDelegate.swift */; };
 		30192A98232300140075679E /* ViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 30192A97232300140075679E /* ViewController.swift */; };
@@ -245,6 +248,9 @@
 
 /* Begin PBXFileReference section */
 		300DA1E223110E000048E943 /* atsc3_alc_listener_mde_writer.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = atsc3_alc_listener_mde_writer.cpp; path = ../../../../src/tools/atsc3_alc_listener_mde_writer.cpp; sourceTree = "<group>"; };
+		300F88582332534B00053806 /* atsc3_aeat_parser.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = atsc3_aeat_parser.c; path = ../../../src/atsc3_aeat_parser.c; sourceTree = "<group>"; };
+		300F88592332534B00053806 /* atsc3_aeat_types.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = atsc3_aeat_types.h; path = ../../../src/atsc3_aeat_types.h; sourceTree = "<group>"; };
+		300F885A2332534B00053806 /* atsc3_aeat_parser.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = atsc3_aeat_parser.h; path = ../../../src/atsc3_aeat_parser.h; sourceTree = "<group>"; };
 		3012705022DBABD4000072DF /* atsc3_ip_udp_rtp_parser.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = atsc3_ip_udp_rtp_parser.h; sourceTree = "<group>"; };
 		3012705122DBABD4000072DF /* atsc3_ip_udp_rtp_parser.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = atsc3_ip_udp_rtp_parser.c; sourceTree = "<group>"; };
 		3012705322DBACF6000072DF /* atsc3_ip_udp_rtp_types.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = atsc3_ip_udp_rtp_types.h; sourceTree = "<group>"; };
@@ -880,6 +886,9 @@
 		30ABE52B222AB98800CAC414 /* src */ = {
 			isa = PBXGroup;
 			children = (
+				300F88582332534B00053806 /* atsc3_aeat_parser.c */,
+				300F885A2332534B00053806 /* atsc3_aeat_parser.h */,
+				300F88592332534B00053806 /* atsc3_aeat_types.h */,
 				30B09497232782FD00152DCC /* a324_tests */,
 				30B0949E232782FD00152DCC /* atsc3_a344_receiver_query_api.h */,
 				30B0949F232782FD00152DCC /* atsc3_dstp_types.c */,
@@ -1312,6 +1321,9 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				300F885B2332536800053806 /* atsc3_aeat_parser.c in Sources */,
+				300F885C2332536800053806 /* atsc3_aeat_parser.h in Sources */,
+				300F885D2332536800053806 /* atsc3_aeat_types.h in Sources */,
 				30FBBFF52331AE0300D348A6 /* atsc3_fdt_mbms_envelope_test_2019-09-17-nab-interop-day1.c in Sources */,
 				30B094A02327830C00152DCC /* atsc3_a344_receiver_query_api.h in Sources */,
 				30B094A12327830C00152DCC /* atsc3_dstp_types.c in Sources */,

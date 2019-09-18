@@ -46,6 +46,8 @@
 #include "atsc3_lls_slt_parser.h"
 #include "xml.h"
 
+#include "atsc3_aeat_parser.h"
+
 int _LLS_INFO_ENABLED  = 0;
 int _LLS_DEBUG_ENABLED = 0;
 int _LLS_TRACE_ENABLED = 0;
