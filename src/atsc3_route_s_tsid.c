@@ -8,8 +8,8 @@
 #include "atsc3_route_s_tsid.h"
 #include "atsc3_fdt_parser.h"
 
-int _ROUTE_S_TSID_PARSER_INFO_ENABLED = 0;
-int _ROUTE_S_TSID_PARSER_DEBUG_ENABLED = 0;
+int _ROUTE_S_TSID_PARSER_INFO_ENABLED = 1;
+int _ROUTE_S_TSID_PARSER_DEBUG_ENABLED = 1;
 
 ATSC3_VECTOR_BUILDER_METHODS_IMPLEMENTATION(atsc3_route_s_tsid_RS, atsc3_route_s_tsid_RS_LS)
 ATSC3_VECTOR_BUILDER_METHODS_ITEM_FREE(atsc3_route_s_tsid_RS_LS)
