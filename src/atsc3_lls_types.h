@@ -316,11 +316,14 @@ typedef struct udp_flow_packet_id_mpu_sequence_tuple {
 } udp_flow_packet_id_mpu_sequence_tuple_t;
 
 //we'll just keep a linear search of these, it should pretty straightforard to iterate thru for now..
+
+//jjustman-2019-08-30 - DEPRECATED
 typedef struct udp_flow_latest_mpu_sequence_number_container {
     uint32_t udp_flows_n;
     udp_flow_packet_id_mpu_sequence_tuple_t** udp_flows;
     
 } udp_flow_latest_mpu_sequence_number_container_t;
+//jjustman-2019-08-30 - DEPRECATED
 
 
 //just to match the alc pattern...
@@ -478,11 +481,15 @@ A/331 - Section 7:
 typedef struct lls_sls_alc_monitor {
 	lls_service_t* lls_service;
 	uint16_t service_id;
-
+    
 	lls_sls_alc_session_t* lls_alc_session;
-	uint32_t video_tsi;
-	uint32_t audio_tsi;
+    
+    uint32_t audio_tsi;
+    bool audio_tsi_manual_override;
 
+    uint32_t video_tsi;
+    bool video_tsi_manual_override;
+    
 	/**
 	* jdj-2019-05-29: TODO - use a sparse array lookup (https://github.com/ned14/nedtries) for resolution to proper transfer_object_length to back-patch close flag
 	*/
@@ -518,11 +525,11 @@ typedef struct lls_sls_alc_monitor {
 
 } lls_sls_alc_monitor_t;
 
-
 typedef struct lls_slt_monitor {
     lls_sls_mmt_monitor_t* lls_sls_mmt_monitor;
 	lls_sls_alc_monitor_t* lls_sls_alc_monitor;
 
+    //jjustman-2019-08-10 - TODO - change this over to ATSC3_VECTOR_BUILDER
     lls_sls_mmt_session_vector_t* lls_sls_mmt_session_vector;
     lls_sls_alc_session_vector_t* lls_sls_alc_session_vector;
 	lls_service_t* lls_service;
@@ -530,8 +537,6 @@ typedef struct lls_slt_monitor {
 	lls_table_t* lls_table_slt;
 
 } lls_slt_monitor_t;
-
-
 
 
 #endif /* ATSC3_LLS_TYPES_H_ */

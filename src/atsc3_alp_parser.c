@@ -347,7 +347,7 @@ atsc3_alp_packet_t* atsc3_alp_packet_parse(block_t* baseband_packet_payload) {
     
     //check for alp underrun which will need re-fragmenting
     if(starting_block_size < 2) {
-        __ALP_PARSER_ERROR("atsc3_alp_packet_parse: remaining size less than 2 bytes, ptr: %p, pos: %d, size: %d",
+        __ALP_PARSER_WARN("atsc3_alp_packet_parse: remaining size less than 2 bytes, ptr: %p, pos: %d, size: %d",
                            baseband_packet_payload,
                            baseband_packet_payload->i_pos,
                            baseband_packet_payload->p_size);

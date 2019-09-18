@@ -14,7 +14,7 @@
 #include <locale.h>
 #include "atsc3_utils.h"
 #include "atsc3_lls.h"
-#include "atsc3_mmtp_types.h"
+#include "atsc3_mmtp_packet_types.h"
 #include "atsc3_output_statistics_ncurses.h"
 
 #ifndef ATSC3_MMT_PACKET_STATISTICS_H_
@@ -216,7 +216,7 @@ packet_id_mmt_stats_t* find_or_create_packet_id(uint32_t ip, uint16_t port, uint
 
 void atsc3_packet_statistics_dump_global_stats();
 void atsc3_packet_statistics_dump_mfu_stats();
-void atsc3_packet_statistics_mmt_stats_populate(udp_packet_t* udp_packet, mmtp_payload_fragments_union_t* mmtp_payload);
+void atsc3_packet_statistics_mmt_stats_populate(udp_packet_t* udp_packet, mmtp_mpu_packet_t* mmtp_mpu_packet);
 void *print_global_statistics_thread(void *vargp);
 void *print_mfu_statistics_thread(void *vargp);
 

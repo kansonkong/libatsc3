@@ -29,12 +29,12 @@ extern int _LLS_TRACE_ENABLED;
 #define LLS_DST_ADDR 3758102332
 #define LLS_DST_PORT 4937
 
-lls_table_t* lls_create_base_table( uint8_t* lls, int size);
-lls_table_t* lls_create_xml_table( uint8_t* lls_packet, int size);
+lls_table_t* lls_create_base_table(block_t* lls_packet_block);
+lls_table_t* lls_create_xml_table(block_t* lls_packet_block);
 
-lls_table_t* __lls_table_create( uint8_t* lls_packet, int size);
-lls_table_t* lls_table_create_or_update_from_lls_slt_monitor(lls_slt_monitor_t* lls_slt_monitor, uint8_t* lls_packet, int packet_size);
-lls_table_t* lls_table_create_or_update_from_lls_slt_monitor_with_metrics(lls_slt_monitor_t* lls_slt_monitor, uint8_t* lls_packet, int packet_size, uint32_t* parsed, uint32_t* parsed_update, uint32_t* parsed_error);
+lls_table_t* __lls_table_create(block_t* lls_packet_block);
+lls_table_t* lls_table_create_or_update_from_lls_slt_monitor(lls_slt_monitor_t* lls_slt_monitor, block_t* lls_packet_block);
+lls_table_t* lls_table_create_or_update_from_lls_slt_monitor_with_metrics(lls_slt_monitor_t* lls_slt_monitor, block_t* lls_packet_block, uint32_t* parsed, uint32_t* parsed_update, uint32_t* parsed_error);
 
 void lls_table_free(lls_table_t** lls_table_p);
 int  lls_create_table_type_instance(lls_table_t* lls_table, xml_node_t* xml_node);

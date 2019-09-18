@@ -12,10 +12,6 @@
 #include "atsc3_output_statistics_ncurses_windows.h"
 #include "atsc3_lls_sls_monitor_output_buffer_utils.h"
 
-
-//TODO - get rid of me...
-extern int _ALC_PACKET_DUMP_TO_OBJECT_ENABLED;
-
 pthread_mutex_t ncurses_writer_lock;
 int initfunc(WINDOW* ripoff_win, int cols) {
 	//printf("got my_window: %p", ripoff_win);
@@ -91,7 +87,9 @@ void* ncurses_input_run_thread(void* lls_slt_monitor_ptr) {
 		}
         
         if(ch == 'm') {
-            _ALC_PACKET_DUMP_TO_OBJECT_ENABLED = 0;
+            if(lls_slt_monitor && lls_slt_monitor->lls_sls_alc_monitor) {
+                lls_slt_monitor->lls_sls_alc_monitor->lls_sls_monitor_output_buffer_mode.file_dump_enabled = false;
+            }
 
             mtl_clear();
             wprintw(my_window, "Switching to MMT Capture Mode, press 's' to select Service ID, 'p' to play, 'x' to return to normal flow monitoring");
@@ -111,10 +109,7 @@ void* ncurses_input_run_thread(void* lls_slt_monitor_ptr) {
                 } else if (ch == 'x') {
                     play_mode = 0;
                     mtl_clear();
-                    wprintw(my_window, "Exiting MMT");
-                    //todo - remove me
-                    alc_recon_file_buffer_struct_set_tsi_toi(NULL, 0, 0);
-                    _ALC_PACKET_DUMP_TO_OBJECT_ENABLED = 0;
+                    wprintw(my_window, "Exiting MMT");                
                 }
                 if(ch == 'v') {
                 	if(lls_sls_mmt_monitor) {

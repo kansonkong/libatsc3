@@ -39,14 +39,10 @@ int PACKET_COUNTER=0;
 #include <sys/stat.h>
 
 #include "atsc3_listener_udp.h"
-#include "atsc3_mmtp_types.h"
+#include "../atsc3_mmtp_packet_types.h"
 #include "atsc3_lls.h"
 #include "atsc3_mmtp_parser.h"
 #include "atsc3_mmt_mpu_utils.h"
-
-extern int _MPU_DEBUG_ENABLED;
-extern int _MMTP_DEBUG_ENABLED;
-extern int _LLS_DEBUG_ENABLED;
 
 #define println(...) printf(__VA_ARGS__);printf("%s%s","\r","\n")
 
@@ -223,7 +219,7 @@ void process_packet(u_char *user, const struct pcap_pkthdr *pkthdr, const u_char
 		//dump header, then dump applicable packet type
 		mmtp_packet_header_dump(mmtp_payload);
 
-		if(mmtp_payload->mmtp_packet_header.mmtp_payload_type == 0x0) {
+		if(mmtp_payload->mmtp_packet_header->mmtp_payload_type == 0x0) {
 			if(mmtp_payload->mmtp_mpu_type_packet_header.mpu_timed_flag == 1) {
 				//timed
 			//	mpu_dump_flow(udp_packet->udp_flow.dst_ip_addr, udp_packet->udp_flow.dst_port, mmtp_payload);
@@ -232,12 +228,12 @@ void process_packet(u_char *user, const struct pcap_pkthdr *pkthdr, const u_char
 			} else {
 				//non-timed
 			}
-		} else if(mmtp_payload->mmtp_packet_header.mmtp_payload_type == 0x2) {
+		} else if(mmtp_payload->mmtp_packet_header->mmtp_payload_type == 0x2) {
 
 			signaling_message_dump(mmtp_payload);
 
 		} else {
-			_MMTP_WARN("mmtp_packet_parse: unknown payload type of 0x%x", mmtp_payload->mmtp_packet_header.mmtp_payload_type);
+			_MMTP_WARN("mmtp_packet_parse: unknown payload type of 0x%x", mmtp_payload->mmtp_packet_header->mmtp_payload_type);
 			goto cleanup;
 		}
 	}
@@ -265,7 +261,7 @@ cleanup:
  */
 int main(int argc,char **argv) {
 
-	_MPU_DEBUG_ENABLED = 0;
+	_MMT_MPU_PARSER_DEBUG_ENABLED = 0;
 	_MMTP_DEBUG_ENABLED = 0;
 	_LLS_DEBUG_ENABLED = 0;
 

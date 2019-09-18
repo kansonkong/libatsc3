@@ -26,7 +26,9 @@
 
 #include "fixups.h"
 #include "unistd.h"
+#include "endianess.c"
 
+#include "atsc3_logging_externs.h"
 
 #define uS 1000000ULL
 
@@ -104,6 +106,7 @@ block_t* block_Alloc(int len);
 block_t* block_Promote(char*);
 block_t* block_Write(block_t* dest, uint8_t* buf, uint32_t size);
 uint32_t block_Append(block_t* dest, block_t* src); //combine two blocks at i_pos, i_pos, return end position
+uint32_t block_AppendFull(block_t* dest, block_t* src); //combine two blocks, dest at i_pos and full size of src p_size
 uint32_t block_Merge(block_t* dest, block_t* src); //combine two blocks from p_size, p_size, return new merged p_size,
 uint32_t block_Seek(block_t* block, int32_t seek_pos);
 uint32_t block_Seek_Relative(block_t* block, int32_t relative_pos);
@@ -172,20 +175,27 @@ uint16_t parsePortIntoIntval(char* dst_port);
 }
 #endif
 
+//global logging hooks
+#define __ATSC3_ERROR(...)	__LIBATSC3_TIMESTAMP_ERROR(__VA_ARGS__);
+#define __ATSC3_WARN(...) 	__LIBATSC3_TIMESTAMP_WARN(__VA_ARGS__);
+#define __ATSC3_INFO(...) 	__LIBATSC3_TIMESTAMP_INFO(__VA_ARGS__);
+#define __ATSC3_DEBUG(...) 	__LIBATSC3_TIMESTAMP_DEBUG(__VA_ARGS__);
+#define __ATSC3_TRACE(...) 	__LIBATSC3_TIMESTAMP_TRACE(__VA_ARGS__);
 
+//local logging hooks
+#define _ATSC3_UTILS_ERROR(...)  									__LIBATSC3_TIMESTAMP_ERROR(__VA_ARGS__);
+#define _ATSC3_UTILS_WARN(...)    									__LIBATSC3_TIMESTAMP_WARN(__VA_ARGS__);
+#define _ATSC3_UTILS_INFO(...)    if(_ATSC3_UTILS_INFO_ENABLED)  { 	__LIBATSC3_TIMESTAMP_INFO(__VA_ARGS__); }
+#define _ATSC3_UTILS_DEBUG(...)   if(_ATSC3_UTILS_DEBUG_ENABLED) { 	__LIBATSC3_TIMESTAMP_DEBUG(__VA_ARGS__); }
+#define _ATSC3_UTILS_TRACE(...)   if(_ATSC3_UTILS_TRACE_ENABLED) {	__LIBATSC3_TIMESTAMP_TRACE(__VA_ARGS__); }
+
+
+//todo: flatten
 #define println(...) printf(__VA_ARGS__);printf("%s%s","\r","\n")
 #define __PRINTLN(...) printf(__VA_ARGS__);printf("%s%s","\r","\n")
 #define __PRINTF(...)  printf(__VA_ARGS__);
-
 #define _ATSC3_UTILS_PRINTLN(...) printf(__VA_ARGS__);printf("%s%s","\r","\n")
 #define _ATSC3_UTILS_PRINTF(...)  printf(__VA_ARGS__);
-
-#define _ATSC3_UTILS_ERROR(...)   printf("%s:%d:ERROR:",__FILE__,__LINE__);_ATSC3_UTILS_PRINTLN(__VA_ARGS__);
-#define _ATSC3_UTILS_WARN(...)    printf("%s:%d:WARN:",__FILE__,__LINE__);_ATSC3_UTILS_PRINTLN(__VA_ARGS__);
-#define _ATSC3_UTILS_INFO(...)    if(_ATSC3_UTILS_INFO_ENABLED) { printf("%s:%d:INFO:",__FILE__,__LINE__);_ATSC3_UTILS_PRINTLN(__VA_ARGS__); }
-#define _ATSC3_UTILS_DEBUG(...)   if(_ATSC3_UTILS_DEBUG_ENABLED) { printf("%s:%d:DEBUG:",__FILE__,__LINE__);_ATSC3_UTILS_PRINTLN(__VA_ARGS__); }
-
-#define _ATSC3_UTILS_TRACE(...)   if(_ATSC3_UTILS_TRACE_ENABLED) { printf("%s:%d:TRACE:",__FILE__,__LINE__);_ATSC3_UTILS_PRINTLN(__VA_ARGS__); }
 #define _ATSC3_UTILS_TRACEF(...)  if(_ATSC3_UTILS_TRACE_ENABLED) { printf("%s:%d:TRACE:",__FILE__,__LINE__);_ATSC3_UTILS_PRINTF(__VA_ARGS__); }
 #define _ATSC3_UTILS_TRACEA(...)  if(_ATSC3_UTILS_TRACE_ENABLED) { _ATSC3_UTILS_PRINTF(__VA_ARGS__); }
 #define _ATSC3_UTILS_TRACEN(...)  if(_ATSC3_UTILS_TRACE_ENABLED) { _ATSC3_UTILS_PRINTLN(__VA_ARGS__); }

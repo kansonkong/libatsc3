@@ -7,5 +7,6 @@
  */
 #include "atsc3_fdt.h"
 
-ATSC3_VECTOR_BUILDER_METHODS_IMPLEMENTATION(atsc3_fdt_instance, atsc3_fdt_file)
+ATSC3_VECTOR_BUILDER_METHODS_IMPLEMENTATION(atsc3_fdt_instance, atsc3_fdt_file);
+ATSC3_VECTOR_BUILDER_METHODS_ITEM_FREE(atsc3_fdt_file);
 

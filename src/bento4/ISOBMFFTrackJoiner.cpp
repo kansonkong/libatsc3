@@ -243,6 +243,80 @@ void ISOBMFF_track_joiner_monitor_output_buffer_parse_and_build_joined_mmt_boxes
     parseAndBuildJoinedBoxes_from_lls_sls_monitor_output_buffer(lls_sls_monitor_output_buffer, audio_output_buffer, video_output_buffer, output_data_buffer_p, output_stream_p);
 }
 
+//jjustman-2019-09-05 - this is probably not needed now that other leaks with Detach have been cleaned up
+int atom_delete_children_recursive_depth = 0;
+void atom_delete_children_recursive(AP4_Atom* atom) {
+
+    __ISOBMFF_JOINER_DEBUG("%*satom_delete_children_recursive - ENTER: AP4_Atom: %p, %c%c%c%c, depth: %d",
+                           atom_delete_children_recursive_depth,
+                           "",
+                           atom,
+                           (atom->GetType() >> 24) & 0xFF,
+                           (atom->GetType() >> 16) & 0xFF,
+                           (atom->GetType() >> 8) & 0xFF,
+                           (atom->GetType()) & 0xFF,
+                           atom_delete_children_recursive_depth);
+    atom_delete_children_recursive_depth++;
+    atom->Detach();
+    
+    AP4_ContainerAtom* containerAtom = NULL;
+    if((containerAtom = AP4_DYNAMIC_CAST(AP4_ContainerAtom, atom))) {
+        //containerAtom->RemoveChild()
+        AP4_List<AP4_Atom>& childAtoms = containerAtom->GetChildren();
+        
+        while(childAtoms.ItemCount() > 0) {
+            AP4_Atom* childAtom;
+
+        	childAtoms.PopHead(childAtom);
+
+//            __ISOBMFF_JOINER_DEBUG("atom_delete_children_recursive - item index: %d,  containerAtom: %p, %c%c%c%c",
+//                                   i,
+//                                   childAtom,
+//                                   (childAtom->GetType() >> 24) & 0xFF,
+//                                   (childAtom->GetType() >> 16) & 0xFF,
+//                                   (childAtom->GetType() >> 8) & 0xFF,
+//                                   (childAtom->GetType()) & 0xFF);
+//            childAtom->Detach();
+    		atom_delete_children_recursive(childAtom);
+            
+            
+    	}
+        //atom->Detach();
+        //childAtoms.DeleteReferences();
+      
+        //atom->Detach();
+
+       // delete atom;
+        
+                __ISOBMFF_JOINER_DEBUG("%*satom_delete_children_recursive - deleting containerAtom: %p, %c%c%c%c",
+                                       atom_delete_children_recursive_depth,
+                                       "",
+                                       containerAtom,
+                                       (containerAtom->GetType() >> 24) & 0xFF,
+                                       (containerAtom->GetType() >> 16) & 0xFF,
+                                       (containerAtom->GetType() >> 8) & 0xFF,
+                                       (containerAtom->GetType()) & 0xFF);
+        delete containerAtom;
+        atom_delete_children_recursive_depth--;
+
+
+    } else {
+        
+        __ISOBMFF_JOINER_DEBUG("%*satom_delete_children_recursive - deleting single atom: %p, %c%c%c%c",
+                               atom_delete_children_recursive_depth,
+                               "",
+                               atom,
+                               (atom->GetType() >> 24) & 0xFF,
+                               (atom->GetType() >> 16) & 0xFF,
+                               (atom->GetType() >> 8) & 0xFF,
+                               (atom->GetType()) & 0xFF);
+        atom->Detach();
+        //atom->~AP4_Atom();
+        delete atom;
+        atom_delete_children_recursive_depth--;
+    }
+    
+}
 
 void ISOBMFF_track_joiner_monitor_output_buffer_parse_and_build_joined_mmt_rebuilt_boxes(lls_sls_monitor_output_buffer_t* lls_sls_monitor_output_buffer, AP4_DataBuffer** output_data_buffer_p, AP4_MemoryByteStream** output_stream_p)
 {
@@ -261,7 +335,6 @@ void ISOBMFF_track_joiner_monitor_output_buffer_parse_and_build_joined_mmt_rebui
  
  */
  uint32_t ISOBMFF_rebuild_moof_from_sample_data(lls_sls_monitor_buffer_isobmff_t* lls_sls_monitor_buffer_isobmff, AP4_DataBuffer** output_data_buffer_p, AP4_MemoryByteStream** output_stream_p) {
-
      
 	block_t* temp_output_buffer = lls_sls_monitor_output_buffer_copy_mmt_moof_from_flow_isobmff_box_no_patching_trailing_mdat(lls_sls_monitor_buffer_isobmff);
 	if(!temp_output_buffer) {
@@ -286,7 +359,7 @@ void ISOBMFF_track_joiner_monitor_output_buffer_parse_and_build_joined_mmt_rebui
 		__ISOBMFF_JOINER_INFO("WARN: ISOBMFF_rebuild_moof_from_sample_data - mpu_presentation_time is NOT SET!");
 	}
 
-	AP4_DataBuffer* dataBuffer = new AP4_DataBuffer(temp_output_buffer->i_pos);
+	AP4_DataBuffer* dataBuffer = new AP4_DataBuffer(temp_output_buffer->p_size);
     *output_data_buffer_p = dataBuffer;
      
 	AP4_MemoryByteStream* memoryOutputByteStream = new AP4_MemoryByteStream(*dataBuffer);
@@ -346,6 +419,7 @@ void ISOBMFF_track_joiner_monitor_output_buffer_parse_and_build_joined_mmt_rebui
                 } else {
                     //detatch
                     tmpTrakAtom->Detach();
+                    delete tmpTrakAtom;
                 }
 			}
             
@@ -359,6 +433,7 @@ void ISOBMFF_track_joiner_monitor_output_buffer_parse_and_build_joined_mmt_rebui
                 while((tmpTrexAtom = AP4_DYNAMIC_CAST(AP4_TrexAtom, mvexAtomToCheckChildren->GetChild(AP4_ATOM_TYPE_TREX, trexIndex++)))) {
                     if(tmpTrexAtom->GetTrackId() != lls_sls_monitor_buffer_isobmff->track_id) {
                         tmpTrexAtom->Detach();
+                        delete tmpTrexAtom;
                     }
                 }
             }
@@ -388,6 +463,7 @@ void ISOBMFF_track_joiner_monitor_output_buffer_parse_and_build_joined_mmt_rebui
             //detach
             for(trafIt = traf_toClear.begin(); trafIt != traf_toClear.end(); trafIt++) {
                 (*trafIt)->Detach();
+                delete (*trafIt);
             }
             
             
@@ -409,6 +485,7 @@ void ISOBMFF_track_joiner_monitor_output_buffer_parse_and_build_joined_mmt_rebui
                         trafContainerAtom->AddChild(tfdt_atom_mdhd_timescale, 1);
                     } else {
                         tfdtAtom->Detach();
+                        delete tfdtAtom;
                     }
                 } else if(!tfdtAtom && tfdt_atom_mdhd_timescale) {
                     trafContainerAtom->AddChild(tfdt_atom_mdhd_timescale, 1);
@@ -505,19 +582,34 @@ void ISOBMFF_track_joiner_monitor_output_buffer_parse_and_build_joined_mmt_rebui
     }
 
     //re-write out our isobmff track..
-
 	for (it = isobmff_atom_list.begin(); it != isobmff_atom_list.end(); it++) {
 		AP4_Atom* top_level_atom = (*it)->atom;
+        
+        //fmp4 hacks...
+        //don't write out ftyp/moov init for fMP4 with HLS...
+        //hack
+//        if(top_level_atom->GetType() == AP4_ATOM_TYPE_FTYP || top_level_atom->GetType() == AP4_ATOM_TYPE_MOOV) {
+//            continue;
+//        }
         if(top_level_atom->GetType() == AP4_ATOM_TYPE_MDAT) {
             mdat_atom_and_offset_written = *it;
         }
 		top_level_atom->Write(*memoryOutputByteStream);
 	}
      
+     //release isobmff_atom_list entries and container
+     for (it = isobmff_atom_list.begin(); it != isobmff_atom_list.end(); it++) {
+         if((*it)->atom) {
+             AP4_Atom* top_level_atom = (*it)->atom;
+             atom_delete_children_recursive(top_level_atom);
+         }
+         delete (*it);
+    }
+    isobmff_atom_list.clear();
      
     if(!mdat_atom_and_offset_written) {
         __ISOBMFF_JOINER_DEBUG("WARNING: mdat_atom_and_offset_written is NULL, manually writing out last known good MDAT!");
-        memoryOutputByteStream->Write(lls_sls_monitor_buffer_isobmff->mmt_mdat_block->p_buffer, lls_sls_monitor_buffer_isobmff->mmt_mdat_block->i_pos);
+        memoryOutputByteStream->Write(lls_sls_monitor_buffer_isobmff->mmt_mdat_block->p_buffer, lls_sls_monitor_buffer_isobmff->mmt_mdat_block->p_size);
     }
 
 	block_Release(&temp_output_buffer);
@@ -603,8 +695,6 @@ list<AP4_Atom_And_Offset*> ISOBMFFTrackParseAndBuildOffset(AP4_MemoryByteStream*
     AP4_Atom* atom;
 
     //AP4_DataBuffer* dataBuffer = new AP4_DataBuffer(isobmff_track_block->p_buffer, isobmff_track_block->i_pos);
-
-
     // inspect the atoms one by one
     AP4_Position start_position;
     AP4_Position end_position;
@@ -617,6 +707,8 @@ list<AP4_Atom_And_Offset*> ISOBMFFTrackParseAndBuildOffset(AP4_MemoryByteStream*
         memoryInputByteStream->Tell(end_position);
         AP4_Atom_And_Offset_t* ap4_atom_and_offset = (AP4_Atom_And_Offset_t*)calloc(1, sizeof(AP4_Atom_And_Offset_t));
         ap4_atom_and_offset->atom = atom;
+        __ISOBMFF_JOINER_DEBUG("ISOBMFFTrackParseAndBuildOffset:CreateAtomFromStream - creating atom: %p", atom);
+        
         ap4_atom_and_offset->start_offset = start_position;
         ap4_atom_and_offset->end_offset = end_position;
 
@@ -727,7 +819,7 @@ void parseAndBuildJoinedBoxes_from_lls_sls_monitor_output_buffer(lls_sls_monitor
 
 	uint32_t video_trun_last_offset = 0;
 
-	AP4_MdhdAtom* video_mdhdAtom;
+    AP4_MdhdAtom* video_mdhdAtom = NULL;
 
 	//mpu_presentation_time support
 	AP4_TfdtAtom* audio_tfdt_atom_mdhd_timescale = NULL;
@@ -757,22 +849,22 @@ void parseAndBuildJoinedBoxes_from_lls_sls_monitor_output_buffer(lls_sls_monitor
 	}
 
 	//we shouldn't be bigger than this for our return..
-	AP4_DataBuffer* dataBuffer = new AP4_DataBuffer(audio_output_buffer->i_pos + video_output_buffer->i_pos );
+	AP4_DataBuffer* dataBuffer = new AP4_DataBuffer(audio_output_buffer->p_size + video_output_buffer->p_size);
     *output_data_buffer_p = dataBuffer;
 	AP4_MemoryByteStream* memoryOutputByteStream = new AP4_MemoryByteStream(*dataBuffer);
 
 	*output_stream_p = memoryOutputByteStream;
 
-    AP4_MemoryByteStream* audioOutputMemoryByteStream = new AP4_MemoryByteStream(audio_output_buffer->p_buffer, audio_output_buffer->i_pos);
-    AP4_MemoryByteStream* videoOutputMemoryByteStream = new AP4_MemoryByteStream(video_output_buffer->p_buffer, video_output_buffer->i_pos);
+    AP4_MemoryByteStream* audioOutputMemoryByteStream = new AP4_MemoryByteStream(audio_output_buffer->p_buffer, audio_output_buffer->p_size);
+    AP4_MemoryByteStream* videoOutputMemoryByteStream = new AP4_MemoryByteStream(video_output_buffer->p_buffer, video_output_buffer->p_size);
 	
     list<AP4_Atom_And_Offset_t*> audio_isobmff_atom_list  = ISOBMFFTrackParseAndBuildOffset(audioOutputMemoryByteStream);
 	list<AP4_Atom_And_Offset_t*> video_isobmff_atom_list =  ISOBMFFTrackParseAndBuildOffset(videoOutputMemoryByteStream);
 
-    __ISOBMFF_JOINER_DEBUG("Dumping audio box: size: %u", audio_output_buffer->i_pos);
+    __ISOBMFF_JOINER_DEBUG("Dumping audio box: size: %u", audio_output_buffer->p_size);
 	//dumpFullMetadata(audio_isobmff_atom_list);
 
-	__ISOBMFF_JOINER_DEBUG("Dumping video box: %u", video_output_buffer->i_pos);
+	__ISOBMFF_JOINER_DEBUG("Dumping video box: %u", video_output_buffer->p_size);
 	//dumpFullMetadata(video_isobmff_atom_list);
 
 
@@ -906,6 +998,7 @@ void parseAndBuildJoinedBoxes_from_lls_sls_monitor_output_buffer(lls_sls_monitor
 			while((tmpTrexAtom = AP4_DYNAMIC_CAST(AP4_TrexAtom, audio_mvexAtomToCopy->GetChild(AP4_ATOM_TYPE_TREX, trexIndex++)))) {
 				if(tmpTrexAtom->GetTrackId() != lls_sls_monitor_output_buffer->audio_output_buffer_isobmff.track_id) {
 					tmpTrexAtom->Detach();
+                    delete tmpTrexAtom;
 				} else if(audio_track_id_to_remap) {
 					//matching track id, detatch tmpTrexAtom and replace
 					tmpTrexAtom->Detach();
@@ -916,6 +1009,7 @@ void parseAndBuildJoinedBoxes_from_lls_sls_monitor_output_buffer(lls_sls_monitor
 							tmpTrexAtom->GetDefaultSampleFlags());
 
 					audio_mvexAtomToCopy->AddChild(ap4_trexAtom);
+                    delete tmpTrexAtom;
 
 				}
 			}
@@ -959,6 +1053,7 @@ void parseAndBuildJoinedBoxes_from_lls_sls_monitor_output_buffer(lls_sls_monitor
                             AP4_AtomParent* tmpTrefParent = tmpTrefAtom->GetParent();
                             tmpTrefAtom->Detach();
                             tmpTrefParent->AddChild(newTempTrefAtom);
+                            delete tmpTrefAtom;
                         }
 #endif
 				} else {
@@ -1022,6 +1117,7 @@ void parseAndBuildJoinedBoxes_from_lls_sls_monitor_output_buffer(lls_sls_monitor
 				if(shouldDetatch) {
 					//clear out any hint tracks
 					tmpTrakAtom->Detach();
+                    delete tmpTrakAtom;
 				}
 			}
 
@@ -1032,6 +1128,7 @@ void parseAndBuildJoinedBoxes_from_lls_sls_monitor_output_buffer(lls_sls_monitor
 			while((tmpTrexAtom = AP4_DYNAMIC_CAST(AP4_TrexAtom, mvexToClear->GetChild(AP4_ATOM_TYPE_TREX, trexIndex++)))) {
 				if(tmpTrexAtom->GetTrackId() != lls_sls_monitor_output_buffer->video_output_buffer_isobmff.track_id) {
 					tmpTrexAtom->Detach();
+                    delete tmpTrexAtom;
 				}
 			}
 
@@ -1081,9 +1178,12 @@ void parseAndBuildJoinedBoxes_from_lls_sls_monitor_output_buffer(lls_sls_monitor
                 	if(video_tfdtTempAtom && video_tfdtTempAtom->GetBaseMediaDecodeTime() == 0) {
                 		if(video_tfdt_atom_mdhd_timescale) {
                 			video_tfdtTempAtom->Detach();
+                            delete video_tfdtTempAtom;
                 			tmpTrafToClean->AddChild(video_tfdt_atom_mdhd_timescale, 1);
                 		} else {
                 			video_tfdtTempAtom->Detach();
+                            delete video_tfdtTempAtom;
+
                 		}
                 	} else if(!video_tfdtTempAtom && video_tfdt_atom_mdhd_timescale) {
                 		tmpTrafToClean->AddChild(video_tfdt_atom_mdhd_timescale, 1);
@@ -1092,6 +1192,8 @@ void parseAndBuildJoinedBoxes_from_lls_sls_monitor_output_buffer(lls_sls_monitor
 
                 if(shouldDetachTrak) {
                 	tmpTrafToClean->Detach();
+                    delete tmpTrafToClean;
+
                 } else {
                 	//append this into our video_trunList
                 	AP4_TrunAtom* temp_trunAtom = AP4_DYNAMIC_CAST(AP4_TrunAtom, tmpTrafToClean->GetChild(AP4_ATOM_TYPE_TRUN));
@@ -1116,6 +1218,7 @@ void parseAndBuildJoinedBoxes_from_lls_sls_monitor_output_buffer(lls_sls_monitor
 
                 	} else {
                 		audio_tfdtTempAtom->Detach();
+                        delete audio_tfdtTempAtom;
                 	}
                     //don't add duplicate tfdt atoms
 				} else if(!audio_tfdtTempAtom && audio_tfdt_atom_mdhd_timescale) {
@@ -1273,20 +1376,25 @@ void parseAndBuildJoinedBoxes_from_lls_sls_monitor_output_buffer(lls_sls_monitor
 	block_Release(&audio_output_buffer);
 	block_Release(&video_output_buffer);
 
+    //release both audio and video isobmff_atom_list entries and container
+
 	for (it = audio_isobmff_atom_list.begin(); it != audio_isobmff_atom_list.end(); it++) {
-		if((*it)->atom) {
-			delete (*it)->atom;
-		}
-		free (*it);
+        if((*it)->atom) {
+            AP4_Atom* top_level_atom = (*it)->atom;
+            atom_delete_children_recursive(top_level_atom);
+        }
+        delete (*it);
 	}
+    audio_isobmff_atom_list.clear();
 
 	for (it = video_isobmff_atom_list.begin(); it != video_isobmff_atom_list.end(); it++) {
-		if((*it)->atom) {
-			delete (*it)->atom;
-		}
-		free (*it);
+        if((*it)->atom) {
+            AP4_Atom* top_level_atom = (*it)->atom;
+            atom_delete_children_recursive(top_level_atom);
+        }
+        delete (*it);
 	}
-
+    video_isobmff_atom_list.clear();
     
     //cleanup
     delete (AP4_ByteStream*) audioOutputMemoryByteStream;
@@ -1380,12 +1488,12 @@ void parseAndBuildJoinedBoxes_from_lls_sls_monitor_output_buffer(lls_sls_monitor
 
 list<AP4_Atom*> ISOBMFFTrackParse(block_t* isobmff_track_block) {
 
-	__ISOBMFF_JOINER_DEBUG("::ISOBMFFTrackParse: payload size is: %u", isobmff_track_block->i_pos);
+	__ISOBMFF_JOINER_DEBUG("::ISOBMFFTrackParse: payload size is: %u", isobmff_track_block->p_size);
 
 	list<AP4_Atom*> atomList;
     AP4_Atom* atom;
 
-    AP4_MemoryByteStream* memoryInputByteStream = new AP4_MemoryByteStream(isobmff_track_block->p_buffer, isobmff_track_block->i_pos);
+    AP4_MemoryByteStream* memoryInputByteStream = new AP4_MemoryByteStream(isobmff_track_block->p_buffer, isobmff_track_block->p_size);
     // inspect the atoms one by one
 
     AP4_DefaultAtomFactory atom_factory;

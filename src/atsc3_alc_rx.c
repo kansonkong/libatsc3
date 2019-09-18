@@ -386,7 +386,7 @@ int alc_rx_analyze_packet_a331_compliant(char *data, int len, alc_channel_t *ch,
 				  flute_version = (word & 0x00F00000) >> 20;
 				  fdt_instance_id = (word & 0x000FFFFF);
 
-				  if(flute_version != FLUTE_VERSION) {
+				  if(flute_version != FLUTE_VERSION_1 && flute_version != FLUTE_VERSION_2) {
 					  ALC_RX_WARN("ALC: tsi: %u, toi: %u, FLUTE version: %i is not supported",  def_lct_hdr->tsi, def_lct_hdr->toi, flute_version);
 					  retval = HDR_ERROR;
 					  goto error;
@@ -682,7 +682,14 @@ int alc_rx_analyze_packet_a331_compliant(char *data, int len, alc_channel_t *ch,
         alc_packet->esi = (fec_payload_id_to_parse) & 0x00FFFFFF;
         //final check to see if we should "force" this object closed, raptorq fec doesn't send a close_object flag...
         //transfer len should be set on the alc session for this toi, not just on the lct packet...
-        if(transfer_len > 0 && transfer_len == (alc_packet->alc_len + alc_packet->esi)) {
+        if(alc_packet->transfer_len  > 0 && alc_packet->transfer_len  == (alc_packet->alc_len + alc_packet->esi)) {
+            ALC_RX_TRACE("ALC: tsi: %u, toi: %u, FLUTE: setting close_object_flag because transfer len: (%llu) == alc_packet->alc_len (%u) + alc_packet->esi (%u)",
+                         alc_packet->def_lct_hdr->tsi,
+                         alc_packet->def_lct_hdr->toi,
+                         alc_packet->transfer_len,
+                         alc_packet->alc_len,
+                         alc_packet->esi);
+
         	alc_packet->close_object_flag = true;
         }
         ALC_RX_TRACE("ALC: tsi: %u, toi: %u, FEC Encoding ID: %i, sbn: %u, esi: %u, transfer_len: %llu, alc_len+esi: %u",
@@ -701,16 +708,15 @@ int alc_rx_analyze_packet_a331_compliant(char *data, int len, alc_channel_t *ch,
 				alc_packet->start_offset);
 
         //jdj-2019-05-29 - hack for missing close_object flag on a single ALC payload toi
-        if(alc_packet->transfer_len && alc_packet->transfer_len <= alc_packet->alc_len) {
-        	ALC_RX_TRACE("ALC: tsi: %u, toi: %u, hack: setting close_object_flag because transfer len: %llu is <= alc_len: %u (start_offset: %u)",
+        if(alc_packet->transfer_len > 0 && alc_packet->transfer_len == (alc_packet->alc_len + alc_packet->start_offset)) {
+        	ALC_RX_TRACE("ALC: tsi: %u, toi: %u, FLUTE: setting close_object_flag because transfer len: (%llu) == alc_packet->alc_len (%u) + alc_packet->start_offset (%u)",
             		alc_packet->def_lct_hdr->tsi,
 					alc_packet->def_lct_hdr->toi,
 					alc_packet->transfer_len,
 					alc_packet->alc_len,
 					alc_packet->start_offset);
             alc_packet->close_object_flag = true;
-
-        }
+        } 
     }
 
 	alc_packet->alc_payload = calloc(alc_packet->alc_len, sizeof(uint8_t));

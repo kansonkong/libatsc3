@@ -203,7 +203,7 @@ lls_sls_monitor_buffer_isobmff_t* atsc3_isobmff_rebuild_track_mpu_from_sample_da
 lls_sls_monitor_buffer_isobmff_t* atsc3_isobmff_build_patched_mdat_fragment(lls_sls_monitor_buffer_isobmff_t* lls_sls_monitor_buffer_isobmff) {
 	lls_sls_monitor_buffer_isobmff_create_mdat_from_trun_sample_entries(lls_sls_monitor_buffer_isobmff);
 	if(lls_sls_monitor_buffer_isobmff->mmt_moof_block_from_flow) {
-		uint32_t moof_size = lls_sls_monitor_buffer_isobmff->mmt_moof_block_from_flow->i_pos;
+		uint32_t moof_size = lls_sls_monitor_buffer_isobmff->mmt_moof_block_from_flow->p_size;
 		if(moof_size > 8) {
 			if(lls_sls_monitor_buffer_isobmff->mmt_moof_block_from_flow->p_buffer[moof_size-4]=='m' &&
 					lls_sls_monitor_buffer_isobmff->mmt_moof_block_from_flow->p_buffer[moof_size-3]=='d' &&
@@ -304,230 +304,166 @@ if(!found_mpu_metadata_fragment_video && !lls_sls_mmt_monitor->lls_sls_monitor_o
 
 
 
+//udp_flow_latest_mpu_sequence_number_container_t* udp_flow_latest_mpu_sequence_number_container,
+//todo: jjustman-2019-09-05 - wrap this to be ATSC A/331 service_id aware
 
-lls_sls_monitor_buffer_isobmff_t* atsc3_isobmff_build_raw_mpu_from_single_sequence_number(udp_flow_t* udp_flow, udp_flow_latest_mpu_sequence_number_container_t* udp_flow_latest_mpu_sequence_number_container,
-		uint16_t packet_id, uint32_t mpu_sequence_number, mmtp_sub_flow_vector_t* mmtp_sub_flow_vector, lls_sls_monitor_buffer_isobmff_t* lls_sls_monitor_buffer_isobmff) {
+lls_sls_monitor_buffer_isobmff_t* atsc3_isobmff_build_raw_mpu_from_single_sequence_number(udp_flow_t* udp_flow,
+                                                                                          udp_flow_latest_mpu_sequence_number_container_t* udp_flow_latest_mpu_sequence_number_container,
+                                                                                          uint16_t packet_id,
+                                                                                          uint32_t mpu_sequence_number,
+                                                                                          lls_sls_monitor_buffer_isobmff_t* lls_sls_monitor_buffer_isobmff,
+                                                                                          mmtp_packet_id_packets_container_t* mmtp_packet_id_packets_container) {
 
 	__ISOBMFF_TOOLS_DEBUG("atsc3_isobmff_build_mpu_from_single_sequence_number: Starting to create MPU from flow: packet_id: %u, mpu_sequence_number: %u",
 			packet_id,
 			mpu_sequence_number);
 
+    
 	//only clear out trun sample, mdat and the current moof box
 	lls_sls_lls_sls_monitor_buffer_isobmff_reset_moof_and_mdat_position(lls_sls_monitor_buffer_isobmff);
-
 	lls_sls_monitor_buffer_isobmff->packet_id = packet_id;
 
-	mpu_data_unit_payload_fragments_t* data_unit_payload_types = NULL;
-    mpu_data_unit_payload_fragments_timed_vector_t* data_unit_payload_fragments = NULL; //technically this is mpu_fragments->media_fragment_unit_vector
-    mpu_data_unit_payload_fragments_t* mpu_metadata_fragments =    NULL;
-    mpu_data_unit_payload_fragments_t* movie_metadata_fragments  = NULL;
-    mmtp_sub_flow_t* mmtp_sub_flow = NULL;
     int total_fragments = 0;
 
-    block_t* mpu_metadata_output_block_t = NULL;
+    block_t* mpu_metadata_fragment = NULL;
+    block_t* movie_fragment_metadata = NULL;
+    block_t* mfu_mdat = NULL;
+    
+    __ISOBMFF_TOOLS_DEBUG("Searching for MPU Metadata with %u:%u and packet_id: %u, mpu_sequence_number: %u", udp_flow->dst_ip_addr, udp_flow->dst_port, packet_id, mpu_sequence_number);
 
-    udp_flow_latest_mpu_sequence_number_container_t* udp_flow_matching_flows = udp_flow_find_matching_flows(udp_flow_latest_mpu_sequence_number_container, udp_flow);
-
-    if(!udp_flow_latest_mpu_sequence_number_container || !udp_flow_latest_mpu_sequence_number_container->udp_flows_n) {
-        __ISOBMFF_TOOLS_ERROR("atsc3_isobmff_build_mpu_from_single_sequence_number: Unable to find flows for MPU metadata creation from %u:%u", udp_flow->dst_ip_addr, udp_flow->dst_port);
+    mpu_sequence_number_mmtp_mpu_packet_collection_t* mpu_sequence_number_mmtp_mpu_packet_collection = mmtp_packet_id_packets_container_find_mpu_sequence_number_mmtp_mpu_packet_collection_from_mpu_sequence_number(mmtp_packet_id_packets_container, mpu_sequence_number);
+    if(!mpu_sequence_number_mmtp_mpu_packet_collection) {
+        __ISOBMFF_TOOLS_DEBUG("Cannot find previous MPU sequence number for: %u", mpu_sequence_number);
+       
+        return NULL;
     }
+    
+    for(int i=0; i < mpu_sequence_number_mmtp_mpu_packet_collection->mmtp_mpu_packet_v.count; i++) {
+        mmtp_mpu_packet_t* mmtp_mpu_packet = mpu_sequence_number_mmtp_mpu_packet_collection->mmtp_mpu_packet_v.data[i];
+        
+        //assume no loss/re-sequencing for now..
+        if(mmtp_mpu_packet->du_mpu_metadata_block) {
+            if(!mpu_metadata_fragment) {
+                __ISOBMFF_TOOLS_DEBUG("i: %u, psn: %u, Found MPU Metadata with %u:%u and packet_id: %u, mpu_sequence_number: %u, fragment_indicator: %u",
+                                      i, mmtp_mpu_packet->packet_sequence_number, udp_flow->dst_ip_addr, udp_flow->dst_port, mmtp_mpu_packet->mmtp_packet_id, mmtp_mpu_packet->mpu_sequence_number, mmtp_mpu_packet->mpu_fragmentation_indicator);
 
-    bool found_mpu_metadata_fragment = false;
-
-    for(int i=0; i < udp_flow_latest_mpu_sequence_number_container->udp_flows_n; i++) {
-    	udp_flow_packet_id_mpu_sequence_tuple_t* udp_flow_packet_id_mpu_sequence_tuple = udp_flow_latest_mpu_sequence_number_container->udp_flows[i];
-
-    	__ISOBMFF_TOOLS_DEBUG("Searching for MPU Metadata with %u:%u and packet_id: %u", udp_flow->dst_ip_addr, udp_flow->dst_port, packet_id);
-
-    	mmtp_sub_flow = mmtp_sub_flow_vector_find_packet_id(mmtp_sub_flow_vector, udp_flow, packet_id);
-
-    	if(mmtp_sub_flow && mmtp_sub_flow->mpu_fragments->mpu_metadata_fragments_vector.size) {
-    		int all_mpu_metadata_fragment_walk_count = mmtp_sub_flow->mpu_fragments->mpu_metadata_fragments_vector.size-1;
-
-    		while(all_mpu_metadata_fragment_walk_count >= 0 && !found_mpu_metadata_fragment) {
-    			mpu_metadata_fragments =  mmtp_sub_flow->mpu_fragments->mpu_metadata_fragments_vector.data[all_mpu_metadata_fragment_walk_count--];
-
-    			if(mpu_metadata_fragments) {
-    				mmtp_payload_fragments_union_t* mpu_metadata_fragment = NULL;
-
-    				/* rebuild if we are fragmented*/
-    				for(int i=0; i < mpu_metadata_fragments->timed_fragments_vector.size; i++) {
-    					mpu_metadata_fragment = mpu_metadata_fragments->timed_fragments_vector.data[i];
-
-    					if(mpu_metadata_fragment && mpu_metadata_fragment->mmtp_mpu_type_packet_header.mpu_data_unit_payload &&
-    							mpu_metadata_fragment->mmtp_mpu_type_packet_header.mpu_data_unit_payload->i_pos) {
-
-							if(mpu_metadata_fragment->mmtp_mpu_type_packet_header.mmtp_packet_id == packet_id &&
-									 mpu_metadata_fragment->mmtp_mpu_type_packet_header.mpu_sequence_number == mpu_sequence_number ) {
-						    	__ISOBMFF_TOOLS_DEBUG("Found MPU Metadata with %u:%u and packet_id: %u, mpu_sequence_number: %u, fragment_indicator: %u", udp_flow->dst_ip_addr, udp_flow->dst_port, packet_id, mpu_sequence_number, mpu_metadata_fragment->mmtp_mpu_type_packet_header.mpu_fragmentation_indicator);
-
-								found_mpu_metadata_fragment = lls_sls_monitor_output_buffer_init_block_flow_refragment(lls_sls_monitor_buffer_isobmff, mpu_metadata_fragment);
-							}
-						}
-					}
-				}
-			}
-		}
+                mpu_metadata_fragment = block_Duplicate(mmtp_mpu_packet->du_mpu_metadata_block);
+            } else {
+                __ISOBMFF_TOOLS_DEBUG("i: %u, psn: %u, Appending MPU Metadata with %u:%u and packet_id: %u, mpu_sequence_number: %u, fragment_indicator: %u",
+                                      i, mmtp_mpu_packet->packet_sequence_number, udp_flow->dst_ip_addr, udp_flow->dst_port, mmtp_mpu_packet->mmtp_packet_id, mmtp_mpu_packet->mpu_sequence_number, mmtp_mpu_packet->mpu_fragmentation_indicator);
+                block_Merge(mpu_metadata_fragment, mmtp_mpu_packet->du_mpu_metadata_block);
+            }
+        }
     }
+    
+    //not needed for now
+    //found_mpu_metadata_fragment = lls_sls_monitor_output_buffer_init_block_flow_refragment(lls_sls_monitor_buffer_isobmff, mpu_metadata_fragment);
 
-	if(found_mpu_metadata_fragment) {
+	if(mpu_metadata_fragment) {
 		__ISOBMFF_TOOLS_DEBUG("found_mpu_metadata_fragment, copying to lls_sls_monitor_buffer_isobmff.init_block");
-		lls_sls_monitor_output_buffer_copy_init_block(lls_sls_monitor_buffer_isobmff, lls_sls_monitor_buffer_isobmff->init_block_flow_refragment);
+		lls_sls_monitor_output_buffer_copy_init_block(lls_sls_monitor_buffer_isobmff, mpu_metadata_fragment);
+        block_Destroy(&mpu_metadata_fragment);
 	} else {
 		if(lls_sls_monitor_buffer_isobmff->init_block) {
 			__ISOBMFF_TOOLS_INFO("init_block used from previous MPU!"); //todo - recover from last init frame
 		} else {
 			__ISOBMFF_TOOLS_WARN("init_block missing!");
-			return NULL;
+            goto fail;
 		}
 	}
 
-    bool found_movie_fragment_metadata = false;
-    for(int i=0; i < udp_flow_latest_mpu_sequence_number_container->udp_flows_n && !found_movie_fragment_metadata; i++) {
-
-        udp_flow_packet_id_mpu_sequence_tuple_t* udp_flow_packet_id_mpu_sequence_tuple = udp_flow_latest_mpu_sequence_number_container->udp_flows[i];
-
-        //remember, subflows are built in case of DU fragmentation - korean MMT samples have this edge case
-        mmtp_sub_flow = mmtp_sub_flow_vector_find_packet_id(mmtp_sub_flow_vector, udp_flow, packet_id);
-
-        if(!mmtp_sub_flow) {
-            __ISOBMFF_TOOLS_INFO("Movie Fragment Metadata: mmtp_sub_flow %u for packet_id: %u is null", i, packet_id);
-            //keep going, this is ok
-            continue;
-        }
-
-        if(udp_flow_packet_id_mpu_sequence_tuple->packet_id == packet_id) {
-            movie_metadata_fragments = mpu_data_unit_payload_fragments_find_mpu_sequence_number(&mmtp_sub_flow->mpu_fragments->movie_fragment_metadata_vector, mpu_sequence_number);
-        } else {
-            __ISOBMFF_TOOLS_INFO("Movie Fragment Metadata: unknown packet_id: %u", udp_flow_packet_id_mpu_sequence_tuple->packet_id);
-            continue;
-        }
-
-        mmtp_payload_fragments_union_t* fragment_metadata = NULL;
-        if(movie_metadata_fragments && movie_metadata_fragments->timed_fragments_vector.size) {
-            for(int i=0; i < movie_metadata_fragments->timed_fragments_vector.size && !found_movie_fragment_metadata; i++) {
-                fragment_metadata = movie_metadata_fragments->timed_fragments_vector.data[i];
-              
-                //rebuild if we are fragmented
-                if(fragment_metadata->mmtp_packet_header.mmtp_packet_id == packet_id) {
-                	lls_sls_monitor_output_buffer_copy_or_append_moof_block_from_flow(lls_sls_monitor_buffer_isobmff, fragment_metadata->mmtp_mpu_type_packet_header.mpu_data_unit_payload);
-                	//only set this to true if our fragment_metadata->mmtp_mpu_type_packet_header.mpu_fragmentation_indicator == 0 || 3
-                	if(fragment_metadata->mmtp_mpu_type_packet_header.mpu_fragmentation_indicator == 0 || fragment_metadata->mmtp_mpu_type_packet_header.mpu_fragmentation_indicator == 3) {
-                	 	found_movie_fragment_metadata = true;
-                	}
-                    __ISOBMFF_TOOLS_DEBUG("Movie Fragment Metadata: Searching mpu_seq_num: %u, Found for fragment_metadata: %d, packet_id: %d, mpu_sequence_number: %u, fragmentation_indicator: %u, fragmentation_counter: %u",
-                                         mpu_sequence_number,
-										 found_movie_fragment_metadata,
-                                         fragment_metadata->mmtp_packet_header.mmtp_packet_id,
-                                         fragment_metadata->mmtp_mpu_type_packet_header.mpu_sequence_number,
-                                         fragment_metadata->mmtp_mpu_type_packet_header.mpu_fragmentation_indicator,
-                                         fragment_metadata->mmtp_mpu_type_packet_header.mpu_fragmentation_counter);
-
-                } else {
-                    __ISOBMFF_TOOLS_DEBUG("Movie Fragment Metadata recon - unknown packet_id: %u, requested packet_id: %u", udp_flow_packet_id_mpu_sequence_tuple->packet_id, packet_id);
-                }
-            }
-        } else {
-            __ISOBMFF_TOOLS_WARN("Movie Fragment Metadata: no timed fragments in this payload: packet_id: %u, mpu_sequence_number: %u", packet_id, mpu_sequence_number);
-	   }
-	}
-
-    for(int i=0; i < udp_flow_latest_mpu_sequence_number_container->udp_flows_n; i++) {
-        udp_flow_packet_id_mpu_sequence_tuple_t* udp_flow_packet_id_mpu_sequence_tuple = udp_flow_latest_mpu_sequence_number_container->udp_flows[i];
-        __ISOBMFF_TOOLS_DEBUG("data unit recon: udp_flow_packet_id_mpu_sequence_tuple: ip: %u:%d, packet_id: %d", udp_flow_packet_id_mpu_sequence_tuple->udp_flow.dst_ip_addr, udp_flow_packet_id_mpu_sequence_tuple->udp_flow.dst_port, packet_id);
-        mmtp_sub_flow = mmtp_sub_flow_vector_find_packet_id(mmtp_sub_flow_vector, udp_flow, packet_id);
-
-        //hack for the previous sequence number which should be complete
-        if(udp_flow_packet_id_mpu_sequence_tuple->packet_id == packet_id) {
-            data_unit_payload_types = mpu_data_unit_payload_fragments_find_mpu_sequence_number(&mmtp_sub_flow->mpu_fragments->media_fragment_unit_vector, mpu_sequence_number);
-        } else {
-            __ISOBMFF_TOOLS_DEBUG("data unit recon: unknown packet_id: %u when requesting packet_id: %u", udp_flow_packet_id_mpu_sequence_tuple->packet_id, packet_id);
-            data_unit_payload_types = NULL;
-            continue;
-        }
-        mmtp_payload_fragments_union_t* mpu_data_unit_payload_fragments_timed = NULL;
-
-        if(data_unit_payload_types && data_unit_payload_types->timed_fragments_vector.size) {
-            total_fragments = data_unit_payload_types->timed_fragments_vector.size;
-            //push to mpu_push_output_buffer
-            for(int i=0; i < total_fragments; i++) {
-                mmtp_payload_fragments_union_t* data_unit = data_unit_payload_types->timed_fragments_vector.data[i];
-
-                //sanity check
-                if(data_unit->mmtp_mpu_type_packet_header.mmtp_packet_id == packet_id) {
-                    __ISOBMFF_TOOLS_TRACE("data unit recon, ip: %u:%d, packet_id: %d", udp_flow_packet_id_mpu_sequence_tuple->udp_flow.dst_ip_addr, udp_flow_packet_id_mpu_sequence_tuple->udp_flow.dst_port, packet_id);
-
-					lls_sls_monitor_output_buffer_copy_and_recover_sample_fragment_block(lls_sls_monitor_buffer_isobmff, data_unit);
-                } else {
-                    __ISOBMFF_TOOLS_DEBUG("data unit recon - unknown packet_id: %u when processing data_unit_payload_types: %u", data_unit->mmtp_mpu_type_packet_header.mmtp_packet_id, packet_id);
-                }
+    
+    
+    for(int i=0; i < mpu_sequence_number_mmtp_mpu_packet_collection->mmtp_mpu_packet_v.count; i++) {
+        mmtp_mpu_packet_t* mmtp_mpu_packet = mpu_sequence_number_mmtp_mpu_packet_collection->mmtp_mpu_packet_v.data[i];
+        
+        //assume no loss/re-sequencing for now..
+        if(mmtp_mpu_packet->du_movie_fragment_block) {
+            if(!movie_fragment_metadata) {
+                __ISOBMFF_TOOLS_DEBUG("i: %u, psn: %u, Found Movie Fragment Metadata with %u:%u and packet_id: %u, mpu_sequence_number: %u, fragment_indicator: %u",
+                                      i, mmtp_mpu_packet->packet_sequence_number, udp_flow->dst_ip_addr, udp_flow->dst_port, mmtp_mpu_packet->mmtp_packet_id, mmtp_mpu_packet->mpu_sequence_number, mmtp_mpu_packet->mpu_fragmentation_indicator);
+                
+                movie_fragment_metadata = block_Duplicate(mmtp_mpu_packet->du_movie_fragment_block);
+            } else {
+                __ISOBMFF_TOOLS_DEBUG("i: %u, psn: %u, Appending Movie Fragment Metadata with %u:%u and packet_id: %u, mpu_sequence_number: %u, fragment_indicator: %u",
+                                      i, mmtp_mpu_packet->packet_sequence_number, udp_flow->dst_ip_addr, udp_flow->dst_port, mmtp_mpu_packet->mmtp_packet_id, mmtp_mpu_packet->mpu_sequence_number, mmtp_mpu_packet->mpu_fragmentation_indicator);
+                block_Merge(movie_fragment_metadata, mmtp_mpu_packet->du_movie_fragment_block);
             }
         }
     }
+    
+    if(!movie_fragment_metadata) {
+        __ISOBMFF_TOOLS_WARN("movie_fragment_metadata missing!");
+        goto fail;
+    }
+    
+    lls_sls_monitor_output_buffer_copy_or_append_moof_block_from_flow(lls_sls_monitor_buffer_isobmff, movie_fragment_metadata);
+    
+    __ISOBMFF_TOOLS_DEBUG("data unit recon: ip: %u:%d, packet_id: %d, mpu_sequence_number: %d", udp_flow->dst_ip_addr, udp_flow->dst_port, packet_id, mpu_sequence_number);
+    
+    for(int i=0; i < mpu_sequence_number_mmtp_mpu_packet_collection->mmtp_mpu_packet_v.count; i++) {
+        mmtp_mpu_packet_t* mmtp_mpu_packet = mpu_sequence_number_mmtp_mpu_packet_collection->mmtp_mpu_packet_v.data[i];
+        
+        //assume no loss/re-sequencing for now..
+        if(mmtp_mpu_packet->du_mfu_block) {
+            __ISOBMFF_TOOLS_TRACE("Found mfu du with %u:%u and packet_id: %u, mpu_sequence_number: %u, fragment_indicator: %u",
+                                  udp_flow->dst_ip_addr, udp_flow->dst_port, packet_id, mpu_sequence_number, mmtp_mpu_packet->mpu_fragmentation_indicator);
 
-    //todo - clean this up...
-
-    for(int f=0; f < udp_flow_latest_mpu_sequence_number_container->udp_flows_n; f++) {
-    	__ISOBMFF_TOOLS_SIGNALLING_DEBUG("signaling: checking flow: %u", f);
-
-        udp_flow_packet_id_mpu_sequence_tuple_t* udp_flow_packet_id_mpu_sequence_tuple = udp_flow_latest_mpu_sequence_number_container->udp_flows[f];
-
-        mmtp_sub_flow = mmtp_sub_flow_vector_find_packet_id(mmtp_sub_flow_vector, udp_flow, packet_id);
-        if(!mmtp_sub_flow) {
-			__ISOBMFF_TOOLS_SIGNALLING_DEBUG("signaling: no sub flow for packet_id: %u",  packet_id);
-        	continue;
+            lls_sls_monitor_output_buffer_copy_and_recover_sample_fragment_block(lls_sls_monitor_buffer_isobmff, mmtp_mpu_packet);
         }
+    }
+    
+    __ISOBMFF_TOOLS_SIGNALLING_DEBUG("signaling: checking flow");
+    
+    //TODO: jjustman-2019-09-05 - clear this flow...
+    
+    for(int i=0; i < mmtp_packet_id_packets_container->mmtp_signalling_packet_v.count; i++) {
+        mmtp_signalling_packet_t* mmtp_signalling_packet = mmtp_packet_id_packets_container->mmtp_signalling_packet_v.data[i];
+        __ISOBMFF_TOOLS_SIGNALLING_DEBUG("signaling vector: idx: %u, messages_n is: %u", i, mmtp_signalling_packet->mmt_signalling_message_header_and_payload_v.count);
+        
+        for(int j=0; j < mmtp_signalling_packet->mmt_signalling_message_header_and_payload_v.count; j++) {
+            mmt_signalling_message_header_and_payload_t* mmt_signalling_message_header_and_payload = mmtp_signalling_packet->mmt_signalling_message_header_and_payload_v.data[j];
+            
+            __ISOBMFF_TOOLS_SIGNALLING_DEBUG("checking signaling message: j idx: %u, message_id is %u", j, mmt_signalling_message_header_and_payload->message_header.message_id);
 
-        mmtp_signalling_message_fragments_vector_t* mmtp_signalling_message_fragments_vector = &mmtp_sub_flow->mmtp_signalling_message_fragements_vector;
+            if(mmt_signalling_message_header_and_payload->message_header.MESSAGE_id_type == MPT_message) {
+                mp_table_t* mp_table = &mmt_signalling_message_header_and_payload->message_payload.mp_table;
 
-		for(int i=0; i < mmtp_signalling_message_fragments_vector->size; i++) {
-			mmt_signalling_message_vector_t* mmt_signalling_message_vector = &mmtp_signalling_message_fragments_vector->data[i]->mmtp_signalling_message_fragments.mmt_signalling_message_vector;
+                if(mp_table->number_of_assets) {
+                    for(int k=0; k < mp_table->number_of_assets; k++) {
+                        //slight hack, check the asset types and default_asset = 1
+                        mp_table_asset_row_t* mp_table_asset_row = &mp_table->mp_table_asset_row[k];
 
-			__ISOBMFF_TOOLS_SIGNALLING_DEBUG("signaling vector: idx: %u, messages_n is: %u", i, mmt_signalling_message_vector->messages_n);
+                        __ISOBMFF_TOOLS_SIGNALLING_DEBUG("MPT message: checking packet_id: %u, asset_type: %s, default: %u, identifier: %s",
+                                mp_table_asset_row->mmt_general_location_info.packet_id,
+                                mp_table_asset_row->asset_type, mp_table_asset_row->default_asset_flag,
+                                mp_table_asset_row->identifier_mapping.asset_id.asset_id ? (const char*)mp_table_asset_row->identifier_mapping.asset_id.asset_id : "");
 
-			for(int j=0; j < mmt_signalling_message_vector->messages_n; j++) {
-				mmt_signalling_message_header_and_payload_t* mmt_signalling_message_header_and_payload = mmt_signalling_message_vector->messages[j];
-				__ISOBMFF_TOOLS_SIGNALLING_DEBUG("checking signaling message: j idx: %u, message_id is %u", j, mmt_signalling_message_header_and_payload->message_header.message_id);
+                        if(mp_table_asset_row->mmt_signalling_message_mpu_timestamp_descriptor && mp_table_asset_row->mmt_signalling_message_mpu_timestamp_descriptor->mpu_tuple_n) {
+                            for(int l=0; l < mp_table_asset_row->mmt_signalling_message_mpu_timestamp_descriptor->mpu_tuple_n; l++) {
+                                mmt_signalling_message_mpu_tuple_t* mmt_signaling_message_mpu_tuple = &mp_table_asset_row->mmt_signalling_message_mpu_timestamp_descriptor->mpu_tuple[l];
 
-				if(mmt_signalling_message_header_and_payload->message_header.MESSAGE_id_type == MPT_message) {
-					mp_table_t* mp_table = &mmt_signalling_message_header_and_payload->message_payload.mp_table;
+                                if(mp_table_asset_row->mmt_general_location_info.packet_id == packet_id &&    mmt_signaling_message_mpu_tuple->mpu_sequence_number == mpu_sequence_number) {
+                                    lls_sls_monitor_buffer_isobmff->mpu_presentation_time = mmt_signaling_message_mpu_tuple->mpu_presentation_time;
+                                    lls_sls_monitor_buffer_isobmff->mpu_presentation_time_set = true;
 
-					if(mp_table->number_of_assets) {
-						for(int k=0; k < mp_table->number_of_assets; k++) {
-							//slight hack, check the asset types and default_asset = 1
-							mp_table_asset_row_t* mp_table_asset_row = &mp_table->mp_table_asset_row[k];
+                                    compute_ntp64_to_seconds_microseconds(lls_sls_monitor_buffer_isobmff->mpu_presentation_time, &lls_sls_monitor_buffer_isobmff->mpu_presentation_time_s, &lls_sls_monitor_buffer_isobmff->mpu_presentation_time_us);
 
-							__ISOBMFF_TOOLS_SIGNALLING_DEBUG("MPT message: checking packet_id: %u, asset_type: %s, default: %u, identifier: %s",
-									mp_table_asset_row->mmt_general_location_info.packet_id,
-									mp_table_asset_row->asset_type, mp_table_asset_row->default_asset_flag,
-									mp_table_asset_row->identifier_mapping.asset_id.asset_id ? (const char*)mp_table_asset_row->identifier_mapping.asset_id.asset_id : "");
-
-							if(mp_table_asset_row->mmt_signaling_message_mpu_timestamp_descriptor && mp_table_asset_row->mmt_signaling_message_mpu_timestamp_descriptor->mpu_tuple_n) {
-								for(int l=0; l < mp_table_asset_row->mmt_signaling_message_mpu_timestamp_descriptor->mpu_tuple_n; l++) {
-									mmt_signaling_message_mpu_tuple_t* mmt_signaling_message_mpu_tuple = &mp_table_asset_row->mmt_signaling_message_mpu_timestamp_descriptor->mpu_tuple[l];
-
-									if(mp_table_asset_row->mmt_general_location_info.packet_id == packet_id &&	mmt_signaling_message_mpu_tuple->mpu_sequence_number == mpu_sequence_number) {
-										lls_sls_monitor_buffer_isobmff->mpu_presentation_time = mmt_signaling_message_mpu_tuple->mpu_presentation_time;
-										lls_sls_monitor_buffer_isobmff->mpu_presentation_time_set = true;
-
-										compute_ntp64_to_seconds_microseconds(lls_sls_monitor_buffer_isobmff->mpu_presentation_time, &lls_sls_monitor_buffer_isobmff->mpu_presentation_time_s, &lls_sls_monitor_buffer_isobmff->mpu_presentation_time_us);
-
-										__ISOBMFF_TOOLS_SIGNALLING_DEBUG("setting packet_id: %u, mpu_sequence_number: %u to mpu_presentation_time: %llu, seconds: %u, ms: %u",
-												mp_table_asset_row->mmt_general_location_info.packet_id,
-												mpu_sequence_number,
-												lls_sls_monitor_buffer_isobmff->mpu_presentation_time,
-												lls_sls_monitor_buffer_isobmff->mpu_presentation_time_s,
-												lls_sls_monitor_buffer_isobmff->mpu_presentation_time_us);
+                                    __ISOBMFF_TOOLS_SIGNALLING_DEBUG("setting packet_id: %u, mpu_sequence_number: %u to mpu_presentation_time: %llu, seconds: %u, ms: %u",
+                                            mp_table_asset_row->mmt_general_location_info.packet_id,
+                                            mpu_sequence_number,
+                                            lls_sls_monitor_buffer_isobmff->mpu_presentation_time,
+                                            lls_sls_monitor_buffer_isobmff->mpu_presentation_time_s,
+                                            lls_sls_monitor_buffer_isobmff->mpu_presentation_time_us);
 
 
-									}
-								}
-							}
-						}
-					}
-				}
-			}
-		}
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
     }
 
     if(lls_sls_monitor_buffer_isobmff->trun_sample_entry_v.count) {
@@ -536,9 +472,36 @@ lls_sls_monitor_buffer_isobmff_t* atsc3_isobmff_build_raw_mpu_from_single_sequen
 				  mpu_sequence_number,
 				  lls_sls_monitor_buffer_isobmff->trun_sample_entry_v.count);
 
-    	 return atsc3_isobmff_build_patched_mdat_fragment(lls_sls_monitor_buffer_isobmff);
+        lls_sls_monitor_buffer_isobmff_t* lls_sls_monitor_buffer_isobmff_pending_mux = atsc3_isobmff_build_patched_mdat_fragment(lls_sls_monitor_buffer_isobmff);
+        
+        if(mpu_metadata_fragment) {
+            block_Destroy(&mpu_metadata_fragment);
+        }
+        
+        if(movie_fragment_metadata) {
+            block_Destroy(&movie_fragment_metadata);
+        }
+        
+        if(mfu_mdat) {
+            block_Destroy(&mfu_mdat);
+        }
+
+        return lls_sls_monitor_buffer_isobmff_pending_mux;
     }
 
+fail:
+    if(mpu_metadata_fragment) {
+        block_Destroy(&mpu_metadata_fragment);
+    }
+    
+    if(movie_fragment_metadata) {
+        block_Destroy(&movie_fragment_metadata);
+    }
+    
+    if(mfu_mdat) {
+        block_Destroy(&mfu_mdat);
+    }
+    
     //otherwise, we were unable to rebuild this mpu
     __ISOBMFF_TOOLS_WARN("unable to rebuild: packet_id: %u, mpu_sequence_number: %u",
         	    			  packet_id,
@@ -597,7 +560,7 @@ lls_sls_monitor_output_buffer_t* atsc3_isobmff_build_mpu_metadata_ftyp_moof_mdat
 		if(movie_metadata_fragments && movie_metadata_fragments->timed_fragments_vector.size) {
             for(int i=0; i < movie_metadata_fragments->timed_fragments_vector.size; i++) {
                 fragment_metadata = movie_metadata_fragments->timed_fragments_vector.data[i];
-                __ISOBMFF_TOOLS_INFO("Movie Fragment Metadata: Found for fragment_metadata packet_id: %d, mpu_sequence_number: %u, fragmentation_indicator: %u, fragmentation_counter: %u", fragment_metadata->mmtp_packet_header.mmtp_packet_id, udp_flow_packet_id_mpu_sequence_tuple->mpu_sequence_number, fragment_metadata->mmtp_mpu_type_packet_header.mpu_fragmentation_indicator, fragment_metadata->mmtp_mpu_type_packet_header.mpu_fragmentation_counter);
+                __ISOBMFF_TOOLS_INFO("Movie Fragment Metadata: Found for fragment_metadata packet_id: %d, mpu_sequence_number: %u, fragmentation_indicator: %u, fragmentation_counter: %u", fragment_metadata->mmtp_packet_header->mmtp_packet_id, udp_flow_packet_id_mpu_sequence_tuple->mpu_sequence_number, fragment_metadata->mmtp_mpu_type_packet_header.mpu_fragmentation_indicator, fragment_metadata->mmtp_mpu_type_packet_header.mpu_fragmentation_counter);
 
                 //rebuild if we are fragmented
                 if(udp_flow_packet_id_mpu_sequence_tuple->packet_id == lls_sls_mmt_monitor->video_packet_id) {
@@ -740,7 +703,7 @@ lls_sls_monitor_output_buffer_t* atsc3_isobmff_build_mpu_metadata_ftyp_moof_mdat
             for(int i=0; i < movie_metadata_fragments->timed_fragments_vector.size; i++) {
                 fragment_metadata = movie_metadata_fragments->timed_fragments_vector.data[i];
                 __ISOBMFF_TOOLS_INFO("Movie Fragment Metadata: Found for fragment_metadata packet_id: %d, mpu_sequence_number: %u, fragmentation_indicator: %u, fragmentation_counter: %u",
-                                     fragment_metadata->mmtp_packet_header.mmtp_packet_id,
+                                     fragment_metadata->mmtp_packet_header->mmtp_packet_id,
                                      fragment_metadata->mmtp_mpu_type_packet_header.mpu_sequence_number,
                                      fragment_metadata->mmtp_mpu_type_packet_header.mpu_fragmentation_indicator,
                                      fragment_metadata->mmtp_mpu_type_packet_header.mpu_fragmentation_counter);
@@ -847,9 +810,9 @@ lls_sls_monitor_output_buffer_t* atsc3_isobmff_build_mpu_metadata_ftyp_moof_mdat
 
 							__ISOBMFF_TOOLS_SIGNALLING_DEBUG("MPT message: checking packet_id: %u, asset_type: %s, default: %u, identifier: %s", mp_table_asset_row->mmt_general_location_info.packet_id, mp_table_asset_row->asset_type, mp_table_asset_row->default_asset_flag, mp_table_asset_row->identifier_mapping.asset_id.asset_id ? (const char*)mp_table_asset_row->identifier_mapping.asset_id.asset_id : "");
 
-							if(mp_table_asset_row->mmt_signaling_message_mpu_timestamp_descriptor && mp_table_asset_row->mmt_signaling_message_mpu_timestamp_descriptor->mpu_tuple_n) {
-								for(int l=0; l < mp_table_asset_row->mmt_signaling_message_mpu_timestamp_descriptor->mpu_tuple_n; l++) {
-									mmt_signaling_message_mpu_tuple_t* mmt_signaling_message_mpu_tuple = &mp_table_asset_row->mmt_signaling_message_mpu_timestamp_descriptor->mpu_tuple[l];
+							if(mp_table_asset_row->mmt_signalling_message_mpu_timestamp_descriptor && mp_table_asset_row->mmt_signalling_message_mpu_timestamp_descriptor->mpu_tuple_n) {
+								for(int l=0; l < mp_table_asset_row->mmt_signalling_message_mpu_timestamp_descriptor->mpu_tuple_n; l++) {
+									mmt_signalling_message_mpu_tuple_t* mmt_signaling_message_mpu_tuple = &mp_table_asset_row->mmt_signalling_message_mpu_timestamp_descriptor->mpu_tuple[l];
 
 
 
@@ -997,7 +960,7 @@ lls_sls_monitor_output_buffer_t* atsc3_isobmff_build_mpu_metadata_ftyp_moof_mdat
             for(int i=0; i < movie_metadata_fragments->timed_fragments_vector.size; i++) {
                 fragment_metadata = movie_metadata_fragments->timed_fragments_vector.data[i];
                 __ISOBMFF_TOOLS_INFO("Movie Fragment Metadata: Found for fragment_metadata packet_id: %d, mpu_sequence_number: %u, fragmentation_indicator: %u, fragmentation_counter: %u",
-                                     fragment_metadata->mmtp_packet_header.mmtp_packet_id,
+                                     fragment_metadata->mmtp_packet_header->mmtp_packet_id,
                                      fragment_metadata->mmtp_mpu_type_packet_header.mpu_sequence_number,
                                      fragment_metadata->mmtp_mpu_type_packet_header.mpu_fragmentation_indicator,
                                      fragment_metadata->mmtp_mpu_type_packet_header.mpu_fragmentation_counter);
@@ -1097,9 +1060,9 @@ lls_sls_monitor_output_buffer_t* atsc3_isobmff_build_mpu_metadata_ftyp_moof_mdat
 
 							__ISOBMFF_TOOLS_WARN("MPT message: checking packet_id: %u, asset_type: %s, default: %u, identifier: %s", mp_table_asset_row->mmt_general_location_info.packet_id, mp_table_asset_row->asset_type, mp_table_asset_row->default_asset_flag, mp_table_asset_row->identifier_mapping.asset_id.asset_id ? (const char*)mp_table_asset_row->identifier_mapping.asset_id.asset_id : "");
 
-							if(mp_table_asset_row->mmt_signaling_message_mpu_timestamp_descriptor && mp_table_asset_row->mmt_signaling_message_mpu_timestamp_descriptor->mpu_tuple_n) {
-								for(int l=0; l < mp_table_asset_row->mmt_signaling_message_mpu_timestamp_descriptor->mpu_tuple_n; l++) {
-									mmt_signaling_message_mpu_tuple_t* mmt_signaling_message_mpu_tuple = &mp_table_asset_row->mmt_signaling_message_mpu_timestamp_descriptor->mpu_tuple[l];
+							if(mp_table_asset_row->mmt_signalling_message_mpu_timestamp_descriptor && mp_table_asset_row->mmt_signalling_message_mpu_timestamp_descriptor->mpu_tuple_n) {
+								for(int l=0; l < mp_table_asset_row->mmt_signalling_message_mpu_timestamp_descriptor->mpu_tuple_n; l++) {
+									mmt_signalling_message_mpu_tuple_t* mmt_signaling_message_mpu_tuple = &mp_table_asset_row->mmt_signalling_message_mpu_timestamp_descriptor->mpu_tuple[l];
 
 
 
