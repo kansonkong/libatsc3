@@ -99,6 +99,9 @@ See Annex F Sec. 6.4 Sec. 6.5 Sec. 6.6
 
  */
 
+/**
+ TODO: jjustman-2019-09-18 - move to block_t
+ **/
 typedef struct llt_xml_payload {
 	uint8_t 	*xml_payload_compressed;
 	uint32_t 	xml_payload_compressed_size;
@@ -255,8 +258,11 @@ typedef struct system_time_table {
 } system_time_table_t;
 
 typedef struct on_screen_message_notification {
+    char*      on_screen_message_notification_xml_fragment_latest;
 	void* to_implement;
 } on_screen_message_notification_t;
+
+
 typedef struct lls_reserved_table {
 	void* to_implement;
 } lls_reserved_table_t;
@@ -524,9 +530,19 @@ typedef struct lls_slt_monitor {
     //jjustman-2019-08-10 - TODO - change this over to ATSC3_VECTOR_BUILDER
     lls_sls_mmt_session_vector_t* lls_sls_mmt_session_vector;
     lls_sls_alc_session_vector_t* lls_sls_alc_session_vector;
+    
 	lls_service_t* lls_service;
 
 	lls_table_t* lls_table_slt;
+    
+    //use this against aeat_table_latest.atsc3_aeat_table_t
+    lls_table_t* aeat_table_latest;
+    
+    //use this against on_screen_message_notification
+    lls_table_t* on_screen_message_notification_latest;
+    
+    
+    
 
 } lls_slt_monitor_t;
 

@@ -19,7 +19,22 @@ atsc3_aeat_table_t* atsc3_aeat_table_new() {
 }
 
 void atsc3_aeat_table_free(atsc3_aeat_table_t** atsc3_aeat_table_p) {
-	//TODO impl
+    if(atsc3_aeat_table_p) {
+        atsc3_aeat_table_t* atsc3_aeat_table = *atsc3_aeat_table_p;
+        if(atsc3_aeat_table) {
+            if(atsc3_aeat_table->aeat_xml_fragment_latest) {
+                free(atsc3_aeat_table->aeat_xml_fragment_latest);
+                atsc3_aeat_table->aeat_xml_fragment_latest = NULL;
+            }
+            
+            //clear atsc3_aeat_table->atsc3_aea_table
+            
+            free(atsc3_aeat_table);
+            atsc3_aeat_table = NULL;
+        }
+        
+        *atsc3_aeat_table_p = NULL;
+    }
 }
 
 

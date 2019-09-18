@@ -653,6 +653,8 @@ int main(int argc,char **argv) {
     
     _AEAT_PARSER_DEBUG_ENABLED = 1;
     _AEAT_PARSER_TRACE_ENABLED = 1;
+    
+    _LLS_INFO_ENABLED = 1;
 
 
 #ifdef __LOTS_OF_DEBUGGING__
