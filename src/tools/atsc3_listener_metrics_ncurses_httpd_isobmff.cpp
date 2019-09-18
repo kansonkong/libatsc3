@@ -4,6 +4,8 @@
  *  Created on: Mar 17, 2019
  *      Author: jjustman
  *
+ * NOTE: MPU-reassembly for MMT, TODO: move to MFU emmission to decoder buffer
+ * 
  * global listener driver for LLS, MMT and ROUTE / DASH with refragmented http output on port 8888
  *
  *
@@ -39,6 +41,8 @@ int PACKET_COUNTER=0;
 
 #include "../atsc3_listener_udp.h"
 #include "../atsc3_utils.h"
+#include "../atsc3_logging_externs.h"
+
 
 #include "../atsc3_lls.h"
 #include "../atsc3_lls_alc_utils.h"
@@ -61,8 +65,6 @@ int PACKET_COUNTER=0;
 
 #include "../atsc3_output_statistics_ncurses.h"
 
-#include "../atsc3_logging_externs.h"
-
 
 #define _ENABLE_DEBUG true
 
@@ -73,18 +75,22 @@ uint32_t* dst_ip_addr_filter = NULL;
 uint16_t* dst_ip_port_filter = NULL;
 uint16_t* dst_packet_id_filter = NULL;
 
-// lls and alc glue for slt, contains lls_table_slt and lls_slt_alc_session
+//jjustman-2019-09-18: refactored MMTP flow collection management
+mmtp_flow_t* mmtp_flow;
 
+//todo: jjustman-2019-09-18 refactor me out for mpu recon persitance
+udp_flow_latest_mpu_sequence_number_container_t* udp_flow_latest_mpu_sequence_number_container;
+
+// lls and alc glue for slt, contains lls_table_slt and lls_slt_alc_session
 lls_slt_monitor_t* lls_slt_monitor;
 
-//make sure to invoke     mmtp_sub_flow_vector_init(&p_sys->mmtp_sub_flow_vector);
-udp_flow_latest_mpu_sequence_number_container_t* udp_flow_latest_mpu_sequence_number_container;
-extern global_atsc3_stats_t*                            global_stats;
-
+extern global_atsc3_stats_t* global_stats;
 
 /**
  *
- * httpd listener testing
+ * httpd listener integration
+ *
+ * jjustman-2019-09-18: TODO: refactor this out
  */
 
 
@@ -280,7 +286,7 @@ void count_packet_as_filtered(udp_packet_t* udp_packet) {
 	global_bandwidth_statistics->interval_filtered_current_packets_rx++;
 }
 
-void update_global_mmtp_statistics_from_udp_packet_t(udp_packet_t *udp_packet) {
+void update_global_mmtp_statistics_from_udp_packet_t(lls_sls_mmt_session_t* matching_lls_sls_mmt_session, udp_packet_t *udp_packet) {
 	global_bandwidth_statistics->interval_mmt_current_bytes_rx += udp_packet->data->p_size;
 
 	mmtp_packet_header_t* mmtp_packet_header = mmtp_packet_header_parse_from_block_t(udp_packet->data);
@@ -304,13 +310,8 @@ void update_global_mmtp_statistics_from_udp_packet_t(udp_packet_t *udp_packet) {
 
 		if(mmtp_mpu_packet->mpu_timed_flag == 1) {
 		    atsc3_packet_statistics_mmt_stats_populate(udp_packet, mmtp_mpu_packet);
+            mmtp_mpu_packet = mmtp_process_from_payload(mmtp_mpu_packet, mmtp_flow, lls_slt_monitor, udp_packet, udp_flow_latest_mpu_sequence_number_container, matching_lls_sls_mmt_session);
 
-            block_Destroy(&mmtp_mpu_packet->du_mpu_metadata_block);
-            block_Destroy(&mmtp_mpu_packet->du_mfu_block);
-            block_Destroy(&mmtp_mpu_packet->du_movie_fragment_block);
-
-            //
-			//mmtp_mpu_dump_header(mmtp_mpu_packet);
 		} else {
 			//non-timed
 			__ATSC3_WARN("mmtp_packet_parse: non-timed payload: packet_id: %u", mmtp_packet_header->mmtp_packet_id);
@@ -322,8 +323,28 @@ void update_global_mmtp_statistics_from_udp_packet_t(udp_packet_t *udp_packet) {
 		if(parsed_count) {
 			mmt_signalling_message_dump(mmtp_signalling_packet);
 			//temp hack until we are managing flows better
-			mmtp_signalling_packet_free(&mmtp_signalling_packet);
+			    /* keep this packet around for processing **/
+            //assign our mmtp_mpu_packet to asset/packet_id/mpu_sequence_number flow
+            mmtp_asset_flow_t* mmtp_asset_flow = mmtp_flow_find_or_create_from_udp_packet(mmtp_flow, udp_packet);
+            mmtp_asset_t* mmtp_asset = mmtp_asset_flow_find_or_create_asset_from_lls_sls_mmt_session(mmtp_asset_flow, matching_lls_sls_mmt_session);
+           
+            //TODO: FIX ME!!! HACK - jjustman-2019-09-05
+            mmtp_mpu_packet_t* mmtp_mpu_packet = mmtp_mpu_packet_new();
+            mmtp_mpu_packet->mmtp_packet_id = mmtp_signalling_packet->mmtp_packet_id;
+            
+            mmtp_packet_id_packets_container_t* mmtp_packet_id_packets_container = mmtp_asset_find_or_create_packets_container_from_mmt_mpu_packet(mmtp_asset, mmtp_mpu_packet);
+            mmtp_packet_id_packets_container_add_mmtp_signalling_packet(mmtp_packet_id_packets_container, mmtp_signalling_packet);
+            
+            //TODO: FIX ME!!! HACK - jjustman-2019-09-05
+            mmtp_mpu_packet_free(&mmtp_mpu_packet);
+            
+            //update our sls_mmt_session info
+            mmt_signalling_message_update_lls_sls_mmt_session(mmtp_signalling_packet, matching_lls_sls_mmt_session);
+ 
 		} else {
+            //jjustman-2019-09-05 - unsupported signalling message type, so free immediately
+            mmtp_signalling_packet_free(&mmtp_signalling_packet);
+
 			goto error;
 		}
 
@@ -346,9 +367,9 @@ void update_global_mmtp_statistics_from_udp_packet_t(udp_packet_t *udp_packet) {
 				udp_packet->udp_flow.dst_ip_addr);
     
  cleanup:
-
- 	 ;
-
+    if(mmtp_packet_header) {
+        mmtp_packet_header_free(&mmtp_packet_header);
+    }
 }
 
 /**
@@ -571,10 +592,10 @@ void process_packet(u_char *user, const struct pcap_pkthdr *pkthdr, const u_char
 	}
 
 	//find our matching MMT flow and push it to reconsitution
-    lls_sls_mmt_session_t* matching_lls_slt_mmt_session = lls_slt_mmt_session_find_from_udp_packet(lls_slt_monitor, udp_packet->udp_flow.src_ip_addr, udp_packet->udp_flow.dst_ip_addr, udp_packet->udp_flow.dst_port);
-    if(matching_lls_slt_mmt_session) {
+    lls_sls_mmt_session_t* matching_lls_sls_mmt_session = lls_slt_mmt_session_find_from_udp_packet(lls_slt_monitor, udp_packet->udp_flow.src_ip_addr, udp_packet->udp_flow.dst_ip_addr, udp_packet->udp_flow.dst_port);
+    if(matching_lls_sls_mmt_session) {
         __TRACE("data len: %d", udp_packet->data_length);
-        update_global_mmtp_statistics_from_udp_packet_t(udp_packet);
+        update_global_mmtp_statistics_from_udp_packet_t(matching_lls_sls_mmt_session, udp_packet);
 
         return udp_packet_free(&udp_packet);
 	}
@@ -735,11 +756,12 @@ int main(int argc,char **argv) {
     	exit(1);
     }
     // mkdir("mpu", 0777);
-
+    // mkdir("route", 0777);
+    
     /** setup global structs **/
-
-
     lls_slt_monitor = lls_slt_monitor_create();
+    mmtp_flow = mmtp_flow_new();
+    udp_flow_latest_mpu_sequence_number_container = udp_flow_latest_mpu_sequence_number_container_t_init();
 
     gettimeofday(&global_stats->program_timeval_start, 0);
 
