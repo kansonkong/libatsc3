@@ -145,6 +145,19 @@ atsc3_ip_udp_rtp_packet_t* atsc3_stltp_tunnel_packet_inner_parse_ip_udp_header_o
  invoked from main pcap listener
  */
 
+/*
+ 
+ jjustman-2019-08-20 - investigate inner port for multi-plp emissions...
+ extracted in driver for baseband re-constitution/alp parsing
+ 
+ if(atsc3_stltp_tunnel_packet_current->ip_udp_rtp_packet_inner->udp_flow.dst_port != inner_port) {
+ __STLTP_PARSER_WARN("atsc3_stltp_tunnel_packet_extract_inner_from_outer_packet: inner port mismatch: %d, expected: %d",
+ atsc3_stltp_tunnel_packet_current->ip_udp_rtp_packet_inner->udp_flow.dst_port,
+ inner_port);
+ 
+ goto concatenation_check_for_outer_marker;
+ }
+**/
 atsc3_stltp_tunnel_packet_t* atsc3_stltp_raw_packet_extract_inner_from_outer_packet(atsc3_ip_udp_rtp_packet_t* ip_udp_rtp_packet, atsc3_stltp_tunnel_packet_t* atsc3_stltp_tunnel_packet_last) {
    
     __STLTP_PARSER_DEBUG("  atsc3_stltp_tunnel_packet_extract_inner_from_outer_packet: OUTER: packet: %p, sequence_number: %d, dst: %u.%u.%u.%u:%u, size: %u, pkt: %p",
@@ -331,6 +344,7 @@ atsc3_stltp_tunnel_packet_t* atsc3_stltp_raw_packet_extract_inner_from_outer_pac
                                 block_Remaining_size(atsc3_stltp_tunnel_packet_current->ip_udp_rtp_packet_outer->data));
 
             atsc3_rtp_header_dump_inner(atsc3_stltp_tunnel_packet_current);
+        
             atsc3_stltp_tunnel_packet_extract_fragment_encapsulated_payload(atsc3_stltp_tunnel_packet_current);
             uint32_t current_ip_udp_rtp_packet_data_size_remaining = block_Remaining_size(atsc3_stltp_tunnel_packet_current->ip_udp_rtp_packet_outer->data);
             
@@ -731,7 +745,7 @@ atsc3_stltp_preamble_packet_t* atsc3_stltp_preamble_packet_extract(atsc3_stltp_t
  **/
 
 //jjustman-2019-08-08 - workaround for TMP packets not containing inner marker flag
-#define _ATSC3_D_HACK_TMP_PACKET_MARKER true
+#define _ATSC3_D_HACK_TMP_PACKET_MARKER false
 
 atsc3_stltp_timing_management_packet_t* atsc3_stltp_timing_management_packet_extract(atsc3_stltp_tunnel_packet_t* atsc3_stltp_tunnel_packet_current) {
     

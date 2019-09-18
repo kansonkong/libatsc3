@@ -74,13 +74,14 @@ extern "C" {
 #define EXT_CENC	193				/**< Extension header for FDT content encoding defined by FLUTE */
 
 #define ALC_VERSION		1		/**< ALC version number */
-#define FLUTE_VERSION	1		/**< FLUTE version number */
+#define FLUTE_VERSION_1 1        /**< FLUTE version number */
+#define FLUTE_VERSION_2	2		/**< FLUTE version number */
 
 #define COM_NO_C_FEC_ENC_ID		0	/**< Compact No-Code FEC scheme */ 
 #define SIMPLE_XOR_FEC_ENC_ID   2	/**< Simple XOR FEC scheme */
 #define RS_FEC_ENC_ID			3	/**< Reed-Solomon FEC scheme, identifier not yet decided, 3 used temporarily */
 
-#define SB_LB_E_FEC_ENC_ID		128		/**< Small Block, Large Block and Expandable FEC scheme */
+    #define SB_LB_E_FEC_ENC_ID		128		/**< Small Block, Large Block and Expandable FEC scheme */
 #define SB_SYS_FEC_ENC_ID		129		/**< Small Block Systematic FEC scheme */
 #define COM_FEC_ENC_ID			130		/**< Compact FEC scheme */
 

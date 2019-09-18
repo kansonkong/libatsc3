@@ -145,9 +145,9 @@ int mmtp_packet_header_parse_from_raw_packet(mmtp_payload_fragments_union_t *mmt
 	uint8_t *raw_buf = p_sys->raw_buf;
 	uint8_t *buf = p_sys->buf;
 
-	block_ChainExtract(mmtp_packet->mmtp_packet_header.raw_packet, raw_buf, MAX_MMTP_SIZE);
+	block_ChainExtract(mmtp_packet_header->raw_packet, raw_buf, MAX_MMTP_SIZE);
 
-	//	block_ChainExtract(mmtp_packet->mmtp_packet_header.raw_packet, raw_buf, MAX_MMTP_SIZE);
+	//	block_ChainExtract(mmtp_packet_header->raw_packet, raw_buf, MAX_MMTP_SIZE);
 
 
 

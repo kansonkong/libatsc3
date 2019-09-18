@@ -1,0 +1,13 @@
+<AEAT xmlns="tag:atsc.org,2016:XMLSchemas/ATSC3/Delivery/AEAT/1.0/" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="tag:atsc.org,2016:XMLSchemas/ATSC3/Delivery/AEAT/1.0/ AEAT-1.0-20190122.xsd">
+	<AEA aeaId="AEA-2016091113002100" issuer="KUSR-TV" audience="public" aeaType="alert" priority="3" wakeup="true">
+		<Header effective="2016-09-11T13:00:00.000-07:00" expires="2016-09-11T16:00:00.000-07:00">
+			<EventCode type="SAME">TOR</EventCode>
+			<EventDesc xml:lang="en">Tornado Warning</EventDesc>
+			<Location type="FIPS">20150</Location>
+		</Header>
+		<AEAText xml:lang="en">The National Weather Service has issued a Tornado Warning for Spark County.  A Tornado has been spotted on the ground 2 miles south of Smallville.  This tornado is moving Northeast at 40 MPH.  A Tornado is on the ground in the area of Smallville, Tinytown and Route 83. Take cover now. Move to an interior room on the lowest floor of a sturdy building.  Avoid windows.  Move to the closest shelter and protect yourself from flying debris.</AEAText>
+		<LiveMedia bsid="47 23" serviceId="3">
+			<ServiceName xml:lang="en">KUSR</ServiceName>
+		</LiveMedia>
+	</AEA>
+</AEAT>

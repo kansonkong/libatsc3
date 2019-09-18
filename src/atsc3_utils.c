@@ -227,7 +227,7 @@ block_t* __block_check_bounaries(const char* method_name, block_t* src) {
 		return NULL;
 	}
 
-	if(src->p_size <= 0) {
+	if(src->p_size < 0) {
 		_ATSC3_UTILS_ERROR("%s: block: %p, invalid p_size for p_buffer: %p, p_size is: %u, i_pos: %u", method_name, src, src->p_buffer, src->p_size, src->i_pos);
 		src->p_size = 0;
 		src->i_pos = 0;
@@ -329,6 +329,24 @@ uint32_t block_Append(block_t* dest, block_t* src) {
 	dest->i_pos += src->i_pos;
 
 	return dest->i_pos;
+}
+
+//use src i_pos to append, with the full payload from src
+uint32_t block_AppendFull(block_t* dest, block_t* src) {
+    if(!__block_check_bounaries(__FUNCTION__, dest)) return 0;
+    
+    int dest_size_required = dest->i_pos + src->p_size;
+    if(dest->p_size < dest_size_required) {
+        block_t* ret_block = block_Resize(dest, dest_size_required);
+        if(!ret_block) {
+            _ATSC3_UTILS_ERROR("block_Append: block: %p, unable to realloc from size: %u to %u, returning NULL", dest, dest->p_size, dest_size_required);
+            return 0;
+        }
+    }
+    memcpy(&dest->p_buffer[dest->i_pos], src->p_buffer, src->p_size);
+    dest->i_pos += src->p_size;
+    
+    return dest->i_pos;
 }
 
 //combine 2 separate block_t's into one full payload, using p_size, rather than i_pos for appending
@@ -443,8 +461,10 @@ block_t* block_Resize(block_t* src, uint32_t src_size_requested) {
 	if(!__block_check_bounaries(__FUNCTION__, src)) return NULL;
     int src_size_original = src->p_size;
     int src_i_pos_original = src->i_pos;
-    
-	uint32_t src_size_required = __MAX(64, src_size_requested);
+
+    //uint32_t src_size_required = __MAX(64, src_size_requested);
+    //do not change our size, as this can cause us to leak unexpectedly
+    uint32_t src_size_required = src_size_requested;
 
 	//always over alloc by X bytes for a null pad
 	void* new_block = realloc(src->p_buffer, src_size_required + 8);

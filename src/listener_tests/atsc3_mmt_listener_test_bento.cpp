@@ -31,7 +31,6 @@
 #include "../atsc3_listener_udp.h"
 #include "../atsc3_utils.h"
 #include "../atsc3_lls.h"
-#include "../atsc3_mmtp_types.h"
 #include "../atsc3_mmtp_parser.h"
 #include "../atsc3_mmt_mpu_parser.h"
 #include "../atsc3_mmt_mpu_utils.h"
@@ -40,6 +39,7 @@
 #include "../atsc3_vector.h"
 #include "../atsc3_logging_externs.h"
 #include "../atsc3_mmt_reconstitution_from_media_sample.h"
+#include "../atsc3_mmtp_packet_types.h"
 //#ifdef __cplusplus
 //}
 //#endif
@@ -51,6 +51,7 @@ uint16_t* dst_packet_id_filter = NULL;
 
 lls_slt_monitor_t* lls_slt_monitor;
 global_atsc3_stats_t* global_stats;
+mmtp_flow_t* mmtp_flow;
 
 
 //make sure to invoke     mmtp_sub_flow_vector_init(&p_sys->mmtp_sub_flow_vector);
@@ -92,8 +93,8 @@ void process_packet(u_char *user, const struct pcap_pkthdr *pkthdr, const u_char
 		}
 
 		//for filtering MMT flows by a specific packet_id
-		if(dst_packet_id_filter && *dst_packet_id_filter != mmtp_payload->mmtp_packet_header.mmtp_packet_id) {
-			__TRACE("dropping packet id: %d", mmtp_payload->mmtp_packet_header.mmtp_packet_id);
+		if(dst_packet_id_filter && *dst_packet_id_filter != mmtp_payload->mmtp_packet_header->mmtp_packet_id) {
+			__TRACE("dropping packet id: %d", mmtp_payload->mmtp_packet_header->mmtp_packet_id);
             mmtp_payload_fragments_union_free(&mmtp_payload);
 
             return cleanup(&udp_packet);
@@ -105,7 +106,7 @@ void process_packet(u_char *user, const struct pcap_pkthdr *pkthdr, const u_char
 			__TRACE("data len: %d", udp_packet->data_length)
     	    mmtp_payload_fragments_union_t* mmtp_payload = mmtp_packet_parse(mmtp_sub_flow_vector, udp_packet->data, udp_packet->data_length);
 			if(mmtp_payload) {
-				mmtp_process_from_payload(mmtp_sub_flow_vector, udp_flow_latest_mpu_sequence_number_container, lls_slt_monitor, udp_packet, &mmtp_payload, matching_lls_slt_mmt_session);
+				mmtp_process_from_payload(mmtp_sub_flow_vector, mmtp_flow, udp_flow_latest_mpu_sequence_number_container, lls_slt_monitor, udp_packet, &mmtp_payload, matching_lls_slt_mmt_session);
 			   // mmtp_payload_fragments_union_free(&mmtp_payload);
 			}
 			return cleanup(&udp_packet);
@@ -178,7 +179,6 @@ int main(int argc,char **argv) {
     _MMT_MPU_DEBUG_ENABLED = 0;
     _PLAYER_FFPLAY_DEBUG_ENABLED = 1;
     _MMTP_DEBUG_ENABLED = 0;
-    _MPU_DEBUG_ENABLED = 0;
     _LLS_DEBUG_ENABLED = 0;
 
     //listen to all flows
@@ -236,6 +236,8 @@ int main(int argc,char **argv) {
     	println("");
     	exit(1);
     }
+
+    mmtp_flow = mmtp_flow_new();
 
     mmtp_sub_flow_vector = (mmtp_sub_flow_vector_t*)calloc(1, sizeof(mmtp_sub_flow_vector_t));
     mmtp_sub_flow_vector_init(mmtp_sub_flow_vector);

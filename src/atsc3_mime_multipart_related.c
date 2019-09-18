@@ -8,3 +8,4 @@
 #include "atsc3_mime_multipart_related.h"
 
 ATSC3_VECTOR_BUILDER_METHODS_IMPLEMENTATION(atsc3_mime_multipart_related_instance, atsc3_mime_multipart_related_payload)
+ATSC3_VECTOR_BUILDER_METHODS_ITEM_FREE(atsc3_mime_multipart_related_payload);

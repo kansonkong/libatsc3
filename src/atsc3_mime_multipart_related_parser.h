@@ -10,11 +10,19 @@
  *
  *      http://tools.ietf.org/html/rfc2387
  */
-#include <stdio.h>
-#include <string.h>
+
 
 #ifndef ATSC3_MIME_MULTPART_RELATED_PARSER_H_
 #define ATSC3_MIME_MULTPART_RELATED_PARSER_H_
+
+#include <stdio.h>
+#include <string.h>
+
+
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 
 #include "atsc3_utils.h"
 #include "atsc3_mime_multipart_related.h"
@@ -36,6 +44,12 @@ atsc3_sls_metadata_fragments_t* atsc3_mbms_envelope_to_sls_metadata_fragments_pa
 atsc3_mime_multipart_related_instance_t* atsc3_mime_multipart_related_parser(FILE* fp);
 
 void atsc3_mime_multipart_related_instance_dump(atsc3_mime_multipart_related_instance_t* atsc3_mime_multipart_related_instance);
+
+
+
+#ifdef __cplusplus
+}
+#endif
 
 
 #define __MIME_PARSER_PRINTLN(...)  printf(__VA_ARGS__);printf("%s%s","\r","\n")

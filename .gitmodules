@@ -1,0 +1,15 @@
+[submodule "Collections-C"]
+	path = Collections-C
+	url = https://github.com/srdja/Collections-C.git
+[submodule "openHEVC"]
+	path = openHEVC
+	url = git://github.com/OpenHEVC/openHEVC.git
+[submodule "ffmpeg"]
+	path = ffmpeg
+	url = https://git.ffmpeg.org/ffmpeg.git
+[submodule "libwebsockets"]
+	path = libwebsockets
+	url = https://libwebsockets.org/repo/libwebsockets
+[submodule "jsmn"]
+	path = jsmn
+	url = https://github.com/zserge/jsmn.git

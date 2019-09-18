@@ -66,15 +66,15 @@ void process_packet(u_char *user, const struct pcap_pkthdr *pkthdr, const u_char
 
 	//dispatch for LLS extraction and dump
 	if(udp_packet->udp_flow.dst_ip_addr == LLS_DST_ADDR && udp_packet->udp_flow.dst_port == LLS_DST_PORT) {
-		lls_table_create_or_update_from_lls_slt_monitor(lls_slt_monitor, udp_packet->data, udp_packet->data_length);
-		return cleanup(&udp_packet);
+		lls_table_create_or_update_from_lls_slt_monitor(lls_slt_monitor, udp_packet->data);
+		return udp_packet_free(&udp_packet);
 	}
 
 	lls_sls_alc_session_t* matching_lls_slt_alc_session = lls_slt_alc_session_find_from_udp_packet(lls_slt_monitor, udp_packet->udp_flow.src_ip_addr, udp_packet->udp_flow.dst_ip_addr, udp_packet->udp_flow.dst_port);
 	if(matching_lls_slt_alc_session ||
 			((dst_ip_addr_filter != NULL && dst_ip_port_filter != NULL) && (udp_packet->udp_flow.dst_ip_addr == *dst_ip_addr_filter && udp_packet->udp_flow.dst_port == *dst_ip_port_filter))) {
 		//process ALC streams
-		int retval = alc_rx_analyze_packet_a331_compliant((char*)udp_packet->data, udp_packet->data_length, &ch, &alc_packet);
+		int retval = alc_rx_analyze_packet_a331_compliant((char*)block_Get(udp_packet->data), block_Remaining_size(udp_packet->data), &ch, &alc_packet);
 		if(!retval) {
 			//dump out for fragment inspection
 			//alc_packet_dump_to_object(&alc_packet, lls_slt_monitor->lls_sls_alc_monitor);
@@ -83,11 +83,11 @@ void process_packet(u_char *user, const struct pcap_pkthdr *pkthdr, const u_char
 		}
 	}
 
-cleanup:
+udp_packet_free:
 	alc_packet_free(&alc_packet);
 	alc_packet = NULL;
 
-    return cleanup(&udp_packet);
+    return udp_packet_free(&udp_packet);
 }
 
 int main(int argc,char **argv) {
@@ -102,7 +102,6 @@ int main(int argc,char **argv) {
 	_LLS_DEBUG_ENABLED = 1;
 
 	_LLS_SLT_PARSER_INFO_ROUTE_ENABLED = 1;
-	_ALC_PACKET_DUMP_TO_OBJECT_ENABLED = 1;
     _ALC_UTILS_DEBUG_ENABLED = 1;
     _ALC_UTILS_TRACE_ENABLED = 1;
 
