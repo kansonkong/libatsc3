@@ -1,9 +1,57 @@
-libatsc3
+libatsc3 Overview
 ==========
-ATSC 3.0 NGBP Open Source Library - Parse LMT, LLS and other signaling, object delivery via ROUTE, video playback of MMT and DASH - 2019-03-10
+ATSC 3.0 NGBP Open Source Library - Parse LMT, LLS and other signaling, object delivery via ROUTE, video playback of MMT and DASH
+
+## August, 2019 Update: "Virtual" ATSC 3.0 Airchain with ALP IP Multicast "reflection"
+
+Designed for real-time inspection, analysis and confidence monitoring
+of STLTP flows, with full ALP IP de-encapsulation and playback support.
+
+[In this demo](https://www.dropbox.com/s/bfy23kxscmgenv6/20190801-ATSC3.0-STLTP%20Reflector%20to%20IP%20Multicast%20and%20MMT%20Playback.mov?dl=0), a Virtual NIC is replaying a STLTP .PCAP capture which is 
+received by the A/324 Reflector tool in real-time.  The reflector tool will unwrap 
+the STLTP single multicast IP:Port emission, and produce re-fragmented 
+ALP IP payloads emitted to a second Virtual NIC, including decoding of 
+Baseband, Preamble and T&M packets.
+
+[MMT and ROUTE playback demo](https://www.dropbox.com/s/2fap10i27mrt25z/2019-08-09-stltp%20reflector%20-%20leak%20free%20-%20mmt%20and%20route%20playback-video.mov?dl=0)
+
+For confidence monitoring of content, the reflector tool will fully parse 
+the tunnel payload consisting of A/324 Outer/Inner Tunneled packets,
+ A/321 Baseband Packets, A/330 ALP packets, and emitting the IP output
+on an independent Virtual NIC for service playback.
+
+
+2019-08-09
+jjustman@ngbp.org
+
+More details:
+
+STLTP:  Added new STLTP De-encapsulator/Reflector listener test tool to enable local replay of ATSC 3.0 STLTP pcaps for emission of ALP IP packets.
+
+
+
+To run:
+
+1. Start a test STLTP replay
+ -  sample artifacts here: https://github.com/jjustman/atsc-3.0-mmt-pcaps)
+2. Run the stltp reflector from the src/listener_tests folder as follows:
+ - atsc3_stltp_alp_listener_reflector_test vnic1 239.0.1.3 30000 vnic0 > debug.log
+   - vnic1: multicast input interface
+   - 239.0.1.3 mulicast destination
+   - 30000 mulicast port
+   - vnic0: unicast output interface for ATSC 3.0 ALP IP packet reflection
+3. Run src/tools/atsc3_listener_test/atsc3_listener_metrics_ncurses_httpd_isobmff vnic0 for MMT and ROUTE-DASH replay
+   - vnic0: unicast interface for ATSC 3.0 ALP IP packet consumption
+
+Note: The STLTP Outer, STLTP Inner, Baseband, and ALP IP de-encapsulation leaks will be fixed ASAP.
+
+
+## Updates - 2019-05-09
+MMT: Out-of-order support for parsing MMTHSample and trun box building for ISOBMFF rebuild.  More info soon...
+
 
 ## Updates - 2019-03-17
-NAB is right around the corner, and I've fixed a few bugs with Linux ncurses tools - and added initial STLTP and MMT MPT signaling messages.  Starting to see some AC-4 audio tracks in the wild, please note ffplay won't be able to decode this format...
+I've fixed a few bugs with Linux ncurses tools - and added initial STLTP and MMT MPT signaling messages.  Starting to see some AC-4 audio tracks in the wild, please note ffplay won't be able to decode this format...
 
 
 https://github.com/jjustman/libatsc3
