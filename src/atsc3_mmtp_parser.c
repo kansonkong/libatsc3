@@ -405,6 +405,11 @@ void mmtp_sub_flow_push_mmtp_packet(mmtp_sub_flow_t *mmtp_sub_flow, mmtp_payload
  * see atsc3_mmt_listener_bento.c for other places these packets may be apptended to
  */
 void mmtp_sub_flow_remove_mmtp_packet(mmtp_sub_flow_t *mmtp_sub_flow, mmtp_payload_fragments_union_t *mmtp_packet) {
+	if(!mmtp_sub_flow) {
+		_MMTP_ERROR("mmtp_sub_flow_remove_mmtp_packet: mmtp_sub_flow is null!");
+		return;
+	}
+
 	mmtp_packet->mmtp_packet_header.mmtp_sub_flow = mmtp_sub_flow;
 
     ssize_t index = -1;
