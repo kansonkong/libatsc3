@@ -13,11 +13,14 @@ int _AEAT_PARSER_INFO_ENABLED = 1;
 int _AEAT_PARSER_DEBUG_ENABLED = 0;
 int _AEAT_PARSER_TRACE_ENABLED = 0;
 
-
-
 int atsc3_aeat_table_populate_from_xml(lls_table_t* lls_table, xml_node_t* xml_root) {
     int ret = 0;
 
+    if(lls_table->aeat_table.aeat_xml_fragment_latest) {
+        free(lls_table->aeat_table.aeat_xml_fragment_latest);
+    }
+    lls_table->aeat_table.aeat_xml_fragment_latest = calloc(lls_table->raw_xml.xml_payload_size+1, sizeof(char));
+    memcpy(lls_table->aeat_table.aeat_xml_fragment_latest, lls_table->raw_xml.xml_payload, lls_table->raw_xml.xml_payload_size);
 
 	xml_string_t* root_node_name = xml_node_name(xml_root); //root
 	dump_xml_string(root_node_name);

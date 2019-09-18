@@ -109,6 +109,7 @@ typedef struct atsc3_aea_table {
  *
  */
 typedef struct atsc3_aeat_table {
+    char*   aeat_xml_fragment_latest;
 	ATSC3_VECTOR_BUILDER_STRUCT(atsc3_aea_table);
 } atsc3_aeat_table_t;
 
