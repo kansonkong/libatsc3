@@ -116,6 +116,7 @@ atsc3_sls_held_fragment_t* atsc3_sls_held_fragment_parse_from_payload(char* payl
 
 		}
 	}
+    goto cleanup;
 
     
 error:
@@ -128,10 +129,10 @@ cleanup:
     if(held_fragment_block) {
         block_Destroy(&held_fragment_block);
     }
-    if(xml_document) {
-        xml_document_free(xml_document, false);
-        xml_document = NULL;
-    }
+//    if(xml_document) {
+//        xml_document_free(xml_document, false);
+//        xml_document = NULL;
+//    }
     
 	return atsc3_sls_held_fragment;
     
