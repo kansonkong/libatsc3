@@ -186,7 +186,9 @@ char* alc_packet_dump_to_object_get_s_tsid_filename(udp_flow_t* udp_flow, alc_pa
 								atsc3_fdt_file_t* atsc3_fdt_file = atsc3_route_s_tsid_RS_LS->atsc3_route_s_tsid_RS_LS_SrcFlow->atsc3_fdt_instance->atsc3_fdt_file_v.data[k];
 
 								if(atsc3_fdt_file->toi == alc_packet->def_lct_hdr->toi && atsc3_fdt_file->content_location && strlen(atsc3_fdt_file->content_location)) {
-                                    content_location = atsc3_fdt_file->content_location;
+                                    size_t content_location_length = strlen(atsc3_fdt_file->content_location);
+                                    content_location = calloc(content_location_length + 1, sizeof(char));
+                                    strncpy(content_location, atsc3_fdt_file->content_location, content_location_length);
                                     
                                     //TODO: jjustman-2019-09-18 -  apply mappings from FLUTE to HTTP object caching here
 //                                    atsc3_fdt_file->content_type;
