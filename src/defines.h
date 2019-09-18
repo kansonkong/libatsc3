@@ -74,7 +74,8 @@ extern "C" {
 #define EXT_CENC	193				/**< Extension header for FDT content encoding defined by FLUTE */
 
 #define ALC_VERSION		1		/**< ALC version number */
-#define FLUTE_VERSION	1		/**< FLUTE version number */
+#define FLUTE_VERSION_1 1        /**< FLUTE version number */
+#define FLUTE_VERSION_2	2		/**< FLUTE version number */
 
 #define COM_NO_C_FEC_ENC_ID		0	/**< Compact No-Code FEC scheme */ 
 #define SIMPLE_XOR_FEC_ENC_ID   2	/**< Simple XOR FEC scheme */
