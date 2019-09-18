@@ -23,7 +23,7 @@
 #include "atsc3_player_ffplay.h"
 #include "xml.h"
 
-
+#include "atsc3_aeat_types.h"
 
 #ifndef ATSC3_LLS_TYPES_H_
 #define ATSC3_LLS_TYPES_H_
@@ -254,9 +254,6 @@ typedef struct system_time_table {
 
 } system_time_table_t;
 
-typedef struct aeat_table {
-	void* to_implement;
-} aeat_table_t;
 typedef struct on_screen_message_notification {
 	void* to_implement;
 } on_screen_message_notification_t;
@@ -279,8 +276,6 @@ typedef struct rrt_table {
 } rrt_table_t;
 
 
-
-
 typedef struct lls_table {
 	uint8_t								lls_table_id; //map via lls_table_id_type;
 	uint8_t								lls_group_id;
@@ -289,18 +284,15 @@ typedef struct lls_table {
 	lls_xml_payload_t					raw_xml;
 
 	union {
-
 		slt_table_t							slt_table;
 		rrt_table_t							rrt_table;
 		system_time_table_t					system_time_table;
-		aeat_table_t						aeat_table;
+		atsc3_aeat_table_t					aeat_table;
 		on_screen_message_notification_t	on_screen_message_notification;
 		lls_reserved_table_t				lls_reserved_table;
 	};
 	xml_document_t* xml_document;
 } lls_table_t;
-
-
 
 typedef struct udp_flow_packet_id_mpu_sequence_tuple {
     udp_flow_t  udp_flow;

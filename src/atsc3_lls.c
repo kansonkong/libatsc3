@@ -96,6 +96,18 @@ lls_table_t* lls_create_xml_table(block_t* lls_packet_block) {
 		lls_table->raw_xml.xml_payload_size = ret;
 		return lls_table;
 	}
+    
+    _LLS_ERROR("lls_create_xml_table - error creating instance of LLS XML table,  lls_table_id: %d, length: %d, lls_group_id: %d, group_count_minus1: %d, lls_table_version: %d",
+               lls_table->lls_table_id,
+               lls_table->raw_xml.xml_payload_compressed_size,
+               lls_table->lls_group_id,
+               lls_table->group_count_minus1,
+               lls_table->lls_table_version);
+
+    if(lls_table) {
+        free(lls_table);
+        lls_table = NULL;
+    }
 
 	return NULL;
 }
@@ -315,7 +327,7 @@ int lls_create_table_type_instance(lls_table_t* lls_table, xml_node_t* xml_root)
 	} else if(lls_table->lls_table_id == SystemTime) {
 		ret = build_system_time_table(lls_table, xml_root);
 	} else if(lls_table->lls_table_id == AEAT) {
-        ret = build_aeat_table(lls_table, xml_root);
+        ret = atsc3_aeat_table_populate_from_xml(lls_table, xml_root);
 	} else if(lls_table->lls_table_id == OnscreenMessageNotification) {
         ret = build_onscreen_message_notification_table(lls_table, xml_root);
 	} else {

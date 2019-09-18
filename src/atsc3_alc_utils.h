@@ -42,8 +42,6 @@ extern int _ALC_UTILS_TRACE_ENABLED;
  */
 
 
-
-
 //this must be set to 1 for dumps to be written to disk
 extern int _ALC_PACKET_DUMP_TO_OBJECT_ENABLED;
 
