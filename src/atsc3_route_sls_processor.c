@@ -47,7 +47,7 @@ void atsc3_route_sls_process_from_alc_packet_and_file(udp_flow_t* udp_flow, alc_
 				return;
 			}
 
-		    char* mbms_toi_filename = alc_packet_dump_to_object_get_filename_tsi_toi(0, *mbms_toi);
+		    char* mbms_toi_filename = alc_packet_dump_to_object_get_filename_tsi_toi(udp_flow, 0, *mbms_toi);
 
 			FILE *fp_mbms= fopen(mbms_toi_filename, "r");
 			if(!fp_mbms) {
