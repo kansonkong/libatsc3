@@ -142,18 +142,15 @@ atsc3_fdt_instance_t* atsc3_fdt_parse_from_xml_fdt_instance(atsc3_fdt_instance_t
     	atsc3_fdt_instance->filter_codes = matching_attribute;
     }
 
-
-
-
     if((matching_attribute = kvp_collection_get(kvp_collection,  "content-encoding"))) {
           atsc3_fdt_instance->content_encoding = matching_attribute;
-      }  if((matching_attribute = kvp_collection_get(kvp_collection,  "content-encoding"))) {
-          atsc3_fdt_instance->content_encoding = matching_attribute;
-      }  if((matching_attribute = kvp_collection_get(kvp_collection,  "content-encoding"))) {
-          atsc3_fdt_instance->content_encoding = matching_attribute;
-      }  if((matching_attribute = kvp_collection_get(kvp_collection,  "content-encoding"))) {
-          atsc3_fdt_instance->content_encoding = matching_attribute;
-      }
+	}  if((matching_attribute = kvp_collection_get(kvp_collection,  "content-encoding"))) {
+	  atsc3_fdt_instance->content_encoding = matching_attribute;
+	}  if((matching_attribute = kvp_collection_get(kvp_collection,  "content-encoding"))) {
+	  atsc3_fdt_instance->content_encoding = matching_attribute;
+	}  if((matching_attribute = kvp_collection_get(kvp_collection,  "content-encoding"))) {
+	  atsc3_fdt_instance->content_encoding = matching_attribute;
+	}
 
 
 
