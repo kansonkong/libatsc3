@@ -201,6 +201,7 @@
 		30DD4F54231A74E40049F710 /* atsc3_mmtp_packet_utils.h in Sources */ = {isa = PBXBuildFile; fileRef = 30DD4F51231A74BF0049F710 /* atsc3_mmtp_packet_utils.h */; };
 		30DD4F57231AA6140049F710 /* atsc3_mmt_mpu_sample_format_parser.c in Sources */ = {isa = PBXBuildFile; fileRef = 30DD4F55231AA60A0049F710 /* atsc3_mmt_mpu_sample_format_parser.c */; };
 		30DD4F58231AA6140049F710 /* atsc3_mmt_mpu_sample_format_parser.h in Sources */ = {isa = PBXBuildFile; fileRef = 30DD4F56231AA60A0049F710 /* atsc3_mmt_mpu_sample_format_parser.h */; };
+		30FBBFF52331AE0300D348A6 /* atsc3_fdt_mbms_envelope_test_2019-09-17-nab-interop-day1.c in Sources */ = {isa = PBXBuildFile; fileRef = 30FBBFF42331ADEE00D348A6 /* atsc3_fdt_mbms_envelope_test_2019-09-17-nab-interop-day1.c */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -588,6 +589,7 @@
 		30F42C0B225AD5E8008CBDBF /* atsc3_mmt_listener_test.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = atsc3_mmt_listener_test.cpp; path = ../../../../src/listener_tests/atsc3_mmt_listener_test.cpp; sourceTree = "<group>"; };
 		30F42C0C225AD5E8008CBDBF /* atsc3_lls_listener_test.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = atsc3_lls_listener_test.cpp; path = ../../../../src/listener_tests/atsc3_lls_listener_test.cpp; sourceTree = "<group>"; };
 		30F42C0D225AD5E9008CBDBF /* atsc3_stltp_listener_test.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = atsc3_stltp_listener_test.cpp; path = ../../../../src/listener_tests/atsc3_stltp_listener_test.cpp; sourceTree = "<group>"; };
+		30FBBFF42331ADEE00D348A6 /* atsc3_fdt_mbms_envelope_test_2019-09-17-nab-interop-day1.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = "atsc3_fdt_mbms_envelope_test_2019-09-17-nab-interop-day1.c"; path = "../../../../src/test/atsc3_fdt_mbms_envelope_test_2019-09-17-nab-interop-day1.c"; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -676,6 +678,7 @@
 		3037E59B2301738900EAAA5C /* test */ = {
 			isa = PBXGroup;
 			children = (
+				30FBBFF42331ADEE00D348A6 /* atsc3_fdt_mbms_envelope_test_2019-09-17-nab-interop-day1.c */,
 				30D4B0D32301FCF200BAF398 /* atsc3_mmt_mpu_packet_test.c */,
 				3037E5A6230173AC00EAAA5C /* atsc3_fdt_mbms_envelope_test.c */,
 				3037E59E230173AB00EAAA5C /* atsc3_fdt_test.c */,
@@ -1309,6 +1312,7 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				30FBBFF52331AE0300D348A6 /* atsc3_fdt_mbms_envelope_test_2019-09-17-nab-interop-day1.c in Sources */,
 				30B094A02327830C00152DCC /* atsc3_a344_receiver_query_api.h in Sources */,
 				30B094A12327830C00152DCC /* atsc3_dstp_types.c in Sources */,
 				30B094A22327830C00152DCC /* atsc3_dstp_types.h in Sources */,

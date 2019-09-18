@@ -108,15 +108,9 @@ block_t* alc_get_payload_from_filename(char* file_name) {
 
 }
 
-char* alc_packet_dump_to_object_get_temporary_filename(udp_flow_t* udp_flow, alc_packet_t* alc_packet) {
-//	char* file_name = (char *)calloc(255, sizeof(char));
-//
-//	if(alc_packet->def_lct_hdr) {
-//		snprintf(file_name, 255, "%s%u-%u", __ALC_DUMP_OUTPUT_PATH__, alc_packet->def_lct_hdr->tsi, alc_packet->def_lct_hdr->toi);
-//	}
-//
-//	return file_name;
+/* jjustman-2019-09-17: TODO - free temporary filename when done */
 
+char* alc_packet_dump_to_object_get_temporary_filename(udp_flow_t* udp_flow, alc_packet_t* alc_packet) {
 	char* temporary_file_name = (char *)calloc(255, sizeof(char));
 	if(alc_packet->def_lct_hdr) {
 		snprintf(temporary_file_name, 255, "%s%u.%u.%u.%u.%u.%u-%u",
@@ -128,6 +122,20 @@ char* alc_packet_dump_to_object_get_temporary_filename(udp_flow_t* udp_flow, alc
 
 	return temporary_file_name;
 }
+
+
+/* jjustman-2019-09-17: TODO - free temporary filename when done */
+char* alc_packet_dump_to_object_get_filename_tsi_toi(udp_flow_t* udp_flow, uint32_t tsi, uint32_t toi) {
+    char* temporary_file_name = (char *)calloc(255, sizeof(char));
+    snprintf(temporary_file_name, 255, "%s%u.%u.%u.%u.%u.%u-%u",
+             __ALC_DUMP_OUTPUT_PATH__,
+             __toipandportnonstruct(udp_flow->dst_ip_addr, udp_flow->dst_port),
+             tsi,
+             toi);
+    
+    return temporary_file_name;
+}
+
 
 /**
  * todo:
@@ -208,15 +216,6 @@ char* alc_packet_dump_to_object_get_s_tsid_filename(udp_flow_t* udp_flow, alc_pa
 	}
 
 	return content_location;
-}
-
-/* deprecaed */
-char* alc_packet_dump_to_object_get_filename_tsi_toi(uint32_t tsi, uint32_t toi) {
-	char *file_name = (char *)calloc(255, sizeof(char));
-
-	snprintf(file_name, 255, "%s%u-%u", __ALC_DUMP_OUTPUT_PATH__, tsi, toi);
-
-	return file_name;
 }
 
 //todo - build this in memory first...
@@ -377,7 +376,7 @@ int alc_packet_dump_to_object(udp_flow_t* udp_flow, alc_packet_t** alc_packet_pt
 			//only push to our output buffer video and audio flows
 			if(lls_sls_alc_monitor && (alc_packet->def_lct_hdr->tsi == lls_sls_alc_monitor->audio_tsi || alc_packet->def_lct_hdr->tsi == lls_sls_alc_monitor->video_tsi)) {
 				__ALC_UTILS_IOTRACE("------ TSI of %d, toi: %u, calling alc_recon_file_buffer_struct_monitor_fragment_with_init_box", alc_packet->def_lct_hdr->tsi, alc_packet->def_lct_hdr->toi);
-				alc_recon_file_buffer_struct_monitor_fragment_with_init_box(alc_packet, lls_sls_alc_monitor);
+				alc_recon_file_buffer_struct_monitor_fragment_with_init_box(udp_flow, alc_packet, lls_sls_alc_monitor);
 			} else {
 				s_tsid_content_location = alc_packet_dump_to_object_get_s_tsid_filename(udp_flow, alc_packet, lls_sls_alc_monitor);
 				if(s_tsid_content_location && strlen(s_tsid_content_location)) {
@@ -820,7 +819,7 @@ cleanup:
 }
 
 
-void alc_recon_file_buffer_struct_monitor_fragment_with_init_box(alc_packet_t* alc_packet, lls_sls_alc_monitor_t* lls_sls_alc_monitor) {
+void alc_recon_file_buffer_struct_monitor_fragment_with_init_box(udp_flow_t* udp_flow, alc_packet_t* alc_packet, lls_sls_alc_monitor_t* lls_sls_alc_monitor) {
 	int flush_ret = 0;
 	char* audio_init_file_name = NULL;
 	char* video_init_file_name = NULL;
@@ -866,12 +865,12 @@ void alc_recon_file_buffer_struct_monitor_fragment_with_init_box(alc_packet_t* a
     uint32_t audio_toi = lls_sls_alc_monitor->last_closed_audio_toi;
     uint32_t video_toi = lls_sls_alc_monitor->last_closed_video_toi;
     
-	audio_fragment_file_name = alc_packet_dump_to_object_get_filename_tsi_toi(lls_sls_alc_monitor->audio_tsi, audio_toi);
-	video_fragment_file_name = alc_packet_dump_to_object_get_filename_tsi_toi(lls_sls_alc_monitor->video_tsi, video_toi);
+	audio_fragment_file_name = alc_packet_dump_to_object_get_filename_tsi_toi(udp_flow, lls_sls_alc_monitor->audio_tsi, audio_toi);
+	video_fragment_file_name = alc_packet_dump_to_object_get_filename_tsi_toi(udp_flow, lls_sls_alc_monitor->video_tsi, video_toi);
 
 	if(!lls_sls_alc_monitor->lls_sls_monitor_output_buffer.has_written_init_box) {
-		audio_init_file_name = alc_packet_dump_to_object_get_filename_tsi_toi(lls_sls_alc_monitor->audio_tsi, lls_sls_alc_monitor->audio_toi_init);
-		video_init_file_name = alc_packet_dump_to_object_get_filename_tsi_toi(lls_sls_alc_monitor->video_tsi, lls_sls_alc_monitor->video_toi_init);
+		audio_init_file_name = alc_packet_dump_to_object_get_filename_tsi_toi(udp_flow, lls_sls_alc_monitor->audio_tsi, lls_sls_alc_monitor->audio_toi_init);
+		video_init_file_name = alc_packet_dump_to_object_get_filename_tsi_toi(udp_flow, lls_sls_alc_monitor->video_tsi, lls_sls_alc_monitor->video_toi_init);
 
 		audio_init_payload = alc_get_payload_from_filename(audio_init_file_name);
 		video_init_payload = alc_get_payload_from_filename(video_init_file_name);

@@ -81,7 +81,7 @@ extern "C" {
 #define SIMPLE_XOR_FEC_ENC_ID   2	/**< Simple XOR FEC scheme */
 #define RS_FEC_ENC_ID			3	/**< Reed-Solomon FEC scheme, identifier not yet decided, 3 used temporarily */
 
-#define SB_LB_E_FEC_ENC_ID		128		/**< Small Block, Large Block and Expandable FEC scheme */
+    #define SB_LB_E_FEC_ENC_ID		128		/**< Small Block, Large Block and Expandable FEC scheme */
 #define SB_SYS_FEC_ENC_ID		129		/**< Small Block Systematic FEC scheme */
 #define COM_FEC_ENC_ID			130		/**< Compact FEC scheme */
 
