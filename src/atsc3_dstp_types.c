@@ -231,7 +231,7 @@ eth->h_source[5] = (unsigned char)(ifreq_c.ifr_hwaddr.sa_data[5]); 
 	eth_frame[24] = (ip_checksum) & 0xFF;
 	eth_frame[25] = (ip_checksum >> 8) & 0xFF;
 
-	uint16_t udp_checksum = atsc3_udp_compute_checksum(&eth_frame[34], udp_payload_size, (uint32_t*)&eth_frame[26], (uint32_t*)&eth_frame[30]);
+	uint16_t udp_checksum = atsc3_udp_compute_checksum(&eth_frame[34], udp_payload_size, *(uint32_t*)&eth_frame[26], *(uint32_t*)&eth_frame[30]);
 	eth_frame[40] = (udp_checksum) & 0xFF;
 	eth_frame[41] = (udp_checksum >> 8) & 0xFF;
 
