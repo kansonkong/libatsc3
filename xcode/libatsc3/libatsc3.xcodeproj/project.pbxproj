@@ -197,6 +197,7 @@
 		30B094A02327830C00152DCC /* atsc3_a344_receiver_query_api.h in Sources */ = {isa = PBXBuildFile; fileRef = 30B0949E232782FD00152DCC /* atsc3_a344_receiver_query_api.h */; };
 		30B094A12327830C00152DCC /* atsc3_dstp_types.c in Sources */ = {isa = PBXBuildFile; fileRef = 30B0949F232782FD00152DCC /* atsc3_dstp_types.c */; };
 		30B094A22327830C00152DCC /* atsc3_dstp_types.h in Sources */ = {isa = PBXBuildFile; fileRef = 30B09496232782FD00152DCC /* atsc3_dstp_types.h */; };
+		30CD6C8823325A8300DFB3D1 /* atsc3_aeat_types.c in Sources */ = {isa = PBXBuildFile; fileRef = 30CD6C8723325A1800DFB3D1 /* atsc3_aeat_types.c */; };
 		30CF0E2622F194DC00E117C8 /* atsc3_alp_types.c in Sources */ = {isa = PBXBuildFile; fileRef = 30CF0E2522F16F2100E117C8 /* atsc3_alp_types.c */; };
 		30D4B0D42301FD6700BAF398 /* atsc3_mmt_mpu_packet_test.c in Sources */ = {isa = PBXBuildFile; fileRef = 30D4B0D32301FCF200BAF398 /* atsc3_mmt_mpu_packet_test.c */; };
 		30DD4F50231A1E5E0049F710 /* atsc3_mmt_listener_to_http_hls_fmp4.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 30DD4F4F231A1E4D0049F710 /* atsc3_mmt_listener_to_http_hls_fmp4.cpp */; };
@@ -534,6 +535,7 @@
 		30B0949E232782FD00152DCC /* atsc3_a344_receiver_query_api.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = atsc3_a344_receiver_query_api.h; path = ../../../src/atsc3_a344_receiver_query_api.h; sourceTree = "<group>"; };
 		30B0949F232782FD00152DCC /* atsc3_dstp_types.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = atsc3_dstp_types.c; path = ../../../src/atsc3_dstp_types.c; sourceTree = "<group>"; };
 		30B112F8222AB5BA0068F33D /* docs */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = docs; sourceTree = BUILT_PRODUCTS_DIR; };
+		30CD6C8723325A1800DFB3D1 /* atsc3_aeat_types.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = atsc3_aeat_types.c; path = ../../../src/atsc3_aeat_types.c; sourceTree = "<group>"; };
 		30CF0E2522F16F2100E117C8 /* atsc3_alp_types.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = atsc3_alp_types.c; path = ../../../src/atsc3_alp_types.c; sourceTree = "<group>"; };
 		30D4B0D32301FCF200BAF398 /* atsc3_mmt_mpu_packet_test.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = atsc3_mmt_mpu_packet_test.c; path = ../../../../src/test/atsc3_mmt_mpu_packet_test.c; sourceTree = "<group>"; };
 		30D51C3F22F2D5420012C23C /* atsc3_baseband_packet_types.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = atsc3_baseband_packet_types.h; path = ../../../src/atsc3_baseband_packet_types.h; sourceTree = "<group>"; };
@@ -886,6 +888,7 @@
 		30ABE52B222AB98800CAC414 /* src */ = {
 			isa = PBXGroup;
 			children = (
+				30CD6C8723325A1800DFB3D1 /* atsc3_aeat_types.c */,
 				300F88582332534B00053806 /* atsc3_aeat_parser.c */,
 				300F885A2332534B00053806 /* atsc3_aeat_parser.h */,
 				300F88592332534B00053806 /* atsc3_aeat_types.h */,
@@ -1321,6 +1324,7 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				30CD6C8823325A8300DFB3D1 /* atsc3_aeat_types.c in Sources */,
 				300F885B2332536800053806 /* atsc3_aeat_parser.c in Sources */,
 				300F885C2332536800053806 /* atsc3_aeat_parser.h in Sources */,
 				300F885D2332536800053806 /* atsc3_aeat_types.h in Sources */,
