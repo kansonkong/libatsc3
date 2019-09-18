@@ -267,9 +267,10 @@ ret:
 
 }
 
-
+//#define __ATSC3_MMT_AGGRESSIVE_FREE__ 1
 void atsc3_mmt_reconstitution_free_from_udp_flow(mmtp_sub_flow_vector_t* mmtp_sub_flow_vector, udp_flow_t* udp_flow, udp_flow_packet_id_mpu_sequence_tuple_t* last_udp_flow_packet_id_mpu_sequence_tuple) {
-    //reap...clear out our "global" packet_id data_unit_payloads from the mpu fragments
+#ifdef __ATSC3_MMT_AGGRESSIVE_FREE__
+	//reap...clear out our "global" packet_id data_unit_payloads from the mpu fragments
     mpu_fragments_t* mpu_fragments = NULL;
     mmtp_sub_flow_t* mmtp_sub_flow = NULL;
     mpu_data_unit_payload_fragments_t* data_unit_payload_types = NULL;
@@ -301,6 +302,7 @@ void atsc3_mmt_reconstitution_free_from_udp_flow(mmtp_sub_flow_vector_t* mmtp_su
             }
         }
     }
+#endif
 }
 
 
