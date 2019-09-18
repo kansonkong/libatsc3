@@ -255,7 +255,7 @@ packet_cleanup:
     return NULL;
 
 ret:
-    return mmtp_payload;
+    return mmtp_mpu_packet;
 
 }
 
