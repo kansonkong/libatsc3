@@ -129,7 +129,7 @@ cleanup:
         block_Destroy(&held_fragment_block);
     }
     if(xml_document) {
-        xml_document_free(xml_document, true);
+        xml_document_free(xml_document, false);
         xml_document = NULL;
     }
     

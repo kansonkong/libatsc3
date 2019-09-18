@@ -112,9 +112,7 @@ typedef struct atsc3_aeat_table {
 	ATSC3_VECTOR_BUILDER_STRUCT(atsc3_aea_table);
 } atsc3_aeat_table_t;
 
-
 ATSC3_VECTOR_BUILDER_METHODS_INTERFACE(atsc3_aeat_table, atsc3_aea_table);
-
 
 atsc3_aeat_table_t* atsc3_aeat_table_new();
 void atsc3_aeat_table_free(atsc3_aeat_table_t** atsc3_aeat_table_p);
