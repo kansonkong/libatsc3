@@ -15,7 +15,7 @@
 #include "atsc3_vector_builder.h"
 
 typedef struct atsc3_sls_html_entry_package_required_capabilities {
-	//todo
+    //jjustman-2019-09-18 - TODO: impl, also add in free for members in atsc3_sls_held_fragment.c
 
 } atsc3_sls_html_entry_package_required_capabilities_t;
 

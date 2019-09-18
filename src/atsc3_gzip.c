@@ -15,6 +15,7 @@ int32_t atsc3_unzip_gzip_payload(uint8_t* input_payload, uint32_t input_payload_
 
 	uint input_payload_offset = 0;
 	uint output_payload_offset = 0;
+    uint output_payload_available = GZIP_CHUNK_OUTPUT_BUFFER_SIZE;
     unsigned char *output_payload = NULL;
 
     int ret;
@@ -37,7 +38,6 @@ int32_t atsc3_unzip_gzip_payload(uint8_t* input_payload, uint32_t input_payload_
 	   return ret;
 
 	do {
-
 		strm.next_in = &input_payload[input_payload_offset];
 
 		uint payload_chunk_size = input_payload_size - input_payload_offset > GZIP_CHUNK_INPUT_READ_SIZE ? GZIP_CHUNK_INPUT_READ_SIZE : input_payload_size - input_payload_offset;
@@ -54,7 +54,7 @@ int32_t atsc3_unzip_gzip_payload(uint8_t* input_payload, uint32_t input_payload_
 			if(!output_payload)
 				return -1;
 
-			strm.avail_out = GZIP_CHUNK_OUTPUT_BUFFER_SIZE;
+			strm.avail_out = output_payload_available;
 			strm.next_out = &output_payload[output_payload_offset];
 
 			ret = inflate(&strm, Z_NO_FLUSH);
@@ -70,26 +70,26 @@ int32_t atsc3_unzip_gzip_payload(uint8_t* input_payload, uint32_t input_payload_
 			}
 
 			if(strm.avail_out == 0) {
+                output_payload_available += GZIP_CHUNK_OUTPUT_BUFFER_SIZE;
+                uint output_payload_new_size = output_payload_offset + GZIP_CHUNK_OUTPUT_BUFFER_SIZE + 1;
+				output_payload = (uint8_t*)realloc(output_payload, output_payload_new_size);
+            } else {
+                output_payload_available = strm.avail_out;
+            }
+            output_payload_offset = strm.total_out; //move our append pointer forward
+		} while (strm.avail_out == 0); //loop until we are out of free output space, then loop input position
 
-				output_payload_offset += GZIP_CHUNK_OUTPUT_BUFFER_SIZE;
-				output_payload = (uint8_t*)realloc(output_payload, output_payload_offset + GZIP_CHUNK_OUTPUT_BUFFER_SIZE + 1);
-
-			}
-		} while (strm.avail_out == 0);
-
-		input_payload_offset += GZIP_CHUNK_INPUT_READ_SIZE;
+        input_payload_offset = strm.total_in; //move input pointer forward += GZIP_CHUNK_INPUT_READ_SIZE;
 
 	} while (ret != Z_STREAM_END && input_payload_offset < input_payload_size);
 
-
-	int paylod_len = (output_payload_offset + (GZIP_CHUNK_OUTPUT_BUFFER_SIZE - strm.avail_out));
+    int paylod_len = strm.total_out; //(output_payload_offset + (GZIP_CHUNK_OUTPUT_BUFFER_SIZE - strm.avail_out));
 	/* clean up and return */
 	output_payload[paylod_len] = '\0';
 	*decompressed_payload = output_payload;
 
 	(void)inflateEnd(&strm);
 	return ret == Z_STREAM_END ?  paylod_len : Z_DATA_ERROR;
-
 }
 
 

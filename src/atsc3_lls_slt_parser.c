@@ -66,7 +66,7 @@ int lls_slt_table_build(lls_table_t *lls_table, xml_node_t *xml_root) {
 
 	kvp_collection_t* slt_attributes_collecton = kvp_collection_parse(slt_attributes);
 	char* bsid_char = kvp_collection_get(slt_attributes_collecton, "bsid");
-	//if there is a space, split and callocif(strnstr(bsid, "", ))
+	//if there is a space, split and callo cif(strnstr(bsid, "", ))
 
 	//TODO: fix me
 	if(bsid_char) {
