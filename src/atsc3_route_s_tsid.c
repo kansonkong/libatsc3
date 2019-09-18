@@ -12,9 +12,11 @@ int _ROUTE_S_TSID_PARSER_INFO_ENABLED = 1;
 int _ROUTE_S_TSID_PARSER_DEBUG_ENABLED = 1;
 
 ATSC3_VECTOR_BUILDER_METHODS_IMPLEMENTATION(atsc3_route_s_tsid_RS, atsc3_route_s_tsid_RS_LS)
+ATSC3_VECTOR_BUILDER_METHODS_ITEM_FREE(atsc3_route_s_tsid_RS_LS)
 
 ATSC3_VECTOR_BUILDER_METHODS_PARENT_IMPLEMENTATION(atsc3_route_s_tsid)
 ATSC3_VECTOR_BUILDER_METHODS_IMPLEMENTATION(atsc3_route_s_tsid, atsc3_route_s_tsid_RS)
+ATSC3_VECTOR_BUILDER_METHODS_ITEM_FREE(atsc3_route_s_tsid_RS)
 
 
 atsc3_route_s_tsid_t* atsc3_route_s_tsid_parse_from_payload(char* payload, char* content_location) {

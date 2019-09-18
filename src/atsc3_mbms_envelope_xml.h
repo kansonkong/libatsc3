@@ -45,7 +45,7 @@ typedef struct atsc3_mbms_metadata_envelope {
 	ATSC3_VECTOR_BUILDER_STRUCT(atsc3_mbms_metadata_item);
 
 } atsc3_mbms_metadata_envelope_t;
-
+ATSC3_VECTOR_BUILDER_METHODS_INTERFACE(atsc3_mbms_metadata_envelope, atsc3_mbms_metadata_item);
 
 
 #endif /* ATSC3_MBMS_ENVELOPE_XML_H_ */

@@ -28,7 +28,7 @@ int PACKET_COUNTER=0;
 #include "../atsc3_lls.h"
 #include "../atsc3_lls_alc_utils.h"
 
-#include "../atsc3_mmtp_types.h"
+#include "../atsc3_mmtp_packet_types.h"
 #include "../atsc3_mmtp_parser.h"
 #include "../atsc3_mmt_mpu_utils.h"
 
@@ -41,10 +41,6 @@ int PACKET_COUNTER=0;
 #include "../atsc3_bandwidth_statistics.h"
 #include "../atsc3_packet_statistics.h"
 #include "../atsc3_logging_externs.h"
-
-extern int _MPU_DEBUG_ENABLED;
-extern int _MMTP_DEBUG_ENABLED;
-extern int _LLS_DEBUG_ENABLED;
 
 //commandline stream filtering
 
@@ -223,7 +219,7 @@ void process_packet(u_char *user, const struct pcap_pkthdr *pkthdr, const u_char
 		//dump header, then dump applicable packet type
 		//mmtp_packet_header_dump(mmtp_payload);
 
-		if(mmtp_payload->mmtp_packet_header.mmtp_payload_type == 0x0) {
+		if(mmtp_payload->mmtp_packet_header->mmtp_payload_type == 0x0) {
 			global_stats->packet_counter_mmt_mpu++;
 
 			if(mmtp_payload->mmtp_mpu_type_packet_header.mpu_timed_flag == 1) {
@@ -239,13 +235,13 @@ void process_packet(u_char *user, const struct pcap_pkthdr *pkthdr, const u_char
 
 			}
 
-		} else if(mmtp_payload->mmtp_packet_header.mmtp_payload_type == 0x2) {
+		} else if(mmtp_payload->mmtp_packet_header->mmtp_payload_type == 0x2) {
 
 			signaling_message_dump(mmtp_payload);
 			global_stats->packet_counter_mmt_signaling++;
 
 		} else {
-			_MMTP_WARN("mmtp_packet_parse: unknown payload type of 0x%x", mmtp_payload->mmtp_packet_header.mmtp_payload_type);
+			_MMTP_WARN("mmtp_packet_parse: unknown payload type of 0x%x", mmtp_payload->mmtp_packet_header->mmtp_payload_type);
 			global_stats->packet_counter_mmt_unknown++;
 			goto cleanup;
 		}
@@ -278,7 +274,7 @@ cleanup:
  */
 int main(int argc,char **argv) {
 
-	_MPU_DEBUG_ENABLED = 0;
+	_MMT_MPU_PARSER_DEBUG_ENABLED = 0;
 	_MMTP_DEBUG_ENABLED = 0;
 	_LLS_DEBUG_ENABLED = 0;
 

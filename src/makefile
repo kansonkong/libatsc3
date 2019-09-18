@@ -13,6 +13,7 @@ all: 	intermediate_lls \
 		intermediate_sls \
 		intermediate_mmt \
 		intermediate_alc \
+		intermediate_a324 \
 		intermediate_a337 \
 		intermediate_ffplay \
 		interemediate_gpl_and_mock_linkage  \
@@ -20,53 +21,83 @@ all: 	intermediate_lls \
 		unit_tests \
 		libmicrohttpd_tests \
 		listener_tests \
+		a324_tests \
 		tools
 
 clean:
 	-rm -f *.o
 	-rm -f route/*
 	-rm -f mpu/*
-	-rm atsc3_lmt_test
-	-rm atsc3_lls_slt_parser_test
-	-rm atsc3_lls_test
-	-rm atsc3_lls_SystemTime_test
-	-rm atsc3_mmt_signaling_message_test
-	-rm atsc3_fdt_test
-	-rm atsc3_stltp_parser_test
-	-rm atsc3_mime_multipart_related_parser_test
-	-rm atsc3_fdt_mbms_envelope_test
-	-rm listener_tests/atsc3_alc_listener_test
-	-rm listener_tests/atsc3_alc_listener_test_valgrind
-	-rm listener_tests/atsc3_lls_listener_test
-	-rm listener_tests/atsc3_mmt_listener_test
-	-rm listener_tests/atsc3_mmt_sls_listener_test
-	-rm listener_tests/atsc3_stltp_listener_test
-	-rm listener_tests/atsc3_stltp_alp_listener_test
-	-rm listener_tests/atsc3_stltp_alp_listener_reflector_test
-	-rm tools/atsc3_listener_metrics_ncurses
-	-rm tools/atsc3_listener_metrics_ncurses_httpd_isobmff
-	-rm tools/atsc3_mmt_mfu_monitor
-	 
+	-rm -f test/atsc3_lmt_test
+	-rm -f test/atsc3_lls_slt_parser_test
+	-rm -f test/atsc3_lls_test
+	-rm -f test/atsc3_lls_SystemTime_test
+	-rm -f test/atsc3_mmt_signalling_message_test
+	-rm -f test/atsc3_fdt_test
+	-rm -f test/atsc3_fdt_test_2019-09-07-esg-e.1.1.7
+	-rm -f test/atsc3_stltp_parser_test
+	-rm -f test/atsc3_mime_multipart_related_parser_test
+	-rm -f test/atsc3_fdt_mbms_envelope_test
+	-rm -f test/atsc3_fdt_mbms_envelope_test_2019-09-07-esg-e.1.1.7
+	-rm -f test/atsc3_fdt_mbms_envelope_test_2019-09-17-nab-interop-day1
+	-rm -f test/atsc3_libmicrohttpd_test
+	-rm -f listener_tests/atsc3_alc_listener_test
+	-rm -f listener_tests/atsc3_alc_listener_test_valgrind
+	-rm -f listener_tests/atsc3_lls_listener_test
+	-rm -f listener_tests/atsc3_mmt_listener_test
+	-rm -f listener_tests/atsc3_mmt_sls_listener_test
+	-rm -f listener_tests/atsc3_stltp_listener_test
+	-rm -f listener_tests/atsc3_stltp_alp_listener_test
+	-rm -f listener_tests/atsc3_stltp_alp_listener_reflector_test
+	-rm -f a324_tests/a32_dstp_lls_aeat_emission_test	
+	-rm -f tools/atsc3_alc_listener_mde_writer
+	-rm -f tools/atsc3_listener_metrics_ncurses
+	-rm -f tools/atsc3_listener_metrics_ncurses_httpd_isobmff
+	-rm -f tools/atsc3_mmt_mfu_monitor
+	-rm -f tools/atsc3_mmt_listener_to_http_hls_fmp4
+
 intermediate_lls: atsc3_lls.o atsc3_lls_sls_parser.o atsc3_lls_alc_utils.o
 
 intermediate_alp: atsc3_alp_types.o atsc3_alp_parser.o
 
 intermediate_baseband: atsc3_baseband_packet_types.o 
 
-intermediate_mbms: atsc3_mime_multipart_related.o atsc3_mime_multipart_related_parser.o \
-					atsc3_route_usbd.o atsc3_mbms_envelope_parser.o
+intermediate_mbms: 	atsc3_mbms_envelope_xml.o \
+					atsc3_mime_multipart_related.o \
+					atsc3_mime_multipart_related_parser.o \
+					atsc3_route_usbd.o \
+					atsc3_mbms_envelope_parser.o
 
-intermediate_sls: atsc3_route_mpd.o atsc3_route_s_tsid.o atsc3_sls_metadata_fragment_types_parser.o	
+intermediate_sls: 	atsc3_route_mpd.o \
+					atsc3_route_s_tsid.o \
+					atsc3_sls_metadata_fragment_types_parser.o	
 
-intermediate_alc: atsc3_alc_rx.c alc_session.c fec.c null_fec.c rs_fec.c xor_fec.o atsc3_alc_utils.o \
-					 atsc3_route_sls_processor.o
+intermediate_alc: 	alc_session.c \
+					fec.c \
+					null_fec.c \
+					rs_fec.c \
+					xor_fec.o \
+					atsc3_alc_rx.c \
+					atsc3_alc_utils.o \
+					atsc3_route_sls_processor.o
 
-intermediate_mmt: xml.o atsc3_mmtp_parser.o atsc3_mmt_mpu_parser.o atsc3_mmt_signaling_message.o \
-					atsc3_mmtp_ntp32_to_pts.o atsc3_utils.o fixups_timespec_get.o \
-					atsc3_bandwidth_statistics.o atsc3_mmt_mpu_utils.o
+intermediate_mmt: 	xml.o \
+					atsc3_mmtp_packet_types.o \
+					atsc3_mmtp_packet_utils.o \
+					atsc3_mmtp_parser.o \
+					atsc3_mmt_mpu_parser.o \
+					atsc3_mmt_mpu_sample_format_parser.o \
+					atsc3_mmt_signalling_message.o \
+					atsc3_mmtp_ntp32_to_pts.o \
+					atsc3_utils.o \
+					fixups_timespec_get.o \
+					atsc3_mmt_mpu_utils.o \
+					atsc3_bandwidth_statistics.o
 
-intermediate_a337:	atsc3_sls_held_fragment.o					
+intermediate_a324: 	atsc3_dstp_types.o
 
+intermediate_a337:	atsc3_sls_held_fragment.o				
+	
 intermediate_ffplay: atsc3_player_ffplay.o
 interemediate_gpl_and_mock_linkage: bento4_gpl_link \
 									bento4_mock_link
@@ -76,15 +107,24 @@ listener_ncurses: atsc3_listener_metrics_ncurses
 # unit tests are standalone drivers with default or CLI parameters for processing relevant 
 # ATSC 3.0 data structs, signalling messages, etc
 
-unit_tests: atsc3_lmt_test atsc3_lls_slt_parser_test atsc3_lls_test \
-			atsc3_lls_SystemTime_test atsc3_mmt_signaling_message_test \
-			atsc3_isobmff_box_test atsc3_fdt_test atsc3_stltp_parser_test \
-			atsc3_mime_multipart_related_parser_test atsc3_fdt_mbms_envelope_test
+unit_tests: test/atsc3_lmt_test \
+			test/atsc3_lls_slt_parser_test \
+			test/atsc3_lls_test \
+			test/atsc3_lls_SystemTime_test \
+			test/atsc3_mmt_mpu_packet_test \
+			test/atsc3_mmt_signalling_message_test \
+			test/atsc3_mmt_signalling_packet_test \
+			test/atsc3_isobmff_box_test \
+			test/atsc3_fdt_test \
+			test/atsc3_fdt_test_2019-09-07-esg-e.1.1.7 \
+			test/atsc3_fdt_mbms_envelope_test_2019-09-17-nab-interop-day1 \
+			test/atsc3_stltp_parser_test \
+			test/atsc3_mime_multipart_related_parser_test \
+			test/atsc3_fdt_mbms_envelope_test \
+			test/atsc3_fdt_mbms_envelope_test_2019-09-07-esg-e.1.1.7
 
-libmicrohttpd_tests: atsc3_libmicrohttpd_test
+libmicrohttpd_tests: test/atsc3_libmicrohttpd_test
 
-
-atsc3_mmt_signaling_message_test: atsc3_mmt_signaling_message_test.c libatsc3.o
 
 # listener_tests: atsc3_alc_listener_test  atsc3_mmt_listener_test atsc3_listener_test atsc3_mmt_listener_test_bento atsc3_listener_metrics_test
 listener_tests: atsc3_alc_listener_test \
@@ -97,8 +137,14 @@ listener_tests: atsc3_alc_listener_test \
 				atsc3_stltp_alp_listener_test \
 				atsc3_stltp_alp_listener_reflector_test
 
+a324_tests: a32_dstp_lls_aeat_emission_test
+
 # real libatsc3 tools for lls, sls, mmt/route and flow analysis
-tools: atsc3_listener_metrics_ncurses atsc3_listener_metrics_ncurses_httpd_isobmff atsc3_mmt_mfu_monitor
+tools: atsc3_listener_metrics_ncurses \
+	atsc3_listener_metrics_ncurses_httpd_isobmff \
+	atsc3_mmt_mfu_monitor \
+	atsc3_alc_listener_mde_writer \
+	atsc3_mmt_listener_to_http_hls_fmp4
 
 # intermediate object generation for linking into libatsc3.o
 
@@ -113,6 +159,9 @@ atsc3_baseband_packet_types.o: atsc3_baseband_packet_types.h atsc3_baseband_pack
 
 atsc3_alp_parser.o: atsc3_alp_types.h atsc3_alp_parser.h atsc3_alp_parser.c
 	cc -g -c atsc3_alp_parser.c 
+
+atsc3_mbms_envelope_xml.o: atsc3_mbms_envelope_xml.h atsc3_mbms_envelope_xml.c
+	cc -g -c atsc3_mbms_envelope_xml.c 
 
 atsc3_mime_multipart_related.o: atsc3_mime_multipart_related.h atsc3_mime_multipart_related.c
 	cc -g -c atsc3_mime_multipart_related.c 
@@ -147,14 +196,26 @@ atsc3_lls_sls_monitor_output_buffer.o: atsc3_lls_sls_monitor_output_buffer.h ats
 atsc3_lls_sls_monitor_output_buffer_utils.o: atsc3_lls_sls_monitor_output_buffer_utils.h atsc3_lls_sls_monitor_output_buffer_utils.c
 	cc -g -c atsc3_lls_sls_monitor_output_buffer_utils.c
 
-atsc3_mmtp_parser.o: atsc3_mmtp_types.h atsc3_mmtp_parser.h atsc3_mmtp_parser.c 
+atsc3_mmtp_packet_types.o: atsc3_mmtp_packet_types.h atsc3_mmtp_packet_types.c
+	cc -g -c atsc3_mmtp_packet_types.c
+
+atsc3_mmtp_packet_utils.o: atsc3_mmtp_packet_utils.h atsc3_mmtp_packet_utils.c
+	cc -g -c atsc3_mmtp_packet_utils.c
+
+atsc3_mmtp_parser.o: atsc3_mmtp_packet_types.h atsc3_mmtp_parser.h atsc3_mmtp_parser.c 
 	cc -g -c atsc3_mmtp_parser.c
 
-atsc3_mmt_mpu_parser.o: atsc3_mmtp_types.h atsc3_mmtp_parser.h atsc3_mmt_mpu_parser.c
+atsc3_mmt_mpu_parser.o: atsc3_mmtp_packet_types.h atsc3_mmtp_parser.h atsc3_mmt_mpu_parser.c
 	cc -g -c atsc3_mmt_mpu_parser.c
 
-atsc3_mmt_signaling_message.o: atsc3_mmt_signaling_message.c atsc3_mmt_signaling_message.h
-	cc -g -c atsc3_mmt_signaling_message.c
+atsc3_mmt_mpu_sample_format_parser.o: atsc3_mmt_mpu_sample_format_type.h atsc3_mmt_mpu_sample_format_parser.h atsc3_mmt_mpu_sample_format_parser.c
+	cc -g -c atsc3_mmt_mpu_sample_format_parser.c
+
+atsc3_mmt_signalling_message_type.o:atsc3_mmt_signalling_message_type.h atsc3_mmt_signalling_message_type.c
+	cc -g -c atsc3_mmt_signalling_message_type.c
+
+atsc3_mmt_signalling_message.o:atsc3_mmt_signalling_message_types.h atsc3_mmt_signalling_message.h atsc3_mmt_signalling_message.c 
+	cc -g -c atsc3_mmt_signalling_message.c
 
 atsc3_mmtp_ntp32_to_pts.o: atsc3_mmtp_ntp32_to_pts.c atsc3_mmtp_ntp32_to_pts.h
 	cc -g -c atsc3_mmtp_ntp32_to_pts.c
@@ -191,7 +252,7 @@ atsc3_isobmff_tools.o: atsc3_isobmff_tools.h atsc3_isobmff_tools.cpp
 
 atsc3_stltp_types.o: atsc3_stltp_types.h atsc3_stltp_types.c
 	cc -g -c atsc3_stltp_types.c
-	
+
 atsc3_stltp_parser.o: atsc3_stltp_parser.h atsc3_stltp_parser.c
 	cc -g -c atsc3_stltp_parser.c
 
@@ -221,6 +282,9 @@ atsc3_mbms_envelope_parser.o: atsc3_mbms_envelope_parser.h atsc3_mbms_envelope_p
 atsc3_route_sls_processor.o: atsc3_route_sls_processor.h atsc3_route_sls_processor.c
 	cc -g -c atsc3_route_sls_processor.c -o atsc3_route_sls_processor.o
 
+atsc3_dstp_types.o: atsc3_dstp_types.h atsc3_dstp_types.c
+	cc -g -c atsc3_dstp_types.c -o atsc3_dstp_types.o
+
 # unit standalone tests with mock data
 
 
@@ -238,60 +302,6 @@ atsc3_stltp_parser_test: atsc3_stltp_parser_test.c \
 	atsc3_utils.o \
 	-o atsc3_stltp_parser_test
 
-#todo - link against libatsc3 intermediate as these are almost integration tests
-atsc3_mime_multipart_related_parser_test: atsc3_mime_multipart_related_parser_test.c \
-	atsc3_mime_multipart_related.o \
-	atsc3_mime_multipart_related_parser.o \
-	atsc3_sls_metadata_fragment_types_parser.o \
-	atsc3_sls_held_fragment.o \
-	atsc3_utils.o \
-	atsc3_route_mpd.o \
-	atsc3_route_s_tsid.o \
-	atsc3_fdt_parser.o \
-	atsc3_fdt.o \
-	atsc3_route_usbd.o \
-	atsc3_mbms_envelope_parser.o \
-	xml.o
-	cc -g atsc3_mime_multipart_related_parser_test.c \
-	atsc3_mime_multipart_related.o \
-	atsc3_mime_multipart_related_parser.o \
-	atsc3_sls_metadata_fragment_types_parser.o \
-	atsc3_sls_held_fragment.o \
-	atsc3_route_mpd.o \
-	atsc3_route_s_tsid.o \
-	atsc3_fdt_parser.o \
-	atsc3_fdt.o \
-	atsc3_route_usbd.o \
-	atsc3_mbms_envelope_parser.o \
-	xml.o \
-	atsc3_utils.o -o atsc3_mime_multipart_related_parser_test
-
-atsc3_fdt_mbms_envelope_test: atsc3_fdt_mbms_envelope_test.c \
-	atsc3_mime_multipart_related.o \
-	atsc3_mime_multipart_related_parser.o \
-	atsc3_sls_metadata_fragment_types_parser.o \
-	atsc3_sls_held_fragment.o \
-	atsc3_utils.o \
-	atsc3_route_mpd.o \
-	atsc3_route_s_tsid.o \
-	atsc3_fdt_parser.o \
-	atsc3_fdt.o \
-	atsc3_route_usbd.o \
-	atsc3_mbms_envelope_parser.o \
-	xml.o
-	cc -g atsc3_mime_multipart_related_parser_test.c \
-	atsc3_mime_multipart_related.o \
-	atsc3_mime_multipart_related_parser.o \
-	atsc3_sls_metadata_fragment_types_parser.o \
-	atsc3_sls_held_fragment.o \
-	atsc3_route_mpd.o \
-	atsc3_route_s_tsid.o \
-	atsc3_fdt_parser.o \
-	atsc3_fdt.o \
-	atsc3_route_usbd.o \
-	atsc3_mbms_envelope_parser.o \
-	xml.o \
-	atsc3_utils.o -o atsc3_fdt_mbms_envelope_test
 # stats modules
 
 atsc3_bandwidth_statistics.o: atsc3_bandwidth_statistics.h atsc3_bandwidth_statistics.c
@@ -300,10 +310,10 @@ atsc3_bandwidth_statistics.o: atsc3_bandwidth_statistics.h atsc3_bandwidth_stati
 atsc3_packet_statistics.o: atsc3_packet_statistics.h atsc3_packet_statistics.c
 	cc -g -c atsc3_packet_statistics.c
 
-atsc3_libmicrohttpd_test: atsc3_libmicrohttpd_test.c 
-	cc atsc3_libmicrohttpd_test.c -o atsc3_libmicrohttpd_test -I../libmicrohttpd/libmicrohttpd-0.9.63/build/include \
-		-L../libmicrohttpd/libmicrohttpd-0.9.63/build/lib -lmicrohttpd
 
+# -L ../Collections-C/build/src
+test_collection: test_collection.c
+	cc test_collection.c -I ../Collections-C/src/include/ ../Collections-C/build/src/libcollectc.a -L ../Collections-C/build/src -o test_collection 
 
 #build a compile time-linked WITHOUT bento4 which should not face license compliance issues
 bento4_mock_link: bento4_mock.o
@@ -322,11 +332,15 @@ libatsc3_intermediate.o: atsc3_lls.o \
 		atsc3_alp_types.o \
 		atsc3_alp_parser.o \
 		atsc3_baseband_packet_types.o \
+		atsc3_mmtp_packet_types.o \
+		atsc3_mmtp_packet_utils.o \
 		atsc3_mmtp_parser.o \
 		atsc3_mmtp_ntp32_to_pts.o \
 		atsc3_utils.o \
-		atsc3_mmt_signaling_message.o \
+		atsc3_mmt_signalling_message_types.o \
+		atsc3_mmt_signalling_message.o \
 		atsc3_mmt_mpu_parser.o \
+		atsc3_mmt_mpu_sample_format_parser.o \
 		atsc3_alc_rx.o \
 		atsc3_lls_alc_utils.o \
 		atsc3_mmt_mpu_utils.o \
@@ -348,6 +362,7 @@ libatsc3_intermediate.o: atsc3_lls.o \
 		atsc3_route_sls_processor.o \
 		atsc3_sls_held_fragment.o  \
 		atsc3_sls_metadata_fragment_types_parser.o \
+		atsc3_mbms_envelope_xml.o	\
 		atsc3_mime_multipart_related.o \
 		atsc3_mime_multipart_related_parser.o \
 		atsc3_mbms_envelope_parser.o \
@@ -362,7 +377,8 @@ libatsc3_intermediate.o: atsc3_lls.o \
 		mad_rlc.o \
 		transport.o \
 		alc_channel.o \
-		alc_list.o
+		alc_list.o \
+		atsc3_dstp_types.o
 
 	ld  -o libatsc3_intermediate.o -r atsc3_lls.o \
 		atsc3_lls_slt_parser.o \
@@ -370,11 +386,15 @@ libatsc3_intermediate.o: atsc3_lls.o \
 		atsc3_alp_types.o \
 		atsc3_alp_parser.o \
 		atsc3_baseband_packet_types.o \
+		atsc3_mmtp_packet_types.o \
+		atsc3_mmtp_packet_utils.o \
 		atsc3_mmtp_parser.o \
 		atsc3_mmtp_ntp32_to_pts.o \
 		atsc3_utils.o \
-		atsc3_mmt_signaling_message.o \
+		atsc3_mmt_signalling_message_types.o \
+		atsc3_mmt_signalling_message.o \
 		atsc3_mmt_mpu_parser.o \
+		atsc3_mmt_mpu_sample_format_parser.o \
 		atsc3_alc_rx.o \
 		atsc3_lls_alc_utils.o \
 		atsc3_mmt_mpu_utils.o \
@@ -396,6 +416,7 @@ libatsc3_intermediate.o: atsc3_lls.o \
 		atsc3_route_sls_processor.o \
 		atsc3_sls_held_fragment.o  \
 		atsc3_sls_metadata_fragment_types_parser.o \
+		atsc3_mbms_envelope_xml.o	\
 		atsc3_mime_multipart_related.o \
 		atsc3_mime_multipart_related_parser.o \
 		atsc3_mbms_envelope_parser.o \
@@ -410,8 +431,8 @@ libatsc3_intermediate.o: atsc3_lls.o \
 		mad_rlc.o \
 		transport.o \
 		alc_channel.o \
-		alc_list.o
-
+		alc_list.o \
+		atsc3_dstp_types.o
 
 libatsc3.o: libatsc3_intermediate.o bento4_mock.o
 	ld  -o libatsc3.o -r libatsc3_intermediate.o bento4_mock.o
@@ -425,28 +446,138 @@ libatsc3_bento4_gpl.o: libatsc3_intermediate.o bento4_gpl.o
 	ld  -o libatsc3_bento4_gpl.o -r libatsc3_intermediate.o bento4_gpl.o -L../bento/lib -lap4
 #-lm -lpthread -lz
 
-###  unit test generation
+###  unit test generation - drivers are in test/
 
-atsc3_lmt_test: atsc3_lmt_test.c libatsc3.o 
-	cc -g atsc3_lmt_test.c libatsc3.o -lz -lm -lpthread -lpcap -o atsc3_lmt_test 
+test/atsc3_lmt_test: test/atsc3_lmt_test.c libatsc3.o 
+	cc -g test/atsc3_lmt_test.c libatsc3.o -lz -lm -lpthread -lpcap -o test/atsc3_lmt_test 
 
-atsc3_lls_test: atsc3_lls_test.c libatsc3.o
-	cc -g atsc3_lls_test.c libatsc3.o -lz  -lm -lpthread -lpcap -o atsc3_lls_test
+test/atsc3_lls_test: test/atsc3_lls_test.c libatsc3.o
+	cc -g test/atsc3_lls_test.c libatsc3.o -lz  -lm -lpthread -lpcap -o test/atsc3_lls_test
 
-atsc3_lls_slt_parser_test: atsc3_lls_slt_parser_test.c libatsc3.o 
-	cc -g atsc3_lls_slt_parser_test.c libatsc3.o -lz -lm -lpthread -lpcap -o atsc3_lls_slt_parser_test 
+test/atsc3_lls_slt_parser_test: test/atsc3_lls_slt_parser_test.c libatsc3.o 
+	cc -g test/atsc3_lls_slt_parser_test.c libatsc3.o -lz -lm -lpthread -lpcap -o test/atsc3_lls_slt_parser_test 
 
-atsc3_lls_SystemTime_test: atsc3_lls_SystemTime_test.c libatsc3.o
-	cc -g atsc3_lls_SystemTime_test.c libatsc3.o -lz  -lm -lpthread -lpcap -o atsc3_lls_SystemTime_test 
+test/atsc3_lls_SystemTime_test: test/atsc3_lls_SystemTime_test.c libatsc3.o
+	cc -g test/atsc3_lls_SystemTime_test.c libatsc3.o -lz  -lm -lpthread -lpcap -o test/atsc3_lls_SystemTime_test 
 
-atsc3_mmt_signaling_message_test: atsc3_mmt_signaling_message_test.c
-	cc -g atsc3_mmt_signaling_message_test.c libatsc3.o -lz  -lm -lpthread -lpcap -o atsc3_mmt_signaling_message_test
+test/atsc3_mmt_signalling_message_test: test/atsc3_mmt_signalling_message_test.c
+	cc -g test/atsc3_mmt_signalling_message_test.c libatsc3.o -lz  -lm -lpthread -lpcap -o test/atsc3_mmt_signalling_message_test
 
-atsc3_isobmff_box_test: atsc3_isobmff_box_test.c
-	cc -g atsc3_isobmff_box_test.c  -lz  -lm -lpthread -lpcap -o atsc3_isobmff_box_test 
+test/atsc3_mmt_signalling_packet_test: test/atsc3_mmt_signalling_packet_test.c atsc3_utils.o
+	cc -g3 -O0 test/atsc3_mmt_signalling_packet_test.c libatsc3.o -lz -lm -lpthread -lpcap -o test/atsc3_mmt_signalling_packet_test
+	echo "valgrind --leak-check=full  ./atsc3_mmt_signalling_packet_test" > test/atsc3_mmt_signalling_packet_test_valgrind
+	chmod +x test/atsc3_mmt_signalling_packet_test_valgrind
 
-atsc3_fdt_test: atsc3_fdt_test.c libatsc3.o
-	cc -g atsc3_fdt_test.c libatsc3.o  -lz  -lm -lpthread -lpcap -o atsc3_fdt_test
+test/atsc3_mmt_mpu_packet_test: test/atsc3_mmt_mpu_packet_test.c atsc3_utils.o
+	cc -g3 -O0 test/atsc3_mmt_mpu_packet_test.c libatsc3.o -lz -lm -lpthread -lpcap -o test/atsc3_mmt_mpu_packet_test
+	echo "valgrind --leak-check=full  ./atsc3_mmt_mpu_packet_test" > test/atsc3_mmt_mpu_packet_test_valgrind
+	chmod +x test/atsc3_mmt_mpu_packet_test_valgrind
+
+test/atsc3_isobmff_box_test: test/atsc3_isobmff_box_test.c
+	cc -g test/atsc3_isobmff_box_test.c  -lz  -lm -lpthread -lpcap -o test/atsc3_isobmff_box_test 
+
+test/atsc3_fdt_test: test/atsc3_fdt_test.c libatsc3.o
+	cc -g test/atsc3_fdt_test.c libatsc3.o  -lz  -lm -lpthread -lpcap -o test/atsc3_fdt_test
+
+test/atsc3_fdt_test_2019-09-07-esg-e.1.1.7: test/atsc3_fdt_test_2019-09-07-esg-e.1.1.7.c libatsc3.o
+	cc -g test/atsc3_fdt_test_2019-09-07-esg-e.1.1.7.c libatsc3.o  -lz  -lm -lpthread -lpcap -o test/atsc3_fdt_test_2019-09-07-esg-e.1.1.7
+	
+test/atsc3_fdt_mbms_envelope_test_2019-09-17-nab-interop-day1: test/atsc3_fdt_mbms_envelope_test_2019-09-17-nab-interop-day1.c
+	cc -g test/atsc3_fdt_mbms_envelope_test_2019-09-17-nab-interop-day1.c libatsc3.o -lz -lm -lpthread -lpcap -o test/atsc3_fdt_mbms_envelope_test_2019-09-17-nab-interop-day1
+
+test/atsc3_libmicrohttpd_test: test/atsc3_libmicrohttpd_test.c 
+	cc -g test/atsc3_libmicrohttpd_test.c  \
+		-I../libmicrohttpd/libmicrohttpd-0.9.63/build/include \
+		-L../libmicrohttpd/libmicrohttpd-0.9.63/build/lib -lmicrohttpd \
+		-o test/atsc3_libmicrohttpd_test
+
+#todo - link against libatsc3 intermediate as these are almost integration tests
+test/atsc3_mime_multipart_related_parser_test: test/atsc3_mime_multipart_related_parser_test.c \
+	atsc3_mbms_envelope_xml.o	\
+	atsc3_mime_multipart_related.o \
+	atsc3_mime_multipart_related_parser.o \
+	atsc3_sls_metadata_fragment_types_parser.o \
+	atsc3_sls_held_fragment.o \
+	atsc3_utils.o \
+	atsc3_route_mpd.o \
+	atsc3_route_s_tsid.o \
+	atsc3_fdt_parser.o \
+	atsc3_fdt.o \
+	atsc3_route_usbd.o \
+	atsc3_mbms_envelope_parser.o \
+	xml.o
+	cc -g test/atsc3_mime_multipart_related_parser_test.c \
+	atsc3_mbms_envelope_xml.o	\
+	atsc3_mime_multipart_related.o \
+	atsc3_mime_multipart_related_parser.o \
+	atsc3_sls_metadata_fragment_types_parser.o \
+	atsc3_sls_held_fragment.o \
+	atsc3_route_mpd.o \
+	atsc3_route_s_tsid.o \
+	atsc3_fdt_parser.o \
+	atsc3_fdt.o \
+	atsc3_route_usbd.o \
+	atsc3_mbms_envelope_parser.o \
+	xml.o \
+	atsc3_utils.o -o test/atsc3_mime_multipart_related_parser_test
+
+test/atsc3_fdt_mbms_envelope_test: test/atsc3_fdt_mbms_envelope_test.c \
+	atsc3_mbms_envelope_xml.o	\
+	atsc3_mime_multipart_related.o \
+	atsc3_mime_multipart_related_parser.o \
+	atsc3_sls_metadata_fragment_types_parser.o \
+	atsc3_sls_held_fragment.o \
+	atsc3_utils.o \
+	atsc3_route_mpd.o \
+	atsc3_route_s_tsid.o \
+	atsc3_fdt_parser.o \
+	atsc3_fdt.o \
+	atsc3_route_usbd.o \
+	atsc3_mbms_envelope_parser.o \
+	xml.o
+	cc -g test/atsc3_fdt_mbms_envelope_test.c \
+	atsc3_mbms_envelope_xml.o	\
+	atsc3_mime_multipart_related.o \
+	atsc3_mime_multipart_related_parser.o \
+	atsc3_sls_metadata_fragment_types_parser.o \
+	atsc3_sls_held_fragment.o \
+	atsc3_route_mpd.o \
+	atsc3_route_s_tsid.o \
+	atsc3_fdt_parser.o \
+	atsc3_fdt.o \
+	atsc3_route_usbd.o \
+	atsc3_mbms_envelope_parser.o \
+	xml.o \
+	atsc3_utils.o -o test/atsc3_fdt_mbms_envelope_test
+
+test/atsc3_fdt_mbms_envelope_test_2019-09-07-esg-e.1.1.7: test/atsc3_fdt_mbms_envelope_test_2019-09-07-esg-e.1.1.7.c \
+	atsc3_mbms_envelope_xml.o	\
+	atsc3_mime_multipart_related.o \
+	atsc3_mime_multipart_related_parser.o \
+	atsc3_sls_metadata_fragment_types_parser.o \
+	atsc3_sls_held_fragment.o \
+	atsc3_utils.o \
+	atsc3_route_mpd.o \
+	atsc3_route_s_tsid.o \
+	atsc3_fdt_parser.o \
+	atsc3_fdt.o \
+	atsc3_route_usbd.o \
+	atsc3_mbms_envelope_parser.o \
+	xml.o
+	cc -g test/atsc3_fdt_mbms_envelope_test_2019-09-07-esg-e.1.1.7.c \
+	atsc3_mbms_envelope_xml.o	\
+	atsc3_mime_multipart_related.o \
+	atsc3_mime_multipart_related_parser.o \
+	atsc3_sls_metadata_fragment_types_parser.o \
+	atsc3_sls_held_fragment.o \
+	atsc3_route_mpd.o \
+	atsc3_route_s_tsid.o \
+	atsc3_fdt_parser.o \
+	atsc3_fdt.o \
+	atsc3_route_usbd.o \
+	atsc3_mbms_envelope_parser.o \
+	xml.o \
+	atsc3_utils.o -o test/atsc3_fdt_mbms_envelope_test_2019-09-07-esg-e.1.1.7
 
 ### integration tests
 ### TODO: move these into target makefile in listener_test/folder
@@ -490,7 +621,7 @@ atsc3_alc_listener_test: listener_tests/atsc3_alc_listener_test.cpp libatsc3_ben
 
 # simple ALC/DASH listener that builds a single ISOBMFF segment with v/a muxed in for each MPU
 atsc3_alc_listener_test_valgrind: listener_tests/atsc3_alc_listener_test.cpp libatsc3_bento4_gpl.o
-	g++ 		-D _TEST_RUN_VALGRIND_OSX_=true -g listener_tests/atsc3_alc_listener_test.cpp \
+	g++ -D _TEST_RUN_VALGRIND_OSX_=true -g listener_tests/atsc3_alc_listener_test.cpp \
 		libatsc3_bento4_gpl.o \
 		-lz -lpcap -lpthread  -o listener_tests/atsc3_alc_listener_test_valgrind
 
@@ -504,6 +635,15 @@ atsc3_alc_listener_test_valgrind: listener_tests/atsc3_alc_listener_test.cpp lib
 #		-o atsc3_mmt_listener_test_bento		
 # this one has some ncurses inclusion to support 		
 # -D _TEST_RUN_VALGRIND_OSX_=true to disable pthread_create on osx due to issues with lldb startup bug
+
+
+# a324_tests
+
+a32_dstp_lls_aeat_emission_test: a324_tests/a324_dstp_lls_aeat_emission_test.cpp libatsc3_bento4_gpl.o
+	g++ -g a324_tests/a324_dstp_lls_aeat_emission_test.cpp \
+		libatsc3_bento4_gpl.o \
+		-lz -lpcap -lpthread \
+		-o a324_tests/a324_dstp_lls_aeat_emission_test
 
 # misc utils	
 # isobmfftrackjoiner: bento4/ISOBMFFTrackJoiner.cpp bento4/ISOBMFFTrackJoiner.h atsc3_utils.o \
@@ -562,3 +702,23 @@ atsc3_mmt_mfu_monitor: tools/atsc3_mmt_mfu_monitor.cpp  \
 		atsc3_mmt_reconstitution_from_media_sample.c atsc3_logging_externs.o \
 		-I../bento/include/ -lpcap  -lncurses -lpcap -lz -lpthread \
 		-o tools/atsc3_mmt_mfu_monitor
+
+atsc3_alc_listener_mde_writer: tools/atsc3_alc_listener_mde_writer.cpp	libatsc3_bento4_gpl.o
+	g++  -D OUTPUT_STATISTICS=NCURSES -g tools/atsc3_alc_listener_mde_writer.cpp \
+		libatsc3_bento4_gpl.o \
+		-I../bento/include/ -lpcap  -lncurses -lpcap -lz -lpthread \
+		-o tools/atsc3_alc_listener_mde_writer
+
+atsc3_mmt_listener_to_http_hls_fmp4: tools/atsc3_mmt_listener_to_http_hls_fmp4.cpp \
+								atsc3_isobmff_tools.o \
+								atsc3_mmt_reconstitution_from_media_sample.o  \
+								atsc3_logging_externs.o \
+								libatsc3_bento4_gpl.o 
+	g++  -D OUTPUT_STATISTICS=NCURSES -g tools/atsc3_mmt_listener_to_http_hls_fmp4.cpp \
+		libatsc3_bento4_gpl.o \
+		atsc3_isobmff_tools.o \
+		atsc3_mmt_reconstitution_from_media_sample.c atsc3_logging_externs.o \
+		-I../bento/include/ -lpcap  -lncurses -lpcap -lz -lpthread \
+		-I../libmicrohttpd/libmicrohttpd-0.9.63/build/include \
+		-L../libmicrohttpd/libmicrohttpd-0.9.63/build/lib -lmicrohttpd \
+		-o tools/atsc3_mmt_listener_to_http_hls_fmp4		
