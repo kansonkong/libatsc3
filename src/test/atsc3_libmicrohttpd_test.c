@@ -5,6 +5,8 @@
  *      Author: jjustman
  */
 
+#include <string.h>
+#include <stdio.h>
 
 #include <sys/types.h>
 #include <sys/select.h>
