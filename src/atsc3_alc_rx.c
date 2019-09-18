@@ -386,7 +386,7 @@ int alc_rx_analyze_packet_a331_compliant(char *data, int len, alc_channel_t *ch,
 				  flute_version = (word & 0x00F00000) >> 20;
 				  fdt_instance_id = (word & 0x000FFFFF);
 
-				  if(flute_version != FLUTE_VERSION) {
+				  if(flute_version != FLUTE_VERSION_1 && flute_version != FLUTE_VERSION_2) {
 					  ALC_RX_WARN("ALC: tsi: %u, toi: %u, FLUTE version: %i is not supported",  def_lct_hdr->tsi, def_lct_hdr->toi, flute_version);
 					  retval = HDR_ERROR;
 					  goto error;

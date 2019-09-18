@@ -467,7 +467,7 @@ alc_packet_t* route_parse_from_udp_packet(lls_sls_alc_session_t *matching_lls_sl
             if(lls_slt_monitor->lls_sls_alc_monitor &&  lls_slt_monitor->lls_sls_alc_monitor->lls_alc_session && lls_slt_monitor->lls_sls_alc_monitor->lls_alc_session->service_id == matching_lls_slt_alc_session->service_id) {
                 goto ret;
             } else {
-                __ATSC3_TRACE("ignoring service_id: %u", matching_lls_slt_alc_session->service_id);
+               // __ATSC3_TRACE("ignoring service_id: %u", matching_lls_slt_alc_session->service_id);
             }
             goto cleanup;
         } else {

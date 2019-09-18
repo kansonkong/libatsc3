@@ -39,6 +39,7 @@ clean:
 	-rm -f test/atsc3_mime_multipart_related_parser_test
 	-rm -f test/atsc3_fdt_mbms_envelope_test
 	-rm -f test/atsc3_fdt_mbms_envelope_test_2019-09-07-esg-e.1.1.7
+	-rm -f test/atsc3_fdt_mbms_envelope_test_2019-09-17-nab-interop-day1
 	-rm -f test/atsc3_libmicrohttpd_test
 	-rm -f listener_tests/atsc3_alc_listener_test
 	-rm -f listener_tests/atsc3_alc_listener_test_valgrind
@@ -116,6 +117,7 @@ unit_tests: test/atsc3_lmt_test \
 			test/atsc3_isobmff_box_test \
 			test/atsc3_fdt_test \
 			test/atsc3_fdt_test_2019-09-07-esg-e.1.1.7 \
+			test/atsc3_fdt_mbms_envelope_test_2019-09-17-nab-interop-day1 \
 			test/atsc3_stltp_parser_test \
 			test/atsc3_mime_multipart_related_parser_test \
 			test/atsc3_fdt_mbms_envelope_test \
@@ -479,6 +481,9 @@ test/atsc3_fdt_test: test/atsc3_fdt_test.c libatsc3.o
 
 test/atsc3_fdt_test_2019-09-07-esg-e.1.1.7: test/atsc3_fdt_test_2019-09-07-esg-e.1.1.7.c libatsc3.o
 	cc -g test/atsc3_fdt_test_2019-09-07-esg-e.1.1.7.c libatsc3.o  -lz  -lm -lpthread -lpcap -o test/atsc3_fdt_test_2019-09-07-esg-e.1.1.7
+	
+test/atsc3_fdt_mbms_envelope_test_2019-09-17-nab-interop-day1: test/atsc3_fdt_mbms_envelope_test_2019-09-17-nab-interop-day1.c
+	cc -g test/atsc3_fdt_mbms_envelope_test_2019-09-17-nab-interop-day1.c libatsc3.o -lz -lm -lpthread -lpcap -o test/atsc3_fdt_mbms_envelope_test_2019-09-17-nab-interop-day1
 
 test/atsc3_libmicrohttpd_test: test/atsc3_libmicrohttpd_test.c 
 	cc -g test/atsc3_libmicrohttpd_test.c  \
