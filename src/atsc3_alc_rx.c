@@ -151,6 +151,7 @@ indicate any of the above modes using the @srcFecPayloadId attribute.
 
 int _ALC_RX_DEBUG_ENABLED = 0;
 int _ALC_RX_TRACE_ENABLED = 0;
+int _ALC_RX_TRACE_TAB_ENABLED = 0;
 
 typedef struct route_fragment {
 	unsigned long long tsi;
@@ -737,6 +738,21 @@ int alc_rx_analyze_packet_a331_compliant(char *data, int len, alc_channel_t *ch,
 			alc_packet->close_session_flag,
 			alc_packet->close_object_flag,
 			alc_packet->ext_route_presentation_ntp_timestamp);
+
+	ALC_RX_TRACE_TAB("ALC\ttsi\t%u\ttoi\t%u\tfec_encoding_id\t%u\tSBN\t%u\tesi\t%u\tpacket_length\t%u\tstart_offset\t%u\ttransfer_len\t%llu\tcodepoint\t%u\tclose_session\t%u\tclose_object\t%u\text_route_presentation_ntp_timestamp\t%llu",
+				alc_packet->def_lct_hdr->tsi,
+				alc_packet->def_lct_hdr->toi,
+				alc_packet->fec_encoding_id,
+				alc_packet->sbn,
+				alc_packet->esi,
+				alc_packet->alc_len,
+				alc_packet->start_offset,
+				alc_packet->transfer_len,
+				alc_packet->def_lct_hdr->codepoint,
+				alc_packet->close_session_flag,
+				alc_packet->close_object_flag,
+				alc_packet->ext_route_presentation_ntp_timestamp);
+
 
 	return ALC_OK;
 

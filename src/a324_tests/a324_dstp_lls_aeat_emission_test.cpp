@@ -93,7 +93,7 @@ int main(int argc,char **argv) {
 
     //inject
 	pcap_lookupnet(devInject, &netpInject, &maskpInject, errbufInject);
-	pcap_t* descrInject = pcap_open_live(devInject, MAX_PCAP_LEN, 1, 0, errbufInject);
+	pcap_t* descrInject = pcap_open_live(devInject, MAX_PCAP_LEN, 1, 1, errbufInject);
 
 	struct stat st;
 	stat(xmlFilename, &st);

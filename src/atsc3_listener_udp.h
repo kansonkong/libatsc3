@@ -21,7 +21,11 @@
 #ifdef __cplusplus
 extern "C" {
 #endif
-#define MAX_PCAP_LEN 1514
+
+//jjustman-2019-09-24 - increase to phy maximum of 65535 - to support ATSC A/331:2019 PHY LLS size of 65535
+//#define MAX_PCAP_LEN 1514
+
+#define MAX_PCAP_LEN 65535
 
 typedef struct udp_flow {
 	uint32_t		src_ip_addr;
