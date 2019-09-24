@@ -164,8 +164,8 @@ mmtp_mpu_packet_t* mmtp_process_from_payload(mmtp_mpu_packet_t* mmtp_mpu_packet,
 				}
 
 				//if we have at least one block in the following, push it to the isobmff track joiner as usual
-				if(lls_slt_monitor->lls_sls_mmt_monitor->lls_sls_monitor_output_buffer.video_output_buffer_isobmff.mmt_mpu_rebuilt &&
-                   lls_slt_monitor->lls_sls_mmt_monitor->lls_sls_monitor_output_buffer.audio_output_buffer_isobmff.mmt_mpu_rebuilt) {
+				if(lls_slt_monitor->lls_sls_mmt_monitor->lls_sls_monitor_output_buffer.video_output_buffer_isobmff.mmt_mpu_rebuilt_and_appending_for_isobmff_mux &&
+                   lls_slt_monitor->lls_sls_mmt_monitor->lls_sls_monitor_output_buffer.audio_output_buffer_isobmff.mmt_mpu_rebuilt_and_appending_for_isobmff_mux) {
 
                     lls_sls_monitor_output_buffer_t* lls_sls_monitor_output_buffer_final_muxed_payload = atsc3_isobmff_build_joined_mmt_rebuilt_boxes(&lls_slt_monitor->lls_sls_mmt_monitor->lls_sls_monitor_output_buffer);
                     
@@ -222,9 +222,10 @@ mmtp_mpu_packet_t* mmtp_process_from_payload(mmtp_mpu_packet_t* mmtp_mpu_packet,
                     }
                     //jjustman-2019-09-05 - TODO: fix this hack
                     //clear out packet_id=0
+                    //mmtp_mpu_packet = NULL;
                     mmtp_mpu_packet_t* mmtp_mpu_packet = mmtp_mpu_packet_new();
                     mmtp_mpu_packet->mmtp_packet_id = 0;
-                    
+
                     mmtp_packet_id_packets_container_t* mmtp_packet_id_packets_container_packet_zero = mmtp_asset_find_or_create_packets_container_from_mmt_mpu_packet(mmtp_asset, mmtp_mpu_packet);
                     mmtp_packet_id_packets_container_free_mmtp_signalling_packet(mmtp_packet_id_packets_container_packet_zero);
                 }

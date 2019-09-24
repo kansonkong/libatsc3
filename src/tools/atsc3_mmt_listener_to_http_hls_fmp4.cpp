@@ -285,7 +285,7 @@ const char* mmt_hls_fmp4_master_manifest_path   = "hls/master.m3u8";
 #define MMT_HLS_FMP4_AUDIO_VARIANT_NAME     "hls/a.m3u8"
 #define MMT_HLS_FMP4_VIDEO_VARIANT_NAME     "hls/v.m3u8"
 
-#define MAX_FMP4_SEGMENTS 6
+#define MAX_FMP4_SEGMENTS 8
 
 char* a_fmp4_segments[MAX_FMP4_SEGMENTS] = {0};
 int a_fmp4_segments_ringbuffer_idx = 0;
@@ -335,7 +335,7 @@ void atsc3_mmt_hls_fmp4_write_master_manifest() {
     "#EXT-X-VERSION:7\n"
     "#EXT-X-INDEPENDENT-SEGMENTS\n"
     "#EXT-X-MEDIA:TYPE=AUDIO,GROUP-ID=\"a1\",NAME=\"English\",LANGUAGE=\"en-US\",AUTOSELECT=YES,DEFAULT=YES,CHANNELS=\"2\",URI=\"a.m3u8\"\n"
-    "#EXT-X-STREAM-INF:RESOLUTION=1280x720,BANDWIDTH=4000000,FRAME-RATE=60.000,AUDIO=\"a1\",AVERAGE-BANDWIDTH=4000000\n"
+    "#EXT-X-STREAM-INF:RESOLUTION=1280x720,BANDWIDTH=4000000,FRAME-RATE=59.94,AUDIO=\"a1\",AVERAGE-BANDWIDTH=4000000\n"
     "v.m3u8\n\n";
 
     
@@ -375,8 +375,8 @@ void atsc3_mmt_hls_fmp4_write_variant_manifest(const char* variant_path, const c
     
     for(int i = ringbuffer_idx; i < ringbuffer_idx + MAX_FMP4_SEGMENTS; i++) {
         char* temp_hls_fragment_payload = fmp4_segments[ i % MAX_FMP4_SEGMENTS];
-        if(temp_hls_fragment_payload) {
-            snprintf(payload + strlen(payload), PAYLOAD_MAX_LEN - strlen(payload), "#EXTINF:1.000000\n%s\n", temp_hls_fragment_payload);
+        if(temp_hls_fragment_payload && i < (ringbuffer_idx + MAX_FMP4_SEGMENTS - 1)) {
+            snprintf(payload + strlen(payload), PAYLOAD_MAX_LEN - strlen(payload), "#EXTINF:1.001\n%s\n", temp_hls_fragment_payload);
         }
     }
     
@@ -426,6 +426,13 @@ void atsc3_mmt_hls_fmp4_copy_file_and_extract_init_fragment(const char* from, co
     struct stat st;
     stat(from, &st);
     off_t size = st.st_size;
+
+    struct stat st_to;
+    if(!stat(to, &st_to)) {
+    	return;
+    }
+
+
     
     //max isobmff moov fragment size
     uint8_t* block = (uint8_t*) calloc(size, sizeof(uint8_t));
@@ -481,11 +488,12 @@ void atsc3_mmt_hls_fmp4_copy_file_and_extract_init_fragment(const char* from, co
     block = NULL;
 }
 
+
 void atsc3_mmt_hls_fmp4_update_manifest(lls_sls_mmt_session_t* lls_sls_mmt_session) {
     
     atsc3_mmt_hls_fmp4_write_master_manifest();
     
-    if(lls_sls_mmt_session->last_udp_flow_packet_id_mpu_sequence_tuple_audio_processed && lls_sls_mmt_session->last_udp_flow_packet_id_mpu_sequence_tuple_video_processed) {
+    if(lls_sls_mmt_session->last_udp_flow_packet_id_mpu_sequence_tuple_audio_processed) {
 
         if(a_fmp4_segments[a_fmp4_segments_ringbuffer_idx % MAX_FMP4_SEGMENTS]) {
             free(a_fmp4_segments[a_fmp4_segments_ringbuffer_idx % MAX_FMP4_SEGMENTS]);
@@ -513,7 +521,7 @@ void atsc3_mmt_hls_fmp4_update_manifest(lls_sls_mmt_session_t* lls_sls_mmt_sessi
                  lls_sls_mmt_session->last_udp_flow_packet_id_mpu_sequence_tuple_audio->mpu_sequence_number - 1, "a.rebuilt");
 
         //atsc3_mmt_hls_fmp4_copy_file(track_dump_file_name, tmp_segment);
-        atsc3_mmt_hls_fmp4_copy_file_and_extract_init_fragment(track_dump_file_name, A_VARIANT_INIT_MP4, tmp_segment);
+       	atsc3_mmt_hls_fmp4_copy_file_and_extract_init_fragment(track_dump_file_name, A_VARIANT_INIT_MP4, tmp_segment);
         
         //copy fmp4 segment over, see lls_sls_monitor_buffer_isobmff_intermediate_mmt_file_dump
         //fix me for packet_id's
@@ -521,7 +529,11 @@ void atsc3_mmt_hls_fmp4_update_manifest(lls_sls_mmt_session_t* lls_sls_mmt_sessi
 
         a_fmp4_segments_ringbuffer_idx++;
         atsc3_mmt_hls_fmp4_write_variant_manifest(MMT_HLS_FMP4_AUDIO_VARIANT_NAME, variant_manifest_audio_header, a_fmp4_segments_ringbuffer_idx, a_fmp4_segments);
-        
+        free(track_dump_file_name);
+
+    }
+    if(lls_sls_mmt_session->last_udp_flow_packet_id_mpu_sequence_tuple_video_processed) {
+
         //video segments here
         if(v_fmp4_segments[v_fmp4_segments_ringbuffer_idx % MAX_FMP4_SEGMENTS]) {
             free(v_fmp4_segments[v_fmp4_segments_ringbuffer_idx % MAX_FMP4_SEGMENTS]);
@@ -556,7 +568,6 @@ void atsc3_mmt_hls_fmp4_update_manifest(lls_sls_mmt_session_t* lls_sls_mmt_sessi
 
         atsc3_mmt_hls_fmp4_write_variant_manifest(MMT_HLS_FMP4_VIDEO_VARIANT_NAME, variant_manifest_video_header, v_fmp4_segments_ringbuffer_idx, v_fmp4_segments);
      
-        free(track_dump_file_name);
         free(track_dump_file_name_v);
     }
 }
