@@ -616,7 +616,7 @@ void* pcap_loop_run_thread(void* dev_pointer) {
 	bpf_u_int32 netp;
 
 	pcap_lookupnet(dev, &netp, &maskp, errbuf);
-    descr = pcap_open_live(dev, MAX_PCAP_LEN, 1, 0, errbuf);
+    descr = pcap_open_live(dev, MAX_PCAP_LEN, 1, 1, errbuf);
 
     if(descr == NULL) {
         printf("pcap_open_live(): %s",errbuf);
@@ -650,6 +650,11 @@ int main(int argc,char **argv) {
     _MMT_MPU_PARSER_DEBUG_ENABLED = 1;
     _MMTP_DEBUG_ENABLED = 1;
     _MMT_SIGNALLING_MESSAGE_DEBUG_ENABLED = 1;
+    
+    _AEAT_PARSER_DEBUG_ENABLED = 1;
+    _AEAT_PARSER_TRACE_ENABLED = 1;
+    
+    _LLS_INFO_ENABLED = 1;
 
 
 #ifdef __LOTS_OF_DEBUGGING__

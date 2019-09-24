@@ -46,6 +46,8 @@
 #include "atsc3_lls_slt_parser.h"
 #include "xml.h"
 
+#include "atsc3_aeat_parser.h"
+
 int _LLS_INFO_ENABLED  = 0;
 int _LLS_DEBUG_ENABLED = 0;
 int _LLS_TRACE_ENABLED = 0;
@@ -96,6 +98,18 @@ lls_table_t* lls_create_xml_table(block_t* lls_packet_block) {
 		lls_table->raw_xml.xml_payload_size = ret;
 		return lls_table;
 	}
+    
+    _LLS_ERROR("lls_create_xml_table - error creating instance of LLS XML table,  lls_table_id: %d, length: %d, lls_group_id: %d, group_count_minus1: %d, lls_table_version: %d",
+               lls_table->lls_table_id,
+               lls_table->raw_xml.xml_payload_compressed_size,
+               lls_table->lls_group_id,
+               lls_table->group_count_minus1,
+               lls_table->lls_table_version);
+
+    if(lls_table) {
+        free(lls_table);
+        lls_table = NULL;
+    }
 
 	return NULL;
 }
@@ -118,8 +132,46 @@ lls_table_t* lls_table_create_or_update_from_lls_slt_monitor_with_metrics(lls_sl
 		(*parsed_error)++;
 		return NULL; //parse error or not supported
 	}
+    
+    //jjustman-2019-09-18 - TODO: refactor this out from union to *
+    if(lls_table_new->lls_table_id == AEAT) {
+        if(!lls_slt_monitor->aeat_table_latest) {
+            _LLS_INFO("Adding new AEAT table reference: %s", lls_table_new->aeat_table.aeat_xml_fragment_latest);
+            lls_slt_monitor->aeat_table_latest = lls_table_new;
+        } else if(lls_slt_monitor->aeat_table_latest->lls_group_id == lls_table_new->lls_group_id &&
+                  lls_slt_monitor->aeat_table_latest->lls_table_version != lls_table_new->lls_table_version) {
+            _LLS_INFO("Updating new AEAT table reference: %s", lls_table_new->aeat_table.aeat_xml_fragment_latest);
+            
+            lls_table_free(&lls_slt_monitor->aeat_table_latest);
+            lls_slt_monitor->aeat_table_latest = lls_table_new;
+        } else {
+            lls_table_free(&lls_table_new);
+        }
+        return NULL; //TODO - fix me - jjustman-2019-09-18
+    }
+    
+    //jjustman-2019-09-18 - TODO: refactor this out from union to *
+    if(lls_table_new->lls_table_id == OnscreenMessageNotification) {
+        if(!lls_slt_monitor->on_screen_message_notification_latest) {
+            _LLS_INFO("Adding new OnscreenMessageNotification table reference: %s", lls_table_new->on_screen_message_notification.on_screen_message_notification_xml_fragment_latest);
+            lls_slt_monitor->on_screen_message_notification_latest = lls_table_new;
+        } else if(lls_slt_monitor->aeat_table_latest->lls_group_id == lls_table_new->lls_group_id &&
+                  lls_slt_monitor->aeat_table_latest->lls_table_version != lls_table_new->lls_table_version) {
+            _LLS_INFO("Updating new OnscreenMessageNotification table reference: %s", lls_table_new->on_screen_message_notification.on_screen_message_notification_xml_fragment_latest);
+            
+            lls_table_free(&lls_slt_monitor->on_screen_message_notification_latest);
+            lls_slt_monitor->on_screen_message_notification_latest = lls_table_new;
+        } else {
+            lls_table_free(&lls_table_new);
+        }
+        return NULL; //TODO - fix me - jjustman-2019-09-18
+
+    }
    
+    //unhandled lls_table_id
     if(lls_table_new->lls_table_id != SLT) {
+        _LLS_INFO("lls_table_create_or_update_from_lls_slt_monitor_with_metrics, ignoring lls_table_id: %d", lls_table_new->lls_table_id);
+        
         lls_table_free(&lls_table_new);
         return NULL;
     }
@@ -243,7 +295,9 @@ void lls_table_free(lls_table_t** lls_table_p) {
 		freesafe(lls_table->system_time_table.utc_local_offset);
 	} else if(lls_table->lls_table_id == AEAT) {
         _LLS_TRACE("free: lls_create_table_type_instance: LLS table AEAT not supported yet");
-	} else if(lls_table->lls_table_id == OnscreenMessageNotification) {
+        //jjustman-2019-09-18 - TODO - move this out of a union into *
+        //atsc3_aeat_table_free(atsc3_aeat_table_t **atsc3_aeat_table_p)
+    } else if(lls_table->lls_table_id == OnscreenMessageNotification) {
         _LLS_TRACE("free: lls_create_table_type_instance: LLS table OnscreenMessageNotification not supported yet");
 	}
 
@@ -315,7 +369,7 @@ int lls_create_table_type_instance(lls_table_t* lls_table, xml_node_t* xml_root)
 	} else if(lls_table->lls_table_id == SystemTime) {
 		ret = build_system_time_table(lls_table, xml_root);
 	} else if(lls_table->lls_table_id == AEAT) {
-        ret = build_aeat_table(lls_table, xml_root);
+        ret = atsc3_aeat_table_populate_from_xml(lls_table, xml_root);
 	} else if(lls_table->lls_table_id == OnscreenMessageNotification) {
         ret = build_onscreen_message_notification_table(lls_table, xml_root);
 	} else {
