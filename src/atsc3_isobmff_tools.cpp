@@ -136,18 +136,27 @@ lls_sls_monitor_buffer_isobmff_t* atsc3_isobmff_rebuild_track_mpu_from_sample_da
         __ISOBMFF_TOOLS_ERROR("atsc3_isobmff_build_joined_mmt_isobmff_fragment: returned mdat size: %u, ap4_memory_byte_stream: %p, returning NULL", mdat_size_computed, ap4_memory_byte_stream);
         return NULL;
     }
+    
+    //jjustman-2019-09-24 - always allocate to mmt_mpu_rebuilt_single, and append for isobmff final mux
+    
+    if(lls_sls_monitor_buffer_isobmff->mmt_mpu_rebuilt_single) {
+        block_Destroy(&lls_sls_monitor_buffer_isobmff->mmt_mpu_rebuilt_single);
+    }
+    
+    lls_sls_monitor_buffer_isobmff->mmt_mpu_rebuilt_single = block_Alloc(ap4_memory_byte_stream->GetDataSize());
+    block_Write(lls_sls_monitor_buffer_isobmff->mmt_mpu_rebuilt_single, (uint8_t*)ap4_memory_byte_stream->GetData(), ap4_memory_byte_stream->GetDataSize());
 
-    if(!lls_sls_monitor_buffer_isobmff->mmt_mpu_rebuilt) {
+    if(!lls_sls_monitor_buffer_isobmff->mmt_mpu_rebuilt_and_appending_for_isobmff_mux) {
         __ISOBMFF_TOOLS_DEBUG("atsc3_isobmff_build_joined_mmt_isobmff_fragment: building return alloc of %u", ap4_memory_byte_stream->GetDataSize());
 
-    	lls_sls_monitor_buffer_isobmff->mmt_mpu_rebuilt = block_Alloc(ap4_memory_byte_stream->GetDataSize());
+    	lls_sls_monitor_buffer_isobmff->mmt_mpu_rebuilt_and_appending_for_isobmff_mux = block_Alloc(ap4_memory_byte_stream->GetDataSize());
     } else {
     	//otherwise append..
     	__ISOBMFF_TOOLS_DEBUG("atsc3_isobmff_build_joined_mmt_isobmff_fragment: appending return alloc of %u", ap4_memory_byte_stream->GetDataSize());
 
     }
 
-    block_Write(lls_sls_monitor_buffer_isobmff->mmt_mpu_rebuilt, (uint8_t*)ap4_memory_byte_stream->GetData(), ap4_memory_byte_stream->GetDataSize());
+    block_Write(lls_sls_monitor_buffer_isobmff->mmt_mpu_rebuilt_and_appending_for_isobmff_mux, (uint8_t*)ap4_memory_byte_stream->GetData(), ap4_memory_byte_stream->GetDataSize());
     ap4_memory_byte_stream->Release();
     delete ap4_data_buffer;
 

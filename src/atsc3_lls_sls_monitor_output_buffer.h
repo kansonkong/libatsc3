@@ -60,10 +60,10 @@ typedef struct lls_sls_monitor_buffer_isobmff {
     //todo - not sure if neededooo won't have flow until our mdat is complete
     block_t* mmt_moof_block_previous_mpu;
 
-
     block_t* mmt_mdat_block;
-
-    block_t* mmt_mpu_rebuilt;
+    block_t* mmt_mpu_rebuilt_single;
+    
+    block_t* mmt_mpu_rebuilt_and_appending_for_isobmff_mux;
 
     //for fragment recovery
     //mmtp_payload_fragments_union_t* last_fragment;

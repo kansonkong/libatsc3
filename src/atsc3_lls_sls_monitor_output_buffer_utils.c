@@ -220,13 +220,13 @@ void lls_sls_monitor_output_buffer_reset_rebuilt_mpu_moof_and_fragment_position(
     block_Release(&lls_sls_monitor_output_buffer->audio_output_buffer_isobmff.alc_moof_mdat_block);
 	block_Release(&lls_sls_monitor_output_buffer->audio_output_buffer_isobmff.mmt_moof_block);
 	block_Release(&lls_sls_monitor_output_buffer->audio_output_buffer_isobmff.mmt_moof_block_from_flow);
-	block_Release(&lls_sls_monitor_output_buffer->audio_output_buffer_isobmff.mmt_mpu_rebuilt);
+	block_Release(&lls_sls_monitor_output_buffer->audio_output_buffer_isobmff.mmt_mpu_rebuilt_and_appending_for_isobmff_mux);
     block_Release(&lls_sls_monitor_output_buffer->audio_output_buffer_isobmff.mmt_mdat_block);
 
 	block_Release(&lls_sls_monitor_output_buffer->video_output_buffer_isobmff.alc_moof_mdat_block);
 	block_Release(&lls_sls_monitor_output_buffer->video_output_buffer_isobmff.mmt_moof_block);
 	block_Release(&lls_sls_monitor_output_buffer->video_output_buffer_isobmff.mmt_moof_block_from_flow);
-	block_Release(&lls_sls_monitor_output_buffer->video_output_buffer_isobmff.mmt_mpu_rebuilt);
+	block_Release(&lls_sls_monitor_output_buffer->video_output_buffer_isobmff.mmt_mpu_rebuilt_and_appending_for_isobmff_mux);
 	block_Release(&lls_sls_monitor_output_buffer->video_output_buffer_isobmff.mmt_mdat_block);
     
     block_Release(&lls_sls_monitor_output_buffer->joined_isobmff_block);
@@ -1251,7 +1251,7 @@ void lls_sls_monitor_buffer_isobmff_intermediate_mmt_file_dump(lls_sls_monitor_b
 
 
 void ls_sls_monitor_buffer_isobmff_mmt_mpu_rebuilt_file_dump(lls_sls_monitor_buffer_isobmff_t* lls_sls_monitor_buffer_isobmff, const char* directory_path, uint32_t mpu_sequence_number, const char* prefix) {
-    if(!lls_sls_monitor_buffer_isobmff || !lls_sls_monitor_buffer_isobmff->mmt_mpu_rebuilt) {
+    if(!lls_sls_monitor_buffer_isobmff || !lls_sls_monitor_buffer_isobmff->mmt_mpu_rebuilt_single) {
         __LLS_SLS_MONITOR_OUTPUT_BUFFER_UTILS_WARN("ls_sls_monitor_buffer_isobmff_mmt_mpu_rebuilt_file_dump: lls_sls_monitor_buffer_isobmff is: %p, returning", lls_sls_monitor_buffer_isobmff);
         
         return;
@@ -1266,7 +1266,7 @@ void ls_sls_monitor_buffer_isobmff_mmt_mpu_rebuilt_file_dump(lls_sls_monitor_buf
 
 	FILE* track_dump_recon_fp = fopen(track_dump_file_name, "w");
 	if(track_dump_recon_fp) {
-		fwrite(lls_sls_monitor_buffer_isobmff->mmt_mpu_rebuilt->p_buffer, lls_sls_monitor_buffer_isobmff->mmt_mpu_rebuilt->p_size, 1, track_dump_recon_fp);
+		fwrite(lls_sls_monitor_buffer_isobmff->mmt_mpu_rebuilt_single->p_buffer, lls_sls_monitor_buffer_isobmff->mmt_mpu_rebuilt_single->p_size, 1, track_dump_recon_fp);
 		fclose(track_dump_recon_fp);
 		free(track_dump_file_name);
 	}
