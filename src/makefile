@@ -42,6 +42,8 @@ clean:
 	-rm -f test/atsc3_fdt_mbms_envelope_test_2019-09-07-esg-e.1.1.7
 	-rm -f test/atsc3_fdt_mbms_envelope_test_2019-09-17-nab-interop-day1
 	-rm -f test/atsc3_libmicrohttpd_test
+	-rm -f test/atsc3_mmt_signalling_packet_test
+	-rm -f test/atsc3_mmt_mpu_packet_test
 	-rm -f listener_tests/atsc3_alc_listener_test
 	-rm -f listener_tests/atsc3_alc_listener_test_valgrind
 	-rm -f listener_tests/atsc3_lls_listener_test
@@ -50,7 +52,7 @@ clean:
 	-rm -f listener_tests/atsc3_stltp_listener_test
 	-rm -f listener_tests/atsc3_stltp_alp_listener_test
 	-rm -f listener_tests/atsc3_stltp_alp_listener_reflector_test
-	-rm -f a324_tests/a32_dstp_lls_aeat_emission_test	
+	-rm -f a324_tests/a324_dstp_lls_aeat_emission_test	
 	-rm -f tools/atsc3_alc_listener_mde_writer
 	-rm -f tools/atsc3_listener_metrics_ncurses
 	-rm -f tools/atsc3_listener_metrics_ncurses_httpd_isobmff
