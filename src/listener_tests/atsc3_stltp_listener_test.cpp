@@ -119,7 +119,7 @@ int main(int argc,char **argv) {
 	println("%s - a udp mulitcast listener test harness for atsc3 stltp payloads, listening on dev: %s", argv[0], argv[1]);
 
     pcap_lookupnet(dev, &netp, &maskp, errbuf);
-    descr = pcap_open_live(dev, MAX_PCAP_LEN, 1, 0, errbuf);
+    descr = pcap_open_live(dev, MAX_PCAP_LEN, 1, 1, errbuf);
 
     if(descr == NULL) {
         printf("pcap_open_live(): %s",errbuf);

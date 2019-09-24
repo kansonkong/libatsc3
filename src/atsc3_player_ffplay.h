@@ -34,8 +34,8 @@ extern int _PLAYER_FFPLAY_TRACE_ENABLED;
 
 //#define __PLAYER_INITIAL_BUFFER_SEGMENT_COUNT 4 		//wait for at least 1 signals to give us enough to sync the elst inection of mpu_presentation_timestamp
 //#define __PLAYER_INITIAL_BUFFER_TARGET 1500000  		//TODO:  make this variable based upon HRBM or 2x MPU for fast startup
-#define __PLAYER_INITIAL_BUFFER_SEGMENT_COUNT 3  	  //wait for at least 1 signals to give us enough to sync the elst inection of mpu_presentation_timestamp
-#define __PLAYER_INITIAL_BUFFER_TARGET 384000          //TODO:  make this variable based upon HRBM or 2x MPU for fast startup
+#define __PLAYER_INITIAL_BUFFER_SEGMENT_COUNT 4  	  //wait for at least 1 signals to give us enough to sync the elst inection of mpu_presentation_timestamp
+#define __PLAYER_INITIAL_BUFFER_TARGET 1024000          //TODO:  make this variable based upon HRBM or 2x MPU for fast startup
 
 #define __PLAYER_FFPLAY_BUFFER_WARNING_SIZE 128000
 #define __PLAYER_FFPLAY_PIPE_INTERNAL_BUFFER_SIZE 16384000  //increasing for 2s sba gop in route

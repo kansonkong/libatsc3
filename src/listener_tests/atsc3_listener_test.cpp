@@ -252,7 +252,6 @@ cleanup:
 }
 
 
-#define MAX_PCAP_LEN 1514
 /**
  *
  * atsc3_mmt_listener_test interface (dst_ip) (dst_port)
@@ -306,7 +305,7 @@ int main(int argc,char **argv) {
     mkdir("mpu", 0777);
 
     pcap_lookupnet(dev, &netp, &maskp, errbuf);
-    descr = pcap_open_live(dev, MAX_PCAP_LEN, 1, 0, errbuf);
+    descr = pcap_open_live(dev, MAX_PCAP_LEN, 1, 1, errbuf);
 
     if(descr == NULL) {
         printf("pcap_open_live(): %s",errbuf);
@@ -329,18 +328,3 @@ int main(int argc,char **argv) {
 
     return 0;
 }
-
-
-
-/* write a packet
-//define a new packet and for each position set its values
-u_char packet[86];
-
-
-// Send down the packet
-if (pcap_sendpacket(descr, packet, 86) != 0) {
-
-    fprintf(stderr,"Error sending the packet: %s", pcap_geterr(descr));
-    return 2;
-}
-*/

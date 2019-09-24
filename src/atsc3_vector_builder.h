@@ -138,7 +138,43 @@
 	};
 
 
-//provide a default
+/*
+ provide a default _free method for vectorable structs
+ 
+ ATSC3_VECTOR_BUILDER_METHODS_ITEM_FREE(atsc3_sls_html_entry_package);
+
+ note, to override default free, implement a method similar to the following:
+ 
+void vector_item_name_free(vector_item_name_t** vector_item_name_p) {
+    if(vector_item_name_p) {
+        vector_item_name_t* vector_item_name = *vector_item_name_p;
+        if(vector_item_name) {
+            //other interior members here
+            freesafe(vector_item_name);
+            vector_item_name = NULL;
+        }
+    *vector_item_name_p = NULL;
+    }
+}
+ 
+ e.g.
+ 
+ s/vector_item_name/atsc3_sls_html_entry_package
+ 
+void atsc3_sls_html_entry_package_free(atsc3_sls_html_entry_package_t** atsc3_sls_html_entry_package_p) {
+    if(atsc3_sls_html_entry_package_p) {
+        atsc3_sls_html_entry_package_t* atsc3_sls_html_entry_package = *atsc3_sls_html_entry_package_p;
+        if(atsc3_sls_html_entry_package) {
+            //other interior members here
+            freesafe(atsc3_sls_html_entry_package);
+            atsc3_sls_html_entry_package = NULL;
+        }
+    *atsc3_sls_html_entry_package_p = NULL;
+    }
+}
+
+*/
+
 #define ATSC3_VECTOR_BUILDER_METHODS_ITEM_FREE(vector_item_name) \
 	void PPCAT(vector_item_name,_free)(PPCAT(vector_item_name,_t)** PPCAT(vector_item_name,_p)) { \
 		if(PPCAT(vector_item_name,_p)) {	\
