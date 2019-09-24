@@ -40,21 +40,25 @@
 #ifndef _ALC_RX_H_
 #define _ALC_RX_H_
 
-#define println(...) printf(__VA_ARGS__);printf("%s%s","\r","\n")
+#define println(...) 			printf(__VA_ARGS__);printf("%s%s","\r","\n")
 
-#define __ALC_RX_PRINTLN(...) printf(__VA_ARGS__);printf("%s%s","\r","\n")
-#define __ALC_RX_PRINTF(...)  printf(__VA_ARGS__);
+#define __ALC_RX_PRINTLN(...) 	printf(__VA_ARGS__);printf("%s%s","\r","\n")
+#define __ALC_RX_PRINTF(...)  	printf(__VA_ARGS__);
 
-#define ALC_RX_ERROR(...)   __LIBATSC3_TIMESTAMP_ERROR(__VA_ARGS__);
-#define ALC_RX_WARN(...)    __LIBATSC3_TIMESTAMP_WARN(__VA_ARGS__);
-#define ALC_RX_INFO(...)    __LIBATSC3_TIMESTAMP_INFO(__VA_ARGS__);
+#define ALC_RX_ERROR(...)   	__LIBATSC3_TIMESTAMP_ERROR(__VA_ARGS__);
+#define ALC_RX_WARN(...)   		__LIBATSC3_TIMESTAMP_WARN(__VA_ARGS__);
+#define ALC_RX_INFO(...)   		__LIBATSC3_TIMESTAMP_INFO(__VA_ARGS__);
 
-#define ALC_RX_DEBUG(...)   if(_ALC_RX_DEBUG_ENABLED) { __LIBATSC3_TIMESTAMP_DEBUG(__VA_ARGS__)}
-#define ALC_RX_DEBUGF(...)  if(_ALC_RX_DEBUG_ENABLED) { __LIBATSC3_TIMESTAMP_ERROR(__VA_ARGS__) }
-#define ALC_RX_DEBUGA(...)  if(_ALC_RX_DEBUG_ENABLED) { __PRINTF(__VA_ARGS__); }
-#define ALC_RX_DEBUGN(...)  if(_ALC_RX_DEBUG_ENABLED) { __PRINTLN(__VA_ARGS__); }
+#define ALC_RX_DEBUG(...)   	if(_ALC_RX_DEBUG_ENABLED) 		{ __LIBATSC3_TIMESTAMP_DEBUG(__VA_ARGS__)}
 
-#define ALC_RX_TRACE(...)   if(_ALC_RX_TRACE_ENABLED) { __LIBATSC3_TIMESTAMP_TRACE(__VA_ARGS__)}
+//todo: jjustman-2019-09-24 - replace va_args[0] (" ", ",", ":", with \t)
+#define ALC_RX_TRACE_TAB(...)   if(_ALC_RX_TRACE_TAB_ENABLED) 	{ __LIBATSC3_TIMESTAMP_TRACE_TAB(__VA_ARGS__)}
+
+#define ALC_RX_DEBUGF(...)  	if(_ALC_RX_DEBUG_ENABLED) { __LIBATSC3_TIMESTAMP_ERROR(__VA_ARGS__) }
+#define ALC_RX_DEBUGA(...)  	if(_ALC_RX_DEBUG_ENABLED) { __PRINTF(__VA_ARGS__); }
+#define ALC_RX_DEBUGN(...)  	if(_ALC_RX_DEBUG_ENABLED) { __PRINTLN(__VA_ARGS__); }
+
+#define ALC_RX_TRACE(...)   	if(_ALC_RX_TRACE_ENABLED) { __LIBATSC3_TIMESTAMP_TRACE(__VA_ARGS__)}
 
 
 #include "defines.h"

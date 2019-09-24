@@ -58,10 +58,14 @@ alc_channel_t ch;
 alc_arguments_t* alc_arguments;
 
 void process_packet(u_char *user, const struct pcap_pkthdr *pkthdr, const u_char *packet) {
+
+
 	udp_packet_t* udp_packet = process_packet_from_pcap(user, pkthdr, packet);
 	if(!udp_packet) {
 		return;
 	}
+	__TRACE("process_packet: source: %u.%u.%u.%u:%u", __toipandportnonstruct(udp_packet->udp_flow.dst_ip_addr, udp_packet->udp_flow.dst_port));
+
     alc_packet_t* alc_packet = NULL;
 
 	//dispatch for LLS extraction and dump
@@ -79,8 +83,10 @@ void process_packet(u_char *user, const struct pcap_pkthdr *pkthdr, const u_char
 			//dump out for fragment inspection
 			//alc_packet_dump_to_object(&alc_packet, lls_slt_monitor->lls_sls_alc_monitor);
 		} else {
-			__ERROR("Error in ALC decode: %d", retval);
+			__ERROR("process_packet: Error in ALC decode: %d", retval);
 		}
+	} else {
+		__ERROR("process_packet: Missing ALC session for: %u.%u.%u.%u:%u", __toipandportnonstruct(udp_packet->udp_flow.dst_ip_addr, udp_packet->udp_flow.dst_port));
 	}
 
 udp_packet_free:
@@ -90,11 +96,47 @@ udp_packet_free:
     return udp_packet_free(&udp_packet);
 }
 
+
+void* pcap_loop_run_thread(void* dev_pointer) {
+	char* dev = (char*) dev_pointer;
+
+	char errbuf[PCAP_ERRBUF_SIZE];
+	pcap_t* descr;
+	struct bpf_program fp;
+	bpf_u_int32 maskp;
+	bpf_u_int32 netp;
+
+	pcap_lookupnet(dev, &netp, &maskp, errbuf);
+    descr = pcap_open_live(dev, MAX_PCAP_LEN, 1, 1, errbuf);
+
+    if(descr == NULL) {
+        printf("pcap_open_live(): %s",errbuf);
+        exit(1);
+    }
+
+    char filter[] = "udp";
+    if(pcap_compile(descr,&fp, filter,0,netp) == -1) {
+        fprintf(stderr,"Error calling pcap_compile");
+        exit(1);
+    }
+
+    if(pcap_setfilter(descr,&fp) == -1) {
+        fprintf(stderr,"Error setting filter");
+        exit(1);
+    }
+
+    pcap_loop(descr,-1,process_packet,NULL);
+
+    return 0;
+}
+
+
 int main(int argc,char **argv) {
 
 	_LLS_SLT_PARSER_INFO_ROUTE_ENABLED = 1;
     _ALC_UTILS_DEBUG_ENABLED = 1;
 	_ALC_RX_DEBUG_ENABLED = 1;
+	_ALC_RX_TRACE_TAB_ENABLED = 1;
 
 #ifdef __LOTS_OF_DEBUGGING__
 
@@ -142,7 +184,7 @@ int main(int argc,char **argv) {
 		dst_ip_port_filter = &dst_port_int;
 
     } else {
-    	println("%s - a udp mulitcast listener test harness for atsc3 ALC ROUTE flows", argv[0]);
+    	println("%s - a udp mulitcast listener test harness for atsc3 ALC ROUTE FLOW analysis (does not write out ROUTE ALC TOI, see tools/atsc3_alc_listener_mde_writer)", argv[0]);
     	println("---");
     	println("args: dev (dst_ip) (dst_port)");
     	println(" dev: device to listen for udp multicast, default listen to 0.0.0.0:0");
@@ -152,34 +194,23 @@ int main(int argc,char **argv) {
     	exit(1);
     }
 
-    mkdir("route", 0777);
-
     lls_slt_monitor = lls_slt_monitor_create();
 	alc_arguments = (alc_arguments_t*)calloc(1, sizeof(alc_arguments_t));
 
     ch.s = open_alc_session(alc_arguments);
 
-    pcap_lookupnet(dev, &netp, &maskp, errbuf);
-    descr = pcap_open_live(dev, MAX_PCAP_LEN, 1, 0, errbuf);
 
-    if(descr == NULL) {
-        printf("pcap_open_live(): %s",errbuf);
-        exit(1);
-    }
+#ifndef _TEST_RUN_VALGRIND_OSX_
 
-    char filter[] = "udp";
-    if(pcap_compile(descr,&fp, filter,0,netp) == -1) {
-        fprintf(stderr,"Error calling pcap_compile");
-        exit(1);
-    }
+	pthread_t global_pcap_thread_id;
+	int pcap_ret = pthread_create(&global_pcap_thread_id, NULL, pcap_loop_run_thread, (void*)dev);
+	assert(!pcap_ret);
 
-    if(pcap_setfilter(descr,&fp) == -1) {
-        fprintf(stderr,"Error setting filter");
-        exit(1);
+	pthread_join(global_pcap_thread_id, NULL);
 
-    }
-
-    pcap_loop(descr,-1,process_packet,NULL);
+#else
+	pcap_loop_run_thread(dev);
+#endif
 
     return 0;
 }
