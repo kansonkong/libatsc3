@@ -134,7 +134,7 @@ void* pcap_loop_run_thread(void* dev_pointer) {
 	bpf_u_int32 netp;
 
 	pcap_lookupnet(dev, &netp, &maskp, errbuf);
-    descr = pcap_open_live(dev, MAX_PCAP_LEN, 1, 0, errbuf);
+    descr = pcap_open_live(dev, MAX_PCAP_LEN, 1, 1, errbuf);
 
     if(descr == NULL) {
         printf("pcap_open_live(): %s",errbuf);
@@ -157,7 +157,6 @@ void* pcap_loop_run_thread(void* dev_pointer) {
     return 0;
 }
 
-#define MAX_PCAP_LEN 1514
 /**
  *
  * atsc3_mmt_listener_test interface (dst_ip) (dst_port)

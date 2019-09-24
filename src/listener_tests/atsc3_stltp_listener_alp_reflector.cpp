@@ -411,7 +411,7 @@ int main(int argc,char **argv) {
     println("%s -an atsc3 stltp udp mulitcast reflector , listening on dev: %s, refleting: %s", argv[0], dev, devInject);
     
     pcap_lookupnet(dev, &netp, &maskp, errbuf);
-    descr = pcap_open_live(dev, MAX_PCAP_LEN, 1, 0, errbuf);
+    descr = pcap_open_live(dev, MAX_PCAP_LEN, 1, 1, errbuf);
     
     if(descr == NULL) {
         printf("pcap_open_live(): %s",errbuf);
@@ -431,7 +431,7 @@ int main(int argc,char **argv) {
    
     //inject
     pcap_lookupnet(devInject, &netpInject, &maskpInject, errbufInject);
-    pcap_t* descrInject = pcap_open_live(devInject, MAX_PCAP_LEN, 1, 0, errbufInject);
+    pcap_t* descrInject = pcap_open_live(devInject, MAX_PCAP_LEN, 1, 1, errbufInject);
     atsc3_alp_packet_collection->descrInject = descrInject;
     
     pcap_loop(descr, -1, process_packet, NULL);

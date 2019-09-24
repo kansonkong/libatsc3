@@ -128,7 +128,7 @@ void* pcap_loop_run_thread(void* dev_pointer) {
 	bpf_u_int32 netp;
 
 	pcap_lookupnet(dev, &netp, &maskp, errbuf);
-    descr = pcap_open_live(dev, MAX_PCAP_LEN, 1, 0, errbuf);
+    descr = pcap_open_live(dev, MAX_PCAP_LEN, 1, 1, errbuf);
 
     if(descr == NULL) {
         printf("pcap_open_live(): %s",errbuf);

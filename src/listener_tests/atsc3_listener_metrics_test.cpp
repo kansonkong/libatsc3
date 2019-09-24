@@ -345,12 +345,10 @@ int main(int argc,char **argv) {
 	pthread_t thread_id;
 	pthread_create(&thread_id, NULL, print_bandwidth_statistics_thread, NULL);
 
-
-
     mkdir("mpu", 0777);
 
     pcap_lookupnet(dev, &netp, &maskp, errbuf);
-    descr = pcap_open_live(dev, MAX_PCAP_LEN, 1, 0, errbuf);
+    descr = pcap_open_live(dev, MAX_PCAP_LEN, 1, 1, errbuf);
 
     if(descr == NULL) {
         printf("pcap_open_live(): %s",errbuf);

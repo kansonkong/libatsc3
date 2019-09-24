@@ -83,7 +83,7 @@ extern int _ALC_UTILS_IOTRACE_ENABLED;
 
 extern int _ALC_RX_DEBUG_ENABLED;
 extern int _ALC_RX_TRACE_ENABLED;
-
+extern int _ALC_RX_TRACE_TAB_ENABLED;
 
 extern int _PLAYER_FFPLAY_DEBUG_ENABLED;
 extern int _PLAYER_FFPLAY_TRACE_ENABLED;
@@ -104,16 +104,31 @@ extern int _STLTP_PARSER_TRACE_ENABLED;
 extern int _DSTP_TYPES_DEBUG_ENABLED;
 extern int _DSTP_TYPES_TRACE_ENABLED;
 
+extern int _AEAT_TYPES_INFO_ENABLED;
+extern int _AEAT_TYPES_DEBUG_ENABLED;
+extern int _AEAT_TYPES_TRACE_ENABLED;
+
+extern int _A344_RECEIVER_QUERY_INFO_ENABLED;
+extern int _A344_RECEIVER_QUERY_DEBUG_ENABLED;
+extern int _A344_RECEIVER_QUERY_TRACE_ENABLED;
+
+extern int _AEAT_PARSER_INFO_ENABLED;
+extern int _AEAT_PARSER_DEBUG_ENABLED;
+extern int _AEAT_PARSER_TRACE_ENABLED;
+
+
+
 //c++ linkage
 //extern int _ISOBMFFTRACKJOINER_DEBUG_ENABLED;
 
 //jjustman-2019-07-24 - normaolized debug logging format
     
-#define __LIBATSC3_TIMESTAMP_ERROR(...)     printf("%-24.24s:%4d:ERROR:%.4f:",__FILE__,__LINE__, gt()); printf(__VA_ARGS__); printf("%s%s","\r","\n");
-#define __LIBATSC3_TIMESTAMP_WARN(...)      printf("%-24.24s:%4d:WARN :%.4f:",__FILE__,__LINE__, gt()); printf(__VA_ARGS__); printf("%s%s","\r","\n");
-#define __LIBATSC3_TIMESTAMP_INFO(...)      printf("%-24.24s:%4d:INFO :%.4f:",__FILE__,__LINE__, gt()); printf(__VA_ARGS__); printf("%s%s","\r","\n");
-#define __LIBATSC3_TIMESTAMP_DEBUG(...)     printf("%-24.24s:%4d:DEBUG:%.4f:",__FILE__,__LINE__, gt()); printf(__VA_ARGS__); printf("%s%s","\r","\n");
-#define __LIBATSC3_TIMESTAMP_TRACE(...)     printf("%-24.24s:%4d:TRACE:%.4f:",__FILE__,__LINE__, gt()); printf(__VA_ARGS__); printf("%s%s","\r","\n");
+#define __LIBATSC3_TIMESTAMP_ERROR(...)     	printf("%-24.24s:%4d:ERROR:%.4f:",__FILE__,__LINE__, gt()); printf(__VA_ARGS__); printf("%s%s","\r","\n");
+#define __LIBATSC3_TIMESTAMP_WARN(...)     		printf("%-24.24s:%4d:WARN :%.4f:",__FILE__,__LINE__, gt()); printf(__VA_ARGS__); printf("%s%s","\r","\n");
+#define __LIBATSC3_TIMESTAMP_INFO(...)      	printf("%-24.24s:%4d:INFO :%.4f:",__FILE__,__LINE__, gt()); printf(__VA_ARGS__); printf("%s%s","\r","\n");
+#define __LIBATSC3_TIMESTAMP_DEBUG(...)    		printf("%-24.24s:%4d:DEBUG:%.4f:",__FILE__,__LINE__, gt()); printf(__VA_ARGS__); printf("%s%s","\r","\n");
+#define __LIBATSC3_TIMESTAMP_TRACE(...)    		printf("%-24.24s:%4d:TRACE:%.4f:",__FILE__,__LINE__, gt()); printf(__VA_ARGS__); printf("%s%s","\r","\n");
+#define __LIBATSC3_TIMESTAMP_TRACE_TAB(...)     printf("%-24.24s\t%4d\tTRACE\t%.4f\t",__FILE__,__LINE__, gt()); printf(__VA_ARGS__); printf("%s%s","\r","\n");
 
 #define __ERROR(...)   __LIBATSC3_TIMESTAMP_ERROR(__VA_ARGS__);
 #define __WARN(...)    __LIBATSC3_TIMESTAMP_WARN(__VA_ARGS__);
