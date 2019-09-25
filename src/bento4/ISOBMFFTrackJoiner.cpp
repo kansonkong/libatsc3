@@ -507,21 +507,27 @@ void ISOBMFF_track_joiner_monitor_output_buffer_parse_and_build_joined_mmt_rebui
                         	if(to_walk_entries_size > j) {
                                 __ISOBMFF_JOINER_DEBUG("REBUILD MOOF: packet_id: %u, missing NAL: zeroing sample %u from size: %u to size: %u,", lls_sls_monitor_buffer_isobmff->packet_id, j, to_walk_entries[j].sample_size, 0);
                                 trun_sample_entry_t* trun_sample_entry_forbidden_nal_bit = lls_sls_monitor_buffer_isobmff->trun_sample_entry_v.data[j];
+                                if(!trun_sample_entry_forbidden_nal_bit) {
+                                	lls_sls_monitor_buffer_isobmff->trun_sample_entry_v.data[j] = trun_sample_entry_new();
+                                }
 
                                 /** jjustman-2019-09-25 - trial hack for NAL error concealment **/
                         		to_walk_entries[j].sample_size = 4; //TODO - match this size with    [hvcC] size=8+135 -> NALU Length Size = 4
                                 to_walk_entries[j].sample_composition_time_offset = 0;
 
-                                trun_sample_entry_forbidden_nal_bit->sample = block_Alloc(4);
+                                if(!trun_sample_entry_forbidden_nal_bit->sample) {
+										trun_sample_entry_forbidden_nal_bit->sample = block_Alloc(4);
 
-                                /*
-                                 * set forbidden zero bit? https://tools.ietf.org/html/rfc3984
-                                 *
-                                 */
-                                uint8_t nal_size[4] = { 0 };
-                                nal_size[0] = 0x80;
+									/*
+									 * set forbidden zero bit? https://tools.ietf.org/html/rfc3984
+									 *
+									 */
+									uint8_t nal_size[4] = { 0 };
+									nal_size[0] = 0x80;
 
-                                block_Write(trun_sample_entry_forbidden_nal_bit->sample, nal_size, 4);
+									block_Write(trun_sample_entry_forbidden_nal_bit->sample, nal_size, 4);
+									final_mdat_size += 4;
+                                }
 
 
                         	} else {
