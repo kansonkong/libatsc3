@@ -508,7 +508,7 @@ void ISOBMFF_track_joiner_monitor_output_buffer_parse_and_build_joined_mmt_rebui
                                 __ISOBMFF_JOINER_DEBUG("REBUILD MOOF: packet_id: %u, missing NAL: zeroing sample %u from size: %u to size: %u,", lls_sls_monitor_buffer_isobmff->packet_id, j, to_walk_entries[j].sample_size, 0);
                                 trun_sample_entry_t* trun_sample_entry_forbidden_nal_bit = lls_sls_monitor_buffer_isobmff->trun_sample_entry_v.data[j];
                                 if(!trun_sample_entry_forbidden_nal_bit) {
-                                	lls_sls_monitor_buffer_isobmff->trun_sample_entry_v.data[j] = trun_sample_entry_new();
+                                	lls_sls_monitor_buffer_isobmff->trun_sample_entry_v.data[j] = (trun_sample_entry_t*)calloc(1, sizeof(trun_sample_entry_t));
                                 }
 
                                 /** jjustman-2019-09-25 - trial hack for NAL error concealment **/
