@@ -505,14 +505,14 @@ void ISOBMFF_track_joiner_monitor_output_buffer_parse_and_build_joined_mmt_rebui
 
                         for (int j=last_trun_id; j < trun_id; j++) {
                         	if(to_walk_entries_size > j) {
-                                __ISOBMFF_JOINER_DEBUG("REBUILD MOOF: packet_id: %u, intra: zeroing sample %u from size: %u to size: %u,", lls_sls_monitor_buffer_isobmff->packet_id, j, to_walk_entries[j].sample_size, 0);
-                                trun_sample_entry_t* trun_sample_entry = lls_sls_monitor_buffer_isobmff->trun_sample_entry_v.data[i];
+                                __ISOBMFF_JOINER_DEBUG("REBUILD MOOF: packet_id: %u, missing NAL: zeroing sample %u from size: %u to size: %u,", lls_sls_monitor_buffer_isobmff->packet_id, j, to_walk_entries[j].sample_size, 0);
+                                trun_sample_entry_t* trun_sample_entry_forbidden_nal_bit = lls_sls_monitor_buffer_isobmff->trun_sample_entry_v.data[j];
 
                                 /** jjustman-2019-09-25 - trial hack for NAL error concealment **/
-                        		to_walk_entries[j].sample_size = 4; //TODO - match this size with               [hvcC] size=8+135 -> NALU Length Size = 4
+                        		to_walk_entries[j].sample_size = 4; //TODO - match this size with    [hvcC] size=8+135 -> NALU Length Size = 4
                                 to_walk_entries[j].sample_composition_time_offset = 0;
 
-                                trun_sample_entry->sample = block_Alloc(4);
+                                trun_sample_entry_forbidden_nal_bit->sample = block_Alloc(4);
 
                                 /*
                                  * set forbidden zero bit? https://tools.ietf.org/html/rfc3984
@@ -521,13 +521,13 @@ void ISOBMFF_track_joiner_monitor_output_buffer_parse_and_build_joined_mmt_rebui
                                 uint8_t nal_size[4] = { 0 };
                                 nal_size[0] = 0x80;
 
-                                block_Write(trun_sample_entry->sample, nal_size, 4);
+                                block_Write(trun_sample_entry_forbidden_nal_bit->sample, nal_size, 4);
 
 
                         	} else {
                                 trun_sample_entry_t* trun_sample_entry_to_add = lls_sls_monitor_buffer_isobmff->trun_sample_entry_v.data[j];
 
-                                __ISOBMFF_JOINER_INFO("REBUILD MOOF: packet_id: %u, WARN - adding trun entry: %u, sample_size: %u", lls_sls_monitor_buffer_isobmff->packet_id, j, trun_sample_entry_to_add->sample_length);
+                                __ISOBMFF_JOINER_INFO("REBUILD MOOF: packet_id: %u, missing TRUN_Atom:Entry - adding trun entry: %u, sample_size: %u", lls_sls_monitor_buffer_isobmff->packet_id, j, trun_sample_entry_to_add->sample_length);
                                 AP4_TrunAtom::Entry* item = new AP4_TrunAtom::Entry();
                                 item->sample_size = trun_sample_entry_to_add->sample_length;
                                 item->sample_duration = last_sample_duration;
