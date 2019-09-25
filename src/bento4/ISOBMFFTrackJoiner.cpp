@@ -515,6 +515,10 @@ void ISOBMFF_track_joiner_monitor_output_buffer_parse_and_build_joined_mmt_rebui
                         		to_walk_entries[j].sample_size = 4; //TODO - match this size with    [hvcC] size=8+135 -> NALU Length Size = 4
                                 to_walk_entries[j].sample_composition_time_offset = 0;
 
+                                if(trun_sample_entry_forbidden_nal_bit->sample) {
+                                	block_Destroy(&trun_sample_entry_forbidden_nal_bit->sample);
+                                }
+
                                 if(!trun_sample_entry_forbidden_nal_bit->sample) {
 										trun_sample_entry_forbidden_nal_bit->sample = block_Alloc(4);
 
