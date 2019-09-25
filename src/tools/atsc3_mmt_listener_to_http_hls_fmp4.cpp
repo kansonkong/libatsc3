@@ -346,7 +346,7 @@ void atsc3_mmt_hls_fmp4_write_master_manifest() {
 #define A_VARIANT_INIT_MP4 "a.init.mp4"
 const char* variant_manifest_audio_header = "#EXTM3U\n"
 "#EXT-X-VERSION:7\n"
-"#EXT-X-TARGETDURATION:2\n"
+"#EXT-X-TARGETDURATION:10\n"
 "#EXT-X-INDEPENDENT-SEGMENTS\n"
 "#EXT-X-MAP:URI=\"a.init.mp4\"\n"
 "#EXT-X-MEDIA-SEQUENCE:%d\n\n";
@@ -354,7 +354,7 @@ const char* variant_manifest_audio_header = "#EXTM3U\n"
 #define V_VARIANT_INIT_MP4 "v.init.mp4"
 const char* variant_manifest_video_header = "#EXTM3U\n"
 "#EXT-X-VERSION:7\n"
-"#EXT-X-TARGETDURATION:2\n"
+"#EXT-X-TARGETDURATION:10\n"
 "#EXT-X-INDEPENDENT-SEGMENTS\n"
 "#EXT-X-MAP:URI=\"v.init.mp4\"\n"
 "#EXT-X-MEDIA-SEQUENCE:%d\n\n";
@@ -376,7 +376,7 @@ void atsc3_mmt_hls_fmp4_write_variant_manifest(const char* variant_path, const c
     for(int i = ringbuffer_idx; i < ringbuffer_idx + MAX_FMP4_SEGMENTS; i++) {
         char* temp_hls_fragment_payload = fmp4_segments[ i % MAX_FMP4_SEGMENTS];
         if(temp_hls_fragment_payload && i < (ringbuffer_idx + MAX_FMP4_SEGMENTS - 1)) {
-            snprintf(payload + strlen(payload), PAYLOAD_MAX_LEN - strlen(payload), "#EXTINF:2.002\n%s\n", temp_hls_fragment_payload);
+            snprintf(payload + strlen(payload), PAYLOAD_MAX_LEN - strlen(payload), "#EXTINF:2.502\n%s\n", temp_hls_fragment_payload);
         }
     }
     
@@ -427,13 +427,12 @@ void atsc3_mmt_hls_fmp4_copy_file_and_extract_init_fragment(const char* from, co
     stat(from, &st);
     off_t size = st.st_size;
 
+    //todo - jjustman-2019-09-25 - determine when/if we should overwrite init fragment
     struct stat st_to;
     if(!stat(to, &st_to)) {
     	return;
     }
 
-
-    
     //max isobmff moov fragment size
     uint8_t* block = (uint8_t*) calloc(size, sizeof(uint8_t));
     FILE* file_from_fp = fopen(from, "r");
@@ -470,8 +469,6 @@ void atsc3_mmt_hls_fmp4_copy_file_and_extract_init_fragment(const char* from, co
         if(has_found_moof_box) {
             fread(block, box_moof_and_mdat_size, 1, file_from_fp);
             fwrite(block, box_moof_and_mdat_size, 1, file_to_fp);
-            fclose(file_from_fp);
-            fclose(file_to_fp);
         }
         
         if(file_from_fp) {

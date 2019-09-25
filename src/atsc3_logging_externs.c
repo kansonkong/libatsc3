@@ -8,6 +8,7 @@
 #include <stdbool.h>
 
 #include "atsc3_logging_externs.h"
+
 FILE* __DEBUG_LOG_FILE = NULL;
 bool  __DEBUG_LOG_AVAILABLE = true;
 
