@@ -1262,7 +1262,7 @@ void ls_sls_monitor_buffer_isobmff_mmt_mpu_rebuilt_file_dump(lls_sls_monitor_buf
 
 	//build our recon mpu
 	char* track_dump_file_name = (char*)calloc(128, sizeof(char));
-	snprintf(track_dump_file_name, 127, "%s/%u.%u.%s", directory_path, atsc3_service_id, lls_sls_monitor_buffer_isobmff->packet_id, mpu_sequence_number, prefix);
+	snprintf(track_dump_file_name, 127, "%s/%u.%u.%u.%s", directory_path, atsc3_service_id, lls_sls_monitor_buffer_isobmff->packet_id, mpu_sequence_number, prefix);
 
 	FILE* track_dump_recon_fp = fopen(track_dump_file_name, "w");
 	if(track_dump_recon_fp) {
