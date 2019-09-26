@@ -1200,7 +1200,7 @@ void lls_sls_monitor_output_buffer_alc_file_dump(lls_sls_monitor_output_buffer_t
 /**
  split up for init and fragment for HLS fmp4 use case
  **/
-void lls_sls_monitor_buffer_isobmff_intermediate_mmt_file_dump(lls_sls_monitor_buffer_isobmff_t* lls_sls_monitor_buffer_isobmff, const char* directory_path, uint16_t packet_id, uint32_t mpu_sequence_number, const char* suffix) {
+void lls_sls_monitor_buffer_isobmff_intermediate_mmt_file_dump(lls_sls_monitor_buffer_isobmff_t* lls_sls_monitor_buffer_isobmff, const char* directory_path, uint16_t atsc3_service_id, uint16_t packet_id, uint32_t mpu_sequence_number, const char* suffix) {
     if(!lls_sls_monitor_buffer_isobmff || !lls_sls_monitor_buffer_isobmff->init_block || !lls_sls_monitor_buffer_isobmff->mmt_mdat_block) {
         __LLS_SLS_MONITOR_OUTPUT_BUFFER_UTILS_WARN("lls_sls_monitor_buffer_isobmff_mmt_file_dump: lls_sls_monitor_buffer_isobmff missing: %p", lls_sls_monitor_buffer_isobmff);
 
@@ -1214,7 +1214,7 @@ void lls_sls_monitor_buffer_isobmff_intermediate_mmt_file_dump(lls_sls_monitor_b
     //write out our init box for fMP4 support
     
     char* init_dump_file_name = (char*)calloc(128, sizeof(char));
-    snprintf(init_dump_file_name, 127, "%s/%u.init.mp4", directory_path, packet_id);
+    snprintf(init_dump_file_name, 127, "%s/%u.%u.init.mp4", directory_path, atsc3_service_id, packet_id);
     
     FILE* init_dump_fp = fopen(init_dump_file_name, "w");
     if(init_dump_fp) {
@@ -1227,7 +1227,7 @@ void lls_sls_monitor_buffer_isobmff_intermediate_mmt_file_dump(lls_sls_monitor_b
 
 	//build our recon mpu
     char* track_dump_file_name = (char*)calloc(128, sizeof(char));
-    snprintf(track_dump_file_name, 127, "%s/%u.%u.%s", directory_path, packet_id, mpu_sequence_number, suffix);
+    snprintf(track_dump_file_name, 127, "%s/%u.%u.%u.%s", directory_path, atsc3_service_id, packet_id, mpu_sequence_number, suffix);
 
     FILE* track_dump_recon_fp = fopen(track_dump_file_name, "w");
     if(track_dump_recon_fp) {
@@ -1250,7 +1250,7 @@ void lls_sls_monitor_buffer_isobmff_intermediate_mmt_file_dump(lls_sls_monitor_b
 }
 
 
-void ls_sls_monitor_buffer_isobmff_mmt_mpu_rebuilt_file_dump(lls_sls_monitor_buffer_isobmff_t* lls_sls_monitor_buffer_isobmff, const char* directory_path, uint32_t mpu_sequence_number, const char* prefix) {
+void ls_sls_monitor_buffer_isobmff_mmt_mpu_rebuilt_file_dump(lls_sls_monitor_buffer_isobmff_t* lls_sls_monitor_buffer_isobmff, const char* directory_path, uint16_t atsc3_service_id, uint32_t mpu_sequence_number, const char* prefix) {
     if(!lls_sls_monitor_buffer_isobmff || !lls_sls_monitor_buffer_isobmff->mmt_mpu_rebuilt_single) {
         __LLS_SLS_MONITOR_OUTPUT_BUFFER_UTILS_WARN("ls_sls_monitor_buffer_isobmff_mmt_mpu_rebuilt_file_dump: lls_sls_monitor_buffer_isobmff is: %p, returning", lls_sls_monitor_buffer_isobmff);
         
@@ -1262,7 +1262,7 @@ void ls_sls_monitor_buffer_isobmff_mmt_mpu_rebuilt_file_dump(lls_sls_monitor_buf
 
 	//build our recon mpu
 	char* track_dump_file_name = (char*)calloc(128, sizeof(char));
-	snprintf(track_dump_file_name, 127, "%s/%u.%u.%s", directory_path, lls_sls_monitor_buffer_isobmff->packet_id, mpu_sequence_number, prefix);
+	snprintf(track_dump_file_name, 127, "%s/%u.%u.%s", directory_path, atsc3_service_id, lls_sls_monitor_buffer_isobmff->packet_id, mpu_sequence_number, prefix);
 
 	FILE* track_dump_recon_fp = fopen(track_dump_file_name, "w");
 	if(track_dump_recon_fp) {
