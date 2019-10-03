@@ -491,6 +491,7 @@ typedef struct mmt_session {
 
 typedef struct lls_sls_mmt_session {
     uint16_t service_id;
+    atsc3_lls_slt_service_t* atsc3_lls_slt_service;
     
     uint32_t sls_source_ip_address;
 	bool	 sls_relax_source_ip_check;
@@ -546,6 +547,8 @@ ATSC3_VECTOR_BUILDER_METHODS_INTERFACE(lls_sls_mmt_session_flows, lls_sls_mmt_se
 
 typedef struct lls_sls_alc_session {
 	uint16_t service_id;
+	//jjustman-2019-10-03 - hack-ish
+	atsc3_lls_slt_service_t* atsc3_lls_slt_service;
 
 	bool sls_relax_source_ip_check;
 	uint32_t sls_source_ip_address;

@@ -235,7 +235,8 @@ void* global_autoplay_run_thread(void*p) {
         if(lls_sls_mmt_session) {
             lls_sls_mmt_monitor = lls_sls_mmt_monitor_create();
             lls_sls_mmt_monitor->lls_mmt_session = lls_sls_mmt_session;
-            lls_sls_mmt_monitor->service_id = my_service_id;
+            //TODO - jjustman-2019-10-03 - fix this hack
+            lls_sls_mmt_monitor->atsc3_lls_slt_service = lls_sls_mmt_session->atsc3_lls_slt_service;
             
             lls_sls_mmt_monitor->video_packet_id = lls_sls_mmt_session->video_packet_id;
             lls_sls_mmt_monitor->audio_packet_id = lls_sls_mmt_session->audio_packet_id;

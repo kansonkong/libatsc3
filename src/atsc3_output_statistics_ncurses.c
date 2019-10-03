@@ -72,7 +72,7 @@ void* ncurses_input_run_thread(void* lls_slt_monitor_ptr) {
     ncurses_init();
     lls_slt_monitor_t* lls_slt_monitor = (lls_slt_monitor_t*)lls_slt_monitor_ptr;
     lls_sls_mmt_monitor_t* lls_sls_mmt_monitor = NULL;
-    lls_sls_alc_monitor* lls_sls_alc_monitor = NULL;
+    lls_sls_alc_monitor_t* lls_sls_alc_monitor = NULL;
 
 
     while(1) {
@@ -171,7 +171,7 @@ void* ncurses_input_run_thread(void* lls_slt_monitor_ptr) {
                         
                         lls_sls_mmt_monitor = lls_sls_mmt_monitor_create();
                         lls_sls_mmt_monitor->lls_mmt_session = lls_sls_mmt_session;
-                        lls_sls_mmt_monitor->service_id = my_service_id;
+
 
                         lls_sls_mmt_monitor->video_packet_id = lls_sls_mmt_session->video_packet_id;
                         lls_sls_mmt_monitor->audio_packet_id = lls_sls_mmt_session->audio_packet_id;
@@ -238,7 +238,7 @@ void* ncurses_input_run_thread(void* lls_slt_monitor_ptr) {
 						lls_sls_alc_monitor = lls_sls_alc_monitor_create();
 						lls_sls_alc_monitor->lls_alc_session = lls_sls_alc_session;
 
-						lls_sls_alc_monitor->service_id = my_service_id;
+						//lls_sls_alc_monitor->service_id = my_service_id;
 
 						//jjustman-2019-09-17 - TODO: remove these testing values
 
@@ -275,15 +275,16 @@ void* ncurses_input_run_thread(void* lls_slt_monitor_ptr) {
 
 
 						//jjustman-2019-09-17 - TODO - move this out to helper method
-						lls_service_t* matching_lls_service = NULL;
-						for(int i=0; i < lls_slt_monitor->lls_table_slt->slt_table.service_entry_n && !matching_lls_service; i++) {
-							atsc3_lls_slt_service_t* atsc3_lls_slt_service = lls_slt_monitor->lls_table_slt->slt_table.service_entry[i];
-							if(lls_service->service_id == my_service_id) {
-								matching_lls_service = lls_service;
+						atsc3_lls_slt_service_t* atsc3_lls_slt_service_matching = NULL;
+
+						for(int i=0; i < lls_slt_monitor->lls_sls_alc_monitor_v.count && !atsc3_lls_slt_service_matching; i++) {
+							atsc3_lls_slt_service_t* atsc3_lls_slt_service = lls_slt_monitor->lls_sls_alc_monitor_v.data[i]->atsc3_lls_slt_service;
+							if(atsc3_lls_slt_service->service_id == my_service_id) {
+								atsc3_lls_slt_service_matching = atsc3_lls_slt_service;
 								break;
 							}
 						}
-						lls_slt_monitor->lls_sls_alc_monitor->lls_service = matching_lls_service;
+						lls_slt_monitor->lls_sls_alc_monitor->atsc3_lls_slt_service = atsc3_lls_slt_service_matching;
 
 					} else {
 						lls_sls_alc_monitor = lls_sls_alc_monitor_create();
@@ -366,7 +367,10 @@ void* ncurses_input_run_thread(void* lls_slt_monitor_ptr) {
             if(play_mode == 1) {
                 mtl_clear();
                 if(lls_slt_monitor->lls_sls_mmt_monitor) {
-                    wprintw(my_window, "MMT: Starting playback for service_id: %u, video packet_id: %u, audio packet_id: %u", lls_slt_monitor->lls_sls_mmt_monitor->service_id, lls_slt_monitor->lls_sls_mmt_monitor->video_packet_id, lls_slt_monitor->lls_sls_mmt_monitor->audio_packet_id);
+                    wprintw(my_window, "MMT: Starting playback for service_id: %u, video packet_id: %u, audio packet_id: %u",
+                    		lls_slt_monitor->lls_sls_mmt_monitor->atsc3_lls_slt_service->service_id,
+							lls_slt_monitor->lls_sls_mmt_monitor->video_packet_id,
+							lls_slt_monitor->lls_sls_mmt_monitor->audio_packet_id);
                     
                     lls_slt_monitor->lls_sls_mmt_monitor->lls_sls_monitor_output_buffer_mode.pipe_ffplay_buffer = pipe_create_ffplay_resolve_fps(&lls_slt_monitor->lls_sls_mmt_monitor->lls_sls_monitor_output_buffer.video_output_buffer_isobmff);
                     
@@ -378,7 +382,7 @@ void* ncurses_input_run_thread(void* lls_slt_monitor_ptr) {
 
                 } else if(lls_slt_monitor->lls_sls_alc_monitor) {
                     wprintw(my_window, "ROUTE/DASH: Starting playback for service_id: %u, video: tsi: %u, toi_init: %u, audio: tsi: %u, toi_init: %u",
-                    		lls_slt_monitor->lls_sls_alc_monitor->service_id,
+                    		lls_slt_monitor->lls_sls_alc_monitor->atsc3_lls_slt_service->service_id,
 							lls_slt_monitor->lls_sls_alc_monitor->video_tsi,
 							lls_slt_monitor->lls_sls_alc_monitor->video_toi_init,
 							lls_slt_monitor->lls_sls_alc_monitor->audio_tsi,
@@ -402,20 +406,28 @@ void* ncurses_input_run_thread(void* lls_slt_monitor_ptr) {
                 if(!lls_slt_monitor->lls_sls_mmt_monitor->lls_sls_monitor_output_buffer_mode.file_dump_enabled) {
                     lls_slt_monitor->lls_sls_mmt_monitor->lls_sls_monitor_output_buffer_mode.file_dump_enabled = true;
                     
-                      wprintw(my_window, "MMT: Starting dump for service_id: %u, video packet_id: %u, audio packet_id: %u", lls_slt_monitor->lls_sls_mmt_monitor->service_id, lls_slt_monitor->lls_sls_mmt_monitor->video_packet_id, lls_slt_monitor->lls_sls_mmt_monitor->audio_packet_id);
+                      wprintw(my_window, "MMT: Starting dump for service_id: %u, video packet_id: %u, audio packet_id: %u",
+                    		  lls_slt_monitor->lls_sls_mmt_monitor->atsc3_lls_slt_service->service_id,
+							  lls_slt_monitor->lls_sls_mmt_monitor->video_packet_id, lls_slt_monitor->lls_sls_mmt_monitor->audio_packet_id);
                     
                 } else {
                     lls_slt_monitor->lls_sls_mmt_monitor->lls_sls_monitor_output_buffer_mode.file_dump_enabled = false;
-                      wprintw(my_window, "MMT: Ending dump for service_id: %u, video packet_id: %u, audio packet_id: %u", lls_slt_monitor->lls_sls_mmt_monitor->service_id, lls_slt_monitor->lls_sls_mmt_monitor->video_packet_id, lls_slt_monitor->lls_sls_mmt_monitor->audio_packet_id);
+                      wprintw(my_window, "MMT: Ending dump for service_id: %u, video packet_id: %u, audio packet_id: %u",
+                    		  lls_slt_monitor->lls_sls_mmt_monitor->atsc3_lls_slt_service->service_id,
+							  lls_slt_monitor->lls_sls_mmt_monitor->video_packet_id, lls_slt_monitor->lls_sls_mmt_monitor->audio_packet_id);
                 }
               
             } else if(lls_slt_monitor->lls_sls_alc_monitor) {
                 if(!lls_slt_monitor->lls_sls_alc_monitor->lls_sls_monitor_output_buffer_mode.file_dump_enabled) {
                     lls_slt_monitor->lls_sls_alc_monitor->lls_sls_monitor_output_buffer_mode.file_dump_enabled = true;
-                     wprintw(my_window, "ROUTE/DASH: Starting dump for service_id: %u, video_tsi: %u, audio_tsi: %u", lls_slt_monitor->lls_sls_alc_monitor->service_id, lls_slt_monitor->lls_sls_alc_monitor->video_tsi, lls_slt_monitor->lls_sls_alc_monitor->audio_tsi);
+                     wprintw(my_window, "ROUTE/DASH: Starting dump for service_id: %u, video_tsi: %u, audio_tsi: %u",
+                    		 lls_slt_monitor->lls_sls_alc_monitor->atsc3_lls_slt_service->service_id,
+							 lls_slt_monitor->lls_sls_alc_monitor->video_tsi, lls_slt_monitor->lls_sls_alc_monitor->audio_tsi);
                 } else {
                     lls_slt_monitor->lls_sls_alc_monitor->lls_sls_monitor_output_buffer_mode.file_dump_enabled = true;
-                     wprintw(my_window, "ROUTE/DASH: Ending dump for service_id: %u, video_tsi: %u, audio_tsi: %u", lls_slt_monitor->lls_sls_alc_monitor->service_id, lls_slt_monitor->lls_sls_alc_monitor->video_tsi, lls_slt_monitor->lls_sls_alc_monitor->audio_tsi);
+                     wprintw(my_window, "ROUTE/DASH: Ending dump for service_id: %u, video_tsi: %u, audio_tsi: %u",
+                    		 lls_slt_monitor->lls_sls_alc_monitor->atsc3_lls_slt_service->service_id,
+							 lls_slt_monitor->lls_sls_alc_monitor->video_tsi, lls_slt_monitor->lls_sls_alc_monitor->audio_tsi);
 
                 }
             }
@@ -592,12 +604,12 @@ void* print_lls_instance_table_thread(void* lls_slt_monitor_ptr) {
 
 	while(1) {
 		sleep(1);
-		if(lls_slt_monitor->lls_table_slt) {
+		if(lls_slt_monitor->lls_latest_slt_table) {
 			ncurses_writer_lock_mutex_acquire();
 
 			//clear our window so we aren't appending, otherwise it will look as if we are leaking slt
 			__LLS_DUMP_CLEAR();
-			lls_dump_instance_table_ncurses(lls_slt_monitor->lls_table_slt);
+			lls_dump_instance_table_ncurses(lls_slt_monitor->lls_latest_slt_table);
 			__DOUPDATE();
 			__LLS_REFRESH();
 	       
@@ -617,19 +629,23 @@ void lls_dump_instance_table_ncurses(lls_table_t* base_table) {
 
 	if(base_table->lls_table_id == SLT) {
 
-		__LLS_DUMP("SLT: Service contains %d entries:", base_table->slt_table.service_entry_n);
+		__LLS_DUMP("SLT: Service contains %d entries:", base_table->slt_table.atsc3_lls_slt_service_v.count);
 
-		for(int i=0l; i < base_table->slt_table.service_entry_n; i++) {
-			lls_service_t* service = base_table->slt_table.service_entry[i];
+		for(int i=0l; i < base_table->slt_table.atsc3_lls_slt_service_v.count; i++) {
+			atsc3_lls_slt_service* service = base_table->slt_table.atsc3_lls_slt_service_v.data[i];
 			__LLS_DUMP("service_id         : %-5d           global_service_id : %s", service->service_id, service->global_service_id);
 			__LLS_DUMP("major_channel_no   : %-5d           minor_channel_no  : %d", service->major_channel_no, service->minor_channel_no);
 			__LLS_DUMP("service_category   : %1d, %-8s    slt_svc_seq_num   : %d", service->service_category, lls_get_service_category_value(service->service_category), service->slt_svc_seq_num);
 			__LLS_DUMP("short_service_name : %s", service->short_service_name);
-			__LLS_DUMP(" broadcast_svc_signaling");
-			__LLS_DUMP("  sls_protocol               : %d, %s", service->broadcast_svc_signaling.sls_protocol, lls_get_sls_protocol_value(service->broadcast_svc_signaling.sls_protocol));
-			__LLS_DUMP("  sls_destination_ip_address : %s:%s", service->broadcast_svc_signaling.sls_destination_ip_address, service->broadcast_svc_signaling.sls_destination_udp_port);
-			__LLS_DUMP("  sls_source_ip_address      : %s", service->broadcast_svc_signaling.sls_source_ip_address);
-			__LLS_DUMP("");
+
+			if(service->atsc3_slt_broadcast_svc_signalling_v.count) {
+
+				__LLS_DUMP(" broadcast_svc_signaling");
+				__LLS_DUMP("  sls_protocol               : %d, %s", service->atsc3_slt_broadcast_svc_signalling_v.data[0]->sls_protocol, lls_get_sls_protocol_value(service->atsc3_slt_broadcast_svc_signalling_v.data[0]->sls_protocol));
+				__LLS_DUMP("  sls_destination_ip_address : %s:%s", service->atsc3_slt_broadcast_svc_signalling_v.data[0]->sls_destination_ip_address, service->atsc3_slt_broadcast_svc_signalling_v.data[0]->sls_destination_udp_port);
+				__LLS_DUMP("  sls_source_ip_address      : %s", service->atsc3_slt_broadcast_svc_signalling_v.data[0]->sls_source_ip_address);
+				__LLS_DUMP("");
+			}
 		}
 	}
 
