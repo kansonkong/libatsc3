@@ -41,8 +41,8 @@ int _MMT_RECON_FROM_SAMPLE_SIGNAL_INFO_ENABLED = 0;
 int _MMT_RECON_FROM_SAMPLE_DEBUG_ENABLED = 0;
 int _MMT_RECON_FROM_SAMPLE_TRACE_ENABLED = 0;
 
-static global_atsc3_stats_t global_stats_internal;
-global_atsc3_stats_t* global_stats = &global_stats_internal;
+static atsc3_global_statistics_t global_stats_internal;
+atsc3_global_statistics_t* atsc3_global_statistics = &global_stats_internal;
 
 
 /**
@@ -88,10 +88,10 @@ mmtp_mpu_packet_t* mmtp_process_from_payload(mmtp_mpu_packet_t* mmtp_mpu_packet,
     
     //TODO - this should never happen with this strong type
     if(mmtp_mpu_packet->mmtp_payload_type == 0x0) {
-        global_stats->packet_counter_mmt_mpu++;
+        atsc3_global_statistics->packet_counter_mmt_mpu++;
 
         if(mmtp_mpu_packet->mpu_timed_flag == 1) {
-            global_stats->packet_counter_mmt_timed_mpu++;
+            atsc3_global_statistics->packet_counter_mmt_timed_mpu++;
             
             if(lls_slt_monitor && lls_slt_monitor->lls_sls_mmt_monitor &&
             		lls_slt_monitor->lls_sls_mmt_monitor->service_id == matching_lls_sls_mmt_session->service_id &&
@@ -234,19 +234,19 @@ mmtp_mpu_packet_t* mmtp_process_from_payload(mmtp_mpu_packet_t* mmtp_mpu_packet,
             }
         } else {
             //non-timed
-            global_stats->packet_counter_mmt_nontimed_mpu++;
+            atsc3_global_statistics->packet_counter_mmt_nontimed_mpu++;
         }
         
         goto ret;
         
     } else if(mmtp_mpu_packet->mmtp_payload_type == 0x2) {
 
-		global_stats->packet_counter_mmt_signaling++;
-		__MMT_RECON_FROM_SAMPLE_SIGNAL_INFO("mmtp_packet_parse: processing mmt flow: %d.%d.%d.%d:(%u) packet_id: 0, signalling message", __toipandportnonstruct(udp_packet->udp_flow.dst_ip_addr, udp_packet->udp_flow.dst_port));
+		atsc3_global_statistics->packet_counter_mmt_signaling++;
+		__MMT_RECON_FROM_SAMPLE_SIGNAL_INFO("mmtp_process_from_payload: processing mmt flow: %d.%d.%d.%d:(%u) packet_id: 0, signalling message", __toipandportnonstruct(udp_packet->udp_flow.dst_ip_addr, udp_packet->udp_flow.dst_port));
 		
     } else {
-		__MMT_RECON_FROM_SAMPLE_WARN("mmtp_packet_parse: unknown payload type of 0x%x", mmtp_mpu_packet->mmtp_payload_type);
-		global_stats->packet_counter_mmt_unknown++;
+		__MMT_RECON_FROM_SAMPLE_WARN("mmtp_process_from_payload: unknown payload type of 0x%x", mmtp_mpu_packet->mmtp_payload_type);
+		atsc3_global_statistics->packet_counter_mmt_unknown++;
 		goto packet_cleanup;
     }
 

@@ -727,7 +727,7 @@ void mmt_signalling_message_update_lls_sls_mmt_session(mmtp_signalling_packet_t*
                 }
             }
         } else {
-            __MMSM_INFO("mmtp_packet_parse: Ignoring signal: 0x%x", mmt_signalling_message_header_and_payload->message_header.MESSAGE_id_type);
+            __MMSM_INFO("mmt_signalling_message_update_lls_sls_mmt_session: Ignoring signal: 0x%x", mmt_signalling_message_header_and_payload->message_header.MESSAGE_id_type);
         }
     }
 }

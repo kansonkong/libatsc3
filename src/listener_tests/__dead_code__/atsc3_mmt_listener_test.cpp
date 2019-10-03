@@ -92,7 +92,7 @@ void process_packet(u_char *user, const struct pcap_pkthdr *pkthdr, const u_char
 					mmtp_mpu_dump_header(mmtp_mpu_packet);
 				} else {
 					//non-timed
-					__ATSC3_WARN("mmtp_packet_parse: non-timed payload: packet_id: %u", mmtp_packet_header->mmtp_packet_id);
+					__ATSC3_WARN("process_packet: mmtp_packet_header_parse_from_block_t - non-timed payload: packet_id: %u", mmtp_packet_header->mmtp_packet_id);
 				}
 			} else if(mmtp_packet_header->mmtp_payload_type == 0x2) {
 
@@ -103,7 +103,7 @@ void process_packet(u_char *user, const struct pcap_pkthdr *pkthdr, const u_char
                 }
 
 			} else {
-				__ATSC3_WARN("mmtp_packet_parse: unknown payload type of 0x%x", mmtp_packet_header->mmtp_payload_type);
+				__ATSC3_WARN("process_packet: mmtp_packet_header_parse_from_block_t - unknown payload type of 0x%x", mmtp_packet_header->mmtp_payload_type);
 				goto cleanup;
 			}
 		}
