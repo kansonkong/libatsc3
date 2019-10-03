@@ -9,7 +9,7 @@
 
 #include "atsc3_lls_sls_monitor_output_buffer.h"
 
-ATSC3_VECTOR_BUILDER_METHODS_IMPLEMENTATION(lls_sls_monitor_buffer_isobmff, trun_sample_entry)
+ATSC3_VECTOR_BUILDER_METHODS_IMPLEMENTATION(lls_sls_monitor_buffer_isobmff, trun_sample_entry);
 
 void trun_sample_entry_free(trun_sample_entry_t** trun_sample_entry_p) {
 	if(trun_sample_entry_p) {

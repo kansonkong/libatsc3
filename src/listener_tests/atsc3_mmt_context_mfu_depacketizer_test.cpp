@@ -125,15 +125,16 @@ void process_packet(u_char *user, const struct pcap_pkthdr *pkthdr, const u_char
 								//TODO:  make sure
 								//lls_service->broadcast_svc_signaling.sls_destination_ip_address && lls_service->broadcast_svc_signaling.sls_destination_udp_port
 								//match our dst_ip_addr_filter && udp_packet->udp_flow.dst_ip_addr != *dst_ip_addr_filter and port filter
-								__INFO("Adding service: %d", lls_service->service_id);
+								__INFO("Adding service: %d", atsc3_lls_slt_service->service_id);
 
 								lls_sls_mmt_monitor = lls_sls_mmt_monitor_create();
-								lls_slt_monitor->lls_sls_mmt_monitor = lls_sls_mmt_monitor;
+								lls_slt_service_id_t* lls_slt_service_id = lls_slt_service_id_new_from_atsc3_lls_slt_service(atsc3_lls_slt_service);
+
+								lls_slt_monitor_add_lls_slt_service_id(lls_slt_service_id);
 
 								//we may not be initialized yet, so re-check again later
-								lls_sls_mmt_session_t* lls_sls_mmt_session = lls_slt_mmt_session_find_from_service_id(lls_slt_monitor, lls_service->service_id);
+								lls_sls_mmt_session_t* lls_sls_mmt_session = lls_slt_mmt_session_find_from_service_id(lls_slt_monitor, atsc3_lls_slt_service->service_id);
 								lls_sls_mmt_monitor->lls_mmt_session = lls_sls_mmt_session;
-								lls_sls_mmt_monitor->service_id = lls_service->service_id;
 							}
 						}
 					}

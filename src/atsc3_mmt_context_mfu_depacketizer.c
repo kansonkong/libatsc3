@@ -138,8 +138,10 @@ mmtp_mpu_packet_t* mmtp_process_from_payload_with_context(udp_packet_t *udp_pack
     mmtp_asset_t* mmtp_asset = NULL;
     mmtp_packet_id_packets_container_t* mmtp_packet_id_packets_container = NULL;
     mpu_sequence_number_mmtp_mpu_packet_collection_t* mpu_sequence_number_mmtp_mpu_packet_collection = NULL;
-    
-    if(!lls_slt_monitor || !lls_slt_monitor->lls_sls_mmt_monitor_v || !(lls_slt_monitor->lls_sls_mmt_monitor->service_id == matching_lls_sls_mmt_session->service_id)) {
+
+    lls_sls_mmt_monitor_t* matching_lls_sls_mmt_monitor = lls_sls_mmt_monitor_find_from_service_id(lls_slt_monitor, matching_lls_sls_mmt_session->service_id);
+
+    if(!matching_lls_sls_mmt_monitor) {
         goto packet_cleanup;
     }
     
@@ -163,16 +165,15 @@ mmtp_mpu_packet_t* mmtp_process_from_payload_with_context(udp_packet_t *udp_pack
         if(mmtp_mpu_packet->mpu_timed_flag == 1) {
             atsc3_global_statistics->packet_counter_mmt_timed_mpu++;
             
-            if(lls_slt_monitor && lls_slt_monitor->lls_sls_mmt_monitor &&
-            		lls_slt_monitor->lls_sls_mmt_monitor->service_id == matching_lls_sls_mmt_session->service_id &&
-            		lls_slt_monitor->lls_sls_mmt_monitor->lls_mmt_session->sls_destination_ip_address == udp_packet->udp_flow.dst_ip_addr &&
-            		lls_slt_monitor->lls_sls_mmt_monitor->lls_mmt_session->sls_destination_udp_port == udp_packet->udp_flow.dst_port) {
+            if(matching_lls_sls_mmt_monitor->atsc3_lls_slt_service->service_id == matching_lls_sls_mmt_session->service_id &&
+            		matching_lls_sls_mmt_session->sls_destination_ip_address == udp_packet->udp_flow.dst_ip_addr &&
+					matching_lls_sls_mmt_session->sls_destination_udp_port == udp_packet->udp_flow.dst_port) {
 
 
             	udp_flow_packet_id_mpu_sequence_tuple_t* last_flow_reference = udp_flow_latest_mpu_sequence_number_add_or_replace_and_check_for_rollover(udp_flow_latest_mpu_sequence_number_container, udp_packet, mmtp_mpu_packet, lls_slt_monitor, matching_lls_sls_mmt_session);
 
             	//see if we are an audio packet that rolled over
-				if(lls_slt_monitor->lls_sls_mmt_monitor->audio_packet_id == mmtp_mpu_packet->mmtp_packet_id) {
+				if(matching_lls_sls_mmt_monitor->audio_packet_id == mmtp_mpu_packet->mmtp_packet_id) {
 					//see if we have incremented our mpu_sequence_number with current mmtp_payload
 
 					if(matching_lls_sls_mmt_session->last_udp_flow_packet_id_mpu_sequence_tuple_audio && matching_lls_sls_mmt_session->last_udp_flow_packet_id_mpu_sequence_tuple_audio->mpu_sequence_number < mmtp_mpu_packet->mpu_sequence_number) {
@@ -209,7 +210,7 @@ mmtp_mpu_packet_t* mmtp_process_from_payload_with_context(udp_packet_t *udp_pack
                     //keep track of our last mpu_sequence_number...
 					udp_flow_packet_id_mpu_sequence_tuple_free_and_clone(&matching_lls_sls_mmt_session->last_udp_flow_packet_id_mpu_sequence_tuple_audio, last_flow_reference);
                     
-				} else if(lls_slt_monitor->lls_sls_mmt_monitor->video_packet_id == mmtp_mpu_packet->mmtp_packet_id) {
+				} else if(matching_lls_sls_mmt_monitor->video_packet_id == mmtp_mpu_packet->mmtp_packet_id) {
 					//see if we have incremented our mpu_sequence_number with current mmtp_payload
 
 					if(matching_lls_sls_mmt_session->last_udp_flow_packet_id_mpu_sequence_tuple_video && matching_lls_sls_mmt_session->last_udp_flow_packet_id_mpu_sequence_tuple_video->mpu_sequence_number < mmtp_mpu_packet->mpu_sequence_number) {
@@ -246,8 +247,8 @@ mmtp_mpu_packet_t* mmtp_process_from_payload_with_context(udp_packet_t *udp_pack
 				}
 
 				//if we have at least one block in the following, push it to the isobmff track joiner as usual
-				if(lls_slt_monitor->lls_sls_mmt_monitor->lls_sls_monitor_output_buffer.video_output_buffer_isobmff.mmt_mpu_rebuilt_and_appending_for_isobmff_mux &&
-                   lls_slt_monitor->lls_sls_mmt_monitor->lls_sls_monitor_output_buffer.audio_output_buffer_isobmff.mmt_mpu_rebuilt_and_appending_for_isobmff_mux) {
+				if(matching_lls_sls_mmt_monitor->lls_sls_monitor_output_buffer.video_output_buffer_isobmff.mmt_mpu_rebuilt_and_appending_for_isobmff_mux &&
+						matching_lls_sls_mmt_monitor->lls_sls_monitor_output_buffer.audio_output_buffer_isobmff.mmt_mpu_rebuilt_and_appending_for_isobmff_mux) {
 
 //                    lls_sls_monitor_output_buffer_t* lls_sls_monitor_output_buffer_final_muxed_payload = atsc3_isobmff_build_joined_mmt_rebuilt_boxes(&lls_slt_monitor->lls_sls_mmt_monitor->lls_sls_monitor_output_buffer);
 //

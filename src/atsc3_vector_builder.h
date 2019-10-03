@@ -115,10 +115,9 @@ qsort((void**)lls_sls_alc_session_flows->lls_slt_alc_sessions, lls_sls_alc_sessi
 			vector_struct_name->PPCAT(vector_item_name, _v).size	= size;	\
 		} else { \
 			/* realloc */ \
-			vector_struct_name->PPCAT(vector_item_name, _v).size = 	__MAX(size, vector_struct_name->PPCAT(vector_item_name, _v).count)); \
+			vector_struct_name->PPCAT(vector_item_name, _v).size = 	__MAX(size, vector_struct_name->PPCAT(vector_item_name, _v).count); \
 			uint32_t to_resize = sizeof(PPCAT(vector_item_name,_t)**) * vector_struct_name->PPCAT(vector_item_name, _v).size;	\
 			vector_struct_name->PPCAT(vector_item_name, _v).data = realloc(vector_struct_name->PPCAT(vector_item_name, _v).data, to_resize);	\
-			vector_struct_name->PPCAT(vector_item_name, _v).data[vector_struct_name->PPCAT(vector_item_name, _v).count++] = vector_item_name;	\
 		}	\
 	} \
 	\
