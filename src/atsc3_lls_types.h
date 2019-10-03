@@ -32,6 +32,12 @@
 #include "atsc3_sls_metadata_fragment_types.h"
 
 
+#if defined (__cplusplus)
+extern "C" {
+#endif
+
+
+
 /***
  * From < A/331 2017 - Signaling Delivery Sync > https://www.atsc.org/wp-content/uploads/2017/12/A331-2017-Signaling-Deivery-Sync-FEC-3.pdf
  * LLS shall be transported in IP packets with address:
@@ -717,6 +723,11 @@ ATSC3_VECTOR_BUILDER_METHODS_INTERFACE(lls_slt_monitor, lls_sls_mmt_session_flow
 ATSC3_VECTOR_BUILDER_METHODS_INTERFACE(lls_slt_monitor, lls_sls_alc_monitor);
 ATSC3_VECTOR_BUILDER_METHODS_INTERFACE(lls_slt_monitor, lls_sls_alc_session_flows);
 
+
+
+#if defined (__cplusplus)
+}
+#endif
 
 
 
