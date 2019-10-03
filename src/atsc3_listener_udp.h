@@ -4,7 +4,21 @@
  *  Created on: Feb 6, 2019
  *      Author: jjustman
  */
+
+#ifndef __DISABLE_LIBPCAP__
 #include <pcap.h>
+#else
+#ifndef __JJ_PCAP_PKTHDR__
+#define __JJ_PCAP_PKTHDR__
+//hack-ish
+#include <sys/time.h>
+struct pcap_pkthdr {
+	struct timeval ts;	/* time stamp */
+	uint32_t caplen;	/* length of portion present */
+	uint32_t len;	/* length this packet (off wire) */
+};
+#endif
+#endif
 
 #include <unistd.h>
 #include <stdint.h>

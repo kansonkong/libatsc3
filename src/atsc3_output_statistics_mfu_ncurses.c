@@ -4,7 +4,10 @@
  *  Created on: Mar 25, 2019
  *      Author: jjustman
  */
+
+#ifndef __DISABLE_NCURSES__
 #include <ncurses.h>
+#endif
 
 #include "atsc3_output_statistics_mfu_ncurses.h"
 #include "atsc3_player_ffplay.h"
@@ -23,6 +26,7 @@ extern void trace (const unsigned int);
 #define BRIGHT_WHITE  15
 
 void ncurses_init() {
+#ifndef __DISABLE_NCURSES__
 
 	ncurses_mutext_init();
 	def_prog_mode();
@@ -57,6 +61,7 @@ void ncurses_init() {
 	create_or_update_window_sizes(false);
 	//clearok(curscr, false);
 	//scrollok(curscr, false);
+#endif
 }
 
 int play_mode = 0;
@@ -65,13 +70,18 @@ uint32_t my_route_tsi = 0;
 uint32_t my_route_toi_init_fragment = 0;
 
 void mtl_clear() {
+#ifndef __DISABLE_NCURSES__
+
 	wmove(my_window, 0, 1);
 	wclrtoeol(my_window);
 	wmove(my_window, 0, 1);
+#endif
 }
 
+#ifndef __DISABLE_NCURSES__
 void* ncurses_input_run_thread(void* lls_slt_monitor_ptr) {
-    int ch;
+
+	int ch;
     ncurses_init();
     lls_slt_monitor_t* lls_slt_monitor = (lls_slt_monitor_t*)lls_slt_monitor_ptr;
     lls_sls_mmt_monitor_t* lls_sls_mmt_monitor = NULL;
@@ -264,6 +274,10 @@ void* ncurses_input_run_thread(void* lls_slt_monitor_ptr) {
 endwin:
 	endwin();
 	exit(1);
+
+#endif
+
+	return NULL;
 }
 
 void ncurses_mutext_init() {
@@ -285,6 +299,8 @@ void ncurses_writer_lock_mutex_destroy() {
 WINDOW* signaling_global_stats_window_outline;
 
 void create_or_update_window_sizes(bool should_reload_term_size) {
+#ifndef __DISABLE_NCURSES__
+
 	int rows, cols;
 
 	if(should_reload_term_size) {
@@ -397,6 +413,7 @@ void create_or_update_window_sizes(bool should_reload_term_size) {
 	immedok(bottom_window_outline, false);
 	//doupdate();
 
+#endif
 }
 
 void handle_winch(int sig)
