@@ -52,6 +52,7 @@ clean:
 	-rm -f listener_tests/atsc3_stltp_listener_test
 	-rm -f listener_tests/atsc3_stltp_alp_listener_test
 	-rm -f listener_tests/atsc3_stltp_alp_listener_reflector_test
+	-rm -f listener_tests/atsc3_mmt_context_mfu_depacketizer_test
 	-rm -f a324_tests/a324_dstp_lls_aeat_emission_test	
 	-rm -f tools/atsc3_alc_listener_mde_writer
 	-rm -f tools/atsc3_listener_metrics_ncurses
@@ -144,8 +145,9 @@ listener_tests: atsc3_alc_listener_test \
 				atsc3_mmt_sls_listener_test  \
 				atsc3_stltp_listener_test \
 				atsc3_stltp_alp_listener_test \
-				atsc3_stltp_alp_listener_reflector_test
-
+				atsc3_stltp_alp_listener_reflector_test \
+				atsc3_mmt_context_mfu_depacketizer_test
+			
 a324_tests: a32_dstp_lls_aeat_emission_test
 
 # real libatsc3 tools for lls, sls, mmt/route and flow analysis
@@ -237,6 +239,12 @@ atsc3_mmtp_ntp32_to_pts.o: atsc3_mmtp_ntp32_to_pts.c atsc3_mmtp_ntp32_to_pts.h
 
 atsc3_mmt_mpu_utils.o: atsc3_mmt_mpu_utils.h atsc3_mmt_mpu_utils.c
 	cc -g -c atsc3_mmt_mpu_utils.c
+	
+atsc3_mmt_context_mfu_depacketizer.o: atsc3_mmt_context_mfu_depacketizer.h \
+		atsc3_mmt_context_mpu_depacketizer.h \
+		atsc3_mmt_context_signalling_information_depacketizer.h \
+		atsc3_mmt_context_mfu_depacketizer.c
+	cc -g -c atsc3_mmt_context_mfu_depacketizer.c
 
 atsc3_utils.o: atsc3_utils.h atsc3_utils.c  
 	cc -g -c atsc3_utils.c
@@ -360,6 +368,7 @@ libatsc3_intermediate.o: atsc3_lls.o \
 		atsc3_mmt_signalling_message.o \
 		atsc3_mmt_mpu_parser.o \
 		atsc3_mmt_mpu_sample_format_parser.o \
+		atsc3_mmt_context_mfu_depacketizer.o \
 		atsc3_alc_rx.o \
 		atsc3_lls_alc_utils.o \
 		atsc3_mmt_mpu_utils.o \
@@ -417,6 +426,7 @@ libatsc3_intermediate.o: atsc3_lls.o \
 		atsc3_mmt_signalling_message.o \
 		atsc3_mmt_mpu_parser.o \
 		atsc3_mmt_mpu_sample_format_parser.o \
+		atsc3_mmt_context_mfu_depacketizer.p \
 		atsc3_alc_rx.o \
 		atsc3_lls_alc_utils.o \
 		atsc3_mmt_mpu_utils.o \
@@ -650,6 +660,16 @@ atsc3_alc_listener_test_valgrind: listener_tests/atsc3_alc_listener_test.cpp lib
 	g++ -D _TEST_RUN_VALGRIND_OSX_=true -g listener_tests/atsc3_alc_listener_test.cpp \
 		libatsc3_bento4_gpl.o \
 		-lz -lpcap -lpthread  -o listener_tests/atsc3_alc_listener_test_valgrind
+		
+# mfu context depacketizer/callback testing
+
+atsc3_mmt_context_mfu_depacketizer_test: listener_tests/atsc3_mmt_context_mfu_depacketizer_test.cpp \
+		libatsc3_bento4_gpl.o
+	g++ -g listener_tests/atsc3_mmt_context_mfu_depacketizer_test.cpp \
+		libatsc3_bento4_gpl.o \
+		-lz -lpcap -lpthread  \
+		-o listener_tests/atsc3_mmt_context_mfu_depacketizer_test
+		
 
 # # interim listener testing for new features like sls and bento4
 
