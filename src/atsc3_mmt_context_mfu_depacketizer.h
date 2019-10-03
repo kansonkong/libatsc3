@@ -43,9 +43,10 @@ typedef void (*atsc3_mmt_mpu_mfu_on_sample_missing_f) (uint16_t packet_id, block
 
 typedef struct atsc3_mmt_mfu_context {
 	mmtp_flow_t* mmtp_flow;
+
 	udp_flow_latest_mpu_sequence_number_container_t* udp_flow_latest_mpu_sequence_number_container;
 	lls_slt_monitor_t* lls_slt_monitor;
-	lls_sls_mmt_session_t* matching_lls_slt_mmt_session;
+	lls_sls_mmt_session_t* matching_lls_sls_mmt_session;
 
 	mp_table_t* mp_table_last;
 
