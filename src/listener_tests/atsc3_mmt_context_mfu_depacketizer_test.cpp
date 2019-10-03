@@ -142,12 +142,16 @@ void process_packet(u_char *user, const struct pcap_pkthdr *pkthdr, const u_char
 			}
 		}
 
+		__INFO("Checking lls_sls_mmt_monitor: %p,", lls_sls_mmt_monitor);
+		__INFO("Checking lls_sls_mmt_monitor->lls_mmt_session: %p,", lls_sls_mmt_monitor->lls_mmt_session);
+
 		//recheck video_packet_id/audio_packet_id
 		if(lls_sls_mmt_monitor && lls_sls_mmt_monitor->lls_mmt_session) {
 			if(!lls_sls_mmt_monitor->video_packet_id) {
 				lls_sls_mmt_session_t* lls_sls_mmt_session = lls_slt_mmt_session_find_from_service_id(lls_slt_monitor, lls_sls_mmt_monitor->lls_mmt_session->service_id);
 				lls_sls_mmt_monitor->video_packet_id = lls_sls_mmt_session->video_packet_id;
 				lls_sls_mmt_monitor->audio_packet_id = lls_sls_mmt_session->audio_packet_id;
+				__INFO("setting audio_packet_id/video_packet_id: %u, %u", lls_sls_mmt_monitor->audio_packet_id, lls_sls_mmt_monitor->video_packet_id);
 			}
 
 			if(lls_sls_mmt_monitor->video_packet_id) {
@@ -173,6 +177,8 @@ void process_packet(u_char *user, const struct pcap_pkthdr *pkthdr, const u_char
 
     //TODO: jjustman-2019-10-03 - packet header parsing to dispatcher mapping
     lls_sls_mmt_session_t* matching_lls_sls_mmt_session = lls_slt_mmt_session_find_from_udp_packet(lls_slt_monitor, udp_packet->udp_flow.src_ip_addr, udp_packet->udp_flow.dst_ip_addr, udp_packet->udp_flow.dst_port);
+	__INFO("Checking matching_lls_sls_mmt_session: %p,", matching_lls_sls_mmt_session);
+
 	if(matching_lls_sls_mmt_session) {
 
 		mmtp_packet_header = mmtp_packet_header_parse_from_block_t(udp_packet->data);
@@ -303,13 +309,16 @@ void* pcap_loop_run_thread(void* dev_pointer) {
  */
 int main(int argc,char **argv) {
 
-	_MMTP_DEBUG_ENABLED = 0;
-	_MMT_MPU_PARSER_DEBUG_ENABLED = 0;
+	_MMTP_DEBUG_ENABLED = 1;
+	_MMT_MPU_PARSER_DEBUG_ENABLED = 1;
 
-	_LLS_DEBUG_ENABLED = 0;
+	_LLS_DEBUG_ENABLED = 1;
 
 	_MMT_SIGNALLING_MESSAGE_DEBUG_ENABLED = 1;
 	_MMT_SIGNALLING_MESSAGE_TRACE_ENABLED = 1;
+
+	_LLS_SLT_PARSER_INFO_MMT_ENABLED = 1;
+	_LLS_MMT_UTILS_TRACE_ENABLED = 1;
 
     char *dev;
 
