@@ -16,10 +16,12 @@
 #include "atsc3_vector_builder.h"
 #include "atsc3_isobmff_trun_box.h"
 
-
 #ifndef ATSC3_LLS_SLS_MONITOR_OUTPUT_BUFFER_H
 #define ATSC3_LLS_SLS_MONITOR_OUTPUT_BUFFER_H
 
+#if defined (__cplusplus)
+extern "C" {
+#endif
 
 #define _LLS_SLS_MONITOR_OUTPUT_MAX_INIT_BUFFER 65535
 #define _LLS_SLS_MONITOR_OUTPUT_MAX_MOOF_BUFFER 65535
@@ -119,6 +121,13 @@ typedef struct lls_sls_monitor_buffer_mode {
 
 
 } lls_sls_monitor_output_buffer_mode_t;
+
+
+
+
+#if defined (__cplusplus)
+}
+#endif
 
 
 #endif /* ATSC3_LLS_SLS_MONITOR_OUTPUT_BUFFER_H */

@@ -226,10 +226,11 @@ lls_sls_mmt_session_t* lls_slt_mmt_session_find_or_create(lls_slt_monitor_t* lls
 }
 
 
+
 void lls_sls_mmt_session_free(lls_sls_mmt_session_t** lls_sls_mmt_session_ptr) {
     lls_sls_mmt_session_t* lls_sls_mmt_session = *lls_sls_mmt_session_ptr;
     if(lls_sls_mmt_session) {
-        
+
         free(lls_sls_mmt_session);
     }
     *lls_sls_mmt_session_ptr = NULL;
