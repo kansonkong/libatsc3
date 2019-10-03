@@ -19,6 +19,7 @@ lls_sls_alc_monitor_t* lls_sls_alc_monitor_create() {
 lls_sls_alc_session_t* lls_slt_alc_session_create(atsc3_lls_slt_service_t* atsc3_lls_slt_service) {
 	lls_sls_alc_session_t* lls_slt_alc_session = lls_sls_alc_session_new();
 
+	lls_slt_alc_session->atsc3_lls_slt_service = atsc3_lls_slt_service;
 	lls_slt_alc_session->service_id = atsc3_lls_slt_service->service_id;
 
 	lls_slt_alc_session->alc_arguments = (alc_arguments_t*)calloc(1, sizeof(alc_arguments_t));

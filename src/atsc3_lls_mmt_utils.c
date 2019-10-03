@@ -24,6 +24,7 @@ lls_sls_mmt_monitor_t* lls_sls_mmt_monitor_create() {
 lls_sls_mmt_session_t* lls_slt_mmt_session_create(atsc3_lls_slt_service_t* atsc3_lls_slt_service) {
 	lls_sls_mmt_session_t* lls_slt_mmt_session = lls_sls_mmt_session_new();
 
+	lls_slt_mmt_session->atsc3_lls_slt_service = atsc3_lls_slt_service;
 	lls_slt_mmt_session->service_id = atsc3_lls_slt_service->service_id;
 
 	lls_slt_mmt_session->mmt_arguments = (mmt_arguments_t*)calloc(1, sizeof(mmt_arguments_t));
