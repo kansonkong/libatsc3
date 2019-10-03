@@ -278,23 +278,25 @@ void lls_table_free(lls_table_t** lls_table_p) {
 				freesafe(atsc3_lls_slt_service->global_service_id);
 				freesafe(atsc3_lls_slt_service->short_service_name);
 
-				atsc3_lls_slt_service_free_atsc3_slt_broadcast_svc_signaling(atsc3_lls_slt_service);
+				_LLS_ERROR("TODO: use ATSC3_VECTOR_BUILDER chained destructors to free atsc3_lls_slt_service_free_atsc3_slt_broadcast_svc_signaling!");
+
+				//atsc3_lls_slt_service_free_atsc3_slt_broadcast_svc_signaling(atsc3_lls_slt_service);
 
 				//clear all char* in broadcast_svc_signaling
 //				freesafe(atsc3_lls_slt_service->broadcast_svc_signaling.sls_destination_ip_address);
 //				freesafe(atsc3_lls_slt_service->broadcast_svc_signaling.sls_destination_udp_port);
 //				freesafe(atsc3_lls_slt_service->broadcast_svc_signaling.sls_source_ip_address);
 
-				free(atsc3_lls_slt_service);
-				lls_table->slt_table.service_entry[i] = NULL;
+//				free(atsc3_lls_slt_service);
+//				lls_table->slt_table.service_entry[i] = NULL;
 			}
 		}
 
-		if(lls_table->slt_table.atsc3_lls_slt_service_v.size) {
-			free(lls_table->slt_table.atsc3_lls_slt_service_v.data);
-			lls_table->slt_table.atsc3_lls_slt_service_v.size = 0;
-			lls_table->slt_table.atsc3_lls_slt_service_v.count = 0;
-		}
+//		if(lls_table->slt_table.atsc3_lls_slt_service_v.size) {
+//			free(lls_table->slt_table.atsc3_lls_slt_service_v.data);
+//			lls_table->slt_table.atsc3_lls_slt_service_v.size = 0;
+//			lls_table->slt_table.atsc3_lls_slt_service_v.count = 0;
+//		}
 
 		//TODO: jjustman-2019-10-03 - free atsc3_slt_capabilities
 		//TODO: jjustman-2019-10-03 - free atsc3_slt_ineturl
@@ -541,10 +543,12 @@ void lls_dump_instance_table(lls_table_t* base_table) {
 
 	if(base_table->lls_table_id == SLT) {
 
-		_LLS_INFO_I("SLT: Service contains %d entries:", base_table->slt_table.service_entry_n);
+		_LLS_INFO_I("SLT: Service contains %d entries:", base_table->slt_table.atsc3_lls_slt_service_v.count);
 
-		for(int i=0l; i < base_table->slt_table.service_entry_n; i++) {
-			lls_service_t* service = base_table->slt_table.service_entry[i];
+		for(int i=0l; i < base_table->slt_table.atsc3_lls_slt_service_v.count; i++) {
+
+			atsc3_lls_slt_service_t* service = base_table->slt_table.atsc3_lls_slt_service_v.data[i];
+
 			_LLS_INFO_I(" -----------------------------");
 			_LLS_INFO_I("  service_id                  : %d", service->service_id);
 			_LLS_INFO_I("  global_service_id           : %s", service->global_service_id);
@@ -554,12 +558,22 @@ void lls_dump_instance_table(lls_table_t* base_table) {
 			_LLS_INFO_I("  short_service_name          : %s", service->short_service_name);
 			_LLS_INFO_I("  slt_svc_seq_num             : %d", service->slt_svc_seq_num);
 			_LLS_INFO_I(" -----------------------------");
-			_LLS_INFO_I("  broadcast_svc_signaling");
-			_LLS_INFO_I(" -----------------------------");
-			_LLS_INFO_I("    sls_protocol              : %d", service->broadcast_svc_signaling.sls_protocol);
-			_LLS_INFO_I("    sls_destination_ip_address: %s", service->broadcast_svc_signaling.sls_destination_ip_address);
-			_LLS_INFO_I("    sls_destination_udp_port  : %s", service->broadcast_svc_signaling.sls_destination_udp_port);
-			_LLS_INFO_I("    sls_source_ip_address     : %s", service->broadcast_svc_signaling.sls_source_ip_address);
+			if(service->atsc3_slt_broadcast_svc_signalling_v.count) {
+
+				_LLS_INFO_I("  broadcast_svc_signaling: entry: %d", service->atsc3_slt_broadcast_svc_signalling_v.count);
+				atsc3_slt_broadcast_svc_signalling_t* atsc3_slt_broadcast_svc_signalling = service->atsc3_slt_broadcast_svc_signalling_v.data[0];
+				_LLS_INFO_I("  -----------------------------");
+				_LLS_INFO_I("    sls_protocol              : %d", atsc3_slt_broadcast_svc_signalling->sls_protocol);
+				_LLS_INFO_I("    sls_major_protocol_version: %u", atsc3_slt_broadcast_svc_signalling->sls_major_protocol_version);
+				_LLS_INFO_I("    sls_minor_protocol_version: %u", atsc3_slt_broadcast_svc_signalling->sls_minor_protocol_version);
+
+				_LLS_INFO_I("    sls_destination_ip_address: %s", atsc3_slt_broadcast_svc_signalling->sls_destination_ip_address);
+				_LLS_INFO_I("    sls_destination_udp_port  : %s", atsc3_slt_broadcast_svc_signalling->sls_destination_udp_port);
+				_LLS_INFO_I("    sls_source_ip_address     : %s", atsc3_slt_broadcast_svc_signalling->sls_source_ip_address);
+			} else {
+				_LLS_INFO_I("  broadcast_svc_signaling *NOT PRESENT*");
+				_LLS_INFO_I("  -------------------------------------");
+			}
 
 		}
 		_LLS_DEBUGN("--------------------------");

@@ -82,6 +82,21 @@
 	\
 \
 
+/*
+ * TODO: jjustman-2019-10-03 - use a qsort to re-index keys, e.g.
+
+int comparator_lls_slt_alc_session_t(const void *a, const void *b) {
+	_ATSC3_LLS_ALC_UTILS_TRACE("comparator_lls_slt_alc_session_t with %u from %u", ((lls_sls_alc_session_t *)a)->service_id, ((lls_sls_alc_session_t *)b)->service_id);
+	if ( ((lls_sls_alc_session_t*)a)->service_id <  ((lls_sls_alc_session_t*)b)->service_id ) return -1;
+	if ( ((lls_sls_alc_session_t*)a)->service_id == ((lls_sls_alc_session_t*)b)->service_id ) return  0;
+	if ( ((lls_sls_alc_session_t*)a)->service_id >  ((lls_sls_alc_session_t*)b)->service_id ) return  1;
+	return 0;
+}
+
+ *
+qsort((void**)lls_sls_alc_session_flows->lls_slt_alc_sessions, lls_sls_alc_session_flows->lls_slt_alc_sessions_n, sizeof(lls_sls_alc_session_t**), comparator_lls_slt_alc_session_t);
+ *
+ */
 //TODO: make sure we don't duplicate over an existing struct without at least clearing the prior instance
 #define ATSC3_VECTOR_BUILDER_METHODS_IMPLEMENTATION(vector_struct_name, vector_item_name) \
 	PPCAT(vector_item_name,_t)* PPCAT(vector_item_name,_new)() { \
