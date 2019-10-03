@@ -4,6 +4,13 @@
  *  Created on: Feb 7, 2019
  *      Author: jjustman
  */
+
+#if defined (__cplusplus)
+extern "C" {
+#endif
+
+#ifndef __DISABLE_NCURSES__
+
 #include <ncurses.h>
 
 #include "atsc3_output_statistics_ncurses.h"
@@ -643,6 +650,11 @@ void lls_dump_instance_table_ncurses(lls_table_t* base_table) {
 
 }
 
+#endif
+
+#if defined (__cplusplus)
+}
+#endif
 
 
 

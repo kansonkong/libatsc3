@@ -11,7 +11,7 @@
 #include <stdio.h>
 
 
-#include "zlib.h"
+#include <zlib.h>
 
 #ifndef ATSC3_GZIP_H_
 #define ATSC3_GZIP_H_

@@ -17,8 +17,10 @@ extern "C" {
 #include "atsc3_mmtp_packet_types.h"
 #include "atsc3_player_ffplay.h"
 #include "atsc3_isobmff_trun_box.h"
-#include "bento4/ISOBMFFTrackJoiner_firewall_gpl.h"
 
+#ifndef __DISABLE_ISOBMFF_LINKAGE__
+#include "bento4/ISOBMFFTrackJoiner_firewall_gpl.h"
+#endif
 
 extern int _LLS_SLS_MONITOR_OUTPUT_BUFFER_UTILS_DEBUG_ENABLED;
 extern int _LLS_SLS_MONITOR_OUTPUT_BUFFER_UTILS_TRACE_ENABLED;
