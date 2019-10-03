@@ -128,13 +128,21 @@ void process_packet(u_char *user, const struct pcap_pkthdr *pkthdr, const u_char
 								__INFO("Adding service: %d", atsc3_lls_slt_service->service_id);
 
 								lls_sls_mmt_monitor = lls_sls_mmt_monitor_create();
+								lls_sls_mmt_monitor->atsc3_lls_slt_service = atsc3_lls_slt_service; //HACK!
 								lls_slt_service_id_t* lls_slt_service_id = lls_slt_service_id_new_from_atsc3_lls_slt_service(atsc3_lls_slt_service);
 
 								lls_slt_monitor_add_lls_slt_service_id(lls_slt_monitor, lls_slt_service_id);
 
 								//we may not be initialized yet, so re-check again later
+								//this should _never_happen...
 								lls_sls_mmt_session_t* lls_sls_mmt_session = lls_slt_mmt_session_find_from_service_id(lls_slt_monitor, atsc3_lls_slt_service->service_id);
+								if(!lls_sls_mmt_session) {
+									__WARN("lls_slt_mmt_session_find_from_service_id: lls_sls_mmt_session is NULL!");
+								}
 								lls_sls_mmt_monitor->lls_mmt_session = lls_sls_mmt_session;
+								lls_slt_monitor->lls_sls_mmt_monitor = lls_sls_mmt_monitor;
+
+								lls_slt_monitor_add_lls_sls_mmt_monitor(lls_slt_monitor, lls_sls_mmt_monitor);
 							}
 						}
 					}
@@ -143,7 +151,10 @@ void process_packet(u_char *user, const struct pcap_pkthdr *pkthdr, const u_char
 		}
 
 		__INFO("Checking lls_sls_mmt_monitor: %p,", lls_sls_mmt_monitor);
-		__INFO("Checking lls_sls_mmt_monitor->lls_mmt_session: %p,", lls_sls_mmt_monitor->lls_mmt_session);
+
+		if(lls_sls_mmt_monitor && lls_sls_mmt_monitor->lls_mmt_session) {
+			__INFO("Checking lls_sls_mmt_monitor->lls_mmt_session: %p,", lls_sls_mmt_monitor->lls_mmt_session);
+		}
 
 		//recheck video_packet_id/audio_packet_id
 		if(lls_sls_mmt_monitor && lls_sls_mmt_monitor->lls_mmt_session) {
@@ -208,6 +219,9 @@ void process_packet(u_char *user, const struct pcap_pkthdr *pkthdr, const u_char
 				atsc3_mmt_mfu_context->lls_slt_monitor = lls_slt_monitor;
 				atsc3_mmt_mfu_context->matching_lls_sls_mmt_session = matching_lls_sls_mmt_session;
 
+				__INFO("Calling mmtp_process_from_payload_with_context with udp_packet: %p, mmtp_mpu_packet: %p, atsc3_mmt_mfu_context: %p,",
+						udp_packet, mmtp_mpu_packet, atsc3_mmt_mfu_context);
+
 				mmtp_mpu_packet = mmtp_process_from_payload_with_context(udp_packet, mmtp_mpu_packet, atsc3_mmt_mfu_context);
 //				            if(mmtp_mpu_packet && matching_lls_sls_mmt_session && matching_lls_sls_mmt_session->last_udp_flow_packet_id_mpu_sequence_tuple_audio && matching_lls_sls_mmt_session->last_udp_flow_packet_id_mpu_sequence_tuple_video) {
 //
@@ -251,7 +265,22 @@ void process_packet(u_char *user, const struct pcap_pkthdr *pkthdr, const u_char
 				//update our sls_mmt_session info
 				mmt_signalling_message_update_lls_sls_mmt_session(mmtp_signalling_packet, matching_lls_sls_mmt_session);
 
+				//TODO - remap this
+				//add in flows 				lls_sls_mmt_session_t* lls_sls_mmt_session = lls_slt_mmt_session_find_from_service_id(lls_slt_monitor, lls_sls_mmt_monitor->lls_mmt_session->service_id);
 
+				if(lls_sls_mmt_monitor && lls_sls_mmt_monitor->lls_mmt_session && matching_lls_sls_mmt_session) {
+						__INFO("HACK: seting audio_packet_id/video_packet_id: %u, %u",
+								matching_lls_sls_mmt_session->audio_packet_id,
+								matching_lls_sls_mmt_session->video_packet_id);
+
+						if(matching_lls_sls_mmt_session->audio_packet_id) {
+							lls_sls_mmt_monitor->audio_packet_id = matching_lls_sls_mmt_session->audio_packet_id;
+						}
+
+						if(matching_lls_sls_mmt_session->video_packet_id) {
+							lls_sls_mmt_monitor->video_packet_id = matching_lls_sls_mmt_session->video_packet_id;
+						}
+				}
 			}
 
 		} else {
