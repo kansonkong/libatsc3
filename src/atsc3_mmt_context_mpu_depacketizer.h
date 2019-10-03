@@ -16,7 +16,6 @@
 #include "atsc3_lls_sls_monitor_output_buffer.h"
 #include "atsc3_lls_sls_monitor_output_buffer_utils.h"
 #include "atsc3_isobmff_tools.h"
-#include "atsc3_mmt_signalling_message.h"
 #include "atsc3_mmtp_packet_types.h"
 #include "atsc3_mmtp_packet_utils.h"
 
@@ -24,8 +23,7 @@
 extern "C" {
 #endif
 
-//jjustman-2019-08-30 - TODO - refactor me
-extern atsc3_global_statistics_t* atsc3_global_statistics;
+
 
 typedef void (*atsc3_mmt_mpu_on_sequence_number_change_f)(uint16_t packet_id, uint32_t mpu_sequence_number_old, uint32_t mpu_sequence_number_new);
 //
