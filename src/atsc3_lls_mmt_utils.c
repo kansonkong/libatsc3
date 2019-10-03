@@ -32,10 +32,10 @@ lls_sls_mmt_session_vector_t* lls_sls_mmt_session_vector_create() {
 }
 
 
-lls_sls_mmt_session_t* lls_slt_mmt_session_create(lls_service_t* lls_service) {
+lls_sls_mmt_session_t* lls_slt_mmt_session_create(atsc3_lls_slt_service_t* atsc3_lls_slt_service) {
 	lls_sls_mmt_session_t* lls_slt_mmt_session = (lls_sls_mmt_session_t*)calloc(1, sizeof(lls_sls_mmt_session_t));
 
-	lls_slt_mmt_session->service_id = lls_service->service_id;
+	lls_slt_mmt_session->service_id = atsc3_lls_slt_service->service_id;
 
 	lls_slt_mmt_session->mmt_arguments = (mmt_arguments_t*)calloc(1, sizeof(mmt_arguments_t));
     if(lls_service->broadcast_svc_signaling.sls_source_ip_address) {
@@ -57,12 +57,12 @@ lls_sls_mmt_session_t* lls_slt_mmt_session_create(lls_service_t* lls_service) {
 	return lls_slt_mmt_session;
 }
 
-void lls_slt_mmt_session_remove(lls_sls_mmt_session_vector_t* lls_slt_mmt_session, lls_service_t* lls_service) {
+void lls_slt_mmt_session_remove(lls_sls_mmt_session_vector_t* lls_slt_mmt_session, atsc3_lls_slt_service_t* atsc3_lls_slt_service) {
 	//noop for now
 }
 
 
-lls_sls_mmt_session_t* lls_slt_mmt_session_find(lls_sls_mmt_session_vector_t* lls_sls_mmt_session_vector, lls_service_t* lls_service) {
+lls_sls_mmt_session_t* lls_slt_mmt_session_find(lls_sls_mmt_session_vector_t* lls_sls_mmt_session_vector, atsc3_lls_slt_service_t* atsc3_lls_slt_service) {
     uint32_t sls_source_ip_address = 0;
     if(lls_service->broadcast_svc_signaling.sls_source_ip_address) {
        sls_source_ip_address = parseIpAddressIntoIntval(lls_service->broadcast_svc_signaling.sls_source_ip_address);
@@ -148,7 +148,7 @@ int comparator_lls_slt_mmt_session_t(const void *a, const void *b) {
 	return 0;
 }
 
-lls_sls_mmt_session_t* lls_slt_mmt_session_find_or_create(lls_sls_mmt_session_vector_t* lls_sls_mmt_session_vector, lls_service_t* lls_service) {
+lls_sls_mmt_session_t* lls_slt_mmt_session_find_or_create(lls_sls_mmt_session_vector_t* lls_sls_mmt_session_vector, atsc3_lls_slt_service_t* atsc3_lls_slt_service) {
 	lls_sls_mmt_session_t* lls_slt_mmt_session = lls_slt_mmt_session_find(lls_sls_mmt_session_vector, lls_service);
 	if(!lls_slt_mmt_session) {
 		if(lls_sls_mmt_session_vector->lls_slt_mmt_sessions_n && lls_sls_mmt_session_vector->lls_slt_mmt_sessions) {

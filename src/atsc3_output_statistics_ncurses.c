@@ -277,7 +277,7 @@ void* ncurses_input_run_thread(void* lls_slt_monitor_ptr) {
 						//jjustman-2019-09-17 - TODO - move this out to helper method
 						lls_service_t* matching_lls_service = NULL;
 						for(int i=0; i < lls_slt_monitor->lls_table_slt->slt_table.service_entry_n && !matching_lls_service; i++) {
-							lls_service_t* lls_service = lls_slt_monitor->lls_table_slt->slt_table.service_entry[i];
+							atsc3_lls_slt_service_t* atsc3_lls_slt_service = lls_slt_monitor->lls_table_slt->slt_table.service_entry[i];
 							if(lls_service->service_id == my_service_id) {
 								matching_lls_service = lls_service;
 								break;
