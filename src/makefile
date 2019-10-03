@@ -426,7 +426,7 @@ libatsc3_intermediate.o: atsc3_lls.o \
 		atsc3_mmt_signalling_message.o \
 		atsc3_mmt_mpu_parser.o \
 		atsc3_mmt_mpu_sample_format_parser.o \
-		atsc3_mmt_context_mfu_depacketizer.p \
+		atsc3_mmt_context_mfu_depacketizer.o \
 		atsc3_alc_rx.o \
 		atsc3_lls_alc_utils.o \
 		atsc3_mmt_mpu_utils.o \

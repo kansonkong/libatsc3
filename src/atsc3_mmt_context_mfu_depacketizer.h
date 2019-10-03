@@ -9,6 +9,7 @@
 #define ATSC3_MMT_CONTEXT_MFU_DEPACKETIZER_H
 
 #include "atsc3_utils.h"
+#include "atsc3_logging_externs.h"
 
 #include "atsc3_mmtp_packet_types.h"
 #include "atsc3_mmt_context_mpu_depacketizer.h"
@@ -46,7 +47,7 @@ typedef struct atsc3_mmt_mfu_context {
 	lls_slt_monitor_t* lls_slt_monitor;
 	lls_sls_mmt_session_t* matching_lls_slt_mmt_session;
 
-	mp_table* mp_table_last;
+	mp_table_t* mp_table_last;
 
 	//from ATSC3_MMT_CONTEXT_MPU_DEPACKETIZER_H
 	atsc3_mmt_mpu_on_sequence_number_change_f 						atsc3_mmt_mpu_on_sequence_number_change;
@@ -70,6 +71,13 @@ atsc3_mmt_mfu_context_t* atsc3_mmt_mfu_context_new();
 mmtp_mpu_packet_t* mmtp_process_from_payload_with_context(udp_packet_t *udp_packet,
 														  mmtp_mpu_packet_t* mmtp_mpu_packet,
 														  atsc3_mmt_mfu_context_t* atsc3_mmt_mfu_context);
+
+
+#define __MMT_CONTEXT_MPU_WARN(...)   		__LIBATSC3_TIMESTAMP_WARN(__VA_ARGS__);
+#define __MMT_CONTEXT_MPU_INFO(...)    		__LIBATSC3_TIMESTAMP_INFO(__VA_ARGS__);
+#define __MMT_CONTEXT_MPU_SIGNAL_INFO(...)  if(_MMT_CONTEXT_MPU_SIGNAL_INFO_ENABLED) { __LIBATSC3_TIMESTAMP_INFO(__VA_ARGS__); }
+#define __MMT_CONTEXT_MPU_DEBUG(...)   		if(_MMT_CONTEXT_MPU_DEBUG_ENABLED) 		 { __LIBATSC3_TIMESTAMP_DEBUG(__VA_ARGS__); };
+#define __MMT_CONTEXT_MPU_TRACE(...)  		if(_MMT_CONTEXT_MPU_TRACE_ENABLED) 		 { __LIBATSC3_TIMESTAMP_TRACE(__VA_ARGS__); };
 
     
 #ifdef __cplusplus
