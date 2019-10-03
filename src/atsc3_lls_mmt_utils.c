@@ -109,20 +109,52 @@ lls_sls_mmt_session_t* lls_slt_mmt_session_find_from_udp_packet(lls_slt_monitor_
 }
 
 
-
 lls_sls_mmt_session_t* lls_slt_mmt_session_find_from_service_id(lls_slt_monitor_t* lls_slt_monitor, uint16_t service_id) {
-
-	lls_sls_mmt_session_vector_t* lls_sls_mmt_session_vector = lls_slt_monitor->lls_sls_mmt_session_vector;
-
-	for(int i=0; i < lls_sls_mmt_session_vector->lls_slt_mmt_sessions_n; i++ ) {
-		lls_sls_mmt_session_t* lls_slt_mmt_session = lls_sls_mmt_session_vector->lls_slt_mmt_sessions[i];
-
-		if(lls_slt_mmt_session->service_id == service_id) {
-			__LLSU_MMT_TRACE("matching service_id: %u, returning with %p", lls_slt_mmt_session->service_id, lls_slt_mmt_session);
-			return lls_slt_mmt_session;
-		}
+	if(!lls_slt_monitor) {
+		_ATSC3_LLS_MMT_UTILS_ERROR("lls_slt_mmt_session_find_from_service_id, lls_slt_monitor is NULL, service_id: %d", service_id);
+		return NULL;
 	}
 
+	for(int i=0; i < lls_slt_monitor->lls_sls_mmt_session_flows_v.count; i++) {
+		lls_sls_mmt_session_flows_t* lls_sls_mmt_session_flows = lls_slt_monitor->lls_sls_mmt_session_flows_v.data[i];
+
+		for(int j=0; j < lls_sls_mmt_session_flows->lls_sls_mmt_session_v.count; j++ ) {
+			lls_sls_mmt_session_t* lls_sls_mmt_session = lls_sls_mmt_session_flows->lls_sls_mmt_session_v.data[j];
+
+			if(lls_sls_mmt_session->service_id == service_id) {
+				_ATSC3_LLS_ALC_UTILS_TRACE("lls_slt_mmt_session_find_from_service_id: matching service_id: %u, returning with %p",
+						lls_sls_mmt_session->service_id, lls_sls_mmt_session);
+				return lls_sls_mmt_session;
+			}
+		}
+	}
+	return NULL;
+}
+
+
+
+lls_sls_mmt_monitor_t* lls_sls_mmt_monitor_find_from_service_id(lls_slt_monitor_t* lls_slt_monitor, uint16_t service_id) {
+	if(!lls_slt_monitor) {
+		_ATSC3_LLS_MMT_UTILS_ERROR("lls_sls_mmt_monitor_find_from_service_id, lls_slt_monitor is NULL, service_id: %d", service_id);
+		return NULL;
+	}
+
+	for(int i=0; i < lls_slt_monitor->lls_sls_mmt_monitor_v.count; i++) {
+		lls_sls_mmt_monitor_t* lls_sls_mmt_monitor = lls_slt_monitor->lls_sls_mmt_monitor_v.data[i];
+		if(lls_sls_mmt_monitor->atsc3_lls_slt_service && lls_sls_mmt_monitor->atsc3_lls_slt_service->lls_sls_mmt_monitor->atsc3_lls_slt_service == service_id) {
+			if(!lls_sls_mmt_monitor->lls_mmt_session) {
+				_ATSC3_LLS_MMT_UTILS_WARN("lls_sls_mmt_monitor_find_from_service_id: %p, service_id: %d, lls_mmt_session is NULL", lls_sls_mmt_monitor, service_id);
+			}
+			if(!lls_sls_mmt_monitor->audio_packet_id) {
+				_ATSC3_LLS_MMT_UTILS_WARN("lls_sls_mmt_monitor_find_from_service_id: %p, service_id: %d, audio_packet_id is NULL", lls_sls_mmt_monitor, service_id);
+			}
+			if(!lls_sls_mmt_monitor->video_packet_id) {
+				_ATSC3_LLS_MMT_UTILS_WARN("lls_sls_mmt_monitor_find_from_service_id: %p, service_id: %d, video_packet_id is NULL", lls_sls_mmt_monitor, service_id);
+			}
+
+			return lls_sls_mmt_monitor;
+		}
+	}
 	return NULL;
 }
 

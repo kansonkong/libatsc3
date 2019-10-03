@@ -119,17 +119,21 @@ lls_sls_alc_session_t* lls_slt_alc_session_find_from_udp_packet(lls_slt_monitor_
 
 
 lls_sls_alc_session_t* lls_slt_alc_session_find_from_service_id(lls_slt_monitor_t* lls_slt_monitor, uint16_t service_id) {
+	if(!lls_slt_monitor) {
+		_ATSC3_LLS_ALC_UTILS_ERROR("lls_slt_alc_session_find_from_service_id: lls_slt_monitor is NULL, service_id: %d", service_id);
+		return NULL;
+	}
 
 	for(int i=0; i < lls_slt_monitor->lls_sls_alc_session_flows_v.count; i++) {
 		lls_sls_alc_session_flows_t* lls_sls_alc_session_flows = lls_slt_monitor->lls_sls_alc_session_flows_v.data[i];
 
 		for(int j=0; j < lls_sls_alc_session_flows->lls_sls_alc_session_v.count; j++ ) {
-			lls_sls_alc_session_t* lls_slt_alc_session = lls_sls_alc_session_flows->lls_sls_alc_session_v.data[j];
+			lls_sls_alc_session_t* lls_sls_alc_session = lls_sls_alc_session_flows->lls_sls_alc_session_v.data[j];
 
-			if(lls_slt_alc_session->service_id == service_id) {
+			if(lls_sls_alc_session->service_id == service_id) {
 				_ATSC3_LLS_ALC_UTILS_TRACE("lls_slt_alc_session_find_from_service_id: matching service_id: %u, returning with %p",
-						lls_slt_alc_session->service_id, lls_slt_alc_session);
-				return lls_slt_alc_session;
+						lls_sls_alc_session->service_id, lls_sls_alc_session);
+				return lls_sls_alc_session;
 			}
 		}
 	}

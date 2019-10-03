@@ -29,10 +29,22 @@ ATSC3_VECTOR_BUILDER_METHODS_IMPLEMENTATION(lls_sls_mmt_session_vector, lls_sls_
 
 
 //lls_slt_monitor
+ATSC3_VECTOR_BUILDER_METHODS_IMPLEMENTATION(lls_slt_monitor, lls_slt_service_id);
+
 ATSC3_VECTOR_BUILDER_METHODS_IMPLEMENTATION(lls_slt_monitor, lls_sls_mmt_monitor);
 ATSC3_VECTOR_BUILDER_METHODS_IMPLEMENTATION(lls_slt_monitor, lls_sls_mmt_session_flows);
 
 ATSC3_VECTOR_BUILDER_METHODS_IMPLEMENTATION(lls_slt_monitor, lls_sls_alc_monitor);
 ATSC3_VECTOR_BUILDER_METHODS_IMPLEMENTATION(lls_slt_monitor, lls_sls_alc_session_flows);
 
+
+
+lls_slt_service_id_t* lls_slt_service_id_new_from_atsc3_lls_slt_service(atsc3_lls_slt_service_t* atsc3_lls_slt_service) {
+	lls_slt_service_id_t* lls_slt_service_id = lls_slt_service_id_new();
+	lls_slt_service_id->service_id = atsc3_lls_slt_service->service_id;
+	gettimeofday(&lls_slt_service_id->time_added, NULL);
+	gettimeofday(&lls_slt_service_id->time_last_slt_update, NULL);
+
+	return lls_slt_service_id;
+}
 
