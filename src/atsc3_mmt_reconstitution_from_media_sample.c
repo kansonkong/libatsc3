@@ -252,7 +252,7 @@ mmtp_mpu_packet_t* mmtp_process_from_payload(mmtp_mpu_packet_t* mmtp_mpu_packet,
 
 packet_cleanup:
     if(mmtp_mpu_packet) {
-        __MMT_RECON_FROM_SAMPLE_WARN("Cleaning up packet: %p", mmtp_mpu_packet);
+        __MMT_RECON_FROM_SAMPLE_TRACE("Cleaning up packet: %p", mmtp_mpu_packet);
         mmtp_mpu_packet_free(&mmtp_mpu_packet);
     }
     return NULL;
