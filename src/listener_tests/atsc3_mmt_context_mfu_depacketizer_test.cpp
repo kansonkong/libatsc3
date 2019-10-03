@@ -222,22 +222,11 @@ void process_packet(u_char *user, const struct pcap_pkthdr *pkthdr, const u_char
 				__INFO("context_dispatcher: calling mmtp_process_from_payload_with_context with udp_packet: %p, mmtp_mpu_packet: %p, atsc3_mmt_mfu_context: %p,",
 						udp_packet, mmtp_mpu_packet, atsc3_mmt_mfu_context);
 
+				mmtp_mfu_process_from_payload_with_context(udp_packet, mmtp_mpu_packet, atsc3_mmt_mfu_context);
+
+				//todo - this will free the mmtp_mpu_packet, so call this last
 				mmtp_process_from_payload_with_context(udp_packet, mmtp_mpu_packet, atsc3_mmt_mfu_context);
-//				            if(mmtp_mpu_packet && matching_lls_sls_mmt_session && matching_lls_sls_mmt_session->last_udp_flow_packet_id_mpu_sequence_tuple_audio && matching_lls_sls_mmt_session->last_udp_flow_packet_id_mpu_sequence_tuple_video) {
-//
-//				                __ATSC3_DEBUG("audio flow: packet_id: %d, mpu_sequence_number: %d, updated: %d, video flow: packet_id: %d, mpu_sequence_number: %d, updated: %d",
-//				                         matching_lls_sls_mmt_session->last_udp_flow_packet_id_mpu_sequence_tuple_audio->packet_id,
-//				                         matching_lls_sls_mmt_session->last_udp_flow_packet_id_mpu_sequence_tuple_audio->mpu_sequence_number,
-//				                         matching_lls_sls_mmt_session->last_udp_flow_packet_id_mpu_sequence_tuple_audio_processed,
-//
-//				                         matching_lls_sls_mmt_session->last_udp_flow_packet_id_mpu_sequence_tuple_video->packet_id,
-//				                         matching_lls_sls_mmt_session->last_udp_flow_packet_id_mpu_sequence_tuple_video->mpu_sequence_number,
-//				                         matching_lls_sls_mmt_session->last_udp_flow_packet_id_mpu_sequence_tuple_video_processed);
-//
-//				                if(matching_lls_sls_mmt_session->last_udp_flow_packet_id_mpu_sequence_tuple_audio_processed || matching_lls_sls_mmt_session->last_udp_flow_packet_id_mpu_sequence_tuple_video_processed) {
-//				                    atsc3_mmt_hls_fmp4_update_manifest(matching_lls_sls_mmt_session);
-//				                }
-//				            }
+
 			} else {
 				//non-timed
 				__ATSC3_WARN("process_packet: mmtp_packet_header_parse_from_block_t - non-timed payload: packet_id: %u", mmtp_packet_header->mmtp_packet_id);

@@ -190,7 +190,10 @@ void mmtp_process_from_payload_with_context(udp_packet_t *udp_packet,
 
     lls_sls_mmt_monitor_t* matching_lls_sls_mmt_monitor = lls_sls_mmt_monitor_find_from_service_id(lls_slt_monitor, matching_lls_sls_mmt_session->service_id);
 
-	__MMT_CONTEXT_MPU_WARN("lls_sls_mmt_monitor_find_from_service_id: %u, matching_lls_sls_mmt_monitor is NULL!", matching_lls_sls_mmt_session->service_id);
+	__MMT_CONTEXT_MPU_WARN("mmtp_process_from_payload_with_context: service_id: %u, packet_id: %u, lls_slt_monitor size: %u, matching_lls_sls_mmt_monitor is NULL!",
+				matching_lls_sls_mmt_session->service_id,
+				mmtp_mpu_packet->mmtp_packet_id,
+				lls_slt_monitor->lls_sls_mmt_monitor_v.count);
 
     if(!matching_lls_sls_mmt_monitor) {
         goto packet_cleanup;
@@ -383,10 +386,115 @@ void mmtp_process_from_payload_with_context(udp_packet_t *udp_packet,
     }
 
 packet_cleanup:
-    if(mmtp_mpu_packet) {
-    	__MMT_CONTEXT_MPU_TRACE("Cleaning up packet: %p", mmtp_mpu_packet);
-        mmtp_mpu_packet_free(&mmtp_mpu_packet);
+//    if(mmtp_mpu_packet) {
+//    	__MMT_CONTEXT_MPU_TRACE("Cleaning up packet: %p", mmtp_mpu_packet);
+//        mmtp_mpu_packet_free(&mmtp_mpu_packet);
+//    }
+
+ret:
+    return;
+}
+
+
+
+void mmtp_mfu_process_from_payload_with_context(udp_packet_t *udp_packet,
+											mmtp_mpu_packet_t* mmtp_mpu_packet,
+											atsc3_mmt_mfu_context_t* atsc3_mmt_mfu_context) {
+
+	atsc3_mmt_mfu_context->udp_flow = &udp_packet->udp_flow;
+
+
+	//borrow from our context
+	mmtp_flow_t *mmtp_flow = atsc3_mmt_mfu_context->mmtp_flow;
+	lls_slt_monitor_t* lls_slt_monitor = atsc3_mmt_mfu_context->lls_slt_monitor;
+	lls_sls_mmt_session_t* matching_lls_sls_mmt_session = atsc3_mmt_mfu_context->matching_lls_sls_mmt_session;
+	udp_flow_latest_mpu_sequence_number_container_t* udp_flow_latest_mpu_sequence_number_container = atsc3_mmt_mfu_context->udp_flow_latest_mpu_sequence_number_container;
+
+
+    //forward declare so our goto will compile
+    mmtp_asset_flow_t* mmtp_asset_flow = NULL;
+    mmtp_asset_t* mmtp_asset = NULL;
+    mmtp_packet_id_packets_container_t* mmtp_packet_id_packets_container = NULL;
+    mpu_sequence_number_mmtp_mpu_packet_collection_t* mpu_sequence_number_mmtp_mpu_packet_collection = NULL;
+
+    lls_sls_mmt_monitor_t* matching_lls_sls_mmt_monitor = lls_sls_mmt_monitor_find_from_service_id(lls_slt_monitor, matching_lls_sls_mmt_session->service_id);
+
+	__MMT_CONTEXT_MPU_WARN("mmtp_mfu_process_from_payload_with_context: service_id: %u, packet_id: %u, lls_slt_monitor size: %u, matching_lls_sls_mmt_monitor is NULL!",
+			matching_lls_sls_mmt_session->service_id,
+			mmtp_mpu_packet->mmtp_packet_id,
+			lls_slt_monitor->lls_sls_mmt_monitor_v.count);
+
+    if(!matching_lls_sls_mmt_monitor) {
+        goto packet_cleanup;
     }
+
+    //assign our mmtp_mpu_packet to asset/packet_id/mpu_sequence_number flow
+    mmtp_asset_flow = mmtp_flow_find_or_create_from_udp_packet(mmtp_flow, udp_packet);
+    mmtp_asset = mmtp_asset_flow_find_or_create_asset_from_lls_sls_mmt_session(mmtp_asset_flow, matching_lls_sls_mmt_session);
+    mmtp_packet_id_packets_container = mmtp_asset_find_or_create_packets_container_from_mmt_mpu_packet(mmtp_asset, mmtp_mpu_packet);
+    mpu_sequence_number_mmtp_mpu_packet_collection = mmtp_packet_id_packets_container_find_or_create_mpu_sequence_number_mmtp_mpu_packet_collection_from_mmt_mpu_packet(mmtp_packet_id_packets_container, mmtp_mpu_packet);
+
+    //persist our mmtp_mpu_packet for mpu reconstitution as per original libatsc3 design
+    mpu_sequence_number_mmtp_mpu_packet_collection_add_mmtp_mpu_packet(mpu_sequence_number_mmtp_mpu_packet_collection, mmtp_mpu_packet);
+
+    //TODO - this should never happen with this strong type
+    if(mmtp_mpu_packet->mmtp_payload_type == 0x0) {
+        atsc3_global_statistics->packet_counter_mmt_mpu++;
+
+        if(mmtp_mpu_packet->mpu_timed_flag == 1) {
+            atsc3_global_statistics->packet_counter_mmt_timed_mpu++;
+
+            if(matching_lls_sls_mmt_monitor->atsc3_lls_slt_service->service_id == matching_lls_sls_mmt_session->service_id &&
+            		matching_lls_sls_mmt_session->sls_destination_ip_address == udp_packet->udp_flow.dst_ip_addr &&
+					matching_lls_sls_mmt_session->sls_destination_udp_port == udp_packet->udp_flow.dst_port) {
+
+            	udp_flow_packet_id_mpu_sequence_tuple_t* last_flow_reference = udp_flow_latest_mpu_sequence_number_add_or_replace_and_check_for_rollover(udp_flow_latest_mpu_sequence_number_container, udp_packet, mmtp_mpu_packet, lls_slt_monitor, matching_lls_sls_mmt_session);
+
+            	char* essence_type = (matching_lls_sls_mmt_monitor->audio_packet_id == mmtp_mpu_packet->mmtp_packet_id) ? "a" : "v";
+
+				//see if we are at the start of a new mfu sample
+				if(mmtp_mpu_packet->mmthsample_header) {
+					__MMT_CONTEXT_MPU_DEBUG("mmtp_mfu_process_from_payload_with_context: new MFU.MMTHSample: packet_id: %u (%c), mpu_sequence_number: %u, mmthsample.samplenumber: %u, mmthsample.movie_fragment_sequence_number: %u, mmthsample.length: %u",
+						mmtp_mpu_packet->mmtp_packet_id,
+						*essence_type,
+						mmtp_mpu_packet->mpu_sequence_number,
+						mmtp_mpu_packet->mmthsample_header->samplenumber,
+						mmtp_mpu_packet->mmthsample_header->movie_fragment_sequence_number,
+						mmtp_mpu_packet->mmthsample_header->length);
+				} else {
+					__MMT_CONTEXT_MPU_DEBUG("mmtp_mfu_process_from_payload_with_context: carry over MFU : packet_id: %u (%c), mpu_sequence_number: %u, mmtp_mpu_packet.samplenumber: %u, mmtp_mpu_packet.mpu_fragment_counter: %u, mmtp_mpu_packet.offset: %u",
+						mmtp_mpu_packet->mmtp_packet_id,
+						*essence_type,
+						mmtp_mpu_packet->mpu_sequence_number,
+						mmtp_mpu_packet->sample_number,
+						mmtp_mpu_packet->mpu_fragment_counter,
+						mmtp_mpu_packet->offset);
+				}
+
+            }
+        } else {
+            //non-timed
+            atsc3_global_statistics->packet_counter_mmt_nontimed_mpu++;
+        }
+
+        goto ret;
+
+    } else if(mmtp_mpu_packet->mmtp_payload_type == 0x2) {
+
+		atsc3_global_statistics->packet_counter_mmt_signaling++;
+		__MMT_CONTEXT_MPU_SIGNAL_INFO("mmtp_mfu_process_from_payload_with_context: processing mmt flow: %d.%d.%d.%d:(%u) packet_id: 0, signalling message", __toipandportnonstruct(udp_packet->udp_flow.dst_ip_addr, udp_packet->udp_flow.dst_port));
+
+    } else {
+    	__MMT_CONTEXT_MPU_WARN("mmtp_mfu_process_from_payload_with_context: unknown payload type of 0x%x", mmtp_mpu_packet->mmtp_payload_type);
+		atsc3_global_statistics->packet_counter_mmt_unknown++;
+		goto packet_cleanup;
+    }
+
+packet_cleanup:
+//    if(mmtp_mpu_packet) {
+//    	__MMT_CONTEXT_MPU_TRACE("Cleaning up packet: %p", mmtp_mpu_packet);
+//        mmtp_mpu_packet_free(&mmtp_mpu_packet);
+//    }
 
 ret:
     return;
