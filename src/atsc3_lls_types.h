@@ -160,18 +160,7 @@ typedef struct slt_entry {
 </SLT>
 
 
- Table 6.4 Code Values for SLT.Service@serviceCategory
 
-
-	serviceCategory 		Meaning
-	---------------			-------------
-	0						ATSC Reserved
-	1						Linear A/V service
-	2						Linear audio only service
-	3						App-based service
-	4						ESG service (program guide)
-	5						EAS service (emergency alert)
-	Other values			ATSC Reserved
 
   	slsProtocol				Meaning
  	---------- 				-------------
@@ -181,15 +170,26 @@ typedef struct slt_entry {
  	other values			ATSC Reserved
 
  */
-enum LLS_SLT_SERVICE_CATEGORY {
-	SERVICE_CATEGORY_ATSC_RESERVED=0,
-	SERVICE_CATEGORY_LINEAR_AV_SERVICE=1,
-	SERVICE_CATEGORY_LINEAR_AUDIO_ONLY_SERVICE=2,
-	SERVICE_CATEGORY_APP_BASED_SERVICE=3,
-	SERVICE_CATEGORY_ESG_SERVICE=4,
-	SERVICE_CATEGORY_EAS_SERVICE=5,
-	SERVICE_CATEGORY_ATSC_RESERVED_OTHER=-1	};
 
+
+typedef struct atsc3_slt_capabilities {
+	bool	__to_impl__;
+
+} atsc3_slt_capabilities_t;
+
+
+enum LLS_SLT_URL_TYPE {
+	SLT_URL_TYPE_ATSC_RESERVED=0,
+	SLT_URL_TYPE_SLS_SERVER=1,
+	SLT_URL_TYPE_ESG_SERVER=2,
+	SLT_URL_TYPE_SERVICE_USAGE_DGR_SERVER=3,
+	SLT_URL_TYPE_DYNAMIC_EVENT_WEBSOCKET_SERVER=4,
+	SLT_URL_TYPE_ATSC_RESERVED_OTHER=-1};
+
+typedef struct atsc3_slt_ineturl {
+	char*						url; 							//Base URL to acquire ESG or service layer signalling files available via broadband for Services in this SLT.
+	uint8_t						url_type; 						//see: LLS_SLT_URL_TYPE
+} atsc3_slt_ineturl_t;
 
 enum LLS_SLT_SERVICE_PROTOCOL {
 	SLS_PROTOCOL_ATSC_RESERVED=0,
@@ -197,39 +197,167 @@ enum LLS_SLT_SERVICE_PROTOCOL {
 	SLS_PROTOCOL_MMTP=2,
 	SLS_PROTOCOL_ATSC_RESERVED_OTHER=-1};
 
-typedef struct broadcast_svc_signaling {
-	int 	sls_protocol;
-	char*	sls_destination_ip_address;
-	char*	sls_destination_udp_port;
-	char*	sls_source_ip_address;
+typedef struct atsc3_slt_broadcast_svc_signaling {
+	int 						sls_protocol;					//LLS_SLT_SERVICE_PROTOCOL
 
-} broadcast_svc_signaling_t;
-/*
+	uint8_t						sls_major_protocol_version;		//A/331:2019 - Default is 1
+	uint8_t						sls_minor_protocol_version;		//A/331:2019 - Default is 0
+
+	char*						sls_destination_ip_address;		//A string containing the dotted-IPv4 destination address of the packets carrying broadcast SLS data for this Service.
+	char*						sls_destination_udp_port;		//Port number of the packets carrying broadcast SLS data for this Service.
+
+	char*						sls_source_ip_address;			//0..1: A string containing the dotted-IPv4 source address of the packets carrying broadcast SLS data for this Service.
+
+} atsc3_slt_broadcast_svc_signaling_t;
+
+
+typedef struct atsc3_slt_simulcast_tsid {
+	uint16_t					simulcast_tsid;					//Identifier of an ATSC 1.0 broadcast stream carrying the same programming content.
+	uint16_t					simulcast_major_channel_no;		//Major channel number of the ATSC 1.0 Service carrying the same programming content.
+	uint16_t					simulcast_minor_channel_no;		//Minor channel number of the ATSC 1.0 Service carrying the same programming content.
+} atsc3_slt_simulcast_tsid_t;
+
+typedef struct atsc3_slt_svc_capabilities {
+	bool						__to_impl__;
+} atsc3_slt_svc_capabilities_t;
+
+typedef struct atsc3_slt_svc_inet_url {
+	char* 						url;					//URL to access Internet signalling for this Service.
+	uint8_t						url_type;				//Type of files available with this URL.
+} atsc3_slt_svc_inet_url_t;
+
+/**
+ * OtherBsid – Each instance of this list of unsigned short integer values shall
+ * indicate an identifier of another Broadcast Stream that delivers a duplicate
+ * or a portion of this Service.
+ *
+ * The format of each instance of OtherBsid shall be identical to the format of @bsid.
+ *
+ * At least one OtherBsid element shall be present when the @essential attribute is present
+ * for the parent Service element and is set to "true".
+ *
+ * No OtherBsid element shall be present when the @essential attribute is present for
+ * the parent Service element and is set to "false".
+ *
+ * One or more OtherBsid elements with @type equal to "1" may be present when @essential
+ * attribute is not present for the parent Service element.
+ *
+ * There is no default value when OtherBsid element is not present.
+ *
+ * @type – This unsigned byte integer value shall indicate whether the Broadcast Stream identified
+ * by the OtherBsid delivers a duplicate or a portion of this Service according to Table 6.6.
+ *
+ * When the value of @type is set to "2", this indicates that this Service element represents a
+ * portion of a Service which has components in the Broadcast Stream identified by the identifier
+ * OtherBsid and whose Service identifier is given by the value of the @serviceId attribute of
+ * the parent Service element.
+ *
+ * When more than one OtherBsid element are present under its parent Service element,
+ * the OtherBsid@type attribute values of all these elements shall be equal.
+ *
+ * Table 6.6 Code Values for SLT.Service.OtherBsid@type
+ *
+  	type 		Meaning
+	----		-------
+	0			ATSC Reserved
+	1			Duplicate
+	2			Portion
+	3-255		ATSC Reserved
+ */
+
+
+typedef struct atsc3_slt_other_bsid {
+	uint16_t					other_bsid;				//Identifier(s) of other Broadcast Stream(s) that deliver duplicates or portions of this Service.
+	uint8_t						type;					//Indicates whether the Broadcast Stream identified by the OtherBsid delivers a duplicate or a portion of this Service.
+} atsc3_slt_other_bsid_t;
+
+
+/*   A/331:2017 sample here:
+ *
  *    <Service serviceId="1001" globalServiceID="urn:atsc:serviceid:ateme_mmt_1" majorChannelNo="10" minorChannelNo="1" serviceCategory="1" shortServiceName="ATEME MMT 1" sltSvcSeqNum="0">
  *
  */
-typedef struct service {
-	uint16_t	service_id;
-	char*		global_service_id;
-	uint		major_channel_no;
-	uint 		minor_channel_no;
-	uint		service_category;
-	char*		short_service_name;
-	uint8_t 	slt_svc_seq_num;  //Version of SLT service info for this service.
-	broadcast_svc_signaling_t broadcast_svc_signaling;
-} lls_service_t;
+
+/*
+ *
+ *
+ * Service category, coded per Table 6.4.
+ *
+ * Code Values for SLT.Service@serviceCategory
+
+	LLS_SLT_SERVICE_CATEGORY
+
+	serviceCategory 		Meaning
+	---------------			-------------
+	0						ATSC Reserved
+	1						Linear A/V service
+	2						Linear audio only service
+	3						App-based service
+	4						ESG service (program guide)
+	5						EAS service (emergency alert)
+	6						DRM Data Service (DRM Data)
+	Other values			ATSC Reserved
+ *
+ */
+
+enum LLS_SLT_SERVICE_CATEGORY {
+	SERVICE_CATEGORY_ATSC_RESERVED=0,
+	SERVICE_CATEGORY_LINEAR_AV_SERVICE=1,
+	SERVICE_CATEGORY_LINEAR_AUDIO_ONLY_SERVICE=2,
+	SERVICE_CATEGORY_APP_BASED_SERVICE=3,
+	SERVICE_CATEGORY_ESG_SERVICE=4,
+	SERVICE_CATEGORY_EAS_SERVICE=5,
+	SERVICE_CATEGORY_DRM_SERVICE=6,
+	SERVICE_CATEGORY_ATSC_RESERVED_OTHER=-1	};
 
 
-typedef struct slt_table {
-	int*				bsid;			//list
-	int					bsid_n;
-	char*			 	slt_capabilities;
-	int					service_entry_n;
-	lls_service_t**		service_entry; 	//list
+typedef struct atsc3_lls_slt_service {
+	uint16_t					service_id;						//Integer number that identifies this Service within the scope of this Broadcast area.
 
-} slt_table_t;
+	char*						global_service_id;				//A globally unique URI that identifies the ATSC 3.0 Service. This attribute is not present for the ESG, EAS and DRM Data Services.
+	uint8_t						slt_svc_seq_num;				//Version of SLT Service info for this Service.
+	bool						protected_flag;					//Indicates whether one or more components needed for meaningful presentation of this Service are protected (e.g. encrypted)
 
+	uint16_t					major_channel_no;				//Major channel number of the Service.
+	uint16_t 					minor_channel_no;				//Minor channel number of the Service.
+	uint8_t						service_category;				//LLS_SLT_SERVICE_CATEGORY - Service category, coded per Table 6.4.
 
+	char*						short_service_name;				//Short name of the Service.
+
+	bool						hidden_flag;					//Indicates whether the Service is intended for testing or proprietary use, and is not to be selected by ordinary TV receivers.
+	bool						broadband_access_required_flag;	//Indicates whether broadband access is required for a receiver to make a meaningful presentation of the Service.
+	bool						essential_flag;					//Indicates if the essential portion of the Service is delivered via this Broadcast Stream
+
+	char*						drm_system_id;					//0..1, For @serviceCategory=6 (DRM Data Service), specifies the DRM System ID of a specific DRM system delivered as part of this Service.
+
+	ATSC3_VECTOR_BUILDER_STRUCT(atsc3_slt_simulcast_tsid);				//0..1, see atsc3_simulcast_tsid_t - atsc3_simulcast_tsid_t
+
+	ATSC3_VECTOR_BUILDER_STRUCT(atsc3_slt_svc_capabilities);			//0..1, Required capabilities for decoding and meaningfully presenting content of this Service.
+
+	ATSC3_VECTOR_BUILDER_STRUCT(atsc3_slt_broadcast_svc_signaling); 	//0..1, Location, protocol, address, id information for broadcast signaling.
+
+	ATSC3_VECTOR_BUILDER_STRUCT(atsc3_slt_svc_inet_url); 				//0..N, URL to access Internet signalling for this Service.
+
+	ATSC3_VECTOR_BUILDER_STRUCT(atsc3_slt_other_bsid); 					//0..N, Identifier(s) of other Broadcast Stream(s) that deliver duplicates or portions of this Service.
+
+} atsc3_lls_slt_service_t;
+
+/*
+ * A/331:2019 - Section 6.3.1 SLT Syntax Description
+ *
+ */
+typedef struct atsc3_lls_slt_table {
+	int*						bsid;			//list
+	int							bsid_n;
+
+	ATSC3_VECTOR_BUILDER_STRUCT(atsc3_slt_capabilities);	//TODO: jjustman-2019-10-03 - change to sa: CapabilitiesType - Required capabilities for decoding and meaningfully presenting the content for all the Services in this SLT instance.
+
+	ATSC3_VECTOR_BUILDER_STRUCT(atsc3_slt_ineturl); 		//TODO: Base URL to acquire ESG or service layer signalling files available via broadband for Services in this SLT
+
+	ATSC3_VECTOR_BUILDER_STRUCT(atsc3_lls_slt_service);		 //jjustman-2019-10-03 - refactored from
+															//lls_service_t**		service_entry; 	//list
+
+} atsc3_lls_slt_table_t;
 
 
 /** from atsc a/331 section 6.4
@@ -290,7 +418,7 @@ typedef struct lls_table {
 	lls_xml_payload_t					raw_xml;
 
 	union {
-		slt_table_t							slt_table;
+		atsc3_lls_slt_table_t				slt_table;
 		rrt_table_t							rrt_table;
 		system_time_table_t					system_time_table;
 		atsc3_aeat_table_t					aeat_table;
@@ -367,8 +495,6 @@ typedef struct lls_sls_mmt_session {
 
     mmt_arguments_t* mmt_arguments;
     mmt_session_t* mmt_session;
-//    alc_arguments_t* alc_arguments;
-//    alc_session_t* alc_session;
     
 } lls_sls_mmt_session_t;
 
@@ -378,11 +504,16 @@ typedef struct lls_sls_mmt_session {
  */
 typedef struct lls_sls_mmt_session_vector {
     lls_table_t* lls_table_slt;
+
+    ATSC3_VECTOR_BUILDER_STRUCT(lls_sls_mmt_session);
     
-    int lls_slt_mmt_sessions_n;
-    lls_sls_mmt_session_t** lls_slt_mmt_sessions;
-    
+    //jjustman-2019-10-03 - refactorted to ATSC3_VECTOR_BUILDER_STRUCT
+    //    int lls_slt_mmt_sessions_n;
+    //    lls_sls_mmt_session_t** lls_slt_mmt_sessions;
+
 } lls_sls_mmt_session_vector_t;
+
+ATSC3_VECTOR_BUILDER_METHODS_INTERFACE(lls_sls_mmt_session_vector, lls_sls_mmt_session);
 
 
 
@@ -432,16 +563,15 @@ typedef struct lls_sls_alc_session {
 **/
 typedef struct lls_sls_mmt_monitor {
     
-    lls_service_t* lls_service;
-    uint16_t service_id;
-    lls_sls_mmt_session_t* lls_mmt_session;
+	atsc3_lls_slt_service_t* 				atsc3_lls_slt_service;
 
-    uint16_t video_packet_id;
-    uint16_t audio_packet_id;
-    
-    
-    lls_sls_monitor_output_buffer_t lls_sls_monitor_output_buffer;
-    lls_sls_monitor_output_buffer_mode_t lls_sls_monitor_output_buffer_mode;
+    lls_sls_mmt_session_t* 					lls_mmt_session;
+
+    uint16_t 								video_packet_id;
+    uint16_t 								audio_packet_id;
+
+    lls_sls_monitor_output_buffer_t 		lls_sls_monitor_output_buffer;
+    lls_sls_monitor_output_buffer_mode_t 	lls_sls_monitor_output_buffer_mode;
 
 } lls_sls_mmt_monitor_t;
 
@@ -452,12 +582,17 @@ typedef struct lls_sls_mmt_monitor {
  * used to store all alc active sessions for this flow
  */
 typedef struct lls_sls_alc_session_vector {
-	lls_table_t* lls_table_slt;
+	lls_table_t* 			lls_table_slt;
 
-	int lls_slt_alc_sessions_n;
-	lls_sls_alc_session_t** lls_slt_alc_sessions;
+	ATSC3_VECTOR_BUILDER_STRUCT(lls_sls_alc_session);
+
+	//TODO - jjustman-2019-10-03 - swap this to ATSC3_VECTOR_BUILDER_STRUCT
+	//int 					lls_slt_alc_sessions_n;
+	//lls_sls_alc_session_t** lls_slt_alc_sessions;
 
 } lls_sls_alc_session_vector_t;
+
+ATSC3_VECTOR_BUILDER_METHODS_INTERFACE(lls_sls_alc_session_vector, lls_sls_alc_session);
 
 
 
@@ -477,16 +612,15 @@ A/331 - Section 7:
  */
 
 typedef struct lls_sls_alc_monitor {
-	lls_service_t* lls_service;
-	uint16_t service_id;
+	atsc3_lls_slt_service_t* 	atsc3_lls_slt_service;
     
-	lls_sls_alc_session_t* lls_alc_session;
+	lls_sls_alc_session_t* 		lls_alc_session;
     
-    uint32_t audio_tsi;
-    bool audio_tsi_manual_override;
+    uint32_t 					audio_tsi;
+    bool 						audio_tsi_manual_override;
 
-    uint32_t video_tsi;
-    bool video_tsi_manual_override;
+    uint32_t 					video_tsi;
+    bool 						video_tsi_manual_override;
     
 	/**
 	* jdj-2019-05-29: TODO - use a sparse array lookup (https://github.com/ned14/nedtries) for resolution to proper transfer_object_length to back-patch close flag
@@ -523,28 +657,45 @@ typedef struct lls_sls_alc_monitor {
 
 } lls_sls_alc_monitor_t;
 
+
+typedef struct lls_slt_service_id {
+	uint16_t					service_id;
+	struct timeval				time_added;
+	struct timeval				time_last_slt_update;
+} lls_slt_service_id_t;
+
 typedef struct lls_slt_monitor {
-    lls_sls_mmt_monitor_t* lls_sls_mmt_monitor;
-	lls_sls_alc_monitor_t* lls_sls_alc_monitor;
+
+	//LLS SLT service_id's we are monitoring
+	ATSC3_VECTOR_BUILDER_STRUCT(lls_slt_service_id);
+
+	//representative mmt SLS
+    ATSC3_VECTOR_BUILDER_STRUCT(lls_sls_mmt_monitor);
+    ATSC3_VECTOR_BUILDER_STRUCT(lls_sls_mmt_session);
+
+	//lls_sls_alc_monitor_t* lls_sls_alc_monitor;
+    ATSC3_VECTOR_BUILDER_STRUCT(lls_sls_alc_monitor);
+    ATSC3_VECTOR_BUILDER_STRUCT(lls_sls_alc_session);
 
     //jjustman-2019-08-10 - TODO - change this over to ATSC3_VECTOR_BUILDER
-    lls_sls_mmt_session_vector_t* lls_sls_mmt_session_vector;
-    lls_sls_alc_session_vector_t* lls_sls_alc_session_vector;
+    //lls_sls_mmt_session_vector_t* lls_sls_mmt_session_vector;
+    //lls_sls_alc_session_vector_t* lls_sls_alc_session_vector;
     
-	lls_service_t* lls_service;
-
-	lls_table_t* lls_table_slt;
+    //LATEST:	last successfully processed SLT table
+	lls_table_t* lls_latest_slt_table;
     
-    //use this against aeat_table_latest.atsc3_aeat_table_t
-    lls_table_t* aeat_table_latest;
+    //LATEST: 	last successfully processed AEAT table
+	//			use this against aeat_table_latest.atsc3_aeat_table_t
+    lls_table_t* lls_latest_aeat_table;
     
+    //LATEST: 	last successfully processed on screen message notification table
     //use this against on_screen_message_notification
-    lls_table_t* on_screen_message_notification_latest;
+    lls_table_t* lls_latest_on_screen_message_notification_table;
     
-    
-    
-
 } lls_slt_monitor_t;
+
+ATSC3_VECTOR_BUILDER_METHODS_INTERFACE(lls_slt_monitor, lls_sls_mmt_monitor);
+ATSC3_VECTOR_BUILDER_METHODS_INTERFACE(lls_slt_monitor, lls_sls_alc_monitor);
 
 
 #endif /* ATSC3_LLS_TYPES_H_ */

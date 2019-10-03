@@ -696,7 +696,7 @@ void process_packet(u_char *user, const struct pcap_pkthdr *pkthdr, const u_char
                 if(!retval) {
                     lls_dump_instance_table(lls_table);
                     for(int i=0; i < lls_table->slt_table.service_entry_n; i++) {
-                        lls_service_t* lls_service = lls_table->slt_table.service_entry[i];
+                        atsc3_lls_slt_service_t* atsc3_lls_slt_service = lls_table->slt_table.service_entry[i];
                         if(lls_service->broadcast_svc_signaling.sls_protocol == SLS_PROTOCOL_MMTP) {
                             if(lls_sls_mmt_monitor) {
                                 //re-configure
