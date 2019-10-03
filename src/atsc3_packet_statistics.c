@@ -7,8 +7,11 @@
 
 #include "atsc3_listener_udp.h"
 #include "atsc3_packet_statistics.h"
+
 int global_mmt_loss_count;
 bool __LOSS_DISPLAY_ENABLED = true;
+
+extern atsc3_global_statistics_t* atsc3_global_statistics;
 
 void *print_global_statistics_thread(void *vargp)
 {

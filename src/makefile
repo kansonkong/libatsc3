@@ -312,6 +312,8 @@ atsc3_dstp_types.o: atsc3_dstp_types.h atsc3_dstp_types.c
 atsc3_a344_receiver_query_api.o: atsc3_a344_receiver_query_api.h atsc3_a344_receiver_query_api.c
 	cc -g -c atsc3_a344_receiver_query_api.c -o atsc3_a344_receiver_query_api.o	
 	
+atsc3_packet_statistics_types.o: atsc3_packet_statistics.h atsc3_packet_statistics_types.o
+	cc -g -c atsc3_packet_statistics_types.c -o atsc3_packet_statistics_types.o	
 
 # unit standalone tests with mock data
 
@@ -409,7 +411,8 @@ libatsc3_intermediate.o: atsc3_lls.o \
 		atsc3_dstp_types.o \
 		atsc3_a344_receiver_query_api.o \
 		atsc3_aeat_types.o \
-		atsc3_aeat_parser.o
+		atsc3_aeat_parser.o \
+		atsc3_packet_statistics_types.o
 
 	ld  -o libatsc3_intermediate.o -r atsc3_lls.o \
 		atsc3_lls_slt_parser.o \
@@ -467,7 +470,8 @@ libatsc3_intermediate.o: atsc3_lls.o \
 		atsc3_dstp_types.o \
 		atsc3_a344_receiver_query_api.o \
 		atsc3_aeat_types.o \
-		atsc3_aeat_parser.o
+		atsc3_aeat_parser.o \
+		atsc3_packet_statistics_types.o
 		
 
 libatsc3.o: libatsc3_intermediate.o bento4_mock.o

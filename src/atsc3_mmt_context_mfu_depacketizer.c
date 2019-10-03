@@ -38,12 +38,70 @@ MPU_timestamp_descriptor: 0x0001
 #include "atsc3_mmt_context_mfu_depacketizer.h"
 
 int _MMT_CONTEXT_MPU_SIGNAL_INFO_ENABLED = 0;
-int _MMT_CONTEXT_MPU_DEBUG_ENABLED = 0;
+int _MMT_CONTEXT_MPU_DEBUG_ENABLED = 1;
 int _MMT_CONTEXT_MPU_TRACE_ENABLED = 0;
 
-static atsc3_global_statistics_t global_stats_internal;
-atsc3_global_statistics_t* atsc3_global_statistics = &global_stats_internal;
+//TODO: jjustman-2019-10-03 - refactor these out to proper impl's:
 
+//MPU
+void atsc3_mmt_mpu_on_sequence_number_change_noop(uint16_t packet_id, uint32_t mpu_sequence_number_old, uint32_t mpu_sequence_number_new) {
+	//noop
+	__MMT_CONTEXT_MPU_DEBUG("atsc3_mmt_mpu_on_sequence_number_change: packet_id: %u, from %d, to %d", packet_id, mpu_sequence_number_old,  mpu_sequence_number_new);
+}
+
+//SI
+void atsc3_mmt_signalling_information_on_mp_table_noop(mp_table_t* mp_table) {
+	//noop;
+	__MMT_CONTEXT_MPU_DEBUG("atsc3_mmt_signalling_information_on_mp_table_noop: mp_table: %p", mp_table);
+}
+
+void atsc3_mmt_signalling_information_on_mpu_timestamp_descriptor_noop(uint16_t packet_id, uint32_t mpu_sequence_number, mmt_signalling_message_mpu_timestamp_descriptor_t* mmt_signalling_message_mpu_timestamp_descriptor) {
+	//noop;
+	__MMT_CONTEXT_MPU_DEBUG("atsc3_mmt_signalling_information_on_mpu_timestamp_descriptor_noop: packet_id: %u, mpu_sequence_number: %d, mmt_signalling_message_mpu_timestamp_descriptor: %p",
+				packet_id,
+				mpu_sequence_number,
+				mmt_signalling_message_mpu_timestamp_descriptor);
+}
+
+//MFU callbacks
+
+void atsc3_mmt_mpu_mfu_on_sample_complete_noop(uint16_t packet_id, block_t* mmt_mfu_sample) {
+	//noop;
+	__MMT_CONTEXT_MPU_DEBUG("atsc3_mmt_mpu_mfu_on_sample_complete_noop: packet_id: %u, mmt_mfu_sample: %p, len: %d",
+			packet_id,
+			mmt_mfu_sample,
+			mmt_mfu_sample->p_size);
+
+}
+
+void atsc3_mmt_mpu_mfu_on_sample_corrupt_noop(uint16_t packet_id, block_t* mmt_mfu_sample) {
+	__MMT_CONTEXT_MPU_DEBUG("atsc3_mmt_mpu_mfu_on_sample_corrupt_noop: packet_id: %u, mmt_mfu_sample: %p, len: %d",
+				packet_id,
+				mmt_mfu_sample,
+				mmt_mfu_sample->p_size);}
+
+
+void atsc3_mmt_mpu_mfu_on_sample_missing_noop(uint16_t packet_id, block_t* mmt_mfu_sample) {
+	__MMT_CONTEXT_MPU_DEBUG("atsc3_mmt_mpu_mfu_on_sample_missing_noop: packet_id: %u, mmt_mfu_sample: %p, len: %d",
+				packet_id,
+				mmt_mfu_sample,
+				mmt_mfu_sample->p_size);}
+
+
+atsc3_mmt_mfu_context_t* atsc3_mmt_mfu_context_new() {
+	atsc3_mmt_mfu_context_t* atsc3_mmt_mfu_context = calloc(1, sizeof(atsc3_mmt_mfu_context_t));
+
+	atsc3_mmt_mfu_context->atsc3_mmt_mpu_on_sequence_number_change 						= &atsc3_mmt_mpu_on_sequence_number_change_noop;
+
+	atsc3_mmt_mfu_context->atsc3_mmt_signalling_information_on_mp_table 				= &atsc3_mmt_signalling_information_on_mp_table_noop;
+	atsc3_mmt_mfu_context->atsc3_mmt_signalling_information_on_mpu_timestamp_descriptor = &atsc3_mmt_signalling_information_on_mpu_timestamp_descriptor_noop;
+
+	atsc3_mmt_mfu_context->atsc3_mmt_mpu_mfu_on_sample_complete = &atsc3_mmt_mpu_mfu_on_sample_complete_noop;
+	atsc3_mmt_mfu_context->atsc3_mmt_mpu_mfu_on_sample_corrupt 	= &atsc3_mmt_mpu_mfu_on_sample_corrupt_noop;
+	atsc3_mmt_mfu_context->atsc3_mmt_mpu_mfu_on_sample_missing 	= &atsc3_mmt_mpu_mfu_on_sample_missing_noop;
+
+	return atsc3_mmt_mfu_context;
+}
 
 /**
  * jjustman-2019-03-30 - combine pending mpu_sequence_numbers until we have at least 1a and 1v packet to flush for decoder...
@@ -71,7 +129,7 @@ mmtp_mpu_packet_t* mmtp_process_from_payload_with_context(udp_packet_t *udp_pack
 	//borrow from our context
 	mmtp_flow_t *mmtp_flow = atsc3_mmt_mfu_context->mmtp_flow;
 	lls_slt_monitor_t* lls_slt_monitor = atsc3_mmt_mfu_context->lls_slt_monitor;
-	lls_sls_mmt_session_t* matching_lls_sls_mmt_session = atsc3_mmt_mfu_context->matching_lls_slt_mmt_session;
+	lls_sls_mmt_session_t* matching_lls_sls_mmt_session = atsc3_mmt_mfu_context->matching_lls_sls_mmt_session;
 	udp_flow_latest_mpu_sequence_number_container_t* udp_flow_latest_mpu_sequence_number_container = atsc3_mmt_mfu_context->udp_flow_latest_mpu_sequence_number_container;
 
 
