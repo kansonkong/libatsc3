@@ -14,40 +14,35 @@
 
 #include "atsc3_lls.h"
 #include "atsc3_lls_types.h"
-
+#include "atsc3_logging_externs.h"
 
 #if defined (__cplusplus)
 extern "C" {
 #endif
 
-extern int _LLSU_MMT_TRACE_ENABLED;
-
 lls_sls_mmt_monitor_t* lls_sls_mmt_monitor_create(void);
 
-lls_sls_mmt_session_vector_t* lls_sls_mmt_session_vector_create(void);
-
-
 lls_sls_mmt_session_t* lls_slt_mmt_session_create(atsc3_lls_slt_service_t* atsc3_lls_slt_service);
-lls_sls_mmt_session_t* lls_slt_mmt_session_find_or_create(lls_sls_mmt_session_vector_t* lls_session, atsc3_lls_slt_service_t* atsc3_lls_slt_service);
+lls_sls_mmt_session_t* lls_slt_mmt_session_find_or_create(lls_slt_monitor_t* lls_slt_monitor, atsc3_lls_slt_service_t* atsc3_lls_slt_service);
 
-lls_sls_mmt_session_t* lls_slt_mmt_session_find(lls_sls_mmt_session_vector_t* lls_session, atsc3_lls_slt_service_t* atsc3_lls_slt_service);
+lls_sls_mmt_session_t* lls_slt_mmt_session_find(lls_slt_monitor_t* lls_slt_monitor, atsc3_lls_slt_service_t* atsc3_lls_slt_service);
 
 lls_sls_mmt_session_t* lls_slt_mmt_session_find_from_udp_packet(lls_slt_monitor_t* lls_slt_monitor, uint32_t src_ip_addr, uint32_t dst_ip_addr, uint16_t dst_port);
 lls_sls_mmt_session_t* lls_slt_mmt_session_find_from_service_id(lls_slt_monitor_t* lls_slt_monitor, uint16_t service_id);
 
-void lls_slt_mmt_session_remove(lls_sls_mmt_session_vector_t* lls_slt_mmt_session, atsc3_lls_slt_service_t* atsc3_lls_slt_service);
+void lls_slt_mmt_session_remove(lls_slt_monitor_t* lls_slt_monitor, atsc3_lls_slt_service_t* atsc3_lls_slt_service);
 
 
 lls_sls_mmt_monitor_t* lls_monitor_sls_mmt_session_create(atsc3_lls_slt_service_t* atsc3_lls_slt_service);
 
-
 void lls_sls_mmt_session_free(lls_sls_mmt_session_t** lls_session_ptr);
 
 
-#define _LLS_MMT_PRINTLN(...) printf(__VA_ARGS__);printf("%s%s","\r","\n")
-#define _LLS_MMT_PRINTF(...)  printf(__VA_ARGS__);
-
-#define __LLSU_MMT_TRACE(...) if(_LLSU_MMT_TRACE_ENABLED) {  printf("%s:%d:TRACE:", __FILE__, __LINE__); _LLS_PRINTLN(__VA_ARGS__); }
+#define _ATSC3_LLS_MMT_UTILS_ERROR(...)  __LIBATSC3_TIMESTAMP_ERROR(__VA_ARGS__);
+#define _ATSC3_LLS_MMT_UTILS_WARN(...)   __LIBATSC3_TIMESTAMP_WARN(__VA_ARGS__);
+#define _ATSC3_LLS_MMT_UTILS_INFO(...)   if(_LLS_MMT_UTILS_INFO_ENABLED)  { __LIBATSC3_TIMESTAMP_INFO(__VA_ARGS__);  }
+#define _ATSC3_LLS_MMT_UTILS_DEBUG(...)  if(_LLS_MMT_UTILS_DEBUG_ENABLED) { __LIBATSC3_TIMESTAMP_DEBUG(__VA_ARGS__); }
+#define _ATSC3_LLS_MMT_UTILS_TRACE(...)  if(_LLS_MMT_UTILS_TRACE_ENABLED) { __LIBATSC3_TIMESTAMP_TRACE(__VA_ARGS__); }
 
 
 #if defined (__cplusplus)

@@ -7,26 +7,13 @@
 
 #include "atsc3_lls_alc_utils.h"
 
-
 int _LLS_ALC_UTILS_INFO_ENABLED = 0;
 int _LLS_ALC_UTILS_DEBUG_ENABLED = 0;
 int _LLS_ALC_UTILS_TRACE_ENABLED = 0;
 
-
 lls_sls_alc_monitor_t* lls_sls_alc_monitor_create() {
 	lls_sls_alc_monitor_t* lls_sls_alc_monitor = lls_sls_alc_monitor_new();
 	return lls_sls_alc_monitor;
-}
-
-
-lls_sls_alc_session_flows_t* lls_sls_alc_session_vector_create() {
-	lls_sls_alc_session_flows_t* lls_sls_alc_session_flows = lls_sls_alc_session_flows_new();
-	assert(lls_sls_alc_session_flows);
-
-	//do not instantiate any other lls_table_xxx types, as they will need to be assigned
-	//do not instanitate any lls_slt_alc_sessions, they will be created later
-
-	return lls_sls_alc_session_flows;
 }
 
 lls_sls_alc_session_t* lls_slt_alc_session_create(atsc3_lls_slt_service_t* atsc3_lls_slt_service) {
@@ -59,12 +46,12 @@ lls_sls_alc_session_t* lls_slt_alc_session_create(atsc3_lls_slt_service_t* atsc3
 	return lls_slt_alc_session;
 }
 
-void lls_slt_alc_session_remove(lls_sls_alc_session_flows_t* lls_slt_alc_session, atsc3_lls_slt_service_t* atsc3_lls_slt_service) {
+void lls_slt_alc_session_remove(lls_slt_monitor_t* lls_slt_monitor, atsc3_lls_slt_service_t* atsc3_lls_slt_service) {
 	//noop for now
 }
 
 
-lls_sls_alc_session_t* lls_slt_alc_session_find(lls_sls_alc_session_flows_t* lls_sls_alc_session_flows, atsc3_lls_slt_service_t* atsc3_lls_slt_service) {
+lls_sls_alc_session_t* lls_slt_alc_session_find(lls_slt_monitor_t* lls_slt_monitor, atsc3_lls_slt_service_t* atsc3_lls_slt_service) {
 
 	if(!atsc3_lls_slt_service->atsc3_slt_broadcast_svc_signalling_v.count) {
 		_ATSC3_LLS_ALC_UTILS_ERROR("lls_slt_alc_session_create: SLT parsing of broadcast_svc_signalling for service_id: %u missing!", atsc3_lls_slt_service->service_id);
@@ -77,30 +64,36 @@ lls_sls_alc_session_t* lls_slt_alc_session_find(lls_sls_alc_session_flows_t* lls
 	uint32_t sls_destination_ip_address = parseIpAddressIntoIntval(atsc3_slt_broadcast_svc_signalling->sls_destination_ip_address);
 	uint16_t sls_destination_udp_port = parsePortIntoIntval(atsc3_slt_broadcast_svc_signalling->sls_destination_udp_port);
 
-	for(int i=0; i < lls_sls_alc_session_flows->lls_sls_alc_session_v.count; i++ ) {
-		lls_sls_alc_session_t* lls_slt_alc_session = lls_sls_alc_session_flows->lls_sls_alc_session_v.data[i];
+	for(int i=0; i < lls_slt_monitor->lls_sls_alc_session_flows_v.count; i++) {
+		lls_sls_alc_session_flows_t* lls_sls_alc_session_flows = lls_slt_monitor->lls_sls_alc_session_flows_v.data[i];
 
-		_ATSC3_LLS_ALC_UTILS_TRACE("lls_slt_alc_session_find lls_service: service_id: %hu, src: %s (%u), dest: %s:%s (%u:%u), checking against %hu, dest: %u.%u.%u.%u:%u (%u:%u)",
-				atsc3_lls_slt_service->service_id,
-				atsc3_slt_broadcast_svc_signalling->sls_source_ip_address,
-				sls_source_ip_address,
-				atsc3_slt_broadcast_svc_signalling->sls_destination_ip_address,
-				atsc3_slt_broadcast_svc_signalling->sls_destination_udp_port,
-				sls_destination_ip_address,
-				sls_destination_udp_port,
-				lls_slt_alc_session->service_id,
-				__toipandportnonstruct(lls_slt_alc_session->sls_destination_ip_address, lls_slt_alc_session->sls_destination_udp_port),
-				lls_slt_alc_session->sls_destination_ip_address,
-				lls_slt_alc_session->sls_destination_udp_port);
+		for(int j=0; j < lls_sls_alc_session_flows->lls_sls_alc_session_v.count; j++ ) {
+			lls_sls_alc_session_t* lls_slt_alc_session = lls_sls_alc_session_flows->lls_sls_alc_session_v.data[j];
 
-		if(lls_slt_alc_session->service_id == atsc3_lls_slt_service->service_id &&
-		   lls_slt_alc_session->sls_source_ip_address == sls_source_ip_address &&
-		   lls_slt_alc_session->sls_destination_ip_address == sls_destination_ip_address &&
-		   lls_slt_alc_session->sls_destination_udp_port == sls_destination_udp_port) {
-			_ATSC3_LLS_ALC_UTILS_TRACE("matching, returning with %p", lls_slt_alc_session);
-				return lls_slt_alc_session;
+			_ATSC3_LLS_ALC_UTILS_TRACE("lls_slt_alc_session_find lls_service: service_id: %hu, src: %s (%u), dest: %s:%s (%u:%u), checking against %hu, dest: %u.%u.%u.%u:%u (%u:%u)",
+					atsc3_lls_slt_service->service_id,
+					atsc3_slt_broadcast_svc_signalling->sls_source_ip_address,
+					sls_source_ip_address,
+					atsc3_slt_broadcast_svc_signalling->sls_destination_ip_address,
+					atsc3_slt_broadcast_svc_signalling->sls_destination_udp_port,
+					sls_destination_ip_address,
+					sls_destination_udp_port,
+					lls_slt_alc_session->service_id,
+					__toipandportnonstruct(lls_slt_alc_session->sls_destination_ip_address, lls_slt_alc_session->sls_destination_udp_port),
+					lls_slt_alc_session->sls_destination_ip_address,
+					lls_slt_alc_session->sls_destination_udp_port);
+
+			if(lls_slt_alc_session->service_id == atsc3_lls_slt_service->service_id &&
+			   lls_slt_alc_session->sls_source_ip_address == sls_source_ip_address &&
+			   lls_slt_alc_session->sls_destination_ip_address == sls_destination_ip_address &&
+			   lls_slt_alc_session->sls_destination_udp_port == sls_destination_udp_port) {
+				_ATSC3_LLS_ALC_UTILS_TRACE("matching, returning with %p", lls_slt_alc_session);
+					return lls_slt_alc_session;
 			}
 		}
+	}
+
+
 	return NULL;
 }
 
@@ -125,7 +118,6 @@ lls_sls_alc_session_t* lls_slt_alc_session_find_from_udp_packet(lls_slt_monitor_
 }
 
 
-
 lls_sls_alc_session_t* lls_slt_alc_session_find_from_service_id(lls_slt_monitor_t* lls_slt_monitor, uint16_t service_id) {
 
 	for(int i=0; i < lls_slt_monitor->lls_sls_alc_session_flows_v.count; i++) {
@@ -141,7 +133,6 @@ lls_sls_alc_session_t* lls_slt_alc_session_find_from_service_id(lls_slt_monitor_
 			}
 		}
 	}
-
 	return NULL;
 }
 
@@ -154,11 +145,15 @@ int comparator_lls_slt_alc_session_t(const void *a, const void *b) {
 	return 0;
 }
 
-lls_sls_alc_session_t* lls_slt_alc_session_find_or_create(lls_sls_alc_session_flows_t* lls_sls_alc_session_flows, atsc3_lls_slt_service_t* atsc3_lls_slt_service) {
-	lls_sls_alc_session_t* lls_slt_alc_session = lls_slt_alc_session_find(lls_sls_alc_session_flows, atsc3_lls_slt_service);
+lls_sls_alc_session_t* lls_slt_alc_session_find_or_create(lls_slt_monitor_t* lls_slt_monitor, atsc3_lls_slt_service_t* atsc3_lls_slt_service) {
+	lls_sls_alc_session_t* lls_slt_alc_session = lls_slt_alc_session_find(lls_slt_monitor, atsc3_lls_slt_service);
 	if(!lls_slt_alc_session) {
 		lls_slt_alc_session = lls_slt_alc_session_create(atsc3_lls_slt_service);
+
+		lls_sls_alc_session_flows_t* lls_sls_alc_session_flows = lls_sls_alc_session_flows_new();
 		lls_sls_alc_session_flows_add_lls_sls_alc_session(lls_sls_alc_session_flows, lls_slt_alc_session);
+
+		lls_slt_monitor_add_lls_sls_alc_session_flows(lls_slt_monitor, lls_sls_alc_session_flows);
 		lls_slt_alc_session->sls_relax_source_ip_check = __LLS_SESSION_RELAX_SOURCE_IP_CHECK__;
 	}
 	return lls_slt_alc_session;
