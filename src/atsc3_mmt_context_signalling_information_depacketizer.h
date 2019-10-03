@@ -24,10 +24,14 @@
 extern "C" {
 #endif
 
-//jjustman-2019-08-30 - TODO - refactor me
-extern atsc3_global_statistics_t* atsc3_global_statistics;
+//todo- jjustman-2019-10-03: add in flow for un-filtered callback listeners
 
-typedef void (*atsc3_mmt_signalling_information_on_mp_table_f)(mp_table_t* mp_table);
+typedef void (*atsc3_mmt_signalling_information_on_mp_table_subset_f)(mp_table_t* mp_table);
+typedef void (*atsc3_mmt_signalling_information_on_mp_table_complete_f)(mp_table_t* mp_table);
+
+typedef void (*atsc3_mmt_signalling_information_on_audio_packet_id_f)(uint16_t audio_packet_id);
+typedef void (*atsc3_mmt_signalling_information_on_video_packet_id_f)(uint16_t video_packet_id);
+
 typedef void (*atsc3_mmt_signalling_information_on_mpu_timestamp_descriptor_f)(uint16_t packet_id, uint32_t mpu_sequence_number, mmt_signalling_message_mpu_timestamp_descriptor_t* mmt_signalling_message_mpu_timestamp_descriptor);
 
 //we will return mmtp_mpu_packet if it was successfully persisted, otherwise it will be null'd out

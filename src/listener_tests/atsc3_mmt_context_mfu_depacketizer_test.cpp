@@ -219,10 +219,10 @@ void process_packet(u_char *user, const struct pcap_pkthdr *pkthdr, const u_char
 				atsc3_mmt_mfu_context->lls_slt_monitor = lls_slt_monitor;
 				atsc3_mmt_mfu_context->matching_lls_sls_mmt_session = matching_lls_sls_mmt_session;
 
-				__INFO("Calling mmtp_process_from_payload_with_context with udp_packet: %p, mmtp_mpu_packet: %p, atsc3_mmt_mfu_context: %p,",
+				__INFO("context_dispatcher: calling mmtp_process_from_payload_with_context with udp_packet: %p, mmtp_mpu_packet: %p, atsc3_mmt_mfu_context: %p,",
 						udp_packet, mmtp_mpu_packet, atsc3_mmt_mfu_context);
 
-				mmtp_mpu_packet = mmtp_process_from_payload_with_context(udp_packet, mmtp_mpu_packet, atsc3_mmt_mfu_context);
+				mmtp_process_from_payload_with_context(udp_packet, mmtp_mpu_packet, atsc3_mmt_mfu_context);
 //				            if(mmtp_mpu_packet && matching_lls_sls_mmt_session && matching_lls_sls_mmt_session->last_udp_flow_packet_id_mpu_sequence_tuple_audio && matching_lls_sls_mmt_session->last_udp_flow_packet_id_mpu_sequence_tuple_video) {
 //
 //				                __ATSC3_DEBUG("audio flow: packet_id: %d, mpu_sequence_number: %d, updated: %d, video flow: packet_id: %d, mpu_sequence_number: %d, updated: %d",
@@ -248,6 +248,18 @@ void process_packet(u_char *user, const struct pcap_pkthdr *pkthdr, const u_char
 			uint8_t parsed_count = mmt_signalling_message_parse_packet(mmtp_signalling_packet, udp_packet->data);
 			if(parsed_count) {
 				mmt_signalling_message_dump(mmtp_signalling_packet);
+
+				__INFO("context_dispatcher: calling mmt_signalling_message_process_with_context with udp_packet: %p, mmtp_signalling_packet: %p, atsc3_mmt_mfu_context: %p,",
+						udp_packet,
+						mmtp_signalling_packet,
+						atsc3_mmt_mfu_context);
+
+				mmt_signalling_message_process_with_context(udp_packet, mmtp_signalling_packet, atsc3_mmt_mfu_context);
+
+
+				//internal hacks below
+
+
 				//TODO: jjustman-2019-10-03 - if signalling_packet == MP_table, set atsc3_mmt_mfu_context->mp_table_last;
 				mmtp_asset_flow_t* mmtp_asset_flow = mmtp_flow_find_or_create_from_udp_packet(mmtp_flow, udp_packet);
 				mmtp_asset_t* mmtp_asset = mmtp_asset_flow_find_or_create_asset_from_lls_sls_mmt_session(mmtp_asset_flow, matching_lls_sls_mmt_session);

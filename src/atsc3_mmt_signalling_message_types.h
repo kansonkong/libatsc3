@@ -212,7 +212,7 @@ typedef struct mmt_signaling_message_mpu_timestamp_descriptor {
     uint16_t                               descriptor_tag;
     uint8_t                                descriptor_length;
     uint8_t                                mpu_tuple_n; //mpu_tuple_n = descriptor_length/12 = (32+64)/8
-    mmt_signalling_message_mpu_tuple_t*     mpu_tuple;
+    mmt_signalling_message_mpu_tuple_t*    mpu_tuple;
 } mmt_signalling_message_mpu_timestamp_descriptor_t;
 
 #define ATSC3_MP_TABLE_ASSET_ROW_HEVC_ID "hev1"
@@ -253,6 +253,7 @@ typedef struct mp_table {
 
 	//table_id==0x20 || table_id==0x11 - mmt_package_id
 	mmt_package_id_t 		mmt_package_id;
+
 	//mp_table_descriptors
 	mp_table_descriptors_t 	mp_table_descriptors;
 
