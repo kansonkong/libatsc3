@@ -46,7 +46,7 @@ int _MMT_CONTEXT_MPU_TRACE_ENABLED = 0;
 //MPU
 void atsc3_mmt_mpu_on_sequence_number_change_noop(uint16_t packet_id, uint32_t mpu_sequence_number_old, uint32_t mpu_sequence_number_new) {
 	//noop
-	__MMT_CONTEXT_MPU_DEBUG("atsc3_mmt_mpu_on_sequence_number_change: packet_id: %u, from %d, to %d", packet_id, mpu_sequence_number_old,  mpu_sequence_number_new);
+	__MMT_CONTEXT_MPU_DEBUG("atsc3_mmt_mpu_on_sequence_number_change_noop: packet_id: %u, from %d, to %d", packet_id, mpu_sequence_number_old,  mpu_sequence_number_new);
 }
 
 //SI
