@@ -20,9 +20,10 @@ lls_sls_mmt_monitor_t* lls_sls_mmt_monitor_create() {
 	return lls_sls_mmt_monitor;
 }
 
-
 lls_sls_mmt_session_t* lls_slt_mmt_session_create(atsc3_lls_slt_service_t* atsc3_lls_slt_service) {
 	lls_sls_mmt_session_t* lls_slt_mmt_session = lls_sls_mmt_session_new();
+	//hack
+	lls_slt_mmt_session->sls_relax_source_ip_check = 1;
 
 	lls_slt_mmt_session->atsc3_lls_slt_service = atsc3_lls_slt_service;
 	lls_slt_mmt_session->service_id = atsc3_lls_slt_service->service_id;
@@ -133,16 +134,28 @@ lls_sls_mmt_session_t* lls_slt_mmt_session_find(lls_slt_monitor_t* lls_slt_monit
 
 lls_sls_mmt_session_t* lls_slt_mmt_session_find_from_udp_packet(lls_slt_monitor_t* lls_slt_monitor, uint32_t src_ip_addr, uint32_t dst_ip_addr, uint16_t dst_port) {
 
+	_ATSC3_LLS_MMT_UTILS_TRACE("lls_slt_mmt_session_find_from_udp_packet: checking lls_sls_mmt_session_flows_v, count: %d", lls_slt_monitor->lls_sls_mmt_session_flows_v.count);
+
 	for(int i=0; i < lls_slt_monitor->lls_sls_mmt_session_flows_v.count; i++) {
 		lls_sls_mmt_session_flows_t* lls_sls_mmt_session_flows = lls_slt_monitor->lls_sls_mmt_session_flows_v.data[i];
+
+		_ATSC3_LLS_MMT_UTILS_TRACE("lls_slt_mmt_session_find_from_udp_packet: checking lls_sls_mmt_session_flows->lls_sls_mmt_session_v.count, count: %d", lls_sls_mmt_session_flows->lls_sls_mmt_session_v.count);
 
 		for(int j=0; j < lls_sls_mmt_session_flows->lls_sls_mmt_session_v.count; j++ ) {
 			lls_sls_mmt_session_t* lls_slt_mmt_session = lls_sls_mmt_session_flows->lls_sls_mmt_session_v.data[j];
 
 			if((lls_slt_mmt_session->sls_relax_source_ip_check || (!lls_slt_mmt_session->sls_relax_source_ip_check && lls_slt_mmt_session->sls_source_ip_address == src_ip_addr)) &&
-				lls_slt_mmt_session->sls_destination_ip_address == dst_ip_addr && lls_slt_mmt_session->sls_destination_udp_port == dst_port) {
+				lls_slt_mmt_session->sls_destination_ip_address == dst_ip_addr &&
+				lls_slt_mmt_session->sls_destination_udp_port == dst_port) {
 				_ATSC3_LLS_MMT_UTILS_TRACE("lls_slt_mmt_session_find_from_udp_packet: matching, returning with %p", lls_slt_mmt_session);
 				return lls_slt_mmt_session;
+			} else {
+				_ATSC3_LLS_MMT_UTILS_TRACE("lls_slt_mmt_session_find_from_udp_packet: not matching sip: %u to%u, dip: %u to %u, port: %u to %u",
+						lls_slt_mmt_session->sls_source_ip_address, src_ip_addr,
+						lls_slt_mmt_session->sls_destination_ip_address, dst_ip_addr,
+						lls_slt_mmt_session->sls_destination_udp_port, dst_port
+						);
+
 			}
 		}
 	}
