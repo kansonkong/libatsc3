@@ -671,17 +671,26 @@ typedef struct lls_slt_service_id {
 	struct timeval				time_last_slt_update;
 } lls_slt_service_id_t;
 
+lls_slt_service_id_t* lls_slt_service_id_new_from_atsc3_lls_slt_service(atsc3_lls_slt_service_t* atsc3_lls_slt_service);
+
+
 typedef struct lls_slt_monitor {
 
 	//LLS SLT service_id's we are monitoring
 	ATSC3_VECTOR_BUILDER_STRUCT(lls_slt_service_id);
 
-	//representative mmt SLS
+	//representative mmt SLS - monitor is what we are building mfu or mpu's
     ATSC3_VECTOR_BUILDER_STRUCT(lls_sls_mmt_monitor);
+
+	//representative mmt SLS - session_flows is the MMTP flow udp/port/packet_id tuples
     ATSC3_VECTOR_BUILDER_STRUCT(lls_sls_mmt_session_flows);
 
 	//lls_sls_alc_monitor_t* lls_sls_alc_monitor;
+
+	//representative alc SLS - monitor is what we are building our TOI's from our listener
     ATSC3_VECTOR_BUILDER_STRUCT(lls_sls_alc_monitor);
+
+	//representative alc SLS - session_flows are all the ALC flow udp/port/tsi tuples
     ATSC3_VECTOR_BUILDER_STRUCT(lls_sls_alc_session_flows);
 
     //jjustman-2019-08-10 - TODO - change this over to ATSC3_VECTOR_BUILDER
@@ -700,6 +709,8 @@ typedef struct lls_slt_monitor {
     lls_table_t* lls_latest_on_screen_message_notification_table;
     
 } lls_slt_monitor_t;
+
+ATSC3_VECTOR_BUILDER_METHODS_INTERFACE(lls_slt_monitor, lls_slt_service_id);
 
 ATSC3_VECTOR_BUILDER_METHODS_INTERFACE(lls_slt_monitor, lls_sls_mmt_monitor);
 ATSC3_VECTOR_BUILDER_METHODS_INTERFACE(lls_slt_monitor, lls_sls_mmt_session_flows);
