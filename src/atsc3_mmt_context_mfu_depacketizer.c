@@ -141,6 +141,8 @@ mmtp_mpu_packet_t* mmtp_process_from_payload_with_context(udp_packet_t *udp_pack
 
     lls_sls_mmt_monitor_t* matching_lls_sls_mmt_monitor = lls_sls_mmt_monitor_find_from_service_id(lls_slt_monitor, matching_lls_sls_mmt_session->service_id);
 
+	__MMT_CONTEXT_MPU_WARN("lls_sls_mmt_monitor_find_from_service_id: %u, matching_lls_sls_mmt_monitor is NULL!", matching_lls_sls_mmt_session->service_id);
+
     if(!matching_lls_sls_mmt_monitor) {
         goto packet_cleanup;
     }
