@@ -188,12 +188,13 @@ void process_packet(u_char *user, const struct pcap_pkthdr *pkthdr, const u_char
 
     //TODO: jjustman-2019-10-03 - packet header parsing to dispatcher mapping
     lls_sls_mmt_session_t* matching_lls_sls_mmt_session = lls_slt_mmt_session_find_from_udp_packet(lls_slt_monitor, udp_packet->udp_flow.src_ip_addr, udp_packet->udp_flow.dst_ip_addr, udp_packet->udp_flow.dst_port);
-	__INFO("Checking matching_lls_sls_mmt_session: %p,", matching_lls_sls_mmt_session);
+	__TRACE("Checking matching_lls_sls_mmt_session: %p,", matching_lls_sls_mmt_session);
 
 	if(matching_lls_sls_mmt_session) {
 
 		mmtp_packet_header = mmtp_packet_header_parse_from_block_t(udp_packet->data);
 
+        
 		if(!mmtp_packet_header) {
 			return udp_packet_free(&udp_packet);
 		}
@@ -207,7 +208,12 @@ void process_packet(u_char *user, const struct pcap_pkthdr *pkthdr, const u_char
 
 		//dump header, then dump applicable packet type
 		if(mmtp_packet_header->mmtp_payload_type == 0x0) {
-			mmtp_mpu_packet_t* mmtp_mpu_packet = mmtp_mpu_packet_parse_from_block_t(mmtp_packet_header, udp_packet->data);
+			//mmtp_mpu_packet_t* mmtp_mpu_packet = mmtp_mpu_packet_parse_from_block_t();
+            mmtp_mpu_packet_t* mmtp_mpu_packet = mmtp_mpu_packet_parse_and_free_packet_header_from_block_t(&mmtp_packet_header, udp_packet->data);
+            if(!mmtp_mpu_packet) {
+                goto error;
+            }
+            
 			if(mmtp_mpu_packet->mpu_timed_flag == 1) {
 				mmtp_mpu_dump_header(mmtp_mpu_packet);
 
@@ -219,7 +225,7 @@ void process_packet(u_char *user, const struct pcap_pkthdr *pkthdr, const u_char
 				atsc3_mmt_mfu_context->lls_slt_monitor = lls_slt_monitor;
 				atsc3_mmt_mfu_context->matching_lls_sls_mmt_session = matching_lls_sls_mmt_session;
 
-				__INFO("context_dispatcher: calling mmtp_mfu_process_from_payload_with_context with udp_packet: %p, mmtp_mpu_packet: %p, atsc3_mmt_mfu_context: %p,",
+				__TRACE("process_packet: mmtp_mfu_process_from_payload_with_context with udp_packet: %p, mmtp_mpu_packet: %p, atsc3_mmt_mfu_context: %p,",
 						udp_packet, mmtp_mpu_packet, atsc3_mmt_mfu_context);
 
 				mmtp_mfu_process_from_payload_with_context(udp_packet, mmtp_mpu_packet, atsc3_mmt_mfu_context);
@@ -235,7 +241,7 @@ void process_packet(u_char *user, const struct pcap_pkthdr *pkthdr, const u_char
 			if(parsed_count) {
 				mmt_signalling_message_dump(mmtp_signalling_packet);
 
-				__INFO("context_dispatcher: calling mmt_signalling_message_process_with_context with udp_packet: %p, mmtp_signalling_packet: %p, atsc3_mmt_mfu_context: %p,",
+				__TRACE("process_packet: calling mmt_signalling_message_process_with_context with udp_packet: %p, mmtp_signalling_packet: %p, atsc3_mmt_mfu_context: %p,",
 						udp_packet,
 						mmtp_signalling_packet,
 						atsc3_mmt_mfu_context);
@@ -291,6 +297,12 @@ cleanup:
 	if(mmtp_packet_header) {
 		mmtp_packet_header_free(&mmtp_packet_header);
 	}
+    
+    return;
+
+error:
+    __ATSC3_WARN("process_packet: error, bailing loop!");
+    return;
 }
 
 
@@ -336,17 +348,26 @@ void* pcap_loop_run_thread(void* dev_pointer) {
  */
 int main(int argc,char **argv) {
 
-	_MMTP_DEBUG_ENABLED = 1;
-	_MMT_MPU_PARSER_DEBUG_ENABLED = 1;
+    _MMT_CONTEXT_MPU_DEBUG_ENABLED = 1;
 
-	_LLS_DEBUG_ENABLED = 1;
+#ifdef __lots_of_logging_
+    _LLS_DEBUG_ENABLED = 1;
 
-	_MMT_SIGNALLING_MESSAGE_DEBUG_ENABLED = 1;
-	_MMT_SIGNALLING_MESSAGE_TRACE_ENABLED = 1;
+    _MMT_SIGNALLING_MESSAGE_DEBUG_ENABLED = 1;
+    _MMT_SIGNALLING_MESSAGE_TRACE_ENABLED = 1;
 
-	_LLS_SLT_PARSER_INFO_MMT_ENABLED = 1;
-	_LLS_MMT_UTILS_TRACE_ENABLED = 1;
+    _LLS_SLT_PARSER_INFO_MMT_ENABLED = 1;
+    _LLS_MMT_UTILS_TRACE_ENABLED = 1;
+    
+    _MMTP_DEBUG_ENABLED = 1;
+    _MMT_MPU_PARSER_DEBUG_ENABLED = 1;
 
+    _MMT_CONTEXT_MPU_DEBUG_ENABLED = 1;
+    _MMT_CONTEXT_MPU_SIGNAL_INFO_ENABLED = 1;
+
+#endif
+    
+    
     char *dev;
 
     char *filter_dst_ip = NULL;
