@@ -68,11 +68,6 @@ atsc3_mmt_mfu_context_t* atsc3_mmt_mfu_context_new();
 
 //Warning: cross boundary processing hooks with callback invocation - impl's in atsc3_mmt_context_mfu_depacketizer.c
 
-//MPU processing: we will return mmtp_mpu_packet if it was successfully persisted, otherwise it will be null'd out
-void mmtp_process_from_payload_with_context(udp_packet_t *udp_packet,
-											mmtp_mpu_packet_t* mmtp_mpu_packet,
-											atsc3_mmt_mfu_context_t* atsc3_mmt_mfu_context);
-
 void mmtp_mfu_process_from_payload_with_context(udp_packet_t *udp_packet,
 												mmtp_mpu_packet_t* mmtp_mpu_packet,
 												atsc3_mmt_mfu_context_t* atsc3_mmt_mfu_context);
