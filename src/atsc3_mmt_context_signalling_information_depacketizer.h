@@ -29,8 +29,11 @@ extern "C" {
 typedef void (*atsc3_mmt_signalling_information_on_mp_table_subset_f)(mp_table_t* mp_table);
 typedef void (*atsc3_mmt_signalling_information_on_mp_table_complete_f)(mp_table_t* mp_table);
 
-typedef void (*atsc3_mmt_signalling_information_on_audio_packet_id_f)(uint16_t audio_packet_id);
-typedef void (*atsc3_mmt_signalling_information_on_video_packet_id_f)(uint16_t video_packet_id);
+typedef void (*atsc3_mmt_signalling_information_on_audio_essence_packet_id_f)(uint16_t audio_packet_id);
+typedef void (*atsc3_mmt_signalling_information_on_audio_packet_id_with_mpu_timestamp_descriptor_f)(uint16_t audio_packet_id, uint32_t mpu_sequence_number, uint64_t mpu_presentation_time_ntp64, uint32_t mpu_presentation_time_seconds, uint32_t mpu_presentation_time_microseconds);
+
+typedef void (*atsc3_mmt_signalling_information_on_video_essence_packet_id_f)(uint16_t video_packet_id);
+typedef void (*atsc3_mmt_signalling_information_on_video_packet_id_with_mpu_timestamp_descriptor_f)(uint16_t video_packet_id, uint32_t mpu_sequence_number, uint64_t mpu_presentation_time_ntp64, uint32_t mpu_presentation_time_seconds, uint32_t mpu_presentation_time_microseconds);
 
 typedef void (*atsc3_mmt_signalling_information_on_mpu_timestamp_descriptor_f)(uint16_t packet_id, uint32_t mpu_sequence_number, mmt_signalling_message_mpu_timestamp_descriptor_t* mmt_signalling_message_mpu_timestamp_descriptor);
 

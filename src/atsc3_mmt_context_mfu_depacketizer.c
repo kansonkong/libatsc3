@@ -61,17 +61,41 @@ void atsc3_mmt_signalling_information_on_mp_table_complete_noop(mp_table_t* mp_t
 	__MMT_CONTEXT_MPU_DEBUG("atsc3_mmt_signalling_information_on_mp_table_complete_noop: mp_table: %p", mp_table);
 }
 
-//audio packet id extraction
-void atsc3_mmt_signalling_information_on_audio_packet_id_noop(uint16_t audio_packet_id) {
+//audio essence packet id extraction
+void atsc3_mmt_signalling_information_on_audio_essence_packet_id_noop(uint16_t audio_packet_id) {
 	//noop;
 	__MMT_CONTEXT_MPU_DEBUG("atsc3_mmt_signalling_information_on_audio_packet_id_noop: audio_packet_id: %u", audio_packet_id);
 }
 
-//video packet_id extraction
-void atsc3_mmt_signalling_information_on_video_packet_id_noop(uint16_t video_packet_id) {
+//video essence packet_id extraction
+void atsc3_mmt_signalling_information_on_video_essence_packet_id_noop(uint16_t video_packet_id) {
 	//noop;
 	__MMT_CONTEXT_MPU_DEBUG("atsc3_mmt_signalling_information_on_video_packet_id_noop: video_packet_id: %u", video_packet_id);
 }
+
+
+//audio packet id extraction with mpu_sequence and mpu_presentation_time
+void atsc3_mmt_signalling_information_on_audio_packet_id_with_mpu_timestamp_descriptor_noop(uint16_t audio_packet_id, uint32_t mpu_sequence_number, uint64_t mpu_presentation_time_ntp64, uint32_t mpu_presentation_time_seconds, uint32_t mpu_presentation_time_microseconds) {
+	//noop;
+	__MMT_CONTEXT_MPU_DEBUG("atsc3_mmt_signalling_information_on_audio_packet_id_with_mpu_timestamp_descriptor_noop: audio_packet_id: %u, mpu_sequence_number: %u, mpu_presentation_time_ntp64: %llu, mpu_presentation_time_seconds: %u, mpu_presentation_time_microseconds: %u",
+			audio_packet_id,
+			mpu_sequence_number,
+			mpu_presentation_time_ntp64,
+			mpu_presentation_time_seconds,
+			mpu_presentation_time_microseconds);
+}
+
+//video packet_id extraction with mpu_sequence and mpu_presentation_time
+void atsc3_mmt_signalling_information_on_video_packet_id_with_mpu_timestamp_descriptor_noop(uint16_t audio_packet_id, uint32_t mpu_sequence_number, uint64_t mpu_presentation_time_ntp64, uint32_t mpu_presentation_time_seconds, uint32_t mpu_presentation_time_microseconds) {
+	//noop;
+	__MMT_CONTEXT_MPU_DEBUG("atsc3_mmt_signalling_information_on_video_packet_id_with_mpu_timestamp_descriptor_noop: audio_packet_id: %u, mpu_sequence_number: %u, mpu_presentation_time_ntp64: %llu, mpu_presentation_time_seconds: %u, mpu_presentation_time_microseconds: %u",
+				audio_packet_id,
+				mpu_sequence_number,
+				mpu_presentation_time_ntp64,
+				mpu_presentation_time_seconds,
+				mpu_presentation_time_microseconds);
+}
+
 
 void atsc3_mmt_signalling_information_on_mpu_timestamp_descriptor_noop(uint16_t packet_id, uint32_t mpu_sequence_number, mmt_signalling_message_mpu_timestamp_descriptor_t* mmt_signalling_message_mpu_timestamp_descriptor) {
 	//noop;
@@ -109,16 +133,22 @@ void atsc3_mmt_mpu_mfu_on_sample_missing_noop(uint16_t packet_id, block_t* mmt_m
 atsc3_mmt_mfu_context_t* atsc3_mmt_mfu_context_new() {
 	atsc3_mmt_mfu_context_t* atsc3_mmt_mfu_context = calloc(1, sizeof(atsc3_mmt_mfu_context_t));
 
+	//MPU related callbacks
 	atsc3_mmt_mfu_context->atsc3_mmt_mpu_on_sequence_number_change 						= &atsc3_mmt_mpu_on_sequence_number_change_noop;
 
+	//signalling information callbacks
 	atsc3_mmt_mfu_context->atsc3_mmt_signalling_information_on_mp_table_subset			= &atsc3_mmt_signalling_information_on_mp_table_subset_noop;
 	atsc3_mmt_mfu_context->atsc3_mmt_signalling_information_on_mp_table_complete 		= &atsc3_mmt_signalling_information_on_mp_table_complete_noop;
 
-	atsc3_mmt_mfu_context->atsc3_mmt_signalling_information_on_audio_packet_id 			= &atsc3_mmt_signalling_information_on_audio_packet_id_noop;
-	atsc3_mmt_mfu_context->atsc3_mmt_signalling_information_on_video_packet_id 			= &atsc3_mmt_signalling_information_on_video_packet_id_noop;
+	atsc3_mmt_mfu_context->atsc3_mmt_signalling_information_on_audio_essence_packet_id 	= &atsc3_mmt_signalling_information_on_audio_essence_packet_id_noop;
+	atsc3_mmt_mfu_context->atsc3_mmt_signalling_information_on_video_essence_packet_id 	= &atsc3_mmt_signalling_information_on_video_essence_packet_id_noop;
+
+	atsc3_mmt_mfu_context->atsc3_mmt_signalling_information_on_audio_packet_id_with_mpu_timestamp_descriptor = &atsc3_mmt_signalling_information_on_audio_packet_id_with_mpu_timestamp_descriptor_noop;
+	atsc3_mmt_mfu_context->atsc3_mmt_signalling_information_on_video_packet_id_with_mpu_timestamp_descriptor = &atsc3_mmt_signalling_information_on_video_packet_id_with_mpu_timestamp_descriptor_noop;
 
 	atsc3_mmt_mfu_context->atsc3_mmt_signalling_information_on_mpu_timestamp_descriptor = &atsc3_mmt_signalling_information_on_mpu_timestamp_descriptor_noop;
 
+	//MFU related callbacks
 	atsc3_mmt_mfu_context->atsc3_mmt_mpu_mfu_on_sample_complete = &atsc3_mmt_mpu_mfu_on_sample_complete_noop;
 	atsc3_mmt_mfu_context->atsc3_mmt_mpu_mfu_on_sample_corrupt 	= &atsc3_mmt_mpu_mfu_on_sample_corrupt_noop;
 	atsc3_mmt_mfu_context->atsc3_mmt_mpu_mfu_on_sample_missing 	= &atsc3_mmt_mpu_mfu_on_sample_missing_noop;
@@ -400,11 +430,47 @@ void mmt_signalling_message_process_with_context(udp_packet_t *udp_packet,
 					//slight hack, check the asset types and default_asset = 1
 					mp_table_asset_row_t* mp_table_asset_row = &mp_table->mp_table_asset_row[i];
 
-					__MMSM_DEBUG("MPT message: checking packet_id: %u, asset_type: %s, default: %u, identifier: %s", mp_table_asset_row->mmt_general_location_info.packet_id, mp_table_asset_row->asset_type, mp_table_asset_row->default_asset_flag, mp_table_asset_row->identifier_mapping.asset_id.asset_id ? (const char*)mp_table_asset_row->identifier_mapping.asset_id.asset_id : "");
-					if(strncasecmp(ATSC3_MP_TABLE_ASSET_ROW_HEVC_ID, mp_table_asset_row->asset_type, 4) == 0) {
-						atsc3_mmt_mfu_context->atsc3_mmt_signalling_information_on_video_packet_id(mp_table_asset_row->mmt_general_location_info.packet_id);
+					uint32_t* mpu_sequence_number_p 			 = NULL;
+					uint64_t* mpu_presentation_time_ntp64_p 	 = NULL;
+					uint32_t  mpu_presentation_time_seconds 	 = 0;
+					uint32_t  mpu_presentation_time_microseconds = 0;
 
-						//matching_lls_sls_mmt_session->video_packet_id = mp_table_asset_row->mmt_general_location_info.packet_id;
+					//try and extract mpu_presentation_timestamp first
+					if(mp_table_asset_row->mmt_signalling_message_mpu_timestamp_descriptor && mp_table_asset_row->mmt_signalling_message_mpu_timestamp_descriptor->mpu_tuple_n) {
+						__MMSM_DEBUG("MPT message: checking packet_id: %u, mmt_signalling_message_mpu_timestamp_descriptor count is: %u",
+								mp_table_asset_row->mmt_general_location_info.packet_id,
+								mp_table_asset_row->mmt_signalling_message_mpu_timestamp_descriptor->mpu_tuple_n);
+
+						for(int l=0; l < mp_table_asset_row->mmt_signalling_message_mpu_timestamp_descriptor->mpu_tuple_n; l++) {
+							mmt_signalling_message_mpu_tuple_t* mmt_signaling_message_mpu_tuple = &mp_table_asset_row->mmt_signalling_message_mpu_timestamp_descriptor->mpu_tuple[l];
+
+							mpu_sequence_number_p = &mmt_signaling_message_mpu_tuple->mpu_sequence_number;
+							mpu_presentation_time_ntp64_p = &mmt_signaling_message_mpu_tuple->mpu_presentation_time;
+
+							compute_ntp64_to_seconds_microseconds(mmt_signaling_message_mpu_tuple->mpu_presentation_time, &mpu_presentation_time_seconds, &mpu_presentation_time_microseconds);
+
+							__MMSM_DEBUG("packet_id: %u, mpu_sequence_number: %u to mpu_presentation_time: %llu, seconds: %u, ms: %u",
+									mp_table_asset_row->mmt_general_location_info.packet_id,
+									mmt_signaling_message_mpu_tuple->mpu_sequence_number,
+									mmt_signaling_message_mpu_tuple->mpu_presentation_time,
+									mpu_presentation_time_seconds,
+									mpu_presentation_time_microseconds);
+						}
+					}
+
+					//resolve packet_id's to matching essence types
+					__MMSM_DEBUG("MPT message: checking packet_id: %u, asset_type: %s, default: %u, identifier: %s", mp_table_asset_row->mmt_general_location_info.packet_id, mp_table_asset_row->asset_type, mp_table_asset_row->default_asset_flag, mp_table_asset_row->identifier_mapping.asset_id.asset_id ? (const char*)mp_table_asset_row->identifier_mapping.asset_id.asset_id : "");
+
+					//mp_table_asset_row->asset_type == HEVC
+					if(strncasecmp(ATSC3_MP_TABLE_ASSET_ROW_HEVC_ID, mp_table_asset_row->asset_type, 4) == 0) {
+						atsc3_mmt_mfu_context->atsc3_mmt_signalling_information_on_video_essence_packet_id(mp_table_asset_row->mmt_general_location_info.packet_id);
+						if(mpu_sequence_number_p && mpu_presentation_time_ntp64_p) {
+							atsc3_mmt_mfu_context->atsc3_mmt_signalling_information_on_video_packet_id_with_mpu_timestamp_descriptor(mp_table_asset_row->mmt_general_location_info.packet_id,
+									*mpu_sequence_number_p,
+									*mpu_presentation_time_ntp64_p,
+									mpu_presentation_time_seconds,
+									mpu_presentation_time_microseconds);
+						}
 						__MMSM_DEBUG("MPT message: mmtp_flow: %p, setting video_packet_id: packet_id: %u, asset_type: %s, default: %u, identifier: %s",
 								atsc3_mmt_mfu_context->mmtp_flow,
 								mp_table_asset_row->mmt_general_location_info.packet_id,
@@ -413,8 +479,15 @@ void mmt_signalling_message_process_with_context(udp_packet_t *udp_packet,
 								mp_table_asset_row->identifier_mapping.asset_id.asset_id ? (const char*)mp_table_asset_row->identifier_mapping.asset_id.asset_id : "");
 
 					} else if(strncasecmp(ATSC3_MP_TABLE_ASSET_ROW_MP4A_ID, mp_table_asset_row->asset_type, 4) == 0 || strncasecmp(ATSC3_MP_TABLE_ASSET_ROW_AC_4_ID, mp_table_asset_row->asset_type, 4) == 0) {
-						atsc3_mmt_mfu_context->atsc3_mmt_signalling_information_on_audio_packet_id(mp_table_asset_row->mmt_general_location_info.packet_id);
-
+						//mp_table_asset_row->asset_type ==  MP4A || AC-4
+						atsc3_mmt_mfu_context->atsc3_mmt_signalling_information_on_audio_essence_packet_id(mp_table_asset_row->mmt_general_location_info.packet_id);
+						if(mpu_sequence_number_p && mpu_presentation_time_ntp64_p) {
+							atsc3_mmt_mfu_context->atsc3_mmt_signalling_information_on_audio_packet_id_with_mpu_timestamp_descriptor(mp_table_asset_row->mmt_general_location_info.packet_id,
+									*mpu_sequence_number_p,
+									*mpu_presentation_time_ntp64_p,
+									mpu_presentation_time_seconds,
+									mpu_presentation_time_microseconds);
+						}
 						//matching_lls_sls_mmt_session->audio_packet_id = mp_table_asset_row->mmt_general_location_info.packet_id;
 						__MMSM_DEBUG("MPT message: mmtp_flow: %p, setting audio_packet_id: packet_id: %u, asset_type: %s, default: %u, identifier: %s",
 								atsc3_mmt_mfu_context->mmtp_flow,
