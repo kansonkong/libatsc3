@@ -3,37 +3,26 @@
  *
  *  Created on: Feb 6, 2019
  *      Author: jjustman
+ *
+ * TODO:
+ * 	normaliE between atsc3_lls_alc_utils.c and this impl
  */
 
 #include "atsc3_lls_mmt_utils.h"
 
+int _LLS_MMT_UTILS_INFO_ENABLED = 0;
+int _LLS_MMT_UTILS_DEBUG_ENABLED = 0;
+int _LLS_MMT_UTILS_TRACE_ENABLED = 0;
 
-int _LLSU_MMT_TRACE_ENABLED = 0;
-int _LLSU_TRACE_ENABLED = 0;
 
 lls_sls_mmt_monitor_t* lls_sls_mmt_monitor_create() {
-	lls_sls_mmt_monitor_t* lls_sls_mmt_monitor = (lls_sls_mmt_monitor_t*)calloc(1, sizeof(lls_sls_mmt_monitor_t));
-
+	lls_sls_mmt_monitor_t* lls_sls_mmt_monitor = lls_sls_mmt_monitor_new();
 	return lls_sls_mmt_monitor;
 }
 
 
-lls_sls_mmt_session_vector_t* lls_sls_mmt_session_vector_create() {
-	lls_sls_mmt_session_vector_t* lls_sls_mmt_session_vector = (lls_sls_mmt_session_vector_t*)calloc(1, sizeof(lls_sls_mmt_session_vector_t));
-	assert(lls_sls_mmt_session_vector);
-
-	//do not instantiate any other lls_table_xxx types, as they will need to be assigned
-	//do not instanitate any lls_slt_mmt_sessions, they will be created later
-
-	lls_sls_mmt_session_vector->lls_slt_mmt_sessions = NULL;
-	lls_sls_mmt_session_vector->lls_slt_mmt_sessions_n = 0;
-
-	return lls_sls_mmt_session_vector;
-}
-
-
 lls_sls_mmt_session_t* lls_slt_mmt_session_create(atsc3_lls_slt_service_t* atsc3_lls_slt_service) {
-	lls_sls_mmt_session_t* lls_slt_mmt_session = (lls_sls_mmt_session_t*)calloc(1, sizeof(lls_sls_mmt_session_t));
+	lls_sls_mmt_session_t* lls_slt_mmt_session = lls_sls_mmt_session_new();
 
 	lls_slt_mmt_session->service_id = atsc3_lls_slt_service->service_id;
 
@@ -148,40 +137,17 @@ int comparator_lls_slt_mmt_session_t(const void *a, const void *b) {
 	return 0;
 }
 
-lls_sls_mmt_session_t* lls_slt_mmt_session_find_or_create(lls_sls_mmt_session_vector_t* lls_sls_mmt_session_vector, atsc3_lls_slt_service_t* atsc3_lls_slt_service) {
-	lls_sls_mmt_session_t* lls_slt_mmt_session = lls_slt_mmt_session_find(lls_sls_mmt_session_vector, lls_service);
+
+lls_sls_mmt_session_t* lls_slt_mmt_session_find_or_create(lls_slt_monitor_t* lls_slt_monitor, atsc3_lls_slt_service_t* atsc3_lls_slt_service) {
+	lls_sls_mmt_session_t* lls_slt_mmt_session = lls_slt_mmt_session_find(lls_slt_monitor, lls_service);
 	if(!lls_slt_mmt_session) {
-		if(lls_sls_mmt_session_vector->lls_slt_mmt_sessions_n && lls_sls_mmt_session_vector->lls_slt_mmt_sessions) {
-			__LLSU_MMT_TRACE("*before realloc to %p, %i, adding %u", lls_sls_mmt_session_vector->lls_slt_mmt_sessions, lls_sls_mmt_session_vector->lls_slt_mmt_sessions_n, lls_service->service_id);
+		lls_slt_mmt_session = lls_slt_mmt_session_create(atsc3_lls_slt_service);
 
-			lls_sls_mmt_session_vector->lls_slt_mmt_sessions = (lls_sls_mmt_session_t**)realloc(lls_sls_mmt_session_vector->lls_slt_mmt_sessions, (lls_sls_mmt_session_vector->lls_slt_mmt_sessions_n + 1) * sizeof(lls_sls_mmt_session_t*));
-			if(!lls_sls_mmt_session_vector->lls_slt_mmt_sessions) {
-				abort();
-			}
+		lls_sls_mmt_session_flows_t* lls_sls_mmt_session_flows = lls_sls_mmt_session_flows_new();
+		lls_sls_mmtsession_flows_add_lls_sls_mmt_session(lls_sls_mmt_session_flows, lls_slt_mmt_session);
 
-			lls_slt_mmt_session = lls_sls_mmt_session_vector->lls_slt_mmt_sessions[lls_sls_mmt_session_vector->lls_slt_mmt_sessions_n++] = lls_slt_mmt_session_create(lls_service);
-			if(!lls_slt_mmt_session) {
-				abort();
-			}
-
-			//sort after realloc
-			qsort((void**)lls_sls_mmt_session_vector->lls_slt_mmt_sessions, lls_sls_mmt_session_vector->lls_slt_mmt_sessions_n, sizeof(lls_sls_mmt_session_t**), comparator_lls_slt_mmt_session_t);
-
-			__LLSU_MMT_TRACE(" *after realloc to %p, %i, adding %u", lls_slt_mmt_session, lls_sls_mmt_session_vector->lls_slt_mmt_sessions_n, lls_service->service_id);
-
-		} else {
-			lls_sls_mmt_session_vector->lls_slt_mmt_sessions = (lls_sls_mmt_session_t**)calloc(1, sizeof(lls_sls_mmt_session_t**));
-			assert(lls_sls_mmt_session_vector->lls_slt_mmt_sessions);
-			lls_sls_mmt_session_vector->lls_slt_mmt_sessions_n = 1;
-
-			lls_sls_mmt_session_vector->lls_slt_mmt_sessions[0] = lls_slt_mmt_session_create(lls_service);
-			assert(lls_sls_mmt_session_vector->lls_slt_mmt_sessions[0]);
-
-			lls_slt_mmt_session = lls_sls_mmt_session_vector->lls_slt_mmt_sessions[0];
-			__LLSU_MMT_TRACE("*calloc %p for %u", lls_slt_mmt_session, lls_service->service_id);
-		}
+		lls_slt_monitor_add_lls_sls_mmt_session_flows(lls_slt_monitor, lls_sls_mmt_session_flows);
 	}
-
 
 	return lls_slt_mmt_session;
 }

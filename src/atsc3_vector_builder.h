@@ -34,11 +34,14 @@
  *	results in method signatures for:
  *
  *		atsc3_fdt_instance_t* 	atsc3_fdt_instance_new()
+ *
  *		atsc3_fdt_file_t* 		atsc3_fdt_file_new();
  *
- *  	atsc3_fdt_instance_add_atsc3_fdt_file(atsc3_fdt_instance_t*, atsc3_fdt_file*);
- *		atsc3_fdt_instance_clear_atsc3_fdt_file(atsc3_fdt_instance_t*); //empty out container, leaving pointer ref's alive
- *		atsc3_fdt_instance_free_atsc3_fdt_file(atsc3_fdt_instance_t*);	//invoke atsc3_fdt_file_free, and empty out container
+ * 		void atsc3_fdt_instance_prealloc_atsc3_fdt_file(atsc3_fdt_instance_t*, uint32_t);
+ *
+ *  	void atsc3_fdt_instance_add_atsc3_fdt_file(atsc3_fdt_instance_t*, atsc3_fdt_file*);
+ *		void atsc3_fdt_instance_clear_atsc3_fdt_file(atsc3_fdt_instance_t*); //empty out container, leaving pointer ref's alive
+ *		void atsc3_fdt_instance_free_atsc3_fdt_file(atsc3_fdt_instance_t*);	//invoke atsc3_fdt_file_free, and empty out container
  *
  * 	 	void atsc3_fdt_file_free(atsc3_fdt_file_t**);
  * 			- default impl can be built by calling ATSC3_VECTOR_BUILDER_METHODS_ITEM_FREE(atsc3_fdt_file)
@@ -50,6 +53,7 @@
 #define ATSC3_VECTOR_BUILDER_METHODS_INTERFACE(vector_struct_name, vector_item_name) \
 	PPCAT(vector_item_name,_t)*   PPCAT(vector_item_name,_new)(); \
 	PPCAT(vector_struct_name,_t)* PPCAT(vector_struct_name,_new)(); \
+	void PPCAT(vector_struct_name,PPCAT(_prealloc_,vector_item_name))(PPCAT(vector_struct_name,_t)*, uint32_t size); \
 	void PPCAT(vector_struct_name,PPCAT(_add_,vector_item_name))(PPCAT(vector_struct_name,_t)*, PPCAT(vector_item_name,_t)*); \
 	void PPCAT(vector_struct_name,PPCAT(_clear_,vector_item_name))(PPCAT(vector_struct_name,_t)*); \
 	void PPCAT(vector_struct_name,PPCAT(_free_,vector_item_name))(PPCAT(vector_struct_name,_t)*); \
@@ -102,6 +106,20 @@ qsort((void**)lls_sls_alc_session_flows->lls_slt_alc_sessions, lls_sls_alc_sessi
 	PPCAT(vector_item_name,_t)* PPCAT(vector_item_name,_new)() { \
 		PPCAT(vector_item_name,_t)* vector_item_name = calloc(1, sizeof(PPCAT(vector_item_name,_t))); \
 		return vector_item_name; \
+	} \
+	void PPCAT(vector_struct_name,PPCAT(_prealloc_,vector_item_name))(PPCAT(vector_struct_name,_t)* vector_struct_name, uint32_t size) { \
+		if(!vector_struct_name->PPCAT(vector_item_name, _v).size || !vector_struct_name->PPCAT(vector_item_name, _v).data) { \
+			/* new alloc */ \
+			vector_struct_name->PPCAT(vector_item_name, _v).data 	= calloc(size, sizeof(PPCAT(vector_item_name,_t)**)); \
+			vector_struct_name->PPCAT(vector_item_name, _v).count 	= 0;	\
+			vector_struct_name->PPCAT(vector_item_name, _v).size	= size;	\
+		} else { \
+			/* realloc */ \
+			vector_struct_name->PPCAT(vector_item_name, _v).size = 	__MAX(size, vector_struct_name->PPCAT(vector_item_name, _v).count)); \
+			uint32_t to_resize = sizeof(PPCAT(vector_item_name,_t)**) * vector_struct_name->PPCAT(vector_item_name, _v).size;	\
+			vector_struct_name->PPCAT(vector_item_name, _v).data = realloc(vector_struct_name->PPCAT(vector_item_name, _v).data, to_resize);	\
+			vector_struct_name->PPCAT(vector_item_name, _v).data[vector_struct_name->PPCAT(vector_item_name, _v).count++] = vector_item_name;	\
+		}	\
 	} \
 	\
 	void PPCAT(vector_struct_name,PPCAT(_add_, vector_item_name))(PPCAT(vector_struct_name,_t)* vector_struct_name, PPCAT(vector_item_name,_t)* vector_item_name) { \
