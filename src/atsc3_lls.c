@@ -197,6 +197,9 @@ lls_table_t* lls_table_create_or_update_from_lls_slt_monitor_with_metrics(lls_sl
 
 		lls_slt_monitor->lls_latest_slt_table = lls_table_new;
 		lls_slt_table_perform_update(lls_table_new, lls_slt_monitor);
+		//jjustman-2019-10-03 - TODO - dispatch updates here for callbacks
+
+
 		(*parsed_update)++;
 		return lls_slt_monitor->lls_latest_slt_table;
 	} else {
