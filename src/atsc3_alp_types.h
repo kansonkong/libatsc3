@@ -7,6 +7,10 @@
 
 #include <string.h>
 
+#ifdef __DISABLE_LIBPCAP__
+typedef struct pcap pcap_t;
+#endif
+
 #ifndef ATSC3_ALP_TYPES_H_
 #define ATSC3_ALP_TYPES_H_
 

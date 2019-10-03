@@ -8,7 +8,11 @@
 
 
 #include <stdarg.h>
-#include <ncurses.h>                    /* ncurses.h includes stdio.h */
+
+#ifndef __DISABLE_NCURSES__
+#include <ncurses.h>                    /* ncurses.h includes stdio.h - but not easily linked for android */
+#endif
+
 #include <pthread.h>
 #include <stdlib.h>
 #include <sys/ioctl.h>
@@ -25,10 +29,10 @@
 extern "C" {
 #endif
 
+#ifndef __DISABLE_NCURSES__
 
 void ncurses_init(void);
 void* ncurses_input_run_thread(void *vargp);
-
 extern pthread_mutex_t ncurses_writer_lock;
 void ncurses_mutext_init(void);
 
@@ -43,9 +47,31 @@ void handle_sighup(int sig);
 void* print_lls_instance_table_thread(void*);
 void lls_dump_instance_table_ncurses(lls_table_t* lls_session);
 
+#else
+#define ncurses_init(...)
+#define ncurses_input_run_thread(...)
+#define ncurses_mutext_init(...)
+#define create_or_update_window_sizes(...)
+#endif
+
+#ifdef __DISABLE_NCURSES__
+#define WINDOW void
+#define SCREEN void
+#define wnoutrefresh(...)
+#define wrefresh(...)
+#define doupdate(...)
+#define curscr(...)
+#define curscr(...)
+#define vs(...)
+#define werase(...)
+#define wprintw(...)
+
+#endif
+
 #define __BW_STATS_NCURSES true
 #define __PKT_STATS_NCURSES true
 
+#ifndef __DISABLE_NCURSES__
 
 
 extern SCREEN* my_screen;
@@ -145,6 +171,8 @@ extern int global_mmt_loss_count;
 #define __NCURSES_WARN(...)    printf("%s:%d:WARN: ","ncurses",__LINE__);printf(__VA_ARGS__);printf("%s%s","\r","\n")
 #define __NCURSES_INFO(...)    printf("%s:%d: ","ncurses",__LINE__);printf(__VA_ARGS__);printf("%s%s","\r","\n")
 
+
+#endif
 
 #if defined (__cplusplus)
 }

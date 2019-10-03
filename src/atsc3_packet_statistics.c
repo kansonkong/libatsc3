@@ -12,7 +12,9 @@ bool __LOSS_DISPLAY_ENABLED = true;
 
 void *print_global_statistics_thread(void *vargp)
 {
-	__PS_TRACE("Starting printGlobalStatistics");
+#ifndef __DISABLE_NCURSES__
+
+    __PS_TRACE("Starting printGlobalStatistics");
 	setlocale(LC_ALL,"");
 	while(true) {
 		sleep(1);
@@ -22,12 +24,17 @@ void *print_global_statistics_thread(void *vargp)
 		__DOUPDATE();
 		ncurses_writer_lock_mutex_release();
 	}
+#endif
+
+	return NULL;
 }
 
 
 void *print_mfu_statistics_thread(void *vargp)
 {
-	__PS_TRACE("Starting print_mfu_statistics_thread");
+#ifndef __DISABLE_NCURSES__
+
+    __PS_TRACE("Starting print_mfu_statistics_thread");
 	__LOSS_DISPLAY_ENABLED = false;
 	setlocale(LC_ALL,"");
 	while(true) {
@@ -38,6 +45,8 @@ void *print_mfu_statistics_thread(void *vargp)
 		__DOUPDATE_MFU();
 		ncurses_writer_lock_mutex_release();
 	}
+#endif
+	return NULL;
 }
 
 int comparator_packet_id_mmt_stats_t(const void *a, const void *b)
@@ -188,6 +197,7 @@ int global_loss_count;
 int __INVOKE_ATSC3_PACKET_STATISTICS_MMT_STATS_POPULATE_COUNT = 0;
 
 void atsc3_packet_statistics_mmt_stats_populate(udp_packet_t* udp_packet, mmtp_mpu_packet_t* mmtp_mpu_packet) {
+#ifndef __DISABLE_NCURSES__
 
 	packet_id_mmt_stats_t* packet_mmt_stats = find_or_create_packet_id(udp_packet->udp_flow.dst_ip_addr, udp_packet->udp_flow.dst_port, mmtp_mpu_packet->mmtp_packet_id);
 
@@ -366,12 +376,15 @@ void atsc3_packet_statistics_mmt_stats_populate(udp_packet_t* udp_packet, mmtp_m
 	}
 
 	global_stats->packet_id_delta = packet_mmt_stats;
+#endif
 }
 
 int DUMP_COUNTER=0;
 int DUMP_COUNTER_2=0;
 
 void atsc3_packet_statistics_dump_global_stats(){
+#ifndef __DISABLE_NCURSES__
+
 	bool has_output = false;
 
 	__PS_CLEAR();
@@ -487,6 +500,8 @@ void atsc3_packet_statistics_dump_global_stats(){
 	//process any gaps or deltas
 
 //	global_stats->packet_id_delta = NULL;
+
+#endif
 }
 
 /**
@@ -500,6 +515,8 @@ void atsc3_packet_statistics_dump_global_stats(){
 
 
 void atsc3_packet_statistics_dump_mfu_stats(){
+#ifndef __DISABLE_NCURSES__
+
 	bool has_output = false;
 
 	__PS_CLEAR();
@@ -618,5 +635,7 @@ void atsc3_packet_statistics_dump_mfu_stats(){
 	}
 
 	__PS_REFRESH();
+
+#endif
 
 }
