@@ -61,6 +61,7 @@ clean:
 	-rm -f tools/atsc3_mmt_listener_to_http_hls_fmp4
 
 intermediate_lls: 	atsc3_lls.o \
+					atsc3_lls_types.o \
 					atsc3_lls_sls_parser.o \
 					atsc3_lls_alc_utils.o \
 					atsc3_aeat_types.o
@@ -182,6 +183,9 @@ atsc3_mime_multipart_related_parser.o: atsc3_mime_multipart_related_parser.h ats
 
 atsc3_lls.o: atsc3_utils.h atsc3_lls.h atsc3_lls.c
 	cc -g -c atsc3_lls.c
+	
+atsc3_lls_types.o: atsc3_lls_types.h atsc3_lls_types.c
+	cc -g -c atsc3_lls_types.c
 	
 atsc3_aeat_types.o: atsc3_aeat_types.h atsc3_aeat_types.c
 	gcc -g -c atsc3_aeat_types.c
@@ -356,6 +360,7 @@ bento4_mock.o: bento4/ISOBMFFTrackJoiner.h bento4/ISOBMFFTrackJoiner_mock.cpp
 # only link in atsc3_logging_externs.o if you are using ncurses
 
 libatsc3_intermediate.o: atsc3_lls.o \
+		atsc3_lls_types.o \
 		atsc3_lls_slt_parser.o \
 		atsc3_lls_sls_parser.o \
 		atsc3_alp_types.o \
@@ -414,7 +419,9 @@ libatsc3_intermediate.o: atsc3_lls.o \
 		atsc3_aeat_parser.o \
 		atsc3_packet_statistics_types.o
 
-	ld  -o libatsc3_intermediate.o -r atsc3_lls.o \
+	ld  -o libatsc3_intermediate.o -r \
+		atsc3_lls.o \
+		atsc3_lls_types.o \
 		atsc3_lls_slt_parser.o \
 		atsc3_lls_sls_parser.o \
 		atsc3_alp_types.o \
