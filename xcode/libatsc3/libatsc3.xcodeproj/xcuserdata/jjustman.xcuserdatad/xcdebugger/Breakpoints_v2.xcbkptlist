@@ -17,7 +17,7 @@
             endingColumnNumber = "9223372036854775807"
             startingLineNumber = "217"
             endingLineNumber = "217"
-            landmarkName = "__block_check_bounaries()"
+            landmarkName = "__block_check_bounaries(method_name, src)"
             landmarkType = "9">
          </BreakpointContent>
       </BreakpointProxy>

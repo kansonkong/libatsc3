@@ -219,13 +219,10 @@ void process_packet(u_char *user, const struct pcap_pkthdr *pkthdr, const u_char
 				atsc3_mmt_mfu_context->lls_slt_monitor = lls_slt_monitor;
 				atsc3_mmt_mfu_context->matching_lls_sls_mmt_session = matching_lls_sls_mmt_session;
 
-				__INFO("context_dispatcher: calling mmtp_process_from_payload_with_context with udp_packet: %p, mmtp_mpu_packet: %p, atsc3_mmt_mfu_context: %p,",
+				__INFO("context_dispatcher: calling mmtp_mfu_process_from_payload_with_context with udp_packet: %p, mmtp_mpu_packet: %p, atsc3_mmt_mfu_context: %p,",
 						udp_packet, mmtp_mpu_packet, atsc3_mmt_mfu_context);
 
 				mmtp_mfu_process_from_payload_with_context(udp_packet, mmtp_mpu_packet, atsc3_mmt_mfu_context);
-
-				//todo - this will free the mmtp_mpu_packet, so call this last
-				mmtp_process_from_payload_with_context(udp_packet, mmtp_mpu_packet, atsc3_mmt_mfu_context);
 
 			} else {
 				//non-timed

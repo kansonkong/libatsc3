@@ -202,10 +202,10 @@ lls_sls_mmt_monitor_t* lls_sls_mmt_monitor_find_from_service_id(lls_slt_monitor_
 				_ATSC3_LLS_MMT_UTILS_WARN("lls_sls_mmt_monitor_find_from_service_id: %p, service_id: %d, lls_mmt_session is NULL", lls_sls_mmt_monitor, service_id);
 			}
 			if(!lls_sls_mmt_monitor->audio_packet_id) {
-				_ATSC3_LLS_MMT_UTILS_WARN("lls_sls_mmt_monitor_find_from_service_id: %p, service_id: %d, audio_packet_id is NULL", lls_sls_mmt_monitor, service_id);
+				_ATSC3_LLS_MMT_UTILS_DEBUG("lls_sls_mmt_monitor_find_from_service_id: %p, service_id: %d, audio_packet_id is NULL", lls_sls_mmt_monitor, service_id);
 			}
 			if(!lls_sls_mmt_monitor->video_packet_id) {
-				_ATSC3_LLS_MMT_UTILS_WARN("lls_sls_mmt_monitor_find_from_service_id: %p, service_id: %d, video_packet_id is NULL", lls_sls_mmt_monitor, service_id);
+				_ATSC3_LLS_MMT_UTILS_DEBUG("lls_sls_mmt_monitor_find_from_service_id: %p, service_id: %d, video_packet_id is NULL", lls_sls_mmt_monitor, service_id);
 			}
 
 			return lls_sls_mmt_monitor;
