@@ -342,6 +342,13 @@ typedef struct atsc3_lls_slt_service {
 
 } atsc3_lls_slt_service_t;
 
+ATSC3_VECTOR_BUILDER_METHODS_INTERFACE(atsc3_lls_slt_service, atsc3_slt_simulcast_tsid);
+ATSC3_VECTOR_BUILDER_METHODS_INTERFACE(atsc3_lls_slt_service, atsc3_slt_svc_capabilities);
+ATSC3_VECTOR_BUILDER_METHODS_INTERFACE(atsc3_lls_slt_service, atsc3_slt_broadcast_svc_signalling);
+ATSC3_VECTOR_BUILDER_METHODS_INTERFACE(atsc3_lls_slt_service, atsc3_slt_svc_inet_url);
+ATSC3_VECTOR_BUILDER_METHODS_INTERFACE(atsc3_lls_slt_service, atsc3_slt_other_bsid);
+
+
 /*
  * A/331:2019 - Section 6.3.1 SLT Syntax Description
  *
@@ -356,9 +363,11 @@ typedef struct atsc3_lls_slt_table {
 
 	ATSC3_VECTOR_BUILDER_STRUCT(atsc3_lls_slt_service);		 //jjustman-2019-10-03 - refactored from
 															//lls_service_t**		service_entry; 	//list
-
 } atsc3_lls_slt_table_t;
 
+ATSC3_VECTOR_BUILDER_METHODS_INTERFACE(atsc3_lls_slt_table, atsc3_slt_capabilities);
+ATSC3_VECTOR_BUILDER_METHODS_INTERFACE(atsc3_lls_slt_table, atsc3_slt_ineturl);
+ATSC3_VECTOR_BUILDER_METHODS_INTERFACE(atsc3_lls_slt_table, atsc3_lls_slt_service);
 
 /** from atsc a/331 section 6.4
  *
@@ -502,7 +511,7 @@ typedef struct lls_sls_mmt_session {
 /**
  * used to store all mmt active sessions for this flow
  */
-typedef struct lls_sls_mmt_session_vector {
+typedef struct lls_sls_mmt_session_flows {
     lls_table_t* lls_table_slt;
 
     ATSC3_VECTOR_BUILDER_STRUCT(lls_sls_mmt_session);
@@ -511,11 +520,9 @@ typedef struct lls_sls_mmt_session_vector {
     //    int lls_slt_mmt_sessions_n;
     //    lls_sls_mmt_session_t** lls_slt_mmt_sessions;
 
-} lls_sls_mmt_session_vector_t;
+} lls_sls_mmt_session_flows_t;
 
-ATSC3_VECTOR_BUILDER_METHODS_INTERFACE(lls_sls_mmt_session_vector, lls_sls_mmt_session);
-
-
+ATSC3_VECTOR_BUILDER_METHODS_INTERFACE(lls_sls_mmt_session_flows, lls_sls_mmt_session);
 
 /**
  global_service_id : (null)
@@ -671,7 +678,7 @@ typedef struct lls_slt_monitor {
 
 	//representative mmt SLS
     ATSC3_VECTOR_BUILDER_STRUCT(lls_sls_mmt_monitor);
-    ATSC3_VECTOR_BUILDER_STRUCT(lls_sls_mmt_session);
+    ATSC3_VECTOR_BUILDER_STRUCT(lls_sls_mmt_session_flows);
 
 	//lls_sls_alc_monitor_t* lls_sls_alc_monitor;
     ATSC3_VECTOR_BUILDER_STRUCT(lls_sls_alc_monitor);
@@ -695,6 +702,8 @@ typedef struct lls_slt_monitor {
 } lls_slt_monitor_t;
 
 ATSC3_VECTOR_BUILDER_METHODS_INTERFACE(lls_slt_monitor, lls_sls_mmt_monitor);
+ATSC3_VECTOR_BUILDER_METHODS_INTERFACE(lls_slt_monitor, lls_sls_mmt_session_flows);
+
 ATSC3_VECTOR_BUILDER_METHODS_INTERFACE(lls_slt_monitor, lls_sls_alc_monitor);
 ATSC3_VECTOR_BUILDER_METHODS_INTERFACE(lls_slt_monitor, lls_sls_alc_session_flows);
 
