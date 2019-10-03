@@ -46,6 +46,8 @@ typedef struct atsc3_mmt_mfu_context {
 	lls_slt_monitor_t* lls_slt_monitor;
 	lls_sls_mmt_session_t* matching_lls_slt_mmt_session;
 
+	mp_table* mp_table_last;
+
 	//from ATSC3_MMT_CONTEXT_MPU_DEPACKETIZER_H
 	atsc3_mmt_mpu_on_sequence_number_change_f 						atsc3_mmt_mpu_on_sequence_number_change;
 
@@ -61,7 +63,8 @@ typedef struct atsc3_mmt_mfu_context {
 } atsc3_mmt_mfu_context_t;
 
 
-
+//wire up dummmy null callback(s) to prevent dispatcher from multiple if(..) checks...
+atsc3_mmt_mfu_context_t* atsc3_mmt_mfu_context_new();
 
 //we will return mmtp_mpu_packet if it was successfully persisted, otherwise it will be null'd out
 mmtp_mpu_packet_t* mmtp_process_from_payload_with_context(udp_packet_t *udp_packet,
