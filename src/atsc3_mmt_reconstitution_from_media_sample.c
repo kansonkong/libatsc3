@@ -40,9 +40,9 @@ MPU_timestamp_descriptor: 0x0001
 int _MMT_RECON_FROM_SAMPLE_SIGNAL_INFO_ENABLED = 0;
 int _MMT_RECON_FROM_SAMPLE_DEBUG_ENABLED = 0;
 int _MMT_RECON_FROM_SAMPLE_TRACE_ENABLED = 0;
-
-static atsc3_global_statistics_t global_stats_internal;
-atsc3_global_statistics_t* atsc3_global_statistics = &global_stats_internal;
+//
+//static atsc3_global_statistics_t global_stats_internal;
+//atsc3_global_statistics_t* atsc3_global_statistics = &global_stats_internal;
 
 
 /**
