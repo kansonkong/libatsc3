@@ -487,7 +487,8 @@ typedef struct lls_sls_mmt_session {
     uint16_t service_id;
     
     uint32_t sls_source_ip_address;
-    
+	bool	 sls_relax_source_ip_check;
+
     uint32_t sls_destination_ip_address;
     uint16_t sls_destination_udp_port;
     
@@ -679,24 +680,22 @@ typedef struct lls_slt_monitor {
 	//LLS SLT service_id's we are monitoring
 	ATSC3_VECTOR_BUILDER_STRUCT(lls_slt_service_id);
 
-	//representative mmt SLS - monitor is what we are building mfu or mpu's
+	//jjustman-2019-10-03 - TODO: refactor out this usage...
+	lls_sls_mmt_monitor_t* lls_sls_mmt_monitor;
+	//representative mmt SLS - global monitor is what we are building mfu or mpu's
     ATSC3_VECTOR_BUILDER_STRUCT(lls_sls_mmt_monitor);
 
 	//representative mmt SLS - session_flows is the MMTP flow udp/port/packet_id tuples
     ATSC3_VECTOR_BUILDER_STRUCT(lls_sls_mmt_session_flows);
 
-	//lls_sls_alc_monitor_t* lls_sls_alc_monitor;
-
+	//jjustman-2019-10-03 - TODO: refactor out this usage...
+	lls_sls_alc_monitor_t* lls_sls_alc_monitor;
 	//representative alc SLS - monitor is what we are building our TOI's from our listener
     ATSC3_VECTOR_BUILDER_STRUCT(lls_sls_alc_monitor);
 
 	//representative alc SLS - session_flows are all the ALC flow udp/port/tsi tuples
     ATSC3_VECTOR_BUILDER_STRUCT(lls_sls_alc_session_flows);
 
-    //jjustman-2019-08-10 - TODO - change this over to ATSC3_VECTOR_BUILDER
-    //lls_sls_mmt_session_vector_t* lls_sls_mmt_session_vector;
-    //lls_sls_alc_session_vector_t* lls_sls_alc_session_vector;
-    
     //LATEST:	last successfully processed SLT table
 	lls_table_t* lls_latest_slt_table;
     
