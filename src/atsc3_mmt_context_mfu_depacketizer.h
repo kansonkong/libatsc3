@@ -73,7 +73,11 @@ void mmtp_process_from_payload_with_context(udp_packet_t *udp_packet,
 											mmtp_mpu_packet_t* mmtp_mpu_packet,
 											atsc3_mmt_mfu_context_t* atsc3_mmt_mfu_context);
 
-//
+void mmtp_mfu_process_from_payload_with_context(udp_packet_t *udp_packet,
+												mmtp_mpu_packet_t* mmtp_mpu_packet,
+												atsc3_mmt_mfu_context_t* atsc3_mmt_mfu_context);
+
+//MMT signalling information processing
 void mmt_signalling_message_process_with_context(udp_packet_t *udp_packet,
 												mmtp_signalling_packet_t* mmtp_signalling_packet,
 												atsc3_mmt_mfu_context_t* atsc3_mmt_mfu_context);
