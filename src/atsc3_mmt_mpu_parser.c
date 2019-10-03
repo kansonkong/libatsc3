@@ -45,7 +45,7 @@ mmtp_mpu_packet_t* mmtp_mpu_packet_parse_from_block_t(mmtp_packet_header_t* mmtp
 	uint8_t *buf = udp_raw_buf;
 
 	//create a sub_flow with this packet_id
-	__MMT_MPU_PARSER_DEBUG("mmtp_mpu_packet_parse_from_block_t: udp_packet->i_pos: %d, udp_packet->p_size: %d, udp_packet->p_buffer: %p\n\tmmtp_packet_id is: %d, mmtp_payload_type: 0x%x, packet_counter: %d",
+	__MMT_MPU_PARSER_DEBUG("mmtp_mpu_packet_parse_from_block_t: udp_packet->i_pos: %d, udp_packet->p_size: %d, udp_packet->p_buffer: %p,mmtp_packet_id is: %d, mmtp_payload_type: 0x%x, packet_counter: %d",
 		udp_packet->i_pos,
 		udp_packet->p_size,
 		udp_packet->p_buffer,

@@ -44,7 +44,7 @@
 #include <pthread.h>
 #endif
 
-#include <sys/timeb.h>
+#include <sys/time.h>
 
 #include "alc_session.h"
 #include "mad_rlc.h"
@@ -103,7 +103,7 @@ alc_session_t* open_alc_session(alc_arguments_t *a) {
   alc_session_t *s;
   int i;
   int retval;
-  struct timeb timeb_current_time;
+  struct timeval timeval_current_time;
   
 #if ABSOLUTE_PATH
   char fullpath[MAX_PATH_LENGTH];
@@ -158,8 +158,10 @@ alc_session_t* open_alc_session(alc_arguments_t *a) {
   
   if(s->mode == SENDER) {
 
-    ftime(&timeb_current_time);
-	s->ftimestarttime = timeb_current_time.time+timeb_current_time.millitm/1000.0;
+	 //jjustman-2019-09-27 - replace timeb with gettimeofday()
+
+	gettimeofday(&timeval, NULL);
+	s->ftimestarttime = time_now.tv_sec + time_now.tv_usec / 1000000.0;
 
     memcpy(s->base_dir, a->base_dir, strlen(a->base_dir));
     

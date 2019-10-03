@@ -13,3 +13,6 @@
 [submodule "jsmn"]
 	path = jsmn
 	url = https://github.com/zserge/jsmn.git
+[submodule "gpac"]
+	path = gpac
+	url = https://github.com/gpac/gpac.git
