@@ -206,7 +206,7 @@ error:
 //		raw_packet_ptr = mmt_signaling_message_parse_packet(mmtp_payload_fragments, raw_packet_ptr, new_size);
 //
 //	} else {
-//		_MMTP_WARN("mmtp_packet_parse: unknown payload type of 0x%x for %-10hu (0x%04x)", mmtp_payload_type,
+//		_MMTP_WARN("mmtp_mpu_packet_parse_from_block_t: unknown payload type of 0x%x for %-10hu (0x%04x)", mmtp_payload_type,
 //				mmtp_packet_id, mmtp_packet_id);
 //		goto failed;
 //	}
