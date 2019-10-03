@@ -585,7 +585,7 @@ void process_mmtp_payload(udp_packet_t *udp_packet, lls_sls_mmt_session_t* match
 	}
     
     //check if we are monitoring this service_id by flow
-    if(!lls_slt_monitor || !lls_slt_monitor->lls_sls_mmt_monitor || !(lls_slt_monitor->lls_sls_mmt_monitor->service_id == matching_lls_sls_mmt_session->service_id)) {
+    if(!lls_slt_monitor || !lls_slt_monitor->lls_sls_mmt_monitor || !(lls_slt_monitor->lls_sls_mmt_monitor->atsc3_lls_slt_service->service_id == matching_lls_sls_mmt_session->service_id)) {
         goto cleanup;
     }
 
@@ -695,24 +695,24 @@ void process_packet(u_char *user, const struct pcap_pkthdr *pkthdr, const u_char
                 
                 if(!retval) {
                     lls_dump_instance_table(lls_table);
-                    for(int i=0; i < lls_table->slt_table.service_entry_n; i++) {
-                        atsc3_lls_slt_service_t* atsc3_lls_slt_service = lls_table->slt_table.service_entry[i];
-                        if(lls_service->broadcast_svc_signaling.sls_protocol == SLS_PROTOCOL_MMTP) {
+                    for(int i=0; i < lls_table->slt_table.atsc3_lls_slt_service_v.count; i++) {
+                        atsc3_lls_slt_service_t* atsc3_lls_slt_service = lls_table->slt_table.atsc3_lls_slt_service_v.data[i];
+                        if(atsc3_lls_slt_service->atsc3_slt_broadcast_svc_signalling_v.count && atsc3_lls_slt_service->atsc3_slt_broadcast_svc_signalling_v.data[0]->sls_protocol == SLS_PROTOCOL_MMTP) {
                             if(lls_sls_mmt_monitor) {
                                 //re-configure
                             } else {
                                 //TODO:  make sure
                                 //lls_service->broadcast_svc_signaling.sls_destination_ip_address && lls_service->broadcast_svc_signaling.sls_destination_udp_port
                                 //match our dst_ip_addr_filter && udp_packet->udp_flow.dst_ip_addr != *dst_ip_addr_filter and port filter
-                                __INFO("Adding service: %d", lls_service->service_id);
+                                __INFO("Adding service: %d", atsc3_lls_slt_service->service_id);
 
                                 lls_sls_mmt_monitor = lls_sls_mmt_monitor_create();
                                 lls_slt_monitor->lls_sls_mmt_monitor = lls_sls_mmt_monitor;
 
                                 //we may not be initialized yet, so re-check again later
-                                lls_sls_mmt_session_t* lls_sls_mmt_session = lls_slt_mmt_session_find_from_service_id(lls_slt_monitor, lls_service->service_id);
+                                lls_sls_mmt_session_t* lls_sls_mmt_session = lls_slt_mmt_session_find_from_service_id(lls_slt_monitor, atsc3_lls_slt_service->service_id);
                                 lls_sls_mmt_monitor->lls_mmt_session = lls_sls_mmt_session;
-                                lls_sls_mmt_monitor->service_id = lls_service->service_id;
+                                lls_sls_mmt_monitor->atsc3_lls_slt_service = atsc3_lls_slt_service;
                             }
                         }
                     }
