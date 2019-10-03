@@ -84,7 +84,7 @@ udp_flow_latest_mpu_sequence_number_container_t* udp_flow_latest_mpu_sequence_nu
 // lls and alc glue for slt, contains lls_table_slt and lls_slt_alc_session
 lls_slt_monitor_t* lls_slt_monitor;
 
-extern global_atsc3_stats_t* global_stats;
+extern atsc3_global_statistics_t* atsc3_global_statistics;
 
 /**
  *
@@ -281,7 +281,7 @@ void* global_httpd_run_thread(void* lls_slt_monitor_ptr) {
 
 
 void count_packet_as_filtered(udp_packet_t* udp_packet) {
-	global_stats->packet_counter_filtered_ipv4++;
+	atsc3_global_statistics->packet_counter_filtered_ipv4++;
 	global_bandwidth_statistics->interval_filtered_current_bytes_rx += udp_packet->data->p_size;
 	global_bandwidth_statistics->interval_filtered_current_packets_rx++;
 }
@@ -314,7 +314,7 @@ void update_global_mmtp_statistics_from_udp_packet_t(lls_sls_mmt_session_t* matc
 
 		} else {
 			//non-timed
-			__ATSC3_WARN("mmtp_packet_parse: non-timed payload: packet_id: %u", mmtp_packet_header->mmtp_packet_id);
+			__ATSC3_WARN("update_global_mmtp_statistics_from_udp_packet_t: mmtp_packet_header_parse_from_block_t - non-timed payload: packet_id: %u", mmtp_packet_header->mmtp_packet_id);
 		}
 	} else if(mmtp_packet_header->mmtp_payload_type == 0x2) {
 
@@ -349,18 +349,18 @@ void update_global_mmtp_statistics_from_udp_packet_t(lls_sls_mmt_session_t* matc
 		}
 
 	} else {
-		__ATSC3_WARN("mmtp_packet_parse: unknown payload type of 0x%x", mmtp_packet_header->mmtp_payload_type);
+		__ATSC3_WARN("update_global_mmtp_statistics_from_udp_packet_t: unknown payload type of 0x%x", mmtp_packet_header->mmtp_payload_type);
 		goto error;
 	}
     
-    global_stats->packet_counter_mmtp_packets_received++;
+    atsc3_global_statistics->packet_counter_mmtp_packets_received++;
     global_bandwidth_statistics->interval_mmt_current_packets_rx++;
 
     goto cleanup;
 
  error:
-	global_stats->packet_counter_mmtp_packets_parsed_error++;
-		__ERROR("mmtp_packet_parse: raw packet ptr is null, parsing failed for flow: %d.%d.%d.%d:(%-10u):%-5u \t ->  %d.%d.%d.%d:(%-10u):%-5u ",
+	atsc3_global_statistics->packet_counter_mmtp_packets_parsed_error++;
+		__ERROR("update_global_mmtp_statistics_from_udp_packet_t: raw packet ptr is null, parsing failed for flow: %d.%d.%d.%d:(%-10u):%-5u \t ->  %d.%d.%d.%d:(%-10u):%-5u ",
 				__toipandportnonstruct(udp_packet->udp_flow.src_ip_addr, udp_packet->udp_flow.src_port),
 				udp_packet->udp_flow.src_ip_addr,
 				__toipandportnonstruct(udp_packet->udp_flow.dst_ip_addr, udp_packet->udp_flow.dst_port),
@@ -482,7 +482,7 @@ alc_packet_t* route_parse_from_udp_packet(lls_sls_alc_session_t *matching_lls_sl
         //process ALC streams
         int retval = alc_rx_analyze_packet_a331_compliant((char*)block_Get(udp_packet->data), block_Remaining_size(udp_packet->data), &ch, &alc_packet);
         if(!retval) {
-            global_stats->packet_counter_alc_packets_parsed++;
+            atsc3_global_statistics->packet_counter_alc_packets_parsed++;
             
             //don't dump unless this is pointing to our monitor session
             if(lls_slt_monitor->lls_sls_alc_monitor &&  lls_slt_monitor->lls_sls_alc_monitor->lls_alc_session && lls_slt_monitor->lls_sls_alc_monitor->lls_alc_session->service_id == matching_lls_slt_alc_session->service_id) {
@@ -493,7 +493,7 @@ alc_packet_t* route_parse_from_udp_packet(lls_sls_alc_session_t *matching_lls_sl
             goto cleanup;
         } else {
             __ERROR("Error in ALC decode: %d", retval);
-            global_stats->packet_counter_alc_packets_parsed_error++;
+            atsc3_global_statistics->packet_counter_alc_packets_parsed_error++;
             goto cleanup;
         }
     } else {
@@ -521,11 +521,11 @@ void process_packet(u_char *user, const struct pcap_pkthdr *pkthdr, const u_char
 	global_bandwidth_statistics->interval_total_current_packets_rx++;
 	global_bandwidth_statistics->grand_total_bytes_rx += udp_packet->raw_packet_length;
 	global_bandwidth_statistics->grand_total_packets_rx++;
-	global_stats->packets_total_received++;
+	atsc3_global_statistics->packets_total_received++;
 
 	//drop mdNS
 	if(udp_packet->udp_flow.dst_ip_addr == UDP_FILTER_MDNS_IP_ADDRESS && udp_packet->udp_flow.dst_port == UDP_FILTER_MDNS_PORT) {
-		global_stats->packet_counter_filtered_ipv4++;
+		atsc3_global_statistics->packet_counter_filtered_ipv4++;
 		//printf("setting dns current_bytes_rx: %d, packets_rx: %d", global_bandwidth_statistics->interval_filtered_current_bytes_rx, global_bandwidth_statistics->interval_filtered_current_packets_rx);
 		global_bandwidth_statistics->interval_filtered_current_bytes_rx += udp_packet->data->p_size;
 		global_bandwidth_statistics->interval_filtered_current_packets_rx++;
@@ -537,22 +537,22 @@ void process_packet(u_char *user, const struct pcap_pkthdr *pkthdr, const u_char
 		global_bandwidth_statistics->interval_lls_current_bytes_rx += udp_packet->data->p_size;
 		global_bandwidth_statistics->interval_lls_current_packets_rx++;
 
-		global_stats->packet_counter_lls_packets_received++;
+		atsc3_global_statistics->packet_counter_lls_packets_received++;
 
 		//process as lls.sst, dont free as we keep track of our object in the lls_slt_monitor
 
-		lls_table_t* lls_table = lls_table_create_or_update_from_lls_slt_monitor_with_metrics(lls_slt_monitor, udp_packet->data, &global_stats->packet_counter_lls_packets_parsed, &global_stats->packet_counter_lls_packets_parsed_update, &global_stats->packet_counter_lls_packets_parsed_error);
+		lls_table_t* lls_table = lls_table_create_or_update_from_lls_slt_monitor_with_metrics(lls_slt_monitor, udp_packet->data, &atsc3_global_statistics->packet_counter_lls_packets_parsed, &atsc3_global_statistics->packet_counter_lls_packets_parsed_update, &atsc3_global_statistics->packet_counter_lls_packets_parsed_error);
 		if(lls_table) {
 
 			if(lls_table->lls_table_id == SLT) {
 
-				global_stats->packet_counter_lls_slt_packets_parsed++;
+				atsc3_global_statistics->packet_counter_lls_slt_packets_parsed++;
 				int retval = lls_slt_table_perform_update(lls_table, lls_slt_monitor);
 
 				if(!retval) {
-					global_stats->packet_counter_lls_slt_update_processed++;
+					atsc3_global_statistics->packet_counter_lls_slt_update_processed++;
 				} else {
-					global_stats->packet_counter_lls_slt_packets_parsed_error++;
+					atsc3_global_statistics->packet_counter_lls_slt_packets_parsed_error++;
 				}
 			}
 		}
@@ -580,7 +580,7 @@ void process_packet(u_char *user, const struct pcap_pkthdr *pkthdr, const u_char
 	if(matching_lls_slt_alc_session) {
 		global_bandwidth_statistics->interval_alc_current_bytes_rx += udp_packet->data->p_size;
 		global_bandwidth_statistics->interval_alc_current_packets_rx++;
-		global_stats->packet_counter_alc_recv++;
+		atsc3_global_statistics->packet_counter_alc_recv++;
 
         alc_packet_t* alc_packet = route_parse_from_udp_packet(matching_lls_slt_alc_session, udp_packet);
         if(alc_packet) {
@@ -601,7 +601,7 @@ void process_packet(u_char *user, const struct pcap_pkthdr *pkthdr, const u_char
 	}
 
     //if we get here, we don't know what type of packet it is..
-    global_stats->packet_counter_udp_unknown++;
+    atsc3_global_statistics->packet_counter_udp_unknown++;
     return udp_packet_free(&udp_packet);
 }
 
@@ -768,7 +768,7 @@ int main(int argc,char **argv) {
     mmtp_flow = mmtp_flow_new();
     udp_flow_latest_mpu_sequence_number_container = udp_flow_latest_mpu_sequence_number_container_t_init();
 
-    gettimeofday(&global_stats->program_timeval_start, 0);
+    gettimeofday(&atsc3_global_statistics->program_timeval_start, 0);
 
     global_bandwidth_statistics = (bandwidth_statistics_t*)calloc(1, sizeof(*global_bandwidth_statistics));
 	gettimeofday(&global_bandwidth_statistics->program_timeval_start, NULL);

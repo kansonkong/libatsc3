@@ -1,4 +1,6 @@
 /*
+ *
+ * DEPRECATED
  * atsc3_mmt_listener_test_bento.c
  *
  *  Created on: Jan 19, 2019
@@ -10,6 +12,8 @@
  * is not needed.
  *
  */
+
+#ifdef __DEAD_CODE__
 
 #include <pcap.h>
 #include <stdio.h>
@@ -50,7 +54,7 @@ uint16_t* dst_ip_port_filter = NULL;
 uint16_t* dst_packet_id_filter = NULL;
 
 lls_slt_monitor_t* lls_slt_monitor;
-global_atsc3_stats_t* global_stats;
+atsc3_global_statistics_t* atsc3_global_statistics;
 mmtp_flow_t* mmtp_flow;
 
 
@@ -265,3 +269,4 @@ int main(int argc,char **argv) {
     return 0;
 }
 
+#endif
