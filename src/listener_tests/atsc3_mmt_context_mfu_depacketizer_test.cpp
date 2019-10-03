@@ -43,6 +43,8 @@ int PACKET_COUNTER=0;
 #include "../atsc3_logging_externs.h"
 //#include "../stubs/atsc3_alc_stubs.h"
 
+#include "../atsc3_mmt_context_mfu_depacketizer.h"
+
 #define _ENABLE_DEBUG true
 
 //commandline stream filtering
@@ -51,7 +53,17 @@ uint32_t* dst_ip_addr_filter = NULL;
 uint16_t* dst_ip_port_filter = NULL;
 uint16_t* dst_packet_id_filter = NULL;
 
+
+//jjustman-2019-09-18: refactored MMTP flow collection management
+mmtp_flow_t* mmtp_flow;
+
+//todo: jjustman-2019-09-18 refactor me out for mpu recon persitance
+udp_flow_latest_mpu_sequence_number_container_t* udp_flow_latest_mpu_sequence_number_container;
+
 lls_slt_monitor_t* lls_slt_monitor;
+
+//jjustman-2019-10-03 - context event callbacks...
+atsc3_mmt_mfu_context_t* atsc3_mmt_mfu_context;
 
 mmtp_packet_header_t*  mmtp_parse_header_from_udp_packet(udp_packet_t* udp_packet) {
 
@@ -80,6 +92,7 @@ void mmtp_process_sls_from_payload(udp_packet_t *udp_packet, mmtp_signalling_pac
 }
 
 void process_packet(u_char *user, const struct pcap_pkthdr *pkthdr, const u_char *packet) {
+	mmtp_packet_header_t* mmtp_packet_header = NULL;
 
 	udp_packet_t* udp_packet = process_packet_from_pcap(user, pkthdr, packet);
 	if(!udp_packet) {
@@ -102,19 +115,94 @@ void process_packet(u_char *user, const struct pcap_pkthdr *pkthdr, const u_char
         return udp_packet_free(&udp_packet);
     }
 
-    lls_sls_mmt_session_t* matching_lls_slt_mmt_session = lls_slt_mmt_session_find_from_udp_packet(lls_slt_monitor, udp_packet->udp_flow.src_ip_addr, udp_packet->udp_flow.dst_ip_addr, udp_packet->udp_flow.dst_port);
-    if(matching_lls_slt_mmt_session) {
 
-    	mmtp_packet_header_t* mmtp_packet_header = mmtp_parse_header_from_udp_packet(udp_packet);
-        if(mmtp_packet_header && mmtp_packet_header->mmtp_payload_type == 0x02) {
+    //TODO: jjustman-2019-10-03 - packet header parsing to dispatcher mapping
+    lls_sls_mmt_session_t* matching_lls_sls_mmt_session = lls_slt_mmt_session_find_from_udp_packet(lls_slt_monitor, udp_packet->udp_flow.src_ip_addr, udp_packet->udp_flow.dst_ip_addr, udp_packet->udp_flow.dst_port);
+	if(matching_lls_sls_mmt_session) {
 
-        	mmtp_signalling_packet_t* mmtp_signalling_packet = mmtp_signalling_packet_parse_and_free_packet_header_from_block_t(&mmtp_packet_header, udp_packet->data);
-        	mmtp_process_sls_from_payload(udp_packet, mmtp_signalling_packet, matching_lls_slt_mmt_session);
-        }
+		mmtp_packet_header = mmtp_packet_header_parse_from_block_t(udp_packet->data);
 
-        return udp_packet_free(&udp_packet);
+		if(!mmtp_packet_header) {
+			return udp_packet_free(&udp_packet);
+		}
+
+		//for filtering MMT flows by a specific packet_id
+		if(dst_packet_id_filter && *dst_packet_id_filter != mmtp_packet_header->mmtp_packet_id) {
+			goto cleanup;
+		}
+
+		mmtp_packet_header_dump(mmtp_packet_header);
+
+		//dump header, then dump applicable packet type
+		if(mmtp_packet_header->mmtp_payload_type == 0x0) {
+			mmtp_mpu_packet_t* mmtp_mpu_packet = mmtp_mpu_packet_parse_from_block_t(mmtp_packet_header, udp_packet->data);
+			if(mmtp_mpu_packet->mpu_timed_flag == 1) {
+				mmtp_mpu_dump_header(mmtp_mpu_packet);
+
+				//TODO: jjustman-2019-10-03 - handle context parameters better
+				// mmtp_flow, lls_slt_monitor, , udp_flow_latest_mpu_sequence_number_container, matching_lls_sls_mmt_session);
+
+				atsc3_mmt_mfu_context->mmtp_flow = mmtp_flow;
+				atsc3_mmt_mfu_context->udp_flow_latest_mpu_sequence_number_container = udp_flow_latest_mpu_sequence_number_container;
+				atsc3_mmt_mfu_context->lls_slt_monitor = lls_slt_monitor;
+				atsc3_mmt_mfu_context->matching_lls_sls_mmt_session = matching_lls_sls_mmt_session;
+
+				mmtp_mpu_packet = mmtp_process_from_payload_with_context(udp_packet, mmtp_mpu_packet, atsc3_mmt_mfu_context);
+//				            if(mmtp_mpu_packet && matching_lls_sls_mmt_session && matching_lls_sls_mmt_session->last_udp_flow_packet_id_mpu_sequence_tuple_audio && matching_lls_sls_mmt_session->last_udp_flow_packet_id_mpu_sequence_tuple_video) {
+//
+//				                __ATSC3_DEBUG("audio flow: packet_id: %d, mpu_sequence_number: %d, updated: %d, video flow: packet_id: %d, mpu_sequence_number: %d, updated: %d",
+//				                         matching_lls_sls_mmt_session->last_udp_flow_packet_id_mpu_sequence_tuple_audio->packet_id,
+//				                         matching_lls_sls_mmt_session->last_udp_flow_packet_id_mpu_sequence_tuple_audio->mpu_sequence_number,
+//				                         matching_lls_sls_mmt_session->last_udp_flow_packet_id_mpu_sequence_tuple_audio_processed,
+//
+//				                         matching_lls_sls_mmt_session->last_udp_flow_packet_id_mpu_sequence_tuple_video->packet_id,
+//				                         matching_lls_sls_mmt_session->last_udp_flow_packet_id_mpu_sequence_tuple_video->mpu_sequence_number,
+//				                         matching_lls_sls_mmt_session->last_udp_flow_packet_id_mpu_sequence_tuple_video_processed);
+//
+//				                if(matching_lls_sls_mmt_session->last_udp_flow_packet_id_mpu_sequence_tuple_audio_processed || matching_lls_sls_mmt_session->last_udp_flow_packet_id_mpu_sequence_tuple_video_processed) {
+//				                    atsc3_mmt_hls_fmp4_update_manifest(matching_lls_sls_mmt_session);
+//				                }
+//				            }
+			} else {
+				//non-timed
+				__ATSC3_WARN("process_packet: mmtp_packet_header_parse_from_block_t - non-timed payload: packet_id: %u", mmtp_packet_header->mmtp_packet_id);
+			}
+		} else if(mmtp_packet_header->mmtp_payload_type == 0x2) {
+
+			mmtp_signalling_packet_t* mmtp_signalling_packet = mmtp_signalling_packet_parse_and_free_packet_header_from_block_t(&mmtp_packet_header, udp_packet->data);
+			uint8_t parsed_count = mmt_signalling_message_parse_packet(mmtp_signalling_packet, udp_packet->data);
+			if(parsed_count) {
+				mmt_signalling_message_dump(mmtp_signalling_packet);
+				//TODO: jjustman-2019-10-03 - if signalling_packet == MP_table, set atsc3_mmt_mfu_context->mp_table_last;
+				mmtp_asset_flow_t* mmtp_asset_flow = mmtp_flow_find_or_create_from_udp_packet(mmtp_flow, udp_packet);
+				mmtp_asset_t* mmtp_asset = mmtp_asset_flow_find_or_create_asset_from_lls_sls_mmt_session(mmtp_asset_flow, matching_lls_sls_mmt_session);
+
+				//TODO: FIX ME!!! HACK - jjustman-2019-09-05
+				mmtp_mpu_packet_t* mmtp_mpu_packet = mmtp_mpu_packet_new();
+				mmtp_mpu_packet->mmtp_packet_id = mmtp_signalling_packet->mmtp_packet_id;
+
+				mmtp_packet_id_packets_container_t* mmtp_packet_id_packets_container = mmtp_asset_find_or_create_packets_container_from_mmt_mpu_packet(mmtp_asset, mmtp_mpu_packet);
+				mmtp_packet_id_packets_container_add_mmtp_signalling_packet(mmtp_packet_id_packets_container, mmtp_signalling_packet);
+
+				//TODO: FIX ME!!! HACK - jjustman-2019-09-05
+				mmtp_mpu_packet_free(&mmtp_mpu_packet);
+
+				//update our sls_mmt_session info
+				mmt_signalling_message_update_lls_sls_mmt_session(mmtp_signalling_packet, matching_lls_sls_mmt_session);
+
+
+			}
+
+		} else {
+			__ATSC3_WARN("process_packet: mmtp_packet_header_parse_from_block_t - unknown payload type of 0x%x", mmtp_packet_header->mmtp_payload_type);
+			goto cleanup;
+		}
 	}
 
+cleanup:
+	if(mmtp_packet_header) {
+		mmtp_packet_header_free(&mmtp_packet_header);
+	}
 }
 
 
@@ -237,6 +325,11 @@ int main(int argc,char **argv) {
     /** setup global structs **/
 
     lls_slt_monitor = lls_slt_monitor_create();
+    mmtp_flow = mmtp_flow_new();
+    udp_flow_latest_mpu_sequence_number_container = udp_flow_latest_mpu_sequence_number_container_t_init();
+
+    //callback contexts
+    atsc3_mmt_mfu_context = atsc3_mmt_mfu_context_new();
 
 
 #ifndef _TEST_RUN_VALGRIND_OSX_
