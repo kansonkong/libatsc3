@@ -197,7 +197,7 @@ enum LLS_SLT_SERVICE_PROTOCOL {
 	SLS_PROTOCOL_MMTP=2,
 	SLS_PROTOCOL_ATSC_RESERVED_OTHER=-1};
 
-typedef struct atsc3_slt_broadcast_svc_signaling {
+typedef struct atsc3_slt_broadcast_svc_signalling {
 	int 						sls_protocol;					//LLS_SLT_SERVICE_PROTOCOL
 
 	uint8_t						sls_major_protocol_version;		//A/331:2019 - Default is 1
@@ -208,7 +208,7 @@ typedef struct atsc3_slt_broadcast_svc_signaling {
 
 	char*						sls_source_ip_address;			//0..1: A string containing the dotted-IPv4 source address of the packets carrying broadcast SLS data for this Service.
 
-} atsc3_slt_broadcast_svc_signaling_t;
+} atsc3_slt_broadcast_svc_signalling_t;
 
 
 typedef struct atsc3_slt_simulcast_tsid {
@@ -334,7 +334,7 @@ typedef struct atsc3_lls_slt_service {
 
 	ATSC3_VECTOR_BUILDER_STRUCT(atsc3_slt_svc_capabilities);			//0..1, Required capabilities for decoding and meaningfully presenting content of this Service.
 
-	ATSC3_VECTOR_BUILDER_STRUCT(atsc3_slt_broadcast_svc_signaling); 	//0..1, Location, protocol, address, id information for broadcast signaling.
+	ATSC3_VECTOR_BUILDER_STRUCT(atsc3_slt_broadcast_svc_signalling); 	//0..1, Location, protocol, address, id information for broadcast signaling.
 
 	ATSC3_VECTOR_BUILDER_STRUCT(atsc3_slt_svc_inet_url); 				//0..N, URL to access Internet signalling for this Service.
 
@@ -581,7 +581,7 @@ typedef struct lls_sls_mmt_monitor {
 /**
  * used to store all alc active sessions for this flow
  */
-typedef struct lls_sls_alc_session_vector {
+typedef struct lls_sls_alc_session_flows {
 	lls_table_t* 			lls_table_slt;
 
 	ATSC3_VECTOR_BUILDER_STRUCT(lls_sls_alc_session);
@@ -590,9 +590,9 @@ typedef struct lls_sls_alc_session_vector {
 	//int 					lls_slt_alc_sessions_n;
 	//lls_sls_alc_session_t** lls_slt_alc_sessions;
 
-} lls_sls_alc_session_vector_t;
+} lls_sls_alc_session_flows_t;
 
-ATSC3_VECTOR_BUILDER_METHODS_INTERFACE(lls_sls_alc_session_vector, lls_sls_alc_session);
+ATSC3_VECTOR_BUILDER_METHODS_INTERFACE(lls_sls_alc_session_flows, lls_sls_alc_session);
 
 
 
@@ -675,7 +675,7 @@ typedef struct lls_slt_monitor {
 
 	//lls_sls_alc_monitor_t* lls_sls_alc_monitor;
     ATSC3_VECTOR_BUILDER_STRUCT(lls_sls_alc_monitor);
-    ATSC3_VECTOR_BUILDER_STRUCT(lls_sls_alc_session);
+    ATSC3_VECTOR_BUILDER_STRUCT(lls_sls_alc_session_flows);
 
     //jjustman-2019-08-10 - TODO - change this over to ATSC3_VECTOR_BUILDER
     //lls_sls_mmt_session_vector_t* lls_sls_mmt_session_vector;
@@ -696,6 +696,10 @@ typedef struct lls_slt_monitor {
 
 ATSC3_VECTOR_BUILDER_METHODS_INTERFACE(lls_slt_monitor, lls_sls_mmt_monitor);
 ATSC3_VECTOR_BUILDER_METHODS_INTERFACE(lls_slt_monitor, lls_sls_alc_monitor);
+ATSC3_VECTOR_BUILDER_METHODS_INTERFACE(lls_slt_monitor, lls_sls_alc_session_flows);
+
+
+
 
 
 #endif /* ATSC3_LLS_TYPES_H_ */
