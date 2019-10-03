@@ -49,10 +49,28 @@ void atsc3_mmt_mpu_on_sequence_number_change_noop(uint16_t packet_id, uint32_t m
 	__MMT_CONTEXT_MPU_DEBUG("atsc3_mmt_mpu_on_sequence_number_change_noop: packet_id: %u, from %d, to %d", packet_id, mpu_sequence_number_old,  mpu_sequence_number_new);
 }
 
-//SI
-void atsc3_mmt_signalling_information_on_mp_table_noop(mp_table_t* mp_table) {
+//MP_table
+void atsc3_mmt_signalling_information_on_mp_table_subset_noop(mp_table_t* mp_table) {
 	//noop;
-	__MMT_CONTEXT_MPU_DEBUG("atsc3_mmt_signalling_information_on_mp_table_noop: mp_table: %p", mp_table);
+	__MMT_CONTEXT_MPU_DEBUG("atsc3_mmt_signalling_information_on_mp_table_subset_noop: mp_table: %p", mp_table);
+}
+
+//MP_table
+void atsc3_mmt_signalling_information_on_mp_table_complete_noop(mp_table_t* mp_table) {
+	//noop;
+	__MMT_CONTEXT_MPU_DEBUG("atsc3_mmt_signalling_information_on_mp_table_complete_noop: mp_table: %p", mp_table);
+}
+
+//audio packet id extraction
+void atsc3_mmt_signalling_information_on_audio_packet_id_noop(uint16_t audio_packet_id) {
+	//noop;
+	__MMT_CONTEXT_MPU_DEBUG("atsc3_mmt_signalling_information_on_audio_packet_id_noop: audio_packet_id: %u", audio_packet_id);
+}
+
+//video packet_id extraction
+void atsc3_mmt_signalling_information_on_video_packet_id_noop(uint16_t video_packet_id) {
+	//noop;
+	__MMT_CONTEXT_MPU_DEBUG("atsc3_mmt_signalling_information_on_video_packet_id_noop: video_packet_id: %u", video_packet_id);
 }
 
 void atsc3_mmt_signalling_information_on_mpu_timestamp_descriptor_noop(uint16_t packet_id, uint32_t mpu_sequence_number, mmt_signalling_message_mpu_timestamp_descriptor_t* mmt_signalling_message_mpu_timestamp_descriptor) {
@@ -93,7 +111,12 @@ atsc3_mmt_mfu_context_t* atsc3_mmt_mfu_context_new() {
 
 	atsc3_mmt_mfu_context->atsc3_mmt_mpu_on_sequence_number_change 						= &atsc3_mmt_mpu_on_sequence_number_change_noop;
 
-	atsc3_mmt_mfu_context->atsc3_mmt_signalling_information_on_mp_table 				= &atsc3_mmt_signalling_information_on_mp_table_noop;
+	atsc3_mmt_mfu_context->atsc3_mmt_signalling_information_on_mp_table_subset			= &atsc3_mmt_signalling_information_on_mp_table_subset_noop;
+	atsc3_mmt_mfu_context->atsc3_mmt_signalling_information_on_mp_table_complete 		= &atsc3_mmt_signalling_information_on_mp_table_complete_noop;
+
+	atsc3_mmt_mfu_context->atsc3_mmt_signalling_information_on_audio_packet_id 			= &atsc3_mmt_signalling_information_on_audio_packet_id_noop;
+	atsc3_mmt_mfu_context->atsc3_mmt_signalling_information_on_video_packet_id 			= &atsc3_mmt_signalling_information_on_video_packet_id_noop;
+
 	atsc3_mmt_mfu_context->atsc3_mmt_signalling_information_on_mpu_timestamp_descriptor = &atsc3_mmt_signalling_information_on_mpu_timestamp_descriptor_noop;
 
 	atsc3_mmt_mfu_context->atsc3_mmt_mpu_mfu_on_sample_complete = &atsc3_mmt_mpu_mfu_on_sample_complete_noop;
@@ -111,20 +134,16 @@ mmtp_sub_flow_vector_t* mmtp_sub_flow_vector,
  TODO: refactor udp_flow_latest_mpu_sequence_number_container_t* udp_flow_latest_mpu_sequence_number_container for mpu recon storage
 
  //jjustman-2019-08-31 - new atsc3_mmtp_packet_types.h refactoring here...
+  *
+  * TODO: do not free mmtp_mpu_packet here
  */
 
-mmtp_mpu_packet_t* mmtp_process_from_payload_with_context(udp_packet_t *udp_packet,
-														  mmtp_mpu_packet_t* mmtp_mpu_packet,
-														  atsc3_mmt_mfu_context_t* atsc3_mmt_mfu_context) {
+void mmtp_process_from_payload_with_context(udp_packet_t *udp_packet,
+											mmtp_mpu_packet_t* mmtp_mpu_packet,
+											atsc3_mmt_mfu_context_t* atsc3_mmt_mfu_context) {
 
-//
-////if we don't have a match, we will free mmtp_mmpu_packet and return NULL
-//mmtp_mpu_packet_t* mmtp_process_from_payload(mmtp_mpu_packet_t* mmtp_mpu_packet,
-//                               mmtp_flow_t *mmtp_flow,
-//                               lls_slt_monitor_t* lls_slt_monitor,
-//                               udp_packet_t *udp_packet,
-//                               udp_flow_latest_mpu_sequence_number_container_t* udp_flow_latest_mpu_sequence_number_container,
-//                               lls_sls_mmt_session_t* matching_lls_sls_mmt_session) {
+	atsc3_mmt_mfu_context->udp_flow = &udp_packet->udp_flow;
+
 
 	//borrow from our context
 	mmtp_flow_t *mmtp_flow = atsc3_mmt_mfu_context->mmtp_flow;
@@ -338,10 +357,80 @@ packet_cleanup:
     	__MMT_CONTEXT_MPU_TRACE("Cleaning up packet: %p", mmtp_mpu_packet);
         mmtp_mpu_packet_free(&mmtp_mpu_packet);
     }
-    return NULL;
 
 ret:
-    return mmtp_mpu_packet;
+    return;
+}
+
+
+
+/*
+ * jjustman-2019-10-03: todo: filter by
+ * 	ignore atsc3_mmt_mfu_context->lls_slt_monitor (or mmtp_flow, matching_lls_sls_mmt_session)
+ *
+ */
+
+void mmt_signalling_message_process_with_context(udp_packet_t *udp_packet,
+												 mmtp_signalling_packet_t* mmtp_signalling_packet,
+												 atsc3_mmt_mfu_context_t* atsc3_mmt_mfu_context) {
+	atsc3_mmt_mfu_context->udp_flow = &udp_packet->udp_flow;
+
+	for(int i=0; i < mmtp_signalling_packet->mmt_signalling_message_header_and_payload_v.count; i++) {
+		mmt_signalling_message_header_and_payload_t* mmt_signalling_message_header_and_payload = mmtp_signalling_packet->mmt_signalling_message_header_and_payload_v.data[i];
+
+		//MPT_message, mp_table, dispatch either complete or subset of MPT_message table
+		if(mmt_signalling_message_header_and_payload->message_header.MESSAGE_id_type == MPT_message) {
+			mp_table_t* mp_table = &mmt_signalling_message_header_and_payload->message_payload.mp_table;
+
+			//dispatched when message_id >= 0x11 (17) && message_id <= 0x19 (31)
+			if(mmt_signalling_message_header_and_payload->message_header.message_id >= MPT_message_start && mmt_signalling_message_header_and_payload->message_header.message_id < MPT_message_end) {
+				__MMSM_TRACE("mmt_signalling_message_process_with_context: partial mp_table, message_id: 0x%02x", mmt_signalling_message_header_and_payload->message_header.message_id);
+				atsc3_mmt_mfu_context->atsc3_mmt_signalling_information_on_mp_table_subset(mp_table);
+
+			} else if(mmt_signalling_message_header_and_payload->message_header.message_id == MPT_message_end) {
+				__MMSM_TRACE("mmt_signalling_message_process_with_context: complete mp_table, message_id: 0x%02x", mmt_signalling_message_header_and_payload->message_header.message_id);
+				atsc3_mmt_mfu_context->atsc3_mmt_signalling_information_on_mp_table_complete(mp_table);
+
+			} else {
+				__MMSM_ERROR("mmt_signalling_message_process_with_context: MESSAGE_id_type == MPT_message but message_id not in bounds: 0x%02x", mmt_signalling_message_header_and_payload->message_header.message_id);
+			}
+
+			if(mp_table->number_of_assets) {
+				for(int i=0; i < mp_table->number_of_assets; i++) {
+					//slight hack, check the asset types and default_asset = 1
+					mp_table_asset_row_t* mp_table_asset_row = &mp_table->mp_table_asset_row[i];
+
+					__MMSM_DEBUG("MPT message: checking packet_id: %u, asset_type: %s, default: %u, identifier: %s", mp_table_asset_row->mmt_general_location_info.packet_id, mp_table_asset_row->asset_type, mp_table_asset_row->default_asset_flag, mp_table_asset_row->identifier_mapping.asset_id.asset_id ? (const char*)mp_table_asset_row->identifier_mapping.asset_id.asset_id : "");
+					if(strncasecmp(ATSC3_MP_TABLE_ASSET_ROW_HEVC_ID, mp_table_asset_row->asset_type, 4) == 0) {
+						atsc3_mmt_mfu_context->atsc3_mmt_signalling_information_on_video_packet_id(mp_table_asset_row->mmt_general_location_info.packet_id);
+
+						//matching_lls_sls_mmt_session->video_packet_id = mp_table_asset_row->mmt_general_location_info.packet_id;
+						__MMSM_DEBUG("MPT message: mmtp_flow: %p, setting video_packet_id: packet_id: %u, asset_type: %s, default: %u, identifier: %s",
+								atsc3_mmt_mfu_context->mmtp_flow,
+								mp_table_asset_row->mmt_general_location_info.packet_id,
+								mp_table_asset_row->asset_type,
+								mp_table_asset_row->default_asset_flag,
+								mp_table_asset_row->identifier_mapping.asset_id.asset_id ? (const char*)mp_table_asset_row->identifier_mapping.asset_id.asset_id : "");
+
+					} else if(strncasecmp(ATSC3_MP_TABLE_ASSET_ROW_MP4A_ID, mp_table_asset_row->asset_type, 4) == 0 || strncasecmp(ATSC3_MP_TABLE_ASSET_ROW_AC_4_ID, mp_table_asset_row->asset_type, 4) == 0) {
+						atsc3_mmt_mfu_context->atsc3_mmt_signalling_information_on_audio_packet_id(mp_table_asset_row->mmt_general_location_info.packet_id);
+
+						//matching_lls_sls_mmt_session->audio_packet_id = mp_table_asset_row->mmt_general_location_info.packet_id;
+						__MMSM_DEBUG("MPT message: mmtp_flow: %p, setting audio_packet_id: packet_id: %u, asset_type: %s, default: %u, identifier: %s",
+								atsc3_mmt_mfu_context->mmtp_flow,
+								mp_table_asset_row->mmt_general_location_info.packet_id,
+								mp_table_asset_row->asset_type,
+								mp_table_asset_row->default_asset_flag,
+								mp_table_asset_row->identifier_mapping.asset_id.asset_id ? (const char*)mp_table_asset_row->identifier_mapping.asset_id.asset_id : "");
+
+					}
+				}
+			}
+		} else {
+			__MMSM_INFO("mmt_signalling_message_update_lls_sls_mmt_session: Ignoring signal: 0x%x", mmt_signalling_message_header_and_payload->message_header.MESSAGE_id_type);
+		}
+	}
 
 }
+
 

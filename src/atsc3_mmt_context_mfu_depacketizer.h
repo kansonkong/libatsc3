@@ -15,22 +15,9 @@
 #include "atsc3_mmt_context_mpu_depacketizer.h"
 #include "atsc3_mmt_context_signalling_information_depacketizer.h"
 
-#include "atsc3_packet_statistics.h"
-//#include "atsc3_mmtp_parser.h"
-//#include "atsc3_mmt_mpu_utils.h"
-//#include "atsc3_lls_sls_monitor_output_buffer.h"
-//#include "atsc3_lls_sls_monitor_output_buffer_utils.h"
-//#include "atsc3_isobmff_tools.h"
-//#include "atsc3_mmt_signalling_message.h"
-//#include "atsc3_mmtp_packet_utils.h"
-
-
 #ifdef __cplusplus
 extern "C" {
 #endif
-
-//jjustman-2019-08-30 - TODO - refactor me
-extern atsc3_global_statistics_t* atsc3_global_statistics;
 
 /*
  * MFU specific callbacks
@@ -42,7 +29,9 @@ typedef void (*atsc3_mmt_mpu_mfu_on_sample_corrupt_f) (uint16_t packet_id, block
 typedef void (*atsc3_mmt_mpu_mfu_on_sample_missing_f) (uint16_t packet_id, block_t* mmt_mfu_sample);
 
 typedef struct atsc3_mmt_mfu_context {
-	mmtp_flow_t* mmtp_flow;
+	udp_flow_t* 	udp_flow;
+
+	mmtp_flow_t* 	mmtp_flow;
 
 	udp_flow_latest_mpu_sequence_number_container_t* udp_flow_latest_mpu_sequence_number_container;
 	lls_slt_monitor_t* lls_slt_monitor;
@@ -54,7 +43,12 @@ typedef struct atsc3_mmt_mfu_context {
 	atsc3_mmt_mpu_on_sequence_number_change_f 						atsc3_mmt_mpu_on_sequence_number_change;
 
 	//from ATSC3_MMT_CONTEXT_SIGNALLING_INFORMATION_DEPACKETIZER_H
-	atsc3_mmt_signalling_information_on_mp_table_f 					atsc3_mmt_signalling_information_on_mp_table;
+	atsc3_mmt_signalling_information_on_mp_table_subset_f 			atsc3_mmt_signalling_information_on_mp_table_subset; 	//dispatched when table_id >= 0x11 (17) && table_id <= 0x19 (31)
+	atsc3_mmt_signalling_information_on_mp_table_complete_f 		atsc3_mmt_signalling_information_on_mp_table_complete; 	//dispatched when table_id == 0x20 (32)
+
+	atsc3_mmt_signalling_information_on_audio_packet_id_f			atsc3_mmt_signalling_information_on_audio_packet_id;
+	atsc3_mmt_signalling_information_on_video_packet_id_f			atsc3_mmt_signalling_information_on_video_packet_id;
+
 	atsc3_mmt_signalling_information_on_mpu_timestamp_descriptor_f 	atsc3_mmt_signalling_information_on_mpu_timestamp_descriptor;
 
 	//MFU specific callbacks
@@ -68,10 +62,19 @@ typedef struct atsc3_mmt_mfu_context {
 //wire up dummmy null callback(s) to prevent dispatcher from multiple if(..) checks...
 atsc3_mmt_mfu_context_t* atsc3_mmt_mfu_context_new();
 
-//we will return mmtp_mpu_packet if it was successfully persisted, otherwise it will be null'd out
-mmtp_mpu_packet_t* mmtp_process_from_payload_with_context(udp_packet_t *udp_packet,
-														  mmtp_mpu_packet_t* mmtp_mpu_packet,
-														  atsc3_mmt_mfu_context_t* atsc3_mmt_mfu_context);
+
+//Warning: cross boundary processing hooks with callback invocation - impl's in atsc3_mmt_context_mfu_depacketizer.c
+
+//MPU processing: we will return mmtp_mpu_packet if it was successfully persisted, otherwise it will be null'd out
+void mmtp_process_from_payload_with_context(udp_packet_t *udp_packet,
+											mmtp_mpu_packet_t* mmtp_mpu_packet,
+											atsc3_mmt_mfu_context_t* atsc3_mmt_mfu_context);
+
+//
+void mmt_signalling_message_process_with_context(udp_packet_t *udp_packet,
+												mmtp_signalling_packet_t* mmtp_signalling_packet,
+												atsc3_mmt_mfu_context_t* atsc3_mmt_mfu_context);
+
 
 
 #define __MMT_CONTEXT_MPU_WARN(...)   		__LIBATSC3_TIMESTAMP_WARN(__VA_ARGS__);
