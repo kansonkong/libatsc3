@@ -31,7 +31,7 @@ lls_sls_alc_session_vector_t* lls_sls_alc_session_vector_create() {
 	return lls_sls_alc_session_vector;
 }
 
-lls_sls_alc_session_t* lls_slt_alc_session_create(lls_service_t* lls_service) {
+lls_sls_alc_session_t* lls_slt_alc_session_create(atsc3_lls_slt_service_t* atsc3_lls_slt_service) {
 	lls_sls_alc_session_t* lls_slt_alc_session = (lls_sls_alc_session_t*)calloc(1, sizeof(lls_sls_alc_session_t));
 
 	lls_slt_alc_session->service_id = lls_service->service_id;
@@ -54,12 +54,12 @@ lls_sls_alc_session_t* lls_slt_alc_session_create(lls_service_t* lls_service) {
 	return lls_slt_alc_session;
 }
 
-void lls_slt_alc_session_remove(lls_sls_alc_session_vector_t* lls_slt_alc_session, lls_service_t* lls_service) {
+void lls_slt_alc_session_remove(lls_sls_alc_session_vector_t* lls_slt_alc_session, atsc3_lls_slt_service_t* atsc3_lls_slt_service) {
 	//noop for now
 }
 
 
-lls_sls_alc_session_t* lls_slt_alc_session_find(lls_sls_alc_session_vector_t* lls_sls_alc_session_vector, lls_service_t* lls_service) {
+lls_sls_alc_session_t* lls_slt_alc_session_find(lls_sls_alc_session_vector_t* lls_sls_alc_session_vector, atsc3_lls_slt_service_t* atsc3_lls_slt_service) {
 
 	uint32_t sls_source_ip_address = parseIpAddressIntoIntval(lls_service->broadcast_svc_signaling.sls_source_ip_address);
 	uint32_t sls_destination_ip_address = parseIpAddressIntoIntval(lls_service->broadcast_svc_signaling.sls_destination_ip_address);
@@ -140,7 +140,7 @@ int comparator_lls_slt_alc_session_t(const void *a, const void *b) {
 	return 0;
 }
 
-lls_sls_alc_session_t* lls_slt_alc_session_find_or_create(lls_sls_alc_session_vector_t* lls_sls_alc_session_vector, lls_service_t* lls_service) {
+lls_sls_alc_session_t* lls_slt_alc_session_find_or_create(lls_sls_alc_session_vector_t* lls_sls_alc_session_vector, atsc3_lls_slt_service_t* atsc3_lls_slt_service) {
 	lls_sls_alc_session_t* lls_slt_alc_session = lls_slt_alc_session_find(lls_sls_alc_session_vector, lls_service);
 	if(!lls_slt_alc_session) {
 		if(lls_sls_alc_session_vector->lls_slt_alc_sessions_n && lls_sls_alc_session_vector->lls_slt_alc_sessions) {

@@ -211,7 +211,7 @@ int lls_slt_table_build(lls_table_t *lls_table, xml_node_t *xml_root) {
 	return 0;
 }
 
-int SLT_BROADCAST_SVC_SIGNALING_build_table(lls_service_t* service_table, xml_node_t *service_row_node, kvp_collection_t* kvp_collection) {
+int SLT_BROADCAST_SVC_SIGNALING_build_table(atsc3_lls_slt_service_t* atsc3_lls_slt_service, xml_node_t *service_row_node, kvp_collection_t* kvp_collection) {
 	int ret = 0;
 	xml_string_t* service_row_node_xml_string = xml_node_name(service_row_node);
 	uint8_t *svc_attributes = xml_attributes_clone(service_row_node_xml_string);
@@ -225,12 +225,12 @@ int SLT_BROADCAST_SVC_SIGNALING_build_table(lls_service_t* service_table, xml_no
 	}
 
 	int scratch_i=0;
-	service_table->broadcast_svc_signaling.sls_protocol = atoi(slsProtocol);
+	atsc3_lls_slt_service->broadcast_svc_signaling.sls_protocol = atoi(slsProtocol);
 	freesafe(slsProtocol);
 
-	service_table->broadcast_svc_signaling.sls_destination_ip_address = kvp_collection_get(kvp_collection, "slsDestinationIpAddress");
-	service_table->broadcast_svc_signaling.sls_destination_udp_port = kvp_collection_get(kvp_collection, "slsDestinationUdpPort");
-	service_table->broadcast_svc_signaling.sls_source_ip_address = kvp_collection_get(kvp_collection, "slsSourceIpAddress");
+	atsc3_lls_slt_service->broadcast_svc_signaling.sls_destination_ip_address = kvp_collection_get(kvp_collection, "slsDestinationIpAddress");
+	atsc3_lls_slt_service->broadcast_svc_signaling.sls_destination_udp_port = kvp_collection_get(kvp_collection, "slsDestinationUdpPort");
+	atsc3_lls_slt_service->broadcast_svc_signaling.sls_source_ip_address = kvp_collection_get(kvp_collection, "slsSourceIpAddress");
 
 
 	//kvp_find_key(kvp_collection, "slsProtocol";
@@ -249,7 +249,7 @@ cleanup:
 int lls_slt_table_perform_update(lls_table_t* lls_table, lls_slt_monitor_t* lls_slt_monitor) {
 
     for(int i=0; i < lls_table->slt_table.service_entry_n; i++) {
-		lls_service_t* lls_service = lls_table->slt_table.service_entry[i];
+		atsc3_lls_slt_service_t* atsc3_lls_slt_service = lls_table->slt_table.service_entry[i];
 		__LLS_SLT_PARSER_DEBUG("checking service: %d", lls_service->service_id);
 
 		if(lls_service->broadcast_svc_signaling.sls_protocol == SLS_PROTOCOL_ROUTE) {

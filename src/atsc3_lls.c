@@ -135,15 +135,15 @@ lls_table_t* lls_table_create_or_update_from_lls_slt_monitor_with_metrics(lls_sl
     
     //jjustman-2019-09-18 - TODO: refactor this out from union to *
     if(lls_table_new->lls_table_id == AEAT) {
-        if(!lls_slt_monitor->aeat_table_latest) {
+        if(!lls_slt_monitor->lls_latest_aeat_table) {
             _LLS_INFO("Adding new AEAT table reference: %s", lls_table_new->aeat_table.aeat_xml_fragment_latest);
-            lls_slt_monitor->aeat_table_latest = lls_table_new;
-        } else if(lls_slt_monitor->aeat_table_latest->lls_group_id == lls_table_new->lls_group_id &&
-                  lls_slt_monitor->aeat_table_latest->lls_table_version != lls_table_new->lls_table_version) {
+            lls_slt_monitor->lls_latest_aeat_table = lls_table_new;
+        } else if(lls_slt_monitor->lls_latest_aeat_table->lls_group_id == lls_table_new->lls_group_id &&
+                  lls_slt_monitor->lls_latest_aeat_table->lls_table_version != lls_table_new->lls_table_version) {
             _LLS_INFO("Updating new AEAT table reference: %s", lls_table_new->aeat_table.aeat_xml_fragment_latest);
             
-            lls_table_free(&lls_slt_monitor->aeat_table_latest);
-            lls_slt_monitor->aeat_table_latest = lls_table_new;
+            lls_table_free(&lls_slt_monitor->lls_latest_aeat_table);
+            lls_slt_monitor->lls_latest_aeat_table = lls_table_new;
         } else {
             lls_table_free(&lls_table_new);
         }
@@ -152,15 +152,15 @@ lls_table_t* lls_table_create_or_update_from_lls_slt_monitor_with_metrics(lls_sl
     
     //jjustman-2019-09-18 - TODO: refactor this out from union to *
     if(lls_table_new->lls_table_id == OnscreenMessageNotification) {
-        if(!lls_slt_monitor->on_screen_message_notification_latest) {
+        if(!lls_slt_monitor->lls_latest_on_screen_message_notification_table) {
             _LLS_INFO("Adding new OnscreenMessageNotification table reference: %s", lls_table_new->on_screen_message_notification.on_screen_message_notification_xml_fragment_latest);
-            lls_slt_monitor->on_screen_message_notification_latest = lls_table_new;
-        } else if(lls_slt_monitor->aeat_table_latest->lls_group_id == lls_table_new->lls_group_id &&
-                  lls_slt_monitor->aeat_table_latest->lls_table_version != lls_table_new->lls_table_version) {
+            lls_slt_monitor->lls_latest_on_screen_message_notification_table = lls_table_new;
+        } else if(lls_slt_monitor->lls_latest_on_screen_message_notification_table->lls_group_id == lls_table_new->lls_group_id &&
+                  lls_slt_monitor->lls_latest_on_screen_message_notification_table->lls_table_version != lls_table_new->lls_table_version) {
             _LLS_INFO("Updating new OnscreenMessageNotification table reference: %s", lls_table_new->on_screen_message_notification.on_screen_message_notification_xml_fragment_latest);
             
-            lls_table_free(&lls_slt_monitor->on_screen_message_notification_latest);
-            lls_slt_monitor->on_screen_message_notification_latest = lls_table_new;
+            lls_table_free(&lls_slt_monitor->lls_latest_on_screen_message_notification_table);
+            lls_slt_monitor->lls_latest_on_screen_message_notification_table = lls_table_new;
         } else {
             lls_table_free(&lls_table_new);
         }
@@ -179,13 +179,13 @@ lls_table_t* lls_table_create_or_update_from_lls_slt_monitor_with_metrics(lls_sl
 	(*parsed)++;
 	//check if we should rebuild our signaling, note lls_table_version will roll over at FF
 	if(lls_slt_monitor) {
-		if(lls_slt_monitor->lls_table_slt) {
-			if(lls_table_new->lls_table_version > lls_slt_monitor->lls_table_slt->lls_table_version ||
-					(lls_table_new->lls_table_version == 0x00 && lls_slt_monitor->lls_table_slt->lls_table_version == 0xFF)) {
+		if(lls_slt_monitor->lls_latest_slt_table) {
+			if(lls_table_new->lls_table_version > lls_slt_monitor->lls_latest_slt_table->lls_table_version ||
+					(lls_table_new->lls_table_version == 0x00 && lls_slt_monitor->lls_latest_slt_table->lls_table_version == 0xFF)) {
 
 				//free our old table and keep the new one
-				lls_table_free(&lls_slt_monitor->lls_table_slt);
-				lls_slt_monitor->lls_table_slt = NULL;
+				lls_table_free(&lls_slt_monitor->lls_latest_slt_table);
+				lls_slt_monitor->lls_latest_slt_table = NULL;
 
 			} else {
 				//free our new one and keep the old one
@@ -195,10 +195,10 @@ lls_table_t* lls_table_create_or_update_from_lls_slt_monitor_with_metrics(lls_sl
 			}
 		}
 
-		lls_slt_monitor->lls_table_slt = lls_table_new;
+		lls_slt_monitor->lls_latest_slt_table = lls_table_new;
 		lls_slt_table_perform_update(lls_table_new, lls_slt_monitor);
 		(*parsed_update)++;
-		return lls_slt_monitor->lls_table_slt;
+		return lls_slt_monitor->lls_latest_slt_table;
 	} else {
 		_LLS_ERROR("lls_slt_monitor is null, can't propagate LLS update!");
 	}
@@ -268,23 +268,37 @@ void lls_table_free(lls_table_t** lls_table_p) {
 
 	if(lls_table->lls_table_id == SLT) {
 
+		//TODO: jjustman-2019-10-03 0 move this into chained destructors
+		_LLS_ERROR("TODO: use ATSC3_VECTOR_BUILDER chained destructors to free slt_table!");
+
 		//for each service entry alloc, free
-		for(int i=0; i < lls_table->slt_table.service_entry_n; i++) {
-			if(lls_table->slt_table.service_entry[i]) {
-				freesafe(lls_table->slt_table.service_entry[i]->global_service_id);
-				freesafe(lls_table->slt_table.service_entry[i]->short_service_name);
+		for(int i=0; i < lls_table->slt_table.atsc3_lls_slt_service_v.count; i++) {
+			atsc3_lls_slt_service_t* atsc3_lls_slt_service = lls_table->slt_table.atsc3_lls_slt_service_v.data[i];
+			if(atsc3_lls_slt_service) {
+				freesafe(atsc3_lls_slt_service->global_service_id);
+				freesafe(atsc3_lls_slt_service->short_service_name);
+
+				atsc3_lls_slt_service_free_atsc3_slt_broadcast_svc_signaling(atsc3_lls_slt_service);
 
 				//clear all char* in broadcast_svc_signaling
-				freesafe(lls_table->slt_table.service_entry[i]->broadcast_svc_signaling.sls_destination_ip_address);
-				freesafe(lls_table->slt_table.service_entry[i]->broadcast_svc_signaling.sls_destination_udp_port);
-				freesafe(lls_table->slt_table.service_entry[i]->broadcast_svc_signaling.sls_source_ip_address);
+//				freesafe(atsc3_lls_slt_service->broadcast_svc_signaling.sls_destination_ip_address);
+//				freesafe(atsc3_lls_slt_service->broadcast_svc_signaling.sls_destination_udp_port);
+//				freesafe(atsc3_lls_slt_service->broadcast_svc_signaling.sls_source_ip_address);
 
-				free(lls_table->slt_table.service_entry[i]);
+				free(atsc3_lls_slt_service);
+				lls_table->slt_table.service_entry[i] = NULL;
 			}
 		}
 
-		if(lls_table->slt_table.service_entry)
-			free(lls_table->slt_table.service_entry);
+		if(lls_table->slt_table.atsc3_lls_slt_service_v.size) {
+			free(lls_table->slt_table.atsc3_lls_slt_service_v.data);
+			lls_table->slt_table.atsc3_lls_slt_service_v.size = 0;
+			lls_table->slt_table.atsc3_lls_slt_service_v.count = 0;
+		}
+
+		//TODO: jjustman-2019-10-03 - free atsc3_slt_capabilities
+		//TODO: jjustman-2019-10-03 - free atsc3_slt_ineturl
+
 
 		if(lls_table->slt_table.bsid)
 			free(lls_table->slt_table.bsid);

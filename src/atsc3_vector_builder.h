@@ -32,8 +32,9 @@
  *		ATSC3_VECTOR_BUILDER_METHODS_INTERFACE(atsc3_fdt_instance, atsc3_fdt_file)
  *
  *	results in method signatures for:
- *		atsc3_fdt_instance* atsc3_fdt_instance_new()
- *		atsc3_fdt_file_t* 	atsc3_fdt_file_new();
+ *
+ *		atsc3_fdt_instance_t* 	atsc3_fdt_instance_new()
+ *		atsc3_fdt_file_t* 		atsc3_fdt_file_new();
  *
  *  	atsc3_fdt_instance_add_atsc3_fdt_file(atsc3_fdt_instance_t*, atsc3_fdt_file*);
  *		atsc3_fdt_instance_clear_atsc3_fdt_file(atsc3_fdt_instance_t*); //empty out container, leaving pointer ref's alive
