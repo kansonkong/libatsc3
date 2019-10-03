@@ -5,7 +5,7 @@
  *      Author: jjustman
  */
 
-
+#ifdef __NO_GPL_FIREWALL__
 #include "bento4/ISOBMFFTrackJoiner.h"
 
 #include "atsc3_isobmff_tools.h"
@@ -1120,4 +1120,6 @@ lls_sls_monitor_output_buffer_t* atsc3_isobmff_build_mpu_metadata_ftyp_moof_mdat
 
     return atsc3_isobmff_build_joined_patched_isobmff_fragment(lls_sls_monitor_output_buffer);
 }
+#endif
+
 #endif
