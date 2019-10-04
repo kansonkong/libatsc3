@@ -23,9 +23,10 @@
 extern "C" {
 #endif
 
-
-
 typedef void (*atsc3_mmt_mpu_on_sequence_number_change_f)(uint16_t packet_id, uint32_t mpu_sequence_number_old, uint32_t mpu_sequence_number_new);
+
+typedef void (*atsc3_mmt_mpu_on_sequence_mpu_metadata_present_f)(uint16_t packet_id, uint32_t mpu_sequence_number, block_t* mmt_mpu_metadata);
+
 //
 ////we will return mmtp_mpu_packet if it was successfully persisted, otherwise it will be null'd out
 //mmtp_mpu_packet_t* mmtp_process_from_payload(mmtp_mpu_packet_t* mmtp_mpu_packet,
