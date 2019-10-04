@@ -173,248 +173,6 @@ atsc3_mmt_mfu_context_t* atsc3_mmt_mfu_context_new() {
 	return atsc3_mmt_mfu_context;
 }
 
-/**
- * jjustman-2019-03-30 - combine pending mpu_sequence_numbers until we have at least 1a and 1v packet to flush for decoder...
-mmtp_sub_flow_vector_t* mmtp_sub_flow_vector,
-		mmtp_payload_fragments_union_t** mmtp_payload_p,
- 
- TODO: refactor udp_flow_latest_mpu_sequence_number_container_t* udp_flow_latest_mpu_sequence_number_container for mpu recon storage
-
- //jjustman-2019-08-31 - new atsc3_mmtp_packet_types.h refactoring here...
-  *
-  * TODO: do not free mmtp_mpu_packet here
- */
-//
-//void mmtp_process_from_payload_with_context(udp_packet_t *udp_packet,
-//											mmtp_mpu_packet_t* mmtp_mpu_packet,
-//											atsc3_mmt_mfu_context_t* atsc3_mmt_mfu_context) {
-//
-//	atsc3_mmt_mfu_context->udp_flow = &udp_packet->udp_flow;
-//
-//
-//	//borrow from our context
-//	mmtp_flow_t *mmtp_flow = atsc3_mmt_mfu_context->mmtp_flow;
-//	lls_slt_monitor_t* lls_slt_monitor = atsc3_mmt_mfu_context->lls_slt_monitor;
-//	lls_sls_mmt_session_t* matching_lls_sls_mmt_session = atsc3_mmt_mfu_context->matching_lls_sls_mmt_session;
-//	udp_flow_latest_mpu_sequence_number_container_t* udp_flow_latest_mpu_sequence_number_container = atsc3_mmt_mfu_context->udp_flow_latest_mpu_sequence_number_container;
-//
-//
-//    //forward declare so our goto will compile
-//    mmtp_asset_flow_t* mmtp_asset_flow = NULL;
-//    mmtp_asset_t* mmtp_asset = NULL;
-//    mmtp_packet_id_packets_container_t* mmtp_packet_id_packets_container = NULL;
-//    mpu_sequence_number_mmtp_mpu_packet_collection_t* mpu_sequence_number_mmtp_mpu_packet_collection = NULL;
-//
-//    lls_sls_mmt_monitor_t* matching_lls_sls_mmt_monitor = lls_sls_mmt_monitor_find_from_service_id(lls_slt_monitor, matching_lls_sls_mmt_session->service_id);
-//
-//    if(!matching_lls_sls_mmt_monitor) {
-//        __MMT_CONTEXT_MPU_WARN("mmtp_process_from_payload_with_context: service_id: %u, packet_id: %u, lls_slt_monitor size: %u, matching_lls_sls_mmt_monitor is NULL!",
-//                    matching_lls_sls_mmt_session->service_id,
-//                    mmtp_mpu_packet->mmtp_packet_id,
-//                    lls_slt_monitor->lls_sls_mmt_monitor_v.count);
-//
-//
-//        goto packet_cleanup;
-//    }
-//
-//    //clear out our last flow processed status
-//    matching_lls_sls_mmt_session->last_udp_flow_packet_id_mpu_sequence_tuple_audio_processed = false;
-//    matching_lls_sls_mmt_session->last_udp_flow_packet_id_mpu_sequence_tuple_video_processed = false;
-//
-//    //assign our mmtp_mpu_packet to asset/packet_id/mpu_sequence_number flow
-//    mmtp_asset_flow = mmtp_flow_find_or_create_from_udp_packet(mmtp_flow, udp_packet);
-//    mmtp_asset = mmtp_asset_flow_find_or_create_asset_from_lls_sls_mmt_session(mmtp_asset_flow, matching_lls_sls_mmt_session);
-//    mmtp_packet_id_packets_container = mmtp_asset_find_or_create_packets_container_from_mmt_mpu_packet(mmtp_asset, mmtp_mpu_packet);
-//    mpu_sequence_number_mmtp_mpu_packet_collection = mmtp_packet_id_packets_container_find_or_create_mpu_sequence_number_mmtp_mpu_packet_collection_from_mmt_mpu_packet(mmtp_packet_id_packets_container, mmtp_mpu_packet);
-//
-//    //persist our mmtp_mpu_packet for mpu reconstitution as per original libatsc3 design
-//    mpu_sequence_number_mmtp_mpu_packet_collection_add_mmtp_mpu_packet(mpu_sequence_number_mmtp_mpu_packet_collection, mmtp_mpu_packet);
-//
-//    //TODO - this should never happen with this strong type
-//    if(mmtp_mpu_packet->mmtp_payload_type == 0x0) {
-//        atsc3_global_statistics->packet_counter_mmt_mpu++;
-//
-//        if(mmtp_mpu_packet->mpu_timed_flag == 1) {
-//            atsc3_global_statistics->packet_counter_mmt_timed_mpu++;
-//
-//            if(matching_lls_sls_mmt_monitor->atsc3_lls_slt_service->service_id == matching_lls_sls_mmt_session->service_id &&
-//            		matching_lls_sls_mmt_session->sls_destination_ip_address == udp_packet->udp_flow.dst_ip_addr &&
-//					matching_lls_sls_mmt_session->sls_destination_udp_port == udp_packet->udp_flow.dst_port) {
-//
-//
-//            	udp_flow_packet_id_mpu_sequence_tuple_t* last_flow_reference = udp_flow_latest_mpu_sequence_number_add_or_replace_and_check_for_rollover(udp_flow_latest_mpu_sequence_number_container, udp_packet, mmtp_mpu_packet, lls_slt_monitor, matching_lls_sls_mmt_session);
-//
-//            	//see if we are an audio packet that rolled over
-//				if(matching_lls_sls_mmt_monitor->audio_packet_id == mmtp_mpu_packet->mmtp_packet_id) {
-//					//see if we have incremented our mpu_sequence_number with current mmtp_payload
-//
-//					if(matching_lls_sls_mmt_session->last_udp_flow_packet_id_mpu_sequence_tuple_audio && matching_lls_sls_mmt_session->last_udp_flow_packet_id_mpu_sequence_tuple_audio->mpu_sequence_number < mmtp_mpu_packet->mpu_sequence_number) {
-//
-//
-//		            	atsc3_mmt_mfu_context->atsc3_mmt_mpu_on_sequence_number_change(mmtp_mpu_packet->mmtp_packet_id, matching_lls_sls_mmt_session->last_udp_flow_packet_id_mpu_sequence_tuple_audio->mpu_sequence_number, mmtp_mpu_packet->mpu_sequence_number);
-//
-//
-////						lls_sls_monitor_buffer_isobmff_t* lls_sls_monitor_buffer_isobmff_pending_mux = atsc3_isobmff_build_raw_mpu_from_single_sequence_number(&udp_packet->udp_flow,
-////														   udp_flow_latest_mpu_sequence_number_container,
-////														   matching_lls_sls_mmt_session->last_udp_flow_packet_id_mpu_sequence_tuple_audio->packet_id,
-////														   matching_lls_sls_mmt_session->last_udp_flow_packet_id_mpu_sequence_tuple_audio->mpu_sequence_number,
-////														   &lls_slt_monitor->lls_sls_mmt_monitor->lls_sls_monitor_output_buffer.audio_output_buffer_isobmff,
-////                                                           mmtp_packet_id_packets_container);
-//
-////
-////						lls_sls_monitor_buffer_isobmff_intermediate_mmt_file_dump(lls_sls_monitor_buffer_isobmff_pending_mux, "mpu/",
-////																				lls_slt_monitor->lls_sls_mmt_monitor->service_id,
-////                                                                                 mmtp_mpu_packet->mmtp_packet_id,
-////                                                                                 matching_lls_sls_mmt_session->last_udp_flow_packet_id_mpu_sequence_tuple_audio->mpu_sequence_number,
-////                                                                                 "a.orig");
-////
-////						atsc3_isobmff_rebuild_track_mpu_from_sample_data(lls_sls_monitor_buffer_isobmff_pending_mux);
-////						ls_sls_monitor_buffer_isobmff_mmt_mpu_rebuilt_file_dump(lls_sls_monitor_buffer_isobmff_pending_mux, "mpu/",
-////																				lls_slt_monitor->lls_sls_mmt_monitor->service_id,
-////																				matching_lls_sls_mmt_session->last_udp_flow_packet_id_mpu_sequence_tuple_audio->mpu_sequence_number,
-////																				"a.rebuilt");
-////
-//                        mpu_sequence_number_mmtp_mpu_packet_collection_t* mpu_sequence_number_mmtp_mpu_packet_collection = mmtp_packet_id_packets_container_find_mpu_sequence_number_mmtp_mpu_packet_collection_from_mpu_sequence_number(mmtp_packet_id_packets_container, matching_lls_sls_mmt_session->last_udp_flow_packet_id_mpu_sequence_tuple_audio->mpu_sequence_number);
-//                        mmtp_packet_id_packets_container_remove_mpu_sequence_number_mmtp_mpu_packet_collection(mmtp_packet_id_packets_container, mpu_sequence_number_mmtp_mpu_packet_collection);
-//                        //jjustman-2019-09-05 - this might be too agressive here
-//                        //mmtp_packet_id_packets_container_free_mmtp_signalling_packet(mmtp_packet_id_packets_container);
-//                    }
-//                    //keep track of our last mpu_sequence_number...
-//					udp_flow_packet_id_mpu_sequence_tuple_free_and_clone(&matching_lls_sls_mmt_session->last_udp_flow_packet_id_mpu_sequence_tuple_audio, last_flow_reference);
-//
-//				} else if(matching_lls_sls_mmt_monitor->video_packet_id == mmtp_mpu_packet->mmtp_packet_id) {
-//					//see if we have incremented our mpu_sequence_number with current mmtp_payload
-//
-//					if(matching_lls_sls_mmt_session->last_udp_flow_packet_id_mpu_sequence_tuple_video && matching_lls_sls_mmt_session->last_udp_flow_packet_id_mpu_sequence_tuple_video->mpu_sequence_number < mmtp_mpu_packet->mpu_sequence_number) {
-//
-//		            	atsc3_mmt_mfu_context->atsc3_mmt_mpu_on_sequence_number_change(mmtp_mpu_packet->mmtp_packet_id, matching_lls_sls_mmt_session->last_udp_flow_packet_id_mpu_sequence_tuple_video->mpu_sequence_number, mmtp_mpu_packet->mpu_sequence_number);
-//
-//						//
-////						lls_sls_monitor_buffer_isobmff_t* lls_sls_monitor_buffer_isobmff_pending_mux = atsc3_isobmff_build_raw_mpu_from_single_sequence_number(&udp_packet->udp_flow,
-////														   udp_flow_latest_mpu_sequence_number_container,
-////														   matching_lls_sls_mmt_session->last_udp_flow_packet_id_mpu_sequence_tuple_video->packet_id,
-////														   matching_lls_sls_mmt_session->last_udp_flow_packet_id_mpu_sequence_tuple_video->mpu_sequence_number,
-////														   &lls_slt_monitor->lls_sls_mmt_monitor->lls_sls_monitor_output_buffer.video_output_buffer_isobmff,
-////                                                           mmtp_packet_id_packets_container);
-////
-////						lls_sls_monitor_buffer_isobmff_intermediate_mmt_file_dump(lls_sls_monitor_buffer_isobmff_pending_mux, "mpu/",
-////																				  lls_slt_monitor->lls_sls_mmt_monitor->service_id,
-////																				  mmtp_mpu_packet->mmtp_packet_id,
-////																				  matching_lls_sls_mmt_session->last_udp_flow_packet_id_mpu_sequence_tuple_video->mpu_sequence_number,
-////																				  "v.orig");
-////						atsc3_isobmff_rebuild_track_mpu_from_sample_data(lls_sls_monitor_buffer_isobmff_pending_mux);
-////						ls_sls_monitor_buffer_isobmff_mmt_mpu_rebuilt_file_dump(lls_sls_monitor_buffer_isobmff_pending_mux, "mpu/",
-////																				lls_slt_monitor->lls_sls_mmt_monitor->service_id,
-////																				matching_lls_sls_mmt_session->last_udp_flow_packet_id_mpu_sequence_tuple_video->mpu_sequence_number,
-////																				"v.rebuilt");
-////                        mpu_sequence_number_mmtp_mpu_packet_collection_t* mpu_sequence_number_mmtp_mpu_packet_collection = mmtp_packet_id_packets_container_find_mpu_sequence_number_mmtp_mpu_packet_collection_from_mpu_sequence_number(mmtp_packet_id_packets_container, matching_lls_sls_mmt_session->last_udp_flow_packet_id_mpu_sequence_tuple_video->mpu_sequence_number);
-//                        mmtp_packet_id_packets_container_remove_mpu_sequence_number_mmtp_mpu_packet_collection(mmtp_packet_id_packets_container, mpu_sequence_number_mmtp_mpu_packet_collection);
-//                        //jjustman-2019-09-05 - this might be too agressive here
-//                        //mmtp_packet_id_packets_container_free_mmtp_signalling_packet(mmtp_packet_id_packets_container);
-//
-//                    }
-//
-//					//keep track of our last mpu_sequence_number...
-//           			udp_flow_packet_id_mpu_sequence_tuple_free_and_clone(&matching_lls_sls_mmt_session->last_udp_flow_packet_id_mpu_sequence_tuple_video, last_flow_reference);
-//				}
-//
-//				//if we have at least one block in the following, push it to the isobmff track joiner as usual
-//				if(matching_lls_sls_mmt_monitor->lls_sls_monitor_output_buffer.video_output_buffer_isobmff.mmt_mpu_rebuilt_and_appending_for_isobmff_mux &&
-//						matching_lls_sls_mmt_monitor->lls_sls_monitor_output_buffer.audio_output_buffer_isobmff.mmt_mpu_rebuilt_and_appending_for_isobmff_mux) {
-//
-////                    lls_sls_monitor_output_buffer_t* lls_sls_monitor_output_buffer_final_muxed_payload = atsc3_isobmff_build_joined_mmt_rebuilt_boxes(&lls_slt_monitor->lls_sls_mmt_monitor->lls_sls_monitor_output_buffer);
-////
-////                    if(lls_sls_monitor_output_buffer_final_muxed_payload) {
-////                        //mark both of these flows as having been processed
-////                        matching_lls_sls_mmt_session->last_udp_flow_packet_id_mpu_sequence_tuple_audio_processed = true;
-////                        matching_lls_sls_mmt_session->last_udp_flow_packet_id_mpu_sequence_tuple_video_processed = true;
-////
-////
-////                        if(lls_slt_monitor->lls_sls_mmt_monitor->lls_sls_monitor_output_buffer_mode.file_dump_enabled) {
-////                            //lls_sls_monitor_output_buffer_final_muxed_payload
-////                            lls_sls_monitor_output_buffer_mmt_file_dump(lls_sls_monitor_output_buffer_final_muxed_payload, "mpu/",
-////                                matching_lls_sls_mmt_session->last_udp_flow_packet_id_mpu_sequence_tuple_audio->mpu_sequence_number,
-////                                matching_lls_sls_mmt_session->last_udp_flow_packet_id_mpu_sequence_tuple_video->mpu_sequence_number);
-////                        }
-////
-////                        //http support output
-////                        if(lls_slt_monitor->lls_sls_mmt_monitor->lls_sls_monitor_output_buffer_mode.http_output_enabled &&
-////                                lls_slt_monitor->lls_sls_mmt_monitor->lls_sls_monitor_output_buffer_mode.http_output_buffer &&
-////                                lls_slt_monitor->lls_sls_mmt_monitor->lls_sls_monitor_output_buffer_mode.http_output_buffer->http_output_conntected) {
-////                            //&& lls_slt_monitor->lls_sls_mmt_monitor->lls_sls_monitor_output_buffer_mode.pipe_ffplay_buffer) {
-////
-////                            lls_sls_monitor_reader_mutex_lock(lls_slt_monitor->lls_sls_mmt_monitor->lls_sls_monitor_output_buffer_mode.http_output_buffer->http_payload_buffer_mutex);
-////                            lls_slt_monitor->lls_sls_mmt_monitor->lls_sls_monitor_output_buffer_mode.http_output_buffer->total_fragments_incoming_written++;
-////
-////                            if(!lls_slt_monitor->lls_sls_mmt_monitor->lls_sls_monitor_output_buffer_mode.http_output_buffer->http_payload_buffer_incoming) {
-////                                lls_slt_monitor->lls_sls_mmt_monitor->lls_sls_monitor_output_buffer_mode.http_output_buffer->http_payload_buffer_incoming =  block_Duplicate(lls_sls_monitor_output_buffer_final_muxed_payload->joined_isobmff_block);
-////                            } else {
-////                                block_Resize(lls_slt_monitor->lls_sls_mmt_monitor->lls_sls_monitor_output_buffer_mode.http_output_buffer->http_payload_buffer_incoming, lls_slt_monitor->lls_sls_mmt_monitor->lls_sls_monitor_output_buffer_mode.http_output_buffer->http_payload_buffer_incoming->p_size + lls_sls_monitor_output_buffer_final_muxed_payload->joined_isobmff_block->p_size);
-////                                block_Write(lls_slt_monitor->lls_sls_mmt_monitor->lls_sls_monitor_output_buffer_mode.http_output_buffer->http_payload_buffer_incoming, lls_sls_monitor_output_buffer_final_muxed_payload->joined_isobmff_block->p_buffer, lls_sls_monitor_output_buffer_final_muxed_payload->joined_isobmff_block->p_size);
-////                            }
-////
-////                            lls_sls_monitor_reader_mutex_unlock(lls_slt_monitor->lls_sls_mmt_monitor->lls_sls_monitor_output_buffer_mode.http_output_buffer->http_payload_buffer_mutex);
-////                        }
-////
-////                        //ffplay pipe output
-////                        if(lls_slt_monitor->lls_sls_mmt_monitor->lls_sls_monitor_output_buffer_mode.ffplay_output_enabled && lls_slt_monitor->lls_sls_mmt_monitor->lls_sls_monitor_output_buffer_mode.pipe_ffplay_buffer) {
-////
-////                            pipe_buffer_reader_mutex_lock(lls_slt_monitor->lls_sls_mmt_monitor->lls_sls_monitor_output_buffer_mode.pipe_ffplay_buffer);
-////
-////                            pipe_buffer_unsafe_push_block(lls_slt_monitor->lls_sls_mmt_monitor->lls_sls_monitor_output_buffer_mode.pipe_ffplay_buffer, lls_sls_monitor_output_buffer_final_muxed_payload->joined_isobmff_block->p_buffer, lls_sls_monitor_output_buffer_final_muxed_payload->joined_isobmff_block->i_pos);
-////
-////                            lls_slt_monitor->lls_sls_mmt_monitor->lls_sls_monitor_output_buffer.has_written_init_box = true;
-////
-////                            pipe_buffer_notify_semaphore_post(lls_slt_monitor->lls_sls_mmt_monitor->lls_sls_monitor_output_buffer_mode.pipe_ffplay_buffer);
-////
-////                            //check to see if we have shutdown
-////                            lls_slt_monitor_check_and_handle_pipe_ffplay_buffer_is_shutdown(lls_slt_monitor);
-////
-////                            pipe_buffer_reader_mutex_unlock(lls_slt_monitor->lls_sls_mmt_monitor->lls_sls_monitor_output_buffer_mode.pipe_ffplay_buffer);
-////                        }
-////
-////                        lls_sls_monitor_output_buffer_reset_rebuilt_mpu_moof_and_fragment_position(&lls_slt_monitor->lls_sls_mmt_monitor->lls_sls_monitor_output_buffer);
-////                    }
-//                    //jjustman-2019-09-05 - TODO: fix this hack
-//                    //clear out packet_id=0
-//                    //mmtp_mpu_packet = NULL;
-////                    mmtp_mpu_packet_t* mmtp_mpu_packet = mmtp_mpu_packet_new();
-////                    mmtp_mpu_packet->mmtp_packet_id = 0;
-////
-////                    mmtp_packet_id_packets_container_t* mmtp_packet_id_packets_container_packet_zero = mmtp_asset_find_or_create_packets_container_from_mmt_mpu_packet(mmtp_asset, mmtp_mpu_packet);
-////                    mmtp_packet_id_packets_container_free_mmtp_signalling_packet(mmtp_packet_id_packets_container_packet_zero);
-//                }
-//            }
-//        } else {
-//            //non-timed
-//            atsc3_global_statistics->packet_counter_mmt_nontimed_mpu++;
-//        }
-//
-//        goto ret;
-//
-//    } else if(mmtp_mpu_packet->mmtp_payload_type == 0x2) {
-//
-//		atsc3_global_statistics->packet_counter_mmt_signaling++;
-//		__MMT_CONTEXT_MPU_SIGNAL_INFO("mmtp_process_from_payload: processing mmt flow: %d.%d.%d.%d:(%u) packet_id: 0, signalling message", __toipandportnonstruct(udp_packet->udp_flow.dst_ip_addr, udp_packet->udp_flow.dst_port));
-//
-//    } else {
-//    	__MMT_CONTEXT_MPU_WARN("mmtp_process_from_payload: unknown payload type of 0x%x", mmtp_mpu_packet->mmtp_payload_type);
-//		atsc3_global_statistics->packet_counter_mmt_unknown++;
-//		goto packet_cleanup;
-//    }
-//
-//packet_cleanup:
-////    if(mmtp_mpu_packet) {
-////    	__MMT_CONTEXT_MPU_TRACE("Cleaning up packet: %p", mmtp_mpu_packet);
-////        mmtp_mpu_packet_free(&mmtp_mpu_packet);
-////    }
-//
-//ret:
-//    return;
-//}
-
-
-
 void mmtp_mfu_process_from_payload_with_context(udp_packet_t *udp_packet,
 											mmtp_mpu_packet_t* mmtp_mpu_packet,
 											atsc3_mmt_mfu_context_t* atsc3_mmt_mfu_context) {
@@ -454,6 +212,7 @@ void mmtp_mfu_process_from_payload_with_context(udp_packet_t *udp_packet,
     mpu_sequence_number_mmtp_mpu_packet_collection_add_mmtp_mpu_packet(mpu_sequence_number_mmtp_mpu_packet_collection, mmtp_mpu_packet);
 
     //TODO - this should never happen with this strong type
+    
     if(mmtp_mpu_packet->mmtp_payload_type == 0x0) {
         atsc3_global_statistics->packet_counter_mmt_mpu++;
 
@@ -464,10 +223,21 @@ void mmtp_mfu_process_from_payload_with_context(udp_packet_t *udp_packet,
             		matching_lls_sls_mmt_session->sls_destination_ip_address == udp_packet->udp_flow.dst_ip_addr &&
 					matching_lls_sls_mmt_session->sls_destination_udp_port == udp_packet->udp_flow.dst_port) {
 
+                /**
+                 
+                 we only care about:
+                    mfu's that start with a sample header (and fi=0): mmtp_mpu_packet->mmthsample_header
+                 
+                    otherwise, check and recon if necessary:
+                        mmtp_mpu_packet->mpu_fragment_type=0x0 - mpu_metadata
+                        mmtp_mpu_packet->mpu_fragment_type=0x2 - mfu
+                 */
             	udp_flow_packet_id_mpu_sequence_tuple_t* last_flow_reference = udp_flow_latest_mpu_sequence_number_add_or_replace_and_check_for_rollover(udp_flow_latest_mpu_sequence_number_container, udp_packet, mmtp_mpu_packet, lls_slt_monitor, matching_lls_sls_mmt_session);
 
             	char* essence_type = (matching_lls_sls_mmt_monitor->audio_packet_id == mmtp_mpu_packet->mmtp_packet_id) ? "a" : "v";
 				//see if we are at the start of a new mfu sample
+                //implies mmtp_mpu_packet->mpu_fragment_type==0x02
+                
 				if(mmtp_mpu_packet->mmthsample_header) {
 					__MMT_CONTEXT_MPU_DEBUG("mmtp_mfu_process_from_payload_with_context: new MFU.MMTHSample: packet_id: %u (%c), mpu_sequence_number: %u, mmthsample.samplenumber: %u, mmthsample.movie_fragment_sequence_number: %u, mmthsample.length: %u, mfu packet size: %u, fragmentation_indicator: %u",
 						mmtp_mpu_packet->mmtp_packet_id,
@@ -513,6 +283,7 @@ void mmtp_mfu_process_from_payload_with_context(udp_packet_t *udp_packet,
                         mmtp_mpu_packet->du_mpu_metadata_block ? mmtp_mpu_packet->du_mpu_metadata_block->p_size : 0,
                         mmtp_mpu_packet->mpu_fragmentation_indicator);
                         
+                        //one (or more) DU
                         if(mmtp_mpu_packet->mpu_fragmentation_indicator == 0x00) {
                             atsc3_mmt_mfu_context->atsc3_mmt_mpu_on_sequence_mpu_metadata_present(mmtp_mpu_packet->mmtp_packet_id, mmtp_mpu_packet->mpu_sequence_number, block_Duplicate(mmtp_mpu_packet->du_mpu_metadata_block));
                         } else if(mmtp_mpu_packet->mpu_fragmentation_indicator == 0x03) {
@@ -521,30 +292,32 @@ void mmtp_mfu_process_from_payload_with_context(udp_packet_t *udp_packet,
                             block_t* du_mpu_metadata_block_rebuilt = NULL;
                             mpu_sequence_number_mmtp_mpu_packet_collection_t* mpu_sequence_number_mmtp_mpu_packet_collection = mmtp_packet_id_packets_container_find_mpu_sequence_number_mmtp_mpu_packet_collection_from_mpu_sequence_number(mmtp_packet_id_packets_container, mmtp_mpu_packet->mpu_sequence_number);
                             for(int i=0; i < mpu_sequence_number_mmtp_mpu_packet_collection->mmtp_mpu_packet_v.count; i++) {
-                                mmtp_mpu_packet_t* mmtp_mpu_packet = mpu_sequence_number_mmtp_mpu_packet_collection->mmtp_mpu_packet_v.data[i];
+                                mmtp_mpu_packet_t* mmtp_mpu_packet_to_rebuild = mpu_sequence_number_mmtp_mpu_packet_collection->mmtp_mpu_packet_v.data[i];
 
                                 //assume no loss/re-sequencing for now..
-                                if(mmtp_mpu_packet->du_mpu_metadata_block) {
+                                if(mmtp_mpu_packet_to_rebuild->du_mpu_metadata_block) {
                                     if(!du_mpu_metadata_block_rebuilt) {
                                         __MMT_CONTEXT_MPU_DEBUG("i: %u, psn: %u, Found MPU Metadata with %u:%u and packet_id: %u, mpu_sequence_number: %u, fragment_indicator: %u",
-                                                              i, mmtp_mpu_packet->packet_sequence_number,
+                                                              i,
+                                                              mmtp_mpu_packet_to_rebuild->packet_sequence_number,
                                                               atsc3_mmt_mfu_context->udp_flow->dst_ip_addr,
                                                               atsc3_mmt_mfu_context->udp_flow->dst_port,
-                                                              mmtp_mpu_packet->mmtp_packet_id,
-                                                              mmtp_mpu_packet->mpu_sequence_number,
-                                                              mmtp_mpu_packet->mpu_fragmentation_indicator);
+                                                              mmtp_mpu_packet_to_rebuild->mmtp_packet_id,
+                                                              mmtp_mpu_packet_to_rebuild->mpu_sequence_number,
+                                                              mmtp_mpu_packet_to_rebuild->mpu_fragmentation_indicator);
 
-                                        du_mpu_metadata_block_rebuilt = block_Duplicate(mmtp_mpu_packet->du_mpu_metadata_block);
+                                        du_mpu_metadata_block_rebuilt = block_Duplicate(mmtp_mpu_packet_to_rebuild->du_mpu_metadata_block);
                                     } else {
                                         __MMT_CONTEXT_MPU_DEBUG("i: %u, psn: %u, Appending MPU Metadata with %u:%u and packet_id: %u, mpu_sequence_number: %u, fragment_indicator: %u",
-                                                              i, mmtp_mpu_packet->packet_sequence_number,
+                                                              i,
+                                                              mmtp_mpu_packet_to_rebuild->packet_sequence_number,
                                                               atsc3_mmt_mfu_context->udp_flow->dst_ip_addr,
                                                               atsc3_mmt_mfu_context->udp_flow->dst_port,
-                                                              mmtp_mpu_packet->mmtp_packet_id,
-                                                              mmtp_mpu_packet->mpu_sequence_number,
-                                                              mmtp_mpu_packet->mpu_fragmentation_indicator);
+                                                              mmtp_mpu_packet_to_rebuild->mmtp_packet_id,
+                                                              mmtp_mpu_packet_to_rebuild->mpu_sequence_number,
+                                                              mmtp_mpu_packet_to_rebuild->mpu_fragmentation_indicator);
                                         
-                                        block_Merge(du_mpu_metadata_block_rebuilt, mmtp_mpu_packet->du_mpu_metadata_block);
+                                        block_Merge(du_mpu_metadata_block_rebuilt, mmtp_mpu_packet_to_rebuild->du_mpu_metadata_block);
                                     }
                                 }
                             }
@@ -562,16 +335,113 @@ void mmtp_mfu_process_from_payload_with_context(udp_packet_t *udp_packet,
                             }
                         }
                     } else if(mmtp_mpu_packet->mpu_fragment_type == 0x2) {
+                        if(mmtp_mpu_packet->mpu_fragmentation_indicator == 0x3) {
+                            
+                            //rebuild mmtp_mpu_packet if we have our closing fragment...
+                            //todo: jjustman-2019-10-03 - how to handle missing first NAL or partial DU's?
+                            //and compute relative DU offset for rebuilding MFU
+                            //first DU in MFU should contain MMTHSample,
+                            //last DU in MFU should contain mpu_fragment_counter == 0;
 
-					__MMT_CONTEXT_MPU_DEBUG("mmtp_mfu_process_from_payload_with_context: carry over MFU : packet_id: %u (%c), mpu_sequence_number: %u, mmtp_mpu_packet.samplenumber: %u, mmtp_mpu_packet.mpu_fragment_counter: %u, mmtp_mpu_packet.offset: %u, mfu packet size: %u, fragmentation_indicator: %u",
-						mmtp_mpu_packet->mmtp_packet_id,
-						*essence_type,
-						mmtp_mpu_packet->mpu_sequence_number,
-						mmtp_mpu_packet->sample_number,
-						mmtp_mpu_packet->mpu_fragment_counter,
-						mmtp_mpu_packet->offset,
-                        mmtp_mpu_packet->du_mfu_block ? mmtp_mpu_packet->du_mfu_block->p_size : 0,
-                        mmtp_mpu_packet->mpu_fragmentation_indicator);
+                            uint32_t mfu_sample_number = mmtp_mpu_packet->sample_number;
+                            
+                            block_t* du_mfu_block_rebuilt = NULL;
+                                                        
+                            int32_t mpu_fragment_counter_start = 0;
+                            int32_t mpu_fragment_counter_position = 0;
+                            int32_t mpu_fragment_count_rebuilt = 0;
+                            
+                            mpu_sequence_number_mmtp_mpu_packet_collection_t* mpu_sequence_number_mmtp_mpu_packet_collection = mmtp_packet_id_packets_container_find_mpu_sequence_number_mmtp_mpu_packet_collection_from_mpu_sequence_number(mmtp_packet_id_packets_container, mmtp_mpu_packet->mpu_sequence_number);
+                            for(int i=0; i < mpu_sequence_number_mmtp_mpu_packet_collection->mmtp_mpu_packet_v.count; i++) {
+                                mmtp_mpu_packet_t* mmtp_mpu_packet_to_rebuild = mpu_sequence_number_mmtp_mpu_packet_collection->mmtp_mpu_packet_v.data[i];
+
+                                if(mfu_sample_number == mmtp_mpu_packet_to_rebuild->sample_number) {
+                                    if(mmtp_mpu_packet_to_rebuild->du_mfu_block) {
+                                        if(!du_mfu_block_rebuilt) {
+                                            if(mmtp_mpu_packet_to_rebuild->mmthsample_header) {
+                                                mpu_fragment_counter_start = mmtp_mpu_packet_to_rebuild->mpu_fragment_counter;
+                                                mpu_fragment_counter_position = mpu_fragment_counter_start;
+                                                __MMT_CONTEXT_MPU_DEBUG("i: %u, psn: %u, Found MFU DU with MMTHSample header start,with %u:%u and packet_id: %u, mpu_sequence_number: %u, fragment_indicator: %u",
+                                                                  i,
+                                                                  mmtp_mpu_packet_to_rebuild->packet_sequence_number,
+                                                                  atsc3_mmt_mfu_context->udp_flow->dst_ip_addr,
+                                                                  atsc3_mmt_mfu_context->udp_flow->dst_port,
+                                                                  mmtp_mpu_packet_to_rebuild->mmtp_packet_id,
+                                                                  mmtp_mpu_packet_to_rebuild->mpu_sequence_number,
+                                                                  mmtp_mpu_packet_to_rebuild->mpu_fragmentation_indicator);
+                                            } else {
+                                                __MMT_CONTEXT_MPU_DEBUG("i: %u, psn: %u, Found MFU DU but missing MMTHSample header start,with %u:%u and packet_id: %u, mpu_sequence_number: %u, fragment_indicator: %u",
+                                                                  i,
+                                                                  mmtp_mpu_packet_to_rebuild->packet_sequence_number,
+                                                                  atsc3_mmt_mfu_context->udp_flow->dst_ip_addr,
+                                                                  atsc3_mmt_mfu_context->udp_flow->dst_port,
+                                                                  mmtp_mpu_packet_to_rebuild->mmtp_packet_id,
+                                                                  mmtp_mpu_packet_to_rebuild->mpu_sequence_number,
+                                                                  mmtp_mpu_packet_to_rebuild->mpu_fragmentation_indicator);
+                                            }
+                                            mpu_fragment_counter_position--;
+                                            mpu_fragment_count_rebuilt++;
+                                            du_mfu_block_rebuilt = block_Duplicate(mmtp_mpu_packet_to_rebuild->du_mfu_block);
+                                            
+                                        } else {
+                                            __MMT_CONTEXT_MPU_DEBUG("i: %u, psn: %u, Appending MFU DU with %u:%u and packet_id: %u, mpu_sequence_number: %u, fragment_indicator: %u",
+                                                                  i,
+                                                                  mmtp_mpu_packet_to_rebuild->packet_sequence_number,
+                                                                  atsc3_mmt_mfu_context->udp_flow->dst_ip_addr,
+                                                                  atsc3_mmt_mfu_context->udp_flow->dst_port,
+                                                                  mmtp_mpu_packet_to_rebuild->mmtp_packet_id,
+                                                                  mmtp_mpu_packet_to_rebuild->mpu_sequence_number,
+                                                                  mmtp_mpu_packet_to_rebuild->mpu_fragmentation_indicator);
+                                            
+                                            mpu_fragment_counter_position--;
+                                            mpu_fragment_count_rebuilt++;
+                                            block_Merge(du_mfu_block_rebuilt, mmtp_mpu_packet_to_rebuild->du_mfu_block);
+                                        }
+                                        
+                                        //hack, handle this context/state better
+                                        block_Destroy(&mmtp_mpu_packet_to_rebuild->du_mfu_block);
+                                    }
+                                }
+                            }
+                            
+                            if(du_mfu_block_rebuilt && du_mfu_block_rebuilt->p_size) {
+                                
+                                __MMT_CONTEXT_MPU_DEBUG("MFU packet_id: %u, mpu_sequence_number: %u, sample_number: %u, fragment_indicator: %u, mpu_fragment_counter_start: %d, mpu_fragment_counter_position: %d, mpu_fragment_count_rebuilt: %d",
+                                                        mmtp_mpu_packet->mmtp_packet_id,
+                                                        mmtp_mpu_packet->mpu_sequence_number,
+                                                        mfu_sample_number,
+                                                        mmtp_mpu_packet->mpu_fragmentation_indicator,
+                                                        mpu_fragment_counter_start,
+                                                        mpu_fragment_counter_position,
+                                                        mpu_fragment_count_rebuilt);
+                                                        
+                                if(mpu_fragment_counter_start - mpu_fragment_count_rebuilt == 0) {
+                                    atsc3_mmt_mfu_context->atsc3_mmt_mpu_mfu_on_sample_complete(mmtp_mpu_packet->mmtp_packet_id, mmtp_mpu_packet->mpu_sequence_number, mfu_sample_number, du_mfu_block_rebuilt);
+                                } else {
+                                    atsc3_mmt_mfu_context->atsc3_mmt_mpu_mfu_on_sample_corrupt(mmtp_mpu_packet->mmtp_packet_id, mmtp_mpu_packet->mpu_sequence_number, mfu_sample_number, du_mfu_block_rebuilt);
+                                }
+                            } else {
+                                __MMT_CONTEXT_MPU_ERROR("psn: %u, MPU Metadata: du_mpu_metadata_block_rebuilt is null or size == 0! with %u:%u and packet_id: %u, mpu_sequence_number: %u, sample_number: %u, fragment_indicator: %u",
+                                                        mmtp_mpu_packet->packet_sequence_number,
+                                                        atsc3_mmt_mfu_context->udp_flow->dst_ip_addr,
+                                                        atsc3_mmt_mfu_context->udp_flow->dst_port,
+                                                        mmtp_mpu_packet->mmtp_packet_id,
+                                                        mmtp_mpu_packet->mpu_sequence_number,
+                                                        mfu_sample_number,
+                                                        mmtp_mpu_packet->mpu_fragmentation_indicator);
+                                atsc3_mmt_mfu_context->atsc3_mmt_mpu_mfu_on_sample_missing(mmtp_mpu_packet->mmtp_packet_id, mmtp_mpu_packet->mpu_sequence_number, mfu_sample_number);
+                            }
+                        } else {
+                            __MMT_CONTEXT_MPU_DEBUG("mmtp_mfu_process_from_payload_with_context: carry over MFU : packet_id: %u (%c), mpu_sequence_number: %u, mmtp_mpu_packet.samplenumber: %u, mmtp_mpu_packet.mpu_fragment_counter: %u, mmtp_mpu_packet.offset: %u, mfu packet size: %u, fragmentation_indicator: %u",
+                                mmtp_mpu_packet->mmtp_packet_id,
+                                *essence_type,
+                                mmtp_mpu_packet->mpu_sequence_number,
+                                mmtp_mpu_packet->sample_number,
+                                mmtp_mpu_packet->mpu_fragment_counter,
+                                mmtp_mpu_packet->offset,
+                                mmtp_mpu_packet->du_mfu_block ? mmtp_mpu_packet->du_mfu_block->p_size : 0,
+                                mmtp_mpu_packet->mpu_fragmentation_indicator);
+                        }
                     }
 				}
 
