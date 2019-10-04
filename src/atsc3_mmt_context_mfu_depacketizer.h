@@ -80,6 +80,7 @@ void mmt_signalling_message_process_with_context(udp_packet_t *udp_packet,
 
 
 
+#define __MMT_CONTEXT_MPU_ERROR(...)           __LIBATSC3_TIMESTAMP_WARN(__VA_ARGS__);
 #define __MMT_CONTEXT_MPU_WARN(...)   		__LIBATSC3_TIMESTAMP_WARN(__VA_ARGS__);
 #define __MMT_CONTEXT_MPU_INFO(...)    		__LIBATSC3_TIMESTAMP_INFO(__VA_ARGS__);
 #define __MMT_CONTEXT_MPU_SIGNAL_INFO(...)  if(_MMT_CONTEXT_MPU_SIGNAL_INFO_ENABLED) { __LIBATSC3_TIMESTAMP_INFO(__VA_ARGS__); }
