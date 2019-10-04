@@ -51,7 +51,9 @@
 
 //jjustman-2019-10-02 - this should be defined in strings.h, if not, add in deprecated binding
 #ifndef bcmp
-int	 bcmp(const void *, const void *, size_t) __POSIX_C_DEPRECATED(200112L);
+//int	 bcmp(const void *, const void *, size_t) __POSIX_C_DEPRECATED(200112L);
+#define bcmp(b1,b2,len) memcmp((b1), (b2), (size_t)(len))
+
 #endif
 
 

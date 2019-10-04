@@ -284,10 +284,10 @@ endwin:
 	endwin();
 	exit(1);
 
-#endif
-
 	return NULL;
 }
+#endif
+
 
 void ncurses_mutext_init() {
 	if (pthread_mutex_init(&ncurses_writer_lock, NULL) != 0) {
