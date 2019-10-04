@@ -259,7 +259,7 @@ typedef struct mmtp_asset {
     /* TODO: jjustman-2019-08-31
      
      map this to proper iso23008-1:
-     
+
      uint32_t   asset_id_scheme
      uint32_t   asset_id_length
      uint8_t*   asset_id_value
