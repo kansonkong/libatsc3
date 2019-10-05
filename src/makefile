@@ -543,7 +543,7 @@ test/atsc3_fdt_test_2019-09-07-esg-e.1.1.7: test/atsc3_fdt_test_2019-09-07-esg-e
 test/atsc3_fdt_mbms_envelope_test_2019-09-17-nab-interop-day1: test/atsc3_fdt_mbms_envelope_test_2019-09-17-nab-interop-day1.c
 	cc -g test/atsc3_fdt_mbms_envelope_test_2019-09-17-nab-interop-day1.c libatsc3.o -lz -lm -lpthread -lpcap -o test/atsc3_fdt_mbms_envelope_test_2019-09-17-nab-interop-day1
 
-test/atsc3_hevc_nal_extractor_test: test/atsc3_hevc_nal_extractor_test.c
+test/atsc3_hevc_nal_extractor_test: test/atsc3_hevc_nal_extractor_test.c libatsc3.o
 	cc -g test/atsc3_hevc_nal_extractor_test.c libatsc3.o -lz -lm -lpthread -lpcap -o test/atsc3_hevc_nal_extractor_test
 
 test/atsc3_libmicrohttpd_test: test/atsc3_libmicrohttpd_test.c 

@@ -16,7 +16,6 @@
 #include <string.h>
 #include <sys/stat.h>
 
-
 #include "../atsc3_utils.h"
 #include "../atsc3_logging_externs.h"
 
@@ -77,6 +76,9 @@ int parse_hevc_nal_test(const char* filename) {
 }
 
 int main(int argc, char* argv[] ) {
+	_ATSC3_HEVC_NAL_EXTRACTOR_INFO_ENABLED = 1;
+	_ATSC3_HEVC_NAL_EXTRACTOR_DEBUG_ENABLED = 1;
+	_ATSC3_HEVC_NAL_EXTRACTOR_TRACE_ENABLED = 1;
 
 	_ATSC3_HEVC_NAL_EXTRACTOR_TEST_INFO("->starting test cases for atsc3_hevc_nal_extractor");
 
