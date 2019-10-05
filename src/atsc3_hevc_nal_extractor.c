@@ -172,11 +172,16 @@ void atsc3_avc1_nal_unit_pps_free(atsc3_avc1_nal_unit_pps_t** atsc3_avc1_nal_uni
 	}
 }
 
-//maybe also avcC? - https://github.com/aizvorski/h264bitstream/blob/master/h264_avcc.c
+video_decoder_configuration_record_t* video_decoder_configuration_record_new() {
+    video_decoder_configuration_record_t* video_decoder_configuration_record = calloc(1, sizeof(video_decoder_configuration_record_t));
+    return video_decoder_configuration_record;
+}
 
-hevc_decoder_configuration_record_t* atsc3_hevc_nal_extractor_parse_from_mpu_metadata_block_t(block_t* mpu_metadata_block) {
-	hevc_decoder_configuration_record_t* hevc_decoder_configuration_record = hevc_decoder_configuration_record_new();
+//process either avcC or hvcC, use video_decoder_configuration_record (containing both avcC and hvcC decoder records)
 
+video_decoder_configuration_record_t* atsc3_avc1_hevc_nal_extractor_parse_from_mpu_metadata_block_t(block_t* mpu_metadata_block) {
+    video_decoder_configuration_record_t* video_decoder_configuration_record = video_decoder_configuration_record_new();
+    
 	if(!mpu_metadata_block || mpu_metadata_block->p_size < 8) {
 		goto error;
 	}
@@ -185,7 +190,7 @@ hevc_decoder_configuration_record_t* atsc3_hevc_nal_extractor_parse_from_mpu_met
 
 	//todo: search for isobmff box: hvcC
 
-	_ATSC3_HEVC_NAL_EXTRACTOR_TRACE("atsc3_hevc_nal_extractor_parse_from_mpu_metadata_block_t: mpu_metadata_block_t: %p, p_buffer: %p, pos: %d, size: %d",
+	_ATSC3_HEVC_NAL_EXTRACTOR_TRACE("atsc3_avc1_hevc_nal_extractor_parse_from_mpu_metadata_block_t: mpu_metadata_block_t: %p, p_buffer: %p, pos: %d, size: %d",
 			mpu_metadata_block,
 			mpu_metadata_block->p_buffer,
 			mpu_metadata_block->i_pos,
@@ -202,7 +207,7 @@ hevc_decoder_configuration_record_t* atsc3_hevc_nal_extractor_parse_from_mpu_met
 
 	for(int i=0; !(has_hvcC_match || has_avcC_match) && (i < mpu_metadata_block->p_size - 4); i++) {
 
-		_ATSC3_HEVC_NAL_EXTRACTOR_TRACE("atsc3_hevc_nal_extractor_parse_from_mpu_metadata_block_t: position: %d, checking: 0x%02x (%c), 0x%02x (%c), 0x%02x (%c), 0x%02x (%c)",
+		_ATSC3_HEVC_NAL_EXTRACTOR_TRACE("atsc3_avc1_hevc_nal_extractor_parse_from_mpu_metadata_block_t: position: %d, checking: 0x%02x (%c), 0x%02x (%c), 0x%02x (%c), 0x%02x (%c)",
 				i,
 				mpu_ptr[i], mpu_ptr[i],
 				mpu_ptr[i+1], mpu_ptr[i+1],
@@ -225,7 +230,10 @@ hevc_decoder_configuration_record_t* atsc3_hevc_nal_extractor_parse_from_mpu_met
 		goto error;
 	}
 
+    //process as HEVC w/ hvcC match
 	if(has_hvcC_match) {
+        hevc_decoder_configuration_record_t* hevc_decoder_configuration_record = hevc_decoder_configuration_record_new();
+
 		//todo: parse trailing 22 bytes after hvcC box name
 
 		//hack
@@ -252,6 +260,9 @@ hevc_decoder_configuration_record_t* atsc3_hevc_nal_extractor_parse_from_mpu_met
 		for(int i=0; i < hevc_decoder_configuration_record->num_of_arrays; i++) {
 
 		}
+    
+        video_decoder_configuration_record->hevc_decoder_configuration_record = hevc_decoder_configuration_record;
+        return video_decoder_configuration_record;
 	}
 
 	if(has_avcC_match) {
@@ -283,8 +294,9 @@ hevc_decoder_configuration_record_t* atsc3_hevc_nal_extractor_parse_from_mpu_met
 		if((num_of_sequence_parameter_sets_temp >> 5) != 0x7) { //3 MSBits set to '111' reserved
 			_ATSC3_HEVC_NAL_EXTRACTOR_WARN("atsc3_hevc_nal_extractor_parse_from_mpu_metadata_block_t: num_of_sequence_parameter_sets_temp 3 MSB != 111");
 		}
+        
+        //SPS count
 		avc1_decoder_configuration_record->num_of_sequence_parameter_sets = num_of_sequence_parameter_sets_temp & 0x1F;
-
 		_ATSC3_HEVC_NAL_EXTRACTOR_DEBUG("atsc3_hevc_nal_extractor_parse_from_mpu_metadata_block_t: num_of_sequence_parameter_sets: %u",  avc1_decoder_configuration_record->num_of_sequence_parameter_sets);
 
 		//start parsing SPS here
@@ -297,12 +309,13 @@ hevc_decoder_configuration_record_t* atsc3_hevc_nal_extractor_parse_from_mpu_met
 			avc1_decoder_configuration_record_add_atsc3_avc1_nal_unit_sps(avc1_decoder_configuration_record, atsc3_avc1_nal_unit_sps);
 			avc_offset += atsc3_avc1_nal_unit_sps->nal_unit_length;
 
-			_ATSC3_HEVC_NAL_EXTRACTOR_DEBUG("atsc3_hevc_nal_extractor_parse_from_mpu_metadata_block_t: avc1: adding pps: %d, nal_length: %u", i, atsc3_avc1_nal_unit_sps->nal_unit_length);
-
+			_ATSC3_HEVC_NAL_EXTRACTOR_DEBUG("atsc3_hevc_nal_extractor_parse_from_mpu_metadata_block_t: avc1: adding SPS: %d, nal_length: %u, nal_unit->p_size: %d",
+                                            i, atsc3_avc1_nal_unit_sps->nal_unit_length, atsc3_avc1_nal_unit_sps->nal_unit->p_size);
 		}
 
-		//pps
+		//PPS count
 		avc1_decoder_configuration_record->num_of_picture_parameter_sets = mpu_ptr[avc_offset++];
+        _ATSC3_HEVC_NAL_EXTRACTOR_DEBUG("atsc3_hevc_nal_extractor_parse_from_mpu_metadata_block_t: num_of_picture_parameter_sets: %u",  avc1_decoder_configuration_record->num_of_picture_parameter_sets);
 
 		//start parsing PPS here
 		for(int i = 0; i < avc1_decoder_configuration_record->num_of_sequence_parameter_sets; i++) {
@@ -314,14 +327,18 @@ hevc_decoder_configuration_record_t* atsc3_hevc_nal_extractor_parse_from_mpu_met
 			avc1_decoder_configuration_record_add_atsc3_avc1_nal_unit_pps(avc1_decoder_configuration_record, atsc3_avc1_nal_unit_pps);
 			avc_offset += atsc3_avc1_nal_unit_pps->nal_unit_length;
 
-			_ATSC3_HEVC_NAL_EXTRACTOR_DEBUG("atsc3_hevc_nal_extractor_parse_from_mpu_metadata_block_t: avc1: adding pps: %d, nal_length: %u", i, atsc3_avc1_nal_unit_pps->nal_unit_length);
+        _ATSC3_HEVC_NAL_EXTRACTOR_DEBUG("atsc3_hevc_nal_extractor_parse_from_mpu_metadata_block_t: avc1: adding pps: %d, nal_length: %u, nal_unit->p_size: %d", i, atsc3_avc1_nal_unit_pps->nal_unit_length,  atsc3_avc1_nal_unit_pps->nal_unit->p_size);
 		}
+        
+        video_decoder_configuration_record->avc1_decoder_configuration_record = avc1_decoder_configuration_record;
+        return video_decoder_configuration_record;
+
 	}
 
-	_ATSC3_HEVC_NAL_EXTRACTOR_ERROR("atsc3_hevc_nal_extractor_parse_from_mpu_metadata_block_t: error processing: ptr: %p, size: %d",
-			mpu_metadata_block, mpu_metadata_block->p_size);
 
-	return hevc_decoder_configuration_record;
+    _ATSC3_HEVC_NAL_EXTRACTOR_ERROR("atsc3_hevc_nal_extractor_parse_from_mpu_metadata_block_t: error processing: ptr: %p, size: %d",
+            mpu_metadata_block, mpu_metadata_block->p_size);
+
 	//hevc_decoder_configuration_record; //or avc1_decoder_configuration_record
 
 error:
@@ -329,9 +346,9 @@ error:
 	_ATSC3_HEVC_NAL_EXTRACTOR_ERROR("atsc3_hevc_nal_extractor_parse_from_mpu_metadata_block_t: error processing: ptr: %p, size: %d",
 			mpu_metadata_block, mpu_metadata_block->p_size);
 
-	if(hevc_decoder_configuration_record) {
-		free(hevc_decoder_configuration_record);
-		hevc_decoder_configuration_record = NULL;
+	if(video_decoder_configuration_record) {
+		free(video_decoder_configuration_record);
+		video_decoder_configuration_record = NULL;
 	}
 
 	return NULL;
