@@ -41,8 +41,8 @@ typedef struct atsc3_mmt_mfu_context {
 
 	//from ATSC3_MMT_CONTEXT_MPU_DEPACKETIZER_H
 	atsc3_mmt_mpu_on_sequence_number_change_f 						atsc3_mmt_mpu_on_sequence_number_change;
-    atsc3_mmt_mpu_on_sequence_mpu_metadata_present_f                atsc3_mmt_mpu_on_sequence_mpu_metadata_present;
-    
+    atsc3_mmt_mpu_on_sequence_mpu_metadata_present_f                atsc3_mmt_mpu_on_sequence_mpu_metadata_present;			//dispatched when a new mpu_metadata (init box) is present and re-constituted
+    																														//use atsc3_hevc_nal_extractor to convert init to NAL's as needed for HEVC decoder
 	//from ATSC3_MMT_CONTEXT_SIGNALLING_INFORMATION_DEPACKETIZER_H
 	atsc3_mmt_signalling_information_on_mp_table_subset_f 			atsc3_mmt_signalling_information_on_mp_table_subset; 	//dispatched when table_id >= 0x11 (17) && table_id <= 0x19 (31)
 	atsc3_mmt_signalling_information_on_mp_table_complete_f 		atsc3_mmt_signalling_information_on_mp_table_complete; 	//dispatched when table_id == 0x20 (32)
