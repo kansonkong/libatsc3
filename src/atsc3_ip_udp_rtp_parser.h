@@ -50,13 +50,11 @@ void atsc3_ip_udp_rtp_packet_destroy(atsc3_ip_udp_rtp_packet_t** ip_udp_rtp_pack
 void atsc3_ip_udp_rtp_packet_destroy_outer_inner(atsc3_ip_udp_rtp_packet_t** ip_udp_rtp_packet_outer_p, atsc3_ip_udp_rtp_packet_t** ip_udp_rtp_packet_inner_p);
 
     
-#define __IP_UDP_RTP_PARSER_ERROR(...)         printf("%s:%d:ERROR: ",__FILE__,__LINE__); printf(__VA_ARGS__); printf("%s%s","\r","\n")
-#define __IP_UDP_RTP_PARSER_WARN(...)          printf("%s:%d:WARN : ",__FILE__,__LINE__); printf(__VA_ARGS__); printf("%s%s","\r","\n")
-#define __IP_UDP_RTP_PARSER_INFO(...)          printf("%s:%d:INFO : ",__FILE__,__LINE__); printf(__VA_ARGS__); printf("%s%s","\r","\n")
-
-#define __IP_UDP_RTP_PARSER_DEBUG(...)         if(_IP_UDP_RTP_PARSER_DEBUG_ENABLED) { printf("%s:%d:DEBUG:%.4f: ",__FILE__,__LINE__, gt()); printf(__VA_ARGS__); printf("%s%s","\r","\n"); }
-    
-#define __IP_UDP_RTP_PARSER_TRACE(...)         if(_IP_UDP_RTP_PARSER_TRACE_ENABLED) { printf("%s:%d:TRACE:%.4f: ",__FILE__,__LINE__, gt()); printf(__VA_ARGS__); printf("%s%s","\r","\n"); }
+#define __IP_UDP_RTP_PARSER_ERROR(...)	__LIBATSC3_TIMESTAMP_ERROR(__VA_ARGS__);
+#define __IP_UDP_RTP_PARSER_WARN(...)   __LIBATSC3_TIMESTAMP_WARN(__VA_ARGS__);
+#define __IP_UDP_RTP_PARSER_INFO(...)   if(_IP_UDP_RTP_PARSER_INFO_ENABLED)  { __LIBATSC3_TIMESTAMP_INFO(__VA_ARGS__);  }
+#define __IP_UDP_RTP_PARSER_DEBUG(...)	if(_IP_UDP_RTP_PARSER_DEBUG_ENABLED) { __LIBATSC3_TIMESTAMP_DEBUG(__VA_ARGS__); }
+#define __IP_UDP_RTP_PARSER_TRACE(...)  if(_IP_UDP_RTP_PARSER_TRACE_ENABLED) { __LIBATSC3_TIMESTAMP_TRACE(__VA_ARGS__); }
 
 
 #ifdef __cplusplus
