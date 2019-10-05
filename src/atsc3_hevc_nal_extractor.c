@@ -177,6 +177,10 @@ video_decoder_configuration_record_t* video_decoder_configuration_record_new() {
     return video_decoder_configuration_record;
 }
 
+#define VPS_NAL_unit_type 32
+#define SPS_NAL_unit_type 33
+#define PPS_NAL_unit_type 34
+
 //process either avcC or hvcC, use video_decoder_configuration_record (containing both avcC and hvcC decoder records)
 
 video_decoder_configuration_record_t* atsc3_avc1_hevc_nal_extractor_parse_from_mpu_metadata_block_t(block_t* mpu_metadata_block) {
@@ -243,9 +247,11 @@ video_decoder_configuration_record_t* atsc3_avc1_hevc_nal_extractor_parse_from_m
 		 * unsigned int(8) numOfArrays;
 		 *
 		 *  for (j=0; j < numOfArrays; j++) {
+
 		 unsigned int(1) array_completeness;
 		 bit(1) reserved = 0;
 		 unsigned int(6) NAL_unit_type;
+
 		 unsigned int(16) numNalus;
 		 for (i=0; i< numNalus; i++) {
 			 unsigned int(16) nalUnitLength;
@@ -254,17 +260,81 @@ video_decoder_configuration_record_t* atsc3_avc1_hevc_nal_extractor_parse_from_m
 	 	 }
 		 */
 
-		hevc_decoder_configuration_record->num_of_arrays = mpu_ptr[hvcC_match_index];
+		hevc_decoder_configuration_record->num_of_arrays = mpu_ptr[hvcC_match_index++];
 		_ATSC3_HEVC_NAL_EXTRACTOR_DEBUG("atsc3_hevc_nal_extractor_parse_from_mpu_metadata_block_t: num_of_arrays: %d", hevc_decoder_configuration_record->num_of_arrays);
 
 		for(int i=0; i < hevc_decoder_configuration_record->num_of_arrays; i++) {
+			uint8_t temp_nal_header_byte = mpu_ptr[hvcC_match_index++];
+			if((temp_nal_header_byte & 0x40) != 0x40) {
+				_ATSC3_HEVC_NAL_EXTRACTOR_WARN("atsc3_hevc_nal_extractor_parse_from_mpu_metadata_block_t: HEVC: nal header bit 7 is not 1!");
+			}
 
+			uint8_t nal_unit_type = temp_nal_header_byte & 0x3F;
+
+			uint16_t num_nauls = ntohs(*((uint16_t*)(&mpu_ptr[hvcC_match_index])));
+			hvcC_match_index += 2;
+
+			switch (nal_unit_type) {
+				case VPS_NAL_unit_type:
+					for(int i=0; i < num_nauls; i++) {
+						atsc3_nal_unit_vps_t* atsc3_nal_unit_vps = atsc3_nal_unit_vps_new();
+
+						atsc3_nal_unit_vps->nal_unit_length = ntohs(*((uint16_t*)(&mpu_ptr[hvcC_match_index])));
+						atsc3_nal_unit_vps->nal_unit = block_Alloc(atsc3_nal_unit_vps->nal_unit_length);
+
+						hvcC_match_index += 2;
+						for(int j=0; j < atsc3_nal_unit_vps->nal_unit_length; j++) {
+							//hack
+							atsc3_nal_unit_vps->nal_unit->p_buffer[j] = mpu_ptr[hvcC_match_index++];
+						}
+						hevc_decoder_configuration_record_add_atsc3_nal_unit_vps(hevc_decoder_configuration_record, atsc3_nal_unit_vps);
+
+					}
+					break;
+
+				case SPS_NAL_unit_type:
+					for(int i=0; i < num_nauls; i++) {
+						atsc3_nal_unit_sps_t* atsc3_nal_unit_sps = atsc3_nal_unit_sps_new();
+
+						atsc3_nal_unit_sps->nal_unit_length = ntohs(*((uint16_t*)(&mpu_ptr[hvcC_match_index])));
+						atsc3_nal_unit_sps->nal_unit = block_Alloc(atsc3_nal_unit_sps->nal_unit_length);
+
+						hvcC_match_index += 2;
+						for(int j=0; j < atsc3_nal_unit_sps->nal_unit_length; j++) {
+							//hack
+							atsc3_nal_unit_sps->nal_unit->p_buffer[j] = mpu_ptr[hvcC_match_index++];
+						}
+						hevc_decoder_configuration_record_add_atsc3_nal_unit_sps(hevc_decoder_configuration_record, atsc3_nal_unit_sps);
+					}
+					break;
+
+				case PPS_NAL_unit_type:
+					for(int i=0; i < num_nauls; i++) {
+						atsc3_nal_unit_pps_t* atsc3_nal_unit_pps = atsc3_nal_unit_pps_new();
+
+						atsc3_nal_unit_pps->nal_unit_length = ntohs(*((uint16_t*)(&mpu_ptr[hvcC_match_index])));
+						atsc3_nal_unit_pps->nal_unit = block_Alloc(atsc3_nal_unit_pps->nal_unit_length);
+
+						hvcC_match_index += 2;
+						for(int j=0; j < atsc3_nal_unit_pps->nal_unit_length; j++) {
+							//hack
+							atsc3_nal_unit_pps->nal_unit->p_buffer[j] = mpu_ptr[hvcC_match_index++];
+						}
+						hevc_decoder_configuration_record_add_atsc3_nal_unit_pps(hevc_decoder_configuration_record, atsc3_nal_unit_pps);
+					}
+					break;
+
+				default:
+					break;
+
+			}
 		}
     
         video_decoder_configuration_record->hevc_decoder_configuration_record = hevc_decoder_configuration_record;
         return video_decoder_configuration_record;
 	}
 
+	//AVC1/avcC NAL processing
 	if(has_avcC_match) {
 		/**
 		 *  from https://github.com/aizvorski/h264bitstream/blob/master/h264_avcc.c
@@ -292,12 +362,12 @@ video_decoder_configuration_record_t* atsc3_avc1_hevc_nal_extractor_parse_from_m
 		uint8_t num_of_sequence_parameter_sets_temp = mpu_ptr[avc_offset++];
 
 		if((num_of_sequence_parameter_sets_temp >> 5) != 0x7) { //3 MSBits set to '111' reserved
-			_ATSC3_HEVC_NAL_EXTRACTOR_WARN("atsc3_hevc_nal_extractor_parse_from_mpu_metadata_block_t: num_of_sequence_parameter_sets_temp 3 MSB != 111");
+			_ATSC3_HEVC_NAL_EXTRACTOR_WARN("atsc3_hevc_nal_extractor_parse_from_mpu_metadata_block_t: avc1: num_of_sequence_parameter_sets_temp 3 MSB != 111");
 		}
         
         //SPS count
 		avc1_decoder_configuration_record->num_of_sequence_parameter_sets = num_of_sequence_parameter_sets_temp & 0x1F;
-		_ATSC3_HEVC_NAL_EXTRACTOR_DEBUG("atsc3_hevc_nal_extractor_parse_from_mpu_metadata_block_t: num_of_sequence_parameter_sets: %u",  avc1_decoder_configuration_record->num_of_sequence_parameter_sets);
+		_ATSC3_HEVC_NAL_EXTRACTOR_DEBUG("atsc3_hevc_nal_extractor_parse_from_mpu_metadata_block_t: avc1: num_of_sequence_parameter_sets: %u",  avc1_decoder_configuration_record->num_of_sequence_parameter_sets);
 
 		//start parsing SPS here
 		for(int i = 0; i < avc1_decoder_configuration_record->num_of_sequence_parameter_sets; i++) {
@@ -315,7 +385,7 @@ video_decoder_configuration_record_t* atsc3_avc1_hevc_nal_extractor_parse_from_m
 
 		//PPS count
 		avc1_decoder_configuration_record->num_of_picture_parameter_sets = mpu_ptr[avc_offset++];
-        _ATSC3_HEVC_NAL_EXTRACTOR_DEBUG("atsc3_hevc_nal_extractor_parse_from_mpu_metadata_block_t: num_of_picture_parameter_sets: %u",  avc1_decoder_configuration_record->num_of_picture_parameter_sets);
+        _ATSC3_HEVC_NAL_EXTRACTOR_DEBUG("atsc3_hevc_nal_extractor_parse_from_mpu_metadata_block_t: avc1: num_of_picture_parameter_sets: %u",  avc1_decoder_configuration_record->num_of_picture_parameter_sets);
 
 		//start parsing PPS here
 		for(int i = 0; i < avc1_decoder_configuration_record->num_of_sequence_parameter_sets; i++) {
