@@ -84,6 +84,7 @@ aligned(8) class HEVCDecoderConfigurationRecord {
  unsigned int(2) general_profile_space;
  unsigned int(1) general_tier_flag;
  unsigned int(5) general_profile_idc;
+
  unsigned int(32) general_profile_compatibility_flags;
  unsigned int(48) general_constraint_indicator_flags;
 
@@ -119,12 +120,49 @@ aligned(8) class HEVCDecoderConfigurationRecord {
 */
 
 typedef struct hevc_decoder_configuration_record {
+	uint8_t		configuration_version; //default = 1
 
+	uint8_t		general_profile_space:2;
+	uint8_t		general_tier_flag:1;
+	uint8_t		general_profile_idc:5;
+	uint32_t	general_profile_compatibility_flags;
+	uint64_t	general_constraint_indicator_flags:48;
+
+	uint8_t 	general_level_idc;
+
+	//upper 4 msb reserved: 1111 -  bit(4) reserved = '1111'b;
+	uint16_t 	min_spatial_segmentation_idc:12;
+
+	//bit(6) reserved = '111111'b;
+	uint8_t 	parallelismType:2;
+
+	//bit(6) reserved = '111111'b;
+	uint8_t 	chroma_format_idc:2;
+
+	//bit(5) reserved = '11111'b;
+	uint8_t 	bit_depth_luma_minus8:3;
+
+	//bit(5) reserved = '11111'b;
+	uint8_t		bit_depth_chroma_minus8:3;
+
+	uint16_t	avg_frame_rate;
+	uint8_t		constant_frame_rate:2;
+	uint8_t		num_temporal_layers:3;
+	uint8_t 	temporal_id_nested:1
+	uint8_t 	length_size_minus_one:2;
+
+	uint8_t 	num_of_arrays;	//interim while we built our vectors
+
+	uint8_t						atsc3_nal_unit_vps_array_completeness:1;
 	ATSC3_VECTOR_BUILDER_STRUCT(atsc3_nal_unit_vps);
+	uint8_t						atsc3_nal_unit_vps_array_completeness:1;
 	ATSC3_VECTOR_BUILDER_STRUCT(atsc3_nal_unit_sps);
+	uint8_t						atsc3_nal_unit_vps_array_completeness:1;
 	ATSC3_VECTOR_BUILDER_STRUCT(atsc3_nal_unit_pps);
 
+	uint8_t						atsc3_nal_unit_prefix_sei_array_completeness:1;
 	ATSC3_VECTOR_BUILDER_STRUCT(atsc3_nal_unit_prefix_sei);
+	uint8_t						atsc3_nal_unit_suffix_sei_array_completeness:1;
 	ATSC3_VECTOR_BUILDER_STRUCT(atsc3_nal_unit_suffix_sei);
 
 } hevc_decoder_configuration_record_t;
