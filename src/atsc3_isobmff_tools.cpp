@@ -13,7 +13,7 @@ int _ISOBMFF_TOOLS_TRACE_ENABLED = 0;
 
 int _ISOBMFF_TOOLS_SIGNALLING_DEBUG_ENABLED = 0;
 
-#ifdef __NO_GPL_FIREWALL__
+#ifdef __ENABLE_GPL_BENTO4__
 #include "bento4/ISOBMFFTrackJoiner.h"
 #endif
 
@@ -23,7 +23,7 @@ int _ISOBMFF_TOOLS_SIGNALLING_DEBUG_ENABLED = 0;
  * rebuild our combined boxes and tracks
  */
 
-#ifdef __NO_GPL_FIREWALL__
+#ifdef __ENABLE_GPL_BENTO4__
 lls_sls_monitor_output_buffer_t* atsc3_isobmff_build_joined_alc_isobmff_fragment(lls_sls_monitor_output_buffer_t* lls_sls_monitor_output_buffer) {
 
     AP4_DataBuffer* ap4_data_buffer;
@@ -64,7 +64,7 @@ lls_sls_monitor_output_buffer_t* atsc3_isobmff_build_joined_alc_isobmff_fragment
 #endif
 
 
-#ifdef __NO_GPL_FIREWALL__
+#ifdef __ENABLE_GPL_BENTO4__
 lls_sls_monitor_output_buffer_t* atsc3_isobmff_build_joined_mmt_isobmff_fragment(lls_sls_monitor_output_buffer_t* lls_sls_monitor_output_buffer) {
 
     AP4_DataBuffer* ap4_data_buffer;
@@ -104,7 +104,7 @@ lls_sls_monitor_output_buffer_t* atsc3_isobmff_build_joined_mmt_isobmff_fragment
 #endif
 
 
-#ifdef __NO_GPL_FIREWALL__
+#ifdef __ENABLE_GPL_BENTO4__
 lls_sls_monitor_output_buffer_t* atsc3_isobmff_build_joined_mmt_rebuilt_boxes(lls_sls_monitor_output_buffer_t* lls_sls_monitor_output_buffer) {
 
     AP4_DataBuffer* ap4_data_buffer;
@@ -144,7 +144,7 @@ lls_sls_monitor_output_buffer_t* atsc3_isobmff_build_joined_mmt_rebuilt_boxes(ll
 #endif
 
 
-#ifdef __NO_GPL_FIREWALL__
+#ifdef __ENABLE_GPL_BENTO4__
 
 lls_sls_monitor_buffer_isobmff_t* atsc3_isobmff_rebuild_track_mpu_from_sample_data(lls_sls_monitor_buffer_isobmff_t* lls_sls_monitor_buffer_isobmff) {
 

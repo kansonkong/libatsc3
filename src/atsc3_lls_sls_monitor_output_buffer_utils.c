@@ -866,10 +866,13 @@ int lls_sls_monitor_output_buffer_copy_and_recover_sample_fragment_block(lls_sls
 //    }
 //
     uint32_t mpu_offset_original = mmtp_mpu_packet->offset;
-    //hacks
+    //hacks, our mpu_sequence_rollover might not have started with the first mfu sample containing a mmthsample_header, e.g.
+    //mpu_sequence_number_last != mmtp_mpu_packet->mpu_sequence_number && mmtp_mpu_packet->mpu_fragment_type == 0x2 && mmtp_mpu_packet->mpu_fragmentation_indicator != (0 || 1)
+    //with sample_number == 1
+        
     if(trun_sample_entry->trun_mmthsample_offset_includes_header) {
         //mmth_offset is a global offset from the base of the mdat box
-        if(mmtp_mpu_packet->mmthsample_header->offset > trun_sample_entry->mfu_mmth_cum_header_sample_size) {
+        if(mmtp_mpu_packet->mmthsample_header && mmtp_mpu_packet->mmthsample_header->offset > trun_sample_entry->mfu_mmth_cum_header_sample_size) {
             mmtp_mpu_packet->mmthsample_header->offset -= trun_sample_entry->mfu_mmth_cum_header_sample_size;
             trun_sample_entry->sample_offset -= trun_sample_entry->mfu_mmth_cum_header_sample_size;
         }
