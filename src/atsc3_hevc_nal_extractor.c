@@ -265,10 +265,10 @@ video_decoder_configuration_record_t* atsc3_avc1_hevc_nal_extractor_parse_from_m
 
 		for(int i=0; i < hevc_decoder_configuration_record->num_of_arrays; i++) {
 			uint8_t temp_nal_header_byte = mpu_ptr[hvcC_match_index++];
-			if((temp_nal_header_byte & 0x40) != 0x40) {
-				_ATSC3_HEVC_NAL_EXTRACTOR_WARN("atsc3_hevc_nal_extractor_parse_from_mpu_metadata_block_t: HEVC: nal header bit 7 is not 1!");
+			if((temp_nal_header_byte & 0x40) == 0x00) {
+				_ATSC3_HEVC_NAL_EXTRACTOR_WARN("atsc3_hevc_nal_extractor_parse_from_mpu_metadata_block_t: HEVC: nal header bit 7 is not 0!");
 			}
-
+            
 			uint8_t nal_unit_type = temp_nal_header_byte & 0x3F;
 
 			uint16_t num_nauls = ntohs(*((uint16_t*)(&mpu_ptr[hvcC_match_index])));
@@ -288,7 +288,7 @@ video_decoder_configuration_record_t* atsc3_avc1_hevc_nal_extractor_parse_from_m
 							atsc3_nal_unit_vps->nal_unit->p_buffer[j] = mpu_ptr[hvcC_match_index++];
 						}
 						hevc_decoder_configuration_record_add_atsc3_nal_unit_vps(hevc_decoder_configuration_record, atsc3_nal_unit_vps);
-
+						_ATSC3_HEVC_NAL_EXTRACTOR_INFO("atsc3_hevc_nal_extractor_parse_from_mpu_metadata_block_t: HEVC: adding vps i: %d, length: %d", i, atsc3_nal_unit_vps->nal_unit->p_size);
 					}
 					break;
 
@@ -305,6 +305,8 @@ video_decoder_configuration_record_t* atsc3_avc1_hevc_nal_extractor_parse_from_m
 							atsc3_nal_unit_sps->nal_unit->p_buffer[j] = mpu_ptr[hvcC_match_index++];
 						}
 						hevc_decoder_configuration_record_add_atsc3_nal_unit_sps(hevc_decoder_configuration_record, atsc3_nal_unit_sps);
+						_ATSC3_HEVC_NAL_EXTRACTOR_INFO("atsc3_hevc_nal_extractor_parse_from_mpu_metadata_block_t: HEVC: adding sps i: %d, length: %d", i, atsc3_nal_unit_sps->nal_unit->p_size);
+
 					}
 					break;
 
@@ -321,6 +323,8 @@ video_decoder_configuration_record_t* atsc3_avc1_hevc_nal_extractor_parse_from_m
 							atsc3_nal_unit_pps->nal_unit->p_buffer[j] = mpu_ptr[hvcC_match_index++];
 						}
 						hevc_decoder_configuration_record_add_atsc3_nal_unit_pps(hevc_decoder_configuration_record, atsc3_nal_unit_pps);
+						_ATSC3_HEVC_NAL_EXTRACTOR_INFO("atsc3_hevc_nal_extractor_parse_from_mpu_metadata_block_t: HEVC: adding pps i: %d, length: %d", i, atsc3_nal_unit_pps->nal_unit->p_size);
+
 					}
 					break;
 
