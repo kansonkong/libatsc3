@@ -232,7 +232,7 @@ void mmtp_mfu_process_from_payload_with_context(udp_packet_t *udp_packet,
                         mmtp_mpu_packet->mpu_fragment_type=0x0 - mpu_metadata
                         mmtp_mpu_packet->mpu_fragment_type=0x2 - mfu
                  */
-            	udp_flow_packet_id_mpu_sequence_tuple_t* last_flow_reference = udp_flow_latest_mpu_sequence_number_add_or_replace_and_check_for_rollover(udp_flow_latest_mpu_sequence_number_container, udp_packet, mmtp_mpu_packet, lls_slt_monitor, matching_lls_sls_mmt_session);
+            	udp_flow_packet_id_mpu_sequence_tuple_t* last_flow_reference = udp_flow_latest_mpu_sequence_number_add_or_replace_and_check_for_rollover(udp_flow_latest_mpu_sequence_number_container, udp_packet, mmtp_mpu_packet, lls_slt_monitor, matching_lls_sls_mmt_session, mmtp_flow);
 
             	char* essence_type = (matching_lls_sls_mmt_monitor->audio_packet_id == mmtp_mpu_packet->mmtp_packet_id) ? "a" : "v";
 				//see if we are at the start of a new mfu sample

@@ -99,7 +99,11 @@ udp_flow_packet_id_mpu_sequence_tuple_t* udp_flow_latest_mpu_sequence_number_fro
  */
 
 udp_flow_packet_id_mpu_sequence_tuple_t* udp_flow_latest_mpu_sequence_number_add_or_replace_and_check_for_rollover(udp_flow_latest_mpu_sequence_number_container_t* udp_flow_latest_mpu_sequence_number_container,
-		udp_packet_t* udp_packet, mmtp_mpu_packet_t* mmtp_mpu_packet, lls_slt_monitor_t* lls_slt_monitor, lls_sls_mmt_session_t* matching_lls_sls_mmt_session) {
+		udp_packet_t* udp_packet,
+		mmtp_mpu_packet_t* mmtp_mpu_packet,
+		lls_slt_monitor_t* lls_slt_monitor,
+		lls_sls_mmt_session_t* matching_lls_sls_mmt_session,
+		mmtp_flow_t* mmtp_flow) {
 
     udp_flow_packet_id_mpu_sequence_tuple_t** udp_flow_packet_id_mpu_sequence_tuple_in_collection = NULL;
     udp_flow_packet_id_mpu_sequence_tuple_t** udp_flow_packet_id_mpu_sequence_matching_pkt_id = NULL;
@@ -135,7 +139,7 @@ udp_flow_packet_id_mpu_sequence_tuple_t* udp_flow_latest_mpu_sequence_number_add
                                                         (*udp_flow_packet_id_mpu_sequence_matching_pkt_id)->mpu_sequence_number_negative_discontinuity,
                                                         ++(*udp_flow_packet_id_mpu_sequence_matching_pkt_id)->mpu_sequence_number_negative_discontinuity_received_fragments);
 
-                    udp_flow_force_negative_mpu_discontinuity_value(*udp_flow_packet_id_mpu_sequence_matching_pkt_id, (*udp_flow_packet_id_mpu_sequence_matching_pkt_id)->mpu_sequence_number_negative_discontinuity, mmtp_mpu_packet, lls_slt_monitor, matching_lls_sls_mmt_session);
+                    udp_flow_force_negative_mpu_discontinuity_value(*udp_flow_packet_id_mpu_sequence_matching_pkt_id, (*udp_flow_packet_id_mpu_sequence_matching_pkt_id)->mpu_sequence_number_negative_discontinuity, mmtp_mpu_packet, lls_slt_monitor, matching_lls_sls_mmt_session, mmtp_flow, udp_packet);
 
                 } else {
                     (*udp_flow_packet_id_mpu_sequence_matching_pkt_id)->mpu_sequence_number_negative_discontinuity = mmtp_mpu_packet->mpu_sequence_number;
@@ -204,33 +208,25 @@ void udp_flow_force_negative_mpu_discontinuity_value(udp_flow_packet_id_mpu_sequ
 		uint32_t new_old_mpu_sequence_number_to_force,
 		mmtp_mpu_packet_t* mmtp_mpu_packet,
         lls_slt_monitor_t* lls_slt_monitor,
-		lls_sls_mmt_session_t* matching_lls_sls_mmt_session) {
-//
-//	/**
-//	 * jjustman-2019-09-25 - TODO: remove this old logic
-//	 */
-//	uint32_t eviction_range_start = udp_flow_packet_id_mpu_sequence_matching_pkt_id->mpu_sequence_number_evict_range_start;
-//	//uint32_t eviction_range_end = mmtp_packet_fragments_to_evict->mmtp_mpu_packet->mpu_sequence_number;
-//
-//	//atsc3_mmt_mpu_clear_data_unit_from_packet_subflow(mmtp_packet_fragments_to_evict, eviction_range_start, eviction_range_end);
-//
-//    //for(int i=eviction_range_start)
-//    //force the "old" packet id
-//    udp_flow_packet_id_mpu_sequence_matching_pkt_id->mpu_sequence_number = new_old_mpu_sequence_number_to_force;
-//    udp_flow_packet_id_mpu_sequence_matching_pkt_id->mpu_sequence_number_evict_range_start = new_old_mpu_sequence_number_to_force;
-//    udp_flow_packet_id_mpu_sequence_matching_pkt_id->mpu_sequence_number_last_refragmentation_flush = new_old_mpu_sequence_number_to_force;
-//
-//    udp_flow_reset_negative_mpu_discontinuity_counters(udp_flow_packet_id_mpu_sequence_matching_pkt_id);
-//
-//    //clear out matching_lls_sls_mmt_session for matching
+		lls_sls_mmt_session_t* matching_lls_sls_mmt_session,
+        mmtp_flow_t *mmtp_flow,
+        udp_packet_t *udp_packet) {
+
+	//slightly more complex than needed
+	//jjustman-2019-10-05: TODO - refactor this selector logic for mmtp_packet_id_packets_container
+    mmtp_asset_flow_t* mmtp_asset_flow = mmtp_flow_find_or_create_from_udp_packet(mmtp_flow, udp_packet);
+    mmtp_asset_t* mmtp_asset = mmtp_asset_flow_find_or_create_asset_from_lls_sls_mmt_session(mmtp_asset_flow, matching_lls_sls_mmt_session);
+
+    //todo: jjustman-2019-10-05 - clear any mpu_sequence_numbers >  mmtp_mpu_packet->mpu_sequence_number based upon packet_id
+    mmtp_packet_id_packets_container_t* mmtp_packet_id_packets_container =  mmtp_asset_find_or_create_packets_container_from_mmt_mpu_packet(mmtp_asset, mmtp_mpu_packet);
 
     if(lls_slt_monitor->lls_sls_mmt_monitor->audio_packet_id == mmtp_mpu_packet->mmtp_packet_id) {
-        //todo: clear MMT container mpu_sequence_number_mmtp_mpu_packet_collection_t* mpu_sequence_number_mmtp_mpu_packet_collection = mmtp_packet_id_packets_container_find_mpu_sequence_number_mmtp_mpu_packet_collection_from_mpu_sequence_number(mmtp_packet_id_packets_container, matching_lls_sls_mmt_session->last_udp_flow_packet_id_mpu_sequence_tuple_audio->mpu_sequence_number);
-        //mmtp_packet_id_packets_container_remove_mpu_sequence_number_mmtp_mpu_packet_collection(mmtp_packet_id_packets_container, mpu_sequence_number_mmtp_mpu_packet_collection);
+    	mpu_sequence_number_mmtp_mpu_packet_collection_t* mpu_sequence_number_mmtp_mpu_packet_collection = mmtp_packet_id_packets_container_find_mpu_sequence_number_mmtp_mpu_packet_collection_from_mpu_sequence_number(mmtp_packet_id_packets_container, matching_lls_sls_mmt_session->last_udp_flow_packet_id_mpu_sequence_tuple_audio->mpu_sequence_number);
+        mmtp_packet_id_packets_container_remove_mpu_sequence_number_mmtp_mpu_packet_collection(mmtp_packet_id_packets_container, mpu_sequence_number_mmtp_mpu_packet_collection);
 		udp_flow_packet_id_mpu_sequence_tuple_free_and_clone(&matching_lls_sls_mmt_session->last_udp_flow_packet_id_mpu_sequence_tuple_audio, udp_flow_packet_id_mpu_sequence_matching_pkt_id);
     } else if(lls_slt_monitor->lls_sls_mmt_monitor->video_packet_id == mmtp_mpu_packet->mmtp_packet_id) {
-        //todo: clear MMT container mpu_sequence_number_mmtp_mpu_packet_collection_t* mpu_sequence_number_mmtp_mpu_packet_collection = mmtp_packet_id_packets_container_find_mpu_sequence_number_mmtp_mpu_packet_collection_from_mpu_sequence_number(mmtp_packet_id_packets_container, matching_lls_sls_mmt_session->last_udp_flow_packet_id_mpu_sequence_tuple_audio->mpu_sequence_number);
-        //mmtp_packet_id_packets_container_remove_mpu_sequence_number_mmtp_mpu_packet_collection(mmtp_packet_id_packets_container, mpu_sequence_number_mmtp_mpu_packet_collection);
+    	mpu_sequence_number_mmtp_mpu_packet_collection_t* mpu_sequence_number_mmtp_mpu_packet_collection = mmtp_packet_id_packets_container_find_mpu_sequence_number_mmtp_mpu_packet_collection_from_mpu_sequence_number(mmtp_packet_id_packets_container, matching_lls_sls_mmt_session->last_udp_flow_packet_id_mpu_sequence_tuple_video->mpu_sequence_number);
+        mmtp_packet_id_packets_container_remove_mpu_sequence_number_mmtp_mpu_packet_collection(mmtp_packet_id_packets_container, mpu_sequence_number_mmtp_mpu_packet_collection);
 		udp_flow_packet_id_mpu_sequence_tuple_free_and_clone(&matching_lls_sls_mmt_session->last_udp_flow_packet_id_mpu_sequence_tuple_video, udp_flow_packet_id_mpu_sequence_matching_pkt_id);
     }
 }
