@@ -83,7 +83,6 @@ int parse_hevc_nal_test(const char* filename, bool expect_avcC_fallback) {
                         + video_decoder_configuration_record->hevc_decoder_configuration_record->atsc3_nal_unit_pps_v.count;
 
 			}
-
 		}
 
 		if(fp) {
@@ -107,6 +106,12 @@ int main(int argc, char* argv[] ) {
 	int result = parse_hevc_nal_test(test_sample_hevc_v_1_filename, true);
 	if(result < 0) {
 		_ATSC3_HEVC_NAL_EXTRACTOR_TEST_ERROR("Sample: %s failed with error: %d", test_sample_hevc_v_1_filename, result);
+	}
+
+	const char* test_sample_hevc_v_2_filename = "testdata/hevc/nal/14496-15.2019-nal-extraction-samples/2019-09-18-cleveland-mmt-35.10.init.mp4";
+	int result2 = parse_hevc_nal_test(test_sample_hevc_v_2_filename, true);
+	if(result2 < 0) {
+		_ATSC3_HEVC_NAL_EXTRACTOR_TEST_ERROR("Sample: %s failed with error: %d", test_sample_hevc_v_2_filename, result2);
 	}
 
 	_ATSC3_HEVC_NAL_EXTRACTOR_TEST_INFO("->completed run of test cases for atsc3_hevc_nal_extractor");
