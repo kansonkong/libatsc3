@@ -169,7 +169,7 @@ mmtp_mpu_packet_t* mmtp_process_from_payload(mmtp_mpu_packet_t* mmtp_mpu_packet,
            			udp_flow_packet_id_mpu_sequence_tuple_free_and_clone(&matching_lls_sls_mmt_session->last_udp_flow_packet_id_mpu_sequence_tuple_video, last_flow_reference);
 				}
 
-                //if we have at least one block in the following, push it to the isobmff track joiner as usual
+				//if we have at least one block in the following, push it to the isobmff track joiner as usual
 				if(lls_slt_monitor->lls_sls_mmt_monitor->lls_sls_monitor_output_buffer.video_output_buffer_isobmff.mmt_mpu_rebuilt_and_appending_for_isobmff_mux &&
                    lls_slt_monitor->lls_sls_mmt_monitor->lls_sls_monitor_output_buffer.audio_output_buffer_isobmff.mmt_mpu_rebuilt_and_appending_for_isobmff_mux) {
 

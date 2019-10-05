@@ -39,12 +39,28 @@ typedef struct atsc3_nal_unit_sps {
 
 } atsc3_nal_unit_sps_t;
 
+//avc1 sequence parameter set
+typedef struct atsc3_avc1_nal_unit_sps {
+	uint16_t	nal_unit_length;
+	block_t*	nal_unit;
+
+} atsc3_avc1_nal_unit_sps_t;
+
+
 //picture parameter set
 typedef struct atsc3_nal_unit_pps {
 	uint16_t	nal_unit_length;
 	block_t*	nal_unit;
 
 } atsc3_nal_unit_pps_t;
+
+//avc1 picture parameter set
+typedef struct atsc3_avc1_nal_unit_pps {
+	uint16_t	nal_unit_length;
+	block_t*	nal_unit;
+
+} atsc3_avc1_nal_unit_pps_t;
+
 
 
 //prefex_SEI
@@ -167,10 +183,6 @@ typedef struct hevc_decoder_configuration_record {
 
 } hevc_decoder_configuration_record_t;
 
-hevc_decoder_configuration_record_t* atsc3_hevc_nal_extractor_parse_from_mpu_metadata_block_t(block_t*);
-
-
-
 ATSC3_VECTOR_BUILDER_METHODS_INTERFACE(hevc_decoder_configuration_record, atsc3_nal_unit_vps);
 ATSC3_VECTOR_BUILDER_METHODS_INTERFACE(hevc_decoder_configuration_record, atsc3_nal_unit_sps);
 ATSC3_VECTOR_BUILDER_METHODS_INTERFACE(hevc_decoder_configuration_record, atsc3_nal_unit_pps);
@@ -178,6 +190,30 @@ ATSC3_VECTOR_BUILDER_METHODS_INTERFACE(hevc_decoder_configuration_record, atsc3_
 ATSC3_VECTOR_BUILDER_METHODS_INTERFACE(hevc_decoder_configuration_record, atsc3_nal_unit_prefix_sei);
 ATSC3_VECTOR_BUILDER_METHODS_INTERFACE(hevc_decoder_configuration_record, atsc3_nal_unit_suffix_sei);
 
+
+
+typedef struct avc1_decoder_configuration_record {
+
+	uint8_t 		configuration_version;
+	uint8_t 		avc_profile_indication;
+	uint8_t 		profile_compatibility;
+	uint8_t  		avc_level_indication;
+    uint8_t         length_size_minus_one:2;
+
+	//upper 3 msb: 111
+	uint8_t			num_of_sequence_parameter_sets:5;
+	ATSC3_VECTOR_BUILDER_STRUCT(atsc3_avc1_nal_unit_sps);
+
+	uint8_t			num_of_picture_parameter_sets;
+	ATSC3_VECTOR_BUILDER_STRUCT(atsc3_avc1_nal_unit_pps);
+
+} avc1_decoder_configuration_record_t;
+
+ATSC3_VECTOR_BUILDER_METHODS_INTERFACE(avc1_decoder_configuration_record, atsc3_avc1_nal_unit_sps);
+ATSC3_VECTOR_BUILDER_METHODS_INTERFACE(avc1_decoder_configuration_record, atsc3_avc1_nal_unit_pps);
+
+
+hevc_decoder_configuration_record_t* atsc3_hevc_nal_extractor_parse_from_mpu_metadata_block_t(block_t*);
 
 #define _ATSC3_HEVC_NAL_EXTRACTOR_ERROR(...)  	__LIBATSC3_TIMESTAMP_ERROR(__VA_ARGS__);
 #define _ATSC3_HEVC_NAL_EXTRACTOR_WARN(...)   	__LIBATSC3_TIMESTAMP_WARN(__VA_ARGS__);
