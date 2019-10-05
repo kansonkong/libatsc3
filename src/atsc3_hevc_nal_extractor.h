@@ -148,16 +148,16 @@ typedef struct hevc_decoder_configuration_record {
 	uint16_t	avg_frame_rate;
 	uint8_t		constant_frame_rate:2;
 	uint8_t		num_temporal_layers:3;
-	uint8_t 	temporal_id_nested:1
+	uint8_t 	temporal_id_nested:1;
 	uint8_t 	length_size_minus_one:2;
 
-	uint8_t 	num_of_arrays;	//interim while we built our vectors
+	uint8_t 					num_of_arrays;	//interim while we built our vectors
 
 	uint8_t						atsc3_nal_unit_vps_array_completeness:1;
 	ATSC3_VECTOR_BUILDER_STRUCT(atsc3_nal_unit_vps);
-	uint8_t						atsc3_nal_unit_vps_array_completeness:1;
+	uint8_t						atsc3_nal_unit_sps_array_completeness:1;
 	ATSC3_VECTOR_BUILDER_STRUCT(atsc3_nal_unit_sps);
-	uint8_t						atsc3_nal_unit_vps_array_completeness:1;
+	uint8_t						atsc3_nal_unit_pps_array_completeness:1;
 	ATSC3_VECTOR_BUILDER_STRUCT(atsc3_nal_unit_pps);
 
 	uint8_t						atsc3_nal_unit_prefix_sei_array_completeness:1;
