@@ -32,6 +32,8 @@
 
 
 int parse_hevc_nal_test(const char* filename) {
+	_ATSC3_HEVC_NAL_EXTRACTOR_TEST_INFO("-> starting test of: %s", filename);
+
 	int ret = 0;
 
 	struct stat st;
@@ -69,16 +71,23 @@ int parse_hevc_nal_test(const char* filename) {
 		}
 	}
 
+	_ATSC3_HEVC_NAL_EXTRACTOR_TEST_INFO("-> completed test of: %s with result: %d", filename, ret);
+
 	return ret;
 }
 
 int main(int argc, char* argv[] ) {
 
+	_ATSC3_HEVC_NAL_EXTRACTOR_TEST_INFO("->starting test cases for atsc3_hevc_nal_extractor");
+
 	const char* test_sample_hevc_v_1_filename = "testdata/hevc/nal/14496-15.2019-nal-extraction-samples/2019-06-18-digi-mmt-5004.35.init.mp4";
 	int result = parse_hevc_nal_test(test_sample_hevc_v_1_filename);
 	if(!result) {
-		_ATSC3_HEVC_NAL_EXTRACTOR_TEST_ERROR("Sample: %c failed with error: %d", test_sample_hevc_v_1_filename, result);
+		_ATSC3_HEVC_NAL_EXTRACTOR_TEST_ERROR("Sample: %s failed with error: %d", test_sample_hevc_v_1_filename, result);
 	}
+
+	_ATSC3_HEVC_NAL_EXTRACTOR_TEST_INFO("->completed run of test cases for atsc3_hevc_nal_extractor");
+
 
 	return 0;
 }
