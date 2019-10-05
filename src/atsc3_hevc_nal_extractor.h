@@ -27,6 +27,7 @@ extern "C" {
 
 //video parameter set
 typedef struct atsc3_nal_unit_vps {
+	uint8_t		array_completeness:1;
 	uint16_t	nal_unit_length;
 	block_t*	nal_unit;
 
@@ -34,6 +35,8 @@ typedef struct atsc3_nal_unit_vps {
 
 //sequence parameter set
 typedef struct atsc3_nal_unit_sps {
+	uint8_t		array_completeness:1;
+
 	uint16_t	nal_unit_length;
 	block_t*	nal_unit;
 
@@ -49,6 +52,8 @@ typedef struct atsc3_avc1_nal_unit_sps {
 
 //picture parameter set
 typedef struct atsc3_nal_unit_pps {
+	uint8_t		array_completeness:1;
+
 	uint16_t	nal_unit_length;
 	block_t*	nal_unit;
 
@@ -65,6 +70,8 @@ typedef struct atsc3_avc1_nal_unit_pps {
 
 //prefex_SEI
 typedef struct atsc3_nal_unit_prefix_sei {
+	uint8_t		array_completeness:1;
+
 	uint16_t	nal_unit_length;
 	block_t*	nal_unit;
 
@@ -73,6 +80,8 @@ typedef struct atsc3_nal_unit_prefix_sei {
 
 //suffix_SEI
 typedef struct atsc3_nal_unit_suffix_sei {
+	uint8_t		array_completeness:1;
+
 	uint16_t	nal_unit_length;
 	block_t*	nal_unit;
 
@@ -169,16 +178,11 @@ typedef struct hevc_decoder_configuration_record {
 
 	uint8_t 					num_of_arrays;	//interim while we built our vectors
 
-	uint8_t						atsc3_nal_unit_vps_array_completeness:1;
 	ATSC3_VECTOR_BUILDER_STRUCT(atsc3_nal_unit_vps);
-	uint8_t						atsc3_nal_unit_sps_array_completeness:1;
 	ATSC3_VECTOR_BUILDER_STRUCT(atsc3_nal_unit_sps);
-	uint8_t						atsc3_nal_unit_pps_array_completeness:1;
 	ATSC3_VECTOR_BUILDER_STRUCT(atsc3_nal_unit_pps);
 
-	uint8_t						atsc3_nal_unit_prefix_sei_array_completeness:1;
 	ATSC3_VECTOR_BUILDER_STRUCT(atsc3_nal_unit_prefix_sei);
-	uint8_t						atsc3_nal_unit_suffix_sei_array_completeness:1;
 	ATSC3_VECTOR_BUILDER_STRUCT(atsc3_nal_unit_suffix_sei);
 
 } hevc_decoder_configuration_record_t;
