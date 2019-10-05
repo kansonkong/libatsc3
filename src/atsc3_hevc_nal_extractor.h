@@ -190,8 +190,6 @@ ATSC3_VECTOR_BUILDER_METHODS_INTERFACE(hevc_decoder_configuration_record, atsc3_
 ATSC3_VECTOR_BUILDER_METHODS_INTERFACE(hevc_decoder_configuration_record, atsc3_nal_unit_prefix_sei);
 ATSC3_VECTOR_BUILDER_METHODS_INTERFACE(hevc_decoder_configuration_record, atsc3_nal_unit_suffix_sei);
 
-
-
 typedef struct avc1_decoder_configuration_record {
 
 	uint8_t 		configuration_version;
@@ -209,11 +207,21 @@ typedef struct avc1_decoder_configuration_record {
 
 } avc1_decoder_configuration_record_t;
 
+
+//since we don't know if we will get hvcC or avcC markers, be prepared for both configuration record types
+typedef struct video_decoder_configuration_record {
+    hevc_decoder_configuration_record_t* hevc_decoder_configuration_record;
+    avc1_decoder_configuration_record_t* avc1_decoder_configuration_record;
+} video_decoder_configuration_record_t;
+
+
+    
 ATSC3_VECTOR_BUILDER_METHODS_INTERFACE(avc1_decoder_configuration_record, atsc3_avc1_nal_unit_sps);
 ATSC3_VECTOR_BUILDER_METHODS_INTERFACE(avc1_decoder_configuration_record, atsc3_avc1_nal_unit_pps);
 
+video_decoder_configuration_record_t* atsc3_avc1_hevc_nal_extractor_parse_from_mpu_metadata_block_t(block_t*);
 
-hevc_decoder_configuration_record_t* atsc3_hevc_nal_extractor_parse_from_mpu_metadata_block_t(block_t*);
+video_decoder_configuration_record_t* video_decoder_configuration_record_new();
 
 #define _ATSC3_HEVC_NAL_EXTRACTOR_ERROR(...)  	__LIBATSC3_TIMESTAMP_ERROR(__VA_ARGS__);
 #define _ATSC3_HEVC_NAL_EXTRACTOR_WARN(...)   	__LIBATSC3_TIMESTAMP_WARN(__VA_ARGS__);

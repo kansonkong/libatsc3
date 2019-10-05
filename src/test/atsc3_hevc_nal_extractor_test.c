@@ -54,11 +54,11 @@ int parse_hevc_nal_test(const char* filename) {
 
 		block_t* hevc_mpu_metadata_block = block_Duplicate_from_ptr(mpu_metadata_payload, mpu_metadata_payload_size);
 
-		hevc_decoder_configuration_record_t*  hevc_decoder_configuration_record = atsc3_hevc_nal_extractor_parse_from_mpu_metadata_block_t(hevc_mpu_metadata_block);
+		video_decoder_configuration_record_t* video_decoder_configuration_record = atsc3_avc1_hevc_nal_extractor_parse_from_mpu_metadata_block_t(hevc_mpu_metadata_block);
 
 		block_Destroy(&hevc_mpu_metadata_block);
 
-		if(!hevc_decoder_configuration_record) {
+		if(!video_decoder_configuration_record) {
 			ret = __ERROR_PARSE_FROM_BLOCK_T;
 		} else {
 			//check vps, sps, pps
