@@ -46,6 +46,7 @@ clean:
 	-rm -f test/atsc3_libmicrohttpd_test
 	-rm -f test/atsc3_mmt_signalling_packet_test
 	-rm -f test/atsc3_mmt_mpu_packet_test
+	-rm -f test/atsc3_hevc_nal_extractor_test	
 	-rm -f listener_tests/atsc3_alc_listener_test
 	-rm -f listener_tests/atsc3_alc_listener_test_valgrind
 	-rm -f listener_tests/atsc3_lls_listener_test
@@ -133,10 +134,10 @@ unit_tests: test/atsc3_lmt_test \
 			test/atsc3_stltp_parser_test \
 			test/atsc3_mime_multipart_related_parser_test \
 			test/atsc3_fdt_mbms_envelope_test \
-			test/atsc3_fdt_mbms_envelope_test_2019-09-07-esg-e.1.1.7
+			test/atsc3_fdt_mbms_envelope_test_2019-09-07-esg-e.1.1.7 \
+			test/atsc3_hevc_nal_extractor_test
 
 libmicrohttpd_tests: test/atsc3_libmicrohttpd_test
-
 
 # listener_tests: atsc3_alc_listener_test  atsc3_mmt_listener_test atsc3_listener_test atsc3_mmt_listener_test_bento atsc3_listener_metrics_test
 listener_tests: atsc3_alc_listener_test \
@@ -316,6 +317,9 @@ atsc3_a344_receiver_query_api.o: atsc3_a344_receiver_query_api.h atsc3_a344_rece
 
 atsc3_packet_statistics_types.o: atsc3_packet_statistics.h atsc3_packet_statistics_types.c
 	cc -g -c atsc3_packet_statistics_types.c -o atsc3_packet_statistics_types.o	
+	
+atsc3_hevc_nal_extractor.o: atsc3_hevc_nal_extractor.h atsc3_hevc_nal_extractor.c
+	cc -g -c atsc3_hevc_nal_extractor.c -o atsc3_hevc_nal_extractor.o
 
 # unit standalone tests with mock data
 
@@ -414,7 +418,8 @@ libatsc3_intermediate.o: atsc3_lls.o \
 		atsc3_a344_receiver_query_api.o \
 		atsc3_aeat_types.o \
 		atsc3_aeat_parser.o \
-		atsc3_packet_statistics_types.o
+		atsc3_packet_statistics_types.o \
+		atsc3_hevc_nal_extractor.o
 
 	ld  -o libatsc3_intermediate.o -r \
 		atsc3_lls.o \
@@ -475,7 +480,8 @@ libatsc3_intermediate.o: atsc3_lls.o \
 		atsc3_a344_receiver_query_api.o \
 		atsc3_aeat_types.o \
 		atsc3_aeat_parser.o \
-		atsc3_packet_statistics_types.o
+		atsc3_packet_statistics_types.o \
+		atsc3_hevc_nal_extractor.o
 
 libatsc3.o: libatsc3_intermediate.o bento4_mock.o
 	ld  -o libatsc3.o -r libatsc3_intermediate.o bento4_mock.o
@@ -536,6 +542,9 @@ test/atsc3_fdt_test_2019-09-07-esg-e.1.1.7: test/atsc3_fdt_test_2019-09-07-esg-e
 
 test/atsc3_fdt_mbms_envelope_test_2019-09-17-nab-interop-day1: test/atsc3_fdt_mbms_envelope_test_2019-09-17-nab-interop-day1.c
 	cc -g test/atsc3_fdt_mbms_envelope_test_2019-09-17-nab-interop-day1.c libatsc3.o -lz -lm -lpthread -lpcap -o test/atsc3_fdt_mbms_envelope_test_2019-09-17-nab-interop-day1
+
+test/atsc3_hevc_nal_extractor_test: test/atsc3_hevc_nal_extractor_test.c
+	cc -g test/atsc3_hevc_nal_extractor_test.c libatsc3.o -lz -lm -lpthread -lpcap -o test/atsc3_hevc_nal_extractor_test
 
 test/atsc3_libmicrohttpd_test: test/atsc3_libmicrohttpd_test.c 
 	cc -g test/atsc3_libmicrohttpd_test.c  \
