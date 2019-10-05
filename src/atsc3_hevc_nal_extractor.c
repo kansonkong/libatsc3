@@ -119,7 +119,25 @@ void atsc3_nal_unit_suffix_sei_free(atsc3_nal_unit_suffix_sei_t** atsc3_nal_unit
 
 hevc_decoder_configuration_record_t* atsc3_hevc_nal_extractor_parse_from_mpu_metadata_block_t(block_t* mpu_metadata_block) {
 	hevc_decoder_configuration_record_t* hevc_decoder_configuration_record = hevc_decoder_configuration_record_new();
+	hevc_decoder_configuration_record->configuration_version = 1;
 
+	//todo: search for isobmff box: hvcC
+
+	//todo: parse trailing 22 bytes after hvcC box name
+
+	//todo: parse out nals:
+	/*
+	 *  for (j=0; j < numOfArrays; j++) {
+ 	 unsigned int(1) array_completeness;
+ 	 bit(1) reserved = 0;
+ 	 unsigned int(6) NAL_unit_type;
+ 	 unsigned int(16) numNalus;
+ 	 for (i=0; i< numNalus; i++) {
+ 	 	 unsigned int(16) nalUnitLength;
+ 	 	 bit(8*nalUnitLength) nalUnit;
+	}
+ }
+	 */
 
 
 	return NULL;
