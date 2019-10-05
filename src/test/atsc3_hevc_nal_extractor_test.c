@@ -14,6 +14,8 @@
 
 #include <stdio.h>
 #include <string.h>
+#include <sys/stat.h>
+
 
 #include "../atsc3_utils.h"
 #include "../atsc3_logging_externs.h"
@@ -47,7 +49,7 @@ int parse_hevc_nal_test(const char* filename) {
 	} else {
 
 		uint8_t* mpu_metadata_payload = (uint8_t*) calloc(mpu_metadata_payload_size, sizeof(uint8_t));
-		fread(mpu_metadata_payload, size, 1, fp);
+		fread(mpu_metadata_payload, mpu_metadata_payload_size, 1, fp);
 
 		block_t* hevc_mpu_metadata_block = block_Duplicate_from_ptr(mpu_metadata_payload, mpu_metadata_payload_size);
 

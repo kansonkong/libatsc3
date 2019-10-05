@@ -28,21 +28,21 @@ extern "C" {
 //video parameter set
 typedef struct atsc3_nal_unit_vps {
 	uint16_t	nal_unit_length;
-	block_t*	na_unit;
+	block_t*	nal_unit;
 
 } atsc3_nal_unit_vps_t;
 
 //sequence parameter set
 typedef struct atsc3_nal_unit_sps {
 	uint16_t	nal_unit_length;
-	block_t*	na_unit;
+	block_t*	nal_unit;
 
 } atsc3_nal_unit_sps_t;
 
 //picture parameter set
 typedef struct atsc3_nal_unit_pps {
 	uint16_t	nal_unit_length;
-	block_t*	na_unit;
+	block_t*	nal_unit;
 
 } atsc3_nal_unit_pps_t;
 
@@ -50,7 +50,7 @@ typedef struct atsc3_nal_unit_pps {
 //prefex_SEI
 typedef struct atsc3_nal_unit_prefix_sei {
 	uint16_t	nal_unit_length;
-	block_t*	na_unit;
+	block_t*	nal_unit;
 
 } atsc3_nal_unit_prefix_sei_t;
 
@@ -58,7 +58,7 @@ typedef struct atsc3_nal_unit_prefix_sei {
 //suffix_SEI
 typedef struct atsc3_nal_unit_suffix_sei {
 	uint16_t	nal_unit_length;
-	block_t*	na_unit;
+	block_t*	nal_unit;
 
 } atsc3_nal_unit_suffix_sei_t;
 
