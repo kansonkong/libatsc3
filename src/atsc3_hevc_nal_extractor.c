@@ -517,7 +517,113 @@ void atsc3_hevc_decoder_configuration_record_dump(hevc_decoder_configuration_rec
 			_ATSC3_HEVC_NAL_EXTRACTOR_DEBUG("HEVC: hvcC: PPS %d, nal unit length is: 0!", i);
 		}
 	}
-
 }
+
+block_t* atsc3_hevc_decoder_configuration_record_get_nals_vps_combined(hevc_decoder_configuration_record_t* hevc_decoder_configuration_record) {
+	_ATSC3_HEVC_NAL_EXTRACTOR_DEBUG("atsc3_hevc_decoder_configuration_record_get_vps_nals_combined: hevc config_record: %p, nal_vps_count: %d",
+				atsc3_hevc_decoder_configuration_record_dump,
+				hevc_decoder_configuration_record->atsc3_nal_unit_vps_v.count);
+
+	block_t* nals_vps_combined = NULL;
+
+	for(int i=0; i < hevc_decoder_configuration_record->atsc3_nal_unit_vps_v.count; i++) {
+		atsc3_nal_unit_vps_t* atsc3_nal_unit_vps = hevc_decoder_configuration_record->atsc3_nal_unit_vps_v.data[i];
+
+		if(atsc3_nal_unit_vps->nal_unit) {
+			if(!nals_vps_combined) {
+				nals_vps_combined = block_Duplicate(atsc3_nal_unit_vps->nal_unit);
+			} else {
+				block_Merge(nals_vps_combined, atsc3_nal_unit_vps->nal_unit);
+			}
+		}
+	}
+
+	if(nals_vps_combined) {
+		block_Rewind(nals_vps_combined);
+		_ATSC3_HEVC_NAL_EXTRACTOR_DEBUG("atsc3_hevc_decoder_configuration_record_get_vps_nals_combined: hevc config_record: %p, nal_vps_count: %d, nals_vps_combined: %p, nals_vps_combined->p_buffer: %p, nals_vps_combined->i_pos: %d, nals_vps_combined->p_size: %d",
+					atsc3_hevc_decoder_configuration_record_dump,
+					hevc_decoder_configuration_record->atsc3_nal_unit_vps_v.count,
+					nals_vps_combined,
+					nals_vps_combined->p_buffer,
+					nals_vps_combined->i_pos,
+					nals_vps_combined->p_size);
+	} else {
+		_ATSC3_HEVC_NAL_EXTRACTOR_WARN("atsc3_hevc_decoder_configuration_record_get_vps_nals_combined: hevc config_record: %p, nals_vps_combined is NULL!", hevc_decoder_configuration_record);
+	}
+
+	return nals_vps_combined;
+}
+
+block_t* atsc3_hevc_decoder_configuration_record_get_nals_sps_combined(hevc_decoder_configuration_record_t* hevc_decoder_configuration_record) {
+	_ATSC3_HEVC_NAL_EXTRACTOR_DEBUG("atsc3_hevc_decoder_configuration_record_get_sps_nals_combined: hevc config_record: %p, nal_sps_count: %d",
+			atsc3_hevc_decoder_configuration_record_dump,
+			hevc_decoder_configuration_record->atsc3_nal_unit_sps_v.count);
+
+	block_t* nals_sps_combined = NULL;
+
+	for(int i=0; i < hevc_decoder_configuration_record->atsc3_nal_unit_sps_v.count; i++) {
+		atsc3_nal_unit_sps_t* atsc3_nal_unit_vps = hevc_decoder_configuration_record->atsc3_nal_unit_sps_v.data[i];
+
+		if(atsc3_nal_unit_vps->nal_unit) {
+			if(!nals_sps_combined) {
+				nals_sps_combined = block_Duplicate(atsc3_nal_unit_vps->nal_unit);
+			} else {
+				block_Merge(nals_sps_combined, atsc3_nal_unit_vps->nal_unit);
+			}
+		}
+	}
+
+	if(nals_sps_combined) {
+		block_Rewind(nals_sps_combined);
+		_ATSC3_HEVC_NAL_EXTRACTOR_DEBUG("atsc3_hevc_decoder_configuration_record_get_sps_nals_combined: hevc config_record: %p, nal_sps_count: %d, nals_sps_combined: %p, nals_sps_combined->p_buffer: %p, nals_sps_combined->i_pos: %d, nals_sps_combined->p_size: %d",
+					atsc3_hevc_decoder_configuration_record_dump,
+					hevc_decoder_configuration_record->atsc3_nal_unit_sps_v.count,
+					nals_sps_combined,
+					nals_sps_combined->p_buffer,
+					nals_sps_combined->i_pos,
+					nals_sps_combined->p_size);
+	} else {
+		_ATSC3_HEVC_NAL_EXTRACTOR_WARN("atsc3_hevc_decoder_configuration_record_get_sps_nals_combined: hevc config_record: %p, nals_sps_combined is NULL!", hevc_decoder_configuration_record);
+	}
+
+	return nals_sps_combined;
+}
+
+block_t* atsc3_hevc_decoder_configuration_record_get_nals_pps_combined(hevc_decoder_configuration_record_t* hevc_decoder_configuration_record) {
+	_ATSC3_HEVC_NAL_EXTRACTOR_DEBUG("atsc3_hevc_decoder_configuration_record_get_pps_nals_combined: hevc config_record: %p, nal_pps_count: %d",
+			atsc3_hevc_decoder_configuration_record_dump,
+			hevc_decoder_configuration_record->atsc3_nal_unit_pps_v.count);
+
+	block_t* nals_pps_combined = NULL;
+
+	for(int i=0; i < hevc_decoder_configuration_record->atsc3_nal_unit_pps_v.count; i++) {
+		atsc3_nal_unit_pps_t* atsc3_nal_unit_vps = hevc_decoder_configuration_record->atsc3_nal_unit_pps_v.data[i];
+
+		if(atsc3_nal_unit_vps->nal_unit) {
+			if(!nals_pps_combined) {
+				nals_pps_combined = block_Duplicate(atsc3_nal_unit_vps->nal_unit);
+			} else {
+				block_Merge(nals_pps_combined, atsc3_nal_unit_vps->nal_unit);
+			}
+		}
+	}
+
+	if(nals_pps_combined) {
+		block_Rewind(nals_pps_combined);
+		_ATSC3_HEVC_NAL_EXTRACTOR_DEBUG("atsc3_hevc_decoder_configuration_record_get_pps_nals_combined: hevc config_record: %p, nal_pps_count: %d, nals_pps_combined: %p, nals_pps_combined->p_buffer: %p, nals_pps_combined->i_pos: %d, nals_pps_combined->p_size: %d",
+					atsc3_hevc_decoder_configuration_record_dump,
+					hevc_decoder_configuration_record->atsc3_nal_unit_pps_v.count,
+					nals_pps_combined,
+					nals_pps_combined->p_buffer,
+					nals_pps_combined->i_pos,
+					nals_pps_combined->p_size);
+	} else {
+		_ATSC3_HEVC_NAL_EXTRACTOR_WARN("atsc3_hevc_decoder_configuration_record_get_pps_nals_combined: hevc config_record: %p, nals_pps_combined is NULL!", hevc_decoder_configuration_record);
+	}
+
+	return nals_pps_combined;
+}
+
+
 
 

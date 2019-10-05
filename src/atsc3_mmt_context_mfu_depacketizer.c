@@ -57,6 +57,8 @@ void atsc3_mmt_mpu_on_sequence_mpu_metadata_present_noop(uint16_t packet_id, uin
         mpu_sequence_number,
         mmt_mpu_metadata,
         mmt_mpu_metadata->p_size);
+
+    //todo: extract NALs for example here...
 }
 
 //MP_table
