@@ -30,7 +30,7 @@
 #define __ERROR_PARSE_FROM_BLOCK_T -2
 
 
-int parse_hevc_nal_test(const char* filename) {
+int parse_hevc_nal_test(const char* filename, bool expect_avcC_fallback) {
 	_ATSC3_HEVC_NAL_EXTRACTOR_TEST_INFO("-> starting test of: %s", filename);
 
 	int ret = 0;
@@ -62,6 +62,27 @@ int parse_hevc_nal_test(const char* filename) {
 			ret = __ERROR_PARSE_FROM_BLOCK_T;
 		} else {
 			//check vps, sps, pps
+			if(expect_avcC_fallback && video_decoder_configuration_record->avc1_decoder_configuration_record) {
+				_ATSC3_HEVC_NAL_EXTRACTOR_TEST_INFO("...-> got back avc1_decoder: %p, sps: %d, pps: %d",
+						video_decoder_configuration_record->avc1_decoder_configuration_record,
+						video_decoder_configuration_record->avc1_decoder_configuration_record->atsc3_avc1_nal_unit_sps_v.count,
+						video_decoder_configuration_record->avc1_decoder_configuration_record->atsc3_avc1_nal_unit_pps_v.count);
+                
+                ret = video_decoder_configuration_record->avc1_decoder_configuration_record->atsc3_avc1_nal_unit_sps_v.count
+                        + video_decoder_configuration_record->avc1_decoder_configuration_record->atsc3_avc1_nal_unit_pps_v.count;
+
+			} else {
+				_ATSC3_HEVC_NAL_EXTRACTOR_TEST_INFO("...-> got back hevcC_decoder: %p, vps: %d, sps: %d, pps: %d",
+										video_decoder_configuration_record->hevc_decoder_configuration_record,
+										video_decoder_configuration_record->hevc_decoder_configuration_record->atsc3_nal_unit_vps_v.count,
+										video_decoder_configuration_record->hevc_decoder_configuration_record->atsc3_nal_unit_sps_v.count,
+										video_decoder_configuration_record->hevc_decoder_configuration_record->atsc3_nal_unit_pps_v.count);
+                
+                ret = video_decoder_configuration_record->hevc_decoder_configuration_record->atsc3_nal_unit_vps_v.count
+                        + video_decoder_configuration_record->hevc_decoder_configuration_record->atsc3_nal_unit_sps_v.count
+                        + video_decoder_configuration_record->hevc_decoder_configuration_record->atsc3_nal_unit_pps_v.count;
+
+			}
 
 		}
 
@@ -83,8 +104,8 @@ int main(int argc, char* argv[] ) {
 	_ATSC3_HEVC_NAL_EXTRACTOR_TEST_INFO("->starting test cases for atsc3_hevc_nal_extractor");
 
 	const char* test_sample_hevc_v_1_filename = "testdata/hevc/nal/14496-15.2019-nal-extraction-samples/2019-06-18-digi-mmt-5004.35.init.mp4";
-	int result = parse_hevc_nal_test(test_sample_hevc_v_1_filename);
-	if(!result) {
+	int result = parse_hevc_nal_test(test_sample_hevc_v_1_filename, true);
+	if(result < 0) {
 		_ATSC3_HEVC_NAL_EXTRACTOR_TEST_ERROR("Sample: %s failed with error: %d", test_sample_hevc_v_1_filename, result);
 	}
 
