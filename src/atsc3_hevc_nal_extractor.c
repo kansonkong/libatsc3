@@ -118,6 +118,9 @@ void atsc3_nal_unit_suffix_sei_free(atsc3_nal_unit_suffix_sei_t** atsc3_nal_unit
 
 
 hevc_decoder_configuration_record_t* atsc3_hevc_nal_extractor_parse_from_mpu_metadata_block_t(block_t* mpu_metadata_block) {
+	hevc_decoder_configuration_record_t* hevc_decoder_configuration_record = hevc_decoder_configuration_record_new();
+
+
 
 	return NULL;
 }
