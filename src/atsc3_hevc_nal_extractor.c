@@ -265,7 +265,7 @@ video_decoder_configuration_record_t* atsc3_avc1_hevc_nal_extractor_parse_from_m
 
 		for(int i=0; i < hevc_decoder_configuration_record->num_of_arrays; i++) {
 			uint8_t temp_nal_header_byte = mpu_ptr[hvcC_match_index++];
-			if((temp_nal_header_byte & 0x40) == 0x00) {
+			if((temp_nal_header_byte & 0x40) != 0x00) {
 				_ATSC3_HEVC_NAL_EXTRACTOR_WARN("atsc3_hevc_nal_extractor_parse_from_mpu_metadata_block_t: HEVC: nal header bit 7 is not 0!");
 			}
             
@@ -288,7 +288,7 @@ video_decoder_configuration_record_t* atsc3_avc1_hevc_nal_extractor_parse_from_m
 							atsc3_nal_unit_vps->nal_unit->p_buffer[j] = mpu_ptr[hvcC_match_index++];
 						}
 						hevc_decoder_configuration_record_add_atsc3_nal_unit_vps(hevc_decoder_configuration_record, atsc3_nal_unit_vps);
-						_ATSC3_HEVC_NAL_EXTRACTOR_INFO("atsc3_hevc_nal_extractor_parse_from_mpu_metadata_block_t: HEVC: adding vps i: %d, length: %d", i, atsc3_nal_unit_vps->nal_unit->p_size);
+						_ATSC3_HEVC_NAL_EXTRACTOR_INFO("atsc3_hevc_nal_extractor_parse_from_mpu_metadata_block_t: HEVC: adding VPS i: %d, nal_unit_length: %d, block_t size: %d", i, atsc3_nal_unit_vps->nal_unit_length, atsc3_nal_unit_vps->nal_unit->p_size);
 					}
 					break;
 
@@ -305,7 +305,7 @@ video_decoder_configuration_record_t* atsc3_avc1_hevc_nal_extractor_parse_from_m
 							atsc3_nal_unit_sps->nal_unit->p_buffer[j] = mpu_ptr[hvcC_match_index++];
 						}
 						hevc_decoder_configuration_record_add_atsc3_nal_unit_sps(hevc_decoder_configuration_record, atsc3_nal_unit_sps);
-						_ATSC3_HEVC_NAL_EXTRACTOR_INFO("atsc3_hevc_nal_extractor_parse_from_mpu_metadata_block_t: HEVC: adding sps i: %d, length: %d", i, atsc3_nal_unit_sps->nal_unit->p_size);
+						_ATSC3_HEVC_NAL_EXTRACTOR_INFO("atsc3_hevc_nal_extractor_parse_from_mpu_metadata_block_t: HEVC: adding SPS i: %d, nal_unit_length: %d, block_t length: %d", i, atsc3_nal_unit_sps->nal_unit_length, atsc3_nal_unit_sps->nal_unit->p_size);
 
 					}
 					break;
@@ -323,7 +323,7 @@ video_decoder_configuration_record_t* atsc3_avc1_hevc_nal_extractor_parse_from_m
 							atsc3_nal_unit_pps->nal_unit->p_buffer[j] = mpu_ptr[hvcC_match_index++];
 						}
 						hevc_decoder_configuration_record_add_atsc3_nal_unit_pps(hevc_decoder_configuration_record, atsc3_nal_unit_pps);
-						_ATSC3_HEVC_NAL_EXTRACTOR_INFO("atsc3_hevc_nal_extractor_parse_from_mpu_metadata_block_t: HEVC: adding pps i: %d, length: %d", i, atsc3_nal_unit_pps->nal_unit->p_size);
+						_ATSC3_HEVC_NAL_EXTRACTOR_INFO("atsc3_hevc_nal_extractor_parse_from_mpu_metadata_block_t: HEVC: adding PPS i: %d, nal_unit_length: %d, block_t length: %d", i, atsc3_nal_unit_pps->nal_unit_length, atsc3_nal_unit_pps->nal_unit->p_size);
 
 					}
 					break;
@@ -426,6 +426,98 @@ error:
 	}
 
 	return NULL;
+}
+
+void atsc3_avc1_decoder_configuration_record_dump(avc1_decoder_configuration_record_t* avc1_decoder_configuration_record) {
+	_ATSC3_HEVC_NAL_EXTRACTOR_DEBUG("atsc3_avc1_decoder_configuration_record_dump: avc1 config_record: %p", avc1_decoder_configuration_record);
+
+}
+
+void atsc3_hevc_decoder_configuration_record_dump(hevc_decoder_configuration_record_t* hevc_decoder_configuration_record) {
+	_ATSC3_HEVC_NAL_EXTRACTOR_DEBUG("atsc3_hevc_decoder_configuration_record_dump: hevc config_record: %p, nal_vps_count: %d, nal_sps_count: %d, nal_pps_count: %d",
+			atsc3_hevc_decoder_configuration_record_dump,
+			hevc_decoder_configuration_record->atsc3_nal_unit_vps_v.count,
+			hevc_decoder_configuration_record->atsc3_nal_unit_sps_v.count,
+			hevc_decoder_configuration_record->atsc3_nal_unit_pps_v.count);
+
+	for(int i=0; i < hevc_decoder_configuration_record->atsc3_nal_unit_vps_v.count; i++) {
+		atsc3_nal_unit_vps_t* atsc3_nal_unit_vps = hevc_decoder_configuration_record->atsc3_nal_unit_vps_v.data[i];
+
+		//dump as hex, each byte of NAL will take 5 bytes for display + 1 byte null term
+		//0x00
+		//12345
+		if(atsc3_nal_unit_vps->nal_unit_length) {
+			uint32_t hex_dump_string_len = (atsc3_nal_unit_vps->nal_unit_length * 5) + 1;
+
+			char* temp_nal_payload_string_base = calloc(hex_dump_string_len, sizeof(char));
+			char* temp_nal_payload_string_append = temp_nal_payload_string_base;
+
+			uint8_t* nal_ptr = block_Get(atsc3_nal_unit_vps->nal_unit);
+
+			for(int j=0; j < atsc3_nal_unit_vps->nal_unit_length; j++) {
+				snprintf(temp_nal_payload_string_append, 6, "0x%02x ", nal_ptr[j]); //snprintf includes nul in the size
+				temp_nal_payload_string_append += 5;
+			}
+
+			_ATSC3_HEVC_NAL_EXTRACTOR_DEBUG("HEVC: hvcC: VPS %d, nal unit length is: %d, nal payload is:\n%s\n", i, atsc3_nal_unit_vps->nal_unit_length, temp_nal_payload_string_base);
+			free(temp_nal_payload_string_base);
+		} else {
+			_ATSC3_HEVC_NAL_EXTRACTOR_DEBUG("HEVC: hvcC: VPS %d, nal unit length is: 0!", i);
+		}
+	}
+
+	for(int i=0; i < hevc_decoder_configuration_record->atsc3_nal_unit_sps_v.count; i++) {
+		atsc3_nal_unit_sps_t* atsc3_nal_unit_sps = hevc_decoder_configuration_record->atsc3_nal_unit_sps_v.data[i];
+
+		//dump as hex, each byte of NAL will take 5 bytes for display + 1 byte null term
+		//0x00
+		//12345
+		if(atsc3_nal_unit_sps->nal_unit_length) {
+			uint32_t hex_dump_string_len = (atsc3_nal_unit_sps->nal_unit_length * 5) + 1;
+
+			char* temp_nal_payload_string_base = calloc(hex_dump_string_len, sizeof(char));
+			char* temp_nal_payload_string_append = temp_nal_payload_string_base;
+
+			uint8_t* nal_ptr = block_Get(atsc3_nal_unit_sps->nal_unit);
+
+			for(int j=0; j < atsc3_nal_unit_sps->nal_unit_length; j++) {
+				snprintf(temp_nal_payload_string_append, 6, "0x%02x ", nal_ptr[j]); //snprintf includes nul in the size
+				temp_nal_payload_string_append += 5;
+			}
+
+			_ATSC3_HEVC_NAL_EXTRACTOR_DEBUG("HEVC: hvcC: SPS %d, nal unit length is: %d, nal payload is:\n%s\n", i, atsc3_nal_unit_sps->nal_unit_length, temp_nal_payload_string_base);
+			free(temp_nal_payload_string_base);
+		} else {
+			_ATSC3_HEVC_NAL_EXTRACTOR_DEBUG("HEVC: hvcC: SPS %d, nal unit length is: 0!", i);
+		}
+	}
+
+	for(int i=0; i < hevc_decoder_configuration_record->atsc3_nal_unit_pps_v.count; i++) {
+		atsc3_nal_unit_pps_t* atsc3_nal_unit_pps = hevc_decoder_configuration_record->atsc3_nal_unit_pps_v.data[i];
+
+		//dump as hex, each byte of NAL will take 5 bytes for display + 1 byte null term
+		//0x00
+		//12345
+		if(atsc3_nal_unit_pps->nal_unit_length) {
+			uint32_t hex_dump_string_len = (atsc3_nal_unit_pps->nal_unit_length * 5) + 1;
+
+			char* temp_nal_payload_string_base = calloc(hex_dump_string_len, sizeof(char));
+			char* temp_nal_payload_string_append = temp_nal_payload_string_base;
+
+			uint8_t* nal_ptr = block_Get(atsc3_nal_unit_pps->nal_unit);
+
+			for(int j=0; j < atsc3_nal_unit_pps->nal_unit_length; j++) {
+				snprintf(temp_nal_payload_string_append, 6, "0x%02x ", nal_ptr[j]); //snprintf includes nul in the size
+				temp_nal_payload_string_append += 5;
+			}
+
+			_ATSC3_HEVC_NAL_EXTRACTOR_DEBUG("HEVC: hvcC: PPS %d, nal unit length is: %d, nal payload is:\n%s\n", i, atsc3_nal_unit_pps->nal_unit_length, temp_nal_payload_string_base);
+			free(temp_nal_payload_string_base);
+		} else {
+			_ATSC3_HEVC_NAL_EXTRACTOR_DEBUG("HEVC: hvcC: PPS %d, nal unit length is: 0!", i);
+		}
+	}
+
 }
 
 

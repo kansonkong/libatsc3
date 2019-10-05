@@ -61,26 +61,31 @@ int parse_hevc_nal_test(const char* filename, bool expect_avcC_fallback) {
 		if(!video_decoder_configuration_record) {
 			ret = __ERROR_PARSE_FROM_BLOCK_T;
 		} else {
-			//check vps, sps, pps
+			//avc1: check  sps, pps
 			if(expect_avcC_fallback && video_decoder_configuration_record->avc1_decoder_configuration_record) {
 				_ATSC3_HEVC_NAL_EXTRACTOR_TEST_INFO("...-> got back avc1_decoder: %p, sps: %d, pps: %d",
 						video_decoder_configuration_record->avc1_decoder_configuration_record,
 						video_decoder_configuration_record->avc1_decoder_configuration_record->atsc3_avc1_nal_unit_sps_v.count,
 						video_decoder_configuration_record->avc1_decoder_configuration_record->atsc3_avc1_nal_unit_pps_v.count);
                 
+                atsc3_avc1_decoder_configuration_record_dump(video_decoder_configuration_record->avc1_decoder_configuration_record);
+
                 ret = video_decoder_configuration_record->avc1_decoder_configuration_record->atsc3_avc1_nal_unit_sps_v.count
                         + video_decoder_configuration_record->avc1_decoder_configuration_record->atsc3_avc1_nal_unit_pps_v.count;
 
 			} else {
+				//HEVC: vps, sps, pps
 				_ATSC3_HEVC_NAL_EXTRACTOR_TEST_INFO("...-> got back hevcC_decoder: %p, vps: %d, sps: %d, pps: %d",
 										video_decoder_configuration_record->hevc_decoder_configuration_record,
 										video_decoder_configuration_record->hevc_decoder_configuration_record->atsc3_nal_unit_vps_v.count,
 										video_decoder_configuration_record->hevc_decoder_configuration_record->atsc3_nal_unit_sps_v.count,
 										video_decoder_configuration_record->hevc_decoder_configuration_record->atsc3_nal_unit_pps_v.count);
                 
+                atsc3_hevc_decoder_configuration_record_dump(video_decoder_configuration_record->hevc_decoder_configuration_record);
+
                 ret = video_decoder_configuration_record->hevc_decoder_configuration_record->atsc3_nal_unit_vps_v.count
-                        + video_decoder_configuration_record->hevc_decoder_configuration_record->atsc3_nal_unit_sps_v.count
-                        + video_decoder_configuration_record->hevc_decoder_configuration_record->atsc3_nal_unit_pps_v.count;
+                                     + video_decoder_configuration_record->hevc_decoder_configuration_record->atsc3_nal_unit_sps_v.count
+                                     + video_decoder_configuration_record->hevc_decoder_configuration_record->atsc3_nal_unit_pps_v.count;
 
 			}
 		}

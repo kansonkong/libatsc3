@@ -13,6 +13,33 @@
  *
  *
  *  It is recommended that the arrays be in the order VPS, SPS, PPS, prefix SEI, suffix SEI.
+ *
+ *
+ *  TODO:  add hev1 descriptor data for w/h
+ *
+ *   [hev1] size=8+339
+              data_reference_index = 1
+              width = 3840
+              height = 2160
+              compressor =
+              [hvcC] size=8+253
+                Configuration Version = 1
+                Profile Space = 0
+                Profile = Main 10
+                Tier = 0
+                Profile Compatibility = 20000000
+                Constraint = b00000000000
+                Level = 153
+                Min Spatial Segmentation = 0
+                Parallelism Type = 0
+                Chroma Format = 1
+                Chroma Depth = 10
+                Luma Depth = 10
+                Average Frame Rate = 0
+                Constant Frame Rate = 0
+                Number Of Temporal Layers = 3
+                Temporal Id Nested = 0
+                NALU Length Size = 4
  */
 
 #ifndef ATSC3_HEVC_NAL_EXTRACTOR_H_
@@ -226,6 +253,10 @@ ATSC3_VECTOR_BUILDER_METHODS_INTERFACE(avc1_decoder_configuration_record, atsc3_
 video_decoder_configuration_record_t* atsc3_avc1_hevc_nal_extractor_parse_from_mpu_metadata_block_t(block_t*);
 
 video_decoder_configuration_record_t* video_decoder_configuration_record_new();
+
+void atsc3_hevc_decoder_configuration_record_dump(hevc_decoder_configuration_record_t* hevc_decoder_configuration_record);
+void atsc3_avc1_decoder_configuration_record_dump(avc1_decoder_configuration_record_t* avc1_decoder_configuration_record);
+
 
 #define _ATSC3_HEVC_NAL_EXTRACTOR_ERROR(...)  	__LIBATSC3_TIMESTAMP_ERROR(__VA_ARGS__);
 #define _ATSC3_HEVC_NAL_EXTRACTOR_WARN(...)   	__LIBATSC3_TIMESTAMP_WARN(__VA_ARGS__);
