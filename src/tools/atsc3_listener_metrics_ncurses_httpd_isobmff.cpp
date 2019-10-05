@@ -648,7 +648,7 @@ void* pcap_loop_run_thread(void* dev_pointer) {
  * arguments:
  */
 int main(int argc,char **argv) {
-    _MMT_MPU_PARSER_DEBUG_ENABLED = 1;
+    _MMT_MPU_PARSER_DEBUG_ENABLED = 0;
     _MMTP_DEBUG_ENABLED = 0;
     _MMT_SIGNALLING_MESSAGE_DEBUG_ENABLED = 1;
     
