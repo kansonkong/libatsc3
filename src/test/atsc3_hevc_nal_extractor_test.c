@@ -133,6 +133,16 @@ int main(int argc, char* argv[] ) {
 
 	_ATSC3_HEVC_NAL_EXTRACTOR_TEST_INFO("->completed run of test cases for atsc3_hevc_nal_extractor");
 
+	///testdata/hevc/nal/10.1.dallas.v.mp4
+
+	const char* test_sample_hevc_v_3_filename = "testdata/hevc/nal/10.1.dallas.v.mp4";
+	int result3 = parse_hevc_nal_test(test_sample_hevc_v_3_filename, true);
+	if(result3 < 0) {
+		_ATSC3_HEVC_NAL_EXTRACTOR_TEST_ERROR("Sample: %s failed with error: %d", test_sample_hevc_v_3_filename, result3);
+	}
+
+	_ATSC3_HEVC_NAL_EXTRACTOR_TEST_INFO("->completed run of test cases for atsc3_hevc_nal_extractor");
+
 
 	return 0;
 }
