@@ -80,9 +80,9 @@ typedef struct atsc3_pcap_packet_header {
 
 //The actual packet data will immediately follow the packet header as a data blob of incl_len bytes without a specific byte alignment.
 
-struct uint48_t {
+typedef struct uint48 {
 	unsigned long long v:48;
-} __attribute__((packed));
+} uint48_t __attribute__((packed));
 
 //pcap ethernet header: 14 bytes
 typedef struct atsc3_pcap_packet_ethernet_header {
@@ -92,24 +92,32 @@ typedef struct atsc3_pcap_packet_ethernet_header {
 
 } atsc3_pcap_ethernet_header_t;
 
+typedef struct atsc3_pcap_packet_instance {
+	atsc3_pcap_global_header_t		atsc3_pcap_global_header;
+	atsc3_pcap_packet_header_t		atsc3_pcap_packet_header;
+
+	block_t*						current_pcap_packet;
+} atsc3_pcap_packet_instance_t;
+
 typedef struct atsc3_pcap_replay_context {
-	char* 		pcap_file_name;
-	FILE* 		pcap_fp;
+	char* 							pcap_file_name;
 
-	uint32_t	pos;
-	uint32_t	pcap_read_packet_count;
+	FILE* 							pcap_fp;
+	uint32_t						pcap_file_len;
+	uint32_t						pcap_file_pos;
 
-	uint32_t	len;
+	uint32_t						pcap_read_packet_count;
 
-	uint32_t	current_ts_sec;
-	uint32_t	current_ts_usec;
-	block_t*	current_pcap_packet;
+	atsc3_pcap_packet_instance_t	atsc3_pcap_packet_instance;
+	uint32_t						current_ts_sec;
+	uint32_t						current_ts_usec;
 
 } atsc3_pcap_replay_context_t;
 
 
 atsc3_pcap_replay_context_t* atsc3_pcap_replay_open_filename(const char* pcap_filename);
-atsc3_pcap_replay_context_t* atsc3_pcap_replay_open_filename(atsc3_pcap_replay_context_t* atsc3_pcap_replay_context_to_iterate);
+atsc3_pcap_replay_context_t* atsc3_pcap_replay_iterate_packet(atsc3_pcap_replay_context_t* atsc3_pcap_replay_context_to_iterate);
+atsc3_pcap_replay_context_t* atsc3_pcap_replay_usleep_packet(atsc3_pcap_replay_context_t* atsc3_pcap_replay_context_to_iterate);
 
 
 
