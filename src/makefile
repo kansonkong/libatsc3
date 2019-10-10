@@ -47,6 +47,7 @@ clean:
 	-rm -f test/atsc3_mmt_signalling_packet_test
 	-rm -f test/atsc3_mmt_mpu_packet_test
 	-rm -f test/atsc3_hevc_nal_extractor_test	
+	-rm -f test/atsc3_pcap_replay_test
 	-rm -f listener_tests/atsc3_alc_listener_test
 	-rm -f listener_tests/atsc3_alc_listener_test_valgrind
 	-rm -f listener_tests/atsc3_lls_listener_test
@@ -135,7 +136,8 @@ unit_tests: test/atsc3_lmt_test \
 			test/atsc3_mime_multipart_related_parser_test \
 			test/atsc3_fdt_mbms_envelope_test \
 			test/atsc3_fdt_mbms_envelope_test_2019-09-07-esg-e.1.1.7 \
-			test/atsc3_hevc_nal_extractor_test
+			test/atsc3_hevc_nal_extractor_test \
+			test/atsc3_pcap_replay_test
 
 libmicrohttpd_tests: test/atsc3_libmicrohttpd_test
 
@@ -321,6 +323,9 @@ atsc3_packet_statistics_types.o: atsc3_packet_statistics.h atsc3_packet_statisti
 atsc3_hevc_nal_extractor.o: atsc3_hevc_nal_extractor.h atsc3_hevc_nal_extractor.c
 	cc -g -c atsc3_hevc_nal_extractor.c -o atsc3_hevc_nal_extractor.o
 
+atsc3_pcap_type.o: atsc3_pcap_type.h atsc3_pcap_type.c
+	cc -g -c atsc3_pcap_type.c -o atsc3_pcap_type.o
+
 # unit standalone tests with mock data
 
 atsc3_stltp_parser_test: atsc3_stltp_parser_test.c \
@@ -419,7 +424,8 @@ libatsc3_intermediate.o: atsc3_lls.o \
 		atsc3_aeat_types.o \
 		atsc3_aeat_parser.o \
 		atsc3_packet_statistics_types.o \
-		atsc3_hevc_nal_extractor.o
+		atsc3_hevc_nal_extractor.o \
+		atsc3_pcap_type.o
 
 	ld  -o libatsc3_intermediate.o -r \
 		atsc3_lls.o \
@@ -481,7 +487,8 @@ libatsc3_intermediate.o: atsc3_lls.o \
 		atsc3_aeat_types.o \
 		atsc3_aeat_parser.o \
 		atsc3_packet_statistics_types.o \
-		atsc3_hevc_nal_extractor.o
+		atsc3_hevc_nal_extractor.o \
+		atsc3_pcap_type.o
 
 libatsc3.o: libatsc3_intermediate.o bento4_mock.o
 	ld  -o libatsc3.o -r libatsc3_intermediate.o bento4_mock.o
@@ -639,6 +646,11 @@ test/atsc3_fdt_mbms_envelope_test_2019-09-07-esg-e.1.1.7: test/atsc3_fdt_mbms_en
 	atsc3_mbms_envelope_parser.o \
 	xml.o \
 	atsc3_utils.o -o test/atsc3_fdt_mbms_envelope_test_2019-09-07-esg-e.1.1.7
+	
+	
+test/atsc3_pcap_replay_test: test/atsc3_pcap_replay_test.c
+	cc -g test/atsc3_pcap_replay_test.c  -lz  -lm -lpthread -lpcap -o test/atsc3_pcap_replay_test 
+	
 
 ### integration tests
 ### TODO: move these into target makefile in listener_test/folder
