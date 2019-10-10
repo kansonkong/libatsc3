@@ -27,12 +27,13 @@ int main(int argc, char* argv[] ) {
 
 	if(atsc3_pcap_replay_context) {
 		while((atsc3_pcap_replay_context = atsc3_pcap_replay_iterate_packet(atsc3_pcap_replay_context))) {
-			_ATSC3_PCAP_REPLAY_TEST_DEBUG("pos: %d, Got packet len: %d, ts_sec: %u, ts_usec: %u",
-					ftell
+			atsc3_pcap_replay_usleep_packet(atsc3_pcap_replay_context);
+
+			_ATSC3_PCAP_REPLAY_TEST_DEBUG("pos: %ld, Got packet len: %d, ts_sec: %u, ts_usec: %u",
+					ftell(atsc3_pcap_replay_context->pcap_fp),
 					atsc3_pcap_replay_context->atsc3_pcap_packet_instance.current_pcap_packet->p_size,
 					atsc3_pcap_replay_context->atsc3_pcap_packet_instance.atsc3_pcap_packet_header.ts_sec,
 					atsc3_pcap_replay_context->atsc3_pcap_packet_instance.atsc3_pcap_packet_header.ts_usec);
-
 
 		}
 	}
