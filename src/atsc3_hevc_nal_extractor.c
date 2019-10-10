@@ -519,7 +519,7 @@ void atsc3_hevc_decoder_configuration_record_dump(hevc_decoder_configuration_rec
 	}
 }
 
-block_t* atsc3_hevc_decoder_configuration_record_get_nals_vps_combined_optional_Start_code(hevc_decoder_configuration_record_t* hevc_decoder_configuration_record, bool include_nal_start_code) {
+block_t* atsc3_hevc_decoder_configuration_record_get_nals_vps_combined_optional_start_code(hevc_decoder_configuration_record_t* hevc_decoder_configuration_record, bool include_nal_start_code) {
 	_ATSC3_HEVC_NAL_EXTRACTOR_DEBUG("atsc3_hevc_decoder_configuration_record_get_vps_nals_combined: hevc config_record: %p, nal_vps_count: %d",
 				atsc3_hevc_decoder_configuration_record_dump,
 				hevc_decoder_configuration_record->atsc3_nal_unit_vps_v.count);
