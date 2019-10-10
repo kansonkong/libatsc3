@@ -53,6 +53,89 @@ uint32_t* dst_ip_addr_filter = NULL;
 uint16_t* dst_ip_port_filter = NULL;
 uint16_t* dst_packet_id_filter = NULL;
 
+//dump essences out
+
+
+
+void atsc3_mmt_mpu_mfu_on_sample_complete_dump(uint16_t packet_id, uint32_t mpu_sequence_number, uint32_t sample_number, block_t* mmt_mfu_sample) {
+
+	__MMT_CONTEXT_MPU_DEBUG("atsc3_mmt_mpu_mfu_on_sample_complete_dump: packet_id: %u, mpu_sequence_number: %u, sample_number: %u, mmt_mfu_sample: %p, len: %d",
+			packet_id,
+            mpu_sequence_number,
+            sample_number,
+			mmt_mfu_sample,
+			mmt_mfu_sample->p_size);
+
+    char myFileName[128];
+    snprintf(myFileName, 128, "mpu/%d.%d.%d.mfu.complete", packet_id, mpu_sequence_number, sample_number);
+    FILE* fp = fopen(myFileName, "w");
+    if(fp) {
+    	block_Rewind(mmt_mfu_sample);
+    	fwrite(block_Get(mmt_mfu_sample), mmt_mfu_sample->p_size, 1, fp);
+    	fclose(fp);
+    } else {
+    	  __MMT_CONTEXT_MPU_DEBUG("ERROR writing sample to complete filename: %s, atsc3_mmt_mpu_mfu_on_sample_complete_dump: packet_id: %u, mpu_sequence_number: %u, sample_number: %u, mmt_mfu_sample: %p, len: %d",
+    			    myFileName,
+				  	packet_id,
+    	            mpu_sequence_number,
+    	            sample_number,
+    				mmt_mfu_sample,
+    				mmt_mfu_sample->p_size);
+
+    }
+}
+
+void atsc3_mmt_mpu_mfu_on_sample_corrupt_dump(uint16_t packet_id, uint32_t mpu_sequence_number, uint32_t sample_number, block_t* mmt_mfu_sample) {
+	__MMT_CONTEXT_MPU_DEBUG("atsc3_mmt_mpu_mfu_on_sample_corrupt_dump: packet_id: %u, mpu_sequence_number: %u, sample_number: %u, mmt_mfu_sample: %p, len: %d",
+				packet_id,
+	            mpu_sequence_number,
+	            sample_number,
+				mmt_mfu_sample,
+				mmt_mfu_sample->p_size);
+
+	char myFileName[128];
+	snprintf(myFileName,  128, "mpu/%d.%d.%d.mfu.corrupt", packet_id, mpu_sequence_number, sample_number);
+	FILE* fp = fopen(myFileName, "w");
+	if(fp) {
+		block_Rewind(mmt_mfu_sample);
+		fwrite(block_Get(mmt_mfu_sample), mmt_mfu_sample->p_size, 1, fp);
+		fclose(fp);
+	} else {
+		  __MMT_CONTEXT_MPU_DEBUG("ERROR writing sample to corrupt filename: %s, atsc3_mmt_mpu_mfu_on_sample_complete_dump: packet_id: %u, mpu_sequence_number: %u, sample_number: %u, mmt_mfu_sample: %p, len: %d",
+					myFileName,
+					packet_id,
+					mpu_sequence_number,
+					sample_number,
+					mmt_mfu_sample,
+					mmt_mfu_sample->p_size);
+
+	}
+}
+
+
+
+void atsc3_mmt_mpu_mfu_on_sample_missing_dump(uint16_t packet_id, uint32_t mpu_sequence_number, uint32_t sample_number) {
+	__MMT_CONTEXT_MPU_DEBUG("atsc3_mmt_mpu_mfu_on_sample_complete_dump: packet_id: %u, mpu_sequence_number: %u, sample_number: %u",
+				packet_id,
+	            mpu_sequence_number,
+	            sample_number);
+
+	char myFileName[128];
+	snprintf(myFileName,  128, "mpu/%d.%d.%d.mfu.missing", packet_id, mpu_sequence_number, sample_number);
+	FILE* fp = fopen(myFileName, "w");
+	if(fp) {
+
+		fwrite("x", 1, 1, fp);
+		fclose(fp);
+	} else {
+		  __MMT_CONTEXT_MPU_DEBUG("ERROR writing sample to missing filename: %s, atsc3_mmt_mpu_mfu_on_sample_complete_dump: packet_id: %u, mpu_sequence_number: %u, sample_number: %u",
+					myFileName,
+					packet_id,
+					mpu_sequence_number,
+					sample_number);
+
+	}
+}
 
 //jjustman-2019-09-18: refactored MMTP flow collection management
 mmtp_flow_t* mmtp_flow;
@@ -442,6 +525,13 @@ int main(int argc,char **argv) {
 
     //callback contexts
     atsc3_mmt_mfu_context = atsc3_mmt_mfu_context_new();
+
+	//MFU related callbacks
+	atsc3_mmt_mfu_context->atsc3_mmt_mpu_mfu_on_sample_complete = &atsc3_mmt_mpu_mfu_on_sample_complete_dump;
+	atsc3_mmt_mfu_context->atsc3_mmt_mpu_mfu_on_sample_corrupt 	= &atsc3_mmt_mpu_mfu_on_sample_corrupt_dump;
+	atsc3_mmt_mfu_context->atsc3_mmt_mpu_mfu_on_sample_missing 	= &atsc3_mmt_mpu_mfu_on_sample_missing_dump;
+
+
 
 
 #ifndef _TEST_RUN_VALGRIND_OSX_
