@@ -364,7 +364,7 @@ void mmtp_mfu_process_from_payload_with_context(udp_packet_t *udp_packet,
                                                 mpu_fragment_counter_start = mmtp_mpu_packet_to_rebuild->mpu_fragment_counter;
                                                 mpu_fragment_counter_position = mpu_fragment_counter_start;
                                                 __MMT_CONTEXT_MPU_DEBUG("i: %u, psn: %u, Found MFU DU with MMTHSample header start,with %u:%u and packet_id: %u, mpu_sequence_number: %u, fragment_indicator: %u",
-                                                                  i,
+                                                		mmtp_mpu_packet_to_rebuild->mpu_fragment_counter,
                                                                   mmtp_mpu_packet_to_rebuild->packet_sequence_number,
                                                                   atsc3_mmt_mfu_context->udp_flow->dst_ip_addr,
                                                                   atsc3_mmt_mfu_context->udp_flow->dst_port,
@@ -373,7 +373,7 @@ void mmtp_mfu_process_from_payload_with_context(udp_packet_t *udp_packet,
                                                                   mmtp_mpu_packet_to_rebuild->mpu_fragmentation_indicator);
                                             } else {
                                                 __MMT_CONTEXT_MPU_DEBUG("i: %u, psn: %u, Found MFU DU but missing MMTHSample header start,with %u:%u and packet_id: %u, mpu_sequence_number: %u, fragment_indicator: %u",
-                                                                  i,
+                                                		mmtp_mpu_packet_to_rebuild->mpu_fragment_counter,
                                                                   mmtp_mpu_packet_to_rebuild->packet_sequence_number,
                                                                   atsc3_mmt_mfu_context->udp_flow->dst_ip_addr,
                                                                   atsc3_mmt_mfu_context->udp_flow->dst_port,
@@ -387,7 +387,7 @@ void mmtp_mfu_process_from_payload_with_context(udp_packet_t *udp_packet,
                                             
                                         } else {
                                             __MMT_CONTEXT_MPU_DEBUG("i: %u, psn: %u, Appending MFU DU with %u:%u and packet_id: %u, mpu_sequence_number: %u, fragment_indicator: %u",
-                                                                  i,
+                                            		mmtp_mpu_packet_to_rebuild->mpu_fragment_counter,
                                                                   mmtp_mpu_packet_to_rebuild->packet_sequence_number,
                                                                   atsc3_mmt_mfu_context->udp_flow->dst_ip_addr,
                                                                   atsc3_mmt_mfu_context->udp_flow->dst_port,
@@ -417,7 +417,7 @@ void mmtp_mfu_process_from_payload_with_context(udp_packet_t *udp_packet,
                                                         mpu_fragment_counter_position,
                                                         mpu_fragment_count_rebuilt);
                                                         
-                                if(mpu_fragment_counter_start - mpu_fragment_count_rebuilt == 0) {
+                                if(mpu_fragment_counter_start - (mpu_fragment_count_rebuilt-1) == 0) {
                                     atsc3_mmt_mfu_context->atsc3_mmt_mpu_mfu_on_sample_complete(mmtp_mpu_packet->mmtp_packet_id, mmtp_mpu_packet->mpu_sequence_number, mfu_sample_number, du_mfu_block_rebuilt);
                                 } else {
                                     atsc3_mmt_mfu_context->atsc3_mmt_mpu_mfu_on_sample_corrupt(mmtp_mpu_packet->mmtp_packet_id, mmtp_mpu_packet->mpu_sequence_number, mfu_sample_number, du_mfu_block_rebuilt);
