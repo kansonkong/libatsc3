@@ -112,7 +112,7 @@ typedef struct atsc3_pcap_replay_context {
 
 	atsc3_pcap_packet_instance_t	atsc3_pcap_packet_instance;
 
-	//struct timeval 					pcap_open_timeval; //?
+	//struct timeval 				pcap_open_timeval; //?
 
 	struct timeval 					last_wallclock_timeval;
 	struct timeval 					current_wallclock_timeval;
@@ -132,15 +132,10 @@ atsc3_pcap_replay_context_t* atsc3_pcap_replay_iterate_packet(atsc3_pcap_replay_
 atsc3_pcap_replay_context_t* atsc3_pcap_replay_usleep_packet(atsc3_pcap_replay_context_t* atsc3_pcap_replay_context_to_iterate);
 
 
-
-
-#define _ATSC3_PCAP_TYPE_ERROR(...)   printf("%s:%d:ERROR:",__FILE__,__LINE__);_ATSC3_UTILS_PRINTLN(__VA_ARGS__);
-#define _ATSC3_PCAP_TYPE_WARN(...)    printf("%s:%d:WARN:",__FILE__,__LINE__);_ATSC3_UTILS_PRINTLN(__VA_ARGS__);
-#define _ATSC3_PCAP_TYPE_INFO(...)    printf("%s:%d:INFO:",__FILE__,__LINE__);_ATSC3_UTILS_PRINTLN(__VA_ARGS__);
-#define _ATSC3_PCAP_TYPE_DEBUG(...)   printf("%s:%d:DEBUG:",__FILE__,__LINE__);_ATSC3_UTILS_PRINTLN(__VA_ARGS__);
-
-
-
-
+#define _ATSC3_PCAP_TYPE_ERROR(...)   __LIBATSC3_TIMESTAMP_ERROR(__VA_ARGS__);
+#define _ATSC3_PCAP_TYPE_WARN(...)    __LIBATSC3_TIMESTAMP_WARN(__VA_ARGS__);
+#define _ATSC3_PCAP_TYPE_INFO(...)    __LIBATSC3_TIMESTAMP_INFO(__VA_ARGS__);
+#define _ATSC3_PCAP_TYPE_DEBUG(...)   if(_ATSC3_PCAP_TYPE_DEBUG_ENABLED) { __LIBATSC3_TIMESTAMP_DEBUG(__VA_ARGS__); }
+#define _ATSC3_PCAP_TYPE_TRACE(...)   if(_ATSC3_PCAP_TYPE_TRACE_ENABLED) { __LIBATSC3_TIMESTAMP_TRACE(__VA_ARGS__); }
 
 #endif /* ATSC3_PCAP_TYPE_H_ */
