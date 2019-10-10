@@ -93,7 +93,6 @@ typedef struct atsc3_pcap_packet_ethernet_header {
 } atsc3_pcap_ethernet_header_t;
 
 typedef struct atsc3_pcap_packet_instance {
-	atsc3_pcap_global_header_t		atsc3_pcap_global_header;
 	atsc3_pcap_packet_header_t		atsc3_pcap_packet_header;
 
 	block_t*						current_pcap_packet;
@@ -105,6 +104,9 @@ typedef struct atsc3_pcap_replay_context {
 	FILE* 							pcap_fp;
 	uint32_t						pcap_file_len;
 	uint32_t						pcap_file_pos;
+
+	bool							has_read_atsc3_pcap_global_header;
+	atsc3_pcap_global_header_t		atsc3_pcap_global_header;
 
 	uint32_t						pcap_read_packet_count;
 
@@ -120,6 +122,12 @@ atsc3_pcap_replay_context_t* atsc3_pcap_replay_iterate_packet(atsc3_pcap_replay_
 atsc3_pcap_replay_context_t* atsc3_pcap_replay_usleep_packet(atsc3_pcap_replay_context_t* atsc3_pcap_replay_context_to_iterate);
 
 
+
+
+#define _ATSC3_PCAP_TYPE_ERROR(...)   printf("%s:%d:ERROR:",__FILE__,__LINE__);_ATSC3_UTILS_PRINTLN(__VA_ARGS__);
+#define _ATSC3_PCAP_TYPE_WARN(...)    printf("%s:%d:WARN:",__FILE__,__LINE__);_ATSC3_UTILS_PRINTLN(__VA_ARGS__);
+#define _ATSC3_PCAP_TYPE_INFO(...)    printf("%s:%d:INFO:",__FILE__,__LINE__);_ATSC3_UTILS_PRINTLN(__VA_ARGS__);
+#define _ATSC3_PCAP_TYPE_DEBUG(...)   printf("%s:%d:DEBUG:",__FILE__,__LINE__);_ATSC3_UTILS_PRINTLN(__VA_ARGS__);
 
 
 

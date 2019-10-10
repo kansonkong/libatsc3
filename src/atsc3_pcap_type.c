@@ -58,21 +58,32 @@ atsc3_pcap_replay_context_t* atsc3_pcap_replay_iterate_packet(atsc3_pcap_replay_
 	}
 
 	if(atsc3_pcap_replay_context_to_iterate->atsc3_pcap_packet_instance.current_pcap_packet) {
+		_ATSC3_PCAP_TYPE_DEBUG("block_Destroy on packet: %p", atsc3_pcap_replay_context_to_iterate->atsc3_pcap_packet_instance.current_pcap_packet);
 		block_Destroy(&atsc3_pcap_replay_context_to_iterate->atsc3_pcap_packet_instance.current_pcap_packet);
 	}
 
 	memset(&atsc3_pcap_replay_context_to_iterate->atsc3_pcap_packet_instance, 0, sizeof(atsc3_pcap_packet_instance_t));
 
 	//read our global header first
-	fread((void*)&atsc3_pcap_replay_context_to_iterate->atsc3_pcap_packet_instance.atsc3_pcap_global_header, sizeof(atsc3_pcap_global_header_t), 1, atsc3_pcap_replay_context_to_iterate->pcap_fp);
+	if(!atsc3_pcap_replay_context_to_iterate->has_read_atsc3_pcap_global_header) {
+		fread((void*)&atsc3_pcap_replay_context_to_iterate->atsc3_pcap_global_header, sizeof(atsc3_pcap_global_header_t), 1, atsc3_pcap_replay_context_to_iterate->pcap_fp);
+		atsc3_pcap_replay_context_to_iterate->has_read_atsc3_pcap_global_header = true;
+	}
 	fread((void*)&atsc3_pcap_replay_context_to_iterate->atsc3_pcap_packet_instance.atsc3_pcap_packet_header, sizeof(atsc3_pcap_packet_header_t), 1, atsc3_pcap_replay_context_to_iterate->pcap_fp);
-
+	//remap to host byte order?
+//	atsc3_pcap_replay_context_to_iterate->atsc3_pcap_packet_instance.atsc3_pcap_packet_header.ts_sec = ntohl(atsc3_pcap_replay_context_to_iterate->atsc3_pcap_packet_instance.atsc3_pcap_packet_header.ts_sec);
+//	atsc3_pcap_replay_context_to_iterate->atsc3_pcap_packet_instance.atsc3_pcap_packet_header.ts_usec = ntohl(atsc3_pcap_replay_context_to_iterate->atsc3_pcap_packet_instance.atsc3_pcap_packet_header.ts_usec);
+//	atsc3_pcap_replay_context_to_iterate->atsc3_pcap_packet_instance.atsc3_pcap_packet_header.incl_len = ntohl(atsc3_pcap_replay_context_to_iterate->atsc3_pcap_packet_instance.atsc3_pcap_packet_header.incl_len);
+//	atsc3_pcap_replay_context_to_iterate->atsc3_pcap_packet_instance.atsc3_pcap_packet_header.orig_len = ntohl(atsc3_pcap_replay_context_to_iterate->atsc3_pcap_packet_instance.atsc3_pcap_packet_header.orig_len);
+//
 	atsc3_pcap_replay_context_to_iterate->pcap_file_pos += sizeof(atsc3_pcap_global_header_t) + sizeof(atsc3_pcap_packet_header_t);
 
-
 	atsc3_pcap_replay_context_to_iterate->atsc3_pcap_packet_instance.current_pcap_packet = block_Alloc(atsc3_pcap_replay_context_to_iterate->atsc3_pcap_packet_instance.atsc3_pcap_packet_header.incl_len);
-	fread((void*)block_Get(atsc3_pcap_replay_context_to_iterate->atsc3_pcap_packet_instance.current_pcap_packet->p_buffer), atsc3_pcap_replay_context_to_iterate->atsc3_pcap_packet_instance.atsc3_pcap_packet_header.incl_len, 1, atsc3_pcap_replay_context_to_iterate->pcap_fp);
 
+	_ATSC3_PCAP_TYPE_DEBUG("Reading packet: %d, size: %d, fpos is: %d", atsc3_pcap_replay_context_to_iterate->pcap_read_packet_count, atsc3_pcap_replay_context_to_iterate->atsc3_pcap_packet_instance.atsc3_pcap_packet_header.incl_len, ftell(atsc3_pcap_replay_context_to_iterate->pcap_fp));
+	fread((void*)atsc3_pcap_replay_context_to_iterate->atsc3_pcap_packet_instance.current_pcap_packet->p_buffer, atsc3_pcap_replay_context_to_iterate->atsc3_pcap_packet_instance.atsc3_pcap_packet_header.incl_len, 1, atsc3_pcap_replay_context_to_iterate->pcap_fp);
+
+	atsc3_pcap_replay_context_to_iterate->pcap_file_pos += atsc3_pcap_replay_context_to_iterate->atsc3_pcap_packet_instance.atsc3_pcap_packet_header.incl_len;
 	atsc3_pcap_replay_context_to_iterate->pcap_read_packet_count++;
 
 	return atsc3_pcap_replay_context_to_iterate;

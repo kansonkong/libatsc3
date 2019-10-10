@@ -648,8 +648,8 @@ test/atsc3_fdt_mbms_envelope_test_2019-09-07-esg-e.1.1.7: test/atsc3_fdt_mbms_en
 	atsc3_utils.o -o test/atsc3_fdt_mbms_envelope_test_2019-09-07-esg-e.1.1.7
 	
 	
-test/atsc3_pcap_replay_test: test/atsc3_pcap_replay_test.c
-	cc -g test/atsc3_pcap_replay_test.c  -lz  -lm -lpthread -lpcap -o test/atsc3_pcap_replay_test 
+test/atsc3_pcap_replay_test: test/atsc3_pcap_replay_test.c atsc3_pcap_type.o atsc3_utils.o
+	cc -g test/atsc3_pcap_replay_test.c atsc3_pcap_type.o  atsc3_utils.o -lz  -lm -lpthread -lpcap -o test/atsc3_pcap_replay_test 
 	
 
 ### integration tests
