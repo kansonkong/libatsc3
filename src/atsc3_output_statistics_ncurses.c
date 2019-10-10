@@ -235,6 +235,7 @@ void* ncurses_input_run_thread(void* lls_slt_monitor_ptr) {
 						//build our alc_session map
 						lls_sls_alc_monitor = lls_sls_alc_monitor_create();
 						lls_sls_alc_monitor->lls_alc_session = lls_sls_alc_session;
+                        lls_sls_alc_monitor->atsc3_lls_slt_service = lls_sls_alc_session->atsc3_lls_slt_service;
 
 						//lls_sls_alc_monitor->service_id = my_service_id;
 
@@ -270,20 +271,6 @@ void* ncurses_input_run_thread(void* lls_slt_monitor_ptr) {
                         }
 						lls_sls_alc_monitor->lls_sls_monitor_output_buffer.has_written_init_box = false;
 						lls_slt_monitor->lls_sls_alc_monitor = lls_sls_alc_monitor;
-
-
-						//jjustman-2019-09-17 - TODO - move this out to helper method
-						atsc3_lls_slt_service_t* atsc3_lls_slt_service_matching = NULL;
-
-						for(int i=0; i < lls_slt_monitor->lls_sls_alc_monitor_v.count && !atsc3_lls_slt_service_matching; i++) {
-							atsc3_lls_slt_service_t* atsc3_lls_slt_service = lls_slt_monitor->lls_sls_alc_monitor_v.data[i]->atsc3_lls_slt_service;
-							if(atsc3_lls_slt_service->service_id == my_service_id) {
-								atsc3_lls_slt_service_matching = atsc3_lls_slt_service;
-								break;
-							}
-						}
-						lls_slt_monitor->lls_sls_alc_monitor->atsc3_lls_slt_service = atsc3_lls_slt_service_matching;
-
 					} else {
 						lls_sls_alc_monitor = lls_sls_alc_monitor_create();
 						lls_slt_monitor->lls_sls_alc_monitor = lls_sls_alc_monitor;
