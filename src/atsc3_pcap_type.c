@@ -55,9 +55,11 @@ atsc3_pcap_replay_context_t* atsc3_pcap_replay_open_filename(const char* pcap_fi
 }
 
 //used for inclusion of pcap's via android assetManager
-atsc3_pcap_replay_context_t* atsc3_pcap_replay_open_from_fd(const char* pcap_filename, int pcap_fd) {
-    if(!pcap_fd) {
-        return NULL;
+atsc3_pcap_replay_context_t* atsc3_pcap_replay_open_from_fd(const char* pcap_filename, int pcap_fd, long pcap_start, long pcap_length) {
+    if(pcap_fd < 0 ) {
+		printf("atsc3_pcap_replay_open_from_fd: ERROR: pcap_fd is %d", pcap_fd);
+
+		return NULL;
     }
 
     FILE* pcap_fp = fdopen(pcap_fd, "r");
@@ -70,14 +72,15 @@ atsc3_pcap_replay_context_t* atsc3_pcap_replay_open_from_fd(const char* pcap_fil
     atsc3_pcap_replay_context->pcap_file_name = calloc(sizeof(pcap_filename+1), sizeof(char));
     strncpy(atsc3_pcap_replay_context->pcap_file_name, pcap_filename, strlen(pcap_filename));
 
-	fseek(pcap_fp, 0L, SEEK_END);
-	long sz = ftell(pcap_fp);
-	fseek(pcap_fp, 0L, SEEK_SET);
-
-	atsc3_pcap_replay_context->pcap_file_len = sz;
+    //embedded android assets start in the an internal offset from AAsset_openFileDescriptor
+	fseek(pcap_fp, pcap_start, SEEK_SET);
+    atsc3_pcap_replay_context->pcap_fd_start = pcap_start;
+	atsc3_pcap_replay_context->pcap_file_len = pcap_length;
     atsc3_pcap_replay_context->pcap_file_pos = 0;
 
     atsc3_pcap_replay_context->pcap_fp = pcap_fp;
+    long my_pcap_fp_pos = ftell(pcap_fp);
+    printf("atsc3_pcap_replay_open_from_fd: fd: %d, pos: %lu", pcap_fd, my_pcap_fp_pos);
 
     return atsc3_pcap_replay_context;
 }
