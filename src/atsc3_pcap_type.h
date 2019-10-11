@@ -59,7 +59,7 @@ extern "C" {
 #endif
 
 
-
+#define	ATSC3_PCAP_ETH_HEADER_LENGTH 14
 #define ATSC3_PCAP_MIN_GLOBAL_AND_PACKET_HEADER_LENGTH 24+16
 #define ATSC3_PCAP_MIN_GLOBAL_AND_PACKET_AND_ETH_HEADER_LENGTH 24+16+14
 
@@ -108,6 +108,8 @@ typedef struct atsc3_pcap_replay_context {
 	char* 							pcap_file_name;
 
 	FILE* 							pcap_fp;
+	uint32_t 						pcap_fd_start;
+
 	uint32_t						pcap_file_len;
 	uint32_t						pcap_file_pos;
 
@@ -133,7 +135,7 @@ typedef struct atsc3_pcap_replay_context {
 } atsc3_pcap_replay_context_t;
 
 atsc3_pcap_replay_context_t* atsc3_pcap_replay_open_filename(const char* pcap_filename);
-atsc3_pcap_replay_context_t* atsc3_pcap_replay_open_from_fd(const char* pcap_filename, int pcap_fd); //used for inclusion of pcap's via android assetManager
+atsc3_pcap_replay_context_t* atsc3_pcap_replay_open_from_fd(const char* pcap_filename, int pcap_fd, long pcap_start, long pcap_length); //used for inclusion of pcap's via android assetManager
 
 atsc3_pcap_replay_context_t* atsc3_pcap_replay_iterate_packet(atsc3_pcap_replay_context_t* atsc3_pcap_replay_context_to_iterate);
 atsc3_pcap_replay_context_t* atsc3_pcap_replay_usleep_packet(atsc3_pcap_replay_context_t* atsc3_pcap_replay_context_to_iterate);
