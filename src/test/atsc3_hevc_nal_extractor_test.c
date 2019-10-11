@@ -99,6 +99,30 @@ int parse_hevc_nal_test(const char* filename, bool expect_avcC_fallback) {
                                      + video_decoder_configuration_record->hevc_decoder_configuration_record->atsc3_nal_unit_sps_v.count
                                      + video_decoder_configuration_record->hevc_decoder_configuration_record->atsc3_nal_unit_pps_v.count;
 
+                //prefix vps/sps/pps wih h2645_ps_to_nalu
+                uint8_t* out_p;
+                int out_size;
+                int rett = h2645_ps_to_nalu(nals_vps_combined->p_buffer, nals_vps_combined->p_size, &out_p, &out_size);
+                
+                if(out_size) {
+                    uint32_t hex_dump_string_len = (out_size * 5) + 1;
+
+                    char* temp_nal_payload_string_base = calloc(hex_dump_string_len, sizeof(char));
+                    char* temp_nal_payload_string_append = temp_nal_payload_string_base;
+
+                    uint8_t* nal_ptr = out_p;
+
+                    for(int j=0; j < out_size; j++) {
+                        snprintf(temp_nal_payload_string_append, 6, "0x%02x ", nal_ptr[j]); //snprintf includes nul in the size
+                        temp_nal_payload_string_append += 5;
+                    }
+
+                    _ATSC3_HEVC_NAL_EXTRACTOR_DEBUG("HEVC: wrapped NAL hvcC: VPS, nal unit length is: %d, nal payload is:\n%s\n",
+                                                    out_size, temp_nal_payload_string_base);
+                    free(temp_nal_payload_string_base);
+                } else {
+                    _ATSC3_HEVC_NAL_EXTRACTOR_DEBUG("HEVC: hvcC: VPS %d, nal unit length is: 0!");
+                }
 			}
 		}
 
