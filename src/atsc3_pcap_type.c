@@ -7,7 +7,7 @@
 
 
 #include <stdio.h>
-#include <at3_common.h>
+#include <string.h>
 #include "atsc3_pcap_type.h"
 
 
