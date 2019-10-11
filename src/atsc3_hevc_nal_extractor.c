@@ -542,10 +542,9 @@ block_t* atsc3_hevc_decoder_configuration_record_get_nals_vps_combined_optional_
 				block_Merge(nals_vps_combined, atsc3_nal_unit_vps->nal_unit);
 			} else {
 				if (!nals_vps_combined) {
-					nals_vps_combined = block_Duplicate(atsc3_nal_unit_vps->nal_unit);
-				} else {
-					block_Merge(nals_vps_combined, atsc3_nal_unit_vps->nal_unit);
+					nals_vps_combined = block_Duplicate(hevc_nals_start_code);
 				}
+				block_Merge(nals_vps_combined, atsc3_nal_unit_vps->nal_unit);
 			}
 		}
 	}
@@ -588,10 +587,10 @@ block_t* atsc3_hevc_decoder_configuration_record_get_nals_sps_combined_optional_
 				block_Merge(nals_sps_combined, atsc3_nal_unit_vps->nal_unit);
 			} else {
 				if (!nals_sps_combined) {
-					nals_sps_combined = block_Duplicate(atsc3_nal_unit_vps->nal_unit);
-				} else {
-					block_Merge(nals_sps_combined, atsc3_nal_unit_vps->nal_unit);
+					nals_sps_combined = block_Duplicate(hevc_nals_start_code);
 				}
+				block_Merge(nals_sps_combined, atsc3_nal_unit_vps->nal_unit);
+
 			}
 		}
 	}
@@ -633,10 +632,9 @@ block_t* atsc3_hevc_decoder_configuration_record_get_nals_pps_combined_optional_
 				block_Merge(nals_pps_combined, atsc3_nal_unit_vps->nal_unit);
 			} else {
 				if (!nals_pps_combined) {
-					nals_pps_combined = block_Duplicate(atsc3_nal_unit_vps->nal_unit);
-				} else {
-					block_Merge(nals_pps_combined, atsc3_nal_unit_vps->nal_unit);
+					nals_pps_combined = block_Duplicate(hevc_nals_start_code);
 				}
+				block_Merge(nals_pps_combined, atsc3_nal_unit_vps->nal_unit);
 			}
 		}
 	}
