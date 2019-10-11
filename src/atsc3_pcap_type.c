@@ -6,7 +6,10 @@
  */
 
 
+#include <stdio.h>
+#include <at3_common.h>
 #include "atsc3_pcap_type.h"
+
 
 int _ATSC3_PCAP_TYPE_DEBUG_ENABLED = 1;
 int _ATSC3_PCAP_TYPE_TRACE_ENABLED = 0;
@@ -49,6 +52,34 @@ atsc3_pcap_replay_context_t* atsc3_pcap_replay_open_filename(const char* pcap_fi
 	}
 
 	return atsc3_pcap_replay_context;
+}
+
+//used for inclusion of pcap's via android assetManager
+atsc3_pcap_replay_context_t* atsc3_pcap_replay_open_from_fd(const char* pcap_filename, int pcap_fd) {
+    if(!pcap_fd) {
+        return NULL;
+    }
+
+    FILE* pcap_fp = fdopen(pcap_fd, "r");
+
+    if(!pcap_fp) {
+        return NULL;
+    }
+
+    atsc3_pcap_replay_context_t* atsc3_pcap_replay_context = calloc(1, sizeof(atsc3_pcap_replay_context_t));
+    atsc3_pcap_replay_context->pcap_file_name = calloc(sizeof(pcap_filename+1), sizeof(char));
+    strncpy(atsc3_pcap_replay_context->pcap_file_name, pcap_filename, strlen(pcap_filename));
+
+	fseek(pcap_fp, 0L, SEEK_END);
+	long sz = ftell(pcap_fp);
+	fseek(pcap_fp, 0L, SEEK_SET);
+
+	atsc3_pcap_replay_context->pcap_file_len = sz;
+    atsc3_pcap_replay_context->pcap_file_pos = 0;
+
+    atsc3_pcap_replay_context->pcap_fp = pcap_fp;
+
+    return atsc3_pcap_replay_context;
 }
 
 atsc3_pcap_replay_context_t* atsc3_pcap_replay_iterate_packet(atsc3_pcap_replay_context_t* atsc3_pcap_replay_context_to_iterate) {
