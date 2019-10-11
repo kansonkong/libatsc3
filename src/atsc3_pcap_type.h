@@ -58,11 +58,7 @@ bytes	Name
 extern "C" {
 #endif
 
-
-#define	ATSC3_PCAP_ETH_HEADER_LENGTH 14
-#define ATSC3_PCAP_MIN_GLOBAL_AND_PACKET_HEADER_LENGTH 24+16
-#define ATSC3_PCAP_MIN_GLOBAL_AND_PACKET_AND_ETH_HEADER_LENGTH 24+16+14
-
+#define ATSC3_PCAP_GLOBAL_HEADER_SIZE_BYTES 24
 //global header length: 24 bytes
 typedef struct atsc3_pcap_global_header {
 	uint32_t	magic_number;		//0xa1b2c3d4 (identical byte order), or 0xd4c3b2a1 (swapped)
@@ -74,6 +70,7 @@ typedef struct atsc3_pcap_global_header {
 	uint32_t	network;			//type of datalink, 1 for ethernet
 } atsc3_pcap_global_header_t;
 
+#define ATSC3_PCAP_PACKET_HEADER_SIZE_BYTES 16
 //pcap packet header length: 16 bytes
 typedef struct atsc3_pcap_packet_header {
 	uint32_t	ts_sec;				//timestamp seconds
@@ -98,10 +95,14 @@ typedef struct atsc3_pcap_packet_ethernet_header {
 
 } atsc3_pcap_ethernet_header_t;
 
+#define ATSC3_PCAP_ETH_HEADER_LENGTH 14
+#define ATSC3_PCAP_MIN_GLOBAL_AND_PACKET_HEADER_LENGTH 24+16
+#define ATSC3_PCAP_MIN_GLOBAL_AND_PACKET_AND_ETH_HEADER_LENGTH 24+16+14
+
 typedef struct atsc3_pcap_packet_instance {
 	atsc3_pcap_packet_header_t		atsc3_pcap_packet_header;
 
-	block_t*						current_pcap_packet;
+    block_t*						current_pcap_packet; //do NOT memset(0) this block...
 } atsc3_pcap_packet_instance_t;
 
 typedef struct atsc3_pcap_replay_context {
