@@ -141,6 +141,8 @@ atsc3_pcap_replay_context_t* atsc3_pcap_replay_open_from_fd(const char* pcap_fil
 atsc3_pcap_replay_context_t* atsc3_pcap_replay_iterate_packet(atsc3_pcap_replay_context_t* atsc3_pcap_replay_context_to_iterate);
 atsc3_pcap_replay_context_t* atsc3_pcap_replay_usleep_packet(atsc3_pcap_replay_context_t* atsc3_pcap_replay_context_to_iterate);
 
+int h2645_ps_to_nalu(const uint8_t *src, int src_size, uint8_t **out, int *out_size);
+
 
 #if defined (__cplusplus)
 }
