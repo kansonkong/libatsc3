@@ -15,6 +15,12 @@
 extern "C" {
 #endif
 
+#ifdef __LIBATSC3_ANDROID__
+#include <android/log.h>
+#define printf(...) __android_log_print(ANDROID_LOG_DEBUG, "TAG", __VA_ARGS__);
+#endif
+
+
 extern int _ATSC3_UTILS_INFO_ENABLED;
 extern int _ATSC3_UTILS_DEBUG_ENABLED;
 extern int _ATSC3_UTILS_TRACE_ENABLED;

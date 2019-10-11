@@ -7,9 +7,9 @@
 
 #include "atsc3_hevc_nal_extractor.h"
 
-int _ATSC3_HEVC_NAL_EXTRACTOR_INFO_ENABLED = 0;
-int _ATSC3_HEVC_NAL_EXTRACTOR_DEBUG_ENABLED = 0;
-int _ATSC3_HEVC_NAL_EXTRACTOR_TRACE_ENABLED = 0;
+int _ATSC3_HEVC_NAL_EXTRACTOR_INFO_ENABLED = 1;
+int _ATSC3_HEVC_NAL_EXTRACTOR_DEBUG_ENABLED = 1;
+int _ATSC3_HEVC_NAL_EXTRACTOR_TRACE_ENABLED = 1;
 
 //default atsc3_vector_builder collection for hevc nal types
 
@@ -540,12 +540,12 @@ block_t* atsc3_hevc_decoder_configuration_record_get_nals_vps_combined_optional_
 					block_Merge(nals_vps_combined, hevc_nals_start_code);
 				}
 				block_Merge(nals_vps_combined, atsc3_nal_unit_vps->nal_unit);
-			}
-		} else {
-			if (!nals_vps_combined) {
-				nals_vps_combined = block_Duplicate(atsc3_nal_unit_vps->nal_unit);
 			} else {
-				block_Merge(nals_vps_combined, atsc3_nal_unit_vps->nal_unit);
+				if (!nals_vps_combined) {
+					nals_vps_combined = block_Duplicate(atsc3_nal_unit_vps->nal_unit);
+				} else {
+					block_Merge(nals_vps_combined, atsc3_nal_unit_vps->nal_unit);
+				}
 			}
 		}
 	}
@@ -564,18 +564,6 @@ block_t* atsc3_hevc_decoder_configuration_record_get_nals_vps_combined_optional_
 	}
 
 	return nals_vps_combined;
-}
-
-//by default, return start NAL code
-block_t* atsc3_hevc_decoder_configuration_record_get_nals_vps_combined(hevc_decoder_configuration_record_t* hevc_decoder_configuration_record) {
-    return atsc3_hevc_decoder_configuration_record_get_nals_vps_combined_optional_start_code(hevc_decoder_configuration_record, true);
-}
-
-block_t* atsc3_hevc_decoder_configuration_record_get_nals_sps_combined(hevc_decoder_configuration_record_t* hevc_decoder_configuration_record) {
-	return atsc3_hevc_decoder_configuration_record_get_nals_sps_combined_optional_start_code(hevc_decoder_configuration_record, true);
-}
-block_t* atsc3_hevc_decoder_configuration_record_get_nals_pps_combined(hevc_decoder_configuration_record_t* hevc_decoder_configuration_record) {
-	return atsc3_hevc_decoder_configuration_record_get_nals_pps_combined_optional_start_code(hevc_decoder_configuration_record, true);
 }
 
 block_t* atsc3_hevc_decoder_configuration_record_get_nals_sps_combined_optional_start_code(hevc_decoder_configuration_record_t* hevc_decoder_configuration_record, bool include_nal_start_code) {
@@ -598,12 +586,12 @@ block_t* atsc3_hevc_decoder_configuration_record_get_nals_sps_combined_optional_
 					block_Merge(nals_sps_combined, hevc_nals_start_code);
 				}
 				block_Merge(nals_sps_combined, atsc3_nal_unit_vps->nal_unit);
-			}
-		} else {
-			if (!nals_sps_combined) {
-				nals_sps_combined = block_Duplicate(atsc3_nal_unit_vps->nal_unit);
 			} else {
-				block_Merge(nals_sps_combined, atsc3_nal_unit_vps->nal_unit);
+				if (!nals_sps_combined) {
+					nals_sps_combined = block_Duplicate(atsc3_nal_unit_vps->nal_unit);
+				} else {
+					block_Merge(nals_sps_combined, atsc3_nal_unit_vps->nal_unit);
+				}
 			}
 		}
 	}
@@ -643,12 +631,12 @@ block_t* atsc3_hevc_decoder_configuration_record_get_nals_pps_combined_optional_
 					block_Merge(nals_pps_combined, hevc_nals_start_code);
 				}
 				block_Merge(nals_pps_combined, atsc3_nal_unit_vps->nal_unit);
-			}
-		} else {
-			if (!nals_pps_combined) {
-				nals_pps_combined = block_Duplicate(atsc3_nal_unit_vps->nal_unit);
 			} else {
-				block_Merge(nals_pps_combined, atsc3_nal_unit_vps->nal_unit);
+				if (!nals_pps_combined) {
+					nals_pps_combined = block_Duplicate(atsc3_nal_unit_vps->nal_unit);
+				} else {
+					block_Merge(nals_pps_combined, atsc3_nal_unit_vps->nal_unit);
+				}
 			}
 		}
 	}
@@ -669,6 +657,18 @@ block_t* atsc3_hevc_decoder_configuration_record_get_nals_pps_combined_optional_
 	return nals_pps_combined;
 }
 
+
+//by default, return start NAL code
+block_t* atsc3_hevc_decoder_configuration_record_get_nals_vps_combined(hevc_decoder_configuration_record_t* hevc_decoder_configuration_record) {
+	return atsc3_hevc_decoder_configuration_record_get_nals_vps_combined_optional_start_code(hevc_decoder_configuration_record, true);
+}
+
+block_t* atsc3_hevc_decoder_configuration_record_get_nals_sps_combined(hevc_decoder_configuration_record_t* hevc_decoder_configuration_record) {
+	return atsc3_hevc_decoder_configuration_record_get_nals_sps_combined_optional_start_code(hevc_decoder_configuration_record, true);
+}
+block_t* atsc3_hevc_decoder_configuration_record_get_nals_pps_combined(hevc_decoder_configuration_record_t* hevc_decoder_configuration_record) {
+	return atsc3_hevc_decoder_configuration_record_get_nals_pps_combined_optional_start_code(hevc_decoder_configuration_record, true);
+}
 
 
 
