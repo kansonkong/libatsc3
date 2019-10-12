@@ -314,6 +314,7 @@ block_t* block_Write(block_t* dest, const uint8_t* src_buf, uint32_t src_size) {
 }
 
 //use src i_pos to append before
+//this will append the leader of the source block...
 uint32_t block_Append(block_t* dest, block_t* src) {
 	if(!__block_check_bounaries(__FUNCTION__, dest)) return 0;
 
@@ -339,7 +340,7 @@ uint32_t block_AppendFull(block_t* dest, block_t* src) {
     if(dest->p_size < dest_size_required) {
         block_t* ret_block = block_Resize(dest, dest_size_required);
         if(!ret_block) {
-            _ATSC3_UTILS_ERROR("block_Append: block: %p, unable to realloc from size: %u to %u, returning NULL", dest, dest->p_size, dest_size_required);
+            _ATSC3_UTILS_ERROR("block_AppendFull: block: %p, unable to realloc from size: %u to %u, returning NULL", dest, dest->p_size, dest_size_required);
             return 0;
         }
     }
