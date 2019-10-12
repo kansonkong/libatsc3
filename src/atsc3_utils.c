@@ -286,6 +286,7 @@ uint32_t block_Seek_Relative(block_t* block, int32_t seek_pos) {
     if(!__block_check_bounaries(__FUNCTION__, block)) {
         block->i_pos = 0;
     }
+    //keep this one as int32_t so we don't compute based upon wraparound
     int32_t new_seek_pos = block->i_pos + seek_pos;
     
     if(new_seek_pos < 0 ) {
@@ -306,7 +307,7 @@ uint32_t block_Seek_Relative(block_t* block, int32_t seek_pos) {
 block_t* block_Write(block_t* dest, const uint8_t* src_buf, uint32_t src_size) {
 	if(!__block_check_bounaries(__FUNCTION__, dest)) return NULL;
 
-	int dest_size_required = dest->i_pos + src_size;
+	uint32_t dest_size_required = dest->i_pos + src_size;
 	if(dest->p_size < dest_size_required) {
 		block_t* ret_block = block_Resize(dest, dest_size_required);
 		if(!ret_block) {
@@ -325,7 +326,7 @@ block_t* block_Write(block_t* dest, const uint8_t* src_buf, uint32_t src_size) {
 uint32_t block_Append(block_t* dest, block_t* src) {
 	if(!__block_check_bounaries(__FUNCTION__, dest)) return 0;
 
-	int dest_size_required = dest->i_pos + src->i_pos;
+	uint32_t dest_size_required = dest->i_pos + src->i_pos;
 	if(dest->p_size < dest_size_required) {
 		block_t* ret_block = block_Resize(dest, dest_size_required);
 		if(!ret_block) {
@@ -344,8 +345,8 @@ block_t* block_AppendFromBuf(block_t* dest, const uint8_t* src_buf, uint32_t src
 	if(!__block_check_bounaries(__FUNCTION__, dest)) return NULL;
 
 	dest->i_pos = dest->p_size;
-	int dest_original_size = dest->p_size;
-    int dest_size_required = dest->p_size + src_size;
+	uint32_t dest_original_size = dest->p_size;
+	uint32_t dest_size_required = dest->p_size + src_size;
 
 	if(dest->p_size < dest_size_required) {
 		block_t* ret_block = block_Resize(dest, dest_size_required);
@@ -365,7 +366,7 @@ block_t* block_AppendFromBuf(block_t* dest, const uint8_t* src_buf, uint32_t src
 uint32_t block_AppendFull(block_t* dest, block_t* src) {
     if(!__block_check_bounaries(__FUNCTION__, dest)) return 0;
     
-    int dest_size_required = dest->i_pos + src->p_size;
+    uint32_t dest_size_required = dest->i_pos + src->p_size;
     if(dest->p_size < dest_size_required) {
         block_t* ret_block = block_Resize(dest, dest_size_required);
         if(!ret_block) {
@@ -385,8 +386,8 @@ uint32_t block_Merge(block_t* dest, block_t* src) {
 
     //seek us forward so we maintain both block_t full payloads
     dest->i_pos = dest->p_size;
-    int dest_original_size = dest->p_size;
-    int dest_size_required = dest->p_size + src->p_size;
+    uint32_t dest_original_size = dest->p_size;
+    uint32_t dest_size_required = dest->p_size + src->p_size;
     
     if(dest->p_size < dest_size_required) {
         block_t* ret_block = block_Resize(dest, dest_size_required);
@@ -408,8 +409,8 @@ uint32_t block_MergeNoRewind(block_t* dest, block_t* src) {
     if(!__block_check_bounaries(__FUNCTION__, dest)) return 0;
 
 
-    int dest_original_size = dest->p_size;
-    int dest_size_required = dest->p_size + src->p_size;
+    uint32_t dest_original_size = dest->p_size;
+    uint32_t dest_size_required = dest->p_size + src->p_size;
 
     if(dest->p_size < dest_size_required) {
         block_t* ret_block = block_Resize(dest, dest_size_required);
@@ -514,8 +515,8 @@ block_t* block_Duplicate_from_ptr(uint8_t* data, uint32_t size) {
 
 block_t* block_Resize(block_t* src, uint32_t src_size_requested) {
 	if(!__block_check_bounaries(__FUNCTION__, src)) return NULL;
-    int src_size_original = src->p_size;
-    int src_i_pos_original = src->i_pos;
+    uint32_t src_size_original = src->p_size;
+    uint32_t src_i_pos_original = src->i_pos;
 
     //uint32_t src_size_required = __MAX(64, src_size_requested);
     //do not change our size, as this can cause us to leak unexpectedly
