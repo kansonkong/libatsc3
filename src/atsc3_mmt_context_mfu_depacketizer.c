@@ -363,14 +363,21 @@ void mmtp_mfu_process_from_payload_with_context(udp_packet_t *udp_packet,
                                             if(mmtp_mpu_packet_to_rebuild->mmthsample_header) {
                                                 mpu_fragment_counter_start = mmtp_mpu_packet_to_rebuild->mpu_fragment_counter;
                                                 mpu_fragment_counter_position = mpu_fragment_counter_start;
-                                                __MMT_CONTEXT_MPU_DEBUG("i: %u, psn: %u, Found MFU DU with MMTHSample header start,with %u:%u and packet_id: %u, mpu_sequence_number: %u, fragment_indicator: %u",
+
+                                                /*
+                                                 *
+                                                 * jjustman-2019-10-12: TODO: use mmthsample.length, pre alloc block_t for MFU rebuild,
+                                                 * and then make sure to only append the DU at the proper offset + length
+                                                 */
+                                                __MMT_CONTEXT_MPU_DEBUG("i: %u, psn: %u, Found MFU DU with MMTHSample header start,with %u:%u and packet_id: %u, mpu_sequence_number: %u, fragment_indicator: %u, mmthsample.length: %u",
                                                 		mmtp_mpu_packet_to_rebuild->mpu_fragment_counter,
                                                                   mmtp_mpu_packet_to_rebuild->packet_sequence_number,
                                                                   atsc3_mmt_mfu_context->udp_flow->dst_ip_addr,
                                                                   atsc3_mmt_mfu_context->udp_flow->dst_port,
                                                                   mmtp_mpu_packet_to_rebuild->mmtp_packet_id,
                                                                   mmtp_mpu_packet_to_rebuild->mpu_sequence_number,
-                                                                  mmtp_mpu_packet_to_rebuild->mpu_fragmentation_indicator);
+                                                                  mmtp_mpu_packet_to_rebuild->mpu_fragmentation_indicator,
+                                                                  mmtp_mpu_packet_to_rebuild->mmthsample_header->length);
                                             } else {
                                                 __MMT_CONTEXT_MPU_DEBUG("i: %u, psn: %u, Found MFU DU but missing MMTHSample header start,with %u:%u and packet_id: %u, mpu_sequence_number: %u, fragment_indicator: %u",
                                                 		mmtp_mpu_packet_to_rebuild->mpu_fragment_counter,
