@@ -135,6 +135,8 @@ lls_table_t* lls_table_create_or_update_from_lls_slt_monitor(lls_slt_monitor_t* 
 			//noop
 			break;
 	}
+
+	return lls_table;
 }
 
 //only return back if lls_table_version has changed
