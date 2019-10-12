@@ -296,7 +296,7 @@ uint32_t block_Seek_Relative(block_t* block, int32_t seek_pos) {
     return block->i_pos;
 }
 
-block_t* block_Write(block_t* dest, uint8_t* src_buf, uint32_t src_size) {
+block_t* block_Write(block_t* dest, const uint8_t* src_buf, uint32_t src_size) {
 	if(!__block_check_bounaries(__FUNCTION__, dest)) return NULL;
 
 	int dest_size_required = dest->i_pos + src_size;

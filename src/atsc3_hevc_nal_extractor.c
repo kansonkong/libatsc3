@@ -15086,3 +15086,74 @@ done:
 
     return nals_combined;
 }
+
+
+
+
+block_t* atsc3_hevc_extract_mp4toannexb_filter_ffmpegImpl(block_t* sample, block_t* last_extradata_NAL_parsed) {
+	block_t* sample_processed = block_Alloc(0);
+	uint8_t start_code[] = { 0x00, 0x00, 0x00, 0x01 };
+	//assumed: TODO-fixme: jjustman-2019-10-12
+	int nal_len = 4;
+
+    //HEVCBSFContext *s = ctx->priv_data;
+    GetByteContext gb;
+
+    int got_irap = 0;
+    int i, ret = 0;
+
+    bytestream2_init(&gb, block_Get(sample), block_Len(sample));
+
+    while (bytestream2_get_bytes_left(&gb)) {
+        uint32_t nalu_size = 0;
+        int      nalu_type;
+        int is_irap, add_extradata, extra_size, prev_size;
+
+        for (i = 0; i < nal_len; i++)
+            nalu_size = (nalu_size << 8) | bytestream2_get_byte(&gb);
+
+        nalu_type = (bytestream2_peek_byte(&gb) >> 1) & 0x3f;
+
+        /* prepend extradata to IRAP frames */
+        is_irap       = nalu_type >= 16 && nalu_type <= 23;
+        add_extradata = is_irap && !got_irap;
+        extra_size    = add_extradata * block_Len(last_extradata_NAL_parsed);
+        got_irap     |= is_irap;
+
+        if (SIZE_MAX - nalu_size < 4 ||
+            SIZE_MAX - 4 - nalu_size < extra_size) {
+
+            goto fail;
+        }
+
+        prev_size = block_Len(sample_processed);
+//		not needed with block, just append the relevant start code (e.g. AV_WB32 1 hack)
+//        ret = av_grow_packet(out, 4 + nalu_size + extra_size);
+//        if (ret < 0)
+//            goto fail;
+
+        if (add_extradata) {
+        	block_Rewind(last_extradata_NAL_parsed);
+        	block_Append(sample_processed, last_extradata_NAL_parsed);
+        }
+        block_Write(sample_processed, start_code, 4); //        AV_WB32(out->data + prev_size + extra_size, 1);
+        
+        block_Write(sample_processed, gb.buffer, nalu_size); //block_write i->pos keeps track of this for us -   //bytestream2_get_buffer(&gb, out->data + prev_size + 4 + extra_size, nalu_size);
+        gb.buffer += nalu_size;
+    }
+
+    block_Rewind(sample_processed);
+
+//    ret = av_packet_copy_props(out, in);
+//    if (ret < 0)
+//        goto fail;
+//
+fail:
+    if (ret < 0) {
+    	block_Destroy(&sample_processed);
+    }
+
+    return sample_processed;
+}
+
+
