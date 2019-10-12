@@ -120,6 +120,7 @@ block_t* block_Duplicate_from_ptr(uint8_t* data, uint32_t size); //src
 uint32_t block_Remaining_size(block_t* src);
 bool block_Valid(block_t* src);
 uint8_t* block_Get(block_t* src);
+uint32_t block_Len(block_t* src);
 
 #define block_RefZero(a) ({ a->_refcnt = 0; })
 #define block_Release(a) ({ _ATSC3_UTILS_TRACE("UTRACE:DECR:%p:%s, block_Refcount: decrementing to: %d, block: %p (p_buffer: %p)", *a, __FUNCTION__, (*a->_refcnt)-1, *a, *a->p_buffer);  _block_Release(a); })
