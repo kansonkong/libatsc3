@@ -762,7 +762,7 @@ done:
 
 
 void atsc3_hevc_nals_record_dump(const char* label, block_t* block) {
-	_ATSC3_HEVC_NAL_EXTRACTOR_INFO("atsc3_hevc_nals_record_dump: %s: ptr: %p, start: %d, len: %d", label, block->p_buffer, block->i_pos, block->p_size);
+	_ATSC3_HEVC_NAL_EXTRACTOR_TRACE("atsc3_hevc_nals_record_dump: %s: ptr: %p, start: %d, len: %d", label, block->p_buffer, block->i_pos, block->p_size);
 	uint32_t hex_dump_string_len = (block->p_size * 5) + 1;
 	char* temp_nal_payload_string_base = calloc(hex_dump_string_len, sizeof(char));
 	char* temp_nal_payload_string_append = temp_nal_payload_string_base;
@@ -773,7 +773,7 @@ void atsc3_hevc_nals_record_dump(const char* label, block_t* block) {
 	}
 
 	if(block->p_size) {
-		_ATSC3_HEVC_NAL_EXTRACTOR_DEBUG("atsc3_hevc_nals_record_dump: %s: nals:\n%s\n", label, temp_nal_payload_string_base);
+		_ATSC3_HEVC_NAL_EXTRACTOR_DEBUG("atsc3_hevc_nals_record_dump: %s: ptr: %p, start: %d, len: %d, nals:\n\n%s\n", label, block->p_buffer, block->i_pos, block->p_size, temp_nal_payload_string_base);
 		free(temp_nal_payload_string_base);
 	}
 }
@@ -15061,6 +15061,8 @@ block_t* atsc3_hevc_extract_extradata_nals_combined_ffmpegImpl(block_t* hvcc_box
         block_Write(nals_combined, vps_data, vps_data_size);
         block_Write(nals_combined, sps_data, sps_data_size);
         block_Write(nals_combined, pps_data, pps_data_size);
+        block_Rewind(nals_combined);
+
     } else {
         _ATSC3_HEVC_NAL_EXTRACTOR_ERROR("Could not extract VPS/PPS/SPS from extradata");
     }
