@@ -15140,11 +15140,11 @@ block_t* atsc3_hevc_extract_mp4toannexb_filter_ffmpegImpl(block_t* sample, block
 
         if (add_extradata) {
         	block_Rewind(last_extradata_NAL_parsed);
-        	block_Merge(sample_processed, last_extradata_NAL_parsed);
+        	block_MergeNoRewind(sample_processed, last_extradata_NAL_parsed);
         }
-        block_Write(sample_processed, start_code, 4); //        AV_WB32(out->data + prev_size + extra_size, 1);
+        block_AppendFromBuf(sample_processed, start_code, 4); //        AV_WB32(out->data + prev_size + extra_size, 1);
         
-        block_Write(sample_processed, gb.buffer, nalu_size); //block_write i->pos keeps track of this for us -   //bytestream2_get_buffer(&gb, out->data + prev_size + 4 + extra_size, nalu_size);
+        block_AppendFromBuf(sample_processed, gb.buffer, nalu_size); //block_write i->pos keeps track of this for us -   //bytestream2_get_buffer(&gb, out->data + prev_size + 4 + extra_size, nalu_size);
         gb.buffer += nalu_size;
     }
 
@@ -15157,14 +15157,14 @@ fail:
 
 	if(gb.buffer_end > gb.buffer) {
 		//recover N bytes..
-		block_Write(sample_processed, start_code, 4);
+		block_AppendFromBuf(sample_processed, start_code, 4);
 		uint32_t len = gb.buffer_end - gb.buffer;
 
-		block_Write(sample_processed, gb.buffer, len);
+		block_AppendFromBuf(sample_processed, gb.buffer, len);
 	} else {
 		//return an empty sample with poision bit
 		uint8_t nal_poision[] = { 0x80, 0x00, 0x00, 0x00 };
-		block_Write(sample_processed, nal_poision, 4);
+		block_AppendFromBuf(sample_processed, nal_poision, 4);
 	}
 
 done:

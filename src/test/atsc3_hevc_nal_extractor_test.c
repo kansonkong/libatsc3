@@ -424,6 +424,7 @@ int parse_hevc_nal_mp4toannexb_test_ffmpeg(const char* filename, bool expect_avc
 
         uint8_t* mfu_payload = (uint8_t*) calloc(mfu_payload_size, sizeof(uint8_t));
         fread(mfu_payload, mfu_payload_size, 1, fp);
+        _ATSC3_HEVC_NAL_EXTRACTOR_TEST_INFO("parse_hevc_nal_mp4toannexb_test_ffmpeg: MFU sample: %s, original size: %llu", filename, mfu_payload_size);
 
         block_t* mfu_payload_block = block_Duplicate_from_ptr(mfu_payload, mfu_payload_size);
         block_Rewind(mfu_payload_block);
@@ -435,42 +436,6 @@ int parse_hevc_nal_mp4toannexb_test_ffmpeg(const char* filename, bool expect_avc
         uint8_t* sample_p = block_Get(mfu_annexb_payload_block);
         uint8_t  sample_len = block_Len(mfu_annexb_payload_block);
 
-        //jjustman:2019-10-12: todo - match nals_len and start code/ 0x03 0x03 removal in test
-/*
-2019-10-12 06:36:48.532 22743-22743/org.ngbp.libatsc3 D/main: # atsc3_mmt_mpu_mfu_on_sample_complete_ndk: packet_id: 10, mpu: 25870, sample: 1, orig len: 262291, len: 147
-2019-10-12 06:36:48.540 22743-22743/org.ngbp.libatsc3 D/main: # atsc3_mmt_mpu_mfu_on_sample_complete_ndk: packet_id: 10, mpu: 25870, sample: 2, orig len: 8376, len: 184
-2019-10-12 06:36:48.552 22743-22743/org.ngbp.libatsc3 D/main: # atsc3_mmt_mpu_mfu_on_sample_complete_ndk: packet_id: 10, mpu: 25870, sample: 3, orig len: 4216, len: 120
-2019-10-12 06:36:48.555 22743-22743/org.ngbp.libatsc3 D/main: # atsc3_mmt_mpu_mfu_on_sample_complete_ndk: packet_id: 10, mpu: 25870, sample: 4, orig len: 673, len: 161
-2019-10-12 06:36:48.653 22743-22743/org.ngbp.libatsc3 D/main: # atsc3_mmt_mpu_mfu_on_sample_complete_ndk: packet_id: 10, mpu: 25870, sample: 5, orig len: 81709, len: 45
-2019-10-12 06:36:48.655 22743-22743/org.ngbp.libatsc3 D/main: # atsc3_mmt_mpu_mfu_on_sample_complete_ndk: packet_id: 10, mpu: 25870, sample: 6, orig len: 5438, len: 62
-2019-10-12 06:36:48.699 22743-22743/org.ngbp.libatsc3 D/main: # atsc3_mmt_mpu_mfu_on_sample_complete_ndk: packet_id: 10, mpu: 25870, sample: 7, orig len: 1537, len: 1
-2019-10-12 06:36:48.702 22743-22743/org.ngbp.libatsc3 D/main: # atsc3_mmt_mpu_mfu_on_sample_complete_ndk: packet_id: 10, mpu: 25870, sample: 8, orig len: 1240, len: 216
-2019-10-12 06:36:48.712 22743-22743/org.ngbp.libatsc3 D/main: # atsc3_mmt_mpu_mfu_on_sample_complete_ndk: packet_id: 10, mpu: 25870, sample: 9, orig len: 86957, len: 173
-2019-10-12 06:36:48.733 22743-22743/org.ngbp.libatsc3 D/main: # atsc3_mmt_mpu_mfu_on_sample_complete_ndk: packet_id: 10, mpu: 25870, sample: 10, orig len: 9931, len: 203
-2019-10-12 06:36:48.735 22743-22743/org.ngbp.libatsc3 D/main: # atsc3_mmt_mpu_mfu_on_sample_complete_ndk: packet_id: 10, mpu: 25870, sample: 11, orig len: 1850, len: 58
-2019-10-12 06:36:48.738 22743-22743/org.ngbp.libatsc3 D/main: # atsc3_mmt_mpu_mfu_on_sample_complete_ndk: packet_id: 10, mpu: 25870, sample: 12, orig len: 1774, len: 238
-2019-10-12 06:36:48.762 22743-22743/org.ngbp.libatsc3 D/main: # atsc3_mmt_mpu_mfu_on_sample_complete_ndk: packet_id: 10, mpu: 25870, sample: 13, orig len: 86147, len: 131
-2019-10-12 06:36:48.778 22743-22743/org.ngbp.libatsc3 D/main: # atsc3_mmt_mpu_mfu_on_sample_complete_ndk: packet_id: 10, mpu: 25870, sample: 14, orig len: 6958, len: 46
-2019-10-12 06:36:48.781 22743-22743/org.ngbp.libatsc3 D/main: # atsc3_mmt_mpu_mfu_on_sample_complete_ndk: packet_id: 10, mpu: 25870, sample: 15, orig len: 1687, len: 151
-2019-10-12 06:36:48.783 22743-22743/org.ngbp.libatsc3 D/main: # atsc3_mmt_mpu_mfu_on_sample_complete_ndk: packet_id: 10, mpu: 25870, sample: 16, orig len: 3246, len: 174
-2019-10-12 06:36:48.815 22743-22743/org.ngbp.libatsc3 D/main: # atsc3_mmt_mpu_mfu_on_sample_complete_ndk: packet_id: 10, mpu: 25870, sample: 17, orig len: 85225, len: 233
-2019-10-12 06:36:48.817 22743-22743/org.ngbp.libatsc3 D/main: # atsc3_mmt_mpu_mfu_on_sample_complete_ndk: packet_id: 10, mpu: 25870, sample: 18, orig len: 7503, len: 79
-2019-10-12 06:36:48.827 22743-22743/org.ngbp.libatsc3 D/main: # atsc3_mmt_mpu_mfu_on_sample_complete_ndk: packet_id: 10, mpu: 25870, sample: 19, orig len: 1259, len: 235
-2019-10-12 06:36:48.831 22743-22743/org.ngbp.libatsc3 D/main: # atsc3_mmt_mpu_mfu_on_sample_complete_ndk: packet_id: 10, mpu: 25870, sample: 20, orig len: 1149, len: 125
-2019-10-12 06:36:48.956 22743-22743/org.ngbp.libatsc3 D/main: # atsc3_mmt_mpu_mfu_on_sample_complete_ndk: packet_id: 10, mpu: 25870, sample: 21, orig len: 85200, len: 208
-2019-10-12 06:36:48.993 22743-22743/org.ngbp.libatsc3 D/main: # atsc3_mmt_mpu_mfu_on_sample_complete_ndk: packet_id: 10, mpu: 25870, sample: 22, orig len: 6641, len: 241
-2019-10-12 06:36:48.999 22743-22743/org.ngbp.libatsc3 D/main: # atsc3_mmt_mpu_mfu_on_sample_complete_ndk: packet_id: 10, mpu: 25870, sample: 23, orig len: 5485, len: 109
-2019-10-12 06:36:49.003 22743-22743/org.ngbp.libatsc3 D/main: # atsc3_mmt_mpu_mfu_on_sample_complete_ndk: packet_id: 10, mpu: 25870, sample: 24, orig len: 2255, len: 207
-2019-10-12 06:36:49.019 22743-22743/org.ngbp.libatsc3 D/main: # atsc3_mmt_mpu_mfu_on_sample_complete_ndk: packet_id: 10, mpu: 25870, sample: 25, orig len: 83887, len: 175
-2019-10-12 06:36:49.021 22743-22743/org.ngbp.libatsc3 D/main: # atsc3_mmt_mpu_mfu_on_sample_complete_ndk: packet_id: 10, mpu: 25870, sample: 26, orig len: 6144, len: 0
-2019-10-12 06:36:49.024 22743-22743/org.ngbp.libatsc3 D/main: # atsc3_mmt_mpu_mfu_on_sample_complete_ndk: packet_id: 10, mpu: 25870, sample: 27, orig len: 1117, len: 93
-2019-10-12 06:36:49.043 22743-22743/org.ngbp.libatsc3 D/main: # atsc3_mmt_mpu_mfu_on_sample_complete_ndk: packet_id: 10, mpu: 25870, sample: 28, orig len: 923, len: 155
-2019-10-12 06:36:49.086 22743-22743/org.ngbp.libatsc3 D/main: # atsc3_mmt_mpu_mfu_on_sample_complete_ndk: packet_id: 10, mpu: 25870, sample: 29, orig len: 85808, len: 48
-2019-10-12 06:36:49.094 22743-22743/org.ngbp.libatsc3 D/main: # atsc3_mmt_mpu_mfu_on_sample_complete_ndk: packet_id: 10, mpu: 25870, sample: 30, orig len: 5805, len: 173
-2019-10-12 06:36:49.099 22743-22743/org.ngbp.libatsc3 D/main: # atsc3_mmt_mpu_mfu_on_sample_complete_ndk: packet_id: 10, mpu: 25870, sample: 31, orig len: 1544, len: 8
-2019-10-12 06:36:49.123 22743-22743/org.ngbp.libatsc3 D/main: # atsc3_mmt_mpu_mfu_on_sample_complete_ndk: packet_id: 10, mpu: 25870, sample: 32, orig len: 1221, len: 197
-2019-10-12 06:36:49.126 22743-22743/org.ngbp.libatsc3 D/main: # atsc3_mmt_mpu_mfu_on_sample_complete_ndk: packet_id: 10, mpu: 25870, sample: 33, orig len: 84587, len: 107
- */
         _ATSC3_HEVC_NAL_EXTRACTOR_TEST_INFO("...-> parse_hevc_nal_mp4toannexb_test_ffmpeg, res is: %d", ret);
         if(fp) {
             fclose(fp);
@@ -531,6 +496,45 @@ int main(int argc, char* argv[] ) {
 	_ATSC3_HEVC_NAL_EXTRACTOR_TEST_INFO("->completed run of test cases for atsc3_hevc_nal_extractor");
 
 
+
+
+    //jjustman:2019-10-12: todo - match nals_len and start code/ 0x03 0x03 removal in test
+/*
+2019-10-12 06:36:48.532 22743-22743/org.ngbp.libatsc3 D/main: # atsc3_mmt_mpu_mfu_on_sample_complete_ndk: packet_id: 10, mpu: 25870, sample: 1, orig len: 262291, len: 147
+2019-10-12 06:36:48.540 22743-22743/org.ngbp.libatsc3 D/main: # atsc3_mmt_mpu_mfu_on_sample_complete_ndk: packet_id: 10, mpu: 25870, sample: 2, orig len: 8376, len: 184
+2019-10-12 06:36:48.552 22743-22743/org.ngbp.libatsc3 D/main: # atsc3_mmt_mpu_mfu_on_sample_complete_ndk: packet_id: 10, mpu: 25870, sample: 3, orig len: 4216, len: 120
+2019-10-12 06:36:48.555 22743-22743/org.ngbp.libatsc3 D/main: # atsc3_mmt_mpu_mfu_on_sample_complete_ndk: packet_id: 10, mpu: 25870, sample: 4, orig len: 673, len: 161
+2019-10-12 06:36:48.653 22743-22743/org.ngbp.libatsc3 D/main: # atsc3_mmt_mpu_mfu_on_sample_complete_ndk: packet_id: 10, mpu: 25870, sample: 5, orig len: 81709, len: 45
+2019-10-12 06:36:48.655 22743-22743/org.ngbp.libatsc3 D/main: # atsc3_mmt_mpu_mfu_on_sample_complete_ndk: packet_id: 10, mpu: 25870, sample: 6, orig len: 5438, len: 62
+2019-10-12 06:36:48.699 22743-22743/org.ngbp.libatsc3 D/main: # atsc3_mmt_mpu_mfu_on_sample_complete_ndk: packet_id: 10, mpu: 25870, sample: 7, orig len: 1537, len: 1
+2019-10-12 06:36:48.702 22743-22743/org.ngbp.libatsc3 D/main: # atsc3_mmt_mpu_mfu_on_sample_complete_ndk: packet_id: 10, mpu: 25870, sample: 8, orig len: 1240, len: 216
+2019-10-12 06:36:48.712 22743-22743/org.ngbp.libatsc3 D/main: # atsc3_mmt_mpu_mfu_on_sample_complete_ndk: packet_id: 10, mpu: 25870, sample: 9, orig len: 86957, len: 173
+2019-10-12 06:36:48.733 22743-22743/org.ngbp.libatsc3 D/main: # atsc3_mmt_mpu_mfu_on_sample_complete_ndk: packet_id: 10, mpu: 25870, sample: 10, orig len: 9931, len: 203
+2019-10-12 06:36:48.735 22743-22743/org.ngbp.libatsc3 D/main: # atsc3_mmt_mpu_mfu_on_sample_complete_ndk: packet_id: 10, mpu: 25870, sample: 11, orig len: 1850, len: 58
+2019-10-12 06:36:48.738 22743-22743/org.ngbp.libatsc3 D/main: # atsc3_mmt_mpu_mfu_on_sample_complete_ndk: packet_id: 10, mpu: 25870, sample: 12, orig len: 1774, len: 238
+2019-10-12 06:36:48.762 22743-22743/org.ngbp.libatsc3 D/main: # atsc3_mmt_mpu_mfu_on_sample_complete_ndk: packet_id: 10, mpu: 25870, sample: 13, orig len: 86147, len: 131
+2019-10-12 06:36:48.778 22743-22743/org.ngbp.libatsc3 D/main: # atsc3_mmt_mpu_mfu_on_sample_complete_ndk: packet_id: 10, mpu: 25870, sample: 14, orig len: 6958, len: 46
+2019-10-12 06:36:48.781 22743-22743/org.ngbp.libatsc3 D/main: # atsc3_mmt_mpu_mfu_on_sample_complete_ndk: packet_id: 10, mpu: 25870, sample: 15, orig len: 1687, len: 151
+2019-10-12 06:36:48.783 22743-22743/org.ngbp.libatsc3 D/main: # atsc3_mmt_mpu_mfu_on_sample_complete_ndk: packet_id: 10, mpu: 25870, sample: 16, orig len: 3246, len: 174
+2019-10-12 06:36:48.815 22743-22743/org.ngbp.libatsc3 D/main: # atsc3_mmt_mpu_mfu_on_sample_complete_ndk: packet_id: 10, mpu: 25870, sample: 17, orig len: 85225, len: 233
+2019-10-12 06:36:48.817 22743-22743/org.ngbp.libatsc3 D/main: # atsc3_mmt_mpu_mfu_on_sample_complete_ndk: packet_id: 10, mpu: 25870, sample: 18, orig len: 7503, len: 79
+2019-10-12 06:36:48.827 22743-22743/org.ngbp.libatsc3 D/main: # atsc3_mmt_mpu_mfu_on_sample_complete_ndk: packet_id: 10, mpu: 25870, sample: 19, orig len: 1259, len: 235
+2019-10-12 06:36:48.831 22743-22743/org.ngbp.libatsc3 D/main: # atsc3_mmt_mpu_mfu_on_sample_complete_ndk: packet_id: 10, mpu: 25870, sample: 20, orig len: 1149, len: 125
+2019-10-12 06:36:48.956 22743-22743/org.ngbp.libatsc3 D/main: # atsc3_mmt_mpu_mfu_on_sample_complete_ndk: packet_id: 10, mpu: 25870, sample: 21, orig len: 85200, len: 208
+2019-10-12 06:36:48.993 22743-22743/org.ngbp.libatsc3 D/main: # atsc3_mmt_mpu_mfu_on_sample_complete_ndk: packet_id: 10, mpu: 25870, sample: 22, orig len: 6641, len: 241
+2019-10-12 06:36:48.999 22743-22743/org.ngbp.libatsc3 D/main: # atsc3_mmt_mpu_mfu_on_sample_complete_ndk: packet_id: 10, mpu: 25870, sample: 23, orig len: 5485, len: 109
+2019-10-12 06:36:49.003 22743-22743/org.ngbp.libatsc3 D/main: # atsc3_mmt_mpu_mfu_on_sample_complete_ndk: packet_id: 10, mpu: 25870, sample: 24, orig len: 2255, len: 207
+2019-10-12 06:36:49.019 22743-22743/org.ngbp.libatsc3 D/main: # atsc3_mmt_mpu_mfu_on_sample_complete_ndk: packet_id: 10, mpu: 25870, sample: 25, orig len: 83887, len: 175
+2019-10-12 06:36:49.021 22743-22743/org.ngbp.libatsc3 D/main: # atsc3_mmt_mpu_mfu_on_sample_complete_ndk: packet_id: 10, mpu: 25870, sample: 26, orig len: 6144, len: 0
+2019-10-12 06:36:49.024 22743-22743/org.ngbp.libatsc3 D/main: # atsc3_mmt_mpu_mfu_on_sample_complete_ndk: packet_id: 10, mpu: 25870, sample: 27, orig len: 1117, len: 93
+2019-10-12 06:36:49.043 22743-22743/org.ngbp.libatsc3 D/main: # atsc3_mmt_mpu_mfu_on_sample_complete_ndk: packet_id: 10, mpu: 25870, sample: 28, orig len: 923, len: 155
+2019-10-12 06:36:49.086 22743-22743/org.ngbp.libatsc3 D/main: # atsc3_mmt_mpu_mfu_on_sample_complete_ndk: packet_id: 10, mpu: 25870, sample: 29, orig len: 85808, len: 48
+2019-10-12 06:36:49.094 22743-22743/org.ngbp.libatsc3 D/main: # atsc3_mmt_mpu_mfu_on_sample_complete_ndk: packet_id: 10, mpu: 25870, sample: 30, orig len: 5805, len: 173
+2019-10-12 06:36:49.099 22743-22743/org.ngbp.libatsc3 D/main: # atsc3_mmt_mpu_mfu_on_sample_complete_ndk: packet_id: 10, mpu: 25870, sample: 31, orig len: 1544, len: 8
+2019-10-12 06:36:49.123 22743-22743/org.ngbp.libatsc3 D/main: # atsc3_mmt_mpu_mfu_on_sample_complete_ndk: packet_id: 10, mpu: 25870, sample: 32, orig len: 1221, len: 197
+2019-10-12 06:36:49.126 22743-22743/org.ngbp.libatsc3 D/main: # atsc3_mmt_mpu_mfu_on_sample_complete_ndk: packet_id: 10, mpu: 25870, sample: 33, orig len: 84587, len: 107
+*/
+
 	//process a sample frame
 	//testdata/hevc/nal/cleveland-35.10.25870.mfu
 	//e.g. 10.25870.1.mfu.complete ... 10.25870.60.mfu.complete
@@ -538,6 +542,22 @@ int main(int argc, char* argv[] ) {
 	int result6 = parse_hevc_nal_mp4toannexb_test_ffmpeg(test_sample_hevc_v_s1_filename, true);
 	if(result6 < 0) {
 		_ATSC3_HEVC_NAL_EXTRACTOR_TEST_ERROR("Sample: %s failed with error: %d", test_sample_hevc_v_s1_filename, result4);
+	}
+
+	_ATSC3_HEVC_NAL_EXTRACTOR_TEST_INFO("->completed run of test cases for atsc3_hevc_nal_extractor");
+
+	const char* test_sample_hevc_v_s2_filename = "testdata/hevc/nal/cleveland-35.10.25870.mfu/10.25870.2.mfu.complete";
+	int result7 = parse_hevc_nal_mp4toannexb_test_ffmpeg(test_sample_hevc_v_s2_filename, true);
+	if(result7 < 0) {
+		_ATSC3_HEVC_NAL_EXTRACTOR_TEST_ERROR("Sample: %s failed with error: %d", test_sample_hevc_v_s2_filename, result4);
+	}
+
+	_ATSC3_HEVC_NAL_EXTRACTOR_TEST_INFO("->completed run of test cases for atsc3_hevc_nal_extractor");
+
+	const char* test_sample_hevc_v_s3_filename = "testdata/hevc/nal/cleveland-35.10.25870.mfu/10.25870.3.mfu.complete";
+	int result8 = parse_hevc_nal_mp4toannexb_test_ffmpeg(test_sample_hevc_v_s3_filename, true);
+	if(result8 < 0) {
+		_ATSC3_HEVC_NAL_EXTRACTOR_TEST_ERROR("Sample: %s failed with error: %d", test_sample_hevc_v_s3_filename, result4);
 	}
 
 	_ATSC3_HEVC_NAL_EXTRACTOR_TEST_INFO("->completed run of test cases for atsc3_hevc_nal_extractor");
