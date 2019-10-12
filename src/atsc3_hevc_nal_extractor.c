@@ -15140,7 +15140,7 @@ block_t* atsc3_hevc_extract_mp4toannexb_filter_ffmpegImpl(block_t* sample, block
 
         if (add_extradata) {
         	block_Rewind(last_extradata_NAL_parsed);
-        	block_Append(sample_processed, last_extradata_NAL_parsed);
+        	block_Merge(sample_processed, last_extradata_NAL_parsed);
         }
         block_Write(sample_processed, start_code, 4); //        AV_WB32(out->data + prev_size + extra_size, 1);
         
