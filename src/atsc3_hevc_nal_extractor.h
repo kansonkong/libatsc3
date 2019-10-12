@@ -255,8 +255,21 @@ ATSC3_VECTOR_BUILDER_METHODS_INTERFACE(avc1_decoder_configuration_record, atsc3_
 video_decoder_configuration_record_t* atsc3_avc1_hevc_nal_extractor_parse_from_mpu_metadata_block_t(block_t*);
 
 video_decoder_configuration_record_t* video_decoder_configuration_record_new();
+block_t* atsc3_hevc_extract_extradata_nals_combined_ffmpegImpl(block_t* hvcc_box);
 
-//by default, include start NAL code
+void atsc3_hevc_decoder_configuration_record_dump(hevc_decoder_configuration_record_t* hevc_decoder_configuration_record);
+void atsc3_hevc_nals_record_dump(const char* label, block_t* block);
+
+void atsc3_avc1_decoder_configuration_record_dump(avc1_decoder_configuration_record_t* avc1_decoder_configuration_record);
+
+
+/**
+ 
+ jjustman-2019-10-12: do not use these
+    vps/sps/pps parsing by hand is incredibly complex,
+    use ffmpegImpl or wait until we are linked with libavcodec for NAL parsing
+ */
+
 block_t* atsc3_hevc_decoder_configuration_record_get_nals_vps_combined(hevc_decoder_configuration_record_t* hevc_decoder_configuration_record);
 block_t* atsc3_hevc_decoder_configuration_record_get_nals_sps_combined(hevc_decoder_configuration_record_t* hevc_decoder_configuration_record);
 block_t* atsc3_hevc_decoder_configuration_record_get_nals_pps_combined(hevc_decoder_configuration_record_t* hevc_decoder_configuration_record);
@@ -264,11 +277,6 @@ block_t* atsc3_hevc_decoder_configuration_record_get_nals_pps_combined(hevc_deco
 block_t* atsc3_hevc_decoder_configuration_record_get_nals_vps_combined_optional_start_code(hevc_decoder_configuration_record_t* hevc_decoder_configuration_record, bool include_nal_start_code);
 block_t* atsc3_hevc_decoder_configuration_record_get_nals_sps_combined_optional_start_code(hevc_decoder_configuration_record_t* hevc_decoder_configuration_record, bool include_nal_start_code);
 block_t* atsc3_hevc_decoder_configuration_record_get_nals_pps_combined_optional_start_code(hevc_decoder_configuration_record_t* hevc_decoder_configuration_record, bool include_nal_start_code);
-
-void atsc3_hevc_decoder_configuration_record_dump(hevc_decoder_configuration_record_t* hevc_decoder_configuration_record);
-void atsc3_hevc_nals_record_dump(const char* label, block_t* block);
-
-void atsc3_avc1_decoder_configuration_record_dump(avc1_decoder_configuration_record_t* avc1_decoder_configuration_record);
 
 //from - https://github.com/FFmpeg/FFmpeg/blob/master/libavcodec/mediacodecdec.c
 int atsc3_ffmpeg_h2645_ps_to_nalu(const uint8_t *src, int src_size, uint8_t **out, int *out_size);
