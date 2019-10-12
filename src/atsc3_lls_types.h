@@ -24,6 +24,8 @@
 #include "xml.h"
 
 #include "atsc3_aeat_types.h"
+#include "atsc3_lls_context_events.h"
+
 
 #ifndef ATSC3_LLS_TYPES_H_
 #define ATSC3_LLS_TYPES_H_
@@ -715,7 +717,12 @@ typedef struct lls_slt_monitor {
     //LATEST: 	last successfully processed on screen message notification table
     //use this against on_screen_message_notification
     lls_table_t* lls_latest_on_screen_message_notification_table;
-    
+
+    //jjustman-2019-10-12 - adding lls event callback hooks
+
+	atsc3_lls_on_sls_table_present_f								atsc3_lls_on_sls_table_present;
+
+
 } lls_slt_monitor_t;
 
 ATSC3_VECTOR_BUILDER_METHODS_INTERFACE(lls_slt_monitor, lls_slt_service_id);
