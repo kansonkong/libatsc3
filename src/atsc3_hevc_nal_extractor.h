@@ -264,7 +264,12 @@ block_t* atsc3_hevc_decoder_configuration_record_get_nals_sps_combined_optional_
 block_t* atsc3_hevc_decoder_configuration_record_get_nals_pps_combined_optional_start_code(hevc_decoder_configuration_record_t* hevc_decoder_configuration_record, bool include_nal_start_code);
 
 void atsc3_hevc_decoder_configuration_record_dump(hevc_decoder_configuration_record_t* hevc_decoder_configuration_record);
+void atsc3_hevc_nals_record_dump(const char* label, block_t* block);
+
 void atsc3_avc1_decoder_configuration_record_dump(avc1_decoder_configuration_record_t* avc1_decoder_configuration_record);
+
+//from - https://github.com/FFmpeg/FFmpeg/blob/master/libavcodec/mediacodecdec.c
+int h2645_ps_to_nalu(const uint8_t *src, int src_size, uint8_t **out, int *out_size);
 
 
 #define _ATSC3_HEVC_NAL_EXTRACTOR_ERROR(...)  	__LIBATSC3_TIMESTAMP_ERROR(__VA_ARGS__);
