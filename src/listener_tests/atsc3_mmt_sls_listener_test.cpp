@@ -24,7 +24,6 @@ int PACKET_COUNTER=0;
 #include <limits.h>
 
 #include "../atsc3_listener_udp.h"
-#include "../jni-libatsc3/src/"
 
 #include "../atsc3_lls.h"
 //#include "../atsc3_lls_alc_utils.h"
