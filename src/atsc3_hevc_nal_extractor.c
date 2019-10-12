@@ -15088,6 +15088,10 @@ done:
 }
 
 
+/**
+ *
+ * process samples from mp4 block payload into annexb NAL rbsp
+ */
 
 
 block_t* atsc3_hevc_extract_mp4toannexb_filter_ffmpegImpl(block_t* sample, block_t* last_extradata_NAL_parsed) {
@@ -15101,6 +15105,8 @@ block_t* atsc3_hevc_extract_mp4toannexb_filter_ffmpegImpl(block_t* sample, block
 
     int got_irap = 0;
     int i, ret = 0;
+
+    block_Rewind(sample);
 
     bytestream2_init(&gb, block_Get(sample), block_Len(sample));
 
@@ -15120,9 +15126,9 @@ block_t* atsc3_hevc_extract_mp4toannexb_filter_ffmpegImpl(block_t* sample, block
         extra_size    = add_extradata * block_Len(last_extradata_NAL_parsed);
         got_irap     |= is_irap;
 
-        if (SIZE_MAX - nalu_size < 4 ||
-            SIZE_MAX - 4 - nalu_size < extra_size) {
-
+        //do not allow us to over-run our gb.buffer when reading the NAL size...
+        if (SIZE_MAX - nalu_size < 4 || SIZE_MAX - 4 - nalu_size < extra_size || nalu_size > (gb.buffer_end - gb.buffer)) {
+        	//WARN: probable buffer-overrun
             goto fail;
         }
 
@@ -15143,15 +15149,25 @@ block_t* atsc3_hevc_extract_mp4toannexb_filter_ffmpegImpl(block_t* sample, block
     }
 
     block_Rewind(sample_processed);
+    goto done;
 
-//    ret = av_packet_copy_props(out, in);
-//    if (ret < 0)
-//        goto fail;
-//
 fail:
-    if (ret < 0) {
-    	block_Destroy(&sample_processed);
-    }
+
+	//TODO - try and recover as much as the sample as possible without overrunning the frame
+
+	if(gb.buffer_end > gb.buffer) {
+		//recover N bytes..
+		block_Write(sample_processed, start_code, 4);
+		uint32_t len = gb.buffer_end - gb.buffer;
+
+		block_Write(sample_processed, gb.buffer, len);
+	} else {
+		//return an empty sample with poision bit
+		uint8_t nal_poision[] = { 0x80, 0x00, 0x00, 0x00 };
+		block_Write(sample_processed, nal_poision, 4);
+	}
+
+done:
 
     return sample_processed;
 }
