@@ -172,6 +172,8 @@ aligned(8) class HEVCDecoderConfigurationRecord {
 */
 
 typedef struct hevc_decoder_configuration_record {
+	block_t*	box_data_original;
+
 	uint8_t		configuration_version; //default = 1
 
 	uint8_t		general_profile_space:2;
@@ -203,7 +205,7 @@ typedef struct hevc_decoder_configuration_record {
 	uint8_t 	temporal_id_nested:1;
 	uint8_t 	length_size_minus_one:2;
 
-	uint8_t 					num_of_arrays;	//interim while we built our vectors
+	uint8_t 	num_of_arrays;	//interim while we built our vectors
 
 	ATSC3_VECTOR_BUILDER_STRUCT(atsc3_nal_unit_vps);
 	ATSC3_VECTOR_BUILDER_STRUCT(atsc3_nal_unit_sps);
@@ -269,7 +271,7 @@ void atsc3_hevc_nals_record_dump(const char* label, block_t* block);
 void atsc3_avc1_decoder_configuration_record_dump(avc1_decoder_configuration_record_t* avc1_decoder_configuration_record);
 
 //from - https://github.com/FFmpeg/FFmpeg/blob/master/libavcodec/mediacodecdec.c
-int h2645_ps_to_nalu(const uint8_t *src, int src_size, uint8_t **out, int *out_size);
+int atsc3_ffmpeg_h2645_ps_to_nalu(const uint8_t *src, int src_size, uint8_t **out, int *out_size);
 
 
 #define _ATSC3_HEVC_NAL_EXTRACTOR_ERROR(...)  	__LIBATSC3_TIMESTAMP_ERROR(__VA_ARGS__);
