@@ -105,7 +105,7 @@ block_t* block_Alloc(int len);
 //block_t* _block_Refcount(block_t*); //used for sharing pointers between ref's
     
 block_t* block_Promote(char*);
-block_t* block_Write(block_t* dest, uint8_t* buf, uint32_t size);
+block_t* block_Write(block_t* dest, const uint8_t* buf, uint32_t size);
 uint32_t block_Append(block_t* dest, block_t* src); //combine two blocks at i_pos, i_pos, return end position
 uint32_t block_AppendFull(block_t* dest, block_t* src); //combine two blocks, dest at i_pos and full size of src p_size
 uint32_t block_Merge(block_t* dest, block_t* src); //combine two blocks from p_size, p_size, return new merged p_size,
