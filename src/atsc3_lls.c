@@ -119,8 +119,22 @@ lls_table_t* lls_table_create_or_update_from_lls_slt_monitor(lls_slt_monitor_t* 
 	uint32_t parsed_update;
 	uint32_t parsed_error;
 
+	lls_table_t* lls_table = lls_table_create_or_update_from_lls_slt_monitor_with_metrics(lls_slt_monitor, lls_packet_block, &parsed, &parsed_update, &parsed_error);
 
-	return lls_table_create_or_update_from_lls_slt_monitor_with_metrics(lls_slt_monitor, lls_packet_block, &parsed, &parsed_update, &parsed_error);
+	switch(lls_table->lls_table_id) {
+
+		case SLT:
+			//todo: jjustman-2019-10-12: only re-dispatch for updates?
+
+			if(lls_slt_monitor->atsc3_lls_on_sls_table_present) {
+				lls_slt_monitor->atsc3_lls_on_sls_table_present(lls_table);
+			}
+			break;
+
+		default:
+			//noop
+			break;
+	}
 }
 
 //only return back if lls_table_version has changed
@@ -178,6 +192,7 @@ lls_table_t* lls_table_create_or_update_from_lls_slt_monitor_with_metrics(lls_sl
 
 	(*parsed)++;
 	//check if we should rebuild our signaling, note lls_table_version will roll over at FF
+	//TODO: refactor me for event dispatching logic
 	if(lls_slt_monitor) {
 		if(lls_slt_monitor->lls_latest_slt_table) {
 			if(lls_table_new->lls_table_version > lls_slt_monitor->lls_latest_slt_table->lls_table_version ||
