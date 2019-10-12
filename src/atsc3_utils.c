@@ -423,10 +423,12 @@ block_t* block_Duplicate_from_position(block_t* src) {
 
 uint8_t* block_Get(block_t* src) {
     if(!__block_check_bounaries(__FUNCTION__, src)) return NULL;
-
     return &src->p_buffer[src->i_pos];
 }
-
+uint32_t block_Len(block_t* src) {
+    if(!__block_check_bounaries(__FUNCTION__, src)) return 0;
+    return src->p_size;
+}
 /**
  *
  * this will return a new block starting 0 up to target_len
