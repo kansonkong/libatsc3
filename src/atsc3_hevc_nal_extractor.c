@@ -1811,24 +1811,33 @@ __asm__ volatile(\
              : "+a"(level), "=&d"(mask))
 
 // avoid +32 for shift optimization (gcc should do that ...)
-#define NEG_SSR32 NEG_SSR32
-static inline  int32_t NEG_SSR32( int32_t a, int8_t s){
-    __asm__ ("sarl %1, %0\n\t"
-         : "+r" (a)
-         : "ic" ((uint8_t)(-s))
-    );
-    return a;
-}
+//#define NEG_SSR32 NEG_SSR32
+//static inline  int32_t NEG_SSR32( int32_t a, int8_t s){
+//    __asm__ ("sarl %1, %0\n\t"
+//         : "+r" (a)
+//         : "ic" ((uint8_t)(-s))
+//    );
+//    return a;
+//}
+//
+//#define NEG_USR32 NEG_USR32
+//static inline uint32_t NEG_USR32(uint32_t a, int8_t s){
+//    __asm__ ("shrl %1, %0\n\t"
+//         : "+r" (a)
+//         : "ic" ((uint8_t)(-s))
+//    );
+//    return a;
+//}
+//
 
-#define NEG_USR32 NEG_USR32
-static inline uint32_t NEG_USR32(uint32_t a, int8_t s){
-    __asm__ ("shrl %1, %0\n\t"
-         : "+r" (a)
-         : "ic" ((uint8_t)(-s))
-    );
-    return a;
-}
 
+#ifndef NEG_SSR32
+#   define NEG_SSR32(a,s) ((( int32_t)(a))>>(32-(s)))
+#endif
+
+#ifndef NEG_USR32
+#   define NEG_USR32(a,s) (((uint32_t)(a))>>(32-(s)))
+#endif
 
 
 
@@ -2826,23 +2835,23 @@ static inline int get_xbits_le(GetBitContext *s, int n)
     return (zero_extend(sign ^ cache, n) ^ sign) - sign;
 }
 #endif
-
-static inline int get_sbits(GetBitContext *s, int n)
-{
-    register int tmp;
-#if CACHED_BITSTREAM_READER
-    av_assert2(n>0 && n<=25);
-    tmp = sign_extend(get_bits(s, n), n);
-#else
-    OPEN_READER(re, s);
-    av_assert2(n>0 && n<=25);
-    UPDATE_CACHE(re, s);
-    tmp = SHOW_SBITS(re, s, n);
-    LAST_SKIP_BITS(re, s, n);
-    CLOSE_READER(re, s);
-#endif
-    return tmp;
-}
+//
+//static inline int get_sbits(GetBitContext *s, int n)
+//{
+//    register int tmp;
+//#if CACHED_BITSTREAM_READER
+//    av_assert2(n>0 && n<=25);
+//    tmp = sign_extend(get_bits(s, n), n);
+//#else
+//    OPEN_READER(re, s);
+//    av_assert2(n>0 && n<=25);
+//    UPDATE_CACHE(re, s);
+//    tmp = SHOW_SBITS(re, s, n);
+//    LAST_SKIP_BITS(re, s, n);
+//    CLOSE_READER(re, s);
+//#endif
+//    return tmp;
+//}
 
 /**
  * Read 1-25 bits.
