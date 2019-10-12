@@ -190,15 +190,22 @@ kvp_collection_t* kvp_collection_parse(uint8_t* input_string) {
 
 
 
-block_t* block_Alloc(int len) {
+block_t* block_Alloc(int size_requested) {
 	block_t* new_block = (block_t*)calloc(1, sizeof(block_t));
 	assert(new_block);
 
-	//calloc an extra byte in case we forget to add in null padding for strings, but don't update the p_size with this margin of saftey
-	new_block->p_buffer = (uint8_t*)calloc(len + 8, sizeof(uint8_t));
+	//calloc an extra byte in case we forget to add in null padding for strings, but don't update the p_size with this margin of safey,
+	//align if size_requested > 0, otherwise alloc 8 as a dummy alloc block
+	uint32_t aligned_size = size_requested ? size_requested + 8 + (8 - (size_requested %8))    :    8;
+
+	#ifdef __MALLOC_TRACE
+	    _ATSC3_UTILS_INFO("block_Alloc: original size requested: %u, aligned size: %u, alignment factor: %f", src_size_required, aligned_size, aligned_size/8.0);
+	#endif
+
+	new_block->p_buffer = (uint8_t*)calloc(aligned_size, sizeof(uint8_t));
 	assert(new_block->p_buffer);
 
-	new_block->p_size = len;
+	new_block->p_size = size_requested;
 	new_block->i_pos = 0;
     new_block->_refcnt = 1;
 
@@ -400,8 +407,7 @@ uint32_t block_Merge(block_t* dest, block_t* src) {
 uint32_t block_MergeNoRewind(block_t* dest, block_t* src) {
     if(!__block_check_bounaries(__FUNCTION__, dest)) return 0;
 
-    //seek us forward so we maintain both block_t full payloads
-    dest->i_pos = dest->p_size;
+
     int dest_original_size = dest->p_size;
     int dest_size_required = dest->p_size + src->p_size;
 
@@ -413,6 +419,8 @@ uint32_t block_MergeNoRewind(block_t* dest, block_t* src) {
         }
     }
     memcpy(&dest->p_buffer[dest_original_size], src->p_buffer, src->p_size);
+    //seek us forward so we maintain both block_t full payloads
+    dest->i_pos = dest->p_size;
 
     return dest->p_size;
 }
@@ -514,7 +522,15 @@ block_t* block_Resize(block_t* src, uint32_t src_size_requested) {
     uint32_t src_size_required = src_size_requested;
 
 	//always over alloc by X bytes for a null pad
-	void* new_block = realloc(src->p_buffer, src_size_required + 8);
+    //jjustman-2019-10-12: TODO - devices like aarm64 need a quad byte aligned boundary (aim for 64bit align)
+    //over-allow with pad but don't set our p_size to this value as its not "accurate" when appending
+    uint32_t aligned_size = src_size_required + 8 + (8 - (src_size_required %8));
+
+#ifdef __MALLOC_TRACE
+    _ATSC3_UTILS_INFO("block_Resize: original size requested: %u, aligned size: %u, alignment factor: %f", src_size_required, aligned_size, aligned_size/8.0);
+#endif
+
+	void* new_block = realloc(src->p_buffer, aligned_size);
 	if(!new_block) {
 		_ATSC3_UTILS_ERROR("block_Resize: block: %p resize to %u failed, returning NULL", src, src_size_required);
 		return NULL;
