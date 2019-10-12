@@ -332,6 +332,28 @@ uint32_t block_Append(block_t* dest, block_t* src) {
 	return dest->i_pos;
 }
 
+
+block_t* block_AppendFromBuf(block_t* dest, const uint8_t* src_buf, uint32_t src_size) {
+	if(!__block_check_bounaries(__FUNCTION__, dest)) return NULL;
+
+	dest->i_pos = dest->p_size;
+	int dest_original_size = dest->p_size;
+    int dest_size_required = dest->p_size + src_size;
+
+	if(dest->p_size < dest_size_required) {
+		block_t* ret_block = block_Resize(dest, dest_size_required);
+		if(!ret_block) {
+			_ATSC3_UTILS_ERROR("block_Write: block: %p, unable to realloc from size: %u to %u, returning NULL", dest, dest->p_size, dest_size_required);
+			return NULL;
+		}
+	}
+	memcpy(&dest->p_buffer[dest_original_size], src_buf, src_size);
+	dest->i_pos = dest_size_required;
+
+	return dest;
+}
+
+
 //use src i_pos to append, with the full payload from src
 uint32_t block_AppendFull(block_t* dest, block_t* src) {
     if(!__block_check_bounaries(__FUNCTION__, dest)) return 0;
@@ -370,6 +392,28 @@ uint32_t block_Merge(block_t* dest, block_t* src) {
     //rewind
     dest->i_pos = 0;
     
+    return dest->p_size;
+}
+
+
+
+uint32_t block_MergeNoRewind(block_t* dest, block_t* src) {
+    if(!__block_check_bounaries(__FUNCTION__, dest)) return 0;
+
+    //seek us forward so we maintain both block_t full payloads
+    dest->i_pos = dest->p_size;
+    int dest_original_size = dest->p_size;
+    int dest_size_required = dest->p_size + src->p_size;
+
+    if(dest->p_size < dest_size_required) {
+        block_t* ret_block = block_Resize(dest, dest_size_required);
+        if(!ret_block) {
+            _ATSC3_UTILS_ERROR("block_Merge: block: %p, unable to realloc from size: %u to %u, returning NULL", dest, dest->p_size, dest_size_required);
+            return 0;
+        }
+    }
+    memcpy(&dest->p_buffer[dest_original_size], src->p_buffer, src->p_size);
+
     return dest->p_size;
 }
 
