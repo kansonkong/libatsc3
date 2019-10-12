@@ -238,6 +238,16 @@ video_decoder_configuration_record_t* atsc3_avc1_hevc_nal_extractor_parse_from_m
 	if(has_hvcC_match) {
         hevc_decoder_configuration_record_t* hevc_decoder_configuration_record = hevc_decoder_configuration_record_new();
 
+        //read our original box data by grabbing the previous uint32_t for box size (-4: hvcC, -4 size)
+        uint32_t hvcc_box_size = 0;
+        hvcc_box_size = ntohl(*((uint32_t*)(&mpu_ptr[hvcC_match_index-8])));
+		_ATSC3_HEVC_NAL_EXTRACTOR_DEBUG("atsc3_hevc_nal_extractor_parse_from_mpu_metadata_block_t: reading isobmff hvcc_box_size: %d", hvcc_box_size);
+
+        if(hvcc_box_size > 8) {
+        	hevc_decoder_configuration_record->box_data_original = block_Duplicate_from_ptr(&mpu_ptr[hvcC_match_index], hvcc_box_size - 8);
+            block_Rewind(hevc_decoder_configuration_record->box_data_original);
+        }
+
 		//todo: parse trailing 22 bytes after hvcC box name
 
 		//hack
@@ -543,7 +553,7 @@ block_t* atsc3_hevc_decoder_configuration_record_get_nals_vps_combined_optional_
 			uint8_t* out_p = NULL;
 			int	out_size = 0;
 
-			int ret = h2645_ps_to_nalu(nals_vps_combined->p_buffer, nals_vps_combined->p_size, &out_p, &out_size);
+			int ret = atsc3_ffmpeg_h2645_ps_to_nalu(nals_vps_combined->p_buffer, nals_vps_combined->p_size, &out_p, &out_size);
 			_ATSC3_HEVC_NAL_EXTRACTOR_DEBUG("atsc3_hevc_decoder_configuration_record_get_vps_nals_combined: ret: %d, old p: %p, size: %d, new p: %p, size: %d",
 					ret,
 					nals_vps_combined->p_buffer,
@@ -598,7 +608,7 @@ block_t* atsc3_hevc_decoder_configuration_record_get_nals_sps_combined_optional_
 			uint8_t* out_p = NULL;
 			int	out_size = 0;
 
-			int ret = h2645_ps_to_nalu(nals_sps_combined->p_buffer, nals_sps_combined->p_size, &out_p, &out_size);
+			int ret = atsc3_ffmpeg_h2645_ps_to_nalu(nals_sps_combined->p_buffer, nals_sps_combined->p_size, &out_p, &out_size);
 			_ATSC3_HEVC_NAL_EXTRACTOR_DEBUG("atsc3_hevc_decoder_configuration_record_get_sps_nals_combined: ret: %d, old p: %p, size: %d, new p: %p, size: %d",
 					ret,
 					nals_sps_combined->p_buffer,
@@ -651,7 +661,7 @@ block_t* atsc3_hevc_decoder_configuration_record_get_nals_pps_combined_optional_
 			uint8_t* out_p = NULL;
 			int	out_size = 0;
 
-			int ret = h2645_ps_to_nalu(nals_pps_combined->p_buffer, nals_pps_combined->p_size, &out_p, &out_size);
+			int ret = atsc3_ffmpeg_h2645_ps_to_nalu(nals_pps_combined->p_buffer, nals_pps_combined->p_size, &out_p, &out_size);
 			_ATSC3_HEVC_NAL_EXTRACTOR_DEBUG("atsc3_hevc_decoder_configuration_record_get_pps_nals_combined: ret: %d, old p: %p, size: %d, new p: %p, size: %d",
 					ret,
 					nals_pps_combined->p_buffer,
@@ -694,7 +704,8 @@ block_t* atsc3_hevc_decoder_configuration_record_get_nals_pps_combined(hevc_deco
 	return atsc3_hevc_decoder_configuration_record_get_nals_pps_combined_optional_start_code(hevc_decoder_configuration_record, true);
 }
 
-int h2645_ps_to_nalu(const uint8_t *src, int src_size, uint8_t **out, int *out_size)
+
+int atsc3_ffmpeg_h2645_ps_to_nalu(const uint8_t *src, int src_size, uint8_t **out, int *out_size)
 {
     int i;
     int ret = 0;
@@ -707,7 +718,6 @@ int h2645_ps_to_nalu(const uint8_t *src, int src_size, uint8_t **out, int *out_s
     }
 
     p = calloc(sizeof(nalu_header) + src_size, sizeof(uint8_t));
-    
     if (!p) {
         return -1;
     }
@@ -735,11 +745,9 @@ int h2645_ps_to_nalu(const uint8_t *src, int src_size, uint8_t **out, int *out_s
             *out = p = new;
 
             //double appending end-code?
-            if(false) {
-				i = i + 2;
-				memmove(p + i + 1, p + i, *out_size - (i + 1));
-				p[i] = 0x03;
-            }
+            i = i + 2;
+            memmove(p + i + 1, p + i, *out_size - (i + 1));
+            p[i] = 0x03;
         }
     }
 done:
