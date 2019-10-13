@@ -360,6 +360,8 @@ void mmtp_mfu_process_from_payload_with_context(udp_packet_t *udp_packet,
                                 if(mfu_sample_number == mmtp_mpu_packet_to_rebuild->sample_number) {
                                     if(mmtp_mpu_packet_to_rebuild->du_mfu_block) {
                                         if(!du_mfu_block_rebuilt) {
+                                            //make sure our first mfu DU for this is set to i_pos == p_size, so we can opportunisticly alloc and make sure block_AppendFull works properly
+                                            mmtp_mpu_packet_to_rebuild->du_mfu_block->i_pos = mmtp_mpu_packet_to_rebuild->du_mfu_block->p_size;
                                             if(mmtp_mpu_packet_to_rebuild->mmthsample_header) {
                                                 mpu_fragment_counter_start = mmtp_mpu_packet_to_rebuild->mpu_fragment_counter;
                                                 mpu_fragment_counter_position = mpu_fragment_counter_start;
@@ -378,6 +380,11 @@ void mmtp_mfu_process_from_payload_with_context(udp_packet_t *udp_packet,
                                                                   mmtp_mpu_packet_to_rebuild->mpu_sequence_number,
                                                                   mmtp_mpu_packet_to_rebuild->mpu_fragmentation_indicator,
                                                                   mmtp_mpu_packet_to_rebuild->mmthsample_header->length);
+                                       //         du_mfu_block_rebuilt = block_Duplicate(mmtp_mpu_packet_to_rebuild->du_mfu_block);
+
+                                                //opportunisic MFU sizing
+//                                                if(mmtp_mpu_packet_to_rebuild->mmthsample_header->length > block_Len(du_mfu_block_rebuilt)) {
+//                                                				block_Resize(du_mfu_block_rebuilt,  mmtp_mpu_packet_to_rebuild->mmthsample_header->length);                                                			}
                                             } else {
                                                 __MMT_CONTEXT_MPU_DEBUG("i: %u, psn: %u, Found MFU DU but missing MMTHSample header start,with %u:%u and packet_id: %u, mpu_sequence_number: %u, fragment_indicator: %u",
                                                 		mmtp_mpu_packet_to_rebuild->mpu_fragment_counter,
@@ -387,12 +394,15 @@ void mmtp_mfu_process_from_payload_with_context(udp_packet_t *udp_packet,
                                                                   mmtp_mpu_packet_to_rebuild->mmtp_packet_id,
                                                                   mmtp_mpu_packet_to_rebuild->mpu_sequence_number,
                                                                   mmtp_mpu_packet_to_rebuild->mpu_fragmentation_indicator);
+                                               // du_mfu_block_rebuilt = block_Duplicate(mmtp_mpu_packet_to_rebuild->du_mfu_block);
+
                                             }
                                             mpu_fragment_counter_position--;
                                             mpu_fragment_count_rebuilt++;
-                                            du_mfu_block_rebuilt = block_Duplicate(mmtp_mpu_packet_to_rebuild->du_mfu_block);
-                                            
-                                        } else {
+											du_mfu_block_rebuilt = block_Duplicate(mmtp_mpu_packet_to_rebuild->du_mfu_block);
+
+
+										} else {
                                             __MMT_CONTEXT_MPU_DEBUG("i: %u, psn: %u, Appending MFU DU with %u:%u and packet_id: %u, mpu_sequence_number: %u, fragment_indicator: %u",
                                             		mmtp_mpu_packet_to_rebuild->mpu_fragment_counter,
                                                                   mmtp_mpu_packet_to_rebuild->packet_sequence_number,
@@ -404,8 +414,10 @@ void mmtp_mfu_process_from_payload_with_context(udp_packet_t *udp_packet,
                                             
                                             mpu_fragment_counter_position--;
                                             mpu_fragment_count_rebuilt++;
-                                            block_Merge(du_mfu_block_rebuilt, mmtp_mpu_packet_to_rebuild->du_mfu_block);
-                                        }
+                                           // block_AppendFull(du_mfu_block_rebuilt, mmtp_mpu_packet_to_rebuild->du_mfu_block);
+											block_Merge(du_mfu_block_rebuilt, mmtp_mpu_packet_to_rebuild->du_mfu_block);
+
+										}
                                         
                                         //hack, handle this context/state better
                                         block_Destroy(&mmtp_mpu_packet_to_rebuild->du_mfu_block);
