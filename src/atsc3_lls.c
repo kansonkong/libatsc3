@@ -120,21 +120,22 @@ lls_table_t* lls_table_create_or_update_from_lls_slt_monitor(lls_slt_monitor_t* 
 	uint32_t parsed_error;
 
 	lls_table_t* lls_table = lls_table_create_or_update_from_lls_slt_monitor_with_metrics(lls_slt_monitor, lls_packet_block, &parsed, &parsed_update, &parsed_error);
+    if(lls_table) {
+        switch (lls_table->lls_table_id) {
 
-	switch(lls_table->lls_table_id) {
+            case SLT:
+                //todo: jjustman-2019-10-12: only re-dispatch for updates?
 
-		case SLT:
-			//todo: jjustman-2019-10-12: only re-dispatch for updates?
+                if (lls_slt_monitor->atsc3_lls_on_sls_table_present) {
+                    lls_slt_monitor->atsc3_lls_on_sls_table_present(lls_table);
+                }
+                break;
 
-			if(lls_slt_monitor->atsc3_lls_on_sls_table_present) {
-				lls_slt_monitor->atsc3_lls_on_sls_table_present(lls_table);
-			}
-			break;
-
-		default:
-			//noop
-			break;
-	}
+            default:
+                //noop
+                break;
+        }
+    }
 
 	return lls_table;
 }
