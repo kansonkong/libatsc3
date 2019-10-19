@@ -94,6 +94,7 @@ void mmtp_process_sls_from_payload(udp_packet_t *udp_packet, mmtp_signalling_pac
 //void process_packet(u_char *user, const struct pcap_pkthdr *pkthdr, const u_char *packet) {
 void atsc3_phy_mmt_player_bridge_process_packet_phy(block_t* packet) {
 
+    mmtp_packet_header_t* mmtp_packet_header = NULL;
     //printf("in packet is: %p", packet);
 
     //lowasys hands off the ip packet header, not phy eth frame
@@ -191,7 +192,7 @@ void atsc3_phy_mmt_player_bridge_process_packet_phy(block_t* packet) {
 
 	if(matching_lls_sls_mmt_session && lls_slt_monitor && lls_slt_monitor->lls_sls_mmt_monitor && matching_lls_sls_mmt_session->atsc3_lls_slt_service->service_id == lls_slt_monitor->lls_sls_mmt_monitor->atsc3_lls_slt_service->service_id) {
 
-        mmtp_packet_header_t* mmtp_packet_header = mmtp_packet_header_parse_from_block_t(udp_packet->data);
+        mmtp_packet_header = mmtp_packet_header_parse_from_block_t(udp_packet->data);
 
         //at3DrvIntf_ptr->LogMsgF("mmtp_packet_header: %p", mmtp_packet_header);
 
@@ -383,6 +384,33 @@ void atsc3_mmt_mpu_on_sequence_mpu_metadata_present_ndk(uint16_t packet_id, uint
                 }
             }
         }
+    } else {
+        //if audio, dump the ESDS box for android MediaCodec
+
+        /*
+         *
+         *  [mp4a] size=8+67
+              data_reference_index = 1
+              channel_count = 2
+              sample_size = 16
+              sample_rate = 48000
+              [esds] size=12+27
+                [ESDescriptor] size=2+25
+                  es_id = 0
+                  stream_priority = 0
+                  [DecoderConfig] size=2+17
+                    stream_type = 5
+                    object_type = 64
+                    up_stream = 0
+                    buffer_size = 8192
+                    max_bitrate = 128000
+                    avg_bitrate = 128000
+                    DecoderSpecificInfo = 11 90
+                  [Descriptor:06] size=2+1
+
+                  https://wiki.multimedia.cx/index.php/Understanding_AAC
+                  https://developer.android.com/reference/android/media/MediaCodecs
+         */
     }
 }
 
@@ -413,18 +441,17 @@ void atsc3_mmt_mpu_mfu_on_sample_complete_ndk(uint16_t packet_id, uint32_t mpu_s
         uint8_t *block_ptr = block_Get(mmt_mfu_sample_rbsp);
         uint32_t block_len = block_Len(mmt_mfu_sample_rbsp);
 
-//        if((global_mfu_proccessed_count++ % 60) == 0) {
-//            char msg[256] = {0};
-//            snprintf(msg, 128,
-//                     "atsc3_mmt_mpu_mfu_on_sample_complete_ndk: total mfu count: %d, packet_id: %d, mpu: %d, sample: %d, orig len: %d, len: %d",
-//                     global_mfu_proccessed_count,
-//                     packet_id, mpu_sequence_number, sample_number, block_Len(mmt_mfu_sample),
-//                     block_len);
-//
-//            at3DrvIntf_ptr->LogMsg(msg);
-//        }
+        if((global_mfu_proccessed_count++ % 600) == 0) {
+            at3DrvIntf_ptr->LogMsgF("atsc3_mmt_mpu_mfu_on_sample_complete_ndk: total mfu count: %d, packet_id: %d, mpu: %d, sample: %d, orig len: %d, len: %d",
+                                    global_mfu_proccessed_count,
+                                    packet_id, mpu_sequence_number, sample_number, block_Len(mmt_mfu_sample),
+                                    block_len);
+
+        }
         at3DrvIntf_ptr->onMfuPacket(mpu_sequence_number, packet_id == global_video_packet_id,
                                     sample_number, block_ptr, block_len, last_mpu_timestamp);
+
+        block_Release(&mmt_mfu_sample_rbsp);
     } else {
         uint8_t *block_ptr = block_Get(mmt_mfu_sample);
         uint32_t block_len = block_Len(mmt_mfu_sample);
@@ -433,6 +460,8 @@ void atsc3_mmt_mpu_mfu_on_sample_complete_ndk(uint16_t packet_id, uint32_t mpu_s
         at3DrvIntf_ptr->onMfuPacket(mpu_sequence_number, packet_id == global_video_packet_id,
                                     sample_number, block_ptr, block_len, last_mpu_timestamp);
     }
+
+    block_Release(&mmt_mfu_sample);
 
 }
 
