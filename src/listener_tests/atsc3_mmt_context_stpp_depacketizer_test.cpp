@@ -1,10 +1,10 @@
 /*
- * atsc3_mmt_context_mfu_depacketizer_test.c
+ * atsc3_mmt_context_stpp_depacketizer_test.c
  *
- *  Created on: Oct 1, 2019
+ *  Created on: Oct 19, 2019
  *      Author: jjustman
  *
- * sample listener for MMT flow(s) to extract MFU emissions for decoder buffer handoff and robustness validation
+ * sample listener for MMT stpp (IMSC-1) caption data
  */
 
 int PACKET_COUNTER=0;
@@ -37,18 +37,51 @@ int PACKET_COUNTER=0;
 
 #include "../atsc3_mmt_context_mfu_depacketizer.h"
 
-#define _ENABLE_DEBUG true
-
-//commandline stream filtering
+//commandline stream filtering per flow
 
 uint32_t* dst_ip_addr_filter = NULL;
 uint16_t* dst_ip_port_filter = NULL;
 uint16_t* dst_packet_id_filter = NULL;
 
-//dump essences out
+
+//jjustman-2019-09-18: refactored MMTP flow collection management
+mmtp_flow_t* mmtp_flow;
+
+//todo: jjustman-2019-09-18 refactor me out for mpu recon persitance
+udp_flow_latest_mpu_sequence_number_container_t* udp_flow_latest_mpu_sequence_number_container;
+
+lls_slt_monitor_t* lls_slt_monitor;
+
+lls_sls_mmt_monitor_t* lls_sls_mmt_monitor = NULL;
+
+//jjustman-2019-10-03 - context event callbacks...
+atsc3_mmt_mfu_context_t* atsc3_mmt_mfu_context;
+
+//stpp packet_id under test
+uint16_t atsc3_mmt_context_stpp_packet_id_for_testing = 19;
+
+void atsc3_mmt_signalling_information_on_stpp_essence_packet_id_dump(uint16_t stpp_packet_id) {
+	__MMT_CONTEXT_MPU_DEBUG("atsc3_mmt_signalling_information_on_stpp_essence_packet_id_dump: stpp mp_table packet_id: %u, stpp_packet_id_under_test: %u",
+			stpp_packet_id,
+			atsc3_mmt_context_stpp_packet_id_for_testing);
+}
+
+void atsc3_mmt_signalling_information_on_stpp_packet_id_with_mpu_timestamp_descriptor_dump(uint16_t stpp_packet_id, uint32_t mpu_sequence_number, uint64_t mpu_presentation_time_ntp64, uint32_t mpu_presentation_time_seconds, uint32_t mpu_presentation_time_microseconds) {
+	__MMT_CONTEXT_MPU_DEBUG("atsc3_mmt_signalling_information_on_stpp_packet_id_with_mpu_timestamp_descriptor_dump: stpp mp_table packet_id: %u, stpp_packet_id_under_test: %u, mpu_sequence_number: %d, mpu_presentation_time_ntp64: %llu, mpu_presentation_time_seconds: %u, mpu_presentation_time_microseconds: %u",
+				stpp_packet_id,
+				atsc3_mmt_context_stpp_packet_id_for_testing,
+				mpu_sequence_number,
+				mpu_presentation_time_ntp64,
+				mpu_presentation_time_seconds,
+				mpu_presentation_time_microseconds);
+}
+
 
 
 void atsc3_mmt_mpu_mfu_on_sample_complete_dump(uint16_t packet_id, uint32_t mpu_sequence_number, uint32_t sample_number, block_t* mmt_mfu_sample) {
+	if(packet_id != atsc3_mmt_context_stpp_packet_id_for_testing) {
+		return;
+	}
 
 	__MMT_CONTEXT_MPU_DEBUG("atsc3_mmt_mpu_mfu_on_sample_complete_dump: packet_id: %u, mpu_sequence_number: %u, sample_number: %u, mmt_mfu_sample: %p, len: %d",
 			packet_id,
@@ -77,6 +110,9 @@ void atsc3_mmt_mpu_mfu_on_sample_complete_dump(uint16_t packet_id, uint32_t mpu_
 }
 
 void atsc3_mmt_mpu_mfu_on_sample_corrupt_dump(uint16_t packet_id, uint32_t mpu_sequence_number, uint32_t sample_number, block_t* mmt_mfu_sample) {
+	if(packet_id != atsc3_mmt_context_stpp_packet_id_for_testing) {
+		return;
+	}
 	__MMT_CONTEXT_MPU_DEBUG("atsc3_mmt_mpu_mfu_on_sample_corrupt_dump: packet_id: %u, mpu_sequence_number: %u, sample_number: %u, mmt_mfu_sample: %p, len: %d",
 				packet_id,
 	            mpu_sequence_number,
@@ -106,6 +142,9 @@ void atsc3_mmt_mpu_mfu_on_sample_corrupt_dump(uint16_t packet_id, uint32_t mpu_s
 
 
 void atsc3_mmt_mpu_mfu_on_sample_missing_dump(uint16_t packet_id, uint32_t mpu_sequence_number, uint32_t sample_number) {
+	if(packet_id != atsc3_mmt_context_stpp_packet_id_for_testing) {
+		return;
+	}
 	__MMT_CONTEXT_MPU_DEBUG("atsc3_mmt_mpu_mfu_on_sample_complete_dump: packet_id: %u, mpu_sequence_number: %u, sample_number: %u",
 				packet_id,
 	            mpu_sequence_number,
@@ -127,19 +166,6 @@ void atsc3_mmt_mpu_mfu_on_sample_missing_dump(uint16_t packet_id, uint32_t mpu_s
 
 	}
 }
-
-//jjustman-2019-09-18: refactored MMTP flow collection management
-mmtp_flow_t* mmtp_flow;
-
-//todo: jjustman-2019-09-18 refactor me out for mpu recon persitance
-udp_flow_latest_mpu_sequence_number_container_t* udp_flow_latest_mpu_sequence_number_container;
-
-lls_slt_monitor_t* lls_slt_monitor;
-
-lls_sls_mmt_monitor_t* lls_sls_mmt_monitor = NULL;
-
-//jjustman-2019-10-03 - context event callbacks...
-atsc3_mmt_mfu_context_t* atsc3_mmt_mfu_context;
 
 mmtp_packet_header_t*  mmtp_parse_header_from_udp_packet(udp_packet_t* udp_packet) {
 
@@ -224,10 +250,10 @@ void process_packet(u_char *user, const struct pcap_pkthdr *pkthdr, const u_char
 			}
 		}
 
-		__INFO("Checking lls_sls_mmt_monitor: %p,", lls_sls_mmt_monitor);
+		__TRACE("Checking lls_sls_mmt_monitor: %p,", lls_sls_mmt_monitor);
 
 		if(lls_sls_mmt_monitor && lls_sls_mmt_monitor->lls_mmt_session) {
-			__INFO("Checking lls_sls_mmt_monitor->lls_mmt_session: %p,", lls_sls_mmt_monitor->lls_mmt_session);
+			__TRACE("Checking lls_sls_mmt_monitor->lls_mmt_session: %p,", lls_sls_mmt_monitor->lls_mmt_session);
 		}
 
 		//recheck video_packet_id/audio_packet_id
@@ -237,7 +263,8 @@ void process_packet(u_char *user, const struct pcap_pkthdr *pkthdr, const u_char
 				lls_sls_mmt_monitor->video_packet_id = lls_sls_mmt_session->video_packet_id;
 				lls_sls_mmt_monitor->audio_packet_id = lls_sls_mmt_session->audio_packet_id;
 				lls_sls_mmt_monitor->stpp_packet_id  = lls_sls_mmt_session->stpp_packet_id;
-				__INFO("setting audio_packet_id/video_packet_id/stpp: %u, %u, %u",
+				__INFO("service: %d, setting audio_packet_id/video_packet_id/stpp: %u, %u, %u",
+						lls_sls_mmt_session->atsc3_lls_slt_service->service_id,
 						lls_sls_mmt_monitor->audio_packet_id,
 						lls_sls_mmt_monitor->video_packet_id,
 						lls_sls_mmt_monitor->stpp_packet_id);
@@ -258,7 +285,6 @@ void process_packet(u_char *user, const struct pcap_pkthdr *pkthdr, const u_char
 	if(matching_lls_sls_mmt_session && lls_slt_monitor && lls_slt_monitor->lls_sls_mmt_monitor && matching_lls_sls_mmt_session->atsc3_lls_slt_service->service_id == lls_slt_monitor->lls_sls_mmt_monitor->atsc3_lls_slt_service->service_id) {
 
 		mmtp_packet_header = mmtp_packet_header_parse_from_block_t(udp_packet->data);
-
         
 		if(!mmtp_packet_header) {
 			return udp_packet_free(&udp_packet);
@@ -273,7 +299,13 @@ void process_packet(u_char *user, const struct pcap_pkthdr *pkthdr, const u_char
 
 		//dump header, then dump applicable packet type
 		if(mmtp_packet_header->mmtp_payload_type == 0x0) {
-			//mmtp_mpu_packet_t* mmtp_mpu_packet = mmtp_mpu_packet_parse_from_block_t();
+			//bail if we are not the MFU packet_id under test, but allow SLS/signalling messages to passthru
+
+			if(mmtp_packet_header->mmtp_packet_id != atsc3_mmt_context_stpp_packet_id_for_testing) {
+				//discard
+				goto cleanup;
+			}
+
             mmtp_mpu_packet_t* mmtp_mpu_packet = mmtp_mpu_packet_parse_and_free_packet_header_from_block_t(&mmtp_packet_header, udp_packet->data);
             if(!mmtp_mpu_packet) {
                 goto error;
@@ -314,8 +346,7 @@ void process_packet(u_char *user, const struct pcap_pkthdr *pkthdr, const u_char
 				mmt_signalling_message_process_with_context(udp_packet, mmtp_signalling_packet, atsc3_mmt_mfu_context);
 
 
-				//internal hacks below
-
+				//internal auto-selection service_id/packet_id triggering hacks below
 
 				//TODO: jjustman-2019-10-03 - if signalling_packet == MP_table, set atsc3_mmt_mfu_context->mp_table_last;
 				mmtp_asset_flow_t* mmtp_asset_flow = mmtp_flow_find_or_create_from_udp_packet(mmtp_flow, udp_packet);
@@ -338,11 +369,11 @@ void process_packet(u_char *user, const struct pcap_pkthdr *pkthdr, const u_char
 				//add in flows 				lls_sls_mmt_session_t* lls_sls_mmt_session = lls_slt_mmt_session_find_from_service_id(lls_slt_monitor, lls_sls_mmt_monitor->lls_mmt_session->service_id);
 
 				if(lls_sls_mmt_monitor && lls_sls_mmt_monitor->lls_mmt_session && matching_lls_sls_mmt_session) {
-                	__INFO("mmt_signalling_information: from atsc3 service_id: %u, patching: seting audio_packet_id/video_packet_id/stpp_packet_id: %u, %u, %u",
-                								matching_lls_sls_mmt_session->atsc3_lls_slt_service->service_id,
-                								matching_lls_sls_mmt_session->audio_packet_id,
-                								matching_lls_sls_mmt_session->video_packet_id,
-                								matching_lls_sls_mmt_session->stpp_packet_id);
+					__INFO("mmt_signalling_information: from atsc3 service_id: %u, patching: seting audio_packet_id/video_packet_id/stpp_packet_id: %u, %u, %u",
+							matching_lls_sls_mmt_session->atsc3_lls_slt_service->service_id,
+							matching_lls_sls_mmt_session->audio_packet_id,
+							matching_lls_sls_mmt_session->video_packet_id,
+							matching_lls_sls_mmt_session->stpp_packet_id);
 
 					if(matching_lls_sls_mmt_session->audio_packet_id) {
 						lls_sls_mmt_monitor->audio_packet_id = matching_lls_sls_mmt_session->audio_packet_id;
@@ -355,7 +386,6 @@ void process_packet(u_char *user, const struct pcap_pkthdr *pkthdr, const u_char
 					if(matching_lls_sls_mmt_session->stpp_packet_id) {
 						lls_sls_mmt_monitor->stpp_packet_id = matching_lls_sls_mmt_session->stpp_packet_id;
 					}
-
 				}
 			}
 
@@ -369,7 +399,6 @@ cleanup:
 	if(mmtp_packet_header) {
 		mmtp_packet_header_free(&mmtp_packet_header);
 	}
-    
     return;
 
 error:
@@ -495,7 +524,7 @@ int main(int argc,char **argv) {
 
 
     } else {
-    	println("%s - a udp mulitcast listener test harness for atsc3 mmt sls", argv[0]);
+    	println("%s - a udp mulitcast listener test harness for atsc3 mmt stpp emissions", argv[0]);
     	println("---");
     	println("args: dev (dst_ip) (dst_port) (packet_id)");
     	println(" dev: device to listen for udp multicast, default listen to 0.0.0.0:0");
@@ -514,6 +543,11 @@ int main(int argc,char **argv) {
 
     //callback contexts
     atsc3_mmt_mfu_context = atsc3_mmt_mfu_context_new();
+
+    //stpp SLS related callbacks from mp_table
+    atsc3_mmt_mfu_context->atsc3_mmt_signalling_information_on_stpp_essence_packet_id = &atsc3_mmt_signalling_information_on_stpp_essence_packet_id_dump;
+	atsc3_mmt_mfu_context->atsc3_mmt_signalling_information_on_stpp_packet_id_with_mpu_timestamp_descriptor = &atsc3_mmt_signalling_information_on_stpp_packet_id_with_mpu_timestamp_descriptor_dump;
+
 
 	//MFU related callbacks
 	atsc3_mmt_mfu_context->atsc3_mmt_mpu_mfu_on_sample_complete = &atsc3_mmt_mpu_mfu_on_sample_complete_dump;
