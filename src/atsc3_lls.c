@@ -290,7 +290,7 @@ void lls_table_free(lls_table_t** lls_table_p) {
 	if(lls_table->lls_table_id == SLT) {
 
 		//TODO: jjustman-2019-10-03 0 move this into chained destructors
-		_LLS_ERROR("TODO: use ATSC3_VECTOR_BUILDER chained destructors to free slt_table!");
+		_LLS_DEBUG("TODO: use ATSC3_VECTOR_BUILDER chained destructors to free slt_table!");
 
 		//for each service entry alloc, free
 		for(int i=0; i < lls_table->slt_table.atsc3_lls_slt_service_v.count; i++) {
@@ -299,7 +299,7 @@ void lls_table_free(lls_table_t** lls_table_p) {
 				freesafe(atsc3_lls_slt_service->global_service_id);
 				freesafe(atsc3_lls_slt_service->short_service_name);
 
-				_LLS_ERROR("TODO: use ATSC3_VECTOR_BUILDER chained destructors to free atsc3_lls_slt_service_free_atsc3_slt_broadcast_svc_signaling!");
+				_LLS_DEBUG("TODO: use ATSC3_VECTOR_BUILDER chained destructors to free atsc3_lls_slt_service_free_atsc3_slt_broadcast_svc_signaling!");
 
 				//atsc3_lls_slt_service_free_atsc3_slt_broadcast_svc_signaling(atsc3_lls_slt_service);
 

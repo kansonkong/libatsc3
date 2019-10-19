@@ -159,7 +159,9 @@ void* pcap_loop_run_thread(void* dev_pointer) {
  */
 int main(int argc,char **argv) {
 
-	_MMTP_DEBUG_ENABLED = 0;
+	//jjustman-2019-10-18 - TODO: fixme for proper MMT_SLS debugging/tracing
+	_MMTP_DEBUG_ENABLED = 1;
+	_MMTP_TRACE_ENABLED = 1;
 	_MMT_MPU_PARSER_DEBUG_ENABLED = 0;
 
 	_LLS_DEBUG_ENABLED = 0;

@@ -57,6 +57,7 @@ clean:
 	-rm -f listener_tests/atsc3_stltp_alp_listener_test
 	-rm -f listener_tests/atsc3_stltp_alp_listener_reflector_test
 	-rm -f listener_tests/atsc3_mmt_context_mfu_depacketizer_test
+	-rm -f listener_tests/atsc3_mmt_context_stpp_depacketizer_test
 	-rm -f a324_tests/a324_dstp_lls_aeat_emission_test	
 	-rm -f tools/atsc3_alc_listener_mde_writer
 	-rm -f tools/atsc3_listener_metrics_ncurses
@@ -151,7 +152,8 @@ listener_tests: atsc3_alc_listener_test \
 				atsc3_stltp_listener_test \
 				atsc3_stltp_alp_listener_test \
 				atsc3_stltp_alp_listener_reflector_test \
-				atsc3_mmt_context_mfu_depacketizer_test
+				atsc3_mmt_context_mfu_depacketizer_test \
+				atsc3_mmt_context_stpp_depacketizer_test
 
 a324_tests: a32_dstp_lls_aeat_emission_test
 
@@ -706,6 +708,16 @@ atsc3_mmt_context_mfu_depacketizer_test: listener_tests/atsc3_mmt_context_mfu_de
 		libatsc3_bento4_gpl.o \
 		-lz -lpcap -lpthread  \
 		-o listener_tests/atsc3_mmt_context_mfu_depacketizer_test
+
+
+# stpp context depacketizer/callback testing
+
+atsc3_mmt_context_stpp_depacketizer_test: listener_tests/atsc3_mmt_context_stpp_depacketizer_test.cpp \
+		libatsc3_bento4_gpl.o
+	g++ -g listener_tests/atsc3_mmt_context_stpp_depacketizer_test.cpp \
+		libatsc3_bento4_gpl.o \
+		-lz -lpcap -lpthread  \
+		-o listener_tests/atsc3_mmt_context_stpp_depacketizer_test
 
 # this one has some ncurses inclusion to support 		
 # -D _TEST_RUN_VALGRIND_OSX_=true to disable pthread_create on osx due to issues with lldb startup bug
