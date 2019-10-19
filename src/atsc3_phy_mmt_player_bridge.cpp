@@ -168,21 +168,13 @@ void atsc3_phy_mmt_player_bridge_process_packet_phy(block_t* packet) {
                 lls_sls_mmt_session_t* lls_sls_mmt_session = lls_slt_mmt_session_find_from_service_id(lls_slt_monitor, lls_sls_mmt_monitor->lls_mmt_session->service_id);
                 lls_sls_mmt_monitor->video_packet_id = lls_sls_mmt_session->video_packet_id;
                 lls_sls_mmt_monitor->audio_packet_id = lls_sls_mmt_session->audio_packet_id;
-                __INFO("setting audio_packet_id/video_packet_id: %u, %u", lls_sls_mmt_monitor->audio_packet_id, lls_sls_mmt_monitor->video_packet_id);
+				lls_sls_mmt_monitor->stpp_packet_id  = lls_sls_mmt_session->stpp_packet_id;
+				__INFO("setting audio_packet_id/video_packet_id/stpp: %u, %u, %u",
+						lls_sls_mmt_monitor->audio_packet_id,
+						lls_sls_mmt_monitor->video_packet_id,
+						lls_sls_mmt_monitor->stpp_packet_id);
             }
 
-            if(lls_sls_mmt_monitor->video_packet_id) {
-                lls_sls_mmt_monitor->lls_sls_monitor_output_buffer.has_written_init_box = false;
-                lls_slt_monitor->lls_sls_mmt_monitor->lls_sls_monitor_output_buffer_mode.file_dump_enabled = true;
-
-                //todo - jjustman-2019-09-05 - refactor this logic out
-
-                if(!lls_slt_monitor->lls_sls_mmt_monitor->lls_sls_monitor_output_buffer_mode.http_output_buffer) {
-                    lls_slt_monitor->lls_sls_mmt_monitor->lls_sls_monitor_output_buffer_mode.http_output_buffer = (http_output_buffer_t*)calloc(1, sizeof(http_output_buffer_t));
-                    lls_slt_monitor->lls_sls_mmt_monitor->lls_sls_monitor_output_buffer_mode.http_output_buffer->http_payload_buffer_mutex = lls_sls_monitor_reader_mutext_create();
-                }
-                lls_slt_monitor->lls_sls_mmt_monitor->lls_sls_monitor_output_buffer_mode.http_output_enabled = true;
-            }
         }
         return udp_packet_free(&udp_packet);
     }
@@ -197,7 +189,7 @@ void atsc3_phy_mmt_player_bridge_process_packet_phy(block_t* packet) {
     __TRACE("Checking matching_lls_sls_mmt_session: %p,", matching_lls_sls_mmt_session);
 
 
-    if(matching_lls_sls_mmt_session) {
+	if(matching_lls_sls_mmt_session && lls_slt_monitor && lls_slt_monitor->lls_sls_mmt_monitor && matching_lls_sls_mmt_session->atsc3_lls_slt_service->service_id == lls_slt_monitor->lls_sls_mmt_monitor->atsc3_lls_slt_service->service_id) {
 
         mmtp_packet_header_t* mmtp_packet_header = mmtp_packet_header_parse_from_block_t(udp_packet->data);
 
@@ -282,9 +274,11 @@ void atsc3_phy_mmt_player_bridge_process_packet_phy(block_t* packet) {
                 //add in flows 				lls_sls_mmt_session_t* lls_sls_mmt_session = lls_slt_mmt_session_find_from_service_id(lls_slt_monitor, lls_sls_mmt_monitor->lls_mmt_session->service_id);
 
                 if(lls_sls_mmt_monitor && lls_sls_mmt_monitor->lls_mmt_session && matching_lls_sls_mmt_session) {
-                    __INFO("HACK: seting audio_packet_id/video_packet_id: %u, %u",
-                           matching_lls_sls_mmt_session->audio_packet_id,
-                           matching_lls_sls_mmt_session->video_packet_id);
+                	__INFO("mmt_signalling_information: from atsc3 service_id: %u, patching: seting audio_packet_id/video_packet_id/stpp_packet_id: %u, %u, %u",
+                								matching_lls_sls_mmt_session->atsc3_lls_slt_service->service_id,
+                								matching_lls_sls_mmt_session->audio_packet_id,
+                								matching_lls_sls_mmt_session->video_packet_id,
+                								matching_lls_sls_mmt_session->stpp_packet_id);
 
                     if(matching_lls_sls_mmt_session->audio_packet_id) {
                         lls_sls_mmt_monitor->audio_packet_id = matching_lls_sls_mmt_session->audio_packet_id;
@@ -293,6 +287,10 @@ void atsc3_phy_mmt_player_bridge_process_packet_phy(block_t* packet) {
                     if(matching_lls_sls_mmt_session->video_packet_id) {
                         lls_sls_mmt_monitor->video_packet_id = matching_lls_sls_mmt_session->video_packet_id;
                     }
+					if(matching_lls_sls_mmt_session->stpp_packet_id) {
+						lls_sls_mmt_monitor->stpp_packet_id = matching_lls_sls_mmt_session->stpp_packet_id;
+					}
+
                 }
             }
 
@@ -302,11 +300,14 @@ void atsc3_phy_mmt_player_bridge_process_packet_phy(block_t* packet) {
         }
     }
 
-    cleanup:
+cleanup:
 
+	if(mmtp_packet_header) {
+		mmtp_packet_header_free(&mmtp_packet_header);
+	}
     return;
 
-    error:
+error:
     __ATSC3_WARN("process_packet: error, bailing loop!");
     return;
 }

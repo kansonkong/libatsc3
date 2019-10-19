@@ -503,6 +503,7 @@ typedef struct lls_sls_mmt_session {
     
     uint16_t video_packet_id;
     uint16_t audio_packet_id;
+    uint16_t stpp_packet_id;
 
     udp_flow_packet_id_mpu_sequence_tuple_t* last_udp_flow_packet_id_mpu_sequence_tuple_audio;
     bool last_udp_flow_packet_id_mpu_sequence_tuple_audio_processed;
@@ -588,6 +589,7 @@ typedef struct lls_sls_mmt_monitor {
 
     uint16_t 								video_packet_id;
     uint16_t 								audio_packet_id;
+    uint16_t								stpp_packet_id;
 
     lls_sls_monitor_output_buffer_t 		lls_sls_monitor_output_buffer;
     lls_sls_monitor_output_buffer_mode_t 	lls_sls_monitor_output_buffer_mode;
