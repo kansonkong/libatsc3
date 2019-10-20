@@ -11,7 +11,7 @@
 #include "atsc3_pcap_type.h"
 
 
-int _ATSC3_PCAP_TYPE_DEBUG_ENABLED = 1;
+int _ATSC3_PCAP_TYPE_DEBUG_ENABLED = 0;
 int _ATSC3_PCAP_TYPE_TRACE_ENABLED = 0;
 
 /**
@@ -178,7 +178,7 @@ atsc3_pcap_replay_context_t* atsc3_pcap_replay_usleep_packet(atsc3_pcap_replay_c
 
         //jjustman-2019-10-19 - only trigger usleep if our differential is greater than 2000uS (2ms)
 		if(wallclock_runtime_packet_capture_ts_differentialUS > 2000) {
-            _ATSC3_PCAP_TYPE_INFO("pcap timing information: current packet timeval: s.us: %ld.%ld, last packet timeval: s.us: %ld.%ld, target sleep duration uS: %lld",
+            _ATSC3_PCAP_TYPE_DEBUG("pcap timing information: current packet timeval: s.us: %ld.%ld, last packet timeval: s.us: %ld.%ld, target sleep duration uS: %lld",
                   current_packet_timeval.tv_sec,
                   current_packet_timeval.tv_usec,
                   last_packet_timeval.tv_sec,
@@ -191,16 +191,17 @@ atsc3_pcap_replay_context_t* atsc3_pcap_replay_usleep_packet(atsc3_pcap_replay_c
             rqtp.tv_sec = wallclock_runtime_packet_capture_ts_differentialUS / 1000000;
             rqtp.tv_nsec = (wallclock_runtime_packet_capture_ts_differentialUS % 1000000) * 1000;
 
-            _ATSC3_PCAP_TYPE_INFO("setting nanosleep to s: %ld, ns: %ld", rqtp.tv_sec, rqtp.tv_nsec);
+            _ATSC3_PCAP_TYPE_DEBUG("setting nanosleep to s: %ld, ns: %ld", rqtp.tv_sec, rqtp.tv_nsec);
             int ret = nanosleep(&rqtp, &rmtp);
 
             if(ret != 0) {
                 //signal interruption,
-                _ATSC3_PCAP_TYPE_INFO("nanosleep returned: %d, sleep duration actual: s: %ld, ns: %ld", ret, rmtp.tv_sec, rmtp.tv_nsec);
+                _ATSC3_PCAP_TYPE_WARN("nanosleep returned: %d, sleep duration actual: s: %ld, ns: %ld", ret, rmtp.tv_sec, rmtp.tv_nsec);
             }
         } else {
             //falling behind
-            _ATSC3_PCAP_TYPE_WARN("pcap timing falling behind: current packet timeval: s.us: %ld.%ld  last packet timeval: s.us: %ld.%ld  wallclock_runtime_packet_capture_ts_differentialUS: %lld, sleep would be negative!",
+            //don't spam...
+            _ATSC3_PCAP_TYPE_DEBUG("pcap timing falling behind: current packet timeval: s.us: %ld.%ld  last packet timeval: s.us: %ld.%ld  wallclock_runtime_packet_capture_ts_differentialUS: %lld, sleep would be negative!",
                     current_packet_timeval.tv_sec,
                     current_packet_timeval.tv_usec,
                     last_packet_timeval.tv_sec,
