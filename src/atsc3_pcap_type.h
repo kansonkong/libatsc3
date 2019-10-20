@@ -143,6 +143,8 @@ atsc3_pcap_replay_context_t* atsc3_pcap_replay_open_from_fd(const char* pcap_fil
 atsc3_pcap_replay_context_t* atsc3_pcap_replay_iterate_packet(atsc3_pcap_replay_context_t* atsc3_pcap_replay_context_to_iterate);
 atsc3_pcap_replay_context_t* atsc3_pcap_replay_usleep_packet(atsc3_pcap_replay_context_t* atsc3_pcap_replay_context_to_iterate);
 
+void atsc3_pcap_replay_free(atsc3_pcap_replay_context_t** atsc3_pcap_replay_context_p);
+
 
 #if defined (__cplusplus)
 }
