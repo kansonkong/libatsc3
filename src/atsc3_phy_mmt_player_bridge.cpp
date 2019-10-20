@@ -63,7 +63,12 @@ lls_sls_mmt_monitor_t* lls_sls_mmt_monitor = NULL;
 
 //POC values not in context...
 uint64_t last_mpu_timestamp = 0;
+
+//these should actually be referenced from mmt_sls_monitor for proper flow references
 uint16_t global_video_packet_id = 0;
+uint16_t global_audio_packet_id = 0;
+uint16_t global_stpp_packet_id = 0;
+
 uint32_t global_mfu_proccessed_count = 0;
 
 mmtp_packet_header_t*  mmtp_parse_header_from_udp_packet(udp_packet_t* udp_packet) {
@@ -439,7 +444,7 @@ void atsc3_mmt_mpu_on_sequence_mpu_metadata_present_ndk(uint16_t packet_id, uint
                     }
                     __INTERNAL_LAST_NAL_PACKET_TODO_FIXME = block_Duplicate(hevc_nals_combined);
 
-                    at3DrvIntf_ptr->onInitHEVC_NAL_Extracted(packet_id == global_video_packet_id, mpu_sequence_number,  block_Get(hevc_nals_combined), hevc_nals_combined->p_size);
+                    at3DrvIntf_ptr->atsc3_onInitHEVC_NAL_Extracted(packet_id, mpu_sequence_number,  block_Get(hevc_nals_combined), hevc_nals_combined->p_size);
                 } else {
                     at3DrvIntf_ptr->LogMsg("atsc3_mmt_mpu_on_sequence_mpu_metadata_present_ndk - error, no NALs returned!");
 
@@ -480,10 +485,35 @@ void atsc3_mmt_mpu_on_sequence_mpu_metadata_present_ndk(uint16_t packet_id, uint
 void atsc3_mmt_signalling_information_on_video_packet_id_with_mpu_timestamp_descriptor_ndk(uint16_t video_packet_id, uint32_t mpu_sequence_number, uint64_t mpu_presentation_time_ntp64, uint32_t mpu_presentation_time_seconds, uint32_t mpu_presentation_time_microseconds) {
     last_mpu_timestamp = mpu_presentation_time_seconds * 1000000 + mpu_presentation_time_microseconds;
     global_video_packet_id = video_packet_id;
+
 //    at3DrvIntf_ptr->LogMsgF("atsc3_mmt_signalling_information_on_video_packet_id_with_mpu_timestamp_descriptor_ndk: packet_id: %u, mpu_sequence_number: %u, setting last_mpu_timestamp: %llu",
 //            video_packet_id,
 //            mpu_sequence_number,
 //            last_mpu_timestamp);
+
+     at3DrvIntf_ptr->atsc3_signallingContext_notify_video_packet_id_and_mpu_timestamp_descriptor(video_packet_id, mpu_sequence_number, mpu_presentation_time_ntp64, mpu_presentation_time_seconds, mpu_presentation_time_microseconds);
+}
+
+void atsc3_mmt_signalling_information_on_audio_packet_id_with_mpu_timestamp_descriptor_ndk(uint16_t audio_packet_id, uint32_t mpu_sequence_number, uint64_t mpu_presentation_time_ntp64, uint32_t mpu_presentation_time_seconds, uint32_t mpu_presentation_time_microseconds) {
+    last_mpu_timestamp = mpu_presentation_time_seconds * 1000000 + mpu_presentation_time_microseconds;
+    global_audio_packet_id = audio_packet_id;
+
+//    at3DrvIntf_ptr->LogMsgF("atsc3_mmt_signalling_information_on_audio_packet_id_with_mpu_timestamp_descriptor_ndk: packet_id: %u, mpu_sequence_number: %u, setting last_mpu_timestamp: %llu",
+//            audio_packet_id,
+//            mpu_sequence_number,
+//            last_mpu_timestamp);
+    at3DrvIntf_ptr->atsc3_signallingContext_notify_audio_packet_id_and_mpu_timestamp_descriptor(audio_packet_id, mpu_sequence_number, mpu_presentation_time_ntp64, mpu_presentation_time_seconds, mpu_presentation_time_microseconds);
+}
+
+void atsc3_mmt_signalling_information_on_stpp_packet_id_with_mpu_timestamp_descriptor_ndk(uint16_t stpp_packet_id, uint32_t mpu_sequence_number, uint64_t mpu_presentation_time_ntp64, uint32_t mpu_presentation_time_seconds, uint32_t mpu_presentation_time_microseconds) {
+    last_mpu_timestamp = mpu_presentation_time_seconds * 1000000 + mpu_presentation_time_microseconds;
+    global_stpp_packet_id = stpp_packet_id;
+
+//    at3DrvIntf_ptr->LogMsgF("atsc3_mmt_signalling_information_on_stpp_packet_id_with_mpu_timestamp_descriptor_ndk: packet_id: %u, mpu_sequence_number: %u, setting last_mpu_timestamp: %llu",
+//            stpp_packet_id,
+//            mpu_sequence_number,
+//            last_mpu_timestamp);
+    at3DrvIntf_ptr->atsc3_signallingContext_notify_stpp_packet_id_and_mpu_timestamp_descriptor(stpp_packet_id, mpu_sequence_number, mpu_presentation_time_ntp64, mpu_presentation_time_seconds, mpu_presentation_time_microseconds);
 }
 
 void atsc3_mmt_mpu_mfu_on_sample_complete_ndk(uint16_t packet_id, uint32_t mpu_sequence_number, uint32_t sample_number, block_t* mmt_mfu_sample) {
@@ -510,17 +540,15 @@ void atsc3_mmt_mpu_mfu_on_sample_complete_ndk(uint16_t packet_id, uint32_t mpu_s
                                     block_len);
 
         }
-        at3DrvIntf_ptr->onMfuPacket(mpu_sequence_number, packet_id == global_video_packet_id,
-                                    sample_number, block_ptr, block_len, last_mpu_timestamp);
+        at3DrvIntf_ptr->atsc3_onMfuPacket(packet_id, mpu_sequence_number, sample_number, block_ptr, block_len, last_mpu_timestamp);
 
         block_Release(&mmt_mfu_sample_rbsp);
     } else {
         uint8_t *block_ptr = block_Get(mmt_mfu_sample);
         uint32_t block_len = block_Len(mmt_mfu_sample);
 
-        //audio doesn't have NAL's
-        at3DrvIntf_ptr->onMfuPacket(mpu_sequence_number, packet_id == global_video_packet_id,
-                                    sample_number, block_ptr, block_len, last_mpu_timestamp);
+        //audio and stpp don't need NAL start codes
+        at3DrvIntf_ptr->atsc3_onMfuPacket(packet_id, mpu_sequence_number, sample_number, block_ptr, block_len, last_mpu_timestamp);
     }
 
     block_Release(&mmt_mfu_sample);
@@ -545,7 +573,14 @@ void atsc3_phy_mmt_player_bridge_init(At3DrvIntf* At3DrvIntf_ptr) {
     atsc3_mmt_mfu_context->atsc3_mmt_mpu_on_sequence_mpu_metadata_present = &atsc3_mmt_mpu_on_sequence_mpu_metadata_present_ndk;
     atsc3_mmt_mfu_context->atsc3_mmt_mpu_mfu_on_sample_complete = &atsc3_mmt_mpu_mfu_on_sample_complete_ndk;
     atsc3_mmt_mfu_context->atsc3_mmt_mpu_mfu_on_sample_corrupt = &atsc3_mmt_mpu_mfu_on_sample_complete_ndk;
+
+    /*
+     * TODO: jjustman-2019-10-20 - extend context callback interface with service_id
+     */
     atsc3_mmt_mfu_context->atsc3_mmt_signalling_information_on_video_packet_id_with_mpu_timestamp_descriptor = &atsc3_mmt_signalling_information_on_video_packet_id_with_mpu_timestamp_descriptor_ndk;
+    atsc3_mmt_mfu_context->atsc3_mmt_signalling_information_on_audio_packet_id_with_mpu_timestamp_descriptor = &atsc3_mmt_signalling_information_on_video_packet_id_with_mpu_timestamp_descriptor_ndk;
+    atsc3_mmt_mfu_context->atsc3_mmt_signalling_information_on_stpp_packet_id_with_mpu_timestamp_descriptor  = &atsc3_mmt_signalling_information_on_video_packet_id_with_mpu_timestamp_descriptor_ndk;
+
     at3DrvIntf_ptr->LogMsg("atsc3_phy_mmt_player_bridge_init - completed");
 
 }
