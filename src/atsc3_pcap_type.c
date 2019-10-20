@@ -151,7 +151,6 @@ atsc3_pcap_replay_context_t* atsc3_pcap_replay_usleep_packet(atsc3_pcap_replay_c
 
 	if(atsc3_pcap_replay_context_to_iterate->last_packet_ts_sec || atsc3_pcap_replay_context_to_iterate->last_packet_ts_usec) {
 
-
 		struct timeval last_packet_timeval;
 		last_packet_timeval.tv_sec = atsc3_pcap_replay_context_to_iterate->last_packet_ts_sec;
 		last_packet_timeval.tv_usec = atsc3_pcap_replay_context_to_iterate->last_packet_ts_usec;
@@ -177,7 +176,8 @@ atsc3_pcap_replay_context_t* atsc3_pcap_replay_usleep_packet(atsc3_pcap_replay_c
 			wallclock_runtime_packet_capture_ts_differentialUS = packet_runtime_us - wallclock_runtime_us;
 		}
 
-		if(wallclock_runtime_packet_capture_ts_differentialUS > 1) {
+        //jjustman-2019-10-19 - only trigger usleep if our differential is greater than 2000uS (2ms)
+		if(wallclock_runtime_packet_capture_ts_differentialUS > 2000) {
             _ATSC3_PCAP_TYPE_INFO("pcap timing information: current packet timeval: s.us: %ld.%ld, last packet timeval: s.us: %ld.%ld, target sleep duration uS: %lld",
                   current_packet_timeval.tv_sec,
                   current_packet_timeval.tv_usec,
@@ -212,9 +212,32 @@ atsc3_pcap_replay_context_t* atsc3_pcap_replay_usleep_packet(atsc3_pcap_replay_c
 		gettimeofday(&atsc3_pcap_replay_context_to_iterate->current_wallclock_timeval, NULL);
 		atsc3_pcap_replay_context_to_iterate->last_wallclock_timeval.tv_sec = atsc3_pcap_replay_context_to_iterate->current_wallclock_timeval.tv_sec;
 		atsc3_pcap_replay_context_to_iterate->last_wallclock_timeval.tv_usec = atsc3_pcap_replay_context_to_iterate->current_wallclock_timeval.tv_usec;
-
 	}
 
-
     return atsc3_pcap_replay_context_to_iterate;
+}
+
+
+void atsc3_pcap_replay_free(atsc3_pcap_replay_context_t** atsc3_pcap_replay_context_p) {
+	if(atsc3_pcap_replay_context_p) {
+		atsc3_pcap_replay_context_t* atsc3_pcap_replay_context = *atsc3_pcap_replay_context_p;
+		if(atsc3_pcap_replay_context) {
+			if(atsc3_pcap_replay_context->pcap_file_name) {
+				free(atsc3_pcap_replay_context->pcap_file_name);
+				atsc3_pcap_replay_context->pcap_file_name = NULL;
+			}
+
+			if(atsc3_pcap_replay_context->pcap_fp) {
+				fclose(atsc3_pcap_replay_context->pcap_fp);
+				atsc3_pcap_replay_context->pcap_fp = NULL;
+			}
+
+			if(atsc3_pcap_replay_context->atsc3_pcap_packet_instance.current_pcap_packet) {
+				block_Destroy(&atsc3_pcap_replay_context->atsc3_pcap_packet_instance.current_pcap_packet);
+			}
+
+			free(atsc3_pcap_replay_context);
+		}
+		*atsc3_pcap_replay_context_p = NULL;
+	}
 }
