@@ -121,10 +121,12 @@ typedef struct atsc3_pcap_replay_context {
 
 	atsc3_pcap_packet_instance_t	atsc3_pcap_packet_instance;
 
-	//struct timeval 				pcap_open_timeval; //?
+	struct timeval 					first_wallclock_timeval;
+	struct timeval 					first_packet_ts_timeval;
 
 	struct timeval 					last_wallclock_timeval;
 	struct timeval 					current_wallclock_timeval;
+
 	struct timeval					delay_delta_timeval;
 
 	uint32_t						last_packet_ts_sec;

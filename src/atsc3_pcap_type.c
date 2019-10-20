@@ -86,6 +86,10 @@ atsc3_pcap_replay_context_t* atsc3_pcap_replay_open_from_fd(const char* pcap_fil
 }
 
 atsc3_pcap_replay_context_t* atsc3_pcap_replay_iterate_packet(atsc3_pcap_replay_context_t* atsc3_pcap_replay_context_to_iterate) {
+	if(!atsc3_pcap_replay_context_to_iterate->first_wallclock_timeval.tv_sec && !atsc3_pcap_replay_context_to_iterate->first_wallclock_timeval.tv_usec) {
+		gettimeofday(&atsc3_pcap_replay_context_to_iterate->first_wallclock_timeval, NULL);
+	}
+
 	if(atsc3_pcap_replay_context_to_iterate->pcap_file_pos + ATSC3_PCAP_MIN_GLOBAL_AND_PACKET_AND_ETH_HEADER_LENGTH > atsc3_pcap_replay_context_to_iterate->pcap_file_len) {
 		return NULL;
 	}
@@ -110,12 +114,18 @@ atsc3_pcap_replay_context_t* atsc3_pcap_replay_iterate_packet(atsc3_pcap_replay_
     //sizeof(atsc3_pcap_packet_header_t) ->
 	fread((void*)&atsc3_pcap_replay_context_to_iterate->atsc3_pcap_packet_instance.atsc3_pcap_packet_header, ATSC3_PCAP_PACKET_HEADER_SIZE_BYTES, 1, atsc3_pcap_replay_context_to_iterate->pcap_fp);
 
+	//keep track of our "last" packet ts
 	atsc3_pcap_replay_context_to_iterate->last_packet_ts_sec = atsc3_pcap_replay_context_to_iterate->current_packet_ts_sec;
 	atsc3_pcap_replay_context_to_iterate->last_packet_ts_usec = atsc3_pcap_replay_context_to_iterate->current_packet_ts_usec;
 
-	//remap to host byte order?
+	//assign our "current" packet ts
 	atsc3_pcap_replay_context_to_iterate->current_packet_ts_sec = atsc3_pcap_replay_context_to_iterate->atsc3_pcap_packet_instance.atsc3_pcap_packet_header.ts_sec;
 	atsc3_pcap_replay_context_to_iterate->current_packet_ts_usec = atsc3_pcap_replay_context_to_iterate->atsc3_pcap_packet_instance.atsc3_pcap_packet_header.ts_usec;
+
+	if(!atsc3_pcap_replay_context_to_iterate->first_packet_ts_timeval.tv_sec && !atsc3_pcap_replay_context_to_iterate->first_packet_ts_timeval.tv_usec) {
+		atsc3_pcap_replay_context_to_iterate->first_packet_ts_timeval.tv_sec = atsc3_pcap_replay_context_to_iterate->current_packet_ts_sec;
+		atsc3_pcap_replay_context_to_iterate->first_packet_ts_timeval.tv_usec = atsc3_pcap_replay_context_to_iterate->current_packet_ts_usec;
+	}
 
 	atsc3_pcap_replay_context_to_iterate->pcap_file_pos += sizeof(atsc3_pcap_global_header_t) + sizeof(atsc3_pcap_packet_header_t);
 
@@ -138,17 +148,9 @@ atsc3_pcap_replay_context_t* atsc3_pcap_replay_iterate_packet(atsc3_pcap_replay_
 
 
 atsc3_pcap_replay_context_t* atsc3_pcap_replay_usleep_packet(atsc3_pcap_replay_context_t* atsc3_pcap_replay_context_to_iterate) {
-	atsc3_pcap_replay_context_to_iterate->last_wallclock_timeval = atsc3_pcap_replay_context_to_iterate->current_wallclock_timeval;
 
 	if(atsc3_pcap_replay_context_to_iterate->last_packet_ts_sec || atsc3_pcap_replay_context_to_iterate->last_packet_ts_usec) {
 
-		struct timeval skew_wallclock_timeval;
-		gettimeofday(&skew_wallclock_timeval, NULL);
-
-		//compute our internal wall-clock differential for skew
-		//		gettimeofday(&time_now, NULL);
-		//todo: jjustman-2019-10-10
-		long long delta_and_skew_wallClockUs = timediff(skew_wallclock_timeval, atsc3_pcap_replay_context_to_iterate->last_wallclock_timeval);
 
 		struct timeval last_packet_timeval;
 		last_packet_timeval.tv_sec = atsc3_pcap_replay_context_to_iterate->last_packet_ts_sec;
@@ -158,13 +160,61 @@ atsc3_pcap_replay_context_t* atsc3_pcap_replay_usleep_packet(atsc3_pcap_replay_c
 		current_packet_timeval.tv_sec = atsc3_pcap_replay_context_to_iterate->current_packet_ts_sec;
 		current_packet_timeval.tv_usec = atsc3_pcap_replay_context_to_iterate->current_packet_ts_usec;
 
+		//compute our service time internal wall-clock differential for skew based upon our first wallclock timeval and first_packet_ts_timeval
+		//against current_wallclock and current packet ts
+		//should have used pointers...:/
 
-		long long packet_capture_ts_differentialUS = timediff(current_packet_timeval, last_packet_timeval);
+		long long wallclock_runtime_packet_capture_ts_differentialUS = 0;
+        gettimeofday(&atsc3_pcap_replay_context_to_iterate->current_wallclock_timeval, NULL);
 
-		usleep(packet_capture_ts_differentialUS);
+        if((atsc3_pcap_replay_context_to_iterate->first_wallclock_timeval.tv_sec || atsc3_pcap_replay_context_to_iterate->first_wallclock_timeval.tv_usec) &&
+			(atsc3_pcap_replay_context_to_iterate->first_packet_ts_timeval.tv_sec || atsc3_pcap_replay_context_to_iterate->first_packet_ts_timeval.tv_usec) &&
+			(last_packet_timeval.tv_sec || last_packet_timeval.tv_usec)) {
+
+			long long wallclock_runtime_us = timediff(atsc3_pcap_replay_context_to_iterate->current_wallclock_timeval, atsc3_pcap_replay_context_to_iterate->first_wallclock_timeval);
+			long long packet_runtime_us = timediff(current_packet_timeval, atsc3_pcap_replay_context_to_iterate->first_packet_ts_timeval);
+
+			wallclock_runtime_packet_capture_ts_differentialUS = packet_runtime_us - wallclock_runtime_us;
+		}
+
+		if(wallclock_runtime_packet_capture_ts_differentialUS > 1) {
+            _ATSC3_PCAP_TYPE_INFO("pcap timing information: current packet timeval: s.us: %ld.%ld, last packet timeval: s.us: %ld.%ld, target sleep duration uS: %lld",
+                  current_packet_timeval.tv_sec,
+                  current_packet_timeval.tv_usec,
+                  last_packet_timeval.tv_sec,
+                  last_packet_timeval.tv_usec,
+                  wallclock_runtime_packet_capture_ts_differentialUS);
+
+            //nanosleep intead of usleep(packet_capture_ts_differentialUS);
+            struct timespec rqtp, rmtp;
+
+            rqtp.tv_sec = wallclock_runtime_packet_capture_ts_differentialUS / 1000000;
+            rqtp.tv_nsec = (wallclock_runtime_packet_capture_ts_differentialUS % 1000000) * 1000;
+
+            _ATSC3_PCAP_TYPE_INFO("setting nanosleep to s: %ld, ns: %ld", rqtp.tv_sec, rqtp.tv_nsec);
+            int ret = nanosleep(&rqtp, &rmtp);
+
+            if(ret != 0) {
+                //signal interruption,
+                _ATSC3_PCAP_TYPE_INFO("nanosleep returned: %d, sleep duration actual: s: %ld, ns: %ld", ret, rmtp.tv_sec, rmtp.tv_nsec);
+            }
+        } else {
+            //falling behind
+            _ATSC3_PCAP_TYPE_WARN("pcap timing falling behind: current packet timeval: s.us: %ld.%ld  last packet timeval: s.us: %ld.%ld  wallclock_runtime_packet_capture_ts_differentialUS: %lld, sleep would be negative!",
+                    current_packet_timeval.tv_sec,
+                    current_packet_timeval.tv_usec,
+                    last_packet_timeval.tv_sec,
+                    last_packet_timeval.tv_usec,
+                    wallclock_runtime_packet_capture_ts_differentialUS);
+            //don't update atsc3_pcap_replay_context_to_iterate->current_wallclock_timeval as we are still behind...
+        }
+
+		gettimeofday(&atsc3_pcap_replay_context_to_iterate->current_wallclock_timeval, NULL);
+		atsc3_pcap_replay_context_to_iterate->last_wallclock_timeval.tv_sec = atsc3_pcap_replay_context_to_iterate->current_wallclock_timeval.tv_sec;
+		atsc3_pcap_replay_context_to_iterate->last_wallclock_timeval.tv_usec = atsc3_pcap_replay_context_to_iterate->current_wallclock_timeval.tv_usec;
 
 	}
 
-	gettimeofday(&atsc3_pcap_replay_context_to_iterate->current_wallclock_timeval, NULL);
-	return atsc3_pcap_replay_context_to_iterate;
+
+    return atsc3_pcap_replay_context_to_iterate;
 }
