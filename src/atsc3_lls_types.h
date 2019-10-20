@@ -110,7 +110,7 @@ See Annex F Sec. 6.4 Sec. 6.5 Sec. 6.6
 /**
  TODO: jjustman-2019-09-18 - move to block_t
  **/
-typedef struct llt_xml_payload {
+typedef struct lls_xml_payload {
 	uint8_t 	*xml_payload_compressed;
 	uint32_t 	xml_payload_compressed_size;
 	uint8_t 	*xml_payload;
@@ -349,6 +349,8 @@ typedef struct atsc3_lls_slt_service {
 	ATSC3_VECTOR_BUILDER_STRUCT(atsc3_slt_other_bsid); 					//0..N, Identifier(s) of other Broadcast Stream(s) that deliver duplicates or portions of this Service.
 
 } atsc3_lls_slt_service_t;
+
+typedef atsc3_lls_slt_service_t atsc3_lls_slt_service_cache_t;
 
 ATSC3_VECTOR_BUILDER_METHODS_INTERFACE(atsc3_lls_slt_service, atsc3_slt_simulcast_tsid);
 ATSC3_VECTOR_BUILDER_METHODS_INTERFACE(atsc3_lls_slt_service, atsc3_slt_svc_capabilities);
@@ -685,7 +687,12 @@ typedef struct lls_slt_service_id {
 	struct timeval				time_last_slt_update;
 } lls_slt_service_id_t;
 
-lls_slt_service_id_t* lls_slt_service_id_new_from_atsc3_lls_slt_service(atsc3_lls_slt_service_t* atsc3_lls_slt_service);
+typedef struct lls_slt_service_id_group_id_cache {
+	uint8_t 	lls_group_id;
+	ATSC3_VECTOR_BUILDER_STRUCT(atsc3_lls_slt_service_cache);
+} lls_slt_service_id_group_id_cache_t;
+
+ATSC3_VECTOR_BUILDER_METHODS_INTERFACE(lls_slt_service_id_group_id_cache, atsc3_lls_slt_service_cache);
 
 
 typedef struct lls_slt_monitor {
@@ -711,6 +718,9 @@ typedef struct lls_slt_monitor {
 
     //LATEST:	last successfully processed SLT table
 	lls_table_t* lls_latest_slt_table;
+
+	//jjustman-2019-10-19: todo: keep track of lls_slt tables by group_id
+	ATSC3_VECTOR_BUILDER_STRUCT(lls_slt_service_id_group_id_cache);
     
     //LATEST: 	last successfully processed AEAT table
 	//			use this against aeat_table_latest.atsc3_aeat_table_t
@@ -734,6 +744,17 @@ ATSC3_VECTOR_BUILDER_METHODS_INTERFACE(lls_slt_monitor, lls_sls_mmt_session_flow
 
 ATSC3_VECTOR_BUILDER_METHODS_INTERFACE(lls_slt_monitor, lls_sls_alc_monitor);
 ATSC3_VECTOR_BUILDER_METHODS_INTERFACE(lls_slt_monitor, lls_sls_alc_session_flows);
+ATSC3_VECTOR_BUILDER_METHODS_INTERFACE(lls_slt_monitor, lls_slt_service_id_group_id_cache);
+
+
+
+lls_slt_service_id_t* lls_slt_service_id_new_from_atsc3_lls_slt_service(atsc3_lls_slt_service_t* atsc3_lls_slt_service);
+
+lls_slt_service_id_group_id_cache_t* lls_slt_monitor_find_lls_slt_service_id_group_id_cache_from_lls_group_id(lls_slt_monitor_t* lls_slt_monitor, uint8_t lls_group_id);
+lls_slt_service_id_group_id_cache_t* lls_slt_monitor_find_or_create_lls_slt_service_id_group_id_cache_from_lls_group_id(lls_slt_monitor_t* lls_slt_monitor, uint8_t lls_group_id);
+atsc3_lls_slt_service_t* lls_slt_monitor_add_lls_slt_service_id_group_id_cache_entry(lls_slt_monitor_t* lls_slt_monitor, uint16_t lls_group_id, atsc3_lls_slt_service_t* atsc3_lls_slt_service);
+atsc3_lls_slt_service_t* lls_slt_monitor_find_lls_slt_service_id_group_id_cache_entry(lls_slt_monitor_t* lls_slt_monitor, uint16_t service_id);
+
 
 
 
