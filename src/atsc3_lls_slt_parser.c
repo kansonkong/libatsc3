@@ -244,6 +244,8 @@ int lls_slt_table_perform_update(lls_table_t* lls_table, lls_slt_monitor_t* lls_
 
 		atsc3_lls_slt_service_t* atsc3_lls_slt_service = lls_table->slt_table.atsc3_lls_slt_service_v.data[i];
 
+		lls_slt_monitor_add_or_update_lls_slt_service_id_group_id_cache_entry(lls_slt_monitor, lls_table->lls_group_id, atsc3_lls_slt_service);
+
 		__LLS_SLT_PARSER_DEBUG("checking service: %d", atsc3_lls_slt_service->service_id);
 
 		if(atsc3_lls_slt_service->atsc3_slt_broadcast_svc_signalling_v.count) {
