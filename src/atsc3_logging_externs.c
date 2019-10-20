@@ -12,6 +12,26 @@
 FILE* __DEBUG_LOG_FILE = NULL;
 bool  __DEBUG_LOG_AVAILABLE = true;
 
+
+#ifdef __LIBATSC3_ANDROID__
+#include <android/log.h>
+
+#define __ATSC3_ANDROID_LOG_MSG_BUFF_LEN 1024
+char __atsc3_android_lsg_msg_buff[__ATSC3_ANDROID_LOG_MSG_BUFF_LEN] = {0};
+
+//overload printf to write to android logs
+int printf(const char *format, ...)  {
+    va_list argptr;
+    va_start(argptr, format);
+    //vsnprintf(__atsc3_android_lsg_msg_buff, __ATSC3_ANDROID_LOG_MSG_BUFF_LEN -1, format, argptr),
+    __android_log_vprint(ANDROID_LOG_DEBUG, "NDK", format, argptr);
+    va_end(argptr);
+
+    return 0;
+}
+#define printf(...) __android_log_print(ANDROID_LOG_DEBUG, "TAG", __VA_ARGS__);
+
+#else
 #ifndef _TEST_RUN_VALGRIND_OSX_
 
 #ifndef __DISABLE_NCURSES__
@@ -36,5 +56,5 @@ int printf(const char *format, ...)  {
 }
 
 #endif
-
+#endif
 #endif
