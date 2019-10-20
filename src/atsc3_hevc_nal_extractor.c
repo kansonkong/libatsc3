@@ -7,9 +7,9 @@
 
 #include "atsc3_hevc_nal_extractor.h"
 
-int _ATSC3_HEVC_NAL_EXTRACTOR_INFO_ENABLED = 1;
-int _ATSC3_HEVC_NAL_EXTRACTOR_DEBUG_ENABLED = 1;
-int _ATSC3_HEVC_NAL_EXTRACTOR_TRACE_ENABLED = 1;
+int _ATSC3_HEVC_NAL_EXTRACTOR_INFO_ENABLED = 0;
+int _ATSC3_HEVC_NAL_EXTRACTOR_DEBUG_ENABLED = 0;
+int _ATSC3_HEVC_NAL_EXTRACTOR_TRACE_ENABLED = 0;
 
 //default atsc3_vector_builder collection for hevc nal types
 
