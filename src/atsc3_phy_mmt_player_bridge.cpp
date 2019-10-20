@@ -43,6 +43,7 @@ At3DrvIntf* at3DrvIntf_ptr;
 #include "atsc3_mmt_context_mfu_depacketizer.h"
 
 #include "atsc3_hevc_nal_extractor.h"
+#include "atsc3_lls_types.h"
 
 
 //commandline stream filtering
@@ -91,6 +92,66 @@ void mmtp_process_sls_from_payload(udp_packet_t *udp_packet, mmtp_signalling_pac
     mmt_signalling_message_dump(mmtp_signalling_packet);
 }
 
+atsc3_lls_slt_service_t* atsc3_phy_mmt_player_bridge_set_single_monitor_a331_service_id(int service_id) {
+    __INFO("atsc3_phy_mmt_player_bridge_set_a331_service_id: with service_id: %d", service_id);
+    //find our matching LLS service, then assign a monitor reference
+
+    atsc3_lls_slt_service_t* atsc3_lls_slt_service = lls_slt_monitor_find_lls_slt_service_id_group_id_cache_entry(lls_slt_monitor, service_id);
+    if(!atsc3_lls_slt_service) {
+        __ERROR("atsc3_phy_mmt_player_bridge_set_a331_service_id: unable to find service_id: %d", service_id);
+        return NULL;
+    }
+
+    //jjustman-2019-10-19: todo: refactor this out
+    atsc3_slt_broadcast_svc_signalling_t* atsc3_slt_broadcast_svc_signalling = NULL;
+    atsc3_slt_broadcast_svc_signalling_t* atsc3_slt_broadcast_svc_signalling_mmt = NULL;
+    atsc3_slt_broadcast_svc_signalling_t* atsc3_slt_broadcast_svc_signalling_route = NULL;
+
+    for(int i=0; i < atsc3_lls_slt_service->atsc3_slt_broadcast_svc_signalling_v.count; i++) {
+        atsc3_slt_broadcast_svc_signalling = atsc3_lls_slt_service->atsc3_slt_broadcast_svc_signalling_v.data[i];
+        if(atsc3_slt_broadcast_svc_signalling->sls_protocol == SLS_PROTOCOL_MMTP) {
+            atsc3_slt_broadcast_svc_signalling_mmt = atsc3_slt_broadcast_svc_signalling;
+        } else if(atsc3_slt_broadcast_svc_signalling->sls_protocol == SLS_PROTOCOL_ROUTE) {
+            __WARN("atsc3_phy_mmt_player_bridge_set_a331_service_id: service_id: %d - sls_protocol == ROUTE, TODO!", service_id);
+            atsc3_slt_broadcast_svc_signalling_route = atsc3_slt_broadcast_svc_signalling;
+        }
+    }
+
+    if(atsc3_slt_broadcast_svc_signalling_mmt != NULL) {
+        __INFO("atsc3_phy_mmt_player_bridge_set_a331_service_id: service_id: %d - using MMT with flow: sip: %s, dip: %s:%s",
+               service_id,
+               atsc3_slt_broadcast_svc_signalling_mmt->sls_source_ip_address,
+               atsc3_slt_broadcast_svc_signalling_mmt->sls_destination_ip_address,
+               atsc3_slt_broadcast_svc_signalling_mmt->sls_destination_udp_port);
+
+        //clear any active SLS monitors
+        lls_slt_monitor_clear_lls_sls_mmt_monitor(lls_slt_monitor);
+        lls_slt_monitor_clear_lls_sls_alc_monitor(lls_slt_monitor);
+
+        lls_sls_mmt_monitor = lls_sls_mmt_monitor_create();
+        lls_sls_mmt_monitor->atsc3_lls_slt_service = atsc3_lls_slt_service; //HACK!
+        lls_slt_service_id_t* lls_slt_service_id = lls_slt_service_id_new_from_atsc3_lls_slt_service(atsc3_lls_slt_service);
+
+        lls_slt_monitor_add_lls_slt_service_id(lls_slt_monitor, lls_slt_service_id);
+
+        //we may not be initialized yet, so re-check again later
+        //this should _never_happen...
+        lls_sls_mmt_session_t* lls_sls_mmt_session = lls_slt_mmt_session_find_from_service_id(lls_slt_monitor, atsc3_lls_slt_service->service_id);
+
+        if(!lls_sls_mmt_session) {
+            __WARN("lls_slt_mmt_session_find_from_service_id: lls_sls_mmt_session is NULL!");
+        }
+        lls_sls_mmt_monitor->lls_mmt_session = lls_sls_mmt_session;
+        lls_slt_monitor->lls_sls_mmt_monitor = lls_sls_mmt_monitor;
+
+        lls_slt_monitor_add_lls_sls_mmt_monitor(lls_slt_monitor, lls_sls_mmt_monitor);
+
+
+    }
+
+    return atsc3_lls_slt_service;
+}
+
 //void process_packet(u_char *user, const struct pcap_pkthdr *pkthdr, const u_char *packet) {
 void atsc3_phy_mmt_player_bridge_process_packet_phy(block_t* packet) {
 
@@ -129,6 +190,7 @@ void atsc3_phy_mmt_player_bridge_process_packet_phy(block_t* packet) {
                             if(lls_sls_mmt_monitor) {
                                 //re-configure
                             } else {
+                                //jjustman-2019-10-19: TODO: refactor this out from above also ^^^ - atsc3_phy_mmt_player_bridge_set_single_monitor_a331_service_id
                                 //TODO:  make sure we don't early free this...
                                 //lls_service->broadcast_svc_signaling.sls_destination_ip_address && lls_service->broadcast_svc_signaling.sls_destination_udp_port
                                 //match our dst_ip_addr_filter && udp_packet->udp_flow.dst_ip_addr != *dst_ip_addr_filter and port filter
