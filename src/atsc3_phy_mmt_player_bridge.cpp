@@ -516,7 +516,7 @@ void atsc3_mmt_signalling_information_on_stpp_packet_id_with_mpu_timestamp_descr
     at3DrvIntf_ptr->atsc3_signallingContext_notify_stpp_packet_id_and_mpu_timestamp_descriptor(stpp_packet_id, mpu_sequence_number, mpu_presentation_time_ntp64, mpu_presentation_time_seconds, mpu_presentation_time_microseconds);
 }
 
-void atsc3_mmt_mpu_mfu_on_sample_complete_ndk(uint16_t packet_id, uint32_t mpu_sequence_number, uint32_t sample_number, block_t* mmt_mfu_sample) {
+void atsc3_mmt_mpu_mfu_on_sample_complete_ndk(uint16_t packet_id, uint32_t mpu_sequence_number, uint32_t sample_number, block_t* mmt_mfu_sample, uint32_t mfu_fragment_count_rebuilt) {
     //    void onMfuPacket(bool is_video, uint8_t* buffer, uint32_t bufferLen, uint64_t presentationUs);
 //    at3DrvIntf_ptr->LogMsgF("atsc3_mmt_mpu_mfu_on_sample_complete_ndk: packet_id: %u, mpu_sequence_number: %u, sample_number: %u, size: %u, last_mpu_timestamp: %llu",
 //                packet_id,
@@ -540,7 +540,7 @@ void atsc3_mmt_mpu_mfu_on_sample_complete_ndk(uint16_t packet_id, uint32_t mpu_s
                                     block_len);
 
         }
-        at3DrvIntf_ptr->atsc3_onMfuPacket(packet_id, mpu_sequence_number, sample_number, block_ptr, block_len, last_mpu_timestamp);
+        at3DrvIntf_ptr->atsc3_onMfuPacket(packet_id, mpu_sequence_number, sample_number, block_ptr, block_len, last_mpu_timestamp, mfu_fragment_count_rebuilt);
 
         block_Release(&mmt_mfu_sample_rbsp);
     } else {
@@ -548,11 +548,89 @@ void atsc3_mmt_mpu_mfu_on_sample_complete_ndk(uint16_t packet_id, uint32_t mpu_s
         uint32_t block_len = block_Len(mmt_mfu_sample);
 
         //audio and stpp don't need NAL start codes
-        at3DrvIntf_ptr->atsc3_onMfuPacket(packet_id, mpu_sequence_number, sample_number, block_ptr, block_len, last_mpu_timestamp);
+        at3DrvIntf_ptr->atsc3_onMfuPacket(packet_id, mpu_sequence_number, sample_number, block_ptr, block_len, last_mpu_timestamp, mfu_fragment_count_rebuilt);
     }
 
     block_Release(&mmt_mfu_sample);
 
+}
+
+
+void atsc3_mmt_mpu_mfu_on_sample_corrupt_ndk(uint16_t packet_id, uint32_t mpu_sequence_number, uint32_t sample_number, block_t* mmt_mfu_sample, uint32_t mfu_fragment_count_expected, uint32_t mfu_fragment_count_rebuilt) {
+    //    void onMfuPacket(bool is_video, uint8_t* buffer, uint32_t bufferLen, uint64_t presentationUs);
+//    at3DrvIntf_ptr->LogMsgF("atsc3_mmt_mpu_mfu_on_sample_complete_ndk: packet_id: %u, mpu_sequence_number: %u, sample_number: %u, size: %u, last_mpu_timestamp: %llu",
+//                packet_id,
+//                mpu_sequence_number,
+//                sample_number,
+//                mmt_mfu_sample->p_size,
+//                last_mpu_timestamp);
+
+    //cant process MFU's without the NAL... we should ALWAYS listen for at least mpu metadata
+    //in as many MMT flows as possible
+
+    if(__INTERNAL_LAST_NAL_PACKET_TODO_FIXME && packet_id == global_video_packet_id) {
+        block_t *mmt_mfu_sample_rbsp = atsc3_hevc_extract_mp4toannexb_filter_ffmpegImpl(mmt_mfu_sample, __INTERNAL_LAST_NAL_PACKET_TODO_FIXME);
+        uint8_t *block_ptr = block_Get(mmt_mfu_sample_rbsp);
+        uint32_t block_len = block_Len(mmt_mfu_sample_rbsp);
+
+        if((global_mfu_proccessed_count++ % 600) == 0) {
+            at3DrvIntf_ptr->LogMsgF("atsc3_mmt_mpu_mfu_on_sample_complete_ndk: total mfu count: %d, packet_id: %d, mpu: %d, sample: %d, orig len: %d, len: %d",
+                                    global_mfu_proccessed_count,
+                                    packet_id, mpu_sequence_number, sample_number, block_Len(mmt_mfu_sample),
+                                    block_len);
+
+        }
+        at3DrvIntf_ptr->atsc3_onMfuPacketCorrupt(packet_id, mpu_sequence_number, sample_number, block_ptr, block_len, last_mpu_timestamp, mfu_fragment_count_expected, mfu_fragment_count_rebuilt);
+
+        block_Release(&mmt_mfu_sample_rbsp);
+    } else {
+        uint8_t *block_ptr = block_Get(mmt_mfu_sample);
+        uint32_t block_len = block_Len(mmt_mfu_sample);
+
+        //audio and stpp don't need NAL start codes
+        at3DrvIntf_ptr->atsc3_onMfuPacketCorrupt(packet_id, mpu_sequence_number, sample_number, block_ptr, block_len, last_mpu_timestamp, mfu_fragment_count_expected, mfu_fragment_count_rebuilt);
+    }
+
+    block_Release(&mmt_mfu_sample);
+}
+
+
+void atsc3_mmt_mpu_mfu_on_sample_corrupt_mmthsample_header_ndk(uint16_t packet_id, uint32_t mpu_sequence_number, uint32_t sample_number, block_t* mmt_mfu_sample, uint32_t mfu_fragment_count_expected, uint32_t mfu_fragment_count_rebuilt) {
+    //    void onMfuPacket(bool is_video, uint8_t* buffer, uint32_t bufferLen, uint64_t presentationUs);
+//    at3DrvIntf_ptr->LogMsgF("atsc3_mmt_mpu_mfu_on_sample_complete_ndk: packet_id: %u, mpu_sequence_number: %u, sample_number: %u, size: %u, last_mpu_timestamp: %llu",
+//                packet_id,
+//                mpu_sequence_number,
+//                sample_number,
+//                mmt_mfu_sample->p_size,
+//                last_mpu_timestamp);
+
+    //cant process MFU's without the NAL... we should ALWAYS listen for at least mpu metadata
+    //in as many MMT flows as possible
+
+    if(__INTERNAL_LAST_NAL_PACKET_TODO_FIXME && packet_id == global_video_packet_id) {
+        block_t *mmt_mfu_sample_rbsp = atsc3_hevc_extract_mp4toannexb_filter_ffmpegImpl(mmt_mfu_sample, __INTERNAL_LAST_NAL_PACKET_TODO_FIXME);
+        uint8_t *block_ptr = block_Get(mmt_mfu_sample_rbsp);
+        uint32_t block_len = block_Len(mmt_mfu_sample_rbsp);
+
+        if((global_mfu_proccessed_count++ % 600) == 0) {
+            at3DrvIntf_ptr->LogMsgF("atsc3_mmt_mpu_mfu_on_sample_complete_ndk: total mfu count: %d, packet_id: %d, mpu: %d, sample: %d, orig len: %d, len: %d",
+                                    global_mfu_proccessed_count,
+                                    packet_id, mpu_sequence_number, sample_number, block_Len(mmt_mfu_sample),
+                                    block_len);
+
+        }
+        at3DrvIntf_ptr->atsc3_onMfuPacketCorruptMmthSampleHeader(packet_id, mpu_sequence_number, sample_number, block_ptr, block_len, last_mpu_timestamp, mfu_fragment_count_expected, mfu_fragment_count_rebuilt);
+
+        block_Release(&mmt_mfu_sample_rbsp);
+    } else {
+        uint8_t *block_ptr = block_Get(mmt_mfu_sample);
+        uint32_t block_len = block_Len(mmt_mfu_sample);
+
+        //audio and stpp don't need NAL start codes
+        at3DrvIntf_ptr->atsc3_onMfuPacketCorruptMmthSampleHeader(packet_id, mpu_sequence_number, sample_number, block_ptr, block_len, last_mpu_timestamp, mfu_fragment_count_expected, mfu_fragment_count_rebuilt);
+    }
+
+    block_Release(&mmt_mfu_sample);
 }
 
 
@@ -572,7 +650,9 @@ void atsc3_phy_mmt_player_bridge_init(At3DrvIntf* At3DrvIntf_ptr) {
     //wire up atsc3_mmt_mpu_on_sequence_mpu_metadata_present to parse out our NALs as needed for android MediaCodec init
     atsc3_mmt_mfu_context->atsc3_mmt_mpu_on_sequence_mpu_metadata_present = &atsc3_mmt_mpu_on_sequence_mpu_metadata_present_ndk;
     atsc3_mmt_mfu_context->atsc3_mmt_mpu_mfu_on_sample_complete = &atsc3_mmt_mpu_mfu_on_sample_complete_ndk;
-    atsc3_mmt_mfu_context->atsc3_mmt_mpu_mfu_on_sample_corrupt = &atsc3_mmt_mpu_mfu_on_sample_complete_ndk;
+    atsc3_mmt_mfu_context->atsc3_mmt_mpu_mfu_on_sample_corrupt = &atsc3_mmt_mpu_mfu_on_sample_corrupt_ndk;
+    //todo: search thru NAL's as needed here and discard anything that intra-NAL..
+    atsc3_mmt_mfu_context->atsc3_mmt_mpu_mfu_on_sample_corrupt_mmthsample_header = &atsc3_mmt_mpu_mfu_on_sample_corrupt_mmthsample_header_ndk;
 
     /*
      * TODO: jjustman-2019-10-20 - extend context callback interface with service_id

@@ -24,8 +24,9 @@ extern "C" {
  * todo - include byte ranges for lost DU's?
  *
  */
-typedef void (*atsc3_mmt_mpu_mfu_on_sample_complete_f) (uint16_t packet_id, uint32_t mpu_sequence_number, uint32_t sample_number, block_t* mmt_mfu_sample);
-typedef void (*atsc3_mmt_mpu_mfu_on_sample_corrupt_f)  (uint16_t packet_id, uint32_t mpu_sequence_number, uint32_t sample_number, block_t* mmt_mfu_sample);
+typedef void (*atsc3_mmt_mpu_mfu_on_sample_complete_f) (uint16_t packet_id, uint32_t mpu_sequence_number, uint32_t sample_number, block_t* mmt_mfu_sample, uint32_t mfu_fragment_count_rebuilt);
+typedef void (*atsc3_mmt_mpu_mfu_on_sample_corrupt_f)  (uint16_t packet_id, uint32_t mpu_sequence_number, uint32_t sample_number, block_t* mmt_mfu_sample, uint32_t mfu_fragment_count_expected, uint32_t mfu_fragment_count_rebuilt);
+typedef void (*atsc3_mmt_mpu_mfu_on_sample_corrupt_mmthsample_header_f) (uint16_t packet_id, uint32_t mpu_sequence_number, uint32_t sample_number, block_t* mmt_mfu_sample,  uint32_t mfu_fragment_count_expected, uint32_t mfu_fragment_count_rebuilt);
 typedef void (*atsc3_mmt_mpu_mfu_on_sample_missing_f)  (uint16_t packet_id, uint32_t mpu_sequence_number, uint32_t sample_number);
 
 typedef struct atsc3_mmt_mfu_context {
@@ -60,6 +61,7 @@ typedef struct atsc3_mmt_mfu_context {
 	//MFU specific callbacks
 	atsc3_mmt_mpu_mfu_on_sample_complete_f 													atsc3_mmt_mpu_mfu_on_sample_complete;
 	atsc3_mmt_mpu_mfu_on_sample_corrupt_f 													atsc3_mmt_mpu_mfu_on_sample_corrupt;
+	atsc3_mmt_mpu_mfu_on_sample_corrupt_mmthsample_header_f									atsc3_mmt_mpu_mfu_on_sample_corrupt_mmthsample_header;
 	atsc3_mmt_mpu_mfu_on_sample_missing_f 													atsc3_mmt_mpu_mfu_on_sample_missing;
 
 } atsc3_mmt_mfu_context_t;
