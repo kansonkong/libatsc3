@@ -78,7 +78,7 @@ void atsc3_mmt_signalling_information_on_stpp_packet_id_with_mpu_timestamp_descr
 
 
 
-void atsc3_mmt_mpu_mfu_on_sample_complete_dump(uint16_t packet_id, uint32_t mpu_sequence_number, uint32_t sample_number, block_t* mmt_mfu_sample) {
+void atsc3_mmt_mpu_mfu_on_sample_complete_dump(uint16_t packet_id, uint32_t mpu_sequence_number, uint32_t sample_number, block_t* mmt_mfu_sample, uint32_t mfu_fragment_count_rebuilt) {
 	if(packet_id != atsc3_mmt_context_stpp_packet_id_for_testing) {
 		return;
 	}
@@ -109,7 +109,7 @@ void atsc3_mmt_mpu_mfu_on_sample_complete_dump(uint16_t packet_id, uint32_t mpu_
     }
 }
 
-void atsc3_mmt_mpu_mfu_on_sample_corrupt_dump(uint16_t packet_id, uint32_t mpu_sequence_number, uint32_t sample_number, block_t* mmt_mfu_sample) {
+void atsc3_mmt_mpu_mfu_on_sample_corrupt_dump(uint16_t packet_id, uint32_t mpu_sequence_number, uint32_t sample_number, block_t* mmt_mfu_sample, uint32_t mfu_fragment_count_expected, uint32_t mfu_fragment_count_rebuilt) {
 	if(packet_id != atsc3_mmt_context_stpp_packet_id_for_testing) {
 		return;
 	}
