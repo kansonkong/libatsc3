@@ -161,8 +161,7 @@ atsc3_lls_slt_service_t* atsc3_phy_mmt_player_bridge_set_single_monitor_a331_ser
 void atsc3_phy_mmt_player_bridge_process_packet_phy(block_t* packet) {
 
     mmtp_packet_header_t* mmtp_packet_header = NULL;
-    //printf("in packet is: %p", packet);
-
+    lls_sls_mmt_session_t* matching_lls_sls_mmt_session = NULL;
     //lowasys hands off the ip packet header, not phy eth frame
 
     //udp_packet_t* udp_packet = udp_packet_process_from_ptr_raw_ethernet_packet(block_Get(packet), packet->p_size);
@@ -174,7 +173,7 @@ void atsc3_phy_mmt_player_bridge_process_packet_phy(block_t* packet) {
 
     //drop mdNS
     if(udp_packet->udp_flow.dst_ip_addr == UDP_FILTER_MDNS_IP_ADDRESS && udp_packet->udp_flow.dst_port == UDP_FILTER_MDNS_PORT) {
-        return udp_packet_free(&udp_packet);
+        goto cleanup;
     }
 
     if(udp_packet->udp_flow.dst_ip_addr == LLS_DST_ADDR && udp_packet->udp_flow.dst_port == LLS_DST_PORT) {
@@ -244,16 +243,16 @@ void atsc3_phy_mmt_player_bridge_process_packet_phy(block_t* packet) {
             }
 
         }
-        return udp_packet_free(&udp_packet);
+        goto cleanup;
     }
 
     if((dst_ip_addr_filter && udp_packet->udp_flow.dst_ip_addr != *dst_ip_addr_filter)) {
-        return udp_packet_free(&udp_packet);
+        goto cleanup;
     }
 
 
     //TODO: jjustman-2019-10-03 - packet header parsing to dispatcher mapping
-    lls_sls_mmt_session_t* matching_lls_sls_mmt_session = lls_slt_mmt_session_find_from_udp_packet(lls_slt_monitor, udp_packet->udp_flow.src_ip_addr, udp_packet->udp_flow.dst_ip_addr, udp_packet->udp_flow.dst_port);
+    matching_lls_sls_mmt_session = lls_slt_mmt_session_find_from_udp_packet(lls_slt_monitor, udp_packet->udp_flow.src_ip_addr, udp_packet->udp_flow.dst_ip_addr, udp_packet->udp_flow.dst_port);
     __TRACE("Checking matching_lls_sls_mmt_session: %p,", matching_lls_sls_mmt_session);
 
 
@@ -264,7 +263,7 @@ void atsc3_phy_mmt_player_bridge_process_packet_phy(block_t* packet) {
         //at3DrvIntf_ptr->LogMsgF("mmtp_packet_header: %p", mmtp_packet_header);
 
         if(!mmtp_packet_header) {
-            return udp_packet_free(&udp_packet);
+            goto cleanup;
         }
 
         //for filtering MMT flows by a specific packet_id
@@ -373,6 +372,10 @@ cleanup:
 	if(mmtp_packet_header) {
 		mmtp_packet_header_free(&mmtp_packet_header);
 	}
+
+	if(udp_packet) {
+        udp_packet_free(&udp_packet);
+    }
     return;
 
 error:
@@ -550,9 +553,6 @@ void atsc3_mmt_mpu_mfu_on_sample_complete_ndk(uint16_t packet_id, uint32_t mpu_s
         //audio and stpp don't need NAL start codes
         at3DrvIntf_ptr->atsc3_onMfuPacket(packet_id, mpu_sequence_number, sample_number, block_ptr, block_len, last_mpu_timestamp, mfu_fragment_count_rebuilt);
     }
-
-    block_Release(&mmt_mfu_sample);
-
 }
 
 
@@ -590,8 +590,6 @@ void atsc3_mmt_mpu_mfu_on_sample_corrupt_ndk(uint16_t packet_id, uint32_t mpu_se
         //audio and stpp don't need NAL start codes
         at3DrvIntf_ptr->atsc3_onMfuPacketCorrupt(packet_id, mpu_sequence_number, sample_number, block_ptr, block_len, last_mpu_timestamp, mfu_fragment_count_expected, mfu_fragment_count_rebuilt);
     }
-
-    block_Release(&mmt_mfu_sample);
 }
 
 
@@ -628,8 +626,6 @@ void atsc3_mmt_mpu_mfu_on_sample_corrupt_mmthsample_header_ndk(uint16_t packet_i
         //audio and stpp don't need NAL start codes
         at3DrvIntf_ptr->atsc3_onMfuPacketCorruptMmthSampleHeader(packet_id, mpu_sequence_number, sample_number, block_ptr, block_len, last_mpu_timestamp, mfu_fragment_count_expected, mfu_fragment_count_rebuilt);
     }
-
-    block_Release(&mmt_mfu_sample);
 }
 
 void atsc3_mmt_mpu_mfu_on_sample_missing_ndk(uint16_t packet_id, uint32_t mpu_sequence_number, uint32_t sample_number) {
@@ -653,6 +649,7 @@ void atsc3_phy_mmt_player_bridge_init(At3DrvIntf* At3DrvIntf_ptr) {
 
     //wire up atsc3_mmt_mpu_on_sequence_mpu_metadata_present to parse out our NALs as needed for android MediaCodec init
     atsc3_mmt_mfu_context->atsc3_mmt_mpu_on_sequence_mpu_metadata_present = &atsc3_mmt_mpu_on_sequence_mpu_metadata_present_ndk;
+
     atsc3_mmt_mfu_context->atsc3_mmt_mpu_mfu_on_sample_complete = &atsc3_mmt_mpu_mfu_on_sample_complete_ndk;
     atsc3_mmt_mfu_context->atsc3_mmt_mpu_mfu_on_sample_corrupt = &atsc3_mmt_mpu_mfu_on_sample_corrupt_ndk;
     //todo: search thru NAL's as needed here and discard anything that intra-NAL..
