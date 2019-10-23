@@ -39,7 +39,7 @@ MPU_timestamp_descriptor: 0x0001
 #include "atsc3_mmtp_packet_types.h"
 
 int _MMT_CONTEXT_MPU_SIGNAL_INFO_ENABLED = 0;
-int _MMT_CONTEXT_MPU_DEBUG_ENABLED = 1;
+int _MMT_CONTEXT_MPU_DEBUG_ENABLED = 0;
 int _MMT_CONTEXT_MPU_TRACE_ENABLED = 0;
 
 //TODO: jjustman-2019-10-03 - refactor these out to proper impl's:
