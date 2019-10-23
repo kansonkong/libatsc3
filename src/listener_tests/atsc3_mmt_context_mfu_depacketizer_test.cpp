@@ -48,14 +48,15 @@ uint16_t* dst_packet_id_filter = NULL;
 //dump essences out
 
 
-void atsc3_mmt_mpu_mfu_on_sample_complete_dump(uint16_t packet_id, uint32_t mpu_sequence_number, uint32_t sample_number, block_t* mmt_mfu_sample) {
+void atsc3_mmt_mpu_mfu_on_sample_complete_dump(uint16_t packet_id, uint32_t mpu_sequence_number, uint32_t sample_number, block_t* mmt_mfu_sample, uint32_t mfu_fragment_count_rebuilt) {
 
-	__MMT_CONTEXT_MPU_DEBUG("atsc3_mmt_mpu_mfu_on_sample_complete_dump: packet_id: %u, mpu_sequence_number: %u, sample_number: %u, mmt_mfu_sample: %p, len: %d",
+	__MMT_CONTEXT_MPU_DEBUG("atsc3_mmt_mpu_mfu_on_sample_complete_dump: packet_id: %u, mpu_sequence_number: %u, sample_number: %u, mmt_mfu_sample: %p, len: %d, mfu_fragment_count_rebuilt: %d",
 			packet_id,
             mpu_sequence_number,
             sample_number,
 			mmt_mfu_sample,
-			mmt_mfu_sample->p_size);
+			mmt_mfu_sample->p_size,
+            mfu_fragment_count_rebuilt);
 
     char myFileName[128];
     snprintf(myFileName, 128, "mpu/%d.%d.%d.mfu.complete", packet_id, mpu_sequence_number, sample_number);
@@ -76,13 +77,15 @@ void atsc3_mmt_mpu_mfu_on_sample_complete_dump(uint16_t packet_id, uint32_t mpu_
     }
 }
 
-void atsc3_mmt_mpu_mfu_on_sample_corrupt_dump(uint16_t packet_id, uint32_t mpu_sequence_number, uint32_t sample_number, block_t* mmt_mfu_sample) {
-	__MMT_CONTEXT_MPU_DEBUG("atsc3_mmt_mpu_mfu_on_sample_corrupt_dump: packet_id: %u, mpu_sequence_number: %u, sample_number: %u, mmt_mfu_sample: %p, len: %d",
+void atsc3_mmt_mpu_mfu_on_sample_corrupt_dump(uint16_t packet_id, uint32_t mpu_sequence_number, uint32_t sample_number, block_t* mmt_mfu_sample, uint32_t mfu_fragment_count_expected, uint32_t mfu_fragment_count_rebuilt) {
+	__MMT_CONTEXT_MPU_DEBUG("atsc3_mmt_mpu_mfu_on_sample_corrupt_dump: packet_id: %u, mpu_sequence_number: %u, sample_number: %u, mmt_mfu_sample: %p, len: %d, mfu_fragment_count_expected: %d, mfu_fragment_count_rebuilt: %d",
 				packet_id,
 	            mpu_sequence_number,
 	            sample_number,
 				mmt_mfu_sample,
-				mmt_mfu_sample->p_size);
+				mmt_mfu_sample->p_size,
+                mfu_fragment_count_expected,
+                mfu_fragment_count_rebuilt);
 
 	char myFileName[128];
 	snprintf(myFileName,  128, "mpu/%d.%d.%d.mfu.corrupt", packet_id, mpu_sequence_number, sample_number);
@@ -92,7 +95,7 @@ void atsc3_mmt_mpu_mfu_on_sample_corrupt_dump(uint16_t packet_id, uint32_t mpu_s
 		fwrite(block_Get(mmt_mfu_sample), mmt_mfu_sample->p_size, 1, fp);
 		fclose(fp);
 	} else {
-		  __MMT_CONTEXT_MPU_DEBUG("ERROR writing sample to corrupt filename: %s, atsc3_mmt_mpu_mfu_on_sample_complete_dump: packet_id: %u, mpu_sequence_number: %u, sample_number: %u, mmt_mfu_sample: %p, len: %d",
+		  __MMT_CONTEXT_MPU_DEBUG("ERROR writing sample to corrupt filename: %s, atsc3_mmt_mpu_mfu_on_sample_corrupt_dump: packet_id: %u, mpu_sequence_number: %u, sample_number: %u, mmt_mfu_sample: %p, len: %d",
 					myFileName,
 					packet_id,
 					mpu_sequence_number,
@@ -106,7 +109,7 @@ void atsc3_mmt_mpu_mfu_on_sample_corrupt_dump(uint16_t packet_id, uint32_t mpu_s
 
 
 void atsc3_mmt_mpu_mfu_on_sample_missing_dump(uint16_t packet_id, uint32_t mpu_sequence_number, uint32_t sample_number) {
-	__MMT_CONTEXT_MPU_DEBUG("atsc3_mmt_mpu_mfu_on_sample_complete_dump: packet_id: %u, mpu_sequence_number: %u, sample_number: %u",
+	__MMT_CONTEXT_MPU_DEBUG("atsc3_mmt_mpu_mfu_on_sample_missing_dump: packet_id: %u, mpu_sequence_number: %u, sample_number: %u",
 				packet_id,
 	            mpu_sequence_number,
 	            sample_number);
@@ -119,7 +122,7 @@ void atsc3_mmt_mpu_mfu_on_sample_missing_dump(uint16_t packet_id, uint32_t mpu_s
 		fwrite("x", 1, 1, fp);
 		fclose(fp);
 	} else {
-		  __MMT_CONTEXT_MPU_DEBUG("ERROR writing sample to missing filename: %s, atsc3_mmt_mpu_mfu_on_sample_complete_dump: packet_id: %u, mpu_sequence_number: %u, sample_number: %u",
+		  __MMT_CONTEXT_MPU_DEBUG("ERROR writing sample to missing filename: %s, atsc3_mmt_mpu_mfu_on_sample_missing_dump: packet_id: %u, mpu_sequence_number: %u, sample_number: %u",
 					myFileName,
 					packet_id,
 					mpu_sequence_number,
@@ -169,6 +172,7 @@ void mmtp_process_sls_from_payload(udp_packet_t *udp_packet, mmtp_signalling_pac
 
 void process_packet(u_char *user, const struct pcap_pkthdr *pkthdr, const u_char *packet) {
 	mmtp_packet_header_t* mmtp_packet_header = NULL;
+    lls_sls_mmt_session_t* matching_lls_sls_mmt_session = NULL;
 
 	udp_packet_t* udp_packet = process_packet_from_pcap(user, pkthdr, packet);
 	if(!udp_packet) {
@@ -177,8 +181,8 @@ void process_packet(u_char *user, const struct pcap_pkthdr *pkthdr, const u_char
 
 	//drop mdNS
 	if(udp_packet->udp_flow.dst_ip_addr == UDP_FILTER_MDNS_IP_ADDRESS && udp_packet->udp_flow.dst_port == UDP_FILTER_MDNS_PORT) {
-		return udp_packet_free(&udp_packet);
-	}
+        goto cleanup;
+    }
 
 	if(udp_packet->udp_flow.dst_ip_addr == LLS_DST_ADDR && udp_packet->udp_flow.dst_port == LLS_DST_PORT) {
 		//auto-monitor code here for MMT
@@ -243,25 +247,23 @@ void process_packet(u_char *user, const struct pcap_pkthdr *pkthdr, const u_char
 						lls_sls_mmt_monitor->stpp_packet_id);
 			}
 		}
-		return udp_packet_free(&udp_packet);
+        goto cleanup;
 	}
 
     if((dst_ip_addr_filter && udp_packet->udp_flow.dst_ip_addr != *dst_ip_addr_filter)) {
-        return udp_packet_free(&udp_packet);
+        goto cleanup;
     }
 
-
     //TODO: jjustman-2019-10-03 - packet header parsing to dispatcher mapping
-    lls_sls_mmt_session_t* matching_lls_sls_mmt_session = lls_slt_mmt_session_find_from_udp_packet(lls_slt_monitor, udp_packet->udp_flow.src_ip_addr, udp_packet->udp_flow.dst_ip_addr, udp_packet->udp_flow.dst_port);
+    matching_lls_sls_mmt_session = lls_slt_mmt_session_find_from_udp_packet(lls_slt_monitor, udp_packet->udp_flow.src_ip_addr, udp_packet->udp_flow.dst_ip_addr, udp_packet->udp_flow.dst_port);
 	__TRACE("Checking matching_lls_sls_mmt_session: %p,", matching_lls_sls_mmt_session);
 
 	if(matching_lls_sls_mmt_session && lls_slt_monitor && lls_slt_monitor->lls_sls_mmt_monitor && matching_lls_sls_mmt_session->atsc3_lls_slt_service->service_id == lls_slt_monitor->lls_sls_mmt_monitor->atsc3_lls_slt_service->service_id) {
 
 		mmtp_packet_header = mmtp_packet_header_parse_from_block_t(udp_packet->data);
-
         
 		if(!mmtp_packet_header) {
-			return udp_packet_free(&udp_packet);
+            goto cleanup;
 		}
 
 		//for filtering MMT flows by a specific packet_id
@@ -369,6 +371,10 @@ cleanup:
 	if(mmtp_packet_header) {
 		mmtp_packet_header_free(&mmtp_packet_header);
 	}
+    
+    if(udp_packet) {
+        udp_packet_free(&udp_packet);
+    }
     
     return;
 
