@@ -188,6 +188,8 @@ typedef struct mmtp_mpu_packet {
     //      and then mpu_fragments based upon mpu_fragmentation_counter
     mmthsample_header_t* mmthsample_header;
 
+    //jjustman-2019-10-23: hack-ish for MFU re-assembly
+    bool mfu_reassembly_performed;
 } mmtp_mpu_packet_t;
     
 typedef struct {
