@@ -177,7 +177,7 @@ atsc3_pcap_replay_context_t* atsc3_pcap_replay_usleep_packet(atsc3_pcap_replay_c
 		}
 
         //jjustman-2019-10-19 - only trigger usleep if our differential is greater than 2000uS (2ms)
-		if(wallclock_runtime_packet_capture_ts_differentialUS > 2000) {
+		if(wallclock_runtime_packet_capture_ts_differentialUS > 3000) {
             _ATSC3_PCAP_TYPE_DEBUG("pcap timing information: current packet timeval: s.us: %ld.%ld, last packet timeval: s.us: %ld.%ld, target sleep duration uS: %lld",
                   current_packet_timeval.tv_sec,
                   current_packet_timeval.tv_usec,
@@ -200,8 +200,10 @@ atsc3_pcap_replay_context_t* atsc3_pcap_replay_usleep_packet(atsc3_pcap_replay_c
             }
         } else {
             //falling behind
+            //TODO: jjustman-2019-10-23: move this to a producer/consumer pattern for emmission handoff
             //don't spam...
-            _ATSC3_PCAP_TYPE_DEBUG("pcap timing falling behind: current packet timeval: s.us: %ld.%ld  last packet timeval: s.us: %ld.%ld  wallclock_runtime_packet_capture_ts_differentialUS: %lld, sleep would be negative!",
+            _ATSC3_PCAP_TYPE_TRACE("pcap timing falling behind: packet_number: %u, current packet timeval: s.us: %ld.%ld  last packet timeval: s.us: %ld.%ld  wallclock_runtime_packet_capture_ts_differentialUS: %lld, sleep would be negative!",
+                    atsc3_pcap_replay_context_to_iterate->pcap_read_packet_count,
                     current_packet_timeval.tv_sec,
                     current_packet_timeval.tv_usec,
                     last_packet_timeval.tv_sec,
