@@ -515,7 +515,10 @@ typedef struct lls_sls_mmt_session {
     bool last_udp_flow_packet_id_mpu_sequence_tuple_video_processed;
     udp_flow_packet_id_mpu_sequence_tuple_t* to_process_udp_flow_packet_id_mpu_sequence_tuple_video;
 
-    mmt_arguments_t* mmt_arguments;
+	udp_flow_packet_id_mpu_sequence_tuple_t* last_udp_flow_packet_id_mpu_sequence_tuple_stpp;
+
+
+	mmt_arguments_t* mmt_arguments;
     mmt_session_t* mmt_session;
     
 } lls_sls_mmt_session_t;
