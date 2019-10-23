@@ -570,19 +570,23 @@ void atsc3_mmt_mpu_mfu_on_sample_corrupt_ndk(uint16_t packet_id, uint32_t mpu_se
 
     if(__INTERNAL_LAST_NAL_PACKET_TODO_FIXME && packet_id == global_video_packet_id) {
         block_t *mmt_mfu_sample_rbsp = atsc3_hevc_extract_mp4toannexb_filter_ffmpegImpl(mmt_mfu_sample, __INTERNAL_LAST_NAL_PACKET_TODO_FIXME);
-        uint8_t *block_ptr = block_Get(mmt_mfu_sample_rbsp);
-        uint32_t block_len = block_Len(mmt_mfu_sample_rbsp);
+        if(mmt_mfu_sample_rbsp) {
+            uint8_t *block_ptr = block_Get(mmt_mfu_sample_rbsp);
+            uint32_t block_len = block_Len(mmt_mfu_sample_rbsp);
 
-        if((global_mfu_proccessed_count++ % 600) == 0) {
-            at3DrvIntf_ptr->LogMsgF("atsc3_mmt_mpu_mfu_on_sample_complete_ndk: total mfu count: %d, packet_id: %d, mpu: %d, sample: %d, orig len: %d, len: %d",
-                                    global_mfu_proccessed_count,
-                                    packet_id, mpu_sequence_number, sample_number, block_Len(mmt_mfu_sample),
-                                    block_len);
+            if((global_mfu_proccessed_count++ % 600) == 0) {
+                at3DrvIntf_ptr->LogMsgF("atsc3_mmt_mpu_mfu_on_sample_complete_ndk: total mfu count: %d, packet_id: %d, mpu: %d, sample: %d, orig len: %d, len: %d",
+                                        global_mfu_proccessed_count,
+                                        packet_id, mpu_sequence_number, sample_number, block_Len(mmt_mfu_sample),
+                                        block_len);
 
+            }
+            at3DrvIntf_ptr->atsc3_onMfuPacketCorrupt(packet_id, mpu_sequence_number, sample_number, block_ptr, block_len, last_mpu_timestamp, mfu_fragment_count_expected, mfu_fragment_count_rebuilt);
+
+            block_Release(&mmt_mfu_sample_rbsp);
+         } else {
+            __ERROR("atsc3_mmt_mpu_mfu_on_sample_corrupt_ndk: mmt_mfu_sample: %p (len: %d) - returned null mmt_mfu_sample_rbsp!", mmt_mfu_sample, mmt_mfu_sample ? mmt_mfu_sample->p_size : -1);
         }
-        at3DrvIntf_ptr->atsc3_onMfuPacketCorrupt(packet_id, mpu_sequence_number, sample_number, block_ptr, block_len, last_mpu_timestamp, mfu_fragment_count_expected, mfu_fragment_count_rebuilt);
-
-        block_Release(&mmt_mfu_sample_rbsp);
     } else {
         uint8_t *block_ptr = block_Get(mmt_mfu_sample);
         uint32_t block_len = block_Len(mmt_mfu_sample);
