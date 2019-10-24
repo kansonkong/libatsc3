@@ -190,7 +190,7 @@ void __internal__atsc3_mmt_signalling_information_on_packet_id_with_mpu_timestam
         atsc3_mmt_mfu_mpu_timestamp_descriptor_free(&atsc3_mmt_mfu_mpu_timestamp_descriptor);
     }
 
-	__MMT_CONTEXT_MPU_DEBUG("__internal__atsc3_mmt_signalling_information_on_packet_id_with_mpu_timestamp_descriptor, adding: packet_id: %d, mpu_sequence_number: %d", packet_id, mpu_sequence_number);
+	__MMT_CONTEXT_MPU_TRACE("__internal__atsc3_mmt_signalling_information_on_packet_id_with_mpu_timestamp_descriptor, adding: packet_id: %d, mpu_sequence_number: %d", packet_id, mpu_sequence_number);
 
     atsc3_mmt_mfu_mpu_timestamp_descriptor_t* atsc3_mmt_mfu_mpu_timestamp_descriptor = atsc3_mmt_mfu_mpu_timestamp_descriptor_new();
     atsc3_mmt_mfu_mpu_timestamp_descriptor->packet_id = packet_id;
@@ -205,7 +205,7 @@ void __internal__atsc3_mmt_signalling_information_on_packet_id_with_mpu_timestam
 }
 
 atsc3_mmt_mfu_mpu_timestamp_descriptor_t* atsc3_get_mpu_timestamp_from_packet_id_mpu_sequence_number(atsc3_mmt_mfu_context_t* atsc3_mmt_mfu_context, uint16_t packet_id, uint32_t mpu_sequence_number) {
-	__MMT_CONTEXT_MPU_INFO("atsc3_get_mpu_timestamp_from_packet_id_mpu_sequence_number: entries: %d, looking for packet_id: %d, mpu_sequence_number: %d",
+	__MMT_CONTEXT_MPU_TRACE("atsc3_get_mpu_timestamp_from_packet_id_mpu_sequence_number: entries: %d, looking for packet_id: %d, mpu_sequence_number: %d",
 						   atsc3_mmt_mfu_context->packet_id_mpu_timestamp_descriptor_window.atsc3_mmt_mfu_mpu_timestamp_descriptor_v.count,
 						   packet_id,
 						   mpu_sequence_number);
