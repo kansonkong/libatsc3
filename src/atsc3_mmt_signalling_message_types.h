@@ -226,7 +226,7 @@ typedef struct mp_table_asset_row {
 	identifier_mapping_t identifier_mapping;
 
 	//identifer_mapping()
-	char		asset_type[4];
+	char		asset_type[5]; //leave null pad
 	//6 bits reserved
 	uint8_t		default_asset_flag;
 
