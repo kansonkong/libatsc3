@@ -705,12 +705,15 @@ void mmtp_mfu_rebuild_from_packet_id_mpu_sequence_number(atsc3_mmt_mfu_context_t
                                  mmtp_mpu_packet_to_rebuild_from_du->mmtp_packet_id, mmtp_mpu_packet_to_rebuild_from_du->mpu_sequence_number, mmtp_mpu_packet_to_rebuild_from_du->sample_number, du_mfu_block_to_rebuild, du_mfu_block_to_rebuild->i_pos, du_mfu_block_to_rebuild->p_size, mmtp_mpu_packet_to_rebuild_from_du->du_mfu_block,  mmtp_mpu_packet_to_rebuild_from_du->du_mfu_block->i_pos, mmtp_mpu_packet_to_rebuild_from_du->du_mfu_block->p_size, mmtp_mpu_packet_to_rebuild_from_du->mpu_fragment_counter);
 
                         block_AppendFull(du_mfu_block_to_rebuild, mmtp_mpu_packet_to_rebuild_from_du->du_mfu_block);
+                        __MMT_CONTEXT_MPU_DEBUG("mmtp_mfu_rebuild_from_packet_id_mpu_sequence_number: after block_appendFull: packet_id: %u, mpu_sequence_number: %u, sample_number: %d, du_mfu_block_to_rebuild: %p, pos: %d, size: %d",
+                                                mmtp_mpu_packet_to_rebuild_from_du->mmtp_packet_id, mmtp_mpu_packet_to_rebuild_from_du->mpu_sequence_number, mmtp_mpu_packet_to_rebuild_from_du->sample_number, du_mfu_block_to_rebuild, du_mfu_block_to_rebuild->i_pos, du_mfu_block_to_rebuild->p_size);
+
                     }
                 }
             }
 
-            __MMT_CONTEXT_MPU_DEBUG("mmtp_mfu_rebuild_from_packet_id_mpu_sequence_number before callbacks for: packet_id: %u, mpu_sequence_number: %u, sample_number: %u, fragment_counter: %u, psn: %u, du_mfu_block_to_rebuild: %p, ->p_size: %u",
-                    mmtp_mpu_packet_to_rebuild->mmtp_packet_id, mmtp_mpu_packet_to_rebuild->mpu_sequence_number, mmtp_mpu_packet_to_rebuild->sample_number, mmtp_mpu_packet_to_rebuild->mpu_fragment_counter, mmtp_mpu_packet_to_rebuild->packet_sequence_number,  mmtp_mpu_packet_to_rebuild->mpu_fragmentation_indicator, du_mfu_block_to_rebuild, du_mfu_block_to_rebuild ? du_mfu_block_to_rebuild->p_size : 0);
+            __MMT_CONTEXT_MPU_DEBUG("mmtp_mfu_rebuild_from_packet_id_mpu_sequence_number before callbacks for: packet_id: %u, mpu_sequence_number: %u, sample_number: %u, fragment_counter: %u, psn: %u, du_mfu_block_to_rebuild: %p, pos: %d, p_size: %u",
+                    mmtp_mpu_packet_to_rebuild->mmtp_packet_id, mmtp_mpu_packet_to_rebuild->mpu_sequence_number, mmtp_mpu_packet_to_rebuild->sample_number, mmtp_mpu_packet_to_rebuild->mpu_fragment_counter, mmtp_mpu_packet_to_rebuild->packet_sequence_number, du_mfu_block_to_rebuild, du_mfu_block_to_rebuild ? du_mfu_block_to_rebuild->i_pos : -1, du_mfu_block_to_rebuild ? du_mfu_block_to_rebuild->p_size : -1);
 
             //todo: impl meta cases for corrupt/missing samples/packets, etc
 
