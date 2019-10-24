@@ -643,8 +643,7 @@ void mmtp_mfu_rebuild_from_packet_id_mpu_sequence_number(atsc3_mmt_mfu_context_t
             //handle force fulsh
             if(mmtp_mpu_ending_index == -1 && flush_all_fragments) {
                 mmtp_mpu_ending_index = mpu_sequence_number_mmtp_mpu_packet_collection->mmtp_mpu_packet_v.count-1;
-            } else {
-                mmtp_mpu_ending_index == -1;
+            } else if(mmtp_mpu_ending_index == -1) {
                 continue;
             }
             //todo - compute gap here between sample_numbers for tracking our MFU loss
