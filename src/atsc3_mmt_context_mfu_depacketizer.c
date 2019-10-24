@@ -493,7 +493,7 @@ void mmtp_mfu_rebuild_from_packet_id_mpu_sequence_number(atsc3_mmt_mfu_context_t
                                           mmtp_mpu_packet_to_rebuild->mpu_fragmentation_indicator);
 
                     block_Merge(du_mpu_metadata_block_rebuilt, mmtp_mpu_packet_to_rebuild->du_mpu_metadata_block);
-
+                    block_Rewind(du_mpu_metadata_block_rebuilt);
                     atsc3_mmt_mfu_context->atsc3_mmt_mpu_on_sequence_mpu_metadata_present(mmtp_mpu_packet_to_rebuild->mmtp_packet_id, mmtp_mpu_packet_to_rebuild->mpu_sequence_number, du_mpu_metadata_block_rebuilt);
                     block_Destroy(&du_mpu_metadata_block_rebuilt);
                 } else {
@@ -559,7 +559,8 @@ void mmtp_mfu_rebuild_from_packet_id_mpu_sequence_number(atsc3_mmt_mfu_context_t
                                         mmtp_mpu_packet_to_rebuild->mmthsample_header->movie_fragment_sequence_number,
                                         mmtp_mpu_packet_to_rebuild->mmthsample_header->length,
                                         mmtp_mpu_packet_to_rebuild->mpu_fragmentation_indicator);
-                
+
+                block_Rewind(mmtp_mpu_packet_to_rebuild->du_mfu_block);
                 block_t* du_mfu_block_duplicated_for_context_callback_invocation = block_Duplicate(mmtp_mpu_packet_to_rebuild->du_mfu_block);
                 atsc3_mmt_mfu_context->atsc3_mmt_mpu_mfu_on_sample_complete(mmtp_mpu_packet_to_rebuild->mmtp_packet_id, mmtp_mpu_packet_to_rebuild->mpu_sequence_number, mmtp_mpu_packet_to_rebuild->sample_number, du_mfu_block_duplicated_for_context_callback_invocation, 1);
                 mmtp_mpu_packet_to_rebuild->mfu_reassembly_performed = true;
@@ -571,6 +572,8 @@ void mmtp_mfu_rebuild_from_packet_id_mpu_sequence_number(atsc3_mmt_mfu_context_t
            if (mmtp_mpu_packet_to_rebuild_last && mmtp_mpu_packet_to_rebuild_last->mfu_reassembly_performed == false && mmtp_mpu_packet_to_rebuild_last->sample_number != mmtp_mpu_packet_to_rebuild->sample_number) {
                //mark packets as rebuilt, should remove from mpu_sequence_number_mmtp_mpu_packet_collection instead...
                if (du_mfu_block_rebuilt && du_mfu_block_rebuilt->p_size) {
+                   block_Rewind(du_mfu_block_rebuilt);
+
                    if(du_mfu_block_rebuild_index_start >= 0) {
                        for(int j=du_mfu_block_rebuild_index_start; j < i; j++) {
                            mpu_sequence_number_mmtp_mpu_packet_collection->mmtp_mpu_packet_v.data[j]->mfu_reassembly_performed = true;
