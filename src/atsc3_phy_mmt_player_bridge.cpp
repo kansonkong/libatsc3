@@ -306,7 +306,7 @@ void atsc3_phy_mmt_player_bridge_process_packet_phy(block_t* packet) {
             if(parsed_count) {
                 mmt_signalling_message_dump(mmtp_signalling_packet);
 
-                __TRACE("process_packet: calling mmt_signalling_message_process_with_context with udp_packet: %p, mmtp_signalling_packet: %p, atsc3_mmt_mfu_context: %p,",
+                __INFO("process_packet: calling mmt_signalling_message_process_with_context with udp_packet: %p, mmtp_signalling_packet: %p, atsc3_mmt_mfu_context: %p,",
                         udp_packet,
                         mmtp_signalling_packet,
                         atsc3_mmt_mfu_context);
