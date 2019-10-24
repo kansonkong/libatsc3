@@ -540,7 +540,7 @@ void mmtp_mfu_rebuild_from_packet_id_mpu_sequence_number(atsc3_mmt_mfu_context_t
             }
             
             //make sure our DU for this is set to i_pos == p_size, so we can opportunisticly alloc and make sure block_AppendFull works properly
-            mmtp_mpu_packet_to_rebuild->du_mfu_block->i_pos = mmtp_mpu_packet_to_rebuild->du_mfu_block->p_size;
+            //jjustman-2019-10-24: todo - fix me! mmtp_mpu_packet_to_rebuild->du_mfu_block->i_pos = mmtp_mpu_packet_to_rebuild->du_mfu_block->p_size;
 
             //regardless of mpu_fragmentation_indicator== as it may be lost in emission... and compute relative DU offset for rebuilding MFU
             //first DU in MFU should contain MMTHSample, but may not if its a lost DU
@@ -697,7 +697,8 @@ void mmtp_mfu_rebuild_from_packet_id_mpu_sequence_number(atsc3_mmt_mfu_context_t
                         mfu_fragment_count_rebuilt++;
 
                         mfu_fragment_counter_position--;
-                        block_Append(du_mfu_block_rebuilt, mmtp_mpu_packet_to_rebuild->du_mfu_block);
+                        //block_Append(du_mfu_block_rebuilt, mmtp_mpu_packet_to_rebuild->du_mfu_block);
+                        block_Merge(du_mfu_block_rebuilt, mmtp_mpu_packet_to_rebuild->du_mfu_block);
                     } else {
                         __MMT_CONTEXT_MPU_WARN("MFU DU rebuild, missing du_mfu_block_rebuilt, packet_id: %u, mpu_sequence_number: %u, sample_number: %u, fragment_counter: %u, psn: %u, with %u:%u, mpu_fragment_indicator: %u", mmtp_mpu_packet_to_rebuild->mmtp_packet_id, mmtp_mpu_packet_to_rebuild->mpu_sequence_number, mmtp_mpu_packet_to_rebuild->sample_number, mmtp_mpu_packet_to_rebuild->mpu_fragment_counter, mmtp_mpu_packet_to_rebuild->packet_sequence_number, atsc3_mmt_mfu_context->udp_flow->dst_ip_addr, atsc3_mmt_mfu_context->udp_flow->dst_port, mmtp_mpu_packet_to_rebuild->mpu_fragmentation_indicator);
                         du_mfu_block_rebuilt = block_Duplicate(mmtp_mpu_packet_to_rebuild->du_mfu_block);
