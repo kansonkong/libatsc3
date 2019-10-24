@@ -526,6 +526,10 @@ void atsc3_mmt_mpu_mfu_on_sample_complete_ndk(uint16_t packet_id, uint32_t mpu_s
         uint8_t *block_ptr = block_Get(mmt_mfu_sample_rbsp);
         uint32_t block_len = block_Len(mmt_mfu_sample_rbsp);
 
+        at3DrvIntf_ptr->LogMsgF(
+                "atsc3_mmt_mpu_mfu_on_sample_complete_ndk: NAL, packet_id: %d, mpu_sequence_number: %d, block: %p, len: %d, pts_us: %lu",
+                packet_id, mpu_sequence_number, block_ptr, block_len, atsc3_mmt_mfu_mpu_timestamp_descriptor->mpu_presentation_time_as_us_value);
+
         if((global_mfu_proccessed_count++ % 600) == 0) {
             at3DrvIntf_ptr->LogMsgF("atsc3_mmt_mpu_mfu_on_sample_complete_ndk: total mfu count: %d, packet_id: %d, mpu: %d, sample: %d, orig len: %d, len: %d",
                                     global_mfu_proccessed_count,
