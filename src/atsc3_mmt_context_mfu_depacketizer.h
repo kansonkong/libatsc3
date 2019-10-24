@@ -103,10 +103,15 @@ void mmtp_mfu_process_from_payload_with_context(udp_packet_t *udp_packet,
 												mmtp_mpu_packet_t* mmtp_mpu_packet,
 												atsc3_mmt_mfu_context_t* atsc3_mmt_mfu_context);
 
+//MFU re-constituion and emission in context
+void mmtp_mfu_rebuild_from_packet_id_mpu_sequence_number(atsc3_mmt_mfu_context_t* atsc3_mmt_mfu_context, mmtp_packet_id_packets_container_t* mmtp_packet_id_packets_container, uint32_t mpu_sequence_number, uint32_t mfu_sample_number_from_current_du, bool flush_all_fragmentss);
+
+
 //MMT signalling information processing
 void mmt_signalling_message_process_with_context(udp_packet_t *udp_packet,
 												mmtp_signalling_packet_t* mmtp_signalling_packet,
 												atsc3_mmt_mfu_context_t* atsc3_mmt_mfu_context);
+
 
 
 
