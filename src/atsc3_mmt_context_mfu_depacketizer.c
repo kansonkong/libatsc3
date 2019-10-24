@@ -599,7 +599,7 @@ void mmtp_mfu_rebuild_from_packet_id_mpu_sequence_number(atsc3_mmt_mfu_context_t
 
             //MFU rebuild any pending packets less than our sample_number,
             if (!mmtp_mpu_packet_to_rebuild->du_mfu_block) {
-                       __MMT_CONTEXT_MPU_WARN("MFU: missing du_mfu_block! creating dummy 0 byte blocki: %u, psn: %u, with %u:%u and packet_id: %u, mpu_sequence_number: %u, fragment_indicator: %u",
+                __MMT_CONTEXT_MPU_WARN("MFU: missing du_mfu_block! creating dummy 0 byte block: %u, psn: %u, with %u:%u and packet_id: %u, mpu_sequence_number: %u, fragment_indicator: %u",
                                                                 i, mmtp_mpu_packet_to_rebuild->packet_sequence_number,
                                                                 atsc3_mmt_mfu_context->udp_flow->dst_ip_addr,
                                                                 atsc3_mmt_mfu_context->udp_flow->dst_port,
@@ -647,6 +647,11 @@ void mmtp_mfu_rebuild_from_packet_id_mpu_sequence_number(atsc3_mmt_mfu_context_t
             }
             //todo - compute gap here between sample_numbers for tracking our MFU loss
 
+            __MMT_CONTEXT_MPU_DEBUG("mmtp_mfu_process_from_payload_with_context: iterating from mmtp_mpu_starting_index: %d, mmtp_mpu_ending_index: %d, packet_id: %u, mpu_sequence_number: %u",
+                                    mmtp_mpu_starting_index, mmtp_mpu_ending_index,
+                                    mmtp_mpu_packet_to_rebuild->mmtp_packet_id,
+                                    mmtp_mpu_packet_to_rebuild->mpu_sequence_number);
+
             //rebuild here as we have rolled over to the next sample number
             block_t* du_mfu_block_to_rebuild = NULL;
             mfu_fragment_counter_mmthsample_header_start = 0;
@@ -659,6 +664,11 @@ void mmtp_mfu_rebuild_from_packet_id_mpu_sequence_number(atsc3_mmt_mfu_context_t
                     mmtp_mpu_packet_t *mmtp_mpu_packet_to_rebuild_from_du = mpu_sequence_number_mmtp_mpu_packet_collection->mmtp_mpu_packet_v.data[j];
                     mmtp_mpu_packet_to_rebuild_from_du->mfu_reassembly_performed = true;
                     mfu_fragment_count_rebuilt++;
+
+                    __MMT_CONTEXT_MPU_DEBUG("mmtp_mfu_process_from_payload_with_context: rebuilding from packet_id: %u, mpu_sequence_number: %u, sample_number: %d",
+                                            mmtp_mpu_packet_to_rebuild_from_du->mmtp_packet_id,
+                                            mmtp_mpu_packet_to_rebuild_from_du->mpu_sequence_number,
+                                            mmtp_mpu_packet_to_rebuild_from_du->sample_number);
 
                     if(mmtp_mpu_packet_to_rebuild_from_du->mpu_fragmentation_indicator == 0x00 || mmtp_mpu_packet_to_rebuild_from_du->mpu_fragmentation_indicator == 0x01) {
                         mfu_fragment_counter_position = mmtp_mpu_packet_to_rebuild_from_du->mpu_fragment_counter;
