@@ -176,6 +176,7 @@ qsort((void**)lls_sls_alc_session_flows->lls_slt_alc_sessions, lls_sls_alc_sessi
 				vector_struct_name->PPCAT(vector_item_name, _v).data[i] = vector_struct_name->PPCAT(vector_item_name, _v).data[i+1]; \
 			} \
 		} \
+        vector_struct_name->PPCAT(vector_item_name, _v).count--; \
 		return vector_item_name; \
     } \
 	\
