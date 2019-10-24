@@ -29,9 +29,25 @@ typedef void (*atsc3_mmt_mpu_mfu_on_sample_corrupt_f)  (uint16_t packet_id, uint
 typedef void (*atsc3_mmt_mpu_mfu_on_sample_corrupt_mmthsample_header_f) (uint16_t packet_id, uint32_t mpu_sequence_number, uint32_t sample_number, block_t* mmt_mfu_sample,  uint32_t mfu_fragment_count_expected, uint32_t mfu_fragment_count_rebuilt);
 typedef void (*atsc3_mmt_mpu_mfu_on_sample_missing_f)  (uint16_t packet_id, uint32_t mpu_sequence_number, uint32_t sample_number);
 
-typedef struct atsc3_mmt_mfu_context {
-	udp_flow_t* 	udp_flow;
+typedef struct atsc3_mmt_mfu_mpu_timestamp_descriptor {
+	uint16_t 	packet_id;
+	uint32_t 	mpu_sequence_number;
+	uint64_t 	mpu_presentation_time_ntp64;
+	uint32_t 	mpu_presentation_time_seconds;
+	uint32_t 	mpu_presentation_time_microseconds;
+	uint64_t 	mpu_presentation_time_as_us_value;
 
+} atsc3_mmt_mfu_mpu_timestamp_descriptor_t;
+
+typedef struct atsc3_mmt_mfu_mpu_timestamp_descriptor_rolling_window {
+	ATSC3_VECTOR_BUILDER_STRUCT(atsc3_mmt_mfu_mpu_timestamp_descriptor);
+} atsc3_mmt_mfu_mpu_timestamp_descriptor_rolling_window_t;
+
+ATSC3_VECTOR_BUILDER_METHODS_INTERFACE(atsc3_mmt_mfu_mpu_timestamp_descriptor_rolling_window, atsc3_mmt_mfu_mpu_timestamp_descriptor);
+
+typedef struct atsc3_mmt_mfu_context {
+	//INTERNAL data structs
+	udp_flow_t* 	udp_flow;
 	mmtp_flow_t* 	mmtp_flow;
 
 	udp_flow_latest_mpu_sequence_number_container_t* udp_flow_latest_mpu_sequence_number_container;
@@ -39,30 +55,40 @@ typedef struct atsc3_mmt_mfu_context {
 	lls_sls_mmt_session_t* matching_lls_sls_mmt_session;
 
 	mp_table_t* mp_table_last;
+	atsc3_mmt_mfu_mpu_timestamp_descriptor_rolling_window_t												packet_id_mpu_timestamp_descriptor_window;
+
+
+	//INTERNAL event callbacks
+	__internal__atsc3_mmt_signalling_information_on_packet_id_with_mpu_timestamp_descriptor_f			__internal__atsc3_mmt_signalling_information_on_packet_id_with_mpu_timestamp_descriptor;
+
+	//EXTERNAL helper methods
+	atsc3_get_mpu_timestamp_from_packet_id_mpu_sequence_number_f										get_mpu_timestamp_from_packet_id_mpu_sequence_number;
+
+	//EXTERNAL in-proc event callbacks
 
 	//from ATSC3_MMT_CONTEXT_MPU_DEPACKETIZER_H
-	atsc3_mmt_mpu_on_sequence_number_change_f 												atsc3_mmt_mpu_on_sequence_number_change;
-    atsc3_mmt_mpu_on_sequence_mpu_metadata_present_f               							atsc3_mmt_mpu_on_sequence_mpu_metadata_present;			//dispatched when a new mpu_metadata (init box) is present and re-constituted
+	atsc3_mmt_mpu_on_sequence_number_change_f 															atsc3_mmt_mpu_on_sequence_number_change;
+    atsc3_mmt_mpu_on_sequence_mpu_metadata_present_f               										atsc3_mmt_mpu_on_sequence_mpu_metadata_present;			//dispatched when a new mpu_metadata (init box) is present and re-constituted
     																														//use atsc3_hevc_nal_extractor to convert init to NAL's as needed for HEVC decoder
 	//from ATSC3_MMT_CONTEXT_SIGNALLING_INFORMATION_DEPACKETIZER_H
-	atsc3_mmt_signalling_information_on_mp_table_subset_f 									atsc3_mmt_signalling_information_on_mp_table_subset; 	//dispatched when table_id >= 0x11 (17) && table_id <= 0x19 (31)
-	atsc3_mmt_signalling_information_on_mp_table_complete_f 								atsc3_mmt_signalling_information_on_mp_table_complete; 	//dispatched when table_id == 0x20 (32)
+	atsc3_mmt_signalling_information_on_mp_table_subset_f 												atsc3_mmt_signalling_information_on_mp_table_subset; 	//dispatched when table_id >= 0x11 (17) && table_id <= 0x19 (31)
+	atsc3_mmt_signalling_information_on_mp_table_complete_f 											atsc3_mmt_signalling_information_on_mp_table_complete; 	//dispatched when table_id == 0x20 (32)
 
-	atsc3_mmt_signalling_information_on_video_essence_packet_id_f							atsc3_mmt_signalling_information_on_video_essence_packet_id;
-	atsc3_mmt_signalling_information_on_audio_essence_packet_id_f							atsc3_mmt_signalling_information_on_audio_essence_packet_id;
-	atsc3_mmt_signalling_information_on_stpp_essence_packet_id_f							atsc3_mmt_signalling_information_on_stpp_essence_packet_id;
+	atsc3_mmt_signalling_information_on_video_essence_packet_id_f										atsc3_mmt_signalling_information_on_video_essence_packet_id;
+	atsc3_mmt_signalling_information_on_audio_essence_packet_id_f										atsc3_mmt_signalling_information_on_audio_essence_packet_id;
+	atsc3_mmt_signalling_information_on_stpp_essence_packet_id_f										atsc3_mmt_signalling_information_on_stpp_essence_packet_id;
 
-	atsc3_mmt_signalling_information_on_video_packet_id_with_mpu_timestamp_descriptor_f		atsc3_mmt_signalling_information_on_video_packet_id_with_mpu_timestamp_descriptor;
-	atsc3_mmt_signalling_information_on_audio_packet_id_with_mpu_timestamp_descriptor_f		atsc3_mmt_signalling_information_on_audio_packet_id_with_mpu_timestamp_descriptor;
-	atsc3_mmt_signalling_information_on_stpp_packet_id_with_mpu_timestamp_descriptor_f		atsc3_mmt_signalling_information_on_stpp_packet_id_with_mpu_timestamp_descriptor;
+	atsc3_mmt_signalling_information_on_video_packet_id_with_mpu_timestamp_descriptor_f					atsc3_mmt_signalling_information_on_video_packet_id_with_mpu_timestamp_descriptor;
+	atsc3_mmt_signalling_information_on_audio_packet_id_with_mpu_timestamp_descriptor_f					atsc3_mmt_signalling_information_on_audio_packet_id_with_mpu_timestamp_descriptor;
+	atsc3_mmt_signalling_information_on_stpp_packet_id_with_mpu_timestamp_descriptor_f					atsc3_mmt_signalling_information_on_stpp_packet_id_with_mpu_timestamp_descriptor;
 
-	atsc3_mmt_signalling_information_on_mpu_timestamp_descriptor_f 							atsc3_mmt_signalling_information_on_mpu_timestamp_descriptor;
+	atsc3_mmt_signalling_information_on_mpu_timestamp_descriptor_f 										atsc3_mmt_signalling_information_on_mpu_timestamp_descriptor;
 
 	//MFU specific callbacks
-	atsc3_mmt_mpu_mfu_on_sample_complete_f 													atsc3_mmt_mpu_mfu_on_sample_complete;
-	atsc3_mmt_mpu_mfu_on_sample_corrupt_f 													atsc3_mmt_mpu_mfu_on_sample_corrupt;
-	atsc3_mmt_mpu_mfu_on_sample_corrupt_mmthsample_header_f									atsc3_mmt_mpu_mfu_on_sample_corrupt_mmthsample_header;
-	atsc3_mmt_mpu_mfu_on_sample_missing_f 													atsc3_mmt_mpu_mfu_on_sample_missing;
+	atsc3_mmt_mpu_mfu_on_sample_complete_f 																atsc3_mmt_mpu_mfu_on_sample_complete;
+	atsc3_mmt_mpu_mfu_on_sample_corrupt_f 																atsc3_mmt_mpu_mfu_on_sample_corrupt;
+	atsc3_mmt_mpu_mfu_on_sample_corrupt_mmthsample_header_f												atsc3_mmt_mpu_mfu_on_sample_corrupt_mmthsample_header;
+	atsc3_mmt_mpu_mfu_on_sample_missing_f 																atsc3_mmt_mpu_mfu_on_sample_missing;
 
 } atsc3_mmt_mfu_context_t;
 
