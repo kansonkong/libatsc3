@@ -92,6 +92,7 @@ typedef struct atsc3_mmt_mfu_context {
 
 } atsc3_mmt_mfu_context_t;
 
+atsc3_mmt_mfu_mpu_timestamp_descriptor_t* atsc3_get_mpu_timestamp_from_packet_id_mpu_sequence_number(atsc3_mmt_mfu_context_t* atsc3_mmt_mfu_context, uint16_t packet_id, uint32_t mpu_sequence_number);
 
 //wire up dummmy null callback(s) to prevent dispatcher from multiple if(..) checks...
 atsc3_mmt_mfu_context_t* atsc3_mmt_mfu_context_new();
