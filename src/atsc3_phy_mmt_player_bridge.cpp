@@ -541,6 +541,7 @@ void atsc3_mmt_mpu_mfu_on_sample_complete_ndk(uint16_t packet_id, uint32_t mpu_s
 
         block_Release(&mmt_mfu_sample_rbsp);
     } else {
+        block_Rewind(mmt_mfu_sample);
         uint8_t *block_ptr = block_Get(mmt_mfu_sample);
         uint32_t block_len = block_Len(mmt_mfu_sample);
 
