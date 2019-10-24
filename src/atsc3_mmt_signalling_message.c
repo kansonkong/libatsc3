@@ -489,7 +489,6 @@ uint8_t* mpt_message_parse(mmt_signalling_message_header_and_payload_t* mmt_sign
 			//build url
 
 		}
-		uint8_t asset_type;
 		buf = extract(buf, (uint8_t*)&row->asset_type, 4);
 
 		uint8_t reserved_default_asset_flag;
