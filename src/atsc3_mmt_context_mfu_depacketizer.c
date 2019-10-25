@@ -634,6 +634,9 @@ void mmtp_mfu_rebuild_from_packet_id_mpu_sequence_number(atsc3_mmt_mfu_context_t
 
             int mmtp_mpu_starting_index = i;
             int mmtp_mpu_ending_index = -1;
+
+            //todo? int block_alloc_size = 0;
+
             //otherwise, walk thru a consecutive set of mfu samples to rebuild
             for(int j=mmtp_mpu_starting_index; j < mpu_sequence_number_mmtp_mpu_packet_collection->mmtp_mpu_packet_v.count && mmtp_mpu_ending_index == -1; j++) {
                 mmtp_mpu_packet_t *mmtp_mpu_packet_to_rebuild_next = mpu_sequence_number_mmtp_mpu_packet_collection->mmtp_mpu_packet_v.data[j];
@@ -691,7 +694,6 @@ void mmtp_mfu_rebuild_from_packet_id_mpu_sequence_number(atsc3_mmt_mfu_context_t
                         mfu_fragment_counter_mmthsample_header_start = mmtp_mpu_packet_to_rebuild_from_du->mpu_fragment_counter;
 
                         mfu_mmth_sample_header_size_to_shift_offset = mmtp_mpu_packet_to_rebuild_from_du->mmthsample_header->mfu_mmth_sample_header_size;
-                        int len = strlen("test");
 
                         //use the original mmthsample_length, only shift the offset of the non-prefixed fragments
                         du_mfu_block_to_rebuild = block_Alloc(mmtp_mpu_packet_to_rebuild_from_du->mmthsample_header->length); //- mfu_mmth_sample_header_size_to_shift_offset);
@@ -716,8 +718,11 @@ void mmtp_mfu_rebuild_from_packet_id_mpu_sequence_number(atsc3_mmt_mfu_context_t
                             __MMT_CONTEXT_MPU_DEBUG("mmtp_mfu_rebuild_from_packet_id_mpu_sequence_number:\tblock_AppendFull fragment with IsAlloc, offset: %u, mmth_sample_to_shift: %u, packet_id: %u, mpu_sequence_number: %u, sample_number: %d, block_AppendFull with du_mfu_block_to_rebuild: %p, pos: %d, size: %d, mmtp_mpu_packet_to_rebuild_from_du->du_mfu_block: %p, du_mfu_pos: %d, du_mfu_size: %d, fragment: %d",
                                                     mmtp_mpu_packet_to_rebuild_from_du->offset, mfu_mmth_sample_header_size_to_shift_offset, mmtp_mpu_packet_to_rebuild_from_du->mmtp_packet_id, mmtp_mpu_packet_to_rebuild_from_du->mpu_sequence_number, mmtp_mpu_packet_to_rebuild_from_du->sample_number, du_mfu_block_to_rebuild, du_mfu_block_to_rebuild->i_pos, du_mfu_block_to_rebuild->p_size, mmtp_mpu_packet_to_rebuild_from_du->du_mfu_block,  mmtp_mpu_packet_to_rebuild_from_du->du_mfu_block->i_pos, mmtp_mpu_packet_to_rebuild_from_du->du_mfu_block->p_size, mmtp_mpu_packet_to_rebuild_from_du->mpu_fragment_counter);
 
-                            block_Seek(du_mfu_block_to_rebuild, mmtp_mpu_packet_to_rebuild_from_du->offset - mfu_mmth_sample_header_size_to_shift_offset);
-                            block_Write(du_mfu_block_to_rebuild, mmtp_mpu_packet_to_rebuild_from_du->du_mfu_block->p_buffer, mmtp_mpu_packet_to_rebuild_from_du->du_mfu_block->p_size);
+                            //testing, hevc doesn't like large null blocks when its expecting nals...
+                            //block_Seek(du_mfu_block_to_rebuild, mmtp_mpu_packet_to_rebuild_from_du->offset - mfu_mmth_sample_header_size_to_shift_offset);
+                            //block_Write(du_mfu_block_to_rebuild, mmtp_mpu_packet_to_rebuild_from_du->du_mfu_block->p_buffer, mmtp_mpu_packet_to_rebuild_from_du->du_mfu_block->p_size);
+                            //so, append as usual, and then trim the tail of the allocation
+                            block_AppendFull(du_mfu_block_to_rebuild, mmtp_mpu_packet_to_rebuild_from_du->du_mfu_block);
                         } else {
                             __MMT_CONTEXT_MPU_DEBUG("mmtp_mfu_rebuild_from_packet_id_mpu_sequence_number:\tblock_AppendFull fragment, packet_id: %u, mpu_sequence_number: %u, sample_number: %d, block_AppendFull with du_mfu_block_to_rebuild: %p, pos: %d, size: %d, mmtp_mpu_packet_to_rebuild_from_du->du_mfu_block: %p, du_mfu_pos: %d, du_mfu_size: %d, fragment: %d",
                                                     mmtp_mpu_packet_to_rebuild_from_du->mmtp_packet_id, mmtp_mpu_packet_to_rebuild_from_du->mpu_sequence_number, mmtp_mpu_packet_to_rebuild_from_du->sample_number, du_mfu_block_to_rebuild, du_mfu_block_to_rebuild->i_pos, du_mfu_block_to_rebuild->p_size, mmtp_mpu_packet_to_rebuild_from_du->du_mfu_block,  mmtp_mpu_packet_to_rebuild_from_du->du_mfu_block->i_pos, mmtp_mpu_packet_to_rebuild_from_du->du_mfu_block->p_size, mmtp_mpu_packet_to_rebuild_from_du->mpu_fragment_counter);
@@ -738,6 +743,10 @@ void mmtp_mfu_rebuild_from_packet_id_mpu_sequence_number(atsc3_mmt_mfu_context_t
             //todo: impl meta cases for corrupt/missing samples/packets, etc
 
             if(du_mfu_block_to_rebuild) {
+                //if we were from alloc, trim off the null tail from i_ptr
+                if(block_IsAlloc(du_mfu_block_to_rebuild)) {
+                    du_mfu_block_to_rebuild->p_size = du_mfu_block_to_rebuild->i_pos;
+                }
                 if (mfu_fragment_counter_mmthsample_header_start) {
                     if (mfu_fragment_counter_mmthsample_header_start - (mfu_fragment_count_rebuilt - 1) == 0) {
                         atsc3_mmt_mfu_context->atsc3_mmt_mpu_mfu_on_sample_complete(mmtp_mpu_packet_to_rebuild->mmtp_packet_id, mmtp_mpu_packet_to_rebuild->mpu_sequence_number, mmtp_mpu_packet_to_rebuild->sample_number, du_mfu_block_to_rebuild, mfu_fragment_count_rebuilt);
