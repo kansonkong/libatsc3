@@ -152,18 +152,19 @@ extern int _ATSC3_PCAP_TYPE_TRACE_ENABLED;
 //jjustman-2019-07-24 - normaolized debug logging format
 
 #ifdef __ANDROID__
-#define __ANDROID_MAX_LOG_LINE_LENGTH__ 1024
+#define __ANDROID_MAX_LOG_LINE_LENGTH__ 1025
 
 extern char  __ANDROID_LOG_VPRINTF_BUFFER[];
 //     vsnprintf(char * restrict str, size_t size, const char * restrict format, va_list ap);
 //va_list argptr; va_start(argptr, format);
 //__VA_OPT__(,) __VA_ARGS__
-#define __LIBATSC3_TIMESTAMP_ERROR(format, ...)         {snprintf(__ANDROID_LOG_VPRINTF_BUFFER,__ANDROID_MAX_LOG_LINE_LENGTH__, format, ##__VA_ARGS__ );	printf("%-32.32s:%4d:ERROR:%.4f:%s",__FILENAME__,__LINE__,  gt(), __ANDROID_LOG_VPRINTF_BUFFER); }
-#define __LIBATSC3_TIMESTAMP_WARN(format, ...)          {snprintf(__ANDROID_LOG_VPRINTF_BUFFER,__ANDROID_MAX_LOG_LINE_LENGTH__, format, ##__VA_ARGS__ );	printf("%-32.32s:%4d:WARN :%.4f:%s",__FILENAME__,__LINE__,  gt(), __ANDROID_LOG_VPRINTF_BUFFER); }
-#define __LIBATSC3_TIMESTAMP_INFO(format, ...)          {snprintf(__ANDROID_LOG_VPRINTF_BUFFER,__ANDROID_MAX_LOG_LINE_LENGTH__, format, ##__VA_ARGS__ );	printf("%-32.32s:%4d:INFO :%.4f:%s",__FILENAME__,__LINE__,  gt(), __ANDROID_LOG_VPRINTF_BUFFER); }
-#define __LIBATSC3_TIMESTAMP_DEBUG(format, ...)         {snprintf(__ANDROID_LOG_VPRINTF_BUFFER,__ANDROID_MAX_LOG_LINE_LENGTH__, format, ##__VA_ARGS__ );	printf("%-32.32s:%4d:DEBUG:%.4f:%s",__FILENAME__,__LINE__,  gt(), __ANDROID_LOG_VPRINTF_BUFFER); }
-#define __LIBATSC3_TIMESTAMP_TRACE(format, ...)         {snprintf(__ANDROID_LOG_VPRINTF_BUFFER,__ANDROID_MAX_LOG_LINE_LENGTH__, format, ##__VA_ARGS__ );	printf("%-32.32s:%4d:TRACE:%.4f:%s",__FILENAME__,__LINE__,  gt(), __ANDROID_LOG_VPRINTF_BUFFER); }
-#define __LIBATSC3_TIMESTAMP_TRACE_TAB(format, ...)     {snprintf(__ANDROID_LOG_VPRINTF_BUFFER,__ANDROID_MAX_LOG_LINE_LENGTH__, format, ##__VA_ARGS__ );	printf("%-32.32s:%4d:TTRAC:%.4f:%s",__FILENAME__,__LINE__,  gt(), __ANDROID_LOG_VPRINTF_BUFFER); }
+#define __LIBATSC3_TIMESTAMP_ERROR(format, ...)         {snprintf(__ANDROID_LOG_VPRINTF_BUFFER,__ANDROID_MAX_LOG_LINE_LENGTH__-1, format, ##__VA_ARGS__ );	printf("%-32.32s:%4d:ERROR:%.4f:%s",__FILENAME__,__LINE__,  gt(), __ANDROID_LOG_VPRINTF_BUFFER); }
+#define __LIBATSC3_TIMESTAMP_WARN(format, ...)          {snprintf(__ANDROID_LOG_VPRINTF_BUFFER,__ANDROID_MAX_LOG_LINE_LENGTH__-1, format, ##__VA_ARGS__ );	printf("%-32.32s:%4d:WARN :%.4f:%s",__FILENAME__,__LINE__,  gt(), __ANDROID_LOG_VPRINTF_BUFFER); }
+#define __LIBATSC3_TIMESTAMP_INFO(format, ...)          {snprintf(__ANDROID_LOG_VPRINTF_BUFFER,__ANDROID_MAX_LOG_LINE_LENGTH__-1, format, ##__VA_ARGS__ );	printf("%-32.32s:%4d:INFO :%.4f:%s",__FILENAME__,__LINE__,  gt(), __ANDROID_LOG_VPRINTF_BUFFER); }
+#define __LIBATSC3_TIMESTAMP_DEBUG(format, ...)         {snprintf(__ANDROID_LOG_VPRINTF_BUFFER,__ANDROID_MAX_LOG_LINE_LENGTH__-1, format, ##__VA_ARGS__ );	printf("%-32.32s:%4d:DEBUG:%.4f:%s",__FILENAME__,__LINE__,  gt(), __ANDROID_LOG_VPRINTF_BUFFER); }
+#define __LIBATSC3_TIMESTAMP_TAB_DEBUG(format, ...)     {snprintf(__ANDROID_LOG_VPRINTF_BUFFER,__ANDROID_MAX_LOG_LINE_LENGTH__-1, format, ##__VA_ARGS__ );	printf("%-32.32s:%4d:DEBUG:%.4f:%s",__FILENAME__,__LINE__,  gt(), __ANDROID_LOG_VPRINTF_BUFFER); }
+#define __LIBATSC3_TIMESTAMP_TRACE(format, ...)         {snprintf(__ANDROID_LOG_VPRINTF_BUFFER,__ANDROID_MAX_LOG_LINE_LENGTH__-1, format, ##__VA_ARGS__ );	printf("%-32.32s:%4d:TRACE:%.4f:%s",__FILENAME__,__LINE__,  gt(), __ANDROID_LOG_VPRINTF_BUFFER); }
+#define __LIBATSC3_TIMESTAMP_TRACE_TAB(format, ...)     {snprintf(__ANDROID_LOG_VPRINTF_BUFFER,__ANDROID_MAX_LOG_LINE_LENGTH__-1, format, ##__VA_ARGS__ );	printf("%-32.32s:%4d:TTRAC:%.4f:%s",__FILENAME__,__LINE__,  gt(), __ANDROID_LOG_VPRINTF_BUFFER); }
 
 #define __ERROR(...)       __LIBATSC3_TIMESTAMP_ERROR(__VA_ARGS__);
 #define __WARN(...)    __LIBATSC3_TIMESTAMP_WARN(__VA_ARGS__);
