@@ -628,6 +628,7 @@ void mmtp_mfu_rebuild_from_packet_id_mpu_sequence_number(atsc3_mmt_mfu_context_t
                 atsc3_mmt_mfu_context->atsc3_mmt_mpu_mfu_on_sample_complete(mmtp_mpu_packet_to_rebuild->mmtp_packet_id, mmtp_mpu_packet_to_rebuild->mpu_sequence_number, mmtp_mpu_packet_to_rebuild->sample_number, du_mfu_block_duplicated_for_context_callback_invocation, 1);
                 mmtp_mpu_packet_to_rebuild->mfu_reassembly_performed = true;
                 block_Destroy(&du_mfu_block_duplicated_for_context_callback_invocation);
+
                 continue;
             }
 
