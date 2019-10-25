@@ -208,13 +208,25 @@ block_t* block_Alloc(int size_requested) {
 	new_block->p_size = size_requested;
 	new_block->i_pos = 0;
     new_block->_refcnt = 1;
+    new_block->_is_alloc = 1;
 
 	return new_block;
 }
 
+bool block_IsAlloc(block_t* block) {
+	return block->_is_alloc != 0;
+}
+
+static block_t* __block_Alloc_internal(int size_requested) {
+	block_t* block = block_Alloc(size_requested);
+	block->_is_alloc = 0;
+
+	return block;
+}
+
 block_t* block_Promote(char* string) {
 	int string_len = strlen(string);
-	block_t* new_block = block_Alloc(string_len);
+	block_t* new_block = __block_Alloc_internal(string_len);
 	block_Write(new_block, (uint8_t*)string, string_len);
 
 	return new_block;
@@ -446,7 +458,7 @@ block_t* block_Duplicate(block_t* src) {
 
 	uint32_t to_alloc_size = src->p_size;
 
-	block_t* dest = block_Alloc(to_alloc_size);
+	block_t* dest = __block_Alloc_internal(to_alloc_size);
 	memcpy(dest->p_buffer, src->p_buffer, to_alloc_size);
 	dest->i_pos = src->i_pos;
 
@@ -468,7 +480,7 @@ block_t* block_Duplicate_from_position(block_t* src) {
 		return NULL;
 	}
 
-	block_t* dest = block_Alloc(to_alloc_size);
+	block_t* dest = __block_Alloc_internal(to_alloc_size);
 	memcpy(dest->p_buffer, &src->p_buffer[src->i_pos], to_alloc_size);
 	dest->i_pos = 0;
 
@@ -493,7 +505,7 @@ block_t* block_Duplicate_to_size(block_t* src, uint32_t target_len) {
 
 	uint32_t to_alloc_size = __CLIP(target_len, 8, src->p_size);
 
-	block_t* dest = block_Alloc(to_alloc_size);
+	block_t* dest = __block_Alloc_internal(to_alloc_size);
 	memcpy(dest->p_buffer, src->p_buffer, to_alloc_size);
 	dest->i_pos = to_alloc_size;
 
@@ -502,7 +514,7 @@ block_t* block_Duplicate_to_size(block_t* src, uint32_t target_len) {
 
 // create new block_t from *data and size
 block_t* block_Duplicate_from_ptr(uint8_t* data, uint32_t size) {
-    block_t* block_t = block_Alloc(size);
+    block_t* block_t = __block_Alloc_internal(size);
     block_Write(block_t, data, size);
     return block_t;
 }
