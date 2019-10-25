@@ -251,8 +251,8 @@
 // *
 // * replay:
 // * wireshark tcp captures must be in libpcap format, and most likely need to have packet checksums realcualted before replay:
-// * e.g. tcprewrite --fixcsum -i 2018-12-17-mmt-airwavz-bad-checksums.pcap -o 2018-12-17-mmt-airwavz-recalc.pcap
-// * replay via, e.g. bittwist -i enp0s6 2018-12-17-mmt-airwavz-recalc.pcap -v
+// * e.g. tcprewrite --fixcsum -i 2018-12-17-mmt-airwavz-bad-checksums.pcap -o 2018-12-17-mmt-airwavz-recalc-60s.pcap
+// * replay via, e.g. bittwist -i enp0s6 2018-12-17-mmt-airwavz-recalc-60s.pcap -v
 // *
 // *
 // * lastly, i then have a host only interface between my ubuntu and mac configured in parallels, but mac's management of the mulitcast routes is a bit weird,
