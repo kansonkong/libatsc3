@@ -93,9 +93,9 @@ typedef struct atsc3_block {
 	uint32_t p_size;
 	uint32_t i_pos;
     uint8_t  _refcnt;
+    uint8_t  _is_alloc;
 } block_t;
 
-block_t* block_Alloc(int len);
 
 #define block_Refcount(a) ({ if(a) { _block_Refcount(a);  \
     _ATSC3_UTILS_TRACE("UTRACE:INCR:%p:%s, block_Refcount: incrementing to: %d, block: %p (p_buffer: %p)", a, __FUNCTION__, a->_refcnt, a, a->p_buffer); } \
@@ -103,7 +103,8 @@ block_t* block_Alloc(int len);
     
     
 //block_t* _block_Refcount(block_t*); //used for sharing pointers between ref's
-    
+block_t* block_Alloc(int len);
+bool block_IsAlloc(block_t*);
 block_t* block_Promote(char*);
 block_t* block_Write(block_t* dest, const uint8_t* buf, uint32_t size);
 uint32_t block_Append(block_t* dest, block_t* src); //combine two blocks at i_pos, i_pos, return end position
