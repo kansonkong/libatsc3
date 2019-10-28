@@ -190,24 +190,43 @@ kvp_collection_t* kvp_collection_parse(uint8_t* input_string) {
 
 
 
-block_t* block_Alloc(int len) {
+block_t* block_Alloc(int size_requested) {
 	block_t* new_block = (block_t*)calloc(1, sizeof(block_t));
 	assert(new_block);
 
-	//calloc an extra byte in case we forget to add in null padding for strings, but don't update the p_size with this margin of saftey
-	new_block->p_buffer = (uint8_t*)calloc(len + 8, sizeof(uint8_t));
+	//calloc an extra byte in case we forget to add in null padding for strings, but don't update the p_size with this margin of safey,
+	//align if size_requested > 0, otherwise alloc 8 as a dummy alloc block
+	uint32_t aligned_size = size_requested ? size_requested + 8 + (8 - (size_requested %8))    :    8;
+
+	#ifdef __MALLOC_TRACE
+	    _ATSC3_UTILS_INFO("block_Alloc: original size requested: %u, aligned size: %u, alignment factor: %f", src_size_required, aligned_size, aligned_size/8.0);
+	#endif
+
+	new_block->p_buffer = (uint8_t*)calloc(aligned_size, sizeof(uint8_t));
 	assert(new_block->p_buffer);
 
-	new_block->p_size = len;
+	new_block->p_size = size_requested;
 	new_block->i_pos = 0;
     new_block->_refcnt = 1;
+    new_block->_is_alloc = 1;
 
 	return new_block;
 }
 
+bool block_IsAlloc(block_t* block) {
+	return block->_is_alloc != 0;
+}
+
+static block_t* __block_Alloc_internal(int size_requested) {
+	block_t* block = block_Alloc(size_requested);
+	block->_is_alloc = 0;
+
+	return block;
+}
+
 block_t* block_Promote(char* string) {
 	int string_len = strlen(string);
-	block_t* new_block = block_Alloc(string_len);
+	block_t* new_block = __block_Alloc_internal(string_len);
 	block_Write(new_block, (uint8_t*)string, string_len);
 
 	return new_block;
@@ -279,6 +298,7 @@ uint32_t block_Seek_Relative(block_t* block, int32_t seek_pos) {
     if(!__block_check_bounaries(__FUNCTION__, block)) {
         block->i_pos = 0;
     }
+    //keep this one as int32_t so we don't compute based upon wraparound
     int32_t new_seek_pos = block->i_pos + seek_pos;
     
     if(new_seek_pos < 0 ) {
@@ -296,10 +316,10 @@ uint32_t block_Seek_Relative(block_t* block, int32_t seek_pos) {
     return block->i_pos;
 }
 
-block_t* block_Write(block_t* dest, uint8_t* src_buf, uint32_t src_size) {
+block_t* block_Write(block_t* dest, const uint8_t* src_buf, uint32_t src_size) {
 	if(!__block_check_bounaries(__FUNCTION__, dest)) return NULL;
 
-	int dest_size_required = dest->i_pos + src_size;
+	uint32_t dest_size_required = dest->i_pos + src_size;
 	if(dest->p_size < dest_size_required) {
 		block_t* ret_block = block_Resize(dest, dest_size_required);
 		if(!ret_block) {
@@ -314,10 +334,11 @@ block_t* block_Write(block_t* dest, uint8_t* src_buf, uint32_t src_size) {
 }
 
 //use src i_pos to append before
+//this will append the leader of the source block...
 uint32_t block_Append(block_t* dest, block_t* src) {
 	if(!__block_check_bounaries(__FUNCTION__, dest)) return 0;
 
-	int dest_size_required = dest->i_pos + src->i_pos;
+	uint32_t dest_size_required = dest->i_pos + src->i_pos;
 	if(dest->p_size < dest_size_required) {
 		block_t* ret_block = block_Resize(dest, dest_size_required);
 		if(!ret_block) {
@@ -331,15 +352,37 @@ uint32_t block_Append(block_t* dest, block_t* src) {
 	return dest->i_pos;
 }
 
+
+block_t* block_AppendFromBuf(block_t* dest, const uint8_t* src_buf, uint32_t src_size) {
+	if(!__block_check_bounaries(__FUNCTION__, dest)) return NULL;
+
+	dest->i_pos = dest->p_size;
+	uint32_t dest_original_size = dest->p_size;
+	uint32_t dest_size_required = dest->p_size + src_size;
+
+	if(dest->p_size < dest_size_required) {
+		block_t* ret_block = block_Resize(dest, dest_size_required);
+		if(!ret_block) {
+			_ATSC3_UTILS_ERROR("block_Write: block: %p, unable to realloc from size: %u to %u, returning NULL", dest, dest->p_size, dest_size_required);
+			return NULL;
+		}
+	}
+	memcpy(&dest->p_buffer[dest_original_size], src_buf, src_size);
+	dest->i_pos = dest_size_required;
+
+	return dest;
+}
+
+
 //use src i_pos to append, with the full payload from src
 uint32_t block_AppendFull(block_t* dest, block_t* src) {
     if(!__block_check_bounaries(__FUNCTION__, dest)) return 0;
     
-    int dest_size_required = dest->i_pos + src->p_size;
+    uint32_t dest_size_required = dest->i_pos + src->p_size;
     if(dest->p_size < dest_size_required) {
         block_t* ret_block = block_Resize(dest, dest_size_required);
         if(!ret_block) {
-            _ATSC3_UTILS_ERROR("block_Append: block: %p, unable to realloc from size: %u to %u, returning NULL", dest, dest->p_size, dest_size_required);
+            _ATSC3_UTILS_ERROR("block_AppendFull: block: %p, unable to realloc from size: %u to %u, returning NULL", dest, dest->p_size, dest_size_required);
             return 0;
         }
     }
@@ -355,8 +398,8 @@ uint32_t block_Merge(block_t* dest, block_t* src) {
 
     //seek us forward so we maintain both block_t full payloads
     dest->i_pos = dest->p_size;
-    int dest_original_size = dest->p_size;
-    int dest_size_required = dest->p_size + src->p_size;
+    uint32_t dest_original_size = dest->p_size;
+    uint32_t dest_size_required = dest->p_size + src->p_size;
     
     if(dest->p_size < dest_size_required) {
         block_t* ret_block = block_Resize(dest, dest_size_required);
@@ -369,6 +412,29 @@ uint32_t block_Merge(block_t* dest, block_t* src) {
     //rewind
     dest->i_pos = 0;
     
+    return dest->p_size;
+}
+
+
+
+uint32_t block_MergeNoRewind(block_t* dest, block_t* src) {
+    if(!__block_check_bounaries(__FUNCTION__, dest)) return 0;
+
+
+    uint32_t dest_original_size = dest->p_size;
+    uint32_t dest_size_required = dest->p_size + src->p_size;
+
+    if(dest->p_size < dest_size_required) {
+        block_t* ret_block = block_Resize(dest, dest_size_required);
+        if(!ret_block) {
+            _ATSC3_UTILS_ERROR("block_Merge: block: %p, unable to realloc from size: %u to %u, returning NULL", dest, dest->p_size, dest_size_required);
+            return 0;
+        }
+    }
+    memcpy(&dest->p_buffer[dest_original_size], src->p_buffer, src->p_size);
+    //seek us forward so we maintain both block_t full payloads
+    dest->i_pos = dest->p_size;
+
     return dest->p_size;
 }
 
@@ -392,7 +458,7 @@ block_t* block_Duplicate(block_t* src) {
 
 	uint32_t to_alloc_size = src->p_size;
 
-	block_t* dest = block_Alloc(to_alloc_size);
+	block_t* dest = __block_Alloc_internal(to_alloc_size);
 	memcpy(dest->p_buffer, src->p_buffer, to_alloc_size);
 	dest->i_pos = src->i_pos;
 
@@ -414,7 +480,7 @@ block_t* block_Duplicate_from_position(block_t* src) {
 		return NULL;
 	}
 
-	block_t* dest = block_Alloc(to_alloc_size);
+	block_t* dest = __block_Alloc_internal(to_alloc_size);
 	memcpy(dest->p_buffer, &src->p_buffer[src->i_pos], to_alloc_size);
 	dest->i_pos = 0;
 
@@ -423,10 +489,12 @@ block_t* block_Duplicate_from_position(block_t* src) {
 
 uint8_t* block_Get(block_t* src) {
     if(!__block_check_bounaries(__FUNCTION__, src)) return NULL;
-
     return &src->p_buffer[src->i_pos];
 }
-
+uint32_t block_Len(block_t* src) {
+    if(!__block_check_bounaries(__FUNCTION__, src)) return 0;
+    return src->p_size;
+}
 /**
  *
  * this will return a new block starting 0 up to target_len
@@ -437,7 +505,7 @@ block_t* block_Duplicate_to_size(block_t* src, uint32_t target_len) {
 
 	uint32_t to_alloc_size = __CLIP(target_len, 8, src->p_size);
 
-	block_t* dest = block_Alloc(to_alloc_size);
+	block_t* dest = __block_Alloc_internal(to_alloc_size);
 	memcpy(dest->p_buffer, src->p_buffer, to_alloc_size);
 	dest->i_pos = to_alloc_size;
 
@@ -446,7 +514,7 @@ block_t* block_Duplicate_to_size(block_t* src, uint32_t target_len) {
 
 // create new block_t from *data and size
 block_t* block_Duplicate_from_ptr(uint8_t* data, uint32_t size) {
-    block_t* block_t = block_Alloc(size);
+    block_t* block_t = __block_Alloc_internal(size);
     block_Write(block_t, data, size);
     return block_t;
 }
@@ -459,15 +527,23 @@ block_t* block_Duplicate_from_ptr(uint8_t* data, uint32_t size) {
 
 block_t* block_Resize(block_t* src, uint32_t src_size_requested) {
 	if(!__block_check_bounaries(__FUNCTION__, src)) return NULL;
-    int src_size_original = src->p_size;
-    int src_i_pos_original = src->i_pos;
+    uint32_t src_size_original = src->p_size;
+    uint32_t src_i_pos_original = src->i_pos;
 
     //uint32_t src_size_required = __MAX(64, src_size_requested);
     //do not change our size, as this can cause us to leak unexpectedly
     uint32_t src_size_required = src_size_requested;
 
 	//always over alloc by X bytes for a null pad
-	void* new_block = realloc(src->p_buffer, src_size_required + 8);
+    //jjustman-2019-10-12: TODO - devices like aarm64 need a quad byte aligned boundary (aim for 64bit align)
+    //over-allow with pad but don't set our p_size to this value as its not "accurate" when appending
+    uint32_t aligned_size = src_size_required + 8 + (8 - (src_size_required %8));
+
+#ifdef __MALLOC_TRACE
+    _ATSC3_UTILS_INFO("block_Resize: original size requested: %u, aligned size: %u, alignment factor: %f", src_size_required, aligned_size, aligned_size/8.0);
+#endif
+
+	void* new_block = realloc(src->p_buffer, aligned_size);
 	if(!new_block) {
 		_ATSC3_UTILS_ERROR("block_Resize: block: %p resize to %u failed, returning NULL", src, src_size_required);
 		return NULL;
