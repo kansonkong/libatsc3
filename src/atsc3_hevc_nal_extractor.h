@@ -45,6 +45,8 @@
 #ifndef ATSC3_HEVC_NAL_EXTRACTOR_H_
 #define ATSC3_HEVC_NAL_EXTRACTOR_H_
 
+#include <stddef.h>
+
 #include "atsc3_logging_externs.h"
 #include "atsc3_vector_builder.h"
 
