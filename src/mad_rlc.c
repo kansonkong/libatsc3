@@ -507,7 +507,7 @@ double mad_rlc_next_sp(alc_session_t *s, int layer) {
 
 	currenttime = sec();
 
-	spacing = (double)((double)s->rlc->sp_cycle / (double)1000) * (double)(min((1 << layer), 128 + layer));
+	spacing = (double)((double)s->rlc->sp_cycle / (double)1000) * (double)(__MIN((1 << layer), 128 + layer));
 
 	return (currenttime + (double)spacing);
 }
