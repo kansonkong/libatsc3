@@ -489,7 +489,6 @@ void mmtp_mfu_rebuild_from_packet_id_mpu_sequence_number(atsc3_mmt_mfu_context_t
         //process mpu_metadata, don't send incomplete payloads for init box (e.g. isnt FI==0x00 or endns in 0x03)
         if (mmtp_mpu_init_packet_to_rebuild->mpu_fragment_type == 0x0) {
             //mark this DU as completed for purging at the end of this method
-            mmtp_mpu_init_packet_to_rebuild->mfu_reassembly_performed = true;
 
             if (!mmtp_mpu_init_packet_to_rebuild->du_mpu_metadata_block) {
                 __MMT_CONTEXT_MPU_WARN(
@@ -515,6 +514,8 @@ void mmtp_mfu_rebuild_from_packet_id_mpu_sequence_number(atsc3_mmt_mfu_context_t
 
             //one (or more) DU
             if (mmtp_mpu_init_packet_to_rebuild->mpu_fragmentation_indicator == 0x00) {
+                mmtp_mpu_init_packet_to_rebuild->mfu_reassembly_performed = true;
+
                 block_t *du_mpu_metadata_block_duplicated_for_context_callback_invocation = block_Duplicate(
                         mmtp_mpu_init_packet_to_rebuild->du_mpu_metadata_block);
                 atsc3_mmt_mfu_context->atsc3_mmt_mpu_on_sequence_mpu_metadata_present(
@@ -525,6 +526,8 @@ void mmtp_mfu_rebuild_from_packet_id_mpu_sequence_number(atsc3_mmt_mfu_context_t
             } else if (mmtp_mpu_init_packet_to_rebuild->mpu_fragmentation_indicator == 0x03) {
                 if (du_mpu_metadata_block_rebuilt != NULL &&
                     mmtp_mpu_init_packet_to_rebuild->du_mpu_metadata_block) {
+                    mmtp_mpu_init_packet_to_rebuild->mfu_reassembly_performed = true;
+
                     __MMT_CONTEXT_MPU_DEBUG(
                             "mmtp_mfu_rebuild_from_packet_id_mpu_sequence_number: Appending MPU Metadata, i: %u, psn: %u, with %u:%u and packet_id: %u, mpu_sequence_number: %u, fragment_indicator: %u",
                             i, mmtp_mpu_init_packet_to_rebuild->packet_sequence_number,
