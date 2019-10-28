@@ -7,12 +7,17 @@
 
 #include "atsc3_listener_udp.h"
 #include "atsc3_packet_statistics.h"
+
 int global_mmt_loss_count;
 bool __LOSS_DISPLAY_ENABLED = true;
 
+extern atsc3_global_statistics_t* atsc3_global_statistics;
+
 void *print_global_statistics_thread(void *vargp)
 {
-	__PS_TRACE("Starting printGlobalStatistics");
+#ifndef __DISABLE_NCURSES__
+
+    __PS_TRACE("Starting printGlobalStatistics");
 	setlocale(LC_ALL,"");
 	while(true) {
 		sleep(1);
@@ -22,12 +27,17 @@ void *print_global_statistics_thread(void *vargp)
 		__DOUPDATE();
 		ncurses_writer_lock_mutex_release();
 	}
+#endif
+
+	return NULL;
 }
 
 
 void *print_mfu_statistics_thread(void *vargp)
 {
-	__PS_TRACE("Starting print_mfu_statistics_thread");
+#ifndef __DISABLE_NCURSES__
+
+    __PS_TRACE("Starting print_mfu_statistics_thread");
 	__LOSS_DISPLAY_ENABLED = false;
 	setlocale(LC_ALL,"");
 	while(true) {
@@ -38,6 +48,8 @@ void *print_mfu_statistics_thread(void *vargp)
 		__DOUPDATE_MFU();
 		ncurses_writer_lock_mutex_release();
 	}
+#endif
+	return NULL;
 }
 
 int comparator_packet_id_mmt_stats_t(const void *a, const void *b)
@@ -52,8 +64,8 @@ int comparator_packet_id_mmt_stats_t(const void *a, const void *b)
 }
 
 packet_flow_t* find_packet_flow(uint32_t ip, uint16_t port) {
-	for(int i=0; i < global_stats->packet_flow_n; i++ ) {
-		packet_flow_t* packet_flow = global_stats->packet_flow_vector[i];
+	for(int i=0; i < atsc3_global_statistics->packet_flow_n; i++ ) {
+		packet_flow_t* packet_flow = atsc3_global_statistics->packet_flow_vector[i];
 		__PS_TRACE("  find_packet_flow with ip: %u, port: %u", ip, port);
 
 		if(packet_flow->ip == ip && packet_flow->port == port) {
@@ -66,8 +78,8 @@ packet_flow_t* find_packet_flow(uint32_t ip, uint16_t port) {
 }
 
 packet_id_mmt_stats_t* find_packet_id(uint32_t ip, uint16_t port, uint32_t packet_id) {
-	for(int i=0; i < global_stats->packet_id_n; i++ ) {
-		packet_id_mmt_stats_t* packet_mmt_stats = global_stats->packet_id_vector[i];
+	for(int i=0; i < atsc3_global_statistics->packet_id_n; i++ ) {
+		packet_id_mmt_stats_t* packet_mmt_stats = atsc3_global_statistics->packet_id_vector[i];
 		__PS_TRACE("  find_packet_id with ip: %u, port: %u, %u", ip, port, packet_id, packet_mmt_stats->packet_id);
 
 		if(packet_mmt_stats->ip == ip && packet_mmt_stats->port == port && packet_mmt_stats->packet_id == packet_id) {
@@ -87,35 +99,35 @@ packet_id_mmt_stats_t* find_packet_id(uint32_t ip, uint16_t port, uint32_t packe
 packet_id_mmt_stats_t* find_or_create_packet_id(uint32_t ip, uint16_t port, uint32_t packet_id) {
 	packet_id_mmt_stats_t* packet_mmt_stats = find_packet_id(ip, port, packet_id);
 	if(!packet_mmt_stats) {
-		if(global_stats->packet_id_n && global_stats->packet_id_vector) {
+		if(atsc3_global_statistics->packet_id_n && atsc3_global_statistics->packet_id_vector) {
 
-			__PS_TRACE("*before realloc to %p, %i, adding %u", global_stats->packet_id_vector, global_stats->packet_id_n, packet_id);
+			__PS_TRACE("*before realloc to %p, %i, adding %u", atsc3_global_statistics->packet_id_vector, atsc3_global_statistics->packet_id_n, packet_id);
 
-			global_stats->packet_id_vector = (packet_id_mmt_stats_t**)realloc(global_stats->packet_id_vector, (global_stats->packet_id_n + 1) * sizeof(packet_id_mmt_stats_t*));
-			if(!global_stats->packet_id_vector) {
+			atsc3_global_statistics->packet_id_vector = (packet_id_mmt_stats_t**)realloc(atsc3_global_statistics->packet_id_vector, (atsc3_global_statistics->packet_id_n + 1) * sizeof(packet_id_mmt_stats_t*));
+			if(!atsc3_global_statistics->packet_id_vector) {
 				abort();
 			}
 
-			packet_mmt_stats = global_stats->packet_id_vector[global_stats->packet_id_n++] = (packet_id_mmt_stats_t*)calloc(1, sizeof(packet_id_mmt_stats_t));
+			packet_mmt_stats = atsc3_global_statistics->packet_id_vector[atsc3_global_statistics->packet_id_n++] = (packet_id_mmt_stats_t*)calloc(1, sizeof(packet_id_mmt_stats_t));
 			if(!packet_mmt_stats) {
 				abort();
 			}
 
 			//sort after realloc
-		    qsort((void**)global_stats->packet_id_vector, global_stats->packet_id_n, sizeof(packet_id_mmt_stats_t**), comparator_packet_id_mmt_stats_t);
+		    qsort((void**)atsc3_global_statistics->packet_id_vector, atsc3_global_statistics->packet_id_n, sizeof(packet_id_mmt_stats_t**), comparator_packet_id_mmt_stats_t);
 
-		    __PS_TRACE(" *after realloc to %p, %i, adding %u", packet_mmt_stats, global_stats->packet_id_n, packet_id);
+		    __PS_TRACE(" *after realloc to %p, %i, adding %u", packet_mmt_stats, atsc3_global_statistics->packet_id_n, packet_id);
 
 		} else {
-			global_stats->packet_id_n = 1;
-			global_stats->packet_id_vector = (packet_id_mmt_stats_t**)calloc(1, sizeof(packet_id_mmt_stats_t*));
-			global_stats->packet_id_vector[0] = (packet_id_mmt_stats_t*)calloc(1, sizeof(packet_id_mmt_stats_t));
+			atsc3_global_statistics->packet_id_n = 1;
+			atsc3_global_statistics->packet_id_vector = (packet_id_mmt_stats_t**)calloc(1, sizeof(packet_id_mmt_stats_t*));
+			atsc3_global_statistics->packet_id_vector[0] = (packet_id_mmt_stats_t*)calloc(1, sizeof(packet_id_mmt_stats_t));
 
-			if(!global_stats->packet_id_vector) {
+			if(!atsc3_global_statistics->packet_id_vector) {
 				abort();
 			}
 
-			packet_mmt_stats = global_stats->packet_id_vector[0];
+			packet_mmt_stats = atsc3_global_statistics->packet_id_vector[0];
 			__PS_TRACE("*calloc %p for %u", packet_mmt_stats, packet_id);
 		}
 		packet_mmt_stats->ip = ip;
@@ -188,6 +200,7 @@ int global_loss_count;
 int __INVOKE_ATSC3_PACKET_STATISTICS_MMT_STATS_POPULATE_COUNT = 0;
 
 void atsc3_packet_statistics_mmt_stats_populate(udp_packet_t* udp_packet, mmtp_mpu_packet_t* mmtp_mpu_packet) {
+#ifndef __DISABLE_NCURSES__
 
 	packet_id_mmt_stats_t* packet_mmt_stats = find_or_create_packet_id(udp_packet->udp_flow.dst_ip_addr, udp_packet->udp_flow.dst_port, mmtp_mpu_packet->mmtp_packet_id);
 
@@ -224,7 +237,7 @@ void atsc3_packet_statistics_mmt_stats_populate(udp_packet_t* udp_packet, mmtp_m
 		//add this gap into the total count of mmt packets missing
 		packet_mmt_stats->packet_sequence_number_sample_interval_missing += packet_mmt_stats->packet_sequence_number_last_gap;
 		packet_mmt_stats->packet_sequence_number_lifetime_missing += packet_mmt_stats->packet_sequence_number_last_gap;
-		global_stats->packet_counter_mmtp_packets_missing += packet_mmt_stats->packet_sequence_number_last_gap;
+		atsc3_global_statistics->packet_counter_mmtp_packets_missing += packet_mmt_stats->packet_sequence_number_last_gap;
 
 
 		if(packet_mmt_stats->packet_id && __LOSS_DISPLAY_ENABLED) {
@@ -365,48 +378,51 @@ void atsc3_packet_statistics_mmt_stats_populate(udp_packet_t* udp_packet, mmtp_m
 		packet_mmt_stats->signalling_stats_sample_interval->signalling_messages_total++;
 	}
 
-	global_stats->packet_id_delta = packet_mmt_stats;
+	atsc3_global_statistics->packet_id_delta = packet_mmt_stats;
+#endif
 }
 
 int DUMP_COUNTER=0;
 int DUMP_COUNTER_2=0;
 
 void atsc3_packet_statistics_dump_global_stats(){
+#ifndef __DISABLE_NCURSES__
+
 	bool has_output = false;
 
 	__PS_CLEAR();
 	struct timeval tNow;
 	gettimeofday(&tNow, NULL);
-	long long elapsedDurationUs = timediff(tNow, global_stats->program_timeval_start);
+	long long elapsedDurationUs = timediff(tNow, atsc3_global_statistics->program_timeval_start);
 	__PS_STATS_GLOBAL("Elapsed Duration            : %-.2fs", elapsedDurationUs / 1000000.0);
 	__PS_STATS_GLOBAL("");
-	__PS_STATS_GLOBAL("LLS total packets received  : %'-u", global_stats->packet_counter_lls_packets_received);
-	__PS_STATS_GLOBAL("> parsed good               : %'-u", global_stats->packet_counter_lls_packets_parsed);
-	__PS_STATS_GLOBAL("> parsed error              : %'-u", global_stats->packet_counter_lls_packets_parsed_error);
-	__PS_STATS_GLOBAL("- SLT packets decoded       : %'-u", global_stats->packet_counter_lls_slt_packets_parsed);
-	__PS_STATS_GLOBAL("  - SLT updates processed   : %'-u", global_stats->packet_counter_lls_slt_update_processed);
+	__PS_STATS_GLOBAL("LLS total packets received  : %'-u", atsc3_global_statistics->packet_counter_lls_packets_received);
+	__PS_STATS_GLOBAL("> parsed good               : %'-u", atsc3_global_statistics->packet_counter_lls_packets_parsed);
+	__PS_STATS_GLOBAL("> parsed error              : %'-u", atsc3_global_statistics->packet_counter_lls_packets_parsed_error);
+	__PS_STATS_GLOBAL("- SLT packets decoded       : %'-u", atsc3_global_statistics->packet_counter_lls_slt_packets_parsed);
+	__PS_STATS_GLOBAL("  - SLT updates processed   : %'-u", atsc3_global_statistics->packet_counter_lls_slt_update_processed);
 	__PS_STATS_GLOBAL("");
-	__PS_STATS_GLOBAL("MMTP total packets received : %'-u", global_stats->packet_counter_mmtp_packets_received);
-	__PS_STATS_GLOBAL("- type=0x0 MPU              : %'-u", global_stats->packet_counter_mmt_mpu);
-	__PS_STATS_GLOBAL("  - timed                   : %'-u", global_stats->packet_counter_mmt_timed_mpu);
-	__PS_STATS_GLOBAL("  - non-timed               : %'-u", global_stats->packet_counter_mmt_nontimed_mpu);
-	__PS_STATS_GLOBAL("- type=0x1 Signaling        : %'-u",	global_stats->packet_counter_mmt_signaling);
-	__PS_STATS_GLOBAL("- type=0x? Other            : %'-u",	global_stats->packet_counter_mmt_unknown);
-	__PS_STATS_GLOBAL("> parsed errors             : %'-u",	global_stats->packet_counter_mmtp_packets_parsed_error);
-	__PS_STATS_GLOBAL("> missing packets           : %'-u",	global_stats->packet_counter_mmtp_packets_missing);
+	__PS_STATS_GLOBAL("MMTP total packets received : %'-u", atsc3_global_statistics->packet_counter_mmtp_packets_received);
+	__PS_STATS_GLOBAL("- type=0x0 MPU              : %'-u", atsc3_global_statistics->packet_counter_mmt_mpu);
+	__PS_STATS_GLOBAL("  - timed                   : %'-u", atsc3_global_statistics->packet_counter_mmt_timed_mpu);
+	__PS_STATS_GLOBAL("  - non-timed               : %'-u", atsc3_global_statistics->packet_counter_mmt_nontimed_mpu);
+	__PS_STATS_GLOBAL("- type=0x1 Signaling        : %'-u",	atsc3_global_statistics->packet_counter_mmt_signaling);
+	__PS_STATS_GLOBAL("- type=0x? Other            : %'-u",	atsc3_global_statistics->packet_counter_mmt_unknown);
+	__PS_STATS_GLOBAL("> parsed errors             : %'-u",	atsc3_global_statistics->packet_counter_mmtp_packets_parsed_error);
+	__PS_STATS_GLOBAL("> missing packets           : %'-u",	atsc3_global_statistics->packet_counter_mmtp_packets_missing);
 	__PS_STATS_GLOBAL("");
-	__PS_STATS_GLOBAL("ALC total packets received  : %'-u",	global_stats->packet_counter_alc_recv);
-	__PS_STATS_GLOBAL("> parsed good               : %'-u",	global_stats->packet_counter_alc_packets_parsed);
-	__PS_STATS_GLOBAL("> parsed errors             : %'-u",	global_stats->packet_counter_alc_packets_parsed_error);
+	__PS_STATS_GLOBAL("ALC total packets received  : %'-u",	atsc3_global_statistics->packet_counter_alc_recv);
+	__PS_STATS_GLOBAL("> parsed good               : %'-u",	atsc3_global_statistics->packet_counter_alc_packets_parsed);
+	__PS_STATS_GLOBAL("> parsed errors             : %'-u",	atsc3_global_statistics->packet_counter_alc_packets_parsed_error);
 	__PS_STATS_GLOBAL("")
-	__PS_STATS_GLOBAL("Non ATSC3 Packets           : %'-u", global_stats->packet_counter_filtered_ipv4);
+	__PS_STATS_GLOBAL("Non ATSC3 Packets           : %'-u", atsc3_global_statistics->packet_counter_filtered_ipv4);
 	__PS_STATS_GLOBAL("");
 	__PS_STATS_GLOBAL("");
-	__PS_STATS_GLOBAL("Total Mulicast Packets RX   : %'-u", global_stats->packets_total_received);
+	__PS_STATS_GLOBAL("Total Mulicast Packets RX   : %'-u", atsc3_global_statistics->packets_total_received);
 
 	//dump flow status
-	for(int i=0; i < global_stats->packet_id_n; i++ ) {
-		packet_id_mmt_stats_t* packet_mmt_stats = global_stats->packet_id_vector[i];
+	for(int i=0; i < atsc3_global_statistics->packet_id_n; i++ ) {
+		packet_id_mmt_stats_t* packet_mmt_stats = atsc3_global_statistics->packet_id_vector[i];
         //sanity check
         if(!packet_mmt_stats) {
             __ERROR("index: %u, packet_mmt_stats is NULL", i);
@@ -487,6 +503,8 @@ void atsc3_packet_statistics_dump_global_stats(){
 	//process any gaps or deltas
 
 //	global_stats->packet_id_delta = NULL;
+
+#endif
 }
 
 /**
@@ -500,34 +518,36 @@ void atsc3_packet_statistics_dump_global_stats(){
 
 
 void atsc3_packet_statistics_dump_mfu_stats(){
+#ifndef __DISABLE_NCURSES__
+
 	bool has_output = false;
 
 	__PS_CLEAR();
 	struct timeval tNow;
 	gettimeofday(&tNow, NULL);
-	long long elapsedDurationUs = timediff(tNow, global_stats->program_timeval_start);
+	long long elapsedDurationUs = timediff(tNow, atsc3_global_statistics->program_timeval_start);
 	__PS_STATS_GLOBAL("Elapsed Duration            : %-.2fs", elapsedDurationUs / 1000000.0);
 	__PS_STATS_GLOBAL("");
-	__PS_STATS_GLOBAL("LLS total packets received  : %'-u", global_stats->packet_counter_lls_packets_received);
-	__PS_STATS_GLOBAL("> parsed good               : %'-u", global_stats->packet_counter_lls_packets_parsed);
-	__PS_STATS_GLOBAL("> parsed error              : %'-u", global_stats->packet_counter_lls_packets_parsed_error);
-	__PS_STATS_GLOBAL("- SLT packets decoded       : %'-u", global_stats->packet_counter_lls_slt_packets_parsed);
-	__PS_STATS_GLOBAL("  - SLT updates processed   : %'-u", global_stats->packet_counter_lls_slt_update_processed);
+	__PS_STATS_GLOBAL("LLS total packets received  : %'-u", atsc3_global_statistics->packet_counter_lls_packets_received);
+	__PS_STATS_GLOBAL("> parsed good               : %'-u", atsc3_global_statistics->packet_counter_lls_packets_parsed);
+	__PS_STATS_GLOBAL("> parsed error              : %'-u", atsc3_global_statistics->packet_counter_lls_packets_parsed_error);
+	__PS_STATS_GLOBAL("- SLT packets decoded       : %'-u", atsc3_global_statistics->packet_counter_lls_slt_packets_parsed);
+	__PS_STATS_GLOBAL("  - SLT updates processed   : %'-u", atsc3_global_statistics->packet_counter_lls_slt_update_processed);
 	__PS_STATS_GLOBAL("");
-	__PS_STATS_GLOBAL("MMTP total packets received : %'-u", global_stats->packet_counter_mmtp_packets_received);
-	__PS_STATS_GLOBAL("- type=0x0 MPU              : %'-u", global_stats->packet_counter_mmt_mpu);
-	__PS_STATS_GLOBAL("  - timed                   : %'-u", global_stats->packet_counter_mmt_timed_mpu);
-	__PS_STATS_GLOBAL("  - non-timed               : %'-u", global_stats->packet_counter_mmt_nontimed_mpu);
-	__PS_STATS_GLOBAL("- type=0x1 Signaling        : %'-u",	global_stats->packet_counter_mmt_signaling);
-	__PS_STATS_GLOBAL("- type=0x? Other            : %'-u",	global_stats->packet_counter_mmt_unknown);
-	__PS_STATS_GLOBAL("> parsed errors             : %'-u",	global_stats->packet_counter_mmtp_packets_parsed_error);
-	__PS_STATS_GLOBAL("> missing packets           : %'-u",	global_stats->packet_counter_mmtp_packets_missing);
+	__PS_STATS_GLOBAL("MMTP total packets received : %'-u", atsc3_global_statistics->packet_counter_mmtp_packets_received);
+	__PS_STATS_GLOBAL("- type=0x0 MPU              : %'-u", atsc3_global_statistics->packet_counter_mmt_mpu);
+	__PS_STATS_GLOBAL("  - timed                   : %'-u", atsc3_global_statistics->packet_counter_mmt_timed_mpu);
+	__PS_STATS_GLOBAL("  - non-timed               : %'-u", atsc3_global_statistics->packet_counter_mmt_nontimed_mpu);
+	__PS_STATS_GLOBAL("- type=0x1 Signaling        : %'-u",	atsc3_global_statistics->packet_counter_mmt_signaling);
+	__PS_STATS_GLOBAL("- type=0x? Other            : %'-u",	atsc3_global_statistics->packet_counter_mmt_unknown);
+	__PS_STATS_GLOBAL("> parsed errors             : %'-u",	atsc3_global_statistics->packet_counter_mmtp_packets_parsed_error);
+	__PS_STATS_GLOBAL("> missing packets           : %'-u",	atsc3_global_statistics->packet_counter_mmtp_packets_missing);
 	__PS_STATS_GLOBAL("");
-	__PS_STATS_GLOBAL("Total Mulicast Packets RX   : %'-u", global_stats->packets_total_received);
+	__PS_STATS_GLOBAL("Total Mulicast Packets RX   : %'-u", atsc3_global_statistics->packets_total_received);
 
 	//dump flow status
-	for(int i=0; i < global_stats->packet_id_n; i++ ) {
-		packet_id_mmt_stats_t* packet_mmt_stats = global_stats->packet_id_vector[i];
+	for(int i=0; i < atsc3_global_statistics->packet_id_n; i++ ) {
+		packet_id_mmt_stats_t* packet_mmt_stats = atsc3_global_statistics->packet_id_vector[i];
 		if(!packet_mmt_stats->packet_id)
 			continue;
 
@@ -618,5 +638,7 @@ void atsc3_packet_statistics_dump_mfu_stats(){
 	}
 
 	__PS_REFRESH();
+
+#endif
 
 }

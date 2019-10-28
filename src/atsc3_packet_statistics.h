@@ -205,9 +205,9 @@ typedef struct global_atsc3_stats {
 	uint32_t packets_total_received;
 
 	struct timeval program_timeval_start;
-} global_atsc3_stats_t;
+} atsc3_global_statistics_t;
 
-extern global_atsc3_stats_t* global_stats;
+extern atsc3_global_statistics_t* atsc3_global_statistics;
 
 
 

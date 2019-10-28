@@ -7,6 +7,8 @@
 
 //#define _ENABLE_TRACE 1
 //#define _SHOW_PACKET_FLOW 1
+#ifdef __DEAD_CODE__
+
 int PACKET_COUNTER=0;
 
 #include <pcap.h>
@@ -95,7 +97,7 @@ int lls_slt_table_process_update(lls_table_t* lls) {
 		  	}
 		}
 	}
-	global_stats->packet_counter_lls_slt_update_processed++;
+	atsc3_global_statistics->packet_counter_lls_slt_update_processed++;
 	return 0;
 
 cleanup:
@@ -128,11 +130,11 @@ void process_packet(u_char *user, const struct pcap_pkthdr *pkthdr, const u_char
 	__TRACE("updating interval_total_current_rx: %d", udp_packet->data_length)
 
 	global_bandwidth_statistics->interval_total_current_bytes_rx += udp_packet->data_length;
-	global_stats->packet_counter_total_received++;
+	atsc3_global_statistics->packet_counter_total_received++;
 
 	//drop mdNS
 	if(udp_packet->udp_flow.dst_ip_addr == UDP_FILTER_MDNS_IP_ADDRESS && udp_packet->udp_flow.dst_port == UDP_FILTER_MDNS_PORT) {
-		global_stats->packet_counter_filtered_ipv4++;
+		atsc3_global_statistics->packet_counter_filtered_ipv4++;
 		__TRACE("setting %s,  %d+=%d,", "interval_filtered_current_rx", global_bandwidth_statistics->interval_filtered_current_rx, udp_packet->data_length);
 		global_bandwidth_statistics->interval_filtered_current_rx += udp_packet->data_length;
 
@@ -142,12 +144,12 @@ void process_packet(u_char *user, const struct pcap_pkthdr *pkthdr, const u_char
 
 	//dispatch for LLS extraction and dump
 	if(udp_packet->udp_flow.dst_ip_addr == LLS_DST_ADDR && udp_packet->udp_flow.dst_port == LLS_DST_PORT) {
-		global_stats->packet_counter_lls_packets_received++;
+		atsc3_global_statistics->packet_counter_lls_packets_received++;
 		global_bandwidth_statistics->interval_lls_current_bytes_rx += udp_packet->data_length;
 
 		lls_table_t* lls_table = lls_table_create_or_update_from_lls_slt_monitor(lls_slt_monitor, udp_packet->data, udp_packet->data_length);
 		if(!lls_table) {
-			global_stats->packet_counter_lls_packets_parsed_error++;
+			atsc3_global_statistics->packet_counter_lls_packets_parsed_error++;
 
 		}
 	}
@@ -158,7 +160,7 @@ void process_packet(u_char *user, const struct pcap_pkthdr *pkthdr, const u_char
 
 	if(udp_packet->udp_flow.dst_ip_addr <= MIN_ATSC3_MULTICAST_BLOCK || udp_packet->udp_flow.dst_ip_addr >= MAX_ATSC3_MULTICAST_BLOCK) {
 		//out of range, so drop
-		global_stats->packet_counter_filtered_ipv4++;
+		atsc3_global_statistics->packet_counter_filtered_ipv4++;
 		global_bandwidth_statistics->interval_filtered_current_rx += udp_packet->data_length;
 
 		goto cleanup;
@@ -167,7 +169,7 @@ void process_packet(u_char *user, const struct pcap_pkthdr *pkthdr, const u_char
 	//ALC (ROUTE) - If this flow is registered from the SLT, process it as ALC, otherwise run the flow thru MMT
 	if(lls_session->lls_slt_alc_session->alc_session &&	(lls_session->lls_slt_alc_session->sls_relax_source_ip_check || lls_session->lls_slt_alc_session->sls_source_ip_address == udp_packet->udp_flow.src_ip_addr) &&
 			lls_session->lls_slt_alc_session->sls_destination_ip_address == udp_packet->udp_flow.dst_ip_addr && lls_session->lls_slt_alc_session->sls_destination_udp_port == udp_packet->udp_flow.dst_port) {
-		global_stats->packet_counter_alc_recv++;
+		atsc3_global_statistics->packet_counter_alc_recv++;
 
 		global_bandwidth_statistics->interval_alc_current_rx += udp_packet->data_length;
 
@@ -180,12 +182,12 @@ void process_packet(u_char *user, const struct pcap_pkthdr *pkthdr, const u_char
 			//process ALC streams
 			int retval = alc_rx_analyze_packet((char*)udp_packet->data, udp_packet->data_length, &ch, &alc_packet);
 			if(!retval) {
-				global_stats->packet_counter_alc_packets_parsed++;
+				atsc3_global_statistics->packet_counter_alc_packets_parsed++;
 				alc_packet_dump_to_object(alc_packet);
 				goto cleanup;
 			} else {
 				__ERROR("Error in ALC decode: %d", retval);
-				global_stats->packet_counter_alc_packets_parsed_error++;
+				atsc3_global_statistics->packet_counter_alc_packets_parsed_error++;
 				goto cleanup;
 			}
 		} else {
@@ -199,13 +201,13 @@ void process_packet(u_char *user, const struct pcap_pkthdr *pkthdr, const u_char
 
 		global_bandwidth_statistics->interval_mmt_current_rx += udp_packet->data_length;
 
-		global_stats->packet_counter_mmtp_packets_received++;
+		atsc3_global_statistics->packet_counter_mmtp_packets_received++;
 
 		__ALC_UTILS_DEBUG("data len: %d", udp_packet->data_length)
 		mmtp_payload_fragments_union_t* mmtp_payload = mmtp_packet_parse(mmtp_sub_flow_vector, udp_packet->data, udp_packet->data_length);
 
 		if(!mmtp_payload) {
-			global_stats->packet_counter_mmtp_packets_parsed_error++;
+			atsc3_global_statistics->packet_counter_mmtp_packets_parsed_error++;
 			__ERROR("mmtp_packet_parse: raw packet ptr is null, parsing failed for flow: %d.%d.%d.%d:(%-10u):%-5hu \t ->  %d.%d.%d.%d\t(%-10u)\t:%-5hu",
 					ip_header[12], ip_header[13], ip_header[14], ip_header[15], udp_packet->udp_flow.src_ip_addr,
 					(uint16_t)((udp_header[0] << 8) + udp_header[1]),
@@ -220,10 +222,10 @@ void process_packet(u_char *user, const struct pcap_pkthdr *pkthdr, const u_char
 		//mmtp_packet_header_dump(mmtp_payload);
 
 		if(mmtp_payload->mmtp_packet_header->mmtp_payload_type == 0x0) {
-			global_stats->packet_counter_mmt_mpu++;
+			atsc3_global_statistics->packet_counter_mmt_mpu++;
 
 			if(mmtp_payload->mmtp_mpu_type_packet_header.mpu_timed_flag == 1) {
-				global_stats->packet_counter_mmt_timed_mpu++;
+				atsc3_global_statistics->packet_counter_mmt_timed_mpu++;
 
 				//timed
 				//mpu_dump_flow(udp_packet->udp_flow.dst_ip_addr, udp_packet->udp_flow.dst_port, mmtp_payload);
@@ -231,18 +233,18 @@ void process_packet(u_char *user, const struct pcap_pkthdr *pkthdr, const u_char
 
 			} else {
 				//non-timed
-				global_stats->packet_counter_mmt_nontimed_mpu++;
+				atsc3_global_statistics->packet_counter_mmt_nontimed_mpu++;
 
 			}
 
 		} else if(mmtp_payload->mmtp_packet_header->mmtp_payload_type == 0x2) {
 
 			signaling_message_dump(mmtp_payload);
-			global_stats->packet_counter_mmt_signaling++;
+			atsc3_global_statistics->packet_counter_mmt_signaling++;
 
 		} else {
 			_MMTP_WARN("mmtp_packet_parse: unknown payload type of 0x%x", mmtp_payload->mmtp_packet_header->mmtp_payload_type);
-			global_stats->packet_counter_mmt_unknown++;
+			atsc3_global_statistics->packet_counter_mmt_unknown++;
 			goto cleanup;
 		}
 
@@ -333,8 +335,8 @@ int main(int argc,char **argv) {
     mmtp_sub_flow_vector_init(mmtp_sub_flow_vector);
     lls_session = lls_sls_alc_session_create();
 
-    global_stats = calloc(1, sizeof(*global_stats));
-    gettimeofday(&global_stats->program_timeval_start, 0);
+    atsc3_global_statistics = calloc(1, sizeof(*atsc3_global_statistics));
+    gettimeofday(&atsc3_global_statistics->program_timeval_start, 0);
 
     global_bandwidth_statistics = calloc(1, sizeof(*global_bandwidth_statistics));
 	gettimeofday(&global_bandwidth_statistics->program_timeval_start, NULL);
@@ -371,4 +373,4 @@ int main(int argc,char **argv) {
 
     return 0;
 }
-
+#endif

@@ -8,7 +8,11 @@
 
 
 #include <stdarg.h>
+#ifndef __DISABLE_NCURSES__
+
 #include <ncurses.h>                    /* ncurses.h includes stdio.h */
+#endif
+
 #include <pthread.h>
 #include <stdlib.h>
 #include <sys/ioctl.h>
@@ -49,6 +53,19 @@ void lls_dump_instance_table_mmt_only_ncurses(lls_table_t* lls_session);
 #define __PKT_STATS_NCURSES true
 
 
+#ifdef __DISABLE_NCURSES__
+#define WINDOW void
+#define SCREEN void
+#define wnoutrefresh(...)
+#define wrefresh(...)
+#define doupdate(...)
+#define curscr(...)
+#define curscr(...)
+#define vs(...)
+#define werase(...)
+#define wprintw(...)
+
+#endif
 
 extern SCREEN* my_screen;
 //wmove(bw_window, 0, 0 __VA_ARGS__); //vwprintf(bw_window, __VA_ARGS__);
