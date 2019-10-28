@@ -4,30 +4,28 @@
  *  Created on: Mar 8, 2019
  *      Author: jjustman
  */
+#include "atsc3_utils.h"
 
 #ifndef ATSC3_ISOBMFF_TRUN_BOX_H_
 #define ATSC3_ISOBMFF_TRUN_BOX_H_
 
-#include "atsc3_utils.h"
-
-//for bento4 support
+//ISOBMFF support
 typedef struct trun_sample_entry {
 
     //keep track of our sample mfu mmth header box size on mpu_fragment_type == 2 && (mpu_fragmentation_indicator == 0 || mpu_fragmentation_indicator == 1)
-    uint32_t mfu_mmth_sample_header_size;
+    uint32_t 	mfu_mmth_sample_header_size;
     
     //keep track of our first sample du size to determine if offset needs to be corrected
-    bool trun_mmthsample_offset_includes_header;
-    uint32_t mfu_mmth_cum_header_sample_size;
-    uint32_t mfu_mmth_last_header_sample_size;
-    uint32_t mfu_mmth_last_sample_size;
-    uint32_t mfu_mmth_last_offset;
-    
+    bool 		trun_mmthsample_offset_includes_header;
+    uint32_t 	mfu_mmth_cum_header_sample_size;
+    uint32_t 	mfu_mmth_last_header_sample_size;
+    uint32_t 	mfu_mmth_last_sample_size;
+    uint32_t 	mfu_mmth_last_offset;
     
 	//sample length and offset will be unknown if our mmth_box is missing, so be prepared to recompute
-	bool 	mmth_box_missing;
+	bool 		mmth_box_missing;
 
-	block_t* sample;
+	block_t* 	sample;
 
 	uint32_t 	sequence_number;				//same as mpu_sequence_number
 	uint8_t 	trackrefindex; 					//track id in mpu
@@ -41,11 +39,11 @@ typedef struct trun_sample_entry {
 
 	uint32_t 	sample_duration;
 
-	uint32_t sample_flags;
-	uint32_t sample_composition_time_offset;
+	uint32_t	sample_flags;
+	uint32_t 	sample_composition_time_offset;
 
-	bool to_remove_sample_entry;
-	bool has_matching_sample;
+	bool		to_remove_sample_entry;
+	bool 		has_matching_sample;
 
 } trun_sample_entry_t;
 

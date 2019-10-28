@@ -14,6 +14,8 @@ void doBandwidthStatusUpdate();
 
 void *print_bandwidth_statistics_thread(void *vargp)
 {
+#ifndef __DISABLE_NCURSES__
+
 	__BW_TRACE("Starting printBandwidthStatistics");
     setlocale(LC_ALL,"");
 
@@ -27,9 +29,14 @@ void *print_bandwidth_statistics_thread(void *vargp)
 		__DOUPDATE();
 		ncurses_writer_lock_mutex_release();
 	}
+#endif
+	return NULL;
 }
 
 void doBandwidthStatusUpdate() {
+
+#ifndef __DISABLE_NCURSES__
+
 	struct timeval time_now;
 
 	//acquire our ncurses_writer mutex
@@ -116,6 +123,7 @@ void doBandwidthStatusUpdate() {
 	__BW_STATS_LIFETIME("Filtered: %'13d B, %'13d pkts",	global_bandwidth_statistics->grand_filtered_bytes_rx, 	global_bandwidth_statistics->grand_filtered_packets_rx);
 	__BW_STATS_LIFETIME("Total   : %'13d B, %'13d pkts",	global_bandwidth_statistics->grand_total_bytes_rx,		global_bandwidth_statistics->grand_total_packets_rx);
 
+#endif
 }
 
 

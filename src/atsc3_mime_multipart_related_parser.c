@@ -6,7 +6,7 @@
  */
 
 #include <string.h>
-#include "strnstr.c"
+#include "strnstr.h"
 #include "atsc3_mime_multipart_related_parser.h"
 
 int _MIME_PARSER_INFO_ENABLED  = 0;

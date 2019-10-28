@@ -16,6 +16,7 @@
 
 typedef struct atsc3_sls_html_entry_package_required_capabilities {
     //jjustman-2019-09-18 - TODO: impl, also add in free for members in atsc3_sls_held_fragment.c
+	bool		__to_impl__;
 
 } atsc3_sls_html_entry_package_required_capabilities_t;
 

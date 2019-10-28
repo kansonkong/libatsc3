@@ -6,6 +6,7 @@
  */
 #pragma GCC diagnostic ignored "-Wformat-zero-length"
 
+
 #include <assert.h>
 #include <ctype.h>
 #include <fcntl.h>
@@ -92,9 +93,9 @@ typedef struct atsc3_block {
 	uint32_t p_size;
 	uint32_t i_pos;
     uint8_t  _refcnt;
+    uint8_t  _is_alloc;
 } block_t;
 
-block_t* block_Alloc(int len);
 
 #define block_Refcount(a) ({ if(a) { _block_Refcount(a);  \
     _ATSC3_UTILS_TRACE("UTRACE:INCR:%p:%s, block_Refcount: incrementing to: %d, block: %p (p_buffer: %p)", a, __FUNCTION__, a->_refcnt, a, a->p_buffer); } \
@@ -102,12 +103,15 @@ block_t* block_Alloc(int len);
     
     
 //block_t* _block_Refcount(block_t*); //used for sharing pointers between ref's
-    
+block_t* block_Alloc(int len);
+bool block_IsAlloc(block_t*);
 block_t* block_Promote(char*);
-block_t* block_Write(block_t* dest, uint8_t* buf, uint32_t size);
+block_t* block_Write(block_t* dest, const uint8_t* buf, uint32_t size);
 uint32_t block_Append(block_t* dest, block_t* src); //combine two blocks at i_pos, i_pos, return end position
+block_t* block_AppendFromBuf(block_t* dest, const uint8_t* src_buf, uint32_t src_size);
 uint32_t block_AppendFull(block_t* dest, block_t* src); //combine two blocks, dest at i_pos and full size of src p_size
 uint32_t block_Merge(block_t* dest, block_t* src); //combine two blocks from p_size, p_size, return new merged p_size,
+uint32_t block_MergeNoRewind(block_t* dest, block_t* src);
 uint32_t block_Seek(block_t* block, int32_t seek_pos);
 uint32_t block_Seek_Relative(block_t* block, int32_t relative_pos);
 block_t* block_Rewind(block_t* dest);
@@ -115,10 +119,11 @@ block_t* block_Resize(block_t* dest, uint32_t dest_size_required);
 block_t* block_Duplicate(block_t* a);
 block_t* block_Duplicate_from_position(block_t* a);
 block_t* block_Duplicate_to_size(block_t* src, uint32_t target_len);
-block_t* block_Duplicate_from_ptr(uint8_t* data, uint32_t size);
+block_t* block_Duplicate_from_ptr(uint8_t* data, uint32_t size); //src
 uint32_t block_Remaining_size(block_t* src);
 bool block_Valid(block_t* src);
 uint8_t* block_Get(block_t* src);
+uint32_t block_Len(block_t* src);
 
 #define block_RefZero(a) ({ a->_refcnt = 0; })
 #define block_Release(a) ({ _ATSC3_UTILS_TRACE("UTRACE:DECR:%p:%s, block_Refcount: decrementing to: %d, block: %p (p_buffer: %p)", *a, __FUNCTION__, (*a->_refcnt)-1, *a, *a->p_buffer);  _block_Release(a); })

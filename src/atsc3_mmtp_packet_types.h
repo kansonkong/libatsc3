@@ -188,6 +188,8 @@ typedef struct mmtp_mpu_packet {
     //      and then mpu_fragments based upon mpu_fragmentation_counter
     mmthsample_header_t* mmthsample_header;
 
+    //jjustman-2019-10-23: hack-ish for MFU re-assembly
+    bool mfu_reassembly_performed;
 } mmtp_mpu_packet_t;
     
 typedef struct {
@@ -259,7 +261,7 @@ typedef struct mmtp_asset {
     /* TODO: jjustman-2019-08-31
      
      map this to proper iso23008-1:
-     
+
      uint32_t   asset_id_scheme
      uint32_t   asset_id_length
      uint8_t*   asset_id_value
