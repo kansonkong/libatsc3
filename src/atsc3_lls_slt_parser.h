@@ -53,7 +53,7 @@ char* lls_get_sls_protocol_value(uint protocol);
 
 int lls_slt_table_build(lls_table_t* lls_table, xml_node_t *xml_root);
 
-int SLT_BROADCAST_SVC_SIGNALING_build_table(lls_service_t* service_table, xml_node_t *service_row_node, kvp_collection_t* kvp_collection);
+int SLT_BROADCAST_SVC_SIGNALING_build_table(atsc3_lls_slt_service_t* atsc3_lls_slt_service, xml_node_t *service_row_node, kvp_collection_t* kvp_collection);
 
 
 #if defined (__cplusplus)

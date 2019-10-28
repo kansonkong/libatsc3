@@ -4,7 +4,14 @@
  *  Created on: May 1, 2019
  *      Author: jjustman
  */
+#ifndef __DISABLE_LIBPCAP__
 #include <pcap.h>
+#else
+//jjustman-2019-09-27 - hacks...
+#define pcap_sendpacket(...) (0)
+#define pcap_geterr(...) ("")
+#endif
+
 #include <string.h>
 
 #ifndef ATSC3_ALP_PARSER_H_

@@ -172,7 +172,7 @@ typedef struct atsc3_route_s_tsid_RS_LS_SrcFlow {
 } atsc3_route_s_tsid_RS_LS_SrcFlow_t;
 
 typedef struct atsc3_route_s_tsid_RS_LS_RepairFlow {
-
+	bool	__to_impl__;
 
 } atsc3_route_s_tsid_RS_LS_RepairFlow_t;
 

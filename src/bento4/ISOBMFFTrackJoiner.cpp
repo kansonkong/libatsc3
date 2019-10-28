@@ -20,35 +20,6 @@ extern FILE* __ISOBMFFTRACKJOINER_DEBUG_LOG_FILE = NULL;
 extern bool  __ISOBMFFTRACKJOINER_DEBUG_LOG_AVAILABLE = true;
 
 
-
-
-/*****************************************************************
-|
-|
-|    Copyright 2002-2008 Axiomatic Systems, LLC
-|
-|
-|    This file is derived from Bento4/AP4 (MP4 Atom Processing Library).
-|
-|    Unless you have obtained Bento4 under a difference license,
-|    this version of Bento4 is Bento4|GPL.
-|    Bento4|GPL is free software; you can redistribute it and/or modify
-|    it under the terms of the GNU General Public License as published by
-|    the Free Software Foundation; either version 2, or (at your option)
-|    any later version.
-|
-|    Bento4|GPL is distributed in the hope that it will be useful,
-|    but WITHOUT ANY WARRANTY; without even the implied warranty of
-|    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-|    GNU General Public License for more details.
-|
-|    You should have received a copy of the GNU General Public License
-|    along with Bento4|GPL; see the file COPYING.  If not, write to the
-|    Free Software Foundation, 59 Temple Place - Suite 330, Boston, MA
-|    02111-1307, USA.
-|
- ****************************************************************/
-
 using namespace std;
 
 #ifdef __EMSCRIPTEN__
@@ -321,8 +292,8 @@ void atom_delete_children_recursive(AP4_Atom* atom) {
 void ISOBMFF_track_joiner_monitor_output_buffer_parse_and_build_joined_mmt_rebuilt_boxes(lls_sls_monitor_output_buffer_t* lls_sls_monitor_output_buffer, AP4_DataBuffer** output_data_buffer_p, AP4_MemoryByteStream** output_stream_p)
 {
 	/** tood - magic happens here **/
-	block_t* audio_output_buffer = block_Duplicate(lls_sls_monitor_output_buffer->audio_output_buffer_isobmff.mmt_mpu_rebuilt);
-	block_t* video_output_buffer = block_Duplicate(lls_sls_monitor_output_buffer->video_output_buffer_isobmff.mmt_mpu_rebuilt);
+	block_t* audio_output_buffer = block_Duplicate(lls_sls_monitor_output_buffer->audio_output_buffer_isobmff.mmt_mpu_rebuilt_and_appending_for_isobmff_mux);
+	block_t* video_output_buffer = block_Duplicate(lls_sls_monitor_output_buffer->video_output_buffer_isobmff.mmt_mpu_rebuilt_and_appending_for_isobmff_mux);
 
     parseAndBuildJoinedBoxes_from_lls_sls_monitor_output_buffer(lls_sls_monitor_output_buffer, audio_output_buffer, video_output_buffer, output_data_buffer_p, output_stream_p);
 }
@@ -512,7 +483,8 @@ void ISOBMFF_track_joiner_monitor_output_buffer_parse_and_build_joined_mmt_rebui
                     for (int i = 0;	i < lls_sls_monitor_buffer_isobmff->trun_sample_entry_v.count; i++) {
                         trun_sample_entry_t* trun_sample_entry = lls_sls_monitor_buffer_isobmff->trun_sample_entry_v.data[i];
                         
-                        uint32_t trun_id = trun_sample_entry->samplenumber - 1;
+                        //if we lost the whole block, samplenumber may be 0, thus wrapping around...
+                        uint32_t trun_id = trun_sample_entry->samplenumber > 0 ? (trun_sample_entry->samplenumber - 1) : 0;
                         if(to_walk_entries_size > trun_id && trun_id >= 0) {
 
                         	//assume we need to set duration and flags..since its not in the mmthsample hint
@@ -533,14 +505,42 @@ void ISOBMFF_track_joiner_monitor_output_buffer_parse_and_build_joined_mmt_rebui
                         }
 
                         for (int j=last_trun_id; j < trun_id; j++) {
-                        	if(to_walk_entries_size > j) {
-                                __ISOBMFF_JOINER_DEBUG("REBUILD MOOF: packet_id: %u, intra: zeroing sample %u from size: %u to size: %u,", lls_sls_monitor_buffer_isobmff->packet_id, j, to_walk_entries[j].sample_size, 0);
+                        	if(to_walk_entries_size >= j) {
+                                __ISOBMFF_JOINER_DEBUG("REBUILD MOOF: packet_id: %u, trun_sample_entry_v.count: %d, to_walk id: %d, missing NAL: zeroing (forbidden bit) sample, size: %u to size: %u,",
+                                                       lls_sls_monitor_buffer_isobmff->packet_id,
+                                                       lls_sls_monitor_buffer_isobmff->trun_sample_entry_v.count,
+                                                       j, to_walk_entries[j].sample_size, 0);
 
-                        		to_walk_entries[j].sample_size = 0;
+                                trun_sample_entry_t* to_inject_missing_sample_entry = trun_sample_entry_new();
+                                to_inject_missing_sample_entry->mmth_box_missing = true;
+                                lls_sls_monitor_buffer_isobmff_add_trun_sample_entry(lls_sls_monitor_buffer_isobmff, to_inject_missing_sample_entry);
+
+
+//                                trun_sample_entry_t* trun_sample_entry_forbidden_nal_bit = lls_sls_monitor_buffer_isobmff->trun_sample_entry_v.data[j];
+//                                if(!trun_sample_entry_forbidden_nal_bit) {
+//                                	trun_sample_entry_forbidden_nal_bit = (trun_sample_entry_t*)calloc(1, sizeof(trun_sample_entry_t));
+//                                }
+
+                                /** jjustman-2019-09-25 - trial hack for NAL error concealment **/
+                                to_inject_missing_sample_entry->sample_length = 4; //TODO - match this size with    [hvcC] size=8+135 -> NALU Length Size = 4
+                                to_inject_missing_sample_entry->sample_composition_time_offset = 0;
+
+                                to_inject_missing_sample_entry->sample = block_Alloc(4);
+
+								/*
+								 * set forbidden zero bit? https://tools.ietf.org/html/rfc3984
+								 *
+								 */
+								uint8_t nal_size[4] = { 0 };
+								nal_size[0] = 0x80;
+
+								block_Write(to_inject_missing_sample_entry->sample, nal_size, 4);
+								final_mdat_size += 4;
+
                         	} else {
                                 trun_sample_entry_t* trun_sample_entry_to_add = lls_sls_monitor_buffer_isobmff->trun_sample_entry_v.data[j];
 
-                                __ISOBMFF_JOINER_INFO("REBUILD MOOF: packet_id: %u, WARN - adding trun entry: %u, sample_size: %u", lls_sls_monitor_buffer_isobmff->packet_id, j, trun_sample_entry_to_add->sample_length);
+                                __ISOBMFF_JOINER_INFO("REBUILD MOOF: packet_id: %u, missing TRUN_Atom:Entry - adding trun entry: %u, sample_size: %u", lls_sls_monitor_buffer_isobmff->packet_id, j, trun_sample_entry_to_add->sample_length);
                                 AP4_TrunAtom::Entry* item = new AP4_TrunAtom::Entry();
                                 item->sample_size = trun_sample_entry_to_add->sample_length;
                                 item->sample_duration = last_sample_duration;

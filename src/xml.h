@@ -31,6 +31,8 @@
 #include <string.h>
 #include <stdbool.h>
 
+#include "atsc3_utils.h"
+
 /**
  * Opaque structure holding the parsed xml document
  */

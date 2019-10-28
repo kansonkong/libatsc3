@@ -26,12 +26,12 @@ address and destination port of the MMTP session carrying the MMTP- specific SLS
 #include "atsc3_lls_slt_parser.h"
 #include "atsc3_lls_sls_parser.h"
 
-int _LLS_SLT_PARSER_INFO_ENABLED=0;
-int _LLS_SLT_PARSER_INFO_MMT_ENABLED=0;
-int _LLS_SLT_PARSER_INFO_ROUTE_ENABLED=0;
+int _LLS_SLT_PARSER_INFO_ENABLED = 0;
+int _LLS_SLT_PARSER_INFO_MMT_ENABLED = 0;
+int _LLS_SLT_PARSER_INFO_ROUTE_ENABLED = 0;
 
-int _LLS_SLT_PARSER_DEBUG_ENABLED=0;
-int _LLS_SLT_PARSER_TRACE_ENABLED=0;
+int _LLS_SLT_PARSER_DEBUG_ENABLED = 0;
+int _LLS_SLT_PARSER_TRACE_ENABLED = 0;
 
 #define LLS_SLT_SIMULCAST_TSID 				"SimulcastTSID"
 #define LLS_SLT_SVC_CAPABILITIES			"SvcCapabilities"
@@ -40,18 +40,8 @@ int _LLS_SLT_PARSER_TRACE_ENABLED=0;
 #define LLS_SLT_OTHER_BSID					"OtherBsid"
 
 
-//defer creating our sls_monitor instances until they are needed
-//create our sls_monitor_ref
-//lls_slt_monitor->lls_sls_alc_monitor = lls_sls_alc_monitor_create();
-//lls_slt_monitor->lls_sls_mmt_monitor = lls_sls_mmt_monitor_create();
-
 lls_slt_monitor_t* lls_slt_monitor_create() {
-	lls_slt_monitor_t* lls_slt_monitor = (lls_slt_monitor_t*)calloc(1, sizeof(lls_slt_monitor_t));
-
-    //create our vector references
-    lls_slt_monitor->lls_sls_mmt_session_vector = lls_sls_mmt_session_vector_create();
-	lls_slt_monitor->lls_sls_alc_session_vector = lls_sls_alc_session_vector_create();
-
+	lls_slt_monitor_t* lls_slt_monitor = lls_slt_monitor_new();
 	return lls_slt_monitor;
 }
 
@@ -83,13 +73,13 @@ int lls_slt_table_build(lls_table_t *lls_table, xml_node_t *xml_root) {
 	int svc_size = xml_node_children(xml_root);
 	__LLS_SLT_PARSER_TRACE("build_SLT_table, lls_table->slt_table.bsid_n: %u, svc_size: %u, attributes are: %s\n", lls_table->slt_table.bsid_n, svc_size, slt_attributes);
 
-	lls_table->slt_table.service_entry = (lls_service_t**)calloc(svc_size, sizeof(lls_service_t*));
+	//lls_table->slt_table.service_entry = (lls_service_t**)calloc(svc_size, sizeof(lls_service_t*));
+
+	atsc3_lls_slt_table_prealloc_atsc3_lls_slt_service(&lls_table->slt_table, svc_size);
 
 	//build our service rows
 	for(int i=0; i < svc_size; i++) {
-		lls_table->slt_table.service_entry[i] = calloc(1, sizeof(lls_service_t));
-
-		lls_service_t* service_entry = lls_table->slt_table.service_entry[i];
+		atsc3_lls_slt_service_t* atsc3_lls_slt_service = atsc3_lls_slt_service_new();
 
 		xml_node_t* service_row_node = xml_node_child(xml_root, i);
 		xml_string_t* service_row_node_xml_string = xml_node_name(service_row_node);
@@ -114,12 +104,12 @@ int lls_slt_table_build(lls_table_t *lls_table, xml_node_t *xml_root) {
 
 			scratch_i = atoi(serviceId);
 			freesafe(serviceId);
-			service_entry->service_id = scratch_i & 0xFFFF;
+			atsc3_lls_slt_service->service_id = scratch_i & 0xFFFF;
 			__LLS_SLT_PARSER_TRACE("service id is: %s, int is: %d, uint_16: %u", serviceId, scratch_i, (scratch_i & 0xFFFF));
 
 			//copy our char* elements
-			service_entry->global_service_id  = kvp_collection_get(service_attributes_collecton, "globalServiceID");
-			service_entry->short_service_name = kvp_collection_get(service_attributes_collecton, "shortServiceName");
+			atsc3_lls_slt_service->global_service_id  = kvp_collection_get(service_attributes_collecton, "globalServiceID");
+			atsc3_lls_slt_service->short_service_name = kvp_collection_get(service_attributes_collecton, "shortServiceName");
 
 			char* majorChannelNo  = kvp_collection_get(service_attributes_collecton, "majorChannelNo");
 			char* minorChannelNo  = kvp_collection_get(service_attributes_collecton, "minorChannelNo");
@@ -129,25 +119,25 @@ int lls_slt_table_build(lls_table_t *lls_table, xml_node_t *xml_root) {
 			//optional parameters here
 			if(majorChannelNo) {
 				scratch_i = atoi(majorChannelNo);
-				service_entry->major_channel_no = scratch_i & 0xFFFF;
+				atsc3_lls_slt_service->major_channel_no = scratch_i & 0xFFFF;
 				freesafe(majorChannelNo);
 			}
 
 			if(minorChannelNo) {
 				scratch_i = atoi(minorChannelNo);
-				service_entry->minor_channel_no = scratch_i & 0xFFFF;
+				atsc3_lls_slt_service->minor_channel_no = scratch_i & 0xFFFF;
 				freesafe(minorChannelNo);
 			}
 
 			if(serviceCategory) {
 				scratch_i = atoi(serviceCategory);
-				service_entry->service_category = scratch_i & 0xFFFF;
+				atsc3_lls_slt_service->service_category = scratch_i & 0xFFFF;
 				freesafe(serviceCategory);
 			}
 
 			if(sltSvcSeqNum) {
 				scratch_i = atoi(sltSvcSeqNum);
-				service_entry->slt_svc_seq_num = scratch_i & 0xFFFF;
+				atsc3_lls_slt_service->slt_svc_seq_num = scratch_i & 0xFFFF;
 				freesafe(sltSvcSeqNum);
 			}
 
@@ -171,7 +161,7 @@ int lls_slt_table_build(lls_table_t *lls_table, xml_node_t *xml_root) {
 				} else if(xml_string_equals_ignore_case(child_row_node_xml_string, LLS_SLT_SVC_CAPABILITIES)) {
 					_LLS_ERROR("build_SLT_table - not supported: LLS_SLT_SVC_CAPABILITIES");
 				} else if(xml_string_equals_ignore_case(child_row_node_xml_string, LLS_SLT_BROADCAST_SVC_SIGNALING)) {
-					SLT_BROADCAST_SVC_SIGNALING_build_table(service_entry, service_row_node, kvp_child_attributes);
+					SLT_BROADCAST_SVC_SIGNALING_build_table(atsc3_lls_slt_service, service_row_node, kvp_child_attributes);
 
 				} else if(xml_string_equals_ignore_case(child_row_node_xml_string, LLS_SLT_SVC_INET_URL)) {
 					_LLS_ERROR("build_SLT_table - not supported: LLS_SLT_SVC_INET_URL");
@@ -186,9 +176,7 @@ int lls_slt_table_build(lls_table_t *lls_table, xml_node_t *xml_root) {
 				kvp_collection_free(kvp_child_attributes);
 			}
 
-
 			//cleanup
-
 			if(service_attributes_collecton) {
 				kvp_collection_free(service_attributes_collecton);
 			}
@@ -196,8 +184,8 @@ int lls_slt_table_build(lls_table_t *lls_table, xml_node_t *xml_root) {
 				free(child_row_node_attributes_s);
 			}
 
-			/** push service row **/
-			lls_table->slt_table.service_entry_n++;
+			//push entry
+			atsc3_lls_slt_table_add_atsc3_lls_slt_service(&lls_table->slt_table, atsc3_lls_slt_service);
 		}
 	}
 
@@ -211,7 +199,7 @@ int lls_slt_table_build(lls_table_t *lls_table, xml_node_t *xml_root) {
 	return 0;
 }
 
-int SLT_BROADCAST_SVC_SIGNALING_build_table(lls_service_t* service_table, xml_node_t *service_row_node, kvp_collection_t* kvp_collection) {
+int SLT_BROADCAST_SVC_SIGNALING_build_table(atsc3_lls_slt_service_t* atsc3_lls_slt_service, xml_node_t *service_row_node, kvp_collection_t* kvp_collection) {
 	int ret = 0;
 	xml_string_t* service_row_node_xml_string = xml_node_name(service_row_node);
 	uint8_t *svc_attributes = xml_attributes_clone(service_row_node_xml_string);
@@ -225,13 +213,19 @@ int SLT_BROADCAST_SVC_SIGNALING_build_table(lls_service_t* service_table, xml_no
 	}
 
 	int scratch_i=0;
-	service_table->broadcast_svc_signaling.sls_protocol = atoi(slsProtocol);
+
+	atsc3_slt_broadcast_svc_signalling_t* atsc3_slt_broadcast_svc_signalling = atsc3_slt_broadcast_svc_signalling_new();
+	atsc3_slt_broadcast_svc_signalling->sls_protocol = atoi(slsProtocol);
 	freesafe(slsProtocol);
 
-	service_table->broadcast_svc_signaling.sls_destination_ip_address = kvp_collection_get(kvp_collection, "slsDestinationIpAddress");
-	service_table->broadcast_svc_signaling.sls_destination_udp_port = kvp_collection_get(kvp_collection, "slsDestinationUdpPort");
-	service_table->broadcast_svc_signaling.sls_source_ip_address = kvp_collection_get(kvp_collection, "slsSourceIpAddress");
+	atsc3_slt_broadcast_svc_signalling->sls_destination_ip_address = kvp_collection_get(kvp_collection, "slsDestinationIpAddress");
+	atsc3_slt_broadcast_svc_signalling->sls_destination_udp_port = kvp_collection_get(kvp_collection, "slsDestinationUdpPort");
+	atsc3_slt_broadcast_svc_signalling->sls_source_ip_address = kvp_collection_get(kvp_collection, "slsSourceIpAddress");
 
+	//jjustman-2019-10-03, if we have at least dest_ip and dest_port, then add
+	if(atsc3_slt_broadcast_svc_signalling->sls_destination_ip_address && atsc3_slt_broadcast_svc_signalling->sls_destination_udp_port) {
+		atsc3_lls_slt_service_add_atsc3_slt_broadcast_svc_signalling(atsc3_lls_slt_service, atsc3_slt_broadcast_svc_signalling);
+	}
 
 	//kvp_find_key(kvp_collection, "slsProtocol";
 
@@ -244,39 +238,52 @@ cleanup:
 	return ret;
 }
 
-
-
 int lls_slt_table_perform_update(lls_table_t* lls_table, lls_slt_monitor_t* lls_slt_monitor) {
 
-    for(int i=0; i < lls_table->slt_table.service_entry_n; i++) {
-		lls_service_t* lls_service = lls_table->slt_table.service_entry[i];
-		__LLS_SLT_PARSER_DEBUG("checking service: %d", lls_service->service_id);
+    for(int i=0; i < lls_table->slt_table.atsc3_lls_slt_service_v.count; i++) {
 
-		if(lls_service->broadcast_svc_signaling.sls_protocol == SLS_PROTOCOL_ROUTE) {
-            __LLS_SLT_PARSER_INFO_ROUTE("ROUTE: adding service: %u, flow: %s:%s", lls_service->service_id, lls_service->broadcast_svc_signaling.sls_destination_ip_address, lls_service->broadcast_svc_signaling.sls_destination_udp_port);
+		atsc3_lls_slt_service_t* atsc3_lls_slt_service = lls_table->slt_table.atsc3_lls_slt_service_v.data[i];
 
-			lls_sls_alc_session_t* lls_sls_alc_session = lls_slt_alc_session_find_or_create(lls_slt_monitor->lls_sls_alc_session_vector, lls_service);
+		lls_slt_monitor_add_or_update_lls_slt_service_id_group_id_cache_entry(lls_slt_monitor, lls_table->lls_group_id, atsc3_lls_slt_service);
 
-			//TODO - we probably need to clear out any missing ALC sessions?
-			if(lls_sls_alc_session && !lls_sls_alc_session->alc_session) {
-				lls_slt_alc_session_remove(lls_slt_monitor->lls_sls_alc_session_vector, lls_service);
-                __LLS_SLT_PARSER_ERROR("ROUTE: Unable to instantiate alc session for service_id: %d via SLS_PROTOCOL_ROUTE", lls_service->service_id);
-				goto cleanup;
-		  	}
+		__LLS_SLT_PARSER_DEBUG("checking service: %d", atsc3_lls_slt_service->service_id);
+
+		if(atsc3_lls_slt_service->atsc3_slt_broadcast_svc_signalling_v.count) {
+
+			if(atsc3_lls_slt_service->atsc3_slt_broadcast_svc_signalling_v.data[0]->sls_protocol == SLS_PROTOCOL_ROUTE) {
+				__LLS_SLT_PARSER_INFO_ROUTE("ROUTE: adding service: %u, flow: %s:%s",
+						atsc3_lls_slt_service->service_id,
+						atsc3_lls_slt_service->atsc3_slt_broadcast_svc_signalling_v.data[0]->sls_destination_ip_address,
+						atsc3_lls_slt_service->atsc3_slt_broadcast_svc_signalling_v.data[0]->sls_destination_udp_port);
+
+				//->atsc3_slt_broadcast_svc_signalling_v.data[0]
+				lls_sls_alc_session_t* lls_sls_alc_session = lls_slt_alc_session_find_or_create(lls_slt_monitor, atsc3_lls_slt_service);
+
+				//TODO - we probably need to clear out any missing ALC sessions?
+				if(lls_sls_alc_session && !lls_sls_alc_session->alc_session) {
+					lls_slt_alc_session_remove(lls_slt_monitor, atsc3_lls_slt_service);
+					__LLS_SLT_PARSER_ERROR("ROUTE: Unable to instantiate alc session for service_id: %d via SLS_PROTOCOL_ROUTE", atsc3_lls_slt_service->service_id);
+					goto cleanup;
+				}
+			} else if(atsc3_lls_slt_service->atsc3_slt_broadcast_svc_signalling_v.data[0]->sls_protocol == SLS_PROTOCOL_MMTP) {
+				__LLS_SLT_PARSER_INFO_MMT("MMT: adding service: %u, flow: %s:%s", atsc3_lls_slt_service->service_id,
+						atsc3_lls_slt_service->atsc3_slt_broadcast_svc_signalling_v.data[0]->sls_destination_ip_address,
+						atsc3_lls_slt_service->atsc3_slt_broadcast_svc_signalling_v.data[0]->sls_destination_udp_port);
+
+				lls_sls_mmt_session_t* lls_sls_mmt_session = lls_slt_mmt_session_find_or_create(lls_slt_monitor, atsc3_lls_slt_service);
+
+				//TODO - clear out any dropped mmt sessions?
+				if(!lls_sls_mmt_session) {
+					lls_slt_mmt_session_remove(lls_slt_monitor, atsc3_lls_slt_service);
+					__LLS_SLT_PARSER_ERROR("MMT: Unable to instantiate session for service_id: %d via SLS_PROTOCOL_MMTP", atsc3_lls_slt_service->service_id);
+					goto cleanup;
+				}
+			} else {
+				__LLS_SLT_PARSER_ERROR("SLT: atsc3_lls_slt_service id: %u, unable to process not implemented for sls_protocol: %d", atsc3_lls_slt_service->service_id, atsc3_lls_slt_service->atsc3_slt_broadcast_svc_signalling_v.data[0]->sls_protocol);
+			}
+		} else {
+			__LLS_SLT_PARSER_ERROR("SLT: atsc3_lls_slt_service id: %u, does not contain broadcast_svc_signalling", atsc3_lls_slt_service->service_id);
 		}
-        
-        if(lls_service->broadcast_svc_signaling.sls_protocol == SLS_PROTOCOL_MMTP) {
-            __LLS_SLT_PARSER_INFO_MMT("MMT: adding service: %u, flow: %s:%s", lls_service->service_id, lls_service->broadcast_svc_signaling.sls_destination_ip_address, lls_service->broadcast_svc_signaling.sls_destination_udp_port);
-            
-            lls_sls_mmt_session_t* lls_sls_mmt_session = lls_slt_mmt_session_find_or_create(lls_slt_monitor->lls_sls_mmt_session_vector, lls_service);
-            
-            //TODO - clear out any dropped mmt sessions?
-            if(!lls_sls_mmt_session) {
-                lls_slt_mmt_session_remove(lls_slt_monitor->lls_sls_mmt_session_vector, lls_service);
-                __LLS_SLT_PARSER_ERROR("MMT: Unable to instantiate session for service_id: %d via SLS_PROTOCOL_MMTP", lls_service->service_id);
-                goto cleanup;
-            }
-        }
 	}
 
 	return 0;

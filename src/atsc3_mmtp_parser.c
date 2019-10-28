@@ -232,15 +232,15 @@ error:
 
 
 void mmtp_packet_header_dump(mmtp_packet_header_t* mmtp_packet_header) {
-	__MMTP_PARSER_INFO("------------------");
-	__MMTP_PARSER_INFO("MMTP Packet Header (%p)", mmtp_packet_header);
-	__MMTP_PARSER_INFO("------------------");
-	__MMTP_PARSER_INFO(" packet version         : %-10d (0x%d%d)", 	mmtp_packet_header->mmtp_packet_version, ((mmtp_packet_header->mmtp_packet_version >> 1) & 0x1), mmtp_packet_header->mmtp_packet_version & 0x1);
-	__MMTP_PARSER_INFO(" payload_type           : %-10d (0x%d%d)", 	mmtp_packet_header->mmtp_payload_type, ((mmtp_packet_header->mmtp_payload_type >> 1) & 0x1), mmtp_packet_header->mmtp_payload_type & 0x1);
-	__MMTP_PARSER_INFO(" packet_id              : %-10hu (0x%04x)", mmtp_packet_header->mmtp_packet_id, mmtp_packet_header->mmtp_packet_id);
-	__MMTP_PARSER_INFO(" timestamp              : %-10u (0x%08x)", 	mmtp_packet_header->mmtp_timestamp, mmtp_packet_header->mmtp_timestamp);
-	__MMTP_PARSER_INFO(" packet_sequence_number : %-10u (0x%08x)",	mmtp_packet_header->packet_sequence_number,mmtp_packet_header->packet_sequence_number);
-	__MMTP_PARSER_INFO(" packet counter         : %-10u (0x%04x)", 	mmtp_packet_header->packet_counter, mmtp_packet_header->packet_counter);
-	__MMTP_PARSER_INFO("------------------");
+	__MMTP_PARSER_DEBUG("------------------");
+	__MMTP_PARSER_DEBUG("MMTP Packet Header (%p)", mmtp_packet_header);
+	__MMTP_PARSER_DEBUG("------------------");
+	__MMTP_PARSER_DEBUG(" packet version         : %-10d (0x%d%d)", 	mmtp_packet_header->mmtp_packet_version, ((mmtp_packet_header->mmtp_packet_version >> 1) & 0x1), mmtp_packet_header->mmtp_packet_version & 0x1);
+	__MMTP_PARSER_DEBUG(" payload_type           : %-10d (0x%d%d)", 	mmtp_packet_header->mmtp_payload_type, ((mmtp_packet_header->mmtp_payload_type >> 1) & 0x1), mmtp_packet_header->mmtp_payload_type & 0x1);
+	__MMTP_PARSER_DEBUG(" packet_id              : %-10hu (0x%04x)", mmtp_packet_header->mmtp_packet_id, mmtp_packet_header->mmtp_packet_id);
+	__MMTP_PARSER_DEBUG(" timestamp              : %-10u (0x%08x)", 	mmtp_packet_header->mmtp_timestamp, mmtp_packet_header->mmtp_timestamp);
+	__MMTP_PARSER_DEBUG(" packet_sequence_number : %-10u (0x%08x)",	mmtp_packet_header->packet_sequence_number,mmtp_packet_header->packet_sequence_number);
+	__MMTP_PARSER_DEBUG(" packet counter         : %-10u (0x%04x)", 	mmtp_packet_header->packet_counter, mmtp_packet_header->packet_counter);
+	__MMTP_PARSER_DEBUG("------------------");
 }
 

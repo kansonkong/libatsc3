@@ -28,7 +28,7 @@
  *	OMA: “Service Guide for Mobile Broadcast Services,” Version 1.1, document OMA-TS- BCAST_Service_Guide-V1_1-20131029-A, Open Mobile Alliance, 29 October 2013.
  	 	 http://www.openmobilealliance.org/release/BCAST/V1_1-20131029-A/OMA-TS-BCAST_Service_Guide-V1_1-20131029-A.pdf
 
- *
+ *	FLUTE (v1): https://tools.ietf.org/html/rfc3926
  *
  *
  */
@@ -38,6 +38,25 @@
 
 
 /**
+ * A/332
+ *
+ *
+ * 5.5 SG Delivery
+5.5.1 SG delivery over Broadcast
+When SG data are delivered via broadcast, the SGDUs and SGDDs shall be delivered as specified in Section 5.4.2 of the OMA BCAST SG specification [11], except that a single LCT component of a ROUTE [3] session (called the Service Guide Announcement Channel) shall be used for delivery of the SGDDs. SGDUs are referenced from within SGDDs by means of the ServiceGuideDeliveryDescriptor.DescriptorEntry.Transport element. If AL-FEC coding is not employed, SGDUs shall be transported using the modified Compact No-Code FEC scheme defined in A/331 [3] where the FEC Payload ID is formatted as a 32-bit start_offset. If AL- FEC coding is employed, SGDUs shall be transported using the RaptorQ scheme [17]. EFDTs shall be transmitted in the transport session delivering the Service Guide fragments.
+ *
+ *
+ *
+ * OMA TS BCAST
+ *
+ *
+ * 5.4.1.5.1 Transport dependencies
+Similarly as in the case of the network using more than one SGDU frame for delivering the Service Guide fragments, the network can also use multiple SGDDs for declaring the exhaustive list of the fragments in the Service Guide. In such a case it is easy to see that in order for the terminals to be aware of all the Service Guide fragments, the terminals need to be aware of all the SGDDs the network uses. For the broadcast delivery of the SGDDs, the network SHALL therefore place all the SGDDs representing a Service Guide into one and only one delivery session. This session is called the Service Guide Announcement Channel. The network SHALL also make sure that the SGDDs declare all fragments that are delivered over the broadcast channel.
+As mentioned before for interactive delivery of the service guide, the main role of the SGDD is to declare all fragments that describe one or more services. The information about division of the fragments into SGDUs in this case is not essential, since all fragments are retrieved interactively and individually for each terminal, and thus a fixed division into SGDUs does not exist. However, the grouping in the service layer can be used to provide information about fragments belonging to the same service. The SGDD MAY declare fragments that are delivered over the interaction channel, but it SHALL at least declare a set of fragments that allow interactive retrieval of the complete SG. For example, the SGDD could declare only ‘Service’ fragments. The terminal could then interactively retrieve fragments related to specific selected services, using the request mechanism described in section 5.4.3.
+ *
+ *
+ *
+ *
  * 5.4.1.3 Service Guide fragment encapsulation
 In order to deliver the fragments from the network to the terminals the network needs to be able to place the fragments into
 the underlying transport frames. The network is provided with means of delivering more than one fragment as a atomic unit
@@ -221,6 +240,29 @@ to “gzip”.
 /**
  *
  *
+ *
+ *5.4.2 Delivery over the Broadcast Channel
+Over the Broadcast Channel, interface SG-5, the Service Guide is delivered using broadcast file delivery sessions. The network places the fragments of the Service Guide into one or more SGDUs and constructs one or more SGDDs to represent the contents of the Service Guide as well as the division of the fragments into the SGDUs. The SGDD(s) and the SGDU(s) are placed into file delivery session(s) to be transported as transport objects, TOs. While the SGDUs can be transported using one or more file delivery sessions, the SGDDs are provided using only one session, namely the Service Guide Announcement Channel as defined in section 5.4.1.5.1.
+In the Service Guide Announcement Channel, the network SHALL use FLUTE [RFC 3926] as the broadcast delivery protocol and FDT Instances SHALL therefore be provided. In the Service Guide Delivery Channel, the network SHALL either use FLUTE (in which case FDT instances SHALL be provided) or ALC (in which case FDT Instances SHALL NOT be provided).
+ 2013 Open Mobile Alliance Ltd. All Rights Reserved.
+Used with the permission of the Open Mobile Alliance Ltd. under the terms as stated in this document. [OMA-Template-Spec-20130101-I]
+
+OMA-TS-BCAST_Service_Guide-V1_1-20131029-A Page 187 (299)
+ The following enhancements apply for the case when the file information is conveyed in the Service Guide or in a file delivery table:
+ SG-D in BSD/A MAY apply the "Compact No-Code FEC scheme" [RFC 3695] (FEC Encoding ID 0, also known as "Null-FEC").
+ SG-D in BSD/A MAY utilize the split-TOI scheme as specified in section 5.4.2.1.3 in conjunction with FLUTE, for signalling the identifier and version of any transported object (e.g. the Service Guide Delivery Unit or Service Guide Delivery Descriptor).
+ SG-D in BSD/A MAY utilize the scheme as specified in section 5.4.2.1.3 in conjunction with FLUTE, for signalling the identifier and version of the Service Guide Delivery Unit.
+In order for the terminals to distuinguish the SGDDs and SGDUs from other transport objects the network SHALL set the ‘Content-Type’ attribute of the ‘File’ element in the FDT Instances
+ to “application/vnd.oma.bcast.sgdd+xml” for SGDDs and
+ to “application/vnd.oma.bcast.sgdu” for SGDUs.
+As there is no signalling whether the network uses FDT Instances in the Service Guide delivery sessions other than the Service Guide Announcement Channel, the terminal
+ SHALL assume that the Transport Object Identifier, TOI, zero is reserved for the FDT Instances.
+ And the network SHALL not use the TOI zero for any types of files other than FDT Instance.
+The network SHALL signal the Forward Error Correction, FEC, parameters for the transport objects in the Service Guide delivery sessions using one of the mechanisms defined in FLUTE [RFC 3926], and the terminal SHALL support all these mechanisms. When ALC/LCT is used for SGDU delivery, the FEC-encoding-ID SHALL be signaled in the LCT header codepoint field, and the EXT_FTI extension header SHALL be used to signal other coding parameters.
+5.4.2.1 Signaling Changes in the Service Guide over Broadcast Channel
+In the following, the way of signaling changes in Service Guide fragments is specified. The changes in the Service Guide are signalled through the change in the transmitted SGDUs which consequently cause a change in the transmitted SGDDs. Observing these changes, the terminal SHALL be able to determine the change. However, this specification does not specify the normative terminal behavior for this. Informative examples for four cases of localizing changes and achieving their discovery are outlined in section 5.5.1.1.
+
+
  */
 
 

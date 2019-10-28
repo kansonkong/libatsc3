@@ -41,15 +41,16 @@ extern "C" {
 #endif
 
 #define __readuint32(data, hdrlen) (data[hdrlen] & 0xFF) << 24 | (data[hdrlen+1] & 0xFF) << 16 | (data[hdrlen+2] & 0xFF) << 8 | (data[hdrlen+3] & 0xFF);
-#ifndef min
+//jjustman-2019-10-28 - conflicts with gcc - /usr/include/c++/7/bits/stl_algobase.h
+//- #ifndef min
 	/** A macro that returns the minimum of a and b if not defined in Operation System. */
-        #define min(a,b)        ((a) <= (b) ? (a) : (b))
-#endif
+  //        #define min(a,b)        ((a) <= (b) ? (a) : (b))
+  //#endif
 
-#ifndef max
+  //#ifndef max
 	/** A macro that returns the maximum of a and b if not defined in Operation System. */
-        #define max(a,b)        ((a) >= (b) ? (a) : (b))
-#endif
+  //        #define max(a,b)        ((a) >= (b) ? (a) : (b))
+  //#endif
 
 #ifndef BOOL
 	/** A type definition for BOOL if not defined in Operation System. */
