@@ -54,7 +54,7 @@ udp_packet_t* process_packet_from_pcap(u_char *user, const struct pcap_pkthdr *p
 	udp_packet->raw_packet_length = pkthdr->len;
     
     uint32_t data_length = pkthdr->len - (udp_header_start + 8);
-    if(data_length <=0 || data_length > 1514) {
+    if(data_length <=0 || data_length > 65535) {
         __LISTENER_UDP_ERROR("process_packet_from_pcap: invalid udp data length: %d, raw phy frame: %d", data_length, udp_packet->raw_packet_length);
         freesafe(udp_packet);
         return NULL;
@@ -114,7 +114,7 @@ udp_packet_t* udp_packet_process_from_ptr_raw_ethernet_packet(uint8_t* raw_packe
 	udp_packet->raw_packet_length = raw_packet_length;
 	uint32_t data_length = raw_packet_length - (udp_header_start + 8);
 
-	 if(data_length <=0 || data_length > 1514) {
+	 if(data_length <=0 || data_length > 65535) {
 		__LISTENER_UDP_ERROR("process_packet_from_pcap: invalid udp data length: %d, raw phy frame: %d", data_length, udp_packet->raw_packet_length);
 		freesafe(udp_packet);
 		return NULL;
@@ -164,7 +164,7 @@ udp_packet_t* udp_packet_process_from_ptr(uint8_t* packet, uint32_t packet_lengt
 
 	uint32_t data_length = packet_length - (udp_header_start + 8);
 
-	if(data_length <=0 || data_length > 1514) {
+	if(data_length <=0 || data_length > 65535) {
 		__LISTENER_UDP_ERROR("udp_packet_process_from_ptr: invalid data length of udp packet: %d", data_length);
 		return NULL;
 	}

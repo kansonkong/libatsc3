@@ -220,13 +220,13 @@ void lls_sls_monitor_output_buffer_reset_rebuilt_mpu_moof_and_fragment_position(
     block_Release(&lls_sls_monitor_output_buffer->audio_output_buffer_isobmff.alc_moof_mdat_block);
 	block_Release(&lls_sls_monitor_output_buffer->audio_output_buffer_isobmff.mmt_moof_block);
 	block_Release(&lls_sls_monitor_output_buffer->audio_output_buffer_isobmff.mmt_moof_block_from_flow);
-	block_Release(&lls_sls_monitor_output_buffer->audio_output_buffer_isobmff.mmt_mpu_rebuilt);
+	block_Release(&lls_sls_monitor_output_buffer->audio_output_buffer_isobmff.mmt_mpu_rebuilt_and_appending_for_isobmff_mux);
     block_Release(&lls_sls_monitor_output_buffer->audio_output_buffer_isobmff.mmt_mdat_block);
 
 	block_Release(&lls_sls_monitor_output_buffer->video_output_buffer_isobmff.alc_moof_mdat_block);
 	block_Release(&lls_sls_monitor_output_buffer->video_output_buffer_isobmff.mmt_moof_block);
 	block_Release(&lls_sls_monitor_output_buffer->video_output_buffer_isobmff.mmt_moof_block_from_flow);
-	block_Release(&lls_sls_monitor_output_buffer->video_output_buffer_isobmff.mmt_mpu_rebuilt);
+	block_Release(&lls_sls_monitor_output_buffer->video_output_buffer_isobmff.mmt_mpu_rebuilt_and_appending_for_isobmff_mux);
 	block_Release(&lls_sls_monitor_output_buffer->video_output_buffer_isobmff.mmt_mdat_block);
     
     block_Release(&lls_sls_monitor_output_buffer->joined_isobmff_block);
@@ -866,10 +866,13 @@ int lls_sls_monitor_output_buffer_copy_and_recover_sample_fragment_block(lls_sls
 //    }
 //
     uint32_t mpu_offset_original = mmtp_mpu_packet->offset;
-    //hacks
+    //hacks, our mpu_sequence_rollover might not have started with the first mfu sample containing a mmthsample_header, e.g.
+    //mpu_sequence_number_last != mmtp_mpu_packet->mpu_sequence_number && mmtp_mpu_packet->mpu_fragment_type == 0x2 && mmtp_mpu_packet->mpu_fragmentation_indicator != (0 || 1)
+    //with sample_number == 1
+        
     if(trun_sample_entry->trun_mmthsample_offset_includes_header) {
         //mmth_offset is a global offset from the base of the mdat box
-        if(mmtp_mpu_packet->mmthsample_header->offset > trun_sample_entry->mfu_mmth_cum_header_sample_size) {
+        if(mmtp_mpu_packet->mmthsample_header && mmtp_mpu_packet->mmthsample_header->offset > trun_sample_entry->mfu_mmth_cum_header_sample_size) {
             mmtp_mpu_packet->mmthsample_header->offset -= trun_sample_entry->mfu_mmth_cum_header_sample_size;
             trun_sample_entry->sample_offset -= trun_sample_entry->mfu_mmth_cum_header_sample_size;
         }
@@ -1131,7 +1134,8 @@ void lls_slt_monitor_check_and_handle_pipe_ffplay_buffer_is_shutdown(lls_slt_mon
 		if(lls_slt_monitor->lls_sls_alc_monitor->lls_sls_monitor_output_buffer_mode.pipe_ffplay_buffer) {
 			bool is_shutdown_alc = pipe_buffer_reader_check_if_shutdown(&lls_slt_monitor->lls_sls_alc_monitor->lls_sls_monitor_output_buffer_mode.pipe_ffplay_buffer);
 			if(is_shutdown_alc) {
-				__LLS_SLS_MONITOR_OUTPUT_BUFFER_UTILS_INFO("lls_slt_monitor: ffplay is shutdown for ALC service_id: %u, setting ffplay_output_enabled = false", lls_slt_monitor->lls_sls_alc_monitor->service_id);
+				__LLS_SLS_MONITOR_OUTPUT_BUFFER_UTILS_INFO("lls_slt_monitor: ffplay is shutdown for ALC service_id: %u, setting ffplay_output_enabled = false",
+						lls_slt_monitor->lls_sls_alc_monitor->atsc3_lls_slt_service->service_id);
 				lls_slt_monitor->lls_sls_alc_monitor->lls_sls_monitor_output_buffer_mode.ffplay_output_enabled = false;
 				lls_slt_monitor->lls_sls_alc_monitor->lls_sls_monitor_output_buffer.should_flush_output_buffer = false;
 			}
@@ -1144,7 +1148,7 @@ void lls_slt_monitor_check_and_handle_pipe_ffplay_buffer_is_shutdown(lls_slt_mon
 			bool is_shutdown_mmt = pipe_buffer_reader_check_if_shutdown(&lls_slt_monitor->lls_sls_mmt_monitor->lls_sls_monitor_output_buffer_mode.pipe_ffplay_buffer);
 			if(is_shutdown_mmt) {
 				__LLS_SLS_MONITOR_OUTPUT_BUFFER_UTILS_INFO("lls_slt_monitor: ffplay is shutdown for MMT service_id: %u, setting ffplay_output_enabled = false",
-						lls_slt_monitor->lls_sls_mmt_monitor->service_id);
+						lls_slt_monitor->lls_sls_mmt_monitor->atsc3_lls_slt_service->service_id);
 				lls_slt_monitor->lls_sls_mmt_monitor->lls_sls_monitor_output_buffer_mode.ffplay_output_enabled = false;
 			}
 		}
@@ -1200,7 +1204,7 @@ void lls_sls_monitor_output_buffer_alc_file_dump(lls_sls_monitor_output_buffer_t
 /**
  split up for init and fragment for HLS fmp4 use case
  **/
-void lls_sls_monitor_buffer_isobmff_intermediate_mmt_file_dump(lls_sls_monitor_buffer_isobmff_t* lls_sls_monitor_buffer_isobmff, const char* directory_path, uint16_t packet_id, uint32_t mpu_sequence_number, const char* suffix) {
+void lls_sls_monitor_buffer_isobmff_intermediate_mmt_file_dump(lls_sls_monitor_buffer_isobmff_t* lls_sls_monitor_buffer_isobmff, const char* directory_path, uint16_t atsc3_service_id, uint16_t packet_id, uint32_t mpu_sequence_number, const char* suffix) {
     if(!lls_sls_monitor_buffer_isobmff || !lls_sls_monitor_buffer_isobmff->init_block || !lls_sls_monitor_buffer_isobmff->mmt_mdat_block) {
         __LLS_SLS_MONITOR_OUTPUT_BUFFER_UTILS_WARN("lls_sls_monitor_buffer_isobmff_mmt_file_dump: lls_sls_monitor_buffer_isobmff missing: %p", lls_sls_monitor_buffer_isobmff);
 
@@ -1214,7 +1218,7 @@ void lls_sls_monitor_buffer_isobmff_intermediate_mmt_file_dump(lls_sls_monitor_b
     //write out our init box for fMP4 support
     
     char* init_dump_file_name = (char*)calloc(128, sizeof(char));
-    snprintf(init_dump_file_name, 127, "%s/%u.init.mp4", directory_path, packet_id);
+    snprintf(init_dump_file_name, 127, "%s/%u.%u.init.mp4", directory_path, atsc3_service_id, packet_id);
     
     FILE* init_dump_fp = fopen(init_dump_file_name, "w");
     if(init_dump_fp) {
@@ -1227,7 +1231,7 @@ void lls_sls_monitor_buffer_isobmff_intermediate_mmt_file_dump(lls_sls_monitor_b
 
 	//build our recon mpu
     char* track_dump_file_name = (char*)calloc(128, sizeof(char));
-    snprintf(track_dump_file_name, 127, "%s/%u.%u.%s", directory_path, packet_id, mpu_sequence_number, suffix);
+    snprintf(track_dump_file_name, 127, "%s/%u.%u.%u.%s", directory_path, atsc3_service_id, packet_id, mpu_sequence_number, suffix);
 
     FILE* track_dump_recon_fp = fopen(track_dump_file_name, "w");
     if(track_dump_recon_fp) {
@@ -1250,8 +1254,8 @@ void lls_sls_monitor_buffer_isobmff_intermediate_mmt_file_dump(lls_sls_monitor_b
 }
 
 
-void ls_sls_monitor_buffer_isobmff_mmt_mpu_rebuilt_file_dump(lls_sls_monitor_buffer_isobmff_t* lls_sls_monitor_buffer_isobmff, const char* directory_path, uint32_t mpu_sequence_number, const char* prefix) {
-    if(!lls_sls_monitor_buffer_isobmff || !lls_sls_monitor_buffer_isobmff->mmt_mpu_rebuilt) {
+void ls_sls_monitor_buffer_isobmff_mmt_mpu_rebuilt_file_dump(lls_sls_monitor_buffer_isobmff_t* lls_sls_monitor_buffer_isobmff, const char* directory_path, uint16_t atsc3_service_id, uint32_t mpu_sequence_number, const char* prefix) {
+    if(!lls_sls_monitor_buffer_isobmff || !lls_sls_monitor_buffer_isobmff->mmt_mpu_rebuilt_single) {
         __LLS_SLS_MONITOR_OUTPUT_BUFFER_UTILS_WARN("ls_sls_monitor_buffer_isobmff_mmt_mpu_rebuilt_file_dump: lls_sls_monitor_buffer_isobmff is: %p, returning", lls_sls_monitor_buffer_isobmff);
         
         return;
@@ -1262,11 +1266,11 @@ void ls_sls_monitor_buffer_isobmff_mmt_mpu_rebuilt_file_dump(lls_sls_monitor_buf
 
 	//build our recon mpu
 	char* track_dump_file_name = (char*)calloc(128, sizeof(char));
-	snprintf(track_dump_file_name, 127, "%s/%u.%s", directory_path, mpu_sequence_number, prefix);
+	snprintf(track_dump_file_name, 127, "%s/%u.%u.%u.%s", directory_path, atsc3_service_id, lls_sls_monitor_buffer_isobmff->packet_id, mpu_sequence_number, prefix);
 
 	FILE* track_dump_recon_fp = fopen(track_dump_file_name, "w");
 	if(track_dump_recon_fp) {
-		fwrite(lls_sls_monitor_buffer_isobmff->mmt_mpu_rebuilt->p_buffer, lls_sls_monitor_buffer_isobmff->mmt_mpu_rebuilt->p_size, 1, track_dump_recon_fp);
+		fwrite(lls_sls_monitor_buffer_isobmff->mmt_mpu_rebuilt_single->p_buffer, lls_sls_monitor_buffer_isobmff->mmt_mpu_rebuilt_single->p_size, 1, track_dump_recon_fp);
 		fclose(track_dump_recon_fp);
 		free(track_dump_file_name);
 	}
