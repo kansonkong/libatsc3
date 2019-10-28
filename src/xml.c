@@ -348,11 +348,8 @@ static void xml_parser_error(struct xml_parser* parser, enum xml_parser_offset o
 	int row = 0;
 	int column = 0;
 
-	#define min(X,Y) ((X) < (Y) ? (X) : (Y))
-	#define max(X,Y) ((X) > (Y) ? (X) : (Y))
-	size_t character = max(0, min(parser->length, parser->position + offset));
-	#undef min
-	#undef max
+
+	size_t character = __MAX(0, __MIN(parser->length, parser->position + offset));
 
 	size_t position = 0; for (; position < character; ++position) {
 		column++;
@@ -421,11 +418,11 @@ static void xml_parser_consume(struct xml_parser* parser, size_t n) {
 	/* Debug information
 	 */
 	#ifdef XML_PARSER_VERBOSE
-	#define min(X,Y) ((X) < (Y) ? (X) : (Y))
+
 	char* consumed = alloca((n + 1) * sizeof(char));
-	memcpy(consumed, &parser->buffer[parser->position], min(n, parser->length - parser->position));
+	memcpy(consumed, &parser->buffer[parser->position], __MIN(n, parser->length - parser->position));
 	consumed[n] = 0;
-	#undef min
+
 
 	size_t message_buffer_length = 512;
 	char* message_buffer = alloca(512 * sizeof(char));
@@ -1113,9 +1110,9 @@ void xml_string_copy(struct xml_string* string, uint8_t* buffer, size_t length) 
 		return;
 	}
 
-	#define min(X,Y) ((X) < (Y) ? (X) : (Y))
-	length = min(length, string->length);
-	#undef min
+
+	length = __MIN(length, string->length);
+
 
 	memcpy(buffer, string->buffer, length);
 }

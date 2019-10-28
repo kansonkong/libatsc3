@@ -169,6 +169,9 @@ tools: atsc3_listener_metrics_ncurses \
 xml.o: xml.c xml.h
 	cc -g -c xml.c 
 
+strnstr.o: strnstr.c strnstr.h
+	cc -g -c strnstr.c
+
 atsc3_alp_types.o: atsc3_alp_types.h atsc3_alp_types.c
 	cc -g -c atsc3_alp_types.c 
 
@@ -321,7 +324,7 @@ atsc3_a344_receiver_query_api.o: atsc3_a344_receiver_query_api.h atsc3_a344_rece
 
 atsc3_packet_statistics_types.o: atsc3_packet_statistics.h atsc3_packet_statistics_types.c
 	cc -g -c atsc3_packet_statistics_types.c -o atsc3_packet_statistics_types.o	
-	
+
 atsc3_hevc_nal_extractor.o: atsc3_hevc_nal_extractor.h atsc3_hevc_nal_extractor.c
 	cc -g -c atsc3_hevc_nal_extractor.c -o atsc3_hevc_nal_extractor.o
 
@@ -389,8 +392,8 @@ libatsc3_intermediate.o: atsc3_lls.o \
 		atsc3_mmt_mpu_utils.o \
 		atsc3_player_ffplay.o \
 		atsc3_alc_utils.o \
-        atsc3_lls_sls_monitor_output_buffer.o \
-        atsc3_lls_sls_monitor_output_buffer_utils.o \
+	        atsc3_lls_sls_monitor_output_buffer.o \
+		atsc3_lls_sls_monitor_output_buffer_utils.o \
 		atsc3_lls_mmt_utils.o \
 		atsc3_listener_udp.o \
 		atsc3_ip_udp_rtp_parser.o \
@@ -409,6 +412,7 @@ libatsc3_intermediate.o: atsc3_lls.o \
 		atsc3_mime_multipart_related.o \
 		atsc3_mime_multipart_related_parser.o \
 		atsc3_mbms_envelope_parser.o \
+		strnstr.o \
 		xml.o \
 		fixups_timespec_get.o \
 		alc_session.o \
@@ -473,6 +477,7 @@ libatsc3_intermediate.o: atsc3_lls.o \
 		atsc3_mime_multipart_related_parser.o \
 		atsc3_mbms_envelope_parser.o \
 		xml.o \
+		strnstr.o \
 		fixups_timespec_get.o \
 		alc_session.o \
 		fec.o \
@@ -575,7 +580,8 @@ test/atsc3_mime_multipart_related_parser_test: test/atsc3_mime_multipart_related
 	atsc3_fdt.o \
 	atsc3_route_usbd.o \
 	atsc3_mbms_envelope_parser.o \
-	xml.o
+	xml.o \
+	strnstr.o 
 	cc -g test/atsc3_mime_multipart_related_parser_test.c \
 	atsc3_mbms_envelope_xml.o	\
 	atsc3_mime_multipart_related.o \
@@ -589,6 +595,7 @@ test/atsc3_mime_multipart_related_parser_test: test/atsc3_mime_multipart_related
 	atsc3_route_usbd.o \
 	atsc3_mbms_envelope_parser.o \
 	xml.o \
+	strnstr.o \
 	atsc3_utils.o -o test/atsc3_mime_multipart_related_parser_test
 
 test/atsc3_fdt_mbms_envelope_test: test/atsc3_fdt_mbms_envelope_test.c \
@@ -604,6 +611,7 @@ test/atsc3_fdt_mbms_envelope_test: test/atsc3_fdt_mbms_envelope_test.c \
 	atsc3_fdt.o \
 	atsc3_route_usbd.o \
 	atsc3_mbms_envelope_parser.o \
+	strnstr.o \
 	xml.o
 	cc -g test/atsc3_fdt_mbms_envelope_test.c \
 	atsc3_mbms_envelope_xml.o	\
@@ -617,6 +625,7 @@ test/atsc3_fdt_mbms_envelope_test: test/atsc3_fdt_mbms_envelope_test.c \
 	atsc3_fdt.o \
 	atsc3_route_usbd.o \
 	atsc3_mbms_envelope_parser.o \
+	strnstr.o \
 	xml.o \
 	atsc3_utils.o -o test/atsc3_fdt_mbms_envelope_test
 
@@ -633,6 +642,7 @@ test/atsc3_fdt_mbms_envelope_test_2019-09-07-esg-e.1.1.7: test/atsc3_fdt_mbms_en
 	atsc3_fdt.o \
 	atsc3_route_usbd.o \
 	atsc3_mbms_envelope_parser.o \
+	strnstr.o \
 	xml.o
 	cc -g test/atsc3_fdt_mbms_envelope_test_2019-09-07-esg-e.1.1.7.c \
 	atsc3_mbms_envelope_xml.o	\
@@ -647,12 +657,12 @@ test/atsc3_fdt_mbms_envelope_test_2019-09-07-esg-e.1.1.7: test/atsc3_fdt_mbms_en
 	atsc3_route_usbd.o \
 	atsc3_mbms_envelope_parser.o \
 	xml.o \
+	strnstr.o \
 	atsc3_utils.o -o test/atsc3_fdt_mbms_envelope_test_2019-09-07-esg-e.1.1.7
-	
-	
+
 test/atsc3_pcap_replay_test: test/atsc3_pcap_replay_test.c atsc3_pcap_type.o atsc3_utils.o
 	cc -g test/atsc3_pcap_replay_test.c atsc3_pcap_type.o  atsc3_utils.o -lz  -lm -lpthread -lpcap -o test/atsc3_pcap_replay_test 
-	
+
 
 ### integration tests
 ### TODO: move these into target makefile in listener_test/folder
