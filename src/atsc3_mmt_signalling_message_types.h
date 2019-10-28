@@ -212,18 +212,21 @@ typedef struct mmt_signaling_message_mpu_timestamp_descriptor {
     uint16_t                               descriptor_tag;
     uint8_t                                descriptor_length;
     uint8_t                                mpu_tuple_n; //mpu_tuple_n = descriptor_length/12 = (32+64)/8
-    mmt_signalling_message_mpu_tuple_t*     mpu_tuple;
+    mmt_signalling_message_mpu_tuple_t*    mpu_tuple;
 } mmt_signalling_message_mpu_timestamp_descriptor_t;
 
 #define ATSC3_MP_TABLE_ASSET_ROW_HEVC_ID "hev1"
 #define ATSC3_MP_TABLE_ASSET_ROW_MP4A_ID "mp4a"
 #define ATSC3_MP_TABLE_ASSET_ROW_AC_4_ID "ac-4"
+#define ATSC3_MP_TABLE_ASSET_ROW_IMSC1_ID "stpp" //MPEG- 4 Part 30 (ISO/IEC 14496-30) defines a way to carry IMSC1-conformat TTM XML in MP4 tracks. Those tracks have a codec 4-character code of stpp.
+
+
 
 typedef struct mp_table_asset_row {
 	identifier_mapping_t identifier_mapping;
 
 	//identifer_mapping()
-	char		asset_type[4];
+	char		asset_type[5]; //leave null pad
 	//6 bits reserved
 	uint8_t		default_asset_flag;
 
@@ -253,6 +256,7 @@ typedef struct mp_table {
 
 	//table_id==0x20 || table_id==0x11 - mmt_package_id
 	mmt_package_id_t 		mmt_package_id;
+
 	//mp_table_descriptors
 	mp_table_descriptors_t 	mp_table_descriptors;
 

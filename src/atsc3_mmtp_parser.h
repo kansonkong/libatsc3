@@ -54,7 +54,7 @@
  * MMTP packet parsing
  *
  *
- * mmtp_packet_parse: parse a full udp datagram into its applicable mmtp_payload_type:
+ * mmtp_packet_header_parse_from_block_t: parse a full udp datagram into its applicable mmtp_payload_type:
  *
  * 	packet header cast for determining payload type:
  *

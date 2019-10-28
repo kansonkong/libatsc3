@@ -7,6 +7,8 @@
 //
 
 #include "atsc3_ip_udp_rtp_parser.h"
+
+int _IP_UDP_RTP_PARSER_INFO_ENABLED = 0;
 int _IP_UDP_RTP_PARSER_DEBUG_ENABLED = 0;
 int _IP_UDP_RTP_PARSER_TRACE_ENABLED = 0;
 

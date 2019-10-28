@@ -285,7 +285,7 @@ const char* mmt_hls_fmp4_master_manifest_path   = "hls/master.m3u8";
 #define MMT_HLS_FMP4_AUDIO_VARIANT_NAME     "hls/a.m3u8"
 #define MMT_HLS_FMP4_VIDEO_VARIANT_NAME     "hls/v.m3u8"
 
-#define MAX_FMP4_SEGMENTS 6
+#define MAX_FMP4_SEGMENTS 8
 
 char* a_fmp4_segments[MAX_FMP4_SEGMENTS] = {0};
 int a_fmp4_segments_ringbuffer_idx = 0;
@@ -335,7 +335,7 @@ void atsc3_mmt_hls_fmp4_write_master_manifest() {
     "#EXT-X-VERSION:7\n"
     "#EXT-X-INDEPENDENT-SEGMENTS\n"
     "#EXT-X-MEDIA:TYPE=AUDIO,GROUP-ID=\"a1\",NAME=\"English\",LANGUAGE=\"en-US\",AUTOSELECT=YES,DEFAULT=YES,CHANNELS=\"2\",URI=\"a.m3u8\"\n"
-    "#EXT-X-STREAM-INF:RESOLUTION=1280x720,BANDWIDTH=4000000,FRAME-RATE=60.000,AUDIO=\"a1\",AVERAGE-BANDWIDTH=4000000\n"
+    "#EXT-X-STREAM-INF:RESOLUTION=1280x720,BANDWIDTH=4000000,FRAME-RATE=59.94,AUDIO=\"a1\",AVERAGE-BANDWIDTH=4000000\n"
     "v.m3u8\n\n";
 
     
@@ -346,7 +346,7 @@ void atsc3_mmt_hls_fmp4_write_master_manifest() {
 #define A_VARIANT_INIT_MP4 "a.init.mp4"
 const char* variant_manifest_audio_header = "#EXTM3U\n"
 "#EXT-X-VERSION:7\n"
-"#EXT-X-TARGETDURATION:1\n"
+"#EXT-X-TARGETDURATION:10\n"
 "#EXT-X-INDEPENDENT-SEGMENTS\n"
 "#EXT-X-MAP:URI=\"a.init.mp4\"\n"
 "#EXT-X-MEDIA-SEQUENCE:%d\n\n";
@@ -354,7 +354,7 @@ const char* variant_manifest_audio_header = "#EXTM3U\n"
 #define V_VARIANT_INIT_MP4 "v.init.mp4"
 const char* variant_manifest_video_header = "#EXTM3U\n"
 "#EXT-X-VERSION:7\n"
-"#EXT-X-TARGETDURATION:1\n"
+"#EXT-X-TARGETDURATION:10\n"
 "#EXT-X-INDEPENDENT-SEGMENTS\n"
 "#EXT-X-MAP:URI=\"v.init.mp4\"\n"
 "#EXT-X-MEDIA-SEQUENCE:%d\n\n";
@@ -375,8 +375,8 @@ void atsc3_mmt_hls_fmp4_write_variant_manifest(const char* variant_path, const c
     
     for(int i = ringbuffer_idx; i < ringbuffer_idx + MAX_FMP4_SEGMENTS; i++) {
         char* temp_hls_fragment_payload = fmp4_segments[ i % MAX_FMP4_SEGMENTS];
-        if(temp_hls_fragment_payload) {
-            snprintf(payload + strlen(payload), PAYLOAD_MAX_LEN - strlen(payload), "#EXTINF:1.000000\n%s\n", temp_hls_fragment_payload);
+        if(temp_hls_fragment_payload && i < (ringbuffer_idx + MAX_FMP4_SEGMENTS - 1)) {
+            snprintf(payload + strlen(payload), PAYLOAD_MAX_LEN - strlen(payload), "#EXTINF:2.502\n%s\n", temp_hls_fragment_payload);
         }
     }
     
@@ -426,7 +426,13 @@ void atsc3_mmt_hls_fmp4_copy_file_and_extract_init_fragment(const char* from, co
     struct stat st;
     stat(from, &st);
     off_t size = st.st_size;
-    
+
+    //todo - jjustman-2019-09-25 - determine when/if we should overwrite init fragment
+    struct stat st_to;
+    if(!stat(to, &st_to)) {
+    	return;
+    }
+
     //max isobmff moov fragment size
     uint8_t* block = (uint8_t*) calloc(size, sizeof(uint8_t));
     FILE* file_from_fp = fopen(from, "r");
@@ -463,8 +469,6 @@ void atsc3_mmt_hls_fmp4_copy_file_and_extract_init_fragment(const char* from, co
         if(has_found_moof_box) {
             fread(block, box_moof_and_mdat_size, 1, file_from_fp);
             fwrite(block, box_moof_and_mdat_size, 1, file_to_fp);
-            fclose(file_from_fp);
-            fclose(file_to_fp);
         }
         
         if(file_from_fp) {
@@ -481,11 +485,12 @@ void atsc3_mmt_hls_fmp4_copy_file_and_extract_init_fragment(const char* from, co
     block = NULL;
 }
 
+
 void atsc3_mmt_hls_fmp4_update_manifest(lls_sls_mmt_session_t* lls_sls_mmt_session) {
     
     atsc3_mmt_hls_fmp4_write_master_manifest();
     
-    if(lls_sls_mmt_session->last_udp_flow_packet_id_mpu_sequence_tuple_audio_processed && lls_sls_mmt_session->last_udp_flow_packet_id_mpu_sequence_tuple_video_processed) {
+    if(lls_sls_mmt_session->last_udp_flow_packet_id_mpu_sequence_tuple_audio_processed) {
 
         if(a_fmp4_segments[a_fmp4_segments_ringbuffer_idx % MAX_FMP4_SEGMENTS]) {
             free(a_fmp4_segments[a_fmp4_segments_ringbuffer_idx % MAX_FMP4_SEGMENTS]);
@@ -513,7 +518,7 @@ void atsc3_mmt_hls_fmp4_update_manifest(lls_sls_mmt_session_t* lls_sls_mmt_sessi
                  lls_sls_mmt_session->last_udp_flow_packet_id_mpu_sequence_tuple_audio->mpu_sequence_number - 1, "a.rebuilt");
 
         //atsc3_mmt_hls_fmp4_copy_file(track_dump_file_name, tmp_segment);
-        atsc3_mmt_hls_fmp4_copy_file_and_extract_init_fragment(track_dump_file_name, A_VARIANT_INIT_MP4, tmp_segment);
+       	atsc3_mmt_hls_fmp4_copy_file_and_extract_init_fragment(track_dump_file_name, A_VARIANT_INIT_MP4, tmp_segment);
         
         //copy fmp4 segment over, see lls_sls_monitor_buffer_isobmff_intermediate_mmt_file_dump
         //fix me for packet_id's
@@ -521,7 +526,11 @@ void atsc3_mmt_hls_fmp4_update_manifest(lls_sls_mmt_session_t* lls_sls_mmt_sessi
 
         a_fmp4_segments_ringbuffer_idx++;
         atsc3_mmt_hls_fmp4_write_variant_manifest(MMT_HLS_FMP4_AUDIO_VARIANT_NAME, variant_manifest_audio_header, a_fmp4_segments_ringbuffer_idx, a_fmp4_segments);
-        
+        free(track_dump_file_name);
+
+    }
+    if(lls_sls_mmt_session->last_udp_flow_packet_id_mpu_sequence_tuple_video_processed) {
+
         //video segments here
         if(v_fmp4_segments[v_fmp4_segments_ringbuffer_idx % MAX_FMP4_SEGMENTS]) {
             free(v_fmp4_segments[v_fmp4_segments_ringbuffer_idx % MAX_FMP4_SEGMENTS]);
@@ -556,7 +565,6 @@ void atsc3_mmt_hls_fmp4_update_manifest(lls_sls_mmt_session_t* lls_sls_mmt_sessi
 
         atsc3_mmt_hls_fmp4_write_variant_manifest(MMT_HLS_FMP4_VIDEO_VARIANT_NAME, variant_manifest_video_header, v_fmp4_segments_ringbuffer_idx, v_fmp4_segments);
      
-        free(track_dump_file_name);
         free(track_dump_file_name_v);
     }
 }
@@ -577,7 +585,7 @@ void process_mmtp_payload(udp_packet_t *udp_packet, lls_sls_mmt_session_t* match
 	}
     
     //check if we are monitoring this service_id by flow
-    if(!lls_slt_monitor || !lls_slt_monitor->lls_sls_mmt_monitor || !(lls_slt_monitor->lls_sls_mmt_monitor->service_id == matching_lls_sls_mmt_session->service_id)) {
+    if(!lls_slt_monitor || !lls_slt_monitor->lls_sls_mmt_monitor || !(lls_slt_monitor->lls_sls_mmt_monitor->atsc3_lls_slt_service->service_id == matching_lls_sls_mmt_session->service_id)) {
         goto cleanup;
     }
 
@@ -609,7 +617,7 @@ void process_mmtp_payload(udp_packet_t *udp_packet, lls_sls_mmt_session_t* match
 
 		} else {
 			//non-timed
-			__ATSC3_WARN("mmtp_packet_parse: non-timed payload: packet_id: %u", mmtp_packet_header->mmtp_packet_id);
+			__ATSC3_WARN("update_global_mmtp_statistics_from_udp_packet_t: non-timed payload: packet_id: %u", mmtp_packet_header->mmtp_packet_id);
 		}
 	} else if(mmtp_packet_header->mmtp_payload_type == 0x2) {
         
@@ -643,14 +651,14 @@ void process_mmtp_payload(udp_packet_t *udp_packet, lls_sls_mmt_session_t* match
 		}
 
 	} else {
-		__ATSC3_WARN("mmtp_packet_parse: unknown payload type of 0x%x", mmtp_packet_header->mmtp_payload_type);
+		__ATSC3_WARN("update_global_mmtp_statistics_from_udp_packet_t: unknown payload type of 0x%x", mmtp_packet_header->mmtp_payload_type);
 		goto error;
 	}
     
     goto cleanup;
 
  error:
-		__ERROR("mmtp_packet_parse: raw packet ptr is null, parsing failed for flow: %d.%d.%d.%d:(%-10u):%-5u \t ->  %d.%d.%d.%d:(%-10u):%-5u ",
+		__ERROR("update_global_mmtp_statistics_from_udp_packet_t: raw packet ptr is null, parsing failed for flow: %d.%d.%d.%d:(%-10u):%-5u \t ->  %d.%d.%d.%d:(%-10u):%-5u ",
 				__toipandportnonstruct(udp_packet->udp_flow.src_ip_addr, udp_packet->udp_flow.src_port),
 				udp_packet->udp_flow.src_ip_addr,
 				__toipandportnonstruct(udp_packet->udp_flow.dst_ip_addr, udp_packet->udp_flow.dst_port),
@@ -677,6 +685,7 @@ void process_packet(u_char *user, const struct pcap_pkthdr *pkthdr, const u_char
 		return udp_packet_free(&udp_packet);
 	}
 
+	//auto-monitor code here for MMT
 	if(udp_packet->udp_flow.dst_ip_addr == LLS_DST_ADDR && udp_packet->udp_flow.dst_port == LLS_DST_PORT) {
 		//process as lls.sst, dont free as we keep track of our object in the lls_slt_monitor
         lls_table_t* lls_table = lls_table_create_or_update_from_lls_slt_monitor(lls_slt_monitor, udp_packet->data);
@@ -686,24 +695,24 @@ void process_packet(u_char *user, const struct pcap_pkthdr *pkthdr, const u_char
                 
                 if(!retval) {
                     lls_dump_instance_table(lls_table);
-                    for(int i=0; i < lls_table->slt_table.service_entry_n; i++) {
-                        lls_service_t* lls_service = lls_table->slt_table.service_entry[i];
-                        if(lls_service->broadcast_svc_signaling.sls_protocol == SLS_PROTOCOL_MMTP) {
+                    for(int i=0; i < lls_table->slt_table.atsc3_lls_slt_service_v.count; i++) {
+                        atsc3_lls_slt_service_t* atsc3_lls_slt_service = lls_table->slt_table.atsc3_lls_slt_service_v.data[i];
+                        if(atsc3_lls_slt_service->atsc3_slt_broadcast_svc_signalling_v.count && atsc3_lls_slt_service->atsc3_slt_broadcast_svc_signalling_v.data[0]->sls_protocol == SLS_PROTOCOL_MMTP) {
                             if(lls_sls_mmt_monitor) {
                                 //re-configure
                             } else {
                                 //TODO:  make sure
                                 //lls_service->broadcast_svc_signaling.sls_destination_ip_address && lls_service->broadcast_svc_signaling.sls_destination_udp_port
                                 //match our dst_ip_addr_filter && udp_packet->udp_flow.dst_ip_addr != *dst_ip_addr_filter and port filter
-                                __INFO("Adding service: %d", lls_service->service_id);
+                                __INFO("Adding service: %d", atsc3_lls_slt_service->service_id);
 
                                 lls_sls_mmt_monitor = lls_sls_mmt_monitor_create();
                                 lls_slt_monitor->lls_sls_mmt_monitor = lls_sls_mmt_monitor;
 
                                 //we may not be initialized yet, so re-check again later
-                                lls_sls_mmt_session_t* lls_sls_mmt_session = lls_slt_mmt_session_find_from_service_id(lls_slt_monitor, lls_service->service_id);
+                                lls_sls_mmt_session_t* lls_sls_mmt_session = lls_slt_mmt_session_find_from_service_id(lls_slt_monitor, atsc3_lls_slt_service->service_id);
                                 lls_sls_mmt_monitor->lls_mmt_session = lls_sls_mmt_session;
-                                lls_sls_mmt_monitor->service_id = lls_service->service_id;
+                                lls_sls_mmt_monitor->atsc3_lls_slt_service = atsc3_lls_slt_service;
                             }
                         }
                     }

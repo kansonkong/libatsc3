@@ -10,15 +10,18 @@
 #include <stdbool.h>
 #include <arpa/inet.h>
 
-#ifndef atsc3_lls_sls_monitor_output_buffer_h
-#define atsc3_lls_sls_monitor_output_buffer_h
-
 #include "atsc3_utils.h"
 #include "atsc3_player_ffplay.h"
 #include "atsc3_mmtp_packet_types.h"
 #include "atsc3_vector_builder.h"
 #include "atsc3_isobmff_trun_box.h"
 
+#ifndef ATSC3_LLS_SLS_MONITOR_OUTPUT_BUFFER_H
+#define ATSC3_LLS_SLS_MONITOR_OUTPUT_BUFFER_H
+
+#if defined (__cplusplus)
+extern "C" {
+#endif
 
 #define _LLS_SLS_MONITOR_OUTPUT_MAX_INIT_BUFFER 65535
 #define _LLS_SLS_MONITOR_OUTPUT_MAX_MOOF_BUFFER 65535
@@ -49,7 +52,8 @@ typedef struct lls_sls_monitor_buffer_isobmff {
     block_t* alc_moof_mdat_block;
 
     //mmt - for building moof and mdat blocks
-    ATSC3_VECTOR_BUILDER_STRUCT(trun_sample_entry)
+    ATSC3_VECTOR_BUILDER_STRUCT(trun_sample_entry);
+
     bool trun_mmthsample_missing_offset_mdat_box;
     
     block_t* mmt_moof_block;
@@ -60,10 +64,10 @@ typedef struct lls_sls_monitor_buffer_isobmff {
     //todo - not sure if neededooo won't have flow until our mdat is complete
     block_t* mmt_moof_block_previous_mpu;
 
-
     block_t* mmt_mdat_block;
-
-    block_t* mmt_mpu_rebuilt;
+    block_t* mmt_mpu_rebuilt_single;
+    
+    block_t* mmt_mpu_rebuilt_and_appending_for_isobmff_mux;
 
     //for fragment recovery
     //mmtp_payload_fragments_union_t* last_fragment;
@@ -76,6 +80,7 @@ typedef struct lls_sls_monitor_buffer_isobmff {
 
 
 ATSC3_VECTOR_BUILDER_METHODS_INTERFACE(lls_sls_monitor_buffer_isobmff, trun_sample_entry)
+
 
 void lls_sls_monitor_buffer_isobmff_clear_trun_sample_entry_instances(lls_sls_monitor_buffer_isobmff_t* lls_sls_monitor_buffer_isobmff);
 
@@ -118,4 +123,11 @@ typedef struct lls_sls_monitor_buffer_mode {
 } lls_sls_monitor_output_buffer_mode_t;
 
 
-#endif /* atsc3_lls_sls_monitor_output_buffer_h */
+
+
+#if defined (__cplusplus)
+}
+#endif
+
+
+#endif /* ATSC3_LLS_SLS_MONITOR_OUTPUT_BUFFER_H */

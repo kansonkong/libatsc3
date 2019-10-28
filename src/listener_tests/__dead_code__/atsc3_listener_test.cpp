@@ -19,6 +19,8 @@
   ./atsc3_listener_test vnic1
 */
 
+#ifdef __DEAD_CODE__
+
 //#define _ENABLE_TRACE 1
 //#define _SHOW_PACKET_FLOW 1
 int PACKET_COUNTER=0;
@@ -328,3 +330,4 @@ int main(int argc,char **argv) {
 
     return 0;
 }
+#endif

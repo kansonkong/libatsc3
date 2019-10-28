@@ -119,8 +119,25 @@ lls_table_t* lls_table_create_or_update_from_lls_slt_monitor(lls_slt_monitor_t* 
 	uint32_t parsed_update;
 	uint32_t parsed_error;
 
+	lls_table_t* lls_table = lls_table_create_or_update_from_lls_slt_monitor_with_metrics(lls_slt_monitor, lls_packet_block, &parsed, &parsed_update, &parsed_error);
+    if(lls_table) {
+        switch (lls_table->lls_table_id) {
 
-	return lls_table_create_or_update_from_lls_slt_monitor_with_metrics(lls_slt_monitor, lls_packet_block, &parsed, &parsed_update, &parsed_error);
+            case SLT:
+                //todo: jjustman-2019-10-12: only re-dispatch for updates?
+
+                if (lls_slt_monitor->atsc3_lls_on_sls_table_present) {
+                    lls_slt_monitor->atsc3_lls_on_sls_table_present(lls_table);
+                }
+                break;
+
+            default:
+                //noop
+                break;
+        }
+    }
+
+	return lls_table;
 }
 
 //only return back if lls_table_version has changed
@@ -135,15 +152,15 @@ lls_table_t* lls_table_create_or_update_from_lls_slt_monitor_with_metrics(lls_sl
     
     //jjustman-2019-09-18 - TODO: refactor this out from union to *
     if(lls_table_new->lls_table_id == AEAT) {
-        if(!lls_slt_monitor->aeat_table_latest) {
+        if(!lls_slt_monitor->lls_latest_aeat_table) {
             _LLS_INFO("Adding new AEAT table reference: %s", lls_table_new->aeat_table.aeat_xml_fragment_latest);
-            lls_slt_monitor->aeat_table_latest = lls_table_new;
-        } else if(lls_slt_monitor->aeat_table_latest->lls_group_id == lls_table_new->lls_group_id &&
-                  lls_slt_monitor->aeat_table_latest->lls_table_version != lls_table_new->lls_table_version) {
+            lls_slt_monitor->lls_latest_aeat_table = lls_table_new;
+        } else if(lls_slt_monitor->lls_latest_aeat_table->lls_group_id == lls_table_new->lls_group_id &&
+                  lls_slt_monitor->lls_latest_aeat_table->lls_table_version != lls_table_new->lls_table_version) {
             _LLS_INFO("Updating new AEAT table reference: %s", lls_table_new->aeat_table.aeat_xml_fragment_latest);
             
-            lls_table_free(&lls_slt_monitor->aeat_table_latest);
-            lls_slt_monitor->aeat_table_latest = lls_table_new;
+            lls_table_free(&lls_slt_monitor->lls_latest_aeat_table);
+            lls_slt_monitor->lls_latest_aeat_table = lls_table_new;
         } else {
             lls_table_free(&lls_table_new);
         }
@@ -152,15 +169,15 @@ lls_table_t* lls_table_create_or_update_from_lls_slt_monitor_with_metrics(lls_sl
     
     //jjustman-2019-09-18 - TODO: refactor this out from union to *
     if(lls_table_new->lls_table_id == OnscreenMessageNotification) {
-        if(!lls_slt_monitor->on_screen_message_notification_latest) {
+        if(!lls_slt_monitor->lls_latest_on_screen_message_notification_table) {
             _LLS_INFO("Adding new OnscreenMessageNotification table reference: %s", lls_table_new->on_screen_message_notification.on_screen_message_notification_xml_fragment_latest);
-            lls_slt_monitor->on_screen_message_notification_latest = lls_table_new;
-        } else if(lls_slt_monitor->aeat_table_latest->lls_group_id == lls_table_new->lls_group_id &&
-                  lls_slt_monitor->aeat_table_latest->lls_table_version != lls_table_new->lls_table_version) {
+            lls_slt_monitor->lls_latest_on_screen_message_notification_table = lls_table_new;
+        } else if(lls_slt_monitor->lls_latest_on_screen_message_notification_table->lls_group_id == lls_table_new->lls_group_id &&
+                  lls_slt_monitor->lls_latest_on_screen_message_notification_table->lls_table_version != lls_table_new->lls_table_version) {
             _LLS_INFO("Updating new OnscreenMessageNotification table reference: %s", lls_table_new->on_screen_message_notification.on_screen_message_notification_xml_fragment_latest);
             
-            lls_table_free(&lls_slt_monitor->on_screen_message_notification_latest);
-            lls_slt_monitor->on_screen_message_notification_latest = lls_table_new;
+            lls_table_free(&lls_slt_monitor->lls_latest_on_screen_message_notification_table);
+            lls_slt_monitor->lls_latest_on_screen_message_notification_table = lls_table_new;
         } else {
             lls_table_free(&lls_table_new);
         }
@@ -178,14 +195,15 @@ lls_table_t* lls_table_create_or_update_from_lls_slt_monitor_with_metrics(lls_sl
 
 	(*parsed)++;
 	//check if we should rebuild our signaling, note lls_table_version will roll over at FF
+	//TODO: refactor me for event dispatching logic
 	if(lls_slt_monitor) {
-		if(lls_slt_monitor->lls_table_slt) {
-			if(lls_table_new->lls_table_version > lls_slt_monitor->lls_table_slt->lls_table_version ||
-					(lls_table_new->lls_table_version == 0x00 && lls_slt_monitor->lls_table_slt->lls_table_version == 0xFF)) {
+		if(lls_slt_monitor->lls_latest_slt_table) {
+			if(lls_table_new->lls_table_version > lls_slt_monitor->lls_latest_slt_table->lls_table_version ||
+					(lls_table_new->lls_table_version == 0x00 && lls_slt_monitor->lls_latest_slt_table->lls_table_version == 0xFF)) {
 
 				//free our old table and keep the new one
-				lls_table_free(&lls_slt_monitor->lls_table_slt);
-				lls_slt_monitor->lls_table_slt = NULL;
+				lls_table_free(&lls_slt_monitor->lls_latest_slt_table);
+				lls_slt_monitor->lls_latest_slt_table = NULL;
 
 			} else {
 				//free our new one and keep the old one
@@ -195,10 +213,13 @@ lls_table_t* lls_table_create_or_update_from_lls_slt_monitor_with_metrics(lls_sl
 			}
 		}
 
-		lls_slt_monitor->lls_table_slt = lls_table_new;
+		lls_slt_monitor->lls_latest_slt_table = lls_table_new;
 		lls_slt_table_perform_update(lls_table_new, lls_slt_monitor);
+		//jjustman-2019-10-03 - TODO - dispatch updates here for callbacks
+
+
 		(*parsed_update)++;
-		return lls_slt_monitor->lls_table_slt;
+		return lls_slt_monitor->lls_latest_slt_table;
 	} else {
 		_LLS_ERROR("lls_slt_monitor is null, can't propagate LLS update!");
 	}
@@ -268,23 +289,39 @@ void lls_table_free(lls_table_t** lls_table_p) {
 
 	if(lls_table->lls_table_id == SLT) {
 
+		//TODO: jjustman-2019-10-03 0 move this into chained destructors
+		_LLS_DEBUG("TODO: use ATSC3_VECTOR_BUILDER chained destructors to free slt_table!");
+
 		//for each service entry alloc, free
-		for(int i=0; i < lls_table->slt_table.service_entry_n; i++) {
-			if(lls_table->slt_table.service_entry[i]) {
-				freesafe(lls_table->slt_table.service_entry[i]->global_service_id);
-				freesafe(lls_table->slt_table.service_entry[i]->short_service_name);
+		for(int i=0; i < lls_table->slt_table.atsc3_lls_slt_service_v.count; i++) {
+			atsc3_lls_slt_service_t* atsc3_lls_slt_service = lls_table->slt_table.atsc3_lls_slt_service_v.data[i];
+			if(atsc3_lls_slt_service) {
+				freesafe(atsc3_lls_slt_service->global_service_id);
+				freesafe(atsc3_lls_slt_service->short_service_name);
+
+				_LLS_DEBUG("TODO: use ATSC3_VECTOR_BUILDER chained destructors to free atsc3_lls_slt_service_free_atsc3_slt_broadcast_svc_signaling!");
+
+				//atsc3_lls_slt_service_free_atsc3_slt_broadcast_svc_signaling(atsc3_lls_slt_service);
 
 				//clear all char* in broadcast_svc_signaling
-				freesafe(lls_table->slt_table.service_entry[i]->broadcast_svc_signaling.sls_destination_ip_address);
-				freesafe(lls_table->slt_table.service_entry[i]->broadcast_svc_signaling.sls_destination_udp_port);
-				freesafe(lls_table->slt_table.service_entry[i]->broadcast_svc_signaling.sls_source_ip_address);
+//				freesafe(atsc3_lls_slt_service->broadcast_svc_signaling.sls_destination_ip_address);
+//				freesafe(atsc3_lls_slt_service->broadcast_svc_signaling.sls_destination_udp_port);
+//				freesafe(atsc3_lls_slt_service->broadcast_svc_signaling.sls_source_ip_address);
 
-				free(lls_table->slt_table.service_entry[i]);
+//				free(atsc3_lls_slt_service);
+//				lls_table->slt_table.service_entry[i] = NULL;
 			}
 		}
 
-		if(lls_table->slt_table.service_entry)
-			free(lls_table->slt_table.service_entry);
+//		if(lls_table->slt_table.atsc3_lls_slt_service_v.size) {
+//			free(lls_table->slt_table.atsc3_lls_slt_service_v.data);
+//			lls_table->slt_table.atsc3_lls_slt_service_v.size = 0;
+//			lls_table->slt_table.atsc3_lls_slt_service_v.count = 0;
+//		}
+
+		//TODO: jjustman-2019-10-03 - free atsc3_slt_capabilities
+		//TODO: jjustman-2019-10-03 - free atsc3_slt_ineturl
+
 
 		if(lls_table->slt_table.bsid)
 			free(lls_table->slt_table.bsid);
@@ -527,10 +564,12 @@ void lls_dump_instance_table(lls_table_t* base_table) {
 
 	if(base_table->lls_table_id == SLT) {
 
-		_LLS_INFO_I("SLT: Service contains %d entries:", base_table->slt_table.service_entry_n);
+		_LLS_INFO_I("SLT: Service contains %d entries:", base_table->slt_table.atsc3_lls_slt_service_v.count);
 
-		for(int i=0l; i < base_table->slt_table.service_entry_n; i++) {
-			lls_service_t* service = base_table->slt_table.service_entry[i];
+		for(int i=0l; i < base_table->slt_table.atsc3_lls_slt_service_v.count; i++) {
+
+			atsc3_lls_slt_service_t* service = base_table->slt_table.atsc3_lls_slt_service_v.data[i];
+
 			_LLS_INFO_I(" -----------------------------");
 			_LLS_INFO_I("  service_id                  : %d", service->service_id);
 			_LLS_INFO_I("  global_service_id           : %s", service->global_service_id);
@@ -540,12 +579,22 @@ void lls_dump_instance_table(lls_table_t* base_table) {
 			_LLS_INFO_I("  short_service_name          : %s", service->short_service_name);
 			_LLS_INFO_I("  slt_svc_seq_num             : %d", service->slt_svc_seq_num);
 			_LLS_INFO_I(" -----------------------------");
-			_LLS_INFO_I("  broadcast_svc_signaling");
-			_LLS_INFO_I(" -----------------------------");
-			_LLS_INFO_I("    sls_protocol              : %d", service->broadcast_svc_signaling.sls_protocol);
-			_LLS_INFO_I("    sls_destination_ip_address: %s", service->broadcast_svc_signaling.sls_destination_ip_address);
-			_LLS_INFO_I("    sls_destination_udp_port  : %s", service->broadcast_svc_signaling.sls_destination_udp_port);
-			_LLS_INFO_I("    sls_source_ip_address     : %s", service->broadcast_svc_signaling.sls_source_ip_address);
+			if(service->atsc3_slt_broadcast_svc_signalling_v.count) {
+
+				_LLS_INFO_I("  broadcast_svc_signaling: entry: %d", service->atsc3_slt_broadcast_svc_signalling_v.count);
+				atsc3_slt_broadcast_svc_signalling_t* atsc3_slt_broadcast_svc_signalling = service->atsc3_slt_broadcast_svc_signalling_v.data[0];
+				_LLS_INFO_I("  -----------------------------");
+				_LLS_INFO_I("    sls_protocol              : %d", atsc3_slt_broadcast_svc_signalling->sls_protocol);
+				_LLS_INFO_I("    sls_major_protocol_version: %u", atsc3_slt_broadcast_svc_signalling->sls_major_protocol_version);
+				_LLS_INFO_I("    sls_minor_protocol_version: %u", atsc3_slt_broadcast_svc_signalling->sls_minor_protocol_version);
+
+				_LLS_INFO_I("    sls_destination_ip_address: %s", atsc3_slt_broadcast_svc_signalling->sls_destination_ip_address);
+				_LLS_INFO_I("    sls_destination_udp_port  : %s", atsc3_slt_broadcast_svc_signalling->sls_destination_udp_port);
+				_LLS_INFO_I("    sls_source_ip_address     : %s", atsc3_slt_broadcast_svc_signalling->sls_source_ip_address);
+			} else {
+				_LLS_INFO_I("  broadcast_svc_signaling *NOT PRESENT*");
+				_LLS_INFO_I("  -------------------------------------");
+			}
 
 		}
 		_LLS_DEBUGN("--------------------------");
