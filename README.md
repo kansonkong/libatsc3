@@ -2,6 +2,10 @@ libatsc3 Overview
 ==========
 ATSC 3.0 NGBP Open Source Library - Parse LMT, LLS and other signaling, object delivery via ROUTE, video playback of MMT and DASH
 
+## October, 2019 Update: MFU OOO mode with context callbacks
+Adding event-drive callbacks for ATSC3 A/331 SLT table emission, along with MFU-based callbacks for A/V/S MFU payloads to decoder buffer handoff.  Coming soon: Android NDK/JNI Sample App for MMT playback via pcaps (or 3.0 Dongle if you have one..)
+
+
 ## September, 2019 Update: New MMTP Flow Vector Management
 
 New design for MMTP de-packetizer, with full MMTP flow vector structures rather than combined union vectors
