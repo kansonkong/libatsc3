@@ -40,6 +40,7 @@
 
 #include "utils.h"
 #include "defines.h"
+#include "atsc3_utils.h"
 
 #ifdef __cplusplus
 extern "C" {

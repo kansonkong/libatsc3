@@ -2,6 +2,19 @@ libatsc3 Overview
 ==========
 ATSC 3.0 NGBP Open Source Library - Parse LMT, LLS and other signaling, object delivery via ROUTE, video playback of MMT and DASH
 
+## September, 2019 Update: New MMTP Flow Vector Management
+
+New design for MMTP de-packetizer, with full MMTP flow vector structures rather than combined union vectors
+Support for ROUTE/FLUTE v2
+
+Playback Tools:
+
+atsc3_listener_metrics_ncurses_httpd_isobmff - atsc3.0 ROUTE/DASH and MMT playback tool
+
+atsc3_mmt_listener_to_http_hls_fmp4 - home gateway MMT to HLS fmp4 [refragmenting for OTT playback](https://www.linkedin.com/posts/jason-justman-7662595_libatsc3-putting-atsc-30-theory-into-practice-activity-6577527461616197632-jzUT)
+
+
+
 ## August, 2019 Update: "Virtual" ATSC 3.0 Airchain with ALP IP Multicast "reflection"
 
 Designed for real-time inspection, analysis and confidence monitoring
