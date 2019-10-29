@@ -15167,6 +15167,8 @@ fail:
 		block_AppendFromBuf(sample_processed, nal_poision, 4);
 	}
 
+	block_Rewind(sample_processed);
+
 done:
 
     return sample_processed;
