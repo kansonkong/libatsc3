@@ -57,7 +57,6 @@ typedef struct atsc3_mmt_mfu_context {
 	mp_table_t* mp_table_last;
 	atsc3_mmt_mfu_mpu_timestamp_descriptor_rolling_window_t												packet_id_mpu_timestamp_descriptor_window;
 
-
 	//INTERNAL event callbacks
 	__internal__atsc3_mmt_signalling_information_on_packet_id_with_mpu_timestamp_descriptor_f			__internal__atsc3_mmt_signalling_information_on_packet_id_with_mpu_timestamp_descriptor;
 
@@ -90,6 +89,9 @@ typedef struct atsc3_mmt_mfu_context {
 	atsc3_mmt_mpu_mfu_on_sample_corrupt_mmthsample_header_f												atsc3_mmt_mpu_mfu_on_sample_corrupt_mmthsample_header;
 	atsc3_mmt_mpu_mfu_on_sample_missing_f 																atsc3_mmt_mpu_mfu_on_sample_missing;
 
+	//Lastly, in the spirit of OOO MMT, movie fragment metadata comes last and should only be used as a last resort...
+	atsc3_mmt_mpu_on_sequence_movie_fragment_metadata_present_f                                         atsc3_mmt_mpu_on_sequence_movie_fragment_metadata_present;
+
 } atsc3_mmt_mfu_context_t;
 
 atsc3_mmt_mfu_mpu_timestamp_descriptor_t* atsc3_get_mpu_timestamp_from_packet_id_mpu_sequence_number(atsc3_mmt_mfu_context_t* atsc3_mmt_mfu_context, uint16_t packet_id, uint32_t mpu_sequence_number);
@@ -114,6 +116,8 @@ void mmt_signalling_message_process_with_context(udp_packet_t *udp_packet,
 												atsc3_mmt_mfu_context_t* atsc3_mmt_mfu_context);
 
 
+//movie fragment sample duration parsing...non bento4 impl
+uint32_t atsc3_mmt_movie_fragment_extract_sample_duration(block_t* mmt_movie_fragment_metadata);
 
 
 #define __MMT_CONTEXT_MPU_ERROR(...)        __LIBATSC3_TIMESTAMP_WARN(__VA_ARGS__);
