@@ -220,10 +220,10 @@ void atsc3_phy_mmt_player_bridge_process_packet_phy(block_t* packet) {
             }
         }
 
-        __INFO("Checking lls_sls_mmt_monitor: %p,", lls_sls_mmt_monitor);
+        __TRACE("Checking lls_sls_mmt_monitor: %p,", lls_sls_mmt_monitor);
 
         if(lls_sls_mmt_monitor && lls_sls_mmt_monitor->lls_mmt_session) {
-            __INFO("Checking lls_sls_mmt_monitor->lls_mmt_session: %p,", lls_sls_mmt_monitor->lls_mmt_session);
+            __TRACE("Checking lls_sls_mmt_monitor->lls_mmt_session: %p,", lls_sls_mmt_monitor->lls_mmt_session);
         }
 
         //recheck video_packet_id/audio_packet_id
@@ -233,7 +233,7 @@ void atsc3_phy_mmt_player_bridge_process_packet_phy(block_t* packet) {
                 lls_sls_mmt_monitor->video_packet_id = lls_sls_mmt_session->video_packet_id;
                 lls_sls_mmt_monitor->audio_packet_id = lls_sls_mmt_session->audio_packet_id;
 				lls_sls_mmt_monitor->stpp_packet_id  = lls_sls_mmt_session->stpp_packet_id;
-				__INFO("setting audio_packet_id/video_packet_id/stpp: %u, %u, %u",
+                __TRACE("setting audio_packet_id/video_packet_id/stpp: %u, %u, %u",
 						lls_sls_mmt_monitor->audio_packet_id,
 						lls_sls_mmt_monitor->video_packet_id,
 						lls_sls_mmt_monitor->stpp_packet_id);
@@ -306,7 +306,7 @@ void atsc3_phy_mmt_player_bridge_process_packet_phy(block_t* packet) {
             if(parsed_count) {
                 mmt_signalling_message_dump(mmtp_signalling_packet);
 
-                __INFO("process_packet: calling mmt_signalling_message_process_with_context with udp_packet: %p, mmtp_signalling_packet: %p, atsc3_mmt_mfu_context: %p,",
+                __TRACE("process_packet: calling mmt_signalling_message_process_with_context with udp_packet: %p, mmtp_signalling_packet: %p, atsc3_mmt_mfu_context: %p,",
                         udp_packet,
                         mmtp_signalling_packet,
                         atsc3_mmt_mfu_context);
@@ -338,7 +338,7 @@ void atsc3_phy_mmt_player_bridge_process_packet_phy(block_t* packet) {
                 //add in flows 				lls_sls_mmt_session_t* lls_sls_mmt_session = lls_slt_mmt_session_find_from_service_id(lls_slt_monitor, lls_sls_mmt_monitor->lls_mmt_session->service_id);
 
                 if(lls_sls_mmt_monitor && lls_sls_mmt_monitor->lls_mmt_session && matching_lls_sls_mmt_session) {
-                	__INFO("mmt_signalling_information: from atsc3 service_id: %u, patching: seting audio_packet_id/video_packet_id/stpp_packet_id: %u, %u, %u",
+                	__TRACE("mmt_signalling_information: from atsc3 service_id: %u, patching: seting audio_packet_id/video_packet_id/stpp_packet_id: %u, %u, %u",
                 								matching_lls_sls_mmt_session->atsc3_lls_slt_service->service_id,
                 								matching_lls_sls_mmt_session->audio_packet_id,
                 								matching_lls_sls_mmt_session->video_packet_id,
