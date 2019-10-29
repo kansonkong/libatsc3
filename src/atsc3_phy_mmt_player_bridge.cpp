@@ -778,6 +778,18 @@ void atsc3_mmt_mpu_mfu_on_sample_missing_ndk(uint16_t packet_id, uint32_t mpu_se
     at3DrvIntf_ptr->atsc3_onMfuSampleMissing(packet_id, mpu_sequence_number, sample_number);
 }
 
+void atsc3_mmt_mpu_on_sequence_movie_fragment_metadata_present_ndk(uint16_t packet_id, uint32_t mpu_sequence_number, block_t* mmt_movie_fragment_metadata) {
+    if(!mmt_movie_fragment_metadata || !mmt_movie_fragment_metadata->p_size) {
+        __WARN("atsc3_mmt_mpu_on_sequence_movie_fragment_metadata_present_ndk: mmt_movie_fragment_metadata: %p: returned null or no length!");
+        return;
+    }
+
+    uint32_t extracted_sample_duration_us = atsc3_mmt_movie_fragment_extract_sample_duration(mmt_movie_fragment_metadata);
+
+    at3DrvIntf_ptr->atsc3_onExtractedSampleDuration(packet_id, mpu_sequence_number, extracted_sample_duration_us);
+}
+
+
 void atsc3_phy_mmt_player_bridge_init(At3DrvIntf* At3DrvIntf_ptr) {
     at3DrvIntf_ptr = At3DrvIntf_ptr;
 
@@ -810,6 +822,9 @@ void atsc3_phy_mmt_player_bridge_init(At3DrvIntf* At3DrvIntf_ptr) {
     atsc3_mmt_mfu_context->atsc3_mmt_signalling_information_on_video_packet_id_with_mpu_timestamp_descriptor = &atsc3_mmt_signalling_information_on_video_packet_id_with_mpu_timestamp_descriptor_ndk;
     atsc3_mmt_mfu_context->atsc3_mmt_signalling_information_on_audio_packet_id_with_mpu_timestamp_descriptor = &atsc3_mmt_signalling_information_on_audio_packet_id_with_mpu_timestamp_descriptor_ndk;
     atsc3_mmt_mfu_context->atsc3_mmt_signalling_information_on_stpp_packet_id_with_mpu_timestamp_descriptor  = &atsc3_mmt_signalling_information_on_stpp_packet_id_with_mpu_timestamp_descriptor_ndk;
+
+    //extract out one trun sampleduration for essence timing
+    atsc3_mmt_mfu_context->atsc3_mmt_mpu_on_sequence_movie_fragment_metadata_present = &atsc3_mmt_mpu_on_sequence_movie_fragment_metadata_present_ndk;
 
     at3DrvIntf_ptr->LogMsg("atsc3_phy_mmt_player_bridge_init - completed");
 

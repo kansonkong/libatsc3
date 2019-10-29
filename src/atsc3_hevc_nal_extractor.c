@@ -15034,6 +15034,8 @@ block_t* atsc3_hevc_extract_extradata_nals_combined_ffmpegImpl(block_t* hvcc_box
         
     }
 
+
+
     for (i = 0; i < HEVC_MAX_VPS_COUNT; i++) {
         if (ps.vps_list[i]) {
             vps = (const HEVCVPS*)ps.vps_list[i]->data;
@@ -15072,7 +15074,9 @@ block_t* atsc3_hevc_extract_extradata_nals_combined_ffmpegImpl(block_t* hvcc_box
         block_Write(nals_combined, pps_data, pps_data_size);
         block_Rewind(nals_combined);
 
-    } else {
+        _ATSC3_HEVC_NAL_EXTRACTOR_INFO("avctx: width: %d, height: %d", avctx->width, avctx->height);
+        
+        } else {
         _ATSC3_HEVC_NAL_EXTRACTOR_ERROR("Could not extract VPS/PPS/SPS from extradata");
     }
 //will return NULL on error
@@ -15083,6 +15087,8 @@ done:
     av_freep(&vps_data);
     av_freep(&sps_data);
     av_freep(&pps_data);
+
+    av_freep(&avctx);
 
     return nals_combined;
 }

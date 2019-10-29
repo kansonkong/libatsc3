@@ -182,6 +182,18 @@ void atsc3_mmt_mpu_mfu_on_sample_corrupt_mmthsample_header_noop(uint16_t packet_
     mfu_fragment_count_rebuilt);
 }
 
+//MPU - init box (mpu_metadata) present
+void atsc3_mmt_mpu_on_sequence_movie_fragment_metadata_present_noop(uint16_t packet_id, uint32_t mpu_sequence_number, block_t* mmt_movie_fragment_metadata) {
+    //as a last resort if mmt_atsc3_message isn't present with v/a descriptor timing, persist at least one trun frame duration...
+    uint32_t sample_duration = atsc3_mmt_movie_fragment_extract_sample_duration(mmt_movie_fragment_metadata);
+
+    __MMT_CONTEXT_MPU_DEBUG("atsc3_mmt_mpu_on_sequence_movie_fragment_metadata_present_noop: packet_id: %u, mpu_sequence_number: %u, mmt_movie_fragment_metadata: %p, size: %d, extracted sample_duration: %d",
+                            packet_id,
+                            mpu_sequence_number,
+                            mmt_movie_fragment_metadata,
+                            mmt_movie_fragment_metadata->p_size,
+                            sample_duration);
+}
 
 void __internal__atsc3_mmt_signalling_information_on_packet_id_with_mpu_timestamp_descriptor(atsc3_mmt_mfu_context_t* atsc3_mmt_mfu_context, uint16_t packet_id, uint32_t mpu_sequence_number, uint64_t mpu_presentation_time_ntp64, uint32_t mpu_presentation_time_seconds, uint32_t mpu_presentation_time_microseconds) {
 	while(atsc3_mmt_mfu_context->packet_id_mpu_timestamp_descriptor_window.atsc3_mmt_mfu_mpu_timestamp_descriptor_v.count > 10) {
@@ -305,6 +317,9 @@ atsc3_mmt_mfu_context_t* atsc3_mmt_mfu_context_new() {
 	atsc3_mmt_mfu_context->atsc3_mmt_mpu_mfu_on_sample_corrupt 	= &atsc3_mmt_mpu_mfu_on_sample_corrupt_noop;
 	atsc3_mmt_mfu_context->atsc3_mmt_mpu_mfu_on_sample_missing 	= &atsc3_mmt_mpu_mfu_on_sample_missing_noop;
     atsc3_mmt_mfu_context->atsc3_mmt_mpu_mfu_on_sample_corrupt_mmthsample_header = &atsc3_mmt_mpu_mfu_on_sample_corrupt_mmthsample_header_noop;
+
+    //movie fragment related callbacks, as a last resort
+    atsc3_mmt_mfu_context->atsc3_mmt_mpu_on_sequence_movie_fragment_metadata_present = &atsc3_mmt_mpu_on_sequence_movie_fragment_metadata_present_noop;
 
 	return atsc3_mmt_mfu_context;
 }
@@ -581,6 +596,7 @@ void mmtp_mfu_rebuild_from_packet_id_mpu_sequence_number(atsc3_mmt_mfu_context_t
         }
     }
 
+
     //make sure our DU for this is set to i_pos == p_size, so we can opportunisticly alloc and make sure block_AppendFull works properly
     //jjustman-2019-10-24: todo - fix me! mmtp_mpu_packet_to_rebuild->du_mfu_block->i_pos = mmtp_mpu_packet_to_rebuild->du_mfu_block->p_size;
 
@@ -774,6 +790,111 @@ void mmtp_mfu_rebuild_from_packet_id_mpu_sequence_number(atsc3_mmt_mfu_context_t
 
             //iterate our parent loop forward
             i = mmtp_mpu_ending_index;
+        }
+    }
+
+    //jjustman-2019-10-29 - in the spirit of OOO MFU, process the movie fragment metadata as a last resort to extract the sample duration until mmt_atsc3_message support is functional
+    block_t* du_movie_fragment_block_rebuilt;
+
+    for(int i=0; i < mpu_sequence_number_mmtp_mpu_packet_collection->mmtp_mpu_packet_v.count; i++) {
+        mmtp_mpu_packet_t *mmtp_mpu_init_packet_to_rebuild = mpu_sequence_number_mmtp_mpu_packet_collection->mmtp_mpu_packet_v.data[i];
+
+        if (mmtp_mpu_init_packet_to_rebuild->mfu_reassembly_performed) {
+            continue;
+        }
+
+        //process movie fragment metadata, don't send incomplete payloads for moof box (e.g. isnt FI==0x00 or endns in 0x03)
+        if (mmtp_mpu_init_packet_to_rebuild->mpu_fragment_type == 0x1) {
+            //mark this DU as completed for purging at the end of this method
+
+            if (!mmtp_mpu_init_packet_to_rebuild->du_movie_fragment_block) {
+                __MMT_CONTEXT_MPU_WARN(
+                        "mmtp_mfu_rebuild_from_packet_id_mpu_sequence_number Movie fragment metadata Metadata, missing du_movie_fragment_block i: %u, psn: %u, with %u:%u and packet_id: %u, mpu_sequence_number: %u, fragment_indicator: %u",
+                        i, mmtp_mpu_init_packet_to_rebuild->packet_sequence_number,
+                        atsc3_mmt_mfu_context->udp_flow->dst_ip_addr,
+                        atsc3_mmt_mfu_context->udp_flow->dst_port,
+                        mmtp_mpu_init_packet_to_rebuild->mmtp_packet_id,
+                        mmtp_mpu_init_packet_to_rebuild->mpu_sequence_number,
+                        mmtp_mpu_init_packet_to_rebuild->mpu_fragmentation_indicator);
+                continue;
+            }
+
+            __MMT_CONTEXT_MPU_DEBUG(
+                    "mmtp_mfu_rebuild_from_packet_id_mpu_sequence_number: Movie fragment metadata: moof: packet_id: %u, mpu_sequence_number: %u, mmtp_mpu_packet.samplenumber: %u, mmtp_mpu_packet.mpu_fragment_counter: %u, mmtp_mpu_packet.offset: %u, du_mpu_metadata_block packet size: %u, fragmentation_indicator: %u",
+                    mmtp_mpu_init_packet_to_rebuild->mmtp_packet_id,
+                    mmtp_mpu_init_packet_to_rebuild->mpu_sequence_number,
+                    mmtp_mpu_init_packet_to_rebuild->sample_number,
+                    mmtp_mpu_init_packet_to_rebuild->mpu_fragment_counter,
+                    mmtp_mpu_init_packet_to_rebuild->offset,
+                    mmtp_mpu_init_packet_to_rebuild->du_movie_fragment_block ? mmtp_mpu_init_packet_to_rebuild->du_movie_fragment_block->p_size : 0,
+                    mmtp_mpu_init_packet_to_rebuild->mpu_fragmentation_indicator);
+
+            //one (or more) DU
+            if (mmtp_mpu_init_packet_to_rebuild->mpu_fragmentation_indicator == 0x00) {
+                mmtp_mpu_init_packet_to_rebuild->mfu_reassembly_performed = true;
+
+                block_t *du_movie_fragment_block_duplicated_for_context_callback_invocation = block_Duplicate(
+                        mmtp_mpu_init_packet_to_rebuild->du_movie_fragment_block);
+                atsc3_mmt_mfu_context->atsc3_mmt_mpu_on_sequence_movie_fragment_metadata_present(
+                        mmtp_mpu_init_packet_to_rebuild->mmtp_packet_id,
+                        mmtp_mpu_init_packet_to_rebuild->mpu_sequence_number,
+                        du_movie_fragment_block_duplicated_for_context_callback_invocation);
+                block_Destroy(&du_movie_fragment_block_duplicated_for_context_callback_invocation);
+            } else if (mmtp_mpu_init_packet_to_rebuild->mpu_fragmentation_indicator == 0x03) {
+                if (du_movie_fragment_block_rebuilt != NULL &&
+                    mmtp_mpu_init_packet_to_rebuild->du_movie_fragment_block) {
+                    mmtp_mpu_init_packet_to_rebuild->mfu_reassembly_performed = true;
+
+                    __MMT_CONTEXT_MPU_DEBUG(
+                            "mmtp_mfu_rebuild_from_packet_id_mpu_sequence_number: Appending movie fragment metadata, i: %u, psn: %u, with %u:%u and packet_id: %u, mpu_sequence_number: %u, fragment_indicator: %u",
+                            i, mmtp_mpu_init_packet_to_rebuild->packet_sequence_number,
+                            atsc3_mmt_mfu_context->udp_flow->dst_ip_addr,
+                            atsc3_mmt_mfu_context->udp_flow->dst_port,
+                            mmtp_mpu_init_packet_to_rebuild->mmtp_packet_id,
+                            mmtp_mpu_init_packet_to_rebuild->mpu_sequence_number,
+                            mmtp_mpu_init_packet_to_rebuild->mpu_fragmentation_indicator);
+
+                    block_Merge(du_movie_fragment_block_rebuilt,
+                                mmtp_mpu_init_packet_to_rebuild->du_movie_fragment_block);
+                    block_Rewind(du_movie_fragment_block_rebuilt);
+                    atsc3_mmt_mfu_context->atsc3_mmt_mpu_on_sequence_mpu_metadata_present(
+                            mmtp_mpu_init_packet_to_rebuild->mmtp_packet_id,
+                            mmtp_mpu_init_packet_to_rebuild->mpu_sequence_number,
+                            du_movie_fragment_block_rebuilt);
+                    block_Destroy(&du_movie_fragment_block_rebuilt);
+                } else {
+                    __MMT_CONTEXT_MPU_WARN(
+                            "mmtp_mfu_rebuild_from_packet_id_mpu_sequence_number Missing proceeding movie fragment metadata i: %u, psn: %u, with %u:%u and packet_id: %u, mpu_sequence_number: %u, fragment_indicator: %u",
+                            i, mmtp_mpu_init_packet_to_rebuild->packet_sequence_number,
+                            atsc3_mmt_mfu_context->udp_flow->dst_ip_addr,
+                            atsc3_mmt_mfu_context->udp_flow->dst_port,
+                            mmtp_mpu_init_packet_to_rebuild->mmtp_packet_id,
+                            mmtp_mpu_init_packet_to_rebuild->mpu_sequence_number,
+                            mmtp_mpu_init_packet_to_rebuild->mpu_fragmentation_indicator);
+                }
+            } else {
+                if (mmtp_mpu_init_packet_to_rebuild->mpu_fragmentation_indicator == 0x01) {
+                    if (du_movie_fragment_block_rebuilt) {
+                        block_Destroy(&du_movie_fragment_block_rebuilt);
+                    }
+                    du_movie_fragment_block_rebuilt = block_Duplicate(
+                            mmtp_mpu_init_packet_to_rebuild->du_movie_fragment_block);
+                } else if (mmtp_mpu_init_packet_to_rebuild->mpu_fragmentation_indicator == 0x02) {
+                    if (du_movie_fragment_block_rebuilt) {
+                        block_Merge(du_movie_fragment_block_rebuilt,
+                                    mmtp_mpu_init_packet_to_rebuild->du_movie_fragment_block);
+                    } else {
+                        __MMT_CONTEXT_MPU_WARN(
+                                "mmtp_mfu_rebuild_from_packet_id_mpu_sequence_number Missing initial movie fragment m]etadata i: %u, psn: %u, with %u:%u and packet_id: %u, mpu_sequence_number: %u, fragment_indicator: %u",
+                                i, mmtp_mpu_init_packet_to_rebuild->packet_sequence_number,
+                                atsc3_mmt_mfu_context->udp_flow->dst_ip_addr,
+                                atsc3_mmt_mfu_context->udp_flow->dst_port,
+                                mmtp_mpu_init_packet_to_rebuild->mmtp_packet_id,
+                                mmtp_mpu_init_packet_to_rebuild->mpu_sequence_number,
+                                mmtp_mpu_init_packet_to_rebuild->mpu_fragmentation_indicator);
+                    }
+                }
+            }
         }
     }
 }
@@ -1082,7 +1203,68 @@ void mmt_signalling_message_process_with_context(udp_packet_t *udp_packet,
 			__MMSM_TRACE("mmt_signalling_message_update_lls_sls_mmt_session: Ignoring signal: 0x%x", mmt_signalling_message_header_and_payload->message_header.MESSAGE_id_type);
 		}
 	}
+}
 
+/*
+ *
+ * from iso 14496-12
+ *
+ aligned(8) class TrackRunBox extends FullBox(‘trun’, version, tr_flags) {
+    unsigned int(32)  sample_count;
+    // the following are optional fields
+    signed int(32) data_offset;
+    unsigned int(32)  first_sample_flags;
+    // all fields in the following array are optional
+    {
+      unsigned int(32)  sample_duration;
+      unsigned int(32)  sample_size;
+      unsigned int(32)  sample_flags
+      if (version == 0)
+         { unsigned int(32) sample_composition_time_offset }
+      else
+         { signed int(32) sample_composition_time_offset }
+    }[ sample_count ]
+}
+
+aligned(8) class FullBox(unsigned int(32) boxtype, unsigned int(8) v, bit(24) f) extends Box(boxtype) {
+    unsigned int(8)   version = v;
+    bit(24)           flags = f;
+}
+*/
+
+uint32_t atsc3_mmt_movie_fragment_extract_sample_duration(block_t* mmt_movie_fragment_metadata) {
+    __MMSM_TRACE("atsc3_mmt_movie_fragment_extract_sample_duration: extracting from %p, length: %d", mmt_movie_fragment_metadata, mmt_movie_fragment_metadata->p_size);
+
+    uint32_t box_size = 0;
+    uint32_t sample_count = 0;
+    uint32_t sample_duration_us = 0;
+
+    block_Rewind(mmt_movie_fragment_metadata);
+
+    uint8_t* ptr = block_Get(mmt_movie_fragment_metadata);
+    ptr += 4;
+    for(int i=4; i < mmt_movie_fragment_metadata->p_size-8 && (sample_duration_us == 0); i++) {
+
+        if(ptr[0] == 't' && ptr[1] == 'r' && ptr[2] == 'u' && ptr[3] == 'n') {
+            //read our box length from ptr-4
+            box_size = ntohl(*(uint32_t*)(ptr));
+            ptr += 4;  //iterate past fullbox format
+            sample_count = ntohl(*(uint32_t*)(ptr));
+            ptr += 4 + 4; //move past data_offset and first_sample_flags
+
+            if(sample_count > 0) {
+                //iterate internal samples is not needed with MFU mode, so bail
+                sample_duration_us = ntohl(*(uint32_t*)(ptr));
+                continue;
+            }
+        }
+
+        ptr++;
+    }
+
+    __MMSM_TRACE("atsc3_mmt_movie_fragment_extract_sample_duration: returning sample_duration_us as %d", sample_duration_us);
+
+    return sample_duration_us;
 }
 
 
