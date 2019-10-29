@@ -1247,8 +1247,9 @@ uint32_t atsc3_mmt_movie_fragment_extract_sample_duration(block_t* mmt_movie_fra
 
         if(ptr[0] == 't' && ptr[1] == 'r' && ptr[2] == 'u' && ptr[3] == 'n') {
             //read our box length from ptr-4
-            box_size = ntohl(*(uint32_t*)(ptr));
-            ptr += 4;  //iterate past fullbox format
+            box_size = ntohl(*(uint32_t*)(ptr-4));
+            ptr += 4; //iterate past our box name
+            ptr += 4; //iterate past fullbox format
             sample_count = ntohl(*(uint32_t*)(ptr));
             ptr += 4 + 4; //move past data_offset and first_sample_flags
 
