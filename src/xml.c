@@ -324,7 +324,8 @@ uint8_t* xml_attributes_clone_node(xml_node_t* node) {
     xml_string_t* xml_string = xml_node_name(node);
     uint8_t* xml_attributes_clone_ret = xml_attributes_clone(xml_string);
     
-    free(xml_string);
+    //xml_string is a ptr reference, we can't free it here...
+    //free(xml_string);
     
     return xml_attributes_clone_ret;
 }
