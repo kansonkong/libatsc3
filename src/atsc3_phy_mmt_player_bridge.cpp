@@ -432,6 +432,11 @@ void atsc3_mmt_mpu_on_sequence_mpu_metadata_present_ndk(uint16_t packet_id, uint
 
         //we will get either avc1 (avcC) NAL or hevc (hvcC) nals back
         if (video_decoder_configuration_record) {
+            //set width/height to player
+            if(video_decoder_configuration_record->width && video_decoder_configuration_record->height) {
+                at3DrvIntf_ptr->atsc3_setVideoWidthHeightFromTrak(video_decoder_configuration_record->width, video_decoder_configuration_record->height);
+            }
+
             if (video_decoder_configuration_record->hevc_decoder_configuration_record) {
 
                 block_t* hevc_nals_combined = atsc3_hevc_extract_extradata_nals_combined_ffmpegImpl(video_decoder_configuration_record->hevc_decoder_configuration_record->box_data_original);
