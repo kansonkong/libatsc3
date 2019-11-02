@@ -17,9 +17,7 @@
 #define ATSC3_ROUTE_MPD_TYPE			"application/dash+xml"
 #define ATSC3_SLS_HELD_FRAGMENT_TYPE	"application/atsc-held+xml"
 
-
 atsc3_sls_metadata_fragments_t* atsc3_sls_metadata_fragment_types_parse_from_mime_multipart_related_instance(atsc3_mime_multipart_related_instance_t* atsc3_mime_multipart_related_instance);
-
 
 #define __SLS_METADATA_FRAGMENT_PARSER_PRINTLN(...) printf(__VA_ARGS__);printf("%s%s","\r","\n")
 #define __SLS_METADATA_FRAGMENT_PARSER_ERROR(...)  	printf("%s:%d:ERROR:",__FILE__,__LINE__);__SLS_METADATA_FRAGMENT_PARSER_PRINTLN(__VA_ARGS__);
