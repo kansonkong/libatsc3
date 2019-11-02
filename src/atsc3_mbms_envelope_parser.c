@@ -116,7 +116,7 @@ atsc3_mbms_metadata_envelope_t* atsc3_mbms_envelope_parse_from_payload(char* pay
 			}
 		}
 	}
-
+    block_Destroy(&metadata_envelope_fragment_block);
 	return atsc3_mbms_metadata_envelope;
 }
 

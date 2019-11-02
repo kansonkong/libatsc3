@@ -19,6 +19,8 @@
  Content-Type="multipart/related"/>
  </FDT-Instance>
 
+ 
+ TODO: jjustman-2019-11-02: add in support for "app_context_id_list"
  */
 
 
@@ -257,4 +259,24 @@ void atsc3_fdt_instance_dump(atsc3_fdt_instance_t* atsc3_fdt_instance) {
 	}
 	_ATSC3_FDT_PARSER_DEBUG("---atsc3_fdt_instance: %p, end---",atsc3_fdt_instance);
 
+}
+
+void atsc3_fdt_instance_free(atsc3_fdt_instance_t** atsc3_fdt_instance_p) {
+    if(atsc3_fdt_instance_p) {
+        atsc3_fdt_instance_t* atsc3_fdt_instance = *atsc3_fdt_instance_p;
+        if(atsc3_fdt_instance) {
+            freeclean((void**)&atsc3_fdt_instance->content_type);
+            freeclean((void**)&atsc3_fdt_instance->content_encoding);
+            freeclean((void**)&atsc3_fdt_instance->atsc3_fdt_fec_attributes.fec_oti_sceheme_specific_info);
+            freeclean((void**)&atsc3_fdt_instance->file_template);
+            freeclean((void**)&atsc3_fdt_instance->app_context_id_list);
+            freeclean((void**)&atsc3_fdt_instance->filter_codes);
+
+            atsc3_fdt_instance_free_atsc3_fdt_file(atsc3_fdt_instance);
+
+            free(atsc3_fdt_instance);
+            atsc3_fdt_instance = NULL;
+        }
+        atsc3_fdt_instance_p = NULL;
+    }
 }

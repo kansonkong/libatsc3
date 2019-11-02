@@ -72,7 +72,7 @@ atsc3_route_s_tsid_t* atsc3_route_s_tsid_parse_from_payload(char* payload, char*
 		}
 	}
     //jjustman-2019-11-02: todo: figure out who is freeing interior strings...
-    //xml_document_free(xml_document, false);
+    xml_document_free(xml_document, false);
     block_Destroy(&s_tsid_fragment_block);
 
     return atsc3_route_s_tsid;
