@@ -1094,8 +1094,7 @@ void alc_recon_file_buffer_struct_monitor_fragment_with_init_box(udp_flow_t* udp
 		}
 	} else {
 
-		//TODO - determine if we should pre-pend the most recent init box?
-
+		//TODO - determine if we should prepend the most recent init box?
 		//append audio if we have an audio frame
 		if(audio_toi && audio_fragment_file_name) {
 			audio_fragment_payload = alc_get_payload_from_filename(audio_fragment_file_name);
@@ -1146,10 +1145,10 @@ cleanup:
 	freesafe(video_init_file_name);
 	freesafe(audio_fragment_file_name);
 	freesafe(video_fragment_file_name);
-	block_Release(&audio_fragment_payload);
-	block_Release(&video_fragment_payload);
-	block_Release(&audio_init_payload);
-	block_Release(&video_init_payload);
+	block_Destroy(&audio_fragment_payload);
+	block_Destroy(&video_fragment_payload);
+	block_Destroy(&audio_init_payload);
+	block_Destroy(&video_init_payload);
 
 	return;
 }

@@ -289,42 +289,14 @@ void lls_table_free(lls_table_t** lls_table_p) {
 
 	if(lls_table->lls_table_id == SLT) {
 
-		//TODO: jjustman-2019-10-03 0 move this into chained destructors
-		_LLS_DEBUG("TODO: use ATSC3_VECTOR_BUILDER chained destructors to free slt_table!");
+        atsc3_lls_slt_table_free_atsc3_slt_ineturl(&lls_table->slt_table);
+        atsc3_lls_slt_table_free_atsc3_lls_slt_service(&lls_table->slt_table);
+        atsc3_lls_slt_table_free_atsc3_slt_capabilities(&lls_table->slt_table);
 
-		//for each service entry alloc, free
-		for(int i=0; i < lls_table->slt_table.atsc3_lls_slt_service_v.count; i++) {
-			atsc3_lls_slt_service_t* atsc3_lls_slt_service = lls_table->slt_table.atsc3_lls_slt_service_v.data[i];
-			if(atsc3_lls_slt_service) {
-				freesafe(atsc3_lls_slt_service->global_service_id);
-				freesafe(atsc3_lls_slt_service->short_service_name);
-
-				_LLS_DEBUG("TODO: use ATSC3_VECTOR_BUILDER chained destructors to free atsc3_lls_slt_service_free_atsc3_slt_broadcast_svc_signaling!");
-
-				//atsc3_lls_slt_service_free_atsc3_slt_broadcast_svc_signaling(atsc3_lls_slt_service);
-
-				//clear all char* in broadcast_svc_signaling
-//				freesafe(atsc3_lls_slt_service->broadcast_svc_signaling.sls_destination_ip_address);
-//				freesafe(atsc3_lls_slt_service->broadcast_svc_signaling.sls_destination_udp_port);
-//				freesafe(atsc3_lls_slt_service->broadcast_svc_signaling.sls_source_ip_address);
-
-//				free(atsc3_lls_slt_service);
-//				lls_table->slt_table.service_entry[i] = NULL;
-			}
-		}
-
-//		if(lls_table->slt_table.atsc3_lls_slt_service_v.size) {
-//			free(lls_table->slt_table.atsc3_lls_slt_service_v.data);
-//			lls_table->slt_table.atsc3_lls_slt_service_v.size = 0;
-//			lls_table->slt_table.atsc3_lls_slt_service_v.count = 0;
-//		}
-
-		//TODO: jjustman-2019-10-03 - free atsc3_slt_capabilities
-		//TODO: jjustman-2019-10-03 - free atsc3_slt_ineturl
-
-
-		if(lls_table->slt_table.bsid)
+        if(lls_table->slt_table.bsid)
 			free(lls_table->slt_table.bsid);
+        lls_table->slt_table.bsid = NULL;
+        
 
 	} else if(lls_table->lls_table_id == RRT) {
         _LLS_TRACE("free: lls_create_table_type_instance: LLS table RRT not supported yet");
