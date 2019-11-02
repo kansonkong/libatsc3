@@ -128,9 +128,11 @@ atsc3_fdt_instance_t* atsc3_fdt_parse_from_xml_fdt_instance(atsc3_fdt_instance_t
     }
     if((matching_attribute = kvp_collection_get(kvp_collection,  "afdt:maxExpiresDelta"))) {
     	atsc3_fdt_instance->max_expires_delta = atoi(matching_attribute);
+        free(matching_attribute);
     }
     if((matching_attribute = kvp_collection_get(kvp_collection,  "afdt:maxTransportSize"))) {
     	atsc3_fdt_instance->max_transport_size = atoi(matching_attribute);
+        free(matching_attribute);
     }
     if((matching_attribute = kvp_collection_get(kvp_collection,  "afdt:fileTemplate"))) {
     	atsc3_fdt_instance->file_template = matching_attribute;
@@ -142,19 +144,8 @@ atsc3_fdt_instance_t* atsc3_fdt_parse_from_xml_fdt_instance(atsc3_fdt_instance_t
     	atsc3_fdt_instance->filter_codes = matching_attribute;
     }
 
-    if((matching_attribute = kvp_collection_get(kvp_collection,  "content-encoding"))) {
-          atsc3_fdt_instance->content_encoding = matching_attribute;
-	}  if((matching_attribute = kvp_collection_get(kvp_collection,  "content-encoding"))) {
-	  atsc3_fdt_instance->content_encoding = matching_attribute;
-	}  if((matching_attribute = kvp_collection_get(kvp_collection,  "content-encoding"))) {
-	  atsc3_fdt_instance->content_encoding = matching_attribute;
-	}  if((matching_attribute = kvp_collection_get(kvp_collection,  "content-encoding"))) {
-	  atsc3_fdt_instance->content_encoding = matching_attribute;
-	}
-
-
-
-    free(xml_attributes);    
+    free(xml_attributes);
+    kvp_collection_free(kvp_collection);
     return atsc3_fdt_instance;
 }
 
@@ -218,7 +209,6 @@ atsc3_fdt_file_t* atsc3_fdt_file_parse_from_xml_fdt_instance(xml_node_t* node) {
     
     char* matching_attribute = NULL;
     
-    
     if((matching_attribute = kvp_collection_get(kvp_collection, "Content-Location"))) {
         atsc3_fdt_file->content_location = matching_attribute;
     }
@@ -252,6 +242,8 @@ atsc3_fdt_file_t* atsc3_fdt_file_parse_from_xml_fdt_instance(xml_node_t* node) {
     //TODO: remainder of elements are FEC related
     
     free(xml_attributes);
+    kvp_collection_free(kvp_collection);
+    
     return atsc3_fdt_file;
 }
 
