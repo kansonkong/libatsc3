@@ -231,7 +231,7 @@ video_decoder_configuration_record_t* atsc3_avc1_hevc_nal_extractor_parse_from_m
     }
     
     
-	uint8_t* mpu_ptr = block_Get(mpu_metadata_block);
+    uint8_t* mpu_ptr = block_Get(mpu_metadata_block);
     
 	bool has_hvcC_match = false;
 	int  hvcC_match_index = 0;
