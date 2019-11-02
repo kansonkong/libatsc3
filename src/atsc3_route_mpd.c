@@ -14,10 +14,80 @@ int _ROUTE_MPD_PARSER_DEBUG_ENABLED = 0;
 
 ATSC3_VECTOR_BUILDER_METHODS_PARENT_IMPLEMENTATION(atsc3_route_mpd);
 ATSC3_VECTOR_BUILDER_METHODS_IMPLEMENTATION(atsc3_route_period, atsc3_route_adaptation_set);
-ATSC3_VECTOR_BUILDER_METHODS_ITEM_FREE(atsc3_route_adaptation_set);
 ATSC3_VECTOR_BUILDER_METHODS_IMPLEMENTATION(atsc3_route_mpd, atsc3_route_period);
-ATSC3_VECTOR_BUILDER_METHODS_ITEM_FREE(atsc3_route_period);
 
+//ATSC3_VECTOR_BUILDER_METHODS_ITEM_FREE(atsc3_route_adaptation_set);
+/**
+ char*                                        content_type;
+ char*                                        id;
+ char*                                        max_frame_rate_str;
+ atsc3_frame_rate_t                             max_frame_rate;
+ uint32_t                                    max_height;
+ uint32_t                                    max_width;
+ char*                                        mime_type;
+ char*                                        min_frame_str;
+
+ atsc3_frame_rate_t                            min_frame_rate;
+ uint32_t                                    min_height;
+ uint32_t                                    min_width;
+ char*                                        par;
+ bool                                        segment_alignment;
+ bool                                        start_with_sap;
+ atsc3_route_role_t                            atsc3_route_role;
+ atsc3_route_representation_t                 atsc3_route_representation;
+
+ */
+void atsc3_route_adaptation_set_free(atsc3_route_adaptation_set_t** atsc3_route_adaptation_set_p) {
+    if(atsc3_route_adaptation_set_p) {
+        atsc3_route_adaptation_set_t* atsc3_route_adaptation_set = *atsc3_route_adaptation_set_p;
+        if(atsc3_route_adaptation_set) {
+            
+            freeclean((void**)&atsc3_route_adaptation_set->content_type);
+            freeclean((void**)&atsc3_route_adaptation_set->id);
+            freeclean((void**)&atsc3_route_adaptation_set->max_frame_rate_str);
+
+            freeclean((void**)&atsc3_route_adaptation_set->mime_type);
+            freeclean((void**)&atsc3_route_adaptation_set->min_frame_str);
+            freeclean((void**)&atsc3_route_adaptation_set->par);
+            
+            //todo: fix me
+            freeclean((void**)&atsc3_route_adaptation_set->atsc3_route_role.scheme_id_uri);
+            freeclean((void**)&atsc3_route_adaptation_set->atsc3_route_role.value);
+
+            freeclean((void**)&atsc3_route_adaptation_set->atsc3_route_representation.codecs);
+            freeclean((void**)&atsc3_route_adaptation_set->atsc3_route_representation.atsc3_route_audio_channel_configuration.scheme_id_uri);
+            freeclean((void**)&atsc3_route_adaptation_set->atsc3_route_representation.atsc3_route_segment_template.initialization);
+            freeclean((void**)&atsc3_route_adaptation_set->atsc3_route_representation.atsc3_route_segment_template.media);
+
+            free(atsc3_route_adaptation_set);
+            atsc3_route_adaptation_set = NULL;
+            
+        }
+        *atsc3_route_adaptation_set_p = NULL;
+    }
+}
+
+//ATSC3_VECTOR_BUILDER_METHODS_ITEM_FREE(atsc3_route_period);
+void atsc3_route_period_free(atsc3_route_period_t** atsc3_route_period_p) {
+    if(atsc3_route_period_p) {
+        atsc3_route_period_t* atsc3_route_period = *atsc3_route_period_p;
+        if(atsc3_route_period) {
+            freeclean((void**)&atsc3_route_period->id);
+            freeclean((void**)&atsc3_route_period->start);
+            
+            //todo: clean this up
+            if(atsc3_route_period->atsc3_xlink) {
+                freeclean((void**)&atsc3_route_period->atsc3_xlink->actuate);
+                freeclean((void**)&atsc3_route_period->atsc3_xlink->href);
+                freeclean((void**)&atsc3_route_period->atsc3_xlink->xlink);
+            }
+            atsc3_route_period_free_atsc3_route_adaptation_set(atsc3_route_period);
+            free(atsc3_route_period);
+            atsc3_route_period = NULL;
+        }
+        *atsc3_route_period_p = NULL;
+    }
+}
 
 atsc3_route_mpd_t* atsc3_route_mpd_parse_from_payload(char* payload, char* content_location) {
 
@@ -104,6 +174,7 @@ atsc3_route_mpd_t* atsc3_route_mpd_parse_from_payload(char* payload, char* conte
 
 				}
 			}
+            free(xml_attributes);
             kvp_collection_free(kvp_collection);
 		}
 	}
@@ -145,6 +216,8 @@ atsc3_route_mpd_t* atsc3_route_mpd_parse_period(xml_node_t* xml_node, atsc3_rout
 			atsc3_route_mpd_parse_adaption_set(mpd_entry_row_children, atsc3_route_period);
 		}
 	}
+    
+    free(xml_attributes);
     kvp_collection_free(kvp_collection);
     
 	return atsc3_route_mpd;
@@ -218,6 +291,7 @@ atsc3_route_period_t* atsc3_route_mpd_parse_adaption_set(xml_node_t* xml_node, a
 		}
 	}
     
+    free(xml_attributes);
     kvp_collection_free(kvp_collection);
 	return atsc3_route_period;
 }
@@ -237,6 +311,7 @@ atsc3_route_adaptation_set_t* atsc3_route_mpd_parse_role_set(xml_node_t* xml_nod
 	if((matching_attribute = kvp_collection_get(kvp_collection,  "schemeIdUri"))) {
 		atsc3_route_adaptation_set->atsc3_route_role.scheme_id_uri = matching_attribute;
 	}
+    free(xml_attributes);
     kvp_collection_free(kvp_collection);
 	return atsc3_route_adaptation_set;
 }
@@ -268,7 +343,6 @@ atsc3_route_adaptation_set_t* atsc3_route_mpd_parse_representation_set(xml_node_
         free(matching_attribute);
 	}
 
-
 	size_t num_mpd_entry_row_children = xml_node_children(xml_node);
 	for(int j=0; j < num_mpd_entry_row_children; j++) {
 		xml_node_t* mpd_entry_row_children = xml_node_child(xml_node, j);
@@ -278,6 +352,8 @@ atsc3_route_adaptation_set_t* atsc3_route_mpd_parse_representation_set(xml_node_
 			atsc3_route_mpd_parse_segment_template_set(mpd_entry_row_children, atsc3_route_adaptation_set);
 		}
 	}
+    
+    free(xml_attributes);
     kvp_collection_free(kvp_collection);
 	return atsc3_route_adaptation_set;
 }
@@ -292,10 +368,11 @@ atsc3_route_adaptation_set_t* atsc3_route_mpd_parse_audio_channel_configuration_
 		atsc3_route_adaptation_set->atsc3_route_representation.atsc3_route_audio_channel_configuration.scheme_id_uri = matching_attribute;
 	}
 	if((matching_attribute = kvp_collection_get(kvp_collection, "value"))) {
-		atsc3_route_adaptation_set->atsc3_route_representation.atsc3_route_audio_channel_configuration.value = atoi(matching_attribute); //?
+		atsc3_route_adaptation_set->atsc3_route_representation.atsc3_route_audio_channel_configuration.value = atoi(matching_attribute);
         free(matching_attribute);
-
 	}
+    
+    free(xml_attributes);
     kvp_collection_free(kvp_collection);
 	return atsc3_route_adaptation_set;
 }
@@ -346,6 +423,8 @@ atsc3_route_adaptation_set_t* atsc3_route_mpd_parse_segment_template_set(xml_nod
 		atsc3_route_adaptation_set->atsc3_route_representation.atsc3_route_segment_template.timescale = atoi(matching_attribute);
         free(matching_attribute);
 	}
+
+    free(xml_attributes);
     kvp_collection_free(kvp_collection);
     
 	return atsc3_route_adaptation_set;
