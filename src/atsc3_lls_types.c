@@ -51,31 +51,80 @@ ATSC3_VECTOR_BUILDER_METHODS_IMPLEMENTATION(lls_slt_monitor, lls_slt_service_id_
  *
  */
 
-ATSC3_VECTOR_BUILDER_METHODS_ITEM_FREE(atsc3_slt_simulcast_tsid);
-ATSC3_VECTOR_BUILDER_METHODS_ITEM_FREE(atsc3_slt_svc_capabilities);
-ATSC3_VECTOR_BUILDER_METHODS_ITEM_FREE(atsc3_slt_broadcast_svc_signalling);
-ATSC3_VECTOR_BUILDER_METHODS_ITEM_FREE(atsc3_slt_svc_inet_url);
-ATSC3_VECTOR_BUILDER_METHODS_ITEM_FREE(atsc3_slt_other_bsid);
+ATSC3_VECTOR_BUILDER_METHODS_ITEM_FREE(atsc3_slt_simulcast_tsid); //no pointers present in struct
 
-ATSC3_VECTOR_BUILDER_METHODS_ITEM_FREE(atsc3_slt_capabilities);
-ATSC3_VECTOR_BUILDER_METHODS_ITEM_FREE(atsc3_slt_ineturl);
-ATSC3_VECTOR_BUILDER_METHODS_ITEM_FREE(atsc3_lls_slt_service);
+ATSC3_VECTOR_BUILDER_METHODS_ITEM_FREE(atsc3_slt_svc_capabilities); //no pointers present in struct
 
-/*
- * duplicate symbol '_lls_sls_alc_session_free' in:
-    atsc3_lls_types.o
-    atsc3_lls_alc_utils.o
-ATSC3_VECTOR_BUILDER_METHODS_ITEM_FREE(lls_sls_alc_session);
-
-duplicate symbol '_lls_sls_mmt_session_free' in:
-    atsc3_lls_types.o
-    atsc3_lls_mmt_utils.o
-ATSC3_VECTOR_BUILDER_METHODS_ITEM_FREE(lls_sls_mmt_session);
-
- */
+//ATSC3_VECTOR_BUILDER_METHODS_ITEM_FREE(atsc3_slt_broadcast_svc_signalling);
+void atsc3_slt_broadcast_svc_signalling_free(atsc3_slt_broadcast_svc_signalling_t** atsc3_slt_broadcast_svc_signalling_p) {
+    if(atsc3_slt_broadcast_svc_signalling_p) {
+        atsc3_slt_broadcast_svc_signalling_t* atsc3_slt_broadcast_svc_signalling = *atsc3_slt_broadcast_svc_signalling_p;
+        if(atsc3_slt_broadcast_svc_signalling) {
+            freeclean((void**)&atsc3_slt_broadcast_svc_signalling->sls_source_ip_address);
+            freeclean((void**)&atsc3_slt_broadcast_svc_signalling->sls_destination_ip_address);
+            freeclean((void**)&atsc3_slt_broadcast_svc_signalling->sls_destination_udp_port);
+            
+            //other interior members here
+            freesafe(atsc3_slt_broadcast_svc_signalling);
+            atsc3_slt_broadcast_svc_signalling = NULL;
+        }
+        *atsc3_slt_broadcast_svc_signalling_p = NULL;
+    }
+}
 
 
-ATSC3_VECTOR_BUILDER_METHODS_ITEM_FREE(lls_slt_service_id);
+//ATSC3_VECTOR_BUILDER_METHODS_ITEM_FREE(atsc3_slt_svc_inet_url);
+void atsc3_slt_svc_inet_url_free(atsc3_slt_svc_inet_url_t** atsc3_slt_svc_inet_url_p) {
+    if(atsc3_slt_svc_inet_url_p) {
+        atsc3_slt_svc_inet_url_t* atsc3_slt_svc_inet_url = *atsc3_slt_svc_inet_url_p;
+        if(atsc3_slt_svc_inet_url) {
+            freeclean((void**)&atsc3_slt_svc_inet_url->url);
+            freesafe(atsc3_slt_svc_inet_url);
+            atsc3_slt_svc_inet_url = NULL;
+        }
+        *atsc3_slt_svc_inet_url_p = NULL;
+    }
+}
+
+ATSC3_VECTOR_BUILDER_METHODS_ITEM_FREE(atsc3_slt_other_bsid);   //no pointers
+ATSC3_VECTOR_BUILDER_METHODS_ITEM_FREE(atsc3_slt_capabilities); //no pointers
+
+//ATSC3_VECTOR_BUILDER_METHODS_ITEM_FREE(atsc3_slt_ineturl);
+void atsc3_slt_ineturl_free(atsc3_slt_ineturl_t** atsc3_slt_ineturl_p) {
+    if(atsc3_slt_ineturl_p) {
+        atsc3_slt_ineturl_t* atsc3_slt_ineturl = *atsc3_slt_ineturl_p;
+        if(atsc3_slt_ineturl) {
+            freeclean((void**)&atsc3_slt_ineturl->url);
+            freesafe(atsc3_slt_ineturl);
+            atsc3_slt_ineturl = NULL;
+        }
+        *atsc3_slt_ineturl_p = NULL;
+    }
+}
+
+//ATSC3_VECTOR_BUILDER_METHODS_ITEM_FREE(atsc3_lls_slt_service);
+void atsc3_lls_slt_service_free(atsc3_lls_slt_service_t** atsc3_lls_slt_service_p) {
+    if(atsc3_lls_slt_service_p) {
+        atsc3_lls_slt_service_t* atsc3_lls_slt_service = *atsc3_lls_slt_service_p;
+        if(atsc3_lls_slt_service) {
+            freeclean((void**)&atsc3_lls_slt_service->global_service_id);
+            freeclean((void**)&atsc3_lls_slt_service->short_service_name);
+            freeclean((void**)&atsc3_lls_slt_service->drm_system_id);
+            atsc3_lls_slt_service_free_atsc3_slt_simulcast_tsid(atsc3_lls_slt_service);
+            atsc3_lls_slt_service_free_atsc3_slt_svc_capabilities(atsc3_lls_slt_service);
+            atsc3_lls_slt_service_free_atsc3_slt_broadcast_svc_signalling(atsc3_lls_slt_service);
+            atsc3_lls_slt_service_free_atsc3_slt_svc_inet_url(atsc3_lls_slt_service);
+            atsc3_lls_slt_service_free_atsc3_slt_other_bsid(atsc3_lls_slt_service);
+            
+            freesafe(atsc3_lls_slt_service);
+            atsc3_lls_slt_service = NULL;
+        }
+        *atsc3_lls_slt_service_p = NULL;
+    }
+}
+
+
+ATSC3_VECTOR_BUILDER_METHODS_ITEM_FREE(lls_slt_service_id); //no pointers
 
 ATSC3_VECTOR_BUILDER_METHODS_ITEM_FREE(lls_sls_mmt_monitor);
 ATSC3_VECTOR_BUILDER_METHODS_ITEM_FREE(lls_sls_mmt_session_flows);

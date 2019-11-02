@@ -12,11 +12,62 @@ int _ROUTE_S_TSID_PARSER_INFO_ENABLED = 1;
 int _ROUTE_S_TSID_PARSER_DEBUG_ENABLED = 1;
 
 ATSC3_VECTOR_BUILDER_METHODS_IMPLEMENTATION(atsc3_route_s_tsid_RS, atsc3_route_s_tsid_RS_LS)
-ATSC3_VECTOR_BUILDER_METHODS_ITEM_FREE(atsc3_route_s_tsid_RS_LS)
 
+void atsc3_route_s_tsid_RS_LS_free(atsc3_route_s_tsid_RS_LS_t** atsc3_route_s_tsid_RS_LS_p) {
+    if(atsc3_route_s_tsid_RS_LS_p) {
+        atsc3_route_s_tsid_RS_LS_t* atsc3_route_s_tsid_RS_LS = *atsc3_route_s_tsid_RS_LS_p;
+        if(atsc3_route_s_tsid_RS_LS) {
+            freeclean((void**)&atsc3_route_s_tsid_RS_LS->start_time);
+            freeclean((void**)&atsc3_route_s_tsid_RS_LS->end_time);
+            
+            if(atsc3_route_s_tsid_RS_LS->atsc3_route_s_tsid_RS_LS_SrcFlow) {
+                atsc3_fdt_instance_free(&atsc3_route_s_tsid_RS_LS->atsc3_route_s_tsid_RS_LS_SrcFlow->atsc3_fdt_instance);
+                
+                if(atsc3_route_s_tsid_RS_LS->atsc3_route_s_tsid_RS_LS_SrcFlow->atsc3_route_s_tsid_RS_LS_SrcFlow_ContentInfo) {
+                    if(atsc3_route_s_tsid_RS_LS->atsc3_route_s_tsid_RS_LS_SrcFlow->atsc3_route_s_tsid_RS_LS_SrcFlow_ContentInfo->atsc3_route_s_tsid_RS_LS_SrcFlow_ContentInfo_MediaInfo) {
+                        freeclean((void**)&atsc3_route_s_tsid_RS_LS->atsc3_route_s_tsid_RS_LS_SrcFlow->atsc3_route_s_tsid_RS_LS_SrcFlow_ContentInfo->atsc3_route_s_tsid_RS_LS_SrcFlow_ContentInfo_MediaInfo->content_type);
+                        freeclean((void**)&atsc3_route_s_tsid_RS_LS->atsc3_route_s_tsid_RS_LS_SrcFlow->atsc3_route_s_tsid_RS_LS_SrcFlow_ContentInfo->atsc3_route_s_tsid_RS_LS_SrcFlow_ContentInfo_MediaInfo->rep_id);
+                    }
+                    freeclean((void**)&atsc3_route_s_tsid_RS_LS->atsc3_route_s_tsid_RS_LS_SrcFlow->atsc3_route_s_tsid_RS_LS_SrcFlow_ContentInfo->atsc3_route_s_tsid_RS_LS_SrcFlow_ContentInfo_MediaInfo);
+                    
+                    if(atsc3_route_s_tsid_RS_LS->atsc3_route_s_tsid_RS_LS_SrcFlow->atsc3_route_s_tsid_RS_LS_SrcFlow_ContentInfo->atsc3_route_s_tsid_RS_LS_SrcFlow_ContentInfo_AEAMedia) {
+                        freeclean((void**)&atsc3_route_s_tsid_RS_LS->atsc3_route_s_tsid_RS_LS_SrcFlow->atsc3_route_s_tsid_RS_LS_SrcFlow_ContentInfo->atsc3_route_s_tsid_RS_LS_SrcFlow_ContentInfo_AEAMedia->aea_id);
+                    }
+                    freeclean((void**)&atsc3_route_s_tsid_RS_LS->atsc3_route_s_tsid_RS_LS_SrcFlow->atsc3_route_s_tsid_RS_LS_SrcFlow_ContentInfo->atsc3_route_s_tsid_RS_LS_SrcFlow_ContentInfo_AEAMedia);
+                }
+                
+                if(atsc3_route_s_tsid_RS_LS->atsc3_route_s_tsid_RS_LS_SrcFlow->atsc3_route_s_tsid_RS_LS_SrcFlow_Payload) {
+                    freeclean((void**)&atsc3_route_s_tsid_RS_LS->atsc3_route_s_tsid_RS_LS_SrcFlow->atsc3_route_s_tsid_RS_LS_SrcFlow_Payload->fec_parms);
+                }
+                freeclean((void**)&atsc3_route_s_tsid_RS_LS->atsc3_route_s_tsid_RS_LS_SrcFlow->atsc3_route_s_tsid_RS_LS_SrcFlow_Payload);
+
+                freeclean((void**)&atsc3_route_s_tsid_RS_LS->atsc3_route_s_tsid_RS_LS_SrcFlow);
+            }
+            
+            if(atsc3_route_s_tsid_RS_LS->atsc3_route_s_tsid_RS_LS_RepairFlow) {
+                //todo
+                freeclean((void**)&atsc3_route_s_tsid_RS_LS->atsc3_route_s_tsid_RS_LS_RepairFlow);
+            }
+            
+            free(atsc3_route_s_tsid_RS_LS);
+            atsc3_route_s_tsid_RS_LS = NULL;
+        }
+        *atsc3_route_s_tsid_RS_LS_p = NULL;
+    }
+}
+void atsc3_route_s_tsid_RS_free(atsc3_route_s_tsid_RS_t** atsc3_route_s_tsid_RS_p) {
+    if(atsc3_route_s_tsid_RS_p) {
+        atsc3_route_s_tsid_RS_t* atsc3_route_s_tsid_RS = *atsc3_route_s_tsid_RS_p;
+        if(atsc3_route_s_tsid_RS) {
+            atsc3_route_s_tsid_RS_free_atsc3_route_s_tsid_RS_LS(atsc3_route_s_tsid_RS);
+            free(atsc3_route_s_tsid_RS);
+            atsc3_route_s_tsid_RS = NULL;
+        }
+        *atsc3_route_s_tsid_RS_p = NULL;
+    }
+}
 ATSC3_VECTOR_BUILDER_METHODS_PARENT_IMPLEMENTATION(atsc3_route_s_tsid)
 ATSC3_VECTOR_BUILDER_METHODS_IMPLEMENTATION(atsc3_route_s_tsid, atsc3_route_s_tsid_RS)
-ATSC3_VECTOR_BUILDER_METHODS_ITEM_FREE(atsc3_route_s_tsid_RS)
 
 
 atsc3_route_s_tsid_t* atsc3_route_s_tsid_parse_from_payload(char* payload, char* content_location) {
@@ -27,7 +78,6 @@ atsc3_route_s_tsid_t* atsc3_route_s_tsid_parse_from_payload(char* payload, char*
 	xml_document_t* xml_document = xml_parse_document(s_tsid_fragment_block->p_buffer, s_tsid_fragment_block->i_pos);
 	if(!xml_document) {
 		return NULL;
-
 	}
 	xml_node_t* xml_document_root_node = xml_document_root(xml_document);
 	xml_string_t* xml_document_root_node_name = xml_node_name(xml_document_root_node);
@@ -72,8 +122,11 @@ atsc3_route_s_tsid_t* atsc3_route_s_tsid_parse_from_payload(char* payload, char*
 			}
 		}
 	}
+    //jjustman-2019-11-02: todo: figure out who is freeing interior strings...
+    xml_document_free(xml_document, false);
+    block_Destroy(&s_tsid_fragment_block);
 
-	return atsc3_route_s_tsid;
+    return atsc3_route_s_tsid;
 }
 
 atsc3_route_s_tsid_t* atsc3_route_s_tsid_parse_RS(xml_node_t* xml_rs_node, atsc3_route_s_tsid_t* atsc3_route_s_tsid) {
@@ -88,14 +141,18 @@ atsc3_route_s_tsid_t* atsc3_route_s_tsid_parse_RS(xml_node_t* xml_rs_node, atsc3
 
 	if((matching_attribute = kvp_collection_get(kvp_collection,  "dIpAddr"))) {
 		atsc3_route_s_tsid_RS->dest_ip_addr = parseIpAddressIntoIntval(matching_attribute);
+        free(matching_attribute);
 	}
 
 	if((matching_attribute = kvp_collection_get(kvp_collection,  "dPort"))) {
 		atsc3_route_s_tsid_RS->dest_port = parsePortIntoIntval(matching_attribute);
+        free(matching_attribute);
 	}
+    
 
 	if((matching_attribute = kvp_collection_get(kvp_collection,  "sIpAddr"))) {
 		atsc3_route_s_tsid_RS->src_ip_addr = parseIpAddressIntoIntval(matching_attribute);
+        free(matching_attribute);
 	}
 
 	//parse child nodes
@@ -106,7 +163,8 @@ atsc3_route_s_tsid_t* atsc3_route_s_tsid_parse_RS(xml_node_t* xml_rs_node, atsc3
 			atsc3_route_s_tsid_parse_RS_LS(s_tsid_rs_entry_row_children, atsc3_route_s_tsid_RS);
 		}
 	}
-
+    free(xml_attributes);
+    kvp_collection_free(kvp_collection);
 	return atsc3_route_s_tsid;
 }
 
@@ -124,10 +182,12 @@ atsc3_route_s_tsid_RS_t* atsc3_route_s_tsid_parse_RS_LS(xml_node_t* xml_rs_ls_no
 
 	if((matching_attribute = kvp_collection_get(kvp_collection,  "tsi"))) {
 		atsc3_route_s_tsid_RS_LS->tsi = atoi(matching_attribute);
+        free(matching_attribute);
 	}
 
 	if((matching_attribute = kvp_collection_get(kvp_collection,  "bw"))) {
 		atsc3_route_s_tsid_RS_LS->bw = atoi(matching_attribute);
+        free(matching_attribute);
 	}
 
 	if((matching_attribute = kvp_collection_get(kvp_collection,  "startTime"))) {
@@ -148,6 +208,9 @@ atsc3_route_s_tsid_RS_t* atsc3_route_s_tsid_parse_RS_LS(xml_node_t* xml_rs_ls_no
 			atsc3_route_s_tsid_parse_RS_LS_RepairFlow(s_tsid_rs_ls_entry_row_children, atsc3_route_s_tsid_RS_LS);
 		}
 	}
+    free(xml_attributes);
+    kvp_collection_free(kvp_collection);
+    
 	return atsc3_route_s_tsid_RS;
 }
 
@@ -158,7 +221,6 @@ atsc3_route_s_tsid_RS_LS_t* atsc3_route_s_tsid_parse_RS_LS_SrcFlow(xml_node_t* x
 	atsc3_route_s_tsid_RS_LS_SrcFlow_t* atsc3_route_s_tsid_RS_LS_SrcFlow = calloc(1, sizeof(atsc3_route_s_tsid_RS_LS_SrcFlow_t));
 	atsc3_route_s_tsid_RS_LS->atsc3_route_s_tsid_RS_LS_SrcFlow = atsc3_route_s_tsid_RS_LS_SrcFlow;
 
-
 	//parse our inner attributes, dIpAddr, dPort, dsIpAddr
 	uint8_t* xml_attributes = xml_attributes_clone_node(xml_node);
 	_ATSC3_ROUTE_S_TSID_PARSER_DEBUG("SrcFlow.attributes: %s", xml_attributes);
@@ -167,10 +229,12 @@ atsc3_route_s_tsid_RS_LS_t* atsc3_route_s_tsid_parse_RS_LS_SrcFlow(xml_node_t* x
 
 	if((matching_attribute = kvp_collection_get(kvp_collection,  "rt"))) {
 		atsc3_route_s_tsid_RS_LS_SrcFlow->rt = strncasecmp("true", matching_attribute, 4);
+        free(matching_attribute);
 	}
 
 	if((matching_attribute = kvp_collection_get(kvp_collection,  "minBuffSize"))) {
 		atsc3_route_s_tsid_RS_LS_SrcFlow->min_buff_size = atoi(matching_attribute);
+        free(matching_attribute);
 	}
 
 	//parse child nodes
@@ -185,7 +249,8 @@ atsc3_route_s_tsid_RS_LS_t* atsc3_route_s_tsid_parse_RS_LS_SrcFlow(xml_node_t* x
 			atsc3_route_s_tsid_parse_RS_LS_SrcFlow_Payload(s_tsid_rs_ls_SrcFlow_entry_row_children, atsc3_route_s_tsid_RS_LS_SrcFlow);
 		}
 	}
-
+    free(xml_attributes);
+    kvp_collection_free(kvp_collection);
 	return atsc3_route_s_tsid_RS_LS;
 }
 
@@ -241,7 +306,11 @@ atsc3_route_s_tsid_RS_LS_SrcFlow_ContentInfo_MediaInfo_t* atsc3_route_s_tsid_par
 	}
 	if((matching_attribute = kvp_collection_get(kvp_collection,  "startup"))) {
 		atsc3_route_s_tsid_RS_LS_SrcFlow_ContentInfo_MediaInfo->startup = strncasecmp("true", matching_attribute, 4);
+        free(matching_attribute);
 	}
+
+    free(xml_attributes);
+    kvp_collection_free(kvp_collection);
 	return atsc3_route_s_tsid_RS_LS_SrcFlow_ContentInfo_MediaInfo;
 }
 
@@ -259,6 +328,8 @@ atsc3_route_s_tsid_RS_LS_SrcFlow_ContentInfo_AEAMedia_t*  atsc3_route_s_tsid_par
 		atsc3_route_s_tsid_RS_LS_SrcFlow_ContentInfo_AEAMedia->aea_id = matching_attribute;
 	}
 
+    free(xml_attributes);
+    kvp_collection_free(kvp_collection);
 	return atsc3_route_s_tsid_RS_LS_SrcFlow_ContentInfo_AEAMedia;
 }
 
@@ -266,7 +337,6 @@ atsc3_route_s_tsid_RS_LS_SrcFlow_ContentInfo_AEAMedia_t*  atsc3_route_s_tsid_par
 atsc3_route_s_tsid_RS_LS_SrcFlow_Payload_t* atsc3_route_s_tsid_parse_RS_LS_SrcFlow_Payload(xml_node_t* xml_node, atsc3_route_s_tsid_RS_LS_SrcFlow_t* atsc3_route_s_tsid_RS_LS_SrcFlow) {
 	atsc3_route_s_tsid_RS_LS_SrcFlow_Payload_t* atsc3_route_s_tsid_RS_LS_SrcFlow_Payload = calloc(1, sizeof(atsc3_route_s_tsid_RS_LS_SrcFlow_Payload_t));
 	atsc3_route_s_tsid_RS_LS_SrcFlow->atsc3_route_s_tsid_RS_LS_SrcFlow_Payload = atsc3_route_s_tsid_RS_LS_SrcFlow_Payload;
-
 
 	//assign any of our attributes here
 	uint8_t* xml_attributes = xml_attributes_clone_node(xml_node);
@@ -276,14 +346,17 @@ atsc3_route_s_tsid_RS_LS_SrcFlow_Payload_t* atsc3_route_s_tsid_parse_RS_LS_SrcFl
 
 	if((matching_attribute = kvp_collection_get(kvp_collection,  "codePoint"))) {
 		atsc3_route_s_tsid_RS_LS_SrcFlow_Payload->code_point = atoi(matching_attribute);
+        free(matching_attribute);
 	}
 
 	if((matching_attribute = kvp_collection_get(kvp_collection,  "formatId"))) {
 		atsc3_route_s_tsid_RS_LS_SrcFlow_Payload->format_id = atoi(matching_attribute);
+        free(matching_attribute);
 	}
 
 	if((matching_attribute = kvp_collection_get(kvp_collection,  "frag"))) {
 		atsc3_route_s_tsid_RS_LS_SrcFlow_Payload->frag = atoi(matching_attribute);
+        free(matching_attribute);
 	}
 
 	if((matching_attribute = kvp_collection_get(kvp_collection,  "order"))) {
@@ -292,12 +365,15 @@ atsc3_route_s_tsid_RS_LS_SrcFlow_Payload_t* atsc3_route_s_tsid_parse_RS_LS_SrcFl
 
 	if((matching_attribute = kvp_collection_get(kvp_collection,  "srcFecPayloadId"))) {
 		atsc3_route_s_tsid_RS_LS_SrcFlow_Payload->src_fec_payload_id = atoi(matching_attribute);
+        free(matching_attribute);
 	}
 
 	if((matching_attribute = kvp_collection_get(kvp_collection,  "fecParams"))) {
 		atsc3_route_s_tsid_RS_LS_SrcFlow_Payload->fec_parms = matching_attribute;
 	}
 
+    free(xml_attributes);
+    kvp_collection_free(kvp_collection);
 	return atsc3_route_s_tsid_RS_LS_SrcFlow_Payload;
 }
 

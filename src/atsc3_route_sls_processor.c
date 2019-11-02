@@ -11,29 +11,40 @@
 
 
 void atsc3_route_sls_process_from_alc_packet_and_file(udp_flow_t* udp_flow, alc_packet_t* alc_packet, lls_sls_alc_monitor_t* lls_sls_alc_monitor) {
-
+    char* file_name = NULL;
+    char* mbms_toi_filename = NULL;
+    
+    FILE *fp = NULL;
+    FILE *fp_mbms = NULL;
+    
+    xml_document_t* fdt_xml = NULL;
+    atsc3_sls_metadata_fragments_t* atsc3_sls_metadata_fragments = NULL;
+    
 	//check if our toi == 0, if so, reprocess our sls fdt in preperation for an upcoming actual mbms emission
 	_ATSC3_ROUTE_SLS_PROCESSOR_INFO("alc_packet tsi/toi:%u/%u", alc_packet->def_lct_hdr->tsi, alc_packet->def_lct_hdr->toi);
 
 	if(alc_packet->def_lct_hdr->toi == 0) {
 
-	    char* file_name = alc_packet_dump_to_object_get_temporary_filename(udp_flow, alc_packet);
+	    file_name = alc_packet_dump_to_object_get_temporary_filename(udp_flow, alc_packet);
 
-		FILE *fp = fopen(file_name, "r");
+		fp = fopen(file_name, "r");
 		if(!fp) {
 			_ATSC3_ROUTE_SLS_PROCESSOR_ERROR("alc_packet tsi/toi:0/0 filename: %s is null!", file_name);
-			return;
+			goto cleanup;
 		}
 
-		xml_document_t* fdt_xml = xml_open_document(fp);
+		fdt_xml = xml_open_document(fp);
 		if(fdt_xml) {
 			atsc3_fdt_instance_t* atsc3_fdt_instance = atsc3_fdt_instance_parse_from_xml_document(fdt_xml);
 			if(!atsc3_fdt_instance) {
 				_ATSC3_ROUTE_SLS_PROCESSOR_ERROR("alc_packet tsi/toi:0/0 instance is null!");
-				return;
+				goto cleanup;
 			}
 			atsc3_fdt_instance_dump(atsc3_fdt_instance);
 			if(lls_sls_alc_monitor) {
+                if(lls_sls_alc_monitor->atsc3_fdt_instance) {
+                    atsc3_fdt_instance_free(&lls_sls_alc_monitor->atsc3_fdt_instance);
+                }
 				lls_sls_alc_monitor->atsc3_fdt_instance = atsc3_fdt_instance;
 			}
 		}
@@ -44,32 +55,80 @@ void atsc3_route_sls_process_from_alc_packet_and_file(udp_flow_t* udp_flow, alc_
 			uint32_t* mbms_toi = atsc3_mbms_envelope_find_toi_from_fdt(lls_sls_alc_monitor->atsc3_fdt_instance);
 			if(!mbms_toi) {
 				_ATSC3_ROUTE_SLS_PROCESSOR_ERROR("Unable to find MBMS TOI");
-				return;
+				goto cleanup;
 			}
 
-		    char* mbms_toi_filename = alc_packet_dump_to_object_get_filename_tsi_toi(udp_flow, 0, *mbms_toi);
+            mbms_toi_filename = alc_packet_dump_to_object_get_filename_tsi_toi(udp_flow, 0, *mbms_toi);
 
-			FILE *fp_mbms= fopen(mbms_toi_filename, "r");
+			fp_mbms = fopen(mbms_toi_filename, "r");
 			if(!fp_mbms) {
 				_ATSC3_ROUTE_SLS_PROCESSOR_ERROR("alc_packet tsi/toi:0/%u filename: %s is null!", *mbms_toi, mbms_toi_filename);
-				return;
+				goto cleanup;
 			}
 
-			atsc3_sls_metadata_fragments_t* atsc3_sls_metadata_fragments = atsc3_mbms_envelope_to_sls_metadata_fragments_parse_from_fdt_fp(fp_mbms);
+			atsc3_sls_metadata_fragments = atsc3_mbms_envelope_to_sls_metadata_fragments_parse_from_fdt_fp(fp_mbms);
 
 			if(atsc3_sls_metadata_fragments) {
-
 				if(atsc3_sls_metadata_fragments->atsc3_route_s_tsid) {
 					//update our audio and video tsi and init
 					lls_sls_alc_update_tsi_toi_from_route_s_tsid(lls_sls_alc_monitor, atsc3_sls_metadata_fragments->atsc3_route_s_tsid);
 				}
-
+                if(lls_sls_alc_monitor->atsc3_sls_metadata_fragments) {
+                    //invoke any chained destructors as needed
+                    atsc3_sls_metadata_fragments_free(&lls_sls_alc_monitor->atsc3_sls_metadata_fragments);
+                }
 				lls_sls_alc_monitor->atsc3_sls_metadata_fragments = atsc3_sls_metadata_fragments;
+                
+                //TODO: jjustman-2019-11-02: write out our multipart mbms payload to our route/svc_id, e.g. to get the mpd
+                for(int i=0; i < lls_sls_alc_monitor->atsc3_sls_metadata_fragments->atsc3_mime_multipart_related_instance->atsc3_mime_multipart_related_payload_v.count; i++) {
+                    atsc3_mime_multipart_related_payload_t* atsc3_mime_multipart_related_payload = lls_sls_alc_monitor->atsc3_sls_metadata_fragments->atsc3_mime_multipart_related_instance->atsc3_mime_multipart_related_payload_v.data[i];
+                    char mbms_filename[1025] = { 0 };
+                    snprintf(mbms_filename, 1024, "route/%d", lls_sls_alc_monitor->atsc3_lls_slt_service->service_id);
+                    mkdir(mbms_filename, 0777);
+                    snprintf(mbms_filename, 1024, "route/%d/%s", lls_sls_alc_monitor->atsc3_lls_slt_service->service_id, atsc3_mime_multipart_related_payload->content_location);
+                    FILE* fp = fopen(mbms_filename, "w");
+                    if(fp) {
+                        fwrite(atsc3_mime_multipart_related_payload->payload, atsc3_mime_multipart_related_payload->payload_length, 1, fp);
+                        fclose(fp);
+                    } else {
+                        _ATSC3_ROUTE_SLS_PROCESSOR_ERROR("sls mbms fragment dump, original content_location: %s, unable to write to local path: %s", atsc3_mime_multipart_related_payload->content_location, mbms_filename);
+
+                    }
+                }
 			}
 		} else {
 			_ATSC3_ROUTE_SLS_PROCESSOR_ERROR("No pending atsc3_fdt_instance to process in TSI:0");
-			return;
+            goto cleanup;
 
 		}
 	}
+    
+cleanup:
+    if(file_name) {
+        free(file_name);
+        file_name = NULL;
+    }
+    
+    if(mbms_toi_filename) {
+        free(mbms_toi_filename);
+        mbms_toi_filename = NULL;
+    }
+    
+    if(fdt_xml) {
+        xml_document_free(fdt_xml, false);
+        fdt_xml = NULL;
+    }
+    
+    if(fp) {
+        fclose(fp);
+        fp = NULL;
+    }
+    if(fp_mbms) {
+        fclose(fp_mbms);
+        fp_mbms = NULL;
+    }
+    
+
+    //mbms_toi is a pointer to atsc3_fdt_intstance alloc, so don't try and free it
+    
 }

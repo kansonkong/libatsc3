@@ -73,6 +73,9 @@ char* kvp_collection_get_reference_p(kvp_collection_t *collection, char* key) {
 	return NULL;
 }
 
+/*
+ if we have a match, then return a strdup'd version of the value we match on, otherwise return null
+ */
 char* kvp_collection_get(kvp_collection_t *collection, char* key) {
 	char* val = NULL;
 	val = kvp_collection_get_reference_p(collection, key);
