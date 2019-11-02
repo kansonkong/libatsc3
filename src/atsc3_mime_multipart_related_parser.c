@@ -254,13 +254,13 @@ atsc3_mime_multipart_related_instance_t* atsc3_mime_multipart_related_parser(FIL
 			if(!strncmp(ATSC3_MIME_MULTIPART_RELATED_HEADER_CONTENT_TYPE, line_buffer, strlen(ATSC3_MIME_MULTIPART_RELATED_HEADER_CONTENT_TYPE))) {
 				line_buffer += strlen(ATSC3_MIME_MULTIPART_RELATED_HEADER_CONTENT_TYPE);
 				line_buffer = __trim(line_buffer);
-				atsc3_mime_multipart_related_payload->content_type = calloc(strlen(line_buffer), sizeof(char));
+				atsc3_mime_multipart_related_payload->content_type = calloc(strlen(line_buffer)+1, sizeof(char));
 				memcpy(atsc3_mime_multipart_related_payload->content_type, line_buffer, strlen(line_buffer));
 
 			} else if(!strncmp(ATSC3_MIME_MULTIPART_RELATED_HEADER_CONTENT_LOCATION, line_buffer, strlen(ATSC3_MIME_MULTIPART_RELATED_HEADER_CONTENT_LOCATION))) {
 				line_buffer += strlen(ATSC3_MIME_MULTIPART_RELATED_HEADER_CONTENT_LOCATION);
 				line_buffer = __trim(line_buffer);
-				atsc3_mime_multipart_related_payload->content_location = calloc(strlen(line_buffer), sizeof(char));
+				atsc3_mime_multipart_related_payload->content_location = calloc(strlen(line_buffer)+1, sizeof(char));
 				memcpy(atsc3_mime_multipart_related_payload->content_location, line_buffer, strlen(line_buffer));
 			} else {
 				line_buffer = __trim(line_buffer);
