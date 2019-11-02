@@ -364,7 +364,7 @@ ATSC3_VECTOR_BUILDER_METHODS_INTERFACE(atsc3_lls_slt_service, atsc3_slt_other_bs
  *
  */
 typedef struct atsc3_lls_slt_table {
-	int*						bsid;			//list
+	int*						bsid;			//list  - TODO: fix me?
 	int							bsid_n;
 
 	ATSC3_VECTOR_BUILDER_STRUCT(atsc3_slt_capabilities);	//TODO: jjustman-2019-10-03 - change to sa: CapabilitiesType - Required capabilities for decoding and meaningfully presenting the content for all the Services in this SLT instance.

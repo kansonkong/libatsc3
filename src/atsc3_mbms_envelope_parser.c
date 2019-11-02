@@ -49,6 +49,7 @@ uint32_t* atsc3_mbms_envelope_find_toi_from_fdt(atsc3_fdt_instance_t* atsc3_fdt_
 
 atsc3_mbms_metadata_envelope_t* atsc3_mbms_envelope_parse_from_payload(char* payload, char* content_location) {
 	atsc3_mbms_metadata_envelope_t* atsc3_mbms_metadata_envelope = NULL;
+    
 	block_t* metadata_envelope_fragment_block = block_Promote(payload);
 	xml_document_t* xml_document = xml_parse_document(metadata_envelope_fragment_block->p_buffer, metadata_envelope_fragment_block->i_pos);
 	if(!xml_document) {
@@ -81,6 +82,7 @@ atsc3_mbms_metadata_envelope_t* atsc3_mbms_envelope_parse_from_payload(char* pay
 
 				if(xml_node_equals_ignore_case(envelope_child, "item")) {
 					atsc3_mbms_metadata_item_t* atsc3_mbms_metadata_item = atsc3_mbms_metadata_item_new();
+                    
 					atsc3_mbms_metadata_envelope_add_atsc3_mbms_metadata_item(atsc3_mbms_metadata_envelope, atsc3_mbms_metadata_item);
 
 					//assign any of our attributes here
@@ -93,7 +95,7 @@ atsc3_mbms_metadata_envelope_t* atsc3_mbms_envelope_parse_from_payload(char* pay
 					if((matching_attribute = kvp_collection_get(kvp_collection,  "contentType"))) {
 						atsc3_mbms_metadata_item->content_type = matching_attribute;
 					}
-					if((matching_attribute = kvp_collection_get(kvp_collection,  "contentType"))) {
+					if((matching_attribute = kvp_collection_get(kvp_collection,  "metadataURI"))) {
 						atsc3_mbms_metadata_item->metadata_uri = matching_attribute;
 					}
 					if((matching_attribute = kvp_collection_get(kvp_collection,  "validFrom"))) {
@@ -104,16 +106,22 @@ atsc3_mbms_metadata_envelope_t* atsc3_mbms_envelope_parse_from_payload(char* pay
 					}
 					if((matching_attribute = kvp_collection_get(kvp_collection,  "version"))) {
 						atsc3_mbms_metadata_item->version = atoi(matching_attribute);
+                        free(matching_attribute);
 					}
+                    
 					//todo - fix me with proper namespacing
 					if((matching_attribute = kvp_collection_get(kvp_collection,  "meta:nextURL"))) {
 						atsc3_mbms_metadata_item->next_url = matching_attribute;
 					}
+                    free(xml_attributes);
+                    kvp_collection_free(kvp_collection);
 				}
 			}
 		}
 	}
-
+    xml_document_free(xml_document, false);
+    block_Destroy(&metadata_envelope_fragment_block);
+    
 	return atsc3_mbms_metadata_envelope;
 }
 

@@ -94,12 +94,15 @@ typedef struct xml_document {
  *     document's buffer
  */
 static void xml_string_free(struct xml_string* string) {
-    //make sure to clear attributes
-    if(string->attributes) {
-        xml_string_free(string->attributes);
+    if(string) {
+        //make sure to clear attributes
+        if(string->attributes) {
+            xml_string_free(string->attributes);
+            string->attributes = NULL;
+        }
+   
+        free(string);
     }
-    
-    free(string);
 }
 
 /**
@@ -109,13 +112,16 @@ static void xml_string_free(struct xml_string* string) {
  */
 static void xml_node_free(struct xml_node* node) {
     xml_string_free(node->name);
+    node->name = NULL;
     
     if(node->attributes) {
         xml_string_free(node->attributes);
+        node->attributes = NULL;
     }
     
     if (node->content) {
         xml_string_free(node->content);
+        node->content = NULL;
     }
     
     struct xml_node** it = node->children;
@@ -124,6 +130,7 @@ static void xml_node_free(struct xml_node* node) {
         ++it;
     }
     free(node->children);
+    node->children = NULL;
     
     free(node);
 }
@@ -317,7 +324,8 @@ uint8_t* xml_attributes_clone_node(xml_node_t* node) {
     xml_string_t* xml_string = xml_node_name(node);
     uint8_t* xml_attributes_clone_ret = xml_attributes_clone(xml_string);
     
-    free(xml_string);
+    //xml_string is a ptr reference, we can't free it here...
+    //free(xml_string);
     
     return xml_attributes_clone_ret;
 }
@@ -935,6 +943,7 @@ struct xml_document* xml_open_document(FILE* source) {
  */
 void xml_document_free(xml_document_t* document, bool free_buffer) {
 	xml_node_free(document->root);
+    document->root = NULL;
 
 	if (free_buffer) {
 		free(document->buffer.buffer);

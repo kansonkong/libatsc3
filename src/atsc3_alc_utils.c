@@ -159,6 +159,118 @@ To associate ESG files with Broadcaster Applications, the corresponding Applicat
 < FDT-Instance@appContextIdList > defined when sending the ESG files in the LCT channel of the ESG Service ROUTE session. Descriptions of the FDT extensions and the ESG Service can be found in A/331 [1].
 
 Application Context Identifiers need not be included in the EFDT if the ESG data is not needed by the Broadcaster Application.
+ *
+ *
+ *
+A.3.3.2.6. Extended FDT Instance Semantics
+ * *
+ *
+ *The Extended FDT Instance shall conform to an FDT Instance according to RFC 6726 [30], with the following rules.
+ • At least one File element must be present, with the following additional constraints:
+ *
+ o When exactly one File element is present in an Extended FDT Instance that is embedded in the S-TSID, and the Extended FDT Instance describes DASH Segments as the delivery objects carried by a source flow, that File element will strictly contain the metadata for the Initialization Segment. In other words, no File element instances
+ are present for the purpose of describing Media Segments.
+ *
+ o When more than one File element is present in an Extended FDT Instance that is  embedded in the S-TSID, and the
+ * Extended FDT Instance describes NRT content files as the delivery objects carried by a source flow, each of those
+ * File elements will contain the metadata for an individual NRT file.
+ *
+ o When more than one File element is present in an Extended FDT Instance that is transported as TOI=0 in the same
+ * LCT channel carrying the associated source flow, the delivery objects transported by the source flow are NRT content
+ * files whereby each of those File elements will contain the metadata for an individual NRT file.
+ *
+ • The @Expires attribute must be present.
+ 
+ When a @fileTemplate attribute is present, then the sender shall operate as follows:
+ • The TOI field in the ROUTE packet header shall be set such that Content-Location can be derived according to Section A.3.3.2.7.
+ • After sending the first packet with a given TOI value, none of the packets pertaining to this TOI shall be sent later
+ * than the wall clock time as derived from @maxExpiresDelta.
+ *
+ * In addition, the EXT_TIME header with Expected Residual Time (ERT) may be used in order to convey more accurate expiry time,
+ * if considered useful. When @maxExpiresDelta is not present, then the EXT_TIME header with Expected Residual Time (ERT)
+ * shall be used to derive the value of FDT-Instance@Expires, according to the procedure described below in Section A.3.3.2.7.
+ 
+ When a @fileTemplate attribute is present, an Extended FDT Instance is produced at the receiver as follows:
+ • Any data that is contained in the EFDT may be used as is in generating an Extended FDT Instance.
+ • The data in the @fileTemplate attribute is used to generate the file URI (equivalent to the File@Content-Location in the FDT)
+ * as documented in Section A.3.3.2.7 with the reception of an LCT packet with a specific TOI value.
+ *
+ *
+ * A.3.3.2.7. File Template
+  When an LCT packet with a new TOI is received for this transport session, then an Extended FDT Instance is
+ generated with a new File entry as follows:
+ 
+ • The TOI is used to generate File@Content-Location using the mechanism defined in Section A.3.3.2.8.
+ • All other attributes that are present in the EFDT.FDT-Instance element are applicable to the File.
+ • Either the EXT_FTI header (per RFC 5775 [27]) or the EXT_TOL header (per Section A.3.8.1), when present,
+    shall be used to signal the Transport Object Length (TOL) of the File.
+ *
+ * If the File@Transfer-Length parameter in the Extended FDT Instance is not present,
+ * then the EXT_TOL header or the or EXT_FTI header shall be present.
+ *
+ * Note that a header containing the transport object length (EXT_TOL or EXT_FTI) need not be present in each packet header.
+ *
+ * If the broadcaster does not know the length of the transport object at the beginning of the transfer,
+ * an EXT_TOL or EXT_FTI header shall be included in at least the last packet of the file and should be included in the last
+ * few packets of the transfer.
+ *
+ • When present, the @maxExpiresDelta shall be used to generate the value of the FDT- Instance@Expires attribute.
+ * The receiver is expected to add this value to its wall clock time when acquiring the first ROUTE packet carrying the
+ * data of a given delivery object to obtain the value for @Expires.
+ *
+ * When @maxExpiresDelta is not present, the* EXT_TIME header with Expected Residual Time (ERT) shall be used to derive the
+ * expiry time of the Extended FDT Instance.
+ *
+ * When both @maxExpiresDelta and the ERT of EXT_TIME are present, the smaller of the two values should be used as the
+ * incremental time interval to be added to the receiver’s current time to generate the effective value for @Expires.
+ *
+ * When neither @maxExpiresDelta nor the ERT field of the EXT_TIME header is present, then the expiration time of the
+ * Extended FDT Instance is given by its @Expires attribute.
+
+ A.3.3.2.8. Substitution
+ The @fileTemplate attribute, when present, shall include the “$TOI$” identifier.
+ After parameter substitution using the TOI number in this transport session, the
+ @fileTemplate shall be a valid URL corresponding to the Content-Location attribute of the associated file.
+ Excluding the TOI values associated with any files listed in FDT-Instance.File elements, the
+ @fileTemplate attribute generates a one-to-one mapping between the TOI and the Content-Location value.
+ When the @fileTemplate is used to identify a sequence of DASH Media Segments, the Segment number is equal to the TOI value
+ 
+ In each URI, the identifiers from Table A.3.5 shall be replaced by the substitution parameter defined in Table A.3.5.
+ 
+ Identifier matching is case-sensitive. If the URI contains unescaped $ symbols which do not enclose a valid identifier,
+ then the result of URI formation is undefined.
+ 
+ The format of the identifier is also specified in Table A.3.5.
+ 
+ Each identifier may be suffixed, within the enclosing ‘$’ characters following this prototype:
+    %0[width]d
+ 
+ The width parameter is an unsigned integer that provides the minimum number of characters to be printed.
+ If the value to be printed is shorter than this number, the result shall be padded with leading zeroes.
+ The value is not truncated even if the result is larger.
+ *
+ An example @fileTemplate using a width of 5 is: fileTemplate="myVideo$TOI%05d$.mps",
+ resulting in file names with exactly five digits in the number portion.
+ 
+ The Media Segment file name for TOI=33 using this template is myVideo00033.mps.
+ 
+ The @fileTemplate shall be authored such that the application of the substitution process results in valid URIs.
+ Strings outside identifiers shall only contain characters that are permitted within URIs according to RFC 3986 [19].
+ *
+ *
+    Table A.3.5 Identifiers for File Templates
+    ----------------------------------------------------------------------------------
+    $<Identifier>$           Substitution Parameter                             Format
+    --------------           ------------------------------------------------   ------
+    $$                       Is an escape sequence, i.e. "$$" is non-           not applicable
+                             recursively replaced with a single "$"
+
+    $TOI$                    This identifier is substituted with the TOI.       The format tag may be present.
+                                                                                When no format tag is present, a default format
+                                                                                tag with width=1 shall be used.
+    
+ *
+ *TODO: check codepoint if we are in entity mode...
  */
 
 char* alc_packet_dump_to_object_get_s_tsid_filename(udp_flow_t* udp_flow, alc_packet_t* alc_packet, lls_sls_alc_monitor_t* lls_sls_alc_monitor) {
@@ -182,9 +294,10 @@ char* alc_packet_dump_to_object_get_s_tsid_filename(udp_flow_t* udp_flow, alc_pa
 
 						//try to find our matching toi and content-location value
 						if(atsc3_route_s_tsid_RS_LS->atsc3_route_s_tsid_RS_LS_SrcFlow->atsc3_fdt_instance && atsc3_route_s_tsid_RS_LS->atsc3_route_s_tsid_RS_LS_SrcFlow->atsc3_fdt_instance->atsc3_fdt_file_v.count) {
-							for(int k=0; k < atsc3_route_s_tsid_RS_LS->atsc3_route_s_tsid_RS_LS_SrcFlow->atsc3_fdt_instance->atsc3_fdt_file_v.count; k++) {
-								atsc3_fdt_file_t* atsc3_fdt_file = atsc3_route_s_tsid_RS_LS->atsc3_route_s_tsid_RS_LS_SrcFlow->atsc3_fdt_instance->atsc3_fdt_file_v.data[k];
-
+                            atsc3_fdt_instance_t* atsc3_fdt_instance = atsc3_route_s_tsid_RS_LS->atsc3_route_s_tsid_RS_LS_SrcFlow->atsc3_fdt_instance;
+                            for(int k=0; k < atsc3_fdt_instance->atsc3_fdt_file_v.count; k++) {
+								atsc3_fdt_file_t* atsc3_fdt_file = atsc3_fdt_instance->atsc3_fdt_file_v.data[k];
+                                //if toi matches, then use this mapping, otherwise, fallback to file_template
 								if(atsc3_fdt_file->toi == alc_packet->def_lct_hdr->toi && atsc3_fdt_file->content_location && strlen(atsc3_fdt_file->content_location)) {
                                     size_t content_location_length = strlen(atsc3_fdt_file->content_location);
                                     content_location = calloc(content_location_length + 1, sizeof(char));
@@ -195,9 +308,64 @@ char* alc_packet_dump_to_object_get_s_tsid_filename(udp_flow_t* udp_flow, alc_pa
 //                                    atsc3_fdt_file->content_length;
 //                                    atsc3_fdt_file->content_encoding;
 //                                    atsc3_fdt_file->transfer_length;
-
-								}
+                                    
+                                }
 							}
+                            
+                            if(!content_location) {
+                                //fallback to instance template
+                                if(atsc3_fdt_instance->file_template) {
+                                    int file_template_strlen = strlen(atsc3_fdt_instance->file_template);
+                                    char intermediate_file_name[1025] = { 0 }; //include null padding
+                                    int intermediate_pos = 0;
+                                    char* final_file_name = calloc(1025, sizeof(char));
+                                    
+                                    //replace $$ to $
+                                    //replace $TOI$ (and width formatting, e.g. $TOI%05d$) with our TOI
+                                    for(int i=0; i < file_template_strlen && i < 1024; i++) {
+                                        if(atsc3_fdt_instance->file_template[i] == '$') {
+                                            if(atsc3_fdt_instance->file_template[i+1] == '$') {
+                                                //escape
+                                                intermediate_file_name[intermediate_pos++] = '$';
+                                                i++;
+                                            } else if(i+4 < file_template_strlen &&
+                                                      atsc3_fdt_instance->file_template[i+1] == 'T' &&
+                                                      atsc3_fdt_instance->file_template[i+2] == 'O' &&
+                                                      atsc3_fdt_instance->file_template[i+3] == 'I') { //next 3 chars should be TOI at least
+                                                if(atsc3_fdt_instance->file_template[i+4] == '$') {
+                                                    //close out with just a %d value
+                                                    intermediate_file_name[intermediate_pos++] = '%';
+                                                    intermediate_file_name[intermediate_pos++] = 'd';
+                                                    i += 4;
+                                                    __ALC_UTILS_DEBUG("intermediate file template name after TOI property substituion is: %s", intermediate_file_name);
+
+                                                } else if(atsc3_fdt_instance->file_template[i+4] == '%') {
+                                                    i += 4;
+                                                    //copy over our formatting until we get to a $
+                                                    //e.g. myVideo$TOI%05d$.mps
+                                                    while(i < file_template_strlen && atsc3_fdt_instance->file_template[i] != '$') {
+                                                        intermediate_file_name[intermediate_pos++] = atsc3_fdt_instance->file_template[i++];
+                                                    }
+                                                    __ALC_UTILS_DEBUG("intermediate file template name after TOI width substitution is: %s", intermediate_file_name);
+                                                 
+                                                } else {
+                                                    __ALC_UTILS_WARN("file template name at pos: %d doesn't match template value of TOI: %s, ignoring...", i, atsc3_fdt_instance->file_template);
+                                                }
+                                            } else {
+                                                __ALC_UTILS_WARN("file template name at pos: %d doesn't match template value of TOI: %s, ignoring...", i, atsc3_fdt_instance->file_template);
+                                            }
+                                        } else {
+                                            intermediate_file_name[intermediate_pos++] = atsc3_fdt_instance->file_template[i];
+                                        }
+                                    }
+                                
+                                    //perform final replacement
+                                    snprintf(final_file_name, 1024, intermediate_file_name, alc_packet->def_lct_hdr->toi);
+                                    content_location = final_file_name;
+                                    __ALC_UTILS_DEBUG("final file template name after TOI substitution is: %s", content_location);
+                                }
+                            }
+                           
 						} else {
 
 							//alternative strategies for content-location here?
@@ -213,7 +381,7 @@ char* alc_packet_dump_to_object_get_s_tsid_filename(udp_flow_t* udp_flow, alc_pa
 		if(alc_packet->def_lct_hdr) {
             content_location = alc_packet_dump_to_object_get_temporary_filename(udp_flow, alc_packet);
 
-			__ALC_UTILS_INFO("alc_packet_dump_to_object_get_s_tsid_filename: no content_location to return for alp_packet: %p, falling back to %s", alc_packet, content_location);
+			__ALC_UTILS_INFO("alc_packet_dump_to_object_get_s_tsid_filename: no content_location to return for alc_packet: %p, falling back to %s", alc_packet, content_location);
 		} else {
 			__ALC_UTILS_ERROR("alc_packet_dump_to_object_get_s_tsid_filename: no content_location to return for alc_packet: %p, falling back to null string!", alc_packet);
 		}
@@ -369,14 +537,22 @@ int alc_packet_dump_to_object(udp_flow_t* udp_flow, alc_packet_t** alc_packet_pt
 	if(alc_packet->close_object_flag) {
         s_tsid_content_location = alc_packet_dump_to_object_get_s_tsid_filename(udp_flow, alc_packet, lls_sls_alc_monitor);
  
-        __ALC_UTILS_IOTRACE("moving from to temporary_filename: %s to: %s, is complete: %d", temporary_filename, s_tsid_content_location, alc_packet->close_object_flag);
-
-		//update our sls here if we have a service we are listenting to
+        if(0 != strncmp(temporary_filename, s_tsid_content_location, __MIN(strlen(temporary_filename), strlen(s_tsid_content_location)))) {
+            char new_file_name[1024] = { 0 };
+            snprintf(new_file_name, 1024, "route/%d", lls_sls_alc_monitor->atsc3_lls_slt_service->service_id);
+            mkdir(new_file_name, 0777);
+            snprintf(new_file_name, 1024, "%s/%s", new_file_name, s_tsid_content_location);
+            
+            rename(temporary_filename, new_file_name);
+            __ALC_UTILS_IOTRACE("tsi: %u, toi: %u, moving from to temporary_filename: %s to: %s, is complete: %d", alc_packet->def_lct_hdr->tsi, alc_packet->def_lct_hdr->toi,  temporary_filename, new_file_name, alc_packet->close_object_flag);
+        }
+        //update our sls here if we have a service we are listenting to
 		if(lls_sls_alc_monitor && lls_sls_alc_monitor->atsc3_lls_slt_service &&  alc_packet->def_lct_hdr->tsi == 0) {
 			__ALC_UTILS_IOTRACE("ALC: service_id: %u, ------ TSI of 0, calling atsc3_route_sls_process_from_alc_packet_and_file", lls_sls_alc_monitor->atsc3_lls_slt_service->service_id);
 			atsc3_route_sls_process_from_alc_packet_and_file(udp_flow, alc_packet, lls_sls_alc_monitor);
 
 		} else {
+            //jjustman-2019-11-02: todo: remove this old code
 			//only push to our output buffer video and audio flows
 			if(lls_sls_alc_monitor && (alc_packet->def_lct_hdr->tsi == lls_sls_alc_monitor->audio_tsi || alc_packet->def_lct_hdr->tsi == lls_sls_alc_monitor->video_tsi)) {
 				__ALC_UTILS_IOTRACE("------ TSI of %d, toi: %u, calling alc_recon_file_buffer_struct_monitor_fragment_with_init_box", alc_packet->def_lct_hdr->tsi, alc_packet->def_lct_hdr->toi);
@@ -918,8 +1094,7 @@ void alc_recon_file_buffer_struct_monitor_fragment_with_init_box(udp_flow_t* udp
 		}
 	} else {
 
-		//TODO - determine if we should pre-pend the most recent init box?
-
+		//TODO - determine if we should prepend the most recent init box?
 		//append audio if we have an audio frame
 		if(audio_toi && audio_fragment_file_name) {
 			audio_fragment_payload = alc_get_payload_from_filename(audio_fragment_file_name);
@@ -970,10 +1145,10 @@ cleanup:
 	freesafe(video_init_file_name);
 	freesafe(audio_fragment_file_name);
 	freesafe(video_fragment_file_name);
-	block_Release(&audio_fragment_payload);
-	block_Release(&video_fragment_payload);
-	block_Release(&audio_init_payload);
-	block_Release(&video_init_payload);
+	block_Destroy(&audio_fragment_payload);
+	block_Destroy(&video_fragment_payload);
+	block_Destroy(&audio_init_payload);
+	block_Destroy(&video_init_payload);
 
 	return;
 }

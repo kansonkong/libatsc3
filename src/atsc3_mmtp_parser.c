@@ -163,7 +163,7 @@ mmtp_packet_header_t* mmtp_packet_header_parse_from_block_t(block_t* udp_packet)
 
     if(mmtp_packet_header->mmtp_header_extension_flag & 0x1) {
     	//clamp mmtp_header_extension_length to max length of our mmtp packet
-		mmtp_packet_header->mmtp_header_extension_length = MIN(mmtp_packet_header->mmtp_header_extension_length, mmtp_payload_length - (buf - raw_buf));
+		mmtp_packet_header->mmtp_header_extension_length = __MIN(mmtp_packet_header->mmtp_header_extension_length, mmtp_payload_length - (buf - raw_buf));
 
 		__MMT_MPU_PARSER_DEBUG("mmtp_mpu_packet_parse_from_block_t: mmtp_header_extension_flag, header extension size: %d, packet version: %d, payload_type: 0x%X, packet_id 0x%hu, timestamp: 0x%X, packet_sequence_number: 0x%X, packet_counter: 0x%X",
 				mmtp_packet_header->mmtp_packet_version,

@@ -83,6 +83,7 @@ intermediate_mbms: 	atsc3_mbms_envelope_xml.o \
 
 intermediate_sls: 	atsc3_route_mpd.o \
 					atsc3_route_s_tsid.o \
+					atsc3_sls_metadata_fragment_types.o \
 					atsc3_sls_metadata_fragment_types_parser.o	
 
 intermediate_alc: 	alc_session.c \
@@ -307,6 +308,9 @@ atsc3_route_mpd.o: atsc3_route_mpd.h atsc3_route_mpd.c
 atsc3_route_s_tsid.o: atsc3_route_s_tsid.h atsc3_route_s_tsid.c
 	cc -g -c atsc3_route_s_tsid.c -o atsc3_route_s_tsid.o
 
+atsc3_sls_metadata_fragment_types.o: atsc3_sls_metadata_fragment_types.h atsc3_sls_metadata_fragment_types.c
+	cc -g -c atsc3_sls_metadata_fragment_types.c -o atsc3_sls_metadata_fragment_types.o
+
 atsc3_sls_metadata_fragment_types_parser.o: atsc3_sls_metadata_fragment_types_parser.h atsc3_sls_metadata_fragment_types_parser.c
 	cc -g -c atsc3_sls_metadata_fragment_types_parser.c -o atsc3_sls_metadata_fragment_types_parser.o
 
@@ -407,6 +411,7 @@ libatsc3_intermediate.o: atsc3_lls.o \
 		atsc3_route_s_tsid.o \
 		atsc3_route_sls_processor.o \
 		atsc3_sls_held_fragment.o  \
+		atsc3_sls_metadata_fragment_types.o \
 		atsc3_sls_metadata_fragment_types_parser.o \
 		atsc3_mbms_envelope_xml.o	\
 		atsc3_mime_multipart_related.o \
@@ -471,6 +476,7 @@ libatsc3_intermediate.o: atsc3_lls.o \
 		atsc3_route_s_tsid.o \
 		atsc3_route_sls_processor.o \
 		atsc3_sls_held_fragment.o  \
+		atsc3_sls_metadata_fragment_types.o \
 		atsc3_sls_metadata_fragment_types_parser.o \
 		atsc3_mbms_envelope_xml.o	\
 		atsc3_mime_multipart_related.o \
@@ -571,6 +577,7 @@ test/atsc3_mime_multipart_related_parser_test: test/atsc3_mime_multipart_related
 	atsc3_mbms_envelope_xml.o	\
 	atsc3_mime_multipart_related.o \
 	atsc3_mime_multipart_related_parser.o \
+	atsc3_sls_metadata_fragment_types.o \
 	atsc3_sls_metadata_fragment_types_parser.o \
 	atsc3_sls_held_fragment.o \
 	atsc3_utils.o \
@@ -586,6 +593,7 @@ test/atsc3_mime_multipart_related_parser_test: test/atsc3_mime_multipart_related
 	atsc3_mbms_envelope_xml.o	\
 	atsc3_mime_multipart_related.o \
 	atsc3_mime_multipart_related_parser.o \
+	atsc3_sls_metadata_fragment_types.o \
 	atsc3_sls_metadata_fragment_types_parser.o \
 	atsc3_sls_held_fragment.o \
 	atsc3_route_mpd.o \
@@ -602,6 +610,7 @@ test/atsc3_fdt_mbms_envelope_test: test/atsc3_fdt_mbms_envelope_test.c \
 	atsc3_mbms_envelope_xml.o	\
 	atsc3_mime_multipart_related.o \
 	atsc3_mime_multipart_related_parser.o \
+	atsc3_sls_metadata_fragment_types.o \
 	atsc3_sls_metadata_fragment_types_parser.o \
 	atsc3_sls_held_fragment.o \
 	atsc3_utils.o \
@@ -617,6 +626,7 @@ test/atsc3_fdt_mbms_envelope_test: test/atsc3_fdt_mbms_envelope_test.c \
 	atsc3_mbms_envelope_xml.o	\
 	atsc3_mime_multipart_related.o \
 	atsc3_mime_multipart_related_parser.o \
+	atsc3_sls_metadata_fragment_types.o \
 	atsc3_sls_metadata_fragment_types_parser.o \
 	atsc3_sls_held_fragment.o \
 	atsc3_route_mpd.o \
@@ -633,6 +643,7 @@ test/atsc3_fdt_mbms_envelope_test_2019-09-07-esg-e.1.1.7: test/atsc3_fdt_mbms_en
 	atsc3_mbms_envelope_xml.o	\
 	atsc3_mime_multipart_related.o \
 	atsc3_mime_multipart_related_parser.o \
+	atsc3_sls_metadata_fragment_types.o \
 	atsc3_sls_metadata_fragment_types_parser.o \
 	atsc3_sls_held_fragment.o \
 	atsc3_utils.o \
@@ -648,6 +659,7 @@ test/atsc3_fdt_mbms_envelope_test_2019-09-07-esg-e.1.1.7: test/atsc3_fdt_mbms_en
 	atsc3_mbms_envelope_xml.o	\
 	atsc3_mime_multipart_related.o \
 	atsc3_mime_multipart_related_parser.o \
+	atsc3_sls_metadata_fragment_types.o \
 	atsc3_sls_metadata_fragment_types_parser.o \
 	atsc3_sls_held_fragment.o \
 	atsc3_route_mpd.o \

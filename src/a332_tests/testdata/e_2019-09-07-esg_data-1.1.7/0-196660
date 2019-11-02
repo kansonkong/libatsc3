@@ -1,0 +1,79 @@
+Content-Type: multipart/related; 
+ type="application/mbms-envelope+xml"
+boundary="j3(c_hegB.HBC9P/9=Re=FkSgyhaTzS_D4_e7a?7EZh(6zXf(-ZmQq+6hDxLu3?uoNww?F" 
+
+--j3(c_hegB.HBC9P/9=Re=FkSgyhaTzS_D4_e7a?7EZh(6zXf(-ZmQq+6hDxLu3?uoNww?F
+Content-Type: application/mbms-envelope+xml
+Content-Location: envelope.xml
+
+<?xml version="1.0" encoding="UTF-8"?>
+<metadataEnvelope xmlns="urn:3gpp:metadata:2005:MBMS:envelope">
+   <item metadataURI="usbd.xml" version="1" contentType="application/route-usd+xml"/>
+   <item metadataURI="stsid.xml" version="1" contentType="application/route-s-tsid+xml"/>
+</metadataEnvelope>
+
+--j3(c_hegB.HBC9P/9=Re=FkSgyhaTzS_D4_e7a?7EZh(6zXf(-ZmQq+6hDxLu3?uoNww?F
+Content-Type: application/route-usd+xml
+Content-Location: usbd.xml
+
+<?xml version="1.0" encoding="UTF-8"?>
+<BundleDescriptionROUTE xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns="tag:atsc.org,2016:XMLSchemas/ATSC3/Delivery/ROUTEUSD/1.0/" xmlns:routeusd="http://www.atsc.org/XMLSchemas/ATSC3/Delivery/ROUTEUSD/1.0/" xsi:schemaLocation="http://www.atsc.org/XMLSchemas/ATSC3/Delivery/ROUTEUSD/1.0/ ROUTEUSD.xsd">
+   <UserServiceDescription serviceId="3"/>
+</BundleDescriptionROUTE>
+
+--j3(c_hegB.HBC9P/9=Re=FkSgyhaTzS_D4_e7a?7EZh(6zXf(-ZmQq+6hDxLu3?uoNww?F
+Content-Type: application/route-s-tsid+xml
+Content-Location: stsid.xml
+
+<?xml version="1.0" encoding="UTF-8"?>
+<S-TSID xmlns="tag:atsc.org,2016:XMLSchemas/ATSC3/Delivery/S-TSID/1.0/" xmlns:afdt="tag:atsc.org,2016:XMLSchemas/ATSC3/Delivery/ATSC-FDT/1.0/" xmlns:fdt="urn:ietf:params:xml:ns:fdt">
+   <RS sIpAddr="192.168.59.62" dIpAddr="239.255.1.1" dPort="49153">
+      <LS tsi="3001">
+         <SrcFlow rt="false">
+            <ContentInfo/>
+            <EFDT>
+               <FDT-Instance Expires="4294967295"
+                             afdt:efdtVersion="0">
+                  <fdt:File Content-Location="sgdd.xml"
+                   TOI="1"
+                   Transfer-Length="21595"
+                   Content-Length="450384"
+                   Content-Type="application/vnd.oma.bcast.sgdd+xml"
+                   Content-Encoding="gzip"/>
+               </FDT-Instance>
+            </EFDT>
+            <Payload codePoint="128" formatId="1" frag="0" order="true"/>
+         </SrcFlow>
+      </LS>
+      <LS tsi="3000">
+         <SrcFlow rt="false">
+            <ContentInfo/>
+            <EFDT>
+               <FDT-Instance Expires="4294967295"
+                             afdt:efdtVersion="0">
+                  <fdt:File Content-Location="sgdu_service.xml"
+                   TOI="1"
+                   Transfer-Length="353"
+                   Content-Length="2199"
+                   Content-Type="application/vnd.oma.bcast.sgdu"
+                   Content-Encoding="gzip"/>
+                  <fdt:File Content-Location="sgdu_content.xml"
+                   TOI="2"
+                   Transfer-Length="134173"
+                   Content-Length="946496"
+                   Content-Type="application/vnd.oma.bcast.sgdu"
+                   Content-Encoding="gzip"/>
+                  <fdt:File Content-Location="sgdu_schedule.xml"
+                   TOI="3"
+                   Transfer-Length="36738"
+                   Content-Length="722381"
+                   Content-Type="application/vnd.oma.bcast.sgdu"
+                   Content-Encoding="gzip"/>
+               </FDT-Instance>
+            </EFDT>
+         </SrcFlow>
+      </LS>
+   </RS>
+</S-TSID>
+
+--j3(c_hegB.HBC9P/9=Re=FkSgyhaTzS_D4_e7a?7EZh(6zXf(-ZmQq+6hDxLu3?uoNww?F--

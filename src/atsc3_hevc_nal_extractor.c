@@ -191,23 +191,53 @@ video_decoder_configuration_record_t* atsc3_avc1_hevc_nal_extractor_parse_from_m
 	}
 
 	block_Rewind(mpu_metadata_block);
-
-	//todo: search for isobmff box: hvcC
-
+    //first, search for the tkhd
+    //then, search for isobmff box: hvcC
+    //todo: search for the avcC box for h264 use cases
+    
 	_ATSC3_HEVC_NAL_EXTRACTOR_TRACE("atsc3_avc1_hevc_nal_extractor_parse_from_mpu_metadata_block_t: mpu_metadata_block_t: %p, p_buffer: %p, pos: %d, size: %d",
 			mpu_metadata_block,
 			mpu_metadata_block->p_buffer,
 			mpu_metadata_block->i_pos,
 			mpu_metadata_block->p_size);
 
-	uint8_t* mpu_ptr = block_Get(mpu_metadata_block);
+    
+    uint8_t* tkhd_ptr = block_Get(mpu_metadata_block);
+    bool has_tkhd_match = false;
+    int  tkhd_match_index = 0;
+    uint32_t init_buff_remaining = 0;
 
+    for(int i=0; !(has_tkhd_match) && (i < mpu_metadata_block->p_size - 4); i++) {
+
+        _ATSC3_HEVC_NAL_EXTRACTOR_TRACE("atsc3_avc1_hevc_nal_extractor_parse_from_mpu_metadata_block_t: searching for tkhd, position: %d, checking: 0x%02x (%c), 0x%02x (%c), 0x%02x (%c), 0x%02x (%c)",
+                i,
+                tkhd_ptr[i], tkhd_ptr[i],
+                tkhd_ptr[i+1], tkhd_ptr[i+1],
+                tkhd_ptr[i+2], tkhd_ptr[i+2],
+                tkhd_ptr[i+3], tkhd_ptr[i+3]);
+
+        //look for our fourcc
+        if(tkhd_ptr[i] == 't' && tkhd_ptr[i+1] == 'k' && tkhd_ptr[i+2] == 'h' && tkhd_ptr[i+3] == 'd') {
+            _ATSC3_HEVC_NAL_EXTRACTOR_DEBUG("atsc3_hevc_nal_extractor_parse_from_mpu_metadata_block_t: tkhd: found matching at position: %d", i);
+            has_tkhd_match = true;
+            tkhd_match_index = i + 4;
+            init_buff_remaining = mpu_metadata_block->p_size - i;
+            continue;
+        }
+    }
+    
+    if(has_tkhd_match && tkhd_match_index) {
+        atsc3_init_parse_tkhd_for_width_height(video_decoder_configuration_record, &tkhd_ptr[tkhd_match_index], init_buff_remaining);
+    }
+    
+    
+    uint8_t* mpu_ptr = block_Get(mpu_metadata_block);
+    
 	bool has_hvcC_match = false;
 	int  hvcC_match_index = 0;
 
 	bool has_avcC_match = false;
 	int  avcC_match_index = 0;
-
 
 	for(int i=0; !(has_hvcC_match || has_avcC_match) && (i < mpu_metadata_block->p_size - 4); i++) {
 
@@ -527,6 +557,78 @@ void atsc3_hevc_decoder_configuration_record_dump(hevc_decoder_configuration_rec
 			_ATSC3_HEVC_NAL_EXTRACTOR_DEBUG("HEVC: hvcC: PPS %d, nal unit length is: 0!", i);
 		}
 	}
+}
+
+/*
+
+ aligned(8) class TrackHeaderBox
+    extends FullBox(‘tkhd’, version, flags){
+    if (version==1) {
+       unsigned int(64)  creation_time;
+       unsigned int(64)  modification_time;
+       unsigned int(32)  track_ID;
+       const unsigned int(32)  reserved = 0;
+       unsigned int(64)  duration;
+    } else { // version==0
+       unsigned int(32)  creation_time;
+       unsigned int(32)  modification_time;
+       unsigned int(32)  track_ID;
+       const unsigned int(32)  reserved = 0;
+       unsigned int(32)  duration;
+    }
+    const unsigned int(32)[2]  reserved = 0;
+    template int(16) layer = 0;
+    template int(16) alternate_group = 0;
+    template int(16)  volume = {if track_is_audio 0x0100 else 0};
+    const unsigned int(16)  reserved = 0;
+    template int(32)[9]  matrix=
+       { 0x00010000,0,0,0,0x00010000,0,0,0,0x40000000 };
+       // unity matrix
+    unsigned int(32) width;
+    unsigned int(32) height;
+ }
+ aligned(8) class FullBox(unsigned int(32) boxtype, unsigned int(8) v, bit(24) f) extends Box(boxtype) {
+     unsigned int(8)   version = v;
+     bit(24)           flags = f;
+ }
+ 
+ 
+ width and height fixed‐point 16.16 values are track‐dependent as follows:
+ 
+ For text and subtitle tracks, they may, depending on the coding format, describe the suggested size of the rendering area. For such tracks, the value 0x0 may also be used to indicate that the data may be rendered at any size, that no preferred size has been indicated and that the actual size may be determined by the external context or by reusing the width and height of another track. For those tracks, the flag track_size_is_aspect_ratio may also be used.
+ For non‐visual tracks (e.g. audio), they should be set to zero.
+ For all other tracks, they specify the track's visual presentation size.
+ 
+ These need not be the same as the pixel dimensions of the images,
+ which is documented in the sample description(s);
+ all images in the sequence are scaled to this size,
+ before any overall transformation of the track represented by the matrix.
+ 
+ The pixel dimensions of the images are the default values.
+ 
+ */
+
+void atsc3_init_parse_tkhd_for_width_height(video_decoder_configuration_record_t* video_decoder_configuration_record, uint8_t* tkhd_ptr_start, uint32_t init_buff_remaining) {
+    uint8_t version = *tkhd_ptr_start++;
+    tkhd_ptr_start += 3;  //complete fullbox
+    if(version == 1) {
+        //walk past 64+64+32+32+64 = 256 bits -> 32 bytes
+        tkhd_ptr_start += 32;
+    } else {
+        //walk pask 32+32+32+32+32 = 160 bits -> 20 bytes
+        tkhd_ptr_start += 20;
+    }
+    tkhd_ptr_start += 8; //past reserved
+    //16+16+16+16 + (32*9) = 64 + 288 = 352 -> 44
+    tkhd_ptr_start += 44;
+    
+    uint32_t width = ntohs(*((uint16_t*)(tkhd_ptr_start)));
+    tkhd_ptr_start += 4;
+    uint32_t height = ntohs(*(uint16_t*)(tkhd_ptr_start));
+    
+    _ATSC3_HEVC_NAL_EXTRACTOR_DEBUG("atsc3_init_parse_tkhd_for_width_height, got width: %d, height: %d", width, height);
+    video_decoder_configuration_record->width = width;
+    video_decoder_configuration_record->height = height;
 }
 
 block_t* atsc3_hevc_decoder_configuration_record_get_nals_vps_combined_optional_start_code(hevc_decoder_configuration_record_t* hevc_decoder_configuration_record, bool include_nal_start_code) {
@@ -15034,6 +15136,8 @@ block_t* atsc3_hevc_extract_extradata_nals_combined_ffmpegImpl(block_t* hvcc_box
         
     }
 
+
+
     for (i = 0; i < HEVC_MAX_VPS_COUNT; i++) {
         if (ps.vps_list[i]) {
             vps = (const HEVCVPS*)ps.vps_list[i]->data;
@@ -15072,7 +15176,9 @@ block_t* atsc3_hevc_extract_extradata_nals_combined_ffmpegImpl(block_t* hvcc_box
         block_Write(nals_combined, pps_data, pps_data_size);
         block_Rewind(nals_combined);
 
-    } else {
+        _ATSC3_HEVC_NAL_EXTRACTOR_INFO("avctx: width: %d, height: %d", avctx->width, avctx->height);
+        
+        } else {
         _ATSC3_HEVC_NAL_EXTRACTOR_ERROR("Could not extract VPS/PPS/SPS from extradata");
     }
 //will return NULL on error
@@ -15083,6 +15189,8 @@ done:
     av_freep(&vps_data);
     av_freep(&sps_data);
     av_freep(&pps_data);
+
+    av_freep(&avctx);
 
     return nals_combined;
 }
@@ -15166,6 +15274,8 @@ fail:
 		uint8_t nal_poision[] = { 0x80, 0x00, 0x00, 0x00 };
 		block_AppendFromBuf(sample_processed, nal_poision, 4);
 	}
+
+	block_Rewind(sample_processed);
 
 done:
 

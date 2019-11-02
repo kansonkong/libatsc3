@@ -190,6 +190,7 @@ void process_packet(u_char *user, const struct pcap_pkthdr *pkthdr, const u_char
 		lls_table_t* lls_table = lls_table_create_or_update_from_lls_slt_monitor(lls_slt_monitor, udp_packet->data);
 		if(lls_table) {
 			if(lls_table->lls_table_id == SLT) {
+                //pretty sure this is redundant, as it is already called in lls_table_create_or_update_from_lls_slt_monitor
 				int retval = lls_slt_table_perform_update(lls_table, lls_slt_monitor);
 
 				if(!retval) {
