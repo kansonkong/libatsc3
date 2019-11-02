@@ -64,6 +64,7 @@ atsc3_route_user_service_bundle_description_t* atsc3_route_user_service_bundle_d
 		}
 	}
 
+    block_Destroy(&usbd_fragment_block);
 	return atsc3_route_user_service_bundle_description;
 }
 
@@ -81,9 +82,11 @@ atsc3_user_service_description_t* atsc3_route_usbd_parse_from_usd(xml_node_t* xm
 
 	if((matching_attribute = kvp_collection_get(kvp_collection,  "serviceId"))) {
 		atsc3_user_service_description->service_id = atoi(matching_attribute);
+        free(matching_attribute);
 	}
 	if((matching_attribute = kvp_collection_get(kvp_collection,  "serviceId"))) {
 		atsc3_user_service_description->service_status = strncmp("true", matching_attribute, 4) == 0 ;
+        free(matching_attribute);
 	}
 
 	//parse children...
@@ -103,9 +106,8 @@ atsc3_user_service_description_t* atsc3_route_usbd_parse_from_usd(xml_node_t* xm
 		}
 		//todo - delivery method
 		//broadcast app svc
-
 	}
-
+    kvp_collection_free(kvp_collection);
 	return atsc3_user_service_description;
 }
 
