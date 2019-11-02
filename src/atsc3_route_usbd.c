@@ -63,7 +63,7 @@ atsc3_route_user_service_bundle_description_t* atsc3_route_user_service_bundle_d
 			}
 		}
 	}
-
+    xml_document_free(xml_document, false);
     block_Destroy(&usbd_fragment_block);
 	return atsc3_route_user_service_bundle_description;
 }
@@ -107,6 +107,7 @@ atsc3_user_service_description_t* atsc3_route_usbd_parse_from_usd(xml_node_t* xm
 		//todo - delivery method
 		//broadcast app svc
 	}
+    free(xml_attributes);
     kvp_collection_free(kvp_collection);
 	return atsc3_user_service_description;
 }
