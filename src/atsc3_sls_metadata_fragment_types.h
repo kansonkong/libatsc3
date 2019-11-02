@@ -16,6 +16,11 @@
 #include "atsc3_mime_multipart_related.h"
 #include "atsc3_mbms_envelope_parser.h"
 
+
+#if defined (__cplusplus)
+extern "C" {
+#endif
+
 /***
  *
  * Table 6.16 Metadata Object Types
@@ -51,7 +56,23 @@ typedef struct atsc3_sls_metadata_fragments {
 	atsc3_sls_held_fragment_t*						atsc3_sls_held_fragment;
 } atsc3_sls_metadata_fragments_t;
 
+atsc3_sls_metadata_fragments_t* atsc3_sls_metadata_fragments_new();
 
+void atsc3_mime_multipart_related_instance_free(atsc3_mime_multipart_related_instance_t** atsc3_mime_multipart_related_instance_p);
+void atsc3_mbms_metadata_envelope_free(atsc3_mbms_metadata_envelope_t** atsc3_mbms_metadata_envelope_p);
+void atsc3_route_user_service_bundle_description_free(atsc3_route_user_service_bundle_description_t** atsc3_route_user_service_bundle_description_p);
 
+void atsc3_route_s_tsid_free(atsc3_route_s_tsid_t** atsc3_route_s_tsid_p);
+void atsc3_route_s_tsid_RS_free(atsc3_route_s_tsid_RS_t** atsc3_route_s_tsid_RS_p);
+
+void atsc3_route_mpd_free(atsc3_route_mpd_t** atsc3_route_mpd_p);
+void atsc3_sls_held_fragment_free(atsc3_sls_held_fragment_t** atsc3_sls_held_fragment_p);
+
+void atsc3_sls_metadata_fragments_free(atsc3_sls_metadata_fragments_t** atsc3_sls_metadata_fragments_p);
+
+#if defined (__cplusplus)
+}
+#endif
 
 #endif /* ATSC3_SLS_METADATA_FRAGMENT_TYPES_H_ */
+ 

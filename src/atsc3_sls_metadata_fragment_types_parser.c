@@ -19,6 +19,7 @@ atsc3_sls_metadata_fragments_t* atsc3_sls_metadata_fragment_types_parse_from_mim
 
 	}
 	atsc3_sls_metadata_fragments_t* atsc3_sls_metadata_fragments = calloc(1, sizeof(atsc3_sls_metadata_fragments_t));
+    atsc3_sls_metadata_fragments->atsc3_mime_multipart_related_instance = atsc3_mime_multipart_related_instance;
 	atsc3_mime_multipart_related_payload_t* atsc3_mime_multipart_related_payload = NULL;
 
 	for(int i=0; i < atsc3_mime_multipart_related_instance->atsc3_mime_multipart_related_payload_v.count; i++) {

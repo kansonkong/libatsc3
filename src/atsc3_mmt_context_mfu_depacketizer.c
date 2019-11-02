@@ -182,17 +182,29 @@ void atsc3_mmt_mpu_mfu_on_sample_corrupt_mmthsample_header_noop(uint16_t packet_
     mfu_fragment_count_rebuilt);
 }
 
+//MPU - init box (mpu_metadata) present
+void atsc3_mmt_mpu_on_sequence_movie_fragment_metadata_present_noop(uint16_t packet_id, uint32_t mpu_sequence_number, block_t* mmt_movie_fragment_metadata) {
+    //as a last resort if mmt_atsc3_message isn't present with v/a descriptor timing, persist at least one trun frame duration...
+    uint32_t sample_duration = atsc3_mmt_movie_fragment_extract_sample_duration(mmt_movie_fragment_metadata);
+
+    __MMT_CONTEXT_MPU_DEBUG("atsc3_mmt_mpu_on_sequence_movie_fragment_metadata_present_noop: packet_id: %u, mpu_sequence_number: %u, mmt_movie_fragment_metadata: %p, size: %d, extracted sample_duration: %d",
+                            packet_id,
+                            mpu_sequence_number,
+                            mmt_movie_fragment_metadata,
+                            mmt_movie_fragment_metadata->p_size,
+                            sample_duration);
+}
 
 void __internal__atsc3_mmt_signalling_information_on_packet_id_with_mpu_timestamp_descriptor(atsc3_mmt_mfu_context_t* atsc3_mmt_mfu_context, uint16_t packet_id, uint32_t mpu_sequence_number, uint64_t mpu_presentation_time_ntp64, uint32_t mpu_presentation_time_seconds, uint32_t mpu_presentation_time_microseconds) {
 	while(atsc3_mmt_mfu_context->packet_id_mpu_timestamp_descriptor_window.atsc3_mmt_mfu_mpu_timestamp_descriptor_v.count > 10) {
         atsc3_mmt_mfu_mpu_timestamp_descriptor_t *atsc3_mmt_mfu_mpu_timestamp_descriptor = atsc3_mmt_mfu_mpu_timestamp_descriptor_rolling_window_pop_atsc3_mmt_mfu_mpu_timestamp_descriptor(&atsc3_mmt_mfu_context->packet_id_mpu_timestamp_descriptor_window);
 
-        __MMT_CONTEXT_MPU_INFO("__internal__atsc3_mmt_signalling_information_on_packet_id_with_mpu_timestamp_descriptor, removing: packet_id: %d, mpu_sequence_number: %d", atsc3_mmt_mfu_mpu_timestamp_descriptor->packet_id, atsc3_mmt_mfu_mpu_timestamp_descriptor->mpu_sequence_number);
+        __MMT_CONTEXT_MPU_TRACE("__internal__atsc3_mmt_signalling_information_on_packet_id_with_mpu_timestamp_descriptor, removing: packet_id: %d, mpu_sequence_number: %d", atsc3_mmt_mfu_mpu_timestamp_descriptor->packet_id, atsc3_mmt_mfu_mpu_timestamp_descriptor->mpu_sequence_number);
 
         atsc3_mmt_mfu_mpu_timestamp_descriptor_free(&atsc3_mmt_mfu_mpu_timestamp_descriptor);
     }
 
-    __MMT_CONTEXT_MPU_INFO("__internal__atsc3_mmt_signalling_information_on_packet_id_with_mpu_timestamp_descriptor, window count: %d, adding: packet_id: %d, mpu_sequence_number: %d", atsc3_mmt_mfu_context->packet_id_mpu_timestamp_descriptor_window.atsc3_mmt_mfu_mpu_timestamp_descriptor_v.count, packet_id, mpu_sequence_number);
+    __MMT_CONTEXT_MPU_TRACE("__internal__atsc3_mmt_signalling_information_on_packet_id_with_mpu_timestamp_descriptor, window count: %d, adding: packet_id: %d, mpu_sequence_number: %d", atsc3_mmt_mfu_context->packet_id_mpu_timestamp_descriptor_window.atsc3_mmt_mfu_mpu_timestamp_descriptor_v.count, packet_id, mpu_sequence_number);
 
     atsc3_mmt_mfu_mpu_timestamp_descriptor_t* matching_atsc3_mmt_mfu_mpu_timestamp_descriptor = atsc3_get_mpu_timestamp_from_packet_id_mpu_sequence_number(atsc3_mmt_mfu_context, packet_id, mpu_sequence_number);
 
@@ -212,20 +224,20 @@ void __internal__atsc3_mmt_signalling_information_on_packet_id_with_mpu_timestam
 
 
 atsc3_mmt_mfu_mpu_timestamp_descriptor_t* atsc3_get_mpu_timestamp_from_packet_id_mpu_sequence_number(atsc3_mmt_mfu_context_t* atsc3_mmt_mfu_context, uint16_t packet_id, uint32_t mpu_sequence_number) {
-    __MMT_CONTEXT_MPU_DEBUG("atsc3_get_mpu_timestamp_from_packet_id_mpu_sequence_number: entries: %d, looking for packet_id: %d, mpu_sequence_number: %d",
-                            atsc3_mmt_mfu_context->packet_id_mpu_timestamp_descriptor_window.atsc3_mmt_mfu_mpu_timestamp_descriptor_v.count,
-                            packet_id,
-                            mpu_sequence_number);
+//    __MMT_CONTEXT_MPU_DEBUG("atsc3_get_mpu_timestamp_from_packet_id_mpu_sequence_number: entries: %d, looking for packet_id: %d, mpu_sequence_number: %d",
+//                            atsc3_mmt_mfu_context->packet_id_mpu_timestamp_descriptor_window.atsc3_mmt_mfu_mpu_timestamp_descriptor_v.count,
+//                            packet_id,
+//                            mpu_sequence_number);
 
     atsc3_mmt_mfu_mpu_timestamp_descriptor_t* atsc3_mmt_mfu_mpu_timestamp_descriptor_max = NULL;
 
     for(int i=0; i < atsc3_mmt_mfu_context->packet_id_mpu_timestamp_descriptor_window.atsc3_mmt_mfu_mpu_timestamp_descriptor_v.count; i++) {
         atsc3_mmt_mfu_mpu_timestamp_descriptor_t* atsc3_mmt_mfu_mpu_timestamp_descriptor = atsc3_mmt_mfu_context->packet_id_mpu_timestamp_descriptor_window.atsc3_mmt_mfu_mpu_timestamp_descriptor_v.data[i];
         if(atsc3_mmt_mfu_mpu_timestamp_descriptor->packet_id == packet_id && atsc3_mmt_mfu_mpu_timestamp_descriptor->mpu_sequence_number == mpu_sequence_number) {
-                __MMT_CONTEXT_MPU_DEBUG("atsc3_get_mpu_timestamp_from_packet_id_mpu_sequence_number: retuning matching: %lu, looking for packet_id: %d, mpu_sequence_number: %d",
-                                        atsc3_mmt_mfu_mpu_timestamp_descriptor->mpu_presentation_time_as_us_value,
-                                        packet_id,
-                                        mpu_sequence_number);
+//                __MMT_CONTEXT_MPU_DEBUG("atsc3_get_mpu_timestamp_from_packet_id_mpu_sequence_number: retuning matching: %lu, looking for packet_id: %d, mpu_sequence_number: %d",
+//                                        atsc3_mmt_mfu_mpu_timestamp_descriptor->mpu_presentation_time_as_us_value,
+//                                        packet_id,
+//                                        mpu_sequence_number);
                 return atsc3_mmt_mfu_mpu_timestamp_descriptor;
         }
     }
@@ -280,7 +292,7 @@ atsc3_mmt_mfu_context_t* atsc3_mmt_mfu_context_new() {
 	atsc3_mmt_mfu_context->__internal__atsc3_mmt_signalling_information_on_packet_id_with_mpu_timestamp_descriptor = &__internal__atsc3_mmt_signalling_information_on_packet_id_with_mpu_timestamp_descriptor;
 
 	//helper methods
-	atsc3_mmt_mfu_context->get_mpu_timestamp_from_packet_id_mpu_sequence_number         = &atsc3_get_mpu_timestamp_from_packet_id_mpu_sequence_number_with_last_failsafe;
+	atsc3_mmt_mfu_context->get_mpu_timestamp_from_packet_id_mpu_sequence_number         = atsc3_get_mpu_timestamp_from_packet_id_mpu_sequence_number; //&atsc3_get_mpu_timestamp_from_packet_id_mpu_sequence_number_with_last_failsafe;
 
 	//MPU related callbacks
 	atsc3_mmt_mfu_context->atsc3_mmt_mpu_on_sequence_number_change 						= &atsc3_mmt_mpu_on_sequence_number_change_noop;
@@ -305,6 +317,9 @@ atsc3_mmt_mfu_context_t* atsc3_mmt_mfu_context_new() {
 	atsc3_mmt_mfu_context->atsc3_mmt_mpu_mfu_on_sample_corrupt 	= &atsc3_mmt_mpu_mfu_on_sample_corrupt_noop;
 	atsc3_mmt_mfu_context->atsc3_mmt_mpu_mfu_on_sample_missing 	= &atsc3_mmt_mpu_mfu_on_sample_missing_noop;
     atsc3_mmt_mfu_context->atsc3_mmt_mpu_mfu_on_sample_corrupt_mmthsample_header = &atsc3_mmt_mpu_mfu_on_sample_corrupt_mmthsample_header_noop;
+
+    //movie fragment related callbacks, as a last resort
+    atsc3_mmt_mfu_context->atsc3_mmt_mpu_on_sequence_movie_fragment_metadata_present = &atsc3_mmt_mpu_on_sequence_movie_fragment_metadata_present_noop;
 
 	return atsc3_mmt_mfu_context;
 }
@@ -489,7 +504,6 @@ void mmtp_mfu_rebuild_from_packet_id_mpu_sequence_number(atsc3_mmt_mfu_context_t
         //process mpu_metadata, don't send incomplete payloads for init box (e.g. isnt FI==0x00 or endns in 0x03)
         if (mmtp_mpu_init_packet_to_rebuild->mpu_fragment_type == 0x0) {
             //mark this DU as completed for purging at the end of this method
-            mmtp_mpu_init_packet_to_rebuild->mfu_reassembly_performed = true;
 
             if (!mmtp_mpu_init_packet_to_rebuild->du_mpu_metadata_block) {
                 __MMT_CONTEXT_MPU_WARN(
@@ -515,6 +529,8 @@ void mmtp_mfu_rebuild_from_packet_id_mpu_sequence_number(atsc3_mmt_mfu_context_t
 
             //one (or more) DU
             if (mmtp_mpu_init_packet_to_rebuild->mpu_fragmentation_indicator == 0x00) {
+                mmtp_mpu_init_packet_to_rebuild->mfu_reassembly_performed = true;
+
                 block_t *du_mpu_metadata_block_duplicated_for_context_callback_invocation = block_Duplicate(
                         mmtp_mpu_init_packet_to_rebuild->du_mpu_metadata_block);
                 atsc3_mmt_mfu_context->atsc3_mmt_mpu_on_sequence_mpu_metadata_present(
@@ -525,6 +541,8 @@ void mmtp_mfu_rebuild_from_packet_id_mpu_sequence_number(atsc3_mmt_mfu_context_t
             } else if (mmtp_mpu_init_packet_to_rebuild->mpu_fragmentation_indicator == 0x03) {
                 if (du_mpu_metadata_block_rebuilt != NULL &&
                     mmtp_mpu_init_packet_to_rebuild->du_mpu_metadata_block) {
+                    mmtp_mpu_init_packet_to_rebuild->mfu_reassembly_performed = true;
+
                     __MMT_CONTEXT_MPU_DEBUG(
                             "mmtp_mfu_rebuild_from_packet_id_mpu_sequence_number: Appending MPU Metadata, i: %u, psn: %u, with %u:%u and packet_id: %u, mpu_sequence_number: %u, fragment_indicator: %u",
                             i, mmtp_mpu_init_packet_to_rebuild->packet_sequence_number,
@@ -578,6 +596,7 @@ void mmtp_mfu_rebuild_from_packet_id_mpu_sequence_number(atsc3_mmt_mfu_context_t
         }
     }
 
+
     //make sure our DU for this is set to i_pos == p_size, so we can opportunisticly alloc and make sure block_AppendFull works properly
     //jjustman-2019-10-24: todo - fix me! mmtp_mpu_packet_to_rebuild->du_mfu_block->i_pos = mmtp_mpu_packet_to_rebuild->du_mfu_block->p_size;
 
@@ -613,15 +632,15 @@ void mmtp_mfu_rebuild_from_packet_id_mpu_sequence_number(atsc3_mmt_mfu_context_t
                 //otherwise, check mpu_fragmentation_indicator...only process if we are marked as fi=0x00 (complete data unit)
                 //let DU rebuild handle any other packets
 
-                __MMT_CONTEXT_MPU_DEBUG("mmtp_mfu_rebuild_from_packet_id_mpu_sequence_number: mpu_fragmentation_indicator==0x00,  du_mfu_block.size: %u, mmthsample_header->length: %u, packet_id: %u, mpu_sequence_number: %u, mmthsample.samplenumber: %u, mmthsample.movie_fragment_sequence_number: %u, mmthsample.length: %u, fragmentation_indicator: %u",
-                                        mmtp_mpu_packet_to_rebuild->du_mfu_block ? mmtp_mpu_packet_to_rebuild->du_mfu_block->p_size : 0,
-                                        mmtp_mpu_packet_to_rebuild->mmthsample_header ? mmtp_mpu_packet_to_rebuild->mmthsample_header->length : 0,
-                                        mmtp_mpu_packet_to_rebuild->mmtp_packet_id,
-                                        mmtp_mpu_packet_to_rebuild->mpu_sequence_number,
-                                        mmtp_mpu_packet_to_rebuild->mmthsample_header->samplenumber,
-                                        mmtp_mpu_packet_to_rebuild->mmthsample_header->movie_fragment_sequence_number,
-                                        mmtp_mpu_packet_to_rebuild->mmthsample_header->length,
-                                        mmtp_mpu_packet_to_rebuild->mpu_fragmentation_indicator);
+//                __MMT_CONTEXT_MPU_DEBUG("mmtp_mfu_rebuild_from_packet_id_mpu_sequence_number: mpu_fragmentation_indicator==0x00,  du_mfu_block.size: %u, mmthsample_header->length: %u, packet_id: %u, mpu_sequence_number: %u, mmthsample.samplenumber: %u, mmthsample.movie_fragment_sequence_number: %u, mmthsample.length: %u, fragmentation_indicator: %u",
+//                                        mmtp_mpu_packet_to_rebuild->du_mfu_block ? mmtp_mpu_packet_to_rebuild->du_mfu_block->p_size : 0,
+//                                        mmtp_mpu_packet_to_rebuild->mmthsample_header ? mmtp_mpu_packet_to_rebuild->mmthsample_header->length : 0,
+//                                        mmtp_mpu_packet_to_rebuild->mmtp_packet_id,
+//                                        mmtp_mpu_packet_to_rebuild->mpu_sequence_number,
+//                                        mmtp_mpu_packet_to_rebuild->mmthsample_header->samplenumber,
+//                                        mmtp_mpu_packet_to_rebuild->mmthsample_header->movie_fragment_sequence_number,
+//                                        mmtp_mpu_packet_to_rebuild->mmthsample_header->length,
+//                                        mmtp_mpu_packet_to_rebuild->mpu_fragmentation_indicator);
 
                 block_Rewind(mmtp_mpu_packet_to_rebuild->du_mfu_block);
                 block_t* du_mfu_block_duplicated_for_context_callback_invocation = block_Duplicate(mmtp_mpu_packet_to_rebuild->du_mfu_block);
@@ -644,9 +663,9 @@ void mmtp_mfu_rebuild_from_packet_id_mpu_sequence_number(atsc3_mmt_mfu_context_t
                     mmtp_mpu_ending_index = j;
                 }
             }
-            //handle force fulsh
+            //handle force flush, <-1
             if(mmtp_mpu_ending_index == -1 && flush_all_fragments) {
-                mmtp_mpu_ending_index = mpu_sequence_number_mmtp_mpu_packet_collection->mmtp_mpu_packet_v.count-1;
+                mmtp_mpu_ending_index = mpu_sequence_number_mmtp_mpu_packet_collection->mmtp_mpu_packet_v.count;
             } else if(mmtp_mpu_ending_index == -1) {
                 continue;
             }
@@ -684,8 +703,8 @@ void mmtp_mfu_rebuild_from_packet_id_mpu_sequence_number(atsc3_mmt_mfu_context_t
                 mmtp_mpu_packet_to_rebuild_from_du->mfu_reassembly_performed = true;
                 mfu_fragment_count_rebuilt++;
 
-                __MMT_CONTEXT_MPU_DEBUG("mmtp_mfu_rebuild_from_packet_id_mpu_sequence_number:\trebuilding from packet_id: %u, mpu_sequence_number: %u, sample_number: %d, fragment: %d, du_mfu_size: %d, offset: %d",
-                        mmtp_mpu_packet_to_rebuild_from_du->mmtp_packet_id, mmtp_mpu_packet_to_rebuild_from_du->mpu_sequence_number, mmtp_mpu_packet_to_rebuild_from_du->sample_number, mmtp_mpu_packet_to_rebuild_from_du->mpu_fragment_counter, mmtp_mpu_packet_to_rebuild_from_du->du_mfu_block->p_size, mmtp_mpu_packet_to_rebuild_from_du->offset);
+//                __MMT_CONTEXT_MPU_DEBUG("mmtp_mfu_rebuild_from_packet_id_mpu_sequence_number:\trebuilding from packet_id: %u, mpu_sequence_number: %u, sample_number: %d, fragment: %d, du_mfu_size: %d, offset: %d",
+//                        mmtp_mpu_packet_to_rebuild_from_du->mmtp_packet_id, mmtp_mpu_packet_to_rebuild_from_du->mpu_sequence_number, mmtp_mpu_packet_to_rebuild_from_du->sample_number, mmtp_mpu_packet_to_rebuild_from_du->mpu_fragment_counter, mmtp_mpu_packet_to_rebuild_from_du->du_mfu_block->p_size, mmtp_mpu_packet_to_rebuild_from_du->offset);
 
                 if(mmtp_mpu_packet_to_rebuild_from_du->mpu_fragmentation_indicator == 0x00 || mmtp_mpu_packet_to_rebuild_from_du->mpu_fragmentation_indicator == 0x01) {
                     mfu_fragment_counter_position = mmtp_mpu_packet_to_rebuild_from_du->mpu_fragment_counter;
@@ -697,8 +716,8 @@ void mmtp_mfu_rebuild_from_packet_id_mpu_sequence_number(atsc3_mmt_mfu_context_t
 
                         //use the original mmthsample_length, only shift the offset of the non-prefixed fragments
                         du_mfu_block_to_rebuild = block_Alloc(mmtp_mpu_packet_to_rebuild_from_du->mmthsample_header->length); //- mfu_mmth_sample_header_size_to_shift_offset);
-                        __MMT_CONTEXT_MPU_DEBUG("mmtp_mfu_rebuild_from_packet_id_mpu_sequence_number:\tblock_alloc\tto\tsize:\t%d\t(mmthsample_header->length),\tmfu_mmth_sample_header_size,\tfrom\tpacket_id:\t%u,\tmpu_sequence_number:\t%u,\tsample_number:\t%d,\tfragment:\t%d,\tdu_mfu_size:\t%d",
-                                mmtp_mpu_packet_to_rebuild_from_du->mmthsample_header->length, mmtp_mpu_packet_to_rebuild_from_du->mmthsample_header->mfu_mmth_sample_header_size, mmtp_mpu_packet_to_rebuild_from_du->mmtp_packet_id, mmtp_mpu_packet_to_rebuild_from_du->mpu_sequence_number, mmtp_mpu_packet_to_rebuild_from_du->sample_number, mmtp_mpu_packet_to_rebuild_from_du->mpu_fragment_counter, mmtp_mpu_packet_to_rebuild_from_du->du_mfu_block->p_size);
+//                        __MMT_CONTEXT_MPU_DEBUG("mmtp_mfu_rebuild_from_packet_id_mpu_sequence_number:\tblock_alloc\tto\tsize:\t%d\t(mmthsample_header->length),\tmfu_mmth_sample_header_size,\tfrom\tpacket_id:\t%u,\tmpu_sequence_number:\t%u,\tsample_number:\t%d,\tfragment:\t%d,\tdu_mfu_size:\t%d",
+//                                mmtp_mpu_packet_to_rebuild_from_du->mmthsample_header->length, mmtp_mpu_packet_to_rebuild_from_du->mmthsample_header->mfu_mmth_sample_header_size, mmtp_mpu_packet_to_rebuild_from_du->mmtp_packet_id, mmtp_mpu_packet_to_rebuild_from_du->mpu_sequence_number, mmtp_mpu_packet_to_rebuild_from_du->sample_number, mmtp_mpu_packet_to_rebuild_from_du->mpu_fragment_counter, mmtp_mpu_packet_to_rebuild_from_du->du_mfu_block->p_size);
 
                         block_AppendFull(du_mfu_block_to_rebuild, mmtp_mpu_packet_to_rebuild_from_du->du_mfu_block);
                     } else {
@@ -715,8 +734,8 @@ void mmtp_mfu_rebuild_from_packet_id_mpu_sequence_number(atsc3_mmt_mfu_context_t
                         //jjustman-2019-10-25 - we can't just append with a pre-allocated block from our mmthsample_header, we will need to offset our proper positions when rebuilding
                         //or develop a more robust missing DU strategy for error concealment
                         if(block_IsAlloc(du_mfu_block_to_rebuild)) {
-                            __MMT_CONTEXT_MPU_DEBUG("mmtp_mfu_rebuild_from_packet_id_mpu_sequence_number:\tblock_AppendFull fragment with IsAlloc, offset: %u, mmth_sample_to_shift: %u, packet_id: %u, mpu_sequence_number: %u, sample_number: %d, block_AppendFull with du_mfu_block_to_rebuild: %p, pos: %d, size: %d, mmtp_mpu_packet_to_rebuild_from_du->du_mfu_block: %p, du_mfu_pos: %d, du_mfu_size: %d, fragment: %d",
-                                                    mmtp_mpu_packet_to_rebuild_from_du->offset, mfu_mmth_sample_header_size_to_shift_offset, mmtp_mpu_packet_to_rebuild_from_du->mmtp_packet_id, mmtp_mpu_packet_to_rebuild_from_du->mpu_sequence_number, mmtp_mpu_packet_to_rebuild_from_du->sample_number, du_mfu_block_to_rebuild, du_mfu_block_to_rebuild->i_pos, du_mfu_block_to_rebuild->p_size, mmtp_mpu_packet_to_rebuild_from_du->du_mfu_block,  mmtp_mpu_packet_to_rebuild_from_du->du_mfu_block->i_pos, mmtp_mpu_packet_to_rebuild_from_du->du_mfu_block->p_size, mmtp_mpu_packet_to_rebuild_from_du->mpu_fragment_counter);
+//                            __MMT_CONTEXT_MPU_DEBUG("mmtp_mfu_rebuild_from_packet_id_mpu_sequence_number:\tblock_AppendFull fragment with IsAlloc, offset: %u, mmth_sample_to_shift: %u, packet_id: %u, mpu_sequence_number: %u, sample_number: %d, block_AppendFull with du_mfu_block_to_rebuild: %p, pos: %d, size: %d, mmtp_mpu_packet_to_rebuild_from_du->du_mfu_block: %p, du_mfu_pos: %d, du_mfu_size: %d, fragment: %d",
+//                                                    mmtp_mpu_packet_to_rebuild_from_du->offset, mfu_mmth_sample_header_size_to_shift_offset, mmtp_mpu_packet_to_rebuild_from_du->mmtp_packet_id, mmtp_mpu_packet_to_rebuild_from_du->mpu_sequence_number, mmtp_mpu_packet_to_rebuild_from_du->sample_number, du_mfu_block_to_rebuild, du_mfu_block_to_rebuild->i_pos, du_mfu_block_to_rebuild->p_size, mmtp_mpu_packet_to_rebuild_from_du->du_mfu_block,  mmtp_mpu_packet_to_rebuild_from_du->du_mfu_block->i_pos, mmtp_mpu_packet_to_rebuild_from_du->du_mfu_block->p_size, mmtp_mpu_packet_to_rebuild_from_du->mpu_fragment_counter);
 
                             //testing, hevc doesn't like large null blocks when its expecting nals...
                             //block_Seek(du_mfu_block_to_rebuild, mmtp_mpu_packet_to_rebuild_from_du->offset - mfu_mmth_sample_header_size_to_shift_offset);
@@ -724,14 +743,14 @@ void mmtp_mfu_rebuild_from_packet_id_mpu_sequence_number(atsc3_mmt_mfu_context_t
                             //so, append as usual, and then trim the tail of the allocation
                             block_AppendFull(du_mfu_block_to_rebuild, mmtp_mpu_packet_to_rebuild_from_du->du_mfu_block);
                         } else {
-                            __MMT_CONTEXT_MPU_DEBUG("mmtp_mfu_rebuild_from_packet_id_mpu_sequence_number:\tblock_AppendFull fragment, packet_id: %u, mpu_sequence_number: %u, sample_number: %d, block_AppendFull with du_mfu_block_to_rebuild: %p, pos: %d, size: %d, mmtp_mpu_packet_to_rebuild_from_du->du_mfu_block: %p, du_mfu_pos: %d, du_mfu_size: %d, fragment: %d",
-                                                    mmtp_mpu_packet_to_rebuild_from_du->mmtp_packet_id, mmtp_mpu_packet_to_rebuild_from_du->mpu_sequence_number, mmtp_mpu_packet_to_rebuild_from_du->sample_number, du_mfu_block_to_rebuild, du_mfu_block_to_rebuild->i_pos, du_mfu_block_to_rebuild->p_size, mmtp_mpu_packet_to_rebuild_from_du->du_mfu_block,  mmtp_mpu_packet_to_rebuild_from_du->du_mfu_block->i_pos, mmtp_mpu_packet_to_rebuild_from_du->du_mfu_block->p_size, mmtp_mpu_packet_to_rebuild_from_du->mpu_fragment_counter);
+//                            __MMT_CONTEXT_MPU_DEBUG("mmtp_mfu_rebuild_from_packet_id_mpu_sequence_number:\tblock_AppendFull fragment, packet_id: %u, mpu_sequence_number: %u, sample_number: %d, block_AppendFull with du_mfu_block_to_rebuild: %p, pos: %d, size: %d, mmtp_mpu_packet_to_rebuild_from_du->du_mfu_block: %p, du_mfu_pos: %d, du_mfu_size: %d, fragment: %d",
+//                                                    mmtp_mpu_packet_to_rebuild_from_du->mmtp_packet_id, mmtp_mpu_packet_to_rebuild_from_du->mpu_sequence_number, mmtp_mpu_packet_to_rebuild_from_du->sample_number, du_mfu_block_to_rebuild, du_mfu_block_to_rebuild->i_pos, du_mfu_block_to_rebuild->p_size, mmtp_mpu_packet_to_rebuild_from_du->du_mfu_block,  mmtp_mpu_packet_to_rebuild_from_du->du_mfu_block->i_pos, mmtp_mpu_packet_to_rebuild_from_du->du_mfu_block->p_size, mmtp_mpu_packet_to_rebuild_from_du->mpu_fragment_counter);
 
                             block_AppendFull(du_mfu_block_to_rebuild, mmtp_mpu_packet_to_rebuild_from_du->du_mfu_block);
                         }
 
-                        __MMT_CONTEXT_MPU_DEBUG("mmtp_mfu_rebuild_from_packet_id_mpu_sequence_number:\tafter block_appendFull: packet_id: %u, mpu_sequence_number: %u, sample_number: %d, offset: %d, du_mfu_block_to_rebuild: %p, pos: %d, size: %d",
-                                                mmtp_mpu_packet_to_rebuild_from_du->mmtp_packet_id, mmtp_mpu_packet_to_rebuild_from_du->mpu_sequence_number, mmtp_mpu_packet_to_rebuild_from_du->sample_number, mmtp_mpu_packet_to_rebuild_from_du->offset, du_mfu_block_to_rebuild, du_mfu_block_to_rebuild->i_pos, du_mfu_block_to_rebuild->p_size);
+//                        __MMT_CONTEXT_MPU_DEBUG("mmtp_mfu_rebuild_from_packet_id_mpu_sequence_number:\tafter block_appendFull: packet_id: %u, mpu_sequence_number: %u, sample_number: %d, offset: %d, du_mfu_block_to_rebuild: %p, pos: %d, size: %d",
+//                                                mmtp_mpu_packet_to_rebuild_from_du->mmtp_packet_id, mmtp_mpu_packet_to_rebuild_from_du->mpu_sequence_number, mmtp_mpu_packet_to_rebuild_from_du->sample_number, mmtp_mpu_packet_to_rebuild_from_du->offset, du_mfu_block_to_rebuild, du_mfu_block_to_rebuild->i_pos, du_mfu_block_to_rebuild->p_size);
 
                     }
                 }
@@ -745,27 +764,137 @@ void mmtp_mfu_rebuild_from_packet_id_mpu_sequence_number(atsc3_mmt_mfu_context_t
             if(du_mfu_block_to_rebuild) {
                 //if we were from alloc, trim off the null tail from i_ptr
                 if(block_IsAlloc(du_mfu_block_to_rebuild)) {
-                    du_mfu_block_to_rebuild->p_size = du_mfu_block_to_rebuild->i_pos;
+                    if(du_mfu_block_to_rebuild->i_pos > du_mfu_block_to_rebuild->p_size) {
+                        //this is bad
+                        assert(false);
+                    } else {
+                        du_mfu_block_to_rebuild->p_size = du_mfu_block_to_rebuild->i_pos;
+                    }
                 }
                 if (mfu_fragment_counter_mmthsample_header_start) {
                     if (mfu_fragment_counter_mmthsample_header_start - (mfu_fragment_count_rebuilt - 1) == 0) {
                         atsc3_mmt_mfu_context->atsc3_mmt_mpu_mfu_on_sample_complete(mmtp_mpu_packet_to_rebuild->mmtp_packet_id, mmtp_mpu_packet_to_rebuild->mpu_sequence_number, mmtp_mpu_packet_to_rebuild->sample_number, du_mfu_block_to_rebuild, mfu_fragment_count_rebuilt);
-                        __MMT_CONTEXT_MPU_DEBUG("mmtp_mfu_rebuild_from_packet_id_mpu_sequence_number MFU DU with MMTHSample, packet_id: %u, mpu_sequence_number: %u, building emission: sample_number: %u, fragment_counter: %u, psn: %u, flow with %u:%u, fi: %u, du_mfu_block_to_rebuild: %p, ->p_size: %u, mfu_fragment_counter_mmthsample_header_start: %d, mfu_fragment_count_rebuilt: %d",
-                                mmtp_mpu_packet_to_rebuild->mmtp_packet_id, mmtp_mpu_packet_to_rebuild->mpu_sequence_number, mmtp_mpu_packet_to_rebuild->sample_number, mmtp_mpu_packet_to_rebuild->mpu_fragment_counter, mmtp_mpu_packet_to_rebuild->packet_sequence_number, atsc3_mmt_mfu_context->udp_flow->dst_ip_addr, atsc3_mmt_mfu_context->udp_flow->dst_port, mmtp_mpu_packet_to_rebuild->mpu_fragmentation_indicator, du_mfu_block_to_rebuild, du_mfu_block_to_rebuild ? du_mfu_block_to_rebuild->p_size : 0, mfu_fragment_counter_mmthsample_header_start, mfu_fragment_count_rebuilt);
+//                        __MMT_CONTEXT_MPU_DEBUG("mmtp_mfu_rebuild_from_packet_id_mpu_sequence_number MFU DU with MMTHSample, packet_id: %u, mpu_sequence_number: %u, building emission: sample_number: %u, fragment_counter: %u, psn: %u, flow with %u:%u, fi: %u, du_mfu_block_to_rebuild: %p, ->p_size: %u, mfu_fragment_counter_mmthsample_header_start: %d, mfu_fragment_count_rebuilt: %d",
+//                                mmtp_mpu_packet_to_rebuild->mmtp_packet_id, mmtp_mpu_packet_to_rebuild->mpu_sequence_number, mmtp_mpu_packet_to_rebuild->sample_number, mmtp_mpu_packet_to_rebuild->mpu_fragment_counter, mmtp_mpu_packet_to_rebuild->packet_sequence_number, atsc3_mmt_mfu_context->udp_flow->dst_ip_addr, atsc3_mmt_mfu_context->udp_flow->dst_port, mmtp_mpu_packet_to_rebuild->mpu_fragmentation_indicator, du_mfu_block_to_rebuild, du_mfu_block_to_rebuild ? du_mfu_block_to_rebuild->p_size : 0, mfu_fragment_counter_mmthsample_header_start, mfu_fragment_count_rebuilt);
                     } else {
                         atsc3_mmt_mfu_context->atsc3_mmt_mpu_mfu_on_sample_corrupt(mmtp_mpu_packet_to_rebuild->mmtp_packet_id, mmtp_mpu_packet_to_rebuild->mpu_sequence_number, mmtp_mpu_packet_to_rebuild->sample_number, du_mfu_block_to_rebuild, mfu_fragment_counter_mmthsample_header_start, mfu_fragment_count_rebuilt);
-                        __MMT_CONTEXT_MPU_DEBUG("mmtp_mfu_rebuild_from_packet_id_mpu_sequence_number MFU DU with corrupt payload, packet_id: %u, mpu_sequence_number: %u, building emission: sample_number: %u, fragment_counter: %u, psn: %u, flow with %u:%u, fi: %u,  du_mfu_block_to_rebuild: %p, du_mfu_block_to_rebuild->p_size: %u, mfu_fragment_counter_mmthsample_header_start: %d, mfu_fragment_count_rebuilt: %d", mmtp_mpu_packet_to_rebuild->mmtp_packet_id, mmtp_mpu_packet_to_rebuild->mpu_sequence_number, mmtp_mpu_packet_to_rebuild->sample_number, mmtp_mpu_packet_to_rebuild->mpu_fragment_counter, mmtp_mpu_packet_to_rebuild->packet_sequence_number, atsc3_mmt_mfu_context->udp_flow->dst_ip_addr, atsc3_mmt_mfu_context->udp_flow->dst_port, mmtp_mpu_packet_to_rebuild->mpu_fragmentation_indicator, du_mfu_block_to_rebuild, du_mfu_block_to_rebuild ? du_mfu_block_to_rebuild->p_size : 0, mfu_fragment_counter_mmthsample_header_start, mfu_fragment_count_rebuilt);
+                        __MMT_CONTEXT_MPU_WARN("mmtp_mfu_rebuild_from_packet_id_mpu_sequence_number MFU DU with corrupt payload, packet_id: %u, mpu_sequence_number: %u, building emission: sample_number: %u, fragment_counter: %u, psn: %u, flow with %u:%u, fi: %u,  du_mfu_block_to_rebuild: %p, du_mfu_block_to_rebuild->p_size: %u, mfu_fragment_counter_mmthsample_header_start: %d, mfu_fragment_count_rebuilt: %d", mmtp_mpu_packet_to_rebuild->mmtp_packet_id, mmtp_mpu_packet_to_rebuild->mpu_sequence_number, mmtp_mpu_packet_to_rebuild->sample_number, mmtp_mpu_packet_to_rebuild->mpu_fragment_counter, mmtp_mpu_packet_to_rebuild->packet_sequence_number, atsc3_mmt_mfu_context->udp_flow->dst_ip_addr, atsc3_mmt_mfu_context->udp_flow->dst_port, mmtp_mpu_packet_to_rebuild->mpu_fragmentation_indicator, du_mfu_block_to_rebuild, du_mfu_block_to_rebuild ? du_mfu_block_to_rebuild->p_size : 0, mfu_fragment_counter_mmthsample_header_start, mfu_fragment_count_rebuilt);
                     }
                 } else {
                     atsc3_mmt_mfu_context->atsc3_mmt_mpu_mfu_on_sample_corrupt_mmthsample_header( mmtp_mpu_packet_to_rebuild->mmtp_packet_id, mmtp_mpu_packet_to_rebuild->mpu_sequence_number, mmtp_mpu_packet_to_rebuild->sample_number, du_mfu_block_to_rebuild, mfu_fragment_counter_missing_mmthsample_header_start, mfu_fragment_count_rebuilt);
                     __MMT_CONTEXT_MPU_DEBUG("mmtp_mfu_rebuild_from_packet_id_mpu_sequence_number MFU DU with missing mmthsample header, packet_id: %u, mpu_sequence_number: %u, building emission: sample_number: %u, fragment_counter: %u, psn: %u, flow with %u:%u, fi: %u, du_mfu_block_to_rebuild: %p, du_mfu_block_to_rebuild->p_size: %u", mmtp_mpu_packet_to_rebuild->mmtp_packet_id, mmtp_mpu_packet_to_rebuild->mpu_sequence_number, mmtp_mpu_packet_to_rebuild->sample_number, mmtp_mpu_packet_to_rebuild->mpu_fragment_counter, mmtp_mpu_packet_to_rebuild->packet_sequence_number, atsc3_mmt_mfu_context->udp_flow->dst_ip_addr, atsc3_mmt_mfu_context->udp_flow->dst_port, mmtp_mpu_packet_to_rebuild->mpu_fragmentation_indicator, du_mfu_block_to_rebuild, du_mfu_block_to_rebuild ? du_mfu_block_to_rebuild->p_size : 0);
                 }
-                __MMT_CONTEXT_MPU_DEBUG("mmtp_mfu_rebuild_from_packet_id_mpu_sequence_number atsc3 block_destroy MFU DU with MMTHSample, packet_id: %u, mpu_sequence_number: %u, building emission: sample_number: %u, fragment_counter: %u, psn: %u, flow with %u:%u, fi: %u, du_mfu_block_to_rebuild: %p, du_mfu_block_to_rebuild->p_size: %u", mmtp_mpu_packet_to_rebuild->mmtp_packet_id, mmtp_mpu_packet_to_rebuild->mpu_sequence_number, mmtp_mpu_packet_to_rebuild->sample_number, mmtp_mpu_packet_to_rebuild->mpu_fragment_counter, mmtp_mpu_packet_to_rebuild->packet_sequence_number, atsc3_mmt_mfu_context->udp_flow->dst_ip_addr, atsc3_mmt_mfu_context->udp_flow->dst_port, mmtp_mpu_packet_to_rebuild->mpu_fragmentation_indicator, du_mfu_block_to_rebuild, du_mfu_block_to_rebuild ? du_mfu_block_to_rebuild->p_size : 0);
+//                __MMT_CONTEXT_MPU_DEBUG("mmtp_mfu_rebuild_from_packet_id_mpu_sequence_number atsc3 block_destroy MFU DU with MMTHSample, packet_id: %u, mpu_sequence_number: %u, building emission: sample_number: %u, fragment_counter: %u, psn: %u, flow with %u:%u, fi: %u, du_mfu_block_to_rebuild: %p, du_mfu_block_to_rebuild->p_size: %u", mmtp_mpu_packet_to_rebuild->mmtp_packet_id, mmtp_mpu_packet_to_rebuild->mpu_sequence_number, mmtp_mpu_packet_to_rebuild->sample_number, mmtp_mpu_packet_to_rebuild->mpu_fragment_counter, mmtp_mpu_packet_to_rebuild->packet_sequence_number, atsc3_mmt_mfu_context->udp_flow->dst_ip_addr, atsc3_mmt_mfu_context->udp_flow->dst_port, mmtp_mpu_packet_to_rebuild->mpu_fragmentation_indicator, du_mfu_block_to_rebuild, du_mfu_block_to_rebuild ? du_mfu_block_to_rebuild->p_size : 0);
                 block_Destroy(&du_mfu_block_to_rebuild);
             }
 
             //iterate our parent loop forward
             i = mmtp_mpu_ending_index;
+        }
+    }
+
+    //jjustman-2019-10-29 - in the spirit of OOO MFU, process the movie fragment metadata as a last resort to extract the sample duration until mmt_atsc3_message support is functional
+    block_t* du_movie_fragment_block_rebuilt;
+
+    for(int i=0; i < mpu_sequence_number_mmtp_mpu_packet_collection->mmtp_mpu_packet_v.count; i++) {
+        mmtp_mpu_packet_t *mmtp_mpu_init_packet_to_rebuild = mpu_sequence_number_mmtp_mpu_packet_collection->mmtp_mpu_packet_v.data[i];
+
+        if (mmtp_mpu_init_packet_to_rebuild->mfu_reassembly_performed) {
+            continue;
+        }
+
+        //process movie fragment metadata, don't send incomplete payloads for moof box (e.g. isnt FI==0x00 or endns in 0x03)
+        if (mmtp_mpu_init_packet_to_rebuild->mpu_fragment_type == 0x1) {
+            //mark this DU as completed for purging at the end of this method
+
+            if (!mmtp_mpu_init_packet_to_rebuild->du_movie_fragment_block) {
+                __MMT_CONTEXT_MPU_WARN(
+                        "mmtp_mfu_rebuild_from_packet_id_mpu_sequence_number Movie fragment metadata Metadata, missing du_movie_fragment_block i: %u, psn: %u, with %u:%u and packet_id: %u, mpu_sequence_number: %u, fragment_indicator: %u",
+                        i, mmtp_mpu_init_packet_to_rebuild->packet_sequence_number,
+                        atsc3_mmt_mfu_context->udp_flow->dst_ip_addr,
+                        atsc3_mmt_mfu_context->udp_flow->dst_port,
+                        mmtp_mpu_init_packet_to_rebuild->mmtp_packet_id,
+                        mmtp_mpu_init_packet_to_rebuild->mpu_sequence_number,
+                        mmtp_mpu_init_packet_to_rebuild->mpu_fragmentation_indicator);
+                continue;
+            }
+
+            __MMT_CONTEXT_MPU_DEBUG(
+                    "mmtp_mfu_rebuild_from_packet_id_mpu_sequence_number: Movie fragment metadata: moof: packet_id: %u, mpu_sequence_number: %u, mmtp_mpu_packet.samplenumber: %u, mmtp_mpu_packet.mpu_fragment_counter: %u, mmtp_mpu_packet.offset: %u, du_mpu_metadata_block packet size: %u, fragmentation_indicator: %u",
+                    mmtp_mpu_init_packet_to_rebuild->mmtp_packet_id,
+                    mmtp_mpu_init_packet_to_rebuild->mpu_sequence_number,
+                    mmtp_mpu_init_packet_to_rebuild->sample_number,
+                    mmtp_mpu_init_packet_to_rebuild->mpu_fragment_counter,
+                    mmtp_mpu_init_packet_to_rebuild->offset,
+                    mmtp_mpu_init_packet_to_rebuild->du_movie_fragment_block ? mmtp_mpu_init_packet_to_rebuild->du_movie_fragment_block->p_size : 0,
+                    mmtp_mpu_init_packet_to_rebuild->mpu_fragmentation_indicator);
+
+            //one (or more) DU
+            if (mmtp_mpu_init_packet_to_rebuild->mpu_fragmentation_indicator == 0x00) {
+                mmtp_mpu_init_packet_to_rebuild->mfu_reassembly_performed = true;
+
+                block_t *du_movie_fragment_block_duplicated_for_context_callback_invocation = block_Duplicate(
+                        mmtp_mpu_init_packet_to_rebuild->du_movie_fragment_block);
+                atsc3_mmt_mfu_context->atsc3_mmt_mpu_on_sequence_movie_fragment_metadata_present(
+                        mmtp_mpu_init_packet_to_rebuild->mmtp_packet_id,
+                        mmtp_mpu_init_packet_to_rebuild->mpu_sequence_number,
+                        du_movie_fragment_block_duplicated_for_context_callback_invocation);
+                block_Destroy(&du_movie_fragment_block_duplicated_for_context_callback_invocation);
+            } else if (mmtp_mpu_init_packet_to_rebuild->mpu_fragmentation_indicator == 0x03) {
+                if (du_movie_fragment_block_rebuilt != NULL &&
+                    mmtp_mpu_init_packet_to_rebuild->du_movie_fragment_block) {
+                    mmtp_mpu_init_packet_to_rebuild->mfu_reassembly_performed = true;
+
+                    __MMT_CONTEXT_MPU_DEBUG(
+                            "mmtp_mfu_rebuild_from_packet_id_mpu_sequence_number: Appending movie fragment metadata, i: %u, psn: %u, with %u:%u and packet_id: %u, mpu_sequence_number: %u, fragment_indicator: %u",
+                            i, mmtp_mpu_init_packet_to_rebuild->packet_sequence_number,
+                            atsc3_mmt_mfu_context->udp_flow->dst_ip_addr,
+                            atsc3_mmt_mfu_context->udp_flow->dst_port,
+                            mmtp_mpu_init_packet_to_rebuild->mmtp_packet_id,
+                            mmtp_mpu_init_packet_to_rebuild->mpu_sequence_number,
+                            mmtp_mpu_init_packet_to_rebuild->mpu_fragmentation_indicator);
+
+                    block_Merge(du_movie_fragment_block_rebuilt,
+                                mmtp_mpu_init_packet_to_rebuild->du_movie_fragment_block);
+                    block_Rewind(du_movie_fragment_block_rebuilt);
+                    atsc3_mmt_mfu_context->atsc3_mmt_mpu_on_sequence_mpu_metadata_present(
+                            mmtp_mpu_init_packet_to_rebuild->mmtp_packet_id,
+                            mmtp_mpu_init_packet_to_rebuild->mpu_sequence_number,
+                            du_movie_fragment_block_rebuilt);
+                    block_Destroy(&du_movie_fragment_block_rebuilt);
+                } else {
+                    __MMT_CONTEXT_MPU_WARN(
+                            "mmtp_mfu_rebuild_from_packet_id_mpu_sequence_number Missing proceeding movie fragment metadata i: %u, psn: %u, with %u:%u and packet_id: %u, mpu_sequence_number: %u, fragment_indicator: %u",
+                            i, mmtp_mpu_init_packet_to_rebuild->packet_sequence_number,
+                            atsc3_mmt_mfu_context->udp_flow->dst_ip_addr,
+                            atsc3_mmt_mfu_context->udp_flow->dst_port,
+                            mmtp_mpu_init_packet_to_rebuild->mmtp_packet_id,
+                            mmtp_mpu_init_packet_to_rebuild->mpu_sequence_number,
+                            mmtp_mpu_init_packet_to_rebuild->mpu_fragmentation_indicator);
+                }
+            } else {
+                if (mmtp_mpu_init_packet_to_rebuild->mpu_fragmentation_indicator == 0x01) {
+                    if (du_movie_fragment_block_rebuilt) {
+                        block_Destroy(&du_movie_fragment_block_rebuilt);
+                    }
+                    du_movie_fragment_block_rebuilt = block_Duplicate(
+                            mmtp_mpu_init_packet_to_rebuild->du_movie_fragment_block);
+                } else if (mmtp_mpu_init_packet_to_rebuild->mpu_fragmentation_indicator == 0x02) {
+                    if (du_movie_fragment_block_rebuilt) {
+                        block_Merge(du_movie_fragment_block_rebuilt,
+                                    mmtp_mpu_init_packet_to_rebuild->du_movie_fragment_block);
+                    } else {
+                        __MMT_CONTEXT_MPU_WARN(
+                                "mmtp_mfu_rebuild_from_packet_id_mpu_sequence_number Missing initial movie fragment m]etadata i: %u, psn: %u, with %u:%u and packet_id: %u, mpu_sequence_number: %u, fragment_indicator: %u",
+                                i, mmtp_mpu_init_packet_to_rebuild->packet_sequence_number,
+                                atsc3_mmt_mfu_context->udp_flow->dst_ip_addr,
+                                atsc3_mmt_mfu_context->udp_flow->dst_port,
+                                mmtp_mpu_init_packet_to_rebuild->mmtp_packet_id,
+                                mmtp_mpu_init_packet_to_rebuild->mpu_sequence_number,
+                                mmtp_mpu_init_packet_to_rebuild->mpu_fragmentation_indicator);
+                    }
+                }
+            }
         }
     }
 }
@@ -1071,10 +1200,72 @@ void mmt_signalling_message_process_with_context(udp_packet_t *udp_packet,
 				}
 			}
 		} else {
-			__MMSM_INFO("mmt_signalling_message_update_lls_sls_mmt_session: Ignoring signal: 0x%x", mmt_signalling_message_header_and_payload->message_header.MESSAGE_id_type);
+			__MMSM_TRACE("mmt_signalling_message_update_lls_sls_mmt_session: Ignoring signal: 0x%x", mmt_signalling_message_header_and_payload->message_header.MESSAGE_id_type);
 		}
 	}
+}
 
+/*
+ *
+ * from iso 14496-12
+ *
+ aligned(8) class TrackRunBox extends FullBox(‘trun’, version, tr_flags) {
+    unsigned int(32)  sample_count;
+    // the following are optional fields
+    signed int(32) data_offset;
+    unsigned int(32)  first_sample_flags;
+    // all fields in the following array are optional
+    {
+      unsigned int(32)  sample_duration;
+      unsigned int(32)  sample_size;
+      unsigned int(32)  sample_flags
+      if (version == 0)
+         { unsigned int(32) sample_composition_time_offset }
+      else
+         { signed int(32) sample_composition_time_offset }
+    }[ sample_count ]
+}
+
+aligned(8) class FullBox(unsigned int(32) boxtype, unsigned int(8) v, bit(24) f) extends Box(boxtype) {
+    unsigned int(8)   version = v;
+    bit(24)           flags = f;
+}
+*/
+
+uint32_t atsc3_mmt_movie_fragment_extract_sample_duration(block_t* mmt_movie_fragment_metadata) {
+    __MMSM_TRACE("atsc3_mmt_movie_fragment_extract_sample_duration: extracting from %p, length: %d", mmt_movie_fragment_metadata, mmt_movie_fragment_metadata->p_size);
+
+    uint32_t box_size = 0;
+    uint32_t sample_count = 0;
+    uint32_t sample_duration_us = 0;
+
+    block_Rewind(mmt_movie_fragment_metadata);
+
+    uint8_t* ptr = block_Get(mmt_movie_fragment_metadata);
+    ptr += 4;
+    for(int i=4; i < mmt_movie_fragment_metadata->p_size-8 && (sample_duration_us == 0); i++) {
+
+        if(ptr[0] == 't' && ptr[1] == 'r' && ptr[2] == 'u' && ptr[3] == 'n') {
+            //read our box length from ptr-4
+            box_size = ntohl(*(uint32_t*)(ptr-4));
+            ptr += 4; //iterate past our box name
+            ptr += 4; //iterate past fullbox format
+            sample_count = ntohl(*(uint32_t*)(ptr));
+            ptr += 4 + 4; //move past data_offset and first_sample_flags
+
+            if(sample_count > 0) {
+                //iterate internal samples is not needed with MFU mode, so bail
+                sample_duration_us = ntohl(*(uint32_t*)(ptr));
+                continue;
+            }
+        }
+
+        ptr++;
+    }
+
+    __MMSM_TRACE("atsc3_mmt_movie_fragment_extract_sample_duration: returning sample_duration_us as %d", sample_duration_us);
+
+    return sample_duration_us;
 }
 
 

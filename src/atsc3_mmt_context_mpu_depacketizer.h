@@ -27,16 +27,7 @@ typedef void (*atsc3_mmt_mpu_on_sequence_number_change_f)(uint16_t packet_id, ui
 
 typedef void (*atsc3_mmt_mpu_on_sequence_mpu_metadata_present_f)(uint16_t packet_id, uint32_t mpu_sequence_number, block_t* mmt_mpu_metadata);
 
-//
-////we will return mmtp_mpu_packet if it was successfully persisted, otherwise it will be null'd out
-//mmtp_mpu_packet_t* mmtp_process_from_payload(mmtp_mpu_packet_t* mmtp_mpu_packet,
-//                               mmtp_flow_t *mmtp_flow,
-//                               lls_slt_monitor_t* lls_slt_monitor,
-//                               udp_packet_t *udp_packet,
-//                               udp_flow_latest_mpu_sequence_number_container_t* udp_flow_latest_mpu_sequence_number_container,
-//                               lls_sls_mmt_session_t* matching_lls_slt_mmt_session);
-
-//void atsc3_mmt_reconstitution_free_from_udp_flow(mmtp_sub_flow_vector_t* mmtp_sub_flow_vector, udp_flow_t* udp_flow, udp_flow_packet_id_mpu_sequence_tuple_t* last_udp_flow_packet_id_mpu_sequence_tuple);
+typedef void (*atsc3_mmt_mpu_on_sequence_movie_fragment_metadata_present_f)(uint16_t packet_id, uint32_t mpu_sequence_number, block_t* mmt_movie_fragment_metadata);
 
 #ifdef __cplusplus
 }

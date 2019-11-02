@@ -220,10 +220,10 @@ void atsc3_phy_mmt_player_bridge_process_packet_phy(block_t* packet) {
             }
         }
 
-        __INFO("Checking lls_sls_mmt_monitor: %p,", lls_sls_mmt_monitor);
+        __TRACE("Checking lls_sls_mmt_monitor: %p,", lls_sls_mmt_monitor);
 
         if(lls_sls_mmt_monitor && lls_sls_mmt_monitor->lls_mmt_session) {
-            __INFO("Checking lls_sls_mmt_monitor->lls_mmt_session: %p,", lls_sls_mmt_monitor->lls_mmt_session);
+            __TRACE("Checking lls_sls_mmt_monitor->lls_mmt_session: %p,", lls_sls_mmt_monitor->lls_mmt_session);
         }
 
         //recheck video_packet_id/audio_packet_id
@@ -233,7 +233,7 @@ void atsc3_phy_mmt_player_bridge_process_packet_phy(block_t* packet) {
                 lls_sls_mmt_monitor->video_packet_id = lls_sls_mmt_session->video_packet_id;
                 lls_sls_mmt_monitor->audio_packet_id = lls_sls_mmt_session->audio_packet_id;
 				lls_sls_mmt_monitor->stpp_packet_id  = lls_sls_mmt_session->stpp_packet_id;
-				__INFO("setting audio_packet_id/video_packet_id/stpp: %u, %u, %u",
+                __TRACE("setting audio_packet_id/video_packet_id/stpp: %u, %u, %u",
 						lls_sls_mmt_monitor->audio_packet_id,
 						lls_sls_mmt_monitor->video_packet_id,
 						lls_sls_mmt_monitor->stpp_packet_id);
@@ -306,7 +306,7 @@ void atsc3_phy_mmt_player_bridge_process_packet_phy(block_t* packet) {
             if(parsed_count) {
                 mmt_signalling_message_dump(mmtp_signalling_packet);
 
-                __INFO("process_packet: calling mmt_signalling_message_process_with_context with udp_packet: %p, mmtp_signalling_packet: %p, atsc3_mmt_mfu_context: %p,",
+                __TRACE("process_packet: calling mmt_signalling_message_process_with_context with udp_packet: %p, mmtp_signalling_packet: %p, atsc3_mmt_mfu_context: %p,",
                         udp_packet,
                         mmtp_signalling_packet,
                         atsc3_mmt_mfu_context);
@@ -338,7 +338,7 @@ void atsc3_phy_mmt_player_bridge_process_packet_phy(block_t* packet) {
                 //add in flows 				lls_sls_mmt_session_t* lls_sls_mmt_session = lls_slt_mmt_session_find_from_service_id(lls_slt_monitor, lls_sls_mmt_monitor->lls_mmt_session->service_id);
 
                 if(lls_sls_mmt_monitor && lls_sls_mmt_monitor->lls_mmt_session && matching_lls_sls_mmt_session) {
-                	__INFO("mmt_signalling_information: from atsc3 service_id: %u, patching: seting audio_packet_id/video_packet_id/stpp_packet_id: %u, %u, %u",
+                	__TRACE("mmt_signalling_information: from atsc3 service_id: %u, patching: seting audio_packet_id/video_packet_id/stpp_packet_id: %u, %u, %u",
                 								matching_lls_sls_mmt_session->atsc3_lls_slt_service->service_id,
                 								matching_lls_sls_mmt_session->audio_packet_id,
                 								matching_lls_sls_mmt_session->video_packet_id,
@@ -432,6 +432,11 @@ void atsc3_mmt_mpu_on_sequence_mpu_metadata_present_ndk(uint16_t packet_id, uint
 
         //we will get either avc1 (avcC) NAL or hevc (hvcC) nals back
         if (video_decoder_configuration_record) {
+            //set width/height to player
+            if(video_decoder_configuration_record->width && video_decoder_configuration_record->height) {
+                at3DrvIntf_ptr->atsc3_setVideoWidthHeightFromTrak(video_decoder_configuration_record->width, video_decoder_configuration_record->height);
+            }
+
             if (video_decoder_configuration_record->hevc_decoder_configuration_record) {
 
                 block_t* hevc_nals_combined = atsc3_hevc_extract_extradata_nals_combined_ffmpegImpl(video_decoder_configuration_record->hevc_decoder_configuration_record->box_data_original);
@@ -516,9 +521,14 @@ void atsc3_mmt_mpu_mfu_on_sample_complete_ndk(uint16_t packet_id, uint32_t mpu_s
     //in as many MMT flows as possible
 
     atsc3_mmt_mfu_mpu_timestamp_descriptor_t* atsc3_mmt_mfu_mpu_timestamp_descriptor = atsc3_mmt_mfu_context->get_mpu_timestamp_from_packet_id_mpu_sequence_number(atsc3_mmt_mfu_context, packet_id, mpu_sequence_number);
-    if(!atsc3_mmt_mfu_mpu_timestamp_descriptor) {
-        __ERROR("atsc3_mmt_mpu_mfu_on_sample_complete_ndk: mmt_mfu_sample: %p: returned null atsc3_mmt_mfu_mpu_timestamp_descriptor for packet_id: %d, mpu_sequence_number: %d", mmt_mfu_sample, packet_id, mpu_sequence_number);
-        return;
+
+    uint64_t mpu_timestamp_descriptor = 0;
+    if(atsc3_mmt_mfu_mpu_timestamp_descriptor) {
+        mpu_timestamp_descriptor = atsc3_mmt_mfu_mpu_timestamp_descriptor->mpu_presentation_time_as_us_value;
+    } else {
+        __WARN("atsc3_mmt_mpu_mfu_on_sample_complete_ndk: mmt_mfu_sample: %p: returned null atsc3_mmt_mfu_mpu_timestamp_descriptor for packet_id: %d, mpu_sequence_number: %d", mmt_mfu_sample, packet_id, mpu_sequence_number);
+        //__ERROR("atsc3_mmt_mpu_mfu_on_sample_complete_ndk: mmt_mfu_sample: %p: returned null atsc3_mmt_mfu_mpu_timestamp_descriptor for packet_id: %d, mpu_sequence_number: %d", mmt_mfu_sample, packet_id, mpu_sequence_number);
+        //return;
     }
 
     if(__INTERNAL_LAST_NAL_PACKET_TODO_FIXME && packet_id == global_video_packet_id) {
@@ -526,9 +536,9 @@ void atsc3_mmt_mpu_mfu_on_sample_complete_ndk(uint16_t packet_id, uint32_t mpu_s
         uint8_t *block_ptr = block_Get(mmt_mfu_sample_rbsp);
         uint32_t block_len = block_Len(mmt_mfu_sample_rbsp);
 
-        at3DrvIntf_ptr->LogMsgF(
-                "atsc3_mmt_mpu_mfu_on_sample_complete_ndk: NAL, packet_id: %d, mpu_sequence_number: %d, block: %p, len: %d, pts_us: %lu",
-                packet_id, mpu_sequence_number, block_ptr, block_len, atsc3_mmt_mfu_mpu_timestamp_descriptor->mpu_presentation_time_as_us_value);
+//        at3DrvIntf_ptr->LogMsgF(
+//                "atsc3_mmt_mpu_mfu_on_sample_complete_ndk: NAL, packet_id: %d, mpu_sequence_number: %d, block: %p, len: %d, pts_us: %lu",
+//                packet_id, mpu_sequence_number, block_ptr, block_len, mpu_timestamp_descriptor);
 
         if((global_mfu_proccessed_count++ % 600) == 0) {
             at3DrvIntf_ptr->LogMsgF("atsc3_mmt_mpu_mfu_on_sample_complete_ndk: total mfu count: %d, packet_id: %d, mpu: %d, sample: %d, orig len: %d, len: %d",
@@ -537,7 +547,7 @@ void atsc3_mmt_mpu_mfu_on_sample_complete_ndk(uint16_t packet_id, uint32_t mpu_s
                                     block_len);
 
         }
-        at3DrvIntf_ptr->atsc3_onMfuPacket(packet_id, mpu_sequence_number, sample_number, block_ptr, block_len, atsc3_mmt_mfu_mpu_timestamp_descriptor->mpu_presentation_time_as_us_value, mfu_fragment_count_rebuilt);
+        at3DrvIntf_ptr->atsc3_onMfuPacket(packet_id, mpu_sequence_number, sample_number, block_ptr, block_len, mpu_timestamp_descriptor, mfu_fragment_count_rebuilt);
 
         block_Release(&mmt_mfu_sample_rbsp);
     } else {
@@ -551,44 +561,150 @@ void atsc3_mmt_mpu_mfu_on_sample_complete_ndk(uint16_t packet_id, uint32_t mpu_s
                     packet_id, mpu_sequence_number, block_ptr, block_len, block_ptr[0], block_ptr[1], block_ptr[2], block_ptr[3]);
         }
         //audio and stpp don't need NAL start codes
-        at3DrvIntf_ptr->atsc3_onMfuPacket(packet_id, mpu_sequence_number, sample_number, block_ptr, block_len, atsc3_mmt_mfu_mpu_timestamp_descriptor->mpu_presentation_time_as_us_value, mfu_fragment_count_rebuilt);
+        at3DrvIntf_ptr->atsc3_onMfuPacket(packet_id, mpu_sequence_number, sample_number, block_ptr, block_len, mpu_timestamp_descriptor, mfu_fragment_count_rebuilt);
     }
 }
 
+/*
+ * jjustman-2019-10-29 - todo: fixme:
+ *
+ *
+    --------- beginning of crash
+2019-10-29 06:32:01.833 20009-20089/org.ngbp.libatsc3 A/libc: Fatal signal 11 (SIGSEGV), code 1 (SEGV_MAPERR), fault addr 0x2a81800000 in tid 20089 (Thread-3769), pid 20009 (g.ngbp.libatsc3)
+2019-10-29 06:32:01.869 20009-20009/org.ngbp.libatsc3 D/main:     -> lines trimmed to 37
+2019-10-29 06:32:01.889 3494-20121/? D/NvOsDebugPrintf: NvRmPrivFlush: NvRmChannelSubmit failed (err = 196623, SyncPointIdx = 32, SyncPointValue = 0)
+2019-10-29 06:32:01.889 20009-20125/org.ngbp.libatsc3 D/VideoDecoder.onInputBufferAvailable: video_global_input_count:	buf idx: 1	1332	mpu:	7754	sample:	39	mpu_presentation_timestamp:	1344142853	videoRenderTs	1345410761	size	8091
+2019-10-29 06:32:01.890 20009-20125/org.ngbp.libatsc3 D/VideoDecoder.onInputBufferAvailable: video_global_input_count:	buf idx: 2	1333	mpu:	7754	sample:	40	mpu_presentation_timestamp:	1344142853	videoRenderTs	1345444127	size	7353
+2019-10-29 06:32:01.904 20140-20140/? E/DEBUG: failed to readlink /proc/20089/fd/148: No such file or directory
+2019-10-29 06:32:01.905 20009-20125/org.ngbp.libatsc3 D/VideoDecoder.onInputBufferAvailable: video_global_input_count:	buf idx: 9	1334	mpu:	7754	sample:	41	mpu_presentation_timestamp:	1344142853	videoRenderTs	1345477493	size	49590
+2019-10-29 06:32:01.905 3494-20121/? D/NvOsDebugPrintf: NvRmPrivFlush: NvRmChannelSubmit failed (err = 196623, SyncPointIdx = 32, SyncPointValue = 0)
+2019-10-29 06:32:01.906 20009-20125/org.ngbp.libatsc3 D/VideoDecoder.onInputBufferAvailable: video_global_input_count:	buf idx: 3	1335	mpu:	7754	sample:	42	mpu_presentation_timestamp:	1344142853	videoRenderTs	1345510859	size	15812
+2019-10-29 06:32:01.907 20009-20125/org.ngbp.libatsc3 D/VideoDecoder.onInputBufferAvailable: video_global_input_count:	buf idx: 0	1336	mpu:	7754	sample:	43	mpu_presentation_timestamp:	1344142853	videoRenderTs	1345544225	size	7257
+2019-10-29 06:32:01.907 20009-20125/org.ngbp.libatsc3 D/VideoDecoder.onInputBufferAvailable: video_global_input_count:	buf idx: 5	1337	mpu:	7754	sample:	44	mpu_presentation_timestamp:	1344142853	videoRenderTs	1345577591	size	7153
+2019-10-29 06:32:01.908 20009-20125/org.ngbp.libatsc3 D/VideoDecoder.onInputBufferAvailable: video_global_input_count:	buf idx: 6	1338	mpu:	7754	sample:	45	mpu_presentation_timestamp:	1344142853	videoRenderTs	1345610957	size	59180
+2019-10-29 06:32:01.955 20140-20140/? I/crash_dump64: obtaining output fd from tombstoned, type: kDebuggerdTombstone
+2019-10-29 06:32:01.955 3500-3500/? I//system/bin/tombstoned: received crash request for pid 20089
+2019-10-29 06:32:01.957 20140-20140/? I/crash_dump64: performing dump of process 20009 (target tid = 20089)
+2019-10-29 06:32:01.966 20140-20140/? A/DEBUG: *** *** *** *** *** *** *** *** *** *** *** *** *** *** *** ***
+2019-10-29 06:32:01.967 20140-20140/? A/DEBUG: Build fingerprint: 'NVIDIA/darcy/darcy:9/PPR1.180610.011/4086637_1697.8089:user/release-keys'
+2019-10-29 06:32:01.967 20140-20140/? A/DEBUG: Revision: '0'
+2019-10-29 06:32:01.967 20140-20140/? A/DEBUG: ABI: 'arm64'
+2019-10-29 06:32:01.967 20140-20140/? A/DEBUG: pid: 20009, tid: 20089, name: Thread-3769  >>> org.ngbp.libatsc3 <<<
+2019-10-29 06:32:01.967 20140-20140/? A/DEBUG: signal 11 (SIGSEGV), code 1 (SEGV_MAPERR), fault addr 0x2a81800000
+2019-10-29 06:32:01.967 20140-20140/? A/DEBUG:     x0  000000007a12500c  x1  0000002a817fffd2  x2  000000000005535a  x3  000000007a139600
+2019-10-29 06:32:01.967 20140-20140/? A/DEBUG:     x4  0000002a8185537c  x5  000000007a18e9ea  x6  0000000000000000  x7  0000000000000000
+2019-10-29 06:32:01.967 20140-20140/? A/DEBUG:     x8  0000000000000000  x9  0000000000000000  x10 0000000000000000  x11 0000000000000000
+2019-10-29 06:32:01.967 20140-20140/? A/DEBUG:     x12 0000000000000000  x13 0000000000000000  x14 0000000000000000  x15 0000000000000000
+2019-10-29 06:32:01.967 20140-20140/? A/DEBUG:     x16 0000002a5a6dbce0  x17 00000029d21e1d00  x18 0000000000000000  x19 0000002a7d720980
+2019-10-29 06:32:01.967 20140-20140/? A/DEBUG:     x20 0000002a733f8218  x21 0000000000000000  x22 000000007a12500c  x23 00000000000699de
+2019-10-29 06:32:01.967 20140-20140/? A/DEBUG:     x24 0000000000000000  x25 0000000000000000  x26 0000002a817eb99e  x27 0000000000000000
+2019-10-29 06:32:01.967 20140-20140/? A/DEBUG:     x28 00000000000699de  x29 0000002a733f81f0
+2019-10-29 06:32:01.967 20140-20140/? A/DEBUG:     sp  0000002a733f81b0  lr  0000002a5a6b0bdc  pc  00000029d21e1c8c
+2019-10-29 06:32:01.979 20009-20125/org.ngbp.libatsc3 D/VideoDecoder.onInputBufferAvailable: video_global_input_count:	buf idx: 7	1339	mpu:	7754	sample:	46	mpu_presentation_timestamp:	1344142853	videoRenderTs	1345644323	size	15368
+2019-10-29 06:32:01.979 3494-20121/? D/NvOsDebugPrintf: NvRmPrivFlush: NvRmChannelSubmit failed (err = 196623, SyncPointIdx = 32, SyncPointValue = 0)
+2019-10-29 06:32:01.980 20009-20125/org.ngbp.libatsc3 D/VideoDecoder.onInputBufferAvailable: video_global_input_count:	buf idx: 8	1340	mpu:	7754	sample:	47	mpu_presentation_timestamp:	1344142853	videoRenderTs	1345677689	size	6577
+2019-10-29 06:32:01.988 3494-20121/? D/NvOsDebugPrintf: NvRmPrivFlush: NvRmChannelSubmit failed (err = 196623, SyncPointIdx = 32, SyncPointValue = 0)
+2019-10-29 06:32:02.004 3494-20121/? D/NvOsDebugPrintf: NvRmPrivFlush: NvRmChannelSubmit failed (err = 196623, SyncPointIdx = 32, SyncPointValue = 0)
+2019-10-29 06:32:02.005 20009-20125/org.ngbp.libatsc3 D/VideoDecoder.onInputBufferAvailable: video_global_input_count:	buf idx: 4	1341	mpu:	7754	sample:	48	mpu_presentation_timestamp:	1344142853	videoRenderTs	1345711055	size	6696
+2019-10-29 06:32:02.020 3494-20121/? D/NvOsDebugPrintf: NvRmPrivFlush: NvRmChannelSubmit failed (err = 196623, SyncPointIdx = 32, SyncPointValue = 0)
+2019-10-29 06:32:02.033 20140-20140/? A/DEBUG: backtrace:
+2019-10-29 06:32:02.033 20140-20140/? A/DEBUG:     #00 pc 000000000001dc8c  /system/lib64/libc.so (memcpy+284)
+2019-10-29 06:32:02.033 20140-20140/? A/DEBUG:     #01 pc 0000000000034bd8  /system/lib64/libjavacore.so (Memory_memmove(_JNIEnv*, _jclass*, _jobject*, int, _jobject*, int, long)+204)
+2019-10-29 06:32:02.033 20140-20140/? A/DEBUG:     #02 pc 000000000007d0c0  /system/framework/arm64/boot-core-libart.oat (offset 0x78000) (libcore.io.Memory.memmove+224)
+2019-10-29 06:32:02.033 20140-20140/? A/DEBUG:     #03 pc 00000000000b7260  /dev/ashmem/dalvik-jit-code-cache (deleted) (java.nio.ByteBuffer.put+560)
+2019-10-29 06:32:02.033 20140-20140/? A/DEBUG:     #04 pc 00000000000bebd8  /dev/ashmem/dalvik-jit-code-cache (deleted) (org.ngbp.libatsc3.media.sync.mmt.MfuByteBufferFragment.<init>+168)
+2019-10-29 06:32:02.033 20140-20140/? A/DEBUG:     #05 pc 0000000000554b88  /system/lib64/libart.so (art_quick_invoke_stub+584)
+2019-10-29 06:32:02.033 20140-20140/? A/DEBUG:     #06 pc 00000000000cf6c8  /system/lib64/libart.so (art::ArtMethod::Invoke(art::Thread*, unsigned int*, unsigned int, art::JValue*, char const*)+200)
+2019-10-29 06:32:02.033 20140-20140/? A/DEBUG:     #07 pc 000000000027f450  /system/lib64/libart.so (art::interpreter::ArtInterpreterToCompiledCodeBridge(art::Thread*, art::ArtMethod*, art::ShadowFrame*, unsigned short, art::JValue*)+344)
+2019-10-29 06:32:02.033 20140-20140/? A/DEBUG:     #08 pc 000000000027a57c  /system/lib64/libart.so (bool art::interpreter::DoCall<true, false>(art::ArtMethod*, art::Thread*, art::ShadowFrame&, art::Instruction const*, unsigned short, art::JValue*)+748)
+2019-10-29 06:32:02.033 20140-20140/? A/DEBUG:     #09 pc 0000000000527470  /system/lib64/libart.so (MterpInvokeDirectRange+244)
+2019-10-29 06:32:02.033 20140-20140/? A/DEBUG:     #10 pc 0000000000547614  /system/lib64/libart.so (ExecuteMterpImpl+15252)
+2019-10-29 06:32:02.033 20140-20140/? A/DEBUG:     #11 pc 0000000000015af2  /dev/ashmem/dalvik-classes2.dex extracted in memory from /data/app/org.ngbp.libatsc3-rjIE7XWVP_4ievVjm-S-Lg==/base.apk!classes2.dex (deleted) (com.lowasis.at3drv.At3DrvIntf.atsc3_onMfuPacketCorrupt+46)
+2019-10-29 06:32:02.033 20140-20140/? A/DEBUG:     #12 pc 000000000025315c  /system/lib64/libart.so (_ZN3art11interpreterL7ExecuteEPNS_6ThreadERKNS_20CodeItemDataAccessorERNS_11ShadowFrameENS_6JValueEb.llvm.442261360+488)
+2019-10-29 06:32:02.033 20140-20140/? A/DEBUG:     #13 pc 0000000000515190  /system/lib64/libart.so (artQuickToInterpreterBridge+1020)
+2019-10-29 06:32:02.033 20140-20140/? A/DEBUG:     #14 pc 000000000055dcfc  /system/lib64/libart.so (art_quick_to_interpreter_bridge+92)
+2019-10-29 06:32:02.033 20140-20140/? A/DEBUG:     #15 pc 0000000000554b88  /system/lib64/libart.so (art_quick_invoke_stub+584)
+2019-10-29 06:32:02.033 20140-20140/? A/DEBUG:     #16 pc 00000000000cf6c8  /system/lib64/libart.so (art::ArtMethod::Invoke(art::Thread*, unsigned int*, unsigned int, art::JValue*, char const*)+200)
+2019-10-29 06:32:02.033 20140-20140/? A/DEBUG:     #17 pc 000000000045ca2c  /system/lib64/libart.so (art::(anonymous namespace)::InvokeWithArgArray(art::ScopedObjectAccessAlreadyRunnable const&, art::ArtMethod*, art::(anonymous namespace)::ArgArray*, art::JValue*, char const*)+104)
+2019-10-29 06:32:02.033 20140-20140/? A/DEBUG:     #18 pc 000000000045ddc0  /system/lib64/libart.so (art::InvokeVirtualOrInterfaceWithVarArgs(art::ScopedObjectAccessAlreadyRunnable const&, _jobject*, _jmethodID*, std::__va_list)+440)
+2019-10-29 06:32:02.033 20140-20140/? A/DEBUG:     #19 pc 00000000003398a8  /system/lib64/libart.so (art::JNI::CallIntMethodV(_JNIEnv*, _jobject*, _jmethodID*, std::__va_list)+656)
+2019-10-29 06:32:02.033 20140-20140/? A/DEBUG:     #20 pc 00000000000ffbc4  /system/lib64/libart.so (art::(anonymous namespace)::CheckJNI::CallMethodV(char const*, _JNIEnv*, _jobject*, _jclass*, _jmethodID*, std::__va_list, art::Primitive::Type, art::InvokeType)+2184)
+2019-10-29 06:32:02.033 20140-20140/? A/DEBUG:     #21 pc 00000000000ecb14  /system/lib64/libart.so (art::(anonymous namespace)::CheckJNI::CallIntMethodV(_JNIEnv*, _jobject*, _jmethodID*, std::__va_list)+92)
+2019-10-29 06:32:02.033 20140-20140/? A/DEBUG:     #22 pc 000000000002a6dc  /data/app/org.ngbp.libatsc3-rjIE7XWVP_4ievVjm-S-Lg==/lib/arm64/libAt3DrvIntf.so (_JNIEnv::CallIntMethod(_jobject*, _jmethodID*, ...)+208)
+2019-10-29 06:32:02.033 20140-20140/? A/DEBUG:     #23 pc 000000000002a8e0  /data/app/org.ngbp.libatsc3-rjIE7XWVP_4ievVjm-S-Lg==/lib/arm64/libAt3DrvIntf.so (At3DrvIntf::atsc3_onMfuPacketCorrupt(unsigned short, unsigned int, unsigned int, unsigned char*, unsigned int, unsigned long, unsigned int, unsigned int)+272)
+2019-10-29 06:32:02.033 20140-20140/? A/DEBUG:     #24 pc 00000000000bc5f8  /data/app/org.ngbp.libatsc3-rjIE7XWVP_4ievVjm-S-Lg==/lib/arm64/libAt3DrvIntf.so (atsc3_mmt_mpu_mfu_on_sample_corrupt_ndk(unsigned short, unsigned int, unsigned int, atsc3_block*, unsigned int, unsigned int)+1008)
+2019-10-29 06:32:02.033 20140-20140/? A/DEBUG:     #25 pc 0000000000080c50  /data/app/org.ngbp.libatsc3-rjIE7XWVP_4ievVjm-S-Lg==/lib/arm64/libAt3DrvIntf.so (mmtp_mfu_rebuild_from_packet_id_mpu_sequence_number+4044)
+2019-10-29 06:32:02.033 20140-20140/? A/DEBUG:     #26 pc 000000000007fa14  /data/app/org.ngbp.libatsc3-rjIE7XWVP_4ievVjm-S-Lg==/lib/arm64/libAt3DrvIntf.so (mmtp_mfu_process_from_payload_with_context+1792)
+2019-10-29 06:32:02.034 20140-20140/? A/DEBUG:     #27 pc 00000000000ba3d0  /data/app/org.ngbp.libatsc3-rjIE7XWVP_4ievVjm-S-Lg==/lib/arm64/libAt3DrvIntf.so (atsc3_phy_mmt_player_bridge_process_packet_phy(atsc3_block*)+1796)
+2019-10-29 06:32:02.036 20140-20140/? A/DEBUG:     #28 pc 0000000000028574  /data/app/org.ngbp.libatsc3-rjIE7XWVP_4ievVjm-S-Lg==/lib/arm64/libAt3DrvIntf.so (At3DrvIntf::RxCallbackJJ(S_RX_DATA*)+172)
+2019-10-29 06:32:02.036 20140-20140/? A/DEBUG:     #29 pc 00000000000284b8  /data/app/org.ngbp.libatsc3-rjIE7XWVP_4ievVjm-S-Lg==/lib/arm64/libAt3DrvIntf.so (At3DrvIntf::RxCallbackStaticJJ(S_RX_DATA*, unsigned long)+36)
+2019-10-29 06:32:02.036 20140-20140/? A/DEBUG:     #30 pc 0000000000063840  /data/app/org.ngbp.libatsc3-rjIE7XWVP_4ievVjm-S-Lg==/lib/arm64/libat3drv.so (non-virtual thunk to CAt3MediaReceiver::OnRxIpData(unsigned char*, int, S_ALP_PLP_CTX*)+196)
+2019-10-29 06:32:02.036 20140-20140/? A/DEBUG:     #31 pc 000000000008f710  /data/app/org.ngbp.libatsc3-rjIE7XWVP_4ievVjm-S-Lg==/lib/arm64/libat3drv.so (CAt3ParserALP::_ParseRawAlp(S_ALP_RAW_INFO*, int)+1204)
+2019-10-29 06:32:02.036 20140-20140/? A/DEBUG:     #32 pc 0000000000090cf4  /data/app/org.ngbp.libatsc3-rjIE7XWVP_4ievVjm-S-Lg==/lib/arm64/libat3drv.so (CAt3ParserALP::ReceiveRawAlpData(unsigned char*, int, S_ALP_RAW_INFO*)+1768)
+2019-10-29 06:32:02.036 20140-20140/? A/DEBUG:     #33 pc 0000000000063240  /data/app/org.ngbp.libatsc3-rjIE7XWVP_4ievVjm-S-Lg==/lib/arm64/libat3drv.so (CAt3MediaReceiver::OnRxBbpData(unsigned char*, S_BBP_CONTAINER*, S_BBP_HDR*)+168)
+2019-10-29 06:32:02.036 20140-20140/? A/DEBUG:     #34 pc 00000000000844ac  /data/app/org.ngbp.libatsc3-rjIE7XWVP_4ievVjm-S-Lg==/lib/arm64/libat3drv.so (CAt3ParserBBP::_ProcessOnePayload(unsigned char*, S_BBP_CONTAINER*)+2152)
+2019-10-29 06:32:02.036 20140-20140/? A/DEBUG:     #35 pc 0000000000085c28  /data/app/org.ngbp.libatsc3-rjIE7XWVP_4ievVjm-S-Lg==/lib/arm64/libat3drv.so (CAt3ParserBBP::ProcessRawData(S_BBP_RAW_INFO*)+2816)
+2019-10-29 06:32:02.036 20140-20140/? A/DEBUG:     #36 pc 0000000000061be8  /data/app/org.ngbp.libatsc3-rjIE7XWVP_4ievVjm-S-Lg==/lib/arm64/libat3drv.so (CAt3Device::_ReceiveBbpCntPacket()+272)
+2019-10-29 06:32:02.036 20140-20140/? A/DEBUG:     #37 pc 000000000004d938  /data/app/org.ngbp.libatsc3-rjIE7XWVP_4ievVjm-S-Lg==/lib/arm64/libat3drv.so (AT3DRV_HandleRxData+924)
+2019-10-29 06:32:02.036 20140-20140/? A/DEBUG:     #38 pc 0000000000029814  /data/app/org.ngbp.libatsc3-rjIE7XWVP_4ievVjm-S-Lg==/lib/arm64/libAt3DrvIntf.so (At3DrvIntf::RxThread()+560)
+2019-10-29 06:32:02.036 20140-20140/? A/DEBUG:     #39 pc 0000000000032fe8  /data/app/org.ngbp.libatsc3-rjIE7XWVP_4ievVjm-S-Lg==/lib/arm64/libAt3DrvIntf.so
+2019-10-29 06:32:02.036 20140-20140/? A/DEBUG:     #40 pc 0000000000032f80  /data/app/org.ngbp.libatsc3-rjIE7XWVP_4ievVjm-S-Lg==/lib/arm64/libAt3DrvIntf.so
+2019-10-29 06:32:02.036 20140-20140/? A/DEBUG:     #41 pc 0000000000032ee0  /data/app/org.ngbp.libatsc3-rjIE7XWVP_4ievVjm-S-Lg==/lib/arm64/libAt3DrvIntf.so
+2019-10-29 06:32:02.036 20140-20140/? A/DEBUG:     #42 pc 0000000000032834  /data/app/org.ngbp.libatsc3-rjIE7XWVP_4ievVjm-S-Lg==/lib/arm64/libAt3DrvIntf.so
+2019-10-29 06:32:02.036 20140-20140/? A/DEBUG:     #43 pc 0000000000081978  /system/lib64/libc.so (__pthread_start(void*)+36)
+2019-10-29 06:32:02.036 20140-20140/? A/DEBUG:     #44 pc 00000000000234b8  /system/lib64/libc.so (__start_thread+68)
+2019-10-29 06:32:02.120 3494-20121/? I/chatty: uid=1046(mediacodec) HwBinder:3494_2 identical 3 lines
+ */
 
 void atsc3_mmt_mpu_mfu_on_sample_corrupt_ndk(uint16_t packet_id, uint32_t mpu_sequence_number, uint32_t sample_number, block_t* mmt_mfu_sample, uint32_t mfu_fragment_count_expected, uint32_t mfu_fragment_count_rebuilt) {
-    //    void onMfuPacket(bool is_video, uint8_t* buffer, uint32_t bufferLen, uint64_t presentationUs);
-//    at3DrvIntf_ptr->LogMsgF("atsc3_mmt_mpu_mfu_on_sample_complete_ndk: packet_id: %u, mpu_sequence_number: %u, sample_number: %u, size: %u, last_mpu_timestamp: %llu",
-//                packet_id,
-//                mpu_sequence_number,
-//                sample_number,
-//                mmt_mfu_sample->p_size,
-//                last_mpu_timestamp);
+    //    at3DrvIntf_ptr->LogMsgF("atsc3_mmt_mpu_mfu_on_sample_corrupt_ndk: packet_id: %u, mpu_sequence_number: %u, sample_number: %u, size: %u, last_mpu_timestamp: %llu",
+    //                packet_id,
+    //                mpu_sequence_number,
+    //                sample_number,
+    //                mmt_mfu_sample->p_size,
+    //                last_mpu_timestamp);
 
     //cant process MFU's without the NAL... we should ALWAYS listen for at least mpu metadata
     //in as many MMT flows as possible
 
     atsc3_mmt_mfu_mpu_timestamp_descriptor_t* atsc3_mmt_mfu_mpu_timestamp_descriptor = atsc3_mmt_mfu_context->get_mpu_timestamp_from_packet_id_mpu_sequence_number(atsc3_mmt_mfu_context, packet_id, mpu_sequence_number);
-    if(!atsc3_mmt_mfu_mpu_timestamp_descriptor) {
-        __ERROR("atsc3_mmt_mpu_mfu_on_sample_corrupt_ndk: mmt_mfu_sample: %p: returned null atsc3_mmt_mfu_mpu_timestamp_descriptor for packet_id: %d, mpu_sequence_number: %d", mmt_mfu_sample, packet_id, mpu_sequence_number);
+    uint64_t mpu_timestamp_descriptor = 0;
+    if(atsc3_mmt_mfu_mpu_timestamp_descriptor) {
+        mpu_timestamp_descriptor = atsc3_mmt_mfu_mpu_timestamp_descriptor->mpu_presentation_time_as_us_value;
+    } else {
+        __WARN("atsc3_mmt_mpu_mfu_on_sample_corrupt_ndk: mmt_mfu_sample: %p: returned null atsc3_mmt_mfu_mpu_timestamp_descriptor for packet_id: %d, mpu_sequence_number: %d", mmt_mfu_sample, packet_id, mpu_sequence_number);
+    }
+
+    if(!block_Len(mmt_mfu_sample)) {
+        __WARN("atsc3_mmt_mpu_mfu_on_sample_corrupt_ndk: mmt_mfu_sample: %p: block len is 0 for packet_id: %d, mpu_sequence_number: %d", mmt_mfu_sample, packet_id, mpu_sequence_number);
         return;
     }
 
     if(__INTERNAL_LAST_NAL_PACKET_TODO_FIXME && packet_id == global_video_packet_id) {
         block_t *mmt_mfu_sample_rbsp = atsc3_hevc_extract_mp4toannexb_filter_ffmpegImpl(mmt_mfu_sample, __INTERNAL_LAST_NAL_PACKET_TODO_FIXME);
-        if(mmt_mfu_sample_rbsp) {
+        if(mmt_mfu_sample_rbsp && block_Len(mmt_mfu_sample_rbsp)) {
             uint8_t *block_ptr = block_Get(mmt_mfu_sample_rbsp);
             uint32_t block_len = block_Len(mmt_mfu_sample_rbsp);
 
-            if((global_mfu_proccessed_count++ % 600) == 0) {
-                at3DrvIntf_ptr->LogMsgF("atsc3_mmt_mpu_mfu_on_sample_complete_ndk: total mfu count: %d, packet_id: %d, mpu: %d, sample: %d, orig len: %d, len: %d",
+            //if((global_mfu_proccessed_count++ % 600) == 0) {
+                __INFO("atsc3_mmt_mpu_mfu_on_sample_corrupt_ndk: total mfu count: %d, packet_id: %d, mpu: %d, sample: %d, sample ptr: %p, orig len: %d (i_pos: %d, p_size: %d), nal ptr: %p, len: %d (i_pos: %d, p_size: %d)",
                                         global_mfu_proccessed_count,
-                                        packet_id, mpu_sequence_number, sample_number, block_Len(mmt_mfu_sample),
-                                        block_len);
+                                        packet_id,
+                                        mpu_sequence_number,
+                                        sample_number,
+                                        mmt_mfu_sample,
+                       mmt_mfu_sample->i_pos,
 
-            }
+                       mmt_mfu_sample->p_size,
+                                        block_Len(mmt_mfu_sample),
+                                        block_ptr,
+                                        block_len,
+                       mmt_mfu_sample_rbsp->i_pos,
+                                        mmt_mfu_sample_rbsp->p_size);
 
-            at3DrvIntf_ptr->atsc3_onMfuPacketCorrupt(packet_id, mpu_sequence_number, sample_number, block_ptr, block_len, atsc3_mmt_mfu_mpu_timestamp_descriptor->mpu_presentation_time_as_us_value, mfu_fragment_count_expected, mfu_fragment_count_rebuilt);
+            //}
+
+            at3DrvIntf_ptr->atsc3_onMfuPacketCorrupt(packet_id, mpu_sequence_number, sample_number, block_ptr, block_len, mpu_timestamp_descriptor, mfu_fragment_count_expected, mfu_fragment_count_rebuilt);
 
             block_Release(&mmt_mfu_sample_rbsp);
          } else {
@@ -599,12 +715,10 @@ void atsc3_mmt_mpu_mfu_on_sample_corrupt_ndk(uint16_t packet_id, uint32_t mpu_se
         uint32_t block_len = block_Len(mmt_mfu_sample);
 
         //audio and stpp don't need NAL start codes
-        if(packet_id == 19) {
-            at3DrvIntf_ptr->LogMsgF(
-                    "atsc3_mmt_mpu_mfu_on_sample_corrupt_ndk: non NAL, packet_id: %d, mpu_sequence_number: %d, block: %p, len: %d, char: %c %c %c %c",
-                    packet_id, mpu_sequence_number, block_ptr, block_len, block_ptr[0], block_ptr[1], block_ptr[2], block_ptr[3]);
-        }
-        at3DrvIntf_ptr->atsc3_onMfuPacketCorrupt(packet_id, mpu_sequence_number, sample_number, block_ptr, block_len, atsc3_mmt_mfu_mpu_timestamp_descriptor->mpu_presentation_time_as_us_value, mfu_fragment_count_expected, mfu_fragment_count_rebuilt);
+        __INFO("atsc3_mmt_mpu_mfu_on_sample_corrupt_ndk: non NAL, packet_id: %d, mpu_sequence_number: %d, sample_number: %d, block: %p, len: %d, char: %c %c %c %c",
+                    packet_id, mpu_sequence_number, sample_number,  block_ptr, block_len, block_ptr[0], block_ptr[1], block_ptr[2], block_ptr[3]);
+
+        at3DrvIntf_ptr->atsc3_onMfuPacketCorrupt(packet_id, mpu_sequence_number, sample_number, block_ptr, block_len, mpu_timestamp_descriptor, mfu_fragment_count_expected, mfu_fragment_count_rebuilt);
     }
 }
 
@@ -619,9 +733,11 @@ void atsc3_mmt_mpu_mfu_on_sample_corrupt_mmthsample_header_ndk(uint16_t packet_i
 //                last_mpu_timestamp);
 
     atsc3_mmt_mfu_mpu_timestamp_descriptor_t* atsc3_mmt_mfu_mpu_timestamp_descriptor = atsc3_mmt_mfu_context->get_mpu_timestamp_from_packet_id_mpu_sequence_number(atsc3_mmt_mfu_context, packet_id, mpu_sequence_number);
-    if(!atsc3_mmt_mfu_mpu_timestamp_descriptor) {
-        __ERROR("atsc3_mmt_mpu_mfu_on_sample_complete_ndk: mmt_mfu_sample: %p: returned null atsc3_mmt_mfu_mpu_timestamp_descriptor for packet_id: %d, mpu_sequence_number: %d", mmt_mfu_sample, packet_id, mpu_sequence_number);
-        return;
+    uint64_t mpu_timestamp_descriptor = 0;
+    if(atsc3_mmt_mfu_mpu_timestamp_descriptor) {
+        mpu_timestamp_descriptor = atsc3_mmt_mfu_mpu_timestamp_descriptor->mpu_presentation_time_as_us_value;
+    } else {
+        __WARN("atsc3_mmt_mpu_mfu_on_sample_corrupt_mmthsample_header_ndk: mmt_mfu_sample: %p: returned null atsc3_mmt_mfu_mpu_timestamp_descriptor for packet_id: %d, mpu_sequence_number: %d", mmt_mfu_sample, packet_id, mpu_sequence_number);
     }
     //TODO: jjustman-2019-10-23: determine if we can still extract NAL's from this payload...
 
@@ -631,15 +747,23 @@ void atsc3_mmt_mpu_mfu_on_sample_corrupt_mmthsample_header_ndk(uint16_t packet_i
             uint8_t *block_ptr = block_Get(mmt_mfu_sample_rbsp);
             uint32_t block_len = block_Len(mmt_mfu_sample_rbsp);
 
-            if((global_mfu_proccessed_count++ % 600) == 0) {
-                at3DrvIntf_ptr->LogMsgF("atsc3_mmt_mpu_mfu_on_sample_complete_ndk: total mfu count: %d, packet_id: %d, mpu: %d, sample: %d, orig len: %d, len: %d",
+            //if((global_mfu_proccessed_count++ % 600) == 0) {
+            __INFO("atsc3_mmt_mpu_mfu_on_sample_corrupt_mmthsample_header_ndk: total mfu count: %d, packet_id: %d, mpu: %d, sample: %d, sample ptr: %p, orig len: %d (i_pos: %d, p_size: %d), nal ptr: %p, len: %d (i_pos: %d, p_size: %d)",
                                         global_mfu_proccessed_count,
-                                        packet_id, mpu_sequence_number, sample_number, block_Len(mmt_mfu_sample),
-                                        block_len);
+                                        packet_id,
+                                        mpu_sequence_number,
+                                        sample_number,
+                                        mmt_mfu_sample,
+                                        block_Len(mmt_mfu_sample),
+                   mmt_mfu_sample->i_pos,
+                   mmt_mfu_sample->p_size,
+                                        block_ptr,
+                                        block_len,
+                   mmt_mfu_sample_rbsp->i_pos,
+                   mmt_mfu_sample_rbsp->p_size);
+            //}
 
-            }
-
-            at3DrvIntf_ptr->atsc3_onMfuPacketCorruptMmthSampleHeader(packet_id, mpu_sequence_number, sample_number, block_ptr, block_len, atsc3_mmt_mfu_mpu_timestamp_descriptor->mpu_presentation_time_as_us_value, mfu_fragment_count_expected, mfu_fragment_count_rebuilt);
+            at3DrvIntf_ptr->atsc3_onMfuPacketCorruptMmthSampleHeader(packet_id, mpu_sequence_number, sample_number, block_ptr, block_len, mpu_timestamp_descriptor, mfu_fragment_count_expected, mfu_fragment_count_rebuilt);
 
             block_Release(&mmt_mfu_sample_rbsp);
         }
@@ -647,8 +771,11 @@ void atsc3_mmt_mpu_mfu_on_sample_corrupt_mmthsample_header_ndk(uint16_t packet_i
         uint8_t *block_ptr = block_Get(mmt_mfu_sample);
         uint32_t block_len = block_Len(mmt_mfu_sample);
 
+        __INFO("atsc3_mmt_mpu_mfu_on_sample_corrupt_mmthsample_header_ndk: non NAL, packet_id: %d, mpu_sequence_number: %d, sample: %d, block: %p, len: %d, char: %c %c %c %c",
+               packet_id, mpu_sequence_number, sample_number, block_ptr, block_len, block_ptr[0], block_ptr[1], block_ptr[2], block_ptr[3]);
+
         //audio and stpp don't need NAL start codes
-        at3DrvIntf_ptr->atsc3_onMfuPacketCorruptMmthSampleHeader(packet_id, mpu_sequence_number, sample_number, block_ptr, block_len, atsc3_mmt_mfu_mpu_timestamp_descriptor->mpu_presentation_time_as_us_value, mfu_fragment_count_expected, mfu_fragment_count_rebuilt);
+        at3DrvIntf_ptr->atsc3_onMfuPacketCorruptMmthSampleHeader(packet_id, mpu_sequence_number, sample_number, block_ptr, block_len, mpu_timestamp_descriptor, mfu_fragment_count_expected, mfu_fragment_count_rebuilt);
     }
 }
 
@@ -656,10 +783,23 @@ void atsc3_mmt_mpu_mfu_on_sample_missing_ndk(uint16_t packet_id, uint32_t mpu_se
     at3DrvIntf_ptr->atsc3_onMfuSampleMissing(packet_id, mpu_sequence_number, sample_number);
 }
 
+void atsc3_mmt_mpu_on_sequence_movie_fragment_metadata_present_ndk(uint16_t packet_id, uint32_t mpu_sequence_number, block_t* mmt_movie_fragment_metadata) {
+    if(!mmt_movie_fragment_metadata || !mmt_movie_fragment_metadata->p_size) {
+        __WARN("atsc3_mmt_mpu_on_sequence_movie_fragment_metadata_present_ndk: mmt_movie_fragment_metadata: %p: returned null or no length!");
+        return;
+    }
+
+    uint32_t extracted_sample_duration_us = atsc3_mmt_movie_fragment_extract_sample_duration(mmt_movie_fragment_metadata);
+
+    at3DrvIntf_ptr->atsc3_onExtractedSampleDuration(packet_id, mpu_sequence_number, extracted_sample_duration_us);
+}
 
 
 void atsc3_phy_mmt_player_bridge_init(At3DrvIntf* At3DrvIntf_ptr) {
     at3DrvIntf_ptr = At3DrvIntf_ptr;
+
+    //set global logging levels
+    _MMT_CONTEXT_MPU_DEBUG_ENABLED = 0;
 
     lls_slt_monitor = lls_slt_monitor_create();
     //wire up a lls event for SLS table
@@ -667,6 +807,7 @@ void atsc3_phy_mmt_player_bridge_init(At3DrvIntf* At3DrvIntf_ptr) {
 
     mmtp_flow = mmtp_flow_new();
     udp_flow_latest_mpu_sequence_number_container = udp_flow_latest_mpu_sequence_number_container_t_init();
+
 
     //MMT/MFU callback contexts
     atsc3_mmt_mfu_context = atsc3_mmt_mfu_context_new();
@@ -686,6 +827,9 @@ void atsc3_phy_mmt_player_bridge_init(At3DrvIntf* At3DrvIntf_ptr) {
     atsc3_mmt_mfu_context->atsc3_mmt_signalling_information_on_video_packet_id_with_mpu_timestamp_descriptor = &atsc3_mmt_signalling_information_on_video_packet_id_with_mpu_timestamp_descriptor_ndk;
     atsc3_mmt_mfu_context->atsc3_mmt_signalling_information_on_audio_packet_id_with_mpu_timestamp_descriptor = &atsc3_mmt_signalling_information_on_audio_packet_id_with_mpu_timestamp_descriptor_ndk;
     atsc3_mmt_mfu_context->atsc3_mmt_signalling_information_on_stpp_packet_id_with_mpu_timestamp_descriptor  = &atsc3_mmt_signalling_information_on_stpp_packet_id_with_mpu_timestamp_descriptor_ndk;
+
+    //extract out one trun sampleduration for essence timing
+    atsc3_mmt_mfu_context->atsc3_mmt_mpu_on_sequence_movie_fragment_metadata_present = &atsc3_mmt_mpu_on_sequence_movie_fragment_metadata_present_ndk;
 
     at3DrvIntf_ptr->LogMsg("atsc3_phy_mmt_player_bridge_init - completed");
 
