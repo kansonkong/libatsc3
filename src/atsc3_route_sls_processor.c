@@ -33,7 +33,7 @@ void atsc3_route_sls_process_from_alc_packet_and_file(udp_flow_t* udp_flow, alc_
 			goto cleanup;
 		}
 
-		xml_document_t* fdt_xml = xml_open_document(fp);
+		fdt_xml = xml_open_document(fp);
 		if(fdt_xml) {
 			atsc3_fdt_instance_t* atsc3_fdt_instance = atsc3_fdt_instance_parse_from_xml_document(fdt_xml);
 			if(!atsc3_fdt_instance) {
@@ -94,6 +94,11 @@ cleanup:
         mbms_toi_filename = NULL;
     }
     
+    if(fdt_xml) {
+        xml_document_free(fdt_xml, false);
+        fdt_xml = NULL;
+    }
+    
     if(fp) {
         fclose(fp);
         fp = NULL;
@@ -103,9 +108,6 @@ cleanup:
         fp_mbms = NULL;
     }
     
-    if(fdt_xml) {
-        xml_document_free(fdt_xml, true);
-    }
 
     //mbms_toi is a pointer to atsc3_fdt_intstance alloc, so don't try and free it
     

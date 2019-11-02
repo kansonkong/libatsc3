@@ -104,8 +104,11 @@ atsc3_route_mpd_t* atsc3_route_mpd_parse_from_payload(char* payload, char* conte
 
 				}
 			}
+            kvp_collection_free(kvp_collection);
 		}
 	}
+    xml_document_free(xml_document, false);
+    block_Destroy(&mpd_fragment_block);
 	return atsc3_route_mpd;
 }
 
@@ -142,7 +145,8 @@ atsc3_route_mpd_t* atsc3_route_mpd_parse_period(xml_node_t* xml_node, atsc3_rout
 			atsc3_route_mpd_parse_adaption_set(mpd_entry_row_children, atsc3_route_period);
 		}
 	}
-
+    kvp_collection_free(kvp_collection);
+    
 	return atsc3_route_mpd;
 }
 
@@ -170,9 +174,11 @@ atsc3_route_period_t* atsc3_route_mpd_parse_adaption_set(xml_node_t* xml_node, a
 	}
 	if((matching_attribute = kvp_collection_get(kvp_collection,  "maxHeight"))) {
 		atsc3_route_adaptation_set->max_height = atoi(matching_attribute);
+        free(matching_attribute);
 	}
 	if((matching_attribute = kvp_collection_get(kvp_collection,  "maxWidth"))) {
 		atsc3_route_adaptation_set->max_width = atoi(matching_attribute);
+        free(matching_attribute);
 	}
 	if((matching_attribute = kvp_collection_get(kvp_collection,  "mimeType"))) {
 		atsc3_route_adaptation_set->mime_type = matching_attribute;
@@ -182,18 +188,22 @@ atsc3_route_period_t* atsc3_route_mpd_parse_adaption_set(xml_node_t* xml_node, a
 	}
 	if((matching_attribute = kvp_collection_get(kvp_collection,  "min_height"))) {
 		atsc3_route_adaptation_set->min_height = atoi(matching_attribute);
+        free(matching_attribute);
 	}
 	if((matching_attribute = kvp_collection_get(kvp_collection,  "min_width"))) {
 		atsc3_route_adaptation_set->min_width = atoi(matching_attribute);
+        free(matching_attribute);
 	}
 	if((matching_attribute = kvp_collection_get(kvp_collection,  "par"))) {
 		atsc3_route_adaptation_set->par = matching_attribute;
 	}
 	if((matching_attribute = kvp_collection_get(kvp_collection,  "segmentAlignment"))) {
 		atsc3_route_adaptation_set->segment_alignment = strncmp("true", matching_attribute, 4) == 0;
+        free(matching_attribute);
 	}
 	if((matching_attribute = kvp_collection_get(kvp_collection,  "startWithSAP"))) {
 		atsc3_route_adaptation_set->start_with_sap = strncmp("true", matching_attribute, 4) == 0;
+        free(matching_attribute);
 	}
 
 	_ATSC3_ROUTE_MPD_PARSER_DEBUG("doing Role and Representation startNumber (start_number) to: %p",xml_node );
@@ -207,6 +217,8 @@ atsc3_route_period_t* atsc3_route_mpd_parse_adaption_set(xml_node_t* xml_node, a
 			atsc3_route_mpd_parse_representation_set(mpd_entry_row_children, atsc3_route_adaptation_set);
 		}
 	}
+    
+    kvp_collection_free(kvp_collection);
 	return atsc3_route_period;
 }
 
@@ -225,7 +237,7 @@ atsc3_route_adaptation_set_t* atsc3_route_mpd_parse_role_set(xml_node_t* xml_nod
 	if((matching_attribute = kvp_collection_get(kvp_collection,  "schemeIdUri"))) {
 		atsc3_route_adaptation_set->atsc3_route_role.scheme_id_uri = matching_attribute;
 	}
-
+    kvp_collection_free(kvp_collection);
 	return atsc3_route_adaptation_set;
 }
 
@@ -239,10 +251,12 @@ atsc3_route_adaptation_set_t* atsc3_route_mpd_parse_representation_set(xml_node_
 
 	if((matching_attribute = kvp_collection_get(kvp_collection,  "audioSamplingRate"))) {
 		atsc3_route_adaptation_set->atsc3_route_representation.audio_sampling_rate = atoi(matching_attribute);
+        free(matching_attribute);
 	}
 
 	if((matching_attribute = kvp_collection_get(kvp_collection,  "bandwidth"))) {
 		atsc3_route_adaptation_set->atsc3_route_representation.bandwidth = atoi(matching_attribute);
+        free(matching_attribute);
 	}
 
 	if((matching_attribute = kvp_collection_get(kvp_collection,  "codecs"))) {
@@ -251,6 +265,7 @@ atsc3_route_adaptation_set_t* atsc3_route_mpd_parse_representation_set(xml_node_
 
 	if((matching_attribute = kvp_collection_get(kvp_collection,  "id"))) {
 		atsc3_route_adaptation_set->atsc3_route_representation.id = atoi(matching_attribute);
+        free(matching_attribute);
 	}
 
 
@@ -263,6 +278,7 @@ atsc3_route_adaptation_set_t* atsc3_route_mpd_parse_representation_set(xml_node_
 			atsc3_route_mpd_parse_segment_template_set(mpd_entry_row_children, atsc3_route_adaptation_set);
 		}
 	}
+    kvp_collection_free(kvp_collection);
 	return atsc3_route_adaptation_set;
 }
 
@@ -277,8 +293,10 @@ atsc3_route_adaptation_set_t* atsc3_route_mpd_parse_audio_channel_configuration_
 	}
 	if((matching_attribute = kvp_collection_get(kvp_collection, "value"))) {
 		atsc3_route_adaptation_set->atsc3_route_representation.atsc3_route_audio_channel_configuration.value = atoi(matching_attribute); //?
-	}
+        free(matching_attribute);
 
+	}
+    kvp_collection_free(kvp_collection);
 	return atsc3_route_adaptation_set;
 }
 
@@ -302,6 +320,7 @@ atsc3_route_adaptation_set_t* atsc3_route_mpd_parse_segment_template_set(xml_nod
 
 	if((matching_attribute = kvp_collection_get(kvp_collection,  "duration"))) {
 		atsc3_route_adaptation_set->atsc3_route_representation.atsc3_route_segment_template.duration = atoi(matching_attribute);
+        free(matching_attribute);
 	}
 
 	if((matching_attribute = kvp_collection_get(kvp_collection,  "initialization"))) {
@@ -315,15 +334,20 @@ atsc3_route_adaptation_set_t* atsc3_route_mpd_parse_segment_template_set(xml_nod
 
 	if((matching_attribute = kvp_collection_get(kvp_collection,  "presentationTimeOffset"))) {
 		atsc3_route_adaptation_set->atsc3_route_representation.atsc3_route_segment_template.presentation_time_offset = atoi(matching_attribute);
+        free(matching_attribute);
 	}
 
 	if((matching_attribute = kvp_collection_get(kvp_collection,  "startNumber"))) {
-			atsc3_route_adaptation_set->atsc3_route_representation.atsc3_route_segment_template.start_number = atoi(matching_attribute);
+        atsc3_route_adaptation_set->atsc3_route_representation.atsc3_route_segment_template.start_number = atoi(matching_attribute);
+        free(matching_attribute);
 	}
 
 	if((matching_attribute = kvp_collection_get(kvp_collection,  "timescale"))) {
 		atsc3_route_adaptation_set->atsc3_route_representation.atsc3_route_segment_template.timescale = atoi(matching_attribute);
+        free(matching_attribute);
 	}
+    kvp_collection_free(kvp_collection);
+    
 	return atsc3_route_adaptation_set;
 }
 
