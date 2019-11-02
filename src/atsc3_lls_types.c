@@ -92,7 +92,7 @@ ATSC3_VECTOR_BUILDER_METHODS_ITEM_FREE(atsc3_slt_capabilities); //no pointers
 //ATSC3_VECTOR_BUILDER_METHODS_ITEM_FREE(atsc3_slt_ineturl);
 void atsc3_slt_ineturl_free(atsc3_slt_ineturl_t** atsc3_slt_ineturl_p) {
     if(atsc3_slt_ineturl_p) {
-        atsc3_slt_svc_inet_url_t* atsc3_slt_ineturl = *atsc3_slt_ineturl_p;
+        atsc3_slt_ineturl_t* atsc3_slt_ineturl = *atsc3_slt_ineturl_p;
         if(atsc3_slt_ineturl) {
             freeclean((void**)&atsc3_slt_ineturl->url);
             freesafe(atsc3_slt_ineturl);
