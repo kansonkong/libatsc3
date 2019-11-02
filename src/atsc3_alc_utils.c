@@ -185,6 +185,8 @@ char* alc_packet_dump_to_object_get_s_tsid_filename(udp_flow_t* udp_flow, alc_pa
 							for(int k=0; k < atsc3_route_s_tsid_RS_LS->atsc3_route_s_tsid_RS_LS_SrcFlow->atsc3_fdt_instance->atsc3_fdt_file_v.count; k++) {
 								atsc3_fdt_file_t* atsc3_fdt_file = atsc3_route_s_tsid_RS_LS->atsc3_route_s_tsid_RS_LS_SrcFlow->atsc3_fdt_instance->atsc3_fdt_file_v.data[k];
 
+                                //if tsi matches, then
+                                 //otherwise, map to file_template
 								if(atsc3_fdt_file->toi == alc_packet->def_lct_hdr->toi && atsc3_fdt_file->content_location && strlen(atsc3_fdt_file->content_location)) {
                                     size_t content_location_length = strlen(atsc3_fdt_file->content_location);
                                     content_location = calloc(content_location_length + 1, sizeof(char));
@@ -198,6 +200,7 @@ char* alc_packet_dump_to_object_get_s_tsid_filename(udp_flow_t* udp_flow, alc_pa
 
 								}
 							}
+                           
 						} else {
 
 							//alternative strategies for content-location here?
@@ -213,7 +216,7 @@ char* alc_packet_dump_to_object_get_s_tsid_filename(udp_flow_t* udp_flow, alc_pa
 		if(alc_packet->def_lct_hdr) {
             content_location = alc_packet_dump_to_object_get_temporary_filename(udp_flow, alc_packet);
 
-			__ALC_UTILS_INFO("alc_packet_dump_to_object_get_s_tsid_filename: no content_location to return for alp_packet: %p, falling back to %s", alc_packet, content_location);
+			__ALC_UTILS_INFO("alc_packet_dump_to_object_get_s_tsid_filename: no content_location to return for alc_packet: %p, falling back to %s", alc_packet, content_location);
 		} else {
 			__ALC_UTILS_ERROR("alc_packet_dump_to_object_get_s_tsid_filename: no content_location to return for alc_packet: %p, falling back to null string!", alc_packet);
 		}
@@ -369,9 +372,16 @@ int alc_packet_dump_to_object(udp_flow_t* udp_flow, alc_packet_t** alc_packet_pt
 	if(alc_packet->close_object_flag) {
         s_tsid_content_location = alc_packet_dump_to_object_get_s_tsid_filename(udp_flow, alc_packet, lls_sls_alc_monitor);
  
-        __ALC_UTILS_IOTRACE("moving from to temporary_filename: %s to: %s, is complete: %d", temporary_filename, s_tsid_content_location, alc_packet->close_object_flag);
-
-		//update our sls here if we have a service we are listenting to
+        if(0 != strncmp(temporary_filename, s_tsid_content_location, __MIN(strlen(temporary_filename), strlen(s_tsid_content_location)))) {
+            char new_file_name[1024];
+            snprintf(new_file_name, 1024, "route/%d", lls_sls_alc_monitor->atsc3_lls_slt_service->service_id);
+            mkdir(new_file_name, 0777);
+            snprintf(new_file_name, 1024, "%s/%s", new_file_name, s_tsid_content_location);
+            
+            rename(temporary_filename, new_file_name);
+            __ALC_UTILS_IOTRACE("moving from to temporary_filename: %s to: %s, is complete: %d", temporary_filename, new_file_name, alc_packet->close_object_flag);            
+        }
+        //update our sls here if we have a service we are listenting to
 		if(lls_sls_alc_monitor && lls_sls_alc_monitor->atsc3_lls_slt_service &&  alc_packet->def_lct_hdr->tsi == 0) {
 			__ALC_UTILS_IOTRACE("ALC: service_id: %u, ------ TSI of 0, calling atsc3_route_sls_process_from_alc_packet_and_file", lls_sls_alc_monitor->atsc3_lls_slt_service->service_id);
 			atsc3_route_sls_process_from_alc_packet_and_file(udp_flow, alc_packet, lls_sls_alc_monitor);
