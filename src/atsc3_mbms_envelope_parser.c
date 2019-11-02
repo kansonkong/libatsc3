@@ -104,11 +104,14 @@ atsc3_mbms_metadata_envelope_t* atsc3_mbms_envelope_parse_from_payload(char* pay
 					}
 					if((matching_attribute = kvp_collection_get(kvp_collection,  "version"))) {
 						atsc3_mbms_metadata_item->version = atoi(matching_attribute);
+                        free(matching_attribute);
 					}
+                    
 					//todo - fix me with proper namespacing
 					if((matching_attribute = kvp_collection_get(kvp_collection,  "meta:nextURL"))) {
 						atsc3_mbms_metadata_item->next_url = matching_attribute;
 					}
+                    kvp_collection_free(kvp_collection);
 				}
 			}
 		}
