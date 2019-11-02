@@ -40,6 +40,8 @@ atsc3_pcap_replay_context_t* atsc3_pcap_replay_open_filename(const char* pcap_fi
 	struct stat st;
 	stat(atsc3_pcap_replay_context->pcap_file_name, &st);
 	if(!st.st_size) {
+		_ATSC3_PCAP_TYPE_WARN("atsc3_pcap_replay_open_filename: %s, ERROR: st.st_size is 0!", atsc3_pcap_replay_context->pcap_file_name);
+
 		return NULL;
 	}
 
@@ -48,17 +50,19 @@ atsc3_pcap_replay_context_t* atsc3_pcap_replay_open_filename(const char* pcap_fi
 
 	atsc3_pcap_replay_context->pcap_fp = fopen(atsc3_pcap_replay_context->pcap_file_name, "r");
 	if(!atsc3_pcap_replay_context->pcap_fp) {
+		_ATSC3_PCAP_TYPE_WARN("atsc3_pcap_replay_open_filename: %s -  fopen() for read returned NULL!", atsc3_pcap_replay_context->pcap_file_name);
+
 		return NULL;
 	}
 
 	return atsc3_pcap_replay_context;
 }
-
-//used for inclusion of pcap's via android assetManager
+/*
+ * accepts a weak const char* reference, and will strncpy for local usage to release for jni
+ */
 atsc3_pcap_replay_context_t* atsc3_pcap_replay_open_from_fd(const char* pcap_filename, int pcap_fd, long pcap_start, long pcap_length) {
     if(pcap_fd < 0 ) {
-		printf("atsc3_pcap_replay_open_from_fd: ERROR: pcap_fd is %d", pcap_fd);
-
+		_ATSC3_PCAP_TYPE_WARN("atsc3_pcap_replay_open_from_fd: ERROR: pcap_fd is %d", pcap_fd);
 		return NULL;
     }
 
