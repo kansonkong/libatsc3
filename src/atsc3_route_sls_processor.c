@@ -42,6 +42,9 @@ void atsc3_route_sls_process_from_alc_packet_and_file(udp_flow_t* udp_flow, alc_
 			}
 			atsc3_fdt_instance_dump(atsc3_fdt_instance);
 			if(lls_sls_alc_monitor) {
+                if(lls_sls_alc_monitor->atsc3_fdt_instance) {
+                    atsc3_fdt_instance_free(&lls_sls_alc_monitor->atsc3_fdt_instance);
+                }
 				lls_sls_alc_monitor->atsc3_fdt_instance = atsc3_fdt_instance;
 			}
 		}
@@ -72,7 +75,7 @@ void atsc3_route_sls_process_from_alc_packet_and_file(udp_flow_t* udp_flow, alc_
 				}
                 if(lls_sls_alc_monitor->atsc3_sls_metadata_fragments) {
                     //TODO: invoke any chained destructors as needed
-                    free(lls_sls_alc_monitor->atsc3_sls_metadata_fragments);
+                    atsc3_sls_metadata_fragments_free(&lls_sls_alc_monitor->atsc3_sls_metadata_fragments);
                 }
 				lls_sls_alc_monitor->atsc3_sls_metadata_fragments = atsc3_sls_metadata_fragments;
 			}

@@ -287,7 +287,7 @@ atsc3_mime_multipart_related_instance_t* atsc3_mime_multipart_related_parser(FIL
 					payload_entry_complete = true;
 
 					//todo: refactor
-					atsc3_mime_multipart_related_payload->payload = calloc(multipart_buffer_pos, sizeof(char));
+					atsc3_mime_multipart_related_payload->payload = calloc(multipart_buffer_pos+1, sizeof(char));
 					memcpy(atsc3_mime_multipart_related_payload->payload, multipart_buffer, multipart_buffer_pos);
 					atsc3_mime_multipart_related_payload->payload_length = multipart_buffer_pos;
 					atsc3_mime_multipart_related_instance_add_atsc3_mime_multipart_related_payload(atsc3_mime_multipart_related_instance, atsc3_mime_multipart_related_payload);
