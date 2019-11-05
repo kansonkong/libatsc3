@@ -45,6 +45,11 @@ At3DrvIntf* at3DrvIntf_ptr;
 #include "atsc3_hevc_nal_extractor.h"
 #include "atsc3_lls_types.h"
 
+#include "atsc3_lls_alc_utils.h"
+#include "atsc3_alc_rx.h"
+#include "atsc3_alc_utils.h"
+
+
 
 //commandline stream filtering
 
@@ -60,6 +65,13 @@ lls_slt_monitor_t* lls_slt_monitor;
 mmtp_flow_t* mmtp_flow;
 udp_flow_latest_mpu_sequence_number_container_t* udp_flow_latest_mpu_sequence_number_container;
 lls_sls_mmt_monitor_t* lls_sls_mmt_monitor = NULL;
+
+//route/alc specific parameters
+lls_sls_alc_monitor_t* lls_sls_alc_monitor = NULL;
+alc_channel_t ch;
+alc_arguments_t* alc_arguments;
+
+
 
 //these should actually be referenced from mmt_sls_monitor for proper flow references
 uint16_t global_video_packet_id = 0;
@@ -114,8 +126,8 @@ atsc3_lls_slt_service_t* atsc3_phy_mmt_player_bridge_set_single_monitor_a331_ser
         if(atsc3_slt_broadcast_svc_signalling->sls_protocol == SLS_PROTOCOL_MMTP) {
             atsc3_slt_broadcast_svc_signalling_mmt = atsc3_slt_broadcast_svc_signalling;
         } else if(atsc3_slt_broadcast_svc_signalling->sls_protocol == SLS_PROTOCOL_ROUTE) {
-            __WARN("atsc3_phy_mmt_player_bridge_set_a331_service_id: service_id: %d - sls_protocol == ROUTE, TODO!", service_id);
             atsc3_slt_broadcast_svc_signalling_route = atsc3_slt_broadcast_svc_signalling;
+            atsc3_slt_broadcast_svc_signalling_mmt = NULL;
         }
     }
 
@@ -147,7 +159,43 @@ atsc3_lls_slt_service_t* atsc3_phy_mmt_player_bridge_set_single_monitor_a331_ser
         lls_slt_monitor->lls_sls_mmt_monitor = lls_sls_mmt_monitor;
 
         lls_slt_monitor_add_lls_sls_mmt_monitor(lls_slt_monitor, lls_sls_mmt_monitor);
+    } else {
+        lls_slt_monitor_clear_lls_sls_mmt_monitor(lls_slt_monitor);
+        if(lls_slt_monitor->lls_sls_mmt_monitor) {
+            lls_sls_mmt_monitor_free(&lls_slt_monitor->lls_sls_mmt_monitor);
+        }
 
+    }
+
+    if(atsc3_slt_broadcast_svc_signalling_route != NULL) {
+        __INFO("atsc3_phy_mmt_player_bridge_set_a331_service_id: service_id: %d - using ROUTE with flow: sip: %s, dip: %s:%s",
+               service_id,
+               atsc3_slt_broadcast_svc_signalling_route->sls_source_ip_address,
+               atsc3_slt_broadcast_svc_signalling_route->sls_destination_ip_address,
+               atsc3_slt_broadcast_svc_signalling_route->sls_destination_udp_port);
+
+        lls_slt_monitor_clear_lls_sls_alc_monitor(lls_slt_monitor);
+
+        lls_sls_alc_monitor = lls_sls_alc_monitor_create();
+        lls_sls_alc_monitor->atsc3_lls_slt_service = atsc3_lls_slt_service;
+        lls_sls_alc_monitor->lls_sls_monitor_output_buffer_mode.file_dump_enabled = true;
+        lls_slt_service_id_t* lls_slt_service_id = lls_slt_service_id_new_from_atsc3_lls_slt_service(atsc3_lls_slt_service);
+        lls_slt_monitor_add_lls_slt_service_id(lls_slt_monitor, lls_slt_service_id);
+
+        lls_sls_alc_session_t* lls_sls_alc_session = lls_slt_alc_session_find_from_service_id(lls_slt_monitor, atsc3_lls_slt_service->service_id);
+        if(!lls_sls_alc_session) {
+            __WARN("lls_slt_alc_session_find_from_service_id: lls_sls_alc_session is NULL!");
+        }
+        lls_sls_alc_monitor->lls_alc_session = lls_sls_alc_session;
+        lls_slt_monitor->lls_sls_alc_monitor = lls_sls_alc_monitor;
+
+        lls_slt_monitor_add_lls_sls_alc_monitor(lls_slt_monitor, lls_sls_alc_monitor);
+
+    } else {
+        lls_slt_monitor_clear_lls_sls_alc_monitor(lls_slt_monitor);
+        if(lls_slt_monitor->lls_sls_alc_monitor) {
+            lls_sls_alc_monitor_free(&lls_slt_monitor->lls_sls_alc_monitor);
+        }
 
     }
 
@@ -159,6 +207,11 @@ void atsc3_phy_mmt_player_bridge_process_packet_phy(block_t* packet) {
 
     mmtp_packet_header_t* mmtp_packet_header = NULL;
     lls_sls_mmt_session_t* matching_lls_sls_mmt_session = NULL;
+
+
+    alc_packet_t* alc_packet = NULL;
+    lls_sls_alc_session_t* matching_lls_slt_alc_session = NULL;
+
     //lowasys hands off the ip packet header, not phy eth frame
 
     //udp_packet_t* udp_packet = udp_packet_process_from_ptr_raw_ethernet_packet(block_Get(packet), packet->p_size);
@@ -247,11 +300,26 @@ void atsc3_phy_mmt_player_bridge_process_packet_phy(block_t* packet) {
         goto cleanup;
     }
 
+    //todo: fix me not filtering
+    matching_lls_slt_alc_session = lls_slt_alc_session_find_from_udp_packet(lls_slt_monitor, udp_packet->udp_flow.src_ip_addr, udp_packet->udp_flow.dst_ip_addr, udp_packet->udp_flow.dst_port);
+    if((lls_sls_alc_monitor && matching_lls_slt_alc_session && lls_sls_alc_monitor->atsc3_lls_slt_service &&  (lls_sls_alc_monitor->atsc3_lls_slt_service->service_id == matching_lls_slt_alc_session->atsc3_lls_slt_service->service_id))  ||
+       ((dst_ip_addr_filter != NULL && dst_ip_port_filter != NULL) && (udp_packet->udp_flow.dst_ip_addr == *dst_ip_addr_filter && udp_packet->udp_flow.dst_port == *dst_ip_port_filter))) {
+        //process ALC streams
+        int retval = alc_rx_analyze_packet_a331_compliant((char*)block_Get(udp_packet->data), block_Remaining_size(udp_packet->data), &ch, &alc_packet);
+        if(!retval) {
+            //dump out for fragment inspection
+            alc_packet_dump_to_object(&udp_packet->udp_flow, &alc_packet, lls_slt_monitor->lls_sls_alc_monitor);
+        } else {
+            __ERROR("Error in ALC decode: %d", retval);
+        }
+        goto cleanup;
+    }
+
+
 
     //TODO: jjustman-2019-10-03 - packet header parsing to dispatcher mapping
     matching_lls_sls_mmt_session = lls_slt_mmt_session_find_from_udp_packet(lls_slt_monitor, udp_packet->udp_flow.src_ip_addr, udp_packet->udp_flow.dst_ip_addr, udp_packet->udp_flow.dst_port);
     __TRACE("Checking matching_lls_sls_mmt_session: %p,", matching_lls_sls_mmt_session);
-
 
 	if(matching_lls_sls_mmt_session && lls_slt_monitor && lls_slt_monitor->lls_sls_mmt_monitor && matching_lls_sls_mmt_session->atsc3_lls_slt_service->service_id == lls_slt_monitor->lls_sls_mmt_monitor->atsc3_lls_slt_service->service_id) {
 
@@ -368,6 +436,9 @@ cleanup:
 
 	if(mmtp_packet_header) {
 		mmtp_packet_header_free(&mmtp_packet_header);
+	}
+	if(alc_packet) {
+	    alc_packet_free(&alc_packet);
 	}
 
 	if(udp_packet) {
