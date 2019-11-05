@@ -485,7 +485,7 @@ lls_sls_monitor_buffer_isobmff_t* atsc3_isobmff_build_raw_mpu_from_single_sequen
 
                                     compute_ntp64_to_seconds_microseconds(lls_sls_monitor_buffer_isobmff->mpu_presentation_time, &lls_sls_monitor_buffer_isobmff->mpu_presentation_time_s, &lls_sls_monitor_buffer_isobmff->mpu_presentation_time_us);
 
-                                    __ISOBMFF_TOOLS_SIGNALLING_DEBUG("setting packet_id: %u, mpu_sequence_number: %u to mpu_presentation_time: %llgb7u, seconds: %u, ms: %u",
+                                    __ISOBMFF_TOOLS_SIGNALLING_DEBUG("setting packet_id: %u, mpu_sequence_number: %u to mpu_presentation_time: %" PRIu64 ", seconds: %u, ms: %u",
                                             mp_table_asset_row->mmt_general_location_info.packet_id,
                                             mpu_sequence_number,
                                             lls_sls_monitor_buffer_isobmff->mpu_presentation_time,
