@@ -216,7 +216,9 @@ atsc3_fdt_file_t* atsc3_fdt_file_parse_from_xml_fdt_instance(xml_node_t* node) {
     }
     
     if((matching_attribute = kvp_collection_get(kvp_collection, "toi"))) {
-        atsc3_fdt_file->toi = atoi(matching_attribute);
+        //android atoi doesn't convert 0xFFFFFFFF properly...
+        uint64_t toi = strtoll(matching_attribute, NULL, 10);
+        atsc3_fdt_file->toi = (toi & 0xFFFFFFFF);
         free(matching_attribute);
     }
     
