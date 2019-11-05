@@ -71,6 +71,7 @@ lls_sls_alc_monitor_t* lls_sls_alc_monitor = NULL;
 alc_channel_t ch;
 alc_arguments_t* alc_arguments;
 
+std::string temp_folder_path;
 
 
 //these should actually be referenced from mmt_sls_monitor for proper flow references
@@ -903,7 +904,9 @@ void atsc3_phy_mmt_player_bridge_init(At3DrvIntf* At3DrvIntf_ptr) {
     //extract out one trun sampleduration for essence timing
     atsc3_mmt_mfu_context->atsc3_mmt_mpu_on_sequence_movie_fragment_metadata_present = &atsc3_mmt_mpu_on_sequence_movie_fragment_metadata_present_ndk;
 
-    at3DrvIntf_ptr->LogMsg("atsc3_phy_mmt_player_bridge_init - completed");
+    temp_folder_path = at3DrvIntf_ptr->get_android_temp_folder();
+    chdir(temp_folder_path.c_str());
+    at3DrvIntf_ptr->LogMsgF("atsc3_phy_mmt_player_bridge_init - completed, temp folder path: %s", temp_folder_path.c_str());
 
 }
 
