@@ -785,7 +785,8 @@ void atsc3_mmt_mpu_mfu_on_sample_missing_ndk(uint16_t packet_id, uint32_t mpu_se
 
 void atsc3_mmt_mpu_on_sequence_movie_fragment_metadata_present_ndk(uint16_t packet_id, uint32_t mpu_sequence_number, block_t* mmt_movie_fragment_metadata) {
     if(!mmt_movie_fragment_metadata || !mmt_movie_fragment_metadata->p_size) {
-        __WARN("atsc3_mmt_mpu_on_sequence_movie_fragment_metadata_present_ndk: mmt_movie_fragment_metadata: %p: returned null or no length!");
+        __WARN("atsc3_mmt_mpu_on_sequence_movie_fragment_metadata_present_ndk: packet_id: %d, mpu_sequence_number: %d, mmt_movie_fragment_metadata: %p: returned null or no length!",
+                packet_id, mpu_sequence_number, mmt_movie_fragment_metadata);
         return;
     }
 

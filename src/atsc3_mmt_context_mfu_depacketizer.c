@@ -259,7 +259,7 @@ atsc3_mmt_mfu_mpu_timestamp_descriptor_t* atsc3_get_mpu_timestamp_from_packet_id
 		if(atsc3_mmt_mfu_mpu_timestamp_descriptor->packet_id == packet_id) {
             atsc3_mmt_mfu_mpu_timestamp_descriptor_max = atsc3_mmt_mfu_mpu_timestamp_descriptor;
 		    if(atsc3_mmt_mfu_mpu_timestamp_descriptor->mpu_sequence_number == mpu_sequence_number) {
-                __MMT_CONTEXT_MPU_DEBUG("atsc3_get_mpu_timestamp_from_packet_id_mpu_sequence_number_with_last_failsafe: retuning matching: %lu, looking for packet_id: %d, mpu_sequence_number: %d",
+                __MMT_CONTEXT_MPU_DEBUG("atsc3_get_mpu_timestamp_from_packet_id_mpu_sequence_number_with_last_failsafe: retuning matching: %" PRIu64 " , looking for packet_id: %d, mpu_sequence_number: %d",
                                         atsc3_mmt_mfu_mpu_timestamp_descriptor->mpu_presentation_time_as_us_value,
                                         packet_id,
                                         mpu_sequence_number);
@@ -271,7 +271,7 @@ atsc3_mmt_mfu_mpu_timestamp_descriptor_t* atsc3_get_mpu_timestamp_from_packet_id
 	if(atsc3_mmt_mfu_mpu_timestamp_descriptor_max != NULL) {
 //	    //TODO: hack because we lost the MPT clock reference...
         //atsc3_mmt_mfu_mpu_timestamp_descriptor_max->mpu_presentation_time_as_us_value;// += 1000000;
-        __MMT_CONTEXT_MPU_DEBUG("atsc3_get_mpu_timestamp_from_packet_id_mpu_sequence_number: retuning fallback max: %lu, looking for packet_id: %d, mpu_sequence_number: %d",
+        __MMT_CONTEXT_MPU_DEBUG("atsc3_get_mpu_timestamp_from_packet_id_mpu_sequence_number: retuning fallback max: %" PRIu64 ", looking for packet_id: %d, mpu_sequence_number: %d",
                                 atsc3_mmt_mfu_mpu_timestamp_descriptor_max->mpu_presentation_time_as_us_value,
                                 packet_id,
                                 mpu_sequence_number);
@@ -674,7 +674,7 @@ void mmtp_mfu_rebuild_from_packet_id_mpu_sequence_number(atsc3_mmt_mfu_context_t
 
             if(mmtp_mpu_ending_index == -1) {
                 //exit from loop
-                __MMT_CONTEXT_MPU_DEBUG("mmtp_mfu_rebuild_from_packet_id_mpu_sequence_number: exiting loop from mmtp_mpu_starting_index: %d, mmtp_mpu_ending_index: %d, count: %d, flush_all_fragments: %b, packet_id: %u, mpu_sequence_number: %u",
+                __MMT_CONTEXT_MPU_DEBUG("mmtp_mfu_rebuild_from_packet_id_mpu_sequence_number: exiting loop from mmtp_mpu_starting_index: %d, mmtp_mpu_ending_index: %d, count: %d, flush_all_fragments: %d, packet_id: %u, mpu_sequence_number: %u",
                                         mmtp_mpu_starting_index, mmtp_mpu_ending_index,
                                         mpu_sequence_number_mmtp_mpu_packet_collection->mmtp_mpu_packet_v.count,
                                         mmtp_mpu_packet_to_rebuild->mmtp_packet_id,
@@ -683,7 +683,7 @@ void mmtp_mfu_rebuild_from_packet_id_mpu_sequence_number(atsc3_mmt_mfu_context_t
                 i = mpu_sequence_number_mmtp_mpu_packet_collection->mmtp_mpu_packet_v.count;
                 continue;
             } else {
-                __MMT_CONTEXT_MPU_DEBUG("mmtp_mfu_rebuild_from_packet_id_mpu_sequence_number: iterating from mmtp_mpu_starting_index: %d, mmtp_mpu_ending_index: %d, count: %d, flush_all_fragments: %b, packet_id: %u, mpu_sequence_number: %u",
+                __MMT_CONTEXT_MPU_DEBUG("mmtp_mfu_rebuild_from_packet_id_mpu_sequence_number: iterating from mmtp_mpu_starting_index: %d, mmtp_mpu_ending_index: %d, count: %d, flush_all_fragments: %d, packet_id: %u, mpu_sequence_number: %u",
                                         mmtp_mpu_starting_index, mmtp_mpu_ending_index,
                                         mpu_sequence_number_mmtp_mpu_packet_collection->mmtp_mpu_packet_v.count,
                                         mmtp_mpu_packet_to_rebuild->mmtp_packet_id,
