@@ -665,6 +665,10 @@ typedef struct lls_sls_alc_monitor {
     uint32_t last_completed_flushed_audio_toi;
     uint32_t last_completed_flushed_video_toi;
 
+    block_t* last_mpd_payload;
+    block_t* last_mpd_payload_patched;
+
+
 	uint32_t video_toi_init;
 	uint32_t audio_toi_init;
 
