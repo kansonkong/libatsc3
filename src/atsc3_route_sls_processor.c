@@ -10,6 +10,9 @@
 #include "atsc3_lls_alc_utils.h"
 
 
+int _ROUTE_SLS_PROCESSOR_INFO_ENABLED = 0;
+int _ROUTE_SLS_PROCESSOR_DEBUG_ENABLED = 0;
+
 void atsc3_route_sls_process_from_alc_packet_and_file(udp_flow_t* udp_flow, alc_packet_t* alc_packet, lls_sls_alc_monitor_t* lls_sls_alc_monitor) {
     char* file_name = NULL;
     char* mbms_toi_filename = NULL;
