@@ -732,7 +732,7 @@ void __alc_recon_fragment_with_init_box(char* file_name, alc_packet_t* alc_packe
 			read_bytes = fragment_input_stat.st_size - (block_size * write_count);
 			has_eof = true;
 		}
-		__ALC_UTILS_TRACE("read bytes: %llu", read_bytes);
+		__ALC_UTILS_TRACE("read bytes: %" PRIu64, read_bytes);
 
 		int write_size = fwrite(m4v_payload, read_bytes, 1, recon_output_file);
 		if(has_eof) {
@@ -824,7 +824,7 @@ void alc_recon_file_ptr_fragment_with_init_box(FILE* output_file_ptr, udp_flow_t
 			read_bytes = fragment_input_stat.st_size - (block_size * write_count);
 			has_eof = true;
 		}
-		__ALC_UTILS_TRACE("read bytes: %llu", read_bytes);
+		__ALC_UTILS_TRACE("read bytes: %" PRIu64, read_bytes);
 
 		if(feof(output_file_ptr)) {
 			goto broken_pipe;
@@ -954,7 +954,7 @@ void alc_recon_file_buffer_struct_fragment_with_init_box(pipe_ffplay_buffer_t* p
 			has_eof = true;
 		}
 		total_bytes_written += read_bytes;
-		__ALC_UTILS_TRACE("read bytes: %llu, bytes written: %llu, total filesize: %llu, has eof input: %d", read_bytes, total_bytes_written, fragment_input_stat.st_size, has_eof);
+		__ALC_UTILS_TRACE("read bytes: %" PRIu64 ", bytes written: %" PRIu64 ", total filesize: %" PRIu64 ", has eof input: %d", read_bytes, total_bytes_written, fragment_input_stat.st_size, has_eof);
 
 		pipe_buffer_unsafe_push_block(pipe_ffplay_buffer, m4v_payload, read_bytes);
 

@@ -10,6 +10,8 @@
 #include <string.h>
 #include <sys/stat.h>
 #include <stdbool.h>
+#include <inttypes.h>
+
 
 #include "atsc3_utils.h"
 #include "atsc3_alc_rx.h"
