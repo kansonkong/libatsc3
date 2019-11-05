@@ -537,7 +537,7 @@ int alc_packet_dump_to_object(udp_flow_t* udp_flow, alc_packet_t** alc_packet_pt
 	if(alc_packet->close_object_flag) {
         s_tsid_content_location = alc_packet_dump_to_object_get_s_tsid_filename(udp_flow, alc_packet, lls_sls_alc_monitor);
  
-        if(0 != strncmp(temporary_filename, s_tsid_content_location, __MIN(strlen(temporary_filename), strlen(s_tsid_content_location)))) {
+        if(strncmp(temporary_filename, s_tsid_content_location, __MIN(strlen(temporary_filename), strlen(s_tsid_content_location))) !=0) {
             char new_file_name[1024] = { 0 };
             snprintf(new_file_name, 1024, "route/%d", lls_sls_alc_monitor->atsc3_lls_slt_service->service_id);
             mkdir(new_file_name, 0777);
@@ -550,24 +550,25 @@ int alc_packet_dump_to_object(udp_flow_t* udp_flow, alc_packet_t** alc_packet_pt
 		if(lls_sls_alc_monitor && lls_sls_alc_monitor->atsc3_lls_slt_service &&  alc_packet->def_lct_hdr->tsi == 0) {
 			__ALC_UTILS_IOTRACE("ALC: service_id: %u, ------ TSI of 0, calling atsc3_route_sls_process_from_alc_packet_and_file", lls_sls_alc_monitor->atsc3_lls_slt_service->service_id);
 			atsc3_route_sls_process_from_alc_packet_and_file(udp_flow, alc_packet, lls_sls_alc_monitor);
-
-		} else {
-            //jjustman-2019-11-02: todo: remove this old code
-			//only push to our output buffer video and audio flows
-			if(lls_sls_alc_monitor && (alc_packet->def_lct_hdr->tsi == lls_sls_alc_monitor->audio_tsi || alc_packet->def_lct_hdr->tsi == lls_sls_alc_monitor->video_tsi)) {
-				__ALC_UTILS_IOTRACE("------ TSI of %d, toi: %u, calling alc_recon_file_buffer_struct_monitor_fragment_with_init_box", alc_packet->def_lct_hdr->tsi, alc_packet->def_lct_hdr->toi);
-				alc_recon_file_buffer_struct_monitor_fragment_with_init_box(udp_flow, alc_packet, lls_sls_alc_monitor);
-			} else {
-				s_tsid_content_location = alc_packet_dump_to_object_get_s_tsid_filename(udp_flow, alc_packet, lls_sls_alc_monitor);
-				if(s_tsid_content_location && strlen(s_tsid_content_location)) {
-					__ALC_UTILS_INFO("tsi: %u, toi: %u, not video or audio payload, using for NRT caching at s_tsid_content_location: %s", alc_packet->def_lct_hdr->tsi, alc_packet->def_lct_hdr->toi, s_tsid_content_location);
-					rename(temporary_filename, s_tsid_content_location);
-				} else {
-					__ALC_UTILS_ERROR("tsi: %u, toi: %u, not video or audio payload and no content_location target!", alc_packet->def_lct_hdr->tsi, alc_packet->def_lct_hdr->toi);
-
-				}
-			}
-		}
+        }
+        
+//		} else {
+//            //jjustman-2019-11-02: todo: remove this old code
+//			//only push to our output buffer video and audio flows
+//			if(lls_sls_alc_monitor && (alc_packet->def_lct_hdr->tsi == lls_sls_alc_monitor->audio_tsi || alc_packet->def_lct_hdr->tsi == lls_sls_alc_monitor->video_tsi)) {
+//				__ALC_UTILS_IOTRACE("------ TSI of %d, toi: %u, calling alc_recon_file_buffer_struct_monitor_fragment_with_init_box", alc_packet->def_lct_hdr->tsi, alc_packet->def_lct_hdr->toi);
+//				alc_recon_file_buffer_struct_monitor_fragment_with_init_box(udp_flow, alc_packet, lls_sls_alc_monitor);
+//			} else {
+//				s_tsid_content_location = alc_packet_dump_to_object_get_s_tsid_filename(udp_flow, alc_packet, lls_sls_alc_monitor);
+//				if(s_tsid_content_location && strlen(s_tsid_content_location)) {
+//					__ALC_UTILS_INFO("tsi: %u, toi: %u, not video or audio payload, using for NRT caching at s_tsid_content_location: %s", alc_packet->def_lct_hdr->tsi, alc_packet->def_lct_hdr->toi, s_tsid_content_location);
+//					rename(temporary_filename, s_tsid_content_location);
+//				} else {
+//					__ALC_UTILS_ERROR("tsi: %u, toi: %u, not video or audio payload and no content_location target!", alc_packet->def_lct_hdr->tsi, alc_packet->def_lct_hdr->toi);
+//
+//				}
+//			}
+    
 	} else {
 		__ALC_UTILS_IOTRACE("dumping to file step: %s, is complete: %d", temporary_filename, alc_packet->close_object_flag);
 	}
