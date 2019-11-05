@@ -79,9 +79,29 @@ void atsc3_route_sls_process_from_alc_packet_and_file(udp_flow_t* udp_flow, alc_
                 }
 				lls_sls_alc_monitor->atsc3_sls_metadata_fragments = atsc3_sls_metadata_fragments;
                 
+                /* https://github.com/google/shaka-player/issues/237
+                 
+                 For MPDs with type dynamic, it is important to look at the combo "availabilityStartTime + period@start" (AST + PST) and "startNumber"
+                 and the current time.
+
+                 startNumber refers to the segment that is available one segmentDuration after the period start
+                 (at the period start, only the init segments are available),
+
+                 For dynamic MPDs, you shall "never" start to play with startNumber, but the latest available segment is
+                 LSN = floor( (now - (availabilityStartTime+PST))/segmentDuration + startNumber- 1).
+
+                 It is also important to align the mediaTimeLine (based on baseMediaDecodeTime) so that it starts at 0 at the beginning of the period.
+                 
+                 content_type    char *    "application/dash+xml"    0x00000001064c8fe0
+                 */
                 //TODO: jjustman-2019-11-02: write out our multipart mbms payload to our route/svc_id, e.g. to get the mpd
                 for(int i=0; i < lls_sls_alc_monitor->atsc3_sls_metadata_fragments->atsc3_mime_multipart_related_instance->atsc3_mime_multipart_related_payload_v.count; i++) {
                     atsc3_mime_multipart_related_payload_t* atsc3_mime_multipart_related_payload = lls_sls_alc_monitor->atsc3_sls_metadata_fragments->atsc3_mime_multipart_related_instance->atsc3_mime_multipart_related_payload_v.data[i];
+                    //jjustman-2019-11-05 - patch MPD type="dynamic" with availabilityStartTime to NOW and startNumber to the most recent A/V flows for TOI delivery
+                    if(strncmp(atsc3_mime_multipart_related_payload->content_type, ATSC3_ROUTE_MPD_TYPE, __MIN(strlen(atsc3_mime_multipart_related_payload->content_type), strlen(ATSC3_ROUTE_MPD_TYPE))) == 0) {
+                        atsc3_route_sls_patch_mpd_availability_start_time_and_start_number(atsc3_mime_multipart_related_payload, lls_sls_alc_monitor);
+                    }
+                    
                     char mbms_filename[1025] = { 0 };
                     snprintf(mbms_filename, 1024, "route/%d", lls_sls_alc_monitor->atsc3_lls_slt_service->service_id);
                     mkdir(mbms_filename, 0777);
@@ -131,4 +151,93 @@ cleanup:
 
     //mbms_toi is a pointer to atsc3_fdt_intstance alloc, so don't try and free it
     
+}
+
+#define _ISO8601_DATE_TIME_LENGTH_ 20
+#define _MPD_availability_start_time_VALUE_ "availabilitystarttime="
+
+void atsc3_route_sls_patch_mpd_availability_start_time_and_start_number(atsc3_mime_multipart_related_payload_t* atsc3_mime_multipart_related_payload, lls_sls_alc_monitor_t* lls_sls_alc_monitor) {
+    char* temp_lower_mpd = calloc(strlen(atsc3_mime_multipart_related_payload->payload)+1, sizeof(char));
+    for(int i=0; i < strlen(atsc3_mime_multipart_related_payload->payload); i++) {
+        temp_lower_mpd[i] = tolower(atsc3_mime_multipart_related_payload->payload[i]);
+    }
+    
+    if(strstr(temp_lower_mpd, "type=\"dynamic\"") != NULL) {
+        //update our availabilityStartTime
+        char* ast_char = strstr(temp_lower_mpd, _MPD_availability_start_time_VALUE_);
+        if(ast_char) {
+            time_t now;
+            time(&now);
+
+            int ast_char_pos_end = (ast_char + strlen(_MPD_availability_start_time_VALUE_)) - temp_lower_mpd;
+            //replace 2019-10-09T19:03:50Z with now()...
+            //        123456789012345678901
+            //                 1         2
+            char iso_now_timestamp[_ISO8601_DATE_TIME_LENGTH_ + 1] = { 0 };
+            strftime(&iso_now_timestamp, _ISO8601_DATE_TIME_LENGTH_, "%Y-%m-%dT%H:%M:%SZ", gmtime(&now));
+
+            char* to_start_ptr = atsc3_mime_multipart_related_payload->payload + ast_char_pos_end + 1;
+            _ATSC3_ROUTE_SLS_PROCESSOR_INFO("patching mpd availabilityStartTime: from %.20s to %s, v: startNumber: %d, a: startNumber: %d",
+                                            to_start_ptr, (char*)iso_now_timestamp,
+                                            lls_sls_alc_monitor->last_closed_video_toi,
+                                            lls_sls_alc_monitor->last_closed_audio_toi);
+            
+            for(int i=0; i < _ISO8601_DATE_TIME_LENGTH_; i++) {
+                to_start_ptr[i] = iso_now_timestamp[i];
+            }
+            int mpd_new_payload_max_len = strlen(atsc3_mime_multipart_related_payload->payload) + 32;
+            char* new_mpd_payload = calloc(mpd_new_payload_max_len + 1, sizeof(char));
+            
+            //todo: jjustman-2019-11-05: make this more robust...
+            char* video_start = strstr(temp_lower_mpd, "contenttype=\"video\"");
+            if(!video_start) goto fail;
+            char* video_start_number_start = strstr(video_start, "startnumber=\"");
+                                                                //1234567890123
+            if(!video_start_number_start) goto fail;
+
+            char* video_start_number_end = strstr(video_start_number_start, "\"");
+            if(!video_start_number_end) goto fail;
+
+            char* audio_start = strstr(temp_lower_mpd, "contenttype=\"audio\"");
+            if(!audio_start) goto fail;
+
+            char* audio_start_number_start = strstr(audio_start, "startnumber=\"");
+            if(!audio_start_number_start) goto fail;
+
+            char* audio_start_number_end = strstr(audio_start_number_start, "\"");
+            if(!audio_start_number_end) goto fail;
+
+            video_start_number_start[13] = '\0';
+            audio_start_number_start[13] = '\0';
+
+            char* mpd_patched_start_ptr = atsc3_mime_multipart_related_payload->payload;
+            int video_start_number_start_pos = (video_start_number_start + 13) - temp_lower_mpd;
+            mpd_patched_start_ptr[video_start_number_start_pos] = '\0';
+            int video_start_number_end_pos = video_start_number_end  - temp_lower_mpd;
+            
+            char* mpd_patched_video_start_end_ptr = mpd_patched_start_ptr + video_start_number_end_pos + 2;
+            
+            int audio_start_number_start_pos = (audio_start_number_start + 13) - temp_lower_mpd;
+            mpd_patched_start_ptr[audio_start_number_start_pos] = '\0';
+            int audio_start_number_end_pos = audio_start_number_end  - temp_lower_mpd + 2;
+
+            char* audio_start_number_end_ptr = mpd_patched_start_ptr + audio_start_number_end_pos;
+            
+            snprintf(new_mpd_payload, mpd_new_payload_max_len, "%s%d%s%d%s",
+                     mpd_patched_start_ptr,
+                     lls_sls_alc_monitor->last_closed_video_toi,
+                     mpd_patched_video_start_end_ptr,
+                     lls_sls_alc_monitor->last_closed_audio_toi,
+                     audio_start_number_end_ptr);
+
+            free(atsc3_mime_multipart_related_payload->payload);
+            atsc3_mime_multipart_related_payload->payload = new_mpd_payload;
+            atsc3_mime_multipart_related_payload->payload_length = strlen(new_mpd_payload);
+                    
+        }
+    }
+    
+fail:
+    _ATSC3_ROUTE_SLS_PROCESSOR_ERROR("unable to patch startNumber values!");
+   
 }
