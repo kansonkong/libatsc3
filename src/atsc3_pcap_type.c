@@ -181,7 +181,7 @@ atsc3_pcap_replay_context_t* atsc3_pcap_replay_usleep_packet(atsc3_pcap_replay_c
 		}
 
         //jjustman-2019-10-19 - only trigger usleep if our differential is greater than 2000uS (2ms)
-		if(wallclock_runtime_packet_capture_ts_differentialUS > 3000) {
+		if(wallclock_runtime_packet_capture_ts_differentialUS > 5000) {
             _ATSC3_PCAP_TYPE_DEBUG("pcap timing information: current packet timeval: s.us: %ld.%ld, last packet timeval: s.us: %ld.%ld, target sleep duration uS: %lld",
                   current_packet_timeval.tv_sec,
                   current_packet_timeval.tv_usec,
