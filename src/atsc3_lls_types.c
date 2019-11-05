@@ -129,7 +129,29 @@ ATSC3_VECTOR_BUILDER_METHODS_ITEM_FREE(lls_slt_service_id); //no pointers
 ATSC3_VECTOR_BUILDER_METHODS_ITEM_FREE(lls_sls_mmt_monitor);
 ATSC3_VECTOR_BUILDER_METHODS_ITEM_FREE(lls_sls_mmt_session_flows);
 
-ATSC3_VECTOR_BUILDER_METHODS_ITEM_FREE(lls_sls_alc_monitor);
+//ATSC3_VECTOR_BUILDER_METHODS_ITEM_FREE(lls_sls_alc_monitor);
+void lls_sls_alc_monitor_free(lls_sls_alc_monitor_t** lls_sls_alc_monitor_p) {
+    if(lls_sls_alc_monitor_p) {
+        lls_sls_alc_monitor_t* lls_sls_alc_monitor = *lls_sls_alc_monitor_p;
+        if(lls_sls_alc_monitor) {
+            if(lls_sls_alc_monitor->last_mpd_payload) {
+                block_Destroy(&lls_sls_alc_monitor->last_mpd_payload);
+            }
+            if(lls_sls_alc_monitor->last_mpd_payload_patched) {
+                block_Destroy(&lls_sls_alc_monitor->last_mpd_payload_patched);
+            }
+            //todo: jjustman-2019-11-05: should free? atsc3_fdt_instance_t
+            //atsc3_sls_metadata_fragments_t?
+            
+            atsc3_sls_metadata_fragments_free(&lls_sls_alc_monitor->atsc3_sls_metadata_fragments);
+            free(lls_sls_alc_monitor);
+            lls_sls_alc_monitor = NULL;
+        }
+        *lls_sls_alc_monitor_p = NULL;
+    }
+    
+}
+
 ATSC3_VECTOR_BUILDER_METHODS_ITEM_FREE(lls_sls_alc_session_flows);
 
 ATSC3_VECTOR_BUILDER_METHODS_ITEM_FREE(atsc3_lls_slt_service_cache);

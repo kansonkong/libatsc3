@@ -156,13 +156,33 @@ cleanup:
 #define _ISO8601_DATE_TIME_LENGTH_ 20
 #define _MPD_availability_start_time_VALUE_ "availabilitystarttime="
 
+/*
+ 
+ start number patching doesn't work with exoplayer2...
+ */
 void atsc3_route_sls_patch_mpd_availability_start_time_and_start_number(atsc3_mime_multipart_related_payload_t* atsc3_mime_multipart_related_payload, lls_sls_alc_monitor_t* lls_sls_alc_monitor) {
+    if(lls_sls_alc_monitor->last_mpd_payload && lls_sls_alc_monitor->last_mpd_payload_patched) {
+        //compare if our original vs. new payload has changed, and patch accordingly, otherwise swap out to our old payload
+        if(strncmp(lls_sls_alc_monitor->last_mpd_payload->p_buffer, atsc3_mime_multipart_related_payload->payload, __MIN(strlen(lls_sls_alc_monitor->last_mpd_payload->p_buffer), atsc3_mime_multipart_related_payload->payload_length)) == 0) {
+            free(atsc3_mime_multipart_related_payload->payload);
+            atsc3_mime_multipart_related_payload->payload = strdup(lls_sls_alc_monitor->last_mpd_payload_patched->p_buffer);
+            atsc3_mime_multipart_related_payload->payload_length = strlen(lls_sls_alc_monitor->last_mpd_payload_patched->p_buffer);
+            return;
+        }
+    }
+    
     char* temp_lower_mpd = calloc(strlen(atsc3_mime_multipart_related_payload->payload)+1, sizeof(char));
     for(int i=0; i < strlen(atsc3_mime_multipart_related_payload->payload); i++) {
         temp_lower_mpd[i] = tolower(atsc3_mime_multipart_related_payload->payload[i]);
     }
     
     if(strstr(temp_lower_mpd, "type=\"dynamic\"") != NULL) {
+        if(lls_sls_alc_monitor->last_mpd_payload) {
+            block_Destroy(&lls_sls_alc_monitor->last_mpd_payload);
+        }
+        lls_sls_alc_monitor->last_mpd_payload = block_Alloc(strlen(atsc3_mime_multipart_related_payload->payload)+1);
+        block_Write(lls_sls_alc_monitor->last_mpd_payload, atsc3_mime_multipart_related_payload->payload, strlen(atsc3_mime_multipart_related_payload->payload));
+        
         //update our availabilityStartTime
         char* ast_char = strstr(temp_lower_mpd, _MPD_availability_start_time_VALUE_);
         if(ast_char) {
@@ -185,57 +205,68 @@ void atsc3_route_sls_patch_mpd_availability_start_time_and_start_number(atsc3_mi
             for(int i=0; i < _ISO8601_DATE_TIME_LENGTH_; i++) {
                 to_start_ptr[i] = iso_now_timestamp[i];
             }
-            int mpd_new_payload_max_len = strlen(atsc3_mime_multipart_related_payload->payload) + 32;
-            char* new_mpd_payload = calloc(mpd_new_payload_max_len + 1, sizeof(char));
             
-            //todo: jjustman-2019-11-05: make this more robust...
-            char* video_start = strstr(temp_lower_mpd, "contenttype=\"video\"");
-            if(!video_start) goto fail;
-            char* video_start_number_start = strstr(video_start, "startnumber=\"");
-                                                                //1234567890123
-            if(!video_start_number_start) goto fail;
+            //only patch startNumber values if we have lls_sls_alc_monitor->last_closed_video_toi and lls_sls_alc_monitor->last_closed_audio_toi
+            if(lls_sls_alc_monitor->last_closed_video_toi && lls_sls_alc_monitor->last_closed_audio_toi) {
+                int mpd_new_payload_max_len = strlen(atsc3_mime_multipart_related_payload->payload) + 32;
+                char* new_mpd_payload = calloc(mpd_new_payload_max_len + 1, sizeof(char));
+                
+                //todo: jjustman-2019-11-05: make this more robust...
+                char* video_start = strstr(temp_lower_mpd, "contenttype=\"video\"");
+                if(!video_start) goto fail;
+                char* video_start_number_start = strstr(video_start, "startnumber=\"");
+                                                                    //1234567890123
+                if(!video_start_number_start) goto fail;
 
-            char* video_start_number_end = strstr(video_start_number_start, "\"");
-            if(!video_start_number_end) goto fail;
+                char* video_start_number_end = strstr(video_start_number_start, "\"");
+                if(!video_start_number_end) goto fail;
 
-            char* audio_start = strstr(temp_lower_mpd, "contenttype=\"audio\"");
-            if(!audio_start) goto fail;
+                char* audio_start = strstr(temp_lower_mpd, "contenttype=\"audio\"");
+                if(!audio_start) goto fail;
 
-            char* audio_start_number_start = strstr(audio_start, "startnumber=\"");
-            if(!audio_start_number_start) goto fail;
+                char* audio_start_number_start = strstr(audio_start, "startnumber=\"");
+                if(!audio_start_number_start) goto fail;
 
-            char* audio_start_number_end = strstr(audio_start_number_start, "\"");
-            if(!audio_start_number_end) goto fail;
+                char* audio_start_number_end = strstr(audio_start_number_start, "\"");
+                if(!audio_start_number_end) goto fail;
 
-            video_start_number_start[13] = '\0';
-            audio_start_number_start[13] = '\0';
+                video_start_number_start[13] = '\0';
+                audio_start_number_start[13] = '\0';
 
-            char* mpd_patched_start_ptr = atsc3_mime_multipart_related_payload->payload;
-            int video_start_number_start_pos = (video_start_number_start + 13) - temp_lower_mpd;
-            mpd_patched_start_ptr[video_start_number_start_pos] = '\0';
-            int video_start_number_end_pos = video_start_number_end  - temp_lower_mpd;
-            
-            char* mpd_patched_video_start_end_ptr = mpd_patched_start_ptr + video_start_number_end_pos + 2;
-            
-            int audio_start_number_start_pos = (audio_start_number_start + 13) - temp_lower_mpd;
-            mpd_patched_start_ptr[audio_start_number_start_pos] = '\0';
-            int audio_start_number_end_pos = audio_start_number_end  - temp_lower_mpd + 2;
+                char* mpd_patched_start_ptr = atsc3_mime_multipart_related_payload->payload;
+                int video_start_number_start_pos = (video_start_number_start + 13) - temp_lower_mpd;
+                mpd_patched_start_ptr[video_start_number_start_pos] = '\0';
+                int video_start_number_end_pos = video_start_number_end  - temp_lower_mpd;
+                
+                char* mpd_patched_video_start_end_ptr = mpd_patched_start_ptr + video_start_number_end_pos + 2;
+                
+                int audio_start_number_start_pos = (audio_start_number_start + 13) - temp_lower_mpd;
+                mpd_patched_start_ptr[audio_start_number_start_pos] = '\0';
+                int audio_start_number_end_pos = audio_start_number_end  - temp_lower_mpd + 2;
 
-            char* audio_start_number_end_ptr = mpd_patched_start_ptr + audio_start_number_end_pos;
-            
-            snprintf(new_mpd_payload, mpd_new_payload_max_len, "%s%d%s%d%s",
-                     mpd_patched_start_ptr,
-                     lls_sls_alc_monitor->last_closed_video_toi,
-                     mpd_patched_video_start_end_ptr,
-                     lls_sls_alc_monitor->last_closed_audio_toi,
-                     audio_start_number_end_ptr);
+                char* audio_start_number_end_ptr = mpd_patched_start_ptr + audio_start_number_end_pos;
+                
+                snprintf(new_mpd_payload, mpd_new_payload_max_len, "%s%d%s%d%s",
+                         mpd_patched_start_ptr,
+                         lls_sls_alc_monitor->last_closed_video_toi,
+                         mpd_patched_video_start_end_ptr,
+                         lls_sls_alc_monitor->last_closed_audio_toi,
+                         audio_start_number_end_ptr);
 
-            free(atsc3_mime_multipart_related_payload->payload);
-            atsc3_mime_multipart_related_payload->payload = new_mpd_payload;
-            atsc3_mime_multipart_related_payload->payload_length = strlen(new_mpd_payload);
-                    
+                free(atsc3_mime_multipart_related_payload->payload);
+                atsc3_mime_multipart_related_payload->payload = new_mpd_payload;
+                atsc3_mime_multipart_related_payload->payload_length = strlen(new_mpd_payload);
+                
+                if(lls_sls_alc_monitor->last_mpd_payload_patched) {
+                    block_Destroy(&lls_sls_alc_monitor->last_mpd_payload_patched);
+
+                }
+                lls_sls_alc_monitor->last_mpd_payload_patched = block_Alloc(atsc3_mime_multipart_related_payload->payload_length + 1);
+                block_Write(lls_sls_alc_monitor->last_mpd_payload_patched, atsc3_mime_multipart_related_payload->payload, atsc3_mime_multipart_related_payload->payload_length);
+            }
         }
     }
+    return;
     
 fail:
     _ATSC3_ROUTE_SLS_PROCESSOR_ERROR("unable to patch startNumber values!");
