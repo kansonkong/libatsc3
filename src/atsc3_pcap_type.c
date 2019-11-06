@@ -180,7 +180,8 @@ atsc3_pcap_replay_context_t* atsc3_pcap_replay_usleep_packet(atsc3_pcap_replay_c
 			wallclock_runtime_packet_capture_ts_differentialUS = packet_runtime_us - wallclock_runtime_us;
 		}
 
-        //jjustman-2019-10-19 - only trigger usleep if our differential is greater than 2000uS (2ms)
+        //jjustman-2019-10-19 - only trigger usleep if our differential is greater than XXms
+        //jjustman-2019-11-06 - this is a bit of a hack, but android has challenges scheduling this granular level of pcap emission, so we "round" to the quantized 50ms boundary
 		if(wallclock_runtime_packet_capture_ts_differentialUS > 5000) {
             _ATSC3_PCAP_TYPE_DEBUG("pcap timing information: current packet timeval: s.us: %ld.%ld, last packet timeval: s.us: %ld.%ld, target sleep duration uS: %lld",
                   current_packet_timeval.tv_sec,
@@ -202,9 +203,10 @@ atsc3_pcap_replay_context_t* atsc3_pcap_replay_usleep_packet(atsc3_pcap_replay_c
                 //signal interruption,
                 _ATSC3_PCAP_TYPE_WARN("nanosleep returned: %d, sleep duration actual: s: %ld, ns: %ld", ret, rmtp.tv_sec, rmtp.tv_nsec);
             }
+            atsc3_pcap_replay_context_to_iterate->delay_delta_behind_rt_replay = 0;
         } else {
             //falling behind
-            //TODO: jjustman-2019-10-23: move this to a producer/consumer pattern for emmission handoff
+            //TODO: jjustman-2019-10-23: move this to a producer/consumer pattern for emission handoff
             //don't spam...
             _ATSC3_PCAP_TYPE_TRACE("pcap timing falling behind: packet_number: %u, current packet timeval: s.us: %ld.%ld  last packet timeval: s.us: %ld.%ld  wallclock_runtime_packet_capture_ts_differentialUS: %lld, sleep would be negative!",
                     atsc3_pcap_replay_context_to_iterate->pcap_read_packet_count,
@@ -214,6 +216,7 @@ atsc3_pcap_replay_context_t* atsc3_pcap_replay_usleep_packet(atsc3_pcap_replay_c
                     last_packet_timeval.tv_usec,
                     wallclock_runtime_packet_capture_ts_differentialUS);
             //don't update atsc3_pcap_replay_context_to_iterate->current_wallclock_timeval as we are still behind...
+            atsc3_pcap_replay_context_to_iterate->delay_delta_behind_rt_replay = wallclock_runtime_packet_capture_ts_differentialUS;
         }
 
 		gettimeofday(&atsc3_pcap_replay_context_to_iterate->current_wallclock_timeval, NULL);
