@@ -71,7 +71,7 @@ lls_sls_alc_monitor_t* lls_sls_alc_monitor = NULL;
 alc_channel_t ch;
 alc_arguments_t* alc_arguments;
 
-std::string temp_folder_path;
+std::string atsc3_ndk_cache_temp_folder_path;
 
 
 //these should actually be referenced from mmt_sls_monitor for proper flow references
@@ -203,6 +203,167 @@ atsc3_lls_slt_service_t* atsc3_phy_mmt_player_bridge_set_single_monitor_a331_ser
     return atsc3_lls_slt_service;
 }
 
+atsc3_lls_slt_service_t* atsc3_phy_mmt_player_bridge_add_monitor_a331_service_id(int service_id) {
+    __INFO("atsc3_phy_mmt_player_bridge_add_monitor_a331_service_id: with service_id: %d", service_id);
+
+    atsc3_lls_slt_service_t* atsc3_lls_slt_service = lls_slt_monitor_find_lls_slt_service_id_group_id_cache_entry(lls_slt_monitor, service_id);
+    if(!atsc3_lls_slt_service) {
+        __ERROR("atsc3_phy_mmt_player_bridge_add_monitor_a331_service_id: unable to find service_id: %d", service_id);
+        return NULL;
+    }
+
+    atsc3_slt_broadcast_svc_signalling_t* atsc3_slt_broadcast_svc_signalling = NULL;
+    atsc3_slt_broadcast_svc_signalling_t* atsc3_slt_broadcast_svc_signalling_route_to_add_monitor = NULL;
+
+    for(int i=0; i < atsc3_lls_slt_service->atsc3_slt_broadcast_svc_signalling_v.count; i++) {
+        atsc3_slt_broadcast_svc_signalling = atsc3_lls_slt_service->atsc3_slt_broadcast_svc_signalling_v.data[i];
+         if(atsc3_slt_broadcast_svc_signalling->sls_protocol == SLS_PROTOCOL_ROUTE) {
+             atsc3_slt_broadcast_svc_signalling_route_to_add_monitor = atsc3_slt_broadcast_svc_signalling;
+        }
+    }
+
+    if(atsc3_slt_broadcast_svc_signalling_route_to_add_monitor == NULL) {
+        __WARN("atsc3_phy_mmt_player_bridge_add_monitor_a331_service_id: unable to find ALC service_id: %d",
+              service_id);
+        return NULL;
+    }
+
+    __INFO("atsc3_phy_mmt_player_bridge_add_monitor_a331_service_id: service_id: %d - adding ROUTE with flow: sip: %s, dip: %s:%s",
+           service_id,
+           atsc3_slt_broadcast_svc_signalling_route_to_add_monitor->sls_source_ip_address,
+           atsc3_slt_broadcast_svc_signalling_route_to_add_monitor->sls_destination_ip_address,
+           atsc3_slt_broadcast_svc_signalling_route_to_add_monitor->sls_destination_udp_port);
+
+    lls_sls_alc_monitor = lls_sls_alc_monitor_create();
+    lls_sls_alc_monitor->atsc3_lls_slt_service = atsc3_lls_slt_service;
+
+    lls_sls_alc_session_t* lls_sls_alc_session = lls_slt_alc_session_find_from_service_id(lls_slt_monitor, atsc3_lls_slt_service->service_id);
+    if(!lls_sls_alc_session) {
+        __WARN("lls_slt_alc_session_find_from_service_id: %d, lls_sls_alc_session is NULL!", service_id);
+        return NULL;
+    }
+    lls_sls_alc_monitor->lls_alc_session = lls_sls_alc_session;
+    lls_slt_monitor_add_lls_sls_alc_monitor(lls_slt_monitor, lls_sls_alc_monitor);
+
+    //add a supplimentry sls_alc monitor
+    // TODO: fix me? NOTE: do not replace the primary lls_slt_monitor->lls_sls_alc_monitor entry if set
+    if(!lls_slt_monitor->lls_sls_alc_monitor) {
+        lls_slt_monitor->lls_sls_alc_monitor = lls_sls_alc_monitor;
+    }
+
+    return atsc3_lls_slt_service;
+}
+
+//TODO: jjustman-2019-11-07: mutex
+atsc3_lls_slt_service_t* atsc3_phy_mmt_player_bridge_remove_monitor_a331_service_id(int service_id) {
+    if(!lls_slt_monitor->lls_sls_alc_monitor || !lls_slt_monitor->lls_sls_alc_monitor_v.count) {
+        __ERROR("atsc3_phy_mmt_player_bridge_remove_monitor_a331_service_id: unable to remove service_id: %d, lls_slt_monitor->lls_sls_alc_monitor is: %p, lls_slt_monitor->lls_sls_alc_monitor_v.count is: %d",
+                service_id,
+                lls_slt_monitor->lls_sls_alc_monitor,
+                lls_slt_monitor->lls_sls_alc_monitor_v.count);
+        return NULL;
+    }
+
+    atsc3_lls_slt_service_t* lls_service_removed_lls_sls_alc_monitor = NULL;
+    lls_sls_alc_monitor_t* my_lls_sls_alc_monitor_entry_to_release = NULL;
+    if(lls_slt_monitor->lls_sls_alc_monitor && lls_slt_monitor->lls_sls_alc_monitor->atsc3_lls_slt_service->service_id == service_id) {
+        my_lls_sls_alc_monitor_entry_to_release = lls_slt_monitor->lls_sls_alc_monitor;
+        lls_slt_monitor->lls_sls_alc_monitor = NULL;
+    }
+
+    //remove lls_sls_alc_monitor entry
+    //TODO: jjustman-2019-11-07: hack, move this into atsc3_vector_builder.h
+    for(int i=0; i < lls_slt_monitor->lls_sls_alc_monitor_v.count && !my_lls_sls_alc_monitor_entry_to_release; i++) {
+        lls_sls_alc_monitor_t* lls_sls_alc_monitor = lls_slt_monitor->lls_sls_alc_monitor_v.data[i];
+        if(lls_sls_alc_monitor->atsc3_lls_slt_service->service_id == service_id) {
+            my_lls_sls_alc_monitor_entry_to_release = lls_sls_alc_monitor;
+            for(int j=i + 1; j < lls_slt_monitor->lls_sls_alc_monitor_v.count; j++) {
+                lls_slt_monitor->lls_sls_alc_monitor_v.data[j-1] = lls_slt_monitor->lls_sls_alc_monitor_v.data[j];
+            }
+            lls_slt_monitor->lls_sls_alc_monitor_v.data[lls_slt_monitor->lls_sls_alc_monitor_v.count-1] = NULL;
+            lls_slt_monitor->lls_sls_alc_monitor_v.count--;
+            //clear out last entry
+        }
+    }
+
+    if(my_lls_sls_alc_monitor_entry_to_release) {
+        lls_service_removed_lls_sls_alc_monitor = my_lls_sls_alc_monitor_entry_to_release->atsc3_lls_slt_service;
+        lls_sls_alc_monitor_free(&my_lls_sls_alc_monitor_entry_to_release);
+    }
+
+    return lls_service_removed_lls_sls_alc_monitor;
+}
+
+lls_sls_alc_monitor_t* atsc3_lls_sls_alc_monitor_get_from_service_id(int service_id) {
+    if(!lls_slt_monitor->lls_sls_alc_monitor || !lls_slt_monitor->lls_sls_alc_monitor_v.count) {
+        __ERROR("atsc3_lls_sls_alc_monitor_get_from_service_id: error searching for service_id: %d, alc_monitor is null: lls_slt_monitor->lls_sls_alc_monitor is: %p, lls_slt_monitor->lls_sls_alc_monitor_v.count is: %d",
+                service_id,
+                lls_slt_monitor->lls_sls_alc_monitor,
+                lls_slt_monitor->lls_sls_alc_monitor_v.count);
+        return NULL;
+    }
+
+    lls_sls_alc_monitor_t* lls_sls_alc_monitor_to_return = NULL;
+    for(int i=0; i < lls_slt_monitor->lls_sls_alc_monitor_v.count && !lls_sls_alc_monitor_to_return; i++) {
+        lls_sls_alc_monitor_t* lls_sls_alc_monitor = lls_slt_monitor->lls_sls_alc_monitor_v.data[i];
+        if(lls_sls_alc_monitor->atsc3_lls_slt_service->service_id == service_id) {
+            lls_sls_alc_monitor_to_return = lls_sls_alc_monitor;
+            continue;
+        }
+    }
+
+    if(!lls_sls_alc_monitor_to_return) {
+        __ERROR("atsc3_lls_sls_alc_monitor_get_from_service_id: service_id: %d, lls_sls_alc_monitor_to_return is null!",
+                service_id);
+        return NULL;
+    }
+
+    __INFO("atsc3_lls_sls_alc_monitor_get_from_service_id: %d, returning lls_sls_alc_monitor_to_return: %p",
+           service_id,
+           lls_sls_alc_monitor_to_return);
+
+    return lls_sls_alc_monitor_to_return;
+}
+
+atsc3_sls_metadata_fragments_t* atsc3_slt_alc_get_sls_metadata_fragments_from_monitor_service_id(int service_id) {
+    lls_sls_alc_monitor_t* lls_sls_alc_monitor = atsc3_lls_sls_alc_monitor_get_from_service_id(service_id);
+
+    if(!lls_sls_alc_monitor || !lls_sls_alc_monitor->atsc3_sls_metadata_fragments) {
+        __ERROR("atsc3_slt_alc_get_sls_metadata_fragments_from_monitor_service_id: service_id: %d, alc_monitor or fragments were null, lls_sls_alc_monitor: %p", service_id, lls_sls_alc_monitor);
+        return NULL;
+    }
+
+    __INFO("atsc3_slt_alc_get_sls_metadata_fragments_from_monitor_service_id: %d, returning atsc3_sls_metadata_fragments: %p",
+           service_id,
+           lls_sls_alc_monitor->atsc3_sls_metadata_fragments);
+
+    return lls_sls_alc_monitor->atsc3_sls_metadata_fragments;
+}
+
+atsc3_route_s_tsid_t* atsc3_slt_alc_get_sls_route_s_tsid_from_monitor_service_id(int service_id) {
+    lls_sls_alc_monitor_t* lls_sls_alc_monitor = atsc3_lls_sls_alc_monitor_get_from_service_id(service_id);
+
+    if(!lls_sls_alc_monitor || !lls_sls_alc_monitor->atsc3_sls_metadata_fragments || !lls_sls_alc_monitor->atsc3_sls_metadata_fragments->atsc3_route_s_tsid) {
+        __ERROR("atsc3_slt_alc_get_sls_route_s_tsid_from_monitor_service_id: service_id: %d, alc_monitor or fragments or route_s_tsid were null, lls_sls_alc_monitor: %p", service_id, lls_sls_alc_monitor);
+        return NULL;
+    }
+
+    __INFO("atsc3_slt_alc_get_sls_route_s_tsid_from_monitor_service_id: %d, returning atsc3_route_s_tsid: %p",
+           service_id,
+           lls_sls_alc_monitor->atsc3_sls_metadata_fragments->atsc3_route_s_tsid);
+
+    return lls_sls_alc_monitor->atsc3_sls_metadata_fragments->atsc3_route_s_tsid;
+}
+
+/**
+ * else {
+        lls_slt_monitor_clear_lls_sls_alc_monitor(lls_slt_monitor);
+        if(lls_slt_monitor->lls_sls_alc_monitor) {
+            lls_sls_alc_monitor_free(&lls_slt_monitor->lls_sls_alc_monitor);
+        }
+
+ * @param packet
+ */
 //void process_packet(u_char *user, const struct pcap_pkthdr *pkthdr, const u_char *packet) {
 void atsc3_phy_mmt_player_bridge_process_packet_phy(block_t* packet) {
 
@@ -906,12 +1067,20 @@ void atsc3_phy_mmt_player_bridge_init(At3DrvIntf* At3DrvIntf_ptr) {
     //extract out one trun sampleduration for essence timing
     atsc3_mmt_mfu_context->atsc3_mmt_mpu_on_sequence_movie_fragment_metadata_present = &atsc3_mmt_mpu_on_sequence_movie_fragment_metadata_present_ndk;
 
-    temp_folder_path = at3DrvIntf_ptr->get_android_temp_folder();
-    chdir(temp_folder_path.c_str());
-    at3DrvIntf_ptr->LogMsgF("atsc3_phy_mmt_player_bridge_init - completed, temp folder path: %s", temp_folder_path.c_str());
+    atsc3_ndk_cache_temp_folder_path = at3DrvIntf_ptr->get_android_temp_folder();
+    chdir(atsc3_ndk_cache_temp_folder_path.c_str());
+    at3DrvIntf_ptr->LogMsgF("atsc3_phy_mmt_player_bridge_init - completed, temp folder path: %s", atsc3_ndk_cache_temp_folder_path.c_str());
 
 }
 
+string atsc3_ndk_cache_temp_folder_path_get() {
+    return atsc3_ndk_cache_temp_folder_path;
+}
+
+
+string atsc3_route_service_context_temp_folder_name(int service_id) {
+    return __ALC_DUMP_OUTPUT_PATH__ + to_string(service_id) + "/";
+}
 
 
 
