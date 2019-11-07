@@ -470,6 +470,7 @@ int alc_packet_write_fragment(FILE* f, char* file_name, uint32_t offset, alc_pac
     return alc_packet->alc_len;
 }
 
+
 int alc_packet_dump_to_object(udp_flow_t* udp_flow, alc_packet_t** alc_packet_ptr, lls_sls_alc_monitor_t* lls_sls_alc_monitor) {
 
 	alc_packet_t* alc_packet = *alc_packet_ptr;
@@ -549,7 +550,7 @@ int alc_packet_dump_to_object(udp_flow_t* udp_flow, alc_packet_t** alc_packet_pt
      
             if(strncmp(temporary_filename, s_tsid_content_location, __MIN(strlen(temporary_filename), strlen(s_tsid_content_location))) !=0) {
                 char new_file_name[1024] = { 0 };
-                snprintf(new_file_name, 1024, "route/%d", lls_sls_alc_monitor->atsc3_lls_slt_service->service_id);
+                snprintf(new_file_name, 1024, __ALC_DUMP_OUTPUT_PATH__"%d", lls_sls_alc_monitor->atsc3_lls_slt_service->service_id);
                 mkdir(new_file_name, 0777);
                 snprintf(new_file_name, 1024, "%s/%s", new_file_name, s_tsid_content_location);
                 
