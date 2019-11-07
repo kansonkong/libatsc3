@@ -76,13 +76,13 @@ block_t* alc_get_payload_from_filename(char*);
 }
 #endif
 
-#define __ALC_UTILS_ERROR(...)   printf("%s:%d:ERROR:%.4f: ",__FILE__,__LINE__, gt()); printf(__VA_ARGS__); printf("%s%s","\r","\n")
-#define __ALC_UTILS_WARN(...)    printf("%s:%d:WARN:%.4f : ",__FILE__,__LINE__, gt()); printf(__VA_ARGS__); printf("%s%s","\r","\n")
-#define __ALC_UTILS_INFO(...)    printf("%s:%d:INFO:%.4f: ",__FILE__,__LINE__, gt()); printf(__VA_ARGS__); printf("%s%s","\r","\n")
+#define __ALC_UTILS_ERROR(...)   __LIBATSC3_TIMESTAMP_ERROR(__VA_ARGS__);
+#define __ALC_UTILS_WARN(...)    __LIBATSC3_TIMESTAMP_WARN(__VA_ARGS__);
+#define __ALC_UTILS_INFO(...)    __LIBATSC3_TIMESTAMP_INFO(__VA_ARGS__);
 
-#define __ALC_UTILS_DEBUG(...)   if(_ALC_UTILS_DEBUG_ENABLED) { printf("%s:%d:DEBUG:%.4f: ",__FILE__,__LINE__, gt()); printf(__VA_ARGS__); printf("%s%s","\r","\n"); }
-#define __ALC_UTILS_TRACE(...)   if(_ALC_UTILS_TRACE_ENABLED) { printf("%s:%d:TRACE:%.4f: ",__FILE__,__LINE__, gt()); printf(__VA_ARGS__); printf("%s%s","\r","\n"); }
-#define __ALC_UTILS_IOTRACE(...) if(_ALC_UTILS_IOTRACE_ENABLED) { printf("%s:%d:TRACE:%.4f: ",__FILE__,__LINE__, gt()); printf(__VA_ARGS__); printf("%s%s","\r","\n"); }
+#define __ALC_UTILS_DEBUG(...)   if(_ALC_UTILS_DEBUG_ENABLED) { __LIBATSC3_TIMESTAMP_DEBUG(__VA_ARGS__); }
+#define __ALC_UTILS_TRACE(...)   if(_ALC_UTILS_TRACE_ENABLED) { __LIBATSC3_TIMESTAMP_TRACE(__VA_ARGS__); }
+#define __ALC_UTILS_IOTRACE(...) if(_ALC_UTILS_IOTRACE_ENABLED) { __LIBATSC3_TIMESTAMP_TRACE(__VA_ARGS__); }
 
 
 #endif /* ATSC3_ALC_UTILS_H_ */
