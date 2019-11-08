@@ -61,6 +61,8 @@ uint16_t* dst_packet_id_filter = NULL;
 atsc3_mmt_mfu_context_t* atsc3_mmt_mfu_context;
 lls_slt_monitor_t* lls_slt_monitor;
 
+void atsc3_lls_sls_alc_on_object_close_flag_s_tsid_content_location_ndk(uint32_t tsi, uint32_t toi, char* content_location);
+
 //mmtp/sls flow management
 mmtp_flow_t* mmtp_flow;
 udp_flow_latest_mpu_sequence_number_container_t* udp_flow_latest_mpu_sequence_number_container;
@@ -192,6 +194,9 @@ atsc3_lls_slt_service_t* atsc3_phy_mmt_player_bridge_set_single_monitor_a331_ser
 
         lls_slt_monitor_add_lls_sls_alc_monitor(lls_slt_monitor, lls_sls_alc_monitor);
 
+        //wire up event callback for alc close_object notification
+        lls_sls_alc_monitor->atsc3_lls_sls_alc_on_object_close_flag_s_tsid_content_location = &atsc3_lls_sls_alc_on_object_close_flag_s_tsid_content_location_ndk;
+
     } else {
         lls_slt_monitor_clear_lls_sls_alc_monitor(lls_slt_monitor);
         if(lls_slt_monitor->lls_sls_alc_monitor) {
@@ -244,6 +249,10 @@ atsc3_lls_slt_service_t* atsc3_phy_mmt_player_bridge_add_monitor_a331_service_id
     }
     lls_sls_alc_monitor->lls_alc_session = lls_sls_alc_session;
     lls_slt_monitor_add_lls_sls_alc_monitor(lls_slt_monitor, lls_sls_alc_monitor);
+
+    //add in supplimentary callback hook for additional ALC emissions
+    lls_sls_alc_monitor->atsc3_lls_sls_alc_on_object_close_flag_s_tsid_content_location = &atsc3_lls_sls_alc_on_object_close_flag_s_tsid_content_location_ndk;
+
 
     //add a supplimentry sls_alc monitor
     // TODO: fix me? NOTE: do not replace the primary lls_slt_monitor->lls_sls_alc_monitor entry if set
@@ -634,6 +643,11 @@ void atsc3_lls_on_sls_table_present_ndk(lls_table_t* lls_table) {
     at3DrvIntf_ptr->LogMsg((const char*)xml_payload_copy);
     free(xml_payload_copy);
 
+}
+
+//TODO: jjustman-2019-11-08: wire up the service_id in which this alc_emission originated from in addition to tsi/toi
+void atsc3_lls_sls_alc_on_object_close_flag_s_tsid_content_location_ndk(uint32_t tsi, uint32_t toi, char* content_location) {
+    at3DrvIntf_ptr->atsc3_lls_sls_alc_on_object_close_flag_s_tsid_content_location_jni(tsi, toi, content_location);
 }
 
 /*
@@ -1034,7 +1048,7 @@ void atsc3_phy_mmt_player_bridge_init(At3DrvIntf* At3DrvIntf_ptr) {
 
     //set global logging levels
     _MMT_CONTEXT_MPU_DEBUG_ENABLED = 0;
-    _ALC_UTILS_IOTRACE_ENABLED = 1;
+    _ALC_UTILS_IOTRACE_ENABLED = 0;
 
 
     lls_slt_monitor = lls_slt_monitor_create();

@@ -184,7 +184,7 @@ void atsc3_route_sls_patch_mpd_availability_start_time_and_start_number(atsc3_mi
             block_Destroy(&lls_sls_alc_monitor->last_mpd_payload);
         }
         lls_sls_alc_monitor->last_mpd_payload = block_Alloc(strlen(atsc3_mime_multipart_related_payload->payload)+1);
-        block_Write(lls_sls_alc_monitor->last_mpd_payload, atsc3_mime_multipart_related_payload->payload, strlen(atsc3_mime_multipart_related_payload->payload));
+        block_Write(lls_sls_alc_monitor->last_mpd_payload, (const uint8_t*)atsc3_mime_multipart_related_payload->payload, strlen(atsc3_mime_multipart_related_payload->payload));
         
         //update our availabilityStartTime
         char* ast_char = strstr(temp_lower_mpd, _MPD_availability_start_time_VALUE_);
@@ -197,7 +197,7 @@ void atsc3_route_sls_patch_mpd_availability_start_time_and_start_number(atsc3_mi
             //        123456789012345678901
             //                 1         2
             char iso_now_timestamp[_ISO8601_DATE_TIME_LENGTH_ + 1] = { 0 };
-            strftime(&iso_now_timestamp, _ISO8601_DATE_TIME_LENGTH_, "%Y-%m-%dT%H:%M:%SZ", gmtime(&now));
+            strftime((char*)&iso_now_timestamp, _ISO8601_DATE_TIME_LENGTH_, "%Y-%m-%dT%H:%M:%SZ", gmtime(&now));
 
             char* to_start_ptr = atsc3_mime_multipart_related_payload->payload + ast_char_pos_end + 1;
             _ATSC3_ROUTE_SLS_PROCESSOR_INFO("patching mpd availabilityStartTime: from %.20s to %s, v: startNumber: %d, a: startNumber: %d",
@@ -265,7 +265,7 @@ void atsc3_route_sls_patch_mpd_availability_start_time_and_start_number(atsc3_mi
 
                 }
                 lls_sls_alc_monitor->last_mpd_payload_patched = block_Alloc(atsc3_mime_multipart_related_payload->payload_length + 1);
-                block_Write(lls_sls_alc_monitor->last_mpd_payload_patched, atsc3_mime_multipart_related_payload->payload, atsc3_mime_multipart_related_payload->payload_length);
+                block_Write(lls_sls_alc_monitor->last_mpd_payload_patched, (const uint8_t*)atsc3_mime_multipart_related_payload->payload, atsc3_mime_multipart_related_payload->payload_length);
             }
         }
     }

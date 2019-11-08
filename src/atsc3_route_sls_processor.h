@@ -7,6 +7,8 @@
  *      process our tsi: 0 and releant toi sls and mbms signaling
  */
 
+#include <stdint.h>
+
 #ifndef ATSC3_ROUTE_SLS_PROCESSOR_H_
 #define ATSC3_ROUTE_SLS_PROCESSOR_H_
 
