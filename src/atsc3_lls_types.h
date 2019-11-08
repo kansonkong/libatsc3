@@ -685,6 +685,9 @@ typedef struct lls_sls_alc_monitor {
     atsc3_fdt_instance_t* atsc3_fdt_instance;
     atsc3_sls_metadata_fragments_t* atsc3_sls_metadata_fragments;
 
+    atsc3_lls_sls_alc_on_object_close_flag_s_tsid_content_location_f						atsc3_lls_sls_alc_on_object_close_flag_s_tsid_content_location;
+
+
 } lls_sls_alc_monitor_t;
 
 
