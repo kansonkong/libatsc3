@@ -62,6 +62,7 @@ atsc3_mmt_mfu_context_t* atsc3_mmt_mfu_context;
 lls_slt_monitor_t* lls_slt_monitor;
 
 void atsc3_lls_sls_alc_on_object_close_flag_s_tsid_content_location_ndk(uint32_t tsi, uint32_t toi, char* content_location);
+void atsc3_lls_sls_alc_on_route_mpd_patched_ndk(uint16_t service_id);
 
 //mmtp/sls flow management
 mmtp_flow_t* mmtp_flow;
@@ -196,6 +197,10 @@ atsc3_lls_slt_service_t* atsc3_phy_mmt_player_bridge_set_single_monitor_a331_ser
 
         //wire up event callback for alc close_object notification
         lls_sls_alc_monitor->atsc3_lls_sls_alc_on_object_close_flag_s_tsid_content_location = &atsc3_lls_sls_alc_on_object_close_flag_s_tsid_content_location_ndk;
+
+        //write up event callback for alc MPD patching
+        lls_sls_alc_monitor->atsc3_lls_sls_alc_on_route_mpd_patched = &atsc3_lls_sls_alc_on_route_mpd_patched_ndk;
+
 
     } else {
         lls_slt_monitor_clear_lls_sls_alc_monitor(lls_slt_monitor);
@@ -651,6 +656,9 @@ void atsc3_lls_sls_alc_on_object_close_flag_s_tsid_content_location_ndk(uint32_t
     at3DrvIntf_ptr->atsc3_lls_sls_alc_on_object_close_flag_s_tsid_content_location_jni(tsi, toi, content_location);
 }
 
+void atsc3_lls_sls_alc_on_route_mpd_patched_ndk(uint16_t service_id) {
+    at3DrvIntf_ptr->atsc3_lls_sls_alc_on_route_mpd_patched_jni(service_id);
+}
 /*
  *
 note for Android MediaCodec:
