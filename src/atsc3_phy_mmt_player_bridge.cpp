@@ -655,6 +655,9 @@ void atsc3_lls_on_sls_table_present_ndk(lls_table_t* lls_table) {
     strncpy(xml_payload_copy, (char*)lls_table->raw_xml.xml_payload, lls_table->raw_xml.xml_payload_size);
 
     at3DrvIntf_ptr->LogMsg((const char*)xml_payload_copy);
+    
+    at3DrvIntf_ptr->atsc3_onSlsTablePresent((const char*)xml_payload_copy);
+
     free(xml_payload_copy);
 
 }
