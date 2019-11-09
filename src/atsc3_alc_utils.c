@@ -471,6 +471,7 @@ int alc_packet_write_fragment(FILE* f, char* file_name, uint32_t offset, alc_pac
 }
 
 
+
 int alc_packet_dump_to_object(udp_flow_t* udp_flow, alc_packet_t** alc_packet_ptr, lls_sls_alc_monitor_t* lls_sls_alc_monitor) {
 
 	alc_packet_t* alc_packet = *alc_packet_ptr;
@@ -1167,3 +1168,53 @@ cleanup:
 	return;
 }
 
+
+void atsc3_alc_persist_route_ext_attributes_per_lls_sls_alc_monitor_essence(alc_packet_t* alc_packet, lls_sls_alc_monitor_t* lls_sls_alc_monitor) {
+    if(alc_packet->use_start_offset && lls_sls_alc_monitor && lls_sls_alc_monitor->video_tsi && lls_sls_alc_monitor->audio_tsi) {
+        uint32_t tsi = alc_packet->def_lct_hdr->tsi;
+        uint32_t toi = alc_packet->def_lct_hdr->toi;
+
+        //only process non init toi's under the assumption they will be LESS THAN  ALC packet size!
+        if(toi != lls_sls_alc_monitor->video_toi_init && toi != lls_sls_alc_monitor->audio_toi_init) {
+
+            uint32_t toi_length = alc_packet->transfer_len;
+
+            //track our transfer_len if EXT_FTI  is only present on the initial ALC packet
+            if(toi_length) {
+                if(tsi == lls_sls_alc_monitor->video_tsi) {
+                    lls_sls_alc_monitor->last_video_toi = toi;
+                    lls_sls_alc_monitor->last_video_toi_length = toi_length;
+                    __DEBUG("ALC: tsi: %u, toi: %u, setting last_video_toi: %u, last_video_toi_length: %u", tsi, toi, toi, toi_length);
+                } else if (tsi == lls_sls_alc_monitor->audio_tsi) {
+                    lls_sls_alc_monitor->last_audio_toi = toi;
+                    lls_sls_alc_monitor->last_audio_toi_length = toi_length;
+                    __DEBUG("ALC: tsi: %u, toi: %u, setting last_audio_toi: %u, last_audio_toi_length: %u", tsi, toi, toi, toi_length);
+                }
+            }
+
+            //check if we should set close flag here
+            uint32_t alc_start_offset = (alc_packet)->start_offset;
+            uint32_t alc_packet_length = (alc_packet)->alc_len;
+
+            if(tsi == lls_sls_alc_monitor->video_tsi && toi == lls_sls_alc_monitor->last_video_toi) {
+                __DEBUG("ALC: tsi: %u, toi: %u, checking last_video_toi_length: %u against start_offset: %u, alc_packet_length: %u (total: %u)",
+                        tsi, toi,  lls_sls_alc_monitor->last_video_toi_length, alc_start_offset, alc_packet_length, alc_start_offset + alc_packet_length);
+
+                    if(lls_sls_alc_monitor->last_video_toi_length && lls_sls_alc_monitor->last_video_toi_length <= (alc_start_offset + alc_packet_length)) {
+                    (alc_packet)->close_object_flag = true;
+                    __DEBUG("ALC: tsi: %u, toi: %u, setting video: close_object_flag: true",
+                        tsi, toi);
+                }
+            } else if(tsi == lls_sls_alc_monitor->audio_tsi && toi == lls_sls_alc_monitor->last_audio_toi) {
+                __DEBUG("ALC: tsi: %u, toi: %u, checking last_audio_toi_length: %u against start_offset: %u, alc_packet_length: %u (total: %u)",
+                        tsi, toi,  lls_sls_alc_monitor->last_audio_toi_length, alc_start_offset, alc_packet_length, alc_start_offset + alc_packet_length);
+
+                if(lls_sls_alc_monitor->last_audio_toi_length && lls_sls_alc_monitor->last_audio_toi_length <= (alc_start_offset + alc_packet_length)) {
+                    alc_packet->close_object_flag = true;
+                    __DEBUG("ALC: tsi: %u, toi: %u, setting audio: close_object_flag: true",
+                        tsi, toi);
+                }
+            }
+        }
+    }
+}
