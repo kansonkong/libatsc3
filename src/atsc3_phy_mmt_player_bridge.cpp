@@ -478,6 +478,7 @@ void atsc3_phy_mmt_player_bridge_process_packet_phy(block_t* packet) {
         //process ALC streams
         int retval = alc_rx_analyze_packet_a331_compliant((char*)block_Get(udp_packet->data), block_Remaining_size(udp_packet->data), &ch, &alc_packet);
         if(!retval) {
+            atsc3_alc_persist_route_ext_attributes_per_lls_sls_alc_monitor_essence(alc_packet, lls_slt_monitor->lls_sls_alc_monitor);
             //dump out for fragment inspection
             alc_packet_dump_to_object(&udp_packet->udp_flow, &alc_packet, lls_slt_monitor->lls_sls_alc_monitor);
         } else {
