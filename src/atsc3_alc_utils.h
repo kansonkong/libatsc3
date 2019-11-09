@@ -72,6 +72,9 @@ void __alc_recon_fragment_with_init_box(char* file_name, alc_packet_t* alc_packe
 
 block_t* alc_get_payload_from_filename(char*);
 
+void atsc3_alc_persist_route_ext_attributes_per_lls_sls_alc_monitor_essence(alc_packet_t* alc_packet, lls_sls_alc_monitor_t* lls_sls_alc_monitor);
+
+
 #if defined (__cplusplus)
 }
 #endif
