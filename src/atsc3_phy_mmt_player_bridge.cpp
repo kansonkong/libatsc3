@@ -135,6 +135,7 @@ atsc3_lls_slt_service_t* atsc3_phy_mmt_player_bridge_set_single_monitor_a331_ser
         }
     }
 
+    //wire up MMT, watch out for potentally free'd sessions that aren't NULL'd out properly..
     if(atsc3_slt_broadcast_svc_signalling_mmt != NULL) {
         __INFO("atsc3_phy_mmt_player_bridge_set_a331_service_id: service_id: %d - using MMT with flow: sip: %s, dip: %s:%s",
                service_id,
@@ -144,7 +145,10 @@ atsc3_lls_slt_service_t* atsc3_phy_mmt_player_bridge_set_single_monitor_a331_ser
 
         //clear any active SLS monitors
         lls_slt_monitor_clear_lls_sls_mmt_monitor(lls_slt_monitor);
+        //TODO - remove this logic to a unified process...
         lls_slt_monitor_clear_lls_sls_alc_monitor(lls_slt_monitor);
+        lls_slt_monitor->lls_sls_alc_monitor = NULL;
+        lls_sls_alc_monitor = NULL; //make sure to clear out our ref
 
         lls_sls_mmt_monitor = lls_sls_mmt_monitor_create();
         lls_sls_mmt_monitor->atsc3_lls_slt_service = atsc3_lls_slt_service; //HACK!
@@ -168,9 +172,11 @@ atsc3_lls_slt_service_t* atsc3_phy_mmt_player_bridge_set_single_monitor_a331_ser
         if(lls_slt_monitor->lls_sls_mmt_monitor) {
             lls_sls_mmt_monitor_free(&lls_slt_monitor->lls_sls_mmt_monitor);
         }
+        lls_sls_mmt_monitor = NULL;
 
     }
 
+    //wire up ROUTE
     if(atsc3_slt_broadcast_svc_signalling_route != NULL) {
         __INFO("atsc3_phy_mmt_player_bridge_set_a331_service_id: service_id: %d - using ROUTE with flow: sip: %s, dip: %s:%s",
                service_id,
@@ -207,6 +213,7 @@ atsc3_lls_slt_service_t* atsc3_phy_mmt_player_bridge_set_single_monitor_a331_ser
         if(lls_slt_monitor->lls_sls_alc_monitor) {
             lls_sls_alc_monitor_free(&lls_slt_monitor->lls_sls_alc_monitor);
         }
+        lls_sls_alc_monitor = NULL;
 
     }
 
@@ -424,6 +431,7 @@ void atsc3_phy_mmt_player_bridge_process_packet_phy(block_t* packet) {
                                 //TODO:  make sure we don't early free this...
                                 //lls_service->broadcast_svc_signaling.sls_destination_ip_address && lls_service->broadcast_svc_signaling.sls_destination_udp_port
                                 //match our dst_ip_addr_filter && udp_packet->udp_flow.dst_ip_addr != *dst_ip_addr_filter and port filter
+
                                 __INFO("Adding service: %d", atsc3_lls_slt_service->service_id);
 
                                 lls_sls_mmt_monitor = lls_sls_mmt_monitor_create();
