@@ -8,6 +8,7 @@
  */
 
 #include <stdint.h>
+#include <string.h>
 
 #ifndef ATSC3_ROUTE_SLS_PROCESSOR_H_
 #define ATSC3_ROUTE_SLS_PROCESSOR_H_

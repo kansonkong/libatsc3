@@ -1177,6 +1177,22 @@ void atsc3_alc_persist_route_ext_attributes_per_lls_sls_alc_monitor_essence(alc_
         //only process non init toi's under the assumption they will be LESS THAN  ALC packet size!
         if(toi != lls_sls_alc_monitor->video_toi_init && toi != lls_sls_alc_monitor->audio_toi_init) {
 
+			//check for toi discontinuity from pcap replay or rfcapture replay
+
+			if(!lls_sls_alc_monitor->has_discontiguous_toi_flow  &&
+			((tsi == lls_sls_alc_monitor->video_tsi && lls_sls_alc_monitor->last_video_toi && lls_sls_alc_monitor->last_video_toi > toi) ||
+				(tsi == lls_sls_alc_monitor->audio_tsi && lls_sls_alc_monitor->last_audio_toi && lls_sls_alc_monitor->last_audio_toi > toi))) {
+
+				__ALC_UTILS_WARN("atsc3_alc_persist_route_ext_attributes_per_lls_sls_alc_monitor_essence: has discontigious re-wrap of TOI flow(s), tsi: %d, last_video_toi: %d, last_audio_toi: %d, toi: %d",
+						tsi, lls_sls_alc_monitor->last_video_toi, lls_sls_alc_monitor->last_audio_toi, toi );
+
+				//force a rebuild of the mpd with updated startNumber values
+				lls_sls_alc_monitor->has_discontiguous_toi_flow = true;
+				if(lls_sls_alc_monitor->last_mpd_payload) {
+					block_Destroy(&lls_sls_alc_monitor->last_mpd_payload);
+				}
+			}
+
             uint32_t toi_length = alc_packet->transfer_len;
 
             //track our transfer_len if EXT_FTI  is only present on the initial ALC packet

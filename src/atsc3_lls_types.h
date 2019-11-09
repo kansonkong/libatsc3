@@ -641,18 +641,21 @@ typedef struct lls_sls_alc_monitor {
 	atsc3_lls_slt_service_t* 	atsc3_lls_slt_service;
     
 	lls_sls_alc_session_t* 		lls_alc_session;
-    
+
     uint32_t 					audio_tsi;
     bool 						audio_tsi_manual_override;
 
     uint32_t 					video_tsi;
     bool 						video_tsi_manual_override;
-    
+
+	bool						has_discontiguous_toi_flow;
+
 	/**
 	* jdj-2019-05-29: TODO - use a sparse array lookup (https://github.com/ned14/nedtries) for resolution to proper transfer_object_length to back-patch close flag
 	*/
 	uint32_t last_video_toi;
 	uint32_t last_video_toi_length;
+
 	uint32_t last_audio_toi;
 	uint32_t last_audio_toi_length;
 
@@ -667,7 +670,6 @@ typedef struct lls_sls_alc_monitor {
 
     block_t* last_mpd_payload;
     block_t* last_mpd_payload_patched;
-
 
 	uint32_t video_toi_init;
 	uint32_t audio_toi_init;
@@ -686,7 +688,7 @@ typedef struct lls_sls_alc_monitor {
     atsc3_sls_metadata_fragments_t* atsc3_sls_metadata_fragments;
 
     atsc3_lls_sls_alc_on_object_close_flag_s_tsid_content_location_f						atsc3_lls_sls_alc_on_object_close_flag_s_tsid_content_location;
-
+	atsc3_lls_sls_alc_on_route_mpd_patched_f    											atsc3_lls_sls_alc_on_route_mpd_patched;                             //dispatched in atsc3_route_sls_processor.c
 
 } lls_sls_alc_monitor_t;
 

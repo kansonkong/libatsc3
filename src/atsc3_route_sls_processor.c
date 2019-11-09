@@ -8,6 +8,7 @@
 
 #include "atsc3_route_sls_processor.h"
 #include "atsc3_lls_alc_utils.h"
+#include "strnstr.h"
 
 
 int _ROUTE_SLS_PROCESSOR_INFO_ENABLED = 0;
@@ -161,10 +162,13 @@ cleanup:
 
 /*
  
- start number patching doesn't work with exoplayer2...
+ special start number patching for pcap/rfcap replays with exoplayer2...
+
+
  */
 void atsc3_route_sls_patch_mpd_availability_start_time_and_start_number(atsc3_mime_multipart_related_payload_t* atsc3_mime_multipart_related_payload, lls_sls_alc_monitor_t* lls_sls_alc_monitor) {
-    if(lls_sls_alc_monitor->last_mpd_payload && lls_sls_alc_monitor->last_mpd_payload_patched) {
+
+    if(lls_sls_alc_monitor->last_mpd_payload && (lls_sls_alc_monitor->last_mpd_payload_patched && !lls_sls_alc_monitor->has_discontiguous_toi_flow)) {
         //compare if our original vs. new payload has changed, and patch accordingly, otherwise swap out to our old payload
         if(strncmp(lls_sls_alc_monitor->last_mpd_payload->p_buffer, atsc3_mime_multipart_related_payload->payload, __MIN(strlen(lls_sls_alc_monitor->last_mpd_payload->p_buffer), atsc3_mime_multipart_related_payload->payload_length)) == 0) {
             free(atsc3_mime_multipart_related_payload->payload);
@@ -172,6 +176,9 @@ void atsc3_route_sls_patch_mpd_availability_start_time_and_start_number(atsc3_mi
             atsc3_mime_multipart_related_payload->payload_length = strlen(lls_sls_alc_monitor->last_mpd_payload_patched->p_buffer);
             return;
         }
+    }
+    if(lls_sls_alc_monitor->has_discontiguous_toi_flow) {
+        _ATSC3_ROUTE_SLS_PROCESSOR_WARN("atsc3_route_sls_patch_mpd_availability_start_time_and_start_number, has_discontiguous_toi_flow is true, rebuilding MPD!");
     }
     
     char* temp_lower_mpd = calloc(strlen(atsc3_mime_multipart_related_payload->payload)+1, sizeof(char));
@@ -200,9 +207,11 @@ void atsc3_route_sls_patch_mpd_availability_start_time_and_start_number(atsc3_mi
             strftime((char*)&iso_now_timestamp, _ISO8601_DATE_TIME_LENGTH_, "%Y-%m-%dT%H:%M:%SZ", gmtime(&now));
 
             char* to_start_ptr = atsc3_mime_multipart_related_payload->payload + ast_char_pos_end + 1;
-            _ATSC3_ROUTE_SLS_PROCESSOR_INFO("patching mpd availabilityStartTime: from %.20s to %s, v: startNumber: %d, a: startNumber: %d",
+            _ATSC3_ROUTE_SLS_PROCESSOR_WARN("atsc3_route_sls_patch_mpd_availability_start_time_and_start_number: patching mpd availabilityStartTime: from %.20s to %s, v: last_video_toi: %d, last_closed_video_toi: %d, a: last_audio_toi: %d, last_closed_audio_toi: %d, startNumber: %d",
                                             to_start_ptr, (char*)iso_now_timestamp,
+                                            lls_sls_alc_monitor->last_video_toi,
                                             lls_sls_alc_monitor->last_closed_video_toi,
+                                            lls_sls_alc_monitor->last_audio_toi,
                                             lls_sls_alc_monitor->last_closed_audio_toi);
             
             for(int i=0; i < _ISO8601_DATE_TIME_LENGTH_; i++) {
@@ -210,24 +219,30 @@ void atsc3_route_sls_patch_mpd_availability_start_time_and_start_number(atsc3_mi
             }
             
             //only patch startNumber values if we have lls_sls_alc_monitor->last_closed_video_toi and lls_sls_alc_monitor->last_closed_audio_toi
+            //todo: jjustman-2019-11-05: make this more robust...
+
             if(lls_sls_alc_monitor->last_closed_video_toi && lls_sls_alc_monitor->last_closed_audio_toi) {
                 int mpd_new_payload_max_len = strlen(atsc3_mime_multipart_related_payload->payload) + 32;
                 char* new_mpd_payload = calloc(mpd_new_payload_max_len + 1, sizeof(char));
-                
-                //todo: jjustman-2019-11-05: make this more robust...
-                char* video_start = strstr(temp_lower_mpd, "contenttype=\"video\"");
-                if(!video_start) goto fail;
-                char* video_start_number_start = strstr(video_start, "startnumber=\"");
-                                                                    //1234567890123
+                char* vcodec_representation_start_pos = strnstr(temp_lower_mpd, "video/mp4", strlen(temp_lower_mpd));
+                char* acodec_representation_start_pos = strnstr(temp_lower_mpd, "audio/mp4", strlen(temp_lower_mpd));
+
+                ///split video startnumber first
+
+//                char* video_start = strstr((temp_lower_mpd+vcodec_representation_start_pos), "contenttype=\"video\"");
+//                if(!video_start) goto fail;
+
+                char* video_start_number_start = strstr(vcodec_representation_start_pos, "startnumber=\"");
+                //1234567890123
                 if(!video_start_number_start) goto fail;
 
                 char* video_start_number_end = strstr(video_start_number_start, "\"");
                 if(!video_start_number_end) goto fail;
 
-                char* audio_start = strstr(temp_lower_mpd, "contenttype=\"audio\"");
-                if(!audio_start) goto fail;
+//                char* audio_start = strstr((temp_lower_mpd, "contenttype=\"audio\"");
+//                if(!audio_start) goto fail;
 
-                char* audio_start_number_start = strstr(audio_start, "startnumber=\"");
+                char* audio_start_number_start = strstr(acodec_representation_start_pos, "startnumber=\"");
                 if(!audio_start_number_start) goto fail;
 
                 char* audio_start_number_end = strstr(audio_start_number_start, "\"");
@@ -240,35 +255,53 @@ void atsc3_route_sls_patch_mpd_availability_start_time_and_start_number(atsc3_mi
                 int video_start_number_start_pos = (video_start_number_start + 13) - temp_lower_mpd;
                 mpd_patched_start_ptr[video_start_number_start_pos] = '\0';
                 int video_start_number_end_pos = video_start_number_end  - temp_lower_mpd;
-                
+
                 char* mpd_patched_video_start_end_ptr = mpd_patched_start_ptr + video_start_number_end_pos + 2;
-                
+
                 int audio_start_number_start_pos = (audio_start_number_start + 13) - temp_lower_mpd;
                 mpd_patched_start_ptr[audio_start_number_start_pos] = '\0';
                 int audio_start_number_end_pos = audio_start_number_end  - temp_lower_mpd + 2;
 
                 char* audio_start_number_end_ptr = mpd_patched_start_ptr + audio_start_number_end_pos;
-                
-                snprintf(new_mpd_payload, mpd_new_payload_max_len, "%s%d%s%d%s",
-                         mpd_patched_start_ptr,
-                         lls_sls_alc_monitor->last_closed_video_toi,
-                         mpd_patched_video_start_end_ptr,
-                         lls_sls_alc_monitor->last_closed_audio_toi,
-                         audio_start_number_end_ptr);
+
+                //if !lls_sls_alc_monitor->has_discontiguous_toi_flow,  use the last_closed video/audio toi, otherwise use the 'current' video/audio toi
+                if(vcodec_representation_start_pos < acodec_representation_start_pos) {
+                    snprintf(new_mpd_payload, mpd_new_payload_max_len, "%s%d%s%d%s",
+                             mpd_patched_start_ptr,
+                             (!lls_sls_alc_monitor->has_discontiguous_toi_flow ? lls_sls_alc_monitor->last_closed_video_toi : lls_sls_alc_monitor->last_video_toi),
+                             mpd_patched_video_start_end_ptr,
+                             (!lls_sls_alc_monitor->has_discontiguous_toi_flow ? lls_sls_alc_monitor->last_closed_audio_toi : lls_sls_alc_monitor->last_audio_toi),
+                             audio_start_number_end_ptr);
+                } else {
+                    snprintf(new_mpd_payload, mpd_new_payload_max_len, "%s%d%s%d%s",
+                             mpd_patched_start_ptr,
+                             (!lls_sls_alc_monitor->has_discontiguous_toi_flow ? lls_sls_alc_monitor->last_closed_audio_toi : lls_sls_alc_monitor->last_audio_toi),
+                             mpd_patched_video_start_end_ptr,
+                             (!lls_sls_alc_monitor->has_discontiguous_toi_flow ? lls_sls_alc_monitor->last_closed_video_toi : lls_sls_alc_monitor->last_video_toi),
+                             audio_start_number_end_ptr);
+                }
 
                 free(atsc3_mime_multipart_related_payload->payload);
                 atsc3_mime_multipart_related_payload->payload = new_mpd_payload;
                 atsc3_mime_multipart_related_payload->payload_length = strlen(new_mpd_payload);
-                
+
                 if(lls_sls_alc_monitor->last_mpd_payload_patched) {
                     block_Destroy(&lls_sls_alc_monitor->last_mpd_payload_patched);
 
                 }
                 lls_sls_alc_monitor->last_mpd_payload_patched = block_Alloc(atsc3_mime_multipart_related_payload->payload_length + 1);
                 block_Write(lls_sls_alc_monitor->last_mpd_payload_patched, (const uint8_t*)atsc3_mime_multipart_related_payload->payload, atsc3_mime_multipart_related_payload->payload_length);
-            }
+
+                //send a forced callback that our ROUTE/DASH flow is discontigous and needs to be reloaded
+                if(lls_sls_alc_monitor->has_discontiguous_toi_flow && lls_sls_alc_monitor->atsc3_lls_sls_alc_on_route_mpd_patched) {
+                    lls_sls_alc_monitor->atsc3_lls_sls_alc_on_route_mpd_patched(lls_sls_alc_monitor->atsc3_lls_slt_service->service_id);
+                }
+             }
         }
     }
+
+    lls_sls_alc_monitor->has_discontiguous_toi_flow = false;
+
     return;
     
 fail:
