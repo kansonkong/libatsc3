@@ -222,10 +222,18 @@ void atsc3_route_sls_patch_mpd_availability_start_time_and_start_number(atsc3_mi
             //todo: jjustman-2019-11-05: make this more robust...
 
             if(lls_sls_alc_monitor->last_closed_video_toi && lls_sls_alc_monitor->last_closed_audio_toi) {
-                int mpd_new_payload_max_len = strlen(atsc3_mime_multipart_related_payload->payload) + 32;
-                char* new_mpd_payload = calloc(mpd_new_payload_max_len + 1, sizeof(char));
                 char* vcodec_representation_start_pos = strnstr(temp_lower_mpd, "video/mp4", strlen(temp_lower_mpd));
                 char* acodec_representation_start_pos = strnstr(temp_lower_mpd, "audio/mp4", strlen(temp_lower_mpd));
+
+                if(!vcodec_representation_start_pos || !acodec_representation_start_pos) {
+                    _ATSC3_ROUTE_SLS_PROCESSOR_WARN("atsc3_route_sls_patch_mpd_availability_start_time_and_start_number: vcodec_representation_start_pos or acodec_representation_start_pos is NULL, mpd is: %s",
+                                                    atsc3_mime_multipart_related_payload->payload);
+                    return;
+
+                }
+
+                int mpd_new_payload_max_len = strlen(atsc3_mime_multipart_related_payload->payload) + 32;
+                char* new_mpd_payload = calloc(mpd_new_payload_max_len + 1, sizeof(char));
 
                 ///split video startnumber first
 
