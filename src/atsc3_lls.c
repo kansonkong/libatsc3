@@ -131,6 +131,8 @@ lls_table_t* lls_table_create_or_update_from_lls_slt_monitor(lls_slt_monitor_t* 
                 }
                 break;
 
+                //todo: jjustman-2019-11-09: dispatch remaining lls table tables
+
             default:
                 //noop
                 break;
