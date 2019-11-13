@@ -200,8 +200,9 @@ lls_table_t* lls_table_create_or_update_from_lls_slt_monitor_with_metrics(lls_sl
 	//TODO: refactor me for event dispatching logic
 	if(lls_slt_monitor) {
 		if(lls_slt_monitor->lls_latest_slt_table) {
-			if(lls_table_new->lls_table_version > lls_slt_monitor->lls_latest_slt_table->lls_table_version ||
-					(lls_table_new->lls_table_version == 0x00 && lls_slt_monitor->lls_latest_slt_table->lls_table_version == 0xFF)) {
+			if(strncmp(lls_slt_monitor->lls_latest_slt_table->raw_xml.xml_payload, lls_table_new->raw_xml.xml_payload, strlen(lls_table_new->raw_xml.xml_payload) != 0) ||
+				(lls_table_new->lls_table_version > lls_slt_monitor->lls_latest_slt_table->lls_table_version ||
+					(lls_table_new->lls_table_version == 0x00 && lls_slt_monitor->lls_latest_slt_table->lls_table_version == 0xFF))) {
 
 				//free our old table and keep the new one
 				lls_table_free(&lls_slt_monitor->lls_latest_slt_table);
