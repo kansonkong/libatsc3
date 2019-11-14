@@ -679,14 +679,14 @@ void atsc3_init_parse_tkhd_for_width_height(video_decoder_configuration_record_t
      */
 
 void atsc3_init_parse_HEVCConfigurationBox_for_width_height(video_decoder_configuration_record_t* video_decoder_configuration_record, uint8_t* configurationBox_ptr_start, uint32_t init_buff_remaining) {
-    configurationBox_ptr_start += 16;
+    configurationBox_ptr_start += 8 + 16; //fullbox + avc1 box struct internals
 
-    uint32_t width = ntohl(*((uint32_t*)(configurationBox_ptr_start)));
-        configurationBox_ptr_start += 4;
-    uint32_t height = ntohl(*(uint32_t*)(configurationBox_ptr_start));
+    uint16_t width = ntohs(*((uint16_t*)(configurationBox_ptr_start)));
+        configurationBox_ptr_start += 2;
+    uint16_t height = ntohs(*(uint16_t*)(configurationBox_ptr_start));
 
     if(width >= 64 && height >= 64) {
-        _ATSC3_HEVC_NAL_EXTRACTOR_DEBUG("atsc3_init_parse_HEVCConfigurationBox_for_width_height, got width: %d, height: %d", width, height);
+        _ATSC3_HEVC_NAL_EXTRACTOR_DEBUG("c, got width: %d, height: %d", width, height);
         video_decoder_configuration_record->width = width;
         video_decoder_configuration_record->height = height;
     } else {
