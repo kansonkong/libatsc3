@@ -1239,10 +1239,10 @@ uint32_t atsc3_mmt_movie_fragment_extract_sample_duration(block_t* mmt_movie_fra
     uint32_t sample_count = 0;
     uint32_t sample_duration_us = 0;
 
-    uint8_t version;
-    uint32_t tr_flags;
-    uint32_t data_offset;
-    uint32_t first_sample_flags;
+    uint8_t version = 0;
+    uint32_t tr_flags = 0;
+    uint32_t data_offset = 0;
+    uint32_t first_sample_flags = 0;
 
     block_Rewind(mmt_movie_fragment_metadata);
 
@@ -1272,8 +1272,13 @@ uint32_t atsc3_mmt_movie_fragment_extract_sample_duration(block_t* mmt_movie_fra
 
             if(sample_count > 0) {
                 //iterate internal samples is not needed with MFU mode, so bail
-                sample_duration_us = ntohl(*(uint32_t*)(ptr));
-                continue;
+                if(tr_flags & 0x000100) {
+                    sample_duration_us = ntohl(*(uint32_t *) (ptr));
+                    continue;
+                } else {
+                    //use "default" duration
+                    //iso14496-12:2015 - 0x000100 sample‐duration‐present: indicates that each sample has its own duration, otherwise the default is used.
+                }
             }
         }
 
