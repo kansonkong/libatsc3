@@ -603,12 +603,9 @@ void atsc3_lls_on_sls_table_present_ndk(lls_table_t* lls_table) {
     char* xml_payload_copy = (char*)calloc(len_aligned , sizeof(char));
     strncpy(xml_payload_copy, (char*)lls_table->raw_xml.xml_payload, lls_table->raw_xml.xml_payload_size);
 
-    at3DrvIntf_ptr->LogMsg((const char*)xml_payload_copy);
-    
     at3DrvIntf_ptr->atsc3_onSlsTablePresent((const char*)xml_payload_copy);
 
     free(xml_payload_copy);
-
 }
 
 //TODO: jjustman-2019-11-08: wire up the service_id in which this alc_emission originated from in addition to tsi/toi
@@ -964,6 +961,14 @@ void atsc3_phy_mmt_player_bridge_init(At3DrvIntf* At3DrvIntf_ptr) {
     atsc3_ndk_cache_temp_folder_path = at3DrvIntf_ptr->get_android_temp_folder();
     chdir(atsc3_ndk_cache_temp_folder_path.c_str());
     at3DrvIntf_ptr->LogMsgF("atsc3_phy_mmt_player_bridge_init - completed, temp folder path: %s", atsc3_ndk_cache_temp_folder_path.c_str());
+
+    /**
+     * additional SLS monitor related callbacks wired up in
+     *
+        lls_sls_alc_monitor->atsc3_lls_sls_alc_on_object_close_flag_s_tsid_content_location = &atsc3_lls_sls_alc_on_object_close_flag_s_tsid_content_location_ndk;
+        //write up event callback for alc MPD patching
+        lls_sls_alc_monitor->atsc3_lls_sls_alc_on_route_mpd_patched = &atsc3_lls_sls_alc_on_route_mpd_patched_ndk;
+     */
 
 }
 
