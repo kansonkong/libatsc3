@@ -70,6 +70,25 @@ void atsc3_route_sls_process_from_alc_packet_and_file(udp_flow_t* udp_flow, alc_
 				goto cleanup;
 			}
 
+			//dump our full payload for debugging
+			if(false) {
+
+                fseek(fp_mbms, 0L, SEEK_END);
+                int sz = ftell(fp_mbms);
+
+                fseek(fp_mbms, 0L, SEEK_SET);
+                char* mbms_temp_buffer = calloc(sz+1, sizeof(char));
+
+                fread(mbms_temp_buffer, sz, 1, fp_mbms);
+                _ATSC3_ROUTE_SLS_PROCESSOR_ERROR("alc_packet tsi/toi:0/%u - filename: %s, mbms payload file size: %d, is:\n%s", *mbms_toi, mbms_toi_filename, sz, mbms_temp_buffer);
+
+                free(mbms_temp_buffer);
+                fseek(fp_mbms, 0L, SEEK_SET);
+
+
+
+            }
+
 			atsc3_sls_metadata_fragments = atsc3_mbms_envelope_to_sls_metadata_fragments_parse_from_fdt_fp(fp_mbms);
 
 			if(atsc3_sls_metadata_fragments) {
@@ -207,7 +226,7 @@ void atsc3_route_sls_patch_mpd_availability_start_time_and_start_number(atsc3_mi
             strftime((char*)&iso_now_timestamp, _ISO8601_DATE_TIME_LENGTH_, "%Y-%m-%dT%H:%M:%SZ", gmtime(&now));
 
             char* to_start_ptr = atsc3_mime_multipart_related_payload->payload + ast_char_pos_end + 1;
-            _ATSC3_ROUTE_SLS_PROCESSOR_WARN("atsc3_route_sls_patch_mpd_availability_start_time_and_start_number: patching mpd availabilityStartTime: from %.20s to %s, v: last_video_toi: %d, last_closed_video_toi: %d, a: last_audio_toi: %d, last_closed_audio_toi: %d, startNumber: %d",
+            _ATSC3_ROUTE_SLS_PROCESSOR_WARN("atsc3_route_sls_patch_mpd_availability_start_time_and_start_number: patching mpd availabilityStartTime: from %.20s to %s, v: last_video_toi: %d, last_closed_video_toi: %d, a: last_audio_toi: %d, last_closed_audio_toi: %d",
                                             to_start_ptr, (char*)iso_now_timestamp,
                                             lls_sls_alc_monitor->last_video_toi,
                                             lls_sls_alc_monitor->last_closed_video_toi,
@@ -222,6 +241,9 @@ void atsc3_route_sls_patch_mpd_availability_start_time_and_start_number(atsc3_mi
             //todo: jjustman-2019-11-05: make this more robust...
 
             if(lls_sls_alc_monitor->last_closed_video_toi && lls_sls_alc_monitor->last_closed_audio_toi) {
+
+                _ATSC3_ROUTE_SLS_PROCESSOR_INFO("In-flight MPD is: \n%s", atsc3_mime_multipart_related_payload->payload);
+
                 char* vcodec_representation_start_pos = strnstr(temp_lower_mpd, "video/mp4", strlen(temp_lower_mpd));
                 char* acodec_representation_start_pos = strnstr(temp_lower_mpd, "audio/mp4", strlen(temp_lower_mpd));
 
@@ -304,8 +326,16 @@ void atsc3_route_sls_patch_mpd_availability_start_time_and_start_number(atsc3_mi
                 if(lls_sls_alc_monitor->has_discontiguous_toi_flow && lls_sls_alc_monitor->atsc3_lls_sls_alc_on_route_mpd_patched) {
                     lls_sls_alc_monitor->atsc3_lls_sls_alc_on_route_mpd_patched(lls_sls_alc_monitor->atsc3_lls_slt_service->service_id);
                 }
-             }
+                _ATSC3_ROUTE_SLS_PROCESSOR_INFO("Final MPD is: \n%s", atsc3_mime_multipart_related_payload->payload);
+
+            } else {
+                _ATSC3_ROUTE_SLS_PROCESSOR_ERROR("unable to patch startNumber values: no closed video/audio toi, v: %d, a: %d", lls_sls_alc_monitor->last_closed_video_toi, lls_sls_alc_monitor->last_closed_audio_toi);
+            }
+        } else {
+            _ATSC3_ROUTE_SLS_PROCESSOR_ERROR("unable to patch startNumber values: "_MPD_availability_start_time_VALUE_" present");
         }
+    } else {
+        _ATSC3_ROUTE_SLS_PROCESSOR_ERROR("unable to patch startNumber values: MPD is missing type=dynamic");
     }
 
     lls_sls_alc_monitor->has_discontiguous_toi_flow = false;
