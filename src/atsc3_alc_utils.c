@@ -544,7 +544,8 @@ int alc_packet_dump_to_object(udp_flow_t* udp_flow, alc_packet_t** alc_packet_pt
 
         //update our sls here if we have a service we are listenting to
         if(lls_sls_alc_monitor && lls_sls_alc_monitor->atsc3_lls_slt_service &&  alc_packet->def_lct_hdr->tsi == 0) {
-            __ALC_UTILS_IOTRACE("ALC: service_id: %u, ------ TSI of 0, calling atsc3_route_sls_process_from_alc_packet_and_file", lls_sls_alc_monitor->atsc3_lls_slt_service->service_id);
+            __ALC_UTILS_IOTRACE("ALC: service_id: %u, ------ TSI of 0, TOI: %d, transfer_len: %d, calling atsc3_route_sls_process_from_alc_packet_and_file",
+            		lls_sls_alc_monitor->atsc3_lls_slt_service->service_id, alc_packet->def_lct_hdr->toi, alc_packet->transfer_len);
             atsc3_route_sls_process_from_alc_packet_and_file(udp_flow, alc_packet, lls_sls_alc_monitor);
         } else {
             s_tsid_content_location = alc_packet_dump_to_object_get_s_tsid_filename(udp_flow, alc_packet, lls_sls_alc_monitor);

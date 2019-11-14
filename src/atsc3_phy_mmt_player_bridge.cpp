@@ -927,6 +927,8 @@ void atsc3_phy_mmt_player_bridge_init(At3DrvIntf* At3DrvIntf_ptr) {
     //set global logging levels
     _MMT_CONTEXT_MPU_DEBUG_ENABLED = 0;
     _ALC_UTILS_IOTRACE_ENABLED = 0;
+    _ROUTE_SLS_PROCESSOR_INFO_ENABLED=0;
+    _ALC_UTILS_IOTRACE_ENABLED = 0;
 
 
     lls_slt_monitor = lls_slt_monitor_create();
