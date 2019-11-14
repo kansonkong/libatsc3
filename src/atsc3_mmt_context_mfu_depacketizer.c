@@ -1239,6 +1239,11 @@ uint32_t atsc3_mmt_movie_fragment_extract_sample_duration(block_t* mmt_movie_fra
     uint32_t sample_count = 0;
     uint32_t sample_duration_us = 0;
 
+    uint8_t version;
+    uint32_t tr_flags;
+    uint32_t data_offset;
+    uint32_t first_sample_flags;
+
     block_Rewind(mmt_movie_fragment_metadata);
 
     uint8_t* ptr = block_Get(mmt_movie_fragment_metadata);
@@ -1249,9 +1254,21 @@ uint32_t atsc3_mmt_movie_fragment_extract_sample_duration(block_t* mmt_movie_fra
             //read our box length from ptr-4
             box_size = ntohl(*(uint32_t*)(ptr-4));
             ptr += 4; //iterate past our box name
-            ptr += 4; //iterate past fullbox format
+            version = *ptr++;
+            //next 3 bytes for fullbox flags, 0x000001: data_offset present, 0x000004: first_sample_flags_present
+
+            tr_flags = (*ptr++ << 16) |  (*ptr++ << 8) |  (*ptr++);
+
             sample_count = ntohl(*(uint32_t*)(ptr));
-            ptr += 4 + 4; //move past data_offset and first_sample_flags
+            ptr += 4;
+            if(tr_flags & 0x1) {
+                data_offset = ntohl(*(uint32_t*)(ptr));
+                ptr += 4;
+            }
+            if(tr_flags & 0x4) {
+                first_sample_flags = ntohl(*(uint32_t*)(ptr));
+                ptr += 4;
+            }
 
             if(sample_count > 0) {
                 //iterate internal samples is not needed with MFU mode, so bail
