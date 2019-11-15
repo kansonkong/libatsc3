@@ -246,35 +246,32 @@ void atsc3_route_sls_patch_mpd_availability_start_time_and_start_number(atsc3_mi
 
                 char* vcodec_representation_start_pos = strnstr(temp_lower_mpd, "video/mp4", strlen(temp_lower_mpd));
                 char* acodec_representation_start_pos = strnstr(temp_lower_mpd, "audio/mp4", strlen(temp_lower_mpd));
+                char* first_start_number_start = strstr(temp_lower_mpd, "startnumber=\"");
+                char* second_start_number_start = strstr(first_start_number_start + 12, "startnumber=\"");
+                char* video_start_number_start = NULL;
+                char* audio_start_number_start = NULL;
 
-                if(!vcodec_representation_start_pos || !acodec_representation_start_pos) {
-                    _ATSC3_ROUTE_SLS_PROCESSOR_WARN("atsc3_route_sls_patch_mpd_availability_start_time_and_start_number: vcodec_representation_start_pos or acodec_representation_start_pos is NULL, mpd is: %s",
+                if(!vcodec_representation_start_pos || !acodec_representation_start_pos || !first_start_number_start || !second_start_number_start) {
+                    _ATSC3_ROUTE_SLS_PROCESSOR_WARN("atsc3_route_sls_patch_mpd_availability_start_time_and_start_number: vcodec_representation_start_pos or acodec_representation_start_pos or start_number(s) are NULL, mpd is: %s",
                                                     atsc3_mime_multipart_related_payload->payload);
                     return;
-
+                }
+                
+                //hack for video/audio start_number sequencing
+                if(vcodec_representation_start_pos > acodec_representation_start_pos) {
+                    video_start_number_start = first_start_number_start;
+                    audio_start_number_start = second_start_number_start;
+                } else {
+                    video_start_number_start = first_start_number_start;
+                    audio_start_number_start = second_start_number_start;
                 }
 
                 int mpd_new_payload_max_len = strlen(atsc3_mime_multipart_related_payload->payload) + 32;
                 char* new_mpd_payload = calloc(mpd_new_payload_max_len + 1, sizeof(char));
 
-                ///split video startnumber first
-
-//                char* video_start = strstr((temp_lower_mpd+vcodec_representation_start_pos), "contenttype=\"video\"");
-//                if(!video_start) goto fail;
-
-                char* video_start_number_start = strstr(vcodec_representation_start_pos, "startnumber=\"");
-                //1234567890123
-                if(!video_start_number_start) goto fail;
-
                 char* video_start_number_end = strstr(video_start_number_start, "\"");
                 if(!video_start_number_end) goto fail;
-
-//                char* audio_start = strstr((temp_lower_mpd, "contenttype=\"audio\"");
-//                if(!audio_start) goto fail;
-
-                char* audio_start_number_start = strstr(acodec_representation_start_pos, "startnumber=\"");
-                if(!audio_start_number_start) goto fail;
-
+            
                 char* audio_start_number_end = strstr(audio_start_number_start, "\"");
                 if(!audio_start_number_end) goto fail;
 
