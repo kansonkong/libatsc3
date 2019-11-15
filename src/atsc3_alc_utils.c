@@ -551,10 +551,29 @@ int alc_packet_dump_to_object(udp_flow_t* udp_flow, alc_packet_t** alc_packet_pt
             s_tsid_content_location = alc_packet_dump_to_object_get_s_tsid_filename(udp_flow, alc_packet, lls_sls_alc_monitor);
      
             if(strncmp(temporary_filename, s_tsid_content_location, __MIN(strlen(temporary_filename), strlen(s_tsid_content_location))) !=0) {
-                char new_file_name[1024] = { 0 };
-                snprintf(new_file_name, 1024, __ALC_DUMP_OUTPUT_PATH__"%d", lls_sls_alc_monitor->atsc3_lls_slt_service->service_id);
-                mkdir(new_file_name, 0777);
-                snprintf(new_file_name, 1024, "%s/%s", new_file_name, s_tsid_content_location);
+                char new_file_name_raw_buffer[1024] = { 0 };
+                char* new_file_name = &new_file_name_raw_buffer;
+                snprintf(new_file_name_raw_buffer, 1024, __ALC_DUMP_OUTPUT_PATH__"%d/%s", lls_sls_alc_monitor->atsc3_lls_slt_service->service_id, s_tsid_content_location);
+                
+                //todo: jjustman-2019-11-15: sanatize path parameter for .. or other traversal attacks
+                bool is_traversal = new_file_name[0] == '.';
+                
+                for(int i=0; i < strlen(new_file_name) && is_traversal; i++) {
+                    new_file_name++;
+                    is_traversal = new_file_name[0] == '.';
+                }
+                
+                //iterate over occurances of '/' and create directory hierarchy
+                char* path_slash_position = new_file_name;
+                char* first_path_slash_position = new_file_name;
+                while((path_slash_position = strstr(path_slash_position + 1, "/"))) {
+                    if(path_slash_position - first_path_slash_position > 0) {
+                        //hack
+                        *path_slash_position = '\0';
+                        mkdir(first_path_slash_position, 0777);
+                        *path_slash_position = '/';
+                    }
+                }
                 
                 rename(temporary_filename, new_file_name);
                 __ALC_UTILS_IOTRACE("tsi: %u, toi: %u, moving from to temporary_filename: %s to: %s, is complete: %d", alc_packet->def_lct_hdr->tsi, alc_packet->def_lct_hdr->toi,  temporary_filename, new_file_name, alc_packet->close_object_flag);
