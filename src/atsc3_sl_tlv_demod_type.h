@@ -55,6 +55,8 @@ For other broadcast standards (ATSC1, DVB-T2, ISMB-T etc), the data is in standa
  */
 
 typedef struct atsc3_sl_tlv_payload {
+	uint32_t	sl_tlv_total_parsed_payload_size;	//computed total sl_tlv payload size form parsed block_t
+
     uint32_t    magic_number;               //0x24681357
     uint32_t    alp_packet_size;
     uint8_t     plp_number;
@@ -65,6 +67,7 @@ typedef struct atsc3_sl_tlv_payload {
     uint8_t     reserved_b16;               //reserved b16
     uint32_t    reserved_b17_b19;           //reserved b17-b19
     uint32_t    reserved_b20_b23;           //reserved b20-b23
+    bool		alp_payload_complete;		//flag if alp_payload block_t may be incomplete, e.g. BBP under-run
     block_t*    alp_payload;                //extracted ALP payload
 } atsc3_sl_tlv_payload_t;
 
