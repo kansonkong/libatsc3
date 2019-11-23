@@ -56,6 +56,7 @@ int main(int argc, char* argv[] ) {
         	bytes_read = fread(buf, 1, 65535, atsc3_sl_tlv_fp);
         	if(bytes_read > 0) {
         		block_Write(atsc3_sl_tlv_block, buf, bytes_read);
+        		block_Rewind(atsc3_sl_tlv_block);
 
         		do {
         			atsc3_sl_tlv_payload = atsc3_sl_tlv_payload_parse_from_block_t(atsc3_sl_tlv_block);

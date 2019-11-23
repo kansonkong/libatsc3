@@ -30,9 +30,13 @@ atsc3_sl_tlv_payload_t* atsc3_sl_tlv_payload_parse_from_block_t(block_t* atsc3_s
 
     //read our magic number first
     
-    atsc3_sl_tlv_payload->magic_number = ntohl(*((uint32_t*)(buf)));
+    //looks like we are already in host order?
+    //atsc3_sl_tlv_payload->magic_number = ntohl(*((uint32_t*)(buf)));
+    __SL_TLV_DEMOD_TRACE("atsc3_sl_tlv_payload_parse_from_block_t: magic number buf is: 0x%08x", (uint32_t)(*buf));
+
+    atsc3_sl_tlv_payload->magic_number = (uint32_t)(*buf);
     if(atsc3_sl_tlv_payload->magic_number != 0x24681357) {
-        __SL_TLV_DEMOD_ERROR("atsc3_sl_tlv_payload_parse_from_block_t: magic number is not 0x24681357, parsed: %0x08", atsc3_sl_tlv_payload->magic_number);
+        __SL_TLV_DEMOD_ERROR("atsc3_sl_tlv_payload_parse_from_block_t: magic number is not 0x24681357, parsed as: 0x%08x", atsc3_sl_tlv_payload->magic_number);
         free(atsc3_sl_tlv_payload);
         return NULL;
     }
