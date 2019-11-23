@@ -27,7 +27,7 @@ all: 	intermediate_lls \
 		a324_tests \
 		tools \
 		atsc3_sl_phy
-
+		
 clean:
 	-rm -f *.o
 	-rm -f route/*
@@ -168,7 +168,9 @@ tools: atsc3_listener_metrics_ncurses \
 	atsc3_alc_listener_mde_writer \
 	atsc3_mmt_listener_to_http_hls_fmp4
 	
-atsc3_sl_phy: atsc3_sl_tlv_demod_type.o	
+atsc3_sl_phy: atsc3_sl_tlv_demod_type.o	\
+	test_sl/atsc3_sl_tlv_parser_to_alp_test \
+	test_sl/atsc3_sl_tlv_parser_to_alp_reflector_test
 
 # intermediate object generation for linking into libatsc3.o
 
