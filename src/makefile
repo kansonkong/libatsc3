@@ -66,6 +66,7 @@ clean:
 	-rm -f tools/atsc3_mmt_mfu_monitor
 	-rm -f tools/atsc3_mmt_listener_to_http_hls_fmp4
 	-rm -f test_sl/atsc3_sl_tlv_parser_to_alp_test
+	-rm -f test_sl/atsc3_sl_tlv_parser_to_alp_reflector_test
 
 intermediate_lls: 	atsc3_lls.o \
 					atsc3_lls_types.o \
@@ -865,6 +866,13 @@ test_sl/atsc3_sl_tlv_parser_to_alp_test: 	test_sl/atsc3_sl_tlv_parser_to_alp_tes
 		  libatsc3.o \
 	   -o test_sl/atsc3_sl_tlv_parser_to_alp_test -lz -lm -lpthread -lpcap
 	   
+test_sl/atsc3_sl_tlv_parser_to_alp_reflector_test: 	test_sl/atsc3_sl_tlv_parser_to_alp_reflector_test.c \
+											atsc3_sl_tlv_demod_type.o \
+											libatsc3.o
+	cc -g test_sl/atsc3_sl_tlv_parser_to_alp_reflector_test.c \
+		  atsc3_sl_tlv_demod_type.o \
+		  libatsc3.o \
+	   -o test_sl/atsc3_sl_tlv_parser_to_alp_reflector_test -lz -lm -lpthread -lpcap
 	   
 	  
 
