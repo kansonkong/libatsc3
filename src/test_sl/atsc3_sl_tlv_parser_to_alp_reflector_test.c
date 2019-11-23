@@ -20,7 +20,8 @@
 #define _ATSC3_SL_TLV_PARSER_TO_ALP_TEST_INFO(...)    printf("%s:%d:INFO:",__FILE__,__LINE__);_ATSC3_UTILS_PRINTLN(__VA_ARGS__);
 #define _ATSC3_SL_TLV_PARSER_TO_ALP_TEST_DEBUG(...)   printf("%s:%d:DEBUG:",__FILE__,__LINE__);_ATSC3_UTILS_PRINTLN(__VA_ARGS__);
 
-extern pcap_t* descrInject;
+const char* SL_TLV_REPLAY_TEST_FILENAME = "testdata/2019-11-22-647mhz.tlv.bin";
+
 atsc3_alp_packet_collection_t* atsc3_alp_packet_collection = NULL;
 
 FILE* atsc3_sl_tlv_open_filename(const char* sl_tlv_filename) {
@@ -68,7 +69,9 @@ int main(int argc, char* argv[] ) {
     pcap_t* descrInject = pcap_open_live(devInject, MAX_PCAP_LEN, 1, 1, errbufInject);
     atsc3_alp_packet_collection->descrInject = descrInject;
     
-    const char* SL_TLV_REPLAY_TEST_FILENAME = "testdata/2019-11-22-647mhz.tlv.bin";
+
+    _ATSC3_SL_TLV_PARSER_TO_ALP_TEST_DEBUG("starting reflection on: %s (pcap i/f: %p), file: %s",
+    		devInject, descrInject, SL_TLV_REPLAY_TEST_FILENAME);
 
     FILE* atsc3_sl_tlv_fp = atsc3_sl_tlv_open_filename(SL_TLV_REPLAY_TEST_FILENAME);
     _ATSC3_SL_TLV_PARSER_TO_ALP_TEST_DEBUG("Opening SL TLV.bin: %s", SL_TLV_REPLAY_TEST_FILENAME);
@@ -84,7 +87,7 @@ int main(int argc, char* argv[] ) {
         while(!feof(atsc3_sl_tlv_fp)) {
             _ATSC3_SL_TLV_PARSER_TO_ALP_TEST_DEBUG("fread: position: %ld", ftell(atsc3_sl_tlv_fp));
 
-        	bytes_read = fread(buf, 1, 65535, atsc3_sl_tlv_fp);
+        	bytes_read = fread(buf, 1, SL_TLV_BLOCK_SIZE, atsc3_sl_tlv_fp);
         	if(bytes_read > 0) {
         		block_Write(atsc3_sl_tlv_block, buf, bytes_read);
         		block_Rewind(atsc3_sl_tlv_block);
@@ -96,6 +99,7 @@ int main(int argc, char* argv[] ) {
         				atsc3_sl_tlv_payload_dump(atsc3_sl_tlv_payload);
         				if(atsc3_sl_tlv_payload->alp_payload_complete) {
         					alp_completed_packets_parsed++;
+        					block_Rewind(atsc3_sl_tlv_payload->alp_payload);
         					atsc3_alp_packet_t* atsc3_alp_packet = atsc3_alp_packet_parse(atsc3_sl_tlv_payload->alp_payload);
                             atsc3_alp_packet_collection_add_atsc3_alp_packet(atsc3_alp_packet_collection, atsc3_alp_packet);
                             atsc3_reflect_alp_packet_collection(atsc3_alp_packet_collection);
