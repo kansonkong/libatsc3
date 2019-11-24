@@ -245,18 +245,32 @@ void atsc3_route_sls_patch_mpd_availability_start_time_and_start_number(atsc3_mi
                 _ATSC3_ROUTE_SLS_PROCESSOR_INFO("In-flight MPD is: \n%s", atsc3_mime_multipart_related_payload->payload);
 
                 char* vcodec_representation_start_pos = strnstr(temp_lower_mpd, "video/mp4", strlen(temp_lower_mpd));
+                if(!vcodec_representation_start_pos) {
+                        _ATSC3_ROUTE_SLS_PROCESSOR_WARN("atsc3_route_sls_patch_mpd_availability_start_time_and_start_number: vcodec_representation_start_pos is null for payload: %s",
+                                                        atsc3_mime_multipart_related_payload->payload);
+                    goto error;
+                }
                 char* acodec_representation_start_pos = strnstr(temp_lower_mpd, "audio/mp4", strlen(temp_lower_mpd));
+                if(!acodec_representation_start_pos) {
+                    _ATSC3_ROUTE_SLS_PROCESSOR_WARN("atsc3_route_sls_patch_mpd_availability_start_time_and_start_number: acodec_representation_start_pos is null for payload: %s",
+                                                    atsc3_mime_multipart_related_payload->payload);
+                    goto error;
+                }
                 char* first_start_number_start = strstr(temp_lower_mpd, "startnumber=\"");
+                if(!first_start_number_start) {
+                    _ATSC3_ROUTE_SLS_PROCESSOR_WARN("atsc3_route_sls_patch_mpd_availability_start_time_and_start_number: first_start_number_start is null for payload: %s",
+                                                    atsc3_mime_multipart_related_payload->payload);
+                    goto error;
+                }
                 char* second_start_number_start = strstr(first_start_number_start + 12, "startnumber=\"");
+                if(!second_start_number_start) {
+                    _ATSC3_ROUTE_SLS_PROCESSOR_WARN("atsc3_route_sls_patch_mpd_availability_start_time_and_start_number: second_start_number_start is null for payload: %s",
+                                                    atsc3_mime_multipart_related_payload->payload);
+                    goto error;
+                }
                 char* video_start_number_start = NULL;
                 char* audio_start_number_start = NULL;
 
-                if(!vcodec_representation_start_pos || !acodec_representation_start_pos || !first_start_number_start || !second_start_number_start) {
-                    _ATSC3_ROUTE_SLS_PROCESSOR_WARN("atsc3_route_sls_patch_mpd_availability_start_time_and_start_number: vcodec_representation_start_pos or acodec_representation_start_pos or start_number(s) are NULL, mpd is: %s",
-                                                    atsc3_mime_multipart_related_payload->payload);
-                    return;
-                }
-                
                 //hack for video/audio start_number sequencing
                 if(vcodec_representation_start_pos > acodec_representation_start_pos) {
                     video_start_number_start = first_start_number_start;
@@ -270,10 +284,10 @@ void atsc3_route_sls_patch_mpd_availability_start_time_and_start_number(atsc3_mi
                 char* new_mpd_payload = calloc(mpd_new_payload_max_len + 1, sizeof(char));
 
                 char* video_start_number_end = strstr(video_start_number_start, "\"");
-                if(!video_start_number_end) goto fail;
+                if(!video_start_number_end) goto error;
             
                 char* audio_start_number_end = strstr(audio_start_number_start, "\"");
-                if(!audio_start_number_end) goto fail;
+                if(!audio_start_number_end) goto error;
 
                 video_start_number_start[13] = '\0';
                 audio_start_number_start[13] = '\0';
@@ -339,7 +353,7 @@ void atsc3_route_sls_patch_mpd_availability_start_time_and_start_number(atsc3_mi
 
     return;
     
-fail:
+error:
     _ATSC3_ROUTE_SLS_PROCESSOR_ERROR("unable to patch startNumber values!");
    
 }
