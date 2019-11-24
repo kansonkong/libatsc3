@@ -7,12 +7,12 @@
  * Android MMT MFU Playback with SLS event driven callbacks
  *
  *
- * Note: At3DrvIntf - Android NDK Binding against Lowasys API are not included
+ * Note: atsc3NdkClientSL - Android NDK Binding against Lowasys API are not included
  */
 
 
 #include "../jni/atsc3NdkClientSL.h"
-//At3DrvIntf* at3DrvIntf_ptr;
+//atsc3NdkClientSL* at3DrvIntf_ptr;
 atsc3NdkClientSL* atsc3NdkClientSL_ptr;
 
 #include "atsc3_phy_mmt_player_bridge.h"
