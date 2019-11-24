@@ -7,11 +7,11 @@
  * Android MMT MFU Playback with SLS event driven callbacks
  *
  *
- * Note: atsc3NdkClientSL - Android NDK Binding against Lowasys API are not included
+ * Note: At3DrvIntf - Android NDK Binding against Lowasys API are not included
  */
 
-#include "atsc3NdkClientSL.h"
-atsc3NdkClientSL* at3DrvIntf_ptr;
+#include "../jni/At3DrvIntf.h"
+At3DrvIntf* at3DrvIntf_ptr;
 
 #include "atsc3_phy_mmt_player_bridge.h"
 
@@ -918,7 +918,7 @@ void atsc3_mmt_mpu_on_sequence_movie_fragment_metadata_present_ndk(uint16_t pack
 }
 
 
-void atsc3_phy_mmt_player_bridge_init(atsc3NdkClientSL* At3DrvIntf_ptr) {
+void atsc3_phy_mmt_player_bridge_init(At3DrvIntf* At3DrvIntf_ptr) {
     at3DrvIntf_ptr = At3DrvIntf_ptr;
 
     //set global logging levels

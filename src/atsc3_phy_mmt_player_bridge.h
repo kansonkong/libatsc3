@@ -5,7 +5,7 @@
 #ifndef AT3DRV_ANDROID_2_26_190826_ATSC3_PHY_MMT_PLAYER_BRIDGE_H
 #define AT3DRV_ANDROID_2_26_190826_ATSC3_PHY_MMT_PLAYER_BRIDGE_H
 
-#include "atsc3NdkClientSL.h"
+#include "../jni/atsc3NdkClientSL.h"
 #include "atsc3_utils.h"
 #include "atsc3_lls_types.h"
 
