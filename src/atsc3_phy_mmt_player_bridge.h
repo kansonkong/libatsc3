@@ -9,6 +9,12 @@
 #include "atsc3_utils.h"
 #include "atsc3_lls_types.h"
 
+//
+//#if defined (__cplusplus)
+//extern "C" {
+//#endif
+
+
 
 void atsc3_phy_mmt_player_bridge_init(atsc3NdkClientSL* At3DrvIntf_ptr);
 
@@ -32,5 +38,12 @@ atsc3_route_s_tsid_t* atsc3_slt_alc_get_sls_route_s_tsid_from_monitor_service_id
 
 string atsc3_ndk_cache_temp_folder_path_get();
 string atsc3_route_service_context_temp_folder_name(int service_id);
+
+
+
+//
+//#if defined (__cplusplus)
+//}
+//#endif
 
 #endif //AT3DRV_ANDROID_2_26_190826_ATSC3_PHY_MMT_PLAYER_BRIDGE_H
