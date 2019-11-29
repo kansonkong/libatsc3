@@ -420,7 +420,7 @@ void atsc3_phy_mmt_player_bridge_process_packet_phy(block_t* packet) {
     //don't auto-select service here, let the lls_slt_monitor->atsc3_lls_on_sls_table_present event callback trigger in a service selection
     if(udp_packet->udp_flow.dst_ip_addr == LLS_DST_ADDR && udp_packet->udp_flow.dst_port == LLS_DST_PORT) {
         //at3DrvIntf_ptr->LogMsgF("atsc3_phy_mmt_player_bridge_process_packet_phy got packet: LLS, %p", udp_packet);
-        __ERROR("LLS packet: dst_ip_addr: %u.%u.%u.%u:%u",
+        __INFO("LLS packet: dst_ip_addr: %u.%u.%u.%u:%u",
                 __toipnonstruct(udp_packet->udp_flow.dst_ip_addr),
                 udp_packet->udp_flow.dst_port);
         lls_table_t* lls_table = lls_table_create_or_update_from_lls_slt_monitor(lls_slt_monitor, udp_packet->data);
@@ -438,9 +438,9 @@ void atsc3_phy_mmt_player_bridge_process_packet_phy(block_t* packet) {
         goto cleanup;
     }
 
-    __ERROR("ALP packet: dst_ip_addr: %u.%u.%u.%u:%u",
-            __toipnonstruct(udp_packet->udp_flow.dst_ip_addr),
-            udp_packet->udp_flow.dst_port);
+//    __ERROR("ALP packet: dst_ip_addr: %u.%u.%u.%u:%u",
+//            __toipnonstruct(udp_packet->udp_flow.dst_ip_addr),
+//            udp_packet->udp_flow.dst_port);
     //ALC: Find a matching SLS service from this packet flow, and if the selected atsc3_lls_slt_service is monitored, write MBMS/MPD and MDE's out to disk
     matching_lls_slt_alc_session = lls_slt_alc_session_find_from_udp_packet(lls_slt_monitor, udp_packet->udp_flow.src_ip_addr, udp_packet->udp_flow.dst_ip_addr, udp_packet->udp_flow.dst_port);
 
