@@ -7,8 +7,8 @@
 
 #include "atsc3_alp_parser.h"
 
-int _ALP_PARSER_INFO_ENABLED = 1;
-int _ALP_PARSER_DEBUG_ENABLED = 1;
+int _ALP_PARSER_INFO_ENABLED = 0;
+int _ALP_PARSER_DEBUG_ENABLED = 0;
 
 /**
  A/322-2018 - Section 5.2 Baseband Formatting:
