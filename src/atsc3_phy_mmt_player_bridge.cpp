@@ -60,8 +60,8 @@ uint16_t* dst_ip_port_filter = NULL;
 uint16_t* dst_packet_id_filter = NULL;
 
 //jjustman-2019-10-03 - context event callbacks...
-atsc3_mmt_mfu_context_t* atsc3_mmt_mfu_context;
-lls_slt_monitor_t* lls_slt_monitor;
+atsc3_mmt_mfu_context_t* atsc3_mmt_mfu_context = NULL;
+lls_slt_monitor_t* lls_slt_monitor = NULL;
 
 void atsc3_lls_sls_alc_on_object_close_flag_s_tsid_content_location_ndk(uint32_t tsi, uint32_t toi, char* content_location);
 void atsc3_lls_sls_alc_on_route_mpd_patched_ndk(uint16_t service_id);
@@ -403,6 +403,12 @@ void atsc3_phy_mmt_player_bridge_process_packet_phy(block_t* packet) {
     udp_packet_t* udp_packet = udp_packet_process_from_ptr(block_Get(packet), packet->p_size);
 
     if(!udp_packet) {
+        __ERROR("after udp_packet_process_from_ptr: unable to extract packet size: %d, i_pos: %d, 0x%02x 0x%02x",
+                packet->p_size,
+                packet->i_pos,
+                packet->p_buffer[0],
+                packet->p_buffer[1]);
+
         return;
     }
 
@@ -414,7 +420,9 @@ void atsc3_phy_mmt_player_bridge_process_packet_phy(block_t* packet) {
     //don't auto-select service here, let the lls_slt_monitor->atsc3_lls_on_sls_table_present event callback trigger in a service selection
     if(udp_packet->udp_flow.dst_ip_addr == LLS_DST_ADDR && udp_packet->udp_flow.dst_port == LLS_DST_PORT) {
         //at3DrvIntf_ptr->LogMsgF("atsc3_phy_mmt_player_bridge_process_packet_phy got packet: LLS, %p", udp_packet);
-
+        __ERROR("LLS packet: dst_ip_addr: %u.%u.%u.%u:%u",
+                __toipnonstruct(udp_packet->udp_flow.dst_ip_addr),
+                udp_packet->udp_flow.dst_port);
         lls_table_t* lls_table = lls_table_create_or_update_from_lls_slt_monitor(lls_slt_monitor, udp_packet->data);
         if(lls_table) {
             if(lls_table->lls_table_id == SLT) {
@@ -430,6 +438,9 @@ void atsc3_phy_mmt_player_bridge_process_packet_phy(block_t* packet) {
         goto cleanup;
     }
 
+    __ERROR("ALP packet: dst_ip_addr: %u.%u.%u.%u:%u",
+            __toipnonstruct(udp_packet->udp_flow.dst_ip_addr),
+            udp_packet->udp_flow.dst_port);
     //ALC: Find a matching SLS service from this packet flow, and if the selected atsc3_lls_slt_service is monitored, write MBMS/MPD and MDE's out to disk
     matching_lls_slt_alc_session = lls_slt_alc_session_find_from_udp_packet(lls_slt_monitor, udp_packet->udp_flow.src_ip_addr, udp_packet->udp_flow.dst_ip_addr, udp_packet->udp_flow.dst_port);
 
@@ -922,6 +933,7 @@ void atsc3_mmt_mpu_on_sequence_movie_fragment_metadata_present_ndk(uint16_t pack
 
 void atsc3_phy_mmt_player_bridge_init(atsc3NdkClientSL* atsc3NdkClientSL_ptr_l) {
     atsc3NdkClientSL_ptr = atsc3NdkClientSL_ptr_l;
+    atsc3NdkClientSL_ptr->LogMsgF("atsc3_phy_mmt_player_bridge_init - client ptr: %p", atsc3NdkClientSL_ptr_l);
 
     //set global logging levels
     _MMT_CONTEXT_MPU_DEBUG_ENABLED = 0;
@@ -929,40 +941,44 @@ void atsc3_phy_mmt_player_bridge_init(atsc3NdkClientSL* atsc3NdkClientSL_ptr_l) 
     _ROUTE_SLS_PROCESSOR_INFO_ENABLED=0;
     _ALC_UTILS_IOTRACE_ENABLED = 0;
 
+    if(!lls_slt_monitor) {
+        lls_slt_monitor = lls_slt_monitor_create();
+        //wire up a lls event for SLS table
+        lls_slt_monitor->atsc3_lls_on_sls_table_present = &atsc3_lls_on_sls_table_present_ndk;
 
-    lls_slt_monitor = lls_slt_monitor_create();
-    //wire up a lls event for SLS table
-    lls_slt_monitor->atsc3_lls_on_sls_table_present = &atsc3_lls_on_sls_table_present_ndk;
-
-    mmtp_flow = mmtp_flow_new();
-    udp_flow_latest_mpu_sequence_number_container = udp_flow_latest_mpu_sequence_number_container_t_init();
+        mmtp_flow = mmtp_flow_new();
+        udp_flow_latest_mpu_sequence_number_container = udp_flow_latest_mpu_sequence_number_container_t_init();
 
 
-    //MMT/MFU callback contexts
-    atsc3_mmt_mfu_context = atsc3_mmt_mfu_context_new();
+        //MMT/MFU callback contexts
+        atsc3_mmt_mfu_context = atsc3_mmt_mfu_context_new();
 
-    //wire up atsc3_mmt_mpu_on_sequence_mpu_metadata_present to parse out our NALs as needed for android MediaCodec init
-    atsc3_mmt_mfu_context->atsc3_mmt_mpu_on_sequence_mpu_metadata_present = &atsc3_mmt_mpu_on_sequence_mpu_metadata_present_ndk;
+        //wire up atsc3_mmt_mpu_on_sequence_mpu_metadata_present to parse out our NALs as needed for android MediaCodec init
+        atsc3_mmt_mfu_context->atsc3_mmt_mpu_on_sequence_mpu_metadata_present = &atsc3_mmt_mpu_on_sequence_mpu_metadata_present_ndk;
 
-    atsc3_mmt_mfu_context->atsc3_mmt_mpu_mfu_on_sample_complete = &atsc3_mmt_mpu_mfu_on_sample_complete_ndk;
-    atsc3_mmt_mfu_context->atsc3_mmt_mpu_mfu_on_sample_corrupt = &atsc3_mmt_mpu_mfu_on_sample_corrupt_ndk;
-    //todo: search thru NAL's as needed here and discard anything that intra-NAL..
-    atsc3_mmt_mfu_context->atsc3_mmt_mpu_mfu_on_sample_corrupt_mmthsample_header = &atsc3_mmt_mpu_mfu_on_sample_corrupt_mmthsample_header_ndk;
-    atsc3_mmt_mfu_context->atsc3_mmt_mpu_mfu_on_sample_missing = &atsc3_mmt_mpu_mfu_on_sample_missing_ndk;
+        atsc3_mmt_mfu_context->atsc3_mmt_mpu_mfu_on_sample_complete = &atsc3_mmt_mpu_mfu_on_sample_complete_ndk;
+        atsc3_mmt_mfu_context->atsc3_mmt_mpu_mfu_on_sample_corrupt = &atsc3_mmt_mpu_mfu_on_sample_corrupt_ndk;
+        //todo: search thru NAL's as needed here and discard anything that intra-NAL..
+        atsc3_mmt_mfu_context->atsc3_mmt_mpu_mfu_on_sample_corrupt_mmthsample_header = &atsc3_mmt_mpu_mfu_on_sample_corrupt_mmthsample_header_ndk;
+        atsc3_mmt_mfu_context->atsc3_mmt_mpu_mfu_on_sample_missing = &atsc3_mmt_mpu_mfu_on_sample_missing_ndk;
 
-    /*
-     * TODO: jjustman-2019-10-20 - extend context callback interface with service_id
-     */
-    atsc3_mmt_mfu_context->atsc3_mmt_signalling_information_on_video_packet_id_with_mpu_timestamp_descriptor = &atsc3_mmt_signalling_information_on_video_packet_id_with_mpu_timestamp_descriptor_ndk;
-    atsc3_mmt_mfu_context->atsc3_mmt_signalling_information_on_audio_packet_id_with_mpu_timestamp_descriptor = &atsc3_mmt_signalling_information_on_audio_packet_id_with_mpu_timestamp_descriptor_ndk;
-    atsc3_mmt_mfu_context->atsc3_mmt_signalling_information_on_stpp_packet_id_with_mpu_timestamp_descriptor  = &atsc3_mmt_signalling_information_on_stpp_packet_id_with_mpu_timestamp_descriptor_ndk;
+        /*
+         * TODO: jjustman-2019-10-20 - extend context callback interface with service_id
+         */
+        atsc3_mmt_mfu_context->atsc3_mmt_signalling_information_on_video_packet_id_with_mpu_timestamp_descriptor = &atsc3_mmt_signalling_information_on_video_packet_id_with_mpu_timestamp_descriptor_ndk;
+        atsc3_mmt_mfu_context->atsc3_mmt_signalling_information_on_audio_packet_id_with_mpu_timestamp_descriptor = &atsc3_mmt_signalling_information_on_audio_packet_id_with_mpu_timestamp_descriptor_ndk;
+        atsc3_mmt_mfu_context->atsc3_mmt_signalling_information_on_stpp_packet_id_with_mpu_timestamp_descriptor  = &atsc3_mmt_signalling_information_on_stpp_packet_id_with_mpu_timestamp_descriptor_ndk;
 
-    //extract out one trun sampleduration for essence timing
-    atsc3_mmt_mfu_context->atsc3_mmt_mpu_on_sequence_movie_fragment_metadata_present = &atsc3_mmt_mpu_on_sequence_movie_fragment_metadata_present_ndk;
+        //extract out one trun sampleduration for essence timing
+        atsc3_mmt_mfu_context->atsc3_mmt_mpu_on_sequence_movie_fragment_metadata_present = &atsc3_mmt_mpu_on_sequence_movie_fragment_metadata_present_ndk;
 
-    atsc3_ndk_cache_temp_folder_path = atsc3NdkClientSL_ptr->get_android_temp_folder();
-    chdir(atsc3_ndk_cache_temp_folder_path.c_str());
-    atsc3NdkClientSL_ptr->LogMsgF("atsc3_phy_mmt_player_bridge_init - completed, temp folder path: %s", atsc3_ndk_cache_temp_folder_path.c_str());
+        atsc3_ndk_cache_temp_folder_path = atsc3NdkClientSL_ptr->get_android_temp_folder();
+        chdir(atsc3_ndk_cache_temp_folder_path.c_str());
+        atsc3NdkClientSL_ptr->LogMsgF("atsc3_phy_mmt_player_bridge_init - completed, temp folder path: %s", atsc3_ndk_cache_temp_folder_path.c_str());
+    } else {
+        atsc3NdkClientSL_ptr->LogMsgF("atsc3_phy_mmt_player_bridge_init - ignoring init as we are already configured");
+    }
+
 
     /**
      * additional SLS monitor related callbacks wired up in
