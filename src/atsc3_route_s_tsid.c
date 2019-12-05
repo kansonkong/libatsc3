@@ -413,6 +413,10 @@ void atsc3_route_s_tsid_dump(atsc3_route_s_tsid_t* atsc3_route_s_tsid) {
 
 				}
 				atsc3_fdt_instance_t* atsc3_fdt_instance = atsc3_route_s_tsid_RS_LS_t->atsc3_route_s_tsid_RS_LS_SrcFlow->atsc3_fdt_instance;
+                if(!atsc3_fdt_instance) {
+                    _ATSC3_ROUTE_S_TSID_PARSER_WARN("    S-TSID.RS.LS.source_flow present but no fdt-instance element!");
+                    return;
+                }
 				_ATSC3_ROUTE_S_TSID_PARSER_DEBUG("     S-TSID.RS.LS.source_flow.fdt-instance: version: %u, expires: %u, content_type: %s, file_template: %s",
 						atsc3_fdt_instance->efdt_vesion,
 						atsc3_fdt_instance->expires,

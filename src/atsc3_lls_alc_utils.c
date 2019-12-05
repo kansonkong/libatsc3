@@ -228,6 +228,12 @@ void lls_sls_alc_update_tsi_toi_from_route_s_tsid(lls_sls_alc_monitor_t* lls_sls
 
 				}
 				atsc3_fdt_instance_t* atsc3_fdt_instance = atsc3_route_s_tsid_RS_LS->atsc3_route_s_tsid_RS_LS_SrcFlow->atsc3_fdt_instance;
+                
+                if(!atsc3_fdt_instance) {
+                   _ATSC3_LLS_ALC_UTILS_WARN("    S-TSID.RS.LS.source_flow present but no fdt-instance element!");
+                   return;
+                }
+
 				_ATSC3_LLS_ALC_UTILS_DEBUG("     S-TSID.RS.LS.source_flow.fdt-instance: version: %u, expires: %u, content_type: %s, file_template: %s",
 						atsc3_fdt_instance->efdt_vesion,
 						atsc3_fdt_instance->expires,
