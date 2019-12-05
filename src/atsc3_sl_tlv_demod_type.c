@@ -5,8 +5,8 @@
 
 #include "atsc3_sl_tlv_demod_type.h"
 
-int _SL_TLV_DEMOD_DEBUG_ENABLED = 1;
-int _SL_TLV_DEMOD_TRACE_ENABLED = 1;
+int _SL_TLV_DEMOD_DEBUG_ENABLED = 0;
+int _SL_TLV_DEMOD_TRACE_ENABLED = 0;
 
 //impl
 
