@@ -46,8 +46,29 @@ atsc3_sl_tlv_payload_t* atsc3_sl_tlv_payload_parse_from_block_t(block_t* atsc3_s
         __SL_TLV_DEMOD_ERROR("atsc3_sl_tlv_payload_parse_from_block_t: position: %d, magic number is not 0x24681357, parsed as: 0x%08x",
         		atsc3_sl_tlv_payload_unparsed_block->i_pos,
         		atsc3_sl_tlv_payload->magic_number);
-        free(atsc3_sl_tlv_payload);
-        return NULL;
+
+        bool magic_number_found = false;
+        //try and find our magic number for start of TLV packet
+        while(++buf < (buf_end - 188) && !magic_number_found) {
+            atsc3_sl_tlv_payload->magic_number = *(uint32_t*)(buf);
+            magic_number_found = atsc3_sl_tlv_payload->magic_number == 0x24681357;
+            if(magic_number_found) {
+                atsc3_sl_tlv_payload_unparsed_block->i_pos += (buf - buf_start);
+
+                __SL_TLV_DEMOD_ERROR("atsc3_sl_tlv_payload_parse_from_block_t: position: %d, found magic number - parsed as: 0x%08x (expected: 0x24681357), buf start: %p, buf_found: %p, buf end: %p, offset: %d",
+                                     atsc3_sl_tlv_payload_unparsed_block->i_pos,
+                                     atsc3_sl_tlv_payload->magic_number,
+                                     buf_start,
+                                     buf,
+                                     buf_end,
+                                     (buf - buf_start));
+            }
+        }
+
+        if(!magic_number_found) {
+            free(atsc3_sl_tlv_payload);
+            return NULL;
+        }
     }
     buf+=4;
     
