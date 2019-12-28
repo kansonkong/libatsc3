@@ -133,7 +133,6 @@ atsc3_sl_tlv_payload_t* atsc3_sl_tlv_payload_parse_from_block_t(block_t* atsc3_s
 
     atsc3_sl_tlv_payload_unparsed_block->i_pos += atsc3_sl_tlv_payload->sl_tlv_total_parsed_payload_size;
 
-
     return atsc3_sl_tlv_payload;
 }
 
