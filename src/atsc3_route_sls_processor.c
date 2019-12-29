@@ -218,6 +218,9 @@ void atsc3_route_sls_patch_mpd_availability_start_time_and_start_number(atsc3_mi
             time_t now;
             time(&now);
 
+            //jjustman-2019-12-29 - add in ~2s to "now" so mpd will have at least a 1s forward buffer (rounding down)...
+            now += 2;
+
             int ast_char_pos_end = (ast_char + strlen(_MPD_availability_start_time_VALUE_)) - temp_lower_mpd;
             //replace 2019-10-09T19:03:50Z with now()...
             //        123456789012345678901
