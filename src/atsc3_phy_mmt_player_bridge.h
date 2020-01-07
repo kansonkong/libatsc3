@@ -5,7 +5,7 @@
 #ifndef AT3DRV_ANDROID_2_26_190826_ATSC3_PHY_MMT_PLAYER_BRIDGE_H
 #define AT3DRV_ANDROID_2_26_190826_ATSC3_PHY_MMT_PLAYER_BRIDGE_H
 
-#include "../jni/atsc3NdkClientSL.h"
+#include "atsc3NdkClient.h"
 #include "atsc3_utils.h"
 #include "atsc3_lls_types.h"
 
@@ -16,7 +16,7 @@
 
 
 
-void atsc3_phy_mmt_player_bridge_init(atsc3NdkClientSL* At3DrvIntf_ptr);
+void atsc3_phy_mmt_player_bridge_init(atsc3NdkClient* At3DrvIntf_ptr);
 
 void atsc3_phy_mmt_player_bridge_process_packet_phy(block_t* packet);
 

@@ -25,7 +25,7 @@ void atsc3_route_sls_process_from_alc_packet_and_file(udp_flow_t* udp_flow, alc_
     atsc3_sls_metadata_fragments_t* atsc3_sls_metadata_fragments = NULL;
     
 	//check if our toi == 0, if so, reprocess our sls fdt in preperation for an upcoming actual mbms emission
-	_ATSC3_ROUTE_SLS_PROCESSOR_INFO("alc_packet tsi/toi:%u/%u", alc_packet->def_lct_hdr->tsi, alc_packet->def_lct_hdr->toi);
+	_ATSC3_ROUTE_SLS_PROCESSOR_DEBUG("alc_packet tsi/toi:%u/%u", alc_packet->def_lct_hdr->tsi, alc_packet->def_lct_hdr->toi);
 
 	if(alc_packet->def_lct_hdr->toi == 0) {
 
@@ -117,6 +117,7 @@ void atsc3_route_sls_process_from_alc_packet_and_file(udp_flow_t* udp_flow, alc_
                  
                  content_type    char *    "application/dash+xml"    0x00000001064c8fe0
                  */
+
                 //TODO: jjustman-2019-11-02: write out our multipart mbms payload to our route/svc_id, e.g. to get the mpd
                 for(int i=0; i < lls_sls_alc_monitor->atsc3_sls_metadata_fragments->atsc3_mime_multipart_related_instance->atsc3_mime_multipart_related_payload_v.count; i++) {
                     atsc3_mime_multipart_related_payload_t* atsc3_mime_multipart_related_payload = lls_sls_alc_monitor->atsc3_sls_metadata_fragments->atsc3_mime_multipart_related_instance->atsc3_mime_multipart_related_payload_v.data[i];
@@ -131,6 +132,9 @@ void atsc3_route_sls_process_from_alc_packet_and_file(udp_flow_t* udp_flow, alc_
                     snprintf(mbms_filename, 1024, "route/%d/%s", lls_sls_alc_monitor->atsc3_lls_slt_service->service_id, atsc3_mime_multipart_related_payload->content_location);
                     FILE* fp = fopen(mbms_filename, "w");
                     if(fp) {
+                        /* lldb: set set target.max-string-summary-length 10000 */
+                        _ATSC3_ROUTE_SLS_PROCESSOR_INFO("writing MPD to: %s, payload: %s", mbms_filename, atsc3_mime_multipart_related_payload->payload);
+
                         fwrite(atsc3_mime_multipart_related_payload->payload, atsc3_mime_multipart_related_payload->payload_length, 1, fp);
                         fclose(fp);
                     } else {
@@ -196,6 +200,7 @@ void atsc3_route_sls_patch_mpd_availability_start_time_and_start_number(atsc3_mi
             return;
         }
     }
+
     if(lls_sls_alc_monitor->has_discontiguous_toi_flow) {
         _ATSC3_ROUTE_SLS_PROCESSOR_WARN("atsc3_route_sls_patch_mpd_availability_start_time_and_start_number, has_discontiguous_toi_flow is true, rebuilding MPD!");
     }
@@ -246,7 +251,7 @@ void atsc3_route_sls_patch_mpd_availability_start_time_and_start_number(atsc3_mi
 
             if(lls_sls_alc_monitor->last_closed_video_toi && lls_sls_alc_monitor->last_closed_audio_toi) {
 
-                _ATSC3_ROUTE_SLS_PROCESSOR_INFO("In-flight MPD is: \n%s", atsc3_mime_multipart_related_payload->payload);
+                _ATSC3_ROUTE_SLS_PROCESSOR_DEBUG("In-flight MPD is: \n%s", atsc3_mime_multipart_related_payload->payload);
 
                 char* vcodec_representation_start_pos = strnstr(temp_lower_mpd, "video/mp4", strlen(temp_lower_mpd));
                 if(!vcodec_representation_start_pos) {
@@ -334,6 +339,7 @@ void atsc3_route_sls_patch_mpd_availability_start_time_and_start_number(atsc3_mi
                     block_Destroy(&lls_sls_alc_monitor->last_mpd_payload_patched);
 
                 }
+
                 lls_sls_alc_monitor->last_mpd_payload_patched = block_Alloc(atsc3_mime_multipart_related_payload->payload_length + 1);
                 block_Write(lls_sls_alc_monitor->last_mpd_payload_patched, (const uint8_t*)atsc3_mime_multipart_related_payload->payload, atsc3_mime_multipart_related_payload->payload_length);
 
@@ -341,7 +347,8 @@ void atsc3_route_sls_patch_mpd_availability_start_time_and_start_number(atsc3_mi
                 if(lls_sls_alc_monitor->has_discontiguous_toi_flow && lls_sls_alc_monitor->atsc3_lls_sls_alc_on_route_mpd_patched) {
                     lls_sls_alc_monitor->atsc3_lls_sls_alc_on_route_mpd_patched(lls_sls_alc_monitor->atsc3_lls_slt_service->service_id);
                 }
-                _ATSC3_ROUTE_SLS_PROCESSOR_INFO("Final MPD is: \n%s", atsc3_mime_multipart_related_payload->payload);
+
+                _ATSC3_ROUTE_SLS_PROCESSOR_DEBUG("Final MPD is: \n%s", atsc3_mime_multipart_related_payload->payload);
 
             } else {
                 _ATSC3_ROUTE_SLS_PROCESSOR_ERROR("unable to patch startNumber values: no closed video/audio toi, v: %d, a: %d", lls_sls_alc_monitor->last_closed_video_toi, lls_sls_alc_monitor->last_closed_audio_toi);
