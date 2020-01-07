@@ -7,13 +7,13 @@
  * Android MMT MFU Playback with SLS event driven callbacks
  *
  *
- * Note: atsc3NdkClientSL - Android NDK Binding against Lowasys API are not included
+ * Note: atsc3NdkClient - Android NDK Binding against Lowasys API are not included
  */
 
 
-#include "../jni/atsc3NdkClientSL.h"
-//atsc3NdkClientSL* at3DrvIntf_ptr;
-atsc3NdkClientSL* atsc3NdkClientSL_ptr;
+#include "atsc3NdkClient.h"
+//atsc3NdkClient* at3DrvIntf_ptr;
+atsc3NdkClient* atsc3NdkClientSL_ptr;
 
 #include "atsc3_phy_mmt_player_bridge.h"
 
@@ -420,7 +420,7 @@ void atsc3_phy_mmt_player_bridge_process_packet_phy(block_t* packet) {
     //don't auto-select service here, let the lls_slt_monitor->atsc3_lls_on_sls_table_present event callback trigger in a service selection
     if(udp_packet->udp_flow.dst_ip_addr == LLS_DST_ADDR && udp_packet->udp_flow.dst_port == LLS_DST_PORT) {
         //at3DrvIntf_ptr->LogMsgF("atsc3_phy_mmt_player_bridge_process_packet_phy got packet: LLS, %p", udp_packet);
-        __INFO("LLS packet: dst_ip_addr: %u.%u.%u.%u:%u",
+        __DEBUG("LLS packet: dst_ip_addr: %u.%u.%u.%u:%u",
                 __toipnonstruct(udp_packet->udp_flow.dst_ip_addr),
                 udp_packet->udp_flow.dst_port);
         lls_table_t* lls_table = lls_table_create_or_update_from_lls_slt_monitor(lls_slt_monitor, udp_packet->data);
@@ -931,14 +931,14 @@ void atsc3_mmt_mpu_on_sequence_movie_fragment_metadata_present_ndk(uint16_t pack
 }
 
 
-void atsc3_phy_mmt_player_bridge_init(atsc3NdkClientSL* atsc3NdkClientSL_ptr_l) {
+void atsc3_phy_mmt_player_bridge_init(atsc3NdkClient* atsc3NdkClientSL_ptr_l) {
     atsc3NdkClientSL_ptr = atsc3NdkClientSL_ptr_l;
     atsc3NdkClientSL_ptr->LogMsgF("atsc3_phy_mmt_player_bridge_init - client ptr: %p", atsc3NdkClientSL_ptr_l);
 
     //set global logging levels
     _MMT_CONTEXT_MPU_DEBUG_ENABLED = 0;
     _ALC_UTILS_IOTRACE_ENABLED = 0;
-    _ROUTE_SLS_PROCESSOR_INFO_ENABLED=0;
+    _ROUTE_SLS_PROCESSOR_INFO_ENABLED=1;
     _ALC_UTILS_IOTRACE_ENABLED = 0;
 
     if(!lls_slt_monitor) {
