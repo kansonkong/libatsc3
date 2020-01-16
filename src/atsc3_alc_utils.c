@@ -291,88 +291,208 @@ char* alc_packet_dump_to_object_get_s_tsid_filename(udp_flow_t* udp_flow, alc_pa
 					atsc3_route_s_tsid_RS_LS_t* atsc3_route_s_tsid_RS_LS = atsc3_route_s_tsid_RS->atsc3_route_s_tsid_RS_LS_v.data[j];
 
 					if(atsc3_route_s_tsid_RS_LS->tsi == alc_packet->def_lct_hdr->tsi && atsc3_route_s_tsid_RS_LS->atsc3_route_s_tsid_RS_LS_SrcFlow) {
+					    //Assume SrcFlow_Payload.format_id == 1 for file mode:
 
-						//try to find our matching toi and content-location value
-						if(atsc3_route_s_tsid_RS_LS->atsc3_route_s_tsid_RS_LS_SrcFlow->atsc3_fdt_instance && atsc3_route_s_tsid_RS_LS->atsc3_route_s_tsid_RS_LS_SrcFlow->atsc3_fdt_instance->atsc3_fdt_file_v.count) {
-                            atsc3_fdt_instance_t* atsc3_fdt_instance = atsc3_route_s_tsid_RS_LS->atsc3_route_s_tsid_RS_LS_SrcFlow->atsc3_fdt_instance;
-                            for(int k=0; k < atsc3_fdt_instance->atsc3_fdt_file_v.count; k++) {
-								atsc3_fdt_file_t* atsc3_fdt_file = atsc3_fdt_instance->atsc3_fdt_file_v.data[k];
-                                //if toi matches, then use this mapping, otherwise, fallback to file_template
-								if(atsc3_fdt_file->toi == alc_packet->def_lct_hdr->toi && atsc3_fdt_file->content_location && strlen(atsc3_fdt_file->content_location)) {
-                                    size_t content_location_length = strlen(atsc3_fdt_file->content_location);
-                                    content_location = calloc(content_location_length + 1, sizeof(char));
-                                    strncpy(content_location, atsc3_fdt_file->content_location, content_location_length);
-                                    
-                                    //TODO: jjustman-2019-09-18 -  apply mappings from FLUTE to HTTP object caching here
-//                                    atsc3_fdt_file->content_type;
-//                                    atsc3_fdt_file->content_length;
-//                                    atsc3_fdt_file->content_encoding;
-//                                    atsc3_fdt_file->transfer_length;
-                                    
+					    if(atsc3_route_s_tsid_RS_LS->atsc3_route_s_tsid_RS_LS_SrcFlow->atsc3_route_s_tsid_RS_LS_SrcFlow_Payload->format_id != 2) {
+                            //try to find our matching toi and content-location value
+                            if(atsc3_route_s_tsid_RS_LS->atsc3_route_s_tsid_RS_LS_SrcFlow->atsc3_fdt_instance && atsc3_route_s_tsid_RS_LS->atsc3_route_s_tsid_RS_LS_SrcFlow->atsc3_fdt_instance->atsc3_fdt_file_v.count) {
+                                atsc3_fdt_instance_t* atsc3_fdt_instance = atsc3_route_s_tsid_RS_LS->atsc3_route_s_tsid_RS_LS_SrcFlow->atsc3_fdt_instance;
+                                for(int k=0; k < atsc3_fdt_instance->atsc3_fdt_file_v.count; k++) {
+                                    atsc3_fdt_file_t* atsc3_fdt_file = atsc3_fdt_instance->atsc3_fdt_file_v.data[k];
+
+                                    //if not in entity mode, and toi matches, then use this mapping, otherwise, fallback to file_template
+                                    if(atsc3_fdt_file->toi == alc_packet->def_lct_hdr->toi && atsc3_fdt_file->content_location && strlen(atsc3_fdt_file->content_location)) {
+                                        size_t content_location_length = strlen(atsc3_fdt_file->content_location);
+                                        content_location = calloc(content_location_length + 1, sizeof(char));
+                                        strncpy(content_location, atsc3_fdt_file->content_location, content_location_length);
+
+                                        //TODO: jjustman-2019-09-18 -  apply mappings from FLUTE to HTTP object caching here
+    //                                    atsc3_fdt_file->content_type;
+    //                                    atsc3_fdt_file->content_length;
+    //                                    atsc3_fdt_file->content_encoding;
+    //                                    atsc3_fdt_file->transfer_length;
+
+                                    }
                                 }
-							}
-                            
-                            if(!content_location) {
-                                //fallback to instance template
-                                if(atsc3_fdt_instance->file_template) {
-                                    int file_template_strlen = strlen(atsc3_fdt_instance->file_template);
-                                    char intermediate_file_name[1025] = { 0 }; //include null padding
-                                    int intermediate_pos = 0;
-                                    char* final_file_name = calloc(1025, sizeof(char));
-                                    
-                                    //replace $$ to $
-                                    //replace $TOI$ (and width formatting, e.g. $TOI%05d$) with our TOI
-                                    for(int i=0; i < file_template_strlen && i < 1024; i++) {
-                                        if(atsc3_fdt_instance->file_template[i] == '$') {
-                                            if(atsc3_fdt_instance->file_template[i+1] == '$') {
-                                                //escape
-                                                intermediate_file_name[intermediate_pos++] = '$';
-                                                i++;
-                                            } else if(i+4 < file_template_strlen &&
-                                                      atsc3_fdt_instance->file_template[i+1] == 'T' &&
-                                                      atsc3_fdt_instance->file_template[i+2] == 'O' &&
-                                                      atsc3_fdt_instance->file_template[i+3] == 'I') { //next 3 chars should be TOI at least
-                                                if(atsc3_fdt_instance->file_template[i+4] == '$') {
-                                                    //close out with just a %d value
-                                                    intermediate_file_name[intermediate_pos++] = '%';
-                                                    intermediate_file_name[intermediate_pos++] = 'd';
-                                                    i += 4;
-                                                    __ALC_UTILS_DEBUG("intermediate file template name after TOI property substituion is: %s", intermediate_file_name);
 
-                                                } else if(atsc3_fdt_instance->file_template[i+4] == '%') {
-                                                    i += 4;
-                                                    //copy over our formatting until we get to a $
-                                                    //e.g. myVideo$TOI%05d$.mps
-                                                    while(i < file_template_strlen && atsc3_fdt_instance->file_template[i] != '$') {
-                                                        intermediate_file_name[intermediate_pos++] = atsc3_fdt_instance->file_template[i++];
+                                if(!content_location) {
+                                    //fallback to instance template
+                                    if(atsc3_fdt_instance->file_template) {
+                                        int file_template_strlen = strlen(atsc3_fdt_instance->file_template);
+                                        char intermediate_file_name[1025] = { 0 }; //include null padding
+                                        int intermediate_pos = 0;
+                                        char* final_file_name = calloc(1025, sizeof(char));
+
+                                        //replace $$ to $
+                                        //replace $TOI$ (and width formatting, e.g. $TOI%05d$) with our TOI
+                                        for(int i=0; i < file_template_strlen && i < 1024; i++) {
+                                            if(atsc3_fdt_instance->file_template[i] == '$') {
+                                                if(atsc3_fdt_instance->file_template[i+1] == '$') {
+                                                    //escape
+                                                    intermediate_file_name[intermediate_pos++] = '$';
+                                                    i++;
+                                                } else if(i+4 < file_template_strlen &&
+                                                          atsc3_fdt_instance->file_template[i+1] == 'T' &&
+                                                          atsc3_fdt_instance->file_template[i+2] == 'O' &&
+                                                          atsc3_fdt_instance->file_template[i+3] == 'I') { //next 3 chars should be TOI at least
+                                                    if(atsc3_fdt_instance->file_template[i+4] == '$') {
+                                                        //close out with just a %d value
+                                                        intermediate_file_name[intermediate_pos++] = '%';
+                                                        intermediate_file_name[intermediate_pos++] = 'd';
+                                                        i += 4;
+                                                        __ALC_UTILS_DEBUG("intermediate file template name after TOI property substituion is: %s", intermediate_file_name);
+
+                                                    } else if(atsc3_fdt_instance->file_template[i+4] == '%') {
+                                                        i += 4;
+                                                        //copy over our formatting until we get to a $
+                                                        //e.g. myVideo$TOI%05d$.mps
+                                                        while(i < file_template_strlen && atsc3_fdt_instance->file_template[i] != '$') {
+                                                            intermediate_file_name[intermediate_pos++] = atsc3_fdt_instance->file_template[i++];
+                                                        }
+                                                        __ALC_UTILS_DEBUG("intermediate file template name after TOI width substitution is: %s", intermediate_file_name);
+
+                                                    } else {
+                                                        __ALC_UTILS_WARN("file template name at pos: %d doesn't match template value of TOI: %s, ignoring...", i, atsc3_fdt_instance->file_template);
                                                     }
-                                                    __ALC_UTILS_DEBUG("intermediate file template name after TOI width substitution is: %s", intermediate_file_name);
-                                                 
                                                 } else {
                                                     __ALC_UTILS_WARN("file template name at pos: %d doesn't match template value of TOI: %s, ignoring...", i, atsc3_fdt_instance->file_template);
                                                 }
                                             } else {
-                                                __ALC_UTILS_WARN("file template name at pos: %d doesn't match template value of TOI: %s, ignoring...", i, atsc3_fdt_instance->file_template);
+                                                intermediate_file_name[intermediate_pos++] = atsc3_fdt_instance->file_template[i];
                                             }
-                                        } else {
-                                            intermediate_file_name[intermediate_pos++] = atsc3_fdt_instance->file_template[i];
+                                        }
+
+                                        //perform final replacement
+                                        snprintf(final_file_name, 1024, intermediate_file_name, alc_packet->def_lct_hdr->toi);
+                                        content_location = final_file_name;
+                                        __ALC_UTILS_DEBUG("final file template name after TOI substitution is: %s", content_location);
+                                        if(alc_packet->def_lct_hdr->tsi == lls_sls_alc_monitor->audio_tsi) {
+                                           lls_sls_alc_monitor->last_closed_audio_toi = alc_packet->def_lct_hdr->toi;
+                                        } else if(alc_packet->def_lct_hdr->tsi == lls_sls_alc_monitor->video_tsi) {
+                                           lls_sls_alc_monitor->last_closed_video_toi = alc_packet->def_lct_hdr->toi;
                                         }
                                     }
-                                
-                                    //perform final replacement
-                                    snprintf(final_file_name, 1024, intermediate_file_name, alc_packet->def_lct_hdr->toi);
-                                    content_location = final_file_name;
-                                    __ALC_UTILS_DEBUG("final file template name after TOI substitution is: %s", content_location);
-                                    if(alc_packet->def_lct_hdr->tsi == lls_sls_alc_monitor->audio_tsi) {
-                                       lls_sls_alc_monitor->last_closed_audio_toi = alc_packet->def_lct_hdr->toi;
-                                    } else if(alc_packet->def_lct_hdr->tsi == lls_sls_alc_monitor->video_tsi) {
-                                       lls_sls_alc_monitor->last_closed_video_toi = alc_packet->def_lct_hdr->toi;
+                                }
+                            }
+					    }
+
+						if(!content_location) {
+                            //alternative strategies for content-location here?
+
+						    //assume entity or package mode delivery here...
+						    if(atsc3_route_s_tsid_RS_LS->atsc3_route_s_tsid_RS_LS_SrcFlow->atsc3_route_s_tsid_RS_LS_SrcFlow_Payload) {
+                                __ALC_UTILS_DEBUG("processing ALC MDE as delivery object format id: %d", atsc3_route_s_tsid_RS_LS->atsc3_route_s_tsid_RS_LS_SrcFlow->atsc3_route_s_tsid_RS_LS_SrcFlow_Payload->format_id);
+
+                                if(atsc3_route_s_tsid_RS_LS->atsc3_route_s_tsid_RS_LS_SrcFlow->atsc3_route_s_tsid_RS_LS_SrcFlow_Payload->format_id == 2) {
+                                    //extract out our content_location from the ALC payload headers here
+                                    char* temp_content_location = alc_packet_dump_to_object_get_temporary_filename(udp_flow, alc_packet);
+
+                                    struct stat st;
+                                    stat(temp_content_location, &st);
+
+                                    //jjustman-2020-01-16 - parse first block of rfc 7231 headers...
+                                    char* temp_content_header = calloc(8193, sizeof(char)); //over-allocate for null pad at end
+                                    FILE* temp_fp = fopen(temp_content_location, "r+");
+                                    if(temp_fp) {
+                                        //jjustman-2020-01-16 - refactor me to proper RFC 7231 header handling
+                                        int read_len = fread(temp_content_header, 1, 8192, temp_fp); //try and get actual bytes read just in case
+                                        //"content-location: "
+                                        // 12345678901234567 = 18 bytes (w/ whitespace?)
+
+                                        char* location_found = strcasestr(temp_content_header, "content-location: ");
+
+                                        if(location_found) {
+                                            location_found += 18; //move us forward 18 bytes for content-location: literal
+                                            //find newline char (either 0x0d|0x0a)
+                                            char* endofline = NULL;
+                                            int pos = 0;
+                                            while(true) {
+                                                if(!location_found[pos]) {
+                                                    __ALC_UTILS_DEBUG("ALC MDE: no content-location found after pos: %d", pos);
+
+                                                    break;
+                                                } else if(location_found[pos] == 0x0d || location_found[pos] == 0x0a) {
+                                                    endofline = location_found + (pos-1);
+                                                    content_location = strndup(location_found, pos);
+                                                    __ALC_UTILS_DEBUG("ALC MDE: local entity mode filename is: %c", content_location);
+
+                                                    bool has_additional_headers = false;
+                                                    int newline_count = 1;
+                                                    while(true) {
+                                                        pos++;
+
+                                                        //now we need to chomp off the remaining entity header(s) until we get to an empty newline
+                                                        //happy path
+                                                        if(location_found[pos] == 0x0d || location_found[pos] == 0x0a) {
+                                                            newline_count++;
+                                                            if(newline_count > 3) {
+                                                                pos++; //and get rid of our last linebreak..
+                                                                //break out and trim our file
+                                                                int trim_size = (location_found + pos) - temp_content_header;
+                                                                int new_mde_payload_size = st.st_size - trim_size;
+                                                                __ALC_UTILS_INFO("ALC MDE: entity mode, original size: %d, header cut is: %d bytes, new mde size is: %d", st.st_size, trim_size, new_mde_payload_size);
+
+                                                                if(trim_size > 0 && new_mde_payload_size > 0) {
+                                                                    uint8_t* to_trim_payload = calloc(new_mde_payload_size, sizeof(uint8_t));
+
+                                                                    fseek(temp_fp, trim_size, SEEK_SET);
+                                                                    fread(to_trim_payload, new_mde_payload_size, 1, temp_fp);
+                                                                    int ret = ftruncate(fileno(temp_fp), new_mde_payload_size);
+                                                                    printf("ftruncate for fd: %d, ret is: %d", fileno(temp_fp), ret);
+                                                                    fsync(temp_fp);
+                                                                    fseek(temp_fp, 0, SEEK_SET);
+                                                                    fwrite(to_trim_payload, new_mde_payload_size, 1, temp_fp);
+                                                                    for(int i=0; i < 32; i++) {
+                                                                        printf("to_trim_payload[%d]: 0x%02x (%c)", i, to_trim_payload[i], to_trim_payload[i]);
+                                                                    }
+
+                                                                    fsync(temp_fp);
+
+                                                                    free(to_trim_payload);
+                                                                    to_trim_payload = NULL;
+
+                                                                    //mark this toi as close
+                                                                    if(alc_packet->def_lct_hdr->tsi == lls_sls_alc_monitor->audio_tsi) {
+                                                                        lls_sls_alc_monitor->last_closed_audio_toi = alc_packet->def_lct_hdr->toi;
+                                                                    } else if(alc_packet->def_lct_hdr->tsi == lls_sls_alc_monitor->video_tsi) {
+                                                                        lls_sls_alc_monitor->last_closed_video_toi = alc_packet->def_lct_hdr->toi;
+                                                                    }
+                                                                    break; //done
+                                                                }
+                                                            }
+                                                        } else {
+                                                            has_additional_headers = true;
+                                                            newline_count = 0;
+                                                        }
+                                                    }
+
+
+
+                                                    break;
+                                                }
+                                                pos++;
+                                            }
+                                        }
+                                    }
+
+                                    if(temp_fp) {
+                                        fclose(temp_fp);
+                                        temp_fp = NULL;
+                                    }
+                                    if(temp_content_location) {
+                                        free(temp_content_location);
+                                        temp_content_location = NULL;
+                                    }
+                                    if(temp_content_header) {
+                                        free(temp_content_header);
+                                        temp_content_header = NULL;
                                     }
                                 }
-                            }                           
-						} else {
 
-							//alternative strategies for content-location here?
+						    } else {
+                                __ALC_UTILS_WARN("processing ALC MDE - but no atsc3_route_s_tsid_RS_LS_SrcFlow_Payload!");
+
+                            }
 						}
 					}
 				}
