@@ -131,6 +131,7 @@ atsc3_pcap_replay_context_t* atsc3_pcap_replay_iterate_packet(atsc3_pcap_replay_
 		atsc3_pcap_replay_context_to_iterate->first_packet_ts_timeval.tv_usec = atsc3_pcap_replay_context_to_iterate->current_packet_ts_usec;
 	}
 
+	//jjustman-2020-01-16 - fixme? should just be packet header size?
 	atsc3_pcap_replay_context_to_iterate->pcap_file_pos += sizeof(atsc3_pcap_global_header_t) + sizeof(atsc3_pcap_packet_header_t);
 
 	atsc3_pcap_replay_context_to_iterate->atsc3_pcap_packet_instance.current_pcap_packet = block_Alloc(atsc3_pcap_replay_context_to_iterate->atsc3_pcap_packet_instance.atsc3_pcap_packet_header.incl_len);
