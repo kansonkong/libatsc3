@@ -133,7 +133,7 @@ void atsc3_route_sls_process_from_alc_packet_and_file(udp_flow_t* udp_flow, alc_
                     FILE* fp = fopen(mbms_filename, "w");
                     if(fp) {
                         /* lldb: set set target.max-string-summary-length 10000 */
-                        _ATSC3_ROUTE_SLS_PROCESSOR_INFO("writing MPD to: %s, payload: %s", mbms_filename, atsc3_mime_multipart_related_payload->payload);
+                        _ATSC3_ROUTE_SLS_PROCESSOR_INFO("writing MBMS object to: %s, payload: %s", mbms_filename, atsc3_mime_multipart_related_payload->payload);
 
                         fwrite(atsc3_mime_multipart_related_payload->payload, atsc3_mime_multipart_related_payload->payload_length, 1, fp);
                         fclose(fp);
