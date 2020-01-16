@@ -1,0 +1,51 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    package="org.ngbp.libatsc3.sampleapp">
+
+    <uses-feature android:name="android.hardware.usb.host" />
+
+    <uses-permission android:name="com.google.android.things.permission.USE_PERIPHERAL_IO"/>
+    <uses-permission android:name="com.google.android.things.permission.MANAGE_INPUT_DRIVERS" />
+    <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" />
+    <uses-permission android:name="android.permission.INTERNET" />
+
+<!--         android:hardwareAccelerated="true"
+-->
+
+    <application
+        android:allowBackup="true"
+        android:icon="@mipmap/ic_launcher"
+        android:label="@string/app_name"
+        android:roundIcon="@mipmap/ic_launcher_round"
+        android:supportsRtl="false"
+        android:theme="@style/AppTheme"
+        android:hardwareAccelerated="true"
+        android:windowSoftInputMode="adjustNothing|stateHidden"
+        android:launchMode="singleInstance"
+        >
+<!-- jjustman-2019-11-24: extractNativeLibs may not be needed
+        android:extractNativeLibs="false"
+-->
+
+        <activity android:name="org.ngbp.libatsc3.sampleapp.MainActivity"
+            android:configChanges="orientation|screenSize">
+
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+                <category android:name="android.intent.category.LEANBACK_LAUNCHER" />
+                <action android:name="android.hardware.usb.action.USB_DEVICE_ATTACHED" />
+            </intent-filter>
+            <meta-data android:name="android.hardware.usb.action.USB_DEVICE_ATTACHED"
+                android:resource="@xml/device_filter" />
+            <!--<meta-data android:name="android.hardware.usb.action.USB_DEVICE_ATTACHED"-->
+            <!--android:resource="@xml/device_filter" />-->
+        </activity>
+        <activity android:name="org.ngbp.libatsc3.android.pcapreplay.PcapFileSelectorActivity">
+        </activity>
+<!--        <activity android:name="org.ngbp.libatsc3.media.sync.mmt.MFUDecoderSurfaceSync" android:screenOrientation="landscape">-->
+<!--        </activity>-->
+    </application>
+
+</manifest>
