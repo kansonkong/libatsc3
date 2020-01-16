@@ -1,0 +1,735 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/baseLayout"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    tools:context="org.ngbp.libatsc3.sampleapp.MainActivity"
+    >
+    <!--     android:windowSoftInputMode="stateVisible|adjustResize" -->
+
+
+    <LinearLayout
+        android:id="@+id/DebugAndSLSMessages"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:background="#E9E5DD"
+        android:orientation="vertical"
+        app:layout_constraintBottom_toTopOf="@id/SelectDeviceLayout"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/videoPreview">
+        s
+        <!--        <ScrollView-->
+        <!--            android:id="@+id/scrollView"-->
+        <!--            android:layout_width="match_parent"-->
+        <!--            android:layout_height="1dp"-->
+        <!--            android:layout_marginTop="0dp"-->
+        <!--            android:layout_marginBottom="0dp"-->
+        <!--            android:layout_weight="0.25"-->
+        <!--            android:fillViewport="false"-->
+        <!--            android:longClickable="false"-->
+        <!--            android:measureAllChildren="false"-->
+        <!--            android:nestedScrollingEnabled="false">-->
+
+
+        <TextView
+            android:id="@+id/textMsg"
+            android:layout_width="match_parent"
+            android:layout_height="100dp"
+            android:focusable="false"
+            android:text="ATSC 3.0 - NGBP - Mobile Android"
+            android:textSize="6sp" />
+        <!--        </ScrollView>-->
+
+        <View
+            android:id="@+id/divider"
+            android:layout_width="match_parent"
+            android:layout_height="4px"
+            android:layout_weight="0"
+            android:background="?android:attr/listDivider"
+            android:backgroundTint="#D2C5E7"
+            android:backgroundTintMode="add" />
+
+        <LinearLayout
+            android:id="@+id/SlsAndAlcObjectStatusMessages"
+            android:layout_width="match_parent"
+            android:layout_height="100dp"
+            android:orientation="horizontal"
+            android:weightSum="1">
+
+            <TextView
+                android:id="@+id/slsMsg"
+                android:layout_width="0dp"
+                android:layout_height="match_parent"
+                android:layout_weight="0.5"
+                android:overScrollMode="always"
+                android:paddingTop="0px"
+                android:scrollbarAlwaysDrawVerticalTrack="true"
+                android:scrollbars="vertical"
+                android:singleLine="false"
+                android:text="--Pending SLS---"
+                android:textSize="6sp" />
+
+            <TextView
+                android:id="@+id/alcObjectStatusMsg"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="0.5"
+                android:overScrollMode="always"
+                android:scrollbars="vertical"
+                android:text="--Pending ALC--"
+                android:textSize="6sp" />
+        </LinearLayout>
+
+        <TextView
+            android:id="@+id/textRawIMSC1"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:layout_marginTop="1dp"
+            android:layout_weight="1.0"
+            android:paddingTop="4px"
+            android:singleLine="false"
+            android:text="--raw IMSC1--"
+            android:textSize="6sp"
+            android:visibility="gone" />
+    </LinearLayout>
+
+    <LinearLayout
+        android:id="@+id/SelectDeviceLayout"
+        android:layout_width="match_parent"
+        android:layout_height="60dp"
+        android:orientation="vertical"
+        app:layout_constraintBottom_toTopOf="@+id/ButtonsPrimaryLayout"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/DebugAndSLSMessages">
+
+        <androidx.constraintlayout.widget.ConstraintLayout
+            android:layout_width="match_parent"
+            android:layout_height="60dp"
+            tools:layout_editor_absoluteX="1dp">
+
+            <TextView
+                android:id="@+id/textDevList"
+                android:layout_width="wrap_content"
+                android:layout_height="24dp"
+                android:layout_marginStart="1dp"
+                android:gravity="center_vertical"
+                android:text="Select Device"
+                android:textSize="18dp"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintTop_toTopOf="parent" />
+
+            <Spinner
+                android:id="@+id/spinDevices"
+                style="android:attr/spinnerItemStyle"
+                android:layout_width="0dp"
+                android:layout_height="28dp"
+                android:layout_marginStart="16dp"
+                android:background="#E7E7E7"
+                android:focusable="true"
+                android:focusedByDefault="true"
+                android:foregroundTint="#009688"
+                android:nextFocusRight="@+id/butOpen"
+                android:nextFocusDown="@+id/butOpen"
+                android:nextFocusForward="@+id/butOpen"
+                android:textSize="16sp"
+                app:layout_constraintEnd_toEndOf="parent"
+                app:layout_constraintHorizontal_bias="0.0"
+                app:layout_constraintStart_toEndOf="@id/textDevList"
+                app:layout_constraintTop_toTopOf="parent">
+
+                <requestFocus />
+            </Spinner>
+
+
+            <TextView
+                android:id="@+id/textServiceList"
+                android:layout_width="wrap_content"
+                android:layout_height="24dp"
+                android:layout_marginStart="1dp"
+                android:gravity="center_vertical"
+                android:text="Select Service"
+                android:textSize="18dp"
+                app:layout_constraintBottom_toBottomOf="parent"
+                app:layout_constraintStart_toStartOf="@id/spinDevices" />
+
+            <Spinner
+                android:id="@+id/spinServices"
+                style="android:attr/spinnerItemStyle"
+                android:layout_width="0dp"
+                android:layout_height="28dp"
+                android:layout_marginStart="16dp"
+                android:background="#E7E7E7"
+                android:focusable="true"
+                android:focusedByDefault="true"
+                android:foregroundTint="#009688"
+                android:nextFocusLeft="@+id/butTune"
+                android:nextFocusRight="@+id/butPlay"
+                android:nextFocusDown="@+id/butPlay"
+                android:nextFocusForward="@+id/butPlay"
+                android:textSize="16sp"
+                app:layout_constraintBottom_toBottomOf="parent"
+                app:layout_constraintEnd_toEndOf="parent"
+                app:layout_constraintHorizontal_bias="0.0"
+                app:layout_constraintStart_toEndOf="@id/textServiceList">
+
+            </Spinner>
+
+        </androidx.constraintlayout.widget.ConstraintLayout>
+
+
+    </LinearLayout>
+
+    <LinearLayout
+        android:id="@+id/ButtonsPrimaryLayout"
+        android:layout_width="match_parent"
+        android:layout_height="50dp"
+        android:orientation="horizontal"
+        app:layout_constraintBottom_toBottomOf="@id/FieldTunePLPServiceInput"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/SelectDeviceLayout">
+
+        <Button
+            android:id="@+id/butOpen"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:layout_weight="1"
+            android:nextFocusUp="@+id/RfScanRunToggleBtn"
+            android:nextFocusDown="@+id/btnToggleRfScan"
+            android:nextFocusForward="@+id/butTune"
+            android:text="Open"
+            android:textSize="12sp" />
+
+        <Button
+            android:id="@+id/butTune"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:layout_weight="1"
+
+            android:nextFocusUp="@+id/spinServices"
+            android:nextFocusDown="@+id/editFreqMhz"
+            android:nextFocusForward="@+id/spinServices"
+            android:text="Tune"
+            android:textSize="12sp" />
+
+        <Button
+            android:id="@+id/butPlay"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:layout_weight="1"
+
+            android:nextFocusUp="@id/spinServices"
+            android:text="Play"
+            android:textSize="12sp" />
+
+        <Button
+            android:id="@+id/butStop"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:layout_weight="1"
+
+            android:text="Stop"
+            android:textSize="12sp" />
+
+        <Button
+            android:id="@+id/butClose"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:layout_weight="1"
+
+            android:text="Close"
+            android:textSize="12sp" />
+
+        <Button
+            android:id="@+id/butReset"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:layout_weight="1"
+
+            android:text="Reset"
+            android:textSize="12sp" />
+
+    </LinearLayout>
+
+    <LinearLayout
+        android:id="@+id/FieldTunePLPServiceInput"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        app:layout_constraintBottom_toTopOf="@id/ButtonsSLSLayout"
+        app:layout_constraintTop_toBottomOf="@id/ButtonsPrimaryLayout">
+
+        <androidx.constraintlayout.widget.ConstraintLayout
+            android:id="@+id/SelectFreqPlpServiceID"
+            android:layout_width="match_parent"
+            android:layout_height="34dp">
+
+            <TextView
+                android:id="@+id/textView2"
+                android:layout_width="50dp"
+                android:layout_height="match_parent"
+                android:layout_marginStart="1dp"
+                android:text="Freq"
+                android:textSize="20dp"
+                app:layout_constraintBottom_toBottomOf="parent"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintTop_toTopOf="parent" />
+
+            <EditText
+                android:id="@+id/editFreqMhz"
+                android:layout_width="50dp"
+                android:layout_height="match_parent"
+                android:layout_marginStart="1dp"
+                android:enabled="false"
+                android:imeOptions="actionDone"
+                android:inputType="phone"
+                android:nextFocusUp="@+id/butTune"
+                android:nextFocusDown="@+id/btnToggleRfMetrics"
+                android:numeric="integer"
+                android:paddingTop="0dp"
+                android:phoneNumber="false"
+                android:text="647"
+                android:textSize="20dp"
+                app:layout_constraintBottom_toBottomOf="parent"
+                app:layout_constraintEnd_toStartOf="@+id/textView"
+                app:layout_constraintStart_toEndOf="@+id/textView2"
+                app:layout_constraintTop_toTopOf="parent"
+                app:layout_constraintVertical_bias="0.0" />
+
+            <TextView
+                android:id="@+id/textView"
+                android:layout_width="50dp"
+                android:layout_height="match_parent"
+                android:text="PLP"
+                android:textSize="20dp"
+                app:layout_constraintBottom_toBottomOf="parent"
+                app:layout_constraintEnd_toEndOf="@id/editPlp"
+                app:layout_constraintStart_toEndOf="@+id/editFreqMhz" />
+
+            <EditText
+                android:id="@+id/editPlp"
+                android:layout_width="50dp"
+                android:layout_height="match_parent"
+                android:layout_marginStart="1dp"
+                android:inputType="phone"
+                android:paddingTop="1dp"
+                android:text="0"
+                android:textSize="20dp"
+                app:layout_constraintBottom_toBottomOf="parent"
+                app:layout_constraintEnd_toStartOf="@+id/textServiceSelection"
+                app:layout_constraintStart_toEndOf="@+id/textView"
+                app:layout_constraintTop_toTopOf="parent" />
+
+
+            <!-- service_id selection -->
+            <TextView
+                android:id="@+id/textServiceSelection"
+                android:layout_width="90dp"
+                android:layout_height="match_parent"
+                android:text="ServiceID"
+                android:textSize="20dp"
+                app:layout_constraintBottom_toBottomOf="parent"
+                app:layout_constraintEnd_toEndOf="@id/editServiceID"
+                app:layout_constraintStart_toEndOf="@+id/editPlp" />
+
+            <EditText
+                android:id="@+id/editServiceID"
+                android:layout_width="70dp"
+                android:layout_height="match_parent"
+                android:layout_marginStart="1dp"
+                android:paddingTop="1dp"
+                android:text="0"
+                android:textSize="20dp"
+                app:layout_constraintBottom_toBottomOf="parent"
+                app:layout_constraintEnd_toEndOf="parent"
+                app:layout_constraintStart_toEndOf="@+id/textServiceSelection"
+                app:layout_constraintTop_toTopOf="parent" />
+
+
+        </androidx.constraintlayout.widget.ConstraintLayout>
+    </LinearLayout>
+
+    <!-- top: @id/FieldTunePLPServiceInput -->
+    <LinearLayout
+        android:id="@+id/ButtonsSLSLayout"
+        android:layout_width="match_parent"
+        android:layout_height="50dp"
+        android:layout_marginBottom="32dp"
+        android:layout_weight="1"
+        android:orientation="horizontal"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent">
+
+
+        <ToggleButton
+            android:id="@+id/btnToggleRfScan"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:layout_weight="1"
+
+            android:focusable="true"
+            android:textOff="Show RF Scan"
+            android:textOn="Hide RF Scan"
+
+            android:textSize="12sp" />
+
+        <ToggleButton
+            android:id="@+id/btnToggleRfMetrics"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:layout_weight="1"
+
+            android:textOff="Show RF Metrics"
+            android:textOn="Hide RF Metrics"
+
+            android:textSize="12sp" />
+
+        <ToggleButton
+            android:id="@+id/btnToggleMfuMetrics"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:layout_weight="1"
+
+            android:textOff="Show MFU Metrics"
+            android:textOn="Hide MFU Metrics"
+
+            android:textSize="12sp" />
+
+        <ToggleButton
+            android:id="@+id/btnToggleIMSC1"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:layout_weight="1"
+
+            android:textOff="Show Raw IMSC1"
+            android:textOn="Hide Raw IMSC1"
+
+            android:textSize="12sp" />
+
+
+        <Button
+            android:id="@+id/btnSetService"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:layout_weight="1"
+
+            android:text="Set ServiceID"
+            android:textSize="12sp" />
+    </LinearLayout>
+
+    <androidx.constraintlayout.widget.ConstraintLayout
+        android:id="@+id/videoPreview"
+        android:layout_width="match_parent"
+        android:layout_height="225dp"
+        android:background="#000000"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent">
+
+        <SurfaceView
+            android:id="@+id/surfaceview1"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:foregroundGravity="center"
+            app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toTopOf="parent" />
+
+        <!-- tried with WebView, but android is very paticular about html formatting -->
+        <com.google.android.exoplayer2.ui.PlayerView
+            android:id="@+id/player_view"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toTopOf="parent"
+            app:use_controller="false" />
+
+        <TextView
+            android:id="@+id/imsc1BodyView"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="24dp"
+            android:background="#80000000"
+            android:paddingLeft="4pt"
+            android:paddingTop="4pt"
+            android:paddingRight="4pt"
+            android:paddingBottom="4pt"
+            android:textAlignment="center"
+            android:textColor="#FFFFFF"
+            app:layout_constraintBottom_toBottomOf="@id/surfaceview1"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent">
+
+        </TextView>
+
+        <androidx.constraintlayout.widget.ConstraintLayout
+            android:id="@+id/MfuMetricsView"
+            android:layout_width="200dp"
+            android:layout_height="match_parent"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintTop_toTopOf="parent">
+
+            <TextView
+                android:id="@+id/MfuMetricsTitle"
+                android:layout_width="200dp"
+                android:layout_height="0dp"
+                android:background="#99000000"
+                android:paddingRight="150dp"
+                android:text="--MFU Metrics--"
+                android:textColor="#FFFFFF"
+                android:textSize="10sp"
+                app:layout_constraintBottom_toBottomOf="parent"
+                app:layout_constraintEnd_toEndOf="parent"
+                app:layout_constraintTop_toTopOf="parent" />
+
+            <TextView
+
+                android:id="@+id/avMfuPtsDelta"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="16dp"
+                android:breakStrategy="simple"
+                android:text=""
+                android:textColor="#FFFFFF"
+                android:textSize="8sp"
+
+                app:layout_constraintStart_toStartOf="@id/MfuMetricsTitle"
+                app:layout_constraintTop_toTopOf="@id/MfuMetricsTitle" />
+            <!-- org.ngbp.libatsc3.SimpleTextView -->
+            <TextView
+                android:id="@+id/videoEnqueuePresentationTimeUsText"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+
+                android:breakStrategy="simple"
+                android:textColor="#FFFFFF"
+
+                android:textSize="8sp"
+                app:layout_constraintStart_toStartOf="@id/MfuMetricsTitle"
+                app:layout_constraintTop_toBottomOf="@id/avMfuPtsDelta" />
+
+            <TextView
+                android:id="@+id/videoOnFrameRenderedTime"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+
+                android:breakStrategy="simple"
+                android:textColor="#FFFFFF"
+                android:textSize="8sp"
+                app:layout_constraintStart_toStartOf="@id/MfuMetricsTitle"
+                app:layout_constraintTop_toBottomOf="@id/videoEnqueuePresentationTimeUsText" />
+
+            <TextView
+                android:id="@+id/audioEnqueuePresentationTimeUsText"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+
+                android:breakStrategy="simple"
+                android:textColor="#FFFFFF"
+                android:textSize="8sp"
+                app:layout_constraintStart_toStartOf="@id/MfuMetricsTitle"
+                app:layout_constraintTop_toBottomOf="@id/videoOnFrameRenderedTime" />
+
+            <TextView
+                android:id="@+id/audioOnFrameRenderedTime"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+
+                android:breakStrategy="simple"
+                android:textColor="#FFFFFF"
+                android:textSize="8sp"
+                app:layout_constraintStart_toStartOf="@id/MfuMetricsTitle"
+                app:layout_constraintTop_toBottomOf="@id/audioEnqueuePresentationTimeUsText" />
+
+            <TextView
+                android:id="@+id/videoMfuStatisticsText"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:breakStrategy="simple"
+                android:textColor="#FFFFFF"
+                android:textSize="8sp"
+                app:layout_constraintStart_toStartOf="@id/MfuMetricsTitle"
+                app:layout_constraintTop_toBottomOf="@id/audioOnFrameRenderedTime" />
+
+        </androidx.constraintlayout.widget.ConstraintLayout>
+
+        <androidx.constraintlayout.widget.ConstraintLayout
+            android:id="@+id/RfMetricsView"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toTopOf="parent">
+
+            <TextView
+                android:id="@+id/RfMetricsTitle"
+                android:layout_width="wrap_content"
+                android:layout_height="0dp"
+                android:background="#99000000"
+                android:paddingRight="150dp"
+                android:text="--RF Metrics--"
+                android:textColor="#FFFFFF"
+                android:textSize="10dp"
+                app:layout_constraintBottom_toBottomOf="parent"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintTop_toTopOf="parent" />
+
+            <TextView
+                android:id="@+id/RfFecModCod"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="12dp"
+                android:textColor="#FFFFFF"
+                android:textSize="10dp"
+                app:layout_constraintStart_toStartOf="@id/RfMetricsTitle"
+                app:layout_constraintTop_toTopOf="parent" />
+
+            <TextView
+                android:id="@+id/RfRssiText"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:textColor="#FFFFFF"
+                android:textSize="10dp"
+                app:layout_constraintStart_toStartOf="@id/RfMetricsTitle"
+                app:layout_constraintTop_toBottomOf="@id/RfFecModCod" />
+
+            <TextView
+                android:id="@+id/RfSNRText"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:textColor="#FFFFFF"
+                android:textSize="10dp"
+                app:layout_constraintStart_toStartOf="@id/RfMetricsTitle"
+                app:layout_constraintTop_toBottomOf="@id/RfRssiText" />
+
+            <TextView
+                android:id="@+id/RfBERText"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:textColor="#FFFFFF"
+                android:textSize="10dp"
+                app:layout_constraintStart_toStartOf="@id/RfMetricsTitle"
+                app:layout_constraintTop_toBottomOf="@id/RfSNRText" />
+
+            <TextView
+                android:id="@+id/BwTotalStatusStr"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:textColor="#FFFFFF"
+                android:textSize="10dp"
+                app:layout_constraintStart_toStartOf="@id/RfMetricsTitle"
+                app:layout_constraintTop_toBottomOf="@id/RfBERText" />
+
+        </androidx.constraintlayout.widget.ConstraintLayout>
+
+    </androidx.constraintlayout.widget.ConstraintLayout>
+
+    <!-- overlay with SLS view -->
+
+    <androidx.constraintlayout.widget.ConstraintLayout
+        android:id="@+id/RfScanLayout"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:background="#FFF1DC"
+        app:layout_constraintBottom_toTopOf="@id/ButtonsSLSLayout"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent">
+
+        <TextView
+            android:id="@+id/RfScanTitle"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="-- RF Scan --"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toTopOf="parent" />
+
+        <LinearLayout
+            android:id="@+id/RfScanOptionsLayout"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:gravity="top"
+            android:orientation="horizontal"
+            app:layout_constraintTop_toBottomOf="@id/RfScanTitle">
+
+            <TextView
+                android:id="@+id/RfScanStartFreqLabel"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Start Freq" />
+
+            <EditText
+                android:id="@+id/RfScanStartFreqVal"
+                android:layout_width="wrap_content"
+                android:layout_height="32dp"
+                android:inputType="number"
+                android:text="473"
+                android:textSize="10sp" />
+
+            <TextView
+                android:id="@+id/RfScanEndFreqLabel"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="End Freq" />
+
+            <EditText
+                android:id="@+id/RfScanEndFreqVal"
+                android:layout_width="wrap_content"
+                android:layout_height="32dp"
+                android:inputType="number"
+                android:text="806"
+                android:textSize="10sp" />
+
+            <TextView
+                android:id="@+id/rfScanLingerDelayMSLabel"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Linger Delay (MS)" />
+
+            <EditText
+                android:id="@+id/RfScanLingerDelayVal"
+                android:layout_width="wrap_content"
+                android:layout_height="32dp"
+                android:inputType="number"
+                android:text="5000"
+                android:textSize="10sp" />
+
+            <ToggleButton
+                android:id="@+id/RfScanRunToggleBtn"
+                android:layout_width="wrap_content"
+                android:layout_height="32dp"
+                android:text="Toggle"
+                android:textOff="SCAN ON"
+                android:textOn="SCAN OFF"
+
+                android:textSize="10sp" />
+        </LinearLayout>
+
+        <androidx.recyclerview.widget.RecyclerView
+            android:id="@+id/RfScanResultsView"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:scrollbars="vertical"
+            app:layout_constraintTop_toBottomOf="@id/RfScanOptionsLayout" />
+
+    </androidx.constraintlayout.widget.ConstraintLayout>
+
+
+    <!--    <org.ngbp.libatsc3.android.MyGLSurfaceView-->
+    <!--    android:id="@+id/glsurfaceview1"-->
+    <!--        android:layout_width="640px"-->
+    <!--        android:layout_height="480px"-->
+    <!--            app:layout_constraintEnd_toEndOf="parent"-->
+    <!--            app:layout_constraintTop_toTopOf="parent" />-->
+
+    <!--    />-->
+
+</androidx.constraintlayout.widget.ConstraintLayout>

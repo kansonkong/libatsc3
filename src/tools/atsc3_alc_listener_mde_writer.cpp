@@ -97,6 +97,7 @@ void process_packet(u_char *user, const struct pcap_pkthdr *pkthdr, const u_char
 		int retval = alc_rx_analyze_packet_a331_compliant((char*)block_Get(udp_packet->data), block_Remaining_size(udp_packet->data), &ch, &alc_packet);
 		if(!retval) {
 			//dump out for fragment inspection
+            atsc3_alc_persist_route_ext_attributes_per_lls_sls_alc_monitor_essence(alc_packet, lls_slt_monitor->lls_sls_alc_monitor);
 			alc_packet_dump_to_object(&udp_packet->udp_flow, &alc_packet, lls_slt_monitor->lls_sls_alc_monitor);
 		} else {
 			__ERROR("Error in ALC decode: %d", retval);
@@ -114,7 +115,8 @@ int main(int argc,char **argv) {
 
 	_LLS_SLT_PARSER_INFO_ROUTE_ENABLED = 1;
     _ALC_UTILS_DEBUG_ENABLED = 1;
-	_ALC_RX_DEBUG_ENABLED = 1;
+    _ALC_UTILS_IOTRACE_ENABLED = 1;
+	_ALC_RX_DEBUG_ENABLED = 0;
     _ALC_UTILS_DEBUG_ENABLED = 1;
 
 #ifdef __LOTS_OF_DEBUGGING__

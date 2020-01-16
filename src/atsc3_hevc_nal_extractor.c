@@ -229,10 +229,25 @@ video_decoder_configuration_record_t* atsc3_avc1_hevc_nal_extractor_parse_from_m
     if(has_tkhd_match && tkhd_match_index) {
         atsc3_init_parse_tkhd_for_width_height(video_decoder_configuration_record, &tkhd_ptr[tkhd_match_index], init_buff_remaining);
     }
-    
-    
+
+	//jjustman-2019-11-14 - if tkhd widht/height looks invalid, set to zero, and scan for hev1 or avcC width/height attributes
+
+
+	if(video_decoder_configuration_record->width < 64) {
+		_ATSC3_HEVC_NAL_EXTRACTOR_WARN("atsc3_avc1_hevc_nal_extractor_parse_from_mpu_metadata_block_t: video_decoder_configuration_record->width < 64 (%d), setting to 0!", video_decoder_configuration_record->width);
+		video_decoder_configuration_record->width = 0;
+	}
+
+    if(video_decoder_configuration_record->height < 64) {
+		_ATSC3_HEVC_NAL_EXTRACTOR_WARN("atsc3_avc1_hevc_nal_extractor_parse_from_mpu_metadata_block_t: video_decoder_configuration_record->height < 64 (%d), setting to 0!", video_decoder_configuration_record->height);
+		video_decoder_configuration_record->height = 0;
+	}
+
     uint8_t* mpu_ptr = block_Get(mpu_metadata_block);
-    
+
+    bool has_hev1_match = false; //14496-15:2019 defines this as either hvc1 or hev1, should also be the same box size of avc1
+    int hev1_match_index = 0;
+
 	bool has_hvcC_match = false;
 	int  hvcC_match_index = 0;
 
@@ -248,6 +263,12 @@ video_decoder_configuration_record_t* atsc3_avc1_hevc_nal_extractor_parse_from_m
 				mpu_ptr[i+2], mpu_ptr[i+2],
 				mpu_ptr[i+3], mpu_ptr[i+3]);
 
+		//hev1 box extraction for w/height - HEVCConfigurationBox
+		if(mpu_ptr[i] == 'h' && (mpu_ptr[i+1] == 'v' || mpu_ptr[i+1] == 'e') && (mpu_ptr[i+2] == 'c' || mpu_ptr[i+2] == 'v') && mpu_ptr[i+3] == '1') {
+			_ATSC3_HEVC_NAL_EXTRACTOR_DEBUG("atsc3_hevc_nal_extractor_parse_from_mpu_metadata_block_t: HEVC: found matching hev1 (hvc1) at position: %d", i);
+			has_hev1_match = true;
+			hev1_match_index = i + 4;
+		}
 		//look for our HEVC hvcC first, then fallback to avcC
 		if(mpu_ptr[i] == 'h' && mpu_ptr[i+1] == 'v' && mpu_ptr[i+2] == 'c' && mpu_ptr[i+3] == 'C') {
 			_ATSC3_HEVC_NAL_EXTRACTOR_DEBUG("atsc3_hevc_nal_extractor_parse_from_mpu_metadata_block_t: HEVC: found matching hvcC at position: %d", i);
@@ -258,6 +279,10 @@ video_decoder_configuration_record_t* atsc3_avc1_hevc_nal_extractor_parse_from_m
 			has_avcC_match = true;
 			avcC_match_index = i + 4;
 		}
+	}
+
+	if(has_hev1_match && hev1_match_index && !video_decoder_configuration_record->width && !video_decoder_configuration_record->height) {
+	    atsc3_init_parse_HEVCConfigurationBox_for_width_height(video_decoder_configuration_record, &mpu_ptr[hev1_match_index], mpu_metadata_block->p_size - hev1_match_index);
 	}
 
 	if(!has_hvcC_match && !has_avcC_match) {
@@ -629,6 +654,44 @@ void atsc3_init_parse_tkhd_for_width_height(video_decoder_configuration_record_t
     _ATSC3_HEVC_NAL_EXTRACTOR_DEBUG("atsc3_init_parse_tkhd_for_width_height, got width: %d, height: %d", width, height);
     video_decoder_configuration_record->width = width;
     video_decoder_configuration_record->height = height;
+}
+
+//try and extract from hev1 box - HEVCConfigurationBox
+	/*
+     * type Avc1Box struct {
+            Version              uint16
+            RevisionLevel        uint16
+            Vendor               uint32
+            TemporalQuality      uint32
+            SpacialQuality       uint32
+            ---------------		 ------  128 bits: 16 bytes
+            Width                uint16
+            Height               uint16
+            HorizontalResolution uint32
+            VerticalResolution   uint32
+            EntryDataSize        uint32
+            FramesPerSample      uint16
+            CompressorName       [32]byte
+            BitDepth             uint16
+            ColorTableIndex      int16
+            // contains filtered or unexported fields
+        }
+     */
+
+void atsc3_init_parse_HEVCConfigurationBox_for_width_height(video_decoder_configuration_record_t* video_decoder_configuration_record, uint8_t* configurationBox_ptr_start, uint32_t init_buff_remaining) {
+    configurationBox_ptr_start += 8 + 16; //fullbox + avc1 box struct internals
+
+    uint16_t width = ntohs(*((uint16_t*)(configurationBox_ptr_start)));
+        configurationBox_ptr_start += 2;
+    uint16_t height = ntohs(*(uint16_t*)(configurationBox_ptr_start));
+
+    if(width >= 64 && height >= 64) {
+        _ATSC3_HEVC_NAL_EXTRACTOR_DEBUG("c, got width: %d, height: %d", width, height);
+        video_decoder_configuration_record->width = width;
+        video_decoder_configuration_record->height = height;
+    } else {
+        _ATSC3_HEVC_NAL_EXTRACTOR_DEBUG("atsc3_init_parse_HEVCConfigurationBox_for_width_height, discarding invalid w/h: width: %d, height: %d", width, height);
+    }
 }
 
 block_t* atsc3_hevc_decoder_configuration_record_get_nals_vps_combined_optional_start_code(hevc_decoder_configuration_record_t* hevc_decoder_configuration_record, bool include_nal_start_code) {

@@ -10,6 +10,8 @@
 #include <string.h>
 #include <sys/stat.h>
 #include <stdbool.h>
+#include <inttypes.h>
+
 
 #include "atsc3_utils.h"
 #include "atsc3_alc_rx.h"
@@ -70,17 +72,20 @@ void __alc_recon_fragment_with_init_box(char* file_name, alc_packet_t* alc_packe
 
 block_t* alc_get_payload_from_filename(char*);
 
+void atsc3_alc_persist_route_ext_attributes_per_lls_sls_alc_monitor_essence(alc_packet_t* alc_packet, lls_sls_alc_monitor_t* lls_sls_alc_monitor);
+
+
 #if defined (__cplusplus)
 }
 #endif
 
-#define __ALC_UTILS_ERROR(...)   printf("%s:%d:ERROR:%.4f: ",__FILE__,__LINE__, gt()); printf(__VA_ARGS__); printf("%s%s","\r","\n")
-#define __ALC_UTILS_WARN(...)    printf("%s:%d:WARN:%.4f : ",__FILE__,__LINE__, gt()); printf(__VA_ARGS__); printf("%s%s","\r","\n")
-#define __ALC_UTILS_INFO(...)    printf("%s:%d:INFO:%.4f: ",__FILE__,__LINE__, gt()); printf(__VA_ARGS__); printf("%s%s","\r","\n")
+#define __ALC_UTILS_ERROR(...)   __LIBATSC3_TIMESTAMP_ERROR(__VA_ARGS__);
+#define __ALC_UTILS_WARN(...)    __LIBATSC3_TIMESTAMP_WARN(__VA_ARGS__);
+#define __ALC_UTILS_INFO(...)    __LIBATSC3_TIMESTAMP_INFO(__VA_ARGS__);
 
-#define __ALC_UTILS_DEBUG(...)   if(_ALC_UTILS_DEBUG_ENABLED) { printf("%s:%d:DEBUG:%.4f: ",__FILE__,__LINE__, gt()); printf(__VA_ARGS__); printf("%s%s","\r","\n"); }
-#define __ALC_UTILS_TRACE(...)   if(_ALC_UTILS_TRACE_ENABLED) { printf("%s:%d:TRACE:%.4f: ",__FILE__,__LINE__, gt()); printf(__VA_ARGS__); printf("%s%s","\r","\n"); }
-#define __ALC_UTILS_IOTRACE(...) if(_ALC_UTILS_IOTRACE_ENABLED) { printf("%s:%d:TRACE:%.4f: ",__FILE__,__LINE__, gt()); printf(__VA_ARGS__); printf("%s%s","\r","\n"); }
+#define __ALC_UTILS_DEBUG(...)   if(_ALC_UTILS_DEBUG_ENABLED) { __LIBATSC3_TIMESTAMP_DEBUG(__VA_ARGS__); }
+#define __ALC_UTILS_TRACE(...)   if(_ALC_UTILS_TRACE_ENABLED) { __LIBATSC3_TIMESTAMP_TRACE(__VA_ARGS__); }
+#define __ALC_UTILS_IOTRACE(...) if(_ALC_UTILS_IOTRACE_ENABLED) { __LIBATSC3_TIMESTAMP_TRACE(__VA_ARGS__); }
 
 
 #endif /* ATSC3_ALC_UTILS_H_ */

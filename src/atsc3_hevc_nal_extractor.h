@@ -270,6 +270,7 @@ void atsc3_avc1_decoder_configuration_record_dump(avc1_decoder_configuration_rec
 
 
 void atsc3_init_parse_tkhd_for_width_height(video_decoder_configuration_record_t* video_decoder_configuration_record, uint8_t* tkhd_ptr_start, uint32_t init_buff_remaining);
+void atsc3_init_parse_HEVCConfigurationBox_for_width_height(video_decoder_configuration_record_t* video_decoder_configuration_record, uint8_t* configurationBox_ptr_start, uint32_t init_buff_remaining);
 
 
 /**
