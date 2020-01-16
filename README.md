@@ -2,7 +2,12 @@ libatsc3 Overview
 ==========
 ATSC 3.0 NGBP Open Source Library - Parse LMT, LLS and other signaling, object delivery via ROUTE, video playback of MMT and DASH
 
-## November, 2019 Update: Additional support for ROUTE, Android PCAP replay and NDK/JNI Bindings coming soon...
+## Jan, 2020 Update: Android Sample App included for ROUTE/DASH and MMT MFU playback
+Adding android sample app for ALP pcap playback. Supports ROUTE/DASH and MMT with MFU decoding (including simple rendering of IMSC1 STPP captions)
+
+PHY vendor support (non-mit drivers) with the android sample app is available from OneMedia 3.0
+
+## November, 2019 Update: Additional support for ROUTE, Android PCAP replay and NDK/JNI Bindings in Jan, 2020 Release
 Adding MBMS content-location output and template support for TOI segment output, additional timing adjustments for in-process PCAP replay with Android, and NDK/JNI bindings for Android sample app for MMT MFU and ROUTE/DASH playback soon.
 
 ## October, 2019 Update: MFU OOO mode with context callbacks
