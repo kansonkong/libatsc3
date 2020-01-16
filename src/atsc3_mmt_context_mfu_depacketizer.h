@@ -35,7 +35,7 @@ typedef struct atsc3_mmt_mfu_mpu_timestamp_descriptor {
 	uint64_t 	mpu_presentation_time_ntp64;
 	uint32_t 	mpu_presentation_time_seconds;
 	uint32_t 	mpu_presentation_time_microseconds;
-	uint64_t 	mpu_presentation_time_as_us_value;
+	uint64_t 	mpu_presentation_time_as_us_value; //%" PRIu64
 
 } atsc3_mmt_mfu_mpu_timestamp_descriptor_t;
 

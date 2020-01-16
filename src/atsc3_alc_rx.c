@@ -553,7 +553,7 @@ int alc_rx_analyze_packet_a331_compliant(char *data, int len, alc_channel_t *ch,
 
 				  ext_route_presentation_ntp_timestamp_set = true;
 
-				  ALC_RX_DEBUG("ALC: tsi: %u, toi: %u, EXT_ROUTE_PRESENTATION_TIME, value is: %llu",  def_lct_hdr->tsi, def_lct_hdr->toi, ext_route_presentation_ntp_timestamp);
+				  ALC_RX_DEBUG("ALC: tsi: %u, toi: %u, EXT_ROUTE_PRESENTATION_TIME, value is: %" PRIu64 ,  def_lct_hdr->tsi, def_lct_hdr->toi, ext_route_presentation_ntp_timestamp);
 
 				  break;
 

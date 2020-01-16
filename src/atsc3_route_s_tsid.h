@@ -235,10 +235,10 @@ atsc3_route_s_tsid_RS_LS_SrcFlow_Payload_t* atsc3_route_s_tsid_parse_RS_LS_SrcFl
 void atsc3_route_s_tsid_dump(atsc3_route_s_tsid_t* atsc3_route_s_tsid);
 
 
-#define _ATSC3_ROUTE_S_TSID_PARSER_ERROR(...)   printf("%s:%d:ERROR:",__FILE__,__LINE__);_ATSC3_UTILS_PRINTLN(__VA_ARGS__);
-#define _ATSC3_ROUTE_S_TSID_PARSER_WARN(...)    printf("%s:%d:WARN:",__FILE__,__LINE__);_ATSC3_UTILS_PRINTLN(__VA_ARGS__);
-#define _ATSC3_ROUTE_S_TSID_PARSER_INFO(...)    if(_ROUTE_S_TSID_PARSER_INFO_ENABLED)  { printf("%s:%d:INFO :",__FILE__,__LINE__);_ATSC3_UTILS_PRINTLN(__VA_ARGS__); }
-#define _ATSC3_ROUTE_S_TSID_PARSER_DEBUG(...)   if(_ROUTE_S_TSID_PARSER_DEBUG_ENABLED) { printf("%s:%d:DEBUG:",__FILE__,__LINE__);_ATSC3_UTILS_PRINTLN(__VA_ARGS__); }
+#define _ATSC3_ROUTE_S_TSID_PARSER_ERROR(...)   __LIBATSC3_TIMESTAMP_ERROR(__VA_ARGS__);
+#define _ATSC3_ROUTE_S_TSID_PARSER_WARN(...)    __LIBATSC3_TIMESTAMP_WARN(__VA_ARGS__);;
+#define _ATSC3_ROUTE_S_TSID_PARSER_INFO(...)    if(_ROUTE_S_TSID_PARSER_INFO_ENABLED)  { __LIBATSC3_TIMESTAMP_INFO(__VA_ARGS__); }
+#define _ATSC3_ROUTE_S_TSID_PARSER_DEBUG(...)   if(_ROUTE_S_TSID_PARSER_DEBUG_ENABLED) { __LIBATSC3_TIMESTAMP_DEBUG(__VA_ARGS__); }
 
 
 #ifdef __cplusplus

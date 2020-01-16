@@ -6,6 +6,8 @@
  */
 #include <stdio.h>
 #include <string.h>
+#include <stdlib.h>
+
 //#include <xlocale.h>
 
 #ifndef ATSC3_FDT_PARSER_H_
