@@ -259,7 +259,7 @@ atsc3_mmt_mfu_mpu_timestamp_descriptor_t* atsc3_get_mpu_timestamp_from_packet_id
 		if(atsc3_mmt_mfu_mpu_timestamp_descriptor->packet_id == packet_id) {
             atsc3_mmt_mfu_mpu_timestamp_descriptor_max = atsc3_mmt_mfu_mpu_timestamp_descriptor;
 		    if(atsc3_mmt_mfu_mpu_timestamp_descriptor->mpu_sequence_number == mpu_sequence_number) {
-                __MMT_CONTEXT_MPU_DEBUG("atsc3_get_mpu_timestamp_from_packet_id_mpu_sequence_number_with_last_failsafe: retuning matching: %lu, looking for packet_id: %d, mpu_sequence_number: %d",
+                __MMT_CONTEXT_MPU_DEBUG("atsc3_get_mpu_timestamp_from_packet_id_mpu_sequence_number_with_last_failsafe: retuning matching: %" PRIu64 " , looking for packet_id: %d, mpu_sequence_number: %d",
                                         atsc3_mmt_mfu_mpu_timestamp_descriptor->mpu_presentation_time_as_us_value,
                                         packet_id,
                                         mpu_sequence_number);
@@ -271,7 +271,7 @@ atsc3_mmt_mfu_mpu_timestamp_descriptor_t* atsc3_get_mpu_timestamp_from_packet_id
 	if(atsc3_mmt_mfu_mpu_timestamp_descriptor_max != NULL) {
 //	    //TODO: hack because we lost the MPT clock reference...
         //atsc3_mmt_mfu_mpu_timestamp_descriptor_max->mpu_presentation_time_as_us_value;// += 1000000;
-        __MMT_CONTEXT_MPU_DEBUG("atsc3_get_mpu_timestamp_from_packet_id_mpu_sequence_number: retuning fallback max: %lu, looking for packet_id: %d, mpu_sequence_number: %d",
+        __MMT_CONTEXT_MPU_DEBUG("atsc3_get_mpu_timestamp_from_packet_id_mpu_sequence_number: retuning fallback max: %" PRIu64 ", looking for packet_id: %d, mpu_sequence_number: %d",
                                 atsc3_mmt_mfu_mpu_timestamp_descriptor_max->mpu_presentation_time_as_us_value,
                                 packet_id,
                                 mpu_sequence_number);
@@ -674,7 +674,7 @@ void mmtp_mfu_rebuild_from_packet_id_mpu_sequence_number(atsc3_mmt_mfu_context_t
 
             if(mmtp_mpu_ending_index == -1) {
                 //exit from loop
-                __MMT_CONTEXT_MPU_DEBUG("mmtp_mfu_rebuild_from_packet_id_mpu_sequence_number: exiting loop from mmtp_mpu_starting_index: %d, mmtp_mpu_ending_index: %d, count: %d, flush_all_fragments: %b, packet_id: %u, mpu_sequence_number: %u",
+                __MMT_CONTEXT_MPU_DEBUG("mmtp_mfu_rebuild_from_packet_id_mpu_sequence_number: exiting loop from mmtp_mpu_starting_index: %d, mmtp_mpu_ending_index: %d, count: %d, flush_all_fragments: %d, packet_id: %u, mpu_sequence_number: %u",
                                         mmtp_mpu_starting_index, mmtp_mpu_ending_index,
                                         mpu_sequence_number_mmtp_mpu_packet_collection->mmtp_mpu_packet_v.count,
                                         mmtp_mpu_packet_to_rebuild->mmtp_packet_id,
@@ -683,7 +683,7 @@ void mmtp_mfu_rebuild_from_packet_id_mpu_sequence_number(atsc3_mmt_mfu_context_t
                 i = mpu_sequence_number_mmtp_mpu_packet_collection->mmtp_mpu_packet_v.count;
                 continue;
             } else {
-                __MMT_CONTEXT_MPU_DEBUG("mmtp_mfu_rebuild_from_packet_id_mpu_sequence_number: iterating from mmtp_mpu_starting_index: %d, mmtp_mpu_ending_index: %d, count: %d, flush_all_fragments: %b, packet_id: %u, mpu_sequence_number: %u",
+                __MMT_CONTEXT_MPU_DEBUG("mmtp_mfu_rebuild_from_packet_id_mpu_sequence_number: iterating from mmtp_mpu_starting_index: %d, mmtp_mpu_ending_index: %d, count: %d, flush_all_fragments: %d, packet_id: %u, mpu_sequence_number: %u",
                                         mmtp_mpu_starting_index, mmtp_mpu_ending_index,
                                         mpu_sequence_number_mmtp_mpu_packet_collection->mmtp_mpu_packet_v.count,
                                         mmtp_mpu_packet_to_rebuild->mmtp_packet_id,
@@ -1146,7 +1146,10 @@ void mmt_signalling_message_process_with_context(udp_packet_t *udp_packet,
 								mp_table_asset_row->default_asset_flag,
 								mp_table_asset_row->identifier_mapping.asset_id.asset_id ? (const char*)mp_table_asset_row->identifier_mapping.asset_id.asset_id : "");
 
-					} else if(strncasecmp(ATSC3_MP_TABLE_ASSET_ROW_MP4A_ID, mp_table_asset_row->asset_type, 4) == 0 || strncasecmp(ATSC3_MP_TABLE_ASSET_ROW_AC_4_ID, mp_table_asset_row->asset_type, 4) == 0) {
+					} else if(strncasecmp(ATSC3_MP_TABLE_ASSET_ROW_MP4A_ID, mp_table_asset_row->asset_type, 4) == 0 ||
+					            strncasecmp(ATSC3_MP_TABLE_ASSET_ROW_AC_4_ID, mp_table_asset_row->asset_type, 4) == 0 ||
+                                strncasecmp(ATSC3_MP_TABLE_ASSET_ROW_MHM1_ID, mp_table_asset_row->asset_type, 4) == 0 ||
+                                strncasecmp(ATSC3_MP_TABLE_ASSET_ROW_MHM2_ID, mp_table_asset_row->asset_type, 4) == 0) {
 						//mp_table_asset_row->asset_type ==  MP4A || AC-4
 						atsc3_mmt_mfu_context->atsc3_mmt_signalling_information_on_audio_essence_packet_id(mp_table_asset_row->mmt_general_location_info.packet_id);
 						if(mpu_sequence_number_p && mpu_presentation_time_ntp64_p) {
@@ -1239,6 +1242,11 @@ uint32_t atsc3_mmt_movie_fragment_extract_sample_duration(block_t* mmt_movie_fra
     uint32_t sample_count = 0;
     uint32_t sample_duration_us = 0;
 
+    uint8_t version = 0;
+    uint32_t tr_flags = 0;
+    uint32_t data_offset = 0;
+    uint32_t first_sample_flags = 0;
+
     block_Rewind(mmt_movie_fragment_metadata);
 
     uint8_t* ptr = block_Get(mmt_movie_fragment_metadata);
@@ -1249,14 +1257,31 @@ uint32_t atsc3_mmt_movie_fragment_extract_sample_duration(block_t* mmt_movie_fra
             //read our box length from ptr-4
             box_size = ntohl(*(uint32_t*)(ptr-4));
             ptr += 4; //iterate past our box name
-            ptr += 4; //iterate past fullbox format
+            version = *ptr++;
+            //next 3 bytes for fullbox flags, 0x000001: data_offset present, 0x000004: first_sample_flags_present
+
+            tr_flags = (*ptr++ << 16) |  (*ptr++ << 8) |  (*ptr++);
+
             sample_count = ntohl(*(uint32_t*)(ptr));
-            ptr += 4 + 4; //move past data_offset and first_sample_flags
+            ptr += 4;
+            if(tr_flags & 0x1) {
+                data_offset = ntohl(*(uint32_t*)(ptr));
+                ptr += 4;
+            }
+            if(tr_flags & 0x4) {
+                first_sample_flags = ntohl(*(uint32_t*)(ptr));
+                ptr += 4;
+            }
 
             if(sample_count > 0) {
                 //iterate internal samples is not needed with MFU mode, so bail
-                sample_duration_us = ntohl(*(uint32_t*)(ptr));
-                continue;
+                if(tr_flags & 0x000100) {
+                    sample_duration_us = ntohl(*(uint32_t *) (ptr));
+                    continue;
+                } else {
+                    //use "default" duration
+                    //iso14496-12:2015 - 0x000100 sample‐duration‐present: indicates that each sample has its own duration, otherwise the default is used.
+                }
             }
         }
 

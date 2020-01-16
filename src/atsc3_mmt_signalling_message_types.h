@@ -218,9 +218,30 @@ typedef struct mmt_signaling_message_mpu_timestamp_descriptor {
 #define ATSC3_MP_TABLE_ASSET_ROW_HEVC_ID "hev1"
 #define ATSC3_MP_TABLE_ASSET_ROW_MP4A_ID "mp4a"
 #define ATSC3_MP_TABLE_ASSET_ROW_AC_4_ID "ac-4"
+
+//jjustman-2020-01-08 - adding in MPEG-H mime type support - Thanks Stefan!
+/*
+ * ATSC A/342-3:2017
+ *
+ * 5.2.2.1 MPEG-H Audio Sample Entry
+    The sample entry “mhm1” shall be used for encapsulation of MHAS packets into ISOBMFF files,
+    according to ISO/IEC 23008-3 Amendment 2, Clause 20.6 [3].
+    The sample entry “mhm2” shall be used in cases of multi-stream or hybrid delivery, i.e., when
+    the MPEG-H Audio Program is split into two or more streams for delivery as described in ISO/IEC
+    23008-3, Clause 14.6 [2].
+
+    If the MHAConfigurationBox() is present, the MPEG-H Profile-Level Indicator
+    mpegh3daProfileLevelIndication in the MHADecoderConfigurationRecord() shall be set to
+    “0x0B,” “0x0C,” or “0x0D” for MPEG-H Audio Low Complexity Profile Level 1, Level 2, or
+    Level 3, respectively. The Profile-LLevel Indicator in the MHAS PACTYP_MPEGH3DACFG
+    packet shall be set accordingly
+ */
+
+#define ATSC3_MP_TABLE_ASSET_ROW_MHM1_ID "mhm1"
+#define ATSC3_MP_TABLE_ASSET_ROW_MHM2_ID "mhm2"
+
+//captions support
 #define ATSC3_MP_TABLE_ASSET_ROW_IMSC1_ID "stpp" //MPEG- 4 Part 30 (ISO/IEC 14496-30) defines a way to carry IMSC1-conformat TTM XML in MP4 tracks. Those tracks have a codec 4-character code of stpp.
-
-
 
 typedef struct mp_table_asset_row {
 	identifier_mapping_t identifier_mapping;

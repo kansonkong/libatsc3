@@ -53,12 +53,12 @@ void atsc3_mime_multipart_related_instance_dump(atsc3_mime_multipart_related_ins
 
 
 #define __MIME_PARSER_PRINTLN(...)  printf(__VA_ARGS__);printf("%s%s","\r","\n")
-#define __MIME_PARSER_ERROR(...)  	printf("%s:%d:ERROR:",__FILE__,__LINE__);__MIME_PARSER_PRINTLN(__VA_ARGS__);
-#define __MIME_PARSER_WARN(...)   	printf("%s:%d:WARN:",__FILE__,__LINE__);__MIME_PARSER_PRINTLN(__VA_ARGS__);
-#define __MIME_PARSER_INFO(...)   	if(_MIME_PARSER_INFO_ENABLED)  { printf("%s:%d:INFO:",__FILE__,__LINE__);__MIME_PARSER_PRINTLN(__VA_ARGS__); }
+#define __MIME_PARSER_ERROR(...)  	__LIBATSC3_TIMESTAMP_ERROR(__VA_ARGS__)
+#define __MIME_PARSER_WARN(...)   	__LIBATSC3_TIMESTAMP_WARN(__VA_ARGS__)
+#define __MIME_PARSER_INFO(...)   	if(_MIME_PARSER_INFO_ENABLED)  { __LIBATSC3_TIMESTAMP_INFO(__VA_ARGS__) }
 
-#define __MIME_PARSER_DEBUG(...)   	if(_MIME_PARSER_DEBUG_ENABLED) { printf("%s:%d:DEBUG:",__FILE__,__LINE__);__MIME_PARSER_PRINTLN(__VA_ARGS__); }
-#define __MIME_PARSER_TRACE(...)  	if(_MIME_PARSER_TRACE_ENABLED) { printf("%s:%d:TRACE:",__FILE__,__LINE__);__MIME_PARSER_PRINTLN(__VA_ARGS__); }
+#define __MIME_PARSER_DEBUG(...)   	if(_MIME_PARSER_DEBUG_ENABLED) { __LIBATSC3_TIMESTAMP_DEBUG(__VA_ARGS__) }
+#define __MIME_PARSER_TRACE(...)  	if(_MIME_PARSER_TRACE_ENABLED) { __LIBATSC3_TIMESTAMP_TRACE(__VA_ARGS__) }
 
 
 #endif /* ATSC3_MIME_MULTPART_RELATED_PARSER_H_ */

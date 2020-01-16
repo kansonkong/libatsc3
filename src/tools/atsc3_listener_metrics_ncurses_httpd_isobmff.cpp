@@ -807,9 +807,11 @@ int main(int argc,char **argv) {
 	pthread_t global_pcap_thread_id;
 	int pcap_ret = pthread_create(&global_pcap_thread_id, NULL, pcap_loop_run_thread, (void*)dev);
 	assert(!pcap_ret);
-    
+
+#ifdef __LIBATSC3_AUTOPLAY__
     pthread_t global_autoplay_thread_id;
     pthread_create(&global_autoplay_thread_id, NULL, global_autoplay_run_thread, NULL);
+#endif
 
 	pthread_join(global_pcap_thread_id, NULL);
 	pthread_join(global_ncurses_input_thread_id, NULL);

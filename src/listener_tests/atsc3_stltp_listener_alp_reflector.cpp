@@ -90,7 +90,7 @@ void process_packet(u_char *user, const struct pcap_pkthdr *pkthdr, const u_char
                        atsc3_stltp_baseband_packet->ip_udp_rtp_packet_inner->rtp_header->sequence_number,
                        atsc3_stltp_baseband_packet->ip_udp_rtp_packet_inner->udp_flow.dst_port);
                 
-                if(atsc3_stltp_baseband_packet->ip_udp_rtp_packet_inner->udp_flow.dst_port != 30001) {
+                if(atsc3_stltp_baseband_packet->ip_udp_rtp_packet_inner->udp_flow.dst_port != 30000) {
                     __INFO("ignorning stltp_baseband_packet port: %d",  atsc3_stltp_baseband_packet->ip_udp_rtp_packet_inner->udp_flow.dst_port);
                     //atsc3_stltp_baseband_packet_free(&atsc3_stltp_baseband_packet);
                     continue;
@@ -296,6 +296,7 @@ void process_packet(u_char *user, const struct pcap_pkthdr *pkthdr, const u_char
             //send our ALP IP packets, then clear the collection
             atsc3_reflect_alp_packet_collection(atsc3_alp_packet_collection);
             
+            //TODO: jjustman-2019-11-23: move this to atsc3_alp_packet_free ATSC3_VECTOR_BUILDER free method
             //clear out our inner payloads, then let collection_clear free the object instance
             for(int i=0; i < atsc3_alp_packet_collection->atsc3_alp_packet_v.count; i++) {
                 atsc3_alp_packet_t* atsc3_alp_packet = atsc3_alp_packet_collection->atsc3_alp_packet_v.data[i];
