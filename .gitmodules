@@ -3,13 +3,15 @@
 	url = https://github.com/srdja/Collections-C.git
 [submodule "openHEVC"]
 	path = openHEVC
-	url = git://github.com/OpenHEVC/openHEVC.git
+	url = https://github.com/jjustman/openHEVC.git
+	branch = ffmpeg_update
 [submodule "ffmpeg"]
 	path = ffmpeg
 	url = https://git.ffmpeg.org/ffmpeg.git
 [submodule "libwebsockets"]
 	path = libwebsockets
-	url = https://libwebsockets.org/repo/libwebsockets
+	url = https://github.com/jjustman/libwebsockets.git
+	branch = master
 [submodule "jsmn"]
 	path = jsmn
 	url = https://github.com/zserge/jsmn.git
