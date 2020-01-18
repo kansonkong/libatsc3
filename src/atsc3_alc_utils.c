@@ -438,13 +438,13 @@ char* alc_packet_dump_to_object_get_s_tsid_filename(udp_flow_t* udp_flow, alc_pa
                                                                     fseek(temp_fp, trim_size, SEEK_SET);
                                                                     fread(to_trim_payload, new_mde_payload_size, 1, temp_fp);
                                                                     int ret = ftruncate(fileno(temp_fp), new_mde_payload_size);
-                                                                    printf("ftruncate for fd: %d, ret is: %d", fileno(temp_fp), ret);
+                                                                    //printf("ftruncate for fd: %d, ret is: %d", fileno(temp_fp), ret);
                                                                     fsync(temp_fp);
                                                                     fseek(temp_fp, 0, SEEK_SET);
                                                                     fwrite(to_trim_payload, new_mde_payload_size, 1, temp_fp);
-                                                                    for(int i=0; i < 32; i++) {
+                                                                   /* for(int i=0; i < 32; i++) {
                                                                         printf("to_trim_payload[%d]: 0x%02x (%c)", i, to_trim_payload[i], to_trim_payload[i]);
-                                                                    }
+                                                                    }*/
 
                                                                     fsync(temp_fp);
 
