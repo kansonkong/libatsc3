@@ -967,7 +967,7 @@ atsc3_timing_management_packet_t* atsc3_stltp_parse_timing_management_packet(ats
     
     //process bootstrap_timing_data
     __STLTP_PARSER_DEBUG("timing management: processing bootstrap_timing with %d num_emission_tim entries", atsc3_timing_management_packet->num_emission_tim);
-    for(int i=0; i < atsc3_timing_management_packet->num_emission_tim; i++) {
+    for(int i=0; i <= atsc3_timing_management_packet->num_emission_tim; i++) {
         atsc3_bootstrap_timing_data_t* atsc3_bootstrap_timing_data = calloc(1, sizeof(atsc3_bootstrap_timing_data_t));
         atsc3_bootstrap_timing_data->seconds = ntohs(*binary_payload);
         binary_payload += 2;
@@ -982,7 +982,7 @@ atsc3_timing_management_packet_t* atsc3_stltp_parse_timing_management_packet(ats
     //process per_transmitter_data
     __STLTP_PARSER_DEBUG("timing management: processing per transmitter data with %d per_transmitter_data entries", atsc3_timing_management_packet->num_xmtrs_in_group);
 
-    for(int i=0; i < atsc3_timing_management_packet->num_xmtrs_in_group; i++) {
+    for(int i=0; i <= atsc3_timing_management_packet->num_xmtrs_in_group; i++) {
         //atsc3_per_transmitter_data_t
         atsc3_per_transmitter_data_t* atsc3_per_transmitter_data = calloc(1, sizeof(atsc3_per_transmitter_data_t));
         //xmtr_id: 13 -> 8, 5
@@ -1033,12 +1033,19 @@ atsc3_timing_management_packet_t* atsc3_stltp_parse_timing_management_packet(ats
     atsc3_timing_management_packet->packet_release_time._reserved = (*binary_payload) & 0x3;
     binary_payload++;
     
+    
     if(atsc3_timing_management_packet->packet_release_time._reserved != 0x3) {
         __STLTP_PARSER_WARN("timing management packet: packet_release_time reserved is not 0x3 (0011), val is: 0x%02x", atsc3_timing_management_packet->packet_release_time._reserved);
-
     }
     
+    __STLTP_PARSER_INFO("timing management packet: pkt_rls_seconds: %02d.%09d", atsc3_timing_management_packet->packet_release_time.pkt_rls_seconds, atsc3_timing_management_packet->packet_release_time.pkt_rls_a_miliseconds);
+    
     atsc3_timing_management_packet->error_check_data.crc16 = ntohs(*((uint16_t*)binary_payload));
+    binary_payload+=2;
+    
+    int parsed_length = binary_payload - binary_payload_start;
+    
+    __STLTP_PARSER_INFO("timing management packet: payload len: %d, parsed len: %d: (start: %p, binary_payload: %p)", atsc3_timing_management_packet->length, parsed_length, binary_payload_start, binary_payload);
     
     return atsc3_timing_management_packet;
 
