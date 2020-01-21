@@ -934,11 +934,11 @@ atsc3_timing_management_packet_t* atsc3_stltp_parse_timing_management_packet(ats
     //num_emission_tim: 6
     atsc3_timing_management_packet->num_emission_tim = (*binary_payload >> 2) & 0x3F;
     
-    //num_xmtrs_in_group: 6
+    //num_xmtrs_in_group: 6 - 2 bytes
     atsc3_timing_management_packet->num_xmtrs_in_group = (*binary_payload & 0x3) << 4;
     binary_payload++;
     //4 bytes remaining
-    atsc3_timing_management_packet->num_xmtrs_in_group = (*binary_payload >> 4) << 0xF;
+    atsc3_timing_management_packet->num_xmtrs_in_group |= (*binary_payload >> 4) & 0xF;
     
     //xmtr_group_num:7
     atsc3_timing_management_packet->xmtr_group_num = ((*binary_payload) & 0xF) << 4;
@@ -1012,10 +1012,11 @@ atsc3_timing_management_packet_t* atsc3_stltp_parse_timing_management_packet(ats
         //
         binary_payload+=4;
     
-        __STLTP_PARSER_DEBUG("timing management: adding transmitter num: %d, xmtr_id: 0x%04x, tx_time_offset: 0x%04x, txid_injection_lvl: 0x%02x, miso_filt_code: 0x%02x",
+        __STLTP_PARSER_DEBUG("timing management: adding transmitter num: %d, xmtr_id: 0x%04x, tx_time_offset: 0x%04x (%0.1f uS), txid_injection_lvl: 0x%02x, miso_filt_code: 0x%02x",
                              i,
                              atsc3_per_transmitter_data->xmtr_id,
                              atsc3_per_transmitter_data->tx_time_offset,
+                             ((int16_t) atsc3_per_transmitter_data->tx_time_offset) / 10.0,
                              atsc3_per_transmitter_data->txid_injection_lvl,
                              atsc3_per_transmitter_data->miso_filt_code_index);
 
@@ -1037,7 +1038,7 @@ atsc3_timing_management_packet_t* atsc3_stltp_parse_timing_management_packet(ats
 
     }
     
-    atsc3_timing_management_packet->error_check_data.crc16 = ntohs(*binary_payload);
+    atsc3_timing_management_packet->error_check_data.crc16 = ntohs(*((uint16_t*)binary_payload));
     
     return atsc3_timing_management_packet;
 
