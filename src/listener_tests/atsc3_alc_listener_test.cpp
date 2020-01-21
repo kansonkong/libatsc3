@@ -133,6 +133,9 @@ void* pcap_loop_run_thread(void* dev_pointer) {
 
 int main(int argc,char **argv) {
 
+    _LLS_INFO_ENABLED = 1;
+    _LLS_SLT_PARSER_INFO_ROUTE_ENABLED = 1;
+
 	_LLS_SLT_PARSER_INFO_ROUTE_ENABLED = 1;
     _ALC_UTILS_DEBUG_ENABLED = 1;
 	_ALC_RX_DEBUG_ENABLED = 1;
