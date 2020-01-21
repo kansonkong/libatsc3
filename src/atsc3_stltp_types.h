@@ -336,7 +336,7 @@ typedef struct atsc3_stltp_preamble_packet {
 typedef struct bootstrap_timing_data {
     uint32_t    seconds;
     uint32_t    nanoseconds;
-} bootstrap_timing_data_t;
+} atsc3_bootstrap_timing_data_t;
     
 typedef struct per_transmitter_data {
     uint16_t    xmtr_id;
@@ -344,7 +344,7 @@ typedef struct per_transmitter_data {
     uint8_t     txid_injection_lvl;
     uint8_t     miso_filt_code_index;
     uint32_t    _reserved:29; //1
-} per_transmitter_data_t;
+} atsc3_per_transmitter_data_t;
 
 typedef struct packet_release_time {
     uint8_t     pkt_rls_seconds;
@@ -360,6 +360,7 @@ typedef struct error_check_data {
     
 typedef struct timing_management_packet {
     //Structure_Data() {
+    uint16_t    length;
 	uint8_t		version_major:4;
 	uint8_t		version_minor:4;
 	uint8_t 	maj_log_rep_cnt_pre:4;
@@ -382,13 +383,13 @@ typedef struct timing_management_packet {
 
     //Bootstrap_Timing_Data() {
         //for (i=0; i<=num_emission_tim; i++) {
-    ATSC3_VECTOR_BUILDER_STRUCT(bootstrap_timing_data);
+    ATSC3_VECTOR_BUILDER_STRUCT(atsc3_bootstrap_timing_data);
         //}
     //}
     
     //Per_Transmitter_Data () {
         //for (i=0; i<=num_xmtrs_in_group; i++) {
-    ATSC3_VECTOR_BUILDER_STRUCT(per_transmitter_data);
+    ATSC3_VECTOR_BUILDER_STRUCT(atsc3_per_transmitter_data);
         //}
     //}
     
@@ -400,10 +401,10 @@ typedef struct timing_management_packet {
     error_check_data_t error_check_data;
     //}
     
-} timing_management_packet_t;
+} atsc3_timing_management_packet_t;
 
-ATSC3_VECTOR_BUILDER_METHODS_INTERFACE(timing_management_packet, bootstrap_timing_data);
-ATSC3_VECTOR_BUILDER_METHODS_INTERFACE(timing_management_packet, per_transmitter_data);
+ATSC3_VECTOR_BUILDER_METHODS_INTERFACE(atsc3_timing_management_packet, atsc3_bootstrap_timing_data);
+ATSC3_VECTOR_BUILDER_METHODS_INTERFACE(atsc3_timing_management_packet, atsc3_per_transmitter_data);
 
 typedef struct atsc3_stltp_timing_management_packet {
     atsc3_ip_udp_rtp_packet_t*      ip_udp_rtp_packet_outer;
@@ -420,7 +421,7 @@ typedef struct atsc3_stltp_timing_management_packet {
 	uint16_t 					    payload_offset;
 	uint16_t 					    payload_length;
 
-	timing_management_packet_t      timing_management_packet;
+	atsc3_timing_management_packet_t      timing_management_packet;
     
     
 //  members are now included in timing_management_packet_t
