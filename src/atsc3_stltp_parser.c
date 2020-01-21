@@ -1027,10 +1027,27 @@ atsc3_timing_management_packet_t* atsc3_stltp_parse_timing_management_packet(ats
     //packet release time
     //pkt_rls_seconds: 4
     atsc3_timing_management_packet->packet_release_time.pkt_rls_seconds = (*binary_payload >> 4) & 0xF;
+    
+    /* pkt_rls_a-milliseconds shall be the milliseconds portion of the time of release from the Broadcast Gateway of the specific Timing and Management packet in which the value is found.
+     Its value shall be expressed as 10 bits representing the 3rd through 12th MSBs of the nanoseconds value of the TAI time when the first bit of the IP header of the Timing and Management
+     packets is released from the Broadcast Gateway.
+     Its range will be from 0 to 953 (decimal) as a consequence of the Period of an a-millisecond being slightly longer than precisely a millisecond.
+     
+     See the definition of an a-millisecond in Section 3.4.
+     
+     a-millisecond – A time interval approximately equal to one millisecond derived from a binary
+     count of nanoseconds and actually equaling 220 nanoseconds, which represents 1,048,576
+     nanoseconds (i.e., having a Period of 1.048576 milliseconds).
+     
+     */
+    
     //pkt_rls_a_miliseconds: 10, (4 | 6)
-    atsc3_timing_management_packet->packet_release_time.pkt_rls_a_miliseconds = (*binary_payload & 0xF) << 4;
+    atsc3_timing_management_packet->packet_release_time.pkt_rls_a_milliseconds = (*binary_payload & 0xF) << 6;
     binary_payload++;
-    atsc3_timing_management_packet->packet_release_time.pkt_rls_a_miliseconds |= (*binary_payload >> 2) & 0x3F;
+    atsc3_timing_management_packet->packet_release_time.pkt_rls_a_milliseconds |= (*binary_payload >> 2) & 0x3F;
+    uint32_t pkt_rls_a_miliseconds_temp = atsc3_timing_management_packet->packet_release_time.pkt_rls_a_milliseconds;
+    atsc3_timing_management_packet->packet_release_time.pkt_rls_computed_milliseconds = ((pkt_rls_a_miliseconds_temp << 20) * 1.048576);
+    
     atsc3_timing_management_packet->packet_release_time._reserved = (*binary_payload) & 0x3;
     binary_payload++;
     
@@ -1039,7 +1056,11 @@ atsc3_timing_management_packet_t* atsc3_stltp_parse_timing_management_packet(ats
         __STLTP_PARSER_WARN("timing management packet: packet_release_time reserved is not 0x3 (0011), val is: 0x%02x", atsc3_timing_management_packet->packet_release_time._reserved);
     }
     
-    __STLTP_PARSER_INFO("timing management packet: pkt_rls_seconds: %02d.%09d", atsc3_timing_management_packet->packet_release_time.pkt_rls_seconds, atsc3_timing_management_packet->packet_release_time.pkt_rls_a_miliseconds);
+    __STLTP_PARSER_INFO("timing management packet: pkt_rls_seconds: %02d.%09d (a-milliseconds: %4d, 0x%04x)",
+                        atsc3_timing_management_packet->packet_release_time.pkt_rls_seconds,
+                        atsc3_timing_management_packet->packet_release_time.pkt_rls_computed_milliseconds,
+                        atsc3_timing_management_packet->packet_release_time.pkt_rls_a_milliseconds,
+                        atsc3_timing_management_packet->packet_release_time.pkt_rls_a_milliseconds);
     
     atsc3_timing_management_packet->error_check_data.crc16 = ntohs(*((uint16_t*)binary_payload));
     binary_payload+=2;
