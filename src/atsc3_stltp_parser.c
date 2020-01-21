@@ -239,7 +239,7 @@ atsc3_stltp_tunnel_packet_t* atsc3_stltp_raw_packet_extract_inner_from_outer_pac
                 block_Release(&inner_payload_current);
                 return NULL;
             }
-            
+        
             if(!inner_packet) {
                 __STLTP_PARSER_ERROR("atsc3_stltp_tunnel_packet_extract_inner_from_outer_packet: re-fragmentation from previous packet fragment failed, last len: %u, inner_packet is null",
                                     last_outer_packet_bytes_remaining_to_parse);
@@ -888,11 +888,12 @@ atsc3_timing_management_packet_t* atsc3_stltp_parse_timing_management_packet(ats
         __STLTP_PARSER_INFO("byte: %d: 0x%02x 0x%02x 0x%02x 0x%02x", i, binary_payload_start[i], binary_payload_start[i+1], binary_payload_start[i+2], binary_payload_start[i+3]);
     }
     
+    */
+    
     for(int i=0; i < atsc3_timing_management_packet->length; i+=4) {
         __STLTP_PARSER_INFO("byte: %d: 0x%02x 0x%02x 0x%02x 0x%02x", i, binary_payload_start[i], binary_payload_start[i+1], binary_payload_start[i+2], binary_payload_start[i+3]);
     }
     
-    */
     
     //version_major: 4
     atsc3_timing_management_packet->version_major = (*binary_payload >> 4) & 0xF;
@@ -966,13 +967,13 @@ atsc3_timing_management_packet_t* atsc3_stltp_parse_timing_management_packet(ats
     }
     
     //process bootstrap_timing_data
-    __STLTP_PARSER_DEBUG("timing management: processing bootstrap_timing with %d num_emission_tim entries", atsc3_timing_management_packet->num_emission_tim);
+    __STLTP_PARSER_DEBUG("timing management: processing bootstrap_timing with %d num_emission_tim entries at pos: %d", atsc3_timing_management_packet->num_emission_tim, binary_payload - binary_payload_start);
     for(int i=0; i <= atsc3_timing_management_packet->num_emission_tim; i++) {
         atsc3_bootstrap_timing_data_t* atsc3_bootstrap_timing_data = calloc(1, sizeof(atsc3_bootstrap_timing_data_t));
-        atsc3_bootstrap_timing_data->seconds = ntohs(*binary_payload);
-        binary_payload += 2;
-        atsc3_bootstrap_timing_data->nanoseconds = ntohs(*binary_payload);
-        binary_payload += 2;
+        atsc3_bootstrap_timing_data->seconds = ntohl(*((uint32_t*)binary_payload));
+        binary_payload += 4;
+        atsc3_bootstrap_timing_data->nanoseconds = ntohl(*((uint32_t*)binary_payload));
+        binary_payload += 4;
 
         __STLTP_PARSER_DEBUG("timing management: adding num_emission: %d, bootstrap_timing with sec.ns: %d.%d", i, atsc3_bootstrap_timing_data->seconds, atsc3_bootstrap_timing_data->nanoseconds);
 
@@ -980,7 +981,7 @@ atsc3_timing_management_packet_t* atsc3_stltp_parse_timing_management_packet(ats
     }
         
     //process per_transmitter_data
-    __STLTP_PARSER_DEBUG("timing management: processing per transmitter data with %d per_transmitter_data entries", atsc3_timing_management_packet->num_xmtrs_in_group);
+    __STLTP_PARSER_DEBUG("timing management: processing per transmitter data with %d per_transmitter_data entries, pos: %d", atsc3_timing_management_packet->num_xmtrs_in_group, binary_payload - binary_payload_start);
 
     for(int i=0; i <= atsc3_timing_management_packet->num_xmtrs_in_group; i++) {
         //atsc3_per_transmitter_data_t
