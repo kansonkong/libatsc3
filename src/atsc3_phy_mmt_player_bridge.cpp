@@ -11,9 +11,15 @@
  */
 
 
+#ifdef __FIXME_REFACTOR_LOWASIS__
+#include "At3DrvIntf.h"
+At3DrvIntf* atsc3NdkClientSL_ptr;
+
+#else
+
 #include "atsc3NdkClient.h"
-//atsc3NdkClient* at3DrvIntf_ptr;
 atsc3NdkClient* atsc3NdkClientSL_ptr;
+#endif
 
 #include "atsc3_phy_mmt_player_bridge.h"
 
@@ -930,9 +936,13 @@ void atsc3_mmt_mpu_on_sequence_movie_fragment_metadata_present_ndk(uint16_t pack
     atsc3NdkClientSL_ptr->atsc3_onExtractedSampleDuration(packet_id, mpu_sequence_number, extracted_sample_duration_us);
 }
 
-
+#ifdef __FIXME_REFACTOR_LOWASIS__
+void atsc3_phy_mmt_player_bridge_init(At3DrvIntf* atsc3NdkClientSL_ptr_l) {
+#else
 void atsc3_phy_mmt_player_bridge_init(atsc3NdkClient* atsc3NdkClientSL_ptr_l) {
+#endif
     atsc3NdkClientSL_ptr = atsc3NdkClientSL_ptr_l;
+
     atsc3NdkClientSL_ptr->LogMsgF("atsc3_phy_mmt_player_bridge_init - client ptr: %p", atsc3NdkClientSL_ptr_l);
 
     //set global logging levels
