@@ -348,7 +348,8 @@ typedef struct per_transmitter_data {
 
 typedef struct packet_release_time {
     uint8_t     pkt_rls_seconds;
-    uint16_t    pkt_rls_a_miliseconds;
+    uint16_t    pkt_rls_a_milliseconds;
+    uint32_t    pkt_rls_computed_milliseconds;
     uint8_t     _reserved:2;
 } packet_release_time_t;
     
