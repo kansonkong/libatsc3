@@ -16,7 +16,7 @@
 //import android.view.SurfaceHolder;
 //import android.view.SurfaceView;
 //
-//import com.lowasis.at3drv.MainActivity;
+//import org.ngbp.libatsc3.MainActivity;
 //import com.lowasis.at3drv.R;
 //
 //import java.io.IOException;
