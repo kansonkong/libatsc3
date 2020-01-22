@@ -1086,3 +1086,172 @@ void atsc3_timing_management_packet_dump(atsc3_timing_management_packet_t* atsc3
     
 }
 
+/*
+    parse A/324 preamble packet from STLTP inner payload
+ */
+
+atsc3_preamble_packet_t* atsc3_stltp_parse_preamble_packet(atsc3_stltp_preamble_packet_t* atsc3_stltp_preamble_packet) {
+    uint8_t *binary_payload = atsc3_stltp_preamble_packet->payload;
+    uint8_t *binary_payload_start = binary_payload;
+
+    uint32_t binary_payload_length = atsc3_stltp_preamble_packet->payload_length;
+   
+    atsc3_preamble_packet_t* atsc3_preamble_packet = calloc(1, sizeof(atsc3_preamble_packet_t));
+
+    //length: 16
+    atsc3_preamble_packet->length = ntohs(*((uint16_t*)binary_payload));
+    binary_payload += 2;
+
+    __STLTP_PARSER_INFO("---------------------------------------");
+    __STLTP_PARSER_INFO("preamble packet header: pointer: %p, sequence_number: %d, port: %d, length: %u, PreamblePayload.length: %d",
+                 binary_payload,
+                 atsc3_stltp_preamble_packet->ip_udp_rtp_packet_inner->rtp_header->sequence_number,
+                 atsc3_stltp_preamble_packet->ip_udp_rtp_packet_inner->udp_flow.dst_port,
+                 atsc3_stltp_preamble_packet->payload_length,
+                 atsc3_preamble_packet->length);
+    __STLTP_PARSER_INFO("preamble: raw hex: 0x%02hhX 0x%02hhX 0x%02hhX 0x%02hhX", binary_payload[0], binary_payload[1], binary_payload[2], binary_payload[3]);
+    __STLTP_PARSER_INFO("---------------------------------------");
+
+    /* debugging
+    */
+    
+    atsc3_preamble_packet->L1_basic_signaling.L1B_version = (*binary_payload >> 5) & 0x7;
+    atsc3_preamble_packet->L1_basic_signaling.L1B_mimo_scattered_pilot_encoding = (*binary_payload >> 4) & 0x1;
+    atsc3_preamble_packet->L1_basic_signaling.L1B_lls_flag = (*binary_payload >> 3) & 0x1;
+    atsc3_preamble_packet->L1_basic_signaling.L1B_time_info_flag = (*binary_payload >> 1) & 0x3;
+    atsc3_preamble_packet->L1_basic_signaling.L1B_return_channel_flag = (*binary_payload) & 0x1;
+    binary_payload++;
+
+    atsc3_preamble_packet->L1_basic_signaling.L1B_papr_reduction = (*binary_payload >> 6) & 0x3;
+    atsc3_preamble_packet->L1_basic_signaling.L1B_frame_length_mode = (*binary_payload >> 5) & 0x1; //3 bytes used
+    
+    if(atsc3_preamble_packet->L1_basic_signaling.L1B_frame_length_mode == 0) {
+        //10 bits
+        atsc3_preamble_packet->L1_basic_signaling.L1B_frame_length = (*binary_payload & 0x1F) << 5; // 5 bits
+        binary_payload++;
+        atsc3_preamble_packet->L1_basic_signaling.L1B_frame_length |= (*binary_payload >> 3) & 0x1F; //5 bits, 3 bits remaining
+        //13 bits
+        atsc3_preamble_packet->L1_basic_signaling.L1B_excess_samples_per_symbol = (*binary_payload & 0x7) << 10; //3
+        binary_payload++;
+        atsc3_preamble_packet->L1_basic_signaling.L1B_excess_samples_per_symbol |= (*binary_payload) << 2; //10
+        binary_payload++;
+        atsc3_preamble_packet->L1_basic_signaling.L1B_excess_samples_per_symbol |= (*binary_payload >> 6) & 0x3;
+        //6 bits remaining
+    } else {
+        atsc3_preamble_packet->L1_basic_signaling.L1B_time_offset = (*binary_payload & 0x1F) << 11; //5 bits, 11 remaining
+        binary_payload++;
+        atsc3_preamble_packet->L1_basic_signaling.L1B_time_offset |= (*binary_payload) << 3; //8 bits, 3 remaining
+        binary_payload++;
+        atsc3_preamble_packet->L1_basic_signaling.L1B_time_offset |= (*binary_payload >> 5) & 0x7;
+        //7 bits
+        atsc3_preamble_packet->L1_basic_signaling.L1B_additional_samples = (*binary_payload & 0x1F) << 2;
+        binary_payload++;
+        atsc3_preamble_packet->L1_basic_signaling.L1B_additional_samples |= (*binary_payload >> 6) & 0x3;
+        //6 bits remaining
+    }
+    
+    //8 bits, 6 avail
+    atsc3_preamble_packet->L1_basic_signaling.L1B_num_subframes = (*binary_payload & 0x3F) << 2;
+    binary_payload++;
+    atsc3_preamble_packet->L1_basic_signaling.L1B_num_subframes |= (*binary_payload >> 6) & 0x3; //2 bits, 6 remaining
+    //3 bits
+    atsc3_preamble_packet->L1_basic_signaling.L1B_preamble_num_symbols = (*binary_payload >> 3) & 0x7;
+    //3 bits
+    atsc3_preamble_packet->L1_basic_signaling.L1B_preamble_reduced_carriers = (*binary_payload & 0x3);
+    binary_payload++;
+   
+    //even alignment here...
+    atsc3_preamble_packet->L1_basic_signaling.L1B_L1_Detail_content_tag = (*binary_payload >> 6) & 0x3; // 6 bits remaining
+    
+    //13 bits
+    atsc3_preamble_packet->L1_basic_signaling.L1B_L1_Detail_size_bytes = (*binary_payload & 0x3F) << 7; //13 bits long, shift
+    binary_payload++;
+    atsc3_preamble_packet->L1_basic_signaling.L1B_L1_Detail_size_bytes |= (*binary_payload >> 1) & 0x7F; //1 bit left
+    
+    //L1B_L1_Detail_fec_type: 3 bits
+    atsc3_preamble_packet->L1_basic_signaling.L1B_L1_Detail_fec_type = (*binary_payload & 0x1) << 2;
+    binary_payload++;
+    atsc3_preamble_packet->L1_basic_signaling.L1B_L1_Detail_fec_type = (*binary_payload >> 6) & 0x3; //6 bits remaining
+
+    //2 bits
+    atsc3_preamble_packet->L1_basic_signaling.L1B_L1_Detail_additional_parity_mode = (*binary_payload >> 4) & 0x3; //4 bits remaining
+    
+    //19 bits
+    atsc3_preamble_packet->L1_basic_signaling.L1B_L1_Detail_total_cells = (*binary_payload & 0xF) << 15; //15 bits remaining
+    binary_payload++;
+    atsc3_preamble_packet->L1_basic_signaling.L1B_L1_Detail_total_cells |= (*binary_payload) << 8; //7 bits remaining
+    binary_payload++;
+    atsc3_preamble_packet->L1_basic_signaling.L1B_L1_Detail_total_cells |= (*binary_payload >> 1) & 0x7F; //1 bit remaining
+    
+    //L1B_first_sub_mimo:1
+    atsc3_preamble_packet->L1_basic_signaling.L1B_first_sub_mimo = (*binary_payload) & 0x1;
+    binary_payload++;
+
+    //2 bits
+    atsc3_preamble_packet->L1_basic_signaling.L1B_first_sub_miso = (*binary_payload >> 6) & 0x3;
+    //2 bits
+    atsc3_preamble_packet->L1_basic_signaling.L1B_first_sub_fft_size = (*binary_payload >> 4) & 0x3;
+    //3 bits
+    atsc3_preamble_packet->L1_basic_signaling.L1B_first_sub_reduced_carriers = (*binary_payload >> 1) & 0x7; //1 bit remaining
+    
+    //4 bits
+    atsc3_preamble_packet->L1_basic_signaling.L1B_first_sub_guard_interval = (*binary_payload & 0x1) << 3;
+    binary_payload++;
+    atsc3_preamble_packet->L1_basic_signaling.L1B_first_sub_guard_interval |= (*binary_payload >> 5) & 0x7; //5 bits remaining
+
+
+    //11 bits - 5 = 6
+    atsc3_preamble_packet->L1_basic_signaling.L1B_first_sub_num_ofdm_symbols = (*binary_payload & 0x1F) << 6;
+    binary_payload++;
+    atsc3_preamble_packet->L1_basic_signaling.L1B_first_sub_num_ofdm_symbols |= (*binary_payload >> 2) & 0x3F; // 2 bits remaining
+    
+    //L1B_first_sub_scattered_pilot_pattern:5
+    atsc3_preamble_packet->L1_basic_signaling.L1B_first_sub_scattered_pilot_pattern = (*binary_payload & 0x3) << 3; //2 bits to process
+    binary_payload++;
+    atsc3_preamble_packet->L1_basic_signaling.L1B_first_sub_scattered_pilot_pattern = (*binary_payload >> 5) & 0x7; //5 bits remaining
+    //3 bits
+    atsc3_preamble_packet->L1_basic_signaling.L1B_first_sub_scattered_pilot_boost = (*binary_payload >> 2) & 0x7; //2 bits remaining
+    //1 bit
+    atsc3_preamble_packet->L1_basic_signaling.L1B_first_sub_sbs_first = (*binary_payload >> 1) & 0x1;
+    //1 bit even...
+    atsc3_preamble_packet->L1_basic_signaling.L1B_first_sub_sbs_last = (*binary_payload) & 0x1;
+    
+    //TODO: check reserved
+    
+    binary_payload += 6; //6*8 = 48bits
+    
+    atsc3_preamble_packet->L1_basic_signaling.L1B_crc = ntohl(*((uint32_t*)binary_payload));
+    binary_payload += 4; //32 bits;
+
+    //L1B done..now onto L1D
+    
+    int bytes_processed = binary_payload - binary_payload_start;
+    int bytes_remaining = atsc3_preamble_packet->length - bytes_processed;
+    
+    __STLTP_PARSER_INFO("preamble: L1B_parsed: consumed %d bytes, leaving %d bytes for L1D (payload_start: %p, binary_payload: %p",
+                        bytes_processed, bytes_remaining,
+                        binary_payload_start, binary_payload);
+    
+    
+    return atsc3_preamble_packet;
+    
+cleanup:
+    if(atsc3_preamble_packet) {
+        free(atsc3_preamble_packet);
+        atsc3_preamble_packet = NULL;
+    }
+    
+    return NULL;
+}
+
+void atsc3_preamble_packet_dump(atsc3_preamble_packet_t* atsc3_preamble_packet) {
+    
+    __STLTP_PARSER_INFO("preamble: L1B: version: %d, mimo: %d, lls_flag: %d, time_info: %d, return_channel: %d",
+                        atsc3_preamble_packet->L1_basic_signaling.L1B_version,
+                        atsc3_preamble_packet->L1_basic_signaling.L1B_mimo_scattered_pilot_encoding,
+                        atsc3_preamble_packet->L1_basic_signaling.L1B_lls_flag,
+                        atsc3_preamble_packet->L1_basic_signaling.L1B_time_info_flag,
+                        atsc3_preamble_packet->L1_basic_signaling.L1B_return_channel_flag
+                        );
+    
+}
