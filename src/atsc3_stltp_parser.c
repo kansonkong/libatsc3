@@ -1207,168 +1207,227 @@ atsc3_preamble_packet_t* atsc3_stltp_parse_preamble_packet(atsc3_stltp_preamble_
     
     //3 bits
     atsc3_preamble_packet->L1_detail_signaling.L1D_num_rf = block_Read_uint8_bitlen(block, 3);
-//    
-//    //messy...but A/322:2018 limits this value to 1
-//    for(int i=1; i < atsc3_preamble_packet->L1_detail_signaling.L1D_num_rf; i++) {
-//        L1D_bonded_bsid_block_t* L1D_bonded_bsid_block = L1D_bonded_bsid_block_new();
-//        
-//        //16 bits
-//        L1D_bonded_bsid_block->L1D_bonded_bsid = (*binary_payload & 0x1) << 15; //1 bit
-//        binary_payload++;
-//        L1D_bonded_bsid_block->L1D_bonded_bsid |= (*binary_payload) << 7; //8 bits, 7 bits remaining
-//        binary_payload++
-//        L1D_bonded_bsid_block->L1D_bonded_bsid |= (*binary_payload >> 1) & 0x7F;
-//        //reserved 3 bits
-//        L1D_bonded_bsid_block->reserved = (*binary_payload) & 0x1;
-//        binary_payload++;
-//        L1D_bonded_bsid_block->reserved |= (*binary_payload >> 6) & 0x3;
-//        
-//        L1_detail_signaling_add_L1D_bonded_bsid_block(atsc3_preamble_packet->L1_detail_signaling, L1D_bonded_bsid_block);
-//    }
-//    //6 bits left
-// 
-//    //todo: figure out how to handle mis-alignment here... ((((32)+10)+10)+10)
-//    if(atsc3_preamble_packet->L1_basic_signaling.L1B_time_info_flag != 00) {
-//        //32
-//        atsc3_preamble_packet->L1_detail_signaling.L1D_time_sec_block.L1D_time_sec = (*binary_payload & 0x3F) << 26; //shift by 32-6 -> 26
-//        binary_payload++;
-//        atsc3_preamble_packet->L1_detail_signaling.L1D_time_sec_block.L1D_time_sec |= (*binary_payload) << 18; //18 bits left
-//        binary_payload++;
-//        atsc3_preamble_packet->L1_detail_signaling.L1D_time_sec_block.L1D_time_sec |= (*binary_payload) << 10; //10 bits left
-//        binary_payload++;
-//        atsc3_preamble_packet->L1_detail_signaling.L1D_time_sec_block.L1D_time_sec |= (*binary_payload) << 8; //2 bits left
-//        binary_payload++;
-//        atsc3_preamble_packet->L1_detail_signaling.L1D_time_sec_block.L1D_time_sec |= (*binary_payload >> 6) 0x03; //6 bits left
-//        
-//        //10 bits
-//        atsc3_preamble_packet->L1_detail_signaling.L1D_time_sec_block.L1D_time_msec = (*binary_payload & 0x3F) <<  4; // 10 - 6 = 4 bits left
-//        binary_payload++;
-//        atsc3_preamble_packet->L1_detail_signaling.L1D_time_sec_block.L1D_time_msec |= (*binary_payload >> 4) & 0xF; // 4 bits left
-//        if(atsc3_preamble_packet->L1_basic_signaling.L1B_time_info_flag != 0x01) {
-//            //10 bits
-//            //time usec
-//            atsc3_preamble_packet->L1_detail_signaling.L1D_time_sec_block.L1D_time_usec = (*binary_payload & 0xF) << 6; //10-4 = 6 bits left
-//            binary_payload++
-//            atsc3_preamble_packet->L1_detail_signaling.L1D_time_sec_block.L1D_time_usec |= (*binary_payload >> 2) & 0x3F; //10-4 = 2 bits left
-//            
-//            if(atsc3_preamble_packet->L1_basic_signaling.L1B_time_info_flag != 0x02) {
-//                //10bits
-//                //time nsec
-//                atsc3_preamble_packet->L1_detail_signaling.L1D_time_sec_block.L1D_time_nsec = (*binary_payload & 0x3) << 8; //10-2 = 8 bits left
-//                binary_payload++;
-//                atsc3_preamble_packet->L1_detail_signaling.L1D_time_sec_block.L1D_time_nsec |= (*binary_payload & 0xFF); //0 bits left...
-//
-//            }
-//        }
-//    }
-//    
-//    
-//    for(int i=0; i <= atsc3_preamble_packet->L1_basic_signaling.L1B_num_subframes; i++) {
-//        if(i > 0) {
-//            /*
-//             L1D_mimo
-//             L1D_miso
-//             L1D_fft_size
-//             L1D_reduced_carriers
-//             L1D_guard_interval
-//             L1D_num_ofdm_symbols
-//             L1D_scattered_pilot_pattern
-//             L1D_scattered_pilot_boost
-//             L1D_sbs_first
-//             L1D_sbs_last
-//             */
-//        }
-//        
-//        if(atsc3_preamble_packet->L1_basic_signaling.L1B_num_subframes > 0) {
-//            //1 bit
-//            //L1d_subframe_multiplex
-//        }
-//        
-//        //1
-//        //L1D_frequency_interleaver
-//        
-//        if (((i=0)&&(L1B_first_sub_sbs_first || L1B_first_sub_sbs_last)) || ((i>0)&&(L1D_sbs_first | L1D_sbs_last))) {
-//            //13
-//            //L1D_sbs_null_cells
-//        }
-//        
-//        //6
-//        //L1d_num_plp
-//        
-//        for (j=0 .. L1D_num_plp) {
-//            L1D_plp_id
-//            L1D_plp_lls_flag
-//            L1D_plp_layer
-//            L1D_plp_start
-//            L1D_plp_size
-//            L1D_plp_scrambler_type
-//            L1D_plp_fec_type
-//            if (L1D_plp_fec_type∈{0,1,2,3,4,5}) {
-//                L1D_plp_mod
-//                L1D_plp_cod
-//                L1D_plp_TI_mode
-//            }
-//            if (L1D_plp_TI_mode=00) {
-//                L1D_plp_fec_block_start
-//            } else if (L1D_plp_TI_mode=01) {
-//                L1D_plp_CTI_fec_block_start
-//            }
-//            
-//            if (L1D_num_rf>0) {
-//                L1D_plp_num_channel_bonded
-//                if (L1D_plp_num_channel_bonded>0) {
-//                    L1D_plp_channel_bonding_format
-//                    for (k=0..L1D_plp_num_channel_bonded){
-//                        L1D_plp_bonded_rf_id
-//                    }
-//                }
-//            }
-//            if (i=0 && L1B_first_sub_mimo=1) || (i >0 && L1D_mimo=1) {
-//                L1D_plp_mimo_stream_combining
-//                L1D_plp_mimo_IQ_interleaving
-//                L1D_plp_mimo_PH
-//            }
-//            if (L1D_plp_layer=0) {
-//                L1D_plp_type
-//                if (L1D_plp_type=1) {
-//                    L1D_plp_num_subslices
-//                    L1D_plp_subslice_interval
-//                }
-//                if (((L1D_plp_TI_mode=01) || (L1D_plp_TI_mode=10))&&(L1D_plp_mod=0000)) {
-//                    L1D_plp_TI_extended_interleaving
-//                }
-//                if (L1D_plp_TI_mode=01) {
-//                    L1D_plp_CTI_depth
-//                    L1D_plp_CTI_start_row
-//                    
-//                } else if (L1D_plp_TI_mode=10) {
-//                        L1D_plp_HTI_inter_subframe
-//                }
-//        
-//            }
-//        }
-//    } else {
-//            L1D_plp_HTI_num_ti_blocks
-//            L1D_plp_HTI_num_fec_blocks_max
-//        if (L1D_plp_HTI_inter_subframe=0) {
-//            L1D_plp_HTI_num_fec_blocks
-//        } else {
-//            for (k=0..L1D_plp_HTI_num_ti_blocks) {
-//                    L1D_plp_HTI_num_fec_blocks
-//                }
-//            }
-//                L1D_plp_HTI_cell_interleaver
-//            } else {
-//                L1D_plp_ldm_injection_level
-//            }
-//        }
-//    }
-//
-//
-//    L1D_bsid
-//    L1D_reserved
-//    L1D_crc
-//    
+
+    for(int i=1; i < atsc3_preamble_packet->L1_detail_signaling.L1D_num_rf; i++) {
+        L1D_bonded_bsid_block_t* L1D_bonded_bsid_block = L1D_bonded_bsid_block_new();
+        
+        //16 bits
+		L1D_bonded_bsid_block->L1D_bonded_bsid =  block_Read_uint16_bitlen(block, 16);
+		
+        //reserved 3 bits
+		L1D_bonded_bsid_block->reserved = block_Read_uint8_bitlen(block, 3);
+        
+        L1_detail_signaling_add_L1D_bonded_bsid_block(&atsc3_preamble_packet->L1_detail_signaling, L1D_bonded_bsid_block);
+    }
+	
+    if(atsc3_preamble_packet->L1_basic_signaling.L1B_time_info_flag != 0x0) {
+        //32
+		atsc3_preamble_packet->L1_detail_signaling.L1D_time_sec_block.L1D_time_sec = block_Read_uint32_bitlen(block, 32);
+        
+        //10 bits
+		atsc3_preamble_packet->L1_detail_signaling.L1D_time_sec_block.L1D_time_msec = block_Read_uint16_bitlen(block, 10);
+		
+		if(atsc3_preamble_packet->L1_basic_signaling.L1B_time_info_flag != 0x01) {
+            //10 bits
+            //time usec
+            atsc3_preamble_packet->L1_detail_signaling.L1D_time_sec_block.L1D_time_usec = block_Read_uint16_bitlen(block, 10);
+            if(atsc3_preamble_packet->L1_basic_signaling.L1B_time_info_flag != 0x02) {
+                //10bits
+                //time nsec
+                atsc3_preamble_packet->L1_detail_signaling.L1D_time_sec_block.L1D_time_nsec = block_Read_uint16_bitlen(block, 10);
+            }
+        }
+    }
+    
+    for(int i=0; i <= atsc3_preamble_packet->L1_basic_signaling.L1B_num_subframes; i++) {
+		L1D_subframe_parameters_t* L1D_subframe_parameters = L1D_subframe_parameters_new();
+		
+        if(i > 0) {
+			//1 bit
+			L1D_subframe_parameters->L1D_mimo = block_Read_uint8_bitlen(block, 1);
+			//2 bit
+			L1D_subframe_parameters->L1D_miso = block_Read_uint8_bitlen(block, 2);
+			//2 bit
+			L1D_subframe_parameters->L1D_fft_size = block_Read_uint8_bitlen(block, 2);
+			//3 bit
+			L1D_subframe_parameters->L1D_reduced_carriers = block_Read_uint8_bitlen(block, 3);
+			//4 bit
+			L1D_subframe_parameters->L1D_guard_interval = block_Read_uint8_bitlen(block, 4);
+			//11 bit
+			L1D_subframe_parameters->L1D_num_ofdm_symbols = block_Read_uint16_bitlen(block, 11);
+			//5 bit
+			L1D_subframe_parameters->L1D_scattered_pilot_pattern = block_Read_uint8_bitlen(block, 5);
+			//3 bit
+			L1D_subframe_parameters->L1D_scattered_pilot_boost = block_Read_uint8_bitlen(block, 3);
+			//1 bit
+			L1D_subframe_parameters->L1D_sbs_first = block_Read_uint8_bitlen(block, 1);
+			//1 bit
+			L1D_subframe_parameters->L1D_sbs_last = block_Read_uint8_bitlen(block, 1);
+        }
+        
+        if(atsc3_preamble_packet->L1_basic_signaling.L1B_num_subframes > 0) {
+            //1 bit
+            L1D_subframe_parameters->L1D_subframe_multiplex = block_Read_uint8_bitlen(block, 1);
+        }
+        
+        //1
+		L1D_subframe_parameters->L1D_frequency_interleaver = block_Read_uint8_bitlen(block, 1);
+
+		if (((i=0) && (atsc3_preamble_packet->L1_basic_signaling.L1B_first_sub_sbs_first ||
+					   atsc3_preamble_packet->L1_basic_signaling.L1B_first_sub_sbs_last)) ||
+			((i>0) && (L1D_subframe_parameters->L1D_sbs_first || L1D_subframe_parameters->L1D_sbs_last))) {
+			
+            //13
+            //L1D_sbs_null_cells
+			L1D_subframe_parameters->L1D_sbs_null_cells = block_Read_uint16_bitlen(block, 13);
+
+        }
+        
+        //L1d_num_plp: 6 bits
+		L1D_subframe_parameters->L1D_num_plp = block_Read_uint8_bitlen(block, 6);
+        
+		for (int j=0; j <= L1D_subframe_parameters->L1D_num_plp; j++) {
+			L1D_PLP_parameters_t* L1D_PLP_parameters = L1D_PLP_parameters_new();
+			
+			//6 bits
+            L1D_PLP_parameters->L1D_plp_id = block_Read_uint8_bitlen(block, 6);
+
+			//1 bit
+            L1D_PLP_parameters->L1D_plp_lls_flag = block_Read_uint8_bitlen(block, 1);
+
+			//2 bit
+            L1D_PLP_parameters->L1D_plp_layer = block_Read_uint8_bitlen(block, 2);
+
+            //24 bit
+            L1D_PLP_parameters->L1D_plp_start = block_Read_uint32_bitlen(block, 24);
+
+            //24 bit
+            L1D_PLP_parameters->L1D_plp_size = block_Read_uint32_bitlen(block, 24);
+
+            //2 bits
+            L1D_PLP_parameters->L1D_plp_scrambler_type = block_Read_uint8_bitlen(block, 2);
+
+            //4 bits
+            L1D_PLP_parameters->L1D_plp_fec_type = block_Read_uint8_bitlen(block, 4);
+
+			if (L1D_PLP_parameters->L1D_plp_fec_type >= 0 && L1D_PLP_parameters->L1D_plp_fec_type <= 5) {
+				//4 bits
+				L1D_PLP_parameters->L1D_plp_mod = block_Read_uint8_bitlen(block, 4);
+				//4 bits
+				L1D_PLP_parameters->L1D_plp_cod = block_Read_uint8_bitlen(block, 4);
+				//2 bits
+            }
+			
+			L1D_PLP_parameters->L1D_plp_TI_mode = block_Read_uint8_bitlen(block, 2);
+
+            if (L1D_PLP_parameters->L1D_plp_TI_mode == 0x0) {
+				//15 bits
+				L1D_PLP_parameters->L1D_plp_fec_block_start = block_Read_uint16_bitlen(block, 15);
+            } else if (L1D_PLP_parameters->L1D_plp_TI_mode == 0x1) {
+				//22 bits
+				L1D_PLP_parameters->L1D_plp_CTI_fec_block_start = block_Read_uint32_bitlen(block, 22);
+            }
+            
+            if (atsc3_preamble_packet->L1_detail_signaling.L1D_num_rf > 0) {
+				//3 bits
+				L1D_PLP_parameters->L1D_plp_num_channel_bonded = block_Read_uint8_bitlen(block, 3);
+				
+                if (L1D_PLP_parameters->L1D_plp_num_channel_bonded > 0) {
+					//2 bits
+					L1D_PLP_parameters->L1D_plp_channel_bonding_format = block_Read_uint8_bitlen(block, 2);
+                    
+					for (int k=0; k <= L1D_PLP_parameters->L1D_plp_num_channel_bonded; k++) {
+						L1D_plp_bonded_rf_id_t* L1D_plp_bonded_rf_id = L1D_plp_bonded_rf_id_new();
+						//3 bits
+						L1D_plp_bonded_rf_id->L1D_plp_bonded_rf_id = block_Read_uint8_bitlen(block, 2);
+						L1D_PLP_parameters_add_L1D_plp_bonded_rf_id(L1D_PLP_parameters, L1D_plp_bonded_rf_id);
+                    }
+                }
+            }
+			
+			
+            if ((i == 0 && atsc3_preamble_packet->L1_basic_signaling.L1B_first_sub_mimo == 1) ||
+				(i > 0 && L1D_subframe_parameters->L1D_mimo == 1)) {
+                //1 bit
+				L1D_PLP_parameters->L1D_plp_mimo_stream_combining = block_Read_uint8_bitlen(block, 1);
+                //1 bit
+                L1D_PLP_parameters->L1D_plp_mimo_IQ_interleaving = block_Read_uint8_bitlen(block, 1);
+                //1 bit
+				L1D_PLP_parameters->L1D_plp_mimo_PH = block_Read_uint8_bitlen(block, 1);
+            }
+			
+			
+            if (L1D_PLP_parameters->L1D_plp_layer == 0) {
+				//1 bit
+                L1D_PLP_parameters->L1D_plp_type = block_Read_uint8_bitlen(block, 1);
+
+                if (L1D_PLP_parameters->L1D_plp_type == 1) {
+					//14
+                    L1D_PLP_parameters->L1D_plp_num_subslices = block_Read_uint16_bitlen(block, 14);
+					//24
+                    L1D_PLP_parameters->L1D_plp_subslice_interval = block_Read_uint32_bitlen(block, 24);
+                }
+				
+                if (((L1D_PLP_parameters->L1D_plp_TI_mode == 0x1) ||
+					 (L1D_PLP_parameters->L1D_plp_TI_mode == 0x2)) && (L1D_PLP_parameters->L1D_plp_mod == 0x0)) {
+					//1 bit
+                    L1D_PLP_parameters->L1D_plp_TI_extended_interleaving = block_Read_uint8_bitlen(block, 1);
+                }
+
+				if (L1D_PLP_parameters->L1D_plp_TI_mode == 0x1) {
+					//3
+                    L1D_PLP_parameters->L1D_plp_CTI_depth = block_Read_uint8_bitlen(block, 3);
+
+					//11
+                    L1D_PLP_parameters->L1D_plp_CTI_start_row = block_Read_uint16_bitlen(block, 11);
+
+				} else if (L1D_PLP_parameters->L1D_plp_TI_mode == 0x2) {
+					//1
+					L1D_PLP_parameters->L1D_plp_HTI_inter_subframe = block_Read_uint8_bitlen(block, 1);
+					//4 bits
+					L1D_PLP_parameters->L1D_plp_HTI_num_ti_blocks = block_Read_uint8_bitlen(block, 4);
+					//12
+					L1D_PLP_parameters->L1D_plp_HTI_num_fec_blocks_max = block_Read_uint16_bitlen(block, 12);
+				}
+				
+				if (L1D_PLP_parameters->L1D_plp_HTI_inter_subframe == 0) {
+					//12
+					L1D_PLP_parameters->L1D_plp_HTI_num_fec_blocks = block_Read_uint16_bitlen(block, 12);
+				} else {
+					for (int k=0; k <= L1D_PLP_parameters->L1D_plp_HTI_num_ti_blocks; k++) {
+						//fix me
+						L1D_plp_HTI_num_fec_blocks_t* L1D_plp_HTI_num_fec_blocks = L1D_plp_HTI_num_fec_blocks_new();
+						
+						//12
+						L1D_plp_HTI_num_fec_blocks->L1D_plp_HTI_num_fec_blocks = block_Read_uint16_bitlen(block, 12);
+						L1D_PLP_parameters_add_L1D_plp_HTI_num_fec_blocks(L1D_PLP_parameters, L1D_plp_HTI_num_fec_blocks);
+					}
+				}
+				//1 bit
+				L1D_PLP_parameters->L1D_plp_HTI_cell_interleaver = block_Read_uint8_bitlen(block, 1);
+
+            } else {
+				//5 bits
+				L1D_PLP_parameters->L1D_plp_ldm_injection_level = block_Read_uint8_bitlen(block, 5);
+            }
+
+			//
+			L1D_subframe_parameters_add_L1D_PLP_parameters(L1D_subframe_parameters, L1D_PLP_parameters);
+			
+        }
+
+		L1_detail_signaling_add_L1D_subframe_parameters(&atsc3_preamble_packet->L1_detail_signaling, L1D_subframe_parameters);
+    }
+
+	//16 bits
+    atsc3_preamble_packet->L1_detail_signaling.L1D_bsid = block_Read_uint16_bitlen(block, 16);
+
+    //as needed...
+	//L1D_reserved
+
+    atsc3_preamble_packet->L1_detail_signaling.L1D_crc = block_Read_uint32_bitlen(block, 32);
+
+    
     
     
     __STLTP_PARSER_INFO("preamble: L1B_parsed: consumed %d bytes, leaving %d bytes for L1D (payload_start: %p, binary_payload: %p",
@@ -1437,5 +1496,41 @@ void atsc3_preamble_packet_dump(atsc3_preamble_packet_t* atsc3_preamble_packet) 
 						atsc3_preamble_packet->L1_basic_signaling.L1B_first_sub_sbs_first,
 						atsc3_preamble_packet->L1_basic_signaling.L1B_first_sub_sbs_last
 						);
+	
+	
+	__STLTP_PARSER_INFO("preamble: L1D: version: %d, num_rf: %d, l1d_subframe_count: %d, time_info flag: %d",
+						atsc3_preamble_packet->L1_detail_signaling.L1D_version,
+						atsc3_preamble_packet->L1_detail_signaling.L1D_num_rf,
+						atsc3_preamble_packet->L1_detail_signaling.L1D_subframe_parameters_v.count,
+						atsc3_preamble_packet->L1_basic_signaling.L1B_time_info_flag
+						);
+	
+	if(atsc3_preamble_packet->L1_basic_signaling.L1B_time_info_flag != 0x0) {
+		if(atsc3_preamble_packet->L1_basic_signaling.L1B_time_info_flag != 0x01) {
+            if(atsc3_preamble_packet->L1_basic_signaling.L1B_time_info_flag != 0x02) {
+				__STLTP_PARSER_INFO("preamble: L1D: time: sec: %d, ms: %d, us: %d, ns: %d",
+									atsc3_preamble_packet->L1_detail_signaling.L1D_time_sec_block.L1D_time_sec,
+									atsc3_preamble_packet->L1_detail_signaling.L1D_time_sec_block.L1D_time_msec,
+									atsc3_preamble_packet->L1_detail_signaling.L1D_time_sec_block.L1D_time_usec,
+									atsc3_preamble_packet->L1_detail_signaling.L1D_time_sec_block.L1D_time_nsec
+									);
+			} else {
+				__STLTP_PARSER_INFO("preamble: L1D: time: sec: %d, ms: %d, us: %d",
+												atsc3_preamble_packet->L1_detail_signaling.L1D_time_sec_block.L1D_time_sec,
+												atsc3_preamble_packet->L1_detail_signaling.L1D_time_sec_block.L1D_time_msec,
+												atsc3_preamble_packet->L1_detail_signaling.L1D_time_sec_block.L1D_time_usec
+												);
+			}
+		} else {
+			__STLTP_PARSER_INFO("preamble: L1D: time: sec: %d, ms: %d",
+											atsc3_preamble_packet->L1_detail_signaling.L1D_time_sec_block.L1D_time_sec,
+											atsc3_preamble_packet->L1_detail_signaling.L1D_time_sec_block.L1D_time_msec
+											);
+		}
+	}
+	
+	//jjustman-2020-01-22: TODO: iterate over L1D_subframe_parameters -> plp, etc
+	
     
+	__STLTP_PARSER_INFO("preamble: L1D: bsid: %d", atsc3_preamble_packet->L1_detail_signaling.L1D_bsid);
 }

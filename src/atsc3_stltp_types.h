@@ -234,29 +234,33 @@ typedef struct L1D_PLP_parameters {
     uint8_t     L1D_plp_layer:2;
     uint32_t    L1D_plp_start:24;
     uint32_t    L1D_plp_size:24;
+	
     uint8_t     L1D_plp_scrambler_type:2;
     uint8_t     L1D_plp_fec_type:4;
     
     //if (L1D_plp_fec_type∈{0,1,2,3,4,5}) {
-    uint8_t     L1D_plp_mod:4;
-    uint8_t     L1D_plp_cod:4;
+		uint8_t     L1D_plp_mod:4;
+		uint8_t     L1D_plp_cod:4;
     //}
     
     uint8_t     L1D_plp_TI_mode:2;
     
     //if (L1D_plp_TI_mode=00) {
-    uint16_t    L1D_plp_fec_block_start:15;
+		uint16_t    L1D_plp_fec_block_start:15;
     //} else if (L1D_plp_TI_mode=01) {
-    uint32_t    L1D_plp_CTI_fec_block_start:22;
+		uint32_t    L1D_plp_CTI_fec_block_start:22;
     //}
     
     //if (L1D_num_rf>0) {
     uint8_t     L1D_plp_num_channel_bonded:3;
-        //if (L1D_plp_num_channel_bonded>0) {
-    uint8_t     L1D_plp_channel_bonding_format:2;
-            //for (k=0..L1D_plp_num_channel_bonded) {
-    ATSC3_VECTOR_BUILDER_STRUCT(L1D_plp_bonded_rf_id);
-            //}
+	
+		//if (L1D_plp_num_channel_bonded>0) {
+		uint8_t     L1D_plp_channel_bonding_format:2;
+		
+			//for (k=0..L1D_plp_num_channel_bonded) {
+			ATSC3_VECTOR_BUILDER_STRUCT(L1D_plp_bonded_rf_id);
+	
+			//}
         //}
     //}
     
@@ -267,26 +271,28 @@ typedef struct L1D_PLP_parameters {
     //}
     
     //if (L1D_plp_layer=0) {
-    uint8_t     L1D_plp_type:1;
+		uint8_t     L1D_plp_type:1;
         //if (L1D_plp_type=1) {
-    uint16_t    L1D_plp_num_subslices:14;
-    uint32_t    L1D_plp_subslice_interval:24;
+			uint16_t    L1D_plp_num_subslices:14;
+			uint32_t    L1D_plp_subslice_interval:24;
         //}
-        //if (((L1D_plp_TI_mode=01) || (L1D_plp_TI_mode=10))&&(L1D_plp_mod=0000)) {
-    uint8_t     L1D_plp_TI_extended_interleaving:1;
+        
+		//if (((L1D_plp_TI_mode=01) || (L1D_plp_TI_mode=10))&&(L1D_plp_mod=0000)) {
+			uint8_t     L1D_plp_TI_extended_interleaving:1;
         //}
+	
         //if (L1D_plp_TI_mode=01) {
-    uint8_t     L1D_plp_CTI_depth:3;
-    uint16_t    L1D_plp_CTI_start_row:11;
-        //}else if (L1D_plp_TI_mode=10) {
-    uint8_t     L1D_plp_HTI_inter_subframe:1;
-    uint8_t     L1D_plp_HTI_num_ti_blocks:4;
-    uint16_t    L1D_plp_HTI_num_fec_blocks_max:12;
-            //if (L1D_plp_HTI_inter_subframe=0) {
-    uint16_t    L1D_plp_HTI_num_fec_blocks:12;
+			uint8_t     L1D_plp_CTI_depth:3;
+			uint16_t    L1D_plp_CTI_start_row:11;
+		//}else if (L1D_plp_TI_mode=10) {
+			uint8_t     L1D_plp_HTI_inter_subframe:1;
+			uint8_t     L1D_plp_HTI_num_ti_blocks:4;
+			uint16_t    L1D_plp_HTI_num_fec_blocks_max:12;
+			//if (L1D_plp_HTI_inter_subframe=0) {
+				uint16_t    L1D_plp_HTI_num_fec_blocks:12;
             //} else {
                 //for (k=0..L1D_plp_HTI_num_ti_blocks) {
-    ATSC3_VECTOR_BUILDER_STRUCT(L1D_plp_HTI_num_fec_blocks);
+					ATSC3_VECTOR_BUILDER_STRUCT(L1D_plp_HTI_num_fec_blocks);
                 //}
             //}
     uint8_t     L1D_plp_HTI_cell_interleaver:1;
@@ -297,6 +303,10 @@ typedef struct L1D_PLP_parameters {
 //}
     
 } L1D_PLP_parameters_t;
+
+ATSC3_VECTOR_BUILDER_METHODS_INTERFACE(L1D_PLP_parameters, L1D_plp_bonded_rf_id);
+ATSC3_VECTOR_BUILDER_METHODS_INTERFACE(L1D_PLP_parameters, L1D_plp_HTI_num_fec_blocks);
+
 
 //for (i=0 .. L1B_num_subframes)
 typedef struct L1D_subframe_parameters {
