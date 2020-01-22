@@ -1273,7 +1273,7 @@ atsc3_preamble_packet_t* atsc3_stltp_parse_preamble_packet(atsc3_stltp_preamble_
         //1
 		L1D_subframe_parameters->L1D_frequency_interleaver = block_Read_uint8_bitlen(block, 1);
 
-		if (((i=0) && (atsc3_preamble_packet->L1_basic_signaling.L1B_first_sub_sbs_first ||
+		if (((i==0) && (atsc3_preamble_packet->L1_basic_signaling.L1B_first_sub_sbs_first ||
 					   atsc3_preamble_packet->L1_basic_signaling.L1B_first_sub_sbs_last)) ||
 			((i>0) && (L1D_subframe_parameters->L1D_sbs_first || L1D_subframe_parameters->L1D_sbs_last))) {
 			
@@ -1530,6 +1530,59 @@ void atsc3_preamble_packet_dump(atsc3_preamble_packet_t* atsc3_preamble_packet) 
 	}
 	
 	//jjustman-2020-01-22: TODO: iterate over L1D_subframe_parameters -> plp, etc
+	
+	for(int i=0; i < atsc3_preamble_packet->L1_detail_signaling.L1D_subframe_parameters_v.count; i++) {
+		L1D_subframe_parameters_t* L1D_subframe_parameters = atsc3_preamble_packet->L1_detail_signaling.L1D_subframe_parameters_v.data[i];
+		if(i > 0) {
+			__STLTP_PARSER_INFO("preamble: L1D: subframe: %d, L1D_mimo: %d, L1D_miso: %d, L1D_fft_size: %d, L1D_reduced_carriers: %d, L1D_guard_interval: %d, L1D_num_ofdm_symbols: %d",
+								i,
+								L1D_subframe_parameters->L1D_mimo,
+								L1D_subframe_parameters->L1D_miso,
+								L1D_subframe_parameters->L1D_fft_size,
+								L1D_subframe_parameters->L1D_reduced_carriers,
+								L1D_subframe_parameters->L1D_guard_interval,
+								L1D_subframe_parameters->L1D_num_ofdm_symbols);
+			
+			__STLTP_PARSER_INFO("preamble: L1D: subframe: %d, L1D_scattered_pilot_pattern: %d, L1D_scattered_pilot_boost: %d, L1D_sbs_first: %d, L1D_sbs_last: %d, L1D_subframe_multiplex: %d",
+								i,
+								L1D_subframe_parameters->L1D_scattered_pilot_pattern,
+								L1D_subframe_parameters->L1D_scattered_pilot_boost,
+								L1D_subframe_parameters->L1D_sbs_first,
+								L1D_subframe_parameters->L1D_sbs_last,
+								L1D_subframe_parameters->L1D_subframe_multiplex);
+		}
+		
+		__STLTP_PARSER_INFO("preamble: L1D: subframe: %d, L1D_frequency_interleaver: %d, L1D_sbs_null_cells: %d, num_plp: %d ",
+							i,
+							L1D_subframe_parameters->L1D_frequency_interleaver,
+							L1D_subframe_parameters->L1D_sbs_null_cells,
+							L1D_subframe_parameters->L1D_num_plp);
+		
+		for(int k=0; k < L1D_subframe_parameters->L1D_PLP_parameters_v.count; k++) {
+			L1D_PLP_parameters_t* L1D_PLP_parameters = L1D_subframe_parameters->L1D_PLP_parameters_v.data[k];
+			
+			__STLTP_PARSER_INFO("preamble: L1D: plp: id: %d, lls_flag: %d, layer: %d, start: %d, size: %d, scrambler: %d, fec: %d, mod: %d, cod: %d",
+								L1D_PLP_parameters->L1D_plp_id,
+								L1D_PLP_parameters->L1D_plp_lls_flag,
+								L1D_PLP_parameters->L1D_plp_layer,
+								L1D_PLP_parameters->L1D_plp_start,
+								L1D_PLP_parameters->L1D_plp_size,
+								L1D_PLP_parameters->L1D_plp_scrambler_type,
+								L1D_PLP_parameters->L1D_plp_fec_type,
+								L1D_PLP_parameters->L1D_plp_mod,
+								L1D_PLP_parameters->L1D_plp_cod);
+			
+			__STLTP_PARSER_INFO("preamble: L1D: plp: id: %d, L1D_plp_TI_mode: %d, L1D_plp_type: %d, L1D_plp_num_subslices: %d, L1D_plp_subslice_interval: %d, L1D_plp_ldm_injection_level: %d",
+								L1D_PLP_parameters->L1D_plp_id,
+								L1D_PLP_parameters->L1D_plp_TI_mode,
+								L1D_PLP_parameters->L1D_plp_type,
+													
+								L1D_PLP_parameters->L1D_plp_num_subslices,
+								L1D_PLP_parameters->L1D_plp_subslice_interval,
+													
+								L1D_PLP_parameters->L1D_plp_ldm_injection_level);
+		}
+	}
 	
     
 	__STLTP_PARSER_INFO("preamble: L1D: bsid: %d", atsc3_preamble_packet->L1_detail_signaling.L1D_bsid);
