@@ -637,6 +637,107 @@ void block_Destroy(block_t** a_ptr) {
     }
 }
 
+/*
+ bit-unpacking functions for parsing A/322 variable length L1(b/d) structs
+
+ read from a bit pointer field for a variable length size field
+ 
+ e.g. _bitpos = 0 and len = 2 then
+        
+    res = src->p_buffer[i] >> (8-2) && 0x2
+    _bitpos = 2;
+
+ e.g. _bitpos = 7 and len = 3 then
+    res = (src->p_buffer[i] & (8 - _bitpos)) << (len - (8 - _bitpos) | (src->p_buffer[i+1]) >> (bitpos + (len - (8-bitpos) % 8) & 0x(len(8- bitpos))
+ or so
+ 
+ bit[0]
+ --------
+ 00000000
+ 
+ src->_bitpos is left to right (e.g. 0 to 7)
+ 
+ 
+ int mask = ((((1 << (loop_read_size - 1)) - 1) << 1) | 1);
+
+ */
+uint8_t block_Read_uint8_bitlen(block_t* src, int bitlen) {
+    uint8_t ret = 0;
+    
+    if(bitlen <= (8 - src->_bitpos)) {
+        int to_shift = (8 - src->_bitpos) - bitlen;
+        int to_mask = ((((1 << (bitlen - 1)) - 1) << 1) | 1);
+
+        //single byte accessor
+        ret = (src->p_buffer[src->i_pos] >> to_shift) & to_mask;
+        
+        src->_bitpos = (src->_bitpos + bitlen) % 8;
+        if(src->_bitpos == 0) {
+            src->i_pos++;
+        }
+    } else {
+        //we need to wrap to the next byte and read
+        int to_mask_msb_n = (8 - src->_bitpos);
+        int to_mask_msb = ((((1 << (to_mask_msb_n - 1)) - 1) << 1) | 1);
+        int to_shift_l = bitlen - to_mask_msb_n;
+        int remainder_to_mask_n = bitlen - to_mask_msb_n;
+        int remainder_to_mask = ((((1 << (remainder_to_mask_n - 1)) - 1) << 1) | 1);
+        int remainder_to_shift = 8 - remainder_to_mask_n;
+        ret = ((src->p_buffer[src->i_pos++] & to_mask_msb) << to_shift_l) | ((src->p_buffer[src->i_pos] >> remainder_to_shift) & remainder_to_mask);
+
+        src->_bitpos = remainder_to_mask;
+    }
+    
+    return ret;
+}
+
+uint16_t block_Read_uint16_bitlen(block_t* src, int bitlen) {
+    uint16_t ret = 0;
+    
+    int bits_remaining = bitlen;
+    while(bits_remaining > 0) {
+        int loop_read_size = (bits_remaining > 8 ? 8 - src->_bitpos : (bits_remaining > (8 - src->_bitpos) ? 8 - src->_bitpos : bits_remaining));
+        int mask = ((((1 << (loop_read_size - 1)) - 1) << 1) | 1);
+
+        ret |= (src->p_buffer[src->i_pos] & mask) << (bits_remaining - loop_read_size);
+        
+        bits_remaining -= loop_read_size;
+        
+        src->_bitpos = (src->_bitpos + loop_read_size) % 8;
+        if(src->_bitpos == 0) {
+            src->i_pos++;
+        }
+    }
+
+    return ret;
+}
+
+uint32_t block_Read_uint32_bitlen(block_t* src, int bitlen) {
+    return 0;
+}
+
+uint64_t block_Read_uint64_bitlen(block_t* src, int bitlen) {
+    return 0;
+}
+
+//TODO: check for _bitpos
+//read from network to host aligned short/long/double long
+uint16_t block_Read_uint16_ntohs(block_t* src) {
+    uint16_t ret = ntohs(*((uint16_t*)(&src->p_buffer[src->i_pos])));
+    src->i_pos += 2;
+    return ret;
+}
+
+uint32_t block_Read_uint32_ntohl(block_t* src) {
+    uint32_t ret = ntohl(*((uint32_t*)(&src->p_buffer[src->i_pos])));
+    src->i_pos += 4;
+    return ret;
+}
+uint64_t block_Read_uint64_ntohul(block_t* src) {
+    return 0;
+}
+
+
 void freesafe(void* tofree) {
 	if(tofree) {
 		free(tofree);

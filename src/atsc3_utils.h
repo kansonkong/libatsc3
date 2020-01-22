@@ -92,6 +92,7 @@ typedef struct atsc3_block {
 	uint8_t* p_buffer;
 	uint32_t p_size;
 	uint32_t i_pos;
+    uint8_t  _bitpos;
     uint8_t  _refcnt;
     uint8_t  _is_alloc;
 } block_t;
@@ -124,6 +125,19 @@ uint32_t block_Remaining_size(block_t* src);
 bool block_Valid(block_t* src);
 uint8_t* block_Get(block_t* src);
 uint32_t block_Len(block_t* src);
+
+//bit-unpacking functions for parsing A/322 variable length L1(b/d) structs
+uint8_t block_Read_uint8_bitlen(block_t* src, int bitlen);
+uint16_t block_Read_uint16_bitlen(block_t* src, int bitlen);
+uint32_t block_Read_uint32_bitlen(block_t* src, int bitlen);
+uint64_t block_Read_uint64_bitlen(block_t* src, int bitlen);
+
+//read from network to host aligned short/long/double long
+uint16_t block_Read_uint16_ntohs(block_t* src);
+uint32_t block_Read_uint32_ntohl(block_t* src);
+uint64_t block_Read_uint64_ntohul(block_t* src);
+
+
 
 #define block_RefZero(a) ({ a->_refcnt = 0; })
 #define block_Release(a) ({ _ATSC3_UTILS_TRACE("UTRACE:DECR:%p:%s, block_Refcount: decrementing to: %d, block: %p (p_buffer: %p)", *a, __FUNCTION__, (*a->_refcnt)-1, *a, *a->p_buffer);  _block_Release(a); })
