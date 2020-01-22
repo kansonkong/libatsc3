@@ -311,20 +311,20 @@ ATSC3_VECTOR_BUILDER_METHODS_INTERFACE(L1D_PLP_parameters, L1D_plp_HTI_num_fec_b
 //for (i=0 .. L1B_num_subframes)
 typedef struct L1D_subframe_parameters {
     //if(i>0)
-    uint8_t     L1D_mimo:1;
-    uint8_t     L1D_miso:2;
-    uint8_t     L1D_fft_size:2;
-    uint8_t     L1D_reduced_carriers:3;
-    uint8_t     L1D_guard_interval:4;
-    uint16_t    L1D_num_ofdm_symbols:11;
-    uint8_t     L1D_scattered_pilot_pattern:5;
-    uint8_t     L1D_scattered_pilot_boost:3;
-    uint8_t     L1D_sbs_first:1;
-    uint8_t     L1D_sbs_last:1;
+		uint8_t     L1D_mimo:1;
+		uint8_t     L1D_miso:2;
+		uint8_t     L1D_fft_size:2;
+		uint8_t     L1D_reduced_carriers:3;
+		uint8_t     L1D_guard_interval:4;
+		uint16_t    L1D_num_ofdm_symbols:11;
+		uint8_t     L1D_scattered_pilot_pattern:5;
+		uint8_t     L1D_scattered_pilot_boost:3;
+		uint8_t     L1D_sbs_first:1;
+		uint8_t     L1D_sbs_last:1;
     //}
     
     //if(L1B_num_subframes>0)
-    uint8_t     L1D_subframe_multiplex:1;
+		uint8_t     L1D_subframe_multiplex:1;
     //}
     
     uint8_t     L1D_frequency_interleaver:1;
@@ -332,7 +332,7 @@ typedef struct L1D_subframe_parameters {
     /*
      if (((i=0)&&(L1B_first_sub_sbs_first || L1B_first_sub_sbs_last)) || ((i>0)&&(L1D_sbs_first | L1D_sbs_last))) {
      */
-    uint16_t    L1D_sbs_null_cells:13;
+		uint16_t    L1D_sbs_null_cells:13;
     //}
     
     uint8_t     L1D_num_plp;
