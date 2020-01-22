@@ -166,9 +166,9 @@ typedef struct L1_basic_signaling {
     //else
     uint16_t    L1B_time_offset:16;
     uint8_t     L1B_additional_samples:7;
+    //end else
     
     uint8_t     L1B_num_subframes:8;
-    
     uint8_t     L1B_preamble_num_symbols:3;
     uint8_t     L1B_preamble_reduced_carriers:3;
     uint8_t     L1B_L1_Detail_content_tag:2;

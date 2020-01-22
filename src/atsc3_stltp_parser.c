@@ -1389,12 +1389,53 @@ cleanup:
 
 void atsc3_preamble_packet_dump(atsc3_preamble_packet_t* atsc3_preamble_packet) {
     
-    __STLTP_PARSER_INFO("preamble: L1B: version: %d, mimo: %d, lls_flag: %d, time_info: %d, return_channel: %d",
+    __STLTP_PARSER_INFO("preamble: L1B: version: %d, mimo: %d, lls_flag: %d, time_info: %d, return_channel: %d, papr_reduction: %d, frame_length mode: %d",
                         atsc3_preamble_packet->L1_basic_signaling.L1B_version,
                         atsc3_preamble_packet->L1_basic_signaling.L1B_mimo_scattered_pilot_encoding,
                         atsc3_preamble_packet->L1_basic_signaling.L1B_lls_flag,
                         atsc3_preamble_packet->L1_basic_signaling.L1B_time_info_flag,
-                        atsc3_preamble_packet->L1_basic_signaling.L1B_return_channel_flag
+                        atsc3_preamble_packet->L1_basic_signaling.L1B_return_channel_flag,
+                        atsc3_preamble_packet->L1_basic_signaling.L1B_papr_reduction,
+                        atsc3_preamble_packet->L1_basic_signaling.L1B_frame_length_mode
                         );
+    if(atsc3_preamble_packet->L1_basic_signaling.L1B_frame_length_mode == 0) {
+        __STLTP_PARSER_INFO("preamble: L1B: frame length: %d, excess samples per symbol: %d",
+                            atsc3_preamble_packet->L1_basic_signaling.L1B_frame_length,
+                            atsc3_preamble_packet->L1_basic_signaling.L1B_excess_samples_per_symbol);
+    } else {
+        __STLTP_PARSER_INFO("preamble: L1B: time offset: %d, additional samples: %d",
+                            atsc3_preamble_packet->L1_basic_signaling.L1B_time_offset,
+                            atsc3_preamble_packet->L1_basic_signaling.L1B_additional_samples);
+    }
+    
+    __STLTP_PARSER_INFO("preamble: L1B: num subframes: %d, preamble num symbols: %d, preamble reduced carriers: %d, l1_detail content tag: %d, l1_detail size bytes: %d",
+                        atsc3_preamble_packet->L1_basic_signaling.L1B_num_subframes,
+                        atsc3_preamble_packet->L1_basic_signaling.L1B_preamble_num_symbols,
+                        atsc3_preamble_packet->L1_basic_signaling.L1B_preamble_reduced_carriers,
+                        atsc3_preamble_packet->L1_basic_signaling.L1B_L1_Detail_content_tag,
+                        atsc3_preamble_packet->L1_basic_signaling.L1B_L1_Detail_size_bytes
+                        );
+    
+    __STLTP_PARSER_INFO("preamble: L1B: l1 detail fec type: %d, additional parity mode: %d, l1d total cells: %d",
+                        atsc3_preamble_packet->L1_basic_signaling.L1B_L1_Detail_fec_type,
+                        atsc3_preamble_packet->L1_basic_signaling.L1B_L1_Detail_additional_parity_mode,
+						atsc3_preamble_packet->L1_basic_signaling.L1B_L1_Detail_total_cells
+                        );
+    
+	__STLTP_PARSER_INFO("preamble: L1B: l1b first sub mimo: %d, first sub miso: %d, first sub fft size: %d, first sub reduced carriers: %d, first sub guard interval: %d",
+						atsc3_preamble_packet->L1_basic_signaling.L1B_first_sub_mimo,
+						atsc3_preamble_packet->L1_basic_signaling.L1B_first_sub_miso,
+						atsc3_preamble_packet->L1_basic_signaling.L1B_first_sub_fft_size,
+						atsc3_preamble_packet->L1_basic_signaling.L1B_first_sub_reduced_carriers,
+						atsc3_preamble_packet->L1_basic_signaling.L1B_first_sub_guard_interval
+						);
+	
+	__STLTP_PARSER_INFO("preamble: L1B: first sub num ofdm symbols: %d, first sub scattered pilot pattern: %d, first sub scatterd pilot boost: %d, first sub sbs_first: %d, first sub sbs_last: %d",
+						atsc3_preamble_packet->L1_basic_signaling.L1B_first_sub_num_ofdm_symbols,
+						atsc3_preamble_packet->L1_basic_signaling.L1B_first_sub_scattered_pilot_pattern,
+						atsc3_preamble_packet->L1_basic_signaling.L1B_first_sub_scattered_pilot_boost,
+						atsc3_preamble_packet->L1_basic_signaling.L1B_first_sub_sbs_first,
+						atsc3_preamble_packet->L1_basic_signaling.L1B_first_sub_sbs_last
+						);
     
 }
