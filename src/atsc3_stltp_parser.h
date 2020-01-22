@@ -37,7 +37,12 @@ atsc3_stltp_preamble_packet_t* atsc3_stltp_preamble_packet_extract(atsc3_stltp_t
 atsc3_stltp_timing_management_packet_t* atsc3_stltp_timing_management_packet_extract(atsc3_stltp_tunnel_packet_t* atsc3_stltp_tunnel_packet_current);
 
 //parse to concrete types
+atsc3_preamble_packet_t* atsc3_stltp_parse_preamble_packet(atsc3_stltp_preamble_packet_t* atsc3_stltp_preamble_packet);
 atsc3_timing_management_packet_t* atsc3_stltp_parse_timing_management_packet(atsc3_stltp_timing_management_packet_t* atsc3_stltp_timing_management_packet);
+
+//utils
+void atsc3_preamble_packet_dump(atsc3_preamble_packet_t* atsc3_preamble_packet);
+void atsc3_timing_management_packet_dump(atsc3_timing_management_packet_t* atsc3_timing_management_packet);
 
 #define __STLTP_PARSER_ERROR(...)       __LIBATSC3_TIMESTAMP_ERROR(__VA_ARGS__);
 #define __STLTP_PARSER_WARN(...)        __LIBATSC3_TIMESTAMP_WARN(__VA_ARGS__);
