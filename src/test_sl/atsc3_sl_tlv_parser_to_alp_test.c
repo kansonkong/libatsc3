@@ -36,12 +36,24 @@ FILE* atsc3_sl_tlv_open_filename(const char* sl_tlv_filename) {
 }
 
 #define SL_TLV_BLOCK_SIZE 65535
+#define SL_TLV_REPLAY_TEST_FILENAME_DEFAULT "testdata/2019-11-22-647mhz.tlv.bin"
 
 int main(int argc, char* argv[] ) {
-
-    const char* SL_TLV_REPLAY_TEST_FILENAME = "testdata/2019-11-22-647mhz.tlv.bin";
+	char* SL_TLV_REPLAY_TEST_FILENAME = NULL;
+	
+	if(argc == 2) {
+		//load our file from the command line parameters
+		SL_TLV_REPLAY_TEST_FILENAME = argv[1];
+	} else {
+		SL_TLV_REPLAY_TEST_FILENAME = SL_TLV_REPLAY_TEST_FILENAME_DEFAULT;
+	}
 
     FILE* atsc3_sl_tlv_fp = atsc3_sl_tlv_open_filename(SL_TLV_REPLAY_TEST_FILENAME);
+	if(!atsc3_sl_tlv_fp) {
+		_ATSC3_SL_TLV_PARSER_TO_ALP_TEST_ERROR("Unable to open filename: %s", SL_TLV_REPLAY_TEST_FILENAME);
+		exit(1);
+	}
+	
     _ATSC3_SL_TLV_PARSER_TO_ALP_TEST_DEBUG("Opening SL TLV.bin: %s", SL_TLV_REPLAY_TEST_FILENAME);
 
     uint8_t* buf = calloc(SL_TLV_BLOCK_SIZE, sizeof(uint8_t));
@@ -49,6 +61,8 @@ int main(int argc, char* argv[] ) {
     atsc3_sl_tlv_payload_t* atsc3_sl_tlv_payload = NULL;
 
     int bytes_read = 0;
+	int total_bytes_read = 0;
+	
     int alp_completed_packets_parsed = 0;
 
     if(atsc3_sl_tlv_fp) {
@@ -56,6 +70,8 @@ int main(int argc, char* argv[] ) {
             _ATSC3_SL_TLV_PARSER_TO_ALP_TEST_DEBUG("fread: position: %ld", ftell(atsc3_sl_tlv_fp));
 
         	bytes_read = fread(buf, 1, 65535, atsc3_sl_tlv_fp);
+			total_bytes_read += bytes_read;
+			
         	if(bytes_read > 0) {
         		block_Write(atsc3_sl_tlv_block, buf, bytes_read);
         		block_Rewind(atsc3_sl_tlv_block);
@@ -95,7 +111,7 @@ int main(int argc, char* argv[] ) {
 
     _ATSC3_SL_TLV_PARSER_TO_ALP_TEST_DEBUG("Completed parsing of SL TLV.bin: %s, total TLV bytes read: %d, ALP packets complete parsed: %d",
     		SL_TLV_REPLAY_TEST_FILENAME,
-			bytes_read,
+			total_bytes_read,
 			alp_completed_packets_parsed);
 
     return 0;
