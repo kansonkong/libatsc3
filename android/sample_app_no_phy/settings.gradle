@@ -1,0 +1,5 @@
+include ':app'
+rootProject.name='libatsc3 Android Sample App (No PHY)'
+gradle.ext.exoplayerRoot = 'Exoplayer'
+gradle.ext.exoplayerModulePrefix = 'exoplayer-'
+apply from: new File(gradle.ext.exoplayerRoot, 'core_settings.gradle')

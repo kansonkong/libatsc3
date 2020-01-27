@@ -239,7 +239,7 @@ atsc3_stltp_tunnel_packet_t* atsc3_stltp_raw_packet_extract_inner_from_outer_pac
                 block_Release(&inner_payload_current);
                 return NULL;
             }
-            
+        
             if(!inner_packet) {
                 __STLTP_PARSER_ERROR("atsc3_stltp_tunnel_packet_extract_inner_from_outer_packet: re-fragmentation from previous packet fragment failed, last len: %u, inner_packet is null",
                                     last_outer_packet_bytes_remaining_to_parse);
@@ -855,3 +855,735 @@ atsc3_stltp_timing_management_packet_t* atsc3_stltp_timing_management_packet_ext
 
 
 
+
+
+//timing_management_packet_t
+
+atsc3_timing_management_packet_t* atsc3_stltp_parse_timing_management_packet(atsc3_stltp_timing_management_packet_t* atsc3_stltp_timing_management_packet) {
+    
+    uint8_t *binary_payload = atsc3_stltp_timing_management_packet->payload;
+    uint8_t *binary_payload_start = binary_payload;
+
+    uint32_t binary_payload_length = atsc3_stltp_timing_management_packet->payload_length;
+    
+    atsc3_timing_management_packet_t* atsc3_timing_management_packet = calloc(1, sizeof(atsc3_timing_management_packet_t));
+
+    //length: 16
+    atsc3_timing_management_packet->length = ntohs(*((uint16_t*)binary_payload));
+    binary_payload += 2;
+    
+    __STLTP_PARSER_INFO("---------------------------------------");
+    __STLTP_PARSER_INFO("Timing Management Packet Header: pointer: %p, sequence_number: %d, port: %d, length: %u, TMP.Structure_Data.length: %d",
+                      binary_payload,
+                      atsc3_stltp_timing_management_packet->ip_udp_rtp_packet_inner->rtp_header->sequence_number,
+                      atsc3_stltp_timing_management_packet->ip_udp_rtp_packet_inner->udp_flow.dst_port,
+                      atsc3_stltp_timing_management_packet->payload_length,
+                      atsc3_timing_management_packet->length);
+    __STLTP_PARSER_INFO("Raw hex: 0x%02hhX 0x%02hhX 0x%02hhX 0x%02hhX", binary_payload[0], binary_payload[1], binary_payload[2], binary_payload[3]);
+    __STLTP_PARSER_INFO("---------------------------------------");
+    
+    /* debugging
+    
+    for(int i=0; i < atsc3_stltp_timing_management_packet->payload_length; i+=4) {
+        __STLTP_PARSER_INFO("byte: %d: 0x%02x 0x%02x 0x%02x 0x%02x", i, binary_payload_start[i], binary_payload_start[i+1], binary_payload_start[i+2], binary_payload_start[i+3]);
+    }
+    
+    */
+    
+    for(int i=0; i < atsc3_timing_management_packet->length; i+=4) {
+        __STLTP_PARSER_INFO("byte: %d: 0x%02x 0x%02x 0x%02x 0x%02x", i, binary_payload_start[i], binary_payload_start[i+1], binary_payload_start[i+2], binary_payload_start[i+3]);
+    }
+    
+    
+    //version_major: 4
+    atsc3_timing_management_packet->version_major = (*binary_payload >> 4) & 0xF;
+    //version_minor: 4
+    atsc3_timing_management_packet->version_minor = (*binary_payload) & 0xF;
+    binary_payload++;
+    
+    //maj_log_rep_cnt_pre: 4
+    atsc3_timing_management_packet->maj_log_rep_cnt_pre = (*binary_payload >> 4) & 0xF;
+    //maj_log_rep_cnt_tim: 4
+    atsc3_timing_management_packet->maj_log_rep_cnt_tim = (*binary_payload) & 0xF;
+    binary_payload++;
+    
+    //bootstrap_major: 4
+    atsc3_timing_management_packet->bootstrap_major = (*binary_payload >> 4) & 0xF;
+    //bootstrap_minor: 4
+    atsc3_timing_management_packet->bootstrap_minor = (*binary_payload) & 0xF;
+    binary_payload++;
+       
+    //5 bytes
+    atsc3_timing_management_packet->min_time_to_next = (*binary_payload >> 3) & 0x1F;
+    //2 bytes
+    atsc3_timing_management_packet->system_bandwidth = (*binary_payload >> 1) & 0x3;
+    
+    //bsr_coefficient: 7
+    atsc3_timing_management_packet->bsr_coefficient = (*binary_payload & 0x1) << 6;
+    binary_payload++;
+    atsc3_timing_management_packet->bsr_coefficient |= (*binary_payload >> 2 ) & 0x3F;
+    
+    //preamble_structure: 8
+    atsc3_timing_management_packet->preamble_structure = (*binary_payload & 0x3) << 6;
+    binary_payload++;
+    atsc3_timing_management_packet->preamble_structure |= (*binary_payload >> 6) & 0x3F;
+    
+    //ea_wakeup: 2
+    atsc3_timing_management_packet->ea_wakeup = (*binary_payload) & 0x3;
+    binary_payload++;
+    
+    //num_emission_tim: 6
+    atsc3_timing_management_packet->num_emission_tim = (*binary_payload >> 2) & 0x3F;
+    
+    //num_xmtrs_in_group: 6 - 2 bytes
+    atsc3_timing_management_packet->num_xmtrs_in_group = (*binary_payload & 0x3) << 4;
+    binary_payload++;
+    //4 bytes remaining
+    atsc3_timing_management_packet->num_xmtrs_in_group |= (*binary_payload >> 4) & 0xF;
+    
+    //xmtr_group_num:7
+    atsc3_timing_management_packet->xmtr_group_num = ((*binary_payload) & 0xF) << 4;
+    //remaining 3 bytes
+    binary_payload++;
+    atsc3_timing_management_packet->xmtr_group_num |= (*binary_payload >> 5) & 0x7;
+    
+    //remaining 5 bytes
+    //maj_log_override: 3
+    atsc3_timing_management_packet->maj_log_override = (*binary_payload >> 2) & 0x7;
+    
+    //num_miso_filt_codes: 2
+    atsc3_timing_management_packet->maj_log_override = (*binary_payload) & 0x3;
+    binary_payload++;
+    
+    //tx_carrier_offset: 2
+    atsc3_timing_management_packet->tx_carrier_offset = (*binary_payload >> 6) & 0x3;
+    
+    //reserved: 6 bits, all 1's
+    atsc3_timing_management_packet->_reserved = (*binary_payload) & 0x3F;
+    binary_payload++;
+    
+    if(atsc3_timing_management_packet->_reserved != 0x3F) {
+        __STLTP_PARSER_WARN("timing management packet reserved is not 0x3F (0011 1111), val is: 0x%02x", atsc3_timing_management_packet->_reserved);
+    }
+    
+    //process bootstrap_timing_data
+    __STLTP_PARSER_DEBUG("timing management: processing bootstrap_timing with %d num_emission_tim entries at pos: %d", atsc3_timing_management_packet->num_emission_tim, binary_payload - binary_payload_start);
+    for(int i=0; i <= atsc3_timing_management_packet->num_emission_tim; i++) {
+        atsc3_bootstrap_timing_data_t* atsc3_bootstrap_timing_data = calloc(1, sizeof(atsc3_bootstrap_timing_data_t));
+        atsc3_bootstrap_timing_data->seconds = ntohl(*((uint32_t*)binary_payload));
+        binary_payload += 4;
+        atsc3_bootstrap_timing_data->nanoseconds = ntohl(*((uint32_t*)binary_payload));
+        binary_payload += 4;
+
+        __STLTP_PARSER_DEBUG("timing management: adding num_emission: %d, bootstrap_timing with sec.ns: %d.%d", i, atsc3_bootstrap_timing_data->seconds, atsc3_bootstrap_timing_data->nanoseconds);
+
+        atsc3_timing_management_packet_add_atsc3_bootstrap_timing_data(atsc3_timing_management_packet, atsc3_bootstrap_timing_data);
+    }
+        
+    //process per_transmitter_data
+    __STLTP_PARSER_DEBUG("timing management: processing per transmitter data with %d per_transmitter_data entries, pos: %d", atsc3_timing_management_packet->num_xmtrs_in_group, binary_payload - binary_payload_start);
+
+    for(int i=0; i <= atsc3_timing_management_packet->num_xmtrs_in_group; i++) {
+        //atsc3_per_transmitter_data_t
+        atsc3_per_transmitter_data_t* atsc3_per_transmitter_data = calloc(1, sizeof(atsc3_per_transmitter_data_t));
+        //xmtr_id: 13 -> 8, 5
+        atsc3_per_transmitter_data->xmtr_id = (*binary_payload << 5);
+        binary_payload++;
+        atsc3_per_transmitter_data->xmtr_id |= (*binary_payload >> 3) & 0x1F;
+        
+        //tx_time_offset: 16
+        atsc3_per_transmitter_data->tx_time_offset = ((*binary_payload) & 0x7) << 13; //3 bits
+        binary_payload++;
+        atsc3_per_transmitter_data->tx_time_offset |= (*binary_payload) << 5; //8 bits
+        binary_payload++;
+        atsc3_per_transmitter_data->tx_time_offset |= (*binary_payload >> 3) & 0x1F; //remaining 5 bits
+        
+        //3 bits remaining
+        //txid_injection_lvl: 4
+        atsc3_per_transmitter_data->txid_injection_lvl = ((*binary_payload) & 0x7) << 1;
+        binary_payload++;
+        atsc3_per_transmitter_data->txid_injection_lvl |= ((*binary_payload) >> 7 ) & 0x1;
+        
+        //miso_filt_code_index: 2
+        atsc3_per_transmitter_data->miso_filt_code_index = ((*binary_payload) >> 5) & 0x3;
+        
+        //5 bits remaining
+        //reserved should be all 1's
+        //atsc3_per_transmitter_data->_reserved =
+        //
+        binary_payload+=4;
+    
+        __STLTP_PARSER_DEBUG("timing management: adding transmitter num: %d, xmtr_id: 0x%04x, tx_time_offset: 0x%04x (%0.1f uS), txid_injection_lvl: 0x%02x, miso_filt_code: 0x%02x",
+                             i,
+                             atsc3_per_transmitter_data->xmtr_id,
+                             atsc3_per_transmitter_data->tx_time_offset,
+                             ((int16_t) atsc3_per_transmitter_data->tx_time_offset) / 10.0,
+                             atsc3_per_transmitter_data->txid_injection_lvl,
+                             atsc3_per_transmitter_data->miso_filt_code_index);
+
+        atsc3_timing_management_packet_add_atsc3_per_transmitter_data(atsc3_timing_management_packet, atsc3_per_transmitter_data);
+    }
+    
+    //packet release time
+    //pkt_rls_seconds: 4
+    atsc3_timing_management_packet->packet_release_time.pkt_rls_seconds = (*binary_payload >> 4) & 0xF;
+    
+    /* pkt_rls_a-milliseconds shall be the milliseconds portion of the time of release from the Broadcast Gateway of the specific Timing and Management packet in which the value is found.
+     Its value shall be expressed as 10 bits representing the 3rd through 12th MSBs of the nanoseconds value of the TAI time when the first bit of the IP header of the Timing and Management
+     packets is released from the Broadcast Gateway.
+     Its range will be from 0 to 953 (decimal) as a consequence of the Period of an a-millisecond being slightly longer than precisely a millisecond.
+     
+     See the definition of an a-millisecond in Section 3.4.
+     
+     a-millisecond – A time interval approximately equal to one millisecond derived from a binary
+     count of nanoseconds and actually equaling 220 nanoseconds, which represents 1,048,576
+     nanoseconds (i.e., having a Period of 1.048576 milliseconds).
+     
+     */
+    
+    //pkt_rls_a_miliseconds: 10, (4 | 6)
+    atsc3_timing_management_packet->packet_release_time.pkt_rls_a_milliseconds = (*binary_payload & 0xF) << 6;
+    binary_payload++;
+    atsc3_timing_management_packet->packet_release_time.pkt_rls_a_milliseconds |= (*binary_payload >> 2) & 0x3F;
+    uint32_t pkt_rls_a_miliseconds_temp = atsc3_timing_management_packet->packet_release_time.pkt_rls_a_milliseconds;
+    atsc3_timing_management_packet->packet_release_time.pkt_rls_computed_milliseconds = ((pkt_rls_a_miliseconds_temp << 20) * 1.048576);
+    
+    atsc3_timing_management_packet->packet_release_time._reserved = (*binary_payload) & 0x3;
+    binary_payload++;
+    
+    
+    if(atsc3_timing_management_packet->packet_release_time._reserved != 0x3) {
+        __STLTP_PARSER_WARN("timing management packet: packet_release_time reserved is not 0x3 (0011), val is: 0x%02x", atsc3_timing_management_packet->packet_release_time._reserved);
+    }
+    
+    __STLTP_PARSER_INFO("timing management packet: pkt_rls_seconds: %02d.%09d (a-milliseconds: %4d, 0x%04x)",
+                        atsc3_timing_management_packet->packet_release_time.pkt_rls_seconds,
+                        atsc3_timing_management_packet->packet_release_time.pkt_rls_computed_milliseconds,
+                        atsc3_timing_management_packet->packet_release_time.pkt_rls_a_milliseconds,
+                        atsc3_timing_management_packet->packet_release_time.pkt_rls_a_milliseconds);
+    
+    atsc3_timing_management_packet->error_check_data.crc16 = ntohs(*((uint16_t*)binary_payload));
+    binary_payload+=2;
+    
+    int parsed_length = binary_payload - binary_payload_start;
+    
+    __STLTP_PARSER_INFO("timing management packet: payload len: %d, parsed len: %d: (start: %p, binary_payload: %p)", atsc3_timing_management_packet->length, parsed_length, binary_payload_start, binary_payload);
+    
+    return atsc3_timing_management_packet;
+
+cleanup:
+    if(atsc3_timing_management_packet) {
+        free(atsc3_timing_management_packet);
+        atsc3_timing_management_packet = NULL;
+    }
+    
+    return NULL;
+}
+
+
+void atsc3_timing_management_packet_dump(atsc3_timing_management_packet_t* atsc3_timing_management_packet) {
+    
+    
+}
+
+/*
+    parse A/324 preamble packet from STLTP inner payload
+ */
+
+atsc3_preamble_packet_t* atsc3_stltp_parse_preamble_packet(atsc3_stltp_preamble_packet_t* atsc3_stltp_preamble_packet) {
+    uint8_t *binary_payload = atsc3_stltp_preamble_packet->payload;
+    uint8_t *binary_payload_start = binary_payload;
+    uint32_t binary_payload_length = atsc3_stltp_preamble_packet->payload_length;
+   
+    block_t* block = block_Duplicate_from_ptr(binary_payload, binary_payload_length);
+    block_Rewind(block);
+    
+    atsc3_preamble_packet_t* atsc3_preamble_packet = calloc(1, sizeof(atsc3_preamble_packet_t));
+
+    //length: 16
+    atsc3_preamble_packet->length = block_Read_uint16_ntohs(block);
+
+    __STLTP_PARSER_INFO("---------------------------------------");
+    __STLTP_PARSER_INFO("preamble packet header: pointer: %p, sequence_number: %d, port: %d, length: %u, PreamblePayload.length: %d",
+                 binary_payload,
+                 atsc3_stltp_preamble_packet->ip_udp_rtp_packet_inner->rtp_header->sequence_number,
+                 atsc3_stltp_preamble_packet->ip_udp_rtp_packet_inner->udp_flow.dst_port,
+                 atsc3_stltp_preamble_packet->payload_length,
+                 atsc3_preamble_packet->length);
+    __STLTP_PARSER_INFO("preamble: raw hex: 0x%02hhX 0x%02hhX 0x%02hhX 0x%02hhX", binary_payload[0], binary_payload[1], binary_payload[2], binary_payload[3]);
+    __STLTP_PARSER_INFO("---------------------------------------");
+
+    /* debugging
+    */
+    
+    //3 bits
+    atsc3_preamble_packet->L1_basic_signaling.L1B_version = block_Read_uint8_bitlen(block, 3);
+    //1 bit
+    atsc3_preamble_packet->L1_basic_signaling.L1B_mimo_scattered_pilot_encoding = block_Read_uint8_bitlen(block, 1);
+    //1 bit
+    atsc3_preamble_packet->L1_basic_signaling.L1B_lls_flag = block_Read_uint8_bitlen(block, 1);
+    //2 bits
+    atsc3_preamble_packet->L1_basic_signaling.L1B_time_info_flag = block_Read_uint8_bitlen(block, 2);
+    //1 bit
+    atsc3_preamble_packet->L1_basic_signaling.L1B_return_channel_flag = block_Read_uint8_bitlen(block, 1);
+    
+    //2 bits
+    atsc3_preamble_packet->L1_basic_signaling.L1B_papr_reduction = block_Read_uint8_bitlen(block, 2);
+    //1 bit
+    atsc3_preamble_packet->L1_basic_signaling.L1B_frame_length_mode = block_Read_uint8_bitlen(block, 1);
+    
+    if(atsc3_preamble_packet->L1_basic_signaling.L1B_frame_length_mode == 0) {
+        //10 bits
+        atsc3_preamble_packet->L1_basic_signaling.L1B_frame_length = block_Read_uint16_bitlen(block, 10);
+        //13 bits
+        atsc3_preamble_packet->L1_basic_signaling.L1B_excess_samples_per_symbol = block_Read_uint16_bitlen(block, 13);
+        
+    } else {
+        //16
+        atsc3_preamble_packet->L1_basic_signaling.L1B_time_offset = block_Read_uint16_bitlen(block, 16);
+        //7 bits
+        atsc3_preamble_packet->L1_basic_signaling.L1B_additional_samples = block_Read_uint16_bitlen(block, 7);
+    }
+    
+    //8 bits, 6 avail
+    atsc3_preamble_packet->L1_basic_signaling.L1B_num_subframes = block_Read_uint8_bitlen(block, 8);
+    //3 bits
+    atsc3_preamble_packet->L1_basic_signaling.L1B_preamble_num_symbols = block_Read_uint8_bitlen(block, 3);
+    //3 bits
+    atsc3_preamble_packet->L1_basic_signaling.L1B_preamble_reduced_carriers = block_Read_uint8_bitlen(block, 3);
+    
+    //2 bits
+    atsc3_preamble_packet->L1_basic_signaling.L1B_L1_Detail_content_tag = block_Read_uint8_bitlen(block, 2);
+    
+    //13 bits
+    atsc3_preamble_packet->L1_basic_signaling.L1B_L1_Detail_size_bytes = block_Read_uint16_bitlen(block, 13);
+
+    //L1B_L1_Detail_fec_type: 3 bits
+    atsc3_preamble_packet->L1_basic_signaling.L1B_L1_Detail_fec_type = block_Read_uint8_bitlen(block, 3);
+    
+    //2 bits
+    atsc3_preamble_packet->L1_basic_signaling.L1B_L1_Detail_additional_parity_mode = block_Read_uint8_bitlen(block, 2);
+    
+    //19 bits
+    atsc3_preamble_packet->L1_basic_signaling.L1B_L1_Detail_total_cells = block_Read_uint32_bitlen(block, 19);
+
+    //L1B_first_sub_mimo:1
+    atsc3_preamble_packet->L1_basic_signaling.L1B_first_sub_mimo = block_Read_uint8_bitlen(block, 1);
+
+    //2 bits
+    atsc3_preamble_packet->L1_basic_signaling.L1B_first_sub_miso = block_Read_uint8_bitlen(block, 2);
+    //2 bits
+    atsc3_preamble_packet->L1_basic_signaling.L1B_first_sub_fft_size = block_Read_uint8_bitlen(block, 2);
+    //3 bits
+    atsc3_preamble_packet->L1_basic_signaling.L1B_first_sub_reduced_carriers = block_Read_uint8_bitlen(block, 3);
+    
+    //4 bits
+    atsc3_preamble_packet->L1_basic_signaling.L1B_first_sub_guard_interval = block_Read_uint8_bitlen(block, 4);
+
+    //11 bits - 5 = 6
+    atsc3_preamble_packet->L1_basic_signaling.L1B_first_sub_num_ofdm_symbols = block_Read_uint16_bitlen(block, 11);
+    
+    //L1B_first_sub_scattered_pilot_pattern:5
+    atsc3_preamble_packet->L1_basic_signaling.L1B_first_sub_scattered_pilot_pattern = block_Read_uint8_bitlen(block, 5);
+    //3 bits
+    atsc3_preamble_packet->L1_basic_signaling.L1B_first_sub_scattered_pilot_boost = block_Read_uint8_bitlen(block, 3);
+    //1 bit
+    atsc3_preamble_packet->L1_basic_signaling.L1B_first_sub_sbs_first = block_Read_uint8_bitlen(block, 1);
+    //1 bit even...
+    atsc3_preamble_packet->L1_basic_signaling.L1B_first_sub_sbs_last = block_Read_uint8_bitlen(block, 1);
+    
+    //TODO: check reserved
+    block->i_pos += 6; //6*8 = 48bits
+    
+    atsc3_preamble_packet->L1_basic_signaling.L1B_crc = block_Read_uint32_ntohl(block);
+
+    //L1B done..now onto L1D
+    
+    int bytes_processed = block->i_pos;
+    int bytes_remaining = block->p_size - block->i_pos;
+    
+    //4 bits
+    atsc3_preamble_packet->L1_detail_signaling.L1D_version = block_Read_uint8_bitlen(block, 4);
+    
+    //3 bits
+    atsc3_preamble_packet->L1_detail_signaling.L1D_num_rf = block_Read_uint8_bitlen(block, 3);
+
+    for(int i=1; i < atsc3_preamble_packet->L1_detail_signaling.L1D_num_rf; i++) {
+        L1D_bonded_bsid_block_t* L1D_bonded_bsid_block = L1D_bonded_bsid_block_new();
+        
+        //16 bits
+		L1D_bonded_bsid_block->L1D_bonded_bsid =  block_Read_uint16_bitlen(block, 16);
+		
+        //reserved 3 bits
+		L1D_bonded_bsid_block->reserved = block_Read_uint8_bitlen(block, 3);
+        
+        L1_detail_signaling_add_L1D_bonded_bsid_block(&atsc3_preamble_packet->L1_detail_signaling, L1D_bonded_bsid_block);
+    }
+	
+    if(atsc3_preamble_packet->L1_basic_signaling.L1B_time_info_flag != 0x0) {
+        //32
+		atsc3_preamble_packet->L1_detail_signaling.L1D_time_sec_block.L1D_time_sec = block_Read_uint32_bitlen(block, 32);
+        
+        //10 bits
+		atsc3_preamble_packet->L1_detail_signaling.L1D_time_sec_block.L1D_time_msec = block_Read_uint16_bitlen(block, 10);
+		
+		if(atsc3_preamble_packet->L1_basic_signaling.L1B_time_info_flag != 0x01) {
+            //10 bits
+            //time usec
+            atsc3_preamble_packet->L1_detail_signaling.L1D_time_sec_block.L1D_time_usec = block_Read_uint16_bitlen(block, 10);
+            if(atsc3_preamble_packet->L1_basic_signaling.L1B_time_info_flag != 0x02) {
+                //10bits
+                //time nsec
+                atsc3_preamble_packet->L1_detail_signaling.L1D_time_sec_block.L1D_time_nsec = block_Read_uint16_bitlen(block, 10);
+            }
+        }
+    }
+    
+    for(int i=0; i <= atsc3_preamble_packet->L1_basic_signaling.L1B_num_subframes; i++) {
+		L1D_subframe_parameters_t* L1D_subframe_parameters = L1D_subframe_parameters_new();
+		
+        if(i > 0) {
+			//1 bit
+			L1D_subframe_parameters->L1D_mimo = block_Read_uint8_bitlen(block, 1);
+			//2 bit
+			L1D_subframe_parameters->L1D_miso = block_Read_uint8_bitlen(block, 2);
+			//2 bit
+			L1D_subframe_parameters->L1D_fft_size = block_Read_uint8_bitlen(block, 2);
+			//3 bit
+			L1D_subframe_parameters->L1D_reduced_carriers = block_Read_uint8_bitlen(block, 3);
+			//4 bit
+			L1D_subframe_parameters->L1D_guard_interval = block_Read_uint8_bitlen(block, 4);
+			//11 bit
+			L1D_subframe_parameters->L1D_num_ofdm_symbols = block_Read_uint16_bitlen(block, 11);
+			//5 bit
+			L1D_subframe_parameters->L1D_scattered_pilot_pattern = block_Read_uint8_bitlen(block, 5);
+			//3 bit
+			L1D_subframe_parameters->L1D_scattered_pilot_boost = block_Read_uint8_bitlen(block, 3);
+			//1 bit
+			L1D_subframe_parameters->L1D_sbs_first = block_Read_uint8_bitlen(block, 1);
+			//1 bit
+			L1D_subframe_parameters->L1D_sbs_last = block_Read_uint8_bitlen(block, 1);
+        }
+        
+        if(atsc3_preamble_packet->L1_basic_signaling.L1B_num_subframes > 0) {
+            //1 bit
+            L1D_subframe_parameters->L1D_subframe_multiplex = block_Read_uint8_bitlen(block, 1);
+        }
+        
+        //1
+		L1D_subframe_parameters->L1D_frequency_interleaver = block_Read_uint8_bitlen(block, 1);
+
+		if (((i==0) && (atsc3_preamble_packet->L1_basic_signaling.L1B_first_sub_sbs_first ||
+					   atsc3_preamble_packet->L1_basic_signaling.L1B_first_sub_sbs_last)) ||
+			((i>0) && (L1D_subframe_parameters->L1D_sbs_first || L1D_subframe_parameters->L1D_sbs_last))) {
+			
+            //13
+            //L1D_sbs_null_cells
+			L1D_subframe_parameters->L1D_sbs_null_cells = block_Read_uint16_bitlen(block, 13);
+
+        }
+        
+        //L1d_num_plp: 6 bits
+		L1D_subframe_parameters->L1D_num_plp = block_Read_uint8_bitlen(block, 6);
+        
+		for (int j=0; j <= L1D_subframe_parameters->L1D_num_plp; j++) {
+			L1D_PLP_parameters_t* L1D_PLP_parameters = L1D_PLP_parameters_new();
+			
+			//6 bits
+            L1D_PLP_parameters->L1D_plp_id = block_Read_uint8_bitlen(block, 6);
+
+			//1 bit
+            L1D_PLP_parameters->L1D_plp_lls_flag = block_Read_uint8_bitlen(block, 1);
+
+			//2 bit
+            L1D_PLP_parameters->L1D_plp_layer = block_Read_uint8_bitlen(block, 2);
+
+            //24 bit
+            L1D_PLP_parameters->L1D_plp_start = block_Read_uint32_bitlen(block, 24);
+
+            //24 bit
+            L1D_PLP_parameters->L1D_plp_size = block_Read_uint32_bitlen(block, 24);
+
+            //2 bits
+            L1D_PLP_parameters->L1D_plp_scrambler_type = block_Read_uint8_bitlen(block, 2);
+
+            //4 bits
+            L1D_PLP_parameters->L1D_plp_fec_type = block_Read_uint8_bitlen(block, 4);
+
+			if (L1D_PLP_parameters->L1D_plp_fec_type >= 0 && L1D_PLP_parameters->L1D_plp_fec_type <= 5) {
+				//4 bits
+				L1D_PLP_parameters->L1D_plp_mod = block_Read_uint8_bitlen(block, 4);
+				//4 bits
+				L1D_PLP_parameters->L1D_plp_cod = block_Read_uint8_bitlen(block, 4);
+				//2 bits
+            }
+			
+			L1D_PLP_parameters->L1D_plp_TI_mode = block_Read_uint8_bitlen(block, 2);
+
+            if (L1D_PLP_parameters->L1D_plp_TI_mode == 0x0) {
+				//15 bits
+				L1D_PLP_parameters->L1D_plp_fec_block_start = block_Read_uint16_bitlen(block, 15);
+            } else if (L1D_PLP_parameters->L1D_plp_TI_mode == 0x1) {
+				//22 bits
+				L1D_PLP_parameters->L1D_plp_CTI_fec_block_start = block_Read_uint32_bitlen(block, 22);
+            }
+            
+            if (atsc3_preamble_packet->L1_detail_signaling.L1D_num_rf > 0) {
+				//3 bits
+				L1D_PLP_parameters->L1D_plp_num_channel_bonded = block_Read_uint8_bitlen(block, 3);
+				
+                if (L1D_PLP_parameters->L1D_plp_num_channel_bonded > 0) {
+					//2 bits
+					L1D_PLP_parameters->L1D_plp_channel_bonding_format = block_Read_uint8_bitlen(block, 2);
+                    
+					for (int k=0; k <= L1D_PLP_parameters->L1D_plp_num_channel_bonded; k++) {
+						L1D_plp_bonded_rf_id_t* L1D_plp_bonded_rf_id = L1D_plp_bonded_rf_id_new();
+						//3 bits
+						L1D_plp_bonded_rf_id->L1D_plp_bonded_rf_id = block_Read_uint8_bitlen(block, 2);
+						L1D_PLP_parameters_add_L1D_plp_bonded_rf_id(L1D_PLP_parameters, L1D_plp_bonded_rf_id);
+                    }
+                }
+            }
+			
+			
+            if ((i == 0 && atsc3_preamble_packet->L1_basic_signaling.L1B_first_sub_mimo == 1) ||
+				(i > 0 && L1D_subframe_parameters->L1D_mimo == 1)) {
+                //1 bit
+				L1D_PLP_parameters->L1D_plp_mimo_stream_combining = block_Read_uint8_bitlen(block, 1);
+                //1 bit
+                L1D_PLP_parameters->L1D_plp_mimo_IQ_interleaving = block_Read_uint8_bitlen(block, 1);
+                //1 bit
+				L1D_PLP_parameters->L1D_plp_mimo_PH = block_Read_uint8_bitlen(block, 1);
+            }
+			
+			
+            if (L1D_PLP_parameters->L1D_plp_layer == 0) {
+				//1 bit
+                L1D_PLP_parameters->L1D_plp_type = block_Read_uint8_bitlen(block, 1);
+
+                if (L1D_PLP_parameters->L1D_plp_type == 1) {
+					//14
+                    L1D_PLP_parameters->L1D_plp_num_subslices = block_Read_uint16_bitlen(block, 14);
+					//24
+                    L1D_PLP_parameters->L1D_plp_subslice_interval = block_Read_uint32_bitlen(block, 24);
+                }
+				
+                if (((L1D_PLP_parameters->L1D_plp_TI_mode == 0x1) ||
+					 (L1D_PLP_parameters->L1D_plp_TI_mode == 0x2)) && (L1D_PLP_parameters->L1D_plp_mod == 0x0)) {
+					//1 bit
+                    L1D_PLP_parameters->L1D_plp_TI_extended_interleaving = block_Read_uint8_bitlen(block, 1);
+                }
+
+				if (L1D_PLP_parameters->L1D_plp_TI_mode == 0x1) {
+					//3
+                    L1D_PLP_parameters->L1D_plp_CTI_depth = block_Read_uint8_bitlen(block, 3);
+
+					//11
+                    L1D_PLP_parameters->L1D_plp_CTI_start_row = block_Read_uint16_bitlen(block, 11);
+
+				} else if (L1D_PLP_parameters->L1D_plp_TI_mode == 0x2) {
+					//1
+					L1D_PLP_parameters->L1D_plp_HTI_inter_subframe = block_Read_uint8_bitlen(block, 1);
+					//4 bits
+					L1D_PLP_parameters->L1D_plp_HTI_num_ti_blocks = block_Read_uint8_bitlen(block, 4);
+					//12
+					L1D_PLP_parameters->L1D_plp_HTI_num_fec_blocks_max = block_Read_uint16_bitlen(block, 12);
+				}
+				
+				if (L1D_PLP_parameters->L1D_plp_HTI_inter_subframe == 0) {
+					//12
+					L1D_PLP_parameters->L1D_plp_HTI_num_fec_blocks = block_Read_uint16_bitlen(block, 12);
+				} else {
+					for (int k=0; k <= L1D_PLP_parameters->L1D_plp_HTI_num_ti_blocks; k++) {
+						//fix me
+						L1D_plp_HTI_num_fec_blocks_t* L1D_plp_HTI_num_fec_blocks = L1D_plp_HTI_num_fec_blocks_new();
+						
+						//12
+						L1D_plp_HTI_num_fec_blocks->L1D_plp_HTI_num_fec_blocks = block_Read_uint16_bitlen(block, 12);
+						L1D_PLP_parameters_add_L1D_plp_HTI_num_fec_blocks(L1D_PLP_parameters, L1D_plp_HTI_num_fec_blocks);
+					}
+				}
+				//1 bit
+				L1D_PLP_parameters->L1D_plp_HTI_cell_interleaver = block_Read_uint8_bitlen(block, 1);
+
+            } else {
+				//5 bits
+				L1D_PLP_parameters->L1D_plp_ldm_injection_level = block_Read_uint8_bitlen(block, 5);
+            }
+
+			//
+			L1D_subframe_parameters_add_L1D_PLP_parameters(L1D_subframe_parameters, L1D_PLP_parameters);
+			
+        }
+
+		L1_detail_signaling_add_L1D_subframe_parameters(&atsc3_preamble_packet->L1_detail_signaling, L1D_subframe_parameters);
+    }
+
+	//16 bits
+    atsc3_preamble_packet->L1_detail_signaling.L1D_bsid = block_Read_uint16_bitlen(block, 16);
+
+    //as needed...
+	//L1D_reserved
+
+    atsc3_preamble_packet->L1_detail_signaling.L1D_crc = block_Read_uint32_bitlen(block, 32);
+
+    
+    
+    
+    __STLTP_PARSER_INFO("preamble: L1B_parsed: consumed %d bytes, leaving %d bytes for L1D (payload_start: %p, binary_payload: %p",
+                        bytes_processed, bytes_remaining,
+                        binary_payload_start, binary_payload);
+    
+    
+    return atsc3_preamble_packet;
+    
+cleanup:
+    if(atsc3_preamble_packet) {
+        free(atsc3_preamble_packet);
+        atsc3_preamble_packet = NULL;
+    }
+    
+    return NULL;
+}
+
+void atsc3_preamble_packet_dump(atsc3_preamble_packet_t* atsc3_preamble_packet) {
+    
+    __STLTP_PARSER_INFO("preamble: L1B: version: %d, mimo: %d, lls_flag: %d, time_info: %d, return_channel: %d, papr_reduction: %d, frame_length mode: %d",
+                        atsc3_preamble_packet->L1_basic_signaling.L1B_version,
+                        atsc3_preamble_packet->L1_basic_signaling.L1B_mimo_scattered_pilot_encoding,
+                        atsc3_preamble_packet->L1_basic_signaling.L1B_lls_flag,
+                        atsc3_preamble_packet->L1_basic_signaling.L1B_time_info_flag,
+                        atsc3_preamble_packet->L1_basic_signaling.L1B_return_channel_flag,
+                        atsc3_preamble_packet->L1_basic_signaling.L1B_papr_reduction,
+                        atsc3_preamble_packet->L1_basic_signaling.L1B_frame_length_mode
+                        );
+    if(atsc3_preamble_packet->L1_basic_signaling.L1B_frame_length_mode == 0) {
+        __STLTP_PARSER_INFO("preamble: L1B: frame length: %d, excess samples per symbol: %d",
+                            atsc3_preamble_packet->L1_basic_signaling.L1B_frame_length,
+                            atsc3_preamble_packet->L1_basic_signaling.L1B_excess_samples_per_symbol);
+    } else {
+        __STLTP_PARSER_INFO("preamble: L1B: time offset: %d, additional samples: %d",
+                            atsc3_preamble_packet->L1_basic_signaling.L1B_time_offset,
+                            atsc3_preamble_packet->L1_basic_signaling.L1B_additional_samples);
+    }
+    
+    __STLTP_PARSER_INFO("preamble: L1B: num subframes: %d, preamble num symbols: %d, preamble reduced carriers: %d, l1_detail content tag: %d, l1_detail size bytes: %d",
+                        atsc3_preamble_packet->L1_basic_signaling.L1B_num_subframes,
+                        atsc3_preamble_packet->L1_basic_signaling.L1B_preamble_num_symbols,
+                        atsc3_preamble_packet->L1_basic_signaling.L1B_preamble_reduced_carriers,
+                        atsc3_preamble_packet->L1_basic_signaling.L1B_L1_Detail_content_tag,
+                        atsc3_preamble_packet->L1_basic_signaling.L1B_L1_Detail_size_bytes
+                        );
+    
+    __STLTP_PARSER_INFO("preamble: L1B: l1 detail fec type: %d, additional parity mode: %d, l1d total cells: %d",
+                        atsc3_preamble_packet->L1_basic_signaling.L1B_L1_Detail_fec_type,
+                        atsc3_preamble_packet->L1_basic_signaling.L1B_L1_Detail_additional_parity_mode,
+						atsc3_preamble_packet->L1_basic_signaling.L1B_L1_Detail_total_cells
+                        );
+    
+	__STLTP_PARSER_INFO("preamble: L1B: l1b first sub mimo: %d, first sub miso: %d, first sub fft size: %d, first sub reduced carriers: %d, first sub guard interval: %d",
+						atsc3_preamble_packet->L1_basic_signaling.L1B_first_sub_mimo,
+						atsc3_preamble_packet->L1_basic_signaling.L1B_first_sub_miso,
+						atsc3_preamble_packet->L1_basic_signaling.L1B_first_sub_fft_size,
+						atsc3_preamble_packet->L1_basic_signaling.L1B_first_sub_reduced_carriers,
+						atsc3_preamble_packet->L1_basic_signaling.L1B_first_sub_guard_interval
+						);
+	
+	__STLTP_PARSER_INFO("preamble: L1B: first sub num ofdm symbols: %d, first sub scattered pilot pattern: %d, first sub scatterd pilot boost: %d, first sub sbs_first: %d, first sub sbs_last: %d",
+						atsc3_preamble_packet->L1_basic_signaling.L1B_first_sub_num_ofdm_symbols,
+						atsc3_preamble_packet->L1_basic_signaling.L1B_first_sub_scattered_pilot_pattern,
+						atsc3_preamble_packet->L1_basic_signaling.L1B_first_sub_scattered_pilot_boost,
+						atsc3_preamble_packet->L1_basic_signaling.L1B_first_sub_sbs_first,
+						atsc3_preamble_packet->L1_basic_signaling.L1B_first_sub_sbs_last
+						);
+	
+	
+	__STLTP_PARSER_INFO("preamble: L1D: version: %d, num_rf: %d, l1d_subframe_count: %d, time_info flag: %d",
+						atsc3_preamble_packet->L1_detail_signaling.L1D_version,
+						atsc3_preamble_packet->L1_detail_signaling.L1D_num_rf,
+						atsc3_preamble_packet->L1_detail_signaling.L1D_subframe_parameters_v.count,
+						atsc3_preamble_packet->L1_basic_signaling.L1B_time_info_flag
+						);
+	
+	if(atsc3_preamble_packet->L1_basic_signaling.L1B_time_info_flag != 0x0) {
+		if(atsc3_preamble_packet->L1_basic_signaling.L1B_time_info_flag != 0x01) {
+            if(atsc3_preamble_packet->L1_basic_signaling.L1B_time_info_flag != 0x02) {
+				__STLTP_PARSER_INFO("preamble: L1D: time: sec: %d, ms: %d, us: %d, ns: %d",
+									atsc3_preamble_packet->L1_detail_signaling.L1D_time_sec_block.L1D_time_sec,
+									atsc3_preamble_packet->L1_detail_signaling.L1D_time_sec_block.L1D_time_msec,
+									atsc3_preamble_packet->L1_detail_signaling.L1D_time_sec_block.L1D_time_usec,
+									atsc3_preamble_packet->L1_detail_signaling.L1D_time_sec_block.L1D_time_nsec
+									);
+			} else {
+				__STLTP_PARSER_INFO("preamble: L1D: time: sec: %d, ms: %d, us: %d",
+												atsc3_preamble_packet->L1_detail_signaling.L1D_time_sec_block.L1D_time_sec,
+												atsc3_preamble_packet->L1_detail_signaling.L1D_time_sec_block.L1D_time_msec,
+												atsc3_preamble_packet->L1_detail_signaling.L1D_time_sec_block.L1D_time_usec
+												);
+			}
+		} else {
+			__STLTP_PARSER_INFO("preamble: L1D: time: sec: %d, ms: %d",
+											atsc3_preamble_packet->L1_detail_signaling.L1D_time_sec_block.L1D_time_sec,
+											atsc3_preamble_packet->L1_detail_signaling.L1D_time_sec_block.L1D_time_msec
+											);
+		}
+	}
+	
+	//jjustman-2020-01-22: TODO: iterate over L1D_subframe_parameters -> plp, etc
+	
+	for(int i=0; i < atsc3_preamble_packet->L1_detail_signaling.L1D_subframe_parameters_v.count; i++) {
+		L1D_subframe_parameters_t* L1D_subframe_parameters = atsc3_preamble_packet->L1_detail_signaling.L1D_subframe_parameters_v.data[i];
+		if(i > 0) {
+			__STLTP_PARSER_INFO("preamble: L1D: subframe: %d, L1D_mimo: %d, L1D_miso: %d, L1D_fft_size: %d, L1D_reduced_carriers: %d, L1D_guard_interval: %d, L1D_num_ofdm_symbols: %d",
+								i,
+								L1D_subframe_parameters->L1D_mimo,
+								L1D_subframe_parameters->L1D_miso,
+								L1D_subframe_parameters->L1D_fft_size,
+								L1D_subframe_parameters->L1D_reduced_carriers,
+								L1D_subframe_parameters->L1D_guard_interval,
+								L1D_subframe_parameters->L1D_num_ofdm_symbols);
+			
+			__STLTP_PARSER_INFO("preamble: L1D: subframe: %d, L1D_scattered_pilot_pattern: %d, L1D_scattered_pilot_boost: %d, L1D_sbs_first: %d, L1D_sbs_last: %d, L1D_subframe_multiplex: %d",
+								i,
+								L1D_subframe_parameters->L1D_scattered_pilot_pattern,
+								L1D_subframe_parameters->L1D_scattered_pilot_boost,
+								L1D_subframe_parameters->L1D_sbs_first,
+								L1D_subframe_parameters->L1D_sbs_last,
+								L1D_subframe_parameters->L1D_subframe_multiplex);
+		}
+		
+		__STLTP_PARSER_INFO("preamble: L1D: subframe: %d, L1D_frequency_interleaver: %d, L1D_sbs_null_cells: %d, num_plp: %d ",
+							i,
+							L1D_subframe_parameters->L1D_frequency_interleaver,
+							L1D_subframe_parameters->L1D_sbs_null_cells,
+							L1D_subframe_parameters->L1D_num_plp);
+		
+		for(int k=0; k < L1D_subframe_parameters->L1D_PLP_parameters_v.count; k++) {
+			L1D_PLP_parameters_t* L1D_PLP_parameters = L1D_subframe_parameters->L1D_PLP_parameters_v.data[k];
+			
+			__STLTP_PARSER_INFO("preamble: L1D: plp: id: %d, lls_flag: %d, layer: %d, start: %d, size: %d, scrambler: %d, fec: %d, mod: %d, cod: %d",
+								L1D_PLP_parameters->L1D_plp_id,
+								L1D_PLP_parameters->L1D_plp_lls_flag,
+								L1D_PLP_parameters->L1D_plp_layer,
+								L1D_PLP_parameters->L1D_plp_start,
+								L1D_PLP_parameters->L1D_plp_size,
+								L1D_PLP_parameters->L1D_plp_scrambler_type,
+								L1D_PLP_parameters->L1D_plp_fec_type,
+								L1D_PLP_parameters->L1D_plp_mod,
+								L1D_PLP_parameters->L1D_plp_cod);
+			
+			__STLTP_PARSER_INFO("preamble: L1D: plp: id: %d, L1D_plp_TI_mode: %d, L1D_plp_type: %d, L1D_plp_num_subslices: %d, L1D_plp_subslice_interval: %d, L1D_plp_ldm_injection_level: %d",
+								L1D_PLP_parameters->L1D_plp_id,
+								L1D_PLP_parameters->L1D_plp_TI_mode,
+								L1D_PLP_parameters->L1D_plp_type,
+													
+								L1D_PLP_parameters->L1D_plp_num_subslices,
+								L1D_PLP_parameters->L1D_plp_subslice_interval,
+													
+								L1D_PLP_parameters->L1D_plp_ldm_injection_level);
+		}
+	}
+	
+    
+	__STLTP_PARSER_INFO("preamble: L1D: bsid: %d", atsc3_preamble_packet->L1_detail_signaling.L1D_bsid);
+}
