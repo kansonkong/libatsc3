@@ -1,0 +1,86 @@
+apply plugin: 'com.android.application'
+
+android {
+    aaptOptions {
+        noCompress "pcap"
+    }
+    compileSdkVersion 28
+    defaultConfig {
+        applicationId "org.ngbp.libatsc3"
+        minSdkVersion 25
+        targetSdkVersion 28
+        versionCode 1
+        versionName "1.0"
+        testInstrumentationRunner "android.support.test.runner.AndroidJUnitRunner"
+
+        ndk {
+            // Specifies the ABI configurations of your native
+            // libraries Gradle should build and package with your APK.
+            //abiFilters 'armeabi-v7a' //, 'armeabi', 'arm64-v8a', 'x86', 'x86_64'
+            // abiFilters 'armeabi-v7a' //, 'arm64-v8a'
+            abiFilters 'arm64-v8a'//, 'arm64-v8a' //'', 'x86_64',  'armeabi-v7a'
+            //'armeabi-v7a', 'x86_64'
+
+        }
+    }
+    buildTypes {
+        release {
+            minifyEnabled false
+            proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
+            jniDebuggable = true
+            debuggable true
+
+        }
+        debug {
+            jniDebuggable = true
+            debuggable true
+
+        }
+    }
+    externalNativeBuild {
+        ndkBuild {
+            path 'Android.mk'
+        }
+    }
+    buildToolsVersion = '29.0.2'
+
+    compileOptions {
+        targetCompatibility JavaVersion.VERSION_1_8
+    }
+
+    packagingOptions {
+        // specify the path to your object binaries, or generally:
+        doNotStrip '**.so'
+    }
+
+    sourceSets {
+        main {
+            manifest.srcFile 'src/main/AndroidManifest.xml'
+            java.srcDirs = ['src/main/java']
+        }
+    }
+    flavorDimensions 'main'
+
+}
+
+repositories {
+    google()
+}
+dependencies {
+    //implementation fileTree(dir: 'libs', include: ['*.jar', '*.so'])
+    implementation 'com.android.support:appcompat-v7:28.0.0'
+    implementation 'com.android.support.constraint:constraint-layout:1.1.3'
+    implementation 'com.android.support:recyclerview-v7:28.0.0'
+
+    implementation 'com.android.support:percent:28.0.0'
+
+    // jjustman-2019-11-08: use local exoplayer:
+    //
+    implementation project(':exoplayer-library-core')
+    implementation project(':exoplayer-library-dash')
+    implementation project(':exoplayer-library-ui')
+
+    testImplementation 'junit:junit:4.12'
+    androidTestImplementation 'com.android.support.test:runner:1.0.1'
+    androidTestImplementation 'com.android.support.test.espresso:espresso-core:3.0.1'
+}
