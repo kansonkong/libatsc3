@@ -332,7 +332,10 @@ void process_packet(u_char *user, const struct pcap_pkthdr *pkthdr, const u_char
             __INFO(">>>stltp atsc3_stltp_timing_management_packet packet complete: count: %u",  atsc3_stltp_tunnel_packet_processed->atsc3_stltp_timing_management_packet_v.count);
             for(int i=0; i < atsc3_stltp_tunnel_packet_processed->atsc3_stltp_timing_management_packet_v.count; i++) {
                 atsc3_stltp_timing_management_packet_t* atsc3_stltp_timing_management_packet = atsc3_stltp_tunnel_packet_processed->atsc3_stltp_timing_management_packet_v.data[i];
-                //atsc3_alp_parse_stltp_baseband_packet(atsc3_stltp_baseband_packet);
+                atsc3_timing_management_packet_t* atsc3_timing_management_packet = atsc3_stltp_parse_timing_management_packet(atsc3_stltp_timing_management_packet);
+                if(!atsc3_timing_management_packet) {
+                    __WARN("atsc3_timing_management_packet is NULL for i: %d", i);
+                }
             }
         }
         

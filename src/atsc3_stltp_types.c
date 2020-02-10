@@ -13,16 +13,42 @@ int _STLTP_TYPES_TRACE_ENABLED = 1;
 
 //L1_detail vector(s)
 
+/*
+ "_L1D_plp_HTI_num_fec_blocks_free", referenced from:
+      _L1D_PLP_parameters_free_L1D_plp_HTI_num_fec_blocks in libatsc3.o
+  "_L1D_plp_bonded_rf_id_free", referenced from:
+      _L1D_PLP_parameters_free_L1D_plp_bonded_rf_id in libatsc3.o
+  "_L1D_plp_bonded_rf_new", referenced from:
+      _atsc3_stltp_parse_preamble_packet in libatsc3.o
+  "_L1D_subframe_parameters_free", referenced from:
+      _L1_detail_signaling_free_L1D_subframe_parameters in libatsc3.o
+
+ */
+
 ATSC3_VECTOR_BUILDER_METHODS_PARENT_IMPLEMENTATION(L1_detail_signaling);
+
 ATSC3_VECTOR_BUILDER_METHODS_IMPLEMENTATION(L1_detail_signaling, L1D_bonded_bsid_block);
 ATSC3_VECTOR_BUILDER_METHODS_ITEM_FREE(L1D_bonded_bsid_block);
 
-ATSC3_VECTOR_BUILDER_METHODS_PARENT_IMPLEMENTATION(timing_management_packet)
-ATSC3_VECTOR_BUILDER_METHODS_IMPLEMENTATION(timing_management_packet, bootstrap_timing_data);
-ATSC3_VECTOR_BUILDER_METHODS_ITEM_FREE(bootstrap_timing_data);
-ATSC3_VECTOR_BUILDER_METHODS_IMPLEMENTATION(timing_management_packet, per_transmitter_data);
-ATSC3_VECTOR_BUILDER_METHODS_ITEM_FREE(per_transmitter_data);
+ATSC3_VECTOR_BUILDER_METHODS_IMPLEMENTATION(L1_detail_signaling, L1D_subframe_parameters);
+ATSC3_VECTOR_BUILDER_METHODS_ITEM_FREE(L1D_subframe_parameters);
 
+ATSC3_VECTOR_BUILDER_METHODS_IMPLEMENTATION(L1D_PLP_parameters, L1D_plp_bonded_rf_id);
+ATSC3_VECTOR_BUILDER_METHODS_ITEM_FREE(L1D_plp_bonded_rf_id);
+
+ATSC3_VECTOR_BUILDER_METHODS_IMPLEMENTATION(L1D_PLP_parameters, L1D_plp_HTI_num_fec_blocks);
+ATSC3_VECTOR_BUILDER_METHODS_ITEM_FREE(L1D_plp_HTI_num_fec_blocks);
+
+ATSC3_VECTOR_BUILDER_METHODS_IMPLEMENTATION(L1D_subframe_parameters, L1D_PLP_parameters);
+ATSC3_VECTOR_BUILDER_METHODS_ITEM_FREE(L1D_PLP_parameters);
+
+ATSC3_VECTOR_BUILDER_METHODS_PARENT_IMPLEMENTATION(atsc3_timing_management_packet)
+
+ATSC3_VECTOR_BUILDER_METHODS_IMPLEMENTATION(atsc3_timing_management_packet, atsc3_bootstrap_timing_data);
+ATSC3_VECTOR_BUILDER_METHODS_ITEM_FREE(atsc3_bootstrap_timing_data);
+
+ATSC3_VECTOR_BUILDER_METHODS_IMPLEMENTATION(atsc3_timing_management_packet, atsc3_per_transmitter_data);
+ATSC3_VECTOR_BUILDER_METHODS_ITEM_FREE(atsc3_per_transmitter_data);
 
 ATSC3_VECTOR_BUILDER_METHODS_PARENT_IMPLEMENTATION(atsc3_stltp_tunnel_packet)
 ATSC3_VECTOR_BUILDER_METHODS_IMPLEMENTATION(atsc3_stltp_tunnel_packet, atsc3_stltp_baseband_packet);
