@@ -145,8 +145,55 @@ managed using IGMP Source-Specific Multicast (SSM) mechanisms.
 
 **/
 
+/*
+ 
+ l1_basic_signalling: 200 bits ->
+ */
+
 typedef struct L1_basic_signaling {
-	uint8_t raw_payload[25];
+    uint8_t     L1B_version:3;
+    uint8_t     L1B_mimo_scattered_pilot_encoding:1;
+    uint8_t     L1B_lls_flag:1;
+    uint8_t     L1B_time_info_flag:2;
+    uint8_t     L1B_return_channel_flag:1;
+    
+    uint8_t     L1B_papr_reduction:2;
+    uint8_t     L1B_frame_length_mode:1;
+    
+    //if L1B_frame_length_mode==0
+    uint16_t    L1B_frame_length:10;
+    uint16_t    L1B_excess_samples_per_symbol:13;
+    //else
+    uint16_t    L1B_time_offset:16;
+    uint8_t     L1B_additional_samples:7;
+    //end else
+    
+    uint8_t     L1B_num_subframes:8;
+    uint8_t     L1B_preamble_num_symbols:3;
+    uint8_t     L1B_preamble_reduced_carriers:3;
+    uint8_t     L1B_L1_Detail_content_tag:2;
+    uint16_t    L1B_L1_Detail_size_bytes:13;
+    
+    uint8_t     L1B_L1_Detail_fec_type:3;
+    uint8_t     L1B_L1_Detail_additional_parity_mode:2;
+    
+    uint32_t    L1B_L1_Detail_total_cells:19;
+    
+    uint8_t     L1B_first_sub_mimo:1;
+    uint8_t     L1B_first_sub_miso:2;
+    uint8_t     L1B_first_sub_fft_size:2;
+    uint8_t     L1B_first_sub_reduced_carriers:3;
+    uint8_t     L1B_first_sub_guard_interval:4;
+    uint16_t    L1B_first_sub_num_ofdm_symbols:11;
+    
+    uint8_t     L1B_first_sub_scattered_pilot_pattern:5;
+    uint8_t     L1B_first_sub_scattered_pilot_boost:3;
+    uint8_t     L1B_first_sub_sbs_first:1;
+    uint8_t     L1B_first_sub_sbs_last:1;
+    
+    uint64_t    L1B_reserved:48;
+    uint32_t    L1B_crc;
+
 } L1_basic_signaling_t;
 
 /*
@@ -187,29 +234,33 @@ typedef struct L1D_PLP_parameters {
     uint8_t     L1D_plp_layer:2;
     uint32_t    L1D_plp_start:24;
     uint32_t    L1D_plp_size:24;
+	
     uint8_t     L1D_plp_scrambler_type:2;
     uint8_t     L1D_plp_fec_type:4;
     
     //if (L1D_plp_fec_type∈{0,1,2,3,4,5}) {
-    uint8_t     L1D_plp_mod:4;
-    uint8_t     L1D_plp_cod:4;
+		uint8_t     L1D_plp_mod:4;
+		uint8_t     L1D_plp_cod:4;
     //}
     
     uint8_t     L1D_plp_TI_mode:2;
     
     //if (L1D_plp_TI_mode=00) {
-    uint16_t    L1D_plp_fec_block_start:15;
+		uint16_t    L1D_plp_fec_block_start:15;
     //} else if (L1D_plp_TI_mode=01) {
-    uint32_t    L1D_plp_CTI_fec_block_start:22;
+		uint32_t    L1D_plp_CTI_fec_block_start:22;
     //}
     
     //if (L1D_num_rf>0) {
     uint8_t     L1D_plp_num_channel_bonded:3;
-        //if (L1D_plp_num_channel_bonded>0) {
-    uint8_t     L1D_plp_channel_bonding_format:2;
-            //for (k=0..L1D_plp_num_channel_bonded) {
-    ATSC3_VECTOR_BUILDER_STRUCT(L1D_plp_bonded_rf_id);
-            //}
+	
+		//if (L1D_plp_num_channel_bonded>0) {
+		uint8_t     L1D_plp_channel_bonding_format:2;
+		
+			//for (k=0..L1D_plp_num_channel_bonded) {
+			ATSC3_VECTOR_BUILDER_STRUCT(L1D_plp_bonded_rf_id);
+	
+			//}
         //}
     //}
     
@@ -220,26 +271,28 @@ typedef struct L1D_PLP_parameters {
     //}
     
     //if (L1D_plp_layer=0) {
-    uint8_t     L1D_plp_type:1;
+		uint8_t     L1D_plp_type:1;
         //if (L1D_plp_type=1) {
-    uint16_t    L1D_plp_num_subslices:14;
-    uint32_t    L1D_plp_subslice_interval:24;
+			uint16_t    L1D_plp_num_subslices:14;
+			uint32_t    L1D_plp_subslice_interval:24;
         //}
-        //if (((L1D_plp_TI_mode=01) || (L1D_plp_TI_mode=10))&&(L1D_plp_mod=0000)) {
-    uint8_t     L1D_plp_TI_extended_interleaving:1;
+        
+		//if (((L1D_plp_TI_mode=01) || (L1D_plp_TI_mode=10))&&(L1D_plp_mod=0000)) {
+			uint8_t     L1D_plp_TI_extended_interleaving:1;
         //}
+	
         //if (L1D_plp_TI_mode=01) {
-    uint8_t     L1D_plp_CTI_depth:3;
-    uint16_t    L1D_plp_CTI_start_row:11;
-        //}else if (L1D_plp_TI_mode=10) {
-    uint8_t     L1D_plp_HTI_inter_subframe:1;
-    uint8_t     L1D_plp_HTI_num_ti_blocks:4;
-    uint16_t    L1D_plp_HTI_num_fec_blocks_max:12;
-            //if (L1D_plp_HTI_inter_subframe=0) {
-    uint16_t    L1D_plp_HTI_num_fec_blocks:12;
+			uint8_t     L1D_plp_CTI_depth:3;
+			uint16_t    L1D_plp_CTI_start_row:11;
+		//}else if (L1D_plp_TI_mode=10) {
+			uint8_t     L1D_plp_HTI_inter_subframe:1;
+			uint8_t     L1D_plp_HTI_num_ti_blocks:4;
+			uint16_t    L1D_plp_HTI_num_fec_blocks_max:12;
+			//if (L1D_plp_HTI_inter_subframe=0) {
+				uint16_t    L1D_plp_HTI_num_fec_blocks:12;
             //} else {
                 //for (k=0..L1D_plp_HTI_num_ti_blocks) {
-    ATSC3_VECTOR_BUILDER_STRUCT(L1D_plp_HTI_num_fec_blocks);
+					ATSC3_VECTOR_BUILDER_STRUCT(L1D_plp_HTI_num_fec_blocks);
                 //}
             //}
     uint8_t     L1D_plp_HTI_cell_interleaver:1;
@@ -251,23 +304,27 @@ typedef struct L1D_PLP_parameters {
     
 } L1D_PLP_parameters_t;
 
+ATSC3_VECTOR_BUILDER_METHODS_INTERFACE(L1D_PLP_parameters, L1D_plp_bonded_rf_id);
+ATSC3_VECTOR_BUILDER_METHODS_INTERFACE(L1D_PLP_parameters, L1D_plp_HTI_num_fec_blocks);
+
+
 //for (i=0 .. L1B_num_subframes)
 typedef struct L1D_subframe_parameters {
     //if(i>0)
-    uint8_t     L1D_mimo:1;
-    uint8_t     L1D_miso:2;
-    uint8_t     L1D_fft_size:2;
-    uint8_t     L1D_reduced_carriers:3;
-    uint8_t     L1D_guard_interval:4;
-    uint16_t    L1D_num_ofdm_symbols:11;
-    uint8_t     L1D_scattered_pilot_pattern:5;
-    uint8_t     L1D_scattered_pilot_boost:3;
-    uint8_t     L1D_sbs_first:1;
-    uint8_t     L1D_sbs_last:1;
+		uint8_t     L1D_mimo:1;
+		uint8_t     L1D_miso:2;
+		uint8_t     L1D_fft_size:2;
+		uint8_t     L1D_reduced_carriers:3;
+		uint8_t     L1D_guard_interval:4;
+		uint16_t    L1D_num_ofdm_symbols:11;
+		uint8_t     L1D_scattered_pilot_pattern:5;
+		uint8_t     L1D_scattered_pilot_boost:3;
+		uint8_t     L1D_sbs_first:1;
+		uint8_t     L1D_sbs_last:1;
     //}
     
     //if(L1B_num_subframes>0)
-    uint8_t     L1D_subframe_multiplex:1;
+		uint8_t     L1D_subframe_multiplex:1;
     //}
     
     uint8_t     L1D_frequency_interleaver:1;
@@ -275,7 +332,7 @@ typedef struct L1D_subframe_parameters {
     /*
      if (((i=0)&&(L1B_first_sub_sbs_first || L1B_first_sub_sbs_last)) || ((i>0)&&(L1D_sbs_first | L1D_sbs_last))) {
      */
-    uint16_t    L1D_sbs_null_cells:13;
+		uint16_t    L1D_sbs_null_cells:13;
     //}
     
     uint8_t     L1D_num_plp;
@@ -307,6 +364,16 @@ typedef struct L1_detail_signaling {
 ATSC3_VECTOR_BUILDER_METHODS_INTERFACE(L1_detail_signaling, L1D_bonded_bsid_block);
 ATSC3_VECTOR_BUILDER_METHODS_INTERFACE(L1_detail_signaling, L1D_subframe_parameters);
 
+typedef struct atsc3_preamble_packet {
+    
+    //TODO: implement L1 basic/L1 detail
+    uint16_t                    length;
+    L1_basic_signaling_t        L1_basic_signaling;
+    L1_detail_signaling_t       L1_detail_signaling;
+    uint16_t                    crc16;
+    
+} atsc3_preamble_packet_t;
+
 typedef struct atsc3_stltp_preamble_packet {
     
     atsc3_ip_udp_rtp_packet_t*      ip_udp_rtp_packet_outer;
@@ -323,10 +390,7 @@ typedef struct atsc3_stltp_preamble_packet {
     uint16_t                         payload_offset;
     uint16_t                         payload_length;
    
-    //TODO: implement L1 basic/L1 detail
-    L1_basic_signaling_t 	         L1_basic_signaling;
-	L1_detail_signaling_t 	         L1_detail_signaling;
-	uint16_t				         crc16;
+    atsc3_preamble_packet_t          preamble_packet;
 } atsc3_stltp_preamble_packet_t;
 
     
@@ -336,7 +400,7 @@ typedef struct atsc3_stltp_preamble_packet {
 typedef struct bootstrap_timing_data {
     uint32_t    seconds;
     uint32_t    nanoseconds;
-} bootstrap_timing_data_t;
+} atsc3_bootstrap_timing_data_t;
     
 typedef struct per_transmitter_data {
     uint16_t    xmtr_id;
@@ -344,11 +408,12 @@ typedef struct per_transmitter_data {
     uint8_t     txid_injection_lvl;
     uint8_t     miso_filt_code_index;
     uint32_t    _reserved:29; //1
-} per_transmitter_data_t;
+} atsc3_per_transmitter_data_t;
 
 typedef struct packet_release_time {
     uint8_t     pkt_rls_seconds;
-    uint16_t    pkt_rls_a_miliseconds;
+    uint16_t    pkt_rls_a_milliseconds;
+    uint32_t    pkt_rls_computed_milliseconds;
     uint8_t     _reserved:2;
 } packet_release_time_t;
     
@@ -360,6 +425,7 @@ typedef struct error_check_data {
     
 typedef struct timing_management_packet {
     //Structure_Data() {
+    uint16_t    length;
 	uint8_t		version_major:4;
 	uint8_t		version_minor:4;
 	uint8_t 	maj_log_rep_cnt_pre:4;
@@ -382,13 +448,13 @@ typedef struct timing_management_packet {
 
     //Bootstrap_Timing_Data() {
         //for (i=0; i<=num_emission_tim; i++) {
-    ATSC3_VECTOR_BUILDER_STRUCT(bootstrap_timing_data);
+    ATSC3_VECTOR_BUILDER_STRUCT(atsc3_bootstrap_timing_data);
         //}
     //}
     
     //Per_Transmitter_Data () {
         //for (i=0; i<=num_xmtrs_in_group; i++) {
-    ATSC3_VECTOR_BUILDER_STRUCT(per_transmitter_data);
+    ATSC3_VECTOR_BUILDER_STRUCT(atsc3_per_transmitter_data);
         //}
     //}
     
@@ -400,10 +466,10 @@ typedef struct timing_management_packet {
     error_check_data_t error_check_data;
     //}
     
-} timing_management_packet_t;
+} atsc3_timing_management_packet_t;
 
-ATSC3_VECTOR_BUILDER_METHODS_INTERFACE(timing_management_packet, bootstrap_timing_data);
-ATSC3_VECTOR_BUILDER_METHODS_INTERFACE(timing_management_packet, per_transmitter_data);
+ATSC3_VECTOR_BUILDER_METHODS_INTERFACE(atsc3_timing_management_packet, atsc3_bootstrap_timing_data);
+ATSC3_VECTOR_BUILDER_METHODS_INTERFACE(atsc3_timing_management_packet, atsc3_per_transmitter_data);
 
 typedef struct atsc3_stltp_timing_management_packet {
     atsc3_ip_udp_rtp_packet_t*      ip_udp_rtp_packet_outer;
@@ -420,15 +486,8 @@ typedef struct atsc3_stltp_timing_management_packet {
 	uint16_t 					    payload_offset;
 	uint16_t 					    payload_length;
 
-	timing_management_packet_t      timing_management_packet;
+	atsc3_timing_management_packet_t      timing_management_packet;
     
-    
-//  members are now included in timing_management_packet_t
-//    bootstrap_timing_data_vt*     bootstrap_timing_data_v;
-//    per_transmitter_data_vt*    per_transmitter_data_v;
-//    packet_release_time_t        packet_release_time;
-//    error_check_data_t            error_check_data;
-
 } atsc3_stltp_timing_management_packet_t;
 
 
