@@ -403,7 +403,7 @@ libatsc3_intermediate.o: atsc3_lls.o \
 		atsc3_mmt_mpu_utils.o \
 		atsc3_player_ffplay.o \
 		atsc3_alc_utils.o \
-	        atsc3_lls_sls_monitor_output_buffer.o \
+		atsc3_lls_sls_monitor_output_buffer.o \
 		atsc3_lls_sls_monitor_output_buffer_utils.o \
 		atsc3_lls_mmt_utils.o \
 		atsc3_listener_udp.o \
