@@ -282,8 +282,8 @@ void atsc3_route_sls_patch_mpd_availability_start_time_and_start_number(atsc3_mi
 
                 //hack for video/audio start_number sequencing
                 if(vcodec_representation_start_pos > acodec_representation_start_pos) {
-                    video_start_number_start = first_start_number_start;
-                    audio_start_number_start = second_start_number_start;
+                    video_start_number_start = second_start_number_start;
+                    audio_start_number_start = first_start_number_start;
                 } else {
                     video_start_number_start = first_start_number_start;
                     audio_start_number_start = second_start_number_start;
@@ -292,38 +292,39 @@ void atsc3_route_sls_patch_mpd_availability_start_time_and_start_number(atsc3_mi
                 int mpd_new_payload_max_len = strlen(atsc3_mime_multipart_related_payload->payload) + 32;
                 char* new_mpd_payload = calloc(mpd_new_payload_max_len + 1, sizeof(char));
 
-                char* video_start_number_end = strstr(video_start_number_start, "\"");
+                char* video_start_number_end = strstr(video_start_number_start + 14, "\"");
                 if(!video_start_number_end) goto error;
             
-                char* audio_start_number_end = strstr(audio_start_number_start, "\"");
+                char* audio_start_number_end = strstr(audio_start_number_start + 14, "\"");
                 if(!audio_start_number_end) goto error;
 
                 video_start_number_start[13] = '\0';
                 audio_start_number_start[13] = '\0';
 
                 char* mpd_patched_start_ptr = atsc3_mime_multipart_related_payload->payload;
-                int video_start_number_start_pos = (video_start_number_start + 13) - temp_lower_mpd;
+                int video_start_number_start_pos = (video_start_number_start) - temp_lower_mpd;
                 mpd_patched_start_ptr[video_start_number_start_pos] = '\0';
                 int video_start_number_end_pos = video_start_number_end  - temp_lower_mpd;
 
                 char* mpd_patched_video_start_end_ptr = mpd_patched_start_ptr + video_start_number_end_pos + 2;
 
-                int audio_start_number_start_pos = (audio_start_number_start + 13) - temp_lower_mpd;
+                int audio_start_number_start_pos = (audio_start_number_start) - temp_lower_mpd;
                 mpd_patched_start_ptr[audio_start_number_start_pos] = '\0';
+
                 int audio_start_number_end_pos = audio_start_number_end  - temp_lower_mpd + 2;
 
                 char* audio_start_number_end_ptr = mpd_patched_start_ptr + audio_start_number_end_pos;
 
                 //if !lls_sls_alc_monitor->has_discontiguous_toi_flow,  use the last_closed video/audio toi, otherwise use the 'current' video/audio toi
                 if(vcodec_representation_start_pos < acodec_representation_start_pos) {
-                    snprintf(new_mpd_payload, mpd_new_payload_max_len, "%s%d%s%d%s",
+                    snprintf(new_mpd_payload, mpd_new_payload_max_len, "%s startNumber=\"%d\" %s startNumber=\"%d\" %s",
                              mpd_patched_start_ptr,
                              (!lls_sls_alc_monitor->has_discontiguous_toi_flow ? lls_sls_alc_monitor->last_closed_video_toi : lls_sls_alc_monitor->last_video_toi),
                              mpd_patched_video_start_end_ptr,
                              (!lls_sls_alc_monitor->has_discontiguous_toi_flow ? lls_sls_alc_monitor->last_closed_audio_toi : lls_sls_alc_monitor->last_audio_toi),
                              audio_start_number_end_ptr);
                 } else {
-                    snprintf(new_mpd_payload, mpd_new_payload_max_len, "%s%d%s%d%s",
+                    snprintf(new_mpd_payload, mpd_new_payload_max_len, "%s startNumber=\"%d\" %s startNumber=\"%d\" %s",
                              mpd_patched_start_ptr,
                              (!lls_sls_alc_monitor->has_discontiguous_toi_flow ? lls_sls_alc_monitor->last_closed_audio_toi : lls_sls_alc_monitor->last_audio_toi),
                              mpd_patched_video_start_end_ptr,
