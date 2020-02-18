@@ -210,10 +210,10 @@ public class MediaCodecInputBufferMfuByteBufferFragmentWorkerRunnable implements
             MapAudioMfuPresentationTimestampUsAnchorSystemTimeUs.clear();
             MapVideoMfuPresentationTimestampUsAnchorSystemTimeUs.clear();
 
-            Thread.sleep(2000);
+            VideoMediaCodec.flush();
+            AudioMediaCodec.flush();
+            Thread.sleep(1000);
 
-            //VideoMediaCodec.flush();
-            //AudioMediaCodec.flush();
             //DecoderHandlerThread.sync.flush();
 
             DecoderHandlerThread.sync.setPlaybackParams(new PlaybackParams().setSpeed(1.0f));
@@ -239,15 +239,16 @@ public class MediaCodecInputBufferMfuByteBufferFragmentWorkerRunnable implements
             MmtPacketIdContext.audio_packet_statistics.last_mpu_sequence_number_input_buffer = null;
             MmtPacketIdContext.audio_packet_statistics.last_mpu_sequence_number_inputBufferQueued = null;
 
-            //VideoMediaCodec.start();
             //VideoMediaCodecInputBufferQueue.clear();
 
-            //AudioMediaCodec.start();
             //AudioMediaCodecInputBufferQueue.clear();
 
             VideoMfuByteBufferQueue.clear();
             AudioMfuByteBufferQueue.clear();
+
             IsSoftFlushingFromAVPtsDiscontinuity = false;
+            VideoMediaCodec.start();
+            AudioMediaCodec.start();
 
             //todo - mark any onOutputBufferAvailable as invalidated until we restart the codec
             Log.d("MediaCodecInputBuffer", String.format("softFlushAVPtsDiscontinuity: Flushing complete"));
@@ -256,4 +257,4 @@ public class MediaCodecInputBufferMfuByteBufferFragmentWorkerRunnable implements
             e.printStackTrace();
         }
     }
-};
+}
