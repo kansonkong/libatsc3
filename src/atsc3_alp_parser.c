@@ -703,7 +703,6 @@ void atsc3_alp_packet_collection_extract_lmt(atsc3_alp_packet_collection_t* atsc
 		}
 	}
 }
-          
 
 
 
