@@ -133,7 +133,7 @@ void atsc3_route_sls_process_from_alc_packet_and_file(udp_flow_t* udp_flow, alc_
                     FILE* fp = fopen(mbms_filename, "w");
                     if(fp) {
                         /* lldb: set set target.max-string-summary-length 10000 */
-                        _ATSC3_ROUTE_SLS_PROCESSOR_INFO("writing MBMS object to: %s, payload: %s", mbms_filename, atsc3_mime_multipart_related_payload->payload);
+                        _ATSC3_ROUTE_SLS_PROCESSOR_DEBUG("writing MBMS object to: %s, payload: %s", mbms_filename, atsc3_mime_multipart_related_payload->payload);
 
                         fwrite(atsc3_mime_multipart_related_payload->payload, atsc3_mime_multipart_related_payload->payload_length, 1, fp);
                         fclose(fp);
@@ -225,7 +225,7 @@ void atsc3_route_sls_patch_mpd_availability_start_time_and_start_number(atsc3_mi
 
             //jjustman-2019-12-29 - add in ~4s to "now" so mpd will have at least a 1s forward buffer (rounding down)...
             //TODO: fix me to be closer to horizon without first startup glitch from exoplayer
-            now += 4;
+            now += 2;
 
             int ast_char_pos_end = (ast_char + strlen(_MPD_availability_start_time_VALUE_)) - temp_lower_mpd;
             //replace 2019-10-09T19:03:50Z with now()...
