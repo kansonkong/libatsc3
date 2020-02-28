@@ -15,7 +15,7 @@ int _SL_TLV_DEMOD_TRACE_ENABLED = 0;
  *
  * 		caller is responsible for setting i_pos to the start of the SL_TLV magic string
  *
- * 		TODO: jjustman-2019-11-23: 	add seek for searching for magic string from block_t,
+ * 		Completed: jjustman-2019-11-23: 	add seek for searching for magic string from block_t,
  * 									add support for carry-over of ALP re-constitution
  * 									add support for returing partial ALP frame payload if block_t is incomplete
  *

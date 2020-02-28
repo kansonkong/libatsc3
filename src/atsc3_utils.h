@@ -68,6 +68,9 @@ long gtl();
 /* clip v in [min, max] */
 #define __CLIP(v, min, max)    __MIN(__MAX((v), (min)), (max))
 
+#define __readuint32(data, hdrlen) (data[hdrlen] & 0xFF) << 24 | (data[hdrlen+1] & 0xFF) << 16 | (data[hdrlen+2] & 0xFF) << 8 | (data[hdrlen+3] & 0xFF);
+
+
 void* extract(uint8_t *bufPosPtr, uint8_t *dest, int size);
 
 //key=value or key="value" attribute par collection parsing and searching

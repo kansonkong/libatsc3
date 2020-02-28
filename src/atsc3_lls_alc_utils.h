@@ -17,8 +17,7 @@
 
 #include "atsc3_lls.h"
 #include "atsc3_lls_types.h"
-#include "mad.h"
-#include "alc_session.h"
+#include "atsc3_alc_session.h"
 #include "atsc3_lls_slt_parser.h"
 #include "atsc3_lls_sls_parser.h"
 #include "atsc3_logging_externs.h"

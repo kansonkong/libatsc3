@@ -89,12 +89,8 @@ intermediate_sls: 	atsc3_route_mpd.o \
 					atsc3_sls_metadata_fragment_types.o \
 					atsc3_sls_metadata_fragment_types_parser.o	
 
-intermediate_alc: 	alc_session.c \
-					fec.c \
-					null_fec.c \
-					rs_fec.c \
-					xor_fec.o \
-					atsc3_alc_rx.c \
+intermediate_alc: 	atsc3_alc_session.o \
+					atsc3_alc_rx.o \
 					atsc3_alc_utils.o \
 					atsc3_route_sls_processor.o
 
@@ -275,6 +271,9 @@ fixups_timespec_get.o:  fixups.h fixups_timespec_get.c
 
 atsc3_alc_rx.o:  atsc3_alc_rx.h atsc3_alc_rx.c atsc3_lct_hdr.h
 	cc -g -c atsc3_alc_rx.c
+	
+atsc3_alc_session.o: atsc3_alc_session.h atsc3_alc_session.c
+	cc -g -c atsc3_alc_session.c
 
 atsc3_alc_utils.o: atsc3_alc_utils.h atsc3_alc_utils.c
 	cc -g -c atsc3_alc_utils.c -o atsc3_alc_utils.o
@@ -399,6 +398,7 @@ libatsc3_intermediate.o: atsc3_lls.o \
 		atsc3_mmt_mpu_sample_format_parser.o \
 		atsc3_mmt_context_mfu_depacketizer.o \
 		atsc3_alc_rx.o \
+		atsc3_alc_session.o \
 		atsc3_lls_alc_utils.o \
 		atsc3_mmt_mpu_utils.o \
 		atsc3_player_ffplay.o \
@@ -427,16 +427,6 @@ libatsc3_intermediate.o: atsc3_lls.o \
 		strnstr.o \
 		xml.o \
 		fixups_timespec_get.o \
-		alc_session.o \
-		fec.o \
-		null_fec.o \
-		rs_fec.o \
-		xor_fec.o \
-		mad.o \
-		mad_rlc.o \
-		transport.o \
-		alc_channel.o \
-		alc_list.o \
 		atsc3_dstp_types.o \
 		atsc3_a344_receiver_query_api.o \
 		atsc3_aeat_types.o \
@@ -464,6 +454,7 @@ libatsc3_intermediate.o: atsc3_lls.o \
 		atsc3_mmt_mpu_sample_format_parser.o \
 		atsc3_mmt_context_mfu_depacketizer.o \
 		atsc3_alc_rx.o \
+		atsc3_alc_session.o \
 		atsc3_lls_alc_utils.o \
 		atsc3_mmt_mpu_utils.o \
 		atsc3_player_ffplay.o \
@@ -492,16 +483,6 @@ libatsc3_intermediate.o: atsc3_lls.o \
 		xml.o \
 		strnstr.o \
 		fixups_timespec_get.o \
-		alc_session.o \
-		fec.o \
-		null_fec.o \
-		rs_fec.o \
-		xor_fec.o \
-		mad.o \
-		mad_rlc.o \
-		transport.o \
-		alc_channel.o \
-		alc_list.o \
 		atsc3_dstp_types.o \
 		atsc3_a344_receiver_query_api.o \
 		atsc3_aeat_types.o \
