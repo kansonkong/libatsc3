@@ -160,6 +160,7 @@ atsc3_lls_slt_service_t* atsc3_phy_mmt_player_bridge_set_single_monitor_a331_ser
                                     atsc3_link_mapping_table_plp->PLP_ID,
                                     atsc3_slt_broadcast_svc_signalling->sls_destination_ip_address,
                                     atsc3_slt_broadcast_svc_signalling->sls_destination_udp_port);
+                            atsc3NdkClientSL_ptr->ListenPLP1(atsc3_link_mapping_table_plp->PLP_ID);
                         }
                     }
                 }
