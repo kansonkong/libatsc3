@@ -27,7 +27,7 @@ int PACKET_COUNTER=0;
 
 #include "../atsc3_lls.h"
 //#include "../atsc3_lls_alc_utils.h"
-//#include "alc_channel.h"
+//#include "atsc3_alc_channel.h"
 //#include "../atsc3_alc_rx.h"
 //#include "../atsc3_alc_utils.h"
 

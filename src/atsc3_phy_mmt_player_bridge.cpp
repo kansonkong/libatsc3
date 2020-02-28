@@ -38,6 +38,7 @@ atsc3NdkClient* atsc3NdkClientSL_ptr;
 
 #include "atsc3_lls.h"
 
+
 #include "atsc3_lls_slt_parser.h"
 #include "atsc3_lls_sls_monitor_output_buffer_utils.h"
 
@@ -56,8 +57,11 @@ atsc3NdkClient* atsc3NdkClientSL_ptr;
 #include "atsc3_lls_alc_utils.h"
 #include "atsc3_alc_rx.h"
 #include "atsc3_alc_utils.h"
+#include "atsc3_alp_types.h"
 
 
+//A/330 LMT management
+atsc3_link_mapping_table* atsc3_link_mapping_table_last = NULL;
 
 //commandline stream filtering
 
@@ -79,11 +83,9 @@ lls_sls_mmt_monitor_t* lls_sls_mmt_monitor = NULL;
 
 //route/alc specific parameters
 lls_sls_alc_monitor_t* lls_sls_alc_monitor = NULL;
-alc_channel_t ch;
-alc_arguments_t* alc_arguments;
+atsc3_alc_arguments_t* alc_arguments;
 
 std::string atsc3_ndk_cache_temp_folder_path;
-
 
 //these should actually be referenced from mmt_sls_monitor for proper flow references
 uint16_t global_video_packet_id = 0;
@@ -133,13 +135,41 @@ atsc3_lls_slt_service_t* atsc3_phy_mmt_player_bridge_set_single_monitor_a331_ser
     atsc3_slt_broadcast_svc_signalling_t* atsc3_slt_broadcast_svc_signalling_mmt = NULL;
     atsc3_slt_broadcast_svc_signalling_t* atsc3_slt_broadcast_svc_signalling_route = NULL;
 
+    //broadcast_svc_signalling has cardinality (0..1), any other signalling location is represented by SvcInetUrl (0..N)
+
     for(int i=0; i < atsc3_lls_slt_service->atsc3_slt_broadcast_svc_signalling_v.count; i++) {
         atsc3_slt_broadcast_svc_signalling = atsc3_lls_slt_service->atsc3_slt_broadcast_svc_signalling_v.data[i];
-        if(atsc3_slt_broadcast_svc_signalling->sls_protocol == SLS_PROTOCOL_MMTP) {
-            atsc3_slt_broadcast_svc_signalling_mmt = atsc3_slt_broadcast_svc_signalling;
-        } else if(atsc3_slt_broadcast_svc_signalling->sls_protocol == SLS_PROTOCOL_ROUTE) {
-            atsc3_slt_broadcast_svc_signalling_route = atsc3_slt_broadcast_svc_signalling;
-            atsc3_slt_broadcast_svc_signalling_mmt = NULL;
+
+        if(atsc3_slt_broadcast_svc_signalling->sls_protocol == SLS_PROTOCOL_MMTP || atsc3_slt_broadcast_svc_signalling->sls_protocol == SLS_PROTOCOL_ROUTE) {
+            //check if we need to add this PLP based upon our LMT to the phy listener
+            //if(atsc3_slt_broadcast_svc_signalling->sls_source_ip_address
+            if(atsc3_link_mapping_table_last != NULL) {
+                for(int j=0; j < atsc3_link_mapping_table_last->atsc3_link_mapping_table_plp_v.count; j++) {
+                    atsc3_link_mapping_table_plp_t* atsc3_link_mapping_table_plp = atsc3_link_mapping_table_last->atsc3_link_mapping_table_plp_v.data[j];
+                    for(int k=0; k < atsc3_link_mapping_table_plp->atsc3_link_mapping_table_multicast_v.count; k++) {
+                        atsc3_link_mapping_table_multicast_t* atsc3_link_mapping_table_multicast = atsc3_link_mapping_table_plp->atsc3_link_mapping_table_multicast_v.data[k];
+
+                        uint32_t sls_destination_ip_address = parseIpAddressIntoIntval(atsc3_slt_broadcast_svc_signalling->sls_destination_ip_address);
+                        uint16_t sls_destination_udp_port = parsePortIntoIntval(atsc3_slt_broadcast_svc_signalling->sls_destination_udp_port);
+
+                        if(atsc3_link_mapping_table_multicast->dst_ip_add == sls_destination_ip_address &&
+                            atsc3_link_mapping_table_multicast->dst_udp_port == sls_destination_udp_port) {
+                            atsc3NdkClientSL_ptr->LogMsgF("atsc3_phy_mmt_player_bridge_set_single_monitor_a331_service_id: SLS adding PLP_id: %d (%s: %s)",
+                                    atsc3_link_mapping_table_plp->PLP_ID,
+                                    atsc3_slt_broadcast_svc_signalling->sls_destination_ip_address,
+                                    atsc3_slt_broadcast_svc_signalling->sls_destination_udp_port);
+                            atsc3NdkClientSL_ptr->ListenPLP1(atsc3_link_mapping_table_plp->PLP_ID);
+                        }
+                    }
+                }
+            }
+
+
+            if(atsc3_slt_broadcast_svc_signalling->sls_protocol == SLS_PROTOCOL_MMTP) {
+                atsc3_slt_broadcast_svc_signalling_mmt = atsc3_slt_broadcast_svc_signalling;
+            } else if(atsc3_slt_broadcast_svc_signalling->sls_protocol == SLS_PROTOCOL_ROUTE) {
+                atsc3_slt_broadcast_svc_signalling_route = atsc3_slt_broadcast_svc_signalling;
+            }
         }
     }
 
@@ -153,6 +183,7 @@ atsc3_lls_slt_service_t* atsc3_phy_mmt_player_bridge_set_single_monitor_a331_ser
 
         //clear any active SLS monitors
         lls_slt_monitor_clear_lls_sls_mmt_monitor(lls_slt_monitor);
+
         //TODO - remove this logic to a unified process...
         lls_slt_monitor_clear_lls_sls_alc_monitor(lls_slt_monitor);
         lls_slt_monitor->lls_sls_alc_monitor = NULL;
@@ -222,7 +253,6 @@ atsc3_lls_slt_service_t* atsc3_phy_mmt_player_bridge_set_single_monitor_a331_ser
             lls_sls_alc_monitor_free(&lls_slt_monitor->lls_sls_alc_monitor);
         }
         lls_sls_alc_monitor = NULL;
-
     }
 
     return atsc3_lls_slt_service;
@@ -454,7 +484,7 @@ void atsc3_phy_mmt_player_bridge_process_packet_phy(block_t* packet) {
        ((dst_ip_addr_filter != NULL && dst_ip_port_filter != NULL) && (udp_packet->udp_flow.dst_ip_addr == *dst_ip_addr_filter && udp_packet->udp_flow.dst_port == *dst_ip_port_filter))) {
 
         //process ALC streams
-        int retval = alc_rx_analyze_packet_a331_compliant((char*)block_Get(udp_packet->data), block_Remaining_size(udp_packet->data), &ch, &alc_packet);
+        int retval = alc_rx_analyze_packet_a331_compliant((char*)block_Get(udp_packet->data), block_Remaining_size(udp_packet->data), &alc_packet);
         if(!retval) {
             atsc3_alc_persist_route_ext_attributes_per_lls_sls_alc_monitor_essence(alc_packet, lls_slt_monitor->lls_sls_alc_monitor);
             //dump out for fragment inspection
@@ -935,6 +965,23 @@ void atsc3_mmt_mpu_on_sequence_movie_fragment_metadata_present_ndk(uint16_t pack
 
     atsc3NdkClientSL_ptr->atsc3_onExtractedSampleDuration(packet_id, mpu_sequence_number, extracted_sample_duration_us);
 }
+
+
+atsc3_link_mapping_table_t*  atsc3_phy_mmt_player_bridge_notify_link_mapping_table(atsc3_link_mapping_table_t* atsc3_link_mapping_table_pending) {
+    atsc3_link_mapping_table_t* atsc3_link_mapping_table_to_free = NULL;
+
+    //jjustman-2020-02-27: TODO: check if LMT payload is different, then update our reference
+    if(true) {
+        atsc3_link_mapping_table_last = atsc3_link_mapping_table_pending;
+    } else {
+        //otherwise, free our newly parsed lmt
+        atsc3_link_mapping_table_to_free = atsc3_link_mapping_table_pending;
+    }
+
+    return atsc3_link_mapping_table_to_free;
+}
+
+
 
 #ifdef __FIXME_REFACTOR_LOWASIS__
 void atsc3_phy_mmt_player_bridge_init(At3DrvIntf* atsc3NdkClientSL_ptr_l) {

@@ -16,7 +16,7 @@
 #include <sys/types.h>
 
 #include "atsc3_lls_sls_monitor_output_buffer.h"
-#include "alc_session.h"
+#include "atsc3_alc_session.h"
 #include "atsc3_listener_udp.h"
 
 //slight tight coupling...
@@ -564,8 +564,8 @@ typedef struct lls_sls_alc_session {
 	uint32_t sls_destination_ip_address;
 	uint16_t sls_destination_udp_port;
 
-	alc_arguments_t* alc_arguments;
-	alc_session_t* alc_session;
+	atsc3_alc_arguments_t* alc_arguments;
+	atsc3_alc_session_t* alc_session;
 
 	//jdj-2019-05-29 - hack for resolving monitor tsi/toi
 

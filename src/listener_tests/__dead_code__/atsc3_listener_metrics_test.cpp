@@ -176,7 +176,7 @@ void process_packet(u_char *user, const struct pcap_pkthdr *pkthdr, const u_char
 		if(lls_session->lls_slt_alc_session->alc_session) {
 			//re-inject our alc session
 			alc_packet_t* alc_packet = NULL;
-			alc_channel_t ch;
+			atsc3_alc_channel_t ch;
 			ch.s = lls_session->lls_slt_alc_session->alc_session;
 
 			//process ALC streams
