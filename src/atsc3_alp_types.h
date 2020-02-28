@@ -173,19 +173,7 @@ typedef struct atsc3_alp_packet {
     bool                is_alp_payload_complete;
 } atsc3_alp_packet_t;
 
-typedef struct lmt_table_header {
-	uint8_t num_PLPs_minus1;		/**< LCT version number */
-	uint8_t reserved;	/**< congestion control flag */
-
-} lmt_table_header_t;
-
-typedef struct lmt_table_plp {
-	uint8_t PLP_ID;			/**jdj-2019-01-07  -    Protocol-Specific Indication (PSI): 2 bits **/
-	uint8_t	reserved;
-	uint8_t num_multicasts;
-} lmt_table_plp_t;
-
-typedef struct lmt_table_multicast {
+typedef struct atsc3_link_mapping_table_multicast {
 	uint32_t		src_ip_add;
 	uint32_t		dst_ip_add;
 	uint16_t		src_udp_port;
@@ -193,16 +181,34 @@ typedef struct lmt_table_multicast {
 	uint8_t 		sid_flag:1;
 	uint8_t 		compressed_flag:1;
 	uint8_t			reserved:6;
-	/*
-	 * optional char if sid_flag==1
-	 	 unsigned char	SID;
+	
+	/* optional char if sid_flag==1
+			unsigned char	SID;
 	   optional char if compressed_flag==1
-		unsigned char	context_id;
-	 *
-	 */
-} lmt_table_multicast_t;
+			unsigned char	context_id;
+	*/
+	uint8_t			sid;
+	uint8_t			context;
+	
+} atsc3_link_mapping_table_multicast_t;
+
+typedef struct atsc3_link_mapping_table_plp {
+	uint8_t PLP_ID;			/**jdj-2019-01-07  -    Protocol-Specific Indication (PSI): 2 bits **/
+	uint8_t	reserved;
+	uint8_t num_multicasts;
+	ATSC3_VECTOR_BUILDER_STRUCT(atsc3_link_mapping_table_multicast);
+} atsc3_link_mapping_table_plp_t;
+
+ATSC3_VECTOR_BUILDER_METHODS_INTERFACE(atsc3_link_mapping_table_plp, atsc3_link_mapping_table_multicast);
 
 
+typedef struct atsc3_link_mapping_table {
+	uint8_t num_PLPs_minus1:6;
+	uint8_t reserved:2;
+	ATSC3_VECTOR_BUILDER_STRUCT(atsc3_link_mapping_table_plp);
+} atsc3_link_mapping_table_t;
+
+ATSC3_VECTOR_BUILDER_METHODS_INTERFACE(atsc3_link_mapping_table, atsc3_link_mapping_table_plp);
 
 typedef struct atsc3_alp_packet_collection {
     pcap_t*                         descrInject; //optional descriptor for alp injection
