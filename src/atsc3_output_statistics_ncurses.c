@@ -232,7 +232,7 @@ void* ncurses_input_run_thread(void* lls_slt_monitor_ptr) {
 
 					if(lls_sls_alc_session) {
                         //TODO - free and teardown if we already have an active monitoring
-						//build our alc_session map
+						//build our atsc3_alc_session map
 						lls_sls_alc_monitor = lls_sls_alc_monitor_create();
 						lls_sls_alc_monitor->lls_alc_session = lls_sls_alc_session;
                         lls_sls_alc_monitor->atsc3_lls_slt_service = lls_sls_alc_session->atsc3_lls_slt_service;

@@ -30,7 +30,7 @@ int PACKET_COUNTER=0;
 #include "../atsc3_lls.h"
 #include "../atsc3_lls_alc_utils.h"
 #include "../atsc3_alc_rx.h"
-#include "../alc_channel.h"
+#include "../atsc3_alc_channel.h"
 #include "../atsc3_alc_utils.h"
 #include "../atsc3_listener_udp.h"
 #include "../atsc3_logging_externs.h"
@@ -41,7 +41,7 @@ lls_sls_alc_monitor* lls_sls_alc_monitor;
 uint32_t* dst_ip_addr_filter = NULL;
 uint16_t* dst_ip_port_filter = NULL;
 
-alc_channel_t ch;
+atsc3_alc_channel_t ch;
 alc_arguments_t* alc_arguments;
 
 void process_packet(u_char *user, const struct pcap_pkthdr *pkthdr, const u_char *packet) {
@@ -180,7 +180,7 @@ int main(int argc,char **argv) {
     lls_slt_monitor = lls_slt_monitor_create();
 	alc_arguments = (alc_arguments_t*)calloc(1, sizeof(alc_arguments_t));
     
-    ch.s = open_alc_session(alc_arguments);
+    ch.s = atsc3_open_alc_session(alc_arguments);
 
     pcap_lookupnet(dev, &netp, &maskp, errbuf);
     descr = pcap_open_live(dev, MAX_PCAP_LEN, 1, 1, errbuf);

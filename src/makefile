@@ -89,7 +89,7 @@ intermediate_sls: 	atsc3_route_mpd.o \
 					atsc3_sls_metadata_fragment_types.o \
 					atsc3_sls_metadata_fragment_types_parser.o	
 
-intermediate_alc: 	alc_session.c \
+intermediate_alc: 	atsc3_alc_session.c \
 					fec.c \
 					null_fec.c \
 					rs_fec.c \
