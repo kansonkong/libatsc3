@@ -47,7 +47,6 @@ int PACKET_COUNTER=0;
 #include "../atsc3_mmt_mpu_utils.h"
 #include "../atsc3_mmt_reconstitution_from_media_sample.h"
 
-#include "../atsc3_alc_channel.h"
 #include "../atsc3_alc_rx.h"
 #include "../atsc3_alc_utils.h"
 
