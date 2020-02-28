@@ -120,7 +120,7 @@ signaling_information_hdr() {
 
 	uint8_t lmt_table_byte = *binary_payload++;
 	//printf("lmt_table_byte: 0x%x\n", lmt_table_byte);
-	lmt_table_header_t lmt_table_header;
+	atsc3_link_mapping_table_t lmt_table_header;
 	lmt_table_header.num_PLPs_minus1 = (lmt_table_byte >> 2) & 0x3F;
 	lmt_table_header.reserved = (lmt_table_byte) & 0x3;
 	printf("lmt table:\n");
@@ -135,7 +135,7 @@ signaling_information_hdr() {
 		uint8_t lmt_table_plp_byte_2 = *binary_payload++;
 
 		//printf("lmt bytes: 0x%x 0x%x", lmt_table_plp_byte, lmt_table_plp_byte_2);
-		lmt_table_plp_t lmt_table_plp;
+		atsc3_link_mapping_table_plp_t lmt_table_plp;
 		lmt_table_plp.PLP_ID = (lmt_table_plp_byte >> 2) & 0x3F;
 		lmt_table_plp.reserved = lmt_table_plp_byte & 0x3;
 		lmt_table_plp.num_multicasts = lmt_table_plp_byte_2;
@@ -151,7 +151,7 @@ signaling_information_hdr() {
 				printf("----LMT PLP underflow!\n\n");
 				exit(1);
 			}
-			lmt_table_multicast_t lmt_table_multicast;
+			atsc3_link_mapping_table_multicast_t lmt_table_multicast;
 
 			uint8_t *lmt_table_plp_byte = binary_payload;
 
