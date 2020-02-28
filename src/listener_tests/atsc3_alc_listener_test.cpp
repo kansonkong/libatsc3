@@ -42,7 +42,6 @@ int PACKET_COUNTER=0;
 #include "../atsc3_lls.h"
 #include "../atsc3_lls_alc_utils.h"
 #include "../atsc3_alc_rx.h"
-#include "../alc_channel.h"
 #include "../atsc3_alc_utils.h"
 #include "../atsc3_listener_udp.h"
 #include "../atsc3_logging_externs.h"
@@ -54,8 +53,8 @@ lls_slt_monitor_t* lls_slt_monitor;
 uint32_t* dst_ip_addr_filter = NULL;
 uint16_t* dst_ip_port_filter = NULL;
 
-alc_channel_t ch;
-alc_arguments_t* alc_arguments;
+atsc3_alc_arguments_t* alc_arguments;
+atsc3_alc_session_t* atsc3_alc_session;
 
 void process_packet(u_char *user, const struct pcap_pkthdr *pkthdr, const u_char *packet) {
 
@@ -78,7 +77,7 @@ void process_packet(u_char *user, const struct pcap_pkthdr *pkthdr, const u_char
 	if(matching_lls_slt_alc_session ||
 			((dst_ip_addr_filter != NULL && dst_ip_port_filter != NULL) && (udp_packet->udp_flow.dst_ip_addr == *dst_ip_addr_filter && udp_packet->udp_flow.dst_port == *dst_ip_port_filter))) {
 		//process ALC streams
-		int retval = alc_rx_analyze_packet_a331_compliant((char*)block_Get(udp_packet->data), block_Remaining_size(udp_packet->data), &ch, &alc_packet);
+		int retval = alc_rx_analyze_packet_a331_compliant((char*)block_Get(udp_packet->data), block_Remaining_size(udp_packet->data), &alc_packet);
 		if(!retval) {
 			//dump out for fragment inspection
 			//alc_packet_dump_to_object(&alc_packet, lls_slt_monitor->lls_sls_alc_monitor);
@@ -198,9 +197,9 @@ int main(int argc,char **argv) {
     }
 
     lls_slt_monitor = lls_slt_monitor_create();
-	alc_arguments = (alc_arguments_t*)calloc(1, sizeof(alc_arguments_t));
+	alc_arguments = (atsc3_alc_arguments_t*)calloc(1, sizeof(atsc3_alc_arguments_t));
 
-    ch.s = open_alc_session(alc_arguments);
+    atsc3_alc_session = atsc3_open_alc_session(alc_arguments);
 
 
 #ifndef _TEST_RUN_VALGRIND_OSX_

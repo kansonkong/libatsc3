@@ -56,7 +56,6 @@ int PACKET_COUNTER=0;
 #include "../atsc3_mmt_mpu_utils.h"
 #include "../atsc3_mmt_reconstitution_from_media_sample.h"
 
-#include "../alc_channel.h"
 #include "../atsc3_alc_rx.h"
 #include "../atsc3_alc_utils.h"
 
@@ -477,11 +476,8 @@ alc_packet_t* route_parse_from_udp_packet(lls_sls_alc_session_t *matching_lls_sl
     if(matching_lls_slt_alc_session->alc_session) {
         //re-inject our alc session
 
-        alc_channel_t ch;
-        ch.s = matching_lls_slt_alc_session->alc_session;
-        
         //process ALC streams
-        int retval = alc_rx_analyze_packet_a331_compliant((char*)block_Get(udp_packet->data), block_Remaining_size(udp_packet->data), &ch, &alc_packet);
+        int retval = alc_rx_analyze_packet_a331_compliant((char*)block_Get(udp_packet->data), block_Remaining_size(udp_packet->data), &alc_packet);
         if(!retval) {
             atsc3_global_statistics->packet_counter_alc_packets_parsed++;
             
