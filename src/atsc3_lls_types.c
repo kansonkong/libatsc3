@@ -206,15 +206,14 @@ atsc3_lls_slt_service_t* lls_slt_monitor_add_or_update_lls_slt_service_id_group_
         atsc3_lls_slt_service_existing = lls_slt_service_id_group_id_cache->atsc3_lls_slt_service_cache_v.data[i];
         if(atsc3_lls_slt_service_existing->service_id == atsc3_lls_slt_service->service_id) {
             has_service_to_update = true;
+            //jjustman-2020-02-28 - hack-ish
+            lls_slt_service_id_group_id_cache->atsc3_lls_slt_service_cache_v.data[i] = atsc3_lls_slt_service;
         }
     }
 
     if(!has_service_to_update) {
         lls_slt_service_id_group_id_cache_add_atsc3_lls_slt_service_cache(lls_slt_service_id_group_id_cache, atsc3_lls_slt_service);
-    } else {
-        //TODO: jjustman-2019-10-20 - update and "merge" atsc3_lls_slt_service_existing wiht atsc3_lls_slt_service
     }
-
     return atsc3_lls_slt_service;
 
 }
