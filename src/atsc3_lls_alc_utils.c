@@ -22,7 +22,7 @@ lls_sls_alc_session_t* lls_slt_alc_session_create(atsc3_lls_slt_service_t* atsc3
 	lls_slt_alc_session->atsc3_lls_slt_service = atsc3_lls_slt_service;
 	lls_slt_alc_session->service_id = atsc3_lls_slt_service->service_id;
 
-	lls_slt_alc_session->alc_arguments = (alc_arguments_t*)calloc(1, sizeof(alc_arguments_t));
+	lls_slt_alc_session->alc_arguments = (atsc3_alc_arguments_t*)calloc(1, sizeof(atsc3_alc_arguments_t));
 
 	if(atsc3_lls_slt_service->atsc3_slt_broadcast_svc_signalling_v.count) {
 		atsc3_slt_broadcast_svc_signalling_t* atsc3_slt_broadcast_svc_signalling = atsc3_lls_slt_service->atsc3_slt_broadcast_svc_signalling_v.data[0];
@@ -44,7 +44,7 @@ lls_sls_alc_session_t* lls_slt_alc_session_create(atsc3_lls_slt_service_t* atsc3
 	} else {
 		_ATSC3_LLS_ALC_UTILS_ERROR("lls_slt_alc_session_create: SLT parsing of broadcast_svc_signalling for service_id: %u missing!", atsc3_lls_slt_service->service_id);
 	}
-	lls_slt_alc_session->alc_session = open_alc_session(lls_slt_alc_session->alc_arguments);
+	lls_slt_alc_session->alc_session = atsc3_open_alc_session(lls_slt_alc_session->alc_arguments);
 
 	return lls_slt_alc_session;
 }
