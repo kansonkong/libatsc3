@@ -180,7 +180,7 @@ void* ncurses_input_run_thread(void* lls_slt_monitor_ptr) {
                     if(lls_sls_mmt_session) {
                         //TODO - free and teardown if we already have an active montiro
 
-                        //build our alc_session map
+                        //build our atsc3_alc_session map
                         
                         lls_sls_mmt_monitor = lls_sls_mmt_monitor_create();
                         lls_sls_mmt_monitor->lls_mmt_session = lls_sls_mmt_session;

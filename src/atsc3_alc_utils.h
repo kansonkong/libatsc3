@@ -15,7 +15,6 @@
 
 #include "atsc3_utils.h"
 #include "atsc3_alc_rx.h"
-#include "alc_channel.h"
 #include "atsc3_player_ffplay.h"
 #include "atsc3_lls_types.h"
 #include "atsc3_lls_sls_monitor_output_buffer.h"

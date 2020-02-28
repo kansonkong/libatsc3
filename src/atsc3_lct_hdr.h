@@ -1,40 +1,12 @@
-/** \file lct_hdr.h \brief LCT header
+/*
+ * atsc3_alc_rx.c
  *
- *  $Author: peltotal $ $Date: 2007/02/26 13:48:19 $ $Revision: 1.23 $
- *
- *  MAD-ALCLIB: Implementation of ALC/LCT protocols, Compact No-Code FEC,
- *  Simple XOR FEC, Reed-Solomon FEC, and RLC Congestion Control protocol.
- *  Copyright (c) 2003-2007 TUT - Tampere University of Technology
- *  main authors/contacts: jani.peltotalo@tut.fi and sami.peltotalo@tut.fi
- *
- *  This program is free software; you can redistribute it and/or modify
- *  it under the terms of the GNU General Public License as published by
- *  the Free Software Foundation; either version 2 of the License, or
- *  (at your option) any later version.
- *
- *  This program is distributed in the hope that it will be useful,
- *  but WITHOUT ANY WARRANTY; without even the implied warranty of
- *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- *  GNU General Public License for more details.
- *
- *  You should have received a copy of the GNU General Public License
- *  along with this program; if not, write to the Free Software
- *  Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
- *
- *  In addition, as a special exception, TUT - Tampere University of Technology
- *  gives permission to link the code of this program with the OpenSSL library (or
- *  with modified versions of OpenSSL that use the same license as OpenSSL), and
- *  distribute linked combinations including the two. You must obey the GNU
- *  General Public License in all respects for all of the code used other than
- *  OpenSSL. If you modify this file, you may extend this exception to your version
- *  of the file, but you are not obligated to do so. If you do not wish to do so,
- *  delete this exception statement from your version.
+ *  Created on: Feb 6, 2019
+ *      Author: jjustman
  */
 
-#ifndef _LCT_HDR_H_
-#define _LCT_HDR_H_
-
-#include "defines.h"
+#ifndef _ATSC3_LCT_HDR_H_
+#define _ATSC3_LCT_HDR_H_
 
 #ifdef __cplusplus
 extern "C" {
@@ -297,76 +269,6 @@ typedef struct atsc3_def_lct_hdr {
  * +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
  */
 
-int add_fdt_lct_he(atsc3_def_lct_hdr_t *def_lct_hdr, int hdrlen, unsigned int fdt_instance_id);
-
-/**
- * This function adds CENC LCT extension header to FLUTE's header.
- *
- * @param def_lct_hdr pointer to the default LCT header
- * @param hdrlen current length of FLUTE header
- * @param content_enc_algo content encoding algorith used with the FDT instance payload
- *
- * @return number of bytes added to the FLUTE's header
- *
- */
-
-/*
- *  0                   1                   2                   3
- *  0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1
- * +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
- * |   HET = 193   |     CENC      |          Reserved             |
- * +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
- */
-
-int add_cenc_lct_he(atsc3_def_lct_hdr_t *def_lct_hdr, int hdrlen, unsigned char content_enc_algo);
-
-/**
- * This function adds FTI (FEC Encoding IDs 0, 2, 128, 130) LCT extension header to FLUTE's header.
- *
- * @param def_lct_hdr pointer to the default LCT header
- * @param hdrlen current length of FLUTE header
- * @param transferlen length of the transport object
- * @param fec_inst_id FEC instance id (or reserved/zeroed with ID 0)
- * @param eslen encoding symbol length
- * @param max_sblen maximum source block length
- *
- * @return number of bytes added to the FLUTE's header
- *
- */
-
-/*
- *  0                   1                   2                   3
- *  0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1
- * +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
- * |   HET = 64    |     HEL       |                               |
- * +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+                               +
- * |                       Transfer Length                         |
- * +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
- * |   Reserved/FEC Instance ID    |     Encoding Symbol Length    |
- * +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
- * |                  Maximum Source Block Length                  |
- * +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
- * 
- */
-
-int add_fti_0_2_128_130_lct_he(atsc3_def_lct_hdr_t *def_lct_hdr, int hdrlen, unsigned long long transferlen,
-								unsigned short fec_inst_id, unsigned short eslen, unsigned int max_sblen);
- 
-/**
- * This function adds FTI (FEC Encoding ID 3) LCT extension header to FLUTE's header.
- *
- * @param def_lct_hdr pointer to the default LCT header
- * @param hdrlen current length of FLUTE header
- * @param transferlen length of the transport object
- * @param m finite field parameter
- * @param G number of encoding symbols per FLUTE packet
- * @param eslen encoding symbol length
- * @param max_sblen maximum source block length
- * @param mxnbofes maximum number of encoding symbols per block
- *
- * @return number of bytes added to the FLUTE's header
- *
- */
 
 /*
  *  0                   1                   2                   3
@@ -383,121 +285,39 @@ int add_fti_0_2_128_130_lct_he(atsc3_def_lct_hdr_t *def_lct_hdr, int hdrlen, uns
  * 
  */
 
-int add_fti_3_lct_he(atsc3_def_lct_hdr_t *def_lct_hdr, int hdrlen, unsigned long long transferlen,
-					unsigned char m, unsigned char G, unsigned short eslen, unsigned short max_sblen,
-					unsigned short mxnbofes);
 
-/*
- * This function adds FTI (FEC Encoding ID 129) LCT extension header to FLUTE's header.
- *
- * @param def_lct_hdr pointer to the default LCT header
- * @param hdrlen current length of FLUTE header
- * @param transferlen length of the transport object
- * @param fec_inst_id FEC instance id (or reserved/zeroed with ID 0)
- * @param eslen encoding symbol length
- * @param max_sblen maximum source block length
- * @param mxnbofes maximum number of encoding symbols per block
- *
- * @return number of bytes added to the FLUTE's header
- *
- */
+#define FDT_TOI		0				/**< TOI for FDT */
 
-/*
- *  0                   1                   2                   3
- *  0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1
- * +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
- * |   HET = 64    |     HEL       |                               |
- * +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+                               +
- * |                       Transfer Length                         |
- * +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
- * |    FEC Instance ID            |     Encoding Symbol Length    |
- * +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
- * |  Maximum Source Block Length  | Max. Num. of Encoding Symbols |
- * +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
- * 
- */
+#define ALC_VERSION		1		/**< ALC version number */
+#define FLUTE_VERSION_1 1        /**< FLUTE version number */
+#define FLUTE_VERSION_2	2		/**< FLUTE version number */
 
-int add_fti_129_lct_he(atsc3_def_lct_hdr_t *def_lct_hdr, int hdrlen, unsigned long long transferlen,
-						unsigned short fec_inst_id, unsigned short eslen, unsigned short max_sblen,
-						unsigned short mxnbofes);
+#define COM_NO_C_FEC_ENC_ID		0	/**< Compact No-Code FEC scheme */
+#define SIMPLE_XOR_FEC_ENC_ID   2	/**< Simple XOR FEC scheme */
+#define RS_FEC_ENC_ID			3	/**< Reed-Solomon FEC scheme, identifier not yet decided, 3 used temporarily */
 
-/**
- * This function adds NOP LCT extension header to FLUTE's header.
- * Not yet implemented.
- *
- * @return number of bytes added to the FLUTE's header
- *
- */
+#define SB_LB_E_FEC_ENC_ID		128		/**< Small Block, Large Block and Expandable FEC scheme */
+#define SB_SYS_FEC_ENC_ID		129		/**< Small Block Systematic FEC scheme */
+#define COM_FEC_ENC_ID			130		/**< Compact FEC scheme */
 
-/*
- *  0                   1                   2                   3
- *  0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1
- * +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
- * |      HET      |      HEL      |                               |
- * +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+                               +
- * .                                                               . 
- * .           Header Extension Content (HEC)                      . 
- * .                                                               .
- * +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
- *
- */
+#define REED_SOL_FEC_INST_ID	0		/**< Reed-Solomon instance id, when Small Block Systematic FEC scheme is used */
 
-int add_nop_lct_he(void);
+#define Null 0			/**< Null congestion control mechanism */
+#define RLC	1			/**< RLC congestion control mechanism */
 
-/*
- * This function adds AUTH LCT extension header to FLUTE's header.
- * Not yet implemented.
- *
- * @return number of bytes added to the FLUTE's header
- *
- */
+#define EXT_NOP		                0		/**< No-operation extension header defined by LCT */
+#define	EXT_AUTH	                1		/**< Authentication extension header defined by LCT */
+#define EXT_TIME	                2		/**< Time extension header defined by LCT */
 
-/*
- *  0                   1                   2                   3
- *  0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1
- * +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
- * |    HET = 0    |      HEL      |                               |
- * +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+                               +
- * .                                                               . 
- * .           Header Extension Content (HEC)                      . 
- * .                                                               .
- * +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
- *
- */
+#define	EXT_FTI		                64		/**< FEC object transmission information extension header defined by ALC */
+#define EXT_ROUTE_PRESENTATION_TIME 66 /** A.3.7.1 EXT_ROUTE_PRESENTATION_TIME Header, 32 x 3 bits = 96 **/
 
-int add_auth_lct_he(void);
+//2019-02-19 - ATSC 3.0 compat - A/331 - A.4.2.6.1 EXT_TOL Header
 
-/**
- * This function adds TIME LCT extension header to FLUTE's header.
- * Not yet implemented.
- *
- * @return number of bytes added to the FLUTE's header
- *
- */
-
-/*
- *  0                   1                   2                   3
- *  0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1
- * +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
- * |    HET = 2    |      HEL      |         Use (bit field)       |
- * +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
- * |                       first time value                        |
- * +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
- * ...            (other time values (optional)                  ...
- * +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
- *
- *                 Use (bit field)
- *
- *                 2                                       3
- *   6   7   8   9   0   1   2   3   4   5   6   7   8   9   0   1
- * +---+---+---+---+---+---+---+---+---+---+---+---+---+---+---+---+
- * |SCT|SCT|ERT|SLC|   reserved    |          PI-specific          |
- * |Hi |Low|   |   |    by LCT     |              use              |
- * +---+---+---+---+---+---+---+---+---+---+---+---+---+---+---+---+
- *
- */
-
-int add_time_lct_he(void);
+#define EXT_TOL_48              	67		//48 bit tol length
+#define EXT_TOL_24 	                194		//24 bit tol length
+#define EXT_FDT		                192				/**< Extension header for FDT defined by FLUTE */
+#define EXT_CENC	                193				/**< Extension header for FDT content encoding defined by FLUTE */
 
 #ifdef __cplusplus
 }; //extern "C"

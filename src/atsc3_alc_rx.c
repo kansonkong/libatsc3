@@ -1,85 +1,17 @@
-/** \file alc_rx.c \brief ALC level receiving
+/*
+ * atsc3_alc_rx.c
  *
- *  $Author: peltotal $ $Date: 2007/02/28 08:58:00 $ $Revision: 1.146 $
- *
- *  MAD-ALCLIB: Implementation of ALC/LCT protocols, Compact No-Code FEC,
- *  Simple XOR FEC, Reed-Solomon FEC, and RLC Congestion Control protocol.
- *  Copyright (c) 2003-2007 TUT - Tampere University of Technology
- *  main authors/contacts: jani.peltotalo@tut.fi and sami.peltotalo@tut.fi
- *
- *  This program is free software; you can redistribute it and/or modify
- *  it under the terms of the GNU General Public License as published by
- *  the Free Software Foundation; either version 2 of the License, or
- *  (at your option) any later version.
- *
- *  This program is distributed in the hope that it will be useful,
- *  but WITHOUT ANY WARRANTY; without even the implied warranty of
- *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- *  GNU General Public License for more details.
- *
- *  You should have received a copy of the GNU General Public License
- *  along with this program; if not, write to the Free Software
- *  Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
- *
- *  In addition, as a special exception, TUT - Tampere University of Technology
- *  gives permission to link the code of this program with the OpenSSL library (or
- *  with modified versions of OpenSSL that use the same license as OpenSSL), and
- *  distribute linked combinations including the two. You must obey the GNU
- *  General Public License in all respects for all of the code used other than
- *  OpenSSL. If you modify this file, you may extend this exception to your version
- *  of the file, but you are not obligated to do so. If you do not wish to do so,
- *  delete this exception statement from your version.
+ *  Created on: Feb 6, 2019
+ *      Author: jjustman
  */
 
-#include <stdlib.h>
-#include <stdio.h>
-#include <errno.h>
-#include <string.h>
-#include <time.h>
-#include <fcntl.h>
-#include <sys/stat.h>
-#include <sys/types.h>
-#include <math.h>
-#include <assert.h>
-
-#include <stdint.h>
-
-#ifdef _MSC_VER
-#include <winsock2.h>
-#include <process.h>
-#include <io.h>
-#else
-#include <pthread.h>
-#include <sys/socket.h>
-#include <netdb.h>
-#include <sys/time.h>
-#endif
-
-#include "defines.h"
 #include "atsc3_alc_rx.h"
-#include "alc_channel.h"
-#include "mad_rlc.h"
-#include "null_fec.h"
-#include "xor_fec.h"
-#include "rs_fec.h"
-#include "utils.h"
-#include "transport.h"
-#include "alc_list.h"
 
 /**
- * This is a private function which parses and analyzes an ALC packet.
- *
- * @param data pointer to the ALC packet
- * @param len length of packet
- * @param ch pointer to the channel
- *
- * @return status of packet [WAITING_FDT = 5, OK = 4, EMPTY_PACKET = 3, HDR_ERROR = 2,
- *                          MEM_ERROR = 1, DUP_PACKET = 0]
  *
  *
  *
- *
- *                          Note for ATSC3 compat:
+ *                          Note for ATSC3 compatability:
  *
  *                          A.3.6 LCT Building Block
 The LCT packet header fields shall be used as defined by the LCT building block in RFC 5651 [26]. The semantics and usage of the following LCT header fields shall be further constrained in ROUTE as follows:
@@ -183,7 +115,7 @@ void alc_packet_free(alc_packet_t** alc_packet_ptr) {
 }
 
 
-int alc_rx_analyze_packet_a331_compliant(char *data, int len, alc_channel_t *ch, alc_packet_t** alc_packet_ptr) {
+int alc_rx_analyze_packet_a331_compliant(char *data, int len, alc_packet_t** alc_packet_ptr) {
 
 	int retval = -1;
 	int header_pos = 0;			//keep track of where we are in the header parsing data[]
@@ -232,25 +164,16 @@ int alc_rx_analyze_packet_a331_compliant(char *data, int len, alc_channel_t *ch,
 	uint64_t ext_route_scratch_64t;
 
 	int fec_inst_id = 0; /* FEC Instance ID */
-//
-//    trans_obj_t *trans_obj = NULL;
-//    trans_block_t *trans_block = NULL;
-//    trans_unit_t *trans_unit = NULL;
-//    trans_unit_t *tu = NULL;
-//    trans_unit_t *next_tu = NULL;
-//    wanted_obj_t *wanted_obj = NULL;
 
 	char *buf = NULL;
 
-	char filename[MAX_PATH_LENGTH];
-	double rx_percent = 0;
-	
+
 	unsigned short j = 0;
 	unsigned short nb_of_symbols = 0;
 	
 	if(len < (int)(sizeof(atsc3_def_lct_hdr_t))) {
 		ALC_RX_ERROR("analyze_packet: packet too short %d", len);
-		retval = HDR_ERROR;
+		retval = -1;
 		goto error;
 
 	}
@@ -298,7 +221,7 @@ int alc_rx_analyze_packet_a331_compliant(char *data, int len, alc_channel_t *ch,
 
 	if(def_lct_hdr->reserved != 0) {
 		ALC_RX_ERROR("Reserved field not zero - 0x%x", def_lct_hdr->reserved);
-		retval = HDR_ERROR;
+		retval = -1;
 		goto error;
 	}
 
@@ -336,7 +259,6 @@ int alc_rx_analyze_packet_a331_compliant(char *data, int len, alc_channel_t *ch,
 
 
 	if(def_lct_hdr->flag_a == 1) {
-		ch->s->state = SAFlagReceived;
 		ALC_RX_TRACE("flag_a, close session flag: 1 ");
 	}
 
@@ -389,7 +311,7 @@ int alc_rx_analyze_packet_a331_compliant(char *data, int len, alc_channel_t *ch,
 
 				  if(flute_version != FLUTE_VERSION_1 && flute_version != FLUTE_VERSION_2) {
 					  ALC_RX_WARN("ALC: tsi: %u, toi: %u, FLUTE version: %i is not supported",  def_lct_hdr->tsi, def_lct_hdr->toi, flute_version);
-					  retval = HDR_ERROR;
+					  retval = -1;
 					  goto error;
 				  }
 				  break;
@@ -402,20 +324,20 @@ int alc_rx_analyze_packet_a331_compliant(char *data, int len, alc_channel_t *ch,
 
 				  if(reserved != 0) {
 					  ALC_RX_WARN("Bad CENC header extension!");
-					  retval = HDR_ERROR;
+					  retval = -1;
 					  goto error;
 				  }
 
 				#ifdef USE_ZLIB
 					  if((content_enc_algo != 0) && (content_enc_algo != ZLIB)) {
 						  ALC_RX_WARN("Only NULL or ZLIB content encoding supported with FDT Instance!");
-						  retval = HDR_ERROR;
+						  retval = -1;
 						  goto error;
 					  }
 				#else
 					  if(content_enc_algo != 0) {
 						  ALC_RX_WARN("Only NULL content encoding supported with FDT Instance!");
-						  retval = HDR_ERROR;
+						  retval = -1;
 						  goto error;
 					  }
 				#endif
@@ -431,7 +353,7 @@ int alc_rx_analyze_packet_a331_compliant(char *data, int len, alc_channel_t *ch,
 
 				  if(hel != 4) {
 					  ALC_RX_WARN("Bad FTI header extension, length: %i", hel);
-					  retval = HDR_ERROR;
+					  retval = -1;
 					  goto error;
 				  }
 
@@ -466,12 +388,12 @@ int alc_rx_analyze_packet_a331_compliant(char *data, int len, alc_channel_t *ch,
 					  if((fec_enc_id == COM_NO_C_FEC_ENC_ID || fec_enc_id == SIMPLE_XOR_FEC_ENC_ID)
 						  && fec_inst_id != 0) {
 						  	  ALC_RX_ERROR("Bad FTI header extension.");
-							  retval = HDR_ERROR;
+							  retval = -1;
 							  goto error;
 					  }
 					  else if(fec_enc_id == SB_SYS_FEC_ENC_ID && fec_inst_id != REED_SOL_FEC_INST_ID) {
 						  ALC_RX_ERROR("FEC Encoding %i/%i is not supported!", fec_enc_id, fec_inst_id);
-						  retval = HDR_ERROR;
+						  retval = -1;
 						  goto error;
 					  }
 				  }
@@ -603,7 +525,7 @@ int alc_rx_analyze_packet_a331_compliant(char *data, int len, alc_channel_t *ch,
 
 			  default:
 				  ALC_RX_ERROR("Unknown LCT Extension header, het: %i", het);
-				  return HDR_ERROR;
+				  return -1;
 				  break;
 			}
 		}
@@ -612,13 +534,13 @@ int alc_rx_analyze_packet_a331_compliant(char *data, int len, alc_channel_t *ch,
 	if(header_pos != def_lct_hdr->hdr_len) {
 		/* Wrong header length */
 		ALC_RX_WARN("ALC: analyze_packet: tsi: %u, toi: %u, packet header length %d, should be %d",  def_lct_hdr->tsi, def_lct_hdr->toi, header_pos, def_lct_hdr->hdr_len);
-		  retval = HDR_ERROR;
+		  retval = -1;
 		  goto error;
 	}
 
 	/* Check if we have an empty packet without FEC Payload ID */
 	if(header_pos == len) {
-		retval = EMPTY_PACKET;
+		retval = -2;
 		ALC_RX_WARN("ALC: analyze_packet: tsi: %u, toi: %u, empty packet!",  def_lct_hdr->tsi, def_lct_hdr->toi);
 
 		goto error;
@@ -754,7 +676,7 @@ int alc_rx_analyze_packet_a331_compliant(char *data, int len, alc_channel_t *ch,
 				alc_packet->ext_route_presentation_ntp_timestamp);
 
 
-	return ALC_OK;
+	return 0;
 
 error:
 	if(def_lct_hdr) {
