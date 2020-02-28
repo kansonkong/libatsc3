@@ -52,3 +52,16 @@ void atsc3_alp_packet_free_alp_payload(atsc3_alp_packet_t* atsc3_alp_packet) {
 		}
 	}
 }
+
+void atsc3_link_mapping_table_free(atsc3_link_mapping_table_t** atsc3_link_mapping_table_p) {
+    if(atsc3_link_mapping_table_p) {
+        atsc3_link_mapping_table_t* atsc3_link_mapping_table = *atsc3_link_mapping_table_p;
+        if(atsc3_link_mapping_table) {
+            //chain destructors
+            atsc3_link_mapping_table_free_atsc3_link_mapping_table_plp(atsc3_link_mapping_table);
+            free(atsc3_link_mapping_table);
+            atsc3_link_mapping_table = NULL;
+        }
+        *atsc3_link_mapping_table_p = NULL;
+    }
+}
