@@ -16,6 +16,7 @@ void atsc3_phy_mmt_player_bridge_init(atsc3NdkClient* At3DrvIntf_ptr);
 #endif
 
 #include "atsc3_utils.h"
+#include "atsc3_alp_types.h"
 #include "atsc3_lls_types.h"
 
 //
@@ -41,6 +42,9 @@ atsc3_sls_metadata_fragments_t* atsc3_slt_alc_get_sls_metadata_fragments_from_mo
 
 //ALC/ROUTE: use case: get the app-based/esg service corresponding efdt atsc3_fdt_file content_location value
 atsc3_route_s_tsid_t* atsc3_slt_alc_get_sls_route_s_tsid_from_monitor_service_id(int service_id);
+
+//free our old atsc3_link_mapping_table_t* if returned
+atsc3_link_mapping_table_t* atsc3_phy_mmt_player_bridge_notify_link_mapping_table(atsc3_link_mapping_table_t* atsc3_link_mapping_table_pending);
 
 string atsc3_ndk_cache_temp_folder_path_get();
 string atsc3_route_service_context_temp_folder_name(int service_id);

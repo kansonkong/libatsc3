@@ -228,7 +228,7 @@ atsc3_alp_packet_t* atsc3_alp_packet_clone(atsc3_alp_packet_t* atsc3_alp_packet)
 //always free if created from atsc3_alp_packet_clone when no longer needed
 void atsc3_alp_packet_free(atsc3_alp_packet_t** atsc3_alp_packet_p);
 void atsc3_alp_packet_free_alp_payload(atsc3_alp_packet_t* atsc3_alp_packet);
-
+void atsc3_link_mapping_table_free(atsc3_link_mapping_table_t** atsc3_link_mapping_table_p);
 
 #if defined (__cplusplus)
 }
