@@ -21,3 +21,4 @@
 [submodule "android/sample_app_no_phy/ExoPlayer"]
 	path = android/sample_app_no_phy/ExoPlayer
 	url = https://github.com/jjustman/ExoPlayer.git
+	branch = release-v2
