@@ -110,10 +110,10 @@ block_t* alc_get_payload_from_filename(char* file_name) {
 
 /* jjustman-2019-09-17: TODO - free temporary filename when done */
 
-char* alc_packet_dump_to_object_get_temporary_filename(udp_flow_t* udp_flow, alc_packet_t* alc_packet) {
+char* alc_packet_dump_to_object_get_temporary_recovering_filename(udp_flow_t *udp_flow, alc_packet_t *alc_packet) {
 	char* temporary_file_name = (char *)calloc(255, sizeof(char));
 	if(alc_packet->def_lct_hdr) {
-		snprintf(temporary_file_name, 255, "%s%u.%u.%u.%u.%u.%u-%u",
+		snprintf(temporary_file_name, 255, "%s%u.%u.%u.%u.%u.%u-%u.recovering",
 			__ALC_DUMP_OUTPUT_PATH__,
 			__toipandportnonstruct(udp_flow->dst_ip_addr, udp_flow->dst_port),
 			alc_packet->def_lct_hdr->tsi,
@@ -370,6 +370,8 @@ char* alc_packet_dump_to_object_get_s_tsid_filename(udp_flow_t* udp_flow, alc_pa
                                            lls_sls_alc_monitor->last_closed_audio_toi = alc_packet->def_lct_hdr->toi;
                                         } else if(alc_packet->def_lct_hdr->tsi == lls_sls_alc_monitor->video_tsi) {
                                            lls_sls_alc_monitor->last_closed_video_toi = alc_packet->def_lct_hdr->toi;
+                                        } else if(alc_packet->def_lct_hdr->tsi == lls_sls_alc_monitor->text_tsi) {
+                                            lls_sls_alc_monitor->last_closed_text_toi = alc_packet->def_lct_hdr->toi;
                                         }
                                     }
                                 }
@@ -385,7 +387,7 @@ char* alc_packet_dump_to_object_get_s_tsid_filename(udp_flow_t* udp_flow, alc_pa
 
                                 if(atsc3_route_s_tsid_RS_LS->atsc3_route_s_tsid_RS_LS_SrcFlow->atsc3_route_s_tsid_RS_LS_SrcFlow_Payload->format_id == 2) {
                                     //extract out our content_location from the ALC payload headers here
-                                    char* temp_content_location = alc_packet_dump_to_object_get_temporary_filename(udp_flow, alc_packet);
+                                    char* temp_content_location = alc_packet_dump_to_object_get_temporary_recovering_filename(udp_flow, alc_packet);
 
                                     struct stat st;
                                     stat(temp_content_location, &st);
@@ -501,10 +503,8 @@ char* alc_packet_dump_to_object_get_s_tsid_filename(udp_flow_t* udp_flow, alc_pa
 	}
 
 	if(!content_location) {
-
 		if(alc_packet->def_lct_hdr) {
-            content_location = alc_packet_dump_to_object_get_temporary_filename(udp_flow, alc_packet);
-
+            content_location = alc_packet_dump_to_object_get_filename_tsi_toi(udp_flow, alc_packet->def_lct_hdr->tsi, alc_packet->def_lct_hdr->toi);
 			__ALC_UTILS_INFO("alc_packet_dump_to_object_get_s_tsid_filename: no content_location to return for alc_packet: %p, falling back to %s", alc_packet, content_location);
 		} else {
 			__ALC_UTILS_ERROR("alc_packet_dump_to_object_get_s_tsid_filename: no content_location to return for alc_packet: %p, falling back to null string!", alc_packet);
@@ -591,8 +591,9 @@ int alc_packet_write_fragment(FILE* f, char* file_name, uint32_t offset, alc_pac
 }
 
 
+//TOI size:     uint32_t to_allocate_size = alc_packet->transfer_len;
 
-int alc_packet_dump_to_object(udp_flow_t* udp_flow, alc_packet_t** alc_packet_ptr, lls_sls_alc_monitor_t* lls_sls_alc_monitor) {
+int atsc3_alc_packet_persist_to_toi_resource_process_sls_mbms_and_emit_callback(udp_flow_t *udp_flow, alc_packet_t **alc_packet_ptr, lls_sls_alc_monitor_t *lls_sls_alc_monitor) {
 
 	alc_packet_t* alc_packet = *alc_packet_ptr;
 	int bytesWritten = 0;
@@ -601,7 +602,7 @@ int alc_packet_dump_to_object(udp_flow_t* udp_flow, alc_packet_t** alc_packet_pt
         return -1;
     }
 
-    char* temporary_filename = alc_packet_dump_to_object_get_temporary_filename(udp_flow, alc_packet);
+    char* temporary_filename = alc_packet_dump_to_object_get_temporary_recovering_filename(udp_flow, alc_packet);
     char* s_tsid_content_location = NULL;
     
     mkdir("route", 0777);
@@ -617,7 +618,7 @@ int alc_packet_dump_to_object(udp_flow_t* udp_flow, alc_packet_t** alc_packet_pt
             f = alc_object_open_or_pre_allocate(temporary_filename, alc_packet);
         }
         if(!f) {
-            __ALC_UTILS_WARN("alc_packet_dump_to_object, unable to open temporary_filename: %s", temporary_filename);
+            __ALC_UTILS_WARN("atsc3_alc_packet_persist_to_toi_resource_process_sls_mbms_and_emit_callback, unable to open temporary_filename: %s", temporary_filename);
             return -2;
         }
         alc_packet_write_fragment(f, temporary_filename, alc_packet->esi, alc_packet);
@@ -643,7 +644,7 @@ int alc_packet_dump_to_object(udp_flow_t* udp_flow, alc_packet_t** alc_packet_pt
             f = alc_object_open_or_pre_allocate(temporary_filename, alc_packet);
         }
         if(!f) {
-            __ALC_UTILS_WARN("alc_packet_dump_to_object, unable to open file: %s", temporary_filename);
+            __ALC_UTILS_WARN("atsc3_alc_packet_persist_to_toi_resource_process_sls_mbms_and_emit_callback, unable to open file: %s", temporary_filename);
             return -2;
         }
         
@@ -651,7 +652,7 @@ int alc_packet_dump_to_object(udp_flow_t* udp_flow, alc_packet_t** alc_packet_pt
         __ALC_UTILS_IOTRACE("done writing out temporary_filename for %s", temporary_filename);
 
     } else {
-        __ALC_UTILS_WARN("alc_packet_dump_to_object, no alc offset strategy for temporary_filename: %s", temporary_filename);
+        __ALC_UTILS_WARN("atsc3_alc_packet_persist_to_toi_resource_process_sls_mbms_and_emit_callback, no alc offset strategy for temporary_filename: %s", temporary_filename);
     }
 	
     if(f) {
@@ -660,13 +661,26 @@ int alc_packet_dump_to_object(udp_flow_t* udp_flow, alc_packet_t** alc_packet_pt
     }
     
     //both codepoint=0 and codepoint=128 will set close_object_flag when we have finished delivery of the object
+    //jjustman-2020-02-28 - atsc3_alc_rx.c will also set close_object implicity if:
+    //  SB_LB_E_FEC_ENC_ID                             : transfer_len >0 && transfer_len == alc_packet->alc_len + alc_packet->esi
+    //  all others (e.g. alc_packet->use_start_offset) : transfer_len >0 && transfer_len == alc_packet->alc_len + alc_packet->start_offset
+
 	if(alc_packet->close_object_flag) {
 
         //update our sls here if we have a service we are listenting to
         if(lls_sls_alc_monitor && lls_sls_alc_monitor->atsc3_lls_slt_service &&  alc_packet->def_lct_hdr->tsi == 0) {
-            __ALC_UTILS_IOTRACE("ALC: service_id: %u, ------ TSI of 0, TOI: %d, transfer_len: %d, calling atsc3_route_sls_process_from_alc_packet_and_file",
-            		lls_sls_alc_monitor->atsc3_lls_slt_service->service_id, alc_packet->def_lct_hdr->toi, alc_packet->transfer_len);
+
+            char* final_mbms_toi_filename = alc_packet_dump_to_object_get_filename_tsi_toi(udp_flow, 0, alc_packet->def_lct_hdr->toi);
+            rename(temporary_filename, final_mbms_toi_filename);
+
+            __ALC_UTILS_IOTRACE("ALC: service_id: %u, ------ TSI of 0, TOI: %d, transfer_len: %d, final object name: %s, calling atsc3_route_sls_process_from_alc_packet_and_file",
+            		lls_sls_alc_monitor->atsc3_lls_slt_service->service_id,
+            		alc_packet->def_lct_hdr->toi,
+            		alc_packet->transfer_len,
+            		final_mbms_toi_filename);
+
             atsc3_route_sls_process_from_alc_packet_and_file(udp_flow, alc_packet, lls_sls_alc_monitor);
+
         } else {
             s_tsid_content_location = alc_packet_dump_to_object_get_s_tsid_filename(udp_flow, alc_packet, lls_sls_alc_monitor);
      
@@ -705,24 +719,6 @@ int alc_packet_dump_to_object(udp_flow_t* udp_flow, alc_packet_t** alc_packet_pt
                 }
             }
         }
-        
-//		} else {
-//            //jjustman-2019-11-02: todo: remove this old code
-//			//only push to our output buffer video and audio flows
-//			if(lls_sls_alc_monitor && (alc_packet->def_lct_hdr->tsi == lls_sls_alc_monitor->audio_tsi || alc_packet->def_lct_hdr->tsi == lls_sls_alc_monitor->video_tsi)) {
-//				__ALC_UTILS_IOTRACE("------ TSI of %d, toi: %u, calling alc_recon_file_buffer_struct_monitor_fragment_with_init_box", alc_packet->def_lct_hdr->tsi, alc_packet->def_lct_hdr->toi);
-//				alc_recon_file_buffer_struct_monitor_fragment_with_init_box(udp_flow, alc_packet, lls_sls_alc_monitor);
-//			} else {
-//				s_tsid_content_location = alc_packet_dump_to_object_get_s_tsid_filename(udp_flow, alc_packet, lls_sls_alc_monitor);
-//				if(s_tsid_content_location && strlen(s_tsid_content_location)) {
-//					__ALC_UTILS_INFO("tsi: %u, toi: %u, not video or audio payload, using for NRT caching at s_tsid_content_location: %s", alc_packet->def_lct_hdr->tsi, alc_packet->def_lct_hdr->toi, s_tsid_content_location);
-//					rename(temporary_filename, s_tsid_content_location);
-//				} else {
-//					__ALC_UTILS_ERROR("tsi: %u, toi: %u, not video or audio payload and no content_location target!", alc_packet->def_lct_hdr->tsi, alc_packet->def_lct_hdr->toi);
-//
-//				}
-//			}
-    
 	} else {
 		__ALC_UTILS_IOTRACE("dumping to file step: %s, is complete: %d", temporary_filename, alc_packet->close_object_flag);
 	}
@@ -925,7 +921,8 @@ void alc_recon_file_ptr_fragment_with_init_box(FILE* output_file_ptr, udp_flow_t
 		return;
 	}
 
-	char* file_name = alc_packet_dump_to_object_get_temporary_filename(udp_flow, alc_packet);
+	char* file_name = alc_packet_dump_to_object_get_temporary_recovering_filename(udp_flow,
+                                                                                  alc_packet);
 	uint32_t toi_init = to_match_toi_init;
 
 	char* init_file_name = (char* )calloc(255, sizeof(char));
@@ -1051,7 +1048,8 @@ void alc_recon_file_buffer_struct_fragment_with_init_box(pipe_ffplay_buffer_t* p
 		return;
 	}
 
-	char* file_name = alc_packet_dump_to_object_get_temporary_filename(udp_flow, alc_packet);
+	char* file_name = alc_packet_dump_to_object_get_temporary_recovering_filename(udp_flow,
+                                                                                  alc_packet);
 	uint32_t toi_init = *__ALC_RECON_FILE_PTR_TOI_INIT;
 	char* init_file_name = (char*)calloc(255, sizeof(char));
 
@@ -1308,16 +1306,25 @@ cleanup:
 	return;
 }
 
+/*
+ * TODO: jjustman-2020-02-28:
+ *      - remove tight coupling from video/audio media essences
+ *      - add in support for generic TSI flows in the lls_sls_alc_monitor route attribute tracking model (e.g. collections-c map)
+ *
+ */
 
 void atsc3_alc_persist_route_ext_attributes_per_lls_sls_alc_monitor_essence(alc_packet_t* alc_packet, lls_sls_alc_monitor_t* lls_sls_alc_monitor) {
     if(alc_packet->use_start_offset && lls_sls_alc_monitor && lls_sls_alc_monitor->video_tsi && lls_sls_alc_monitor->audio_tsi) {
         uint32_t tsi = alc_packet->def_lct_hdr->tsi;
         uint32_t toi = alc_packet->def_lct_hdr->toi;
 
-        //only process non init toi's under the assumption they will be LESS THAN  ALC packet size!
-        if(toi != lls_sls_alc_monitor->video_toi_init && toi != lls_sls_alc_monitor->audio_toi_init) {
+        //only process non init toi's, under the assumption they will be less than alc packet size for closed object tracking
 
-			//check for toi discontinuity from pcap replay or rfcapture replay
+        if(!(tsi == lls_sls_alc_monitor->video_tsi && toi == lls_sls_alc_monitor->video_toi_init) ||
+           (tsi == lls_sls_alc_monitor->audio_tsi && toi == lls_sls_alc_monitor->audio_toi_init) ||
+           (tsi == lls_sls_alc_monitor->text_tsi && toi == lls_sls_alc_monitor->text_toi_init)) {
+
+            //check for toi discontinuity from pcap replay or rfcapture replay
 
 			if(!lls_sls_alc_monitor->has_discontiguous_toi_flow  &&
 			((tsi == lls_sls_alc_monitor->video_tsi && lls_sls_alc_monitor->last_video_toi && lls_sls_alc_monitor->last_video_toi > toi) ||
@@ -1345,6 +1352,10 @@ void atsc3_alc_persist_route_ext_attributes_per_lls_sls_alc_monitor_essence(alc_
                     lls_sls_alc_monitor->last_audio_toi = toi;
                     lls_sls_alc_monitor->last_audio_toi_length = toi_length;
                     __DEBUG("ALC: tsi: %u, toi: %u, setting last_audio_toi: %u, last_audio_toi_length: %u", tsi, toi, toi, toi_length);
+                } else if(tsi == lls_sls_alc_monitor->text_tsi) {
+                    lls_sls_alc_monitor->last_text_toi = toi;
+                    lls_sls_alc_monitor->last_text_toi_length = toi_length;
+                    __DEBUG("ALC: tsi: %u, toi: %u, setting last_text_toi: %u, last_text_toi_length: %u", tsi, toi, toi, toi_length);
                 }
             }
 
@@ -1369,6 +1380,15 @@ void atsc3_alc_persist_route_ext_attributes_per_lls_sls_alc_monitor_essence(alc_
                     alc_packet->close_object_flag = true;
                     __DEBUG("ALC: tsi: %u, toi: %u, setting audio: close_object_flag: true",
                         tsi, toi);
+                }
+            } else if(tsi == lls_sls_alc_monitor->text_tsi && toi == lls_sls_alc_monitor->last_text_toi) {
+                __DEBUG("ALC: tsi: %u, toi: %u, checking last_text_toi_length: %u against start_offset: %u, alc_packet_length: %u (total: %u)",
+                        tsi, toi,  lls_sls_alc_monitor->last_text_toi_length, alc_start_offset, alc_packet_length, alc_start_offset + alc_packet_length);
+
+                if(lls_sls_alc_monitor->last_text_toi_length && lls_sls_alc_monitor->last_text_toi_length <= (alc_start_offset + alc_packet_length)) {
+                    alc_packet->close_object_flag = true;
+                    __DEBUG("ALC: tsi: %u, toi: %u, setting text: close_object_flag: true",
+                            tsi, toi);
                 }
             }
         }
