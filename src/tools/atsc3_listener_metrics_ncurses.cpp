@@ -189,7 +189,9 @@ void update_global_mmtp_statistics_from_udp_packet_t(udp_packet_t *udp_packet) {
 }
 
 static void route_process_from_alc_packet(udp_flow_t* udp_flow, alc_packet_t **alc_packet) {
-    alc_packet_dump_to_object(udp_flow, alc_packet, lls_slt_monitor->lls_sls_alc_monitor);
+    atsc3_alc_packet_persist_to_toi_resource_process_sls_mbms_and_emit_callback(udp_flow,
+                                                                                alc_packet,
+                                                                                lls_slt_monitor->lls_sls_alc_monitor);
     
     if(lls_slt_monitor->lls_sls_alc_monitor->lls_sls_monitor_output_buffer.has_written_init_box && lls_slt_monitor->lls_sls_alc_monitor->lls_sls_monitor_output_buffer.should_flush_output_buffer) {
      
