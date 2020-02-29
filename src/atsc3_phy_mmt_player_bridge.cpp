@@ -967,7 +967,7 @@ void atsc3_mmt_mpu_on_sequence_movie_fragment_metadata_present_ndk(uint16_t pack
 }
 
 
-atsc3_link_mapping_table_t*  atsc3_phy_mmt_player_bridge_notify_link_mapping_table(atsc3_link_mapping_table_t* atsc3_link_mapping_table_pending) {
+atsc3_link_mapping_table_t* atsc3_phy_mmt_player_bridge_notify_link_mapping_table(atsc3_link_mapping_table_t* atsc3_link_mapping_table_pending) {
     atsc3_link_mapping_table_t* atsc3_link_mapping_table_to_free = NULL;
 
     //no last link mapping table, so take ownership of pending ptr
