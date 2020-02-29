@@ -201,8 +201,9 @@ typedef struct atsc3_link_mapping_table_plp {
 
 ATSC3_VECTOR_BUILDER_METHODS_INTERFACE(atsc3_link_mapping_table_plp, atsc3_link_mapping_table_multicast);
 
-
+//TODO: include: alp_packet_header->alp_additional_header_for_signaling_information.signaling_version
 typedef struct atsc3_link_mapping_table {
+    uint8_t alp_additional_header_for_signaling_information_signaling_version;
 	uint8_t num_PLPs_minus1:6;
 	uint8_t reserved:2;
 	ATSC3_VECTOR_BUILDER_STRUCT(atsc3_link_mapping_table_plp);
