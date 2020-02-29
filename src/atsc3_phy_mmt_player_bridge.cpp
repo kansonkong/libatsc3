@@ -970,13 +970,21 @@ void atsc3_mmt_mpu_on_sequence_movie_fragment_metadata_present_ndk(uint16_t pack
 atsc3_link_mapping_table_t*  atsc3_phy_mmt_player_bridge_notify_link_mapping_table(atsc3_link_mapping_table_t* atsc3_link_mapping_table_pending) {
     atsc3_link_mapping_table_t* atsc3_link_mapping_table_to_free = NULL;
 
-    //jjustman-2020-02-27: TODO: check if LMT payload is different, then update our reference
-    if(true) {
+    //no last link mapping table, so take ownership of pending ptr
+    if(!atsc3_link_mapping_table_last) {
         atsc3_link_mapping_table_last = atsc3_link_mapping_table_pending;
     } else {
-        //otherwise, free our newly parsed lmt
-        atsc3_link_mapping_table_to_free = atsc3_link_mapping_table_pending;
+        //if we have a pending table version that matches our last table version, so return our pending version to be freed (discarded)
+        if(atsc3_link_mapping_table_pending->alp_additional_header_for_signaling_information_signaling_version ==
+            atsc3_link_mapping_table_last->alp_additional_header_for_signaling_information_signaling_version) {
+            atsc3_link_mapping_table_to_free = atsc3_link_mapping_table_pending;
+        } else {
+            //pending table version is not the saemm as our last version, so discard our last ptr ref and update pending to last
+            atsc3_link_mapping_table_to_free = atsc3_link_mapping_table_last;
+            atsc3_link_mapping_table_last = atsc3_link_mapping_table_pending;
+        }
     }
+
 
     return atsc3_link_mapping_table_to_free;
 }
