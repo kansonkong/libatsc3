@@ -1320,9 +1320,9 @@ void atsc3_alc_persist_route_ext_attributes_per_lls_sls_alc_monitor_essence(alc_
 
         //only process non init toi's, under the assumption they will be less than alc packet size for closed object tracking
 
-        if(!(tsi == lls_sls_alc_monitor->video_tsi && toi == lls_sls_alc_monitor->video_toi_init) ||
+        if(!((tsi == lls_sls_alc_monitor->video_tsi && toi == lls_sls_alc_monitor->video_toi_init) ||
            (tsi == lls_sls_alc_monitor->audio_tsi && toi == lls_sls_alc_monitor->audio_toi_init) ||
-           (tsi == lls_sls_alc_monitor->text_tsi && toi == lls_sls_alc_monitor->text_toi_init)) {
+           (tsi == lls_sls_alc_monitor->text_tsi && toi == lls_sls_alc_monitor->text_toi_init))) {
 
             //check for toi discontinuity from pcap replay or rfcapture replay
 
