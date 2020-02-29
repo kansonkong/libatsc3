@@ -29,7 +29,7 @@ void atsc3_route_sls_process_from_alc_packet_and_file(udp_flow_t* udp_flow, alc_
 
 	if(alc_packet->def_lct_hdr->toi == 0) {
 
-	    file_name = alc_packet_dump_to_object_get_temporary_filename(udp_flow, alc_packet);
+	    file_name = alc_packet_dump_to_object_get_filename_tsi_toi(udp_flow, 0, 0);
 
 		fp = fopen(file_name, "r");
 		if(!fp) {
@@ -270,6 +270,15 @@ void atsc3_route_sls_patch_mpd_availability_start_time_and_start_number(atsc3_mi
                                                     atsc3_mime_multipart_related_payload->payload);
                     goto error;
                 }
+
+                //jjustman-2020-02-28 - looks like STPP might be delivered in the MPD via application/mp4?
+                char* stpp_representation_start_pos = strnstr(temp_lower_mpd, "application/mp4", strlen(temp_lower_mpd));
+                if(stpp_representation_start_pos) {
+                    _ATSC3_ROUTE_SLS_PROCESSOR_INFO("atsc3_route_sls_patch_mpd_availability_start_time_and_start_number: stpp_representation_start_pos is: %s",
+                                                    stpp_representation_start_pos);
+                }
+
+
                 char* first_start_number_start = strstr(temp_lower_mpd, "startnumber=\"");
                 if(!first_start_number_start) {
                     _ATSC3_ROUTE_SLS_PROCESSOR_WARN("atsc3_route_sls_patch_mpd_availability_start_time_and_start_number: first_start_number_start is null for payload: %s",
@@ -282,8 +291,18 @@ void atsc3_route_sls_patch_mpd_availability_start_time_and_start_number(atsc3_mi
                                                     atsc3_mime_multipart_related_payload->payload);
                     goto error;
                 }
+
+                char* third_start_number_start = strstr(second_start_number_start + 12, "startnumber=\"");
+                if(third_start_number_start) {
+                    _ATSC3_ROUTE_SLS_PROCESSOR_INFO("atsc3_route_sls_patch_mpd_availability_start_time_and_start_number: third_start_number_start %p",
+                                                    third_start_number_start);
+
+                }
+
+
                 char* video_start_number_start = NULL;
                 char* audio_start_number_start = NULL;
+                char* stpp_start_number_start = third_start_number_start; //hack for now...
 
                 //hack for video/audio start_number sequencing
                 if(vcodec_representation_start_pos > acodec_representation_start_pos) {
@@ -294,7 +313,8 @@ void atsc3_route_sls_patch_mpd_availability_start_time_and_start_number(atsc3_mi
                     audio_start_number_start = second_start_number_start;
                 }
 
-                int mpd_new_payload_max_len = strlen(atsc3_mime_multipart_related_payload->payload) + 32;
+                //just to be safe...
+                int mpd_new_payload_max_len = strlen(atsc3_mime_multipart_related_payload->payload) + 96;
                 char* new_mpd_payload = calloc(mpd_new_payload_max_len + 1, sizeof(char));
 
                 char* video_start_number_end = strstr(video_start_number_start + 14, "\"");
@@ -303,8 +323,17 @@ void atsc3_route_sls_patch_mpd_availability_start_time_and_start_number(atsc3_mi
                 char* audio_start_number_end = strstr(audio_start_number_start + 14, "\"");
                 if(!audio_start_number_end) goto error;
 
+                char* stpp_start_number_end = NULL;
+
+                if(stpp_start_number_start != NULL) {
+                    stpp_start_number_end = strstr(stpp_start_number_start + 14, "\"");
+                }
+
                 video_start_number_start[13] = '\0';
                 audio_start_number_start[13] = '\0';
+                if(stpp_start_number_start != NULL) {
+                    stpp_start_number_start[13] = '\0';
+                }
 
                 char* mpd_patched_start_ptr = atsc3_mime_multipart_related_payload->payload;
                 int video_start_number_start_pos = (video_start_number_start) - temp_lower_mpd;
@@ -317,24 +346,44 @@ void atsc3_route_sls_patch_mpd_availability_start_time_and_start_number(atsc3_mi
                 mpd_patched_start_ptr[audio_start_number_start_pos] = '\0';
 
                 int audio_start_number_end_pos = audio_start_number_end  - temp_lower_mpd + 2;
-
                 char* audio_start_number_end_ptr = mpd_patched_start_ptr + audio_start_number_end_pos;
 
-                //if !lls_sls_alc_monitor->has_discontiguous_toi_flow,  use the last_closed video/audio toi, otherwise use the 'current' video/audio toi
-                if(vcodec_representation_start_pos < acodec_representation_start_pos) {
-                    snprintf(new_mpd_payload, mpd_new_payload_max_len, "%s startNumber=\"%d\" %s startNumber=\"%d\" %s",
+                if(stpp_start_number_start != NULL) {
+                    //jjustman-2020-02-28 STPP startnumber hack
+                    char* mpd_patched_audio_start_end_ptr = mpd_patched_start_ptr + audio_start_number_end_pos + 2;
+
+                    int stpp_start_number_start_pos = (stpp_start_number_start) - temp_lower_mpd;
+                    mpd_patched_start_ptr[stpp_start_number_start_pos] = '\0';
+
+                    int stpp_start_number_end_pos = stpp_start_number_end  - temp_lower_mpd + 2;
+                    char* stpp_start_number_end_ptr = mpd_patched_start_ptr + stpp_start_number_end_pos;
+                    snprintf(new_mpd_payload, mpd_new_payload_max_len, "%s startNumber=\"%d\" %s startNumber=\"%d\" %s startNumber=\"%d\" %s",
                              mpd_patched_start_ptr,
-                             (!lls_sls_alc_monitor->has_discontiguous_toi_flow ? lls_sls_alc_monitor->last_closed_video_toi : lls_sls_alc_monitor->last_video_toi),
-                             mpd_patched_video_start_end_ptr,
                              (!lls_sls_alc_monitor->has_discontiguous_toi_flow ? lls_sls_alc_monitor->last_closed_audio_toi : lls_sls_alc_monitor->last_audio_toi),
-                             audio_start_number_end_ptr);
+                             mpd_patched_video_start_end_ptr,
+                             (!lls_sls_alc_monitor->has_discontiguous_toi_flow ? lls_sls_alc_monitor->last_closed_video_toi : lls_sls_alc_monitor->last_video_toi),
+                             audio_start_number_end_ptr,
+                             (!lls_sls_alc_monitor->has_discontiguous_toi_flow ? lls_sls_alc_monitor->last_closed_text_toi : lls_sls_alc_monitor->last_text_toi),
+                             stpp_start_number_end_ptr
+                             );
                 } else {
-                    snprintf(new_mpd_payload, mpd_new_payload_max_len, "%s startNumber=\"%d\" %s startNumber=\"%d\" %s",
-                             mpd_patched_start_ptr,
-                             (!lls_sls_alc_monitor->has_discontiguous_toi_flow ? lls_sls_alc_monitor->last_closed_audio_toi : lls_sls_alc_monitor->last_audio_toi),
-                             mpd_patched_video_start_end_ptr,
-                             (!lls_sls_alc_monitor->has_discontiguous_toi_flow ? lls_sls_alc_monitor->last_closed_video_toi : lls_sls_alc_monitor->last_video_toi),
-                             audio_start_number_end_ptr);
+
+                    //if !lls_sls_alc_monitor->has_discontiguous_toi_flow,  use the last_closed video/audio toi, otherwise use the 'current' video/audio toi
+                    if(vcodec_representation_start_pos < acodec_representation_start_pos) {
+                        snprintf(new_mpd_payload, mpd_new_payload_max_len, "%s startNumber=\"%d\" %s startNumber=\"%d\" %s",
+                                 mpd_patched_start_ptr,
+                                 (!lls_sls_alc_monitor->has_discontiguous_toi_flow ? lls_sls_alc_monitor->last_closed_video_toi : lls_sls_alc_monitor->last_video_toi),
+                                 mpd_patched_video_start_end_ptr,
+                                 (!lls_sls_alc_monitor->has_discontiguous_toi_flow ? lls_sls_alc_monitor->last_closed_audio_toi : lls_sls_alc_monitor->last_audio_toi),
+                                 audio_start_number_end_ptr);
+                    } else {
+                        snprintf(new_mpd_payload, mpd_new_payload_max_len, "%s startNumber=\"%d\" %s startNumber=\"%d\" %s",
+                                 mpd_patched_start_ptr,
+                                 (!lls_sls_alc_monitor->has_discontiguous_toi_flow ? lls_sls_alc_monitor->last_closed_audio_toi : lls_sls_alc_monitor->last_audio_toi),
+                                 mpd_patched_video_start_end_ptr,
+                                 (!lls_sls_alc_monitor->has_discontiguous_toi_flow ? lls_sls_alc_monitor->last_closed_video_toi : lls_sls_alc_monitor->last_video_toi),
+                                 audio_start_number_end_ptr);
+                    }
                 }
 
                 free(atsc3_mime_multipart_related_payload->payload);

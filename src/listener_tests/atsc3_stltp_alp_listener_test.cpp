@@ -57,7 +57,7 @@ void process_packet(u_char *user, const struct pcap_pkthdr *pkthdr, const u_char
 						  atsc3_stltp_baseband_packet->ip_udp_rtp_packet_inner->rtp_header->sequence_number,
 						  atsc3_stltp_baseband_packet->ip_udp_rtp_packet_inner->udp_flow.dst_port);
 				   
-				   if(atsc3_stltp_baseband_packet->ip_udp_rtp_packet_inner->udp_flow.dst_port != 30000) {
+				   if(!(atsc3_stltp_baseband_packet->ip_udp_rtp_packet_inner->udp_flow.dst_port >= 30000 && atsc3_stltp_baseband_packet->ip_udp_rtp_packet_inner->udp_flow.dst_port <= 30063)) {
 					   __INFO("ignorning stltp_baseband_packet port: %d",  atsc3_stltp_baseband_packet->ip_udp_rtp_packet_inner->udp_flow.dst_port);
 					   //atsc3_stltp_baseband_packet_free(&atsc3_stltp_baseband_packet);
 					   continue;
