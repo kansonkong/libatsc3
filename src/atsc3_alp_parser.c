@@ -715,7 +715,8 @@ atsc3_link_mapping_table_t* atsc3_alp_packet_extract_lmt(atsc3_alp_packet_t* ats
 		__ALP_PARSER_INFO("atsc3_alp_packet_collection_extract_lmt: alp_payload: %p, alp_payload_length after signalling header extension: %d", atsc3_alp_packet->alp_payload, alp_payload_length);
 		
 		atsc3_link_mapping_table = atsc3_link_mapping_table_new();
-	
+	    atsc3_link_mapping_table->alp_additional_header_for_signaling_information_signaling_version = atsc3_alp_packet->alp_packet_header.alp_additional_header_for_signaling_information.signaling_version;
+
 		atsc3_link_mapping_table->num_PLPs_minus1 = block_Read_uint8_bitlen(atsc3_alp_packet->alp_payload, 6);
 		atsc3_link_mapping_table->reserved = block_Read_uint8_bitlen(atsc3_alp_packet->alp_payload, 2);
 		if(atsc3_link_mapping_table->reserved != 0x3) {
