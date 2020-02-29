@@ -323,7 +323,11 @@ void atsc3_route_sls_patch_mpd_availability_start_time_and_start_number(atsc3_mi
                 char* audio_start_number_end = strstr(audio_start_number_start + 14, "\"");
                 if(!audio_start_number_end) goto error;
 
-                char* stpp_start_number_end = strstr(stpp_start_number_start + 14, "\"");
+                char* stpp_start_number_end = NULL;
+
+                if(stpp_start_number_start != NULL) {
+                    stpp_start_number_end = strstr(stpp_start_number_start + 14, "\"");
+                }
 
                 video_start_number_start[13] = '\0';
                 audio_start_number_start[13] = '\0';
