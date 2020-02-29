@@ -635,6 +635,16 @@ A/331 - Section 7:
 		the DASH Media Presentation Description (MPD),
 		the HTML Entry pages Location Description (HELD) (see A/337 [7]), and
 		Distribution Window Description (DWD) (see A/337 [7]).
+
+
+		jjustman-2020-02-28:
+		TODO: additional enhancements from A/331 A3.10.2 Basic Delivery Object Recovery
+
+		 The ROUTE receiver continuously acquires packet payloads for the object as long as all of the following conditions are satisfied:
+             i) there is at least one entry in RECEIVED still set to false;
+             ii) the object has not yet expired; and
+             iii) the application has not given up on reception of this object.
+
  */
 
 typedef struct lls_sls_alc_monitor {
@@ -648,7 +658,10 @@ typedef struct lls_sls_alc_monitor {
     uint32_t 					video_tsi;
     bool 						video_tsi_manual_override;
 
-	bool						has_discontiguous_toi_flow;
+    uint32_t 					text_tsi;
+    bool 						text_tsi_manual_override;
+
+    bool						has_discontiguous_toi_flow;
 
 	/**
 	* jdj-2019-05-29: TODO - use a sparse array lookup (https://github.com/ned14/nedtries) for resolution to proper transfer_object_length to back-patch close flag
@@ -659,20 +672,27 @@ typedef struct lls_sls_alc_monitor {
 	uint32_t last_audio_toi;
 	uint32_t last_audio_toi_length;
 
+	uint32_t last_text_toi;
+	uint32_t last_text_toi_length;
+
 	uint32_t last_closed_video_toi;
 	uint32_t last_closed_audio_toi;
+    uint32_t last_closed_text_toi;
 
     uint32_t last_pending_flushed_audio_toi;
     uint32_t last_pending_flushed_video_toi;
+    uint32_t last_pending_flushed_text_toi;
 
     uint32_t last_completed_flushed_audio_toi;
     uint32_t last_completed_flushed_video_toi;
+    uint32_t last_completed_flushed_text_toi;
 
     block_t* last_mpd_payload;
     block_t* last_mpd_payload_patched;
 
 	uint32_t video_toi_init;
 	uint32_t audio_toi_init;
+	uint32_t text_toi_init;
 
 	uint32_t usbd_tsi;
 	uint32_t stsid_tsi;

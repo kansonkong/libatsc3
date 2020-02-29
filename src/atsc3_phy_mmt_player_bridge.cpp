@@ -488,7 +488,7 @@ void atsc3_phy_mmt_player_bridge_process_packet_phy(block_t* packet) {
         if(!retval) {
             atsc3_alc_persist_route_ext_attributes_per_lls_sls_alc_monitor_essence(alc_packet, lls_slt_monitor->lls_sls_alc_monitor);
             //dump out for fragment inspection
-            alc_packet_dump_to_object(&udp_packet->udp_flow, &alc_packet, lls_slt_monitor->lls_sls_alc_monitor);
+            atsc3_alc_packet_persist_to_toi_resource_process_sls_mbms_and_emit_callback(&udp_packet->udp_flow, &alc_packet, lls_slt_monitor->lls_sls_alc_monitor);
         } else {
             __ERROR("Error in ALC decode: %d", retval);
         }
