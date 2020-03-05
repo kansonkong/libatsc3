@@ -11,7 +11,10 @@
 #include <stdint.h>
 #include <stdbool.h>
 #include <stdlib.h>
+#include <bits/in_addr.h>
+#include <arpa/inet.h>
 
+#include "atsc3_utils.h"
 #include "atsc3_vector_builder.h"
 #include "atsc3_logging_externs.h"
 #include "atsc3_listener_udp.h"
