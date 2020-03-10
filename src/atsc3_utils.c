@@ -782,7 +782,7 @@ void freesafe(void* tofree) {
 void freeclean(void** tofree) {
 	if(*tofree) {
 		free(*tofree);
-		tofree = NULL;
+		*tofree = NULL;
 	}
 }
 
@@ -790,7 +790,7 @@ void freeclean(void** tofree) {
 void freeclean_uint8_t(uint8_t** tofree) {
 	if(*tofree) {
 		free(*tofree);
-		tofree = NULL;
+		*tofree = NULL;
 	}
 }
 
