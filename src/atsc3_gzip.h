@@ -29,7 +29,10 @@ extern "C" {
 
 #define GZIP_CHUNK_INPUT_SIZE_MAX 65507
 #define GZIP_CHUNK_INPUT_READ_SIZE 1024
-#define GZIP_CHUNK_OUTPUT_BUFFER_SIZE 1024*8
+
+//jjustman-2020-03-09 - TODO - slab alloc this output buffer
+#define GZIP_CHUNK_OUTPUT_BUFFER_SIZE GZIP_CHUNK_INPUT_SIZE_MAX*8 //this is way overkill, but just incase the compressed lls table is _massive_
+
 
 int32_t atsc3_unzip_gzip_payload(uint8_t* input_payload, uint32_t input_payload_size, uint8_t **decompressed_payload);
 
