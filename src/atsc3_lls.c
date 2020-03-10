@@ -47,17 +47,25 @@
 #include "xml.h"
 
 #include "atsc3_aeat_parser.h"
+#include "atsc3_lls_types.h"
 
 int _LLS_INFO_ENABLED  = 0;
 int _LLS_DEBUG_ENABLED = 0;
 int _LLS_TRACE_ENABLED = 0;
 
-char* LLS_SERVICE_CATEGORY_VALUES[] = {"atsc reserved", "linear av", "linear audio", "app based svc.", "esg service", "eas service", "atsc other" };
+char* LLS_SERVICE_CATEGORY_VALUES[] = {"atsc reserved", "linear av", "linear audio", "app based svc.", "esg service", "eas service", "certificateData", "atsc other" };
+//jjustman-2020-03-10: note: 0xFE=>"SignedMultiTable", 0xFF=>"UserDefined"
+
 char* LLS_PROTOCOL_VALUES[] = {"atsc reserved", "ROUTE", "MMTP", "atsc other" };
 
 
 static lls_table_t* __lls_create_base_table_raw(block_t* lls_packet_block) {
 
+    //make sure we have enough remaining data
+    if(block_Remaining_size(lls_packet_block) < 4) {
+        _LLS_ERROR("__lls_create_base_table_raw: preamble remaining bytes is: %d, need at least 4, returning NULL!", block_Remaining_size(lls_packet_block));
+        return NULL;
+    }
 	//zero out full struct
 	lls_table_t* base_table = (lls_table_t*)calloc(1, sizeof(lls_table_t));
 	uint8_t lls[4];
@@ -70,17 +78,139 @@ static lls_table_t* __lls_create_base_table_raw(block_t* lls_packet_block) {
 	base_table->group_count_minus1 = lls[2];
 	base_table->lls_table_version = lls[3];
 
-	int remaining_payload_size = __MIN(65535, block_Remaining_size(lls_packet_block));
+	int remaining_payload_size = __MIN(65536, block_Remaining_size(lls_packet_block));
 
-	uint8_t *temp_gzip_payload = (uint8_t*)calloc(remaining_payload_size, sizeof(uint8_t));
-	//FILE *f = fopen("slt.gz", "w");
-	memcpy(temp_gzip_payload, block_Get(lls_packet_block), remaining_payload_size);
-	block_Seek_Relative(lls_packet_block, remaining_payload_size);
+	if(!remaining_payload_size || remaining_payload_size == 65536) {
+	    _LLS_ERROR("__lls_create_base_table_raw: remaining payload size is: %d, invalid, returning NULL!", remaining_payload_size);
+	    return NULL;
+	}
 
-	base_table->raw_xml.xml_payload_compressed = temp_gzip_payload;
-	base_table->raw_xml.xml_payload_compressed_size = remaining_payload_size;
+	//peek and re-assign as necessary for SignedMultiTable
+	if(base_table->lls_table_id == SignedMultiTable) {
+	    block_t* signed_multi_table_block = block_Duplicate_from_position(lls_packet_block);
+        uint8_t* signed_multi_table_block_start_lls_payload_count = block_Get(signed_multi_table_block);
 
-	__LLS_SLT_PARSER_TRACE("first 4 hex: 0x%x 0x%x 0x%x 0x%x", temp_gzip_payload[0], temp_gzip_payload[1], temp_gzip_payload[2], temp_gzip_payload[3]);
+        base_table->signed_multi_table.lls_payload_count = block_Read_uint8_bitlen(signed_multi_table_block, 8);
+
+        _LLS_TRACE("__lls_create_base_table_raw: SignedMultiTable: setting raw_signed_mutli_table block_t p: %p, len: %d, to first 4 hex: 0x%x 0x%x 0x%x 0x%x, payload_count: %d",
+                   signed_multi_table_block,
+                   signed_multi_table_block->p_size,
+                   signed_multi_table_block->p_buffer[0],
+                   signed_multi_table_block->p_buffer[1],
+                   signed_multi_table_block->p_buffer[2],
+                   signed_multi_table_block->p_buffer[3],
+                   base_table->signed_multi_table.lls_payload_count);
+
+        _LLS_TRACE("__lls_create_base_table_raw: SignedMultiTable: lls_payload_count is: %d", base_table->signed_multi_table.lls_payload_count);
+        for(int i=0; i < base_table->signed_multi_table.lls_payload_count && base_table; i++) {
+            //read out lls_payload_id, lls_payload_version and lls_payload_length, and re-cast a block_T buffer for lls_payload() parsing
+            atsc3_signed_multi_table_lls_payload_t* lls_payload = atsc3_signed_multi_table_lls_payload_new();
+            lls_payload->lls_payload_id = block_Read_uint8_bitlen(signed_multi_table_block, 8);
+            lls_payload->lls_payload_version = block_Read_uint8_bitlen(signed_multi_table_block, 8);
+            lls_payload->lls_payload_length = block_Read_uint16_ntohs(signed_multi_table_block);
+
+
+            _LLS_DEBUG("__lls_create_base_table_raw: parsed lls_payload[%d], lls_payload_id: %d, lls_payload_version: %d, lls_payload_length: %d",
+                       i,
+                       lls_payload->lls_payload_id,
+                       lls_payload->lls_payload_version,
+                       lls_payload->lls_payload_length);
+
+            if(lls_payload->lls_payload_length < block_Remaining_size(signed_multi_table_block)) {
+                lls_payload->lls_payload = block_Duplicate_from_ptr(block_Get(signed_multi_table_block), lls_payload->lls_payload_length);
+                block_Seek_Relative(signed_multi_table_block, lls_payload->lls_payload_length);
+
+                uint8_t *decompressed_payload;
+                block_Rewind(lls_payload->lls_payload);
+                uint8_t* compressed_payload_start = block_Get(lls_payload->lls_payload);
+                uint32_t compressed_payload_length = block_Remaining_size(lls_payload->lls_payload);
+
+                int32_t ret = atsc3_unzip_gzip_payload(compressed_payload_start, compressed_payload_length, &decompressed_payload);
+
+                if(ret > 0) {
+                    //such a hack
+                    lls_payload->lls_table = (lls_table_t*)calloc(1, sizeof(lls_table_t));
+                    lls_payload->lls_table->lls_table_id = lls_payload->lls_payload_id;
+                    lls_payload->lls_table->lls_group_id = base_table->lls_group_id;
+                    lls_payload->lls_table->group_count_minus1 = base_table->group_count_minus1;
+                    lls_payload->lls_table->lls_table_version = lls_payload->lls_payload_version;
+
+                    lls_payload->lls_table->raw_xml.xml_payload = decompressed_payload;
+                    lls_payload->lls_table->raw_xml.xml_payload_size = ret;
+
+                    _LLS_DEBUG("__lls_create_base_table_raw: lls_payload[%d], lls_payload->lls_table->lls_table_version: %d, lls_payload->lls_table->raw_xml.xml_payload_compressed: %p, size: %d, lls_table->raw_xml.xml_payload_size: %d, lls_table->raw_xml.xml_payload: %s",
+                            i,
+                            lls_payload->lls_table->lls_table_version,
+                            lls_payload->lls_table->raw_xml.xml_payload_compressed,
+                            lls_payload->lls_table->raw_xml.xml_payload_compressed_size,
+                            lls_payload->lls_table->raw_xml.xml_payload_size,
+                            lls_payload->lls_table->raw_xml.xml_payload);
+                } else {
+                    _LLS_ERROR("__lls_create_base_table_raw: lls_payload[%d], unable to extract raw_xml.xml_payload",
+                               i);
+                }
+
+                atsc3_signed_multi_table_add_atsc3_signed_multi_table_lls_payload(&base_table->signed_multi_table, lls_payload);
+                _LLS_DEBUG("__lls_create_base_table_raw: adding lls_payload[%d], lls_payload_id: %d, lls_payload_version: %d, lls_payload_length: %d",
+                        i,
+                        lls_payload->lls_payload_id,
+                        lls_payload->lls_payload_version,
+                        lls_payload->lls_payload_length);
+
+            } else {
+                _LLS_ERROR("__lls_create_base_table_raw: unable to add table[%d], payload_length: %d is too long for remaining: %d, clearing out base_table to NULL",
+                           lls_payload->lls_payload_length,
+                           block_Remaining_size(signed_multi_table_block));
+
+                freeclean(&lls_payload);
+                atsc3_signed_multi_table_free_atsc3_signed_multi_table_lls_payload(&base_table->signed_multi_table);
+                freeclean(&base_table);
+            }
+        }
+
+        if(base_table && block_Remaining_size((signed_multi_table_block))) {
+            uint8_t* signed_multi_table_block_end_before_signature_length_field = block_Get(signed_multi_table_block);
+
+            base_table->signed_multi_table.signature_length = block_Read_uint16_ntohs(signed_multi_table_block);
+            _LLS_TRACE("__lls_create_base_table_raw: SignedMultiTable: signature_length is: %d, remaining bytes: %d",
+                       base_table->signed_multi_table.signature_length,
+                       block_Remaining_size(signed_multi_table_block));
+
+            if(block_Remaining_size(signed_multi_table_block) != base_table->signed_multi_table.signature_length) {
+                _LLS_ERROR("_lls_ceate_base_table_raw: SignedMultiTable: remaining signature length too short! signature_length is: %d, remaining bytes: %d",
+                                                  base_table->signed_multi_table.signature_length,
+                                                  block_Remaining_size(signed_multi_table_block));
+                freeclean(&base_table);
+                _LLS_ERROR("returning base_table as: %p", base_table);
+            } else {
+
+                //copy from our interior signedMultiTable from lls_payload_count to before signature_length;
+                base_table->signed_multi_table.raw_signed_multi_table_for_signature = block_Duplicate_from_ptr(signed_multi_table_block_start_lls_payload_count, (signed_multi_table_block_end_before_signature_length_field - signed_multi_table_block_start_lls_payload_count));
+                //this should be our CMS message for verification
+                base_table->signed_multi_table.signature = block_Duplicate_from_position(signed_multi_table_block);
+                _LLS_TRACE("__lls_create_base_table_raw: SignedMultiTable: signature_length is: %d, signature: %s",
+                           base_table->signed_multi_table.signature_length,
+                           base_table->signed_multi_table.signature);
+            }
+        } else {
+            _LLS_ERROR("_lls_ceate_base_table_raw: SignedMultiTable: error finalizing signedMultiTable, base_table: %p, remaining bytes for signature: %d",
+                    base_table,
+                    block_Remaining_size(signed_multi_table_block));
+            freeclean(&base_table);
+        }
+        _LLS_ERROR("before block_Destroy(signed_multi_table_block) base_table as: %p", base_table);
+        block_Destroy(&signed_multi_table_block);
+        _LLS_ERROR("returning base_table as: %p", base_table);
+	} else {
+        uint8_t *temp_gzip_payload = (uint8_t*)calloc(remaining_payload_size, sizeof(uint8_t));
+        memcpy(temp_gzip_payload, block_Get(lls_packet_block), remaining_payload_size);
+        block_Seek_Relative(lls_packet_block, remaining_payload_size);
+
+        base_table->raw_xml.xml_payload_compressed = temp_gzip_payload;
+        base_table->raw_xml.xml_payload_compressed_size = remaining_payload_size;
+
+        __LLS_SLT_PARSER_TRACE("__lls_create_base_table_raw: XML: first 4 hex: 0x%x 0x%x 0x%x 0x%x", temp_gzip_payload[0], temp_gzip_payload[1], temp_gzip_payload[2], temp_gzip_payload[3]);
+	}
 
 	return base_table;
 }
@@ -89,6 +219,18 @@ static lls_table_t* __lls_create_base_table_raw(block_t* lls_packet_block) {
 
 lls_table_t* lls_create_xml_table(block_t* lls_packet_block) {
 	lls_table_t *lls_table = __lls_create_base_table_raw(lls_packet_block);
+	if(!lls_table) {
+        _LLS_ERROR("lls_create_xml_table - error creating instance of LLS XML table, lls_table* is NULL!");
+        return NULL;
+	}
+
+	//jjustman-2020-03-10 - adding in support for lls_payload_id of 0xFE for SignedMultiTable from our base_table_raw creation
+
+	if(lls_table->lls_table_id == SignedMultiTable) {
+
+	    //special handling here, our child nodes are already gunzip'd
+        return lls_table;
+	}
 
 	uint8_t *decompressed_payload;
 	int32_t ret = atsc3_unzip_gzip_payload(lls_table->raw_xml.xml_payload_compressed, lls_table->raw_xml.xml_payload_compressed_size, &decompressed_payload);
@@ -120,6 +262,23 @@ lls_table_t* lls_table_create_or_update_from_lls_slt_monitor(lls_slt_monitor_t* 
 	uint32_t parsed_error;
 
 	lls_table_t* lls_table = lls_table_create_or_update_from_lls_slt_monitor_with_metrics(lls_slt_monitor, lls_packet_block, &parsed, &parsed_update, &parsed_error);
+
+	if(lls_table) {
+	    if(lls_table->lls_table_id == SignedMultiTable) {
+	        for(int i=0; i < lls_table->signed_multi_table.atsc3_signed_multi_table_lls_payload_v.count; i++) {
+	            atsc3_signed_multi_table_lls_payload_t* atsc3_signed_multi_table_lls_payload = lls_table->signed_multi_table.atsc3_signed_multi_table_lls_payload_v.data[i];
+                atsc3_lls_table_create_or_update_from_lls_slt_monitor_dispatcher(lls_slt_monitor, atsc3_signed_multi_table_lls_payload->lls_table);
+	        }
+	    } else {
+            atsc3_lls_table_create_or_update_from_lls_slt_monitor_dispatcher(lls_slt_monitor, lls_table);
+	    }
+
+    }
+
+	return lls_table;
+}
+
+lls_table_t* atsc3_lls_table_create_or_update_from_lls_slt_monitor_dispatcher(lls_slt_monitor_t* lls_slt_monitor, lls_table_t* lls_table) {
     if(lls_table) {
         switch (lls_table->lls_table_id) {
 
@@ -138,8 +297,6 @@ lls_table_t* lls_table_create_or_update_from_lls_slt_monitor(lls_slt_monitor_t* 
                 break;
         }
     }
-
-	return lls_table;
 }
 
 //only return back if lls_table_version has changed
@@ -151,7 +308,25 @@ lls_table_t* lls_table_create_or_update_from_lls_slt_monitor_with_metrics(lls_sl
 		(*parsed_error)++;
 		return NULL; //parse error or not supported
 	}
-    
+
+    if(lls_table_new->lls_table_id != SignedMultiTable) {
+        return atsc3_lls_table_create_or_update_from_lls_slt_monitor_with_metrics_single_table(lls_slt_monitor, lls_table_new, parsed, parsed_update, parsed_error);
+    } else {
+        _LLS_DEBUG("lls_table_create_or_update_from_lls_slt_monitor_with_metrics: iterating over %d entries", lls_table_new->signed_multi_table.atsc3_signed_multi_table_lls_payload_v.count);
+        //iterate over our interior tables...
+        for(int i=0; i < lls_table_new->signed_multi_table.atsc3_signed_multi_table_lls_payload_v.count; i++) {
+            atsc3_signed_multi_table_lls_payload_t *lls_table_payload = lls_table_new->signed_multi_table.atsc3_signed_multi_table_lls_payload_v.data[i];
+            atsc3_lls_table_create_or_update_from_lls_slt_monitor_with_metrics_single_table(lls_slt_monitor, lls_table_payload->lls_table, parsed, parsed_update, parsed_error);
+        }
+
+        return lls_table_new;
+    }
+
+}
+
+lls_table_t* atsc3_lls_table_create_or_update_from_lls_slt_monitor_with_metrics_single_table(lls_slt_monitor_t* lls_slt_monitor, atsc3_lls_table_t* lls_table_new, uint32_t* parsed, uint32_t* parsed_update, uint32_t* parsed_error) {
+    _LLS_DEBUG("atsc3_lls_table_create_or_update_from_lls_slt_monitor_with_metrics_single_table: lls_table_new: %p, lls_table_id: %d", lls_table_new, lls_table_new->lls_table_id);
+
     //jjustman-2019-09-18 - TODO: refactor this out from union to *
     if(lls_table_new->lls_table_id == AEAT) {
         if(!lls_slt_monitor->lls_latest_aeat_table) {
@@ -200,10 +375,17 @@ lls_table_t* lls_table_create_or_update_from_lls_slt_monitor_with_metrics(lls_sl
 	//TODO: refactor me for event dispatching logic
 	if(lls_slt_monitor) {
 		if(lls_slt_monitor->lls_latest_slt_table) {
-			if(strncmp((const char*)lls_slt_monitor->lls_latest_slt_table->raw_xml.xml_payload, (const char*)lls_table_new->raw_xml.xml_payload, strlen((const char*)lls_table_new->raw_xml.xml_payload)) != 0 ||
+            _LLS_DEBUG("atsc3_lls_table_create_or_update_from_lls_slt_monitor_with_metrics_single_table: checking lls_latest_slt_table: %p against %p ", lls_slt_monitor->lls_latest_slt_table, lls_table_new);
+
+            if(strncmp((const char*)lls_slt_monitor->lls_latest_slt_table->raw_xml.xml_payload, (const char*)lls_table_new->raw_xml.xml_payload, strlen((const char*)lls_table_new->raw_xml.xml_payload)) != 0 ||
                 (lls_table_new->lls_table_version > lls_slt_monitor->lls_latest_slt_table->lls_table_version ||
                 (lls_table_new->lls_table_version == 0x00 && lls_slt_monitor->lls_latest_slt_table->lls_table_version == 0xFF))) {
 
+                _LLS_DEBUG("atsc3_lls_table_create_or_update_from_lls_slt_monitor_with_metrics_single_table: attempting to free lls_latest_slt_table: %p,  lls_table_new->lls_table_version: %d, lls_slt_monitor->lls_latest_slt_table->lls_table_version: %d",
+                           lls_slt_monitor->lls_latest_slt_table,
+                           lls_table_new->lls_table_version,
+                           lls_slt_monitor->lls_latest_slt_table->lls_table_version
+                           );
 				//free our old table and keep the new one
 				lls_table_free(&lls_slt_monitor->lls_latest_slt_table);
 				lls_slt_monitor->lls_latest_slt_table = NULL;
@@ -216,7 +398,8 @@ lls_table_t* lls_table_create_or_update_from_lls_slt_monitor_with_metrics(lls_sl
 			}
 		}
 
-		lls_slt_monitor->lls_latest_slt_table = lls_table_new;
+        _LLS_DEBUG("atsc3_lls_table_create_or_update_from_lls_slt_monitor_with_metrics_single_table: setting lls_slt_monitor->lls_latest_slt_table: %p", lls_table_new);
+        lls_slt_monitor->lls_latest_slt_table = lls_table_new;
 		lls_slt_table_perform_update(lls_table_new, lls_slt_monitor);
 		//jjustman-2019-10-03 - TODO - dispatch updates here for callbacks
 
@@ -229,12 +412,32 @@ lls_table_t* lls_table_create_or_update_from_lls_slt_monitor_with_metrics(lls_sl
 	return NULL;
 
 }
+//jjustman-2020-03-10 - todo: refactor me for signedMultiTable support
 
 lls_table_t* __lls_table_create(block_t* lls_packet_block) {
-	int res = 0;
-	xml_node_t* xml_root_node = NULL;
 
-	lls_table_t* lls_table = lls_create_xml_table(lls_packet_block);
+    lls_table_t *lls_table = lls_create_xml_table(lls_packet_block);
+    if(!lls_table) {
+        _LLS_ERROR("lls_create_table - error creating instance of LLS table and subclass, return from lls_create_xml_table was null");
+        return NULL;
+    }
+
+    if(lls_table->lls_table_id != SignedMultiTable) {
+        return atsc3_lls_table_parse_raw_xml(lls_table);
+    } else {
+        //iterate over our interior tables...
+        for(int i=0; i < lls_table->signed_multi_table.atsc3_signed_multi_table_lls_payload_v.count; i++) {
+            atsc3_signed_multi_table_lls_payload_t *lls_table_payload = lls_table->signed_multi_table.atsc3_signed_multi_table_lls_payload_v.data[i];
+            atsc3_lls_table_parse_raw_xml(lls_table_payload->lls_table);
+        }
+
+        return lls_table;
+    }
+}
+
+lls_table_t* atsc3_lls_table_parse_raw_xml(atsc3_lls_table_t* lls_table) {
+    int res = 0;
+    xml_node_t *xml_root_node = NULL;
 
 	if(!lls_table) {
 		_LLS_ERROR("lls_create_table - error creating instance of LLS table and subclass, return from lls_create_xml_table was null");

@@ -33,8 +33,13 @@ lls_table_t* lls_create_base_table(block_t* lls_packet_block);
 lls_table_t* lls_create_xml_table(block_t* lls_packet_block);
 
 lls_table_t* __lls_table_create(block_t* lls_packet_block);
+
+lls_table_t* atsc3_lls_table_parse_raw_xml(atsc3_lls_table_t* lls_table);
+
 lls_table_t* lls_table_create_or_update_from_lls_slt_monitor(lls_slt_monitor_t* lls_slt_monitor, block_t* lls_packet_block);
 lls_table_t* lls_table_create_or_update_from_lls_slt_monitor_with_metrics(lls_slt_monitor_t* lls_slt_monitor, block_t* lls_packet_block, uint32_t* parsed, uint32_t* parsed_update, uint32_t* parsed_error);
+lls_table_t* atsc3_lls_table_create_or_update_from_lls_slt_monitor_with_metrics_single_table(lls_slt_monitor_t* lls_slt_monitor, atsc3_lls_table_t* lls_table_new, uint32_t* parsed, uint32_t* parsed_update, uint32_t* parsed_error);
+lls_table_t* atsc3_lls_table_create_or_update_from_lls_slt_monitor_dispatcher(lls_slt_monitor_t* lls_slt_monitor, lls_table_t* lls_table);
 
 void lls_table_free(lls_table_t** lls_table_p);
 int  lls_create_table_type_instance(lls_table_t* lls_table, xml_node_t* xml_node);
