@@ -84,15 +84,14 @@ void atsc3_route_sls_process_from_alc_packet_and_file(udp_flow_t* udp_flow, alc_
 
                 free(mbms_temp_buffer);
                 fseek(fp_mbms, 0L, SEEK_SET);
-
-
-
             }
 
 			atsc3_sls_metadata_fragments = atsc3_mbms_envelope_to_sls_metadata_fragments_parse_from_fdt_fp(fp_mbms);
 
 			if(atsc3_sls_metadata_fragments) {
 				if(atsc3_sls_metadata_fragments->atsc3_route_s_tsid) {
+                    lls_sls_alc_update_s_tsid_RS_dIpAddr_dPort_if_missing(udp_flow, lls_sls_alc_monitor, atsc3_sls_metadata_fragments->atsc3_route_s_tsid);
+
 					//update our audio and video tsi and init
 					lls_sls_alc_update_tsi_toi_from_route_s_tsid(lls_sls_alc_monitor, atsc3_sls_metadata_fragments->atsc3_route_s_tsid);
 				}
