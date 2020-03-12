@@ -55,24 +55,23 @@ FILE* alc_object_pre_allocate(char* file_name, alc_packet_t* alc_packet);
 int alc_packet_write_fragment(FILE* f, char* file_name, uint32_t offset, alc_packet_t* alc_packet);
 FILE* alc_object_open_or_pre_allocate(char* file_name, alc_packet_t* alc_packet);
 
-
-//deprecated
 void alc_recon_file_ptr_set_tsi_toi(FILE* file_ptr, uint32_t tsi, uint32_t toi_init);
-void alc_recon_file_ptr_fragment_with_init_box(FILE* output_file_ptr, udp_flow_t* udp_flow, alc_packet_t* alc_packet, uint32_t to_match_toi_init);
-
-void alc_recon_file_buffer_struct_set_tsi_toi(pipe_ffplay_buffer_t* pipe_ffplay_buffer, uint32_t tsi, uint32_t toi_init);
-void alc_recon_file_buffer_struct_fragment_with_init_box(pipe_ffplay_buffer_t* pipe_ffplay_buffer, udp_flow_t* udp_flow, alc_packet_t* alc_packet);
-
 char* alc_packet_dump_to_object_get_filename_tsi_toi(udp_flow_t* udp_flow, uint32_t tsi, uint32_t toi);
-void alc_recon_file_buffer_struct_monitor_fragment_with_init_box(udp_flow_t* udp_flow, alc_packet_t* alc_packet, lls_sls_alc_monitor_t* lls_slt_monitor);
-
-void __alc_prepend_fragment_with_init_box(char* file_name, alc_packet_t* alc_packet);
-void __alc_recon_fragment_with_init_box(char* file_name, alc_packet_t* alc_packet, uint32_t tsi, uint32_t toi_init, const char* to_write_filename);
 
 block_t* alc_get_payload_from_filename(char*);
 
 void atsc3_alc_persist_route_ext_attributes_per_lls_sls_alc_monitor_essence(alc_packet_t* alc_packet, lls_sls_alc_monitor_t* lls_sls_alc_monitor);
+void atsc3_alc_packet_check_monitor_flow_for_toi_wraparound_discontinuity(alc_packet_t* alc_packet, lls_sls_alc_monitor_t* lls_sls_alc_monitor);
 
+//jjustman-2020-03-11
+//deprecated - used for isobmff de-fragmentation to handoff a standalone media presentation unit from alc media fragment
+void alc_recon_file_buffer_struct_set_tsi_toi(pipe_ffplay_buffer_t* pipe_ffplay_buffer, uint32_t tsi, uint32_t toi_init);
+void alc_recon_file_ptr_fragment_with_init_box(FILE* output_file_ptr, udp_flow_t* udp_flow, alc_packet_t* alc_packet, uint32_t to_match_toi_init);
+void alc_recon_file_buffer_struct_fragment_with_init_box(pipe_ffplay_buffer_t* pipe_ffplay_buffer, udp_flow_t* udp_flow, alc_packet_t* alc_packet);
+void alc_recon_file_buffer_struct_monitor_fragment_with_init_box(udp_flow_t* udp_flow, alc_packet_t* alc_packet, lls_sls_alc_monitor_t* lls_slt_monitor);
+void __alc_prepend_fragment_with_init_box(char* file_name, alc_packet_t* alc_packet);
+void __alc_recon_fragment_with_init_box(char* file_name, alc_packet_t* alc_packet, uint32_t tsi, uint32_t toi_init, const char* to_write_filename);
+//end deprecated
 
 #if defined (__cplusplus)
 }
