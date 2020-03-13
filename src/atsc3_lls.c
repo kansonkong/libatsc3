@@ -744,7 +744,7 @@ void lls_dump_instance_table(lls_table_t* base_table) {
 
 		_LLS_INFO_I("SLT: Service contains %d entries:", base_table->slt_table.atsc3_lls_slt_service_v.count);
 
-		for(int i=0l; i < base_table->slt_table.atsc3_lls_slt_service_v.count; i++) {
+		for(int i=0; i < base_table->slt_table.atsc3_lls_slt_service_v.count; i++) {
 
 			atsc3_lls_slt_service_t* service = base_table->slt_table.atsc3_lls_slt_service_v.data[i];
 
