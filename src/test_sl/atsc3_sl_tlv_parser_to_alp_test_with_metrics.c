@@ -1,19 +1,8 @@
 /*
- * atsc3_sl_tlv_parser_to_alp_test_validate_sanity.c
+ * atsc3_sl_tlv_parser_to_alp_test_with_metrics.c
  *
- *  Created on: Mar 13, 2020
+ *  Created on: Nov 23, 2019
  *      Author: jjustman
- *
- * Include additional TLV sanity parsing for:
- *
- *  	PLP number must be less than 63
- *			e.g. PLP_id's cannot exceed this value, anything above this value is an indicator of TLV payload corruption
- *
- *		Extract start of ALP packet and ALP header for IP payloads, with actual ALP packet length
- *			confirm TLV header ALP Packet size matches ALP header packet length
- *
- *		Dump TLV de-packetization metrics
- *
  */
 
 #include <stdio.h>
@@ -26,7 +15,6 @@
 #define _ATSC3_SL_TLV_PARSER_TO_ALP_TEST_WARN(...)    printf("%s:%d:WARN:",__FILE__,__LINE__);_ATSC3_UTILS_PRINTLN(__VA_ARGS__);
 #define _ATSC3_SL_TLV_PARSER_TO_ALP_TEST_INFO(...)    printf("%s:%d:INFO:",__FILE__,__LINE__);_ATSC3_UTILS_PRINTLN(__VA_ARGS__);
 #define _ATSC3_SL_TLV_PARSER_TO_ALP_TEST_DEBUG(...)   printf("%s:%d:DEBUG:",__FILE__,__LINE__);_ATSC3_UTILS_PRINTLN(__VA_ARGS__);
-
 
 FILE* atsc3_sl_tlv_open_filename(const char* sl_tlv_filename) {
 	FILE* atsc3_sl_tlv_fp = NULL;
