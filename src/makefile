@@ -8,6 +8,10 @@
 # 	requirements: bento4 libary, ncurses libary and headers
 #
 
+# jjustman-2020-03-13 - add support for older cc versions (e.g. 4.8.4)
+CFLAGS=-std=c99
+$(info    CFLAGS is $(CFLAGS))
+
 all: 	intermediate_lls \
 		intermediate_alp \
 		intermediate_baseband \
