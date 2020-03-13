@@ -71,6 +71,76 @@ typedef struct atsc3_sl_tlv_payload {
     block_t*    alp_payload;                //extracted ALP payload
 } atsc3_sl_tlv_payload_t;
 
+
+typedef struct atsc3_sl_tlv_payload_metrics {
+	uint64_t	total_tlv_bytes_read;
+	uint32_t	total_tlv_packets_parsed_count;
+
+	uint32_t	total_tlv_packets_with_matching_magic_count;
+
+	uint32_t	total_tlv_packets_without_matching_magic_count;
+	uint32_t	total_tlv_packets_without_matching_magic_is_null_value_count;
+
+	uint64_t	total_tlv_bytes_discarded_due_to_magic_mismatch_count;
+	
+	//sane mismatch heuristics from TLV header restrictions
+	/*
+		A331/2020 Section 6.2 defines this value as 65,507, from the following calculation in footnote 5:
+	 
+		The maximum size of the IP datagram is 65,535 bytes. The maximum UDP data payload is 65,535 minus 20 bytes for the IP header minus 8 bytes for the UDP header.
+	*/
+	uint32_t	total_tlv_packets_with_TLV_header_ALP_size_greater_than_a331_max_phy_length_count;
+	uint32_t	total_tlv_packets_with_TLV_header_ALP_size_mismatch_from_parsed_ALP_header_count;
+	uint32_t	total_tlv_packets_without_ALP_starting_at_TS_transfer_size_header_length_count;
+	uint32_t	total_tlv_packets_without_magic_number_after_alp_size_data_bytes_consumed_count;
+
+	uint32_t	total_tlv_packets_with_invalid_PLP_value_count; //e.g. PLP > 63
+	uint32_t	total_tlv_packets_with_invalid_TS_transfer_size_count; //SLAPI-0.7 defines this as 188
+	uint32_t	total_tlv_packets_with_invalid_TLV_header_size_value; //SLAPI-0.7 defines this as 24
+	
+	//TODO: check for "paddding at end of ALP bytes"
+	
+	/*
+	 for packets that do not have any of the above heuristic errors, capture ALP header metrics (A/330:2019)
+	 
+	 Table 5.2 Code Values for packet_type
+	 
+		packet_type Value	Meaning
+		-----------------	--------
+		000					IPv4 packet
+		001					Reserved
+		010					Compressed IP packet
+		011					Reserved
+		100					Link layer signaling packet
+		101					Reserved
+		110					Packet Type Extension
+		111					MPEG-2 Transport Stream
+
+		*NOTE*: packet_types other than 000 (0x0) or 100 (0x4) are SUSPECT, and may indiciate corruption in the BBP FEC frame or BBP de-encapsulation.
+	 */
+	uint32_t	total_alp_packet_type_ip_packets_count;
+	uint64_t	total_alp_packet_type_ip_packets_bytes_read;
+	
+	uint32_t	total_alp_packet_type_link_layer_signalling_packets_count;
+	uint64_t	total_alp_packet_type_link_layer_signalling_bytes_read;
+	
+	//USUALLY not present in most ATSC 3.0 use-cases
+	uint32_t	total_alp_packet_type_packet_compressed_ip_packet_count;
+	uint64_t	total_alp_packet_type_packet_compressed_ip_packet_bytes_read;
+
+	uint32_t	total_alp_packet_type_packet_type_extension_count;
+	uint64_t	total_alp_packet_type_packet_type_extension_bytes_read;
+	
+	uint32_t	total_alp_packet_type_packet_mpeg2_transport_stream_count;
+	uint64_t	total_alp_packet_type_packet_mpeg2_transport_stream_bytes_read;
+	
+	//SHOULD NEVER be present according to A330:2019
+	uint32_t	total_alp_packet_type_reserved_count;
+	uint64_t	total_alp_packet_type_reserved_bytes_read;
+
+
+} atsc3_sl_tlv_payload_metrics_t;
+
 atsc3_sl_tlv_payload_t* atsc3_sl_tlv_payload_parse_from_block_t(block_t* atsc3_sl_tlv_payload_unparsed_block_t);
 void atsc3_sl_tlv_payload_free(atsc3_sl_tlv_payload_t** atsc3_sl_tlv_payload_p);
 void atsc3_sl_tlv_payload_dump(atsc3_sl_tlv_payload_t* atsc3_sl_tlv_payload);
