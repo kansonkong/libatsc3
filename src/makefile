@@ -9,9 +9,12 @@
 #
 
 # jjustman-2020-03-13 - add support for older cc versions (e.g. 4.8.4)
-CFLAGS=-std=c99
-$(info    CFLAGS is $(CFLAGS))
-
+# jjustman-2020-03-26 - disabling as it causes libpacap typedef headers to fail (e.g.  typedef u_int bpf_u_int32;)
+# CFLAGS=-std=c99
+# $(info    CFLAGS is $(CFLAGS))
+#
+# jjustman-2020-03-26 - added #ifdef __MALLOC_DEBUGGING for doublefree crash debugging on linux in atsc3_alc_listener_mde_writer
+# 	to enable, add -l
 all: 	intermediate_lls \
 		intermediate_alp \
 		intermediate_baseband \
@@ -821,8 +824,18 @@ atsc3_mmt_mfu_monitor: tools/atsc3_mmt_mfu_monitor.cpp  \
 		-I../bento/include/ -lpcap  -lncurses -lpcap -lz -lpthread \
 		-o tools/atsc3_mmt_mfu_monitor
 
+# jjustman-2020-03-26 - malloc/double free debugging
+# atsc3_alc_listener_mde_writer: tools/atsc3_alc_listener_mde_writer.cpp	libatsc3_bento4_gpl.o
+#	g++  -D OUTPUT_STATISTICS=NCURSES -D__MALLOC_DEBUGGING=1 \
+#		-g tools/atsc3_alc_listener_mde_writer.cpp \
+#		libatsc3_bento4_gpl.o \
+#		-I../bento/include/ -lpcap  -lncurses -lpcap -lz -lpthread -lmcheck\
+#		-o tools/atsc3_alc_listener_mde_writer
+
+
 atsc3_alc_listener_mde_writer: tools/atsc3_alc_listener_mde_writer.cpp	libatsc3_bento4_gpl.o
-	g++  -D OUTPUT_STATISTICS=NCURSES -g tools/atsc3_alc_listener_mde_writer.cpp \
+	g++  -D OUTPUT_STATISTICS=NCURSES \
+		-g tools/atsc3_alc_listener_mde_writer.cpp \
 		libatsc3_bento4_gpl.o \
 		-I../bento/include/ -lpcap  -lncurses -lpcap -lz -lpthread \
 		-o tools/atsc3_alc_listener_mde_writer
