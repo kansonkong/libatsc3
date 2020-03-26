@@ -121,11 +121,11 @@ lls_sls_alc_session_t* lls_slt_alc_session_find_from_udp_packet(lls_slt_monitor_
 
 			if((lls_slt_alc_session->sls_relax_source_ip_check || (!lls_slt_alc_session->sls_relax_source_ip_check && lls_slt_alc_session->sls_source_ip_address == src_ip_addr)) &&
 				lls_slt_alc_session->sls_destination_ip_address == dst_ip_addr && lls_slt_alc_session->sls_destination_udp_port == dst_port) {
-				_ATSC3_LLS_ALC_UTILS_INFO("lls_slt_alc_session_find_from_udp_packet: checking lls_slt_monitor->lls_sls_alc_monitor");
+				_ATSC3_LLS_ALC_UTILS_TRACE("lls_slt_alc_session_find_from_udp_packet: checking lls_slt_monitor->lls_sls_alc_monitor");
 			
 				for(int k=0; k < lls_slt_monitor->lls_sls_alc_monitor_v.count; k++) {
 					lls_sls_alc_monitor_t* lls_sls_alc_monitor = lls_slt_monitor->lls_sls_alc_monitor_v.data[k];
-					_ATSC3_LLS_ALC_UTILS_INFO("lls_slt_alc_session_find_from_udp_packet: checking lls_slt_monitor->lls_sls_alc_monitor_v.data[%d] from: %p (service_id: %d) with: %p (service_id: %d)",
+					_ATSC3_LLS_ALC_UTILS_TRACE("lls_slt_alc_session_find_from_udp_packet: checking lls_slt_monitor->lls_sls_alc_monitor_v.data[%d] from: %p (service_id: %d) with: %p (service_id: %d)",
 											  k,
 											  lls_slt_monitor->lls_sls_alc_monitor,
 											  lls_slt_monitor->lls_sls_alc_monitor->atsc3_lls_slt_service->service_id,
@@ -133,7 +133,7 @@ lls_sls_alc_session_t* lls_slt_alc_session_find_from_udp_packet(lls_slt_monitor_
 											  lls_sls_alc_monitor->atsc3_lls_slt_service->service_id);
 
 					if(lls_slt_alc_session->service_id == lls_sls_alc_monitor->atsc3_lls_slt_service->service_id) {
-						_ATSC3_LLS_ALC_UTILS_INFO("lls_slt_alc_session_find_from_udp_packet: updating lls_slt_monitor->lls_sls_alc_monitor from: %p (service_id: %d) to: %p (service_id: %d)",
+						_ATSC3_LLS_ALC_UTILS_TRACE("lls_slt_alc_session_find_from_udp_packet: updating lls_slt_monitor->lls_sls_alc_monitor from: %p (service_id: %d) to: %p (service_id: %d)",
 												  lls_slt_monitor->lls_sls_alc_monitor, lls_slt_monitor->lls_sls_alc_monitor->atsc3_lls_slt_service->service_id,
 												  lls_sls_alc_monitor, lls_sls_alc_monitor->atsc3_lls_slt_service->service_id);
 						lls_slt_monitor->lls_sls_alc_monitor = lls_sls_alc_monitor;

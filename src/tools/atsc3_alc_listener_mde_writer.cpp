@@ -100,12 +100,14 @@ void process_packet(u_char *user, const struct pcap_pkthdr *pkthdr, const u_char
 	 jjustman-2020-03-25 - alternatively, filter out by ServiceID:
 	lls_sls_alc_monitor->atsc3_lls_slt_service &&
 	lls_sls_alc_monitor->atsc3_lls_slt_service->service_id == matching_lls_slt_alc_session->atsc3_lls_slt_service->service_id
+	 
+	clang optimized out matching_lls_slt_alc_session in the first conditional, so its added in the 3rd filter test for service_id
     */
 	
 	lls_sls_alc_session_t* matching_lls_slt_alc_session = lls_slt_alc_session_find_from_udp_packet(lls_slt_monitor, udp_packet->udp_flow.src_ip_addr, udp_packet->udp_flow.dst_ip_addr, udp_packet->udp_flow.dst_port);
     if((lls_sls_alc_monitor && matching_lls_slt_alc_session) &&
 	   (dst_service_id_filter == NULL && dst_ip_addr_filter == NULL && dst_ip_port_filter == NULL) ||
-	   ((dst_service_id_filter != NULL && matching_lls_slt_alc_session->service_id == *dst_service_id_filter ) ||
+	   ((dst_service_id_filter != NULL && matching_lls_slt_alc_session && matching_lls_slt_alc_session->service_id == *dst_service_id_filter ) ||
 	    (dst_ip_addr_filter != NULL && dst_ip_port_filter == NULL && udp_packet->udp_flow.dst_ip_addr == *dst_ip_addr_filter) ||
 	    (dst_ip_addr_filter != NULL && dst_ip_port_filter != NULL && udp_packet->udp_flow.dst_ip_addr == *dst_ip_addr_filter && udp_packet->udp_flow.dst_port == *dst_ip_port_filter))) {
 		
