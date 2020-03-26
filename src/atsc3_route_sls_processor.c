@@ -62,7 +62,7 @@ void atsc3_route_sls_process_from_alc_packet_and_file(udp_flow_t* udp_flow, alc_
 				goto cleanup;
 			}
 
-            mbms_toi_filename = alc_packet_dump_to_object_get_filename_tsi_toi(udp_flow, 0, *mbms_toi);
+			mbms_toi_filename = alc_packet_dump_to_object_get_filename_tsi_toi(udp_flow, 0, *mbms_toi);
 
 			fp_mbms = fopen(mbms_toi_filename, "r");
 			if(!fp_mbms) {
@@ -73,84 +73,84 @@ void atsc3_route_sls_process_from_alc_packet_and_file(udp_flow_t* udp_flow, alc_
 			//dump our full payload for debugging
 			if(false) {
 
-                fseek(fp_mbms, 0L, SEEK_END);
-                int sz = ftell(fp_mbms);
-
-                fseek(fp_mbms, 0L, SEEK_SET);
-                char* mbms_temp_buffer = calloc(sz+1, sizeof(char));
-
-                fread(mbms_temp_buffer, sz, 1, fp_mbms);
-                _ATSC3_ROUTE_SLS_PROCESSOR_ERROR("alc_packet tsi/toi:0/%u - filename: %s, mbms payload file size: %d, is:\n%s", *mbms_toi, mbms_toi_filename, sz, mbms_temp_buffer);
-
-                free(mbms_temp_buffer);
-                fseek(fp_mbms, 0L, SEEK_SET);
-            }
+			  fseek(fp_mbms, 0L, SEEK_END);
+			  int sz = ftell(fp_mbms);
+			  
+			  fseek(fp_mbms, 0L, SEEK_SET);
+			  char* mbms_temp_buffer = calloc(sz+1, sizeof(char));
+			  
+			  fread(mbms_temp_buffer, sz, 1, fp_mbms);
+			  _ATSC3_ROUTE_SLS_PROCESSOR_ERROR("alc_packet tsi/toi:0/%u - filename: %s, mbms payload file size: %d, is:\n%s", *mbms_toi, mbms_toi_filename, sz, mbms_temp_buffer);
+			  
+			  free(mbms_temp_buffer);
+			  fseek(fp_mbms, 0L, SEEK_SET);
+			}
 
 			atsc3_sls_metadata_fragments = atsc3_mbms_envelope_to_sls_metadata_fragments_parse_from_fdt_fp(fp_mbms);
 
 			if(atsc3_sls_metadata_fragments) {
 				if(atsc3_sls_metadata_fragments->atsc3_route_s_tsid) {
-                    lls_sls_alc_update_s_tsid_RS_dIpAddr_dPort_if_missing(udp_flow, lls_sls_alc_monitor, atsc3_sls_metadata_fragments->atsc3_route_s_tsid);
+				  lls_sls_alc_update_s_tsid_RS_dIpAddr_dPort_if_missing(udp_flow, lls_sls_alc_monitor, atsc3_sls_metadata_fragments->atsc3_route_s_tsid);
 
 					//update our audio and video tsi and init
 					lls_sls_alc_update_tsi_toi_from_route_s_tsid(lls_sls_alc_monitor, atsc3_sls_metadata_fragments->atsc3_route_s_tsid);
 				}
-                if(lls_sls_alc_monitor->atsc3_sls_metadata_fragments) {
-                    //invoke any chained destructors as needed
-                    atsc3_sls_metadata_fragments_free(&lls_sls_alc_monitor->atsc3_sls_metadata_fragments);
-                }
+				if(lls_sls_alc_monitor->atsc3_sls_metadata_fragments) {
+				  //invoke any chained destructors as needed
+				  atsc3_sls_metadata_fragments_free(&lls_sls_alc_monitor->atsc3_sls_metadata_fragments);
+				}
 				lls_sls_alc_monitor->atsc3_sls_metadata_fragments = atsc3_sls_metadata_fragments;
                 
-                /* https://github.com/google/shaka-player/issues/237
-                 
-                 For MPDs with type dynamic, it is important to look at the combo "availabilityStartTime + period@start" (AST + PST) and "startNumber"
-                 and the current time.
-
-                 startNumber refers to the segment that is available one segmentDuration after the period start
-                 (at the period start, only the init segments are available),
-
-                 For dynamic MPDs, you shall "never" start to play with startNumber, but the latest available segment is
-                 LSN = floor( (now - (availabilityStartTime+PST))/segmentDuration + startNumber- 1).
-
-                 It is also important to align the mediaTimeLine (based on baseMediaDecodeTime) so that it starts at 0 at the beginning of the period.
-                 
-                 content_type    char *    "application/dash+xml"    0x00000001064c8fe0
-                 */
-
-                //TODO: jjustman-2019-11-02: write out our multipart mbms payload to our route/svc_id, e.g. to get the mpd
-                for(int i=0; i < lls_sls_alc_monitor->atsc3_sls_metadata_fragments->atsc3_mime_multipart_related_instance->atsc3_mime_multipart_related_payload_v.count; i++) {
-                    atsc3_mime_multipart_related_payload_t* atsc3_mime_multipart_related_payload = lls_sls_alc_monitor->atsc3_sls_metadata_fragments->atsc3_mime_multipart_related_instance->atsc3_mime_multipart_related_payload_v.data[i];
-                    if(!atsc3_mime_multipart_related_payload->content_type) {
-                        _ATSC3_ROUTE_SLS_PROCESSOR_WARN("atsc3_route_sls_process_from_alc_packet_and_file: content_type is null for tsi/toi:%u/%u", alc_packet->def_lct_hdr->tsi, alc_packet->def_lct_hdr->toi);
-                    } else {
-
-                        //jjustman-2019-11-05 - patch MPD type="dynamic" with availabilityStartTime to NOW and startNumber to the most recent A/V flows for TOI delivery
-                        if(strncmp(atsc3_mime_multipart_related_payload->content_type, ATSC3_ROUTE_MPD_TYPE, __MIN(strlen(atsc3_mime_multipart_related_payload->content_type), strlen(ATSC3_ROUTE_MPD_TYPE))) == 0) {
-                            atsc3_route_sls_patch_mpd_availability_start_time_and_start_number(atsc3_mime_multipart_related_payload, lls_sls_alc_monitor);
-                        }
-                    }
-
-                    char mbms_filename[1025] = { 0 };
-                    snprintf(mbms_filename, 1024, "route/%d", lls_sls_alc_monitor->atsc3_lls_slt_service->service_id);
-                    mkdir(mbms_filename, 0777);
-                    snprintf(mbms_filename, 1024, "route/%d/%s", lls_sls_alc_monitor->atsc3_lls_slt_service->service_id, atsc3_mime_multipart_related_payload->content_location);
-                    FILE* fp = fopen(mbms_filename, "w");
-                    if(fp) {
-                        /* lldb: set set target.max-string-summary-length 10000 */
-                        _ATSC3_ROUTE_SLS_PROCESSOR_DEBUG("writing MBMS object to: %s, payload: %s", mbms_filename, atsc3_mime_multipart_related_payload->payload);
-
-                        fwrite(atsc3_mime_multipart_related_payload->payload, atsc3_mime_multipart_related_payload->payload_length, 1, fp);
-                        fclose(fp);
-                    } else {
-                        _ATSC3_ROUTE_SLS_PROCESSOR_ERROR("sls mbms fragment dump, original content_location: %s, unable to write to local path: %s", atsc3_mime_multipart_related_payload->content_location, mbms_filename);
-
-                    }
-                }
+				/* https://github.com/google/shaka-player/issues/237
+				   
+				   For MPDs with type dynamic, it is important to look at the combo "availabilityStartTime + period@start" (AST + PST) and "startNumber"
+				   and the current time.
+				   
+				   startNumber refers to the segment that is available one segmentDuration after the period start
+				   (at the period start, only the init segments are available),
+				   
+				   For dynamic MPDs, you shall "never" start to play with startNumber, but the latest available segment is
+				   LSN = floor( (now - (availabilityStartTime+PST))/segmentDuration + startNumber- 1).
+				   
+				   It is also important to align the mediaTimeLine (based on baseMediaDecodeTime) so that it starts at 0 at the beginning of the period.
+				   
+				   content_type    char *    "application/dash+xml"    0x00000001064c8fe0
+				*/
+				
+				//TODO: jjustman-2019-11-02: write out our multipart mbms payload to our route/svc_id, e.g. to get the mpd
+				for(int i=0; i < lls_sls_alc_monitor->atsc3_sls_metadata_fragments->atsc3_mime_multipart_related_instance->atsc3_mime_multipart_related_payload_v.count; i++) {
+				  atsc3_mime_multipart_related_payload_t* atsc3_mime_multipart_related_payload = lls_sls_alc_monitor->atsc3_sls_metadata_fragments->atsc3_mime_multipart_related_instance->atsc3_mime_multipart_related_payload_v.data[i];
+				  if(!atsc3_mime_multipart_related_payload->content_type) {
+				    _ATSC3_ROUTE_SLS_PROCESSOR_WARN("atsc3_route_sls_process_from_alc_packet_and_file: content_type is null for tsi/toi:%u/%u", alc_packet->def_lct_hdr->tsi, alc_packet->def_lct_hdr->toi);
+				  } else {
+				    
+				    //jjustman-2019-11-05 - patch MPD type="dynamic" with availabilityStartTime to NOW and startNumber to the most recent A/V flows for TOI delivery
+				    if(strncmp(atsc3_mime_multipart_related_payload->content_type, ATSC3_ROUTE_MPD_TYPE, __MIN(strlen(atsc3_mime_multipart_related_payload->content_type), strlen(ATSC3_ROUTE_MPD_TYPE))) == 0) {
+				      atsc3_route_sls_patch_mpd_availability_start_time_and_start_number(atsc3_mime_multipart_related_payload, lls_sls_alc_monitor);
+				    }
+				  }
+				  
+				  char mbms_filename[1025] = { 0 };
+				  snprintf(mbms_filename, 1024, "route/%d", lls_sls_alc_monitor->atsc3_lls_slt_service->service_id);
+				  mkdir(mbms_filename, 0777);
+				  snprintf(mbms_filename, 1024, "route/%d/%s", lls_sls_alc_monitor->atsc3_lls_slt_service->service_id, atsc3_mime_multipart_related_payload->content_location);
+				  FILE* fp_mbms_file = fopen(mbms_filename, "w");
+				  if(fp_mbms_file) {
+				    /* lldb: set set target.max-string-summary-length 10000 */
+				    _ATSC3_ROUTE_SLS_PROCESSOR_DEBUG("writing MBMS object to: %s, payload: %s", mbms_filename, atsc3_mime_multipart_related_payload->payload);
+				    
+				    fwrite(atsc3_mime_multipart_related_payload->payload, atsc3_mime_multipart_related_payload->payload_length, 1, fp_mbms_file);
+				    fclose(fp_mbms_file);
+				    fp_mbms_file = NULL;
+				  } else {
+				    _ATSC3_ROUTE_SLS_PROCESSOR_ERROR("sls mbms fragment dump, original content_location: %s, unable to write to local path: %s", atsc3_mime_multipart_related_payload->content_location, mbms_filename);
+				    
+				  }
+			     }
 			}
 		} else {
 			_ATSC3_ROUTE_SLS_PROCESSOR_ERROR("No pending atsc3_fdt_instance to process in TSI:0");
-            goto cleanup;
-
+			goto cleanup;
 		}
 	}
     
