@@ -22,3 +22,7 @@
 	path = android/sample_app_no_phy/ExoPlayer
 	url = https://github.com/jjustman/ExoPlayer.git
 	branch = release-v2
+# jjustman-2020-03-13 - not yet for protocol dissectors of stltp, alp, lls, route/dash and mmt
+# [submodule "wireshark"]
+#	path = wireshark
+#	url = https://github.com/wireshark/wireshark.git

@@ -8,6 +8,10 @@
 # 	requirements: bento4 libary, ncurses libary and headers
 #
 
+# jjustman-2020-03-13 - add support for older cc versions (e.g. 4.8.4)
+CFLAGS=-std=c99
+$(info    CFLAGS is $(CFLAGS))
+
 all: 	intermediate_lls \
 		intermediate_alp \
 		intermediate_baseband \
@@ -27,7 +31,7 @@ all: 	intermediate_lls \
 		a324_tests \
 		tools \
 		atsc3_sl_phy
-		
+
 clean:
 	-rm -f *.o
 	-rm -f route/*
@@ -67,6 +71,7 @@ clean:
 	-rm -f tools/atsc3_mmt_listener_to_http_hls_fmp4
 	-rm -f test_sl/atsc3_sl_tlv_parser_to_alp_test
 	-rm -f test_sl/atsc3_sl_tlv_parser_to_alp_reflector_test
+	-rm -f test_sl/atsc3_sl_tlv_parser_to_alp_test_with_metrics
 
 intermediate_lls: 	atsc3_lls.o \
 					atsc3_lls_types.o \
@@ -163,10 +168,11 @@ tools: atsc3_listener_metrics_ncurses \
 	atsc3_mmt_mfu_monitor \
 	atsc3_alc_listener_mde_writer \
 	atsc3_mmt_listener_to_http_hls_fmp4
-	
+
 atsc3_sl_phy: atsc3_sl_tlv_demod_type.o	\
 	test_sl/atsc3_sl_tlv_parser_to_alp_test \
-	test_sl/atsc3_sl_tlv_parser_to_alp_reflector_test
+	test_sl/atsc3_sl_tlv_parser_to_alp_reflector_test \
+	test_sl/atsc3_sl_tlv_parser_to_alp_test_with_metrics
 
 # intermediate object generation for linking into libatsc3.o
 
@@ -271,7 +277,7 @@ fixups_timespec_get.o:  fixups.h fixups_timespec_get.c
 
 atsc3_alc_rx.o:  atsc3_alc_rx.h atsc3_alc_rx.c atsc3_lct_hdr.h
 	cc -g -c atsc3_alc_rx.c
-	
+
 atsc3_alc_session.o: atsc3_alc_session.h atsc3_alc_session.c
 	cc -g -c atsc3_alc_session.c
 
@@ -835,12 +841,10 @@ atsc3_mmt_listener_to_http_hls_fmp4: tools/atsc3_mmt_listener_to_http_hls_fmp4.c
 		-I../libmicrohttpd/libmicrohttpd-0.9.63/build/include \
 		-L../libmicrohttpd/libmicrohttpd-0.9.63/build/lib -lmicrohttpd \
 		-o tools/atsc3_mmt_listener_to_http_hls_fmp4
-		
-		
-		
+
 atsc3_sl_tlv_demod_type.o: atsc3_sl_tlv_demod_type.h atsc3_sl_tlv_demod_type.c
 	cc -g -c atsc3_sl_tlv_demod_type.c
-	
+
 test_sl/atsc3_sl_tlv_parser_to_alp_test: 	test_sl/atsc3_sl_tlv_parser_to_alp_test.c \
 											atsc3_sl_tlv_demod_type.o \
 											libatsc3.o
@@ -848,15 +852,21 @@ test_sl/atsc3_sl_tlv_parser_to_alp_test: 	test_sl/atsc3_sl_tlv_parser_to_alp_tes
 		  atsc3_sl_tlv_demod_type.o \
 		  libatsc3.o \
 	   -o test_sl/atsc3_sl_tlv_parser_to_alp_test -lz -lm -lpthread -lpcap
-	   
+
+test_sl/atsc3_sl_tlv_parser_to_alp_test_with_metrics:	test_sl/atsc3_sl_tlv_parser_to_alp_test_with_metrics.c \
+														atsc3_sl_tlv_demod_type.o \
+														libatsc3.o
+	cc -g test_sl/atsc3_sl_tlv_parser_to_alp_test_with_metrics.c \
+	  	atsc3_sl_tlv_demod_type.o \
+		libatsc3.o \
+		-o test_sl/atsc3_sl_tlv_parser_to_alp_test_with_metrics -lz -lm -lpthread -lpcap
+
 test_sl/atsc3_sl_tlv_parser_to_alp_reflector_test: 	test_sl/atsc3_sl_tlv_parser_to_alp_reflector_test.c \
-											atsc3_sl_tlv_demod_type.o \
-											libatsc3.o
+													atsc3_sl_tlv_demod_type.o \
+													libatsc3.o
 	cc -g test_sl/atsc3_sl_tlv_parser_to_alp_reflector_test.c \
 		  atsc3_sl_tlv_demod_type.o \
 		  libatsc3.o \
 	   -o test_sl/atsc3_sl_tlv_parser_to_alp_reflector_test -lz -lm -lpthread -lpcap
-	   
-	  
 
 

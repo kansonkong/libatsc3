@@ -5,6 +5,37 @@
  *      Author: jjustman
  *
  *
+ * jjustman-2020-03-11 - TODO: add support for EXT_ROUTE_PRESENTATION_TIME - SCT
+ * From ATSC A/331:2020 - Section 8.1.1.3 -
+ *
+ * 8.1.1.3 Synchronization and Time
+ *
+ * ROUTE/DASH requires accurate wall clock for synchronization.
+ * Network servers for both broadcast and broadband components of a Service shall synchronize  to a common wall clock (UTC) source.
+ * GPS or other source with similar accuracy and stability shall be utilized.
+ *
+ * Several use cases of receiver presentation time are supported for MPD@type='dynamic'. These are defined as:
+ *
+ *      Earliest MDE ROUTE presentation time,
+ *      Earliest Segment level DASH Media Presentation time,
+ *      and Synchronized Segment level DASH Media Presentation timeline.
+ *
+ *      The receiver is expected to calculate the offset of presentation timeline relative to receiver wall clock for two use cases as follows:
+ *      1) Earliest MDE ROUTE presentation time:
+ *          MDE data block with T-RAP ROUTE reception time plus (EXT_ROUTE_PRESENTATION_TIME - SCT).
+ *          Initial media request based on adjusted segment availability start time per Section 5.3.9.5.3 of [57].
+ *
+ *      2) Segment level DASH Media Presentation time:
+ *          Segment request based on DASH Segment “availability start time” per the DASH-IF [12] profile
+ *          in which the receiver calculates the presentation timeline based on UTC timing given in the MPD.
+ *
+ *  Note that DASH provides a mode supporting synchronized playback among different receivers using a parameter called MPD@suggestedPresentationDelay.
+ *  Broadcast emission of MPD@suggestedPresentationDelay is optional and can be used by receivers when synchronized playback is desired.
+ *
+ *  This mode is not described here as there is no ATSC 3.0 requirement for synchronized playback across multiple devices.
+ *
+ *  Note that this mode causes an additional delay in channel change times.
+ *
  *
  *      <?xml version="1.0" encoding="UTF-8"?>
 <MPD availabilityStartTime="2019-02-19T21:40:50Z" maxSegmentDuration="PT2S" minBufferTime="PT2S" minimumUpdatePeriod="PT10S" profiles="urn:mpeg:dash:profile:isoff-live:2011" publishTime="2019-02-19T21:40:50Z" timeShiftBufferDepth="PT20S" type="dynamic" xmlns="urn:mpeg:dash:schema:mpd:2011" xmlns:cenc="urn:mpeg:cenc:2013" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemalocation="urn:mpeg:dash:schema:mpd:2011 DASH-MPD.xsd">
