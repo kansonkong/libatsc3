@@ -13,6 +13,11 @@
 #define _SHOW_PACKET_FLOW 1
 int PACKET_COUNTER=0;
 
+#ifdef __MALLOC_DEBUGGING
+#include <mcheck.h>
+#endif
+
+
 #include <pcap.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -45,12 +50,13 @@ atsc3_alc_arguments_t* alc_arguments;
 atsc3_alc_session_t* atsc3_alc_session;
 
 void process_packet(u_char *user, const struct pcap_pkthdr *pkthdr, const u_char *packet) {
-	udp_packet_t* udp_packet = process_packet_from_pcap(user, pkthdr, packet);
-	if(!udp_packet) {
-		return;
-	}
-    alc_packet_t* alc_packet = NULL;
+  udp_packet_t* udp_packet = process_packet_from_pcap(user, pkthdr, packet);
+  if(!udp_packet) {
+	return;
+  }
 
+  alc_packet_t* alc_packet = NULL;
+    
     
     //dispatch for LLS extraction and dump
     if(udp_packet->udp_flow.dst_ip_addr == LLS_DST_ADDR && udp_packet->udp_flow.dst_port == LLS_DST_PORT) {
@@ -113,15 +119,27 @@ void process_packet(u_char *user, const struct pcap_pkthdr *pkthdr, const u_char
 		
 		//process ALC streams
 		int retval = alc_rx_analyze_packet_a331_compliant((char*)block_Get(udp_packet->data), block_Remaining_size(udp_packet->data), &alc_packet);
+
+#ifdef __MALLOC_DEBUGGING
+		mcheck(0);
+#endif
+		
 		if(!retval) {
 			
 			//lls_sls_alc_monitor_t* atsc3_lls_sls_alc_monitor_find_from_udp_packet(lls_slt_monitor_t* lls_slt_monitor, uint32_t src_ip_addr, uint32_t dst_ip_addr, uint16_t dst_port) {
 
 			//dump out for fragment inspection
-            atsc3_alc_persist_route_ext_attributes_per_lls_sls_alc_monitor_essence(alc_packet, lls_slt_monitor->lls_sls_alc_monitor);
-            atsc3_alc_packet_persist_to_toi_resource_process_sls_mbms_and_emit_callback(
+		  atsc3_alc_persist_route_ext_attributes_per_lls_sls_alc_monitor_essence(alc_packet, lls_slt_monitor->lls_sls_alc_monitor);
+
+#ifdef __MALLOC_DEBUGGING
+mcheck(0);
+#endif
+		  atsc3_alc_packet_persist_to_toi_resource_process_sls_mbms_and_emit_callback(
                     &udp_packet->udp_flow, &alc_packet,
                     lls_slt_monitor->lls_sls_alc_monitor);
+#ifdef __MALLOC_DEBUGGING
+		 mcheck(0);
+#endif
 		} else {
 			__ERROR("Error in ALC decode: %d", retval);
 		}
@@ -132,12 +150,20 @@ void process_packet(u_char *user, const struct pcap_pkthdr *pkthdr, const u_char
 udp_packet_free:
 	alc_packet_free(&alc_packet);
 	alc_packet = NULL;
+#ifdef __MALLOC_DEBUGGING
 
+	mcheck(0);
+#endif
+	
     return udp_packet_free(&udp_packet);
 }
 
 int main(int argc,char **argv) {
 
+#ifdef __MALLOC_DEBUGGING
+          mcheck(0);
+	  mtrace ();
+#endif
 	_LLS_SLT_PARSER_INFO_ROUTE_ENABLED = 1;
 	_LLS_ALC_UTILS_INFO_ENABLED = 1;
 
