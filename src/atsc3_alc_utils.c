@@ -1335,6 +1335,9 @@ cleanup:
  *          OTHERWISE lls_sls_alc_monitor->last_..._toi will be overwritten and the discontinuity WILL NOT BE DETECTED!
  */
 
+#define __ATSC3_ALC_UTILS_CHECK_CLOSE_FLAG_ON_TOI_LENGTH_PERSIST__
+//jjustman-2020-03-25 - workaround for digicap packager that is only emitting EXT_FTI on the very first packet of the TOI, and no close object flag
+
 void atsc3_alc_persist_route_ext_attributes_per_lls_sls_alc_monitor_essence(alc_packet_t* alc_packet, lls_sls_alc_monitor_t* lls_sls_alc_monitor) {
     if(lls_sls_alc_monitor && lls_sls_alc_monitor->video_tsi && lls_sls_alc_monitor->audio_tsi) {
         uint32_t tsi = alc_packet->def_lct_hdr->tsi;
