@@ -102,6 +102,14 @@ lls_sls_alc_session_t* lls_slt_alc_session_find(lls_slt_monitor_t* lls_slt_monit
 	return NULL;
 }
 
+/*
+ 
+ jjustman-2020-03-25 - workaround warning: set our lls_slt_monitor->lls_sls_alc_monitor if we have a matching session
+ TODO: deprecate this method and instead use atsc3_lls_sls_alc_monitor_find_from_udp_packet(0
+ 
+ lls_sls_alc_monitor
+ 
+ */
 
 lls_sls_alc_session_t* lls_slt_alc_session_find_from_udp_packet(lls_slt_monitor_t* lls_slt_monitor, uint32_t src_ip_addr, uint32_t dst_ip_addr, uint16_t dst_port) {
 
@@ -113,7 +121,26 @@ lls_sls_alc_session_t* lls_slt_alc_session_find_from_udp_packet(lls_slt_monitor_
 
 			if((lls_slt_alc_session->sls_relax_source_ip_check || (!lls_slt_alc_session->sls_relax_source_ip_check && lls_slt_alc_session->sls_source_ip_address == src_ip_addr)) &&
 				lls_slt_alc_session->sls_destination_ip_address == dst_ip_addr && lls_slt_alc_session->sls_destination_udp_port == dst_port) {
+				_ATSC3_LLS_ALC_UTILS_TRACE("lls_slt_alc_session_find_from_udp_packet: checking lls_slt_monitor->lls_sls_alc_monitor");
+			
+				for(int k=0; k < lls_slt_monitor->lls_sls_alc_monitor_v.count; k++) {
+					lls_sls_alc_monitor_t* lls_sls_alc_monitor = lls_slt_monitor->lls_sls_alc_monitor_v.data[k];
+					_ATSC3_LLS_ALC_UTILS_TRACE("lls_slt_alc_session_find_from_udp_packet: checking lls_slt_monitor->lls_sls_alc_monitor_v.data[%d] from: %p (service_id: %d) with: %p (service_id: %d)",
+											  k,
+											  lls_slt_monitor->lls_sls_alc_monitor,
+											  lls_slt_monitor->lls_sls_alc_monitor->atsc3_lls_slt_service->service_id,
+											  lls_sls_alc_monitor,
+											  lls_sls_alc_monitor->atsc3_lls_slt_service->service_id);
+
+					if(lls_slt_alc_session->service_id == lls_sls_alc_monitor->atsc3_lls_slt_service->service_id) {
+						_ATSC3_LLS_ALC_UTILS_TRACE("lls_slt_alc_session_find_from_udp_packet: updating lls_slt_monitor->lls_sls_alc_monitor from: %p (service_id: %d) to: %p (service_id: %d)",
+												  lls_slt_monitor->lls_sls_alc_monitor, lls_slt_monitor->lls_sls_alc_monitor->atsc3_lls_slt_service->service_id,
+												  lls_sls_alc_monitor, lls_sls_alc_monitor->atsc3_lls_slt_service->service_id);
+						lls_slt_monitor->lls_sls_alc_monitor = lls_sls_alc_monitor;
+					}
+				}
 				_ATSC3_LLS_ALC_UTILS_TRACE("lls_slt_alc_session_find_from_udp_packet: matching, returning with %p", lls_slt_alc_session);
+
 				return lls_slt_alc_session;
 			}
 		}
@@ -121,6 +148,28 @@ lls_sls_alc_session_t* lls_slt_alc_session_find_from_udp_packet(lls_slt_monitor_
 	return NULL;
 }
 
+
+lls_sls_alc_monitor_t* atsc3_lls_sls_alc_monitor_find_from_udp_packet(lls_slt_monitor_t* lls_slt_monitor, uint32_t src_ip_addr, uint32_t dst_ip_addr, uint16_t dst_port) {
+	for(int i=0; i < lls_slt_monitor->lls_sls_alc_session_flows_v.count; i++) {
+		lls_sls_alc_session_flows_t* lls_sls_alc_session_flows = lls_slt_monitor->lls_sls_alc_session_flows_v.data[i];
+
+		for(int j=0; j < lls_sls_alc_session_flows->lls_sls_alc_session_v.count; j++ ) {
+			lls_sls_alc_session_t* lls_slt_alc_session = lls_sls_alc_session_flows->lls_sls_alc_session_v.data[j];
+
+			if((lls_slt_alc_session->sls_relax_source_ip_check || (!lls_slt_alc_session->sls_relax_source_ip_check && lls_slt_alc_session->sls_source_ip_address == src_ip_addr)) &&
+				lls_slt_alc_session->sls_destination_ip_address == dst_ip_addr && lls_slt_alc_session->sls_destination_udp_port == dst_port) {
+				_ATSC3_LLS_ALC_UTILS_TRACE("lls_slt_alc_session_find_from_udp_packet: matching, returning with %p", lls_slt_alc_session);
+				for(int k=0; k < lls_slt_monitor->lls_sls_alc_monitor_v.count; k++) {
+					lls_sls_alc_monitor_t* lls_sls_alc_monitor = lls_slt_monitor->lls_sls_alc_monitor_v.data[k];
+					if(lls_slt_alc_session->service_id == lls_sls_alc_monitor->atsc3_lls_slt_service->service_id) {
+						return lls_sls_alc_monitor;
+					}
+				}
+			}
+		}
+	}
+	return NULL;
+}
 
 lls_sls_alc_session_t* lls_slt_alc_session_find_from_service_id(lls_slt_monitor_t* lls_slt_monitor, uint16_t service_id) {
 	if(!lls_slt_monitor) {
