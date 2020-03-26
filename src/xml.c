@@ -893,6 +893,7 @@ struct xml_document* xml_parse_document(uint8_t* buffer, size_t length) {
 
 /**
  * [PUBLIC API]
+ * jjustman-2020-03-26 - do NOT take ownership of FILE* source - removed fclose(source) as handing off ownership should be a **
  */
 struct xml_document* xml_open_document(FILE* source) {
 
@@ -923,7 +924,7 @@ struct xml_document* xml_open_document(FILE* source) {
 
 		document_length += read;
 	}
-	fclose(source);
+
 
 	/* Try to parse buffer
 	 */
