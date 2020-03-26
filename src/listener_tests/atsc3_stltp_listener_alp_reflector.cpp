@@ -377,7 +377,7 @@ int main(int argc,char **argv) {
     
     atsc3_alp_packet_collection = atsc3_alp_packet_collection_new();
 
-    if(argc != 5) {
+    if(argc < 5) {
         println("%s - an atsc3 stltp udp mulitcast reflector ", argv[0]);
         println("---");
         println("args: devListen ip port devInject");
@@ -411,9 +411,9 @@ int main(int argc,char **argv) {
         dst_ip_port_filter = (uint16_t*)calloc(1, sizeof(uint16_t));
         *dst_ip_port_filter |= dst_port_filter_int & 0xFFFF;
 	
-		if(argc == 5) {
+		if(argc == 6) {
 			//parse out custom PLP_num
-			filter_stltp_plp_id = argv[4];
+			filter_stltp_plp_id = argv[5];
 
 			uint8_t stltp_plp_id = atoi(filter_stltp_plp_id);
 			if(stltp_plp_id >=0 && stltp_plp_id <= 63) {
