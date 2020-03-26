@@ -37,6 +37,15 @@
 #define MIN_ATSC3_MULTICAST_BLOCK (239 << 24 | 255 << 16)
 #define MAX_ATSC3_MULTICAST_BLOCK (239 << 24 | 255 << 16 | 255 << 8 | 255)
 
+/*
+	A331/2020 Section 6.2 defines this value as 65,507, from the following calculation in footnote 5:
+ 
+	The maximum size of the IP datagram is 65,535 bytes. The maximum UDP data payload is 65,535 minus 20 bytes for the IP header
+	minus 8 bytes for the UDP header.
+*/
+#define MAX_ATSC3_PHY_IP_DATAGRAM_SIZE 65535
+#define MAX_ATSC3_PHY_ALP_DATA_PAYLOAD_SIZE 65507
+
 //mDNS destination addr and port - filter this noise out
 #define UDP_FILTER_MDNS_IP_ADDRESS 3758096635
 #define UDP_FILTER_MDNS_PORT 5353

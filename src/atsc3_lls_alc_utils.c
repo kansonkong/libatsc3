@@ -195,6 +195,48 @@ atsc3_route_s_tsid.c:350:DEBUG:     S-TSID.RS.LS.source_flow.fdt-instance.file: 
  *
  */
 
+/*
+ * jjustman-2020-03-10 - patch around RS missing dIpAddr and dPort if missing
+ *
+ * fixes spec gaps in A/331:2020 with regards to non-SLS carrying flows of media essense observed in the wild...
+ *
+ * <S-TSID xmlns="tag:atsc.org,2016:XMLSchemas/ATSC3/Delivery/S-TSID/1.0/" xmlns:afdt="tag:atsc.org,2016:XMLSchemas/ATSC3/Delivery/ATSC-FDT/1.0/" xmlns:fdt="urn:ietf:param
+s:xml:ns:fdt">
+    <RS sIpAddr="172.16.200.1">
+
+    @dIpAddr    0..1 stsid:IPv4addressType      Destination IP address of this ROUTE session; mandatory for ROUTE session other than session carrying SLS (session signaled in SLT); defaults to session carrying SLS.
+    @dPort      0..1 unsignedShort              Destination port of this ROUTE session; mandatory for ROUTE session other than session carrying SLS (session signaled in SLT); defaults to session carrying SLS.
+ */
+
+void lls_sls_alc_update_s_tsid_RS_dIpAddr_dPort_if_missing(udp_flow_t* udp_flow, lls_sls_alc_monitor_t* lls_sls_alc_monitor, atsc3_route_s_tsid_t* atsc3_route_s_tsid) {
+    if(!lls_sls_alc_monitor || !atsc3_route_s_tsid) {
+        _ATSC3_LLS_ALC_UTILS_ERROR("lls_sls_alc_session: %p, atsc3_route_s_tsid:%p returning!", lls_sls_alc_monitor, atsc3_route_s_tsid);
+        return;
+    }
+
+    char* content_type = NULL;
+
+    for(int i=0; i < atsc3_route_s_tsid->atsc3_route_s_tsid_RS_v.count; i++) {
+        atsc3_route_s_tsid_RS_t *atsc3_route_s_tsid_RS = atsc3_route_s_tsid->atsc3_route_s_tsid_RS_v.data[i];
+        if(!atsc3_route_s_tsid_RS->dest_ip_addr || !atsc3_route_s_tsid_RS->dest_port) {
+            _ATSC3_LLS_ALC_UTILS_WARN( "lls_sls_alc_update_s_tsid_RS_dIpAddr_dPort_if_missing: patching S-TSID.RS: RS: dIpAddr: %u, dPort: %u, sIpAddr: %u with new dIpAddr: %u, dPort: %u",
+                    atsc3_route_s_tsid_RS->dest_ip_addr,
+                    atsc3_route_s_tsid_RS->dest_port,
+                    atsc3_route_s_tsid_RS->src_ip_addr,
+                    udp_flow->dst_ip_addr,
+                    udp_flow->dst_port);
+            if(!atsc3_route_s_tsid_RS->dest_ip_addr) {
+                atsc3_route_s_tsid_RS->dest_ip_addr = udp_flow->dst_ip_addr;
+            }
+
+            if(!atsc3_route_s_tsid_RS->dest_port) {
+                atsc3_route_s_tsid_RS->dest_port = udp_flow->dst_port;
+            }
+        }
+    }
+}
+
+
 void lls_sls_alc_update_tsi_toi_from_route_s_tsid(lls_sls_alc_monitor_t* lls_sls_alc_monitor, atsc3_route_s_tsid_t* atsc3_route_s_tsid) {
 
 	if(!lls_sls_alc_monitor || !atsc3_route_s_tsid) {

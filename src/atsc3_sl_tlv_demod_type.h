@@ -13,19 +13,18 @@
 #include <stdio.h>
 #include <sys/stat.h>
 
-
 #ifndef ATSC3_SL_TLV_DEMOD_TYPE_H_
 #define ATSC3_SL_TLV_DEMOD_TYPE_H_
 
-
 #include "atsc3_utils.h"
 #include "atsc3_logging_externs.h"
+#include "atsc3_alp_parser.h"
 
 #if defined (__cplusplus)
 extern "C" {
 #endif
 
-
+extern int __ATSC3_SL_TLV_USE_INLINE_ALP_PARSER_CALL__;
 /**
  
  Ref: SL SDK API v0.5
@@ -67,14 +66,101 @@ typedef struct atsc3_sl_tlv_payload {
     uint8_t     reserved_b16;               //reserved b16
     uint32_t    reserved_b17_b19;           //reserved b17-b19
     uint32_t    reserved_b20_b23;           //reserved b20-b23
+	
     bool		alp_payload_complete;		//flag if alp_payload block_t may be incomplete, e.g. BBP under-run
-    block_t*    alp_payload;                //extracted ALP payload
+    block_t*    alp_payload;                //extracted ALP payload buffer data
+	
+	//only set if __ATSC3_SL_TLV_USE_INLINE_ALP_PARSER_CALL__ is true
+	atsc3_alp_packet_t* atsc3_alp_packet; 	//extract the atsc3_alp_packet in the TLV_payload_parser
+	
 } atsc3_sl_tlv_payload_t;
 
+
+typedef struct atsc3_sl_tlv_payload_metrics {
+	uint64_t	total_tlv_bytes_read;
+	uint32_t	total_tlv_packets_parsed_count;
+
+	uint32_t	total_tlv_packets_with_matching_magic_count;
+	uint32_t	total_tlv_header_alp_size_bytes_read;
+	uint32_t	total_alp_packets_actual_size_bytes;
+	uint32_t	total_tlv_header_alp_trailing_padding_size_bytes;
+	
+	uint32_t	total_tlv_packets_without_matching_magic_count;
+	uint32_t	total_tlv_packets_without_matching_magic_is_null_value_count;
+
+	uint64_t	total_tlv_bytes_discarded_due_to_magic_mismatch_count;
+
+	uint32_t	total_tlv_packets_without_matching_magic_recovered_in_block_count;
+	uint32_t	total_tlv_bytes_discarded_without_matching_magic_recovered_in_block_count;
+
+	//sane mismatch heuristics from TLV header restrictions
+
+	uint32_t	total_tlv_packets_with_invalid_PLP_value_count; //e.g. PLP > 63
+	uint32_t	total_tlv_packets_with_invalid_TS_transfer_size_count; //SLAPI-0.7 defines this as 188
+	uint32_t	total_tlv_packets_with_invalid_TLV_header_size_value; //SLAPI-0.7 defines this as 24
+	
+	uint32_t	total_tlv_packets_with_successfully_extracted_alp_count;
+	uint32_t	total_tlv_packets_with_failed_extracted_alp_count;
+	
+	uint32_t	total_tlv_packets_with_TLV_header_ALP_size_greater_than_max_IP_UDP_datagram_size_count;
+	uint32_t	total_tlv_packets_with_TLV_header_ALP_size_mismatch_from_parsed_ALP_header_count;
+	
+	//TODO: uint32_t	total_tlv_packets_without_ALP_starting_at_TS_transfer_size_header_length_count;
+	uint32_t	total_tlv_packets_without_magic_number_after_alp_size_data_bytes_consumed_count;
+	
+	/*
+	 for packets that do not have any of the above heuristic errors, capture ALP header metrics (A/330:2019)
+	 
+	 Table 5.2 Code Values for packet_type
+	 
+		packet_type Value	Meaning
+		-----------------	--------
+		000					IPv4 packet					//0x0
+		001					Reserved						//0x1
+		010					Compressed IP packet		//0x2
+		011					Reserved						//0x3
+		100					Link layer signaling packet	//0x4
+		101					Reserved						//0x5
+		110					Packet Type Extension		//0x6
+		111					MPEG-2 Transport Stream		//0x7
+
+		*NOTE*: packet_types other than 000 (0x0) or 100 (0x4) are SUSPECT, and may indiciate corruption in the BBP FEC frame or BBP de-encapsulation.
+	 */
+	//0x0
+	uint32_t	total_alp_packet_type_ip_packets_count;
+	uint64_t	total_alp_packet_type_ip_packets_bytes_read;
+	
+	//0x4
+	uint32_t	total_alp_packet_type_link_layer_signalling_packets_count;
+	uint64_t	total_alp_packet_type_link_layer_signalling_bytes_read;
+	
+	//USUALLY not present in most ATSC 3.0 use-cases
+	//0x2
+	uint32_t	total_alp_packet_type_packet_compressed_ip_packet_count;
+	uint64_t	total_alp_packet_type_packet_compressed_ip_packet_bytes_read;
+
+	//0x6
+	uint32_t	total_alp_packet_type_packet_type_extension_count;
+	uint64_t	total_alp_packet_type_packet_type_extension_bytes_read;
+	
+	//0x7
+	uint32_t	total_alp_packet_type_packet_mpeg2_transport_stream_count;
+	uint64_t	total_alp_packet_type_packet_mpeg2_transport_stream_bytes_read;
+	
+	//SHOULD NEVER be present according to A330:2019
+	//0x1, 0x3, 0x5
+	uint32_t	total_alp_packet_type_reserved_count;
+	uint64_t	total_alp_packet_type_reserved_bytes_read;
+	
+} atsc3_sl_tlv_payload_metrics_t;
+
 atsc3_sl_tlv_payload_t* atsc3_sl_tlv_payload_parse_from_block_t(block_t* atsc3_sl_tlv_payload_unparsed_block_t);
+atsc3_sl_tlv_payload_t* atsc3_sl_tlv_payload_parse_from_block_t_with_metrics(block_t* atsc3_sl_tlv_payload_unparsed_block_t, atsc3_sl_tlv_payload_metrics_t* atsc3_sl_tlv_payload_metrics);
+
 void atsc3_sl_tlv_payload_free(atsc3_sl_tlv_payload_t** atsc3_sl_tlv_payload_p);
 void atsc3_sl_tlv_payload_dump(atsc3_sl_tlv_payload_t* atsc3_sl_tlv_payload);
 
+void atsc3_sl_tlv_payload_metrics_dump(atsc3_sl_tlv_payload_metrics_t* atsc3_sl_tlv_payload_metrics);
 
 #define __SL_TLV_DEMOD_ERROR(...)   __LIBATSC3_TIMESTAMP_ERROR(__VA_ARGS__);
 #define __SL_TLV_DEMOD_WARN(...)    __LIBATSC3_TIMESTAMP_WARN(__VA_ARGS__);

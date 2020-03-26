@@ -107,6 +107,10 @@ See Annex F Sec. 6.4 Sec. 6.5 Sec. 6.6
 
  */
 
+//jjustman-2020-03-10 - cleanup and renaming to atsc3_ prefix
+typedef lls_table_t atsc3_lls_table_t;
+
+
 /**
  TODO: jjustman-2019-09-18 - move to block_t
  **/
@@ -410,17 +414,137 @@ typedef struct on_screen_message_notification {
 } on_screen_message_notification_t;
 
 
+/*
+ * defined in A/360:2019
+ *
+ * Table 5.1
+ *
+
+    Element or AttributeName        Use     DataType                ShortDescription
+    ------------------------------  ----    --------------          -----------------------
+     CertificationData                                              Root element of the CertificationData table.
+      ToBeSignedData                1
+        @OCSPRefresh                1       xs:dayTimeDuration      The duration for which an OCSPResponse is considered valid from its producedAt time.
+        Certificates                1..N    Base64 String           A list of certificates that are used to authenticate a broadcaster signature.
+                                                                    This must include end-entity certificates authenticating the CurrentCert and the CMSSignedData
+                                                                    signing certificate and any intermediate CA certificates used to validate these certificates.
+                                                                    The Root CA certificate is not included in the list.
+        CurrentCert                 1       Base64 String           SubjectKeyIdentifier for the certificate currently used to sign signaling messages.
+        CertReplacement             0..1
+         @NextCertFrom              1       DateTime                Earliest time at which NextCert can be validly used.
+         @CurrentCertUntil          1       DateTime                Latest time at which CurrentCert can be validly used.
+         NextCert                   1       Base64 String           SubjectKeyIdentifier for the certificate next used to sign signaling messages.
+      CMSSignedData                 1       Base64 String           A CMS Signed Data structure authenticating the ToBeSignedData contained in this table.
+      OCSPResponse                  1..N    Base64 String           A set of OCSP Responses that provide status information for each of the Certificates.
+
+
+  See payload sample in test_data/2019-phx-nab-interop-signed-lls/lls_table_type_id_6.xml
+
+ */
+
+typedef struct atsc3_certification_data{
+    void* to_implement;
+
+} atsc3_certification_data_t;
+
+/* defined in A/331:2020
+ *
+ * Section 6.7 SignedMultiTable
+
+ Syntax                                             No. of Bits     Format
+ ------------------------------------------------   -----------     -----------
+ SignedMultiTable() {
+    LLS_payload_count                               8               uimsbf
+    for (i=0; i<LLS_payload_count; i++) {
+        LLS_payload_id                              8               uimsbf
+        LLS_payload_version                         8               uimsbf
+        LLS_payload_length                          16              uimsbf
+        LLS_payload()                               var
+    }
+    signature_length                                16              uimsbf
+    signature()                                     var             uimsbf
+
+
+ Description:
+
+    LLS_payload_count – An 8-bit unsigned integer that shall list the number of LLS tables in the loop defined in Table 6.15 above.
+    LLS_payload_id – An 8-bit unsigned integer that shall indicate the payload type (values of LLS_table_id) of the LLS_payload() field.
+                     Valid values are from the values defined for LLS_table_id.
+                     *The values 0x00 and 0xFE shall not be used.*
+
+    LLS_payload_version – An 8-bit unsigned integer that shall be defined as LLS_table_version for this payload.
+    LLS_payload_length – A 16-bit unsigned integer that shall indicate the length, in bytes, of the LLS_payload() field.
+    LLS_payload() – The payload as signaled by the LLS_payload_id value (e.g., SLT, RRT). See LLS_table_id.
+
+    signature_length – A 16-bit unsigned integer that shall indicate the length, in bytes, of the signature() field.
+    signature() – This field shall be CMS Signed Data as per A/360 [10], Section 5.2.2.3.
+                  The signature shall be computed over the LLS_payload_count field up to but not including the signature_length field.
+
+
+    Cross-reference from A/360:2019:
+
+    5.2.2.3 Signatures for Low Level Signaling (LLS) Tables
+
+    A signature that is applied to a LLS message is carried in a CMS Signed Data (RFC 5652 [13]) element with the following characteristics:
+
+        1) The characteristics shall be as specified in Section 5.2.2.1 above.
+        2) The SignerIdentifier shall match either the CurrentCert or, if present, the NextCert.
+
+
+        https://tools.ietf.org/html/rfc5652
+
+        The CMS values are generated using ASN.1 [X.208-88], using BER-
+        encoding (Basic Encoding Rules) [X.209-88].  Values are typically
+        represented as octet strings.  While many systems are capable of
+        transmitting arbitrary octet strings reliably, it is well known that
+        many electronic mail systems are not.  This document does not address
+        mechanisms for encoding octet strings for reliable transmission in
+        such environments.
+
+
+ */
+typedef struct atsc3_signed_multi_table_lls_payload {
+    uint8_t             lls_payload_id;
+    uint8_t             lls_payload_version;
+    uint16_t            lls_payload_length;
+
+    //hack
+    block_t*            lls_payload;
+
+    //super hack
+    atsc3_lls_table_t*  lls_table;
+
+} atsc3_signed_multi_table_lls_payload_t;
+
+typedef struct atsc3_signed_multi_table {
+    block_t*    raw_signed_multi_table_for_signature;
+
+    uint8_t     lls_payload_count;
+
+    ATSC3_VECTOR_BUILDER_STRUCT(atsc3_signed_multi_table_lls_payload);
+
+    uint16_t    signature_length;
+    block_t*    signature;
+
+} atsc3_signed_multi_table_t;
+
+ATSC3_VECTOR_BUILDER_METHODS_INTERFACE(atsc3_signed_multi_table, atsc3_signed_multi_table_lls_payload);
+
+
 typedef struct lls_reserved_table {
 	void* to_implement;
 } lls_reserved_table_t;
 
 typedef enum {
-	SLT = 1,
-	RRT,
-	SystemTime,
-	AEAT,
-	OnscreenMessageNotification,
-	RESERVED
+	SLT = 0x01,
+	RRT = 0x02,
+	SystemTime = 0x03,
+	AEAT = 0x04,
+	OnscreenMessageNotification = 0x05,
+	CertificationData = 0x06,
+	SignedMultiTable = 0xFE,
+	UserDefined = 0xFF,
+    RESERVED = 0x00,             //anything else...
 } lls_table_type_t;
 
 typedef struct rrt_table {
@@ -434,6 +558,7 @@ typedef struct lls_table {
 	uint8_t								lls_group_id;
 	uint8_t 							group_count_minus1;
 	uint8_t								lls_table_version;
+
 	lls_xml_payload_t					raw_xml;
 
 	union {
@@ -442,10 +567,18 @@ typedef struct lls_table {
 		system_time_table_t					system_time_table;
 		atsc3_aeat_table_t					aeat_table;
 		on_screen_message_notification_t	on_screen_message_notification;
+
+		//jjustman-2020-03-09 - new in A/331:2020 and A/360:2019
+		atsc3_certification_data_t          certification_data; //0x06 - A/360:2019
+		atsc3_signed_multi_table_t          signed_multi_table; //0xFE - A/331:2020
+		//jjustman-2020-03-09 - NOTE: lls_table_id types of 0x00 and 0xFE are not allowed in the signed_multi_table
+
 		lls_reserved_table_t				lls_reserved_table;
 	};
 	xml_document_t* xml_document;
 } lls_table_t;
+
+
 
 typedef struct udp_flow_packet_id_mpu_sequence_tuple {
     udp_flow_t  udp_flow;

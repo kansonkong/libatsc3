@@ -1,7 +1,7 @@
 /*
  * endianess.h
  */
-#include <arpa/inet.h>
+//#include <arpa/inet.h>
 
 #ifndef htonll
 

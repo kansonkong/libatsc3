@@ -591,7 +591,14 @@ int alc_packet_write_fragment(FILE* f, char* file_name, uint32_t offset, alc_pac
 }
 
 
-//TOI size:     uint32_t to_allocate_size = alc_packet->transfer_len;
+/* atsc3_alc_packet_persist_to_toi_resource_process_sls_mbms_and_emit_callback
+ *
+ * persist to disk, process sls mbms and/or emit ROUTE media_delivery_event complete to the application tier if
+ * the full packet has been recovered (e.g. no missing data units in the forward transmission)
+ * Notes:
+ *
+ *      TOI size:     uint32_t to_allocate_size = alc_packet->transfer_len;
+ */
 
 int atsc3_alc_packet_persist_to_toi_resource_process_sls_mbms_and_emit_callback(udp_flow_t *udp_flow, alc_packet_t **alc_packet_ptr, lls_sls_alc_monitor_t *lls_sls_alc_monitor) {
 
@@ -1307,88 +1314,163 @@ cleanup:
 }
 
 /*
+ * atsc3_alc_persist_route_ext_attributes_per_lls_sls_alc_monitor_essence
+ * keep track of our current TSI/TOI's start_offset attribute for ALC flows that only provide the EXT_FTI value at the first
+ * packet of the TOI flow
+ *
+ * additionally, set the close_object flag if our current alc packet start_offset + transfer_len will be greater than the
+ * persisted EXT_FTI object transfer len in lls_sls_alc_monitor->last_..._toi_length (...: video, audio, text)
+ *
  * TODO: jjustman-2020-02-28:
  *      - remove tight coupling from video/audio media essences
  *      - add in support for generic TSI flows in the lls_sls_alc_monitor route attribute tracking model (e.g. collections-c map)
  *
+ * - validate that alc_packet->use_start_offset is the correct attribute to key for EXT_FTI
+ *
+ * jjustman-2020-03-12 - NOTE - a more robust implementation is in atsc3_alc_rx.c
+ * this code path will only handle alc->use_start_offset, as atsc3_alc_rx logic that handles both start_offset and sbn_esi
+ *
+ * ***NOTE***: atsc3_alc_packet_check_monitor_flow_for_toi_wraparound_discontinuity MUST BE CALLED BEFORE
+ *          atsc3_alc_persist_route_ext_attributes_per_lls_sls_alc_monitor_essence IN FLOW,
+ *          OTHERWISE lls_sls_alc_monitor->last_..._toi will be overwritten and the discontinuity WILL NOT BE DETECTED!
  */
 
 void atsc3_alc_persist_route_ext_attributes_per_lls_sls_alc_monitor_essence(alc_packet_t* alc_packet, lls_sls_alc_monitor_t* lls_sls_alc_monitor) {
-    if(alc_packet->use_start_offset && lls_sls_alc_monitor && lls_sls_alc_monitor->video_tsi && lls_sls_alc_monitor->audio_tsi) {
+    if(lls_sls_alc_monitor && lls_sls_alc_monitor->video_tsi && lls_sls_alc_monitor->audio_tsi) {
         uint32_t tsi = alc_packet->def_lct_hdr->tsi;
         uint32_t toi = alc_packet->def_lct_hdr->toi;
 
-        //only process non init toi's, under the assumption they will be less than alc packet size for closed object tracking
+        uint32_t toi_length = alc_packet->transfer_len;
 
-        if(!((tsi == lls_sls_alc_monitor->video_tsi && toi == lls_sls_alc_monitor->video_toi_init) ||
-           (tsi == lls_sls_alc_monitor->audio_tsi && toi == lls_sls_alc_monitor->audio_toi_init) ||
-           (tsi == lls_sls_alc_monitor->text_tsi && toi == lls_sls_alc_monitor->text_toi_init))) {
+        //track our transfer_len if EXT_FTI is only present on the initial ALC packet
+        //jjustman-2020-03-12 - do not persist this data for toi_init fragments
 
-            //check for toi discontinuity from pcap replay or rfcapture replay
+        if(toi_length) {
+            if(tsi == lls_sls_alc_monitor->video_tsi && lls_sls_alc_monitor->video_toi_init && lls_sls_alc_monitor->video_toi_init != toi) {
+                lls_sls_alc_monitor->last_video_toi = toi;
+                lls_sls_alc_monitor->last_video_toi_length = toi_length;
+                //only output debug message on first ALC packet
+                if((alc_packet->use_start_offset && alc_packet->start_offset == 0) || (alc_packet->use_sbn_esi && alc_packet->esi == 0)) {
+                    __ALC_UTILS_DEBUG("ALC: tsi: %u, toi: %u, setting last_video_toi: %u, last_video_toi_length: %u", tsi, toi, toi, toi_length);
+                }
+            } else if (tsi == lls_sls_alc_monitor->audio_tsi && lls_sls_alc_monitor->audio_toi_init && lls_sls_alc_monitor->audio_toi_init != toi) {
+                lls_sls_alc_monitor->last_audio_toi = toi;
+                lls_sls_alc_monitor->last_audio_toi_length = toi_length;
+                if((alc_packet->use_start_offset && alc_packet->start_offset == 0) || (alc_packet->use_sbn_esi && alc_packet->esi == 0)) {
+                    __ALC_UTILS_DEBUG("ALC: tsi: %u, toi: %u, setting last_audio_toi: %u, last_audio_toi_length: %u", tsi, toi, toi, toi_length);
+                }
+            } else if(tsi == lls_sls_alc_monitor->text_tsi && lls_sls_alc_monitor->text_toi_init && lls_sls_alc_monitor->text_toi_init != toi) {
+                lls_sls_alc_monitor->last_text_toi = toi;
+                lls_sls_alc_monitor->last_text_toi_length = toi_length;
 
-			if(!lls_sls_alc_monitor->has_discontiguous_toi_flow  &&
-			((tsi == lls_sls_alc_monitor->video_tsi && lls_sls_alc_monitor->last_video_toi && lls_sls_alc_monitor->last_video_toi > toi) ||
-				(tsi == lls_sls_alc_monitor->audio_tsi && lls_sls_alc_monitor->last_audio_toi && lls_sls_alc_monitor->last_audio_toi > toi))) {
-
-				__ALC_UTILS_WARN("atsc3_alc_persist_route_ext_attributes_per_lls_sls_alc_monitor_essence: has discontigious re-wrap of TOI flow(s), tsi: %d, last_video_toi: %d, last_audio_toi: %d, toi: %d",
-						tsi, lls_sls_alc_monitor->last_video_toi, lls_sls_alc_monitor->last_audio_toi, toi );
-
-				//force a rebuild of the mpd with updated startNumber values
-				lls_sls_alc_monitor->has_discontiguous_toi_flow = true;
-				if(lls_sls_alc_monitor->last_mpd_payload) {
-					block_Destroy(&lls_sls_alc_monitor->last_mpd_payload);
-				}
-			}
-
-            uint32_t toi_length = alc_packet->transfer_len;
-
-            //track our transfer_len if EXT_FTI  is only present on the initial ALC packet
-            if(toi_length) {
-                if(tsi == lls_sls_alc_monitor->video_tsi) {
-                    lls_sls_alc_monitor->last_video_toi = toi;
-                    lls_sls_alc_monitor->last_video_toi_length = toi_length;
-                    __DEBUG("ALC: tsi: %u, toi: %u, setting last_video_toi: %u, last_video_toi_length: %u", tsi, toi, toi, toi_length);
-                } else if (tsi == lls_sls_alc_monitor->audio_tsi) {
-                    lls_sls_alc_monitor->last_audio_toi = toi;
-                    lls_sls_alc_monitor->last_audio_toi_length = toi_length;
-                    __DEBUG("ALC: tsi: %u, toi: %u, setting last_audio_toi: %u, last_audio_toi_length: %u", tsi, toi, toi, toi_length);
-                } else if(tsi == lls_sls_alc_monitor->text_tsi) {
-                    lls_sls_alc_monitor->last_text_toi = toi;
-                    lls_sls_alc_monitor->last_text_toi_length = toi_length;
-                    __DEBUG("ALC: tsi: %u, toi: %u, setting last_text_toi: %u, last_text_toi_length: %u", tsi, toi, toi, toi_length);
+                if((alc_packet->use_start_offset && alc_packet->start_offset == 0) || (alc_packet->use_sbn_esi && alc_packet->esi == 0)) {
+                    __ALC_UTILS_DEBUG("ALC: tsi: %u, toi: %u, setting last_text_toi: %u, last_text_toi_length: %u", tsi, toi, toi, toi_length);
                 }
             }
+        }
 
-            //check if we should set close flag here
+        //check if we should set close flag here
+        //jjustman-2020-03-12 - NOTE - a more robust implementation is in atsc3_alc_rx.c
+        //this code path will only handle alc->use_start_offset, as atsc3_alc_rx logic that handles both start_offset and sbn_esi
+
+#ifdef __ATSC3_ALC_UTILS_CHECK_CLOSE_FLAG_ON_TOI_LENGTH_PERSIST__
+        if(alc_packet->use_start_offset) {
             uint32_t alc_start_offset = (alc_packet)->start_offset;
             uint32_t alc_packet_length = (alc_packet)->alc_len;
 
             if(tsi == lls_sls_alc_monitor->video_tsi && toi == lls_sls_alc_monitor->last_video_toi) {
-                __DEBUG("ALC: tsi: %u, toi: %u, checking last_video_toi_length: %u against start_offset: %u, alc_packet_length: %u (total: %u)",
+                __ALC_UTILS_DEBUG("ALC: tsi: %u, toi: %u, checking last_video_toi_length: %u against start_offset: %u, alc_packet_length: %u (total: %u)",
                         tsi, toi,  lls_sls_alc_monitor->last_video_toi_length, alc_start_offset, alc_packet_length, alc_start_offset + alc_packet_length);
 
                     if(lls_sls_alc_monitor->last_video_toi_length && lls_sls_alc_monitor->last_video_toi_length <= (alc_start_offset + alc_packet_length)) {
                     (alc_packet)->close_object_flag = true;
-                    __DEBUG("ALC: tsi: %u, toi: %u, setting video: close_object_flag: true",
+                        __ALC_UTILS_DEBUG("ALC: tsi: %u, toi: %u, setting video: close_object_flag: true",
                         tsi, toi);
                 }
             } else if(tsi == lls_sls_alc_monitor->audio_tsi && toi == lls_sls_alc_monitor->last_audio_toi) {
-                __DEBUG("ALC: tsi: %u, toi: %u, checking last_audio_toi_length: %u against start_offset: %u, alc_packet_length: %u (total: %u)",
+                __ALC_UTILS_DEBUG("ALC: tsi: %u, toi: %u, checking last_audio_toi_length: %u against start_offset: %u, alc_packet_length: %u (total: %u)",
                         tsi, toi,  lls_sls_alc_monitor->last_audio_toi_length, alc_start_offset, alc_packet_length, alc_start_offset + alc_packet_length);
 
                 if(lls_sls_alc_monitor->last_audio_toi_length && lls_sls_alc_monitor->last_audio_toi_length <= (alc_start_offset + alc_packet_length)) {
                     alc_packet->close_object_flag = true;
-                    __DEBUG("ALC: tsi: %u, toi: %u, setting audio: close_object_flag: true",
+                    __ALC_UTILS_DEBUG("ALC: tsi: %u, toi: %u, setting audio: close_object_flag: true",
                         tsi, toi);
                 }
             } else if(tsi == lls_sls_alc_monitor->text_tsi && toi == lls_sls_alc_monitor->last_text_toi) {
-                __DEBUG("ALC: tsi: %u, toi: %u, checking last_text_toi_length: %u against start_offset: %u, alc_packet_length: %u (total: %u)",
+                __ALC_UTILS_DEBUG("ALC: tsi: %u, toi: %u, checking last_text_toi_length: %u against start_offset: %u, alc_packet_length: %u (total: %u)",
                         tsi, toi,  lls_sls_alc_monitor->last_text_toi_length, alc_start_offset, alc_packet_length, alc_start_offset + alc_packet_length);
 
                 if(lls_sls_alc_monitor->last_text_toi_length && lls_sls_alc_monitor->last_text_toi_length <= (alc_start_offset + alc_packet_length)) {
                     alc_packet->close_object_flag = true;
-                    __DEBUG("ALC: tsi: %u, toi: %u, setting text: close_object_flag: true",
+                    __ALC_UTILS_DEBUG("ALC: tsi: %u, toi: %u, setting text: close_object_flag: true",
                             tsi, toi);
+                }
+            }
+        }
+#endif
+
+    }
+}
+
+/*
+ * atsc3_alc_packet_check_monitor_flow_for_toi_wraparound_discontinuity:
+ *
+ * check our alc_packet TOI value to determine if we have a value less than our last closed TOI object,
+ * signalling a wraparound or loop of our input source (e.g. STLTP or ALP replay or RFcapture replay) and
+ * force a re-patch of the MPD on the next MBMS emission.
+ *
+ * the wrapaound check is limited to only TSI flows containing a/v/stpp media essense id's
+ * that are monitored in the lls_sls_alc_monitor, and the TOI_init objects are ignored from this check.
+ *
+ * if detected, force a rebuild of the mpd with updated availabiltyStartTime and relevant startNumber values for each TSI flow/essence
+ * will be checked at the next MBMS emission when the carouseled MPD is written to disk, and patched accordingly in
+ * atsc3_route_sls_patch_mpd_availability_start_time_and_start_number *
+ *
+ * ***NOTE***: atsc3_alc_packet_check_monitor_flow_for_toi_wraparound_discontinuity MUST BE CALLED BEFORE
+ *              atsc3_alc_persist_route_ext_attributes_per_lls_sls_alc_monitor_essence IN FLOW,
+ *              OTHERWISE lls_sls_alc_monitor->last_..._toi will be overwritten and the discontinuity WILL NOT BE DETECTED!
+ */
+void atsc3_alc_packet_check_monitor_flow_for_toi_wraparound_discontinuity(alc_packet_t* alc_packet, lls_sls_alc_monitor_t* lls_sls_alc_monitor) {
+    if (lls_sls_alc_monitor && lls_sls_alc_monitor->video_tsi && lls_sls_alc_monitor->audio_tsi) {
+
+        uint32_t tsi = alc_packet->def_lct_hdr->tsi;
+        uint32_t toi = alc_packet->def_lct_hdr->toi;
+
+        //only process non init toi's, under the assumption they will be less than alc packet size for closed object tracking
+        if((alc_packet->use_start_offset && alc_packet->start_offset == 0) || (alc_packet->use_sbn_esi && alc_packet->esi == 0)) {
+            __ALC_UTILS_DEBUG("atsc3_alc_packet_check_monitor_flow_for_toi_wraparound_discontinuity: "
+                              "enter with lls_sls_alc_monitor->has_discontiguous_toi_flow: %d, checking against tsi: %d, toi: %d, "
+                              "last_video_toi: %d, last_audio_toi: %d, last_text_toi: %d, "
+                              "video_tsi: %d, video_toi_init: %d, audio_tsi: %d, audio_toi_init: %d, text_tsi: %d, text_toi_init: %d",
+                                lls_sls_alc_monitor->has_discontiguous_toi_flow,
+                                tsi, toi,
+                                lls_sls_alc_monitor->last_video_toi,
+                                lls_sls_alc_monitor->last_audio_toi,
+                                lls_sls_alc_monitor->last_text_toi,
+                                lls_sls_alc_monitor->video_tsi, lls_sls_alc_monitor->video_toi_init,
+                                lls_sls_alc_monitor->audio_tsi, lls_sls_alc_monitor->audio_toi_init,
+                                lls_sls_alc_monitor->text_tsi, lls_sls_alc_monitor->text_toi_init);
+        }
+
+        //don't re-set double-set set our sls_alc_monitor flag for discontigious toi
+        //jjustman-2020-03-11 - TODO: mutex lock this parameter during this check
+
+        if(!lls_sls_alc_monitor->has_discontiguous_toi_flow) {
+            if ((tsi == lls_sls_alc_monitor->video_tsi && toi != lls_sls_alc_monitor->video_toi_init && lls_sls_alc_monitor->last_video_toi && lls_sls_alc_monitor->last_video_toi > toi) ||
+                (tsi == lls_sls_alc_monitor->audio_tsi && toi != lls_sls_alc_monitor->audio_toi_init && lls_sls_alc_monitor->last_audio_toi && lls_sls_alc_monitor->last_audio_toi > toi) ||
+                (tsi == lls_sls_alc_monitor->text_tsi  && toi != lls_sls_alc_monitor->text_toi_init  && lls_sls_alc_monitor->last_text_toi  && lls_sls_alc_monitor->last_text_toi > toi)) {
+
+                __ALC_UTILS_INFO("atsc3_alc_packet_check_monitor_flow_for_toi_wraparound_discontinuity: has discontigious re-wrap of TOI flow(s), "
+                                 "tsi: %d, toi: %d, last_video_toi: %d, last_audio_toi: %d, last_text_toi: %d",
+                                 tsi, toi, lls_sls_alc_monitor->last_video_toi, lls_sls_alc_monitor->last_audio_toi, lls_sls_alc_monitor->last_text_toi);
+
+                //force a rebuild of the mpd with updated availabiltyStartTime and relevant startNumber values for each TSI flow/essense
+                //will be checked at the next MBMS emission when the carouseled MPD is written to disk, and patched accordingly in
+                //atsc3_route_sls_patch_mpd_availability_start_time_and_start_number
+
+                lls_sls_alc_monitor->has_discontiguous_toi_flow = true;
+                if (lls_sls_alc_monitor->last_mpd_payload) {
+                    block_Destroy(&lls_sls_alc_monitor->last_mpd_payload);
                 }
             }
         }

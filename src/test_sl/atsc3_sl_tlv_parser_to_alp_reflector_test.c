@@ -102,6 +102,7 @@ int main(int argc, char* argv[] ) {
         					block_Rewind(atsc3_sl_tlv_payload->alp_payload);
         					atsc3_alp_packet_t* atsc3_alp_packet = atsc3_alp_packet_parse(atsc3_sl_tlv_payload->alp_payload);
                             atsc3_alp_packet_collection_add_atsc3_alp_packet(atsc3_alp_packet_collection, atsc3_alp_packet);
+							//push a collection of one alp packet for alp reflection to match the method signature
                             atsc3_reflect_alp_packet_collection(atsc3_alp_packet_collection);
 
                             for(int i=0; i < atsc3_alp_packet_collection->atsc3_alp_packet_v.count; i++) {
