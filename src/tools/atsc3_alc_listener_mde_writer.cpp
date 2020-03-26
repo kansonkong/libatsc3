@@ -35,10 +35,11 @@ int PACKET_COUNTER=0;
 #include "../atsc3_logging_externs.h"
 
 lls_slt_monitor_t* lls_slt_monitor;
-lls_sls_alc_monitor* lls_sls_alc_monitor;
+lls_sls_alc_monitor_t* lls_sls_alc_monitor;
 
 uint32_t* dst_ip_addr_filter = NULL;
 uint16_t* dst_ip_port_filter = NULL;
+uint16_t* dst_service_id_filter = NULL;
 
 atsc3_alc_arguments_t* alc_arguments;
 atsc3_alc_session_t* atsc3_alc_session;
@@ -60,25 +61,32 @@ void process_packet(u_char *user, const struct pcap_pkthdr *pkthdr, const u_char
                 atsc3_lls_slt_service_t* atsc3_lls_slt_service = lls_table->slt_table.atsc3_lls_slt_service_v.data[i];
                 if(atsc3_lls_slt_service->atsc3_slt_broadcast_svc_signalling_v.count &&
                    atsc3_lls_slt_service->atsc3_slt_broadcast_svc_signalling_v.data[0]->sls_protocol == SLS_PROTOCOL_ROUTE) {
-                    if(lls_sls_alc_monitor) {
-                        //update as needed
-                    } else {
-                        lls_sls_alc_monitor = lls_sls_alc_monitor_create();
-                        lls_sls_alc_monitor->atsc3_lls_slt_service = atsc3_lls_slt_service;
-                        lls_sls_alc_monitor->lls_sls_monitor_output_buffer_mode.file_dump_enabled = true;
+					lls_sls_alc_monitor_t* lls_sls_alc_monitor_local = lls_sls_alc_monitor_create();
+								
+					lls_slt_service_id_t* lls_slt_service_id = lls_slt_service_id_new_from_atsc3_lls_slt_service(atsc3_lls_slt_service);
+					lls_slt_monitor_add_lls_slt_service_id(lls_slt_monitor, lls_slt_service_id);
 
-                        lls_slt_service_id_t* lls_slt_service_id = lls_slt_service_id_new_from_atsc3_lls_slt_service(atsc3_lls_slt_service);
-                        lls_slt_monitor_add_lls_slt_service_id(lls_slt_monitor, lls_slt_service_id);
-                        lls_sls_alc_session_t* lls_sls_alc_session = lls_slt_alc_session_find_from_service_id(lls_slt_monitor, atsc3_lls_slt_service->service_id);
-                        if(!lls_sls_alc_session) {
-                            __WARN("lls_slt_alc_session_find_from_service_id: lls_sls_alc_session is NULL!");
-                        }
-                        lls_sls_alc_monitor->lls_alc_session = lls_sls_alc_session;
-                        lls_slt_monitor->lls_sls_alc_monitor = lls_sls_alc_monitor;
-                        
-                        lls_slt_monitor_add_lls_sls_alc_monitor(lls_slt_monitor, lls_sls_alc_monitor);
-                                            
-                    }
+					lls_sls_alc_session_t* lls_sls_alc_session = lls_slt_alc_session_find_from_service_id(lls_slt_monitor, atsc3_lls_slt_service->service_id);
+					if(!lls_sls_alc_session) {
+						__WARN("lls_slt_alc_session_find_from_service_id: lls_sls_alc_session is NULL!");
+					}
+					lls_sls_alc_monitor_local->lls_alc_session = lls_sls_alc_session;
+					lls_sls_alc_monitor_local->atsc3_lls_slt_service = atsc3_lls_slt_service;
+					lls_sls_alc_monitor_local->lls_sls_monitor_output_buffer_mode.file_dump_enabled = true;
+
+
+					__WARN("process_packet: adding lls_sls_alc_monitor: %p to lls_slt_monitor: %p, service_id: %d",
+						   lls_sls_alc_monitor, lls_slt_monitor, lls_sls_alc_session->service_id);
+
+					lls_slt_monitor_add_lls_sls_alc_monitor(lls_slt_monitor, lls_sls_alc_monitor_local);
+
+					if(!lls_sls_alc_monitor) {
+						lls_slt_monitor->lls_sls_alc_monitor = lls_sls_alc_monitor_local;
+						lls_sls_alc_monitor =  lls_sls_alc_monitor_local;
+
+					} else {
+						//only swap out this lls_sls_alc_monitor if this alc flow is "retired"
+					}
                 }
             }
         }
@@ -88,13 +96,27 @@ void process_packet(u_char *user, const struct pcap_pkthdr *pkthdr, const u_char
         return udp_packet_free(&udp_packet);
     }
     
-    //todo: fix me not filtering
-    lls_sls_alc_session_t* matching_lls_slt_alc_session = lls_slt_alc_session_find_from_udp_packet(lls_slt_monitor, udp_packet->udp_flow.src_ip_addr, udp_packet->udp_flow.dst_ip_addr, udp_packet->udp_flow.dst_port);
-    if((lls_sls_alc_monitor && matching_lls_slt_alc_session && lls_sls_alc_monitor->atsc3_lls_slt_service &&  (lls_sls_alc_monitor->atsc3_lls_slt_service->service_id == matching_lls_slt_alc_session->atsc3_lls_slt_service->service_id))  ||
-        ((dst_ip_addr_filter != NULL && dst_ip_port_filter != NULL) && (udp_packet->udp_flow.dst_ip_addr == *dst_ip_addr_filter && udp_packet->udp_flow.dst_port == *dst_ip_port_filter))) {
+    /*
+	 jjustman-2020-03-25 - alternatively, filter out by ServiceID:
+	lls_sls_alc_monitor->atsc3_lls_slt_service &&
+	lls_sls_alc_monitor->atsc3_lls_slt_service->service_id == matching_lls_slt_alc_session->atsc3_lls_slt_service->service_id
+	 
+	clang optimized out matching_lls_slt_alc_session in the first conditional, so its added in the 3rd filter test for service_id
+    */
+	
+	lls_sls_alc_session_t* matching_lls_slt_alc_session = lls_slt_alc_session_find_from_udp_packet(lls_slt_monitor, udp_packet->udp_flow.src_ip_addr, udp_packet->udp_flow.dst_ip_addr, udp_packet->udp_flow.dst_port);
+    if((lls_sls_alc_monitor && matching_lls_slt_alc_session) &&
+	   (dst_service_id_filter == NULL && dst_ip_addr_filter == NULL && dst_ip_port_filter == NULL) ||
+	   ((dst_service_id_filter != NULL && matching_lls_slt_alc_session && matching_lls_slt_alc_session->service_id == *dst_service_id_filter ) ||
+	    (dst_ip_addr_filter != NULL && dst_ip_port_filter == NULL && udp_packet->udp_flow.dst_ip_addr == *dst_ip_addr_filter) ||
+	    (dst_ip_addr_filter != NULL && dst_ip_port_filter != NULL && udp_packet->udp_flow.dst_ip_addr == *dst_ip_addr_filter && udp_packet->udp_flow.dst_port == *dst_ip_port_filter))) {
+		
 		//process ALC streams
 		int retval = alc_rx_analyze_packet_a331_compliant((char*)block_Get(udp_packet->data), block_Remaining_size(udp_packet->data), &alc_packet);
 		if(!retval) {
+			
+			//lls_sls_alc_monitor_t* atsc3_lls_sls_alc_monitor_find_from_udp_packet(lls_slt_monitor_t* lls_slt_monitor, uint32_t src_ip_addr, uint32_t dst_ip_addr, uint16_t dst_port) {
+
 			//dump out for fragment inspection
             atsc3_alc_persist_route_ext_attributes_per_lls_sls_alc_monitor_essence(alc_packet, lls_slt_monitor->lls_sls_alc_monitor);
             atsc3_alc_packet_persist_to_toi_resource_process_sls_mbms_and_emit_callback(
@@ -103,6 +125,8 @@ void process_packet(u_char *user, const struct pcap_pkthdr *pkthdr, const u_char
 		} else {
 			__ERROR("Error in ALC decode: %d", retval);
 		}
+	} else {
+		//__ERROR("Discarding packet: lls_sls_alc_monitor: %p, matching_lls_slt_alc_session: %p, ", lls_sls_alc_monitor, matching_lls_slt_alc_session);
 	}
 
 udp_packet_free:
@@ -115,13 +139,14 @@ udp_packet_free:
 int main(int argc,char **argv) {
 
 	_LLS_SLT_PARSER_INFO_ROUTE_ENABLED = 1;
+	_LLS_ALC_UTILS_INFO_ENABLED = 1;
+
     _ALC_UTILS_DEBUG_ENABLED = 1;
     _ALC_UTILS_IOTRACE_ENABLED = 1;
-	_ALC_RX_DEBUG_ENABLED = 0;
+	_ALC_RX_DEBUG_ENABLED = 1;
     _ALC_UTILS_DEBUG_ENABLED = 1;
-
+	
 #ifdef __LOTS_OF_DEBUGGING__
-
 	_LLS_INFO_ENABLED = 1;
 	_LLS_DEBUG_ENABLED = 1;
 
@@ -138,7 +163,11 @@ int main(int argc,char **argv) {
 
     char *dst_ip = NULL;
     char *dst_port = NULL;
-    int dst_port_filter_int;
+	char *dst_service_id = NULL;
+	
+	uint16_t dst_service_id_int;
+	uint32_t dst_ip_int;
+	uint16_t dst_port_int;
 
     char errbuf[PCAP_ERRBUF_SIZE];
     pcap_t* descr;
@@ -151,27 +180,56 @@ int main(int argc,char **argv) {
     if(argc==2) {
         dev = argv[1];
         __INFO("listening on dev: %s", dev);
+		
     } else if(argc==4) {
+		if(argv[2][0] == 's') {
+			dev = argv[1];
+			dst_service_id = argv[3];
+
+			dst_service_id_int = atoi(dst_service_id);
+			dst_service_id_filter = &dst_service_id_int;
+		} else if(argv[2][0] == 'p') {
+			//listen to a selected flow
+			dev = argv[1];
+			dst_ip = argv[3];
+
+			dst_ip_int = parseIpAddressIntoIntval(dst_ip);
+			dst_ip_addr_filter = &dst_ip_int;
+
+			__INFO("listening on dev: %s, dst_ip: %s, all ports", dev, dst_ip);
+		} else {
+			println("Invalid type for filtering: %c (should be empty, s or p)", argv[2][0]);
+			exit(2);
+		}
+    } else if(argc==5) {
+		if(argv[2][0] != 'p') {
+			printf("invalid filter type: %c", argv[2][0]);
+			exit(2);
+		}
     	//listen to a selected flow
 		dev = argv[1];
-		dst_ip = argv[2];
-		dst_port = argv[3];
+		dst_ip = argv[3];
+		dst_port = argv[4];
 
-		uint32_t dst_ip_int;
 		dst_ip_int = parseIpAddressIntoIntval(dst_ip);
 		dst_ip_addr_filter = &dst_ip_int;
 
 		__INFO("listening on dev: %s, dst_ip: %s, dst_port: %s", dev, dst_ip, dst_port);
-		uint16_t dst_port_int = parsePortIntoIntval(dst_port);
+		dst_port_int = parsePortIntoIntval(dst_port);
 		dst_ip_port_filter = &dst_port_int;
 
     } else {
     	println("%s - a udp mulitcast ALC listener for writing out MDE fragments to ROUTE objects", argv[0]);
     	println("---");
-    	println("args: dev dst_ip dst_port");
+    	println("args: dev (type) (service_id)|(dst_ip dst_port");
     	println(" dev: device to listen for udp multicast");
-    	println(" dst_ip: restrict ALC flow capture to specific ip address");
-    	println(" dst_port: restrict ALC flow capture to specific port");
+    	println(" --- optional ---");
+    	println(" type: s => service_id, p=> dst_ip (dst_port)");
+		println("  s: restrict ALC flow capture to specific service_id");
+		println("  -or-");
+		println("  p: restrict ALC flow capture to specific ip address");
+    	println("   dst_ip: restrict ALC flow capture to specific ip address");
+    	println("   dst_port: restrict ALC flow capture to specific port");
     	println("");
     	exit(1);
     }
