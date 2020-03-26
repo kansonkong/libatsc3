@@ -159,7 +159,8 @@ static lls_table_t* __lls_create_base_table_raw(block_t* lls_packet_block) {
 
             } else {
                 _LLS_ERROR("__lls_create_base_table_raw: unable to add table[%d], payload_length: %d is too long for remaining: %d, clearing out base_table to NULL",
-                           lls_payload->lls_payload_length,
+                           i,
+						   lls_payload->lls_payload_length,
                            block_Remaining_size(signed_multi_table_block));
 
                 freeclean(&lls_payload);
