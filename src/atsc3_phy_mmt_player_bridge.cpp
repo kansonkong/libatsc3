@@ -483,11 +483,19 @@ void atsc3_phy_mmt_player_bridge_process_packet_phy(block_t* packet) {
     if((lls_sls_alc_monitor && matching_lls_slt_alc_session && lls_sls_alc_monitor->atsc3_lls_slt_service &&  (lls_sls_alc_monitor->atsc3_lls_slt_service->service_id == matching_lls_slt_alc_session->atsc3_lls_slt_service->service_id))  ||
        ((dst_ip_addr_filter != NULL && dst_ip_port_filter != NULL) && (udp_packet->udp_flow.dst_ip_addr == *dst_ip_addr_filter && udp_packet->udp_flow.dst_port == *dst_ip_port_filter))) {
 
-        //process ALC streams
+        //parse and process ALC flow
         int retval = alc_rx_analyze_packet_a331_compliant((char*)block_Get(udp_packet->data), block_Remaining_size(udp_packet->data), &alc_packet);
         if(!retval) {
+            //__DEBUG("atsc3_phy_mmt_player_bridge_process_packet_phy: alc_packet: %p, tsi: %d, toi: %d", alc_packet, alc_packet->def_lct_hdr->tsi, alc_packet->def_lct_hdr->toi);
+
+            //check our alc_packet for a wrap-around TOI value, if it is a monitored TSI, and re-patch the MBMS MPD for updated availabilityStartTime and startNumber with last closed TOI values
+            atsc3_alc_packet_check_monitor_flow_for_toi_wraparound_discontinuity(alc_packet, lls_slt_monitor->lls_sls_alc_monitor);
+
+            //keep track of our EXT_FTI and update last_toi as needed for TOI length and manual set of the close_object flag
             atsc3_alc_persist_route_ext_attributes_per_lls_sls_alc_monitor_essence(alc_packet, lls_slt_monitor->lls_sls_alc_monitor);
-            //dump out for fragment inspection
+
+            //persist to disk, process sls mbms and/or emit ROUTE media_delivery_event complete to the application tier if
+            //the full packet has been recovered (e.g. no missing data units in the forward transmission)
             atsc3_alc_packet_persist_to_toi_resource_process_sls_mbms_and_emit_callback(&udp_packet->udp_flow, &alc_packet, lls_slt_monitor->lls_sls_alc_monitor);
         } else {
             __ERROR("Error in ALC decode: %d", retval);
@@ -1005,6 +1013,17 @@ void atsc3_phy_mmt_player_bridge_init(atsc3NdkClient* atsc3NdkClientSL_ptr_l) {
     _ALC_UTILS_IOTRACE_ENABLED = 0;
     _ROUTE_SLS_PROCESSOR_INFO_ENABLED=1;
     _ALC_UTILS_IOTRACE_ENABLED = 0;
+
+#ifdef __SIGNED_MULTIPART_LLS_DEBUGGING__
+    _LLS_TRACE_ENABLED = 1;
+    _LLS_DEBUG_ENABLED = 1;
+
+    _LLS_SLT_PARSER_DEBUG_ENABLED = 1;
+    _LLS_SLT_PARSER_TRACE_ENABLED = 1;
+#endif
+    _LLS_ALC_UTILS_DEBUG_ENABLED = 1;
+    _ALC_UTILS_DEBUG_ENABLED = 1;
+    _ALC_RX_TRACE_ENABLED = 0;
 
     if(!lls_slt_monitor) {
         lls_slt_monitor = lls_slt_monitor_create();

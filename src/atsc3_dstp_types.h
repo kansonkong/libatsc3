@@ -11,7 +11,12 @@
 #include <stdint.h>
 #include <stdbool.h>
 #include <stdlib.h>
+#ifdef __ANDROID__
+#include <bits/in_addr.h>
+#endif
+#include <arpa/inet.h>
 
+#include "atsc3_utils.h"
 #include "atsc3_vector_builder.h"
 #include "atsc3_logging_externs.h"
 #include "atsc3_listener_udp.h"
