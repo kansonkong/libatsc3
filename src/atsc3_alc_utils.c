@@ -95,13 +95,13 @@ block_t* alc_get_payload_from_filename(char* file_name) {
 	block_t* payload = block_Alloc(st.st_size);
 
 	FILE* fp = fopen(file_name, "r");
-	if(st.st_size == 0) {
+	if(!fp || st.st_size == 0) {
 		__ALC_UTILS_ERROR("alc_get_payload_from_filename: size: 0 file: %s", file_name);
 		return NULL;
 	}
 
 	fread(payload->p_buffer, st.st_size, 1, fp);
-    payload->i_pos = st.st_size;
+	payload->i_pos = st.st_size;
 	fclose(fp);
 
 	return payload;
@@ -416,7 +416,7 @@ char* alc_packet_dump_to_object_get_s_tsid_filename(udp_flow_t* udp_flow, alc_pa
                                                 } else if(location_found[pos] == 0x0d || location_found[pos] == 0x0a) {
                                                     endofline = location_found + (pos-1);
                                                     content_location = strndup(location_found, pos);
-                                                    __ALC_UTILS_DEBUG("ALC MDE: local entity mode filename is: %c", content_location);
+                                                    __ALC_UTILS_DEBUG("ALC MDE: local entity mode filename is: %s", content_location);
 
                                                     bool has_additional_headers = false;
                                                     int newline_count = 1;
@@ -441,14 +441,14 @@ char* alc_packet_dump_to_object_get_s_tsid_filename(udp_flow_t* udp_flow, alc_pa
                                                                     fread(to_trim_payload, new_mde_payload_size, 1, temp_fp);
                                                                     int ret = ftruncate(fileno(temp_fp), new_mde_payload_size);
                                                                     //printf("ftruncate for fd: %d, ret is: %d", fileno(temp_fp), ret);
-                                                                    fsync(temp_fp);
+                                                                    fsync(fileno(temp_fp));
                                                                     fseek(temp_fp, 0, SEEK_SET);
                                                                     fwrite(to_trim_payload, new_mde_payload_size, 1, temp_fp);
                                                                    /* for(int i=0; i < 32; i++) {
                                                                         printf("to_trim_payload[%d]: 0x%02x (%c)", i, to_trim_payload[i], to_trim_payload[i]);
                                                                     }*/
 
-                                                                    fsync(temp_fp);
+                                                                    fsync(fileno(temp_fp));
 
                                                                     free(to_trim_payload);
                                                                     to_trim_payload = NULL;
