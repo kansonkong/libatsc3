@@ -891,7 +891,7 @@ atsc3_timing_management_packet_t* atsc3_stltp_parse_timing_management_packet(ats
     */
     
     for(int i=0; i < atsc3_timing_management_packet->length; i+=4) {
-        __STLTP_PARSER_INFO("byte: %d: 0x%02x 0x%02x 0x%02x 0x%02x", i, binary_payload_start[i], binary_payload_start[i+1], binary_payload_start[i+2], binary_payload_start[i+3]);
+        __STLTP_PARSER_TRACE("byte: %d: 0x%02x 0x%02x 0x%02x 0x%02x", i, binary_payload_start[i], binary_payload_start[i+1], binary_payload_start[i+2], binary_payload_start[i+3]);
     }
     
     

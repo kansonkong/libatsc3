@@ -27,6 +27,7 @@ int PACKET_COUNTER = 0;
 
 uint32_t* dst_ip_addr_filter = NULL;
 uint16_t* dst_ip_port_filter = NULL;
+uint16_t stltp_ip_port_filter = 30000;
 
 atsc3_stltp_tunnel_packet_t* atsc3_stltp_tunnel_packet_processed = NULL;
 atsc3_alp_packet_collection_t* atsc3_alp_packet_collection = NULL;
@@ -57,7 +58,8 @@ void process_packet(u_char *user, const struct pcap_pkthdr *pkthdr, const u_char
 						  atsc3_stltp_baseband_packet->ip_udp_rtp_packet_inner->rtp_header->sequence_number,
 						  atsc3_stltp_baseband_packet->ip_udp_rtp_packet_inner->udp_flow.dst_port);
 				   
-				   if((atsc3_stltp_baseband_packet->ip_udp_rtp_packet_inner->udp_flow.dst_port >= 30000 && atsc3_stltp_baseband_packet->ip_udp_rtp_packet_inner->udp_flow.dst_port <= 30063)) {
+				   //jjustman-2020-03-25 - TODO: map this into [0..63] for PLP BBP persistance
+				   if(atsc3_stltp_baseband_packet->ip_udp_rtp_packet_inner->udp_flow.dst_port != stltp_ip_port_filter) {
 					   __INFO("ignorning stltp_baseband_packet port: %d",  atsc3_stltp_baseband_packet->ip_udp_rtp_packet_inner->udp_flow.dst_port);
 					   //atsc3_stltp_baseband_packet_free(&atsc3_stltp_baseband_packet);
 					   continue;
@@ -289,7 +291,7 @@ void process_packet(u_char *user, const struct pcap_pkthdr *pkthdr, const u_char
 			
             
 			if(atsc3_stltp_tunnel_packet_processed->atsc3_stltp_preamble_packet_v.count) {
-				__INFO(">>>stltp atsc3_stltp_preamble_packet packet complete: count: %u",  atsc3_stltp_tunnel_packet_processed->atsc3_stltp_preamble_packet_v.count);
+				__INFO("preamble: >>>stltp atsc3_stltp_preamble_packet packet complete: count: %u",  atsc3_stltp_tunnel_packet_processed->atsc3_stltp_preamble_packet_v.count);
 				for(int i=0; i < atsc3_stltp_tunnel_packet_processed->atsc3_stltp_preamble_packet_v.count; i++) {
 					atsc3_stltp_preamble_packet_t* atsc3_stltp_preamble_packet = atsc3_stltp_tunnel_packet_processed->atsc3_stltp_preamble_packet_v.data[i];
 					atsc3_preamble_packet_t* atsc3_preamble_packet = atsc3_stltp_parse_preamble_packet(atsc3_stltp_preamble_packet);
@@ -302,7 +304,7 @@ void process_packet(u_char *user, const struct pcap_pkthdr *pkthdr, const u_char
 			}
             
 			if(atsc3_stltp_tunnel_packet_processed->atsc3_stltp_timing_management_packet_v.count) {
-            	__INFO(">>>stltp atsc3_stltp_timing_management_packet packet complete: count: %u",  atsc3_stltp_tunnel_packet_processed->atsc3_stltp_timing_management_packet_v.count);
+            	__INFO("timing management: >>>stltp atsc3_stltp_timing_management_packet packet complete: count: %u",  atsc3_stltp_tunnel_packet_processed->atsc3_stltp_timing_management_packet_v.count);
             	for(int i=0; i < atsc3_stltp_tunnel_packet_processed->atsc3_stltp_timing_management_packet_v.count; i++) {
             		atsc3_stltp_timing_management_packet_t* atsc3_stltp_timing_management_packet = atsc3_stltp_tunnel_packet_processed->atsc3_stltp_timing_management_packet_v.data[i];
             		atsc3_timing_management_packet_t* atsc3_timing_management_packet = atsc3_stltp_parse_timing_management_packet(atsc3_stltp_timing_management_packet);
@@ -332,11 +334,10 @@ int main(int argc,char **argv) {
     char *dev;
     char *filter_dst_ip = NULL;
     char *filter_dst_port = NULL;
-    char *filter_packet_id = NULL;
+    char *filter_stltp_plp_id = NULL;
 
     int dst_port_filter_int;
     int dst_ip_port_filter_int;
-    int dst_packet_id_filter_int;
 
     char errbuf[PCAP_ERRBUF_SIZE];
 
@@ -347,13 +348,14 @@ int main(int argc,char **argv) {
     
     atsc3_alp_packet_collection = atsc3_alp_packet_collection_new();
 
-    if(argc != 4) {
+    if(argc < 4) {
     	println("%s - a udp mulitcast listener test harness for atsc3 stltp payloads", argv[0]);
     	println("---");
     	println("args: dev ip port");
     	println(" dev : device to listen for udp multicast");
     	println(" ip  : ip address for stltp");
     	println(" port: port for single stltp");
+		println(" 	(optional) PLP_num: PLP number to extract (e.g. 0 -> STLTP inner port: 30000, 63 -> STLTP inner port 300063");
 
 		exit(1);
     } else {
@@ -374,11 +376,22 @@ int main(int argc,char **argv) {
 		}
 
 		//parse port
-
 		dst_port_filter_int = atoi(filter_dst_port);
 		dst_ip_port_filter = (uint16_t*)calloc(1, sizeof(uint16_t));
 		*dst_ip_port_filter |= dst_port_filter_int & 0xFFFF;
 
+		if(argc == 5) {
+			//parse out custom PLP_num
+			filter_stltp_plp_id = argv[4];
+
+			uint8_t stltp_plp_id = atoi(filter_stltp_plp_id);
+			if(stltp_plp_id >=0 && stltp_plp_id <= 63) {
+				stltp_ip_port_filter = stltp_plp_id + 30000;
+				println("using PLP: %d (stltp inner port: %d)", stltp_plp_id, stltp_ip_port_filter);
+			} else {
+				println("ignoring PLP: %d, defaulting to PLP 0 (stltp inner port: %d)", stltp_plp_id, stltp_ip_port_filter);
+			}
+		}
     }
 
 
