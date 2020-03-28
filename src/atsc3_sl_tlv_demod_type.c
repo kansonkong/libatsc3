@@ -10,10 +10,11 @@ int _SL_TLV_DEMOD_TRACE_ENABLED = 0;
 
 int __ATSC3_SL_TLV_USE_INLINE_ALP_PARSER_CALL__ = 0;
 
-//impl
+//impl for default metrics collection
+atsc3_sl_tlv_payload_metrics_t __GLOBAL_DEFAULT_SL_TLV_PAYLOAD_METRICS;
 
 atsc3_sl_tlv_payload_t* atsc3_sl_tlv_payload_parse_from_block_t(block_t* atsc3_sl_tlv_payload_unparsed_block) {
-	return atsc3_sl_tlv_payload_parse_from_block_t_with_metrics(atsc3_sl_tlv_payload_unparsed_block, NULL);
+	return atsc3_sl_tlv_payload_parse_from_block_t_with_metrics(atsc3_sl_tlv_payload_unparsed_block, &__GLOBAL_DEFAULT_SL_TLV_PAYLOAD_METRICS);
 }
 /*
  * atsc3_sl_tlv_payload_parse_from_block_t
