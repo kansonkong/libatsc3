@@ -347,6 +347,7 @@ typedef struct atsc3_lls_slt_service {
 	ATSC3_VECTOR_BUILDER_STRUCT(atsc3_slt_svc_capabilities);			//0..1, Required capabilities for decoding and meaningfully presenting content of this Service.
 
 	ATSC3_VECTOR_BUILDER_STRUCT(atsc3_slt_broadcast_svc_signalling); 	//0..1, Location, protocol, address, id information for broadcast signaling.
+																		//jjustman-2020-03-28 - yes, the cardinality is 0..1, but put it in a vector for struct commonality
 
 	ATSC3_VECTOR_BUILDER_STRUCT(atsc3_slt_svc_inet_url); 				//0..N, URL to access Internet signalling for this Service.
 

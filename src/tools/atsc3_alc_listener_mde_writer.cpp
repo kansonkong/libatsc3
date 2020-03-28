@@ -82,7 +82,7 @@ void process_packet(u_char *user, const struct pcap_pkthdr *pkthdr, const u_char
 
 
 					__WARN("process_packet: adding lls_sls_alc_monitor: %p to lls_slt_monitor: %p, service_id: %d",
-						   lls_sls_alc_monitor, lls_slt_monitor, lls_sls_alc_session->service_id);
+						   lls_sls_alc_monitor_local, lls_slt_monitor, lls_sls_alc_session->service_id);
 
 					lls_slt_monitor_add_lls_sls_alc_monitor(lls_slt_monitor, lls_sls_alc_monitor_local);
 
@@ -201,6 +201,15 @@ int main(int argc,char **argv) {
     bpf_u_int32 maskp;
     bpf_u_int32 netp;
 
+	//wire up our required lls and sls structs here, if needed for "ad-hoc" IP based ROUTE flow selection without LLS/SLS
+	
+    mkdir("route", 0777);
+
+    lls_slt_monitor = lls_slt_monitor_create();
+	alc_arguments = (atsc3_alc_arguments_t*)calloc(1, sizeof(atsc3_alc_arguments_t));
+    
+    atsc3_alc_session = atsc3_open_alc_session(alc_arguments);
+	
 
     //listen to all flows
     if(argc==2) {
@@ -214,17 +223,10 @@ int main(int argc,char **argv) {
 
 			dst_service_id_int = atoi(dst_service_id);
 			dst_service_id_filter = &dst_service_id_int;
-		} else if(argv[2][0] == 'p') {
-			//listen to a selected flow
-			dev = argv[1];
-			dst_ip = argv[3];
-
-			dst_ip_int = parseIpAddressIntoIntval(dst_ip);
-			dst_ip_addr_filter = &dst_ip_int;
-
-			__INFO("listening on dev: %s, dst_ip: %s, all ports", dev, dst_ip);
 		} else {
-			println("Invalid type for filtering: %c (should be empty, s or p)", argv[2][0]);
+			//we can't support listening to an ip address ROUTE flow, as we need an ip:port to create our dummy SLS broadcast_svc_signalling
+			
+			println("Invalid type for filtering: %c (should be empty or s)", argv[2][0]);
 			exit(2);
 		}
     } else if(argc==5) {
@@ -243,6 +245,43 @@ int main(int argc,char **argv) {
 		__INFO("listening on dev: %s, dst_ip: %s, dst_port: %s", dev, dst_ip, dst_port);
 		dst_port_int = parsePortIntoIntval(dst_port);
 		dst_ip_port_filter = &dst_port_int;
+		
+		/* jjustman-2020-03-28 - create a dummy lls_sls_alc_monitor_t for ad-hoc SLS management (e.g. LLS is not present in this pcap flow - may be on a non-listening PLP */
+
+		atsc3_lls_slt_service_t* atsc3_lls_slt_service = atsc3_lls_slt_service_new();
+		atsc3_lls_slt_service->service_id=31337; //hack
+		
+		atsc3_slt_broadcast_svc_signalling_t* atsc3_slt_broadcast_svc_signalling = atsc3_slt_broadcast_svc_signalling_new();
+		atsc3_slt_broadcast_svc_signalling->sls_destination_ip_address = dst_ip;
+		atsc3_slt_broadcast_svc_signalling->sls_destination_udp_port =  dst_port;
+		atsc3_slt_broadcast_svc_signalling->sls_protocol = SLS_PROTOCOL_ROUTE;
+		atsc3_lls_slt_service_add_atsc3_slt_broadcast_svc_signalling(atsc3_lls_slt_service, atsc3_slt_broadcast_svc_signalling);
+		
+		lls_slt_alc_session_find_or_create(lls_slt_monitor, atsc3_lls_slt_service);
+
+		lls_slt_service_id_t* lls_slt_service_id = lls_slt_service_id_new_from_atsc3_lls_slt_service(atsc3_lls_slt_service);
+		lls_slt_monitor_add_lls_slt_service_id(lls_slt_monitor, lls_slt_service_id);
+
+		lls_sls_alc_session_t* lls_sls_alc_session = lls_slt_alc_session_find_from_service_id(lls_slt_monitor, atsc3_lls_slt_service->service_id);
+		if(!lls_sls_alc_session) {
+			__WARN("lls_slt_alc_session_find_from_service_id: lls_sls_alc_session is NULL!");
+		}
+		
+		lls_sls_alc_monitor_t* lls_sls_alc_monitor_local = lls_sls_alc_monitor_create();
+		lls_sls_alc_monitor_local->lls_alc_session = lls_sls_alc_session;
+		lls_sls_alc_monitor_local->atsc3_lls_slt_service = atsc3_lls_slt_service;
+		lls_sls_alc_monitor_local->lls_sls_monitor_output_buffer_mode.file_dump_enabled = true;
+
+
+		__WARN("process_packet: adding lls_sls_alc_monitor: %p to lls_slt_monitor: %p, service_id: %d",
+			   lls_sls_alc_monitor_local, lls_slt_monitor, lls_sls_alc_session->service_id);
+
+		lls_slt_monitor_add_lls_sls_alc_monitor(lls_slt_monitor, lls_sls_alc_monitor_local);
+
+		if(!lls_sls_alc_monitor) {
+			lls_slt_monitor->lls_sls_alc_monitor = lls_sls_alc_monitor_local;
+			lls_sls_alc_monitor =  lls_sls_alc_monitor_local;
+		}
 
     } else {
     	println("%s - a udp mulitcast ALC listener for writing out MDE fragments to ROUTE objects", argv[0]);
@@ -253,19 +292,13 @@ int main(int argc,char **argv) {
     	println(" type: s => service_id, p=> dst_ip (dst_port)");
 		println("  s: restrict ALC flow capture to specific service_id");
 		println("  -or-");
-		println("  p: restrict ALC flow capture to specific ip address");
+		println("  p: restrict ALC flow capture to specific ip address and port");
     	println("   dst_ip: restrict ALC flow capture to specific ip address");
     	println("   dst_port: restrict ALC flow capture to specific port");
     	println("");
     	exit(1);
     }
 
-    mkdir("route", 0777);
-
-    lls_slt_monitor = lls_slt_monitor_create();
-	alc_arguments = (atsc3_alc_arguments_t*)calloc(1, sizeof(atsc3_alc_arguments_t));
-    
-    atsc3_alc_session = atsc3_open_alc_session(alc_arguments);
 
     pcap_lookupnet(dev, &netp, &maskp, errbuf);
     descr = pcap_open_live(dev, MAX_PCAP_LEN, 1, 1, errbuf);
