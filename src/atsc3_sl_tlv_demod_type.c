@@ -82,19 +82,31 @@ atsc3_sl_tlv_payload_t* atsc3_sl_tlv_payload_parse_from_block_t_with_metrics(blo
 			atsc3_sl_tlv_payload_metrics->total_tlv_bytes_discarded_without_matching_magic_recovered_in_block_count += (buf - buf_start);
 
             free(atsc3_sl_tlv_payload);
-            return NULL;
+            __SL_TLV_DEMOD_ERROR("atsc3_sl_tlv_payload_parse_from_block_t: magic number not found in remaining atsc3_sl_tlv_payload_unparsed_block: %p, returning",
+                                 atsc3_sl_tlv_payload_unparsed_block);
+                                 return NULL;
         }
     }
+    //we need at least 28 (4 bytes of magic + 24 bytes of TLV) bytes here to process TLV header, if not, bail
+    if((buf_end - buf) < 28) {
+        free(atsc3_sl_tlv_payload);
+        __SL_TLV_DEMOD_ERROR("atsc3_sl_tlv_payload_parse_from_block_t: remaining TLV payload too short: %d, need at least 28 bytes, block: %p, returning",
+                             (buf_end - buf),
+                             atsc3_sl_tlv_payload_unparsed_block);
+        return NULL;
+    }
     buf+=4;
-    
+
+
+
     __SL_TLV_DEMOD_TRACE("parsing SL TLV packet with magic: 0x%8x, position: %d", atsc3_sl_tlv_payload->magic_number, atsc3_sl_tlv_payload_unparsed_block->i_pos);
 
     //atsc3_sl_tlv_payload->alp_packet_size = ntohl(*((uint32_t*)(buf)));
     atsc3_sl_tlv_payload->alp_packet_size = *(uint32_t*)(buf);
 	if(atsc3_sl_tlv_payload->alp_packet_size > MAX_ATSC3_PHY_IP_DATAGRAM_SIZE) {
 		atsc3_sl_tlv_payload_metrics->total_tlv_packets_with_TLV_header_ALP_size_greater_than_max_IP_UDP_datagram_size_count++;
-		__SL_TLV_DEMOD_ERROR( "INVALID TLV: alp packet size: %d", atsc3_sl_tlv_payload->alp_packet_size);
-
+		__SL_TLV_DEMOD_ERROR( "INVALID TLV: alp packet size: %d - (0x%08x), bailing", atsc3_sl_tlv_payload->alp_packet_size, atsc3_sl_tlv_payload->alp_packet_size);
+		return NULL;
 	} else {
 		//don't add this value yet if our TLV payload size is incomplete in our block_t, add it in "TLV packet is in this block_t boundary"
 		__SL_TLV_DEMOD_TRACE( "alp packet size: %d", atsc3_sl_tlv_payload->alp_packet_size);
