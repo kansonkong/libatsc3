@@ -126,9 +126,9 @@ public:
 
 
     int RxThread();
-    CJniEnv* atsc3_jni_rx_capture_thread_env = NULL;
-    CJniEnv* atsc3_jni_rx_thread_env = NULL;
-    CJniEnv* atsc3_jni_rx_status_thread_env = NULL;
+    CJniEnv* Atsc3_Jni_Processing_Thread_Env = NULL;
+    CJniEnv* Atsc3_Jni_Processing_Thread_Env = NULL;
+    CJniEnv* Atsc3_Jni_Status_Thread_Env = NULL;
 
     void set_plp_settings(jint *a_plp_ids, jsize sa_plp_size);
 
