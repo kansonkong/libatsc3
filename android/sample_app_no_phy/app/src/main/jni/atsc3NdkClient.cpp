@@ -305,7 +305,7 @@ void atsc3NdkClient::atsc3_onMfuPacket(uint16_t packet_id, uint32_t mpu_sequence
     // this method can be called in native thread. we don't safely use pre-assigned mJniEnv.
     if (!JReady())
         return;
-    if (!atsc3_jni_rx_thread_env) {
+    if (!Atsc3_Jni_Processing_Thread_Env) {
         eprintf("!! err on get jni env\n");
         return;
     }
@@ -320,11 +320,11 @@ void atsc3NdkClient::atsc3_onMfuPacket(uint16_t packet_id, uint32_t mpu_sequence
     //printf("atsc3NdkClient::onMfuPacket, ret: %d, bufferLen: %u", r, bufferLen);
    // env.Get()->DeleteLocalRef(jobjectByteBuffer);
 #else
-    jobject jobjectLocalByteBuffer = atsc3_jni_rx_thread_env->Get()->NewDirectByteBuffer(buffer, bufferLen);
+    jobject jobjectLocalByteBuffer = Atsc3_Jni_Processing_Thread_Env->Get()->NewDirectByteBuffer(buffer, bufferLen);
 
-    int r = atsc3_jni_rx_thread_env->Get()->CallIntMethod(mClsDrvIntf, atsc3_onMfuPacketID, packet_id, mpu_sequence_number, sample_number, jobjectLocalByteBuffer, bufferLen, presentationUs, mfu_fragment_count_rebuilt);
+    int r = Atsc3_Jni_Processing_Thread_Env->Get()->CallIntMethod(mClsDrvIntf, atsc3_onMfuPacketID, packet_id, mpu_sequence_number, sample_number, jobjectLocalByteBuffer, bufferLen, presentationUs, mfu_fragment_count_rebuilt);
     //printf("atsc3NdkClient::onMfuPacket, ret: %d, bufferLen: %u", r, bufferLen);
-    atsc3_jni_rx_thread_env->Get()->DeleteLocalRef(jobjectLocalByteBuffer);
+    Atsc3_Jni_Processing_Thread_Env->Get()->DeleteLocalRef(jobjectLocalByteBuffer);
 #endif
 }
 
@@ -334,7 +334,7 @@ void atsc3NdkClient::atsc3_onMfuPacketCorrupt(uint16_t packet_id, uint32_t mpu_s
     // this method can be called in native thread. we don't safely use pre-assigned mJniEnv.
     if (!JReady())
         return;
-    if (!atsc3_jni_rx_thread_env) {
+    if (!Atsc3_Jni_Processing_Thread_Env) {
         eprintf("!! err on get jni env\n");
         return;
     }
@@ -349,11 +349,11 @@ void atsc3NdkClient::atsc3_onMfuPacketCorrupt(uint16_t packet_id, uint32_t mpu_s
     //printf("atsc3NdkClient::onMfuPacket, ret: %d, bufferLen: %u", r, bufferLen);
    // env.Get()->DeleteLocalRef(jobjectByteBuffer);
 #else
-    jobject jobjectLocalByteBuffer = atsc3_jni_rx_thread_env->Get()->NewDirectByteBuffer(buffer, bufferLen);
+    jobject jobjectLocalByteBuffer = Atsc3_Jni_Processing_Thread_Env->Get()->NewDirectByteBuffer(buffer, bufferLen);
 
-    int r = atsc3_jni_rx_thread_env->Get()->CallIntMethod(mClsDrvIntf, atsc3_onMfuPacketCorruptID, packet_id, mpu_sequence_number, sample_number, jobjectLocalByteBuffer, bufferLen, presentationUs, mfu_fragment_count_expected, mfu_fragment_count_rebuilt);
+    int r = Atsc3_Jni_Processing_Thread_Env->Get()->CallIntMethod(mClsDrvIntf, atsc3_onMfuPacketCorruptID, packet_id, mpu_sequence_number, sample_number, jobjectLocalByteBuffer, bufferLen, presentationUs, mfu_fragment_count_expected, mfu_fragment_count_rebuilt);
     //printf("atsc3NdkClient::onMfuPacket, ret: %d, bufferLen: %u", r, bufferLen);
-    atsc3_jni_rx_thread_env->Get()->DeleteLocalRef(jobjectLocalByteBuffer);
+    Atsc3_Jni_Processing_Thread_Env->Get()->DeleteLocalRef(jobjectLocalByteBuffer);
 #endif
 }
 
@@ -363,7 +363,7 @@ void atsc3NdkClient::atsc3_onMfuPacketCorruptMmthSampleHeader(uint16_t packet_id
     // this method can be called in native thread. we don't safely use pre-assigned mJniEnv.
     if (!JReady())
         return;
-    if (!atsc3_jni_rx_thread_env) {
+    if (!Atsc3_Jni_Processing_Thread_Env) {
         eprintf("!! err on get jni env\n");
         return;
     }
@@ -378,11 +378,11 @@ void atsc3NdkClient::atsc3_onMfuPacketCorruptMmthSampleHeader(uint16_t packet_id
     //printf("atsc3NdkClient::onMfuPacket, ret: %d, bufferLen: %u", r, bufferLen);
    // env.Get()->DeleteLocalRef(jobjectByteBuffer);
 #else
-    jobject jobjectLocalByteBuffer = atsc3_jni_rx_thread_env->Get()->NewDirectByteBuffer(buffer, bufferLen);
+    jobject jobjectLocalByteBuffer = Atsc3_Jni_Processing_Thread_Env->Get()->NewDirectByteBuffer(buffer, bufferLen);
 
-    int r = atsc3_jni_rx_thread_env->Get()->CallIntMethod(mClsDrvIntf, atsc3_onMfuPacketCorruptMmthSampleHeaderID, packet_id, mpu_sequence_number, sample_number, jobjectLocalByteBuffer, bufferLen, presentationUs, mfu_fragment_count_expected, mfu_fragment_count_rebuilt);
+    int r = Atsc3_Jni_Processing_Thread_Env->Get()->CallIntMethod(mClsDrvIntf, atsc3_onMfuPacketCorruptMmthSampleHeaderID, packet_id, mpu_sequence_number, sample_number, jobjectLocalByteBuffer, bufferLen, presentationUs, mfu_fragment_count_expected, mfu_fragment_count_rebuilt);
     //printf("atsc3NdkClient::onMfuPacket, ret: %d, bufferLen: %u", r, bufferLen);
-    atsc3_jni_rx_thread_env->Get()->DeleteLocalRef(jobjectLocalByteBuffer);
+    Atsc3_Jni_Processing_Thread_Env->Get()->DeleteLocalRef(jobjectLocalByteBuffer);
 #endif
 }
 
@@ -390,7 +390,7 @@ void atsc3NdkClient::atsc3_onMfuPacketCorruptMmthSampleHeader(uint16_t packet_id
 void atsc3NdkClient::atsc3_onInitHEVC_NAL_Extracted(uint16_t packet_id, uint32_t mpu_sequence_number, uint8_t* buffer, uint32_t bufferLen) {
     if (!JReady())
         return;
-    if (!atsc3_jni_rx_thread_env) {
+    if (!Atsc3_Jni_Processing_Thread_Env) {
         eprintf("!! err on get jni env\n");
         return;
     }
@@ -405,9 +405,9 @@ void atsc3NdkClient::atsc3_onInitHEVC_NAL_Extracted(uint16_t packet_id, uint32_t
     //printf("atsc3NdkClient::onMfuPacket, ret: %d, bufferLen: %u", r, bufferLen);
     //env.Get()->DeleteLocalRef(jobjectByteBuffer);
 #else
-    jobject jobjectByteBuffer = atsc3_jni_rx_thread_env->Get()->NewDirectByteBuffer(buffer, bufferLen);
-    int r = atsc3_jni_rx_thread_env->Get()->CallIntMethod(mClsDrvIntf, mOnInitHEVC_NAL_Extracted, packet_id, mpu_sequence_number, jobjectByteBuffer, bufferLen);
-    atsc3_jni_rx_thread_env->Get()->DeleteLocalRef(jobjectByteBuffer);
+    jobject jobjectByteBuffer = Atsc3_Jni_Processing_Thread_Env->Get()->NewDirectByteBuffer(buffer, bufferLen);
+    int r = Atsc3_Jni_Processing_Thread_Env->Get()->CallIntMethod(mClsDrvIntf, mOnInitHEVC_NAL_Extracted, packet_id, mpu_sequence_number, jobjectByteBuffer, bufferLen);
+    Atsc3_Jni_Processing_Thread_Env->Get()->DeleteLocalRef(jobjectByteBuffer);
 #endif
 }
 
@@ -425,12 +425,12 @@ void atsc3NdkClient::atsc3_signallingContext_notify_video_packet_id_and_mpu_time
     // this method can be called in native thread. we don't safely use pre-assigned mJniEnv.
     if (!JReady())
         return;
-    if (!atsc3_jni_rx_thread_env) {
+    if (!Atsc3_Jni_Processing_Thread_Env) {
         eprintf("!! err on get jni env\n");
         return;
     }
 
-    int r = atsc3_jni_rx_thread_env->Get()->CallIntMethod(mClsDrvIntf, atsc3_signallingContext_notify_video_packet_id_and_mpu_timestamp_descriptor_ID, video_packet_id, mpu_sequence_number, mpu_presentation_time_ntp64, mpu_presentation_time_seconds, mpu_presentation_time_microseconds);
+    int r = Atsc3_Jni_Processing_Thread_Env->Get()->CallIntMethod(mClsDrvIntf, atsc3_signallingContext_notify_video_packet_id_and_mpu_timestamp_descriptor_ID, video_packet_id, mpu_sequence_number, mpu_presentation_time_ntp64, mpu_presentation_time_seconds, mpu_presentation_time_microseconds);
     //printf("atsc3NdkClient::onMfuPacket, ret: %d, bufferLen: %u", r, bufferLen);
    //env.Get()->DeleteLocalRef(jobjectLocalByteBuffer);
 }
@@ -440,12 +440,12 @@ void atsc3NdkClient::atsc3_signallingContext_notify_audio_packet_id_and_mpu_time
     // this method can be called in native thread. we don't safely use pre-assigned mJniEnv.
     if (!JReady())
         return;
-    if (!atsc3_jni_rx_thread_env) {
+    if (!Atsc3_Jni_Processing_Thread_Env) {
         eprintf("!! err on get jni env\n");
         return;
     }
 
-    int r = atsc3_jni_rx_thread_env->Get()->CallIntMethod(mClsDrvIntf, atsc3_signallingContext_notify_audio_packet_id_and_mpu_timestamp_descriptor_ID, audio_packet_id, mpu_sequence_number, mpu_presentation_time_ntp64, mpu_presentation_time_seconds, mpu_presentation_time_microseconds);
+    int r = Atsc3_Jni_Processing_Thread_Env->Get()->CallIntMethod(mClsDrvIntf, atsc3_signallingContext_notify_audio_packet_id_and_mpu_timestamp_descriptor_ID, audio_packet_id, mpu_sequence_number, mpu_presentation_time_ntp64, mpu_presentation_time_seconds, mpu_presentation_time_microseconds);
     //printf("atsc3NdkClient::onMfuPacket, ret: %d, bufferLen: %u", r, bufferLen);
     //env.Get()->DeleteLocalRef(jobjectLocalByteBuffer);
 }
@@ -456,12 +456,12 @@ void atsc3NdkClient::atsc3_signallingContext_notify_stpp_packet_id_and_mpu_times
     // this method can be called in native thread. we don't safely use pre-assigned mJniEnv.
     if (!JReady())
         return;
-    if (!atsc3_jni_rx_thread_env) {
+    if (!Atsc3_Jni_Processing_Thread_Env) {
         eprintf("!! err on get jni env\n");
         return;
     }
 
-    int r =  atsc3_jni_rx_thread_env->Get()->CallIntMethod(mClsDrvIntf, atsc3_signallingContext_notify_stpp_packet_id_and_mpu_timestamp_descriptor_ID, stpp_packet_id, mpu_sequence_number, mpu_presentation_time_ntp64, mpu_presentation_time_seconds, mpu_presentation_time_microseconds);
+    int r =  Atsc3_Jni_Processing_Thread_Env->Get()->CallIntMethod(mClsDrvIntf, atsc3_signallingContext_notify_stpp_packet_id_and_mpu_timestamp_descriptor_ID, stpp_packet_id, mpu_sequence_number, mpu_presentation_time_ntp64, mpu_presentation_time_seconds, mpu_presentation_time_microseconds);
     //printf("atsc3NdkClient::onMfuPacket, ret: %d, bufferLen: %u", r, bufferLen);
     //env.Get()->DeleteLocalRef(jobjectLocalByteBuffer);
 }
@@ -470,12 +470,12 @@ void atsc3NdkClient::atsc3_signallingContext_notify_stpp_packet_id_and_mpu_times
 void atsc3NdkClient::atsc3_onMfuSampleMissing(uint16_t pcaket_id, uint32_t mpu_sequence_number, uint32_t sample_number) {
     if (!JReady())
         return;
-    if (!atsc3_jni_rx_thread_env) {
+    if (!Atsc3_Jni_Processing_Thread_Env) {
         eprintf("!! err on get jni env\n");
         return;
     }
 
-    int r = atsc3_jni_rx_thread_env->Get()->CallIntMethod(mClsDrvIntf, atsc3_onMfuSampleMissingID, pcaket_id, mpu_sequence_number, sample_number);
+    int r = Atsc3_Jni_Processing_Thread_Env->Get()->CallIntMethod(mClsDrvIntf, atsc3_onMfuSampleMissingID, pcaket_id, mpu_sequence_number, sample_number);
 
 }
 
@@ -524,15 +524,15 @@ void atsc3NdkClient::atsc3_onAlcObjectStatusMessage(const char *fmt, ...)
 
     if (!JReady())
         return;
-    if (!atsc3_jni_rx_thread_env) {
+    if (!Atsc3_Jni_Processing_Thread_Env) {
         eprintf("!! err on get jni env\n");
         return;
     }
 
-    jstring js = atsc3_jni_rx_thread_env->Get()->NewStringUTF(msg);
+    jstring js = Atsc3_Jni_Processing_Thread_Env->Get()->NewStringUTF(msg);
 
-    int r = atsc3_jni_rx_thread_env->Get()->CallIntMethod(mClsDrvIntf, atsc3_on_alc_object_status_message_ID, js);
-    atsc3_jni_rx_thread_env->Get()->DeleteLocalRef(js);
+    int r = Atsc3_Jni_Processing_Thread_Env->Get()->CallIntMethod(mClsDrvIntf, atsc3_on_alc_object_status_message_ID, js);
+    Atsc3_Jni_Processing_Thread_Env->Get()->DeleteLocalRef(js);
 
 }
 
@@ -563,11 +563,11 @@ int atsc3NdkClient::atsc3_pcap_thread_run() {
 
     pcapConsumerThreadPtr = std::thread([this](){
         atsc3_jni_pcap_consumer_thread_env = new CJniEnv(mJavaVM);
-        atsc3_jni_rx_thread_env = atsc3_jni_pcap_consumer_thread_env; //hack
+        Atsc3_Jni_Processing_Thread_Env = atsc3_jni_pcap_consumer_thread_env; //hack
         LogMsgF("atsc3NdkClient::atsc3_pcap_consumer_thread_run with this: %p", this);
 
         this->PcapConsumerThreadRun();
-        atsc3_jni_rx_thread_env = NULL;
+        Atsc3_Jni_Processing_Thread_Env = NULL;
         delete atsc3_jni_pcap_consumer_thread_env;
     });
 
@@ -576,21 +576,21 @@ int atsc3NdkClient::atsc3_pcap_thread_run() {
 }
 
 int atsc3NdkClient::pinFromRxCaptureThread() {
-    printf("atsc3NdkClient::atsc3_jni_rx_capture_thread_env: mJavaVM: %p", mJavaVM);
-    atsc3_jni_rx_capture_thread_env = new CJniEnv(mJavaVM);
+    printf("atsc3NdkClient::Atsc3_Jni_Processing_Thread_Env: mJavaVM: %p", mJavaVM);
+    Atsc3_Jni_Processing_Thread_Env = new CJniEnv(mJavaVM);
     return 0;
 };
 
 int atsc3NdkClient::pinFromRxProcessingThread() {
     printf("atsc3NdkClient::pinFromRxProcessingThread: mJavaVM: %p", mJavaVM);
-    atsc3_jni_rx_thread_env = new CJniEnv(mJavaVM);
+    Atsc3_Jni_Processing_Thread_Env = new CJniEnv(mJavaVM);
     return 0;
 }
 
 
 int atsc3NdkClient::pinFromRxStatusThread() {
     printf("atsc3NdkClient::pinFromRxStatusThread: mJavaVM: %p", mJavaVM);
-    atsc3_jni_rx_status_thread_env = new CJniEnv(mJavaVM);
+    Atsc3_Jni_Status_Thread_Env = new CJniEnv(mJavaVM);
     return 0;
 }
 
@@ -687,26 +687,26 @@ void atsc3NdkClient::atsc3_update_rf_stats(int32_t tuner_lock,
     if (!JReady() || !mOnLogMsgId)
         return;
 
-    if (!atsc3_jni_rx_status_thread_env) {
-        eprintf("atsc3NdkClient:atsc3_update_rf_stats: err on get jni env: atsc3_jni_rx_status_thread_env\n");
+    if (!Atsc3_Jni_Status_Thread_Env) {
+        eprintf("atsc3NdkClient:atsc3_update_rf_stats: err on get jni env: Atsc3_Jni_Status_Thread_Env\n");
         return;
     }
-    int r = atsc3_jni_rx_status_thread_env->Get()->CallIntMethod(mClsDrvIntf, atsc3_rf_phy_status_callback_ID,
-             tuner_lock,
-             rssi,
-             modcod_valid,
-             plp_fec_type,
-             plp_mod,
-             plp_cod,
-             nRfLevel1000,
-             nSnr1000,
-             ber_pre_ldpc_e7,
-             ber_pre_bch_e9,
-             fer_post_bch_e6,
-             demod_lock_status,
-             cpu_status,
-             plp_any,
-             plp_all);
+    int r = Atsc3_Jni_Status_Thread_Env->Get()->CallIntMethod(mClsDrvIntf, atsc3_rf_phy_status_callback_ID,
+                                                              tuner_lock,
+                                                              rssi,
+                                                              modcod_valid,
+                                                              plp_fec_type,
+                                                              plp_mod,
+                                                              plp_cod,
+                                                              nRfLevel1000,
+                                                              nSnr1000,
+                                                              ber_pre_ldpc_e7,
+                                                              ber_pre_bch_e9,
+                                                              fer_post_bch_e6,
+                                                              demod_lock_status,
+                                                              cpu_status,
+                                                              plp_any,
+                                                              plp_all);
 
 }
 
@@ -717,14 +717,14 @@ void atsc3NdkClient::atsc3_onExtractedSampleDuration(uint16_t packet_id, uint32_
     // this method can be called in native thread. we don't safely use pre-assigned mJniEnv.
     if (!JReady() || !mOnLogMsgId)
         return;
-    if (!atsc3_jni_rx_thread_env) {
+    if (!Atsc3_Jni_Processing_Thread_Env) {
         eprintf("!! err on get jni env\n");
         return;
     }
-    int r = atsc3_jni_rx_thread_env->Get()->CallIntMethod(mClsDrvIntf, atsc3_onExtractedSampleDurationID,
-                                     packet_id,
-                                     mpu_sequence_number,
-                                     extracted_sample_duration_us);
+    int r = Atsc3_Jni_Processing_Thread_Env->Get()->CallIntMethod(mClsDrvIntf, atsc3_onExtractedSampleDurationID,
+                                                                  packet_id,
+                                                                  mpu_sequence_number,
+                                                                  extracted_sample_duration_us);
 }
 
 
@@ -734,11 +734,11 @@ void atsc3NdkClient::atsc3_setVideoWidthHeightFromTrak(uint32_t width, uint32_t 
     // this method can be called in native thread. we don't safely use pre-assigned mJniEnv.
     if (!JReady() || !mOnLogMsgId)
         return;
-    if (!atsc3_jni_rx_thread_env) {
+    if (!Atsc3_Jni_Processing_Thread_Env) {
         eprintf("!! err on get jni env\n");
         return;
     }
-    int r = atsc3_jni_rx_thread_env->Get()->CallIntMethod(mClsDrvIntf, atsc3_setVideoWidthHeightFromTrakID, width, height);
+    int r = Atsc3_Jni_Processing_Thread_Env->Get()->CallIntMethod(mClsDrvIntf, atsc3_setVideoWidthHeightFromTrakID, width, height);
 
 }
 
@@ -747,11 +747,11 @@ void atsc3NdkClient::atsc3_update_rf_bw_stats(uint64_t total_pkts, uint64_t tota
                                           unsigned int total_lmts) {
     if (!JReady() || !mOnLogMsgId)
         return;
-    if (!atsc3_jni_rx_status_thread_env) {
-        eprintf("atsc3NdkClient:atsc3_update_rf_bw_stats: err on get jni env: atsc3_jni_rx_status_thread_env\n");
+    if (!Atsc3_Jni_Status_Thread_Env) {
+        eprintf("atsc3NdkClient:atsc3_update_rf_bw_stats: err on get jni env: Atsc3_Jni_Status_Thread_Env\n");
         return;
     }
-    int r = atsc3_jni_rx_status_thread_env->Get()->CallIntMethod(mClsDrvIntf, atsc3_update_rf_bw_stats_ID, total_pkts, total_bytes, total_lmts);
+    int r = Atsc3_Jni_Status_Thread_Env->Get()->CallIntMethod(mClsDrvIntf, atsc3_update_rf_bw_stats_ID, total_pkts, total_bytes, total_lmts);
 }
 
 //Java to native methods
@@ -922,11 +922,11 @@ void atsc3NdkClient::atsc3_lls_sls_alc_on_object_close_flag_s_tsid_content_locat
 void atsc3NdkClient::atsc3_lls_sls_alc_on_route_mpd_patched_jni(uint16_t service_id) {
     if (!JReady() || !atsc3_lls_sls_alc_on_route_mpd_patched_ID)
         return;
-    if (!atsc3_jni_rx_thread_env) {
+    if (!Atsc3_Jni_Processing_Thread_Env) {
         eprintf("!! err on get jni env\n");
         return;
     }
-    int r = atsc3_jni_rx_thread_env->Get()->CallIntMethod(mClsDrvIntf, atsc3_lls_sls_alc_on_route_mpd_patched_ID, service_id);
+    int r = Atsc3_Jni_Processing_Thread_Env->Get()->CallIntMethod(mClsDrvIntf, atsc3_lls_sls_alc_on_route_mpd_patched_ID, service_id);
 
 }
 
@@ -937,14 +937,14 @@ void atsc3NdkClient::atsc3_onSlsTablePresent(const char *sls_payload_xml) {
         return;
     }
 
-    if (!atsc3_jni_rx_thread_env) {
+    if (!Atsc3_Jni_Processing_Thread_Env) {
         eprintf("!! err on get jni env\n");
         return;
     }
 
-    jstring xml_payload = atsc3_jni_rx_thread_env->Get()->NewStringUTF(sls_payload_xml);
-    int r = atsc3_jni_rx_thread_env->Get()->CallIntMethod(mClsDrvIntf, atsc3_onSlsTablePresent_ID, xml_payload);
-    atsc3_jni_rx_thread_env->Get()->DeleteLocalRef(xml_payload);
+    jstring xml_payload = Atsc3_Jni_Processing_Thread_Env->Get()->NewStringUTF(sls_payload_xml);
+    int r = Atsc3_Jni_Processing_Thread_Env->Get()->CallIntMethod(mClsDrvIntf, atsc3_onSlsTablePresent_ID, xml_payload);
+    Atsc3_Jni_Processing_Thread_Env->Get()->DeleteLocalRef(xml_payload);
 }
 
 

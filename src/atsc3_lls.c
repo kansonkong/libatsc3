@@ -307,6 +307,7 @@ lls_table_t* lls_table_create_or_update_from_lls_slt_monitor_with_metrics(lls_sl
 	lls_table_t* lls_table_new = __lls_table_create(lls_packet_block);
 	if(!lls_table_new) {
 		(*parsed_error)++;
+		_LLS_ERROR("lls_table_create_or_update_from_lls_slt_monitor_with_metrics: failed to create lls_table_new!")
 		return NULL; //parse error or not supported
 	}
 
@@ -410,7 +411,10 @@ lls_table_t* atsc3_lls_table_create_or_update_from_lls_slt_monitor_with_metrics_
 	} else {
 		_LLS_ERROR("lls_slt_monitor is null, can't propagate LLS update!");
 	}
-	return NULL;
+
+    _LLS_ERROR("atsc3_lls_table_create_or_update_from_lls_slt_monitor_with_metrics_single_table: returning NULL");
+
+    return NULL;
 
 }
 //jjustman-2020-03-10 - todo: refactor me for signedMultiTable support
@@ -436,7 +440,7 @@ lls_table_t* __lls_table_create(block_t* lls_packet_block) {
     }
 }
 
-lls_table_t* atsc3_lls_table_parse_raw_xml(atsc3_lls_table_t* lls_table) {
+atsc3_lls_table_t* atsc3_lls_table_parse_raw_xml(atsc3_lls_table_t* lls_table) {
     int res = 0;
     xml_node_t *xml_root_node = NULL;
 

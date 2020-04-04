@@ -54,6 +54,14 @@ int build_system_time_table(lls_table_t* lls_table, xml_node_t* xml_root);
 int build_aeat_table(lls_table_t* lls_table, xml_node_t* xml_root);
 int build_onscreen_message_notification_table(lls_table_t* lls_table, xml_node_t* xml_root);
 
+//jjustman-2020-04-03 - TODO: refactor into logging_externs
+
+#include "android/log.h"
+#define MODULE_NAME "intf"
+#define LOGD(...) __android_log_print(ANDROID_LOG_DEBUG  , MODULE_NAME, __VA_ARGS__)
+
+#define printf LOGD
+//jjustman-2020-04-03 - TODO: refactor into logging_externs
 
 #define _LLS_PRINTLN(...) printf(__VA_ARGS__);printf("%s%s","\r","\n")
 #define _LLS_PRINTF(...)  printf(__VA_ARGS__);
