@@ -1082,7 +1082,7 @@ void atsc3_phy_mmt_player_bridge_init(atsc3NdkClient* atsc3NdkClientSL_ptr_l) {
         //no linkage forfs::remove_all(atsc3_ndk_cache_temp_folder_path + "/");
         //https://github.com/android/ndk/issues/609
 
-        atsc3_ndk_cache_temp_folder_purge((char*)(atsc3_ndk_cache_temp_folder_path + "/").c_str());
+        atsc3_ndk_cache_temp_folder_purge((char*)(atsc3_ndk_cache_temp_folder_path).c_str());
 
         chdir(atsc3_ndk_cache_temp_folder_path.c_str());
 
