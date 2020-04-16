@@ -117,7 +117,10 @@ atsc3_sl_tlv_payload_t* atsc3_sl_tlv_payload_parse_from_block_t_with_metrics(blo
     atsc3_sl_tlv_payload->plp_number = *buf++;
 	if(atsc3_sl_tlv_payload->plp_number > 63) {
 		atsc3_sl_tlv_payload_metrics->total_tlv_packets_with_invalid_PLP_value_count++;
-		__SL_TLV_DEMOD_ERROR("INVALID TLV: plp number (expected < 63): %d (0x%2x)", atsc3_sl_tlv_payload->plp_number, atsc3_sl_tlv_payload->plp_number);
+		//jjustman-2020-04-16 - reduce noisy TLV packets due to possible re-sync or alp buffer continutations
+        __SL_TLV_DEMOD_DEBUG("INVALID TLV: plp number (expected < 63): %d (0x%2x)", atsc3_sl_tlv_payload->plp_number, atsc3_sl_tlv_payload->plp_number);
+
+        //__SL_TLV_DEMOD_ERROR("INVALID TLV: plp number (expected < 63): %d (0x%2x)", atsc3_sl_tlv_payload->plp_number, atsc3_sl_tlv_payload->plp_number);
 	} else {
 		__SL_TLV_DEMOD_TRACE(" plp number: %d", atsc3_sl_tlv_payload->plp_number);
 	}
@@ -125,7 +128,10 @@ atsc3_sl_tlv_payload_t* atsc3_sl_tlv_payload_parse_from_block_t_with_metrics(blo
     atsc3_sl_tlv_payload->ts_size = *buf++;
 	if(atsc3_sl_tlv_payload->ts_size != 188) {
 		atsc3_sl_tlv_payload_metrics->total_tlv_packets_with_invalid_TS_transfer_size_count++;
-		__SL_TLV_DEMOD_ERROR("INVALID: TS transfer size (ts_size) packet size (expected 188) : %d", atsc3_sl_tlv_payload->ts_size);
+        //jjustman-2020-04-16 - reduce noisy TLV packets due to possible re-sync or alp buffer continutations
+        __SL_TLV_DEMOD_DEBUG("INVALID: TS transfer size (ts_size) packet size (expected 188) : %d", atsc3_sl_tlv_payload->ts_size);
+
+        //__SL_TLV_DEMOD_ERROR("INVALID: TS transfer size (ts_size) packet size (expected 188) : %d", atsc3_sl_tlv_payload->ts_size);
 	} else {
 		__SL_TLV_DEMOD_TRACE(" TS transfer size (ts_size) packet size: %d", atsc3_sl_tlv_payload->ts_size);
 

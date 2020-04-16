@@ -6,6 +6,9 @@
  */
 #pragma GCC diagnostic ignored "-Wformat-zero-length"
 
+#ifdef __LIBATSC3_ANDROID__
+#include <sys/endian.h>
+#endif
 
 #include <assert.h>
 #include <ctype.h>
