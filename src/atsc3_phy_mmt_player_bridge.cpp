@@ -1082,11 +1082,7 @@ void atsc3_phy_mmt_player_bridge_init(atsc3NdkClient* atsc3NdkClientSL_ptr_l) {
         //no linkage forfs::remove_all(atsc3_ndk_cache_temp_folder_path + "/");
         //https://github.com/android/ndk/issues/609
 
-        char* rm_args[] = {"/system/bin/rm", "-rf", (char*)((atsc3_ndk_cache_temp_folder_path + "/*").c_str())};
-        int rm_result = execv("/system/bin/rm", rm_args);
-        if(rm_result) {
-            Atsc3NdkClient_ptr->LogMsgF("atsc3_phy_mmt_player_bridge_init: unable to clear temp folder path: result: %d", rm_result);
-        }
+        atsc3_ndk_cache_temp_folder_purge((char*)(atsc3_ndk_cache_temp_folder_path + "/").c_str());
 
         chdir(atsc3_ndk_cache_temp_folder_path.c_str());
 
@@ -1116,5 +1112,27 @@ string atsc3_route_service_context_temp_folder_name(int service_id) {
 }
 
 
+
+int atsc3_ndk_cache_temp_unlink_cb(const char *fpath, const struct stat *sb, int typeflag, struct FTW *ftwbuf)
+{
+    int rv = 0;
+
+    if(strcmp(fpath, atsc3_ndk_cache_temp_folder_path.c_str()) != 0) {
+        printf("atsc3_ndk_cache_temp_unlink_cb: removing cache path: %s", fpath);
+
+        rv = remove(fpath);
+
+        if (rv) {
+            printf("atsc3_ndk_cache_temp_unlink_cb: unable to remove path: %s, err from remove is: %d", fpath, rv);
+        }
+    }
+    return rv;
+}
+
+int atsc3_ndk_cache_temp_folder_purge(char *path)
+{
+    printf("atsc3_ndk_cache_temp_folder_purge: invoked with path: %s", path);
+    return nftw(path, atsc3_ndk_cache_temp_unlink_cb, 64, FTW_DEPTH | FTW_PHYS);
+}
 
 
