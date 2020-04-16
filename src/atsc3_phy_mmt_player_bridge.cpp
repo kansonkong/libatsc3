@@ -1030,7 +1030,8 @@ void atsc3_phy_mmt_player_bridge_init(atsc3NdkClient* atsc3NdkClientSL_ptr_l) {
     //set global logging levels
     _MMT_CONTEXT_MPU_DEBUG_ENABLED = 0;
     _ALC_UTILS_IOTRACE_ENABLED = 0;
-    _ROUTE_SLS_PROCESSOR_INFO_ENABLED=1;
+    _ROUTE_SLS_PROCESSOR_INFO_ENABLED = 1;
+    _ROUTE_SLS_PROCESSOR_DEBUG_ENABLED = 1;
     _ALC_UTILS_IOTRACE_ENABLED = 0;
 
 #ifdef __SIGNED_MULTIPART_LLS_DEBUGGING__
@@ -1041,7 +1042,7 @@ void atsc3_phy_mmt_player_bridge_init(atsc3NdkClient* atsc3NdkClientSL_ptr_l) {
     _LLS_SLT_PARSER_TRACE_ENABLED = 1;
 #endif
     _LLS_ALC_UTILS_DEBUG_ENABLED = 1;
-    _ALC_UTILS_DEBUG_ENABLED = 1;
+    _ALC_UTILS_DEBUG_ENABLED = 0;
     _ALC_RX_TRACE_ENABLED = 0;
 
     if(!lls_slt_monitor) {
@@ -1076,7 +1077,19 @@ void atsc3_phy_mmt_player_bridge_init(atsc3NdkClient* atsc3NdkClientSL_ptr_l) {
         atsc3_mmt_mfu_context->atsc3_mmt_mpu_on_sequence_movie_fragment_metadata_present = &atsc3_mmt_mpu_on_sequence_movie_fragment_metadata_present_ndk;
 
         atsc3_ndk_cache_temp_folder_path = Atsc3NdkClient_ptr->get_android_temp_folder();
+
+        //jjustman-2020-04-16 - hack to clean up cache directory payload and clear out any leftover cache objects (e.g. ROUTE/DASH toi's)
+        //no linkage forfs::remove_all(atsc3_ndk_cache_temp_folder_path + "/");
+        //https://github.com/android/ndk/issues/609
+
+        char* rm_args[] = {"/system/bin/rm", "-rf", (char*)((atsc3_ndk_cache_temp_folder_path + "/*").c_str())};
+        int rm_result = execv("/system/bin/rm", rm_args);
+        if(rm_result) {
+            Atsc3NdkClient_ptr->LogMsgF("atsc3_phy_mmt_player_bridge_init: unable to clear temp folder path: result: %d", rm_result);
+        }
+
         chdir(atsc3_ndk_cache_temp_folder_path.c_str());
+
         Atsc3NdkClient_ptr->LogMsgF("atsc3_phy_mmt_player_bridge_init - completed, temp folder path: %s", atsc3_ndk_cache_temp_folder_path.c_str());
     } else {
         Atsc3NdkClient_ptr->LogMsgF("atsc3_phy_mmt_player_bridge_init - ignoring init as we are already configured");
