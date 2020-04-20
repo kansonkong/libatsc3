@@ -240,12 +240,14 @@ void atsc3_route_sls_patch_mpd_availability_start_time_and_start_number(atsc3_mi
             strftime((char*)&iso_now_timestamp, _ISO8601_DATE_TIME_LENGTH_, "%Y-%m-%dT%H:%M:%SZ", gmtime(&now));
 
             char* to_start_ptr = atsc3_mime_multipart_related_payload->payload + ast_char_pos_end + 1;
-            _ATSC3_ROUTE_SLS_PROCESSOR_WARN("atsc3_route_sls_patch_mpd_availability_start_time_and_start_number: patching mpd availabilityStartTime: from %.20s to %s, v: last_video_toi: %d, last_closed_video_toi: %d, a: last_audio_toi: %d, last_closed_audio_toi: %d",
+            _ATSC3_ROUTE_SLS_PROCESSOR_WARN("atsc3_route_sls_patch_mpd_availability_start_time_and_start_number: patching mpd availabilityStartTime: from %.20s to %s, v: last_video_toi: %d, last_closed_video_toi: %d, a: last_audio_toi: %d, last_closed_audio_toi: %d, stpp: last_text_toi: %d, last_closed_text_toi: %d",
                                             to_start_ptr, (char*)iso_now_timestamp,
                                             lls_sls_alc_monitor->last_video_toi,
                                             lls_sls_alc_monitor->last_closed_video_toi,
                                             lls_sls_alc_monitor->last_audio_toi,
-                                            lls_sls_alc_monitor->last_closed_audio_toi);
+                                            lls_sls_alc_monitor->last_closed_audio_toi,
+                                            lls_sls_alc_monitor->last_text_toi,
+                                            lls_sls_alc_monitor->last_closed_text_toi);
             
             for(int i=0; i < _ISO8601_DATE_TIME_LENGTH_; i++) {
                 to_start_ptr[i] = iso_now_timestamp[i];
@@ -349,6 +351,7 @@ void atsc3_route_sls_patch_mpd_availability_start_time_and_start_number(atsc3_mi
                 char* audio_start_number_end_ptr = mpd_patched_start_ptr + audio_start_number_end_pos;
 
                 if(stpp_start_number_start != NULL) {
+                    _ATSC3_ROUTE_SLS_PROCESSOR_INFO("patching with STPP");
                     //jjustman-2020-02-28 STPP startnumber hack
                     char* mpd_patched_audio_start_end_ptr = mpd_patched_start_ptr + audio_start_number_end_pos + 2;
 
@@ -367,7 +370,7 @@ void atsc3_route_sls_patch_mpd_availability_start_time_and_start_number(atsc3_mi
                              stpp_start_number_end_ptr
                              );
                 } else {
-
+                    _ATSC3_ROUTE_SLS_PROCESSOR_INFO("patching without STPP");
                     //if !lls_sls_alc_monitor->has_discontiguous_toi_flow,  use the last_closed video/audio toi, otherwise use the 'current' video/audio toi
                     if(vcodec_representation_start_pos < acodec_representation_start_pos) {
                         snprintf(new_mpd_payload, mpd_new_payload_max_len, "%s startNumber=\"%d\" %s startNumber=\"%d\" %s",

@@ -358,8 +358,10 @@ void lls_sls_alc_update_tsi_toi_from_route_s_tsid(lls_sls_alc_monitor_t* lls_sls
                                         lls_sls_alc_monitor->video_tsi,
                                         lls_sls_alc_monitor->video_toi_init);
                             }
-                        } else if(strncasecmp("text", src_flow_content_info_content_type, 4) == 0) {
+                        } else if(strncasecmp("text", src_flow_content_info_content_type, 4) == 0 || strncasecmp("subtitles", src_flow_content_info_content_type, 4) == 0) {
                             if (!lls_sls_alc_monitor->text_tsi_manual_override) {
+                                _ATSC3_LLS_ALC_UTILS_INFO("lls_sls_alc_update_tsi_toi_from_route_s_tsid: steting text tsi/toi information to: text_toi_init: %d, text_tsi: %d", atsc3_fdt_file->toi, atsc3_route_s_tsid_RS_LS->tsi);
+
                                 lls_sls_alc_monitor->text_toi_init = atsc3_fdt_file->toi;
                                 lls_sls_alc_monitor->text_tsi = atsc3_route_s_tsid_RS_LS->tsi;
                             } else {
