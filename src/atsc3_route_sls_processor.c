@@ -188,10 +188,7 @@ cleanup:
 #define _MPD_availability_start_time_VALUE_ "availabilitystarttime="
 
 /*
- 
- special start number patching for pcap/rfcap replays with exoplayer2...
-
-
+    special start number patching for pcap/rfcap replays with exoplayer2...
  */
 void atsc3_route_sls_patch_mpd_availability_start_time_and_start_number(atsc3_mime_multipart_related_payload_t* atsc3_mime_multipart_related_payload, lls_sls_alc_monitor_t* lls_sls_alc_monitor) {
 
