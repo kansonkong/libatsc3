@@ -458,6 +458,8 @@ char* alc_packet_dump_to_object_get_s_tsid_filename(udp_flow_t* udp_flow, alc_pa
                                                                         lls_sls_alc_monitor->last_closed_audio_toi = alc_packet->def_lct_hdr->toi;
                                                                     } else if(alc_packet->def_lct_hdr->tsi == lls_sls_alc_monitor->video_tsi) {
                                                                         lls_sls_alc_monitor->last_closed_video_toi = alc_packet->def_lct_hdr->toi;
+                                                                    } else if(alc_packet->def_lct_hdr->tsi == lls_sls_alc_monitor->text_tsi) {
+                                                                        lls_sls_alc_monitor->last_closed_text_toi = alc_packet->def_lct_hdr->toi;
                                                                     }
                                                                     break; //done
                                                                 }
