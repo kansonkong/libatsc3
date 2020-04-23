@@ -1045,6 +1045,9 @@ void atsc3_phy_mmt_player_bridge_init(atsc3NdkClient* atsc3NdkClientSL_ptr_l) {
     _ALC_UTILS_DEBUG_ENABLED = 0;
     _ALC_RX_TRACE_ENABLED = 0;
 
+    //jjustman-2020-04-23 - TLV parsing metrics enable inline ALP parsing
+    __ATSC3_SL_TLV_USE_INLINE_ALP_PARSER_CALL__ = 1;
+
     if(!lls_slt_monitor) {
         lls_slt_monitor = lls_slt_monitor_create();
         //wire up a lls event for SLS table
