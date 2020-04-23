@@ -37,7 +37,7 @@ atsc3_sl_tlv_payload_t* atsc3_sl_tlv_payload_parse_from_block_t_with_metrics(blo
 
     //our TLV header must be at least 188 bytes to parse
     if(buf_end - buf_start < 188) {
-    	__SL_TLV_DEMOD_TRACE("atsc3_sl_tlv_payload_parse_from_block_t: remaining payload length is less than TLV 188 bytes: %ld", (buf_end - buf_start));
+    	__SL_TLV_DEMOD_WARN("atsc3_sl_tlv_payload_parse_from_block_t: remaining payload length is less than TLV 188 bytes: %ld", (buf_end - buf_start));
     	free(atsc3_sl_tlv_payload);
     	return NULL;
     }
@@ -301,6 +301,9 @@ void atsc3_sl_tlv_payload_free(atsc3_sl_tlv_payload_t** atsc3_sl_tlv_payload_p) 
         atsc3_sl_tlv_payload_t* atsc3_sl_tlv_payload = *atsc3_sl_tlv_payload_p;
         if(atsc3_sl_tlv_payload) {
             block_Destroy(&atsc3_sl_tlv_payload->alp_payload);
+            if(atsc3_sl_tlv_payload->atsc3_alp_packet) {
+                atsc3_alp_packet_free(&atsc3_sl_tlv_payload->atsc3_alp_packet);
+            }
             free(atsc3_sl_tlv_payload);
             atsc3_sl_tlv_payload = NULL;
         }
