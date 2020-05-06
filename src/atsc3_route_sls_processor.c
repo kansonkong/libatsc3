@@ -139,7 +139,10 @@ void atsc3_route_sls_process_from_alc_packet_and_file(udp_flow_t* udp_flow, alc_
 				    /* lldb: set set target.max-string-summary-length 10000 */
 				    _ATSC3_ROUTE_SLS_PROCESSOR_DEBUG("writing MBMS object to: %s, payload: %s", mbms_filename, atsc3_mime_multipart_related_payload->payload);
 				    
-				    fwrite(atsc3_mime_multipart_related_payload->payload, atsc3_mime_multipart_related_payload->payload_length, 1, fp_mbms_file);
+				    size_t fwrite_size = fwrite(atsc3_mime_multipart_related_payload->payload, atsc3_mime_multipart_related_payload->payload_length, 1, fp_mbms_file);
+				    if(!fwrite_size) {
+				      _ATSC3_ROUTE_SLS_PROCESSOR_ERROR("fwrite for atsc3_mime_multipart_related_payload, file: %s, is: %d", mbms_filename, fwrite_size);
+				    }
 				    fclose(fp_mbms_file);
 				    fp_mbms_file = NULL;
 				  } else {
@@ -233,8 +236,10 @@ void atsc3_route_sls_patch_mpd_availability_start_time_and_start_number(atsc3_mi
             //replace 2019-10-09T19:03:50Z with now()...
             //        123456789012345678901
             //                 1         2
-            char iso_now_timestamp[_ISO8601_DATE_TIME_LENGTH_ + 1] = { 0 };
-            strftime((char*)&iso_now_timestamp, _ISO8601_DATE_TIME_LENGTH_, "%Y-%m-%dT%H:%M:%SZ", gmtime(&now));
+
+	    //jjustman-2020-05-06 - hack, linux strftime will truncate 1 character short, ignore since we are null padded
+            char iso_now_timestamp[_ISO8601_DATE_TIME_LENGTH_ + 2] = { 0 };
+            strftime((char*)&iso_now_timestamp, _ISO8601_DATE_TIME_LENGTH_+1, "%Y-%m-%dT%H:%M:%SZ", gmtime(&now));
 
             char* to_start_ptr = atsc3_mime_multipart_related_payload->payload + ast_char_pos_end + 1;
             _ATSC3_ROUTE_SLS_PROCESSOR_WARN("atsc3_route_sls_patch_mpd_availability_start_time_and_start_number: patching mpd availabilityStartTime: from %.20s to %s, v: last_video_toi: %d, last_closed_video_toi: %d, a: last_audio_toi: %d, last_closed_audio_toi: %d, stpp: last_text_toi: %d, last_closed_text_toi: %d",
