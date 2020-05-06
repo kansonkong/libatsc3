@@ -72,7 +72,7 @@ ATSC3_VECTOR_BUILDER_METHODS_IMPLEMENTATION(atsc3_route_s_tsid, atsc3_route_s_ts
 
 atsc3_route_s_tsid_t* atsc3_route_s_tsid_parse_from_payload(char* payload, char* content_location) {
 
-	atsc3_route_s_tsid_t* atsc3_route_s_tsid;
+	atsc3_route_s_tsid_t* atsc3_route_s_tsid = NULL;
 
 	block_t* s_tsid_fragment_block = block_Promote(payload);
 	xml_document_t* xml_document = xml_parse_document(s_tsid_fragment_block->p_buffer, s_tsid_fragment_block->i_pos);
