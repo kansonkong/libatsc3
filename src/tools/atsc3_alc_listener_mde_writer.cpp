@@ -127,23 +127,23 @@ void process_packet(u_char *user, const struct pcap_pkthdr *pkthdr, const u_char
 		if(!retval) {
 			//check our alc_packet for a wrap-around TOI value, if it is a monitored TSI, and re-patch the MBMS MPD for updated availabilityStartTime and startNumber with last closed TOI values
 			atsc3_alc_packet_check_monitor_flow_for_toi_wraparound_discontinuity(alc_packet, lls_slt_monitor->lls_sls_alc_monitor);
+#ifdef __MALLOC_DEBUGGING
+mcheck(0);
+#endif
 
 			//keep track of our EXT_FTI and update last_toi as needed for TOI length and manual set of the close_object flag
 			atsc3_alc_persist_route_ext_attributes_per_lls_sls_alc_monitor_essence(alc_packet, lls_slt_monitor->lls_sls_alc_monitor);
+#ifdef __MALLOC_DEBUGGING
+mcheck(0);
+#endif
 
 			//persist to disk, process sls mbms and/or emit ROUTE media_delivery_event complete to the application tier if
 			//the full packet has been recovered (e.g. no missing data units in the forward transmission)
 			atsc3_alc_packet_persist_to_toi_resource_process_sls_mbms_and_emit_callback(&udp_packet->udp_flow, &alc_packet, lls_slt_monitor->lls_sls_alc_monitor);
-
 #ifdef __MALLOC_DEBUGGING
 mcheck(0);
 #endif
-		  atsc3_alc_packet_persist_to_toi_resource_process_sls_mbms_and_emit_callback(
-                    &udp_packet->udp_flow, &alc_packet,
-                    lls_slt_monitor->lls_sls_alc_monitor);
-#ifdef __MALLOC_DEBUGGING
-		 mcheck(0);
-#endif
+
 		} else {
 			__ERROR("Error in ALC decode: %d", retval);
 		}
