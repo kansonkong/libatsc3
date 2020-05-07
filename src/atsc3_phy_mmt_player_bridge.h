@@ -18,6 +18,7 @@ void atsc3_phy_mmt_player_bridge_init(atsc3NdkClient* At3DrvIntf_ptr);
 #include "atsc3_utils.h"
 #include "atsc3_alp_types.h"
 #include "atsc3_lls_types.h"
+#include "atsc3_sl_tlv_demod_type.h"
 
 #include <ftw.h>
 
