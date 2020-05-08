@@ -23,6 +23,8 @@
 #include "../atsc3_alp_parser.h"
 #include "../atsc3_logging_externs.h"
 
+#define PREAMBLE_PACKET_PARSE_AND_LOG true
+#define TIMING_MANAGEMENT_PACKET_PARSE_AND_LOG true
 
 FILE* __DEBUG_LOG_FILE = NULL;
 bool  __DEBUG_LOG_AVAILABLE = true;
@@ -324,19 +326,32 @@ void process_packet(u_char *user, const struct pcap_pkthdr *pkthdr, const u_char
         if(atsc3_stltp_tunnel_packet_processed->atsc3_stltp_preamble_packet_v.count) {
             __INFO("preamble: >>>stltp atsc3_stltp_preamble_packet packet complete: count: %u",  atsc3_stltp_tunnel_packet_processed->atsc3_stltp_preamble_packet_v.count);
             for(int i=0; i < atsc3_stltp_tunnel_packet_processed->atsc3_stltp_preamble_packet_v.count; i++) {
-                atsc3_stltp_preamble_packet_t* atsc3_stltp_preamble_packet = atsc3_stltp_tunnel_packet_processed->atsc3_stltp_preamble_packet_v.data[i];
-                //atsc3_alp_parse_stltp_preamble_packet(atsc3_stltp_preamble_packet);
+
+#ifdef PREAMBLE_PACKET_PARSE_AND_LOG
+			  atsc3_stltp_preamble_packet_t* atsc3_stltp_preamble_packet = atsc3_stltp_tunnel_packet_processed->atsc3_stltp_preamble_packet_v.data[i];
+			  atsc3_preamble_packet_t* atsc3_preamble_packet = atsc3_stltp_parse_preamble_packet(atsc3_stltp_preamble_packet);
+			  if(!atsc3_preamble_packet) {
+				  __WARN("atsc3_preamble_packet is NULL for i: %d", i);
+			  } else {
+				  atsc3_preamble_packet_dump(atsc3_preamble_packet);
+			  }
+#endif					
             }
         }
         
         if(atsc3_stltp_tunnel_packet_processed->atsc3_stltp_timing_management_packet_v.count) {
             __INFO("timing management: >>>stltp atsc3_stltp_timing_management_packet packet complete: count: %u",  atsc3_stltp_tunnel_packet_processed->atsc3_stltp_timing_management_packet_v.count);
             for(int i=0; i < atsc3_stltp_tunnel_packet_processed->atsc3_stltp_timing_management_packet_v.count; i++) {
-                atsc3_stltp_timing_management_packet_t* atsc3_stltp_timing_management_packet = atsc3_stltp_tunnel_packet_processed->atsc3_stltp_timing_management_packet_v.data[i];
-                atsc3_timing_management_packet_t* atsc3_timing_management_packet = atsc3_stltp_parse_timing_management_packet(atsc3_stltp_timing_management_packet);
-                if(!atsc3_timing_management_packet) {
-                    __WARN("atsc3_timing_management_packet is NULL for i: %d", i);
+
+#ifdef TIMING_MANAGEMENT_PACKET_PARSE_AND_LOG
+				atsc3_stltp_timing_management_packet_t* atsc3_stltp_timing_management_packet = atsc3_stltp_tunnel_packet_processed->atsc3_stltp_timing_management_packet_v.data[i];
+				atsc3_timing_management_packet_t* atsc3_timing_management_packet = atsc3_stltp_parse_timing_management_packet(atsc3_stltp_timing_management_packet);
+            	if(!atsc3_timing_management_packet) {
+            		__WARN("atsc3_timing_management_packet is NULL for i: %d", i);
+            	} else {
+                   	 atsc3_timing_management_packet_dump(atsc3_timing_management_packet);
                 }
+#endif
             }
         }
         
