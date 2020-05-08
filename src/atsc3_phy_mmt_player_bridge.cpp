@@ -10,6 +10,7 @@
  * Note: atsc3NdkClient - Android NDK Binding against Lowasys API are not included
  */
 
+#ifndef __JJ_PHY_MMT_PLAYER_BRIDGE_DISABLED
 
 #ifdef __FIXME_REFACTOR_LOWASIS__
 #include "At3DrvIntf.h"
@@ -994,7 +995,7 @@ void atsc3_mmt_mpu_on_sequence_movie_fragment_metadata_present_ndk(uint16_t pack
 }
 
 
-atsc3_link_mapping_table_t* atsc3_phy_mmt_player_bridge_notify_link_mapping_table(atsc3_link_mapping_table_t* atsc3_link_mapping_table_pending) {
+atsc3_link_mapping_table_t* atsc3_phy_jni_bridge_notify_link_mapping_table(atsc3_link_mapping_table_t* atsc3_link_mapping_table_pending) {
     atsc3_link_mapping_table_t* atsc3_link_mapping_table_to_free = NULL;
 
     //no last link mapping table, so take ownership of pending ptr
@@ -1139,3 +1140,4 @@ int atsc3_ndk_cache_temp_folder_purge(char *path)
 }
 
 
+#endif
