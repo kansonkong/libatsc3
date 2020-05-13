@@ -1445,10 +1445,15 @@ void atsc3_alc_packet_check_monitor_flow_for_toi_wraparound_discontinuity(alc_pa
         if((alc_packet->use_start_offset && alc_packet->start_offset == 0) || (alc_packet->use_sbn_esi && alc_packet->esi == 0)) {
             __ALC_UTILS_DEBUG("atsc3_alc_packet_check_monitor_flow_for_toi_wraparound_discontinuity: "
                               "enter with lls_sls_alc_monitor->has_discontiguous_toi_flow: %d, checking against tsi: %d, toi: %d, "
-                              "last_video_toi: %d, last_audio_toi: %d, last_text_toi: %d, "
+                              "last_closed_video_toi: %d, last_closed_audio_toi: %d, last_closed_text_toi: %d, "
+                              "pkt: last_video_toi: %d,pkt: last_audio_toi: %d, pkt: last_text_toi: %d, "
                               "video_tsi: %d, video_toi_init: %d, audio_tsi: %d, audio_toi_init: %d, text_tsi: %d, text_toi_init: %d",
                                 lls_sls_alc_monitor->has_discontiguous_toi_flow,
                                 tsi, toi,
+                                lls_sls_alc_monitor->last_closed_video_toi,
+                                lls_sls_alc_monitor->last_closed_audio_toi,
+                                lls_sls_alc_monitor->last_closed_text_toi,
+
                                 lls_sls_alc_monitor->last_video_toi,
                                 lls_sls_alc_monitor->last_audio_toi,
                                 lls_sls_alc_monitor->last_text_toi,
@@ -1461,13 +1466,13 @@ void atsc3_alc_packet_check_monitor_flow_for_toi_wraparound_discontinuity(alc_pa
         //jjustman-2020-03-11 - TODO: mutex lock this parameter during this check
 
         if(!lls_sls_alc_monitor->has_discontiguous_toi_flow) {
-            if ((tsi == lls_sls_alc_monitor->video_tsi && toi != lls_sls_alc_monitor->video_toi_init && lls_sls_alc_monitor->last_video_toi && lls_sls_alc_monitor->last_video_toi > toi) ||
-                (tsi == lls_sls_alc_monitor->audio_tsi && toi != lls_sls_alc_monitor->audio_toi_init && lls_sls_alc_monitor->last_audio_toi && lls_sls_alc_monitor->last_audio_toi > toi) ||
-                (tsi == lls_sls_alc_monitor->text_tsi  && toi != lls_sls_alc_monitor->text_toi_init  && lls_sls_alc_monitor->last_text_toi  && lls_sls_alc_monitor->last_text_toi > toi)) {
+            if ((tsi == lls_sls_alc_monitor->video_tsi && toi != lls_sls_alc_monitor->video_toi_init && lls_sls_alc_monitor->last_closed_video_toi && lls_sls_alc_monitor->last_closed_video_toi > toi) ||
+                (tsi == lls_sls_alc_monitor->audio_tsi && toi != lls_sls_alc_monitor->audio_toi_init && lls_sls_alc_monitor->last_closed_audio_toi && lls_sls_alc_monitor->last_closed_audio_toi > toi) ||
+                (tsi == lls_sls_alc_monitor->text_tsi  && toi != lls_sls_alc_monitor->text_toi_init  && lls_sls_alc_monitor->last_closed_text_toi  && lls_sls_alc_monitor->last_closed_text_toi > toi)) {
 
                 __ALC_UTILS_INFO("atsc3_alc_packet_check_monitor_flow_for_toi_wraparound_discontinuity: has discontigious re-wrap of TOI flow(s), "
-                                 "tsi: %d, toi: %d, last_video_toi: %d, last_audio_toi: %d, last_text_toi: %d",
-                                 tsi, toi, lls_sls_alc_monitor->last_video_toi, lls_sls_alc_monitor->last_audio_toi, lls_sls_alc_monitor->last_text_toi);
+                                 "tsi: %d, toi: %d, last_closed_video_toi: %d, last_closed_audio_toi: %d, last_closed_text_toi: %d",
+                                 tsi, toi, lls_sls_alc_monitor->last_closed_video_toi, lls_sls_alc_monitor->last_closed_audio_toi, lls_sls_alc_monitor->last_closed_text_toi);
 
                 //force a rebuild of the mpd with updated availabiltyStartTime and relevant startNumber values for each TSI flow/essense
                 //will be checked at the next MBMS emission when the carouseled MPD is written to disk, and patched accordingly in
