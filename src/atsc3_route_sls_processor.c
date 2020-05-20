@@ -362,15 +362,28 @@ void atsc3_route_sls_patch_mpd_availability_start_time_and_start_number(atsc3_mi
 
                     int stpp_start_number_end_pos = stpp_start_number_end  - temp_lower_mpd + 2;
                     char* stpp_start_number_end_ptr = mpd_patched_start_ptr + stpp_start_number_end_pos;
-                    snprintf(new_mpd_payload, mpd_new_payload_max_len, "%s startNumber=\"%d\" %s startNumber=\"%d\" %s startNumber=\"%d\" %s",
+
+                    //jjustman-2020-05-20: todo - STPP placement
+                    if(vcodec_representation_start_pos < acodec_representation_start_pos) {
+                        snprintf(new_mpd_payload, mpd_new_payload_max_len, "%s startNumber=\"%d\" %s startNumber=\"%d\" %s startNumber=\"%d\" %s",
+                             mpd_patched_start_ptr,
+                             (!lls_sls_alc_monitor->has_discontiguous_toi_flow ? lls_sls_alc_monitor->last_closed_video_toi: lls_sls_alc_monitor->last_video_toi),
+                             mpd_patched_video_start_end_ptr,
+                             (!lls_sls_alc_monitor->has_discontiguous_toi_flow ? lls_sls_alc_monitor->last_closed_audio_toi  : lls_sls_alc_monitor->last_audio_toi),
+                             audio_start_number_end_ptr,
+                             (!lls_sls_alc_monitor->has_discontiguous_toi_flow ? lls_sls_alc_monitor->last_closed_text_toi : lls_sls_alc_monitor->last_text_toi),
+                             stpp_start_number_end_ptr
+                             );
+                    } else {
+                        snprintf(new_mpd_payload, mpd_new_payload_max_len, "%s startNumber=\"%d\" %s startNumber=\"%d\" %s startNumber=\"%d\" %s",
                              mpd_patched_start_ptr,
                              (!lls_sls_alc_monitor->has_discontiguous_toi_flow ? lls_sls_alc_monitor->last_closed_audio_toi : lls_sls_alc_monitor->last_audio_toi),
                              mpd_patched_video_start_end_ptr,
                              (!lls_sls_alc_monitor->has_discontiguous_toi_flow ? lls_sls_alc_monitor->last_closed_video_toi : lls_sls_alc_monitor->last_video_toi),
                              audio_start_number_end_ptr,
                              (!lls_sls_alc_monitor->has_discontiguous_toi_flow ? lls_sls_alc_monitor->last_closed_text_toi : lls_sls_alc_monitor->last_text_toi),
-                             stpp_start_number_end_ptr
-                             );
+                             stpp_start_number_end_ptr);
+                    }
                 } else {
                     _ATSC3_ROUTE_SLS_PROCESSOR_INFO("patching without STPP");
                     //if !lls_sls_alc_monitor->has_discontiguous_toi_flow,  use the last_closed video/audio toi, otherwise use the 'current' video/audio toi
@@ -409,6 +422,9 @@ void atsc3_route_sls_patch_mpd_availability_start_time_and_start_number(atsc3_mi
                 }
 
                 _ATSC3_ROUTE_SLS_PROCESSOR_DEBUG("Final MPD is: \n%s", atsc3_mime_multipart_related_payload->payload);
+
+                   //temp debugging
+                   _ATSC3_ROUTE_SLS_PROCESSOR_WARN("Final MPD is: \n%s", atsc3_mime_multipart_related_payload->payload);
 
             } else {
                 _ATSC3_ROUTE_SLS_PROCESSOR_ERROR("unable to patch startNumber values: no closed video/audio toi, v: %d, a: %d", lls_sls_alc_monitor->last_closed_video_toi, lls_sls_alc_monitor->last_closed_audio_toi);
