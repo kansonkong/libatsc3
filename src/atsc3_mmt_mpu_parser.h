@@ -9,14 +9,12 @@
 #define ATSC3_MMT_MPU_PARSER_H_
 
 #include "atsc3_logging_externs.h"
+#include "atsc3_utils.h"
 #include "atsc3_mmtp_parser.h"
 #include "atsc3_mmtp_packet_types.h"
 #include "atsc3_mmt_mpu_sample_format_parser.h"
 
-//packet type=v0/v1 have an upper bound of ~1432
-#define UPPER_BOUND_MPU_FRAGMENT_SIZE 1432
 #define MPU_REASSEMBLE_MAX_BUFFER 8192000
-#define MIN(a,b) (((a)<(b))?(a):(b))
 
 //simple box type parsing for muli and sbg+ateme+enensys extensions
 #define _BOX_MFU_MULI 0x6d756c69
