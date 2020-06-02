@@ -690,9 +690,9 @@ atsc3_stltp_listener_test: listener_tests/atsc3_stltp_listener_test.cpp libatsc3
 atsc3_stltp_alp_listener_test: listener_tests/atsc3_stltp_alp_listener_test.cpp libatsc3.o
 	g++ -g listener_tests/atsc3_stltp_alp_listener_test.cpp libatsc3.o -lpcap -lz -lpthread -o listener_tests/atsc3_stltp_alp_listener_test
 
-# todo: fix naming
-atsc3_stltp_alp_listener_reflector_test: listener_tests/atsc3_stltp_listener_alp_reflector.cpp libatsc3.o
-	g++ -g listener_tests/atsc3_stltp_listener_alp_reflector.cpp libatsc3.o -lpcap -lz -lpthread -o listener_tests/atsc3_stltp_alp_listener_reflector_test
+# jjustman-2020-06-02 - renamed from atsc3_stltp_listener_alp_reflector.cpp to match atsc3_stltp_alp_listener_reflector_test.cpp
+atsc3_stltp_alp_listener_reflector_test: listener_tests/atsc3_stltp_alp_listener_reflector_test.cpp libatsc3.o
+	g++ -g listener_tests/atsc3_stltp_alp_listener_reflector_test.cpp libatsc3.o -lpcap -lz -lpthread -o listener_tests/atsc3_stltp_alp_listener_reflector_test
 
 
 atsc3_mmt_sls_listener_test: listener_tests/atsc3_mmt_sls_listener_test.cpp libatsc3.o
