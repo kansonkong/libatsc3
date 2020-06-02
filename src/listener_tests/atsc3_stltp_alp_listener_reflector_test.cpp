@@ -1,12 +1,14 @@
 /*
- * atsc3_stltp_listener_alp_reflector.c
+ * atsc3_stltp_alp_listener_reflector_test.cpp
  *
  *  Created on: Mar 16, 2019
  *      Author: jjustman
  *
  * stltp listener for atsc a/324
  *
- * */
+ * jjustman: 2020-06-02 - renamed from atsc3_stltp_listener_alp_reflector.cpp to atsc3_stltp_alp_listener_reflector_test.cpp to match makefile build artifact
+ *
+ */
 #include <pcap.h>
 #include <stdio.h>
 #include <stdlib.h>
