@@ -17,10 +17,6 @@
 #include "atsc3_mmt_signalling_message.h"
 #include "atsc3_mmtp_packet_types.h"
 
-#define MIN_MMTP_SIZE 32
-#define MAX_MMTP_SIZE 1514
-
-
 /*
  * MMTP as specified in Clause 9 of ISO/IEC23008-1 [37] shall be used to deliver MPUs. The following constraints shall be applied to MMTP:
    The value of the version field of MMTP packets shall be '01'.
