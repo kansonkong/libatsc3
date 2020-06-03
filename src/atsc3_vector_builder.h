@@ -307,9 +307,10 @@ void atsc3_sls_html_entry_package_free(atsc3_sls_html_entry_package_t** atsc3_sl
 		if(!vector_struct->size || !vector_struct->data) { \
 			/* new alloc */ \
 			vector_struct->data = calloc(ATSC3_VECTOR_BUILDER_METHODS_IMPLEMENTATION_DEFAULT_SIZE, sizeof(PPCAT(vector_struct_name,_t)**)); \
-			vector_struct->data[0] = vector_item;	\
+			(vector_struct->data[0]) = vector_item;	\
 			vector_struct->count = 1;	\
 			vector_struct->size	= ATSC3_VECTOR_BUILDER_METHODS_IMPLEMENTATION_DEFAULT_SIZE;	\
+			printf("doing new alloc for vector_struct: %p, count: %d, size: %d, vector_item: %p", vector_struct, vector_struct->count,   vector_struct->size,  vector_item); \
 		} else if(vector_struct->count < vector_struct->size) {	\
 			/* push to back if we have available space (count < size) */ \
 			vector_struct->data[vector_struct->count++] = vector_item;	\

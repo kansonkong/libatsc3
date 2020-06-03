@@ -222,8 +222,8 @@ void* ncurses_input_run_thread(void* lls_slt_monitor_ptr) {
                 } else if(lls_slt_monitor->lls_sls_alc_monitor) {
                     wprintw(my_window, "ROUTE/DASH: Starting playback for service_id: %u, video_tsi: %u, audio_tsi: %u",
                     		lls_slt_monitor->lls_sls_alc_monitor->atsc3_lls_slt_service->service_id,
-							 atsc3_sls_alc_flow_get_first_tsi(lls_slt_monitor->lls_sls_alc_monitor->atsc3_sls_alc_video_flow_v),
-							 atsc3_sls_alc_flow_get_first_tsi(lls_slt_monitor->lls_sls_alc_monitor->atsc3_sls_alc_audio_flow_v));
+							 atsc3_sls_alc_flow_get_first_tsi(&lls_slt_monitor->lls_sls_alc_monitor->atsc3_sls_alc_video_flow_v),
+							 atsc3_sls_alc_flow_get_first_tsi(&lls_slt_monitor->lls_sls_alc_monitor->atsc3_sls_alc_audio_flow_v));
                     lls_slt_monitor->lls_sls_alc_monitor->lls_sls_monitor_output_buffer_mode.pipe_ffplay_buffer = pipe_create_ffplay_resolve_fps(&lls_slt_monitor->lls_sls_alc_monitor->lls_sls_monitor_output_buffer.video_output_buffer_isobmff);
                     
                     lls_slt_monitor->lls_sls_alc_monitor->lls_sls_monitor_output_buffer_mode.ffplay_output_enabled = true;
@@ -257,14 +257,14 @@ void* ncurses_input_run_thread(void* lls_slt_monitor_ptr) {
                     lls_slt_monitor->lls_sls_alc_monitor->lls_sls_monitor_output_buffer_mode.file_dump_enabled = true;
                      wprintw(my_window, "ROUTE/DASH: Starting dump for service_id: %u, video_tsi: %u, audio_tsi: %u",
                     		 lls_slt_monitor->lls_sls_alc_monitor->atsc3_lls_slt_service->service_id,
-							 atsc3_sls_alc_flow_get_first_tsi(lls_slt_monitor->lls_sls_alc_monitor->atsc3_sls_alc_video_flow_v),
-							 atsc3_sls_alc_flow_get_first_tsi(lls_slt_monitor->lls_sls_alc_monitor->atsc3_sls_alc_audio_flow_v));
+							 atsc3_sls_alc_flow_get_first_tsi(&lls_slt_monitor->lls_sls_alc_monitor->atsc3_sls_alc_video_flow_v),
+							 atsc3_sls_alc_flow_get_first_tsi(&lls_slt_monitor->lls_sls_alc_monitor->atsc3_sls_alc_audio_flow_v));
                 } else {
                     lls_slt_monitor->lls_sls_alc_monitor->lls_sls_monitor_output_buffer_mode.file_dump_enabled = true;
                      wprintw(my_window, "ROUTE/DASH: Ending dump for service_id: %u, video_tsi: %u, audio_tsi: %u",
                     		 lls_slt_monitor->lls_sls_alc_monitor->atsc3_lls_slt_service->service_id,
-							 atsc3_sls_alc_flow_get_first_tsi(lls_slt_monitor->lls_sls_alc_monitor->atsc3_sls_alc_video_flow_v),
-							 atsc3_sls_alc_flow_get_first_tsi(lls_slt_monitor->lls_sls_alc_monitor->atsc3_sls_alc_audio_flow_v));
+							 atsc3_sls_alc_flow_get_first_tsi(&lls_slt_monitor->lls_sls_alc_monitor->atsc3_sls_alc_video_flow_v),
+							 atsc3_sls_alc_flow_get_first_tsi(&lls_slt_monitor->lls_sls_alc_monitor->atsc3_sls_alc_audio_flow_v));
 
                 }
             }
