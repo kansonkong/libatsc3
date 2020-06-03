@@ -298,9 +298,14 @@ atsc3_route_s_tsid_RS_LS_SrcFlow_ContentInfo_MediaInfo_t* atsc3_route_s_tsid_par
 	kvp_collection_t* kvp_collection = kvp_collection_parse(xml_attributes);
 	char* matching_attribute = NULL;
 
-	if((matching_attribute = kvp_collection_get(kvp_collection,  "contentType"))) {
+	if((matching_attribute = kvp_collection_get(kvp_collection, "lang"))) {
+		atsc3_route_s_tsid_RS_LS_SrcFlow_ContentInfo_MediaInfo->lang = matching_attribute;
+	}
+
+	if((matching_attribute = kvp_collection_get(kvp_collection, "contentType"))) {
 		atsc3_route_s_tsid_RS_LS_SrcFlow_ContentInfo_MediaInfo->content_type = matching_attribute;
 	}
+
 	if((matching_attribute = kvp_collection_get(kvp_collection,  "repId"))) {
 		atsc3_route_s_tsid_RS_LS_SrcFlow_ContentInfo_MediaInfo->rep_id = matching_attribute;
 	}

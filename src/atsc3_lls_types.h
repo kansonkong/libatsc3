@@ -787,6 +787,13 @@ A/331 - Section 7:
  */
 
 typedef struct atsc3_sls_alc_flow {
+	//TODO: add char* for rep_id for ROUTE
+	char* 		rep_id;
+	char*		lang;
+
+	//only for NRT payloads
+	char*		fdt_file_content_type;
+
 	uint32_t 	tsi;				//transport stream ID
 
 	uint32_t 	toi_init; 			//init toi fragment (if applicable for RT media)
@@ -811,13 +818,19 @@ typedef atsc3_sls_alc_flow_t atsc3_sls_alc_subtitles_flow_t;
 typedef atsc3_sls_alc_flow_t atsc3_sls_alc_data_flow_t;
 
 //used for RT media fragment delivery (e.g. codepoint=8)
-void atsc3_sls_alc_flow_add_entry_unique_tsi_toi_init(atsc3_sls_alc_flow_v atsc3_sls_alc_flow, uint32_t tsi, uint32_t toi_init);
+atsc3_sls_alc_flow_t* atsc3_sls_alc_flow_add_entry_unique_tsi_toi_init(atsc3_sls_alc_flow_v atsc3_sls_alc_flow, uint32_t tsi, uint32_t toi_init);
 atsc3_sls_alc_flow_t* atsc3_sls_alc_flow_find_entry_tsi_toi_init(atsc3_sls_alc_flow_v atsc3_sls_alc_flow, uint32_t tsi, uint32_t toi_init);
 
-//used for NRT package delivery (e.g. codepoint=1/2/3/4)
-void atsc3_sls_alc_flow_add_entry_unique_tsi_toi_nrt(atsc3_sls_alc_flow_v atsc3_sls_alc_flow, uint32_t tsi, uint32_t toi);
-atsc3_sls_alc_flow_t* atsc3_sls_alc_flow_find_entry_tsi_toi_nrt(atsc3_sls_alc_flow_v atsc3_sls_alc_flow, uint32_t tsi, uint32_t toi);
+void atsc3_sls_alc_flow_set_rep_id_if_null(atsc3_sls_alc_flow_t* atsc3_sls_alc_flow, char* rep_id);
+void atsc3_sls_alc_flow_set_lang_if_null(atsc3_sls_alc_flow_t* atsc3_sls_alc_flow, char* lang);
 
+//used for NRT package delivery (e.g. codepoint=1/2/3/4)
+atsc3_sls_alc_flow_t* atsc3_sls_alc_flow_add_entry_unique_tsi_toi_nrt(atsc3_sls_alc_flow_v atsc3_sls_alc_flow, uint32_t tsi, uint32_t toi);
+atsc3_sls_alc_flow_t* atsc3_sls_alc_flow_find_entry_tsi_toi_nrt(atsc3_sls_alc_flow_v atsc3_sls_alc_flow, uint32_t tsi, uint32_t toi);
+void atsc3_sls_alc_flow_nrt_set_fdt_file_content_type_if_null(atsc3_sls_alc_flow_t* atsc3_sls_alc_flow, char* fdt_file_content_type);
+
+uint32_t atsc3_sls_alc_flow_get_first_tsi(atsc3_sls_alc_flow_v atsc3_sls_alc_flow);
+uint32_t atsc3_sls_alc_flow_get_first_toi_init(atsc3_sls_alc_flow_v atsc3_sls_alc_flow);
 
 typedef struct lls_sls_alc_monitor {
 	atsc3_lls_slt_service_t* 	atsc3_lls_slt_service;
@@ -842,7 +855,6 @@ typedef struct lls_sls_alc_monitor {
     atsc3_sls_alc_flow_v atsc3_sls_alc_video_flow_v;
     atsc3_sls_alc_flow_v atsc3_sls_alc_subtitles_flow_v;
     atsc3_sls_alc_flow_v atsc3_sls_alc_data_flow_v;
-
 	
 	//method callback handlers
     atsc3_lls_sls_alc_on_object_close_flag_s_tsid_content_location_f						atsc3_lls_sls_alc_on_object_close_flag_s_tsid_content_location;
@@ -866,11 +878,6 @@ typedef struct lls_sls_alc_monitor {
     lls_sls_monitor_output_buffer_t 		lls_sls_monitor_output_buffer;
     lls_sls_monitor_output_buffer_mode_t 	lls_sls_monitor_output_buffer_mode;
 } lls_sls_alc_monitor_t;
-
-ATSC3_VECTOR_BUILDER_METHODS_INTERFACE(lls_sls_alc_monitor, atsc3_sls_alc_audio_flow)
-ATSC3_VECTOR_BUILDER_METHODS_INTERFACE(lls_sls_alc_monitor, atsc3_sls_alc_video_flow)
-ATSC3_VECTOR_BUILDER_METHODS_INTERFACE(lls_sls_alc_monitor, atsc3_sls_alc_subtitles_flow)
-ATSC3_VECTOR_BUILDER_METHODS_INTERFACE(lls_sls_alc_monitor, atsc3_sls_alc_data_flow)
 
 typedef struct lls_slt_service_id {
 	uint16_t					service_id;
