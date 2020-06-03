@@ -298,6 +298,8 @@ lls_table_t* atsc3_lls_table_create_or_update_from_lls_slt_monitor_dispatcher(ll
                 break;
         }
     }
+
+    return lls_table;
 }
 
 //only return back if lls_table_version has changed
