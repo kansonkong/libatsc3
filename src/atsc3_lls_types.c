@@ -35,6 +35,11 @@ ATSC3_VECTOR_BUILDER_METHODS_IMPLEMENTATION(lls_sls_alc_session_flows, lls_sls_a
 
 ATSC3_VECTOR_BUILDER_METHODS_IMPLEMENTATION(lls_sls_mmt_session_flows, lls_sls_mmt_session);
 
+//jjustman-2020-06-02 - adding support for multiple alc tsi flows
+ATSC3_VECTOR_BUILDER_METHODS_IMPLEMENTATION(lls_sls_alc_monitor, atsc3_sls_alc_audio_flow);
+ATSC3_VECTOR_BUILDER_METHODS_IMPLEMENTATION(lls_sls_alc_monitor, atsc3_sls_alc_video_flow);
+ATSC3_VECTOR_BUILDER_METHODS_IMPLEMENTATION(lls_sls_alc_monitor, atsc3_sls_alc_subtitles_flow);
+ATSC3_VECTOR_BUILDER_METHODS_IMPLEMENTATION(lls_sls_alc_monitor, atsc3_sls_alc_data_flow);
 
 //lls_slt_service_id_group_id_cache
 ATSC3_VECTOR_BUILDER_METHODS_IMPLEMENTATION(lls_slt_service_id_group_id_cache, atsc3_lls_slt_service_cache);
@@ -246,6 +251,62 @@ atsc3_lls_slt_service_t* lls_slt_monitor_find_lls_slt_service_id_group_id_cache_
     return NULL;
 }
 
+ATSC3_VECTOR_BUILDER_TYPEDEF_STRUCT_METHODS_IMPLEMENTATION(atsc3_sls_alc_flow);
+ATSC3_VECTOR_BUILDER_TYPEDEF_STRUCT_METHODS_ITEM_FREE(atsc3_sls_alc_flow);
 
+
+
+void atsc3_sls_alc_flow_add_entry_unique_tsi_toi_init(atsc3_sls_alc_flow_v atsc3_sls_alc_flow, uint32_t tsi, uint32_t toi_init) {
+	atsc3_sls_alc_flow_t* matching_atsc3_sls_alc_flow = atsc3_sls_alc_flow_find_entry_tsi_toi_init(atsc3_sls_alc_flow, tsi, toi_init);
+	if(matching_atsc3_sls_alc_flow == NULL) {
+		//create a new entry
+		matching_atsc3_sls_alc_flow = atsc3_sls_alc_flow_new();
+		matching_atsc3_sls_alc_flow->tsi = tsi;
+		matching_atsc3_sls_alc_flow->toi_init = toi_init;
+
+		atsc3_sls_alc_flow_add(&atsc3_sls_alc_flow, matching_atsc3_sls_alc_flow);
+	}
+}
+
+atsc3_sls_alc_flow_t* atsc3_sls_alc_flow_find_entry_tsi_toi_init(atsc3_sls_alc_flow_v atsc3_sls_alc_flow, uint32_t tsi, uint32_t toi_init) {
+	atsc3_sls_alc_flow_t* matching_atsc3_sls_alc_flow = NULL;
+	atsc3_sls_alc_flow_t* to_check_atsc3_sls_alc_flow = NULL;
+
+	for(int i=0; i < atsc3_sls_alc_flow.count && !matching_atsc3_sls_alc_flow; i++) {
+		to_check_atsc3_sls_alc_flow = atsc3_sls_alc_flow.data[i];
+		if(to_check_atsc3_sls_alc_flow->tsi == tsi && to_check_atsc3_sls_alc_flow->toi_init == toi_init) {
+			matching_atsc3_sls_alc_flow = to_check_atsc3_sls_alc_flow;
+		}
+	}
+
+	return matching_atsc3_sls_alc_flow;
+}
+
+
+
+void atsc3_sls_alc_flow_add_entry_unique_tsi_toi_nrt(atsc3_sls_alc_flow_v atsc3_sls_alc_flow, uint32_t tsi, uint32_t toi) {
+	atsc3_sls_alc_flow_t* matching_atsc3_sls_alc_flow_nrt = atsc3_sls_alc_flow_find_entry_tsi_toi_nrt(atsc3_sls_alc_flow, tsi, toi);
+	if(matching_atsc3_sls_alc_flow_nrt == NULL) {
+		//create a new entry
+		matching_atsc3_sls_alc_flow_nrt = atsc3_sls_alc_flow_new();
+		matching_atsc3_sls_alc_flow_nrt->tsi = tsi;
+		matching_atsc3_sls_alc_flow_nrt->toi = toi;
+		atsc3_sls_alc_flow_add(&atsc3_sls_alc_flow, matching_atsc3_sls_alc_flow_nrt);
+	}
+}
+
+atsc3_sls_alc_flow_t* atsc3_sls_alc_flow_find_entry_tsi_toi_nrt(atsc3_sls_alc_flow_v atsc3_sls_alc_flow, uint32_t tsi, uint32_t toi) {
+	atsc3_sls_alc_flow_t* matching_atsc3_sls_alc_flow_nrt = NULL;
+	atsc3_sls_alc_flow_t* to_check_atsc3_sls_alc_flow_nrt = NULL;
+
+	for(int i=0; i < atsc3_sls_alc_flow.count && !matching_atsc3_sls_alc_flow_nrt; i++) {
+		to_check_atsc3_sls_alc_flow_nrt = atsc3_sls_alc_flow.data[i];
+		if(to_check_atsc3_sls_alc_flow_nrt->tsi == tsi && to_check_atsc3_sls_alc_flow_nrt->toi == toi) {
+			matching_atsc3_sls_alc_flow_nrt = to_check_atsc3_sls_alc_flow_nrt;
+		}
+	}
+
+	return matching_atsc3_sls_alc_flow_nrt;
+}
 
 

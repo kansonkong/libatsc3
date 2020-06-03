@@ -428,6 +428,19 @@ cleanup_last_packet_and_return:
     return atsc3_stltp_tunnel_packet_current;
 }
 
+/*
+ jjustman-2020-06-02: TODO, enforce IP and PORT requirements as defined in A/324:2018
+ 
+
+ 
+ The collection of packet(s) representing a single Baseband Packet is referred to hereafter as the Baseband Packetizer Packet Set (BPPS).
+	The resultant packet Stream shall have IP destination address 239.0.51.48 and IP destination ports 30000 through 30063,
+	corresponding to the PLPs numbered from 0 through 63, respectively.
+ 
+ The resultant Stream of Preamble Payload packets shall have destination address 239.0.51.48 and destination port 30064.
+ The resultant stream of TMP() packets shall have IP destination address 239.0.51.48 and destination port 30065.
+ */
+
 bool atsc3_stltp_tunnel_packet_extract_fragment_encapsulated_payload(atsc3_stltp_tunnel_packet_t* atsc3_stltp_tunnel_packet_current)  {
 
     uint32_t pre_extract_container_size = 0;
@@ -714,9 +727,20 @@ atsc3_stltp_preamble_packet_t* atsc3_stltp_preamble_packet_extract(atsc3_stltp_t
 
 /*
  
- The payload data for each Timing and Management Stream RTP/UDP/IP packet shall be a fragment of the TMP() data structure described in Table 8.3. To provide validation that the TMP() structure is delivered correctly over the STL, a 16-bit cyclic redundancy check is provided as part of the TMP() data. The resultant stream of TMP() packets shall have IP destination address 239.0.51.48 and destination port 30065
+ The payload data for each Timing and Management Stream RTP/UDP/IP packet shall be a fragment of the TMP() data structure described in Table 8.3.
+ To provide validation that the TMP() structure is delivered correctly over the STL, a 16-bit cyclic redundancy check is provided as part of the TMP() data.
  
- The RTP header fields of the TMP Packet Set shall be as described below, configured with the marker (M) bit of the packet containing the beginning of a TMP() data structure set to one ‘1’. The marker (M) bits of remaining packets shall be set to zero ‘0’. This allows the transmission system on the consumer end of the STL to reconstruct the TMP() data structure after any ordering correction takes place. The timestamps of the packets of a given TMP Packet Set shall have the same values. The timestamp values are derived from a subset of the Bootstrap_Timing_Data, providing a mechanism to uniquely associate each of the TMP packets with a specific Physical Layer frame.
+ The resultant stream of TMP() packets shall have IP destination address 239.0.51.48 and destination port 30065
+ 
+ The RTP header fields of the TMP Packet Set shall be as described below, configured with the marker (M) bit of the packet containing the beginning of a
+ TMP() data structure set to one ‘1’. The marker (M) bits of remaining packets shall be set to zero ‘0’.
+ 
+ This allows the transmission system on the consumer end of the STL to reconstruct the TMP() data structure after any ordering correction takes place.
+ 
+ The timestamps of the packets of a given TMP Packet Set shall have the same values.
+ 
+ The timestamp values are derived from a subset of the Bootstrap_Timing_Data, providing a mechanism to uniquely associate each of the TMP packets with a
+ specific Physical Layer frame.
  
  ..
  Timing & Management_Packet (TMP) ()
