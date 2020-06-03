@@ -799,8 +799,8 @@ typedef struct atsc3_sls_alc_flow {
 	uint32_t 	toi_init; 			//init toi fragment (if applicable for RT media)
 	uint32_t 	toi_init_length;	//init toi fragement length (if applicable for RT media)
 
-	uint32_t	toi;				//current toi fragment OR nrt (if known)
-	uint32_t 	toi_length;			//current toi fragment OR nrt length (if known)
+	uint32_t	toi;					//current toi fragment OR nrt (if known)
+	uint32_t 	toi_length;				//current toi fragment OR nrt length (if known)
 
 	uint32_t	last_inflight_toi;			//last toi fragment OR nrt (if known)
 	uint32_t 	last_inflight_toi_length;	//last toi fragment OR nrt length (if known)
@@ -818,22 +818,22 @@ typedef atsc3_sls_alc_flow_t atsc3_sls_alc_subtitles_flow_t;
 typedef atsc3_sls_alc_flow_t atsc3_sls_alc_data_flow_t;
 
 //used for RT media fragment delivery (e.g. codepoint=8)
-atsc3_sls_alc_flow_t* atsc3_sls_alc_flow_add_entry_unique_tsi_toi_init(atsc3_sls_alc_flow_v atsc3_sls_alc_flow, uint32_t tsi, uint32_t toi_init);
-atsc3_sls_alc_flow_t* atsc3_sls_alc_flow_find_entry_tsi_toi_init(atsc3_sls_alc_flow_v atsc3_sls_alc_flow, uint32_t tsi, uint32_t toi_init);
+atsc3_sls_alc_flow_t* atsc3_sls_alc_flow_add_entry_unique_tsi_toi_init(atsc3_sls_alc_flow_v* atsc3_sls_alc_flow, uint32_t tsi, uint32_t toi_init);
+atsc3_sls_alc_flow_t* atsc3_sls_alc_flow_find_entry_tsi_toi_init(atsc3_sls_alc_flow_v* atsc3_sls_alc_flow, uint32_t tsi, uint32_t toi_init);
 
-atsc3_sls_alc_flow_t* atsc3_sls_alc_flow_find_entry_tsi(atsc3_sls_alc_flow_v atsc3_sls_alc_flow, uint32_t tsi);
+atsc3_sls_alc_flow_t* atsc3_sls_alc_flow_find_entry_tsi(atsc3_sls_alc_flow_v* atsc3_sls_alc_flow, uint32_t tsi);
 
 void atsc3_sls_alc_flow_set_rep_id_if_null(atsc3_sls_alc_flow_t* atsc3_sls_alc_flow, char* rep_id);
 void atsc3_sls_alc_flow_set_lang_if_null(atsc3_sls_alc_flow_t* atsc3_sls_alc_flow, char* lang);
 
 //used for NRT package delivery (e.g. codepoint=1/2/3/4)
-atsc3_sls_alc_flow_t* atsc3_sls_alc_flow_add_entry_unique_tsi_toi_nrt(atsc3_sls_alc_flow_v atsc3_sls_alc_flow, uint32_t tsi, uint32_t toi);
-atsc3_sls_alc_flow_t* atsc3_sls_alc_flow_find_entry_tsi_toi_nrt(atsc3_sls_alc_flow_v atsc3_sls_alc_flow, uint32_t tsi, uint32_t toi);
+atsc3_sls_alc_flow_t* atsc3_sls_alc_flow_add_entry_unique_tsi_toi_nrt(atsc3_sls_alc_flow_v* atsc3_sls_alc_flow, uint32_t tsi, uint32_t toi);
+atsc3_sls_alc_flow_t* atsc3_sls_alc_flow_find_entry_tsi_toi_nrt(atsc3_sls_alc_flow_v* atsc3_sls_alc_flow, uint32_t tsi, uint32_t toi);
 void atsc3_sls_alc_flow_nrt_set_fdt_file_content_type_if_null(atsc3_sls_alc_flow_t* atsc3_sls_alc_flow, char* fdt_file_content_type);
 
-uint32_t atsc3_sls_alc_flow_get_first_tsi(atsc3_sls_alc_flow_v atsc3_sls_alc_flow);
-uint32_t atsc3_sls_alc_flow_get_last_closed_toi(atsc3_sls_alc_flow_v atsc3_sls_alc_flow);
-uint32_t atsc3_sls_alc_flow_get_first_toi_init(atsc3_sls_alc_flow_v atsc3_sls_alc_flow);
+uint32_t atsc3_sls_alc_flow_get_first_tsi(atsc3_sls_alc_flow_v* atsc3_sls_alc_flow);
+uint32_t atsc3_sls_alc_flow_get_last_closed_toi(atsc3_sls_alc_flow_v* atsc3_sls_alc_flow);
+uint32_t atsc3_sls_alc_flow_get_first_toi_init(atsc3_sls_alc_flow_v* atsc3_sls_alc_flow);
 
 typedef struct lls_sls_alc_monitor {
 	atsc3_lls_slt_service_t* 	atsc3_lls_slt_service;
