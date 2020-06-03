@@ -90,7 +90,10 @@ typedef struct atsc3_route_s_tsid_RS_LS_SrcFlow_ContentInfo_MediaInfo {
 	char* 	content_type;
 	char*	rep_id;
 	bool 	startup;
-	//content_rating...
+
+	//TODO: jjustman-2020-06-02: content_rating object, e.g.
+	//<ContentRating value="1,'TV-14 D-L',{0 'TV-14'}{1 'D'}{2 'L'}"/>
+
 
 } atsc3_route_s_tsid_RS_LS_SrcFlow_ContentInfo_MediaInfo_t;
 

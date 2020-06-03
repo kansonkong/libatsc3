@@ -285,11 +285,102 @@ void lls_sls_alc_update_s_tsid_RS_dIpAddr_dPort_if_missing(udp_flow_t* udp_flow,
     }
 }
 
+/*
+ 
+ jjustman-2020-06-02 - TODO: add in support for more than one tsi per content type flow
+ 
+ E.G:
+	 
+
+	 <?xml version="1.0" encoding="UTF-8"?>
+	 <S-TSID @xmlns="tag:atsc.org,2016:XMLSchemas/ATSC3/Delivery/S-TSID/1.0/" xmlns:afdt="tag:atsc.org,2016:XMLSchemas/ATSC3/Delivery/ATSC-FDT/1.0/" xmlns:fdt="urn:ietf:params:xml:ns:fdt">
+		 <RS sIpAddr="172.16.200.1">
+			 <LS tsi="100">
+				 <SrcFlow rt="true">
+					 <EFDT>
+						 <FDT-Instance Expires="4294967295" afdt:efdtVersion="1" afdt:maxTransportSize="6200000" afdt:fileTemplate="video-$TOI$.mp4v">
+							 <fdt:File TOI="1" Content-Location="video-init.mp4v"/>
+						 </FDT-Instance>
+					 </EFDT>
+					 <ContentInfo>
+						 <MediaInfo contentType="video" repId="Video1_1">
+							 <ContentRating value="1,'TV-14 D-L',{0 'TV-14'}{1 'D'}{2 'L'}"/>
+						 </MediaInfo>
+					 </ContentInfo>
+					 <Payload codePoint="8" formatId="1" frag="0" order="true"/>
+				 </SrcFlow>
+			 </LS>
+			 <LS tsi="200">
+				 <SrcFlow rt="true">
+					 <EFDT>
+						 <FDT-Instance Expires="4294967295" afdt:efdtVersion="1" afdt:maxTransportSize="96000" afdt:fileTemplate="a0-a02_2-$TOI$.m4s">
+							 <fdt:File TOI="1" Content-Location="a0-a02_2-init.mp4"/>
+						 </FDT-Instance>
+					 </EFDT>
+					 <ContentInfo>
+						 <MediaInfo contentType="audio" repId="a2_2"/>
+					   </ContentInfo>
+					 <Payload codePoint="8" formatId="1" frag="0" order="true"/>
+				 </SrcFlow>
+			 </LS>
+			 <LS tsi="201">
+				 <SrcFlow rt="true">
+					 <EFDT>
+						 <FDT-Instance Expires="4294967295" afdt:efdtVersion="1" afdt:maxTransportSize="32000" afdt:fileTemplate="a1-a13_3-$TOI$.m4s">
+							 <fdt:File TOI="1" Content-Location="a1-a13_3-init.mp4"/>
+						 </FDT-Instance>
+					 </EFDT>
+					 <ContentInfo>
+						 <MediaInfo contentType="audio" repId="a13_3"/>
+					 </ContentInfo>
+					 <Payload codePoint="8" formatId="1" frag="0" order="true"/>
+				 </SrcFlow>
+			 </LS>
+			 <LS tsi="300">
+				 <SrcFlow rt="true">
+					 <EFDT>
+						 <FDT-Instance Expires="4294967295" afdt:efdtVersion="1" afdt:maxTransportSize="140000" afdt:fileTemplate="d4_4-$TOI$.m4s">
+							 <fdt:File TOI="1" Content-Location="d4_4-init.mp4"/>
+						 </FDT-Instance>
+					 </EFDT>
+					 <ContentInfo>
+						 <MediaInfo contentType="subtitles" repId="d3_3"/>
+					 </ContentInfo>
+					 <Payload codePoint="8" formatId="1" frag="0" order="true"/>
+				 </SrcFlow>
+			 </LS>
+		 </RS>
+	 </S-TSID>
+	 
+jjustman-2020-06-02: TODO: make sure we properly clear out lls_sls_alc_monitor on MBMS TSI=0, TOI change
+
+A/331:2020 Section 7:
+
+   The S-TSID fragment provides component acquisition information associated with one Service.
+   It also provides mapping between DASH Representations found in the MPD and in the TSI corresponding
+   to the component of the Service.
+
+   The S-TSID can provide component acquisition information in the
+   form of a TSI, and for a streaming Service, also the associated DASH Representation identifier
+   carrying DASH Segments associated with the DASH Representation.
+
+   By the TSI value, the receiver collects the audio/video components from the Service and
+   begins buffering DASH Segments then applies the appropriate decoding processes.
+
+
+Example:
+
+	<ContentInfo>
+    	<MediaInfo contentType="audio" repId="a2_2"/>
+    </ContentInfo>
+
+ 
+ */
 
 void lls_sls_alc_update_tsi_toi_from_route_s_tsid(lls_sls_alc_monitor_t* lls_sls_alc_monitor, atsc3_route_s_tsid_t* atsc3_route_s_tsid) {
 
 	if(!lls_sls_alc_monitor || !atsc3_route_s_tsid) {
-		_ATSC3_LLS_ALC_UTILS_ERROR("lls_sls_alc_session: %p, atsc3_route_s_tsid:%p returning!", lls_sls_alc_monitor, atsc3_route_s_tsid);
+		_ATSC3_LLS_ALC_UTILS_ERROR("lls_sls_alc_session: %p, atsc3_route_s_tsid: %p returning!", lls_sls_alc_monitor, atsc3_route_s_tsid);
 		return;
 	}
 
@@ -340,39 +431,38 @@ void lls_sls_alc_update_tsi_toi_from_route_s_tsid(lls_sls_alc_monitor_t* lls_sls
 						if(strncasecmp("audio", src_flow_content_info_content_type, 5) == 0 && !lls_sls_alc_monitor->audio_tsi_manual_override) {
                             if(!lls_sls_alc_monitor->audio_tsi_manual_override)  {
                                 //update our audio tsi and toi accordingly
-                                lls_sls_alc_monitor->audio_toi_init = atsc3_fdt_file->toi;
-                                lls_sls_alc_monitor->audio_tsi = atsc3_route_s_tsid_RS_LS->tsi;
+                            	atsc3_sls_alc_flow_add_entry_unique_tsi_toi_init(lls_sls_alc_monitor->atsc3_sls_alc_audio_flow_v, atsc3_route_s_tsid_RS_LS->tsi, atsc3_fdt_file->toi);
+
                             } else {
                                 _ATSC3_LLS_ALC_UTILS_DEBUG("lls_sls_alc_update_tsi_toi_from_route_s_tsid: not replacing audio tsi/toi_init, as manual override set: %d, %d",
-                                                           lls_sls_alc_monitor->audio_tsi,
-                                                           lls_sls_alc_monitor->audio_toi_init);
+                                                           lls_sls_alc_monitor->audio_tsi_manual_override->tsi,
+                                                           lls_sls_alc_monitor->audio_tsi_manual_override->toi_init);
                             }
 
 						} else if(strncasecmp("video", src_flow_content_info_content_type, 5) == 0) {
                             if (!lls_sls_alc_monitor->video_tsi_manual_override) {
-                                lls_sls_alc_monitor->video_toi_init = atsc3_fdt_file->toi;
-                                lls_sls_alc_monitor->video_tsi = atsc3_route_s_tsid_RS_LS->tsi;
+                            	atsc3_sls_alc_flow_add_entry_unique_tsi_toi_init(lls_sls_alc_monitor->atsc3_sls_alc_video_flow_v, atsc3_route_s_tsid_RS_LS->tsi, atsc3_fdt_file->toi);
                             } else {
                                 _ATSC3_LLS_ALC_UTILS_DEBUG(
                                         "lls_sls_alc_update_tsi_toi_from_route_s_tsid: not replacing video tsi/toi_init, as manual override set: %d, %d",
-                                        lls_sls_alc_monitor->video_tsi,
-                                        lls_sls_alc_monitor->video_toi_init);
+                                        lls_sls_alc_monitor->video_tsi_manual_override->tsi,
+                                        lls_sls_alc_monitor->video_tsi_manual_override->toi_init);
                             }
                         } else if(strncasecmp("text", src_flow_content_info_content_type, 4) == 0 || strncasecmp("subtitles", src_flow_content_info_content_type, 4) == 0) {
                             if (!lls_sls_alc_monitor->text_tsi_manual_override) {
-                                _ATSC3_LLS_ALC_UTILS_INFO("lls_sls_alc_update_tsi_toi_from_route_s_tsid: steting text tsi/toi information to: text_toi_init: %d, text_tsi: %d", atsc3_fdt_file->toi, atsc3_route_s_tsid_RS_LS->tsi);
-
-                                lls_sls_alc_monitor->text_toi_init = atsc3_fdt_file->toi;
-                                lls_sls_alc_monitor->text_tsi = atsc3_route_s_tsid_RS_LS->tsi;
+                                _ATSC3_LLS_ALC_UTILS_INFO("lls_sls_alc_update_tsi_toi_from_route_s_tsid: setting subtitle tsi/toi_init information to: %d, %d", atsc3_route_s_tsid_RS_LS->tsi, atsc3_fdt_file->toi);
+                            	atsc3_sls_alc_flow_add_entry_unique_tsi_toi_init(lls_sls_alc_monitor->atsc3_sls_alc_subtitles_flow_v, atsc3_route_s_tsid_RS_LS->tsi, atsc3_fdt_file->toi);
                             } else {
                                 _ATSC3_LLS_ALC_UTILS_DEBUG(
                                         "lls_sls_alc_update_tsi_toi_from_route_s_tsid: not replacing text tsi/toi_init, as manual override set: %d, %d",
-                                        lls_sls_alc_monitor->text_tsi,
-                                        lls_sls_alc_monitor->text_tsi);
+                                        lls_sls_alc_monitor->text_tsi_manual_override->tsi,
+                                        lls_sls_alc_monitor->text_tsi_manual_override->toi_init);
                             }
 
                         } else {
-							_ATSC3_LLS_ALC_UTILS_ERROR("unknown src_flow_content_info_content_type: %s", src_flow_content_info_content_type);
+                            _ATSC3_LLS_ALC_UTILS_INFO("lls_sls_alc_update_tsi_toi_from_route_s_tsid: unknown src_flow_content_info_content_type: %s, setting data tsi/toi information to: %d, %d", src_flow_content_info_content_type, atsc3_fdt_file->toi, atsc3_route_s_tsid_RS_LS->tsi);
+                        	atsc3_sls_alc_flow_add_entry_unique_tsi_toi_nrt(lls_sls_alc_monitor->atsc3_sls_alc_data_flow_v, atsc3_route_s_tsid_RS_LS->tsi, atsc3_fdt_file->toi);
+
 						}
 
 					} else {
