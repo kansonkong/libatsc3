@@ -279,6 +279,21 @@ atsc3_sls_alc_flow_t* atsc3_sls_alc_flow_find_entry_tsi_toi_init(atsc3_sls_alc_f
 }
 
 
+atsc3_sls_alc_flow_t* atsc3_sls_alc_flow_find_entry_tsi(atsc3_sls_alc_flow_v atsc3_sls_alc_flow, uint32_t tsi) {
+	atsc3_sls_alc_flow_t* matching_atsc3_sls_alc_flow = NULL;
+	atsc3_sls_alc_flow_t* to_check_atsc3_sls_alc_flow = NULL;
+
+	for(int i=0; i < atsc3_sls_alc_flow.count && !matching_atsc3_sls_alc_flow; i++) {
+		to_check_atsc3_sls_alc_flow = atsc3_sls_alc_flow.data[i];
+		if(to_check_atsc3_sls_alc_flow->tsi == tsi) {
+			matching_atsc3_sls_alc_flow = to_check_atsc3_sls_alc_flow;
+		}
+	}
+
+	return matching_atsc3_sls_alc_flow;
+}
+
+
 void atsc3_sls_alc_flow_set_rep_id_if_null(atsc3_sls_alc_flow_t* atsc3_sls_alc_flow, char* rep_id) {
 	if(atsc3_sls_alc_flow && atsc3_sls_alc_flow->rep_id == NULL && rep_id != NULL) {
 		atsc3_sls_alc_flow->rep_id = strndup(rep_id, strlen(rep_id));
@@ -335,6 +350,17 @@ uint32_t atsc3_sls_alc_flow_get_first_tsi(atsc3_sls_alc_flow_v atsc3_sls_alc_flo
 
 	return matching_tsi;
 }
+
+
+uint32_t atsc3_sls_alc_flow_get_last_closed_toi(atsc3_sls_alc_flow_v atsc3_sls_alc_flow) {
+	uint32_t matching_last_closed_toi = 0;
+	if(atsc3_sls_alc_flow.count && atsc3_sls_alc_flow.data[0]) {
+		matching_last_closed_toi = atsc3_sls_alc_flow.data[0]->last_closed_toi;
+	}
+
+	return matching_last_closed_toi;
+}
+
 
 
 uint32_t atsc3_sls_alc_flow_get_first_toi_init(atsc3_sls_alc_flow_v atsc3_sls_alc_flow) {
