@@ -384,8 +384,8 @@ static void route_process_from_alc_packet(udp_flow_t* udp_flow, alc_packet_t **a
 	 * 							 use a sparse array lookup (https://github.com/ned14/nedtries) for resolution to proper transfer_object_length to back-patch close flag
 	 */
 	if((*alc_packet)->use_start_offset && lls_slt_monitor->lls_sls_alc_monitor &&
-				atsc3_sls_alc_flow_get_first_tsi(lls_slt_monitor->lls_sls_alc_monitor->atsc3_sls_alc_video_flow_v) &&
-				atsc3_sls_alc_flow_get_first_tsi(lls_slt_monitor->lls_sls_alc_monitor->atsc3_sls_alc_audio_flow_v)) {
+				atsc3_sls_alc_flow_get_first_tsi(&lls_slt_monitor->lls_sls_alc_monitor->atsc3_sls_alc_video_flow_v) &&
+				atsc3_sls_alc_flow_get_first_tsi(&lls_slt_monitor->lls_sls_alc_monitor->atsc3_sls_alc_audio_flow_v)) {
 
 
 

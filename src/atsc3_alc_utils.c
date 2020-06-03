@@ -370,13 +370,13 @@ char* alc_packet_dump_to_object_get_s_tsid_filename(udp_flow_t* udp_flow, alc_pa
 
                                         atsc3_sls_alc_flow_t* matching_sls_alc_flow = NULL;
 
-                                        if((matching_sls_alc_flow = atsc3_sls_alc_flow_find_entry_tsi(lls_sls_alc_monitor->atsc3_sls_alc_audio_flow_v, alc_packet->def_lct_hdr->tsi))) {
+                                        if((matching_sls_alc_flow = atsc3_sls_alc_flow_find_entry_tsi(&lls_sls_alc_monitor->atsc3_sls_alc_audio_flow_v, alc_packet->def_lct_hdr->tsi))) {
                                         	matching_sls_alc_flow->last_closed_toi = alc_packet->def_lct_hdr->toi;
-                                        } else if((matching_sls_alc_flow = atsc3_sls_alc_flow_find_entry_tsi(lls_sls_alc_monitor->atsc3_sls_alc_video_flow_v, alc_packet->def_lct_hdr->tsi))) {
+                                        } else if((matching_sls_alc_flow = atsc3_sls_alc_flow_find_entry_tsi(&lls_sls_alc_monitor->atsc3_sls_alc_video_flow_v, alc_packet->def_lct_hdr->tsi))) {
                                         	matching_sls_alc_flow->last_closed_toi = alc_packet->def_lct_hdr->toi;
-                                        } else if((matching_sls_alc_flow = atsc3_sls_alc_flow_find_entry_tsi(lls_sls_alc_monitor->atsc3_sls_alc_subtitles_flow_v, alc_packet->def_lct_hdr->tsi))) {
+                                        } else if((matching_sls_alc_flow = atsc3_sls_alc_flow_find_entry_tsi(&lls_sls_alc_monitor->atsc3_sls_alc_subtitles_flow_v, alc_packet->def_lct_hdr->tsi))) {
                                         	matching_sls_alc_flow->last_closed_toi = alc_packet->def_lct_hdr->toi;
-                                        } else if((matching_sls_alc_flow = atsc3_sls_alc_flow_find_entry_tsi(lls_sls_alc_monitor->atsc3_sls_alc_data_flow_v, alc_packet->def_lct_hdr->tsi))) {
+                                        } else if((matching_sls_alc_flow = atsc3_sls_alc_flow_find_entry_tsi(&lls_sls_alc_monitor->atsc3_sls_alc_data_flow_v, alc_packet->def_lct_hdr->tsi))) {
                                         	matching_sls_alc_flow->last_closed_toi = alc_packet->def_lct_hdr->toi;
                                         }
 
@@ -471,13 +471,13 @@ char* alc_packet_dump_to_object_get_s_tsid_filename(udp_flow_t* udp_flow, alc_pa
 
                                                                     atsc3_sls_alc_flow_t* matching_sls_alc_flow = NULL;
 
-																	 if((matching_sls_alc_flow = atsc3_sls_alc_flow_find_entry_tsi(lls_sls_alc_monitor->atsc3_sls_alc_audio_flow_v, alc_packet->def_lct_hdr->tsi))) {
+																	 if((matching_sls_alc_flow = atsc3_sls_alc_flow_find_entry_tsi(&lls_sls_alc_monitor->atsc3_sls_alc_audio_flow_v, alc_packet->def_lct_hdr->tsi))) {
 																		matching_sls_alc_flow->last_closed_toi = alc_packet->def_lct_hdr->toi;
-																	 } else if((matching_sls_alc_flow = atsc3_sls_alc_flow_find_entry_tsi(lls_sls_alc_monitor->atsc3_sls_alc_video_flow_v, alc_packet->def_lct_hdr->tsi))) {
+																	 } else if((matching_sls_alc_flow = atsc3_sls_alc_flow_find_entry_tsi(&lls_sls_alc_monitor->atsc3_sls_alc_video_flow_v, alc_packet->def_lct_hdr->tsi))) {
 																		matching_sls_alc_flow->last_closed_toi = alc_packet->def_lct_hdr->toi;
-																	 } else if((matching_sls_alc_flow = atsc3_sls_alc_flow_find_entry_tsi(lls_sls_alc_monitor->atsc3_sls_alc_subtitles_flow_v, alc_packet->def_lct_hdr->tsi))) {
+																	 } else if((matching_sls_alc_flow = atsc3_sls_alc_flow_find_entry_tsi(&lls_sls_alc_monitor->atsc3_sls_alc_subtitles_flow_v, alc_packet->def_lct_hdr->tsi))) {
 																		matching_sls_alc_flow->last_closed_toi = alc_packet->def_lct_hdr->toi;
-																	 } else if((matching_sls_alc_flow = atsc3_sls_alc_flow_find_entry_tsi(lls_sls_alc_monitor->atsc3_sls_alc_data_flow_v, alc_packet->def_lct_hdr->tsi))) {
+																	 } else if((matching_sls_alc_flow = atsc3_sls_alc_flow_find_entry_tsi(&lls_sls_alc_monitor->atsc3_sls_alc_data_flow_v, alc_packet->def_lct_hdr->tsi))) {
 																		matching_sls_alc_flow->last_closed_toi = alc_packet->def_lct_hdr->toi;
 																	 }
 
@@ -1194,9 +1194,9 @@ void alc_recon_file_buffer_struct_monitor_fragment_with_init_box(udp_flow_t* udp
 	block_t* video_init_payload = NULL;
 
 	//tsi matching for audio and video fragments
-	if(alc_packet->def_lct_hdr->tsi == atsc3_sls_alc_flow_get_first_tsi(lls_sls_alc_monitor->atsc3_sls_alc_audio_flow_v)) {
+	if(alc_packet->def_lct_hdr->tsi == atsc3_sls_alc_flow_get_first_tsi(&lls_sls_alc_monitor->atsc3_sls_alc_audio_flow_v)) {
 		//don't flush out init boxes here..
-		if(alc_packet->def_lct_hdr->toi == atsc3_sls_alc_flow_get_first_toi_init(lls_sls_alc_monitor->atsc3_sls_alc_audio_flow_v)) {
+		if(alc_packet->def_lct_hdr->toi == atsc3_sls_alc_flow_get_first_toi_init(&lls_sls_alc_monitor->atsc3_sls_alc_audio_flow_v)) {
 			__ALC_UTILS_DEBUG("alc_recon_file_buffer_struct_monitor_fragment_with_init_box, got audio init box: tsi: %u, toi: %u, ignoring", alc_packet->def_lct_hdr->tsi, alc_packet->def_lct_hdr->toi);
 			return;
 		}
@@ -1210,8 +1210,8 @@ void alc_recon_file_buffer_struct_monitor_fragment_with_init_box(udp_flow_t* udp
 		}
 	}
 
-	if(alc_packet->def_lct_hdr->tsi == atsc3_sls_alc_flow_get_first_tsi(lls_sls_alc_monitor->atsc3_sls_alc_video_flow_v)) {
-		if(alc_packet->def_lct_hdr->toi == atsc3_sls_alc_flow_get_first_toi_init(lls_sls_alc_monitor->atsc3_sls_alc_video_flow_v)) {
+	if(alc_packet->def_lct_hdr->tsi == atsc3_sls_alc_flow_get_first_tsi(&lls_sls_alc_monitor->atsc3_sls_alc_video_flow_v)) {
+		if(alc_packet->def_lct_hdr->toi == atsc3_sls_alc_flow_get_first_toi_init(&lls_sls_alc_monitor->atsc3_sls_alc_video_flow_v)) {
 			__ALC_UTILS_DEBUG("alc_recon_file_buffer_struct_monitor_fragment_with_init_box, got video init box: tsi: %u, toi: %u, ignoring", alc_packet->def_lct_hdr->tsi, alc_packet->def_lct_hdr->toi);
 			return;
 		}
@@ -1229,15 +1229,15 @@ void alc_recon_file_buffer_struct_monitor_fragment_with_init_box(udp_flow_t* udp
 	//we may have short audio/video packets, so allow our buffer accumulate and then flush independently after we have written our initbox
 	//jjustman-2020-06-02: TODO - fixme
 
-	uint32_t audio_toi = atsc3_sls_alc_flow_get_last_closed_toi(lls_sls_alc_monitor->atsc3_sls_alc_audio_flow_v);
-	uint32_t video_toi = atsc3_sls_alc_flow_get_last_closed_toi(lls_sls_alc_monitor->atsc3_sls_alc_video_flow_v);
+	uint32_t audio_toi = atsc3_sls_alc_flow_get_last_closed_toi(&lls_sls_alc_monitor->atsc3_sls_alc_audio_flow_v);
+	uint32_t video_toi = atsc3_sls_alc_flow_get_last_closed_toi(&lls_sls_alc_monitor->atsc3_sls_alc_video_flow_v);
 
-	audio_fragment_file_name = alc_packet_dump_to_object_get_filename_tsi_toi(udp_flow, atsc3_sls_alc_flow_get_first_tsi(lls_sls_alc_monitor->atsc3_sls_alc_audio_flow_v), atsc3_sls_alc_flow_get_first_toi_init(lls_sls_alc_monitor->atsc3_sls_alc_audio_flow_v));
-	video_fragment_file_name = alc_packet_dump_to_object_get_filename_tsi_toi(udp_flow, atsc3_sls_alc_flow_get_first_tsi(lls_sls_alc_monitor->atsc3_sls_alc_video_flow_v), atsc3_sls_alc_flow_get_first_toi_init(lls_sls_alc_monitor->atsc3_sls_alc_video_flow_v));
+	audio_fragment_file_name = alc_packet_dump_to_object_get_filename_tsi_toi(udp_flow, atsc3_sls_alc_flow_get_first_tsi(&lls_sls_alc_monitor->atsc3_sls_alc_audio_flow_v), atsc3_sls_alc_flow_get_first_toi_init(&lls_sls_alc_monitor->atsc3_sls_alc_audio_flow_v));
+	video_fragment_file_name = alc_packet_dump_to_object_get_filename_tsi_toi(udp_flow, atsc3_sls_alc_flow_get_first_tsi(&lls_sls_alc_monitor->atsc3_sls_alc_video_flow_v), atsc3_sls_alc_flow_get_first_toi_init(&lls_sls_alc_monitor->atsc3_sls_alc_video_flow_v));
 
 	if(!lls_sls_alc_monitor->lls_sls_monitor_output_buffer.has_written_init_box) {
-		audio_init_file_name = alc_packet_dump_to_object_get_filename_tsi_toi(udp_flow, atsc3_sls_alc_flow_get_first_tsi(lls_sls_alc_monitor->atsc3_sls_alc_audio_flow_v), atsc3_sls_alc_flow_get_first_toi_init(lls_sls_alc_monitor->atsc3_sls_alc_audio_flow_v));
-		video_init_file_name = alc_packet_dump_to_object_get_filename_tsi_toi(udp_flow, atsc3_sls_alc_flow_get_first_tsi(lls_sls_alc_monitor->atsc3_sls_alc_video_flow_v), atsc3_sls_alc_flow_get_first_toi_init(lls_sls_alc_monitor->atsc3_sls_alc_video_flow_v));
+		audio_init_file_name = alc_packet_dump_to_object_get_filename_tsi_toi(udp_flow, atsc3_sls_alc_flow_get_first_tsi(&lls_sls_alc_monitor->atsc3_sls_alc_audio_flow_v), atsc3_sls_alc_flow_get_first_toi_init(&lls_sls_alc_monitor->atsc3_sls_alc_audio_flow_v));
+		video_init_file_name = alc_packet_dump_to_object_get_filename_tsi_toi(udp_flow, atsc3_sls_alc_flow_get_first_tsi(&lls_sls_alc_monitor->atsc3_sls_alc_video_flow_v), atsc3_sls_alc_flow_get_first_toi_init(&lls_sls_alc_monitor->atsc3_sls_alc_video_flow_v));
 
 		audio_init_payload = alc_get_payload_from_filename(audio_init_file_name);
 		video_init_payload = alc_get_payload_from_filename(video_init_file_name);
@@ -1404,7 +1404,9 @@ void atsc3_alc_persist_route_ext_attributes_per_lls_sls_alc_monitor_essence(alc_
 
         atsc3_sls_alc_flow_t* matching_sls_alc_flow = NULL;
 
-		if((matching_sls_alc_flow = atsc3_sls_alc_flow_find_entry_tsi(lls_sls_alc_monitor->atsc3_sls_alc_audio_flow_v, alc_packet->def_lct_hdr->tsi))) {
+		if((matching_sls_alc_flow = atsc3_sls_alc_flow_find_entry_tsi(&lls_sls_alc_monitor->atsc3_sls_alc_audio_flow_v, alc_packet->def_lct_hdr->tsi))) {
+			__ALC_UTILS_INFO("atsc3_alc_persist_route_ext_attributes_per_lls_sls_alc_monitor_essence, found matching_sls_alc_flow for tsi: %d, toi_init: %d, matching toi: %d, toi: %d",
+					alc_packet->def_lct_hdr->tsi, matching_sls_alc_flow->toi_init, matching_sls_alc_flow->toi, toi);
 			if(matching_sls_alc_flow->toi_init == toi) {
 				if(toi_length) {
 					matching_sls_alc_flow->toi_init_length = toi_length;
@@ -1435,7 +1437,7 @@ void atsc3_alc_persist_route_ext_attributes_per_lls_sls_alc_monitor_essence(alc_
 					__ALC_UTILS_DEBUG("ALC: tsi: %u, toi: %u, setting audio: toi: %u, toi_length: %u", tsi, toi, toi, toi_length);
 				}
 			}
-		} else if((matching_sls_alc_flow = atsc3_sls_alc_flow_find_entry_tsi(lls_sls_alc_monitor->atsc3_sls_alc_video_flow_v, alc_packet->def_lct_hdr->tsi))) {
+		} else if((matching_sls_alc_flow = atsc3_sls_alc_flow_find_entry_tsi(&lls_sls_alc_monitor->atsc3_sls_alc_video_flow_v, alc_packet->def_lct_hdr->tsi))) {
 			if(matching_sls_alc_flow->toi_init == toi) {
 				if(toi_length) {
 					matching_sls_alc_flow->toi_init_length = toi_length;
@@ -1466,7 +1468,7 @@ void atsc3_alc_persist_route_ext_attributes_per_lls_sls_alc_monitor_essence(alc_
 				}
 			}
 
-		} else if((matching_sls_alc_flow = atsc3_sls_alc_flow_find_entry_tsi(lls_sls_alc_monitor->atsc3_sls_alc_subtitles_flow_v, alc_packet->def_lct_hdr->tsi))) {
+		} else if((matching_sls_alc_flow = atsc3_sls_alc_flow_find_entry_tsi(&lls_sls_alc_monitor->atsc3_sls_alc_subtitles_flow_v, alc_packet->def_lct_hdr->tsi))) {
 			if(matching_sls_alc_flow->toi_init == toi) {
 				if(toi_length) {
 					matching_sls_alc_flow->toi_init_length = toi_length;
@@ -1497,7 +1499,7 @@ void atsc3_alc_persist_route_ext_attributes_per_lls_sls_alc_monitor_essence(alc_
 					__ALC_UTILS_DEBUG("ALC: tsi: %u, toi: %u, setting subtitle: toi: %u, toi_length: %u", tsi, toi, toi, toi_length);
 				}
 			}
-		} else if((matching_sls_alc_flow = atsc3_sls_alc_flow_find_entry_tsi(lls_sls_alc_monitor->atsc3_sls_alc_data_flow_v, alc_packet->def_lct_hdr->tsi))) {
+		} else if((matching_sls_alc_flow = atsc3_sls_alc_flow_find_entry_tsi(&lls_sls_alc_monitor->atsc3_sls_alc_data_flow_v, alc_packet->def_lct_hdr->tsi))) {
 			if(matching_sls_alc_flow->toi_init == toi) {
 				if(toi_length) {
 					matching_sls_alc_flow->toi_init_length = toi_length;
@@ -1647,7 +1649,7 @@ void atsc3_alc_packet_check_monitor_flow_for_toi_wraparound_discontinuity(alc_pa
 
         	atsc3_sls_alc_flow_t* matching_sls_alc_flow = NULL;
 
-			if((matching_sls_alc_flow = atsc3_sls_alc_flow_find_entry_tsi(lls_sls_alc_monitor->atsc3_sls_alc_audio_flow_v, alc_packet->def_lct_hdr->tsi))) {
+			if((matching_sls_alc_flow = atsc3_sls_alc_flow_find_entry_tsi(&lls_sls_alc_monitor->atsc3_sls_alc_audio_flow_v, alc_packet->def_lct_hdr->tsi))) {
 				if(matching_sls_alc_flow->last_closed_toi > toi) {
 					lls_sls_alc_monitor->has_discontiguous_toi_flow = true;
 					if (lls_sls_alc_monitor->last_mpd_payload) {
@@ -1658,7 +1660,7 @@ void atsc3_alc_packet_check_monitor_flow_for_toi_wraparound_discontinuity(alc_pa
 	                                 tsi, toi, matching_sls_alc_flow->last_closed_toi);
 
 				}
-			} else if((matching_sls_alc_flow = atsc3_sls_alc_flow_find_entry_tsi(lls_sls_alc_monitor->atsc3_sls_alc_video_flow_v, alc_packet->def_lct_hdr->tsi))) {
+			} else if((matching_sls_alc_flow = atsc3_sls_alc_flow_find_entry_tsi(&lls_sls_alc_monitor->atsc3_sls_alc_video_flow_v, alc_packet->def_lct_hdr->tsi))) {
 
 				if(matching_sls_alc_flow->last_closed_toi > toi) {
 					lls_sls_alc_monitor->has_discontiguous_toi_flow = true;
@@ -1671,7 +1673,7 @@ void atsc3_alc_packet_check_monitor_flow_for_toi_wraparound_discontinuity(alc_pa
 	                                 tsi, toi, matching_sls_alc_flow->last_closed_toi);
 
 				}
-			} else if((matching_sls_alc_flow = atsc3_sls_alc_flow_find_entry_tsi(lls_sls_alc_monitor->atsc3_sls_alc_subtitles_flow_v, alc_packet->def_lct_hdr->tsi))) {
+			} else if((matching_sls_alc_flow = atsc3_sls_alc_flow_find_entry_tsi(&lls_sls_alc_monitor->atsc3_sls_alc_subtitles_flow_v, alc_packet->def_lct_hdr->tsi))) {
 				if(matching_sls_alc_flow->last_closed_toi > toi) {
 					lls_sls_alc_monitor->has_discontiguous_toi_flow = true;
 
@@ -1687,7 +1689,7 @@ void atsc3_alc_packet_check_monitor_flow_for_toi_wraparound_discontinuity(alc_pa
 
 //jjustman-2020-06-02: don't process data re-wrap for MPD re-patch
 
-//			} else if((matching_sls_alc_flow = atsc3_sls_alc_flow_find_entry_tsi(lls_sls_alc_monitor->atsc3_sls_alc_audio_flow_v, alc_packet->def_lct_hdr->tsi))) {
+//			} else if((matching_sls_alc_flow = atsc3_sls_alc_flow_find_entry_tsi(&lls_sls_alc_monitor->atsc3_sls_alc_audio_flow_v, alc_packet->def_lct_hdr->tsi))) {
 //				if(matching_sls_alc_flow->last_closed_toi > toi) {
 //	                __ALC_UTILS_INFO("atsc3_alc_packet_check_monitor_flow_for_toi_wraparound_discontinuity: has discontigious re-wrap of TOI flow(s), "
 //	                                 "tsi: %d, toi: %d, audio->last_closed_toi: %d",
