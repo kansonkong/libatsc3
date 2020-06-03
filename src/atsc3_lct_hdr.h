@@ -156,68 +156,26 @@ typedef struct atsc3_def_lct_hdr {
      Depending on the type of the payload, additional payload header(s) may be added to prefix the payload data.
      
      Table A.3.6 Defined Values of Codepoint Field of LCT Header
-     Codepoint value (CP)
-     Semantics
+	 
+     Codepoint value (CP)   Semantics     							@formatId    				@frag					@order
+	 --------------------	-------------------------------------	------------				------					------
+     0						ATSC Reserved (not used)				-							-						-
+	 1						NRT- File Mode							1 (File Mode)				0 (arbitrary)			true
+     2						NRT – Entity Mode						2 (Entity Mode)				0						true
+     3						NRT – Unsigned Package Mode				3 (Unsigned Package Mode)   0						true
+     4						NRT – Signed Package Mode				4 (Signed Package Mode)		0						true
+     5						New IS, timeline changed    			1 (File Mode)			    0						true
+     6						New IS, timeline continued				1							0						true
+     7						Redundant IS							1							0						true
+     8						Media Segment, File Mode				1							1 (sample)				true
+     9						Media Segment, Entity Mode				2 (Entity Mode)				1						true
+     10 – 127				ATSC Reserved
+	 128 – 255				Attributes of this type of packet are	Per Payload element			Per Payload element		Per Payload element
+							signalled by attributes given in the
+							SrcFlow.Payload element associated
+							with the CodePoint vlaue
      
-     @formatId
-     
-     @frag
-     
-     @order
-     0
-     ATSC Reserved (not used)
-     1
-     NRT- File Mode
-     1 (File Mode)
-     0 (arbitrary)
-     true
-     2
-     NRT – Entity Mode
-     2 (Entity Mode)
-     0
-     true
-     3
-     NRT – Unsigned Package Mode
-     3 (Unsigned Package Mode)
-     0
-     true
-     4
-     NRT – Signed Package Mode
-     4 (Signed Package Mode)
-     0
-     true
-     5
-     New IS, timeline changed
-     1 (File Mode)
-     0
-     true
-     6
-     New IS, timeline continued
-     1
-     0
-     true
-     7
-     Redundant IS
-     1
-     0
-     true
-     8
-     Media Segment, File Mode
-     1
-     1 (sample)
-     true
-     9
-     Media Segment, Entity Mode
-     2 (Entity Mode)
-     1
-     true
-     10 – 127
-     ATSC Reserved
-     128 – 255
-     Attributes of this type of packet are signalled by attributes given in the SrcFlow.Payload element associated with the CodePoint vlaue
-     Per Payload element
-     Per Payload element
-     Per Payload element
+          
      
      Detailed semantics for each of the defined values of the Codepoint (CP) field, which represents the type of delivery object carried in the associated ROUTE packet, shall be as follows:
      CP=1: The delivery object is an NRT file or a byte-range portion of such file delivered in ROUTE

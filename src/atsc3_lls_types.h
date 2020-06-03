@@ -779,40 +779,82 @@ A/331 - Section 7:
              ii) the object has not yet expired; and
              iii) the application has not given up on reception of this object.
 
+
+
+
+
+
  */
+
+typedef struct atsc3_sls_alc_flow {
+	uint32_t 	tsi;				//transport stream ID
+
+	uint32_t 	toi_init; 			//init toi fragment (if applicable for RT media)
+	uint32_t 	toi_init_length;	//init toi fragement length (if applicable for RT media)
+
+	uint32_t	toi;				//current toi fragment OR nrt (if known)
+	uint32_t 	toi_length;			//current toi fragment OR nrt length (if known)
+
+	uint32_t	last_toi;			//last toi fragment OR nrt (if known)
+	uint32_t 	last_toi_length;	//last toi fragment OR nrt length (if known)
+
+	uint32_t	closed_toi;			//last closed toi fragment OR nrt (if known)
+	uint32_t 	closed_toi_length;	//last closed toi fragment OR nrtlength (if known)
+} atsc3_sls_alc_flow_t;
+
+ATSC3_VECTOR_BUILDER_TYPEDEF_STRUCT(atsc3_sls_alc_flow);
+ATSC3_VECTOR_BUILDER_TYPEDEF_STRUCT_METHODS_INTERFACE(atsc3_sls_alc_flow);
+
+typedef atsc3_sls_alc_flow_t atsc3_sls_alc_audio_flow_t;
+typedef atsc3_sls_alc_flow_t atsc3_sls_alc_video_flow_t;
+typedef atsc3_sls_alc_flow_t atsc3_sls_alc_subtitles_flow_t;
+typedef atsc3_sls_alc_flow_t atsc3_sls_alc_data_flow_t;
+
+//used for RT media fragment delivery (e.g. codepoint=8)
+void atsc3_sls_alc_flow_add_entry_unique_tsi_toi_init(atsc3_sls_alc_flow_v atsc3_sls_alc_flow, uint32_t tsi, uint32_t toi_init);
+atsc3_sls_alc_flow_t* atsc3_sls_alc_flow_find_entry_tsi_toi_init(atsc3_sls_alc_flow_v atsc3_sls_alc_flow, uint32_t tsi, uint32_t toi_init);
+
+//used for NRT package delivery (e.g. codepoint=1/2/3/4)
+void atsc3_sls_alc_flow_add_entry_unique_tsi_toi_nrt(atsc3_sls_alc_flow_v atsc3_sls_alc_flow, uint32_t tsi, uint32_t toi);
+atsc3_sls_alc_flow_t* atsc3_sls_alc_flow_find_entry_tsi_toi_nrt(atsc3_sls_alc_flow_v atsc3_sls_alc_flow, uint32_t tsi, uint32_t toi);
+
 
 typedef struct lls_sls_alc_monitor {
 	atsc3_lls_slt_service_t* 	atsc3_lls_slt_service;
     
 	lls_sls_alc_session_t* 		lls_alc_session;
+	
+	atsc3_fdt_instance_t* 					atsc3_fdt_instance;
+    atsc3_sls_metadata_fragments_t* 		atsc3_sls_metadata_fragments;
 
-    uint32_t 					audio_tsi;
-    bool 						audio_tsi_manual_override;
+    uint32_t usbd_tsi;
+	uint32_t stsid_tsi;
+	uint32_t apd_tsi;
+	uint32_t mpd_tsi;
+	uint32_t held_tsi;
+	uint32_t dwd_tsi;
+	
+    bool		has_discontiguous_toi_flow;
+	block_t* 	last_mpd_payload;
+    block_t* 	last_mpd_payload_patched;
 
-    uint32_t 					video_tsi;
-    bool 						video_tsi_manual_override;
+    atsc3_sls_alc_flow_v atsc3_sls_alc_audio_flow_v;
+    atsc3_sls_alc_flow_v atsc3_sls_alc_video_flow_v;
+    atsc3_sls_alc_flow_v atsc3_sls_alc_subtitles_flow_v;
+    atsc3_sls_alc_flow_v atsc3_sls_alc_data_flow_v;
 
-    uint32_t 					text_tsi;
-    bool 						text_tsi_manual_override;
+	
+	//method callback handlers
+    atsc3_lls_sls_alc_on_object_close_flag_s_tsid_content_location_f						atsc3_lls_sls_alc_on_object_close_flag_s_tsid_content_location;
+	atsc3_lls_sls_alc_on_route_mpd_patched_f    											atsc3_lls_sls_alc_on_route_mpd_patched;                             //dispatched in atsc3_route_sls_processor.c
 
-    bool						has_discontiguous_toi_flow;
-
-	/**
-	* jdj-2019-05-29: TODO - use a sparse array lookup (https://github.com/ned14/nedtries) for resolution to proper transfer_object_length to back-patch close flag
-	*/
-	uint32_t last_video_toi;
-	uint32_t last_video_toi_length;
-
-	uint32_t last_audio_toi;
-	uint32_t last_audio_toi_length;
-
-	uint32_t last_text_toi;
-	uint32_t last_text_toi_length;
-
-	uint32_t last_closed_video_toi;
-	uint32_t last_closed_audio_toi;
-    uint32_t last_closed_text_toi;
-
+	//only used in special debugging cases
+	atsc3_sls_alc_flow_t* audio_tsi_manual_override;
+	atsc3_sls_alc_flow_t* video_tsi_manual_override;
+	atsc3_sls_alc_flow_t* text_tsi_manual_override;
+	atsc3_sls_alc_flow_t* data_tsi_manual_override;
+	
+	//only used for ffplay re-constituion for alc flows
     uint32_t last_pending_flushed_audio_toi;
     uint32_t last_pending_flushed_video_toi;
     uint32_t last_pending_flushed_text_toi;
@@ -820,32 +862,15 @@ typedef struct lls_sls_alc_monitor {
     uint32_t last_completed_flushed_audio_toi;
     uint32_t last_completed_flushed_video_toi;
     uint32_t last_completed_flushed_text_toi;
-
-    block_t* last_mpd_payload;
-    block_t* last_mpd_payload_patched;
-
-	uint32_t video_toi_init;
-	uint32_t audio_toi_init;
-	uint32_t text_toi_init;
-
-	uint32_t usbd_tsi;
-	uint32_t stsid_tsi;
-	uint32_t apd_tsi;
-	uint32_t mpd_tsi;
-	uint32_t held_tsi;
-	uint32_t dwd_tsi;
-    
-    lls_sls_monitor_output_buffer_t lls_sls_monitor_output_buffer;
-    lls_sls_monitor_output_buffer_mode_t lls_sls_monitor_output_buffer_mode;
-
-    atsc3_fdt_instance_t* atsc3_fdt_instance;
-    atsc3_sls_metadata_fragments_t* atsc3_sls_metadata_fragments;
-
-    atsc3_lls_sls_alc_on_object_close_flag_s_tsid_content_location_f						atsc3_lls_sls_alc_on_object_close_flag_s_tsid_content_location;
-	atsc3_lls_sls_alc_on_route_mpd_patched_f    											atsc3_lls_sls_alc_on_route_mpd_patched;                             //dispatched in atsc3_route_sls_processor.c
-
+	
+    lls_sls_monitor_output_buffer_t 		lls_sls_monitor_output_buffer;
+    lls_sls_monitor_output_buffer_mode_t 	lls_sls_monitor_output_buffer_mode;
 } lls_sls_alc_monitor_t;
 
+ATSC3_VECTOR_BUILDER_METHODS_INTERFACE(lls_sls_alc_monitor, atsc3_sls_alc_audio_flow)
+ATSC3_VECTOR_BUILDER_METHODS_INTERFACE(lls_sls_alc_monitor, atsc3_sls_alc_video_flow)
+ATSC3_VECTOR_BUILDER_METHODS_INTERFACE(lls_sls_alc_monitor, atsc3_sls_alc_subtitles_flow)
+ATSC3_VECTOR_BUILDER_METHODS_INTERFACE(lls_sls_alc_monitor, atsc3_sls_alc_data_flow)
 
 typedef struct lls_slt_service_id {
 	uint16_t					service_id;

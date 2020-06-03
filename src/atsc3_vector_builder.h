@@ -176,7 +176,8 @@ qsort((void**)lls_sls_alc_session_flows->lls_slt_alc_sessions, lls_sls_alc_sessi
 				vector_struct_name->PPCAT(vector_item_name, _v).data[i] = vector_struct_name->PPCAT(vector_item_name, _v).data[i+1]; \
 			} \
 		} \
-        vector_struct_name->PPCAT(vector_item_name, _v).count--; \
+		vector_struct_name->PPCAT(vector_item_name, _v).data[vector_struct_name->PPCAT(vector_item_name, _v).count-1] = NULL; \
+		vector_struct_name->PPCAT(vector_item_name, _v).count--; \
 		return vector_item_name; \
     } \
 	\
@@ -185,7 +186,8 @@ qsort((void**)lls_sls_alc_session_flows->lls_slt_alc_sessions, lls_sls_alc_sessi
 		if(vector_struct_name->PPCAT(vector_item_name, _v).data) {	\
 			for(int i=0; i < vector_struct_name->PPCAT(vector_item_name, _v).count; i++) { \
 				if(vector_struct_name->PPCAT(vector_item_name, _v).data[i]) { \
-					freesafe(vector_struct_name->PPCAT(vector_item_name, _v).data[i]); \
+					/* jjustman-2020-06-02 - freesafe(vector_struct_name->PPCAT(vector_item_name, _v).data[i]); */ \
+					PPCAT(vector_item_name,_free)(&vector_struct_name->PPCAT(vector_item_name, _v).data[i]); \
 					vector_struct_name->PPCAT(vector_item_name, _v).data[i] = NULL; \
 				} \
 			} \
@@ -254,6 +256,125 @@ void atsc3_sls_html_entry_package_free(atsc3_sls_html_entry_package_t** atsc3_sl
 				vector_item_name = NULL;	\
 			}	\
 			*PPCAT(vector_item_name,_p) = NULL;	\
+		}	\
+	};
+
+/**
+ * jjustman-2020-06-02 - standalone vector support for generic typedef structs
+ *
+ */
+
+
+
+#define ATSC3_VECTOR_BUILDER_TYPEDEF_STRUCT(vector_struct_name) \
+ typedef struct  {\
+    PPCAT(vector_struct_name,_t)** data; \
+    uint32_t count; \
+   	uint32_t size; \
+ } PPCAT(vector_struct_name, _v);
+
+
+#define ATSC3_VECTOR_BUILDER_TYPEDEF_STRUCT_METHODS_INTERFACE(vector_struct_name) \
+	PPCAT(vector_struct_name,_t)* 	PPCAT(vector_struct_name,_new)(); \
+	void 							PPCAT(vector_struct_name,_prealloc)(PPCAT(vector_struct_name,_v)*, uint32_t size); \
+	void 							PPCAT(vector_struct_name,_add)     (PPCAT(vector_struct_name,_v)*, PPCAT(vector_struct_name,_t)*); \
+	PPCAT(vector_struct_name,_t)* 	PPCAT(vector_struct_name,_pop)     (PPCAT(vector_struct_name,_v)*); \
+	void 							PPCAT(vector_struct_name,_clear)   (PPCAT(vector_struct_name,_v)*); \
+	void 							PPCAT(vector_struct_name,_free_v)  (PPCAT(vector_struct_name,_v)*); \
+	void 							PPCAT(vector_struct_name,_free_t)  (PPCAT(vector_struct_name,_t)** PPCAT(vector_struct_name,_p));
+
+
+#define ATSC3_VECTOR_BUILDER_TYPEDEF_STRUCT_METHODS_IMPLEMENTATION(vector_struct_name) \
+	PPCAT(vector_struct_name,_t)* PPCAT(vector_struct_name,_new)() { \
+		PPCAT(vector_struct_name,_t)* vector_struct = calloc(1, sizeof(PPCAT(vector_struct_name,_t))); \
+		return vector_struct; \
+	} \
+	void PPCAT(vector_struct_name,_prealloc)(PPCAT(vector_struct_name,_v)* vector_struct, uint32_t size) { \
+		if(!vector_struct->size || !vector_struct->data) { \
+			/* new alloc */ \
+			vector_struct->data = calloc(size, sizeof(PPCAT(vector_struct_name,_t)**)); \
+			vector_struct->count = 0;	\
+			vector_struct->size	= size;	\
+		} else { \
+			/* realloc */ \
+			vector_struct->size = 	__MAX(size, vector_struct->count); \
+			uint32_t to_resize = sizeof(PPCAT(vector_struct_name,_t)**) * vector_struct->size;	\
+			vector_struct->data = realloc(vector_struct->data, to_resize);	\
+		}	\
+	} \
+	\
+	void PPCAT(vector_struct_name,_add)(PPCAT(vector_struct_name,_v)* vector_struct, PPCAT(vector_struct_name,_t)* vector_item) { \
+		if(!vector_struct->size || !vector_struct->data) { \
+			/* new alloc */ \
+			vector_struct->data = calloc(ATSC3_VECTOR_BUILDER_METHODS_IMPLEMENTATION_DEFAULT_SIZE, sizeof(PPCAT(vector_struct_name,_t)**)); \
+			vector_struct->data[0] = vector_item;	\
+			vector_struct->count = 1;	\
+			vector_struct->size	= ATSC3_VECTOR_BUILDER_METHODS_IMPLEMENTATION_DEFAULT_SIZE;	\
+		} else if(vector_struct->count < vector_struct->size) {	\
+			/* push to back if we have available space (count < size) */ \
+			vector_struct->data[vector_struct->count++] = vector_item;	\
+		} else { \
+			/* realloc */ \
+			vector_struct->size = __MAX(vector_struct->size * 2, \
+										__MAX(vector_struct->count, ATSC3_VECTOR_BUILDER_METHODS_IMPLEMENTATION_DEFAULT_SIZE)); \
+			uint32_t to_resize = sizeof(PPCAT(vector_struct_name,_t)**) * vector_struct->size;	\
+			vector_struct->data = realloc(vector_struct->data, to_resize);	\
+			vector_struct->data[vector_struct->count++] = vector_item;	\
+			\
+		}	\
+	} \
+	PPCAT(vector_struct_name,_t)* PPCAT(vector_struct_name,_pop)(PPCAT(vector_struct_name,_v)* vector_struct) { \
+		if(!vector_struct->count) { return NULL; } \
+		PPCAT(vector_struct_name,_t)* vector_item = vector_struct->data[0]; \
+		for(int i=0; i < vector_struct->count - 1; i++) { \
+			if(vector_struct->data[i+1]) { \
+				vector_struct->data[i] = vector_struct->data[i+1]; \
+			} \
+		} \
+		vector_struct->data[vector_struct->count-1] = NULL; \
+		vector_struct->count--; \
+		return vector_item; \
+    } \
+	\
+	/* de-alloc vector AND _free item instances */ \
+	void PPCAT(vector_struct_name,_clear)(PPCAT(vector_struct_name,_v)* vector_struct) { \
+		if(vector_struct->data) {	\
+			for(int i=0; i < vector_struct->count; i++) { \
+				if(vector_struct->data[i]) { \
+					/* freesafe(vector_struct->data[i]); */ \
+					PPCAT(vector_struct_name,_free_t)(&vector_struct->data[i]); \
+					vector_struct->data[i] = NULL; \
+				} \
+			} \
+			vector_struct->count = 0; \
+			\
+		} \
+	} \
+	void PPCAT(vector_struct_name,_free_v)(PPCAT(vector_struct_name,_v)* vector_struct) { \
+		if(vector_struct->data) {	\
+			for(int i=0; i < vector_struct->count; i++) { \
+				if(vector_struct->data[i]) { \
+					PPCAT(vector_struct_name,_free_t)(&vector_struct->data[i]); \
+				} \
+			} \
+			vector_struct->count = 0; \
+			vector_struct->size  = 0; \
+			free(vector_struct->data); \
+			vector_struct->data = NULL; \
+		} \
+	};
+
+
+
+#define ATSC3_VECTOR_BUILDER_TYPEDEF_STRUCT_METHODS_ITEM_FREE(vector_struct_name) \
+	void PPCAT(vector_struct_name,_free_t)(PPCAT(vector_struct_name,_t)** PPCAT(vector_struct_name,_p)) { \
+		if(PPCAT(vector_struct_name,_p)) {	\
+			PPCAT(vector_struct_name,_t)* vector_item = *PPCAT(vector_struct_name,_p);	\
+			if(vector_item) { \
+				freesafe(vector_item);	\
+				vector_item = NULL;	\
+			}	\
+			*PPCAT(vector_struct_name,_p) = NULL;	\
 		}	\
 	};
 
