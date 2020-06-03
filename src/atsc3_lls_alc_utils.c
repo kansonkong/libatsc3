@@ -431,7 +431,10 @@ void lls_sls_alc_update_tsi_toi_from_route_s_tsid(lls_sls_alc_monitor_t* lls_sls
 						if(strncasecmp("audio", src_flow_content_info_content_type, 5) == 0 && !lls_sls_alc_monitor->audio_tsi_manual_override) {
                             if(!lls_sls_alc_monitor->audio_tsi_manual_override)  {
                                 //update our audio tsi and toi accordingly
-                            	atsc3_sls_alc_flow_add_entry_unique_tsi_toi_init(lls_sls_alc_monitor->atsc3_sls_alc_audio_flow_v, atsc3_route_s_tsid_RS_LS->tsi, atsc3_fdt_file->toi);
+                            	atsc3_sls_alc_flow_t* atsc3_sls_alc_flow = atsc3_sls_alc_flow_add_entry_unique_tsi_toi_init(lls_sls_alc_monitor->atsc3_sls_alc_audio_flow_v, atsc3_route_s_tsid_RS_LS->tsi, atsc3_fdt_file->toi);
+                            	atsc3_sls_alc_flow_set_rep_id_if_null(atsc3_sls_alc_flow, atsc3_route_s_tsid_RS_LS->atsc3_route_s_tsid_RS_LS_SrcFlow->atsc3_route_s_tsid_RS_LS_SrcFlow_ContentInfo->atsc3_route_s_tsid_RS_LS_SrcFlow_ContentInfo_MediaInfo->rep_id);
+                            	atsc3_sls_alc_flow_set_lang_if_null(atsc3_sls_alc_flow, atsc3_route_s_tsid_RS_LS->atsc3_route_s_tsid_RS_LS_SrcFlow->atsc3_route_s_tsid_RS_LS_SrcFlow_ContentInfo->atsc3_route_s_tsid_RS_LS_SrcFlow_ContentInfo_MediaInfo->lang);
+
 
                             } else {
                                 _ATSC3_LLS_ALC_UTILS_DEBUG("lls_sls_alc_update_tsi_toi_from_route_s_tsid: not replacing audio tsi/toi_init, as manual override set: %d, %d",
@@ -441,7 +444,11 @@ void lls_sls_alc_update_tsi_toi_from_route_s_tsid(lls_sls_alc_monitor_t* lls_sls
 
 						} else if(strncasecmp("video", src_flow_content_info_content_type, 5) == 0) {
                             if (!lls_sls_alc_monitor->video_tsi_manual_override) {
-                            	atsc3_sls_alc_flow_add_entry_unique_tsi_toi_init(lls_sls_alc_monitor->atsc3_sls_alc_video_flow_v, atsc3_route_s_tsid_RS_LS->tsi, atsc3_fdt_file->toi);
+                            	atsc3_sls_alc_flow_t* atsc3_sls_alc_flow = atsc3_sls_alc_flow_add_entry_unique_tsi_toi_init(lls_sls_alc_monitor->atsc3_sls_alc_video_flow_v, atsc3_route_s_tsid_RS_LS->tsi, atsc3_fdt_file->toi);
+
+                            	atsc3_sls_alc_flow_set_rep_id_if_null(atsc3_sls_alc_flow, atsc3_route_s_tsid_RS_LS->atsc3_route_s_tsid_RS_LS_SrcFlow->atsc3_route_s_tsid_RS_LS_SrcFlow_ContentInfo->atsc3_route_s_tsid_RS_LS_SrcFlow_ContentInfo_MediaInfo->rep_id);
+                            	atsc3_sls_alc_flow_set_lang_if_null(atsc3_sls_alc_flow, atsc3_route_s_tsid_RS_LS->atsc3_route_s_tsid_RS_LS_SrcFlow->atsc3_route_s_tsid_RS_LS_SrcFlow_ContentInfo->atsc3_route_s_tsid_RS_LS_SrcFlow_ContentInfo_MediaInfo->lang);
+
                             } else {
                                 _ATSC3_LLS_ALC_UTILS_DEBUG(
                                         "lls_sls_alc_update_tsi_toi_from_route_s_tsid: not replacing video tsi/toi_init, as manual override set: %d, %d",
@@ -451,7 +458,11 @@ void lls_sls_alc_update_tsi_toi_from_route_s_tsid(lls_sls_alc_monitor_t* lls_sls
                         } else if(strncasecmp("text", src_flow_content_info_content_type, 4) == 0 || strncasecmp("subtitles", src_flow_content_info_content_type, 4) == 0) {
                             if (!lls_sls_alc_monitor->text_tsi_manual_override) {
                                 _ATSC3_LLS_ALC_UTILS_INFO("lls_sls_alc_update_tsi_toi_from_route_s_tsid: setting subtitle tsi/toi_init information to: %d, %d", atsc3_route_s_tsid_RS_LS->tsi, atsc3_fdt_file->toi);
-                            	atsc3_sls_alc_flow_add_entry_unique_tsi_toi_init(lls_sls_alc_monitor->atsc3_sls_alc_subtitles_flow_v, atsc3_route_s_tsid_RS_LS->tsi, atsc3_fdt_file->toi);
+                                atsc3_sls_alc_flow_t* atsc3_sls_alc_flow = atsc3_sls_alc_flow_add_entry_unique_tsi_toi_init(lls_sls_alc_monitor->atsc3_sls_alc_subtitles_flow_v, atsc3_route_s_tsid_RS_LS->tsi, atsc3_fdt_file->toi);
+
+                            	atsc3_sls_alc_flow_set_rep_id_if_null(atsc3_sls_alc_flow, atsc3_route_s_tsid_RS_LS->atsc3_route_s_tsid_RS_LS_SrcFlow->atsc3_route_s_tsid_RS_LS_SrcFlow_ContentInfo->atsc3_route_s_tsid_RS_LS_SrcFlow_ContentInfo_MediaInfo->rep_id);
+                            	atsc3_sls_alc_flow_set_lang_if_null(atsc3_sls_alc_flow, atsc3_route_s_tsid_RS_LS->atsc3_route_s_tsid_RS_LS_SrcFlow->atsc3_route_s_tsid_RS_LS_SrcFlow_ContentInfo->atsc3_route_s_tsid_RS_LS_SrcFlow_ContentInfo_MediaInfo->lang);
+
                             } else {
                                 _ATSC3_LLS_ALC_UTILS_DEBUG(
                                         "lls_sls_alc_update_tsi_toi_from_route_s_tsid: not replacing text tsi/toi_init, as manual override set: %d, %d",
@@ -460,9 +471,9 @@ void lls_sls_alc_update_tsi_toi_from_route_s_tsid(lls_sls_alc_monitor_t* lls_sls
                             }
 
                         } else {
-                            _ATSC3_LLS_ALC_UTILS_INFO("lls_sls_alc_update_tsi_toi_from_route_s_tsid: unknown src_flow_content_info_content_type: %s, setting data tsi/toi information to: %d, %d", src_flow_content_info_content_type, atsc3_fdt_file->toi, atsc3_route_s_tsid_RS_LS->tsi);
-                        	atsc3_sls_alc_flow_add_entry_unique_tsi_toi_nrt(lls_sls_alc_monitor->atsc3_sls_alc_data_flow_v, atsc3_route_s_tsid_RS_LS->tsi, atsc3_fdt_file->toi);
-
+                            _ATSC3_LLS_ALC_UTILS_INFO("lls_sls_alc_update_tsi_toi_from_route_s_tsid: unknown src_flow_content_info_content_type: %s, using atsc3_fdt_file->content_type: %s, setting data tsi/toi information to: %d, %d", src_flow_content_info_content_type, atsc3_fdt_file->content_type, atsc3_fdt_file->toi, atsc3_route_s_tsid_RS_LS->tsi);
+                            atsc3_sls_alc_flow_t* atsc3_sls_alc_flow_nrt = atsc3_sls_alc_flow_add_entry_unique_tsi_toi_nrt(lls_sls_alc_monitor->atsc3_sls_alc_data_flow_v, atsc3_route_s_tsid_RS_LS->tsi, atsc3_fdt_file->toi);
+                        	atsc3_sls_alc_flow_nrt_set_fdt_file_content_type_if_null(atsc3_sls_alc_flow_nrt, atsc3_fdt_file->content_type);
 						}
 
 					} else {
