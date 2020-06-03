@@ -35,12 +35,6 @@ ATSC3_VECTOR_BUILDER_METHODS_IMPLEMENTATION(lls_sls_alc_session_flows, lls_sls_a
 
 ATSC3_VECTOR_BUILDER_METHODS_IMPLEMENTATION(lls_sls_mmt_session_flows, lls_sls_mmt_session);
 
-//jjustman-2020-06-02 - adding support for multiple alc tsi flows
-ATSC3_VECTOR_BUILDER_METHODS_IMPLEMENTATION(lls_sls_alc_monitor, atsc3_sls_alc_audio_flow);
-ATSC3_VECTOR_BUILDER_METHODS_IMPLEMENTATION(lls_sls_alc_monitor, atsc3_sls_alc_video_flow);
-ATSC3_VECTOR_BUILDER_METHODS_IMPLEMENTATION(lls_sls_alc_monitor, atsc3_sls_alc_subtitles_flow);
-ATSC3_VECTOR_BUILDER_METHODS_IMPLEMENTATION(lls_sls_alc_monitor, atsc3_sls_alc_data_flow);
-
 //lls_slt_service_id_group_id_cache
 ATSC3_VECTOR_BUILDER_METHODS_IMPLEMENTATION(lls_slt_service_id_group_id_cache, atsc3_lls_slt_service_cache);
 
@@ -256,7 +250,7 @@ ATSC3_VECTOR_BUILDER_TYPEDEF_STRUCT_METHODS_ITEM_FREE(atsc3_sls_alc_flow);
 
 
 
-void atsc3_sls_alc_flow_add_entry_unique_tsi_toi_init(atsc3_sls_alc_flow_v atsc3_sls_alc_flow, uint32_t tsi, uint32_t toi_init) {
+atsc3_sls_alc_flow_t* atsc3_sls_alc_flow_add_entry_unique_tsi_toi_init(atsc3_sls_alc_flow_v atsc3_sls_alc_flow, uint32_t tsi, uint32_t toi_init) {
 	atsc3_sls_alc_flow_t* matching_atsc3_sls_alc_flow = atsc3_sls_alc_flow_find_entry_tsi_toi_init(atsc3_sls_alc_flow, tsi, toi_init);
 	if(matching_atsc3_sls_alc_flow == NULL) {
 		//create a new entry
@@ -266,6 +260,8 @@ void atsc3_sls_alc_flow_add_entry_unique_tsi_toi_init(atsc3_sls_alc_flow_v atsc3
 
 		atsc3_sls_alc_flow_add(&atsc3_sls_alc_flow, matching_atsc3_sls_alc_flow);
 	}
+
+	return matching_atsc3_sls_alc_flow;
 }
 
 atsc3_sls_alc_flow_t* atsc3_sls_alc_flow_find_entry_tsi_toi_init(atsc3_sls_alc_flow_v atsc3_sls_alc_flow, uint32_t tsi, uint32_t toi_init) {
@@ -283,8 +279,21 @@ atsc3_sls_alc_flow_t* atsc3_sls_alc_flow_find_entry_tsi_toi_init(atsc3_sls_alc_f
 }
 
 
+void atsc3_sls_alc_flow_set_rep_id_if_null(atsc3_sls_alc_flow_t* atsc3_sls_alc_flow, char* rep_id) {
+	if(atsc3_sls_alc_flow && atsc3_sls_alc_flow->rep_id == NULL && rep_id != NULL) {
+		atsc3_sls_alc_flow->rep_id = strndup(rep_id, strlen(rep_id));
+	}
+}
 
-void atsc3_sls_alc_flow_add_entry_unique_tsi_toi_nrt(atsc3_sls_alc_flow_v atsc3_sls_alc_flow, uint32_t tsi, uint32_t toi) {
+void atsc3_sls_alc_flow_set_lang_if_null(atsc3_sls_alc_flow_t* atsc3_sls_alc_flow, char* lang) {
+	if(atsc3_sls_alc_flow && atsc3_sls_alc_flow->lang == NULL && lang != NULL) {
+		atsc3_sls_alc_flow->lang = strndup(lang, strlen(lang));
+	}
+}
+
+
+
+atsc3_sls_alc_flow_t* atsc3_sls_alc_flow_add_entry_unique_tsi_toi_nrt(atsc3_sls_alc_flow_v atsc3_sls_alc_flow, uint32_t tsi, uint32_t toi) {
 	atsc3_sls_alc_flow_t* matching_atsc3_sls_alc_flow_nrt = atsc3_sls_alc_flow_find_entry_tsi_toi_nrt(atsc3_sls_alc_flow, tsi, toi);
 	if(matching_atsc3_sls_alc_flow_nrt == NULL) {
 		//create a new entry
@@ -293,6 +302,8 @@ void atsc3_sls_alc_flow_add_entry_unique_tsi_toi_nrt(atsc3_sls_alc_flow_v atsc3_
 		matching_atsc3_sls_alc_flow_nrt->toi = toi;
 		atsc3_sls_alc_flow_add(&atsc3_sls_alc_flow, matching_atsc3_sls_alc_flow_nrt);
 	}
+
+	return matching_atsc3_sls_alc_flow_nrt;
 }
 
 atsc3_sls_alc_flow_t* atsc3_sls_alc_flow_find_entry_tsi_toi_nrt(atsc3_sls_alc_flow_v atsc3_sls_alc_flow, uint32_t tsi, uint32_t toi) {
@@ -309,4 +320,28 @@ atsc3_sls_alc_flow_t* atsc3_sls_alc_flow_find_entry_tsi_toi_nrt(atsc3_sls_alc_fl
 	return matching_atsc3_sls_alc_flow_nrt;
 }
 
+void atsc3_sls_alc_flow_nrt_set_fdt_file_content_type_if_null(atsc3_sls_alc_flow_t* matching_atsc3_sls_alc_flow_nrt, char* fdt_file_content_type) {
+	if(matching_atsc3_sls_alc_flow_nrt && matching_atsc3_sls_alc_flow_nrt->fdt_file_content_type == NULL && fdt_file_content_type != NULL) {
+		matching_atsc3_sls_alc_flow_nrt->fdt_file_content_type = strndup(fdt_file_content_type, strlen(fdt_file_content_type));
+	}
+}
 
+
+uint32_t atsc3_sls_alc_flow_get_first_tsi(atsc3_sls_alc_flow_v atsc3_sls_alc_flow) {
+	uint32_t matching_tsi = 0;
+	if(atsc3_sls_alc_flow.count && atsc3_sls_alc_flow.data[0]) {
+		matching_tsi = atsc3_sls_alc_flow.data[0]->tsi;
+	}
+
+	return matching_tsi;
+}
+
+
+uint32_t atsc3_sls_alc_flow_get_first_toi_init(atsc3_sls_alc_flow_v atsc3_sls_alc_flow) {
+	uint32_t matching_toi_init = 0;
+	if(atsc3_sls_alc_flow.count && atsc3_sls_alc_flow.data[0]) {
+		matching_toi_init = atsc3_sls_alc_flow.data[0]->toi_init;
+	}
+
+	return matching_toi_init;
+}

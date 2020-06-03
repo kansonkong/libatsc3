@@ -88,6 +88,7 @@ extern "C" {
  */
 typedef struct atsc3_route_s_tsid_RS_LS_SrcFlow_ContentInfo_MediaInfo {
 	char* 	content_type;
+	char* 	lang; //TODO
 	char*	rep_id;
 	bool 	startup;
 
