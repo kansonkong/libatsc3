@@ -239,7 +239,7 @@ void atsc3_route_sls_patch_mpd_availability_start_time_and_start_number(atsc3_mi
 
     	    //jjustman-2020-05-06 - hack, linux strftime will truncate 1 character short, ignore since we are null padded
             char iso_now_timestamp[_ISO8601_DATE_TIME_LENGTH_ + 2] = { 0 };
-            strftime((char*)&iso_now_timestamp, _ISO8601_DATE_TIME_LENGTH_, "%Y-%m-%dT%H:%M:%SZ", gmtime(&now));
+            strftime((char*)&iso_now_timestamp, _ISO8601_DATE_TIME_LENGTH_ + 1, "%Y-%m-%dT%H:%M:%SZ", gmtime(&now));
 
             char* to_start_ptr = atsc3_mime_multipart_related_payload->payload + ast_char_pos_end + 1;
             _ATSC3_ROUTE_SLS_PROCESSOR_WARN("atsc3_route_sls_patch_mpd_availability_start_time_and_start_number: patching mpd availabilityStartTime: from %.20s to %s, v: last_video_toi: %d, last_closed_video_toi: %d, a: last_audio_toi: %d, last_closed_audio_toi: %d",
