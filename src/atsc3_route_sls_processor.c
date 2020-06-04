@@ -236,7 +236,9 @@ void atsc3_route_sls_patch_mpd_availability_start_time_and_start_number(atsc3_mi
             //replace 2019-10-09T19:03:50Z with now()...
             //        123456789012345678901
             //                 1         2
-            char iso_now_timestamp[_ISO8601_DATE_TIME_LENGTH_ + 1] = { 0 };
+
+    	    //jjustman-2020-05-06 - hack, linux strftime will truncate 1 character short, ignore since we are null padded
+            char iso_now_timestamp[_ISO8601_DATE_TIME_LENGTH_ + 2] = { 0 };
             strftime((char*)&iso_now_timestamp, _ISO8601_DATE_TIME_LENGTH_, "%Y-%m-%dT%H:%M:%SZ", gmtime(&now));
 
             char* to_start_ptr = atsc3_mime_multipart_related_payload->payload + ast_char_pos_end + 1;
