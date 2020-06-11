@@ -85,7 +85,7 @@ void* ncurses_input_run_thread(void* lls_slt_monitor_ptr) {
     ncurses_init();
     lls_slt_monitor_t* lls_slt_monitor = (lls_slt_monitor_t*)lls_slt_monitor_ptr;
     lls_sls_mmt_monitor_t* lls_sls_mmt_monitor = NULL;
-    lls_sls_alc_monitor* lls_sls_alc_monitor = NULL;
+    lls_sls_alc_monitor_t* lls_sls_alc_monitor = NULL;
 
 
     while(1) {
