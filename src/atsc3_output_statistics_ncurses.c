@@ -596,7 +596,7 @@ void lls_dump_instance_table_ncurses(lls_table_t* base_table) {
 		__LLS_DUMP("SLT: Service contains %d entries:", base_table->slt_table.atsc3_lls_slt_service_v.count);
 
 		for(int i=0l; i < base_table->slt_table.atsc3_lls_slt_service_v.count; i++) {
-			atsc3_lls_slt_service* service = base_table->slt_table.atsc3_lls_slt_service_v.data[i];
+			atsc3_lls_slt_service_t* service = base_table->slt_table.atsc3_lls_slt_service_v.data[i];
 			__LLS_DUMP("service_id         : %-5d           global_service_id : %s", service->service_id, service->global_service_id);
 			__LLS_DUMP("major_channel_no   : %-5d           minor_channel_no  : %d", service->major_channel_no, service->minor_channel_no);
 			__LLS_DUMP("service_category   : %1d, %-8s    slt_svc_seq_num   : %d", service->service_category, lls_get_service_category_value(service->service_category), service->slt_svc_seq_num);

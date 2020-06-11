@@ -26,3 +26,6 @@
 # [submodule "wireshark"]
 #	path = wireshark
 #	url = https://github.com/wireshark/wireshark.git
+[submodule "Bear"]
+	path = Bear
+	url = https://github.com/rizsotto/Bear.git
