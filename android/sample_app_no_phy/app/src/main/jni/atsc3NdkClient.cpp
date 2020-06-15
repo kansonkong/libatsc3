@@ -1348,3 +1348,10 @@ Java_org_ngbp_libatsc3_sampleapp_atsc3NdkClient_setRfPhyStatisticsViewVisible(JN
 
     return 0;
 }
+
+
+
+int atsc3NdkClient::ListenPLP1(int plp1) {
+    //apiImpl.ListenPLP1(plp1);
+    return 0;
+}

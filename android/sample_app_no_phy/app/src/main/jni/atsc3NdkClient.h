@@ -86,6 +86,8 @@ public:
 
     int Tune(int freqKHz, int plpId);
     int TuneMultiplePLP(int freqKhz, vector<int> plpIds);
+    int ListenPLP1(int plp1); //by default, we will always listen to PLP0, append additional PLP for listening
+
 
     int Stop();
     int Close();
@@ -126,7 +128,7 @@ public:
 
 
     int RxThread();
-    CJniEnv* Atsc3_Jni_Processing_Thread_Env = NULL;
+    CJniEnv* Atsc3_Jni_Capture_Thread_Env = NULL;
     CJniEnv* Atsc3_Jni_Processing_Thread_Env = NULL;
     CJniEnv* Atsc3_Jni_Status_Thread_Env = NULL;
 
