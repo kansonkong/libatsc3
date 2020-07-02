@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<BundleDescriptionROUTE xmlns="tag:atsc.org,2016:XMLSchemas/ATSC3/Delivery/ROUTEUSD/1.0/">
+    <UserServiceDescription serviceId="5004">
+        <DeliveryMethod>
+            <BroadcastAppService>
+                <BasePattern>a0-a02_2-</BasePattern>
+                <BasePattern>a1-a13_3-</BasePattern>
+                <BasePattern>d4_4-</BasePattern>
+                <BasePattern>video-</BasePattern>
+            </BroadcastAppService>
+        </DeliveryMethod>
+    </UserServiceDescription>
+</BundleDescriptionROUTE>
+
