@@ -1,0 +1,19 @@
+Content-Type:multipart/related;
+ boundary="boundary-content";
+ type=application/mbms-envelope+xml
+
+--boundary-content
+Content-Type:application/mbms-envelope+xml
+Content-Location:envelope.xml
+
+<?xml version="1.0" encoding="UTF-8"?>
+<metadataEnvelope xmlns="urn:3gpp:metadata:2005:MBMS:envelope">
+    <item metadataURI="dynamic/trigger/trigger.json" version="1" contentType="application/json"/>
+</metadataEnvelope>
+
+--boundary-content
+Content-Transfer-Encoding:binary
+Content-Location:dynamic/trigger/trigger.json
+
+{"trigger":{"refresh":3,"trigger-data":{"1":{"type":"horizontalBarAlert","refresh":3,"timer":5,"cycle":true,"enable":true,"barHeight":"40px","data":[]},"default":{"type":"CTA-default","linkApp":"ksnv/index.html"}}},"alert-feed":[]}
+--boundary-content--
