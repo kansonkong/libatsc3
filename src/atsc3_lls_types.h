@@ -15,24 +15,27 @@
 
 #include <sys/types.h>
 
-#include "atsc3_lls_sls_monitor_output_buffer.h"
-#include "atsc3_alc_session.h"
-#include "atsc3_listener_udp.h"
+#ifndef ATSC3_LLS_TYPES_H_
+#define ATSC3_LLS_TYPES_H_
 
-//slight tight coupling...
-#include "atsc3_player_ffplay.h"
 #include "xml.h"
 
 #include "atsc3_aeat_types.h"
-#include "atsc3_lls_context_events.h"
+#include "atsc3_monitor_events_lls.h"
+#include "atsc3_monitor_events_sls.h"
+#include "atsc3_monitor_events_alc.h"
 
+#include "atsc3_alc_session.h"
+#include "atsc3_listener_udp.h"
 
-#ifndef ATSC3_LLS_TYPES_H_
-#define ATSC3_LLS_TYPES_H_
 
 #include "atsc3_fdt.h"
 #include "atsc3_sls_metadata_fragment_types.h"
 
+
+//slight tight coupling...
+#include "atsc3_lls_sls_monitor_output_buffer.h"
+#include "atsc3_player_ffplay.h"
 
 #if defined (__cplusplus)
 extern "C" {
@@ -755,7 +758,7 @@ typedef struct lls_sls_alc_session_flows {
 ATSC3_VECTOR_BUILDER_METHODS_INTERFACE(lls_sls_alc_session_flows, lls_sls_alc_session);
 
 
-
+ 
 /**
  * used to store monitor references of current flows
 
@@ -786,8 +789,39 @@ A/331 - Section 7:
 
  */
 
+typedef struct atsc3_route_object {
+	
+	uint32_t	toi;					//current toi fragment OR nrt (if known)
+	uint32_t 	toi_length;				//current toi fragment OR nrt length (if known)
+	
+	/* A/331/2020 A3.10.2:
+	 The ROUTE receiver allocates a Boolean array RECEIVED[0..T-1] or RECEIVED[0..T’-1], as appropriate, with all entries initialized to false to track
+	 received object symbols.
+	 
+	 The ROUTE receiver continuously acquires packet payloads for the object as long as all of the following conditions are satisfied:
+	 
+		i) there is at least one entry in RECEIVED still set to false;
+		ii) the object has not yet expired; and
+		iii) the application has not given up on reception of this object. More details are provided below.
+	 */
+			
+	uint8_t*	toi_received_source_bytes; //%256 for byte positions
+	uint32_t	expiration;
+	bool		has_given_up;
+
+	
+} atsc3_route_object_t;
+
+void atsc3_route_object_set_toi_and_length(atsc3_route_object_t* atsc3_route_object, uint32_t toi, uint32_t toi_length);
+void atsc3_route_object_mark_received_byte_range(atsc3_route_object_t* atsc3_route_object, uint32_t source_byte_range_start, uint32_t source_byte_range_end);
+bool atsc3_route_object_is_recovered(atsc3_route_object_t* atsc3_route_object);
+
+
+/*
+	atsc3_sls_alc_flow: ROUTE object data pertaining to a TSI (transport stream id)
+ */
+
 typedef struct atsc3_sls_alc_flow {
-	//TODO: add char* for rep_id for ROUTE
 	char* 		rep_id;
 	char*		lang;
 
@@ -807,7 +841,12 @@ typedef struct atsc3_sls_alc_flow {
 
 	uint32_t	last_closed_toi;			//last closed toi fragment OR nrt (if known)
 	uint32_t 	last_closed_toi_length;	//last closed toi fragment OR nrtlength (if known)
+	
+	ATSC3_VECTOR_BUILDER_STRUCT(atsc3_route_object);
+											
 } atsc3_sls_alc_flow_t;
+
+ATSC3_VECTOR_BUILDER_METHODS_INTERFACE(atsc3_sls_alc_flow, atsc3_route_object);
 
 ATSC3_VECTOR_BUILDER_TYPEDEF_STRUCT(atsc3_sls_alc_flow);
 ATSC3_VECTOR_BUILDER_TYPEDEF_STRUCT_METHODS_INTERFACE(atsc3_sls_alc_flow);
@@ -835,6 +874,7 @@ uint32_t atsc3_sls_alc_flow_get_first_tsi(atsc3_sls_alc_flow_v* atsc3_sls_alc_fl
 uint32_t atsc3_sls_alc_flow_get_last_closed_toi(atsc3_sls_alc_flow_v* atsc3_sls_alc_flow);
 uint32_t atsc3_sls_alc_flow_get_first_toi_init(atsc3_sls_alc_flow_v* atsc3_sls_alc_flow);
 
+
 typedef struct lls_sls_alc_monitor {
 	atsc3_lls_slt_service_t* 	atsc3_lls_slt_service;
     
@@ -860,10 +900,30 @@ typedef struct lls_sls_alc_monitor {
     atsc3_sls_alc_flow_v atsc3_sls_alc_data_flow_v;
 	
 	//method callback handlers
-    atsc3_lls_sls_alc_on_object_close_flag_s_tsid_content_location_f						atsc3_lls_sls_alc_on_object_close_flag_s_tsid_content_location;
-	atsc3_lls_sls_alc_on_route_mpd_patched_f    											atsc3_lls_sls_alc_on_route_mpd_patched;                             //dispatched in atsc3_route_sls_processor.c
+    atsc3_alc_on_object_close_flag_s_tsid_content_location_f	atsc3_lls_sls_alc_on_object_close_flag_s_tsid_content_location;
+	atsc3_alc_on_route_mpd_patched_f    						atsc3_lls_sls_alc_on_route_mpd_patched;                             //dispatched in atsc3_route_sls_processor.c
 
-	//only used in special debugging cases
+	//this should be in the sls_monitor...
+	atsc3_sls_on_held_trigger_received_f						atsc3_sls_on_held_trigger_received_callback;
+
+    //jjustman-2020-07-01 #WI - todo: dispatch HELD block_t* payload to application callback
+
+	//<?xml version="1.0" encoding="UTF-8"?>
+    //<HELD xmlns="tag:atsc.org,2016:XMLSchemas/ATSC3/AppSignaling/HELD/1.0/" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+    //<HTMLEntryPackage appContextId="tag:sinclairplatform.com,2020:KSNV:2089" appRendering="false" bcastEntryPackageUrl="App.pkg" bcastEntryPageUrl="index.html" coupledServices="5004"/>
+    //</HELD>
+
+    //jjustman-2020-07-01 1569: dispatch async event notification that package extraction has completed
+    //codePoint==3 || codePoint == 4
+    // filesystem path that .pkg was extracted to bcastEntryPackageUrl/
+    // appContextIdList (scope)
+    // list<string> objects ~
+
+    //A/344 - ICR - when you receieve a packageExtraction complete with appContextIdList, and then within ~5s receive a HELD emission
+    //                  then you can launch the <bcastEntryPackageUrl, bcastEntryPageUrl>
+
+
+    //only used in special debugging cases
 	atsc3_sls_alc_flow_t* audio_tsi_manual_override;
 	atsc3_sls_alc_flow_t* video_tsi_manual_override;
 	atsc3_sls_alc_flow_t* text_tsi_manual_override;

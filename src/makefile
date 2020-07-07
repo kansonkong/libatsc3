@@ -1,6 +1,6 @@
 # jjustman - updated - 2019-10-05
 # 
-# MIT "compatable" library is built as libatsc3.o (e.g. non$(CFLAGS) $(DEBUG) pl distribution)
+# MIT "compatable" library is built as libatsc3.o (e.g. non-gpl distribution)
 #
 # GPL "compatable" gpl binaries are only built for the toosl output linkages, as it will contain linking steps againt Bento4 for ISOBMFF box management
 #	e.g. bento4_gpl.o and atsc3_isobmff_tools_gpl.o (with -D__ENABLE_GPL_BENTO4__)
@@ -20,7 +20,7 @@
 # /usr/local/include/stdlib.h:134:25: warning: pointer is missing a nullability type specifier (_Nonnull, _Nullable, or _Null_unspecified) [-Wnullability-completeness]
 # double   atof(const char *);
 
-CFLAGS=-Wno-nullability-completeness
+CFLAGS=-Wno-nullability-completeness -Wno-expansion-to-defined -Wno-builtin-requires-header
 DEBUG=-g
 
 all: 	intermediate_lls \
@@ -216,7 +216,18 @@ atsc3_mime_multipart_related_parser.o: atsc3_mime_multipart_related_parser.h ats
 atsc3_lls.o: atsc3_utils.h atsc3_lls.h atsc3_lls.c
 	cc $(CFLAGS) $(DEBUG)  -c atsc3_lls.c
 
-atsc3_lls_types.o: atsc3_lls_types.h atsc3_lls_types.c
+atsc3_lls_types.o: atsc3_lls_types.h atsc3_lls_types.c \
+		xml.h \
+		atsc3_aeat_types.h \
+		atsc3_monitor_events_lls.h \
+		atsc3_monitor_events_sls.h \
+		atsc3_monitor_events_alc.h \
+		atsc3_alc_session.h \
+		atsc3_listener_udp.h \
+		atsc3_fdt.h \
+		atsc3_sls_metadata_fragment_types.h \
+		atsc3_lls_sls_monitor_output_buffer.h \
+		atsc3_player_ffplay.h 
 	cc $(CFLAGS) $(DEBUG)  -c atsc3_lls_types.c
 
 atsc3_aeat_types.o: atsc3_aeat_types.h atsc3_aeat_types.c
@@ -548,13 +559,15 @@ test/atsc3_lls_SystemTime_test: test/atsc3_lls_SystemTime_test.c libatsc3.o
 test/atsc3_mmt_signalling_message_test: test/atsc3_mmt_signalling_message_test.c
 	cc $(CFLAGS) $(DEBUG)  test/atsc3_mmt_signalling_message_test.c libatsc3.o -lz  -lm -lpthread -lpcap -o test/atsc3_mmt_signalling_message_test
 
+# jjustman-2020-07-07 - removed 3 -O0 
 test/atsc3_mmt_signalling_packet_test: test/atsc3_mmt_signalling_packet_test.c atsc3_utils.o
-	cc $(CFLAGS) $(DEBUG) 3 -O0 test/atsc3_mmt_signalling_packet_test.c libatsc3.o -lz -lm -lpthread -lpcap -o test/atsc3_mmt_signalling_packet_test
+	cc $(CFLAGS) $(DEBUG) test/atsc3_mmt_signalling_packet_test.c libatsc3.o -lz -lm -lpthread -lpcap -o test/atsc3_mmt_signalling_packet_test
 	echo "valgrind --leak-check=full  ./atsc3_mmt_signalling_packet_test" > test/atsc3_mmt_signalling_packet_test_valgrind
 	chmod +x test/atsc3_mmt_signalling_packet_test_valgrind
 
+# jjustman-2020-07-07 - removed 3 -O0 
 test/atsc3_mmt_mpu_packet_test: test/atsc3_mmt_mpu_packet_test.c atsc3_utils.o
-	cc $(CFLAGS) $(DEBUG) 3 -O0 test/atsc3_mmt_mpu_packet_test.c libatsc3.o -lz -lm -lpthread -lpcap -o test/atsc3_mmt_mpu_packet_test
+	cc $(CFLAGS) $(DEBUG) test/atsc3_mmt_mpu_packet_test.c libatsc3.o -lz -lm -lpthread -lpcap -o test/atsc3_mmt_mpu_packet_test
 	echo "valgrind --leak-check=full  ./atsc3_mmt_mpu_packet_test" > test/atsc3_mmt_mpu_packet_test_valgrind
 	chmod +x test/atsc3_mmt_mpu_packet_test_valgrind
 

@@ -1380,6 +1380,13 @@ cleanup:
  * ***NOTE***: atsc3_alc_packet_check_monitor_flow_for_toi_wraparound_discontinuity MUST BE CALLED BEFORE
  *          atsc3_alc_persist_route_ext_attributes_per_lls_sls_alc_monitor_essence IN FLOW,
  *          OTHERWISE lls_sls_alc_monitor->last_..._toi will be overwritten and the discontinuity WILL NOT BE DETECTED!
+ *
+ * 	NOTE: jjustman-2020-06-23: TODO: also parse A.3.10.2. Basic Delivery Object Recovery
+ 
+	Upon receipt of the first ROUTE packet payload for an object, the ROUTE receiver uses the File@Transfer-Length
+	attribute of the associated Extended FDT Instance, when present, to determine the length T of the object.
+	When the File@Transfer- Length attribute is not present in the Extended FDT Instance, the receiver uses the
+	@maxTransportSize attribute of the associated Extended FDT Instance to determine the maximum length T’ of the object.
  */
 
 
@@ -1400,7 +1407,6 @@ void atsc3_alc_persist_route_ext_attributes_per_lls_sls_alc_monitor_essence(alc_
 
         //track our transfer_len if EXT_FTI is only present on the initial ALC packet
         //jjustman-2020-03-12 - do not persist this data for toi_init fragments
-
 
         atsc3_sls_alc_flow_t* matching_sls_alc_flow = NULL;
 
