@@ -993,8 +993,15 @@ typedef struct lls_slt_monitor {
 
     //jjustman-2019-10-12 - adding lls event callback hooks
 
-	atsc3_lls_on_sls_table_present_f								atsc3_lls_on_sls_table_present;
-
+    //defined in atsc3_monitor_events_lls.h
+	atsc3_lls_on_sls_table_present_f								atsc3_lls_on_sls_table_present_callback;
+	atsc3_lls_on_rrt_table_present_f								atsc3_lls_on_rrt_table_present_callback;
+	atsc3_lls_on_systemtime_table_present_f							atsc3_lls_on_systemtime_table_present_callback;
+	atsc3_lls_on_aeat_table_present_f								atsc3_lls_on_aeat_table_present_callback;
+	atsc3_lls_on_onscreenmessagenotification_table_present_f		atsc3_lls_on_onscreenmessagenotification_table_present_callback;
+	atsc3_lls_on_certificationdata_table_present_f					atsc3_lls_on_certificationdata_table_present_callback;
+	atsc3_lls_on_signedmultitable_table_present_f					atsc3_lls_on_signedmultitable_table_present_callback;
+	atsc3_lls_on_userdefined_table_present_f						atsc3_lls_on_userdefined_table_present_callback;
 
 } lls_slt_monitor_t;
 
