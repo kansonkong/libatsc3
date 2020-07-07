@@ -76,6 +76,9 @@ lls_slt_monitor_t* lls_slt_monitor = NULL;
 void atsc3_lls_sls_alc_on_object_close_flag_s_tsid_content_location_ndk(uint32_t tsi, uint32_t toi, char* content_location);
 void atsc3_lls_sls_alc_on_route_mpd_patched_ndk(uint16_t service_id);
 
+//#1569
+void atsc3_sls_on_held_trigger_received_callback_impl(uint16_t service_id, block_t* held_payload);
+
 //mmtp/sls flow management
 mmtp_flow_t* mmtp_flow;
 udp_flow_latest_mpu_sequence_number_container_t* udp_flow_latest_mpu_sequence_number_container;
@@ -245,6 +248,9 @@ atsc3_lls_slt_service_t* atsc3_phy_mmt_player_bridge_set_single_monitor_a331_ser
 
         //write up event callback for alc MPD patching
         lls_sls_alc_monitor->atsc3_lls_sls_alc_on_route_mpd_patched = &atsc3_lls_sls_alc_on_route_mpd_patched_ndk;
+
+        //#1569
+        lls_sls_alc_monitor->atsc3_sls_on_held_trigger_received_callback = &atsc3_sls_on_held_trigger_received_callback_impl;
 
 
     } else {
@@ -692,6 +698,11 @@ void atsc3_lls_sls_alc_on_object_close_flag_s_tsid_content_location_ndk(uint32_t
 void atsc3_lls_sls_alc_on_route_mpd_patched_ndk(uint16_t service_id) {
     Atsc3NdkClient_ptr->atsc3_lls_sls_alc_on_route_mpd_patched_jni(service_id);
 }
+
+void atsc3_sls_on_held_trigger_received_callback_impl(uint16_t service_id, block_t* held_payload) {
+	Atsc3NdkClient_ptr->atsc3_sls_on_held_trigger_received_callback_jni(service_id, held_payload);
+}
+
 /*
  *
 note for Android MediaCodec:

@@ -930,6 +930,18 @@ void atsc3NdkClient::atsc3_lls_sls_alc_on_route_mpd_patched_jni(uint16_t service
 
 }
 
+void atsc3NdkClient::atsc3_sls_on_held_trigger_received_callback_jni(uint16_t service_id, block_t* held_payload) {
+	if (!JReady() || !atsc3_lls_sls_alc_on_route_mpd_patched_ID)
+		return;
+
+	if (!Atsc3_Jni_Processing_Thread_Env) {
+		eprintf("!! err on get jni env\n");
+		return;
+	}
+
+	atsc3_onAlcObjectStatusMessage("HELD: service_id: %d, xml:\n%s", service_id, held_payload->p_buffer);
+}
+
 void atsc3NdkClient::atsc3_onSlsTablePresent(const char *sls_payload_xml) {
     if (!JReady() || !atsc3_onSlsTablePresent_ID) {
         eprintf("err: JReady: %d, atsc3_onSlsTablePresent_ID: %d",  JReady(), atsc3_onSlsTablePresent_ID);
