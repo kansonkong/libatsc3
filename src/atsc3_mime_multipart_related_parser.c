@@ -269,7 +269,7 @@ atsc3_mime_multipart_related_instance_t* atsc3_mime_multipart_related_parser(FIL
 			}
 		}
 
-		char* line_binary;
+		char* line_binary = NULL;
 		size_t line_binary_alloc_len = 0;
 
 		size_t line_binary_len;
@@ -301,14 +301,19 @@ atsc3_mime_multipart_related_instance_t* atsc3_mime_multipart_related_parser(FIL
 					if(!strncmp(atsc3_mime_multipart_related_instance->boundary, &candidate_boundary[2], strlen(atsc3_mime_multipart_related_instance->boundary))) {
 						payload_entry_complete = true;
 
-						//we just need to trim off the last 2 (\r\n) bytes here for the atsc3_mime_multipart_related_payload->payload->p_size
-						atsc3_mime_multipart_related_payload->payload->p_buffer[atsc3_mime_multipart_related_payload->payload->p_size-2] = '\0';
-						atsc3_mime_multipart_related_payload->payload->p_buffer[atsc3_mime_multipart_related_payload->payload->p_size-1] = '\0';
+						//we need at least a \r\n to 'touch' this file
+						if(atsc3_mime_multipart_related_payload->payload->p_size > 1) {
+							//we just need to trim off the last 2 (\r\n) bytes here for the atsc3_mime_multipart_related_payload->payload->p_size
+							atsc3_mime_multipart_related_payload->payload->p_buffer[atsc3_mime_multipart_related_payload->payload->p_size-2] = '\0';
+							atsc3_mime_multipart_related_payload->payload->p_buffer[atsc3_mime_multipart_related_payload->payload->p_size-1] = '\0';
 
-						atsc3_mime_multipart_related_payload->payload->p_size -= 2;
+							atsc3_mime_multipart_related_payload->payload->p_size -= 2;
 
-						atsc3_mime_multipart_related_instance_add_atsc3_mime_multipart_related_payload(atsc3_mime_multipart_related_instance, atsc3_mime_multipart_related_payload);
-						__MIME_PARSER_TRACE("atsc3_mime_multipart_related_parser: line: %u, payload boundary pushing new entry: %s", line_count, atsc3_mime_multipart_related_payload->payload->p_buffer);
+							atsc3_mime_multipart_related_instance_add_atsc3_mime_multipart_related_payload(atsc3_mime_multipart_related_instance, atsc3_mime_multipart_related_payload);
+							__MIME_PARSER_TRACE("atsc3_mime_multipart_related_parser: line: %u, payload boundary pushing new entry: %s", line_count, atsc3_mime_multipart_related_payload->payload->p_buffer);
+						} else {
+							__MIME_PARSER_TRACE("atsc3_mime_multipart_related_parser: closing candidate boundary with no payload: end marker?: line_binary_len: %d", line_binary_len);
+						}
 						//if remaining string length is --, then we are done..
 					} else {
 						__MIME_PARSER_TRACE("atsc3_mime_multipart_related_parser: not a match");

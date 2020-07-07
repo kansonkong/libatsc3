@@ -70,6 +70,8 @@ RFC 5775               ALC Protocol Instantiation             April 2010
 //shortcut hack
 #include "atsc3_isobmff_tools.h"
 
+#include "atsc3_route_package_utils.h"
+
 int _ALC_UTILS_DEBUG_ENABLED=0;
 int _ALC_UTILS_TRACE_ENABLED=0;
 int _ALC_UTILS_IOTRACE_ENABLED=0;
@@ -537,7 +539,51 @@ char* alc_packet_dump_to_object_get_s_tsid_filename(udp_flow_t* udp_flow, alc_pa
 	return content_location;
 }
 
-//todo - build this in memory first...
+
+//jjustman-2020-07-07 - get <LS> element for matching flow and packet
+
+
+atsc3_route_s_tsid_RS_LS_t* atsc3_alc_packet_get_RS_LS_element(udp_flow_t* udp_flow, alc_packet_t* alc_packet, lls_sls_alc_monitor_t* lls_sls_alc_monitor) {
+	if(lls_sls_alc_monitor->atsc3_sls_metadata_fragments && lls_sls_alc_monitor->atsc3_sls_metadata_fragments->atsc3_route_s_tsid && lls_sls_alc_monitor->atsc3_sls_metadata_fragments->atsc3_route_s_tsid->atsc3_route_s_tsid_RS_v.count) {
+		for(int i=0; i < lls_sls_alc_monitor->atsc3_sls_metadata_fragments->atsc3_route_s_tsid->atsc3_route_s_tsid_RS_v.count; i++) {
+ 			atsc3_route_s_tsid_RS_t* atsc3_route_s_tsid_RS = lls_sls_alc_monitor->atsc3_sls_metadata_fragments->atsc3_route_s_tsid->atsc3_route_s_tsid_RS_v.data[i];
+
+ 			if(atsc3_route_s_tsid_RS->dest_ip_addr == udp_flow->dst_ip_addr && atsc3_route_s_tsid_RS->dest_port == udp_flow->dst_port && atsc3_route_s_tsid_RS->atsc3_route_s_tsid_RS_LS_v.count) {
+ 				for(int j=0; j < atsc3_route_s_tsid_RS->atsc3_route_s_tsid_RS_LS_v.count; j++) {
+ 					atsc3_route_s_tsid_RS_LS_t* atsc3_route_s_tsid_RS_LS = atsc3_route_s_tsid_RS->atsc3_route_s_tsid_RS_LS_v.data[j];
+
+ 					if(atsc3_route_s_tsid_RS_LS->tsi == alc_packet->def_lct_hdr->tsi) {
+ 						return atsc3_route_s_tsid_RS_LS;
+ 					}
+ 				}
+ 			}
+ 		}
+	 }
+
+	return NULL;
+}
+
+atsc3_fdt_file_t* atsc3_alc_RS_LS_get_matching_toi_file_instance(atsc3_route_s_tsid_RS_LS_t* atsc3_route_s_tsid_RS_LS, uint32_t search_toi) {
+	if(atsc3_route_s_tsid_RS_LS && atsc3_route_s_tsid_RS_LS->atsc3_route_s_tsid_RS_LS_SrcFlow) {
+		if(atsc3_route_s_tsid_RS_LS->atsc3_route_s_tsid_RS_LS_SrcFlow->atsc3_route_s_tsid_RS_LS_SrcFlow_Payload) {
+			if(atsc3_route_s_tsid_RS_LS->atsc3_route_s_tsid_RS_LS_SrcFlow->atsc3_fdt_instance && atsc3_route_s_tsid_RS_LS->atsc3_route_s_tsid_RS_LS_SrcFlow->atsc3_fdt_instance->atsc3_fdt_file_v.count) {
+				atsc3_fdt_instance_t* atsc3_fdt_instance = atsc3_route_s_tsid_RS_LS->atsc3_route_s_tsid_RS_LS_SrcFlow->atsc3_fdt_instance;
+                for(int k=0; k < atsc3_fdt_instance->atsc3_fdt_file_v.count; k++) {
+                	atsc3_fdt_file_t* atsc3_fdt_file = atsc3_fdt_instance->atsc3_fdt_file_v.data[k];
+                	if(atsc3_fdt_file->toi == search_toi) {
+                		return atsc3_fdt_file;
+                	}
+                }
+			}
+		}
+	}
+
+	return NULL;
+}
+
+ //end jjustman-2020-07-07
+
+
 
 FILE* alc_object_open_or_pre_allocate(char* file_name, alc_packet_t* alc_packet) {
     if( access( file_name, F_OK ) != -1 ) {
@@ -741,6 +787,38 @@ int atsc3_alc_packet_persist_to_toi_resource_process_sls_mbms_and_emit_callback(
                 
                 rename(temporary_filename, new_file_name);
                 __ALC_UTILS_IOTRACE("tsi: %u, toi: %u, moving from to temporary_filename: %s to: %s, is complete: %d", alc_packet->def_lct_hdr->tsi, alc_packet->def_lct_hdr->toi,  temporary_filename, new_file_name, alc_packet->close_object_flag);
+
+
+                //jjustman-2020-07-07 - package extraction - process any requirements for codePoint==3 || codePoint == 4 OR formatId==3 || formatId==4
+                atsc3_route_s_tsid_RS_LS_t* atsc3_route_s_tsid_RS_LS = atsc3_alc_packet_get_RS_LS_element(udp_flow, alc_packet, lls_sls_alc_monitor);
+                if(atsc3_route_s_tsid_RS_LS) {
+                	atsc3_fdt_file_t* atsc3_fdt_file = atsc3_alc_RS_LS_get_matching_toi_file_instance(atsc3_route_s_tsid_RS_LS, alc_packet->def_lct_hdr->toi);
+                	if(atsc3_fdt_file) {
+                        __ALC_UTILS_INFO("object closed: tsi: %u, toi: %u, filename: %s, LCT: codepoint: %d, S-TSID: codepoint: %d, formatId: %d, frag: %d, order: %d",
+                        		alc_packet->def_lct_hdr->tsi,
+								alc_packet->def_lct_hdr->toi,
+								new_file_name,
+								alc_packet->def_lct_hdr->codepoint,
+								atsc3_route_s_tsid_RS_LS->atsc3_route_s_tsid_RS_LS_SrcFlow->atsc3_route_s_tsid_RS_LS_SrcFlow_Payload->codepoint,
+								atsc3_route_s_tsid_RS_LS->atsc3_route_s_tsid_RS_LS_SrcFlow->atsc3_route_s_tsid_RS_LS_SrcFlow_Payload->format_id,
+								atsc3_route_s_tsid_RS_LS->atsc3_route_s_tsid_RS_LS_SrcFlow->atsc3_route_s_tsid_RS_LS_SrcFlow_Payload->frag,
+								atsc3_route_s_tsid_RS_LS->atsc3_route_s_tsid_RS_LS_SrcFlow->atsc3_route_s_tsid_RS_LS_SrcFlow_Payload->order);
+
+                        //perform package extraction for codepoint 3 || 4 or
+                        int lct_codepoint_package_matching = (alc_packet->def_lct_hdr->codepoint == atsc3_route_s_tsid_RS_LS->atsc3_route_s_tsid_RS_LS_SrcFlow->atsc3_route_s_tsid_RS_LS_SrcFlow_Payload->codepoint) &&
+                        								  (atsc3_route_s_tsid_RS_LS->atsc3_route_s_tsid_RS_LS_SrcFlow->atsc3_route_s_tsid_RS_LS_SrcFlow_Payload->codepoint == 3 || atsc3_route_s_tsid_RS_LS->atsc3_route_s_tsid_RS_LS_SrcFlow->atsc3_route_s_tsid_RS_LS_SrcFlow_Payload->codepoint == 4);
+						int stsid_formatid_package_matching = (atsc3_route_s_tsid_RS_LS->atsc3_route_s_tsid_RS_LS_SrcFlow->atsc3_route_s_tsid_RS_LS_SrcFlow_Payload->format_id == 3 || atsc3_route_s_tsid_RS_LS->atsc3_route_s_tsid_RS_LS_SrcFlow->atsc3_route_s_tsid_RS_LS_SrcFlow_Payload->format_id == 4);
+
+						if(lct_codepoint_package_matching || stsid_formatid_package_matching) {
+							__ALC_UTILS_INFO("calling atsc3_route_package_extract_unsigned_payload with package: %s", new_file_name);
+							//perform package extraction into shared appContextIdList path
+							atsc3_route_package_extract_unsigned_payload(new_file_name);
+                        }
+                	}
+                }
+
+
+
 
                 //emit lls alc context callback
                 if(lls_sls_alc_monitor->atsc3_lls_sls_alc_on_object_close_flag_s_tsid_content_location) {
