@@ -1051,7 +1051,7 @@ void atsc3_phy_mmt_player_bridge_init(atsc3NdkClient* atsc3NdkClientSL_ptr_l) {
     if(!lls_slt_monitor) {
         lls_slt_monitor = lls_slt_monitor_create();
         //wire up a lls event for SLS table
-        lls_slt_monitor->atsc3_lls_on_sls_table_present = &atsc3_lls_on_sls_table_present_ndk;
+        lls_slt_monitor->atsc3_lls_on_sls_table_present_callback = &atsc3_lls_on_sls_table_present_ndk;
 
         mmtp_flow = mmtp_flow_new();
         udp_flow_latest_mpu_sequence_number_container = udp_flow_latest_mpu_sequence_number_container_t_init();

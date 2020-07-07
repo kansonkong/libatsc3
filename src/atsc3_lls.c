@@ -285,13 +285,52 @@ lls_table_t* atsc3_lls_table_create_or_update_from_lls_slt_monitor_dispatcher(ll
 
             case SLT:
                 //todo: jjustman-2019-10-12: only re-dispatch for updates?
-
-                if (lls_slt_monitor->atsc3_lls_on_sls_table_present) {
-                    lls_slt_monitor->atsc3_lls_on_sls_table_present(lls_table);
+                if (lls_slt_monitor->atsc3_lls_on_sls_table_present_callback) {
+                    lls_slt_monitor->atsc3_lls_on_sls_table_present_callback(lls_table);
                 }
                 break;
 
-                //todo: jjustman-2019-11-09: dispatch remaining lls table tables
+            case RRT:
+            	 if (lls_slt_monitor->atsc3_lls_on_rrt_table_present_callback) {
+            	     lls_slt_monitor->atsc3_lls_on_rrt_table_present_callback(lls_table);
+            	 }
+            	 break;
+
+            case SystemTime:
+				 if (lls_slt_monitor->atsc3_lls_on_systemtime_table_present_callback) {
+					 lls_slt_monitor->atsc3_lls_on_systemtime_table_present_callback(lls_table);
+				 }
+				 break;
+
+            case AEAT:
+				 if (lls_slt_monitor->atsc3_lls_on_aeat_table_present_callback) {
+					 lls_slt_monitor->atsc3_lls_on_aeat_table_present_callback(lls_table);
+				 }
+				 break;
+
+            case OnscreenMessageNotification:
+				 if (lls_slt_monitor->atsc3_lls_on_onscreenmessagenotification_table_present_callback) {
+					 lls_slt_monitor->atsc3_lls_on_onscreenmessagenotification_table_present_callback(lls_table);
+				 }
+				 break;
+
+            case CertificationData:
+           		 if (lls_slt_monitor->atsc3_lls_on_certificationdata_table_present_callback) {
+					 lls_slt_monitor->atsc3_lls_on_certificationdata_table_present_callback(lls_table);
+				 }
+				 break;
+
+            case SignedMultiTable:
+				 if (lls_slt_monitor->atsc3_lls_on_signedmultitable_table_present_callback) {
+					 lls_slt_monitor->atsc3_lls_on_signedmultitable_table_present_callback(lls_table);
+				 }
+				 break;
+
+            case UserDefined:
+				 if (lls_slt_monitor->atsc3_lls_on_userdefined_table_present_callback) {
+					 lls_slt_monitor->atsc3_lls_on_userdefined_table_present_callback(lls_table);
+				 }
+				 break;
 
             default:
                 //noop
