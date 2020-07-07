@@ -772,6 +772,32 @@ uint64_t block_Read_uint64_ntohul(block_t* src) {
     return 0;
 }
 
+//read from filesyste into block_t
+block_t* block_Read_from_filename(char* file_name) {
+
+	if( access(file_name, F_OK ) == -1 ) {
+		_ATSC3_UTILS_ERROR("block_Read_from_filename: unable to open file: %s", file_name);
+		return NULL;
+	}
+
+	struct stat st;
+	stat(file_name, &st);
+
+	block_t* payload = block_Alloc(st.st_size);
+
+	FILE* fp = fopen(file_name, "r");
+	if(!fp || st.st_size == 0) {
+		_ATSC3_UTILS_ERROR("block_Read_from_filename: size: 0 file: %s", file_name);
+		return NULL;
+	}
+
+	fread(payload->p_buffer, st.st_size, 1, fp);
+	payload->i_pos = st.st_size;
+	fclose(fp);
+
+	return payload;
+}
+
 
 void freesafe(void* tofree) {
 	if(tofree) {
