@@ -48,6 +48,13 @@ extern int _ALC_PACKET_DUMP_TO_OBJECT_ENABLED;
 
 int atsc3_alc_packet_persist_to_toi_resource_process_sls_mbms_and_emit_callback(udp_flow_t* udp_flow, alc_packet_t** alc_packet_ptr, lls_sls_alc_monitor_t* lls_sls_alc_monitor);
 
+//get <LS> element for matching flow and packet
+atsc3_route_s_tsid_RS_LS_t* atsc3_alc_packet_get_RS_LS_element(udp_flow_t* udp_flow, alc_packet_t* alc_packet, lls_sls_alc_monitor_t* lls_sls_alc_monitor);
+
+//get <fdt:File> element for matching TOI from RS_LS
+atsc3_fdt_file_t* atsc3_alc_RS_LS_get_matching_toi_file_instance(atsc3_route_s_tsid_RS_LS_t* atsc3_route_s_tsid_RS_LS, uint32_t search_toi);
+
+
 char* alc_packet_dump_to_object_get_s_tsid_filename(udp_flow_t* udp_flow, alc_packet_t* alc_packet, lls_sls_alc_monitor_t* lls_sls_alc_monitor);
 char* alc_packet_dump_to_object_get_temporary_filename(udp_flow_t* udp_flow, alc_packet_t* alc_packet);
 

@@ -350,7 +350,7 @@ atsc3_route_s_tsid_RS_LS_SrcFlow_Payload_t* atsc3_route_s_tsid_parse_RS_LS_SrcFl
 	char* matching_attribute = NULL;
 
 	if((matching_attribute = kvp_collection_get(kvp_collection,  "codePoint"))) {
-		atsc3_route_s_tsid_RS_LS_SrcFlow_Payload->code_point = atoi(matching_attribute);
+		atsc3_route_s_tsid_RS_LS_SrcFlow_Payload->codepoint = atoi(matching_attribute);
         free(matching_attribute);
 	}
 
