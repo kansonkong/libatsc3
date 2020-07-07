@@ -24,6 +24,7 @@
 #include <time.h>
 #include <sys/time.h>
 #include <stdbool.h>
+#include <sys/stat.h>
 
 #ifndef ATSC3_UTILS_H_
 #define ATSC3_UTILS_H_
@@ -152,6 +153,8 @@ uint16_t block_Read_uint16_ntohs(block_t* src);
 uint32_t block_Read_uint32_ntohl(block_t* src);
 uint64_t block_Read_uint64_ntohul(block_t* src);
 
+//read from filesystem into block_t
+block_t* block_Read_from_filename(char* file_name);
 
 
 #define block_RefZero(a) ({ a->_refcnt = 0; })
