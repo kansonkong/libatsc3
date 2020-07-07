@@ -270,12 +270,14 @@ atsc3_mime_multipart_related_instance_t* atsc3_mime_multipart_related_parser(FIL
 		}
 
 		char* line_binary;
+		size_t line_binary_alloc_len = 0;
+
 		size_t line_binary_len;
 
+		//jjustman-2020-07-07 - should work for binary payloads
+
 		while(!feof(fp) && !payload_entry_complete) {
-			//TODO: fix me for binary payloads
-			//fgets(line_buffer, ATSC3_MIME_MULTIPART_RELATED_LINE_BUFFER, fp);
-			line_binary = fgetln(fp, &line_binary_len);
+			line_binary_len = getline(&line_binary, &line_binary_alloc_len, fp);
 
 			if(!line_binary || line_binary_len == 0) {
 				//end of file
@@ -324,6 +326,11 @@ atsc3_mime_multipart_related_instance_t* atsc3_mime_multipart_related_parser(FIL
 				__MIME_PARSER_TRACE("atsc3_mime_multipart_related_parser: line: %u, pushing to buffer at pos: %u, len: %u, line_binary: %p", line_count, atsc3_mime_multipart_related_payload->payload->i_pos, line_binary_len, line_binary);
 				block_AppendFromBuf(atsc3_mime_multipart_related_payload->payload, line_binary, line_binary_len);
 			}
+		}
+
+		if(line_binary) {
+			free(line_binary);
+			line_binary = NULL;
 		}
 	}
 
