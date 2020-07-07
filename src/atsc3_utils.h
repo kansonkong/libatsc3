@@ -26,6 +26,9 @@
 #include <stdbool.h>
 #include <sys/stat.h>
 
+#include <libgen.h>
+
+
 #ifndef ATSC3_UTILS_H_
 #define ATSC3_UTILS_H_
 
@@ -178,6 +181,9 @@ void freeclean_uint8_t(uint8_t** tofree);
 uint32_t parseIpAddressIntoIntval(char* dst_ip);
 
 uint16_t parsePortIntoIntval(char* dst_port);
+
+int mkpath(char *dir, mode_t mode);
+
 
 /*
  * Concatenate preprocessor tokens A and B without expanding macro definitions

@@ -36,7 +36,7 @@ extern "C" {
 //   but has been observed to be far greater in some defective signaler applications
 
 #define ATSC3_MIME_MULTIPART_RELATED_LINE_BUFFER 8192
-#define ATSC3_MIME_MULTIPART_RELATED_PAYLOAD_BUFFER 65535
+#define ATSC3_MIME_MULTIPART_RELATED_PAYLOAD_BLOCK_T_DEFAULT_ALLOC 8192
 
 //this is a bit of a misnomer, its actually the multipart mbms and child envelope parers..
 atsc3_sls_metadata_fragments_t* atsc3_mbms_envelope_to_sls_metadata_fragments_parse_from_fdt_fp(FILE* atsc3_fdt_instance_fp);

@@ -28,8 +28,8 @@ Content-Location: envelope.xml
 typedef struct atsc3_mime_multipart_related_payload {
 	char* 						content_type;
 	char* 						content_location;
-	char*						payload;
-	uint32_t					payload_length;
+
+	block_t*					payload;
 
 } atsc3_mime_multipart_related_payload_t;
 
