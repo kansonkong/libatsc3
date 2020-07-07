@@ -153,6 +153,7 @@ unit_tests: test/atsc3_lmt_test \
 			test/atsc3_fdt_mbms_envelope_test_2019-09-17-nab-interop-day1 \
 			test/atsc3_stltp_parser_test \
 			test/atsc3_mime_multipart_related_parser_test \
+			test/atsc3_package_mode_mime_multipart_related_parser_test \
 			test/atsc3_fdt_mbms_envelope_test \
 			test/atsc3_fdt_mbms_envelope_test_2019-09-07-esg-e.1.1.7 \
 			test/atsc3_hevc_nal_extractor_test \
