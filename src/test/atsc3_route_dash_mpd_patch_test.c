@@ -38,7 +38,7 @@ int test_simple_regex_extended_compare() {
 	    return -1;
 	}
 
-	_ATSC3_ROUTE_DASH_MPD_PATCH_TEST_INFO("compiled regex is: %p, magic: %d", &regex, regex.re_magic);
+	_ATSC3_ROUTE_DASH_MPD_PATCH_TEST_INFO("compiled regex is: %p", &regex);
 
 	/* Execute regular expression */
 	reti = regexec(&regex, "abc", 0, NULL, 0);
