@@ -45,8 +45,8 @@ typedef struct atsc3_sls_html_entry_package {
 } atsc3_sls_html_entry_package_t;
 
 typedef struct atsc3_sls_held_fragment {
+	block_t* raw_xml_fragment;
 	ATSC3_VECTOR_BUILDER_STRUCT(atsc3_sls_html_entry_package);
-
 } atsc3_sls_held_fragment_t;
 
 

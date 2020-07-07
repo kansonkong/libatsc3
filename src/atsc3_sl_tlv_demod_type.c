@@ -73,7 +73,7 @@ atsc3_sl_tlv_payload_t* atsc3_sl_tlv_payload_parse_from_block_t_with_metrics(blo
                                      buf_start,
                                      buf,
                                      buf_end,
-                                     (buf - buf_start));
+                                     (int)(buf - buf_start));
             }
         }
 
@@ -91,7 +91,7 @@ atsc3_sl_tlv_payload_t* atsc3_sl_tlv_payload_parse_from_block_t_with_metrics(blo
     if((buf_end - buf) < 28) {
         free(atsc3_sl_tlv_payload);
         __SL_TLV_DEMOD_ERROR("atsc3_sl_tlv_payload_parse_from_block_t: remaining TLV payload too short: %d, need at least 28 bytes, block: %p, returning",
-                             (buf_end - buf),
+                             (int)(buf_end - buf),
                              atsc3_sl_tlv_payload_unparsed_block);
         return NULL;
     }
@@ -257,7 +257,7 @@ atsc3_sl_tlv_payload_t* atsc3_sl_tlv_payload_parse_from_block_t_with_metrics(blo
 			//don't walk over end of block_t,
 			__SL_TLV_DEMOD_WARN("atsc3_sl_tlv_payload->alp_trailing_padding_size: %d, not enough space remaining in block_t, truncating to len: %d",
 								atsc3_sl_tlv_payload->alp_trailing_padding_size,
-								(buf_end - buf));
+								(int)(buf_end - buf));
 			buf = buf_end;
 			
 		} else {
@@ -270,20 +270,20 @@ atsc3_sl_tlv_payload_t* atsc3_sl_tlv_payload_parse_from_block_t_with_metrics(blo
 				__SL_TLV_DEMOD_TRACE("after alp_trailing_padding_size, not enough space to peek for magic: buf_end: %p, buf: %p, len: %d",
 									 buf_end,
 									 buf,
-									 buf_end - buf);
+									 (int)(buf_end - buf));
 			} else {
 				uint32_t peek_magic_number = *(uint32_t*)(buf);
 				if(atsc3_sl_tlv_payload->magic_number != 0x24681357) {
 					   __SL_TLV_DEMOD_ERROR("after alp_trailing_padding_size: buf: %p, position: %d, magic number is not 0x24681357, parsed as: 0x%08x",
 							   buf,
-							  (buf - buf_start),
+							  (int)(buf - buf_start),
 							   atsc3_sl_tlv_payload->magic_number);
 					atsc3_sl_tlv_payload_metrics->total_tlv_packets_without_magic_number_after_alp_size_data_bytes_consumed_count++;
 					
 				} else {
 						__SL_TLV_DEMOD_TRACE("after alp_trailing_padding_size: buf: %p, position: %d, magic number is: 0x%08x",
 												  buf,
-												 (buf - buf_start),
+												 (int)(buf - buf_start),
 												  atsc3_sl_tlv_payload->magic_number);
 				}
 			}
@@ -340,7 +340,7 @@ void atsc3_sl_tlv_payload_metrics_dump(atsc3_sl_tlv_payload_metrics_t* atsc3_sl_
 	
 	__SL_TLV_DEMOD_INFO("---TLV Dump Metrics---");
 
-	__SL_TLV_DEMOD_INFO(" total_tlv_bytes_read:	%d", atsc3_sl_tlv_payload_metrics->total_tlv_bytes_read);
+	__SL_TLV_DEMOD_INFO(" total_tlv_bytes_read:	%llu", atsc3_sl_tlv_payload_metrics->total_tlv_bytes_read);
 	__SL_TLV_DEMOD_INFO(" total_tlv_packets_parsed_count:	%d", atsc3_sl_tlv_payload_metrics->total_tlv_packets_parsed_count);
 
 	__SL_TLV_DEMOD_INFO(" total_tlv_header_alp_size_bytes_read:	%d", atsc3_sl_tlv_payload_metrics->total_tlv_header_alp_size_bytes_read);
@@ -354,7 +354,7 @@ void atsc3_sl_tlv_payload_metrics_dump(atsc3_sl_tlv_payload_metrics_t* atsc3_sl_
 
 	__SL_TLV_DEMOD_INFO(" total_tlv_packets_without_matching_magic_is_null_value_count:	%d", atsc3_sl_tlv_payload_metrics->total_tlv_packets_without_matching_magic_is_null_value_count);
 
-	__SL_TLV_DEMOD_INFO(" total_tlv_bytes_discarded_due_to_magic_mismatch_count:	%d", atsc3_sl_tlv_payload_metrics->total_tlv_bytes_discarded_due_to_magic_mismatch_count);
+	__SL_TLV_DEMOD_INFO(" total_tlv_bytes_discarded_due_to_magic_mismatch_count:	%llu", atsc3_sl_tlv_payload_metrics->total_tlv_bytes_discarded_due_to_magic_mismatch_count);
 	
 	__SL_TLV_DEMOD_INFO(" total_tlv_packets_without_matching_magic_recovered_in_block_count:	%d", atsc3_sl_tlv_payload_metrics->total_tlv_packets_without_matching_magic_recovered_in_block_count);
 	__SL_TLV_DEMOD_INFO(" total_tlv_bytes_discarded_without_matching_magic_recovered_in_block_count:	%d", atsc3_sl_tlv_payload_metrics->total_tlv_bytes_discarded_without_matching_magic_recovered_in_block_count);
@@ -379,10 +379,10 @@ void atsc3_sl_tlv_payload_metrics_dump(atsc3_sl_tlv_payload_metrics_t* atsc3_sl_
 	__SL_TLV_DEMOD_INFO("---ALP Payload Metrics---");
 	
 	__SL_TLV_DEMOD_INFO(" total_alp_packet_type_ip_packets_count:	%d", atsc3_sl_tlv_payload_metrics->total_alp_packet_type_ip_packets_count);
-	__SL_TLV_DEMOD_INFO(" total_alp_packet_type_ip_packets_bytes_read:	%d", atsc3_sl_tlv_payload_metrics->total_alp_packet_type_ip_packets_bytes_read);
+	__SL_TLV_DEMOD_INFO(" total_alp_packet_type_ip_packets_bytes_read:	%llu", atsc3_sl_tlv_payload_metrics->total_alp_packet_type_ip_packets_bytes_read);
 	
 	__SL_TLV_DEMOD_INFO(" total_alp_packet_type_link_layer_signalling_packets_count:	%d", atsc3_sl_tlv_payload_metrics->total_alp_packet_type_link_layer_signalling_packets_count);
-	__SL_TLV_DEMOD_INFO(" total_alp_packet_type_link_layer_signalling_bytes_read:	%d", atsc3_sl_tlv_payload_metrics->total_alp_packet_type_link_layer_signalling_bytes_read);
+	__SL_TLV_DEMOD_INFO(" total_alp_packet_type_link_layer_signalling_bytes_read:	%llu", atsc3_sl_tlv_payload_metrics->total_alp_packet_type_link_layer_signalling_bytes_read);
 //	
 //	//USUALLY not present in most ATSC 3.0 use-cases
 //	__SL_TLV_DEMOD_INFO(" total_alp_packet_type_packet_compressed_ip_packet_count:	%d", atsc3_sl_tlv_payload_metrics->total_alp_packet_type_packet_compressed_ip_packet_count);

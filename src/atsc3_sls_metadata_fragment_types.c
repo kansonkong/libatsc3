@@ -100,6 +100,9 @@ void atsc3_sls_held_fragment_free(atsc3_sls_held_fragment_t** atsc3_sls_held_fra
 	if(atsc3_sls_held_fragment_p) {
 		atsc3_sls_held_fragment_t* atsc3_sls_held_fragment = *atsc3_sls_held_fragment_p;
 		if(atsc3_sls_held_fragment) {
+			if(atsc3_sls_held_fragment->raw_xml_fragment) {
+				block_Destroy(&atsc3_sls_held_fragment->raw_xml_fragment);
+			}
 			atsc3_sls_held_fragment_free_atsc3_sls_html_entry_package(atsc3_sls_held_fragment);
 			free(atsc3_sls_held_fragment);
 			atsc3_sls_held_fragment = NULL;

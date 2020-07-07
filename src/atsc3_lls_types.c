@@ -50,6 +50,10 @@ ATSC3_VECTOR_BUILDER_METHODS_IMPLEMENTATION(lls_slt_monitor, lls_sls_alc_monitor
 ATSC3_VECTOR_BUILDER_METHODS_IMPLEMENTATION(lls_slt_monitor, lls_sls_alc_session_flows);
 ATSC3_VECTOR_BUILDER_METHODS_IMPLEMENTATION(lls_slt_monitor, lls_slt_service_id_group_id_cache);
 
+//tracking for ROUTE object recovery
+ATSC3_VECTOR_BUILDER_METHODS_IMPLEMENTATION(atsc3_sls_alc_flow, atsc3_route_object);
+
+
 /**
  *
  * jjustman-2019-10-03 - todo: _free methods:
@@ -372,3 +376,56 @@ uint32_t atsc3_sls_alc_flow_get_first_toi_init(atsc3_sls_alc_flow_v* atsc3_sls_a
 
 	return matching_toi_init;
 }
+
+
+void atsc3_route_object_free(atsc3_route_object_t** atsc3_route_object_p) {
+	if(atsc3_route_object_p) {
+		atsc3_route_object_t* atsc3_route_object = *atsc3_route_object_p;
+		if(atsc3_route_object) {
+			if(atsc3_route_object->toi_received_source_bytes) {
+				free(atsc3_route_object->toi_received_source_bytes);
+			}
+			free(atsc3_route_object);
+			atsc3_route_object = NULL;
+		}
+		*atsc3_route_object_p = NULL;
+	}
+}
+
+
+#define ATSC3_ROUTE_OBJECT_RECEVIED_SOURCE_BYTES_INDEX_LENGTH(toi_length) ((toi_length / 256) + 1)
+
+void atsc3_route_object_set_toi_and_length(atsc3_route_object_t* atsc3_route_object, uint32_t toi, uint32_t toi_length) {
+	atsc3_route_object->toi = toi;
+	atsc3_route_object->toi_length = toi_length;
+	int max_received_bytes_count = ATSC3_ROUTE_OBJECT_RECEVIED_SOURCE_BYTES_INDEX_LENGTH(toi_length);
+	atsc3_route_object->toi_received_source_bytes = calloc(max_received_bytes_count, sizeof(uint8_t));
+	
+}
+void atsc3_route_object_mark_received_byte_range(atsc3_route_object_t* atsc3_route_object,uint32_t source_byte_range_start, uint32_t source_byte_range_end) {
+	//make sure we're in the bounding range
+	int max_received_bytes_count = ATSC3_ROUTE_OBJECT_RECEVIED_SOURCE_BYTES_INDEX_LENGTH(atsc3_route_object->toi_length);
+
+}
+
+bool atsc3_route_object_is_recovered(atsc3_route_object_t* atsc3_route_object) {
+	bool has_missing_source_block_bytes = false;
+	int max_received_bytes_count = ATSC3_ROUTE_OBJECT_RECEVIED_SOURCE_BYTES_INDEX_LENGTH(atsc3_route_object->toi_length);
+	
+	for(int i=0; i < max_received_bytes_count && !has_missing_source_block_bytes; i++) {
+		if(atsc3_route_object->toi_received_source_bytes[i] != 0xFF) {
+			has_missing_source_block_bytes = true;
+		}
+	}
+	
+	//handle any last remaining bytes that aren't %256
+	for(int j=0; j < (atsc3_route_object->toi_length - ((max_received_bytes_count-1) * 256 )); j++) {
+		if(atsc3_route_object->toi_received_source_bytes[max_received_bytes_count-1] >> (7-j) != 0x1) {
+			has_missing_source_block_bytes = true;
+		}
+	}
+	
+	
+	return has_missing_source_block_bytes;
+}
+
