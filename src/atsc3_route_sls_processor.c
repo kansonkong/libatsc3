@@ -250,7 +250,7 @@ void atsc3_route_sls_patch_mpd_availability_start_time_and_start_number(atsc3_mi
         _ATSC3_ROUTE_SLS_PROCESSOR_WARN("atsc3_route_sls_patch_mpd_availability_start_time_and_start_number, has_discontiguous_toi_flow is true, rebuilding MPD!");
     }
     
-    char* temp_lower_mpd = calloc(strlen(atsc3_mime_multipart_related_payload->payload->p_size)+1, sizeof(char));
+    char* temp_lower_mpd = calloc(atsc3_mime_multipart_related_payload->payload->p_size, sizeof(char));
     for(int i=0; i < strlen(atsc3_mime_multipart_related_payload->payload->p_buffer); i++) {
         temp_lower_mpd[i] = tolower(atsc3_mime_multipart_related_payload->payload->p_buffer[i]);
     }
