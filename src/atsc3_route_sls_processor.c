@@ -156,9 +156,9 @@ void atsc3_route_sls_process_from_alc_packet_and_file(udp_flow_t* udp_flow, alc_
 				  FILE* fp_mbms_file = fopen(mbms_filename, "w");
 				  if(fp_mbms_file) {
 				    /* lldb: set set target.max-string-summary-length 10000 */
-				    _ATSC3_ROUTE_SLS_PROCESSOR_DEBUG("writing MBMS object to: %s, payload: %s", mbms_filename, atsc3_mime_multipart_related_payload->payload);
+				    _ATSC3_ROUTE_SLS_PROCESSOR_DEBUG("writing MBMS object to: %s, payload: %s", mbms_filename, atsc3_mime_multipart_related_payload->payload->p_buffer);
 				    
-				    size_t fwrite_size = fwrite(atsc3_mime_multipart_related_payload->payload, atsc3_mime_multipart_related_payload->payload_length, 1, fp_mbms_file);
+				    size_t fwrite_size = fwrite(atsc3_mime_multipart_related_payload->payload->p_buffer, atsc3_mime_multipart_related_payload->payload->p_size, 1, fp_mbms_file);
 				    if(!fwrite_size) {
 				      _ATSC3_ROUTE_SLS_PROCESSOR_ERROR("fwrite for atsc3_mime_multipart_related_payload, file: %s, is: %d", mbms_filename, fwrite_size);
 				    }
@@ -237,10 +237,11 @@ void atsc3_route_sls_patch_mpd_availability_start_time_and_start_number(atsc3_mi
 
     if(lls_sls_alc_monitor->last_mpd_payload && (lls_sls_alc_monitor->last_mpd_payload_patched && !lls_sls_alc_monitor->has_discontiguous_toi_flow)) {
         //compare if our original vs. new payload has changed, and patch accordingly, otherwise swap out to our old payload
-        if(strncmp(lls_sls_alc_monitor->last_mpd_payload->p_buffer, atsc3_mime_multipart_related_payload->payload, __MIN(strlen(lls_sls_alc_monitor->last_mpd_payload->p_buffer), atsc3_mime_multipart_related_payload->payload_length)) == 0) {
-            free(atsc3_mime_multipart_related_payload->payload);
-            atsc3_mime_multipart_related_payload->payload = strdup(lls_sls_alc_monitor->last_mpd_payload_patched->p_buffer);
-            atsc3_mime_multipart_related_payload->payload_length = strlen(lls_sls_alc_monitor->last_mpd_payload_patched->p_buffer);
+        if(strncmp(lls_sls_alc_monitor->last_mpd_payload->p_buffer, atsc3_mime_multipart_related_payload->payload->p_buffer, __MIN(strlen(lls_sls_alc_monitor->last_mpd_payload->p_buffer), atsc3_mime_multipart_related_payload->payload->p_buffer)) == 0) {
+        	if(atsc3_mime_multipart_related_payload->payload) {
+        		block_Destroy(&atsc3_mime_multipart_related_payload->payload);
+        		atsc3_mime_multipart_related_payload->payload = block_Duplicate(lls_sls_alc_monitor->last_mpd_payload_patched);
+			}
             return;
         }
     }
@@ -249,17 +250,16 @@ void atsc3_route_sls_patch_mpd_availability_start_time_and_start_number(atsc3_mi
         _ATSC3_ROUTE_SLS_PROCESSOR_WARN("atsc3_route_sls_patch_mpd_availability_start_time_and_start_number, has_discontiguous_toi_flow is true, rebuilding MPD!");
     }
     
-    char* temp_lower_mpd = calloc(strlen(atsc3_mime_multipart_related_payload->payload)+1, sizeof(char));
-    for(int i=0; i < strlen(atsc3_mime_multipart_related_payload->payload); i++) {
-        temp_lower_mpd[i] = tolower(atsc3_mime_multipart_related_payload->payload[i]);
+    char* temp_lower_mpd = calloc(strlen(atsc3_mime_multipart_related_payload->payload->p_size)+1, sizeof(char));
+    for(int i=0; i < strlen(atsc3_mime_multipart_related_payload->payload->p_buffer); i++) {
+        temp_lower_mpd[i] = tolower(atsc3_mime_multipart_related_payload->payload->p_buffer[i]);
     }
     
     if(strstr(temp_lower_mpd, "type=\"dynamic\"") != NULL) {
         if(lls_sls_alc_monitor->last_mpd_payload) {
             block_Destroy(&lls_sls_alc_monitor->last_mpd_payload);
         }
-        lls_sls_alc_monitor->last_mpd_payload = block_Alloc(strlen(atsc3_mime_multipart_related_payload->payload)+1);
-        block_Write(lls_sls_alc_monitor->last_mpd_payload, (const uint8_t*)atsc3_mime_multipart_related_payload->payload, strlen(atsc3_mime_multipart_related_payload->payload));
+        lls_sls_alc_monitor->last_mpd_payload = block_Duplicate(atsc3_mime_multipart_related_payload->payload);
         
         //update our availabilityStartTime
         char* ast_char = strstr(temp_lower_mpd, _MPD_availability_start_time_VALUE_);
@@ -281,7 +281,7 @@ void atsc3_route_sls_patch_mpd_availability_start_time_and_start_number(atsc3_mi
             char iso_now_timestamp[_ISO8601_DATE_TIME_LENGTH_ + 2] = { 0 };
             strftime((char*)&iso_now_timestamp, _ISO8601_DATE_TIME_LENGTH_+1, "%Y-%m-%dT%H:%M:%SZ", gmtime(&now));
 
-            char* to_start_ptr = atsc3_mime_multipart_related_payload->payload + ast_char_pos_end + 1;
+            char* to_start_ptr = atsc3_mime_multipart_related_payload->payload->p_buffer + ast_char_pos_end + 1;
             /*
             _ATSC3_ROUTE_SLS_PROCESSOR_WARN("atsc3_route_sls_patch_mpd_availability_start_time_and_start_number: patching mpd availabilityStartTime: from %.20s to %s, v: last_video_toi: %d, last_closed_video_toi: %d, a: last_audio_toi: %d, last_closed_audio_toi: %d, stpp: last_text_toi: %d, last_closed_text_toi: %d",
                                             to_start_ptr, (char*)iso_now_timestamp,

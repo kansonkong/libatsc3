@@ -895,3 +895,29 @@ char* __trim(char *str)
 {
     return _ltrim(_rtrim(str));
 }
+
+
+int mkpath(char *dir, mode_t mode)
+{
+    struct stat sb;
+
+    if (!dir) {
+        return 1;
+    }
+
+    if (!stat(dir, &sb)) {
+        return 0;
+    }
+
+    char* my_dir_string = strdup(dir);
+    printf("my_dir_string: %s\n", my_dir_string);
+
+    mkpath(dirname(my_dir_string), mode);
+
+    int ret = mkdir(my_dir_string, mode);
+    printf("called mkdir: %s, result: %d\n", my_dir_string, ret);
+
+    free(my_dir_string);
+
+    return ret;
+}

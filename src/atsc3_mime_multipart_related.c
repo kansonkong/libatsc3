@@ -15,7 +15,9 @@ void atsc3_mime_multipart_related_payload_free(atsc3_mime_multipart_related_payl
         if(atsc3_mime_multipart_related_payload) {
             freeclean((void**)&atsc3_mime_multipart_related_payload->content_location);
             freeclean((void**)&atsc3_mime_multipart_related_payload->content_type);
-            freeclean((void**)&atsc3_mime_multipart_related_payload->payload);
+            if(atsc3_mime_multipart_related_payload->payload) {
+            	block_Destroy(&atsc3_mime_multipart_related_payload->payload);
+            }
           
             free(atsc3_mime_multipart_related_payload);
             atsc3_mime_multipart_related_payload = NULL;
