@@ -35,11 +35,6 @@ void mmtp_packet_id_packets_container_remove_mpu_sequence_number_mmtp_mpu_packet
 void mmtp_asset_flow_set_flow_from_udp_packet(mmtp_asset_flow_t* mmtp_asset_flow, udp_packet_t* udp_packet);
 
 
-
-#ifdef __cplusplus
-}
-#endif
-
 #define __MMTP_UTILS_ERROR(...)   __LIBATSC3_TIMESTAMP_ERROR(__VA_ARGS__);
 #define __MMTP_UTILS_WARN(...)    __LIBATSC3_TIMESTAMP_WARN(__VA_ARGS__);
 #define __MMTP_UTILS_INFO(...)    __LIBATSC3_TIMESTAMP_INFO(__VA_ARGS__);
@@ -47,4 +42,8 @@ void mmtp_asset_flow_set_flow_from_udp_packet(mmtp_asset_flow_t* mmtp_asset_flow
 #define __MMTP_UTILS_DEBUG(...)   if(_MMTP_DEBUG_ENABLED) { __LIBATSC3_TIMESTAMP_DEBUG(__VA_ARGS__); }
 #define __MMTP_UTILS_TRACE(...)   if(_MMTP_TRACE_ENABLED) { __LIBATSC3_TIMESTAMP_TRACE(__VA_ARGS__); }
 
+
+#ifdef __cplusplus
+}
+#endif
 #endif /* ATSC3_MMTP_PACKET_UTILS_H_ */

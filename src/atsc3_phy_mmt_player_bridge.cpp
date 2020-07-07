@@ -39,7 +39,6 @@ atsc3NdkClient* Atsc3NdkClient_ptr;
 
 #include "atsc3_lls.h"
 
-
 #include "atsc3_lls_slt_parser.h"
 #include "atsc3_lls_sls_monitor_output_buffer_utils.h"
 

@@ -105,6 +105,20 @@ void atsc3_route_sls_process_from_alc_packet_and_file(udp_flow_t* udp_flow, alc_
 				  atsc3_sls_metadata_fragments_free(&lls_sls_alc_monitor->atsc3_sls_metadata_fragments);
 				}
 				lls_sls_alc_monitor->atsc3_sls_metadata_fragments = atsc3_sls_metadata_fragments;
+
+				// #1569
+				if(lls_sls_alc_monitor->atsc3_sls_metadata_fragments->atsc3_sls_held_fragment &&
+						lls_sls_alc_monitor->atsc3_sls_metadata_fragments->atsc3_sls_held_fragment->raw_xml_fragment &&
+						lls_sls_alc_monitor->atsc3_sls_metadata_fragments->atsc3_sls_held_fragment->raw_xml_fragment->p_size) {
+					if(lls_sls_alc_monitor->atsc3_sls_on_held_trigger_received_callback) {
+						lls_sls_alc_monitor->atsc3_sls_on_held_trigger_received_callback(lls_sls_alc_monitor->atsc3_lls_slt_service->service_id, lls_sls_alc_monitor->atsc3_sls_metadata_fragments->atsc3_sls_held_fragment->raw_xml_fragment);
+					}
+				}
+
+				//jjustman-2020-07-07 -  TODO: dispatch any additional atsc3_monitor_events_sls here
+
+
+
                 
 				/* https://github.com/google/shaka-player/issues/237
 				   
