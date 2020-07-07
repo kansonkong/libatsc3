@@ -19,3 +19,6 @@
 /atsc3_pcap_replay_test
 /atsc3_route_dash_mpd_patch_test
 /atsc3_route_dash_mpd_patch_test.dSYM/
+/atsc3_package_mode_mime_multipart_related_parser_test
+/atsc3_package_mode_mime_multipart_related_parser_test.dSYM/
+/package_test/
