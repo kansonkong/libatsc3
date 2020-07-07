@@ -197,7 +197,17 @@ use="optional"/>
  <xs:anyAttribute processContents="skip"/>
  </xs:complexType>
 
+
+jjustman-2020-07-07: A/331:2020
+
+    Table A.3.4 ATSC-Defined Extensions to FDT-Instance.File Element
+
+        appContextIdList
+        filterCodes
+
+
  */
+
 typedef struct atsc3_fdt_file {
 	char* 						content_location;
 	uint32_t 					toi;
@@ -207,6 +217,11 @@ typedef struct atsc3_fdt_file {
 	char*						content_encoding;
 	char*						content_md5;
 
+	char*						app_context_id_list;
+	//todo: impl appContextIdList as vector(string)
+
+	char*						filter_codes;
+	//todo: impl appContextIdList as vector(uint32_t)
 
 	atsc3_fdt_fec_attributes_t	atsc3_fdt_fec_attributes;
 } atsc3_fdt_file_t;
@@ -233,6 +248,18 @@ typedef struct atsc3_fdt_file {
 		<xs:list itemType="xs:unsignedInt"/>
 	</xs:simpleType>
  *
+ *
+ *
+ jjustman-2020-07-07 - A/331:2020 - Additional elements as defined in A.3.3.2.3 - ATSC Extensions to the FDT-Instance Element
+
+	edftVersion
+    maxExpiresDelta
+    maxTransportSize
+    appContextIdList
+    fileTemplate
+    filterCodes
+
+
  */
 
 typedef struct atsc3_fdt_instance {
@@ -246,8 +273,8 @@ typedef struct atsc3_fdt_instance {
 	uint8_t						efdt_vesion;
 	uint32_t					max_expires_delta;
 	uint32_t					max_transport_size;
-	char*						file_template;
 	char*						app_context_id_list;
+	char*						file_template;
 	char*						filter_codes;
 
 	ATSC3_VECTOR_BUILDER_STRUCT(atsc3_fdt_file)
@@ -255,6 +282,10 @@ typedef struct atsc3_fdt_instance {
 } atsc3_fdt_instance_t;
 
 ATSC3_VECTOR_BUILDER_METHODS_INTERFACE(atsc3_fdt_instance, atsc3_fdt_file)
+
+
+void atsc3_fdt_instance_free(atsc3_fdt_instance_t** atsc3_fdt_instance_p);
+
 
 
 #endif /* ATSC3_FDT_H_ */

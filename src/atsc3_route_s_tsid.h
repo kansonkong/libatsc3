@@ -142,7 +142,7 @@ typedef struct atsc3_route_s_tsid_RS_LS_SrcFlow_ContentInfo {
 	</xs:complexType>
  */
 typedef struct atsc3_route_s_tsid_RS_LS_SrcFlow_Payload {
-	uint8_t code_point;
+	uint8_t codepoint;
 	uint8_t format_id;
 	uint8_t frag;
 	bool	order;

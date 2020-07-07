@@ -373,6 +373,10 @@ atsc3_hevc_nal_extractor.o: atsc3_hevc_nal_extractor.h atsc3_hevc_nal_extractor.
 atsc3_pcap_type.o: atsc3_pcap_type.h atsc3_pcap_type.c
 	cc $(CFLAGS) $(DEBUG)  -c atsc3_pcap_type.c -o atsc3_pcap_type.o
 
+atsc3_route_package_utils.o: atsc3_route_package_utils.h atsc3_route_package_utils.c
+	cc $(CFLAGS) $(DEBUG)  -c atsc3_route_package_utils.c -o atsc3_route_package_utils.o
+
+
 # unit standalone tests with mock data
 
 atsc3_stltp_parser_test: atsc3_stltp_parser_test.c \
@@ -465,7 +469,8 @@ libatsc3_intermediate.o: atsc3_lls.o \
 		atsc3_aeat_parser.o \
 		atsc3_packet_statistics_types.o \
 		atsc3_hevc_nal_extractor.o \
-		atsc3_pcap_type.o
+		atsc3_pcap_type.o \
+		atsc3_route_package_utils.o
 
 	ld  -o libatsc3_intermediate.o -r \
 		atsc3_lls.o \
@@ -521,7 +526,8 @@ libatsc3_intermediate.o: atsc3_lls.o \
 		atsc3_aeat_parser.o \
 		atsc3_packet_statistics_types.o \
 		atsc3_hevc_nal_extractor.o \
-		atsc3_pcap_type.o
+		atsc3_pcap_type.o \
+		atsc3_route_package_utils.o
 
 libatsc3.o: libatsc3_intermediate.o bento4_mock.o
 	ld  -o libatsc3.o -r libatsc3_intermediate.o bento4_mock.o
