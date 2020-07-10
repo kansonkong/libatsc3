@@ -700,7 +700,18 @@ void atsc3_lls_sls_alc_on_route_mpd_patched_ndk(uint16_t service_id) {
 }
 
 void atsc3_sls_on_held_trigger_received_callback_impl(uint16_t service_id, block_t* held_payload) {
-	Atsc3NdkClient_ptr->atsc3_sls_on_held_trigger_received_callback_jni(service_id, held_payload);
+    block_Rewind(held_payload);
+    uint8_t *block_ptr = block_Get(held_payload);
+    uint32_t block_len = block_Len(held_payload);
+
+    int len_aligned = block_len + 1;
+    len_aligned += 8-(len_aligned%8);
+    char* xml_payload_copy = (char*)calloc(len_aligned , sizeof(char));
+    strncpy(xml_payload_copy, (char*)block_ptr, block_len);
+
+    Atsc3NdkClient_ptr->atsc3_sls_on_held_trigger_received_callback_jni(service_id, (const char*)xml_payload_copy);
+
+    free(xml_payload_copy);
 }
 
 /*
