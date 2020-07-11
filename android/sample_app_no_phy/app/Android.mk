@@ -10,6 +10,15 @@ LOCAL_PATH := $(call my-dir)
 MY_CUR_PATH := $(LOCAL_PATH)
 
 # ---------------------------
+# pcre2 library
+
+include $(CLEAR_VARS)
+LOCAL_MODULE := libpcre
+LOCAL_SRC_FILES := libpcre/libs/$(TARGET_ARCH_ABI)/libpcre2.so
+LOCAL_EXPORT_C_INCLUDES := $(LOCAL_PATH)/libpcre/include
+include $(PREBUILT_SHARED_LIBRARY)
+
+# ---------------------------
 # libatsc3 jni interface
 
 LOCAL_PATH := $(MY_LOCAL_PATH)
@@ -56,6 +65,7 @@ LOCAL_SRC_FILES += \
 LOCAL_C_INCLUDES += $(LOCAL_PATH)/src/main/jni
 LOCAL_C_INCLUDES += $(LOCAL_PATH)/../../../src/
 
+LOCAL_SHARED_LIBRARIES := libpcre
 
 
 LOCAL_CFLAGS += -g -fpack-struct=8 -fPIC  \
