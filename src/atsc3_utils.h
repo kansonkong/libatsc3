@@ -126,9 +126,10 @@ typedef struct atsc3_block {
 block_t* block_Alloc(int len);
 bool block_IsAlloc(block_t*);
 block_t* block_Promote(char*);
-block_t* block_Write(block_t* dest, const uint8_t* buf, uint32_t size);
-uint32_t block_Append(block_t* dest, block_t* src); //combine two blocks at i_pos, i_pos, return end position
-block_t* block_AppendFromBuf(block_t* dest, const uint8_t* src_buf, uint32_t src_size);
+block_t* block_Write(block_t* dest, const uint8_t* buf, uint32_t size); //write starting at i_pos
+uint32_t block_Append(block_t* dest, block_t* src); //combine two blocks at i_pos, len: src->i_pos, return end position
+block_t* block_AppendFromSrciPos(block_t* dest, block_t* src); //combine two blocks at dest->i_pos, block_Get(src), len: src->p_size - src->i_pos
+block_t* block_AppendFromBuf(block_t* dest, const uint8_t* src_buf, uint32_t src_size); //write buffer to block starting a tp_size
 uint32_t block_AppendFull(block_t* dest, block_t* src); //combine two blocks, dest at i_pos and full size of src p_size
 uint32_t block_Merge(block_t* dest, block_t* src); //combine two blocks from p_size, p_size, return new merged p_size,
 uint32_t block_MergeNoRewind(block_t* dest, block_t* src);
