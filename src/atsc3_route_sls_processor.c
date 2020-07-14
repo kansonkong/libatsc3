@@ -11,8 +11,8 @@
 #include "strnstr.h"
 
 
-int _ROUTE_SLS_PROCESSOR_INFO_ENABLED = 0;
-int _ROUTE_SLS_PROCESSOR_DEBUG_ENABLED = 0;
+int _ROUTE_SLS_PROCESSOR_INFO_ENABLED = 1;
+int _ROUTE_SLS_PROCESSOR_DEBUG_ENABLED = 1;
 
 /*
  jjustman-2020-06-02 TODO: make sure we properly clear out lls_sls_alc_monitor on MBMS TSI=0, TOI change
@@ -331,8 +331,10 @@ void atsc3_route_sls_patch_mpd_availability_start_time_and_start_number(atsc3_mi
         	block_Rewind(patched_mpd);
 
 
-        	block_Destroy(&patched_mpd);
+        	block_Destroy(&atsc3_mime_multipart_related_payload->payload);
+        	atsc3_mime_multipart_related_payload->payload = block_Duplicate(patched_mpd);
 
+        	block_Destroy(&patched_mpd);
         	atsc3_route_dash_matching_s_tsid_representation_media_info_alc_flow_match_vector_free(&match_vector);
 
         	atsc3_pcre2_regex_match_capture_vector_free(&atsc3_pcre2_regex_match_capture_vector);
