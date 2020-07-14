@@ -20,6 +20,9 @@
 #include "atsc3_mbms_envelope_parser.h"
 #include "atsc3_mime_multipart_related_parser.h"
 
+#include "atsc3_route_dash_utils.h"
+#include "atsc3_pcre2_regex_utils.h"
+
 
 
 

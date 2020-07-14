@@ -80,7 +80,7 @@ atsc3_pcre2_regex_match_capture_vector_t* atsc3_pcre2_regex_match(atsc3_pcre2_re
 	}
 
 	int capture_group_id = 0;
-	atsc3_pcre2_regex_match_capture_vector_t* atsc3_pcre2_regex_match_capture_vector = atsc3_pcre2_regex_match_capture_vector_new(subject_block);
+	atsc3_pcre2_regex_match_capture_vector_t* atsc3_pcre2_regex_match_capture_vector = atsc3_pcre2_regex_match_capture_vector_new_from_block_t(subject_block);
 
 	//placeholder handles
 	atsc3_preg2_regex_match_capture_group_t* atsc3_preg2_regex_match_capture_group = NULL;
@@ -441,7 +441,7 @@ error:
 
 //jjustman-2020-07-14 - todo: macro _new and _free for ATSC3_ALLOC() with chained VECTOR_BUILDER destructors..
 
-atsc3_pcre2_regex_match_capture_vector_t* atsc3_pcre2_regex_match_capture_vector_new(block_t* subject_block_to_copy) {
+atsc3_pcre2_regex_match_capture_vector_t* atsc3_pcre2_regex_match_capture_vector_new_from_block_t(block_t* subject_block_to_copy) {
 	atsc3_pcre2_regex_match_capture_vector_t* atsc3_pcre2_regex_match_captures = calloc(1, sizeof(atsc3_pcre2_regex_match_capture_vector_t));
 	atsc3_pcre2_regex_match_captures->subject_block = block_Duplicate(subject_block_to_copy);
 	block_Rewind(atsc3_pcre2_regex_match_captures->subject_block);
