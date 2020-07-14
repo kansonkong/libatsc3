@@ -23,6 +23,9 @@
 CFLAGS=-Wno-nullability-completeness -Wno-expansion-to-defined -Wno-builtin-requires-header
 DEBUG=-g
 
+LOCAL_LD_LIBS=-lz -lm -lpthread -lpcap -lpcre2-8
+LOCAL_LD_LIBS_NCURSES=$(LOCAL_LD_LIBS) -lncurses
+
 all: 	intermediate_lls \
 		intermediate_alp \
 		intermediate_baseband \
@@ -376,6 +379,14 @@ atsc3_pcap_type.o: atsc3_pcap_type.h atsc3_pcap_type.c
 atsc3_route_package_utils.o: atsc3_route_package_utils.h atsc3_route_package_utils.c
 	cc $(CFLAGS) $(DEBUG)  -c atsc3_route_package_utils.c -o atsc3_route_package_utils.o
 
+atsc3_pcre2_regex_utils.o: atsc3_pcre2_regex_utils.h atsc3_pcre2_regex_utils.c
+	cc $(CFLAGS) $(DEBUG)  -c atsc3_pcre2_regex_utils.c -o atsc3_pcre2_regex_utils.o
+
+atsc3_route_dash_utils.o: atsc3_route_dash_utils.h atsc3_route_dash_utils.c \
+							atsc3_pcre2_regex_utils.h atsc3_pcre2_regex_utils.c
+	
+	cc $(CFLAGS) $(DEBUG)  -c atsc3_route_dash_utils.c -o atsc3_route_dash_utils.o
+
 
 # unit standalone tests with mock data
 
@@ -470,7 +481,9 @@ libatsc3_intermediate.o: atsc3_lls.o \
 		atsc3_packet_statistics_types.o \
 		atsc3_hevc_nal_extractor.o \
 		atsc3_pcap_type.o \
-		atsc3_route_package_utils.o
+		atsc3_route_package_utils.o \
+		atsc3_pcre2_regex_utils.o \
+		atsc3_route_dash_utils.o
 
 	ld  -o libatsc3_intermediate.o -r \
 		atsc3_lls.o \
@@ -527,7 +540,9 @@ libatsc3_intermediate.o: atsc3_lls.o \
 		atsc3_packet_statistics_types.o \
 		atsc3_hevc_nal_extractor.o \
 		atsc3_pcap_type.o \
-		atsc3_route_package_utils.o
+		atsc3_route_package_utils.o \
+		atsc3_pcre2_regex_utils.o \
+		atsc3_route_dash_utils.o
 
 libatsc3.o: libatsc3_intermediate.o bento4_mock.o
 	ld  -o libatsc3.o -r libatsc3_intermediate.o bento4_mock.o
@@ -553,46 +568,46 @@ libatsc3_bento4_gpl.o: libatsc3_intermediate.o bento4_gpl.o
 ###  unit test generation - drivers are in test/
 
 test/atsc3_lmt_test: test/atsc3_lmt_test.c libatsc3.o 
-	cc $(CFLAGS) $(DEBUG)  test/atsc3_lmt_test.c libatsc3.o -lz -lm -lpthread -lpcap -o test/atsc3_lmt_test 
+	cc $(CFLAGS) $(DEBUG)  test/atsc3_lmt_test.c libatsc3.o $(LOCAL_LD_LIBS) -o test/atsc3_lmt_test 
 
 test/atsc3_lls_test: test/atsc3_lls_test.c libatsc3.o
-	cc $(CFLAGS) $(DEBUG)  test/atsc3_lls_test.c libatsc3.o -lz  -lm -lpthread -lpcap -o test/atsc3_lls_test
+	cc $(CFLAGS) $(DEBUG)  test/atsc3_lls_test.c libatsc3.o $(LOCAL_LD_LIBS) -o test/atsc3_lls_test
 
 test/atsc3_lls_slt_parser_test: test/atsc3_lls_slt_parser_test.c libatsc3.o 
-	cc $(CFLAGS) $(DEBUG)  test/atsc3_lls_slt_parser_test.c libatsc3.o -lz -lm -lpthread -lpcap -o test/atsc3_lls_slt_parser_test 
+	cc $(CFLAGS) $(DEBUG)  test/atsc3_lls_slt_parser_test.c libatsc3.o $(LOCAL_LD_LIBS) -o test/atsc3_lls_slt_parser_test 
 
 test/atsc3_lls_SystemTime_test: test/atsc3_lls_SystemTime_test.c libatsc3.o
-	cc $(CFLAGS) $(DEBUG)  test/atsc3_lls_SystemTime_test.c libatsc3.o -lz  -lm -lpthread -lpcap -o test/atsc3_lls_SystemTime_test 
+	cc $(CFLAGS) $(DEBUG)  test/atsc3_lls_SystemTime_test.c libatsc3.o $(LOCAL_LD_LIBS) -o test/atsc3_lls_SystemTime_test 
 
 test/atsc3_mmt_signalling_message_test: test/atsc3_mmt_signalling_message_test.c
-	cc $(CFLAGS) $(DEBUG)  test/atsc3_mmt_signalling_message_test.c libatsc3.o -lz  -lm -lpthread -lpcap -o test/atsc3_mmt_signalling_message_test
+	cc $(CFLAGS) $(DEBUG)  test/atsc3_mmt_signalling_message_test.c libatsc3.o $(LOCAL_LD_LIBS) -o test/atsc3_mmt_signalling_message_test
 
 # jjustman-2020-07-07 - removed 3 -O0 
 test/atsc3_mmt_signalling_packet_test: test/atsc3_mmt_signalling_packet_test.c atsc3_utils.o
-	cc $(CFLAGS) $(DEBUG) test/atsc3_mmt_signalling_packet_test.c libatsc3.o -lz -lm -lpthread -lpcap -o test/atsc3_mmt_signalling_packet_test
+	cc $(CFLAGS) $(DEBUG) test/atsc3_mmt_signalling_packet_test.c libatsc3.o $(LOCAL_LD_LIBS) -o test/atsc3_mmt_signalling_packet_test
 	echo "valgrind --leak-check=full  ./atsc3_mmt_signalling_packet_test" > test/atsc3_mmt_signalling_packet_test_valgrind
 	chmod +x test/atsc3_mmt_signalling_packet_test_valgrind
 
 # jjustman-2020-07-07 - removed 3 -O0 
 test/atsc3_mmt_mpu_packet_test: test/atsc3_mmt_mpu_packet_test.c atsc3_utils.o
-	cc $(CFLAGS) $(DEBUG) test/atsc3_mmt_mpu_packet_test.c libatsc3.o -lz -lm -lpthread -lpcap -o test/atsc3_mmt_mpu_packet_test
+	cc $(CFLAGS) $(DEBUG) test/atsc3_mmt_mpu_packet_test.c libatsc3.o $(LOCAL_LD_LIBS) -o test/atsc3_mmt_mpu_packet_test
 	echo "valgrind --leak-check=full  ./atsc3_mmt_mpu_packet_test" > test/atsc3_mmt_mpu_packet_test_valgrind
 	chmod +x test/atsc3_mmt_mpu_packet_test_valgrind
 
 test/atsc3_isobmff_box_test: test/atsc3_isobmff_box_test.c
-	cc $(CFLAGS) $(DEBUG)  test/atsc3_isobmff_box_test.c  -lz  -lm -lpthread -lpcap -o test/atsc3_isobmff_box_test 
+	cc $(CFLAGS) $(DEBUG)  test/atsc3_isobmff_box_test.c $(LOCAL_LD_LIBS) -o test/atsc3_isobmff_box_test 
 
 test/atsc3_fdt_test: test/atsc3_fdt_test.c libatsc3.o
-	cc $(CFLAGS) $(DEBUG)  test/atsc3_fdt_test.c libatsc3.o  -lz  -lm -lpthread -lpcap -o test/atsc3_fdt_test
+	cc $(CFLAGS) $(DEBUG)  test/atsc3_fdt_test.c libatsc3.o $(LOCAL_LD_LIBS) -o test/atsc3_fdt_test
 
 test/atsc3_fdt_test_2019-09-07-esg-e.1.1.7: test/atsc3_fdt_test_2019-09-07-esg-e.1.1.7.c libatsc3.o
-	cc $(CFLAGS) $(DEBUG)  test/atsc3_fdt_test_2019-09-07-esg-e.1.1.7.c libatsc3.o  -lz  -lm -lpthread -lpcap -o test/atsc3_fdt_test_2019-09-07-esg-e.1.1.7
+	cc $(CFLAGS) $(DEBUG)  test/atsc3_fdt_test_2019-09-07-esg-e.1.1.7.c libatsc3.o $(LOCAL_LD_LIBS) -o test/atsc3_fdt_test_2019-09-07-esg-e.1.1.7
 
 test/atsc3_fdt_mbms_envelope_test_2019-09-17-nab-interop-day1: test/atsc3_fdt_mbms_envelope_test_2019-09-17-nab-interop-day1.c
-	cc $(CFLAGS) $(DEBUG)  test/atsc3_fdt_mbms_envelope_test_2019-09-17-nab-interop-day1.c libatsc3.o -lz -lm -lpthread -lpcap -o test/atsc3_fdt_mbms_envelope_test_2019-09-17-nab-interop-day1
+	cc $(CFLAGS) $(DEBUG)  test/atsc3_fdt_mbms_envelope_test_2019-09-17-nab-interop-day1.c libatsc3.o $(LOCAL_LD_LIBS) -o test/atsc3_fdt_mbms_envelope_test_2019-09-17-nab-interop-day1
 
 test/atsc3_hevc_nal_extractor_test: test/atsc3_hevc_nal_extractor_test.c libatsc3.o
-	cc $(CFLAGS) $(DEBUG)  test/atsc3_hevc_nal_extractor_test.c libatsc3.o -lz -lm -lpthread -lpcap -o test/atsc3_hevc_nal_extractor_test
+	cc $(CFLAGS) $(DEBUG)  test/atsc3_hevc_nal_extractor_test.c libatsc3.o $(LOCAL_LD_LIBS) -o test/atsc3_hevc_nal_extractor_test
 
 test/atsc3_libmicrohttpd_test: test/atsc3_libmicrohttpd_test.c 
 	cc $(CFLAGS) $(DEBUG)  test/atsc3_libmicrohttpd_test.c  \
@@ -746,46 +761,55 @@ test/atsc3_route_dash_mpd_patch_test: test/atsc3_route_dash_mpd_patch_test.c ats
 
 # low level signal listener testing
 atsc3_lls_listener_test: listener_tests/atsc3_lls_listener_test.cpp libatsc3.o 
-	g++ $(CFLAGS) $(DEBUG)  listener_tests/atsc3_lls_listener_test.cpp libatsc3.o -lpcap -lz -lpthread -o listener_tests/atsc3_lls_listener_test
+	g++ $(CFLAGS) $(DEBUG) listener_tests/atsc3_lls_listener_test.cpp libatsc3.o \
+		$(LOCAL_LD_LIBS) \
+		-o listener_tests/atsc3_lls_listener_test
 
 
 # stltp listener test
 atsc3_stltp_listener_test: listener_tests/atsc3_stltp_listener_test.cpp libatsc3.o
-	g++ $(CFLAGS) $(DEBUG)  listener_tests/atsc3_stltp_listener_test.cpp libatsc3.o -lpcap -lz -lpthread -o listener_tests/atsc3_stltp_listener_test
+	g++ $(CFLAGS) $(DEBUG)  listener_tests/atsc3_stltp_listener_test.cpp libatsc3.o \
+		$(LOCAL_LD_LIBS) \
+		-o listener_tests/atsc3_stltp_listener_test
 
 
 # stltp and alp listener test
 atsc3_stltp_alp_listener_test: listener_tests/atsc3_stltp_alp_listener_test.cpp libatsc3.o
-	g++ $(CFLAGS) $(DEBUG)  listener_tests/atsc3_stltp_alp_listener_test.cpp libatsc3.o -lpcap -lz -lpthread -o listener_tests/atsc3_stltp_alp_listener_test
+	g++ $(CFLAGS) $(DEBUG)  listener_tests/atsc3_stltp_alp_listener_test.cpp libatsc3.o \
+		$(LOCAL_LD_LIBS) \
+		-o listener_tests/atsc3_stltp_alp_listener_test
 
 # jjustman-2020-06-02 - renamed from atsc3_stltp_listener_alp_reflector.cpp to match atsc3_stltp_alp_listener_reflector_test.cpp
 atsc3_stltp_alp_listener_reflector_test: listener_tests/atsc3_stltp_alp_listener_reflector_test.cpp libatsc3.o
-	g++ $(CFLAGS) $(DEBUG)  listener_tests/atsc3_stltp_alp_listener_reflector_test.cpp libatsc3.o -lpcap -lz -lpthread -o listener_tests/atsc3_stltp_alp_listener_reflector_test
-
+	g++ $(CFLAGS) $(DEBUG) listener_tests/atsc3_stltp_alp_listener_reflector_test.cpp libatsc3.o \
+		$(LOCAL_LD_LIBS) \
+		-o listener_tests/atsc3_stltp_alp_listener_reflector_test
 
 atsc3_mmt_sls_listener_test: listener_tests/atsc3_mmt_sls_listener_test.cpp libatsc3.o
-	g++ $(CFLAGS) $(DEBUG)  listener_tests/atsc3_mmt_sls_listener_test.cpp  \
-		libatsc3.o -lpcap -lz -lpthread \
+	g++ $(CFLAGS) $(DEBUG)  listener_tests/atsc3_mmt_sls_listener_test.cpp libatsc3.o \
+		$(LOCAL_LD_LIBS) \
 		-o listener_tests/atsc3_mmt_sls_listener_test
 
 # simple MMT listener that builds a single ISOBMFF segment with v/a muxed in for each MPU
 atsc3_mmt_listener_test: listener_tests/atsc3_mmt_listener_test.cpp libatsc3_bento4_gpl.o 
 	g++ -D __ISOBMFF_LIB=true $(CFLAGS) $(DEBUG)  listener_tests/atsc3_mmt_listener_test.cpp \
-	libatsc3_bento4_gpl.o \
-	-lz -lpcap  -lm -lpthread \
-	-o listener_tests/atsc3_mmt_listener_test
+		libatsc3_bento4_gpl.o \
+		$(LOCAL_LD_LIBS) \
+		-o listener_tests/atsc3_mmt_listener_test
 
 # simple ALC/DASH listener that builds a single ISOBMFF segment with v/a muxed in for each MPU
 atsc3_alc_listener_test: listener_tests/atsc3_alc_listener_test.cpp libatsc3_bento4_gpl.o
 	g++ $(CFLAGS) $(DEBUG)  listener_tests/atsc3_alc_listener_test.cpp \
 		libatsc3_bento4_gpl.o \
-		-lz -lpcap -lpthread  -o listener_tests/atsc3_alc_listener_test
+		$(LOCAL_LD_LIBS) \
+		-o listener_tests/atsc3_alc_listener_test
 
 # simple ALC/DASH listener that builds a single ISOBMFF segment with v/a muxed in for each MPU
 atsc3_alc_listener_test_valgrind: listener_tests/atsc3_alc_listener_test.cpp libatsc3_bento4_gpl.o
 	g++ -D _TEST_RUN_VALGRIND_OSX_=true $(CFLAGS) $(DEBUG)  listener_tests/atsc3_alc_listener_test.cpp \
 		libatsc3_bento4_gpl.o \
-		-lz -lpcap -lpthread  -o listener_tests/atsc3_alc_listener_test_valgrind
+		$(LOCAL_LD_LIBS) \
+		-o listener_tests/atsc3_alc_listener_test_valgrind
 
 # mfu context depacketizer/callback testing
 
@@ -793,7 +817,7 @@ atsc3_mmt_context_mfu_depacketizer_test: listener_tests/atsc3_mmt_context_mfu_de
 		libatsc3_bento4_gpl.o
 	g++ $(CFLAGS) $(DEBUG)  listener_tests/atsc3_mmt_context_mfu_depacketizer_test.cpp \
 		libatsc3_bento4_gpl.o \
-		-lz -lpcap -lpthread  \
+		$(LOCAL_LD_LIBS) \
 		-o listener_tests/atsc3_mmt_context_mfu_depacketizer_test
 
 
@@ -803,7 +827,7 @@ atsc3_mmt_context_stpp_depacketizer_test: listener_tests/atsc3_mmt_context_stpp_
 		libatsc3_bento4_gpl.o
 	g++ $(CFLAGS) $(DEBUG)  listener_tests/atsc3_mmt_context_stpp_depacketizer_test.cpp \
 		libatsc3_bento4_gpl.o \
-		-lz -lpcap -lpthread  \
+		$(LOCAL_LD_LIBS) \
 		-o listener_tests/atsc3_mmt_context_stpp_depacketizer_test
 
 # this one has some ncurses inclusion to support 		
@@ -815,7 +839,7 @@ atsc3_mmt_context_stpp_depacketizer_test: listener_tests/atsc3_mmt_context_stpp_
 a32_dstp_lls_aeat_emission_test: a324_tests/a324_dstp_lls_aeat_emission_test.cpp libatsc3_bento4_gpl.o
 	g++ $(CFLAGS) $(DEBUG)  a324_tests/a324_dstp_lls_aeat_emission_test.cpp \
 		libatsc3_bento4_gpl.o \
-		-lz -lpcap -lpthread \
+		$(LOCAL_LD_LIBS) \
 		-o a324_tests/a324_dstp_lls_aeat_emission_test
 
 # misc utils	
@@ -836,15 +860,16 @@ atsc3_listener_metrics_ncurses: tools/atsc3_listener_metrics_ncurses.cpp \
 								libatsc3_bento4_gpl.o
 
 	g++  -D OUTPUT_STATISTICS=NCURSES $(CFLAGS) $(DEBUG)  tools/atsc3_listener_metrics_ncurses.cpp \
-		libatsc3_bento4_gpl.o \
-		atsc3_isobmff_tools_gpl.o \
-		atsc3_output_statistics_ncurses.c \
-		atsc3_bandwidth_statistics.c \
-		atsc3_packet_statistics.c \
-		atsc3_mmt_reconstitution_from_media_sample.c \
-		atsc3_logging_externs.o \
-		-I../bento/include/ -lpcap  -lncurses -lpcap -lz -lpthread \
-		-o tools/atsc3_listener_metrics_ncurses
+			libatsc3_bento4_gpl.o \
+			atsc3_isobmff_tools_gpl.o \
+			atsc3_output_statistics_ncurses.c \
+			atsc3_bandwidth_statistics.c \
+			atsc3_packet_statistics.c \
+			atsc3_mmt_reconstitution_from_media_sample.c \
+			atsc3_logging_externs.o \
+			-I../bento/include/ \
+			$(LOCAL_LD_LIBS_NCURSES) \
+			-o tools/atsc3_listener_metrics_ncurses
 
 atsc3_listener_metrics_ncurses_httpd_isobmff: tools/atsc3_listener_metrics_ncurses_httpd_isobmff.cpp \
 								atsc3_bandwidth_statistics.c \
@@ -857,17 +882,18 @@ atsc3_listener_metrics_ncurses_httpd_isobmff: tools/atsc3_listener_metrics_ncurs
 								libatsc3_bento4_gpl.o
 
 	g++  -D OUTPUT_STATISTICS=NCURSES $(CFLAGS) $(DEBUG)  tools/atsc3_listener_metrics_ncurses_httpd_isobmff.cpp \
-		libatsc3_bento4_gpl.o \
-		atsc3_isobmff_tools_gpl.o \
-		atsc3_output_statistics_ncurses.c \
-		atsc3_bandwidth_statistics.c \
-		atsc3_packet_statistics.c \
-		atsc3_mmt_reconstitution_from_media_sample.c \
-		atsc3_logging_externs.o \
-		-I../bento/include/ -lpcap  -lncurses -lpcap -lz -lpthread \
-		-I../libmicrohttpd/libmicrohttpd-0.9.63/build/include \
-		-L../libmicrohttpd/libmicrohttpd-0.9.63/build/lib -lmicrohttpd \
-		-o tools/atsc3_listener_metrics_ncurses_httpd_isobmff
+			libatsc3_bento4_gpl.o \
+			atsc3_isobmff_tools_gpl.o \
+			atsc3_output_statistics_ncurses.c \
+			atsc3_bandwidth_statistics.c \
+			atsc3_packet_statistics.c \
+			atsc3_mmt_reconstitution_from_media_sample.c \
+			atsc3_logging_externs.o \
+			-I../bento/include/ \
+			$(LOCAL_LD_LIBS_NCURSES) \
+			-I../libmicrohttpd/libmicrohttpd-0.9.63/build/include \
+			-L../libmicrohttpd/libmicrohttpd-0.9.63/build/lib -lmicrohttpd \
+			-o tools/atsc3_listener_metrics_ncurses_httpd_isobmff
 
 # atsc3_mmt_mfu_monitor
 
@@ -882,15 +908,16 @@ atsc3_mmt_mfu_monitor: tools/atsc3_mmt_mfu_monitor.cpp  \
 						libatsc3_bento4_gpl.o
 
 	g++  -D OUTPUT_STATISTICS=NCURSES $(CFLAGS) $(DEBUG)  tools/atsc3_mmt_mfu_monitor.cpp \
-		libatsc3_bento4_gpl.o \
-		atsc3_isobmff_tools_gpl.o \
-		atsc3_output_statistics_mfu_ncurses.c \
-		atsc3_bandwidth_statistics.c \
-		atsc3_packet_statistics.c \
-		atsc3_mmt_reconstitution_from_media_sample.c \
-		atsc3_logging_externs.o \
-		-I../bento/include/ -lpcap  -lncurses -lpcap -lz -lpthread \
-		-o tools/atsc3_mmt_mfu_monitor
+			libatsc3_bento4_gpl.o \
+			atsc3_isobmff_tools_gpl.o \
+			atsc3_output_statistics_mfu_ncurses.c \
+			atsc3_bandwidth_statistics.c \
+			atsc3_packet_statistics.c \
+			atsc3_mmt_reconstitution_from_media_sample.c \
+			atsc3_logging_externs.o \
+			-I../bento/include/ \
+			$(LOCAL_LD_LIBS_NCURSES) \
+			-o tools/atsc3_mmt_mfu_monitor
 
 # jjustman-2020-03-26 - malloc/double free debugging
 # atsc3_alc_listener_mde_writer: tools/atsc3_alc_listener_mde_writer.cpp	libatsc3_bento4_gpl.o
@@ -905,7 +932,8 @@ atsc3_alc_listener_mde_writer: tools/atsc3_alc_listener_mde_writer.cpp	libatsc3_
 	g++  -D OUTPUT_STATISTICS=NCURSES \
 		$(CFLAGS) $(DEBUG)  tools/atsc3_alc_listener_mde_writer.cpp \
 		libatsc3_bento4_gpl.o \
-		-I../bento/include/ -lpcap  -lncurses -lpcap -lz -lpthread \
+		-I../bento/include/ \
+		$(LOCAL_LD_LIBS) \
 		-o tools/atsc3_alc_listener_mde_writer
 
 atsc3_mmt_listener_to_http_hls_fmp4: tools/atsc3_mmt_listener_to_http_hls_fmp4.cpp \
@@ -918,7 +946,8 @@ atsc3_mmt_listener_to_http_hls_fmp4: tools/atsc3_mmt_listener_to_http_hls_fmp4.c
 		libatsc3_bento4_gpl.o \
 		atsc3_isobmff_tools_gpl.o \
 		atsc3_mmt_reconstitution_from_media_sample.c atsc3_logging_externs.o \
-		-I../bento/include/ -lpcap  -lncurses -lpcap -lz -lpthread \
+		-I../bento/include/ \
+		$(LOCAL_LD_LIBS) \
 		-I../libmicrohttpd/libmicrohttpd-0.9.63/build/include \
 		-L../libmicrohttpd/libmicrohttpd-0.9.63/build/lib -lmicrohttpd \
 		-o tools/atsc3_mmt_listener_to_http_hls_fmp4
@@ -932,7 +961,7 @@ test_sl/atsc3_sl_tlv_parser_to_alp_test: 	test_sl/atsc3_sl_tlv_parser_to_alp_tes
 	cc $(CFLAGS) $(DEBUG)  test_sl/atsc3_sl_tlv_parser_to_alp_test.c \
 		  atsc3_sl_tlv_demod_type.o \
 		  libatsc3.o \
-	   -o test_sl/atsc3_sl_tlv_parser_to_alp_test -lz -lm -lpthread -lpcap
+	   -o test_sl/atsc3_sl_tlv_parser_to_alp_test $(LOCAL_LD_LIBS)
 
 test_sl/atsc3_sl_tlv_parser_to_alp_test_with_metrics:	test_sl/atsc3_sl_tlv_parser_to_alp_test_with_metrics.c \
 														atsc3_sl_tlv_demod_type.o \
@@ -940,7 +969,7 @@ test_sl/atsc3_sl_tlv_parser_to_alp_test_with_metrics:	test_sl/atsc3_sl_tlv_parse
 	cc $(CFLAGS) $(DEBUG)  test_sl/atsc3_sl_tlv_parser_to_alp_test_with_metrics.c \
 	  	atsc3_sl_tlv_demod_type.o \
 		libatsc3.o \
-		-o test_sl/atsc3_sl_tlv_parser_to_alp_test_with_metrics -lz -lm -lpthread -lpcap
+		-o test_sl/atsc3_sl_tlv_parser_to_alp_test_with_metrics $(LOCAL_LD_LIBS)
 
 test_sl/atsc3_sl_tlv_parser_to_alp_reflector_test: 	test_sl/atsc3_sl_tlv_parser_to_alp_reflector_test.c \
 													atsc3_sl_tlv_demod_type.o \
@@ -948,6 +977,6 @@ test_sl/atsc3_sl_tlv_parser_to_alp_reflector_test: 	test_sl/atsc3_sl_tlv_parser_
 	cc $(CFLAGS) $(DEBUG)  test_sl/atsc3_sl_tlv_parser_to_alp_reflector_test.c \
 		  atsc3_sl_tlv_demod_type.o \
 		  libatsc3.o \
-	   -o test_sl/atsc3_sl_tlv_parser_to_alp_reflector_test -lz -lm -lpthread -lpcap
+	   -o test_sl/atsc3_sl_tlv_parser_to_alp_reflector_test $(LOCAL_LD_LIBS)
 
 
