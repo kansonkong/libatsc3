@@ -18,6 +18,7 @@
 #ifndef ATSC3_LLS_TYPES_H_
 #define ATSC3_LLS_TYPES_H_
 
+#include "atsc3_logging_externs.h"
 #include "xml.h"
 
 #include "atsc3_aeat_types.h"
@@ -819,11 +820,14 @@ bool atsc3_route_object_is_recovered(atsc3_route_object_t* atsc3_route_object);
 
 /*
 	atsc3_sls_alc_flow: ROUTE object data pertaining to a TSI (transport stream id)
+
+	note: route_s_tsid metadata fragments are transient - e.g. subject to release in the atsc3_route_sls_processor via:
+			atsc3_sls_metadata_fragments_free(&lls_sls_alc_monitor->atsc3_sls_metadata_fragments);
+
  */
 
 typedef struct atsc3_sls_alc_flow {
-	char* 		rep_id;
-	char*		lang;
+	atsc3_route_s_tsid_RS_LS_SrcFlow_ContentInfo_MediaInfo_t* media_info;
 
 	//only for NRT payloads
 	char*		fdt_file_content_type;
@@ -856,14 +860,20 @@ typedef atsc3_sls_alc_flow_t atsc3_sls_alc_video_flow_t;
 typedef atsc3_sls_alc_flow_t atsc3_sls_alc_subtitles_flow_t;
 typedef atsc3_sls_alc_flow_t atsc3_sls_alc_data_flow_t;
 
+void atsc3_sls_alc_flow_typedef_free(atsc3_sls_alc_flow_t** atsc3_sls_alc_flow_p);
 //used for RT media fragment delivery (e.g. codepoint=8)
-atsc3_sls_alc_flow_t* atsc3_sls_alc_flow_add_entry_unique_tsi_toi_init(atsc3_sls_alc_flow_v* atsc3_sls_alc_flow, uint32_t tsi, uint32_t toi_init);
+
+//for matching contentInfo.mediaInfo@repId
+atsc3_sls_alc_flow_t* atsc3_sls_alc_flow_add_entry_unique_tsi(atsc3_sls_alc_flow_v* atsc3_sls_alc_flow, uint32_t tsi, atsc3_route_s_tsid_RS_LS_SrcFlow_ContentInfo_MediaInfo_t* media_info);
+atsc3_sls_alc_flow_t* atsc3_sls_alc_flow_add_entry_unique_tsi_toi_init(atsc3_sls_alc_flow_v* atsc3_sls_alc_flow, uint32_t tsi, uint32_t toi_init, atsc3_route_s_tsid_RS_LS_SrcFlow_ContentInfo_MediaInfo_t* media_info);
 atsc3_sls_alc_flow_t* atsc3_sls_alc_flow_find_entry_tsi_toi_init(atsc3_sls_alc_flow_v* atsc3_sls_alc_flow, uint32_t tsi, uint32_t toi_init);
 
 atsc3_sls_alc_flow_t* atsc3_sls_alc_flow_find_entry_tsi(atsc3_sls_alc_flow_v* atsc3_sls_alc_flow, uint32_t tsi);
 
-void atsc3_sls_alc_flow_set_rep_id_if_null(atsc3_sls_alc_flow_t* atsc3_sls_alc_flow, char* rep_id);
-void atsc3_sls_alc_flow_set_lang_if_null(atsc3_sls_alc_flow_t* atsc3_sls_alc_flow, char* lang);
+//TODO: replace these with proper atsc3_route_s_tsid_RS_LS_SrcFlow_ContentInfo_MediaInfo_t setter / cleanup
+
+//void atsc3_sls_alc_flow_set_rep_id_if_null(atsc3_sls_alc_flow_t* atsc3_sls_alc_flow, char* rep_id);
+//void atsc3_sls_alc_flow_set_lang_if_null(atsc3_sls_alc_flow_t* atsc3_sls_alc_flow, char* lang);
 
 //used for NRT package delivery (e.g. codepoint=1/2/3/4)
 atsc3_sls_alc_flow_t* atsc3_sls_alc_flow_add_entry_unique_tsi_toi_nrt(atsc3_sls_alc_flow_v* atsc3_sls_alc_flow, uint32_t tsi, uint32_t toi);
@@ -875,24 +885,31 @@ uint32_t atsc3_sls_alc_flow_get_last_closed_toi(atsc3_sls_alc_flow_v* atsc3_sls_
 uint32_t atsc3_sls_alc_flow_get_first_toi_init(atsc3_sls_alc_flow_v* atsc3_sls_alc_flow);
 
 
+//jjustman-2020-07-14 - TODO: make sure when this monitor is torn down,
+//void atsc3_sls_alc_flow_free(atsc3_sls_alc_flow_t** atsc3_sls_alc_flow_p) {
+//is invoked...
+
 typedef struct lls_sls_alc_monitor {
-	atsc3_lls_slt_service_t* 	atsc3_lls_slt_service;
+	atsc3_lls_slt_service_t* 				atsc3_lls_slt_service;
     
-	lls_sls_alc_session_t* 		lls_alc_session;
+	lls_sls_alc_session_t* 					lls_alc_session;
 	
 	atsc3_fdt_instance_t* 					atsc3_fdt_instance;
     atsc3_sls_metadata_fragments_t* 		atsc3_sls_metadata_fragments;
 
-    uint32_t usbd_tsi;
-	uint32_t stsid_tsi;
-	uint32_t apd_tsi;
-	uint32_t mpd_tsi;
-	uint32_t held_tsi;
-	uint32_t dwd_tsi;
+    uint32_t 	usbd_tsi;
+	uint32_t 	stsid_tsi;
+	uint32_t 	apd_tsi;
+	uint32_t 	mpd_tsi;
+	uint32_t 	held_tsi;
+	uint32_t 	dwd_tsi;
 	
     bool		has_discontiguous_toi_flow;
 	block_t* 	last_mpd_payload;
     block_t* 	last_mpd_payload_patched;
+
+
+    atsc3_sls_alc_flow_v atsc3_sls_alc_all_mediainfo_flow_v;
 
     atsc3_sls_alc_flow_v atsc3_sls_alc_audio_flow_v;
     atsc3_sls_alc_flow_v atsc3_sls_alc_video_flow_v;
@@ -1023,6 +1040,14 @@ lls_slt_service_id_group_id_cache_t* lls_slt_monitor_find_or_create_lls_slt_serv
 atsc3_lls_slt_service_t* lls_slt_monitor_add_or_update_lls_slt_service_id_group_id_cache_entry(lls_slt_monitor_t* lls_slt_monitor, uint16_t lls_group_id, atsc3_lls_slt_service_t* atsc3_lls_slt_service);
 atsc3_lls_slt_service_t* lls_slt_monitor_find_lls_slt_service_id_group_id_cache_entry(lls_slt_monitor_t* lls_slt_monitor, uint16_t service_id);
 
+
+
+
+#define _ATSC3_LLS_TYPES_ERROR(...)   __LIBATSC3_TIMESTAMP_ERROR(__VA_ARGS__);
+#define _ATSC3_LLS_TYPES_WARN(...)    __LIBATSC3_TIMESTAMP_WARN(__VA_ARGS__);;
+#define _ATSC3_LLS_TYPES_INFO(...)    if(_LLS_TYPES_INFO_ENABLED)  { __LIBATSC3_TIMESTAMP_INFO(__VA_ARGS__); }
+#define _ATSC3_LLS_TYPES_DEBUG(...)   if(_LLS_TYPES_DEBUG_ENABLED) { __LIBATSC3_TIMESTAMP_DEBUG(__VA_ARGS__); }
+#define _ATSC3_LLS_TYPES_TRACE(...)   if(_LLS_TYPES_TRACE_ENABLED) { __LIBATSC3_TIMESTAMP_TRACE(__VA_ARGS__); }
 
 
 

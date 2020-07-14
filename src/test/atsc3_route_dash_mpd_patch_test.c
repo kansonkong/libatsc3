@@ -1081,7 +1081,51 @@ int test_parse_mpd_with_multiple_audio_adaption_sets_pcre2_regex_utils() {
 }
 
 
+int test_replace_mpd_with_multiple_audio_adaption_sets_pcre2_regex_utils() {
+
+	/*
+	 * create a dummy map of representations with id's:
+	 *
+		Video1_1
+		a02_2
+		a13_3
+		d4_4
+
+	LS.Srcflow.ContentInfo.MediaInfo repId values
+
+	atsc3_route_s_tsid_RS_LS_SrcFlow_ContentInfo_MediaInfo_t
+
+
+	 and startNumber values:
+
+	  	500
+	  	1000
+	  	31337
+	  	168502
+
+	 *
+	 */
+
+	atsc3_pcre2_regex_context_t* atsc3_pcre2_regex_context = atsc3_pcre2_regex_context_new(TEST_MPD_REGEX_PATTERN);
+
+	block_t* block_mpd = block_Read_from_filename(TEST_MPD_MULTIPLE_AUDIO_ADAPTATION_SETS);
+
+	atsc3_pcre2_regex_match_capture_vector_t* atsc3_pcre2_regex_match_capture_vector = atsc3_pcre2_regex_match(atsc3_pcre2_regex_context, block_mpd);
+
+	atsc3_pcre2_regex_match_capture_vector_dump(atsc3_pcre2_regex_match_capture_vector);
+
+	atsc3_pcre2_regex_match_capture_vector_free(&atsc3_pcre2_regex_match_capture_vector);
+
+	atsc3_pcre2_regex_context_free(&atsc3_pcre2_regex_context);
+
+	return 0;
+}
+
 int main(int argc, char* argv[] ) {
+
+	_PCRE2_REGEX_UTILS_INFO_ENABLED = 1;
+	_PCRE2_REGEX_UTILS_DEBUG_ENABLED = 1;
+	_PCRE2_REGEX_UTILS_TRACE_ENABLED = 1;
 
 	_ATSC3_ROUTE_DASH_MPD_PATCH_TEST_INFO("---starting unit for atsc3_route_dash_mpd_patch_test.c---");
 	if(false) {
@@ -1116,12 +1160,13 @@ int main(int argc, char* argv[] ) {
 	}
 
 	if(true) {
-		_PCRE2_REGEX_UTILS_INFO_ENABLED = 1;
-		_PCRE2_REGEX_UTILS_DEBUG_ENABLED = 1;
-		_PCRE2_REGEX_UTILS_TRACE_ENABLED = 1;
-
 		_ATSC3_ROUTE_DASH_MPD_PATCH_TEST_INFO("test_parse_mpd_with_multiple_audio_adaption_sets_pcre2_regex_utils");
 		test_parse_mpd_with_multiple_audio_adaption_sets_pcre2_regex_utils();
+	}
+
+	if(true) {
+		_ATSC3_ROUTE_DASH_MPD_PATCH_TEST_INFO("test_replace_mpd_with_multiple_audio_adaption_sets_pcre2_regex_utils");
+		test_replace_mpd_with_multiple_audio_adaption_sets_pcre2_regex_utils();
 	}
 
 	return 0;
