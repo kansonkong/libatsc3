@@ -298,7 +298,7 @@ void atsc3_sls_html_entry_package_free(atsc3_sls_html_entry_package_t** atsc3_sl
 	PPCAT(vector_struct_name,_t)* 	PPCAT(vector_struct_name,_pop)     (PPCAT(vector_struct_name,_v)*); \
 	void 							PPCAT(vector_struct_name,_clear)   (PPCAT(vector_struct_name,_v)*); \
 	void 							PPCAT(vector_struct_name,_free_v)  (PPCAT(vector_struct_name,_v)*); \
-	void 							PPCAT(vector_struct_name,_free_t)  (PPCAT(vector_struct_name,_t)** PPCAT(vector_struct_name,_p));
+	void 							PPCAT(vector_struct_name,_typedef_free)  (PPCAT(vector_struct_name,_t)** PPCAT(vector_struct_name,_p));
 
 
 #define ATSC3_VECTOR_BUILDER_TYPEDEF_STRUCT_METHODS_IMPLEMENTATION(vector_struct_name) \
@@ -360,7 +360,7 @@ void atsc3_sls_html_entry_package_free(atsc3_sls_html_entry_package_t** atsc3_sl
 			for(int i=0; i < vector_struct->count; i++) { \
 				if(vector_struct->data[i]) { \
 					/* freesafe(vector_struct->data[i]); */ \
-					PPCAT(vector_struct_name,_free_t)(&vector_struct->data[i]); \
+					PPCAT(vector_struct_name,_typedef_free)(&vector_struct->data[i]); \
 					vector_struct->data[i] = NULL; \
 				} \
 			} \
@@ -372,7 +372,7 @@ void atsc3_sls_html_entry_package_free(atsc3_sls_html_entry_package_t** atsc3_sl
 		if(vector_struct->data) {	\
 			for(int i=0; i < vector_struct->count; i++) { \
 				if(vector_struct->data[i]) { \
-					PPCAT(vector_struct_name,_free_t)(&vector_struct->data[i]); \
+					PPCAT(vector_struct_name,_typedef_free)(&vector_struct->data[i]); \
 				} \
 			} \
 			vector_struct->count = 0; \
@@ -383,9 +383,23 @@ void atsc3_sls_html_entry_package_free(atsc3_sls_html_entry_package_t** atsc3_sl
 	};
 
 
+//jjustman-2020-07-14 - re-name typedef usage of _t to _typedef_free
+//
+//#define ATSC3_VECTOR_BUILDER_TYPEDEF_STRUCT_METHODS_ITEM_FREE(vector_struct_name) \
+//	void PPCAT(vector_struct_name,_free_t)(PPCAT(vector_struct_name,_t)** PPCAT(vector_struct_name,_p)) { \
+//		if(PPCAT(vector_struct_name,_p)) {	\
+//			PPCAT(vector_struct_name,_t)* vector_item = *PPCAT(vector_struct_name,_p);	\
+//			if(vector_item) { \
+//				freesafe(vector_item);	\
+//				vector_item = NULL;	\
+//			}	\
+//			*PPCAT(vector_struct_name,_p) = NULL;	\
+//		}	\
+//	};
+
 
 #define ATSC3_VECTOR_BUILDER_TYPEDEF_STRUCT_METHODS_ITEM_FREE(vector_struct_name) \
-	void PPCAT(vector_struct_name,_free_t)(PPCAT(vector_struct_name,_t)** PPCAT(vector_struct_name,_p)) { \
+	void PPCAT(vector_struct_name,_typedef_free)(PPCAT(vector_struct_name,_t)** PPCAT(vector_struct_name,_p)) { \
 		if(PPCAT(vector_struct_name,_p)) {	\
 			PPCAT(vector_struct_name,_t)* vector_item = *PPCAT(vector_struct_name,_p);	\
 			if(vector_item) { \

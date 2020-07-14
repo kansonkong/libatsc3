@@ -248,8 +248,8 @@ void* ncurses_input_run_thread(void* lls_slt_monitor_ptr) {
 						lls_slt_monitor->lls_sls_alc_monitor = lls_sls_alc_monitor;
 					}
 
-					atsc3_sls_alc_flow_free_t(&lls_sls_alc_monitor->audio_tsi_manual_override);
-					atsc3_sls_alc_flow_free_t(&lls_sls_alc_monitor->video_tsi_manual_override);
+					atsc3_sls_alc_flow_typedef_free(&lls_sls_alc_monitor->audio_tsi_manual_override);
+					atsc3_sls_alc_flow_typedef_free(&lls_sls_alc_monitor->video_tsi_manual_override);
 
                     if(lls_slt_monitor && lls_slt_monitor->lls_sls_alc_monitor) {
                         lls_slt_monitor->lls_sls_alc_monitor->lls_sls_monitor_output_buffer_mode.file_dump_enabled = true;

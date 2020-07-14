@@ -24,11 +24,10 @@ void atsc3_route_s_tsid_RS_LS_free(atsc3_route_s_tsid_RS_LS_t** atsc3_route_s_ts
                 atsc3_fdt_instance_free(&atsc3_route_s_tsid_RS_LS->atsc3_route_s_tsid_RS_LS_SrcFlow->atsc3_fdt_instance);
                 
                 if(atsc3_route_s_tsid_RS_LS->atsc3_route_s_tsid_RS_LS_SrcFlow->atsc3_route_s_tsid_RS_LS_SrcFlow_ContentInfo) {
+
                     if(atsc3_route_s_tsid_RS_LS->atsc3_route_s_tsid_RS_LS_SrcFlow->atsc3_route_s_tsid_RS_LS_SrcFlow_ContentInfo->atsc3_route_s_tsid_RS_LS_SrcFlow_ContentInfo_MediaInfo) {
-                        freeclean((void**)&atsc3_route_s_tsid_RS_LS->atsc3_route_s_tsid_RS_LS_SrcFlow->atsc3_route_s_tsid_RS_LS_SrcFlow_ContentInfo->atsc3_route_s_tsid_RS_LS_SrcFlow_ContentInfo_MediaInfo->content_type);
-                        freeclean((void**)&atsc3_route_s_tsid_RS_LS->atsc3_route_s_tsid_RS_LS_SrcFlow->atsc3_route_s_tsid_RS_LS_SrcFlow_ContentInfo->atsc3_route_s_tsid_RS_LS_SrcFlow_ContentInfo_MediaInfo->rep_id);
+                    	atsc3_route_s_tsid_RS_LS_SrcFlow_ContentInfo_MediaInfo_free(&atsc3_route_s_tsid_RS_LS->atsc3_route_s_tsid_RS_LS_SrcFlow->atsc3_route_s_tsid_RS_LS_SrcFlow_ContentInfo->atsc3_route_s_tsid_RS_LS_SrcFlow_ContentInfo_MediaInfo);
                     }
-                    freeclean((void**)&atsc3_route_s_tsid_RS_LS->atsc3_route_s_tsid_RS_LS_SrcFlow->atsc3_route_s_tsid_RS_LS_SrcFlow_ContentInfo->atsc3_route_s_tsid_RS_LS_SrcFlow_ContentInfo_MediaInfo);
                     
                     if(atsc3_route_s_tsid_RS_LS->atsc3_route_s_tsid_RS_LS_SrcFlow->atsc3_route_s_tsid_RS_LS_SrcFlow_ContentInfo->atsc3_route_s_tsid_RS_LS_SrcFlow_ContentInfo_AEAMedia) {
                         freeclean((void**)&atsc3_route_s_tsid_RS_LS->atsc3_route_s_tsid_RS_LS_SrcFlow->atsc3_route_s_tsid_RS_LS_SrcFlow_ContentInfo->atsc3_route_s_tsid_RS_LS_SrcFlow_ContentInfo_AEAMedia->aea_id);
@@ -441,6 +440,51 @@ void atsc3_route_s_tsid_dump(atsc3_route_s_tsid_t* atsc3_route_s_tsid) {
 				}
 			}
 		}
+	}
+}
+
+atsc3_route_s_tsid_RS_LS_SrcFlow_ContentInfo_MediaInfo_t* atsc3_route_s_tsid_RS_LS_SrcFlow_ContentInfo_MediaInfo_new() {
+	atsc3_route_s_tsid_RS_LS_SrcFlow_ContentInfo_MediaInfo_t* atsc3_route_s_tsid_RS_LS_SrcFlow_ContentInfo_MediaInfo = calloc(1, sizeof(atsc3_route_s_tsid_RS_LS_SrcFlow_ContentInfo_MediaInfo_t));
+	return atsc3_route_s_tsid_RS_LS_SrcFlow_ContentInfo_MediaInfo;
+}
+
+//allow NULL to be passed, just in case with dummy instance
+atsc3_route_s_tsid_RS_LS_SrcFlow_ContentInfo_MediaInfo_t* atsc3_route_s_tsid_RS_LS_SrcFlow_ContentInfo_MediaInfo_clone(atsc3_route_s_tsid_RS_LS_SrcFlow_ContentInfo_MediaInfo_t* atsc3_route_s_tsid_RS_LS_SrcFlow_ContentInfo_MediaInfo) {
+
+	atsc3_route_s_tsid_RS_LS_SrcFlow_ContentInfo_MediaInfo_t* atsc3_route_s_tsid_RS_LS_SrcFlow_ContentInfo_MediaInfo_cloned = atsc3_route_s_tsid_RS_LS_SrcFlow_ContentInfo_MediaInfo_new();
+
+	//allow NULL to be passed, just in case with dummy instance
+	if(!atsc3_route_s_tsid_RS_LS_SrcFlow_ContentInfo_MediaInfo) {
+		return atsc3_route_s_tsid_RS_LS_SrcFlow_ContentInfo_MediaInfo_cloned;
+	}
+
+	atsc3_route_s_tsid_RS_LS_SrcFlow_ContentInfo_MediaInfo_cloned->content_type = strndup(atsc3_route_s_tsid_RS_LS_SrcFlow_ContentInfo_MediaInfo->content_type, ATSC3_ROUTE_S_TSID_RS_LS_SRCFLOW_CONTENTINFO_MEDIAINFO_CHAR_MAX_LEN);
+	atsc3_route_s_tsid_RS_LS_SrcFlow_ContentInfo_MediaInfo_cloned->lang = strndup(atsc3_route_s_tsid_RS_LS_SrcFlow_ContentInfo_MediaInfo->lang, ATSC3_ROUTE_S_TSID_RS_LS_SRCFLOW_CONTENTINFO_MEDIAINFO_CHAR_MAX_LEN);
+	atsc3_route_s_tsid_RS_LS_SrcFlow_ContentInfo_MediaInfo_cloned->rep_id = strndup(atsc3_route_s_tsid_RS_LS_SrcFlow_ContentInfo_MediaInfo->rep_id, ATSC3_ROUTE_S_TSID_RS_LS_SRCFLOW_CONTENTINFO_MEDIAINFO_CHAR_MAX_LEN);
+
+	return atsc3_route_s_tsid_RS_LS_SrcFlow_ContentInfo_MediaInfo_cloned;
+}
+
+void atsc3_route_s_tsid_RS_LS_SrcFlow_ContentInfo_MediaInfo_free(atsc3_route_s_tsid_RS_LS_SrcFlow_ContentInfo_MediaInfo_t** atsc3_route_s_tsid_RS_LS_SrcFlow_ContentInfo_MediaInfo_p) {
+	if(atsc3_route_s_tsid_RS_LS_SrcFlow_ContentInfo_MediaInfo_p) {
+		atsc3_route_s_tsid_RS_LS_SrcFlow_ContentInfo_MediaInfo_t* atsc3_route_s_tsid_RS_LS_SrcFlow_ContentInfo_MediaInfo = *atsc3_route_s_tsid_RS_LS_SrcFlow_ContentInfo_MediaInfo_p;
+		if(atsc3_route_s_tsid_RS_LS_SrcFlow_ContentInfo_MediaInfo) {
+			if(atsc3_route_s_tsid_RS_LS_SrcFlow_ContentInfo_MediaInfo->content_type) {
+				freeclean(&atsc3_route_s_tsid_RS_LS_SrcFlow_ContentInfo_MediaInfo->content_type);
+			}
+
+			if(atsc3_route_s_tsid_RS_LS_SrcFlow_ContentInfo_MediaInfo->lang) {
+				freeclean(&atsc3_route_s_tsid_RS_LS_SrcFlow_ContentInfo_MediaInfo->lang);
+			}
+
+			if(atsc3_route_s_tsid_RS_LS_SrcFlow_ContentInfo_MediaInfo->rep_id) {
+				freeclean(&atsc3_route_s_tsid_RS_LS_SrcFlow_ContentInfo_MediaInfo->rep_id);
+			}
+
+			free(atsc3_route_s_tsid_RS_LS_SrcFlow_ContentInfo_MediaInfo);
+			atsc3_route_s_tsid_RS_LS_SrcFlow_ContentInfo_MediaInfo = NULL;
+		}
+		*atsc3_route_s_tsid_RS_LS_SrcFlow_ContentInfo_MediaInfo_p = NULL;
 	}
 }
 
