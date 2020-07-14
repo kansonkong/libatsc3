@@ -1053,7 +1053,7 @@ void atsc3_phy_mmt_player_bridge_init(atsc3NdkClient* atsc3NdkClientSL_ptr_l) {
     _MMT_CONTEXT_MPU_DEBUG_ENABLED = 0;
     _ALC_UTILS_IOTRACE_ENABLED = 0;
     _ROUTE_SLS_PROCESSOR_INFO_ENABLED = 1;
-    _ROUTE_SLS_PROCESSOR_DEBUG_ENABLED = 1;
+    _ROUTE_SLS_PROCESSOR_DEBUG_ENABLED = 0;
     _ALC_UTILS_IOTRACE_ENABLED = 0;
 
 #ifdef __SIGNED_MULTIPART_LLS_DEBUGGING__
@@ -1063,7 +1063,7 @@ void atsc3_phy_mmt_player_bridge_init(atsc3NdkClient* atsc3NdkClientSL_ptr_l) {
     _LLS_SLT_PARSER_DEBUG_ENABLED = 1;
     _LLS_SLT_PARSER_TRACE_ENABLED = 1;
 #endif
-    _LLS_ALC_UTILS_DEBUG_ENABLED = 1;
+    _LLS_ALC_UTILS_DEBUG_ENABLED = 0;
     _ALC_UTILS_DEBUG_ENABLED = 0;
     _ALC_RX_TRACE_ENABLED = 0;
 
