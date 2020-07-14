@@ -292,7 +292,12 @@ char* alc_packet_dump_to_object_get_s_tsid_filename(udp_flow_t* udp_flow, alc_pa
 				for(int j=0; j < atsc3_route_s_tsid_RS->atsc3_route_s_tsid_RS_LS_v.count; j++) {
 					atsc3_route_s_tsid_RS_LS_t* atsc3_route_s_tsid_RS_LS = atsc3_route_s_tsid_RS->atsc3_route_s_tsid_RS_LS_v.data[j];
 
-					if(atsc3_route_s_tsid_RS_LS->tsi == alc_packet->def_lct_hdr->tsi && atsc3_route_s_tsid_RS_LS->atsc3_route_s_tsid_RS_LS_SrcFlow) {
+
+					//jjustman-2020-07-14 - guard for  atsc3_route_s_tsid_RS_LS_SrcFlow_Payload = 0x0000000000000000
+					//  * frame #0: 0x00000001000374fe atsc3_alc_listener_mde_writer`alc_packet_dump_to_object_get_s_tsid_filename(udp_flow=0x00000001015075b0, alc_packet=0x000000010150e8c0, lls_sls_alc_monitor=0x0000000100704ca0) at atsc3_alc_utils.c:298:13
+
+
+					if(atsc3_route_s_tsid_RS_LS->tsi == alc_packet->def_lct_hdr->tsi && atsc3_route_s_tsid_RS_LS->atsc3_route_s_tsid_RS_LS_SrcFlow && atsc3_route_s_tsid_RS_LS->atsc3_route_s_tsid_RS_LS_SrcFlow->atsc3_route_s_tsid_RS_LS_SrcFlow_Payload) {
 					    //Assume SrcFlow_Payload.format_id == 1 for file mode:
 
 					    if(atsc3_route_s_tsid_RS_LS->atsc3_route_s_tsid_RS_LS_SrcFlow->atsc3_route_s_tsid_RS_LS_SrcFlow_Payload->format_id != 2) {
@@ -1742,7 +1747,7 @@ void atsc3_alc_packet_check_monitor_flow_for_toi_wraparound_discontinuity(alc_pa
         	atsc3_sls_alc_flow_t* matching_sls_alc_flow = NULL;
 
 			if((matching_sls_alc_flow = atsc3_sls_alc_flow_find_entry_tsi(&lls_sls_alc_monitor->atsc3_sls_alc_audio_flow_v, alc_packet->def_lct_hdr->tsi))) {
-				if(matching_sls_alc_flow->last_closed_toi > toi) {
+				if(matching_sls_alc_flow->toi_init != toi && matching_sls_alc_flow->last_closed_toi > toi) {
 					lls_sls_alc_monitor->has_discontiguous_toi_flow = true;
 					if (lls_sls_alc_monitor->last_mpd_payload) {
 						block_Destroy(&lls_sls_alc_monitor->last_mpd_payload);
@@ -1754,7 +1759,7 @@ void atsc3_alc_packet_check_monitor_flow_for_toi_wraparound_discontinuity(alc_pa
 				}
 			} else if((matching_sls_alc_flow = atsc3_sls_alc_flow_find_entry_tsi(&lls_sls_alc_monitor->atsc3_sls_alc_video_flow_v, alc_packet->def_lct_hdr->tsi))) {
 
-				if(matching_sls_alc_flow->last_closed_toi > toi) {
+				if(matching_sls_alc_flow->toi_init != toi && matching_sls_alc_flow->last_closed_toi > toi) {
 					lls_sls_alc_monitor->has_discontiguous_toi_flow = true;
 
 					if (lls_sls_alc_monitor->last_mpd_payload) {
@@ -1766,7 +1771,7 @@ void atsc3_alc_packet_check_monitor_flow_for_toi_wraparound_discontinuity(alc_pa
 
 				}
 			} else if((matching_sls_alc_flow = atsc3_sls_alc_flow_find_entry_tsi(&lls_sls_alc_monitor->atsc3_sls_alc_subtitles_flow_v, alc_packet->def_lct_hdr->tsi))) {
-				if(matching_sls_alc_flow->last_closed_toi > toi) {
+				if(matching_sls_alc_flow->toi_init != toi && matching_sls_alc_flow->last_closed_toi > toi) {
 					lls_sls_alc_monitor->has_discontiguous_toi_flow = true;
 
 					if (lls_sls_alc_monitor->last_mpd_payload) {
