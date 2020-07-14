@@ -18,6 +18,7 @@
 
 #include "../atsc3_pcre2_regex_utils.h"
 
+#include "../atsc3_route_dash_utils.h"
 
 #define _ATSC3_ROUTE_DASH_MPD_PATCH_TEST_ERROR(...)   printf("%s:%d:ERROR:",__FILE__,__LINE__);_ATSC3_UTILS_PRINTLN(__VA_ARGS__);
 #define _ATSC3_ROUTE_DASH_MPD_PATCH_TEST_WARN(...)    printf("%s:%d:WARN:",__FILE__,__LINE__);_ATSC3_UTILS_PRINTLN(__VA_ARGS__);
@@ -1083,18 +1084,68 @@ int test_parse_mpd_with_multiple_audio_adaption_sets_pcre2_regex_utils() {
 
 int test_replace_mpd_with_multiple_audio_adaption_sets_pcre2_regex_utils() {
 
+	uint32_t tsi = 0;
+	atsc3_sls_alc_flow_t* atsc3_sls_alc_all_mediainfo_flow = NULL;
+
+	atsc3_route_s_tsid_RS_LS_SrcFlow_ContentInfo_MediaInfo_t* media_info = atsc3_route_s_tsid_RS_LS_SrcFlow_ContentInfo_MediaInfo_new();
+
+	lls_sls_alc_monitor_t* lls_sls_alc_monitor = lls_sls_alc_monitor_new();
+
 	/*
 	 * create a dummy map of representations with id's:
 	 *
-		Video1_1
-		a02_2
-		a13_3
-		d4_4
+		TSI=100, repId=Video1_1
+		TSI=200, repId=a02_2
+		TSI=201, repId=a13_3
+		TSI=300, repId=d4_4
 
-	LS.Srcflow.ContentInfo.MediaInfo repId values
+		LS.Srcflow.ContentInfo.MediaInfo repId values
 
-	atsc3_route_s_tsid_RS_LS_SrcFlow_ContentInfo_MediaInfo_t
+		atsc3_route_s_tsid_RS_LS_SrcFlow_ContentInfo_MediaInfo_t
+	*/
 
+	char* repId_Video1_1 = "Video1_1";
+	char* contentType_video = "video";
+
+	char* repId_a02_2 = "a02_2";
+	char* repId_a13_3 = "a13_3";
+	char* contentType_audio = "audio";
+
+	char* repId_d4_4 = "d4_4";
+	char* contentType_subtitles = "subtitles";
+
+	tsi=100;
+
+	media_info->content_type = contentType_video;
+	media_info->rep_id = repId_Video1_1;
+
+	atsc3_sls_alc_all_mediainfo_flow = atsc3_sls_alc_flow_add_entry_unique_tsi(&lls_sls_alc_monitor->atsc3_sls_alc_all_mediainfo_flow_v, tsi, media_info);
+	atsc3_sls_alc_all_mediainfo_flow->last_closed_toi = 500;
+
+	tsi=200;
+
+	media_info->content_type = contentType_audio;
+	media_info->rep_id = repId_a02_2;
+
+	atsc3_sls_alc_all_mediainfo_flow = atsc3_sls_alc_flow_add_entry_unique_tsi(&lls_sls_alc_monitor->atsc3_sls_alc_all_mediainfo_flow_v, tsi, media_info);
+	atsc3_sls_alc_all_mediainfo_flow->last_closed_toi = 1000;
+
+	tsi=201;
+
+	media_info->content_type = contentType_audio;
+	media_info->rep_id = repId_a13_3;
+
+	atsc3_sls_alc_all_mediainfo_flow = atsc3_sls_alc_flow_add_entry_unique_tsi(&lls_sls_alc_monitor->atsc3_sls_alc_all_mediainfo_flow_v, tsi, media_info);
+	atsc3_sls_alc_all_mediainfo_flow->last_closed_toi = 31337;
+
+	tsi=300;
+
+	media_info->content_type = contentType_subtitles;
+	media_info->rep_id = repId_d4_4;
+
+	atsc3_sls_alc_all_mediainfo_flow = atsc3_sls_alc_flow_add_entry_unique_tsi(&lls_sls_alc_monitor->atsc3_sls_alc_all_mediainfo_flow_v, tsi, media_info);
+	atsc3_sls_alc_all_mediainfo_flow->last_closed_toi = 168502;
+	/*
 
 	 and startNumber values:
 
@@ -1114,6 +1165,8 @@ int test_replace_mpd_with_multiple_audio_adaption_sets_pcre2_regex_utils() {
 
 	atsc3_pcre2_regex_match_capture_vector_dump(atsc3_pcre2_regex_match_capture_vector);
 
+	atsc3_route_dash_find_matching_s_tsid_representations_from_mpd_pcre2_regex_matches(atsc3_pcre2_regex_match_capture_vector, &lls_sls_alc_monitor->atsc3_sls_alc_all_mediainfo_flow_v);
+
 	atsc3_pcre2_regex_match_capture_vector_free(&atsc3_pcre2_regex_match_capture_vector);
 
 	atsc3_pcre2_regex_context_free(&atsc3_pcre2_regex_context);
@@ -1126,6 +1179,10 @@ int main(int argc, char* argv[] ) {
 	_PCRE2_REGEX_UTILS_INFO_ENABLED = 1;
 	_PCRE2_REGEX_UTILS_DEBUG_ENABLED = 1;
 	_PCRE2_REGEX_UTILS_TRACE_ENABLED = 1;
+
+	_ROUTE_DASH_UTILS_DEBUG_ENABLED = 1;
+	_ROUTE_DASH_UTILS_TRACE_ENABLED = 1;
+
 
 	_ATSC3_ROUTE_DASH_MPD_PATCH_TEST_INFO("---starting unit for atsc3_route_dash_mpd_patch_test.c---");
 	if(false) {
