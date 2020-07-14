@@ -647,7 +647,7 @@ FILE* alc_object_pre_allocate(char* file_name, alc_packet_t* alc_packet) {
         __ALC_UTILS_IOTRACE("pre_allocate: after: file %s to size: %d, wrote out: %u in %u fwrite", file_name, to_allocate_size, alloc_offset, loop_count);
 
     } else {
-        __ALC_UTILS_WARN("pre_allocate: file %s, transfer_len is 0, not pre allocating", file_name);
+        __ALC_UTILS_IOTRACE("pre_allocate: file %s, transfer_len is 0, not pre allocating", file_name);
     }
     fclose(f);
     f = fopen(file_name, "r+");
@@ -1502,7 +1502,7 @@ void atsc3_alc_persist_route_ext_attributes_per_lls_sls_alc_monitor_essence(alc_
         atsc3_sls_alc_flow_t* matching_sls_alc_flow = NULL;
 
 		if((matching_sls_alc_flow = atsc3_sls_alc_flow_find_entry_tsi(&lls_sls_alc_monitor->atsc3_sls_alc_audio_flow_v, alc_packet->def_lct_hdr->tsi))) {
-			__ALC_UTILS_INFO("atsc3_alc_persist_route_ext_attributes_per_lls_sls_alc_monitor_essence, found matching_sls_alc_flow for tsi: %d, toi_init: %d, matching toi: %d, toi: %d",
+			__ALC_UTILS_DEBUG("atsc3_alc_persist_route_ext_attributes_per_lls_sls_alc_monitor_essence, found matching_sls_alc_flow for tsi: %d, toi_init: %d, matching toi: %d, toi: %d",
 					alc_packet->def_lct_hdr->tsi, matching_sls_alc_flow->toi_init, matching_sls_alc_flow->toi, toi);
 			if(matching_sls_alc_flow->toi_init == toi) {
 				if(toi_length) {
