@@ -372,6 +372,14 @@ char* alc_packet_dump_to_object_get_s_tsid_filename(udp_flow_t* udp_flow, alc_pa
 
                                         atsc3_sls_alc_flow_t* matching_sls_alc_flow = NULL;
 
+                                        //jjustman-2020-07-14 - global route dash representationId patching for s-tsid flows
+                                        //atsc3_sls_alc_all_mediainfo_flow_v
+                                        if((matching_sls_alc_flow = atsc3_sls_alc_flow_find_entry_tsi(&lls_sls_alc_monitor->atsc3_sls_alc_all_mediainfo_flow_v, alc_packet->def_lct_hdr->tsi))) {
+                                        	matching_sls_alc_flow->last_closed_toi = alc_packet->def_lct_hdr->toi;
+                                        }
+
+
+
                                         if((matching_sls_alc_flow = atsc3_sls_alc_flow_find_entry_tsi(&lls_sls_alc_monitor->atsc3_sls_alc_audio_flow_v, alc_packet->def_lct_hdr->tsi))) {
                                         	matching_sls_alc_flow->last_closed_toi = alc_packet->def_lct_hdr->toi;
                                         } else if((matching_sls_alc_flow = atsc3_sls_alc_flow_find_entry_tsi(&lls_sls_alc_monitor->atsc3_sls_alc_video_flow_v, alc_packet->def_lct_hdr->tsi))) {
@@ -1259,7 +1267,7 @@ cleanup:
 	return;
 }
 
-
+//jjustman-2020-07-14 - dead code - don't use
 void alc_recon_file_buffer_struct_monitor_fragment_with_init_box(udp_flow_t* udp_flow, alc_packet_t* alc_packet, lls_sls_alc_monitor_t* lls_sls_alc_monitor) {
 	int flush_ret = 0;
 	char* audio_init_file_name = NULL;
