@@ -86,9 +86,11 @@ extern "C" {
 		<xs:anyAttribute namespace="##other" processContents="strict"/>
 	</xs:complexType>
  */
+#define ATSC3_ROUTE_S_TSID_RS_LS_SRCFLOW_CONTENTINFO_MEDIAINFO_CHAR_MAX_LEN 128
+
 typedef struct atsc3_route_s_tsid_RS_LS_SrcFlow_ContentInfo_MediaInfo {
 	char* 	content_type;
-	char* 	lang; //TODO
+	char* 	lang;
 	char*	rep_id;
 	bool 	startup;
 
@@ -97,6 +99,12 @@ typedef struct atsc3_route_s_tsid_RS_LS_SrcFlow_ContentInfo_MediaInfo {
 
 
 } atsc3_route_s_tsid_RS_LS_SrcFlow_ContentInfo_MediaInfo_t;
+
+//jjustman-2020-07-14 - TODO - create ATSC3_ALLOC define to support: _new, _clone, _free
+
+atsc3_route_s_tsid_RS_LS_SrcFlow_ContentInfo_MediaInfo_t* atsc3_route_s_tsid_RS_LS_SrcFlow_ContentInfo_MediaInfo_new();
+atsc3_route_s_tsid_RS_LS_SrcFlow_ContentInfo_MediaInfo_t* atsc3_route_s_tsid_RS_LS_SrcFlow_ContentInfo_MediaInfo_clone(atsc3_route_s_tsid_RS_LS_SrcFlow_ContentInfo_MediaInfo_t* atsc3_route_s_tsid_RS_LS_SrcFlow_ContentInfo_MediaInfo);
+void atsc3_route_s_tsid_RS_LS_SrcFlow_ContentInfo_MediaInfo_free(atsc3_route_s_tsid_RS_LS_SrcFlow_ContentInfo_MediaInfo_t** atsc3_route_s_tsid_RS_LS_SrcFlow_ContentInfo_MediaInfo_p);
 
 /*
  * <!-- AEA Media Content -->

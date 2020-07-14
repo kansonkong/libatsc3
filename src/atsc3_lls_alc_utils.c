@@ -400,7 +400,21 @@ void lls_sls_alc_update_tsi_toi_from_route_s_tsid(lls_sls_alc_monitor_t* lls_sls
 
 			if(atsc3_route_s_tsid_RS_LS->atsc3_route_s_tsid_RS_LS_SrcFlow) {
 
+				atsc3_fdt_instance_t* atsc3_fdt_instance = atsc3_route_s_tsid_RS_LS->atsc3_route_s_tsid_RS_LS_SrcFlow->atsc3_fdt_instance;
+				atsc3_route_s_tsid_RS_LS_SrcFlow_ContentInfo_MediaInfo_t* media_info = NULL; //jjustman-2020-07-14 - keep track of this mediaInfo/repId and tsi/toi for mpd startNumber patching
+
+
+                if(!atsc3_fdt_instance) {
+                   _ATSC3_LLS_ALC_UTILS_WARN("    S-TSID.RS.LS.source_flow present but no fdt-instance element!");
+                   return;
+                }
+
 				if(atsc3_route_s_tsid_RS_LS->atsc3_route_s_tsid_RS_LS_SrcFlow->atsc3_route_s_tsid_RS_LS_SrcFlow_ContentInfo && atsc3_route_s_tsid_RS_LS->atsc3_route_s_tsid_RS_LS_SrcFlow->atsc3_route_s_tsid_RS_LS_SrcFlow_ContentInfo->atsc3_route_s_tsid_RS_LS_SrcFlow_ContentInfo_MediaInfo) {
+					media_info = atsc3_route_s_tsid_RS_LS->atsc3_route_s_tsid_RS_LS_SrcFlow->atsc3_route_s_tsid_RS_LS_SrcFlow_ContentInfo->atsc3_route_s_tsid_RS_LS_SrcFlow_ContentInfo_MediaInfo;
+
+					atsc3_sls_alc_flow_t* atsc3_sls_alc_all_mediainfo_flow = atsc3_sls_alc_flow_add_entry_unique_tsi(&lls_sls_alc_monitor->atsc3_sls_alc_all_mediainfo_flow_v, atsc3_route_s_tsid_RS_LS->tsi, media_info);
+
+					//TODO: jjustman-2020-07-14 - fixme to a qualfied type
 					src_flow_content_info_content_type = atsc3_route_s_tsid_RS_LS->atsc3_route_s_tsid_RS_LS_SrcFlow->atsc3_route_s_tsid_RS_LS_SrcFlow_ContentInfo->atsc3_route_s_tsid_RS_LS_SrcFlow_ContentInfo_MediaInfo->content_type;
 
 					_ATSC3_LLS_ALC_UTILS_DEBUG("   S-TSID.RS.LS.SrcFlow.ContentInfo: contentType: %s, repId: %s, startup: %u",
@@ -409,12 +423,12 @@ void lls_sls_alc_update_tsi_toi_from_route_s_tsid(lls_sls_alc_monitor_t* lls_sls
 							atsc3_route_s_tsid_RS_LS->atsc3_route_s_tsid_RS_LS_SrcFlow->atsc3_route_s_tsid_RS_LS_SrcFlow_ContentInfo->atsc3_route_s_tsid_RS_LS_SrcFlow_ContentInfo_MediaInfo->startup);
 
 				}
-				atsc3_fdt_instance_t* atsc3_fdt_instance = atsc3_route_s_tsid_RS_LS->atsc3_route_s_tsid_RS_LS_SrcFlow->atsc3_fdt_instance;
-                
-                if(!atsc3_fdt_instance) {
-                   _ATSC3_LLS_ALC_UTILS_WARN("    S-TSID.RS.LS.source_flow present but no fdt-instance element!");
-                   return;
-                }
+
+				//continue on...
+				if(!media_info) {
+	                   _ATSC3_LLS_ALC_UTILS_INFO("    atsc3_route_s_tsid_RS_LS_SrcFlow_ContentInfo_MediaInfo missing for tsi: %d", atsc3_route_s_tsid_RS_LS->tsi);
+				}
+
 
 				_ATSC3_LLS_ALC_UTILS_DEBUG("     S-TSID.RS.LS.source_flow.fdt-instance: version: %u, expires: %u, content_type: %s, file_template: %s",
 						atsc3_fdt_instance->efdt_vesion,
@@ -431,10 +445,7 @@ void lls_sls_alc_update_tsi_toi_from_route_s_tsid(lls_sls_alc_monitor_t* lls_sls
 						if(strncasecmp("audio", src_flow_content_info_content_type, 5) == 0 && !lls_sls_alc_monitor->audio_tsi_manual_override) {
                             if(!lls_sls_alc_monitor->audio_tsi_manual_override)  {
                                 //update our audio tsi and toi accordingly
-                            	atsc3_sls_alc_flow_t* atsc3_sls_alc_flow = atsc3_sls_alc_flow_add_entry_unique_tsi_toi_init(&lls_sls_alc_monitor->atsc3_sls_alc_audio_flow_v, atsc3_route_s_tsid_RS_LS->tsi, atsc3_fdt_file->toi);
-                            	atsc3_sls_alc_flow_set_rep_id_if_null(atsc3_sls_alc_flow, atsc3_route_s_tsid_RS_LS->atsc3_route_s_tsid_RS_LS_SrcFlow->atsc3_route_s_tsid_RS_LS_SrcFlow_ContentInfo->atsc3_route_s_tsid_RS_LS_SrcFlow_ContentInfo_MediaInfo->rep_id);
-                            	atsc3_sls_alc_flow_set_lang_if_null(atsc3_sls_alc_flow, atsc3_route_s_tsid_RS_LS->atsc3_route_s_tsid_RS_LS_SrcFlow->atsc3_route_s_tsid_RS_LS_SrcFlow_ContentInfo->atsc3_route_s_tsid_RS_LS_SrcFlow_ContentInfo_MediaInfo->lang);
-
+                            	atsc3_sls_alc_flow_t* atsc3_sls_alc_flow = atsc3_sls_alc_flow_add_entry_unique_tsi_toi_init(&lls_sls_alc_monitor->atsc3_sls_alc_audio_flow_v, atsc3_route_s_tsid_RS_LS->tsi, atsc3_fdt_file->toi, media_info);
 
                             } else {
                                 _ATSC3_LLS_ALC_UTILS_DEBUG("lls_sls_alc_update_tsi_toi_from_route_s_tsid: not replacing audio tsi/toi_init, as manual override set: %d, %d",
@@ -444,10 +455,7 @@ void lls_sls_alc_update_tsi_toi_from_route_s_tsid(lls_sls_alc_monitor_t* lls_sls
 
 						} else if(strncasecmp("video", src_flow_content_info_content_type, 5) == 0) {
                             if (!lls_sls_alc_monitor->video_tsi_manual_override) {
-                            	atsc3_sls_alc_flow_t* atsc3_sls_alc_flow = atsc3_sls_alc_flow_add_entry_unique_tsi_toi_init(&lls_sls_alc_monitor->atsc3_sls_alc_video_flow_v, atsc3_route_s_tsid_RS_LS->tsi, atsc3_fdt_file->toi);
-
-                            	atsc3_sls_alc_flow_set_rep_id_if_null(atsc3_sls_alc_flow, atsc3_route_s_tsid_RS_LS->atsc3_route_s_tsid_RS_LS_SrcFlow->atsc3_route_s_tsid_RS_LS_SrcFlow_ContentInfo->atsc3_route_s_tsid_RS_LS_SrcFlow_ContentInfo_MediaInfo->rep_id);
-                            	atsc3_sls_alc_flow_set_lang_if_null(atsc3_sls_alc_flow, atsc3_route_s_tsid_RS_LS->atsc3_route_s_tsid_RS_LS_SrcFlow->atsc3_route_s_tsid_RS_LS_SrcFlow_ContentInfo->atsc3_route_s_tsid_RS_LS_SrcFlow_ContentInfo_MediaInfo->lang);
+                            	atsc3_sls_alc_flow_t* atsc3_sls_alc_flow = atsc3_sls_alc_flow_add_entry_unique_tsi_toi_init(&lls_sls_alc_monitor->atsc3_sls_alc_video_flow_v, atsc3_route_s_tsid_RS_LS->tsi, atsc3_fdt_file->toi, media_info);
 
                             } else {
                                 _ATSC3_LLS_ALC_UTILS_DEBUG(
@@ -456,12 +464,10 @@ void lls_sls_alc_update_tsi_toi_from_route_s_tsid(lls_sls_alc_monitor_t* lls_sls
                                         lls_sls_alc_monitor->video_tsi_manual_override->toi_init);
                             }
                         } else if(strncasecmp("text", src_flow_content_info_content_type, 4) == 0 || strncasecmp("subtitles", src_flow_content_info_content_type, 4) == 0) {
+                        	//jjustman-2020-07-14 - todo: fix me for "subtitles" content type strlen
                             if (!lls_sls_alc_monitor->text_tsi_manual_override) {
                                 _ATSC3_LLS_ALC_UTILS_INFO("lls_sls_alc_update_tsi_toi_from_route_s_tsid: setting subtitle tsi/toi_init information to: %d, %d", atsc3_route_s_tsid_RS_LS->tsi, atsc3_fdt_file->toi);
-                                atsc3_sls_alc_flow_t* atsc3_sls_alc_flow = atsc3_sls_alc_flow_add_entry_unique_tsi_toi_init(&lls_sls_alc_monitor->atsc3_sls_alc_subtitles_flow_v, atsc3_route_s_tsid_RS_LS->tsi, atsc3_fdt_file->toi);
-
-                            	atsc3_sls_alc_flow_set_rep_id_if_null(atsc3_sls_alc_flow, atsc3_route_s_tsid_RS_LS->atsc3_route_s_tsid_RS_LS_SrcFlow->atsc3_route_s_tsid_RS_LS_SrcFlow_ContentInfo->atsc3_route_s_tsid_RS_LS_SrcFlow_ContentInfo_MediaInfo->rep_id);
-                            	atsc3_sls_alc_flow_set_lang_if_null(atsc3_sls_alc_flow, atsc3_route_s_tsid_RS_LS->atsc3_route_s_tsid_RS_LS_SrcFlow->atsc3_route_s_tsid_RS_LS_SrcFlow_ContentInfo->atsc3_route_s_tsid_RS_LS_SrcFlow_ContentInfo_MediaInfo->lang);
+                                atsc3_sls_alc_flow_t* atsc3_sls_alc_flow = atsc3_sls_alc_flow_add_entry_unique_tsi_toi_init(&lls_sls_alc_monitor->atsc3_sls_alc_subtitles_flow_v, atsc3_route_s_tsid_RS_LS->tsi, atsc3_fdt_file->toi, media_info);
 
                             } else {
                                 _ATSC3_LLS_ALC_UTILS_DEBUG(

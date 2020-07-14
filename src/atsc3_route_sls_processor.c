@@ -17,6 +17,8 @@ int _ROUTE_SLS_PROCESSOR_DEBUG_ENABLED = 0;
 /*
  jjustman-2020-06-02 TODO: make sure we properly clear out lls_sls_alc_monitor on MBMS TSI=0, TOI change
 
+ TODO: only process the full SLS if TSI=0, TOI= has changed, indiciating a new SLS payload...
+
  */
 
 void atsc3_route_sls_process_from_alc_packet_and_file(udp_flow_t* udp_flow, alc_packet_t* alc_packet, lls_sls_alc_monitor_t* lls_sls_alc_monitor) {

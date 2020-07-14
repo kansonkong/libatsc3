@@ -22,6 +22,7 @@ extern "C" {
 #define ATSC3_ROUTE_DASH_MPD_REPRESENTATION_ID_SEGMENT_TEMPLATE_START_NUMBER_REGEX_FLAGS "msg"
 
 
+//atsc3_pcre2_regex_match_capture_vector_t* atsc3_pcre2_regex_match_capture_vector
 
 
 
