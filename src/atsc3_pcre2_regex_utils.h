@@ -81,7 +81,7 @@ atsc3_pcre2_regex_match_capture_vector_t* atsc3_pcre2_regex_match(atsc3_pcre2_re
 
 //jjustman-2020-07-14 - todo: macro _new and _free for ATSC3_ALLOC() with chained VECTOR_BUILDER destructors..
 
-atsc3_pcre2_regex_match_capture_vector_t* atsc3_pcre2_regex_match_capture_vector_new(block_t* source_block_to_copy);
+atsc3_pcre2_regex_match_capture_vector_t* atsc3_pcre2_regex_match_capture_vector_new_from_block_t(block_t* source_block_to_copy);
 void atsc3_pcre2_regex_match_capture_vector_dump(atsc3_pcre2_regex_match_capture_vector_t* atsc3_pcre2_regex_match_capture_vector);
 
 void atsc3_pcre2_regex_match_capture_vector_free(atsc3_pcre2_regex_match_capture_vector_t** atsc3_pcre2_regex_match_captures_p);
