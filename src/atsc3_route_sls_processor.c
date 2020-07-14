@@ -119,9 +119,6 @@ void atsc3_route_sls_process_from_alc_packet_and_file(udp_flow_t* udp_flow, alc_
 
 				//jjustman-2020-07-07 -  TODO: dispatch any additional atsc3_monitor_events_sls here
 
-
-
-                
 				/* https://github.com/google/shaka-player/issues/237
 				   
 				   For MPDs with type dynamic, it is important to look at the combo "availabilityStartTime + period@start" (AST + PST) and "startNumber"
@@ -151,26 +148,33 @@ void atsc3_route_sls_process_from_alc_packet_and_file(udp_flow_t* udp_flow, alc_
 				    }
 				  }
 				  
-				  char mbms_filename[1025] = { 0 };
-				  snprintf(mbms_filename, 1024, "route/%d", lls_sls_alc_monitor->atsc3_lls_slt_service->service_id);
-				  mkdir(mbms_filename, 0777);
-				  snprintf(mbms_filename, 1024, "route/%d/%s", lls_sls_alc_monitor->atsc3_lls_slt_service->service_id, atsc3_mime_multipart_related_payload->content_location);
-				  FILE* fp_mbms_file = fopen(mbms_filename, "w");
-				  if(fp_mbms_file) {
-				    /* lldb: set set target.max-string-summary-length 10000 */
-				    _ATSC3_ROUTE_SLS_PROCESSOR_DEBUG("writing MBMS object to: %s, payload: %s", mbms_filename, atsc3_mime_multipart_related_payload->payload->p_buffer);
-				    
-				    size_t fwrite_size = fwrite(atsc3_mime_multipart_related_payload->payload->p_buffer, atsc3_mime_multipart_related_payload->payload->p_size, 1, fp_mbms_file);
-				    if(!fwrite_size) {
-				      _ATSC3_ROUTE_SLS_PROCESSOR_ERROR("fwrite for atsc3_mime_multipart_related_payload, file: %s, is: %d", mbms_filename, fwrite_size);
-				    }
-				    fclose(fp_mbms_file);
-				    fp_mbms_file = NULL;
+				  //jjustman-2020-07-14 - mpd patching may result in an empty payload return (e.g. unable to properly patch due to error, so check that we don't flush out a possibly corrupt SLS object
+				  //QQ: are 0 byte ROUTE objects acceptable?
+
+				  if(atsc3_mime_multipart_related_payload->payload && atsc3_mime_multipart_related_payload->payload->p_buffer && atsc3_mime_multipart_related_payload->payload->p_size) {
+
+					  char mbms_filename[1025] = { 0 };
+					  snprintf(mbms_filename, 1024, "route/%d", lls_sls_alc_monitor->atsc3_lls_slt_service->service_id);
+					  mkdir(mbms_filename, 0777);
+					  snprintf(mbms_filename, 1024, "route/%d/%s", lls_sls_alc_monitor->atsc3_lls_slt_service->service_id, atsc3_mime_multipart_related_payload->content_location);
+					  FILE* fp_mbms_file = fopen(mbms_filename, "w");
+					  if(fp_mbms_file) {
+						/* lldb: set set target.max-string-summary-length 10000 */
+						_ATSC3_ROUTE_SLS_PROCESSOR_DEBUG("writing MBMS object to: %s, payload: %s", mbms_filename, atsc3_mime_multipart_related_payload->payload->p_buffer);
+
+						size_t fwrite_size = fwrite(atsc3_mime_multipart_related_payload->payload->p_buffer, atsc3_mime_multipart_related_payload->payload->p_size, 1, fp_mbms_file);
+						if(!fwrite_size) {
+						  _ATSC3_ROUTE_SLS_PROCESSOR_ERROR("fwrite for atsc3_mime_multipart_related_payload, file: %s, is: %d", mbms_filename, fwrite_size);
+						}
+						fclose(fp_mbms_file);
+						fp_mbms_file = NULL;
+					  } else {
+						  _ATSC3_ROUTE_SLS_PROCESSOR_ERROR("sls mbms fragment dump, original content_location: %s, unable to write to local path: %s", atsc3_mime_multipart_related_payload->content_location, mbms_filename);
+					  }
 				  } else {
-				    _ATSC3_ROUTE_SLS_PROCESSOR_ERROR("sls mbms fragment dump, original content_location: %s, unable to write to local path: %s", atsc3_mime_multipart_related_payload->content_location, mbms_filename);
-				    
+					  _ATSC3_ROUTE_SLS_PROCESSOR_ERROR("sls mbms fragment paylaod is null or p_size is zero, skipping write of original content_location: %s", atsc3_mime_multipart_related_payload->content_location);
 				  }
-			     }
+				}
 			}
 		} else {
 			_ATSC3_ROUTE_SLS_PROCESSOR_ERROR("No pending atsc3_fdt_instance to process in TSI:0");
@@ -233,6 +237,7 @@ cleanup:
           <Representation audioSamplingRate="48000" bandwidth="96000" codecs="ac-4.02.00.00" id="a02_2">
             <SegmentTemplate duration="2002000" initialization="a0-$RepresentationID$-init.mp4" media="a0-$RepresentationID$-$Number$.m4s" startNumber="0" timescale="1000000"/>
 
+//TODO: confirm fragment is complete...
 
  */
 void atsc3_route_sls_patch_mpd_availability_start_time_and_start_number(atsc3_mime_multipart_related_payload_t* atsc3_mime_multipart_related_payload, lls_sls_alc_monitor_t* lls_sls_alc_monitor) {
@@ -307,45 +312,62 @@ void atsc3_route_sls_patch_mpd_availability_start_time_and_start_number(atsc3_mi
         	block_Rewind(block_mpd);
 
         	atsc3_pcre2_regex_match_capture_vector_t* atsc3_pcre2_regex_match_capture_vector = atsc3_pcre2_regex_match(atsc3_pcre2_regex_context, block_mpd);
+        	if(atsc3_pcre2_regex_match_capture_vector) {
 
-        	atsc3_pcre2_regex_match_capture_vector_dump(atsc3_pcre2_regex_match_capture_vector);
+				atsc3_pcre2_regex_match_capture_vector_dump(atsc3_pcre2_regex_match_capture_vector);
 
-        	atsc3_route_dash_matching_s_tsid_representation_media_info_alc_flow_match_vector_t* match_vector = atsc3_route_dash_find_matching_s_tsid_representations_from_mpd_pcre2_regex_matches(atsc3_pcre2_regex_match_capture_vector, &lls_sls_alc_monitor->atsc3_sls_alc_all_mediainfo_flow_v);
-        	_ATSC3_ROUTE_SLS_PROCESSOR_DEBUG("got back %d match tuples <capture, media_info, alc_flow>", match_vector->atsc3_route_dash_matching_s_tsid_representation_media_info_alc_flow_match_v.count);
+				atsc3_route_dash_matching_s_tsid_representation_media_info_alc_flow_match_vector_t* match_vector = atsc3_route_dash_find_matching_s_tsid_representations_from_mpd_pcre2_regex_matches(atsc3_pcre2_regex_match_capture_vector, &lls_sls_alc_monitor->atsc3_sls_alc_all_mediainfo_flow_v);
+				if(!match_vector || !match_vector->atsc3_route_dash_matching_s_tsid_representation_media_info_alc_flow_match_v.count) {
+					_ATSC3_ROUTE_SLS_PROCESSOR_ERROR("find_matching_s_tsid_representations - match vector is null or match_v.cound is 0!");
+					goto error;
+				}
 
-        	for(int i=0; i < match_vector->atsc3_route_dash_matching_s_tsid_representation_media_info_alc_flow_match_v.count; i++) {
-        		atsc3_route_dash_matching_s_tsid_representation_media_info_alc_flow_match_t* atsc3_route_dash_matching_s_tsid_representation_media_info_alc_flow_match = match_vector->atsc3_route_dash_matching_s_tsid_representation_media_info_alc_flow_match_v.data[i];
+				_ATSC3_ROUTE_SLS_PROCESSOR_DEBUG("got back %d match tuples <capture, media_info, alc_flow>", match_vector->atsc3_route_dash_matching_s_tsid_representation_media_info_alc_flow_match_v.count);
 
-        		_ATSC3_ROUTE_SLS_PROCESSOR_DEBUG("s-tsid repId: %s, contentType: %s, startNumber replace start: %d, end: %d, toi value: %d",
-        				atsc3_route_dash_matching_s_tsid_representation_media_info_alc_flow_match->atsc3_route_s_content_info_media_info->rep_id,
-        				atsc3_route_dash_matching_s_tsid_representation_media_info_alc_flow_match->atsc3_route_s_content_info_media_info->content_type,
-        				atsc3_route_dash_matching_s_tsid_representation_media_info_alc_flow_match->atsc3_preg2_regex_match_capture_start_number->match_start,
-        				atsc3_route_dash_matching_s_tsid_representation_media_info_alc_flow_match->atsc3_preg2_regex_match_capture_start_number->match_end,
-        				atsc3_route_dash_matching_s_tsid_representation_media_info_alc_flow_match->atsc3_sls_alc_flow->last_closed_toi);
+				for(int i=0; i < match_vector->atsc3_route_dash_matching_s_tsid_representation_media_info_alc_flow_match_v.count; i++) {
+					atsc3_route_dash_matching_s_tsid_representation_media_info_alc_flow_match_t* atsc3_route_dash_matching_s_tsid_representation_media_info_alc_flow_match = match_vector->atsc3_route_dash_matching_s_tsid_representation_media_info_alc_flow_match_v.data[i];
 
-        		//todo - hand this off to patch the mpd payload
+					_ATSC3_ROUTE_SLS_PROCESSOR_DEBUG("s-tsid repId: %s, contentType: %s, startNumber replace start: %d, end: %d, toi value: %d",
+							atsc3_route_dash_matching_s_tsid_representation_media_info_alc_flow_match->atsc3_route_s_content_info_media_info->rep_id,
+							atsc3_route_dash_matching_s_tsid_representation_media_info_alc_flow_match->atsc3_route_s_content_info_media_info->content_type,
+							atsc3_route_dash_matching_s_tsid_representation_media_info_alc_flow_match->atsc3_preg2_regex_match_capture_start_number->match_start,
+							atsc3_route_dash_matching_s_tsid_representation_media_info_alc_flow_match->atsc3_preg2_regex_match_capture_start_number->match_end,
+							atsc3_route_dash_matching_s_tsid_representation_media_info_alc_flow_match->atsc3_sls_alc_flow->last_closed_toi);
+
+					//todo - hand this off to patch the mpd payload
+
+				}
+
+				block_t* patched_mpd = atsc3_route_dash_patch_mpd_manifest_from_matching_matching_s_tsid_representation_media_info_alc_flow_match_vector(match_vector , block_mpd);
+				block_Rewind(patched_mpd);
+
+
+				block_Destroy(&atsc3_mime_multipart_related_payload->payload);
+				atsc3_mime_multipart_related_payload->payload = block_Duplicate(patched_mpd);
+				lls_sls_alc_monitor->last_mpd_payload_patched = block_Duplicate(patched_mpd);
+
+				block_Destroy(&patched_mpd);
+
+				atsc3_route_dash_matching_s_tsid_representation_media_info_alc_flow_match_vector_free(&match_vector);
+
+				atsc3_pcre2_regex_match_capture_vector_free(&atsc3_pcre2_regex_match_capture_vector);
+        	} else {
+        		_ATSC3_ROUTE_SLS_PROCESSOR_ERROR("atsc3_pcre2_regex_match returned NULL - with block_mpd: %s", block_mpd->p_buffer);
+           		block_Destroy(&atsc3_mime_multipart_related_payload->payload);
+
+           		if(lls_sls_alc_monitor->last_mpd_payload_patched) {
+           			atsc3_mime_multipart_related_payload->payload = block_Duplicate(lls_sls_alc_monitor->last_mpd_payload_patched);
+            		_ATSC3_ROUTE_SLS_PROCESSOR_WARN("atsc3_pcre2_regex_match returned NULL - returning last patched payload! %s", lls_sls_alc_monitor->last_mpd_payload_patched);
+
+           		}
 
         	}
-
-        	block_t* patched_mpd = atsc3_route_dash_patch_mpd_manifest_from_matching_matching_s_tsid_representation_media_info_alc_flow_match_vector(match_vector , block_mpd);
-        	block_Rewind(patched_mpd);
-
-
-        	block_Destroy(&atsc3_mime_multipart_related_payload->payload);
-        	atsc3_mime_multipart_related_payload->payload = block_Duplicate(patched_mpd);
-
-        	block_Destroy(&patched_mpd);
-        	atsc3_route_dash_matching_s_tsid_representation_media_info_alc_flow_match_vector_free(&match_vector);
-
-        	atsc3_pcre2_regex_match_capture_vector_free(&atsc3_pcre2_regex_match_capture_vector);
 
         	atsc3_pcre2_regex_context_free(&atsc3_pcre2_regex_context);
 
         	block_Destroy(&block_mpd);
 
         	//end jjustman 2020-07-14
-
-
 
         } else {
             _ATSC3_ROUTE_SLS_PROCESSOR_ERROR("unable to patch startNumber values: "_MPD_availability_start_time_VALUE_" present");

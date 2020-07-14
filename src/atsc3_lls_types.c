@@ -8,7 +8,7 @@
 #include "atsc3_lls_types.h"
 
 int _LLS_TYPES_INFO_ENABLED = 1;
-int _LLS_TYPES_DEBUG_ENABLED = 1;
+int _LLS_TYPES_DEBUG_ENABLED = 0;
 int _LLS_TYPES_TRACE_ENABLED = 0;
 
 
@@ -372,7 +372,7 @@ atsc3_sls_alc_flow_t* atsc3_sls_alc_flow_find_entry_tsi(atsc3_sls_alc_flow_v* at
 			matching_atsc3_sls_alc_flow = to_check_atsc3_sls_alc_flow;
 		}
 	}
-	printf("atsc3_sls_alc_flow_find_entry_tsi: couldn't find flow in %p, count: %d, tsi: %d\n", atsc3_sls_alc_flow, atsc3_sls_alc_flow->count, tsi);
+	_ATSC3_LLS_TYPES_TRACE("atsc3_sls_alc_flow_find_entry_tsi: couldn't find flow in %p, count: %d, tsi: %d\n", atsc3_sls_alc_flow, atsc3_sls_alc_flow->count, tsi);
 	return matching_atsc3_sls_alc_flow;
 }
 
