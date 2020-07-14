@@ -191,7 +191,7 @@ kvp_collection_t* kvp_collection_parse(uint8_t* input_string) {
 	return collection;
 }
 
-
+//0 size block allocs are allowed to create a block_t with only padding alignment for block_Write, etc...
 
 block_t* block_Alloc(int size_requested) {
 	block_t* new_block = (block_t*)calloc(1, sizeof(block_t));
@@ -355,6 +355,30 @@ uint32_t block_Append(block_t* dest, block_t* src) {
 	return dest->i_pos;
 }
 
+
+//combine two blocks at dest->i_pos, block_Get(src), len: src->p_size - src->i_pos
+
+block_t* block_AppendFromSrciPos(block_t* dest, block_t* src) {
+	if(!__block_check_bounaries(__FUNCTION__, dest)) return 0;
+
+	uint32_t src_len = __MAX(0, src->p_size - src->i_pos);
+	if(!src_len) {
+		return dest; //bail early
+	}
+
+	uint32_t dest_size_required = dest->i_pos + src_len;
+	if(dest->p_size < dest_size_required) {
+		block_t* ret_block = block_Resize(dest, dest_size_required);
+		if(!ret_block) {
+			_ATSC3_UTILS_ERROR("block_Append: block: %p, unable to realloc from size: %u to %u, returning NULL", dest, dest->p_size, dest_size_required);
+			return 0;
+		}
+	}
+	memcpy(&dest->p_buffer[dest->i_pos], block_Get(src), src_len);
+	dest->i_pos += src->i_pos;
+
+	return dest;
+}
 
 block_t* block_AppendFromBuf(block_t* dest, const uint8_t* src_buf, uint32_t src_size) {
 	if(!__block_check_bounaries(__FUNCTION__, dest)) return NULL;

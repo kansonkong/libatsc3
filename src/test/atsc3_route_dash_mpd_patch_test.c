@@ -1182,11 +1182,21 @@ int test_replace_mpd_with_multiple_audio_adaption_sets_pcre2_regex_utils() {
 
 	}
 
+	block_t* patched_mpd = atsc3_route_dash_patch_mpd_manifest_from_matching_matching_s_tsid_representation_media_info_alc_flow_match_vector(match_vector , block_mpd);
+	block_Rewind(patched_mpd);
+
+	_ATSC3_ROUTE_DASH_MPD_PATCH_TEST_INFO("patched MPD is now:\n%s", block_Get(patched_mpd));
+
+	block_Destroy(&patched_mpd);
+
 	atsc3_route_dash_matching_s_tsid_representation_media_info_alc_flow_match_vector_free(&match_vector);
 
 	atsc3_pcre2_regex_match_capture_vector_free(&atsc3_pcre2_regex_match_capture_vector);
 
 	atsc3_pcre2_regex_context_free(&atsc3_pcre2_regex_context);
+
+	block_Destroy(&block_mpd);
+
 
 	return 0;
 }

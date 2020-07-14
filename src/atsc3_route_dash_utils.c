@@ -57,3 +57,79 @@ atsc3_route_dash_matching_s_tsid_representation_media_info_alc_flow_match_vector
 	return atsc3_route_dash_matching_s_tsid_representation_media_info_alc_flow_match_vector;
 
 }
+
+/*
+ * perform MPD patch with startObject number from atsc3_sls_alc_flow->last_closed_toi
+ *
+ * note: toi is uint_32, so max value and length for this string replacement will be:
+ *
+ * 			4294967296
+ * 			----------
+ * 			1234567890
+ * 			         1
+ *
+ * 		10 chars long + null pad == 11
+ *  e.g.
+ *
+ *  	video-796278946.mp4v
+ *  	      ---------
+ *  	      123456789\0
+ *
+ *	NOTE: requires that regex will match from 0...N for match_start and match_end bytes, and atsc3_route_dash_find_matching_s.. is independent of repId type and ordering
+ *
+ */
+#define ATSC3_ROUTE_DASH_PATCH_UINT32_LENGTH 11
+block_t* atsc3_route_dash_patch_mpd_manifest_from_matching_matching_s_tsid_representation_media_info_alc_flow_match_vector(atsc3_route_dash_matching_s_tsid_representation_media_info_alc_flow_match_vector_t* match_vector, block_t* original_mpd) {
+	block_t* patched_mpd = NULL;
+	char temp_buffer[ATSC3_ROUTE_DASH_PATCH_UINT32_LENGTH] = { 0 };
+
+	if(!original_mpd || !original_mpd->p_size) {
+		__ROUTE_DASH_UTILS_ERROR("original MPD is empty!");
+		return NULL;
+	}
+
+	block_Rewind(original_mpd);
+
+	patched_mpd = block_Alloc(0);
+
+	__ROUTE_DASH_UTILS_DEBUG("atsc3_route_dash_patch_mpd_manifest_from_matching_matching_s_tsid_representation_media_info_alc_flow_match_vector: have %d match tuples of <capture, media_info, alc_flow>",
+								match_vector->atsc3_route_dash_matching_s_tsid_representation_media_info_alc_flow_match_v.count);
+
+	for(int i=0; i < match_vector->atsc3_route_dash_matching_s_tsid_representation_media_info_alc_flow_match_v.count; i++) {
+		atsc3_route_dash_matching_s_tsid_representation_media_info_alc_flow_match_t* atsc3_route_dash_matching_s_tsid_representation_media_info_alc_flow_match = match_vector->atsc3_route_dash_matching_s_tsid_representation_media_info_alc_flow_match_v.data[i];
+
+		__ROUTE_DASH_UTILS_TRACE("s-tsid repId: %s, contentType: %s, startNumber replace start: %d, end: %d, toi value: %d",
+					atsc3_route_dash_matching_s_tsid_representation_media_info_alc_flow_match->atsc3_route_s_content_info_media_info->rep_id,
+					atsc3_route_dash_matching_s_tsid_representation_media_info_alc_flow_match->atsc3_route_s_content_info_media_info->content_type,
+					atsc3_route_dash_matching_s_tsid_representation_media_info_alc_flow_match->atsc3_preg2_regex_match_capture_start_number->match_start,
+					atsc3_route_dash_matching_s_tsid_representation_media_info_alc_flow_match->atsc3_preg2_regex_match_capture_start_number->match_end,
+					atsc3_route_dash_matching_s_tsid_representation_media_info_alc_flow_match->atsc3_sls_alc_flow->last_closed_toi);
+
+		int original_mpd_length_to_copy = atsc3_route_dash_matching_s_tsid_representation_media_info_alc_flow_match->atsc3_preg2_regex_match_capture_start_number->match_start - original_mpd->i_pos;
+
+		__ROUTE_DASH_UTILS_TRACE("capture: %d, repId: %s, copying from original mpd at %p, len: %d", i, atsc3_route_dash_matching_s_tsid_representation_media_info_alc_flow_match->atsc3_route_s_content_info_media_info->rep_id,
+									block_Get(original_mpd), original_mpd_length_to_copy);
+
+		//copy from original_mpd->i_pos to match_start
+		block_Write(patched_mpd, block_Get(original_mpd), original_mpd_length_to_copy);
+		block_Seek(original_mpd, atsc3_route_dash_matching_s_tsid_representation_media_info_alc_flow_match->atsc3_preg2_regex_match_capture_start_number->match_end);
+		__ROUTE_DASH_UTILS_TRACE("capture: %d, repId: %s, original mpd is now at: %p", i, atsc3_route_dash_matching_s_tsid_representation_media_info_alc_flow_match->atsc3_route_s_content_info_media_info->rep_id,
+									block_Get(original_mpd));
+
+		snprintf(&temp_buffer, ATSC3_ROUTE_DASH_PATCH_UINT32_LENGTH, "%d", atsc3_route_dash_matching_s_tsid_representation_media_info_alc_flow_match->atsc3_sls_alc_flow->last_closed_toi);
+		__ROUTE_DASH_UTILS_TRACE("capture: %d, repId: %s, writing startNumber as: %s", i, atsc3_route_dash_matching_s_tsid_representation_media_info_alc_flow_match->atsc3_route_s_content_info_media_info->rep_id,
+									temp_buffer);
+
+		block_Write(patched_mpd, &temp_buffer, strlen(temp_buffer));
+	}
+
+	__ROUTE_DASH_UTILS_TRACE("appending remaining original mpd: %p, i_pos: %d, p_size: %d to patched_mpd", block_Get(original_mpd), original_mpd->i_pos, original_mpd->p_size);
+
+	//perform one closing block_write of original mpd
+	block_AppendFromSrciPos(patched_mpd, original_mpd);
+	block_Rewind(patched_mpd);
+
+	__ROUTE_DASH_UTILS_TRACE("patched mpd is:\n", block_Get(patched_mpd));
+
+	return patched_mpd;
+}
