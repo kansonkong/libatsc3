@@ -158,7 +158,7 @@ public:
 
     void atsc3_onAlcObjectStatusMessage(const char *fmt, ...);
 
-    void atsc3_sls_on_held_trigger_received_callback_jni(uint16_t service_id, block_t* held_payload);
+    void atsc3_sls_on_held_trigger_received_callback_jni(uint16_t service_id, const char *held_payload);
 
 
 private:
