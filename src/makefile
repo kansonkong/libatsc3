@@ -752,8 +752,14 @@ test/atsc3_pcap_replay_test: test/atsc3_pcap_replay_test.c atsc3_pcap_type.o ats
 	cc $(CFLAGS) $(DEBUG)  test/atsc3_pcap_replay_test.c atsc3_pcap_type.o  atsc3_utils.o -lz  -lm -lpthread -lpcap -o test/atsc3_pcap_replay_test 
 
 
-test/atsc3_route_dash_mpd_patch_test: test/atsc3_route_dash_mpd_patch_test.c atsc3_utils.o
-	cc $(CFLAGS) $(DEBUG)  test/atsc3_route_dash_mpd_patch_test.c  atsc3_utils.o -lz  -lm -lpthread -lpcap -lpcre2-8 -o test/atsc3_route_dash_mpd_patch_test 
+test/atsc3_route_dash_mpd_patch_test: test/atsc3_route_dash_mpd_patch_test.c \
+										atsc3_utils.o atsc3_pcre2_regex_utils.o
+										
+	cc $(CFLAGS) $(DEBUG) test/atsc3_route_dash_mpd_patch_test.c  \
+							atsc3_pcre2_regex_utils.o \
+							atsc3_utils.o \
+							$(LOCAL_LD_LIBS) \
+							-o test/atsc3_route_dash_mpd_patch_test 
 
 
 ### integration tests

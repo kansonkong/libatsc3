@@ -20,23 +20,22 @@ atsc3_pcre2_regex_context_t* atsc3_pcre2_regex_context_new(const char* pcre2_reg
 
 	//compile our regex pattern
 
-	pcre2_code *re = NULL;
-	re = pcre2_compile(atsc3_pcre2_regex_context->pattern,
+	atsc3_pcre2_regex_context->re = pcre2_compile(atsc3_pcre2_regex_context->pattern,
 													PCRE2_ZERO_TERMINATED, /* indicates pattern is zero-terminated */
 													PCRE2_MULTILINE | PCRE2_DOTALL,                     /* default options */
 													&atsc3_pcre2_regex_context->errornumber,          /* for error number */
 													&atsc3_pcre2_regex_context->erroroffset,          /* for error offset */
 													NULL);                 /* use default compile context */
 
-	if (re == NULL) {
+	if (atsc3_pcre2_regex_context->re== NULL) {
 		PCRE2_UCHAR buffer[256];
 		pcre2_get_error_message(atsc3_pcre2_regex_context->errornumber, buffer, sizeof(buffer));
-		__PCRE2_REGEX_UTILS_ERROR("PCRE2 compilation failed at offset %d: %s\n", (int)atsc3_pcre2_regex_context->erroroffset, buffer);
+		__PCRE2_REGEX_UTILS_ERROR("PCRE2 compilation failed at offset %d: %s", (int)atsc3_pcre2_regex_context->erroroffset, buffer);
 		goto error;
 	}
 
 	//setup the match_data block for right size of capture groups
-	atsc3_pcre2_regex_context->match_data = pcre2_match_data_create_from_pattern(re, NULL);
+	atsc3_pcre2_regex_context->match_data = pcre2_match_data_create_from_pattern(atsc3_pcre2_regex_context->re, NULL);
 
 	return atsc3_pcre2_regex_context;
 
@@ -46,9 +45,9 @@ error:
 		atsc3_pcre2_regex_context_free(&atsc3_pcre2_regex_context);
 	}
 
-	if(re) {
-		pcre2_code_free(re);
-		re = NULL;
+	if(atsc3_pcre2_regex_context->re) {
+		pcre2_code_free(atsc3_pcre2_regex_context->re);
+		atsc3_pcre2_regex_context->re = NULL;
 	}
 
 	return NULL;
@@ -65,7 +64,6 @@ atsc3_pcre2_regex_match_captures_t* atsc3_pcre2_regex_match(atsc3_pcre2_regex_co
 		return NULL;
 	}
 
-	pcre2_code *re = NULL;
 	int rc;
 
 	PCRE2_SPTR subject = NULL;  /* the appropriate width (in this case, 8 bits). */
@@ -74,7 +72,7 @@ atsc3_pcre2_regex_match_captures_t* atsc3_pcre2_regex_match(atsc3_pcre2_regex_co
 	subject = (PCRE2_SPTR) subject_block->p_buffer;
 	subject_length = (PCRE2_SIZE)strlen((char *)subject); //jjustman-2020-07-13 - todo, change to subject_block->p_size?
 
-	re = pcre2_match(re, subject, subject_length,
+	rc = pcre2_match(atsc3_pcre2_regex_context->re, subject, subject_length,
 					  0,                  					  /* start at offset 0 in the subject */
 					  0,                 					  /* default options */
 					  atsc3_pcre2_regex_context->match_data,  /* block for storing the result */
@@ -85,14 +83,14 @@ atsc3_pcre2_regex_match_captures_t* atsc3_pcre2_regex_match(atsc3_pcre2_regex_co
 	if (rc < 0) {
 	  switch(rc) {
 	    case PCRE2_ERROR_NOMATCH:
-	    	__PCRE2_REGEX_UTILS_DEBUG("no match for pattern: %s, with data:\n%s", atsc3_pcre2_regex_context->pattern, subject_block->p_buffer);
+	    	__PCRE2_REGEX_UTILS_DEBUG("no match for pattern: %s, with data: %s", atsc3_pcre2_regex_context->pattern, subject_block->p_buffer);
 	    	break;
 
 			/*
 			Handle other special cases if you like
 			*/
 	    default:
-	    		__PCRE2_REGEX_UTILS_INFO("Matching error %d\n", rc);
+	    		__PCRE2_REGEX_UTILS_INFO("Matching error %d", rc);
 	    	break;
 	 }
 
@@ -104,7 +102,7 @@ atsc3_pcre2_regex_match_captures_t* atsc3_pcre2_regex_match(atsc3_pcre2_regex_co
 	/* Match succeded. Get a pointer to the output vector, where string offsets are	stored. */
 
 	atsc3_pcre2_regex_context->ovector = pcre2_get_ovector_pointer(atsc3_pcre2_regex_context->match_data);
-	__PCRE2_REGEX_UTILS_DEBUG("Match succeeded at offset %d\n", (int)atsc3_pcre2_regex_context->ovector[0]);
+	__PCRE2_REGEX_UTILS_DEBUG("Match succeeded at offset %d ", (int)atsc3_pcre2_regex_context->ovector[0]);
 
 
 	/*************************************************************************
@@ -115,8 +113,8 @@ atsc3_pcre2_regex_match_captures_t* atsc3_pcre2_regex_match(atsc3_pcre2_regex_co
 
 	/* The output vector wasn't big enough. This should not happen, because we used	pcre2_match_data_create_from_pattern() above. */
 
-	if (re == 0) {
-		__PCRE2_REGEX_UTILS_ERROR("ovector was not big enough for all the captured substrings\n");
+	if (rc == 0) {
+		__PCRE2_REGEX_UTILS_ERROR("ovector was not big enough for all the captured substrings");
 		//jjustman-2020-07-13 todo? goto error;
 	}
 	/* We must guard against patterns such as /(?=.\K)/ that use \K in an assertion
@@ -124,8 +122,8 @@ atsc3_pcre2_regex_match_captures_t* atsc3_pcre2_regex_match(atsc3_pcre2_regex_co
 	we just detect this case and give up. */
 
 	if (atsc3_pcre2_regex_context->ovector[0] > atsc3_pcre2_regex_context->ovector[1]) {
-		__PCRE2_REGEX_UTILS_ERROR("\\K was used in an assertion to set the match start after its end.\n"
-					"From end to start the match was: %.*s\n", (int)(atsc3_pcre2_regex_context->ovector[0] - atsc3_pcre2_regex_context->ovector[1]),
+		__PCRE2_REGEX_UTILS_ERROR("\\K was used in an assertion to set the match start after its end."
+					"From end to start the match was: %.*s", (int)(atsc3_pcre2_regex_context->ovector[0] - atsc3_pcre2_regex_context->ovector[1]),
 						(char *)(subject + atsc3_pcre2_regex_context->ovector[1]));
 		goto error;
 	}
@@ -139,10 +137,10 @@ atsc3_pcre2_regex_match_captures_t* atsc3_pcre2_regex_match(atsc3_pcre2_regex_co
 	for (int i = 0; i < rc; i++) {
 	  PCRE2_SPTR substring_start = subject + atsc3_pcre2_regex_context->ovector[2*i];
 	  PCRE2_SIZE substring_length = atsc3_pcre2_regex_context->ovector[2*i+1] - atsc3_pcre2_regex_context->ovector[2*i];
-	  __PCRE2_REGEX_UTILS_INFO("%2d: %.*s\n", i, (int)substring_length, (char *)substring_start);
+	  __PCRE2_REGEX_UTILS_INFO("%2d: %.*s", i, (int)substring_length, (char *)substring_start);
 	}
 
-	(void)pcre2_pattern_info(re, PCRE2_INFO_NAMECOUNT, &atsc3_pcre2_regex_context->namecount);          /* where to put the answer */
+	(void)pcre2_pattern_info(atsc3_pcre2_regex_context->re, PCRE2_INFO_NAMECOUNT, &atsc3_pcre2_regex_context->namecount);          /* where to put the answer */
 
 	if (atsc3_pcre2_regex_context->namecount == 0) {
 		__PCRE2_REGEX_UTILS_DEBUG("atsc3_pcre2_regex_context: %p - No named substrings", atsc3_pcre2_regex_context);
@@ -151,7 +149,7 @@ atsc3_pcre2_regex_match_captures_t* atsc3_pcre2_regex_match(atsc3_pcre2_regex_co
 //   else {
 //
 //	  PCRE2_SPTR tabptr;
-//	  printf("Named substrings\n");
+//	  printf("Named substrings");
 //
 //	  /* Before we can access the substrings, we must extract the table for
 //	  translating names to numbers, and the size of each entry in the table. */
@@ -174,7 +172,7 @@ atsc3_pcre2_regex_match_captures_t* atsc3_pcre2_regex_match(atsc3_pcre2_regex_co
 //	  for (i = 0; i < namecount; i++)
 //	    {
 //	    int n = (tabptr[0] << 8) | tabptr[1];
-//	    printf("(%d) %*s: %.*s\n", n, name_entry_size - 3, tabptr + 2,
+//	    printf("(%d) %*s: %.*s", n, name_entry_size - 3, tabptr + 2,
 //	      (int)(ovector[2*n+1] - ovector[2*n]), subject + ovector[2*n]);
 //	    tabptr += name_entry_size;
 //	    }
@@ -183,7 +181,7 @@ atsc3_pcre2_regex_match_captures_t* atsc3_pcre2_regex_match(atsc3_pcre2_regex_co
 	// /g is set by default, otherwise return just this single match capture group
 	if (!atsc3_pcre2_regex_context->find_all) {
 	  pcre2_match_data_free(atsc3_pcre2_regex_context->match_data);  /* Release the memory that was used */
-	  pcre2_code_free(re);                /* for the match data and the pattern. */
+	  pcre2_code_free(atsc3_pcre2_regex_context->re);                /* for the match data and the pattern. */
 	  //jjustman-2020-07-13 - TODO: return capture group information...
 	  return 0;
 	}
@@ -192,12 +190,12 @@ atsc3_pcre2_regex_match_captures_t* atsc3_pcre2_regex_match(atsc3_pcre2_regex_co
 	sequence. First, find the options with which the regex was compiled and extract
 	the UTF state. */
 
-	(void)pcre2_pattern_info(re, PCRE2_INFO_ALLOPTIONS, &atsc3_pcre2_regex_context->option_bits);
+	(void)pcre2_pattern_info(atsc3_pcre2_regex_context->re, PCRE2_INFO_ALLOPTIONS, &atsc3_pcre2_regex_context->option_bits);
 	atsc3_pcre2_regex_context->utf8 = (atsc3_pcre2_regex_context->option_bits & PCRE2_UTF) != 0;
 
 	/* Now find the newline convention and see whether CRLF is a valid newline	sequence. */
 
-	(void)pcre2_pattern_info(re, PCRE2_INFO_NEWLINE, &atsc3_pcre2_regex_context->newline);
+	(void)pcre2_pattern_info(atsc3_pcre2_regex_context->re, PCRE2_INFO_NEWLINE, &atsc3_pcre2_regex_context->newline);
 	atsc3_pcre2_regex_context->crlf_is_newline = 	atsc3_pcre2_regex_context->newline == PCRE2_NEWLINE_ANY ||
 													atsc3_pcre2_regex_context->newline == PCRE2_NEWLINE_CRLF ||
 													atsc3_pcre2_regex_context->newline == PCRE2_NEWLINE_ANYCRLF;
@@ -247,7 +245,7 @@ atsc3_pcre2_regex_match_captures_t* atsc3_pcre2_regex_match(atsc3_pcre2_regex_co
 
 	  /* Run the next matching operation */
 
-	  rc = pcre2_match(re, subject, subject_length,       /* the length of the subject */
+	  rc = pcre2_match(atsc3_pcre2_regex_context->re, subject, subject_length,       /* the length of the subject */
 						start_offset,       			    	/* starting offset in the subject */
 						options,            					/* options */
 						atsc3_pcre2_regex_context->match_data,  /* block for storing the result */
@@ -297,21 +295,22 @@ atsc3_pcre2_regex_match_captures_t* atsc3_pcre2_regex_match(atsc3_pcre2_regex_co
 
 	  /* Match succeded */
 
-	  __PCRE2_REGEX_UTILS_DEBUG("atsc3_pcre2_regex_context: %p, Match succeeded again at offset: %d\n", atsc3_pcre2_regex_context, (int)atsc3_pcre2_regex_context->ovector[0]);
+	  __PCRE2_REGEX_UTILS_DEBUG("atsc3_pcre2_regex_context: %p, Match succeeded again at offset: %d", atsc3_pcre2_regex_context, (int)atsc3_pcre2_regex_context->ovector[0]);
 
 	  /* The match succeeded, but the output vector wasn't big enough. This
 	  should not happen. */
 
-	  if (rc == 0)
-		  __PCRE2_REGEX_UTILS_ERROR("atsc3_pcre2_regex_context: %p, ovector was not big enough for all the captured substrings", atsc3_pcre2_regex_context);
+	  if (rc == 0) {
+		  __PCRE2_REGEX_UTILS_ERROR("atsc3_pcre2_regex_context: %p, ovector was not big enough for all the captured substrings, rc: %d", atsc3_pcre2_regex_context, rc);
+	  }
 
 	  /* We must guard against patterns such as /(?=.\K)/ that use \K in an
 	  assertion to set the start of a match later than its end. In this
 	  demonstration program, we just detect this case and give up. */
 
 	  if (atsc3_pcre2_regex_context->ovector[0] > atsc3_pcre2_regex_context->ovector[1]) {
-		  __PCRE2_REGEX_UTILS_ERROR("\\K was used in an assertion to set the match start after its end.\n"
-				  "From end to start the match was: %.*s\n", (int)(atsc3_pcre2_regex_context->ovector[0] - atsc3_pcre2_regex_context->ovector[1]),
+		  __PCRE2_REGEX_UTILS_ERROR("\\K was used in an assertion to set the match start after its end."
+				  "From end to start the match was: %.*s", (int)(atsc3_pcre2_regex_context->ovector[0] - atsc3_pcre2_regex_context->ovector[1]),
 				  (char *)(subject + atsc3_pcre2_regex_context->ovector[1]));
 		  goto error;
 	  }
@@ -323,17 +322,17 @@ atsc3_pcre2_regex_match_captures_t* atsc3_pcre2_regex_match(atsc3_pcre2_regex_co
 	    PCRE2_SPTR substring_start = subject + atsc3_pcre2_regex_context->ovector[2*i];
 	    size_t substring_length = atsc3_pcre2_regex_context->ovector[2*i+1] - atsc3_pcre2_regex_context->ovector[2*i];
 	    //jjustman-2020-07-13 - push to capture vector_t
-	    __PCRE2_REGEX_UTILS_DEBUG("%2d: %.*s\n", i, (int)substring_length, (char *)substring_start);
+	    __PCRE2_REGEX_UTILS_DEBUG("%2d: %.*s", i, (int)substring_length, (char *)substring_start);
 	  }
 
 	  if (atsc3_pcre2_regex_context->namecount == 0) {
 		  __PCRE2_REGEX_UTILS_DEBUG("No named substrings");
 	  } else {
 	    PCRE2_SPTR tabptr = atsc3_pcre2_regex_context->name_table;
-	    __PCRE2_REGEX_UTILS_DEBUG("Named substrings\n");
+	    __PCRE2_REGEX_UTILS_DEBUG("Named substrings");
 	    for (int i = 0; i < atsc3_pcre2_regex_context->namecount; i++) {
 	    	int n = (tabptr[0] << 8) | tabptr[1];
-	    	__PCRE2_REGEX_UTILS_DEBUG("(%d) %*s: %.*s\n", n, atsc3_pcre2_regex_context->name_entry_size - 3, tabptr + 2,
+	    	__PCRE2_REGEX_UTILS_DEBUG("(%d) %*s: %.*s", n, atsc3_pcre2_regex_context->name_entry_size - 3, tabptr + 2,
 	        (int)(atsc3_pcre2_regex_context->ovector[2*n+1] - atsc3_pcre2_regex_context->ovector[2*n]), subject + atsc3_pcre2_regex_context->ovector[2*n]);
 	    	tabptr += atsc3_pcre2_regex_context->name_entry_size;
 	      }
@@ -355,13 +354,25 @@ error:
 
 	}
 
-	if(re) {
-		pcre2_code_free(re);                 /*   data and the compiled pattern. */
-		re = NULL;
+	if(atsc3_pcre2_regex_context->re) {
+		pcre2_code_free(atsc3_pcre2_regex_context->re);                 /*   data and the compiled pattern. */
+		atsc3_pcre2_regex_context->re = NULL;
 	}
 
 	return NULL;
 
+}
+
+void atsc3_pcre2_regex_match_captures_free(atsc3_pcre2_regex_match_captures_t** atsc3_pcre2_regex_match_captures_p) {
+	if(atsc3_pcre2_regex_match_captures_p) {
+		atsc3_pcre2_regex_match_captures_t* atsc3_pcre2_regex_match_captures = *atsc3_pcre2_regex_match_captures_p;
+		if(atsc3_pcre2_regex_match_captures) {
+
+			free(atsc3_pcre2_regex_match_captures);
+			atsc3_pcre2_regex_match_captures = NULL;
+		}
+		*atsc3_pcre2_regex_match_captures_p = NULL;
+	}
 }
 
 void atsc3_pcre2_regex_context_free(atsc3_pcre2_regex_context_t** atsc3_pcre2_regex_context_p) {
