@@ -31,23 +31,40 @@
  *
  * Example:
  *
-typedef struct atsc3_fdt_instance {
-	uint32_t 					expires;
-	bool 						complete;
-	char* 						content_type;
-	char* 						content_encoding;
-	atsc3_fdt_fec_attributes_t 	atsc3_fdt_fec_attributes;
 
-	uint8_t						efdt_vesion;
-	uint32_t					max_expires_delta;
-	uint32_t					max_transport_size;
-	char*						file_template;
-	char*						app_context_id_list;
-	char*						filter_codes;
+	typedef struct atsc3_fdt_file {
+		char* 						content_location;
+		uint32_t 					toi;
+		uint32_t 					content_length;
+		uint32_t 					transfer_length;
+		char*						content_type;
+		char*						content_encoding;
+		char*						content_md5;
 
-	ATSC3_VECTOR_BUILDER_STRUCT(atsc3_fdt_file)
+		char*						app_context_id_list;
 
-} atsc3_fdt_instance_t;
+		char*						filter_codes;
+
+		atsc3_fdt_fec_attributes_t	atsc3_fdt_fec_attributes;
+	} atsc3_fdt_file_t;
+
+	typedef struct atsc3_fdt_instance {
+		uint32_t 					expires;
+		bool 						complete;
+		char* 						content_type;
+		char* 						content_encoding;
+		atsc3_fdt_fec_attributes_t 	atsc3_fdt_fec_attributes;
+
+		uint8_t						efdt_vesion;
+		uint32_t					max_expires_delta;
+		uint32_t					max_transport_size;
+		char*						file_template;
+		char*						app_context_id_list;
+		char*						filter_codes;
+
+		ATSC3_VECTOR_BUILDER_STRUCT(atsc3_fdt_file)
+
+	} atsc3_fdt_instance_t;
 
 	ATSC3_VECTOR_BUILDER_METHODS_INTERFACE(atsc3_fdt_instance, atsc3_fdt_file)
 											vector_struct_name, vector_item_name
