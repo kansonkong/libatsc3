@@ -60,6 +60,7 @@ clean:
 	-rm -f test/atsc3_stltp_parser_test
 	-rm -f test/atsc3_mime_multipart_related_parser_test
 	-rm -f test/atsc3_package_mode_mime_multipart_related_parser_test
+	-rm -f test/atsc3_route_package_extract_test
 	-rm -f test/atsc3_fdt_mbms_envelope_test
 	-rm -f test/atsc3_fdt_mbms_envelope_test_2019-09-07-esg-e.1.1.7
 	-rm -f test/atsc3_fdt_mbms_envelope_test_2019-09-17-nab-interop-day1
@@ -157,6 +158,7 @@ unit_tests: test/atsc3_lmt_test \
 			test/atsc3_stltp_parser_test \
 			test/atsc3_mime_multipart_related_parser_test \
 			test/atsc3_package_mode_mime_multipart_related_parser_test \
+			test/atsc3_route_package_extract_test \
 			test/atsc3_fdt_mbms_envelope_test \
 			test/atsc3_fdt_mbms_envelope_test_2019-09-07-esg-e.1.1.7 \
 			test/atsc3_hevc_nal_extractor_test \
@@ -681,6 +683,42 @@ test/atsc3_package_mode_mime_multipart_related_parser_test: test/atsc3_package_m
 	xml.o \
 	strnstr.o \
 	atsc3_utils.o -o test/atsc3_package_mode_mime_multipart_related_parser_test
+	
+	
+test/atsc3_route_package_extract_test: test/atsc3_route_package_extract_test.c \
+	atsc3_mbms_envelope_xml.o	\
+	atsc3_mime_multipart_related.o \
+	atsc3_mime_multipart_related_parser.o \
+	atsc3_sls_metadata_fragment_types.o \
+	atsc3_sls_metadata_fragment_types_parser.o \
+	atsc3_sls_held_fragment.o \
+	atsc3_utils.o \
+	atsc3_route_mpd.o \
+	atsc3_route_s_tsid.o \
+	atsc3_fdt_parser.o \
+	atsc3_fdt.o \
+	atsc3_route_usbd.o \
+	atsc3_route_package_utils.o \
+	atsc3_mbms_envelope_parser.o \
+	xml.o \
+	strnstr.o 
+	cc $(CFLAGS) $(DEBUG)  test/atsc3_route_package_extract_test.c \
+	atsc3_mbms_envelope_xml.o	\
+	atsc3_mime_multipart_related.o \
+	atsc3_mime_multipart_related_parser.o \
+	atsc3_sls_metadata_fragment_types.o \
+	atsc3_sls_metadata_fragment_types_parser.o \
+	atsc3_sls_held_fragment.o \
+	atsc3_route_mpd.o \
+	atsc3_route_s_tsid.o \
+	atsc3_fdt_parser.o \
+	atsc3_fdt.o \
+	atsc3_route_usbd.o \
+	atsc3_route_package_utils.o \
+	atsc3_mbms_envelope_parser.o \
+	xml.o \
+	strnstr.o \
+	atsc3_utils.o -o test/atsc3_route_package_extract_test
 
 test/atsc3_fdt_mbms_envelope_test: test/atsc3_fdt_mbms_envelope_test.c \
 	atsc3_mbms_envelope_xml.o	\

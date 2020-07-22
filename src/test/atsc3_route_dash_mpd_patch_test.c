@@ -1178,8 +1178,6 @@ int test_replace_mpd_with_multiple_audio_adaption_sets_pcre2_regex_utils() {
 				atsc3_route_dash_matching_s_tsid_representation_media_info_alc_flow_match->atsc3_preg2_regex_match_capture_start_number->match_end,
 				atsc3_route_dash_matching_s_tsid_representation_media_info_alc_flow_match->atsc3_sls_alc_flow->last_closed_toi);
 
-		//todo - hand this off to patch the mpd payload
-
 	}
 
 	block_t* patched_mpd = atsc3_route_dash_patch_mpd_manifest_from_matching_matching_s_tsid_representation_media_info_alc_flow_match_vector(match_vector , block_mpd);

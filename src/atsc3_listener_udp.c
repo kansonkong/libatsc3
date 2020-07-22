@@ -21,8 +21,9 @@ udp_packet_t* process_packet_from_pcap(u_char *user, const struct pcap_pkthdr *p
 	for (i = 0; i < 14; i++) {
 		ethernet_packet[i] = packet[0 + i];
 	}
+	//workaround for airwavz pcaps with ethertype=0xc0a8
     if (!(ethernet_packet[12] == 0x08 && ethernet_packet[13] == 0x00)) {
-        __LISTENER_UDP_ERROR("udp_packet_process_from_ptr: invalid ethernet frame");
+        __LISTENER_UDP_ERROR("udp_packet_process_from_ptr: invalid ethernet frame, expected 0x08 0x00, ethernet_packet[12]=0x%02x, [13]=0x%02x", ethernet_packet[12], ethernet_packet[13]);
 		return NULL;
 	}
 
@@ -32,7 +33,7 @@ udp_packet_t* process_packet_from_pcap(u_char *user, const struct pcap_pkthdr *p
 
 	//check if we are a UDP packet, otherwise bail
 	if (ip_header[9] != 0x11) {
-		__LISTENER_UDP_ERROR("udp_packet_process_from_ptr: not a UDP packet!");
+		__LISTENER_UDP_ERROR("udp_packet_process_from_ptr: not a UDP packet! ip_header[9]=0x%02x, len: %d, caplen: %d", ip_header[9], pkthdr->len, pkthdr->caplen);
 		return NULL;
 	}
 
