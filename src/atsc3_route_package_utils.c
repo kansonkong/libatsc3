@@ -14,9 +14,26 @@
 int _ROUTE_PACKAGE_UTILS_DEBUG_ENABLED=1;
 int _ROUTE_PACKAGE_UTILS_TRACE_ENABLED=1;
 
+
+ATSC3_VECTOR_BUILDER_METHODS_IMPLEMENTATION(atsc3_route_package_extract_payload_metadata, atsc3_route_package_extract_payload_multipart_item);
+ATSC3_VECTOR_BUILDER_METHODS_PARENT_IMPLEMENTATION(atsc3_route_package_extract_payload_metadata);
+
+void atsc3_route_package_extract_payload_multipart_item_free(atsc3_route_package_extract_payload_multipart_item_t** atsc3_route_package_extract_payload_multipart_item_p) {
+    if(atsc3_route_package_extract_payload_multipart_item_p) {
+    	atsc3_route_package_extract_payload_multipart_item_t* atsc3_route_package_extract_payload_multipart_item = *atsc3_route_package_extract_payload_multipart_item_p;
+        if(atsc3_route_package_extract_payload_multipart_item) {
+            freeclean((void**)&atsc3_route_package_extract_payload_multipart_item->content_location);
+            atsc3_route_package_extract_payload_multipart_item = NULL;
+        }
+        *atsc3_route_package_extract_payload_multipart_item_p = NULL;
+    }
+}
+
 #define __ROUTE_PACKAGE_PATH_TODO_FIXME__ "package_test"
-int atsc3_route_package_extract_unsigned_payload(const char* filename) {
+atsc3_route_package_extract_payload_metadata_t* atsc3_route_package_extract_unsigned_payload(const char* filename) {
 	int ret = 0;
+	atsc3_route_package_extract_payload_metadata_t* atsc3_route_package_extract_payload_metadata = atsc3_route_package_extract_payload_metadata_new();
+
 	FILE *fp = fopen(filename, "r");
 
 	if(fp) {
@@ -71,5 +88,5 @@ int atsc3_route_package_extract_unsigned_payload(const char* filename) {
 		}
 	}
 
-	return ret;
+	return atsc3_route_package_extract_payload_metadata;
 }

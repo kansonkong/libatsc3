@@ -102,16 +102,14 @@
 	void PPCAT(vector_item_name,_free)(PPCAT(vector_item_name,_t)** PPCAT(vector_item_name,_p));
 
 
-/**
- *
- *		ATSC3_VECTOR_BUILDER_METHODS_IMPLEMENTATION(atsc3_fdt_instance, atsc3_fdt_file)
- *
- *	results in:
- *		atsc3_fdt_file_t* atsc3_fdt_file_new();
- *  	atsc3_fdt_instance_add_atsc3_fdt_file(atsc3_fdt_instance_t*, atsc3_fdt_file*)
- *
- *	todo: prealloc to N as needed
+
  
+ /*
+  * ATSC3_VECTOR_BUILDER_METHODS_PARENT_IMPLEMENTATION(atsc3_fdt_instance)
+  *
+  * results in:
+  * 	atsc3_fdt_instance_new();
+  *
  * jjustman:2019-08-09: todo - add a free method
  */
 #define ATSC3_VECTOR_BUILDER_METHODS_IMPLEMENTATION_DEFAULT_SIZE 10
@@ -128,7 +126,18 @@
 	\
 \
 
-/*
+/**
+ *
+ *
+ *		ATSC3_VECTOR_BUILDER_METHODS_IMPLEMENTATION(atsc3_fdt_instance, atsc3_fdt_file)
+ *
+ *	results in:
+ *		atsc3_fdt_file_t* atsc3_fdt_file_new();
+ *  	atsc3_fdt_instance_add_atsc3_fdt_file(atsc3_fdt_instance_t*, atsc3_fdt_file*)
+ *
+ *	todo: prealloc to N as needed
+ *
+ *
  * TODO: jjustman-2019-10-03 - use a qsort to re-index keys, e.g.
 
 int comparator_lls_slt_alc_session_t(const void *a, const void *b) {
@@ -242,7 +251,7 @@ void vector_item_name_free(vector_item_name_t** vector_item_name_p) {
             freesafe(vector_item_name);
             vector_item_name = NULL;
         }
-    *vector_item_name_p = NULL;
+ 	 	*vector_item_name_p = NULL;
     }
 }
  
@@ -258,7 +267,7 @@ void atsc3_sls_html_entry_package_free(atsc3_sls_html_entry_package_t** atsc3_sl
             freesafe(atsc3_sls_html_entry_package);
             atsc3_sls_html_entry_package = NULL;
         }
-    *atsc3_sls_html_entry_package_p = NULL;
+ 	    *atsc3_sls_html_entry_package_p = NULL;
     }
 }
 

@@ -49,8 +49,78 @@ uint16_t* dst_service_id_filter = NULL;
 atsc3_alc_arguments_t* alc_arguments;
 atsc3_alc_session_t* atsc3_alc_session;
 
+#define __AIRWAVZ_PCAP_FIXUP__ 1
+//#define __AIRWAVZ_PCAP_FIXUP_DEBUG__ 1
+
 void process_packet(u_char *user, const struct pcap_pkthdr *pkthdr, const u_char *packet) {
-  udp_packet_t* udp_packet = process_packet_from_pcap(user, pkthdr, packet);
+
+#ifdef __AIRWAVZ_PCAP_FIXUP__
+
+#ifdef __AIRWAVZ_PCAP_FIXUP_DEBUG__
+	__INFO("got airwavz pcap packet: %p, first 40 bytes BEFORE fixup are:", packet);
+	for (int i = 0; i < 40; i++) {
+		__INFO("[%d]=0x%02x", i, packet[i]);
+	}
+#endif
+
+	uint8_t* eth_frame = (uint8_t*)calloc(pkthdr->len + 14, sizeof(uint8_t));
+
+	eth_frame[0]=1;
+	eth_frame[1]=1;
+	eth_frame[2]=1;
+	eth_frame[3]=1;
+	eth_frame[4]=1;
+	eth_frame[5]=1;
+
+	/* set mac source to local timestamp */
+	long replay_timestamp = gtl();
+
+	eth_frame[6]  = (replay_timestamp >> 10) & 0xFF;
+	eth_frame[7]  = (replay_timestamp >> 8) & 0xFF;
+	eth_frame[8]  = (replay_timestamp >> 6) & 0xFF;
+	eth_frame[9]  = (replay_timestamp >> 4) & 0xFF;
+	eth_frame[10] = (replay_timestamp >> 2) & 0xFF;
+	eth_frame[11] = replay_timestamp & 0xFF;
+
+	//ipv4 type
+	eth_frame[12]=0x08;
+	eth_frame[13]=0x00;
+	memcpy(&eth_frame[14], packet, pkthdr->len);
+
+	//hack
+	pcap_pkthdr* pkthdr_fixup = (pcap_pkthdr*)calloc(1, sizeof(pcap_pkthdr));
+	pkthdr_fixup->caplen = pkthdr->caplen + 14;
+	pkthdr_fixup->len = pkthdr->len + 14;
+	pkthdr_fixup->ts = pkthdr->ts;
+
+#ifdef __AIRWAVZ_PCAP_FIXUP_DEBUG__
+	__INFO("got airwavz pcap packet: %p, first 40 bytes AFTER fixup are:", eth_frame);
+	for (int i = 0; i < 40; i++) {
+		__INFO("[%d]=0x%02x", i, eth_frame[i]);
+	}
+#endif
+
+	udp_packet_t* udp_packet = process_packet_from_pcap(user, pkthdr_fixup, eth_frame);
+
+	if(!udp_packet) {
+		__WARN("udp_packet airwavz was NULL!");
+	} else {
+		__INFO("process_packet: flow: %d.%d.%d.%d:(%u):%u \t ->  %d.%d.%d.%d:(%u):%u, len: %d ",
+				__toipandportnonstruct(udp_packet->udp_flow.src_ip_addr, udp_packet->udp_flow.src_port),
+				udp_packet->udp_flow.src_ip_addr,
+				__toipandportnonstruct(udp_packet->udp_flow.dst_ip_addr, udp_packet->udp_flow.dst_port),
+				udp_packet->udp_flow.dst_ip_addr,
+				pkthdr_fixup->len
+				);
+	}
+
+	free((void*)eth_frame);
+	free((void*)pkthdr_fixup);
+
+#else
+	udp_packet_t* udp_packet = process_packet_from_pcap(user, pkthdr, packet);
+#endif
+
   if(!udp_packet) {
 	return;
   }
@@ -61,6 +131,11 @@ void process_packet(u_char *user, const struct pcap_pkthdr *pkthdr, const u_char
     //dispatch for LLS extraction and dump
     if(udp_packet->udp_flow.dst_ip_addr == LLS_DST_ADDR && udp_packet->udp_flow.dst_port == LLS_DST_PORT) {
         lls_table_t* lls_table = lls_table_create_or_update_from_lls_slt_monitor(lls_slt_monitor, udp_packet->data);
+#ifdef __AIRWAVZ_PCAP_FIXUP__
+        if(lls_table) {
+        	lls_dump_instance_table(lls_table);
+        }
+#endif
         //auto-assign our first ROUTE service id here
         if(lls_table && lls_table->lls_table_id == SLT) {
             for(int i=0; i < lls_table->slt_table.atsc3_lls_slt_service_v.count; i++) {
@@ -172,7 +247,6 @@ int main(int argc,char **argv) {
 	_LLS_ALC_UTILS_INFO_ENABLED = 1;
 
     _ALC_UTILS_DEBUG_ENABLED = 1;
-    _ALC_UTILS_IOTRACE_ENABLED = 1;
 	_ALC_RX_DEBUG_ENABLED = 1;
     _ALC_UTILS_DEBUG_ENABLED = 1;
 	
@@ -185,6 +259,7 @@ int main(int argc,char **argv) {
     _ALC_UTILS_TRACE_ENABLED = 1;
 
 	_ALC_UTILS_IOTRACE_ENABLED=1;
+
 	_ALC_RX_DEBUG_ENABLED = 1;
 	_ALC_RX_TRACE_ENABLED = 1;
 #endif
@@ -311,8 +386,14 @@ int main(int argc,char **argv) {
         printf("pcap_open_live(): %s",errbuf);
         exit(1);
     }
-
+#ifdef __AIRWAVZ_PCAP_FIXUP__
+    _LLS_INFO_ENABLED = 1;
+    char filter[] = ""; //remove udp filter for eth frame header fixup
+#else
     char filter[] = "udp";
+
+#endif
+
     if(pcap_compile(descr,&fp, filter,0,netp) == -1) {
         fprintf(stderr,"Error calling pcap_compile");
         exit(1);
@@ -323,6 +404,7 @@ int main(int argc,char **argv) {
         exit(1);
     }
 
+    __INFO("using filter: %s", filter);
     pcap_loop(descr,-1,process_packet,NULL);
 
     return 0;
