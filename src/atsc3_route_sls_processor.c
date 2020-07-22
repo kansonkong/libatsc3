@@ -109,6 +109,7 @@ void atsc3_route_sls_process_from_alc_packet_and_file(udp_flow_t* udp_flow, alc_
 				lls_sls_alc_monitor->atsc3_sls_metadata_fragments = atsc3_sls_metadata_fragments;
 
 				// #1569
+				// jjustman-2020-07-20 - TODO - add SLS TOI value here - *mbms_toi
 				if(lls_sls_alc_monitor->atsc3_sls_metadata_fragments->atsc3_sls_held_fragment &&
 						lls_sls_alc_monitor->atsc3_sls_metadata_fragments->atsc3_sls_held_fragment->raw_xml_fragment &&
 						lls_sls_alc_monitor->atsc3_sls_metadata_fragments->atsc3_sls_held_fragment->raw_xml_fragment->p_size) {

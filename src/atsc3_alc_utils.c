@@ -825,7 +825,10 @@ int atsc3_alc_packet_persist_to_toi_resource_process_sls_mbms_and_emit_callback(
 						if(lct_codepoint_package_matching || stsid_formatid_package_matching) {
 							__ALC_UTILS_INFO("calling atsc3_route_package_extract_unsigned_payload with package: %s", new_file_name);
 							//perform package extraction into shared appContextIdList path
-							atsc3_route_package_extract_unsigned_payload(new_file_name);
+							atsc3_route_package_extract_payload_metadata_t* atsc3_route_package_extract_payload_metadata = atsc3_route_package_extract_unsigned_payload(new_file_name);
+
+							//todo, dispatch atsc3_route_package_extract_payload_metadata
+							//#...TODO: 2020-07-20: callback(<cache_folder_path, list<string> extracted_objects>)
                         }
                 	}
                 }

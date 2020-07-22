@@ -25,6 +25,7 @@ atsc3_sls_metadata_fragments_t* atsc3_sls_metadata_fragment_types_parse_from_mim
 	for(int i=0; i < atsc3_mime_multipart_related_instance->atsc3_mime_multipart_related_payload_v.count; i++) {
 		atsc3_mime_multipart_related_payload = atsc3_mime_multipart_related_instance->atsc3_mime_multipart_related_payload_v.data[i];
 
+		//jjustman-2020-07-22 TODO: switch _parse_from_payload methods to use block_t* rather than char*
 
 		//jjustman-2020-02-28 - avoid null pointer deref
 		if(atsc3_mime_multipart_related_payload && atsc3_mime_multipart_related_payload->content_type && atsc3_mime_multipart_related_payload->payload) {

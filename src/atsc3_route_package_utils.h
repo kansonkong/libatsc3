@@ -17,6 +17,7 @@
 #include "atsc3_logging_externs.h"
 #include "atsc3_utils.h"
 #include "atsc3_mime_multipart_related_parser.h"
+#include "atsc3_mbms_envelope_parser.h"
 #include "atsc3_sls_metadata_fragment_types_parser.h"
 
 
@@ -24,7 +25,33 @@
 extern "C" {
 #endif
 
-int atsc3_route_package_extract_unsigned_payload(const char* filename);
+typedef struct atsc3_route_package_extract_payload_multipart_item {
+	char*		content_location;
+	uint32_t	size;
+} atsc3_route_package_extract_payload_multipart_item_t;
+
+/*
+ * from atsc3_sls_metadata_fragment_types_parser.c
+ *
+ *      //ROUTE MBMS envelope fragment creation
+            if(!strncmp(ATSC3_ROUTE_MBMS_ENVELOPE_TYPE, atsc3_mime_multipart_related_payload->content_type, strlen(ATSC3_ROUTE_MBMS_ENVELOPE_TYPE))) {
+                atsc3_sls_metadata_fragments->atsc3_mbms_metadata_envelope = atsc3_mbms_envelope_parse_from_payload(atsc3_mime_multipart_related_payload->payload->p_buffer, atsc3_mime_multipart_related_payload->content_location);
+                atsc3_mbms_metadata_envelope_dump(atsc3_sls_metadata_fragments->atsc3_mbms_metadata_envelope);
+            }
+
+ */
+
+typedef struct atsc3_route_package_extract_payload_metadata {
+	block_t* atsc3_mbms_metadata_envelope_raw_xml;
+	atsc3_mbms_metadata_envelope_t* atsc3_mbms_metadata_envelope;
+
+	ATSC3_VECTOR_BUILDER_STRUCT(atsc3_route_package_extract_payload_multipart_item);
+
+} atsc3_route_package_extract_payload_metadata_t;
+
+ATSC3_VECTOR_BUILDER_METHODS_INTERFACE(atsc3_route_package_extract_payload_metadata, atsc3_route_package_extract_payload_multipart_item);
+
+atsc3_route_package_extract_payload_metadata_t* atsc3_route_package_extract_unsigned_payload(const char* filename);
 
 
 
