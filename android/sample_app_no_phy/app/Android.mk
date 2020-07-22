@@ -1,4 +1,4 @@
-# Android.mk for libatsc3 + saankhyalabs
+# Android.mk for libatsc3 Android sample app
 #
 #
 # jjustman@ngbp.org - for libatsc3 inclusion 2019-09-28
