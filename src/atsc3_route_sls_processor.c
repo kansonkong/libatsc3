@@ -355,7 +355,8 @@ void atsc3_route_sls_patch_mpd_availability_start_time_and_start_number(atsc3_mi
 
 
 				//send a forced callback that our ROUTE/DASH flow is discontigous and needs to be reloaded
-				//jjustman-2020-07-22 - atsc3_route_sls_process_from_alc_packet_and_file - TODO - fix this moving after we flush to disk
+				//jjustman-2020-07-22 - atsc3_route_sls_process_from_alc_packet_and_file -
+				//jjustman-2020-07-27 - TODO - fix this moving after we flush to disk
 				if(lls_sls_alc_monitor->has_discontiguous_toi_flow && lls_sls_alc_monitor->atsc3_lls_sls_alc_on_route_mpd_patched) {
 					lls_sls_alc_monitor->atsc3_lls_sls_alc_on_route_mpd_patched(lls_sls_alc_monitor->atsc3_lls_slt_service->service_id);
 				}

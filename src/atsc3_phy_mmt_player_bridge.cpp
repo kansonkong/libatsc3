@@ -233,6 +233,8 @@ atsc3_lls_slt_service_t* atsc3_phy_mmt_player_bridge_set_single_monitor_a331_ser
         lls_sls_alc_monitor = lls_sls_alc_monitor_create();
         lls_sls_alc_monitor->atsc3_lls_slt_service = atsc3_lls_slt_service;
         lls_sls_alc_monitor->lls_sls_monitor_output_buffer_mode.file_dump_enabled = true;
+        lls_sls_alc_monitor->has_discontiguous_toi_flow = true; //jjustman-2020-07-27 - hack-ish
+
         lls_slt_service_id_t* lls_slt_service_id = lls_slt_service_id_new_from_atsc3_lls_slt_service(atsc3_lls_slt_service);
         lls_slt_monitor_add_lls_slt_service_id(lls_slt_monitor, lls_slt_service_id);
 
@@ -244,6 +246,7 @@ atsc3_lls_slt_service_t* atsc3_phy_mmt_player_bridge_set_single_monitor_a331_ser
         lls_slt_monitor->lls_sls_alc_monitor = lls_sls_alc_monitor;
 
         lls_slt_monitor_add_lls_sls_alc_monitor(lls_slt_monitor, lls_sls_alc_monitor);
+
 
         //wire up event callback for alc close_object notification
         lls_sls_alc_monitor->atsc3_lls_sls_alc_on_object_close_flag_s_tsid_content_location = &atsc3_lls_sls_alc_on_object_close_flag_s_tsid_content_location_ndk;

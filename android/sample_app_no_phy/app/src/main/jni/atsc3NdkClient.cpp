@@ -939,6 +939,7 @@ void atsc3NdkClient::atsc3_lls_sls_alc_on_package_extract_completed_callback_jni
         return;
     }
 
+    return;
     //org.ngbp.libatsc3.android.PackageExtractEnvelopeMetadataAndPayload
     jclass jcls = api.packageExtractEnvelopeMetadataAndPayload_jclass;
     jobject jobj = api.mJniEnv->AllocObject(jcls);
