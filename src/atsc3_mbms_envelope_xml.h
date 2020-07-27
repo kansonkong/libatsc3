@@ -32,12 +32,19 @@ or
 #define ATSC3_MBMS_ENVELOPE_CONTENT_TYPE "application/mbms-envelope+xml"
 
 typedef struct atsc3_mbms_metadata_item {
-	char* content_type;
-	char* metadata_uri;
-	char* valid_from_string;
-	char* valid_until_string;
-	uint32_t version;
-	char* next_url;
+	char* 		content_type;
+	char* 		metadata_uri;
+	char* 		valid_from_string;
+	char* 		valid_until_string;
+	uint32_t 	version;
+	char* 		next_url;
+
+	/* A/344:2020
+	 * @contentLength 	0..1 	long 		Provides the length in bytes of the referenced file. This value may be accessed through the Content-Length HTTP attribute in a
+										response to a User Agent request.
+	 */
+	uint64_t	content_length;
+
 } atsc3_mbms_metadata_item_t;
 
 typedef struct atsc3_mbms_metadata_envelope {
