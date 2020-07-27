@@ -256,7 +256,22 @@ public:
     jmethodID atsc3_on_alc_object_status_message_ID = nullptr;
 
     jmethodID atsc3_lls_sls_alc_on_package_extract_completed_ID = nullptr;
-    jclass packageExtractEnvelopeMetadataAndPayload_jclass = nullptr;
+
+    jclass packageExtractEnvelopeMetadataAndPayload_jclass_init_env = nullptr;
+    jclass packageExtractEnvelopeMetadataAndPayload_jclass_global_ref = nullptr;
+
+    jclass packageExtractEnvelopeMetadataAndPayload_MultipartRelatedPayload_jclass_init_env = nullptr;
+    jclass packageExtractEnvelopeMetadataAndPayload_MultipartRelatedPayload_jclass_global_ref = nullptr;
+
+
+    //todo: refactor this out - ala https://gist.github.com/qiao-tw/6e43fb2311ee3c31752e11a4415deeb1
+
+    jclass      jni_java_util_ArrayList = nullptr;
+    jmethodID   jni_java_util_ArrayList_cctor = nullptr;
+    jmethodID   jni_java_util_ArrayList_add = nullptr;
+
+
+
 
     void atsc3_onMfuSampleMissing(uint16_t i, uint32_t i1, uint32_t i2);
 
