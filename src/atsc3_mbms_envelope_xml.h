@@ -37,7 +37,8 @@ typedef struct atsc3_mbms_metadata_item {
 	char* 		valid_from_string;
 	char* 		valid_until_string;
 	uint32_t 	version;
-	char* 		next_url;
+	char* 		next_url_string;
+	char*		avail_at_string;
 
 	/* A/344:2020
 	 * @contentLength 	0..1 	long 		Provides the length in bytes of the referenced file. This value may be accessed through the Content-Length HTTP attribute in a

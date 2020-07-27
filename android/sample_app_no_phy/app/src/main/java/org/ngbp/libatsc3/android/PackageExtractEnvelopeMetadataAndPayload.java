@@ -141,8 +141,10 @@ atsc3_route_package_util: 232:DEBUG:1595861703.9012:item: 55, path: conf/app.jso
         public String contentLocation;
         public String contentType;
         public String validFrom;
-        public String validTo;
+        public String validUntil;
         public int version;
+        public String nextUrl;
+        public String availAt;
         public int extractedSize;
 
     }

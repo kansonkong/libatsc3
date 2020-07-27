@@ -1350,12 +1350,13 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
 
     public void onPackageExtractCompleted(PackageExtractEnvelopeMetadataAndPayload packageExtractEnvelopeMetadataAndPayload) {
         if(packageExtractEnvelopeMetadataAndPayload != null && packageExtractEnvelopeMetadataAndPayload.packageExtractPath != null) {
-            //packageExtractEnvelopeMetadataAndPayload.multipartRelatedPayloadList.size()
             Log.d("onPackageExtractCompleted", String.format("packageExtractEnvelopeMetadataAndPayload: %s, path: %s, count: %d", packageExtractEnvelopeMetadataAndPayload, packageExtractEnvelopeMetadataAndPayload.packageExtractPath, packageExtractEnvelopeMetadataAndPayload.multipartRelatedPayloadList.size()));
 
             for(PackageExtractEnvelopeMetadataAndPayload.MultipartRelatedPayload multipartRelatedPayload : packageExtractEnvelopeMetadataAndPayload.multipartRelatedPayloadList) {
-                Log.d("onPackageExtractCompleted", String.format("packageExtractEnvelopeMetadataAndPayload.multipartRelatedPayload: contentLocation: %s", multipartRelatedPayload.contentLocation));
-
+                Log.d("onPackageExtractCompleted", String.format("packageExtractEnvelopeMetadataAndPayload.multipartRelatedPayload: contentLocation: %s, contentType: %s, size: %d",
+                        multipartRelatedPayload.contentLocation,
+                        multipartRelatedPayload.contentType,
+                        multipartRelatedPayload.extractedSize));
             }
 
         }

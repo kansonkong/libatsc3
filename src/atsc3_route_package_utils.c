@@ -137,8 +137,11 @@ atsc3_route_package_extracted_envelope_metadata_and_payload_t* atsc3_route_packa
 							if(atsc3_mbms_metadata_item->valid_until_string) {
 									atsc3_mime_multipart_related_payload->valid_until_string = strdup(atsc3_mbms_metadata_item->valid_until_string);
 							}
-							if(atsc3_mbms_metadata_item->next_url) {
-									atsc3_mime_multipart_related_payload->next_url = strdup(atsc3_mbms_metadata_item->next_url);
+							if(atsc3_mbms_metadata_item->next_url_string) {
+									atsc3_mime_multipart_related_payload->next_url_string = strdup(atsc3_mbms_metadata_item->next_url_string);
+							}
+							if(atsc3_mbms_metadata_item->avail_at_string) {
+									atsc3_mime_multipart_related_payload->avail_at_string = strdup(atsc3_mbms_metadata_item->avail_at_string);
 							}
 						}
 					}
@@ -220,7 +223,7 @@ void atsc3_route_package_extract_payload_metadata_dump(atsc3_route_package_extra
 	__ROUTE_PACKAGE_UTILS_DEBUG("---");
 	for(int i=0; i < atsc3_route_package_extracted_envelope_metadata_and_payload->atsc3_mime_multipart_related_payload_v.count; i++) {
 		atsc3_mime_multipart_related_payload_t* atsc3_mime_multipart_related_payload = atsc3_route_package_extracted_envelope_metadata_and_payload->atsc3_mime_multipart_related_payload_v.data[i];
-		__ROUTE_PACKAGE_UTILS_DEBUG("item: %d, path: %s, size: %d, content_type: %s, valid_from: %s, valid_until: %s, version: %u, next_url: %s",
+		__ROUTE_PACKAGE_UTILS_DEBUG("item: %d, path: %s, size: %d, content_type: %s, valid_from: %s, valid_until: %s, version: %u, next_url: %s, avail_at: %s",
 				i,
 				atsc3_mime_multipart_related_payload->sanitizied_content_location,
 				atsc3_mime_multipart_related_payload->extracted_size,
@@ -228,7 +231,8 @@ void atsc3_route_package_extract_payload_metadata_dump(atsc3_route_package_extra
 				atsc3_mime_multipart_related_payload->valid_from_string,
 				atsc3_mime_multipart_related_payload->valid_until_string,
 				atsc3_mime_multipart_related_payload->version,
-				atsc3_mime_multipart_related_payload->next_url
+				atsc3_mime_multipart_related_payload->next_url_string,
+				atsc3_mime_multipart_related_payload->avail_at_string
 				);
 
 	}
