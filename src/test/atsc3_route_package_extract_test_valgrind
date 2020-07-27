@@ -1,0 +1,2 @@
+valgrind --leak-check=full --show-leak-kinds=all  --leak-check=yes ./atsc3_route_package_extract_test
+
