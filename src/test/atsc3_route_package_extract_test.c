@@ -82,16 +82,25 @@ int main(int argc, char* argv[] ) {
 	 */
 
 
-	//phx-dash-2
 	char* test_app_pkg_payload = "../../test_data/route-dash/2020-07-02-mpd-patching/route-5004/App.pkg";
 
 	_ATSC3_ROUTE_PACKAGE_EXTRACT_TEST_INFO("Running tests with payload: %s", test_app_pkg_payload);
-	int ret_phx_test = atsc3_route_package_extract_unsigned_payload_test(test_app_pkg_payload);
+	int ret_app_pkg = atsc3_route_package_extract_unsigned_payload_test(test_app_pkg_payload);
 
+	_ATSC3_ROUTE_PACKAGE_EXTRACT_TEST_INFO("---");
+	_ATSC3_ROUTE_PACKAGE_EXTRACT_TEST_INFO("atsc3_route_package_extract_test test_app_pkg_payload complete, result: %d", ret_app_pkg);
+	_ATSC3_ROUTE_PACKAGE_EXTRACT_TEST_INFO("---");
+
+
+
+	char* test_alert_pkg_payload = "../../test_data/route-dash/2020-07-02-mpd-patching/route-5004/Alert.pkg";
+
+	_ATSC3_ROUTE_PACKAGE_EXTRACT_TEST_INFO("Running tests with payload: %s", test_alert_pkg_payload);
+	int ret_alert_pkg = atsc3_route_package_extract_unsigned_payload_test(test_alert_pkg_payload);
 
 
 	_ATSC3_ROUTE_PACKAGE_EXTRACT_TEST_INFO("---");
-	_ATSC3_ROUTE_PACKAGE_EXTRACT_TEST_INFO("atsc3_route_package_extract_test test complete");
+	_ATSC3_ROUTE_PACKAGE_EXTRACT_TEST_INFO("atsc3_route_package_extract_test test_alert_pkg_payload complete, result: %d", ret_alert_pkg);
 	_ATSC3_ROUTE_PACKAGE_EXTRACT_TEST_INFO("---");
 
 	return 0;

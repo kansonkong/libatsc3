@@ -28,29 +28,6 @@
 #define PREAMBLE_PACKET_PARSE_AND_LOG true
 #define TIMING_MANAGEMENT_PACKET_PARSE_AND_LOG true
 
-FILE* __DEBUG_LOG_FILE = NULL;
-bool  __DEBUG_LOG_AVAILABLE = true;
-
-//overload printf to write to stderr
-int printf(const char *format, ...)  {
-    
-    if(__DEBUG_LOG_AVAILABLE && !__DEBUG_LOG_FILE) {
-        __DEBUG_LOG_FILE = fopen("debug.log", "w");
-        if(!__DEBUG_LOG_FILE) {
-            __DEBUG_LOG_AVAILABLE = false;
-            __DEBUG_LOG_FILE = stderr;
-        }
-    }
-    
-    va_list argptr;
-    va_start(argptr, format);
-    vfprintf(__DEBUG_LOG_FILE, format, argptr);
-    va_end(argptr);
-    fflush(__DEBUG_LOG_FILE);
-    return 0;
-}
-
-
 int PACKET_COUNTER = 0;
 
 uint32_t* dst_ip_addr_filter = NULL;
