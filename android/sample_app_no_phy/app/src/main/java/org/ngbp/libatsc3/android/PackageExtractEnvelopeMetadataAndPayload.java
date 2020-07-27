@@ -1,5 +1,6 @@
 package org.ngbp.libatsc3.android;
 
+import java.util.ArrayList;
 import java.util.List;
 
 public class PackageExtractEnvelopeMetadataAndPayload {
@@ -134,7 +135,7 @@ atsc3_route_package_util: 232:DEBUG:1595861703.9012:item: 55, path: conf/app.jso
 
      */
 
-    public List<MultipartRelatedPayload> multipartRelatedPayloadList;
+    public List<MultipartRelatedPayload> multipartRelatedPayloadList = new ArrayList<>();
 
     public class MultipartRelatedPayload {
         public String contentLocation;
