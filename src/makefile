@@ -20,6 +20,17 @@
 # /usr/local/include/stdlib.h:134:25: warning: pointer is missing a nullability type specifier (_Nonnull, _Nullable, or _Null_unspecified) [-Wnullability-completeness]
 # double   atof(const char *);
 
+# jjustman-2020-07-27 - note: for OSX users who are experencing valgrind die ala:
+# 
+# 	==12799== valgrind: Unrecognised instruction at address 0x1013e4a73.
+#   ==12799==    at 0x1013E4A73: __pthread_init.cold.2 (in /usr/lib/system/libsystem_pthread.dylib)
+#
+# 	use: https://github.com/LouisBrunner/valgrind-macos
+#   		brew tap LouisBrunner/valgrind
+#			brew install --HEAD LouisBrunner/valgrind/valgrind
+
+
+
 CFLAGS=-Wno-nullability-completeness -Wno-expansion-to-defined -Wno-builtin-requires-header
 DEBUG=-g
 ASAN=-fsanitize=address -fno-omit-frame-pointer
