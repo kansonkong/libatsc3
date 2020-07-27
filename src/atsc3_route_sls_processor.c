@@ -157,7 +157,7 @@ void atsc3_route_sls_process_from_alc_packet_and_file(udp_flow_t* udp_flow, alc_
 					  char mbms_filename[1025] = { 0 };
 					  snprintf(mbms_filename, 1024, "route/%d", lls_sls_alc_monitor->atsc3_lls_slt_service->service_id);
 					  mkdir(mbms_filename, 0777);
-					  snprintf(mbms_filename, 1024, "route/%d/%s", lls_sls_alc_monitor->atsc3_lls_slt_service->service_id, atsc3_mime_multipart_related_payload->content_location);
+					  snprintf(mbms_filename, 1024, "route/%d/%s", lls_sls_alc_monitor->atsc3_lls_slt_service->service_id, atsc3_mime_multipart_related_payload->sanitizied_content_location);
 					  FILE* fp_mbms_file = fopen(mbms_filename, "w");
 					  if(fp_mbms_file) {
 						/* lldb: set set target.max-string-summary-length 10000 */
@@ -170,10 +170,10 @@ void atsc3_route_sls_process_from_alc_packet_and_file(udp_flow_t* udp_flow, alc_
 						fclose(fp_mbms_file);
 						fp_mbms_file = NULL;
 					  } else {
-						  _ATSC3_ROUTE_SLS_PROCESSOR_ERROR("sls mbms fragment dump, original content_location: %s, unable to write to local path: %s", atsc3_mime_multipart_related_payload->content_location, mbms_filename);
+						  _ATSC3_ROUTE_SLS_PROCESSOR_ERROR("sls mbms fragment dump, original content_location: %s, unable to write to local path: %s", atsc3_mime_multipart_related_payload->sanitizied_content_location, mbms_filename);
 					  }
 				  } else {
-					  _ATSC3_ROUTE_SLS_PROCESSOR_ERROR("sls mbms fragment paylaod is null or p_size is zero, skipping write of original content_location: %s", atsc3_mime_multipart_related_payload->content_location);
+					  _ATSC3_ROUTE_SLS_PROCESSOR_ERROR("sls mbms fragment paylaod is null or p_size is zero, skipping write of original content_location: %s", atsc3_mime_multipart_related_payload->sanitizied_content_location);
 				  }
 				}
 			}
@@ -352,6 +352,14 @@ void atsc3_route_sls_patch_mpd_availability_start_time_and_start_number(atsc3_mi
 				atsc3_route_dash_matching_s_tsid_representation_media_info_alc_flow_match_vector_free(&match_vector);
 
 				atsc3_pcre2_regex_match_capture_vector_free(&atsc3_pcre2_regex_match_capture_vector);
+
+
+				//send a forced callback that our ROUTE/DASH flow is discontigous and needs to be reloaded
+				//jjustman-2020-07-22 - atsc3_route_sls_process_from_alc_packet_and_file - TODO - fix this moving after we flush to disk
+				if(lls_sls_alc_monitor->has_discontiguous_toi_flow && lls_sls_alc_monitor->atsc3_lls_sls_alc_on_route_mpd_patched) {
+					lls_sls_alc_monitor->atsc3_lls_sls_alc_on_route_mpd_patched(lls_sls_alc_monitor->atsc3_lls_slt_service->service_id);
+				}
+
         	} else {
         		_ATSC3_ROUTE_SLS_PROCESSOR_ERROR("atsc3_pcre2_regex_match returned NULL - with block_mpd: %s", block_mpd->p_buffer);
            		block_Destroy(&atsc3_mime_multipart_related_payload->payload);

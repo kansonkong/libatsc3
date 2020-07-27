@@ -158,6 +158,9 @@ qsort((void**)lls_sls_alc_session_flows->lls_slt_alc_sessions, lls_sls_alc_sessi
 		PPCAT(vector_item_name,_t)* vector_item_name = calloc(1, sizeof(PPCAT(vector_item_name,_t))); \
 		return vector_item_name; \
 	} \
+	ATSC3_VECTOR_BUILDER_METHODS_IMPLEMENTATION_NO_CCTOR(vector_struct_name, vector_item_name)
+
+#define ATSC3_VECTOR_BUILDER_METHODS_IMPLEMENTATION_NO_CCTOR(vector_struct_name, vector_item_name) \
 	void PPCAT(vector_struct_name,PPCAT(_prealloc_,vector_item_name))(PPCAT(vector_struct_name,_t)* vector_struct_name, uint32_t size) { \
 		if(!vector_struct_name->PPCAT(vector_item_name, _v).size || !vector_struct_name->PPCAT(vector_item_name, _v).data) { \
 			/* new alloc */ \
