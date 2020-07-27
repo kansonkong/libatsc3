@@ -29,6 +29,7 @@ extern "C" {
 
 
 typedef struct atsc3_route_package_extracted_envelope_metadata_and_payload {
+	char*		package_name; //TODO: jjustman-2020-07-27 - App.pkg
 	uint32_t 	tsi;
 	uint32_t	toi;
 	char*		app_context_id_list;
