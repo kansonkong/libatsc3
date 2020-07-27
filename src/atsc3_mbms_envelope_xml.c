@@ -22,7 +22,8 @@ void atsc3_mbms_metadata_item_free(atsc3_mbms_metadata_item_t** atsc3_mbms_metad
             freeclean((void**)&atsc3_mbms_metadata_item->metadata_uri);
             freeclean((void**)&atsc3_mbms_metadata_item->valid_from_string);
             freeclean((void**)&atsc3_mbms_metadata_item->valid_until_string);
-            freeclean((void**)&atsc3_mbms_metadata_item->next_url);
+            freeclean((void**)&atsc3_mbms_metadata_item->next_url_string);
+            freeclean((void**)&atsc3_mbms_metadata_item->avail_at_string);
             
             free(atsc3_mbms_metadata_item);
             atsc3_mbms_metadata_item = NULL;
