@@ -831,8 +831,13 @@ int atsc3_alc_packet_persist_to_toi_resource_process_sls_mbms_and_emit_callback(
 							atsc3_route_package_extracted_envelope_metadata_and_payload_set_alc_tsi_toi_from_alc_packet(atsc3_route_package_extracted_envelope_metadata_and_payload, alc_packet);
 							atsc3_route_package_extracted_envelope_metadata_and_payload_set_fdt_attributes(atsc3_route_package_extracted_envelope_metadata_and_payload, atsc3_fdt_file);
 
-							//todo, dispatch atsc3_route_package_extract_payload_metadata
-							//#...TODO: 2020-07-20: callback(<cache_folder_path, list<string> extracted_objects>)
+							if(lls_sls_alc_monitor->atsc3_lls_sls_alc_on_package_extract_completed_callback) {
+								lls_sls_alc_monitor->atsc3_lls_sls_alc_on_package_extract_completed_callback(atsc3_route_package_extracted_envelope_metadata_and_payload);
+
+							}
+
+							//atsc3_route_package_extracted_envelope_metadata_and_payload_free(atsc3_route_package_extracted_envelope_metadata_and_payload);
+
                         }
                 	}
                 }

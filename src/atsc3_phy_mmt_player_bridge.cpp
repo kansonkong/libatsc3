@@ -76,6 +76,8 @@ lls_slt_monitor_t* lls_slt_monitor = NULL;
 void atsc3_lls_sls_alc_on_object_close_flag_s_tsid_content_location_ndk(uint32_t tsi, uint32_t toi, char* content_location);
 void atsc3_lls_sls_alc_on_route_mpd_patched_ndk(uint16_t service_id);
 
+void atsc3_lls_sls_alc_on_package_extract_completed_callback_ndk(atsc3_route_package_extracted_envelope_metadata_and_payload_t* atsc3_route_package_extracted_envelope_metadata_and_payload_t);
+
 //#1569
 void atsc3_sls_on_held_trigger_received_callback_impl(uint16_t service_id, block_t* held_payload);
 
@@ -249,9 +251,10 @@ atsc3_lls_slt_service_t* atsc3_phy_mmt_player_bridge_set_single_monitor_a331_ser
         //write up event callback for alc MPD patching
         lls_sls_alc_monitor->atsc3_lls_sls_alc_on_route_mpd_patched = &atsc3_lls_sls_alc_on_route_mpd_patched_ndk;
 
+        lls_sls_alc_monitor->atsc3_lls_sls_alc_on_package_extract_completed_callback = &atsc3_lls_sls_alc_on_package_extract_completed_callback_ndk;
+
         //#1569
         lls_sls_alc_monitor->atsc3_sls_on_held_trigger_received_callback = &atsc3_sls_on_held_trigger_received_callback_impl;
-
 
     } else {
         lls_slt_monitor_clear_lls_sls_alc_monitor(lls_slt_monitor);
@@ -697,6 +700,10 @@ void atsc3_lls_sls_alc_on_object_close_flag_s_tsid_content_location_ndk(uint32_t
 
 void atsc3_lls_sls_alc_on_route_mpd_patched_ndk(uint16_t service_id) {
     Atsc3NdkClient_ptr->atsc3_lls_sls_alc_on_route_mpd_patched_jni(service_id);
+}
+
+void atsc3_lls_sls_alc_on_package_extract_completed_callback_ndk(atsc3_route_package_extracted_envelope_metadata_and_payload_t* atsc3_route_package_extracted_envelope_metadata_and_payload_t) {
+    Atsc3NdkClient_ptr->atsc3_lls_sls_alc_on_package_extract_completed_callback_jni(atsc3_route_package_extracted_envelope_metadata_and_payload_t);
 }
 
 void atsc3_sls_on_held_trigger_received_callback_impl(uint16_t service_id, block_t* held_payload) {

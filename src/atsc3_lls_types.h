@@ -920,8 +920,12 @@ typedef struct lls_sls_alc_monitor {
     atsc3_alc_on_object_close_flag_s_tsid_content_location_f	atsc3_lls_sls_alc_on_object_close_flag_s_tsid_content_location;
 	atsc3_alc_on_route_mpd_patched_f    						atsc3_lls_sls_alc_on_route_mpd_patched;                             //dispatched in atsc3_route_sls_processor.c
 
+	atsc3_alc_on_package_extract_completed_f					atsc3_lls_sls_alc_on_package_extract_completed_callback;
+
 	//this should be in the sls_monitor...
 	atsc3_sls_on_held_trigger_received_f						atsc3_sls_on_held_trigger_received_callback;
+
+
 
     //jjustman-2020-07-01 #WI - todo: dispatch HELD block_t* payload to application callback
 
