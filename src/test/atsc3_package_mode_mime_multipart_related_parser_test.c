@@ -39,7 +39,7 @@ int parse_mime_multipart(const char* filename) {
 				//hack for directory creation:
 				//jjustman-2020-07-07: TODO: sanatize this logic
 
-				char* filename = atsc3_mime_multipart_related_payload->content_location;
+				char* filename = atsc3_mime_multipart_related_payload->sanitizied_content_location;
 
 				char* last_slash_position = NULL;
 				for(int i=0; i < strlen(filename); i++) {

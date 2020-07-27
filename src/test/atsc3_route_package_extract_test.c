@@ -24,11 +24,26 @@
 int atsc3_route_package_extract_unsigned_payload_test(const char* filename) {
 	int ret = 0;
 
-	_ATSC3_ROUTE_PACKAGE_EXTRACT_TEST_INFO("--enter: atsc3_route_package_extract_unsigned_payload_test with filename: %s", filename);
+	const char* package_extract_path_test_original = "package_extract_path_1";
+	atsc3_fdt_file_t* atsc3_fdt_file = atsc3_fdt_file_new();
+	atsc3_fdt_file->app_context_id_list = package_extract_path_test_original;
 
-	atsc3_route_package_extract_payload_metadata_t* atsc3_route_package_extract_payload_metadata = atsc3_route_package_extract_unsigned_payload(filename);
+	char* package_extract_path = atsc3_route_package_generate_path_from_appContextIdList(atsc3_fdt_file);
 
-	_ATSC3_ROUTE_PACKAGE_EXTRACT_TEST_DEBUG("atsc3_route_package_extract_payload_metadata is: %p, num objects: %d", atsc3_route_package_extract_payload_metadata, atsc3_route_package_extract_payload_metadata->atsc3_route_package_extract_payload_multipart_item_v.count);
+	_ATSC3_ROUTE_PACKAGE_EXTRACT_TEST_INFO("--enter: atsc3_route_package_extract_unsigned_payload_test with filename: %s, original package extract path: %s, hashed package extract path: %s", filename, package_extract_path_test_original, package_extract_path);
+
+	atsc3_route_package_extracted_envelope_metadata_and_payload_t* atsc3_route_package_extracted_envelope_metadata_and_payload = atsc3_route_package_extract_unsigned_payload(filename, package_extract_path);
+
+	if(atsc3_route_package_extracted_envelope_metadata_and_payload) {
+
+		atsc3_route_package_extracted_envelope_metadata_and_payload_set_fdt_attributes(atsc3_route_package_extracted_envelope_metadata_and_payload, atsc3_fdt_file);
+		_ATSC3_ROUTE_PACKAGE_EXTRACT_TEST_DEBUG("atsc3_route_package_extract_payload_metadata is: %p, num objects: %d", atsc3_route_package_extracted_envelope_metadata_and_payload, atsc3_route_package_extracted_envelope_metadata_and_payload->atsc3_mime_multipart_related_payload_v.count);
+
+		atsc3_route_package_extract_payload_metadata_dump(atsc3_route_package_extracted_envelope_metadata_and_payload);
+	} else {
+		_ATSC3_ROUTE_PACKAGE_EXTRACT_TEST_ERROR("atsc3_route_package_extracted_envelope_metadata_and_payload is NULL!");
+		ret = -1;
+	}
 
 	return ret;
 }
@@ -38,6 +53,11 @@ int main(int argc, char* argv[] ) {
 	_MIME_PARSER_INFO_ENABLED = 1;
 	_MIME_PARSER_DEBUG_ENABLED = 1;
 	_MIME_PARSER_TRACE_ENABLED = 1;
+
+	_ROUTE_PACKAGE_UTILS_DEBUG_ENABLED = 1;
+	_ROUTE_PACKAGE_UTILS_TRACE_ENABLED = 1;
+
+	_ROUTE_MBMS_ENVELOPE_PARSER_DEBUG_ENABLED = 1;
 
 #ifdef __TRACE__
 	_XML_INFO_ENABLED = 1;

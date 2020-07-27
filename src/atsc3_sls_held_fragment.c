@@ -144,7 +144,7 @@ cleanup:
 
 void atsc3_sls_held_fragment_dump(atsc3_sls_held_fragment_t* atsc3_sls_held_fragment) {
 
-	_ATSC3_HELD_PARSER_INFO("HELD fragment dump, raw xml payload is:\n%s", atsc3_sls_held_fragment->raw_xml_fragment);
+	_ATSC3_HELD_PARSER_INFO("HELD fragment dump, raw xml payload is:\n%s", atsc3_sls_held_fragment->raw_xml_fragment->p_buffer);
 
 	for(int i=0; i < atsc3_sls_held_fragment->atsc3_sls_html_entry_package_v.count; i++) {
 		atsc3_sls_html_entry_package_t* atsc3_sls_html_entry_package = atsc3_sls_held_fragment->atsc3_sls_html_entry_package_v.data[i];
