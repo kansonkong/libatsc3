@@ -950,6 +950,9 @@ void atsc3NdkClient::atsc3_lls_sls_alc_on_package_extract_completed_callback_jni
         return;
     }
 
+    std::list<jstring> to_clean_jstrings;
+    std::list<jobject> to_clean_jobject;
+
     //org.ngbp.libatsc3.android.PackageExtractEnvelopeMetadataAndPayload
     jclass jcls = api.packageExtractEnvelopeMetadataAndPayload_jclass_global_ref;
     jobject jobj = Atsc3_Jni_Processing_Thread_Env->Get()->AllocObject(jcls);
@@ -967,15 +970,19 @@ void atsc3NdkClient::atsc3_lls_sls_alc_on_package_extract_completed_callback_jni
     jfieldID appContextIdList_valId = Atsc3_Jni_Processing_Thread_Env->Get()->GetFieldID(jcls, "appContextIdList", "Ljava/lang/String;");
     jstring appContextIdList_payload = Atsc3_Jni_Processing_Thread_Env->Get()->NewStringUTF(atsc3_route_package_extracted_envelope_metadata_and_payload->app_context_id_list);
     Atsc3_Jni_Processing_Thread_Env->Get()->SetObjectField(jobj, appContextIdList_valId, appContextIdList_payload);
+    to_clean_jstrings.push_back(appContextIdList_payload);
 
 
     jfieldID packageExtractPath_valId = Atsc3_Jni_Processing_Thread_Env->Get()->GetFieldID(jcls, "packageExtractPath", "Ljava/lang/String;");
     jstring packageExtractPath_payload = Atsc3_Jni_Processing_Thread_Env->Get()->NewStringUTF(atsc3_route_package_extracted_envelope_metadata_and_payload->package_extract_path);
     Atsc3_Jni_Processing_Thread_Env->Get()->SetObjectField(jobj, packageExtractPath_valId, packageExtractPath_payload);
+    to_clean_jstrings.push_back(packageExtractPath_payload);
+
 
     jfieldID mbmsEnvelopeRawXml_valId = Atsc3_Jni_Processing_Thread_Env->Get()->GetFieldID(jcls, "mbmsEnvelopeRawXml", "Ljava/lang/String;");
     jstring mbmsEnvelopeRawXml_payload = Atsc3_Jni_Processing_Thread_Env->Get()->NewStringUTF((char*)atsc3_route_package_extracted_envelope_metadata_and_payload->atsc3_mbms_metadata_envelope_raw_xml->p_buffer);
     Atsc3_Jni_Processing_Thread_Env->Get()->SetObjectField(jobj, mbmsEnvelopeRawXml_valId, mbmsEnvelopeRawXml_payload);
+    to_clean_jstrings.push_back(mbmsEnvelopeRawXml_payload);
 
     if(atsc3_route_package_extracted_envelope_metadata_and_payload->atsc3_mime_multipart_related_payload_v.count > 0) {
 
@@ -985,10 +992,57 @@ void atsc3NdkClient::atsc3_lls_sls_alc_on_package_extract_completed_callback_jni
             atsc3_mime_multipart_related_payload_t* atsc3_mime_multipart_related_payload = atsc3_route_package_extracted_envelope_metadata_and_payload->atsc3_mime_multipart_related_payload_v.data[i];
             jobject jobj_multipart_related_payload_jobject = Atsc3_Jni_Processing_Thread_Env->Get()->AllocObject(api.packageExtractEnvelopeMetadataAndPayload_MultipartRelatedPayload_jclass_global_ref);
 
+            to_clean_jobject.push_back(jobj_multipart_related_payload_jobject);
+
             jfieldID contentLocation_valId = Atsc3_Jni_Processing_Thread_Env->Get()->GetFieldID(api.packageExtractEnvelopeMetadataAndPayload_MultipartRelatedPayload_jclass_global_ref, "contentLocation", "Ljava/lang/String;");
             jstring contentLocation_jstring = Atsc3_Jni_Processing_Thread_Env->Get()->NewStringUTF(atsc3_mime_multipart_related_payload->sanitizied_content_location);
-
             Atsc3_Jni_Processing_Thread_Env->Get()->SetObjectField(jobj_multipart_related_payload_jobject, contentLocation_valId, contentLocation_jstring);
+            to_clean_jstrings.push_back(contentLocation_jstring);
+
+            if(atsc3_mime_multipart_related_payload->content_type) {
+                jfieldID contentType_valId = Atsc3_Jni_Processing_Thread_Env->Get()->GetFieldID(api.packageExtractEnvelopeMetadataAndPayload_MultipartRelatedPayload_jclass_global_ref, "contentType", "Ljava/lang/String;");
+                jstring contentType_jstring = Atsc3_Jni_Processing_Thread_Env->Get()->NewStringUTF(atsc3_mime_multipart_related_payload->content_type);
+                Atsc3_Jni_Processing_Thread_Env->Get()->SetObjectField(jobj_multipart_related_payload_jobject, contentType_valId, contentType_jstring);
+                to_clean_jstrings.push_back(contentType_jstring);
+            }
+
+            if(atsc3_mime_multipart_related_payload->valid_from_string) {
+                jfieldID validFrom_valId = Atsc3_Jni_Processing_Thread_Env->Get()->GetFieldID(api.packageExtractEnvelopeMetadataAndPayload_MultipartRelatedPayload_jclass_global_ref, "validFrom", "Ljava/lang/String;");
+                jstring validFrom_jstring = Atsc3_Jni_Processing_Thread_Env->Get()->NewStringUTF(atsc3_mime_multipart_related_payload->valid_from_string);
+                Atsc3_Jni_Processing_Thread_Env->Get()->SetObjectField(jobj_multipart_related_payload_jobject, validFrom_valId, validFrom_jstring);
+                to_clean_jstrings.push_back(validFrom_jstring);
+            }
+
+            if(atsc3_mime_multipart_related_payload->valid_until_string) {
+                jfieldID validUntil_valId = Atsc3_Jni_Processing_Thread_Env->Get()->GetFieldID(api.packageExtractEnvelopeMetadataAndPayload_MultipartRelatedPayload_jclass_global_ref, "validUntil", "Ljava/lang/String;");
+                jstring validUntil_jstring = Atsc3_Jni_Processing_Thread_Env->Get()->NewStringUTF(atsc3_mime_multipart_related_payload->valid_until_string);
+                Atsc3_Jni_Processing_Thread_Env->Get()->SetObjectField(jobj_multipart_related_payload_jobject, validUntil_valId, validUntil_jstring);
+                to_clean_jstrings.push_back(validUntil_jstring);
+            }
+
+            //version
+
+            jfieldID version_valId = Atsc3_Jni_Processing_Thread_Env->Get()->GetFieldID(api.packageExtractEnvelopeMetadataAndPayload_MultipartRelatedPayload_jclass_global_ref, "version", "I");
+            Atsc3_Jni_Processing_Thread_Env->Get()->SetIntField(jobj_multipart_related_payload_jobject, version_valId, atsc3_mime_multipart_related_payload->version);
+
+
+            if(atsc3_mime_multipart_related_payload->next_url_string) {
+                jfieldID nextUrl_valId = Atsc3_Jni_Processing_Thread_Env->Get()->GetFieldID(api.packageExtractEnvelopeMetadataAndPayload_MultipartRelatedPayload_jclass_global_ref, "nextUrl", "Ljava/lang/String;");
+                jstring nextUrl_jstring = Atsc3_Jni_Processing_Thread_Env->Get()->NewStringUTF(atsc3_mime_multipart_related_payload->next_url_string);
+                Atsc3_Jni_Processing_Thread_Env->Get()->SetObjectField(jobj_multipart_related_payload_jobject, nextUrl_valId, nextUrl_jstring);
+                to_clean_jstrings.push_back(nextUrl_jstring);
+            }
+
+            if(atsc3_mime_multipart_related_payload->avail_at_string) {
+                jfieldID availAt_valId = Atsc3_Jni_Processing_Thread_Env->Get()->GetFieldID(api.packageExtractEnvelopeMetadataAndPayload_MultipartRelatedPayload_jclass_global_ref, "availAt", "Ljava/lang/String;");
+                jstring availAt_jstring = Atsc3_Jni_Processing_Thread_Env->Get()->NewStringUTF(atsc3_mime_multipart_related_payload->avail_at_string);
+                Atsc3_Jni_Processing_Thread_Env->Get()->SetObjectField(jobj_multipart_related_payload_jobject, availAt_valId, availAt_jstring);
+                to_clean_jstrings.push_back(availAt_jstring);
+            }
+
+            //extractedSize
+            jfieldID extractedSize_valId = Atsc3_Jni_Processing_Thread_Env->Get()->GetFieldID(api.packageExtractEnvelopeMetadataAndPayload_MultipartRelatedPayload_jclass_global_ref, "extractedSize", "I");
+            Atsc3_Jni_Processing_Thread_Env->Get()->SetIntField(jobj_multipart_related_payload_jobject, extractedSize_valId, atsc3_mime_multipart_related_payload->extracted_size);
 
             Atsc3_Jni_Processing_Thread_Env->Get()->CallBooleanMethod(multipartRelatedPayloadList_jobject, api.jni_java_util_ArrayList_add, jobj_multipart_related_payload_jobject);
         }
@@ -998,9 +1052,16 @@ void atsc3NdkClient::atsc3_lls_sls_alc_on_package_extract_completed_callback_jni
     }
 
     int r = Atsc3_Jni_Processing_Thread_Env->Get()->CallIntMethod(mClsDrvIntf, atsc3_lls_sls_alc_on_package_extract_completed_ID, jobj);
-    Atsc3_Jni_Processing_Thread_Env->Get()->DeleteLocalRef(appContextIdList_payload);
-    Atsc3_Jni_Processing_Thread_Env->Get()->DeleteLocalRef(packageExtractPath_payload);
-    Atsc3_Jni_Processing_Thread_Env->Get()->DeleteLocalRef(mbmsEnvelopeRawXml_payload);
+
+    for (std::list<jstring>::iterator it=to_clean_jstrings.begin(); it != to_clean_jstrings.end(); ++it) {
+        Atsc3_Jni_Processing_Thread_Env->Get()->DeleteLocalRef(*it);
+    }
+    to_clean_jstrings.clear();
+
+    for (std::list<jobject>::iterator it=to_clean_jobject.begin(); it != to_clean_jobject.end(); ++it) {
+        Atsc3_Jni_Processing_Thread_Env->Get()->DeleteLocalRef(*it);
+    }
+    to_clean_jobject.clear();
 
     Atsc3_Jni_Processing_Thread_Env->Get()->DeleteLocalRef(jobj);
 }

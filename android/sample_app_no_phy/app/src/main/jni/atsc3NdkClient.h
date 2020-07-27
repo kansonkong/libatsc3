@@ -12,6 +12,8 @@
 #include <queue>
 #include <mutex>
 #include <semaphore.h>
+#include <list>
+
 using namespace std;
 
 #include <android/log.h>
