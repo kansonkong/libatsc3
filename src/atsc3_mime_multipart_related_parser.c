@@ -316,10 +316,9 @@ atsc3_mime_multipart_related_instance_t* atsc3_mime_multipart_related_parser(FIL
 						//we need at least a \r\n to 'touch' this file
 						if(atsc3_mime_multipart_related_payload->payload->p_size > 1) {
 							//we just need to trim off the last 2 (\r\n) bytes here for the atsc3_mime_multipart_related_payload->payload->p_size
-							atsc3_mime_multipart_related_payload->payload->p_buffer[atsc3_mime_multipart_related_payload->payload->p_size-2] = '\0';
-							atsc3_mime_multipart_related_payload->payload->p_buffer[atsc3_mime_multipart_related_payload->payload->p_size-1] = '\0';
 
-							atsc3_mime_multipart_related_payload->payload->p_size -= 2;
+							block_Tail_Truncate(atsc3_mime_multipart_related_payload->payload, 2);
+							block_Rewind(atsc3_mime_multipart_related_payload->payload);
 
 							atsc3_mime_multipart_related_instance_add_atsc3_mime_multipart_related_payload(atsc3_mime_multipart_related_instance, atsc3_mime_multipart_related_payload);
 							__MIME_PARSER_TRACE("atsc3_mime_multipart_related_parser: line: %u, payload boundary pushing new entry: %s", line_count, atsc3_mime_multipart_related_payload->payload->p_buffer);
@@ -394,8 +393,8 @@ void atsc3_mime_multipart_related_instance_dump(atsc3_mime_multipart_related_ins
 	for(int i=0; i < atsc3_mime_multipart_related_instance->atsc3_mime_multipart_related_payload_v.count; i++) {
 		__MIME_PARSER_DEBUG("type     : %s", atsc3_mime_multipart_related_instance->atsc3_mime_multipart_related_payload_v.data[i]->content_type);
 		__MIME_PARSER_DEBUG("location : %s", atsc3_mime_multipart_related_instance->atsc3_mime_multipart_related_payload_v.data[i]->sanitizied_content_location);
-		__MIME_PARSER_DEBUG("payload  : %d bytes\n%s", 	atsc3_mime_multipart_related_instance->atsc3_mime_multipart_related_payload_v.data[i]->payload->p_size,
-														atsc3_mime_multipart_related_instance->atsc3_mime_multipart_related_payload_v.data[i]->payload->p_buffer);
+		__MIME_PARSER_DEBUG("payload  : %d bytes", 	atsc3_mime_multipart_related_instance->atsc3_mime_multipart_related_payload_v.data[i]->payload->p_size);
+		__MIME_PARSER_TRACE("%s", atsc3_mime_multipart_related_instance->atsc3_mime_multipart_related_payload_v.data[i]->payload->p_buffer);
 	}
 
 }

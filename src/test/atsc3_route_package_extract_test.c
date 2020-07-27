@@ -21,12 +21,11 @@
 #define _ATSC3_ROUTE_PACKAGE_EXTRACT_TEST_DEBUG(...)   printf("%s:%d:DEBUG:",__FILE__,__LINE__);_ATSC3_UTILS_PRINTLN(__VA_ARGS__);
 
 
-int atsc3_route_package_extract_unsigned_payload_test(const char* filename) {
-	int ret = 0;
+atsc3_route_package_extracted_envelope_metadata_and_payload_t* atsc3_route_package_extract_unsigned_payload_test(const char* filename) {
 
 	const char* package_extract_path_test_original = "package_extract_path_1";
 	atsc3_fdt_file_t* atsc3_fdt_file = atsc3_fdt_file_new();
-	atsc3_fdt_file->app_context_id_list = package_extract_path_test_original;
+	atsc3_fdt_file->app_context_id_list = (char*)package_extract_path_test_original;
 
 	char* package_extract_path = atsc3_route_package_generate_path_from_appContextIdList(atsc3_fdt_file);
 
@@ -42,11 +41,13 @@ int atsc3_route_package_extract_unsigned_payload_test(const char* filename) {
 		atsc3_route_package_extract_payload_metadata_dump(atsc3_route_package_extracted_envelope_metadata_and_payload);
 	} else {
 		_ATSC3_ROUTE_PACKAGE_EXTRACT_TEST_ERROR("atsc3_route_package_extracted_envelope_metadata_and_payload is NULL!");
-		ret = -1;
 	}
 
-	return ret;
+
+	return atsc3_route_package_extracted_envelope_metadata_and_payload;
 }
+
+
 
 int main(int argc, char* argv[] ) {
 
@@ -85,10 +86,14 @@ int main(int argc, char* argv[] ) {
 	char* test_app_pkg_payload = "../../test_data/route-dash/2020-07-02-mpd-patching/route-5004/App.pkg";
 
 	_ATSC3_ROUTE_PACKAGE_EXTRACT_TEST_INFO("Running tests with payload: %s", test_app_pkg_payload);
-	int ret_app_pkg = atsc3_route_package_extract_unsigned_payload_test(test_app_pkg_payload);
+	atsc3_route_package_extracted_envelope_metadata_and_payload_t* atsc3_route_package_extracted_envelope_metadata_and_payload_app_pkg = atsc3_route_package_extract_unsigned_payload_test(test_app_pkg_payload);
+
+	assert(atsc3_route_package_extracted_envelope_metadata_and_payload_app_pkg);
+	assert(atsc3_route_package_extracted_envelope_metadata_and_payload_app_pkg->atsc3_mime_multipart_related_payload_v.count == 56);
+
 
 	_ATSC3_ROUTE_PACKAGE_EXTRACT_TEST_INFO("---");
-	_ATSC3_ROUTE_PACKAGE_EXTRACT_TEST_INFO("atsc3_route_package_extract_test test_app_pkg_payload complete, result: %d", ret_app_pkg);
+	_ATSC3_ROUTE_PACKAGE_EXTRACT_TEST_INFO("atsc3_route_package_extract_test test_app_pkg_payload complete, result: %p", atsc3_route_package_extracted_envelope_metadata_and_payload_app_pkg);
 	_ATSC3_ROUTE_PACKAGE_EXTRACT_TEST_INFO("---");
 
 
@@ -96,11 +101,15 @@ int main(int argc, char* argv[] ) {
 	char* test_alert_pkg_payload = "../../test_data/route-dash/2020-07-02-mpd-patching/route-5004/Alert.pkg";
 
 	_ATSC3_ROUTE_PACKAGE_EXTRACT_TEST_INFO("Running tests with payload: %s", test_alert_pkg_payload);
-	int ret_alert_pkg = atsc3_route_package_extract_unsigned_payload_test(test_alert_pkg_payload);
+	atsc3_route_package_extracted_envelope_metadata_and_payload_t* atsc3_route_package_extracted_envelope_metadata_and_payload_alert_pkg = atsc3_route_package_extract_unsigned_payload_test(test_alert_pkg_payload);
+
+	assert(atsc3_route_package_extracted_envelope_metadata_and_payload_alert_pkg);
+	assert(atsc3_route_package_extracted_envelope_metadata_and_payload_alert_pkg->atsc3_mime_multipart_related_payload_v.count == 1);
+	assert(atsc3_route_package_extracted_envelope_metadata_and_payload_alert_pkg->atsc3_mime_multipart_related_payload_v.data[0]->content_type);
 
 
 	_ATSC3_ROUTE_PACKAGE_EXTRACT_TEST_INFO("---");
-	_ATSC3_ROUTE_PACKAGE_EXTRACT_TEST_INFO("atsc3_route_package_extract_test test_alert_pkg_payload complete, result: %d", ret_alert_pkg);
+	_ATSC3_ROUTE_PACKAGE_EXTRACT_TEST_INFO("atsc3_route_package_extract_test test_alert_pkg_payload complete, result: %p", atsc3_route_package_extracted_envelope_metadata_and_payload_alert_pkg);
 	_ATSC3_ROUTE_PACKAGE_EXTRACT_TEST_INFO("---");
 
 	return 0;
