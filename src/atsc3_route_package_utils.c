@@ -120,7 +120,7 @@ atsc3_route_package_extracted_envelope_metadata_and_payload_t* atsc3_route_packa
 
 				if(atsc3_route_package_extracted_envelope_metadata_and_payload->atsc3_mbms_metadata_envelope && i > 0) {
 					//envelope position should be at i-1
-					if(i < atsc3_route_package_extracted_envelope_metadata_and_payload->atsc3_mbms_metadata_envelope->atsc3_mbms_metadata_item_v.count) {
+					if(i <= atsc3_route_package_extracted_envelope_metadata_and_payload->atsc3_mbms_metadata_envelope->atsc3_mbms_metadata_item_v.count) {
 						atsc3_mbms_metadata_item_t* atsc3_mbms_metadata_item = atsc3_route_package_extracted_envelope_metadata_and_payload->atsc3_mbms_metadata_envelope->atsc3_mbms_metadata_item_v.data[i-1];
 
 						__ROUTE_PACKAGE_UTILS_DEBUG("comparing atsc3_mbms_metadata_item->metadata_uri: %s, atsc3_mime_multipart_related_payload->unsafe_content_location: %s",

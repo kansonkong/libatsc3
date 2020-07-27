@@ -145,6 +145,7 @@ uint32_t block_Remaining_size(block_t* src);
 bool block_Valid(block_t* src);
 uint8_t* block_Get(block_t* src);
 uint32_t block_Len(block_t* src);
+bool block_Tail_Truncate(block_t* src, uint32_t len);
 
 //bit-unpacking functions for parsing A/322 variable length L1(b/d) structs
 uint8_t block_Read_uint8_bitlen(block_t* src, int bitlen);

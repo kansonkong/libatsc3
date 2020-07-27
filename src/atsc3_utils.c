@@ -661,6 +661,26 @@ void block_Destroy(block_t** a_ptr) {
     }
 }
 
+bool block_Tail_Truncate(block_t* src, uint32_t len) {
+	if(src && src->p_size > len) {
+		for(int i=1; i <= len; i++) {
+			src->p_buffer[src->p_size - i] = '\0';
+		}
+		src->p_size -= len;
+		src->i_pos = src->p_size - 1;
+		return true;
+	} else {
+		if(!src) {
+			_ATSC3_UTILS_WARN("block_Tail_Truncate: src is NULL");
+		} else {
+			_ATSC3_UTILS_WARN("block_Tail_Truncate: src: %p, p_size is: %d, tail truncate len is: %d", src->p_size, len);
+
+		}
+		return false;
+	}
+}
+
+
 /*
  bit-unpacking functions for parsing A/322 variable length L1(b/d) structs
 
