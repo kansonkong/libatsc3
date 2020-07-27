@@ -14,6 +14,7 @@
 #define ATSC3_MONITOR_EVENTS_ALC_H
 
 #include "atsc3_utils.h"
+#include "atsc3_route_package_utils.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -21,6 +22,8 @@ extern "C" {
 
 typedef void (*atsc3_alc_on_object_close_flag_s_tsid_content_location_f)(uint32_t tsi, uint32_t toi, char* s_tsid_content_location);
 typedef void (*atsc3_alc_on_route_mpd_patched_f)(uint16_t service_id);
+
+typedef void (*atsc3_alc_on_package_extract_completed_f)(atsc3_route_package_extracted_envelope_metadata_and_payload_t* atsc3_route_package_extracted_envelope_metadata_and_payload_t);
 
 
 //jjustman-2020-07-01 #1569: dispatch async event notification that package extraction has completed
