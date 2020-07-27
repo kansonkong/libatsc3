@@ -75,7 +75,6 @@ void atsc3_route_package_extracted_envelope_metadata_and_payload_set_fdt_attribu
 		}
 	}
 
-
 }
 atsc3_route_package_extracted_envelope_metadata_and_payload_t* atsc3_route_package_extract_unsigned_payload(const char* filename, const char* package_extract_path) {
 	int ret = 0;

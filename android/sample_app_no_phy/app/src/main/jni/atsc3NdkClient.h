@@ -20,15 +20,15 @@ using namespace std;
 #include <android/asset_manager_jni.h>
 
 
-//#include "at3drv_api.h"
-
 #define DEBUG 1
 
 #include "android/log.h"
 #define MODULE_NAME "intf"
 
+// libatsc3 type imports here
 #include <atsc3_utils.h>
 #include <atsc3_pcap_type.h>
+#include <atsc3_route_package_utils.h>
 
 /*
  * : public libatsc3_Iphy_mockable
@@ -121,6 +121,7 @@ public:
     void atsc3_signallingContext_notify_video_packet_id_and_mpu_timestamp_descriptor(uint16_t video_packet_id, uint32_t mpu_sequence_number, uint64_t mpu_presentation_time_ntp64, uint32_t mpu_presentation_time_seconds, uint32_t mpu_presentation_time_microseconds);
     void atsc3_signallingContext_notify_audio_packet_id_and_mpu_timestamp_descriptor(uint16_t audio_packet_id, uint32_t mpu_sequence_number, uint64_t mpu_presentation_time_ntp64, uint32_t mpu_presentation_time_seconds, uint32_t mpu_presentation_time_microsecond);
     void atsc3_signallingContext_notify_stpp_packet_id_and_mpu_timestamp_descriptor(uint16_t stpp_packet_id, uint32_t mpu_sequence_number, uint64_t mpu_presentation_time_ntp64, uint32_t mpu_presentation_time_seconds, uint32_t mpu_presentation_time_microseconds);
+    void atsc3_lls_sls_alc_on_package_extract_completed_callback_jni(atsc3_route_package_extracted_envelope_metadata_and_payload_t* atsc3_route_package_extracted_envelope_metadata_and_payload_t);
 
     int pinFromRxCaptureThread();
     int pinFromRxProcessingThread();
@@ -253,6 +254,9 @@ public:
 
     jmethodID atsc3_lls_sls_alc_on_route_mpd_patched_ID = nullptr;
     jmethodID atsc3_on_alc_object_status_message_ID = nullptr;
+
+    jmethodID atsc3_lls_sls_alc_on_package_extract_completed_ID = nullptr;
+    jclass packageExtractEnvelopeMetadataAndPayload_jclass = nullptr;
 
     void atsc3_onMfuSampleMissing(uint16_t i, uint32_t i1, uint32_t i2);
 
