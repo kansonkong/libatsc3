@@ -602,8 +602,8 @@ int alc_rx_analyze_packet_a331_compliant(char *data, int len, atsc3_alc_packet_t
 
     if(alc_packet->fec_encoding_id == SB_LB_E_FEC_ENC_ID) {
         alc_packet->use_sbn_esi = true;
-        alc_packet->sbn = (fec_payload_id_to_parse >> 24) & 0xFF;
-        alc_packet->esi = (fec_payload_id_to_parse) & 0x00FFFFFF;
+        alc_packet->sbn = (fec_payload_id_to_parse >> 24) & 0xFF; //upper 8 bits for sbn
+        alc_packet->esi = (fec_payload_id_to_parse) & 0x00FFFFFF; //lower 24 bits
         //final check to see if we should "force" this object closed, raptorq fec doesn't send a close_object flag...
         //transfer len should be set on the alc session for this toi, not just on the lct packet...
         if(alc_packet->transfer_len  > 0 && alc_packet->transfer_len  == (alc_packet->alc_len + alc_packet->esi)) {

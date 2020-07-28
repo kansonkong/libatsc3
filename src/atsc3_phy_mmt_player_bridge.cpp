@@ -522,11 +522,15 @@ void atsc3_phy_mmt_player_bridge_process_packet_phy(block_t* packet) {
             atsc3_alc_packet_check_monitor_flow_for_toi_wraparound_discontinuity(alc_packet, lls_slt_monitor->lls_sls_alc_monitor);
 
             //keep track of our EXT_FTI and update last_toi as needed for TOI length and manual set of the close_object flag
-            atsc3_alc_persist_route_ext_attributes_per_lls_sls_alc_monitor_essence(alc_packet, lls_slt_monitor->lls_sls_alc_monitor);
+            atsc3_route_object_t* atsc3_route_object = atsc3_alc_persist_route_object_lct_packet_received_for_lls_sls_alc_monitor_all_flows(alc_packet, lls_slt_monitor->lls_sls_alc_monitor);
 
             //persist to disk, process sls mbms and/or emit ROUTE media_delivery_event complete to the application tier if
             //the full packet has been recovered (e.g. no missing data units in the forward transmission)
-            atsc3_alc_packet_persist_to_toi_resource_process_sls_mbms_and_emit_callback(&udp_packet->udp_flow, &alc_packet, lls_slt_monitor->lls_sls_alc_monitor);
+            if(atsc3_route_object) {
+            	atsc3_alc_packet_persist_to_toi_resource_process_sls_mbms_and_emit_callback(&udp_packet->udp_flow, &alc_packet, lls_slt_monitor->lls_sls_alc_monitor, atsc3_route_object);
+            } else {
+                __ERROR("Error in ALC persist, atsc3_route_object is NULL!");
+            }
         } else {
             __ERROR("Error in ALC decode: %d", retval);
         }
