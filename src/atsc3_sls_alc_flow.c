@@ -27,10 +27,7 @@ void atsc3_sls_alc_flow_typedef_free(atsc3_sls_alc_flow_t** atsc3_sls_alc_flow_p
 					atsc3_route_s_tsid_RS_LS_SrcFlow_ContentInfo_MediaInfo_free(&atsc3_sls_alc_flow->media_info);
 				}
 			}
-//			if(atsc3_sls_alc_flow->fdt_file_content_type) {
-//				free(atsc3_sls_alc_flow->fdt_file_content_type);
-//				atsc3_sls_alc_flow->fdt_file_content_type = NULL;
-//			}
+			atsc3_sls_alc_flow_free_atsc3_route_object(atsc3_sls_alc_flow);
 
 			free(atsc3_sls_alc_flow);
 			atsc3_sls_alc_flow = NULL;
@@ -50,9 +47,11 @@ atsc3_route_object_t* atsc3_sls_alc_flow_route_object_add_unique_lct_packet_rece
 	//find or create our alc_flow
 	atsc3_sls_alc_flow_t* atsc3_sls_alc_flow = atsc3_sls_alc_flow_find_or_create_entry_from_alc_packet(atsc3_sls_alc_flow_vector, atsc3_alc_packet);
 
-	_ATSC3_SLS_ALC_FLOW_DEBUG("atsc3_sls_alc_flow_route_object_add_unique_lct_packet_received before find_or_create_route_object, tsi: %d, toi: %d, atsc3_sls_alc_flow: %p, count: %d ",
+	_ATSC3_SLS_ALC_FLOW_DEBUG("atsc3_sls_alc_flow_route_object_add_unique_lct_packet_received before find_or_create_route_object, atsc3_sls_alc_flow_vector.count: %d, tsi: %d, toi: %d, atsc3_sls_alc_flow: %p, atsc3_route_object_v: %d ",
+			atsc3_sls_alc_flow_vector->count,
 			atsc3_alc_packet->def_lct_hdr->tsi, atsc3_alc_packet->def_lct_hdr->toi,
-			atsc3_sls_alc_flow, atsc3_sls_alc_flow->atsc3_route_object_v.count);
+			atsc3_sls_alc_flow,
+			atsc3_sls_alc_flow->atsc3_route_object_v.count);
 
 	//find or create our route_object
 	atsc3_route_object = atsc3_sls_alc_flow_find_or_create_route_object_from_alc_packet(atsc3_sls_alc_flow, atsc3_alc_packet);
@@ -244,6 +243,7 @@ atsc3_route_object_lct_packet_received_t* atsc3_route_object_add_or_update_lct_p
 		atsc3_route_object_lct_packet_received_set_attributes_from_alc_packet(atsc3_route_object_lct_packet_received, atsc3_alc_packet);
 
 		atsc3_route_object_add_atsc3_route_object_lct_packet_received(atsc3_route_object, atsc3_route_object_lct_packet_received);
+
 #ifdef __ATSC3_ROUTE_OBJECT_PENDANTIC__
 		_ATSC3_SLS_ALC_FLOW_DEBUG("atsc3_route_object_add_or_update_lct_packet_received: ADDED, tsi: %d, toi: %d, alc_packet->start_offset: %d, to_check->start_offset: %d",
 								atsc3_route_object->tsi, atsc3_route_object->toi,

@@ -3,6 +3,15 @@
  *
  *  Created on: Jul 27, 2020
  *      Author: jjustman
+ *
+ *
+ *
+jjustman@sdg-komo-mac188 tools % tail -f debug.log.5003| grep "atsc3_route_object_reset_and_free_atsc3_route_object_lct_packet_received\|atsc3_route_object_is_complete: true"
+atsc3_route_object.c    : 153:DEBUG:1595953002.4722:atsc3_route_object_is_complete: true, complete, with tsi: 1060, toi: 3, atsc3_route_object_lct_packet_received_v: 1, last_object_position: 780, atsc3_route_object->object_length: 780
+atsc3_route_object.c    : 166:DEBUG:1595953002.4724:atsc3_route_object_reset_and_free_atsc3_route_object_lct_packet_received: atsc3_route_object: 0x7fc740004db0, tsi: 1060, toi: 3, clearing 1 route_object_lct_packet_received entries
+atsc3_route_object.c    : 153:DEBUG:1595953002.6641:atsc3_route_object_is_complete: true, complete, with tsi: 1060, toi: 3, atsc3_route_object_lct_packet_received_v: 1, last_object_position: 780, atsc3_route_object->object_length: 780
+atsc3_route_object.c    : 166:DEBUG:1595953002.6642:atsc3_route_object_reset_and_free_atsc3_route_object_lct_packet_received: atsc3_route_object: 0x7fc740004db0, tsi: 1060, toi: 3, clearing 1 route_object_lct_packet_received entries
+ *
  */
 
 #include "atsc3_route_object.h"
@@ -138,17 +147,20 @@ bool atsc3_route_object_is_complete(atsc3_route_object_t* atsc3_route_object) {
 	}
 
 	if(!atsc3_route_object->object_length || last_object_position != atsc3_route_object->object_length) {
-		_ATSC3_ROUTE_OBJECT_DEBUG("atsc3_route_object_is_complete: has_missing_source_blocks at end, tsi: %d, toi: %d, last_object_position: %d, atsc3_route_object->object_length: %d",
+		_ATSC3_ROUTE_OBJECT_DEBUG("atsc3_route_object_is_complete: false, has_missing_source_blocks at end, tsi: %d, toi: %d, atsc3_route_object_lct_packet_received_v: %d, last_object_position: %d, atsc3_route_object->object_length: %d",
 				atsc3_route_object->tsi, atsc3_route_object->toi,
+				atsc3_route_object->atsc3_route_object_lct_packet_received_v.count,
 				last_object_position,
 				atsc3_route_object->object_length);
 
 		has_missing_source_blocks = true;
 	} else {
-		_ATSC3_ROUTE_OBJECT_DEBUG("atsc3_route_object_is_complete: complete, with tsi: %d, toi: %d, last_object_position: %d, atsc3_route_object->object_length: %d",
+
+		_ATSC3_ROUTE_OBJECT_DEBUG("atsc3_route_object_is_complete: true, object_length: %8d,            atsc3_route_object: %p, tsi: %d, toi: %d, atsc3_route_object_lct_packet_received_v.count: %d",
+						atsc3_route_object->object_length,
+						atsc3_route_object,
 						atsc3_route_object->tsi, atsc3_route_object->toi,
-						last_object_position,
-						atsc3_route_object->object_length);
+						atsc3_route_object->atsc3_route_object_lct_packet_received_v.count);
 	}
 
 
@@ -156,9 +168,16 @@ bool atsc3_route_object_is_complete(atsc3_route_object_t* atsc3_route_object) {
 }
 
 
-void atsc3_route_object_clear_and_reset_atsc3_route_object_lct_packet_received(atsc3_route_object_t* atsc3_route_object) {
+void atsc3_route_object_reset_and_free_atsc3_route_object_lct_packet_received(atsc3_route_object_t* atsc3_route_object) {
+	_ATSC3_ROUTE_OBJECT_DEBUG("atsc3_route_object_reset_and_free_atsc3_route_object_lct_packet_received: atsc3_route_object: %p, tsi: %d, toi: %d, atsc3_route_object_lct_packet_received_v.count: %d",
+			atsc3_route_object,
+			atsc3_route_object->tsi,
+			atsc3_route_object->toi,
+			atsc3_route_object->atsc3_route_object_lct_packet_received_v.count);
+
+
 	atsc3_route_object->most_recent_atsc3_route_object_lct_packet_received = NULL;
-	atsc3_route_object_clear_atsc3_route_object_lct_packet_received(atsc3_route_object);
+	atsc3_route_object_free_atsc3_route_object_lct_packet_received(atsc3_route_object);
 
 }
 

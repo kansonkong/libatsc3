@@ -98,6 +98,7 @@
 	PPCAT(vector_struct_name,_t)* PPCAT(vector_struct_name,_new)(); \
 	void PPCAT(vector_struct_name,PPCAT(_prealloc_,vector_item_name))(PPCAT(vector_struct_name,_t)*, uint32_t size); \
 	void PPCAT(vector_struct_name,PPCAT(_add_,vector_item_name))(PPCAT(vector_struct_name,_t)*, PPCAT(vector_item_name,_t)*); \
+	bool PPCAT(vector_struct_name,PPCAT(_remove_,vector_item_name))(PPCAT(vector_struct_name,_t)*, PPCAT(vector_item_name,_t)*); \
 	PPCAT(vector_item_name,_t)*   PPCAT(vector_struct_name,PPCAT(_pop_,vector_item_name))(PPCAT(vector_struct_name,_t)*); \
 	void PPCAT(vector_struct_name,PPCAT(_clear_,vector_item_name))(PPCAT(vector_struct_name,_t)*); \
 	void PPCAT(vector_struct_name,PPCAT(_free_,vector_item_name))(PPCAT(vector_struct_name,_t)*); \
@@ -257,6 +258,26 @@ qsort((void**)lls_sls_alc_session_flows->lls_slt_alc_sessions, lls_sls_alc_sessi
 		/* PPCAT(name,_t)* name = calloc(1, sizeof(PPCAT(name,_t))); */ \
 		/* return name; */ \
 	} \
+	bool PPCAT(vector_struct_name,PPCAT(_remove_, vector_item_name))(PPCAT(vector_struct_name,_t)* vector_struct_name, PPCAT(vector_item_name,_t)* vector_item_name) { \
+		bool result = false; \
+		if(!vector_struct_name->PPCAT(vector_item_name, _v).size || !vector_struct_name->PPCAT(vector_item_name, _v).data) { \
+			return result; \
+		} \
+		for(int i=0; i < vector_struct_name->PPCAT(vector_item_name, _v).count; i++) { \
+			PPCAT(vector_item_name,_t)* vector_item_name_to_check = vector_struct_name->PPCAT(vector_item_name, _v).data[i]; \
+			if(vector_item_name_to_check == vector_item_name) { \
+				result = true; \
+				int j=i; \
+				/* shift up descendents */ \
+				for(; j < vector_struct_name->PPCAT(vector_item_name, _v).count-1; j++) { \
+					vector_struct_name->PPCAT(vector_item_name, _v).data[j] = vector_struct_name->PPCAT(vector_item_name, _v).data[j+1]; \
+				} \
+				vector_struct_name->PPCAT(vector_item_name, _v).count--; \
+				vector_struct_name->PPCAT(vector_item_name, _v).data[j+1] = NULL; \
+			}\
+		}\
+		return result; \
+	} \
 	PPCAT(vector_item_name,_t)* PPCAT(vector_struct_name,PPCAT(_pop_,vector_item_name))(PPCAT(vector_struct_name,_t)* vector_struct_name) { \
 		if(!vector_struct_name->PPCAT(vector_item_name, _v).count) { return NULL; } \
 		PPCAT(vector_item_name,_t)* vector_item_name = vector_struct_name->PPCAT(vector_item_name, _v).data[0]; \
@@ -305,6 +326,10 @@ qsort((void**)lls_sls_alc_session_flows->lls_slt_alc_sessions, lls_sls_alc_sessi
 		} \
 	} \
 
+	/*
+	 *
+	 *
+	 */
 
 /*
  provide a default _free method for vectorable structs
