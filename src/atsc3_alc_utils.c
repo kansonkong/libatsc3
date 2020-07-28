@@ -563,6 +563,16 @@ atsc3_fdt_file_t* atsc3_alc_RS_LS_get_matching_toi_file_instance(atsc3_route_s_t
 
  //end jjustman-2020-07-07
 
+FILE* atsc3_alc_object_open(char* file_name) {
+	if( access( file_name, F_OK ) != -1 ) {
+		FILE* f = fopen(file_name, "r+");
+		if(f) {
+			return f;
+		}
+	}
+
+	return NULL;
+}
 
 
 FILE* alc_object_open_or_pre_allocate(char* file_name, atsc3_alc_packet_t* alc_packet) {
@@ -649,9 +659,8 @@ int alc_packet_write_fragment(FILE* f, char* file_name, uint32_t offset, atsc3_a
  *      TOI size:     uint32_t to_allocate_size = alc_packet->transfer_len;
  */
 
-int atsc3_alc_packet_persist_to_toi_resource_process_sls_mbms_and_emit_callback(udp_flow_t *udp_flow, atsc3_alc_packet_t **alc_packet_ptr, lls_sls_alc_monitor_t *lls_sls_alc_monitor) {
+int atsc3_alc_packet_persist_to_toi_resource_process_sls_mbms_and_emit_callback(udp_flow_t *udp_flow, atsc3_alc_packet_t *alc_packet, lls_sls_alc_monitor_t *lls_sls_alc_monitor, atsc3_route_object_t* atsc3_route_object) {
 
-	atsc3_alc_packet_t* alc_packet = *alc_packet_ptr;
 	int bytesWritten = 0;
 
     if(lls_sls_alc_monitor && !lls_sls_alc_monitor->lls_sls_monitor_output_buffer_mode.file_dump_enabled) {
@@ -665,14 +674,26 @@ int atsc3_alc_packet_persist_to_toi_resource_process_sls_mbms_and_emit_callback(
 
     FILE *f = NULL;
 
+    bool should_preallocate_fp = true;
+
+    //jjustman-2020-07-28 - do not pre-allocate if we have lct_packets received for this object
+    if(atsc3_route_object->atsc3_route_object_lct_packet_received_v.count) {
+		f = atsc3_alc_object_open(temporary_filename);
+		if(f) {
+			should_preallocate_fp = false;
+		}
+	}
+
     if(alc_packet->use_sbn_esi) {
-        //raptor fec, use the esi to see if we should write out to a new file vs append
-        if(!alc_packet->esi) {
-            f = alc_object_pre_allocate(temporary_filename, alc_packet);
-            __ALC_UTILS_IOTRACE("raptor_fec: done creating new pre-allocation for temporary_filename: %s, size: %llu", temporary_filename, alc_packet->transfer_len);
-        } else {
-            f = alc_object_open_or_pre_allocate(temporary_filename, alc_packet);
-        }
+    	if(should_preallocate_fp) {
+			//raptor fec, use the esi to see if we should write out to a new file vs append
+			if(!alc_packet->esi) {
+				f = alc_object_pre_allocate(temporary_filename, alc_packet);
+				__ALC_UTILS_IOTRACE("raptor_fec: done creating new pre-allocation for temporary_filename: %s, size: %llu", temporary_filename, alc_packet->transfer_len);
+			} else {
+				f = alc_object_open_or_pre_allocate(temporary_filename, alc_packet);
+			}
+    	}
         if(!f) {
             __ALC_UTILS_WARN("atsc3_alc_packet_persist_to_toi_resource_process_sls_mbms_and_emit_callback, unable to open temporary_filename: %s", temporary_filename);
             return -2;
@@ -681,24 +702,26 @@ int atsc3_alc_packet_persist_to_toi_resource_process_sls_mbms_and_emit_callback(
         __ALC_UTILS_IOTRACE("raptor_fec: done writing out fragment for %s", temporary_filename);
 
     } else if(alc_packet->use_start_offset) {
-        if(!alc_packet->start_offset) {
-            f = alc_object_pre_allocate(temporary_filename, alc_packet);
-            __ALC_UTILS_IOTRACE("ALC: tsi: %u, toi: %u, done creating new pre-allocation temporary_filename %s, size: %llu",
-            		alc_packet->def_lct_hdr->tsi,
-					alc_packet->def_lct_hdr->toi,
-					temporary_filename,
-					alc_packet->transfer_len);
+		if(should_preallocate_fp) {
+			if(!alc_packet->start_offset) {
+				f = alc_object_pre_allocate(temporary_filename, alc_packet);
+				__ALC_UTILS_IOTRACE("ALC: tsi: %u, toi: %u, done creating new pre-allocation temporary_filename %s, size: %llu",
+						alc_packet->def_lct_hdr->tsi,
+						alc_packet->def_lct_hdr->toi,
+						temporary_filename,
+						alc_packet->transfer_len);
 
-        } else {
-            __ALC_UTILS_IOTRACE("ALC: tsi: %u, toi: %u, using existing pre-alloc temporary_filename %s, offset: %u, size: %llu",
-            		alc_packet->def_lct_hdr->tsi,
-					alc_packet->def_lct_hdr->toi,
-					temporary_filename,
-					alc_packet->start_offset,
-					alc_packet->transfer_len);
+			} else {
+				__ALC_UTILS_IOTRACE("ALC: tsi: %u, toi: %u, using existing pre-alloc temporary_filename %s, offset: %u, size: %llu",
+						alc_packet->def_lct_hdr->tsi,
+						alc_packet->def_lct_hdr->toi,
+						temporary_filename,
+						alc_packet->start_offset,
+						alc_packet->transfer_len);
 
-            f = alc_object_open_or_pre_allocate(temporary_filename, alc_packet);
-        }
+				f = alc_object_open_or_pre_allocate(temporary_filename, alc_packet);
+			}
+		}
         if(!f) {
             __ALC_UTILS_WARN("atsc3_alc_packet_persist_to_toi_resource_process_sls_mbms_and_emit_callback, unable to open file: %s", temporary_filename);
             return -2;
@@ -721,13 +744,20 @@ int atsc3_alc_packet_persist_to_toi_resource_process_sls_mbms_and_emit_callback(
     //  SB_LB_E_FEC_ENC_ID                             : transfer_len >0 && transfer_len == alc_packet->alc_len + alc_packet->esi
     //  all others (e.g. alc_packet->use_start_offset) : transfer_len >0 && transfer_len == alc_packet->alc_len + alc_packet->start_offset
 
-	if(alc_packet->close_object_flag) {
+	//jjustman-2020-07-28 - check with atsc3_route_object if we are 'complete'
+    //if(alc_packet->close_object_flag) {
+
+    //jjustman-2020-07-28 - TODO: don't redispatch repeadedly for carousels...
+    if(atsc3_route_object_is_complete(atsc3_route_object)) {
 
         //update our sls here if we have a service we are listenting to
         if(lls_sls_alc_monitor && lls_sls_alc_monitor->atsc3_lls_slt_service &&  alc_packet->def_lct_hdr->tsi == 0) {
 
             char* final_mbms_toi_filename = alc_packet_dump_to_object_get_filename_tsi_toi(udp_flow, 0, alc_packet->def_lct_hdr->toi);
             rename(temporary_filename, final_mbms_toi_filename);
+
+            //jjustman-2020-07-28 - purge atsc3_route_object->atsc3_route_object_lct_packet_received_v as we are invalidated at this point
+            atsc3_route_object_clear_and_reset_atsc3_route_object_lct_packet_received(atsc3_route_object);
 
             __ALC_UTILS_IOTRACE("ALC: service_id: %u, ------ TSI of 0, TOI: %d, transfer_len: %lld, final object name: %s, calling atsc3_route_sls_process_from_alc_packet_and_file",
             		lls_sls_alc_monitor->atsc3_lls_slt_service->service_id,
@@ -768,13 +798,17 @@ int atsc3_alc_packet_persist_to_toi_resource_process_sls_mbms_and_emit_callback(
                 rename(temporary_filename, new_file_name);
                 __ALC_UTILS_IOTRACE("tsi: %u, toi: %u, moving from to temporary_filename: %s to: %s, is complete: %d", alc_packet->def_lct_hdr->tsi, alc_packet->def_lct_hdr->toi,  temporary_filename, new_file_name, alc_packet->close_object_flag);
 
+                //jjustman-2020-07-28 - purge our lct_packet_received list as we are moved
+                atsc3_route_object_clear_and_reset_atsc3_route_object_lct_packet_received(atsc3_route_object);
 
                 atsc3_sls_alc_flow_t* matching_sls_alc_flow = NULL;
 
 				//jjustman-2020-07-14 - global route dash representationId patching for s-tsid flows
 				//atsc3_sls_alc_all_mediainfo_flow_v
-				if((matching_sls_alc_flow = atsc3_sls_alc_flow_find_entry_tsi(&lls_sls_alc_monitor->atsc3_sls_alc_all_mediainfo_flow_v, alc_packet->def_lct_hdr->tsi))) {
-					matching_sls_alc_flow->last_closed_toi = alc_packet->def_lct_hdr->toi;
+				if((matching_sls_alc_flow = atsc3_sls_alc_flow_find_entry_tsi(&lls_sls_alc_monitor->atsc3_sls_alc_all_s_tsid_flow_v, alc_packet->def_lct_hdr->tsi))) {
+					if(matching_sls_alc_flow->toi_init != alc_packet->def_lct_hdr->toi) {
+						matching_sls_alc_flow->last_closed_toi = alc_packet->def_lct_hdr->toi;
+					}
 				}
 
                 //jjustman-2020-07-07 - package extraction - process any requirements for codePoint==3 || codePoint == 4 OR formatId==3 || formatId==4
@@ -1441,7 +1475,7 @@ cleanup:
 */
 
 /*
- * atsc3_alc_persist_route_ext_attributes_per_lls_sls_alc_monitor_essence
+ * atsc3_alc_persist_route_object_lct_packet_received_for_lls_sls_alc_monitor_all_flows
  * keep track of our current TSI/TOI's start_offset attribute for ALC flows that only provide the EXT_FTI value at the first
  * packet of the TOI flow
  *
@@ -1458,7 +1492,7 @@ cleanup:
  * this code path will only handle alc->use_start_offset, as atsc3_alc_rx logic that handles both start_offset and sbn_esi
  *
  * ***NOTE***: atsc3_alc_packet_check_monitor_flow_for_toi_wraparound_discontinuity MUST BE CALLED BEFORE
- *          atsc3_alc_persist_route_ext_attributes_per_lls_sls_alc_monitor_essence IN FLOW,
+ *          atsc3_alc_persist_route_object_lct_packet_received_for_lls_sls_alc_monitor_all_flows IN FLOW,
  *          OTHERWISE lls_sls_alc_monitor->last_..._toi will be overwritten and the discontinuity WILL NOT BE DETECTED!
  *
  * 	NOTE: jjustman-2020-06-23: TODO: also parse A.3.10.2. Basic Delivery Object Recovery
@@ -1473,29 +1507,48 @@ cleanup:
 //#define __ATSC3_ALC_UTILS_CHECK_CLOSE_FLAG_ON_TOI_LENGTH_PERSIST__
 //jjustman-2020-03-25 - workaround for digicap packager that is only emitting EXT_FTI on the very first packet of the TOI, and no close object flag
 
-void atsc3_alc_persist_route_ext_attributes_per_lls_sls_alc_monitor_essence(atsc3_alc_packet_t* alc_packet, lls_sls_alc_monitor_t* lls_sls_alc_monitor) {
-    if(lls_sls_alc_monitor) {
-    	//find our relevant tsi, e.g. lls_sls_alc_monitor->video_tsi && lls_sls_alc_monitor->audio_tsi for flows later...
+atsc3_route_object_t* atsc3_alc_persist_route_object_lct_packet_received_for_lls_sls_alc_monitor_all_flows(atsc3_alc_packet_t* alc_packet, lls_sls_alc_monitor_t* lls_sls_alc_monitor) {
+    atsc3_sls_alc_flow_t* matching_sls_alc_flow = NULL;
+	atsc3_route_object_t* atsc3_route_object = NULL;
 
-        uint32_t tsi = alc_packet->def_lct_hdr->tsi;
-        uint32_t toi = alc_packet->def_lct_hdr->toi;
+	if(lls_sls_alc_monitor) {
+		atsc3_route_object = atsc3_sls_alc_flow_route_object_add_unique_lct_packet_received(&lls_sls_alc_monitor->atsc3_sls_alc_all_s_tsid_flow_v, alc_packet);
+	}
 
-        uint32_t toi_length = alc_packet->transfer_len;
+	__ALC_UTILS_DEBUG("atsc3_alc_persist_route_object_lct_packet_received_for_lls_sls_alc_monitor_all_flows: tsi: %d, toi: %d, lls_sls_alc_monitor is: %p, size: %d, atsc3_route_object: %p",
+			alc_packet->def_lct_hdr->tsi,
+			alc_packet->def_lct_hdr->toi,
+			lls_sls_alc_monitor,
+			lls_sls_alc_monitor->atsc3_sls_alc_all_s_tsid_flow_v.count,
+			atsc3_route_object);
 
-		uint32_t alc_start_offset = (alc_packet)->start_offset;
-		uint32_t alc_packet_length = (alc_packet)->alc_len;
+
+
+	return atsc3_route_object;
+}
+
+       // if((matching_sls_alc_flow = atsc3_sls_alc_flow_find_entry_tsi(&lls_sls_alc_monitor->atsc3_sls_alc_all_s_tsid_flow_v, alc_packet->def_lct_hdr->tsi))) {
+
+
+//
+//        uint32_t tsi = alc_packet->def_lct_hdr->tsi;
+//        uint32_t toi = alc_packet->def_lct_hdr->toi;
+//
+//        uint32_t toi_length = alc_packet->transfer_len;
+//
+//		uint32_t alc_start_offset = (alc_packet)->start_offset;
+//		uint32_t alc_packet_length = (alc_packet)->alc_len;
 
         //track our transfer_len if EXT_FTI is only present on the initial ALC packet
         //jjustman-2020-07-27 - persist this for toi_init that may be larger than 1 data unit
 
-        atsc3_sls_alc_flow_t* matching_sls_alc_flow = NULL;
 
         //jjustman-2020-07-27- TODO: find or create atsc3_route_object from flows
         //    atsc3_sls_alc_flow_v atsc3_sls_alc_all_s_tsid_flow_v;
 
 
 //        if((matching_sls_alc_flow = atsc3_sls_alc_flow_find_entry_tsi(&lls_sls_alc_monitor->atsc3_sls_alc_audio_flow_v, alc_packet->def_lct_hdr->tsi))) {
-//        			__ALC_UTILS_DEBUG("atsc3_alc_persist_route_ext_attributes_per_lls_sls_alc_monitor_essence, found matching_sls_alc_flow for tsi: %d, toi_init: %d, matching toi: %d, toi: %d",
+//        			__ALC_UTILS_DEBUG("atsc3_alc_persist_route_object_lct_packet_received_for_lls_sls_alc_monitor_all_flows, found matching_sls_alc_flow for tsi: %d, toi_init: %d, matching toi: %d, toi: %d",
 //        					alc_packet->def_lct_hdr->tsi, matching_sls_alc_flow->toi_init, matching_sls_alc_flow->toi, toi);
 //        			if(matching_sls_alc_flow->toi_init == toi) {
 //        				if(toi_length) {
@@ -1531,7 +1584,7 @@ void atsc3_alc_persist_route_ext_attributes_per_lls_sls_alc_monitor_essence(atsc
 
 
 //		if((matching_sls_alc_flow = atsc3_sls_alc_flow_find_entry_tsi(&lls_sls_alc_monitor->atsc3_sls_alc_audio_flow_v, alc_packet->def_lct_hdr->tsi))) {
-//			__ALC_UTILS_DEBUG("atsc3_alc_persist_route_ext_attributes_per_lls_sls_alc_monitor_essence, found matching_sls_alc_flow for tsi: %d, toi_init: %d, matching toi: %d, toi: %d",
+//			__ALC_UTILS_DEBUG("atsc3_alc_persist_route_object_lct_packet_received_for_lls_sls_alc_monitor_all_flows, found matching_sls_alc_flow for tsi: %d, toi_init: %d, matching toi: %d, toi: %d",
 //					alc_packet->def_lct_hdr->tsi, matching_sls_alc_flow->toi_init, matching_sls_alc_flow->toi, toi);
 //			if(matching_sls_alc_flow->toi_init == toi) {
 //				if(toi_length) {
@@ -1677,51 +1730,51 @@ void atsc3_alc_persist_route_ext_attributes_per_lls_sls_alc_monitor_essence(atsc
 //                    __ALC_UTILS_DEBUG("ALC: tsi: %u, toi: %u, setting last_text_toi: %u, last_text_toi_length: %u", tsi, toi, toi, toi_length);
 //                }
 //            }
-        }
-
-        //check if we should set close flag here
-        //jjustman-2020-03-12 - NOTE - a more robust implementation is in atsc3_alc_rx.c
-        //this code path will only handle alc->use_start_offset, as atsc3_alc_rx logic that handles both start_offset and sbn_esi
-
-//jjustman-2020-06-02: TODO: FIXME
-
-#ifdef __ATSC3_ALC_UTILS_CHECK_CLOSE_FLAG_ON_TOI_LENGTH_PERSIST__
-        if(alc_packet->use_start_offset) {
-            uint32_t alc_start_offset = (alc_packet)->start_offset;
-            uint32_t alc_packet_length = (alc_packet)->alc_len;
-
-            if(tsi == lls_sls_alc_monitor->video_tsi && toi == lls_sls_alc_monitor->last_video_toi) {
-                __ALC_UTILS_DEBUG("ALC: tsi: %u, toi: %u, checking last_video_toi_length: %u against start_offset: %u, alc_packet_length: %u (total: %u)",
-                        tsi, toi,  lls_sls_alc_monitor->last_video_toi_length, alc_start_offset, alc_packet_length, alc_start_offset + alc_packet_length);
-
-                    if(lls_sls_alc_monitor->last_video_toi_length && lls_sls_alc_monitor->last_video_toi_length <= (alc_start_offset + alc_packet_length)) {
-                    (alc_packet)->close_object_flag = true;
-                        __ALC_UTILS_DEBUG("ALC: tsi: %u, toi: %u, setting video: close_object_flag: true",
-                        tsi, toi);
-                }
-            } else if(tsi == lls_sls_alc_monitor->audio_tsi && toi == lls_sls_alc_monitor->last_audio_toi) {
-                __ALC_UTILS_DEBUG("ALC: tsi: %u, toi: %u, checking last_audio_toi_length: %u against start_offset: %u, alc_packet_length: %u (total: %u)",
-                        tsi, toi,  lls_sls_alc_monitor->last_audio_toi_length, alc_start_offset, alc_packet_length, alc_start_offset + alc_packet_length);
-
-                if(lls_sls_alc_monitor->last_audio_toi_length && lls_sls_alc_monitor->last_audio_toi_length <= (alc_start_offset + alc_packet_length)) {
-                    alc_packet->close_object_flag = true;
-                    __ALC_UTILS_DEBUG("ALC: tsi: %u, toi: %u, setting audio: close_object_flag: true",
-                        tsi, toi);
-                }
-            } else if(tsi == lls_sls_alc_monitor->text_tsi && toi == lls_sls_alc_monitor->last_text_toi) {
-                __ALC_UTILS_DEBUG("ALC: tsi: %u, toi: %u, checking last_text_toi_length: %u against start_offset: %u, alc_packet_length: %u (total: %u)",
-                        tsi, toi,  lls_sls_alc_monitor->last_text_toi_length, alc_start_offset, alc_packet_length, alc_start_offset + alc_packet_length);
-
-                if(lls_sls_alc_monitor->last_text_toi_length && lls_sls_alc_monitor->last_text_toi_length <= (alc_start_offset + alc_packet_length)) {
-                    alc_packet->close_object_flag = true;
-                    __ALC_UTILS_DEBUG("ALC: tsi: %u, toi: %u, setting text: close_object_flag: true",
-                            tsi, toi);
-                }
-            }
-        }
-#endif
-
-}
+//        }
+//
+//        //check if we should set close flag here
+//        //jjustman-2020-03-12 - NOTE - a more robust implementation is in atsc3_alc_rx.c
+//        //this code path will only handle alc->use_start_offset, as atsc3_alc_rx logic that handles both start_offset and sbn_esi
+//
+////jjustman-2020-06-02: TODO: FIXME
+//
+//#ifdef __ATSC3_ALC_UTILS_CHECK_CLOSE_FLAG_ON_TOI_LENGTH_PERSIST__
+//        if(alc_packet->use_start_offset) {
+//            uint32_t alc_start_offset = (alc_packet)->start_offset;
+//            uint32_t alc_packet_length = (alc_packet)->alc_len;
+//
+//            if(tsi == lls_sls_alc_monitor->video_tsi && toi == lls_sls_alc_monitor->last_video_toi) {
+//                __ALC_UTILS_DEBUG("ALC: tsi: %u, toi: %u, checking last_video_toi_length: %u against start_offset: %u, alc_packet_length: %u (total: %u)",
+//                        tsi, toi,  lls_sls_alc_monitor->last_video_toi_length, alc_start_offset, alc_packet_length, alc_start_offset + alc_packet_length);
+//
+//                    if(lls_sls_alc_monitor->last_video_toi_length && lls_sls_alc_monitor->last_video_toi_length <= (alc_start_offset + alc_packet_length)) {
+//                    (alc_packet)->close_object_flag = true;
+//                        __ALC_UTILS_DEBUG("ALC: tsi: %u, toi: %u, setting video: close_object_flag: true",
+//                        tsi, toi);
+//                }
+//            } else if(tsi == lls_sls_alc_monitor->audio_tsi && toi == lls_sls_alc_monitor->last_audio_toi) {
+//                __ALC_UTILS_DEBUG("ALC: tsi: %u, toi: %u, checking last_audio_toi_length: %u against start_offset: %u, alc_packet_length: %u (total: %u)",
+//                        tsi, toi,  lls_sls_alc_monitor->last_audio_toi_length, alc_start_offset, alc_packet_length, alc_start_offset + alc_packet_length);
+//
+//                if(lls_sls_alc_monitor->last_audio_toi_length && lls_sls_alc_monitor->last_audio_toi_length <= (alc_start_offset + alc_packet_length)) {
+//                    alc_packet->close_object_flag = true;
+//                    __ALC_UTILS_DEBUG("ALC: tsi: %u, toi: %u, setting audio: close_object_flag: true",
+//                        tsi, toi);
+//                }
+//            } else if(tsi == lls_sls_alc_monitor->text_tsi && toi == lls_sls_alc_monitor->last_text_toi) {
+//                __ALC_UTILS_DEBUG("ALC: tsi: %u, toi: %u, checking last_text_toi_length: %u against start_offset: %u, alc_packet_length: %u (total: %u)",
+//                        tsi, toi,  lls_sls_alc_monitor->last_text_toi_length, alc_start_offset, alc_packet_length, alc_start_offset + alc_packet_length);
+//
+//                if(lls_sls_alc_monitor->last_text_toi_length && lls_sls_alc_monitor->last_text_toi_length <= (alc_start_offset + alc_packet_length)) {
+//                    alc_packet->close_object_flag = true;
+//                    __ALC_UTILS_DEBUG("ALC: tsi: %u, toi: %u, setting text: close_object_flag: true",
+//                            tsi, toi);
+//                }
+//            }
+//        }
+//#endif
+//
+//}
 
 /*
  * atsc3_alc_packet_check_monitor_flow_for_toi_wraparound_discontinuity:
@@ -1738,7 +1791,7 @@ void atsc3_alc_persist_route_ext_attributes_per_lls_sls_alc_monitor_essence(atsc
  * atsc3_route_sls_patch_mpd_availability_start_time_and_start_number *
  *
  * ***NOTE***: atsc3_alc_packet_check_monitor_flow_for_toi_wraparound_discontinuity MUST BE CALLED BEFORE
- *              atsc3_alc_persist_route_ext_attributes_per_lls_sls_alc_monitor_essence IN FLOW,
+ *              atsc3_alc_persist_route_object_lct_packet_received_for_lls_sls_alc_monitor_all_flows IN FLOW,
  *              OTHERWISE lls_sls_alc_monitor->last_..._toi will be overwritten and the discontinuity WILL NOT BE DETECTED!
  */
 void atsc3_alc_packet_check_monitor_flow_for_toi_wraparound_discontinuity(atsc3_alc_packet_t* alc_packet, lls_sls_alc_monitor_t* lls_sls_alc_monitor) {
@@ -1775,7 +1828,7 @@ void atsc3_alc_packet_check_monitor_flow_for_toi_wraparound_discontinuity(atsc3_
 
         	atsc3_sls_alc_flow_t* matching_sls_alc_flow = NULL;
 
-			if((matching_sls_alc_flow = atsc3_sls_alc_flow_find_entry_tsi(&lls_sls_alc_monitor->atsc3_sls_alc_all_mediainfo_flow_v, alc_packet->def_lct_hdr->tsi))) {
+			if((matching_sls_alc_flow = atsc3_sls_alc_flow_find_entry_tsi(&lls_sls_alc_monitor->atsc3_sls_alc_all_s_tsid_flow_v, alc_packet->def_lct_hdr->tsi))) {
 				if(matching_sls_alc_flow->toi_init != toi && matching_sls_alc_flow->last_closed_toi > toi) {
 					lls_sls_alc_monitor->has_discontiguous_toi_flow = true;
 					if (lls_sls_alc_monitor->last_mpd_payload) {

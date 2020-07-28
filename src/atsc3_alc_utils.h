@@ -38,6 +38,14 @@ extern int _ALC_UTILS_TRACE_ENABLED;
 
 //ALC dump object output path
 #define __ALC_DUMP_OUTPUT_PATH__ "route/"
+
+void atsc3_alc_packet_check_monitor_flow_for_toi_wraparound_discontinuity(atsc3_alc_packet_t* alc_packet, lls_sls_alc_monitor_t* lls_sls_alc_monitor);
+
+atsc3_route_object_t* atsc3_alc_persist_route_object_lct_packet_received_for_lls_sls_alc_monitor_all_flows(atsc3_alc_packet_t* alc_packet, lls_sls_alc_monitor_t* lls_sls_alc_monitor);
+int atsc3_alc_packet_persist_to_toi_resource_process_sls_mbms_and_emit_callback(udp_flow_t* udp_flow, atsc3_alc_packet_t* alc_packet, lls_sls_alc_monitor_t* lls_sls_alc_monitor, atsc3_route_object_t* atsc3_route_object);
+
+
+
 /**
  * deubg toi dump methods
  */
@@ -46,7 +54,6 @@ extern int _ALC_UTILS_TRACE_ENABLED;
 //this must be set to 1 for dumps to be written to disk
 extern int _ALC_PACKET_DUMP_TO_OBJECT_ENABLED;
 
-int atsc3_alc_packet_persist_to_toi_resource_process_sls_mbms_and_emit_callback(udp_flow_t* udp_flow, atsc3_alc_packet_t** alc_packet_ptr, lls_sls_alc_monitor_t* lls_sls_alc_monitor);
 
 //get <LS> element for matching flow and packet
 atsc3_route_s_tsid_RS_LS_t* atsc3_alc_packet_get_RS_LS_element(udp_flow_t* udp_flow, atsc3_alc_packet_t* alc_packet, lls_sls_alc_monitor_t* lls_sls_alc_monitor);
@@ -58,6 +65,8 @@ atsc3_fdt_file_t* atsc3_alc_RS_LS_get_matching_toi_file_instance(atsc3_route_s_t
 char* alc_packet_dump_to_object_get_s_tsid_filename(udp_flow_t* udp_flow, atsc3_alc_packet_t* alc_packet, lls_sls_alc_monitor_t* lls_sls_alc_monitor);
 char* alc_packet_dump_to_object_get_temporary_filename(udp_flow_t* udp_flow, atsc3_alc_packet_t* alc_packet);
 
+FILE* atsc3_alc_object_open(char* file_name);
+
 FILE* alc_object_pre_allocate(char* file_name, atsc3_alc_packet_t* alc_packet);
 int alc_packet_write_fragment(FILE* f, char* file_name, uint32_t offset, atsc3_alc_packet_t* alc_packet);
 FILE* alc_object_open_or_pre_allocate(char* file_name, atsc3_alc_packet_t* alc_packet);
@@ -67,8 +76,7 @@ char* alc_packet_dump_to_object_get_filename_tsi_toi(udp_flow_t* udp_flow, uint3
 
 block_t* alc_get_payload_from_filename(char*);
 
-void atsc3_alc_persist_route_ext_attributes_per_lls_sls_alc_monitor_essence(atsc3_alc_packet_t* alc_packet, lls_sls_alc_monitor_t* lls_sls_alc_monitor);
-void atsc3_alc_packet_check_monitor_flow_for_toi_wraparound_discontinuity(atsc3_alc_packet_t* alc_packet, lls_sls_alc_monitor_t* lls_sls_alc_monitor);
+
 
 //jjustman-2020-03-11
 //deprecated - used for isobmff de-fragmentation to handoff a standalone media presentation unit from alc media fragment

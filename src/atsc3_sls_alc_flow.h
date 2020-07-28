@@ -12,6 +12,7 @@
 #include "atsc3_logging_externs.h"
 #include "atsc3_vector_builder.h"
 
+#include "atsc3_alc_rx.h"
 #include "atsc3_sls_metadata_fragment_types.h"
 #include "atsc3_route_object.h"
 
@@ -28,30 +29,36 @@ extern "C" {
  */
 
 typedef struct atsc3_sls_alc_flow {
+
+	uint32_t 					tsi;			//transport stream ID
+
+	//delayed objects...
 	uint32_t					sls_toi;		//keep track of the SLS TOI for version and format changes - see A/331:2020 - Annex C: Filtering for Signaling Fragments
 	uint8_t						s_tsid_version;	//keep track of the mbms-envelope for s-tsid version changes
 
-	atsc3_route_s_tsid_RS_LS_t* atsc3_route_s_tsid_RS_LS;  //pin to our s-tsid RS_LS reference
+	atsc3_route_s_tsid_RS_LS_t* 								atsc3_route_s_tsid_RS_LS;  //pin to our s-tsid RS_LS reference
 
-	atsc3_route_s_tsid_RS_LS_SrcFlow_ContentInfo_MediaInfo_t* media_info;	//optional
+	atsc3_route_s_tsid_RS_LS_SrcFlow_ContentInfo_MediaInfo_t* 	media_info;	//optional
 
-	//only for NRT payloads
-	char*		fdt_file_content_type;
 
 	/* jjustman-2020-07-27 - todo: deprecate these */
-	uint32_t 	tsi;				//transport stream ID
 
-	uint32_t 	toi_init; 			//init toi fragment (if applicable for RT media)
-	uint32_t 	toi_init_length;	//init toi fragement length (if applicable for RT media)
+	uint32_t	last_closed_toi;	//for media fragments, keep track of the last closed fragment for mpd patching
+	uint32_t	toi_init;			//ignore the init fragment toi when performing mpd patching
 
-	uint32_t	toi;					//current toi fragment OR nrt (if known)
-	uint32_t 	toi_length;				//current toi fragment OR nrt length (if known)
-
-	uint32_t	last_inflight_toi;			//last toi fragment OR nrt (if known)
-	uint32_t 	last_inflight_toi_length;	//last toi fragment OR nrt length (if known)
-
-	uint32_t	last_closed_toi;			//last closed toi fragment OR nrt (if known)
-	uint32_t 	last_closed_toi_length;	//last closed toi fragment OR nrtlength (if known)
+	//only for NRT payloads
+//	char*		fdt_file_content_type;
+//	uint32_t 	toi_init; 			//init toi fragment (if applicable for RT media)
+//	uint32_t 	toi_init_length;	//init toi fragement length (if applicable for RT media)
+//
+//	uint32_t	toi;					//current toi fragment OR nrt (if known)
+//	uint32_t 	toi_length;				//current toi fragment OR nrt length (if known)
+//
+//	uint32_t	last_inflight_toi;			//last toi fragment OR nrt (if known)
+//	uint32_t 	last_inflight_toi_length;	//last toi fragment OR nrt length (if known)
+//
+//	uint32_t	last_closed_toi;			//last closed toi fragment OR nrt (if known)
+//	uint32_t 	last_closed_toi_length;	//last closed toi fragment OR nrtlength (if known)
 
 	ATSC3_VECTOR_BUILDER_STRUCT(atsc3_route_object);
 
@@ -62,17 +69,37 @@ ATSC3_VECTOR_BUILDER_METHODS_INTERFACE(atsc3_sls_alc_flow, atsc3_route_object);
 ATSC3_VECTOR_BUILDER_TYPEDEF_STRUCT(atsc3_sls_alc_flow);
 ATSC3_VECTOR_BUILDER_TYPEDEF_STRUCT_METHODS_INTERFACE(atsc3_sls_alc_flow);
 
-typedef atsc3_sls_alc_flow_t atsc3_sls_alc_audio_flow_t;
-typedef atsc3_sls_alc_flow_t atsc3_sls_alc_video_flow_t;
-typedef atsc3_sls_alc_flow_t atsc3_sls_alc_subtitles_flow_t;
-typedef atsc3_sls_alc_flow_t atsc3_sls_alc_data_flow_t;
-
 void atsc3_sls_alc_flow_typedef_free(atsc3_sls_alc_flow_t** atsc3_sls_alc_flow_p);
 //used for RT media fragment delivery (e.g. codepoint=8)
 
 //jjustman-2020-07-14 - TODO: make sure when this monitor is torn down,
 //void atsc3_sls_alc_flow_free(atsc3_sls_alc_flow_t** atsc3_sls_alc_flow_p) {
 //is invoked...
+
+
+//jjustman-2020-07-28 - add a reference for our alc_packet_t* recv'd into the applicable atsc3_sls_alc_flow
+//TODO: scope with sls_toi and s_tsid_version
+atsc3_route_object_t* atsc3_sls_alc_flow_route_object_add_unique_lct_packet_received(atsc3_sls_alc_flow_v* atsc3_sls_alc_flow_vector, atsc3_alc_packet_t* alc_packet);
+atsc3_sls_alc_flow_t* atsc3_sls_alc_flow_find_or_create_entry_from_alc_packet(atsc3_sls_alc_flow_v* atsc3_sls_alc_flow_vector, atsc3_alc_packet_t* alc_packet);
+atsc3_sls_alc_flow_t* atsc3_sls_alc_flow_find_entry_from_alc_packet(atsc3_sls_alc_flow_v* atsc3_sls_alc_flow_vector, atsc3_alc_packet_t* alc_packet);
+
+atsc3_route_object_t* atsc3_sls_alc_flow_find_or_create_route_object_from_alc_packet(atsc3_sls_alc_flow_t* atsc3_sls_alc_flow, atsc3_alc_packet_t* alc_packet);
+atsc3_route_object_t* atsc3_sls_alc_flow_find_route_object_entry_from_alc_packet(atsc3_sls_alc_flow_t* atsc3_sls_alc_flow, atsc3_alc_packet_t* alc_packet);
+
+
+//jjustman-2020-07-28 -todo: refactor into atsc3_sls_alc_flow_route_object_utils class?
+void atsc3_route_object_set_alc_flow_and_tsi_toi(atsc3_route_object_t* atsc3_route_object, atsc3_sls_alc_flow_t* atsc3_sls_alc_flow, atsc3_alc_packet_t* atsc3_alc_packet);
+
+atsc3_route_object_lct_packet_received_t* atsc3_route_object_add_or_update_lct_packet_received(atsc3_route_object_t* atsc3_route_object, atsc3_alc_packet_t* atsc3_alc_packet);
+atsc3_route_object_lct_packet_received_t* atsc3_route_object_find_lct_packet_received(atsc3_route_object_t* atsc3_route_object, atsc3_alc_packet_t* atsc3_alc_packet);
+
+void atsc3_route_object_lct_packet_received_set_attributes_from_alc_packet(atsc3_route_object_lct_packet_received_t* atsc3_route_object_lct_packet_received, atsc3_alc_packet_t* atsc3_alc_packet);
+void atsc3_route_object_lct_packet_received_update_carousel_count(atsc3_route_object_lct_packet_received_t* atsc3_route_object_lct_packet_received, atsc3_alc_packet_t* atsc3_alc_packet);
+
+//update our route object with persisted length (if present)
+void atsc3_route_object_lct_packet_received_update_atsc3_route_object(atsc3_route_object_t* atsc3_route_object, atsc3_route_object_lct_packet_received_t* atsc3_route_object_lct_packet_received);
+
+
 
 
 
@@ -90,7 +117,6 @@ atsc3_sls_alc_flow_t* atsc3_sls_alc_flow_find_entry_tsi(atsc3_sls_alc_flow_v* at
 
 //used for NRT package delivery (e.g. codepoint=1/2/3/4)
 atsc3_sls_alc_flow_t* atsc3_sls_alc_flow_add_entry_unique_tsi_toi_nrt(atsc3_sls_alc_flow_v* atsc3_sls_alc_flow, uint32_t tsi, uint32_t toi);
-atsc3_sls_alc_flow_t* atsc3_sls_alc_flow_find_entry_tsi_toi_nrt(atsc3_sls_alc_flow_v* atsc3_sls_alc_flow, uint32_t tsi, uint32_t toi);
 void atsc3_sls_alc_flow_nrt_set_fdt_file_content_type_if_null(atsc3_sls_alc_flow_t* atsc3_sls_alc_flow, char* fdt_file_content_type);
 
 uint32_t atsc3_sls_alc_flow_get_first_tsi(atsc3_sls_alc_flow_v* atsc3_sls_alc_flow);

@@ -49,7 +49,7 @@ uint16_t* dst_service_id_filter = NULL;
 atsc3_alc_arguments_t* alc_arguments;
 atsc3_alc_session_t* atsc3_alc_session;
 
-#define __AIRWAVZ_PCAP_FIXUP__ 1
+//#define __AIRWAVZ_PCAP_FIXUP__ 1
 //#define __AIRWAVZ_PCAP_FIXUP_DEBUG__ 1
 
 void process_packet(u_char *user, const struct pcap_pkthdr *pkthdr, const u_char *packet) {
@@ -103,7 +103,7 @@ void process_packet(u_char *user, const struct pcap_pkthdr *pkthdr, const u_char
 	udp_packet_t* udp_packet = process_packet_from_pcap(user, pkthdr_fixup, eth_frame);
 
 	if(!udp_packet) {
-		__WARN("udp_packet airwavz was NULL!");
+		__WARN("udp_packet was NULL!");
 	} else {
 		__INFO("process_packet: flow: %d.%d.%d.%d:(%u):%u \t ->  %d.%d.%d.%d:(%u):%u, len: %d ",
 				__toipandportnonstruct(udp_packet->udp_flow.src_ip_addr, udp_packet->udp_flow.src_port),
@@ -207,14 +207,19 @@ mcheck(0);
 #endif
 
 			//keep track of our EXT_FTI and update last_toi as needed for TOI length and manual set of the close_object flag
-			atsc3_alc_persist_route_ext_attributes_per_lls_sls_alc_monitor_essence(alc_packet, lls_slt_monitor->lls_sls_alc_monitor);
+			atsc3_route_object_t* atsc3_route_object = atsc3_alc_persist_route_object_lct_packet_received_for_lls_sls_alc_monitor_all_flows(alc_packet, lls_slt_monitor->lls_sls_alc_monitor);
 #ifdef __MALLOC_DEBUGGING
 mcheck(0);
 #endif
 
 			//persist to disk, process sls mbms and/or emit ROUTE media_delivery_event complete to the application tier if
 			//the full packet has been recovered (e.g. no missing data units in the forward transmission)
-			atsc3_alc_packet_persist_to_toi_resource_process_sls_mbms_and_emit_callback(&udp_packet->udp_flow, &alc_packet, lls_slt_monitor->lls_sls_alc_monitor);
+			if(atsc3_route_object) {
+				atsc3_alc_packet_persist_to_toi_resource_process_sls_mbms_and_emit_callback(&udp_packet->udp_flow, alc_packet, lls_slt_monitor->lls_sls_alc_monitor, atsc3_route_object);
+			} else {
+				__ERROR("Error in ALC persist, atsc3_route_object is NULL!");
+
+			}
 #ifdef __MALLOC_DEBUGGING
 mcheck(0);
 #endif
@@ -249,6 +254,15 @@ int main(int argc,char **argv) {
     _ALC_UTILS_DEBUG_ENABLED = 1;
 	_ALC_RX_DEBUG_ENABLED = 1;
     _ALC_UTILS_DEBUG_ENABLED = 1;
+
+    _ROUTE_OBJECT_INFO_ENABLED = 1;
+    _ROUTE_OBJECT_DEBUG_ENABLED = 1;
+    _ROUTE_OBJECT_TRACE_ENABLED = 1;
+
+    _SLS_ALC_FLOW_INFO_ENABLED = 1;
+    _SLS_ALC_FLOW_DEBUG_ENABLED = 1;
+    _SLS_ALC_FLOW_TRACE_ENABLED = 1;
+
 	
 #ifdef __LOTS_OF_DEBUGGING__
 	_LLS_INFO_ENABLED = 1;

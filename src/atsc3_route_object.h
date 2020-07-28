@@ -14,10 +14,14 @@
  *
  */
 
+#include <stdlib.h>
+#include <stdbool.h>
+
 
 #ifndef ATSC3_ROUTE_OBJECT_H_
 #define ATSC3_ROUTE_OBJECT_H_
 
+#include "atsc3_utils.h"
 #include "atsc3_logging_externs.h"
 #include "atsc3_vector_builder.h"
 
@@ -49,10 +53,16 @@ extern "C" {
 		i) there is at least one entry in RECEIVED still set to false;
 		ii) the object has not yet expired; and
 		iii) the application has not given up on reception of this object. More details are provided below.
+
+
+		todo: sort by start_offset?
 */
 
 typedef struct atsc3_route_object_lct_packet_received {
-	long					received_timestamp;	//populate with gtl();
+	long					first_received_timestamp;		//populate with gtl();
+
+	uint32_t				carousel_count;					//0
+	long					most_recent_received_timestamp;	//populate with gtl();
 
 	uint8_t					codepoint;
 	uint8_t 				fec_encoding_id; 	//jjustman-2020-07-27 - todo: extract from fec building block?
@@ -73,21 +83,23 @@ typedef struct atsc3_route_object_lct_packet_received {
 	unsigned int 			packet_len;
 	unsigned long long 		object_len;
 
-
-
 } atsc3_route_object_lct_packet_received_t;
 
+typedef struct atsc3_sls_alc_flow atsc3_sls_alc_flow_t;
+
 typedef struct atsc3_route_object {
+	atsc3_sls_alc_flow_t*	atsc3_sls_alc_flow;
 
-	uint32_t	tsi;					//keep reference for our tsi / toi
-	uint32_t	toi;
+	uint32_t				tsi;					//keep reference for our tsi / toi just to be sure...
+	uint32_t				toi;
 
-	uint32_t 	object_length;			//persisted object_length (if known)
+	uint32_t 				object_length;			//persisted object_length (if known)
 
-	uint32_t	expiration;
-	bool		has_given_up;
+	uint32_t				expiration;
+	bool					has_given_up;
 
 	ATSC3_VECTOR_BUILDER_STRUCT(atsc3_route_object_lct_packet_received);
+	atsc3_route_object_lct_packet_received_t* 	most_recent_atsc3_route_object_lct_packet_received;
 
 
 } atsc3_route_object_t;
@@ -95,10 +107,15 @@ typedef struct atsc3_route_object {
 ATSC3_VECTOR_BUILDER_METHODS_INTERFACE(atsc3_route_object, atsc3_route_object_lct_packet_received);
 ATSC3_VECTOR_BUILDER_METHODS_PARENT_INTERFACE_FREE(atsc3_route_object);
 
+bool atsc3_route_object_is_complete(atsc3_route_object_t* atsc3_route_object);
+
+void atsc3_route_object_clear_and_reset_atsc3_route_object_lct_packet_received(atsc3_route_object_t* atsc3_route_object);
+
+///deprecated
+
 void atsc3_route_object_set_toi_and_length(atsc3_route_object_t* atsc3_route_object, uint32_t toi, uint32_t toi_length);
 void atsc3_route_object_mark_received_byte_range(atsc3_route_object_t* atsc3_route_object, uint32_t source_byte_range_start, uint32_t source_byte_range_end);
 bool atsc3_route_object_is_recovered(atsc3_route_object_t* atsc3_route_object);
-
 
 
 #define _ATSC3_ROUTE_OBJECT_ERROR(...)   __LIBATSC3_TIMESTAMP_ERROR(__VA_ARGS__);

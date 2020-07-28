@@ -34,6 +34,9 @@ atsc3_route_dash_matching_s_tsid_representation_media_info_alc_flow_match_vector
 			atsc3_sls_alc_flow_t* atsc3_sls_alc_flow = atsc3_sls_alc_flow_v->data[j];
 
 			atsc3_route_s_tsid_RS_LS_SrcFlow_ContentInfo_MediaInfo_t* media_info = atsc3_sls_alc_flow->media_info;
+			if(!media_info) {
+				continue;
+			}
 			__ROUTE_DASH_UTILS_TRACE("mpd_representation_id: %s, rep_id: %s", mpd_representation_id, media_info->rep_id);
 
 			//only push this candidate if we have a last_closed_toi value

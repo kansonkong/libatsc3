@@ -138,6 +138,8 @@ void atsc3_route_sls_process_from_alc_packet_and_file(udp_flow_t* udp_flow, atsc
 				
 				//TODO: jjustman-2019-11-02: write out our multipart mbms payload to our route/svc_id, e.g. to get the mpd
 				for(int i=0; i < lls_sls_alc_monitor->atsc3_sls_metadata_fragments->atsc3_mime_multipart_related_instance->atsc3_mime_multipart_related_payload_v.count; i++) {
+				  bool fragment_route_sls_patch_mpd = false;
+
 				  atsc3_mime_multipart_related_payload_t* atsc3_mime_multipart_related_payload = lls_sls_alc_monitor->atsc3_sls_metadata_fragments->atsc3_mime_multipart_related_instance->atsc3_mime_multipart_related_payload_v.data[i];
 				  if(!atsc3_mime_multipart_related_payload->content_type) {
 				    _ATSC3_ROUTE_SLS_PROCESSOR_WARN("atsc3_route_sls_process_from_alc_packet_and_file: content_type is null for tsi/toi:%u/%u", alc_packet->def_lct_hdr->tsi, alc_packet->def_lct_hdr->toi);
@@ -145,7 +147,7 @@ void atsc3_route_sls_process_from_alc_packet_and_file(udp_flow_t* udp_flow, atsc
 				    
 				    //jjustman-2019-11-05 - patch MPD type="dynamic" with availabilityStartTime to NOW and startNumber to the most recent A/V flows for TOI delivery
 				    if(strncmp(atsc3_mime_multipart_related_payload->content_type, ATSC3_ROUTE_MPD_TYPE, __MIN(strlen(atsc3_mime_multipart_related_payload->content_type), strlen(ATSC3_ROUTE_MPD_TYPE))) == 0) {
-				      atsc3_route_sls_patch_mpd_availability_start_time_and_start_number(atsc3_mime_multipart_related_payload, lls_sls_alc_monitor);
+				    	fragment_route_sls_patch_mpd = atsc3_route_sls_patch_mpd_availability_start_time_and_start_number(atsc3_mime_multipart_related_payload, lls_sls_alc_monitor);
 				    }
 				  }
 				  
@@ -169,6 +171,13 @@ void atsc3_route_sls_process_from_alc_packet_and_file(udp_flow_t* udp_flow, atsc
 						}
 						fclose(fp_mbms_file);
 						fp_mbms_file = NULL;
+
+
+						//jjustman-2020-07-27 - send a forced callback that our ROUTE/DASH flow is discontigous and needs to be reloaded once we are written to disk
+						if(fragment_route_sls_patch_mpd && lls_sls_alc_monitor->atsc3_lls_sls_alc_on_route_mpd_patched) {
+							lls_sls_alc_monitor->atsc3_lls_sls_alc_on_route_mpd_patched(lls_sls_alc_monitor->atsc3_lls_slt_service->service_id);
+						}
+
 					  } else {
 						  _ATSC3_ROUTE_SLS_PROCESSOR_ERROR("sls mbms fragment dump, original content_location: %s, unable to write to local path: %s", atsc3_mime_multipart_related_payload->sanitizied_content_location, mbms_filename);
 					  }
@@ -241,7 +250,8 @@ cleanup:
 //TODO: confirm fragment is complete...
 
  */
-void atsc3_route_sls_patch_mpd_availability_start_time_and_start_number(atsc3_mime_multipart_related_payload_t* atsc3_mime_multipart_related_payload, lls_sls_alc_monitor_t* lls_sls_alc_monitor) {
+bool atsc3_route_sls_patch_mpd_availability_start_time_and_start_number(atsc3_mime_multipart_related_payload_t* atsc3_mime_multipart_related_payload, lls_sls_alc_monitor_t* lls_sls_alc_monitor) {
+
 
     if(lls_sls_alc_monitor->last_mpd_payload && (lls_sls_alc_monitor->last_mpd_payload_patched && !lls_sls_alc_monitor->has_discontiguous_toi_flow)) {
         //compare if our original vs. new payload has changed, and patch accordingly, otherwise swap out to our old payload
@@ -250,12 +260,16 @@ void atsc3_route_sls_patch_mpd_availability_start_time_and_start_number(atsc3_mi
         		block_Destroy(&atsc3_mime_multipart_related_payload->payload);
         		atsc3_mime_multipart_related_payload->payload = block_Duplicate(lls_sls_alc_monitor->last_mpd_payload_patched);
 			}
-            return;
+            return false;
         }
     }
 
-    if(lls_sls_alc_monitor->has_discontiguous_toi_flow) {
-        _ATSC3_ROUTE_SLS_PROCESSOR_WARN("atsc3_route_sls_patch_mpd_availability_start_time_and_start_number, has_discontiguous_toi_flow is true, rebuilding MPD!");
+	block_t* in_flight_last_mpd_payload = block_Duplicate(atsc3_mime_multipart_related_payload->payload);
+
+    if(lls_sls_alc_monitor->has_discontiguous_toi_flow || !lls_sls_alc_monitor->last_mpd_payload) {
+        _ATSC3_ROUTE_SLS_PROCESSOR_WARN("atsc3_route_sls_patch_mpd_availability_start_time_and_start_number, has_discontiguous_toi_flow: %d, last_mpd_payload: %p, rebuilding MPD!",
+        		lls_sls_alc_monitor->has_discontiguous_toi_flow,
+        		lls_sls_alc_monitor->last_mpd_payload);
     }
     
     char* temp_lower_mpd = calloc(atsc3_mime_multipart_related_payload->payload->p_size, sizeof(char));
@@ -264,11 +278,7 @@ void atsc3_route_sls_patch_mpd_availability_start_time_and_start_number(atsc3_mi
     }
     
     if(strstr(temp_lower_mpd, "type=\"dynamic\"") != NULL) {
-        if(lls_sls_alc_monitor->last_mpd_payload) {
-            block_Destroy(&lls_sls_alc_monitor->last_mpd_payload);
-        }
-        lls_sls_alc_monitor->last_mpd_payload = block_Duplicate(atsc3_mime_multipart_related_payload->payload);
-        
+
         //update our availabilityStartTime
         char* ast_char = strstr(temp_lower_mpd, _MPD_availability_start_time_VALUE_);
         if(ast_char) {
@@ -317,7 +327,10 @@ void atsc3_route_sls_patch_mpd_availability_start_time_and_start_number(atsc3_mi
 
 				atsc3_pcre2_regex_match_capture_vector_dump(atsc3_pcre2_regex_match_capture_vector);
 
-				atsc3_route_dash_matching_s_tsid_representation_media_info_alc_flow_match_vector_t* match_vector = atsc3_route_dash_find_matching_s_tsid_representations_from_mpd_pcre2_regex_matches(atsc3_pcre2_regex_match_capture_vector, &lls_sls_alc_monitor->atsc3_sls_alc_all_mediainfo_flow_v);
+				//atsc3_sls_alc_all_s_tsid_flow_v
+				//				atsc3_route_dash_matching_s_tsid_representation_media_info_alc_flow_match_vector_t* match_vector = atsc3_route_dash_find_matching_s_tsid_representations_from_mpd_pcre2_regex_matches(atsc3_pcre2_regex_match_capture_vector, &lls_sls_alc_monitor->atsc3_sls_alc_all_mediainfo_flow_v);
+
+				atsc3_route_dash_matching_s_tsid_representation_media_info_alc_flow_match_vector_t* match_vector = atsc3_route_dash_find_matching_s_tsid_representations_from_mpd_pcre2_regex_matches(atsc3_pcre2_regex_match_capture_vector, &lls_sls_alc_monitor->atsc3_sls_alc_all_s_tsid_flow_v);
 				if(!match_vector || !match_vector->atsc3_route_dash_matching_s_tsid_representation_media_info_alc_flow_match_v.count) {
 					_ATSC3_ROUTE_SLS_PROCESSOR_ERROR("find_matching_s_tsid_representations - match vector is null or match_v.cound is 0!");
 					goto error;
@@ -353,13 +366,10 @@ void atsc3_route_sls_patch_mpd_availability_start_time_and_start_number(atsc3_mi
 
 				atsc3_pcre2_regex_match_capture_vector_free(&atsc3_pcre2_regex_match_capture_vector);
 
-
-				//send a forced callback that our ROUTE/DASH flow is discontigous and needs to be reloaded
-				//jjustman-2020-07-22 - atsc3_route_sls_process_from_alc_packet_and_file -
-				//jjustman-2020-07-27 - TODO - fix this moving after we flush to disk
-				if(lls_sls_alc_monitor->has_discontiguous_toi_flow && lls_sls_alc_monitor->atsc3_lls_sls_alc_on_route_mpd_patched) {
-					lls_sls_alc_monitor->atsc3_lls_sls_alc_on_route_mpd_patched(lls_sls_alc_monitor->atsc3_lls_slt_service->service_id);
+				if(lls_sls_alc_monitor->last_mpd_payload) {
+					block_Destroy(&lls_sls_alc_monitor->last_mpd_payload);
 				}
+				lls_sls_alc_monitor->last_mpd_payload = in_flight_last_mpd_payload;
 
         	} else {
         		_ATSC3_ROUTE_SLS_PROCESSOR_ERROR("atsc3_pcre2_regex_match returned NULL - with block_mpd: %s", block_mpd->p_buffer);
@@ -370,7 +380,6 @@ void atsc3_route_sls_patch_mpd_availability_start_time_and_start_number(atsc3_mi
             		_ATSC3_ROUTE_SLS_PROCESSOR_WARN("atsc3_pcre2_regex_match returned NULL - returning last patched payload! %s", lls_sls_alc_monitor->last_mpd_payload_patched->p_buffer);
 
            		}
-
         	}
 
         	atsc3_pcre2_regex_context_free(&atsc3_pcre2_regex_context);
@@ -381,16 +390,24 @@ void atsc3_route_sls_patch_mpd_availability_start_time_and_start_number(atsc3_mi
 
         } else {
             _ATSC3_ROUTE_SLS_PROCESSOR_ERROR("unable to patch startNumber values: "_MPD_availability_start_time_VALUE_" present");
+            goto error;
         }
     } else {
         _ATSC3_ROUTE_SLS_PROCESSOR_ERROR("unable to patch startNumber values: MPD is missing type=dynamic");
+        goto error;
+
     }
 
     lls_sls_alc_monitor->has_discontiguous_toi_flow = false;
 
-    return;
+    return true;
     
 error:
-    _ATSC3_ROUTE_SLS_PROCESSOR_ERROR("unable to patch startNumber values!");
+	block_Destroy(&atsc3_mime_multipart_related_payload->payload);
+	block_Destroy(&in_flight_last_mpd_payload);
+
+    _ATSC3_ROUTE_SLS_PROCESSOR_ERROR("unable to patch startNumber values - clearing atsc3_mime_multipart_related_payload->payload!");
+
+    return false;
    
 }

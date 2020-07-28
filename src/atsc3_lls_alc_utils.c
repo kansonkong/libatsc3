@@ -414,10 +414,18 @@ void lls_sls_alc_update_all_mediainfo_flow_v_from_route_s_tsid(lls_sls_alc_monit
 				if(atsc3_route_s_tsid_RS_LS->atsc3_route_s_tsid_RS_LS_SrcFlow->atsc3_route_s_tsid_RS_LS_SrcFlow_ContentInfo && atsc3_route_s_tsid_RS_LS->atsc3_route_s_tsid_RS_LS_SrcFlow->atsc3_route_s_tsid_RS_LS_SrcFlow_ContentInfo->atsc3_route_s_tsid_RS_LS_SrcFlow_ContentInfo_MediaInfo) {
 					media_info = atsc3_route_s_tsid_RS_LS->atsc3_route_s_tsid_RS_LS_SrcFlow->atsc3_route_s_tsid_RS_LS_SrcFlow_ContentInfo->atsc3_route_s_tsid_RS_LS_SrcFlow_ContentInfo_MediaInfo;
 
-					atsc3_sls_alc_flow_t* atsc3_sls_alc_all_mediainfo_flow = atsc3_sls_alc_flow_add_entry_unique_tsi(&lls_sls_alc_monitor->atsc3_sls_alc_all_mediainfo_flow_v, atsc3_route_s_tsid_RS_LS->tsi, media_info);
+					atsc3_sls_alc_flow_t* atsc3_sls_alc_all_mediainfo_flow = atsc3_sls_alc_flow_add_entry_unique_tsi(&lls_sls_alc_monitor->atsc3_sls_alc_all_s_tsid_flow_v, atsc3_route_s_tsid_RS_LS->tsi, media_info);
 
 					//TODO: jjustman-2020-07-14 - fixme to a qualfied type
 					src_flow_content_info_content_type = atsc3_route_s_tsid_RS_LS->atsc3_route_s_tsid_RS_LS_SrcFlow->atsc3_route_s_tsid_RS_LS_SrcFlow_ContentInfo->atsc3_route_s_tsid_RS_LS_SrcFlow_ContentInfo_MediaInfo->content_type;
+
+					for(int k=0; k < atsc3_fdt_instance->atsc3_fdt_file_v.count; k++) {
+						atsc3_fdt_file_t* atsc3_fdt_file = atsc3_fdt_instance->atsc3_fdt_file_v.data[k];
+						if(src_flow_content_info_content_type && atsc3_fdt_file->toi && atsc3_route_s_tsid_RS_LS->tsi) {
+							atsc3_sls_alc_all_mediainfo_flow->toi_init = atsc3_fdt_file->toi;
+
+						}
+					}
 
 					_ATSC3_LLS_ALC_UTILS_DEBUG("   S-TSID.RS.LS.SrcFlow.ContentInfo: contentType: %s, repId: %s, startup: %u",
 							atsc3_route_s_tsid_RS_LS->atsc3_route_s_tsid_RS_LS_SrcFlow->atsc3_route_s_tsid_RS_LS_SrcFlow_ContentInfo->atsc3_route_s_tsid_RS_LS_SrcFlow_ContentInfo_MediaInfo->content_type,

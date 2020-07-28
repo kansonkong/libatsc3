@@ -1119,7 +1119,7 @@ int test_replace_mpd_with_multiple_audio_adaption_sets_pcre2_regex_utils() {
 	media_info->content_type = contentType_video;
 	media_info->rep_id = repId_Video1_1;
 
-	atsc3_sls_alc_all_mediainfo_flow = atsc3_sls_alc_flow_add_entry_unique_tsi(&lls_sls_alc_monitor->atsc3_sls_alc_all_mediainfo_flow_v, tsi, media_info);
+	atsc3_sls_alc_all_mediainfo_flow = atsc3_sls_alc_flow_add_entry_unique_tsi(&lls_sls_alc_monitor->atsc3_sls_alc_all_s_tsid_flow_v, tsi, media_info);
 	atsc3_sls_alc_all_mediainfo_flow->last_closed_toi = 500;
 
 	tsi=200;
@@ -1127,7 +1127,7 @@ int test_replace_mpd_with_multiple_audio_adaption_sets_pcre2_regex_utils() {
 	media_info->content_type = contentType_audio;
 	media_info->rep_id = repId_a02_2;
 
-	atsc3_sls_alc_all_mediainfo_flow = atsc3_sls_alc_flow_add_entry_unique_tsi(&lls_sls_alc_monitor->atsc3_sls_alc_all_mediainfo_flow_v, tsi, media_info);
+	atsc3_sls_alc_all_mediainfo_flow = atsc3_sls_alc_flow_add_entry_unique_tsi(&lls_sls_alc_monitor->atsc3_sls_alc_all_s_tsid_flow_v, tsi, media_info);
 	atsc3_sls_alc_all_mediainfo_flow->last_closed_toi = 1000;
 
 	tsi=201;
@@ -1135,7 +1135,7 @@ int test_replace_mpd_with_multiple_audio_adaption_sets_pcre2_regex_utils() {
 	media_info->content_type = contentType_audio;
 	media_info->rep_id = repId_a13_3;
 
-	atsc3_sls_alc_all_mediainfo_flow = atsc3_sls_alc_flow_add_entry_unique_tsi(&lls_sls_alc_monitor->atsc3_sls_alc_all_mediainfo_flow_v, tsi, media_info);
+	atsc3_sls_alc_all_mediainfo_flow = atsc3_sls_alc_flow_add_entry_unique_tsi(&lls_sls_alc_monitor->atsc3_sls_alc_all_s_tsid_flow_v, tsi, media_info);
 	atsc3_sls_alc_all_mediainfo_flow->last_closed_toi = 31337;
 
 	tsi=300;
@@ -1143,7 +1143,7 @@ int test_replace_mpd_with_multiple_audio_adaption_sets_pcre2_regex_utils() {
 	media_info->content_type = contentType_subtitles;
 	media_info->rep_id = repId_d4_4;
 
-	atsc3_sls_alc_all_mediainfo_flow = atsc3_sls_alc_flow_add_entry_unique_tsi(&lls_sls_alc_monitor->atsc3_sls_alc_all_mediainfo_flow_v, tsi, media_info);
+	atsc3_sls_alc_all_mediainfo_flow = atsc3_sls_alc_flow_add_entry_unique_tsi(&lls_sls_alc_monitor->atsc3_sls_alc_all_s_tsid_flow_v, tsi, media_info);
 	atsc3_sls_alc_all_mediainfo_flow->last_closed_toi = 168502;
 	/*
 
@@ -1165,7 +1165,7 @@ int test_replace_mpd_with_multiple_audio_adaption_sets_pcre2_regex_utils() {
 
 	atsc3_pcre2_regex_match_capture_vector_dump(atsc3_pcre2_regex_match_capture_vector);
 
-	atsc3_route_dash_matching_s_tsid_representation_media_info_alc_flow_match_vector_t* match_vector = atsc3_route_dash_find_matching_s_tsid_representations_from_mpd_pcre2_regex_matches(atsc3_pcre2_regex_match_capture_vector, &lls_sls_alc_monitor->atsc3_sls_alc_all_mediainfo_flow_v);
+	atsc3_route_dash_matching_s_tsid_representation_media_info_alc_flow_match_vector_t* match_vector = atsc3_route_dash_find_matching_s_tsid_representations_from_mpd_pcre2_regex_matches(atsc3_pcre2_regex_match_capture_vector, &lls_sls_alc_monitor->atsc3_sls_alc_all_s_tsid_flow_v);
 	_ATSC3_ROUTE_DASH_MPD_PATCH_TEST_INFO("got back %d match tuples <capture, media_info, alc_flow>", match_vector->atsc3_route_dash_matching_s_tsid_representation_media_info_alc_flow_match_v.count);
 
 	for(int i=0; i < match_vector->atsc3_route_dash_matching_s_tsid_representation_media_info_alc_flow_match_v.count; i++) {
