@@ -101,7 +101,6 @@ atsc3_route_object_t* atsc3_sls_alc_flow_find_or_create_route_object_from_alc_pa
 		//create a new entry
 		matching_atsc3_route_object = atsc3_route_object_new();
 		atsc3_route_object_set_alc_flow_and_tsi_toi(matching_atsc3_route_object, atsc3_sls_alc_flow, alc_packet);
-		//todo - impl methods
 		atsc3_sls_alc_flow_add_atsc3_route_object(atsc3_sls_alc_flow, matching_atsc3_route_object);
 	}
 
@@ -239,13 +238,13 @@ void atsc3_route_object_set_alc_flow_and_tsi_toi(atsc3_route_object_t* atsc3_rou
 atsc3_route_object_lct_packet_received_t* atsc3_route_object_add_or_update_lct_packet_received(atsc3_route_object_t* atsc3_route_object, atsc3_alc_packet_t* atsc3_alc_packet) {
 	atsc3_route_object_lct_packet_received_t* atsc3_route_object_lct_packet_received = atsc3_route_object_find_lct_packet_received(atsc3_route_object, atsc3_alc_packet);
 	if(!atsc3_route_object_lct_packet_received) {
-		//atsc3_route_object_lct_packet_received = atsc3_route_object_lct_packet_received_new();
-
-		atsc3_route_object_lct_packet_received = calloc(1, sizeof(atsc3_route_object_lct_packet_received_t));
+		atsc3_route_object_lct_packet_received = atsc3_route_object_lct_packet_received_new();
 
 		atsc3_route_object_lct_packet_received_set_attributes_from_alc_packet(atsc3_route_object_lct_packet_received, atsc3_alc_packet);
-		printf("new atsc3_route_object_lct_packet_received: atsc3_route_object: %p, lct_packet_recv: %p, tsi: %d, toi: %d, start_offset: %d\n",atsc3_route_object, atsc3_route_object_lct_packet_received, atsc3_alc_packet->def_lct_hdr->tsi, atsc3_alc_packet->def_lct_hdr->toi, atsc3_alc_packet->start_offset);
 
+#ifdef __ATSC3_ROUTE_OBJECT_PENDANTIC__
+		printf("new atsc3_route_object_lct_packet_received: atsc3_route_object: %p, lct_packet_recv: %p, tsi: %d, toi: %d, start_offset: %d\n",atsc3_route_object, atsc3_route_object_lct_packet_received, atsc3_alc_packet->def_lct_hdr->tsi, atsc3_alc_packet->def_lct_hdr->toi, atsc3_alc_packet->start_offset);
+#endif
 		atsc3_route_object_add_atsc3_route_object_lct_packet_received(atsc3_route_object, atsc3_route_object_lct_packet_received);
 
 #ifdef __ATSC3_ROUTE_OBJECT_PENDANTIC__
@@ -345,46 +344,39 @@ void atsc3_route_object_lct_packet_received_update_carousel_count(atsc3_route_ob
 void atsc3_route_object_lct_packet_received_update_atsc3_route_object(atsc3_route_object_t* atsc3_route_object, atsc3_route_object_lct_packet_received_t* atsc3_route_object_lct_packet_received) {
 	if(!atsc3_route_object->object_length && atsc3_route_object_lct_packet_received->object_len) {
 		atsc3_route_object->object_length = atsc3_route_object_lct_packet_received->object_len;
+
+		//pre_allocate our expected atsc3_route_object->
+		//atsc3_route_object->atsc3_route_object_lct_packet_received_v size
+
+		atsc3_route_object_calculate_expected_route_object_lct_packet_count(atsc3_route_object, atsc3_route_object_lct_packet_received);
+
+		atsc3_route_object_prealloc_atsc3_route_object_lct_packet_received(atsc3_route_object, atsc3_route_object->expected_route_object_lct_packet_count);
+
+		_ATSC3_SLS_ALC_FLOW_DEBUG("atsc3_route_object_lct_packet_received_update_atsc3_route_object: assigning object_length, route_object: %p, atsc3_alc_packet: tsi: %d, toi: %d, use_sbn_esi: %d, use_start_offset: %d, expected_lct_packet_len_for_count: %d, pre_allocating and setting expected_route_object_lct_packet_count to %d",
+				atsc3_route_object,
+					atsc3_route_object->tsi, atsc3_route_object->toi,
+					atsc3_route_object_lct_packet_received->use_sbn_esi, atsc3_route_object_lct_packet_received->use_start_offset,
+					atsc3_route_object->expected_route_object_lct_packet_len_for_count,
+					atsc3_route_object->expected_route_object_lct_packet_count);
+
+	} else if(atsc3_route_object->object_length) {
+		//over/under by 40 bytes for header...
+		if(ABS(atsc3_route_object->expected_route_object_lct_packet_len_for_count - atsc3_route_object_lct_packet_received->packet_len) > 40) {
+			//recalc
+			atsc3_route_object_calculate_expected_route_object_lct_packet_count(atsc3_route_object, atsc3_route_object_lct_packet_received);
+
+			_ATSC3_SLS_ALC_FLOW_DEBUG("atsc3_route_object_lct_packet_received_update_atsc3_route_object: recalculating, route_object: %p, atsc3_alc_packet: tsi: %d, toi: %d, use_sbn_esi: %d, use_start_offset: %d, expected_lct_packet_len_for_count: %d, updating setting expected_route_object_lct_packet_count to %d",
+					atsc3_route_object,
+					atsc3_route_object->tsi, atsc3_route_object->toi,
+					atsc3_route_object_lct_packet_received->use_sbn_esi, atsc3_route_object_lct_packet_received->use_start_offset,
+					atsc3_route_object->expected_route_object_lct_packet_len_for_count,
+					atsc3_route_object->expected_route_object_lct_packet_count);
+		}
 	}
+
 	atsc3_route_object->most_recent_atsc3_route_object_lct_packet_received = atsc3_route_object_lct_packet_received;
 }
 
-
-// jjustman-2020-07-14: removed - use atsc3_route_s_tsid_RS_LS_SrcFlow_ContentInfo_MediaInfo_clone intead
-
-//void atsc3_sls_alc_flow_set_rep_id_if_null(atsc3_sls_alc_flow_t* atsc3_sls_alc_flow, char* rep_id) {
-//	if(atsc3_sls_alc_flow && atsc3_sls_alc_flow->rep_id == NULL && rep_id != NULL) {
-//		atsc3_sls_alc_flow->rep_id = strndup(rep_id, strlen(rep_id));
-//	}
-//}
-//
-//void atsc3_sls_alc_flow_set_lang_if_null(atsc3_sls_alc_flow_t* atsc3_sls_alc_flow, char* lang) {
-//	if(atsc3_sls_alc_flow && atsc3_sls_alc_flow->lang == NULL && lang != NULL) {
-//		atsc3_sls_alc_flow->lang = strndup(lang, strlen(lang));
-//	}
-//}
-
-
-//
-//atsc3_sls_alc_flow_t* atsc3_sls_alc_flow_find_entry_tsi_toi_nrt(atsc3_sls_alc_flow_v* atsc3_sls_alc_flow, uint32_t tsi, uint32_t toi) {
-//	atsc3_sls_alc_flow_t* matching_atsc3_sls_alc_flow_nrt = NULL;
-//	atsc3_sls_alc_flow_t* to_check_atsc3_sls_alc_flow_nrt = NULL;
-//
-//	for(int i=0; i < atsc3_sls_alc_flow->count && !matching_atsc3_sls_alc_flow_nrt; i++) {
-//		to_check_atsc3_sls_alc_flow_nrt = atsc3_sls_alc_flow->data[i];
-//		if(to_check_atsc3_sls_alc_flow_nrt->tsi == tsi && to_check_atsc3_sls_alc_flow_nrt->toi == toi) {
-//			matching_atsc3_sls_alc_flow_nrt = to_check_atsc3_sls_alc_flow_nrt;
-//		}
-//	}
-//
-//	return matching_atsc3_sls_alc_flow_nrt;
-//}
-//
-//void atsc3_sls_alc_flow_nrt_set_fdt_file_content_type_if_null(atsc3_sls_alc_flow_t* matching_atsc3_sls_alc_flow_nrt, char* fdt_file_content_type) {
-//	if(matching_atsc3_sls_alc_flow_nrt && matching_atsc3_sls_alc_flow_nrt->fdt_file_content_type == NULL && fdt_file_content_type != NULL) {
-//		matching_atsc3_sls_alc_flow_nrt->fdt_file_content_type = strndup(fdt_file_content_type, strlen(fdt_file_content_type));
-//	}
-//}
 
 
 uint32_t atsc3_sls_alc_flow_get_first_tsi(atsc3_sls_alc_flow_v* atsc3_sls_alc_flow) {
