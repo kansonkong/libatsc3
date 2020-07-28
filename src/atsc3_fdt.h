@@ -270,7 +270,7 @@ typedef struct atsc3_fdt_instance {
 	atsc3_fdt_fec_attributes_t 	atsc3_fdt_fec_attributes;
 
 	/*atsc-fdt/1.0*/
-	uint8_t						efdt_vesion;
+	uint8_t						efdt_version;
 	uint32_t					max_expires_delta;
 	uint32_t					max_transport_size;
 	char*						app_context_id_list;

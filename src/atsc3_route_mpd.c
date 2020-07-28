@@ -89,6 +89,7 @@ void atsc3_route_period_free(atsc3_route_period_t** atsc3_route_period_p) {
     }
 }
 
+//jjustman-2020-07-27 - todo: change this char* payload to block_t*
 atsc3_route_mpd_t* atsc3_route_mpd_parse_from_payload(char* payload, char* content_location) {
 
 	block_t* mpd_fragment_block = block_Promote(payload);

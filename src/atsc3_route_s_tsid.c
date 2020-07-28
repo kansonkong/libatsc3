@@ -68,7 +68,7 @@ void atsc3_route_s_tsid_RS_free(atsc3_route_s_tsid_RS_t** atsc3_route_s_tsid_RS_
 ATSC3_VECTOR_BUILDER_METHODS_PARENT_IMPLEMENTATION(atsc3_route_s_tsid)
 ATSC3_VECTOR_BUILDER_METHODS_IMPLEMENTATION(atsc3_route_s_tsid, atsc3_route_s_tsid_RS)
 
-
+//jjustman-2020-07-27 - todo: change this char* payload to block_t*
 atsc3_route_s_tsid_t* atsc3_route_s_tsid_parse_from_payload(char* payload, char* content_location) {
 
 	atsc3_route_s_tsid_t* atsc3_route_s_tsid = NULL;
@@ -422,7 +422,7 @@ void atsc3_route_s_tsid_dump(atsc3_route_s_tsid_t* atsc3_route_s_tsid) {
                     return;
                 }
 				_ATSC3_ROUTE_S_TSID_PARSER_DEBUG("     S-TSID.RS.LS.source_flow.fdt-instance: version: %u, expires: %u, content_type: %s, file_template: %s",
-						atsc3_fdt_instance->efdt_vesion,
+						atsc3_fdt_instance->efdt_version,
 						atsc3_fdt_instance->expires,
 						atsc3_fdt_instance->content_type,
 						atsc3_fdt_instance->file_template);
@@ -478,15 +478,15 @@ void atsc3_route_s_tsid_RS_LS_SrcFlow_ContentInfo_MediaInfo_free(atsc3_route_s_t
 		atsc3_route_s_tsid_RS_LS_SrcFlow_ContentInfo_MediaInfo_t* atsc3_route_s_tsid_RS_LS_SrcFlow_ContentInfo_MediaInfo = *atsc3_route_s_tsid_RS_LS_SrcFlow_ContentInfo_MediaInfo_p;
 		if(atsc3_route_s_tsid_RS_LS_SrcFlow_ContentInfo_MediaInfo) {
 			if(atsc3_route_s_tsid_RS_LS_SrcFlow_ContentInfo_MediaInfo->content_type) {
-				freeclean(&atsc3_route_s_tsid_RS_LS_SrcFlow_ContentInfo_MediaInfo->content_type);
+				freeclean((void**)&atsc3_route_s_tsid_RS_LS_SrcFlow_ContentInfo_MediaInfo->content_type);
 			}
 
 			if(atsc3_route_s_tsid_RS_LS_SrcFlow_ContentInfo_MediaInfo->lang) {
-				freeclean(&atsc3_route_s_tsid_RS_LS_SrcFlow_ContentInfo_MediaInfo->lang);
+				freeclean((void**)&atsc3_route_s_tsid_RS_LS_SrcFlow_ContentInfo_MediaInfo->lang);
 			}
 
 			if(atsc3_route_s_tsid_RS_LS_SrcFlow_ContentInfo_MediaInfo->rep_id) {
-				freeclean(&atsc3_route_s_tsid_RS_LS_SrcFlow_ContentInfo_MediaInfo->rep_id);
+				freeclean((void**)&atsc3_route_s_tsid_RS_LS_SrcFlow_ContentInfo_MediaInfo->rep_id);
 			}
 
 			free(atsc3_route_s_tsid_RS_LS_SrcFlow_ContentInfo_MediaInfo);

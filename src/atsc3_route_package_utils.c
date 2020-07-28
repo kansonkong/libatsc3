@@ -17,6 +17,32 @@ int _ROUTE_PACKAGE_UTILS_TRACE_ENABLED=1;
 
 ATSC3_VECTOR_BUILDER_METHODS_IMPLEMENTATION_NO_CCTOR(atsc3_route_package_extracted_envelope_metadata_and_payload, atsc3_mime_multipart_related_payload);
 ATSC3_VECTOR_BUILDER_METHODS_PARENT_IMPLEMENTATION(atsc3_route_package_extracted_envelope_metadata_and_payload);
+
+void atsc3_route_package_extracted_envelope_metadata_and_payload_free(atsc3_route_package_extracted_envelope_metadata_and_payload_t** atsc3_route_package_extracted_envelope_metadata_and_payload_p) {
+		if(atsc3_route_package_extracted_envelope_metadata_and_payload_p) {
+			atsc3_route_package_extracted_envelope_metadata_and_payload_t* atsc3_route_package_extracted_envelope_metadata_and_payload = *atsc3_route_package_extracted_envelope_metadata_and_payload_p;
+			if(atsc3_route_package_extracted_envelope_metadata_and_payload) {
+				freeclean((void**)&atsc3_route_package_extracted_envelope_metadata_and_payload->package_name);
+				freeclean((void**)&atsc3_route_package_extracted_envelope_metadata_and_payload->app_context_id_list);
+				freeclean((void**)&atsc3_route_package_extracted_envelope_metadata_and_payload->filter_codes);
+				freeclean((void**)&atsc3_route_package_extracted_envelope_metadata_and_payload->filter_codes);
+				freeclean((void**)&atsc3_route_package_extracted_envelope_metadata_and_payload->package_extract_path);
+				block_Destroy(&atsc3_route_package_extracted_envelope_metadata_and_payload->atsc3_mbms_metadata_envelope_raw_xml);
+				atsc3_mbms_metadata_envelope_free(&atsc3_route_package_extracted_envelope_metadata_and_payload->atsc3_mbms_metadata_envelope);
+
+				//atsc3_route_package_extracted_envelope_metadata_and_payload_free_atsc3_mime_multipart_related_payload(atsc3_route_package_extracted_envelope_metadata_and_payload);
+
+				atsc3_mime_multipart_related_instance_free(&atsc3_route_package_extracted_envelope_metadata_and_payload->atsc3_mime_multipart_related_instance);
+
+				atsc3_route_package_extracted_envelope_metadata_and_payload_dealloc_atsc3_mime_multipart_related_payload(atsc3_route_package_extracted_envelope_metadata_and_payload);
+
+				freesafe((void*)atsc3_route_package_extracted_envelope_metadata_and_payload);
+				atsc3_route_package_extracted_envelope_metadata_and_payload = NULL;
+			}
+			*atsc3_route_package_extracted_envelope_metadata_and_payload_p = NULL;
+		}
+	}
+
 //
 //void atsc3_route_package_extract_payload_multipart_item_free(atsc3_route_package_extract_payload_multipart_item_t** atsc3_route_package_extract_payload_multipart_item_p) {
 //    if(atsc3_route_package_extract_payload_multipart_item_p) {
@@ -29,6 +55,10 @@ ATSC3_VECTOR_BUILDER_METHODS_PARENT_IMPLEMENTATION(atsc3_route_package_extracted
 //    }
 //}
 
+/*
+ *
+ * NOTE: caller is responsable for free()ing a non-null returned value
+ */
 #define __ATSC3_ROUTE_PACKAGE_DEFAULT_PACKAGE_NAME__ "undefined"
 char* atsc3_route_package_generate_path_from_appContextIdList(atsc3_fdt_file_t* atsc3_fdt_file) {
 
@@ -92,6 +122,9 @@ atsc3_route_package_extracted_envelope_metadata_and_payload_t* atsc3_route_packa
 		atsc3_mime_multipart_related_instance_t* atsc3_mime_multipart_related_instance = atsc3_mime_multipart_related_parser(fp);
 
 		if(atsc3_mime_multipart_related_instance) {
+			//keep a reference for our atsc3_mime_multipart_related_instance in our atsc3_route_package_extracted_envelope_metadata_and_payload so we can free it properly
+			atsc3_route_package_extracted_envelope_metadata_and_payload->atsc3_mime_multipart_related_instance = atsc3_mime_multipart_related_instance;
+
 			atsc3_mime_multipart_related_instance_dump(atsc3_mime_multipart_related_instance);
 
 			mkdir(package_extract_path, 0777);
@@ -186,6 +219,7 @@ atsc3_route_package_extracted_envelope_metadata_and_payload_t* atsc3_route_packa
 					__ROUTE_PACKAGE_UTILS_ERROR("unable to open payload file: %s", sandboxed_filename);
 				}
 			}
+
 		} else {
 			__ROUTE_PACKAGE_UTILS_ERROR("atsc3_mime_multipart_related_instance is null!");
 			ret = -1;
