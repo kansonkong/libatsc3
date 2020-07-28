@@ -166,7 +166,7 @@ void lls_sls_alc_monitor_free(lls_sls_alc_monitor_t** lls_sls_alc_monitor_p) {
             //todo: jjustman-2019-11-05: should free? atsc3_fdt_instance_t
             //atsc3_sls_metadata_fragments_t?
             
-            atsc3_sls_alc_flow_free_v(&lls_sls_alc_monitor->atsc3_sls_alc_all_mediainfo_flow_v);
+            atsc3_sls_alc_flow_free_v(&lls_sls_alc_monitor->atsc3_sls_alc_all_s_tsid_flow_v);
 
 
             free(lls_sls_alc_monitor);
