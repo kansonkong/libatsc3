@@ -842,18 +842,8 @@ block_t* block_Read_from_filename(char* file_name) {
 	return payload;
 }
 
-
 void freesafe(void* tofree) {
 	if(tofree) {
-		free(tofree);
-	}
-}
-
-
-
-void freesafe_jj(void* tofree) {
-	if(tofree) {
-		printf("freesafe with: %p\n", tofree);
 		free(tofree);
 	}
 }
@@ -973,4 +963,16 @@ int mkpath(char *dir, mode_t mode)
     free(my_dir_string);
 
     return ret;
+}
+
+
+FILE* atsc3_object_open(char* file_name) {
+	if( access( file_name, F_OK ) != -1 ) {
+		FILE* f = fopen(file_name, "r+");
+		if(f) {
+			return f;
+		}
+	}
+
+	return NULL;
 }

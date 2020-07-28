@@ -31,11 +31,37 @@ void atsc3_route_object_free(atsc3_route_object_t** atsc3_route_object_p) {
 		if(atsc3_route_object) {
 			atsc3_route_object_dealloc_atsc3_route_object_lct_packet_received(atsc3_route_object);
 
+			freeclean((void**)&atsc3_route_object->temporary_object_recovery_filename);
+			freeclean((void**)&atsc3_route_object->final_object_recovery_filename);
+
 			free(atsc3_route_object);
 			atsc3_route_object = NULL;
 		}
 		*atsc3_route_object_p = NULL;
 	}
+}
+
+
+void atsc3_route_object_set_temporary_object_recovery_filename_if_null(atsc3_route_object_t* atsc3_route_object, char* temporary_filename) {
+	if(!atsc3_route_object->temporary_object_recovery_filename) {
+		atsc3_route_object->temporary_object_recovery_filename = strdup(temporary_filename);
+	}
+}
+
+void atsc3_route_object_clear_temporary_object_recovery_filename(atsc3_route_object_t* atsc3_route_object) {
+	freeclean((void**)&atsc3_route_object->temporary_object_recovery_filename);
+}
+
+void atsc3_route_object_set_final_object_recovery_filename(atsc3_route_object_t* atsc3_route_object, char* final_object_recovery_filename) {
+	freeclean((void**)&atsc3_route_object->final_object_recovery_filename);
+	atsc3_route_object->final_object_recovery_filename = strdup(final_object_recovery_filename);
+}
+
+void atsc3_route_object_calculate_expected_route_object_lct_packet_count(atsc3_route_object_t* atsc3_route_object, atsc3_route_object_lct_packet_received_t* atsc3_route_object_lct_packet_received) {
+	atsc3_route_object->expected_route_object_lct_packet_len_for_count = atsc3_route_object_lct_packet_received->packet_len;
+
+	uint32_t route_object_lct_packet_received_target_count = (atsc3_route_object->object_length / (atsc3_route_object_lct_packet_received->packet_len +1) ) + 1;
+	atsc3_route_object->expected_route_object_lct_packet_count = route_object_lct_packet_received_target_count;
 }
 
 
@@ -69,10 +95,20 @@ int atsc3_route_object_lct_packet_received_generic_sbn_start_offset_comparator(c
 
 //jjustman-2020-07-28 - first try, check to make sure we have all of our lct_packet's received and the most recent packet would be
 //						a fully recovered object...
-//	TODO: 		    qsort((void**)atsc3_global_statistics->packet_id_vector, atsc3_global_statistics->packet_id_n, sizeof(packet_id_mmt_stats_t**), comparator_packet_id_mmt_stats_t);
 
 bool atsc3_route_object_is_complete(atsc3_route_object_t* atsc3_route_object) {
 	bool has_missing_source_blocks = false;
+
+	//short-circuit if we don't have at least 7/8 of route_object_lct_packets from estimate
+	uint32_t expected_route_object_lct_packet_count_threshold = (atsc3_route_object->expected_route_object_lct_packet_count * (7/8));
+
+	//#ifdef __ATSC3_ROUTE_OBJECT_PENDANTIC__
+	_ATSC3_ROUTE_OBJECT_DEBUG("atsc3_route_object_is_complete: pre-flight check with atsc3_route_object->atsc3_route_object_lct_packet_received_v.count: %d,  expected_route_object_lct_packet_count_threshold: %d", atsc3_route_object->atsc3_route_object_lct_packet_received_v.count, expected_route_object_lct_packet_count_threshold);
+	//#endif
+	if(atsc3_route_object->atsc3_route_object_lct_packet_received_v.count < expected_route_object_lct_packet_count_threshold) {
+		return false;
+	}
+
 	atsc3_route_object_lct_packet_received_t* atsc3_route_object_lct_packet_received = NULL;
 
 	uint32_t last_object_position = 0;
@@ -169,42 +205,82 @@ bool atsc3_route_object_is_complete(atsc3_route_object_t* atsc3_route_object) {
 
 
 void atsc3_route_object_reset_and_free_atsc3_route_object_lct_packet_received(atsc3_route_object_t* atsc3_route_object) {
+
+#ifdef __ATSC3_ROUTE_OBJECT_PENDANTIC__
 	_ATSC3_ROUTE_OBJECT_WARN("atsc3_route_object_reset_and_free_atsc3_route_object_lct_packet_received: before: atsc3_route_object: %p, tsi: %d, toi: %d, atsc3_route_object_lct_packet_received_v.count: %d",
 			atsc3_route_object,
 			atsc3_route_object->tsi,
 			atsc3_route_object->toi,
 			atsc3_route_object->atsc3_route_object_lct_packet_received_v.count);
-
+#endif
 
 	atsc3_route_object->most_recent_atsc3_route_object_lct_packet_received = NULL;
 	atsc3_route_object_free_atsc3_route_object_lct_packet_received(atsc3_route_object);
+	atsc3_route_object->expected_route_object_lct_packet_count = 0;
+	atsc3_route_object->expected_route_object_lct_packet_len_for_count = 0;
+
+	//jjustman-2020-07-28 - TODO: unlink
+
+	freeclean((void**)&atsc3_route_object->temporary_object_recovery_filename);
+	freeclean((void**)&atsc3_route_object->final_object_recovery_filename);
+
+
+#ifdef __ATSC3_ROUTE_OBJECT_PENDANTIC__
+
 	_ATSC3_ROUTE_OBJECT_WARN("atsc3_route_object_reset_and_free_atsc3_route_object_lct_packet_received: after: atsc3_route_object: %p, tsi: %d, toi: %d, atsc3_route_object_lct_packet_received_v.count: %d",
 				atsc3_route_object,
 				atsc3_route_object->tsi,
 				atsc3_route_object->toi,
 				atsc3_route_object->atsc3_route_object_lct_packet_received_v.count);
+#endif
 
 }
 
-//deprecated
 
 
-#define ATSC3_ROUTE_OBJECT_RECEVIED_SOURCE_BYTES_INDEX_LENGTH(toi_length) ((toi_length / 256) + 1)
+void atsc3_route_object_reset_and_free_and_unlink_recovery_file_atsc3_route_object_lct_packet_received(atsc3_route_object_t* atsc3_route_object) {
 
-void atsc3_route_object_set_toi_and_length(atsc3_route_object_t* atsc3_route_object, uint32_t toi, uint32_t toi_length) {
-	atsc3_route_object->toi = toi;
-	atsc3_route_object->object_length = toi_length;
+#ifdef __ATSC3_ROUTE_OBJECT_PENDANTIC__
+	_ATSC3_ROUTE_OBJECT_WARN("atsc3_route_object_reset_and_free_atsc3_route_object_lct_packet_received: before: atsc3_route_object: %p, tsi: %d, toi: %d, atsc3_route_object_lct_packet_received_v.count: %d",
+			atsc3_route_object,
+			atsc3_route_object->tsi,
+			atsc3_route_object->toi,
+			atsc3_route_object->atsc3_route_object_lct_packet_received_v.count);
+#endif
 
+	atsc3_route_object->most_recent_atsc3_route_object_lct_packet_received = NULL;
+	atsc3_route_object_free_atsc3_route_object_lct_packet_received(atsc3_route_object);
+	atsc3_route_object->expected_route_object_lct_packet_count = 0;
+	atsc3_route_object->expected_route_object_lct_packet_len_for_count = 0;
+
+	//jjustman-2020-07-28: unlink temporary_object_recovery_filename
+	if(atsc3_route_object->temporary_object_recovery_filename) {
+		FILE* f = atsc3_object_open(atsc3_route_object->temporary_object_recovery_filename);
+		if(f) {
+			fclose(f);
+	        remove(atsc3_route_object->temporary_object_recovery_filename);
+		}
+		freeclean((void**)&atsc3_route_object->temporary_object_recovery_filename);
+	}
+
+	//jjustman-2020-07-28: unlink final_object_recovery_filename
+	if(atsc3_route_object->final_object_recovery_filename) {
+		FILE* f = atsc3_object_open(atsc3_route_object->final_object_recovery_filename);
+		if(f) {
+			fclose(f);
+			remove(atsc3_route_object->final_object_recovery_filename);
+		}
+		freeclean((void**)&atsc3_route_object->final_object_recovery_filename);
+	}
+
+#ifdef __ATSC3_ROUTE_OBJECT_PENDANTIC__
+
+	_ATSC3_ROUTE_OBJECT_WARN("atsc3_route_object_reset_and_free_atsc3_route_object_lct_packet_received: after: atsc3_route_object: %p, tsi: %d, toi: %d, atsc3_route_object_lct_packet_received_v.count: %d",
+				atsc3_route_object,
+				atsc3_route_object->tsi,
+				atsc3_route_object->toi,
+				atsc3_route_object->atsc3_route_object_lct_packet_received_v.count);
+#endif
 
 }
-void atsc3_route_object_mark_received_byte_range(atsc3_route_object_t* atsc3_route_object,uint32_t source_byte_range_start, uint32_t source_byte_range_end) {
-	//make sure we're in the bounding range
 
-}
-
-bool atsc3_route_object_is_recovered(atsc3_route_object_t* atsc3_route_object) {
-	bool has_missing_source_block_bytes = false;
-
-
-	return has_missing_source_block_bytes;
-}

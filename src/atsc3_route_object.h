@@ -90,10 +90,16 @@ typedef struct atsc3_sls_alc_flow atsc3_sls_alc_flow_t;
 typedef struct atsc3_route_object {
 	atsc3_sls_alc_flow_t*	atsc3_sls_alc_flow;
 
-	uint32_t				tsi;					//keep reference for our tsi / toi just to be sure...
+	uint32_t				tsi;											//keep reference for our tsi / toi just to be sure...
 	uint32_t				toi;
 
-	uint32_t 				object_length;			//persisted object_length (if known)
+	char*					temporary_object_recovery_filename; 			//temporary reference so we can remove from on-disk if we end up being marked as 'given up'
+	char*					final_object_recovery_filename;					//filename of the completed recovery route object for eventual reaping...
+
+	uint32_t 				object_length;									//persisted object_length (if known)
+
+	uint32_t				expected_route_object_lct_packet_count; 		//guesstimate of ( object_length / packet_len ) +1
+	uint32_t				expected_route_object_lct_packet_len_for_count; //pin and recompute if packet_len > expected_route_object_lct_packet_len_for_count
 
 	uint32_t				expiration;
 	bool					has_given_up;
@@ -107,16 +113,18 @@ typedef struct atsc3_route_object {
 ATSC3_VECTOR_BUILDER_METHODS_INTERFACE(atsc3_route_object, atsc3_route_object_lct_packet_received);
 ATSC3_VECTOR_BUILDER_METHODS_PARENT_INTERFACE_FREE(atsc3_route_object);
 
+void atsc3_route_object_set_temporary_object_recovery_filename_if_null(atsc3_route_object_t* atsc3_route_object, char* temporary_filename);
+void atsc3_route_object_clear_temporary_object_recovery_filename(atsc3_route_object_t* atsc3_route_object);
+void atsc3_route_object_set_final_object_recovery_filename(atsc3_route_object_t* atsc3_route_object, char* final_object_recovery_filename);
+
+void atsc3_route_object_calculate_expected_route_object_lct_packet_count(atsc3_route_object_t* atsc3_route_object, atsc3_route_object_lct_packet_received_t* atsc3_route_object_lct_packet_received);
+
 bool atsc3_route_object_is_complete(atsc3_route_object_t* atsc3_route_object);
 
 void atsc3_route_object_reset_and_free_atsc3_route_object_lct_packet_received(atsc3_route_object_t* atsc3_route_object);
 
-///deprecated
-
-void atsc3_route_object_set_toi_and_length(atsc3_route_object_t* atsc3_route_object, uint32_t toi, uint32_t toi_length);
-void atsc3_route_object_mark_received_byte_range(atsc3_route_object_t* atsc3_route_object, uint32_t source_byte_range_start, uint32_t source_byte_range_end);
-bool atsc3_route_object_is_recovered(atsc3_route_object_t* atsc3_route_object);
-
+//used in atsc3_lls_sls_alc_monitor_check_all_s_tsid_flows_has_given_up_route_objects, unlink abandonded / stale objects from disk after N seconds
+void atsc3_route_object_reset_and_free_and_unlink_recovery_file_atsc3_route_object_lct_packet_received(atsc3_route_object_t* atsc3_route_object);
 
 #define _ATSC3_ROUTE_OBJECT_ERROR(...)   __LIBATSC3_TIMESTAMP_ERROR(__VA_ARGS__);
 #define _ATSC3_ROUTE_OBJECT_WARN(...)    __LIBATSC3_TIMESTAMP_WARN(__VA_ARGS__);;
