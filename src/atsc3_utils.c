@@ -849,6 +849,15 @@ void freesafe(void* tofree) {
 	}
 }
 
+
+
+void freesafe_jj(void* tofree) {
+	if(tofree) {
+		printf("freesafe with: %p\n", tofree);
+		free(tofree);
+	}
+}
+
 void freeclean(void** tofree) {
 	if(*tofree) {
 		free(*tofree);
