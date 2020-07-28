@@ -8,8 +8,8 @@
 #include "atsc3_route_dash_utils.h"
 
 int _ROUTE_DASH_UTILS_INFO_ENABLED = 1;
-int _ROUTE_DASH_UTILS_DEBUG_ENABLED = 1;
-int _ROUTE_DASH_UTILS_TRACE_ENABLED = 1;
+int _ROUTE_DASH_UTILS_DEBUG_ENABLED = 0;
+int _ROUTE_DASH_UTILS_TRACE_ENABLED = 0;
 
 
 ATSC3_VECTOR_BUILDER_METHODS_PARENT_IMPLEMENTATION(atsc3_route_dash_matching_s_tsid_representation_media_info_alc_flow_match_vector);
