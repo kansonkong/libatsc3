@@ -657,6 +657,12 @@ int alc_packet_write_fragment(FILE* f, char* file_name, uint32_t offset, atsc3_a
  * Notes:
  *
  *      TOI size:     uint32_t to_allocate_size = alc_packet->transfer_len;
+ *
+ *
+ *      return values:
+ *      	-1 if unable to open file pointer to object
+ *      	-2 if lls_sls_alc_monitor or !lls_sls_alc_monitor->lls_sls_monitor_output_buffer_mode.file_dump_enabled
+ *
  */
 
 int atsc3_alc_packet_persist_to_toi_resource_process_sls_mbms_and_emit_callback(udp_flow_t *udp_flow, atsc3_alc_packet_t *alc_packet, lls_sls_alc_monitor_t *lls_sls_alc_monitor, atsc3_route_object_t* atsc3_route_object) {
@@ -664,7 +670,7 @@ int atsc3_alc_packet_persist_to_toi_resource_process_sls_mbms_and_emit_callback(
 	int bytesWritten = 0;
 
     if(lls_sls_alc_monitor && !lls_sls_alc_monitor->lls_sls_monitor_output_buffer_mode.file_dump_enabled) {
-        return -1;
+        return -2;
     }
 
     char* temporary_filename = alc_packet_dump_to_object_get_temporary_recovering_filename(udp_flow, alc_packet);
@@ -696,7 +702,8 @@ int atsc3_alc_packet_persist_to_toi_resource_process_sls_mbms_and_emit_callback(
     	}
         if(!f) {
             __ALC_UTILS_WARN("atsc3_alc_packet_persist_to_toi_resource_process_sls_mbms_and_emit_callback, unable to open temporary_filename: %s", temporary_filename);
-            return -2;
+            bytesWritten = -1;
+            goto cleanup;
         }
         alc_packet_write_fragment(f, temporary_filename, alc_packet->esi, alc_packet);
         __ALC_UTILS_IOTRACE("raptor_fec: done writing out fragment for %s", temporary_filename);
@@ -724,7 +731,8 @@ int atsc3_alc_packet_persist_to_toi_resource_process_sls_mbms_and_emit_callback(
 		}
         if(!f) {
             __ALC_UTILS_WARN("atsc3_alc_packet_persist_to_toi_resource_process_sls_mbms_and_emit_callback, unable to open file: %s", temporary_filename);
-            return -2;
+            bytesWritten = -1;
+            goto cleanup;
         }
         
         alc_packet_write_fragment(f, temporary_filename, alc_packet->start_offset, alc_packet);
@@ -744,8 +752,7 @@ int atsc3_alc_packet_persist_to_toi_resource_process_sls_mbms_and_emit_callback(
     //  SB_LB_E_FEC_ENC_ID                             : transfer_len >0 && transfer_len == alc_packet->alc_len + alc_packet->esi
     //  all others (e.g. alc_packet->use_start_offset) : transfer_len >0 && transfer_len == alc_packet->alc_len + alc_packet->start_offset
 
-	//jjustman-2020-07-28 - check with atsc3_route_object if we are 'complete'
-    //if(alc_packet->close_object_flag) {
+	//jjustman-2020-07-28 - check with atsc3_route_object if we are 'complete' - removed old logic for ...if(alc_packet->close_object_flag) {
 
     //jjustman-2020-07-28 - TODO: don't redispatch repeadedly for carousels...
     if(atsc3_route_object_is_complete(atsc3_route_object)) {
@@ -757,7 +764,7 @@ int atsc3_alc_packet_persist_to_toi_resource_process_sls_mbms_and_emit_callback(
             rename(temporary_filename, final_mbms_toi_filename);
 
             //jjustman-2020-07-28 - purge atsc3_route_object->atsc3_route_object_lct_packet_received_v as we are invalidated at this point
-            atsc3_route_object_clear_and_reset_atsc3_route_object_lct_packet_received(atsc3_route_object);
+            atsc3_route_object_reset_and_free_atsc3_route_object_lct_packet_received(atsc3_route_object);
 
             __ALC_UTILS_IOTRACE("ALC: service_id: %u, ------ TSI of 0, TOI: %d, transfer_len: %lld, final object name: %s, calling atsc3_route_sls_process_from_alc_packet_and_file",
             		lls_sls_alc_monitor->atsc3_lls_slt_service->service_id,
@@ -766,6 +773,7 @@ int atsc3_alc_packet_persist_to_toi_resource_process_sls_mbms_and_emit_callback(
             		final_mbms_toi_filename);
 
             atsc3_route_sls_process_from_alc_packet_and_file(udp_flow, alc_packet, lls_sls_alc_monitor);
+            free(final_mbms_toi_filename);
 
         } else {
             s_tsid_content_location = alc_packet_dump_to_object_get_s_tsid_filename(udp_flow, alc_packet, lls_sls_alc_monitor);
@@ -798,8 +806,6 @@ int atsc3_alc_packet_persist_to_toi_resource_process_sls_mbms_and_emit_callback(
                 rename(temporary_filename, new_file_name);
                 __ALC_UTILS_IOTRACE("tsi: %u, toi: %u, moving from to temporary_filename: %s to: %s, is complete: %d", alc_packet->def_lct_hdr->tsi, alc_packet->def_lct_hdr->toi,  temporary_filename, new_file_name, alc_packet->close_object_flag);
 
-                //jjustman-2020-07-28 - purge our lct_packet_received list as we are moved
-                atsc3_route_object_clear_and_reset_atsc3_route_object_lct_packet_received(atsc3_route_object);
 
                 atsc3_sls_alc_flow_t* matching_sls_alc_flow = NULL;
 
@@ -859,6 +865,16 @@ int atsc3_alc_packet_persist_to_toi_resource_process_sls_mbms_and_emit_callback(
 					lls_sls_alc_monitor->atsc3_lls_sls_alc_on_object_close_flag_s_tsid_content_location(alc_packet->def_lct_hdr->tsi, alc_packet->def_lct_hdr->toi, s_tsid_content_location);
 
                 }
+
+                //
+                //jjustman-2020-07-28 - purge our lct_packet_received list as we are moved, and remove atsc3_route_object from flow
+                atsc3_route_object_reset_and_free_atsc3_route_object_lct_packet_received(atsc3_route_object);
+                if(matching_sls_alc_flow) {
+                    atsc3_sls_alc_flow_remove_atsc3_route_object(matching_sls_alc_flow, atsc3_route_object);
+                    if(!matching_sls_alc_flow->atsc3_route_object_v.count) {
+                    	//todo: jjustman-2020-07-28 candiate to reap this flow?
+                    }
+                }
             }
         }
 	} else {
@@ -868,12 +884,15 @@ int atsc3_alc_packet_persist_to_toi_resource_process_sls_mbms_and_emit_callback(
 	__ALC_UTILS_IOTRACE("checking tsi: %u, toi: %u, close_object_flag: %d", alc_packet->def_lct_hdr->tsi, alc_packet->def_lct_hdr->toi, alc_packet->close_object_flag);
 
 cleanup:
+
 	if(temporary_filename) {
 		free(temporary_filename);
+		temporary_filename = NULL;
 	}
 
 	if(s_tsid_content_location) {
 		free(s_tsid_content_location);
+		s_tsid_content_location = NULL;
 	}
 
 	return bytesWritten;

@@ -400,7 +400,7 @@ void mmtp_mfu_process_from_payload_with_context(udp_packet_t *udp_packet,
             //notify context of the sequence number channge
             atsc3_mmt_mfu_context->atsc3_mmt_mpu_on_sequence_number_change(mmtp_mpu_packet->mmtp_packet_id, matching_lls_sls_mmt_session->last_udp_flow_packet_id_mpu_sequence_tuple_video->mpu_sequence_number, mmtp_mpu_packet->mpu_sequence_number);
             //remove last mpu_sequence_number reference from our packets conntainenr
-            mmtp_packet_id_packets_container_remove_mpu_sequence_number_mmtp_mpu_packet_collection(mmtp_packet_id_packets_container, last_mpu_sequence_number_mmtp_mpu_packet_collection);
+            mmtp_packet_id_packets_container_remove_mpu_sequence_number_mmtp_mpu_packet_collection_non_vector_builder(mmtp_packet_id_packets_container, last_mpu_sequence_number_mmtp_mpu_packet_collection);
         }
         udp_flow_packet_id_mpu_sequence_tuple_free_and_clone(&matching_lls_sls_mmt_session->last_udp_flow_packet_id_mpu_sequence_tuple_video, last_flow_reference);
 
@@ -409,7 +409,7 @@ void mmtp_mfu_process_from_payload_with_context(udp_packet_t *udp_packet,
             mpu_sequence_number_mmtp_mpu_packet_collection_t* last_mpu_sequence_number_mmtp_mpu_packet_collection = mmtp_packet_id_packets_container_find_mpu_sequence_number_mmtp_mpu_packet_collection_from_mpu_sequence_number(mmtp_packet_id_packets_container, matching_lls_sls_mmt_session->last_udp_flow_packet_id_mpu_sequence_tuple_audio->mpu_sequence_number);
             mmtp_mfu_rebuild_from_packet_id_mpu_sequence_number(atsc3_mmt_mfu_context, mmtp_packet_id_packets_container, matching_lls_sls_mmt_session->last_udp_flow_packet_id_mpu_sequence_tuple_audio->mpu_sequence_number, 0, true);
             atsc3_mmt_mfu_context->atsc3_mmt_mpu_on_sequence_number_change(mmtp_mpu_packet->mmtp_packet_id, matching_lls_sls_mmt_session->last_udp_flow_packet_id_mpu_sequence_tuple_audio->mpu_sequence_number, mmtp_mpu_packet->mpu_sequence_number);
-            mmtp_packet_id_packets_container_remove_mpu_sequence_number_mmtp_mpu_packet_collection(mmtp_packet_id_packets_container, last_mpu_sequence_number_mmtp_mpu_packet_collection);
+            mmtp_packet_id_packets_container_remove_mpu_sequence_number_mmtp_mpu_packet_collection_non_vector_builder(mmtp_packet_id_packets_container, last_mpu_sequence_number_mmtp_mpu_packet_collection);
         }
         udp_flow_packet_id_mpu_sequence_tuple_free_and_clone(&matching_lls_sls_mmt_session->last_udp_flow_packet_id_mpu_sequence_tuple_audio, last_flow_reference);
     } else if(matching_lls_sls_mmt_monitor->stpp_packet_id == mmtp_mpu_packet->mmtp_packet_id) {
@@ -417,7 +417,7 @@ void mmtp_mfu_process_from_payload_with_context(udp_packet_t *udp_packet,
             mpu_sequence_number_mmtp_mpu_packet_collection_t* last_mpu_sequence_number_mmtp_mpu_packet_collection = mmtp_packet_id_packets_container_find_mpu_sequence_number_mmtp_mpu_packet_collection_from_mpu_sequence_number(mmtp_packet_id_packets_container, matching_lls_sls_mmt_session->last_udp_flow_packet_id_mpu_sequence_tuple_stpp->mpu_sequence_number);
             mmtp_mfu_rebuild_from_packet_id_mpu_sequence_number(atsc3_mmt_mfu_context, mmtp_packet_id_packets_container, matching_lls_sls_mmt_session->last_udp_flow_packet_id_mpu_sequence_tuple_stpp->mpu_sequence_number, 0, true);
             atsc3_mmt_mfu_context->atsc3_mmt_mpu_on_sequence_number_change(mmtp_mpu_packet->mmtp_packet_id, matching_lls_sls_mmt_session->last_udp_flow_packet_id_mpu_sequence_tuple_stpp->mpu_sequence_number, mmtp_mpu_packet->mpu_sequence_number);
-            mmtp_packet_id_packets_container_remove_mpu_sequence_number_mmtp_mpu_packet_collection(mmtp_packet_id_packets_container, last_mpu_sequence_number_mmtp_mpu_packet_collection);
+            mmtp_packet_id_packets_container_remove_mpu_sequence_number_mmtp_mpu_packet_collection_non_vector_builder(mmtp_packet_id_packets_container, last_mpu_sequence_number_mmtp_mpu_packet_collection);
         }
         udp_flow_packet_id_mpu_sequence_tuple_free_and_clone(&matching_lls_sls_mmt_session->last_udp_flow_packet_id_mpu_sequence_tuple_stpp, last_flow_reference);
     }

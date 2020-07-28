@@ -109,7 +109,7 @@ ATSC3_VECTOR_BUILDER_METHODS_PARENT_INTERFACE_FREE(atsc3_route_object);
 
 bool atsc3_route_object_is_complete(atsc3_route_object_t* atsc3_route_object);
 
-void atsc3_route_object_clear_and_reset_atsc3_route_object_lct_packet_received(atsc3_route_object_t* atsc3_route_object);
+void atsc3_route_object_reset_and_free_atsc3_route_object_lct_packet_received(atsc3_route_object_t* atsc3_route_object);
 
 ///deprecated
 
