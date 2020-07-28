@@ -47,7 +47,7 @@ atsc3_route_object_t* atsc3_sls_alc_flow_route_object_add_unique_lct_packet_rece
 	//find or create our alc_flow
 	atsc3_sls_alc_flow_t* atsc3_sls_alc_flow = atsc3_sls_alc_flow_find_or_create_entry_from_alc_packet(atsc3_sls_alc_flow_vector, atsc3_alc_packet);
 
-	_ATSC3_SLS_ALC_FLOW_DEBUG("atsc3_sls_alc_flow_route_object_add_unique_lct_packet_received before find_or_create_route_object, atsc3_sls_alc_flow_vector.count: %d, tsi: %d, toi: %d, atsc3_sls_alc_flow: %p, atsc3_route_object_v: %d ",
+	_ATSC3_SLS_ALC_FLOW_TRACE("atsc3_sls_alc_flow_route_object_add_unique_lct_packet_received before find_or_create_route_object, atsc3_sls_alc_flow_vector.count: %d, tsi: %d, toi: %d, atsc3_sls_alc_flow: %p, atsc3_route_object_v: %d ",
 			atsc3_sls_alc_flow_vector->count,
 			atsc3_alc_packet->def_lct_hdr->tsi, atsc3_alc_packet->def_lct_hdr->toi,
 			atsc3_sls_alc_flow,
@@ -56,10 +56,10 @@ atsc3_route_object_t* atsc3_sls_alc_flow_route_object_add_unique_lct_packet_rece
 	//find or create our route_object
 	atsc3_route_object = atsc3_sls_alc_flow_find_or_create_route_object_from_alc_packet(atsc3_sls_alc_flow, atsc3_alc_packet);
 
-	_ATSC3_SLS_ALC_FLOW_DEBUG("atsc3_sls_alc_flow_route_object_add_unique_lct_packet_received after find_or_create_route_object, obj: %p, tsi: %d, toi: %d, atsc3_sls_alc_flow: %p, count: %d ",
+	_ATSC3_SLS_ALC_FLOW_TRACE("atsc3_sls_alc_flow_route_object_add_unique_lct_packet_received after find_or_create_route_object, obj: %p, tsi: %d, toi: %d, atsc3_sls_alc_flow: %p, count: %d ",
 			atsc3_route_object,
-				atsc3_alc_packet->def_lct_hdr->tsi, atsc3_alc_packet->def_lct_hdr->toi,
-				atsc3_sls_alc_flow, atsc3_sls_alc_flow->atsc3_route_object_v.count);
+			atsc3_alc_packet->def_lct_hdr->tsi, atsc3_alc_packet->def_lct_hdr->toi,
+			atsc3_sls_alc_flow, atsc3_sls_alc_flow->atsc3_route_object_v.count);
 
 	atsc3_route_object_add_or_update_lct_packet_received(atsc3_route_object, atsc3_alc_packet);
 
@@ -299,6 +299,7 @@ atsc3_route_object_lct_packet_received_t* atsc3_route_object_find_lct_packet_rec
 
 void atsc3_route_object_lct_packet_received_set_attributes_from_alc_packet(atsc3_route_object_lct_packet_received_t* atsc3_route_object_lct_packet_received, atsc3_alc_packet_t* atsc3_alc_packet) {
 	atsc3_route_object_lct_packet_received->first_received_timestamp = gtl();
+	atsc3_route_object_lct_packet_received->most_recent_received_timestamp = atsc3_route_object_lct_packet_received->first_received_timestamp;
 	atsc3_route_object_lct_packet_received->codepoint = atsc3_alc_packet->def_lct_hdr->codepoint;
 
 	//jjustman-2020-07-28 - todo - fixme

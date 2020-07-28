@@ -12,6 +12,10 @@
 extern "C" {
 #endif
 
+int _HELD_PARSER_INFO_ENABLED = 0;
+int _HELD_PARSER_DEBUG_ENABLED = 0;
+int _HELD_PARSER_TRACE_ENABLED = 0;
+
 ATSC3_VECTOR_BUILDER_METHODS_PARENT_IMPLEMENTATION(atsc3_sls_held_fragment);
 
 ATSC3_VECTOR_BUILDER_METHODS_IMPLEMENTATION(atsc3_sls_held_fragment, atsc3_sls_html_entry_package);

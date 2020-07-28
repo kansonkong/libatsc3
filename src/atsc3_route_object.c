@@ -16,8 +16,8 @@ atsc3_route_object.c    : 166:DEBUG:1595953002.6642:atsc3_route_object_reset_and
 
 #include "atsc3_route_object.h"
 
-int _ROUTE_OBJECT_INFO_ENABLED = 0;
-int _ROUTE_OBJECT_DEBUG_ENABLED = 1;
+int _ROUTE_OBJECT_INFO_ENABLED = 1;
+int _ROUTE_OBJECT_DEBUG_ENABLED = 0;
 int _ROUTE_OBJECT_TRACE_ENABLED = 0;
 
 ATSC3_VECTOR_BUILDER_METHODS_IMPLEMENTATION(atsc3_route_object, atsc3_route_object_lct_packet_received);
@@ -131,7 +131,7 @@ bool atsc3_route_object_is_complete(atsc3_route_object_t* atsc3_route_object) {
 		} else if(atsc3_route_object_lct_packet_received->use_start_offset) {
 			if(last_object_position != atsc3_route_object_lct_packet_received->start_offset) {
 				has_missing_source_blocks = true;
-				_ATSC3_ROUTE_OBJECT_DEBUG("atsc3_route_object_is_complete: has_missing_source_blocks - using start_offset - idx: %d, tsi: %d, toi: %d, last_object_position: %d, start_offset: %d",
+				_ATSC3_ROUTE_OBJECT_TRACE("atsc3_route_object_is_complete: has_missing_source_blocks - using start_offset - idx: %d, tsi: %d, toi: %d, last_object_position: %d, start_offset: %d",
 										i, atsc3_route_object->tsi, atsc3_route_object->toi, last_object_position, atsc3_route_object_lct_packet_received->start_offset);
 			} else {
 #ifdef __ATSC3_ROUTE_OBJECT_PENDANTIC__
