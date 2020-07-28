@@ -19,6 +19,7 @@
 #define ATSC3_LLS_TYPES_H_
 
 #include "atsc3_logging_externs.h"
+#include "atsc3_utils.h"
 #include "xml.h"
 
 #include "atsc3_aeat_types.h"
@@ -813,6 +814,7 @@ typedef struct lls_sls_alc_monitor {
 	//this should be in the sls_monitor...
 	atsc3_sls_on_held_trigger_received_f						atsc3_sls_on_held_trigger_received_callback;
 
+	uint64_t								lct_packets_received_count;
 
 
     //jjustman-2020-07-01 #WI - todo: dispatch HELD block_t* payload to application callback
@@ -932,7 +934,8 @@ lls_slt_service_id_group_id_cache_t* lls_slt_monitor_find_or_create_lls_slt_serv
 atsc3_lls_slt_service_t* lls_slt_monitor_add_or_update_lls_slt_service_id_group_id_cache_entry(lls_slt_monitor_t* lls_slt_monitor, uint16_t lls_group_id, atsc3_lls_slt_service_t* atsc3_lls_slt_service);
 atsc3_lls_slt_service_t* lls_slt_monitor_find_lls_slt_service_id_group_id_cache_entry(lls_slt_monitor_t* lls_slt_monitor, uint16_t service_id);
 
-
+void atsc3_lls_sls_alc_monitor_increment_lct_packet_received_count(lls_sls_alc_monitor_t* lls_sls_alc_monitor);
+void atsc3_lls_sls_alc_monitor_check_all_s_tsid_flows_has_given_up_route_objects(lls_sls_alc_monitor_t* lls_sls_alc_monitor);
 
 
 #define _ATSC3_LLS_TYPES_ERROR(...)   __LIBATSC3_TIMESTAMP_ERROR(__VA_ARGS__);

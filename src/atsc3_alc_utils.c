@@ -822,7 +822,7 @@ int atsc3_alc_packet_persist_to_toi_resource_process_sls_mbms_and_emit_callback(
                 if(atsc3_route_s_tsid_RS_LS) {
                 	atsc3_fdt_file_t* atsc3_fdt_file = atsc3_alc_RS_LS_get_matching_toi_file_instance(atsc3_route_s_tsid_RS_LS, alc_packet->def_lct_hdr->toi);
                 	if(atsc3_fdt_file) {
-                        __ALC_UTILS_INFO("object closed: tsi: %u, toi: %u, filename: %s, LCT: codepoint: %d, S-TSID: codepoint: %d, formatId: %d, frag: %d, order: %d",
+                        __ALC_UTILS_INFO("atsc3_fdt_file: object closed: tsi: %u, toi: %u, filename: %s, LCT: codepoint: %d, S-TSID: codepoint: %d, formatId: %d, frag: %d, order: %d, lct packets: %d",
                         		alc_packet->def_lct_hdr->tsi,
 								alc_packet->def_lct_hdr->toi,
 								new_file_name,
@@ -830,7 +830,8 @@ int atsc3_alc_packet_persist_to_toi_resource_process_sls_mbms_and_emit_callback(
 								atsc3_route_s_tsid_RS_LS->atsc3_route_s_tsid_RS_LS_SrcFlow->atsc3_route_s_tsid_RS_LS_SrcFlow_Payload->codepoint,
 								atsc3_route_s_tsid_RS_LS->atsc3_route_s_tsid_RS_LS_SrcFlow->atsc3_route_s_tsid_RS_LS_SrcFlow_Payload->format_id,
 								atsc3_route_s_tsid_RS_LS->atsc3_route_s_tsid_RS_LS_SrcFlow->atsc3_route_s_tsid_RS_LS_SrcFlow_Payload->frag,
-								atsc3_route_s_tsid_RS_LS->atsc3_route_s_tsid_RS_LS_SrcFlow->atsc3_route_s_tsid_RS_LS_SrcFlow_Payload->order);
+								atsc3_route_s_tsid_RS_LS->atsc3_route_s_tsid_RS_LS_SrcFlow->atsc3_route_s_tsid_RS_LS_SrcFlow_Payload->order,
+								atsc3_route_object->atsc3_route_object_lct_packet_received_v.count);
 
                         //perform package extraction for codepoint 3 || 4 or
                         int lct_codepoint_package_matching = (alc_packet->def_lct_hdr->codepoint == atsc3_route_s_tsid_RS_LS->atsc3_route_s_tsid_RS_LS_SrcFlow->atsc3_route_s_tsid_RS_LS_SrcFlow_Payload->codepoint) &&
@@ -857,6 +858,17 @@ int atsc3_alc_packet_persist_to_toi_resource_process_sls_mbms_and_emit_callback(
 							atsc3_route_package_extracted_envelope_metadata_and_payload_free(&atsc3_route_package_extracted_envelope_metadata_and_payload);
 
                         }
+                	} else {
+                		__ALC_UTILS_INFO("route template: object closed: tsi: %u, toi: %u, filename: %s, LCT: codepoint: %d, S-TSID: codepoint: %d, formatId: %d, frag: %d, order: %d, lct packets: %d",
+							alc_packet->def_lct_hdr->tsi,
+							alc_packet->def_lct_hdr->toi,
+							new_file_name,
+							alc_packet->def_lct_hdr->codepoint,
+							atsc3_route_s_tsid_RS_LS->atsc3_route_s_tsid_RS_LS_SrcFlow->atsc3_route_s_tsid_RS_LS_SrcFlow_Payload->codepoint,
+							atsc3_route_s_tsid_RS_LS->atsc3_route_s_tsid_RS_LS_SrcFlow->atsc3_route_s_tsid_RS_LS_SrcFlow_Payload->format_id,
+							atsc3_route_s_tsid_RS_LS->atsc3_route_s_tsid_RS_LS_SrcFlow->atsc3_route_s_tsid_RS_LS_SrcFlow_Payload->frag,
+							atsc3_route_s_tsid_RS_LS->atsc3_route_s_tsid_RS_LS_SrcFlow->atsc3_route_s_tsid_RS_LS_SrcFlow_Payload->order,
+							atsc3_route_object->atsc3_route_object_lct_packet_received_v.count);
                 	}
                 }
 
@@ -866,7 +878,7 @@ int atsc3_alc_packet_persist_to_toi_resource_process_sls_mbms_and_emit_callback(
 
                 }
 
-                //
+
                 //jjustman-2020-07-28 - purge our lct_packet_received list as we are moved, and remove atsc3_route_object from flow
                 atsc3_route_object_reset_and_free_atsc3_route_object_lct_packet_received(atsc3_route_object);
                 if(matching_sls_alc_flow) {
@@ -875,6 +887,9 @@ int atsc3_alc_packet_persist_to_toi_resource_process_sls_mbms_and_emit_callback(
                     	//todo: jjustman-2020-07-28 candiate to reap this flow?
                     }
                 }
+
+                //jjustman-2020-07-28 - TODO: add s_tsid_content_location as a candiate to purge from disk after 60s?
+
             }
         }
 	} else {
@@ -1531,17 +1546,17 @@ atsc3_route_object_t* atsc3_alc_persist_route_object_lct_packet_received_for_lls
 	atsc3_route_object_t* atsc3_route_object = NULL;
 
 	if(lls_sls_alc_monitor) {
+		atsc3_lls_sls_alc_monitor_increment_lct_packet_received_count(lls_sls_alc_monitor);
 		atsc3_route_object = atsc3_sls_alc_flow_route_object_add_unique_lct_packet_received(&lls_sls_alc_monitor->atsc3_sls_alc_all_s_tsid_flow_v, alc_packet);
+		atsc3_lls_sls_alc_monitor_check_all_s_tsid_flows_has_given_up_route_objects(lls_sls_alc_monitor);
 	}
 
-	__ALC_UTILS_DEBUG("atsc3_alc_persist_route_object_lct_packet_received_for_lls_sls_alc_monitor_all_flows: tsi: %d, toi: %d, lls_sls_alc_monitor is: %p, size: %d, atsc3_route_object: %p",
+	__ALC_UTILS_DEBUG("atsc3_alc_persist_route_object_lct_packet_received_for_lls_sls_alc_monitor_all_flows: complete, tsi: %d, toi: %d, lls_sls_alc_monitor is: %p, size: %d, atsc3_route_object: %p",
 			alc_packet->def_lct_hdr->tsi,
 			alc_packet->def_lct_hdr->toi,
 			lls_sls_alc_monitor,
 			lls_sls_alc_monitor->atsc3_sls_alc_all_s_tsid_flow_v.count,
 			atsc3_route_object);
-
-
 
 	return atsc3_route_object;
 }

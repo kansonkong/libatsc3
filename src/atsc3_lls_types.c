@@ -266,4 +266,43 @@ atsc3_lls_slt_service_t* lls_slt_monitor_find_lls_slt_service_id_group_id_cache_
 }
 
 
+void atsc3_lls_sls_alc_monitor_increment_lct_packet_received_count(lls_sls_alc_monitor_t* lls_sls_alc_monitor) {
+	lls_sls_alc_monitor->lct_packets_received_count++;
+}
+
+#define _ATSC3_LLS_SLS_ALC_MONITOR_LCT_PACKETS_INTERVAL_TO_CHECK_GIVEN_UP_COUNT 10000
+#define _ATSC3_LLS_SLS_ALC_MONITOR_LCT_PACKETS_GIVEN_UP_SECONDS 5
+
+void atsc3_lls_sls_alc_monitor_check_all_s_tsid_flows_has_given_up_route_objects(lls_sls_alc_monitor_t* lls_sls_alc_monitor) {
+	if(lls_sls_alc_monitor->lct_packets_received_count % _ATSC3_LLS_SLS_ALC_MONITOR_LCT_PACKETS_INTERVAL_TO_CHECK_GIVEN_UP_COUNT == 0) {
+		long now = gtl();
+
+		for(int i=0; i < lls_sls_alc_monitor->atsc3_sls_alc_all_s_tsid_flow_v.count; i++) {
+			atsc3_sls_alc_flow_t* atsc3_sls_alc_flow = lls_sls_alc_monitor->atsc3_sls_alc_all_s_tsid_flow_v.data[i];
+			if(atsc3_sls_alc_flow->atsc3_route_object_v.count) {
+				for(int j=0; j < atsc3_sls_alc_flow->atsc3_route_object_v.count; j++) {
+					atsc3_route_object_t* atsc3_route_object = atsc3_sls_alc_flow->atsc3_route_object_v.data[j];
+					if(atsc3_route_object->most_recent_atsc3_route_object_lct_packet_received) {
+						if(atsc3_route_object->most_recent_atsc3_route_object_lct_packet_received->most_recent_received_timestamp < (now - _ATSC3_LLS_SLS_ALC_MONITOR_LCT_PACKETS_GIVEN_UP_SECONDS * 1000)) {
+							_ATSC3_LLS_TYPES_INFO("atsc3_lls_sls_alc_monitor_check_all_s_tsid_flows_has_given_up_route_objects: candidate route_object: %p, given up timestamp: %.4f (delta: %.4f), tsi: %d, toi: %d, object_length: %d, lct_packets_received: %d",
+									atsc3_route_object,
+									atsc3_route_object->most_recent_atsc3_route_object_lct_packet_received->most_recent_received_timestamp / 1000.0,
+									(now - atsc3_route_object->most_recent_atsc3_route_object_lct_packet_received->most_recent_received_timestamp) / 1000.0,
+									atsc3_route_object->tsi,
+									atsc3_route_object->toi,
+									atsc3_route_object->object_length,
+									atsc3_route_object->atsc3_route_object_lct_packet_received_v.count);
+
+						}
+					}
+
+				}
+			}
+		}
+	}
+
+}
+
+
+
 
