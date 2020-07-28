@@ -170,6 +170,9 @@
 #define ATSC3_VECTOR_BUILDER_METHODS_PARENT_INTERFACE_FREE(vector_struct_name) \
 	void PPCAT(vector_struct_name,_free)(PPCAT(vector_struct_name,_t)** PPCAT(vector_struct_name,_p));
 
+//jjustman-2020-07-27 - TODO: add ATSC3_VECTOR_BUILDER_METHODS_PARENT_ITEM_FREE - todo - keep track of internal _v's that we need to dealloc
+
+
 
 /* note, if vector_struct_name is also used as vector_item_name,
  * you do not need a METHODS_PARENT_IMPLEMENTATION for now, it will be

@@ -4,6 +4,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class PackageExtractEnvelopeMetadataAndPayload {
+    public String packageName;
     public int tsi;
     public int toi;
     public String appContextIdList;

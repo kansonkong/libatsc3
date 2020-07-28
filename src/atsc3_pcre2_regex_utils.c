@@ -183,7 +183,7 @@ atsc3_pcre2_regex_match_capture_vector_t* atsc3_pcre2_regex_match(atsc3_pcre2_re
 
 		atsc3_preg2_regex_match_capture_group_add_atsc3_preg2_regex_match_capture(atsc3_preg2_regex_match_capture_group, atsc3_preg2_regex_match_capture);
 
-		__PCRE2_REGEX_UTILS_TRACE("%2d (s: %d, e: %d): %.*s", i,
+		__PCRE2_REGEX_UTILS_TRACE("%2d (s: %zu, e: %zu): %.*s", i,
 													  atsc3_pcre2_regex_context->ovector[2*i],
 													  atsc3_pcre2_regex_context->ovector[2*i+1],
 													  (int)substring_length, (char *)substring_start);
@@ -391,7 +391,7 @@ atsc3_pcre2_regex_match_capture_vector_t* atsc3_pcre2_regex_match(atsc3_pcre2_re
 
 			atsc3_preg2_regex_match_capture_group_add_atsc3_preg2_regex_match_capture(atsc3_preg2_regex_match_capture_group, atsc3_preg2_regex_match_capture);
 
-			__PCRE2_REGEX_UTILS_TRACE("%2d (s: %d, e: %d): %.*s", i,
+			__PCRE2_REGEX_UTILS_TRACE("%2d (s: %zu, e: %zu): %.*s", i,
 															  atsc3_pcre2_regex_context->ovector[2*i],
 															  atsc3_pcre2_regex_context->ovector[2*i+1],
 															  (int)substring_length, (char *)substring_start);
@@ -464,7 +464,7 @@ void atsc3_pcre2_regex_match_capture_vector_dump(atsc3_pcre2_regex_match_capture
 		for(int j = 0; j < atsc3_preg2_regex_match_capture_group->atsc3_preg2_regex_match_capture_v.count; j++) {
 			atsc3_preg2_regex_match_capture_t* atsc3_preg2_regex_match_capture = atsc3_preg2_regex_match_capture_group->atsc3_preg2_regex_match_capture_v.data[j];
 
-			__PCRE2_REGEX_UTILS_DEBUG("   ref: %d (start: %d, end: %d, length: %d), value:\n%s",  atsc3_preg2_regex_match_capture->capture_reference_id,
+			__PCRE2_REGEX_UTILS_DEBUG("   ref: %d (start: %zu, end: %zu, length: %d), value:\n%s",  atsc3_preg2_regex_match_capture->capture_reference_id,
 																									atsc3_preg2_regex_match_capture->match_start,
 																									atsc3_preg2_regex_match_capture->match_end,
 																									atsc3_preg2_regex_match_capture->substring->p_size,

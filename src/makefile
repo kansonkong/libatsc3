@@ -256,10 +256,10 @@ atsc3_lls_types.o: atsc3_lls_types.h atsc3_lls_types.c \
 	cc $(CFLAGS) $(DEBUG)  -c atsc3_lls_types.c
 
 atsc3_aeat_types.o: atsc3_aeat_types.h atsc3_aeat_types.c
-	gcc $(CFLAGS) $(DEBUG)  -c atsc3_aeat_types.c
+	cc $(CFLAGS) $(DEBUG)  -c atsc3_aeat_types.c
 
 atsc3_aeat_parser.o: atsc3_aeat_parser.h atsc3_aeat_parser.c
-	gcc $(CFLAGS) $(DEBUG)  -c atsc3_aeat_parser.c
+	cc $(CFLAGS) $(DEBUG)  -c atsc3_aeat_parser.c
 
 atsc3_listener_udp.o: atsc3_listener_udp.h atsc3_listener_udp.c
 	cc $(CFLAGS) $(DEBUG)  -c atsc3_listener_udp.c
@@ -390,8 +390,9 @@ atsc3_a344_receiver_query_api.o: atsc3_a344_receiver_query_api.h atsc3_a344_rece
 atsc3_packet_statistics_types.o: atsc3_packet_statistics.h atsc3_packet_statistics_types.c
 	cc $(CFLAGS) $(DEBUG)  -c atsc3_packet_statistics_types.c -o atsc3_packet_statistics_types.o	
 
+# jjustman-2020-07-27 - using -w as -Wno-excess-initializers doesn't stop log spamming of "warning: excess elements in struct initializer"
 atsc3_hevc_nal_extractor.o: atsc3_hevc_nal_extractor.h atsc3_hevc_nal_extractor.c
-	cc $(CFLAGS) $(DEBUG)  -c atsc3_hevc_nal_extractor.c -o atsc3_hevc_nal_extractor.o
+	cc -w $(CFLAGS) $(DEBUG)  -c atsc3_hevc_nal_extractor.c -o atsc3_hevc_nal_extractor.o
 
 atsc3_pcap_type.o: atsc3_pcap_type.h atsc3_pcap_type.c
 	cc $(CFLAGS) $(DEBUG)  -c atsc3_pcap_type.c -o atsc3_pcap_type.o
@@ -409,6 +410,9 @@ atsc3_route_dash_utils.o: atsc3_route_dash_utils.h atsc3_route_dash_utils.c \
 	
 atsc3_utils_sha256.o: atsc3_utils_sha256.h atsc3_utils_sha256.c
 	cc $(CFLAGS) $(DEBUG)  -c atsc3_utils_sha256.c -o atsc3_utils_sha256.o
+	
+atsc3_route_object.o:	atsc3_route_object.h atsc3_route_object.c
+	cc $(CFLAGS) $(DEBUG)  -c atsc3_route_object.c -o atsc3_route_object.o
 	
 
 # unit standalone tests with mock data
@@ -507,7 +511,8 @@ libatsc3_intermediate.o: atsc3_lls.o \
 		atsc3_route_package_utils.o \
 		atsc3_pcre2_regex_utils.o \
 		atsc3_route_dash_utils.o \
-		atsc3_utils_sha256.o
+		atsc3_utils_sha256.o \
+		atsc3_route_object.o
 
 	ld  -o libatsc3_intermediate.o -r \
 		atsc3_lls.o \
@@ -567,7 +572,8 @@ libatsc3_intermediate.o: atsc3_lls.o \
 		atsc3_route_package_utils.o \
 		atsc3_pcre2_regex_utils.o \
 		atsc3_route_dash_utils.o \
-		atsc3_utils_sha256.o
+		atsc3_utils_sha256.o \
+		atsc3_route_object.o
 
 libatsc3.o: libatsc3_intermediate.o bento4_mock.o
 	ld  -o libatsc3.o -r libatsc3_intermediate.o bento4_mock.o
@@ -882,7 +888,8 @@ test/atsc3_route_dash_mpd_patch_test: test/atsc3_route_dash_mpd_patch_test.c \
 										atsc3_alc_utils.o \
 										xml.o \
 										atsc3_mmtp_ntp32_to_pts.o \
-										atsc3_utils_sha256.o
+										atsc3_utils_sha256.o \
+										atsc3_route_object.o
 										
 										
 	cc $(ASAN) $(CFLAGS) $(DEBUG) test/atsc3_route_dash_mpd_patch_test.c  \
@@ -914,6 +921,7 @@ test/atsc3_route_dash_mpd_patch_test: test/atsc3_route_dash_mpd_patch_test.c \
 							xml.o \
 							atsc3_mmtp_ntp32_to_pts.o \
 							atsc3_utils_sha256.o \
+							atsc3_route_object.o \
 							$(LOCAL_LD_LIBS) \
 							-o test/atsc3_route_dash_mpd_patch_test 
 
@@ -1022,7 +1030,7 @@ atsc3_listener_metrics_ncurses: tools/atsc3_listener_metrics_ncurses.cpp \
 								atsc3_isobmff_tools_gpl.o \
 								libatsc3_bento4_gpl.o
 
-	g++  -D OUTPUT_STATISTICS=NCURSES $(CFLAGS) $(DEBUG)  tools/atsc3_listener_metrics_ncurses.cpp \
+	g++ -Wno-deprecated -D OUTPUT_STATISTICS=NCURSES $(CFLAGS) $(DEBUG)  tools/atsc3_listener_metrics_ncurses.cpp \
 			libatsc3_bento4_gpl.o \
 			atsc3_isobmff_tools_gpl.o \
 			atsc3_output_statistics_ncurses.c \
@@ -1044,7 +1052,7 @@ atsc3_listener_metrics_ncurses_httpd_isobmff: tools/atsc3_listener_metrics_ncurs
 								atsc3_isobmff_tools_gpl.o \
 								libatsc3_bento4_gpl.o
 
-	g++  -D OUTPUT_STATISTICS=NCURSES $(CFLAGS) $(DEBUG)  tools/atsc3_listener_metrics_ncurses_httpd_isobmff.cpp \
+	g++ -Wno-deprecated -D OUTPUT_STATISTICS=NCURSES $(CFLAGS) $(DEBUG)  tools/atsc3_listener_metrics_ncurses_httpd_isobmff.cpp \
 			libatsc3_bento4_gpl.o \
 			atsc3_isobmff_tools_gpl.o \
 			atsc3_output_statistics_ncurses.c \
@@ -1070,7 +1078,7 @@ atsc3_mmt_mfu_monitor: tools/atsc3_mmt_mfu_monitor.cpp  \
 						atsc3_isobmff_tools_gpl.o \
 						libatsc3_bento4_gpl.o
 
-	g++  -D OUTPUT_STATISTICS=NCURSES $(CFLAGS) $(DEBUG)  tools/atsc3_mmt_mfu_monitor.cpp \
+	g++ -Wno-deprecated -D OUTPUT_STATISTICS=NCURSES $(CFLAGS) $(DEBUG)  tools/atsc3_mmt_mfu_monitor.cpp \
 			libatsc3_bento4_gpl.o \
 			atsc3_isobmff_tools_gpl.o \
 			atsc3_output_statistics_mfu_ncurses.c \
@@ -1105,7 +1113,7 @@ atsc3_mmt_listener_to_http_hls_fmp4: tools/atsc3_mmt_listener_to_http_hls_fmp4.c
 								atsc3_isobmff_tools_gpl.o \
 								libatsc3_bento4_gpl.o
 
-	g++  -D OUTPUT_STATISTICS=NCURSES $(CFLAGS) $(DEBUG)  tools/atsc3_mmt_listener_to_http_hls_fmp4.cpp \
+	g++ -Wno-deprecated -D OUTPUT_STATISTICS=NCURSES $(CFLAGS) $(DEBUG)  tools/atsc3_mmt_listener_to_http_hls_fmp4.cpp \
 		libatsc3_bento4_gpl.o \
 		atsc3_isobmff_tools_gpl.o \
 		atsc3_mmt_reconstitution_from_media_sample.c atsc3_logging_externs.o \
