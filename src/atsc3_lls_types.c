@@ -270,7 +270,7 @@ void atsc3_lls_sls_alc_monitor_increment_lct_packet_received_count(lls_sls_alc_m
 	lls_sls_alc_monitor->lct_packets_received_count++;
 }
 
-#define _ATSC3_LLS_SLS_ALC_MONITOR_LCT_PACKETS_INTERVAL_TO_CHECK_GIVEN_UP_COUNT 10000
+#define _ATSC3_LLS_SLS_ALC_MONITOR_LCT_PACKETS_INTERVAL_TO_CHECK_GIVEN_UP_COUNT 1000
 #define _ATSC3_LLS_SLS_ALC_MONITOR_LCT_PACKETS_GIVEN_UP_SECONDS 5
 
 void atsc3_lls_sls_alc_monitor_check_all_s_tsid_flows_has_given_up_route_objects(lls_sls_alc_monitor_t* lls_sls_alc_monitor) {
@@ -282,8 +282,10 @@ void atsc3_lls_sls_alc_monitor_check_all_s_tsid_flows_has_given_up_route_objects
 			if(atsc3_sls_alc_flow->atsc3_route_object_v.count) {
 				for(int j=0; j < atsc3_sls_alc_flow->atsc3_route_object_v.count; j++) {
 					atsc3_route_object_t* atsc3_route_object = atsc3_sls_alc_flow->atsc3_route_object_v.data[j];
+
 					if(atsc3_route_object->most_recent_atsc3_route_object_lct_packet_received) {
 						if(atsc3_route_object->most_recent_atsc3_route_object_lct_packet_received->most_recent_received_timestamp < (now - _ATSC3_LLS_SLS_ALC_MONITOR_LCT_PACKETS_GIVEN_UP_SECONDS * 1000)) {
+
 							_ATSC3_LLS_TYPES_INFO("atsc3_lls_sls_alc_monitor_check_all_s_tsid_flows_has_given_up_route_objects: candidate route_object: %p, given up timestamp: %.4f (delta: %.4f), tsi: %d, toi: %d, object_length: %d, lct_packets_received: %d",
 									atsc3_route_object,
 									atsc3_route_object->most_recent_atsc3_route_object_lct_packet_received->most_recent_received_timestamp / 1000.0,
@@ -293,9 +295,12 @@ void atsc3_lls_sls_alc_monitor_check_all_s_tsid_flows_has_given_up_route_objects
 									atsc3_route_object->object_length,
 									atsc3_route_object->atsc3_route_object_lct_packet_received_v.count);
 
+							atsc3_route_object_reset_and_free_atsc3_route_object_lct_packet_received(atsc3_route_object);
+							atsc3_sls_alc_flow_remove_atsc3_route_object(atsc3_sls_alc_flow, atsc3_route_object);
+							atsc3_route_object_free(&atsc3_route_object);
+							j = 0; //start us back at the beginning...
 						}
 					}
-
 				}
 			}
 		}

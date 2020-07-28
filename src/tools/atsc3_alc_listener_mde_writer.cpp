@@ -49,6 +49,8 @@ uint16_t* dst_service_id_filter = NULL;
 atsc3_alc_arguments_t* alc_arguments;
 atsc3_alc_session_t* atsc3_alc_session;
 
+uint32_t alc_packet_received_count = 0;
+
 //#define __AIRWAVZ_PCAP_FIXUP__ 1
 //#define __AIRWAVZ_PCAP_FIXUP_DEBUG__ 1
 
@@ -216,6 +218,11 @@ mcheck(0);
 			//the full packet has been recovered (e.g. no missing data units in the forward transmission)
 			if(atsc3_route_object) {
 				atsc3_alc_packet_persist_to_toi_resource_process_sls_mbms_and_emit_callback(&udp_packet->udp_flow, alc_packet, lls_slt_monitor->lls_sls_alc_monitor, atsc3_route_object);
+				alc_packet_received_count++;
+//				if(alc_packet_received_count > 10000) {
+//					exit(0);
+//				}
+
 			} else {
 				__ERROR("Error in ALC persist, atsc3_route_object is NULL!");
 

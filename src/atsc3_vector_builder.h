@@ -309,6 +309,7 @@ qsort((void**)lls_sls_alc_session_flows->lls_slt_alc_sessions, lls_sls_alc_sessi
 			for(int i=0; i < vector_struct_name->PPCAT(vector_item_name, _v).count; i++) { \
 				if(vector_struct_name->PPCAT(vector_item_name, _v).data[i]) { \
 					PPCAT(vector_item_name,_free)(&vector_struct_name->PPCAT(vector_item_name, _v).data[i]); \
+					vector_struct_name->PPCAT(vector_item_name, _v).data[i] = NULL; \
 				} \
 			} \
 			vector_struct_name->PPCAT(vector_item_name, _v).count = 0; \
@@ -371,12 +372,15 @@ void atsc3_sls_html_entry_package_free(atsc3_sls_html_entry_package_t** atsc3_sl
 #define ATSC3_VECTOR_BUILDER_METHODS_INTERFACE_ITEM_FREE(vector_item_name) \
 	void PPCAT(vector_item_name,_free)(PPCAT(vector_item_name,_t)** PPCAT(vector_item_name,_p));
 
+//printf("in ATSC3_VECTOR_BUILDER_METHODS_ITEM_FREE with: %p", PPCAT(vector_item_name,_p));
+
 #define ATSC3_VECTOR_BUILDER_METHODS_ITEM_FREE(vector_item_name) \
 	void PPCAT(vector_item_name,_free)(PPCAT(vector_item_name,_t)** PPCAT(vector_item_name,_p)) { \
 		if(PPCAT(vector_item_name,_p)) {	\
 			PPCAT(vector_item_name,_t)* vector_item_name = *PPCAT(vector_item_name,_p);	\
 			if(vector_item_name) { \
-				freesafe(vector_item_name);	\
+				printf("vector_item_name with p: %p\n", vector_item_name); \
+				freesafe_jj(vector_item_name);	\
 				vector_item_name = NULL;	\
 			}	\
 			*PPCAT(vector_item_name,_p) = NULL;	\

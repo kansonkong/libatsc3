@@ -288,6 +288,8 @@ bool atsc3_route_sls_patch_mpd_availability_start_time_and_start_number(atsc3_mi
 #ifdef __EXOPLAYER_ROUTE_DASH_SHIFT_AVAILABILITY_START_TIME__
             //move us N seconds in the future so exoplayer will fast-start (offset minBufferTime and timeShiftBufferDepthMs)
             now += __EXOPLAYER_ROUTE_DASH_SHIFT_AVAILABILITY_START_TIME__;
+#else
+            now += 1; //shift us forward 1 second so we can try to stay behind the horizon
 #endif
 
             int ast_char_pos_end = (ast_char + strlen(_MPD_availability_start_time_VALUE_)) - temp_lower_mpd;

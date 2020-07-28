@@ -1115,7 +1115,7 @@ tools/atsc3_mmt_mfu_monitor: tools/atsc3_mmt_mfu_monitor.cpp \
 
 
 tools/atsc3_alc_listener_mde_writer: tools/atsc3_alc_listener_mde_writer.cpp	libatsc3_bento4_gpl.o
-	g++ $(CFLAGS) $(DEBUG)  tools/atsc3_alc_listener_mde_writer.cpp \
+	g++ $(CFLAGS) $(DEBUG) tools/atsc3_alc_listener_mde_writer.cpp \
 		libatsc3_bento4_gpl.o \
 		-I../bento/include/ \
 		$(LOCAL_LD_LIBS) \

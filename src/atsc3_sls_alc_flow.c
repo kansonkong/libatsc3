@@ -239,8 +239,12 @@ void atsc3_route_object_set_alc_flow_and_tsi_toi(atsc3_route_object_t* atsc3_rou
 atsc3_route_object_lct_packet_received_t* atsc3_route_object_add_or_update_lct_packet_received(atsc3_route_object_t* atsc3_route_object, atsc3_alc_packet_t* atsc3_alc_packet) {
 	atsc3_route_object_lct_packet_received_t* atsc3_route_object_lct_packet_received = atsc3_route_object_find_lct_packet_received(atsc3_route_object, atsc3_alc_packet);
 	if(!atsc3_route_object_lct_packet_received) {
-		atsc3_route_object_lct_packet_received = atsc3_route_object_lct_packet_received_new();
+		//atsc3_route_object_lct_packet_received = atsc3_route_object_lct_packet_received_new();
+
+		atsc3_route_object_lct_packet_received = calloc(1, sizeof(atsc3_route_object_lct_packet_received_t));
+
 		atsc3_route_object_lct_packet_received_set_attributes_from_alc_packet(atsc3_route_object_lct_packet_received, atsc3_alc_packet);
+		printf("new atsc3_route_object_lct_packet_received: atsc3_route_object: %p, lct_packet_recv: %p, tsi: %d, toi: %d, start_offset: %d\n",atsc3_route_object, atsc3_route_object_lct_packet_received, atsc3_alc_packet->def_lct_hdr->tsi, atsc3_alc_packet->def_lct_hdr->toi, atsc3_alc_packet->start_offset);
 
 		atsc3_route_object_add_atsc3_route_object_lct_packet_received(atsc3_route_object, atsc3_route_object_lct_packet_received);
 
