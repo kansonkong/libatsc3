@@ -673,7 +673,7 @@ bool block_Tail_Truncate(block_t* src, uint32_t len) {
 		if(!src) {
 			_ATSC3_UTILS_WARN("block_Tail_Truncate: src is NULL");
 		} else {
-			_ATSC3_UTILS_WARN("block_Tail_Truncate: src: %p, p_size is: %d, tail truncate len is: %d", src->p_size, len);
+			_ATSC3_UTILS_WARN("block_Tail_Truncate: src: %p, p_size is: %d, tail truncate len is: %d", src->p_buffer, src->p_size, len);
 
 		}
 		return false;

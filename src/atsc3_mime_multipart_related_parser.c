@@ -56,6 +56,7 @@ atsc3_mime_multipart_related_instance_t* atsc3_mime_multipart_related_parser(FIL
 	atsc3_mime_multipart_related_instance_t* atsc3_mime_multipart_related_instance = calloc(1, sizeof(atsc3_mime_multipart_related_instance_t));
 
 	char* line_buffer = calloc(ATSC3_MIME_MULTIPART_RELATED_LINE_BUFFER, sizeof(char));
+	char* line_buffer_to_free = line_buffer;
 
 	int ret;
 	int token_len;
@@ -347,10 +348,21 @@ atsc3_mime_multipart_related_instance_t* atsc3_mime_multipart_related_parser(FIL
 		}
 	}
 
+	if(line_buffer_to_free) {
+		free(line_buffer_to_free);
+		line_buffer_to_free = NULL;
+	}
+
 	return atsc3_mime_multipart_related_instance;
 
 
 error:
+
+	if(line_buffer_to_free) {
+		free(line_buffer_to_free);
+		line_buffer_to_free = NULL;
+	}
+
 	if(atsc3_mime_multipart_related_instance) {
 		free(atsc3_mime_multipart_related_instance);
 		atsc3_mime_multipart_related_instance = NULL;

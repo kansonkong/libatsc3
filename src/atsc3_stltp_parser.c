@@ -991,7 +991,7 @@ atsc3_timing_management_packet_t* atsc3_stltp_parse_timing_management_packet(ats
     }
     
     //process bootstrap_timing_data
-    __STLTP_PARSER_DEBUG("timing management: processing bootstrap_timing with %d num_emission_tim entries at pos: %d", atsc3_timing_management_packet->num_emission_tim, binary_payload - binary_payload_start);
+    __STLTP_PARSER_DEBUG("timing management: processing bootstrap_timing with %d num_emission_tim entries at pos: %ld", atsc3_timing_management_packet->num_emission_tim, binary_payload - binary_payload_start);
     for(int i=0; i <= atsc3_timing_management_packet->num_emission_tim; i++) {
         atsc3_bootstrap_timing_data_t* atsc3_bootstrap_timing_data = calloc(1, sizeof(atsc3_bootstrap_timing_data_t));
         atsc3_bootstrap_timing_data->seconds = ntohl(*((uint32_t*)binary_payload));
@@ -1005,7 +1005,7 @@ atsc3_timing_management_packet_t* atsc3_stltp_parse_timing_management_packet(ats
     }
         
     //process per_transmitter_data
-    __STLTP_PARSER_DEBUG("timing management: processing per transmitter data with %d per_transmitter_data entries, pos: %d", atsc3_timing_management_packet->num_xmtrs_in_group, binary_payload - binary_payload_start);
+    __STLTP_PARSER_DEBUG("timing management: processing per transmitter data with %d per_transmitter_data entries, pos: %ld", atsc3_timing_management_packet->num_xmtrs_in_group, binary_payload - binary_payload_start);
 
     for(int i=0; i <= atsc3_timing_management_packet->num_xmtrs_in_group; i++) {
         //atsc3_per_transmitter_data_t

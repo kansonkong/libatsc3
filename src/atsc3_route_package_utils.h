@@ -29,25 +29,26 @@ extern "C" {
 
 
 typedef struct atsc3_route_package_extracted_envelope_metadata_and_payload {
-	char*		package_name; //TODO: jjustman-2020-07-27 - App.pkg
-	uint32_t 	tsi;
-	uint32_t	toi;
-	char*		app_context_id_list;
-	char*		filter_codes;
+	char*										package_name; //TODO: jjustman-2020-07-27 - App.pkg
+	uint32_t 									tsi;
+	uint32_t									toi;
+	char*										app_context_id_list;
+	char*										filter_codes;
 
 	//todo: extract elements from atsc3_fdt-instance as needed (max expires delta, etc)
 	//todo: add atsc3_fdt_file_t as needed
 
-	char*		package_extract_path;
-	block_t* 	atsc3_mbms_metadata_envelope_raw_xml;  					//raw xml contents of the MBMS envelope boundary object w/ header Content-Type:application/mbms-envelope+xml
+	char*										package_extract_path;
+	block_t* 									atsc3_mbms_metadata_envelope_raw_xml;  					//raw xml contents of the MBMS envelope boundary object w/ header Content-Type:application/mbms-envelope+xml
 
-	atsc3_mbms_metadata_envelope_t* atsc3_mbms_metadata_envelope;		//collection of envelope items, should match with item.metadataUri ==  multipart_related.content-location
-
+	atsc3_mbms_metadata_envelope_t* 			atsc3_mbms_metadata_envelope;		//collection of envelope items, should match with item.metadataUri ==  multipart_related.content-location
+	atsc3_mime_multipart_related_instance_t*  	atsc3_mime_multipart_related_instance;
 	ATSC3_VECTOR_BUILDER_STRUCT(atsc3_mime_multipart_related_payload);	//collection of multipart/related objects and their binary payload from the package extraction
 
 } atsc3_route_package_extracted_envelope_metadata_and_payload_t;
 
 ATSC3_VECTOR_BUILDER_METHODS_INTERFACE(atsc3_route_package_extracted_envelope_metadata_and_payload, atsc3_mime_multipart_related_payload);
+ATSC3_VECTOR_BUILDER_METHODS_PARENT_INTERFACE_FREE(atsc3_route_package_extracted_envelope_metadata_and_payload);
 
 char* atsc3_route_package_generate_path_from_appContextIdList(atsc3_fdt_file_t* atsc3_fdt_file);
 

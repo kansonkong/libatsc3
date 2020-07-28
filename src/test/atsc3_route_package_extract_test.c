@@ -27,6 +27,7 @@ atsc3_route_package_extracted_envelope_metadata_and_payload_t* atsc3_route_packa
 	atsc3_fdt_file_t* atsc3_fdt_file = atsc3_fdt_file_new();
 	atsc3_fdt_file->app_context_id_list = (char*)package_extract_path_test_original;
 
+	//jjustman-2020-07-27 - todo: refactor this down?
 	char* package_extract_path = atsc3_route_package_generate_path_from_appContextIdList(atsc3_fdt_file);
 
 	_ATSC3_ROUTE_PACKAGE_EXTRACT_TEST_INFO("--enter: atsc3_route_package_extract_unsigned_payload_test with filename: %s, original package extract path: %s, hashed package extract path: %s", filename, package_extract_path_test_original, package_extract_path);
@@ -43,7 +44,8 @@ atsc3_route_package_extracted_envelope_metadata_and_payload_t* atsc3_route_packa
 		_ATSC3_ROUTE_PACKAGE_EXTRACT_TEST_ERROR("atsc3_route_package_extracted_envelope_metadata_and_payload is NULL!");
 	}
 
-
+	atsc3_fdt_file_free(&atsc3_fdt_file);
+	free(package_extract_path);
 	return atsc3_route_package_extracted_envelope_metadata_and_payload;
 }
 
@@ -91,6 +93,7 @@ int main(int argc, char* argv[] ) {
 	assert(atsc3_route_package_extracted_envelope_metadata_and_payload_app_pkg);
 	assert(atsc3_route_package_extracted_envelope_metadata_and_payload_app_pkg->atsc3_mime_multipart_related_payload_v.count == 56);
 
+	atsc3_route_package_extracted_envelope_metadata_and_payload_free(&atsc3_route_package_extracted_envelope_metadata_and_payload_app_pkg);
 
 	_ATSC3_ROUTE_PACKAGE_EXTRACT_TEST_INFO("---");
 	_ATSC3_ROUTE_PACKAGE_EXTRACT_TEST_INFO("atsc3_route_package_extract_test test_app_pkg_payload complete, result: %p", atsc3_route_package_extracted_envelope_metadata_and_payload_app_pkg);
@@ -107,6 +110,8 @@ int main(int argc, char* argv[] ) {
 	assert(atsc3_route_package_extracted_envelope_metadata_and_payload_alert_pkg->atsc3_mime_multipart_related_payload_v.count == 1);
 	assert(atsc3_route_package_extracted_envelope_metadata_and_payload_alert_pkg->atsc3_mime_multipart_related_payload_v.data[0]->content_type);
 
+
+	atsc3_route_package_extracted_envelope_metadata_and_payload_free(&atsc3_route_package_extracted_envelope_metadata_and_payload_alert_pkg);
 
 	_ATSC3_ROUTE_PACKAGE_EXTRACT_TEST_INFO("---");
 	_ATSC3_ROUTE_PACKAGE_EXTRACT_TEST_INFO("atsc3_route_package_extract_test test_alert_pkg_payload complete, result: %p", atsc3_route_package_extracted_envelope_metadata_and_payload_alert_pkg);
