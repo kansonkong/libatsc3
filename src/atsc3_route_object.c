@@ -258,6 +258,8 @@ void atsc3_route_object_reset_and_free_and_unlink_recovery_file_atsc3_route_obje
 		FILE* f = atsc3_object_open(atsc3_route_object->temporary_object_recovery_filename);
 		if(f) {
 			fclose(f);
+			_ATSC3_ROUTE_OBJECT_INFO("atsc3_route_object_reset_and_free_and_unlink_recovery_file_atsc3_route_object_lct_packet_received: removing temporary_object_recovery_filename: %s", atsc3_route_object->temporary_object_recovery_filename);
+
 	        remove(atsc3_route_object->temporary_object_recovery_filename);
 		}
 		freeclean((void**)&atsc3_route_object->temporary_object_recovery_filename);
@@ -268,6 +270,9 @@ void atsc3_route_object_reset_and_free_and_unlink_recovery_file_atsc3_route_obje
 		FILE* f = atsc3_object_open(atsc3_route_object->final_object_recovery_filename);
 		if(f) {
 			fclose(f);
+
+			_ATSC3_ROUTE_OBJECT_INFO("atsc3_route_object_reset_and_free_and_unlink_recovery_file_atsc3_route_object_lct_packet_received: removing final_object_recovery_filename: %s", atsc3_route_object->final_object_recovery_filename);
+
 			remove(atsc3_route_object->final_object_recovery_filename);
 		}
 		freeclean((void**)&atsc3_route_object->final_object_recovery_filename);
