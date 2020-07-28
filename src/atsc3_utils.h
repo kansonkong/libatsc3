@@ -81,6 +81,10 @@ long gtl();
 #   define __MIN(a, b)   ( ((a) < (b)) ? (a) : (b) )
 #endif
 
+#ifndef ABS
+#define ABS(x)           (((x) < 0) ? -(x) : (x))
+#endif
+
 /* clip v in [min, max] */
 #define __CLIP(v, min, max)    __MIN(__MAX((v), (min)), (max))
 
@@ -177,7 +181,6 @@ char* _rtrim(char *str);
 char* __trim(char *str);
 
 void freesafe(void* tofree);
-void freesafe_jj(void* tofree);
 
 void freeclean(void** tofree);
 void freeclean_uint8_t(uint8_t** tofree);
@@ -217,6 +220,9 @@ int mkpath(char *dir, mode_t mode);
  * Turn A into a string literal after macro-expanding it.
  */
 #define STRINGIZE(A) STRINGIZE_NX(A)
+
+//check to see if file exists on disk, return FILE* or NULL
+FILE* atsc3_object_open(char* file_name);
 
 #if defined (__cplusplus)
 }

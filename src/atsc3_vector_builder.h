@@ -372,15 +372,13 @@ void atsc3_sls_html_entry_package_free(atsc3_sls_html_entry_package_t** atsc3_sl
 #define ATSC3_VECTOR_BUILDER_METHODS_INTERFACE_ITEM_FREE(vector_item_name) \
 	void PPCAT(vector_item_name,_free)(PPCAT(vector_item_name,_t)** PPCAT(vector_item_name,_p));
 
-//printf("in ATSC3_VECTOR_BUILDER_METHODS_ITEM_FREE with: %p", PPCAT(vector_item_name,_p));
 
 #define ATSC3_VECTOR_BUILDER_METHODS_ITEM_FREE(vector_item_name) \
 	void PPCAT(vector_item_name,_free)(PPCAT(vector_item_name,_t)** PPCAT(vector_item_name,_p)) { \
 		if(PPCAT(vector_item_name,_p)) {	\
 			PPCAT(vector_item_name,_t)* vector_item_name = *PPCAT(vector_item_name,_p);	\
 			if(vector_item_name) { \
-				printf("vector_item_name with p: %p\n", vector_item_name); \
-				freesafe_jj(vector_item_name);	\
+				freesafe(vector_item_name);	\
 				vector_item_name = NULL;	\
 			}	\
 			*PPCAT(vector_item_name,_p) = NULL;	\
@@ -438,7 +436,6 @@ void atsc3_sls_html_entry_package_free(atsc3_sls_html_entry_package_t** atsc3_sl
 			(vector_struct->data[0]) = vector_item;	\
 			vector_struct->count = 1;	\
 			vector_struct->size	= ATSC3_VECTOR_BUILDER_METHODS_IMPLEMENTATION_DEFAULT_SIZE;	\
-			printf("doing new alloc for vector_struct: %p, count: %d, size: %d, vector_item: %p", vector_struct, vector_struct->count,   vector_struct->size,  vector_item); \
 		} else if(vector_struct->count < vector_struct->size) {	\
 			/* push to back if we have available space (count < size) */ \
 			vector_struct->data[vector_struct->count++] = vector_item;	\

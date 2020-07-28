@@ -295,7 +295,7 @@ void atsc3_lls_sls_alc_monitor_check_all_s_tsid_flows_has_given_up_route_objects
 									atsc3_route_object->object_length,
 									atsc3_route_object->atsc3_route_object_lct_packet_received_v.count);
 
-							atsc3_route_object_reset_and_free_atsc3_route_object_lct_packet_received(atsc3_route_object);
+							atsc3_route_object_reset_and_free_and_unlink_recovery_file_atsc3_route_object_lct_packet_received(atsc3_route_object);
 							atsc3_sls_alc_flow_remove_atsc3_route_object(atsc3_sls_alc_flow, atsc3_route_object);
 							atsc3_route_object_free(&atsc3_route_object);
 							j = 0; //start us back at the beginning...
