@@ -21,7 +21,7 @@ int _ROUTE_SLS_PROCESSOR_DEBUG_ENABLED = 0;
 
  */
 
-void atsc3_route_sls_process_from_alc_packet_and_file(udp_flow_t* udp_flow, alc_packet_t* alc_packet, lls_sls_alc_monitor_t* lls_sls_alc_monitor) {
+void atsc3_route_sls_process_from_alc_packet_and_file(udp_flow_t* udp_flow, atsc3_alc_packet_t* alc_packet, lls_sls_alc_monitor_t* lls_sls_alc_monitor) {
     char* file_name = NULL;
     char* mbms_toi_filename = NULL;
     
@@ -100,7 +100,7 @@ void atsc3_route_sls_process_from_alc_packet_and_file(udp_flow_t* udp_flow, alc_
 				  lls_sls_alc_update_s_tsid_RS_dIpAddr_dPort_if_missing(udp_flow, lls_sls_alc_monitor, atsc3_sls_metadata_fragments->atsc3_route_s_tsid);
 
 					//update our audio and video tsi and init
-					lls_sls_alc_update_tsi_toi_from_route_s_tsid(lls_sls_alc_monitor, atsc3_sls_metadata_fragments->atsc3_route_s_tsid);
+					lls_sls_alc_update_all_mediainfo_flow_v_from_route_s_tsid(lls_sls_alc_monitor, atsc3_sls_metadata_fragments->atsc3_route_s_tsid);
 				}
 				if(lls_sls_alc_monitor->atsc3_sls_metadata_fragments) {
 				  //invoke any chained destructors as needed

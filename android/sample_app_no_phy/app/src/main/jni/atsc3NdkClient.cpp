@@ -950,6 +950,11 @@ void atsc3NdkClient::atsc3_lls_sls_alc_on_package_extract_completed_callback_jni
         return;
     }
 
+    if(!atsc3_route_package_extracted_envelope_metadata_and_payload->package_name) {
+    	eprintf("atsc3_lls_sls_alc_on_package_extract_completed_callback_jni::err atsc3_route_package_extracted_envelope_metadata_and_payload->package_name is NULL\n");
+        return;
+    }
+
     std::list<jstring> to_clean_jstrings;
     std::list<jobject> to_clean_jobject;
 
@@ -962,9 +967,16 @@ void atsc3NdkClient::atsc3_lls_sls_alc_on_package_extract_completed_callback_jni
         return;
     }
 
+
+    jfieldID packageName_valId = Atsc3_Jni_Processing_Thread_Env->Get()->GetFieldID(jcls, "packageName", "Ljava/lang/String;");
+    jstring packageName_payload = Atsc3_Jni_Processing_Thread_Env->Get()->NewStringUTF(atsc3_route_package_extracted_envelope_metadata_and_payload->package_name);
+    Atsc3_Jni_Processing_Thread_Env->Get()->SetObjectField(jobj, packageName_valId, packageName_payload);
+    to_clean_jstrings.push_back(packageName_payload);
+
     jfieldID tsi_valId = Atsc3_Jni_Processing_Thread_Env->Get()->GetFieldID(jcls, "tsi", "I");
     Atsc3_Jni_Processing_Thread_Env->Get()->SetIntField(jobj, tsi_valId, atsc3_route_package_extracted_envelope_metadata_and_payload->tsi);
-    jfieldID toi_valId = Atsc3_Jni_Processing_Thread_Env->Get()->GetFieldID(jcls, "tsi", "I");
+
+    jfieldID toi_valId = Atsc3_Jni_Processing_Thread_Env->Get()->GetFieldID(jcls, "toi", "I");
     Atsc3_Jni_Processing_Thread_Env->Get()->SetIntField(jobj, toi_valId, atsc3_route_package_extracted_envelope_metadata_and_payload->toi);
 
     jfieldID appContextIdList_valId = Atsc3_Jni_Processing_Thread_Env->Get()->GetFieldID(jcls, "appContextIdList", "Ljava/lang/String;");

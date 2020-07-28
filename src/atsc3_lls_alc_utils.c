@@ -375,9 +375,10 @@ Example:
     </ContentInfo>
 
  
+ jjustman-2020-07-27: TODO - keep track of our SLS TOI and s-tsid version here if we have to rebuild
  */
 
-void lls_sls_alc_update_tsi_toi_from_route_s_tsid(lls_sls_alc_monitor_t* lls_sls_alc_monitor, atsc3_route_s_tsid_t* atsc3_route_s_tsid) {
+void lls_sls_alc_update_all_mediainfo_flow_v_from_route_s_tsid(lls_sls_alc_monitor_t* lls_sls_alc_monitor, atsc3_route_s_tsid_t* atsc3_route_s_tsid) {
 
 	if(!lls_sls_alc_monitor || !atsc3_route_s_tsid) {
 		_ATSC3_LLS_ALC_UTILS_ERROR("lls_sls_alc_session: %p, atsc3_route_s_tsid: %p returning!", lls_sls_alc_monitor, atsc3_route_s_tsid);
@@ -399,6 +400,7 @@ void lls_sls_alc_update_tsi_toi_from_route_s_tsid(lls_sls_alc_monitor_t* lls_sls
 																										atsc3_route_s_tsid_RS_LS->end_time);
 
 			if(atsc3_route_s_tsid_RS_LS->atsc3_route_s_tsid_RS_LS_SrcFlow) {
+				atsc3_route_s_tsid_RS_LS_SrcFlow_Payload_t* atsc3_route_s_tsid_RS_LS_SrcFlow_Payload = atsc3_route_s_tsid_RS_LS->atsc3_route_s_tsid_RS_LS_SrcFlow->atsc3_route_s_tsid_RS_LS_SrcFlow_Payload;
 
 				atsc3_fdt_instance_t* atsc3_fdt_instance = atsc3_route_s_tsid_RS_LS->atsc3_route_s_tsid_RS_LS_SrcFlow->atsc3_fdt_instance;
 				atsc3_route_s_tsid_RS_LS_SrcFlow_ContentInfo_MediaInfo_t* media_info = NULL; //jjustman-2020-07-14 - keep track of this mediaInfo/repId and tsi/toi for mpd startNumber patching
@@ -424,80 +426,90 @@ void lls_sls_alc_update_tsi_toi_from_route_s_tsid(lls_sls_alc_monitor_t* lls_sls
 
 				}
 
-				//continue on...
-				if(!media_info) {
-	                   _ATSC3_LLS_ALC_UTILS_INFO("    atsc3_route_s_tsid_RS_LS_SrcFlow_ContentInfo_MediaInfo missing for tsi: %d", atsc3_route_s_tsid_RS_LS->tsi);
-				}
-
-
-				_ATSC3_LLS_ALC_UTILS_DEBUG("     S-TSID.RS.LS.source_flow.fdt-instance: version: %u, expires: %u, content_type: %s, file_template: %s",
-						atsc3_fdt_instance->efdt_version,
-						atsc3_fdt_instance->expires,
-						atsc3_fdt_instance->content_type,
-						atsc3_fdt_instance->file_template);
-
-				for(int k=0; k < atsc3_fdt_instance->atsc3_fdt_file_v.count; k++) {
-					atsc3_fdt_file_t* atsc3_fdt_file = atsc3_fdt_instance->atsc3_fdt_file_v.data[k];
-
-
-					if(src_flow_content_info_content_type && atsc3_fdt_file->toi && atsc3_route_s_tsid_RS_LS->tsi) {
-
-						if(strncasecmp("audio", src_flow_content_info_content_type, 5) == 0 && !lls_sls_alc_monitor->audio_tsi_manual_override) {
-                            if(!lls_sls_alc_monitor->audio_tsi_manual_override)  {
-                                //update our audio tsi and toi accordingly
-                            	atsc3_sls_alc_flow_t* atsc3_sls_alc_flow = atsc3_sls_alc_flow_add_entry_unique_tsi_toi_init(&lls_sls_alc_monitor->atsc3_sls_alc_audio_flow_v, atsc3_route_s_tsid_RS_LS->tsi, atsc3_fdt_file->toi, media_info);
-
-                            } else {
-                                _ATSC3_LLS_ALC_UTILS_DEBUG("lls_sls_alc_update_tsi_toi_from_route_s_tsid: not replacing audio tsi/toi_init, as manual override set: %d, %d",
-                                                           lls_sls_alc_monitor->audio_tsi_manual_override->tsi,
-                                                           lls_sls_alc_monitor->audio_tsi_manual_override->toi_init);
-                            }
-
-						} else if(strncasecmp("video", src_flow_content_info_content_type, 5) == 0) {
-                            if (!lls_sls_alc_monitor->video_tsi_manual_override) {
-                            	atsc3_sls_alc_flow_t* atsc3_sls_alc_flow = atsc3_sls_alc_flow_add_entry_unique_tsi_toi_init(&lls_sls_alc_monitor->atsc3_sls_alc_video_flow_v, atsc3_route_s_tsid_RS_LS->tsi, atsc3_fdt_file->toi, media_info);
-
-                            } else {
-                                _ATSC3_LLS_ALC_UTILS_DEBUG(
-                                        "lls_sls_alc_update_tsi_toi_from_route_s_tsid: not replacing video tsi/toi_init, as manual override set: %d, %d",
-                                        lls_sls_alc_monitor->video_tsi_manual_override->tsi,
-                                        lls_sls_alc_monitor->video_tsi_manual_override->toi_init);
-                            }
-                        } else if(strncasecmp("text", src_flow_content_info_content_type, 4) == 0 || strncasecmp("subtitles", src_flow_content_info_content_type, 4) == 0) {
-                        	//jjustman-2020-07-14 - todo: fix me for "subtitles" content type strlen
-                            if (!lls_sls_alc_monitor->text_tsi_manual_override) {
-                                _ATSC3_LLS_ALC_UTILS_INFO("lls_sls_alc_update_tsi_toi_from_route_s_tsid: setting subtitle tsi/toi_init information to: %d, %d", atsc3_route_s_tsid_RS_LS->tsi, atsc3_fdt_file->toi);
-                                atsc3_sls_alc_flow_t* atsc3_sls_alc_flow = atsc3_sls_alc_flow_add_entry_unique_tsi_toi_init(&lls_sls_alc_monitor->atsc3_sls_alc_subtitles_flow_v, atsc3_route_s_tsid_RS_LS->tsi, atsc3_fdt_file->toi, media_info);
-
-                            } else {
-                                _ATSC3_LLS_ALC_UTILS_DEBUG(
-                                        "lls_sls_alc_update_tsi_toi_from_route_s_tsid: not replacing text tsi/toi_init, as manual override set: %d, %d",
-                                        lls_sls_alc_monitor->text_tsi_manual_override->tsi,
-                                        lls_sls_alc_monitor->text_tsi_manual_override->toi_init);
-                            }
-
-                        } else {
-                            _ATSC3_LLS_ALC_UTILS_INFO("lls_sls_alc_update_tsi_toi_from_route_s_tsid: unknown src_flow_content_info_content_type: %s, using atsc3_fdt_file->content_type: %s, setting data tsi/toi information to: %d, %d", src_flow_content_info_content_type, atsc3_fdt_file->content_type, atsc3_fdt_file->toi, atsc3_route_s_tsid_RS_LS->tsi);
-                            atsc3_sls_alc_flow_t* atsc3_sls_alc_flow_nrt = atsc3_sls_alc_flow_add_entry_unique_tsi_toi_nrt(&lls_sls_alc_monitor->atsc3_sls_alc_data_flow_v, atsc3_route_s_tsid_RS_LS->tsi, atsc3_fdt_file->toi);
-                        	atsc3_sls_alc_flow_nrt_set_fdt_file_content_type_if_null(atsc3_sls_alc_flow_nrt, atsc3_fdt_file->content_type);
-						}
-
-					} else {
-						_ATSC3_LLS_ALC_UTILS_ERROR("missing required flow tsi/toi, src_flow_content_info_content_type: %s, tsi: %u, toi: %u for content-location: %s",
-								src_flow_content_info_content_type,
-								atsc3_fdt_file->toi,
-								atsc3_route_s_tsid_RS_LS->tsi,
-								atsc3_fdt_file->content_location);
-					}
-
-					_ATSC3_LLS_ALC_UTILS_DEBUG("     S-TSID.RS.LS.source_flow.fdt-instance.file: content-location: %s, toi: %u, content_length: %u, transfer_length: %u, content_type; %s, content_encoding: %s",
-							atsc3_fdt_file->content_location,
-							atsc3_fdt_file->toi,
-							atsc3_fdt_file->content_length,
-							atsc3_fdt_file->transfer_length,
-							atsc3_fdt_file->content_type,
-							atsc3_fdt_file->content_encoding);
-				}
+				//jjustman-2020-07-27 - todo - purge this
+//				//continue on...
+//				if(!media_info) {
+//					_ATSC3_LLS_ALC_UTILS_INFO("    atsc3_route_s_tsid_RS_LS_SrcFlow_ContentInfo_MediaInfo missing for tsi: %d", atsc3_route_s_tsid_RS_LS->tsi);
+//				}
+//
+//
+//				_ATSC3_LLS_ALC_UTILS_DEBUG("     S-TSID.RS.LS.source_flow.fdt-instance: version: %u, expires: %u, content_type: %s, file_template: %s",
+//						atsc3_fdt_instance->efdt_version,
+//						atsc3_fdt_instance->expires,
+//						atsc3_fdt_instance->content_type,
+//						atsc3_fdt_instance->file_template);
+//
+//				for(int k=0; k < atsc3_fdt_instance->atsc3_fdt_file_v.count; k++) {
+//					atsc3_fdt_file_t* atsc3_fdt_file = atsc3_fdt_instance->atsc3_fdt_file_v.data[k];
+//
+//
+//					if(src_flow_content_info_content_type && atsc3_fdt_file->toi && atsc3_route_s_tsid_RS_LS->tsi) {
+//
+//						if(strncasecmp("audio", src_flow_content_info_content_type, 5) == 0 && !lls_sls_alc_monitor->audio_tsi_manual_override) {
+//                            if(!lls_sls_alc_monitor->audio_tsi_manual_override)  {
+//                                //update our audio tsi and toi accordingly
+//                            	atsc3_sls_alc_flow_t* atsc3_sls_alc_flow = atsc3_sls_alc_flow_add_entry_unique_tsi_toi_init(&lls_sls_alc_monitor->atsc3_sls_alc_audio_flow_v, atsc3_route_s_tsid_RS_LS->tsi, atsc3_fdt_file->toi, media_info);
+//
+//                            } else {
+//                                _ATSC3_LLS_ALC_UTILS_DEBUG("lls_sls_alc_update_tsi_toi_from_route_s_tsid: not replacing audio tsi/toi_init, as manual override set: %d, %d",
+//                                                           lls_sls_alc_monitor->audio_tsi_manual_override->tsi,
+//                                                           lls_sls_alc_monitor->audio_tsi_manual_override->toi_init);
+//                            }
+//
+//						} else if(strncasecmp("video", src_flow_content_info_content_type, 5) == 0) {
+//                            if (!lls_sls_alc_monitor->video_tsi_manual_override) {
+//                            	atsc3_sls_alc_flow_t* atsc3_sls_alc_flow = atsc3_sls_alc_flow_add_entry_unique_tsi_toi_init(&lls_sls_alc_monitor->atsc3_sls_alc_video_flow_v, atsc3_route_s_tsid_RS_LS->tsi, atsc3_fdt_file->toi, media_info);
+//
+//                            } else {
+//                                _ATSC3_LLS_ALC_UTILS_DEBUG(
+//                                        "lls_sls_alc_update_tsi_toi_from_route_s_tsid: not replacing video tsi/toi_init, as manual override set: %d, %d",
+//                                        lls_sls_alc_monitor->video_tsi_manual_override->tsi,
+//                                        lls_sls_alc_monitor->video_tsi_manual_override->toi_init);
+//                            }
+//                        } else if(strncasecmp("text", src_flow_content_info_content_type, 4) == 0 || strncasecmp("subtitles", src_flow_content_info_content_type, 4) == 0) {
+//                        	//jjustman-2020-07-14 - todo: fix me for "subtitles" content type strlen
+//                            if (!lls_sls_alc_monitor->text_tsi_manual_override) {
+//                                _ATSC3_LLS_ALC_UTILS_INFO("lls_sls_alc_update_tsi_toi_from_route_s_tsid: setting subtitle tsi/toi_init information to: %d, %d", atsc3_route_s_tsid_RS_LS->tsi, atsc3_fdt_file->toi);
+//                                atsc3_sls_alc_flow_t* atsc3_sls_alc_flow = atsc3_sls_alc_flow_add_entry_unique_tsi_toi_init(&lls_sls_alc_monitor->atsc3_sls_alc_subtitles_flow_v, atsc3_route_s_tsid_RS_LS->tsi, atsc3_fdt_file->toi, media_info);
+//
+//                            } else {
+//                                _ATSC3_LLS_ALC_UTILS_DEBUG(
+//                                        "lls_sls_alc_update_tsi_toi_from_route_s_tsid: not replacing text tsi/toi_init, as manual override set: %d, %d",
+//                                        lls_sls_alc_monitor->text_tsi_manual_override->tsi,
+//                                        lls_sls_alc_monitor->text_tsi_manual_override->toi_init);
+//                            }
+//
+//                        } else {
+//                            _ATSC3_LLS_ALC_UTILS_INFO("lls_sls_alc_update_tsi_toi_from_route_s_tsid: unknown src_flow_content_info_content_type: %s, using atsc3_fdt_file->content_type: %s, setting data tsi/toi information to: %d, %d", src_flow_content_info_content_type, atsc3_fdt_file->content_type, atsc3_fdt_file->toi, atsc3_route_s_tsid_RS_LS->tsi);
+//                            atsc3_sls_alc_flow_t* atsc3_sls_alc_flow_nrt = atsc3_sls_alc_flow_add_entry_unique_tsi_toi_nrt(&lls_sls_alc_monitor->atsc3_sls_alc_data_flow_v, atsc3_route_s_tsid_RS_LS->tsi, atsc3_fdt_file->toi);
+//                        	atsc3_sls_alc_flow_nrt_set_fdt_file_content_type_if_null(atsc3_sls_alc_flow_nrt, atsc3_fdt_file->content_type);
+//						}
+//
+//					} else {
+//						if(!atsc3_route_s_tsid_RS_LS_SrcFlow_Payload || (atsc3_route_s_tsid_RS_LS_SrcFlow_Payload && !(atsc3_route_s_tsid_RS_LS_SrcFlow_Payload->codepoint == 3 || atsc3_route_s_tsid_RS_LS_SrcFlow_Payload->codepoint == 4))) {
+//							_ATSC3_LLS_ALC_UTILS_WARN("missing contentInfo/MediaInfo for flow tsi/toi, src_flow_content_info_content_type: %s, tsi: %u, toi: %u for content-location: %s",
+//									src_flow_content_info_content_type,
+//									atsc3_fdt_file->toi,
+//									atsc3_route_s_tsid_RS_LS->tsi,
+//									atsc3_fdt_file->content_location);
+//						} else {
+//							_ATSC3_LLS_ALC_UTILS_DEBUG("skipping contentInfo/MediaInfo check for codePoint: %d, tsi: %u, toi: %u for content-location: %s",
+//									atsc3_route_s_tsid_RS_LS_SrcFlow_Payload->codepoint,
+//									atsc3_fdt_file->toi,
+//									atsc3_route_s_tsid_RS_LS->tsi,
+//									atsc3_fdt_file->content_location);
+//
+//						}
+//					}
+//
+//					_ATSC3_LLS_ALC_UTILS_DEBUG("     S-TSID.RS.LS.source_flow.fdt-instance.file: content-location: %s, toi: %u, content_length: %u, transfer_length: %u, content_type; %s, content_encoding: %s",
+//							atsc3_fdt_file->content_location,
+//							atsc3_fdt_file->toi,
+//							atsc3_fdt_file->content_length,
+//							atsc3_fdt_file->transfer_length,
+//							atsc3_fdt_file->content_type,
+//							atsc3_fdt_file->content_encoding);
+//				}
 			}
 		}
 	}

@@ -125,7 +125,7 @@ void process_packet(u_char *user, const struct pcap_pkthdr *pkthdr, const u_char
 	return;
   }
 
-  alc_packet_t* alc_packet = NULL;
+  atsc3_alc_packet_t* alc_packet = NULL;
     
     
     //dispatch for LLS extraction and dump

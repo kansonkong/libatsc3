@@ -25,7 +25,7 @@ atsc3_route_package_extracted_envelope_metadata_and_payload_t* atsc3_route_packa
 
 	const char* package_extract_path_test_original = "package_extract_path_1";
 	atsc3_fdt_file_t* atsc3_fdt_file = atsc3_fdt_file_new();
-	atsc3_fdt_file->app_context_id_list = (char*)package_extract_path_test_original;
+	atsc3_fdt_file->app_context_id_list = strdup(package_extract_path_test_original);
 
 	//jjustman-2020-07-27 - todo: refactor this down?
 	char* package_extract_path = atsc3_route_package_generate_path_from_appContextIdList(atsc3_fdt_file);

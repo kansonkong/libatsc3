@@ -27,6 +27,8 @@
 #include "atsc3_monitor_events_alc.h"
 
 #include "atsc3_alc_session.h"
+#include "atsc3_route_object.h"
+
 #include "atsc3_listener_udp.h"
 
 
@@ -774,48 +776,7 @@ A/331 - Section 7:
 		the HTML Entry pages Location Description (HELD) (see A/337 [7]), and
 		Distribution Window Description (DWD) (see A/337 [7]).
 
-
-		jjustman-2020-02-28:
-		TODO: additional enhancements from A/331 A3.10.2 Basic Delivery Object Recovery
-
-		 The ROUTE receiver continuously acquires packet payloads for the object as long as all of the following conditions are satisfied:
-             i) there is at least one entry in RECEIVED still set to false;
-             ii) the object has not yet expired; and
-             iii) the application has not given up on reception of this object.
-
-
-
-
-
-
- */
-
-typedef struct atsc3_route_object {
-	
-	uint32_t	toi;					//current toi fragment OR nrt (if known)
-	uint32_t 	toi_length;				//current toi fragment OR nrt length (if known)
-	
-	/* A/331/2020 A3.10.2:
-	 The ROUTE receiver allocates a Boolean array RECEIVED[0..T-1] or RECEIVED[0..T’-1], as appropriate, with all entries initialized to false to track
-	 received object symbols.
-	 
-	 The ROUTE receiver continuously acquires packet payloads for the object as long as all of the following conditions are satisfied:
-	 
-		i) there is at least one entry in RECEIVED still set to false;
-		ii) the object has not yet expired; and
-		iii) the application has not given up on reception of this object. More details are provided below.
-	 */
-			
-	uint8_t*	toi_received_source_bytes; //%256 for byte positions
-	uint32_t	expiration;
-	bool		has_given_up;
-
-	
-} atsc3_route_object_t;
-
-void atsc3_route_object_set_toi_and_length(atsc3_route_object_t* atsc3_route_object, uint32_t toi, uint32_t toi_length);
-void atsc3_route_object_mark_received_byte_range(atsc3_route_object_t* atsc3_route_object, uint32_t source_byte_range_start, uint32_t source_byte_range_end);
-bool atsc3_route_object_is_recovered(atsc3_route_object_t* atsc3_route_object);
+*/
 
 
 /*
@@ -827,11 +788,17 @@ bool atsc3_route_object_is_recovered(atsc3_route_object_t* atsc3_route_object);
  */
 
 typedef struct atsc3_sls_alc_flow {
-	atsc3_route_s_tsid_RS_LS_SrcFlow_ContentInfo_MediaInfo_t* media_info;
+	uint32_t					sls_toi;		//keep track of the SLS TOI for version and format changes - see A/331:2020 - Annex C: Filtering for Signaling Fragments
+	uint8_t						s_tsid_version;	//keep track of the mbms-envelope for s-tsid version changes
+
+	atsc3_route_s_tsid_RS_LS_t* atsc3_route_s_tsid_RS_LS;  //pin to our s-tsid RS_LS reference
+
+	atsc3_route_s_tsid_RS_LS_SrcFlow_ContentInfo_MediaInfo_t* media_info;	//optional
 
 	//only for NRT payloads
 	char*		fdt_file_content_type;
 
+	/* jjustman-2020-07-27 - todo: deprecate these */
 	uint32_t 	tsi;				//transport stream ID
 
 	uint32_t 	toi_init; 			//init toi fragment (if applicable for RT media)
@@ -908,13 +875,14 @@ typedef struct lls_sls_alc_monitor {
 	block_t* 	last_mpd_payload;
     block_t* 	last_mpd_payload_patched;
 
+    atsc3_sls_alc_flow_v atsc3_sls_alc_all_s_tsid_flow_v;
 
     atsc3_sls_alc_flow_v atsc3_sls_alc_all_mediainfo_flow_v;
-
-    atsc3_sls_alc_flow_v atsc3_sls_alc_audio_flow_v;
-    atsc3_sls_alc_flow_v atsc3_sls_alc_video_flow_v;
-    atsc3_sls_alc_flow_v atsc3_sls_alc_subtitles_flow_v;
-    atsc3_sls_alc_flow_v atsc3_sls_alc_data_flow_v;
+//
+//    atsc3_sls_alc_flow_v atsc3_sls_alc_audio_flow_v;
+//    atsc3_sls_alc_flow_v atsc3_sls_alc_video_flow_v;
+//    atsc3_sls_alc_flow_v atsc3_sls_alc_subtitles_flow_v;
+//    atsc3_sls_alc_flow_v atsc3_sls_alc_data_flow_v;
 	
 	//method callback handlers
     atsc3_alc_on_object_close_flag_s_tsid_content_location_f	atsc3_lls_sls_alc_on_object_close_flag_s_tsid_content_location;
