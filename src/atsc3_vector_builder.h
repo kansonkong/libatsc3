@@ -55,7 +55,7 @@
 		char* 						content_encoding;
 		atsc3_fdt_fec_attributes_t 	atsc3_fdt_fec_attributes;
 
-		uint8_t						efdt_vesion;
+		uint8_t						efdt_version;
 		uint32_t					max_expires_delta;
 		uint32_t					max_transport_size;
 		char*						file_template;
@@ -81,8 +81,10 @@
  *  	void 			atsc3_fdt_instance_add_atsc3_fdt_file(atsc3_fdt_instance_t*, atsc3_fdt_file*);
  *  	atsc3_fdt_file*	atsc3_fdt_instance_pop_atsc3_fdt_file(atsc3_fdt_instance_t*);
  *
- *		void 			atsc3_fdt_instance_clear_atsc3_fdt_file(atsc3_fdt_instance_t*); //empty out container, leaving pointer ref's alive
- *		void 			atsc3_fdt_instance_free_atsc3_fdt_file(atsc3_fdt_instance_t*);	//invoke atsc3_fdt_file_free, and empty out container
+ *		void 			atsc3_fdt_instance_clear_atsc3_fdt_file(atsc3_fdt_instance_t*); 	//empty out container, freeing pointer ref's, but not calling _free impl
+ *		void 			atsc3_fdt_instance_free_atsc3_fdt_file(atsc3_fdt_instance_t*);		//invoke atsc3_fdt_file_free, and empty out container
+ *
+ * 		void 			atsc3_fdt_instance_dealloc_atsc3_fdt_file(atsc3_fdt_instance_t*);	//empty out container, leaving pointer ref's alive, only release our data* block
  *
  * 	 	void 			atsc3_fdt_file_free(atsc3_fdt_file_t**);
  * 							- default impl can be built by calling ATSC3_VECTOR_BUILDER_METHODS_ITEM_FREE(atsc3_fdt_file)
@@ -99,7 +101,9 @@
 	PPCAT(vector_item_name,_t)*   PPCAT(vector_struct_name,PPCAT(_pop_,vector_item_name))(PPCAT(vector_struct_name,_t)*); \
 	void PPCAT(vector_struct_name,PPCAT(_clear_,vector_item_name))(PPCAT(vector_struct_name,_t)*); \
 	void PPCAT(vector_struct_name,PPCAT(_free_,vector_item_name))(PPCAT(vector_struct_name,_t)*); \
-	void PPCAT(vector_item_name,_free)(PPCAT(vector_item_name,_t)** PPCAT(vector_item_name,_p));
+	void PPCAT(vector_struct_name,PPCAT(_dealloc_,vector_item_name))(PPCAT(vector_struct_name,_t)*); \
+	void PPCAT(vector_item_name,_free)(PPCAT(vector_item_name,_t)** PPCAT(vector_item_name,_p)); \
+
 
 
 
@@ -113,6 +117,59 @@
  * jjustman:2019-08-09: todo - add a free method
  */
 #define ATSC3_VECTOR_BUILDER_METHODS_IMPLEMENTATION_DEFAULT_SIZE 10
+
+/*
+ * ATSC3_VECTOR_BUILDER_METHODS_PARENT_INTERFACE_FREE
+ *
+ * parent interface free method signature
+ *
+ * note: jjustman-2020-07-27: all users of ATSC3_VECTOR_BUILDER_METHODS_INTERFACE should either:
+ *
+ * 	1.) vector_struct_name:  declare in .h and implement this _free method in .c ala:
+ *
+ *	s/vector_struct_name/atsc3_sls_html_entry_package
+
+ 	 void vector_struct_name_free(vector_struct_name_t** vector_struct_name_p) {
+		if(vector_struct_name_p) {
+			vector_struct_name_t* vector_struct_name = *vector_struct_name_p;
+			if(vector_struct_name) {
+				//other interior members here
+				freesafe(vector_struct_name);
+				vector_struct_name = NULL;
+			}
+			*vector_struct_name_p = NULL;
+		}
+	}
+
+ *
+ * 	and
+ *
+ * 	2.) vector_item_name:
+ * 			no callocs/strudp's:  use default impl ATSC3_VECTOR_BUILDER_METHODS_ITEM_FREE(vector_struct_name) declared in .c
+ *			calloc's as needed :  implement pattern similar to above, using vector_item_name
+ *
+ *		s/vector_item_name/atsc3_sls_html_entry_package
+
+	  void vector_item_name_free(vector_item_name_t** vector_item_name_p) {
+			if(vector_item_name_p) {
+				vector_item_name_t* vector_item_name = *vector_item_name_p;
+				if(vector_item_name) {
+					//other interior members here
+					freesafe(vector_item_name);
+					vector_item_name = NULL;
+				}
+				*vector_item_name_p = NULL;
+			}
+		}
+ *
+ *
+ *
+ *
+ */
+
+#define ATSC3_VECTOR_BUILDER_METHODS_PARENT_INTERFACE_FREE(vector_struct_name) \
+	void PPCAT(vector_struct_name,_free)(PPCAT(vector_struct_name,_t)** PPCAT(vector_struct_name,_p));
+
 
 /* note, if vector_struct_name is also used as vector_item_name,
  * you do not need a METHODS_PARENT_IMPLEMENTATION for now, it will be
@@ -210,13 +267,12 @@ qsort((void**)lls_sls_alc_session_flows->lls_slt_alc_sessions, lls_sls_alc_sessi
 		return vector_item_name; \
     } \
 	\
-	/* de-alloc vector AND _free item instances */ \
+	/* de-alloc vector AND _free item instances: TODO: jjustman-2020-07-27 - don't invoke _free?,  jjustman-2020-06-02 - fPPCAT(vector_item_name,_free)(&vector_struct_name->PPCAT(vector_item_name, _v).data[i]); */ \
 	void PPCAT(vector_struct_name,PPCAT(_clear_, vector_item_name))(PPCAT(vector_struct_name,_t)* vector_struct_name) { \
 		if(vector_struct_name->PPCAT(vector_item_name, _v).data) {	\
 			for(int i=0; i < vector_struct_name->PPCAT(vector_item_name, _v).count; i++) { \
 				if(vector_struct_name->PPCAT(vector_item_name, _v).data[i]) { \
-					/* jjustman-2020-06-02 - freesafe(vector_struct_name->PPCAT(vector_item_name, _v).data[i]); */ \
-					PPCAT(vector_item_name,_free)(&vector_struct_name->PPCAT(vector_item_name, _v).data[i]); \
+					freesafe(vector_struct_name->PPCAT(vector_item_name, _v).data[i]); \
 					vector_struct_name->PPCAT(vector_item_name, _v).data[i] = NULL; \
 				} \
 			} \
@@ -236,7 +292,15 @@ qsort((void**)lls_sls_alc_session_flows->lls_slt_alc_sessions, lls_sls_alc_sessi
 			free(vector_struct_name->PPCAT(vector_item_name, _v).data); \
 			vector_struct_name->PPCAT(vector_item_name, _v).data = NULL; \
 		} \
-	};
+	}; \
+	void PPCAT(vector_struct_name,PPCAT(_dealloc_, vector_item_name))(PPCAT(vector_struct_name,_t)* vector_struct_name) { \
+		if(vector_struct_name->PPCAT(vector_item_name, _v).data) {	\
+			vector_struct_name->PPCAT(vector_item_name, _v).count = 0; \
+			vector_struct_name->PPCAT(vector_item_name, _v).size  = 0; \
+			free(vector_struct_name->PPCAT(vector_item_name, _v).data); \
+			vector_struct_name->PPCAT(vector_item_name, _v).data = NULL; \
+		} \
+	} \
 
 
 /*
@@ -245,18 +309,18 @@ qsort((void**)lls_sls_alc_session_flows->lls_slt_alc_sessions, lls_sls_alc_sessi
  ATSC3_VECTOR_BUILDER_METHODS_ITEM_FREE(atsc3_sls_html_entry_package);
 
  note, to override default free, implement a method similar to the following:
- 
-void vector_item_name_free(vector_item_name_t** vector_item_name_p) {
-    if(vector_item_name_p) {
-        vector_item_name_t* vector_item_name = *vector_item_name_p;
-        if(vector_item_name) {
-            //other interior members here
-            freesafe(vector_item_name);
-            vector_item_name = NULL;
-        }
- 	 	*vector_item_name_p = NULL;
-    }
-}
+
+	void vector_item_name_free(vector_item_name_t** vector_item_name_p) {
+		if(vector_item_name_p) {
+			vector_item_name_t* vector_item_name = *vector_item_name_p;
+			if(vector_item_name) {
+				//other interior members here
+				freesafe(vector_item_name);
+				vector_item_name = NULL;
+			}
+			*vector_item_name_p = NULL;
+		}
+	}
  
  e.g.
  
@@ -275,6 +339,9 @@ void atsc3_sls_html_entry_package_free(atsc3_sls_html_entry_package_t** atsc3_sl
 }
 
 */
+
+#define ATSC3_VECTOR_BUILDER_METHODS_INTERFACE_ITEM_FREE(vector_item_name) \
+	void PPCAT(vector_item_name,_free)(PPCAT(vector_item_name,_t)** PPCAT(vector_item_name,_p));
 
 #define ATSC3_VECTOR_BUILDER_METHODS_ITEM_FREE(vector_item_name) \
 	void PPCAT(vector_item_name,_free)(PPCAT(vector_item_name,_t)** PPCAT(vector_item_name,_p)) { \

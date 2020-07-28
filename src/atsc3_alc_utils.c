@@ -454,7 +454,7 @@ char* alc_packet_dump_to_object_get_s_tsid_filename(udp_flow_t* udp_flow, alc_pa
                                                                 //break out and trim our file
                                                                 int trim_size = (location_found + pos) - temp_content_header;
                                                                 int new_mde_payload_size = st.st_size - trim_size;
-                                                                __ALC_UTILS_INFO("ALC MDE: entity mode, original size: %d, header cut is: %d bytes, new mde size is: %d", st.st_size, trim_size, new_mde_payload_size);
+                                                                __ALC_UTILS_INFO("ALC MDE: entity mode, original size: %lld, header cut is: %d bytes, new mde size is: %d", st.st_size, trim_size, new_mde_payload_size);
 
                                                                 if(trim_size > 0 && new_mde_payload_size > 0) {
                                                                     uint8_t* to_trim_payload = calloc(new_mde_payload_size, sizeof(uint8_t));
@@ -762,7 +762,7 @@ int atsc3_alc_packet_persist_to_toi_resource_process_sls_mbms_and_emit_callback(
             char* final_mbms_toi_filename = alc_packet_dump_to_object_get_filename_tsi_toi(udp_flow, 0, alc_packet->def_lct_hdr->toi);
             rename(temporary_filename, final_mbms_toi_filename);
 
-            __ALC_UTILS_IOTRACE("ALC: service_id: %u, ------ TSI of 0, TOI: %d, transfer_len: %d, final object name: %s, calling atsc3_route_sls_process_from_alc_packet_and_file",
+            __ALC_UTILS_IOTRACE("ALC: service_id: %u, ------ TSI of 0, TOI: %d, transfer_len: %lld, final object name: %s, calling atsc3_route_sls_process_from_alc_packet_and_file",
             		lls_sls_alc_monitor->atsc3_lls_slt_service->service_id,
             		alc_packet->def_lct_hdr->toi,
             		alc_packet->transfer_len,
@@ -775,7 +775,7 @@ int atsc3_alc_packet_persist_to_toi_resource_process_sls_mbms_and_emit_callback(
      
             if(strncmp(temporary_filename, s_tsid_content_location, __MIN(strlen(temporary_filename), strlen(s_tsid_content_location))) !=0) {
                 char new_file_name_raw_buffer[1024] = { 0 };
-                char* new_file_name = &new_file_name_raw_buffer;
+                char* new_file_name = (char*)&new_file_name_raw_buffer; //hack
                 snprintf(new_file_name_raw_buffer, 1024, __ALC_DUMP_OUTPUT_PATH__"%d/%s", lls_sls_alc_monitor->atsc3_lls_slt_service->service_id, s_tsid_content_location);
                 
                 //todo: jjustman-2019-11-15: sanatize path parameter for .. or other traversal attacks
@@ -823,20 +823,23 @@ int atsc3_alc_packet_persist_to_toi_resource_process_sls_mbms_and_emit_callback(
 						int stsid_formatid_package_matching = (atsc3_route_s_tsid_RS_LS->atsc3_route_s_tsid_RS_LS_SrcFlow->atsc3_route_s_tsid_RS_LS_SrcFlow_Payload->format_id == 3 || atsc3_route_s_tsid_RS_LS->atsc3_route_s_tsid_RS_LS_SrcFlow->atsc3_route_s_tsid_RS_LS_SrcFlow_Payload->format_id == 4);
 
 						if(lct_codepoint_package_matching || stsid_formatid_package_matching) {
-							__ALC_UTILS_INFO("calling atsc3_route_package_extract_unsigned_payload with package: %s", new_file_name);
+							__ALC_UTILS_DEBUG("calling atsc3_route_package_extract_unsigned_payload with package: %s", new_file_name);
 							//perform package extraction into shared appContextIdList path
 							char* package_extract_path = atsc3_route_package_generate_path_from_appContextIdList(atsc3_fdt_file);
 
 							atsc3_route_package_extracted_envelope_metadata_and_payload_t* atsc3_route_package_extracted_envelope_metadata_and_payload = atsc3_route_package_extract_unsigned_payload(new_file_name, package_extract_path);
-							atsc3_route_package_extracted_envelope_metadata_and_payload_set_alc_tsi_toi_from_alc_packet(atsc3_route_package_extracted_envelope_metadata_and_payload, alc_packet);
-							atsc3_route_package_extracted_envelope_metadata_and_payload_set_fdt_attributes(atsc3_route_package_extracted_envelope_metadata_and_payload, atsc3_fdt_file);
-
-							if(lls_sls_alc_monitor->atsc3_lls_sls_alc_on_package_extract_completed_callback) {
-								lls_sls_alc_monitor->atsc3_lls_sls_alc_on_package_extract_completed_callback(atsc3_route_package_extracted_envelope_metadata_and_payload);
-
+							if(atsc3_route_package_extracted_envelope_metadata_and_payload) {
+								atsc3_route_package_extracted_envelope_metadata_and_payload_set_alc_tsi_toi_from_alc_packet(atsc3_route_package_extracted_envelope_metadata_and_payload, alc_packet);
+								atsc3_route_package_extracted_envelope_metadata_and_payload_set_fdt_attributes(atsc3_route_package_extracted_envelope_metadata_and_payload, atsc3_fdt_file);
+								if(lls_sls_alc_monitor->atsc3_lls_sls_alc_on_package_extract_completed_callback) {
+									lls_sls_alc_monitor->atsc3_lls_sls_alc_on_package_extract_completed_callback(atsc3_route_package_extracted_envelope_metadata_and_payload);
+								}
+							} else {
+								__ALC_UTILS_WARN("Unable to extract package: %s to path: %s", new_file_name, package_extract_path);
 							}
+							freesafe(package_extract_path);
 
-							//atsc3_route_package_extracted_envelope_metadata_and_payload_free(atsc3_route_package_extracted_envelope_metadata_and_payload);
+							atsc3_route_package_extracted_envelope_metadata_and_payload_free(&atsc3_route_package_extracted_envelope_metadata_and_payload);
 
                         }
                 	}

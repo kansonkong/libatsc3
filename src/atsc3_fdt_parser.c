@@ -126,7 +126,8 @@ atsc3_fdt_instance_t* atsc3_fdt_parse_from_xml_fdt_instance(atsc3_fdt_instance_t
     //TODO: fix with proper namespace mapping...e.g. resolve against  xmlns:afdt="tag:atsc.org,2016:XMLSchemas/ATSC3/Delivery/ATSC-FDT/1.0/"
 
     if((matching_attribute = kvp_collection_get(kvp_collection,  "afdt:efdtVersion"))) {
-    	atsc3_fdt_instance->efdt_vesion = matching_attribute;
+    	atsc3_fdt_instance->efdt_version = (0xFF && atoi(matching_attribute));
+    	free(matching_attribute);
     }
     if((matching_attribute = kvp_collection_get(kvp_collection,  "afdt:maxExpiresDelta"))) {
     	atsc3_fdt_instance->max_expires_delta = atoi(matching_attribute);

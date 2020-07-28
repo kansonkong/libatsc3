@@ -163,9 +163,9 @@ static lls_table_t* __lls_create_base_table_raw(block_t* lls_packet_block) {
 						   lls_payload->lls_payload_length,
                            block_Remaining_size(signed_multi_table_block));
 
-                freeclean(&lls_payload);
+                freeclean((void**)&lls_payload);
                 atsc3_signed_multi_table_free_atsc3_signed_multi_table_lls_payload(&base_table->signed_multi_table);
-                freeclean(&base_table);
+                freeclean((void**)&base_table);
             }
         }
 
@@ -181,7 +181,7 @@ static lls_table_t* __lls_create_base_table_raw(block_t* lls_packet_block) {
                 _LLS_ERROR("_lls_ceate_base_table_raw: SignedMultiTable: remaining signature length too short! signature_length is: %d, remaining bytes: %d",
                                                   base_table->signed_multi_table.signature_length,
                                                   block_Remaining_size(signed_multi_table_block));
-                freeclean(&base_table);
+                freeclean((void**)&base_table);
                 _LLS_ERROR("returning base_table as: %p", base_table);
             } else {
 
@@ -191,13 +191,13 @@ static lls_table_t* __lls_create_base_table_raw(block_t* lls_packet_block) {
                 base_table->signed_multi_table.signature = block_Duplicate_from_position(signed_multi_table_block);
                 _LLS_TRACE("__lls_create_base_table_raw: SignedMultiTable: signature_length is: %d, signature: %s",
                            base_table->signed_multi_table.signature_length,
-                           base_table->signed_multi_table.signature);
+                           base_table->signed_multi_table.signature->p_buffer);
             }
         } else {
             _LLS_ERROR("_lls_ceate_base_table_raw: SignedMultiTable: error finalizing signedMultiTable, base_table: %p, remaining bytes for signature: %d",
                     base_table,
                     block_Remaining_size(signed_multi_table_block));
-            freeclean(&base_table);
+            freeclean((void**)&base_table);
         }
         _LLS_ERROR("before block_Destroy(signed_multi_table_block) base_table as: %p", base_table);
         block_Destroy(&signed_multi_table_block);

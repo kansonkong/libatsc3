@@ -46,7 +46,7 @@ uint32_t* atsc3_mbms_envelope_find_toi_from_fdt(atsc3_fdt_instance_t* atsc3_fdt_
  *
  *
  */
-
+//jjustman-2020-07-27: TODO - fix this type from char* payload to block_t*
 atsc3_mbms_metadata_envelope_t* atsc3_mbms_envelope_parse_from_payload(char* payload, char* content_location) {
 	atsc3_mbms_metadata_envelope_t* atsc3_mbms_metadata_envelope = NULL;
     

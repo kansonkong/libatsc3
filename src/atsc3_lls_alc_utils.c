@@ -431,7 +431,7 @@ void lls_sls_alc_update_tsi_toi_from_route_s_tsid(lls_sls_alc_monitor_t* lls_sls
 
 
 				_ATSC3_LLS_ALC_UTILS_DEBUG("     S-TSID.RS.LS.source_flow.fdt-instance: version: %u, expires: %u, content_type: %s, file_template: %s",
-						atsc3_fdt_instance->efdt_vesion,
+						atsc3_fdt_instance->efdt_version,
 						atsc3_fdt_instance->expires,
 						atsc3_fdt_instance->content_type,
 						atsc3_fdt_instance->file_template);
