@@ -43,7 +43,7 @@ int printf(const char *format, ...)  {
   if(__DEBUG_LOG_AVAILABLE && !__DEBUG_LOG_FILE) {
 	  char launch_timestamp_string[32] = {0};
 	  double launch_timestamp = gt();
-	  snprintf(&launch_timestamp_string, 31, "%s.%.4f", __DEBUG_LOG_FILE_NAME__, launch_timestamp);
+	  snprintf((char*)&launch_timestamp_string, 31, "%s.%.4f", __DEBUG_LOG_FILE_NAME__, launch_timestamp);
 	  fprintf(stderr, "Debug logfile at: %s\n", launch_timestamp_string);
     __DEBUG_LOG_FILE = fopen(launch_timestamp_string, "w");
     if(!__DEBUG_LOG_FILE) {

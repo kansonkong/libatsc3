@@ -442,7 +442,7 @@ void atsc3_phy_mmt_player_bridge_process_packet_phy(block_t* packet) {
     lls_sls_mmt_session_t* matching_lls_sls_mmt_session = NULL;
 
 
-    alc_packet_t* alc_packet = NULL;
+    atsc3_alc_packet_t* alc_packet = NULL;
     lls_sls_alc_session_t* matching_lls_slt_alc_session = NULL;
 
     //lowasys hands off the ip packet header, not phy eth frame

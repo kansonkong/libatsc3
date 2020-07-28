@@ -11,8 +11,8 @@
 
 #include "atsc3_route_package_utils.h"
 
-int _ROUTE_PACKAGE_UTILS_DEBUG_ENABLED=1;
-int _ROUTE_PACKAGE_UTILS_TRACE_ENABLED=1;
+int _ROUTE_PACKAGE_UTILS_DEBUG_ENABLED=0;
+int _ROUTE_PACKAGE_UTILS_TRACE_ENABLED=0;
 
 
 ATSC3_VECTOR_BUILDER_METHODS_IMPLEMENTATION_NO_CCTOR(atsc3_route_package_extracted_envelope_metadata_and_payload, atsc3_mime_multipart_related_payload);
@@ -90,13 +90,16 @@ char* atsc3_route_package_generate_path_from_appContextIdList(atsc3_fdt_file_t* 
 	return package_extract_path;
 }
 
-void atsc3_route_package_extracted_envelope_metadata_and_payload_set_alc_tsi_toi_from_alc_packet(atsc3_route_package_extracted_envelope_metadata_and_payload_t* atsc3_route_package_extracted_envelope_metadata_and_payload, alc_packet_t* alc_packet) {
+void atsc3_route_package_extracted_envelope_metadata_and_payload_set_alc_tsi_toi_from_alc_packet(atsc3_route_package_extracted_envelope_metadata_and_payload_t* atsc3_route_package_extracted_envelope_metadata_and_payload, atsc3_alc_packet_t* alc_packet) {
 	atsc3_route_package_extracted_envelope_metadata_and_payload->tsi = alc_packet->def_lct_hdr->tsi;
 	atsc3_route_package_extracted_envelope_metadata_and_payload->toi = alc_packet->def_lct_hdr->toi;
 }
 
 void atsc3_route_package_extracted_envelope_metadata_and_payload_set_fdt_attributes(atsc3_route_package_extracted_envelope_metadata_and_payload_t* atsc3_route_package_extracted_envelope_metadata_and_payload, atsc3_fdt_file_t* atsc3_fdt_file) {
 	if(atsc3_fdt_file) {
+		if(atsc3_fdt_file->content_location) {
+			atsc3_route_package_extracted_envelope_metadata_and_payload->package_name = strdup(atsc3_fdt_file->content_location);
+		}
 		if(atsc3_fdt_file->app_context_id_list) {
 			atsc3_route_package_extracted_envelope_metadata_and_payload->app_context_id_list = strdup(atsc3_fdt_file->app_context_id_list);
 		}
@@ -234,7 +237,14 @@ void atsc3_route_package_extract_payload_metadata_dump(atsc3_route_package_extra
 
 	__ROUTE_PACKAGE_UTILS_DEBUG("---");
 	__ROUTE_PACKAGE_UTILS_DEBUG("tsi: %d, toi: %d", atsc3_route_package_extracted_envelope_metadata_and_payload->tsi, atsc3_route_package_extracted_envelope_metadata_and_payload->toi);
-	__ROUTE_PACKAGE_UTILS_DEBUG("tsi: %d, toi: %d", atsc3_route_package_extracted_envelope_metadata_and_payload->tsi, atsc3_route_package_extracted_envelope_metadata_and_payload->toi);
+
+	if(atsc3_route_package_extracted_envelope_metadata_and_payload->package_name) {
+		__ROUTE_PACKAGE_UTILS_DEBUG("package_name: %s", atsc3_route_package_extracted_envelope_metadata_and_payload->package_name);
+
+	} else {
+		__ROUTE_PACKAGE_UTILS_ERROR("package_name is NULL!");
+
+	}
 
 
 	if(atsc3_route_package_extracted_envelope_metadata_and_payload->app_context_id_list) {

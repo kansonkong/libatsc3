@@ -244,15 +244,15 @@ typedef struct atsc3_def_lct_hdr {
  */
 
 
-#define FDT_TOI		0				/**< TOI for FDT */
+#define FDT_TOI		0					/**< TOI for FDT */
 
-#define ALC_VERSION		1		/**< ALC version number */
-#define FLUTE_VERSION_1 1        /**< FLUTE version number */
-#define FLUTE_VERSION_2	2		/**< FLUTE version number */
+#define ALC_VERSION		1				/**< ALC version number */
+#define FLUTE_VERSION_1 1      		 	/**< FLUTE version number */
+#define FLUTE_VERSION_2	2				/**< FLUTE version number */
 
-#define COM_NO_C_FEC_ENC_ID		0	/**< Compact No-Code FEC scheme */
-#define SIMPLE_XOR_FEC_ENC_ID   2	/**< Simple XOR FEC scheme */
-#define RS_FEC_ENC_ID			3	/**< Reed-Solomon FEC scheme, identifier not yet decided, 3 used temporarily */
+#define COM_NO_C_FEC_ENC_ID		0		/**< Compact No-Code FEC scheme */
+#define SIMPLE_XOR_FEC_ENC_ID   2		/**< Simple XOR FEC scheme */
+#define RS_FEC_ENC_ID			3		/**< Reed-Solomon FEC scheme, identifier not yet decided, 3 used temporarily */
 
 #define SB_LB_E_FEC_ENC_ID		128		/**< Small Block, Large Block and Expandable FEC scheme */
 #define SB_SYS_FEC_ENC_ID		129		/**< Small Block Systematic FEC scheme */

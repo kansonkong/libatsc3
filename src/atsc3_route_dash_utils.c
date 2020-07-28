@@ -28,7 +28,7 @@ atsc3_route_dash_matching_s_tsid_representation_media_info_alc_flow_match_vector
 	for(int i=0; i < atsc3_pcre2_regex_match_capture_vector->atsc3_preg2_regex_match_capture_group_v.count; i++) {
 		atsc3_preg2_regex_match_capture_group_t* atsc3_preg2_regex_match_capture_group = atsc3_pcre2_regex_match_capture_vector->atsc3_preg2_regex_match_capture_group_v.data[i];
 		atsc3_preg2_regex_match_capture_t* atsc3_preg2_regex_match_capture_representation_id = atsc3_preg2_regex_match_capture_group->atsc3_preg2_regex_match_capture_v.data[ATSC3_ROUTE_DASH_MPD_REPRESENTATION_ID_SEGMENT_TEMPLATE_START_NUMBER_REGEX_REPRESENTATION_ID_CAPTURE_REFERENCE];
-		char* mpd_representation_id = atsc3_preg2_regex_match_capture_representation_id->substring->p_buffer;
+		char* mpd_representation_id = (char*)atsc3_preg2_regex_match_capture_representation_id->substring->p_buffer;
 
 		for(int j=0; j < atsc3_sls_alc_flow_v->count; j++) {
 			atsc3_sls_alc_flow_t* atsc3_sls_alc_flow = atsc3_sls_alc_flow_v->data[j];
@@ -48,9 +48,10 @@ atsc3_route_dash_matching_s_tsid_representation_media_info_alc_flow_match_vector
 
 					atsc3_route_dash_matching_s_tsid_representation_media_info_alc_flow_match_vector_add_atsc3_route_dash_matching_s_tsid_representation_media_info_alc_flow_match(atsc3_route_dash_matching_s_tsid_representation_media_info_alc_flow_match_vector, atsc3_route_dash_matching_s_tsid_representation_media_info_alc_flow_match);
 
-					__ROUTE_DASH_UTILS_DEBUG("Found match with %s to rep_id: %s, contentType: %s, tsi: %d, last_closed_toi: %d, startNumber start: %d, end: %d",
+					__ROUTE_DASH_UTILS_DEBUG("Found match with %s to rep_id: %s, contentType: %s, tsi: %d, last_closed_toi: %d, startNumber start: %zu, end: %zu",
 							mpd_representation_id, media_info->rep_id, media_info->content_type, atsc3_sls_alc_flow->tsi, atsc3_sls_alc_flow->last_closed_toi,
-							atsc3_preg2_regex_match_capture_start_number->match_start, atsc3_preg2_regex_match_capture_start_number->match_end);
+							atsc3_preg2_regex_match_capture_start_number->match_start,
+							atsc3_preg2_regex_match_capture_start_number->match_end);
 
 				}
 			}
@@ -112,7 +113,7 @@ block_t* atsc3_route_dash_patch_mpd_manifest_from_matching_matching_s_tsid_repre
 	for(int i=0; i < match_vector->atsc3_route_dash_matching_s_tsid_representation_media_info_alc_flow_match_v.count; i++) {
 		atsc3_route_dash_matching_s_tsid_representation_media_info_alc_flow_match_t* atsc3_route_dash_matching_s_tsid_representation_media_info_alc_flow_match = match_vector->atsc3_route_dash_matching_s_tsid_representation_media_info_alc_flow_match_v.data[i];
 
-		__ROUTE_DASH_UTILS_TRACE("s-tsid repId: %s, contentType: %s, startNumber replace start: %d, end: %d, toi value: %d",
+		__ROUTE_DASH_UTILS_TRACE("s-tsid repId: %s, contentType: %s, startNumber replace start: %zu, end: %zu, toi value: %d",
 					atsc3_route_dash_matching_s_tsid_representation_media_info_alc_flow_match->atsc3_route_s_content_info_media_info->rep_id,
 					atsc3_route_dash_matching_s_tsid_representation_media_info_alc_flow_match->atsc3_route_s_content_info_media_info->content_type,
 					atsc3_route_dash_matching_s_tsid_representation_media_info_alc_flow_match->atsc3_preg2_regex_match_capture_start_number->match_start,
@@ -130,11 +131,11 @@ block_t* atsc3_route_dash_patch_mpd_manifest_from_matching_matching_s_tsid_repre
 		__ROUTE_DASH_UTILS_TRACE("capture: %d, repId: %s, original mpd is now at: %p", i, atsc3_route_dash_matching_s_tsid_representation_media_info_alc_flow_match->atsc3_route_s_content_info_media_info->rep_id,
 									block_Get(original_mpd));
 
-		snprintf(&temp_buffer, ATSC3_ROUTE_DASH_PATCH_UINT32_LENGTH, "%d", atsc3_route_dash_matching_s_tsid_representation_media_info_alc_flow_match->atsc3_sls_alc_flow->last_closed_toi);
+		snprintf((char*)&temp_buffer, ATSC3_ROUTE_DASH_PATCH_UINT32_LENGTH, "%d", atsc3_route_dash_matching_s_tsid_representation_media_info_alc_flow_match->atsc3_sls_alc_flow->last_closed_toi);
 		__ROUTE_DASH_UTILS_TRACE("capture: %d, repId: %s, writing startNumber as: %s", i, atsc3_route_dash_matching_s_tsid_representation_media_info_alc_flow_match->atsc3_route_s_content_info_media_info->rep_id,
 									temp_buffer);
 
-		block_Write(patched_mpd, &temp_buffer, strlen(temp_buffer));
+		block_Write(patched_mpd, (uint8_t*)&temp_buffer, strlen(temp_buffer));
 	}
 
 	__ROUTE_DASH_UTILS_TRACE("appending remaining original mpd: %p, i_pos: %d, p_size: %d to patched_mpd", block_Get(original_mpd), original_mpd->i_pos, original_mpd->p_size);
@@ -143,7 +144,7 @@ block_t* atsc3_route_dash_patch_mpd_manifest_from_matching_matching_s_tsid_repre
 	block_AppendFromSrciPos(patched_mpd, original_mpd);
 	block_Rewind(patched_mpd);
 
-	__ROUTE_DASH_UTILS_TRACE("patched mpd is:\n", block_Get(patched_mpd));
+	__ROUTE_DASH_UTILS_TRACE("patched mpd is:\n%s", block_Get(patched_mpd));
 
 	return patched_mpd;
 }

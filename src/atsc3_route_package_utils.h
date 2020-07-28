@@ -29,7 +29,7 @@ extern "C" {
 
 
 typedef struct atsc3_route_package_extracted_envelope_metadata_and_payload {
-	char*										package_name; //TODO: jjustman-2020-07-27 - App.pkg
+	char*										package_name;
 	uint32_t 									tsi;
 	uint32_t									toi;
 	char*										app_context_id_list;
@@ -39,11 +39,12 @@ typedef struct atsc3_route_package_extracted_envelope_metadata_and_payload {
 	//todo: add atsc3_fdt_file_t as needed
 
 	char*										package_extract_path;
-	block_t* 									atsc3_mbms_metadata_envelope_raw_xml;  					//raw xml contents of the MBMS envelope boundary object w/ header Content-Type:application/mbms-envelope+xml
+	block_t* 									atsc3_mbms_metadata_envelope_raw_xml; 	//raw xml contents of the MBMS envelope boundary object w/ header Content-Type:application/mbms-envelope+xml
 
-	atsc3_mbms_metadata_envelope_t* 			atsc3_mbms_metadata_envelope;		//collection of envelope items, should match with item.metadataUri ==  multipart_related.content-location
-	atsc3_mime_multipart_related_instance_t*  	atsc3_mime_multipart_related_instance;
-	ATSC3_VECTOR_BUILDER_STRUCT(atsc3_mime_multipart_related_payload);	//collection of multipart/related objects and their binary payload from the package extraction
+	atsc3_mbms_metadata_envelope_t* 			atsc3_mbms_metadata_envelope;			//collection of envelope items, should match with item.metadataUri ==  multipart_related.content-location
+
+	atsc3_mime_multipart_related_instance_t*  	atsc3_mime_multipart_related_instance;	//keep a reference as the atsc3_mime_multipart_related_payload is built from this object
+	ATSC3_VECTOR_BUILDER_STRUCT(atsc3_mime_multipart_related_payload);					//collection of multipart/related objects and their binary payload from the package extraction
 
 } atsc3_route_package_extracted_envelope_metadata_and_payload_t;
 
@@ -52,7 +53,7 @@ ATSC3_VECTOR_BUILDER_METHODS_PARENT_INTERFACE_FREE(atsc3_route_package_extracted
 
 char* atsc3_route_package_generate_path_from_appContextIdList(atsc3_fdt_file_t* atsc3_fdt_file);
 
-void atsc3_route_package_extracted_envelope_metadata_and_payload_set_alc_tsi_toi_from_alc_packet(atsc3_route_package_extracted_envelope_metadata_and_payload_t* atsc3_route_package_extracted_envelope_metadata_and_payload, alc_packet_t* alc_packet);
+void atsc3_route_package_extracted_envelope_metadata_and_payload_set_alc_tsi_toi_from_alc_packet(atsc3_route_package_extracted_envelope_metadata_and_payload_t* atsc3_route_package_extracted_envelope_metadata_and_payload, atsc3_alc_packet_t* alc_packet);
 void atsc3_route_package_extracted_envelope_metadata_and_payload_set_fdt_attributes(atsc3_route_package_extracted_envelope_metadata_and_payload_t* atsc3_route_package_extracted_envelope_metadata_and_payload, atsc3_fdt_file_t* atsc3_fdt_file);
 
 atsc3_route_package_extracted_envelope_metadata_and_payload_t* atsc3_route_package_extract_unsigned_payload(const char* filename, const char* package_extract_path);

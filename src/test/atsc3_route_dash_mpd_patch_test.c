@@ -70,9 +70,9 @@ int test_pcre2_simple_match() {
 
 	pcre2_code *re;
 
-	PCRE2_SPTR pattern = "^(a\\w+)\\s(\\w)*";
-	PCRE2_SPTR subject = "abc zz  asdfasdf";
-	PCRE2_SPTR subject_length = strlen((char *)subject);
+	PCRE2_SPTR pattern = (PCRE2_SPTR8)"^(a\\w+)\\s(\\w)*";
+	PCRE2_SPTR subject = (PCRE2_SPTR8)"abc zz  asdfasdf";
+	PCRE2_SIZE subject_length = strlen((char *)subject);
 
 	int errornumber;
 	PCRE2_SIZE erroroffset;
@@ -1171,7 +1171,7 @@ int test_replace_mpd_with_multiple_audio_adaption_sets_pcre2_regex_utils() {
 	for(int i=0; i < match_vector->atsc3_route_dash_matching_s_tsid_representation_media_info_alc_flow_match_v.count; i++) {
 		atsc3_route_dash_matching_s_tsid_representation_media_info_alc_flow_match_t* atsc3_route_dash_matching_s_tsid_representation_media_info_alc_flow_match = match_vector->atsc3_route_dash_matching_s_tsid_representation_media_info_alc_flow_match_v.data[i];
 
-		_ATSC3_ROUTE_DASH_MPD_PATCH_TEST_INFO("s-tsid repId: %s, contentType: %s, startNumber replace start: %d, end: %d, toi value: %d",
+		_ATSC3_ROUTE_DASH_MPD_PATCH_TEST_INFO("s-tsid repId: %s, contentType: %s, startNumber replace start: %zu, end: %zu, toi value: %d",
 				atsc3_route_dash_matching_s_tsid_representation_media_info_alc_flow_match->atsc3_route_s_content_info_media_info->rep_id,
 				atsc3_route_dash_matching_s_tsid_representation_media_info_alc_flow_match->atsc3_route_s_content_info_media_info->content_type,
 				atsc3_route_dash_matching_s_tsid_representation_media_info_alc_flow_match->atsc3_preg2_regex_match_capture_start_number->match_start,

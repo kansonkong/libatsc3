@@ -95,8 +95,8 @@ typedef struct route_fragment {
 
 } route_fragment_t;
 
-void alc_packet_free(alc_packet_t** alc_packet_ptr) {
-	alc_packet_t* alc_packet = *alc_packet_ptr;
+void alc_packet_free(atsc3_alc_packet_t** alc_packet_ptr) {
+	atsc3_alc_packet_t* alc_packet = *alc_packet_ptr;
 	if(alc_packet) {
 		if(alc_packet->def_lct_hdr) {
 			free(alc_packet->def_lct_hdr);
@@ -115,7 +115,7 @@ void alc_packet_free(alc_packet_t** alc_packet_ptr) {
 }
 
 
-int alc_rx_analyze_packet_a331_compliant(char *data, int len, alc_packet_t** alc_packet_ptr) {
+int alc_rx_analyze_packet_a331_compliant(char *data, int len, atsc3_alc_packet_t** alc_packet_ptr) {
 
 	int retval = -1;
 	int header_pos = 0;			//keep track of where we are in the header parsing data[]
@@ -262,6 +262,7 @@ int alc_rx_analyze_packet_a331_compliant(char *data, int len, alc_packet_t** alc
 		ALC_RX_TRACE("flag_a, close session flag: 1 ");
 	}
 
+	//jjustman-2020-07-27 - TODO: confirm this is 'correct'
 	fec_enc_id = def_lct_hdr->codepoint;
 
 	//for any codepoint <=128...
@@ -581,7 +582,7 @@ int alc_rx_analyze_packet_a331_compliant(char *data, int len, alc_packet_t** alc
 	 *
 	 */
 
-    alc_packet_t* alc_packet = calloc(1, sizeof(alc_packet_t));
+    atsc3_alc_packet_t* alc_packet = calloc(1, sizeof(atsc3_alc_packet_t));
     *alc_packet_ptr = alc_packet;
 
     alc_packet->def_lct_hdr = def_lct_hdr;

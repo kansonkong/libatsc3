@@ -93,7 +93,7 @@ int parse_fdt(const char* filename) {
         
         lls_sls_alc_monitor_t* lls_sls_alc_monitor = calloc(1, sizeof(lls_sls_alc_monitor_t));
         
-        lls_sls_alc_update_tsi_toi_from_route_s_tsid(lls_sls_alc_monitor, atsc3_sls_metadata_fragments->atsc3_route_s_tsid);
+        lls_sls_alc_update_all_mediainfo_flow_v_from_route_s_tsid(lls_sls_alc_monitor, atsc3_sls_metadata_fragments->atsc3_route_s_tsid);
 
 //        if(!lls_sls_alc_monitor->audio_tsi) {
 //            _ATSC3_FDT_TEST_UTILS_ERROR("lls_sls_alc_monitor->audio_tsi is null for: %s", filename);
