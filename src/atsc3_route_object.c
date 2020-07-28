@@ -169,7 +169,7 @@ bool atsc3_route_object_is_complete(atsc3_route_object_t* atsc3_route_object) {
 
 
 void atsc3_route_object_reset_and_free_atsc3_route_object_lct_packet_received(atsc3_route_object_t* atsc3_route_object) {
-	_ATSC3_ROUTE_OBJECT_DEBUG("atsc3_route_object_reset_and_free_atsc3_route_object_lct_packet_received: atsc3_route_object: %p, tsi: %d, toi: %d, atsc3_route_object_lct_packet_received_v.count: %d",
+	_ATSC3_ROUTE_OBJECT_WARN("atsc3_route_object_reset_and_free_atsc3_route_object_lct_packet_received: before: atsc3_route_object: %p, tsi: %d, toi: %d, atsc3_route_object_lct_packet_received_v.count: %d",
 			atsc3_route_object,
 			atsc3_route_object->tsi,
 			atsc3_route_object->toi,
@@ -178,6 +178,11 @@ void atsc3_route_object_reset_and_free_atsc3_route_object_lct_packet_received(at
 
 	atsc3_route_object->most_recent_atsc3_route_object_lct_packet_received = NULL;
 	atsc3_route_object_free_atsc3_route_object_lct_packet_received(atsc3_route_object);
+	_ATSC3_ROUTE_OBJECT_WARN("atsc3_route_object_reset_and_free_atsc3_route_object_lct_packet_received: after: atsc3_route_object: %p, tsi: %d, toi: %d, atsc3_route_object_lct_packet_received_v.count: %d",
+				atsc3_route_object,
+				atsc3_route_object->tsi,
+				atsc3_route_object->toi,
+				atsc3_route_object->atsc3_route_object_lct_packet_received_v.count);
 
 }
 
