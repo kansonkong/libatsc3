@@ -294,7 +294,7 @@ atsc3_route_object_lct_packet_received_t* atsc3_route_object_add_or_update_lct_p
 	} else {
 		//increment our packet carousel count
 		atsc3_route_object_lct_packet_received_update_carousel_count(atsc3_route_object_lct_packet_received, atsc3_alc_packet);
-		_ATSC3_SLS_ALC_FLOW_WARN("atsc3_route_object_add_or_update_lct_packet_received: UPDATED, tsi: %d, toi: %d, alc_packet->start_offset: %d, to_check->start_offset: %d, carousel_count: %d",
+		_ATSC3_SLS_ALC_FLOW_DEBUG("atsc3_route_object_add_or_update_lct_packet_received: UPDATED, tsi: %d, toi: %d, alc_packet->start_offset: %d, to_check->start_offset: %d, carousel_count: %d",
 								atsc3_route_object->tsi, atsc3_route_object->toi,
 								atsc3_alc_packet->start_offset,
 								atsc3_route_object_lct_packet_received->start_offset,
@@ -339,7 +339,7 @@ atsc3_route_object_lct_packet_received_t* atsc3_route_object_find_lct_packet_rec
         atsc3_route_object_lct_packet_received_node_t *p = avltree_container_of(avltree_node, atsc3_route_object_lct_packet_received_node_t, node);
         if(p->atsc3_route_object_lct_packet_received) {
         	matching_atsc3_route_object_lct_packet_received = p->atsc3_route_object_lct_packet_received;
-        	_ATSC3_SLS_ALC_FLOW_WARN("atsc3_route_object_find_lct_packet_received: FOUND MATCHING atsc3_route_object_lct_packet_received?! ptr: %p, tsi: %d, toi: %d, alc_packet->start_offset: %d",
+        	_ATSC3_SLS_ALC_FLOW_DEBUG("atsc3_route_object_find_lct_packet_received: FOUND MATCHING atsc3_route_object_lct_packet_received?! ptr: %p, tsi: %d, toi: %d, alc_packet->start_offset: %d",
         									matching_atsc3_route_object_lct_packet_received,
         									atsc3_route_object->tsi, atsc3_route_object->toi,
         									atsc3_alc_packet->start_offset);

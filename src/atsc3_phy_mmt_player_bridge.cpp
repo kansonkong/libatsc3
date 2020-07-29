@@ -527,7 +527,7 @@ void atsc3_phy_mmt_player_bridge_process_packet_phy(block_t* packet) {
             //persist to disk, process sls mbms and/or emit ROUTE media_delivery_event complete to the application tier if
             //the full packet has been recovered (e.g. no missing data units in the forward transmission)
             if(atsc3_route_object) {
-            	atsc3_alc_packet_persist_to_toi_resource_process_sls_mbms_and_emit_callback(&udp_packet->udp_flow, &alc_packet, lls_slt_monitor->lls_sls_alc_monitor, atsc3_route_object);
+            	atsc3_alc_packet_persist_to_toi_resource_process_sls_mbms_and_emit_callback(&udp_packet->udp_flow, alc_packet, lls_slt_monitor->lls_sls_alc_monitor, atsc3_route_object);
             } else {
                 __ERROR("Error in ALC persist, atsc3_route_object is NULL!");
             }

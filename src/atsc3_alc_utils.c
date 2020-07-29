@@ -841,7 +841,7 @@ int atsc3_alc_packet_persist_to_toi_resource_process_sls_mbms_and_emit_callback(
 
                 	atsc3_fdt_file_t* atsc3_fdt_file = atsc3_alc_RS_LS_get_matching_toi_file_instance(atsc3_route_s_tsid_RS_LS, alc_packet->def_lct_hdr->toi);
                 	if(atsc3_fdt_file) {
-                        __ALC_UTILS_INFO("atsc3_fdt_file: object closed: tsi: %u, toi: %u, filename: %s, LCT: codepoint: %d, S-TSID: codepoint: %d, formatId: %d, frag: %d, order: %d, lct packets: %d",
+                        __ALC_UTILS_DEBUG("atsc3_fdt_file: object closed: tsi: %u, toi: %u, filename: %s, LCT: codepoint: %d, S-TSID: codepoint: %d, formatId: %d, frag: %d, order: %d, lct packets: %d",
                         		alc_packet->def_lct_hdr->tsi,
 								alc_packet->def_lct_hdr->toi,
 								new_file_name,
@@ -878,7 +878,7 @@ int atsc3_alc_packet_persist_to_toi_resource_process_sls_mbms_and_emit_callback(
 
                         }
                 	} else {
-                		__ALC_UTILS_INFO("route template: object closed: tsi: %u, toi: %u, filename: %s, LCT: codepoint: %d, S-TSID: codepoint: %d, formatId: %d, frag: %d, order: %d, lct packets: %d",
+                		__ALC_UTILS_DEBUG("route template: object closed: tsi: %u, toi: %u, filename: %s, LCT: codepoint: %d, S-TSID: codepoint: %d, formatId: %d, frag: %d, order: %d, lct packets: %d",
 							alc_packet->def_lct_hdr->tsi,
 							alc_packet->def_lct_hdr->toi,
 							new_file_name,
@@ -1378,7 +1378,7 @@ atsc3_route_object_t* atsc3_alc_persist_route_object_lct_packet_received_for_lls
 	if(lls_sls_alc_monitor) {
 		atsc3_lls_sls_alc_monitor_increment_lct_packet_received_count(lls_sls_alc_monitor);
 		atsc3_route_object = atsc3_sls_alc_flow_route_object_add_unique_lct_packet_received(&lls_sls_alc_monitor->atsc3_sls_alc_all_s_tsid_flow_v, alc_packet);
-		atsc3_lls_sls_alc_monitor_check_all_s_tsid_flows_has_given_up_route_objects(lls_sls_alc_monitor);
+		(lls_sls_alc_monitor);
 	}
 
 	__ALC_UTILS_DEBUG("atsc3_alc_persist_route_object_lct_packet_received_for_lls_sls_alc_monitor_all_flows: complete, tsi: %d, toi: %d, lls_sls_alc_monitor is: %p, size: %d, atsc3_route_object: %p",

@@ -292,7 +292,7 @@ bool atsc3_route_sls_patch_mpd_availability_start_time_and_start_number(atsc3_mi
             //move us N seconds in the future so exoplayer will fast-start (offset minBufferTime and timeShiftBufferDepthMs)
             now += __EXOPLAYER_ROUTE_DASH_SHIFT_AVAILABILITY_START_TIME__;
 #else
-            now += 1; //shift us forward 1 second so we can try to stay behind the horizon
+            now += 2; //shift us forward 2 seconds so we can try to stay behind the horizon
 #endif
 
             int ast_char_pos_end = (ast_char + strlen(_MPD_availability_start_time_VALUE_)) - temp_lower_mpd;
@@ -359,7 +359,6 @@ bool atsc3_route_sls_patch_mpd_availability_start_time_and_start_number(atsc3_mi
 
 				block_t* patched_mpd = atsc3_route_dash_patch_mpd_manifest_from_matching_matching_s_tsid_representation_media_info_alc_flow_match_vector(match_vector , block_mpd);
 				block_Rewind(patched_mpd);
-
 
 				block_Destroy(&atsc3_mime_multipart_related_payload->payload);
 				atsc3_mime_multipart_related_payload->payload = block_Duplicate(patched_mpd);
