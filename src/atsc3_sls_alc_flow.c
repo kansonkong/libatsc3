@@ -241,6 +241,7 @@ atsc3_route_object_lct_packet_received_t* atsc3_route_object_add_or_update_lct_p
 		atsc3_route_object_lct_packet_received = atsc3_route_object_lct_packet_received_new();
 
 		atsc3_route_object_lct_packet_received_set_attributes_from_alc_packet(atsc3_route_object_lct_packet_received, atsc3_alc_packet);
+		atsc3_route_object_add_atsc3_route_object_lct_packet_len(atsc3_route_object, atsc3_route_object_lct_packet_received);
 
 #ifdef __ATSC3_ROUTE_OBJECT_PENDANTIC__
 		printf("new atsc3_route_object_lct_packet_received: atsc3_route_object: %p, lct_packet_recv: %p, tsi: %d, toi: %d, start_offset: %d\n",atsc3_route_object, atsc3_route_object_lct_packet_received, atsc3_alc_packet->def_lct_hdr->tsi, atsc3_alc_packet->def_lct_hdr->toi, atsc3_alc_packet->start_offset);
