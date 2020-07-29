@@ -105,7 +105,10 @@ typedef struct atsc3_route_object {
 	bool					has_given_up;
 
 	ATSC3_VECTOR_BUILDER_STRUCT(atsc3_route_object_lct_packet_received);
+
 	atsc3_route_object_lct_packet_received_t* 	most_recent_atsc3_route_object_lct_packet_received;
+
+	long 					recovery_complete_timestamp; 					//gtl() for when atsc3_route_object_set_object_recovery_complete was invoked on this object
 
 
 } atsc3_route_object_t;
@@ -116,6 +119,7 @@ ATSC3_VECTOR_BUILDER_METHODS_PARENT_INTERFACE_FREE(atsc3_route_object);
 void atsc3_route_object_set_temporary_object_recovery_filename_if_null(atsc3_route_object_t* atsc3_route_object, char* temporary_filename);
 void atsc3_route_object_clear_temporary_object_recovery_filename(atsc3_route_object_t* atsc3_route_object);
 void atsc3_route_object_set_final_object_recovery_filename(atsc3_route_object_t* atsc3_route_object, char* final_object_recovery_filename);
+void atsc3_route_object_set_object_recovery_complete(atsc3_route_object_t* atsc3_route_object);
 
 void atsc3_route_object_calculate_expected_route_object_lct_packet_count(atsc3_route_object_t* atsc3_route_object, atsc3_route_object_lct_packet_received_t* atsc3_route_object_lct_packet_received);
 

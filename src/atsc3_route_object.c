@@ -57,6 +57,13 @@ void atsc3_route_object_set_final_object_recovery_filename(atsc3_route_object_t*
 	atsc3_route_object->final_object_recovery_filename = strdup(final_object_recovery_filename);
 }
 
+void atsc3_route_object_set_object_recovery_complete(atsc3_route_object_t* atsc3_route_object) {
+	atsc3_route_object->most_recent_atsc3_route_object_lct_packet_received = NULL;
+	atsc3_route_object_free_atsc3_route_object_lct_packet_received(atsc3_route_object);
+	atsc3_route_object->recovery_complete_timestamp = gtl();
+}
+
+
 void atsc3_route_object_calculate_expected_route_object_lct_packet_count(atsc3_route_object_t* atsc3_route_object, atsc3_route_object_lct_packet_received_t* atsc3_route_object_lct_packet_received) {
 	//always use the MAX of our lct_packet_len so we don't indadvertantly grow our target count upwards on the final packet (short payload)
 	atsc3_route_object->expected_route_object_lct_packet_len_for_count = __MAX(atsc3_route_object->expected_route_object_lct_packet_len_for_count, atsc3_route_object_lct_packet_received->packet_len);
@@ -221,6 +228,15 @@ bool atsc3_route_object_is_complete(atsc3_route_object_t* atsc3_route_object) {
 }
 
 
+/*
+ *	jjustman-2020-07-28 - atsc3_route_object_reset_and_free_atsc3_route_object_lct_packet_received:
+ *
+ *		frees atsc3_route_bject_lct_packet_received objects, and removes as candidate from "given_up" eviction, but will NOT unlink temporary or final object recovery filenames
+ *
+ *		used for SLS flows
+ *
+*/
+
 void atsc3_route_object_reset_and_free_atsc3_route_object_lct_packet_received(atsc3_route_object_t* atsc3_route_object) {
 
 #ifdef __ATSC3_ROUTE_OBJECT_PENDANTIC__
@@ -235,8 +251,6 @@ void atsc3_route_object_reset_and_free_atsc3_route_object_lct_packet_received(at
 	atsc3_route_object_free_atsc3_route_object_lct_packet_received(atsc3_route_object);
 	atsc3_route_object->expected_route_object_lct_packet_count = 0;
 	atsc3_route_object->expected_route_object_lct_packet_len_for_count = 0;
-
-	//jjustman-2020-07-28 - TODO: unlink
 
 	freeclean((void**)&atsc3_route_object->temporary_object_recovery_filename);
 	freeclean((void**)&atsc3_route_object->final_object_recovery_filename);
@@ -254,6 +268,15 @@ void atsc3_route_object_reset_and_free_atsc3_route_object_lct_packet_received(at
 }
 
 
+/*
+ *	jjustman-2020-07-28 - atsc3_route_object_reset_and_free_and_unlink_recovery_file_atsc3_route_object_lct_packet_received:
+ *
+ *		frees atsc3_route_bject_lct_packet_received objects, and removes as candidate from "given_up" eviction, and WILL unlink temporary/final object recovery on disk after
+ *
+ *		used for media fragment cleanup when 		            	atsc3_route_object_set_final_object_recovery_filename(atsc3_route_object, new_file_name); is set
+ *
+ *		invoked from atsc3_lls_sls_alc_monitor_check_all_s_tsid_flows_has_given_up_route_objects
+*/
 
 void atsc3_route_object_reset_and_free_and_unlink_recovery_file_atsc3_route_object_lct_packet_received(atsc3_route_object_t* atsc3_route_object) {
 
