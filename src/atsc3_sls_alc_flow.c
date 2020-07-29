@@ -235,6 +235,25 @@ void atsc3_route_object_set_alc_flow_and_tsi_toi(atsc3_route_object_t* atsc3_rou
 	//defer any other attributes to the atsc3_route_object_lct_packet_received impl
 }
 
+void
+action(const void *nodep, const VISIT which, const int depth)
+{
+    int *datap;
+    switch (which) {
+    case preorder:
+        break;
+    case postorder:
+        datap = *(int **) nodep;
+        printf("%6d\n", *datap);
+        break;
+    case endorder:
+        break;
+    case leaf:
+        datap = *(int **) nodep;
+        printf("%6d\n", *datap);
+        break;
+    }
+}
 atsc3_route_object_lct_packet_received_t* atsc3_route_object_add_or_update_lct_packet_received(atsc3_route_object_t* atsc3_route_object, atsc3_alc_packet_t* atsc3_alc_packet) {
 	atsc3_route_object_lct_packet_received_t* atsc3_route_object_lct_packet_received = atsc3_route_object_find_lct_packet_received(atsc3_route_object, atsc3_alc_packet);
 	if(!atsc3_route_object_lct_packet_received) {
@@ -242,6 +261,23 @@ atsc3_route_object_lct_packet_received_t* atsc3_route_object_add_or_update_lct_p
 
 		atsc3_route_object_lct_packet_received_set_attributes_from_alc_packet(atsc3_route_object_lct_packet_received, atsc3_alc_packet);
 		atsc3_route_object_add_atsc3_route_object_lct_packet_len(atsc3_route_object, atsc3_route_object_lct_packet_received);
+		//add this to our atsc3_route_object->atsc3_route_object_lct_packet_received_tree_root_p
+
+		atsc3_route_object_lct_packet_received_t* inserted_atsc3_route_object_lct_packet_received = NULL;
+
+		atsc3_route_object_lct_packet_received_node_t* atsc3_route_object_lct_packet_received_node_to_insert = calloc(1, sizeof(atsc3_route_object_lct_packet_received_node_t));
+		if(atsc3_route_object_lct_packet_received->use_sbn_esi) {
+			atsc3_route_object_lct_packet_received_node_to_insert->key = atsc3_route_object_lct_packet_received->sbn_esi_merged;
+		} else if(atsc3_route_object_lct_packet_received->use_start_offset) {
+			atsc3_route_object_lct_packet_received_node_to_insert->key = atsc3_route_object_lct_packet_received->start_offset;
+		} else {
+			return NULL;
+		}
+
+		atsc3_route_object_lct_packet_received_node_to_insert->atsc3_route_object_lct_packet_received = atsc3_route_object_lct_packet_received;
+
+		avltree_insert(&atsc3_route_object_lct_packet_received_node_to_insert->node, &atsc3_route_object->atsc3_route_object_lct_packet_received_tree);
+
 
 #ifdef __ATSC3_ROUTE_OBJECT_PENDANTIC__
 		printf("new atsc3_route_object_lct_packet_received: atsc3_route_object: %p, lct_packet_recv: %p, tsi: %d, toi: %d, start_offset: %d\n",atsc3_route_object, atsc3_route_object_lct_packet_received, atsc3_alc_packet->def_lct_hdr->tsi, atsc3_alc_packet->def_lct_hdr->toi, atsc3_alc_packet->start_offset);
@@ -258,63 +294,114 @@ atsc3_route_object_lct_packet_received_t* atsc3_route_object_add_or_update_lct_p
 	} else {
 		//increment our packet carousel count
 		atsc3_route_object_lct_packet_received_update_carousel_count(atsc3_route_object_lct_packet_received, atsc3_alc_packet);
-		_ATSC3_SLS_ALC_FLOW_DEBUG("atsc3_route_object_add_or_update_lct_packet_received: UPDATED, tsi: %d, toi: %d, alc_packet->start_offset: %d, to_check->start_offset: %d",
+		_ATSC3_SLS_ALC_FLOW_WARN("atsc3_route_object_add_or_update_lct_packet_received: UPDATED, tsi: %d, toi: %d, alc_packet->start_offset: %d, to_check->start_offset: %d, carousel_count: %d",
 								atsc3_route_object->tsi, atsc3_route_object->toi,
 								atsc3_alc_packet->start_offset,
-								atsc3_route_object_lct_packet_received->start_offset);
+								atsc3_route_object_lct_packet_received->start_offset,
+								atsc3_route_object_lct_packet_received->carousel_count);
 
 	}
-
 
 	atsc3_route_object_lct_packet_received_update_atsc3_route_object(atsc3_route_object, atsc3_route_object_lct_packet_received);
 
 	return atsc3_route_object_lct_packet_received;
 }
 
+/*
+ * jjustman-2020-07-28: two ways to solve this o(N^2) operation:
+ *
+ * 	1.) implement avltree (binary search tree) for our matching atsc3_alc_packet->start_offset and ptr* ref,
+ * 		-OR-
+ * 	2.)	enforce qsort, and walk the tree backwards...
+ *
+ */
+
+
 atsc3_route_object_lct_packet_received_t* atsc3_route_object_find_lct_packet_received(atsc3_route_object_t* atsc3_route_object, atsc3_alc_packet_t* atsc3_alc_packet) {
 	atsc3_route_object_lct_packet_received_t* matching_atsc3_route_object_lct_packet_received = NULL;
-	atsc3_route_object_lct_packet_received_t* to_check_atsc3_route_object_lct_packet_received = NULL;
 
-	//jjustman-2020-07-28 - todo: refactor out this matching logic
+	//hack-ish...
+	atsc3_route_object_lct_packet_received_t* to_find_atsc3_route_object_lct_packet_received = atsc3_route_object_lct_packet_received_new();
+	atsc3_route_object_lct_packet_received_set_source_attributes_from_alc_packet(to_find_atsc3_route_object_lct_packet_received, atsc3_alc_packet);
 
-	for(int i=0; i < atsc3_route_object->atsc3_route_object_lct_packet_received_v.count && !matching_atsc3_route_object_lct_packet_received; i++) {
-		to_check_atsc3_route_object_lct_packet_received = atsc3_route_object->atsc3_route_object_lct_packet_received_v.data[i];
+	atsc3_route_object_lct_packet_received_node_t* atsc3_route_object_lct_packet_received_node_to_lookup = calloc(1, sizeof(atsc3_route_object_lct_packet_received_node_t));
 
-		if(atsc3_alc_packet->use_sbn_esi && to_check_atsc3_route_object_lct_packet_received->use_sbn_esi) {
-			if(atsc3_alc_packet->sbn == to_check_atsc3_route_object_lct_packet_received->sbn && atsc3_alc_packet->esi == to_check_atsc3_route_object_lct_packet_received->esi) {
-				matching_atsc3_route_object_lct_packet_received = to_check_atsc3_route_object_lct_packet_received;
-			}
-		} else if(atsc3_alc_packet->use_start_offset && to_check_atsc3_route_object_lct_packet_received->use_start_offset) {
-			if(atsc3_alc_packet->start_offset == to_check_atsc3_route_object_lct_packet_received->start_offset) {
-
-				_ATSC3_SLS_ALC_FLOW_DEBUG("atsc3_route_object_find_lct_packet_received: found matching for tsi: %d, toi: %d, alc_packet->start_offset: %d, to_check->start_offset: %d",
-						atsc3_route_object->tsi, atsc3_route_object->toi,
-						atsc3_alc_packet->start_offset,
-						to_check_atsc3_route_object_lct_packet_received->start_offset);
-
-				matching_atsc3_route_object_lct_packet_received = to_check_atsc3_route_object_lct_packet_received;
-			}
-		}
+	if(to_find_atsc3_route_object_lct_packet_received->use_sbn_esi) {
+		atsc3_route_object_lct_packet_received_node_to_lookup->key = to_find_atsc3_route_object_lct_packet_received->sbn_esi_merged;
+	} else if(to_find_atsc3_route_object_lct_packet_received->use_start_offset) {
+		atsc3_route_object_lct_packet_received_node_to_lookup->key = to_find_atsc3_route_object_lct_packet_received->start_offset;
+	} else {
+		return NULL;
 	}
+
+	struct avltree_node* avltree_node = avltree_lookup(&atsc3_route_object_lct_packet_received_node_to_lookup->node, &atsc3_route_object->atsc3_route_object_lct_packet_received_tree);
+	if(avltree_node) {
+        atsc3_route_object_lct_packet_received_node_t *p = avltree_container_of(avltree_node, atsc3_route_object_lct_packet_received_node_t, node);
+        if(p->atsc3_route_object_lct_packet_received) {
+        	matching_atsc3_route_object_lct_packet_received = p->atsc3_route_object_lct_packet_received;
+        	_ATSC3_SLS_ALC_FLOW_WARN("atsc3_route_object_find_lct_packet_received: FOUND MATCHING atsc3_route_object_lct_packet_received?! ptr: %p, tsi: %d, toi: %d, alc_packet->start_offset: %d",
+        									matching_atsc3_route_object_lct_packet_received,
+        									atsc3_route_object->tsi, atsc3_route_object->toi,
+        									atsc3_alc_packet->start_offset);
+
+        }
+	}
+
+	freeclean((void**)&to_find_atsc3_route_object_lct_packet_received);
+	freeclean((void**)&atsc3_route_object_lct_packet_received_node_to_lookup);
 
 	return matching_atsc3_route_object_lct_packet_received;
 }
+//	atsc3_route_object_lct_packet_received_t* matching_atsc3_route_object_lct_packet_received = NULL;
+//	atsc3_route_object_lct_packet_received_t* to_check_atsc3_route_object_lct_packet_received = NULL;
+//
+//	//jjustman-2020-07-28 - todo: refactor out this matching logic to use tfind/tsearch
+//
+//	for(int i=0; i < atsc3_route_object->atsc3_route_object_lct_packet_received_v.count && !matching_atsc3_route_object_lct_packet_received; i++) {
+//		to_check_atsc3_route_object_lct_packet_received = atsc3_route_object->atsc3_route_object_lct_packet_received_v.data[i];
+//
+//		if(atsc3_alc_packet->use_sbn_esi && to_check_atsc3_route_object_lct_packet_received->use_sbn_esi) {
+//			if(atsc3_alc_packet->sbn == to_check_atsc3_route_object_lct_packet_received->sbn && atsc3_alc_packet->esi == to_check_atsc3_route_object_lct_packet_received->esi) {
+//				matching_atsc3_route_object_lct_packet_received = to_check_atsc3_route_object_lct_packet_received;
+//			}
+//		} else if(atsc3_alc_packet->use_start_offset && to_check_atsc3_route_object_lct_packet_received->use_start_offset) {
+//			if(atsc3_alc_packet->start_offset == to_check_atsc3_route_object_lct_packet_received->start_offset) {
+//
+//				_ATSC3_SLS_ALC_FLOW_DEBUG("atsc3_route_object_find_lct_packet_received: found matching for tsi: %d, toi: %d, alc_packet->start_offset: %d, to_check->start_offset: %d",
+//						atsc3_route_object->tsi, atsc3_route_object->toi,
+//						atsc3_alc_packet->start_offset,
+//						to_check_atsc3_route_object_lct_packet_received->start_offset);
+//
+//				matching_atsc3_route_object_lct_packet_received = to_check_atsc3_route_object_lct_packet_received;
+//			}
+//		}
+//	}
+//
+//	return matching_atsc3_route_object_lct_packet_received;
 
+
+void atsc3_route_object_lct_packet_received_set_source_attributes_from_alc_packet(atsc3_route_object_lct_packet_received_t* atsc3_route_object_lct_packet_received, atsc3_alc_packet_t* atsc3_alc_packet) {
+
+	atsc3_route_object_lct_packet_received->use_sbn_esi = atsc3_alc_packet->use_sbn_esi;
+	atsc3_route_object_lct_packet_received->sbn = atsc3_alc_packet->sbn;
+	atsc3_route_object_lct_packet_received->esi = atsc3_alc_packet->esi;
+	uint32_t sbn_esi_merged = (atsc3_alc_packet->sbn & 0xFF) << 24 || (atsc3_alc_packet->esi & 0xFFFFFF);
+
+	atsc3_route_object_lct_packet_received->sbn_esi_merged = sbn_esi_merged;
+
+	atsc3_route_object_lct_packet_received->use_start_offset = atsc3_alc_packet->use_start_offset;
+	atsc3_route_object_lct_packet_received->start_offset = atsc3_alc_packet->start_offset;
+}
 
 void atsc3_route_object_lct_packet_received_set_attributes_from_alc_packet(atsc3_route_object_lct_packet_received_t* atsc3_route_object_lct_packet_received, atsc3_alc_packet_t* atsc3_alc_packet) {
 	atsc3_route_object_lct_packet_received->first_received_timestamp = gtl();
 	atsc3_route_object_lct_packet_received->most_recent_received_timestamp = atsc3_route_object_lct_packet_received->first_received_timestamp;
 	atsc3_route_object_lct_packet_received->codepoint = atsc3_alc_packet->def_lct_hdr->codepoint;
 
+	atsc3_route_object_lct_packet_received_set_source_attributes_from_alc_packet(atsc3_route_object_lct_packet_received, atsc3_alc_packet);
 	//jjustman-2020-07-28 - todo - fixme
 	atsc3_route_object_lct_packet_received->fec_encoding_id = atsc3_alc_packet->def_lct_hdr->codepoint;
 
-	atsc3_route_object_lct_packet_received->use_sbn_esi = atsc3_alc_packet->use_sbn_esi;
-	atsc3_route_object_lct_packet_received->sbn = atsc3_alc_packet->sbn;
-	atsc3_route_object_lct_packet_received->esi = atsc3_alc_packet->esi;
-
-	atsc3_route_object_lct_packet_received->use_start_offset = atsc3_alc_packet->use_start_offset;
-	atsc3_route_object_lct_packet_received->start_offset = atsc3_alc_packet->start_offset;
 
 	atsc3_route_object_lct_packet_received->close_object_flag = atsc3_alc_packet->close_object_flag;
 	atsc3_route_object_lct_packet_received->close_session_flag = atsc3_alc_packet->close_session_flag;

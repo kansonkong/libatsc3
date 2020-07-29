@@ -5,6 +5,8 @@
  *      Author: jjustman
  */
 
+#include <search.h>
+
 #ifndef ATSC3_SLS_ALC_FLOW_H_
 #define ATSC3_SLS_ALC_FLOW_H_
 
@@ -93,6 +95,11 @@ void atsc3_route_object_set_alc_flow_and_tsi_toi(atsc3_route_object_t* atsc3_rou
 atsc3_route_object_lct_packet_received_t* atsc3_route_object_add_or_update_lct_packet_received(atsc3_route_object_t* atsc3_route_object, atsc3_alc_packet_t* atsc3_alc_packet);
 atsc3_route_object_lct_packet_received_t* atsc3_route_object_find_lct_packet_received(atsc3_route_object_t* atsc3_route_object, atsc3_alc_packet_t* atsc3_alc_packet);
 
+//for tsearch/tfind with atsc3_route_object->atsc3_route_object_lct_packet_received_tree_root_p
+int atsc3_route_object_lct_packet_compare_sbn_esi_merged(const void *pa, const void *pb);
+int atsc3_route_object_lct_packet_compare_start_offset(const void *pa, const void *pb);
+
+void atsc3_route_object_lct_packet_received_set_source_attributes_from_alc_packet(atsc3_route_object_lct_packet_received_t* atsc3_route_object_lct_packet_received, atsc3_alc_packet_t* atsc3_alc_packet);
 void atsc3_route_object_lct_packet_received_set_attributes_from_alc_packet(atsc3_route_object_lct_packet_received_t* atsc3_route_object_lct_packet_received, atsc3_alc_packet_t* atsc3_alc_packet);
 void atsc3_route_object_lct_packet_received_update_carousel_count(atsc3_route_object_lct_packet_received_t* atsc3_route_object_lct_packet_received, atsc3_alc_packet_t* atsc3_alc_packet);
 

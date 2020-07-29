@@ -56,7 +56,7 @@ ATSC3_VECTOR_BUILDER_METHODS_IMPLEMENTATION(lls_slt_monitor, lls_sls_alc_session
 ATSC3_VECTOR_BUILDER_METHODS_IMPLEMENTATION(lls_slt_monitor, lls_slt_service_id_group_id_cache);
 
 //tracking for ROUTE object recovery
-ATSC3_VECTOR_BUILDER_METHODS_IMPLEMENTATION(atsc3_sls_alc_flow, atsc3_route_object);
+ATSC3_VECTOR_BUILDER_METHODS_IMPLEMENTATION_NO_CCTOR(atsc3_sls_alc_flow, atsc3_route_object);
 
 
 /**

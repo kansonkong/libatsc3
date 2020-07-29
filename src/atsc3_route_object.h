@@ -16,7 +16,7 @@
 
 #include <stdlib.h>
 #include <stdbool.h>
-
+#include <search.h>
 
 #ifndef ATSC3_ROUTE_OBJECT_H_
 #define ATSC3_ROUTE_OBJECT_H_
@@ -24,6 +24,9 @@
 #include "atsc3_utils.h"
 #include "atsc3_logging_externs.h"
 #include "atsc3_vector_builder.h"
+
+#include "libtree.h"
+
 
 #if defined (__cplusplus)
 extern "C" {
@@ -70,6 +73,7 @@ typedef struct atsc3_route_object_lct_packet_received {
 	bool					use_sbn_esi;		//for fec_encoding_id=6 - raptorQ
 	uint8_t					sbn;
 	uint32_t				esi:24;
+	uint32_t				sbn_esi_merged;		//combined for tsearch
 
 	bool					use_start_offset;	//for all other fec_encoding_id's
 	uint32_t				start_offset;
@@ -86,6 +90,12 @@ typedef struct atsc3_route_object_lct_packet_received {
 } atsc3_route_object_lct_packet_received_t;
 
 typedef struct atsc3_sls_alc_flow atsc3_sls_alc_flow_t;
+
+typedef struct atsc3_route_object_lct_packet_received_node {
+        uint32_t key;
+        atsc3_route_object_lct_packet_received_t* atsc3_route_object_lct_packet_received;
+        struct avltree_node node;
+} atsc3_route_object_lct_packet_received_node_t;
 
 typedef struct atsc3_route_object {
 	atsc3_sls_alc_flow_t*	atsc3_sls_alc_flow;
@@ -107,6 +117,7 @@ typedef struct atsc3_route_object {
 	bool					has_given_up;
 
 	ATSC3_VECTOR_BUILDER_STRUCT(atsc3_route_object_lct_packet_received);
+	struct avltree			atsc3_route_object_lct_packet_received_tree;
 
 	atsc3_route_object_lct_packet_received_t* 	most_recent_atsc3_route_object_lct_packet_received;
 
