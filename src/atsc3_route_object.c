@@ -85,7 +85,7 @@ void atsc3_route_object_set_final_object_recovery_filename(atsc3_route_object_t*
  */
 void atsc3_route_object_set_object_recovery_complete(atsc3_route_object_t* atsc3_route_object) {
  	atsc3_route_object->recovery_complete_timestamp = gtl();
- 	_ATSC3_ROUTE_OBJECT_INFO("atsc3_route_object_set_object_recovery_complete: atsc3_route_object: %p, tsi: %d, toi: %d, atsc3_route_object_lct_packet_received_v.count: %d, timestamp: %.2f",
+ 	_ATSC3_ROUTE_OBJECT_DEBUG("atsc3_route_object_set_object_recovery_complete: atsc3_route_object: %p, tsi: %d, toi: %d, atsc3_route_object_lct_packet_received_v.count: %d, timestamp: %.2f",
  			atsc3_route_object,
  			atsc3_route_object->tsi,
  			atsc3_route_object->toi,

@@ -42,8 +42,8 @@ atsc3_alp_packet_collection_t* atsc3_alp_packet_collection = NULL;
 //TODO - add SMPTE-2022.1 FEC decoding (see fork of prompeg-decoder - https://github.com/jjustman/prompeg-decoder)
 
 void process_packet(u_char *user, const struct pcap_pkthdr *pkthdr, const u_char *packet) {
-    __INFO("");
-    __INFO("process_packet: pcap packet: %p, pcap len: %d", packet, pkthdr->len);
+	__DEBUG("");
+	__DEBUG("process_packet: pcap packet: %p, pcap len: %d", packet, pkthdr->len);
     
     //extract our outer ip/udp/rtp packet
     atsc3_ip_udp_rtp_packet_t* ip_udp_rtp_packet = atsc3_ip_udp_rtp_process_packet_from_pcap(user, pkthdr, packet);
@@ -61,19 +61,19 @@ void process_packet(u_char *user, const struct pcap_pkthdr *pkthdr, const u_char
         }
         
         if(atsc3_stltp_tunnel_packet_processed->atsc3_stltp_baseband_packet_v.count) {
-            __INFO(">>>stltp atsc3_stltp_baseband_packet packet complete: count: %u",  atsc3_stltp_tunnel_packet_processed->atsc3_stltp_baseband_packet_v.count);
+        	__DEBUG(">>>stltp atsc3_stltp_baseband_packet packet complete: count: %u",  atsc3_stltp_tunnel_packet_processed->atsc3_stltp_baseband_packet_v.count);
             
             //TODO: jjustman-2019-08-09 refactor stltp baseband to alp processing logic out
             
             for(int i=0; i < atsc3_stltp_tunnel_packet_processed->atsc3_stltp_baseband_packet_v.count; i++) {
                 atsc3_alp_packet_t* atsc3_alp_packet = NULL;
                 atsc3_stltp_baseband_packet_t* atsc3_stltp_baseband_packet = atsc3_stltp_tunnel_packet_processed->atsc3_stltp_baseband_packet_v.data[i];
-                __INFO("atsc3_baseband_packet: sequence_num: %d, port: %d",
+                __DEBUG("atsc3_baseband_packet: sequence_num: %d, port: %d",
                        atsc3_stltp_baseband_packet->ip_udp_rtp_packet_inner->rtp_header->sequence_number,
                        atsc3_stltp_baseband_packet->ip_udp_rtp_packet_inner->udp_flow.dst_port);
                 
 				if(atsc3_stltp_baseband_packet->ip_udp_rtp_packet_inner->udp_flow.dst_port != stltp_ip_port_filter) {
-                    __INFO("ignorning stltp_baseband_packet port: %d",  atsc3_stltp_baseband_packet->ip_udp_rtp_packet_inner->udp_flow.dst_port);
+					__DEBUG("ignorning stltp_baseband_packet port: %d",  atsc3_stltp_baseband_packet->ip_udp_rtp_packet_inner->udp_flow.dst_port);
                     //atsc3_stltp_baseband_packet_free(&atsc3_stltp_baseband_packet);
                     continue;
                 }
@@ -81,7 +81,7 @@ void process_packet(u_char *user, const struct pcap_pkthdr *pkthdr, const u_char
                 //make sure we get a packet back, base field pointer (13b) : 0x1FFF (8191 bytes) will return NULL
                 atsc3_baseband_packet_t* atsc3_baseband_packet = atsc3_stltp_parse_baseband_packet(atsc3_stltp_baseband_packet);
                 if(!atsc3_baseband_packet) {
-                    __INFO("no baseband packet returned, ^^^ should be only padding");
+                	__DEBUG("no baseband packet returned, ^^^ should be only padding");
                 }
                 
                 if(atsc3_baseband_packet) {
@@ -133,7 +133,7 @@ void process_packet(u_char *user, const struct pcap_pkthdr *pkthdr, const u_char
                         //merge block_t pre_pointer by computing the difference...
                         uint32_t remaining_packet_pending_bytes = block_Remaining_size(atsc3_alp_packet_collection->atsc3_alp_packet_pending->alp_payload);
                         uint32_t remaining_baseband_frame_bytes = block_Remaining_size(atsc3_baseband_packet->alp_payload_pre_pointer);
-                        __INFO("atsc3_baseband_packet: alp_packet_pending: size: %d, fragment remaining bytes: %d, bb pre_pointer frame bytes remaining: %d, bb pre_pointer size: %d",
+                        __DEBUG("atsc3_baseband_packet: alp_packet_pending: size: %d, fragment remaining bytes: %d, bb pre_pointer frame bytes remaining: %d, bb pre_pointer size: %d",
                                atsc3_alp_packet_collection->atsc3_alp_packet_pending->alp_payload->p_size,
                                remaining_packet_pending_bytes,
                                remaining_baseband_frame_bytes,
@@ -154,7 +154,7 @@ void process_packet(u_char *user, const struct pcap_pkthdr *pkthdr, const u_char
                                __WARN("atsc3_baseband_packet: pending packet: short and post pointer: %d bytes still remaining", final_alp_packet_short_bytes_remaining);
 
                             } else {
-                                __INFO("atsc3_baseband_packet: carry over pending packet: short:  %d bytes still remaining", final_alp_packet_short_bytes_remaining);
+                            	__DEBUG("atsc3_baseband_packet: carry over pending packet: short:  %d bytes still remaining", final_alp_packet_short_bytes_remaining);
                             }
                             
                             //do not attempt to free atsc3_alp_packet_collection->atsc3_alp_packet_pending, as it will free our interm reference to atsc3_alp_packet
@@ -170,7 +170,7 @@ void process_packet(u_char *user, const struct pcap_pkthdr *pkthdr, const u_char
                             atsc3_alp_packet_pre_pointer = NULL;
                             
                             uint32_t remaining_baseband_frame_bytes = block_Remaining_size(atsc3_baseband_packet->alp_payload_pre_pointer);
-                            __INFO("atsc3_baseband_packet: pushed:  bb pre_pointer frame bytes remaining: %d, bb pre_pointer size: %d",
+                            __DEBUG("atsc3_baseband_packet: pushed:  bb pre_pointer frame bytes remaining: %d, bb pre_pointer size: %d",
                                    remaining_baseband_frame_bytes,
                                    atsc3_baseband_packet->alp_payload_pre_pointer->p_size);
                             
@@ -196,7 +196,7 @@ void process_packet(u_char *user, const struct pcap_pkthdr *pkthdr, const u_char
                     if(atsc3_baseband_packet->alp_payload_pre_pointer && block_Remaining_size(atsc3_baseband_packet->alp_payload_pre_pointer)) {
 
                         while((atsc3_alp_packet = atsc3_alp_packet_parse(atsc3_baseband_packet->alp_payload_pre_pointer))) {
-                            __INFO("  atsc3_baseband_packet: carry over:  parse alp_payload_pre_pointer: pos: %d, size: %d",
+                        	__DEBUG("  atsc3_baseband_packet: carry over:  parse alp_payload_pre_pointer: pos: %d, size: %d",
                                    atsc3_baseband_packet->alp_payload_pre_pointer->i_pos,
                                    atsc3_baseband_packet->alp_payload_pre_pointer->p_size);
                             
@@ -233,13 +233,13 @@ void process_packet(u_char *user, const struct pcap_pkthdr *pkthdr, const u_char
                 
                     //process post_pointer for our baseband frame
                     if(atsc3_baseband_packet->alp_payload_post_pointer) {
-                        __INFO("atsc3_baseband_packet: starting alp_payload_post_pointer: pos: %d, size: %d",
+                    	__DEBUG("atsc3_baseband_packet: starting alp_payload_post_pointer: pos: %d, size: %d",
                                atsc3_baseband_packet->alp_payload_post_pointer->i_pos,
                                atsc3_baseband_packet->alp_payload_post_pointer->p_size);
                         
 
                         while((atsc3_alp_packet = atsc3_alp_packet_parse(atsc3_baseband_packet->alp_payload_post_pointer))) {
-                            __INFO("  atsc3_baseband_packet: after parse alp_payload_post_pointer: pos: %d, size: %d",
+                        	__DEBUG("  atsc3_baseband_packet: after parse alp_payload_post_pointer: pos: %d, size: %d",
                                    atsc3_baseband_packet->alp_payload_post_pointer->i_pos,
                                    atsc3_baseband_packet->alp_payload_post_pointer->p_size);
                             
@@ -269,7 +269,7 @@ void process_packet(u_char *user, const struct pcap_pkthdr *pkthdr, const u_char
                             __WARN(" !!!TODO: Carrying over one byte in alp_payload_post_pointer: %d, peek: 0x%02x", remaining_size, atsc3_stltp_tunnel_packet_processed->atsc3_baseband_packet_short_fragment->p_buffer[0]);
                         }
                     } else {
-                        __INFO("atsc3_alp_packet_pending: no alp_payload_post_pointer - carrying over pkt: %p", atsc3_alp_packet_collection->atsc3_alp_packet_pending);
+                    	__DEBUG("atsc3_alp_packet_pending: no alp_payload_post_pointer - carrying over pkt: %p", atsc3_alp_packet_collection->atsc3_alp_packet_pending);
                  
                     }
                 }
@@ -303,7 +303,7 @@ void process_packet(u_char *user, const struct pcap_pkthdr *pkthdr, const u_char
         }
         
         if(atsc3_stltp_tunnel_packet_processed->atsc3_stltp_preamble_packet_v.count) {
-            __INFO("preamble: >>>stltp atsc3_stltp_preamble_packet packet complete: count: %u",  atsc3_stltp_tunnel_packet_processed->atsc3_stltp_preamble_packet_v.count);
+        	__DEBUG("preamble: >>>stltp atsc3_stltp_preamble_packet packet complete: count: %u",  atsc3_stltp_tunnel_packet_processed->atsc3_stltp_preamble_packet_v.count);
             for(int i=0; i < atsc3_stltp_tunnel_packet_processed->atsc3_stltp_preamble_packet_v.count; i++) {
 
 #ifdef PREAMBLE_PACKET_PARSE_AND_LOG
@@ -319,7 +319,7 @@ void process_packet(u_char *user, const struct pcap_pkthdr *pkthdr, const u_char
         }
         
         if(atsc3_stltp_tunnel_packet_processed->atsc3_stltp_timing_management_packet_v.count) {
-            __INFO("timing management: >>>stltp atsc3_stltp_timing_management_packet packet complete: count: %u",  atsc3_stltp_tunnel_packet_processed->atsc3_stltp_timing_management_packet_v.count);
+        	__DEBUG("timing management: >>>stltp atsc3_stltp_timing_management_packet packet complete: count: %u",  atsc3_stltp_tunnel_packet_processed->atsc3_stltp_timing_management_packet_v.count);
             for(int i=0; i < atsc3_stltp_tunnel_packet_processed->atsc3_stltp_timing_management_packet_v.count; i++) {
 
 #ifdef TIMING_MANAGEMENT_PACKET_PARSE_AND_LOG
@@ -343,7 +343,7 @@ cleanup:
 }
 
 int main(int argc,char **argv) {
-    _IP_UDP_RTP_PARSER_DEBUG_ENABLED = 1;
+    _IP_UDP_RTP_PARSER_DEBUG_ENABLED = 0;
     _IP_UDP_RTP_PARSER_TRACE_ENABLED = 0;
 
     _ATSC3_UTILS_TRACE_ENABLED = 0;
