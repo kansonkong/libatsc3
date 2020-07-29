@@ -58,11 +58,26 @@ void atsc3_route_object_set_final_object_recovery_filename(atsc3_route_object_t*
 }
 
 void atsc3_route_object_calculate_expected_route_object_lct_packet_count(atsc3_route_object_t* atsc3_route_object, atsc3_route_object_lct_packet_received_t* atsc3_route_object_lct_packet_received) {
-	atsc3_route_object->expected_route_object_lct_packet_len_for_count = atsc3_route_object_lct_packet_received->packet_len;
+	//always use the MAX of our lct_packet_len so we don't indadvertantly grow our target count upwards on the final packet (short payload)
+	atsc3_route_object->expected_route_object_lct_packet_len_for_count = __MAX(atsc3_route_object->expected_route_object_lct_packet_len_for_count, atsc3_route_object_lct_packet_received->packet_len);
 
-	uint32_t route_object_lct_packet_received_target_count = (atsc3_route_object->object_length / (atsc3_route_object_lct_packet_received->packet_len +1) ) + 1;
+	uint32_t route_object_lct_packet_received_target_count = __MAX(1, (atsc3_route_object->object_length / (__MAX(atsc3_route_object->expected_route_object_lct_packet_len_for_count, 1))));
 	atsc3_route_object->expected_route_object_lct_packet_count = route_object_lct_packet_received_target_count;
+
+#ifdef __ATSC3_ROUTE_OBJECT_PENDANTIC__
+	_ATSC3_ROUTE_OBJECT_TRACE("atsc3_route_object_calculate_expected_route_object_lct_packet_count: tsi: %d, toi: %d, object_length: %d, lct_packet_len: %d, expected_route_object_lct_packet_len_for_count: %d, expected_route_object_lct_packet_count: %d, current count: %d, threshold: %d",
+			atsc3_route_object->tsi, atsc3_route_object->toi,
+			atsc3_route_object->object_length,
+			atsc3_route_object_lct_packet_received->packet_len,
+			atsc3_route_object->expected_route_object_lct_packet_len_for_count,
+			atsc3_route_object->expected_route_object_lct_packet_count,
+			atsc3_route_object->atsc3_route_object_lct_packet_received_v.count,
+			(atsc3_route_object->expected_route_object_lct_packet_count * 7) / 8);
+#endif
+
 }
+
+
 
 
 int atsc3_route_object_lct_packet_received_generic_sbn_start_offset_comparator(const void *a_dp, const void *b_dp) {
@@ -97,21 +112,23 @@ int atsc3_route_object_lct_packet_received_generic_sbn_start_offset_comparator(c
 //						a fully recovered object...
 
 bool atsc3_route_object_is_complete(atsc3_route_object_t* atsc3_route_object) {
+	atsc3_route_object_lct_packet_received_t* atsc3_route_object_lct_packet_received = NULL;
 	bool has_missing_source_blocks = false;
+	uint32_t last_object_position = 0;
 
-	//short-circuit if we don't have at least 7/8 of route_object_lct_packets from estimate
-	uint32_t expected_route_object_lct_packet_count_threshold = (atsc3_route_object->expected_route_object_lct_packet_count * (7/8));
+	//short-circuit if we don't have at least 7/8 of route_object_lct_packets from estimate (-2 for single digit lct_packet counts that may get lost...)
+	//or only do this calculation of expected_
+	int expected_route_object_lct_packet_count_threshold_adjusted = __MAX(1, (((int)atsc3_route_object->expected_route_object_lct_packet_count * 7) / 8) - 2);
+	uint32_t expected_route_object_lct_packet_count_threshold = (uint32_t)expected_route_object_lct_packet_count_threshold_adjusted;
 
-	//#ifdef __ATSC3_ROUTE_OBJECT_PENDANTIC__
-	_ATSC3_ROUTE_OBJECT_DEBUG("atsc3_route_object_is_complete: pre-flight check with atsc3_route_object->atsc3_route_object_lct_packet_received_v.count: %d,  expected_route_object_lct_packet_count_threshold: %d", atsc3_route_object->atsc3_route_object_lct_packet_received_v.count, expected_route_object_lct_packet_count_threshold);
-	//#endif
 	if(atsc3_route_object->atsc3_route_object_lct_packet_received_v.count < expected_route_object_lct_packet_count_threshold) {
+		#ifdef __ATSC3_ROUTE_OBJECT_PENDANTIC__
+		_ATSC3_ROUTE_OBJECT_TRACE("atsc3_route_object_is_complete: tsi: %d, toi: %d, pre-flight check with atsc3_route_object->atsc3_route_object_lct_packet_received_v.count: %d,  expected_route_object_lct_packet_count_threshold: %d",
+				atsc3_route_object->tsi, atsc3_route_object->toi,
+				atsc3_route_object->atsc3_route_object_lct_packet_received_v.count, expected_route_object_lct_packet_count_threshold);
+		#endif
 		return false;
 	}
-
-	atsc3_route_object_lct_packet_received_t* atsc3_route_object_lct_packet_received = NULL;
-
-	uint32_t last_object_position = 0;
 
 #ifdef __ATSC3_ROUTE_OBJECT_PENDANTIC__
 	for(int i=0; i < atsc3_route_object->atsc3_route_object_lct_packet_received_v.count; i++) {

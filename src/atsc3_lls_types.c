@@ -286,14 +286,15 @@ void atsc3_lls_sls_alc_monitor_check_all_s_tsid_flows_has_given_up_route_objects
 					if(atsc3_route_object->most_recent_atsc3_route_object_lct_packet_received) {
 						if(atsc3_route_object->most_recent_atsc3_route_object_lct_packet_received->most_recent_received_timestamp < (now - _ATSC3_LLS_SLS_ALC_MONITOR_LCT_PACKETS_GIVEN_UP_SECONDS * 1000)) {
 
-							_ATSC3_LLS_TYPES_INFO("atsc3_lls_sls_alc_monitor_check_all_s_tsid_flows_has_given_up_route_objects: candidate route_object: %p, given up timestamp: %.4f (delta: %.4f), tsi: %d, toi: %d, object_length: %d, lct_packets_received: %d",
+							_ATSC3_LLS_TYPES_INFO("atsc3_lls_sls_alc_monitor_check_all_s_tsid_flows_has_given_up_route_objects: candidate route_object: %p, given up timestamp: %.4f (delta: %.4f), tsi: %d, toi: %d, object_length: %d, lct_packets_received: %d, expected: %d",
 									atsc3_route_object,
 									atsc3_route_object->most_recent_atsc3_route_object_lct_packet_received->most_recent_received_timestamp / 1000.0,
 									(now - atsc3_route_object->most_recent_atsc3_route_object_lct_packet_received->most_recent_received_timestamp) / 1000.0,
 									atsc3_route_object->tsi,
 									atsc3_route_object->toi,
 									atsc3_route_object->object_length,
-									atsc3_route_object->atsc3_route_object_lct_packet_received_v.count);
+									atsc3_route_object->atsc3_route_object_lct_packet_received_v.count,
+									atsc3_route_object->expected_route_object_lct_packet_count);
 
 							atsc3_route_object_reset_and_free_and_unlink_recovery_file_atsc3_route_object_lct_packet_received(atsc3_route_object);
 							atsc3_sls_alc_flow_remove_atsc3_route_object(atsc3_sls_alc_flow, atsc3_route_object);
