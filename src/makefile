@@ -36,6 +36,7 @@
 
 
 CFLAGS=-Wno-nullability-completeness -Wno-expansion-to-defined -Wno-builtin-requires-header
+
 DEBUG=-g
 ASAN=-fsanitize=address -fno-omit-frame-pointer
 
@@ -418,11 +419,15 @@ atsc3_utils_sha256.o: atsc3_utils_sha256.h atsc3_utils_sha256.c
 	cc $(CFLAGS) $(DEBUG)  -c atsc3_utils_sha256.c -o atsc3_utils_sha256.o
 	
 atsc3_route_object.o:	atsc3_route_object.h atsc3_route_object.c
-	cc $(CFLAGS) $(DEBUG)  -c atsc3_route_object.c -o atsc3_route_object.o
+	cc $(CFLAGS) $(DEBUG) \
+		-c atsc3_route_object.c \
+		-o atsc3_route_object.o
 	
 atsc3_sls_alc_flow.o:	atsc3_sls_alc_flow.h atsc3_sls_alc_flow.c
 	cc $(CFLAGS) $(DEBUG)  -c atsc3_sls_alc_flow.c -o atsc3_sls_alc_flow.o
 	
+avltree.o: libtree.h avl.c
+	cc $(CFLAGS) $(DEBUG)  -c avl.c -o avltree.o
 
 # unit standalone tests with mock data
 
@@ -522,7 +527,8 @@ libatsc3_intermediate.o: atsc3_lls.o \
 		atsc3_route_dash_utils.o \
 		atsc3_utils_sha256.o \
 		atsc3_route_object.o \
-		atsc3_sls_alc_flow.o
+		atsc3_sls_alc_flow.o \
+		avltree.o
 
 	ld  -o libatsc3_intermediate.o -r \
 		atsc3_lls.o \
@@ -584,7 +590,8 @@ libatsc3_intermediate.o: atsc3_lls.o \
 		atsc3_route_dash_utils.o \
 		atsc3_utils_sha256.o \
 		atsc3_route_object.o \
-		atsc3_sls_alc_flow.o
+		atsc3_sls_alc_flow.o \
+		avltree.o		
 		
 
 libatsc3.o: libatsc3_intermediate.o bento4_mock.o
@@ -902,7 +909,8 @@ test/atsc3_route_dash_mpd_patch_test: test/atsc3_route_dash_mpd_patch_test.c \
 										atsc3_mmtp_ntp32_to_pts.o \
 										atsc3_utils_sha256.o \
 										atsc3_route_object.o \
-										atsc3_sls_alc_flow.o
+										atsc3_sls_alc_flow.o \
+										avltree.o
 										
 										
 	cc $(ASAN) $(CFLAGS) $(DEBUG) test/atsc3_route_dash_mpd_patch_test.c  \
@@ -936,6 +944,7 @@ test/atsc3_route_dash_mpd_patch_test: test/atsc3_route_dash_mpd_patch_test.c \
 							atsc3_utils_sha256.o \
 							atsc3_route_object.o \
 							atsc3_sls_alc_flow.o \
+							avltree.o \
 							$(LOCAL_LD_LIBS) \
 							-o test/atsc3_route_dash_mpd_patch_test 
 

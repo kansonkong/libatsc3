@@ -20,6 +20,22 @@ int _ROUTE_OBJECT_INFO_ENABLED = 1;
 int _ROUTE_OBJECT_DEBUG_ENABLED = 0;
 int _ROUTE_OBJECT_TRACE_ENABLED = 0;
 
+int atsc3_route_object_lct_packet_received_cmp_fn(const struct avltree_node *a, const struct avltree_node *b)
+{
+        atsc3_route_object_lct_packet_received_node_t *p = avltree_container_of(a, atsc3_route_object_lct_packet_received_node_t, node);
+        atsc3_route_object_lct_packet_received_node_t *q = avltree_container_of(b, atsc3_route_object_lct_packet_received_node_t, node);
+
+        return (p->key < q->key)? -1 : (p->key > q->key) ? 1 : 0 ;
+}
+
+atsc3_route_object_t* atsc3_route_object_new() {
+	atsc3_route_object_t* atsc3_route_object = calloc(1, sizeof(atsc3_route_object_t));
+
+	avltree_init(&atsc3_route_object->atsc3_route_object_lct_packet_received_tree, atsc3_route_object_lct_packet_received_cmp_fn, 0);
+
+	return atsc3_route_object;
+}
+
 ATSC3_VECTOR_BUILDER_METHODS_IMPLEMENTATION(atsc3_route_object, atsc3_route_object_lct_packet_received);
 //default free for this item since we don't calloc any members
 ATSC3_VECTOR_BUILDER_METHODS_ITEM_FREE(atsc3_route_object_lct_packet_received);
@@ -71,6 +87,15 @@ void atsc3_route_object_set_object_recovery_complete(atsc3_route_object_t* atsc3
 
 	atsc3_route_object->most_recent_atsc3_route_object_lct_packet_received = NULL;
 	atsc3_route_object_free_atsc3_route_object_lct_packet_received(atsc3_route_object);
+
+	//clean up our avltree (stale) entries
+
+	struct avltree_node* node;
+	while((node = avltree_first(&atsc3_route_object->atsc3_route_object_lct_packet_received_tree))) {
+		avltree_remove(node, &atsc3_route_object->atsc3_route_object_lct_packet_received_tree);
+        atsc3_route_object_lct_packet_received_node_t *p = avltree_container_of(node, atsc3_route_object_lct_packet_received_node_t, node);
+        freesafe((void*)p);
+	}
 	atsc3_route_object->recovery_complete_timestamp = gtl();
 }
 
@@ -301,6 +326,15 @@ void atsc3_route_object_reset_and_free_atsc3_route_object_lct_packet_received(at
 
 	atsc3_route_object->most_recent_atsc3_route_object_lct_packet_received = NULL;
 	atsc3_route_object_free_atsc3_route_object_lct_packet_received(atsc3_route_object);
+
+	//clean up our stale avltree entries
+	struct avltree_node* node;
+	while((node = avltree_first(&atsc3_route_object->atsc3_route_object_lct_packet_received_tree))) {
+		avltree_remove(node, &atsc3_route_object->atsc3_route_object_lct_packet_received_tree);
+		atsc3_route_object_lct_packet_received_node_t *p = avltree_container_of(node, atsc3_route_object_lct_packet_received_node_t, node);
+		freesafe((void*)p);
+	}
+
 	atsc3_route_object->expected_route_object_lct_packet_count = 0;
 	atsc3_route_object->expected_route_object_lct_packet_len_for_count = 0;
 	atsc3_route_object->cumulative_lct_packet_len = 0;
@@ -344,10 +378,21 @@ void atsc3_route_object_reset_and_free_and_unlink_recovery_file_atsc3_route_obje
 
 	atsc3_route_object->most_recent_atsc3_route_object_lct_packet_received = NULL;
 	atsc3_route_object_free_atsc3_route_object_lct_packet_received(atsc3_route_object);
+
+	//clean up our avltree (stale) entries
+
+	struct avltree_node* node;
+	while((node = avltree_first(&atsc3_route_object->atsc3_route_object_lct_packet_received_tree))) {
+		avltree_remove(node, &atsc3_route_object->atsc3_route_object_lct_packet_received_tree);
+        atsc3_route_object_lct_packet_received_node_t *p = avltree_container_of(node, atsc3_route_object_lct_packet_received_node_t, node);
+        freesafe((void*)p);
+	}
+
 	atsc3_route_object->expected_route_object_lct_packet_count = 0;
 	atsc3_route_object->expected_route_object_lct_packet_len_for_count = 0;
 	atsc3_route_object->cumulative_lct_packet_len = 0;
 	atsc3_route_object_recovery_file_handle_close(atsc3_route_object);
+
 
 
 	//jjustman-2020-07-28: unlink temporary_object_recovery_filename
