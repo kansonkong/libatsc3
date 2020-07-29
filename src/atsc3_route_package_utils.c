@@ -219,7 +219,7 @@ atsc3_route_package_extracted_envelope_metadata_and_payload_t* atsc3_route_packa
 					fclose(fp_payload);
 					fp_payload = NULL;
 				} else {
-˙					__ROUTE_PACKAGE_UTILS_ERROR("unable to open payload file: %s", sandboxed_filename);
+					__ROUTE_PACKAGE_UTILS_ERROR("unable to open payload file: %s", sandboxed_filename);
 				}
 			}
 
@@ -227,6 +227,8 @@ atsc3_route_package_extracted_envelope_metadata_and_payload_t* atsc3_route_packa
 			__ROUTE_PACKAGE_UTILS_ERROR("atsc3_mime_multipart_related_instance is null!");
 			ret = -1;
 		}
+
+		fclose(fp);
 	}
 
 	return atsc3_route_package_extracted_envelope_metadata_and_payload;
