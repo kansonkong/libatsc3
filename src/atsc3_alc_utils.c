@@ -890,13 +890,10 @@ int atsc3_alc_packet_persist_to_toi_resource_process_sls_mbms_and_emit_callback(
                 }
 
                 //jjustman-2020-07-28 - purge our lct_packet_received list as we are moved, and remove atsc3_route_object from flow
-                atsc3_route_object_reset_and_free_atsc3_route_object_lct_packet_received(atsc3_route_object);
-                if(matching_sls_alc_flow) {
-                    atsc3_sls_alc_flow_remove_atsc3_route_object(matching_sls_alc_flow, atsc3_route_object);
-                    if(!matching_sls_alc_flow->atsc3_route_object_v.count) {
-                    	//todo: jjustman-2020-07-28 candiate to reap this flow?
-                    }
-                }
+            	//atsc3_lls_sls_alc_monitor_check_all_s_tsid_flows_has_given_up_route_objects will handle object unlinking for media fragment
+            	atsc3_route_object_set_object_recovery_complete(atsc3_route_object);
+
+
             }
         }
 	} else {
