@@ -80,24 +80,20 @@ void atsc3_route_object_set_final_object_recovery_filename(atsc3_route_object_t*
 
 /*
  * only run this when you are done working with atsc3_route_object_lct_packets
+ *
+ * borrowed from atsc3_route_object_reset_and_free_atsc3_route_object_lct_packet_received
  */
 void atsc3_route_object_set_object_recovery_complete(atsc3_route_object_t* atsc3_route_object) {
-	//make sure to close our recovery file handle, if applicable
-	atsc3_route_object_recovery_file_handle_close(atsc3_route_object);
-
-	atsc3_route_object->most_recent_atsc3_route_object_lct_packet_received = NULL;
-	atsc3_route_object_free_atsc3_route_object_lct_packet_received(atsc3_route_object);
-
-	//clean up our avltree (stale) entries
-
-	struct avltree_node* node;
-	while((node = avltree_first(&atsc3_route_object->atsc3_route_object_lct_packet_received_tree))) {
-		avltree_remove(node, &atsc3_route_object->atsc3_route_object_lct_packet_received_tree);
-        atsc3_route_object_lct_packet_received_node_t *p = avltree_container_of(node, atsc3_route_object_lct_packet_received_node_t, node);
-        freesafe((void*)p);
-	}
-	atsc3_route_object->recovery_complete_timestamp = gtl();
+ 	atsc3_route_object->recovery_complete_timestamp = gtl();
+ 	_ATSC3_ROUTE_OBJECT_INFO("atsc3_route_object_set_object_recovery_complete: atsc3_route_object: %p, tsi: %d, toi: %d, atsc3_route_object_lct_packet_received_v.count: %d, timestamp: %.2f",
+ 			atsc3_route_object,
+ 			atsc3_route_object->tsi,
+ 			atsc3_route_object->toi,
+ 			atsc3_route_object->atsc3_route_object_lct_packet_received_v.count,
+ 			atsc3_route_object->recovery_complete_timestamp);
+ 	atsc3_route_object_reset_and_free_atsc3_route_object_lct_packet_received(atsc3_route_object);
 }
+
 
 void atsc3_route_object_recovery_file_handle_assign(atsc3_route_object_t* atsc3_route_object, FILE* recovery_file_handle) {
 	if(!recovery_file_handle) {
