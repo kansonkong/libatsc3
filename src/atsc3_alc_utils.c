@@ -595,6 +595,11 @@ FILE* alc_object_pre_allocate(char* file_name, atsc3_alc_packet_t* alc_packet) {
 		__TO_PREALLOC_ZERO_SLAB_PTR = (uint8_t*)malloc(__TO_PREALLOC_ZERO_SLAB_SIZE);
 		memset(__TO_PREALLOC_ZERO_SLAB_PTR, 0, __TO_PREALLOC_ZERO_SLAB_SIZE);
 	}
+	struct stat st = {0};
+
+	if(stat(__ALC_DUMP_OUTPUT_PATH__, &st) == -1) {
+		 mkdir(__ALC_DUMP_OUTPUT_PATH__, 0777);
+	}
 
     if( access( file_name, F_OK ) != -1 ) {
     	__ALC_UTILS_IOTRACE("pre_allocate: file %s exists, removing", file_name);
@@ -663,9 +668,14 @@ int alc_packet_write_fragment(FILE* f, char* file_name, uint32_t offset, atsc3_a
  *      	-1 if unable to open file pointer to object
  *      	-2 if lls_sls_alc_monitor or !lls_sls_alc_monitor->lls_sls_monitor_output_buffer_mode.file_dump_enabled
  *
+ *      	if/when we pre-allocate, objects will be placed in __ALC_DUMP_OUTPUT_PATH__
+ *
  */
 
 int atsc3_alc_packet_persist_to_toi_resource_process_sls_mbms_and_emit_callback(udp_flow_t *udp_flow, atsc3_alc_packet_t *alc_packet, lls_sls_alc_monitor_t *lls_sls_alc_monitor, atsc3_route_object_t* atsc3_route_object) {
+    char* s_tsid_content_location = NULL;
+    FILE *f = NULL;
+    bool should_preallocate_fp = true;
 
 	int bytesWritten = 0;
 
@@ -674,20 +684,20 @@ int atsc3_alc_packet_persist_to_toi_resource_process_sls_mbms_and_emit_callback(
     }
 
     char* temporary_filename = alc_packet_dump_to_object_get_temporary_recovering_filename(udp_flow, alc_packet);
-
     atsc3_route_object_set_temporary_object_recovery_filename_if_null(atsc3_route_object, temporary_filename);
 
-    char* s_tsid_content_location = NULL;
-    
-    mkdir("route", 0777);
-
-    FILE *f = NULL;
-
-    bool should_preallocate_fp = true;
-
-    //jjustman-2020-07-28 - do not pre-allocate if we have lct_packets received for this object
+    //jjustman-2020-07-28 - do not pre-allocate if we have lct_packets received for this object for carousel recovery or if we have an active file* recovery handle open
     if(atsc3_route_object->atsc3_route_object_lct_packet_received_v.count) {
-		f = atsc3_alc_object_open(temporary_filename);
+    	if(atsc3_route_object->recovery_file_handle) {
+    		f = atsc3_route_object->recovery_file_handle;
+    	} else {
+    		//if we are already pre-allocated, recover this file
+    		f = atsc3_alc_object_open(temporary_filename);
+    		if(f) {
+    			atsc3_route_object_recovery_file_handle_assign(atsc3_route_object, f);
+    		}
+    	}
+
 		if(f) {
 			should_preallocate_fp = false;
 		}
@@ -700,14 +710,16 @@ int atsc3_alc_packet_persist_to_toi_resource_process_sls_mbms_and_emit_callback(
 				f = alc_object_pre_allocate(temporary_filename, alc_packet);
 				__ALC_UTILS_IOTRACE("raptor_fec: done creating new pre-allocation for temporary_filename: %s, size: %llu", temporary_filename, alc_packet->transfer_len);
 			} else {
-				f = alc_object_open_or_pre_allocate(temporary_filename, alc_packet);
+				f = alc_object_open_or_pre_allocate(temporary_filename, alc_packet); //this shouldn't be used much (if at all..)
 			}
+			if(!f) {
+				__ALC_UTILS_WARN("atsc3_alc_packet_persist_to_toi_resource_process_sls_mbms_and_emit_callback, unable to open temporary_filename: %s", temporary_filename);
+				bytesWritten = -1;
+				goto cleanup;
+			}
+			atsc3_route_object_recovery_file_handle_assign(atsc3_route_object, f);
     	}
-        if(!f) {
-            __ALC_UTILS_WARN("atsc3_alc_packet_persist_to_toi_resource_process_sls_mbms_and_emit_callback, unable to open temporary_filename: %s", temporary_filename);
-            bytesWritten = -1;
-            goto cleanup;
-        }
+
         alc_packet_write_fragment(f, temporary_filename, alc_packet->esi, alc_packet);
         __ALC_UTILS_IOTRACE("raptor_fec: done writing out fragment for %s", temporary_filename);
 
@@ -731,34 +743,28 @@ int atsc3_alc_packet_persist_to_toi_resource_process_sls_mbms_and_emit_callback(
 
 				f = alc_object_open_or_pre_allocate(temporary_filename, alc_packet);
 			}
+
+			if(!f) {
+				__ALC_UTILS_WARN("atsc3_alc_packet_persist_to_toi_resource_process_sls_mbms_and_emit_callback, unable to open file: %s", temporary_filename);
+			    bytesWritten = -1;
+			    goto cleanup;
+			}
+			atsc3_route_object_recovery_file_handle_assign(atsc3_route_object, f);
 		}
-        if(!f) {
-            __ALC_UTILS_WARN("atsc3_alc_packet_persist_to_toi_resource_process_sls_mbms_and_emit_callback, unable to open file: %s", temporary_filename);
-            bytesWritten = -1;
-            goto cleanup;
-        }
+
         
         alc_packet_write_fragment(f, temporary_filename, alc_packet->start_offset, alc_packet);
-        __ALC_UTILS_IOTRACE("done writing out temporary_filename for %s", temporary_filename);
-
+        __ALC_UTILS_IOTRACE("alc_packet->start_offset: done writing out temporary_filename for %s", temporary_filename);
     } else {
         __ALC_UTILS_WARN("atsc3_alc_packet_persist_to_toi_resource_process_sls_mbms_and_emit_callback, no alc offset strategy for temporary_filename: %s", temporary_filename);
     }
 	
-    if(f) {
-        fclose(f);
-        f = NULL;
-    }
-    
-    //both codepoint=0 and codepoint=128 will set close_object_flag when we have finished delivery of the object
-    //jjustman-2020-02-28 - atsc3_alc_rx.c will also set close_object implicity if:
-    //  SB_LB_E_FEC_ENC_ID                             : transfer_len >0 && transfer_len == alc_packet->alc_len + alc_packet->esi
-    //  all others (e.g. alc_packet->use_start_offset) : transfer_len >0 && transfer_len == alc_packet->alc_len + alc_packet->start_offset
-
-	//jjustman-2020-07-28 - check with atsc3_route_object if we are 'complete' - removed old logic for ...if(alc_packet->close_object_flag) {
+    //jjustman-2020-07-28 - do not close f handle here, as we will persist it via atsc3_route_object, 16% of profiling time in atsc3_alc_listener_mde_writer was in atsc3_alc_object_open
 
     //jjustman-2020-07-28 - TODO: don't redispatch repeadedly for carousels...
     if(atsc3_route_object_is_complete(atsc3_route_object)) {
+
+        atsc3_route_object_recovery_file_handle_close(atsc3_route_object);
 
         //update our sls here if we have a service we are listenting to
         if(lls_sls_alc_monitor && lls_sls_alc_monitor->atsc3_lls_slt_service &&  alc_packet->def_lct_hdr->tsi == 0) {
@@ -781,6 +787,8 @@ int atsc3_alc_packet_persist_to_toi_resource_process_sls_mbms_and_emit_callback(
             free(final_mbms_toi_filename);
 
         } else {
+        	//jjustman-2020-07-28 - todo: use atsc3_route_object for fp handle reference
+
             s_tsid_content_location = alc_packet_dump_to_object_get_s_tsid_filename(udp_flow, alc_packet, lls_sls_alc_monitor);
      
             if(strncmp(temporary_filename, s_tsid_content_location, __MIN(strlen(temporary_filename), strlen(s_tsid_content_location))) !=0) {
@@ -892,7 +900,6 @@ int atsc3_alc_packet_persist_to_toi_resource_process_sls_mbms_and_emit_callback(
                 //jjustman-2020-07-28 - purge our lct_packet_received list as we are moved, and remove atsc3_route_object from flow
             	//atsc3_lls_sls_alc_monitor_check_all_s_tsid_flows_has_given_up_route_objects will handle object unlinking for media fragment
             	atsc3_route_object_set_object_recovery_complete(atsc3_route_object);
-
 
             }
         }
@@ -1402,6 +1409,9 @@ atsc3_route_object_t* atsc3_alc_persist_route_object_lct_packet_received_for_lls
  * ***NOTE***: atsc3_alc_packet_check_monitor_flow_for_toi_wraparound_discontinuity MUST BE CALLED BEFORE
  *              atsc3_alc_persist_route_object_lct_packet_received_for_lls_sls_alc_monitor_all_flows IN FLOW,
  *              OTHERWISE lls_sls_alc_monitor->last_..._toi will be overwritten and the discontinuity WILL NOT BE DETECTED!
+ *
+ *
+ *              jjustman-2020-07-28 - TODO: validate this functionality after refactoring...
  */
 void atsc3_alc_packet_check_monitor_flow_for_toi_wraparound_discontinuity(atsc3_alc_packet_t* alc_packet, lls_sls_alc_monitor_t* lls_sls_alc_monitor) {
     if (lls_sls_alc_monitor) {

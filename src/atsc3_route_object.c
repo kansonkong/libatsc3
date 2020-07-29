@@ -34,6 +34,8 @@ void atsc3_route_object_free(atsc3_route_object_t** atsc3_route_object_p) {
 			freeclean((void**)&atsc3_route_object->temporary_object_recovery_filename);
 			freeclean((void**)&atsc3_route_object->final_object_recovery_filename);
 
+			atsc3_route_object_recovery_file_handle_close(atsc3_route_object);
+
 			free(atsc3_route_object);
 			atsc3_route_object = NULL;
 		}
@@ -41,6 +43,9 @@ void atsc3_route_object_free(atsc3_route_object_t** atsc3_route_object_p) {
 	}
 }
 
+void atsc3_route_object_add_atsc3_route_object_lct_packet_len(atsc3_route_object_t* atsc3_route_object, atsc3_route_object_lct_packet_received_t* atsc3_route_object_lct_packet_received) {
+	atsc3_route_object->cumulative_lct_packet_len += atsc3_route_object_lct_packet_received->packet_len;
+}
 
 void atsc3_route_object_set_temporary_object_recovery_filename_if_null(atsc3_route_object_t* atsc3_route_object, char* temporary_filename) {
 	if(!atsc3_route_object->temporary_object_recovery_filename) {
@@ -57,10 +62,41 @@ void atsc3_route_object_set_final_object_recovery_filename(atsc3_route_object_t*
 	atsc3_route_object->final_object_recovery_filename = strdup(final_object_recovery_filename);
 }
 
+/*
+ * only run this when you are done working with atsc3_route_object_lct_packets
+ */
 void atsc3_route_object_set_object_recovery_complete(atsc3_route_object_t* atsc3_route_object) {
+	//make sure to close our recovery file handle, if applicable
+	atsc3_route_object_recovery_file_handle_close(atsc3_route_object);
+
 	atsc3_route_object->most_recent_atsc3_route_object_lct_packet_received = NULL;
 	atsc3_route_object_free_atsc3_route_object_lct_packet_received(atsc3_route_object);
 	atsc3_route_object->recovery_complete_timestamp = gtl();
+}
+
+void atsc3_route_object_recovery_file_handle_assign(atsc3_route_object_t* atsc3_route_object, FILE* recovery_file_handle) {
+	if(!recovery_file_handle) {
+		_ATSC3_ROUTE_OBJECT_WARN("atsc3_route_object_recovery_file_handle_assign: recovery_file_handle is NULL!");
+		return;
+	}
+
+	if(atsc3_route_object->recovery_file_handle) {
+		if(atsc3_route_object->recovery_file_handle != recovery_file_handle) {
+			_ATSC3_ROUTE_OBJECT_WARN("atsc3_route_object_recovery_file_handle_assign: existing atsc3_route_object->recovery_file_handle is: %p, new is: %p, releasing atsc3_route_object handle!",
+					atsc3_route_object->recovery_file_handle, recovery_file_handle);
+			fclose(atsc3_route_object->recovery_file_handle);
+			atsc3_route_object->recovery_file_handle = NULL;
+		}
+	}
+
+	atsc3_route_object->recovery_file_handle = recovery_file_handle;
+}
+
+void atsc3_route_object_recovery_file_handle_close(atsc3_route_object_t* atsc3_route_object) {
+	if(atsc3_route_object->recovery_file_handle) {
+		fclose(atsc3_route_object->recovery_file_handle);
+		atsc3_route_object->recovery_file_handle = NULL;
+	}
 }
 
 
@@ -83,8 +119,6 @@ void atsc3_route_object_calculate_expected_route_object_lct_packet_count(atsc3_r
 #endif
 
 }
-
-
 
 
 int atsc3_route_object_lct_packet_received_generic_sbn_start_offset_comparator(const void *a_dp, const void *b_dp) {
@@ -118,13 +152,11 @@ int atsc3_route_object_lct_packet_received_generic_sbn_start_offset_comparator(c
 //jjustman-2020-07-28 - first try, check to make sure we have all of our lct_packet's received and the most recent packet would be
 //						a fully recovered object...
 
-bool atsc3_route_object_is_complete(atsc3_route_object_t* atsc3_route_object) {
-	atsc3_route_object_lct_packet_received_t* atsc3_route_object_lct_packet_received = NULL;
-	bool has_missing_source_blocks = false;
-	uint32_t last_object_position = 0;
-
+/*
+ * method 1: estimate total lct_packets needed for this object - results in lots of overhead with large objects (~100's of qsort calls for one object)
+ *
 	//short-circuit if we don't have at least 7/8 of route_object_lct_packets from estimate (-2 for single digit lct_packet counts that may get lost...)
-	//or only do this calculation of expected_
+	//or only do this calculation of packet_len ~ object_len?
 	int expected_route_object_lct_packet_count_threshold_adjusted = __MAX(1, (((int)atsc3_route_object->expected_route_object_lct_packet_count * 7) / 8) - 2);
 	uint32_t expected_route_object_lct_packet_count_threshold = (uint32_t)expected_route_object_lct_packet_count_threshold_adjusted;
 
@@ -155,6 +187,26 @@ bool atsc3_route_object_is_complete(atsc3_route_object_t* atsc3_route_object) {
 	}
 	last_object_position = 0;
 #endif
+ */
+
+bool atsc3_route_object_is_complete(atsc3_route_object_t* atsc3_route_object) {
+	atsc3_route_object_lct_packet_received_t* atsc3_route_object_lct_packet_received = NULL;
+	bool has_missing_source_blocks = false;
+	uint32_t last_object_position = 0;
+
+	int atsc3_route_object_length_threshold = __MAX(1, (int)atsc3_route_object->object_length - 1500);
+
+	//short circuit in that our cumulative_lct_packet_len should be close to our object length
+	if(atsc3_route_object->cumulative_lct_packet_len < atsc3_route_object_length_threshold) {
+		#ifdef __ATSC3_ROUTE_OBJECT_PENDANTIC__
+		_ATSC3_ROUTE_OBJECT_INFO("atsc3_route_object_is_complete: tsi: %d, toi: %d, pre-flight check with atsc3_route_object->atsc3_route_object_lct_packet_received_v.count: %d,  cumulative_lct_packet_len: %d, < atsc3_route_object_length_threshold: %d",
+				atsc3_route_object->tsi, atsc3_route_object->toi,
+				atsc3_route_object->atsc3_route_object_lct_packet_received_v.count,
+				atsc3_route_object->cumulative_lct_packet_len,
+				atsc3_route_object_length_threshold);
+		#endif
+		return false;
+	}
 
 	qsort((void**)atsc3_route_object->atsc3_route_object_lct_packet_received_v.data, atsc3_route_object->atsc3_route_object_lct_packet_received_v.count, sizeof(atsc3_route_object_lct_packet_received_t**), atsc3_route_object_lct_packet_received_generic_sbn_start_offset_comparator);
 
@@ -251,6 +303,8 @@ void atsc3_route_object_reset_and_free_atsc3_route_object_lct_packet_received(at
 	atsc3_route_object_free_atsc3_route_object_lct_packet_received(atsc3_route_object);
 	atsc3_route_object->expected_route_object_lct_packet_count = 0;
 	atsc3_route_object->expected_route_object_lct_packet_len_for_count = 0;
+	atsc3_route_object->cumulative_lct_packet_len = 0;
+	atsc3_route_object_recovery_file_handle_close(atsc3_route_object);
 
 	freeclean((void**)&atsc3_route_object->temporary_object_recovery_filename);
 	freeclean((void**)&atsc3_route_object->final_object_recovery_filename);
@@ -292,14 +346,15 @@ void atsc3_route_object_reset_and_free_and_unlink_recovery_file_atsc3_route_obje
 	atsc3_route_object_free_atsc3_route_object_lct_packet_received(atsc3_route_object);
 	atsc3_route_object->expected_route_object_lct_packet_count = 0;
 	atsc3_route_object->expected_route_object_lct_packet_len_for_count = 0;
+	atsc3_route_object->cumulative_lct_packet_len = 0;
+	atsc3_route_object_recovery_file_handle_close(atsc3_route_object);
+
 
 	//jjustman-2020-07-28: unlink temporary_object_recovery_filename
 	if(atsc3_route_object->temporary_object_recovery_filename) {
-		FILE* f = atsc3_object_open(atsc3_route_object->temporary_object_recovery_filename);
-		if(f) {
-			fclose(f);
+		struct stat st = {0};
+		if(stat(atsc3_route_object->temporary_object_recovery_filename, &st) == 0) {
 			_ATSC3_ROUTE_OBJECT_INFO("atsc3_route_object_reset_and_free_and_unlink_recovery_file_atsc3_route_object_lct_packet_received: removing temporary_object_recovery_filename: %s", atsc3_route_object->temporary_object_recovery_filename);
-
 	        remove(atsc3_route_object->temporary_object_recovery_filename);
 		}
 		freeclean((void**)&atsc3_route_object->temporary_object_recovery_filename);
@@ -307,12 +362,9 @@ void atsc3_route_object_reset_and_free_and_unlink_recovery_file_atsc3_route_obje
 
 	//jjustman-2020-07-28: unlink final_object_recovery_filename
 	if(atsc3_route_object->final_object_recovery_filename) {
-		FILE* f = atsc3_object_open(atsc3_route_object->final_object_recovery_filename);
-		if(f) {
-			fclose(f);
-
+		struct stat st = {0};
+		if(stat(atsc3_route_object->final_object_recovery_filename, &st) == 0) {
 			_ATSC3_ROUTE_OBJECT_INFO("atsc3_route_object_reset_and_free_and_unlink_recovery_file_atsc3_route_object_lct_packet_received: removing final_object_recovery_filename: %s", atsc3_route_object->final_object_recovery_filename);
-
 			remove(atsc3_route_object->final_object_recovery_filename);
 		}
 		freeclean((void**)&atsc3_route_object->final_object_recovery_filename);

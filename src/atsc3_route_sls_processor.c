@@ -19,6 +19,9 @@ int _ROUTE_SLS_PROCESSOR_DEBUG_ENABLED = 0;
 
  TODO: only process the full SLS if TSI=0, TOI= has changed, indiciating a new SLS payload...
 
+
+	jjustman-2020-07-28 - todo: use atsc3_route_object for fp handle reference
+
  */
 
 void atsc3_route_sls_process_from_alc_packet_and_file(udp_flow_t* udp_flow, atsc3_alc_packet_t* alc_packet, lls_sls_alc_monitor_t* lls_sls_alc_monitor) {
