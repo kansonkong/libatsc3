@@ -953,12 +953,12 @@ int mkpath(char *dir, mode_t mode)
     }
 
     char* my_dir_string = strdup(dir);
-    printf("my_dir_string: %s\n", my_dir_string);
+    //printf("my_dir_string: %s\n", my_dir_string);
 
     mkpath(dirname(my_dir_string), mode);
 
     int ret = mkdir(my_dir_string, mode);
-    printf("called mkdir: %s, result: %d\n", my_dir_string, ret);
+    //printf("called mkdir: %s, result: %d\n", my_dir_string, ret);
 
     free(my_dir_string);
 
