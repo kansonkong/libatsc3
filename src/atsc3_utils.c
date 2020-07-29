@@ -375,7 +375,7 @@ block_t* block_AppendFromSrciPos(block_t* dest, block_t* src) {
 		}
 	}
 	memcpy(&dest->p_buffer[dest->i_pos], block_Get(src), src_len);
-	dest->i_pos += src->i_pos;
+	dest->i_pos += src_len; //src->i_pos;
 
 	return dest;
 }
