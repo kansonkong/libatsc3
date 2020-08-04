@@ -39,7 +39,14 @@ void* extract(uint8_t *bufPosPtr, uint8_t *dest, int size) {
 }
 
 void kvp_collection_free(kvp_collection_t* collection) {
-	if(!collection || !collection->size_n) return;
+	if(!collection) {
+		return;
+	}
+
+	if(!collection->size_n && !collection->kvp_collection) {
+		free(collection);
+		return;
+	}
 
 	//free each entry and their corresponding key/val char*
 	for(int i=0; i < collection->size_n; i++) {

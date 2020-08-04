@@ -33,17 +33,20 @@ void atsc3_route_s_tsid_RS_LS_free(atsc3_route_s_tsid_RS_LS_t** atsc3_route_s_ts
                         freeclean((void**)&atsc3_route_s_tsid_RS_LS->atsc3_route_s_tsid_RS_LS_SrcFlow->atsc3_route_s_tsid_RS_LS_SrcFlow_ContentInfo->atsc3_route_s_tsid_RS_LS_SrcFlow_ContentInfo_AEAMedia->aea_id);
                     }
                     freeclean((void**)&atsc3_route_s_tsid_RS_LS->atsc3_route_s_tsid_RS_LS_SrcFlow->atsc3_route_s_tsid_RS_LS_SrcFlow_ContentInfo->atsc3_route_s_tsid_RS_LS_SrcFlow_ContentInfo_AEAMedia);
+                    freeclean((void**)&atsc3_route_s_tsid_RS_LS->atsc3_route_s_tsid_RS_LS_SrcFlow->atsc3_route_s_tsid_RS_LS_SrcFlow_ContentInfo);
                 }
                 
                 if(atsc3_route_s_tsid_RS_LS->atsc3_route_s_tsid_RS_LS_SrcFlow->atsc3_route_s_tsid_RS_LS_SrcFlow_Payload) {
                     freeclean((void**)&atsc3_route_s_tsid_RS_LS->atsc3_route_s_tsid_RS_LS_SrcFlow->atsc3_route_s_tsid_RS_LS_SrcFlow_Payload->fec_parms);
+                    freeclean((void**)&atsc3_route_s_tsid_RS_LS->atsc3_route_s_tsid_RS_LS_SrcFlow->atsc3_route_s_tsid_RS_LS_SrcFlow_Payload);
                 }
-                freeclean((void**)&atsc3_route_s_tsid_RS_LS->atsc3_route_s_tsid_RS_LS_SrcFlow->atsc3_route_s_tsid_RS_LS_SrcFlow_Payload);
 
                 freeclean((void**)&atsc3_route_s_tsid_RS_LS->atsc3_route_s_tsid_RS_LS_SrcFlow);
             }
             
             if(atsc3_route_s_tsid_RS_LS->atsc3_route_s_tsid_RS_LS_RepairFlow) {
+                _ATSC3_ROUTE_S_TSID_PARSER_WARN("PROBABLE memory leak with atsc3_route_s_tsid_RS_LS_free and RepairFlow: %p", atsc3_route_s_tsid_RS_LS->atsc3_route_s_tsid_RS_LS_RepairFlow);
+
                 //todo
                 freeclean((void**)&atsc3_route_s_tsid_RS_LS->atsc3_route_s_tsid_RS_LS_RepairFlow);
             }
@@ -364,7 +367,8 @@ atsc3_route_s_tsid_RS_LS_SrcFlow_Payload_t* atsc3_route_s_tsid_parse_RS_LS_SrcFl
 	}
 
 	if((matching_attribute = kvp_collection_get(kvp_collection,  "order"))) {
-		atsc3_route_s_tsid_RS_LS_SrcFlow_Payload->order = matching_attribute;
+		atsc3_route_s_tsid_RS_LS_SrcFlow_Payload->order = (matching_attribute[0] == 't' || matching_attribute[0] == 't') ? true : false;
+        free(matching_attribute);
 	}
 
 	if((matching_attribute = kvp_collection_get(kvp_collection,  "srcFecPayloadId"))) {

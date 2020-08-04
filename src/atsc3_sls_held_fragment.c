@@ -79,6 +79,7 @@ atsc3_sls_held_fragment_t* atsc3_sls_held_fragment_parse_from_payload(char* payl
 
 					if((matching_attribute = kvp_collection_get(kvp_collection,  "appRendering"))) {
 						atsc3_sls_html_entry_package->app_rendering = strncmp("true", matching_attribute, 4) == 0;
+				        free(matching_attribute);
 					}
 
                     //TODO: jjustman-2019-09-18 - parse this into struct tm
@@ -117,12 +118,14 @@ atsc3_sls_held_fragment_t* atsc3_sls_held_fragment_parse_from_payload(char* payl
 
 					if(atsc3_sls_html_entry_package) {
 						atsc3_sls_held_fragment_add_atsc3_sls_html_entry_package(atsc3_sls_held_fragment, atsc3_sls_html_entry_package);
-
 					}
                     
                     if(kvp_collection) {
                         kvp_collection_free(kvp_collection);
                     }
+
+                    freeclean((void**)&xml_attributes);
+
 				}
 			}
 

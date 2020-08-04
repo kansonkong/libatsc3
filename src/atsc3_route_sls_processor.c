@@ -207,7 +207,7 @@ cleanup:
     }
     
     if(fdt_xml) {
-        xml_document_free(fdt_xml, false);
+        xml_document_free(fdt_xml, true);
         fdt_xml = NULL;
     }
     
@@ -255,6 +255,7 @@ cleanup:
  */
 bool atsc3_route_sls_patch_mpd_availability_start_time_and_start_number(atsc3_mime_multipart_related_payload_t* atsc3_mime_multipart_related_payload, lls_sls_alc_monitor_t* lls_sls_alc_monitor) {
 
+	atsc3_pcre2_regex_context_t* atsc3_pcre2_regex_context = NULL;
 
     if(lls_sls_alc_monitor->last_mpd_payload && (lls_sls_alc_monitor->last_mpd_payload_patched && !lls_sls_alc_monitor->has_discontiguous_toi_flow)) {
         //compare if our original vs. new payload has changed, and patch accordingly, otherwise swap out to our old payload
@@ -322,7 +323,7 @@ bool atsc3_route_sls_patch_mpd_availability_start_time_and_start_number(atsc3_mi
             
             //jjustman-2020-07-14
 
-        	atsc3_pcre2_regex_context_t* atsc3_pcre2_regex_context = atsc3_pcre2_regex_context_new(ATSC3_ROUTE_DASH_MPD_REPRESENTATION_ID_SEGMENT_TEMPLATE_START_NUMBER_REGEX_PATTERN);
+            atsc3_pcre2_regex_context = atsc3_pcre2_regex_context_new(ATSC3_ROUTE_DASH_MPD_REPRESENTATION_ID_SEGMENT_TEMPLATE_START_NUMBER_REGEX_PATTERN);
 
         	block_t* block_mpd = block_Duplicate(atsc3_mime_multipart_related_payload->payload);
         	block_Rewind(block_mpd);
@@ -338,6 +339,8 @@ bool atsc3_route_sls_patch_mpd_availability_start_time_and_start_number(atsc3_mi
 				atsc3_route_dash_matching_s_tsid_representation_media_info_alc_flow_match_vector_t* match_vector = atsc3_route_dash_find_matching_s_tsid_representations_from_mpd_pcre2_regex_matches(atsc3_pcre2_regex_match_capture_vector, &lls_sls_alc_monitor->atsc3_sls_alc_all_s_tsid_flow_v);
 				if(!match_vector || !match_vector->atsc3_route_dash_matching_s_tsid_representation_media_info_alc_flow_match_v.count) {
 					_ATSC3_ROUTE_SLS_PROCESSOR_ERROR("find_matching_s_tsid_representations - match vector is null or match_v.cound is 0!");
+		        	block_Destroy(&block_mpd);
+		        	atsc3_pcre2_regex_match_capture_vector_free(&atsc3_pcre2_regex_match_capture_vector);
 					goto error;
 				}
 
@@ -402,13 +405,19 @@ bool atsc3_route_sls_patch_mpd_availability_start_time_and_start_number(atsc3_mi
 
     }
 
+    freesafe(temp_lower_mpd);
     lls_sls_alc_monitor->has_discontiguous_toi_flow = false;
 
     return true;
     
 error:
+	if(atsc3_pcre2_regex_context) {
+		atsc3_pcre2_regex_context_free(&atsc3_pcre2_regex_context);
+	}
 	block_Destroy(&atsc3_mime_multipart_related_payload->payload);
 	block_Destroy(&in_flight_last_mpd_payload);
+
+    freesafe(temp_lower_mpd);
 
     _ATSC3_ROUTE_SLS_PROCESSOR_ERROR("unable to patch startNumber values - clearing atsc3_mime_multipart_related_payload->payload!");
 
