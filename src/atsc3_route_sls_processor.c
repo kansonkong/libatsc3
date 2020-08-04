@@ -185,7 +185,7 @@ void atsc3_route_sls_process_from_alc_packet_and_file(udp_flow_t* udp_flow, atsc
 						  _ATSC3_ROUTE_SLS_PROCESSOR_ERROR("sls mbms fragment dump, original content_location: %s, unable to write to local path: %s", atsc3_mime_multipart_related_payload->sanitizied_content_location, mbms_filename);
 					  }
 				  } else {
-					  _ATSC3_ROUTE_SLS_PROCESSOR_ERROR("sls mbms fragment paylaod is null or p_size is zero, skipping write of original content_location: %s", atsc3_mime_multipart_related_payload->sanitizied_content_location);
+					  _ATSC3_ROUTE_SLS_PROCESSOR_ERROR("sls mbms fragment payload is null or p_size is zero, skipping write of original content_location: %s", atsc3_mime_multipart_related_payload->sanitizied_content_location);
 				  }
 				}
 			}
