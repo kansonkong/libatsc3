@@ -159,7 +159,7 @@ intermediate_ffplay: atsc3_player_ffplay.o
 interemediate_gpl_and_mock_linkage: bento4_gpl_link \
 									bento4_mock_link
 libatsc3_core: libatsc3.o
-listener_ncurses: atsc3_listener_metrics_ncurses
+listener_ncurses: tools/atsc3_listener_metrics_ncurses
 
 # unit tests are standalone drivers with default or CLI parameters for processing relevant 
 # ATSC 3.0 data structs, signalling messages, etc
@@ -207,7 +207,7 @@ a324_tests: a324_tests/a324_dstp_lls_aeat_emission_test
 # real libatsc3 tools for lls, sls, mmt/route and flow analysis
 # only on linux...	tools/atsc3_alc_listener_mde_writer_malloc_debug \
 
-tools: atsc3_listener_metrics_ncurses \
+tools: tools/atsc3_listener_metrics_ncurses \
 	tools/atsc3_listener_metrics_ncurses_httpd_isobmff \
 	tools/atsc3_mmt_mfu_monitor \
 	tools/atsc3_alc_listener_mde_writer \
@@ -910,9 +910,9 @@ test/atsc3_route_dash_mpd_patch_test: test/atsc3_route_dash_mpd_patch_test.c \
 										atsc3_utils_sha256.o \
 										atsc3_route_object.o \
 										atsc3_sls_alc_flow.o \
-										avltree.o
-										
-										
+										avltree.o \
+										strnstr.o
+
 	cc $(ASAN) $(CFLAGS) $(DEBUG) test/atsc3_route_dash_mpd_patch_test.c  \
 							atsc3_utils.o \
 							atsc3_pcre2_regex_utils.o \
@@ -945,6 +945,7 @@ test/atsc3_route_dash_mpd_patch_test: test/atsc3_route_dash_mpd_patch_test.c \
 							atsc3_route_object.o \
 							atsc3_sls_alc_flow.o \
 							avltree.o \
+							strnstr.o \
 							$(LOCAL_LD_LIBS) \
 							-o test/atsc3_route_dash_mpd_patch_test 
 
