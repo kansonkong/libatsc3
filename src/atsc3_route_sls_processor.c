@@ -275,7 +275,7 @@ bool atsc3_route_sls_patch_mpd_availability_start_time_and_start_number(atsc3_mi
         		lls_sls_alc_monitor->last_mpd_payload);
     }
     
-    char* temp_lower_mpd = calloc(atsc3_mime_multipart_related_payload->payload->p_size, sizeof(char));
+    char* temp_lower_mpd = calloc(atsc3_mime_multipart_related_payload->payload->p_size+1, sizeof(char));
     for(int i=0; i < strlen((const char*)atsc3_mime_multipart_related_payload->payload->p_buffer); i++) {
         temp_lower_mpd[i] = tolower(atsc3_mime_multipart_related_payload->payload->p_buffer[i]);
     }
