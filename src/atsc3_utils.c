@@ -939,28 +939,32 @@ char* __trim(char *str)
     return _ltrim(_rtrim(str));
 }
 
-
+//jjustman-2020-08-04 - dirname() is not reliable to be portable between linux/osx/android
 int mkpath(char *dir, mode_t mode)
 {
     struct stat sb;
+    int ret = 0;
 
     if (!dir) {
         return 1;
     }
 
-    if (!stat(dir, &sb)) {
-        return 0;
-    }
+	char* dir_to_process = strlcopy(dir);
 
-    char* my_dir_string = strdup(dir);
-    //printf("my_dir_string: %s\n", my_dir_string);
+	char* pch = strtok (dir_to_process,"/");
+	int offset = 0;
 
-    mkpath(dirname(my_dir_string), mode);
+	while (pch != NULL && offset>=0) {
+		offset += strlen(pch);
 
-    int ret = mkdir(dir, mode);
-    printf("called mkdir: my_dir_string: %s, dir: %s, result: %d\n", my_dir_string, dir, ret);
+		dir[offset] = '\0';
+ 	    ret = mkdir(dir, mode);
+ 	   _ATSC3_UTILS_DEBUG("calling mkdir: dir: %s, offset: %d, result: %d\n", dir, offset, ret);
+	    dir[offset++] = '/';
 
-    free(my_dir_string);
+		pch = strtok (NULL, "/");
+	}
+	freesafe(dir_to_process);
 
     return ret;
 }
