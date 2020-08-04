@@ -1,1 +1,1 @@
-sudo apt-get install libpcap-dev zlib1g-dev ncurses-dev libpcre2-dev gpac -y
+sudo apt-get install libpcap-dev zlib1g-dev ncurses-dev libpcre2-dev gpac valgrind -y
