@@ -957,8 +957,8 @@ int mkpath(char *dir, mode_t mode)
 
     mkpath(dirname(my_dir_string), mode);
 
-    int ret = mkdir(my_dir_string, mode);
-    //printf("called mkdir: %s, result: %d\n", my_dir_string, ret);
+    int ret = mkdir(dir, mode);
+    printf("called mkdir: my_dir_string: %s, dir: %s, result: %d\n", my_dir_string, dir, ret);
 
     free(my_dir_string);
 
