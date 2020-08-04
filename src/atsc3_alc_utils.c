@@ -762,7 +762,7 @@ int atsc3_alc_packet_persist_to_toi_resource_process_sls_mbms_and_emit_callback(
     //jjustman-2020-07-28 - do not close f handle here, as we will persist it via atsc3_route_object, 16% of profiling time in atsc3_alc_listener_mde_writer was in atsc3_alc_object_open
 
     //jjustman-2020-07-28 - TODO: don't redispatch repeadedly for carousels...
-    if(atsc3_route_object_is_complete(atsc3_route_object)) {
+    if(atsc3_route_object_is_complete(atsc3_route_object) && !atsc3_route_object->recovery_complete_timestamp) {
 
         atsc3_route_object_recovery_file_handle_close(atsc3_route_object);
 
