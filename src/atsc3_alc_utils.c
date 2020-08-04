@@ -113,7 +113,7 @@ block_t* alc_get_payload_from_filename(char* file_name) {
 /* jjustman-2019-09-17: TODO - free temporary filename when done */
 
 char* alc_packet_dump_to_object_get_temporary_recovering_filename(udp_flow_t *udp_flow, atsc3_alc_packet_t *alc_packet) {
-	char* temporary_file_name = (char *)calloc(255, sizeof(char));
+	char* temporary_file_name = (char *)calloc(256, sizeof(char));
 	if(alc_packet->def_lct_hdr) {
 		snprintf(temporary_file_name, 255, "%s%u.%u.%u.%u.%u.%u-%u.recovering",
 			__ALC_DUMP_OUTPUT_PATH__,
@@ -804,6 +804,7 @@ int atsc3_alc_packet_persist_to_toi_resource_process_sls_mbms_and_emit_callback(
                     is_traversal = new_file_name[0] == '.';
                 }
                 
+                //jjustman-2020-08-04: TODO - refactor this to mkpath
                 //iterate over occurances of '/' and create directory hierarchy
                 char* path_slash_position = new_file_name;
                 char* first_path_slash_position = new_file_name;
