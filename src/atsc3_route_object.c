@@ -91,7 +91,8 @@ void atsc3_route_object_set_object_recovery_complete(atsc3_route_object_t* atsc3
  			atsc3_route_object->toi,
  			atsc3_route_object->atsc3_route_object_lct_packet_received_v.count,
  			atsc3_route_object->recovery_complete_timestamp);
- 	atsc3_route_object_reset_and_free_atsc3_route_object_lct_packet_received(atsc3_route_object);
+ 	//this will be invoked from atsc3_lls_sls_alc_monitor_check_all_s_tsid_flows_has_given_up_route_objects
+ 	//atsc3_route_object_reset_and_free_atsc3_route_object_lct_packet_received(atsc3_route_object);
 }
 
 
@@ -395,7 +396,7 @@ void atsc3_route_object_reset_and_free_and_unlink_recovery_file_atsc3_route_obje
 	if(atsc3_route_object->temporary_object_recovery_filename) {
 		struct stat st = {0};
 		if(stat(atsc3_route_object->temporary_object_recovery_filename, &st) == 0) {
-			_ATSC3_ROUTE_OBJECT_INFO("atsc3_route_object_reset_and_free_and_unlink_recovery_file_atsc3_route_object_lct_packet_received: removing temporary_object_recovery_filename: %s", atsc3_route_object->temporary_object_recovery_filename);
+			_ATSC3_ROUTE_OBJECT_TRACE("atsc3_route_object_reset_and_free_and_unlink_recovery_file_atsc3_route_object_lct_packet_received: removing temporary_object_recovery_filename: %s", atsc3_route_object->temporary_object_recovery_filename);
 	        remove(atsc3_route_object->temporary_object_recovery_filename);
 		}
 		freeclean((void**)&atsc3_route_object->temporary_object_recovery_filename);
@@ -405,7 +406,7 @@ void atsc3_route_object_reset_and_free_and_unlink_recovery_file_atsc3_route_obje
 	if(atsc3_route_object->final_object_recovery_filename) {
 		struct stat st = {0};
 		if(stat(atsc3_route_object->final_object_recovery_filename, &st) == 0) {
-			_ATSC3_ROUTE_OBJECT_INFO("atsc3_route_object_reset_and_free_and_unlink_recovery_file_atsc3_route_object_lct_packet_received: removing final_object_recovery_filename: %s", atsc3_route_object->final_object_recovery_filename);
+			_ATSC3_ROUTE_OBJECT_TRACE("atsc3_route_object_reset_and_free_and_unlink_recovery_file_atsc3_route_object_lct_packet_received: removing final_object_recovery_filename: %s", atsc3_route_object->final_object_recovery_filename);
 			remove(atsc3_route_object->final_object_recovery_filename);
 		}
 		freeclean((void**)&atsc3_route_object->final_object_recovery_filename);
