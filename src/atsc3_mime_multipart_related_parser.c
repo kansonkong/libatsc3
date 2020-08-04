@@ -229,6 +229,7 @@ atsc3_mime_multipart_related_instance_t* atsc3_mime_multipart_related_parser(FIL
 		goto error;
 	}
 
+	atsc3_mime_multipart_related_payload_t* atsc3_mime_multipart_related_payload = NULL;
 
 	//get each payload
 	while(!feof(fp)) {
@@ -236,8 +237,13 @@ atsc3_mime_multipart_related_instance_t* atsc3_mime_multipart_related_parser(FIL
 		bool payload_header_complete = false;
 		bool payload_entry_complete = false;
 
-		atsc3_mime_multipart_related_payload_t* atsc3_mime_multipart_related_payload = atsc3_mime_multipart_related_payload_new();
-		atsc3_mime_multipart_related_payload->payload = block_Alloc(0);
+		if(atsc3_mime_multipart_related_payload) {
+			__MIME_PARSER_WARN("orphan atsc3_mime_multipart_related_payload: %p", atsc3_mime_multipart_related_payload);
+		}
+
+		//jjustman-2020-08-04 - xcode leak detector is complanining about ->payload leaking somewhere..todo -
+		atsc3_mime_multipart_related_payload = atsc3_mime_multipart_related_payload_new();
+		atsc3_mime_multipart_related_payload->payload = block_Alloc(0);  //jjustman-2020-08-04 - TODO - better payload guestimate size for this item?
 
 		/**
 		 * try and parse out header attributes first, e.g.:
@@ -322,7 +328,10 @@ atsc3_mime_multipart_related_instance_t* atsc3_mime_multipart_related_parser(FIL
 							block_Rewind(atsc3_mime_multipart_related_payload->payload);
 
 							atsc3_mime_multipart_related_instance_add_atsc3_mime_multipart_related_payload(atsc3_mime_multipart_related_instance, atsc3_mime_multipart_related_payload);
-							__MIME_PARSER_TRACE("atsc3_mime_multipart_related_parser: line: %u, payload boundary pushing new entry: %s", line_count, atsc3_mime_multipart_related_payload->payload->p_buffer);
+
+							__MIME_PARSER_TRACE("atsc3_mime_multipart_related_parser: atsc3_mime_multipart_related_payload: %p, line: %u, payload boundary pushing new entry: %s", atsc3_mime_multipart_related_payload, line_count, atsc3_mime_multipart_related_payload->payload->p_buffer);
+							atsc3_mime_multipart_related_payload = NULL;
+
 						} else {
 							__MIME_PARSER_TRACE("atsc3_mime_multipart_related_parser: closing candidate boundary with no payload: end marker?: line_binary_len: %zu", line_binary_len);
 						}
@@ -337,7 +346,8 @@ atsc3_mime_multipart_related_instance_t* atsc3_mime_multipart_related_parser(FIL
 			}
 
 			if(!payload_entry_complete) {
-				__MIME_PARSER_TRACE("atsc3_mime_multipart_related_parser: line: %u, pushing to buffer at pos: %u, len: %zu, line_binary: %p", line_count, atsc3_mime_multipart_related_payload->payload->i_pos, line_binary_len, line_binary);
+				__MIME_PARSER_TRACE("atsc3_mime_multipart_related_parser: incomplete payload atsc3_mime_multipart_related_payload: %p, at: line: %u, pushing to buffer at pos: %u, len: %zu, line_binary: %p",
+						atsc3_mime_multipart_related_payload, line_count, atsc3_mime_multipart_related_payload->payload->i_pos, line_binary_len, line_binary);
 				block_AppendFromBuf(atsc3_mime_multipart_related_payload->payload, (const uint8_t*)line_binary, line_binary_len);
 			}
 		}

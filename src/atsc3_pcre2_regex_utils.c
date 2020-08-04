@@ -529,6 +529,10 @@ void atsc3_pcre2_regex_context_free(atsc3_pcre2_regex_context_t** atsc3_pcre2_re
 				pcre2_match_data_free(atsc3_pcre2_regex_context->match_data);   /* Release memory used for the match */
 				atsc3_pcre2_regex_context->match_data = NULL;
 			}
+			if(atsc3_pcre2_regex_context->re) {
+				pcre2_code_free_8(atsc3_pcre2_regex_context->re);
+				atsc3_pcre2_regex_context->re = NULL;
+			}
 
 			free(atsc3_pcre2_regex_context);
 			atsc3_pcre2_regex_context = NULL;
