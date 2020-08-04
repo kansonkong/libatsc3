@@ -1376,13 +1376,13 @@ atsc3_route_object_t* atsc3_alc_persist_route_object_lct_packet_received_for_lls
 	atsc3_route_object_t* atsc3_route_object = NULL;
 
 	if(lls_sls_alc_monitor) {
+		//jjustman-2020-08-04 - hack-ish - todo: is this the best place to call this?
+		//jjustman-2020-08-04 - NOTE: clear out our candidate purged route objects first, then search for our S_TSID flow lookup next
+		atsc3_lls_sls_alc_monitor_check_all_s_tsid_flows_has_given_up_route_objects(lls_sls_alc_monitor);
+
 		atsc3_lls_sls_alc_monitor_increment_lct_packet_received_count(lls_sls_alc_monitor);
 		atsc3_route_object = atsc3_sls_alc_flow_route_object_add_unique_lct_packet_received(&lls_sls_alc_monitor->atsc3_sls_alc_all_s_tsid_flow_v, alc_packet);
 		(lls_sls_alc_monitor);
-
-		//jjustman-2020-08-04 - hack-ish - todo: is this the best place to call this?
-
-		atsc3_lls_sls_alc_monitor_check_all_s_tsid_flows_has_given_up_route_objects(lls_sls_alc_monitor);
 	}
 
 	__ALC_UTILS_DEBUG("atsc3_alc_persist_route_object_lct_packet_received_for_lls_sls_alc_monitor_all_flows: complete, tsi: %d, toi: %d, lls_sls_alc_monitor is: %p, size: %d, atsc3_route_object: %p",
