@@ -249,15 +249,17 @@ atsc3_lls_slt_service_t* atsc3_phy_mmt_player_bridge_set_single_monitor_a331_ser
 
 
         //wire up event callback for alc close_object notification
-        lls_sls_alc_monitor->atsc3_lls_sls_alc_on_object_close_flag_s_tsid_content_location = &atsc3_lls_sls_alc_on_object_close_flag_s_tsid_content_location_ndk;
+        lls_sls_alc_monitor->atsc3_lls_sls_alc_on_object_close_flag_s_tsid_content_location_callback = &atsc3_lls_sls_alc_on_object_close_flag_s_tsid_content_location_ndk;
 
-        //write up event callback for alc MPD patching
-        lls_sls_alc_monitor->atsc3_lls_sls_alc_on_route_mpd_patched = &atsc3_lls_sls_alc_on_route_mpd_patched_ndk;
+        //wire up event callback for alc MPD patching
+        lls_sls_alc_monitor->atsc3_lls_sls_alc_on_route_mpd_patched_callback = &atsc3_lls_sls_alc_on_route_mpd_patched_ndk;
+        //jjustman-2020-08-05 - also atsc3_lls_sls_alc_on_route_mpd_patched_with_filename_callback
 
         lls_sls_alc_monitor->atsc3_lls_sls_alc_on_package_extract_completed_callback = &atsc3_lls_sls_alc_on_package_extract_completed_callback_ndk;
 
         //#1569
         lls_sls_alc_monitor->atsc3_sls_on_held_trigger_received_callback = &atsc3_sls_on_held_trigger_received_callback_impl;
+        //jjustman-2020-08-05 - also atsc3_sls_on_held_trigger_received_with_version_callback
 
     } else {
         lls_slt_monitor_clear_lls_sls_alc_monitor(lls_slt_monitor);
@@ -313,7 +315,7 @@ atsc3_lls_slt_service_t* atsc3_phy_mmt_player_bridge_add_monitor_a331_service_id
     lls_slt_monitor_add_lls_sls_alc_monitor(lls_slt_monitor, lls_sls_alc_monitor);
 
     //add in supplimentary callback hook for additional ALC emissions
-    lls_sls_alc_monitor->atsc3_lls_sls_alc_on_object_close_flag_s_tsid_content_location = &atsc3_lls_sls_alc_on_object_close_flag_s_tsid_content_location_ndk;
+    lls_sls_alc_monitor->atsc3_lls_sls_alc_on_object_close_flag_s_tsid_content_location_callback = &atsc3_lls_sls_alc_on_object_close_flag_s_tsid_content_location_ndk;
 
 
     //add a supplimentry sls_alc monitor
@@ -722,6 +724,7 @@ void atsc3_sls_on_held_trigger_received_callback_impl(uint16_t service_id, block
     len_aligned += 8-(len_aligned%8);
     char* xml_payload_copy = (char*)calloc(len_aligned , sizeof(char));
     strncpy(xml_payload_copy, (char*)block_ptr, block_len);
+    __ATSC3_INFO("HELD: change: %s", xml_payload_copy);
 
     Atsc3NdkClient_ptr->atsc3_sls_on_held_trigger_received_callback_jni(service_id, (const char*)xml_payload_copy);
 
