@@ -163,9 +163,9 @@ static lls_table_t* __lls_create_base_table_raw(block_t* lls_packet_block) {
 						   lls_payload->lls_payload_length,
                            block_Remaining_size(signed_multi_table_block));
 
-                freeclean(&lls_payload);
+                freeclean((void**)&lls_payload);
                 atsc3_signed_multi_table_free_atsc3_signed_multi_table_lls_payload(&base_table->signed_multi_table);
-                freeclean(&base_table);
+                freeclean((void**)&base_table);
             }
         }
 
@@ -181,7 +181,7 @@ static lls_table_t* __lls_create_base_table_raw(block_t* lls_packet_block) {
                 _LLS_ERROR("_lls_ceate_base_table_raw: SignedMultiTable: remaining signature length too short! signature_length is: %d, remaining bytes: %d",
                                                   base_table->signed_multi_table.signature_length,
                                                   block_Remaining_size(signed_multi_table_block));
-                freeclean(&base_table);
+                freeclean((void**)&base_table);
                 _LLS_ERROR("returning base_table as: %p", base_table);
             } else {
 
@@ -191,13 +191,13 @@ static lls_table_t* __lls_create_base_table_raw(block_t* lls_packet_block) {
                 base_table->signed_multi_table.signature = block_Duplicate_from_position(signed_multi_table_block);
                 _LLS_TRACE("__lls_create_base_table_raw: SignedMultiTable: signature_length is: %d, signature: %s",
                            base_table->signed_multi_table.signature_length,
-                           base_table->signed_multi_table.signature);
+                           base_table->signed_multi_table.signature->p_buffer);
             }
         } else {
             _LLS_ERROR("_lls_ceate_base_table_raw: SignedMultiTable: error finalizing signedMultiTable, base_table: %p, remaining bytes for signature: %d",
                     base_table,
                     block_Remaining_size(signed_multi_table_block));
-            freeclean(&base_table);
+            freeclean((void**)&base_table);
         }
         _LLS_ERROR("before block_Destroy(signed_multi_table_block) base_table as: %p", base_table);
         block_Destroy(&signed_multi_table_block);
@@ -285,19 +285,60 @@ lls_table_t* atsc3_lls_table_create_or_update_from_lls_slt_monitor_dispatcher(ll
 
             case SLT:
                 //todo: jjustman-2019-10-12: only re-dispatch for updates?
-
-                if (lls_slt_monitor->atsc3_lls_on_sls_table_present) {
-                    lls_slt_monitor->atsc3_lls_on_sls_table_present(lls_table);
+                if (lls_slt_monitor->atsc3_lls_on_sls_table_present_callback) {
+                    lls_slt_monitor->atsc3_lls_on_sls_table_present_callback(lls_table);
                 }
                 break;
 
-                //todo: jjustman-2019-11-09: dispatch remaining lls table tables
+            case RRT:
+            	 if (lls_slt_monitor->atsc3_lls_on_rrt_table_present_callback) {
+            	     lls_slt_monitor->atsc3_lls_on_rrt_table_present_callback(lls_table);
+            	 }
+            	 break;
+
+            case SystemTime:
+				 if (lls_slt_monitor->atsc3_lls_on_systemtime_table_present_callback) {
+					 lls_slt_monitor->atsc3_lls_on_systemtime_table_present_callback(lls_table);
+				 }
+				 break;
+
+            case AEAT:
+				 if (lls_slt_monitor->atsc3_lls_on_aeat_table_present_callback) {
+					 lls_slt_monitor->atsc3_lls_on_aeat_table_present_callback(lls_table);
+				 }
+				 break;
+
+            case OnscreenMessageNotification:
+				 if (lls_slt_monitor->atsc3_lls_on_onscreenmessagenotification_table_present_callback) {
+					 lls_slt_monitor->atsc3_lls_on_onscreenmessagenotification_table_present_callback(lls_table);
+				 }
+				 break;
+
+            case CertificationData:
+           		 if (lls_slt_monitor->atsc3_lls_on_certificationdata_table_present_callback) {
+					 lls_slt_monitor->atsc3_lls_on_certificationdata_table_present_callback(lls_table);
+				 }
+				 break;
+
+            case SignedMultiTable:
+				 if (lls_slt_monitor->atsc3_lls_on_signedmultitable_table_present_callback) {
+					 lls_slt_monitor->atsc3_lls_on_signedmultitable_table_present_callback(lls_table);
+				 }
+				 break;
+
+            case UserDefined:
+				 if (lls_slt_monitor->atsc3_lls_on_userdefined_table_present_callback) {
+					 lls_slt_monitor->atsc3_lls_on_userdefined_table_present_callback(lls_table);
+				 }
+				 break;
 
             default:
                 //noop
                 break;
         }
     }
+
+    return lls_table;
 }
 
 //only return back if lls_table_version has changed
@@ -307,6 +348,7 @@ lls_table_t* lls_table_create_or_update_from_lls_slt_monitor_with_metrics(lls_sl
 	lls_table_t* lls_table_new = __lls_table_create(lls_packet_block);
 	if(!lls_table_new) {
 		(*parsed_error)++;
+		_LLS_ERROR("lls_table_create_or_update_from_lls_slt_monitor_with_metrics: failed to create lls_table_new!")
 		return NULL; //parse error or not supported
 	}
 
@@ -410,7 +452,10 @@ lls_table_t* atsc3_lls_table_create_or_update_from_lls_slt_monitor_with_metrics_
 	} else {
 		_LLS_ERROR("lls_slt_monitor is null, can't propagate LLS update!");
 	}
-	return NULL;
+
+    _LLS_ERROR("atsc3_lls_table_create_or_update_from_lls_slt_monitor_with_metrics_single_table: returning NULL");
+
+    return NULL;
 
 }
 //jjustman-2020-03-10 - todo: refactor me for signedMultiTable support
@@ -436,7 +481,7 @@ lls_table_t* __lls_table_create(block_t* lls_packet_block) {
     }
 }
 
-lls_table_t* atsc3_lls_table_parse_raw_xml(atsc3_lls_table_t* lls_table) {
+atsc3_lls_table_t* atsc3_lls_table_parse_raw_xml(atsc3_lls_table_t* lls_table) {
     int res = 0;
     xml_node_t *xml_root_node = NULL;
 

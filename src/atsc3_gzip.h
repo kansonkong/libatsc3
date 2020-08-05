@@ -9,9 +9,9 @@
 #include <string.h>
 #include <stdlib.h>
 #include <stdio.h>
-
-
 #include <zlib.h>
+
+#include "atsc3_utils.h"
 
 #ifndef ATSC3_GZIP_H_
 #define ATSC3_GZIP_H_
@@ -27,7 +27,7 @@ extern "C" {
  * The maximum UDP data payload is 65,535 minus 20 bytes for the IP header minus 8 bytes for the UDP header.
  */
 
-#define GZIP_CHUNK_INPUT_SIZE_MAX 65507
+#define GZIP_CHUNK_INPUT_SIZE_MAX MAX_ATSC3_PHY_ALP_DATA_PAYLOAD_SIZE
 #define GZIP_CHUNK_INPUT_READ_SIZE 1024
 
 //jjustman-2020-03-09 - TODO - slab alloc this output buffer

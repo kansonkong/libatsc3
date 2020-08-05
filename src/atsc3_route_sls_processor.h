@@ -9,6 +9,7 @@
 
 #include <stdint.h>
 #include <string.h>
+#include <stdbool.h>
 
 #ifndef ATSC3_ROUTE_SLS_PROCESSOR_H_
 #define ATSC3_ROUTE_SLS_PROCESSOR_H_
@@ -20,11 +21,14 @@
 #include "atsc3_mbms_envelope_parser.h"
 #include "atsc3_mime_multipart_related_parser.h"
 
+#include "atsc3_route_dash_utils.h"
+#include "atsc3_pcre2_regex_utils.h"
 
 
 
-void atsc3_route_sls_process_from_alc_packet_and_file(udp_flow_t* udp_flow, alc_packet_t* alc_packet, lls_sls_alc_monitor_t* lls_sls_alc_monitor);
-void atsc3_route_sls_patch_mpd_availability_start_time_and_start_number(atsc3_mime_multipart_related_payload_t* atsc3_mime_multipart_related_payload, lls_sls_alc_monitor_t* lls_sls_alc_monitor);
+
+void atsc3_route_sls_process_from_alc_packet_and_file(udp_flow_t* udp_flow, atsc3_alc_packet_t* alc_packet, lls_sls_alc_monitor_t* lls_sls_alc_monitor);
+bool atsc3_route_sls_patch_mpd_availability_start_time_and_start_number(atsc3_mime_multipart_related_payload_t* atsc3_mime_multipart_related_payload, lls_sls_alc_monitor_t* lls_sls_alc_monitor);
 
 
 #define _ATSC3_ROUTE_SLS_PROCESSOR_ERROR(...)   __LIBATSC3_TIMESTAMP_ERROR(__VA_ARGS__);

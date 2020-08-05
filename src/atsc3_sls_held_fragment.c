@@ -12,13 +12,26 @@
 extern "C" {
 #endif
 
+int _HELD_PARSER_INFO_ENABLED = 0;
+int _HELD_PARSER_DEBUG_ENABLED = 0;
+int _HELD_PARSER_TRACE_ENABLED = 0;
+
 ATSC3_VECTOR_BUILDER_METHODS_PARENT_IMPLEMENTATION(atsc3_sls_held_fragment);
 
 ATSC3_VECTOR_BUILDER_METHODS_IMPLEMENTATION(atsc3_sls_held_fragment, atsc3_sls_html_entry_package);
 
+//jjustman-2020-07-27: TODO: change this from char* payload to block_t*
 atsc3_sls_held_fragment_t* atsc3_sls_held_fragment_parse_from_payload(char* payload, char* content_locationt) {
 
-    atsc3_sls_held_fragment_t* atsc3_sls_held_fragment = NULL;
+	if(!strlen(payload)) {
+		_ATSC3_HELD_PARSER_ERROR("HELD fragment is empty, payload ptr: %p", payload);
+		return NULL;
+	}
+
+    atsc3_sls_held_fragment_t* atsc3_sls_held_fragment = atsc3_sls_held_fragment_new();
+
+    //jjustman-2020-07-07 - if we can't parse this HELD fragment, at least pass back raw_xml_fragment
+    atsc3_sls_held_fragment->raw_xml_fragment = block_Promote(payload);
 
 	block_t* held_fragment_block = block_Promote(payload);
 	xml_document_t* xml_document = xml_parse_document(held_fragment_block->p_buffer, held_fragment_block->i_pos);
@@ -44,7 +57,6 @@ atsc3_sls_held_fragment_t* atsc3_sls_held_fragment_parse_from_payload(char* payl
 	for(int i=0; i < num_root_children; i++) {
 		xml_node_t* root_child = xml_node_child(xml_document_root_node, i);
 		if(xml_node_equals_ignore_case(root_child, "HELD")) {
-			atsc3_sls_held_fragment = atsc3_sls_held_fragment_new();
 
 			//HTMLEntryPackage
 			size_t num_html_entry_packages_children = xml_node_children(root_child);
@@ -67,6 +79,7 @@ atsc3_sls_held_fragment_t* atsc3_sls_held_fragment_parse_from_payload(char* payl
 
 					if((matching_attribute = kvp_collection_get(kvp_collection,  "appRendering"))) {
 						atsc3_sls_html_entry_package->app_rendering = strncmp("true", matching_attribute, 4) == 0;
+				        free(matching_attribute);
 					}
 
                     //TODO: jjustman-2019-09-18 - parse this into struct tm
@@ -105,12 +118,14 @@ atsc3_sls_held_fragment_t* atsc3_sls_held_fragment_parse_from_payload(char* payl
 
 					if(atsc3_sls_html_entry_package) {
 						atsc3_sls_held_fragment_add_atsc3_sls_html_entry_package(atsc3_sls_held_fragment, atsc3_sls_html_entry_package);
-
 					}
                     
                     if(kvp_collection) {
                         kvp_collection_free(kvp_collection);
                     }
+
+                    freeclean((void**)&xml_attributes);
+
 				}
 			}
 
@@ -120,10 +135,7 @@ atsc3_sls_held_fragment_t* atsc3_sls_held_fragment_parse_from_payload(char* payl
 
     
 error:
-    if(atsc3_sls_held_fragment) {
-        free(atsc3_sls_held_fragment);
-        atsc3_sls_held_fragment = NULL;
-    }
+	_ATSC3_HELD_PARSER_WARN("Unable to parse HELD fragment - returning raw_xml_fragment for debugging: %s", atsc3_sls_held_fragment->raw_xml_fragment->p_buffer);
     
 cleanup:
     if(held_fragment_block) {
@@ -139,10 +151,13 @@ cleanup:
 }
 
 void atsc3_sls_held_fragment_dump(atsc3_sls_held_fragment_t* atsc3_sls_held_fragment) {
+
+	_ATSC3_HELD_PARSER_INFO("HELD fragment dump, raw xml payload is:\n%s", atsc3_sls_held_fragment->raw_xml_fragment->p_buffer);
+
 	for(int i=0; i < atsc3_sls_held_fragment->atsc3_sls_html_entry_package_v.count; i++) {
 		atsc3_sls_html_entry_package_t* atsc3_sls_html_entry_package = atsc3_sls_held_fragment->atsc3_sls_html_entry_package_v.data[i];
         //todo: add clear_app_context_cache_date (struct tm)
-        _ATSC3_HELD_PARSER_INFO("Dumping HELD: %i, "
+        _ATSC3_HELD_PARSER_INFO("\tHELD entry: %i, "
                                 "appContextId: %s, "
                                 "appRendering: %d, "
                                 "clear_app_context_cache_date_s: %s, "

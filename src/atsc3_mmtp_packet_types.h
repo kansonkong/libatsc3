@@ -32,10 +32,7 @@ extern int _MMTP_DEBUG_ENABLED;
 extern int _MMTP_TRACE_ENABLED;
 
 #define MIN_MMTP_SIZE 32
-#define MAX_MMTP_SIZE 1514
-
-//packet type=v0/v1 have an upper bound of ~1432
-#define UPPER_BOUND_MPU_FRAGMENT_SIZE 1432
+#define MAX_MMTP_SIZE MAX_ATSC3_PHY_ALP_DATA_PAYLOAD_SIZE
 
 #define MPU_REASSEMBLE_MAX_BUFFER 8192000
 

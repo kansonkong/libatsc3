@@ -49,18 +49,95 @@ uint16_t* dst_service_id_filter = NULL;
 atsc3_alc_arguments_t* alc_arguments;
 atsc3_alc_session_t* atsc3_alc_session;
 
+uint32_t alc_packet_received_count = 0;
+
+//#define __AIRWAVZ_PCAP_FIXUP__ 1
+//#define __AIRWAVZ_PCAP_FIXUP_DEBUG__ 1
+
 void process_packet(u_char *user, const struct pcap_pkthdr *pkthdr, const u_char *packet) {
-  udp_packet_t* udp_packet = process_packet_from_pcap(user, pkthdr, packet);
+
+#ifdef __AIRWAVZ_PCAP_FIXUP__
+
+#ifdef __AIRWAVZ_PCAP_FIXUP_DEBUG__
+	__INFO("got airwavz pcap packet: %p, first 40 bytes BEFORE fixup are:", packet);
+	for (int i = 0; i < 40; i++) {
+		__INFO("[%d]=0x%02x", i, packet[i]);
+	}
+#endif
+
+	uint8_t* eth_frame = (uint8_t*)calloc(pkthdr->len + 14, sizeof(uint8_t));
+
+	eth_frame[0]=1;
+	eth_frame[1]=1;
+	eth_frame[2]=1;
+	eth_frame[3]=1;
+	eth_frame[4]=1;
+	eth_frame[5]=1;
+
+	/* set mac source to local timestamp */
+	long replay_timestamp = gtl();
+
+	eth_frame[6]  = (replay_timestamp >> 10) & 0xFF;
+	eth_frame[7]  = (replay_timestamp >> 8) & 0xFF;
+	eth_frame[8]  = (replay_timestamp >> 6) & 0xFF;
+	eth_frame[9]  = (replay_timestamp >> 4) & 0xFF;
+	eth_frame[10] = (replay_timestamp >> 2) & 0xFF;
+	eth_frame[11] = replay_timestamp & 0xFF;
+
+	//ipv4 type
+	eth_frame[12]=0x08;
+	eth_frame[13]=0x00;
+	memcpy(&eth_frame[14], packet, pkthdr->len);
+
+	//hack
+	pcap_pkthdr* pkthdr_fixup = (pcap_pkthdr*)calloc(1, sizeof(pcap_pkthdr));
+	pkthdr_fixup->caplen = pkthdr->caplen + 14;
+	pkthdr_fixup->len = pkthdr->len + 14;
+	pkthdr_fixup->ts = pkthdr->ts;
+
+#ifdef __AIRWAVZ_PCAP_FIXUP_DEBUG__
+	__INFO("got airwavz pcap packet: %p, first 40 bytes AFTER fixup are:", eth_frame);
+	for (int i = 0; i < 40; i++) {
+		__INFO("[%d]=0x%02x", i, eth_frame[i]);
+	}
+#endif
+
+	udp_packet_t* udp_packet = process_packet_from_pcap(user, pkthdr_fixup, eth_frame);
+
+	if(!udp_packet) {
+		__WARN("udp_packet was NULL!");
+	} else {
+		__INFO("process_packet: flow: %d.%d.%d.%d:(%u):%u \t ->  %d.%d.%d.%d:(%u):%u, len: %d ",
+				__toipandportnonstruct(udp_packet->udp_flow.src_ip_addr, udp_packet->udp_flow.src_port),
+				udp_packet->udp_flow.src_ip_addr,
+				__toipandportnonstruct(udp_packet->udp_flow.dst_ip_addr, udp_packet->udp_flow.dst_port),
+				udp_packet->udp_flow.dst_ip_addr,
+				pkthdr_fixup->len
+				);
+	}
+
+	free((void*)eth_frame);
+	free((void*)pkthdr_fixup);
+
+#else
+	udp_packet_t* udp_packet = process_packet_from_pcap(user, pkthdr, packet);
+#endif
+
   if(!udp_packet) {
 	return;
   }
 
-  alc_packet_t* alc_packet = NULL;
+  atsc3_alc_packet_t* alc_packet = NULL;
     
     
     //dispatch for LLS extraction and dump
     if(udp_packet->udp_flow.dst_ip_addr == LLS_DST_ADDR && udp_packet->udp_flow.dst_port == LLS_DST_PORT) {
         lls_table_t* lls_table = lls_table_create_or_update_from_lls_slt_monitor(lls_slt_monitor, udp_packet->data);
+#ifdef __AIRWAVZ_PCAP_FIXUP__
+        if(lls_table) {
+        	lls_dump_instance_table(lls_table);
+        }
+#endif
         //auto-assign our first ROUTE service id here
         if(lls_table && lls_table->lls_table_id == SLT) {
             for(int i=0; i < lls_table->slt_table.atsc3_lls_slt_service_v.count; i++) {
@@ -110,41 +187,64 @@ void process_packet(u_char *user, const struct pcap_pkthdr *pkthdr, const u_char
 	clang optimized out matching_lls_slt_alc_session in the first conditional, so its added in the 3rd filter test for service_id
     */
 	
-	lls_sls_alc_session_t* matching_lls_slt_alc_session = lls_slt_alc_session_find_from_udp_packet(lls_slt_monitor, udp_packet->udp_flow.src_ip_addr, udp_packet->udp_flow.dst_ip_addr, udp_packet->udp_flow.dst_port);
-    if((lls_sls_alc_monitor && matching_lls_slt_alc_session) &&
-	   (dst_service_id_filter == NULL && dst_ip_addr_filter == NULL && dst_ip_port_filter == NULL) ||
-	   ((dst_service_id_filter != NULL && matching_lls_slt_alc_session && matching_lls_slt_alc_session->service_id == *dst_service_id_filter ) ||
-	    (dst_ip_addr_filter != NULL && dst_ip_port_filter == NULL && udp_packet->udp_flow.dst_ip_addr == *dst_ip_addr_filter) ||
-	    (dst_ip_addr_filter != NULL && dst_ip_port_filter != NULL && udp_packet->udp_flow.dst_ip_addr == *dst_ip_addr_filter && udp_packet->udp_flow.dst_port == *dst_ip_port_filter))) {
-		
-		//process ALC streams
-		int retval = alc_rx_analyze_packet_a331_compliant((char*)block_Get(udp_packet->data), block_Remaining_size(udp_packet->data), &alc_packet);
+    lls_sls_alc_monitor_t* matching_lls_sls_alc_monitor = atsc3_lls_sls_alc_monitor_find_from_udp_packet(lls_slt_monitor, udp_packet->udp_flow.src_ip_addr, udp_packet->udp_flow.dst_ip_addr, udp_packet->udp_flow.dst_port);
+	//only used for service id filtering.
+    lls_sls_alc_session_t* matching_lls_slt_alc_session = lls_slt_alc_session_find_from_udp_packet(lls_slt_monitor, udp_packet->udp_flow.src_ip_addr, udp_packet->udp_flow.dst_ip_addr, udp_packet->udp_flow.dst_port);
 
-#ifdef __MALLOC_DEBUGGING
+    if(matching_lls_sls_alc_monitor) {
+
+		if(matching_lls_slt_alc_session && (
+		   (dst_service_id_filter == NULL && dst_ip_addr_filter == NULL && dst_ip_port_filter == NULL) ||
+		   ((dst_service_id_filter != NULL && matching_lls_slt_alc_session && matching_lls_slt_alc_session->service_id == *dst_service_id_filter ) ||
+			(dst_ip_addr_filter != NULL && dst_ip_port_filter == NULL && udp_packet->udp_flow.dst_ip_addr == *dst_ip_addr_filter) ||
+			(dst_ip_addr_filter != NULL && dst_ip_port_filter != NULL && udp_packet->udp_flow.dst_ip_addr == *dst_ip_addr_filter && udp_packet->udp_flow.dst_port == *dst_ip_port_filter)))) {
+
+			//process ALC streams
+			int retval = alc_rx_analyze_packet_a331_compliant((char*)block_Get(udp_packet->data), block_Remaining_size(udp_packet->data), &alc_packet);
+
+	#ifdef __MALLOC_DEBUGGING
+			mcheck(0);
+	#endif
+
+			if(!retval) {
+				//check our alc_packet for a wrap-around TOI value, if it is a monitored TSI, and re-patch the MBMS MPD for updated availabilityStartTime and startNumber with last closed TOI values
+				atsc3_alc_packet_check_monitor_flow_for_toi_wraparound_discontinuity(alc_packet, matching_lls_sls_alc_monitor);
+	#ifdef __MALLOC_DEBUGGING
+	mcheck(0);
+	#endif
+
+				//keep track of our EXT_FTI and update last_toi as needed for TOI length and manual set of the close_object flag
+				atsc3_route_object_t* atsc3_route_object = atsc3_alc_persist_route_object_lct_packet_received_for_lls_sls_alc_monitor_all_flows(alc_packet, matching_lls_sls_alc_monitor);
+	#ifdef __MALLOC_DEBUGGING
+	mcheck(0);
+	#endif
+
+				//persist to disk, process sls mbms and/or emit ROUTE media_delivery_event complete to the application tier if
+				//the full packet has been recovered (e.g. no missing data units in the forward transmission)
+				if(atsc3_route_object) {
+					atsc3_alc_packet_persist_to_toi_resource_process_sls_mbms_and_emit_callback(&udp_packet->udp_flow, alc_packet, matching_lls_sls_alc_monitor, atsc3_route_object);
+					alc_packet_received_count++;
+
+	//				if(alc_packet_received_count > 10000) {
+	//					exit(0);
+	//				}
+
+				} else {
+					__ERROR("Error in ALC persist, atsc3_route_object is NULL!");
+
+				}
+		#ifdef __MALLOC_DEBUGGING
 		mcheck(0);
-#endif
-		
-		if(!retval) {
-			
-			//lls_sls_alc_monitor_t* atsc3_lls_sls_alc_monitor_find_from_udp_packet(lls_slt_monitor_t* lls_slt_monitor, uint32_t src_ip_addr, uint32_t dst_ip_addr, uint16_t dst_port) {
+		#endif
 
-			//dump out for fragment inspection
-		  atsc3_alc_persist_route_ext_attributes_per_lls_sls_alc_monitor_essence(alc_packet, lls_slt_monitor->lls_sls_alc_monitor);
-
-#ifdef __MALLOC_DEBUGGING
-mcheck(0);
-#endif
-		  atsc3_alc_packet_persist_to_toi_resource_process_sls_mbms_and_emit_callback(
-                    &udp_packet->udp_flow, &alc_packet,
-                    lls_slt_monitor->lls_sls_alc_monitor);
-#ifdef __MALLOC_DEBUGGING
-		 mcheck(0);
-#endif
+			} else {
+				__ERROR("Error in ALC decode: %d", retval);
+			}
 		} else {
-			__ERROR("Error in ALC decode: %d", retval);
+			__ERROR("Discarding packet: lls_sls_alc_monitor: %p, matching_lls_sls_alc_monitor: %p, matching_lls_slt_alc_session: %p, ", lls_sls_alc_monitor, matching_lls_sls_alc_monitor, matching_lls_slt_alc_session);
 		}
 	} else {
-		//__ERROR("Discarding packet: lls_sls_alc_monitor: %p, matching_lls_slt_alc_session: %p, ", lls_sls_alc_monitor, matching_lls_slt_alc_session);
+		__ERROR("Discarding packet: lls_sls_alc_monitor: %p, matching_lls_sls_alc_monitor: %p, matching_lls_slt_alc_session: %p, ", lls_sls_alc_monitor, matching_lls_sls_alc_monitor, matching_lls_slt_alc_session);
 	}
 
 udp_packet_free:
@@ -167,10 +267,20 @@ int main(int argc,char **argv) {
 	_LLS_SLT_PARSER_INFO_ROUTE_ENABLED = 1;
 	_LLS_ALC_UTILS_INFO_ENABLED = 1;
 
-    _ALC_UTILS_DEBUG_ENABLED = 1;
-    _ALC_UTILS_IOTRACE_ENABLED = 1;
-	_ALC_RX_DEBUG_ENABLED = 1;
-    _ALC_UTILS_DEBUG_ENABLED = 1;
+    _ALC_UTILS_DEBUG_ENABLED = 0;
+	_ALC_RX_DEBUG_ENABLED = 0;
+    _ALC_UTILS_DEBUG_ENABLED = 0;
+
+    _ROUTE_OBJECT_INFO_ENABLED = 1;
+    _ROUTE_OBJECT_DEBUG_ENABLED = 0;
+    _ROUTE_OBJECT_TRACE_ENABLED = 0;
+
+    _SLS_ALC_FLOW_INFO_ENABLED = 1;
+    _SLS_ALC_FLOW_DEBUG_ENABLED = 0;
+    _SLS_ALC_FLOW_TRACE_ENABLED = 0;
+
+    _ROUTE_SLS_PROCESSOR_DEBUG_ENABLED = 0;
+
 	
 #ifdef __LOTS_OF_DEBUGGING__
 	_LLS_INFO_ENABLED = 1;
@@ -181,8 +291,14 @@ int main(int argc,char **argv) {
     _ALC_UTILS_TRACE_ENABLED = 1;
 
 	_ALC_UTILS_IOTRACE_ENABLED=1;
+
 	_ALC_RX_DEBUG_ENABLED = 1;
 	_ALC_RX_TRACE_ENABLED = 1;
+    _ROUTE_OBJECT_DEBUG_ENABLED = 1;
+    _ROUTE_SLS_PROCESSOR_DEBUG_ENABLED = 1;
+    _SLS_ALC_FLOW_DEBUG_ENABLED = 1;
+
+
 #endif
 
 	char *dev;
@@ -307,8 +423,14 @@ int main(int argc,char **argv) {
         printf("pcap_open_live(): %s",errbuf);
         exit(1);
     }
-
+#ifdef __AIRWAVZ_PCAP_FIXUP__
+    _LLS_INFO_ENABLED = 1;
+    char filter[] = ""; //remove udp filter for eth frame header fixup
+#else
     char filter[] = "udp";
+
+#endif
+
     if(pcap_compile(descr,&fp, filter,0,netp) == -1) {
         fprintf(stderr,"Error calling pcap_compile");
         exit(1);
@@ -319,6 +441,7 @@ int main(int argc,char **argv) {
         exit(1);
     }
 
+    __INFO("using filter: %s", filter);
     pcap_loop(descr,-1,process_packet,NULL);
 
     return 0;
