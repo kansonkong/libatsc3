@@ -19,6 +19,11 @@ void atsc3_mime_multipart_related_payload_free(atsc3_mime_multipart_related_payl
             freeclean((void**)&atsc3_mime_multipart_related_payload->content_transfer_encoding);
             freeclean((void**)&atsc3_mime_multipart_related_payload->content_type);
 
+            freeclean((void**)&atsc3_mime_multipart_related_payload->valid_from_string);
+            freeclean((void**)&atsc3_mime_multipart_related_payload->valid_until_string);
+            freeclean((void**)&atsc3_mime_multipart_related_payload->next_url_string);
+            freeclean((void**)&atsc3_mime_multipart_related_payload->avail_at_string);
+
             if(atsc3_mime_multipart_related_payload->payload) {
             	block_Destroy(&atsc3_mime_multipart_related_payload->payload);
             }

@@ -118,6 +118,7 @@ typedef struct atsc3_block {
     uint8_t  _bitpos;
     uint8_t  _refcnt;
     uint8_t  _is_alloc;
+    uint32_t _a_size;
 } block_t;
 
 
@@ -141,6 +142,7 @@ uint32_t block_Seek(block_t* block, int32_t seek_pos);
 uint32_t block_Seek_Relative(block_t* block, int32_t relative_pos);
 block_t* block_Rewind(block_t* dest);
 block_t* block_Resize(block_t* dest, uint32_t dest_size_required);
+block_t* block_Resize_Soft(block_t* dest, uint32_t dest_size_min_required); //perform a soft allocation to src->p_size * 2  where p_size < 2M
 block_t* block_Duplicate(block_t* a);
 block_t* block_Duplicate_from_position(block_t* a);
 block_t* block_Duplicate_to_size(block_t* src, uint32_t target_len);

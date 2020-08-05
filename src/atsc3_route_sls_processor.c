@@ -99,16 +99,18 @@ void atsc3_route_sls_process_from_alc_packet_and_file(udp_flow_t* udp_flow, atsc
 			atsc3_sls_metadata_fragments = atsc3_mbms_envelope_to_sls_metadata_fragments_parse_from_fdt_fp(fp_mbms);
 
 			if(atsc3_sls_metadata_fragments) {
+				//clear out our old SLS, and invoke any chained destructors as needed for our prior sls
+				if(lls_sls_alc_monitor->atsc3_sls_metadata_fragments) {
+				  atsc3_sls_metadata_fragments_free(&lls_sls_alc_monitor->atsc3_sls_metadata_fragments);
+				}
+				
 				if(atsc3_sls_metadata_fragments->atsc3_route_s_tsid) {
 				  lls_sls_alc_update_s_tsid_RS_dIpAddr_dPort_if_missing(udp_flow, lls_sls_alc_monitor, atsc3_sls_metadata_fragments->atsc3_route_s_tsid);
 
 					//update our audio and video tsi and init
 					lls_sls_alc_update_all_mediainfo_flow_v_from_route_s_tsid(lls_sls_alc_monitor, atsc3_sls_metadata_fragments->atsc3_route_s_tsid);
 				}
-				if(lls_sls_alc_monitor->atsc3_sls_metadata_fragments) {
-				  //invoke any chained destructors as needed
-				  atsc3_sls_metadata_fragments_free(&lls_sls_alc_monitor->atsc3_sls_metadata_fragments);
-				}
+				
 				lls_sls_alc_monitor->atsc3_sls_metadata_fragments = atsc3_sls_metadata_fragments;
 
 				// #1569

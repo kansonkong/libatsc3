@@ -331,7 +331,7 @@ block_t* block_Write(block_t* dest, const uint8_t* src_buf, uint32_t src_size) {
 
 	uint32_t dest_size_required = dest->i_pos + src_size;
 	if(dest->p_size < dest_size_required) {
-		block_t* ret_block = block_Resize(dest, dest_size_required);
+		block_t* ret_block = block_Resize_Soft(dest, dest_size_required);
 		if(!ret_block) {
 			_ATSC3_UTILS_ERROR("block_Write: block: %p, unable to realloc from size: %u to %u, returning NULL", dest, dest->p_size, dest_size_required);
 			return NULL;
@@ -350,7 +350,7 @@ uint32_t block_Append(block_t* dest, block_t* src) {
 
 	uint32_t dest_size_required = dest->i_pos + src->i_pos;
 	if(dest->p_size < dest_size_required) {
-		block_t* ret_block = block_Resize(dest, dest_size_required);
+		block_t* ret_block = block_Resize_Soft(dest, dest_size_required);
 		if(!ret_block) {
 			_ATSC3_UTILS_ERROR("block_Append: block: %p, unable to realloc from size: %u to %u, returning NULL", dest, dest->p_size, dest_size_required);
 			return 0;
@@ -375,7 +375,7 @@ block_t* block_AppendFromSrciPos(block_t* dest, block_t* src) {
 
 	uint32_t dest_size_required = dest->i_pos + src_len;
 	if(dest->p_size < dest_size_required) {
-		block_t* ret_block = block_Resize(dest, dest_size_required);
+		block_t* ret_block = block_Resize_Soft(dest, dest_size_required);
 		if(!ret_block) {
 			_ATSC3_UTILS_ERROR("block_Append: block: %p, unable to realloc from size: %u to %u, returning NULL", dest, dest->p_size, dest_size_required);
 			return 0;
@@ -395,7 +395,7 @@ block_t* block_AppendFromBuf(block_t* dest, const uint8_t* src_buf, uint32_t src
 	uint32_t dest_size_required = dest->p_size + src_size;
 
 	if(dest->p_size < dest_size_required) {
-		block_t* ret_block = block_Resize(dest, dest_size_required);
+		block_t* ret_block = block_Resize_Soft(dest, dest_size_required);
 		if(!ret_block) {
 			_ATSC3_UTILS_ERROR("block_Write: block: %p, unable to realloc from size: %u to %u, returning NULL", dest, dest->p_size, dest_size_required);
 			return NULL;
@@ -414,7 +414,7 @@ uint32_t block_AppendFull(block_t* dest, block_t* src) {
     
     uint32_t dest_size_required = dest->i_pos + src->p_size;
     if(dest->p_size < dest_size_required) {
-        block_t* ret_block = block_Resize(dest, dest_size_required);
+        block_t* ret_block = block_Resize_Soft(dest, dest_size_required);
         if(!ret_block) {
             _ATSC3_UTILS_ERROR("block_AppendFull: block: %p, unable to realloc from size: %u to %u, returning NULL", dest, dest->p_size, dest_size_required);
             return 0;
@@ -436,7 +436,7 @@ uint32_t block_Merge(block_t* dest, block_t* src) {
     uint32_t dest_size_required = dest->p_size + src->p_size;
     
     if(dest->p_size < dest_size_required) {
-        block_t* ret_block = block_Resize(dest, dest_size_required);
+        block_t* ret_block = block_Resize_Soft(dest, dest_size_required);
         if(!ret_block) {
             _ATSC3_UTILS_ERROR("block_Merge: block: %p, unable to realloc from size: %u to %u, returning NULL", dest, dest->p_size, dest_size_required);
             return 0;
@@ -459,7 +459,7 @@ uint32_t block_MergeNoRewind(block_t* dest, block_t* src) {
     uint32_t dest_size_required = dest->p_size + src->p_size;
 
     if(dest->p_size < dest_size_required) {
-        block_t* ret_block = block_Resize(dest, dest_size_required);
+        block_t* ret_block = block_Resize_Soft(dest, dest_size_required);
         if(!ret_block) {
             _ATSC3_UTILS_ERROR("block_Merge: block: %p, unable to realloc from size: %u to %u, returning NULL", dest, dest->p_size, dest_size_required);
             return 0;
@@ -553,11 +553,28 @@ block_t* block_Duplicate_from_ptr(uint8_t* data, uint32_t size) {
     return block_t;
 }
 
+#define __ATSC3_UTILS_BLOCK_RESIZE_DOUBLE_LIMIT__ 2048000
+//perform a soft allocation to
+//src->p_size * 2  where p_size < 2M
+block_t* block_Resize_Soft(block_t* dest, uint32_t dest_size_min_required) {
+	uint32_t target_dest_size_min_required = dest_size_min_required;
+
+	if(dest_size_min_required * 2 < __ATSC3_UTILS_BLOCK_RESIZE_DOUBLE_LIMIT__) {
+		target_dest_size_min_required = dest_size_min_required * 2;
+	}
+
+	block_Resize(dest, target_dest_size_min_required);
+	dest->p_size = dest_size_min_required;
+
+	return dest;
+}
+
 
 //return will be NULL if realloc failed, but src will still be valid
 //grow or shrink a block,
 //  if growing, null out new payload, maintain i_pos
 //  if shrinking, discard end payload, i_pos will reset to 0
+
 
 block_t* block_Resize(block_t* src, uint32_t src_size_requested) {
 	if(!__block_check_bounaries(__FUNCTION__, src)) return NULL;
@@ -568,6 +585,11 @@ block_t* block_Resize(block_t* src, uint32_t src_size_requested) {
     //do not change our size, as this can cause us to leak unexpectedly
     uint32_t src_size_required = src_size_requested;
 
+    if(src->_a_size >= src_size_requested && src_size_requested > src->i_pos && src_size_requested > src->p_size) {
+    	src->p_size = src_size_required;
+    	return src;
+    }
+
 	//always over alloc by X bytes for a null pad
     //jjustman-2019-10-12: TODO - devices like aarm64 need a quad byte aligned boundary (aim for 64bit align)
     //over-allow with pad but don't set our p_size to this value as its not "accurate" when appending
@@ -577,6 +599,7 @@ block_t* block_Resize(block_t* src, uint32_t src_size_requested) {
     _ATSC3_UTILS_INFO("block_Resize: original size requested: %u, aligned size: %u, alignment factor: %f", src_size_required, aligned_size, aligned_size/8.0);
 #endif
 
+    src->_a_size = aligned_size;
 	void* new_block = realloc(src->p_buffer, aligned_size);
 	if(!new_block) {
 		_ATSC3_UTILS_ERROR("block_Resize: block: %p resize to %u failed, returning NULL", src, src_size_required);
