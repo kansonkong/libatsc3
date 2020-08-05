@@ -46,7 +46,7 @@ void atsc3_timing_management_packet_dump(atsc3_timing_management_packet_t* atsc3
 
 #define __STLTP_PARSER_ERROR(...)       __LIBATSC3_TIMESTAMP_ERROR(__VA_ARGS__);
 #define __STLTP_PARSER_WARN(...)        __LIBATSC3_TIMESTAMP_WARN(__VA_ARGS__);
-#define __STLTP_PARSER_INFO(...)        __LIBATSC3_TIMESTAMP_INFO(__VA_ARGS__);
+#define __STLTP_PARSER_INFO(...)        if(_STLTP_PARSER_INFO_ENABLED)  { __LIBATSC3_TIMESTAMP_INFO(__VA_ARGS__);  }
 #define __STLTP_PARSER_DEBUG(...)       if(_STLTP_PARSER_DEBUG_ENABLED) { __LIBATSC3_TIMESTAMP_DEBUG(__VA_ARGS__); }
 #define __STLTP_PARSER_TRACE(...)       if(_STLTP_PARSER_TRACE_ENABLED) { __LIBATSC3_TIMESTAMP_TRACE(__VA_ARGS__); }
 

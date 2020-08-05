@@ -3,6 +3,7 @@ package org.ngbp.libatsc3.sampleapp;
 import android.content.res.AssetManager;
 import android.util.Log;
 
+import org.ngbp.libatsc3.android.PackageExtractEnvelopeMetadataAndPayload;
 import org.ngbp.libatsc3.media.ATSC3PlayerFlags;
 import org.ngbp.libatsc3.media.sync.mmt.MfuByteBufferFragment;
 import org.ngbp.libatsc3.media.sync.mmt.MmtPacketIdContext;
@@ -90,6 +91,11 @@ public class atsc3NdkClient {
 
     int atsc3_on_alc_object_status_message(String alc_object_status_message) {
         mActivity.onAlcObjectStatusMessage(alc_object_status_message);
+        return 0;
+    }
+
+    int atsc3_lls_sls_alc_on_package_extract_completed(PackageExtractEnvelopeMetadataAndPayload packageExtractEnvelopeMetadataAndPayload) {
+        mActivity.onPackageExtractCompleted(packageExtractEnvelopeMetadataAndPayload);
         return 0;
     }
 

@@ -10,15 +10,16 @@
  * Note: atsc3NdkClient - Android NDK Binding against Lowasys API are not included
  */
 
+#ifndef __JJ_PHY_MMT_PLAYER_BRIDGE_DISABLED
 
 #ifdef __FIXME_REFACTOR_LOWASIS__
 #include "At3DrvIntf.h"
-At3DrvIntf* atsc3NdkClientSL_ptr;
+At3DrvIntf* Atsc3NdkClient_ptr;
 
 #else
 
 #include "atsc3NdkClient.h"
-atsc3NdkClient* atsc3NdkClientSL_ptr;
+atsc3NdkClient* Atsc3NdkClient_ptr;
 #endif
 
 #include "atsc3_phy_mmt_player_bridge.h"
@@ -37,7 +38,6 @@ atsc3NdkClient* atsc3NdkClientSL_ptr;
 #include "atsc3_utils.h"
 
 #include "atsc3_lls.h"
-
 
 #include "atsc3_lls_slt_parser.h"
 #include "atsc3_lls_sls_monitor_output_buffer_utils.h"
@@ -75,6 +75,11 @@ lls_slt_monitor_t* lls_slt_monitor = NULL;
 
 void atsc3_lls_sls_alc_on_object_close_flag_s_tsid_content_location_ndk(uint32_t tsi, uint32_t toi, char* content_location);
 void atsc3_lls_sls_alc_on_route_mpd_patched_ndk(uint16_t service_id);
+
+void atsc3_lls_sls_alc_on_package_extract_completed_callback_ndk(atsc3_route_package_extracted_envelope_metadata_and_payload_t* atsc3_route_package_extracted_envelope_metadata_and_payload_t);
+
+//#1569
+void atsc3_sls_on_held_trigger_received_callback_impl(uint16_t service_id, block_t* held_payload);
 
 //mmtp/sls flow management
 mmtp_flow_t* mmtp_flow;
@@ -154,11 +159,11 @@ atsc3_lls_slt_service_t* atsc3_phy_mmt_player_bridge_set_single_monitor_a331_ser
 
                         if(atsc3_link_mapping_table_multicast->dst_ip_add == sls_destination_ip_address &&
                             atsc3_link_mapping_table_multicast->dst_udp_port == sls_destination_udp_port) {
-                            atsc3NdkClientSL_ptr->LogMsgF("atsc3_phy_mmt_player_bridge_set_single_monitor_a331_service_id: SLS adding PLP_id: %d (%s: %s)",
-                                    atsc3_link_mapping_table_plp->PLP_ID,
-                                    atsc3_slt_broadcast_svc_signalling->sls_destination_ip_address,
-                                    atsc3_slt_broadcast_svc_signalling->sls_destination_udp_port);
-                            atsc3NdkClientSL_ptr->ListenPLP1(atsc3_link_mapping_table_plp->PLP_ID);
+                            Atsc3NdkClient_ptr->LogMsgF("atsc3_phy_mmt_player_bridge_set_single_monitor_a331_service_id: SLS adding PLP_id: %d (%s: %s)",
+                                                        atsc3_link_mapping_table_plp->PLP_ID,
+                                                        atsc3_slt_broadcast_svc_signalling->sls_destination_ip_address,
+                                                        atsc3_slt_broadcast_svc_signalling->sls_destination_udp_port);
+                            Atsc3NdkClient_ptr->ListenPLP1(atsc3_link_mapping_table_plp->PLP_ID);
                         }
                     }
                 }
@@ -228,6 +233,8 @@ atsc3_lls_slt_service_t* atsc3_phy_mmt_player_bridge_set_single_monitor_a331_ser
         lls_sls_alc_monitor = lls_sls_alc_monitor_create();
         lls_sls_alc_monitor->atsc3_lls_slt_service = atsc3_lls_slt_service;
         lls_sls_alc_monitor->lls_sls_monitor_output_buffer_mode.file_dump_enabled = true;
+        lls_sls_alc_monitor->has_discontiguous_toi_flow = true; //jjustman-2020-07-27 - hack-ish
+
         lls_slt_service_id_t* lls_slt_service_id = lls_slt_service_id_new_from_atsc3_lls_slt_service(atsc3_lls_slt_service);
         lls_slt_monitor_add_lls_slt_service_id(lls_slt_monitor, lls_slt_service_id);
 
@@ -240,12 +247,17 @@ atsc3_lls_slt_service_t* atsc3_phy_mmt_player_bridge_set_single_monitor_a331_ser
 
         lls_slt_monitor_add_lls_sls_alc_monitor(lls_slt_monitor, lls_sls_alc_monitor);
 
+
         //wire up event callback for alc close_object notification
         lls_sls_alc_monitor->atsc3_lls_sls_alc_on_object_close_flag_s_tsid_content_location = &atsc3_lls_sls_alc_on_object_close_flag_s_tsid_content_location_ndk;
 
         //write up event callback for alc MPD patching
         lls_sls_alc_monitor->atsc3_lls_sls_alc_on_route_mpd_patched = &atsc3_lls_sls_alc_on_route_mpd_patched_ndk;
 
+        lls_sls_alc_monitor->atsc3_lls_sls_alc_on_package_extract_completed_callback = &atsc3_lls_sls_alc_on_package_extract_completed_callback_ndk;
+
+        //#1569
+        lls_sls_alc_monitor->atsc3_sls_on_held_trigger_received_callback = &atsc3_sls_on_held_trigger_received_callback_impl;
 
     } else {
         lls_slt_monitor_clear_lls_sls_alc_monitor(lls_slt_monitor);
@@ -430,7 +442,7 @@ void atsc3_phy_mmt_player_bridge_process_packet_phy(block_t* packet) {
     lls_sls_mmt_session_t* matching_lls_sls_mmt_session = NULL;
 
 
-    alc_packet_t* alc_packet = NULL;
+    atsc3_alc_packet_t* alc_packet = NULL;
     lls_sls_alc_session_t* matching_lls_slt_alc_session = NULL;
 
     //lowasys hands off the ip packet header, not phy eth frame
@@ -456,9 +468,22 @@ void atsc3_phy_mmt_player_bridge_process_packet_phy(block_t* packet) {
     //don't auto-select service here, let the lls_slt_monitor->atsc3_lls_on_sls_table_present event callback trigger in a service selection
     if(udp_packet->udp_flow.dst_ip_addr == LLS_DST_ADDR && udp_packet->udp_flow.dst_port == LLS_DST_PORT) {
         //at3DrvIntf_ptr->LogMsgF("atsc3_phy_mmt_player_bridge_process_packet_phy got packet: LLS, %p", udp_packet);
-        __DEBUG("LLS packet: dst_ip_addr: %u.%u.%u.%u:%u",
-                __toipnonstruct(udp_packet->udp_flow.dst_ip_addr),
-                udp_packet->udp_flow.dst_port);
+//        __INFO("LLS packet: dst_ip_addr: %u.%u.%u.%u:%u, len: %d",
+//                __toipnonstruct(udp_packet->udp_flow.dst_ip_addr),
+//                udp_packet->udp_flow.dst_port,
+//                udp_packet->data->p_size);
+        //dump SLS packet
+//        if(udp_packet->data->p_size == 351) {
+//
+//                FILE *fp = NULL;
+//                fp = fopen("sls.raw", "w");
+//                if(fp) {
+//                    printf("writing to sls.raw");
+//
+//                    fwrite(udp_packet->data->p_buffer, udp_packet->data->p_size, 1, fp);
+//                    fclose(fp);
+//                }
+//          }
         lls_table_t* lls_table = lls_table_create_or_update_from_lls_slt_monitor(lls_slt_monitor, udp_packet->data);
         if(lls_table) {
             if(lls_table->lls_table_id == SLT) {
@@ -468,15 +493,20 @@ void atsc3_phy_mmt_player_bridge_process_packet_phy(block_t* packet) {
                 if(!retval) {
                     lls_dump_instance_table(lls_table);
                 }
+            } else {
+                __INFO("lls_table_id: %d", lls_table->lls_table_id);
             }
+        } else {
+            //LLS_table may not have been updated (e.g. lls_table_version has not changed)
         }
-
         goto cleanup;
     }
 
-//    __ERROR("ALP packet: dst_ip_addr: %u.%u.%u.%u:%u",
-//            __toipnonstruct(udp_packet->udp_flow.dst_ip_addr),
-//            udp_packet->udp_flow.dst_port);
+    __DEBUG("IP flow packet: dst_ip_addr: %u.%u.%u.%u:%u, pkt_len: %d",
+           __toipnonstruct(udp_packet->udp_flow.dst_ip_addr),
+           udp_packet->udp_flow.dst_port,
+           udp_packet->data->p_size);
+
     //ALC: Find a matching SLS service from this packet flow, and if the selected atsc3_lls_slt_service is monitored, write MBMS/MPD and MDE's out to disk
     matching_lls_slt_alc_session = lls_slt_alc_session_find_from_udp_packet(lls_slt_monitor, udp_packet->udp_flow.src_ip_addr, udp_packet->udp_flow.dst_ip_addr, udp_packet->udp_flow.dst_port);
 
@@ -492,11 +522,15 @@ void atsc3_phy_mmt_player_bridge_process_packet_phy(block_t* packet) {
             atsc3_alc_packet_check_monitor_flow_for_toi_wraparound_discontinuity(alc_packet, lls_slt_monitor->lls_sls_alc_monitor);
 
             //keep track of our EXT_FTI and update last_toi as needed for TOI length and manual set of the close_object flag
-            atsc3_alc_persist_route_ext_attributes_per_lls_sls_alc_monitor_essence(alc_packet, lls_slt_monitor->lls_sls_alc_monitor);
+            atsc3_route_object_t* atsc3_route_object = atsc3_alc_persist_route_object_lct_packet_received_for_lls_sls_alc_monitor_all_flows(alc_packet, lls_slt_monitor->lls_sls_alc_monitor);
 
             //persist to disk, process sls mbms and/or emit ROUTE media_delivery_event complete to the application tier if
             //the full packet has been recovered (e.g. no missing data units in the forward transmission)
-            atsc3_alc_packet_persist_to_toi_resource_process_sls_mbms_and_emit_callback(&udp_packet->udp_flow, &alc_packet, lls_slt_monitor->lls_sls_alc_monitor);
+            if(atsc3_route_object) {
+            	atsc3_alc_packet_persist_to_toi_resource_process_sls_mbms_and_emit_callback(&udp_packet->udp_flow, alc_packet, lls_slt_monitor->lls_sls_alc_monitor, atsc3_route_object);
+            } else {
+                __ERROR("Error in ALC persist, atsc3_route_object is NULL!");
+            }
         } else {
             __ERROR("Error in ALC decode: %d", retval);
         }
@@ -645,12 +679,13 @@ error:
 
 
 void atsc3_lls_on_sls_table_present_ndk(lls_table_t* lls_table) {
+    printf("atsc3_lls_on_sls_table_present_ndk: lls_table is: %p, val: %s", lls_table, lls_table->raw_xml.xml_payload);
     if(!lls_table) {
-        atsc3NdkClientSL_ptr->LogMsg("E: atsc3_lls_on_sls_table_present_ndk: no lls_table for SLS!");
+        Atsc3NdkClient_ptr->LogMsg("E: atsc3_lls_on_sls_table_present_ndk: no lls_table for SLS!");
         return;
     }
     if(!lls_table->raw_xml.xml_payload || !lls_table->raw_xml.xml_payload_size) {
-        atsc3NdkClientSL_ptr->LogMsg("E: atsc3_lls_on_sls_table_present_ndk: no raw_xml.xml_payload for SLS!");
+        Atsc3NdkClient_ptr->LogMsg("E: atsc3_lls_on_sls_table_present_ndk: no raw_xml.xml_payload for SLS!");
         return;
     }
 
@@ -660,19 +695,39 @@ void atsc3_lls_on_sls_table_present_ndk(lls_table_t* lls_table) {
     char* xml_payload_copy = (char*)calloc(len_aligned , sizeof(char));
     strncpy(xml_payload_copy, (char*)lls_table->raw_xml.xml_payload, lls_table->raw_xml.xml_payload_size);
 
-    atsc3NdkClientSL_ptr->atsc3_onSlsTablePresent((const char*)xml_payload_copy);
+    Atsc3NdkClient_ptr->atsc3_onSlsTablePresent((const char*)xml_payload_copy);
 
     free(xml_payload_copy);
 }
 
 //TODO: jjustman-2019-11-08: wire up the service_id in which this alc_emission originated from in addition to tsi/toi
 void atsc3_lls_sls_alc_on_object_close_flag_s_tsid_content_location_ndk(uint32_t tsi, uint32_t toi, char* content_location) {
-    atsc3NdkClientSL_ptr->atsc3_lls_sls_alc_on_object_close_flag_s_tsid_content_location_jni(tsi, toi, content_location);
+    Atsc3NdkClient_ptr->atsc3_lls_sls_alc_on_object_close_flag_s_tsid_content_location_jni(tsi, toi, content_location);
 }
 
 void atsc3_lls_sls_alc_on_route_mpd_patched_ndk(uint16_t service_id) {
-    atsc3NdkClientSL_ptr->atsc3_lls_sls_alc_on_route_mpd_patched_jni(service_id);
+    Atsc3NdkClient_ptr->atsc3_lls_sls_alc_on_route_mpd_patched_jni(service_id);
 }
+
+void atsc3_lls_sls_alc_on_package_extract_completed_callback_ndk(atsc3_route_package_extracted_envelope_metadata_and_payload_t* atsc3_route_package_extracted_envelope_metadata_and_payload_t) {
+    Atsc3NdkClient_ptr->atsc3_lls_sls_alc_on_package_extract_completed_callback_jni(atsc3_route_package_extracted_envelope_metadata_and_payload_t);
+}
+
+void atsc3_sls_on_held_trigger_received_callback_impl(uint16_t service_id, block_t* held_payload) {
+    block_Rewind(held_payload);
+    uint8_t *block_ptr = block_Get(held_payload);
+    uint32_t block_len = block_Len(held_payload);
+
+    int len_aligned = block_len + 1;
+    len_aligned += 8-(len_aligned%8);
+    char* xml_payload_copy = (char*)calloc(len_aligned , sizeof(char));
+    strncpy(xml_payload_copy, (char*)block_ptr, block_len);
+
+    Atsc3NdkClient_ptr->atsc3_sls_on_held_trigger_received_callback_jni(service_id, (const char*)xml_payload_copy);
+
+    free(xml_payload_copy);
+}
+
 /*
  *
 note for Android MediaCodec:
@@ -704,7 +759,7 @@ void atsc3_mmt_mpu_on_sequence_mpu_metadata_present_ndk(uint16_t packet_id, uint
         if (video_decoder_configuration_record) {
             //set width/height to player
             if(video_decoder_configuration_record->width && video_decoder_configuration_record->height) {
-                atsc3NdkClientSL_ptr->atsc3_setVideoWidthHeightFromTrak(video_decoder_configuration_record->width, video_decoder_configuration_record->height);
+                Atsc3NdkClient_ptr->atsc3_setVideoWidthHeightFromTrak(video_decoder_configuration_record->width, video_decoder_configuration_record->height);
             }
 
             if (video_decoder_configuration_record->hevc_decoder_configuration_record) {
@@ -719,9 +774,9 @@ void atsc3_mmt_mpu_on_sequence_mpu_metadata_present_ndk(uint16_t packet_id, uint
                     }
                     __INTERNAL_LAST_NAL_PACKET_TODO_FIXME = block_Duplicate(hevc_nals_combined);
 
-                    atsc3NdkClientSL_ptr->atsc3_onInitHEVC_NAL_Extracted(packet_id, mpu_sequence_number,  block_Get(hevc_nals_combined), hevc_nals_combined->p_size);
+                    Atsc3NdkClient_ptr->atsc3_onInitHEVC_NAL_Extracted(packet_id, mpu_sequence_number, block_Get(hevc_nals_combined), hevc_nals_combined->p_size);
                 } else {
-                    atsc3NdkClientSL_ptr->LogMsg("atsc3_mmt_mpu_on_sequence_mpu_metadata_present_ndk - error, no NALs returned!");
+                    Atsc3NdkClient_ptr->LogMsg("atsc3_mmt_mpu_on_sequence_mpu_metadata_present_ndk - error, no NALs returned!");
 
                 }
             }
@@ -761,21 +816,21 @@ void atsc3_mmt_signalling_information_on_video_packet_id_with_mpu_timestamp_desc
     uint64_t last_mpu_timestamp = mpu_presentation_time_seconds * 1000000 + mpu_presentation_time_microseconds;
     global_video_packet_id = video_packet_id;
 
-    atsc3NdkClientSL_ptr->atsc3_signallingContext_notify_video_packet_id_and_mpu_timestamp_descriptor(video_packet_id, mpu_sequence_number, mpu_presentation_time_ntp64, mpu_presentation_time_seconds, mpu_presentation_time_microseconds);
+    Atsc3NdkClient_ptr->atsc3_signallingContext_notify_video_packet_id_and_mpu_timestamp_descriptor(video_packet_id, mpu_sequence_number, mpu_presentation_time_ntp64, mpu_presentation_time_seconds, mpu_presentation_time_microseconds);
 }
 
 void atsc3_mmt_signalling_information_on_audio_packet_id_with_mpu_timestamp_descriptor_ndk(uint16_t audio_packet_id, uint32_t mpu_sequence_number, uint64_t mpu_presentation_time_ntp64, uint32_t mpu_presentation_time_seconds, uint32_t mpu_presentation_time_microseconds) {
     uint64_t last_mpu_timestamp = mpu_presentation_time_seconds * 1000000 + mpu_presentation_time_microseconds;
     global_audio_packet_id = audio_packet_id;
 
-    atsc3NdkClientSL_ptr->atsc3_signallingContext_notify_audio_packet_id_and_mpu_timestamp_descriptor(audio_packet_id, mpu_sequence_number, mpu_presentation_time_ntp64, mpu_presentation_time_seconds, mpu_presentation_time_microseconds);
+    Atsc3NdkClient_ptr->atsc3_signallingContext_notify_audio_packet_id_and_mpu_timestamp_descriptor(audio_packet_id, mpu_sequence_number, mpu_presentation_time_ntp64, mpu_presentation_time_seconds, mpu_presentation_time_microseconds);
 }
 
 void atsc3_mmt_signalling_information_on_stpp_packet_id_with_mpu_timestamp_descriptor_ndk(uint16_t stpp_packet_id, uint32_t mpu_sequence_number, uint64_t mpu_presentation_time_ntp64, uint32_t mpu_presentation_time_seconds, uint32_t mpu_presentation_time_microseconds) {
     uint64_t last_mpu_timestamp = mpu_presentation_time_seconds * 1000000 + mpu_presentation_time_microseconds;
     global_stpp_packet_id = stpp_packet_id;
 
-    atsc3NdkClientSL_ptr->atsc3_signallingContext_notify_stpp_packet_id_and_mpu_timestamp_descriptor(stpp_packet_id, mpu_sequence_number, mpu_presentation_time_ntp64, mpu_presentation_time_seconds, mpu_presentation_time_microseconds);
+    Atsc3NdkClient_ptr->atsc3_signallingContext_notify_stpp_packet_id_and_mpu_timestamp_descriptor(stpp_packet_id, mpu_sequence_number, mpu_presentation_time_ntp64, mpu_presentation_time_seconds, mpu_presentation_time_microseconds);
 }
 
 void atsc3_mmt_mpu_mfu_on_sample_complete_ndk(uint16_t packet_id, uint32_t mpu_sequence_number, uint32_t sample_number, block_t* mmt_mfu_sample, uint32_t mfu_fragment_count_rebuilt) {
@@ -811,13 +866,13 @@ void atsc3_mmt_mpu_mfu_on_sample_complete_ndk(uint16_t packet_id, uint32_t mpu_s
 //                packet_id, mpu_sequence_number, block_ptr, block_len, mpu_timestamp_descriptor);
 
         if((global_mfu_proccessed_count++ % 600) == 0) {
-            atsc3NdkClientSL_ptr->LogMsgF("atsc3_mmt_mpu_mfu_on_sample_complete_ndk: total mfu count: %d, packet_id: %d, mpu: %d, sample: %d, orig len: %d, len: %d",
-                                    global_mfu_proccessed_count,
-                                    packet_id, mpu_sequence_number, sample_number, block_Len(mmt_mfu_sample),
-                                    block_len);
+            Atsc3NdkClient_ptr->LogMsgF("atsc3_mmt_mpu_mfu_on_sample_complete_ndk: total mfu count: %d, packet_id: %d, mpu: %d, sample: %d, orig len: %d, len: %d",
+                                        global_mfu_proccessed_count,
+                                        packet_id, mpu_sequence_number, sample_number, block_Len(mmt_mfu_sample),
+                                        block_len);
 
         }
-        atsc3NdkClientSL_ptr->atsc3_onMfuPacket(packet_id, mpu_sequence_number, sample_number, block_ptr, block_len, mpu_timestamp_descriptor, mfu_fragment_count_rebuilt);
+        Atsc3NdkClient_ptr->atsc3_onMfuPacket(packet_id, mpu_sequence_number, sample_number, block_ptr, block_len, mpu_timestamp_descriptor, mfu_fragment_count_rebuilt);
 
         block_Release(&mmt_mfu_sample_rbsp);
     } else {
@@ -826,12 +881,12 @@ void atsc3_mmt_mpu_mfu_on_sample_complete_ndk(uint16_t packet_id, uint32_t mpu_s
         uint32_t block_len = block_Len(mmt_mfu_sample);
 
         if(packet_id == 19) {
-            atsc3NdkClientSL_ptr->LogMsgF(
+            Atsc3NdkClient_ptr->LogMsgF(
                     "atsc3_mmt_mpu_mfu_on_sample_complete_ndk: non NAL, packet_id: %d, mpu_sequence_number: %d, block: %p, len: %d, char: %c %c %c %c",
                     packet_id, mpu_sequence_number, block_ptr, block_len, block_ptr[0], block_ptr[1], block_ptr[2], block_ptr[3]);
         }
         //audio and stpp don't need NAL start codes
-        atsc3NdkClientSL_ptr->atsc3_onMfuPacket(packet_id, mpu_sequence_number, sample_number, block_ptr, block_len, mpu_timestamp_descriptor, mfu_fragment_count_rebuilt);
+        Atsc3NdkClient_ptr->atsc3_onMfuPacket(packet_id, mpu_sequence_number, sample_number, block_ptr, block_len, mpu_timestamp_descriptor, mfu_fragment_count_rebuilt);
     }
 }
 
@@ -883,7 +938,7 @@ void atsc3_mmt_mpu_mfu_on_sample_corrupt_ndk(uint16_t packet_id, uint32_t mpu_se
 
             //}
 
-            atsc3NdkClientSL_ptr->atsc3_onMfuPacketCorrupt(packet_id, mpu_sequence_number, sample_number, block_ptr, block_len, mpu_timestamp_descriptor, mfu_fragment_count_expected, mfu_fragment_count_rebuilt);
+            Atsc3NdkClient_ptr->atsc3_onMfuPacketCorrupt(packet_id, mpu_sequence_number, sample_number, block_ptr, block_len, mpu_timestamp_descriptor, mfu_fragment_count_expected, mfu_fragment_count_rebuilt);
 
             block_Release(&mmt_mfu_sample_rbsp);
          } else {
@@ -897,7 +952,7 @@ void atsc3_mmt_mpu_mfu_on_sample_corrupt_ndk(uint16_t packet_id, uint32_t mpu_se
         __INFO("atsc3_mmt_mpu_mfu_on_sample_corrupt_ndk: non NAL, packet_id: %d, mpu_sequence_number: %d, sample_number: %d, block: %p, len: %d, char: %c %c %c %c",
                     packet_id, mpu_sequence_number, sample_number,  block_ptr, block_len, block_ptr[0], block_ptr[1], block_ptr[2], block_ptr[3]);
 
-        atsc3NdkClientSL_ptr->atsc3_onMfuPacketCorrupt(packet_id, mpu_sequence_number, sample_number, block_ptr, block_len, mpu_timestamp_descriptor, mfu_fragment_count_expected, mfu_fragment_count_rebuilt);
+        Atsc3NdkClient_ptr->atsc3_onMfuPacketCorrupt(packet_id, mpu_sequence_number, sample_number, block_ptr, block_len, mpu_timestamp_descriptor, mfu_fragment_count_expected, mfu_fragment_count_rebuilt);
     }
 }
 
@@ -942,7 +997,7 @@ void atsc3_mmt_mpu_mfu_on_sample_corrupt_mmthsample_header_ndk(uint16_t packet_i
                    mmt_mfu_sample_rbsp->p_size);
             //}
 
-            atsc3NdkClientSL_ptr->atsc3_onMfuPacketCorruptMmthSampleHeader(packet_id, mpu_sequence_number, sample_number, block_ptr, block_len, mpu_timestamp_descriptor, mfu_fragment_count_expected, mfu_fragment_count_rebuilt);
+            Atsc3NdkClient_ptr->atsc3_onMfuPacketCorruptMmthSampleHeader(packet_id, mpu_sequence_number, sample_number, block_ptr, block_len, mpu_timestamp_descriptor, mfu_fragment_count_expected, mfu_fragment_count_rebuilt);
 
             block_Release(&mmt_mfu_sample_rbsp);
         }
@@ -954,12 +1009,12 @@ void atsc3_mmt_mpu_mfu_on_sample_corrupt_mmthsample_header_ndk(uint16_t packet_i
                packet_id, mpu_sequence_number, sample_number, block_ptr, block_len, block_ptr[0], block_ptr[1], block_ptr[2], block_ptr[3]);
 
         //audio and stpp don't need NAL start codes
-        atsc3NdkClientSL_ptr->atsc3_onMfuPacketCorruptMmthSampleHeader(packet_id, mpu_sequence_number, sample_number, block_ptr, block_len, mpu_timestamp_descriptor, mfu_fragment_count_expected, mfu_fragment_count_rebuilt);
+        Atsc3NdkClient_ptr->atsc3_onMfuPacketCorruptMmthSampleHeader(packet_id, mpu_sequence_number, sample_number, block_ptr, block_len, mpu_timestamp_descriptor, mfu_fragment_count_expected, mfu_fragment_count_rebuilt);
     }
 }
 
 void atsc3_mmt_mpu_mfu_on_sample_missing_ndk(uint16_t packet_id, uint32_t mpu_sequence_number, uint32_t sample_number) {
-    atsc3NdkClientSL_ptr->atsc3_onMfuSampleMissing(packet_id, mpu_sequence_number, sample_number);
+    Atsc3NdkClient_ptr->atsc3_onMfuSampleMissing(packet_id, mpu_sequence_number, sample_number);
 }
 
 void atsc3_mmt_mpu_on_sequence_movie_fragment_metadata_present_ndk(uint16_t packet_id, uint32_t mpu_sequence_number, block_t* mmt_movie_fragment_metadata) {
@@ -971,11 +1026,11 @@ void atsc3_mmt_mpu_on_sequence_movie_fragment_metadata_present_ndk(uint16_t pack
 
     uint32_t extracted_sample_duration_us = atsc3_mmt_movie_fragment_extract_sample_duration(mmt_movie_fragment_metadata);
 
-    atsc3NdkClientSL_ptr->atsc3_onExtractedSampleDuration(packet_id, mpu_sequence_number, extracted_sample_duration_us);
+    Atsc3NdkClient_ptr->atsc3_onExtractedSampleDuration(packet_id, mpu_sequence_number, extracted_sample_duration_us);
 }
 
 
-atsc3_link_mapping_table_t* atsc3_phy_mmt_player_bridge_notify_link_mapping_table(atsc3_link_mapping_table_t* atsc3_link_mapping_table_pending) {
+atsc3_link_mapping_table_t* atsc3_phy_jni_bridge_notify_link_mapping_table(atsc3_link_mapping_table_t* atsc3_link_mapping_table_pending) {
     atsc3_link_mapping_table_t* atsc3_link_mapping_table_to_free = NULL;
 
     //no last link mapping table, so take ownership of pending ptr
@@ -1004,14 +1059,15 @@ void atsc3_phy_mmt_player_bridge_init(At3DrvIntf* atsc3NdkClientSL_ptr_l) {
 #else
 void atsc3_phy_mmt_player_bridge_init(atsc3NdkClient* atsc3NdkClientSL_ptr_l) {
 #endif
-    atsc3NdkClientSL_ptr = atsc3NdkClientSL_ptr_l;
+    Atsc3NdkClient_ptr = atsc3NdkClientSL_ptr_l;
 
-    atsc3NdkClientSL_ptr->LogMsgF("atsc3_phy_mmt_player_bridge_init - client ptr: %p", atsc3NdkClientSL_ptr_l);
+    Atsc3NdkClient_ptr->LogMsgF("atsc3_phy_mmt_player_bridge_init - client ptr: %p", atsc3NdkClientSL_ptr_l);
 
     //set global logging levels
     _MMT_CONTEXT_MPU_DEBUG_ENABLED = 0;
     _ALC_UTILS_IOTRACE_ENABLED = 0;
-    _ROUTE_SLS_PROCESSOR_INFO_ENABLED=1;
+    _ROUTE_SLS_PROCESSOR_INFO_ENABLED = 1;
+    _ROUTE_SLS_PROCESSOR_DEBUG_ENABLED = 0;
     _ALC_UTILS_IOTRACE_ENABLED = 0;
 
 #ifdef __SIGNED_MULTIPART_LLS_DEBUGGING__
@@ -1021,14 +1077,17 @@ void atsc3_phy_mmt_player_bridge_init(atsc3NdkClient* atsc3NdkClientSL_ptr_l) {
     _LLS_SLT_PARSER_DEBUG_ENABLED = 1;
     _LLS_SLT_PARSER_TRACE_ENABLED = 1;
 #endif
-    _LLS_ALC_UTILS_DEBUG_ENABLED = 1;
-    _ALC_UTILS_DEBUG_ENABLED = 1;
+    _LLS_ALC_UTILS_DEBUG_ENABLED = 0;
+    _ALC_UTILS_DEBUG_ENABLED = 0;
     _ALC_RX_TRACE_ENABLED = 0;
+
+    //jjustman-2020-04-23 - TLV parsing metrics enable inline ALP parsing
+    __ATSC3_SL_TLV_USE_INLINE_ALP_PARSER_CALL__ = 1;
 
     if(!lls_slt_monitor) {
         lls_slt_monitor = lls_slt_monitor_create();
         //wire up a lls event for SLS table
-        lls_slt_monitor->atsc3_lls_on_sls_table_present = &atsc3_lls_on_sls_table_present_ndk;
+        lls_slt_monitor->atsc3_lls_on_sls_table_present_callback = &atsc3_lls_on_sls_table_present_ndk;
 
         mmtp_flow = mmtp_flow_new();
         udp_flow_latest_mpu_sequence_number_container = udp_flow_latest_mpu_sequence_number_container_t_init();
@@ -1056,11 +1115,19 @@ void atsc3_phy_mmt_player_bridge_init(atsc3NdkClient* atsc3NdkClientSL_ptr_l) {
         //extract out one trun sampleduration for essence timing
         atsc3_mmt_mfu_context->atsc3_mmt_mpu_on_sequence_movie_fragment_metadata_present = &atsc3_mmt_mpu_on_sequence_movie_fragment_metadata_present_ndk;
 
-        atsc3_ndk_cache_temp_folder_path = atsc3NdkClientSL_ptr->get_android_temp_folder();
+        atsc3_ndk_cache_temp_folder_path = Atsc3NdkClient_ptr->get_android_temp_folder();
+
+        //jjustman-2020-04-16 - hack to clean up cache directory payload and clear out any leftover cache objects (e.g. ROUTE/DASH toi's)
+        //no linkage forfs::remove_all(atsc3_ndk_cache_temp_folder_path + "/");
+        //https://github.com/android/ndk/issues/609
+
+        atsc3_ndk_cache_temp_folder_purge((char*)(atsc3_ndk_cache_temp_folder_path).c_str());
+
         chdir(atsc3_ndk_cache_temp_folder_path.c_str());
-        atsc3NdkClientSL_ptr->LogMsgF("atsc3_phy_mmt_player_bridge_init - completed, temp folder path: %s", atsc3_ndk_cache_temp_folder_path.c_str());
+
+        Atsc3NdkClient_ptr->LogMsgF("atsc3_phy_mmt_player_bridge_init - completed, temp folder path: %s", atsc3_ndk_cache_temp_folder_path.c_str());
     } else {
-        atsc3NdkClientSL_ptr->LogMsgF("atsc3_phy_mmt_player_bridge_init - ignoring init as we are already configured");
+        Atsc3NdkClient_ptr->LogMsgF("atsc3_phy_mmt_player_bridge_init - ignoring init as we are already configured");
     }
 
 
@@ -1085,4 +1152,27 @@ string atsc3_route_service_context_temp_folder_name(int service_id) {
 
 
 
+int atsc3_ndk_cache_temp_unlink_cb(const char *fpath, const struct stat *sb, int typeflag, struct FTW *ftwbuf)
+{
+    int rv = 0;
 
+    if(strcmp(fpath, atsc3_ndk_cache_temp_folder_path.c_str()) != 0) {
+        printf("atsc3_ndk_cache_temp_unlink_cb: removing cache path: %s", fpath);
+
+        rv = remove(fpath);
+
+        if (rv) {
+            printf("atsc3_ndk_cache_temp_unlink_cb: unable to remove path: %s, err from remove is: %d", fpath, rv);
+        }
+    }
+    return rv;
+}
+
+int atsc3_ndk_cache_temp_folder_purge(char *path)
+{
+    printf("atsc3_ndk_cache_temp_folder_purge: invoked with path: %s", path);
+    return nftw(path, atsc3_ndk_cache_temp_unlink_cb, 64, FTW_DEPTH | FTW_PHYS);
+}
+
+
+#endif

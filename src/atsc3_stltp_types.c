@@ -8,8 +8,8 @@
 
 #include "atsc3_stltp_types.h"
 
-int _STLTP_TYPES_DEBUG_ENABLED = 1;
-int _STLTP_TYPES_TRACE_ENABLED = 1;
+int _STLTP_TYPES_DEBUG_ENABLED = 0;
+int _STLTP_TYPES_TRACE_ENABLED = 0;
 
 //L1_detail vector(s)
 

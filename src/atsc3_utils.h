@@ -6,6 +6,9 @@
  */
 #pragma GCC diagnostic ignored "-Wformat-zero-length"
 
+#ifdef __LIBATSC3_ANDROID__
+#include <sys/endian.h>
+#endif
 
 #include <assert.h>
 #include <ctype.h>
@@ -21,6 +24,10 @@
 #include <time.h>
 #include <sys/time.h>
 #include <stdbool.h>
+#include <sys/stat.h>
+
+#include <libgen.h>
+
 
 #ifndef ATSC3_UTILS_H_
 #define ATSC3_UTILS_H_
@@ -74,6 +81,10 @@ long gtl();
 #   define __MIN(a, b)   ( ((a) < (b)) ? (a) : (b) )
 #endif
 
+#ifndef ABS
+#define ABS(x)           (((x) < 0) ? -(x) : (x))
+#endif
+
 /* clip v in [min, max] */
 #define __CLIP(v, min, max)    __MIN(__MAX((v), (min)), (max))
 
@@ -107,6 +118,7 @@ typedef struct atsc3_block {
     uint8_t  _bitpos;
     uint8_t  _refcnt;
     uint8_t  _is_alloc;
+    uint32_t _a_size;
 } block_t;
 
 
@@ -119,9 +131,10 @@ typedef struct atsc3_block {
 block_t* block_Alloc(int len);
 bool block_IsAlloc(block_t*);
 block_t* block_Promote(char*);
-block_t* block_Write(block_t* dest, const uint8_t* buf, uint32_t size);
-uint32_t block_Append(block_t* dest, block_t* src); //combine two blocks at i_pos, i_pos, return end position
-block_t* block_AppendFromBuf(block_t* dest, const uint8_t* src_buf, uint32_t src_size);
+block_t* block_Write(block_t* dest, const uint8_t* buf, uint32_t size); //write starting at i_pos
+uint32_t block_Append(block_t* dest, block_t* src); //combine two blocks at i_pos, len: src->i_pos, return end position
+block_t* block_AppendFromSrciPos(block_t* dest, block_t* src); //combine two blocks at dest->i_pos, block_Get(src), len: src->p_size - src->i_pos
+block_t* block_AppendFromBuf(block_t* dest, const uint8_t* src_buf, uint32_t src_size); //write buffer to block starting a tp_size
 uint32_t block_AppendFull(block_t* dest, block_t* src); //combine two blocks, dest at i_pos and full size of src p_size
 uint32_t block_Merge(block_t* dest, block_t* src); //combine two blocks from p_size, p_size, return new merged p_size,
 uint32_t block_MergeNoRewind(block_t* dest, block_t* src);
@@ -129,6 +142,7 @@ uint32_t block_Seek(block_t* block, int32_t seek_pos);
 uint32_t block_Seek_Relative(block_t* block, int32_t relative_pos);
 block_t* block_Rewind(block_t* dest);
 block_t* block_Resize(block_t* dest, uint32_t dest_size_required);
+block_t* block_Resize_Soft(block_t* dest, uint32_t dest_size_min_required); //perform a soft allocation to src->p_size * 2  where p_size < 2M
 block_t* block_Duplicate(block_t* a);
 block_t* block_Duplicate_from_position(block_t* a);
 block_t* block_Duplicate_to_size(block_t* src, uint32_t target_len);
@@ -137,6 +151,7 @@ uint32_t block_Remaining_size(block_t* src);
 bool block_Valid(block_t* src);
 uint8_t* block_Get(block_t* src);
 uint32_t block_Len(block_t* src);
+bool block_Tail_Truncate(block_t* src, uint32_t len);
 
 //bit-unpacking functions for parsing A/322 variable length L1(b/d) structs
 uint8_t block_Read_uint8_bitlen(block_t* src, int bitlen);
@@ -149,6 +164,8 @@ uint16_t block_Read_uint16_ntohs(block_t* src);
 uint32_t block_Read_uint32_ntohl(block_t* src);
 uint64_t block_Read_uint64_ntohul(block_t* src);
 
+//read from filesystem into block_t
+block_t* block_Read_from_filename(char* file_name);
 
 
 #define block_RefZero(a) ({ a->_refcnt = 0; })
@@ -166,12 +183,16 @@ char* _rtrim(char *str);
 char* __trim(char *str);
 
 void freesafe(void* tofree);
+
 void freeclean(void** tofree);
 void freeclean_uint8_t(uint8_t** tofree);
 
 uint32_t parseIpAddressIntoIntval(char* dst_ip);
 
 uint16_t parsePortIntoIntval(char* dst_port);
+
+int mkpath(char *dir, mode_t mode);
+
 
 /*
  * Concatenate preprocessor tokens A and B without expanding macro definitions
@@ -201,6 +222,9 @@ uint16_t parsePortIntoIntval(char* dst_port);
  * Turn A into a string literal after macro-expanding it.
  */
 #define STRINGIZE(A) STRINGIZE_NX(A)
+
+//check to see if file exists on disk, return FILE* or NULL
+FILE* atsc3_object_open(char* file_name);
 
 #if defined (__cplusplus)
 }

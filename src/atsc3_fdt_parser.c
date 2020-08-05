@@ -125,8 +125,9 @@ atsc3_fdt_instance_t* atsc3_fdt_parse_from_xml_fdt_instance(atsc3_fdt_instance_t
 	/*atsc-fdt/1.0 attributes here*/
     //TODO: fix with proper namespace mapping...e.g. resolve against  xmlns:afdt="tag:atsc.org,2016:XMLSchemas/ATSC3/Delivery/ATSC-FDT/1.0/"
 
-    if((matching_attribute = kvp_collection_get(kvp_collection,  "afdt:efdt_vesion"))) {
-    	atsc3_fdt_instance->content_encoding = matching_attribute;
+    if((matching_attribute = kvp_collection_get(kvp_collection,  "afdt:efdtVersion"))) {
+    	atsc3_fdt_instance->efdt_version = (0xFF && atoi(matching_attribute));
+    	free(matching_attribute);
     }
     if((matching_attribute = kvp_collection_get(kvp_collection,  "afdt:maxExpiresDelta"))) {
     	atsc3_fdt_instance->max_expires_delta = atoi(matching_attribute);
@@ -243,6 +244,27 @@ atsc3_fdt_file_t* atsc3_fdt_file_parse_from_xml_fdt_instance(xml_node_t* node) {
     if((matching_attribute = kvp_collection_get(kvp_collection,  "Content-MD5"))) {
         atsc3_fdt_file->content_md5 = matching_attribute;
     }
+
+    /*
+    	jjustman-2020-07-07: A/331:2020
+
+        Table A.3.4 ATSC-Defined Extensions to FDT-Instance.File Element
+
+            appContextIdList
+            filterCodes
+
+            TODO: fix afdt: for namespace alias
+     */
+
+    if((matching_attribute = kvp_collection_get(kvp_collection,  "afdt:appContextIdList"))) {
+            atsc3_fdt_file->app_context_id_list = matching_attribute;
+    }
+
+    if((matching_attribute = kvp_collection_get(kvp_collection,  "afdt:filterCodes"))) {
+            atsc3_fdt_file->filter_codes = matching_attribute;
+    }
+
+
     //TODO: remainder of elements are FEC related
     
     free(xml_attributes);
@@ -263,22 +285,3 @@ void atsc3_fdt_instance_dump(atsc3_fdt_instance_t* atsc3_fdt_instance) {
 
 }
 
-void atsc3_fdt_instance_free(atsc3_fdt_instance_t** atsc3_fdt_instance_p) {
-    if(atsc3_fdt_instance_p) {
-        atsc3_fdt_instance_t* atsc3_fdt_instance = *atsc3_fdt_instance_p;
-        if(atsc3_fdt_instance) {
-            freeclean((void**)&atsc3_fdt_instance->content_type);
-            freeclean((void**)&atsc3_fdt_instance->content_encoding);
-            freeclean((void**)&atsc3_fdt_instance->atsc3_fdt_fec_attributes.fec_oti_sceheme_specific_info);
-            freeclean((void**)&atsc3_fdt_instance->file_template);
-            freeclean((void**)&atsc3_fdt_instance->app_context_id_list);
-            freeclean((void**)&atsc3_fdt_instance->filter_codes);
-
-            atsc3_fdt_instance_free_atsc3_fdt_file(atsc3_fdt_instance);
-
-            free(atsc3_fdt_instance);
-            atsc3_fdt_instance = NULL;
-        }
-        atsc3_fdt_instance_p = NULL;
-    }
-}

@@ -36,36 +36,36 @@ extern "C" {
 #endif
 
 
-typedef struct alc_packet {
-	atsc3_def_lct_hdr_t* def_lct_hdr;
-	uint8_t fec_encoding_id;
+typedef struct atsc3_alc_packet {
+	atsc3_def_lct_hdr_t* 	def_lct_hdr;
+	uint8_t 				fec_encoding_id;
     
     //for fec_encoding_id == 128, raptor fec
-    bool use_sbn_esi;
-    uint8_t sbn;	//sbn: source block number for fec recovery
-	uint32_t esi; 	//esi: encoding symbol id, our 24bit offset
+    bool 					use_sbn_esi;
+    uint8_t 				sbn;	//sbn: source block number for fec recovery
+	uint32_t 				esi; 	//esi: encoding symbol id, our 24bit offset
     
     //for all other fec values
-    bool use_start_offset;
-    uint32_t start_offset;
+    bool 					use_start_offset;
+    uint32_t 				start_offset;
     
-    uint8_t close_object_flag;
-    uint8_t close_session_flag;
+    uint8_t 				close_object_flag;
+    uint8_t 				close_session_flag;
 
-    bool 	 ext_route_presentation_ntp_timestamp_set;
-    uint64_t ext_route_presentation_ntp_timestamp;
+    bool 	 				ext_route_presentation_ntp_timestamp_set;
+    uint64_t				ext_route_presentation_ntp_timestamp;
     
-    unsigned int alc_len;
-    unsigned long long transfer_len;
+    unsigned int 			alc_len;
+    unsigned long long 		transfer_len;
 
-	uint8_t* alc_payload;
+	uint8_t* 				alc_payload; //todo - use block_t
 
-} alc_packet_t;
+} atsc3_alc_packet_t;
 
 
-int alc_rx_analyze_packet_a331_compliant(char *data, int len, alc_packet_t** alc_packet_ptr);
+int alc_rx_analyze_packet_a331_compliant(char *data, int len, atsc3_alc_packet_t** alc_packet_ptr);
 
-void alc_packet_free(alc_packet_t** alc_packet_ptr);
+void alc_packet_free(atsc3_alc_packet_t** alc_packet_ptr);
 
 
 #define ALC_RX_ERROR(...)   	__LIBATSC3_TIMESTAMP_ERROR(__VA_ARGS__);

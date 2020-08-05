@@ -241,43 +241,16 @@ void* ncurses_input_run_thread(void* lls_slt_monitor_ptr) {
 
 						//jjustman-2019-09-17 - TODO: remove these testing values
 
-                        if(my_service_id == 1) {
-                            //todo - wire up to mbms signaling
-                            lls_sls_alc_monitor->video_tsi = 1;
-                            lls_sls_alc_monitor->video_toi_init = 2100000000;
-
-                            lls_sls_alc_monitor->audio_tsi = 2;
-                            lls_sls_alc_monitor->audio_toi_init = 2100000000;
-                        } else if(my_service_id == 11 ) {
-                           lls_sls_alc_monitor->video_tsi = 3000;
-							lls_sls_alc_monitor->video_toi_init = 2;
-
-							lls_sls_alc_monitor->audio_tsi = 3002;
-							lls_sls_alc_monitor->audio_toi_init = 5;
-
-                        } else if(my_service_id == 12 ) {
-                            lls_sls_alc_monitor->video_tsi = 3003;
- 							lls_sls_alc_monitor->video_toi_init = 2;
-
- 							lls_sls_alc_monitor->audio_tsi = 3009;
- 							lls_sls_alc_monitor->audio_toi_init = 4;
-
-                         } else {
-                            lls_sls_alc_monitor->video_tsi = 3000;
-                            lls_sls_alc_monitor->video_toi_init = 2;
-                            
-                            lls_sls_alc_monitor->audio_tsi = 3002;
-                            lls_sls_alc_monitor->audio_toi_init = 2;
-                        }
 						lls_sls_alc_monitor->lls_sls_monitor_output_buffer.has_written_init_box = false;
 						lls_slt_monitor->lls_sls_alc_monitor = lls_sls_alc_monitor;
 					} else {
 						lls_sls_alc_monitor = lls_sls_alc_monitor_create();
 						lls_slt_monitor->lls_sls_alc_monitor = lls_sls_alc_monitor;
 					}
-                    lls_sls_alc_monitor->audio_tsi_manual_override = false;
-                    lls_sls_alc_monitor->video_tsi_manual_override = false;
-                    
+
+					atsc3_sls_alc_flow_typedef_free(&lls_sls_alc_monitor->audio_tsi_manual_override);
+					atsc3_sls_alc_flow_typedef_free(&lls_sls_alc_monitor->video_tsi_manual_override);
+
                     if(lls_slt_monitor && lls_slt_monitor->lls_sls_alc_monitor) {
                         lls_slt_monitor->lls_sls_alc_monitor->lls_sls_monitor_output_buffer_mode.file_dump_enabled = true;
                     }
@@ -288,9 +261,6 @@ void* ncurses_input_run_thread(void* lls_slt_monitor_ptr) {
                         lls_slt_monitor->lls_sls_alc_monitor = lls_sls_alc_monitor;
                     }
 
-                    //set this first, as mbms rs flows may come in at any time
-                    lls_sls_alc_monitor->audio_tsi_manual_override = true;
-
 					mtl_clear();
 					wprintw(my_window, "Please enter Audio TSI: ");
 					echo();
@@ -300,7 +270,6 @@ void* ncurses_input_run_thread(void* lls_slt_monitor_ptr) {
 					mtl_clear();
 
 					long my_tsi_long = strtol(route_input_str, NULL, 0);
-					lls_sls_alc_monitor->audio_tsi = (uint32_t) my_tsi_long;
 					mtl_clear();
 					wprintw(my_window, "Please enter Audio TOI: ");
 					echo();
@@ -310,18 +279,21 @@ void* ncurses_input_run_thread(void* lls_slt_monitor_ptr) {
 					mtl_clear();
 
 					long my_toi_init_fragment = strtol(route_input_str, NULL, 0);
-					lls_sls_alc_monitor->audio_toi_init = (uint32_t) my_toi_init_fragment;
-					wprintw(my_window, "Monitoring Audio TSI: %u, TOI: %u",  lls_sls_alc_monitor->audio_tsi, lls_sls_alc_monitor->audio_toi_init);
+
+					lls_sls_alc_monitor->audio_tsi_manual_override = atsc3_sls_alc_flow_new();
+					lls_sls_alc_monitor->audio_tsi_manual_override->tsi = (uint32_t) my_tsi_long;
+					lls_sls_alc_monitor->audio_tsi_manual_override->toi_init = (uint32_t) my_toi_init_fragment;
+
+					wprintw(my_window, "Monitoring Audio TSI: %u, TOI: %u",
+							lls_sls_alc_monitor->audio_tsi_manual_override->tsi, lls_sls_alc_monitor->audio_tsi_manual_override->toi_init);
 
 				} else if(ch == 'v') {
                     if(!lls_sls_alc_monitor) {
                         lls_sls_alc_monitor = lls_sls_alc_monitor_create();
                         lls_slt_monitor->lls_sls_alc_monitor = lls_sls_alc_monitor;
                     }
-                    
-                    //set this first, as mbms rs flows may come in at any time
-                    lls_sls_alc_monitor->video_tsi_manual_override = true;
-					mtl_clear();
+
+                    mtl_clear();
 					wprintw(my_window, "Please enter Video TSI: ");
 					echo();
 					mvwgetnstr(my_window, 0, 32, route_input_str, 10);
@@ -329,7 +301,6 @@ void* ncurses_input_run_thread(void* lls_slt_monitor_ptr) {
 					mtl_clear();
 
 					long my_tsi_long = strtol(route_input_str, NULL, 0);
-					lls_sls_alc_monitor->video_tsi = (uint32_t) my_tsi_long;
 					mtl_clear();
 					wprintw(my_window, "Please enter Video TOI: ");
 					echo();
@@ -339,9 +310,15 @@ void* ncurses_input_run_thread(void* lls_slt_monitor_ptr) {
 					mtl_clear();
 
 					long my_toi_init_fragment = strtol(route_input_str, NULL, 0);
-					lls_sls_alc_monitor->video_toi_init = (uint32_t) my_toi_init_fragment;
 					mtl_clear();
-					wprintw(my_window, "Monitoring Video TSI: %u, TOI: %u",  lls_sls_alc_monitor->video_tsi, lls_sls_alc_monitor->video_toi_init);
+
+
+					lls_sls_alc_monitor->video_tsi_manual_override = atsc3_sls_alc_flow_new();
+					lls_sls_alc_monitor->video_tsi_manual_override->tsi = (uint32_t) my_tsi_long;
+					lls_sls_alc_monitor->video_tsi_manual_override->toi_init = (uint32_t) my_toi_init_fragment;
+
+					wprintw(my_window, "Monitoring Video TSI: %u, TOI: %u",
+							lls_sls_alc_monitor->video_tsi_manual_override->tsi, lls_sls_alc_monitor->video_tsi_manual_override->toi_init);
 				}
 			}
 		}
@@ -366,12 +343,16 @@ void* ncurses_input_run_thread(void* lls_slt_monitor_ptr) {
                     lls_slt_monitor->lls_sls_mmt_monitor->lls_sls_monitor_output_buffer_mode.http_output_enabled = true;
 
                 } else if(lls_slt_monitor->lls_sls_alc_monitor) {
-                    wprintw(my_window, "ROUTE/DASH: Starting playback for service_id: %u, video: tsi: %u, toi_init: %u, audio: tsi: %u, toi_init: %u",
-                    		lls_slt_monitor->lls_sls_alc_monitor->atsc3_lls_slt_service->service_id,
-							lls_slt_monitor->lls_sls_alc_monitor->video_tsi,
-							lls_slt_monitor->lls_sls_alc_monitor->video_toi_init,
-							lls_slt_monitor->lls_sls_alc_monitor->audio_tsi,
-							lls_slt_monitor->lls_sls_alc_monitor->audio_toi_init);
+                    wprintw(my_window, "ROUTE/DASH: Starting playback for service_id: %u",
+                    		lls_slt_monitor->lls_sls_alc_monitor->atsc3_lls_slt_service->service_id);
+                    /*
+                     *  video: tsi: %u, toi_init: %u, audio: tsi: %u, toi_init: %u",
+							atsc3_sls_alc_flow_get_first_tsi(&lls_slt_monitor->lls_sls_alc_monitor->atsc3_sls_alc_video_flow_v),
+							atsc3_sls_alc_flow_get_first_toi_init(&lls_slt_monitor->lls_sls_alc_monitor->atsc3_sls_alc_video_flow_v),
+							atsc3_sls_alc_flow_get_first_tsi(&lls_slt_monitor->lls_sls_alc_monitor->atsc3_sls_alc_audio_flow_v),
+							atsc3_sls_alc_flow_get_first_toi_init(&lls_slt_monitor->lls_sls_alc_monitor->atsc3_sls_alc_audio_flow_v));
+                     */
+
                     lls_slt_monitor->lls_sls_alc_monitor->lls_sls_monitor_output_buffer_mode.pipe_ffplay_buffer = pipe_create_ffplay_resolve_fps(&lls_slt_monitor->lls_sls_alc_monitor->lls_sls_monitor_output_buffer.video_output_buffer_isobmff);
                     
                     lls_slt_monitor->lls_sls_alc_monitor->lls_sls_monitor_output_buffer_mode.ffplay_output_enabled = true;
@@ -405,15 +386,18 @@ void* ncurses_input_run_thread(void* lls_slt_monitor_ptr) {
             } else if(lls_slt_monitor->lls_sls_alc_monitor) {
                 if(!lls_slt_monitor->lls_sls_alc_monitor->lls_sls_monitor_output_buffer_mode.file_dump_enabled) {
                     lls_slt_monitor->lls_sls_alc_monitor->lls_sls_monitor_output_buffer_mode.file_dump_enabled = true;
-                     wprintw(my_window, "ROUTE/DASH: Starting dump for service_id: %u, video_tsi: %u, audio_tsi: %u",
-                    		 lls_slt_monitor->lls_sls_alc_monitor->atsc3_lls_slt_service->service_id,
-							 lls_slt_monitor->lls_sls_alc_monitor->video_tsi, lls_slt_monitor->lls_sls_alc_monitor->audio_tsi);
+                     wprintw(my_window, "ROUTE/DASH: Starting dump for service_id: %u", lls_slt_monitor->lls_sls_alc_monitor->atsc3_lls_slt_service->service_id);
+//                     video_tsi: %u, audio_tsi: %u",
+//                    		 lls_slt_monitor->lls_sls_alc_monitor->atsc3_lls_slt_service->service_id,
+//							 atsc3_sls_alc_flow_get_first_tsi(&lls_slt_monitor->lls_sls_alc_monitor->atsc3_sls_alc_video_flow_v),
+//							 atsc3_sls_alc_flow_get_first_tsi(&lls_slt_monitor->lls_sls_alc_monitor->atsc3_sls_alc_audio_flow_v));
                 } else {
                     lls_slt_monitor->lls_sls_alc_monitor->lls_sls_monitor_output_buffer_mode.file_dump_enabled = true;
-                     wprintw(my_window, "ROUTE/DASH: Ending dump for service_id: %u, video_tsi: %u, audio_tsi: %u",
-                    		 lls_slt_monitor->lls_sls_alc_monitor->atsc3_lls_slt_service->service_id,
-							 lls_slt_monitor->lls_sls_alc_monitor->video_tsi, lls_slt_monitor->lls_sls_alc_monitor->audio_tsi);
-
+                     wprintw(my_window, "ROUTE/DASH: Ending dump for service_id: %u", lls_slt_monitor->lls_sls_alc_monitor->atsc3_lls_slt_service->service_id);
+//                     video_tsi: %u, audio_tsi: %u",
+//                    		 lls_slt_monitor->lls_sls_alc_monitor->atsc3_lls_slt_service->service_id,
+//							 atsc3_sls_alc_flow_get_first_tsi(&lls_slt_monitor->lls_sls_alc_monitor->atsc3_sls_alc_video_flow_v),
+//							 atsc3_sls_alc_flow_get_first_tsi(&lls_slt_monitor->lls_sls_alc_monitor->atsc3_sls_alc_audio_flow_v));
                 }
             }
         }
@@ -617,7 +601,7 @@ void lls_dump_instance_table_ncurses(lls_table_t* base_table) {
 		__LLS_DUMP("SLT: Service contains %d entries:", base_table->slt_table.atsc3_lls_slt_service_v.count);
 
 		for(int i=0l; i < base_table->slt_table.atsc3_lls_slt_service_v.count; i++) {
-			atsc3_lls_slt_service* service = base_table->slt_table.atsc3_lls_slt_service_v.data[i];
+			atsc3_lls_slt_service_t* service = base_table->slt_table.atsc3_lls_slt_service_v.data[i];
 			__LLS_DUMP("service_id         : %-5d           global_service_id : %s", service->service_id, service->global_service_id);
 			__LLS_DUMP("major_channel_no   : %-5d           minor_channel_no  : %d", service->major_channel_no, service->minor_channel_no);
 			__LLS_DUMP("service_category   : %1d, %-8s    slt_svc_seq_num   : %d", service->service_category, lls_get_service_category_value(service->service_category), service->slt_svc_seq_num);

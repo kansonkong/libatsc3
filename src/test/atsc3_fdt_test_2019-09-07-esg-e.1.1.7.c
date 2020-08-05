@@ -104,8 +104,8 @@ int parse_fdt(const char* filename) {
 			goto cleanup;
 		}
 
-		if(!(1 == atsc3_fdt_instance->efdt_vesion)) {
-			_ATSC3_FDT_TEST_UTILS_ERROR("atsc3_fdt_instance->efdt_vesion is incorrect, expected: %d, got: %d", 1, atsc3_fdt_instance->efdt_vesion);
+		if(!(1 == atsc3_fdt_instance->efdt_version)) {
+			_ATSC3_FDT_TEST_UTILS_ERROR("atsc3_fdt_instance->efdt_vesion is incorrect, expected: %d, got: %d", 1, atsc3_fdt_instance->efdt_version);
 			ret = -3;
 			goto cleanup;
 		}

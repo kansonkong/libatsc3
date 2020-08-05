@@ -536,7 +536,8 @@ atsc3_alp_packet_t* atsc3_alp_packet_parse(block_t* baseband_packet_payload) {
 
     if(!alp_payload_length) {
 
-        __ALP_PARSER_WARN("ALP payload length is: 0! seeking to end of payload, remaining: %d from pos: %lu, size: %d",
+        __ALP_PARSER_WARN("ALP payload length is: 0! packet_type is: 0x%x, seeking to end of payload, remaining: %d from pos: %lu, size: %d",
+                          alp_packet_header->packet_type,
                           remaining_binary_payload_bytes,
                           baseband_packet_payload->i_pos + (binary_payload - alp_binary_payload_start),
                           baseband_packet_payload->p_size);

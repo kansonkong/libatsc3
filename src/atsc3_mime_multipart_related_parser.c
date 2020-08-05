@@ -45,6 +45,8 @@ Content-Location: usbd.xml
 #define ATSC3_MIME_MULTIPART_RELATED_HEADER_CONTENT_LOCATION "Content-Location:"
 #define ATSC3_MIME_MULTIPART_RELATED_HEADER_MULTIPART_RELATED "multipart/related;"
 
+#define ATSC3_MIME_MULTIPART_RELATED_HEADER_CONTENT_TRANSFER_ENCODING "Content-Transfer-Encoding:"
+
 atsc3_mime_multipart_related_instance_t* atsc3_mime_multipart_related_parser(FILE* fp) {
 	if(!fp) {
 		__MIME_PARSER_ERROR("atsc3_mime_multipart_related_parser: fp is null!");
@@ -54,7 +56,7 @@ atsc3_mime_multipart_related_instance_t* atsc3_mime_multipart_related_parser(FIL
 	atsc3_mime_multipart_related_instance_t* atsc3_mime_multipart_related_instance = calloc(1, sizeof(atsc3_mime_multipart_related_instance_t));
 
 	char* line_buffer = calloc(ATSC3_MIME_MULTIPART_RELATED_LINE_BUFFER, sizeof(char));
-	char* multipart_buffer = calloc(ATSC3_MIME_MULTIPART_RELATED_PAYLOAD_BUFFER, sizeof(char));
+	char* line_buffer_to_free = line_buffer;
 
 	int ret;
 	int token_len;
@@ -227,6 +229,7 @@ atsc3_mime_multipart_related_instance_t* atsc3_mime_multipart_related_parser(FIL
 		goto error;
 	}
 
+	atsc3_mime_multipart_related_payload_t* atsc3_mime_multipart_related_payload = NULL;
 
 	//get each payload
 	while(!feof(fp)) {
@@ -234,10 +237,13 @@ atsc3_mime_multipart_related_instance_t* atsc3_mime_multipart_related_parser(FIL
 		bool payload_header_complete = false;
 		bool payload_entry_complete = false;
 
-		memset(multipart_buffer, 0, ATSC3_MIME_MULTIPART_RELATED_PAYLOAD_BUFFER);
-		uint32_t multipart_buffer_pos = 0;
+		if(atsc3_mime_multipart_related_payload) {
+			__MIME_PARSER_WARN("orphan atsc3_mime_multipart_related_payload: %p", atsc3_mime_multipart_related_payload);
+		}
 
-		atsc3_mime_multipart_related_payload_t* atsc3_mime_multipart_related_payload = atsc3_mime_multipart_related_payload_new();
+		//jjustman-2020-08-04 - xcode leak detector is complanining about ->payload leaking somewhere..todo -
+		atsc3_mime_multipart_related_payload = atsc3_mime_multipart_related_payload_new();
+		atsc3_mime_multipart_related_payload->payload = block_Alloc(0);  //jjustman-2020-08-04 - TODO - better payload guestimate size for this item?
 
 		/**
 		 * try and parse out header attributes first, e.g.:
@@ -260,8 +266,18 @@ atsc3_mime_multipart_related_instance_t* atsc3_mime_multipart_related_parser(FIL
 			} else if(!strncmp(ATSC3_MIME_MULTIPART_RELATED_HEADER_CONTENT_LOCATION, line_buffer, strlen(ATSC3_MIME_MULTIPART_RELATED_HEADER_CONTENT_LOCATION))) {
 				line_buffer += strlen(ATSC3_MIME_MULTIPART_RELATED_HEADER_CONTENT_LOCATION);
 				line_buffer = __trim(line_buffer);
-				atsc3_mime_multipart_related_payload->content_location = calloc(strlen(line_buffer)+1, sizeof(char));
-				memcpy(atsc3_mime_multipart_related_payload->content_location, line_buffer, strlen(line_buffer));
+				atsc3_mime_multipart_related_payload->unsafe_content_location = calloc(strlen(line_buffer)+1, sizeof(char));
+				memcpy(atsc3_mime_multipart_related_payload->unsafe_content_location, line_buffer, strlen(line_buffer));
+
+				//jjustman-2020-07-22 - TODO: clean this value for directory traversal attacks (e.g. /, ../, ~, etc)
+				atsc3_mime_multipart_related_payload->sanitizied_content_location = strdup(atsc3_mime_multipart_related_payload->unsafe_content_location);
+				//TODO:
+
+			} else if(!strncmp(ATSC3_MIME_MULTIPART_RELATED_HEADER_CONTENT_TRANSFER_ENCODING, line_buffer, strlen(ATSC3_MIME_MULTIPART_RELATED_HEADER_CONTENT_TRANSFER_ENCODING))) {
+				line_buffer += strlen(ATSC3_MIME_MULTIPART_RELATED_HEADER_CONTENT_TRANSFER_ENCODING);
+				line_buffer = __trim(line_buffer);
+				atsc3_mime_multipart_related_payload->content_transfer_encoding = calloc(strlen(line_buffer)+1, sizeof(char));
+				memcpy(atsc3_mime_multipart_related_payload->content_transfer_encoding, line_buffer, strlen(line_buffer));
 			} else {
 				line_buffer = __trim(line_buffer);
 				if(!strlen(line_buffer)) {
@@ -272,48 +288,100 @@ atsc3_mime_multipart_related_instance_t* atsc3_mime_multipart_related_parser(FIL
 			}
 		}
 
+		char* line_binary = NULL;
+		size_t line_binary_alloc_len = 0;
+
+		size_t line_binary_len;
+
+		//jjustman-2020-07-07 - should work for binary payloads
 
 		while(!feof(fp) && !payload_entry_complete) {
-			fgets(line_buffer, ATSC3_MIME_MULTIPART_RELATED_LINE_BUFFER, fp);
+			line_binary_len = getline(&line_binary, &line_binary_alloc_len, fp);
+
+			if(!line_binary || line_binary_len == 0) {
+				//end of file
+				__MIME_PARSER_ERROR("fgetln returned null!");
+				payload_entry_complete = true;
+				continue;
+			}
+
 			line_count++;
 			//check to see if we should close out boundary
 
 			//first 2 chars should be --
-			if(!strncmp("--", line_buffer, 2)) {
-				__MIME_PARSER_TRACE("atsc3_mime_multipart_related_parser: line: %u, checking start of boundary closed %s", line_count, line_buffer);
+			if(!strncmp("--", line_binary, 2)) {
+				__MIME_PARSER_INFO("candidate length: %zu, boundary len: %lu", line_binary_len, strlen(atsc3_mime_multipart_related_instance->boundary));
 
-				line_buffer += 2;
-				if(!strncmp(atsc3_mime_multipart_related_instance->boundary, line_buffer, strlen(atsc3_mime_multipart_related_instance->boundary))) {
-					payload_entry_complete = true;
+				char* candidate_boundary = strndup(line_binary, line_binary_len);
 
-					//todo: refactor
-					atsc3_mime_multipart_related_payload->payload = calloc(multipart_buffer_pos+1, sizeof(char));
-					memcpy(atsc3_mime_multipart_related_payload->payload, multipart_buffer, multipart_buffer_pos);
-					atsc3_mime_multipart_related_payload->payload_length = multipart_buffer_pos;
-					atsc3_mime_multipart_related_instance_add_atsc3_mime_multipart_related_payload(atsc3_mime_multipart_related_instance, atsc3_mime_multipart_related_payload);
-					__MIME_PARSER_TRACE("atsc3_mime_multipart_related_parser: line: %u, payload boundary pushing new entry: %s", line_count, atsc3_mime_multipart_related_payload->payload);
-					//if remaining string length is --, then we are done..
+				if(candidate_boundary) {
+					__MIME_PARSER_TRACE("atsc3_mime_multipart_related_parser: line: %u, boundary: %s, checking start of candidate_boundary closed: len: %zu, string: %s", line_count, atsc3_mime_multipart_related_instance->boundary, line_binary_len, candidate_boundary);
+
+					if(!strncmp(atsc3_mime_multipart_related_instance->boundary, &candidate_boundary[2], strlen(atsc3_mime_multipart_related_instance->boundary))) {
+						payload_entry_complete = true;
+
+						//we need at least a \r\n to 'touch' this file
+						if(atsc3_mime_multipart_related_payload->payload->p_size > 1) {
+							//we just need to trim off the last 2 (\r\n) bytes here for the atsc3_mime_multipart_related_payload->payload->p_size
+
+							block_Tail_Truncate(atsc3_mime_multipart_related_payload->payload, 2);
+							block_Rewind(atsc3_mime_multipart_related_payload->payload);
+
+							atsc3_mime_multipart_related_instance_add_atsc3_mime_multipart_related_payload(atsc3_mime_multipart_related_instance, atsc3_mime_multipart_related_payload);
+
+							__MIME_PARSER_TRACE("atsc3_mime_multipart_related_parser: atsc3_mime_multipart_related_payload: %p, line: %u, payload boundary pushing new entry: %s", atsc3_mime_multipart_related_payload, line_count, atsc3_mime_multipart_related_payload->payload->p_buffer);
+							atsc3_mime_multipart_related_payload = NULL;
+
+						} else {
+							__MIME_PARSER_TRACE("atsc3_mime_multipart_related_parser: closing candidate boundary with no payload: end marker?: line_binary_len: %zu", line_binary_len);
+						}
+						//if remaining string length is --, then we are done..
+					} else {
+						__MIME_PARSER_TRACE("atsc3_mime_multipart_related_parser: not a match");
+					}
+					free(candidate_boundary);
 				} else {
-					line_buffer -= 2;
+					__MIME_PARSER_ERROR("unable to allocate candidate_boundary");
 				}
 			}
 
 			if(!payload_entry_complete) {
-				uint32_t line_buffer_len = strlen(line_buffer);
-
-				__MIME_PARSER_TRACE("atsc3_mime_multipart_related_parser: line: %u, pushing to buffer at pos: %u, len: %u, line buffer: %s", line_count, multipart_buffer_pos, line_buffer_len, line_buffer);
-
-				//push to buffer
-				memcpy(&multipart_buffer[multipart_buffer_pos], line_buffer, line_buffer_len);
-				multipart_buffer_pos += line_buffer_len;
+				__MIME_PARSER_TRACE("atsc3_mime_multipart_related_parser: incomplete payload atsc3_mime_multipart_related_payload: %p, at: line: %u, pushing to buffer at pos: %u, len: %zu, line_binary: %p",
+						atsc3_mime_multipart_related_payload, line_count, atsc3_mime_multipart_related_payload->payload->i_pos, line_binary_len, line_binary);
+				block_AppendFromBuf(atsc3_mime_multipart_related_payload->payload, (const uint8_t*)line_binary, line_binary_len);
 			}
 		}
+
+		if(line_binary) {
+			free(line_binary);
+			line_binary = NULL;
+		}
+
+		//any remaining multipart related payloads here should be discarded as transient...
+		if(atsc3_mime_multipart_related_payload) {
+			atsc3_mime_multipart_related_payload_free(&atsc3_mime_multipart_related_payload);
+		}
+	}
+
+	if(atsc3_mime_multipart_related_payload) {
+		atsc3_mime_multipart_related_payload_free(&atsc3_mime_multipart_related_payload);
+	}
+
+	if(line_buffer_to_free) {
+		free(line_buffer_to_free);
+		line_buffer_to_free = NULL;
 	}
 
 	return atsc3_mime_multipart_related_instance;
 
 
 error:
+
+	if(line_buffer_to_free) {
+		free(line_buffer_to_free);
+		line_buffer_to_free = NULL;
+	}
+
 	if(atsc3_mime_multipart_related_instance) {
 		free(atsc3_mime_multipart_related_instance);
 		atsc3_mime_multipart_related_instance = NULL;
@@ -355,8 +423,9 @@ void atsc3_mime_multipart_related_instance_dump(atsc3_mime_multipart_related_ins
 	__MIME_PARSER_DEBUG("count: %u", atsc3_mime_multipart_related_instance->atsc3_mime_multipart_related_payload_v.count);
 	for(int i=0; i < atsc3_mime_multipart_related_instance->atsc3_mime_multipart_related_payload_v.count; i++) {
 		__MIME_PARSER_DEBUG("type     : %s", atsc3_mime_multipart_related_instance->atsc3_mime_multipart_related_payload_v.data[i]->content_type);
-		__MIME_PARSER_DEBUG("location : %s", atsc3_mime_multipart_related_instance->atsc3_mime_multipart_related_payload_v.data[i]->content_location);
-		__MIME_PARSER_DEBUG("payload  :\n%s", atsc3_mime_multipart_related_instance->atsc3_mime_multipart_related_payload_v.data[i]->payload);
+		__MIME_PARSER_DEBUG("location : %s", atsc3_mime_multipart_related_instance->atsc3_mime_multipart_related_payload_v.data[i]->sanitizied_content_location);
+		__MIME_PARSER_DEBUG("payload  : %d bytes", 	atsc3_mime_multipart_related_instance->atsc3_mime_multipart_related_payload_v.data[i]->payload->p_size);
+		__MIME_PARSER_TRACE("%s", atsc3_mime_multipart_related_instance->atsc3_mime_multipart_related_payload_v.data[i]->payload->p_buffer);
 	}
 
 }

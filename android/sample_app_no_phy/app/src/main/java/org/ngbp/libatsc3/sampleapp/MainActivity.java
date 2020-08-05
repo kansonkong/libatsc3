@@ -58,6 +58,7 @@ import com.google.android.exoplayer2.util.Util;
 import org.ngbp.libatsc3.a331.LLSParserSLT;
 import org.ngbp.libatsc3.a331.models.Service;
 import org.ngbp.libatsc3.android.DebuggingFlags;
+import org.ngbp.libatsc3.android.PackageExtractEnvelopeMetadataAndPayload;
 import org.ngbp.libatsc3.android.ServiceHandler;
 import org.ngbp.libatsc3.android.ThingsUI;
 import org.ngbp.libatsc3.android.pcapreplay.PcapFileSelectorActivity;
@@ -1345,6 +1346,20 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
             }
         });
 
+    }
+
+    public void onPackageExtractCompleted(PackageExtractEnvelopeMetadataAndPayload packageExtractEnvelopeMetadataAndPayload) {
+        if(packageExtractEnvelopeMetadataAndPayload != null && packageExtractEnvelopeMetadataAndPayload.packageExtractPath != null) {
+            Log.d("onPackageExtractCompleted", String.format("packageExtractEnvelopeMetadataAndPayload: packageName: %s, path: %s, count: %d", packageExtractEnvelopeMetadataAndPayload.packageName, packageExtractEnvelopeMetadataAndPayload.packageExtractPath, packageExtractEnvelopeMetadataAndPayload.multipartRelatedPayloadList.size()));
+
+            for(PackageExtractEnvelopeMetadataAndPayload.MultipartRelatedPayload multipartRelatedPayload : packageExtractEnvelopeMetadataAndPayload.multipartRelatedPayloadList) {
+                Log.d("onPackageExtractCompleted", String.format("packageExtractEnvelopeMetadataAndPayload.multipartRelatedPayload: contentLocation: %s, contentType: %s, size: %d",
+                        multipartRelatedPayload.contentLocation,
+                        multipartRelatedPayload.contentType,
+                        multipartRelatedPayload.extractedSize));
+            }
+
+        }
     }
 
     public class MfuVideoStatsLedRunnable implements Runnable {

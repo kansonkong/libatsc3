@@ -374,64 +374,31 @@ void update_global_mmtp_statistics_from_udp_packet_t(lls_sls_mmt_session_t* matc
 
 /**
  * only build our atsc3_isobmff_build_joined_alc_isobmff_fragment if we have ffplay output active
+ *
+ * TODO: jjustman-2020-06-02: fixme to use proper lls_alc monitor pattern
  */
 
-static void route_process_from_alc_packet(udp_flow_t* udp_flow, alc_packet_t **alc_packet) {
+static void route_process_from_alc_packet(udp_flow_t* udp_flow, atsc3_alc_packet_t **alc_packet) {
 	/**
 	 * jdj-2019-05-29: TODO - refactor out for EXT_FTI processing that may be missing a close object flag,
 	 * 							 use a sparse array lookup (https://github.com/ned14/nedtries) for resolution to proper transfer_object_length to back-patch close flag
+	 *
+	 * 							 &&
+				atsc3_sls_alc_flow_get_first_tsi(&lls_slt_monitor->lls_sls_alc_monitor->atsc3_sls_alc_video_flow_v) &&
+				atsc3_sls_alc_flow_get_first_tsi(&lls_slt_monitor->lls_sls_alc_monitor->atsc3_sls_alc_audio_flow_v)
 	 */
-	if((*alc_packet)->use_start_offset && lls_slt_monitor->lls_sls_alc_monitor && lls_slt_monitor->lls_sls_alc_monitor->video_tsi && lls_slt_monitor->lls_sls_alc_monitor->audio_tsi) {
-		uint32_t tsi = (*alc_packet)->def_lct_hdr->tsi;
-		uint32_t toi = (*alc_packet)->def_lct_hdr->toi;
+	if((*alc_packet)->use_start_offset && lls_slt_monitor->lls_sls_alc_monitor) {
 
-		//only process non init toi's under the assumption they will be LESS THAN  ALC packet size!
-		if(toi != lls_slt_monitor->lls_sls_alc_monitor->video_toi_init && toi != lls_slt_monitor->lls_sls_alc_monitor->audio_toi_init) {
 
-			uint32_t toi_length = (*alc_packet)->transfer_len;
 
-			//track our transfer_len if EXT_FTI  is only present on the initial ALC packet
-			if(toi_length) {
-				if(tsi == lls_slt_monitor->lls_sls_alc_monitor->video_tsi) {
-					lls_slt_monitor->lls_sls_alc_monitor->last_video_toi = toi;
-					lls_slt_monitor->lls_sls_alc_monitor->last_video_toi_length = toi_length;
-					__DEBUG("ALC: tsi: %u, toi: %u, setting last_video_toi: %u, last_video_toi_length: %u", tsi, toi, toi, toi_length);
-				} else if (tsi == lls_slt_monitor->lls_sls_alc_monitor->audio_tsi) {
-					lls_slt_monitor->lls_sls_alc_monitor->last_audio_toi = toi;
-					lls_slt_monitor->lls_sls_alc_monitor->last_audio_toi_length = toi_length;
-					__DEBUG("ALC: tsi: %u, toi: %u, setting last_audio_toi: %u, last_audio_toi_length: %u", tsi, toi, toi, toi_length);
-				}
-			}
+		atsc3_route_object_t* atsc3_route_object = atsc3_alc_persist_route_object_lct_packet_received_for_lls_sls_alc_monitor_all_flows(*alc_packet, lls_slt_monitor->lls_sls_alc_monitor);
 
-			//check if we should set close flag here
-			uint32_t alc_start_offset = (*alc_packet)->start_offset;
-			uint32_t alc_packet_length = (*alc_packet)->alc_len;
 
-			if(tsi == lls_slt_monitor->lls_sls_alc_monitor->video_tsi && toi == lls_slt_monitor->lls_sls_alc_monitor->last_video_toi) {
-				__DEBUG("ALC: tsi: %u, toi: %u, checking last_video_toi_length: %u against start_offset: %u, alc_packet_length: %u (total: %u)",
-						tsi, toi,  lls_slt_monitor->lls_sls_alc_monitor->last_video_toi_length, alc_start_offset, alc_packet_length, alc_start_offset + alc_packet_length);
 
-				if(lls_slt_monitor->lls_sls_alc_monitor->last_video_toi_length && lls_slt_monitor->lls_sls_alc_monitor->last_video_toi_length <= (alc_start_offset + alc_packet_length)) {
-					(*alc_packet)->close_object_flag = true;
-					__DEBUG("ALC: tsi: %u, toi: %u, setting video: close_object_flag: true",
-						tsi, toi);
-				}
-			} else if(tsi == lls_slt_monitor->lls_sls_alc_monitor->audio_tsi && toi == lls_slt_monitor->lls_sls_alc_monitor->last_audio_toi) {
-				__DEBUG("ALC: tsi: %u, toi: %u, checking last_audio_toi_length: %u against start_offset: %u, alc_packet_length: %u (total: %u)",
-						tsi, toi,  lls_slt_monitor->lls_sls_alc_monitor->last_audio_toi_length, alc_start_offset, alc_packet_length, alc_start_offset + alc_packet_length);
-
-				if(lls_slt_monitor->lls_sls_alc_monitor->last_audio_toi_length && lls_slt_monitor->lls_sls_alc_monitor->last_audio_toi_length <= (alc_start_offset + alc_packet_length)) {
-					(*alc_packet)->close_object_flag = true;
-					__DEBUG("ALC: tsi: %u, toi: %u, setting audio: close_object_flag: true",
-						tsi, toi);
-				}
-			}
-		}
+		atsc3_alc_packet_persist_to_toi_resource_process_sls_mbms_and_emit_callback(udp_flow,
+                                                                                *alc_packet,
+                                                                                lls_slt_monitor->lls_sls_alc_monitor, atsc3_route_object);
 	}
-
-    atsc3_alc_packet_persist_to_toi_resource_process_sls_mbms_and_emit_callback(udp_flow,
-                                                                                alc_packet,
-                                                                                lls_slt_monitor->lls_sls_alc_monitor);
     
     if(lls_slt_monitor->lls_sls_alc_monitor->lls_sls_monitor_output_buffer.has_written_init_box && lls_slt_monitor->lls_sls_alc_monitor->lls_sls_monitor_output_buffer.should_flush_output_buffer) {
 
@@ -471,8 +438,8 @@ static void route_process_from_alc_packet(udp_flow_t* udp_flow, alc_packet_t **a
     }
 }
 
-alc_packet_t* route_parse_from_udp_packet(lls_sls_alc_session_t *matching_lls_slt_alc_session, udp_packet_t *udp_packet) {
-    alc_packet_t* alc_packet = NULL;
+atsc3_alc_packet_t* route_parse_from_udp_packet(lls_sls_alc_session_t *matching_lls_slt_alc_session, udp_packet_t *udp_packet) {
+    atsc3_alc_packet_t* alc_packet = NULL;
 
     //sanity check
     if(matching_lls_slt_alc_session->alc_session) {
@@ -581,7 +548,7 @@ void process_packet(u_char *user, const struct pcap_pkthdr *pkthdr, const u_char
 		global_bandwidth_statistics->interval_alc_current_packets_rx++;
 		atsc3_global_statistics->packet_counter_alc_recv++;
 
-        alc_packet_t* alc_packet = route_parse_from_udp_packet(matching_lls_slt_alc_session, udp_packet);
+        atsc3_alc_packet_t* alc_packet = route_parse_from_udp_packet(matching_lls_slt_alc_session, udp_packet);
         if(alc_packet) {
             route_process_from_alc_packet(&udp_packet->udp_flow, &alc_packet);
             alc_packet_free(&alc_packet);

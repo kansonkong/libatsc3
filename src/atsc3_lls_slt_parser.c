@@ -26,7 +26,7 @@ address and destination port of the MMTP session carrying the MMTP- specific SLS
 #include "atsc3_lls_slt_parser.h"
 #include "atsc3_lls_sls_parser.h"
 
-int _LLS_SLT_PARSER_INFO_ENABLED = 0;
+int _LLS_SLT_PARSER_INFO_ENABLED = 1;
 int _LLS_SLT_PARSER_INFO_MMT_ENABLED = 0;
 int _LLS_SLT_PARSER_INFO_ROUTE_ENABLED = 0;
 
