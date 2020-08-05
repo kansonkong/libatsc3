@@ -1,0 +1,8 @@
+tar xvfz libmicrohttpd-latest.tar.gz
+
+cd libmicrohttpd-0.9.63
+
+
+./configure --prefix=`pwd`/build
+make
+make install
