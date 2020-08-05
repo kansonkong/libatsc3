@@ -384,7 +384,6 @@ void atsc3_route_object_lct_packet_received_set_attributes_from_alc_packet(atsc3
 	//jjustman-2020-07-28 - todo - fixme
 	atsc3_route_object_lct_packet_received->fec_encoding_id = atsc3_alc_packet->def_lct_hdr->codepoint;
 
-
 	atsc3_route_object_lct_packet_received->close_object_flag = atsc3_alc_packet->close_object_flag;
 	atsc3_route_object_lct_packet_received->close_session_flag = atsc3_alc_packet->close_session_flag;
 
@@ -411,8 +410,10 @@ void atsc3_route_object_lct_packet_received_update_carousel_count(atsc3_route_ob
 
 }
 
+//jjustman-2020-08-04 - TSI=0 is allowed to update object length as it might be a SLS change (e.g.  afdt:efdtVersion="9" changes to  afdt:efdtVersion="10", resulting in being 1 byte longer..)
+
 void atsc3_route_object_lct_packet_received_update_atsc3_route_object(atsc3_route_object_t* atsc3_route_object, atsc3_route_object_lct_packet_received_t* atsc3_route_object_lct_packet_received) {
-	if(!atsc3_route_object->object_length && atsc3_route_object_lct_packet_received->object_len) {
+	if((!atsc3_route_object->object_length || atsc3_route_object->tsi == 0) && atsc3_route_object_lct_packet_received->object_len) {
 		atsc3_route_object->object_length = atsc3_route_object_lct_packet_received->object_len;
 
 		//pre_allocate our expected atsc3_route_object->

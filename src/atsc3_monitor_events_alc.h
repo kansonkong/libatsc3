@@ -22,6 +22,7 @@ extern "C" {
 
 typedef void (*atsc3_alc_on_object_close_flag_s_tsid_content_location_f)(uint32_t tsi, uint32_t toi, char* s_tsid_content_location);
 typedef void (*atsc3_alc_on_route_mpd_patched_f)(uint16_t service_id);
+typedef void (*atsc3_alc_on_route_mpd_patched_with_filename_f)(uint16_t service_id, char* mpd_filename);
 
 typedef void (*atsc3_alc_on_package_extract_completed_f)(atsc3_route_package_extracted_envelope_metadata_and_payload_t* atsc3_route_package_extracted_envelope_metadata_and_payload_t);
 

@@ -14,6 +14,7 @@
 #ifndef ATSC3_ROUTE_SLS_PROCESSOR_H_
 #define ATSC3_ROUTE_SLS_PROCESSOR_H_
 
+#include "atsc3_logging_externs.h"
 #include "atsc3_alc_rx.h"
 #include "atsc3_lls_types.h"
 #include "atsc3_alc_utils.h"
@@ -28,6 +29,12 @@
 
 
 void atsc3_route_sls_process_from_alc_packet_and_file(udp_flow_t* udp_flow, atsc3_alc_packet_t* alc_packet, lls_sls_alc_monitor_t* lls_sls_alc_monitor);
+
+int32_t atsc3_sls_write_mime_multipart_related_payload_to_file(atsc3_mime_multipart_related_payload_t* atsc3_mime_multipart_related_payload, lls_sls_alc_monitor_t* lls_sls_alc_monitor);
+char* atsc3_sls_generate_filename_from_atsc3_mime_multipart_related_payload(atsc3_mime_multipart_related_payload_t* atsc3_mime_multipart_related_payload, lls_sls_alc_monitor_t* lls_sls_alc_monitor);
+
+bool atsc3_route_sls_process_from_sls_metadata_fragments_patch_mpd_availability_start_time_and_start_number(atsc3_sls_metadata_fragments_t* atsc3_sls_metadata_fragments, lls_sls_alc_monitor_t* lls_sls_alc_monitor);
+
 bool atsc3_route_sls_patch_mpd_availability_start_time_and_start_number(atsc3_mime_multipart_related_payload_t* atsc3_mime_multipart_related_payload, lls_sls_alc_monitor_t* lls_sls_alc_monitor);
 
 
@@ -35,6 +42,7 @@ bool atsc3_route_sls_patch_mpd_availability_start_time_and_start_number(atsc3_mi
 #define _ATSC3_ROUTE_SLS_PROCESSOR_WARN(...)    __LIBATSC3_TIMESTAMP_WARN(__VA_ARGS__);
 #define _ATSC3_ROUTE_SLS_PROCESSOR_INFO(...)   if(_ROUTE_SLS_PROCESSOR_INFO_ENABLED) { __LIBATSC3_TIMESTAMP_INFO(__VA_ARGS__); }
 #define _ATSC3_ROUTE_SLS_PROCESSOR_DEBUG(...)  if(_ROUTE_SLS_PROCESSOR_DEBUG_ENABLED) { __LIBATSC3_TIMESTAMP_DEBUG(__VA_ARGS__); }
+#define _ATSC3_ROUTE_SLS_PROCESSOR_TRACE(...)  if(_ROUTE_SLS_PROCESSOR_TRACE_ENABLED) { __LIBATSC3_TIMESTAMP_DEBUG(__VA_ARGS__); }
 
 
 
