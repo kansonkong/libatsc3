@@ -929,7 +929,7 @@ uint16_t parsePortIntoIntval(char* dst_port) {
 //alloc and copy - note limited to 16k
 char* strlcopy(char* src) {
 	int len = strnlen(src, 16384);
-	char* dest = (char*)calloc(len, sizeof(char*));
+	char* dest = (char*)calloc(len+1, sizeof(char));
 	return strncpy(dest, src, len);
 }
 

@@ -368,7 +368,12 @@ lls_table_t* lls_table_create_or_update_from_lls_slt_monitor_with_metrics(lls_sl
 }
 
 lls_table_t* atsc3_lls_table_create_or_update_from_lls_slt_monitor_with_metrics_single_table(lls_slt_monitor_t* lls_slt_monitor, atsc3_lls_table_t* lls_table_new, uint32_t* parsed, uint32_t* parsed_update, uint32_t* parsed_error) {
-    _LLS_DEBUG("atsc3_lls_table_create_or_update_from_lls_slt_monitor_with_metrics_single_table: lls_table_new: %p, lls_table_id: %d", lls_table_new, lls_table_new->lls_table_id);
+	if(!lls_slt_monitor) {
+		_LLS_ERROR("atsc3_lls_table_create_or_update_from_lls_slt_monitor_with_metrics_single_table: lls_slt_monitor is NULL!");
+		return NULL;
+	}
+
+    _LLS_DEBUG("atsc3_lls_table_create_or_update_from_lls_slt_monitor_with_metrics_single_table: lls_slt_monitor: %p, lls_table_new: %p, lls_table_id: %d", lls_slt_monitor, lls_table_new, lls_table_new->lls_table_id);
 
     //jjustman-2019-09-18 - TODO: refactor this out from union to *
     if(lls_table_new->lls_table_id == AEAT) {

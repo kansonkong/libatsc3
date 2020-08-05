@@ -740,7 +740,6 @@ static struct xml_node* xml_parse_node(struct xml_parser* parser) {
 		goto node_creation;
 	}
 
-	struct xml_node *last_child = NULL;
 	/* If the content does not start with '<', a text content is assumed
 	 */
 	if ('<' != xml_parser_peek(parser, CURRENT_CHARACTER)) {
@@ -779,7 +778,6 @@ static struct xml_node* xml_parse_node(struct xml_parser* parser) {
 		children[new_elements - 1] = child;
 		children[new_elements] = 0;
 
-		last_child = child;
 		xml_skip_whitespace(parser);
 
 	}
@@ -899,32 +897,59 @@ struct xml_document* xml_open_document(FILE* source) {
 
 	/* Prepare buffer
 	 */
-	size_t const read_chunk = 1; // TODO 4096;
-
 	size_t document_length = 0;
-	size_t buffer_size = 1;	// TODO 4069
-	uint8_t* buffer = calloc(buffer_size, sizeof(uint8_t));
 
-	/* Read hole file into buffer
-	 */
-	while (!feof(source)) {
+	size_t const read_chunk = 512; // TODO 4096;
+	size_t buffer_size = 512;	// TODO 4069
 
-		/* Reallocate buffer
-		 */
-		if (buffer_size - document_length < read_chunk) {
-			buffer = realloc(buffer, buffer_size + 2 * read_chunk);
-			buffer_size += 2 * read_chunk;
+	uint8_t* buffer = NULL;
+
+	bool single_fread_success = false;
+
+	//fstat(source, &st); - reports wrong size?
+	fseek(source, 0, SEEK_END);
+    long source_fp_size = ftell(source);
+	fseek(source, 0, SEEK_SET);
+
+	if(source_fp_size) {
+		buffer = calloc(source_fp_size, sizeof(uint8_t));
+		size_t read = fread(buffer, source_fp_size, 1, source);
+		if(!read) {
+			_XML_ERROR("%d::xml_open_document - fread returned: %d", __LINE__, read);
+		} else {
+			single_fread_success = true;
+			document_length = source_fp_size;
 		}
-
-		size_t read = fread(
-			&buffer[document_length],
-			sizeof(uint8_t), read_chunk,
-			source
-		);
-
-		document_length += read;
 	}
 
+	//fallback to incremental resizing
+	if(!single_fread_success) {
+
+		//fallback
+		buffer = calloc(buffer_size, sizeof(uint8_t));
+
+		/* Read hole file into buffer
+		 */
+		while (!feof(source)) {
+
+			/*
+			 * Reallocate buffer
+			 */
+
+			if (buffer_size - document_length < read_chunk) {
+				buffer = realloc(buffer, buffer_size + 2 * read_chunk);
+				buffer_size += 2 * read_chunk;
+			}
+
+			size_t read = fread(
+				&buffer[document_length],
+				sizeof(uint8_t), read_chunk,
+				source
+			);
+
+			document_length += read;
+		}
+	}
 
 	/* Try to parse buffer
 	 */
