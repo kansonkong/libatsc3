@@ -236,13 +236,13 @@ vector_struct_name->PPCAT(vector_item_name, _v).count, j+1);
 	void PPCAT(vector_struct_name,PPCAT(_prealloc_,vector_item_name))(PPCAT(vector_struct_name,_t)* vector_struct_name, uint32_t size) { \
 		if(!vector_struct_name->PPCAT(vector_item_name, _v).size || !vector_struct_name->PPCAT(vector_item_name, _v).data) { \
 			/* new alloc */ \
-			vector_struct_name->PPCAT(vector_item_name, _v).data 	= calloc(size, sizeof(PPCAT(vector_item_name,_t)**)); \
+			vector_struct_name->PPCAT(vector_item_name, _v).data 	= calloc(size, sizeof(PPCAT(vector_item_name,_t)*)); \
 			vector_struct_name->PPCAT(vector_item_name, _v).count 	= 0;	\
 			vector_struct_name->PPCAT(vector_item_name, _v).size	= size;	\
 		} else { \
 			/* realloc */ \
 			vector_struct_name->PPCAT(vector_item_name, _v).size = 	__MAX(size, vector_struct_name->PPCAT(vector_item_name, _v).count); \
-			uint32_t to_resize = sizeof(PPCAT(vector_item_name,_t)**) * vector_struct_name->PPCAT(vector_item_name, _v).size;	\
+			uint32_t to_resize = sizeof(PPCAT(vector_item_name,_t)*) * vector_struct_name->PPCAT(vector_item_name, _v).size;	\
 			vector_struct_name->PPCAT(vector_item_name, _v).data = realloc(vector_struct_name->PPCAT(vector_item_name, _v).data, to_resize);	\
 		}	\
 	} \
@@ -250,7 +250,7 @@ vector_struct_name->PPCAT(vector_item_name, _v).count, j+1);
 	void PPCAT(vector_struct_name,PPCAT(_add_, vector_item_name))(PPCAT(vector_struct_name,_t)* vector_struct_name, PPCAT(vector_item_name,_t)* vector_item_name) { \
 		if(!vector_struct_name->PPCAT(vector_item_name, _v).size || !vector_struct_name->PPCAT(vector_item_name, _v).data) { \
 			/* new alloc */ \
-			vector_struct_name->PPCAT(vector_item_name, _v).data 	= calloc(ATSC3_VECTOR_BUILDER_METHODS_IMPLEMENTATION_DEFAULT_SIZE, sizeof(PPCAT(vector_item_name,_t)**)); \
+			vector_struct_name->PPCAT(vector_item_name, _v).data 	= calloc(ATSC3_VECTOR_BUILDER_METHODS_IMPLEMENTATION_DEFAULT_SIZE, sizeof(PPCAT(vector_item_name,_t)*)); \
 			(vector_struct_name->PPCAT(vector_item_name, _v).data[0]) = vector_item_name;	\
 			vector_struct_name->PPCAT(vector_item_name, _v).count 	= 1;	\
 			vector_struct_name->PPCAT(vector_item_name, _v).size	= ATSC3_VECTOR_BUILDER_METHODS_IMPLEMENTATION_DEFAULT_SIZE;	\
@@ -261,7 +261,7 @@ vector_struct_name->PPCAT(vector_item_name, _v).count, j+1);
 			/* realloc */ \
 			vector_struct_name->PPCAT(vector_item_name, _v).size = __MAX(vector_struct_name->PPCAT(vector_item_name, _v).size * 2, \
 																		__MAX(vector_struct_name->PPCAT(vector_item_name, _v).count, ATSC3_VECTOR_BUILDER_METHODS_IMPLEMENTATION_DEFAULT_SIZE)); \
-			uint32_t to_resize = sizeof(PPCAT(vector_item_name,_t)**) * vector_struct_name->PPCAT(vector_item_name, _v).size;	\
+			uint32_t to_resize = sizeof(PPCAT(vector_item_name,_t)*) * vector_struct_name->PPCAT(vector_item_name, _v).size;	\
 			vector_struct_name->PPCAT(vector_item_name, _v).data = realloc(vector_struct_name->PPCAT(vector_item_name, _v).data, to_resize);	\
 			vector_struct_name->PPCAT(vector_item_name, _v).data[vector_struct_name->PPCAT(vector_item_name, _v).count++] = vector_item_name;	\
 			\
@@ -429,13 +429,13 @@ void atsc3_sls_html_entry_package_free(atsc3_sls_html_entry_package_t** atsc3_sl
 	void PPCAT(vector_struct_name,_prealloc)(PPCAT(vector_struct_name,_v)* vector_struct, uint32_t size) { \
 		if(!vector_struct->size || !vector_struct->data) { \
 			/* new alloc */ \
-			vector_struct->data = calloc(size, sizeof(PPCAT(vector_struct_name,_t)**)); \
+			vector_struct->data = calloc(size, sizeof(PPCAT(vector_struct_name,_t)*)); \
 			vector_struct->count = 0;	\
 			vector_struct->size	= size;	\
 		} else { \
 			/* realloc */ \
 			vector_struct->size = 	__MAX(size, vector_struct->count); \
-			uint32_t to_resize = sizeof(PPCAT(vector_struct_name,_t)**) * vector_struct->size;	\
+			uint32_t to_resize = sizeof(PPCAT(vector_struct_name,_t)*) * vector_struct->size;	\
 			vector_struct->data = realloc(vector_struct->data, to_resize);	\
 		}	\
 	} \
@@ -443,7 +443,7 @@ void atsc3_sls_html_entry_package_free(atsc3_sls_html_entry_package_t** atsc3_sl
 	void PPCAT(vector_struct_name,_add)(PPCAT(vector_struct_name,_v)* vector_struct, PPCAT(vector_struct_name,_t)* vector_item) { \
 		if(!vector_struct->size || !vector_struct->data) { \
 			/* new alloc */ \
-			vector_struct->data = calloc(ATSC3_VECTOR_BUILDER_METHODS_IMPLEMENTATION_DEFAULT_SIZE, sizeof(PPCAT(vector_struct_name,_t)**)); \
+			vector_struct->data = calloc(ATSC3_VECTOR_BUILDER_METHODS_IMPLEMENTATION_DEFAULT_SIZE, sizeof(PPCAT(vector_struct_name,_t)*)); \
 			(vector_struct->data[0]) = vector_item;	\
 			vector_struct->count = 1;	\
 			vector_struct->size	= ATSC3_VECTOR_BUILDER_METHODS_IMPLEMENTATION_DEFAULT_SIZE;	\
@@ -454,7 +454,7 @@ void atsc3_sls_html_entry_package_free(atsc3_sls_html_entry_package_t** atsc3_sl
 			/* realloc */ \
 			vector_struct->size = __MAX(vector_struct->size * 2, \
 										__MAX(vector_struct->count, ATSC3_VECTOR_BUILDER_METHODS_IMPLEMENTATION_DEFAULT_SIZE)); \
-			uint32_t to_resize = sizeof(PPCAT(vector_struct_name,_t)**) * vector_struct->size;	\
+			uint32_t to_resize = sizeof(PPCAT(vector_struct_name,_t)*) * vector_struct->size;	\
 			vector_struct->data = realloc(vector_struct->data, to_resize);	\
 			vector_struct->data[vector_struct->count++] = vector_item;	\
 			\
@@ -505,7 +505,7 @@ void atsc3_sls_html_entry_package_free(atsc3_sls_html_entry_package_t** atsc3_sl
 //jjustman-2020-07-14 - re-name typedef usage of _t to _typedef_free
 //
 //#define ATSC3_VECTOR_BUILDER_TYPEDEF_STRUCT_METHODS_ITEM_FREE(vector_struct_name) \
-//	void PPCAT(vector_struct_name,_free_t)(PPCAT(vector_struct_name,_t)** PPCAT(vector_struct_name,_p)) { \
+//	void PPCAT(vector_struct_name,_free_t)(PPCAT(vector_struct_name,_t)* PPCAT(vector_struct_name,_p)) { \
 //		if(PPCAT(vector_struct_name,_p)) {	\
 //			PPCAT(vector_struct_name,_t)* vector_item = *PPCAT(vector_struct_name,_p);	\
 //			if(vector_item) { \
