@@ -821,7 +821,7 @@ int atsc3_alc_packet_persist_to_toi_resource_process_sls_mbms_and_emit_callback(
                 __ALC_UTILS_IOTRACE("tsi: %u, toi: %u, moving from to temporary_filename: %s to: %s, is complete: %d", alc_packet->def_lct_hdr->tsi, alc_packet->def_lct_hdr->toi,  temporary_filename, new_file_name, alc_packet->close_object_flag);
 
             	atsc3_route_object_clear_temporary_object_recovery_filename(atsc3_route_object);
-
+				atsc3_route_object_set_final_object_recovery_filename_for_logging(atsc3_route_object, new_file_name);
                 atsc3_sls_alc_flow_t* matching_sls_alc_flow = NULL;
 
 				//jjustman-2020-07-14 - global route dash representationId patching for s-tsid flows
@@ -831,7 +831,7 @@ int atsc3_alc_packet_persist_to_toi_resource_process_sls_mbms_and_emit_callback(
 						matching_sls_alc_flow->last_closed_toi = alc_packet->def_lct_hdr->toi;
 
 						//keep track of our new file name path so we can purge/reap as needed for media segments
-		            	atsc3_route_object_set_final_object_recovery_filename(atsc3_route_object, new_file_name);
+		            	atsc3_route_object_set_final_object_recovery_filename_for_eviction(atsc3_route_object, new_file_name);
 					}
 				}
 
