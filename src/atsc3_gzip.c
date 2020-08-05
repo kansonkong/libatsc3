@@ -16,9 +16,13 @@ int32_t atsc3_unzip_gzip_payload(uint8_t* input_payload, uint32_t input_payload_
 	uint input_payload_offset = 0;
 	uint output_payload_offset = 0;
     uint output_payload_available = GZIP_CHUNK_OUTPUT_BUFFER_SIZE;
-    unsigned char *output_payload = NULL;
+    unsigned char *output_payload = (unsigned char*)calloc(GZIP_CHUNK_OUTPUT_BUFFER_SIZE + 1, sizeof(unsigned char));
 
-    int ret;
+	if(!output_payload) {
+		return -1;
+	}
+
+	int ret;
     unsigned have;
     z_stream strm;
 
@@ -47,13 +51,6 @@ int32_t atsc3_unzip_gzip_payload(uint8_t* input_payload, uint32_t input_payload_
 			break;
 
 		do {
-			if(!output_payload) {
-				output_payload = (uint8_t*)calloc(GZIP_CHUNK_OUTPUT_BUFFER_SIZE + 1, sizeof(uint8_t));
-			}
-
-			if(!output_payload)
-				return -1;
-
 			strm.avail_out = output_payload_available;
 			strm.next_out = &output_payload[output_payload_offset];
 
