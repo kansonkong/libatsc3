@@ -212,7 +212,18 @@ int comparator_lls_slt_alc_session_t(const void *a, const void *b) {
  *
 qsort((void**)lls_sls_alc_session_flows->lls_slt_alc_sessions, lls_sls_alc_session_flows->lls_slt_alc_sessions_n, sizeof(lls_sls_alc_session_t**), comparator_lls_slt_alc_session_t);
  *
+ *
+ *for debugging _remove
+ *
+ *	printf("found matching item at: %p, position: %d, count: %d, size: %d", \
+vector_item_name_to_check, i, vector_struct_name->PPCAT(vector_item_name, _v).count, vector_struct_name->PPCAT(vector_item_name, _v).size); \
+ *	 printf("shifting up at: %d to %d, obj: %p", \
+j+1, j, vector_struct_name->PPCAT(vector_item_name, _v).data[j+1]); \
+ * printf("decreasing count to: %d, NULLing position %d", \
+vector_struct_name->PPCAT(vector_item_name, _v).count, j+1);
  */
+
+#define __ATSC3_VECTOR_UTILS_PENDANTIC__
 //TODO: make sure we don't duplicate over an existing struct without at least clearing the prior instance
 #define ATSC3_VECTOR_BUILDER_METHODS_IMPLEMENTATION(vector_struct_name, vector_item_name) \
 	PPCAT(vector_item_name,_t)* PPCAT(vector_item_name,_new)() { \

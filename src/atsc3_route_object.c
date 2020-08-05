@@ -46,17 +46,21 @@ void atsc3_route_object_free(atsc3_route_object_t** atsc3_route_object_p) {
 		atsc3_route_object_t* atsc3_route_object = *atsc3_route_object_p;
 		if(atsc3_route_object) {
 
-			freeclean((void**)&atsc3_route_object->temporary_object_recovery_filename);
-			freeclean((void**)&atsc3_route_object->final_object_recovery_filename);
-
-			_ATSC3_ROUTE_OBJECT_DEBUG("atsc3_route_object_free: p: %p, tsi: %d, toi: %d, before closing fp: %p, atsc3_route_object_lct_packet_received count: %d (size: %d)",
+			_ATSC3_ROUTE_OBJECT_DEBUG("atsc3_route_object_free: p: %p, tsi: %d, toi: %d, before closing fp: %p, atsc3_route_object_lct_packet_received count: %d (size: %d), final_object_recovery_filename_for_logging: %s",
 					atsc3_route_object,
 					atsc3_route_object->tsi,
 					atsc3_route_object->toi,
 					atsc3_route_object->recovery_file_handle,
 					atsc3_route_object->atsc3_route_object_lct_packet_received_v.count,
-					atsc3_route_object->atsc3_route_object_lct_packet_received_v.size
+					atsc3_route_object->atsc3_route_object_lct_packet_received_v.size,
+					atsc3_route_object->final_object_recovery_filename_for_logging
+
 			);
+
+			freeclean((void**)&atsc3_route_object->temporary_object_recovery_filename);
+			freeclean((void**)&atsc3_route_object->final_object_recovery_filename_for_eviction);
+			freeclean((void**)&atsc3_route_object->final_object_recovery_filename_for_logging);
+
 
 			//most important to clear the lct packets recv
 			atsc3_route_object_recovery_file_handle_close(atsc3_route_object);
@@ -98,9 +102,15 @@ void atsc3_route_object_clear_temporary_object_recovery_filename(atsc3_route_obj
 	freeclean((void**)&atsc3_route_object->temporary_object_recovery_filename);
 }
 
-void atsc3_route_object_set_final_object_recovery_filename(atsc3_route_object_t* atsc3_route_object, char* final_object_recovery_filename) {
-	freeclean((void**)&atsc3_route_object->final_object_recovery_filename);
-	atsc3_route_object->final_object_recovery_filename = strdup(final_object_recovery_filename);
+void atsc3_route_object_set_final_object_recovery_filename_for_eviction(atsc3_route_object_t* atsc3_route_object, char* final_object_recovery_filename_for_eviction) {
+	freeclean((void**)&atsc3_route_object->final_object_recovery_filename_for_eviction);
+	atsc3_route_object->final_object_recovery_filename_for_eviction = strdup(final_object_recovery_filename_for_eviction);
+
+}
+
+void atsc3_route_object_set_final_object_recovery_filename_for_logging(atsc3_route_object_t* atsc3_route_object, char* final_object_recovery_filename_for_logging) {
+	freeclean((void**)&atsc3_route_object->final_object_recovery_filename_for_logging);
+	atsc3_route_object->final_object_recovery_filename_for_logging = strdup(final_object_recovery_filename_for_logging);
 }
 
 /*
@@ -279,10 +289,20 @@ bool atsc3_route_object_is_complete(atsc3_route_object_t* atsc3_route_object) {
 
 	int atsc3_route_object_length_threshold = __MAX(1, (int)atsc3_route_object->object_length - 1500);
 
+	if(atsc3_route_object->recovery_complete_timestamp) {
+		_ATSC3_ROUTE_OBJECT_DEBUG("atsc3_route_object_is_complete: true, using recovery_complete_timestamp, atsc3_route_object: %p, tsi: %d, toi: %d, atsc3_route_object_lct_packet_received_v.count: %d, recovery_complete_timestamp: %lu, final_object_recovery_filename_for_logging: %s",
+						atsc3_route_object,
+						atsc3_route_object->tsi, atsc3_route_object->toi,
+						atsc3_route_object->atsc3_route_object_lct_packet_received_v.count,
+						atsc3_route_object->recovery_complete_timestamp,
+						atsc3_route_object->final_object_recovery_filename_for_logging);
+		return true;
+	}
+
 	//short circuit in that our cumulative_lct_packet_len should be close to our object length
 	if(atsc3_route_object->cumulative_lct_packet_len < atsc3_route_object_length_threshold) {
 		#ifdef __ATSC3_ROUTE_OBJECT_PENDANTIC__
-		_ATSC3_ROUTE_OBJECT_INFO("atsc3_route_object_is_complete: tsi: %d, toi: %d, pre-flight check with atsc3_route_object->atsc3_route_object_lct_packet_received_v.count: %d,  cumulative_lct_packet_len: %d, < atsc3_route_object_length_threshold: %d",
+		_ATSC3_ROUTE_OBJECT_TRACE("atsc3_route_object_is_complete: tsi: %d, toi: %d, pre-flight check with atsc3_route_object->atsc3_route_object_lct_packet_received_v.count: %d,  cumulative_lct_packet_len: %d, < atsc3_route_object_length_threshold: %d",
 				atsc3_route_object->tsi, atsc3_route_object->toi,
 				atsc3_route_object->atsc3_route_object_lct_packet_received_v.count,
 				atsc3_route_object->cumulative_lct_packet_len,
@@ -318,16 +338,20 @@ bool atsc3_route_object_is_complete(atsc3_route_object_t* atsc3_route_object) {
 		if(atsc3_route_object_lct_packet_received->use_sbn_esi) {
 			if(last_object_position != atsc3_route_object_lct_packet_received->esi) {
 				has_missing_source_blocks = true;
+#ifdef __ATSC3_ROUTE_OBJECT_PENDANTIC__
 				_ATSC3_ROUTE_OBJECT_DEBUG("atsc3_route_object_is_complete: has_missing_source_blocks - using sbn_esi - tsi: %d, toi: %d, last_object_position: %d, esi: %d",
 						atsc3_route_object->tsi, atsc3_route_object->toi, last_object_position, atsc3_route_object_lct_packet_received->esi);
+#endif
 			} else {
 				last_object_position += atsc3_route_object_lct_packet_received->packet_len;
 			}
 		} else if(atsc3_route_object_lct_packet_received->use_start_offset) {
 			if(last_object_position != atsc3_route_object_lct_packet_received->start_offset) {
 				has_missing_source_blocks = true;
+#ifdef __ATSC3_ROUTE_OBJECT_PENDANTIC__
 				_ATSC3_ROUTE_OBJECT_TRACE("atsc3_route_object_is_complete: has_missing_source_blocks - using start_offset - idx: %d, tsi: %d, toi: %d, last_object_position: %d, start_offset: %d",
 										i, atsc3_route_object->tsi, atsc3_route_object->toi, last_object_position, atsc3_route_object_lct_packet_received->start_offset);
+#endif
 			} else {
 #ifdef __ATSC3_ROUTE_OBJECT_PENDANTIC__
 
@@ -351,11 +375,13 @@ bool atsc3_route_object_is_complete(atsc3_route_object_t* atsc3_route_object) {
 		has_missing_source_blocks = true;
 	} else {
 
-		_ATSC3_ROUTE_OBJECT_DEBUG("atsc3_route_object_is_complete: true, object_length: %8d,            atsc3_route_object: %p, tsi: %d, toi: %d, atsc3_route_object_lct_packet_received_v.count: %d",
+		_ATSC3_ROUTE_OBJECT_DEBUG("atsc3_route_object_is_complete: true, object_length: %8d,            atsc3_route_object: %p, tsi: %d, toi: %d, atsc3_route_object_lct_packet_received_v.count: %d, recovery_complete_timestamp: %lu, final_object_recovery_filename_for_logging: %s",
 						atsc3_route_object->object_length,
 						atsc3_route_object,
 						atsc3_route_object->tsi, atsc3_route_object->toi,
-						atsc3_route_object->atsc3_route_object_lct_packet_received_v.count);
+						atsc3_route_object->atsc3_route_object_lct_packet_received_v.count,
+						atsc3_route_object->recovery_complete_timestamp,
+						atsc3_route_object->final_object_recovery_filename_for_logging);
 	}
 
 
@@ -394,7 +420,7 @@ void atsc3_route_object_reset_and_free_atsc3_route_object_lct_packet_received(at
 	atsc3_route_object_recovery_file_handle_close(atsc3_route_object);
 
 	freeclean((void**)&atsc3_route_object->temporary_object_recovery_filename);
-	freeclean((void**)&atsc3_route_object->final_object_recovery_filename);
+	freeclean((void**)&atsc3_route_object->final_object_recovery_filename_for_eviction);
 
 
 #ifdef __ATSC3_ROUTE_OBJECT_PENDANTIC__
@@ -414,7 +440,7 @@ void atsc3_route_object_reset_and_free_atsc3_route_object_lct_packet_received(at
  *
  *		frees atsc3_route_bject_lct_packet_received objects, and removes as candidate from "given_up" eviction, and WILL unlink temporary/final object recovery on disk after
  *
- *		used for media fragment cleanup when 		            	atsc3_route_object_set_final_object_recovery_filename(atsc3_route_object, new_file_name); is set
+ *		used for media fragment cleanup when 		            	atsc3_route_object_set_final_object_recovery_filename_for_eviction(atsc3_route_object, new_file_name); is set
  *
  *		invoked from atsc3_lls_sls_alc_monitor_check_all_s_tsid_flows_has_given_up_route_objects
 */
@@ -462,15 +488,18 @@ void atsc3_route_object_reset_and_free_and_unlink_recovery_file_atsc3_route_obje
 		freeclean((void**)&atsc3_route_object->temporary_object_recovery_filename);
 	}
 
-	//jjustman-2020-07-28: unlink final_object_recovery_filename
-	if(atsc3_route_object->final_object_recovery_filename) {
+	//jjustman-2020-07-28: unlink final_object_recovery_filename_for_eviction
+	if(atsc3_route_object->final_object_recovery_filename_for_eviction) {
 		struct stat st = {0};
-		if(stat(atsc3_route_object->final_object_recovery_filename, &st) == 0) {
-			_ATSC3_ROUTE_OBJECT_TRACE("atsc3_route_object_reset_and_free_and_unlink_recovery_file_atsc3_route_object_lct_packet_received: removing final_object_recovery_filename: %s", atsc3_route_object->final_object_recovery_filename);
-			remove(atsc3_route_object->final_object_recovery_filename);
+		if(stat(atsc3_route_object->final_object_recovery_filename_for_eviction, &st) == 0) {
+			_ATSC3_ROUTE_OBJECT_TRACE("atsc3_route_object_reset_and_free_and_unlink_recovery_file_atsc3_route_object_lct_packet_received: removing final_object_recovery_filename_for_eviction: %s", atsc3_route_object->final_object_recovery_filename_for_eviction);
+			remove(atsc3_route_object->final_object_recovery_filename_for_eviction);
 		}
-		freeclean((void**)&atsc3_route_object->final_object_recovery_filename);
+		freeclean((void**)&atsc3_route_object->final_object_recovery_filename_for_eviction);
 	}
+
+	freeclean((void**)&atsc3_route_object->final_object_recovery_filename_for_logging);
+
 
 #ifdef __ATSC3_ROUTE_OBJECT_PENDANTIC__
 
@@ -481,14 +510,18 @@ void atsc3_route_object_reset_and_free_and_unlink_recovery_file_atsc3_route_obje
 				atsc3_route_object->atsc3_route_object_lct_packet_received_v.count);
 #endif
 
-	_ATSC3_ROUTE_OBJECT_DEBUG("atsc3_route_object_reset_and_free_and_unlink_recovery_file_atsc3_route_object_lct_packet_received: p: %p, tsi: %d, toi: %d, after closing fp: %p, atsc3_route_object_lct_packet_received count: %d (size: %d)",
+	_ATSC3_ROUTE_OBJECT_DEBUG("atsc3_route_object_reset_and_free_and_unlink_recovery_file_atsc3_route_object_lct_packet_received: p: %p, tsi: %d, toi: %d, after closing fp: %p, atsc3_route_object_lct_packet_received count: %d (size: %d), final_object_recovery_filename_for_logging: %s",
 			atsc3_route_object,
 			atsc3_route_object->tsi,
 			atsc3_route_object->toi,
 			atsc3_route_object->recovery_file_handle,
 			atsc3_route_object->atsc3_route_object_lct_packet_received_v.count,
-			atsc3_route_object->atsc3_route_object_lct_packet_received_v.size
+			atsc3_route_object->atsc3_route_object_lct_packet_received_v.size,
+			atsc3_route_object->final_object_recovery_filename_for_logging
 	);
+
+	freeclean((void**)&atsc3_route_object->final_object_recovery_filename_for_logging);
+
 
 }
 

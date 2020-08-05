@@ -557,6 +557,12 @@ block_t* block_Duplicate_from_ptr(uint8_t* data, uint32_t size) {
 //perform a soft allocation to
 //src->p_size * 2  where p_size < 2M
 block_t* block_Resize_Soft(block_t* dest, uint32_t dest_size_min_required) {
+
+	if(dest->_a_size >= dest_size_min_required && dest->i_pos < dest_size_min_required && dest->p_size < dest_size_min_required) {
+		dest->p_size = dest_size_min_required;
+    	return dest;
+	}
+
 	uint32_t target_dest_size_min_required = dest_size_min_required;
 
 	if(dest_size_min_required * 2 < __ATSC3_UTILS_BLOCK_RESIZE_DOUBLE_LIMIT__) {
@@ -581,14 +587,14 @@ block_t* block_Resize(block_t* src, uint32_t src_size_requested) {
     uint32_t src_size_original = src->p_size;
     uint32_t src_i_pos_original = src->i_pos;
 
+	if(src->_a_size >= src_size_requested && src->i_pos < src_size_requested && src->p_size < src_size_requested) {
+    	src->p_size = src_size_requested;
+    	return src;
+    }
+
     //uint32_t src_size_required = __MAX(64, src_size_requested);
     //do not change our size, as this can cause us to leak unexpectedly
     uint32_t src_size_required = src_size_requested;
-
-    if(src->_a_size >= src_size_requested && src_size_requested > src->i_pos && src_size_requested > src->p_size) {
-    	src->p_size = src_size_required;
-    	return src;
-    }
 
 	//always over alloc by X bytes for a null pad
     //jjustman-2019-10-12: TODO - devices like aarm64 need a quad byte aligned boundary (aim for 64bit align)

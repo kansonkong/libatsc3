@@ -321,6 +321,7 @@ atsc3_route_object_lct_packet_received_t* atsc3_route_object_find_lct_packet_rec
 	atsc3_route_object_lct_packet_received_t* matching_atsc3_route_object_lct_packet_received = NULL;
 
 	//hack-ish...
+	//jjustman-2020-08-04 - TODO - fix me...
 	atsc3_route_object_lct_packet_received_t* to_find_atsc3_route_object_lct_packet_received = atsc3_route_object_lct_packet_received_new();
 	atsc3_route_object_lct_packet_received_set_source_attributes_from_alc_packet(to_find_atsc3_route_object_lct_packet_received, atsc3_alc_packet);
 
