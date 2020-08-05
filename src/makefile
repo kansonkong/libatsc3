@@ -32,19 +32,22 @@
 #
 #   		brew tap LouisBrunner/valgrind
 #			brew install --HEAD LouisBrunner/valgrind/valgrind
-
+#
+# A: This may happen when the C++ standard library is linked statically. Prebuilt libstdc++/libc++ often do not use frame pointers, and it breaks fast (frame-pointer-based) unwinding. Either switch to the shared library with the -shared-libstdc++ flag, or use ASAN_OPTIONS=fast_unwind_on_malloc=0. The latter could be very slow.
+# 
 
 CC=cc
 CXX=g++
 CFLAGS=-Wno-nullability-completeness -Wno-expansion-to-defined -Wno-builtin-requires-header
 
 DEBUG=-g
-ASAN=-fsanitize=address -fno-omit-frame-pointer
+ASAN=-fsanitize=address -fno-omit-frame-pointer -fno-optimize-sibling-calls -O1 -fsanitize-address-use-after-scope
 
 LOCAL_LD_LIBS=-lz -lm -lpthread -lpcap -lpcre2-8
 LOCAL_LD_LIBS_NCURSES=$(LOCAL_LD_LIBS) -lncurses
 
 all: 	intermediate_lls \
+		intermediate_lls_asan \
 		intermediate_alp \
 		intermediate_baseband \
 		intermediate_mbms \
@@ -116,6 +119,13 @@ intermediate_lls: 	atsc3_lls.o \
 					atsc3_lls_sls_parser.o \
 					atsc3_lls_alc_utils.o \
 					atsc3_aeat_types.o
+					
+					
+intermediate_lls_asan: 	atsc3_lls_asan.o \
+						atsc3_lls_types_asan.o \
+						atsc3_lls_sls_parser_asan.o \
+						atsc3_lls_alc_utils_asan.o \
+						atsc3_aeat_types_asan.o
 
 intermediate_alp: atsc3_alp_types.o atsc3_alp_parser.o
 
@@ -249,6 +259,9 @@ atsc3_mime_multipart_related_parser.o: atsc3_mime_multipart_related_parser.h ats
 atsc3_lls.o: atsc3_utils.h atsc3_lls.h atsc3_lls.c
 	$(CC) $(CFLAGS) $(DEBUG)  -c atsc3_lls.c
 
+atsc3_lls_asan.o: atsc3_utils.h atsc3_lls.h atsc3_lls.c
+	$(CC) $(ASAN) $(CFLAGS) $(DEBUG)  -c atsc3_lls.c -o atsc3_lls_asan.o
+
 atsc3_lls_types.o: atsc3_lls_types.h atsc3_lls_types.c \
 		xml.h \
 		atsc3_aeat_types.h \
@@ -262,9 +275,27 @@ atsc3_lls_types.o: atsc3_lls_types.h atsc3_lls_types.c \
 		atsc3_lls_sls_monitor_output_buffer.h \
 		atsc3_player_ffplay.h 
 	$(CC) $(CFLAGS) $(DEBUG)  -c atsc3_lls_types.c
+	
+	
+atsc3_lls_types_asan.o: atsc3_lls_types.h atsc3_lls_types.c \
+		xml.h \
+		atsc3_aeat_types.h \
+		atsc3_monitor_events_lls.h \
+		atsc3_monitor_events_sls.h \
+		atsc3_monitor_events_alc.h \
+		atsc3_alc_session.h \
+		atsc3_listener_udp.h \
+		atsc3_fdt.h \
+		atsc3_sls_metadata_fragment_types.h \
+		atsc3_lls_sls_monitor_output_buffer.h \
+		atsc3_player_ffplay.h 
+	$(CC) $(ASAN) $(CFLAGS) $(DEBUG)  -c atsc3_lls_types.c -o atsc3_lls_types_asan.o
 
 atsc3_aeat_types.o: atsc3_aeat_types.h atsc3_aeat_types.c
 	$(CC) $(CFLAGS) $(DEBUG)  -c atsc3_aeat_types.c
+
+atsc3_aeat_types_asan.o: atsc3_aeat_types.h atsc3_aeat_types.c
+	$(CC) $(ASAN) $(CFLAGS) $(DEBUG)  -c atsc3_aeat_types.c -o atsc3_aeat_types_asan.o
 
 atsc3_aeat_parser.o: atsc3_aeat_parser.h atsc3_aeat_parser.c
 	$(CC) $(CFLAGS) $(DEBUG)  -c atsc3_aeat_parser.c
@@ -281,11 +312,20 @@ atsc3_lls_mmt_utils.o: atsc3_lls_mmt_utils.h atsc3_lls_mmt_utils.c
 atsc3_lls_alc_utils.o: atsc3_lls_alc_utils.h atsc3_lls_alc_utils.c
 	$(CC) $(CFLAGS) $(DEBUG)  -c atsc3_lls_alc_utils.c
 
+atsc3_lls_alc_utils_asan.o: atsc3_lls_alc_utils.h atsc3_lls_alc_utils.c
+	$(CC) $(ASAN) $(CFLAGS) $(DEBUG)  -c atsc3_lls_alc_utils.c -o atsc3_lls_alc_utils_asan.o
+
 atsc3_lls_sls_parser.o: atsc3_lls_sls_parser.h atsc3_lls_sls_parser.c
 	$(CC) $(CFLAGS) $(DEBUG)  -c atsc3_lls_sls_parser.c
 
+atsc3_lls_sls_parser_asan.o: atsc3_lls_sls_parser.h atsc3_lls_sls_parser.c
+	$(CC) $(ASAN) $(CFLAGS) $(DEBUG)  -c atsc3_lls_sls_parser.c -o atsc3_lls_sls_parser_asan.o
+
 atsc3_lls_slt_parser.o: atsc3_lls_slt_parser.h atsc3_lls_slt_parser.c
 	$(CC) $(CFLAGS) $(DEBUG)  -c atsc3_lls_slt_parser.c
+
+atsc3_lls_slt_parser_asan.o: atsc3_lls_slt_parser.h atsc3_lls_slt_parser.c
+	$(CC) $(ASAN) $(CFLAGS) $(DEBUG)  -c atsc3_lls_slt_parser.c -o atsc3_lls_slt_parser_asan.o
 
 atsc3_lls_sls_monitor_output_buffer.o: atsc3_lls_sls_monitor_output_buffer.h atsc3_lls_sls_monitor_output_buffer.c
 	$(CC) $(CFLAGS) $(DEBUG)  -c atsc3_lls_sls_monitor_output_buffer.c
@@ -594,6 +634,134 @@ libatsc3_intermediate.o: atsc3_lls.o \
 		atsc3_sls_alc_flow.o \
 		avltree.o		
 		
+		
+libatsc3_intermediate_asan.o: \
+		atsc3_lls_asan.o \
+		atsc3_lls_types_asan.o \
+		atsc3_lls_slt_parser_asan.o \
+		atsc3_lls_sls_parser_asan.o \
+		atsc3_lls_alc_utils_asan.o \
+		atsc3_alp_types.o \
+		atsc3_alp_parser.o \
+		atsc3_baseband_packet_types.o \
+		atsc3_mmtp_packet_types.o \
+		atsc3_mmtp_packet_utils.o \
+		atsc3_mmtp_parser.o \
+		atsc3_mmtp_ntp32_to_pts.o \
+		atsc3_utils.o \
+		atsc3_mmt_signalling_message_types.o \
+		atsc3_mmt_signalling_message.o \
+		atsc3_mmt_mpu_parser.o \
+		atsc3_mmt_mpu_sample_format_parser.o \
+		atsc3_mmt_context_mfu_depacketizer.o \
+		atsc3_alc_rx.o \
+		atsc3_alc_session.o \
+		atsc3_mmt_mpu_utils.o \
+		atsc3_player_ffplay.o \
+		atsc3_alc_utils.o \
+		atsc3_lls_sls_monitor_output_buffer.o \
+		atsc3_lls_sls_monitor_output_buffer_utils.o \
+		atsc3_lls_mmt_utils.o \
+		atsc3_listener_udp.o \
+		atsc3_ip_udp_rtp_parser.o \
+		atsc3_gzip.o \
+		atsc3_stltp_types.o \
+		atsc3_stltp_parser.o \
+		atsc3_fdt.o \
+		atsc3_fdt_parser.o \
+		atsc3_route_mpd.o \
+		atsc3_route_usbd.o \
+		atsc3_route_s_tsid.o \
+		atsc3_route_sls_processor.o \
+		atsc3_sls_held_fragment.o  \
+		atsc3_sls_metadata_fragment_types.o \
+		atsc3_sls_metadata_fragment_types_parser.o \
+		atsc3_mbms_envelope_xml.o	\
+		atsc3_mime_multipart_related.o \
+		atsc3_mime_multipart_related_parser.o \
+		atsc3_mbms_envelope_parser.o \
+		strnstr.o \
+		xml.o \
+		fixups_timespec_get.o \
+		atsc3_dstp_types.o \
+		atsc3_a344_receiver_query_api.o \
+		atsc3_aeat_types.o \
+		atsc3_aeat_parser.o \
+		atsc3_packet_statistics_types.o \
+		atsc3_hevc_nal_extractor.o \
+		atsc3_pcap_type.o \
+		atsc3_route_package_utils.o \
+		atsc3_pcre2_regex_utils.o \
+		atsc3_route_dash_utils.o \
+		atsc3_utils_sha256.o \
+		atsc3_route_object.o \
+		atsc3_sls_alc_flow.o \
+		avltree.o
+
+	ld  -o libatsc3_intermediate_asan.o -r \
+		atsc3_lls_asan.o \
+		atsc3_lls_types_asan.o \
+		atsc3_lls_slt_parser_asan.o \
+		atsc3_lls_sls_parser_asan.o \
+		atsc3_lls_alc_utils_asan.o \
+		atsc3_alp_types.o \
+		atsc3_alp_parser.o \
+		atsc3_baseband_packet_types.o \
+		atsc3_mmtp_packet_types.o \
+		atsc3_mmtp_packet_utils.o \
+		atsc3_mmtp_parser.o \
+		atsc3_mmtp_ntp32_to_pts.o \
+		atsc3_utils.o \
+		atsc3_mmt_signalling_message_types.o \
+		atsc3_mmt_signalling_message.o \
+		atsc3_mmt_mpu_parser.o \
+		atsc3_mmt_mpu_sample_format_parser.o \
+		atsc3_mmt_context_mfu_depacketizer.o \
+		atsc3_alc_rx.o \
+		atsc3_alc_session.o \
+		atsc3_mmt_mpu_utils.o \
+		atsc3_player_ffplay.o \
+		atsc3_alc_utils.o \
+		atsc3_lls_sls_monitor_output_buffer.o \
+		atsc3_lls_sls_monitor_output_buffer_utils.o \
+		atsc3_lls_mmt_utils.o \
+		atsc3_listener_udp.o \
+		atsc3_ip_udp_rtp_parser.o \
+		atsc3_gzip.o \
+		atsc3_stltp_types.o \
+		atsc3_stltp_parser.o \
+		atsc3_fdt.o \
+		atsc3_fdt_parser.o \
+		atsc3_route_mpd.o \
+		atsc3_route_usbd.o \
+		atsc3_route_s_tsid.o \
+		atsc3_route_sls_processor.o \
+		atsc3_sls_held_fragment.o  \
+		atsc3_sls_metadata_fragment_types.o \
+		atsc3_sls_metadata_fragment_types_parser.o \
+		atsc3_mbms_envelope_xml.o	\
+		atsc3_mime_multipart_related.o \
+		atsc3_mime_multipart_related_parser.o \
+		atsc3_mbms_envelope_parser.o \
+		xml.o \
+		strnstr.o \
+		fixups_timespec_get.o \
+		atsc3_dstp_types.o \
+		atsc3_a344_receiver_query_api.o \
+		atsc3_aeat_types.o \
+		atsc3_aeat_parser.o \
+		atsc3_packet_statistics_types.o \
+		atsc3_hevc_nal_extractor.o \
+		atsc3_pcap_type.o \
+		atsc3_route_package_utils.o \
+		atsc3_pcre2_regex_utils.o \
+		atsc3_route_dash_utils.o \
+		atsc3_utils_sha256.o \
+		atsc3_route_object.o \
+		atsc3_sls_alc_flow.o \
+		avltree.o		
+		
+		
 
 libatsc3.o: libatsc3_intermediate.o bento4_mock.o
 	ld  -o libatsc3.o -r libatsc3_intermediate.o bento4_mock.o
@@ -615,6 +783,9 @@ bento4_gpl.o: bento4/ISOBMFFTrackJoiner.h bento4/ISOBMFFTrackJoiner.cpp
 libatsc3_bento4_gpl.o: libatsc3_intermediate.o bento4_gpl.o
 	ld  -o libatsc3_bento4_gpl.o -r libatsc3_intermediate.o bento4_gpl.o -L../bento/lib -lap4
 #-lm -lpthread -lz
+
+libatsc3_bento4_gpl_asan.o: libatsc3_intermediate_asan.o bento4_gpl.o
+	ld  -o libatsc3_bento4_gpl_asan.o -r libatsc3_intermediate_asan.o bento4_gpl.o -L../bento/lib -lap4
 
 ###  unit test generation - drivers are in test/
 
@@ -1132,9 +1303,9 @@ tools/atsc3_alc_listener_mde_writer: tools/atsc3_alc_listener_mde_writer.cpp	lib
 		$(LOCAL_LD_LIBS) \
 		-o tools/atsc3_alc_listener_mde_writer
 		
-tools/atsc3_alc_listener_mde_writer_asan: tools/atsc3_alc_listener_mde_writer.cpp	libatsc3_bento4_gpl.o
+tools/atsc3_alc_listener_mde_writer_asan: tools/atsc3_alc_listener_mde_writer.cpp	libatsc3_bento4_gpl_asan.o
 	$(CXX)  $(ASAN) $(CFLAGS) $(DEBUG)  tools/atsc3_alc_listener_mde_writer.cpp \
-		libatsc3_bento4_gpl.o \
+		libatsc3_bento4_gpl_asan.o \
 		-I../bento/include/ \
 		$(LOCAL_LD_LIBS) \
 		-o tools/atsc3_alc_listener_mde_writer_asan
