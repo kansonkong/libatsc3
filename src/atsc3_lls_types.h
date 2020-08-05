@@ -788,7 +788,10 @@ typedef struct lls_sls_alc_monitor {
 	lls_sls_alc_session_t* 					lls_alc_session;
 	
 	atsc3_fdt_instance_t* 					atsc3_fdt_instance;
+	atsc3_fdt_instance_t* 					atsc3_fdt_instance_pending; 			//used for a new pending fdt_instance for our SLS, invoked in atsc3_route_sls_process_from_alc_packet_and_file
+
     atsc3_sls_metadata_fragments_t* 		atsc3_sls_metadata_fragments;
+    atsc3_sls_metadata_fragments_t* 		atsc3_sls_metadata_fragments_pending;	//used for a new pending set of SLS fragments, which need to be checked for changes before re-dispatching events
 
     uint32_t 	usbd_tsi;
 	uint32_t 	stsid_tsi;
@@ -806,15 +809,19 @@ typedef struct lls_sls_alc_monitor {
     //atsc3_sls_alc_flow_v 	atsc3_sls_alc_all_mediainfo_flow_v;
 	
 	//method callback handlers
-    atsc3_alc_on_object_close_flag_s_tsid_content_location_f	atsc3_lls_sls_alc_on_object_close_flag_s_tsid_content_location;
-	atsc3_alc_on_route_mpd_patched_f    						atsc3_lls_sls_alc_on_route_mpd_patched;                             //dispatched in atsc3_route_sls_processor.c
-
+    atsc3_alc_on_object_close_flag_s_tsid_content_location_f	atsc3_lls_sls_alc_on_object_close_flag_s_tsid_content_location_callback;
+	
+	atsc3_alc_on_route_mpd_patched_f    						atsc3_lls_sls_alc_on_route_mpd_patched_callback;                             //dispatched in atsc3_route_sls_processor.c
+	atsc3_alc_on_route_mpd_patched_with_filename_f		 		atsc3_lls_sls_alc_on_route_mpd_patched_with_filename_callback;				//dispatched in atsc3_route_sls_processor.c
+	
 	atsc3_alc_on_package_extract_completed_f					atsc3_lls_sls_alc_on_package_extract_completed_callback;
 
 	//this should be in the sls_monitor...
 	atsc3_sls_on_held_trigger_received_f						atsc3_sls_on_held_trigger_received_callback;
+	atsc3_sls_on_held_trigger_received_with_version_f			atsc3_sls_on_held_trigger_received_with_version_callback;
 
-	uint64_t								lct_packets_received_count;
+
+	uint64_t													lct_packets_received_count;
 
 
     //jjustman-2020-07-01 #WI - todo: dispatch HELD block_t* payload to application callback
@@ -926,7 +933,6 @@ ATSC3_VECTOR_BUILDER_METHODS_INTERFACE(lls_slt_monitor, lls_sls_alc_session_flow
 ATSC3_VECTOR_BUILDER_METHODS_INTERFACE(lls_slt_monitor, lls_slt_service_id_group_id_cache);
 
 
-
 lls_slt_service_id_t* lls_slt_service_id_new_from_atsc3_lls_slt_service(atsc3_lls_slt_service_t* atsc3_lls_slt_service);
 
 lls_slt_service_id_group_id_cache_t* lls_slt_monitor_find_lls_slt_service_id_group_id_cache_from_lls_group_id(lls_slt_monitor_t* lls_slt_monitor, uint8_t lls_group_id);
@@ -936,6 +942,9 @@ atsc3_lls_slt_service_t* lls_slt_monitor_find_lls_slt_service_id_group_id_cache_
 
 void atsc3_lls_sls_alc_monitor_increment_lct_packet_received_count(lls_sls_alc_monitor_t* lls_sls_alc_monitor);
 void atsc3_lls_sls_alc_monitor_check_all_s_tsid_flows_has_given_up_route_objects(lls_sls_alc_monitor_t* lls_sls_alc_monitor);
+
+bool atsc3_lls_sls_alc_monitor_sls_metadata_fragements_has_held_changed(lls_sls_alc_monitor_t* atsc3_lls_sls_alc_monitor, atsc3_sls_metadata_fragments_t* atsc3_sls_metadata_fragments_pending);
+block_t* atsc3_sls_metadata_fragements_get_sls_held_fragment_duplicate_raw_xml_or_empty(atsc3_sls_metadata_fragments_t* atsc3_sls_metadata_fragments_pending);
 
 
 #define _ATSC3_LLS_TYPES_ERROR(...)   __LIBATSC3_TIMESTAMP_ERROR(__VA_ARGS__);
