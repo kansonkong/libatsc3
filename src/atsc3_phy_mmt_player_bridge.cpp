@@ -724,6 +724,7 @@ void atsc3_sls_on_held_trigger_received_callback_impl(uint16_t service_id, block
     len_aligned += 8-(len_aligned%8);
     char* xml_payload_copy = (char*)calloc(len_aligned , sizeof(char));
     strncpy(xml_payload_copy, (char*)block_ptr, block_len);
+    __ATSC3_INFO("HELD: change: %s", xml_payload_copy);
 
     Atsc3NdkClient_ptr->atsc3_sls_on_held_trigger_received_callback_jni(service_id, (const char*)xml_payload_copy);
 
