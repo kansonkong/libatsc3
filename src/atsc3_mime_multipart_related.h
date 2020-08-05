@@ -34,6 +34,7 @@ typedef struct atsc3_mime_multipart_related_payload {
 
 	//from atsc3_mbms_metadata_item_v - mapped in atsc3_route_package_extract_unsigned_payload
 	char* 						content_type;							//back-patch from envelope.xml
+
 	char* 						valid_from_string;
 	char* 						valid_until_string;
 	uint32_t					version;								//back-patch from envelope.xml

@@ -350,6 +350,10 @@ void atsc3_lls_sls_alc_monitor_check_all_s_tsid_flows_has_given_up_route_objects
 					}
 				}
 			}
+
+			_ATSC3_LLS_TYPES_INFO("atsc3_lls_sls_alc_monitor_check_all_s_tsid_flows_has_given_up_route_objects: completed atsc3_sls_alc_flow: %p, with atsc3_route_objects.count: %d",
+					atsc3_sls_alc_flow,
+					atsc3_sls_alc_flow->atsc3_route_object_v.count);
 		}
 	}
 
