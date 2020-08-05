@@ -241,10 +241,10 @@ void process_packet(u_char *user, const struct pcap_pkthdr *pkthdr, const u_char
 				__ERROR("Error in ALC decode: %d", retval);
 			}
 		} else {
-			__ERROR("Discarding packet: lls_sls_alc_monitor: %p, matching_lls_sls_alc_monitor: %p, matching_lls_slt_alc_session: %p, ", lls_sls_alc_monitor, matching_lls_sls_alc_monitor, matching_lls_slt_alc_session);
+			__INFO("Discarding packet: lls_sls_alc_monitor: %p, matching_lls_sls_alc_monitor: %p, matching_lls_slt_alc_session: %p, ", lls_sls_alc_monitor, matching_lls_sls_alc_monitor, matching_lls_slt_alc_session);
 		}
 	} else {
-		__ERROR("Discarding packet: lls_sls_alc_monitor: %p, matching_lls_sls_alc_monitor: %p, matching_lls_slt_alc_session: %p, ", lls_sls_alc_monitor, matching_lls_sls_alc_monitor, matching_lls_slt_alc_session);
+		__INFO("Discarding packet: lls_sls_alc_monitor: %p, matching_lls_sls_alc_monitor: %p, matching_lls_slt_alc_session: %p", lls_sls_alc_monitor, matching_lls_sls_alc_monitor, matching_lls_slt_alc_session);
 	}
 
 udp_packet_free:

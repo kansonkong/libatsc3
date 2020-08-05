@@ -234,7 +234,7 @@ static block_t* __block_Alloc_internal(int size_requested) {
 	return block;
 }
 
-block_t* block_Promote(char* string) {
+block_t* block_Promote(const char* string) {
 	int string_len = strlen(string);
 	block_t* new_block = __block_Alloc_internal(string_len);
 	block_Write(new_block, (uint8_t*)string, string_len);
