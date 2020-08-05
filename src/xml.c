@@ -915,7 +915,7 @@ struct xml_document* xml_open_document(FILE* source) {
 		buffer = calloc(source_fp_size, sizeof(uint8_t));
 		size_t read = fread(buffer, source_fp_size, 1, source);
 		if(!read) {
-			_XML_ERROR("%d::xml_open_document - fread returned: %d", __LINE__, read);
+			_XML_ERROR("%d::xml_open_document - fread returned: %zu", __LINE__, read);
 		} else {
 			single_fread_success = true;
 			document_length = source_fp_size;
