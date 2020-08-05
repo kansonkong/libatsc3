@@ -102,6 +102,8 @@ typedef struct atsc3_route_object {
 
 	uint32_t				tsi;											//keep reference for our tsi / toi just to be sure...
 	uint32_t				toi;
+	bool					is_toi_init;
+
 	FILE*					recovery_file_handle;							//keep tracek of our recovery file handle instead of fopen/fclose on every lct packet
 
 	char*					temporary_object_recovery_filename; 			//temporary reference so we can remove from on-disk if we end up being marked as 'given up'
@@ -131,6 +133,7 @@ ATSC3_VECTOR_BUILDER_METHODS_INTERFACE(atsc3_route_object, atsc3_route_object_lc
 ATSC3_VECTOR_BUILDER_METHODS_PARENT_INTERFACE_FREE(atsc3_route_object);
 
 void atsc3_route_object_add_atsc3_route_object_lct_packet_len(atsc3_route_object_t* atsc3_route_object, atsc3_route_object_lct_packet_received_t* atsc3_route_object_lct_packet_received);
+void atsc3_route_object_set_is_toi_init_object(atsc3_route_object_t* atsc3_route_object, bool is_toi_init);
 
 void atsc3_route_object_set_temporary_object_recovery_filename_if_null(atsc3_route_object_t* atsc3_route_object, char* temporary_filename);
 void atsc3_route_object_clear_temporary_object_recovery_filename(atsc3_route_object_t* atsc3_route_object);
