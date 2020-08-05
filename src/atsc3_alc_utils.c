@@ -792,6 +792,16 @@ int atsc3_alc_packet_persist_to_toi_resource_process_sls_mbms_and_emit_callback(
         } else {
         	//jjustman-2020-07-28 - todo: use atsc3_route_object for fp handle reference
 
+        	//jjustman-2020-08-05 - dirty hack - don't process ROUTE object completion if we don't have our SLS parsed yet,
+        	// i.e. lls_sls_alc_monitor->atsc3_sls_metadata_fragments is null
+
+        	if(!lls_sls_alc_monitor->atsc3_sls_metadata_fragments) {
+                __ALC_UTILS_ERROR("lls_sls_alc_monitor->atsc3_sls_metadata_fragments is NULL, tsi: %u, toi: %u, bailing on object recovery complete!",
+                        alc_packet->def_lct_hdr->tsi, alc_packet->def_lct_hdr->toi);
+                bytesWritten = -3;
+                goto cleanup;
+            }
+
             s_tsid_content_location = alc_packet_dump_to_object_get_s_tsid_filename(udp_flow, alc_packet, lls_sls_alc_monitor);
      
             if(strncmp(temporary_filename, s_tsid_content_location, __MIN(strlen(temporary_filename), strlen(s_tsid_content_location))) !=0) {
