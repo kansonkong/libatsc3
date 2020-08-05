@@ -147,6 +147,7 @@ void atsc3_route_object_reset_and_free_atsc3_route_object_lct_packet_received(at
 
 //used in atsc3_lls_sls_alc_monitor_check_all_s_tsid_flows_has_given_up_route_objects, unlink abandonded / stale objects from disk after N seconds
 void atsc3_route_object_reset_and_free_and_unlink_recovery_file_atsc3_route_object_lct_packet_received(atsc3_route_object_t* atsc3_route_object);
+void atsc3_route_object_free_lct_packet_received_tree(atsc3_route_object_t* atsc3_route_object);
 
 #define _ATSC3_ROUTE_OBJECT_ERROR(...)   __LIBATSC3_TIMESTAMP_ERROR(__VA_ARGS__);
 #define _ATSC3_ROUTE_OBJECT_WARN(...)    __LIBATSC3_TIMESTAMP_WARN(__VA_ARGS__);;

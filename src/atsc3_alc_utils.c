@@ -892,17 +892,17 @@ int atsc3_alc_packet_persist_to_toi_resource_process_sls_mbms_and_emit_callback(
                 	}
                 }
 
-                //emit lls alc context callback
-                if(lls_sls_alc_monitor->atsc3_lls_sls_alc_on_object_close_flag_s_tsid_content_location) {
-					lls_sls_alc_monitor->atsc3_lls_sls_alc_on_object_close_flag_s_tsid_content_location(alc_packet->def_lct_hdr->tsi, alc_packet->def_lct_hdr->toi, s_tsid_content_location);
-
-                }
-
-                //jjustman-2020-07-28 - purge our lct_packet_received list as we are moved, and remove atsc3_route_object from flow
-            	//atsc3_lls_sls_alc_monitor_check_all_s_tsid_flows_has_given_up_route_objects will handle object unlinking for media fragment
-            	atsc3_route_object_set_object_recovery_complete(atsc3_route_object);
-
             }
+			//emit lls alc context callback
+			if(lls_sls_alc_monitor->atsc3_lls_sls_alc_on_object_close_flag_s_tsid_content_location) {
+				lls_sls_alc_monitor->atsc3_lls_sls_alc_on_object_close_flag_s_tsid_content_location(alc_packet->def_lct_hdr->tsi, alc_packet->def_lct_hdr->toi, s_tsid_content_location);
+
+			}
+
+			//jjustman-2020-07-28 - purge our lct_packet_received list as we are moved, and remove atsc3_route_object from flow
+			//atsc3_lls_sls_alc_monitor_check_all_s_tsid_flows_has_given_up_route_objects will handle object unlinking for media fragment
+			//purging of full atsc3_route_object occurs in atsc3_alc_persist_route_object_lct_packet_received_for_lls_sls_alc_monitor_all_flows
+		   atsc3_route_object_set_object_recovery_complete(atsc3_route_object);
         }
 	} else {
 		__ALC_UTILS_IOTRACE("dumping to file step: %s, is complete: %d", temporary_filename, alc_packet->close_object_flag);
@@ -1383,7 +1383,6 @@ atsc3_route_object_t* atsc3_alc_persist_route_object_lct_packet_received_for_lls
 
 		atsc3_lls_sls_alc_monitor_increment_lct_packet_received_count(lls_sls_alc_monitor);
 		atsc3_route_object = atsc3_sls_alc_flow_route_object_add_unique_lct_packet_received(&lls_sls_alc_monitor->atsc3_sls_alc_all_s_tsid_flow_v, alc_packet);
-		(lls_sls_alc_monitor);
 	}
 
 	__ALC_UTILS_DEBUG("atsc3_alc_persist_route_object_lct_packet_received_for_lls_sls_alc_monitor_all_flows: complete, tsi: %d, toi: %d, lls_sls_alc_monitor is: %p, size: %d, atsc3_route_object: %p",

@@ -16,6 +16,10 @@ atsc3_route_object.c    : 166:DEBUG:1595953002.6642:atsc3_route_object_reset_and
 
 #include "atsc3_route_object.h"
 
+//default free for this item since we don't calloc any members
+ATSC3_VECTOR_BUILDER_METHODS_ITEM_FREE(atsc3_route_object_lct_packet_received);
+ATSC3_VECTOR_BUILDER_METHODS_IMPLEMENTATION(atsc3_route_object, atsc3_route_object_lct_packet_received);
+
 int _ROUTE_OBJECT_INFO_ENABLED = 1;
 int _ROUTE_OBJECT_DEBUG_ENABLED = 0;
 int _ROUTE_OBJECT_TRACE_ENABLED = 0;
@@ -36,21 +40,42 @@ atsc3_route_object_t* atsc3_route_object_new() {
 	return atsc3_route_object;
 }
 
-ATSC3_VECTOR_BUILDER_METHODS_IMPLEMENTATION(atsc3_route_object, atsc3_route_object_lct_packet_received);
-//default free for this item since we don't calloc any members
-ATSC3_VECTOR_BUILDER_METHODS_ITEM_FREE(atsc3_route_object_lct_packet_received);
-
 //jjustman-2020-07-27 - TODO: add ATSC3_VECTOR_BUILDER_METHODS_PARENT_ITEM_FREE
 void atsc3_route_object_free(atsc3_route_object_t** atsc3_route_object_p) {
 	if(atsc3_route_object_p) {
 		atsc3_route_object_t* atsc3_route_object = *atsc3_route_object_p;
 		if(atsc3_route_object) {
-			atsc3_route_object_dealloc_atsc3_route_object_lct_packet_received(atsc3_route_object);
 
 			freeclean((void**)&atsc3_route_object->temporary_object_recovery_filename);
 			freeclean((void**)&atsc3_route_object->final_object_recovery_filename);
 
+			_ATSC3_ROUTE_OBJECT_DEBUG("atsc3_route_object_free: p: %p, tsi: %d, toi: %d, before closing fp: %p, atsc3_route_object_lct_packet_received count: %d (size: %d)",
+					atsc3_route_object,
+					atsc3_route_object->tsi,
+					atsc3_route_object->toi,
+					atsc3_route_object->recovery_file_handle,
+					atsc3_route_object->atsc3_route_object_lct_packet_received_v.count,
+					atsc3_route_object->atsc3_route_object_lct_packet_received_v.size
+			);
+
+			//most important to clear the lct packets recv
 			atsc3_route_object_recovery_file_handle_close(atsc3_route_object);
+
+			//jjustman-2020-08-04 - important, always call these two together..
+			atsc3_route_object_free_atsc3_route_object_lct_packet_received(atsc3_route_object);
+			atsc3_route_object->most_recent_atsc3_route_object_lct_packet_received = NULL;
+
+			atsc3_route_object_free_lct_packet_received_tree(atsc3_route_object);
+
+			_ATSC3_ROUTE_OBJECT_DEBUG("atsc3_route_object_free: p: %p, tsi: %d, toi: %d, after closing fp: %p, atsc3_route_object_lct_packet_received count: %d (size: %d)",
+					atsc3_route_object,
+							atsc3_route_object->tsi,
+							atsc3_route_object->toi,
+					atsc3_route_object->recovery_file_handle,
+								atsc3_route_object->atsc3_route_object_lct_packet_received_v.count,
+								atsc3_route_object->atsc3_route_object_lct_packet_received_v.size
+						);
+			atsc3_route_object->most_recent_atsc3_route_object_lct_packet_received = NULL;
 
 			free(atsc3_route_object);
 			atsc3_route_object = NULL;
@@ -79,20 +104,56 @@ void atsc3_route_object_set_final_object_recovery_filename(atsc3_route_object_t*
 }
 
 /*
- * only run this when you are done working with atsc3_route_object_lct_packets
+ * method: atsc3_route_object_set_object_recovery_complete
+ *
+ * used to mark this atsc3_route_object as fully recovered and persisted on disk
+ *
+ * only run this when you are done working with atsc3_route_object_lct_packets,
+ * will release internal LCT packet container/counts
+ *
+ * 	invoked: atsc3_alc_persist_route_object_lct_packet_received_for_lls_sls_alc_monitor_all_flows
  *
  * borrowed from atsc3_route_object_reset_and_free_atsc3_route_object_lct_packet_received
  */
 void atsc3_route_object_set_object_recovery_complete(atsc3_route_object_t* atsc3_route_object) {
  	atsc3_route_object->recovery_complete_timestamp = gtl();
- 	_ATSC3_ROUTE_OBJECT_DEBUG("atsc3_route_object_set_object_recovery_complete: atsc3_route_object: %p, tsi: %d, toi: %d, atsc3_route_object_lct_packet_received_v.count: %d, timestamp: %.2f",
- 			atsc3_route_object,
- 			atsc3_route_object->tsi,
- 			atsc3_route_object->toi,
- 			atsc3_route_object->atsc3_route_object_lct_packet_received_v.count,
- 			atsc3_route_object->recovery_complete_timestamp);
+
+// 	_ATSC3_ROUTE_OBJECT_DEBUG("atsc3_route_object_set_object_recovery_complete: atsc3_route_object: %p, tsi: %d, toi: %d, atsc3_route_object_lct_packet_received_v.count: %d, timestamp: %.2lu",
+// 			atsc3_route_object,
+// 			atsc3_route_object->tsi,
+// 			atsc3_route_object->toi,
+// 			atsc3_route_object->atsc3_route_object_lct_packet_received_v.count,
+// 			atsc3_route_object->recovery_complete_timestamp);
  	//this will be invoked from atsc3_lls_sls_alc_monitor_check_all_s_tsid_flows_has_given_up_route_objects
  	//atsc3_route_object_reset_and_free_atsc3_route_object_lct_packet_received(atsc3_route_object);
+
+ 	//borrowed from atsc3_route_object_free
+
+ 	_ATSC3_ROUTE_OBJECT_DEBUG("atsc3_route_object_set_object_recovery_complete: p: %p, tsi: %d, toi: %d, before closing fp: %p, atsc3_route_object_lct_packet_received count: %d (size: %d)",
+ 			atsc3_route_object,
+			atsc3_route_object->tsi,
+			atsc3_route_object->toi,
+			atsc3_route_object->recovery_file_handle,
+			atsc3_route_object->atsc3_route_object_lct_packet_received_v.count,
+			atsc3_route_object->atsc3_route_object_lct_packet_received_v.size
+	);
+	atsc3_route_object_recovery_file_handle_close(atsc3_route_object);
+
+	//jjustman-2020-08-04 - important, always call these two together..
+	atsc3_route_object_free_atsc3_route_object_lct_packet_received(atsc3_route_object);
+	atsc3_route_object->most_recent_atsc3_route_object_lct_packet_received = NULL;
+
+	atsc3_route_object_free_lct_packet_received_tree(atsc3_route_object);
+	//end borrowed from atsc3_route_object_free
+
+	_ATSC3_ROUTE_OBJECT_DEBUG("atsc3_route_object_set_object_recovery_complete: p: %p, tsi: %d, toi: %d, after closing fp: %p, atsc3_route_object_lct_packet_received count: %d (size: %d)",
+			atsc3_route_object,
+ 			atsc3_route_object->tsi,
+			atsc3_route_object->toi,
+			atsc3_route_object->recovery_file_handle,
+			atsc3_route_object->atsc3_route_object_lct_packet_received_v.count,
+			atsc3_route_object->atsc3_route_object_lct_packet_received_v.size
+	);
 }
 
 
@@ -281,7 +342,7 @@ bool atsc3_route_object_is_complete(atsc3_route_object_t* atsc3_route_object) {
 	}
 
 	if(!atsc3_route_object->object_length || last_object_position != atsc3_route_object->object_length) {
-		_ATSC3_ROUTE_OBJECT_DEBUG("atsc3_route_object_is_complete: false, has_missing_source_blocks at end, tsi: %d, toi: %d, atsc3_route_object_lct_packet_received_v: %d, last_object_position: %d, atsc3_route_object->object_length: %d",
+		_ATSC3_ROUTE_OBJECT_TRACE("atsc3_route_object_is_complete: false, has_missing_source_blocks at end, tsi: %d, toi: %d, atsc3_route_object_lct_packet_received_v: %d, last_object_position: %d, atsc3_route_object->object_length: %d",
 				atsc3_route_object->tsi, atsc3_route_object->toi,
 				atsc3_route_object->atsc3_route_object_lct_packet_received_v.count,
 				last_object_position,
@@ -321,16 +382,11 @@ void atsc3_route_object_reset_and_free_atsc3_route_object_lct_packet_received(at
 			atsc3_route_object->atsc3_route_object_lct_packet_received_v.count);
 #endif
 
-	atsc3_route_object->most_recent_atsc3_route_object_lct_packet_received = NULL;
+	//jjustman-2020-08-04 - important, always call these two together..
 	atsc3_route_object_free_atsc3_route_object_lct_packet_received(atsc3_route_object);
+	atsc3_route_object->most_recent_atsc3_route_object_lct_packet_received = NULL;
 
-	//clean up our stale avltree entries
-	struct avltree_node* node;
-	while((node = avltree_first(&atsc3_route_object->atsc3_route_object_lct_packet_received_tree))) {
-		avltree_remove(node, &atsc3_route_object->atsc3_route_object_lct_packet_received_tree);
-		atsc3_route_object_lct_packet_received_node_t *p = avltree_container_of(node, atsc3_route_object_lct_packet_received_node_t, node);
-		freesafe((void*)p);
-	}
+	atsc3_route_object_free_lct_packet_received_tree(atsc3_route_object);
 
 	atsc3_route_object->expected_route_object_lct_packet_count = 0;
 	atsc3_route_object->expected_route_object_lct_packet_len_for_count = 0;
@@ -373,23 +429,27 @@ void atsc3_route_object_reset_and_free_and_unlink_recovery_file_atsc3_route_obje
 			atsc3_route_object->atsc3_route_object_lct_packet_received_v.count);
 #endif
 
-	atsc3_route_object->most_recent_atsc3_route_object_lct_packet_received = NULL;
+	_ATSC3_ROUTE_OBJECT_DEBUG("atsc3_route_object_reset_and_free_and_unlink_recovery_file_atsc3_route_object_lct_packet_received: p: %p, tsi: %d, toi: %d, before closing fp: %p, atsc3_route_object_lct_packet_received count: %d (size: %d)",
+			atsc3_route_object,
+			atsc3_route_object->tsi,
+			atsc3_route_object->toi,
+			atsc3_route_object->recovery_file_handle,
+			atsc3_route_object->atsc3_route_object_lct_packet_received_v.count,
+			atsc3_route_object->atsc3_route_object_lct_packet_received_v.size
+	);
+
+
+	atsc3_route_object_recovery_file_handle_close(atsc3_route_object);
+
+	//jjustman-2020-08-04 - important, always call these two together..
 	atsc3_route_object_free_atsc3_route_object_lct_packet_received(atsc3_route_object);
+	atsc3_route_object->most_recent_atsc3_route_object_lct_packet_received = NULL;
 
-	//clean up our avltree (stale) entries
-
-	struct avltree_node* node;
-	while((node = avltree_first(&atsc3_route_object->atsc3_route_object_lct_packet_received_tree))) {
-		avltree_remove(node, &atsc3_route_object->atsc3_route_object_lct_packet_received_tree);
-        atsc3_route_object_lct_packet_received_node_t *p = avltree_container_of(node, atsc3_route_object_lct_packet_received_node_t, node);
-        freesafe((void*)p);
-	}
+	atsc3_route_object_free_lct_packet_received_tree(atsc3_route_object);
 
 	atsc3_route_object->expected_route_object_lct_packet_count = 0;
 	atsc3_route_object->expected_route_object_lct_packet_len_for_count = 0;
 	atsc3_route_object->cumulative_lct_packet_len = 0;
-	atsc3_route_object_recovery_file_handle_close(atsc3_route_object);
-
 
 
 	//jjustman-2020-07-28: unlink temporary_object_recovery_filename
@@ -421,5 +481,24 @@ void atsc3_route_object_reset_and_free_and_unlink_recovery_file_atsc3_route_obje
 				atsc3_route_object->atsc3_route_object_lct_packet_received_v.count);
 #endif
 
+	_ATSC3_ROUTE_OBJECT_DEBUG("atsc3_route_object_reset_and_free_and_unlink_recovery_file_atsc3_route_object_lct_packet_received: p: %p, tsi: %d, toi: %d, after closing fp: %p, atsc3_route_object_lct_packet_received count: %d (size: %d)",
+			atsc3_route_object,
+			atsc3_route_object->tsi,
+			atsc3_route_object->toi,
+			atsc3_route_object->recovery_file_handle,
+			atsc3_route_object->atsc3_route_object_lct_packet_received_v.count,
+			atsc3_route_object->atsc3_route_object_lct_packet_received_v.size
+	);
+
+}
+
+void atsc3_route_object_free_lct_packet_received_tree(atsc3_route_object_t* atsc3_route_object) {
+	//clean up our stale avltree entries
+	struct avltree_node* node;
+	while((node = avltree_first(&atsc3_route_object->atsc3_route_object_lct_packet_received_tree))) {
+		avltree_remove(node, &atsc3_route_object->atsc3_route_object_lct_packet_received_tree);
+		atsc3_route_object_lct_packet_received_node_t *p = avltree_container_of(node, atsc3_route_object_lct_packet_received_node_t, node);
+		freesafe((void*)p);
+	}
 }
 

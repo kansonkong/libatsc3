@@ -187,56 +187,64 @@ void process_packet(u_char *user, const struct pcap_pkthdr *pkthdr, const u_char
 	clang optimized out matching_lls_slt_alc_session in the first conditional, so its added in the 3rd filter test for service_id
     */
 	
-	lls_sls_alc_session_t* matching_lls_slt_alc_session = lls_slt_alc_session_find_from_udp_packet(lls_slt_monitor, udp_packet->udp_flow.src_ip_addr, udp_packet->udp_flow.dst_ip_addr, udp_packet->udp_flow.dst_port);
-    if((lls_sls_alc_monitor && matching_lls_slt_alc_session) &&
-	   (dst_service_id_filter == NULL && dst_ip_addr_filter == NULL && dst_ip_port_filter == NULL) ||
-	   ((dst_service_id_filter != NULL && matching_lls_slt_alc_session && matching_lls_slt_alc_session->service_id == *dst_service_id_filter ) ||
-	    (dst_ip_addr_filter != NULL && dst_ip_port_filter == NULL && udp_packet->udp_flow.dst_ip_addr == *dst_ip_addr_filter) ||
-	    (dst_ip_addr_filter != NULL && dst_ip_port_filter != NULL && udp_packet->udp_flow.dst_ip_addr == *dst_ip_addr_filter && udp_packet->udp_flow.dst_port == *dst_ip_port_filter))) {
-		
-		//process ALC streams
-		int retval = alc_rx_analyze_packet_a331_compliant((char*)block_Get(udp_packet->data), block_Remaining_size(udp_packet->data), &alc_packet);
+    lls_sls_alc_monitor_t* matching_lls_sls_alc_monitor = atsc3_lls_sls_alc_monitor_find_from_udp_packet(lls_slt_monitor, udp_packet->udp_flow.src_ip_addr, udp_packet->udp_flow.dst_ip_addr, udp_packet->udp_flow.dst_port);
+	//only used for service id filtering.
+    lls_sls_alc_session_t* matching_lls_slt_alc_session = lls_slt_alc_session_find_from_udp_packet(lls_slt_monitor, udp_packet->udp_flow.src_ip_addr, udp_packet->udp_flow.dst_ip_addr, udp_packet->udp_flow.dst_port);
 
-#ifdef __MALLOC_DEBUGGING
+    if(matching_lls_sls_alc_monitor) {
+
+		if(matching_lls_slt_alc_session && (
+		   (dst_service_id_filter == NULL && dst_ip_addr_filter == NULL && dst_ip_port_filter == NULL) ||
+		   ((dst_service_id_filter != NULL && matching_lls_slt_alc_session && matching_lls_slt_alc_session->service_id == *dst_service_id_filter ) ||
+			(dst_ip_addr_filter != NULL && dst_ip_port_filter == NULL && udp_packet->udp_flow.dst_ip_addr == *dst_ip_addr_filter) ||
+			(dst_ip_addr_filter != NULL && dst_ip_port_filter != NULL && udp_packet->udp_flow.dst_ip_addr == *dst_ip_addr_filter && udp_packet->udp_flow.dst_port == *dst_ip_port_filter)))) {
+
+			//process ALC streams
+			int retval = alc_rx_analyze_packet_a331_compliant((char*)block_Get(udp_packet->data), block_Remaining_size(udp_packet->data), &alc_packet);
+
+	#ifdef __MALLOC_DEBUGGING
+			mcheck(0);
+	#endif
+
+			if(!retval) {
+				//check our alc_packet for a wrap-around TOI value, if it is a monitored TSI, and re-patch the MBMS MPD for updated availabilityStartTime and startNumber with last closed TOI values
+				atsc3_alc_packet_check_monitor_flow_for_toi_wraparound_discontinuity(alc_packet, matching_lls_sls_alc_monitor);
+	#ifdef __MALLOC_DEBUGGING
+	mcheck(0);
+	#endif
+
+				//keep track of our EXT_FTI and update last_toi as needed for TOI length and manual set of the close_object flag
+				atsc3_route_object_t* atsc3_route_object = atsc3_alc_persist_route_object_lct_packet_received_for_lls_sls_alc_monitor_all_flows(alc_packet, matching_lls_sls_alc_monitor);
+	#ifdef __MALLOC_DEBUGGING
+	mcheck(0);
+	#endif
+
+				//persist to disk, process sls mbms and/or emit ROUTE media_delivery_event complete to the application tier if
+				//the full packet has been recovered (e.g. no missing data units in the forward transmission)
+				if(atsc3_route_object) {
+					atsc3_alc_packet_persist_to_toi_resource_process_sls_mbms_and_emit_callback(&udp_packet->udp_flow, alc_packet, matching_lls_sls_alc_monitor, atsc3_route_object);
+					alc_packet_received_count++;
+
+	//				if(alc_packet_received_count > 10000) {
+	//					exit(0);
+	//				}
+
+				} else {
+					__ERROR("Error in ALC persist, atsc3_route_object is NULL!");
+
+				}
+		#ifdef __MALLOC_DEBUGGING
 		mcheck(0);
-#endif
-		
-		if(!retval) {
-			//check our alc_packet for a wrap-around TOI value, if it is a monitored TSI, and re-patch the MBMS MPD for updated availabilityStartTime and startNumber with last closed TOI values
-			atsc3_alc_packet_check_monitor_flow_for_toi_wraparound_discontinuity(alc_packet, lls_slt_monitor->lls_sls_alc_monitor);
-#ifdef __MALLOC_DEBUGGING
-mcheck(0);
-#endif
-
-			//keep track of our EXT_FTI and update last_toi as needed for TOI length and manual set of the close_object flag
-			atsc3_route_object_t* atsc3_route_object = atsc3_alc_persist_route_object_lct_packet_received_for_lls_sls_alc_monitor_all_flows(alc_packet, lls_slt_monitor->lls_sls_alc_monitor);
-#ifdef __MALLOC_DEBUGGING
-mcheck(0);
-#endif
-
-			//persist to disk, process sls mbms and/or emit ROUTE media_delivery_event complete to the application tier if
-			//the full packet has been recovered (e.g. no missing data units in the forward transmission)
-			if(atsc3_route_object) {
-				atsc3_alc_packet_persist_to_toi_resource_process_sls_mbms_and_emit_callback(&udp_packet->udp_flow, alc_packet, lls_slt_monitor->lls_sls_alc_monitor, atsc3_route_object);
-				alc_packet_received_count++;
-
-//				if(alc_packet_received_count > 10000) {
-//					exit(0);
-//				}
+		#endif
 
 			} else {
-				__ERROR("Error in ALC persist, atsc3_route_object is NULL!");
-
+				__ERROR("Error in ALC decode: %d", retval);
 			}
-#ifdef __MALLOC_DEBUGGING
-mcheck(0);
-#endif
-
 		} else {
-			__ERROR("Error in ALC decode: %d", retval);
+			__ERROR("Discarding packet: lls_sls_alc_monitor: %p, matching_lls_sls_alc_monitor: %p, matching_lls_slt_alc_session: %p, ", lls_sls_alc_monitor, matching_lls_sls_alc_monitor, matching_lls_slt_alc_session);
 		}
 	} else {
-		//__ERROR("Discarding packet: lls_sls_alc_monitor: %p, matching_lls_slt_alc_session: %p, ", lls_sls_alc_monitor, matching_lls_slt_alc_session);
+		__ERROR("Discarding packet: lls_sls_alc_monitor: %p, matching_lls_sls_alc_monitor: %p, matching_lls_slt_alc_session: %p, ", lls_sls_alc_monitor, matching_lls_sls_alc_monitor, matching_lls_slt_alc_session);
 	}
 
 udp_packet_free:
@@ -264,12 +272,14 @@ int main(int argc,char **argv) {
     _ALC_UTILS_DEBUG_ENABLED = 0;
 
     _ROUTE_OBJECT_INFO_ENABLED = 1;
-    _ROUTE_OBJECT_DEBUG_ENABLED = 0;
+    _ROUTE_OBJECT_DEBUG_ENABLED = 1;
     _ROUTE_OBJECT_TRACE_ENABLED = 0;
 
     _SLS_ALC_FLOW_INFO_ENABLED = 1;
     _SLS_ALC_FLOW_DEBUG_ENABLED = 0;
     _SLS_ALC_FLOW_TRACE_ENABLED = 0;
+
+    _ROUTE_SLS_PROCESSOR_DEBUG_ENABLED = 1;
 
 	
 #ifdef __LOTS_OF_DEBUGGING__
