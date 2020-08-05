@@ -762,7 +762,8 @@ int atsc3_alc_packet_persist_to_toi_resource_process_sls_mbms_and_emit_callback(
     //jjustman-2020-07-28 - do not close f handle here, as we will persist it via atsc3_route_object, 16% of profiling time in atsc3_alc_listener_mde_writer was in atsc3_alc_object_open
 
     //jjustman-2020-07-28 - TODO: don't redispatch repeadedly for carousels...
-    if(atsc3_route_object_is_complete(atsc3_route_object) && !atsc3_route_object->recovery_complete_timestamp) {
+    //jjustman-2020-08-05 - allow is_toi_init to re-write our object on carousel emission
+    if(atsc3_route_object_is_complete(atsc3_route_object) && (atsc3_route_object->is_toi_init || !atsc3_route_object->recovery_complete_timestamp)) {
 
         atsc3_route_object_recovery_file_handle_close(atsc3_route_object);
 
@@ -845,6 +846,8 @@ int atsc3_alc_packet_persist_to_toi_resource_process_sls_mbms_and_emit_callback(
 
 						//keep track of our new file name path so we can purge/reap as needed for media segments
 		            	atsc3_route_object_set_final_object_recovery_filename_for_eviction(atsc3_route_object, new_file_name);
+					} else if(matching_sls_alc_flow->toi_init == alc_packet->def_lct_hdr->toi) {
+						atsc3_route_object_set_is_toi_init_object(atsc3_route_object, true);
 					}
 				}
 

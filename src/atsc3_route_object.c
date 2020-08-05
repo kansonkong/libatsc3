@@ -92,6 +92,11 @@ void atsc3_route_object_add_atsc3_route_object_lct_packet_len(atsc3_route_object
 	atsc3_route_object->cumulative_lct_packet_len += atsc3_route_object_lct_packet_received->packet_len;
 }
 
+void atsc3_route_object_set_is_toi_init_object(atsc3_route_object_t* atsc3_route_object, bool is_toi_init) {
+	atsc3_route_object->is_toi_init = is_toi_init;
+}
+
+
 void atsc3_route_object_set_temporary_object_recovery_filename_if_null(atsc3_route_object_t* atsc3_route_object, char* temporary_filename) {
 	if(!atsc3_route_object->temporary_object_recovery_filename) {
 		atsc3_route_object->temporary_object_recovery_filename = strdup(temporary_filename);
@@ -414,6 +419,7 @@ void atsc3_route_object_reset_and_free_atsc3_route_object_lct_packet_received(at
 
 	atsc3_route_object_free_lct_packet_received_tree(atsc3_route_object);
 
+	atsc3_route_object->is_toi_init = false;
 	atsc3_route_object->expected_route_object_lct_packet_count = 0;
 	atsc3_route_object->expected_route_object_lct_packet_len_for_count = 0;
 	atsc3_route_object->cumulative_lct_packet_len = 0;
@@ -473,6 +479,7 @@ void atsc3_route_object_reset_and_free_and_unlink_recovery_file_atsc3_route_obje
 
 	atsc3_route_object_free_lct_packet_received_tree(atsc3_route_object);
 
+	atsc3_route_object->is_toi_init = false;
 	atsc3_route_object->expected_route_object_lct_packet_count = 0;
 	atsc3_route_object->expected_route_object_lct_packet_len_for_count = 0;
 	atsc3_route_object->cumulative_lct_packet_len = 0;
