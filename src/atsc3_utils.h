@@ -130,7 +130,7 @@ typedef struct atsc3_block {
 //block_t* _block_Refcount(block_t*); //used for sharing pointers between ref's
 block_t* block_Alloc(int len);
 bool block_IsAlloc(block_t*);
-block_t* block_Promote(char*);
+block_t* block_Promote(const char*);
 block_t* block_Write(block_t* dest, const uint8_t* buf, uint32_t size); //write starting at i_pos
 uint32_t block_Append(block_t* dest, block_t* src); //combine two blocks at i_pos, len: src->i_pos, return end position
 block_t* block_AppendFromSrciPos(block_t* dest, block_t* src); //combine two blocks at dest->i_pos, block_Get(src), len: src->p_size - src->i_pos

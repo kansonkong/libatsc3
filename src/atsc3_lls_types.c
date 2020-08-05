@@ -359,6 +359,46 @@ void atsc3_lls_sls_alc_monitor_check_all_s_tsid_flows_has_given_up_route_objects
 
 }
 
+bool atsc3_lls_sls_alc_monitor_sls_metadata_fragements_has_held_changed(lls_sls_alc_monitor_t* atsc3_lls_sls_alc_monitor, atsc3_sls_metadata_fragments_t* atsc3_sls_metadata_fragments_pending) {
+	bool has_changed = false;
+	atsc3_sls_held_fragment_t* atsc3_sls_held_fragment = NULL;
+	atsc3_sls_held_fragment_t* atsc3_sls_held_fragment_pending = NULL;
+
+	if(atsc3_lls_sls_alc_monitor && atsc3_lls_sls_alc_monitor->atsc3_sls_metadata_fragments && atsc3_lls_sls_alc_monitor->atsc3_sls_metadata_fragments->atsc3_sls_held_fragment) {
+		atsc3_sls_held_fragment = atsc3_lls_sls_alc_monitor->atsc3_sls_metadata_fragments->atsc3_sls_held_fragment;
+	}
+
+	if(atsc3_sls_metadata_fragments_pending && atsc3_sls_metadata_fragments_pending->atsc3_sls_held_fragment) {
+		atsc3_sls_held_fragment_pending = atsc3_sls_metadata_fragments_pending->atsc3_sls_held_fragment;
+	}
+
+	has_changed = atsc3_sls_held_fragment_has_changed(atsc3_sls_held_fragment, atsc3_sls_held_fragment_pending); //nulls are checked in atsc3_sls_held_fragment_has_changed
+
+	return has_changed;
+}
+
+/*
+ * atsc3_sls_metadata_fragements_get_sls_held_fragment_duplicate_raw_xml_or_empty
+ *
+ * jjustman-2020-08-05
+ * empty HELD payload will just be
+ *
+ * caller must invoke block_Destroy(&block) when complete...
+ */
+static const char* __ATSC3_HELD_FRAGMENT_EMPTY_PAYLOAD__ = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<HELD xmlns=\"tag:atsc.org,2016:XMLSchemas/ATSC3/AppSignaling/HELD/1.0/\" xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\">\n</HELD>\n";
+block_t* atsc3_sls_metadata_fragements_get_sls_held_fragment_duplicate_raw_xml_or_empty(atsc3_sls_metadata_fragments_t* atsc3_sls_metadata_fragments_pending) {
+	block_t* atsc3_sls_held_fragment_raw_xml = NULL;
+
+	if(atsc3_sls_metadata_fragments_pending && atsc3_sls_metadata_fragments_pending->atsc3_sls_held_fragment && atsc3_sls_metadata_fragments_pending->atsc3_sls_held_fragment->raw_xml_fragment && atsc3_sls_metadata_fragments_pending->atsc3_sls_held_fragment->raw_xml_fragment->p_size) {
+		atsc3_sls_held_fragment_raw_xml = block_Duplicate(atsc3_sls_metadata_fragments_pending->atsc3_sls_held_fragment->raw_xml_fragment);
+	} else {
+		atsc3_sls_held_fragment_raw_xml = block_Promote(__ATSC3_HELD_FRAGMENT_EMPTY_PAYLOAD__);
+	}
+
+	block_Rewind(atsc3_sls_held_fragment_raw_xml);
+
+	return atsc3_sls_held_fragment_raw_xml;
+}
 
 
 

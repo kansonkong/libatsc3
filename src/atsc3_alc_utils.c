@@ -767,7 +767,7 @@ int atsc3_alc_packet_persist_to_toi_resource_process_sls_mbms_and_emit_callback(
         atsc3_route_object_recovery_file_handle_close(atsc3_route_object);
 
         //update our sls here if we have a service we are listenting to
-        if(lls_sls_alc_monitor && lls_sls_alc_monitor->atsc3_lls_slt_service &&  alc_packet->def_lct_hdr->tsi == 0) {
+        if(lls_sls_alc_monitor && lls_sls_alc_monitor->atsc3_lls_slt_service && alc_packet->def_lct_hdr->tsi == 0) {
 
             char* final_mbms_toi_filename = alc_packet_dump_to_object_get_filename_tsi_toi(udp_flow, 0, alc_packet->def_lct_hdr->toi);
             rename(temporary_filename, final_mbms_toi_filename);
@@ -784,10 +784,23 @@ int atsc3_alc_packet_persist_to_toi_resource_process_sls_mbms_and_emit_callback(
             		final_mbms_toi_filename);
 
             atsc3_route_sls_process_from_alc_packet_and_file(udp_flow, alc_packet, lls_sls_alc_monitor);
+			
+			atsc3_route_sls_process_from_sls_metadata_fragments_patch_mpd_availability_start_time_and_start_number(lls_sls_alc_monitor->atsc3_sls_metadata_fragments, lls_sls_alc_monitor);
+					
             free(final_mbms_toi_filename);
 
         } else {
         	//jjustman-2020-07-28 - todo: use atsc3_route_object for fp handle reference
+
+        	//jjustman-2020-08-05 - dirty hack - don't process ROUTE object completion if we don't have our SLS parsed yet,
+        	// i.e. lls_sls_alc_monitor->atsc3_sls_metadata_fragments is null
+
+        	if(!lls_sls_alc_monitor->atsc3_sls_metadata_fragments) {
+                __ALC_UTILS_ERROR("lls_sls_alc_monitor->atsc3_sls_metadata_fragments is NULL, tsi: %u, toi: %u, bailing on object recovery complete!",
+                        alc_packet->def_lct_hdr->tsi, alc_packet->def_lct_hdr->toi);
+                bytesWritten = -3;
+                goto cleanup;
+            }
 
             s_tsid_content_location = alc_packet_dump_to_object_get_s_tsid_filename(udp_flow, alc_packet, lls_sls_alc_monitor);
      
@@ -894,8 +907,8 @@ int atsc3_alc_packet_persist_to_toi_resource_process_sls_mbms_and_emit_callback(
 
             }
 			//emit lls alc context callback
-			if(lls_sls_alc_monitor->atsc3_lls_sls_alc_on_object_close_flag_s_tsid_content_location) {
-				lls_sls_alc_monitor->atsc3_lls_sls_alc_on_object_close_flag_s_tsid_content_location(alc_packet->def_lct_hdr->tsi, alc_packet->def_lct_hdr->toi, s_tsid_content_location);
+			if(lls_sls_alc_monitor->atsc3_lls_sls_alc_on_object_close_flag_s_tsid_content_location_callback) {
+				lls_sls_alc_monitor->atsc3_lls_sls_alc_on_object_close_flag_s_tsid_content_location_callback(alc_packet->def_lct_hdr->tsi, alc_packet->def_lct_hdr->toi, s_tsid_content_location);
 
 			}
 
@@ -1431,14 +1444,23 @@ void atsc3_alc_packet_check_monitor_flow_for_toi_wraparound_discontinuity(atsc3_
         	atsc3_sls_alc_flow_t* matching_sls_alc_flow = NULL;
 
 			if((matching_sls_alc_flow = atsc3_sls_alc_flow_find_entry_tsi(&lls_sls_alc_monitor->atsc3_sls_alc_all_s_tsid_flow_v, alc_packet->def_lct_hdr->tsi))) {
-				if(matching_sls_alc_flow->toi_init != toi && matching_sls_alc_flow->last_closed_toi > toi) {
+				if(!lls_sls_alc_monitor->has_discontiguous_toi_flow && matching_sls_alc_flow->toi_init != toi && matching_sls_alc_flow->last_closed_toi > toi) {
 					lls_sls_alc_monitor->has_discontiguous_toi_flow = true;
 					if (lls_sls_alc_monitor->last_mpd_payload) {
 						block_Destroy(&lls_sls_alc_monitor->last_mpd_payload);
 					}
+					
+					//trigger a re-patch when we have matching toi flows
+					if (lls_sls_alc_monitor->last_mpd_payload_patched) {
+						block_Destroy(&lls_sls_alc_monitor->last_mpd_payload_patched);
+					}
+					
 	                __ALC_UTILS_INFO("atsc3_alc_packet_check_monitor_flow_for_toi_wraparound_discontinuity: has discontigious re-wrap of TOI flow(s), "
-	                                 "tsi: %d, toi: %d, audio->last_closed_toi: %d",
+	                                 "tsi: %d, toi: %d, matching_sls_alc_flow->last_closed_toi: %d",
 	                                 tsi, toi, matching_sls_alc_flow->last_closed_toi);
+					
+					//clear out our last_closed_toi
+					matching_sls_alc_flow->last_closed_toi = 0;
 
 				}
 			}
