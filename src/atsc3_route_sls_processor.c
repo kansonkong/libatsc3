@@ -367,18 +367,16 @@ bool atsc3_route_sls_patch_mpd_availability_start_time_and_start_number(atsc3_mi
 
 				block_Destroy(&atsc3_mime_multipart_related_payload->payload);
 				atsc3_mime_multipart_related_payload->payload = block_Duplicate(patched_mpd);
+				block_Destroy(&lls_sls_alc_monitor->last_mpd_payload_patched);
 				lls_sls_alc_monitor->last_mpd_payload_patched = block_Duplicate(patched_mpd);
 
 				block_Destroy(&patched_mpd);
 
 				atsc3_route_dash_matching_s_tsid_representation_media_info_alc_flow_match_vector_free(&match_vector);
-
 				atsc3_pcre2_regex_match_capture_vector_free(&atsc3_pcre2_regex_match_capture_vector);
 
-				if(lls_sls_alc_monitor->last_mpd_payload) {
-					block_Destroy(&lls_sls_alc_monitor->last_mpd_payload);
-				}
-				lls_sls_alc_monitor->last_mpd_payload = in_flight_last_mpd_payload;
+				block_Destroy(&lls_sls_alc_monitor->last_mpd_payload);
+				lls_sls_alc_monitor->last_mpd_payload = block_Duplicate(in_flight_last_mpd_payload);
 
         	} else {
         		_ATSC3_ROUTE_SLS_PROCESSOR_ERROR("atsc3_pcre2_regex_match returned NULL - with block_mpd: %s", block_mpd->p_buffer);
@@ -387,13 +385,13 @@ bool atsc3_route_sls_patch_mpd_availability_start_time_and_start_number(atsc3_mi
            		if(lls_sls_alc_monitor->last_mpd_payload_patched) {
            			atsc3_mime_multipart_related_payload->payload = block_Duplicate(lls_sls_alc_monitor->last_mpd_payload_patched);
             		_ATSC3_ROUTE_SLS_PROCESSOR_WARN("atsc3_pcre2_regex_match returned NULL - returning last patched payload! %s", lls_sls_alc_monitor->last_mpd_payload_patched->p_buffer);
-
            		}
         	}
 
         	atsc3_pcre2_regex_context_free(&atsc3_pcre2_regex_context);
 
         	block_Destroy(&block_mpd);
+        	block_Destroy(&in_flight_last_mpd_payload);
 
         	//end jjustman 2020-07-14
 
@@ -416,6 +414,7 @@ error:
 	if(atsc3_pcre2_regex_context) {
 		atsc3_pcre2_regex_context_free(&atsc3_pcre2_regex_context);
 	}
+
 	block_Destroy(&atsc3_mime_multipart_related_payload->payload);
 	block_Destroy(&in_flight_last_mpd_payload);
 

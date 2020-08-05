@@ -357,9 +357,14 @@ atsc3_mime_multipart_related_instance_t* atsc3_mime_multipart_related_parser(FIL
 			line_binary = NULL;
 		}
 
+		//any remaining multipart related payloads here should be discarded as transient...
 		if(atsc3_mime_multipart_related_payload) {
 			atsc3_mime_multipart_related_payload_free(&atsc3_mime_multipart_related_payload);
 		}
+	}
+
+	if(atsc3_mime_multipart_related_payload) {
+		atsc3_mime_multipart_related_payload_free(&atsc3_mime_multipart_related_payload);
 	}
 
 	if(line_buffer_to_free) {

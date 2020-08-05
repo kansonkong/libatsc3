@@ -291,14 +291,14 @@ void atsc3_lls_sls_alc_monitor_check_all_s_tsid_flows_has_given_up_route_objects
 					if(atsc3_route_object->recovery_complete_timestamp) {
 						if(atsc3_route_object->recovery_complete_timestamp < (now - _ATSC3_LLS_SLS_ALC_MONITOR_LCT_PACKETS_RECOVERY_COMPLETE_PURGE_SECONDS * 1000)) {
 							should_free_and_unlink = true;
-							_ATSC3_LLS_TYPES_INFO("atsc3_lls_sls_alc_monitor_check_all_s_tsid_flows_has_given_up_route_objects: recovery complete candidate: route_object: %p, recovery_complete_timestamp: %.4f (delta: %.4f), tsi: %d, toi: %d, object_length: %d, final_object_recovery_filename: %s",
+							_ATSC3_LLS_TYPES_INFO("atsc3_lls_sls_alc_monitor_check_all_s_tsid_flows_has_given_up_route_objects: recovery complete candidate: route_object: %p, recovery_complete_timestamp: %.4f (delta: %.4f), tsi: %d, toi: %d, object_length: %d, final_object_recovery_filename_for_eviction: %s",
 									atsc3_route_object,
 									atsc3_route_object->recovery_complete_timestamp / 1000.0,
 									(now - atsc3_route_object->recovery_complete_timestamp) / 1000.0,
 									atsc3_route_object->tsi,
 									atsc3_route_object->toi,
 									atsc3_route_object->object_length,
-									atsc3_route_object->final_object_recovery_filename);
+									atsc3_route_object->final_object_recovery_filename_for_eviction);
 
 						}
 					}
@@ -351,7 +351,7 @@ void atsc3_lls_sls_alc_monitor_check_all_s_tsid_flows_has_given_up_route_objects
 				}
 			}
 
-			_ATSC3_LLS_TYPES_INFO("atsc3_lls_sls_alc_monitor_check_all_s_tsid_flows_has_given_up_route_objects: completed atsc3_sls_alc_flow: %p, with atsc3_route_objects.count: %d",
+			_ATSC3_LLS_TYPES_DEBUG("atsc3_lls_sls_alc_monitor_check_all_s_tsid_flows_has_given_up_route_objects: completed atsc3_sls_alc_flow: %p, with atsc3_route_objects.count: %d",
 					atsc3_sls_alc_flow,
 					atsc3_sls_alc_flow->atsc3_route_object_v.count);
 		}
