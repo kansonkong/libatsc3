@@ -95,7 +95,7 @@ atsc3_ip_udp_rtp_packet_t* atsc3_ip_udp_rtp_packet_process_from_blockt_pos(block
     
     uint32_t data_length = packet_length - outer_payload_start;
     
-    if(data_length <=0 || data_length > 1514) {
+    if(data_length <= 0 || data_length > MAX_ATSC3_PHY_ALP_DATA_PAYLOAD_SIZE) {
         __IP_UDP_RTP_PARSER_ERROR("udp_packet_process_from_ptr: invalid data length of udp packet: %d", data_length);
         return NULL;
     }

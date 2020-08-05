@@ -7,6 +7,7 @@
 
 #include <stdio.h>      /* printf */
 #include <stdarg.h>     /* va_list, va_start, va_arg, va_end */
+#include "atsc3_utils.h"
 
 #ifndef ATSC3_LOGGING_EXTERNS_H_
 #define ATSC3_LOGGING_EXTERNS_H_
@@ -40,6 +41,10 @@ extern int _XML_TRACE_ENABLED;
 extern int _LLS_INFO_ENABLED;
 extern int _LLS_DEBUG_ENABLED;
 extern int _LLS_TRACE_ENABLED;
+
+extern int _LLS_TYPES_INFO_ENABLED;
+extern int _LLS_TYPES_DEBUG_ENABLED;
+extern int _LLS_TYPES_TRACE_ENABLED;
 
 extern int _LLS_SLT_PARSER_INFO_ENABLED;
 extern int _LLS_SLT_PARSER_INFO_MMT_ENABLED;
@@ -112,7 +117,9 @@ extern int _ALC_RX_TRACE_TAB_ENABLED;
 extern int _PLAYER_FFPLAY_DEBUG_ENABLED;
 extern int _PLAYER_FFPLAY_TRACE_ENABLED;
 
+extern int _STLTP_PARSER_INFO_ENABLED;
 extern int _STLTP_PARSER_DEBUG_ENABLED;
+extern int _STLTP_PARSER_TRACE_ENABLED;
 
 extern int _MIME_PARSER_INFO_ENABLED;
 extern int _MIME_PARSER_DEBUG_ENABLED;
@@ -124,7 +131,6 @@ extern int _IP_UDP_RTP_PARSER_TRACE_ENABLED;
 
 extern int _STLTP_TYPES_DEBUG_ENABLED;
 extern int _STLTP_TYPES_TRACE_ENABLED;
-extern int _STLTP_PARSER_TRACE_ENABLED;
 
 extern int _DSTP_TYPES_DEBUG_ENABLED;
 extern int _DSTP_TYPES_TRACE_ENABLED;
@@ -151,6 +157,28 @@ extern int _ATSC3_PCAP_TYPE_TRACE_ENABLED;
 extern int _SL_TLV_DEMOD_DEBUG_ENABLED;
 extern int _SL_TLV_DEMOD_TRACE_ENABLED;
 
+extern int _PCRE2_REGEX_UTILS_INFO_ENABLED;
+extern int _PCRE2_REGEX_UTILS_DEBUG_ENABLED;
+extern int _PCRE2_REGEX_UTILS_TRACE_ENABLED;
+
+extern int _ROUTE_PACKAGE_UTILS_DEBUG_ENABLED;
+extern int _ROUTE_PACKAGE_UTILS_TRACE_ENABLED;
+
+extern int _ROUTE_DASH_UTILS_INFO_ENABLED;
+extern int _ROUTE_DASH_UTILS_DEBUG_ENABLED;
+extern int _ROUTE_DASH_UTILS_TRACE_ENABLED;
+
+extern int _ROUTE_OBJECT_INFO_ENABLED;
+extern int _ROUTE_OBJECT_DEBUG_ENABLED;
+extern int _ROUTE_OBJECT_TRACE_ENABLED;
+
+extern int _SLS_ALC_FLOW_INFO_ENABLED;
+extern int _SLS_ALC_FLOW_DEBUG_ENABLED;
+extern int _SLS_ALC_FLOW_TRACE_ENABLED;
+
+extern int _HELD_PARSER_INFO_ENABLED;
+extern int _HELD_PARSER_DEBUG_ENABLED;
+extern int _HELD_PARSER_TRACE_ENABLED;
 
 
 //c++ linkage

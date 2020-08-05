@@ -21,8 +21,9 @@ udp_packet_t* process_packet_from_pcap(u_char *user, const struct pcap_pkthdr *p
 	for (i = 0; i < 14; i++) {
 		ethernet_packet[i] = packet[0 + i];
 	}
+	//workaround for airwavz pcaps with ethertype=0xc0a8
     if (!(ethernet_packet[12] == 0x08 && ethernet_packet[13] == 0x00)) {
-        __LISTENER_UDP_ERROR("udp_packet_process_from_ptr: invalid ethernet frame");
+        __LISTENER_UDP_ERROR("udp_packet_process_from_ptr: invalid ethernet frame, expected 0x08 0x00, ethernet_packet[12]=0x%02x, [13]=0x%02x", ethernet_packet[12], ethernet_packet[13]);
 		return NULL;
 	}
 
@@ -32,7 +33,7 @@ udp_packet_t* process_packet_from_pcap(u_char *user, const struct pcap_pkthdr *p
 
 	//check if we are a UDP packet, otherwise bail
 	if (ip_header[9] != 0x11) {
-		__LISTENER_UDP_ERROR("udp_packet_process_from_ptr: not a UDP packet!");
+		__LISTENER_UDP_ERROR("udp_packet_process_from_ptr: not a UDP packet! ip_header[9]=0x%02x, len: %d, caplen: %d", ip_header[9], pkthdr->len, pkthdr->caplen);
 		return NULL;
 	}
 
@@ -54,7 +55,7 @@ udp_packet_t* process_packet_from_pcap(u_char *user, const struct pcap_pkthdr *p
 	udp_packet->raw_packet_length = pkthdr->len;
     
     uint32_t data_length = pkthdr->len - (udp_header_start + 8);
-    if(data_length <=0 || data_length > 65535) {
+    if(data_length <=0 || data_length > MAX_ATSC3_PHY_IP_DATAGRAM_SIZE) {
         __LISTENER_UDP_ERROR("process_packet_from_pcap: invalid udp data length: %d, raw phy frame: %d", data_length, udp_packet->raw_packet_length);
         freesafe(udp_packet);
         return NULL;
@@ -114,7 +115,7 @@ udp_packet_t* udp_packet_process_from_ptr_raw_ethernet_packet(uint8_t* raw_packe
 	udp_packet->raw_packet_length = raw_packet_length;
 	uint32_t data_length = raw_packet_length - (udp_header_start + 8);
 
-	 if(data_length <=0 || data_length > 65535) {
+	 if(data_length <=0 || data_length > MAX_ATSC3_PHY_IP_DATAGRAM_SIZE) {
 		__LISTENER_UDP_ERROR("process_packet_from_pcap: invalid udp data length: %d, raw phy frame: %d", data_length, udp_packet->raw_packet_length);
 		freesafe(udp_packet);
 		return NULL;
@@ -164,7 +165,7 @@ udp_packet_t* udp_packet_process_from_ptr(uint8_t* packet, uint32_t packet_lengt
 
 	uint32_t data_length = packet_length - (udp_header_start + 8);
 
-	if(data_length <=0 || data_length > 65535) {
+	if(data_length <=0 || data_length > MAX_ATSC3_PHY_IP_DATAGRAM_SIZE) {
 		__LISTENER_UDP_ERROR("udp_packet_process_from_ptr: invalid data length of udp packet: %d", data_length);
 		return NULL;
 	}

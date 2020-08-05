@@ -13,6 +13,7 @@
 #include "atsc3_vector_builder.h"
 #include "xml.h"
 
+
 /**
  * Content-Type: multipart/related;
   type="application/mbms-envelope+xml";
@@ -26,10 +27,24 @@ Content-Location: envelope.xml
  */
 
 typedef struct atsc3_mime_multipart_related_payload {
-	char* 						content_type;
-	char* 						content_location;
-	char*						payload;
-	uint32_t					payload_length;
+
+	char*						unsafe_content_location;				//original path as supplied in the multipart/related object
+	char* 						sanitizied_content_location;			//sanitized path (e.g. no ../ or ~
+	char*						content_transfer_encoding;
+
+	//from atsc3_mbms_metadata_item_v - mapped in atsc3_route_package_extract_unsigned_payload
+	char* 						content_type;							//back-patch from envelope.xml
+
+	char* 						valid_from_string;
+	char* 						valid_until_string;
+	uint32_t					version;								//back-patch from envelope.xml
+	char* 						next_url_string;
+	char*						avail_at_string;
+	//end from atsc3_mbms_metadata_item_v
+
+	uint32_t					extracted_size;
+
+	block_t*					payload;
 
 } atsc3_mime_multipart_related_payload_t;
 

@@ -156,68 +156,26 @@ typedef struct atsc3_def_lct_hdr {
      Depending on the type of the payload, additional payload header(s) may be added to prefix the payload data.
      
      Table A.3.6 Defined Values of Codepoint Field of LCT Header
-     Codepoint value (CP)
-     Semantics
+	 
+     Codepoint value (CP)   Semantics     							@formatId    				@frag					@order
+	 --------------------	-------------------------------------	------------				------					------
+     0						ATSC Reserved (not used)				-							-						-
+	 1						NRT- File Mode							1 (File Mode)				0 (arbitrary)			true
+     2						NRT – Entity Mode						2 (Entity Mode)				0						true
+     3						NRT – Unsigned Package Mode				3 (Unsigned Package Mode)   0						true
+     4						NRT – Signed Package Mode				4 (Signed Package Mode)		0						true
+     5						New IS, timeline changed    			1 (File Mode)			    0						true
+     6						New IS, timeline continued				1							0						true
+     7						Redundant IS							1							0						true
+     8						Media Segment, File Mode				1							1 (sample)				true
+     9						Media Segment, Entity Mode				2 (Entity Mode)				1						true
+     10 – 127				ATSC Reserved
+	 128 – 255				Attributes of this type of packet are	Per Payload element			Per Payload element		Per Payload element
+							signalled by attributes given in the
+							SrcFlow.Payload element associated
+							with the CodePoint vlaue
      
-     @formatId
-     
-     @frag
-     
-     @order
-     0
-     ATSC Reserved (not used)
-     1
-     NRT- File Mode
-     1 (File Mode)
-     0 (arbitrary)
-     true
-     2
-     NRT – Entity Mode
-     2 (Entity Mode)
-     0
-     true
-     3
-     NRT – Unsigned Package Mode
-     3 (Unsigned Package Mode)
-     0
-     true
-     4
-     NRT – Signed Package Mode
-     4 (Signed Package Mode)
-     0
-     true
-     5
-     New IS, timeline changed
-     1 (File Mode)
-     0
-     true
-     6
-     New IS, timeline continued
-     1
-     0
-     true
-     7
-     Redundant IS
-     1
-     0
-     true
-     8
-     Media Segment, File Mode
-     1
-     1 (sample)
-     true
-     9
-     Media Segment, Entity Mode
-     2 (Entity Mode)
-     1
-     true
-     10 – 127
-     ATSC Reserved
-     128 – 255
-     Attributes of this type of packet are signalled by attributes given in the SrcFlow.Payload element associated with the CodePoint vlaue
-     Per Payload element
-     Per Payload element
-     Per Payload element
+          
      
      Detailed semantics for each of the defined values of the Codepoint (CP) field, which represents the type of delivery object carried in the associated ROUTE packet, shall be as follows:
      CP=1: The delivery object is an NRT file or a byte-range portion of such file delivered in ROUTE
@@ -286,15 +244,15 @@ typedef struct atsc3_def_lct_hdr {
  */
 
 
-#define FDT_TOI		0				/**< TOI for FDT */
+#define FDT_TOI		0					/**< TOI for FDT */
 
-#define ALC_VERSION		1		/**< ALC version number */
-#define FLUTE_VERSION_1 1        /**< FLUTE version number */
-#define FLUTE_VERSION_2	2		/**< FLUTE version number */
+#define ALC_VERSION		1				/**< ALC version number */
+#define FLUTE_VERSION_1 1      		 	/**< FLUTE version number */
+#define FLUTE_VERSION_2	2				/**< FLUTE version number */
 
-#define COM_NO_C_FEC_ENC_ID		0	/**< Compact No-Code FEC scheme */
-#define SIMPLE_XOR_FEC_ENC_ID   2	/**< Simple XOR FEC scheme */
-#define RS_FEC_ENC_ID			3	/**< Reed-Solomon FEC scheme, identifier not yet decided, 3 used temporarily */
+#define COM_NO_C_FEC_ENC_ID		0		/**< Compact No-Code FEC scheme */
+#define SIMPLE_XOR_FEC_ENC_ID   2		/**< Simple XOR FEC scheme */
+#define RS_FEC_ENC_ID			3		/**< Reed-Solomon FEC scheme, identifier not yet decided, 3 used temporarily */
 
 #define SB_LB_E_FEC_ENC_ID		128		/**< Small Block, Large Block and Expandable FEC scheme */
 #define SB_SYS_FEC_ENC_ID		129		/**< Small Block Systematic FEC scheme */

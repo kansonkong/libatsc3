@@ -24,27 +24,29 @@ void atsc3_route_s_tsid_RS_LS_free(atsc3_route_s_tsid_RS_LS_t** atsc3_route_s_ts
                 atsc3_fdt_instance_free(&atsc3_route_s_tsid_RS_LS->atsc3_route_s_tsid_RS_LS_SrcFlow->atsc3_fdt_instance);
                 
                 if(atsc3_route_s_tsid_RS_LS->atsc3_route_s_tsid_RS_LS_SrcFlow->atsc3_route_s_tsid_RS_LS_SrcFlow_ContentInfo) {
+
                     if(atsc3_route_s_tsid_RS_LS->atsc3_route_s_tsid_RS_LS_SrcFlow->atsc3_route_s_tsid_RS_LS_SrcFlow_ContentInfo->atsc3_route_s_tsid_RS_LS_SrcFlow_ContentInfo_MediaInfo) {
-                        freeclean((void**)&atsc3_route_s_tsid_RS_LS->atsc3_route_s_tsid_RS_LS_SrcFlow->atsc3_route_s_tsid_RS_LS_SrcFlow_ContentInfo->atsc3_route_s_tsid_RS_LS_SrcFlow_ContentInfo_MediaInfo->content_type);
-                        freeclean((void**)&atsc3_route_s_tsid_RS_LS->atsc3_route_s_tsid_RS_LS_SrcFlow->atsc3_route_s_tsid_RS_LS_SrcFlow_ContentInfo->atsc3_route_s_tsid_RS_LS_SrcFlow_ContentInfo_MediaInfo->rep_id);
+                    	atsc3_route_s_tsid_RS_LS_SrcFlow_ContentInfo_MediaInfo_free(&atsc3_route_s_tsid_RS_LS->atsc3_route_s_tsid_RS_LS_SrcFlow->atsc3_route_s_tsid_RS_LS_SrcFlow_ContentInfo->atsc3_route_s_tsid_RS_LS_SrcFlow_ContentInfo_MediaInfo);
                     }
-                    freeclean((void**)&atsc3_route_s_tsid_RS_LS->atsc3_route_s_tsid_RS_LS_SrcFlow->atsc3_route_s_tsid_RS_LS_SrcFlow_ContentInfo->atsc3_route_s_tsid_RS_LS_SrcFlow_ContentInfo_MediaInfo);
                     
                     if(atsc3_route_s_tsid_RS_LS->atsc3_route_s_tsid_RS_LS_SrcFlow->atsc3_route_s_tsid_RS_LS_SrcFlow_ContentInfo->atsc3_route_s_tsid_RS_LS_SrcFlow_ContentInfo_AEAMedia) {
                         freeclean((void**)&atsc3_route_s_tsid_RS_LS->atsc3_route_s_tsid_RS_LS_SrcFlow->atsc3_route_s_tsid_RS_LS_SrcFlow_ContentInfo->atsc3_route_s_tsid_RS_LS_SrcFlow_ContentInfo_AEAMedia->aea_id);
                     }
                     freeclean((void**)&atsc3_route_s_tsid_RS_LS->atsc3_route_s_tsid_RS_LS_SrcFlow->atsc3_route_s_tsid_RS_LS_SrcFlow_ContentInfo->atsc3_route_s_tsid_RS_LS_SrcFlow_ContentInfo_AEAMedia);
+                    freeclean((void**)&atsc3_route_s_tsid_RS_LS->atsc3_route_s_tsid_RS_LS_SrcFlow->atsc3_route_s_tsid_RS_LS_SrcFlow_ContentInfo);
                 }
                 
                 if(atsc3_route_s_tsid_RS_LS->atsc3_route_s_tsid_RS_LS_SrcFlow->atsc3_route_s_tsid_RS_LS_SrcFlow_Payload) {
                     freeclean((void**)&atsc3_route_s_tsid_RS_LS->atsc3_route_s_tsid_RS_LS_SrcFlow->atsc3_route_s_tsid_RS_LS_SrcFlow_Payload->fec_parms);
+                    freeclean((void**)&atsc3_route_s_tsid_RS_LS->atsc3_route_s_tsid_RS_LS_SrcFlow->atsc3_route_s_tsid_RS_LS_SrcFlow_Payload);
                 }
-                freeclean((void**)&atsc3_route_s_tsid_RS_LS->atsc3_route_s_tsid_RS_LS_SrcFlow->atsc3_route_s_tsid_RS_LS_SrcFlow_Payload);
 
                 freeclean((void**)&atsc3_route_s_tsid_RS_LS->atsc3_route_s_tsid_RS_LS_SrcFlow);
             }
             
             if(atsc3_route_s_tsid_RS_LS->atsc3_route_s_tsid_RS_LS_RepairFlow) {
+                _ATSC3_ROUTE_S_TSID_PARSER_WARN("PROBABLE memory leak with atsc3_route_s_tsid_RS_LS_free and RepairFlow: %p", atsc3_route_s_tsid_RS_LS->atsc3_route_s_tsid_RS_LS_RepairFlow);
+
                 //todo
                 freeclean((void**)&atsc3_route_s_tsid_RS_LS->atsc3_route_s_tsid_RS_LS_RepairFlow);
             }
@@ -69,10 +71,10 @@ void atsc3_route_s_tsid_RS_free(atsc3_route_s_tsid_RS_t** atsc3_route_s_tsid_RS_
 ATSC3_VECTOR_BUILDER_METHODS_PARENT_IMPLEMENTATION(atsc3_route_s_tsid)
 ATSC3_VECTOR_BUILDER_METHODS_IMPLEMENTATION(atsc3_route_s_tsid, atsc3_route_s_tsid_RS)
 
-
+//jjustman-2020-07-27 - todo: change this char* payload to block_t*
 atsc3_route_s_tsid_t* atsc3_route_s_tsid_parse_from_payload(char* payload, char* content_location) {
 
-	atsc3_route_s_tsid_t* atsc3_route_s_tsid;
+	atsc3_route_s_tsid_t* atsc3_route_s_tsid = NULL;
 
 	block_t* s_tsid_fragment_block = block_Promote(payload);
 	xml_document_t* xml_document = xml_parse_document(s_tsid_fragment_block->p_buffer, s_tsid_fragment_block->i_pos);
@@ -298,9 +300,14 @@ atsc3_route_s_tsid_RS_LS_SrcFlow_ContentInfo_MediaInfo_t* atsc3_route_s_tsid_par
 	kvp_collection_t* kvp_collection = kvp_collection_parse(xml_attributes);
 	char* matching_attribute = NULL;
 
-	if((matching_attribute = kvp_collection_get(kvp_collection,  "contentType"))) {
+	if((matching_attribute = kvp_collection_get(kvp_collection, "lang"))) {
+		atsc3_route_s_tsid_RS_LS_SrcFlow_ContentInfo_MediaInfo->lang = matching_attribute;
+	}
+
+	if((matching_attribute = kvp_collection_get(kvp_collection, "contentType"))) {
 		atsc3_route_s_tsid_RS_LS_SrcFlow_ContentInfo_MediaInfo->content_type = matching_attribute;
 	}
+
 	if((matching_attribute = kvp_collection_get(kvp_collection,  "repId"))) {
 		atsc3_route_s_tsid_RS_LS_SrcFlow_ContentInfo_MediaInfo->rep_id = matching_attribute;
 	}
@@ -345,7 +352,7 @@ atsc3_route_s_tsid_RS_LS_SrcFlow_Payload_t* atsc3_route_s_tsid_parse_RS_LS_SrcFl
 	char* matching_attribute = NULL;
 
 	if((matching_attribute = kvp_collection_get(kvp_collection,  "codePoint"))) {
-		atsc3_route_s_tsid_RS_LS_SrcFlow_Payload->code_point = atoi(matching_attribute);
+		atsc3_route_s_tsid_RS_LS_SrcFlow_Payload->codepoint = atoi(matching_attribute);
         free(matching_attribute);
 	}
 
@@ -360,7 +367,8 @@ atsc3_route_s_tsid_RS_LS_SrcFlow_Payload_t* atsc3_route_s_tsid_parse_RS_LS_SrcFl
 	}
 
 	if((matching_attribute = kvp_collection_get(kvp_collection,  "order"))) {
-		atsc3_route_s_tsid_RS_LS_SrcFlow_Payload->order = matching_attribute;
+		atsc3_route_s_tsid_RS_LS_SrcFlow_Payload->order = (matching_attribute[0] == 't' || matching_attribute[0] == 't') ? true : false;
+        free(matching_attribute);
 	}
 
 	if((matching_attribute = kvp_collection_get(kvp_collection,  "srcFecPayloadId"))) {
@@ -418,7 +426,7 @@ void atsc3_route_s_tsid_dump(atsc3_route_s_tsid_t* atsc3_route_s_tsid) {
                     return;
                 }
 				_ATSC3_ROUTE_S_TSID_PARSER_DEBUG("     S-TSID.RS.LS.source_flow.fdt-instance: version: %u, expires: %u, content_type: %s, file_template: %s",
-						atsc3_fdt_instance->efdt_vesion,
+						atsc3_fdt_instance->efdt_version,
 						atsc3_fdt_instance->expires,
 						atsc3_fdt_instance->content_type,
 						atsc3_fdt_instance->file_template);
@@ -436,6 +444,59 @@ void atsc3_route_s_tsid_dump(atsc3_route_s_tsid_t* atsc3_route_s_tsid) {
 				}
 			}
 		}
+	}
+}
+
+atsc3_route_s_tsid_RS_LS_SrcFlow_ContentInfo_MediaInfo_t* atsc3_route_s_tsid_RS_LS_SrcFlow_ContentInfo_MediaInfo_new() {
+	atsc3_route_s_tsid_RS_LS_SrcFlow_ContentInfo_MediaInfo_t* atsc3_route_s_tsid_RS_LS_SrcFlow_ContentInfo_MediaInfo = calloc(1, sizeof(atsc3_route_s_tsid_RS_LS_SrcFlow_ContentInfo_MediaInfo_t));
+	return atsc3_route_s_tsid_RS_LS_SrcFlow_ContentInfo_MediaInfo;
+}
+
+//allow NULL to be passed, just in case with dummy instance
+atsc3_route_s_tsid_RS_LS_SrcFlow_ContentInfo_MediaInfo_t* atsc3_route_s_tsid_RS_LS_SrcFlow_ContentInfo_MediaInfo_clone(atsc3_route_s_tsid_RS_LS_SrcFlow_ContentInfo_MediaInfo_t* atsc3_route_s_tsid_RS_LS_SrcFlow_ContentInfo_MediaInfo) {
+
+	atsc3_route_s_tsid_RS_LS_SrcFlow_ContentInfo_MediaInfo_t* atsc3_route_s_tsid_RS_LS_SrcFlow_ContentInfo_MediaInfo_cloned = atsc3_route_s_tsid_RS_LS_SrcFlow_ContentInfo_MediaInfo_new();
+
+	//allow NULL to be passed, just in case with dummy instance
+	if(!atsc3_route_s_tsid_RS_LS_SrcFlow_ContentInfo_MediaInfo) {
+		return atsc3_route_s_tsid_RS_LS_SrcFlow_ContentInfo_MediaInfo_cloned;
+	}
+
+	if(atsc3_route_s_tsid_RS_LS_SrcFlow_ContentInfo_MediaInfo->content_type) {
+		atsc3_route_s_tsid_RS_LS_SrcFlow_ContentInfo_MediaInfo_cloned->content_type = strndup(atsc3_route_s_tsid_RS_LS_SrcFlow_ContentInfo_MediaInfo->content_type, ATSC3_ROUTE_S_TSID_RS_LS_SRCFLOW_CONTENTINFO_MEDIAINFO_CHAR_MAX_LEN);
+	}
+
+	if(atsc3_route_s_tsid_RS_LS_SrcFlow_ContentInfo_MediaInfo->lang) {
+		atsc3_route_s_tsid_RS_LS_SrcFlow_ContentInfo_MediaInfo_cloned->lang = strndup(atsc3_route_s_tsid_RS_LS_SrcFlow_ContentInfo_MediaInfo->lang, ATSC3_ROUTE_S_TSID_RS_LS_SRCFLOW_CONTENTINFO_MEDIAINFO_CHAR_MAX_LEN);
+	}
+
+	if(atsc3_route_s_tsid_RS_LS_SrcFlow_ContentInfo_MediaInfo->rep_id) {
+		atsc3_route_s_tsid_RS_LS_SrcFlow_ContentInfo_MediaInfo_cloned->rep_id = strndup(atsc3_route_s_tsid_RS_LS_SrcFlow_ContentInfo_MediaInfo->rep_id, ATSC3_ROUTE_S_TSID_RS_LS_SRCFLOW_CONTENTINFO_MEDIAINFO_CHAR_MAX_LEN);
+	}
+
+	return atsc3_route_s_tsid_RS_LS_SrcFlow_ContentInfo_MediaInfo_cloned;
+}
+
+void atsc3_route_s_tsid_RS_LS_SrcFlow_ContentInfo_MediaInfo_free(atsc3_route_s_tsid_RS_LS_SrcFlow_ContentInfo_MediaInfo_t** atsc3_route_s_tsid_RS_LS_SrcFlow_ContentInfo_MediaInfo_p) {
+	if(atsc3_route_s_tsid_RS_LS_SrcFlow_ContentInfo_MediaInfo_p) {
+		atsc3_route_s_tsid_RS_LS_SrcFlow_ContentInfo_MediaInfo_t* atsc3_route_s_tsid_RS_LS_SrcFlow_ContentInfo_MediaInfo = *atsc3_route_s_tsid_RS_LS_SrcFlow_ContentInfo_MediaInfo_p;
+		if(atsc3_route_s_tsid_RS_LS_SrcFlow_ContentInfo_MediaInfo) {
+			if(atsc3_route_s_tsid_RS_LS_SrcFlow_ContentInfo_MediaInfo->content_type) {
+				freeclean((void**)&atsc3_route_s_tsid_RS_LS_SrcFlow_ContentInfo_MediaInfo->content_type);
+			}
+
+			if(atsc3_route_s_tsid_RS_LS_SrcFlow_ContentInfo_MediaInfo->lang) {
+				freeclean((void**)&atsc3_route_s_tsid_RS_LS_SrcFlow_ContentInfo_MediaInfo->lang);
+			}
+
+			if(atsc3_route_s_tsid_RS_LS_SrcFlow_ContentInfo_MediaInfo->rep_id) {
+				freeclean((void**)&atsc3_route_s_tsid_RS_LS_SrcFlow_ContentInfo_MediaInfo->rep_id);
+			}
+
+			free(atsc3_route_s_tsid_RS_LS_SrcFlow_ContentInfo_MediaInfo);
+			atsc3_route_s_tsid_RS_LS_SrcFlow_ContentInfo_MediaInfo = NULL;
+		}
+		*atsc3_route_s_tsid_RS_LS_SrcFlow_ContentInfo_MediaInfo_p = NULL;
 	}
 }
 

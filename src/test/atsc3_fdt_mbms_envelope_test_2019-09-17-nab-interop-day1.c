@@ -93,20 +93,20 @@ int parse_fdt(const char* filename) {
         
         lls_sls_alc_monitor_t* lls_sls_alc_monitor = calloc(1, sizeof(lls_sls_alc_monitor_t));
         
-        lls_sls_alc_update_tsi_toi_from_route_s_tsid(lls_sls_alc_monitor, atsc3_sls_metadata_fragments->atsc3_route_s_tsid);
+        lls_sls_alc_update_all_mediainfo_flow_v_from_route_s_tsid(lls_sls_alc_monitor, atsc3_sls_metadata_fragments->atsc3_route_s_tsid);
 
-        if(!lls_sls_alc_monitor->audio_tsi) {
-            _ATSC3_FDT_TEST_UTILS_ERROR("lls_sls_alc_monitor->audio_tsi is null for: %s", filename);
-            return -1;
-        }
-        
-        if(!lls_sls_alc_monitor->video_tsi) {
-            _ATSC3_FDT_TEST_UTILS_ERROR("lls_sls_alc_monitor->audio_tsi is null for: %s", filename);
-            return -1;
-        }
-        
-        _ATSC3_FDT_TEST_UTILS_INFO("audio_tsi: %d, video_tsi: %d", lls_sls_alc_monitor->audio_tsi, lls_sls_alc_monitor->video_tsi);
-        
+//        if(!lls_sls_alc_monitor->audio_tsi) {
+//            _ATSC3_FDT_TEST_UTILS_ERROR("lls_sls_alc_monitor->audio_tsi is null for: %s", filename);
+//            return -1;
+//        }
+//
+//        if(!lls_sls_alc_monitor->video_tsi) {
+//            _ATSC3_FDT_TEST_UTILS_ERROR("lls_sls_alc_monitor->audio_tsi is null for: %s", filename);
+//            return -1;
+//        }
+//
+//        _ATSC3_FDT_TEST_UTILS_INFO("audio_tsi: %d, video_tsi: %d", lls_sls_alc_monitor->audio_tsi, lls_sls_alc_monitor->video_tsi);
+//
         /**
          if(lls_sls_alc_monitor && lls_sls_alc_monitor->atsc3_fdt_instance) {
          uint32_t* mbms_toi = atsc3_mbms_envelope_find_toi_from_fdt(lls_sls_alc_monitor->atsc3_fdt_instance);

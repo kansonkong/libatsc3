@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<metadataEnvelope xmlns="urn:3gpp:metadata:2005:MBMS:envelope">
+    <item metadataURI="usbd.rusd" contentType="application/route-usd+xml" version="38"/>
+    <item metadataURI="stsid.sls" contentType="application/route-s-tsid+xml" version="122"/>
+    <item metadataURI="mpd.mpd" contentType="application/dash+xml" version="145"/>
+    <item metadataURI="held.held" contentType="application/atsc-held+xml" version="1"/>
+</metadataEnvelope>
+

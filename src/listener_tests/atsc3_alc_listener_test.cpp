@@ -65,7 +65,7 @@ void process_packet(u_char *user, const struct pcap_pkthdr *pkthdr, const u_char
 	}
 	__TRACE("process_packet: source: %u.%u.%u.%u:%u", __toipandportnonstruct(udp_packet->udp_flow.dst_ip_addr, udp_packet->udp_flow.dst_port));
 
-    alc_packet_t* alc_packet = NULL;
+    atsc3_alc_packet_t* alc_packet = NULL;
 
 	//dispatch for LLS extraction and dump
 	if(udp_packet->udp_flow.dst_ip_addr == LLS_DST_ADDR && udp_packet->udp_flow.dst_port == LLS_DST_PORT) {

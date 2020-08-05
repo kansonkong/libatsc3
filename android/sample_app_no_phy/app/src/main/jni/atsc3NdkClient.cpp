@@ -3,6 +3,7 @@
 #include <atsc3_lls_types.h>
 #include <atsc3_phy_mmt_player_bridge.h>
 #include <atsc3_pcap_type.h>
+#include <atsc3_monitor_events_alc.h>
 #include "atsc3NdkClient.h"
 #include "atsc3NdkClientNoPhyImpl.h"
 
@@ -305,7 +306,7 @@ void atsc3NdkClient::atsc3_onMfuPacket(uint16_t packet_id, uint32_t mpu_sequence
     // this method can be called in native thread. we don't safely use pre-assigned mJniEnv.
     if (!JReady())
         return;
-    if (!atsc3_jni_rx_thread_env) {
+    if (!Atsc3_Jni_Processing_Thread_Env) {
         eprintf("!! err on get jni env\n");
         return;
     }
@@ -320,11 +321,11 @@ void atsc3NdkClient::atsc3_onMfuPacket(uint16_t packet_id, uint32_t mpu_sequence
     //printf("atsc3NdkClient::onMfuPacket, ret: %d, bufferLen: %u", r, bufferLen);
    // env.Get()->DeleteLocalRef(jobjectByteBuffer);
 #else
-    jobject jobjectLocalByteBuffer = atsc3_jni_rx_thread_env->Get()->NewDirectByteBuffer(buffer, bufferLen);
+    jobject jobjectLocalByteBuffer = Atsc3_Jni_Processing_Thread_Env->Get()->NewDirectByteBuffer(buffer, bufferLen);
 
-    int r = atsc3_jni_rx_thread_env->Get()->CallIntMethod(mClsDrvIntf, atsc3_onMfuPacketID, packet_id, mpu_sequence_number, sample_number, jobjectLocalByteBuffer, bufferLen, presentationUs, mfu_fragment_count_rebuilt);
+    int r = Atsc3_Jni_Processing_Thread_Env->Get()->CallIntMethod(mClsDrvIntf, atsc3_onMfuPacketID, packet_id, mpu_sequence_number, sample_number, jobjectLocalByteBuffer, bufferLen, presentationUs, mfu_fragment_count_rebuilt);
     //printf("atsc3NdkClient::onMfuPacket, ret: %d, bufferLen: %u", r, bufferLen);
-    atsc3_jni_rx_thread_env->Get()->DeleteLocalRef(jobjectLocalByteBuffer);
+    Atsc3_Jni_Processing_Thread_Env->Get()->DeleteLocalRef(jobjectLocalByteBuffer);
 #endif
 }
 
@@ -334,7 +335,7 @@ void atsc3NdkClient::atsc3_onMfuPacketCorrupt(uint16_t packet_id, uint32_t mpu_s
     // this method can be called in native thread. we don't safely use pre-assigned mJniEnv.
     if (!JReady())
         return;
-    if (!atsc3_jni_rx_thread_env) {
+    if (!Atsc3_Jni_Processing_Thread_Env) {
         eprintf("!! err on get jni env\n");
         return;
     }
@@ -349,11 +350,11 @@ void atsc3NdkClient::atsc3_onMfuPacketCorrupt(uint16_t packet_id, uint32_t mpu_s
     //printf("atsc3NdkClient::onMfuPacket, ret: %d, bufferLen: %u", r, bufferLen);
    // env.Get()->DeleteLocalRef(jobjectByteBuffer);
 #else
-    jobject jobjectLocalByteBuffer = atsc3_jni_rx_thread_env->Get()->NewDirectByteBuffer(buffer, bufferLen);
+    jobject jobjectLocalByteBuffer = Atsc3_Jni_Processing_Thread_Env->Get()->NewDirectByteBuffer(buffer, bufferLen);
 
-    int r = atsc3_jni_rx_thread_env->Get()->CallIntMethod(mClsDrvIntf, atsc3_onMfuPacketCorruptID, packet_id, mpu_sequence_number, sample_number, jobjectLocalByteBuffer, bufferLen, presentationUs, mfu_fragment_count_expected, mfu_fragment_count_rebuilt);
+    int r = Atsc3_Jni_Processing_Thread_Env->Get()->CallIntMethod(mClsDrvIntf, atsc3_onMfuPacketCorruptID, packet_id, mpu_sequence_number, sample_number, jobjectLocalByteBuffer, bufferLen, presentationUs, mfu_fragment_count_expected, mfu_fragment_count_rebuilt);
     //printf("atsc3NdkClient::onMfuPacket, ret: %d, bufferLen: %u", r, bufferLen);
-    atsc3_jni_rx_thread_env->Get()->DeleteLocalRef(jobjectLocalByteBuffer);
+    Atsc3_Jni_Processing_Thread_Env->Get()->DeleteLocalRef(jobjectLocalByteBuffer);
 #endif
 }
 
@@ -363,7 +364,7 @@ void atsc3NdkClient::atsc3_onMfuPacketCorruptMmthSampleHeader(uint16_t packet_id
     // this method can be called in native thread. we don't safely use pre-assigned mJniEnv.
     if (!JReady())
         return;
-    if (!atsc3_jni_rx_thread_env) {
+    if (!Atsc3_Jni_Processing_Thread_Env) {
         eprintf("!! err on get jni env\n");
         return;
     }
@@ -378,11 +379,11 @@ void atsc3NdkClient::atsc3_onMfuPacketCorruptMmthSampleHeader(uint16_t packet_id
     //printf("atsc3NdkClient::onMfuPacket, ret: %d, bufferLen: %u", r, bufferLen);
    // env.Get()->DeleteLocalRef(jobjectByteBuffer);
 #else
-    jobject jobjectLocalByteBuffer = atsc3_jni_rx_thread_env->Get()->NewDirectByteBuffer(buffer, bufferLen);
+    jobject jobjectLocalByteBuffer = Atsc3_Jni_Processing_Thread_Env->Get()->NewDirectByteBuffer(buffer, bufferLen);
 
-    int r = atsc3_jni_rx_thread_env->Get()->CallIntMethod(mClsDrvIntf, atsc3_onMfuPacketCorruptMmthSampleHeaderID, packet_id, mpu_sequence_number, sample_number, jobjectLocalByteBuffer, bufferLen, presentationUs, mfu_fragment_count_expected, mfu_fragment_count_rebuilt);
+    int r = Atsc3_Jni_Processing_Thread_Env->Get()->CallIntMethod(mClsDrvIntf, atsc3_onMfuPacketCorruptMmthSampleHeaderID, packet_id, mpu_sequence_number, sample_number, jobjectLocalByteBuffer, bufferLen, presentationUs, mfu_fragment_count_expected, mfu_fragment_count_rebuilt);
     //printf("atsc3NdkClient::onMfuPacket, ret: %d, bufferLen: %u", r, bufferLen);
-    atsc3_jni_rx_thread_env->Get()->DeleteLocalRef(jobjectLocalByteBuffer);
+    Atsc3_Jni_Processing_Thread_Env->Get()->DeleteLocalRef(jobjectLocalByteBuffer);
 #endif
 }
 
@@ -390,7 +391,7 @@ void atsc3NdkClient::atsc3_onMfuPacketCorruptMmthSampleHeader(uint16_t packet_id
 void atsc3NdkClient::atsc3_onInitHEVC_NAL_Extracted(uint16_t packet_id, uint32_t mpu_sequence_number, uint8_t* buffer, uint32_t bufferLen) {
     if (!JReady())
         return;
-    if (!atsc3_jni_rx_thread_env) {
+    if (!Atsc3_Jni_Processing_Thread_Env) {
         eprintf("!! err on get jni env\n");
         return;
     }
@@ -405,9 +406,9 @@ void atsc3NdkClient::atsc3_onInitHEVC_NAL_Extracted(uint16_t packet_id, uint32_t
     //printf("atsc3NdkClient::onMfuPacket, ret: %d, bufferLen: %u", r, bufferLen);
     //env.Get()->DeleteLocalRef(jobjectByteBuffer);
 #else
-    jobject jobjectByteBuffer = atsc3_jni_rx_thread_env->Get()->NewDirectByteBuffer(buffer, bufferLen);
-    int r = atsc3_jni_rx_thread_env->Get()->CallIntMethod(mClsDrvIntf, mOnInitHEVC_NAL_Extracted, packet_id, mpu_sequence_number, jobjectByteBuffer, bufferLen);
-    atsc3_jni_rx_thread_env->Get()->DeleteLocalRef(jobjectByteBuffer);
+    jobject jobjectByteBuffer = Atsc3_Jni_Processing_Thread_Env->Get()->NewDirectByteBuffer(buffer, bufferLen);
+    int r = Atsc3_Jni_Processing_Thread_Env->Get()->CallIntMethod(mClsDrvIntf, mOnInitHEVC_NAL_Extracted, packet_id, mpu_sequence_number, jobjectByteBuffer, bufferLen);
+    Atsc3_Jni_Processing_Thread_Env->Get()->DeleteLocalRef(jobjectByteBuffer);
 #endif
 }
 
@@ -425,12 +426,12 @@ void atsc3NdkClient::atsc3_signallingContext_notify_video_packet_id_and_mpu_time
     // this method can be called in native thread. we don't safely use pre-assigned mJniEnv.
     if (!JReady())
         return;
-    if (!atsc3_jni_rx_thread_env) {
+    if (!Atsc3_Jni_Processing_Thread_Env) {
         eprintf("!! err on get jni env\n");
         return;
     }
 
-    int r = atsc3_jni_rx_thread_env->Get()->CallIntMethod(mClsDrvIntf, atsc3_signallingContext_notify_video_packet_id_and_mpu_timestamp_descriptor_ID, video_packet_id, mpu_sequence_number, mpu_presentation_time_ntp64, mpu_presentation_time_seconds, mpu_presentation_time_microseconds);
+    int r = Atsc3_Jni_Processing_Thread_Env->Get()->CallIntMethod(mClsDrvIntf, atsc3_signallingContext_notify_video_packet_id_and_mpu_timestamp_descriptor_ID, video_packet_id, mpu_sequence_number, mpu_presentation_time_ntp64, mpu_presentation_time_seconds, mpu_presentation_time_microseconds);
     //printf("atsc3NdkClient::onMfuPacket, ret: %d, bufferLen: %u", r, bufferLen);
    //env.Get()->DeleteLocalRef(jobjectLocalByteBuffer);
 }
@@ -440,12 +441,12 @@ void atsc3NdkClient::atsc3_signallingContext_notify_audio_packet_id_and_mpu_time
     // this method can be called in native thread. we don't safely use pre-assigned mJniEnv.
     if (!JReady())
         return;
-    if (!atsc3_jni_rx_thread_env) {
+    if (!Atsc3_Jni_Processing_Thread_Env) {
         eprintf("!! err on get jni env\n");
         return;
     }
 
-    int r = atsc3_jni_rx_thread_env->Get()->CallIntMethod(mClsDrvIntf, atsc3_signallingContext_notify_audio_packet_id_and_mpu_timestamp_descriptor_ID, audio_packet_id, mpu_sequence_number, mpu_presentation_time_ntp64, mpu_presentation_time_seconds, mpu_presentation_time_microseconds);
+    int r = Atsc3_Jni_Processing_Thread_Env->Get()->CallIntMethod(mClsDrvIntf, atsc3_signallingContext_notify_audio_packet_id_and_mpu_timestamp_descriptor_ID, audio_packet_id, mpu_sequence_number, mpu_presentation_time_ntp64, mpu_presentation_time_seconds, mpu_presentation_time_microseconds);
     //printf("atsc3NdkClient::onMfuPacket, ret: %d, bufferLen: %u", r, bufferLen);
     //env.Get()->DeleteLocalRef(jobjectLocalByteBuffer);
 }
@@ -456,12 +457,12 @@ void atsc3NdkClient::atsc3_signallingContext_notify_stpp_packet_id_and_mpu_times
     // this method can be called in native thread. we don't safely use pre-assigned mJniEnv.
     if (!JReady())
         return;
-    if (!atsc3_jni_rx_thread_env) {
+    if (!Atsc3_Jni_Processing_Thread_Env) {
         eprintf("!! err on get jni env\n");
         return;
     }
 
-    int r =  atsc3_jni_rx_thread_env->Get()->CallIntMethod(mClsDrvIntf, atsc3_signallingContext_notify_stpp_packet_id_and_mpu_timestamp_descriptor_ID, stpp_packet_id, mpu_sequence_number, mpu_presentation_time_ntp64, mpu_presentation_time_seconds, mpu_presentation_time_microseconds);
+    int r =  Atsc3_Jni_Processing_Thread_Env->Get()->CallIntMethod(mClsDrvIntf, atsc3_signallingContext_notify_stpp_packet_id_and_mpu_timestamp_descriptor_ID, stpp_packet_id, mpu_sequence_number, mpu_presentation_time_ntp64, mpu_presentation_time_seconds, mpu_presentation_time_microseconds);
     //printf("atsc3NdkClient::onMfuPacket, ret: %d, bufferLen: %u", r, bufferLen);
     //env.Get()->DeleteLocalRef(jobjectLocalByteBuffer);
 }
@@ -470,12 +471,12 @@ void atsc3NdkClient::atsc3_signallingContext_notify_stpp_packet_id_and_mpu_times
 void atsc3NdkClient::atsc3_onMfuSampleMissing(uint16_t pcaket_id, uint32_t mpu_sequence_number, uint32_t sample_number) {
     if (!JReady())
         return;
-    if (!atsc3_jni_rx_thread_env) {
+    if (!Atsc3_Jni_Processing_Thread_Env) {
         eprintf("!! err on get jni env\n");
         return;
     }
 
-    int r = atsc3_jni_rx_thread_env->Get()->CallIntMethod(mClsDrvIntf, atsc3_onMfuSampleMissingID, pcaket_id, mpu_sequence_number, sample_number);
+    int r = Atsc3_Jni_Processing_Thread_Env->Get()->CallIntMethod(mClsDrvIntf, atsc3_onMfuSampleMissingID, pcaket_id, mpu_sequence_number, sample_number);
 
 }
 
@@ -524,15 +525,15 @@ void atsc3NdkClient::atsc3_onAlcObjectStatusMessage(const char *fmt, ...)
 
     if (!JReady())
         return;
-    if (!atsc3_jni_rx_thread_env) {
+    if (!Atsc3_Jni_Processing_Thread_Env) {
         eprintf("!! err on get jni env\n");
         return;
     }
 
-    jstring js = atsc3_jni_rx_thread_env->Get()->NewStringUTF(msg);
+    jstring js = Atsc3_Jni_Processing_Thread_Env->Get()->NewStringUTF(msg);
 
-    int r = atsc3_jni_rx_thread_env->Get()->CallIntMethod(mClsDrvIntf, atsc3_on_alc_object_status_message_ID, js);
-    atsc3_jni_rx_thread_env->Get()->DeleteLocalRef(js);
+    int r = Atsc3_Jni_Processing_Thread_Env->Get()->CallIntMethod(mClsDrvIntf, atsc3_on_alc_object_status_message_ID, js);
+    Atsc3_Jni_Processing_Thread_Env->Get()->DeleteLocalRef(js);
 
 }
 
@@ -563,11 +564,11 @@ int atsc3NdkClient::atsc3_pcap_thread_run() {
 
     pcapConsumerThreadPtr = std::thread([this](){
         atsc3_jni_pcap_consumer_thread_env = new CJniEnv(mJavaVM);
-        atsc3_jni_rx_thread_env = atsc3_jni_pcap_consumer_thread_env; //hack
+        Atsc3_Jni_Processing_Thread_Env = atsc3_jni_pcap_consumer_thread_env; //hack
         LogMsgF("atsc3NdkClient::atsc3_pcap_consumer_thread_run with this: %p", this);
 
         this->PcapConsumerThreadRun();
-        atsc3_jni_rx_thread_env = NULL;
+        Atsc3_Jni_Processing_Thread_Env = NULL;
         delete atsc3_jni_pcap_consumer_thread_env;
     });
 
@@ -576,21 +577,21 @@ int atsc3NdkClient::atsc3_pcap_thread_run() {
 }
 
 int atsc3NdkClient::pinFromRxCaptureThread() {
-    printf("atsc3NdkClient::atsc3_jni_rx_capture_thread_env: mJavaVM: %p", mJavaVM);
-    atsc3_jni_rx_capture_thread_env = new CJniEnv(mJavaVM);
+    printf("atsc3NdkClient::Atsc3_Jni_Processing_Thread_Env: mJavaVM: %p", mJavaVM);
+    Atsc3_Jni_Processing_Thread_Env = new CJniEnv(mJavaVM);
     return 0;
 };
 
 int atsc3NdkClient::pinFromRxProcessingThread() {
     printf("atsc3NdkClient::pinFromRxProcessingThread: mJavaVM: %p", mJavaVM);
-    atsc3_jni_rx_thread_env = new CJniEnv(mJavaVM);
+    Atsc3_Jni_Processing_Thread_Env = new CJniEnv(mJavaVM);
     return 0;
 }
 
 
 int atsc3NdkClient::pinFromRxStatusThread() {
     printf("atsc3NdkClient::pinFromRxStatusThread: mJavaVM: %p", mJavaVM);
-    atsc3_jni_rx_status_thread_env = new CJniEnv(mJavaVM);
+    Atsc3_Jni_Status_Thread_Env = new CJniEnv(mJavaVM);
     return 0;
 }
 
@@ -687,26 +688,26 @@ void atsc3NdkClient::atsc3_update_rf_stats(int32_t tuner_lock,
     if (!JReady() || !mOnLogMsgId)
         return;
 
-    if (!atsc3_jni_rx_status_thread_env) {
-        eprintf("atsc3NdkClient:atsc3_update_rf_stats: err on get jni env: atsc3_jni_rx_status_thread_env\n");
+    if (!Atsc3_Jni_Status_Thread_Env) {
+        eprintf("atsc3NdkClient:atsc3_update_rf_stats: err on get jni env: Atsc3_Jni_Status_Thread_Env\n");
         return;
     }
-    int r = atsc3_jni_rx_status_thread_env->Get()->CallIntMethod(mClsDrvIntf, atsc3_rf_phy_status_callback_ID,
-             tuner_lock,
-             rssi,
-             modcod_valid,
-             plp_fec_type,
-             plp_mod,
-             plp_cod,
-             nRfLevel1000,
-             nSnr1000,
-             ber_pre_ldpc_e7,
-             ber_pre_bch_e9,
-             fer_post_bch_e6,
-             demod_lock_status,
-             cpu_status,
-             plp_any,
-             plp_all);
+    int r = Atsc3_Jni_Status_Thread_Env->Get()->CallIntMethod(mClsDrvIntf, atsc3_rf_phy_status_callback_ID,
+                                                              tuner_lock,
+                                                              rssi,
+                                                              modcod_valid,
+                                                              plp_fec_type,
+                                                              plp_mod,
+                                                              plp_cod,
+                                                              nRfLevel1000,
+                                                              nSnr1000,
+                                                              ber_pre_ldpc_e7,
+                                                              ber_pre_bch_e9,
+                                                              fer_post_bch_e6,
+                                                              demod_lock_status,
+                                                              cpu_status,
+                                                              plp_any,
+                                                              plp_all);
 
 }
 
@@ -717,14 +718,14 @@ void atsc3NdkClient::atsc3_onExtractedSampleDuration(uint16_t packet_id, uint32_
     // this method can be called in native thread. we don't safely use pre-assigned mJniEnv.
     if (!JReady() || !mOnLogMsgId)
         return;
-    if (!atsc3_jni_rx_thread_env) {
+    if (!Atsc3_Jni_Processing_Thread_Env) {
         eprintf("!! err on get jni env\n");
         return;
     }
-    int r = atsc3_jni_rx_thread_env->Get()->CallIntMethod(mClsDrvIntf, atsc3_onExtractedSampleDurationID,
-                                     packet_id,
-                                     mpu_sequence_number,
-                                     extracted_sample_duration_us);
+    int r = Atsc3_Jni_Processing_Thread_Env->Get()->CallIntMethod(mClsDrvIntf, atsc3_onExtractedSampleDurationID,
+                                                                  packet_id,
+                                                                  mpu_sequence_number,
+                                                                  extracted_sample_duration_us);
 }
 
 
@@ -734,11 +735,11 @@ void atsc3NdkClient::atsc3_setVideoWidthHeightFromTrak(uint32_t width, uint32_t 
     // this method can be called in native thread. we don't safely use pre-assigned mJniEnv.
     if (!JReady() || !mOnLogMsgId)
         return;
-    if (!atsc3_jni_rx_thread_env) {
+    if (!Atsc3_Jni_Processing_Thread_Env) {
         eprintf("!! err on get jni env\n");
         return;
     }
-    int r = atsc3_jni_rx_thread_env->Get()->CallIntMethod(mClsDrvIntf, atsc3_setVideoWidthHeightFromTrakID, width, height);
+    int r = Atsc3_Jni_Processing_Thread_Env->Get()->CallIntMethod(mClsDrvIntf, atsc3_setVideoWidthHeightFromTrakID, width, height);
 
 }
 
@@ -747,11 +748,11 @@ void atsc3NdkClient::atsc3_update_rf_bw_stats(uint64_t total_pkts, uint64_t tota
                                           unsigned int total_lmts) {
     if (!JReady() || !mOnLogMsgId)
         return;
-    if (!atsc3_jni_rx_status_thread_env) {
-        eprintf("atsc3NdkClient:atsc3_update_rf_bw_stats: err on get jni env: atsc3_jni_rx_status_thread_env\n");
+    if (!Atsc3_Jni_Status_Thread_Env) {
+        eprintf("atsc3NdkClient:atsc3_update_rf_bw_stats: err on get jni env: Atsc3_Jni_Status_Thread_Env\n");
         return;
     }
-    int r = atsc3_jni_rx_status_thread_env->Get()->CallIntMethod(mClsDrvIntf, atsc3_update_rf_bw_stats_ID, total_pkts, total_bytes, total_lmts);
+    int r = Atsc3_Jni_Status_Thread_Env->Get()->CallIntMethod(mClsDrvIntf, atsc3_update_rf_bw_stats_ID, total_pkts, total_bytes, total_lmts);
 }
 
 //Java to native methods
@@ -862,11 +863,11 @@ atsc3NdkClient::atsc3_slt_alc_get_sls_metadata_fragments_content_locations_from_
     if(atsc3_sls_metadata_fragments && atsc3_sls_metadata_fragments->atsc3_mime_multipart_related_instance && atsc3_sls_metadata_fragments->atsc3_mime_multipart_related_instance->atsc3_mime_multipart_related_payload_v.count) {
         for(int i=0; i < atsc3_sls_metadata_fragments->atsc3_mime_multipart_related_instance->atsc3_mime_multipart_related_payload_v.count; i++) {
             atsc3_mime_multipart_related_payload_t* atsc3_mime_multipart_related_payload = atsc3_sls_metadata_fragments->atsc3_mime_multipart_related_instance->atsc3_mime_multipart_related_payload_v.data[i];
-            if(atsc3_mime_multipart_related_payload->content_location) {
+            if(atsc3_mime_multipart_related_payload->sanitizied_content_location) {
                 //if to_match_content_type is supplied, filter by match
                 if(to_match_content_type && atsc3_mime_multipart_related_payload->content_type &&
                    strncasecmp(to_match_content_type, atsc3_mime_multipart_related_payload->content_type, strlen(to_match_content_type)) == 0 ) {
-                    string my_metadata_route_service_temp_folder_name = atsc3_route_service_context_temp_folder_name(service_id) + atsc3_mime_multipart_related_payload->content_location;
+                    string my_metadata_route_service_temp_folder_name = atsc3_route_service_context_temp_folder_name(service_id) + atsc3_mime_multipart_related_payload->sanitizied_content_location;
                     my_mbms_metadata_uri_values.push_back(my_metadata_route_service_temp_folder_name);
                 }
             }
@@ -922,12 +923,171 @@ void atsc3NdkClient::atsc3_lls_sls_alc_on_object_close_flag_s_tsid_content_locat
 void atsc3NdkClient::atsc3_lls_sls_alc_on_route_mpd_patched_jni(uint16_t service_id) {
     if (!JReady() || !atsc3_lls_sls_alc_on_route_mpd_patched_ID)
         return;
-    if (!atsc3_jni_rx_thread_env) {
+    if (!Atsc3_Jni_Processing_Thread_Env) {
         eprintf("!! err on get jni env\n");
         return;
     }
-    int r = atsc3_jni_rx_thread_env->Get()->CallIntMethod(mClsDrvIntf, atsc3_lls_sls_alc_on_route_mpd_patched_ID, service_id);
+    int r = Atsc3_Jni_Processing_Thread_Env->Get()->CallIntMethod(mClsDrvIntf, atsc3_lls_sls_alc_on_route_mpd_patched_ID, service_id);
 
+}
+
+// https://stackoverflow.com/questions/6343459/get-strings-used-in-java-from-jni
+void atsc3NdkClient::atsc3_lls_sls_alc_on_package_extract_completed_callback_jni(atsc3_route_package_extracted_envelope_metadata_and_payload_t* atsc3_route_package_extracted_envelope_metadata_and_payload) {
+    if (!JReady() || !atsc3_lls_sls_alc_on_package_extract_completed_ID)
+        return;
+    if (!Atsc3_Jni_Processing_Thread_Env) {
+        eprintf("atsc3_lls_sls_alc_on_package_extract_completed_callback_jni::err on get jni env: Atsc3_Jni_Processing_Thread_Env\n");
+        return;
+    }
+
+    if(!atsc3_route_package_extracted_envelope_metadata_and_payload) {
+        eprintf("atsc3_lls_sls_alc_on_package_extract_completed_callback_jni::err atsc3_route_package_extracted_envelope_metadata_and_payload is NULL\n");
+        return;
+    }
+
+    if(!atsc3_route_package_extracted_envelope_metadata_and_payload->atsc3_mbms_metadata_envelope_raw_xml || !atsc3_route_package_extracted_envelope_metadata_and_payload->atsc3_mbms_metadata_envelope_raw_xml->p_buffer) {
+        eprintf("atsc3_lls_sls_alc_on_package_extract_completed_callback_jni::err atsc3_route_package_extracted_envelope_metadata_and_payload->atsc3_mbms_metadata_envelope_raw_xml (or p_buffer) is NULL\n");
+        return;
+    }
+
+    if(!atsc3_route_package_extracted_envelope_metadata_and_payload->package_name) {
+    	eprintf("atsc3_lls_sls_alc_on_package_extract_completed_callback_jni::err atsc3_route_package_extracted_envelope_metadata_and_payload->package_name is NULL\n");
+        return;
+    }
+
+    std::list<jstring> to_clean_jstrings;
+    std::list<jobject> to_clean_jobject;
+
+    //org.ngbp.libatsc3.android.PackageExtractEnvelopeMetadataAndPayload
+    jclass jcls = api.packageExtractEnvelopeMetadataAndPayload_jclass_global_ref;
+    jobject jobj = Atsc3_Jni_Processing_Thread_Env->Get()->AllocObject(jcls);
+
+    if(!jobj) {
+        eprintf("atsc3_lls_sls_alc_on_package_extract_completed_callback_jni::err unable to allocate packageExtractEnvelopeMetadataAndPayload_jclass_global_ref instance jobj!");
+        return;
+    }
+
+
+    jfieldID packageName_valId = Atsc3_Jni_Processing_Thread_Env->Get()->GetFieldID(jcls, "packageName", "Ljava/lang/String;");
+    jstring packageName_payload = Atsc3_Jni_Processing_Thread_Env->Get()->NewStringUTF(atsc3_route_package_extracted_envelope_metadata_and_payload->package_name);
+    Atsc3_Jni_Processing_Thread_Env->Get()->SetObjectField(jobj, packageName_valId, packageName_payload);
+    to_clean_jstrings.push_back(packageName_payload);
+
+    jfieldID tsi_valId = Atsc3_Jni_Processing_Thread_Env->Get()->GetFieldID(jcls, "tsi", "I");
+    Atsc3_Jni_Processing_Thread_Env->Get()->SetIntField(jobj, tsi_valId, atsc3_route_package_extracted_envelope_metadata_and_payload->tsi);
+
+    jfieldID toi_valId = Atsc3_Jni_Processing_Thread_Env->Get()->GetFieldID(jcls, "toi", "I");
+    Atsc3_Jni_Processing_Thread_Env->Get()->SetIntField(jobj, toi_valId, atsc3_route_package_extracted_envelope_metadata_and_payload->toi);
+
+    jfieldID appContextIdList_valId = Atsc3_Jni_Processing_Thread_Env->Get()->GetFieldID(jcls, "appContextIdList", "Ljava/lang/String;");
+    jstring appContextIdList_payload = Atsc3_Jni_Processing_Thread_Env->Get()->NewStringUTF(atsc3_route_package_extracted_envelope_metadata_and_payload->app_context_id_list);
+    Atsc3_Jni_Processing_Thread_Env->Get()->SetObjectField(jobj, appContextIdList_valId, appContextIdList_payload);
+    to_clean_jstrings.push_back(appContextIdList_payload);
+
+
+    jfieldID packageExtractPath_valId = Atsc3_Jni_Processing_Thread_Env->Get()->GetFieldID(jcls, "packageExtractPath", "Ljava/lang/String;");
+    jstring packageExtractPath_payload = Atsc3_Jni_Processing_Thread_Env->Get()->NewStringUTF(atsc3_route_package_extracted_envelope_metadata_and_payload->package_extract_path);
+    Atsc3_Jni_Processing_Thread_Env->Get()->SetObjectField(jobj, packageExtractPath_valId, packageExtractPath_payload);
+    to_clean_jstrings.push_back(packageExtractPath_payload);
+
+
+    jfieldID mbmsEnvelopeRawXml_valId = Atsc3_Jni_Processing_Thread_Env->Get()->GetFieldID(jcls, "mbmsEnvelopeRawXml", "Ljava/lang/String;");
+    jstring mbmsEnvelopeRawXml_payload = Atsc3_Jni_Processing_Thread_Env->Get()->NewStringUTF((char*)atsc3_route_package_extracted_envelope_metadata_and_payload->atsc3_mbms_metadata_envelope_raw_xml->p_buffer);
+    Atsc3_Jni_Processing_Thread_Env->Get()->SetObjectField(jobj, mbmsEnvelopeRawXml_valId, mbmsEnvelopeRawXml_payload);
+    to_clean_jstrings.push_back(mbmsEnvelopeRawXml_payload);
+
+    if(atsc3_route_package_extracted_envelope_metadata_and_payload->atsc3_mime_multipart_related_payload_v.count > 0) {
+
+        jobject multipartRelatedPayloadList_jobject = Atsc3_Jni_Processing_Thread_Env->Get()->NewObject(api.jni_java_util_ArrayList, api.jni_java_util_ArrayList_cctor, atsc3_route_package_extracted_envelope_metadata_and_payload->atsc3_mime_multipart_related_payload_v.count);
+
+        for(int i=0; i < atsc3_route_package_extracted_envelope_metadata_and_payload->atsc3_mime_multipart_related_payload_v.count; i++) {
+            atsc3_mime_multipart_related_payload_t* atsc3_mime_multipart_related_payload = atsc3_route_package_extracted_envelope_metadata_and_payload->atsc3_mime_multipart_related_payload_v.data[i];
+            jobject jobj_multipart_related_payload_jobject = Atsc3_Jni_Processing_Thread_Env->Get()->AllocObject(api.packageExtractEnvelopeMetadataAndPayload_MultipartRelatedPayload_jclass_global_ref);
+
+            to_clean_jobject.push_back(jobj_multipart_related_payload_jobject);
+
+            jfieldID contentLocation_valId = Atsc3_Jni_Processing_Thread_Env->Get()->GetFieldID(api.packageExtractEnvelopeMetadataAndPayload_MultipartRelatedPayload_jclass_global_ref, "contentLocation", "Ljava/lang/String;");
+            jstring contentLocation_jstring = Atsc3_Jni_Processing_Thread_Env->Get()->NewStringUTF(atsc3_mime_multipart_related_payload->sanitizied_content_location);
+            Atsc3_Jni_Processing_Thread_Env->Get()->SetObjectField(jobj_multipart_related_payload_jobject, contentLocation_valId, contentLocation_jstring);
+            to_clean_jstrings.push_back(contentLocation_jstring);
+
+            if(atsc3_mime_multipart_related_payload->content_type) {
+                jfieldID contentType_valId = Atsc3_Jni_Processing_Thread_Env->Get()->GetFieldID(api.packageExtractEnvelopeMetadataAndPayload_MultipartRelatedPayload_jclass_global_ref, "contentType", "Ljava/lang/String;");
+                jstring contentType_jstring = Atsc3_Jni_Processing_Thread_Env->Get()->NewStringUTF(atsc3_mime_multipart_related_payload->content_type);
+                Atsc3_Jni_Processing_Thread_Env->Get()->SetObjectField(jobj_multipart_related_payload_jobject, contentType_valId, contentType_jstring);
+                to_clean_jstrings.push_back(contentType_jstring);
+            }
+
+            if(atsc3_mime_multipart_related_payload->valid_from_string) {
+                jfieldID validFrom_valId = Atsc3_Jni_Processing_Thread_Env->Get()->GetFieldID(api.packageExtractEnvelopeMetadataAndPayload_MultipartRelatedPayload_jclass_global_ref, "validFrom", "Ljava/lang/String;");
+                jstring validFrom_jstring = Atsc3_Jni_Processing_Thread_Env->Get()->NewStringUTF(atsc3_mime_multipart_related_payload->valid_from_string);
+                Atsc3_Jni_Processing_Thread_Env->Get()->SetObjectField(jobj_multipart_related_payload_jobject, validFrom_valId, validFrom_jstring);
+                to_clean_jstrings.push_back(validFrom_jstring);
+            }
+
+            if(atsc3_mime_multipart_related_payload->valid_until_string) {
+                jfieldID validUntil_valId = Atsc3_Jni_Processing_Thread_Env->Get()->GetFieldID(api.packageExtractEnvelopeMetadataAndPayload_MultipartRelatedPayload_jclass_global_ref, "validUntil", "Ljava/lang/String;");
+                jstring validUntil_jstring = Atsc3_Jni_Processing_Thread_Env->Get()->NewStringUTF(atsc3_mime_multipart_related_payload->valid_until_string);
+                Atsc3_Jni_Processing_Thread_Env->Get()->SetObjectField(jobj_multipart_related_payload_jobject, validUntil_valId, validUntil_jstring);
+                to_clean_jstrings.push_back(validUntil_jstring);
+            }
+
+            //version
+
+            jfieldID version_valId = Atsc3_Jni_Processing_Thread_Env->Get()->GetFieldID(api.packageExtractEnvelopeMetadataAndPayload_MultipartRelatedPayload_jclass_global_ref, "version", "I");
+            Atsc3_Jni_Processing_Thread_Env->Get()->SetIntField(jobj_multipart_related_payload_jobject, version_valId, atsc3_mime_multipart_related_payload->version);
+
+
+            if(atsc3_mime_multipart_related_payload->next_url_string) {
+                jfieldID nextUrl_valId = Atsc3_Jni_Processing_Thread_Env->Get()->GetFieldID(api.packageExtractEnvelopeMetadataAndPayload_MultipartRelatedPayload_jclass_global_ref, "nextUrl", "Ljava/lang/String;");
+                jstring nextUrl_jstring = Atsc3_Jni_Processing_Thread_Env->Get()->NewStringUTF(atsc3_mime_multipart_related_payload->next_url_string);
+                Atsc3_Jni_Processing_Thread_Env->Get()->SetObjectField(jobj_multipart_related_payload_jobject, nextUrl_valId, nextUrl_jstring);
+                to_clean_jstrings.push_back(nextUrl_jstring);
+            }
+
+            if(atsc3_mime_multipart_related_payload->avail_at_string) {
+                jfieldID availAt_valId = Atsc3_Jni_Processing_Thread_Env->Get()->GetFieldID(api.packageExtractEnvelopeMetadataAndPayload_MultipartRelatedPayload_jclass_global_ref, "availAt", "Ljava/lang/String;");
+                jstring availAt_jstring = Atsc3_Jni_Processing_Thread_Env->Get()->NewStringUTF(atsc3_mime_multipart_related_payload->avail_at_string);
+                Atsc3_Jni_Processing_Thread_Env->Get()->SetObjectField(jobj_multipart_related_payload_jobject, availAt_valId, availAt_jstring);
+                to_clean_jstrings.push_back(availAt_jstring);
+            }
+
+            //extractedSize
+            jfieldID extractedSize_valId = Atsc3_Jni_Processing_Thread_Env->Get()->GetFieldID(api.packageExtractEnvelopeMetadataAndPayload_MultipartRelatedPayload_jclass_global_ref, "extractedSize", "I");
+            Atsc3_Jni_Processing_Thread_Env->Get()->SetIntField(jobj_multipart_related_payload_jobject, extractedSize_valId, atsc3_mime_multipart_related_payload->extracted_size);
+
+            Atsc3_Jni_Processing_Thread_Env->Get()->CallBooleanMethod(multipartRelatedPayloadList_jobject, api.jni_java_util_ArrayList_add, jobj_multipart_related_payload_jobject);
+        }
+
+        jfieldID multipartRelatedPayloadList_valId = Atsc3_Jni_Processing_Thread_Env->Get()->GetFieldID(jcls, "multipartRelatedPayloadList", "Ljava/util/List;");
+        Atsc3_Jni_Processing_Thread_Env->Get()->SetObjectField(jobj, multipartRelatedPayloadList_valId, multipartRelatedPayloadList_jobject);
+    }
+
+    int r = Atsc3_Jni_Processing_Thread_Env->Get()->CallIntMethod(mClsDrvIntf, atsc3_lls_sls_alc_on_package_extract_completed_ID, jobj);
+
+    for (std::list<jstring>::iterator it=to_clean_jstrings.begin(); it != to_clean_jstrings.end(); ++it) {
+        Atsc3_Jni_Processing_Thread_Env->Get()->DeleteLocalRef(*it);
+    }
+    to_clean_jstrings.clear();
+
+    for (std::list<jobject>::iterator it=to_clean_jobject.begin(); it != to_clean_jobject.end(); ++it) {
+        Atsc3_Jni_Processing_Thread_Env->Get()->DeleteLocalRef(*it);
+    }
+    to_clean_jobject.clear();
+
+    Atsc3_Jni_Processing_Thread_Env->Get()->DeleteLocalRef(jobj);
+}
+
+void atsc3NdkClient::atsc3_sls_on_held_trigger_received_callback_jni(uint16_t service_id, const char *held_payload) {
+	if (!JReady() || !atsc3_lls_sls_alc_on_route_mpd_patched_ID)
+		return;
+
+	if (!Atsc3_Jni_Processing_Thread_Env) {
+		eprintf("!! err on get jni env\n");
+		return;
+	}
+
+	atsc3_onAlcObjectStatusMessage("HELD: service_id: %d, xml:\n%s", service_id, held_payload);
 }
 
 void atsc3NdkClient::atsc3_onSlsTablePresent(const char *sls_payload_xml) {
@@ -937,14 +1097,14 @@ void atsc3NdkClient::atsc3_onSlsTablePresent(const char *sls_payload_xml) {
         return;
     }
 
-    if (!atsc3_jni_rx_thread_env) {
+    if (!Atsc3_Jni_Processing_Thread_Env) {
         eprintf("!! err on get jni env\n");
         return;
     }
 
-    jstring xml_payload = atsc3_jni_rx_thread_env->Get()->NewStringUTF(sls_payload_xml);
-    int r = atsc3_jni_rx_thread_env->Get()->CallIntMethod(mClsDrvIntf, atsc3_onSlsTablePresent_ID, xml_payload);
-    atsc3_jni_rx_thread_env->Get()->DeleteLocalRef(xml_payload);
+    jstring xml_payload = Atsc3_Jni_Processing_Thread_Env->Get()->NewStringUTF(sls_payload_xml);
+    int r = Atsc3_Jni_Processing_Thread_Env->Get()->CallIntMethod(mClsDrvIntf, atsc3_onSlsTablePresent_ID, xml_payload);
+    Atsc3_Jni_Processing_Thread_Env->Get()->DeleteLocalRef(xml_payload);
 }
 
 
@@ -1078,6 +1238,39 @@ Java_org_ngbp_libatsc3_sampleapp_atsc3NdkClient_ApiInit(JNIEnv *env, jobject ins
         eprintf("!! Cannot find 'atsc3_on_alc_object_status_message_ID' method id\n");
         return -1;
     }
+
+    //jjustman-2020-07-27 - atsc3_lls_sls_alc_on_package_extract_completed_ID
+    //org.ngbp.libatsc3.android.PackageExtractEnvelopeMetadataAndPayload
+	api.atsc3_lls_sls_alc_on_package_extract_completed_ID = env->GetMethodID(jClazz, "atsc3_lls_sls_alc_on_package_extract_completed", "(Lorg/ngbp/libatsc3/android/PackageExtractEnvelopeMetadataAndPayload;)I");
+	if (api.atsc3_lls_sls_alc_on_package_extract_completed_ID == NULL) {
+	   eprintf("!! Cannot find 'atsc3_lls_sls_alc_on_package_extract_completed_ID' method id\n");
+	   return -1;
+	}
+
+	api.packageExtractEnvelopeMetadataAndPayload_jclass_init_env = env->FindClass("org/ngbp/libatsc3/android/PackageExtractEnvelopeMetadataAndPayload");
+
+    if (api.packageExtractEnvelopeMetadataAndPayload_jclass_init_env == NULL) {
+        eprintf("Cannot find 'packageExtractEnvelopeMetadataAndPayload_jclass' class reference\n");
+        return -1;
+    } else {
+        api.packageExtractEnvelopeMetadataAndPayload_jclass_global_ref = (jclass)(env->NewGlobalRef(api.packageExtractEnvelopeMetadataAndPayload_jclass_init_env));
+    }
+
+    api.packageExtractEnvelopeMetadataAndPayload_MultipartRelatedPayload_jclass_init_env = env->FindClass("org/ngbp/libatsc3/android/PackageExtractEnvelopeMetadataAndPayload$MultipartRelatedPayload");
+    if (api.packageExtractEnvelopeMetadataAndPayload_MultipartRelatedPayload_jclass_init_env == NULL) {
+        eprintf("Cannot find 'packageExtractEnvelopeMetadataAndPayload$MultipartRelatedPayload_jclass_init_env' class reference\n");
+        return -1;
+    } else {
+       api.packageExtractEnvelopeMetadataAndPayload_MultipartRelatedPayload_jclass_global_ref = (jclass)(env->NewGlobalRef(api.packageExtractEnvelopeMetadataAndPayload_MultipartRelatedPayload_jclass_init_env));
+    }
+
+    api.jni_java_util_ArrayList = (jclass) env->NewGlobalRef(env->FindClass("java/util/ArrayList"));
+    eprintf("creating api.jni_java_util_ArrayList");
+
+    api.jni_java_util_ArrayList_cctor = env->GetMethodID(api.jni_java_util_ArrayList, "<init>", "(I)V");
+    eprintf("creating api.jni_java_util_ArrayList_cctor");
+    api.jni_java_util_ArrayList_add  = env->GetMethodID(api.jni_java_util_ArrayList, "add", "(Ljava/lang/Object;)Z");
+    eprintf("creating api.jni_java_util_ArrayList_add");
 
     api.mClsDrvIntf = (jclass)(api.mJniEnv->NewGlobalRef(drvIntf));
 
@@ -1346,5 +1539,12 @@ Java_org_ngbp_libatsc3_sampleapp_atsc3NdkClient_setRfPhyStatisticsViewVisible(JN
         atsc3NdkClientNoPhyImpl::tunerStatusThreadShouldPollTunerStatus = false;
     }
 
+    return 0;
+}
+
+
+
+int atsc3NdkClient::ListenPLP1(int plp1) {
+    //apiImpl.ListenPLP1(plp1);
     return 0;
 }

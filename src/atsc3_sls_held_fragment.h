@@ -10,6 +10,7 @@
 #ifndef ATSC3_SLS_HELD_FRAGMENT_H_
 #define ATSC3_SLS_HELD_FRAGMENT_H_
 
+#include "atsc3_logging_externs.h"
 #include "atsc3_utils.h"
 #include "xml.h"
 #include "atsc3_vector_builder.h"
@@ -45,8 +46,8 @@ typedef struct atsc3_sls_html_entry_package {
 } atsc3_sls_html_entry_package_t;
 
 typedef struct atsc3_sls_held_fragment {
+	block_t* raw_xml_fragment;
 	ATSC3_VECTOR_BUILDER_STRUCT(atsc3_sls_html_entry_package);
-
 } atsc3_sls_held_fragment_t;
 
 
@@ -57,8 +58,9 @@ void atsc3_sls_held_fragment_dump(atsc3_sls_held_fragment_t* atsc3_sls_held_frag
 
 #define _ATSC3_HELD_PARSER_ERROR(...)   printf("%s:%d:ERROR:",__FILE__,__LINE__);_ATSC3_UTILS_PRINTLN(__VA_ARGS__);
 #define _ATSC3_HELD_PARSER_WARN(...)    printf("%s:%d:WARN:",__FILE__,__LINE__);_ATSC3_UTILS_PRINTLN(__VA_ARGS__);
-#define _ATSC3_HELD_PARSER_INFO(...)    printf("%s:%d:INFO:",__FILE__,__LINE__);_ATSC3_UTILS_PRINTLN(__VA_ARGS__);
-#define _ATSC3_HELD_PARSER_DEBUG(...)   printf("%s:%d:DEBUG:",__FILE__,__LINE__);_ATSC3_UTILS_PRINTLN(__VA_ARGS__);
+#define _ATSC3_HELD_PARSER_INFO(...)    if(_HELD_PARSER_INFO_ENABLED) { printf("%s:%d:INFO:",__FILE__,__LINE__);_ATSC3_UTILS_PRINTLN(__VA_ARGS__); }
+#define _ATSC3_HELD_PARSER_DEBUG(...)   if(_HELD_PARSER_DEBUG_ENABLED) { printf("%s:%d:DEBUG:",__FILE__,__LINE__);_ATSC3_UTILS_PRINTLN(__VA_ARGS__); }
+//_HELD_PARSER_TRACE_ENABLED
 
 
 

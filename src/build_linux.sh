@@ -1,5 +1,7 @@
 #!/bin/bash
 
+sudo ../linux-build
+
 # Correctly link xlocale.h
 sudo ln -s /usr/include/locale.h /usr/include/xlocale.h
 

@@ -46,7 +46,7 @@ uint32_t* atsc3_mbms_envelope_find_toi_from_fdt(atsc3_fdt_instance_t* atsc3_fdt_
  *
  *
  */
-
+//jjustman-2020-07-27: TODO - fix this type from char* payload to block_t*
 atsc3_mbms_metadata_envelope_t* atsc3_mbms_envelope_parse_from_payload(char* payload, char* content_location) {
 	atsc3_mbms_metadata_envelope_t* atsc3_mbms_metadata_envelope = NULL;
     
@@ -110,8 +110,11 @@ atsc3_mbms_metadata_envelope_t* atsc3_mbms_envelope_parse_from_payload(char* pay
 					}
                     
 					//todo - fix me with proper namespacing
-					if((matching_attribute = kvp_collection_get(kvp_collection,  "meta:nextURL"))) {
-						atsc3_mbms_metadata_item->next_url = matching_attribute;
+					if((matching_attribute = kvp_collection_get(kvp_collection,  "nextURL"))) {
+						atsc3_mbms_metadata_item->next_url_string = matching_attribute;
+					}
+					if((matching_attribute = kvp_collection_get(kvp_collection,  "availAt"))) {
+						atsc3_mbms_metadata_item->avail_at_string = matching_attribute;
 					}
                     free(xml_attributes);
                     kvp_collection_free(kvp_collection);
@@ -133,13 +136,14 @@ void atsc3_mbms_metadata_envelope_dump(atsc3_mbms_metadata_envelope_t* atsc3_mbm
 
 	for(int i=0; i < atsc3_mbms_metadata_envelope->atsc3_mbms_metadata_item_v.count; i++) {
 		atsc3_mbms_metadata_item_t* atsc3_mbms_metadata_item = atsc3_mbms_metadata_envelope->atsc3_mbms_metadata_item_v.data[i];
-		_ATSC3_ROUTE_MBMS_ENVELOPE_PARSER_DEBUG("item: content_type: %s, metadata_uri: %s, valid_from: %s, valid_until: %s, version: %u, next_url: %s",
+		_ATSC3_ROUTE_MBMS_ENVELOPE_PARSER_DEBUG("item: content_type: %s, metadata_uri: %s, valid_from: %s, valid_until: %s, version: %u, next_url: %s, avail_at: %s",
 		atsc3_mbms_metadata_item->content_type,
 		atsc3_mbms_metadata_item->metadata_uri,
 		atsc3_mbms_metadata_item->valid_from_string,
 		atsc3_mbms_metadata_item->valid_until_string,
 		atsc3_mbms_metadata_item->version,
-		atsc3_mbms_metadata_item->next_url);
+		atsc3_mbms_metadata_item->next_url_string,
+		atsc3_mbms_metadata_item->avail_at_string);
 	}
 
 	_ATSC3_ROUTE_S_TSID_PARSER_DEBUG("--atsc3_mbms_metadata_envelope_t");

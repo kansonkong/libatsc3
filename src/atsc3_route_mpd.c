@@ -18,23 +18,23 @@ ATSC3_VECTOR_BUILDER_METHODS_IMPLEMENTATION(atsc3_route_mpd, atsc3_route_period)
 
 //ATSC3_VECTOR_BUILDER_METHODS_ITEM_FREE(atsc3_route_adaptation_set);
 /**
- char*                                        content_type;
- char*                                        id;
- char*                                        max_frame_rate_str;
- atsc3_frame_rate_t                             max_frame_rate;
- uint32_t                                    max_height;
- uint32_t                                    max_width;
- char*                                        mime_type;
- char*                                        min_frame_str;
+	 char*                                       content_type;
+	 char*                                       id;
+	 char*                                       max_frame_rate_str;
+	 atsc3_frame_rate_t                          max_frame_rate;
+	 uint32_t                                    max_height;
+	 uint32_t                                    max_width;
+	 char*                                       mime_type;
+	 char*                                       min_frame_str;
 
- atsc3_frame_rate_t                            min_frame_rate;
- uint32_t                                    min_height;
- uint32_t                                    min_width;
- char*                                        par;
- bool                                        segment_alignment;
- bool                                        start_with_sap;
- atsc3_route_role_t                            atsc3_route_role;
- atsc3_route_representation_t                 atsc3_route_representation;
+	 atsc3_frame_rate_t                          min_frame_rate;
+	 uint32_t                                    min_height;
+	 uint32_t                                    min_width;
+	 char*                                       par;
+	 bool                                        segment_alignment;
+	 bool                                        start_with_sap;
+	 atsc3_route_role_t                           atsc3_route_role;
+	 atsc3_route_representation_t                 atsc3_route_representation;
 
  */
 void atsc3_route_adaptation_set_free(atsc3_route_adaptation_set_t** atsc3_route_adaptation_set_p) {
@@ -89,6 +89,7 @@ void atsc3_route_period_free(atsc3_route_period_t** atsc3_route_period_p) {
     }
 }
 
+//jjustman-2020-07-27 - todo: change this char* payload to block_t*
 atsc3_route_mpd_t* atsc3_route_mpd_parse_from_payload(char* payload, char* content_location) {
 
 	block_t* mpd_fragment_block = block_Promote(payload);

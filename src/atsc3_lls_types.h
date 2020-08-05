@@ -15,24 +15,32 @@
 
 #include <sys/types.h>
 
-#include "atsc3_lls_sls_monitor_output_buffer.h"
-#include "atsc3_alc_session.h"
-#include "atsc3_listener_udp.h"
+#ifndef ATSC3_LLS_TYPES_H_
+#define ATSC3_LLS_TYPES_H_
 
-//slight tight coupling...
-#include "atsc3_player_ffplay.h"
+#include "atsc3_logging_externs.h"
+#include "atsc3_utils.h"
 #include "xml.h"
 
 #include "atsc3_aeat_types.h"
-#include "atsc3_lls_context_events.h"
+#include "atsc3_monitor_events_lls.h"
+#include "atsc3_monitor_events_sls.h"
+#include "atsc3_monitor_events_alc.h"
 
+#include "atsc3_alc_session.h"
+#include "atsc3_route_object.h"
+#include "atsc3_sls_alc_flow.h"
 
-#ifndef ATSC3_LLS_TYPES_H_
-#define ATSC3_LLS_TYPES_H_
+#include "atsc3_listener_udp.h"
+
 
 #include "atsc3_fdt.h"
 #include "atsc3_sls_metadata_fragment_types.h"
 
+
+//slight tight coupling...
+#include "atsc3_lls_sls_monitor_output_buffer.h"
+#include "atsc3_player_ffplay.h"
 
 #if defined (__cplusplus)
 extern "C" {
@@ -755,7 +763,7 @@ typedef struct lls_sls_alc_session_flows {
 ATSC3_VECTOR_BUILDER_METHODS_INTERFACE(lls_sls_alc_session_flows, lls_sls_alc_session);
 
 
-
+ 
 /**
  * used to store monitor references of current flows
 
@@ -770,49 +778,69 @@ A/331 - Section 7:
 		the HTML Entry pages Location Description (HELD) (see A/337 [7]), and
 		Distribution Window Description (DWD) (see A/337 [7]).
 
+*/
 
-		jjustman-2020-02-28:
-		TODO: additional enhancements from A/331 A3.10.2 Basic Delivery Object Recovery
 
-		 The ROUTE receiver continuously acquires packet payloads for the object as long as all of the following conditions are satisfied:
-             i) there is at least one entry in RECEIVED still set to false;
-             ii) the object has not yet expired; and
-             iii) the application has not given up on reception of this object.
-
- */
 
 typedef struct lls_sls_alc_monitor {
-	atsc3_lls_slt_service_t* 	atsc3_lls_slt_service;
+	atsc3_lls_slt_service_t* 				atsc3_lls_slt_service;
     
-	lls_sls_alc_session_t* 		lls_alc_session;
+	lls_sls_alc_session_t* 					lls_alc_session;
+	
+	atsc3_fdt_instance_t* 					atsc3_fdt_instance;
+    atsc3_sls_metadata_fragments_t* 		atsc3_sls_metadata_fragments;
 
-    uint32_t 					audio_tsi;
-    bool 						audio_tsi_manual_override;
+    uint32_t 	usbd_tsi;
+	uint32_t 	stsid_tsi;
+	uint32_t 	apd_tsi;
+	uint32_t 	mpd_tsi;
+	uint32_t 	held_tsi;
+	uint32_t 	dwd_tsi;
+	
+    bool		has_discontiguous_toi_flow;
+	block_t* 	last_mpd_payload;
+    block_t* 	last_mpd_payload_patched;
 
-    uint32_t 					video_tsi;
-    bool 						video_tsi_manual_override;
+    atsc3_sls_alc_flow_v 	atsc3_sls_alc_all_s_tsid_flow_v;
 
-    uint32_t 					text_tsi;
-    bool 						text_tsi_manual_override;
+    //atsc3_sls_alc_flow_v 	atsc3_sls_alc_all_mediainfo_flow_v;
+	
+	//method callback handlers
+    atsc3_alc_on_object_close_flag_s_tsid_content_location_f	atsc3_lls_sls_alc_on_object_close_flag_s_tsid_content_location;
+	atsc3_alc_on_route_mpd_patched_f    						atsc3_lls_sls_alc_on_route_mpd_patched;                             //dispatched in atsc3_route_sls_processor.c
 
-    bool						has_discontiguous_toi_flow;
+	atsc3_alc_on_package_extract_completed_f					atsc3_lls_sls_alc_on_package_extract_completed_callback;
 
-	/**
-	* jdj-2019-05-29: TODO - use a sparse array lookup (https://github.com/ned14/nedtries) for resolution to proper transfer_object_length to back-patch close flag
-	*/
-	uint32_t last_video_toi;
-	uint32_t last_video_toi_length;
+	//this should be in the sls_monitor...
+	atsc3_sls_on_held_trigger_received_f						atsc3_sls_on_held_trigger_received_callback;
 
-	uint32_t last_audio_toi;
-	uint32_t last_audio_toi_length;
+	uint64_t								lct_packets_received_count;
 
-	uint32_t last_text_toi;
-	uint32_t last_text_toi_length;
 
-	uint32_t last_closed_video_toi;
-	uint32_t last_closed_audio_toi;
-    uint32_t last_closed_text_toi;
+    //jjustman-2020-07-01 #WI - todo: dispatch HELD block_t* payload to application callback
 
+	//<?xml version="1.0" encoding="UTF-8"?>
+    //<HELD xmlns="tag:atsc.org,2016:XMLSchemas/ATSC3/AppSignaling/HELD/1.0/" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+    //<HTMLEntryPackage appContextId="tag:sinclairplatform.com,2020:KSNV:2089" appRendering="false" bcastEntryPackageUrl="App.pkg" bcastEntryPageUrl="index.html" coupledServices="5004"/>
+    //</HELD>
+
+    //jjustman-2020-07-01 1569: dispatch async event notification that package extraction has completed
+    //codePoint==3 || codePoint == 4
+    // filesystem path that .pkg was extracted to bcastEntryPackageUrl/
+    // appContextIdList (scope)
+    // list<string> objects ~
+
+    //A/344 - ICR - when you receieve a packageExtraction complete with appContextIdList, and then within ~5s receive a HELD emission
+    //                  then you can launch the <bcastEntryPackageUrl, bcastEntryPageUrl>
+
+
+    //only used in special debugging cases
+	atsc3_sls_alc_flow_t* audio_tsi_manual_override;
+	atsc3_sls_alc_flow_t* video_tsi_manual_override;
+	atsc3_sls_alc_flow_t* text_tsi_manual_override;
+	atsc3_sls_alc_flow_t* data_tsi_manual_override;
+	
+	//only used for ffplay re-constituion for alc flows
     uint32_t last_pending_flushed_audio_toi;
     uint32_t last_pending_flushed_video_toi;
     uint32_t last_pending_flushed_text_toi;
@@ -820,32 +848,10 @@ typedef struct lls_sls_alc_monitor {
     uint32_t last_completed_flushed_audio_toi;
     uint32_t last_completed_flushed_video_toi;
     uint32_t last_completed_flushed_text_toi;
-
-    block_t* last_mpd_payload;
-    block_t* last_mpd_payload_patched;
-
-	uint32_t video_toi_init;
-	uint32_t audio_toi_init;
-	uint32_t text_toi_init;
-
-	uint32_t usbd_tsi;
-	uint32_t stsid_tsi;
-	uint32_t apd_tsi;
-	uint32_t mpd_tsi;
-	uint32_t held_tsi;
-	uint32_t dwd_tsi;
-    
-    lls_sls_monitor_output_buffer_t lls_sls_monitor_output_buffer;
-    lls_sls_monitor_output_buffer_mode_t lls_sls_monitor_output_buffer_mode;
-
-    atsc3_fdt_instance_t* atsc3_fdt_instance;
-    atsc3_sls_metadata_fragments_t* atsc3_sls_metadata_fragments;
-
-    atsc3_lls_sls_alc_on_object_close_flag_s_tsid_content_location_f						atsc3_lls_sls_alc_on_object_close_flag_s_tsid_content_location;
-	atsc3_lls_sls_alc_on_route_mpd_patched_f    											atsc3_lls_sls_alc_on_route_mpd_patched;                             //dispatched in atsc3_route_sls_processor.c
-
+	
+    lls_sls_monitor_output_buffer_t 		lls_sls_monitor_output_buffer;
+    lls_sls_monitor_output_buffer_mode_t 	lls_sls_monitor_output_buffer_mode;
 } lls_sls_alc_monitor_t;
-
 
 typedef struct lls_slt_service_id {
 	uint16_t					service_id;
@@ -898,8 +904,15 @@ typedef struct lls_slt_monitor {
 
     //jjustman-2019-10-12 - adding lls event callback hooks
 
-	atsc3_lls_on_sls_table_present_f								atsc3_lls_on_sls_table_present;
-
+    //defined in atsc3_monitor_events_lls.h
+	atsc3_lls_on_sls_table_present_f								atsc3_lls_on_sls_table_present_callback;
+	atsc3_lls_on_rrt_table_present_f								atsc3_lls_on_rrt_table_present_callback;
+	atsc3_lls_on_systemtime_table_present_f							atsc3_lls_on_systemtime_table_present_callback;
+	atsc3_lls_on_aeat_table_present_f								atsc3_lls_on_aeat_table_present_callback;
+	atsc3_lls_on_onscreenmessagenotification_table_present_f		atsc3_lls_on_onscreenmessagenotification_table_present_callback;
+	atsc3_lls_on_certificationdata_table_present_f					atsc3_lls_on_certificationdata_table_present_callback;
+	atsc3_lls_on_signedmultitable_table_present_f					atsc3_lls_on_signedmultitable_table_present_callback;
+	atsc3_lls_on_userdefined_table_present_f						atsc3_lls_on_userdefined_table_present_callback;
 
 } lls_slt_monitor_t;
 
@@ -921,6 +934,15 @@ lls_slt_service_id_group_id_cache_t* lls_slt_monitor_find_or_create_lls_slt_serv
 atsc3_lls_slt_service_t* lls_slt_monitor_add_or_update_lls_slt_service_id_group_id_cache_entry(lls_slt_monitor_t* lls_slt_monitor, uint16_t lls_group_id, atsc3_lls_slt_service_t* atsc3_lls_slt_service);
 atsc3_lls_slt_service_t* lls_slt_monitor_find_lls_slt_service_id_group_id_cache_entry(lls_slt_monitor_t* lls_slt_monitor, uint16_t service_id);
 
+void atsc3_lls_sls_alc_monitor_increment_lct_packet_received_count(lls_sls_alc_monitor_t* lls_sls_alc_monitor);
+void atsc3_lls_sls_alc_monitor_check_all_s_tsid_flows_has_given_up_route_objects(lls_sls_alc_monitor_t* lls_sls_alc_monitor);
+
+
+#define _ATSC3_LLS_TYPES_ERROR(...)   __LIBATSC3_TIMESTAMP_ERROR(__VA_ARGS__);
+#define _ATSC3_LLS_TYPES_WARN(...)    __LIBATSC3_TIMESTAMP_WARN(__VA_ARGS__);;
+#define _ATSC3_LLS_TYPES_INFO(...)    if(_LLS_TYPES_INFO_ENABLED)  { __LIBATSC3_TIMESTAMP_INFO(__VA_ARGS__); }
+#define _ATSC3_LLS_TYPES_DEBUG(...)   if(_LLS_TYPES_DEBUG_ENABLED) { __LIBATSC3_TIMESTAMP_DEBUG(__VA_ARGS__); }
+#define _ATSC3_LLS_TYPES_TRACE(...)   if(_LLS_TYPES_TRACE_ENABLED) { __LIBATSC3_TIMESTAMP_TRACE(__VA_ARGS__); }
 
 
 

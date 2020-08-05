@@ -39,7 +39,14 @@ void* extract(uint8_t *bufPosPtr, uint8_t *dest, int size) {
 }
 
 void kvp_collection_free(kvp_collection_t* collection) {
-	if(!collection || !collection->size_n) return;
+	if(!collection) {
+		return;
+	}
+
+	if(!collection->size_n && !collection->kvp_collection) {
+		free(collection);
+		return;
+	}
 
 	//free each entry and their corresponding key/val char*
 	for(int i=0; i < collection->size_n; i++) {
@@ -191,7 +198,7 @@ kvp_collection_t* kvp_collection_parse(uint8_t* input_string) {
 	return collection;
 }
 
-
+//0 size block allocs are allowed to create a block_t with only padding alignment for block_Write, etc...
 
 block_t* block_Alloc(int size_requested) {
 	block_t* new_block = (block_t*)calloc(1, sizeof(block_t));
@@ -324,7 +331,7 @@ block_t* block_Write(block_t* dest, const uint8_t* src_buf, uint32_t src_size) {
 
 	uint32_t dest_size_required = dest->i_pos + src_size;
 	if(dest->p_size < dest_size_required) {
-		block_t* ret_block = block_Resize(dest, dest_size_required);
+		block_t* ret_block = block_Resize_Soft(dest, dest_size_required);
 		if(!ret_block) {
 			_ATSC3_UTILS_ERROR("block_Write: block: %p, unable to realloc from size: %u to %u, returning NULL", dest, dest->p_size, dest_size_required);
 			return NULL;
@@ -343,7 +350,7 @@ uint32_t block_Append(block_t* dest, block_t* src) {
 
 	uint32_t dest_size_required = dest->i_pos + src->i_pos;
 	if(dest->p_size < dest_size_required) {
-		block_t* ret_block = block_Resize(dest, dest_size_required);
+		block_t* ret_block = block_Resize_Soft(dest, dest_size_required);
 		if(!ret_block) {
 			_ATSC3_UTILS_ERROR("block_Append: block: %p, unable to realloc from size: %u to %u, returning NULL", dest, dest->p_size, dest_size_required);
 			return 0;
@@ -356,6 +363,30 @@ uint32_t block_Append(block_t* dest, block_t* src) {
 }
 
 
+//combine two blocks at dest->i_pos, block_Get(src), len: src->p_size - src->i_pos
+
+block_t* block_AppendFromSrciPos(block_t* dest, block_t* src) {
+	if(!__block_check_bounaries(__FUNCTION__, dest)) return 0;
+
+	uint32_t src_len = __MAX(0, src->p_size - src->i_pos);
+	if(!src_len) {
+		return dest; //bail early
+	}
+
+	uint32_t dest_size_required = dest->i_pos + src_len;
+	if(dest->p_size < dest_size_required) {
+		block_t* ret_block = block_Resize_Soft(dest, dest_size_required);
+		if(!ret_block) {
+			_ATSC3_UTILS_ERROR("block_Append: block: %p, unable to realloc from size: %u to %u, returning NULL", dest, dest->p_size, dest_size_required);
+			return 0;
+		}
+	}
+	memcpy(&dest->p_buffer[dest->i_pos], block_Get(src), src_len);
+	dest->i_pos += src_len; //src->i_pos;
+
+	return dest;
+}
+
 block_t* block_AppendFromBuf(block_t* dest, const uint8_t* src_buf, uint32_t src_size) {
 	if(!__block_check_bounaries(__FUNCTION__, dest)) return NULL;
 
@@ -364,7 +395,7 @@ block_t* block_AppendFromBuf(block_t* dest, const uint8_t* src_buf, uint32_t src
 	uint32_t dest_size_required = dest->p_size + src_size;
 
 	if(dest->p_size < dest_size_required) {
-		block_t* ret_block = block_Resize(dest, dest_size_required);
+		block_t* ret_block = block_Resize_Soft(dest, dest_size_required);
 		if(!ret_block) {
 			_ATSC3_UTILS_ERROR("block_Write: block: %p, unable to realloc from size: %u to %u, returning NULL", dest, dest->p_size, dest_size_required);
 			return NULL;
@@ -383,7 +414,7 @@ uint32_t block_AppendFull(block_t* dest, block_t* src) {
     
     uint32_t dest_size_required = dest->i_pos + src->p_size;
     if(dest->p_size < dest_size_required) {
-        block_t* ret_block = block_Resize(dest, dest_size_required);
+        block_t* ret_block = block_Resize_Soft(dest, dest_size_required);
         if(!ret_block) {
             _ATSC3_UTILS_ERROR("block_AppendFull: block: %p, unable to realloc from size: %u to %u, returning NULL", dest, dest->p_size, dest_size_required);
             return 0;
@@ -405,7 +436,7 @@ uint32_t block_Merge(block_t* dest, block_t* src) {
     uint32_t dest_size_required = dest->p_size + src->p_size;
     
     if(dest->p_size < dest_size_required) {
-        block_t* ret_block = block_Resize(dest, dest_size_required);
+        block_t* ret_block = block_Resize_Soft(dest, dest_size_required);
         if(!ret_block) {
             _ATSC3_UTILS_ERROR("block_Merge: block: %p, unable to realloc from size: %u to %u, returning NULL", dest, dest->p_size, dest_size_required);
             return 0;
@@ -428,7 +459,7 @@ uint32_t block_MergeNoRewind(block_t* dest, block_t* src) {
     uint32_t dest_size_required = dest->p_size + src->p_size;
 
     if(dest->p_size < dest_size_required) {
-        block_t* ret_block = block_Resize(dest, dest_size_required);
+        block_t* ret_block = block_Resize_Soft(dest, dest_size_required);
         if(!ret_block) {
             _ATSC3_UTILS_ERROR("block_Merge: block: %p, unable to realloc from size: %u to %u, returning NULL", dest, dest->p_size, dest_size_required);
             return 0;
@@ -522,16 +553,44 @@ block_t* block_Duplicate_from_ptr(uint8_t* data, uint32_t size) {
     return block_t;
 }
 
+#define __ATSC3_UTILS_BLOCK_RESIZE_DOUBLE_LIMIT__ 2048000
+//perform a soft allocation to
+//src->p_size * 2  where p_size < 2M
+block_t* block_Resize_Soft(block_t* dest, uint32_t dest_size_min_required) {
+
+	if(dest->_a_size >= dest_size_min_required && dest->i_pos < dest_size_min_required && dest->p_size < dest_size_min_required) {
+		dest->p_size = dest_size_min_required;
+    	return dest;
+	}
+
+	uint32_t target_dest_size_min_required = dest_size_min_required;
+
+	if(dest_size_min_required * 2 < __ATSC3_UTILS_BLOCK_RESIZE_DOUBLE_LIMIT__) {
+		target_dest_size_min_required = dest_size_min_required * 2;
+	}
+
+	block_Resize(dest, target_dest_size_min_required);
+	dest->p_size = dest_size_min_required;
+
+	return dest;
+}
+
 
 //return will be NULL if realloc failed, but src will still be valid
 //grow or shrink a block,
 //  if growing, null out new payload, maintain i_pos
 //  if shrinking, discard end payload, i_pos will reset to 0
 
+
 block_t* block_Resize(block_t* src, uint32_t src_size_requested) {
 	if(!__block_check_bounaries(__FUNCTION__, src)) return NULL;
     uint32_t src_size_original = src->p_size;
     uint32_t src_i_pos_original = src->i_pos;
+
+	if(src->_a_size >= src_size_requested && src->i_pos < src_size_requested && src->p_size < src_size_requested) {
+    	src->p_size = src_size_requested;
+    	return src;
+    }
 
     //uint32_t src_size_required = __MAX(64, src_size_requested);
     //do not change our size, as this can cause us to leak unexpectedly
@@ -546,6 +605,7 @@ block_t* block_Resize(block_t* src, uint32_t src_size_requested) {
     _ATSC3_UTILS_INFO("block_Resize: original size requested: %u, aligned size: %u, alignment factor: %f", src_size_required, aligned_size, aligned_size/8.0);
 #endif
 
+    src->_a_size = aligned_size;
 	void* new_block = realloc(src->p_buffer, aligned_size);
 	if(!new_block) {
 		_ATSC3_UTILS_ERROR("block_Resize: block: %p resize to %u failed, returning NULL", src, src_size_required);
@@ -625,7 +685,8 @@ void block_Destroy(block_t** a_ptr) {
     if(a) {
         _ATSC3_UTILS_TRACE("block_Destroy: hard freeing block: %p (p_buffer: %p)", a, a->p_buffer);
             
-        if(a->p_buffer && a->p_size) {
+        //jjustman-2020-08-04 - removed && a->p_size as we (can) block_Alloc(0) and still have a p_buffer
+        if(a->p_buffer) {
             a->i_pos = 0;
             a->p_size = 0;
             free(a->p_buffer);
@@ -636,6 +697,26 @@ void block_Destroy(block_t** a_ptr) {
         *a_ptr = NULL;
     }
 }
+
+bool block_Tail_Truncate(block_t* src, uint32_t len) {
+	if(src && src->p_size > len) {
+		for(int i=1; i <= len; i++) {
+			src->p_buffer[src->p_size - i] = '\0';
+		}
+		src->p_size -= len;
+		src->i_pos = src->p_size - 1;
+		return true;
+	} else {
+		if(!src) {
+			_ATSC3_UTILS_WARN("block_Tail_Truncate: src is NULL");
+		} else {
+			_ATSC3_UTILS_WARN("block_Tail_Truncate: src: %p, p_size is: %d, tail truncate len is: %d", src->p_buffer, src->p_size, len);
+
+		}
+		return false;
+	}
+}
+
 
 /*
  bit-unpacking functions for parsing A/322 variable length L1(b/d) structs
@@ -772,6 +853,31 @@ uint64_t block_Read_uint64_ntohul(block_t* src) {
     return 0;
 }
 
+//read from filesyste into block_t
+block_t* block_Read_from_filename(char* file_name) {
+
+	if( access(file_name, F_OK ) == -1 ) {
+		_ATSC3_UTILS_ERROR("block_Read_from_filename: unable to open file: %s", file_name);
+		return NULL;
+	}
+
+	struct stat st;
+	stat(file_name, &st);
+
+	block_t* payload = block_Alloc(st.st_size);
+
+	FILE* fp = fopen(file_name, "r");
+	if(!fp || st.st_size == 0) {
+		_ATSC3_UTILS_ERROR("block_Read_from_filename: size: 0 file: %s", file_name);
+		return NULL;
+	}
+
+	fread(payload->p_buffer, st.st_size, 1, fp);
+	payload->i_pos = st.st_size;
+	fclose(fp);
+
+	return payload;
+}
 
 void freesafe(void* tofree) {
 	if(tofree) {
@@ -868,4 +974,46 @@ char* _rtrim(char *str)
 char* __trim(char *str)
 {
     return _ltrim(_rtrim(str));
+}
+
+//jjustman-2020-08-04 - dirname() is not reliable to be portable between linux/osx/android
+int mkpath(char *dir, mode_t mode)
+{
+    struct stat sb;
+    int ret = 0;
+
+    if (!dir) {
+        return 1;
+    }
+
+	char* dir_to_process = strlcopy(dir);
+
+	char* pch = strtok (dir_to_process,"/");
+	int offset = 0;
+
+	while (pch != NULL && offset>=0) {
+		offset += strlen(pch);
+
+		dir[offset] = '\0';
+ 	    ret = mkdir(dir, mode);
+ 	   _ATSC3_UTILS_DEBUG("calling mkdir: dir: %s, offset: %d, result: %d\n", dir, offset, ret);
+	    dir[offset++] = '/';
+
+		pch = strtok (NULL, "/");
+	}
+	freesafe(dir_to_process);
+
+    return ret;
+}
+
+
+FILE* atsc3_object_open(char* file_name) {
+	if( access( file_name, F_OK ) != -1 ) {
+		FILE* f = fopen(file_name, "r+");
+		if(f) {
+			return f;
+		}
+	}
+
+	return NULL;
 }
