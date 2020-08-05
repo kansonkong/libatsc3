@@ -255,6 +255,44 @@ void atsc3_sls_html_entry_package_free(atsc3_sls_html_entry_package_t** atsc3_sl
     }
 }
 
+/*
+ * check to see if our sls held fragment has changed, from the following possible matrix
+ *
+ * 	atsc3_sls_held_fragment				atsc3_sls_held_fragment_pending			return
+ * 	-----------------------				-------------------------------			------
+ * 	(null)								!null									true
+ * 	!null && raw_xml_fragment == null	!null && raw_xml_fragment == null		false
+ * 	!null && raw_xml_fragment->p_size	(null)									true
+ * 	(null)								!null && raw_xml_fragment == null		false
+ * 	->raw_xml_fragment		strncmp		->raw_xml_fragment						== 0
+ *
+ */
+bool atsc3_sls_held_fragment_has_changed(atsc3_sls_held_fragment_t* atsc3_sls_held_fragment, atsc3_sls_held_fragment_t* atsc3_sls_held_fragment_pending) {
+	bool has_changed = false;
+
+	uint8_t* held_payload = NULL;
+	uint8_t* held_payload_pending = NULL;
+
+	if(atsc3_sls_held_fragment && atsc3_sls_held_fragment->raw_xml_fragment && atsc3_sls_held_fragment->raw_xml_fragment->p_size) {
+		held_payload = atsc3_sls_held_fragment->raw_xml_fragment->p_buffer;
+	}
+
+	if(atsc3_sls_held_fragment_pending && atsc3_sls_held_fragment_pending->raw_xml_fragment && atsc3_sls_held_fragment_pending->raw_xml_fragment->p_size) {
+		held_payload_pending = atsc3_sls_held_fragment_pending->raw_xml_fragment->p_buffer;
+	}
+
+	if(!held_payload && !held_payload_pending) {
+		has_changed = false;
+	} else if(held_payload && !held_payload_pending) {
+		has_changed = true;
+	} else if(!held_payload && held_payload_pending) {
+		has_changed = true;
+	} else if(held_payload && held_payload_pending) {
+		has_changed = (0 != strncasecmp((char*)held_payload, (char*)held_payload_pending, __MIN(atsc3_sls_held_fragment->raw_xml_fragment->p_size, atsc3_sls_held_fragment_pending->raw_xml_fragment->p_size)));
+	}
+
+	return has_changed;
+}
 
 #ifdef __cplusplus
 }; //extern "C"
