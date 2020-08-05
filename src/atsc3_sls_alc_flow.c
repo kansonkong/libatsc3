@@ -235,25 +235,6 @@ void atsc3_route_object_set_alc_flow_and_tsi_toi(atsc3_route_object_t* atsc3_rou
 	//defer any other attributes to the atsc3_route_object_lct_packet_received impl
 }
 
-void
-action(const void *nodep, const VISIT which, const int depth)
-{
-    int *datap;
-    switch (which) {
-    case preorder:
-        break;
-    case postorder:
-        datap = *(int **) nodep;
-        printf("%6d\n", *datap);
-        break;
-    case endorder:
-        break;
-    case leaf:
-        datap = *(int **) nodep;
-        printf("%6d\n", *datap);
-        break;
-    }
-}
 atsc3_route_object_lct_packet_received_t* atsc3_route_object_add_or_update_lct_packet_received(atsc3_route_object_t* atsc3_route_object, atsc3_alc_packet_t* atsc3_alc_packet) {
 	atsc3_route_object_lct_packet_received_t* atsc3_route_object_lct_packet_received = atsc3_route_object_find_lct_packet_received(atsc3_route_object, atsc3_alc_packet);
 	if(!atsc3_route_object_lct_packet_received) {
