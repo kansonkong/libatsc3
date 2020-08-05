@@ -29,6 +29,7 @@ extern "C" {
 //</HELD>
 
 typedef void (*atsc3_sls_on_held_trigger_received_f)(uint16_t service_id, block_t* held_payload);
+typedef void (*atsc3_sls_on_held_trigger_received_with_version_f)(uint16_t service_id, uint8_t version, block_t* held_payload);
 
 //jjustman-2020-07-07: TODO: remaining SLS metadata object types dispatched as event
 // 							per A/331:2020 - Table 6.17 Metadata Object Types
