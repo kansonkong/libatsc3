@@ -498,9 +498,6 @@ void atsc3_route_object_reset_and_free_and_unlink_recovery_file_atsc3_route_obje
 		freeclean((void**)&atsc3_route_object->final_object_recovery_filename_for_eviction);
 	}
 
-	freeclean((void**)&atsc3_route_object->final_object_recovery_filename_for_logging);
-
-
 #ifdef __ATSC3_ROUTE_OBJECT_PENDANTIC__
 
 	_ATSC3_ROUTE_OBJECT_WARN("atsc3_route_object_reset_and_free_atsc3_route_object_lct_packet_received: after: atsc3_route_object: %p, tsi: %d, toi: %d, atsc3_route_object_lct_packet_received_v.count: %d",
@@ -521,11 +518,13 @@ void atsc3_route_object_reset_and_free_and_unlink_recovery_file_atsc3_route_obje
 	);
 
 	freeclean((void**)&atsc3_route_object->final_object_recovery_filename_for_logging);
-
-
 }
 
 void atsc3_route_object_free_lct_packet_received_tree(atsc3_route_object_t* atsc3_route_object) {
+	if(!atsc3_route_object) {
+		return;
+	}
+
 	//clean up our stale avltree entries
 	struct avltree_node* node;
 	while((node = avltree_first(&atsc3_route_object->atsc3_route_object_lct_packet_received_tree))) {
@@ -533,5 +532,9 @@ void atsc3_route_object_free_lct_packet_received_tree(atsc3_route_object_t* atsc
 		atsc3_route_object_lct_packet_received_node_t *p = avltree_container_of(node, atsc3_route_object_lct_packet_received_node_t, node);
 		freesafe((void*)p);
 	}
+
+	//clear out any remaining pointers just to be safe...does not alloc just sets everything to NULL
+	avltree_init(&atsc3_route_object->atsc3_route_object_lct_packet_received_tree, atsc3_route_object_lct_packet_received_cmp_fn, 0);
+
 }
 
