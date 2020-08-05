@@ -685,7 +685,8 @@ void block_Destroy(block_t** a_ptr) {
     if(a) {
         _ATSC3_UTILS_TRACE("block_Destroy: hard freeing block: %p (p_buffer: %p)", a, a->p_buffer);
             
-        if(a->p_buffer && a->p_size) {
+        //jjustman-2020-08-04 - removed && a->p_size as we (can) block_Alloc(0) and still have a p_buffer
+        if(a->p_buffer) {
             a->i_pos = 0;
             a->p_size = 0;
             free(a->p_buffer);
