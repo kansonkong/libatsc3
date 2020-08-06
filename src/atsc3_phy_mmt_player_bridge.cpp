@@ -7,7 +7,7 @@
  * Android MMT MFU Playback with SLS event driven callbacks
  *
  *
- * Note: atsc3NdkClient - Android NDK Binding against Lowasys API are not included
+ * Note: atsc3NdkPHYBridge - Android NDK Binding against Lowasys API are not included
  */
 
 #ifndef __JJ_PHY_MMT_PLAYER_BRIDGE_DISABLED
@@ -18,8 +18,8 @@ At3DrvIntf* Atsc3NdkClient_ptr;
 
 #else
 
-#include "atsc3NdkClient.h"
-atsc3NdkClient* Atsc3NdkClient_ptr;
+#include "atsc3NdkPHYBridge.h"
+atsc3NdkPHYBridge* Atsc3NdkClient_ptr;
 #endif
 
 #include "atsc3_phy_mmt_player_bridge.h"
@@ -1060,11 +1060,11 @@ atsc3_link_mapping_table_t* atsc3_phy_jni_bridge_notify_link_mapping_table(atsc3
 #ifdef __FIXME_REFACTOR_LOWASIS__
 void atsc3_phy_mmt_player_bridge_init(At3DrvIntf* atsc3NdkClientSL_ptr_l) {
 #else
-void atsc3_phy_mmt_player_bridge_init(atsc3NdkClient* atsc3NdkClientSL_ptr_l) {
+void atsc3_phy_player_bridge_init(atsc3NdkPHYBridge* At3DrvIntf_ptr) {
 #endif
-    Atsc3NdkClient_ptr = atsc3NdkClientSL_ptr_l;
+    Atsc3NdkClient_ptr = At3DrvIntf_ptr;
 
-    Atsc3NdkClient_ptr->LogMsgF("atsc3_phy_mmt_player_bridge_init - client ptr: %p", atsc3NdkClientSL_ptr_l);
+    Atsc3NdkClient_ptr->LogMsgF("atsc3_phy_player_bridge_init - client ptr: %p", At3DrvIntf_ptr);
 
     //set global logging levels
     _MMT_CONTEXT_MPU_DEBUG_ENABLED = 0;
@@ -1128,9 +1128,9 @@ void atsc3_phy_mmt_player_bridge_init(atsc3NdkClient* atsc3NdkClientSL_ptr_l) {
 
         chdir(atsc3_ndk_cache_temp_folder_path.c_str());
 
-        Atsc3NdkClient_ptr->LogMsgF("atsc3_phy_mmt_player_bridge_init - completed, temp folder path: %s", atsc3_ndk_cache_temp_folder_path.c_str());
+        Atsc3NdkClient_ptr->LogMsgF("atsc3_phy_player_bridge_init - completed, temp folder path: %s", atsc3_ndk_cache_temp_folder_path.c_str());
     } else {
-        Atsc3NdkClient_ptr->LogMsgF("atsc3_phy_mmt_player_bridge_init - ignoring init as we are already configured");
+        Atsc3NdkClient_ptr->LogMsgF("atsc3_phy_player_bridge_init - ignoring init as we are already configured");
     }
 
 
