@@ -107,9 +107,6 @@ void atsc3_route_object_lct_packet_received_update_carousel_count(atsc3_route_ob
 //update our route object with persisted length (if present)
 void atsc3_route_object_lct_packet_received_update_atsc3_route_object(atsc3_route_object_t* atsc3_route_object, atsc3_route_object_lct_packet_received_t* atsc3_route_object_lct_packet_received);
 
-int atsc3_route_object_persist_atsc3_alc_packet_from_udp_flow(atsc3_route_object_t* atsc3_route_object, atsc3_alc_packet_t* alc_packet, udp_flow_t* udp_flow);
-
-
 //for matching contentInfo.mediaInfo@repId
 atsc3_sls_alc_flow_t* atsc3_sls_alc_flow_add_entry_unique_tsi(atsc3_sls_alc_flow_v* atsc3_sls_alc_flow, uint32_t tsi, atsc3_route_s_tsid_RS_LS_SrcFlow_ContentInfo_MediaInfo_t* media_info);
 atsc3_sls_alc_flow_t* atsc3_sls_alc_flow_add_entry_unique_tsi_toi_init(atsc3_sls_alc_flow_v* atsc3_sls_alc_flow, uint32_t tsi, uint32_t toi_init, atsc3_route_s_tsid_RS_LS_SrcFlow_ContentInfo_MediaInfo_t* media_info);

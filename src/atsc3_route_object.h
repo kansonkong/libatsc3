@@ -39,6 +39,9 @@ extern "C" {
 //ALC dump object output path
 #define __ALC_DUMP_OUTPUT_PATH__ "route/"
 
+#define __ATSC3_ROUTE_OBJECT_PERSIST_BLOCK_SIZE_FLUSH_BYTES__ 	(1500 * 32) //48KB
+
+
 /*
  * atsc3_route_object_lct_packet_received: keep track of this object's received lct packets
  * 		for object recovery and completion tracking
@@ -94,6 +97,9 @@ typedef struct atsc3_route_object_lct_packet_received {
 
 	unsigned int 			packet_len;
 	unsigned long long 		object_len;
+
+	block_t*				pending_alc_payload_to_persist; 	//promote the atsc3_alc_packet->alc_payload to block_t so we can flush to disk,
+																//perform sparse merge to reduce fseek/fwrite calls when flushing out threshold
 
 } atsc3_route_object_lct_packet_received_t;
 
@@ -156,8 +162,16 @@ void atsc3_route_object_clear_temporary_object_recovery_filename(atsc3_route_obj
 void atsc3_route_object_set_final_object_recovery_filename_for_eviction(atsc3_route_object_t* atsc3_route_object, char* final_object_recovery_filename_for_eviction);
 void atsc3_route_object_set_final_object_recovery_filename_for_logging(atsc3_route_object_t* atsc3_route_object, char* final_object_recovery_filename_for_eviction);
 
-#define __ATSC3_ROUTE_OBJECT_PERSIST_BLOCK_SIZE_BYTES__ 	(1500 * 32) //48KB
-bool atsc3_route_object_recovery_file_buffer_ensure_alloc_and_position(atsc3_route_object_t* atsc3_route_object, atsc3_alc_packet_t* alc_packet);
+bool atsc3_route_object_lct_packet_received_promote_atsc3_alc_packet_alc_payload_to_pending_block(atsc3_route_object_lct_packet_received_t* atsc3_route_object_lct_packet_received, atsc3_alc_packet_t* alc_packet);
+
+//flush out to disk a block size of __ATSC3_ROUTE_OBJECT_PERSIST_BLOCK_SIZE_FLUSH_BYTES__
+//int atsc3_route_object_persist_recovery_block_from_lct_packet_vector(atsc3_route_object_t* atsc3_route_object);
+int atsc3_route_object_persist_recovery_buffer_all_pending_lct_packet_vector(atsc3_route_object_t* atsc3_route_object);
+
+
+//bool atsc3_route_object_recovery_file_buffer_ensure_alloc_and_position(atsc3_route_object_t* atsc3_route_object, atsc3_alc_packet_t* alc_packet);
+
+
 int64_t atsc3_route_object_recovery_file_buffer_flush_block_to_temporary_object_recovery_filename(atsc3_route_object_t* atsc3_route_object);
 
 void atsc3_route_object_set_object_recovery_complete(atsc3_route_object_t* atsc3_route_object);
@@ -166,9 +180,7 @@ void atsc3_route_object_recovery_file_handle_assign(atsc3_route_object_t* atsc3_
 void atsc3_route_object_recovery_file_handle_flush_and_close(atsc3_route_object_t* atsc3_route_object);
 void atsc3_route_object_recovery_file_handle_abandon_and_close(atsc3_route_object_t* atsc3_route_object);
 
-
 void atsc3_route_object_calculate_expected_route_object_lct_packet_count(atsc3_route_object_t* atsc3_route_object, atsc3_route_object_lct_packet_received_t* atsc3_route_object_lct_packet_received);
-
 bool atsc3_route_object_is_complete(atsc3_route_object_t* atsc3_route_object);
 
 void atsc3_route_object_reset_and_free_atsc3_route_object_lct_packet_received(atsc3_route_object_t* atsc3_route_object);
