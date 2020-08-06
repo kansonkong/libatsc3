@@ -4,7 +4,7 @@
 
 #include <atsc3_utils.h>
 #include <atsc3_phy_mmt_player_bridge.h>
-#include "atsc3NdkClient.h"
+#include "atsc3NdkPHYBridge.h"
 
 #include "atsc3NdkClientNoPhyImpl.h"
 
@@ -15,10 +15,10 @@ bool atsc3NdkClientNoPhyImpl::processThreadShouldRun = false;
 bool atsc3NdkClientNoPhyImpl::tunerStatusThreadShouldRun = false;
 bool atsc3NdkClientNoPhyImpl::tunerStatusThreadShouldPollTunerStatus = false;
 
-atsc3NdkClient* atsc3NdkClientNoPhyImpl::atsc3NdkClient_ref = NULL;
+atsc3NdkPHYBridge* atsc3NdkClientNoPhyImpl::atsc3NdkClient_ref = NULL;
 
 //NDK JNI main dispatcher reference
-void atsc3NdkClientNoPhyImpl::Init(atsc3NdkClient* ref_) {
+void atsc3NdkClientNoPhyImpl::Init(atsc3NdkPHYBridge* ref_) {
     atsc3NdkClientNoPhyImpl::atsc3NdkClient_ref = ref_;
 
 }

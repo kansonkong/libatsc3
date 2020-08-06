@@ -19,13 +19,13 @@ using namespace std;
 #include <atsc3_sl_tlv_demod_type.h>
 #include <atsc3_alp_parser.h>
 
-#include "atsc3NdkClient.h"
+#include "atsc3NdkPHYBridge.h"
 
 typedef void * (*THREADFUNCPTR)(void *);
 
 class atsc3NdkClientNoPhyImpl {
     public:
-        void Init(atsc3NdkClient* ref_);
+        void Init(atsc3NdkPHYBridge* ref_);
 
         int Open(int fd, int bus, int addr);
         int Tune(int freqKhz, int plpId);
@@ -54,7 +54,7 @@ class atsc3NdkClientNoPhyImpl {
 
 private:
 
-    static atsc3NdkClient* atsc3NdkClient_ref;   //reference to our base JNI NDI handler
+    static atsc3NdkPHYBridge* atsc3NdkClient_ref;   //reference to our base JNI NDI handler
 
     //thread handler references for Capture, Processing and Tuner Status threads
 

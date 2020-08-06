@@ -4,7 +4,7 @@
 #include <atsc3_phy_mmt_player_bridge.h>
 #include <atsc3_pcap_type.h>
 #include <atsc3_monitor_events_alc.h>
-#include "atsc3NdkClient.h"
+#include "atsc3NdkPHYBridge.h"
 #include "atsc3NdkClientNoPhyImpl.h"
 
 
@@ -88,7 +88,7 @@ int atsc3NdkClient::Open(int fd, int bus, int addr)
 
 int atsc3NdkClient::atsc3_rx_callback_f(void* pData, uint64_t ullUser)
 {
-//    atsc3NdkClient *me = (atsc3NdkClient *)ullUser; // same as &api
+//    atsc3NdkPHYBridge *me = (atsc3NdkPHYBridge *)ullUser; // same as &api
 //    return me->RxCallbackJJ(pData);
     return 0;
 }
@@ -108,7 +108,7 @@ int atsc3NdkClient::atsc3_pcap_replay_open_file_from_assetManager(const char *fi
         atsc3_pcap_thread_stop();
     }
 
-    LogMsgF("atsc3NdkClient::atsc3_pcap_open_for_replay_from_assetManager: filename: %s, aasetManager: %p", filename, mgr);
+    LogMsgF("atsc3NdkPHYBridge::atsc3_pcap_open_for_replay_from_assetManager: filename: %s, aasetManager: %p", filename, mgr);
     pcap_replay_filename = (char*)calloc(strlen(filename)+1, sizeof(char));
     strncpy(pcap_replay_filename, filename, strlen(filename));
 
@@ -135,7 +135,7 @@ int atsc3NdkClient::atsc3_pcap_replay_open_file_from_assetManager(const char *fi
 int atsc3NdkClient::atsc3_pcap_replay_open_file(const char *filename) {
 
     atsc3_pcap_replay_context = atsc3_pcap_replay_open_filename(filename);
-    LogMsgF("atsc3NdkClient::atsc3_pcap_replay_open_file: file: %s, replay context: %p", filename, atsc3_pcap_replay_context);
+    LogMsgF("atsc3NdkPHYBridge::atsc3_pcap_replay_open_file: file: %s, replay context: %p", filename, atsc3_pcap_replay_context);
     if(!atsc3_pcap_replay_context) {
         return -1;
     }
@@ -157,10 +157,10 @@ int atsc3NdkClient::PcapProducerThreadParserRun() {
 
     int packet_push_count = 0;
 
-    LogMsgF("atsc3NdkClient::PcapProducerThreadParserRun with this: %p", this);
+    LogMsgF("atsc3NdkPHYBridge::PcapProducerThreadParserRun with this: %p", this);
 
     if(!atsc3_pcap_replay_context) {
-        LogMsgF("atsc3NdkClient::PcapProducerThreadParserRun - ERROR - no atsc3_pcap_replay_context!");
+        LogMsgF("atsc3NdkPHYBridge::PcapProducerThreadParserRun - ERROR - no atsc3_pcap_replay_context!");
         pcapThreadShouldRun = false;
         return -1;
     }
@@ -180,7 +180,7 @@ int atsc3NdkClient::PcapProducerThreadParserRun() {
                 block_t* phy_payload = block_Duplicate_from_position(atsc3_pcap_replay_local_context->atsc3_pcap_packet_instance.current_pcap_packet);
                 block_Rewind(atsc3_pcap_replay_local_context->atsc3_pcap_packet_instance.current_pcap_packet);
                 if(phy_payload->p_size && (packet_push_count++ % 10000) == 0) {
-                    LogMsgF("atsc3NdkClient::RunPcapThreadParser - pushing to atsc3_phy_mmt_player_bridge_process_packet_phy: count: %d, len was: %d, new payload: %p (0x%02x 0x%02x), len: %d",
+                    LogMsgF("atsc3NdkPHYBridge::RunPcapThreadParser - pushing to atsc3_phy_mmt_player_bridge_process_packet_phy: count: %d, len was: %d, new payload: %p (0x%02x 0x%02x), len: %d",
                             packet_push_count,
                             atsc3_pcap_replay_local_context->atsc3_pcap_packet_instance.current_pcap_packet->p_size,
                             phy_payload,
@@ -200,7 +200,7 @@ int atsc3NdkClient::PcapProducerThreadParserRun() {
                         to_dispatch_queue.pop();
                     }
                     pcap_replay_condition.notify_one();  //todo: jjustman-2019-11-06 - only signal if we aren't behind packet processing or we have a growing queue
-                    //printf("atsc3NdkClient::PcapProducerThreadRun - signalling notify_one at count: %d", pushed_count);
+                    //printf("atsc3NdkPHYBridge::PcapProducerThreadRun - signalling notify_one at count: %d", pushed_count);
                 }
                 //cleanup happens on the consumer thread for dispatching
             }
@@ -214,9 +214,9 @@ int atsc3NdkClient::PcapProducerThreadParserRun() {
     }
 
     if(!atsc3_pcap_replay_local_context) {
-        LogMsgF("atsc3NdkClient::RunPcapThreadParser - unwinding thread, end of file!");
+        LogMsgF("atsc3NdkPHYBridge::RunPcapThreadParser - unwinding thread, end of file!");
     } else {
-        LogMsgF("atsc3NdkClient::RunPcapThreadParser - unwinding thread, pcapThreadShouldRun is false");
+        LogMsgF("atsc3NdkPHYBridge::RunPcapThreadParser - unwinding thread, pcapThreadShouldRun is false");
     }
 
     pcapProducerShutdown = true;
@@ -245,7 +245,7 @@ int atsc3NdkClient::PcapConsumerThreadRun() {
             pcap_replay_condition.notify_one();
         }
 
-        //printf("atsc3NdkClient::PcapConsumerThreadRun - pushing %d packets", to_dispatch_queue.size());
+        //printf("atsc3NdkPHYBridge::PcapConsumerThreadRun - pushing %d packets", to_dispatch_queue.size());
         while(to_dispatch_queue.size()) {
             block_t *phy_payload_to_process = to_dispatch_queue.front();
             //jjustman-2019-11-06 moved  to semaphore producer/consumer thread for processing pcap replay in time-sensitive phy simulation
@@ -318,13 +318,13 @@ void atsc3NdkClient::atsc3_onMfuPacket(uint16_t packet_id, uint32_t mpu_sequence
     global_jobject_mfu_refs.push_back(jobjectGlobalByteBuffer);
 
     int r = env.Get()->CallIntMethod(mClsDrvIntf, atsc3_onMfuPacketID, mpu_sequence_number, is_video, sample_number, jobjectGlobalByteBuffer, bufferLen, presentationUs);
-    //printf("atsc3NdkClient::onMfuPacket, ret: %d, bufferLen: %u", r, bufferLen);
+    //printf("atsc3NdkPHYBridge::onMfuPacket, ret: %d, bufferLen: %u", r, bufferLen);
    // env.Get()->DeleteLocalRef(jobjectByteBuffer);
 #else
     jobject jobjectLocalByteBuffer = Atsc3_Jni_Processing_Thread_Env->Get()->NewDirectByteBuffer(buffer, bufferLen);
 
     int r = Atsc3_Jni_Processing_Thread_Env->Get()->CallIntMethod(mClsDrvIntf, atsc3_onMfuPacketID, packet_id, mpu_sequence_number, sample_number, jobjectLocalByteBuffer, bufferLen, presentationUs, mfu_fragment_count_rebuilt);
-    //printf("atsc3NdkClient::onMfuPacket, ret: %d, bufferLen: %u", r, bufferLen);
+    //printf("atsc3NdkPHYBridge::onMfuPacket, ret: %d, bufferLen: %u", r, bufferLen);
     Atsc3_Jni_Processing_Thread_Env->Get()->DeleteLocalRef(jobjectLocalByteBuffer);
 #endif
 }
@@ -347,13 +347,13 @@ void atsc3NdkClient::atsc3_onMfuPacketCorrupt(uint16_t packet_id, uint32_t mpu_s
     global_jobject_mfu_refs.push_back(jobjectGlobalByteBuffer);
 
     int r = env.Get()->CallIntMethod(mClsDrvIntf, atsc3_onMfuPacketID, mpu_sequence_number, is_video, sample_number, jobjectGlobalByteBuffer, bufferLen, presentationUs);
-    //printf("atsc3NdkClient::onMfuPacket, ret: %d, bufferLen: %u", r, bufferLen);
+    //printf("atsc3NdkPHYBridge::onMfuPacket, ret: %d, bufferLen: %u", r, bufferLen);
    // env.Get()->DeleteLocalRef(jobjectByteBuffer);
 #else
     jobject jobjectLocalByteBuffer = Atsc3_Jni_Processing_Thread_Env->Get()->NewDirectByteBuffer(buffer, bufferLen);
 
     int r = Atsc3_Jni_Processing_Thread_Env->Get()->CallIntMethod(mClsDrvIntf, atsc3_onMfuPacketCorruptID, packet_id, mpu_sequence_number, sample_number, jobjectLocalByteBuffer, bufferLen, presentationUs, mfu_fragment_count_expected, mfu_fragment_count_rebuilt);
-    //printf("atsc3NdkClient::onMfuPacket, ret: %d, bufferLen: %u", r, bufferLen);
+    //printf("atsc3NdkPHYBridge::onMfuPacket, ret: %d, bufferLen: %u", r, bufferLen);
     Atsc3_Jni_Processing_Thread_Env->Get()->DeleteLocalRef(jobjectLocalByteBuffer);
 #endif
 }
@@ -376,13 +376,13 @@ void atsc3NdkClient::atsc3_onMfuPacketCorruptMmthSampleHeader(uint16_t packet_id
     global_jobject_mfu_refs.push_back(jobjectGlobalByteBuffer);
 
     int r = env.Get()->CallIntMethod(mClsDrvIntf, atsc3_onMfuPacketID, mpu_sequence_number, is_video, sample_number, jobjectGlobalByteBuffer, bufferLen, presentationUs);
-    //printf("atsc3NdkClient::onMfuPacket, ret: %d, bufferLen: %u", r, bufferLen);
+    //printf("atsc3NdkPHYBridge::onMfuPacket, ret: %d, bufferLen: %u", r, bufferLen);
    // env.Get()->DeleteLocalRef(jobjectByteBuffer);
 #else
     jobject jobjectLocalByteBuffer = Atsc3_Jni_Processing_Thread_Env->Get()->NewDirectByteBuffer(buffer, bufferLen);
 
     int r = Atsc3_Jni_Processing_Thread_Env->Get()->CallIntMethod(mClsDrvIntf, atsc3_onMfuPacketCorruptMmthSampleHeaderID, packet_id, mpu_sequence_number, sample_number, jobjectLocalByteBuffer, bufferLen, presentationUs, mfu_fragment_count_expected, mfu_fragment_count_rebuilt);
-    //printf("atsc3NdkClient::onMfuPacket, ret: %d, bufferLen: %u", r, bufferLen);
+    //printf("atsc3NdkPHYBridge::onMfuPacket, ret: %d, bufferLen: %u", r, bufferLen);
     Atsc3_Jni_Processing_Thread_Env->Get()->DeleteLocalRef(jobjectLocalByteBuffer);
 #endif
 }
@@ -403,7 +403,7 @@ void atsc3NdkClient::atsc3_onInitHEVC_NAL_Extracted(uint16_t packet_id, uint32_t
     global_jobject_nal_refs.push_back(jobjectGlobalByteBuffer);
 
     int r = env.Get()->CallIntMethod(mClsDrvIntf, mOnInitHEVC_NAL_Extracted, is_video, mpu_sequence_number, jobjectGlobalByteBuffer, bufferLen);
-    //printf("atsc3NdkClient::onMfuPacket, ret: %d, bufferLen: %u", r, bufferLen);
+    //printf("atsc3NdkPHYBridge::onMfuPacket, ret: %d, bufferLen: %u", r, bufferLen);
     //env.Get()->DeleteLocalRef(jobjectByteBuffer);
 #else
     jobject jobjectByteBuffer = Atsc3_Jni_Processing_Thread_Env->Get()->NewDirectByteBuffer(buffer, bufferLen);
@@ -432,7 +432,7 @@ void atsc3NdkClient::atsc3_signallingContext_notify_video_packet_id_and_mpu_time
     }
 
     int r = Atsc3_Jni_Processing_Thread_Env->Get()->CallIntMethod(mClsDrvIntf, atsc3_signallingContext_notify_video_packet_id_and_mpu_timestamp_descriptor_ID, video_packet_id, mpu_sequence_number, mpu_presentation_time_ntp64, mpu_presentation_time_seconds, mpu_presentation_time_microseconds);
-    //printf("atsc3NdkClient::onMfuPacket, ret: %d, bufferLen: %u", r, bufferLen);
+    //printf("atsc3NdkPHYBridge::onMfuPacket, ret: %d, bufferLen: %u", r, bufferLen);
    //env.Get()->DeleteLocalRef(jobjectLocalByteBuffer);
 }
 
@@ -447,7 +447,7 @@ void atsc3NdkClient::atsc3_signallingContext_notify_audio_packet_id_and_mpu_time
     }
 
     int r = Atsc3_Jni_Processing_Thread_Env->Get()->CallIntMethod(mClsDrvIntf, atsc3_signallingContext_notify_audio_packet_id_and_mpu_timestamp_descriptor_ID, audio_packet_id, mpu_sequence_number, mpu_presentation_time_ntp64, mpu_presentation_time_seconds, mpu_presentation_time_microseconds);
-    //printf("atsc3NdkClient::onMfuPacket, ret: %d, bufferLen: %u", r, bufferLen);
+    //printf("atsc3NdkPHYBridge::onMfuPacket, ret: %d, bufferLen: %u", r, bufferLen);
     //env.Get()->DeleteLocalRef(jobjectLocalByteBuffer);
 }
 
@@ -463,7 +463,7 @@ void atsc3NdkClient::atsc3_signallingContext_notify_stpp_packet_id_and_mpu_times
     }
 
     int r =  Atsc3_Jni_Processing_Thread_Env->Get()->CallIntMethod(mClsDrvIntf, atsc3_signallingContext_notify_stpp_packet_id_and_mpu_timestamp_descriptor_ID, stpp_packet_id, mpu_sequence_number, mpu_presentation_time_ntp64, mpu_presentation_time_seconds, mpu_presentation_time_microseconds);
-    //printf("atsc3NdkClient::onMfuPacket, ret: %d, bufferLen: %u", r, bufferLen);
+    //printf("atsc3NdkPHYBridge::onMfuPacket, ret: %d, bufferLen: %u", r, bufferLen);
     //env.Get()->DeleteLocalRef(jobjectLocalByteBuffer);
 }
 
@@ -556,7 +556,7 @@ int atsc3NdkClient::atsc3_pcap_thread_run() {
     pcapProducerThreadPtr = std::thread([this](){
         atsc3_jni_pcap_producer_thread_env = new CJniEnv(mJavaVM);
 
-        LogMsgF("atsc3NdkClient::atsc3_pcap_producer_thread_run with this: %p", this);
+        LogMsgF("atsc3NdkPHYBridge::atsc3_pcap_producer_thread_run with this: %p", this);
 
         this->PcapProducerThreadParserRun();
         delete atsc3_jni_pcap_producer_thread_env;
@@ -565,7 +565,7 @@ int atsc3NdkClient::atsc3_pcap_thread_run() {
     pcapConsumerThreadPtr = std::thread([this](){
         atsc3_jni_pcap_consumer_thread_env = new CJniEnv(mJavaVM);
         Atsc3_Jni_Processing_Thread_Env = atsc3_jni_pcap_consumer_thread_env; //hack
-        LogMsgF("atsc3NdkClient::atsc3_pcap_consumer_thread_run with this: %p", this);
+        LogMsgF("atsc3NdkPHYBridge::atsc3_pcap_consumer_thread_run with this: %p", this);
 
         this->PcapConsumerThreadRun();
         Atsc3_Jni_Processing_Thread_Env = NULL;
@@ -577,20 +577,20 @@ int atsc3NdkClient::atsc3_pcap_thread_run() {
 }
 
 int atsc3NdkClient::pinFromRxCaptureThread() {
-    printf("atsc3NdkClient::Atsc3_Jni_Processing_Thread_Env: mJavaVM: %p", mJavaVM);
+    printf("atsc3NdkPHYBridge::Atsc3_Jni_Processing_Thread_Env: mJavaVM: %p", mJavaVM);
     Atsc3_Jni_Processing_Thread_Env = new CJniEnv(mJavaVM);
     return 0;
 };
 
 int atsc3NdkClient::pinFromRxProcessingThread() {
-    printf("atsc3NdkClient::pinFromRxProcessingThread: mJavaVM: %p", mJavaVM);
+    printf("atsc3NdkPHYBridge::pinFromRxProcessingThread: mJavaVM: %p", mJavaVM);
     Atsc3_Jni_Processing_Thread_Env = new CJniEnv(mJavaVM);
     return 0;
 }
 
 
 int atsc3NdkClient::pinFromRxStatusThread() {
-    printf("atsc3NdkClient::pinFromRxStatusThread: mJavaVM: %p", mJavaVM);
+    printf("atsc3NdkPHYBridge::pinFromRxStatusThread: mJavaVM: %p", mJavaVM);
     Atsc3_Jni_Status_Thread_Env = new CJniEnv(mJavaVM);
     return 0;
 }
@@ -598,7 +598,7 @@ int atsc3NdkClient::pinFromRxStatusThread() {
 int atsc3NdkClient::PcapLocalCleanup() {
     int spinlock_count = 0;
     while(spinlock_count++ < 10 && (!pcapProducerShutdown || !pcapConsumerShutdown)) {
-        LogMsgF("atsc3NdkClient::PcapLocalCleanup: waiting for pcapProducerShutdown: %d, pcapConsumerShutdown: %d, pcapThreadShouldRun: %d",
+        LogMsgF("atsc3NdkPHYBridge::PcapLocalCleanup: waiting for pcapProducerShutdown: %d, pcapConsumerShutdown: %d, pcapThreadShouldRun: %d",
                 pcapProducerShutdown, pcapConsumerShutdown, pcapThreadShouldRun);
         sleep(1);
     }
@@ -639,7 +639,7 @@ int atsc3NdkClient::PcapLocalCleanup() {
 int atsc3NdkClient::atsc3_pcap_thread_stop() {
 
     pcapThreadShouldRun = false;
-    LogMsgF("atsc3NdkClient::atsc3_pcap_thread_stop with this: %p", &pcapProducerThreadPtr);
+    LogMsgF("atsc3NdkPHYBridge::atsc3_pcap_thread_stop with this: %p", &pcapProducerThreadPtr);
     if(pcapProducerThreadPtr.joinable()) {
         pcapProducerThreadPtr.join();
     }
@@ -647,7 +647,7 @@ int atsc3NdkClient::atsc3_pcap_thread_stop() {
     if(pcapConsumerThreadPtr.joinable()) {
         pcapConsumerThreadPtr.join();
     }
-    LogMsgF("atsc3NdkClient::atsc3_pcap_thread_stop: stopped with this: %p", &pcapProducerThreadPtr);
+    LogMsgF("atsc3NdkPHYBridge::atsc3_pcap_thread_stop: stopped with this: %p", &pcapProducerThreadPtr);
 
     PcapLocalCleanup();
     return 0;
@@ -689,7 +689,7 @@ void atsc3NdkClient::atsc3_update_rf_stats(int32_t tuner_lock,
         return;
 
     if (!Atsc3_Jni_Status_Thread_Env) {
-        eprintf("atsc3NdkClient:atsc3_update_rf_stats: err on get jni env: Atsc3_Jni_Status_Thread_Env\n");
+        eprintf("atsc3NdkPHYBridge:atsc3_update_rf_stats: err on get jni env: Atsc3_Jni_Status_Thread_Env\n");
         return;
     }
     int r = Atsc3_Jni_Status_Thread_Env->Get()->CallIntMethod(mClsDrvIntf, atsc3_rf_phy_status_callback_ID,
@@ -749,7 +749,7 @@ void atsc3NdkClient::atsc3_update_rf_bw_stats(uint64_t total_pkts, uint64_t tota
     if (!JReady() || !mOnLogMsgId)
         return;
     if (!Atsc3_Jni_Status_Thread_Env) {
-        eprintf("atsc3NdkClient:atsc3_update_rf_bw_stats: err on get jni env: Atsc3_Jni_Status_Thread_Env\n");
+        eprintf("atsc3NdkPHYBridge:atsc3_update_rf_bw_stats: err on get jni env: Atsc3_Jni_Status_Thread_Env\n");
         return;
     }
     int r = Atsc3_Jni_Status_Thread_Env->Get()->CallIntMethod(mClsDrvIntf, atsc3_update_rf_bw_stats_ID, total_pkts, total_bytes, total_lmts);
@@ -774,7 +774,7 @@ void atsc3NdkClient::set_plp_settings(jint *a_plp_ids, jsize a_plp_size) {
 std::string atsc3NdkClient::get_android_temp_folder() {
     CJniEnv env(mJavaVM);
 
-    jclass clazz = env.Get()->FindClass("org/ngbp/libatsc3/sampleapp/atsc3NdkClient");
+    jclass clazz = env.Get()->FindClass("org/ngbp/libatsc3/sampleapp/atsc3NdkPHYBridge");
 
     jmethodID getCacheDir = env.Get()->GetMethodID( clazz, "getCacheDir", "()Ljava/io/File;" );
     jobject cache_dir = env.Get()->CallObjectMethod(mClsDrvIntf, getCacheDir );
@@ -1123,9 +1123,9 @@ Java_org_ngbp_libatsc3_sampleapp_atsc3NdkClient_ApiInit(JNIEnv *env, jobject ins
         return -1;
     }
 
-    jclass jClazz = env->FindClass("org/ngbp/libatsc3/sampleapp/atsc3NdkClient");
+    jclass jClazz = env->FindClass("org/ngbp/libatsc3/sampleapp/atsc3NdkPHYBridge");
     if (jClazz == NULL) {
-        eprintf("!! Cannot find atsc3NdkClient java class\n");
+        eprintf("!! Cannot find atsc3NdkPHYBridge java class\n");
         return -1;
     }
     api.mOnLogMsgId = env->GetMethodID(jClazz, "onLogMsg", "(Ljava/lang/String;)I");
@@ -1281,8 +1281,8 @@ Java_org_ngbp_libatsc3_sampleapp_atsc3NdkClient_ApiInit(JNIEnv *env, jobject ins
     api.LogMsg("Api init ok");
 
     //wire up atsc3_phy_mmt_player_bridge
-    //atsc3NdkClient* at3DrvIntf_ptr
-    atsc3_phy_mmt_player_bridge_init(&api);
+    //atsc3NdkPHYBridge* at3DrvIntf_ptr
+    atsc3_phy_player_bridge_init(&api);
 
     printf("**** jni init OK\n");
     return 0;
