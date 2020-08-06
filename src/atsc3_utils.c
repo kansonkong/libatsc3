@@ -219,6 +219,7 @@ block_t* block_Alloc(int size_requested) {
 	new_block->i_pos = 0;
     new_block->_refcnt = 1;
     new_block->_is_alloc = 1;
+    new_block->_a_size = size_requested;
 
 	return new_block;
 }
@@ -1006,13 +1007,11 @@ int mkpath(char *dir, mode_t mode)
     return ret;
 }
 
-
+//don't care if it exists or not, just open the object...
 FILE* atsc3_object_open(char* file_name) {
-	if( access( file_name, F_OK ) != -1 ) {
-		FILE* f = fopen(file_name, "r+");
-		if(f) {
-			return f;
-		}
+	FILE* f = fopen(file_name, "w+");
+	if(f) {
+		return f;
 	}
 
 	return NULL;

@@ -110,21 +110,6 @@ block_t* alc_get_payload_from_filename(char* file_name) {
 
 }
 
-/* jjustman-2019-09-17: TODO - free temporary filename when done */
-
-char* alc_packet_dump_to_object_get_temporary_recovering_filename(udp_flow_t *udp_flow, atsc3_alc_packet_t *alc_packet) {
-	char* temporary_file_name = (char *)calloc(256, sizeof(char));
-	if(alc_packet->def_lct_hdr) {
-		snprintf(temporary_file_name, 255, "%s%u.%u.%u.%u.%u.%u-%u.recovering",
-			__ALC_DUMP_OUTPUT_PATH__,
-			__toipandportnonstruct(udp_flow->dst_ip_addr, udp_flow->dst_port),
-			alc_packet->def_lct_hdr->tsi,
-			alc_packet->def_lct_hdr->toi);
-	}
-
-	return temporary_file_name;
-}
-
 
 /* jjustman-2019-09-17: TODO - free temporary filename when done */
 char* alc_packet_dump_to_object_get_filename_tsi_toi(udp_flow_t* udp_flow, uint32_t tsi, uint32_t toi) {
@@ -563,6 +548,8 @@ atsc3_fdt_file_t* atsc3_alc_RS_LS_get_matching_toi_file_instance(atsc3_route_s_t
 
  //end jjustman-2020-07-07
 
+//jjustman-2020-08-05 - todo: use atsc3_utils / FILE* atsc3_object_open(char* file_name) {
+
 FILE* atsc3_alc_object_open(char* file_name) {
 	if( access( file_name, F_OK ) != -1 ) {
 		FILE* f = fopen(file_name, "r+");
@@ -673,99 +660,30 @@ int alc_packet_write_fragment(FILE* f, char* file_name, uint32_t offset, atsc3_a
  */
 
 int atsc3_alc_packet_persist_to_toi_resource_process_sls_mbms_and_emit_callback(udp_flow_t *udp_flow, atsc3_alc_packet_t *alc_packet, lls_sls_alc_monitor_t *lls_sls_alc_monitor, atsc3_route_object_t* atsc3_route_object) {
-    char* s_tsid_content_location = NULL;
-    FILE *f = NULL;
-    bool should_preallocate_fp = true;
+    char* temporary_filename = NULL;
+	char* s_tsid_content_location = NULL;
 
 	int bytesWritten = 0;
 
-    if(lls_sls_alc_monitor && !lls_sls_alc_monitor->lls_sls_monitor_output_buffer_mode.file_dump_enabled) {
+	//jjustman-2020-08-05 - deprecate file_dump_enabled option
+    if(!lls_sls_alc_monitor || (lls_sls_alc_monitor && !lls_sls_alc_monitor->lls_sls_monitor_output_buffer_mode.file_dump_enabled)) {
         return -2;
     }
 
-    char* temporary_filename = alc_packet_dump_to_object_get_temporary_recovering_filename(udp_flow, alc_packet);
-    atsc3_route_object_set_temporary_object_recovery_filename_if_null(atsc3_route_object, temporary_filename);
-
-    //jjustman-2020-07-28 - do not pre-allocate if we have lct_packets received for this object for carousel recovery or if we have an active file* recovery handle open
-    if(atsc3_route_object->atsc3_route_object_lct_packet_received_v.count) {
-    	if(atsc3_route_object->recovery_file_handle) {
-    		f = atsc3_route_object->recovery_file_handle;
-    	} else {
-    		//if we are already pre-allocated, recover this file
-    		f = atsc3_alc_object_open(temporary_filename);
-    		if(f) {
-    			atsc3_route_object_recovery_file_handle_assign(atsc3_route_object, f);
-    		}
-    	}
-
-		if(f) {
-			should_preallocate_fp = false;
-		}
-	}
-
-    if(alc_packet->use_sbn_esi) {
-    	if(should_preallocate_fp) {
-			//raptor fec, use the esi to see if we should write out to a new file vs append
-			if(!alc_packet->esi) {
-				f = alc_object_pre_allocate(temporary_filename, alc_packet);
-				__ALC_UTILS_IOTRACE("raptor_fec: done creating new pre-allocation for temporary_filename: %s, size: %llu", temporary_filename, alc_packet->transfer_len);
-			} else {
-				f = alc_object_open_or_pre_allocate(temporary_filename, alc_packet); //this shouldn't be used much (if at all..)
-			}
-			if(!f) {
-				__ALC_UTILS_WARN("atsc3_alc_packet_persist_to_toi_resource_process_sls_mbms_and_emit_callback, unable to open temporary_filename: %s", temporary_filename);
-				bytesWritten = -1;
-				goto cleanup;
-			}
-			atsc3_route_object_recovery_file_handle_assign(atsc3_route_object, f);
-    	}
-
-        alc_packet_write_fragment(f, temporary_filename, alc_packet->esi, alc_packet);
-        __ALC_UTILS_IOTRACE("raptor_fec: done writing out fragment for %s", temporary_filename);
-
-    } else if(alc_packet->use_start_offset) {
-		if(should_preallocate_fp) {
-			if(!alc_packet->start_offset) {
-				f = alc_object_pre_allocate(temporary_filename, alc_packet);
-				__ALC_UTILS_IOTRACE("ALC: tsi: %u, toi: %u, done creating new pre-allocation temporary_filename %s, size: %llu",
-						alc_packet->def_lct_hdr->tsi,
-						alc_packet->def_lct_hdr->toi,
-						temporary_filename,
-						alc_packet->transfer_len);
-
-			} else {
-				__ALC_UTILS_IOTRACE("ALC: tsi: %u, toi: %u, using existing pre-alloc temporary_filename %s, offset: %u, size: %llu",
-						alc_packet->def_lct_hdr->tsi,
-						alc_packet->def_lct_hdr->toi,
-						temporary_filename,
-						alc_packet->start_offset,
-						alc_packet->transfer_len);
-
-				f = alc_object_open_or_pre_allocate(temporary_filename, alc_packet);
-			}
-
-			if(!f) {
-				__ALC_UTILS_WARN("atsc3_alc_packet_persist_to_toi_resource_process_sls_mbms_and_emit_callback, unable to open file: %s", temporary_filename);
-			    bytesWritten = -1;
-			    goto cleanup;
-			}
-			atsc3_route_object_recovery_file_handle_assign(atsc3_route_object, f);
-		}
-
-        
-        alc_packet_write_fragment(f, temporary_filename, alc_packet->start_offset, alc_packet);
-        __ALC_UTILS_IOTRACE("alc_packet->start_offset: done writing out temporary_filename for %s", temporary_filename);
-    } else {
-        __ALC_UTILS_WARN("atsc3_alc_packet_persist_to_toi_resource_process_sls_mbms_and_emit_callback, no alc offset strategy for temporary_filename: %s", temporary_filename);
+    bytesWritten = atsc3_route_object_persist_atsc3_alc_packet_from_udp_flow(atsc3_route_object, alc_packet, udp_flow);
+    if(bytesWritten < 0) {
+    	return -3;
     }
-	
+
     //jjustman-2020-07-28 - do not close f handle here, as we will persist it via atsc3_route_object, 16% of profiling time in atsc3_alc_listener_mde_writer was in atsc3_alc_object_open
 
     //jjustman-2020-07-28 - TODO: don't redispatch repeadedly for carousels...
     //jjustman-2020-08-05 - allow is_toi_init to re-write our object on carousel emission
     if(atsc3_route_object_is_complete(atsc3_route_object) && (atsc3_route_object->is_toi_init || !atsc3_route_object->recovery_complete_timestamp)) {
 
-        atsc3_route_object_recovery_file_handle_close(atsc3_route_object);
+        atsc3_route_object_recovery_file_handle_flush_and_close(atsc3_route_object);
+
+        temporary_filename = atsc3_route_object_get_temporary_object_recovery_filename_strdup(atsc3_route_object);
 
         //update our sls here if we have a service we are listenting to
         if(lls_sls_alc_monitor && lls_sls_alc_monitor->atsc3_lls_slt_service && alc_packet->def_lct_hdr->tsi == 0) {

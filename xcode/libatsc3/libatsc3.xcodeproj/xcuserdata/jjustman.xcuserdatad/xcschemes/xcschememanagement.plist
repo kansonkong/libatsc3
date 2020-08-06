@@ -9,6 +9,11 @@
 			<key>orderHint</key>
 			<integer>4</integer>
 		</dict>
+		<key>Copy of atsc3_alc_listener_mde_writer vnic0 ASAN.xcscheme</key>
+		<dict>
+			<key>orderHint</key>
+			<integer>5</integer>
+		</dict>
 		<key>Copy of libatsc3.xcscheme</key>
 		<dict>
 			<key>orderHint</key>
@@ -31,6 +36,11 @@
 			<key>orderHint</key>
 			<integer>20</integer>
 		</dict>
+		<key>atsc3_alc_listener_mde_writer vnic0 NO ASAN.xcscheme</key>
+		<dict>
+			<key>orderHint</key>
+			<integer>4</integer>
+		</dict>
 		<key>atsc3_fdt_mbms_envelope_test_2019-09-17-nab-interop-day1.xcscheme_^#shared#^_</key>
 		<dict>
 			<key>orderHint</key>
@@ -39,7 +49,7 @@
 		<key>atsc3_fmp4_player.xcscheme_^#shared#^_</key>
 		<dict>
 			<key>orderHint</key>
-			<integer>23</integer>
+			<integer>3</integer>
 		</dict>
 		<key>atsc3_hevc_nal_extractor_test.xcscheme</key>
 		<dict>
@@ -58,7 +68,7 @@
 			<key>isShown</key>
 			<true/>
 			<key>orderHint</key>
-			<integer>3</integer>
+			<integer>0</integer>
 		</dict>
 		<key>atsc3_mmt_context_mfu_depacketizer_test.xcscheme</key>
 		<dict>
@@ -104,14 +114,14 @@
 			<key>isShown</key>
 			<true/>
 			<key>orderHint</key>
-			<integer>5</integer>
+			<integer>2</integer>
 		</dict>
 		<key>docs.xcscheme_^#shared#^_</key>
 		<dict>
 			<key>isShown</key>
 			<true/>
 			<key>orderHint</key>
-			<integer>7</integer>
+			<integer>1</integer>
 		</dict>
 		<key>libatsc3 2.xcscheme_^#shared#^_</key>
 		<dict>
@@ -181,27 +191,12 @@
 	</dict>
 	<key>SuppressBuildableAutocreation</key>
 	<dict>
-		<key>30192A92232300140075679E</key>
-		<dict>
-			<key>primary</key>
-			<true/>
-		</dict>
-		<key>30364DAF221C7F1F005A903B</key>
-		<dict>
-			<key>primary</key>
-			<true/>
-		</dict>
 		<key>3037E5AC23017B3700EAAA5C</key>
 		<dict>
 			<key>primary</key>
 			<true/>
 		</dict>
 		<key>3051DCE2221A8A9900ED316D</key>
-		<dict>
-			<key>primary</key>
-			<true/>
-		</dict>
-		<key>30B112F7222AB5BA0068F33D</key>
 		<dict>
 			<key>primary</key>
 			<true/>
