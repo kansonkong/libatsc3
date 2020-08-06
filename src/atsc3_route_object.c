@@ -36,6 +36,7 @@ atsc3_route_object_t* atsc3_route_object_new() {
 	atsc3_route_object_t* atsc3_route_object = calloc(1, sizeof(atsc3_route_object_t));
 
 	avltree_init(&atsc3_route_object->atsc3_route_object_lct_packet_received_tree, atsc3_route_object_lct_packet_received_cmp_fn, 0);
+	atsc3_route_object->recovery_file_buffer_position = -1;
 
 	return atsc3_route_object;
 }
@@ -61,9 +62,8 @@ void atsc3_route_object_free(atsc3_route_object_t** atsc3_route_object_p) {
 			freeclean((void**)&atsc3_route_object->final_object_recovery_filename_for_eviction);
 			freeclean((void**)&atsc3_route_object->final_object_recovery_filename_for_logging);
 
-
 			//most important to clear the lct packets recv
-			atsc3_route_object_recovery_file_handle_close(atsc3_route_object);
+			atsc3_route_object_recovery_file_handle_flush_and_close(atsc3_route_object);
 
 			//jjustman-2020-08-04 - important, always call these two together..
 			atsc3_route_object_free_atsc3_route_object_lct_packet_received(atsc3_route_object);
@@ -73,12 +73,12 @@ void atsc3_route_object_free(atsc3_route_object_t** atsc3_route_object_p) {
 
 			_ATSC3_ROUTE_OBJECT_DEBUG("atsc3_route_object_free: p: %p, tsi: %d, toi: %d, after closing fp: %p, atsc3_route_object_lct_packet_received count: %d (size: %d)",
 					atsc3_route_object,
-							atsc3_route_object->tsi,
-							atsc3_route_object->toi,
+					atsc3_route_object->tsi,
+					atsc3_route_object->toi,
 					atsc3_route_object->recovery_file_handle,
-								atsc3_route_object->atsc3_route_object_lct_packet_received_v.count,
-								atsc3_route_object->atsc3_route_object_lct_packet_received_v.size
-						);
+					atsc3_route_object->atsc3_route_object_lct_packet_received_v.count,
+					atsc3_route_object->atsc3_route_object_lct_packet_received_v.size
+			);
 			atsc3_route_object->most_recent_atsc3_route_object_lct_packet_received = NULL;
 
 			free(atsc3_route_object);
@@ -103,6 +103,16 @@ void atsc3_route_object_set_temporary_object_recovery_filename_if_null(atsc3_rou
 	}
 }
 
+char* atsc3_route_object_get_temporary_object_recovery_filename_strdup(atsc3_route_object_t* atsc3_route_object) {
+	char* temporary_filename = NULL;
+	if(atsc3_route_object->temporary_object_recovery_filename) {
+		temporary_filename = strdup(atsc3_route_object->temporary_object_recovery_filename);
+	}
+
+	return temporary_filename;
+}
+
+
 void atsc3_route_object_clear_temporary_object_recovery_filename(atsc3_route_object_t* atsc3_route_object) {
 	freeclean((void**)&atsc3_route_object->temporary_object_recovery_filename);
 }
@@ -116,6 +126,139 @@ void atsc3_route_object_set_final_object_recovery_filename_for_eviction(atsc3_ro
 void atsc3_route_object_set_final_object_recovery_filename_for_logging(atsc3_route_object_t* atsc3_route_object, char* final_object_recovery_filename_for_logging) {
 	freeclean((void**)&atsc3_route_object->final_object_recovery_filename_for_logging);
 	atsc3_route_object->final_object_recovery_filename_for_logging = strdup(final_object_recovery_filename_for_logging);
+}
+
+bool atsc3_route_object_recovery_file_buffer_ensure_alloc_and_position(atsc3_route_object_t* atsc3_route_object, atsc3_alc_packet_t* alc_packet) {
+
+	if(alc_packet->use_sbn_esi) {
+		//jjustman-2020-08-05: TODO - for raptorQ fec - atsc3_route_object_repair_symbol_add(...) for this alc_packet
+		//bail
+		return false;
+	} else if(alc_packet->use_start_offset){
+		if(atsc3_route_object->recovery_file_buffer_position == -1) {
+			atsc3_route_object->recovery_file_buffer_position = alc_packet->start_offset;
+			//we have to force-destroy this in-flight block
+			//jjustman-2020-08-05 - log this
+			if(atsc3_route_object->recovery_file_buffer) {
+				block_Destroy(&atsc3_route_object->recovery_file_buffer);
+			}
+		}
+		if(!atsc3_route_object->recovery_file_buffer) {
+			uint32_t remaining_block_payload_size = atsc3_route_object->object_length - alc_packet->start_offset;
+			
+			atsc3_route_object->recovery_file_buffer = block_Alloc(__MIN(remaining_block_payload_size, __ATSC3_ROUTE_OBJECT_PERSIST_BLOCK_SIZE_BYTES__));
+		}
+
+		return true;
+	} else {
+		_ATSC3_ROUTE_OBJECT_WARN("atsc3_route_object_recovery_file_buffer_ensure_alloc_and_position: atsc3_route_object: %p, tsi: %d, toi: %d, alc_packet: %p is not use_sbn_esi AND not use_start_offset?!",
+							atsc3_route_object,
+							atsc3_route_object->tsi,
+							atsc3_route_object->toi,
+							alc_packet);
+
+		return false;
+	}
+}
+
+
+int64_t atsc3_route_object_recovery_file_buffer_flush_block_to_temporary_object_recovery_filename(atsc3_route_object_t* atsc3_route_object) {
+	int64_t bytes_written = 0;
+	int res = 0;
+	FILE* fp = NULL;
+
+	if(!atsc3_route_object || !atsc3_route_object->recovery_file_buffer || !atsc3_route_object->recovery_file_buffer->p_buffer || !atsc3_route_object->recovery_file_buffer->p_size) {
+		_ATSC3_ROUTE_OBJECT_WARN("atsc3_route_object_recovery_file_buffer_ensure_alloc_and_position: atsc3_route_object: %p, recovery_file_buffer is invalid!",
+							atsc3_route_object);
+		bytes_written = -4;
+		goto free_recovery_file_buffer;
+	}
+
+	if(!atsc3_route_object->temporary_object_recovery_filename || atsc3_route_object->recovery_file_buffer_position < 0) {
+		_ATSC3_ROUTE_OBJECT_WARN("atsc3_route_object_recovery_file_buffer_ensure_alloc_and_position: atsc3_route_object: %p, temporary_object_recovery_filename is NULL!, recovery_file_buffer_position is: %lld",
+							atsc3_route_object,
+							atsc3_route_object->recovery_file_buffer_position);
+		bytes_written = -3;
+		goto free_recovery_file_buffer;
+	}
+
+	if(atsc3_route_object->recovery_file_handle) {
+		int res = 0;
+		//try a sanity check for seeking to 0
+		res = fseek(atsc3_route_object->recovery_file_handle, 0, SEEK_SET);
+
+		if(!res) {
+			fp = atsc3_route_object->recovery_file_handle;
+		} else {
+			_ATSC3_ROUTE_OBJECT_WARN("atsc3_route_object_recovery_file_buffer_ensure_alloc_and_position: atsc3_route_object: %p, atsc3_route_object->recovery_file_handle: %p,  fseek to (0, SEEK_SET) returned error: %d",
+								atsc3_route_object,
+								atsc3_route_object->recovery_file_handle,
+								res);
+			fclose(atsc3_route_object->recovery_file_handle);
+			atsc3_route_object->recovery_file_handle = NULL;
+		}
+	}
+
+	if(!fp) {
+		//make sure we have our dump output path
+		struct stat st = {0};
+
+		if(stat(__ALC_DUMP_OUTPUT_PATH__, &st) == -1) {
+			mkdir(__ALC_DUMP_OUTPUT_PATH__, 0777);
+		}
+
+		fp = atsc3_object_open(atsc3_route_object->temporary_object_recovery_filename);
+		if(!fp) {
+			_ATSC3_ROUTE_OBJECT_WARN("atsc3_route_object_recovery_file_buffer_ensure_alloc_and_position: atsc3_alc_object_open:: atsc3_route_object: %p, atsc3_route_object->temporary_object_recovery_filename: %s failed",
+								atsc3_route_object,
+								atsc3_route_object->temporary_object_recovery_filename);
+			bytes_written = -2;
+			goto free_recovery_file_buffer;
+		} else {
+			atsc3_route_object->recovery_file_handle = fp;
+		}
+	}
+
+
+	res = fseek(fp, atsc3_route_object->recovery_file_buffer_position, SEEK_SET);
+	if(!res) {
+		res = fwrite(atsc3_route_object->recovery_file_buffer->p_buffer, atsc3_route_object->recovery_file_buffer->p_size, 1, fp);
+		if(res != 1) {
+			_ATSC3_ROUTE_OBJECT_WARN("atsc3_route_object_recovery_file_buffer_ensure_alloc_and_position: atsc3_route_object: %p, atsc3_route_object->recovery_file_handle: %p, fwrite of %d bytes failed from block_t: %p - res: %d",
+							atsc3_route_object,
+							atsc3_route_object->recovery_file_handle,
+							atsc3_route_object->recovery_file_buffer->p_size,
+							atsc3_route_object->recovery_file_buffer->p_buffer,
+							res);
+			fclose(fp);
+			fp = NULL;
+			atsc3_route_object->recovery_file_handle = NULL;
+
+			bytes_written = -1;
+			goto free_recovery_file_buffer;
+		} else {
+			atsc3_route_object->recovery_file_buffer_position = (uint32_t) ftell(fp);
+			bytes_written = atsc3_route_object->recovery_file_buffer->p_size;
+			block_Destroy(&atsc3_route_object->recovery_file_buffer);
+			goto done;
+		}
+	}
+
+free_recovery_file_buffer:
+	if(atsc3_route_object->recovery_file_buffer) {
+		block_Destroy(&atsc3_route_object->recovery_file_buffer);
+	}
+	//borrowed from atsc3_route_object_set_object_recovery_complete
+	atsc3_route_object_free_atsc3_route_object_lct_packet_received(atsc3_route_object);
+	atsc3_route_object->most_recent_atsc3_route_object_lct_packet_received = NULL;
+	atsc3_route_object_free_lct_packet_received_tree(atsc3_route_object);
+
+	atsc3_route_object->recovery_file_buffer_position = -1;
+
+	//hack, if we wern't able to flush this buffer to disk, clear out our
+
+done:
+	return bytes_written;
 }
 
 /*
@@ -152,7 +295,7 @@ void atsc3_route_object_set_object_recovery_complete(atsc3_route_object_t* atsc3
 			atsc3_route_object->atsc3_route_object_lct_packet_received_v.count,
 			atsc3_route_object->atsc3_route_object_lct_packet_received_v.size
 	);
-	atsc3_route_object_recovery_file_handle_close(atsc3_route_object);
+	atsc3_route_object_recovery_file_handle_flush_and_close(atsc3_route_object);
 
 	//jjustman-2020-08-04 - important, always call these two together..
 	atsc3_route_object_free_atsc3_route_object_lct_packet_received(atsc3_route_object);
@@ -190,12 +333,35 @@ void atsc3_route_object_recovery_file_handle_assign(atsc3_route_object_t* atsc3_
 	atsc3_route_object->recovery_file_handle = recovery_file_handle;
 }
 
-void atsc3_route_object_recovery_file_handle_close(atsc3_route_object_t* atsc3_route_object) {
+void atsc3_route_object_recovery_file_handle_flush_and_close(atsc3_route_object_t* atsc3_route_object) {
+	if(atsc3_route_object && atsc3_route_object->recovery_file_buffer) {
+		atsc3_route_object_recovery_file_buffer_flush_block_to_temporary_object_recovery_filename(atsc3_route_object);
+	}
+	
+	//just to be safe
+	if(atsc3_route_object->recovery_file_buffer) {
+		block_Destroy(&atsc3_route_object->recovery_file_buffer);
+	}
+
+	atsc3_route_object->recovery_file_buffer_position = -1;
 	if(atsc3_route_object->recovery_file_handle) {
 		fclose(atsc3_route_object->recovery_file_handle);
 		atsc3_route_object->recovery_file_handle = NULL;
 	}
 }
+
+void atsc3_route_object_recovery_file_handle_abandon_and_close(atsc3_route_object_t* atsc3_route_object) {
+	if(atsc3_route_object->recovery_file_buffer) {
+		block_Destroy(&atsc3_route_object->recovery_file_buffer);
+	}
+	atsc3_route_object->recovery_file_buffer_position = -1;
+
+	if(atsc3_route_object->recovery_file_handle) {
+		fclose(atsc3_route_object->recovery_file_handle);
+		atsc3_route_object->recovery_file_handle = NULL;
+	}
+}
+
 
 
 void atsc3_route_object_calculate_expected_route_object_lct_packet_count(atsc3_route_object_t* atsc3_route_object, atsc3_route_object_lct_packet_received_t* atsc3_route_object_lct_packet_received) {
@@ -413,6 +579,8 @@ void atsc3_route_object_reset_and_free_atsc3_route_object_lct_packet_received(at
 			atsc3_route_object->atsc3_route_object_lct_packet_received_v.count);
 #endif
 
+	atsc3_route_object_recovery_file_handle_flush_and_close(atsc3_route_object);
+
 	//jjustman-2020-08-04 - important, always call these two together..
 	atsc3_route_object_free_atsc3_route_object_lct_packet_received(atsc3_route_object);
 	atsc3_route_object->most_recent_atsc3_route_object_lct_packet_received = NULL;
@@ -423,7 +591,7 @@ void atsc3_route_object_reset_and_free_atsc3_route_object_lct_packet_received(at
 	atsc3_route_object->expected_route_object_lct_packet_count = 0;
 	atsc3_route_object->expected_route_object_lct_packet_len_for_count = 0;
 	atsc3_route_object->cumulative_lct_packet_len = 0;
-	atsc3_route_object_recovery_file_handle_close(atsc3_route_object);
+
 
 	freeclean((void**)&atsc3_route_object->temporary_object_recovery_filename);
 	freeclean((void**)&atsc3_route_object->final_object_recovery_filename_for_eviction);
@@ -471,7 +639,7 @@ void atsc3_route_object_reset_and_free_and_unlink_recovery_file_atsc3_route_obje
 	);
 
 
-	atsc3_route_object_recovery_file_handle_close(atsc3_route_object);
+	atsc3_route_object_recovery_file_handle_abandon_and_close(atsc3_route_object);
 
 	//jjustman-2020-08-04 - important, always call these two together..
 	atsc3_route_object_free_atsc3_route_object_lct_packet_received(atsc3_route_object);
@@ -543,5 +711,21 @@ void atsc3_route_object_free_lct_packet_received_tree(atsc3_route_object_t* atsc
 	//clear out any remaining pointers just to be safe...does not alloc just sets everything to NULL
 	avltree_init(&atsc3_route_object->atsc3_route_object_lct_packet_received_tree, atsc3_route_object_lct_packet_received_cmp_fn, 0);
 
+}
+
+
+/* jjustman-2019-09-17: TODO - free temporary filename when done */
+
+char* alc_packet_dump_to_object_get_temporary_recovering_filename(udp_flow_t *udp_flow, atsc3_alc_packet_t *alc_packet) {
+	char* temporary_file_name = (char *)calloc(256, sizeof(char));
+	if(alc_packet->def_lct_hdr) {
+		snprintf(temporary_file_name, 255, "%s%u.%u.%u.%u.%u.%u-%u.recovering",
+			__ALC_DUMP_OUTPUT_PATH__,
+			__toipandportnonstruct(udp_flow->dst_ip_addr, udp_flow->dst_port),
+			alc_packet->def_lct_hdr->tsi,
+			alc_packet->def_lct_hdr->toi);
+	}
+
+	return temporary_file_name;
 }
 

@@ -448,6 +448,100 @@ void atsc3_route_object_lct_packet_received_update_atsc3_route_object(atsc3_rout
 	atsc3_route_object->most_recent_atsc3_route_object_lct_packet_received = atsc3_route_object_lct_packet_received;
 }
 
+/*
+ *
+ * jjustman-2020-08-05 -
+ *
+ * TODO: buffer up to __ATSC3_ROUTE_OBJECT_PERSIST_BLOCK_SIZE_BYTES__  of block_t before flushing, avoiding most small pre_allocation for small objects
+ *
+ * object is then flushed and closed to disk with atsc3_route_object_recovery_file_handle_flush_and_close
+ *
+ *
+ */
+
+int atsc3_route_object_persist_atsc3_alc_packet_from_udp_flow(atsc3_route_object_t* atsc3_route_object, atsc3_alc_packet_t* alc_packet, udp_flow_t* udp_flow) {
+	int bytesWritten = 0;
+	char* temporary_recovery_filename = NULL;
+	bool is_source_symbol = false;
+
+	if(!atsc3_route_object || !atsc3_route_object->most_recent_atsc3_route_object_lct_packet_received) {
+		_ATSC3_SLS_ALC_FLOW_WARN("atsc3_route_object_persist_atsc3_alc_packet_from_udp_flow: atsc3_route_object: %p, most_recent_atsc3_route_object_lct_packet_received is NULL, discarding!", atsc3_route_object);
+		return -2;
+	}
+
+	if(!atsc3_route_object->temporary_object_recovery_filename) {
+		temporary_recovery_filename = alc_packet_dump_to_object_get_temporary_recovering_filename(udp_flow, alc_packet);
+		atsc3_route_object_set_temporary_object_recovery_filename_if_null(atsc3_route_object, temporary_recovery_filename);
+		freeclean((void*)&temporary_recovery_filename);
+	}
+
+	is_source_symbol = atsc3_route_object_recovery_file_buffer_ensure_alloc_and_position(atsc3_route_object, alc_packet);
+
+	//if we are a repair symbol, skip source symbol recovery and defer processing for raptorQ
+	if(!is_source_symbol) {
+		return 0;
+	}
+
+	int32_t block_remaining_size = block_Remaining_size(atsc3_route_object->recovery_file_buffer);
+
+	//compute gap between atsc3_route_object->recovery_file_buffer_position and our start_offset
+	int32_t relative_buffer_write_position = alc_packet->start_offset - atsc3_route_object->recovery_file_buffer_position;
+	int32_t updated_file_buffer_position_after_write = alc_packet->start_offset + alc_packet->alc_len;
+	int32_t required_buffer_size = updated_file_buffer_position_after_write - atsc3_route_object->recovery_file_buffer_position;
+
+	if(relative_buffer_write_position >= 0) { //this is an "append"
+		
+		if(block_remaining_size >= required_buffer_size) {		//if we have enough space, write to our block_t
+			block_Seek(atsc3_route_object->recovery_file_buffer, relative_buffer_write_position);
+			block_Write(atsc3_route_object->recovery_file_buffer, alc_packet->alc_payload, alc_packet->alc_len);
+			//note: only set atsc3_route_object->recovery_file_buffer_position) after we have flushed out to disk
+
+			_ATSC3_SLS_ALC_FLOW_INFO("atsc3_route_object_persist_atsc3_alc_packet_from_udp_flow: calling block_Write with alc_packet, tsi: %d, toi: %d, start_offset: %d, len: %d, remaining recovery_file_buffer size: %d, atsc3_route_object->recovery_file_buffer_position: %d",
+					alc_packet->def_lct_hdr->tsi,
+					alc_packet->def_lct_hdr->toi,
+					alc_packet->start_offset,
+					alc_packet->alc_len,
+					block_Remaining_size(atsc3_route_object->recovery_file_buffer),
+					atsc3_route_object->recovery_file_buffer_position);
+
+
+		} else {
+			//otherwise flush out disk and create new recovery_file_buffer and write our alc_packet
+			_ATSC3_SLS_ALC_FLOW_INFO("atsc3_route_object_persist_atsc3_alc_packet_from_udp_flow: flushing and reallocing recovery_file_buffer, tsi: %d, toi: %d, start_offset: %d, len: %d, remaining recovery_file_buffer size: %d, required_buffer_size size: %d, alc_len: %d",
+								alc_packet->def_lct_hdr->tsi,
+								alc_packet->def_lct_hdr->toi,
+								alc_packet->start_offset,
+								alc_packet->alc_len,
+								block_Remaining_size(atsc3_route_object->recovery_file_buffer),
+								required_buffer_size,
+								alc_packet->alc_len);
+
+			bytesWritten = atsc3_route_object_recovery_file_buffer_flush_block_to_temporary_object_recovery_filename(atsc3_route_object);
+			atsc3_route_object_recovery_file_buffer_ensure_alloc_and_position(atsc3_route_object, alc_packet);
+			block_Write(atsc3_route_object->recovery_file_buffer, alc_packet->alc_payload, alc_packet->alc_len);
+			atsc3_route_object->recovery_file_buffer_position = updated_file_buffer_position_after_write;
+
+		}
+	} else if(relative_buffer_write_position < 0) {
+		//we might have a carousel packet, but cheat for our flush to disk
+		_ATSC3_SLS_ALC_FLOW_INFO("atsc3_route_object_persist_atsc3_alc_packet_from_udp_flow: buffer_gap_size < 0! flushing and reallocing recovery_file_buffer, tsi: %d, toi: %d, start_offset: %d, len: %d, remaining recovery_file_buffer size: %d, relative_buffer_write_position: %d, alc_len: %d",
+										alc_packet->def_lct_hdr->tsi,
+										alc_packet->def_lct_hdr->toi,
+										alc_packet->start_offset,
+										alc_packet->alc_len,
+										block_Remaining_size(atsc3_route_object->recovery_file_buffer),
+										relative_buffer_write_position,
+										alc_packet->alc_len);
+
+		bytesWritten = atsc3_route_object_recovery_file_buffer_flush_block_to_temporary_object_recovery_filename(atsc3_route_object);
+		//hack...!  let fseek do the hard work
+		atsc3_route_object->recovery_file_buffer = block_Duplicate_from_ptr(alc_packet->alc_payload, alc_packet->alc_len);
+		atsc3_route_object->recovery_file_buffer_position = alc_packet->start_offset;
+		bytesWritten = atsc3_route_object_recovery_file_buffer_flush_block_to_temporary_object_recovery_filename(atsc3_route_object);
+	}
+
+	return bytesWritten;
+}
 
 
 uint32_t atsc3_sls_alc_flow_get_first_tsi(atsc3_sls_alc_flow_v* atsc3_sls_alc_flow) {

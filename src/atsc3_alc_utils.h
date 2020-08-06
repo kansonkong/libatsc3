@@ -13,16 +13,15 @@
 #include <inttypes.h>
 
 
+#ifndef ATSC3_ALC_UTILS_H_
+#define ATSC3_ALC_UTILS_H_
+
 #include "atsc3_utils.h"
 #include "atsc3_alc_rx.h"
 #include "atsc3_player_ffplay.h"
 #include "atsc3_lls_types.h"
 #include "atsc3_lls_sls_monitor_output_buffer.h"
 #include "atsc3_route_sls_processor.h"
-
-
-#ifndef ATSC3_ALC_UTILS_H_
-#define ATSC3_ALC_UTILS_H_
 
 
 #if defined (__cplusplus)
@@ -35,9 +34,6 @@ extern int _ALC_UTILS_TRACE_ENABLED;
 //zero out this slab of memory for a single TOI when pre-allocating
 #define  __TO_PREALLOC_ZERO_SLAB_SIZE 8192000
 
-
-//ALC dump object output path
-#define __ALC_DUMP_OUTPUT_PATH__ "route/"
 
 void atsc3_alc_packet_check_monitor_flow_for_toi_wraparound_discontinuity(atsc3_alc_packet_t* alc_packet, lls_sls_alc_monitor_t* lls_sls_alc_monitor);
 
