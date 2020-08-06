@@ -554,7 +554,12 @@ int atsc3NdkClient::atsc3_pcap_thread_run() {
     pcapThreadShouldRun = true;
 
     pcapProducerThreadPtr = std::thread([this](){
-        atsc3_jni_pcap_producer_thread_env = new CJniEnv(mJavaVM);
+        JavaVMAttachArgs args;
+        args.version = JNI_VERSION_1_4;
+        args.name = "libatsc3_pcapProducerThreadParser";
+        args.group = NULL;
+
+        atsc3_jni_pcap_producer_thread_env = new CJniEnv(mJavaVM, args);
 
         LogMsgF("atsc3NdkClient::atsc3_pcap_producer_thread_run with this: %p", this);
 
@@ -563,7 +568,12 @@ int atsc3NdkClient::atsc3_pcap_thread_run() {
     });
 
     pcapConsumerThreadPtr = std::thread([this](){
-        atsc3_jni_pcap_consumer_thread_env = new CJniEnv(mJavaVM);
+        JavaVMAttachArgs args;
+        args.version = JNI_VERSION_1_4;
+        args.name = "libatsc3_pcapConsumerThreadParser";
+        args.group = NULL;
+
+        atsc3_jni_pcap_consumer_thread_env = new CJniEnv(mJavaVM, args);
         Atsc3_Jni_Processing_Thread_Env = atsc3_jni_pcap_consumer_thread_env; //hack
         LogMsgF("atsc3NdkClient::atsc3_pcap_consumer_thread_run with this: %p", this);
 
@@ -914,7 +924,7 @@ vector<string> atsc3NdkClient::atsc3_slt_alc_get_sls_route_s_tsid_fdt_file_conte
 
 void atsc3NdkClient::atsc3_lls_sls_alc_on_object_close_flag_s_tsid_content_location_jni(uint32_t tsi, uint32_t toi, char *content_location) {
     //jjustman-2020-01-07: add in alc flow debugging
-    printf("atsc3_lls_sls_alc_on_object_close_flag_s_tsid_content_location_jni: tsi: %d, toi: %d, content_location: %s", tsi, toi, content_location);
+   // printf("atsc3_lls_sls_alc_on_object_close_flag_s_tsid_content_location_jni: tsi: %d, toi: %d, content_location: %s", tsi, toi, content_location);
 
     //len: nnn, lost DU: nnn
     atsc3_onAlcObjectStatusMessage("C: tsi: %d, toi: %d, content_location: %s", tsi, toi, content_location);

@@ -53,6 +53,14 @@ public:
         r = jvm->AttachCurrentThread(&mJniEnv, 0);
         if (r == 0) mAttached = true;
     }
+    //set custom args for thread name
+    CJniEnv(JavaVM *jvm, JavaVMAttachArgs args): mJvm(jvm) {
+        int r = jvm->GetEnv((void **)&mJniEnv, JNI_VERSION_1_4);
+        if (r == JNI_OK) return;
+        r = jvm->AttachCurrentThread(&mJniEnv, &args);
+        if (r == 0) mAttached = true;
+    }
+
     virtual ~CJniEnv() {
         if (mJniEnv && mAttached)
             mJvm->DetachCurrentThread();
