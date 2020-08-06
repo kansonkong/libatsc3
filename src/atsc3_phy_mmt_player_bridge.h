@@ -11,8 +11,8 @@
 void atsc3_phy_mmt_player_bridge_init(At3DrvIntf* At3DrvIntf_ptr);
 
 #else
-#include "atsc3NdkClient.h"
-void atsc3_phy_mmt_player_bridge_init(atsc3NdkClient* At3DrvIntf_ptr);
+#include "atsc3NdkPHYBridge.h"
+void atsc3_phy_player_bridge_init(atsc3NdkPHYBridge* At3DrvIntf_ptr);
 
 #endif
 

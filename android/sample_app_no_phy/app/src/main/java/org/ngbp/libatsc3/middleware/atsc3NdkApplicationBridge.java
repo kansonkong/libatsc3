@@ -1,4 +1,4 @@
-package org.ngbp.libatsc3.sampleapp;
+package org.ngbp.libatsc3.middleware;
 
 import android.content.res.AssetManager;
 import android.util.Log;
@@ -10,21 +10,22 @@ import org.ngbp.libatsc3.media.sync.mmt.MmtPacketIdContext;
 import org.ngbp.libatsc3.media.sync.mmt.MpuMetadata_HEVC_NAL_Payload;
 import org.ngbp.libatsc3.phy.BwPhyStatistics;
 import org.ngbp.libatsc3.phy.RfPhyStatistics;
+import org.ngbp.libatsc3.sampleapp.MainActivity;
 
 import java.io.File;
 import java.nio.ByteBuffer;
 
 /**
- * Created by cafrii on 17. 9. 18.
  */
 
-public class atsc3NdkClient {
+public class atsc3NdkApplicationBridge
+{
 
     final static String TAG ="intf";
 
     MainActivity mActivity;
 
-    atsc3NdkClient(MainActivity parent) {
+    atsc3NdkApplicationBridge(MainActivity parent) {
         mActivity = parent;
     }
 
@@ -99,26 +100,6 @@ public class atsc3NdkClient {
         return 0;
     }
 
-    public native int ApiInit(atsc3NdkClient intf);
-    public native int ApiPrepare(String devlist, int delimiter1, int delimiter2);
-    public native long[] ApiFindDeviceKey(boolean bPreBootDevice);
-    public native int ApiFwLoad(long key);
-    public native int ApiOpen(int fd, long key);
-    public native int ApiTune(int freqKhz, int plpid);
-    public native int ApiSetPLP(int[] aPlpIds);
-    public native int ApiStop();
-    public native int ApiClose();
-    public native int ApiReset();
-    public native int ApiUninit();
-
-    public native int setRfPhyStatisticsViewVisible(boolean isRfPhyStatisticsVisible);
-    
-    //libatsc3 methods here...
-    public native int atsc3_pcap_open_for_replay(String filename);
-    public native int atsc3_pcap_open_for_replay_from_assetManager(String filename, AssetManager assetManager);
-    public native int atsc3_pcap_thread_run();
-    public native int atsc3_pcap_thread_stop();
-
     public native int atsc3_slt_selectService(int service_id);                  //select either single MMT or ROUTE service
     public native int atsc3_slt_alc_select_additional_service(int service_id);  //listen on additional ALC service(s)
     public native int atsc3_slt_alc_clear_additional_service_selections();      //clear ALC additional service listeners
@@ -174,44 +155,6 @@ public class atsc3NdkClient {
     }
 
 
-
-    int atsc3_rf_phy_status_callback(int rfstat_lock,
-                                     int rssi,
-                                     int modcod_valid,
-                                     int plp_fec_type,
-                                     int plp_mod,
-                                     int plp_cod,
-                                     int nRfLevel1000,
-                                     int nSnr1000,
-                                     int ber_pre_ldpc_e7,
-                                     int ber_pre_bch_e9,
-                                     int fer_post_bch_e6,
-                                     int demod_lock_status,
-                                     int cpu_status,
-                                     int plp_any,
-                                     int plp_all) {
-
-        RfPhyStatistics rfPhyStatistics = new RfPhyStatistics(rfstat_lock,
-                rssi,
-                modcod_valid,
-                plp_fec_type,
-                plp_mod,
-                plp_cod,
-                nRfLevel1000,
-                nSnr1000,
-                ber_pre_ldpc_e7,
-                ber_pre_bch_e9,
-                fer_post_bch_e6,
-                demod_lock_status,
-                cpu_status,
-                plp_any,
-                plp_all);
-
-        mActivity.pushRfPhyStatisticsUpdate(rfPhyStatistics);
-
-        return 0;
-    }
-
     int atsc3_onExtractedSampleDuration(int packet_id, int mpu_sequence_number, int extracted_sample_duration_us) {
         if(extracted_sample_duration_us <= 0) {
             Log.e("atsc3_onExtractedSampleDuration", String.format("extracted sample duration for packet_id: %d, mpu_sequence_number: %d, value %d is invalid", packet_id, mpu_sequence_number, extracted_sample_duration_us));
@@ -256,8 +199,8 @@ public class atsc3NdkClient {
         //System.loadLibrary("NXP_Tuner_Lib");
         //System.loadLibrary("SiTune_Tuner_Libs");
 
-        System.loadLibrary("atsc3NdkClient");
+        System.loadLibrary("atsc3NdkApplicationBridge");
     }
 
-
 }
+
