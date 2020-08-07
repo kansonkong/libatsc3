@@ -25,7 +25,7 @@ public class atsc3NdkApplicationBridge
 
     MainActivity mActivity;
 
-    atsc3NdkApplicationBridge(MainActivity parent) {
+    public atsc3NdkApplicationBridge(MainActivity parent) {
         mActivity = parent;
     }
 

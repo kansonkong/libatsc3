@@ -71,7 +71,10 @@ import org.ngbp.libatsc3.media.MfuByteBufferHandler;
 import org.ngbp.libatsc3.media.sync.mmt.MfuByteBufferFragment;
 import org.ngbp.libatsc3.media.sync.mmt.MmtPacketIdContext;
 import org.ngbp.libatsc3.media.sync.mmt.MpuMetadata_HEVC_NAL_Payload;
-import org.ngbp.libatsc3.middleware.atsc3NdkClient;
+
+import org.ngbp.libatsc3.middleware.atsc3NdkApplicationBridge;
+import org.ngbp.libatsc3.middleware.atsc3NdkPHYBridge;
+import org.ngbp.libatsc3.middleware.phy.virtual.DemuxedPcapVirtualPHY;
 import org.ngbp.libatsc3.phy.BwPhyStatistics;
 import org.ngbp.libatsc3.phy.RfPhyFecModCodTypes;
 import org.ngbp.libatsc3.phy.RfPhyStatistics;
@@ -239,7 +242,10 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         ServiceHandler.GetInstance().sendMessage(ServiceHandler.GetInstance().obtainMessage(ServiceHandler.BW_PHY_STATISTICS_UPDATED, bwPhyStatistics));
     }
 
-    public static atsc3NdkClient mAt3DrvIntf;
+    //jjustman-2020-08-07 - temporary wire-up, and  remove static field accessor static
+    public atsc3NdkApplicationBridge atsc3NdkApplicationBridge;
+    public atsc3NdkPHYBridge         atsc3NdkPHYBridge;
+    public DemuxedPcapVirtualPHY     demuxedPcapVirtualPHY;
 
     public UsbManager mUsbManager;
     private PendingIntent mPermissionIntent;
@@ -653,7 +659,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                   editServiceIDText.setText(""+service.serviceId);
 
                   //notify libatsc3 service selection
-                  selectedServiceSLSProtocol = mAt3DrvIntf.atsc3_slt_selectService(service.serviceId);
+                  selectedServiceSLSProtocol = atsc3NdkApplicationBridge.atsc3_slt_selectService(service.serviceId);
                   if(!serviceSpinnerLastSelectionFromArrayAdapterUpdate) {
                       clearDebugTextViewFields();
                   }
@@ -700,7 +706,12 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         mDevListSpinner.setOnItemSelectedListener(this);
 
         // get at3drv jni interface
-        mAt3DrvIntf = new atsc3NdkClient(this);
+        //jjustman-2020-08-07 app and phy refactoring
+        atsc3NdkApplicationBridge = new atsc3NdkApplicationBridge(this);
+        atsc3NdkPHYBridge = new atsc3NdkPHYBridge(this);
+        // if needed at runtime for pcap replay:
+        demuxedPcapVirtualPHY = new DemuxedPcapVirtualPHY();
+
 
         // get usb manager
         mUsbManager = (UsbManager) getSystemService(Context.USB_SERVICE);
@@ -719,7 +730,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
 
         // init at3drv driver
         showMsg("onCreate: ApiInit\n");
-        mAt3DrvIntf.ApiInit(mAt3DrvIntf);
+        atsc3NdkPHYBridge.ApiInit(atsc3NdkPHYBridge);
         ThingsUI.WriteToAlphaDisplayNoEx("AINT");
 
         // now, scan usb devices and try to connect
@@ -1015,13 +1026,13 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                 if (isChecked) {
                     // The toggle is enabled
                     viewRfMetrics.setVisibility(View.VISIBLE);
-                    mAt3DrvIntf.setRfPhyStatisticsViewVisible(true);
+                    atsc3NdkPHYBridge.setRfPhyStatisticsViewVisible(true);
                     isRfPhyStatisticsViewVisible = true;
 
                 } else {
                     // The toggle is disabled
                     viewRfMetrics.setVisibility(View.GONE);
-                    mAt3DrvIntf.setRfPhyStatisticsViewVisible(false);
+                    atsc3NdkPHYBridge.setRfPhyStatisticsViewVisible(false);
                     isRfPhyStatisticsViewVisible = false;
                 }
             }
@@ -1077,7 +1088,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
             public void onClick(View v) {
                 Integer selectedServiceIdToSet = Integer.parseInt(editServiceIDText.getText().toString());
                 if(selectedServiceIdToSet != null) {
-                    selectedServiceSLSProtocol = mAt3DrvIntf.atsc3_slt_selectService(selectedServiceIdToSet.intValue());
+                    selectedServiceSLSProtocol = atsc3NdkApplicationBridge.atsc3_slt_selectService(selectedServiceIdToSet.intValue());
                     if(selectedServiceSLSProtocol > 0) {
                         selectedServiceId = selectedServiceIdToSet;
                     }
@@ -1424,16 +1435,16 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     @Override
     protected void onDestroy() {
         Log.d(TAG, "onDestroy called");
-        mAt3DrvIntf.ApiClose();
+        atsc3NdkPHYBridge.ApiClose();
         unregisterReceiver(mUsbReceiver);
         super.onDestroy();
     }
     @Override
     public void onBackPressed() {
         Log.d(TAG, "onBackPressed called");
-        mAt3DrvIntf.ApiClose();
+        atsc3NdkPHYBridge.ApiClose();
         unregisterReceiver(mUsbReceiver);
-        mAt3DrvIntf.ApiUninit();
+        atsc3NdkPHYBridge.ApiUninit();
         Log.d(TAG, "uninit ended");
 
         moveTaskToBack(true);
@@ -1616,7 +1627,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                     info = info + d2 + ad.dev.getDeviceName() + d1 + ad.fd;
             }
             Log.d(TAG, "prepare: " + info);
-            int r = mAt3DrvIntf.ApiPrepare(info, d1.charAt(0), d2.charAt(0));
+            int r = atsc3NdkPHYBridge.ApiPrepare(info, d1.charAt(0), d2.charAt(0));
 
             if (r != 0) showMsg("!! prepare failed\n");
         }
@@ -1796,13 +1807,13 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                     inputSelectionFromPcap = true;
                     enableDeviceControlButtons(true);
                     if(inputSelectedPcapReplayFromFilesystem != null) {
-                        mAt3DrvIntf.atsc3_pcap_open_for_replay(inputSelectedPcapReplayFromFilesystem);
+                        demuxedPcapVirtualPHY.atsc3_pcap_open_for_replay(inputSelectedPcapReplayFromFilesystem);
                     } else if(inputSelectedPcapReplayFromAssetManager != null) {
-                        mAt3DrvIntf.atsc3_pcap_open_for_replay_from_assetManager(inputSelectedPcapReplayFromAssetManager, assetManager);
+                        demuxedPcapVirtualPHY.atsc3_pcap_open_for_replay_from_assetManager(inputSelectedPcapReplayFromAssetManager, assetManager);
                     }
 
 
-                    mAt3DrvIntf.atsc3_pcap_thread_run();
+                    demuxedPcapVirtualPHY.atsc3_pcap_thread_run();
                     ThingsUI.WriteToAlphaDisplayNoEx("PCAP");
                     enableDeviceControlButtons(true);
                     break;
@@ -1813,7 +1824,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                     break;
                 }
                 //notify pcap thread (if running) to stop
-                mAt3DrvIntf.atsc3_pcap_thread_stop();
+                demuxedPcapVirtualPHY.atsc3_pcap_thread_stop();
 
 
                 showMsg(String.format("opening mCurFx3Device: fd: %d, key: %d", mCurAt3Device.fd, mCurAt3Device.key));
@@ -1825,7 +1836,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                     @Override
                     public void run() {
 
-                        int re = mAt3DrvIntf.ApiOpen(mCurAt3Device.fd, mCurAt3Device.key);
+                        int re = atsc3NdkPHYBridge.ApiOpen(mCurAt3Device.fd, mCurAt3Device.key);
                         if (re < 0) {
                             showMsgFromNative(String.format("open: failed, r: %d", re));
                             return;
@@ -1866,7 +1877,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                 new Thread(new Runnable() {
                     @Override
                     public void run() {
-                        int re = mAt3DrvIntf.ApiTune(freqMHz * 1000, plp);
+                        int re = atsc3NdkPHYBridge.ApiTune(freqMHz * 1000, plp);
                         if (re != 0) {
                             showMsgFromNative(String.format("Tune failed with res: %d", re));
                             return;
@@ -1906,7 +1917,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                     routeDashPlayerCreate();
 
                     if (simpleExoPlayer != null) {
-                        String[] routeMPDFileName = mAt3DrvIntf.atsc3_slt_alc_get_sls_metadata_fragments_content_locations_from_monitor_service_id(selectedServiceId, DASH_CONTENT_TYPE);
+                        String[] routeMPDFileName = atsc3NdkApplicationBridge.atsc3_slt_alc_get_sls_metadata_fragments_content_locations_from_monitor_service_id(selectedServiceId, DASH_CONTENT_TYPE);
                         if(routeMPDFileName.length == 0) {
                             Toast.makeText(getApplicationContext(), String.format("Unable to resolve Dash MPD path from MBMS envelope, service_id: %d", selectedServiceId), Toast.LENGTH_SHORT).show();
                             return;
@@ -1950,7 +1961,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
 
                 if(inputSelectionFromPcap) {
                     //shutdown pcap thread
-                    mAt3DrvIntf.atsc3_pcap_thread_stop();
+                    demuxedPcapVirtualPHY.atsc3_pcap_thread_stop();
                     showMsg("pcap thread stopped");
                     return;
                 }
@@ -1959,7 +1970,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                     showMsg("no atlas device connected yet\n");
                     break;
                 }
-                r = mAt3DrvIntf.ApiStop();
+                r = atsc3NdkPHYBridge.ApiStop();
                 ThingsUI.WriteToAlphaDisplayNoEx(String.format("ASTP"));
 
                 //clear pending SLS window
@@ -1979,7 +1990,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                     showMsg("no atlas device connected yet\n");
                     break;
                 }
-                r = mAt3DrvIntf.ApiReset();
+                r = atsc3NdkPHYBridge.ApiReset();
                 ThingsUI.WriteToAlphaDisplayNoEx(String.format("ARST"));
                 break;
 
@@ -1989,7 +2000,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                     showMsg("no atlas device connected yet\n");
                     break;
                 }
-                r = mAt3DrvIntf.ApiClose();
+                r = atsc3NdkPHYBridge.ApiClose();
                 //mTextView.setText("Closed\n"); // clear log msg
                 if (r != 0) showMsg("closed\n");
 
@@ -2066,7 +2077,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         if (s.equals(kSpinnerNotSelect)) {
             // unchoose cur device
             if (mCurAt3Device != null) {
-                mAt3DrvIntf.ApiClose();
+                atsc3NdkPHYBridge.ApiClose();
             }
             mCurAt3Device = null;
             inputSelectedPcapReplayFromFilesystem = null;
@@ -2117,7 +2128,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                     if (mCurAt3Device != ad) {
                         //Log.d(TAG, "new device selected");
                         showMsg("new device selected\n");
-                        mAt3DrvIntf.ApiClose();
+                        atsc3NdkPHYBridge.ApiClose();
 
                         mCurAt3Device = ad;
                     } else {

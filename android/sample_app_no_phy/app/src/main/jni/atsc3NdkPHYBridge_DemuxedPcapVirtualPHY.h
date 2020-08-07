@@ -24,6 +24,8 @@ using namespace std;
 
 #define DEBUG 1
 
+#include "atsc3_JniEnc.h"
+
 #include "android/log.h"
 #define MODULE_NAME "intf"
 
@@ -36,34 +38,6 @@ using namespace std;
  * : public libatsc3_Iphy_mockable
  */
 
-
-//--------------------------------------------------------------------------
-//jjustman-2019-10-19: i don't think the mJvm->detatch is correct in the context of the CJniEnv destructor, see:
-//https://developer.android.com/training/articles/perf-jni#threads_1
-class CJniEnv
-{
-private:
-    JNIEnv *mJniEnv = nullptr;
-    JavaVM *mJvm = nullptr;
-    bool mAttached = false;
-public:
-    CJniEnv(JavaVM *jvm): mJvm(jvm) {
-        int r = jvm->GetEnv((void **)&mJniEnv, JNI_VERSION_1_4);
-        if (r == JNI_OK) return;
-        r = jvm->AttachCurrentThread(&mJniEnv, 0);
-        if (r == 0) mAttached = true;
-    }
-    virtual ~CJniEnv() {
-        if (mJniEnv && mAttached)
-            mJvm->DetachCurrentThread();
-    }
-    operator bool() {
-        return mJniEnv != nullptr;
-    }
-    JNIEnv *Get() {
-        return mJniEnv;
-    }
-};
 
 class Iatsc3NdkClient {
     public:
@@ -102,6 +76,7 @@ public:
     /*
      * pcap methods
      */
+
     int atsc3_pcap_replay_open_file(const char *filename);
     int atsc3_pcap_replay_open_file_from_assetManager(const char *filename, AAssetManager *mgr);
     int atsc3_pcap_thread_run();

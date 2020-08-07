@@ -16,6 +16,11 @@ import java.io.File;
 import java.nio.ByteBuffer;
 
 /**
+ *    /Library/Java/JavaVirtualMachines/jdk1.8.0_231.jdk/Contents/Home/bin/javah -d cpp -classpath ../../build/intermediates/classes/debug org.ngbp.libatsc3.middleware.atsc3NdkPHYBridge
+ *
+ *  javah -classpath ./bin/classes -d jni org.ngbp.libatsc3.middleware.atsc3NdkPHYBridge
+ *
+ *  /Users/jjustman/Desktop/libatsc3/android/sample_app_no_phy/app/src/main/java/org/ngbp/libatsc3/middlewarea
  */
 
 public class atsc3NdkPHYBridge {
@@ -24,7 +29,7 @@ public class atsc3NdkPHYBridge {
 
     MainActivity mActivity;
 
-    atsc3NdkPHYBridge(MainActivity parent) {
+    public atsc3NdkPHYBridge(MainActivity parent) {
         mActivity = parent;
     }
 

@@ -21,6 +21,7 @@ using namespace std;
 #include <android/asset_manager.h>
 #include <android/asset_manager_jni.h>
 
+#include "atsc3_JniEnc.h"
 
 #define DEBUG 1
 
@@ -36,34 +37,6 @@ using namespace std;
  * : public libatsc3_Iphy_mockable
  */
 
-
-//--------------------------------------------------------------------------
-//jjustman-2019-10-19: i don't think the mJvm->detatch is correct in the context of the CJniEnv destructor, see:
-//https://developer.android.com/training/articles/perf-jni#threads_1
-class CJniEnv
-{
-private:
-    JNIEnv *mJniEnv = nullptr;
-    JavaVM *mJvm = nullptr;
-    bool mAttached = false;
-public:
-    CJniEnv(JavaVM *jvm): mJvm(jvm) {
-        int r = jvm->GetEnv((void **)&mJniEnv, JNI_VERSION_1_4);
-        if (r == JNI_OK) return;
-        r = jvm->AttachCurrentThread(&mJniEnv, 0);
-        if (r == 0) mAttached = true;
-    }
-    virtual ~CJniEnv() {
-        if (mJniEnv && mAttached)
-            mJvm->DetachCurrentThread();
-    }
-    operator bool() {
-        return mJniEnv != nullptr;
-    }
-    JNIEnv *Get() {
-        return mJniEnv;
-    }
-};
 
 class Iatsc3NdkClient {
     public:
