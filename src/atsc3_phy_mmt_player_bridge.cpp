@@ -18,8 +18,13 @@ At3DrvIntf* Atsc3NdkClient_ptr;
 
 #else
 
+//jjustman-2020-08-07: TODO - update this bridge ref
+#include "atsc3NdkApplicationBridge.h"
 #include "atsc3NdkPHYBridge.h"
-atsc3NdkPHYBridge* Atsc3NdkClient_ptr;
+
+atsc3NdkApplicationBridge* Atsc3NdkClient_ptr;
+atsc3NdkPHYBridge* Atsc3NdkPHYBridge_ptr;
+
 #endif
 
 #include "atsc3_phy_mmt_player_bridge.h"
@@ -163,7 +168,7 @@ atsc3_lls_slt_service_t* atsc3_phy_mmt_player_bridge_set_single_monitor_a331_ser
                                                         atsc3_link_mapping_table_plp->PLP_ID,
                                                         atsc3_slt_broadcast_svc_signalling->sls_destination_ip_address,
                                                         atsc3_slt_broadcast_svc_signalling->sls_destination_udp_port);
-                            Atsc3NdkClient_ptr->ListenPLP1(atsc3_link_mapping_table_plp->PLP_ID);
+                            Atsc3NdkPHYBridge_ptr->ListenPLP1(atsc3_link_mapping_table_plp->PLP_ID);
                         }
                     }
                 }
@@ -1060,11 +1065,11 @@ atsc3_link_mapping_table_t* atsc3_phy_jni_bridge_notify_link_mapping_table(atsc3
 #ifdef __FIXME_REFACTOR_LOWASIS__
 void atsc3_phy_mmt_player_bridge_init(At3DrvIntf* atsc3NdkClientSL_ptr_l) {
 #else
-void atsc3_phy_player_bridge_init(atsc3NdkPHYBridge* At3DrvIntf_ptr) {
+void atsc3_phy_player_bridge_init(atsc3NdkPHYBridge* atsc3NdkPHYBridge_ptr) {
 #endif
-    Atsc3NdkClient_ptr = At3DrvIntf_ptr;
+    Atsc3NdkPHYBridge_ptr = atsc3NdkPHYBridge_ptr;
 
-    Atsc3NdkClient_ptr->LogMsgF("atsc3_phy_player_bridge_init - client ptr: %p", At3DrvIntf_ptr);
+    Atsc3NdkPHYBridge_ptr->LogMsgF("atsc3_phy_player_bridge_init - client ptr: %p", Atsc3NdkPHYBridge_ptr);
 
     //set global logging levels
     _MMT_CONTEXT_MPU_DEBUG_ENABLED = 0;
