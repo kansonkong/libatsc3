@@ -66,7 +66,7 @@ public class RfScanUtility implements Runnable{
             try {
                 for(int freqMHz = startFreq; freqMHz <= endFreq && shouldRun; freqMHz+=6) {
                     //showMsgFromNative(String.format("Tuning to: %d", freqMHz));
-                    MainActivity.mAt3DrvIntf.ApiTune((freqMHz)*1000, 0);
+   //                 MainActivity.atsc3NdkApplicationBridge.ApiTune((freqMHz)*1000, 0);
                     RfScanResultModel rfScanResultModel = new RfScanResultModel();
                     rfScanResultModel.scan_start_ms = System.currentTimeMillis();
                     rfScanResultModel.frequency_mhz = freqMHz;

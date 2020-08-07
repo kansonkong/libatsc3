@@ -4,8 +4,9 @@
 #include <atsc3_phy_mmt_player_bridge.h>
 #include <atsc3_pcap_type.h>
 #include <atsc3_monitor_events_alc.h>
+
 #include "atsc3NdkPHYBridge.h"
-#include "atsc3NdkClientNoPhyImpl.h"
+//#include "atsc3NdkClientNoPhyImpl.h"
 
 
 #if DEBUG
@@ -38,22 +39,22 @@
 		if (ar) { printf("%s: !! %s, err %d, line %d\n", __func__, s, ar, __LINE__); } \
 		} while(0)
 
-
-using namespace std;
-vector<string> Split(const char *str, char delimiter = ' ') {
-    vector<string> vs;
-    if (!str) return vs;
-    do {
-        const char *begin = str;
-        while(*str != delimiter && *str)
-            str++;
-        vs.push_back(string(begin, str));
-    } while (0 != *str++);
-    return vs;
-}
+//
+//using namespace std;
+//vector<string> Split(const char *str, char delimiter = ' ') {
+//    vector<string> vs;
+//    if (!str) return vs;
+//    do {
+//        const char *begin = str;
+//        while(*str != delimiter && *str)
+//            str++;
+//        vs.push_back(string(begin, str));
+//    } while (0 != *str++);
+//    return vs;
+//}
 
 atsc3NdkPHYBridge api;
-atsc3NdkClientNoPhyImpl apiImpl;
+//atsc3NdkClientNoPhyImpl apiImpl;
 
 int atsc3NdkPHYBridge::Init()
 {
@@ -81,8 +82,8 @@ int atsc3NdkPHYBridge::Prepare(const char *strDevListInfo, int delim1, int delim
 /** jjustman-2019-11-08 - todo: fix for double app launch */
 int atsc3NdkPHYBridge::Open(int fd, int bus, int addr)
 {
-    apiImpl.Init(this);
-    apiImpl.Open(fd, bus, addr);
+//    apiImpl.Init(this);
+//    apiImpl.Open(fd, bus, addr);
     return 0;
 }
 
@@ -104,7 +105,7 @@ int atsc3NdkPHYBridge::RxThread()
 
 int atsc3NdkPHYBridge::Tune(int freqKHz, int plpid)
 {
-    apiImpl.Tune(freqKHz, plpid);
+//    apiImpl.Tune(freqKHz, plpid);
 
     return 0;
 }
@@ -258,33 +259,33 @@ void atsc3NdkPHYBridge::set_plp_settings(jint *a_plp_ids, jsize a_plp_size) {
    // AT3DRV_FE_SetPLP(mhDevice, u_plp_ids, a_plp_size);
 
 }
-
-//return -1 on service_id not found
-//return -2 on duplicate additional service_id request
-int atsc3NdkPHYBridge::atsc3_slt_alc_select_additional_service(int service_id) {
-    //keep track of internally here which "additional service_id's" we have on monitor;
-
-    bool is_monitoring_duplicate = false;
-    for(int i=0; i < atsc3_slt_alc_additional_services_monitored.size() && !is_monitoring_duplicate; i++) {
-        if(atsc3_slt_alc_additional_services_monitored.at(i) == service_id) {
-            //duplicate request
-            is_monitoring_duplicate = true;
-            continue;
-        }
-    }
-
-    if(is_monitoring_duplicate) {
-        return -2;
-    }
-    atsc3_lls_slt_service_t* atsc3_lls_slt_service = atsc3_phy_mmt_player_bridge_add_monitor_a331_service_id(service_id);
-    if(!atsc3_lls_slt_service) {
-        return -1;
-    }
-
-    atsc3_slt_alc_additional_services_monitored.push_back(service_id);
-
-    return 0;
-}
+//
+////return -1 on service_id not found
+////return -2 on duplicate additional service_id request
+//int atsc3NdkPHYBridge::atsc3_slt_alc_select_additional_service(int service_id) {
+//    //keep track of internally here which "additional service_id's" we have on monitor;
+//
+//    bool is_monitoring_duplicate = false;
+//    for(int i=0; i < atsc3_slt_alc_additional_services_monitored.size() && !is_monitoring_duplicate; i++) {
+//        if(atsc3_slt_alc_additional_services_monitored.at(i) == service_id) {
+//            //duplicate request
+//            is_monitoring_duplicate = true;
+//            continue;
+//        }
+//    }
+//
+//    if(is_monitoring_duplicate) {
+//        return -2;
+//    }
+//    atsc3_lls_slt_service_t* atsc3_lls_slt_service = atsc3_phy_mmt_player_bridge_add_monitor_a331_service_id(service_id);
+//    if(!atsc3_lls_slt_service) {
+//        return -1;
+//    }
+//
+//    atsc3_slt_alc_additional_services_monitored.push_back(service_id);
+//
+//    return 0;
+//}
 
 //--------------------------------------------------------------------------
 
@@ -467,11 +468,11 @@ Java_org_ngbp_libatsc3_middleware_atsc3NdkPHYBridge_ApiSetPLP(JNIEnv *env, jobje
 extern "C"
 JNIEXPORT jint JNICALL
 Java_org_ngbp_libatsc3_middleware_atsc3NdkPHYBridge_setRfPhyStatisticsViewVisible(JNIEnv *env, jobject thiz, jboolean is_rf_phy_statistics_visible) {
-    if(is_rf_phy_statistics_visible) {
-        atsc3NdkClientNoPhyImpl::tunerStatusThreadShouldPollTunerStatus = true;
-    } else {
-        atsc3NdkClientNoPhyImpl::tunerStatusThreadShouldPollTunerStatus = false;
-    }
+//    if(is_rf_phy_statistics_visible) {
+//        atsc3NdkPHYBridge::tunerStatusThreadShouldPollTunerStatus = true;
+//    } else {
+//        atsc3NdkPHYBridge::tunerStatusThreadShouldPollTunerStatus = false;
+//    }
 
     return 0;
 }
