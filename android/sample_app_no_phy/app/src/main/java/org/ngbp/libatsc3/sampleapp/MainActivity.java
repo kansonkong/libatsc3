@@ -57,10 +57,14 @@ import com.google.android.exoplayer2.util.Util;
 
 import org.ngbp.libatsc3.a331.LLSParserSLT;
 import org.ngbp.libatsc3.a331.models.Service;
+import org.ngbp.libatsc3.middleware.Atsc3NdkApplicationBridge;
+import org.ngbp.libatsc3.middleware.Atsc3NdkPHYBridge;
 import org.ngbp.libatsc3.middleware.android.DebuggingFlags;
 import org.ngbp.libatsc3.middleware.android.a331.PackageExtractEnvelopeMetadataAndPayload;
 import org.ngbp.libatsc3.ServiceHandler;
 import org.ngbp.libatsc3.ThingsUI;
+import org.ngbp.libatsc3.middleware.android.application.interfaces.IAtsc3NdkApplicationBridgeCallbacks;
+import org.ngbp.libatsc3.middleware.android.phy.interfaces.IAtsc3NdkPHYBridgeCallbacks;
 import org.ngbp.libatsc3.pcapreplay.PcapFileSelectorActivity;
 import org.ngbp.libatsc3.phy.RfScanUtility;
 import org.ngbp.libatsc3.middleware.android.ATSC3PlayerFlags;
@@ -72,8 +76,6 @@ import org.ngbp.libatsc3.middleware.android.application.sync.mmt.MfuByteBufferFr
 import org.ngbp.libatsc3.middleware.android.application.sync.mmt.MmtPacketIdContext;
 import org.ngbp.libatsc3.middleware.android.application.sync.mmt.MpuMetadata_HEVC_NAL_Payload;
 
-import org.ngbp.libatsc3.middleware.atsc3NdkApplicationBridge;
-import org.ngbp.libatsc3.middleware.atsc3NdkPHYBridge;
 import org.ngbp.libatsc3.middleware.android.phy.virtual.DemuxedPcapVirtualPHY;
 import org.ngbp.libatsc3.middleware.android.phy.models.BwPhyStatistics;
 import org.ngbp.libatsc3.phy.RfPhyFecModCodTypes;
@@ -107,7 +109,7 @@ import android.support.v7.widget.RecyclerView;
 //import com.google.android.things.contrib.driver.rainbowhat.RainbowHat;
 //import org.ngbp.libatsc3.SimpleTextView;
 
-public class MainActivity extends AppCompatActivity implements View.OnClickListener, AdapterView.OnItemSelectedListener {
+public class MainActivity extends AppCompatActivity implements View.OnClickListener, AdapterView.OnItemSelectedListener, IAtsc3NdkApplicationBridgeCallbacks, IAtsc3NdkPHYBridgeCallbacks {
 
     private DashMediaSource.Factory dashMediaSourceFactory;
     public static final String DASH_CONTENT_TYPE = "application/dash+xml";
@@ -243,8 +245,8 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     }
 
     //jjustman-2020-08-07 - temporary wire-up, and  remove static field accessor static
-    public atsc3NdkApplicationBridge atsc3NdkApplicationBridge;
-    public atsc3NdkPHYBridge         atsc3NdkPHYBridge;
+    public Atsc3NdkApplicationBridge atsc3NdkApplicationBridge;
+    public Atsc3NdkPHYBridge         atsc3NdkPHYBridge;
     public DemuxedPcapVirtualPHY     demuxedPcapVirtualPHY;
 
     public UsbManager mUsbManager;
@@ -707,8 +709,8 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
 
         // get at3drv jni interface
         //jjustman-2020-08-07 app and phy refactoring
-        atsc3NdkApplicationBridge = new atsc3NdkApplicationBridge(this);
-        atsc3NdkPHYBridge = new atsc3NdkPHYBridge(this);
+        atsc3NdkApplicationBridge = new Atsc3NdkApplicationBridge(this);
+        atsc3NdkPHYBridge = new Atsc3NdkPHYBridge(this);
         // if needed at runtime for pcap replay:
         demuxedPcapVirtualPHY = new DemuxedPcapVirtualPHY();
 
