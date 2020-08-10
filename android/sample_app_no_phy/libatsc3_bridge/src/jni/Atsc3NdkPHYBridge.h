@@ -23,7 +23,6 @@
 using namespace std;
 
 #include "Atsc3JniEnv.h"
-#include "IAtsc3NdkPHYClient.h"
 
 #define DEBUG 1
 
@@ -33,97 +32,73 @@ using namespace std;
 #include <atsc3_utils.h>
 #include <atsc3_pcap_type.h>
 #include <atsc3_route_package_utils.h>
+#include <phy/IAtsc3NdkPHYBridge.h>
 
 /*
  * : public libatsc3_Iphy_mockable
  * : public IAtsc3NdkPHYClient
  */
 
+/* phy callback method(s)
+ * jjustman:2020-08-10 - TODO - refactor out
+    int atsc3_rx_callback_f(void*, uint64_t ullUser);
+*/
 
-class Atsc3NdkPHYBridge
+class Atsc3NdkPHYBridge : public IAtsc3NdkPHYBridge
 {
 public:
-    Atsc3NdkPHYBridge(): mbInit(false), mbLoop(false), mbRun(false) {    }
-
-    /* phy callback method(s) */
-    int atsc3_rx_callback_f(void*, uint64_t ullUser);
+    Atsc3NdkPHYBridge(JavaVM* vm);
 
     void LogMsg(const char *msg);
     void LogMsg(const std::string &msg);
     void LogMsgF(const char *fmt, ...);
 
+    void atsc3_update_rf_stats(int32_t tuner_lock,    //1
+                                       int32_t rssi,
+                                       uint8_t modcod_valid,
+                                       uint8_t plp_fec_type,
+                                       uint8_t plp_mod,
+                                       uint8_t plp_cod,
+                                       int32_t nRfLevel1000,
+                                       int32_t nSnr1000,
+                                       uint32_t ber_pre_ldpc_e7,
+                                       uint32_t ber_pre_bch_e9,
+                                       uint32_t fer_post_bch_e6,
+                                       uint8_t demod_lock,
+                                       uint8_t signal,
+                                       uint8_t plp_any,
+                                       uint8_t plp_all); //15
 
-    int RxThread();
-    Atsc3JniEnv* Atsc3_Jni_Capture_Thread_Env = NULL;
-    Atsc3JniEnv* Atsc3_Jni_Processing_Thread_Env = NULL;
+    void atsc3_update_rf_bw_stats(uint64_t total_pkts, uint64_t total_bytes, unsigned int total_lmts);
+
+    void setRfPhyStatisticsViewVisible(bool isRfPhyStatisticsVisible);
+
+    void setJniInstance(jclass jniInstance) {  this->jniInstance = jniInstance; }
+    jclass getJniInstance() { return this->jniInstance; }
+
+private:
+    // jni stuff
+    JavaVM* javaVM = nullptr;       // Java VM
+    JNIEnv* jniEnvPinned = nullptr;    // Jni Environment pinned to our "dispatcher" thread
+
+    jclass jniInstance = nullptr;   // instance configured from Init() method for callbacks to be dispatched on
+
+public:
+    jmethodID mOnLogMsgId = nullptr;                     // java class method id
+    jmethodID atsc3_rf_phy_status_callback_ID = nullptr; // java class method id for phy stats
+    jmethodID atsc3_update_rf_bw_stats_ID = nullptr;     // java callback method id for by stats
+
+private:
+
     Atsc3JniEnv* Atsc3_Jni_Status_Thread_Env = NULL;
 
-
-private:
-    bool mbInit;
-
-    std::thread mhRxThread;
-
-    bool mbLoop, mbRun;
-
-    // statistics
-    uint32_t s_ulLastTickPrint;
-    uint64_t s_ullTotalBytes = 0;
-    uint64_t s_ullTotalPkts;
-    unsigned s_uTotalLmts = 0;
-    std::map<std::string, unsigned> s_mapIpPort;
-    int s_nPrevLmtVer = -1;
-    uint32_t s_ulL1SecBase;
-
-    //pcap replay context and locals
-    int PcapProducerThreadParserRun();
-    int PcapConsumerThreadRun();
-    int PcapLocalCleanup();
-
-
-public:
-    jobject     global_pcap_asset_manager_ref = NULL;
-
-private:
-    //global env.Get()->NewGlobalRef(jobjectByteBuffer); for c alloc'd MFU's and NAL's
-    std::vector<jobject> global_jobject_mfu_refs;
-    std::vector<jobject> global_jobject_nal_refs;
-
-public:
-    void ResetStatstics() {
-        s_ulLastTickPrint = 0;
-        s_ullTotalBytes = s_ullTotalPkts = 0;
-        s_uTotalLmts = 0;
-        s_mapIpPort.clear();
-        s_nPrevLmtVer = -1;
-        s_ulL1SecBase = 0;
-    }
-
-public:
-    // jni stuff
-    JavaVM* mJavaVM = nullptr;    // Java VM
-    JNIEnv* mJniEnv = nullptr;    // Jni Environment
-    jclass mClsDrvIntf = nullptr; // java At3DrvInterface class
-
     bool JReady() {
-        return mJavaVM && mJniEnv && mClsDrvIntf ? true : false;
+        return javaVM && jniEnvPinned && jniInstance ? true : false;
     }
 
-    jmethodID mOnLogMsgId = nullptr;  // java class method id
-
-    jmethodID atsc3_rf_phy_status_callback_ID = nullptr;
-    jmethodID atsc3_update_rf_bw_stats_ID = nullptr;
 
     //todo: refactor this out - ala https://gist.github.com/qiao-tw/6e43fb2311ee3c31752e11a4415deeb1
 
-    jclass      jni_java_util_ArrayList = nullptr;
-    jmethodID   jni_java_util_ArrayList_cctor = nullptr;
-    jmethodID   jni_java_util_ArrayList_add = nullptr;
-
-
-
-
-private:
     std::thread atsc3_rxStatusThread;
     void RxStatusThread();
     bool rxStatusThreadShouldRun;
@@ -131,7 +106,5 @@ private:
 };
 
 #define NDK_PHY_BRIDGE_ERROR(...)   	__LIBATSC3_TIMESTAMP_ERROR(__VA_ARGS__);
-
-
 
 #endif //LIBATSC3_ATSC3NDKPHYBRIDGE_H
