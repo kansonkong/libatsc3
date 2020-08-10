@@ -17,11 +17,12 @@ import android.util.Log;
 import android.view.Surface;
 import android.view.SurfaceHolder;
 
-import org.ngbp.libatsc3.android.DebuggingFlags;
-import org.ngbp.libatsc3.android.ServiceHandler;
-import org.ngbp.libatsc3.media.sync.CodecAACSpecificData;
-import org.ngbp.libatsc3.media.sync.mmt.MfuByteBufferFragment;
-import org.ngbp.libatsc3.media.sync.mmt.MmtPacketIdContext;
+import org.ngbp.libatsc3.middleware.android.ATSC3PlayerFlags;
+import org.ngbp.libatsc3.middleware.android.DebuggingFlags;
+import org.ngbp.libatsc3.ServiceHandler;
+import org.ngbp.libatsc3.middleware.android.application.sync.CodecAACSpecificData;
+import org.ngbp.libatsc3.middleware.android.application.sync.mmt.MfuByteBufferFragment;
+import org.ngbp.libatsc3.middleware.android.application.sync.mmt.MmtPacketIdContext;
 import org.ngbp.libatsc3.sampleapp.MainActivity;
 
 import java.io.IOException;

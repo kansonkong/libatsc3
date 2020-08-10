@@ -3,9 +3,9 @@ package org.ngbp.libatsc3.media;
 import android.media.MediaCodec;
 import android.util.Log;
 
-import org.ngbp.libatsc3.android.DebuggingFlags;
-import org.ngbp.libatsc3.media.sync.mmt.MfuByteBufferFragment;
-import org.ngbp.libatsc3.media.sync.mmt.MmtPacketIdContext;
+import org.ngbp.libatsc3.middleware.android.DebuggingFlags;
+import org.ngbp.libatsc3.middleware.android.application.sync.mmt.MfuByteBufferFragment;
+import org.ngbp.libatsc3.middleware.android.application.sync.mmt.MmtPacketIdContext;
 
 import java.nio.ByteBuffer;
 

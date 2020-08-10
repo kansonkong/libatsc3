@@ -25,7 +25,7 @@ LOCAL_PATH := $(MY_LOCAL_PATH)
 include $(CLEAR_VARS)
 # LOCAL_ALLOW_UNDEFINED_SYMBOLS=true
 
-LOCAL_MODULE := atsc3NdkClient
+LOCAL_MODULE := atsc3NdkClient_core
 
 LIBATSC3C := \
     $(wildcard $(LOCAL_PATH)/../../../src/*.c)
@@ -35,35 +35,37 @@ LIBATSC3CPP := \
 
 # LIBUSB := \
 #     $(wildcard $(LOCAL_PATH)/src/main/libusb/libusb/*.c)
+#     src/main/jni/atsc3NdkApplicationBridge.cpp \
+  #    src/main/jni/atsc3NdkPHYBridge.cpp \
 
+# jjustman-2020-08-10 - temporary - refactor this out...
+LOCAL_SRC_FILES += \
+    $(LIBATSC3C:$(LOCAL_PATH)/%=%)  \
+    $(LIBATSC3CPP:$(LOCAL_PATH)/%=%)
 
-#LOCAL_SRC_FILES += \
-#    $(LIBATSC3C:$(LOCAL_PATH)/%=%)  \
-#    $(LIBATSC3CPP:$(LOCAL_PATH)/%=%)
-#
-##	$(LOCAL_PATH)/src/main/libusb/libusb/core.c \
-##	$(LOCAL_PATH)/src/main/libusb/libusb/descriptor.c \
-##	$(LOCAL_PATH)/src/main/libusb/libusb/hotplug.c \
-##	$(LOCAL_PATH)/src/main/libusb/libusb/io.c \
-##	$(LOCAL_PATH)/src/main/libusb/libusb/sync.c \
-##	$(LOCAL_PATH)/src/main/libusb/libusb/strerror.c \
-##	$(LOCAL_PATH)/src/main/libusb/libusb/os/linux_usbfs.c \
-##	$(LOCAL_PATH)/src/main/libusb/libusb/os/poll_posix.c \
-##	$(LOCAL_PATH)/src/main/libusb/libusb/os/threads_posix.c \
-##	$(LOCAL_PATH)/src/main/libusb/libusb/os/linux_netlink.c
-#
-##udev:     $(LOCAL_PATH)/src/main/libusb/libusb/os/linux_usbfs.c \
-##          $(LOCAL_PATH)/src/main/libusb/libusb/os/linux_udev.c
-##                          -DUSE_UDEV
-#
-##LOCAL_C_INCLUDES += $(LOCAL_PATH)/src/main/libusb
-##LOCAL_C_INCLUDES += $(LOCAL_PATH)/src/main/libusb/libusb
-##LOCAL_C_INCLUDES += $(LOCAL_PATH)/src/main/libusb/android
+#	$(LOCAL_PATH)/src/main/libusb/libusb/core.c \
+#	$(LOCAL_PATH)/src/main/libusb/libusb/descriptor.c \
+#	$(LOCAL_PATH)/src/main/libusb/libusb/hotplug.c \
+#	$(LOCAL_PATH)/src/main/libusb/libusb/io.c \
+#	$(LOCAL_PATH)/src/main/libusb/libusb/sync.c \
+#	$(LOCAL_PATH)/src/main/libusb/libusb/strerror.c \
+#	$(LOCAL_PATH)/src/main/libusb/libusb/os/linux_usbfs.c \
+#	$(LOCAL_PATH)/src/main/libusb/libusb/os/poll_posix.c \
+#	$(LOCAL_PATH)/src/main/libusb/libusb/os/threads_posix.c \
+#	$(LOCAL_PATH)/src/main/libusb/libusb/os/linux_netlink.c
 
+#udev:     $(LOCAL_PATH)/src/main/libusb/libusb/os/linux_usbfs.c \
+#          $(LOCAL_PATH)/src/main/libusb/libusb/os/linux_udev.c
+#                          -DUSE_UDEV
+
+#LOCAL_C_INCLUDES += $(LOCAL_PATH)/src/main/libusb
+#LOCAL_C_INCLUDES += $(LOCAL_PATH)/src/main/libusb/libusb
+#LOCAL_C_INCLUDES += $(LOCAL_PATH)/src/main/libusb/android
+#
 #LOCAL_C_INCLUDES += $(LOCAL_PATH)/src/main/jni
 #LOCAL_C_INCLUDES += $(LOCAL_PATH)/../../../src/
 
-#LOCAL_SHARED_LIBRARIES := libpcre
+LOCAL_SHARED_LIBRARIES := libpcre
 
 LOCAL_CFLAGS += -g -fpack-struct=8 -fPIC  \
                 -D__DISABLE_LIBPCAP__ -D__DISABLE_ISOBMFF_LINKAGE__ -D__DISABLE_NCURSES__ \
