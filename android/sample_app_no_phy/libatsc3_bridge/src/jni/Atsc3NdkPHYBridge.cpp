@@ -1,60 +1,12 @@
-#include <android/asset_manager.h>
-#include <android/asset_manager_jni.h>
+#include "Atsc3NdkPHYBridge.h"
+
 #include <atsc3_lls_types.h>
-#include <atsc3_phy_mmt_player_bridge.h>
 #include <atsc3_pcap_type.h>
 #include <atsc3_monitor_events_alc.h>
 
-#include "Atsc3NdkPHYBridge.h"
-//#include "Atsc3NdkClientNoPhyImpl.h"
-
-
-#if DEBUG
-	#define LOGV(...) __android_log_print(ANDROID_LOG_VERBOSE, MODULE_NAME, __VA_ARGS__)
-	#define LOGD(...) __android_log_print(ANDROID_LOG_DEBUG  , MODULE_NAME, __VA_ARGS__)
-	#define LOGI(...) __android_log_print(ANDROID_LOG_INFO   , MODULE_NAME, __VA_ARGS__)
-	#define LOGW(...) __android_log_print(ANDROID_LOG_WARN   , MODULE_NAME, __VA_ARGS__)
-	#define LOGE(...) __android_log_print(ANDROID_LOG_ERROR  , MODULE_NAME, __VA_ARGS__)
-#else
-#define LOGV(...)
-	#define LOGD(...)
-	#define LOGI(...)
-	#define LOGW(...)
-	#define LOGE(...)
-#endif
-
-#define printf LOGD
-#define eprintf LOGE
-
-#define ASSERT(cond,s) do { \
-        if (!(cond)) { eprintf("%s: !! %s assert fail, line %d\n", __func__, s, __LINE__); \
-            return -1; } \
-        } while(0)
-
-#define CHK_AR(ar,s) do { \
-		if (ar) { eprintf("%s: !! %s, err %d, line %d\n", __func__, s, ar, __LINE__); \
-			return -1; } \
-		} while(0)
-#define SHOW_AR(ar,s) do { \
-		if (ar) { printf("%s: !! %s, err %d, line %d\n", __func__, s, ar, __LINE__); } \
-		} while(0)
-
-//
-//using namespace std;
-//vector<string> Split(const char *str, char delimiter = ' ') {
-//    vector<string> vs;
-//    if (!str) return vs;
-//    do {
-//        const char *begin = str;
-//        while(*str != delimiter && *str)
-//            str++;
-//        vs.push_back(string(begin, str));
-//    } while (0 != *str++);
-//    return vs;
-//}
+#include <atsc3_core_service_player_bridge.h>
 
 Atsc3NdkPHYBridge api;
-//Atsc3NdkClientNoPhyImpl apiImpl;
 
 int Atsc3NdkPHYBridge::Init()
 {
@@ -141,7 +93,7 @@ void Atsc3NdkPHYBridge::LogMsg(const char *msg)
         return;
     Atsc3JniEnv env(mJavaVM);
     if (!env) {
-        eprintf("!! err on get jni env\n");
+        NDK_PHY_BRIDGE_ERROR("!! err on get jni env");
         return;
     }
     jstring js = env.Get()->NewStringUTF(msg);
@@ -210,7 +162,7 @@ void Atsc3NdkPHYBridge::atsc3_update_rf_stats(int32_t tuner_lock,
         return;
 
     if (!Atsc3_Jni_Status_Thread_Env) {
-        eprintf("Atsc3NdkPHYBridge:atsc3_update_rf_stats: err on get jni env: Atsc3_Jni_Status_Thread_Env\n");
+        NDK_PHY_BRIDGE_ERROR("Atsc3NdkPHYBridge:atsc3_update_rf_stats: err on get jni env: Atsc3_Jni_Status_Thread_Env");
         return;
     }
     int r = Atsc3_Jni_Status_Thread_Env->Get()->CallIntMethod(mClsDrvIntf, atsc3_rf_phy_status_callback_ID,
@@ -238,7 +190,7 @@ void Atsc3NdkPHYBridge::atsc3_update_rf_bw_stats(uint64_t total_pkts, uint64_t t
     if (!JReady() || !mOnLogMsgId)
         return;
     if (!Atsc3_Jni_Status_Thread_Env) {
-        eprintf("Atsc3NdkPHYBridge:atsc3_update_rf_bw_stats: err on get jni env: Atsc3_Jni_Status_Thread_Env\n");
+        NDK_PHY_BRIDGE_ERROR("Atsc3NdkPHYBridge:atsc3_update_rf_bw_stats: err on get jni env: Atsc3_Jni_Status_Thread_Env");
         return;
     }
     int r = Atsc3_Jni_Status_Thread_Env->Get()->CallIntMethod(mClsDrvIntf, atsc3_update_rf_bw_stats_ID, total_pkts, total_bytes, total_lmts);
@@ -298,42 +250,42 @@ Java_org_ngbp_libatsc3_middleware_atsc3NdkPHYBridge_ApiInit(JNIEnv *env, jobject
 
     env->GetJavaVM(&api.mJavaVM);
     if(api.mJavaVM == NULL) {
-        eprintf("!! no java vm\n");
+        NDK_PHY_BRIDGE_ERROR("!! no java vm");
         return -1;
     }
 
     jclass jClazz = env->FindClass("org/ngbp/libatsc3/middleware/Atsc3NdkPHYBridge");
     if (jClazz == NULL) {
-        eprintf("!! Cannot find org/ngbp/libatsc3/middleware/Atsc3NdkPHYBridge java class\n");
+        NDK_PHY_BRIDGE_ERROR("!! Cannot find org/ngbp/libatsc3/middleware/Atsc3NdkPHYBridge java class");
         return -1;
     }
     api.mOnLogMsgId = env->GetMethodID(jClazz, "onLogMsg", "(Ljava/lang/String;)I");
     if (api.mOnLogMsgId == NULL) {
-        eprintf("!! Cannot find 'onLogMsg' method id\n");
+        NDK_PHY_BRIDGE_ERROR("!! Cannot find 'onLogMsg' method id");
         return -1;
     }
 
     api.atsc3_rf_phy_status_callback_ID = env->GetMethodID(jClazz, "atsc3_rf_phy_status_callback", "(IIIIIIIIIIIIIII)I");
     if (api.atsc3_rf_phy_status_callback_ID == NULL) {
-        eprintf("!! Cannot find 'atsc3_rf_phy_status_callback' method id\n");
+        NDK_PHY_BRIDGE_ERROR("!! Cannot find 'atsc3_rf_phy_status_callback' method id");
         return -1;
     }
 
     //atsc3_update_rf_bw_stats_ID
     api.atsc3_update_rf_bw_stats_ID = env->GetMethodID(jClazz, "atsc3_updateRfBwStats", "(JJI)I");
     if (api.atsc3_update_rf_bw_stats_ID == NULL) {
-        eprintf("!! Cannot find 'atsc3_update_rf_bw_stats_ID' method id\n");
+        NDK_PHY_BRIDGE_ERROR("!! Cannot find 'atsc3_update_rf_bw_stats_ID' method id");
         return -1;
     }
 
 
     api.jni_java_util_ArrayList = (jclass) env->NewGlobalRef(env->FindClass("java/util/ArrayList"));
-    eprintf("creating api.jni_java_util_ArrayList");
+    NDK_PHY_BRIDGE_ERROR("creating api.jni_java_util_ArrayList");
 
     api.jni_java_util_ArrayList_cctor = env->GetMethodID(api.jni_java_util_ArrayList, "<init>", "(I)V");
-    eprintf("creating api.jni_java_util_ArrayList_cctor");
+    NDK_PHY_BRIDGE_ERROR("creating api.jni_java_util_ArrayList_cctor");
     api.jni_java_util_ArrayList_add  = env->GetMethodID(api.jni_java_util_ArrayList, "add", "(Ljava/lang/Object;)Z");
-    eprintf("creating api.jni_java_util_ArrayList_add");
+    NDK_PHY_BRIDGE_ERROR("creating api.jni_java_util_ArrayList_add");
 
     api.mClsDrvIntf = (jclass)(api.mJniEnv->NewGlobalRef(drvIntf));
 
@@ -347,14 +299,14 @@ Java_org_ngbp_libatsc3_middleware_atsc3NdkPHYBridge_ApiInit(JNIEnv *env, jobject
     //Atsc3NdkPHYBridge* at3DrvIntf_ptr
     atsc3_phy_player_bridge_init(&api);
 
-    printf("**** jni init OK\n");
+    printf("**** jni init OK");
     return 0;
 }
 
 extern "C" JNIEXPORT jint JNICALL
 Java_org_ngbp_libatsc3_middleware_atsc3NdkPHYBridge_ApiPrepare(JNIEnv *env, jobject instance, jstring devlist_, jint d1, jint d2)
 {
-    printf("jni prepare\n");
+    printf("jni prepare");
 
     const char *devlist = env->GetStringUTFChars(devlist_, 0);
     int r = api.Prepare(devlist, (int)d1, (int)d2);
@@ -365,7 +317,7 @@ Java_org_ngbp_libatsc3_middleware_atsc3NdkPHYBridge_ApiPrepare(JNIEnv *env, jobj
 extern "C" JNIEXPORT jint JNICALL
 Java_org_ngbp_libatsc3_middleware_atsc3NdkPHYBridge_ApiFwLoad(JNIEnv *env, jobject instance, jlong key)
 {
-    printf("jni fwload\n");
+    printf("jni fwload");
 
 //    int r = api.FwLoad((AT3_DEV_KEY) key);
 //    return r;
@@ -390,7 +342,7 @@ Java_org_ngbp_libatsc3_middleware_atsc3NdkPHYBridge_ApiOpen(JNIEnv *env, jobject
 extern "C" JNIEXPORT jint JNICALL
 Java_org_ngbp_libatsc3_middleware_atsc3NdkPHYBridge_ApiTune(JNIEnv *env, jobject instance, jint freqKHz, jint plpid)
 {
-    printf("Java_org_ngbp_libatsc3_middleware_atsc3NdkPHYBridge_ApiTune::tune\n");
+    printf("Java_org_ngbp_libatsc3_middleware_atsc3NdkPHYBridge_ApiTune::tune");
 
     return api.Tune(freqKHz, plpid);
 }
@@ -398,21 +350,21 @@ Java_org_ngbp_libatsc3_middleware_atsc3NdkPHYBridge_ApiTune(JNIEnv *env, jobject
 extern "C" JNIEXPORT jint JNICALL
 Java_org_ngbp_libatsc3_middleware_atsc3NdkPHYBridge_ApiStop(JNIEnv *env, jobject instance)
 {
-    printf("jni stop\n");
+    printf("jni stop");
     return api.Stop();
 }
 
 extern "C" JNIEXPORT jint JNICALL
 Java_org_ngbp_libatsc3_middleware_atsc3NdkPHYBridge_ApiClose(JNIEnv *env, jobject instance)
 {
-    printf("ApiClose:\n");
+    printf("ApiClose:");
     return api.Close();
 }
 
 extern "C" JNIEXPORT jint JNICALL
 Java_org_ngbp_libatsc3_middleware_atsc3NdkPHYBridge_ApiUninit(JNIEnv *env, jobject instance)
 {
-    printf("ApiUninit:\n");
+    printf("ApiUninit:");
     int r = api.Uninit();
 
     if (api.mClsDrvIntf) {
@@ -425,7 +377,7 @@ Java_org_ngbp_libatsc3_middleware_atsc3NdkPHYBridge_ApiUninit(JNIEnv *env, jobje
 extern "C" JNIEXPORT jint JNICALL
 Java_org_ngbp_libatsc3_middleware_atsc3NdkPHYBridge_ApiReset(JNIEnv *env, jobject instance)
 {
-    printf("jni reset:\n");
+    printf("jni reset:");
     return api.Reset();
 }
 

@@ -5,6 +5,8 @@
 #ifndef LIBATSC3_ATSC3NDKPHYBRIDGE_H
 #define LIBATSC3_ATSC3NDKPHYBRIDGE_H
 
+#include "Atsc3LoggingUtils.h"
+
 #include <string.h>
 #include <jni.h>
 #include <thread>
@@ -14,18 +16,17 @@
 #include <semaphore.h>
 #include <list>
 
-using namespace std;
-
-#include <android/log.h>
 #include <sys/types.h>
 #include <android/asset_manager.h>
 #include <android/asset_manager_jni.h>
 
+using namespace std;
+
 #include "Atsc3JniEnv.h"
+#include "IAtsc3NdkPHYClient.h"
 
 #define DEBUG 1
 
-#include "android/log.h"
 #define MODULE_NAME "intf"
 
 // libatsc3 type imports here
@@ -38,19 +39,7 @@ using namespace std;
  */
 
 
-class Iatsc3NdkClient {
-    public:
-        virtual int Init() = 0;
-        virtual int Open(int fd, int bus, int addr) = 0;
-        virtual int Tune(int freqKhz, int plp) = 0;
-        virtual int Stop()  = 0;
-        virtual int Close()  = 0;
-
-        virtual ~Iatsc3NdkClient() {};
-
-};
-
-class Atsc3NdkPHYBridge : public Iatsc3NdkClient
+class Atsc3NdkPHYBridge : public IAtsc3NdkPHYClient
 {
 public:
     Atsc3NdkPHYBridge(): mbInit(false), mbLoop(false), mbRun(false) {    }
@@ -175,6 +164,7 @@ private:
 
 };
 
+#define NDK_PHY_BRIDGE_ERROR(...)   	__LIBATSC3_TIMESTAMP_ERROR(__VA_ARGS__);
 
 
 
