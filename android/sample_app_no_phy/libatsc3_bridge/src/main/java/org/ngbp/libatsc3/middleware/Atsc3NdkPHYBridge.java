@@ -1,0 +1,96 @@
+package org.ngbp.libatsc3.middleware;
+
+import android.util.Log;
+
+import org.ngbp.libatsc3.middleware.android.phy.interfaces.IPHYBridgeCallbacks;
+import org.ngbp.libatsc3.middleware.android.phy.models.BwPhyStatistics;
+import org.ngbp.libatsc3.middleware.android.phy.models.RfPhyStatistics;
+
+/**
+ *    /Library/Java/JavaVirtualMachines/jdk1.8.0_231.jdk/Contents/Home/bin/javah -d cpp -classpath ../../build/intermediates/classes/debug org.ngbp.libatsc3.middleware.Atsc3NdkPHYBridge
+ *
+ *  javah -classpath ./bin/classes -d jni org.ngbp.libatsc3.middleware.Atsc3NdkPHYBridge
+ *
+ *  /Users/jjustman/Desktop/libatsc3/android/sample_app_no_phy/app/src/main/java/org/ngbp/libatsc3/middlewarea
+ */
+
+public class Atsc3NdkPHYBridge {
+
+    final static String TAG ="intf";
+
+    IPHYBridgeCallbacks mActivity;
+
+    public Atsc3NdkPHYBridge(IPHYBridgeCallbacks iPHYBridgeCallbacks) {
+        mActivity = iPHYBridgeCallbacks;
+    }
+
+    int onLogMsg(String msg) {
+        Log.d(TAG, msg);
+        mActivity.showMsgFromNative(msg+"\n");
+        return 0;
+    }
+
+    public native int ApiInit(Atsc3NdkPHYBridge intf);
+    public native int ApiPrepare(String devlist, int delimiter1, int delimiter2);
+    public native long[] ApiFindDeviceKey(boolean bPreBootDevice);
+    public native int ApiFwLoad(long key);
+    public native int ApiOpen(int fd, long key);
+    public native int ApiTune(int freqKhz, int plpid);
+    public native int ApiSetPLP(int[] aPlpIds);
+    public native int ApiStop();
+    public native int ApiClose();
+    public native int ApiReset();
+    public native int ApiUninit();
+
+    public native int setRfPhyStatisticsViewVisible(boolean isRfPhyStatisticsVisible);
+
+    int atsc3_rf_phy_status_callback(int rfstat_lock,
+                                     int rssi,
+                                     int modcod_valid,
+                                     int plp_fec_type,
+                                     int plp_mod,
+                                     int plp_cod,
+                                     int nRfLevel1000,
+                                     int nSnr1000,
+                                     int ber_pre_ldpc_e7,
+                                     int ber_pre_bch_e9,
+                                     int fer_post_bch_e6,
+                                     int demod_lock_status,
+                                     int cpu_status,
+                                     int plp_any,
+                                     int plp_all) {
+
+        RfPhyStatistics rfPhyStatistics = new RfPhyStatistics(rfstat_lock,
+                rssi,
+                modcod_valid,
+                plp_fec_type,
+                plp_mod,
+                plp_cod,
+                nRfLevel1000,
+                nSnr1000,
+                ber_pre_ldpc_e7,
+                ber_pre_bch_e9,
+                fer_post_bch_e6,
+                demod_lock_status,
+                cpu_status,
+                plp_any,
+                plp_all);
+
+        mActivity.pushRfPhyStatisticsUpdate(rfPhyStatistics);
+
+        return 0;
+    }
+
+    int atsc3_updateRfBwStats(long total_pkts, long total_bytes, int total_lmts) {
+        mActivity.pushBwPhyStatistics(new BwPhyStatistics(total_pkts, total_bytes, total_lmts));
+        return 0;
+    }
+
+    static {
+        //jjustman:2019-11-24: cross reference and circular dependency with NXP_Tuner_Lib and SL API methods
+        //System.loadLibrary("NXP_Tuner_Lib");
+        //System.loadLibrary("SiTune_Tuner_Libs");
+
+        System.loadLibrary("Atsc3NdkPHYBridge");
+    }
+}

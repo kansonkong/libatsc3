@@ -5,10 +5,10 @@ import android.media.PlaybackParams;
 import android.os.Message;
 import android.util.Log;
 
-import org.ngbp.libatsc3.android.DebuggingFlags;
-import org.ngbp.libatsc3.android.ServiceHandler;
-import org.ngbp.libatsc3.media.sync.mmt.MfuByteBufferFragment;
-import org.ngbp.libatsc3.media.sync.mmt.MmtPacketIdContext;
+import org.ngbp.libatsc3.middleware.android.DebuggingFlags;
+import org.ngbp.libatsc3.ServiceHandler;
+import org.ngbp.libatsc3.middleware.android.application.sync.mmt.MfuByteBufferFragment;
+import org.ngbp.libatsc3.middleware.android.application.sync.mmt.MmtPacketIdContext;
 
 import java.util.LinkedHashMap;
 import java.util.Map;
