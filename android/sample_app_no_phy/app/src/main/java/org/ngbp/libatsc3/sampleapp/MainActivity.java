@@ -76,7 +76,7 @@ import org.ngbp.libatsc3.middleware.android.application.sync.mmt.MfuByteBufferFr
 import org.ngbp.libatsc3.middleware.android.application.sync.mmt.MmtPacketIdContext;
 import org.ngbp.libatsc3.middleware.android.application.sync.mmt.MpuMetadata_HEVC_NAL_Payload;
 
-import org.ngbp.libatsc3.middleware.android.phy.virtual.DemuxedPcapVirtualPHY;
+import org.ngbp.libatsc3.middleware.android.phy.virtual.PcapDemuxedVirtualPHYAndroid;
 import org.ngbp.libatsc3.middleware.android.phy.models.BwPhyStatistics;
 import org.ngbp.libatsc3.phy.RfPhyFecModCodTypes;
 import org.ngbp.libatsc3.middleware.android.phy.models.RfPhyStatistics;
@@ -247,7 +247,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     //jjustman-2020-08-07 - temporary wire-up, and  remove static field accessor static
     public Atsc3NdkApplicationBridge atsc3NdkApplicationBridge;
     public Atsc3NdkPHYBridge         atsc3NdkPHYBridge;
-    public DemuxedPcapVirtualPHY     demuxedPcapVirtualPHY;
+    public PcapDemuxedVirtualPHYAndroid demuxedPcapVirtualPHY;
 
     public UsbManager mUsbManager;
     private PendingIntent mPermissionIntent;
@@ -712,7 +712,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         atsc3NdkApplicationBridge = new Atsc3NdkApplicationBridge(this);
         atsc3NdkPHYBridge = new Atsc3NdkPHYBridge(this);
         // if needed at runtime for pcap replay:
-        demuxedPcapVirtualPHY = new DemuxedPcapVirtualPHY();
+        demuxedPcapVirtualPHY = new PcapDemuxedVirtualPHYAndroid();
 
 
         // get usb manager
@@ -732,7 +732,8 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
 
         // init at3drv driver
         showMsg("onCreate: ApiInit\n");
-        atsc3NdkPHYBridge.ApiInit(atsc3NdkPHYBridge);
+        atsc3NdkPHYBridge.init();
+
         ThingsUI.WriteToAlphaDisplayNoEx("AINT");
 
         // now, scan usb devices and try to connect

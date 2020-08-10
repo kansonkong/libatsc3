@@ -22,6 +22,7 @@ public class Atsc3NdkPHYBridge {
 
     public Atsc3NdkPHYBridge(IAtsc3NdkPHYBridgeCallbacks iAtsc3NdkPHYBridgeCallbacks) {
         mActivity = iAtsc3NdkPHYBridgeCallbacks;
+        init();
     }
 
     int onLogMsg(String msg) {
@@ -30,7 +31,6 @@ public class Atsc3NdkPHYBridge {
         return 0;
     }
 
-    public native int setRfPhyStatisticsViewVisible(boolean isRfPhyStatisticsVisible);
 
     int atsc3_rf_phy_status_callback(int rfstat_lock,
                                      int rssi,
@@ -73,4 +73,9 @@ public class Atsc3NdkPHYBridge {
         mActivity.pushBwPhyStatistics(new BwPhyStatistics(total_pkts, total_bytes, total_lmts));
         return 0;
     }
+
+    //native jni methods
+
+    public native void init();
+    public native int setRfPhyStatisticsViewVisible(boolean isRfPhyStatisticsVisible);
 }

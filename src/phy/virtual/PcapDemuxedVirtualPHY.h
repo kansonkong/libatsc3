@@ -2,13 +2,10 @@
 // Created by Jason Justman on 2019-09-27.
 //
 
-#ifndef LIBATSC3_ATSC3NDKPHYBRIDGE_DEMUXEDPCAPVIRTUALPHY_H
-#define LIBATSC3_ATSC3NDKPHYBRIDGE_DEMUXEDPCAPVIRTUALPHY_H
+#ifndef LIBATSC3_PCAPDEMUXEDVIRTUALPHY_H
+#define LIBATSC3_PCAPDEMUXEDVIRTUALPHY_H
 
-#include "Atsc3LoggingUtils.h"
-
-#include <string.h>
-#include <jni.h>
+#include <string>
 #include <thread>
 #include <map>
 #include <queue>
@@ -17,16 +14,12 @@
 #include <list>
 
 #include <sys/types.h>
-#include <android/asset_manager.h>
-#include <android/asset_manager_jni.h>
 
 using namespace std;
 
 #define DEBUG 1
-#include "Atsc3JniEnv.h"
-#include "IAtsc3NdkPHYClient.h"
 
-#define MODULE_NAME "intf"
+#include "../IAtsc3NdkPHYClient.h"
 
 // libatsc3 type imports here
 #include <atsc3_utils.h>
@@ -37,10 +30,10 @@ using namespace std;
  * : public libatsc3_Iphy_mockable
  */
 
-class Atsc3NdkPHYBridge_DemuxedPcapVirtualPHY : public IAtsc3NdkPHYClient
+class PcapDemuxedVirtualPHY : public IAtsc3NdkPHYClient
 {
 public:
-    Atsc3NdkPHYBridge_DemuxedPcapVirtualPHY(): mbInit(false), mbLoop(false), mbRun(false) {    }
+    PcapDemuxedVirtualPHY(): mbInit(false), mbLoop(false), mbRun(false) {    }
 
     int Init();
     int Open(int fd, int bus, int addr);
@@ -62,10 +55,9 @@ public:
      */
 
     int atsc3_pcap_replay_open_file(const char *filename);
-    int atsc3_pcap_replay_open_file_from_assetManager(const char *filename, AAssetManager *mgr);
+//    int atsc3_pcap_replay_open_file_from_assetManager(const char *filename, AAssetManager *mgr);
     int atsc3_pcap_thread_run();
     int atsc3_pcap_thread_stop();
-
 
     void LogMsg(const char *msg);
     void LogMsg(const std::string &msg);
@@ -107,11 +99,11 @@ private:
     bool                            pcapThreadShouldRun;
 
     std::thread                     pcapProducerThreadPtr;
-    Atsc3JniEnv*                        atsc3_jni_pcap_producer_thread_env = NULL;
+    Atsc3JniEnv*                    atsc3_jni_pcap_producer_thread_env = NULL;
     bool                            pcapProducerShutdown = true;
 
     std::thread                     pcapConsumerThreadPtr;
-    Atsc3JniEnv*                        atsc3_jni_pcap_consumer_thread_env = NULL;
+    Atsc3JniEnv*                    atsc3_jni_pcap_consumer_thread_env = NULL;
     bool                            pcapConsumerShutdown = true;
 
     atsc3_pcap_replay_context_t*    atsc3_pcap_replay_context = NULL;
@@ -122,19 +114,8 @@ private:
     //alc service monitoring
     vector<int>                     atsc3_slt_alc_additional_services_monitored;
 
-
 public:
     jobject     global_pcap_asset_manager_ref = NULL;
-
-public:
-    void ResetStatstics() {
-        s_ulLastTickPrint = 0;
-        s_ullTotalBytes = s_ullTotalPkts = 0;
-        s_uTotalLmts = 0;
-        s_mapIpPort.clear();
-        s_nPrevLmtVer = -1;
-        s_ulL1SecBase = 0;
-    }
 
 public:
     // jni stuff
@@ -158,26 +139,6 @@ public:
     jmethodID   jni_java_util_ArrayList_add = nullptr;
 
 
-    std::string get_android_temp_folder();
-
-    //moving to "friend" scope
-    void atsc3_update_rf_stats(   int32_t tuner_lock,    //1
-                                  int32_t rssi,
-                                  uint8_t modcod_valid,
-                                  uint8_t plp_fec_type,
-                                  uint8_t plp_mod,
-                                  uint8_t plp_cod,
-                                  int32_t nRfLevel1000,
-                                  int32_t nSnr1000,
-                                  uint32_t ber_pre_ldpc_e7,
-                                  uint32_t ber_pre_bch_e9,
-                                  uint32_t fer_post_bch_e6,
-                                  uint8_t demod_lock,
-                                  uint8_t signal,
-                                  uint8_t plp_any,
-                                  uint8_t plp_all); //15
-    void atsc3_update_rf_bw_stats(uint64_t total_pkts, uint64_t total_bytes, unsigned int total_lmts);
-
 private:
     std::thread atsc3_rxStatusThread;
     void RxStatusThread();
@@ -187,5 +148,4 @@ private:
 #define NDK_PCAP_VIRTUAL_PHY_ERROR(...)   	__LIBATSC3_TIMESTAMP_ERROR(__VA_ARGS__);
 
 
-
-#endif //LIBATSC3_ATSC3NDKPHYBRIDGE_DEMUXEDPCAPVIRTUALPHY_H
+#endif //LIBATSC3_PCAPDEMUXEDVIRTUALPHY_H
