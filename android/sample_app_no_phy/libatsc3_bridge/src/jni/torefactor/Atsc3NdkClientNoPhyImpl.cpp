@@ -151,7 +151,7 @@ void Atsc3NdkClientNoPhyImpl::processTLVFromCallback()
 //                        if(atsc3_alp_packet->alp_packet_header.packet_type == 0x00) {
 //
 //                            block_Rewind(atsc3_alp_packet->alp_payload);
-//                            atsc3_phy_mmt_player_bridge_process_packet_phy(atsc3_alp_packet->alp_payload);
+//                            atsc3_core_service_bridge_process_packet_phy(atsc3_alp_packet->alp_payload);
 //
 //                        } else if(atsc3_alp_packet->alp_packet_header.packet_type == 0x4) {
 //                            alp_total_LMTs_recv++;

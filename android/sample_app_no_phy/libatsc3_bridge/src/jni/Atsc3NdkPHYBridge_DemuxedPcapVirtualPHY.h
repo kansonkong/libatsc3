@@ -5,6 +5,8 @@
 #ifndef LIBATSC3_ATSC3NDKPHYBRIDGE_DEMUXEDPCAPVIRTUALPHY_H
 #define LIBATSC3_ATSC3NDKPHYBRIDGE_DEMUXEDPCAPVIRTUALPHY_H
 
+#include "Atsc3LoggingUtils.h"
+
 #include <string.h>
 #include <jni.h>
 #include <thread>
@@ -14,19 +16,16 @@
 #include <semaphore.h>
 #include <list>
 
-using namespace std;
-
-#include <android/log.h>
 #include <sys/types.h>
 #include <android/asset_manager.h>
 #include <android/asset_manager_jni.h>
 
+using namespace std;
 
 #define DEBUG 1
-
 #include "Atsc3JniEnv.h"
+#include "IAtsc3NdkPHYClient.h"
 
-#include "android/log.h"
 #define MODULE_NAME "intf"
 
 // libatsc3 type imports here
@@ -38,20 +37,7 @@ using namespace std;
  * : public libatsc3_Iphy_mockable
  */
 
-
-class Iatsc3NdkClient {
-    public:
-        virtual int Init() = 0;
-        virtual int Open(int fd, int bus, int addr) = 0;
-        virtual int Tune(int freqKhz, int plp) = 0;
-        virtual int Stop()  = 0;
-        virtual int Close()  = 0;
-
-        virtual ~Iatsc3NdkClient() {};
-
-};
-
-class Atsc3NdkPHYBridge_DemuxedPcapVirtualPHY : public Iatsc3NdkClient
+class Atsc3NdkPHYBridge_DemuxedPcapVirtualPHY : public IAtsc3NdkPHYClient
 {
 public:
     Atsc3NdkPHYBridge_DemuxedPcapVirtualPHY(): mbInit(false), mbLoop(false), mbRun(false) {    }
@@ -59,11 +45,9 @@ public:
     int Init();
     int Open(int fd, int bus, int addr);
     int Prepare(const char *devinfo, int delim1, int delim2);
-
     int Tune(int freqKHz, int plpId);
     int TuneMultiplePLP(int freqKhz, vector<int> plpIds);
     int ListenPLP1(int plp1); //by default, we will always listen to PLP0, append additional PLP for listening
-
 
     int Stop();
     int Close();
@@ -200,6 +184,7 @@ private:
     bool rxStatusThreadShouldRun;
 };
 
+#define NDK_PCAP_VIRTUAL_PHY_ERROR(...)   	__LIBATSC3_TIMESTAMP_ERROR(__VA_ARGS__);
 
 
 

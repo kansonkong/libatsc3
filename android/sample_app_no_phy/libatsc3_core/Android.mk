@@ -65,6 +65,8 @@ LOCAL_SRC_FILES += \
 #LOCAL_C_INCLUDES += $(LOCAL_PATH)/src/main/jni
 #LOCAL_C_INCLUDES += $(LOCAL_PATH)/../../../src/
 
+LOCAL_C_INCLUDES += $(LOCAL_PATH)/libpcre/include
+
 LOCAL_SHARED_LIBRARIES := libpcre
 
 LOCAL_CFLAGS += -g -fpack-struct=8 -fPIC  \

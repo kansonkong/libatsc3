@@ -16,7 +16,7 @@ LOCAL_PATH := $(MY_LOCAL_PATH)
 include $(CLEAR_VARS)
 # LOCAL_ALLOW_UNDEFINED_SYMBOLS=true
 
-LOCAL_MODULE := atsc3NdkClient_bridge
+LOCAL_MODULE := libatsc3_bridge
 
 LIBATSC3COREBRIDGECPP := \
     $(wildcard $(LOCAL_PATH)/src/cpp/*.cpp)
@@ -54,8 +54,14 @@ LOCAL_SRC_FILES += \
 #LOCAL_C_INCLUDES += $(LOCAL_PATH)/src/main/libusb/libusb
 #LOCAL_C_INCLUDES += $(LOCAL_PATH)/src/main/libusb/android
 
-LOCAL_C_INCLUDES += $(LOCAL_PATH)/src/main/jni
+LOCAL_C_INCLUDES += $(LOCAL_PATH)/src/cpp
+LOCAL_C_INCLUDES += $(LOCAL_PATH)/src/jni
 LOCAL_C_INCLUDES += $(LOCAL_PATH)/../../../src/
+
+# jjustman-2020-08-10 - hack-ish...
+LOCAL_C_INCLUDES += $(LOCAL_PATH)/../libatsc3_core/libpcre/include
+
+
 
 LOCAL_CFLAGS += -g -fpack-struct=8 -fPIC  \
                 -D__DISABLE_LIBPCAP__ -D__DISABLE_ISOBMFF_LINKAGE__ -D__DISABLE_NCURSES__ \
