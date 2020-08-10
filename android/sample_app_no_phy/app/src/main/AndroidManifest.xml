@@ -45,9 +45,9 @@
             <!--<meta-data android:name="android.hardware.usb.action.USB_DEVICE_ATTACHED"-->
             <!--android:resource="@xml/device_filter" />-->
         </activity>
-        <activity android:name="org.ngbp.libatsc3.android.pcapreplay.PcapFileSelectorActivity">
+        <activity android:name="org.ngbp.libatsc3.pcapreplay.PcapFileSelectorActivity">
         </activity>
-<!--        <activity android:name="org.ngbp.libatsc3.media.sync.mmt.MFUDecoderSurfaceSync" android:screenOrientation="landscape">-->
+<!--        <activity android:name="org.ngbp.libatsc3.middleware.android.application.sync.mmt.MFUDecoderSurfaceSync" android:screenOrientation="landscape">-->
 <!--        </activity>-->
     </application>
 
