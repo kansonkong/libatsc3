@@ -2,7 +2,7 @@ package org.ngbp.libatsc3.middleware;
 
 import android.util.Log;
 
-import org.ngbp.libatsc3.middleware.android.phy.interfaces.IPHYBridgeCallbacks;
+import org.ngbp.libatsc3.middleware.android.phy.interfaces.IAtsc3NdkPHYBridgeCallbacks;
 import org.ngbp.libatsc3.middleware.android.phy.models.BwPhyStatistics;
 import org.ngbp.libatsc3.middleware.android.phy.models.RfPhyStatistics;
 
@@ -18,10 +18,10 @@ public class Atsc3NdkPHYBridge {
 
     final static String TAG ="intf";
 
-    IPHYBridgeCallbacks mActivity;
+    IAtsc3NdkPHYBridgeCallbacks mActivity;
 
-    public Atsc3NdkPHYBridge(IPHYBridgeCallbacks iPHYBridgeCallbacks) {
-        mActivity = iPHYBridgeCallbacks;
+    public Atsc3NdkPHYBridge(IAtsc3NdkPHYBridgeCallbacks iAtsc3NdkPHYBridgeCallbacks) {
+        mActivity = iAtsc3NdkPHYBridgeCallbacks;
     }
 
     int onLogMsg(String msg) {

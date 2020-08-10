@@ -6,7 +6,7 @@ import org.ngbp.libatsc3.middleware.android.application.sync.mmt.MpuMetadata_HEV
 
 import java.io.File;
 
-public interface IApplicationBridgeCallbacks {
+public interface IAtsc3NdkApplicationBridgeCallbacks {
     public void showMsgFromNative(String message);
 
     public File jni_getCacheDir(); //hack, todo - move to pure NDK impl

@@ -4,7 +4,7 @@ import android.util.Log;
 
 import org.ngbp.libatsc3.middleware.android.a331.PackageExtractEnvelopeMetadataAndPayload;
 import org.ngbp.libatsc3.middleware.android.ATSC3PlayerFlags;
-import org.ngbp.libatsc3.middleware.android.application.interfaces.IApplicationBridgeCallbacks;
+import org.ngbp.libatsc3.middleware.android.application.interfaces.IAtsc3NdkApplicationBridgeCallbacks;
 import org.ngbp.libatsc3.middleware.android.application.sync.mmt.MfuByteBufferFragment;
 import org.ngbp.libatsc3.middleware.android.application.sync.mmt.MmtPacketIdContext;
 import org.ngbp.libatsc3.middleware.android.application.sync.mmt.MpuMetadata_HEVC_NAL_Payload;
@@ -20,10 +20,10 @@ public class Atsc3NdkApplicationBridge
 
     final static String TAG ="intf";
 
-    IApplicationBridgeCallbacks mActivity;
+    IAtsc3NdkApplicationBridgeCallbacks mActivity;
 
-    public Atsc3NdkApplicationBridge(IApplicationBridgeCallbacks iApplicationBridgeCallbacks) {
-        mActivity = iApplicationBridgeCallbacks;
+    public Atsc3NdkApplicationBridge(IAtsc3NdkApplicationBridgeCallbacks iAtsc3NdkApplicationBridgeCallbacks) {
+        mActivity = iAtsc3NdkApplicationBridgeCallbacks;
     }
 
     int onLogMsg(String msg) {
