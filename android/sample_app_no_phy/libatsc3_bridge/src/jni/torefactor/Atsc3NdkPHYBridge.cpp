@@ -15,6 +15,76 @@ int Atsc3NdkPHYBridge::Init()
     return 0;
 }
 
+int Atsc3NdkPHYBridge::Prepare(const char *strDevListInfo, int delim1, int delim2)
+{
+    // format example:  delim1 is colon, delim2 is comma
+    // "/dev/bus/usb/001/001:21,/dev/bus/usb/001/002:22"
+
+
+    return 0;
+}
+/*
+ * Open ... dongle device
+ * note: target device need to be populated before calling this api
+ *
+ * https://github.com/libusb/libusb/pull/242
+ */
+
+/** jjustman-2019-11-08 - todo: fix for double app launch */
+int Atsc3NdkPHYBridge::Open(int fd, int bus, int addr)
+{
+//    apiImpl.Init(this);
+//    apiImpl.Open(fd, bus, addr);
+    return 0;
+}
+
+int Atsc3NdkPHYBridge::atsc3_rx_callback_f(void* pData, uint64_t ullUser)
+{
+//    Atsc3NdkPHYBridge *me = (Atsc3NdkPHYBridge *)ullUser; // same as &api
+//    return me->RxCallbackJJ(pData);
+    return 0;
+}
+
+
+int Atsc3NdkPHYBridge::RxThread()
+{
+
+    return 0;
+
+
+}
+
+int Atsc3NdkPHYBridge::Tune(int freqKHz, int plpid)
+{
+//    apiImpl.Tune(freqKHz, plpid);
+
+    return 0;
+}
+
+int Atsc3NdkPHYBridge::Stop()
+{
+
+    return 0;
+}
+
+int Atsc3NdkPHYBridge::Reset()
+{
+
+    return 0;
+}
+
+int Atsc3NdkPHYBridge::Close()
+{
+
+    return 0;
+}
+
+int Atsc3NdkPHYBridge::Uninit()
+{
+
+    return 0;
+}
+
 void Atsc3NdkPHYBridge::LogMsg(const char *msg)
 {
     // this method can be called in native thread. we don't safely use pre-assigned mJniEnv.
@@ -44,6 +114,30 @@ void Atsc3NdkPHYBridge::LogMsgF(const char *fmt, ...)
     msg[sizeof(msg)-1] = 0;
     va_end(v);
     LogMsg(msg);
+}
+
+int Atsc3NdkPHYBridge::pinFromRxCaptureThread() {
+    printf("Atsc3NdkPHYBridge::Atsc3_Jni_Processing_Thread_Env: mJavaVM: %p", mJavaVM);
+    Atsc3_Jni_Processing_Thread_Env = new Atsc3JniEnv(mJavaVM);
+    return 0;
+};
+
+int Atsc3NdkPHYBridge::pinFromRxProcessingThread() {
+    printf("Atsc3NdkPHYBridge::pinFromRxProcessingThread: mJavaVM: %p", mJavaVM);
+    Atsc3_Jni_Processing_Thread_Env = new Atsc3JniEnv(mJavaVM);
+    return 0;
+}
+
+
+int Atsc3NdkPHYBridge::pinFromRxStatusThread() {
+    printf("Atsc3NdkPHYBridge::pinFromRxStatusThread: mJavaVM: %p", mJavaVM);
+    Atsc3_Jni_Status_Thread_Env = new Atsc3JniEnv(mJavaVM);
+    return 0;
+}
+
+//E_AT3_FESTAT
+void Atsc3NdkPHYBridge::RxStatusThread() {
+
 }
 
 void Atsc3NdkPHYBridge::atsc3_update_rf_stats(int32_t tuner_lock,
@@ -104,6 +198,47 @@ void Atsc3NdkPHYBridge::atsc3_update_rf_bw_stats(uint64_t total_pkts, uint64_t t
 //Java to native methods
 
 
+
+void Atsc3NdkPHYBridge::set_plp_settings(jint *a_plp_ids, jsize a_plp_size) {
+
+    uint8_t* u_plp_ids = (uint8_t*)calloc(a_plp_size, sizeof(uint8_t));
+    for(int i=0; i < a_plp_size; i++) {
+        u_plp_ids[i] = (uint8_t)a_plp_ids[i];
+    }
+
+    //AT3DRV_FE_SetPLP
+   // AT3DRV_FE_SetPLP(mhDevice, u_plp_ids, a_plp_size);
+
+}
+//
+////return -1 on service_id not found
+////return -2 on duplicate additional service_id request
+//int Atsc3NdkPHYBridge::atsc3_slt_alc_select_additional_service(int service_id) {
+//    //keep track of internally here which "additional service_id's" we have on monitor;
+//
+//    bool is_monitoring_duplicate = false;
+//    for(int i=0; i < atsc3_slt_alc_additional_services_monitored.size() && !is_monitoring_duplicate; i++) {
+//        if(atsc3_slt_alc_additional_services_monitored.at(i) == service_id) {
+//            //duplicate request
+//            is_monitoring_duplicate = true;
+//            continue;
+//        }
+//    }
+//
+//    if(is_monitoring_duplicate) {
+//        return -2;
+//    }
+//    atsc3_lls_slt_service_t* atsc3_lls_slt_service = atsc3_phy_mmt_player_bridge_add_monitor_a331_service_id(service_id);
+//    if(!atsc3_lls_slt_service) {
+//        return -1;
+//    }
+//
+//    atsc3_slt_alc_additional_services_monitored.push_back(service_id);
+//
+//    return 0;
+//}
+
+//--------------------------------------------------------------------------
 
 extern "C" JNIEXPORT jint JNICALL
 Java_org_ngbp_libatsc3_middleware_atsc3NdkPHYBridge_ApiInit(JNIEnv *env, jobject instance, jobject drvIntf)

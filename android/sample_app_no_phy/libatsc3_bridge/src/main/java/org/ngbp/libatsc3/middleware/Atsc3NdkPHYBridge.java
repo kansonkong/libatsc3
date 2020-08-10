@@ -30,18 +30,6 @@ public class Atsc3NdkPHYBridge {
         return 0;
     }
 
-    public native int ApiInit(Atsc3NdkPHYBridge intf);
-    public native int ApiPrepare(String devlist, int delimiter1, int delimiter2);
-    public native long[] ApiFindDeviceKey(boolean bPreBootDevice);
-    public native int ApiFwLoad(long key);
-    public native int ApiOpen(int fd, long key);
-    public native int ApiTune(int freqKhz, int plpid);
-    public native int ApiSetPLP(int[] aPlpIds);
-    public native int ApiStop();
-    public native int ApiClose();
-    public native int ApiReset();
-    public native int ApiUninit();
-
     public native int setRfPhyStatisticsViewVisible(boolean isRfPhyStatisticsVisible);
 
     int atsc3_rf_phy_status_callback(int rfstat_lock,
@@ -84,13 +72,5 @@ public class Atsc3NdkPHYBridge {
     int atsc3_updateRfBwStats(long total_pkts, long total_bytes, int total_lmts) {
         mActivity.pushBwPhyStatistics(new BwPhyStatistics(total_pkts, total_bytes, total_lmts));
         return 0;
-    }
-
-    static {
-        //jjustman:2019-11-24: cross reference and circular dependency with NXP_Tuner_Lib and SL API methods
-        //System.loadLibrary("NXP_Tuner_Lib");
-        //System.loadLibrary("SiTune_Tuner_Libs");
-
-        System.loadLibrary("Atsc3NdkPHYBridge");
     }
 }

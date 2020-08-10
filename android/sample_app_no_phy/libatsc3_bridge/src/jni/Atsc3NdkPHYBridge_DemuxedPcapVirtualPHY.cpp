@@ -499,7 +499,6 @@ Java_org_ngbp_libatsc3_sampleapp_atsc3NdkPHYBridge_DemuxedPcapVirtualPHY_ApiInit
     //wire up atsc3_phy_mmt_player_bridge
     //Atsc3NdkPHYBridge_DemuxedPcapVirtualPHY* at3DrvIntf_ptr
 
-    atsc3_phy_player_bridge_init(&api);
 
     printf("**** jni init OK");
     return 0;

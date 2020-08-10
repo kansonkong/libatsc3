@@ -44,7 +44,7 @@ class Atsc3NdkPHYBridge
 {
 public:
     Atsc3NdkPHYBridge(): mbInit(false), mbLoop(false), mbRun(false) {    }
-
+    
     /* phy callback method(s) */
     int atsc3_rx_callback_f(void*, uint64_t ullUser);
 
@@ -52,12 +52,17 @@ public:
     void LogMsg(const std::string &msg);
     void LogMsgF(const char *fmt, ...);
 
+    int pinFromRxCaptureThread();
+    int pinFromRxProcessingThread();
+    int pinFromRxStatusThread();
+
 
     int RxThread();
     Atsc3JniEnv* Atsc3_Jni_Capture_Thread_Env = NULL;
     Atsc3JniEnv* Atsc3_Jni_Processing_Thread_Env = NULL;
     Atsc3JniEnv* Atsc3_Jni_Status_Thread_Env = NULL;
 
+    void set_plp_settings(jint *a_plp_ids, jsize sa_plp_size);
 
 private:
     bool mbInit;
@@ -121,7 +126,23 @@ public:
     jmethodID   jni_java_util_ArrayList_add = nullptr;
 
 
-
+    //moving to "friend" scope
+    void atsc3_update_rf_stats(   int32_t tuner_lock,    //1
+                                  int32_t rssi,
+                                  uint8_t modcod_valid,
+                                  uint8_t plp_fec_type,
+                                  uint8_t plp_mod,
+                                  uint8_t plp_cod,
+                                  int32_t nRfLevel1000,
+                                  int32_t nSnr1000,
+                                  uint32_t ber_pre_ldpc_e7,
+                                  uint32_t ber_pre_bch_e9,
+                                  uint32_t fer_post_bch_e6,
+                                  uint8_t demod_lock,
+                                  uint8_t signal,
+                                  uint8_t plp_any,
+                                  uint8_t plp_all); //15
+    void atsc3_update_rf_bw_stats(uint64_t total_pkts, uint64_t total_bytes, unsigned int total_lmts);
 
 private:
     std::thread atsc3_rxStatusThread;

@@ -33,16 +33,41 @@ LIBATSC3C := \
 LIBATSC3CPP := \
     $(wildcard $(LOCAL_PATH)/../../../src/*.cpp)
 
+# LIBUSB := \
+#     $(wildcard $(LOCAL_PATH)/src/main/libusb/libusb/*.c)
+#     src/main/jni/atsc3NdkApplicationBridge.cpp \
+  #    src/main/jni/atsc3NdkPHYBridge.cpp \
+
 # jjustman-2020-08-10 - temporary - refactor this out...
 LOCAL_SRC_FILES += \
     $(LIBATSC3C:$(LOCAL_PATH)/%=%)  \
     $(LIBATSC3CPP:$(LOCAL_PATH)/%=%)
 
-#for libatsc3 application and phy interface includes
+
+#	$(LOCAL_PATH)/src/main/libusb/libusb/core.c \
+#	$(LOCAL_PATH)/src/main/libusb/libusb/descriptor.c \
+#	$(LOCAL_PATH)/src/main/libusb/libusb/hotplug.c \
+#	$(LOCAL_PATH)/src/main/libusb/libusb/io.c \
+#	$(LOCAL_PATH)/src/main/libusb/libusb/sync.c \
+#	$(LOCAL_PATH)/src/main/libusb/libusb/strerror.c \
+#	$(LOCAL_PATH)/src/main/libusb/libusb/os/linux_usbfs.c \
+#	$(LOCAL_PATH)/src/main/libusb/libusb/os/poll_posix.c \
+#	$(LOCAL_PATH)/src/main/libusb/libusb/os/threads_posix.c \
+#	$(LOCAL_PATH)/src/main/libusb/libusb/os/linux_netlink.c
+
+#udev:     $(LOCAL_PATH)/src/main/libusb/libusb/os/linux_usbfs.c \
+#          $(LOCAL_PATH)/src/main/libusb/libusb/os/linux_udev.c
+#                          -DUSE_UDEV
+
+#LOCAL_C_INCLUDES += $(LOCAL_PATH)/src/main/libusb
+#LOCAL_C_INCLUDES += $(LOCAL_PATH)/src/main/libusb/libusb
+#LOCAL_C_INCLUDES += $(LOCAL_PATH)/src/main/libusb/android
+#
+#LOCAL_C_INCLUDES += $(LOCAL_PATH)/src/main/jni
+#LOCAL_C_INCLUDES += $(LOCAL_PATH)/../../../src/
+
 LOCAL_C_INCLUDES += $(LOCAL_PATH)/../../../src/application
 LOCAL_C_INCLUDES += $(LOCAL_PATH)/../../../src/phy
-
-#for pcre2 include header
 LOCAL_C_INCLUDES += $(LOCAL_PATH)/libpcre/include
 
 LOCAL_SHARED_LIBRARIES := libpcre
