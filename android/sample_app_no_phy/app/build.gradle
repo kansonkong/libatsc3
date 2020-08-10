@@ -65,6 +65,7 @@ repositories {
 }
 dependencies {
     implementation project(':libatsc3_bridge')
+    implementation project(':libatsc3_phy_virtual')
 
     //implementation fileTree(dir: 'libs', include: ['*.jar', '*.so'])
     implementation 'com.android.support:appcompat-v7:28.0.0'

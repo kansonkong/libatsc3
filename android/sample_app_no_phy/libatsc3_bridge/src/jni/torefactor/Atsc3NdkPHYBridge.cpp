@@ -433,3 +433,6 @@ int Atsc3NdkPHYBridge::ListenPLP1(int plp1) {
     //apiImpl.ListenPLP1(plp1);
     return 0;
 }
+
+extern "C"
+JNIEXPORT jint

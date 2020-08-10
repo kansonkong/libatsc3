@@ -640,7 +640,7 @@ void Atsc3NdkApplicationBridge::atsc3_sls_on_held_trigger_received_callback_jni(
 
 void Atsc3NdkApplicationBridge::atsc3_onSlsTablePresent(const char *sls_payload_xml) {
     if (!JReady() || !atsc3_onSlsTablePresent_ID) {
-        NDK_APPLICATION_BRIDGE_ERROR("err: JReady: %d, atsc3_onSlsTablePresent_ID: %d",  JReady(), atsc3_onSlsTablePresent_ID);
+        NDK_APPLICATION_BRIDGE_ERROR("err: JReady: %d, atsc3_onSlsTablePresent_ID: %p",  JReady(), atsc3_onSlsTablePresent_ID);
 
         return;
     }
