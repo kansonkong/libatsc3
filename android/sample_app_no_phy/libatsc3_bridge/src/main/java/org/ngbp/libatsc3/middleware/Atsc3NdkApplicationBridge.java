@@ -187,14 +187,5 @@ public class Atsc3NdkApplicationBridge
         mActivity.routeDash_force_player_reload_mpd(service_id);
         return 0;
     }
-
-    static {
-        //jjustman:2019-11-24: cross reference and circular dependency with NXP_Tuner_Lib and SL API methods
-        //System.loadLibrary("NXP_Tuner_Lib");
-        //System.loadLibrary("SiTune_Tuner_Libs");
-
-        System.loadLibrary("Atsc3NdkApplicationBridge");
-    }
-
 }
 

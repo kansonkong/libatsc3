@@ -2,6 +2,8 @@ package org.ngbp.libatsc3.middleware.android.phy.virtual;
 
 import android.content.res.AssetManager;
 
+import org.ngbp.libatsc3.middleware.android.phy.BasePHY;
+
 /*
 
     to build JNI c interface:
@@ -15,7 +17,7 @@ javah -classpath ./bin/classes -d jni com.nvidia.example.fibonacci.FibonacciActi
 
 
  */
-public class DemuxedPcapVirtualPHY {
+public class DemuxedPcapVirtualPHY extends BasePHY {
 
     //libatsc3 methods here...
     public native int atsc3_pcap_open_for_replay(String filename);
@@ -23,8 +25,8 @@ public class DemuxedPcapVirtualPHY {
     public native int atsc3_pcap_thread_run();
     public native int atsc3_pcap_thread_stop();
 
-    static {
-        System.loadLibrary("libatsc3_DemuxedPcapVirtualPHY");
-    }
+//    static {
+//        System.loadLibrary("libatsc3_DemuxedPcapVirtualPHY");
+//    }
 
 }
