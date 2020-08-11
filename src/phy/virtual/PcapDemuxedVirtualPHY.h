@@ -51,23 +51,30 @@ public:
 
     int atsc3_pcap_replay_open_file(const char *filename);
     int atsc3_pcap_thread_run();
-    int atsc3_pcap_thread_stop();
+    int atsc3_pcap_thread_stop(); 							//will invoke cleanup of context
 
+    bool is_pcap_replay_running();
+    atsc3_pcap_replay_context_t* get_pcap_replay_context_status_volatile(); //treat this as const*
+
+    ~PcapDemuxedVirtualPHY() {
+    	atsc3_pcap_thread_stop(); //cleanup just to be sure..
+    }
 protected:
-
-    std::thread mhRxThread;
-
-    // statistics
-    uint32_t s_ulLastTickPrint;
-    uint64_t s_ullTotalBytes = 0;
-    uint64_t s_ullTotalPkts;
-    unsigned s_uTotalLmts = 0;
-    std::map<std::string, unsigned> s_mapIpPort;
 
     //pcap replay context and locals
     int PcapProducerThreadParserRun();
     int PcapConsumerThreadRun();
     int PcapLocalCleanup();
+
+    //overloadable callbacks for Android to pin mJavaVM as needed
+    virtual void pinPcapProducerThreadAsNeeded() { };
+    virtual void releasePinPcapProducerThreadAsNeeded() { };
+
+    virtual void pinPcapConsumerThreadAsNeeded() { };
+    virtual void releasePcapConsumerThreadAsNeeded() { };
+
+
+    //local member variables for pcap replay
 
     char*                           pcap_replay_filename = NULL;
     bool                            pcapThreadShouldRun;
@@ -79,16 +86,13 @@ protected:
     bool                            pcapConsumerShutdown = true;
 
     atsc3_pcap_replay_context_t*    atsc3_pcap_replay_context = NULL;
+
     queue<block_t*>                 pcap_replay_buffer_queue;
     mutex                           pcap_replay_buffer_queue_mutex;
     condition_variable              pcap_replay_condition;
 
-    //alc service monitoring
-    vector<int>                     atsc3_slt_alc_additional_services_monitored;
 
-    std::thread atsc3_rxStatusThread;
-    void RxStatusThread();
-    bool rxStatusThreadShouldRun;
+
 };
 
 #define PCAP_DEMUXED_VIRTUAL_PHY_ERROR(...)   	__LIBATSC3_TIMESTAMP_ERROR(__VA_ARGS__);

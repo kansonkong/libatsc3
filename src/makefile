@@ -35,12 +35,13 @@
 
 
 
-CFLAGS=-Wno-nullability-completeness -Wno-expansion-to-defined -Wno-builtin-requires-header
+CFLAGS=-Wno-nullability-completeness -Wno-expansion-to-defined -Wno-builtin-requires-header -Wno-c++11-extensions
+CXXFLAGS=-std=c++11 
 
 DEBUG=-g
 ASAN=-fsanitize=address -fno-omit-frame-pointer
 
-LOCAL_LD_LIBS=-lz -lm -lpthread -lpcap -lpcre2-8
+LOCAL_LD_LIBS=-lz -lm -lpthread -lpcap -lpcre2-8 -lstdc++
 LOCAL_LD_LIBS_NCURSES=$(LOCAL_LD_LIBS) -lncurses
 
 all: 	intermediate_lls \
@@ -54,12 +55,14 @@ all: 	intermediate_lls \
 		intermediate_a337 \
 		intermediate_a344 \
 		intermediate_ffplay \
+		intermediate_phy \
 		interemediate_gpl_and_mock_linkage  \
 		libatsc3_core   \
 		unit_tests \
 		libmicrohttpd_tests \
 		listener_tests \
 		a324_tests \
+		phy_tests \
 		tools \
 		atsc3_sl_phy
 
@@ -99,6 +102,8 @@ clean:
 	-rm -f listener_tests/atsc3_mmt_context_mfu_depacketizer_test
 	-rm -f listener_tests/atsc3_mmt_context_stpp_depacketizer_test
 	-rm -f a324_tests/a324_dstp_lls_aeat_emission_test	
+	-rm -f phy_tests/pcap_demuxed_virtual_phy_test
+	-rm -f phy_tests/pcap_demuxed_virtual_phy_test_noasan
 	-rm -f tools/atsc3_alc_listener_mde_writer
 	-rm -f tools/atsc3_alc_listener_mde_writer_asan
 	-rm -f tools/atsc3_alc_listener_mde_writer_malloc_debug	
@@ -156,6 +161,9 @@ intermediate_a337:	atsc3_sls_held_fragment.o
 intermediate_a344:	atsc3_a344_receiver_query_api.o				
 
 intermediate_ffplay: atsc3_player_ffplay.o
+
+intermediate_phy: PcapDemuxedVirtualPHY.o
+
 interemediate_gpl_and_mock_linkage: bento4_gpl_link \
 									bento4_mock_link
 libatsc3_core: libatsc3.o
@@ -203,6 +211,9 @@ listener_tests: listener_tests/atsc3_alc_listener_test \
 				listener_tests/atsc3_mmt_context_stpp_depacketizer_test
 
 a324_tests: a324_tests/a324_dstp_lls_aeat_emission_test
+
+phy_tests:	phy_tests/pcap_demuxed_virtual_phy_test \
+			phy_tests/pcap_demuxed_virtual_phy_test_noasan
 
 # real libatsc3 tools for lls, sls, mmt/route and flow analysis
 # only on linux...	tools/atsc3_alc_listener_mde_writer_malloc_debug \
@@ -307,10 +318,10 @@ atsc3_mmt_mpu_parser.o: atsc3_mmtp_packet_types.h atsc3_mmtp_parser.h atsc3_mmt_
 atsc3_mmt_mpu_sample_format_parser.o: atsc3_mmt_mpu_sample_format_type.h atsc3_mmt_mpu_sample_format_parser.h atsc3_mmt_mpu_sample_format_parser.c
 	cc $(CFLAGS) $(DEBUG)  -c atsc3_mmt_mpu_sample_format_parser.c
 
-atsc3_mmt_signalling_message_type.o:atsc3_mmt_signalling_message_type.h atsc3_mmt_signalling_message_type.c
-	cc $(CFLAGS) $(DEBUG)  -c atsc3_mmt_signalling_message_type.c
+atsc3_mmt_signalling_message_type.o: atsc3_mmt_signalling_message_type.h atsc3_mmt_signalling_message_type.c
+	cc $(CFLAGS) $(DEBUG) -c atsc3_mmt_signalling_message_type.c
 
-atsc3_mmt_signalling_message.o:atsc3_mmt_signalling_message_types.h atsc3_mmt_signalling_message.h atsc3_mmt_signalling_message.c 
+atsc3_mmt_signalling_message.o: atsc3_mmt_signalling_message_types.h atsc3_mmt_signalling_message.h atsc3_mmt_signalling_message.c 
 	cc $(CFLAGS) $(DEBUG)  -c atsc3_mmt_signalling_message.c
 
 atsc3_mmtp_ntp32_to_pts.o: atsc3_mmtp_ntp32_to_pts.c atsc3_mmtp_ntp32_to_pts.h
@@ -411,23 +422,27 @@ atsc3_pcre2_regex_utils.o: atsc3_pcre2_regex_utils.h atsc3_pcre2_regex_utils.c
 	cc $(CFLAGS) $(DEBUG)  -c atsc3_pcre2_regex_utils.c -o atsc3_pcre2_regex_utils.o
 
 atsc3_route_dash_utils.o: atsc3_route_dash_utils.h atsc3_route_dash_utils.c \
-							atsc3_pcre2_regex_utils.h atsc3_pcre2_regex_utils.c
-	
+							atsc3_pcre2_regex_utils.h atsc3_pcre2_regex_utils.c	
 	cc $(CFLAGS) $(DEBUG)  -c atsc3_route_dash_utils.c -o atsc3_route_dash_utils.o
-	
+
 atsc3_utils_sha256.o: atsc3_utils_sha256.h atsc3_utils_sha256.c
 	cc $(CFLAGS) $(DEBUG)  -c atsc3_utils_sha256.c -o atsc3_utils_sha256.o
-	
+
 atsc3_route_object.o:	atsc3_route_object.h atsc3_route_object.c
 	cc $(CFLAGS) $(DEBUG) \
 		-c atsc3_route_object.c \
 		-o atsc3_route_object.o
-	
+
 atsc3_sls_alc_flow.o:	atsc3_sls_alc_flow.h atsc3_sls_alc_flow.c
 	cc $(CFLAGS) $(DEBUG)  -c atsc3_sls_alc_flow.c -o atsc3_sls_alc_flow.o
-	
+
 avltree.o: libtree.h avl.c
 	cc $(CFLAGS) $(DEBUG)  -c avl.c -o avltree.o
+
+PcapDemuxedVirtualPHY.o: phy/virtual/PcapDemuxedVirtualPHY.h phy/virtual/PcapDemuxedVirtualPHY.cpp
+	g++ $(CFLAGS) $(CXXFLAGS) $(DEBUG) \
+		-c phy/virtual/PcapDemuxedVirtualPHY.cpp \
+		-o PcapDemuxedVirtualPHY.o  -I.
 
 # unit standalone tests with mock data
 
@@ -528,7 +543,8 @@ libatsc3_intermediate.o: atsc3_lls.o \
 		atsc3_utils_sha256.o \
 		atsc3_route_object.o \
 		atsc3_sls_alc_flow.o \
-		avltree.o
+		avltree.o \
+		PcapDemuxedVirtualPHY.o
 
 	ld  -o libatsc3_intermediate.o -r \
 		atsc3_lls.o \
@@ -591,8 +607,8 @@ libatsc3_intermediate.o: atsc3_lls.o \
 		atsc3_utils_sha256.o \
 		atsc3_route_object.o \
 		atsc3_sls_alc_flow.o \
-		avltree.o		
-		
+		avltree.o \
+		PcapDemuxedVirtualPHY.o
 
 libatsc3.o: libatsc3_intermediate.o bento4_mock.o
 	ld  -o libatsc3.o -r libatsc3_intermediate.o bento4_mock.o
@@ -698,7 +714,7 @@ test/atsc3_mime_multipart_related_parser_test: test/atsc3_mime_multipart_related
 	xml.o \
 	strnstr.o \
 	atsc3_utils.o -o test/atsc3_mime_multipart_related_parser_test
-	
+
 test/atsc3_package_mode_mime_multipart_related_parser_test: test/atsc3_package_mode_mime_multipart_related_parser_test.c \
 	atsc3_mbms_envelope_xml.o	\
 	atsc3_mime_multipart_related.o \
@@ -731,8 +747,7 @@ test/atsc3_package_mode_mime_multipart_related_parser_test: test/atsc3_package_m
 	xml.o \
 	strnstr.o \
 	atsc3_utils.o -o test/atsc3_package_mode_mime_multipart_related_parser_test
-	
-	
+
 test/atsc3_route_package_extract_test: test/atsc3_route_package_extract_test.c \
 	atsc3_mbms_envelope_xml.o	\
 	atsc3_mime_multipart_related.o \
@@ -769,7 +784,7 @@ test/atsc3_route_package_extract_test: test/atsc3_route_package_extract_test.c \
 	strnstr.o \
 	atsc3_utils_sha256.o \
 	atsc3_utils.o -o test/atsc3_route_package_extract_test
-	
+
 test/atsc3_route_package_extract_test_noasan: test/atsc3_route_package_extract_test.c \
 	atsc3_mbms_envelope_xml.o	\
 	atsc3_mime_multipart_related.o \
@@ -1037,6 +1052,22 @@ a324_tests/a324_dstp_lls_aeat_emission_test: a324_tests/a324_dstp_lls_aeat_emiss
 		$(LOCAL_LD_LIBS) \
 		-o a324_tests/a324_dstp_lls_aeat_emission_test
 
+# jjustman-2020-08-10 - phy tests
+
+phy_tests/pcap_demuxed_virtual_phy_test: phy_tests/PcapDemuxedVirtualPHYTest.cpp libatsc3_bento4_gpl.o
+	g++ $(ASAN) $(CFLAGS) $(CXXFLAGS) $(DEBUG) -I . \
+		phy_tests/PcapDemuxedVirtualPHYTest.cpp \
+		libatsc3_bento4_gpl.o \
+		$(LOCAL_LD_LIBS) \
+		-o phy_tests/pcap_demuxed_virtual_phy_test
+		
+phy_tests/pcap_demuxed_virtual_phy_test_noasan: phy_tests/PcapDemuxedVirtualPHYTest.cpp libatsc3_bento4_gpl.o
+	g++ $(CFLAGS) $(CXXFLAGS) $(DEBUG) -I . \
+		phy_tests/PcapDemuxedVirtualPHYTest.cpp \
+		libatsc3_bento4_gpl.o \
+		$(LOCAL_LD_LIBS) \
+		-o phy_tests/pcap_demuxed_virtual_phy_test_noasan
+
 # misc utils	
 # isobmfftrackjoiner: bento4/ISOBMFFTrackJoiner.cpp bento4/ISOBMFFTrackJoiner.h atsc3_utils.o \
 #					atsc3_lls_sls_monitor_output_buffer_utils.o atsc3_player_ffplay.o
@@ -1130,14 +1161,14 @@ tools/atsc3_alc_listener_mde_writer: tools/atsc3_alc_listener_mde_writer.cpp	lib
 		-I../bento/include/ \
 		$(LOCAL_LD_LIBS) \
 		-o tools/atsc3_alc_listener_mde_writer
-		
+
 tools/atsc3_alc_listener_mde_writer_asan: tools/atsc3_alc_listener_mde_writer.cpp	libatsc3_bento4_gpl.o
 	g++ $(ASAN) $(CFLAGS) $(DEBUG)  tools/atsc3_alc_listener_mde_writer.cpp \
 		libatsc3_bento4_gpl.o \
 		-I../bento/include/ \
 		$(LOCAL_LD_LIBS) \
 		-o tools/atsc3_alc_listener_mde_writer_asan
-		
+
 #		
 # tools/atsc3_alc_listener_mde_writer_malloc_debug: tools/atsc3_alc_listener_mde_writer.cpp	libatsc3_bento4_gpl.o
 #	g++ -D __MALLOC_DEBUGGING \

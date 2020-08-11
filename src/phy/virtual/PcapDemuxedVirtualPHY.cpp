@@ -1,34 +1,5 @@
 #include "PcapDemuxedVirtualPHY.h"
 
-int PcapDemuxedVirtualPHY::Init()
-{
-    printf("%s:%s:TODO", __FILE__, __func__);
-
-  //  mbInit = true;
-    return 0;
-}
-
-int PcapDemuxedVirtualPHY::Prepare(const char *strDevListInfo, int delim1, int delim2)
-{
-    // format example:  delim1 is colon, delim2 is comma
-    // "/dev/bus/usb/001/001:21,/dev/bus/usb/001/002:22"
-
-
-    return 0;
-}
-/*
- * Open ... dongle device
- * note: target device need to be populated before calling this api
- *
- * https://github.com/libusb/libusb/pull/242
- */
-
-/** jjustman-2019-11-08 - todo: fix for double app launch */
-int PcapDemuxedVirtualPHY::Open(int fd, int bus, int addr)
-{
-    return 0;
-}
-
 int PcapDemuxedVirtualPHY::atsc3_pcap_replay_open_file(const char *filename) {
 
     atsc3_pcap_replay_context = atsc3_pcap_replay_open_filename(filename);
@@ -38,6 +9,121 @@ int PcapDemuxedVirtualPHY::atsc3_pcap_replay_open_file(const char *filename) {
     }
     return 0;
 }
+
+
+//jjustman-2020-08-10: todo - mutex guard this
+int PcapDemuxedVirtualPHY::atsc3_pcap_thread_run() {
+    pcapThreadShouldRun = false;
+    PCAP_DEMUXED_VIRTUAL_PHY_INFO("atsc3_pcap_thread_run: checking for previous pcap_thread: producerShutdown: %d, consumerShutdown: %d", pcapProducerShutdown, pcapConsumerShutdown);
+
+
+    while(!pcapProducerShutdown || !pcapConsumerShutdown) {
+    	usleep(100000);
+        PCAP_DEMUXED_VIRTUAL_PHY_INFO("atsc3_pcap_thread_run: waiting for shutdown for previous pcap_thread: producerShutdown: %d, consumerShutdown: %d", pcapProducerShutdown, pcapConsumerShutdown);
+    }
+
+    if(pcapProducerThreadPtr.joinable()) {
+		pcapProducerThreadPtr.join();
+	}
+	if(pcapConsumerThreadPtr.joinable()) {
+		pcapConsumerThreadPtr.join();
+	}
+
+    pcapThreadShouldRun = true;
+    PCAP_DEMUXED_VIRTUAL_PHY_INFO("atsc3_pcap_thread_run: setting pcapthreadShouldRun: %d", pcapThreadShouldRun);
+
+    pcapProducerThreadPtr = std::thread([this](){
+		pcapProducerShutdown = false;
+    	pinPcapProducerThreadAsNeeded();
+
+        PCAP_DEMUXED_VIRTUAL_PHY_INFO("PcapDemuxedVirtualPHY::atsc3_pcap_producer_thread_run with this: %p", this);
+        this->PcapProducerThreadParserRun();
+        releasePinPcapProducerThreadAsNeeded();
+    });
+
+    pcapConsumerThreadPtr = std::thread([this](){
+    	pcapConsumerShutdown = false;
+		pinPcapConsumerThreadAsNeeded();
+        PCAP_DEMUXED_VIRTUAL_PHY_INFO("PcapDemuxedVirtualPHY::atsc3_pcap_consumer_thread_run with this: %p", this);
+
+        this->PcapConsumerThreadRun();
+        releasePcapConsumerThreadAsNeeded();
+    });
+
+    PCAP_DEMUXED_VIRTUAL_PHY_INFO("atsc3_pcap_thread_run: threads created, pcapProducerThreadPtr id: 0x%08x, pcapConsumerThreadPtr id: 0x%08x",
+    		pcapProducerThreadPtr.get_id(),
+			pcapConsumerThreadPtr.get_id());
+
+    return 0;
+}
+
+int PcapDemuxedVirtualPHY::PcapLocalCleanup() {
+    int spinlock_count = 0;
+    while(spinlock_count++ < 10 && (!pcapProducerShutdown || !pcapConsumerShutdown)) {
+        PCAP_DEMUXED_VIRTUAL_PHY_INFO("PcapDemuxedVirtualPHY::PcapLocalCleanup: waiting for pcapProducerShutdown: %d, pcapConsumerShutdown: %d, pcapThreadShouldRun: %d",
+                pcapProducerShutdown, pcapConsumerShutdown, pcapThreadShouldRun);
+        usleep(100000);
+    }
+    //release any local resources held in our context
+    atsc3_pcap_replay_free(&atsc3_pcap_replay_context);
+
+    //release any remaining block_t* payloads in pcap_replay_buffer_queue
+    while(pcap_replay_buffer_queue.size()) {
+        block_t* to_free = pcap_replay_buffer_queue.front();
+        pcap_replay_buffer_queue.pop();
+        block_Destroy(&to_free);
+    }
+
+//    if(pcap_replay_asset_ref_ptr) {
+//        AAsset_close(pcap_replay_asset_ref_ptr);
+//        pcap_replay_asset_ref_ptr = NULL;
+//    }
+//
+//    //we can close the asset reference, but don't close the AAssetManager GlobalReference
+//    if(global_pcap_asset_manager_ref) {
+//        Atsc3JniEnv env(mJavaVM);
+//        if (!env) {
+//            PCAP_DEMUXED_VIRTUAL_PHY_ERROR("!! err on get jni env");
+//        } else {
+//            env.Get()->DeleteGlobalRef(global_pcap_asset_manager_ref);
+//        }
+//        global_pcap_asset_manager_ref = NULL;
+//    }
+
+    if(pcap_replay_filename) {
+        free(pcap_replay_filename);
+        pcap_replay_filename = NULL;
+    }
+
+    return 0;
+}
+
+bool PcapDemuxedVirtualPHY::is_pcap_replay_running() {
+	return !pcapProducerShutdown && !pcapConsumerShutdown;
+}
+
+atsc3_pcap_replay_context_t* PcapDemuxedVirtualPHY::get_pcap_replay_context_status_volatile() {
+	return atsc3_pcap_replay_context;
+}
+
+
+int PcapDemuxedVirtualPHY::atsc3_pcap_thread_stop() {
+
+    pcapThreadShouldRun = false;
+    PCAP_DEMUXED_VIRTUAL_PHY_INFO("PcapDemuxedVirtualPHY::atsc3_pcap_thread_stop with this: %p", &pcapProducerThreadPtr);
+    if(pcapProducerThreadPtr.joinable()) {
+        pcapProducerThreadPtr.join();
+    }
+
+    if(pcapConsumerThreadPtr.joinable()) {
+        pcapConsumerThreadPtr.join();
+    }
+    PCAP_DEMUXED_VIRTUAL_PHY_INFO("PcapDemuxedVirtualPHY::atsc3_pcap_thread_stop: stopped with this: %p", &pcapProducerThreadPtr);
+
+    PcapLocalCleanup();
+    return 0;
+}
+
 
 /**
  * TODO:  jjustman-2019-10-10: implement pcap replay in new superclass
@@ -99,6 +185,7 @@ int PcapDemuxedVirtualPHY::PcapProducerThreadParserRun() {
                     //printf("PcapDemuxedVirtualPHY::PcapProducerThreadRun - signalling notify_one at count: %d", pushed_count);
                 }
                 //cleanup happens on the consumer thread for dispatching
+                pcapThreadShouldRun = !atsc3_pcap_replay_check_file_pos_is_eof(atsc3_pcap_replay_local_context);
             }
         }
     }
@@ -125,9 +212,9 @@ int PcapDemuxedVirtualPHY::PcapProducerThreadParserRun() {
 
 int PcapDemuxedVirtualPHY::PcapConsumerThreadRun() {
 
-
+    queue<block_t *> to_dispatch_queue; //perform a shallow copy so we can exit critical section asap
+    queue<block_t *> to_purge_queue; //perform a shallow copy so we can exit critical section asap
     while (pcapThreadShouldRun) {
-        queue<block_t *> to_dispatch_queue; //perform a shallow copy so we can exit critical section asap
         {
             //critical section
             unique_lock<mutex> condition_lock(pcap_replay_buffer_queue_mutex);
@@ -143,16 +230,47 @@ int PcapDemuxedVirtualPHY::PcapConsumerThreadRun() {
 
         //printf("PcapDemuxedVirtualPHY::PcapConsumerThreadRun - pushing %d packets", to_dispatch_queue.size());
         while(to_dispatch_queue.size()) {
-            block_t *phy_payload_to_process = to_dispatch_queue.front();
+            block_t* phy_payload_to_process = to_dispatch_queue.front();
             //jjustman-2019-11-06 moved  to semaphore producer/consumer thread for processing pcap replay in time-sensitive phy simulation
-            atsc3_core_service_bridge_process_packet_phy(phy_payload_to_process);
 
+            if(this->atsc3_rx_udp_packet_process_callback) {
+            	this->atsc3_rx_udp_packet_process_callback(phy_payload_to_process);
+            }
+
+            to_purge_queue.push(phy_payload_to_process);
             to_dispatch_queue.pop();
-            block_Destroy(&phy_payload_to_process);
         }
+
+        while(to_purge_queue.size()) {
+            block_t *phy_payload_to_purge = to_purge_queue.front();
+            to_purge_queue.pop();
+            block_Destroy(&phy_payload_to_purge);
+        }
+
     }
     pcapConsumerShutdown = true;
 
+    return 0;
+}
+
+
+
+/*
+ * default IPHY impl's here
+ */
+
+int PcapDemuxedVirtualPHY::Init()
+{
+    return 0;
+}
+
+int PcapDemuxedVirtualPHY::Prepare(const char *strDevListInfo, int delim1, int delim2)
+{
+    return 0;
+}
+
+int PcapDemuxedVirtualPHY::Open(int fd, int bus, int addr)
+{
     return 0;
 }
 
@@ -181,118 +299,3 @@ int PcapDemuxedVirtualPHY::Uninit()
     return 0;
 }
 
-
-int PcapDemuxedVirtualPHY::atsc3_pcap_thread_run() {
-    pcapThreadShouldRun = false;
-    PCAP_DEMUXED_VIRTUAL_PHY_INFO("atsc3_pcap_thread_run: checking for previous pcap_thread: producerShutdown: %d, consumerShutdown: %d", pcapProducerShutdown, pcapConsumerShutdown);
-
-    if(pcapProducerThreadPtr.joinable()) {
-        pcapProducerThreadPtr.join();
-    }
-    if(pcapConsumerThreadPtr.joinable()) {
-        pcapConsumerThreadPtr.join();
-    }
-    usleep(500000);
-
-    //jjustman-2019-11-05 - TODO: make sure mhRxThread is terminated before we instantiate a new
-    pcapThreadShouldRun = true;
-
-//    pcapProducerThreadPtr = std::thread([this](){
-//        atsc3_jni_pcap_producer_thread_env = new Atsc3JniEnv(mJavaVM);
-//
-//        PCAP_DEMUXED_VIRTUAL_PHY_INFO("PcapDemuxedVirtualPHY::atsc3_pcap_producer_thread_run with this: %p", this);
-//
-//        this->PcapProducerThreadParserRun();
-//        delete atsc3_jni_pcap_producer_thread_env;
-//    });
-//
-//    pcapConsumerThreadPtr = std::thread([this](){
-//        atsc3_jni_pcap_consumer_thread_env = new Atsc3JniEnv(mJavaVM);
-//        Atsc3_Jni_Processing_Thread_Env = atsc3_jni_pcap_consumer_thread_env; //hack
-//        PCAP_DEMUXED_VIRTUAL_PHY_INFO("PcapDemuxedVirtualPHY::atsc3_pcap_consumer_thread_run with this: %p", this);
-//
-//        this->PcapConsumerThreadRun();
-//        Atsc3_Jni_Processing_Thread_Env = NULL;
-//        delete atsc3_jni_pcap_consumer_thread_env;
-//    });
-
-
-    return 0;
-}
-//
-//int PcapDemuxedVirtualPHY::pinFromRxCaptureThread() {
-////    printf("PcapDemuxedVirtualPHY::Atsc3_Jni_Processing_Thread_Env: mJavaVM: %p", mJavaVM);
-////    Atsc3_Jni_Processing_Thread_Env = new Atsc3JniEnv(mJavaVM);
-//    return 0;
-//};
-//
-//int PcapDemuxedVirtualPHY::pinFromRxProcessingThread() {
-////    printf("PcapDemuxedVirtualPHY::pinFromRxProcessingThread: mJavaVM: %p", mJavaVM);
-////    Atsc3_Jni_Processing_Thread_Env = new Atsc3JniEnv(mJavaVM);
-//    return 0;
-//}
-//
-//
-//int PcapDemuxedVirtualPHY::pinFromRxStatusThread() {
-////    printf("PcapDemuxedVirtualPHY::pinFromRxStatusThread: mJavaVM: %p", mJavaVM);
-////    Atsc3_Jni_Status_Thread_Env = new Atsc3JniEnv(mJavaVM);
-//    return 0;
-//}
-
-int PcapDemuxedVirtualPHY::PcapLocalCleanup() {
-    int spinlock_count = 0;
-    while(spinlock_count++ < 10 && (!pcapProducerShutdown || !pcapConsumerShutdown)) {
-        PCAP_DEMUXED_VIRTUAL_PHY_INFO("PcapDemuxedVirtualPHY::PcapLocalCleanup: waiting for pcapProducerShutdown: %d, pcapConsumerShutdown: %d, pcapThreadShouldRun: %d",
-                pcapProducerShutdown, pcapConsumerShutdown, pcapThreadShouldRun);
-        sleep(1);
-    }
-    //release any local resources held in our context
-    atsc3_pcap_replay_free(&atsc3_pcap_replay_context);
-
-    //release any remaining block_t* payloads in pcap_replay_buffer_queue
-    while(pcap_replay_buffer_queue.size()) {
-        block_t* to_free = pcap_replay_buffer_queue.front();
-        pcap_replay_buffer_queue.pop();
-        block_Destroy(&to_free);
-    }
-
-//    if(pcap_replay_asset_ref_ptr) {
-//        AAsset_close(pcap_replay_asset_ref_ptr);
-//        pcap_replay_asset_ref_ptr = NULL;
-//    }
-//
-//    //we can close the asset reference, but don't close the AAssetManager GlobalReference
-//    if(global_pcap_asset_manager_ref) {
-//        Atsc3JniEnv env(mJavaVM);
-//        if (!env) {
-//            PCAP_DEMUXED_VIRTUAL_PHY_ERROR("!! err on get jni env");
-//        } else {
-//            env.Get()->DeleteGlobalRef(global_pcap_asset_manager_ref);
-//        }
-//        global_pcap_asset_manager_ref = NULL;
-//    }
-
-    if(pcap_replay_filename) {
-        free(pcap_replay_filename);
-        pcap_replay_filename = NULL;
-    }
-
-    return 0;
-}
-
-int PcapDemuxedVirtualPHY::atsc3_pcap_thread_stop() {
-
-    pcapThreadShouldRun = false;
-    PCAP_DEMUXED_VIRTUAL_PHY_INFO("PcapDemuxedVirtualPHY::atsc3_pcap_thread_stop with this: %p", &pcapProducerThreadPtr);
-    if(pcapProducerThreadPtr.joinable()) {
-        pcapProducerThreadPtr.join();
-    }
-
-    if(pcapConsumerThreadPtr.joinable()) {
-        pcapConsumerThreadPtr.join();
-    }
-    PCAP_DEMUXED_VIRTUAL_PHY_INFO("PcapDemuxedVirtualPHY::atsc3_pcap_thread_stop: stopped with this: %p", &pcapProducerThreadPtr);
-
-    PcapLocalCleanup();
-    return 0;
-}

@@ -14,6 +14,14 @@
 int _ATSC3_PCAP_TYPE_DEBUG_ENABLED = 0;
 int _ATSC3_PCAP_TYPE_TRACE_ENABLED = 0;
 
+atsc3_pcap_replay_context_t* atsc3_pcap_replay_context_new() {
+	atsc3_pcap_replay_context_t* atsc3_pcap_replay_context = calloc(1, sizeof(atsc3_pcap_replay_context_t));
+
+	//jjustman-2020-08-11 - pre-allocate our block_t for ~MAX_ATSC3_ETHERNET_PHY_FRAME_LENGTH 1518 bytes and then use block_Resize to adjust as needed (will null out slab alloc past p_size)
+	atsc3_pcap_replay_context->atsc3_pcap_packet_instance.current_pcap_packet = block_Alloc(MAX_ATSC3_ETHERNET_PHY_FRAME_LENGTH);
+
+	return atsc3_pcap_replay_context;
+}
 /**
  *
  * either:
@@ -33,7 +41,8 @@ size = st.st_size;
  */
 
 atsc3_pcap_replay_context_t* atsc3_pcap_replay_open_filename(const char* pcap_filename) {
-	atsc3_pcap_replay_context_t* atsc3_pcap_replay_context = calloc(1, sizeof(atsc3_pcap_replay_context_t));
+	atsc3_pcap_replay_context_t* atsc3_pcap_replay_context = atsc3_pcap_replay_context_new();
+
 	atsc3_pcap_replay_context->pcap_file_name = calloc(strlen(pcap_filename) + 1, sizeof(char));
 	strncpy(atsc3_pcap_replay_context->pcap_file_name, pcap_filename, strlen(pcap_filename));
 
@@ -72,7 +81,7 @@ atsc3_pcap_replay_context_t* atsc3_pcap_replay_open_from_fd(const char* pcap_fil
         return NULL;
     }
 
-    atsc3_pcap_replay_context_t* atsc3_pcap_replay_context = calloc(1, sizeof(atsc3_pcap_replay_context_t));
+    atsc3_pcap_replay_context_t* atsc3_pcap_replay_context = atsc3_pcap_replay_context_new();
     atsc3_pcap_replay_context->pcap_file_name = calloc(strlen(pcap_filename) + 1, sizeof(char));
     strncpy(atsc3_pcap_replay_context->pcap_file_name, pcap_filename, strlen(pcap_filename));
 
@@ -102,10 +111,7 @@ atsc3_pcap_replay_context_t* atsc3_pcap_replay_iterate_packet(atsc3_pcap_replay_
 		return NULL;
 	}
 
-	if(atsc3_pcap_replay_context_to_iterate->atsc3_pcap_packet_instance.current_pcap_packet) {
-		//_ATSC3_PCAP_TYPE_DEBUG("block_Destroy on packet: %p", atsc3_pcap_replay_context_to_iterate->atsc3_pcap_packet_instance.current_pcap_packet);
-		block_Destroy(&atsc3_pcap_replay_context_to_iterate->atsc3_pcap_packet_instance.current_pcap_packet);
-	}
+
     
     //jjustman-2019-10-11 - clear our our last packet header, but not not overwrite block_t* ptr to packet payload
 	memset(&atsc3_pcap_replay_context_to_iterate->atsc3_pcap_packet_instance.atsc3_pcap_packet_header, 0, ATSC3_PCAP_PACKET_HEADER_SIZE_BYTES);
@@ -134,7 +140,16 @@ atsc3_pcap_replay_context_t* atsc3_pcap_replay_iterate_packet(atsc3_pcap_replay_
 	//jjustman-2020-01-16 - fixme? should just be packet header size?
 	atsc3_pcap_replay_context_to_iterate->pcap_file_pos += sizeof(atsc3_pcap_global_header_t) + sizeof(atsc3_pcap_packet_header_t);
 
-	atsc3_pcap_replay_context_to_iterate->atsc3_pcap_packet_instance.current_pcap_packet = block_Alloc(atsc3_pcap_replay_context_to_iterate->atsc3_pcap_packet_instance.atsc3_pcap_packet_header.incl_len);
+	//jjustman-2020-08-11 - don't re-allocate if we are the same block size, just rewind
+	if(atsc3_pcap_replay_context_to_iterate->atsc3_pcap_packet_instance.current_pcap_packet) {
+		block_Resize(atsc3_pcap_replay_context_to_iterate->atsc3_pcap_packet_instance.current_pcap_packet, atsc3_pcap_replay_context_to_iterate->atsc3_pcap_packet_instance.atsc3_pcap_packet_header.incl_len);
+		block_Rewind(atsc3_pcap_replay_context_to_iterate->atsc3_pcap_packet_instance.current_pcap_packet);
+	}
+
+	if(!atsc3_pcap_replay_context_to_iterate->atsc3_pcap_packet_instance.current_pcap_packet) {
+		_ATSC3_PCAP_TYPE_INFO("block_Alloc on packet, current_pcap_packet was null, new size: %d", atsc3_pcap_replay_context_to_iterate->atsc3_pcap_packet_instance.atsc3_pcap_packet_header.incl_len);
+		atsc3_pcap_replay_context_to_iterate->atsc3_pcap_packet_instance.current_pcap_packet = block_Alloc(atsc3_pcap_replay_context_to_iterate->atsc3_pcap_packet_instance.atsc3_pcap_packet_header.incl_len);
+	}
 
 	_ATSC3_PCAP_TYPE_DEBUG("PEEK: Reading packet: %d, size: %d, fpos is: %ld, next emission: ts_sec: %u, ts_usec: %u",
                            atsc3_pcap_replay_context_to_iterate->pcap_read_packet_count,
@@ -228,6 +243,14 @@ atsc3_pcap_replay_context_t* atsc3_pcap_replay_usleep_packet(atsc3_pcap_replay_c
     return atsc3_pcap_replay_context_to_iterate;
 }
 
+bool atsc3_pcap_replay_check_file_pos_is_eof(atsc3_pcap_replay_context_t* atsc3_pcap_replay_context_to_iterate) {
+
+	if(atsc3_pcap_replay_context_to_iterate->pcap_file_pos >= atsc3_pcap_replay_context_to_iterate->pcap_file_len) {
+		return true;
+	}
+
+	return false;
+}
 
 void atsc3_pcap_replay_free(atsc3_pcap_replay_context_t** atsc3_pcap_replay_context_p) {
 	if(atsc3_pcap_replay_context_p) {
