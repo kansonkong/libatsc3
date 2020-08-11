@@ -38,9 +38,9 @@
 CFLAGS=-Wno-nullability-completeness -Wno-expansion-to-defined -Wno-builtin-requires-header -Wno-c++11-extensions
 CXXFLAGS=-std=c++11 
 
-# DEBUG=-g -O1
+DEBUG=-g -O1
 
-DEBUG=-g -fsanitize=address -fno-omit-frame-pointer -fno-optimize-sibling-calls -O1 -fsanitize-address-use-after-scope
+#DEBUG=-g -fsanitize=address -fno-omit-frame-pointer -fno-optimize-sibling-calls -O1 -fsanitize-address-use-after-scope
 ASAN=-fsanitize=address -fno-omit-frame-pointer -fno-optimize-sibling-calls -O1 -fsanitize-address-use-after-scope
 
 LOCAL_LD_LIBS=-lz -lm -lpthread -lpcap -lpcre2-8 -lstdc++
