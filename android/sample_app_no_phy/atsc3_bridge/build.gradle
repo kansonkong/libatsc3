@@ -52,6 +52,5 @@ repositories {
     google()
 }
 dependencies {
-    // doesn't leak..i.e. won't compile? implementation project(':libatsc3_core')
-    api project(':atsc3_core')
+    api project(':libatsc3_core')
 }

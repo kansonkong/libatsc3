@@ -1,6 +1,6 @@
 rootProject.name='libatsc3 Android Sample App (w PHY)'
 
-include ':atsc3_core'
+include ':libatsc3_core'
 include ':atsc3_bridge'
 include ':atsc3_phy_virtual'
 include ':app'

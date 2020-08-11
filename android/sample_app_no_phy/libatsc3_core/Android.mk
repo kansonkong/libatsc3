@@ -1,7 +1,10 @@
 # Android.mk for libatsc3 Android sample app
 #
 #
-# jjustman@ngbp.org - for libatsc3 inclusion 2019-09-28
+# jjustman@ngbp.org - for libatsc3 multi-module project 2020-08-10
+# output artifact:
+#	local module: libatsc3_core
+#	prefab LOCAL_SHARED_LIBRARIES: atsc3_core
 
 # global pathing
 
@@ -25,7 +28,7 @@ LOCAL_PATH := $(MY_LOCAL_PATH)
 include $(CLEAR_VARS)
 # LOCAL_ALLOW_UNDEFINED_SYMBOLS=true
 
-LOCAL_MODULE := atsc3_core
+LOCAL_MODULE := libatsc3_core
 
 LIBATSC3C := \
     $(wildcard $(LOCAL_PATH)/../../../src/*.c)
