@@ -37,7 +37,7 @@ LIBATSC3CPP := \
     $(wildcard $(LOCAL_PATH)/../../../src/*.cpp)
 
 LIBATSC3PHYVIRTUALCPP := \
-    $(wildcard $(LOCAL_PATH)/../../../src/phy/virtual*.cpp)
+    $(wildcard $(LOCAL_PATH)/../../../src/phy/virtual/*.cpp)
 
 # jjustman-2020-08-10 - temporary - refactor this out...
 LOCAL_SRC_FILES += \
@@ -49,6 +49,8 @@ LOCAL_SRC_FILES += \
 LOCAL_C_INCLUDES += $(LOCAL_PATH)/../../../src
 LOCAL_C_INCLUDES += $(LOCAL_PATH)/../../../src/application
 LOCAL_C_INCLUDES += $(LOCAL_PATH)/../../../src/phy
+LOCAL_C_INCLUDES += $(LOCAL_PATH)/../../../src/phy/virtual
+
 
 #for pcre2 include header
 LOCAL_C_INCLUDES += $(LOCAL_PATH)/libpcre/include

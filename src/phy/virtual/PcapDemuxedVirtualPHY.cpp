@@ -1,13 +1,10 @@
 #include "PcapDemuxedVirtualPHY.h"
-#include "atsc3_core_service_player_bridge.h"
-
-PcapDemuxedVirtualPHY api;
 
 int PcapDemuxedVirtualPHY::Init()
 {
     printf("%s:%s:TODO", __FILE__, __func__);
 
-    mbInit = true;
+  //  mbInit = true;
     return 0;
 }
 
@@ -32,17 +29,10 @@ int PcapDemuxedVirtualPHY::Open(int fd, int bus, int addr)
     return 0;
 }
 
-int PcapDemuxedVirtualPHY::atsc3_rx_callback_f(void* pData, uint64_t ullUser)
-{
-//    PcapDemuxedVirtualPHY *me = (PcapDemuxedVirtualPHY *)ullUser; // same as &api
-//    return me->RxCallbackJJ(pData);
-    return 0;
-}
-
 int PcapDemuxedVirtualPHY::atsc3_pcap_replay_open_file(const char *filename) {
 
     atsc3_pcap_replay_context = atsc3_pcap_replay_open_filename(filename);
-    LogMsgF("PcapDemuxedVirtualPHY::atsc3_pcap_replay_open_file: file: %s, replay context: %p", filename, atsc3_pcap_replay_context);
+    PCAP_DEMUXED_VIRTUAL_PHY_INFO("PcapDemuxedVirtualPHY::atsc3_pcap_replay_open_file: file: %s, replay context: %p", filename, atsc3_pcap_replay_context);
     if(!atsc3_pcap_replay_context) {
         return -1;
     }
@@ -63,10 +53,10 @@ int PcapDemuxedVirtualPHY::PcapProducerThreadParserRun() {
 
     int packet_push_count = 0;
 
-    LogMsgF("PcapDemuxedVirtualPHY::PcapProducerThreadParserRun with this: %p", this);
+    PCAP_DEMUXED_VIRTUAL_PHY_INFO("PcapDemuxedVirtualPHY::PcapProducerThreadParserRun with this: %p", this);
 
     if(!atsc3_pcap_replay_context) {
-        LogMsgF("PcapDemuxedVirtualPHY::PcapProducerThreadParserRun - ERROR - no atsc3_pcap_replay_context!");
+        PCAP_DEMUXED_VIRTUAL_PHY_INFO("PcapDemuxedVirtualPHY::PcapProducerThreadParserRun - ERROR - no atsc3_pcap_replay_context!");
         pcapThreadShouldRun = false;
         return -1;
     }
@@ -86,7 +76,7 @@ int PcapDemuxedVirtualPHY::PcapProducerThreadParserRun() {
                 block_t* phy_payload = block_Duplicate_from_position(atsc3_pcap_replay_local_context->atsc3_pcap_packet_instance.current_pcap_packet);
                 block_Rewind(atsc3_pcap_replay_local_context->atsc3_pcap_packet_instance.current_pcap_packet);
                 if(phy_payload->p_size && (packet_push_count++ % 10000) == 0) {
-                    LogMsgF("PcapDemuxedVirtualPHY::RunPcapThreadParser - pushing to atsc3_core_service_bridge_process_packet_phy: count: %d, len was: %d, new payload: %p (0x%02x 0x%02x), len: %d",
+                    PCAP_DEMUXED_VIRTUAL_PHY_INFO("PcapDemuxedVirtualPHY::RunPcapThreadParser - pushing to atsc3_core_service_bridge_process_packet_phy: count: %d, len was: %d, new payload: %p (0x%02x 0x%02x), len: %d",
                             packet_push_count,
                             atsc3_pcap_replay_local_context->atsc3_pcap_packet_instance.current_pcap_packet->p_size,
                             phy_payload,
@@ -120,9 +110,9 @@ int PcapDemuxedVirtualPHY::PcapProducerThreadParserRun() {
     }
 
     if(!atsc3_pcap_replay_local_context) {
-        LogMsgF("PcapDemuxedVirtualPHY::RunPcapThreadParser - unwinding thread, end of file!");
+        PCAP_DEMUXED_VIRTUAL_PHY_INFO("PcapDemuxedVirtualPHY::RunPcapThreadParser - unwinding thread, end of file!");
     } else {
-        LogMsgF("PcapDemuxedVirtualPHY::RunPcapThreadParser - unwinding thread, pcapThreadShouldRun is false");
+        PCAP_DEMUXED_VIRTUAL_PHY_INFO("PcapDemuxedVirtualPHY::RunPcapThreadParser - unwinding thread, pcapThreadShouldRun is false");
     }
 
     pcapProducerShutdown = true;
@@ -166,14 +156,6 @@ int PcapDemuxedVirtualPHY::PcapConsumerThreadRun() {
     return 0;
 }
 
-int PcapDemuxedVirtualPHY::RxThread()
-{
-
-    return 0;
-
-
-}
-
 int PcapDemuxedVirtualPHY::Tune(int freqKHz, int plpid)
 {
     return 0;
@@ -200,43 +182,9 @@ int PcapDemuxedVirtualPHY::Uninit()
 }
 
 
-
-
-
-void PcapDemuxedVirtualPHY::LogMsg(const char *msg)
-{
-    // this method can be called in native thread. we don't safely use pre-assigned mJniEnv.
-    if (!JReady() || !mOnLogMsgId)
-        return;
-    Atsc3JniEnv env(mJavaVM);
-    if (!env) {
-        NDK_PCAP_VIRTUAL_PHY_ERROR("!! err on get jni env");
-        return;
-    }
-    jstring js = env.Get()->NewStringUTF(msg);
-    int r = env.Get()->CallIntMethod(mClsDrvIntf, mOnLogMsgId, js);
-    env.Get()->DeleteLocalRef(js);
-}
-
-void PcapDemuxedVirtualPHY::LogMsg(const std::string &str)
-{
-    LogMsg(str.c_str());
-}
-
-void PcapDemuxedVirtualPHY::LogMsgF(const char *fmt, ...)
-{
-    va_list v;
-    char msg[1024];
-    va_start(v, fmt);
-    vsnprintf(msg, sizeof(msg)-1, fmt, v);
-    msg[sizeof(msg)-1] = 0;
-    va_end(v);
-    LogMsg(msg);
-}
-
 int PcapDemuxedVirtualPHY::atsc3_pcap_thread_run() {
     pcapThreadShouldRun = false;
-    LogMsgF("atsc3_pcap_thread_run: checking for previous pcap_thread: producerShutdown: %d, consumerShutdown: %d", pcapProducerShutdown, pcapConsumerShutdown);
+    PCAP_DEMUXED_VIRTUAL_PHY_INFO("atsc3_pcap_thread_run: checking for previous pcap_thread: producerShutdown: %d, consumerShutdown: %d", pcapProducerShutdown, pcapConsumerShutdown);
 
     if(pcapProducerThreadPtr.joinable()) {
         pcapProducerThreadPtr.join();
@@ -249,52 +197,52 @@ int PcapDemuxedVirtualPHY::atsc3_pcap_thread_run() {
     //jjustman-2019-11-05 - TODO: make sure mhRxThread is terminated before we instantiate a new
     pcapThreadShouldRun = true;
 
-    pcapProducerThreadPtr = std::thread([this](){
-        atsc3_jni_pcap_producer_thread_env = new Atsc3JniEnv(mJavaVM);
-
-        LogMsgF("PcapDemuxedVirtualPHY::atsc3_pcap_producer_thread_run with this: %p", this);
-
-        this->PcapProducerThreadParserRun();
-        delete atsc3_jni_pcap_producer_thread_env;
-    });
-
-    pcapConsumerThreadPtr = std::thread([this](){
-        atsc3_jni_pcap_consumer_thread_env = new Atsc3JniEnv(mJavaVM);
-        Atsc3_Jni_Processing_Thread_Env = atsc3_jni_pcap_consumer_thread_env; //hack
-        LogMsgF("PcapDemuxedVirtualPHY::atsc3_pcap_consumer_thread_run with this: %p", this);
-
-        this->PcapConsumerThreadRun();
-        Atsc3_Jni_Processing_Thread_Env = NULL;
-        delete atsc3_jni_pcap_consumer_thread_env;
-    });
+//    pcapProducerThreadPtr = std::thread([this](){
+//        atsc3_jni_pcap_producer_thread_env = new Atsc3JniEnv(mJavaVM);
+//
+//        PCAP_DEMUXED_VIRTUAL_PHY_INFO("PcapDemuxedVirtualPHY::atsc3_pcap_producer_thread_run with this: %p", this);
+//
+//        this->PcapProducerThreadParserRun();
+//        delete atsc3_jni_pcap_producer_thread_env;
+//    });
+//
+//    pcapConsumerThreadPtr = std::thread([this](){
+//        atsc3_jni_pcap_consumer_thread_env = new Atsc3JniEnv(mJavaVM);
+//        Atsc3_Jni_Processing_Thread_Env = atsc3_jni_pcap_consumer_thread_env; //hack
+//        PCAP_DEMUXED_VIRTUAL_PHY_INFO("PcapDemuxedVirtualPHY::atsc3_pcap_consumer_thread_run with this: %p", this);
+//
+//        this->PcapConsumerThreadRun();
+//        Atsc3_Jni_Processing_Thread_Env = NULL;
+//        delete atsc3_jni_pcap_consumer_thread_env;
+//    });
 
 
     return 0;
 }
-
-int PcapDemuxedVirtualPHY::pinFromRxCaptureThread() {
-    printf("PcapDemuxedVirtualPHY::Atsc3_Jni_Processing_Thread_Env: mJavaVM: %p", mJavaVM);
-    Atsc3_Jni_Processing_Thread_Env = new Atsc3JniEnv(mJavaVM);
-    return 0;
-};
-
-int PcapDemuxedVirtualPHY::pinFromRxProcessingThread() {
-    printf("PcapDemuxedVirtualPHY::pinFromRxProcessingThread: mJavaVM: %p", mJavaVM);
-    Atsc3_Jni_Processing_Thread_Env = new Atsc3JniEnv(mJavaVM);
-    return 0;
-}
-
-
-int PcapDemuxedVirtualPHY::pinFromRxStatusThread() {
-    printf("PcapDemuxedVirtualPHY::pinFromRxStatusThread: mJavaVM: %p", mJavaVM);
-    Atsc3_Jni_Status_Thread_Env = new Atsc3JniEnv(mJavaVM);
-    return 0;
-}
+//
+//int PcapDemuxedVirtualPHY::pinFromRxCaptureThread() {
+////    printf("PcapDemuxedVirtualPHY::Atsc3_Jni_Processing_Thread_Env: mJavaVM: %p", mJavaVM);
+////    Atsc3_Jni_Processing_Thread_Env = new Atsc3JniEnv(mJavaVM);
+//    return 0;
+//};
+//
+//int PcapDemuxedVirtualPHY::pinFromRxProcessingThread() {
+////    printf("PcapDemuxedVirtualPHY::pinFromRxProcessingThread: mJavaVM: %p", mJavaVM);
+////    Atsc3_Jni_Processing_Thread_Env = new Atsc3JniEnv(mJavaVM);
+//    return 0;
+//}
+//
+//
+//int PcapDemuxedVirtualPHY::pinFromRxStatusThread() {
+////    printf("PcapDemuxedVirtualPHY::pinFromRxStatusThread: mJavaVM: %p", mJavaVM);
+////    Atsc3_Jni_Status_Thread_Env = new Atsc3JniEnv(mJavaVM);
+//    return 0;
+//}
 
 int PcapDemuxedVirtualPHY::PcapLocalCleanup() {
     int spinlock_count = 0;
     while(spinlock_count++ < 10 && (!pcapProducerShutdown || !pcapConsumerShutdown)) {
-        LogMsgF("PcapDemuxedVirtualPHY::PcapLocalCleanup: waiting for pcapProducerShutdown: %d, pcapConsumerShutdown: %d, pcapThreadShouldRun: %d",
+        PCAP_DEMUXED_VIRTUAL_PHY_INFO("PcapDemuxedVirtualPHY::PcapLocalCleanup: waiting for pcapProducerShutdown: %d, pcapConsumerShutdown: %d, pcapThreadShouldRun: %d",
                 pcapProducerShutdown, pcapConsumerShutdown, pcapThreadShouldRun);
         sleep(1);
     }
@@ -308,21 +256,21 @@ int PcapDemuxedVirtualPHY::PcapLocalCleanup() {
         block_Destroy(&to_free);
     }
 
-    if(pcap_replay_asset_ref_ptr) {
-        AAsset_close(pcap_replay_asset_ref_ptr);
-        pcap_replay_asset_ref_ptr = NULL;
-    }
-
-    //we can close the asset reference, but don't close the AAssetManager GlobalReference
-    if(global_pcap_asset_manager_ref) {
-        Atsc3JniEnv env(mJavaVM);
-        if (!env) {
-            NDK_PCAP_VIRTUAL_PHY_ERROR("!! err on get jni env");
-        } else {
-            env.Get()->DeleteGlobalRef(global_pcap_asset_manager_ref);
-        }
-        global_pcap_asset_manager_ref = NULL;
-    }
+//    if(pcap_replay_asset_ref_ptr) {
+//        AAsset_close(pcap_replay_asset_ref_ptr);
+//        pcap_replay_asset_ref_ptr = NULL;
+//    }
+//
+//    //we can close the asset reference, but don't close the AAssetManager GlobalReference
+//    if(global_pcap_asset_manager_ref) {
+//        Atsc3JniEnv env(mJavaVM);
+//        if (!env) {
+//            PCAP_DEMUXED_VIRTUAL_PHY_ERROR("!! err on get jni env");
+//        } else {
+//            env.Get()->DeleteGlobalRef(global_pcap_asset_manager_ref);
+//        }
+//        global_pcap_asset_manager_ref = NULL;
+//    }
 
     if(pcap_replay_filename) {
         free(pcap_replay_filename);
@@ -335,7 +283,7 @@ int PcapDemuxedVirtualPHY::PcapLocalCleanup() {
 int PcapDemuxedVirtualPHY::atsc3_pcap_thread_stop() {
 
     pcapThreadShouldRun = false;
-    LogMsgF("PcapDemuxedVirtualPHY::atsc3_pcap_thread_stop with this: %p", &pcapProducerThreadPtr);
+    PCAP_DEMUXED_VIRTUAL_PHY_INFO("PcapDemuxedVirtualPHY::atsc3_pcap_thread_stop with this: %p", &pcapProducerThreadPtr);
     if(pcapProducerThreadPtr.joinable()) {
         pcapProducerThreadPtr.join();
     }
@@ -343,255 +291,8 @@ int PcapDemuxedVirtualPHY::atsc3_pcap_thread_stop() {
     if(pcapConsumerThreadPtr.joinable()) {
         pcapConsumerThreadPtr.join();
     }
-    LogMsgF("PcapDemuxedVirtualPHY::atsc3_pcap_thread_stop: stopped with this: %p", &pcapProducerThreadPtr);
+    PCAP_DEMUXED_VIRTUAL_PHY_INFO("PcapDemuxedVirtualPHY::atsc3_pcap_thread_stop: stopped with this: %p", &pcapProducerThreadPtr);
 
     PcapLocalCleanup();
     return 0;
-}
-
-//E_AT3_FESTAT
-void PcapDemuxedVirtualPHY::RxStatusThread() {
-
-}
-
-void PcapDemuxedVirtualPHY::atsc3_update_rf_stats(int32_t tuner_lock,
-                                                  int32_t rssi,
-                                                  uint8_t modcod_valid,
-                                                  uint8_t plp_fec_type,
-                                                  uint8_t plp_mod,
-                                                  uint8_t plp_cod,
-                                                  int32_t nRfLevel1000,
-                                                  int32_t nSnr1000,
-                                                  uint32_t ber_pre_ldpc_e7,
-                                                  uint32_t ber_pre_bch_e9,
-                                                  uint32_t fer_post_bch_e6,
-                                                  uint8_t demod_lock_status,
-                                                  uint8_t cpu_status,
-                                                  uint8_t plp_any,
-                                                  uint8_t plp_all) {
-
-    // this method can be called in native thread. we don't safely use pre-assigned mJniEnv.
-    if (!JReady() || !mOnLogMsgId)
-        return;
-
-    if (!Atsc3_Jni_Status_Thread_Env) {
-        NDK_PCAP_VIRTUAL_PHY_ERROR("PcapDemuxedVirtualPHY:atsc3_update_rf_stats: err on get jni env: Atsc3_Jni_Status_Thread_Env");
-        return;
-    }
-    int r = Atsc3_Jni_Status_Thread_Env->Get()->CallIntMethod(mClsDrvIntf, atsc3_rf_phy_status_callback_ID,
-                                                              tuner_lock,
-                                                              rssi,
-                                                              modcod_valid,
-                                                              plp_fec_type,
-                                                              plp_mod,
-                                                              plp_cod,
-                                                              nRfLevel1000,
-                                                              nSnr1000,
-                                                              ber_pre_ldpc_e7,
-                                                              ber_pre_bch_e9,
-                                                              fer_post_bch_e6,
-                                                              demod_lock_status,
-                                                              cpu_status,
-                                                              plp_any,
-                                                              plp_all);
-
-}
-
-
-void PcapDemuxedVirtualPHY::atsc3_update_rf_bw_stats(uint64_t total_pkts, uint64_t total_bytes,
-                                                     unsigned int total_lmts) {
-    if (!JReady() || !mOnLogMsgId)
-        return;
-    if (!Atsc3_Jni_Status_Thread_Env) {
-        NDK_PCAP_VIRTUAL_PHY_ERROR("PcapDemuxedVirtualPHY:atsc3_update_rf_bw_stats: err on get jni env: Atsc3_Jni_Status_Thread_Env");
-        return;
-    }
-    int r = Atsc3_Jni_Status_Thread_Env->Get()->CallIntMethod(mClsDrvIntf, atsc3_update_rf_bw_stats_ID, total_pkts, total_bytes, total_lmts);
-}
-
-//Java to native methods
-
-
-
-//--------------------------------------------------------------------------
-
-extern "C" JNIEXPORT jint JNICALL
-Java_org_ngbp_libatsc3_sampleapp_atsc3NdkPHYBridge_DemuxedPcapVirtualPHY_ApiInit(JNIEnv *env, jobject instance, jobject drvIntf)
-{
-    printf("Java_org_ngbp_libatsc3_sampleapp_atsc3NdkPHYBridge_DemuxedPcapVirtualPHY_ApiInit: start init, env: %p\n", env);
-
-    api.mJniEnv = env;
-
-    env->GetJavaVM(&api.mJavaVM);
-    if(api.mJavaVM == NULL) {
-        NDK_PCAP_VIRTUAL_PHY_ERROR("!! no java vm");
-        return -1;
-    }
-
-    jclass jClazz = env->FindClass("org/ngbp/libatsc3/middleware/phy/virtual/DemuxedPcapVirtualPHY");
-    if (jClazz == NULL) {
-        NDK_PCAP_VIRTUAL_PHY_ERROR("!! Cannot find org/ngbp/libatsc3/middleware/phy/virtual/DemuxedPcapVirtualPHY java class");
-        return -1;
-    }
-
-    api.mOnLogMsgId = env->GetMethodID(jClazz, "onLogMsg", "(Ljava/lang/String;)I");
-    if (api.mOnLogMsgId == NULL) {
-        NDK_PCAP_VIRTUAL_PHY_ERROR("!! Cannot find 'onLogMsg' method id");
-        return -1;
-    }
-
-    api.jni_java_util_ArrayList = (jclass) env->NewGlobalRef(env->FindClass("java/util/ArrayList"));
-    NDK_PCAP_VIRTUAL_PHY_ERROR("creating api.jni_java_util_ArrayList");
-
-    api.jni_java_util_ArrayList_cctor = env->GetMethodID(api.jni_java_util_ArrayList, "<init>", "(I)V");
-    NDK_PCAP_VIRTUAL_PHY_ERROR("creating api.jni_java_util_ArrayList_cctor");
-    api.jni_java_util_ArrayList_add  = env->GetMethodID(api.jni_java_util_ArrayList, "add", "(Ljava/lang/Object;)Z");
-    NDK_PCAP_VIRTUAL_PHY_ERROR("creating api.jni_java_util_ArrayList_add");
-
-    api.mClsDrvIntf = (jclass)(api.mJniEnv->NewGlobalRef(drvIntf));
-
-    int r = api.Init();
-    if (r)
-        return r;
-
-    api.LogMsg("Api init ok");
-
-    //wire up atsc3_phy_mmt_player_bridge
-    //PcapDemuxedVirtualPHY* at3DrvIntf_ptr
-
-
-    printf("**** jni init OK");
-    return 0;
-}
-
-extern "C" JNIEXPORT jint JNICALL
-Java_org_ngbp_libatsc3_sampleapp_atsc3NdkPHYBridge_DemuxedPcapVirtualPHY_ApiPrepare(JNIEnv *env, jobject instance, jstring devlist_, jint d1, jint d2)
-{
-    printf("jni prepare");
-
-    return 0;
-}
-
-extern "C" JNIEXPORT jint JNICALL
-Java_org_ngbp_libatsc3_sampleapp_atsc3NdkPHYBridge_DemuxedPcapVirtualPHY_ApiFwLoad(JNIEnv *env, jobject instance, jlong key)
-{
-    printf("jni fwload");
-    return 0;
-}
-
-extern "C" JNIEXPORT jint JNICALL
-Java_org_ngbp_libatsc3_sampleapp_atsc3NdkPHYBridge_DemuxedPcapVirtualPHY_ApiOpen(JNIEnv *env, jobject instance, jint fd, jlong key)
-{
-    return api.Open(0, 0, 0);
-}
-
-extern "C" JNIEXPORT jint JNICALL
-Java_org_ngbp_libatsc3_sampleapp_atsc3NdkPHYBridge_DemuxedPcapVirtualPHY_ApiTune(JNIEnv *env, jobject instance, jint freqKHz, jint plpid)
-{
-    printf("Java_org_ngbp_libatsc3_sampleapp_atsc3NdkPHYBridge_DemuxedPcapVirtualPHY_ApiTune::tune");
-    return api.Tune(0, 0);
-}
-
-extern "C" JNIEXPORT jint JNICALL
-Java_org_ngbp_libatsc3_sampleapp_atsc3NdkPHYBridge_DemuxedPcapVirtualPHY_ApiStop(JNIEnv *env, jobject instance)
-{
-    return api.Stop();
-}
-
-extern "C" JNIEXPORT jint JNICALL
-Java_org_ngbp_libatsc3_sampleapp_atsc3NdkPHYBridge_DemuxedPcapVirtualPHY_ApiClose(JNIEnv *env, jobject instance)
-{
-    printf("ApiClose:");
-    return api.Close();
-}
-
-extern "C" JNIEXPORT jint JNICALL
-Java_org_ngbp_libatsc3_sampleapp_atsc3NdkPHYBridge_DemuxedPcapVirtualPHY_ApiUninit(JNIEnv *env, jobject instance)
-{
-    return api.Uninit();
-}
-
-extern "C" JNIEXPORT jint JNICALL
-Java_org_ngbp_libatsc3_sampleapp_atsc3NdkPHYBridge_DemuxedPcapVirtualPHY_ApiReset(JNIEnv *env, jobject instance)
-{
-    printf("jni reset:");
-    return api.Reset();
-}
-
-extern "C" JNIEXPORT jlongArray JNICALL
-Java_org_ngbp_libatsc3_sampleapp_atsc3NdkPHYBridge_DemuxedPcapVirtualPHY_ApiFindDeviceKey(JNIEnv *env, jobject instance, jboolean bPreBootDevice)
-{
-    return NULL;
-}
-
-//hacks
-
-extern "C"
-JNIEXPORT jint JNICALL
-Java_org_ngbp_libatsc3_sampleapp_atsc3NdkPHYBridge_DemuxedPcapVirtualPHY_atsc3_1pcap_1open_1for_1replay_1from_1assetManager(JNIEnv *env, jobject thiz, jstring filename_,
-                                                        jobject asset_manager_weak) {
-    printf("Java_org_ngbp_libatsc3_sampleapp_atsc3NdkPHYBridge_DemuxedPcapVirtualPHY_atsc3_1pcap_1open_1for_1replay_1from_1assetManager");
-
-    const char* filename_weak = env->GetStringUTFChars(filename_, 0);
-
-    //global ref and AAsetManager ptr null'd in PcapLocalCleanup
-    api.global_pcap_asset_manager_ref = env->NewGlobalRef(asset_manager_weak);
-
-    AAssetManager* aasetManager = AAssetManager_fromJava(env, asset_manager_weak);
-    int r = api.atsc3_pcap_replay_open_file_from_assetManager(filename_weak, aasetManager);
-    env->ReleaseStringUTFChars(filename_, filename_weak);
-
-    printf("Java_org_ngbp_libatsc3_sampleapp_atsc3NdkPHYBridge_DemuxedPcapVirtualPHY_atsc3_1pcap_1open_1for_1replay_1from_1assetManager - return: %d\n", r);
-    return r;
-}
-
-extern "C"
-JNIEXPORT jint JNICALL
-Java_org_ngbp_libatsc3_sampleapp_atsc3NdkPHYBridge_DemuxedPcapVirtualPHY_atsc3_1pcap_1thread_1run(JNIEnv *env, jobject thiz) {
-
-    printf("::Java_org_ngbp_libatsc3_sampleapp_atsc3NdkPHYBridge_DemuxedPcapVirtualPHY_ApPcapThreadRun");
-
-    int r = api.atsc3_pcap_thread_run();
-    return r;
-
-}
-
-extern "C"
-JNIEXPORT jint JNICALL
-Java_org_ngbp_libatsc3_sampleapp_atsc3NdkPHYBridge_DemuxedPcapVirtualPHY_atsc3_1pcap_1thread_1stop(JNIEnv *env, jobject thiz) {
-
-    printf("::Java_org_ngbp_libatsc3_sampleapp_atsc3NdkPHYBridge_DemuxedPcapVirtualPHY_atsc3_1pcap_1thread_1stop");
-
-    int r = api.atsc3_pcap_thread_stop();
-    return r;
-
-}
-
-extern "C"
-JNIEXPORT jint JNICALL
-Java_org_ngbp_libatsc3_sampleapp_atsc3NdkPHYBridge_DemuxedPcapVirtualPHY_ApiSetPLP(JNIEnv *env, jobject thiz, jintArray a_plp_ids) {
-    // TODO: implement ApiSetPLP()
-//
-//    jsize len = *env->GetArrayLength(a_plp_ids);
-//    jint *a_body = *env->GetIntArrayElements(a_plp_ids, 0);
-////    for (int i=0; i<len; i++) {
-////        sum += body[i];
-////    }
-//    api.set_plp_settings(a_body, len);
-
-    return -1;
-}
-
-extern "C"
-JNIEXPORT jint JNICALL
-Java_org_ngbp_libatsc3_sampleapp_atsc3NdkPHYBridge_DemuxedPcapVirtualPHY_atsc3_1pcap_1open_1for_1replay(JNIEnv *env, jobject thiz,
-                                                                  jstring filename_) {
-
-    const char* filename_weak = env->GetStringUTFChars(filename_, 0);
-
-    int ret = api.atsc3_pcap_replay_open_file(filename_weak);
-
-    env->ReleaseStringUTFChars( filename_, filename_weak );
-
-    return ret;
 }

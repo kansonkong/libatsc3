@@ -25,6 +25,7 @@ using namespace std;
 #include <atsc3_utils.h>
 #include <atsc3_pcap_type.h>
 #include <atsc3_route_package_utils.h>
+#include <atsc3_core_service_player_bridge.h>
 
 /*
  * : public libatsc3_Iphy_mockable
@@ -33,52 +34,28 @@ using namespace std;
 class PcapDemuxedVirtualPHY : public IAtsc3NdkPHYClient
 {
 public:
-    PcapDemuxedVirtualPHY(): mbInit(false), mbLoop(false), mbRun(false) {    }
+    //PcapDemuxedVirtualPHY();
 
     int Init();
+    int Prepare(const char *strDevListInfo, int delim1, int delim2);
     int Open(int fd, int bus, int addr);
-    int Prepare(const char *devinfo, int delim1, int delim2);
     int Tune(int freqKHz, int plpId);
-    int TuneMultiplePLP(int freqKhz, vector<int> plpIds);
-    int ListenPLP1(int plp1); //by default, we will always listen to PLP0, append additional PLP for listening
-
     int Stop();
     int Close();
     int Reset();
     int Uninit();
-
-    /* phy callback method(s) */
-    int atsc3_rx_callback_f(void*, uint64_t ullUser);
 
     /*
      * pcap methods
      */
 
     int atsc3_pcap_replay_open_file(const char *filename);
-//    int atsc3_pcap_replay_open_file_from_assetManager(const char *filename, AAssetManager *mgr);
     int atsc3_pcap_thread_run();
     int atsc3_pcap_thread_stop();
 
-    void LogMsg(const char *msg);
-    void LogMsg(const std::string &msg);
-    void LogMsgF(const char *fmt, ...);
-
-    int pinFromRxCaptureThread();
-    int pinFromRxProcessingThread();
-    int pinFromRxStatusThread();
-
-
-    int RxThread();
-    Atsc3JniEnv* Atsc3_Jni_Capture_Thread_Env = NULL;
-    Atsc3JniEnv* Atsc3_Jni_Processing_Thread_Env = NULL;
-    Atsc3JniEnv* Atsc3_Jni_Status_Thread_Env = NULL;
-
-private:
-    bool mbInit;
+protected:
 
     std::thread mhRxThread;
-
-    bool mbLoop, mbRun;
 
     // statistics
     uint32_t s_ulLastTickPrint;
@@ -86,24 +63,19 @@ private:
     uint64_t s_ullTotalPkts;
     unsigned s_uTotalLmts = 0;
     std::map<std::string, unsigned> s_mapIpPort;
-    int s_nPrevLmtVer = -1;
-    uint32_t s_ulL1SecBase;
 
     //pcap replay context and locals
     int PcapProducerThreadParserRun();
     int PcapConsumerThreadRun();
     int PcapLocalCleanup();
 
-    AAsset*                         pcap_replay_asset_ref_ptr = NULL;
     char*                           pcap_replay_filename = NULL;
     bool                            pcapThreadShouldRun;
 
     std::thread                     pcapProducerThreadPtr;
-    Atsc3JniEnv*                    atsc3_jni_pcap_producer_thread_env = NULL;
     bool                            pcapProducerShutdown = true;
 
     std::thread                     pcapConsumerThreadPtr;
-    Atsc3JniEnv*                    atsc3_jni_pcap_consumer_thread_env = NULL;
     bool                            pcapConsumerShutdown = true;
 
     atsc3_pcap_replay_context_t*    atsc3_pcap_replay_context = NULL;
@@ -114,32 +86,6 @@ private:
     //alc service monitoring
     vector<int>                     atsc3_slt_alc_additional_services_monitored;
 
-public:
-    jobject     global_pcap_asset_manager_ref = NULL;
-
-public:
-    // jni stuff
-    JavaVM* mJavaVM = nullptr;    // Java VM
-    JNIEnv* mJniEnv = nullptr;    // Jni Environment
-    jclass mClsDrvIntf = nullptr; // java At3DrvInterface class
-
-    bool JReady() {
-        return mJavaVM && mJniEnv && mClsDrvIntf ? true : false;
-    }
-
-    jmethodID mOnLogMsgId = nullptr;  // java class method id
-
-    jmethodID atsc3_rf_phy_status_callback_ID = nullptr;
-    jmethodID atsc3_update_rf_bw_stats_ID = nullptr;
-
-    //todo: refactor this out - ala https://gist.github.com/qiao-tw/6e43fb2311ee3c31752e11a4415deeb1
-
-    jclass      jni_java_util_ArrayList = nullptr;
-    jmethodID   jni_java_util_ArrayList_cctor = nullptr;
-    jmethodID   jni_java_util_ArrayList_add = nullptr;
-
-
-private:
     std::thread atsc3_rxStatusThread;
     void RxStatusThread();
     bool rxStatusThreadShouldRun;
@@ -148,7 +94,7 @@ private:
 #define PCAP_DEMUXED_VIRTUAL_PHY_ERROR(...)   	__LIBATSC3_TIMESTAMP_ERROR(__VA_ARGS__);
 #define PCAP_DEMUXED_VIRTUAL_PHY_WARN(...)   	__LIBATSC3_TIMESTAMP_WARN(__VA_ARGS__);
 #define PCAP_DEMUXED_VIRTUAL_PHY_INFO(...)   	__LIBATSC3_TIMESTAMP_INFO(__VA_ARGS__);
-#define PCAP_DEMUXED_VIRTUAL_PHY_DEBUG(...)   	__LIBATSC3_TIMESTAMP_INFO(__VA_ARGS__);
+#define PCAP_DEMUXED_VIRTUAL_PHY_DEBUG(...)   	__LIBATSC3_TIMESTAMP_DEBUG(__VA_ARGS__);
 
 
 

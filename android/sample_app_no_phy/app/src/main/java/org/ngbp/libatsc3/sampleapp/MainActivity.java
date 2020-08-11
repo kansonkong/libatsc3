@@ -77,7 +77,7 @@ import org.ngbp.libatsc3.middleware.android.application.sync.mmt.MfuByteBufferFr
 import org.ngbp.libatsc3.middleware.android.application.sync.mmt.MmtPacketIdContext;
 import org.ngbp.libatsc3.middleware.android.application.sync.mmt.MpuMetadata_HEVC_NAL_Payload;
 
-import org.ngbp.libatsc3.middleware.android.phy.virtual.PcapDemuxedVirtualPHYAndroid;
+import org.ngbp.libatsc3.middleware.android.phy.virtual.PcapDemuxedPHYVirtualAndroid;
 import org.ngbp.libatsc3.middleware.android.phy.models.BwPhyStatistics;
 import org.ngbp.libatsc3.phy.RfPhyFecModCodTypes;
 import org.ngbp.libatsc3.middleware.android.phy.models.RfPhyStatistics;
@@ -250,7 +250,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     public Atsc3NdkPHYBridge         atsc3NdkPHYBridge;
     public Atsc3NdkPHYClientBase     atsc3NdkPHYClientInstance;
 
-    public PcapDemuxedVirtualPHYAndroid demuxedPcapVirtualPHY;
+    public PcapDemuxedPHYVirtualAndroid demuxedPcapVirtualPHY;
 
     public UsbManager mUsbManager;
     private PendingIntent mPermissionIntent;
@@ -715,7 +715,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         atsc3NdkApplicationBridge = new Atsc3NdkApplicationBridge(this);
         atsc3NdkPHYBridge = new Atsc3NdkPHYBridge(this);
         // if needed at runtime for pcap replay:
-        demuxedPcapVirtualPHY = new PcapDemuxedVirtualPHYAndroid();
+        demuxedPcapVirtualPHY = new PcapDemuxedPHYVirtualAndroid();
 
 
         // get usb manager
