@@ -14,6 +14,39 @@
 
 #include "atsc3_core_service_player_bridge.h"
 
+IAtsc3NdkApplicationBridge* Atsc3NdkApplicationBridge_ptr;
+IAtsc3NdkPHYBridge*         Atsc3NdkPHYBridge_ptr;
+
+atsc3_link_mapping_table*   atsc3_link_mapping_table_last = NULL;
+
+//commandline stream filtering
+uint32_t* dst_ip_addr_filter = NULL;
+uint16_t* dst_ip_port_filter = NULL;
+uint16_t* dst_packet_id_filter = NULL;
+
+//jjustman-2019-10-03 - context event callbacks...
+atsc3_mmt_mfu_context_t* atsc3_mmt_mfu_context = NULL;
+lls_slt_monitor_t* lls_slt_monitor = NULL;
+
+//mmtp/sls flow management
+mmtp_flow_t* mmtp_flow;
+udp_flow_latest_mpu_sequence_number_container_t* udp_flow_latest_mpu_sequence_number_container;
+lls_sls_mmt_monitor_t* lls_sls_mmt_monitor = NULL;
+
+//route/alc specific parameters
+lls_sls_alc_monitor_t* lls_sls_alc_monitor = NULL;
+atsc3_alc_arguments_t* alc_arguments;
+
+std::string atsc3_ndk_cache_temp_folder_path;
+
+//these should actually be referenced from mmt_sls_monitor for proper flow references
+uint16_t global_video_packet_id = 0;
+uint16_t global_audio_packet_id = 0;
+uint16_t global_stpp_packet_id = 0;
+
+uint32_t global_mfu_proccessed_count = 0;
+
+
 
 void atsc3_core_service_player_bridge_init(IAtsc3NdkApplicationBridge* IAtsc3NdkApplicationBridge_p, IAtsc3NdkPHYBridge* IAtsc3NdkPHYBridge_p) {
         Atsc3NdkApplicationBridge_ptr = IAtsc3NdkApplicationBridge_p;
