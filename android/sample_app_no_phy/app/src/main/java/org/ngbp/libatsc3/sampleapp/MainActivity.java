@@ -64,6 +64,7 @@ import org.ngbp.libatsc3.middleware.android.a331.PackageExtractEnvelopeMetadataA
 import org.ngbp.libatsc3.ServiceHandler;
 import org.ngbp.libatsc3.ThingsUI;
 import org.ngbp.libatsc3.middleware.android.application.interfaces.IAtsc3NdkApplicationBridgeCallbacks;
+import org.ngbp.libatsc3.middleware.android.phy.Atsc3NdkPHYClientBase;
 import org.ngbp.libatsc3.middleware.android.phy.interfaces.IAtsc3NdkPHYBridgeCallbacks;
 import org.ngbp.libatsc3.pcapreplay.PcapFileSelectorActivity;
 import org.ngbp.libatsc3.phy.RfScanUtility;
@@ -247,6 +248,8 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     //jjustman-2020-08-07 - temporary wire-up, and  remove static field accessor static
     public Atsc3NdkApplicationBridge atsc3NdkApplicationBridge;
     public Atsc3NdkPHYBridge         atsc3NdkPHYBridge;
+    public Atsc3NdkPHYClientBase     atsc3NdkPHYClientInstance;
+
     public PcapDemuxedVirtualPHYAndroid demuxedPcapVirtualPHY;
 
     public UsbManager mUsbManager;
@@ -1438,16 +1441,16 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     @Override
     protected void onDestroy() {
         Log.d(TAG, "onDestroy called");
-        atsc3NdkPHYBridge.ApiClose();
+        atsc3NdkPHYClientInstance.ApiClose();
         unregisterReceiver(mUsbReceiver);
         super.onDestroy();
     }
     @Override
     public void onBackPressed() {
         Log.d(TAG, "onBackPressed called");
-        atsc3NdkPHYBridge.ApiClose();
+        atsc3NdkPHYClientInstance.ApiClose();
         unregisterReceiver(mUsbReceiver);
-        atsc3NdkPHYBridge.ApiUninit();
+        atsc3NdkPHYClientInstance.ApiUninit();
         Log.d(TAG, "uninit ended");
 
         moveTaskToBack(true);
@@ -1630,7 +1633,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                     info = info + d2 + ad.dev.getDeviceName() + d1 + ad.fd;
             }
             Log.d(TAG, "prepare: " + info);
-            int r = atsc3NdkPHYBridge.ApiPrepare(info, d1.charAt(0), d2.charAt(0));
+            int r = atsc3NdkPHYClientInstance.ApiPrepare(info, d1.charAt(0), d2.charAt(0));
 
             if (r != 0) showMsg("!! prepare failed\n");
         }
@@ -1839,7 +1842,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                     @Override
                     public void run() {
 
-                        int re = atsc3NdkPHYBridge.ApiOpen(mCurAt3Device.fd, mCurAt3Device.key);
+                        int re = atsc3NdkPHYClientInstance.ApiOpen(mCurAt3Device.fd, mCurAt3Device.key);
                         if (re < 0) {
                             showMsgFromNative(String.format("open: failed, r: %d", re));
                             return;
@@ -1880,7 +1883,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                 new Thread(new Runnable() {
                     @Override
                     public void run() {
-                        int re = atsc3NdkPHYBridge.ApiTune(freqMHz * 1000, plp);
+                        int re = atsc3NdkPHYClientInstance.ApiTune(freqMHz * 1000, plp);
                         if (re != 0) {
                             showMsgFromNative(String.format("Tune failed with res: %d", re));
                             return;
@@ -1973,7 +1976,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                     showMsg("no atlas device connected yet\n");
                     break;
                 }
-                r = atsc3NdkPHYBridge.ApiStop();
+                r = atsc3NdkPHYClientInstance.ApiStop();
                 ThingsUI.WriteToAlphaDisplayNoEx(String.format("ASTP"));
 
                 //clear pending SLS window
@@ -1993,7 +1996,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                     showMsg("no atlas device connected yet\n");
                     break;
                 }
-                r = atsc3NdkPHYBridge.ApiReset();
+                r = atsc3NdkPHYClientInstance.ApiReset();
                 ThingsUI.WriteToAlphaDisplayNoEx(String.format("ARST"));
                 break;
 
@@ -2003,7 +2006,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                     showMsg("no atlas device connected yet\n");
                     break;
                 }
-                r = atsc3NdkPHYBridge.ApiClose();
+                r = atsc3NdkPHYClientInstance.ApiClose();
                 //mTextView.setText("Closed\n"); // clear log msg
                 if (r != 0) showMsg("closed\n");
 
@@ -2080,7 +2083,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         if (s.equals(kSpinnerNotSelect)) {
             // unchoose cur device
             if (mCurAt3Device != null) {
-                atsc3NdkPHYBridge.ApiClose();
+                atsc3NdkPHYClientInstance.ApiClose();
             }
             mCurAt3Device = null;
             inputSelectedPcapReplayFromFilesystem = null;
@@ -2131,7 +2134,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                     if (mCurAt3Device != ad) {
                         //Log.d(TAG, "new device selected");
                         showMsg("new device selected\n");
-                        atsc3NdkPHYBridge.ApiClose();
+                        atsc3NdkPHYClientInstance.ApiClose();
 
                         mCurAt3Device = ad;
                     } else {

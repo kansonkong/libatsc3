@@ -1,6 +1,11 @@
-include ':libatsc3_core', ':libatsc3_bridge', ':libatsc3_phy_virtual',':app'
+rootProject.name='libatsc3 Android Sample App (w PHY)'
 
-rootProject.name='libatsc3 Android Sample App (No PHY)'
+include ':atsc3_core'
+include ':atsc3_bridge'
+include ':atsc3_phy_virtual'
+include ':app'
+
+
 gradle.ext.exoplayerRoot = 'Exoplayer'
 gradle.ext.exoplayerModulePrefix = 'exoplayer-'
 apply from: new File(gradle.ext.exoplayerRoot, 'core_settings.gradle')
