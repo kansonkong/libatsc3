@@ -1,5 +1,4 @@
 apply plugin: 'com.android.library'
-// apply plugin: 'com.ydq.android.gradle.native-aar.export'
 
 android {
     compileSdkVersion 28
@@ -11,9 +10,6 @@ android {
 
         ndk {
             //abiFilters 'arm64-v8a', 'armeabi-v7a' //, 'arm64-v8a' //'', 'x86_64',
-            //moduleName 'libatsc3_core'
-
-           // moduleName 'atsc3_core'
         }
     }
     externalNativeBuild {
@@ -58,7 +54,6 @@ android {
     prefab {
         atsc3_core {
             //headers "../../../src/**/*.h"
-
         }
     }
 
@@ -69,5 +64,4 @@ repositories {
 }
 
 dependencies {
-
 }
