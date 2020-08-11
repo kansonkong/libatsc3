@@ -1,0 +1,57 @@
+apply plugin: 'com.android.library'
+//apply plugin: 'com.ydq.android.gradle.native-aar.import'
+
+android {
+    compileSdkVersion 28
+    defaultConfig {
+        targetSdkVersion 28
+        minSdkVersion 28
+        versionCode 1
+        versionName "1.0"
+
+        ndk {
+            //abiFilters 'arm64-v8a', 'armeabi-v7a' //, 'arm64-v8a' //'', 'x86_64',
+        }
+    }
+    buildTypes {
+        release {
+            minifyEnabled false
+            proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
+            jniDebuggable = true
+            debuggable true
+        }
+        debug {
+            jniDebuggable = true
+            debuggable true
+        }
+    }
+    externalNativeBuild {
+        ndkBuild {
+            path 'Android.mk'
+        }
+    }
+    buildToolsVersion = '29.0.2'
+
+    compileOptions {
+        targetCompatibility JavaVersion.VERSION_1_8
+    }
+
+    packagingOptions {
+        // specify the path to your object binaries, or generally:
+        doNotStrip '**.so'
+    }
+
+    buildFeatures {
+        prefab true
+    }
+
+
+}
+
+repositories {
+    google()
+}
+dependencies {
+    // doesn't leak..i.e. won't compile? implementation project(':libatsc3_core')
+    api project(':atsc3_core')
+}

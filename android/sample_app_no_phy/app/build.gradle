@@ -7,7 +7,7 @@ android {
     compileSdkVersion 28
     defaultConfig {
         applicationId "org.ngbp.libatsc3"
-        minSdkVersion 25
+        minSdkVersion 28
         targetSdkVersion 28
         versionCode 1
         versionName "1.0"
@@ -64,8 +64,8 @@ repositories {
     google()
 }
 dependencies {
-    implementation project(':libatsc3_bridge')
-    implementation project(':libatsc3_phy_virtual')
+    api project(':atsc3_bridge')
+    api project(':atsc3_phy_virtual')
 
     //implementation fileTree(dir: 'libs', include: ['*.jar', '*.so'])
     implementation 'com.android.support:appcompat-v7:28.0.0'
