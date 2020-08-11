@@ -32,3 +32,6 @@
 [submodule "libtree"]
 	path = libtree
 	url = https://github.com/fbuihuu/libtree.git
+[submodule "srt"]
+	path = srt
+	url = https://github.com/Haivision/srt.git
