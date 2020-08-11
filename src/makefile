@@ -38,8 +38,10 @@
 CFLAGS=-Wno-nullability-completeness -Wno-expansion-to-defined -Wno-builtin-requires-header -Wno-c++11-extensions
 CXXFLAGS=-std=c++11 
 
-DEBUG=-g
-ASAN=-fsanitize=address -fno-omit-frame-pointer
+# DEBUG=-g -O1
+
+DEBUG=-g -fsanitize=address -fno-omit-frame-pointer -fno-optimize-sibling-calls -O1 -fsanitize-address-use-after-scope
+ASAN=-fsanitize=address -fno-omit-frame-pointer -fno-optimize-sibling-calls -O1 -fsanitize-address-use-after-scope
 
 LOCAL_LD_LIBS=-lz -lm -lpthread -lpcap -lpcre2-8 -lstdc++
 LOCAL_LD_LIBS_NCURSES=$(LOCAL_LD_LIBS) -lncurses
@@ -106,6 +108,8 @@ clean:
 	-rm -f a324_tests/a324_dstp_lls_aeat_emission_test	
 	-rm -f phy_tests/pcap_demuxed_virtual_phy_test
 	-rm -f phy_tests/pcap_demuxed_virtual_phy_test_noasan
+	-rm -f phy_tests/pcap_stltp_virtual_phy_test
+	-rm -f phy_tests/pcap_stltp_virtual_phy_test_noasan	
 	-rm -f tools/atsc3_alc_listener_mde_writer
 	-rm -f tools/atsc3_alc_listener_mde_writer_asan
 	-rm -f tools/atsc3_alc_listener_mde_writer_malloc_debug	
@@ -166,7 +170,8 @@ intermediate_a344:	atsc3_a344_receiver_query_api.o
 
 intermediate_ffplay: atsc3_player_ffplay.o
 
-intermediate_phy: PcapDemuxedVirtualPHY.o
+intermediate_phy: PcapDemuxedVirtualPHY.o \
+				  PcapSTLTPVirtualPHY.o
 
 interemediate_gpl_and_mock_linkage: bento4_gpl_link \
 									bento4_mock_link
@@ -218,7 +223,9 @@ listener_tests: listener_tests/atsc3_alc_listener_test \
 a324_tests: a324_tests/a324_dstp_lls_aeat_emission_test
 
 phy_tests:	phy_tests/pcap_demuxed_virtual_phy_test \
-			phy_tests/pcap_demuxed_virtual_phy_test_noasan
+			phy_tests/pcap_demuxed_virtual_phy_test_noasan \
+			phy_tests/pcap_stltp_virtual_phy_test \
+			phy_tests/pcap_stltp_virtual_phy_test_noasan
 
 # real libatsc3 tools for lls, sls, mmt/route and flow analysis
 # only on linux...	tools/atsc3_alc_listener_mde_writer_malloc_debug \
@@ -452,6 +459,12 @@ PcapDemuxedVirtualPHY.o: phy/virtual/PcapDemuxedVirtualPHY.h phy/virtual/PcapDem
 		-c phy/virtual/PcapDemuxedVirtualPHY.cpp \
 		-o PcapDemuxedVirtualPHY.o  -I.
 
+PcapSTLTPVirtualPHY.o: phy/virtual/PcapSTLTPVirtualPHY.h phy/virtual/PcapSTLTPVirtualPHY.cpp
+	g++ $(CFLAGS) $(CXXFLAGS) $(DEBUG) \
+		-c phy/virtual/PcapSTLTPVirtualPHY.cpp \
+		-o PcapSTLTPVirtualPHY.o  -I.
+
+
 # unit standalone tests with mock data
 
 atsc3_stltp_parser_test: atsc3_stltp_parser_test.c \
@@ -553,7 +566,8 @@ libatsc3_intermediate.o: atsc3_lls.o \
 		atsc3_route_object.o \
 		atsc3_sls_alc_flow.o \
 		avltree.o \
-		PcapDemuxedVirtualPHY.o
+		PcapDemuxedVirtualPHY.o \
+		PcapSTLTPVirtualPHY.o
 
 	ld  -o libatsc3_intermediate.o -r \
 		atsc3_lls.o \
@@ -618,7 +632,8 @@ libatsc3_intermediate.o: atsc3_lls.o \
 		atsc3_route_object.o \
 		atsc3_sls_alc_flow.o \
 		avltree.o \
-		PcapDemuxedVirtualPHY.o
+		PcapDemuxedVirtualPHY.o \
+		PcapSTLTPVirtualPHY.o
 
 libatsc3.o: libatsc3_intermediate.o bento4_mock.o
 	ld  -o libatsc3.o -r libatsc3_intermediate.o bento4_mock.o
@@ -1069,6 +1084,7 @@ a324_tests/a324_dstp_lls_aeat_emission_test: a324_tests/a324_dstp_lls_aeat_emiss
 
 # jjustman-2020-08-10 - phy tests
 
+# Demuxed pcap virtual phy
 phy_tests/pcap_demuxed_virtual_phy_test: phy_tests/PcapDemuxedVirtualPHYTest.cpp libatsc3_bento4_gpl.o
 	g++ $(ASAN) $(CFLAGS) $(CXXFLAGS) $(DEBUG) -I . \
 		phy_tests/PcapDemuxedVirtualPHYTest.cpp \
@@ -1082,6 +1098,22 @@ phy_tests/pcap_demuxed_virtual_phy_test_noasan: phy_tests/PcapDemuxedVirtualPHYT
 		libatsc3_bento4_gpl.o \
 		$(LOCAL_LD_LIBS) \
 		-o phy_tests/pcap_demuxed_virtual_phy_test_noasan
+		
+		
+# STLTP pcap virtual phy
+phy_tests/pcap_stltp_virtual_phy_test: phy_tests/PcapSTLTPVirtualPHYTest.cpp libatsc3_bento4_gpl.o
+	g++ $(ASAN) $(CFLAGS) $(CXXFLAGS) $(DEBUG) -I . \
+		phy_tests/PcapSTLTPVirtualPHYTest.cpp \
+		libatsc3_bento4_gpl.o \
+		$(LOCAL_LD_LIBS) \
+		-o phy_tests/pcap_stltp_virtual_phy_test
+		
+phy_tests/pcap_stltp_virtual_phy_test_noasan: phy_tests/PcapSTLTPVirtualPHYTest.cpp libatsc3_bento4_gpl.o
+	g++ $(CFLAGS) $(CXXFLAGS) $(DEBUG) -I . \
+		phy_tests/PcapSTLTPVirtualPHYTest.cpp \
+		libatsc3_bento4_gpl.o \
+		$(LOCAL_LD_LIBS) \
+		-o phy_tests/pcap_stltp_virtual_phy_test_noasan
 
 # misc utils	
 # isobmfftrackjoiner: bento4/ISOBMFFTrackJoiner.cpp bento4/ISOBMFFTrackJoiner.h atsc3_utils.o \

@@ -13,14 +13,14 @@
 
 #include <phy/virtual/PcapDemuxedVirtualPHY.h>
 
-#define _PCAP_DEMUXED_VIRTUAL_TEST_ERROR(...)   __LIBATSC3_TIMESTAMP_ERROR(__VA_ARGS__);
+#define _PCAP_STLTP_VIRTUAL_TEST_ERROR(...)   __LIBATSC3_TIMESTAMP_ERROR(__VA_ARGS__);
 #define _PCAP_DEMUXED_VIRTUAL_TEST_WARN(...)    __LIBATSC3_TIMESTAMP_WARN(__VA_ARGS__);
 #define _PCAP_DEMUXED_VIRTUAL_TEST_INFO(...)    __LIBATSC3_TIMESTAMP_INFO(__VA_ARGS__);
 #define _PCAP_DEMUXED_VIRTUAL_TEST_DEBUG(...)   __LIBATSC3_TIMESTAMP_DEBUG(__VA_ARGS__);
 
 uint64_t rx_udp_invocation_count = 0;
 
-void rx_udp_packet_process_callback(block_t* packet) {
+void phy_rx_udp_packet_process_callback(uint8_t plp, block_t* packet) {
 	if((rx_udp_invocation_count++ % 1000) == 0) {
 		_PCAP_DEMUXED_VIRTUAL_TEST_DEBUG("packet number: %llu, packet: %p, len: %d",
 				rx_udp_invocation_count, packet, packet->p_size);
@@ -32,7 +32,7 @@ int test_demux_1m_100000_packet_replay() {
 	PcapDemuxedVirtualPHY* pcapDemuxedVirtualPHY = new PcapDemuxedVirtualPHY();
 	//            atsc3_core_service_bridge_process_packet_phy(phy_payload_to_process);
 
-	pcapDemuxedVirtualPHY->SetRxUdpPacketProcessCallback(rx_udp_packet_process_callback);
+	pcapDemuxedVirtualPHY->SetRxUdpPacketProcessCallback(phy_rx_udp_packet_process_callback);
 
 	pcapDemuxedVirtualPHY->atsc3_pcap_replay_open_file(PCAP_REPLAY_TEST_FILENAME);
 
