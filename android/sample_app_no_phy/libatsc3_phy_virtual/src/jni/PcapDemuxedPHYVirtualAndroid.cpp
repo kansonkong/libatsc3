@@ -18,6 +18,28 @@ int PcapDemuxedVirtualPHYAndroid::Open(int fd, int bus, int addr)
     return 0;
 }
 
+void PcapDemuxedVirtualPHYAndroid::pinPcapProducerThreadAsNeeded() {
+    atsc3_jni_pcap_producer_thread_env = new Atsc3JniEnv(mJavaVM);
+}
+void PcapDemuxedVirtualPHYAndroid::releasePinPcapProducerThreadAsNeeded() {
+    if(atsc3_jni_pcap_producer_thread_env) {
+        delete atsc3_jni_pcap_producer_thread_env;
+    }
+}
+void PcapDemuxedVirtualPHYAndroid::releasePcapConsumerThreadAsNeeded() {
+    atsc3_jni_pcap_consumer_thread_env = new Atsc3JniEnv(mJavaVM);
+    Atsc3_Jni_Processing_Thread_Env = atsc3_jni_pcap_consumer_thread_env; //hack
+}
+
+void PcapDemuxedVirtualPHYAndroid::pinPcapConsumerThreadAsNeeded() {
+    if(atsc3_jni_pcap_consumer_thread_env) {
+        delete atsc3_jni_pcap_consumer_thread_env;
+
+        atsc3_jni_pcap_consumer_thread_env = NULL;
+        Atsc3_Jni_Processing_Thread_Env = NULL;
+    }
+}
+
 //used for inclusion of pcap's via android assetManager
 int PcapDemuxedVirtualPHYAndroid::atsc3_pcap_replay_open_file_from_assetManager(const char *filename,
                                                                                            AAssetManager *mgr) {
