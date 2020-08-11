@@ -27,7 +27,6 @@ android {
         debug {
             jniDebuggable = true
             debuggable true
-
         }
         atsc3_core {
             jniDebuggable = true
@@ -51,17 +50,17 @@ android {
         prefabPublishing true
         //prefab true
     }
+
     prefab {
         atsc3_core {
             //headers "../../../src/**/*.h"
         }
     }
-
 }
 
 repositories {
     google()
 }
 
-dependencies {
-}
+//dependencies {
+//}

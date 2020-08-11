@@ -5,21 +5,32 @@
 
 # global pathing
 
+
 MY_LOCAL_PATH := $(call my-dir)
 LOCAL_PATH := $(call my-dir)
 MY_CUR_PATH := $(LOCAL_PATH)
 
-# import our prefab build from core
-$(call import-module,prefab/libatsc3_core)
+#jjustman-2020-08-10 - super hack
+LOCAL_PATH := $(MY_LOCAL_PATH)
+
+include $(CLEAR_VARS)
+LOCAL_MODULE := libatsc3_core
+LOCAL_SRC_FILES := $(LOCAL_PATH)/../libatsc3_core/build/intermediates/prefab_package/debug/prefab/modules/atsc3_core/libs/android.$(TARGET_ARCH_ABI)/libatsc3_core.so
+# LOCAL_EXPORT_C_INCLUDES := $(LOCAL_PATH)/libpcre/include
+include $(PREBUILT_SHARED_LIBRARY)
+
 
 # ---------------------------
 # libatsc3_bridge jni interface
 
-LOCAL_PATH := $(MY_LOCAL_PATH)
 include $(CLEAR_VARS)
+# import our prefab build from core
+
+# $(call import-module,prefab/libatsc3_core)
+
 # LOCAL_ALLOW_UNDEFINED_SYMBOLS=true
 
-LOCAL_MODULE := atsc3_bridge
+LOCAL_MODULE := libatsc3_bridge
 
 LIBATSC3COREBRIDGECPP := \
     $(wildcard $(LOCAL_PATH)/src/cpp/*.cpp)
@@ -45,8 +56,8 @@ LOCAL_CFLAGS += -g -fpack-struct=8 -fPIC  \
 
 LOCAL_LDLIBS := -ldl -llog -landroid -lz
 
-# jjustman-2020-08-10 - link in our atsc3_core prefab shared library
-LOCAL_SHARED_LIBRARIES := atsc3_core
+# jjustman-2020-08-10 - use our "hand rolled prefab" to link in our atsc3_core prefab shared library
+LOCAL_SHARED_LIBRARIES := libatsc3_core
 
 include $(BUILD_SHARED_LIBRARY)
 

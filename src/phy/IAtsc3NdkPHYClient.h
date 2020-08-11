@@ -10,6 +10,13 @@ public:
     virtual int Close()  = 0;
 
     virtual ~IAtsc3NdkPHYClient() {};
+
+    /* jjustman-2020-08-10
+     * additional methods to impl?
+     *
+     *   int TuneMultiplePLP(int freqKhz, vector<int> plpIds);
+    int ListenPLP1(int plp1); //by default, we will always listen to PLP0, append additional PLP for listening
+     */
 };
 
 
