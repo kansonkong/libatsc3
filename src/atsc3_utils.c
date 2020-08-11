@@ -219,6 +219,7 @@ block_t* block_Alloc(int size_requested) {
 	new_block->i_pos = 0;
     new_block->_refcnt = 1;
     new_block->_is_alloc = 1;
+    new_block->_a_size = aligned_size - 1; //guard edge
 
 	return new_block;
 }
@@ -587,8 +588,26 @@ block_t* block_Resize(block_t* src, uint32_t src_size_requested) {
     uint32_t src_size_original = src->p_size;
     uint32_t src_i_pos_original = src->i_pos;
 
-	if(src->_a_size >= src_size_requested && src->i_pos < src_size_requested && src->p_size < src_size_requested) {
-    	src->p_size = src_size_requested;
+
+    //try and avoid a realloc if we have enough space from our original _a_size allocation
+	if(src_size_requested <= src->_a_size) {
+		if(src_size_requested > src->p_size) {
+			//soft increase, so null out our "extended" p_size area
+#ifdef __MALLOC_TRACE
+		    _ATSC3_UTILS_WARN("block_Resize: p_size: %d, a_size: %d, src_size_requested: %d, doing memset len: %d",
+		    		src->p_size, src->_a_size, src_size_requested, (src_size_requested - src->p_size));
+#endif
+			memset(&src->p_buffer[src->p_size], 0, (src_size_requested - src->p_size));
+		} else {
+			//soft decrease, set i_pos to 0 - don't null out data (lazy)
+#ifdef __MALLOC_TRACE
+			_ATSC3_UTILS_WARN("block_Resize: p_size: %d, a_size: %d, src_size_requested: %d, no memset",
+					    		src->p_size, src->_a_size, src_size_requested);
+#endif
+			src->i_pos = 0;
+		}
+
+		src->p_size = src_size_requested;
     	return src;
     }
 
@@ -602,7 +621,8 @@ block_t* block_Resize(block_t* src, uint32_t src_size_requested) {
     uint32_t aligned_size = src_size_required + 8 + (8 - (src_size_required %8));
 
 #ifdef __MALLOC_TRACE
-    _ATSC3_UTILS_INFO("block_Resize: original size requested: %u, aligned size: %u, alignment factor: %f", src_size_required, aligned_size, aligned_size/8.0);
+    _ATSC3_UTILS_WARN("block_Resize: p_size: %d, a_size: %d, original size requested: %u, aligned size: %u, alignment factor: %f",
+    		src->p_size, src->_a_size, src_size_required, aligned_size, aligned_size/8.0);
 #endif
 
     src->_a_size = aligned_size;

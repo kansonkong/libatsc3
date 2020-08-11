@@ -76,8 +76,6 @@ public:
 
 protected:
 
-
-
     //pcap replay context and locals
     int PcapProducerThreadParserRun();
     int PcapConsumerThreadRun();
