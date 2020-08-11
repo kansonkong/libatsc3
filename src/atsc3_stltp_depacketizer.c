@@ -7,10 +7,9 @@
 
 #include "atsc3_stltp_depacketizer.h"
 
-int _ATSC3_STLTP_DEPACKETIZER_INFO_ENABLED = 1;
-int _ATSC3_STLTP_DEPACKETIZER_DEBUG_ENABLED = 1;
-int _ATSC3_STLTP_DEPACKETIZER_TRACE_ENABLED = 1;
-
+int _ATSC3_STLTP_DEPACKETIZER_INFO_ENABLED = 0;
+int _ATSC3_STLTP_DEPACKETIZER_DEBUG_ENABLED = 0;
+int _ATSC3_STLTP_DEPACKETIZER_TRACE_ENABLED = 0;
 
 
 atsc3_stltp_depacketizer_context_t* atsc3_stltp_depacketizer_context_new() {
