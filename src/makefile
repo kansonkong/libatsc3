@@ -47,6 +47,7 @@ LOCAL_LD_LIBS_NCURSES=$(LOCAL_LD_LIBS) -lncurses
 all: 	intermediate_lls \
 		intermediate_alp \
 		intermediate_baseband \
+		intermediate_stltp \
 		intermediate_mbms \
 		intermediate_sls \
 		intermediate_mmt \
@@ -99,6 +100,7 @@ clean:
 	-rm -f listener_tests/atsc3_stltp_listener_test
 	-rm -f listener_tests/atsc3_stltp_alp_listener_test
 	-rm -f listener_tests/atsc3_stltp_alp_listener_reflector_test
+	-rm -f listener_tests/atsc3_stltp_alp_listener_reflector_test_noasan	
 	-rm -f listener_tests/atsc3_mmt_context_mfu_depacketizer_test
 	-rm -f listener_tests/atsc3_mmt_context_stpp_depacketizer_test
 	-rm -f a324_tests/a324_dstp_lls_aeat_emission_test	
@@ -124,6 +126,8 @@ intermediate_lls: 	atsc3_lls.o \
 intermediate_alp: atsc3_alp_types.o atsc3_alp_parser.o
 
 intermediate_baseband: atsc3_baseband_packet_types.o 
+
+intermediate_stltp:	atsc3_stltp_depacketizer.o
 
 intermediate_mbms: 	atsc3_mbms_envelope_xml.o \
 					atsc3_mime_multipart_related.o \
@@ -207,6 +211,7 @@ listener_tests: listener_tests/atsc3_alc_listener_test \
 				listener_tests/atsc3_stltp_listener_test \
 				listener_tests/atsc3_stltp_alp_listener_test \
 				listener_tests/atsc3_stltp_alp_listener_reflector_test \
+				listener_tests/atsc3_stltp_alp_listener_reflector_test_noasan \
 				listener_tests/atsc3_mmt_context_mfu_depacketizer_test \
 				listener_tests/atsc3_mmt_context_stpp_depacketizer_test
 
@@ -246,6 +251,9 @@ atsc3_baseband_packet_types.o: atsc3_baseband_packet_types.h atsc3_baseband_pack
 
 atsc3_alp_parser.o: atsc3_alp_types.h atsc3_alp_parser.h atsc3_alp_parser.c
 	cc $(CFLAGS) $(DEBUG)  -c atsc3_alp_parser.c 
+	
+atsc3_stltp_depacketizer.o: atsc3_stltp_depacketizer.h atsc3_stltp_depacketizer.c atsc3_stltp_parser.h atsc3_alp_parser.h
+	cc $(CFLAGS) $(DEBUG)  -c atsc3_stltp_depacketizer.c 
 
 atsc3_mbms_envelope_xml.o: atsc3_mbms_envelope_xml.h atsc3_mbms_envelope_xml.c
 	cc $(CFLAGS) $(DEBUG)  -c atsc3_mbms_envelope_xml.c 
@@ -489,6 +497,7 @@ libatsc3_intermediate.o: atsc3_lls.o \
 		atsc3_lls_sls_parser.o \
 		atsc3_alp_types.o \
 		atsc3_alp_parser.o \
+		atsc3_stltp_depacketizer.o \
 		atsc3_baseband_packet_types.o \
 		atsc3_mmtp_packet_types.o \
 		atsc3_mmtp_packet_utils.o \
@@ -553,6 +562,7 @@ libatsc3_intermediate.o: atsc3_lls.o \
 		atsc3_lls_sls_parser.o \
 		atsc3_alp_types.o \
 		atsc3_alp_parser.o \
+		atsc3_stltp_depacketizer.o \
 		atsc3_baseband_packet_types.o \
 		atsc3_mmtp_packet_types.o \
 		atsc3_mmtp_packet_utils.o \
@@ -991,9 +1001,14 @@ listener_tests/atsc3_stltp_alp_listener_test: listener_tests/atsc3_stltp_alp_lis
 # jjustman-2020-06-02 - renamed from atsc3_stltp_listener_alp_reflector.cpp to match atsc3_stltp_alp_listener_reflector_test.cpp
 # jjustman-2020-07-27 - link in atsc3_logging_externs.o as this is a very chatty output
 listener_tests/atsc3_stltp_alp_listener_reflector_test: listener_tests/atsc3_stltp_alp_listener_reflector_test.cpp libatsc3.o atsc3_logging_externs.o
-	g++ $(CFLAGS) $(DEBUG) listener_tests/atsc3_stltp_alp_listener_reflector_test.cpp libatsc3.o atsc3_logging_externs.o \
+	g++ $(CFLAGS) $(ASAN) $(DEBUG) listener_tests/atsc3_stltp_alp_listener_reflector_test.cpp libatsc3.o atsc3_logging_externs.o \
 		$(LOCAL_LD_LIBS) \
 		-o listener_tests/atsc3_stltp_alp_listener_reflector_test
+		
+listener_tests/atsc3_stltp_alp_listener_reflector_test_noasan: listener_tests/atsc3_stltp_alp_listener_reflector_test.cpp libatsc3.o atsc3_logging_externs.o
+	g++ $(CFLAGS) $(DEBUG) listener_tests/atsc3_stltp_alp_listener_reflector_test.cpp libatsc3.o atsc3_logging_externs.o \
+		$(LOCAL_LD_LIBS) \
+		-o listener_tests/atsc3_stltp_alp_listener_reflector_test_noasan
 
 listener_tests/atsc3_mmt_sls_listener_test: listener_tests/atsc3_mmt_sls_listener_test.cpp libatsc3.o
 	g++ $(ASAN) $(CFLAGS) $(DEBUG)  listener_tests/atsc3_mmt_sls_listener_test.cpp libatsc3.o \
