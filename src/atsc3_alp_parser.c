@@ -577,13 +577,13 @@ cleanup:
 }
 
 
-void atsc3_reflect_alp_packet_collection(atsc3_alp_packet_collection_t* atsc3_alp_packet_collection) {
+void atsc3_reflect_alp_packet_collection(uint8_t plp, atsc3_alp_packet_collection_t* atsc3_alp_packet_collection, pcap_t* atsc3_baseband_alp_output_pcap_device_reference) {
     //iterate thru completd packets
     for(int i=0; i < atsc3_alp_packet_collection->atsc3_alp_packet_v.count; i++) {
         atsc3_alp_packet_t* atsc3_alp_packet = atsc3_alp_packet_collection->atsc3_alp_packet_v.data[i];
 
         //if we are an IP packet, push this via pcap
-        if(atsc3_alp_packet_collection->descrInject && atsc3_alp_packet && atsc3_alp_packet->alp_packet_header.packet_type == 0x0) {
+        if(atsc3_baseband_alp_output_pcap_device_reference && atsc3_alp_packet && atsc3_alp_packet->alp_packet_header.packet_type == 0x0) {
             
             block_Rewind(atsc3_alp_packet->alp_payload);
             uint8_t* alp_payload = block_Get(atsc3_alp_packet->alp_payload);
@@ -625,8 +625,8 @@ void atsc3_reflect_alp_packet_collection(atsc3_alp_packet_collection_t* atsc3_al
                                   eth_frame[11],
                                   atsc3_alp_packet->alp_packet_header.packet_type, eth_frame_size);
                 
-                if (pcap_sendpacket(atsc3_alp_packet_collection->descrInject, eth_frame, eth_frame_size) != 0) {
-                    __ALP_PARSER_ERROR("error sending the packet: %s", pcap_geterr(atsc3_alp_packet_collection->descrInject));
+                if (pcap_sendpacket(atsc3_baseband_alp_output_pcap_device_reference, eth_frame, eth_frame_size) != 0) {
+                    __ALP_PARSER_ERROR("error sending the packet: %s", pcap_geterr(atsc3_baseband_alp_output_pcap_device_reference));
                 }
                 free(eth_frame);
                 eth_frame = NULL;

@@ -212,8 +212,6 @@ typedef struct atsc3_link_mapping_table {
 ATSC3_VECTOR_BUILDER_METHODS_INTERFACE(atsc3_link_mapping_table, atsc3_link_mapping_table_plp);
 
 typedef struct atsc3_alp_packet_collection {
-    pcap_t*                         descrInject; //optional descriptor for alp injection
-
     ATSC3_VECTOR_BUILDER_STRUCT(atsc3_baseband_packet); //re-fragmented baseband packets for alp de-encapsulation
     ATSC3_VECTOR_BUILDER_STRUCT(atsc3_alp_packet);      //completed ALP output packets for emission
     

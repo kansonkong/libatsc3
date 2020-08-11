@@ -36,7 +36,6 @@ atsc3_stltp_depacketizer_context_t* atsc3_stltp_depacketizer_context;
 extern pcap_t* descrInject;
 
 
-
 void process_packet(u_char *user, const struct pcap_pkthdr *pkthdr, const u_char *packet) {
 	atsc3_stltp_depacketizer_from_pcap_frame(user, pkthdr, packet, atsc3_stltp_depacketizer_context);
 }
@@ -460,7 +459,10 @@ int main(int argc,char **argv) {
     pcap_lookupnet(devInject, &netpInject, &maskpInject, errbufInject);
     pcap_t* descrInject = pcap_open_live(devInject, MAX_PCAP_LEN, 1, 1, errbufInject);
     
-    atsc3_stltp_depacketizer_context->atsc3_alp_packet_collection->descrInject = descrInject;
+
+    atsc3_stltp_depacketizer_context->atsc3_stltp_baseband_alp_packet_collection_callback_with_pcap_device_reference = atsc3_reflect_alp_packet_collection;
+    atsc3_stltp_depacketizer_context->atsc3_baseband_alp_output_pcap_device_reference = descrInject;
+
 
     pcap_loop(descr, -1, process_packet, NULL);
     

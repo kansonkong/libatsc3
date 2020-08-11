@@ -21,6 +21,36 @@ atsc3_stltp_depacketizer_context_t* atsc3_stltp_depacketizer_context_new() {
 	return atsc3_stltp_depacketizer_context;
 }
 
+void atsc3_stltp_depacketizer_context_free(atsc3_stltp_depacketizer_context_t** atsc3_stltp_depacketizer_context_p) {
+	if(atsc3_stltp_depacketizer_context_p) {
+		atsc3_stltp_depacketizer_context_t* atsc3_stltp_depacketizer_context = *atsc3_stltp_depacketizer_context_p;
+		if(atsc3_stltp_depacketizer_context) {
+
+			//cleanup
+			if(atsc3_stltp_depacketizer_context->atsc3_stltp_tunnel_packet_processed) {
+				atsc3_stltp_tunnel_packet_destroy(&atsc3_stltp_depacketizer_context->atsc3_stltp_tunnel_packet_processed);
+			}
+
+			if(atsc3_stltp_depacketizer_context->atsc3_alp_packet_collection) {
+				//atsc3_stltp_depacketizer_context->atsc3_alp_packet_collection
+				atsc3_alp_packet_collection_free_atsc3_alp_packet(atsc3_stltp_depacketizer_context->atsc3_alp_packet_collection);
+				atsc3_alp_packet_collection_free_atsc3_baseband_packet(atsc3_stltp_depacketizer_context->atsc3_alp_packet_collection);
+				if(atsc3_stltp_depacketizer_context->atsc3_alp_packet_collection->atsc3_alp_packet_pending) {
+					atsc3_alp_packet_free(&atsc3_stltp_depacketizer_context->atsc3_alp_packet_collection->atsc3_alp_packet_pending);
+				}
+			}
+
+			free(atsc3_stltp_depacketizer_context);
+			atsc3_stltp_depacketizer_context = NULL;
+
+		}
+		*atsc3_stltp_depacketizer_context_p = NULL;
+	}
+
+}
+
+
+
 
 //TODO - add SMPTE-2022.1 FEC decoding (see fork of prompeg-decoder - https://github.com/jjustman/prompeg-decoder)
 
@@ -258,7 +288,20 @@ void atsc3_stltp_depacketizer_from_ip_udp_rtp_packet(atsc3_ip_udp_rtp_packet_t* 
             }
 
             //send our ALP IP packets, then clear the collection
-            atsc3_reflect_alp_packet_collection(atsc3_alp_packet_collection);
+            if(atsc3_stltp_depacketizer_context->atsc3_stltp_baseband_alp_packet_collection_callback) {
+            	atsc3_stltp_depacketizer_context->atsc3_stltp_baseband_alp_packet_collection_callback(atsc3_stltp_depacketizer_context_get_plp_from_context(atsc3_stltp_depacketizer_context), atsc3_alp_packet_collection);
+            }
+
+        	//generic context for class instance re-scoping
+            if(atsc3_stltp_depacketizer_context->atsc3_stltp_baseband_alp_packet_collection_callback_with_context && atsc3_stltp_depacketizer_context->atsc3_stltp_baseband_alp_packet_collection_callback_context) {
+            	atsc3_stltp_depacketizer_context->atsc3_stltp_baseband_alp_packet_collection_callback_with_context(atsc3_stltp_depacketizer_context_get_plp_from_context(atsc3_stltp_depacketizer_context), atsc3_alp_packet_collection, atsc3_stltp_depacketizer_context->atsc3_stltp_baseband_alp_packet_collection_callback_context);
+            }
+
+
+            //explicit callback context for pcap_t reflection
+            if(atsc3_stltp_depacketizer_context->atsc3_stltp_baseband_alp_packet_collection_callback_with_pcap_device_reference && atsc3_stltp_depacketizer_context->atsc3_baseband_alp_output_pcap_device_reference) {
+            	atsc3_stltp_depacketizer_context->atsc3_stltp_baseband_alp_packet_collection_callback_with_pcap_device_reference(atsc3_stltp_depacketizer_context_get_plp_from_context(atsc3_stltp_depacketizer_context), atsc3_alp_packet_collection, atsc3_stltp_depacketizer_context->atsc3_baseband_alp_output_pcap_device_reference);
+            }
 
             //TODO: jjustman-2019-11-23: move this to atsc3_alp_packet_free ATSC3_VECTOR_BUILDER free method
             //clear out our inner payloads, then let collection_clear free the object instance
@@ -324,14 +367,18 @@ cleanup:
     atsc3_ip_udp_rtp_packet_destroy(&ip_udp_rtp_packet);
 }
 
-void atsc3_stltp_depacketizer_from_blockt(block_t* packet, atsc3_stltp_depacketizer_context_t* atsc3_stltp_depacketizer_context) {
-	atsc3_ip_udp_rtp_packet_t* ip_udp_rtp_packet = atsc3_ip_udp_rtp_packet_process_from_blockt_pos(packet);
+/*
+ * note: packet ownership is transferred to atsc3_stltp_depacketizer and ip_udp_rtp packet, so do NOT try and free *block_t unless we return false;
+ */
+bool atsc3_stltp_depacketizer_from_blockt(block_t** packet_p, atsc3_stltp_depacketizer_context_t* atsc3_stltp_depacketizer_context) {
+	atsc3_ip_udp_rtp_packet_t* ip_udp_rtp_packet = atsc3_ip_udp_rtp_packet_process_from_blockt_pos(*packet_p);
 	if(!ip_udp_rtp_packet) {
-		return;
+		return false;
 	}
 
 	atsc3_stltp_depacketizer_from_ip_udp_rtp_packet(ip_udp_rtp_packet, atsc3_stltp_depacketizer_context);
-
+	*packet_p = NULL;
+	return true;
 }
 
 void atsc3_stltp_depacketizer_from_pcap_frame(u_char *user, const struct pcap_pkthdr *pkthdr, const u_char *packet, atsc3_stltp_depacketizer_context_t* atsc3_stltp_depacketizer_context) {
@@ -345,3 +392,13 @@ void atsc3_stltp_depacketizer_from_pcap_frame(u_char *user, const struct pcap_pk
     atsc3_stltp_depacketizer_from_ip_udp_rtp_packet(ip_udp_rtp_packet, atsc3_stltp_depacketizer_context);
 }
 
+
+uint8_t atsc3_stltp_depacketizer_context_get_plp_from_context(atsc3_stltp_depacketizer_context_t* atsc3_stltp_depacketizer_context) {
+	uint8_t plp = 0;
+
+	if(atsc3_stltp_depacketizer_context->inner_rtp_port_filter > 30000 && atsc3_stltp_depacketizer_context->inner_rtp_port_filter <= 30064) {
+		plp = atsc3_stltp_depacketizer_context->inner_rtp_port_filter - 30000;
+	}
+
+	return plp;
+}
