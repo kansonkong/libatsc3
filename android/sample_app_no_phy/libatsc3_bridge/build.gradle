@@ -1,5 +1,4 @@
 apply plugin: 'com.android.library'
-//apply plugin: 'com.ydq.android.gradle.native-aar.import'
 
 android {
     compileSdkVersion 28
@@ -13,27 +12,28 @@ android {
             //abiFilters 'arm64-v8a', 'armeabi-v7a' //, 'arm64-v8a' //'', 'x86_64',
         }
     }
+    externalNativeBuild {
+        ndkBuild {
+            path 'Android.mk'
+        }
+    }
     buildTypes {
+        debug {
+            jniDebuggable = true
+            debuggable true
+        }
+//        atsc3_bridge {
+//            jniDebuggable = true
+//            debuggable true
+//        }
         release {
             minifyEnabled false
             proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
             jniDebuggable = true
             debuggable true
         }
-        debug {
-            jniDebuggable = true
-            debuggable true
-        }
-        atsc3_bridge {
-            jniDebuggable = true
-            debuggable true
-        }
     }
-    externalNativeBuild {
-        ndkBuild {
-            path 'Android.mk'
-        }
-    }
+
     buildToolsVersion = '29.0.2'
 
     compileOptions {
@@ -55,8 +55,6 @@ android {
 
         }
     }
-
-
 }
 
 repositories {
@@ -68,9 +66,9 @@ dependencies {
 
     //grrr!!! api project(':libatsc3_core')
     ///Users/jjustman/Desktop/libatsc3/android/sample_app_no_phy/libatsc3_core/build/intermediates/prefab_package/debug/prefab/modules/atsc3_core/libs
-    //api project(':libatsc3_core')
-    api fileTree(dir: '../libatsc3_core/build/intermediates/prefab_package/debug/prefab/modules/atsc3_core/libs', include: ['*.so'])
 
+    implementation fileTree(dir: '../libatsc3_core/build/intermediates/prefab_package/debug/prefab/modules/atsc3_core/libs', include: ['**/*.so'])
 
-
+    //jjustman-2020-08-11 - fails 2020-08-11T23:36:35.177-0700 [ERROR] [org.gradle.internal.buildevents.BuildExceptionReporter]       > No matching variant of project :libatsc3_core was found. The consumer was configured to find a runtime of a component, as well as attribute 'com.android.build.api.attributes.BuildTypeAttr' with value 'atsc3_bridge' but:
+    api project(':libatsc3_core')
 }

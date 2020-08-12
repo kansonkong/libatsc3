@@ -64,6 +64,7 @@ repositories {
     google()
 }
 dependencies {
+    api project(':libatsc3_core')
     api project(':libatsc3_bridge')
     api project(':libatsc3_phy_virtual')
 

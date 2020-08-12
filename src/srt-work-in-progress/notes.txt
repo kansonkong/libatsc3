@@ -1,0 +1,94 @@
+# srt make
+
+cd srt
+
+export OPENSSL_ROOT_DIR=$(brew --prefix openssl)
+
+export OPENSSL_LIB_DIR=$(brew --prefix openssl)"/lib"
+export OPENSSL_INCLUDE_DIR=$(brew --prefix openssl)"/include"
+
+./configure --prefix `pwd`/build --enable-debug=1 --enable-heavy-logging
+
+make -j32
+make install
+
+
+
+# transmitmedia.cpp
+
+
+/toolchains/llvm/prebuilt/darwin-x86_64/bin
+
+
+
+NDK=/Users/jjustman/Library/Android/sdk/ndk/21.2.6472646/toolchains/aarch64-linux-android-4.9/prebuilt/darwin-x86_64/
+export ANDROID_NDK_HOME=$NDK
+
+export PATH=/Users/jjustman/Library/Android/sdk/ndk/21.2.6472646/toolchains/aarch64-linux-android-4.9/prebuilt/darwin-x86_64/bin/:$PATH
+
+export PATH=/Users/jjustman/Library/Android/sdk/ndk/21.2.6472646/toolchains/llvm/prebuilt/darwin-x86_64/bin/:$PATH
+
+
+#!/bin/sh
+
+# cd /home/baron/srt
+
+# Add the standalone toolchain to the search path.
+# export PATH=$PATH:/home/baron/android-toolchain-arm64/bin
+
+# Tell configure what tools to use.
+target_host=aarch64-linux-android
+export AR=$target_host-ar
+export AS=$target_host-clang
+export CC=${target_host}28-clang
+export CXX=${target_host}28-clang++
+export LD=$target_host-ld
+export STRIP=$target_host-strip
+
+# Tell configure what flags Android requires.
+export CFLAGS="-fPIE -fPIC"
+export LDFLAGS="-pie"
+
+git clean -fd
+./configure 
+
+--ENABLE_DEBUG:BOOL=TRUE --ENABLE_SHARED:BOOL=FALSE --ENABLE_CXX11:BOOL=FALSE
+make
+make install
+
+
+$BASE_DIR/arm64-v8a
+
+export install_dir=/Users/jjustman/Desktop/libatsc3/srt/docs/Android/arm64-v8a
+./configure --use-openssl-pc=OFF --prefix=$install_dir --CMAKE_PREFIX_PATH=$install_dir --CMAKE_INSTALL_PREFIX=$install_dir
+
+
+NDK=/Users/jjustman/Library/Android/sdk/ndk/21.2.6472646
+export ANDROID_NDK_HOME=$NDK
+export toolchain=$NDK/toolchains/llvm/prebuilt/darwin-x86_64
+
+
+export OPENSSL_CONF=android64-aarch64
+echo "running ./Configure $OPENSSL_CONF --prefix=$install_dir --openssldir=$install_dir -fPIC"
+CC=clang
+
+./Configure $OPENSSL_CONF --openssldir=$install_dir -fPIC
+
+# OpenSSL (1.0.2) adds -mandroid to the compile flags. This flag is not recognized by clang.
+sed -i 's/-mandroid//g' Makefile
+make
+make install
+
+
+
+clang++: warning: argument unused during compilation: '-dynamiclib' [-Wunused-command-line-argument]
+clang++: warning: argument unused during compilation: '-compatibility_version 1.0.0' [-Wunused-command-line-argument]
+clang++: warning: argument unused during compilation: '-current_version 1.4.1' [-Wunused-command-line-argument]
+clang++: warning: argument unused during compilation: '-install_name @rpath/libsrt.1.dylib' [-Wunused-command-line-argument]
+
+
+hack buiild?
+
+/Users/jjustman/Library/Android/sdk/ndk/21.2.6472646/toolchains/llvm/prebuilt/darwin-x86_64/bin/aarch64-linux-android28-clang++   -Wl,--no-undefined -Wl,--unresolved-symbols=ignore-in-object-files -DENABLE_LOGGING=1 -Wextra -O3 -DNDEBUG -isysroot /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX10.15.sdk -dynamiclib -Wl,-headerpad_max_install_names -pie -compatibility_version 1.0.0 -current_version 1.4.1 -o libsrt.1.4.1.dylib -install_name @rpath/libsrt.1.dylib CMakeFiles/srt_shared.dir/cmake_object_lib_support.c.o CMakeFiles/srt_virtual.dir/srtcore/api.cpp.o CMakeFiles/srt_virtual.dir/srtcore/buffer.cpp.o CMakeFiles/srt_virtual.dir/srtcore/cache.cpp.o CMakeFiles/srt_virtual.dir/srtcore/channel.cpp.o CMakeFiles/srt_virtual.dir/srtcore/common.cpp.o CMakeFiles/srt_virtual.dir/srtcore/core.cpp.o CMakeFiles/srt_virtual.dir/srtcore/crypto.cpp.o CMakeFiles/srt_virtual.dir/srtcore/epoll.cpp.o CMakeFiles/srt_virtual.dir/srtcore/fec.cpp.o CMakeFiles/srt_virtual.dir/srtcore/handshake.cpp.o CMakeFiles/srt_virtual.dir/srtcore/list.cpp.o CMakeFiles/srt_virtual.dir/srtcore/md5.cpp.o CMakeFiles/srt_virtual.dir/srtcore/packet.cpp.o CMakeFiles/srt_virtual.dir/srtcore/packetfilter.cpp.o CMakeFiles/srt_virtual.dir/srtcore/queue.cpp.o CMakeFiles/srt_virtual.dir/srtcore/congctl.cpp.o CMakeFiles/srt_virtual.dir/srtcore/srt_c_api.cpp.o CMakeFiles/srt_virtual.dir/srtcore/window.cpp.o CMakeFiles/srt_virtual.dir/srtcore/srt_compat.c.o CMakeFiles/srt_virtual.dir/srtcore/sync.cpp.o CMakeFiles/srt_virtual.dir/srtcore/sync_posix.cpp.o CMakeFiles/srt_virtual.dir/haicrypt/cryspr.c.o CMakeFiles/srt_virtual.dir/haicrypt/cryspr-openssl.c.o CMakeFiles/srt_virtual.dir/haicrypt/hcrypt.c.o CMakeFiles/srt_virtual.dir/haicrypt/hcrypt_ctx_rx.c.o CMakeFiles/srt_virtual.dir/haicrypt/hcrypt_ctx_tx.c.o CMakeFiles/srt_virtual.dir/haicrypt/hcrypt_rx.c.o CMakeFiles/srt_virtual.dir/haicrypt/hcrypt_sa.c.o CMakeFiles/srt_virtual.dir/haicrypt/hcrypt_tx.c.o CMakeFiles/srt_virtual.dir/haicrypt/hcrypt_xpt_srt.c.o CMakeFiles/srt_virtual.dir/haicrypt/haicrypt_log.cpp.o  -pthread 
+
+

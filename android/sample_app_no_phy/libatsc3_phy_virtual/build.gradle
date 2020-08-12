@@ -18,16 +18,21 @@ android {
         }
     }
     buildTypes {
+        debug {
+            jniDebuggable = true
+            debuggable true
+        }
+//        atsc3_phy_virtual_debug {
+//            jniDebuggable = true
+//            debuggable true
+//        }
+
         release {
             minifyEnabled false
             proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
             jniDebuggable = true
             debuggable true
 
-        }
-        debug {
-            jniDebuggable = true
-            debuggable true
         }
     }
 
@@ -43,25 +48,35 @@ android {
         doNotStrip '**.so'
     }
 
-    buildFeatures {
-        //prefabPublishing true
-        prefab true
-    }
-    prefab {
-        atsc3_phy_virtual {
-            //headers "../../../src/**/*.h"
-        }
-    }
+//    buildFeatures {
+//        //prefabPublishing true
+//        prefab true
+//    }
+
+
+//    prefab {
+//        atsc3_phy_virtual {
+//            //headers "../../../src/**/*.h"
+//        }
+//    }
 }
 
 repositories {
     google()
 }
 dependencies {
+//    implementation 'com.android.ndk.thirdparty:openssl:1.1.1d-alpha-1'
+
     // api project(':libatsc3_bridge')
-    api project(':libatsc3_core')
-    implementation project(path: ':libatsc3_bridge')
+   // api project(':libatsc3_core')
+    //implementation project(path: ':libatsc3_bridge')
 //    api project(':libatsc3_bridge')
 //    implementation project(':libatsc3_bridge')
+
+
+//    //jjustman-2020-08-11 - fails
+    api project(':libatsc3_bridge')
+    api project(':libatsc3_core')
+    implementation fileTree(dir: '../libatsc3_bridge/build/intermediates/prefab_package/debug/prefab/modules/atsc3_bridge/libs', include: ['**/*.so'])
 
 }
