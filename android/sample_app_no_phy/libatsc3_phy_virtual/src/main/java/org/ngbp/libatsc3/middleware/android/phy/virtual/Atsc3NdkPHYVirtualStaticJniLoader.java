@@ -1,4 +1,4 @@
-package org.ngbp.libatsc3.middleware.phy.virtual;
+package org.ngbp.libatsc3.middleware.android.phy.virtual;
 
 public class Atsc3NdkPHYVirtualStaticJniLoader {
 
