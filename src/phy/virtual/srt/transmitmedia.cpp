@@ -27,7 +27,7 @@ jjustman@sdg-komo-mac188 armeabi-v7a %
 #include <stdexcept>
 #include <iterator>
 #include <map>
-#include <srt/srt.h>
+#include <srtcore/srt.h>
 #if !defined(_WIN32)
 #include <sys/ioctl.h>
 #else

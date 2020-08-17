@@ -14,7 +14,7 @@
 #include <algorithm>
 #include <cctype>
 #include "logsupport.hpp"
-#include <srt/srt.h>
+#include <srtcore/srt.h>
 
 using namespace std;
 

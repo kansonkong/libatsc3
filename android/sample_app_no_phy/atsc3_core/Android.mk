@@ -73,6 +73,6 @@ LOCAL_CFLAGS += -g -fpack-struct=8 -fPIC  \
                 -D__DISABLE_LIBPCAP__ -D__DISABLE_ISOBMFF_LINKAGE__ -D__DISABLE_NCURSES__ \
                 -D__MOCK_PCAP_REPLAY__ -D__LIBATSC3_ANDROID__
 
-LOCAL_LDLIBS := -ldl -llog -landroid -lz -lc
+LOCAL_LDLIBS := -ldl -lc++_shared -llog -landroid -lz -lc
 
 include $(BUILD_SHARED_LIBRARY)

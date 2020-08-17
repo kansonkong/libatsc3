@@ -88,8 +88,8 @@
 // to the library. Application using the "installed" library should
 // use <srt/srt.h>
 
-#include <srt/srt.h>
-#include <srt/udt.h> // This TEMPORARILY contains extra C++-only SRT API.
+#include <srtcore/srt.h>
+#include <srtcore/udt.h> // This TEMPORARILY contains extra C++-only SRT API.
 #include <srtcore/logging.h>
 
 using namespace std;

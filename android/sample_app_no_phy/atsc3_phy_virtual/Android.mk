@@ -16,6 +16,16 @@ MY_CUR_PATH := $(LOCAL_PATH)
 #	include $(PREBUILT_SHARED_LIBRARY)
 #endif
 ##---
+
+##jjustman-2020-08-12 - remove prefab LOCAL_SRC_FILES := $(LOCAL_PATH)/../libatsc3_core/build/intermediates/prefab_package/debug/prefab/modules/atsc3_core/libs/android.$(TARGET_ARCH_ABI)/libatsc3_core.so
+include $(CLEAR_VARS)
+LOCAL_MODULE := local-pv-atsc3_core
+LOCAL_SRC_FILES := $(LOCAL_PATH)/../atsc3_core/build/intermediates/ndkBuild/debug/obj/local/$(TARGET_ARCH_ABI)/libatsc3_core.so
+ifneq ($(MAKECMDGOALS),clean)
+include $(PREBUILT_SHARED_LIBRARY)
+endif
+
+
 #
 #
 #include $(CLEAR_VARS)
@@ -24,12 +34,21 @@ MY_CUR_PATH := $(LOCAL_PATH)
 #ifneq ($(MAKECMDGOALS),clean)
 #	include $(PREBUILT_SHARED_LIBRARY)
 #endif
+##jjustman-2020-08-12 - remove prefab LOCAL_SRC_FILES := $(LOCAL_PATH)/../libatsc3_core/build/intermediates/prefab_package/debug/prefab/modules/atsc3_core/libs/android.$(TARGET_ARCH_ABI)/libatsc3_core.so
+include $(CLEAR_VARS)
+LOCAL_MODULE := local-pv-atsc3_bridge
+LOCAL_SRC_FILES := $(LOCAL_PATH)/../atsc3_bridge/build/intermediates/ndkBuild/debug/obj/local/$(TARGET_ARCH_ABI)/libatsc3_bridge.so
+ifneq ($(MAKECMDGOALS),clean)
+include $(PREBUILT_SHARED_LIBRARY)
+endif
+
+
 # ---
 # libsrt library
 
 include $(CLEAR_VARS)
 LOCAL_MODULE := libsrt
-LOCAL_SRC_FILES := $(LOCAL_PATH)/../libatsc3_core/libsrt/libs/$(TARGET_ARCH_ABI)/libsrt.so
+LOCAL_SRC_FILES := $(LOCAL_PATH)/../atsc3_core/libsrt/libs/$(TARGET_ARCH_ABI)/libsrt.so
 # LOCAL_EXPORT_C_INCLUDES := $(LOCAL_PATH)/../libatsc3_core/libsrt/include
 include $(PREBUILT_SHARED_LIBRARY)
 
@@ -37,12 +56,12 @@ include $(PREBUILT_SHARED_LIBRARY)
 
 include $(CLEAR_VARS)
 LOCAL_MODULE := libssl
-LOCAL_SRC_FILES := $(LOCAL_PATH)/../libatsc3_core/libsrt/libs/$(TARGET_ARCH_ABI)/libssl.so
+LOCAL_SRC_FILES := $(LOCAL_PATH)/../atsc3_core/libsrt/libs/$(TARGET_ARCH_ABI)/libssl.so
 include $(PREBUILT_SHARED_LIBRARY)
 
 include $(CLEAR_VARS)
 LOCAL_MODULE := libcrypto
-LOCAL_SRC_FILES := $(LOCAL_PATH)/../libatsc3_core/libsrt/libs/$(TARGET_ARCH_ABI)/libcrypto.so
+LOCAL_SRC_FILES := $(LOCAL_PATH)/../atsc3_core/libsrt/libs/$(TARGET_ARCH_ABI)/libcrypto.so
 include $(PREBUILT_SHARED_LIBRARY)
 
 
@@ -84,11 +103,12 @@ LOCAL_C_INCLUDES += $(LOCAL_PATH)/../../../src
 LOCAL_C_INCLUDES += $(LOCAL_PATH)/../../../src/phy
 LOCAL_C_INCLUDES += $(LOCAL_PATH)/../../../src/phy/virtual
 
-
 # prefab-fixup.. for ndk phy bridge/application bridge
 LOCAL_C_INCLUDES += $(LOCAL_PATH)/../libatsc3_bridge/src/jni
 
 #libsrt prefab fixup for srt
+LOCAL_C_INCLUDES += $(LOCAL_PATH)/../../..
+LOCAL_C_INCLUDES += $(LOCAL_PATH)/../../../srt
 LOCAL_C_INCLUDES += $(LOCAL_PATH)/../../../srt/srtcore
 LOCAL_C_INCLUDES += $(LOCAL_PATH)/../../../src/phy/virtual/srt
 LOCAL_C_INCLUDES += $(LOCAL_PATH)/../../../src/phy/virtual/srt/haicrypt
@@ -102,14 +122,14 @@ LOCAL_CFLAGS += -g -fpack-struct=8  \
                 -D__MOCK_PCAP_REPLAY__ -D__LIBATSC3_ANDROID__ \
                  -DSRT_VERSION=\"1.4.1\"
 
-LOCAL_LDLIBS += -ldl -llog -landroid -lz
-LOCAL_LDFLAGS += -fPIE -fPIC
+LOCAL_LDLIBS += -ldl -lc++_shared -llog -landroid -lz -latsc3_core -latsc3_bridge
+LOCAL_LDFLAGS += -fPIE -fPIC -L $(LOCAL_PATH)/../atsc3_bridge/build/intermediates/ndkBuild/debug/obj/local/$(TARGET_ARCH_ABI)/ -L $(LOCAL_PATH)/../atsc3_core/build/intermediates/ndkBuild/debug/obj/local/$(TARGET_ARCH_ABI)/
 
 # jjustman-2020-08-10 - link in our atsc3_bridge prefab shared library
 # LOCAL_SHARED_LIBRARIES := atsc3_bridge
 # ifneq ($(MAKECMDGOALS),clean)
 
 LOCAL_SHARED_LIBRARIES :=  libssl libcrypto  libsrt
-# libatsc3_bridge libatsc3_core
+# atsc3_bridge atsc3_core
 
 include $(BUILD_SHARED_LIBRARY)
