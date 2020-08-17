@@ -18,6 +18,8 @@ include $(CLEAR_VARS)
 
 LOCAL_MODULE := atsc3NdkClient
 
+LOCAL_SRC_FILES := $(LOCAL_PATH)/src/jni/Atsc3NdkClient.cpp
+
 LOCAL_CFLAGS += -g -fpack-struct=8 -fPIC  \
                 -D__DISABLE_LIBPCAP__ -D__DISABLE_ISOBMFF_LINKAGE__ -D__DISABLE_NCURSES__ \
                 -D__MOCK_PCAP_REPLAY__ -D__LIBATSC3_ANDROID__

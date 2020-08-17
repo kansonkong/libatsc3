@@ -56,7 +56,7 @@ include $(PREBUILT_SHARED_LIBRARY)
 
 include $(CLEAR_VARS)
 LOCAL_MODULE := libssl
-LOCAL_SRC_FILES := $(LOCAL_PATH)/../atsc3_core/libsrt/libs/$(TARGET_ARCH_ABI)/libssl.so
+LOCAL_SRC_FILES := $(LOCAL_PATH)/../atsc3_core/libsrt/libs/$(TARGET_ARCH_ABI)/libssl.so.1.1
 include $(PREBUILT_SHARED_LIBRARY)
 
 include $(CLEAR_VARS)
@@ -78,6 +78,12 @@ include $(CLEAR_VARS)
 
 LOCAL_MODULE := libatsc3_phy_virtual
 
+LIBATSC3JNI_LOCAL_PHYVIRTUALCPP := \
+    $(wildcard $(LOCAL_PATH)/src/jni/*.cpp)
+
+LIBATSC3JNI_LOCAL_SRT_PHYVIRTUALCPP := \
+    $(wildcard $(LOCAL_PATH)/src/jni/srt/*.cpp)
+
 LIBATSC3JNIPHYVIRTUALCPP := \
     $(wildcard $(LOCAL_PATH)/../../../src/phy/virtual/*.cpp)
 
@@ -92,6 +98,8 @@ LIBATSC3JNI_SRT_CORE_PHYVIRTUALCPP := \
 
 # jjustman-2020-08-12 - super hack for impl for srt_c_api.cpp
 LOCAL_SRC_FILES += \
+    $(LIBATSC3JNI_LOCAL_PHYVIRTUALCPP:$(LOCAL_PATH)/%=%) \
+    $(LIBATSC3JNI_LOCAL_SRT_PHYVIRTUALCPP:$(LOCAL_PATH)/%=%) \
     $(LIBATSC3JNIPHYVIRTUALCPP:$(LOCAL_PATH)/%=%) \
     $(LIBATSC3JNI_SRT_PHYVIRTUALCPP:$(LOCAL_PATH)/%=%) \
     $(LIBATSC3JNI_SRT_CORE_PHYVIRTUALCPP:$(LOCAL_PATH)/%=%) \
@@ -113,7 +121,12 @@ LOCAL_C_INCLUDES += $(LOCAL_PATH)/../../../srt/srtcore
 LOCAL_C_INCLUDES += $(LOCAL_PATH)/../../../src/phy/virtual/srt
 LOCAL_C_INCLUDES += $(LOCAL_PATH)/../../../src/phy/virtual/srt/haicrypt
 
-LOCAL_C_INCLUDES += $(LOCAL_PATH)/../libatsc3_core/libsrt/include
+# LOCAL_C_INCLUDES += $(LOCAL_PATH)/../atsc3_core/libsrt/include
+
+#brige includes
+LOCAL_C_INCLUDES += $(LOCAL_PATH)/../atsc3_bridge/src/jni
+
+
 
 
 # shared library missing -fPIC for srt
@@ -129,7 +142,7 @@ LOCAL_LDFLAGS += -fPIE -fPIC -L $(LOCAL_PATH)/../atsc3_bridge/build/intermediate
 # LOCAL_SHARED_LIBRARIES := atsc3_bridge
 # ifneq ($(MAKECMDGOALS),clean)
 
-LOCAL_SHARED_LIBRARIES :=  libssl libcrypto  libsrt
+# LOCAL_SHARED_LIBRARIES :=  libssl libcrypto  libsrt
 # atsc3_bridge atsc3_core
 
 include $(BUILD_SHARED_LIBRARY)

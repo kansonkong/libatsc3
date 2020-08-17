@@ -435,4 +435,5 @@ int Atsc3NdkPHYBridge::ListenPLP1(int plp1) {
 }
 
 extern "C"
+JNIEXPORT jintextern "C"
 JNIEXPORT jint

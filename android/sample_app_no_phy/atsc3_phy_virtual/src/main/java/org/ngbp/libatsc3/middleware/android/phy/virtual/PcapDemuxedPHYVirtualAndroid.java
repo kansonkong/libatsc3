@@ -17,7 +17,7 @@ javah -classpath ./bin/classes -d jni com.nvidia.example.fibonacci.FibonacciActi
 
 
  */
-public class PcapDemuxedPHYVirtualAndroid extends Atsc3NdkPHYClientBase {
+public class PcapDemuxedPHYVirtualAndroid extends Atsc3NdkPHYVirtualStaticJniLoader  {
 
     //libatsc3 methods here...
     public native int atsc3_pcap_open_for_replay(String filename);

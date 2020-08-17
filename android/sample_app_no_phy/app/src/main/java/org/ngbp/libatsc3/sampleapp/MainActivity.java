@@ -62,10 +62,10 @@ import org.ngbp.libatsc3.middleware.Atsc3NdkPHYBridge;
 import org.ngbp.libatsc3.middleware.android.DebuggingFlags;
 import org.ngbp.libatsc3.middleware.android.a331.PackageExtractEnvelopeMetadataAndPayload;
 import org.ngbp.libatsc3.ServiceHandler;
-import org.ngbp.libatsc3.ThingsUI;
 import org.ngbp.libatsc3.middleware.android.application.interfaces.IAtsc3NdkApplicationBridgeCallbacks;
 import org.ngbp.libatsc3.middleware.android.phy.Atsc3NdkPHYClientBase;
 import org.ngbp.libatsc3.middleware.android.phy.interfaces.IAtsc3NdkPHYBridgeCallbacks;
+import org.ngbp.libatsc3.middleware.android.phy.virtual.srt.SRTTransmitSTLTPVirtualPHY;
 import org.ngbp.libatsc3.pcapreplay.PcapFileSelectorActivity;
 import org.ngbp.libatsc3.phy.RfScanUtility;
 import org.ngbp.libatsc3.middleware.android.ATSC3PlayerFlags;
@@ -737,8 +737,6 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         showMsg("onCreate: ApiInit\n");
         atsc3NdkPHYBridge.init();
 
-        ThingsUI.WriteToAlphaDisplayNoEx("AINT");
-
         // now, scan usb devices and try to connect
         ServiceHandler.GetInstance().postDelayed(new Runnable() {
             @Override
@@ -764,6 +762,16 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         ((Button) findViewById(R.id.butStop)).setOnClickListener(this);
         ((Button) findViewById(R.id.butReset)).setOnClickListener(this);
         ((Button) findViewById(R.id.butClose)).setOnClickListener(this);
+
+        ((Button) findViewById(R.id.btnSRT)).setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                SRTTransmitSTLTPVirtualPHY srtTransmitSTLTPVirtualPHY = new SRTTransmitSTLTPVirtualPHY();
+                srtTransmitSTLTPVirtualPHY.ApiInit();
+                Log.d("MainActivity", "after running SRTTransmitSTLTPVirtualPHY");
+            }
+        });
+
 
         //add focus changed listener -- onFocusedChangedListenerUiBtn
         ((Button) findViewById(R.id.butOpen)).setOnFocusChangeListener(onFocusedChangedListenerUiBtn);
@@ -1380,47 +1388,8 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         }
     }
 
-    public class MfuVideoStatsLedRunnable implements Runnable {
-        Boolean shouldStop = false;
-
-        @Override
-        public void run() {
-
-            while(!shouldStop) {
-                try {
-                    ThingsUI.WriteToAlphaDisplay("PktC");
-                    Thread.sleep(5000);
-
-                    ThingsUI.WriteToAlphaDisplay("Ifr");
-                    Thread.sleep(5000);
-                    ThingsUI.WriteToAlphaDisplay(String.format("%d", mfuStatsVideoICount));
-                    Thread.sleep(5000);
-
-                    ThingsUI.WriteToAlphaDisplay("B/P");
-                    Thread.sleep(5000);
-                    ThingsUI.WriteToAlphaDisplay(String.format("%d", mfuStatsVideoPBCount));
-                    Thread.sleep(5000);
-
-                    ThingsUI.WriteToAlphaDisplay("Aud");
-                    Thread.sleep(5000);
-                    ThingsUI.WriteToAlphaDisplay(String.format("%d", MmtPacketIdContext.audio_packet_statistics.total_mfu_samples_count));
-                    Thread.sleep(5000);
 
 
-                } catch (Exception | java.lang.NoClassDefFoundError ex) {
-                    ex.printStackTrace();
-                    shouldStop = true;
-                }
-            }
-        }
-    };
-
-    public void updateLedWithAVCount() {
-        if (mfuVideoStatsLedThread == null) {
-            mfuVideoStatsLedThread = new Thread(new MfuVideoStatsLedRunnable());
-            mfuVideoStatsLedThread.start();
-        }
-    }
 
     @Override
     protected void onPause() {
@@ -1807,7 +1776,6 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         {
             case R.id.butOpen:
                 Log.d("onClick", "Button: Open\n");
-                updateLedWithAVCount();
 
                 if(inputSelectionFromPcap) {
                     inputSelectionFromPcap = true;
@@ -1820,7 +1788,6 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
 
 
                     demuxedPcapVirtualPHY.atsc3_pcap_thread_run();
-                    ThingsUI.WriteToAlphaDisplayNoEx("PCAP");
                     enableDeviceControlButtons(true);
                     break;
                 }
@@ -1947,13 +1914,10 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                     if (!ATSC3PlayerFlags.ATSC3PlayerStartPlayback) {
                         MfuByteBufferHandler.clearQueues();
                         myDecoderHandlerThread.decoderHandler.sendMessage(myDecoderHandlerThread.decoderHandler.obtainMessage(DecoderHandlerThread.CREATE_CODEC));
-                        ThingsUI.WriteToAlphaDisplayNoEx(String.format("PLAY"));
                     } else {
                         ATSC3PlayerFlags.ATSC3PlayerStartPlayback = false;
                         ATSC3PlayerFlags.ATSC3PlayerStopPlayback = true;
                         myDecoderHandlerThread.decoderHandler.sendMessage(myDecoderHandlerThread.decoderHandler.obtainMessage(DecoderHandlerThread.DESTROY));
-                        ThingsUI.WriteToAlphaDisplayNoEx(String.format("---"));
-
                     }
                 }
                 break;
@@ -1977,7 +1941,6 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                     break;
                 }
                 r = atsc3NdkPHYClientInstance.ApiStop();
-                ThingsUI.WriteToAlphaDisplayNoEx(String.format("ASTP"));
 
                 //clear pending SLS window
                 ServiceHandler.GetInstance().post(new Runnable() {
@@ -1997,7 +1960,6 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                     break;
                 }
                 r = atsc3NdkPHYClientInstance.ApiReset();
-                ThingsUI.WriteToAlphaDisplayNoEx(String.format("ARST"));
                 break;
 
             case R.id.butClose:
@@ -2011,7 +1973,6 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                 if (r != 0) showMsg("closed\n");
 
                 enableDeviceControlButtons(false);
-                ThingsUI.WriteToAlphaDisplayNoEx(String.format("ACLS"));
                 ServiceHandler.GetInstance().post(new Runnable() {
                     @Override
                     public void run() {
