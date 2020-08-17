@@ -16,7 +16,7 @@
 #include <vector>
 #include <iostream>
 #include <stdexcept>
-#include <srt/srt.h>
+#include <srtcore/srt.h>
 #include "uriparser.hpp"
 #include "apputil.hpp"
 

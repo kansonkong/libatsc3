@@ -70,8 +70,11 @@ dependencies {
 //
 //    debugImplementation fileTree(dir: 'build/intermediates/prefab_package/debug/prefab/modules/', include: ['**/*.so'])
 
-    debugImplementation project(':app:atsc3_core')
-    debugImplementation project(':app:atsc3_bridge')
+    //implementation project(':atsc3_core')
+    //implementation project(':atsc3_bridge')
+
+    debugApi project(':atsc3_core')
+    debugApi project(':atsc3_bridge')
 
 }
 

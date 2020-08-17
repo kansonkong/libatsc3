@@ -14,7 +14,7 @@ android {
         testInstrumentationRunner "android.support.test.runner.AndroidJUnitRunner"
 
         ndk {
-//            abiFilters 'arm64-v8a', 'armeabi-v7a' //, 'arm64-v8a' //'', 'x86_64',
+            abiFilters 'arm64-v8a' //, 'armeabi-v7a' //, 'arm64-v8a' //'', 'x86_64',
         }
     }
     buildTypes {
@@ -89,9 +89,13 @@ dependencies {
 //    debugImplementation project(':libatsc3_core')
 //    debugImplementation project(':libatsc3_bridge')
 //    debugImplementation project(':libatsc3_phy_virtual')
+//
+//    api project(":app:atsc3_core")
+//    api project(":app:atsc3_bridge")
+//    api project(":app:atsc3_phy_virtual")
 
-    api project(":app:atsc3_core")
-    api project(":app:atsc3_bridge")
-    api project(":app:atsc3_phy_virtual")
+    api project(":atsc3_core")
+    api project(":atsc3_bridge")
+    api project(":atsc3_phy_virtual")
 
 }
