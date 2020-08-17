@@ -11,8 +11,8 @@
 #ifndef INC_SRT_LOGSUPPORT_HPP
 #define INC_SRT_LOGSUPPORT_HPP
 
-#include <srt/srt.h>
-#include <srt/logging_api.h>
+#include <srtcore/srt.h>
+#include <srtcore/logging_api.h>
 
 srt_logging::LogLevel::type SrtParseLogLevel(std::string level);
 std::set<srt_logging::LogFA> SrtParseLogFA(std::string fa, std::set<std::string>* punknown = nullptr);

@@ -22,7 +22,7 @@ android {
             jniDebuggable = true
             debuggable true
         }
-        libatsc3_core_debug {
+        atsc3_core_debug {
             jniDebuggable = true
             debuggable true
         }
@@ -66,5 +66,6 @@ repositories {
 dependencies {
     //works but mostly empty .so - try wtih debugApp?
   //  debugImplementation fileTree(dir: 'build/intermediates/prefab_package/debug/prefab/modules/', include: ['**/*.so'])
+    debugApi fileTree(dir: 'build/intermediates/ndkBuild/debug/obj/local', include: ['**/libatsc3_core.so'])
     debugApi fileTree(dir: 'build/aar', include: ['*.aar'])
 }

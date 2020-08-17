@@ -7,5 +7,5 @@ APP_DEBUG := true
 
 APP_ABI := all
 
-APP_CPPFLAGS += -std=c++11 -D_ANDROID -fexceptions
+APP_CPPFLAGS += -std=c++11 -fexceptions -D_ANDROID
 

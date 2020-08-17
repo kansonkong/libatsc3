@@ -22,7 +22,7 @@ android {
             jniDebuggable = true
             debuggable true
         }
-        libatsc3_bridge_debug {
+        atsc3_bridge_debug {
         }
         release {
             minifyEnabled false
@@ -69,8 +69,14 @@ dependencies {
 //    debugImplementation project(path: ':libatsc3_core')
 //    debugImplementation fileTree(dir: 'build/intermediates/prefab_package/debug/prefab/modules/', include: ['**/*.so'])
 //
-    debugApi project(':app:atsc3_core')
-   // implementation project(path: ':app:atsc3_core', configuration: 'debug')
+    //api project(':atsc3_core')
+    //debugImplementation project(':atsc3_core')
+
+    // implementation project(path: ':app:atsc3_core', configuration: 'debug')
     //api project(':app:libatsc3_core')
+
+    //api project(path:':atsc3_core', configuration:'atsc3_core_debug')
+    debugApi project(':atsc3_core')
+    debugApi fileTree(dir: '../atsc3_core/build/intermediates/ndkBuild/debug/obj/local', include: ['**/libatsc3_core.so'])
     debugApi fileTree(dir: 'build/aar', include: ['*.aar'])
 }

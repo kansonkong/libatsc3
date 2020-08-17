@@ -7,7 +7,10 @@ buildscript {
         jcenter()
     }
     dependencies {
-        classpath 'com.android.tools.build:gradle:4.2.0-alpha07'
+        // android studio - canary - classpath 'com.android.tools.build:gradle:4.2.0-alpha07'
+        // android studio 4.0
+        classpath "com.android.tools.build:gradle:4.0.1"
+
         //classpath 'com.android.tools.build:gradle:3.6.3'
         //classpath 'com.ydq.android.gradle.build.tool:nativeBundle:1.0.6'
         // NOTE: Do not place your application dependencies here; they belong
@@ -19,7 +22,6 @@ allprojects {
     repositories {
         google()
         jcenter()
-
     }
 }
 //
@@ -34,7 +36,11 @@ android {
     defaultConfig {
         minSdkVersion 28
         targetSdkVersion 28
+        ndk {
+            abiFilters 'arm64-v8a'
+        }
     }
+
     externalNativeBuild {
         ndkBuild {
             path 'Android.mk'
@@ -43,6 +49,5 @@ android {
 }
 
 dependencies {
-
     project(':app')
 }

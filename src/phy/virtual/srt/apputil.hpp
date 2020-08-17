@@ -63,7 +63,7 @@ inline void SysCleanupNetwork() {}
 
 #endif
 
-#include <srt/srt.h> // Required for stats module
+#include <srtcore/srt.h> // Required for stats module
 
 #ifdef _WIN32
 inline int SysError() { return ::GetLastError(); }
