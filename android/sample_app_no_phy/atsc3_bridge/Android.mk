@@ -54,7 +54,7 @@ LOCAL_C_INCLUDES += $(LOCAL_PATH)/../atsc3_core/libpcre/include
 
 LOCAL_CFLAGS += -g -fpack-struct=8 -fPIC  \
                 -D__DISABLE_LIBPCAP__ -D__DISABLE_ISOBMFF_LINKAGE__ -D__DISABLE_NCURSES__ \
-                -D__MOCK_PCAP_REPLAY__ -D__LIBATSC3_ANDROID__
+                -D__MOCK_PCAP_REPLAY__ -D__LIBATSC3_ANDROID__ -DDEBUG
 
 LOCAL_LDFLAGS += -fPIE -fPIC -L $(LOCAL_PATH)/../atsc3_core/build/intermediates/ndkBuild/debug/obj/local/$(TARGET_ARCH_ABI)/
 

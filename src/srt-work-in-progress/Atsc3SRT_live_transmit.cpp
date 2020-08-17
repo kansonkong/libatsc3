@@ -335,6 +335,11 @@ int parse_args(LiveTransmitConfig &cfg, int argc, char** argv)
 
 int main(int argc, char** argv)
 {
+	return Atsc3SRT_live_transmit_run(argc, argv);
+}
+
+int Atsc3SRT_live_transmit_run(argc, argv) {
+
     srt_startup();
     // This is mainly required on Windows to initialize the network system,
     // for a case when the instance would use UDP. SRT does it on its own, independently.

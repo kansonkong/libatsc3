@@ -137,24 +137,25 @@ extern "C" JNIEXPORT jint JNI_OnLoad(JavaVM* vm, void* reserved) {
         return -1;
     }
 
+    NDK_PHY_BRIDGE_INFO("atsc3_bridge::JNI_OnLoad complete, vm: %p", vm);
     return JNI_VERSION_1_6;
 }
 
 extern "C" JNIEXPORT jint JNICALL
-Java_org_ngbp_libatsc3_middleware_atsc3NdkPHYBridge_init(JNIEnv *env, jobject instance)
+Java_org_ngbp_libatsc3_middleware_Atsc3NdkPHYBridge_init(JNIEnv *env, jobject instance)
 {
-    printf("Java_org_ngbp_libatsc3_middleware_atsc3NdkPHYBridge_Init: start init, env: %p\n", env);
+    printf("Java_org_ngbp_libatsc3_middleware_Atsc3NdkPHYBridge_Init: start init, env: %p\n", env);
 
     api->setJniInstance((jclass) env->NewGlobalRef(instance));
 
-    printf("atsc3NdkPHYBridge_Init: with jniInstance: %p", api->getJniInstance());
+    printf("Atsc3NdkPHYBridge_Init: with jniInstance: %p", api->getJniInstance());
     return 0;
 }
 
 
 extern "C"
 JNIEXPORT jint JNICALL
-Java_org_ngbp_libatsc3_middleware_atsc3NdkPHYBridge_setRfPhyStatisticsViewVisible(JNIEnv *env, jobject thiz, jboolean is_rf_phy_statistics_visible) {
+Java_org_ngbp_libatsc3_middleware_Atsc3NdkPHYBridge_setRfPhyStatisticsViewVisible(JNIEnv *env, jobject thiz, jboolean is_rf_phy_statistics_visible) {
     if(is_rf_phy_statistics_visible) {
         api->setRfPhyStatisticsViewVisible(true);
     } else {

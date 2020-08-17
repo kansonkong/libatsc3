@@ -12,9 +12,17 @@ import org.ngbp.libatsc3.middleware.android.phy.models.RfPhyStatistics;
  *  javah -classpath ./bin/classes -d jni org.ngbp.libatsc3.middleware.Atsc3NdkPHYBridge
  *
  *  /Users/jjustman/Desktop/libatsc3/android/sample_app_no_phy/app/src/main/java/org/ngbp/libatsc3/middlewarea
+ *
+ *  Object ndkStaticJniLoader = null;
+ *         try {
+ *             ndkStaticJniLoader = Class.forName("org.ngbp.libatsc3.middleware.Atsc3NdkStaticJniLoader");
+ *         } catch (ClassNotFoundException e) {
+ *             e.printStackTrace();
+ *         }
+ *         Log.d("Atsc3NdkPHYBridge", "ndkStaticJniLoader class is: "+ndkStaticJniLoader);
  */
 
-public class Atsc3NdkPHYBridge {
+public class Atsc3NdkPHYBridge extends Atsc3NdkStaticJniLoader{
 
     final static String TAG ="intf";
 
@@ -76,6 +84,6 @@ public class Atsc3NdkPHYBridge {
 
     //native jni methods
 
-    public native void init();
+    public native int init();
     public native int setRfPhyStatisticsViewVisible(boolean isRfPhyStatisticsVisible);
 }
