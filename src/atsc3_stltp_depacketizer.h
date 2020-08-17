@@ -1,10 +1,9 @@
-/*
+	/*
  * atsc3_stltp_depacketizer.h
  *
  *  Created on: Aug 11, 2020
  *      Author: jjustman
  */
-
 
 #include <string.h>
 #include <stdint.h>
@@ -15,12 +14,12 @@
 #ifndef ATSC3_STLTP_DEPACKETIZER_H_
 #define ATSC3_STLTP_DEPACKETIZER_H_
 
-
 #include "atsc3_utils.h"
 #include "atsc3_logging_externs.h"
 #include "atsc3_listener_udp.h"
 #include "atsc3_ip_udp_rtp_parser.h"
 #include "atsc3_stltp_parser.h"
+#include "atsc3_alp_types.h"
 #include "atsc3_alp_parser.h"
 
 #if defined (__cplusplus)

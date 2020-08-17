@@ -7,7 +7,7 @@
  * Android MMT MFU Playback with SLS event driven callbacks
  *
  *
- * Note: Atsc3NdkPHYBridge - Android NDK Binding against Lowasys API are not included
+fv * Note: Atsc3NdkPHYBridge - Android NDK Binding against Lowasys API are not included
  */
 
 #ifndef __JJ_PHY_MMT_PLAYER_BRIDGE_DISABLED
@@ -1094,8 +1094,8 @@ atsc3_link_mapping_table_t* atsc3_phy_jni_bridge_notify_link_mapping_table(atsc3
 
 
 
-string atsc3_ndk_cache_temp_folder_path_get() {
-    return atsc3_ndk_cache_temp_folder_path;
+string atsc3_ndk_cache_temp_folder_path_get(int service_id) {
+    return atsc3_ndk_cache_temp_folder_path + to_string(service_id) + "/";
 }
 
 

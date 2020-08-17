@@ -46,7 +46,7 @@ public:
 
 	int Write(const char* data, size_t size, int64_t src_time, std::ostream &out_stats = std::cout) override
 	{
-    	printf("Atsc3SRT_Target:Write - data: %p, size: %lu, src_time: %llu",
+    	printf("Atsc3SRT_Target:Write - data: %p, size: %lu, src_time: %llu\n",
     			data, size, src_time);
 
     	return (int) size;

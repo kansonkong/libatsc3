@@ -9,6 +9,7 @@ MY_LOCAL_PATH := $(call my-dir)
 LOCAL_PATH := $(call my-dir)
 MY_CUR_PATH := $(LOCAL_PATH)
 
+
 # libatsc3 jni interface
 
 LOCAL_PATH := $(MY_LOCAL_PATH)
