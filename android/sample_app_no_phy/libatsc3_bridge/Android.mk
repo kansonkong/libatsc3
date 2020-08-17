@@ -10,12 +10,14 @@ MY_CUR_PATH := $(LOCAL_PATH)
 
 #jjustman-2020-08-10 - super hack
 LOCAL_PATH := $(MY_LOCAL_PATH)
-
-include $(CLEAR_VARS)
-LOCAL_MODULE := libatsc3_core
-LOCAL_SRC_FILES := $(LOCAL_PATH)/../libatsc3_core/build/intermediates/prefab_package/debug/prefab/modules/atsc3_core/libs/android.$(TARGET_ARCH_ABI)/libatsc3_core.so
-include $(PREBUILT_SHARED_LIBRARY)
-
+#
+##jjustman-2020-08-12 - remove prefab LOCAL_SRC_FILES := $(LOCAL_PATH)/../libatsc3_core/build/intermediates/prefab_package/debug/prefab/modules/atsc3_core/libs/android.$(TARGET_ARCH_ABI)/libatsc3_core.so
+#include $(CLEAR_VARS)
+#LOCAL_MODULE := libatsc3_core
+#LOCAL_SRC_FILES :=
+#ifneq ($(MAKECMDGOALS),clean)
+#	include $(PREBUILT_SHARED_LIBRARY)
+#endif
 
 # ---------------------------
 # libatsc3_bridge jni interface
@@ -40,6 +42,9 @@ LIBATSC3JNIBRIDGECPP := \
 # jjustman-2020-08-10 - temporary - refactor this out...
 LOCAL_SRC_FILES += \
     $(LIBATSC3JNIBRIDGECPP:$(LOCAL_PATH)/%=%)
+#	../../../src/atsc3_core_service_player_bridge.cpp \
+#	../../../src/atsc3_listener_udp.c \
+
 
 LOCAL_C_INCLUDES += $(LOCAL_PATH)/src/jni
 LOCAL_C_INCLUDES += $(LOCAL_PATH)/../../../src/
@@ -52,11 +57,9 @@ LOCAL_CFLAGS += -g -fpack-struct=8 -fPIC  \
                 -D__MOCK_PCAP_REPLAY__ -D__LIBATSC3_ANDROID__ \
 
 LOCAL_LDLIBS := -ldl -llog -landroid -lz
+# libatsc3_core
 
-# jjustman-2020-08-10 - use our "hand rolled prefab" to link in our atsc3_core prefab shared library
 LOCAL_SHARED_LIBRARIES := atsc3_core
 
 include $(BUILD_SHARED_LIBRARY)
-
-
 

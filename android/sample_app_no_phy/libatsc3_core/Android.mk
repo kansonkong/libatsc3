@@ -36,9 +36,8 @@ include $(PREBUILT_SHARED_LIBRARY)
 
 LOCAL_PATH := $(MY_LOCAL_PATH)
 include $(CLEAR_VARS)
-# LOCAL_ALLOW_UNDEFINED_SYMBOLS=true
 
-LOCAL_MODULE := libatsc3_core
+LOCAL_MODULE := atsc3_core
 
 LIBATSC3C := \
     $(wildcard $(LOCAL_PATH)/../../../src/*.c)

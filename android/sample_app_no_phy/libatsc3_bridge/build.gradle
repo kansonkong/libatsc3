@@ -22,10 +22,8 @@ android {
             jniDebuggable = true
             debuggable true
         }
-//        atsc3_bridge {
-//            jniDebuggable = true
-//            debuggable true
-//        }
+        libatsc3_bridge_debug {
+        }
         release {
             minifyEnabled false
             proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
@@ -45,30 +43,34 @@ android {
         // specify the path to your object binaries, or generally:
         doNotStrip '**.so'
     }
+//
+//    buildFeatures {
+//        prefabPublishing true
+//    }
+//
+//    /*
+//    jjustman-2020-08-12 - super important, dont append the 'lib' here, it causes the prefab aar build to fail to find a matching target
+//     */
+//    prefab {
+//        atsc3_bridge {
+//        }
+//    }
 
-    buildFeatures {
-        prefabPublishing true
-    }
-
-    prefab {
-        atsc3_bridge {
-
-        }
-    }
 }
 
 repositories {
     google()
 }
+
 dependencies {
-    // working for single tier build - api project(':libatsc3_core')
-    //but not for 2nd tier (e.g. libatsc3_phy_virtual
+    //implementation project(path: ':libatsc3_core', configuration: 'debug')
+    //compileOnly fileTree(dir: '../libatsc3_core/build/intermediates/prefab_package/debug/prefab/modules/atsc3_core/libs/', include: ['**/*.so'])
 
-    //grrr!!! api project(':libatsc3_core')
-    ///Users/jjustman/Desktop/libatsc3/android/sample_app_no_phy/libatsc3_core/build/intermediates/prefab_package/debug/prefab/modules/atsc3_core/libs
-
-    implementation fileTree(dir: '../libatsc3_core/build/intermediates/prefab_package/debug/prefab/modules/atsc3_core/libs', include: ['**/*.so'])
-
-    //jjustman-2020-08-11 - fails 2020-08-11T23:36:35.177-0700 [ERROR] [org.gradle.internal.buildevents.BuildExceptionReporter]       > No matching variant of project :libatsc3_core was found. The consumer was configured to find a runtime of a component, as well as attribute 'com.android.build.api.attributes.BuildTypeAttr' with value 'atsc3_bridge' but:
-    api project(':libatsc3_core')
+//    debugImplementation project(path: ':libatsc3_core')
+//    debugImplementation fileTree(dir: 'build/intermediates/prefab_package/debug/prefab/modules/', include: ['**/*.so'])
+//
+    debugApi project(':app:atsc3_core')
+   // implementation project(path: ':app:atsc3_core', configuration: 'debug')
+    //api project(':app:libatsc3_core')
+    debugApi fileTree(dir: 'build/aar', include: ['*.aar'])
 }

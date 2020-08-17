@@ -1040,8 +1040,8 @@
          <BreakpointContent
             uuid = "E18419D7-4464-4435-A140-B2198C656E23"
             shouldBeEnabled = "No"
-            ignoreCount = "0"
             condition = "mmtp_packet_header-&gt;mpu_data_unit_payload_fragments_timed.mmtp_packet_id==2"
+            ignoreCount = "0"
             continueAfterRunningActions = "No"
             filePath = "../../src/atsc3_mmt_mpu_parser.c"
             timestampString = "590485595.414786"

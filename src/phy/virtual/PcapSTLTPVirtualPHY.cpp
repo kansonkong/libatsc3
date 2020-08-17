@@ -1,6 +1,6 @@
 #include "PcapSTLTPVirtualPHY.h"
 
-
+std::hash<std::thread::id> __pcapSTLTPVirtualPHY_thread_hasher__;
 
 PcapSTLTPVirtualPHY::PcapSTLTPVirtualPHY() {
 	atsc3_stltp_depacketizer_context = atsc3_stltp_depacketizer_context_new();
@@ -93,8 +93,8 @@ int PcapSTLTPVirtualPHY::atsc3_pcap_thread_run() {
     });
 
     PCAP_DEMUXED_VIRTUAL_PHY_INFO("atsc3_pcap_thread_run: threads created, pcapProducerThreadPtr id: 0x%08x, pcapConsumerThreadPtr id: 0x%08x",
-    		pcapProducerThreadPtr.get_id(),
-			pcapConsumerThreadPtr.get_id());
+                                  __pcapSTLTPVirtualPHY_thread_hasher__(pcapProducerThreadPtr.get_id()),
+                                  __pcapSTLTPVirtualPHY_thread_hasher__(pcapConsumerThreadPtr.get_id()));
 
     return 0;
 }
