@@ -91,10 +91,15 @@ LIBATSC3JNI_SRT_PHYVIRTUALCPP := \
     $(wildcard $(LOCAL_PATH)/../../../src/phy/virtual/srt/*.cpp)
 
 LIBATSC3JNI_SRT_CORE_PHYVIRTUALCPP := \
-    $(wildcard $(LOCAL_PATH)/../../../srt/srtcore/*.cpp)
+    $(wildcard $(LOCAL_PATH)/../../../srt/srtcore/*.cpp) \
+    $(LOCAL_PATH)/../../../srt/srtcore/srt_compat.c
 
+# jjustman-2020-08-17 - note - renamed hcrypt_ut.c to z_hcrypt_ut.c as it is a unit test that does not compile and breaks the ndk build
 LIBATSC3JNI_SRT_HAICRYPT_PHYVIRTUALCPP := \
-    $(wildcard $(LOCAL_PATH)/../../../srt/haicrypt/*.c)
+    $(wildcard $(LOCAL_PATH)/../../../srt/haicrypt/hcrypt*.c) \
+    $(LOCAL_PATH)/../../../srt/haicrypt/cryspr.c \
+    $(LOCAL_PATH)/../../../srt/haicrypt/cryspr-openssl.c
+
 
 
 # jjustman-2020-08-10 - temporary - refactor this out...
@@ -154,5 +159,6 @@ LOCAL_SHARED_LIBRARIES := libssl libcrypto
 include $(BUILD_SHARED_LIBRARY)
 
 #as per https://android-developers.googleblog.com/2020/02/native-dependencies-in-android-studio-40.html
+ifneq ($(MAKECMDGOALS),generateJsonModelDebug)
 $(call import-module,prefab/openssl)
-
+endif

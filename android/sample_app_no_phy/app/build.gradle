@@ -98,4 +98,7 @@ dependencies {
     api project(":atsc3_bridge")
     api project(":atsc3_phy_virtual")
 
+    implementation 'com.android.ndk.thirdparty:openssl:1.1.1d-alpha-1'
+
+
 }
