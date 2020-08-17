@@ -19,5 +19,6 @@ javah -classpath ./bin/classes -d jni com.nvidia.example.fibonacci.FibonacciActi
  */
 public class SRTTransmitSTLTPVirtualPHY extends Atsc3NdkPHYVirtualStaticJniLoader  {
 
+    @Override public native int ApiInit();
 
 }

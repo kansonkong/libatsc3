@@ -359,6 +359,8 @@ int SrtCommon::ConfigurePre(SRTSOCKET sock)
     {
         if ( Verbose::on )
         {
+            printf("SRT::ConfigurePre: failed to set options, first: %s", failures.begin()->c_str());
+
             cerr << "WARNING: failed to set options: ";
             copy(failures.begin(), failures.end(), ostream_iterator<string>(cerr, ", "));
             cerr << endl;
