@@ -50,4 +50,6 @@ android {
 
 dependencies {
     project(':app')
+    implementation 'com.android.ndk.thirdparty:openssl:1.1.1d-alpha-1'
+
 }
