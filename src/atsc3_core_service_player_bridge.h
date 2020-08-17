@@ -18,13 +18,13 @@ using namespace std;
 #ifndef LIBATSC3_ATSC3CORESERVICEPLAYERBRIDGE_H
 #define LIBATSC3_ATSC3CORESERVICEPLAYERBRIDGE_H
 
-
-
 #include "atsc3_utils.h"
 #include "atsc3_logging_externs.h"
 
 #include "atsc3_listener_udp.h"
 #include "atsc3_alp_types.h"
+#include "atsc3_alc_rx.h"
+
 #include "atsc3_lls_types.h"
 #include "atsc3_sl_tlv_demod_type.h"
 
@@ -55,7 +55,7 @@ using namespace std;
 //c++ linkage methods
 
 string atsc3_route_service_context_temp_folder_name(int service_id);
-string atsc3_ndk_cache_temp_folder_path_get();
+string atsc3_ndk_cache_temp_folder_path_get(int service_id);
 
 #if defined (__cplusplus)
 extern "C" {

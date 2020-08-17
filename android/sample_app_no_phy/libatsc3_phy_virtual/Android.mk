@@ -5,23 +5,25 @@ MY_LOCAL_PATH := $(call my-dir)
 LOCAL_PATH := $(call my-dir)
 MY_CUR_PATH := $(LOCAL_PATH)
 
-
-# ---
-# core library
-
-include $(CLEAR_VARS)
-LOCAL_MODULE := libatsc3_core
-LOCAL_SRC_FILES := $(LOCAL_PATH)/../libatsc3_core/build/intermediates/prefab_package/debug/prefab/modules/atsc3_core/libs/android.$(TARGET_ARCH_ABI)/libatsc3_core.so
-include $(PREBUILT_SHARED_LIBRARY)
-
-#---
-
+#
+## ---
+## core library
+#
+#include $(CLEAR_VARS)
+#LOCAL_MODULE := libatsc3_core
+#LOCAL_SRC_FILES := $(LOCAL_PATH)/../libatsc3_core/build/intermediates/prefab_package/debug/prefab/modules/atsc3_core/libs/android.$(TARGET_ARCH_ABI)/libatsc3_core.so
+#ifneq ($(MAKECMDGOALS),clean)
+#	include $(PREBUILT_SHARED_LIBRARY)
+#endif
+##---
+#
 #
 #include $(CLEAR_VARS)
 #LOCAL_MODULE := libatsc3_bridge
 #LOCAL_SRC_FILES := $(LOCAL_PATH)/../libatsc3_bridge/build/intermediates/prefab_package/debug/prefab/modules/atsc3_bridge/libs/android.$(TARGET_ARCH_ABI)/libatsc3_bridge.so
-#include $(PREBUILT_SHARED_LIBRARY)
-
+#ifneq ($(MAKECMDGOALS),clean)
+#	include $(PREBUILT_SHARED_LIBRARY)
+#endif
 # ---
 # libsrt library
 
@@ -35,13 +37,12 @@ include $(PREBUILT_SHARED_LIBRARY)
 
 include $(CLEAR_VARS)
 LOCAL_MODULE := libssl
-LOCAL_SRC_FILES += $(LOCAL_PATH)/../libatsc3_core/libsrt/libs/$(TARGET_ARCH_ABI)/libssl.so
+LOCAL_SRC_FILES := $(LOCAL_PATH)/../libatsc3_core/libsrt/libs/$(TARGET_ARCH_ABI)/libssl.so
 include $(PREBUILT_SHARED_LIBRARY)
-
 
 include $(CLEAR_VARS)
 LOCAL_MODULE := libcrypto
-LOCAL_SRC_FILES += $(LOCAL_PATH)/../libatsc3_core/libsrt/libs/$(TARGET_ARCH_ABI)/libcrypto.so
+LOCAL_SRC_FILES := $(LOCAL_PATH)/../libatsc3_core/libsrt/libs/$(TARGET_ARCH_ABI)/libcrypto.so
 include $(PREBUILT_SHARED_LIBRARY)
 
 
@@ -106,8 +107,9 @@ LOCAL_LDFLAGS += -fPIE -fPIC
 
 # jjustman-2020-08-10 - link in our atsc3_bridge prefab shared library
 # LOCAL_SHARED_LIBRARIES := atsc3_bridge
-# atsc3_bridge
-LOCAL_SHARED_LIBRARIES +=  libssl libcrypto atsc3_core  libsrt
-LOCAL_ARM_MODE := arm
+# ifneq ($(MAKECMDGOALS),clean)
+
+LOCAL_SHARED_LIBRARIES :=  libssl libcrypto  libsrt
+# libatsc3_bridge libatsc3_core
 
 include $(BUILD_SHARED_LIBRARY)

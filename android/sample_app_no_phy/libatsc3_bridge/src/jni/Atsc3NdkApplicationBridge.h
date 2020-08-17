@@ -26,17 +26,19 @@
 #include <atsc3_utils.h>
 #include <atsc3_logging_externs.h>
 #include <atsc3_lls_types.h>
+#include "atsc3_alc_rx.h"
 #include <atsc3_pcap_type.h>
 #include <atsc3_monitor_events_alc.h>
 #include <atsc3_route_package_utils.h>
 #include <atsc3_core_service_player_bridge.h>
 
+
 #include <application/IAtsc3NdkApplicationBridge.h>
 
 #define MODULE_NAME "intf"
 
-/*
- * : public libatsc3_Iphy_mockable
+/*]
+ * : public libatsc3_Iphy_mockable 
  */
 
 

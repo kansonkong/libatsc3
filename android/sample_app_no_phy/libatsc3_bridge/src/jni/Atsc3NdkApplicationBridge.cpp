@@ -1,10 +1,6 @@
 #include "Atsc3NdkApplicationBridge.h"
 
-
-
 Atsc3NdkApplicationBridge* apiAppBridge;
-
-
 
 void Atsc3NdkApplicationBridge::atsc3_onMfuPacket(uint16_t packet_id, uint32_t mpu_sequence_number, uint32_t sample_number, uint8_t* buffer, uint32_t bufferLen, uint64_t presentationUs, uint32_t mfu_fragment_count_rebuilt)
 {

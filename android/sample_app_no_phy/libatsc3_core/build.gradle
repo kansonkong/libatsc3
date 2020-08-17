@@ -22,11 +22,10 @@ android {
             jniDebuggable = true
             debuggable true
         }
-//        atsc3_core {
-//            jniDebuggable = true
-//            debuggable true
-//        }
-
+        libatsc3_core_debug {
+            jniDebuggable = true
+            debuggable true
+        }
         release {
             minifyEnabled false
             proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
@@ -44,22 +43,28 @@ android {
 
     packagingOptions {
         // specify the path to your object binaries, or generally:
-        doNotStrip '**.so'
+        doNotStrip '**/*.so'
     }
-
-    buildFeatures {
-        prefabPublishing true
-    }
-
-    prefab {
-        atsc3_core {
-        }
-    }
+//
+//    buildFeatures {
+//        prefabPublishing true
+//    }
+//
+//    /*
+//    jjustman-2020-08-12 - super important, dont append the 'lib' here, it causes the prefab aar build to fail to find a matching target
+//     */
+//    prefab {
+//        atsc3_core {
+//        }
+//    }
 }
 
 repositories {
     google()
 }
 
-//dependencies {
-//}
+dependencies {
+    //works but mostly empty .so - try wtih debugApp?
+  //  debugImplementation fileTree(dir: 'build/intermediates/prefab_package/debug/prefab/modules/', include: ['**/*.so'])
+    debugApi fileTree(dir: 'build/aar', include: ['*.aar'])
+}

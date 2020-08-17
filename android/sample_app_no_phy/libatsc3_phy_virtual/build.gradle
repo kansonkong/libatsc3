@@ -22,10 +22,9 @@ android {
             jniDebuggable = true
             debuggable true
         }
-//        atsc3_phy_virtual_debug {
-//            jniDebuggable = true
-//            debuggable true
-//        }
+        libatsc3_phy_virtual {
+
+        }
 
         release {
             minifyEnabled false
@@ -47,36 +46,32 @@ android {
         // specify the path to your object binaries, or generally:
         doNotStrip '**.so'
     }
-
-//    buildFeatures {
-//        //prefabPublishing true
-//        prefab true
-//    }
-
-
-//    prefab {
-//        atsc3_phy_virtual {
-//            //headers "../../../src/**/*.h"
-//        }
-//    }
 }
 
 repositories {
     google()
 }
 dependencies {
-//    implementation 'com.android.ndk.thirdparty:openssl:1.1.1d-alpha-1'
+    /*
+        Android NDK: ERROR:/Users/jjustman/Desktop/libatsc3/android/sample_app_no_phy/libatsc3_phy_virtual/Android.mk:atsc3_core: LOCAL_SRC_FILES points to a missing file
+        Android NDK: Check that /Users/jjustman/Desktop/libatsc3/android/sample_app_no_phy/libatsc3_phy_virtual/../libatsc3_core/build/intermediates/prefab_package/debug/prefab/modules/atsc3_core/libs/android.armeabi-v7a/libatsc3_core.so exists  or that its path is correct
+    */
+    //debugApi fileTree(dir: '../libatsc3_core/build/intermediates/prefab_package/debug/prefab/modules/atsc3_core/libs/', include: ['**/*.so'])
+    /*
+    debugApi project(':libatsc3_core')
+    debugApi project(':libatsc3_bridge')
+    */
 
-    // api project(':libatsc3_bridge')
-   // api project(':libatsc3_core')
-    //implementation project(path: ':libatsc3_bridge')
-//    api project(':libatsc3_bridge')
-//    implementation project(':libatsc3_bridge')
+//    implementation project(path: ':libatsc3_core', configuration: 'debug')
+//    implementation project(path: ':libatsc3_bridge', configuration: 'debug')
+//
+//    debugImplementation project(':libatsc3_core')
+//    debugImplementation project(':libatsc3_bridge')
+//
+//    debugImplementation fileTree(dir: 'build/intermediates/prefab_package/debug/prefab/modules/', include: ['**/*.so'])
 
-
-//    //jjustman-2020-08-11 - fails
-    api project(':libatsc3_bridge')
-    api project(':libatsc3_core')
-    implementation fileTree(dir: '../libatsc3_bridge/build/intermediates/prefab_package/debug/prefab/modules/atsc3_bridge/libs', include: ['**/*.so'])
+    debugImplementation project(':app:atsc3_core')
+    debugImplementation project(':app:atsc3_bridge')
 
 }
+

@@ -11,9 +11,7 @@ int _ATSC3_STLTP_DEPACKETIZER_INFO_ENABLED = 0;
 int _ATSC3_STLTP_DEPACKETIZER_DEBUG_ENABLED = 0;
 int _ATSC3_STLTP_DEPACKETIZER_TRACE_ENABLED = 0;
 
-
 atsc3_stltp_depacketizer_context_t* atsc3_stltp_depacketizer_context_new() {
-
 	atsc3_stltp_depacketizer_context_t* atsc3_stltp_depacketizer_context = calloc(1, sizeof(atsc3_stltp_depacketizer_context_t));
 
 	atsc3_stltp_depacketizer_context->atsc3_alp_packet_collection = atsc3_alp_packet_collection_new();

@@ -360,7 +360,7 @@ int main(int argc, char** argv)
 //    if (parse_ret != 0)
 //        return parse_ret == 1 ? EXIT_FAILURE : 0;
 
-    cfg.source = "srt://host";
+    cfg.source = "srt://bna.srt.atsc3.com:31338?passphrase=C001EBAF-B9FF-4704-98E4-8C1D1B585F3E";
     Verbose::on = true;
     cfg.quiet = false;
 

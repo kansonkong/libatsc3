@@ -1,9 +1,13 @@
 rootProject.name='libatsc3 Android Sample App (w PHY)'
 
-include ':libatsc3_core'
-include ':libatsc3_bridge'
-include ':libatsc3_phy_virtual'
 include ':app'
+project(':app').projectDir = new File('./app')
+
+include ':app:atsc3_core',':app:atsc3_bridge', ':app:atsc3_phy_virtual'
+
+project(':app:atsc3_core').projectDir = new File(settingsDir, 'libatsc3_core')
+project(':app:atsc3_bridge').projectDir = new File(settingsDir, 'libatsc3_bridge')
+project(':app:atsc3_phy_virtual').projectDir = new File(settingsDir, 'libatsc3_phy_virtual')
 
 
 gradle.ext.exoplayerRoot = 'Exoplayer'
