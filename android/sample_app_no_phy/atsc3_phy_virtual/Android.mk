@@ -45,24 +45,24 @@ endif
 
 # ---
 # libsrt library
-
-include $(CLEAR_VARS)
-LOCAL_MODULE := libsrt
-LOCAL_SRC_FILES := $(LOCAL_PATH)/../atsc3_core/libsrt/libs/$(TARGET_ARCH_ABI)/libsrt.so
-# LOCAL_EXPORT_C_INCLUDES := $(LOCAL_PATH)/../libatsc3_core/libsrt/include
-include $(PREBUILT_SHARED_LIBRARY)
+#
+#include $(CLEAR_VARS)
+#LOCAL_MODULE := libsrt
+#LOCAL_SRC_FILES := $(LOCAL_PATH)/../atsc3_core/libsrt/libs/$(TARGET_ARCH_ABI)/libsrt.so
+## LOCAL_EXPORT_C_INCLUDES := $(LOCAL_PATH)/../libatsc3_core/libsrt/include
+#include $(PREBUILT_SHARED_LIBRARY)
 
 #---openssl and libcrypto for srt support
+#
+#include $(CLEAR_VARS)
+#LOCAL_MODULE := libssl
+#LOCAL_SRC_FILES := $(LOCAL_PATH)/../atsc3_core/libsrt/libs/$(TARGET_ARCH_ABI)/libssl.so.1.1
+#include $(PREBUILT_SHARED_LIBRARY)
 
-include $(CLEAR_VARS)
-LOCAL_MODULE := libssl
-LOCAL_SRC_FILES := $(LOCAL_PATH)/../atsc3_core/libsrt/libs/$(TARGET_ARCH_ABI)/libssl.so.1.1
-include $(PREBUILT_SHARED_LIBRARY)
-
-include $(CLEAR_VARS)
-LOCAL_MODULE := libcrypto
-LOCAL_SRC_FILES := $(LOCAL_PATH)/../atsc3_core/libsrt/libs/$(TARGET_ARCH_ABI)/libcrypto.so
-include $(PREBUILT_SHARED_LIBRARY)
+#include $(CLEAR_VARS)
+#LOCAL_MODULE := libcrypto
+#LOCAL_SRC_FILES := $(LOCAL_PATH)/../atsc3_core/libsrt/libs/$(TARGET_ARCH_ABI)/libcrypto.so
+#include $(PREBUILT_SHARED_LIBRARY)
 
 
 # import our prefab build from bridge
@@ -90,9 +90,12 @@ LIBATSC3JNIPHYVIRTUALCPP := \
 LIBATSC3JNI_SRT_PHYVIRTUALCPP := \
     $(wildcard $(LOCAL_PATH)/../../../src/phy/virtual/srt/*.cpp)
 
-
 LIBATSC3JNI_SRT_CORE_PHYVIRTUALCPP := \
     $(wildcard $(LOCAL_PATH)/../../../srt/srtcore/*.cpp)
+
+LIBATSC3JNI_SRT_HAICRYPT_PHYVIRTUALCPP := \
+    $(wildcard $(LOCAL_PATH)/../../../srt/haicrypt/*.c)
+
 
 # jjustman-2020-08-10 - temporary - refactor this out...
 
@@ -103,8 +106,7 @@ LOCAL_SRC_FILES += \
     $(LIBATSC3JNIPHYVIRTUALCPP:$(LOCAL_PATH)/%=%) \
     $(LIBATSC3JNI_SRT_PHYVIRTUALCPP:$(LOCAL_PATH)/%=%) \
     $(LIBATSC3JNI_SRT_CORE_PHYVIRTUALCPP:$(LOCAL_PATH)/%=%) \
-    $(LOCAL_PATH)/../../../srt/srtcore/srt_compat.c
-
+    $(LIBATSC3JNI_SRT_HAICRYPT_PHYVIRTUALCPP:$(LOCAL_PATH)/%=%)
 
 ##for libatsc3 application and phy interface includes
 LOCAL_C_INCLUDES += $(LOCAL_PATH)/../../../src
@@ -130,10 +132,13 @@ LOCAL_C_INCLUDES += $(LOCAL_PATH)/../atsc3_bridge/src/jni
 
 
 # shared library missing -fPIC for srt
-LOCAL_CFLAGS += -g -fpack-struct=8  \
+
+#jjustman-2020-08-17 - special defines for SRT
+LOCAL_CFLAGS += -g -O1 -fpack-struct=8  \
                 -D__DISABLE_LIBPCAP__ -D__DISABLE_ISOBMFF_LINKAGE__ -D__DISABLE_NCURSES__ \
                 -D__MOCK_PCAP_REPLAY__ -D__LIBATSC3_ANDROID__ \
-                 -DSRT_VERSION=\"1.4.1\"
+                 -DANDROID=1 -DHAI_ENABLE_SRT=1 -DHAI_PATCH=1 -DHAVE_INET_PTON=1 -DLINUX=1 -DSRT_ENABLE_APP_READER -DSRT_ENABLE_CLOSE_SYNCH -DSRT_ENABLE_ENCRYPTION -DSRT_VERSION=\"1.4.1\" -DUSE_OPENSSL=1 -D_GNU_SOURCE -Dsrt_shared_EXPORTS
+
 
 LOCAL_LDLIBS += -ldl -lc++_shared -llog -landroid -lz -latsc3_core -latsc3_bridge
 LOCAL_LDFLAGS += -fPIE -fPIC -L $(LOCAL_PATH)/../atsc3_bridge/build/intermediates/ndkBuild/debug/obj/local/$(TARGET_ARCH_ABI)/ -L $(LOCAL_PATH)/../atsc3_core/build/intermediates/ndkBuild/debug/obj/local/$(TARGET_ARCH_ABI)/
@@ -142,7 +147,12 @@ LOCAL_LDFLAGS += -fPIE -fPIC -L $(LOCAL_PATH)/../atsc3_bridge/build/intermediate
 # LOCAL_SHARED_LIBRARIES := atsc3_bridge
 # ifneq ($(MAKECMDGOALS),clean)
 
-# LOCAL_SHARED_LIBRARIES :=  libssl libcrypto  libsrt
-# atsc3_bridge atsc3_core
+#
+LOCAL_SHARED_LIBRARIES := libssl libcrypto
+# libsrt atsc3_bridge atsc3_core
 
 include $(BUILD_SHARED_LIBRARY)
+
+#as per https://android-developers.googleblog.com/2020/02/native-dependencies-in-android-studio-40.html
+$(call import-module,prefab/openssl)
+

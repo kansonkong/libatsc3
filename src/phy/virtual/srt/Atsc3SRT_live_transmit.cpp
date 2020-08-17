@@ -222,7 +222,8 @@ int parse_args(LiveTransmitConfig &cfg, int argc, char** argv)
         { o_version,      OptionScheme::ARG_NONE }
     };
 
-    options_t params = ProcessOptions(argv, argc, optargs);
+    options_t params; // = new map<string, vector<string>>();
+    //ProcessOptions(argv, argc, optargs);
 //
 //          bool print_help    = OptionPresent(params, o_help);
 //    const bool print_version = OptionPresent(params, o_version);
@@ -340,14 +341,20 @@ int main(int argc, char** argv)
 int atsc3srt_live_transmit_startup() {
 
 	int argc = 0;
-	char** argv = NULL;
+	char** argv = { { 0 } };
+
+	printf("atsc3srt_live_transmit_startup");
 
 	srt_startup();
+
+    printf("after srt_startup");
 
     // This is mainly required on Windows to initialize the network system,
     // for a case when the instance would use UDP. SRT does it on its own, independently.
     if (!SysInitializeNetwork())
         throw std::runtime_error("Can't initialize network!");
+
+    printf("after SysInitializeNetwork");
 
     // Symmetrically, this does a cleanup; put into a local destructor to ensure that
     // it's called regardless of how this function returns.
@@ -368,7 +375,7 @@ int atsc3srt_live_transmit_startup() {
 //    if (parse_ret != 0)
 //        return parse_ret == 1 ? EXIT_FAILURE : 0;
 
-    cfg.source = "srt://host";
+    cfg.source = "srt://bna.srt.atsc3.com:31338?passphrase=C001EBAF-B9FF-4704-98E4-8C1D1B585F3E";
     Verbose::on = true;
     cfg.quiet = false;
 
@@ -409,6 +416,7 @@ int atsc3srt_live_transmit_startup() {
         logfile_stream.open(cfg.logfile.c_str());
         if (!logfile_stream)
         {
+            printf("ERROR: Can't open logfile");
             cerr << "ERROR: Can't open '" << cfg.logfile.c_str() << "' for writing - fallback to cerr\n";
         }
         else
@@ -459,6 +467,8 @@ int atsc3srt_live_transmit_startup() {
     signal(SIGTERM, OnINT_ForceExit);
 
 
+    printf("Media path: %s", cfg.source.c_str());
+
     if (!cfg.quiet)
     {
         cerr << "Media path: '"
@@ -482,6 +492,8 @@ int atsc3srt_live_transmit_startup() {
     int pollid = srt_epoll_create();
     if (pollid < 0)
     {
+
+        printf("Can't initialize epoll");
         cerr << "Can't initialize epoll";
         return 1;
     }
@@ -498,9 +510,14 @@ int atsc3srt_live_transmit_startup() {
         {
             if (!src.get())
             {
+
+                printf("before source::create, cfg.source: %s", cfg.source.c_str());
                 src = Source::Create(cfg.source);
+                printf("after source::create, src is: %p", src.get());
+
                 if (!src.get())
                 {
+                    printf("Unsupported source type");
                     cerr << "Unsupported source type" << endl;
                     return 1;
                 }
@@ -508,7 +525,9 @@ int atsc3srt_live_transmit_startup() {
                 switch (src->uri.type())
                 {
                 case UriParser::SRT:
-                    if (srt_epoll_add_usock(pollid,
+                    printf("before source srt_epoll_add_usock");
+
+                        if (srt_epoll_add_usock(pollid,
                         src->GetSRTSocket(), &events))
                     {
                         cerr << "Failed to add SRT source to poll, "
@@ -822,6 +841,8 @@ int atsc3srt_live_transmit_startup() {
     }
     catch (std::exception& x)
     {
+        printf("SRT: ERROR exception: %s", x.what());
+
         cerr << "ERROR: " << x.what() << endl;
         return 255;
     }

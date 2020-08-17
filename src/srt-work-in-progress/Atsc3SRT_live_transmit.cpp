@@ -221,7 +221,7 @@ int parse_args(LiveTransmitConfig &cfg, int argc, char** argv)
         { o_version,      OptionScheme::ARG_NONE }
     };
 
-    options_t params = ProcessOptions(argv, argc, optargs);
+    options_t params; // = ProcessOptions(argv, argc, optargs);
 //
 //          bool print_help    = OptionPresent(params, o_help);
 //    const bool print_version = OptionPresent(params, o_version);
@@ -335,11 +335,6 @@ int parse_args(LiveTransmitConfig &cfg, int argc, char** argv)
 
 int main(int argc, char** argv)
 {
-	return Atsc3SRT_live_transmit_run(argc, argv);
-}
-
-int Atsc3SRT_live_transmit_run(argc, argv) {
-
     srt_startup();
     // This is mainly required on Windows to initialize the network system,
     // for a case when the instance would use UDP. SRT does it on its own, independently.
