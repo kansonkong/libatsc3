@@ -9,7 +9,7 @@ android {
         versionName "1.0"
 
         ndk {
-            //abiFilters 'arm64-v8a', 'armeabi-v7a' //, 'arm64-v8a' //'', 'x86_64',
+            abiFilters 'arm64-v8a' //, 'armeabi-v7a' //, 'arm64-v8a' //'', 'x86_64',
         }
     }
     externalNativeBuild {
@@ -76,5 +76,6 @@ dependencies {
     debugApi project(':atsc3_core')
     debugApi project(':atsc3_bridge')
 
+    implementation 'com.android.ndk.thirdparty:openssl:1.1.1d-alpha-1'
 }
 
