@@ -21,7 +21,7 @@
 uint64_t rx_udp_invocation_count = 0;
 
 void phy_rx_udp_packet_process_callback(uint8_t plp_num, block_t* packet) {
-	if((rx_udp_invocation_count++ % 1000) == 0) {
+	if((rx_udp_invocation_count++ % 100) == 0) {
 		_PCAP_STLTP_VIRTUAL_TEST_DEBUG("PLP: %d, packet number: %llu, packet: %p, len: %d",
 				plp_num, rx_udp_invocation_count, packet, packet->p_size);
 	}

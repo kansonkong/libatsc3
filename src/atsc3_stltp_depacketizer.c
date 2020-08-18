@@ -51,14 +51,13 @@ void atsc3_stltp_depacketizer_context_free(atsc3_stltp_depacketizer_context_t** 
 
 
 //TODO - add SMPTE-2022.1 FEC decoding (see fork of prompeg-decoder - https://github.com/jjustman/prompeg-decoder)
-
+//#define __ATSC3_STLTP_DEPACKETIZER_PENDANTIC__
 
 void atsc3_stltp_depacketizer_from_ip_udp_rtp_packet(atsc3_ip_udp_rtp_packet_t* ip_udp_rtp_packet, atsc3_stltp_depacketizer_context_t* atsc3_stltp_depacketizer_context) {
 	atsc3_stltp_tunnel_packet_t* atsc3_stltp_tunnel_packet_processed = NULL;
 
 #ifdef __ATSC3_STLTP_DEPACKETIZER_PENDANTIC__
-	_ATSC3_STLTP_DEPACKETIZER_WARN("%u.%u.%u.%u:%u", __toipandportnonstruct(ip_udp_rtp_packet->udp_flow.dst_ip_addr, ip_udp_rtp_packet->udp_flow.dst_port));
-	_ATSC3_STLTP_DEPACKETIZER_WARN("%u.%u.%u.%u:%u", __toipandportnonstruct(atsc3_stltp_depacketizer_context->destination_flow_filter.dst_ip_addr, atsc3_stltp_depacketizer_context->destination_flow_filter.dst_ip_addr));
+	_ATSC3_STLTP_DEPACKETIZER_WARN("ip_udp_rtp packet: %u.%u.%u.%u:%u, destination_flow_filter: %u.%u.%u.%u:%u", __toipandportnonstruct(ip_udp_rtp_packet->udp_flow.dst_ip_addr, ip_udp_rtp_packet->udp_flow.dst_port), __toipandportnonstruct(atsc3_stltp_depacketizer_context->destination_flow_filter.dst_ip_addr, atsc3_stltp_depacketizer_context->destination_flow_filter.dst_port));
 #endif
 
 	_ATSC3_STLTP_DEPACKETIZER_DEBUG("atsc3_stltp_depacketizer_from_ip_udp_rtp_packet: packet: %p, pcap len: %d", ip_udp_rtp_packet, ip_udp_rtp_packet->data->p_size);
@@ -66,7 +65,7 @@ void atsc3_stltp_depacketizer_from_ip_udp_rtp_packet(atsc3_ip_udp_rtp_packet_t* 
 	atsc3_alp_packet_collection_t* atsc3_alp_packet_collection = atsc3_stltp_depacketizer_context->atsc3_alp_packet_collection;
 
     //dispatch for STLTP decoding and reflection
-    if(ip_udp_rtp_packet->udp_flow.dst_ip_addr == atsc3_stltp_depacketizer_context->destination_flow_filter.dst_ip_addr && ip_udp_rtp_packet->udp_flow.dst_port == atsc3_stltp_depacketizer_context->destination_flow_filter.dst_ip_addr) {
+    if(ip_udp_rtp_packet->udp_flow.dst_ip_addr == atsc3_stltp_depacketizer_context->destination_flow_filter.dst_ip_addr && ip_udp_rtp_packet->udp_flow.dst_port == atsc3_stltp_depacketizer_context->destination_flow_filter.dst_port) {
 
     	atsc3_stltp_depacketizer_context->atsc3_stltp_tunnel_packet_processed = atsc3_stltp_raw_packet_extract_inner_from_outer_packet(ip_udp_rtp_packet, atsc3_stltp_depacketizer_context->atsc3_stltp_tunnel_packet_processed);
     	atsc3_stltp_tunnel_packet_processed = atsc3_stltp_depacketizer_context->atsc3_stltp_tunnel_packet_processed;
