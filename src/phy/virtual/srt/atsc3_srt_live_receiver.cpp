@@ -1,5 +1,5 @@
 /*
- * Atsc3_SRT_live_transmit.cpp
+ * SRTLiveReceiver.cpp
  *
  *  Created on: Aug 11, 2020
  *      Author: jjustman
@@ -81,7 +81,6 @@
 #include "transmitmedia.hpp"
 #include "verbose.hpp"
 
-#include "Atsc3SRT_Target.h"
 
 
 // NOTE: This is without "haisrt/" because it uses an internal path
@@ -92,7 +91,45 @@
 #include <srtcore/udt.h> // This TEMPORARILY contains extra C++-only SRT API.
 #include <srtcore/logging.h>
 
+#include "atsc3_srt_live_receiver.h"
+#include "atsc3_srt_target.h"
+
+
 using namespace std;
+
+atsc3_srt_live_receiver_context_t* atsc3_srt_live_receiver_context_new(const char* source_connection_string) {
+	atsc3_srt_live_receiver_context_t* atsc3_srt_live_receiver_context = (atsc3_srt_live_receiver_context_t*) calloc(1, sizeof(atsc3_srt_live_receiver_context_t));
+
+	atsc3_srt_live_receiver_context->source_connection_string = strdup(source_connection_string);
+
+	return atsc3_srt_live_receiver_context;
+}
+
+void atsc3_srt_live_receiver_context_set_rx_udp_packet_process_callback_with_context(atsc3_srt_live_receiver_context_t* atsc3_srt_live_receiver_context, atsc3_srt_live_rx_udp_packet_process_callback_with_context_f atsc3_srt_live_rx_udp_packet_process_callback_with_context, void* context) {
+	atsc3_srt_live_receiver_context->atsc3_srt_live_rx_udp_packet_process_callback_with_context = atsc3_srt_live_rx_udp_packet_process_callback_with_context;
+	atsc3_srt_live_receiver_context->atsc3_srt_live_rx_udp_packet_process_callback_context = context;
+}
+
+void atsc3_srt_live_receiver_context_free(atsc3_srt_live_receiver_context_t** atsc3_srt_live_receiver_context_p) {
+	if(atsc3_srt_live_receiver_context_p) {
+		atsc3_srt_live_receiver_context_t* atsc3_srt_live_receiver_context = *atsc3_srt_live_receiver_context_p;
+		if(atsc3_srt_live_receiver_context) {
+
+			//cleanup
+			if(atsc3_srt_live_receiver_context->source_connection_string) {
+				freeclean((void**)&atsc3_srt_live_receiver_context->source_connection_string);
+			}
+
+			atsc3_srt_live_receiver_context->atsc3_srt_live_rx_udp_packet_process_callback = NULL;
+			atsc3_srt_live_receiver_context->atsc3_srt_live_rx_udp_packet_process_callback_context = NULL;
+			atsc3_srt_live_receiver_context->atsc3_srt_live_rx_udp_packet_process_callback_with_context = NULL;
+
+			atsc3_srt_live_receiver_context = NULL;
+
+		}
+		*atsc3_srt_live_receiver_context_p = NULL;
+	}
+}
 
 
 
@@ -114,6 +151,8 @@ struct AlarmExit: public std::runtime_error
 
 volatile bool int_state = false;
 volatile bool timer_state = false;
+
+
 void OnINT_ForceExit(int)
 {
     Verb() << "\n-------- REQUESTED INTERRUPT!\n";
@@ -161,23 +200,7 @@ struct LiveTransmitConfig
 };
 
 
-void PrintOptionHelp(const OptionName& opt_names, const string &value, const string &desc)
-{
-    cerr << "\t";
-    int i = 0;
-    for (auto opt : opt_names.names)
-    {
-        if (i++) cerr << ", ";
-        cerr << "-" << opt;
-    }
-
-    if (!value.empty())
-        cerr << ":"  << value;
-    cerr << "\t- " << desc << "\n";
-}
-
-
-int parse_args(LiveTransmitConfig &cfg, int argc, char** argv)
+int parse_args(LiveTransmitConfig &cfg)
 {
     const OptionName
         o_timeout       = { "t", "to", "timeout" },
@@ -222,74 +245,7 @@ int parse_args(LiveTransmitConfig &cfg, int argc, char** argv)
         { o_version,      OptionScheme::ARG_NONE }
     };
 
-    options_t params; // = new map<string, vector<string>>();
-    //ProcessOptions(argv, argc, optargs);
-//
-//          bool print_help    = OptionPresent(params, o_help);
-//    const bool print_version = OptionPresent(params, o_version);
-
-//    if (params[""].size() != 2 && !print_help && !print_version)
-//    {
-//        cerr << "ERROR. Invalid syntax. Specify source and target URIs.\n";
-//        if (params[""].size() > 0)
-//        {
-//            cerr << "The following options are passed without a key: ";
-//            copy(params[""].begin(), params[""].end(), ostream_iterator<string>(cerr, ", "));
-//            cerr << endl;
-//        }
-//        print_help = true; // Enable help to print it further
-//    }
-//
-//    if (print_help)
-//    {
-//        cout << "SRT sample application to transmit live streaming.\n";
-//        cerr << "Built with SRT Library version: " << SRT_VERSION << endl;
-//        const uint32_t srtver = srt_getversion();
-//        const int major = srtver / 0x10000;
-//        const int minor = (srtver / 0x100) % 0x100;
-//        const int patch = srtver % 0x100;
-//        cerr << "SRT Library version: " << major << "." << minor << "." << patch << endl;
-//        cerr << "Usage: srt-live-transmit [options] <input-uri> <output-uri>\n";
-//        cerr << "\n";
-//#ifndef _WIN32
-//        PrintOptionHelp(o_timeout,   "<timeout=0>", "exit timer in seconds");
-//        PrintOptionHelp(o_timeout_mode, "<mode=0>", "timeout mode (0 - since app start; 1 - like 0, but cancel on connect");
-//#endif
-//        PrintOptionHelp(o_autorecon, "<enabled=yes>", "auto-reconnect mode {yes, no}");
-//        PrintOptionHelp(o_chunk,     "<chunk=1456>", "max size of data read in one step, that can fit one SRT packet");
-//        PrintOptionHelp(o_bwreport,  "<every_n_packets=0>", "bandwidth report frequency");
-//        PrintOptionHelp(o_srctime,   "<enabled=yes>", "Pass packet time from source to SRT output {yes, no}");
-//        PrintOptionHelp(o_buffering, "<packets=n>", "Buffer up to n incoming packets");
-//        PrintOptionHelp(o_statsrep,  "<every_n_packets=0>", "frequency of status report");
-//        PrintOptionHelp(o_statsout,  "<filename>", "output stats to file");
-//        PrintOptionHelp(o_statspf,   "<format=default>", "stats printing format {json, csv, default}");
-//        PrintOptionHelp(o_statsfull, "", "full counters in stats-report (prints total statistics)");
-//        PrintOptionHelp(o_loglevel,  "<level=error>", "log level {fatal,error,info,note,warning}");
-//        PrintOptionHelp(o_logfa,     "<fas=general,...>", "log functional area {all,general,bstats,control,data,tsbpd,rexmit}");
-//        //PrintOptionHelp(o_log_internal, "", "use internal logger");
-//        PrintOptionHelp(o_logfile, "<filename="">", "write logs to file");
-//        PrintOptionHelp(o_quiet, "", "quiet mode (default off)");
-//        PrintOptionHelp(o_verbose,   "", "verbose mode (default off)");
-//        cerr << "\n";
-//        cerr << "\t-h,-help - show this help\n";
-//        cerr << "\t-version - print SRT library version\n";
-//        cerr << "\n";
-//        cerr << "\t<input-uri>  - URI specifying a medium to read from\n";
-//        cerr << "\t<output-uri> - URI specifying a medium to write to\n";
-//        cerr << "URI syntax: SCHEME://HOST:PORT/PATH?PARAM1=VALUE&PARAM2=VALUE...\n";
-//        cerr << "Supported schemes:\n";
-//        cerr << "\tsrt: use HOST, PORT, and PARAM for setting socket options\n";
-//        cerr << "\tudp: use HOST, PORT and PARAM for some UDP specific settings\n";
-//        cerr << "\tfile: only as file://con for using stdin or stdout\n";
-//
-//        return 2;
-//    }
-
-//    if (print_version)
-//    {
-//        cerr << "SRT Library version: " <<  SRT_VERSION << endl;
-//        return 2;
-//    }
+    options_t params;
 
     cfg.timeout      = Option<OutNumber>(params, o_timeout);
     cfg.timeout_mode = Option<OutNumber>(params, o_timeout_mode);
@@ -334,14 +290,9 @@ int parse_args(LiveTransmitConfig &cfg, int argc, char** argv)
 }
 
 
-#ifdef __JJ_TO_REFACTOR_OUT_CLI
-int main(int argc, char** argv)
-{
-#endif
-int atsc3srt_live_transmit_startup() {
+int atsc3_srt_live_receiver_start_in_proc(atsc3_srt_live_receiver_context_t* atsc3_srt_live_receiver_context) {
 
-	int argc = 0;
-	char** argv = { { 0 } };
+	atsc3_srt_live_receiver_context->is_shutdown = false;
 
 	printf("atsc3srt_live_transmit_startup");
 
@@ -371,19 +322,20 @@ int atsc3srt_live_transmit_startup() {
 
     LiveTransmitConfig cfg;
 
-    const int parse_ret = parse_args(cfg, argc, argv);
-//    if (parse_ret != 0)
-//        return parse_ret == 1 ? EXIT_FAILURE : 0;
+    const int parse_ret = parse_args(cfg);
 
-    cfg.source = "srt://bna.srt.atsc3.com:31347?passphrase=88731837-0EB5-4951-83AA-F515B3BEBC20";
+    cfg.source = string(atsc3_srt_live_receiver_context->source_connection_string);
+
     Verbose::on = true;
     cfg.quiet = false;
 
     //
     // Set global config variables
     //
-    if (cfg.chunk_size > 0)
+    if (cfg.chunk_size > 0) {
         transmit_chunk_size = cfg.chunk_size;
+    }
+
     transmit_stats_writer = SrtStatsWriterFactory(cfg.stats_pf);
     transmit_bw_report = cfg.bw_report;
     transmit_stats_report = cfg.stats_report;
@@ -484,7 +436,7 @@ int atsc3srt_live_transmit_startup() {
     //unique_ptr<Base> ptr;
 
     unique_ptr<Target> tar;
-    tar.reset(new Atsc3SRT_Target());
+    tar.reset(new Atsc3SRT_Target(atsc3_srt_live_receiver_context));
 
     //jjustman-2020-08-11-direct handoff to atsc3_stltp_depacketizer
     bool tarConnected = false;
@@ -506,7 +458,7 @@ int atsc3srt_live_transmit_startup() {
 
     try {
         // Now loop until broken
-        while (!int_state && !timer_state)
+        while (!int_state && !timer_state && atsc3_srt_live_receiver_context->should_run)
         {
             if (!src.get())
             {
@@ -844,14 +796,22 @@ int atsc3srt_live_transmit_startup() {
         printf("SRT: ERROR exception: %s", x.what());
 
         cerr << "ERROR: " << x.what() << endl;
+        atsc3_srt_live_receiver_context->is_shutdown = true;
         return 255;
     }
 
+    atsc3_srt_live_receiver_context->is_shutdown = true;
     return 0;
 }
 
-// Class utilities
+void atsc3_srt_live_receiver_notify_shutdown(atsc3_srt_live_receiver_context_t* atsc3_srt_live_receiver_context) {
+	atsc3_srt_live_receiver_context->should_run = false;
+}
 
+
+bool atsc3_srt_live_receiver_get_is_shutdown(atsc3_srt_live_receiver_context_t* atsc3_srt_live_receiver_context) {
+	return atsc3_srt_live_receiver_context->is_shutdown;
+}
 
 void TestLogHandler(void* opaque, int level, const char* file, int line, const char* area, const char* message)
 {

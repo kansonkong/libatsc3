@@ -94,7 +94,7 @@ protected:
     //local member variables for pcap replay
 
     char*                           pcap_replay_filename = NULL;
-    bool                            pcapThreadShouldRun;
+    bool                            pcapThreadShouldRun = false;
 
     std::thread                     pcapProducerThreadPtr;
     bool                            pcapProducerShutdown = true;

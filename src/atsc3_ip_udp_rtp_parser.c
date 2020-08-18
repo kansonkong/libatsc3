@@ -53,6 +53,8 @@ block_t* atsc3_pcap_parse_ethernet_frame(const struct pcap_pkthdr *pkthdr, const
 //from will be promoted to pointer of ->data
 //if you need an independent data block, do: ip_udp_rtp_packet->data = block_Duplicate(ip_udp_rtp_packet->data)
 
+#define __ATSC3_IP_UDP_RTP_PENDANTIC_DEBUGGING__
+
 atsc3_ip_udp_rtp_packet_t* atsc3_ip_udp_rtp_packet_process_from_blockt_pos(block_t* from) {
     int i = 0;
     int k = 0;
@@ -73,7 +75,18 @@ atsc3_ip_udp_rtp_packet_t* atsc3_ip_udp_rtp_packet_process_from_blockt_pos(block
     
     //check if we are a UDP packet, otherwise bail
     if (ip_header[9] != 0x11) {
-        __LISTENER_UDP_ERROR("udp_packet_process_from_ptr: not a UDP packet!");
+        __LISTENER_UDP_ERROR("udp_packet_process_from_ptr: not a UDP packet! ip_header[9]: 0x%02x", ip_header[9]);
+
+#ifdef __ATSC3_IP_UDP_RTP_PENDANTIC_DEBUGGING__
+        printf("block_t pos: %d, size: %d\t", from->i_pos, from->p_size);
+        for(int i=0; i < 40; i++) {
+        	if(i>0 && ((i % 8) == 0)) {
+        		printf(" ");
+        	}
+        	printf("%02x ", packet[i]);
+        }
+        printf("\n");
+#endif
         return NULL;
     }
     
