@@ -21,9 +21,11 @@
 uint64_t rx_udp_invocation_count = 0;
 
 void phy_rx_udp_packet_process_callback(uint8_t plp_num, block_t* packet) {
-//	if((rx_udp_invocation_count++ % 10) == 0) {
+//	if((rx_udp_invocation_count % 10) == 0) {
 		_SRT_STLTP_VIRTUAL_TEST_DEBUG("PLP: %d, packet number: %llu, packet: %p, len: %d",
 				plp_num, rx_udp_invocation_count, packet, packet->p_size);
+
+		rx_udp_invocation_count++;
 //	}
 }
 
@@ -42,7 +44,7 @@ int test_srt_stltp_with_bna_rx() {
 	double srt_thread_run_start_time = gt();
 
 	sleep(1);
-	while((gt() - srt_thread_run_start_time) < 10 ) {
+	while((gt() - srt_thread_run_start_time) < 60 ) {
 		usleep(1000000);
 		_SRT_STLTP_VIRTUAL_TEST_INFO("srt_is_running: %d", srtRxSTLTPVirtualPHY->is_srt_running());
 

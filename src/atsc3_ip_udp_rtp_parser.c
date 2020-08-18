@@ -68,9 +68,24 @@ atsc3_ip_udp_rtp_packet_t* atsc3_ip_udp_rtp_packet_process_from_blockt_pos(block
     
     uint8_t* packet = block_Get(from);
     uint32_t packet_length = block_Remaining_size(from);
+    /*
+     * jjustman-2020-08-17 - guard for too short inner packet:
+     *
+     *
+    frame #5: 0x00000001000d6086 srt_stltp_virtual_phy_test`atsc3_ip_udp_rtp_packet_process_from_blockt_pos(from=0x0000603000048a00) at atsc3_ip_udp_rtp_parser.c:73:22 [opt]
+    frame #6: 0x00000001000e28c0 srt_stltp_virtual_phy_test`atsc3_stltp_tunnel_packet_inner_parse_ip_udp_header_outer_data(atsc3_stltp_tunnel_packet=0x000060b00003ca50) at atsc3_stltp_parser.c:128:62 [opt]
+    frame #7: 0x00000001000e4562 srt_stltp_virtual_phy_test`atsc3_stltp_raw_packet_extract_inner_from_outer_packet(ip_udp_rtp_packet=<unavailable>, atsc3_stltp_tunnel_packet_last=<unavailable>) at atsc3_stltp_parser.c:395:55 [opt]
+    frame #8: 0x000000010008e807 srt_stltp_virtual_phy_test`atsc3_stltp_depacketizer_from_ip_udp_rtp_packet(ip_udp_rtp_packet=<unavailable>, atsc3_stltp_depacketizer_context=<unavailable>) at atsc3_stltp_depacketizer.c:68:78 [opt]
+    frame #9: 0x0000000100091171 srt_stltp_virtual_phy_test`atsc3_stltp_depacketizer_from_blockt(packet_p=0x00007000018aed60, atsc3_stltp_depacketizer_context=0x0000607000000330) at atsc3_stltp_depacketizer.c:381:2 [opt]
+     *
+     */
+    if(packet_length < outer_payload_start) {
+        __LISTENER_UDP_ERROR("udp_packet_process_from_ptr: packet too short for parsing IP/UDP/RTP, needed %d bytes, packet_len is only: %d bytes", outer_payload_start, packet_length);
+    	return NULL;
+    }
     
     for (i = 0; i < udp_header_start; i++) {
-        ip_header[i] = packet[i];
+         ip_header[i] = packet[i];
     }
     
     //check if we are a UDP packet, otherwise bail

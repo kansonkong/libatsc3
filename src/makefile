@@ -40,8 +40,8 @@ CXXFLAGS=-std=c++11
 
 DEBUG=-g -O1
 
-#DEBUG=-g -fsanitize=address -fno-omit-frame-pointer -fno-optimize-sibling-calls -O1 -fsanitize-address-use-after-scope
-ASAN=-fsanitize=address -fno-omit-frame-pointer -fno-optimize-sibling-calls -O1 -fsanitize-address-use-after-scope
+#DEBUG=-g -fsanitize=address -fno-omit-frame-pointer -fno-optimize-sibling-calls -O0 -fsanitize-address-use-after-scope
+ASAN=-fsanitize=address -fno-omit-frame-pointer -fno-optimize-sibling-calls -O0 -fsanitize-address-use-after-scope
 
 LOCAL_LD_LIBS=-lz -lm -lpthread -lpcap -lpcre2-8 -lstdc++
 LOCAL_LD_LIBS_NCURSES=$(LOCAL_LD_LIBS) -lncurses
