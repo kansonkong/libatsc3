@@ -756,7 +756,6 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         // jjustman-2020-08-18 - wire up our applicationBridge and PHYBridge
         atsc3NdkApplicationBridge = new Atsc3NdkApplicationBridge(this);
         atsc3NdkPHYBridge = new Atsc3NdkPHYBridge(this);
-        atsc3NdkPHYBridge.init();
 
         // now, scan usb devices and try to connect
         ServiceHandler.GetInstance().postDelayed(new Runnable() {
