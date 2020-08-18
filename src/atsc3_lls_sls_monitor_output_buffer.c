@@ -16,7 +16,7 @@ void trun_sample_entry_free(trun_sample_entry_t** trun_sample_entry_p) {
 		trun_sample_entry_t* trun_sample_entry = *trun_sample_entry_p;
 
 		if(trun_sample_entry) {
-			block_Release(&trun_sample_entry->sample);
+			block_Destroy(&trun_sample_entry->sample);
 
 			freesafe(trun_sample_entry);
 			trun_sample_entry = NULL;

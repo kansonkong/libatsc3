@@ -225,7 +225,7 @@ int PcapDemuxedVirtualPHY::PcapConsumerThreadRun() {
                 pcap_replay_buffer_queue.pop();
             }
             condition_lock.unlock();
-            pcap_replay_condition.notify_one();
+            //pcap_replay_condition.notify_one();
         }
 
         //printf("PcapDemuxedVirtualPHY::PcapConsumerThreadRun - pushing %d packets", to_dispatch_queue.size());

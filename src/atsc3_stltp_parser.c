@@ -188,6 +188,9 @@ atsc3_stltp_tunnel_packet_t* atsc3_stltp_raw_packet_extract_inner_from_outer_pac
     //rewind raw packet buffer to outer packet
     block_Rewind(ip_udp_rtp_packet->data);
     
+    if(atsc3_stltp_tunnel_packet_current->ip_udp_rtp_packet_outer) {
+    	atsc3_ip_udp_rtp_packet_free(&atsc3_stltp_tunnel_packet_current->ip_udp_rtp_packet_outer);
+    }
     atsc3_stltp_tunnel_packet_current->ip_udp_rtp_packet_outer = atsc3_ip_udp_rtp_packet_duplicate(ip_udp_rtp_packet);
     
 	if(!atsc3_stltp_tunnel_packet_current->ip_udp_rtp_packet_outer) {
@@ -195,7 +198,7 @@ atsc3_stltp_tunnel_packet_t* atsc3_stltp_raw_packet_extract_inner_from_outer_pac
 		return NULL;
 	}
 
-    
+
     //seek past the outer packet header data, as we have already parsed this data..
     block_Seek(atsc3_stltp_tunnel_packet_current->ip_udp_rtp_packet_outer->data, ATSC_STLTP_IP_UDP_RTP_HEADER_SIZE);
 
@@ -230,14 +233,14 @@ atsc3_stltp_tunnel_packet_t* atsc3_stltp_raw_packet_extract_inner_from_outer_pac
             if(inner_payload_last_short_frame) {
                 block_Merge(inner_payload_last_short_frame, inner_payload_current);
                 //todo: validate destroy is the propr action - block_Destroy(&inner_payload_current);
-                block_Release(&inner_payload_current);
+                block_Destroy(&inner_payload_current);
                 inner_packet = atsc3_ip_udp_rtp_packet_process_from_blockt_pos(inner_payload_last_short_frame);
                 atsc3_stltp_tunnel_packet_current->ip_udp_rtp_packet_inner = inner_packet;
             } else {
                 //todo: figure out what to do here
                 __STLTP_PARSER_ERROR("atsc3_stltp_tunnel_packet_extract_inner_from_outer_packet: re-fragmentation from previous packet from last outer position failed");
                 //block_Destroy(&inner_payload_current);
-                block_Release(&inner_payload_current);
+                block_Destroy(&inner_payload_current);
                 return NULL;
             }
         
@@ -550,6 +553,12 @@ atsc3_stltp_baseband_packet_t* atsc3_stltp_baseband_packet_extract(atsc3_stltp_t
         //jdj-2019-07-31 - hack for A324 - 2019 compatability
         baseband_header_packet_length &= 0xFFFF;
         assert(baseband_header_packet_length);
+        if(atsc3_stltp_baseband_packet_pending->payload) {
+        	//this should never happen, but OK
+    		__STLTP_PARSER_WARN("atsc3_stltp_baseband_packet_pending->payload is not null, ptr: %p, len: %d, freeing before new calloc", atsc3_stltp_baseband_packet_pending->payload, atsc3_stltp_baseband_packet_pending->payload_length);
+    		atsc3_stltp_baseband_packet_pending->payload_length = 0;
+    		freeclean((void**)&atsc3_stltp_baseband_packet_pending->payload);
+        }
         
         atsc3_stltp_baseband_packet_pending->payload_length = baseband_header_packet_length;
         atsc3_stltp_baseband_packet_pending->payload = calloc(baseband_header_packet_length, sizeof(uint8_t));

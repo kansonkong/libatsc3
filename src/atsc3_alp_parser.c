@@ -334,11 +334,15 @@ cleanup:
 
 
 //parse relative position of baseband_packet_payload,
+
+/*
+ * jjustman-2020-08-17 - TODO: wrap this with better block_t reads so we don't possibly over-read from our starting_block_size
+ */
 atsc3_alp_packet_t* atsc3_alp_packet_parse(block_t* baseband_packet_payload) {
     uint32_t starting_block_size = block_Remaining_size(baseband_packet_payload);
     
     if(starting_block_size == 0) {
-        __ALP_PARSER_DEBUG("atsc3_alp_packet_parse: remaining size is 0 bytes, returning NULL, ptr: %p, pos: %d, size: %d",
+    	__ALP_PARSER_DEBUG("atsc3_alp_packet_parse: remaining size is 0 bytes, returning NULL, ptr: %p, pos: %d, size: %d",
                            baseband_packet_payload,
                            baseband_packet_payload->i_pos,
                            baseband_packet_payload->p_size);
@@ -346,8 +350,8 @@ atsc3_alp_packet_t* atsc3_alp_packet_parse(block_t* baseband_packet_payload) {
     }
     
     //check for alp underrun which will need re-fragmenting
-    if(starting_block_size < 2) {
-        __ALP_PARSER_WARN("atsc3_alp_packet_parse: remaining size less than 2 bytes, ptr: %p, pos: %d, size: %d",
+    if(starting_block_size < 8) {
+        __ALP_PARSER_WARN("atsc3_alp_packet_parse: remaining size less than 8 bytes, ptr: %p, pos: %d, size: %d",
                            baseband_packet_payload,
                            baseband_packet_payload->i_pos,
                            baseband_packet_payload->p_size);
@@ -447,6 +451,14 @@ atsc3_alp_packet_t* atsc3_alp_packet_parse(block_t* baseband_packet_payload) {
                 uint8_t hef_length_minus1 = *binary_payload++;
                 __ALP_PARSER_INFO("extension type: 0x%x, extension length: %u", hef_type, hef_length_minus1);
                 for(int i=0; i < hef_length_minus1; i++) {
+                	if((binary_payload - alp_binary_payload_start) < 1) {
+                		 __ALP_PARSER_WARN("atsc3_alp_packet_parse: remaining size is %lu bytes, returning NULL, ptr: %p, pos: %d, size: %d",
+								   (binary_payload - alp_binary_payload_start),
+								   baseband_packet_payload,
+								   baseband_packet_payload->i_pos,
+								   baseband_packet_payload->p_size);
+                		 return NULL;
+                	}
                     binary_payload++;
                 }
             }
@@ -473,6 +485,14 @@ atsc3_alp_packet_t* atsc3_alp_packet_parse(block_t* baseband_packet_payload) {
         
         if(alp_packet_header->payload_configuration == 0 && alp_packet_header->alp_packet_header_mode.header_mode == 0) {
             //read 5.2.1 Additional Header for Signaling Information - 40 bits
+        	if((binary_payload - alp_binary_payload_start) < 1) {
+        		 __ALP_PARSER_WARN("atsc3_alp_packet_parse: remaining size is %lu bytes, returning NULL, ptr: %p, pos: %d, size: %d",
+        									   (binary_payload - alp_binary_payload_start),
+        									   baseband_packet_payload,
+        									   baseband_packet_payload->i_pos,
+        									   baseband_packet_payload->p_size);
+				 return NULL;
+			}
             uint8_t si_header[5];
             memcpy(&si_header, binary_payload, 5);
             binary_payload+=5;
@@ -533,6 +553,16 @@ atsc3_alp_packet_t* atsc3_alp_packet_parse(block_t* baseband_packet_payload) {
     //atsc3_stltp_tunnel_packet_clear_completed_inner_packets
     
     int32_t remaining_binary_payload_bytes = starting_block_size - (binary_payload - alp_binary_payload_start);
+
+    if((binary_payload - alp_binary_payload_start) < 1) {
+    	__ALP_PARSER_WARN("atsc3_alp_packet_parse: remaining size is %lu bytes, returning NULL, ptr: %p, pos: %d, size: %d",
+   								   (binary_payload - alp_binary_payload_start),
+   								   baseband_packet_payload,
+   								   baseband_packet_payload->i_pos,
+   								   baseband_packet_payload->p_size);
+		 return NULL;
+	}
+
 
     if(!alp_payload_length) {
 

@@ -99,6 +99,9 @@ protected:
     std::thread                     srtConsumerThreadPtr;
     bool                            srtConsumerShutdown = true;
 
+    queue<block_t*>                 srt_rx_live_receiver_buffer_queue; //holding queue from SRT transport callback, swapped into srt_rx_buffer_queue as needed
+    mutex                           srt_rx_live_receiver_buffer_queue_mutex;
+
     queue<block_t*>                 srt_rx_buffer_queue;
     mutex                           srt_rx_buffer_queue_mutex;
     condition_variable              srt_rx_condition;
