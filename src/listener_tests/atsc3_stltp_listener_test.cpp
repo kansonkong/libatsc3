@@ -28,6 +28,7 @@ uint32_t* dst_ip_addr_filter = NULL;
 uint16_t* dst_ip_port_filter = NULL;
 
 atsc3_stltp_tunnel_packet_t* atsc3_stltp_tunnel_packet_processed = NULL;
+atsc3_stltp_depacketizer_context_t* atsc3_stltp_depacketizer_context = NULL;
 
 void process_packet(u_char *user, const struct pcap_pkthdr *pkthdr, const u_char *packet) {
 	atsc3_ip_udp_rtp_packet_t* ip_udp_rtp_packet = atsc3_ip_udp_rtp_process_packet_from_pcap(user, pkthdr, packet);
@@ -37,7 +38,7 @@ void process_packet(u_char *user, const struct pcap_pkthdr *pkthdr, const u_char
 
 	//dispatch for LLS extraction and dump
 	if(ip_udp_rtp_packet->udp_flow.dst_ip_addr == *dst_ip_addr_filter && ip_udp_rtp_packet->udp_flow.dst_port == *dst_ip_port_filter) {
-		atsc3_stltp_tunnel_packet_processed = atsc3_stltp_raw_packet_extract_inner_from_outer_packet(ip_udp_rtp_packet, atsc3_stltp_tunnel_packet_processed);
+		atsc3_stltp_tunnel_packet_processed = atsc3_stltp_raw_packet_extract_inner_from_outer_packet(atsc3_stltp_depacketizer_context, ip_udp_rtp_packet, atsc3_stltp_tunnel_packet_processed);
 
 		if(atsc3_stltp_tunnel_packet_processed) {
 			if(atsc3_stltp_tunnel_packet_processed->atsc3_stltp_baseband_packet_v.count) {
@@ -122,6 +123,7 @@ int main(int argc,char **argv) {
 
     }
 
+    atsc3_stltp_depacketizer_context = atsc3_stltp_depacketizer_context_new();
 
 	println("%s - a udp mulitcast listener test harness for atsc3 stltp payloads, listening on dev: %s", argv[0], argv[1]);
 

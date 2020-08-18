@@ -10,6 +10,7 @@
 #include <string.h>
 
 #include <atsc3_utils.h>
+#include <atsc3_logging_externs.h>
 
 #include <phy/virtual/SRTRxSTLTPVirtualPHY.h>
 
@@ -21,11 +22,11 @@
 uint64_t rx_udp_invocation_count = 0;
 
 void phy_rx_udp_packet_process_callback(uint8_t plp_num, block_t* packet) {
-	if((rx_udp_invocation_count % 1000) == 0) {
+	//if((rx_udp_invocation_count % 1000) == 0) {
 		_SRT_STLTP_VIRTUAL_TEST_DEBUG("PLP: %d, packet number: %llu, packet: %p, len: %d",
 				plp_num, rx_udp_invocation_count, packet, packet->p_size);
 
-	}
+	//}
 	rx_udp_invocation_count++;
 
 }
@@ -73,6 +74,20 @@ int test_srt_stltp_with_bna_rx() {
 }
 
 int main(int argc, char* argv[] ) {
+
+	_ALP_PARSER_INFO_ENABLED = 1;
+	_ALP_PARSER_DEBUG_ENABLED = 1;
+
+	_ATSC3_STLTP_DEPACKETIZER_INFO_ENABLED = 1;
+	_ATSC3_STLTP_DEPACKETIZER_DEBUG_ENABLED = 1;
+	_ATSC3_STLTP_DEPACKETIZER_TRACE_ENABLED = 1;
+
+	_STLTP_PARSER_INFO_ENABLED = 1;
+	_STLTP_PARSER_DEBUG_ENABLED = 1;
+	_STLTP_PARSER_TRACE_ENABLED = 1;
+
+	_STLTP_TYPES_DEBUG_ENABLED = 1;
+	_STLTP_TYPES_TRACE_ENABLED = 1;
 
 	_SRT_STLTP_VIRTUAL_TEST_INFO("starting test_srt_stltp_with_bna_rx test");
 
