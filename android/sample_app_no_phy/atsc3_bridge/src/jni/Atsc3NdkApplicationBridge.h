@@ -30,31 +30,18 @@
 #include <atsc3_pcap_type.h>
 #include <atsc3_monitor_events_alc.h>
 #include <atsc3_route_package_utils.h>
-#include <atsc3_core_service_player_bridge.h>
-
-
 #include <application/IAtsc3NdkApplicationBridge.h>
 
+#include <atsc3_core_service_player_bridge.h>
+#include "Atsc3BridgeNdkStaticJniLoader.h"
+
 #define MODULE_NAME "intf"
-
-/*]
- * : public libatsc3_Iphy_mockable 
- */
-
-
-//--------------------------------------------------------------------------
-//jjustman-2019-10-19: i don't think the mJvm->detatch is correct in the context of the Atsc3JniEnv destructor, see:
-//https://developer.android.com/training/articles/perf-jni#threads_1
-
 
 class Atsc3NdkApplicationBridge : public IAtsc3NdkApplicationBridge
 {
 public:
-    Atsc3NdkApplicationBridge(): mbInit(false), mbLoop(false), mbRun(false) {    }
+    Atsc3NdkApplicationBridge(JNIEnv* env, jobject jni_instance);
     
-    /* phy callback method(s)
-    int atsc3_rx_callback_f(void*, uint64_t ullUser);
-    **/
     void LogMsg(const char *msg);
     void LogMsg(const std::string &msg);
     void LogMsgF(const char *fmt, ...);
@@ -106,11 +93,18 @@ public:
     int pinFromRxProcessingThread();
     int pinFromRxStatusThread();
 
+    int RxThread();
 
     Atsc3JniEnv* Atsc3_Jni_Capture_Thread_Env = NULL;
     Atsc3JniEnv* Atsc3_Jni_Processing_Thread_Env = NULL;
     Atsc3JniEnv* Atsc3_Jni_Status_Thread_Env = NULL;
 private:
+    JNIEnv* env = nullptr;
+    jobject jni_instance_globalRef = nullptr;
+
+
+
+
     bool mbInit;
 
     std::thread mhRxThread;
@@ -172,10 +166,8 @@ public:
     jmethodID atsc3_signallingContext_notify_audio_packet_id_and_mpu_timestamp_descriptor_ID = nullptr;  // java class method id
     jmethodID atsc3_signallingContext_notify_stpp_packet_id_and_mpu_timestamp_descriptor_ID = nullptr;  // java class method id
 
-    jmethodID atsc3_rf_phy_status_callback_ID = nullptr;
     jmethodID atsc3_onExtractedSampleDurationID = nullptr;
     jmethodID atsc3_setVideoWidthHeightFromTrakID = nullptr;
-    jmethodID atsc3_update_rf_bw_stats_ID = nullptr;
 
     jmethodID atsc3_lls_sls_alc_on_route_mpd_patched_ID = nullptr;
     jmethodID atsc3_on_alc_object_status_message_ID = nullptr;
@@ -201,7 +193,7 @@ public:
 
 };
 
-#define NDK_APPLICATION_BRIDGE_ERROR(...)   	__LIBATSC3_TIMESTAMP_ERROR(__VA_ARGS__);
+#define _NDK_APPLICATION_BRIDGE_ERROR(...)   	__LIBATSC3_TIMESTAMP_ERROR(__VA_ARGS__);
 #define NDK_APPLICATION_BRIDGE_INFO(...)   	    __LIBATSC3_TIMESTAMP_INFO(__VA_ARGS__);
 
 

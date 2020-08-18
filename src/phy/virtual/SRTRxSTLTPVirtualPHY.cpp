@@ -2,19 +2,28 @@
 
 std::hash<std::thread::id> __SRTRxSTLTPVirtualPHY_thread_hasher__;
 
-SRTRxSTLTPVirtualPHY::SRTRxSTLTPVirtualPHY(string srtConnectionSource) {
+SRTRxSTLTPVirtualPHY::SRTRxSTLTPVirtualPHY() {
+
+	atsc3_srt_live_receiver_context = atsc3_srt_live_receiver_context_new();
+	atsc3_srt_live_receiver_context_set_rx_udp_packet_process_callback_with_context(atsc3_srt_live_receiver_context, SRTRxSTLTPVirtualPHY::Atsc3_srt_live_rx_udp_packet_process_callback_with_context, (void*) this);
 
 	atsc3_stltp_depacketizer_context = atsc3_stltp_depacketizer_context_new();
 
-	atsc3_srt_live_receiver_context = atsc3_srt_live_receiver_context_new(srtConnectionSource.c_str());
-	atsc3_srt_live_receiver_context_set_rx_udp_packet_process_callback_with_context(atsc3_srt_live_receiver_context, SRTRxSTLTPVirtualPHY::Atsc3_srt_live_rx_udp_packet_process_callback_with_context, (void*) this);
-
 	atsc3_stltp_depacketizer_context->atsc3_stltp_baseband_alp_packet_collection_callback_with_context = &SRTRxSTLTPVirtualPHY::Atsc3_stltp_baseband_alp_packet_collection_callback_with_context;
 	atsc3_stltp_depacketizer_context->atsc3_stltp_baseband_alp_packet_collection_callback_context = (void*)this;
-
-
-
 }
+
+SRTRxSTLTPVirtualPHY::SRTRxSTLTPVirtualPHY(string srtConnectionSource) : SRTRxSTLTPVirtualPHY() {
+
+	atsc3_srt_live_receiver_context_set_srt_source_connection_string(atsc3_srt_live_receiver_context, srtConnectionSource.c_str());
+}
+
+void SRTRxSTLTPVirtualPHY::set_srt_source_connection_string(const char* srt_source_connection_string) {
+
+	atsc3_srt_live_receiver_context_set_srt_source_connection_string(atsc3_srt_live_receiver_context, srt_source_connection_string);
+}
+
+
 //
 //
 //void SRTRxSTLTPVirtualPHY::atsc3_srt_stltp_listen_ip_port_plp(string ip, string port, uint8_t plp) {
@@ -81,7 +90,7 @@ int SRTRxSTLTPVirtualPHY::atsc3_srt_thread_run() {
 
         SRTRXSTLTP_VIRTUAL_PHY_INFO("SRTRxSTLTPVirtualPHY::atsc3_srt_producer_thread_run with this: %p", this);
         this->srtProducerThreadRun();
-        releasePinProducerThreadAsNeeded();
+        releaseProducerThreadAsNeeded();
     });
 
     srtConsumerThreadPtr = std::thread([this](){
@@ -249,7 +258,6 @@ int SRTRxSTLTPVirtualPHY::srtConsumerThreadRun() {
             }
             srt_replay_buffer_queue_guard.unlock();
             condition_lock.unlock();
-            //srt_rx_condition.notify_one();
         }
 
         //printf("SRTRxSTLTPVirtualPHY::srtConsumerThreadRun - pushing %d packets", to_dispatch_queue.size());
@@ -308,11 +316,13 @@ void SRTRxSTLTPVirtualPHY::atsc3_stltp_baseband_alp_packet_collection_received(u
 
 	for(int i=0; i < atsc3_alp_packet_collection->atsc3_alp_packet_v.count; i++) {
 		atsc3_alp_packet_t* atsc3_alp_packet = atsc3_alp_packet_collection->atsc3_alp_packet_v.data[i];
-        block_Rewind(atsc3_alp_packet->alp_payload);
+		if(atsc3_alp_packet && atsc3_alp_packet->alp_payload) {
+			block_Rewind(atsc3_alp_packet->alp_payload);
 
-		//if we are an IP packet, push this via our IAtsc3NdkPHYClient callback
-		if(atsc3_phy_rx_udp_packet_process_callback && atsc3_alp_packet && atsc3_alp_packet->alp_packet_header.packet_type == 0x0) {
-			atsc3_phy_rx_udp_packet_process_callback(plp, atsc3_alp_packet->alp_payload);
+			//if we are an IP packet, push this via our IAtsc3NdkPHYClient callback
+			if(atsc3_phy_rx_udp_packet_process_callback && atsc3_alp_packet && atsc3_alp_packet->alp_packet_header.packet_type == 0x0) {
+				atsc3_phy_rx_udp_packet_process_callback(plp, atsc3_alp_packet->alp_payload);
+			}
 		}
 	}
 }

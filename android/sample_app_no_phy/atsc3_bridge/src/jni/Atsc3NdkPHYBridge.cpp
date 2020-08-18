@@ -14,7 +14,7 @@ void Atsc3NdkPHYBridge::LogMsg(const char *msg)
         return;
     Atsc3JniEnv env(this->javaVM);
     if (!env) {
-        NDK_PHY_BRIDGE_ERROR("!! err on get jni env");
+        _BRIDGE_NDK_PHY_ERROR("!! err on get jni env");
         return;
     }
     jstring js = env.Get()->NewStringUTF(msg);
@@ -59,7 +59,7 @@ void Atsc3NdkPHYBridge::atsc3_update_rf_stats(int32_t tuner_lock,
         return;
 
     if (!Atsc3_Jni_Status_Thread_Env) {
-        NDK_PHY_BRIDGE_ERROR("Atsc3NdkPHYBridge:atsc3_update_rf_stats: err on get jni env: Atsc3_Jni_Status_Thread_Env");
+        _BRIDGE_NDK_PHY_ERROR("Atsc3NdkPHYBridge:atsc3_update_rf_stats: err on get jni env: Atsc3_Jni_Status_Thread_Env");
         return;
     }
     int r = Atsc3_Jni_Status_Thread_Env->Get()->CallIntMethod(jniInstance,
@@ -89,7 +89,7 @@ void Atsc3NdkPHYBridge::atsc3_update_rf_bw_stats(uint64_t total_pkts,
     if (!JReady() || !atsc3_update_rf_bw_stats_ID)
         return;
     if (!Atsc3_Jni_Status_Thread_Env) {
-        NDK_PHY_BRIDGE_ERROR("Atsc3NdkPHYBridge:atsc3_update_rf_bw_stats: err on get jni env: Atsc3_Jni_Status_Thread_Env");
+        _BRIDGE_NDK_PHY_ERROR("Atsc3NdkPHYBridge:atsc3_update_rf_bw_stats: err on get jni env: Atsc3_Jni_Status_Thread_Env");
         return;
     }
     int r = Atsc3_Jni_Status_Thread_Env->Get()->CallIntMethod(jniInstance,
@@ -105,50 +105,45 @@ void Atsc3NdkPHYBridge::setRfPhyStatisticsViewVisible(bool isRfPhyStatisticsVisi
 
 //Java to native methods
 
-extern "C" JNIEXPORT jint JNI_OnLoad(JavaVM* vm, void* reserved) {
-    api = new Atsc3NdkPHYBridge(vm);
-    JNIEnv* env;
-    if (vm->GetEnv(reinterpret_cast<void**>(&env), JNI_VERSION_1_6) != JNI_OK) {
-        return JNI_ERR;
-    }
+//jjustman-2020-08-18 - is this really needed?
+
+extern "C" JNIEXPORT jint JNICALL
+Java_org_ngbp_libatsc3_middleware_Atsc3NdkPHYBridge_init(JNIEnv *env, jobject instance)
+{
+    api = new Atsc3NdkPHYBridge(atsc3_bridge_ndk_static_loader_get_javaVM());
+
+    _BRIDGE_NDK_PHY_INFO("Java_org_ngbp_libatsc3_middleware_Atsc3NdkPHYBridge_Init: start init, env: %p\n", env);
+
+    api->setJniInstance((jclass) env->NewGlobalRef(instance));
 
     jclass jClazz = env->FindClass("org/ngbp/libatsc3/middleware/Atsc3NdkPHYBridge");
     if (jClazz == NULL) {
-        NDK_PHY_BRIDGE_ERROR("PHY_BRIDGE::JNI_OnLoad - Cannot find org/ngbp/libatsc3/middleware/Atsc3NdkPHYBridge java class");
+        _BRIDGE_NDK_PHY_ERROR("PHY_BRIDGE::JNI_OnLoad - Cannot find org/ngbp/libatsc3/middleware/Atsc3NdkPHYBridge java class");
         return -1;
     }
 
     api->mOnLogMsgId = env->GetMethodID(jClazz, "onLogMsg", "(Ljava/lang/String;)I");
     if (api->mOnLogMsgId == NULL) {
-        NDK_PHY_BRIDGE_ERROR("PHY_BRIDGE::JNI_OnLoad - Cannot find 'onLogMsg' method id");
+        _BRIDGE_NDK_PHY_ERROR("PHY_BRIDGE::JNI_OnLoad - Cannot find 'onLogMsg' method id");
         return -1;
     }
 
     api->atsc3_rf_phy_status_callback_ID = env->GetMethodID(jClazz, "atsc3_rf_phy_status_callback", "(IIIIIIIIIIIIIII)I");
     if (api->atsc3_rf_phy_status_callback_ID == NULL) {
-        NDK_PHY_BRIDGE_ERROR("PHY_BRIDGE::JNI_OnLoad - 'atsc3_rf_phy_status_callback' method id");
+        _BRIDGE_NDK_PHY_ERROR("PHY_BRIDGE::JNI_OnLoad - 'atsc3_rf_phy_status_callback' method id");
         return -1;
     }
 
     //atsc3_update_rf_bw_stats_ID
     api->atsc3_update_rf_bw_stats_ID = env->GetMethodID(jClazz, "atsc3_updateRfBwStats", "(JJI)I");
     if (api->atsc3_update_rf_bw_stats_ID == NULL) {
-        NDK_PHY_BRIDGE_ERROR("PHY_BRIDGE::JNI_OnLoad - Cannot find 'atsc3_update_rf_bw_stats_ID' method id");
+        _BRIDGE_NDK_PHY_ERROR("PHY_BRIDGE::JNI_OnLoad - Cannot find 'atsc3_update_rf_bw_stats_ID' method id");
         return -1;
     }
 
-    NDK_PHY_BRIDGE_INFO("atsc3_bridge::JNI_OnLoad complete, vm: %p", vm);
-    return JNI_VERSION_1_6;
-}
 
-extern "C" JNIEXPORT jint JNICALL
-Java_org_ngbp_libatsc3_middleware_Atsc3NdkPHYBridge_init(JNIEnv *env, jobject instance)
-{
-    printf("Java_org_ngbp_libatsc3_middleware_Atsc3NdkPHYBridge_Init: start init, env: %p\n", env);
-
-    api->setJniInstance((jclass) env->NewGlobalRef(instance));
-
-    printf("Atsc3NdkPHYBridge_Init: with jniInstance: %p", api->getJniInstance());
+    atsc3_core_service_phy_bridge_init(api);
+    _BRIDGE_NDK_PHY_INFO("Atsc3NdkPHYBridge_Init: with jniInstance: %p", api->getJniInstance());
     return 0;
 }
 

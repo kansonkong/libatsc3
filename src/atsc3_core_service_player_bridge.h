@@ -43,7 +43,6 @@ using namespace std;
 
 #include "atsc3_lls_alc_utils.h"
 #include "atsc3_alc_rx.h"
-#include "atsc3_alc_utils.h"
 #include "atsc3_alp_types.h"
 
 //runtime app interface includes (e.g. I/F for android, etc)
@@ -63,8 +62,12 @@ extern "C" {
 
 //methods
 
-void atsc3_core_service_player_bridge_init(IAtsc3NdkApplicationBridge* Atsc3NdkApplicationBridge_p, IAtsc3NdkPHYBridge* Atsc3NdkPHYBridge_p);
+void atsc3_core_service_application_bridge_init(IAtsc3NdkApplicationBridge* atsc3NdkApplicationBridge);
+void atsc3_core_service_phy_bridge_init(IAtsc3NdkPHYBridge* atsc3NdkPHYBridge);
 
+//jjustman-2020-08-18 - signature match for typedef void(*atsc3_phy_rx_udp_packet_process_callback_f)(uint8_t plp_num, block_t* block);
+
+void atsc3_core_service_bridge_process_packet_from_plp_and_block(uint8_t plp_num, block_t* block);
 void atsc3_core_service_bridge_process_packet_phy(block_t* packet);
 
 //change SLT service and wire up a single montior

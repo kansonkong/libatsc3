@@ -45,8 +45,8 @@ LIBATSC3C := \
 LIBATSC3CPP := \
     $(wildcard $(LOCAL_PATH)/../../../src/*.cpp)
 
-LIBATSC3PHYVIRTUALCPP := \
-    $(wildcard $(LOCAL_PATH)/../../../src/phy/virtual/*.cpp)
+#LIBATSC3PHYVIRTUALCPP := \
+#    $(wildcard $(LOCAL_PATH)/../../../src/phy/virtual/*.cpp)
 
 #LIBATSC3PHYVIRTUALSRTCPP := \
 #    $(wildcard $(LOCAL_PATH)/../../../src/phy/virtual/srt/*.cpp)
@@ -54,14 +54,15 @@ LIBATSC3PHYVIRTUALCPP := \
 # jjustman-2020-08-10 - temporary - refactor this out...
 LOCAL_SRC_FILES += \
     $(LIBATSC3C:$(LOCAL_PATH)/%=%)  \
-    $(LIBATSC3CPP:$(LOCAL_PATH)/%=%) \
-    $(LIBATSC3PHYVIRTUALCPP:$(LOCAL_PATH)/%=%)
+    $(LIBATSC3CPP:$(LOCAL_PATH)/%=%)
+
+#   $(LIBATSC3PHYVIRTUALCPP:$(LOCAL_PATH)/%=%)
 
 #for libatsc3 application and phy interface includescd lib
 LOCAL_C_INCLUDES += $(LOCAL_PATH)/../../../src
 LOCAL_C_INCLUDES += $(LOCAL_PATH)/../../../src/application
-LOCAL_C_INCLUDES += $(LOCAL_PATH)/../../../src/phy
-LOCAL_C_INCLUDES += $(LOCAL_PATH)/../../../src/phy/virtual
+# LOCAL_C_INCLUDES += $(LOCAL_PATH)/../../../src/phy
+# LOCAL_C_INCLUDES += $(LOCAL_PATH)/../../../src/phy/virtual
 
 #for pcre2 include header
 LOCAL_C_INCLUDES += $(LOCAL_PATH)/libpcre/include

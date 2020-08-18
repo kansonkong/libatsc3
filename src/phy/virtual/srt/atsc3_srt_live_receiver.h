@@ -32,7 +32,10 @@ typedef struct atsc3_srt_live_receiver_context {
 } atsc3_srt_live_receiver_context_t;
 
 //jjustman-2020-08-17 - sample connection string:  "srt://bna.srt.atsc3.com:31347?passphrase=88731837-0EB5-4951-83AA-F515B3BEBC20";
-atsc3_srt_live_receiver_context_t* atsc3_srt_live_receiver_context_new(const char* source_connection_string);
+atsc3_srt_live_receiver_context_t* atsc3_srt_live_receiver_context_new();
+atsc3_srt_live_receiver_context_t* atsc3_srt_live_receiver_context_new_with_source_connection_string(const char* source_connection_string);
+void atsc3_srt_live_receiver_context_set_srt_source_connection_string(atsc3_srt_live_receiver_context_t* atsc3_srt_live_receiver_context, const char* source_connection_string);
+
 void atsc3_srt_live_receiver_context_set_rx_udp_packet_process_callback_with_context(atsc3_srt_live_receiver_context_t* atsc3_srt_live_receiver_context, atsc3_srt_live_rx_udp_packet_process_callback_with_context_f atsc3_srt_live_rx_udp_packet_process_callback_with_context, void* context);
 void atsc3_srt_live_receiver_context_free(atsc3_srt_live_receiver_context_t** atsc3_srt_live_receiver_context_p);
 

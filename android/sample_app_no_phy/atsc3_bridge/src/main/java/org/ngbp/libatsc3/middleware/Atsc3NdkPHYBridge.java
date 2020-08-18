@@ -22,16 +22,23 @@ import org.ngbp.libatsc3.middleware.android.phy.models.RfPhyStatistics;
  *         Log.d("Atsc3NdkPHYBridge", "ndkStaticJniLoader class is: "+ndkStaticJniLoader);
  */
 
-public class Atsc3NdkPHYBridge extends Atsc3NdkStaticJniLoader{
+public class Atsc3NdkPHYBridge extends Atsc3BridgeNdkStaticJniLoader {
 
     final static String TAG ="intf";
 
     IAtsc3NdkPHYBridgeCallbacks mActivity;
 
+    //native jni methods
+    @Override
+    public native int init();
+
+    public native int setRfPhyStatisticsViewVisible(boolean isRfPhyStatisticsVisible);
+
     public Atsc3NdkPHYBridge(IAtsc3NdkPHYBridgeCallbacks iAtsc3NdkPHYBridgeCallbacks) {
         mActivity = iAtsc3NdkPHYBridgeCallbacks;
         init();
     }
+
 
     int onLogMsg(String msg) {
         Log.d(TAG, msg);
@@ -81,9 +88,4 @@ public class Atsc3NdkPHYBridge extends Atsc3NdkStaticJniLoader{
         mActivity.pushBwPhyStatistics(new BwPhyStatistics(total_pkts, total_bytes, total_lmts));
         return 0;
     }
-
-    //native jni methods
-
-    public native int init();
-    public native int setRfPhyStatisticsViewVisible(boolean isRfPhyStatisticsVisible);
 }
