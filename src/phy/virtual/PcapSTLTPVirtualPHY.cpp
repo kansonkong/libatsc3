@@ -204,8 +204,9 @@ int PcapSTLTPVirtualPHY::PcapProducerThreadParserRun() {
                 block_t* phy_payload = block_Duplicate_from_position(atsc3_pcap_replay_local_context->atsc3_pcap_packet_instance.current_pcap_packet);
                 block_Rewind(atsc3_pcap_replay_local_context->atsc3_pcap_packet_instance.current_pcap_packet);
                 if(phy_payload->p_size && (packet_push_count++ % 10000) == 0) {
-                    PCAP_DEMUXED_VIRTUAL_PHY_INFO("PcapSTLTPVirtualPHY::RunPcapThreadParser - pushing to atsc3_core_service_bridge_process_packet_phy: count: %d, len was: %d, new payload: %p (0x%02x 0x%02x), len: %d",
+                    PCAP_DEMUXED_VIRTUAL_PHY_DEBUG("PcapSTLTPVirtualPHY::RunPcapThreadParser - pushing to to_dispatch_queue: count: %d, queue current size: %d, len was: %d, new payload: %p (0x%02x 0x%02x), len: %d",
                             packet_push_count,
+							to_dispatch_queue.size(),
                             atsc3_pcap_replay_local_context->atsc3_pcap_packet_instance.current_pcap_packet->p_size,
                             phy_payload,
                             phy_payload->p_buffer[0], phy_payload->p_buffer[1],
@@ -216,7 +217,7 @@ int PcapSTLTPVirtualPHY::PcapProducerThreadParserRun() {
                     to_dispatch_queue.push(phy_payload);
                 }
 
-                if(!atsc3_pcap_replay_local_context->delay_delta_behind_rt_replay || to_dispatch_queue.size() > 10) { //pcap_replay_buffer_queue.size() doesn't seem to be accurate...
+                if(!atsc3_pcap_replay_local_context->delay_delta_behind_rt_replay || to_dispatch_queue.size() > 25) {
                     int pushed_count = to_dispatch_queue.size();
                     lock_guard<mutex> pcap_replay_buffer_queue_guard(pcap_replay_buffer_queue_mutex);
                     while(to_dispatch_queue.size()) {
@@ -224,7 +225,6 @@ int PcapSTLTPVirtualPHY::PcapProducerThreadParserRun() {
                         to_dispatch_queue.pop();
                     }
                     pcap_replay_condition.notify_one();  //todo: jjustman-2019-11-06 - only signal if we aren't behind packet processing or we have a growing queue
-                    //printf("PcapSTLTPVirtualPHY::PcapProducerThreadRun - signalling notify_one at count: %d", pushed_count);
                 }
                 //cleanup happens on the consumer thread for dispatching
                 pcapThreadShouldRun = !atsc3_pcap_replay_check_file_pos_is_eof(atsc3_pcap_replay_local_context);
@@ -267,7 +267,6 @@ int PcapSTLTPVirtualPHY::PcapConsumerThreadRun() {
                 pcap_replay_buffer_queue.pop();
             }
             condition_lock.unlock();
-            //pcap_replay_condition.notify_one();
         }
 
         //printf("PcapSTLTPVirtualPHY::PcapConsumerThreadRun - pushing %d packets", to_dispatch_queue.size());
@@ -276,7 +275,7 @@ int PcapSTLTPVirtualPHY::PcapConsumerThreadRun() {
 
             //jjustman-2020-08-11 - dispatch this for processing against our stltp_depacketizer context
             if(!atsc3_stltp_depacketizer_from_blockt(&phy_payload_to_process, atsc3_stltp_depacketizer_context)) {
-            	to_purge_queue.push(phy_payload_to_process); //we were unable to process this block, so purge
+            	to_purge_queue.push(phy_payload_to_process); //we were unable to process this block, so purge it ourselves as cleanup
             }
             to_dispatch_queue.pop();
         }
