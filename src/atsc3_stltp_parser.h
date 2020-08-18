@@ -12,9 +12,12 @@
 #include <stdlib.h>
 
 #include "atsc3_utils.h"
-#include "atsc3_ip_udp_rtp_parser.h"
-#include "atsc3_stltp_types.h"
 #include "atsc3_logging_externs.h"
+
+#include "atsc3_ip_udp_rtp_parser.h"
+#include "atsc3_stltp_depacketizer_context.h"
+
+#include "atsc3_stltp_types.h"
 
 #if defined (__cplusplus)
 extern "C" {
@@ -26,7 +29,7 @@ atsc3_ip_udp_rtp_packet_t* atsc3_stltp_udp_packet_outer_fragment_check_marker(at
 //inner packet parsers
 atsc3_ip_udp_rtp_packet_t* atsc3_stltp_udp_packet_inner_prepend_fragment(atsc3_stltp_tunnel_packet_t* atsc3_stltp_tunnel_packet);
 atsc3_ip_udp_rtp_packet_t* atsc3_stltp_tunnel_packet_inner_parse_ip_udp_header(atsc3_stltp_tunnel_packet_t* atsc3_stltp_tunnel_packet);
-atsc3_stltp_tunnel_packet_t* atsc3_stltp_raw_packet_extract_inner_from_outer_packet(atsc3_ip_udp_rtp_packet_t* ip_udp_rtp_packet, atsc3_stltp_tunnel_packet_t* atsc3_stltp_tunnel_packet_fragment);
+atsc3_stltp_tunnel_packet_t* atsc3_stltp_raw_packet_extract_inner_from_outer_packet(atsc3_stltp_depacketizer_context_t* atsc3_stltp_depacketizer_context, atsc3_ip_udp_rtp_packet_t* ip_udp_rtp_packet, atsc3_stltp_tunnel_packet_t* atsc3_stltp_tunnel_packet_fragment);
 
 //helper method for extraction of inner packet concrete types
 bool atsc3_stltp_tunnel_packet_extract_fragment_encapsulated_payload(atsc3_stltp_tunnel_packet_t* atsc3_stltp_tunnel_packet_current);

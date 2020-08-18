@@ -36,6 +36,8 @@ uint16_t stltp_ip_port_filter = 30000;
 
 extern pcap_t* descrInject;
 
+atsc3_stltp_depacketizer_context_t* atsc3_stltp_depacketizer_context = NULL;
+
 atsc3_stltp_tunnel_packet_t* atsc3_stltp_tunnel_packet_processed = NULL;
 atsc3_alp_packet_collection_t* atsc3_alp_packet_collection = NULL;
 
@@ -53,7 +55,7 @@ void process_packet(u_char *user, const struct pcap_pkthdr *pkthdr, const u_char
     
     //dispatch for STLTP decoding and reflection
     if(ip_udp_rtp_packet->udp_flow.dst_ip_addr == *dst_ip_addr_filter && ip_udp_rtp_packet->udp_flow.dst_port == *dst_ip_port_filter) {
-        atsc3_stltp_tunnel_packet_processed = atsc3_stltp_raw_packet_extract_inner_from_outer_packet(ip_udp_rtp_packet, atsc3_stltp_tunnel_packet_processed);
+        atsc3_stltp_tunnel_packet_processed = atsc3_stltp_raw_packet_extract_inner_from_outer_packet(atsc3_stltp_depacketizer_context, ip_udp_rtp_packet, atsc3_stltp_tunnel_packet_processed);
         
         if(!atsc3_stltp_tunnel_packet_processed) {
             __ERROR("process_packet: atsc3_stltp_tunnel_packet_processed is null, error processing packet: %p, size: %u",  ip_udp_rtp_packet, ip_udp_rtp_packet->data->p_size);
@@ -193,6 +195,7 @@ void process_packet(u_char *user, const struct pcap_pkthdr *pkthdr, const u_char
                     }
                     
                     //process our pre_pointers from a baseband fragment for alp
+                    //(stltp_ip_port_filter - 30000)
                     if(atsc3_baseband_packet->alp_payload_pre_pointer && block_Remaining_size(atsc3_baseband_packet->alp_payload_pre_pointer)) {
 
                         while((atsc3_alp_packet = atsc3_alp_packet_parse(atsc3_baseband_packet->alp_payload_pre_pointer))) {
@@ -238,7 +241,8 @@ void process_packet(u_char *user, const struct pcap_pkthdr *pkthdr, const u_char
                                atsc3_baseband_packet->alp_payload_post_pointer->p_size);
                         
 
-                        while((atsc3_alp_packet = atsc3_alp_packet_parse(atsc3_baseband_packet->alp_payload_post_pointer))) {
+
+                        while((atsc3_alp_packet = atsc3_alp_packet_parse((stltp_ip_port_filter - 30000), atsc3_baseband_packet->alp_payload_post_pointer))) {
                         	__DEBUG("  atsc3_baseband_packet: after parse alp_payload_post_pointer: pos: %d, size: %d",
                                    atsc3_baseband_packet->alp_payload_post_pointer->i_pos,
                                    atsc3_baseband_packet->alp_payload_post_pointer->p_size);
@@ -370,6 +374,8 @@ int main(int argc,char **argv) {
     bpf_u_int32 netpInject;
     
     atsc3_alp_packet_collection = atsc3_alp_packet_collection_new();
+    atsc3_stltp_depacketizer_context = atsc3_stltp_depacketizer_context_new();
+
 
     if(argc < 5) {
         println("%s - an atsc3 stltp udp mulitcast reflector ", argv[0]);

@@ -32,15 +32,17 @@
 #
 #   		brew tap LouisBrunner/valgrind
 #			brew install --HEAD LouisBrunner/valgrind/valgrind
+# env ASAN_OPTIONS=detect_container_overflow=0
+
 
 
 
 CFLAGS=-Wno-nullability-completeness -Wno-expansion-to-defined -Wno-builtin-requires-header -Wno-c++11-extensions
 CXXFLAGS=-std=c++11 
 
-DEBUG=-g -O1
+#DEBUG=-g -O1
 
-#DEBUG=-g -fsanitize=address -fno-omit-frame-pointer -fno-optimize-sibling-calls -O0 -fsanitize-address-use-after-scope
+DEBUG=-g -fsanitize=address -fno-omit-frame-pointer -fno-optimize-sibling-calls -O0 -fsanitize-address-use-after-scope
 ASAN=-fsanitize=address -fno-omit-frame-pointer -fno-optimize-sibling-calls -O0 -fsanitize-address-use-after-scope
 
 LOCAL_LD_LIBS=-lz -lm -lpthread -lpcap -lpcre2-8 -lstdc++
@@ -149,7 +151,8 @@ intermediate_alp: atsc3_alp_types.o atsc3_alp_parser.o
 
 intermediate_baseband: atsc3_baseband_packet_types.o 
 
-intermediate_stltp:	atsc3_stltp_depacketizer.o
+intermediate_stltp:	atsc3_stltp_depacketizer_context.o \
+					atsc3_stltp_depacketizer.o
 
 intermediate_mbms: 	atsc3_mbms_envelope_xml.o \
 					atsc3_mime_multipart_related.o \
@@ -281,6 +284,9 @@ atsc3_baseband_packet_types.o: atsc3_baseband_packet_types.h atsc3_baseband_pack
 
 atsc3_alp_parser.o: atsc3_alp_types.h atsc3_alp_parser.h atsc3_alp_parser.c
 	cc $(CFLAGS) $(DEBUG)  -c atsc3_alp_parser.c 
+	
+atsc3_stltp_depacketizer_context.o: atsc3_stltp_depacketizer_context.h atsc3_stltp_depacketizer_context.c atsc3_alp_types.h atsc3_alp_parser.h
+	cc $(CFLAGS) $(DEBUG)  -c atsc3_stltp_depacketizer_context.c
 	
 atsc3_stltp_depacketizer.o: atsc3_stltp_depacketizer.h atsc3_stltp_depacketizer.c atsc3_stltp_parser.h atsc3_alp_parser.h
 	cc $(CFLAGS) $(DEBUG)  -c atsc3_stltp_depacketizer.c 
@@ -615,6 +621,7 @@ libatsc3_intermediate.o: atsc3_lls.o \
 		atsc3_lls_sls_parser.o \
 		atsc3_alp_types.o \
 		atsc3_alp_parser.o \
+		atsc3_stltp_depacketizer_context.o \
 		atsc3_stltp_depacketizer.o \
 		atsc3_baseband_packet_types.o \
 		atsc3_mmtp_packet_types.o \
@@ -684,6 +691,7 @@ libatsc3_intermediate.o: atsc3_lls.o \
 		atsc3_lls_sls_parser.o \
 		atsc3_alp_types.o \
 		atsc3_alp_parser.o \
+		atsc3_stltp_depacketizer_context.o \
 		atsc3_stltp_depacketizer.o \
 		atsc3_baseband_packet_types.o \
 		atsc3_mmtp_packet_types.o \

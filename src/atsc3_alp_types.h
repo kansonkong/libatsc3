@@ -14,6 +14,7 @@ typedef struct pcap pcap_t;
 #ifndef ATSC3_ALP_TYPES_H_
 #define ATSC3_ALP_TYPES_H_
 
+#include "atsc3_vector_builder.h"
 #include "atsc3_utils.h"
 #include "atsc3_logging_externs.h"
 #include "atsc3_stltp_types.h"
@@ -168,6 +169,8 @@ typedef struct alp_packet_header  {
 } alp_packet_header_t;
 
 typedef struct atsc3_alp_packet {
+	uint8_t				plp_num;
+
     alp_packet_header_t alp_packet_header;
     block_t*            alp_payload;
     bool                is_alp_payload_complete;
@@ -215,7 +218,6 @@ typedef struct atsc3_alp_packet_collection {
     ATSC3_VECTOR_BUILDER_STRUCT(atsc3_baseband_packet); //re-fragmented baseband packets for alp de-encapsulation
     ATSC3_VECTOR_BUILDER_STRUCT(atsc3_alp_packet);      //completed ALP output packets for emission
     
-    atsc3_alp_packet_t*             atsc3_alp_packet_pending; //incomplete packet for fragmentation
 } atsc3_alp_packet_collection_t;
 
 ATSC3_VECTOR_BUILDER_METHODS_INTERFACE(atsc3_alp_packet_collection, atsc3_baseband_packet);

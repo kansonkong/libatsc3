@@ -99,7 +99,7 @@ int main(int argc, char* argv[] ) {
         				if(atsc3_sl_tlv_payload->alp_payload_complete) {
         					alp_completed_packets_parsed++;
         					block_Rewind(atsc3_sl_tlv_payload->alp_payload);
-        					atsc3_alp_packet_t* atsc3_alp_packet = atsc3_alp_packet_parse(atsc3_sl_tlv_payload->alp_payload);
+        					atsc3_alp_packet_t* atsc3_alp_packet = atsc3_alp_packet_parse(atsc3_sl_tlv_payload->plp_number, atsc3_sl_tlv_payload->alp_payload);
                             atsc3_alp_packet_collection_add_atsc3_alp_packet(atsc3_alp_packet_collection, atsc3_alp_packet);
 							//push a collection of one alp packet for alp reflection to match the method signature
                             atsc3_reflect_alp_packet_collection(atsc3_sl_tlv_payload->plp_number, atsc3_alp_packet_collection, descrInject);
