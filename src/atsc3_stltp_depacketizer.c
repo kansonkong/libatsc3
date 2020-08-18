@@ -15,6 +15,7 @@ atsc3_stltp_depacketizer_context_t* atsc3_stltp_depacketizer_context_new() {
 	atsc3_stltp_depacketizer_context_t* atsc3_stltp_depacketizer_context = calloc(1, sizeof(atsc3_stltp_depacketizer_context_t));
 
 	atsc3_stltp_depacketizer_context->atsc3_alp_packet_collection = atsc3_alp_packet_collection_new();
+	atsc3_stltp_depacketizer_context->inner_rtp_port_filter = 30000; //just to be safe as PLP0 if we never get set...
 
 	return atsc3_stltp_depacketizer_context;
 }
@@ -44,7 +45,6 @@ void atsc3_stltp_depacketizer_context_free(atsc3_stltp_depacketizer_context_t** 
 		}
 		*atsc3_stltp_depacketizer_context_p = NULL;
 	}
-
 }
 
 
@@ -55,15 +55,18 @@ void atsc3_stltp_depacketizer_context_free(atsc3_stltp_depacketizer_context_t** 
 
 void atsc3_stltp_depacketizer_from_ip_udp_rtp_packet(atsc3_ip_udp_rtp_packet_t* ip_udp_rtp_packet, atsc3_stltp_depacketizer_context_t* atsc3_stltp_depacketizer_context) {
 	atsc3_stltp_tunnel_packet_t* atsc3_stltp_tunnel_packet_processed = NULL;
+	_ATSC3_STLTP_DEPACKETIZER_WARN("%u.%u.%u.%u:%u", __toipandportnonstruct(ip_udp_rtp_packet->udp_flow.dst_ip_addr, ip_udp_rtp_packet->udp_flow.dst_port));
+	_ATSC3_STLTP_DEPACKETIZER_WARN("%u.%u.%u.%u:%u", __toipandportnonstruct(atsc3_stltp_depacketizer_context->destination_flow_filter.dst_ip_addr, atsc3_stltp_depacketizer_context->destination_flow_filter.dst_ip_addr));
 
 	_ATSC3_STLTP_DEPACKETIZER_DEBUG("atsc3_stltp_depacketizer_from_ip_udp_rtp_packet: packet: %p, pcap len: %d", ip_udp_rtp_packet, ip_udp_rtp_packet->data->p_size);
 
 	atsc3_alp_packet_collection_t* atsc3_alp_packet_collection = atsc3_stltp_depacketizer_context->atsc3_alp_packet_collection;
 
     //dispatch for STLTP decoding and reflection
-    if(ip_udp_rtp_packet->udp_flow.dst_ip_addr == atsc3_stltp_depacketizer_context->destination_flow_filter.dst_ip_addr && ip_udp_rtp_packet->udp_flow.dst_port == atsc3_stltp_depacketizer_context->destination_flow_filter.dst_port) {
+    if(ip_udp_rtp_packet->udp_flow.dst_ip_addr == atsc3_stltp_depacketizer_context->destination_flow_filter.dst_ip_addr && ip_udp_rtp_packet->udp_flow.dst_port == atsc3_stltp_depacketizer_context->destination_flow_filter.dst_ip_addr) {
     	atsc3_stltp_depacketizer_context->atsc3_stltp_tunnel_packet_processed = atsc3_stltp_raw_packet_extract_inner_from_outer_packet(ip_udp_rtp_packet, atsc3_stltp_depacketizer_context->atsc3_stltp_tunnel_packet_processed);
     	atsc3_stltp_tunnel_packet_processed = atsc3_stltp_depacketizer_context->atsc3_stltp_tunnel_packet_processed;
+    	_ATSC3_STLTP_DEPACKETIZER_WARN("atsc3_stltp_depacketizer_from_ip_udp_rtp_packet: packet: %p, pcap len: %d, atsc3_stltp_tunnel_packet_processed: %p", ip_udp_rtp_packet, ip_udp_rtp_packet->data->p_size, atsc3_stltp_tunnel_packet_processed);
 
         if(!atsc3_stltp_tunnel_packet_processed) {
             __ERROR("process_packet: atsc3_stltp_tunnel_packet_processed is null, error processing packet: %p, size: %u",  ip_udp_rtp_packet, ip_udp_rtp_packet->data->p_size);
