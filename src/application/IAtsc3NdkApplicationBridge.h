@@ -69,11 +69,9 @@ class IAtsc3NdkApplicationBridge {
 
         virtual string get_android_temp_folder() = 0;
 
-        virtual int pinFromRxCaptureThread() = 0;
         virtual int pinFromRxProcessingThread() = 0;
-        virtual int pinFromRxStatusThread() = 0;
-        virtual int RxThread() = 0;
 
+        virtual int RxThread() = 0;
 };
 
 
