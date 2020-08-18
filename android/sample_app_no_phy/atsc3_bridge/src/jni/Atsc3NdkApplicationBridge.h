@@ -95,15 +95,23 @@ public:
 
     int RxThread();
 
-    Atsc3JniEnv* Atsc3_Jni_Capture_Thread_Env = NULL;
+    //Atsc3JniEnv* Atsc3_Jni_Capture_Thread_Env = NULL;
     Atsc3JniEnv* Atsc3_Jni_Processing_Thread_Env = NULL;
     Atsc3JniEnv* Atsc3_Jni_Status_Thread_Env = NULL;
+
+    void setJniClassReference(string jclass_name) {
+        if(env) {
+            jclass jclass_local = env->FindClass(jclass_name.c_str());
+            jni_class_globalRef = reinterpret_cast<jclass>(env->NewGlobalRef(jclass_local));
+        }
+    }
+    jclass getJniClassReference() {
+        return jni_class_globalRef;
+    }
 private:
     JNIEnv* env = nullptr;
     jobject jni_instance_globalRef = nullptr;
-
-
-
+    jclass jni_class_globalRef = nullptr;
 
     bool mbInit;
 
@@ -143,13 +151,13 @@ public:
     }
 
 public:
+
+    //jjustman-2020-08-18 - todo - remove me - OLD
     // jni stuff
     JavaVM* mJavaVM = nullptr;    // Java VM
-    JNIEnv* mJniEnv = nullptr;    // Jni Environment
-    jclass mClsDrvIntf = nullptr; // java At3DrvInterface class
 
     bool JReady() {
-        return mJavaVM && mJniEnv && mClsDrvIntf ? true : false;
+        return mJavaVM && env && jni_class_globalRef ? true : false;
     }
 
     jmethodID mOnLogMsgId = nullptr;  // java class method id
@@ -194,7 +202,7 @@ public:
 };
 
 #define _NDK_APPLICATION_BRIDGE_ERROR(...)   	__LIBATSC3_TIMESTAMP_ERROR(__VA_ARGS__);
-#define NDK_APPLICATION_BRIDGE_INFO(...)   	    __LIBATSC3_TIMESTAMP_INFO(__VA_ARGS__);
+#define _NDK_APPLICATION_BRIDGE_INFO(...)   	__LIBATSC3_TIMESTAMP_INFO(__VA_ARGS__);
 
 
 

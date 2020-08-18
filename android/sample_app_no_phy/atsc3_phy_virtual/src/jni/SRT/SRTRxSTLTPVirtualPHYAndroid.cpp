@@ -34,6 +34,9 @@ void SRTRxSTLTPVirtualPHYAndroid::releaseProducerThreadAsNeeded() {
 
 void SRTRxSTLTPVirtualPHYAndroid::pinConsumerThreadAsNeeded() {
     consumerJniEnv = new Atsc3JniEnv(atsc3_ndk_phy_virtual_static_loader_get_javaVM());
+    if(atsc3_ndk_application_bridge_get_instance()) {
+        atsc3_ndk_application_bridge_get_instance()->pinFromRxProcessingThread();
+    }
 }
 
 void SRTRxSTLTPVirtualPHYAndroid::releaseConsumerThreadAsNeeded() {

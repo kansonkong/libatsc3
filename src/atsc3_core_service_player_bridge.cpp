@@ -16,8 +16,8 @@ fv * Note: Atsc3NdkPHYBridge - Android NDK Binding against Lowasys API are not i
 #include "atsc3_alc_utils.h"
 
 
-IAtsc3NdkApplicationBridge* Atsc3NdkApplicationBridge_ptr;
-IAtsc3NdkPHYBridge*         Atsc3NdkPHYBridge_ptr;
+IAtsc3NdkApplicationBridge* Atsc3NdkApplicationBridge_ptr = NULL;
+IAtsc3NdkPHYBridge*         Atsc3NdkPHYBridge_ptr = NULL;
 
 atsc3_link_mapping_table*   atsc3_link_mapping_table_last = NULL;
 
@@ -48,18 +48,23 @@ uint16_t global_stpp_packet_id = 0;
 
 uint32_t global_mfu_proccessed_count = 0;
 
+IAtsc3NdkApplicationBridge* atsc3_ndk_application_bridge_get_instance() {
+    return Atsc3NdkApplicationBridge_ptr;
+}
 
 void atsc3_core_service_application_bridge_init(IAtsc3NdkApplicationBridge* atsc3NdkApplicationBridge) {
-        Atsc3NdkApplicationBridge_ptr = atsc3NdkApplicationBridge;
+    Atsc3NdkApplicationBridge_ptr = atsc3NdkApplicationBridge;
+    printf("atsc3_core_service_application_bridge_init with Atsc3NdkApplicationBridge_ptr: %p", Atsc3NdkApplicationBridge_ptr);
+    Atsc3NdkApplicationBridge_ptr->LogMsg("atsc3_core_service_application_bridge_init->LogMsg()");
 
-        Atsc3NdkApplicationBridge_ptr->LogMsgF("atsc3_core_service_application_bridge_init - Atsc3NdkApplicationBridge_ptr: %p", Atsc3NdkApplicationBridge_ptr);
+    Atsc3NdkApplicationBridge_ptr->LogMsgF("atsc3_core_service_application_bridge_init - Atsc3NdkApplicationBridge_ptr: %p", Atsc3NdkApplicationBridge_ptr);
 
-        //set global logging levels
-        _MMT_CONTEXT_MPU_DEBUG_ENABLED = 0;
-        _ALC_UTILS_IOTRACE_ENABLED = 0;
-        _ROUTE_SLS_PROCESSOR_INFO_ENABLED = 1;
-        _ROUTE_SLS_PROCESSOR_DEBUG_ENABLED = 0;
-        _ALC_UTILS_IOTRACE_ENABLED = 0;
+    //set global logging levels
+    _MMT_CONTEXT_MPU_DEBUG_ENABLED = 0;
+    _ALC_UTILS_IOTRACE_ENABLED = 0;
+    _ROUTE_SLS_PROCESSOR_INFO_ENABLED = 1;
+    _ROUTE_SLS_PROCESSOR_DEBUG_ENABLED = 0;
+    _ALC_UTILS_IOTRACE_ENABLED = 0;
 
 #ifdef __SIGNED_MULTIPART_LLS_DEBUGGING__
         _LLS_TRACE_ENABLED = 1;
