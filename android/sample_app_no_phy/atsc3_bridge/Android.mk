@@ -23,11 +23,6 @@ endif
 # libatsc3_bridge jni interface
 
 include $(CLEAR_VARS)
-# import our prefab build from core
-
-# $(call import-module,atsc3_core)
-
-# LOCAL_ALLOW_UNDEFINED_SYMBOLS=true
 
 LOCAL_MODULE := atsc3_bridge
 
@@ -42,9 +37,6 @@ LIBATSC3JNIBRIDGECPP := \
 # jjustman-2020-08-10 - temporary - refactor this out...
 LOCAL_SRC_FILES += \
     $(LIBATSC3JNIBRIDGECPP:$(LOCAL_PATH)/%=%)
-#	../../../src/atsc3_core_service_player_bridge.cpp \
-#	../../../src/atsc3_listener_udp.c \
-
 
 LOCAL_C_INCLUDES += $(LOCAL_PATH)/src/jni
 LOCAL_C_INCLUDES += $(LOCAL_PATH)/../../../src/
@@ -59,8 +51,7 @@ LOCAL_CFLAGS += -g -fpack-struct=8 -fPIC  \
 LOCAL_LDFLAGS += -fPIE -fPIC -L $(LOCAL_PATH)/../atsc3_core/build/intermediates/ndkBuild/debug/obj/local/$(TARGET_ARCH_ABI)/
 
 LOCAL_LDLIBS := -ldl -lc++_shared -llog -landroid -lz -latsc3_core
-# libatsc3_core
-# APP_ALLOW_MISSING_DEPS=true
+
 
 # LOCAL_SHARED_LIBRARIES := atsc3_core
 

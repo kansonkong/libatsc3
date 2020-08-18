@@ -36,6 +36,7 @@ using namespace std;
 class SRTRxSTLTPVirtualPHY : public IAtsc3NdkPHYClient
 {
 public:
+	SRTRxSTLTPVirtualPHY();
 	SRTRxSTLTPVirtualPHY(string srtConnectionSource);
 
     int Init();
@@ -48,11 +49,10 @@ public:
     int Uninit();
 
     /*
-     * pcap methods
+     * SRT methods
      */
 
-    //configure one-shot listener for single PLP flow from STLTP
-    void atsc3_pcap_stltp_listen_ip_port_plp(string ip, string port, uint8_t plp);
+    void set_srt_source_connection_string(const char* srt_source_connection_string);
 
     int atsc3_srt_thread_run();
     int atsc3_srt_thread_stop(); 							//will invoke cleanup of context
@@ -68,7 +68,7 @@ public:
     void atsc3_stltp_baseband_alp_packet_collection_received(uint8_t plp, atsc3_alp_packet_collection_t* atsc3_alp_packet_collection);
 
 
-    ~SRTRxSTLTPVirtualPHY() {
+    virtual ~SRTRxSTLTPVirtualPHY() {
     	atsc3_srt_thread_stop(); //cleanup just to be sure..
     	atsc3_stltp_depacketizer_context_free(&atsc3_stltp_depacketizer_context);
     	atsc3_srt_live_receiver_context_free(&atsc3_srt_live_receiver_context);
@@ -82,7 +82,7 @@ protected:
 
     //overloadable callbacks for Android to pin mJavaVM as needed
     virtual void pinProducerThreadAsNeeded() { };
-    virtual void releasePinProducerThreadAsNeeded() { };
+    virtual void releaseProducerThreadAsNeeded() { };
 
     virtual void pinConsumerThreadAsNeeded() { };
     virtual void releaseConsumerThreadAsNeeded() { };

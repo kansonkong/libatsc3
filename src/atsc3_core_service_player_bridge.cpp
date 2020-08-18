@@ -13,6 +13,8 @@ fv * Note: Atsc3NdkPHYBridge - Android NDK Binding against Lowasys API are not i
 #ifndef __JJ_PHY_MMT_PLAYER_BRIDGE_DISABLED
 
 #include "atsc3_core_service_player_bridge.h"
+#include "atsc3_alc_utils.h"
+
 
 IAtsc3NdkApplicationBridge* Atsc3NdkApplicationBridge_ptr;
 IAtsc3NdkPHYBridge*         Atsc3NdkPHYBridge_ptr;
@@ -47,12 +49,10 @@ uint16_t global_stpp_packet_id = 0;
 uint32_t global_mfu_proccessed_count = 0;
 
 
+void atsc3_core_service_application_bridge_init(IAtsc3NdkApplicationBridge* atsc3NdkApplicationBridge) {
+        Atsc3NdkApplicationBridge_ptr = atsc3NdkApplicationBridge;
 
-void atsc3_core_service_player_bridge_init(IAtsc3NdkApplicationBridge* IAtsc3NdkApplicationBridge_p, IAtsc3NdkPHYBridge* IAtsc3NdkPHYBridge_p) {
-        Atsc3NdkApplicationBridge_ptr = IAtsc3NdkApplicationBridge_p;
-        Atsc3NdkPHYBridge_ptr = IAtsc3NdkPHYBridge_p;
-
-        Atsc3NdkApplicationBridge_ptr->LogMsgF("atsc3_core_service_player_bridge_init - Atsc3NdkApplicationBridge_ptr: %p, Atsc3NdkPHYBridge_ptr: %p", Atsc3NdkApplicationBridge_ptr, Atsc3NdkPHYBridge_ptr);
+        Atsc3NdkApplicationBridge_ptr->LogMsgF("atsc3_core_service_application_bridge_init - Atsc3NdkApplicationBridge_ptr: %p", Atsc3NdkApplicationBridge_ptr);
 
         //set global logging levels
         _MMT_CONTEXT_MPU_DEBUG_ENABLED = 0;
@@ -129,6 +129,15 @@ void atsc3_core_service_player_bridge_init(IAtsc3NdkApplicationBridge* IAtsc3Ndk
             lls_sls_alc_monitor->atsc3_lls_sls_alc_on_route_mpd_patched = &atsc3_lls_sls_alc_on_route_mpd_patched_ndk;
          */
 }
+
+void atsc3_core_service_phy_bridge_init(IAtsc3NdkPHYBridge* atsc3NdkPHYBridge) {
+	Atsc3NdkPHYBridge_ptr = atsc3NdkPHYBridge;
+	if(Atsc3NdkApplicationBridge_ptr) {
+	        Atsc3NdkApplicationBridge_ptr->LogMsgF("atsc3_core_service_phy_bridge_init - Atsc3NdkPHYBridge_ptr: %p", Atsc3NdkPHYBridge_ptr);
+	}
+}
+
+
 
 
 //A/330 LMT management
@@ -474,6 +483,13 @@ atsc3_route_s_tsid_t* atsc3_slt_alc_get_sls_route_s_tsid_from_monitor_service_id
 
  * @param packet
  */
+
+
+//jjustman-2020-08-18 - todo: keep track of plp_num's?
+void atsc3_core_service_bridge_process_packet_from_plp_and_block(uint8_t plp_num, block_t* block) {
+	atsc3_core_service_bridge_process_packet_phy(block);
+}
+
 //void process_packet(u_char *user, const struct pcap_pkthdr *pkthdr, const u_char *packet) {
 void atsc3_core_service_bridge_process_packet_phy(block_t* packet) {
 

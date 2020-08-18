@@ -8,7 +8,6 @@ APP_DEBUG := true
 APP_STRIP_MODE := "none"
 # APP_STL := c++_shared
 
-APP_ABI := all
 
 APP_CPPFLAGS += -std=c++11 -D_ANDROID
 

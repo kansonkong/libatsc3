@@ -2,13 +2,18 @@
 
 Atsc3NdkApplicationBridge* apiAppBridge;
 
+Atsc3NdkApplicationBridge::Atsc3NdkApplicationBridge(JNIEnv* env, jobject jni_instance) : mbInit(false), mbLoop(false), mbRun(false)  {
+    this->env = env;
+    this->jni_instance_globalRef = env->NewGlobalRef(jni_instance);
+}
+
 void Atsc3NdkApplicationBridge::atsc3_onMfuPacket(uint16_t packet_id, uint32_t mpu_sequence_number, uint32_t sample_number, uint8_t* buffer, uint32_t bufferLen, uint64_t presentationUs, uint32_t mfu_fragment_count_rebuilt)
 {
     // this method can be called in native thread. we don't safely use pre-assigned mJniEnv.
     if (!JReady())
         return;
     if (!Atsc3_Jni_Processing_Thread_Env) {
-        NDK_APPLICATION_BRIDGE_ERROR("!! err on get jni env");
+        _NDK_APPLICATION_BRIDGE_ERROR("!! err on get jni env");
         return;
     }
 
@@ -18,13 +23,13 @@ void Atsc3NdkApplicationBridge::atsc3_onMfuPacket(uint16_t packet_id, uint32_t m
     jobject jobjectGlobalByteBuffer = env.Get()->NewGlobalRef(jobjectByteBuffer);
     global_jobject_mfu_refs.push_back(jobjectGlobalByteBuffer);
 
-    int r = env.Get()->CallIntMethod(mClsDrvIntf, atsc3_onMfuPacketID, mpu_sequence_number, is_video, sample_number, jobjectGlobalByteBuffer, bufferLen, presentationUs);
+    int r = env.Get()->CallIntMethod(jni_instance_globalRef, atsc3_onMfuPacketID, mpu_sequence_number, is_video, sample_number, jobjectGlobalByteBuffer, bufferLen, presentationUs);
     //NDK_APPLICATION_BRIDGE_INFO("Atsc3NdkPHYBridge::onMfuPacket, ret: %d, bufferLen: %u", r, bufferLen);
    // env.Get()->DeleteLocalRef(jobjectByteBuffer);
 #else
     jobject jobjectLocalByteBuffer = Atsc3_Jni_Processing_Thread_Env->Get()->NewDirectByteBuffer(buffer, bufferLen);
 
-    int r = Atsc3_Jni_Processing_Thread_Env->Get()->CallIntMethod(mClsDrvIntf, atsc3_onMfuPacketID, packet_id, mpu_sequence_number, sample_number, jobjectLocalByteBuffer, bufferLen, presentationUs, mfu_fragment_count_rebuilt);
+    int r = Atsc3_Jni_Processing_Thread_Env->Get()->CallIntMethod(jni_instance_globalRef, atsc3_onMfuPacketID, packet_id, mpu_sequence_number, sample_number, jobjectLocalByteBuffer, bufferLen, presentationUs, mfu_fragment_count_rebuilt);
     //NDK_APPLICATION_BRIDGE_INFO("Atsc3NdkPHYBridge::onMfuPacket, ret: %d, bufferLen: %u", r, bufferLen);
     Atsc3_Jni_Processing_Thread_Env->Get()->DeleteLocalRef(jobjectLocalByteBuffer);
 #endif
@@ -37,7 +42,7 @@ void Atsc3NdkApplicationBridge::atsc3_onMfuPacketCorrupt(uint16_t packet_id, uin
     if (!JReady())
         return;
     if (!Atsc3_Jni_Processing_Thread_Env) {
-        NDK_APPLICATION_BRIDGE_ERROR("!! err on get jni env");
+        _NDK_APPLICATION_BRIDGE_ERROR("!! err on get jni env");
         return;
     }
 
@@ -47,13 +52,13 @@ void Atsc3NdkApplicationBridge::atsc3_onMfuPacketCorrupt(uint16_t packet_id, uin
     jobject jobjectGlobalByteBuffer = env.Get()->NewGlobalRef(jobjectByteBuffer);
     global_jobject_mfu_refs.push_back(jobjectGlobalByteBuffer);
 
-    int r = env.Get()->CallIntMethod(mClsDrvIntf, atsc3_onMfuPacketID, mpu_sequence_number, is_video, sample_number, jobjectGlobalByteBuffer, bufferLen, presentationUs);
+    int r = env.Get()->CallIntMethod(jni_instance_globalRef, atsc3_onMfuPacketID, mpu_sequence_number, is_video, sample_number, jobjectGlobalByteBuffer, bufferLen, presentationUs);
     //NDK_APPLICATION_BRIDGE_INFO("Atsc3NdkPHYBridge::onMfuPacket, ret: %d, bufferLen: %u", r, bufferLen);
    // env.Get()->DeleteLocalRef(jobjectByteBuffer);
 #else
     jobject jobjectLocalByteBuffer = Atsc3_Jni_Processing_Thread_Env->Get()->NewDirectByteBuffer(buffer, bufferLen);
 
-    int r = Atsc3_Jni_Processing_Thread_Env->Get()->CallIntMethod(mClsDrvIntf, atsc3_onMfuPacketCorruptID, packet_id, mpu_sequence_number, sample_number, jobjectLocalByteBuffer, bufferLen, presentationUs, mfu_fragment_count_expected, mfu_fragment_count_rebuilt);
+    int r = Atsc3_Jni_Processing_Thread_Env->Get()->CallIntMethod(jni_instance_globalRef, atsc3_onMfuPacketCorruptID, packet_id, mpu_sequence_number, sample_number, jobjectLocalByteBuffer, bufferLen, presentationUs, mfu_fragment_count_expected, mfu_fragment_count_rebuilt);
     //NDK_APPLICATION_BRIDGE_INFO("Atsc3NdkPHYBridge::onMfuPacket, ret: %d, bufferLen: %u", r, bufferLen);
     Atsc3_Jni_Processing_Thread_Env->Get()->DeleteLocalRef(jobjectLocalByteBuffer);
 #endif
@@ -66,7 +71,7 @@ void Atsc3NdkApplicationBridge::atsc3_onMfuPacketCorruptMmthSampleHeader(uint16_
     if (!JReady())
         return;
     if (!Atsc3_Jni_Processing_Thread_Env) {
-        NDK_APPLICATION_BRIDGE_ERROR("!! err on get jni env");
+        _NDK_APPLICATION_BRIDGE_ERROR("!! err on get jni env");
         return;
     }
 
@@ -76,13 +81,13 @@ void Atsc3NdkApplicationBridge::atsc3_onMfuPacketCorruptMmthSampleHeader(uint16_
     jobject jobjectGlobalByteBuffer = env.Get()->NewGlobalRef(jobjectByteBuffer);
     global_jobject_mfu_refs.push_back(jobjectGlobalByteBuffer);
 
-    int r = env.Get()->CallIntMethod(mClsDrvIntf, atsc3_onMfuPacketID, mpu_sequence_number, is_video, sample_number, jobjectGlobalByteBuffer, bufferLen, presentationUs);
+    int r = env.Get()->CallIntMethod(jni_instance_globalRef, atsc3_onMfuPacketID, mpu_sequence_number, is_video, sample_number, jobjectGlobalByteBuffer, bufferLen, presentationUs);
     //NDK_APPLICATION_BRIDGE_INFO("Atsc3NdkPHYBridge::onMfuPacket, ret: %d, bufferLen: %u", r, bufferLen);
    // env.Get()->DeleteLocalRef(jobjectByteBuffer);
 #else
     jobject jobjectLocalByteBuffer = Atsc3_Jni_Processing_Thread_Env->Get()->NewDirectByteBuffer(buffer, bufferLen);
 
-    int r = Atsc3_Jni_Processing_Thread_Env->Get()->CallIntMethod(mClsDrvIntf, atsc3_onMfuPacketCorruptMmthSampleHeaderID, packet_id, mpu_sequence_number, sample_number, jobjectLocalByteBuffer, bufferLen, presentationUs, mfu_fragment_count_expected, mfu_fragment_count_rebuilt);
+    int r = Atsc3_Jni_Processing_Thread_Env->Get()->CallIntMethod(jni_instance_globalRef, atsc3_onMfuPacketCorruptMmthSampleHeaderID, packet_id, mpu_sequence_number, sample_number, jobjectLocalByteBuffer, bufferLen, presentationUs, mfu_fragment_count_expected, mfu_fragment_count_rebuilt);
     //NDK_APPLICATION_BRIDGE_INFO("Atsc3NdkPHYBridge::onMfuPacket, ret: %d, bufferLen: %u", r, bufferLen);
     Atsc3_Jni_Processing_Thread_Env->Get()->DeleteLocalRef(jobjectLocalByteBuffer);
 #endif
@@ -93,7 +98,7 @@ void Atsc3NdkApplicationBridge::atsc3_onInitHEVC_NAL_Extracted(uint16_t packet_i
     if (!JReady())
         return;
     if (!Atsc3_Jni_Processing_Thread_Env) {
-        NDK_APPLICATION_BRIDGE_ERROR("!! err on get jni env");
+        _NDK_APPLICATION_BRIDGE_ERROR("!! err on get jni env");
         return;
     }
 
@@ -103,12 +108,12 @@ void Atsc3NdkApplicationBridge::atsc3_onInitHEVC_NAL_Extracted(uint16_t packet_i
     jobject jobjectGlobalByteBuffer = env.Get()->NewGlobalRef(jobjectByteBuffer);
     global_jobject_nal_refs.push_back(jobjectGlobalByteBuffer);
 
-    int r = env.Get()->CallIntMethod(mClsDrvIntf, mOnInitHEVC_NAL_Extracted, is_video, mpu_sequence_number, jobjectGlobalByteBuffer, bufferLen);
+    int r = env.Get()->CallIntMethod(jni_instance_globalRef, mOnInitHEVC_NAL_Extracted, is_video, mpu_sequence_number, jobjectGlobalByteBuffer, bufferLen);
     //NDK_APPLICATION_BRIDGE_INFO("Atsc3NdkPHYBridge::onMfuPacket, ret: %d, bufferLen: %u", r, bufferLen);
     //env.Get()->DeleteLocalRef(jobjectByteBuffer);
 #else
     jobject jobjectByteBuffer = Atsc3_Jni_Processing_Thread_Env->Get()->NewDirectByteBuffer(buffer, bufferLen);
-    int r = Atsc3_Jni_Processing_Thread_Env->Get()->CallIntMethod(mClsDrvIntf, mOnInitHEVC_NAL_Extracted, packet_id, mpu_sequence_number, jobjectByteBuffer, bufferLen);
+    int r = Atsc3_Jni_Processing_Thread_Env->Get()->CallIntMethod(jni_instance_globalRef, mOnInitHEVC_NAL_Extracted, packet_id, mpu_sequence_number, jobjectByteBuffer, bufferLen);
     Atsc3_Jni_Processing_Thread_Env->Get()->DeleteLocalRef(jobjectByteBuffer);
 #endif
 }
@@ -128,11 +133,11 @@ void Atsc3NdkApplicationBridge::atsc3_signallingContext_notify_video_packet_id_a
     if (!JReady())
         return;
     if (!Atsc3_Jni_Processing_Thread_Env) {
-        NDK_APPLICATION_BRIDGE_ERROR("!! err on get jni env");
+        _NDK_APPLICATION_BRIDGE_ERROR("!! err on get jni env");
         return;
     }
 
-    int r = Atsc3_Jni_Processing_Thread_Env->Get()->CallIntMethod(mClsDrvIntf, atsc3_signallingContext_notify_video_packet_id_and_mpu_timestamp_descriptor_ID, video_packet_id, mpu_sequence_number, mpu_presentation_time_ntp64, mpu_presentation_time_seconds, mpu_presentation_time_microseconds);
+    int r = Atsc3_Jni_Processing_Thread_Env->Get()->CallIntMethod(jni_instance_globalRef, atsc3_signallingContext_notify_video_packet_id_and_mpu_timestamp_descriptor_ID, video_packet_id, mpu_sequence_number, mpu_presentation_time_ntp64, mpu_presentation_time_seconds, mpu_presentation_time_microseconds);
     //NDK_APPLICATION_BRIDGE_INFO("Atsc3NdkPHYBridge::onMfuPacket, ret: %d, bufferLen: %u", r, bufferLen);
    //env.Get()->DeleteLocalRef(jobjectLocalByteBuffer);
 }
@@ -143,11 +148,11 @@ void Atsc3NdkApplicationBridge::atsc3_signallingContext_notify_audio_packet_id_a
     if (!JReady())
         return;
     if (!Atsc3_Jni_Processing_Thread_Env) {
-        NDK_APPLICATION_BRIDGE_ERROR("!! err on get jni env");
+        _NDK_APPLICATION_BRIDGE_ERROR("!! err on get jni env");
         return;
     }
 
-    int r = Atsc3_Jni_Processing_Thread_Env->Get()->CallIntMethod(mClsDrvIntf, atsc3_signallingContext_notify_audio_packet_id_and_mpu_timestamp_descriptor_ID, audio_packet_id, mpu_sequence_number, mpu_presentation_time_ntp64, mpu_presentation_time_seconds, mpu_presentation_time_microseconds);
+    int r = Atsc3_Jni_Processing_Thread_Env->Get()->CallIntMethod(jni_instance_globalRef, atsc3_signallingContext_notify_audio_packet_id_and_mpu_timestamp_descriptor_ID, audio_packet_id, mpu_sequence_number, mpu_presentation_time_ntp64, mpu_presentation_time_seconds, mpu_presentation_time_microseconds);
     //NDK_APPLICATION_BRIDGE_INFO("Atsc3NdkPHYBridge::onMfuPacket, ret: %d, bufferLen: %u", r, bufferLen);
     //env.Get()->DeleteLocalRef(jobjectLocalByteBuffer);
 }
@@ -159,11 +164,11 @@ void Atsc3NdkApplicationBridge::atsc3_signallingContext_notify_stpp_packet_id_an
     if (!JReady())
         return;
     if (!Atsc3_Jni_Processing_Thread_Env) {
-        NDK_APPLICATION_BRIDGE_ERROR("!! err on get jni env");
+        _NDK_APPLICATION_BRIDGE_ERROR("!! err on get jni env");
         return;
     }
 
-    int r =  Atsc3_Jni_Processing_Thread_Env->Get()->CallIntMethod(mClsDrvIntf, atsc3_signallingContext_notify_stpp_packet_id_and_mpu_timestamp_descriptor_ID, stpp_packet_id, mpu_sequence_number, mpu_presentation_time_ntp64, mpu_presentation_time_seconds, mpu_presentation_time_microseconds);
+    int r =  Atsc3_Jni_Processing_Thread_Env->Get()->CallIntMethod(jni_instance_globalRef, atsc3_signallingContext_notify_stpp_packet_id_and_mpu_timestamp_descriptor_ID, stpp_packet_id, mpu_sequence_number, mpu_presentation_time_ntp64, mpu_presentation_time_seconds, mpu_presentation_time_microseconds);
     //NDK_APPLICATION_BRIDGE_INFO("Atsc3NdkPHYBridge::onMfuPacket, ret: %d, bufferLen: %u", r, bufferLen);
     //env.Get()->DeleteLocalRef(jobjectLocalByteBuffer);
 }
@@ -173,11 +178,11 @@ void Atsc3NdkApplicationBridge::atsc3_onMfuSampleMissing(uint16_t pcaket_id, uin
     if (!JReady())
         return;
     if (!Atsc3_Jni_Processing_Thread_Env) {
-        NDK_APPLICATION_BRIDGE_ERROR("!! err on get jni env");
+        _NDK_APPLICATION_BRIDGE_ERROR("!! err on get jni env");
         return;
     }
 
-    int r = Atsc3_Jni_Processing_Thread_Env->Get()->CallIntMethod(mClsDrvIntf, atsc3_onMfuSampleMissingID, pcaket_id, mpu_sequence_number, sample_number);
+    int r = Atsc3_Jni_Processing_Thread_Env->Get()->CallIntMethod(jni_instance_globalRef, atsc3_onMfuSampleMissingID, pcaket_id, mpu_sequence_number, sample_number);
 
 }
 
@@ -189,11 +194,11 @@ void Atsc3NdkApplicationBridge::LogMsg(const char *msg)
         return;
     Atsc3JniEnv env(mJavaVM);
     if (!env) {
-        NDK_APPLICATION_BRIDGE_ERROR("!! err on get jni env");
+        _NDK_APPLICATION_BRIDGE_ERROR("!! err on get jni env");
         return;
     }
     jstring js = env.Get()->NewStringUTF(msg);
-    int r = env.Get()->CallIntMethod(mClsDrvIntf, mOnLogMsgId, js);
+    int r = env.Get()->CallIntMethod(jni_instance_globalRef, mOnLogMsgId, js);
     env.Get()->DeleteLocalRef(js);
 }
 
@@ -227,13 +232,13 @@ void Atsc3NdkApplicationBridge::atsc3_onAlcObjectStatusMessage(const char *fmt, 
     if (!JReady())
         return;
     if (!Atsc3_Jni_Processing_Thread_Env) {
-        NDK_APPLICATION_BRIDGE_ERROR("!! err on get jni env");
+        _NDK_APPLICATION_BRIDGE_ERROR("!! err on get jni env");
         return;
     }
 
     jstring js = Atsc3_Jni_Processing_Thread_Env->Get()->NewStringUTF(msg);
 
-    int r = Atsc3_Jni_Processing_Thread_Env->Get()->CallIntMethod(mClsDrvIntf, atsc3_on_alc_object_status_message_ID, js);
+    int r = Atsc3_Jni_Processing_Thread_Env->Get()->CallIntMethod(jni_instance_globalRef, atsc3_on_alc_object_status_message_ID, js);
     Atsc3_Jni_Processing_Thread_Env->Get()->DeleteLocalRef(js);
 
 }
@@ -258,6 +263,11 @@ int Atsc3NdkApplicationBridge::pinFromRxStatusThread() {
     return 0;
 }
 
+int Atsc3NdkApplicationBridge::RxThread() {
+    NDK_APPLICATION_BRIDGE_INFO("Atsc3NdkPHYBridge::RxThread: TODO! mJavaVM: %p", mJavaVM);
+    return 0;
+}
+
 int Atsc3NdkApplicationBridge::atsc3_slt_selectService(int service_id) {
     int ret = -1;
     atsc3_lls_slt_service_t* atsc3_lls_slt_service = atsc3_phy_mmt_player_bridge_set_single_monitor_a331_service_id(service_id);
@@ -277,10 +287,10 @@ void Atsc3NdkApplicationBridge::atsc3_onExtractedSampleDuration(uint16_t packet_
     if (!JReady() || !mOnLogMsgId)
         return;
     if (!Atsc3_Jni_Processing_Thread_Env) {
-        NDK_APPLICATION_BRIDGE_ERROR("!! err on get jni env");
+        _NDK_APPLICATION_BRIDGE_ERROR("!! err on get jni env");
         return;
     }
-    int r = Atsc3_Jni_Processing_Thread_Env->Get()->CallIntMethod(mClsDrvIntf, atsc3_onExtractedSampleDurationID,
+    int r = Atsc3_Jni_Processing_Thread_Env->Get()->CallIntMethod(jni_instance_globalRef, atsc3_onExtractedSampleDurationID,
                                                                   packet_id,
                                                                   mpu_sequence_number,
                                                                   extracted_sample_duration_us);
@@ -294,10 +304,10 @@ void Atsc3NdkApplicationBridge::atsc3_setVideoWidthHeightFromTrak(uint32_t width
     if (!JReady() || !mOnLogMsgId)
         return;
     if (!Atsc3_Jni_Processing_Thread_Env) {
-        NDK_APPLICATION_BRIDGE_ERROR("!! err on get jni env");
+        _NDK_APPLICATION_BRIDGE_ERROR("!! err on get jni env");
         return;
     }
-    int r = Atsc3_Jni_Processing_Thread_Env->Get()->CallIntMethod(mClsDrvIntf, atsc3_setVideoWidthHeightFromTrakID, width, height);
+    int r = Atsc3_Jni_Processing_Thread_Env->Get()->CallIntMethod(jni_instance_globalRef, atsc3_setVideoWidthHeightFromTrakID, width, height);
 
 }
 
@@ -320,7 +330,7 @@ std::string Atsc3NdkApplicationBridge::get_android_temp_folder() {
     jclass clazz = env.Get()->FindClass("org/ngbp/libatsc3/sampleapp/Atsc3NdkPHYBridge");
 
     jmethodID getCacheDir = env.Get()->GetMethodID( clazz, "getCacheDir", "()Ljava/io/File;" );
-    jobject cache_dir = env.Get()->CallObjectMethod(mClsDrvIntf, getCacheDir );
+    jobject cache_dir = env.Get()->CallObjectMethod(jni_instance_globalRef, getCacheDir );
 
     jclass fileClass = env.Get()->FindClass( "java/io/File" );
     jmethodID getPath = env.Get()->GetMethodID( fileClass, "getPath", "()Ljava/lang/String;" );
@@ -467,10 +477,10 @@ void Atsc3NdkApplicationBridge::atsc3_lls_sls_alc_on_route_mpd_patched_jni(uint1
     if (!JReady() || !atsc3_lls_sls_alc_on_route_mpd_patched_ID)
         return;
     if (!Atsc3_Jni_Processing_Thread_Env) {
-        NDK_APPLICATION_BRIDGE_ERROR("!! err on get jni env");
+        _NDK_APPLICATION_BRIDGE_ERROR("!! err on get jni env");
         return;
     }
-    int r = Atsc3_Jni_Processing_Thread_Env->Get()->CallIntMethod(mClsDrvIntf, atsc3_lls_sls_alc_on_route_mpd_patched_ID, service_id);
+    int r = Atsc3_Jni_Processing_Thread_Env->Get()->CallIntMethod(jni_instance_globalRef, atsc3_lls_sls_alc_on_route_mpd_patched_ID, service_id);
 
 }
 
@@ -478,23 +488,24 @@ void Atsc3NdkApplicationBridge::atsc3_lls_sls_alc_on_route_mpd_patched_jni(uint1
 void Atsc3NdkApplicationBridge::atsc3_lls_sls_alc_on_package_extract_completed_callback_jni(atsc3_route_package_extracted_envelope_metadata_and_payload_t* atsc3_route_package_extracted_envelope_metadata_and_payload) {
     if (!JReady() || !atsc3_lls_sls_alc_on_package_extract_completed_ID)
         return;
+
     if (!Atsc3_Jni_Processing_Thread_Env) {
-        NDK_APPLICATION_BRIDGE_ERROR("atsc3_lls_sls_alc_on_package_extract_completed_callback_jni::err on get jni env: Atsc3_Jni_Processing_Thread_Env");
+        _NDK_APPLICATION_BRIDGE_ERROR("atsc3_lls_sls_alc_on_package_extract_completed_callback_jni::err on get jni env: Atsc3_Jni_Processing_Thread_Env");
         return;
     }
 
     if(!atsc3_route_package_extracted_envelope_metadata_and_payload) {
-        NDK_APPLICATION_BRIDGE_ERROR("atsc3_lls_sls_alc_on_package_extract_completed_callback_jni::err atsc3_route_package_extracted_envelope_metadata_and_payload is NULL");
+        _NDK_APPLICATION_BRIDGE_ERROR("atsc3_lls_sls_alc_on_package_extract_completed_callback_jni::err atsc3_route_package_extracted_envelope_metadata_and_payload is NULL");
         return;
     }
 
     if(!atsc3_route_package_extracted_envelope_metadata_and_payload->atsc3_mbms_metadata_envelope_raw_xml || !atsc3_route_package_extracted_envelope_metadata_and_payload->atsc3_mbms_metadata_envelope_raw_xml->p_buffer) {
-        NDK_APPLICATION_BRIDGE_ERROR("atsc3_lls_sls_alc_on_package_extract_completed_callback_jni::err atsc3_route_package_extracted_envelope_metadata_and_payload->atsc3_mbms_metadata_envelope_raw_xml (or p_buffer) is NULL");
+        _NDK_APPLICATION_BRIDGE_ERROR("atsc3_lls_sls_alc_on_package_extract_completed_callback_jni::err atsc3_route_package_extracted_envelope_metadata_and_payload->atsc3_mbms_metadata_envelope_raw_xml (or p_buffer) is NULL");
         return;
     }
 
     if(!atsc3_route_package_extracted_envelope_metadata_and_payload->package_name) {
-    	NDK_APPLICATION_BRIDGE_ERROR("atsc3_lls_sls_alc_on_package_extract_completed_callback_jni::err atsc3_route_package_extracted_envelope_metadata_and_payload->package_name is NULL");
+    	_NDK_APPLICATION_BRIDGE_ERROR("atsc3_lls_sls_alc_on_package_extract_completed_callback_jni::err atsc3_route_package_extracted_envelope_metadata_and_payload->package_name is NULL");
         return;
     }
 
@@ -506,7 +517,7 @@ void Atsc3NdkApplicationBridge::atsc3_lls_sls_alc_on_package_extract_completed_c
     jobject jobj = Atsc3_Jni_Processing_Thread_Env->Get()->AllocObject(jcls);
 
     if(!jobj) {
-        NDK_APPLICATION_BRIDGE_ERROR("atsc3_lls_sls_alc_on_package_extract_completed_callback_jni::err unable to allocate packageExtractEnvelopeMetadataAndPayload_jclass_global_ref instance jobj!");
+        _NDK_APPLICATION_BRIDGE_ERROR("atsc3_lls_sls_alc_on_package_extract_completed_callback_jni::err unable to allocate packageExtractEnvelopeMetadataAndPayload_jclass_global_ref instance jobj!");
         return;
     }
 
@@ -606,7 +617,7 @@ void Atsc3NdkApplicationBridge::atsc3_lls_sls_alc_on_package_extract_completed_c
         Atsc3_Jni_Processing_Thread_Env->Get()->SetObjectField(jobj, multipartRelatedPayloadList_valId, multipartRelatedPayloadList_jobject);
     }
 
-    int r = Atsc3_Jni_Processing_Thread_Env->Get()->CallIntMethod(mClsDrvIntf, atsc3_lls_sls_alc_on_package_extract_completed_ID, jobj);
+    int r = Atsc3_Jni_Processing_Thread_Env->Get()->CallIntMethod(jni_instance_globalRef, atsc3_lls_sls_alc_on_package_extract_completed_ID, jobj);
 
     for (std::list<jstring>::iterator it=to_clean_jstrings.begin(); it != to_clean_jstrings.end(); ++it) {
         Atsc3_Jni_Processing_Thread_Env->Get()->DeleteLocalRef(*it);
@@ -626,7 +637,7 @@ void Atsc3NdkApplicationBridge::atsc3_sls_on_held_trigger_received_callback_jni(
 		return;
 
 	if (!Atsc3_Jni_Processing_Thread_Env) {
-		NDK_APPLICATION_BRIDGE_ERROR("!! err on get jni env");
+		_NDK_APPLICATION_BRIDGE_ERROR("!! err on get jni env");
 		return;
 	}
 
@@ -635,18 +646,18 @@ void Atsc3NdkApplicationBridge::atsc3_sls_on_held_trigger_received_callback_jni(
 
 void Atsc3NdkApplicationBridge::atsc3_onSlsTablePresent(const char *sls_payload_xml) {
     if (!JReady() || !atsc3_onSlsTablePresent_ID) {
-        NDK_APPLICATION_BRIDGE_ERROR("err: JReady: %d, atsc3_onSlsTablePresent_ID: %p",  JReady(), atsc3_onSlsTablePresent_ID);
+        _NDK_APPLICATION_BRIDGE_ERROR("err: JReady: %d, atsc3_onSlsTablePresent_ID: %p", JReady(), atsc3_onSlsTablePresent_ID);
 
         return;
     }
 
     if (!Atsc3_Jni_Processing_Thread_Env) {
-        NDK_APPLICATION_BRIDGE_ERROR("!! err on get jni env");
+        _NDK_APPLICATION_BRIDGE_ERROR("!! err on get jni env");
         return;
     }
 
     jstring xml_payload = Atsc3_Jni_Processing_Thread_Env->Get()->NewStringUTF(sls_payload_xml);
-    int r = Atsc3_Jni_Processing_Thread_Env->Get()->CallIntMethod(mClsDrvIntf, atsc3_onSlsTablePresent_ID, xml_payload);
+    int r = Atsc3_Jni_Processing_Thread_Env->Get()->CallIntMethod(jni_instance_globalRef, atsc3_onSlsTablePresent_ID, xml_payload);
     Atsc3_Jni_Processing_Thread_Env->Get()->DeleteLocalRef(xml_payload);
 }
 
@@ -654,53 +665,54 @@ void Atsc3NdkApplicationBridge::atsc3_onSlsTablePresent(const char *sls_payload_
 //--------------------------------------------------------------------------
 
 extern "C" JNIEXPORT jint JNICALL
-Java_org_ngbp_libatsc3_sampleapp_atsc3NdkApplicationBridge_apiAppBridgeInit(JNIEnv *env, jobject instance, jobject drvIntf)
+_Java_org_ngbp_libatsc3_middleware_Atsc3NdkApplicationBridge_init(JNIEnv *env, jobject instance)
 {
-    NDK_APPLICATION_BRIDGE_INFO("Java_org_ngbp_libatsc3_sampleapp_atsc3NdkApplicationBridge_apiAppBridgeInit: start init, env: %p\n", env);
+    apiAppBridge = new Atsc3NdkApplicationBridge(env, instance);
+    NDK_APPLICATION_BRIDGE_INFO("_Java_org_ngbp_libatsc3_middleware_Atsc3NdkApplicationBridge_init:  env: %p\n", env);
 
     apiAppBridge->mJniEnv = env;
 
     env->GetJavaVM(&apiAppBridge->mJavaVM);
     if(apiAppBridge->mJavaVM == NULL) {
-        NDK_APPLICATION_BRIDGE_ERROR("!! no java vm");
+        _NDK_APPLICATION_BRIDGE_ERROR("!! no java vm");
         return -1;
     }
 
-    jclass jClazz = env->FindClass("org/ngbp/libatsc3/sampleapp/Atsc3NdkPHYBridge");
+    jclass jClazz = env->FindClass("org/ngbp/libatsc3/middleware/Atsc3NdkApplicationBridge");
     if (jClazz == NULL) {
-        NDK_APPLICATION_BRIDGE_ERROR("!! Cannot find Atsc3NdkPHYBridge java class");
+        _NDK_APPLICATION_BRIDGE_ERROR("!! Cannot find Atsc3NdkApplicationBridge java class");
         return -1;
     }
     apiAppBridge->mOnLogMsgId = env->GetMethodID(jClazz, "onLogMsg", "(Ljava/lang/String;)I");
     if (apiAppBridge->mOnLogMsgId == NULL) {
-        NDK_APPLICATION_BRIDGE_ERROR("!! Cannot find 'onLogMsg' method id");
+        _NDK_APPLICATION_BRIDGE_ERROR("!! Cannot find 'onLogMsg' method id");
         return -1;
     }
 
     //atsc3_onSlsTablePresent_ID
     apiAppBridge->atsc3_onSlsTablePresent_ID = env->GetMethodID(jClazz, "atsc3_onSlsTablePresent", "(Ljava/lang/String;)I");
     if (apiAppBridge->atsc3_onSlsTablePresent_ID == NULL) {
-        NDK_APPLICATION_BRIDGE_ERROR("!! Cannot find 'atsc3_onSlsTablePresent_ID' method id");
+        _NDK_APPLICATION_BRIDGE_ERROR("!! Cannot find 'atsc3_onSlsTablePresent_ID' method id");
         return -1;
     }
 
     //java.nio.ByteBuffer, L: fully qualified class, J: long
     apiAppBridge->atsc3_onMfuPacketID = env->GetMethodID(jClazz, "atsc3_onMfuPacket", "(IIILjava/nio/ByteBuffer;IJI)I");
     if (apiAppBridge->atsc3_onMfuPacketID == NULL) {
-        NDK_APPLICATION_BRIDGE_ERROR("!! Cannot find 'atsc3_onMfuPacket' method id");
+        _NDK_APPLICATION_BRIDGE_ERROR("!! Cannot find 'atsc3_onMfuPacket' method id");
         return -1;
     }
     //java.nio.ByteBuffer, L: fully qualified class, J: long
     apiAppBridge->atsc3_onMfuPacketCorruptID = env->GetMethodID(jClazz, "atsc3_onMfuPacketCorrupt", "(IIILjava/nio/ByteBuffer;IJII)I");
     if (apiAppBridge->atsc3_onMfuPacketCorruptID == NULL) {
-        NDK_APPLICATION_BRIDGE_ERROR("!! Cannot find 'atsc3_onMfuPacketCorrupt' method id");
+        _NDK_APPLICATION_BRIDGE_ERROR("!! Cannot find 'atsc3_onMfuPacketCorrupt' method id");
         return -1;
     }
 
     //java.nio.ByteBuffer, L: fully qualified class, J: long
     apiAppBridge->atsc3_onMfuPacketCorruptMmthSampleHeaderID = env->GetMethodID(jClazz, "atsc3_onMfuPacketCorruptMmthSampleHeader", "(IIILjava/nio/ByteBuffer;IJII)I");
     if (apiAppBridge->atsc3_onMfuPacketCorruptMmthSampleHeaderID == NULL) {
-        NDK_APPLICATION_BRIDGE_ERROR("!! Cannot find 'atsc3_onMfuPacketCorruptMmthSampleHeaderID' method id");
+        _NDK_APPLICATION_BRIDGE_ERROR("!! Cannot find 'atsc3_onMfuPacketCorruptMmthSampleHeaderID' method id");
         return -1;
     }
 
@@ -708,14 +720,14 @@ Java_org_ngbp_libatsc3_sampleapp_atsc3NdkApplicationBridge_apiAppBridgeInit(JNIE
     //java.nio.ByteBuffer, L: fully qualified class, J: long
     apiAppBridge->atsc3_onMfuSampleMissingID = env->GetMethodID(jClazz, "atsc3_onMfuSampleMissing", "(III)I");
     if (apiAppBridge->atsc3_onMfuSampleMissingID == NULL) {
-        NDK_APPLICATION_BRIDGE_ERROR("!! Cannot find 'atsc3_onMfuSampleMissingID' method id");
+        _NDK_APPLICATION_BRIDGE_ERROR("!! Cannot find 'atsc3_onMfuSampleMissingID' method id");
         return -1;
     }
 
     //java.nio.ByteBuffer
     apiAppBridge->mOnInitHEVC_NAL_Extracted = env->GetMethodID(jClazz, "atsc3_onInitHEVC_NAL_Packet", "(IILjava/nio/ByteBuffer;I)I");
     if (apiAppBridge->mOnInitHEVC_NAL_Extracted == NULL) {
-        NDK_APPLICATION_BRIDGE_ERROR("!! Cannot find 'atsc3_onInitHEVC_NAL_Packet' method id");
+        _NDK_APPLICATION_BRIDGE_ERROR("!! Cannot find 'atsc3_onInitHEVC_NAL_Packet' method id");
         return -1;
     }
 
@@ -727,58 +739,45 @@ Java_org_ngbp_libatsc3_sampleapp_atsc3NdkApplicationBridge_apiAppBridgeInit(JNIE
 
     apiAppBridge->atsc3_signallingContext_notify_video_packet_id_and_mpu_timestamp_descriptor_ID = env->GetMethodID(jClazz, "atsc3_signallingContext_notify_video_packet_id_and_mpu_timestamp_descriptor", "(IIJII)I");
     if (apiAppBridge->atsc3_signallingContext_notify_video_packet_id_and_mpu_timestamp_descriptor_ID == NULL) {
-        NDK_APPLICATION_BRIDGE_ERROR("!! Cannot find 'atsc3_signallingContext_notify_video_packet_id_and_mpu_timestamp_descriptor_ID' method id");
+        _NDK_APPLICATION_BRIDGE_ERROR("!! Cannot find 'atsc3_signallingContext_notify_video_packet_id_and_mpu_timestamp_descriptor_ID' method id");
         return -1;
     }
     apiAppBridge->atsc3_signallingContext_notify_audio_packet_id_and_mpu_timestamp_descriptor_ID = env->GetMethodID(jClazz, "atsc3_signallingContext_notify_audio_packet_id_and_mpu_timestamp_descriptor", "(IIJII)I");
     if (apiAppBridge->atsc3_signallingContext_notify_audio_packet_id_and_mpu_timestamp_descriptor_ID == NULL) {
-        NDK_APPLICATION_BRIDGE_ERROR("!! Cannot find 'atsc3_signallingContext_notify_audio_packet_id_and_mpu_timestamp_descriptor_ID' method id");
+        _NDK_APPLICATION_BRIDGE_ERROR("!! Cannot find 'atsc3_signallingContext_notify_audio_packet_id_and_mpu_timestamp_descriptor_ID' method id");
         return -1;
     }
     apiAppBridge->atsc3_signallingContext_notify_stpp_packet_id_and_mpu_timestamp_descriptor_ID = env->GetMethodID(jClazz, "atsc3_signallingContext_notify_stpp_packet_id_and_mpu_timestamp_descriptor", "(IIJII)I");
     if (apiAppBridge->atsc3_signallingContext_notify_stpp_packet_id_and_mpu_timestamp_descriptor_ID == NULL) {
-        NDK_APPLICATION_BRIDGE_ERROR("!! Cannot find 'atsc3_signallingContext_notify_stpp_packet_id_and_mpu_timestamp_descriptor_ID' method id");
-        return -1;
-    }
-
-    apiAppBridge->atsc3_rf_phy_status_callback_ID = env->GetMethodID(jClazz, "atsc3_rf_phy_status_callback", "(IIIIIIIIIIIIIII)I");
-    if (apiAppBridge->atsc3_rf_phy_status_callback_ID == NULL) {
-        NDK_APPLICATION_BRIDGE_ERROR("!! Cannot find 'atsc3_rf_phy_status_callback' method id");
+        _NDK_APPLICATION_BRIDGE_ERROR("!! Cannot find 'atsc3_signallingContext_notify_stpp_packet_id_and_mpu_timestamp_descriptor_ID' method id");
         return -1;
     }
 
     //atsc3_onExtractedSampleDurationID
     apiAppBridge->atsc3_onExtractedSampleDurationID = env->GetMethodID(jClazz, "atsc3_onExtractedSampleDuration", "(III)I");
     if (apiAppBridge->atsc3_onExtractedSampleDurationID == NULL) {
-        NDK_APPLICATION_BRIDGE_ERROR("!! Cannot find 'atsc3_onExtractedSampleDurationID' method id");
+        _NDK_APPLICATION_BRIDGE_ERROR("!! Cannot find 'atsc3_onExtractedSampleDurationID' method id");
         return -1;
     }
 
     //atsc3_setVideoWidthHeightFromTrakID
     apiAppBridge->atsc3_setVideoWidthHeightFromTrakID = env->GetMethodID(jClazz, "atsc3_setVideoWidthHeightFromTrak", "(II)I");
     if (apiAppBridge->atsc3_setVideoWidthHeightFromTrakID == NULL) {
-        NDK_APPLICATION_BRIDGE_ERROR("!! Cannot find 'atsc3_setVideoWidthHeightFromTrakID' method id");
-        return -1;
-    }
-
-    //atsc3_update_rf_bw_stats_ID
-    apiAppBridge->atsc3_update_rf_bw_stats_ID = env->GetMethodID(jClazz, "atsc3_updateRfBwStats", "(JJI)I");
-    if (apiAppBridge->atsc3_update_rf_bw_stats_ID == NULL) {
-        NDK_APPLICATION_BRIDGE_ERROR("!! Cannot find 'atsc3_update_rf_bw_stats_ID' method id");
+        _NDK_APPLICATION_BRIDGE_ERROR("!! Cannot find 'atsc3_setVideoWidthHeightFromTrakID' method id");
         return -1;
     }
 
     //atsc3_lls_sls_alc_on_route_mpd_patched_ID
     apiAppBridge->atsc3_lls_sls_alc_on_route_mpd_patched_ID = env->GetMethodID(jClazz, "atsc3_lls_sls_alc_on_route_mpd_patched", "(I)I");
     if (apiAppBridge->atsc3_lls_sls_alc_on_route_mpd_patched_ID == NULL) {
-        NDK_APPLICATION_BRIDGE_ERROR("!! Cannot find 'atsc3_lls_sls_alc_on_route_mpd_patched_ID' method id");
+        _NDK_APPLICATION_BRIDGE_ERROR("!! Cannot find 'atsc3_lls_sls_alc_on_route_mpd_patched_ID' method id");
         return -1;
     }
 
     //atsc3_on_alc_object_status_message_ID
     apiAppBridge->atsc3_on_alc_object_status_message_ID = env->GetMethodID(jClazz, "atsc3_on_alc_object_status_message", "(Ljava/lang/String;)I");
     if (apiAppBridge->atsc3_on_alc_object_status_message_ID == NULL) {
-        NDK_APPLICATION_BRIDGE_ERROR("!! Cannot find 'atsc3_on_alc_object_status_message_ID' method id");
+        _NDK_APPLICATION_BRIDGE_ERROR("!! Cannot find 'atsc3_on_alc_object_status_message_ID' method id");
         return -1;
     }
 
@@ -786,14 +785,14 @@ Java_org_ngbp_libatsc3_sampleapp_atsc3NdkApplicationBridge_apiAppBridgeInit(JNIE
     //org.ngbp.libatsc3.middleware.android.a331.PackageExtractEnvelopeMetadataAndPayload
 	apiAppBridge->atsc3_lls_sls_alc_on_package_extract_completed_ID = env->GetMethodID(jClazz, "atsc3_lls_sls_alc_on_package_extract_completed", "(Lorg/ngbp/libatsc3/android/PackageExtractEnvelopeMetadataAndPayload;)I");
 	if (apiAppBridge->atsc3_lls_sls_alc_on_package_extract_completed_ID == NULL) {
-	   NDK_APPLICATION_BRIDGE_ERROR("!! Cannot find 'atsc3_lls_sls_alc_on_package_extract_completed_ID' method id");
+	   _NDK_APPLICATION_BRIDGE_ERROR("!! Cannot find 'atsc3_lls_sls_alc_on_package_extract_completed_ID' method id");
 	   return -1;
 	}
 
 	apiAppBridge->packageExtractEnvelopeMetadataAndPayload_jclass_init_env = env->FindClass("org/ngbp/libatsc3/android/PackageExtractEnvelopeMetadataAndPayload");
 
     if (apiAppBridge->packageExtractEnvelopeMetadataAndPayload_jclass_init_env == NULL) {
-        NDK_APPLICATION_BRIDGE_ERROR("Cannot find 'packageExtractEnvelopeMetadataAndPayload_jclass' class reference");
+        _NDK_APPLICATION_BRIDGE_ERROR("Cannot find 'packageExtractEnvelopeMetadataAndPayload_jclass' class reference");
         return -1;
     } else {
         apiAppBridge->packageExtractEnvelopeMetadataAndPayload_jclass_global_ref = (jclass)(env->NewGlobalRef(apiAppBridge->packageExtractEnvelopeMetadataAndPayload_jclass_init_env));
@@ -801,41 +800,32 @@ Java_org_ngbp_libatsc3_sampleapp_atsc3NdkApplicationBridge_apiAppBridgeInit(JNIE
 
     apiAppBridge->packageExtractEnvelopeMetadataAndPayload_MultipartRelatedPayload_jclass_init_env = env->FindClass("org/ngbp/libatsc3/android/PackageExtractEnvelopeMetadataAndPayload$MultipartRelatedPayload");
     if (apiAppBridge->packageExtractEnvelopeMetadataAndPayload_MultipartRelatedPayload_jclass_init_env == NULL) {
-        NDK_APPLICATION_BRIDGE_ERROR("Cannot find 'packageExtractEnvelopeMetadataAndPayload$MultipartRelatedPayload_jclass_init_env' class reference");
+        _NDK_APPLICATION_BRIDGE_ERROR("Cannot find 'packageExtractEnvelopeMetadataAndPayload$MultipartRelatedPayload_jclass_init_env' class reference");
         return -1;
     } else {
        apiAppBridge->packageExtractEnvelopeMetadataAndPayload_MultipartRelatedPayload_jclass_global_ref = (jclass)(env->NewGlobalRef(apiAppBridge->packageExtractEnvelopeMetadataAndPayload_MultipartRelatedPayload_jclass_init_env));
     }
 
     apiAppBridge->jni_java_util_ArrayList = (jclass) env->NewGlobalRef(env->FindClass("java/util/ArrayList"));
-    NDK_APPLICATION_BRIDGE_ERROR("creating apiAppBridge->jni_java_util_ArrayList");
+    _NDK_APPLICATION_BRIDGE_ERROR("creating apiAppBridge->jni_java_util_ArrayList");
 
     apiAppBridge->jni_java_util_ArrayList_cctor = env->GetMethodID(apiAppBridge->jni_java_util_ArrayList, "<init>", "(I)V");
-    NDK_APPLICATION_BRIDGE_ERROR("creating apiAppBridge->jni_java_util_ArrayList_cctor");
+    _NDK_APPLICATION_BRIDGE_ERROR("creating apiAppBridge->jni_java_util_ArrayList_cctor");
     apiAppBridge->jni_java_util_ArrayList_add  = env->GetMethodID(apiAppBridge->jni_java_util_ArrayList, "add", "(Ljava/lang/Object;)Z");
-    NDK_APPLICATION_BRIDGE_ERROR("creating apiAppBridge->jni_java_util_ArrayList_add");
+    _NDK_APPLICATION_BRIDGE_ERROR("creating apiAppBridge->jni_java_util_ArrayList_add");
 
-    apiAppBridge->mClsDrvIntf = (jclass)(apiAppBridge->mJniEnv->NewGlobalRef(drvIntf));
-
-//    int r = apiAppBridge->Init();
-//    if (r)
-//        return r;
+    atsc3_core_service_application_bridge_init(apiAppBridge);
+    NDK_APPLICATION_BRIDGE_INFO("**** apiAppBridge init OK");
 
     apiAppBridge->LogMsg("apiAppBridge init ok");
-
-    //wire up atsc3_phy_mmt_player_bridge
-    //Atsc3NdkPHYBridge* at3DrvIntf_ptr
-  //  atsc3_phy_player_bridge_init(&apiAppBridge);
-
-    NDK_APPLICATION_BRIDGE_INFO("**** jni init OK");
     return 0;
 }
 
 extern "C"
 JNIEXPORT jint JNICALL
-Java_org_ngbp_libatsc3_sampleapp_atsc3NdkApplicationBridge_atsc3_1slt_1selectService(JNIEnv *env, jobject thiz,
+_Java_org_ngbp_libatsc3_middleware_Atsc3NdkApplicationBridge_atsc3_1slt_1selectService(JNIEnv *env, jobject thiz,
                                                          jint service_id) {
-    NDK_APPLICATION_BRIDGE_INFO("Java_org_ngbp_libatsc3_sampleapp_atsc3NdkApplicationBridge_atsc3_1slt_1selectService, service_id: %d\n", (int)service_id);
+    NDK_APPLICATION_BRIDGE_INFO("_Java_org_ngbp_libatsc3_middleware_Atsc3NdkApplicationBridge_atsc3_1slt_1selectService, service_id: %d\n", (int)service_id);
     int ret = apiAppBridge->atsc3_slt_selectService((int)service_id);
 
     return ret;
@@ -843,7 +833,7 @@ Java_org_ngbp_libatsc3_sampleapp_atsc3NdkApplicationBridge_atsc3_1slt_1selectSer
 
 extern "C"
 JNIEXPORT jint JNICALL
-Java_org_ngbp_libatsc3_sampleapp_atsc3NdkApplicationBridge_apiAppBridgeSetPLP(JNIEnv *env, jobject thiz, jintArray a_plp_ids) {
+_Java_org_ngbp_libatsc3_middleware_Atsc3NdkApplicationBridge_apiAppBridgeSetPLP(JNIEnv *env, jobject thiz, jintArray a_plp_ids) {
     // TODO: implement apiAppBridgeSetPLP()
 //
 //    jsize len = *env->GetArrayLength(a_plp_ids);
@@ -858,11 +848,11 @@ Java_org_ngbp_libatsc3_sampleapp_atsc3NdkApplicationBridge_apiAppBridgeSetPLP(JN
 
 extern "C"
 JNIEXPORT jint JNICALL
-Java_org_ngbp_libatsc3_sampleapp_atsc3NdkApplicationBridge_atsc3_1slt_1alc_1select_1additional_1service(JNIEnv *env,
+_Java_org_ngbp_libatsc3_middleware_Atsc3NdkApplicationBridge_atsc3_1slt_1alc_1select_1additional_1service(JNIEnv *env,
                                                                                 jobject thiz,
                                                                                 jint service_id) {
 
-    NDK_APPLICATION_BRIDGE_INFO("Java_org_ngbp_libatsc3_sampleapp_atsc3NdkApplicationBridge_atsc3_1slt_1alc_1select_1additional_1service, additional service_id: %d\n", (int)service_id);
+    NDK_APPLICATION_BRIDGE_INFO("_Java_org_ngbp_libatsc3_middleware_Atsc3NdkApplicationBridge_atsc3_1slt_1alc_1select_1additional_1service, additional service_id: %d\n", (int)service_id);
     int ret = apiAppBridge->atsc3_slt_alc_select_additional_service((int)service_id);
 
     return ret;
@@ -870,17 +860,17 @@ Java_org_ngbp_libatsc3_sampleapp_atsc3NdkApplicationBridge_atsc3_1slt_1alc_1sele
 
 extern "C"
 JNIEXPORT jint JNICALL
-Java_org_ngbp_libatsc3_sampleapp_atsc3NdkApplicationBridge_atsc3_1slt_1alc_1clear_1additional_1service_1selections(
+_Java_org_ngbp_libatsc3_middleware_Atsc3NdkApplicationBridge_atsc3_1slt_1alc_1clear_1additional_1service_1selections(
         JNIEnv *env, jobject thiz) {
-    NDK_APPLICATION_BRIDGE_INFO("Java_org_ngbp_libatsc3_sampleapp_atsc3NdkApplicationBridge_atsc3_1slt_1alc_1clear_1additional_1service_1selections");
+    NDK_APPLICATION_BRIDGE_INFO("_Java_org_ngbp_libatsc3_middleware_Atsc3NdkApplicationBridge_atsc3_1slt_1alc_1clear_1additional_1service_1selections");
     int ret = apiAppBridge->atsc3_slt_alc_clear_additional_service_selections();
     return ret;
 }
 
 extern "C"
 JNIEXPORT jobjectArray JNICALL
-Java_org_ngbp_libatsc3_sampleapp_atsc3NdkApplicationBridge_atsc3_1slt_1alc_1get_1sls_1metadata_1fragments_1content_1locations_1from_1monitor_1service_1id(JNIEnv *env, jobject thiz, jint service_id, jstring to_match_content_type_string) {
-    NDK_APPLICATION_BRIDGE_INFO("Java_org_ngbp_libatsc3_sampleapp_atsc3NdkApplicationBridge_atsc3_1slt_1alc_1get_1sls_1metadata_1fragments_1content_1locations_1from_1monitor_1service_1id, service_id: %d\n", (int)service_id);
+_Java_org_ngbp_libatsc3_middleware_Atsc3NdkApplicationBridge_atsc3_1slt_1alc_1get_1sls_1metadata_1fragments_1content_1locations_1from_1monitor_1service_1id(JNIEnv *env, jobject thiz, jint service_id, jstring to_match_content_type_string) {
+    NDK_APPLICATION_BRIDGE_INFO("_Java_org_ngbp_libatsc3_middleware_Atsc3NdkApplicationBridge_atsc3_1slt_1alc_1get_1sls_1metadata_1fragments_1content_1locations_1from_1monitor_1service_1id, service_id: %d\n", (int)service_id);
     const char* to_match_content_type_weak = env->GetStringUTFChars(to_match_content_type_string, 0);
 
     vector<string> slt_alc_sls_metadata_fragment_content_locations = apiAppBridge->atsc3_slt_alc_get_sls_metadata_fragments_content_locations_from_monitor_service_id((int)service_id, to_match_content_type_weak);
@@ -901,9 +891,9 @@ Java_org_ngbp_libatsc3_sampleapp_atsc3NdkApplicationBridge_atsc3_1slt_1alc_1get_
 
 extern "C"
 JNIEXPORT jobjectArray JNICALL
-Java_org_ngbp_libatsc3_sampleapp_atsc3NdkApplicationBridge_atsc3_1slt_1alc_1get_1sls_1route_1s_1tsid_1fdt_1file_1content_1locations_1from_1monitor_1service_1id(
+_Java_org_ngbp_libatsc3_middleware_Atsc3NdkApplicationBridge_atsc3_1slt_1alc_1get_1sls_1route_1s_1tsid_1fdt_1file_1content_1locations_1from_1monitor_1service_1id(
         JNIEnv *env, jobject thiz, jint service_id) {
-    NDK_APPLICATION_BRIDGE_INFO("Java_org_ngbp_libatsc3_sampleapp_atsc3NdkApplicationBridge_atsc3_1slt_1alc_1get_1sls_1route_1s_1tsid_1fdt_1file_1content_1locations_1from_1monitor_1service_1id, service_id: %d\n", (int)service_id);
+    NDK_APPLICATION_BRIDGE_INFO("_Java_org_ngbp_libatsc3_middleware_Atsc3NdkApplicationBridge_atsc3_1slt_1alc_1get_1sls_1route_1s_1tsid_1fdt_1file_1content_1locations_1from_1monitor_1service_1id, service_id: %d\n", (int)service_id);
 
     vector<string> slt_alc_sls_route_s_tsid_fdt_file_content_locations = apiAppBridge->atsc3_slt_alc_get_sls_route_s_tsid_fdt_file_content_locations_from_monitor_service_id((int)service_id);
 

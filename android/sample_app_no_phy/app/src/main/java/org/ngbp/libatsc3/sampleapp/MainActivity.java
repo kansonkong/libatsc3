@@ -65,7 +65,7 @@ import org.ngbp.libatsc3.ServiceHandler;
 import org.ngbp.libatsc3.middleware.android.application.interfaces.IAtsc3NdkApplicationBridgeCallbacks;
 import org.ngbp.libatsc3.middleware.android.phy.Atsc3NdkPHYClientBase;
 import org.ngbp.libatsc3.middleware.android.phy.interfaces.IAtsc3NdkPHYBridgeCallbacks;
-import org.ngbp.libatsc3.middleware.android.phy.virtual.srt.SRTTransmitSTLTPVirtualPHY;
+import org.ngbp.libatsc3.middleware.android.phy.virtual.srt.SRTRxSTLTPVirtualPHYAndroid;
 import org.ngbp.libatsc3.pcapreplay.PcapFileSelectorActivity;
 import org.ngbp.libatsc3.phy.RfScanUtility;
 import org.ngbp.libatsc3.middleware.android.ATSC3PlayerFlags;
@@ -160,8 +160,40 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     private Boolean inputSelectionFromPcap = false;
 
     private static final String PCAP_URI_PREFIX = "pcaps/";
+
+//jjustman-2020-08-18
+
+    public Atsc3NdkApplicationBridge atsc3NdkApplicationBridge;
+
+    public Atsc3NdkPHYBridge         atsc3NdkPHYBridge;
+
+    public Atsc3NdkPHYClientBase     atsc3NdkPHYClientInstance = null; //whomever is currently instantiated (e.g. SRTRxSTLTPVirtualPhyAndroid, etc..)
+
+    private static final String SRT_STLTP_URI_PREFIX = "srt://";
+    private String inputSelectedSRTSource;
+    private Boolean inputSelectionFromSRT = false;
+    private SRTRxSTLTPVirtualPHYAndroid srtRxSTLTPVirtualPHYAndroid;
+
+    private String prebuiltAssetsForDeviceSelectionVirtualPHY[] = { "srt://bna.srt.atsc3.com:31347?passphrase=88731837-0EB5-4951-83AA-F515B3BEBC20", "--", "pcaps/2019-10-29-239.0.0.18.PLP.1.decoded.pcap", "pcaps/2019-12-17-lab-digi-alp.pcap" };
+
+    public PcapDemuxedPHYVirtualAndroid demuxedPcapVirtualPHY;
+
+    public void stopAndDeInitAtsc3NdkPHYClientInstance() {
+        if(atsc3NdkPHYClientInstance != null) {
+            atsc3NdkPHYClientInstance.stop();
+            atsc3NdkPHYClientInstance.deinit();
+            try {
+                Thread.sleep(1000);
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
+            atsc3NdkPHYClientInstance = null;
+        }
+    }
+
+//end jjustman-2020-08-18
+
     private String inputSelectedPcapReplayFromAssetManager = null;
-    private String pcapAssetFromAssetManager[] = { "pcaps/2019-10-29-239.0.0.18.PLP.1.decoded.pcap", "pcaps/2019-12-17-lab-digi-alp.pcap" };
 
     public static final String SELECT_PCAP_MESSAGE = "Select PCAP from Device...";
     private String inputSelectedPcapReplayFromFilesystem  = null;
@@ -245,12 +277,6 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         ServiceHandler.GetInstance().sendMessage(ServiceHandler.GetInstance().obtainMessage(ServiceHandler.BW_PHY_STATISTICS_UPDATED, bwPhyStatistics));
     }
 
-    //jjustman-2020-08-07 - temporary wire-up, and  remove static field accessor static
-    public Atsc3NdkApplicationBridge atsc3NdkApplicationBridge;
-    public Atsc3NdkPHYBridge         atsc3NdkPHYBridge;
-    public Atsc3NdkPHYClientBase     atsc3NdkPHYClientInstance;
-
-    public PcapDemuxedPHYVirtualAndroid demuxedPcapVirtualPHY;
 
     public UsbManager mUsbManager;
     private PendingIntent mPermissionIntent;
@@ -463,15 +489,15 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
             itemCount++;
         }
 
-        if(pcapAssetFromAssetManager.length > 0) {
+        if(prebuiltAssetsForDeviceSelectionVirtualPHY.length > 0) {
             items.add("---");
             itemCount++;
 
-            for(int i=0; i < pcapAssetFromAssetManager.length; i++) {
-                if(itemSelected != null && itemSelected.equalsIgnoreCase(pcapAssetFromAssetManager[i])) {
+            for(int i = 0; i < prebuiltAssetsForDeviceSelectionVirtualPHY.length; i++) {
+                if(itemSelected != null && itemSelected.equalsIgnoreCase(prebuiltAssetsForDeviceSelectionVirtualPHY[i])) {
                     idxSelected = itemCount;
                 }
-                items.add(pcapAssetFromAssetManager[i]);
+                items.add(prebuiltAssetsForDeviceSelectionVirtualPHY[i]);
                 itemCount++;
             }
             items.add("---");
@@ -710,12 +736,6 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         mDevListSpinner = (Spinner) findViewById(R.id.spinDevices);
         mDevListSpinner.setOnItemSelectedListener(this);
 
-        // get at3drv jni interface
-        //jjustman-2020-08-07 app and phy refactoring
-        atsc3NdkApplicationBridge = new Atsc3NdkApplicationBridge(this);
-        atsc3NdkPHYBridge = new Atsc3NdkPHYBridge(this);
-        // if needed at runtime for pcap replay:
-        demuxedPcapVirtualPHY = new PcapDemuxedPHYVirtualAndroid();
 
 
         // get usb manager
@@ -733,8 +753,9 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         Log.d(TAG, "onCreate: registering intent to receiver..");
         registerReceiver(mUsbReceiver, filter);
 
-        // init at3drv driver
-        showMsg("onCreate: ApiInit\n");
+        // jjustman-2020-08-18 - wire up our applicationBridge and PHYBridge
+        atsc3NdkApplicationBridge = new Atsc3NdkApplicationBridge(this);
+        atsc3NdkPHYBridge = new Atsc3NdkPHYBridge(this);
         atsc3NdkPHYBridge.init();
 
         // now, scan usb devices and try to connect
@@ -762,16 +783,6 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         ((Button) findViewById(R.id.butStop)).setOnClickListener(this);
         ((Button) findViewById(R.id.butReset)).setOnClickListener(this);
         ((Button) findViewById(R.id.butClose)).setOnClickListener(this);
-
-        ((Button) findViewById(R.id.btnSRT)).setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                SRTTransmitSTLTPVirtualPHY srtTransmitSTLTPVirtualPHY = new SRTTransmitSTLTPVirtualPHY();
-                srtTransmitSTLTPVirtualPHY.ApiInit();
-                Log.d("MainActivity", "after running SRTTransmitSTLTPVirtualPHY");
-            }
-        });
-
 
         //add focus changed listener -- onFocusedChangedListenerUiBtn
         ((Button) findViewById(R.id.butOpen)).setOnFocusChangeListener(onFocusedChangedListenerUiBtn);
@@ -933,6 +944,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
 
             }
         }, 3000);
+
 
         hasCalledOnCreate = true;
     }
@@ -1410,16 +1422,17 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     @Override
     protected void onDestroy() {
         Log.d(TAG, "onDestroy called");
-        atsc3NdkPHYClientInstance.ApiClose();
+        stopAndDeInitAtsc3NdkPHYClientInstance();
+
         unregisterReceiver(mUsbReceiver);
         super.onDestroy();
     }
     @Override
     public void onBackPressed() {
         Log.d(TAG, "onBackPressed called");
-        atsc3NdkPHYClientInstance.ApiClose();
+        stopAndDeInitAtsc3NdkPHYClientInstance();
+
         unregisterReceiver(mUsbReceiver);
-        atsc3NdkPHYClientInstance.ApiUninit();
         Log.d(TAG, "uninit ended");
 
         moveTaskToBack(true);
@@ -1777,8 +1790,27 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
             case R.id.butOpen:
                 Log.d("onClick", "Button: Open\n");
 
+                stopAllPlayers();
+                stopAndDeInitAtsc3NdkPHYClientInstance();
+
+                if(inputSelectionFromSRT) {
+                    srtRxSTLTPVirtualPHYAndroid = new SRTRxSTLTPVirtualPHYAndroid();
+                    atsc3NdkPHYClientInstance = srtRxSTLTPVirtualPHYAndroid;
+
+                    srtRxSTLTPVirtualPHYAndroid.init();
+                    srtRxSTLTPVirtualPHYAndroid.setSrtSourceConnectionString(inputSelectedSRTSource);
+
+                    srtRxSTLTPVirtualPHYAndroid.run();
+                    enableDeviceControlButtons(true);
+                    return;
+                }
+
                 if(inputSelectionFromPcap) {
-                    inputSelectionFromPcap = true;
+                    demuxedPcapVirtualPHY = new PcapDemuxedPHYVirtualAndroid();
+                    atsc3NdkPHYClientInstance = demuxedPcapVirtualPHY;
+
+                    demuxedPcapVirtualPHY.init();
+
                     enableDeviceControlButtons(true);
                     if(inputSelectedPcapReplayFromFilesystem != null) {
                         demuxedPcapVirtualPHY.atsc3_pcap_open_for_replay(inputSelectedPcapReplayFromFilesystem);
@@ -1786,25 +1818,19 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                         demuxedPcapVirtualPHY.atsc3_pcap_open_for_replay_from_assetManager(inputSelectedPcapReplayFromAssetManager, assetManager);
                     }
 
-
-                    demuxedPcapVirtualPHY.atsc3_pcap_thread_run();
+                    demuxedPcapVirtualPHY.run();
                     enableDeviceControlButtons(true);
-                    break;
+                    return;
                 }
 
                 if (mCurAt3Device == null) {
                     showMsg("no FX3 device connected yet\n");
                     break;
                 }
-                //notify pcap thread (if running) to stop
-                demuxedPcapVirtualPHY.atsc3_pcap_thread_stop();
-
 
                 showMsg(String.format("opening mCurFx3Device: fd: %d, key: %d", mCurAt3Device.fd, mCurAt3Device.key));
-                //ThingsUI.WriteToAlphaDisplayNoEx("OPEN");
 
-                stopAllPlayers();
-
+                //jjustman-2020-08-18 - TODO - clean this up...
                 new Thread(new Runnable() {
                     @Override
                     public void run() {
@@ -1929,18 +1955,9 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                 routeDashPlayerStopAndRelease();
                 myDecoderHandlerThread.decoderHandler.sendMessage(myDecoderHandlerThread.decoderHandler.obtainMessage(DecoderHandlerThread.DESTROY));
 
-                if(inputSelectionFromPcap) {
-                    //shutdown pcap thread
-                    demuxedPcapVirtualPHY.atsc3_pcap_thread_stop();
-                    showMsg("pcap thread stopped");
-                    return;
+                if(atsc3NdkPHYClientInstance != null) {
+                    atsc3NdkPHYClientInstance.stop();
                 }
-
-                if (mCurAt3Device == null) {
-                    showMsg("no atlas device connected yet\n");
-                    break;
-                }
-                r = atsc3NdkPHYClientInstance.ApiStop();
 
                 //clear pending SLS window
                 ServiceHandler.GetInstance().post(new Runnable() {
@@ -1963,14 +1980,13 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                 break;
 
             case R.id.butClose:
-                showMsg("button Close\n");
-                if (mCurAt3Device == null) {
-                    showMsg("no atlas device connected yet\n");
-                    break;
+                showMsg("button deinit\n");
+
+                if(atsc3NdkPHYClientInstance != null) {
+                    atsc3NdkPHYClientInstance.deinit();
                 }
-                r = atsc3NdkPHYClientInstance.ApiClose();
-                //mTextView.setText("Closed\n"); // clear log msg
-                if (r != 0) showMsg("closed\n");
+
+                if (r != 0) showMsg("deinit\n");
 
                 enableDeviceControlButtons(false);
                 ServiceHandler.GetInstance().post(new Runnable() {
@@ -2041,19 +2057,23 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     public void onItemSelected(AdapterView<?> parent, View view, int pos, long id) {
         String s = (String) parent.getItemAtPosition(pos);
         Log.d(TAG, "user selected " + s);
-        if (s.equals(kSpinnerNotSelect)) {
-            // unchoose cur device
-            if (mCurAt3Device != null) {
-                atsc3NdkPHYClientInstance.ApiClose();
-            }
-            mCurAt3Device = null;
-            inputSelectedPcapReplayFromFilesystem = null;
-            inputSelectedPcapReplayFromAssetManager = null;
-            inputSelectionFromPcap = false;
-            enableDeviceControlButtons(false);
-            enableDeviceOpenButtons(false);
-            return;
-        }
+//        if (s.equals(kSpinnerNotSelect)) {
+//
+//            stopAndDeInitAtsc3NdkPHYClientInstance
+//
+//            // unchoose cur device
+//            if (mCurAt3Device != null) {
+//                atsc3NdkPHYClientInstance.ApiClose();
+//            }
+//            mCurAt3Device = null;
+//            inputSelectedPcapReplayFromFilesystem = null;
+//            inputSelectedPcapReplayFromAssetManager = null;
+//            inputSelectionFromPcap = false;
+//            inputSelectionFromSRT = false;
+//            enableDeviceControlButtons(false);
+//            enableDeviceOpenButtons(false);
+//            return;
+//        }
 
         //launch our file picker for asset selection
         if(s.startsWith(SELECT_PCAP_MESSAGE)) {
@@ -2069,9 +2089,22 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
             inputSelectedPcapReplayFromFilesystem = null;
             inputSelectedPcapReplayFromAssetManager = s;
             inputSelectionFromPcap = true;
+            inputSelectionFromSRT = false;
+
             enableDeviceOpenButtons(true);
             return;
-        } else {
+        } else if(s.startsWith(SRT_STLTP_URI_PREFIX)) {
+            //support SRT_STLTP transport
+            inputSelectedPcapReplayFromFilesystem = null;
+            inputSelectedPcapReplayFromAssetManager = null;
+            inputSelectionFromPcap = false;
+
+            inputSelectedSRTSource = s;
+            inputSelectionFromSRT = true;
+
+            enableDeviceOpenButtons(true);
+            return;
+        }  {
             inputSelectionFromPcap = false;
             inputSelectedPcapReplayFromFilesystem = null;
             inputSelectedPcapReplayFromAssetManager = null;
@@ -2095,7 +2128,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                     if (mCurAt3Device != ad) {
                         //Log.d(TAG, "new device selected");
                         showMsg("new device selected\n");
-                        atsc3NdkPHYClientInstance.ApiClose();
+                        stopAndDeInitAtsc3NdkPHYClientInstance();
 
                         mCurAt3Device = ad;
                     } else {

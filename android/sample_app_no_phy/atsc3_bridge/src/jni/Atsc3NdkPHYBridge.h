@@ -35,6 +35,9 @@ using namespace std;
 #include <atsc3_route_package_utils.h>
 #include <phy/IAtsc3NdkPHYBridge.h>
 
+#include "Atsc3BridgeNdkStaticJniLoader.h"
+
+#include <atsc3_core_service_player_bridge.h>
 /*
  * : public libatsc3_Iphy_mockable
  * : public IAtsc3NdkPHYClient
@@ -106,7 +109,7 @@ private:
 
 };
 
-#define NDK_PHY_BRIDGE_ERROR(...)   	__LIBATSC3_TIMESTAMP_ERROR(__VA_ARGS__);
-#define NDK_PHY_BRIDGE_INFO(...)    	__LIBATSC3_TIMESTAMP_INFO(__VA_ARGS__);
+#define _BRIDGE_NDK_PHY_ERROR(...)   	__LIBATSC3_TIMESTAMP_ERROR(__VA_ARGS__);
+#define _BRIDGE_NDK_PHY_INFO(...)    	__LIBATSC3_TIMESTAMP_INFO(__VA_ARGS__);
 
 #endif //LIBATSC3_ATSC3NDKPHYBRIDGE_H

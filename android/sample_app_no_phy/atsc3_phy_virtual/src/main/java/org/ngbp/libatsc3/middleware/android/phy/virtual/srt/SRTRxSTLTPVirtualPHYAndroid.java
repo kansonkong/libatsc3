@@ -17,8 +17,13 @@ javah -classpath ./bin/classes -d jni com.nvidia.example.fibonacci.FibonacciActi
 
 
  */
-public class SRTTransmitSTLTPVirtualPHY extends Atsc3NdkPHYVirtualStaticJniLoader  {
+public class SRTRxSTLTPVirtualPHYAndroid extends Atsc3NdkPHYVirtualStaticJniLoader  {
 
-    @Override public native int ApiInit();
+    @Override public native int init();
+    @Override public native int run();
+    @Override public native int stop();
+    @Override public native int deinit();
+
+    public native void setSrtSourceConnectionString(String srtSourceConnectionString);
 
 }
