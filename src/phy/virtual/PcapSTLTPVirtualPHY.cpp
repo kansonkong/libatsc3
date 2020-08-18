@@ -92,7 +92,7 @@ int PcapSTLTPVirtualPHY::atsc3_pcap_thread_run() {
         releasePcapConsumerThreadAsNeeded();
     });
 
-    PCAP_DEMUXED_VIRTUAL_PHY_INFO("atsc3_pcap_thread_run: threads created, pcapProducerThreadPtr id: 0x%08x, pcapConsumerThreadPtr id: 0x%08x",
+    PCAP_DEMUXED_VIRTUAL_PHY_INFO("atsc3_pcap_thread_run: threads created, pcapProducerThreadPtr id: %lu, pcapConsumerThreadPtr id: %lu",
                                   __pcapSTLTPVirtualPHY_thread_hasher__(pcapProducerThreadPtr.get_id()),
                                   __pcapSTLTPVirtualPHY_thread_hasher__(pcapConsumerThreadPtr.get_id()));
 
