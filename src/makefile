@@ -132,7 +132,9 @@ clean:
 	-rm -f phy_tests/srt_stltp_virtual_phy_test_noasan	
 	-rm -f tools/atsc3_alc_listener_mde_writer
 	-rm -f tools/atsc3_alc_listener_mde_writer_asan
-	-rm -f tools/atsc3_alc_listener_mde_writer_malloc_debug	
+	-rm -f tools/atsc3_alc_listener_mde_writer_malloc_debug
+	-rm -f tools/atsc3_srt_rx_stltp_virtual_phy_alc_listener_writer
+	-rm -f tools/atsc3_srt_rx_stltp_virtual_phy_alc_listener_writer_noasan	
 	-rm -f tools/atsc3_listener_metrics_ncurses
 	-rm -f tools/atsc3_listener_metrics_ncurses_httpd_isobmff
 	-rm -f tools/atsc3_mmt_mfu_monitor
@@ -261,7 +263,9 @@ tools: tools/atsc3_listener_metrics_ncurses \
 	tools/atsc3_mmt_mfu_monitor \
 	tools/atsc3_alc_listener_mde_writer \
 	tools/atsc3_alc_listener_mde_writer_asan \
-	tools/atsc3_mmt_listener_to_http_hls_fmp4
+	tools/atsc3_mmt_listener_to_http_hls_fmp4 \
+	tools/atsc3_srt_rx_stltp_virtual_phy_alc_listener_writer \
+	tools/atsc3_srt_rx_stltp_virtual_phy_alc_listener_writer_noasan
 
 atsc3_sl_phy: atsc3_sl_tlv_demod_type.o	\
 	test_sl/atsc3_sl_tlv_parser_to_alp_test \
@@ -1357,6 +1361,31 @@ tools/atsc3_alc_listener_mde_writer_asan: tools/atsc3_alc_listener_mde_writer.cp
 		-I../bento/include/ \
 		$(LOCAL_LD_LIBS) \
 		-o tools/atsc3_alc_listener_mde_writer_asan
+
+# jjustman-2020-08-18 - adding web-ba support tool: atsc3_srt_rx_stltp_virtual_phy_alc_listener_writer
+
+tools/atsc3_srt_rx_stltp_virtual_phy_alc_listener_writer: tools/atsc3_srt_rx_stltp_virtual_phy_alc_listener_writer.cpp libatsc3_bento4_gpl.o
+	g++ $(ASAN) $(CFLAGS) $(CXXFLAGS) $(DEBUG) \
+		$(SRT_PLATFORM_BUILD_DEFS) \
+		-I . \
+		tools/atsc3_srt_rx_stltp_virtual_phy_alc_listener_writer.cpp \
+		atsc3_srt_live_receiver.o atsc3_srt_app_libs.o SRTRxSTLTPVirtualPHY.o \
+		libatsc3_bento4_gpl.o \
+		$(LOCAL_LD_LIBS) \
+		$(LOCAL_LD_LIBS_SRT_PATH) $(LOCAL_LD_LIBS_SRT) \
+		-o tools/atsc3_srt_rx_stltp_virtual_phy_alc_listener_writer
+
+tools/atsc3_srt_rx_stltp_virtual_phy_alc_listener_writer_noasan: tools/atsc3_srt_rx_stltp_virtual_phy_alc_listener_writer.cpp libatsc3_bento4_gpl.o
+	g++  $(CFLAGS) $(CXXFLAGS) $(DEBUG) \
+		$(SRT_PLATFORM_BUILD_DEFS) \
+		-I . \
+		tools/atsc3_srt_rx_stltp_virtual_phy_alc_listener_writer.cpp \
+		atsc3_srt_live_receiver.o atsc3_srt_app_libs.o SRTRxSTLTPVirtualPHY.o \
+		libatsc3_bento4_gpl.o \
+		$(LOCAL_LD_LIBS) \
+		$(LOCAL_LD_LIBS_SRT_PATH) $(LOCAL_LD_LIBS_SRT) \
+		-o tools/atsc3_srt_rx_stltp_virtual_phy_alc_listener_writer_noasan
+
 
 #		
 # tools/atsc3_alc_listener_mde_writer_malloc_debug: tools/atsc3_alc_listener_mde_writer.cpp	libatsc3_bento4_gpl.o
