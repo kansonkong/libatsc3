@@ -9,11 +9,6 @@
 
 class Atsc3JniEnv
 {
-private:
-    JNIEnv *mJniEnv = nullptr;
-    JavaVM *mJvm    = nullptr;
-    bool mAttached  = false;
-    
 public:
     Atsc3JniEnv(JavaVM *jvm): mJvm(jvm) {
         int r = jvm->GetEnv((void **)&mJniEnv, JNI_VERSION_1_4);
@@ -31,6 +26,11 @@ public:
     JNIEnv *Get() {
         return mJniEnv;
     }
+private:
+    JNIEnv *mJniEnv = nullptr;
+    JavaVM *mJvm    = nullptr;
+    bool mAttached  = false;
+
 };
 
 #endif //LIBATSC3_ANDROID_ATSC3JNIENV_H

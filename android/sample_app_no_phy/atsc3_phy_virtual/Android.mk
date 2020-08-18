@@ -22,7 +22,9 @@ include $(CLEAR_VARS)
 LOCAL_MODULE := local-pv-atsc3_core
 LOCAL_SRC_FILES := $(LOCAL_PATH)/../atsc3_core/build/intermediates/ndkBuild/debug/obj/local/$(TARGET_ARCH_ABI)/libatsc3_core.so
 ifneq ($(MAKECMDGOALS),clean)
+	ifneq ($(MAKECMDGOALS),generateJsonModelDebug)
 include $(PREBUILT_SHARED_LIBRARY)
+	endif
 endif
 
 
@@ -38,10 +40,13 @@ endif
 include $(CLEAR_VARS)
 LOCAL_MODULE := local-pv-atsc3_bridge
 LOCAL_SRC_FILES := $(LOCAL_PATH)/../atsc3_bridge/build/intermediates/ndkBuild/debug/obj/local/$(TARGET_ARCH_ABI)/libatsc3_bridge.so
-ifneq ($(MAKECMDGOALS),clean)
-include $(PREBUILT_SHARED_LIBRARY)
-endif
 
+$(info $(MAKECMDGOALS))
+ifneq ($(MAKECMDGOALS),clean)
+	ifneq ($(MAKECMDGOALS),generateJsonModelDebug)
+include $(PREBUILT_SHARED_LIBRARY)
+	endif
+endif
 
 # ---
 # libsrt library
@@ -113,6 +118,9 @@ LOCAL_SRC_FILES += \
     $(LIBATSC3JNI_SRT_CORE_PHYVIRTUALCPP:$(LOCAL_PATH)/%=%) \
     $(LIBATSC3JNI_SRT_HAICRYPT_PHYVIRTUALCPP:$(LOCAL_PATH)/%=%)
 
+
+LOCAL_C_INCLUDES += $(LOCAL_PATH)/src/jni
+
 ##for libatsc3 application and phy interface includes
 LOCAL_C_INCLUDES += $(LOCAL_PATH)/../../../src
 LOCAL_C_INCLUDES += $(LOCAL_PATH)/../../../src/phy
@@ -152,13 +160,20 @@ LOCAL_LDFLAGS += -fPIE -fPIC -L $(LOCAL_PATH)/../atsc3_bridge/build/intermediate
 # LOCAL_SHARED_LIBRARIES := atsc3_bridge
 # ifneq ($(MAKECMDGOALS),clean)
 
-#
+ifneq ($(MAKECMDGOALS),clean)
+	ifneq ($(MAKECMDGOALS),generateJsonModelDebug)
 LOCAL_SHARED_LIBRARIES := libssl libcrypto
+	endif
+endif
+
 # libsrt atsc3_bridge atsc3_core
 
 include $(BUILD_SHARED_LIBRARY)
 
 #as per https://android-developers.googleblog.com/2020/02/native-dependencies-in-android-studio-40.html
-ifneq ($(MAKECMDGOALS),generateJsonModelDebug)
+$(info $(MAKECMDGOALS))
+ifneq ($(MAKECMDGOALS),clean)
+	ifneq ($(MAKECMDGOALS),generateJsonModelDebug)
 $(call import-module,prefab/openssl)
+	endif
 endif

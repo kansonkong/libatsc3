@@ -15,22 +15,15 @@ import java.nio.ByteBuffer;
 /*
  */
 
-public class Atsc3NdkApplicationBridge
+public class Atsc3NdkApplicationBridge extends Atsc3BridgeNdkStaticJniLoader
 {
-
     final static String TAG ="intf";
 
     IAtsc3NdkApplicationBridgeCallbacks mActivity;
 
-    public Atsc3NdkApplicationBridge(IAtsc3NdkApplicationBridgeCallbacks iAtsc3NdkApplicationBridgeCallbacks) {
-        mActivity = iAtsc3NdkApplicationBridgeCallbacks;
-    }
-
-    int onLogMsg(String msg) {
-        Log.d(TAG, msg);
-        mActivity.showMsgFromNative(msg+"\n");
-        return 0;
-    }
+    //native jni methods
+    @Override
+    public native int init();
 
     //service invocation change methods
     public native int atsc3_slt_selectService(int service_id);                  //select either single MMT or ROUTE service
@@ -40,6 +33,17 @@ public class Atsc3NdkApplicationBridge
     //NOTE: these methods may return an empty collection if the MBMS carousel or S-TSID has not been received after selecting service/additional_service
     public native String[] atsc3_slt_alc_get_sls_metadata_fragments_content_locations_from_monitor_service_id(int service_id, String to_match_content_type);
     public native String[] atsc3_slt_alc_get_sls_route_s_tsid_fdt_file_content_locations_from_monitor_service_id(int service_id);
+
+    public Atsc3NdkApplicationBridge(IAtsc3NdkApplicationBridgeCallbacks iAtsc3NdkApplicationBridgeCallbacks) {
+        mActivity = iAtsc3NdkApplicationBridgeCallbacks;
+        init();
+    }
+
+    int onLogMsg(String msg) {
+        Log.d(TAG, msg);
+        mActivity.showMsgFromNative(msg+"\n");
+        return 0;
+    }
 
     int atsc3_onSlsTablePresent(String sls_payload_xml) {
 

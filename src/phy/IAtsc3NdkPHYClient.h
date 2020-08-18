@@ -8,6 +8,7 @@
 
 typedef void(*atsc3_phy_rx_udp_packet_process_callback_f)(uint8_t plp_num, block_t* block);
 
+//jjustman-2020-08-18 - todo: refactor these to lowercase names
 class IAtsc3NdkPHYClient {
 
 	public:
@@ -32,7 +33,7 @@ class IAtsc3NdkPHYClient {
 		 */
 
 	protected:
-		atsc3_phy_rx_udp_packet_process_callback_f atsc3_phy_rx_udp_packet_process_callback;
+		atsc3_phy_rx_udp_packet_process_callback_f atsc3_phy_rx_udp_packet_process_callback = nullptr;
 };
 
 

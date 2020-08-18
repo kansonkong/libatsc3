@@ -21,12 +21,13 @@
 uint64_t rx_udp_invocation_count = 0;
 
 void phy_rx_udp_packet_process_callback(uint8_t plp_num, block_t* packet) {
-//	if((rx_udp_invocation_count % 10) == 0) {
+	if((rx_udp_invocation_count % 1000) == 0) {
 		_SRT_STLTP_VIRTUAL_TEST_DEBUG("PLP: %d, packet number: %llu, packet: %p, len: %d",
 				plp_num, rx_udp_invocation_count, packet, packet->p_size);
 
-		rx_udp_invocation_count++;
-//	}
+	}
+	rx_udp_invocation_count++;
+
 }
 
 int test_srt_stltp_with_bna_rx() {
@@ -43,18 +44,15 @@ int test_srt_stltp_with_bna_rx() {
 
 	double srt_thread_run_start_time = gt();
 
+	int loop_count = 0;
+	bool should_break = false;
 	sleep(1);
-	while((gt() - srt_thread_run_start_time) < 60 ) {
+	while((gt() - srt_thread_run_start_time) < 60 &&  !should_break) {
 		usleep(1000000);
 		_SRT_STLTP_VIRTUAL_TEST_INFO("srt_is_running: %d", srtRxSTLTPVirtualPHY->is_srt_running());
-
-//		atsc3_pcap_replay_context_volitale = srtRxSTLTPVirtualPHY->get_pcap_replay_context_status_volatile();
-//		//not mutexed, but shouldn't be disposed until we invoke atsc3_pcap_thread_stop
-//		if(atsc3_pcap_replay_context_volitale) {
-//			_SRT_STLTP_VIRTUAL_TEST_DEBUG("pcap_file_pos: %d, pcap_file_len: %d",
-//					atsc3_pcap_replay_context_volitale->pcap_file_pos,
-//					atsc3_pcap_replay_context_volitale->pcap_file_len);
-//		}
+		if(loop_count++ > 10) {
+			should_break = !srtRxSTLTPVirtualPHY->is_srt_running();
+		}
 	}
 	double srt_thread_run_end_time = gt();
 

@@ -428,12 +428,3 @@ Java_org_ngbp_libatsc3_middleware_atsc3NdkPHYBridge_setRfPhyStatisticsViewVisibl
     return 0;
 }
 
-
-int Atsc3NdkPHYBridge::ListenPLP1(int plp1) {
-    //apiImpl.ListenPLP1(plp1);
-    return 0;
-}
-
-extern "C"
-JNIEXPORT jintextern "C"
-JNIEXPORT jint
