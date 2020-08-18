@@ -174,7 +174,12 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     private Boolean inputSelectionFromSRT = false;
     private SRTRxSTLTPVirtualPHYAndroid srtRxSTLTPVirtualPHYAndroid;
 
-    private String prebuiltAssetsForDeviceSelectionVirtualPHY[] = { "srt://bna.srt.atsc3.com:31347?passphrase=88731837-0EB5-4951-83AA-F515B3BEBC20", "--", "pcaps/2019-10-29-239.0.0.18.PLP.1.decoded.pcap", "pcaps/2019-12-17-lab-digi-alp.pcap" };
+    private String prebuiltAssetsForDeviceSelectionVirtualPHY[] = {
+            "srt://bna.srt.atsc3.com:31347?passphrase=88731837-0EB5-4951-83AA-F515B3BEBC20",
+            "srt://las.srt.atsc3.com:31350?passphrase=A166AC45-DB7C-4B68-B957-09B8452C76A4",
+            "--",
+            "pcaps/2019-10-29-239.0.0.18.PLP.1.decoded.pcap",
+            "pcaps/2019-12-17-lab-digi-alp.pcap" };
 
     public PcapDemuxedPHYVirtualAndroid demuxedPcapVirtualPHY;
 
@@ -692,7 +697,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                   //notify libatsc3 service selection
                   selectedServiceSLSProtocol = atsc3NdkApplicationBridge.atsc3_slt_selectService(service.serviceId);
                   if(!serviceSpinnerLastSelectionFromArrayAdapterUpdate) {
-                      clearDebugTextViewFields();
+                      //clearDebugTextViewFields();
                   }
                   if (selectedServiceSLSProtocol > 0) {
                       selectedServiceId = selectedServiceId;
