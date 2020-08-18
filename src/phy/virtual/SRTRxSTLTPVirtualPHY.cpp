@@ -11,6 +11,8 @@ SRTRxSTLTPVirtualPHY::SRTRxSTLTPVirtualPHY() {
 
 	atsc3_stltp_depacketizer_context->atsc3_stltp_baseband_alp_packet_collection_callback_with_context = &SRTRxSTLTPVirtualPHY::Atsc3_stltp_baseband_alp_packet_collection_callback_with_context;
 	atsc3_stltp_depacketizer_context->atsc3_stltp_baseband_alp_packet_collection_callback_context = (void*)this;
+
+	atsc3_stltp_depacketizer_context_set_all_plps(atsc3_stltp_depacketizer_context);
 }
 
 SRTRxSTLTPVirtualPHY::SRTRxSTLTPVirtualPHY(string srtConnectionSource) : SRTRxSTLTPVirtualPHY() {

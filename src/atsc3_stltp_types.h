@@ -5,11 +5,11 @@
  *      Author: jjustman
  */
 
-#ifndef ATSC3_STLTP_TYPES_H_
-#define ATSC3_STLTP_TYPES_H_
-
 #include <stdint.h>
 #include <stdbool.h>
+
+#ifndef ATSC3_STLTP_TYPES_H_
+#define ATSC3_STLTP_TYPES_H_
 
 #include "atsc3_vector_builder.h"
 #include "atsc3_logging_externs.h"
@@ -89,6 +89,8 @@ typedef struct atsc3_stltp_baseband_packet {
 
     //for reference between stltp inner -> baseband -> alp
     atsc3_baseband_packet_t        atsc3_baseband_packet;
+
+    uint8_t 					   plp_num;
 
 } atsc3_stltp_baseband_packet_t;
 
@@ -506,7 +508,24 @@ typedef struct atsc3_stltp_timing_management_packet {
 /*
  jjustman-2019-07-23: note: when parsing the stltp tunnel outer/inner, only seek against packet_outer,
                             use inner when parsing out baseband/preamble/timing packet handoffs only
+
+                            //incomplete packet for fragmentation
+
+atsc3_stltp_tunnel_packet_set_baseband_packet_pending_from_inner_rtp_for_plp(atsc3_stltp_depacketizer_context, atsc3_stltp_tunnel_packet_current->ip_udp_rtp_packet_inner, atsc3_stltp_tunnel_packet_current);
+
  */
+
+typedef struct atsc3_alp_packet atsc3_alp_packet_t;
+
+typedef struct atsc3_stltp_tunnel_baseband_packet_pending_by_plp {
+
+    atsc3_stltp_baseband_packet_t*          atsc3_stltp_baseband_packet_pending;
+    block_t*                                atsc3_baseband_packet_short_fragment;
+
+    atsc3_alp_packet_t*             		atsc3_alp_packet_pending;
+
+} atsc3_stltp_tunnel_baseband_packet_pending_by_plp_t;
+
 typedef struct atsc3_stltp_tunnel_packet {
 
     //outer RTP packet pointer, make sure to seek 40 bytes for IP/UDP/RTP header offset
@@ -525,9 +544,9 @@ typedef struct atsc3_stltp_tunnel_packet {
 
 	//atsc3_stltp_baseband_packet_t* 		atsc3_stltp_baseband_packet;
     ATSC3_VECTOR_BUILDER_STRUCT(atsc3_stltp_baseband_packet);
-    atsc3_stltp_baseband_packet_t*          atsc3_stltp_baseband_packet_pending;
-    block_t*                                atsc3_baseband_packet_short_fragment;
     
+    atsc3_stltp_tunnel_baseband_packet_pending_by_plp_t* atsc3_stltp_tunnel_baseband_packet_pending_by_plp;
+
 	//atsc3_stltp_preamble_packet_t* 		atsc3_stltp_preamble_packet;
     ATSC3_VECTOR_BUILDER_STRUCT(atsc3_stltp_preamble_packet);
     atsc3_stltp_preamble_packet_t*          atsc3_stltp_preamble_packet_pending;
@@ -541,8 +560,11 @@ typedef struct atsc3_stltp_tunnel_packet {
 
 } atsc3_stltp_tunnel_packet_t;
 
+
+
 ATSC3_VECTOR_BUILDER_METHODS_INTERFACE(atsc3_stltp_tunnel_packet, atsc3_stltp_baseband_packet);
 atsc3_stltp_baseband_packet_t* atsc3_stltp_baseband_packet_new_and_init(atsc3_stltp_tunnel_packet_t* atsc3_stltp_tunnel_packet);
+void atsc3_baseband_packet_set_plp_from_stltp_baseband_packet(atsc3_baseband_packet_t* atsc3_baseband_packet, atsc3_stltp_baseband_packet_t* atsc3_stltp_baseband_packet);
 
 ATSC3_VECTOR_BUILDER_METHODS_INTERFACE(atsc3_stltp_tunnel_packet, atsc3_stltp_preamble_packet);
 ATSC3_VECTOR_BUILDER_METHODS_INTERFACE(atsc3_stltp_tunnel_packet, atsc3_stltp_timing_management_packet);
