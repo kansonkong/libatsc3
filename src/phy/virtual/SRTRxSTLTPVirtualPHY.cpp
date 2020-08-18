@@ -241,13 +241,15 @@ int SRTRxSTLTPVirtualPHY::srtConsumerThreadRun() {
             //critical section
             unique_lock<mutex> condition_lock(srt_rx_buffer_queue_mutex);
             srt_rx_condition.wait(condition_lock);
+            unique_lock<mutex> srt_replay_buffer_queue_guard(srt_rx_live_receiver_buffer_queue_mutex);
 
-            while (srt_rx_buffer_queue.size()) {
-                to_dispatch_queue.push(srt_rx_buffer_queue.front());
-                srt_rx_buffer_queue.pop();
+            while (srt_rx_live_receiver_buffer_queue.size()) {
+                to_dispatch_queue.push(srt_rx_live_receiver_buffer_queue.front());
+                srt_rx_live_receiver_buffer_queue.pop();
             }
+            srt_replay_buffer_queue_guard.unlock();
             condition_lock.unlock();
-            srt_rx_condition.notify_one();
+            //srt_rx_condition.notify_one();
         }
 
         //printf("SRTRxSTLTPVirtualPHY::srtConsumerThreadRun - pushing %d packets", to_dispatch_queue.size());
@@ -280,13 +282,16 @@ void SRTRxSTLTPVirtualPHY::Atsc3_srt_live_rx_udp_packet_process_callback_with_co
 	srtRxSTLTPVirtualPHY->atsc3_srt_live_rx_udp_packet_received(block);
 }
 
+#define _ATSC3_SRT_STLTP_LIVE_BUFFER_QUEUE_RX_CONDITION_NOTIFY_QUEUE_SIZE_ 50
 //hand this SRT datagram off to our STLTP listener queue
 //jjustman-2020-08-17 - TODO: SRT flows are only a single dip:dport, so we will need to configure the STLTP context accordingly with the first packet from our received flow...
 //jjustman-2020-08-17 - TODO: buffer this as needed with an internal queue and then push to srt_rx_buffer_queue
 void SRTRxSTLTPVirtualPHY::atsc3_srt_live_rx_udp_packet_received(block_t* block) {
-	lock_guard<mutex> srt_replay_buffer_queue_guard(srt_rx_buffer_queue_mutex);
-	srt_rx_buffer_queue.push(block_Duplicate(block));
-	srt_rx_condition.notify_one();
+	lock_guard<mutex> srt_replay_buffer_queue_guard(srt_rx_live_receiver_buffer_queue_mutex);
+	srt_rx_live_receiver_buffer_queue.push(block_Duplicate(block));
+	if(srt_rx_live_receiver_buffer_queue.size() > _ATSC3_SRT_STLTP_LIVE_BUFFER_QUEUE_RX_CONDITION_NOTIFY_QUEUE_SIZE_) {
+		srt_rx_condition.notify_one();
+	}
 }
 
 

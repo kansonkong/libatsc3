@@ -913,7 +913,7 @@ void atsc3_mmt_mpu_mfu_on_sample_complete_ndk(uint16_t packet_id, uint32_t mpu_s
         }
         Atsc3NdkApplicationBridge_ptr->atsc3_onMfuPacket(packet_id, mpu_sequence_number, sample_number, block_ptr, block_len, mpu_timestamp_descriptor, mfu_fragment_count_rebuilt);
 
-        block_Release(&mmt_mfu_sample_rbsp);
+        block_Destroy(&mmt_mfu_sample_rbsp);
     } else {
         block_Rewind(mmt_mfu_sample);
         uint8_t *block_ptr = block_Get(mmt_mfu_sample);
@@ -979,7 +979,7 @@ void atsc3_mmt_mpu_mfu_on_sample_corrupt_ndk(uint16_t packet_id, uint32_t mpu_se
 
             Atsc3NdkApplicationBridge_ptr->atsc3_onMfuPacketCorrupt(packet_id, mpu_sequence_number, sample_number, block_ptr, block_len, mpu_timestamp_descriptor, mfu_fragment_count_expected, mfu_fragment_count_rebuilt);
 
-            block_Release(&mmt_mfu_sample_rbsp);
+            block_Destroy(&mmt_mfu_sample_rbsp);
          } else {
             __ERROR("atsc3_mmt_mpu_mfu_on_sample_corrupt_ndk: mmt_mfu_sample: %p (len: %d) - returned null mmt_mfu_sample_rbsp!", mmt_mfu_sample, mmt_mfu_sample ? mmt_mfu_sample->p_size : -1);
         }
@@ -1038,7 +1038,7 @@ void atsc3_mmt_mpu_mfu_on_sample_corrupt_mmthsample_header_ndk(uint16_t packet_i
 
             Atsc3NdkApplicationBridge_ptr->atsc3_onMfuPacketCorruptMmthSampleHeader(packet_id, mpu_sequence_number, sample_number, block_ptr, block_len, mpu_timestamp_descriptor, mfu_fragment_count_expected, mfu_fragment_count_rebuilt);
 
-            block_Release(&mmt_mfu_sample_rbsp);
+            block_Destroy(&mmt_mfu_sample_rbsp);
         }
     } else {
         uint8_t *block_ptr = block_Get(mmt_mfu_sample);
