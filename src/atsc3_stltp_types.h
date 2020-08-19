@@ -560,7 +560,7 @@ typedef struct atsc3_stltp_tunnel_packet {
 
 } atsc3_stltp_tunnel_packet_t;
 
-
+bool atsc3_stltp_tunnel_packet_is_rtp_packet_outer_sequence_number_contiguous(atsc3_stltp_tunnel_packet_t* atsc3_stltp_tunnel_packet_last, atsc3_stltp_tunnel_packet_t* atsc3_stltp_tunnel_packet_current);
 
 ATSC3_VECTOR_BUILDER_METHODS_INTERFACE(atsc3_stltp_tunnel_packet, atsc3_stltp_baseband_packet);
 atsc3_stltp_baseband_packet_t* atsc3_stltp_baseband_packet_new_and_init(atsc3_stltp_tunnel_packet_t* atsc3_stltp_tunnel_packet);

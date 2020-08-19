@@ -20,10 +20,10 @@
 extern "C" {
 #endif
 
-typedef void(*atsc3_stltp_baseband_alp_packet_collection_callback_f)(uint8_t plp, atsc3_alp_packet_collection_t* atsc3_alp_packet_collection);
-typedef void(*atsc3_stltp_baseband_alp_packet_collection_callback_with_context_f)(uint8_t plp, atsc3_alp_packet_collection_t* atsc3_alp_packet_collection, void* context);
+typedef void(*atsc3_stltp_baseband_alp_packet_collection_callback_f)(atsc3_alp_packet_collection_t* atsc3_alp_packet_collection);
+typedef void(*atsc3_stltp_baseband_alp_packet_collection_callback_with_context_f)(atsc3_alp_packet_collection_t* atsc3_alp_packet_collection, void* context);
 
-typedef void(*atsc3_stltp_baseband_alp_packet_collection_callback_with_pcap_device_reference_f)(uint8_t plp, atsc3_alp_packet_collection_t* atsc3_alp_packet_collection, pcap_t* atsc3_baseband_alp_output_pcap_device_reference); //used for re-injection
+typedef void(*atsc3_stltp_baseband_alp_packet_collection_callback_with_pcap_device_reference_f)(atsc3_alp_packet_collection_t* atsc3_alp_packet_collection, pcap_t* atsc3_baseband_alp_output_pcap_device_reference); //used for re-injection
 
 //jjustman-2020-08-11- TODO: extend this to contain the relevant bootstrap reference emission time for re-modulation
 

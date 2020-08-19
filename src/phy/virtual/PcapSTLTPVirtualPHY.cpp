@@ -293,17 +293,17 @@ int PcapSTLTPVirtualPHY::PcapConsumerThreadRun() {
 }
 
 
-void PcapSTLTPVirtualPHY::Atsc3_stltp_baseband_alp_packet_collection_callback_with_context(uint8_t plp, atsc3_alp_packet_collection_t* atsc3_alp_packet_collection, void* context) {
+void PcapSTLTPVirtualPHY::Atsc3_stltp_baseband_alp_packet_collection_callback_with_context(atsc3_alp_packet_collection_t* atsc3_alp_packet_collection, void* context) {
 	PcapSTLTPVirtualPHY* pcapSTLTPVirtualPHY = (PcapSTLTPVirtualPHY*)context;
 
-	pcapSTLTPVirtualPHY->atsc3_stltp_baseband_alp_packet_collection_received(plp, atsc3_alp_packet_collection);
+	pcapSTLTPVirtualPHY->atsc3_stltp_baseband_alp_packet_collection_received(atsc3_alp_packet_collection);
 }
 
 /*
  * jjustman-2020-08-11: NOTE - we will only process ALP packets here with packet_type = 0x0
  *
  */
-void PcapSTLTPVirtualPHY::atsc3_stltp_baseband_alp_packet_collection_received(uint8_t plp, atsc3_alp_packet_collection_t* atsc3_alp_packet_collection) {
+void PcapSTLTPVirtualPHY::atsc3_stltp_baseband_alp_packet_collection_received(atsc3_alp_packet_collection_t* atsc3_alp_packet_collection) {
 
 	for(int i=0; i < atsc3_alp_packet_collection->atsc3_alp_packet_v.count; i++) {
 		atsc3_alp_packet_t* atsc3_alp_packet = atsc3_alp_packet_collection->atsc3_alp_packet_v.data[i];
@@ -311,7 +311,7 @@ void PcapSTLTPVirtualPHY::atsc3_stltp_baseband_alp_packet_collection_received(ui
 
 		//if we are an IP packet, push this via our IAtsc3NdkPHYClient callback
 		if(atsc3_phy_rx_udp_packet_process_callback && atsc3_alp_packet && atsc3_alp_packet->alp_packet_header.packet_type == 0x0) {
-			atsc3_phy_rx_udp_packet_process_callback(plp, atsc3_alp_packet->alp_payload);
+			atsc3_phy_rx_udp_packet_process_callback(atsc3_alp_packet->plp_num, atsc3_alp_packet->alp_payload);
 		}
 	}
 }
