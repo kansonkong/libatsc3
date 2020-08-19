@@ -82,7 +82,7 @@ void atsc3_stltp_depacketizer_from_ip_udp_rtp_packet(atsc3_ip_udp_rtp_packet_t* 
 							//hack to carry over 1 (or N) byte payload(s) that is too small from our last run...trumps pending packets
 					if(atsc3_stltp_tunnel_packet_processed->atsc3_stltp_tunnel_baseband_packet_pending_by_plp->atsc3_baseband_packet_short_fragment) {
 						if(atsc3_baseband_packet->alp_payload_pre_pointer) {
-							__WARN("atsc3_baseband_packet: carry over: atsc3_baseband_packet_short_fragment: atsc3_baseband_packet_short_fragment: ptr: %p, size: %d, alp_payload_pre_pointer: ptr: %p, size: %d, new size: %d, sequence: %d, port: %d",
+							__DEBUG("atsc3_baseband_packet: carry over: atsc3_baseband_packet_short_fragment: atsc3_baseband_packet_short_fragment: ptr: %p, size: %d, alp_payload_pre_pointer: ptr: %p, size: %d, new size: %d, sequence: %d, port: %d",
 								  atsc3_stltp_tunnel_packet_processed->atsc3_stltp_tunnel_baseband_packet_pending_by_plp->atsc3_baseband_packet_short_fragment,
 								  atsc3_stltp_tunnel_packet_processed->atsc3_stltp_tunnel_baseband_packet_pending_by_plp->atsc3_baseband_packet_short_fragment->p_size,
 								  atsc3_baseband_packet->alp_payload_pre_pointer,
@@ -272,7 +272,14 @@ void atsc3_stltp_depacketizer_from_ip_udp_rtp_packet(atsc3_ip_udp_rtp_packet_t* 
                         uint32_t remaining_size = block_Remaining_size(atsc3_baseband_packet->alp_payload_post_pointer);
                         if(remaining_size) {
                             atsc3_stltp_tunnel_packet_processed->atsc3_stltp_tunnel_baseband_packet_pending_by_plp->atsc3_baseband_packet_short_fragment = block_Duplicate_from_position(atsc3_baseband_packet->alp_payload_post_pointer);
-                            __WARN("atsc3_stltp_tunnel_packet_processed->atsc3_stltp_tunnel_baseband_packet_pending_by_plp->atsc3_baseband_packet_short_fragment: Carrying over due to short ALP packet, alp_payload_post_pointer remaining size: %d, peek: 0x%02x", remaining_size, atsc3_stltp_tunnel_packet_processed->atsc3_stltp_tunnel_baseband_packet_pending_by_plp->atsc3_baseband_packet_short_fragment->p_buffer[0]);
+                            __DEBUG("atsc3_stltp_tunnel_packet_processed->atsc3_stltp_tunnel_baseband_packet_pending_by_plp->atsc3_baseband_packet_short_fragment: %p, Carrying over due to short ALP packet, port: %d, sequence: %d, alp_payload_post_pointer remaining size: %d (pos: %d, len: %d), peek: 0x%02x",
+                            		atsc3_stltp_tunnel_packet_processed->atsc3_stltp_tunnel_baseband_packet_pending_by_plp->atsc3_baseband_packet_short_fragment,
+									atsc3_stltp_baseband_packet->ip_udp_rtp_packet_inner->udp_flow.dst_port,
+									atsc3_stltp_baseband_packet->ip_udp_rtp_packet_inner->rtp_header->sequence_number,
+									remaining_size,
+									atsc3_stltp_tunnel_packet_processed->atsc3_stltp_tunnel_baseband_packet_pending_by_plp->atsc3_baseband_packet_short_fragment->i_pos,
+									atsc3_stltp_tunnel_packet_processed->atsc3_stltp_tunnel_baseband_packet_pending_by_plp->atsc3_baseband_packet_short_fragment->p_size,
+									atsc3_stltp_tunnel_packet_processed->atsc3_stltp_tunnel_baseband_packet_pending_by_plp->atsc3_baseband_packet_short_fragment->p_buffer[0]);
                         }
                     } else {
                     	_ATSC3_STLTP_DEPACKETIZER_DEBUG("atsc3_alp_packet_pending: no alp_payload_post_pointer - carrying over pkt: %p", atsc3_stltp_tunnel_packet_processed->atsc3_stltp_tunnel_baseband_packet_pending_by_plp->atsc3_alp_packet_pending);
@@ -283,18 +290,18 @@ void atsc3_stltp_depacketizer_from_ip_udp_rtp_packet(atsc3_ip_udp_rtp_packet_t* 
 
             //send our ALP IP packets, then clear the collection
             if(atsc3_stltp_depacketizer_context->atsc3_stltp_baseband_alp_packet_collection_callback) {
-            	atsc3_stltp_depacketizer_context->atsc3_stltp_baseband_alp_packet_collection_callback(atsc3_stltp_depacketizer_context_get_plp_from_context(atsc3_stltp_depacketizer_context), atsc3_alp_packet_collection);
+            	atsc3_stltp_depacketizer_context->atsc3_stltp_baseband_alp_packet_collection_callback(atsc3_alp_packet_collection);
             }
 
         	//generic context for class instance re-scoping
             if(atsc3_stltp_depacketizer_context->atsc3_stltp_baseband_alp_packet_collection_callback_with_context && atsc3_stltp_depacketizer_context->atsc3_stltp_baseband_alp_packet_collection_callback_context) {
-            	atsc3_stltp_depacketizer_context->atsc3_stltp_baseband_alp_packet_collection_callback_with_context(atsc3_stltp_depacketizer_context_get_plp_from_context(atsc3_stltp_depacketizer_context), atsc3_alp_packet_collection, atsc3_stltp_depacketizer_context->atsc3_stltp_baseband_alp_packet_collection_callback_context);
+            	atsc3_stltp_depacketizer_context->atsc3_stltp_baseband_alp_packet_collection_callback_with_context(atsc3_alp_packet_collection, atsc3_stltp_depacketizer_context->atsc3_stltp_baseband_alp_packet_collection_callback_context);
             }
 
 
             //explicit callback context for pcap_t reflection
             if(atsc3_stltp_depacketizer_context->atsc3_stltp_baseband_alp_packet_collection_callback_with_pcap_device_reference && atsc3_stltp_depacketizer_context->atsc3_baseband_alp_output_pcap_device_reference) {
-            	atsc3_stltp_depacketizer_context->atsc3_stltp_baseband_alp_packet_collection_callback_with_pcap_device_reference(atsc3_stltp_depacketizer_context_get_plp_from_context(atsc3_stltp_depacketizer_context), atsc3_alp_packet_collection, atsc3_stltp_depacketizer_context->atsc3_baseband_alp_output_pcap_device_reference);
+            	atsc3_stltp_depacketizer_context->atsc3_stltp_baseband_alp_packet_collection_callback_with_pcap_device_reference(atsc3_alp_packet_collection, atsc3_stltp_depacketizer_context->atsc3_baseband_alp_output_pcap_device_reference);
             }
 
             //TODO: jjustman-2019-11-23: move this to atsc3_alp_packet_free ATSC3_VECTOR_BUILDER free method
@@ -361,8 +368,12 @@ cleanup:
     atsc3_ip_udp_rtp_packet_destroy(&ip_udp_rtp_packet);
 }
 
-/*
- * note: packet ownership is transferred to atsc3_stltp_depacketizer and ip_udp_rtp packet, so do NOT try and free *block_t unless we return false;
+/* jjustman-2020-08-18 - TODO: verify this...
+ *
+ * note: packet ownership is transferred to atsc3_stltp_depacketizer of ip_udp_rtp packet,
+ * so do NOT try and free ip_udp_rtp
+ *
+ * *block_t unless we return false;
  */
 bool atsc3_stltp_depacketizer_from_blockt(block_t** packet_p, atsc3_stltp_depacketizer_context_t* atsc3_stltp_depacketizer_context) {
 	atsc3_ip_udp_rtp_packet_t* ip_udp_rtp_packet = atsc3_ip_udp_rtp_packet_process_from_blockt_pos(*packet_p);
@@ -371,6 +382,7 @@ bool atsc3_stltp_depacketizer_from_blockt(block_t** packet_p, atsc3_stltp_depack
 	}
 
 	atsc3_stltp_depacketizer_from_ip_udp_rtp_packet(ip_udp_rtp_packet, atsc3_stltp_depacketizer_context);
+	block_Destroy(packet_p);
 	*packet_p = NULL;
 	return true;
 }

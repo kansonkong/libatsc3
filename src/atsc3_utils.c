@@ -204,9 +204,9 @@ block_t* block_Alloc(int size_requested) {
 	block_t* new_block = (block_t*)calloc(1, sizeof(block_t));
 	assert(new_block);
 
-	//calloc an extra byte in case we forget to add in null padding for strings, but don't update the p_size with this margin of safey,
+	//calloc an extra byte in case we forget to add in null padding for strings, but don't update the p_size with this margin of safety (16 bytes)
 	//align if size_requested > 0, otherwise alloc 8 as a dummy alloc block
-	uint32_t aligned_size = size_requested ? size_requested + 8 + (8 - (size_requested %8))    :    8;
+	uint32_t aligned_size = size_requested ? size_requested + 16 + (8 - (size_requested %8))    :    8;
 
 	#ifdef __MALLOC_TRACE
 	    _ATSC3_UTILS_INFO("block_Alloc: original size requested: %u, aligned size: %u, alignment factor: %f", src_size_required, aligned_size, aligned_size/8.0);
@@ -219,9 +219,9 @@ block_t* block_Alloc(int size_requested) {
 	new_block->i_pos = 0;
     new_block->_refcnt = 1;
     new_block->_is_alloc = 1;
-    new_block->_a_size = aligned_size - 1; //guard edge
+    new_block->_a_size = aligned_size - 8; //guard edge
 
-	return new_block;
+    return new_block;
 }
 
 bool block_IsAlloc(block_t* block) {
@@ -709,6 +709,7 @@ void block_Destroy(block_t** a_ptr) {
         if(a->p_buffer) {
             a->i_pos = 0;
             a->p_size = 0;
+            a->_a_size = 0;
             free(a->p_buffer);
             a->p_buffer = NULL;
             free(a);
@@ -949,7 +950,7 @@ uint16_t parsePortIntoIntval(char* dst_port) {
 //alloc and copy - note limited to 16k
 char* strlcopy(char* src) {
 	int len = strnlen(src, 16384);
-	char* dest = (char*)calloc(len, sizeof(char*));
+	char* dest = (char*)calloc(len+1, sizeof(char));
 	return strncpy(dest, src, len);
 }
 
@@ -1026,13 +1027,11 @@ int mkpath(char *dir, mode_t mode)
     return ret;
 }
 
-
+//don't care if it exists or not, just open the object...
 FILE* atsc3_object_open(char* file_name) {
-	if( access( file_name, F_OK ) != -1 ) {
-		FILE* f = fopen(file_name, "r+");
-		if(f) {
-			return f;
-		}
+	FILE* f = fopen(file_name, "w+");
+	if(f) {
+		return f;
 	}
 
 	return NULL;

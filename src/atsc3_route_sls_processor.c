@@ -195,8 +195,36 @@ void atsc3_route_sls_process_from_alc_packet_and_file(udp_flow_t* udp_flow, atsc
 			lls_sls_alc_monitor->atsc3_sls_metadata_fragments = atsc3_sls_metadata_fragments_pending;
 			lls_sls_alc_monitor->atsc3_sls_metadata_fragments_pending = NULL;
 			
+		} else if (lls_sls_alc_monitor && lls_sls_alc_monitor->atsc3_sls_metadata_fragments) {
+			//perform a sanity check to make sure our sls fragments are present on disk, this should not normally happen with a monitored service and atsc3_route_object, which will avoid eviction for SLS fragments
+
+			for(int i=0; i < lls_sls_alc_monitor->atsc3_sls_metadata_fragments->atsc3_mime_multipart_related_instance->atsc3_mime_multipart_related_payload_v.count; i++) {
+				bool should_check_sls_fragment_on_disk_present = true;
+
+				atsc3_mime_multipart_related_payload_t* atsc3_mime_multipart_related_payload = lls_sls_alc_monitor->atsc3_sls_metadata_fragments->atsc3_mime_multipart_related_instance->atsc3_mime_multipart_related_payload_v.data[i];
+				if(!atsc3_mime_multipart_related_payload->content_type) {
+					_ATSC3_ROUTE_SLS_PROCESSOR_TRACE("atsc3_route_sls_process_from_alc_packet_and_file: content_type is null for tsi/toi:%u/%u", alc_packet->def_lct_hdr->tsi, alc_packet->def_lct_hdr->toi);
+				} else {
+					//jjustman-2020-08-05 - we can re-flush our mpd only if we have patched it (reference block_t assignment in lls_sls_alc_monitor->last_mpd_payload_patched)
+					if(strncmp(atsc3_mime_multipart_related_payload->content_type, ATSC3_ROUTE_MPD_TYPE, __MIN(strlen(atsc3_mime_multipart_related_payload->content_type), strlen(ATSC3_ROUTE_MPD_TYPE))) == 0) {
+						should_check_sls_fragment_on_disk_present = (lls_sls_alc_monitor->last_mpd_payload_patched && lls_sls_alc_monitor->last_mpd_payload_patched->p_size);
+					}
+				}
+
+				if(should_check_sls_fragment_on_disk_present) {
+					char* mbms_filename = atsc3_sls_generate_filename_from_atsc3_mime_multipart_related_payload(atsc3_mime_multipart_related_payload, lls_sls_alc_monitor);
+					struct stat st = {0};
+					if(stat(mbms_filename, &st) != 0) {
+						int32_t bytes_written = atsc3_sls_write_mime_multipart_related_payload_to_file(atsc3_mime_multipart_related_payload, lls_sls_alc_monitor);
+						_ATSC3_ROUTE_SLS_PROCESSOR_INFO("atsc3_route_sls_process_from_alc_packet_and_file: lls_sls_alc_monitor fragment check for on-disk object: %s missing, re-persisting with size: %d", mbms_filename, bytes_written);
+					}
+					freesafe((void*)mbms_filename);
+				}
+			}
+
+
 		} else {
-			_ATSC3_ROUTE_SLS_PROCESSOR_TRACE("No pending atsc3_fdt_instance to process in TSI:0");
+			_ATSC3_ROUTE_SLS_PROCESSOR_TRACE("No lls_sls_alc_monitor and no pending atsc3_fdt_instance to process in TSI:0!");
 			goto cleanup;
 		}
 	}
@@ -415,11 +443,12 @@ bool atsc3_route_sls_patch_mpd_availability_start_time_and_start_number(atsc3_mi
             //        123456789012345678901
             //                 1         2
 
-            //jjustman-2020-05-06 - hack, linux strftime will truncate 1 character short, ignore since we are null padded
+	    //jjustman-2020-05-06 - hack, linux strftime will truncate 1 character short, ignore since we are null padded
             char iso_now_timestamp[_ISO8601_DATE_TIME_LENGTH_ + 2] = { 0 };
             strftime((char*)&iso_now_timestamp, _ISO8601_DATE_TIME_LENGTH_+1, "%Y-%m-%dT%H:%M:%SZ", gmtime(&now));
 
             char* to_start_ptr = (char*) atsc3_mime_multipart_related_payload->payload->p_buffer + ast_char_pos_end + 1;
+ 
             /*
             _ATSC3_ROUTE_SLS_PROCESSOR_WARN("atsc3_route_sls_patch_mpd_availability_start_time_and_start_number: patching mpd availabilityStartTime: from %.20s to %s, v: last_video_toi: %d, last_closed_video_toi: %d, a: last_audio_toi: %d, last_closed_audio_toi: %d, stpp: last_text_toi: %d, last_closed_text_toi: %d",
                                             to_start_ptr, (char*)iso_now_timestamp,

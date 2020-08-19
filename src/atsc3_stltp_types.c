@@ -55,6 +55,24 @@ ATSC3_VECTOR_BUILDER_METHODS_IMPLEMENTATION(atsc3_stltp_tunnel_packet, atsc3_stl
 ATSC3_VECTOR_BUILDER_METHODS_IMPLEMENTATION(atsc3_stltp_tunnel_packet, atsc3_stltp_preamble_packet);
 ATSC3_VECTOR_BUILDER_METHODS_IMPLEMENTATION(atsc3_stltp_tunnel_packet, atsc3_stltp_timing_management_packet);
 
+bool atsc3_stltp_tunnel_packet_is_rtp_packet_outer_sequence_number_contiguous(atsc3_stltp_tunnel_packet_t* atsc3_stltp_tunnel_packet_last, atsc3_stltp_tunnel_packet_t* atsc3_stltp_tunnel_packet_current) {
+	bool is_sequence_number_contiguous = false;
+	if(atsc3_stltp_tunnel_packet_last && atsc3_stltp_tunnel_packet_last->ip_udp_rtp_packet_outer && atsc3_stltp_tunnel_packet_last->ip_udp_rtp_packet_outer->rtp_header &&
+	   atsc3_stltp_tunnel_packet_current && atsc3_stltp_tunnel_packet_current->ip_udp_rtp_packet_outer && atsc3_stltp_tunnel_packet_current->ip_udp_rtp_packet_outer->rtp_header) {
+		uint16_t last_sequence_number = atsc3_stltp_tunnel_packet_last->ip_udp_rtp_packet_outer->rtp_header->sequence_number;
+		uint16_t current_sequence_number = atsc3_stltp_tunnel_packet_current->ip_udp_rtp_packet_outer->rtp_header->sequence_number;
+
+		//we wrap around at last: 65535, current: 0
+		if(last_sequence_number == 65535 && current_sequence_number == 0) {
+			is_sequence_number_contiguous = true;
+		} else if(last_sequence_number + 1 == current_sequence_number) {
+			is_sequence_number_contiguous = true;
+		}
+	}
+
+	return is_sequence_number_contiguous;
+}
+
 inline const char *ATSC3_CTP_STL_PAYLOAD_TYPE_TO_STRING(int code) {
     switch (code) {
         case ATSC3_STLTP_PAYLOAD_TYPE_TUNNEL:

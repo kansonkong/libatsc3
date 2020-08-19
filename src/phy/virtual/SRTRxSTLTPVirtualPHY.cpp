@@ -292,7 +292,7 @@ void SRTRxSTLTPVirtualPHY::Atsc3_srt_live_rx_udp_packet_process_callback_with_co
 	srtRxSTLTPVirtualPHY->atsc3_srt_live_rx_udp_packet_received(block);
 }
 
-#define _ATSC3_SRT_STLTP_LIVE_BUFFER_QUEUE_RX_CONDITION_NOTIFY_QUEUE_SIZE_ 50
+#define _ATSC3_SRT_STLTP_LIVE_BUFFER_QUEUE_RX_CONDITION_NOTIFY_QUEUE_SIZE_ 100
 //hand this SRT datagram off to our STLTP listener queue
 //jjustman-2020-08-17 - TODO: SRT flows are only a single dip:dport, so we will need to configure the STLTP context accordingly with the first packet from our received flow...
 //jjustman-2020-08-17 - TODO: buffer this as needed with an internal queue and then push to srt_rx_buffer_queue
@@ -305,16 +305,16 @@ void SRTRxSTLTPVirtualPHY::atsc3_srt_live_rx_udp_packet_received(block_t* block)
 }
 
 
-void SRTRxSTLTPVirtualPHY::Atsc3_stltp_baseband_alp_packet_collection_callback_with_context(uint8_t plp, atsc3_alp_packet_collection_t* atsc3_alp_packet_collection, void* context) {
+void SRTRxSTLTPVirtualPHY::Atsc3_stltp_baseband_alp_packet_collection_callback_with_context(atsc3_alp_packet_collection_t* atsc3_alp_packet_collection, void* context) {
 	SRTRxSTLTPVirtualPHY* srtRxSTLTPVirtualPHY = (SRTRxSTLTPVirtualPHY*)context;
-	srtRxSTLTPVirtualPHY->atsc3_stltp_baseband_alp_packet_collection_received(plp, atsc3_alp_packet_collection);
+	srtRxSTLTPVirtualPHY->atsc3_stltp_baseband_alp_packet_collection_received(atsc3_alp_packet_collection);
 }
 
 /*
  * jjustman-2020-08-11: NOTE - we will only process ALP packets here with packet_type = 0x0
  *
  */
-void SRTRxSTLTPVirtualPHY::atsc3_stltp_baseband_alp_packet_collection_received(uint8_t plp, atsc3_alp_packet_collection_t* atsc3_alp_packet_collection) {
+void SRTRxSTLTPVirtualPHY::atsc3_stltp_baseband_alp_packet_collection_received(atsc3_alp_packet_collection_t* atsc3_alp_packet_collection) {
 
 	for(int i=0; i < atsc3_alp_packet_collection->atsc3_alp_packet_v.count; i++) {
 		atsc3_alp_packet_t* atsc3_alp_packet = atsc3_alp_packet_collection->atsc3_alp_packet_v.data[i];
@@ -323,7 +323,7 @@ void SRTRxSTLTPVirtualPHY::atsc3_stltp_baseband_alp_packet_collection_received(u
 
 			//if we are an IP packet, push this via our IAtsc3NdkPHYClient callback
 			if(atsc3_phy_rx_udp_packet_process_callback && atsc3_alp_packet && atsc3_alp_packet->alp_packet_header.packet_type == 0x0) {
-				atsc3_phy_rx_udp_packet_process_callback(plp, atsc3_alp_packet->alp_payload);
+				atsc3_phy_rx_udp_packet_process_callback(atsc3_alp_packet->plp_num, atsc3_alp_packet->alp_payload);
 			}
 		}
 	}

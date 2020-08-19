@@ -63,9 +63,9 @@ public:
     static void Atsc3_srt_live_rx_udp_packet_process_callback_with_context(block_t* block, void* context);
     void atsc3_srt_live_rx_udp_packet_received(block_t* block);
 
-    //special "friend" callback from stltp_depacketizer context
-    static void Atsc3_stltp_baseband_alp_packet_collection_callback_with_context(uint8_t plp, atsc3_alp_packet_collection_t* atsc3_alp_packet_collection, void* context);
-    void atsc3_stltp_baseband_alp_packet_collection_received(uint8_t plp, atsc3_alp_packet_collection_t* atsc3_alp_packet_collection);
+    //special "friend" callback from stltp_depacketizer context - plp is an attribute of the alp_packet in collection
+    static void Atsc3_stltp_baseband_alp_packet_collection_callback_with_context(atsc3_alp_packet_collection_t* atsc3_alp_packet_collection, void* context);
+    void atsc3_stltp_baseband_alp_packet_collection_received(atsc3_alp_packet_collection_t* atsc3_alp_packet_collection);
 
 
     virtual ~SRTRxSTLTPVirtualPHY() {
