@@ -82,7 +82,7 @@ static inline void INIT_NODE(struct avltree_node *node)
 
 static inline signed get_balance(struct avltree_node *node)
 {
-	return (int)(node->parent & 7) - 2;
+	return (node ? ((int)(node->parent & 7) - 2) : 0);
 }
 
 static inline void set_balance(int balance, struct avltree_node *node)
@@ -380,7 +380,7 @@ void avltree_remove(struct avltree_node *node, struct avltree *tree)
 	struct avltree_node *left = node->left;
 	struct avltree_node *right = node->right;
 	struct avltree_node *next;
-	int is_left = is_left;
+	int is_left = 0;
 
 	if (node == tree->first)
 		tree->first = avltree_next(node);

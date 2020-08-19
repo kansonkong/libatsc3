@@ -614,7 +614,7 @@ cleanup:
 }
 
 
-void atsc3_reflect_alp_packet_collection(uint8_t plp, atsc3_alp_packet_collection_t* atsc3_alp_packet_collection, pcap_t* atsc3_baseband_alp_output_pcap_device_reference) {
+void atsc3_reflect_alp_packet_collection(atsc3_alp_packet_collection_t* atsc3_alp_packet_collection, pcap_t* atsc3_baseband_alp_output_pcap_device_reference) {
     //iterate thru completd packets
     for(int i=0; i < atsc3_alp_packet_collection->atsc3_alp_packet_v.count; i++) {
         atsc3_alp_packet_t* atsc3_alp_packet = atsc3_alp_packet_collection->atsc3_alp_packet_v.data[i];

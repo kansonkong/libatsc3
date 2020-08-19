@@ -69,8 +69,8 @@ public:
     atsc3_pcap_replay_context_t* get_pcap_replay_context_status_volatile(); //treat this as const*
 
     //special "friend" callback from stltp_depacketizer context
-    static void Atsc3_stltp_baseband_alp_packet_collection_callback_with_context(uint8_t plp, atsc3_alp_packet_collection_t* atsc3_alp_packet_collection, void* context);
-    void atsc3_stltp_baseband_alp_packet_collection_received(uint8_t plp, atsc3_alp_packet_collection_t* atsc3_alp_packet_collection);
+    static void Atsc3_stltp_baseband_alp_packet_collection_callback_with_context(atsc3_alp_packet_collection_t* atsc3_alp_packet_collection, void* context);
+    void atsc3_stltp_baseband_alp_packet_collection_received(atsc3_alp_packet_collection_t* atsc3_alp_packet_collection);
 
     ~PcapSTLTPVirtualPHY() {
     	atsc3_pcap_thread_stop(); //cleanup just to be sure..

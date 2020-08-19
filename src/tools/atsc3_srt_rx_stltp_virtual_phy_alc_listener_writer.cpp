@@ -96,22 +96,12 @@ void alc_process_from_udp_packet(udp_packet_t* udp_packet) {
 		//process ALC streams
 		int retval = alc_rx_analyze_packet_a331_compliant((char*)block_Get(udp_packet->data), block_Remaining_size(udp_packet->data), &alc_packet);
 
-#ifdef __MALLOC_DEBUGGING
-		mcheck(0);
-#endif
-
 		if(!retval) {
 			//check our alc_packet for a wrap-around TOI value, if it is a monitored TSI, and re-patch the MBMS MPD for updated availabilityStartTime and startNumber with last closed TOI values
 			atsc3_alc_packet_check_monitor_flow_for_toi_wraparound_discontinuity(alc_packet, matching_lls_sls_alc_monitor);
-#ifdef __MALLOC_DEBUGGING
-mcheck(0);
-#endif
 
 			//keep track of our EXT_FTI and update last_toi as needed for TOI length and manual set of the close_object flag
 			atsc3_route_object_t* atsc3_route_object = atsc3_alc_persist_route_object_lct_packet_received_for_lls_sls_alc_monitor_all_flows(alc_packet, matching_lls_sls_alc_monitor);
-#ifdef __MALLOC_DEBUGGING
-mcheck(0);
-#endif
 
 			//persist to disk, process sls mbms and/or emit ROUTE media_delivery_event complete to the application tier if
 			//the full packet has been recovered (e.g. no missing data units in the forward transmission)
@@ -123,9 +113,6 @@ mcheck(0);
 				_SRT_STLTP_VIRTUAL_PHY_ALC_WRITER_ERROR("Error in ALC persist, atsc3_route_object is NULL!");
 
 			}
-	#ifdef __MALLOC_DEBUGGING
-	mcheck(0);
-	#endif
 
 		} else {
 			_SRT_STLTP_VIRTUAL_PHY_ALC_WRITER_ERROR("Error in ALC decode: %d", retval);
@@ -137,10 +124,6 @@ mcheck(0);
 udp_packet_free:
 	alc_packet_free(&alc_packet);
 	alc_packet = NULL;
-#ifdef __MALLOC_DEBUGGING
-
-	mcheck(0);
-#endif
 
     return udp_packet_free(&udp_packet);
 }
@@ -149,8 +132,10 @@ void phy_rx_udp_packet_process_callback(uint8_t plp_num, block_t* packet) {
 
     udp_packet_t* udp_packet = udp_packet_process_from_ptr(block_Get(packet), packet->p_size);
 
-	_SRT_STLTP_VIRTUAL_PHY_ALC_WRITER_DEBUG("PLP: %d, packet number: %llu, packet: %p, len: %d, udp_packet: %p",
-				plp_num, rx_udp_invocation_count++, packet, packet->p_size, udp_packet);
+    if((rx_udp_invocation_count % 1000) == 0) {
+		_SRT_STLTP_VIRTUAL_PHY_ALC_WRITER_DEBUG("PLP: %d, packet number: %llu, packet: %p, len: %d, udp_packet: %p",
+					plp_num, rx_udp_invocation_count++, packet, packet->p_size, udp_packet);
+    }
 
 	if(!udp_packet) {
 		return;
@@ -232,6 +217,7 @@ void configure_lls_sls_monitor() {
 
 int main(int argc, char* argv[] ) {
 
+#ifdef __PENDANTIC__
 	_ALP_PARSER_INFO_ENABLED = 1;
 	_ALP_PARSER_DEBUG_ENABLED = 1;
 
@@ -245,8 +231,8 @@ int main(int argc, char* argv[] ) {
 
 	_STLTP_TYPES_DEBUG_ENABLED = 1;
 	_STLTP_TYPES_TRACE_ENABLED = 1;
-
-	string srt_connection_string = "srt://las.srt.atsc3.com:31351?passphrase=6E35F28D-21B8-46A4-8081-F3232D150728";
+#endif
+	string srt_connection_string = "srt://las.srt.atsc3.com:31351?passphrase=6E35F28D-21B8-46A4-8081-F3232D150728&packetfilter=fec";
 
 	if(argc > 1) {
 		srt_connection_string = string(argv[1]);
