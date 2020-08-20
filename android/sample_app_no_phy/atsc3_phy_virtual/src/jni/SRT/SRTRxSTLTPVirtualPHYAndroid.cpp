@@ -5,7 +5,7 @@ SRTRxSTLTPVirtualPHYAndroid* srtRxSTLTPVirtualPHYAndroid = nullptr;
 SRTRxSTLTPVirtualPHYAndroid::SRTRxSTLTPVirtualPHYAndroid(JNIEnv* env, jobject jni_instance) {
     this->env = env;
     this->jni_instance_globalRef = env->NewGlobalRef(jni_instance);
-    this->SetRxUdpPacketProcessCallback(atsc3_core_service_bridge_process_packet_from_plp_and_block);
+    this->setRxUdpPacketProcessCallback(atsc3_core_service_bridge_process_packet_from_plp_and_block);
 }
 
 SRTRxSTLTPVirtualPHYAndroid::~SRTRxSTLTPVirtualPHYAndroid() {
@@ -48,11 +48,11 @@ void SRTRxSTLTPVirtualPHYAndroid::releaseConsumerThreadAsNeeded() {
 extern "C" JNIEXPORT jint JNICALL
 Java_org_ngbp_libatsc3_middleware_android_phy_virtual_srt_SRTRxSTLTPVirtualPHYAndroid_init(JNIEnv* env, jobject instance)
 {
-    printf("Java_org_ngbp_libatsc3_middleware_android_phy_virtual_srt_SRTRxSTLTPVirtualPHYAndroid_init: start init, env: %p\n", env);
+    _SRTRXSTLTP_VIRTUAL_PHY_DEBUG("Java_org_ngbp_libatsc3_middleware_android_phy_virtual_srt_SRTRxSTLTPVirtualPHYAndroid_init: start init, env: %p", env);
 
     srtRxSTLTPVirtualPHYAndroid = new SRTRxSTLTPVirtualPHYAndroid(env, instance);
 
-    printf("Java_org_ngbp_libatsc3_middleware_android_phy_virtual_srt_SRTRxSTLTPVirtualPHYAndroid_init: return, env: %p\n", env);
+    _SRTRXSTLTP_VIRTUAL_PHY_DEBUG("Java_org_ngbp_libatsc3_middleware_android_phy_virtual_srt_SRTRxSTLTPVirtualPHYAndroid_init: return, srtRxSTLTPVirtualPHYAndroid: %p", srtRxSTLTPVirtualPHYAndroid);
 
     return 0;
 }
@@ -61,12 +61,12 @@ extern "C" JNIEXPORT void JNICALL
 Java_org_ngbp_libatsc3_middleware_android_phy_virtual_srt_SRTRxSTLTPVirtualPHYAndroid_setSrtSourceConnectionString(JNIEnv* env, jobject instance, jstring srtSourceConnectionString)
 {
     if(!srtRxSTLTPVirtualPHYAndroid) {
-        printf("Java_org_ngbp_libatsc3_middleware_android_phy_virtual_srt_SRTRxSTLTPVirtualPHYAndroid_setSrtSourceConnectionString: error, srtRxSTLTPVirtualPHYAndroid is NULL!");
+        _SRTRXSTLTP_VIRTUAL_PHY_DEBUG("Java_org_ngbp_libatsc3_middleware_android_phy_virtual_srt_SRTRxSTLTPVirtualPHYAndroid_setSrtSourceConnectionString: error, srtRxSTLTPVirtualPHYAndroid is NULL!");
         return;
     }
 
     const char *srtSourceConnectionString_cstr = env->GetStringUTFChars(srtSourceConnectionString, NULL);
-    printf("Java_org_ngbp_libatsc3_middleware_android_phy_virtual_srt_SRTRxSTLTPVirtualPHYAndroid_setSrtSourceConnectionString: with: %s", srtSourceConnectionString_cstr);
+    _SRTRXSTLTP_VIRTUAL_PHY_DEBUG("Java_org_ngbp_libatsc3_middleware_android_phy_virtual_srt_SRTRxSTLTPVirtualPHYAndroid_setSrtSourceConnectionString: with: %s", srtSourceConnectionString_cstr);
     srtRxSTLTPVirtualPHYAndroid->set_srt_source_connection_string(srtSourceConnectionString_cstr);
 
     env->ReleaseStringUTFChars(srtSourceConnectionString, srtSourceConnectionString_cstr);
@@ -79,12 +79,27 @@ Java_org_ngbp_libatsc3_middleware_android_phy_virtual_srt_SRTRxSTLTPVirtualPHYAn
 {
     int res = 0;
     if(!srtRxSTLTPVirtualPHYAndroid) {
-        printf("Java_org_ngbp_libatsc3_middleware_android_phy_virtual_srt_SRTRxSTLTPVirtualPHYAndroid_run: error, srtRxSTLTPVirtualPHYAndroid is NULL!");
+        _SRTRXSTLTP_VIRTUAL_PHY_ERROR("Java_org_ngbp_libatsc3_middleware_android_phy_virtual_srt_SRTRxSTLTPVirtualPHYAndroid_run: error, srtRxSTLTPVirtualPHYAndroid is NULL!");
         return -1;
     }
-    res = srtRxSTLTPVirtualPHYAndroid->atsc3_srt_thread_run();
-    printf("Java_org_ngbp_libatsc3_middleware_android_phy_virtual_srt_SRTRxSTLTPVirtualPHYAndroid_run: returning res: %d", res);
+    res = srtRxSTLTPVirtualPHYAndroid->run();
+    _SRTRXSTLTP_VIRTUAL_PHY_DEBUG("Java_org_ngbp_libatsc3_middleware_android_phy_virtual_srt_SRTRxSTLTPVirtualPHYAndroid_run: returning res: %d", res);
 
+    return res;
+}
+
+
+
+extern "C" JNIEXPORT jboolean JNICALL
+Java_org_ngbp_libatsc3_middleware_android_phy_virtual_srt_SRTRxSTLTPVirtualPHYAndroid_is_1running(JNIEnv* env, jobject instance)
+{
+    jboolean res = false;
+
+    if(!srtRxSTLTPVirtualPHYAndroid) {
+        _SRTRXSTLTP_VIRTUAL_PHY_ERROR("Java_org_ngbp_libatsc3_middleware_android_phy_virtual_srt_SRTRxSTLTPVirtualPHYAndroid_run: error, srtRxSTLTPVirtualPHYAndroid is NULL!");
+        return false;
+    }
+    res = srtRxSTLTPVirtualPHYAndroid->is_running();
     return res;
 }
 
@@ -93,11 +108,11 @@ Java_org_ngbp_libatsc3_middleware_android_phy_virtual_srt_SRTRxSTLTPVirtualPHYAn
 {
     int res = 0;
     if(!srtRxSTLTPVirtualPHYAndroid) {
-        printf("Java_org_ngbp_libatsc3_middleware_android_phy_virtual_srt_SRTRxSTLTPVirtualPHYAndroid_stop: error, srtRxSTLTPVirtualPHYAndroid is NULL!");
+        _SRTRXSTLTP_VIRTUAL_PHY_ERROR("Java_org_ngbp_libatsc3_middleware_android_phy_virtual_srt_SRTRxSTLTPVirtualPHYAndroid_stop: error, srtRxSTLTPVirtualPHYAndroid is NULL!");
         return -1;
     }
-    res = srtRxSTLTPVirtualPHYAndroid->atsc3_srt_thread_stop();
-    printf("Java_org_ngbp_libatsc3_middleware_android_phy_virtual_srt_SRTRxSTLTPVirtualPHYAndroid_stop: returning res: %d", res);
+    res = srtRxSTLTPVirtualPHYAndroid->stop();
+    _SRTRXSTLTP_VIRTUAL_PHY_DEBUG("Java_org_ngbp_libatsc3_middleware_android_phy_virtual_srt_SRTRxSTLTPVirtualPHYAndroid_stop: returning res: %d", res);
 
     return res;
 }
@@ -108,11 +123,11 @@ Java_org_ngbp_libatsc3_middleware_android_phy_virtual_srt_SRTRxSTLTPVirtualPHYAn
 {
     int res = 0;
     if(!srtRxSTLTPVirtualPHYAndroid) {
-        printf("Java_org_ngbp_libatsc3_middleware_android_phy_virtual_srt_SRTRxSTLTPVirtualPHYAndroid_deinit: error, srtRxSTLTPVirtualPHYAndroid is NULL!");
+        _SRTRXSTLTP_VIRTUAL_PHY_ERROR("Java_org_ngbp_libatsc3_middleware_android_phy_virtual_srt_SRTRxSTLTPVirtualPHYAndroid_deinit: error, srtRxSTLTPVirtualPHYAndroid is NULL!");
         return -1;
     }
 
-    delete srtRxSTLTPVirtualPHYAndroid;
+    srtRxSTLTPVirtualPHYAndroid->deinit();
     srtRxSTLTPVirtualPHYAndroid = nullptr;
 
     return res;

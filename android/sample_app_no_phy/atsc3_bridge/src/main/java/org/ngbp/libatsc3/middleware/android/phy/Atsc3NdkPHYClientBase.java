@@ -1,28 +1,85 @@
 package org.ngbp.libatsc3.middleware.android.phy;
 
-/*     native int ApiInit(Atsc3NdkPHYBridge atsc3NdkPhyBridge); */
+import android.hardware.usb.UsbDevice;
+
+import java.util.ArrayList;
+import java.util.List;
+
+/*
+    state management overview
+
+    init -> (optional phy specific configuration parameters)
+          -> run
+            -> stop
+                -> deinit
+ */
+
 public abstract class Atsc3NdkPHYClientBase {
 
-    /*
-        state management overview
+    public static class USBVendorIDProductIDSupportedPHY {
+        public USBVendorIDProductIDSupportedPHY(int vendorID, int productID, String phyName, boolean isBootloader, Class<? extends Atsc3NdkPHYClientBase> candidatePHYImplementation) {
+            this.vendorID = vendorID;
+            this.productID = productID;
+            this.phyName = phyName;
+            this.isBootloader = isBootloader;
+            this.candidatePHYImplementation = candidatePHYImplementation;
+        }
 
-        init -> (optional phy specific configuration parameters)
-              -> run
-                -> stop
-                    -> deinit
-     */
-    public native int init();
-    public native int run();
-    public native int stop();
-    public native int deinit();
+        public int vendorID;
+        public int productID;
+        public String phyName;
+        public boolean isBootloader;
+        public Class<? extends Atsc3NdkPHYClientBase> candidatePHYImplementation;
+    }
 
-    public native int ApiPrepare(String devlist, int delimiter1, int delimiter2);
-    public native long[] ApiFindDeviceKey(boolean bPreBootDevice);
-    public native int ApiFwLoad(long key);
-    public native int ApiOpen(int fd, long key);
-    public native int ApiTune(int freqKhz, int plpid);
-    public native int ApiSetPLP(int[] aPlpIds);
-    public native int ApiReset();
+    public static Atsc3NdkPHYClientBase CreateInstanceFromUSBVendorIDProductIDSupportedPHY(USBVendorIDProductIDSupportedPHY usbVendorIDProductIDSupportedPHY) {
+        Atsc3NdkPHYClientBase newInstance = null;
+        try {
+            newInstance = usbVendorIDProductIDSupportedPHY.candidatePHYImplementation.newInstance();
 
-    //public native int ApiClose();
+        } catch (IllegalAccessException e) {
+            e.printStackTrace();
+        } catch (InstantiationException e) {
+            e.printStackTrace();
+        }
+
+        return newInstance;
+    }
+
+    static ArrayList<USBVendorIDProductIDSupportedPHY> AllRegisteredPHYImplementations = new ArrayList<>();
+    public static ArrayList<Atsc3NdkPHYClientBase.USBVendorIDProductIDSupportedPHY> GetCandidatePHYImplementations(UsbDevice usbDevice) {
+        ArrayList<USBVendorIDProductIDSupportedPHY> matchingRegisteredPHYImplementations = new ArrayList<>();
+        for(USBVendorIDProductIDSupportedPHY usbVendorIDProductIDSupportedPHY : AllRegisteredPHYImplementations) {
+            if(usbVendorIDProductIDSupportedPHY.vendorID == usbDevice.getVendorId() && usbVendorIDProductIDSupportedPHY.productID == usbDevice.getProductId()) {
+                matchingRegisteredPHYImplementations.add(usbVendorIDProductIDSupportedPHY);
+            }
+        }
+        return matchingRegisteredPHYImplementations.size() > 0 ? matchingRegisteredPHYImplementations : null;
+    }
+    //
+    public Atsc3UsbDevice atsc3UsbDevice = null;
+    public void setAtsc3UsbDevice(Atsc3UsbDevice atsc3UsbDevice) {
+        this.atsc3UsbDevice = atsc3UsbDevice;
+    }
+
+
+
+
+
+
+    //required jni methods for implementation
+    public native int     init();
+    public native int     run();
+    public native boolean is_running();
+    public native int     stop();
+    public native int     deinit();
+
+    //optional jni methods, to enable per-PHY use-cases,
+    //but un-safe for non context-aware invocation
+
+    public native int     download_bootloader_firmware(int fd);
+    public native int     open(int fd);
+    public native int     tune(int freqKhz, int single_plp);
+    public native int     listen_plps(List<Byte> plps);
+
 }

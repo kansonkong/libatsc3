@@ -64,6 +64,8 @@ import org.ngbp.libatsc3.middleware.android.a331.PackageExtractEnvelopeMetadataA
 import org.ngbp.libatsc3.ServiceHandler;
 import org.ngbp.libatsc3.middleware.android.application.interfaces.IAtsc3NdkApplicationBridgeCallbacks;
 import org.ngbp.libatsc3.middleware.android.phy.Atsc3NdkPHYClientBase;
+import org.ngbp.libatsc3.middleware.android.phy.Atsc3UsbDevice;
+import org.ngbp.libatsc3.middleware.android.phy.SaankhyaPHYAndroid;
 import org.ngbp.libatsc3.middleware.android.phy.interfaces.IAtsc3NdkPHYBridgeCallbacks;
 import org.ngbp.libatsc3.middleware.android.phy.virtual.srt.SRTRxSTLTPVirtualPHYAndroid;
 import org.ngbp.libatsc3.pcapreplay.PcapFileSelectorActivity;
@@ -86,6 +88,7 @@ import java.io.File;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.constraintlayout.widget.ConstraintLayout;
@@ -177,6 +180,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     private String prebuiltAssetsForDeviceSelectionVirtualPHY[] = {
             "srt://bna.srt.atsc3.com:31347?passphrase=88731837-0EB5-4951-83AA-F515B3BEBC20",
             "srt://las.srt.atsc3.com:31350?passphrase=A166AC45-DB7C-4B68-B957-09B8452C76A4",
+            "srt://lab.srt.atsc3.com:31340?passphrase=03760631-667B-4ADB-9E04-E4491B0A7CF1",
             "--",
             "pcaps/2019-10-29-239.0.0.18.PLP.1.decoded.pcap",
             "pcaps/2019-12-17-lab-digi-alp.pcap" };
@@ -287,8 +291,8 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     private PendingIntent mPermissionIntent;
 
     // usb device list
-    private List<atsc3UsbDevice> mAt3Devices = new ArrayList<atsc3UsbDevice>();
-    private atsc3UsbDevice mCurAt3Device = null;
+    private List<Atsc3UsbDevice> mAt3Devices = new ArrayList<Atsc3UsbDevice>();
+    private Atsc3UsbDevice mCurAt3Device = null;
 
     // log message view
     private TextView mTextView;
@@ -430,6 +434,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                 Log.i("surfaceChanged", String.format("resizing to: isSurfaceViewFullScreen: false, myWindowRect.w: %d, myWindowRect.h: %d", surfaceLayoutRight, surfaceLayoutBottom));
             }
         }
+        SaankhyaPHYAndroid saankhyaPHYAndroid = new SaankhyaPHYAndroid();
     }
 
     private void hideNonVideoLayouts() {
@@ -482,17 +487,17 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         int itemCount = 1;
         int idxSelected = 0;
 
-        for (atsc3UsbDevice ad : mAt3Devices) {
-            if (mCurAt3Device != null && mCurAt3Device.toString().equalsIgnoreCase(ad.toString())) {
-                idxSelected = itemCount;
-            } else if(itemSelected != null && itemSelected.equals(ad.toString())) {
-                idxSelected = itemCount;
-            }
-            items.add(ad.toString());
-
-            Log.d(TAG, String.format("dropdown idx: %d, fd: %s, deviceName: %s, key: %s", itemCount, ad.fd, ad.dev.getDeviceName(), ad.toString()));
-            itemCount++;
-        }
+//        for (Atsc3UsbDevice ad : mAt3Devices) {
+//            if (mCurAt3Device != null && mCurAt3Device.toString().equalsIgnoreCase(ad.toString())) {
+//                idxSelected = itemCount;
+//            } else if(itemSelected != null && itemSelected.equals(ad.toString())) {
+//                idxSelected = itemCount;
+//            }
+//            items.add(ad.toString());
+//
+//            Log.d(TAG, String.format("dropdown idx: %d, fd: %s, deviceName: %s, key: %s", itemCount, ad.fd, ad.dev.getDeviceName(), ad.toString()));
+//            itemCount++;
+//        }
 
         if(prebuiltAssetsForDeviceSelectionVirtualPHY.length > 0) {
             items.add("---");
@@ -766,7 +771,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         ServiceHandler.GetInstance().postDelayed(new Runnable() {
             @Override
             public void run() {
-                scanDevices();
+                usbPHYLayerDeviceScan();
                 // Spinner, https://developer.android.com/guide/topics/ui/controls/spinner.html
                 ServiceHandler.GetInstance().postDelayed(new Runnable() {
                     @Override
@@ -1155,20 +1160,57 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     private void createServiceHandler() {
 
         serviceHandler = new ServiceHandler() {
-            public void handleMessage(Message msg) {
+            public void handleMessage(final Message msg) {
                 if (msg.what == 1) { // update log
                     String str = (String) msg.obj;
                     showMsg("# " + str);
-                } else if (msg.what == 2) { // connect device and prepare
-                    UsbDevice device = (UsbDevice) msg.obj;
-                    Log.d(TAG, "handler: connect device");
-                    connectDeviceAndPrepare(device);
-                    Log.d(TAG, "---- end of handling connect device");
+                } else if (msg.what == 2) {
+                    //USB: Either permission granted OR device connected, try to instantiate our atsc3NdkPHYClient instance based upon vid/pid
+                    final UsbDevice device = (UsbDevice) msg.obj;
+
+                    new Thread(new Runnable() {
+                        @Override
+                        public void run() {
+                            Log.d(TAG, "handler: connect device");
+
+                            //jjustman-2020-08-19- this is slightly messy, but should be seamless for switching to a new device
+                            Atsc3NdkPHYClientBase atsc3NdkPHYClientBaseInstanceResult = usbPHYLayerDeviceTryToInstantiateFromRegisteredPHYNDKs(device);
+                            if (atsc3NdkPHYClientBaseInstanceResult != null) {
+                                //todo - redispatch out of our service handler queue...grr
+                                if (atsc3NdkPHYClientInstance != null) {
+                                    atsc3NdkPHYClientInstance.deinit();
+                                    atsc3NdkPHYClientInstance = null;
+
+                                    try {
+                                        Thread.sleep(1000);
+                                    } catch (InterruptedException e) {
+                                        e.printStackTrace();
+                                    }
+
+                                }
+                                atsc3NdkPHYClientInstance = atsc3NdkPHYClientBaseInstanceResult;
+                            }
+                            Log.d(TAG, "---- end of handling connect device");
+                        }}).start();
+
                 } else if (msg.what == 3) { // disconnect device and prepare
                     UsbDevice device = (UsbDevice) msg.obj;
                     Log.d(TAG, "handler: disconnected device");
-                    prepareDevices();
-                    Log.d(TAG, "---- end of handling discconecting device");
+                    dumpDevice(device, "disconnected");
+                    //jjustman-2020-08-19 - TODO: find from our Atsc3UsbDevices and shutdown our Atsc3NdkClientBase accordingly
+
+                    if(Atsc3UsbDevice.AllAtsc3UsbDevices.containsKey(device)) {
+                        Atsc3UsbDevice atsc3UsbDevice = Atsc3UsbDevice.AllAtsc3UsbDevices.get(device);
+                        Log.d(TAG, "found matching usbDevice and atsc3UsbDevice that was disconnected, instantiated atsc3NdkClientBase is: "+atsc3UsbDevice.atsc3NdkPHYClientBase);
+                        if(atsc3UsbDevice.atsc3NdkPHYClientBase != null) {
+                            atsc3UsbDevice.atsc3NdkPHYClientBase.deinit();
+                            atsc3UsbDevice.atsc3NdkPHYClientBase = null;
+
+                            Atsc3UsbDevice.AllAtsc3UsbDevices.remove(device);
+                        }
+
+                    }
+                    Log.d(TAG, "---- end of handling disconnecting device");
                 } else if (msg.what == ServiceHandler.DRAW_TEXT_FRAME_VIDEO_ENQUEUE_US) {
                     mVideoEnqueuePresentationTimeUsText.setText((String) msg.obj);
                 } else if (msg.what == ServiceHandler.DRAW_TEXT_FRAME_VIDEO_RELEASE_RENDERER) {
@@ -1464,9 +1506,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         return key;
     }
 
-    private void scanDevices() {
-        prepareDevices();
-
+    private void usbPHYLayerDeviceScan() {
         Log.d(TAG, "scanDevices:: calling mUsbManager.getDeviceList()");
         HashMap<String, UsbDevice> deviceList = mUsbManager.getDeviceList();
         if (deviceList == null) {
@@ -1475,195 +1515,74 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
             return;
         }
 
-        // find device
-        List<UsbDevice> devices = new ArrayList<UsbDevice>();
-        Log.d(TAG, "device list: " + deviceList.size() + " devices");
-        for (UsbDevice d : deviceList.values()) {
-            Log.d(TAG, " --" + d.toString());
-            Log.d(TAG, "   vid/pid: " + d.getVendorId() + "/" + d.getProductId() +
-                    " id " + d.getDeviceId() + " name " + d.getDeviceName());
-            if (isDeviceCypressFX3(d) || isDeviceBootedFX3(d)) {
-                devices.add(d);
-            }
+        for (UsbDevice usbDevice : deviceList.values()) {
+            usbPHYLayerDeviceTryToInstantiateFromRegisteredPHYNDKs(usbDevice);
         }
+    }
 
-        if (devices.isEmpty()) {
-            showMsg("No device\n");
-            Toast.makeText(getApplicationContext(), "No FX3 detected!", Toast.LENGTH_SHORT).show();
-            return;
-        }
+    Atsc3NdkPHYClientBase usbPHYLayerDeviceTryToInstantiateFromRegisteredPHYNDKs(UsbDevice usbDevice) {
+        Atsc3NdkPHYClientBase atsc3NdkPHYClientBaseInstantiated = null;
+        ArrayList<Atsc3NdkPHYClientBase.USBVendorIDProductIDSupportedPHY> candidatePHYList = Atsc3NdkPHYClientBase.GetCandidatePHYImplementations(usbDevice);
 
-        Log.d(TAG, "total " + devices.size() + " FX3 device found");
+        if(candidatePHYList != null) {
+            if (!mUsbManager.hasPermission(usbDevice)) {
+                Log.e(TAG, String.format("requesting permission for device: name: %s, vid: %d, pid: %d", usbDevice.getProductName(), usbDevice.getVendorId(), usbDevice.getProductId()));
+                mUsbManager.requestPermission(usbDevice, mPermissionIntent);
 
-        for (UsbDevice d : devices) {
-            if (!mUsbManager.hasPermission(d)) {
-                Log.d(TAG, "dev " + d.getDeviceName() + " no permission yet. request..");
-                mUsbManager.requestPermission(d, mPermissionIntent);
                 // once we requested, next action will be continued in broadcast receiver.
-                return;
+                return null;
             }
 
-            Log.d(TAG, "dev " + d.getDeviceName() + " permission ok. make connection..");
-            connectDeviceAndPrepare(d);
-        }
-    }
+            UsbDeviceConnection usbDeviceConnection = mUsbManager.openDevice(usbDevice);
+            if(usbDeviceConnection != null) {
+                Atsc3UsbDevice atsc3UsbDevice = new Atsc3UsbDevice(usbDevice, usbDeviceConnection);
 
-    private void connectDeviceAndPrepare(UsbDevice device) {
-        int vid = device.getVendorId();
-        int pid = device.getProductId();
-        String devName = device.getDeviceName();
+                for (Atsc3NdkPHYClientBase.USBVendorIDProductIDSupportedPHY candidatePHY : candidatePHYList) {
+                    Atsc3NdkPHYClientBase atsc3NdkPHYClientBaseCandidate = Atsc3NdkPHYClientBase.CreateInstanceFromUSBVendorIDProductIDSupportedPHY(candidatePHY);
+                    atsc3NdkPHYClientBaseCandidate.init();
+                    int usbFd = atsc3UsbDevice.getFd();
 
-        Log.d(TAG, "connectDeviceAndPrepares: " + device.getDeviceName());
-
-        if (!mUsbManager.hasPermission(device)) {
-            Log.e(TAG, String.format("connectDevice: vid: %d, pid: %d - has no permission!"));
-
-            return;
-        }
-        //disconnectDevice(device);
-
-        long  key = getKeyFromUsbDevName(devName);
-        if (key < 0) {
-            Log.e(TAG, String.format("connectDeviceAndPrepare: get key failed from devName %s", devName));
-            return;
-        }
-
-        Log.d(TAG, "now, connecting device " + devName + "...");
-        UsbDeviceConnection conn = mUsbManager.openDevice(device);
-        if (conn == null) {
-            Log.e(TAG, "dev " + devName + " connect error");
-            return;
-        }
-
-        int fd = conn.getFileDescriptor();
-        Log.d(TAG, "connected, fd:" + fd);
-
-        //check for duplicate vid/pid/devName in our at3Device list
-        for (int i = 0; i < mAt3Devices.size(); i++) {
-            atsc3UsbDevice ad = mAt3Devices.get(i);
-
-            if (ad.dev.getDeviceName().equals(device.getDeviceName())) {
-                ad.dev = device; //update dev instance with new device to keep track of active FD
-                ad.fd = fd;
-                return; //bail for duplicate
+                    if (candidatePHY.isBootloader) {
+                        int r = atsc3NdkPHYClientBaseCandidate.download_bootloader_firmware(usbFd);
+                        if (r < 0) {
+                            Log.d(TAG, String.format("prepareDevices: download_bootloader_firmware with %s failed for fd: %d", atsc3NdkPHYClientBaseCandidate, usbFd));
+                        } else {
+                            Log.d(TAG, String.format("prepareDevices: download_bootloader_firmware with %s for fd: %d, success", atsc3NdkPHYClientBaseCandidate, usbFd));
+                            //pre-boot devices should re-enumerate, so don't track this connection just yet...
+                        }
+                    } else {
+                        int r = atsc3NdkPHYClientBaseCandidate.open(usbFd);
+                        if (r < 0) {
+                            Log.d(TAG, String.format("prepareDevices: open with %s failed for fd: %d, res: %d", atsc3NdkPHYClientBaseCandidate, usbFd, r));
+                        } else {
+                            Log.d(TAG, String.format("prepareDevices: open with %s for fd: %d, success", atsc3NdkPHYClientBaseCandidate, usbFd));
+                            atsc3NdkPHYClientBaseCandidate.setAtsc3UsbDevice(atsc3UsbDevice);
+                            atsc3UsbDevice.setAtsc3NdkPHYClientBase(atsc3NdkPHYClientBaseCandidate);
+                            atsc3NdkPHYClientBaseInstantiated = atsc3NdkPHYClientBaseCandidate;
+                            break;
+                        }
+                    }
+                }
             }
+            //updateSpinnerFromDevList();
         }
-
-        // otherwise, add to our at3 device list
-        mAt3Devices.add(new atsc3UsbDevice(device, conn, fd, key));
-
-        // to enable firmware loading below, prepare here.
-        //not needed...
-        prepareDevices();
-
-//        if (isDeviceCypressFX3((device))) {
-//            Log.d(TAG, "this is cyfx device. try firmware loading...");
-//            mAt3DrvIntf.ApiFwLoad(key);
-//            return;
-//        }
-//        if (isAtlasPrebootDevice(device)) {
-//            Log.d(TAG, "this is pre-boot atlas device. try firmware loading...");
-//            mAt3DrvIntf.ApiFwLoad(key);
-//            return;
-//        }
-        showMsg("usb connected\n");
+        return atsc3NdkPHYClientBaseInstantiated;
     }
 
-    private void disconnectDevice(UsbDevice device) {
-        int nDisconnected = 0;
-
-        if(mAt3Devices.size() == 0) {
-            return;
-        }
-
-        Log.d(TAG, String.format("disconnectDevice: total devices (fx3 pre+booted): %d", mAt3Devices.size()));
-
-        for (int i = mAt3Devices.size()-1; i>=0; i--) {
-            atsc3UsbDevice ad = mAt3Devices.get(i);
-            Log.d(TAG, String.format("disconnectDevice: checking dev: %d, fd: %d, name: %s", i, ad.fd, ad.dev.getDeviceName()));
-
-            if (!ad.dev.getDeviceName().equals(device.getDeviceName()))
-                continue;
-
-            Log.d(TAG, String.format("disconnectDevice: removing device at index: %d, fd: %d, name: %s", i, ad.fd, device.getDeviceName()));
-            ad.disconnect();
-            mAt3Devices.remove(i);
-
-            nDisconnected++;
-        }
-
-        if (nDisconnected == 0) {
-            Log.w(TAG, String.format("disconnectDevice: no device to disconnect, but size is: %d", mAt3Devices.size()));
-        }
-
-        if (nDisconnected > 1) {
-            Log.e(TAG, String.format("disconnectDevice: %d devices removed - possible duplicates?!", nDisconnected));
-        }
-    }
 
     private void disconnectAllDevices() {
-        for (atsc3UsbDevice ad : mAt3Devices)
-            ad.disconnect();
-        mAt3Devices.clear();
-        // TODO: disconnect usb connection also
-    }
 
-    private void prepareDevices() {
-        String d1 = ":", d2 = ",";
-        String info = "";
-        if(mAt3Devices.size() > 0) {
-            for (atsc3UsbDevice ad : mAt3Devices) {
-                if (info.isEmpty())
-                    info = ad.dev.getDeviceName() + d1 + ad.fd;
-                else
-                    info = info + d2 + ad.dev.getDeviceName() + d1 + ad.fd;
+        for (Map.Entry<UsbDevice, Atsc3UsbDevice> entry : Atsc3UsbDevice.AllAtsc3UsbDevices.entrySet()) {
+            if(entry.getValue().atsc3NdkPHYClientBase != null) {
+                entry.getValue().atsc3NdkPHYClientBase.deinit();
+                entry.getValue().atsc3NdkPHYClientBase = null;
             }
-            Log.d(TAG, "prepare: " + info);
-            int r = atsc3NdkPHYClientInstance.ApiPrepare(info, d1.charAt(0), d2.charAt(0));
-
-            if (r != 0) showMsg("!! prepare failed\n");
+            entry.getValue().disconnect();
         }
-        updateSpinnerFromDevList();
-    }
-//
-//    private boolean isAtlasPrebootDevice(UsbDevice device) {
-//        // full-function (fwloaded) atlas device has 2 or 3 EPs.
-//        // preboot (not fwloaded) atlas device has (currently) zero EP.
-//        int vid = device.getVendorId(); int pid = device.getProductId();
-//        if (vid != 0xf055 || pid != 0x1e1b) return false; // not atlas device
-//        UsbConfiguration conf = device.getConfiguration(0);
-//        UsbInterface intf = conf.getInterface(0);
-//        int numEp = intf.getEndpointCount();
-//        Log.d(TAG, "atlas device: num ep = " + numEp);
-//        if (numEp < 2) return true;
-//        return false;
-//    }
-
-    //atlas         if (vid == 0xf055 && pid == 0x1e1b) return true;
-
-    //mVendorId=1204,mProductId=240 CyFX3
-    private boolean isDeviceBootedFX3(UsbDevice device) {
-        int vid = device.getVendorId();
-        int pid = device.getProductId();
-        if (vid == 0x04b4 && pid == 0x00F0) {
-            return true;
-        } else {
-            return false;
-        }
+        Atsc3UsbDevice.AllAtsc3UsbDevices.clear();
     }
 
-    //mVendorId=1204,mProductId=243 CyFX3
-    //pid == 0x00f3??
-    private boolean isDeviceCypressFX3(UsbDevice device) {
-        int vid = device.getVendorId();     //1204 -> 0x04b4
-        int pid = device.getProductId();    //0x00F0
 
-        if (vid == 0x04b4 && pid == 0x00F3) {
-            return true;
-        } else {
-            return false;
-        }
-    }
 
     private void dumpDevice(UsbDevice device, String action) {
         // getConfiguration requires api level >= 21
@@ -1688,15 +1607,16 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
             String action = intent.getAction();
             Log.d(TAG, "get intent action " + action);
 
+            //response from our pending intent for mUsbManager.requestPermission(usbDevice, mPermissionIntent);
             if (ACTION_USB_PERMISSION.equals(action)) {
                 synchronized (this) {
                     UsbDevice device = (UsbDevice)intent.getParcelableExtra(UsbManager.EXTRA_DEVICE);
                     if (device == null) { Log.e(TAG, "null device!"); return; }
-                    if (!isDeviceBootedFX3(device) && !isDeviceCypressFX3(device)) return;
+
                     dumpDevice(device, " has permission");
 
+                    //dispatch a message to try to instantiate our PHY - usbPHYLayerDeviceTryToInstantiateFromRegisteredPHYNDKs(device)
                     if (intent.getBooleanExtra(UsbManager.EXTRA_PERMISSION_GRANTED, false)) {
-                        //connectDeviceAndPrepare(device);
                         Message msg = mHandler.obtainMessage(2, device);
                         mHandler.sendMessage(msg);
                     }
@@ -1707,18 +1627,21 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                     return;
                 }
             }
+
+            //device was already granted permissions and re-connected
             if (UsbManager.ACTION_USB_DEVICE_ATTACHED.equals(action)) {
                 synchronized (this) {
                     UsbDevice device = (UsbDevice)intent.getParcelableExtra(UsbManager.EXTRA_DEVICE);
                     if (device == null) { Log.e(TAG, "null device!"); return; }
-                    if (!isDeviceBootedFX3(device) && !isDeviceCypressFX3(device)) return;
+
                     dumpDevice(device, " attached");
 
                     if (intent.getBooleanExtra(UsbManager.EXTRA_PERMISSION_GRANTED, false)) {
                         //call method to set up device communication
                         Log.d(TAG, "permission granted");
-                        //connectDeviceAndPrepare(device);
-                            // warning: this can occur ANR because it touches UI
+
+                        //dispatch a message to try to instantiate our PHY - usbPHYLayerDeviceTryToInstantiateFromRegisteredPHYNDKs(device)
+
                         Message msg = mHandler.obtainMessage(2, device);
                         mHandler.sendMessage(msg);
                     }
@@ -1742,11 +1665,10 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                 synchronized (this) {
                     UsbDevice device = (UsbDevice)intent.getParcelableExtra(UsbManager.EXTRA_DEVICE);
                     if (device == null) { Log.e(TAG, "null device!"); return; }
-                    if (!isDeviceBootedFX3(device) && !isDeviceCypressFX3(device)) return;
-                    dumpDevice(device, " detached");
-                    disconnectDevice(device);
-                    //prepareDevices();
 
+                    dumpDevice(device, " detached");
+
+                    //send a device disconnected, and try to clear/shutdown our atsc3NdkPHYClientBase
                     Message msg = mHandler.obtainMessage(3, device);
                     mHandler.sendMessage(msg);
 
@@ -1754,10 +1676,9 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                 }
             }
 
-            //make sure to call super impl!
             onReceive(context, intent);
-        } // onReceive
-    }; // MyReceiver
+        }
+    };
 
 
     public void onActivityResult(int requestCode, int resultCode, Intent data) {
@@ -1832,35 +1753,35 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                     break;
                 }
 
-                showMsg(String.format("opening mCurFx3Device: fd: %d, key: %d", mCurAt3Device.fd, mCurAt3Device.key));
-
-                //jjustman-2020-08-18 - TODO - clean this up...
-                new Thread(new Runnable() {
-                    @Override
-                    public void run() {
-
-                        int re = atsc3NdkPHYClientInstance.ApiOpen(mCurAt3Device.fd, mCurAt3Device.key);
-                        if (re < 0) {
-                            showMsgFromNative(String.format("open: failed, r: %d", re));
-                            return;
-                        } else if(re == 240) { //SL_FX3S_I2C_AWAITING_BROADCAST_USB_ATTACHED
-                            showMsgFromNative(String.format("open: pending SL_FX3S_I2C_AWAITING_BROADCAST_USB_ATTACHED event"));
-                            return;
-                        }
-
-                        ServiceHandler.GetInstance().post(new Runnable() {
-                            @Override
-                            public void run() {
-                                ((Button)findViewById(R.id.butTune)).setEnabled(true);
-                                ((Button)findViewById(R.id.butTune)).requestFocus();
-                                btnToggleRfScan.setEnabled(true);
-
-                                ((EditText)findViewById(R.id.editFreqMhz)).setEnabled(true);
-                                ((EditText)findViewById(R.id.editPlp)).setEnabled(true);
-                            }
-                        });
-                    }
-                }).start();
+//                showMsg(String.format("opening mCurFx3Device: fd: %d, key: %d", mCurAt3Device.fd, mCurAt3Device.key));
+//
+//                //jjustman-2020-08-18 - TODO - clean this up...
+//                new Thread(new Runnable() {
+//                    @Override
+//                    public void run() {
+//
+//                        int re = atsc3NdkPHYClientInstance.ApiOpen(mCurAt3Device.fd, mCurAt3Device.key);
+//                        if (re < 0) {
+//                            showMsgFromNative(String.format("open: failed, r: %d", re));
+//                            return;
+//                        } else if(re == 240) { //SL_FX3S_I2C_AWAITING_BROADCAST_USB_ATTACHED
+//                            showMsgFromNative(String.format("open: pending SL_FX3S_I2C_AWAITING_BROADCAST_USB_ATTACHED event"));
+//                            return;
+//                        }
+//
+//                        ServiceHandler.GetInstance().post(new Runnable() {
+//                            @Override
+//                            public void run() {
+//                                ((Button)findViewById(R.id.butTune)).setEnabled(true);
+//                                ((Button)findViewById(R.id.butTune)).requestFocus();
+//                                btnToggleRfScan.setEnabled(true);
+//
+//                                ((EditText)findViewById(R.id.editFreqMhz)).setEnabled(true);
+//                                ((EditText)findViewById(R.id.editPlp)).setEnabled(true);
+//                            }
+//                        });
+//                    }
+//                }).start();
 
                 break;
 
@@ -1876,28 +1797,30 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                 EditText editPlp = (EditText)findViewById(R.id.editPlp);
                 final int plp = Integer.parseInt(editPlp.getText().toString());
                 Log.d(TAG, "tune with freq " + freqMHz + ", plp " + plp);
-                //ThingsUI.WriteToAlphaDisplayNoEx(String.format("T%d", freqMHz));
-                new Thread(new Runnable() {
-                    @Override
-                    public void run() {
-                        int re = atsc3NdkPHYClientInstance.ApiTune(freqMHz * 1000, plp);
-                        if (re != 0) {
-                            showMsgFromNative(String.format("Tune failed with res: %d", re));
-                            return;
-                        }
 
-                        ServiceHandler.GetInstance().post(new Runnable() {
-                            @Override
-                            public void run() {
-                                mServiceSpinner.setEnabled(true);
-                                mServiceSpinner.requestFocus();
-
-                                editServiceIDText.setEnabled(true);
-
+                if(atsc3NdkPHYClientInstance != null) {
+                    new Thread(new Runnable() {
+                        @Override
+                        public void run() {
+                            int re = atsc3NdkPHYClientInstance.tune(freqMHz * 1000, plp);
+                            if (re != 0) {
+                                showMsgFromNative(String.format("Tune failed with res: %d", re));
+                                return;
                             }
-                        });
-                    }
-                }).start();
+
+                            ServiceHandler.GetInstance().post(new Runnable() {
+                                @Override
+                                public void run() {
+                                    mServiceSpinner.setEnabled(true);
+                                    mServiceSpinner.requestFocus();
+
+                                    editServiceIDText.setEnabled(true);
+
+                                }
+                            });
+                        }
+                    }).start();
+                }
 
                 break;
 
@@ -1980,7 +1903,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                     showMsg("no atlas device connected yet\n");
                     break;
                 }
-                r = atsc3NdkPHYClientInstance.ApiReset();
+                //r = atsc3NdkPHYClientInstance.ApiReset();
                 break;
 
             case R.id.butClose:
@@ -2114,39 +2037,39 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
             inputSelectedPcapReplayFromAssetManager = null;
         }
 
-        try {
-            // parse string and get fd
-            int end = s.indexOf(":");
-            if (end <= 0 && end > 10) { // fd digits are probably under 10?
-                Log.d(TAG, "cannot get fd, " + s);
-                return;
-            }
-            int fd = Integer.parseInt(s.substring(0, end));
-            Log.d(TAG, "selected device's fd: " + fd);
-            enableDeviceOpenButtons(true);
-            enableDeviceControlButtons(false);
-
-            // choose the device
-            for (atsc3UsbDevice ad : mAt3Devices) {
-                if (ad.fd == fd) {
-                    if (mCurAt3Device != ad) {
-                        //Log.d(TAG, "new device selected");
-                        showMsg("new device selected\n");
-                        stopAndDeInitAtsc3NdkPHYClientInstance();
-
-                        mCurAt3Device = ad;
-                    } else {
-                        Log.d(TAG, "keep previous selection");
-                    }
-                    return;
-                }
-            }
-
-
-        } catch (Exception ex) {
-            Log.e("onItemSelected", "exception ex: "+ex);
-        }
-        showMsg("device not selected\n");
+//        try {
+//            // parse string and get fd
+//            int end = s.indexOf(":");
+//            if (end <= 0 && end > 10) { // fd digits are probably under 10?
+//                Log.d(TAG, "cannot get fd, " + s);
+//                return;
+//            }
+//            int fd = Integer.parseInt(s.substring(0, end));
+//            Log.d(TAG, "selected device's fd: " + fd);
+//            enableDeviceOpenButtons(true);
+//            enableDeviceControlButtons(false);
+//
+//            // choose the device
+//            for (Atsc3UsbDevice ad : mAt3Devices) {
+//                if (ad.fd == fd) {
+//                    if (mCurAt3Device != ad) {
+//                        //Log.d(TAG, "new device selected");
+//                        showMsg("new device selected\n");
+//                        stopAndDeInitAtsc3NdkPHYClientInstance();
+//
+//                        mCurAt3Device = ad;
+//                    } else {
+//                        Log.d(TAG, "keep previous selection");
+//                    }
+//                    return;
+//                }
+//            }
+//
+//
+//        } catch (Exception ex) {
+//            Log.e("onItemSelected", "exception ex: "+ex);
+//        }
+//        showMsg("device not selected\n");
     }
     @Override
     public void onNothingSelected(AdapterView<?> parent) {

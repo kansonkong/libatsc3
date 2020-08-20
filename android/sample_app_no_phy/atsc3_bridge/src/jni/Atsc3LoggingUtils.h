@@ -7,7 +7,6 @@
 #ifndef LIBATSC3_ANDROID_ATSC3LOGGINGUTILS_H
 #define LIBATSC3_ANDROID_ATSC3LOGGINGUTILS_H
 
-
 #if DEBUG
     #define LOGV(...) __android_log_print(ANDROID_LOG_VERBOSE, MODULE_NAME, __VA_ARGS__)
 	#define LOGD(...) __android_log_print(ANDROID_LOG_DEBUG  , MODULE_NAME, __VA_ARGS__)
