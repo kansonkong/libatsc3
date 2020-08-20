@@ -2,13 +2,9 @@
 // Created by Jason Justman on 2019-09-27.
 //
 
-#ifndef LIBATSC3_ATSC3NDKPHYBRIDGE_H
-#define LIBATSC3_ATSC3NDKPHYBRIDGE_H
-
-#include "Atsc3LoggingUtils.h"
-
-#include <string.h>
 #include <jni.h>
+#include <string.h>
+#include <sys/types.h>
 #include <thread>
 #include <map>
 #include <queue>
@@ -16,17 +12,18 @@
 #include <semaphore.h>
 #include <list>
 
-#include <sys/types.h>
+using namespace std;
+
 #include <android/asset_manager.h>
 #include <android/asset_manager_jni.h>
 
-using namespace std;
+#ifndef LIBATSC3_ATSC3NDKPHYBRIDGE_H
+#define LIBATSC3_ATSC3NDKPHYBRIDGE_H
+
+#define MODULE_NAME "Atsc3NdkPHYBridge"
 
 #include "Atsc3JniEnv.h"
-
-#define DEBUG 1
-
-#define MODULE_NAME "intf"
+#include "Atsc3LoggingUtils.h"
 
 // libatsc3 type imports here
 #include <atsc3_utils.h>
@@ -38,20 +35,11 @@ using namespace std;
 #include "Atsc3BridgeNdkStaticJniLoader.h"
 
 #include <atsc3_core_service_player_bridge.h>
-/*
- * : public libatsc3_Iphy_mockable
- * : public IAtsc3NdkPHYClient
- */
-
-/* phy callback method(s)
- * jjustman:2020-08-10 - TODO - refactor out
-    int atsc3_rx_callback_f(void*, uint64_t ullUser);
-*/
 
 class Atsc3NdkPHYBridge : public IAtsc3NdkPHYBridge
 {
 public:
-    Atsc3NdkPHYBridge(JavaVM* vm);
+    Atsc3NdkPHYBridge(JNIEnv* env, jobject jni_instance);
 
     void LogMsg(const char *msg);
     void LogMsg(const std::string &msg);
@@ -77,39 +65,47 @@ public:
 
     void setRfPhyStatisticsViewVisible(bool isRfPhyStatisticsVisible);
 
-    void setJniInstance(jclass jniInstance) {  this->jniInstance = jniInstance; }
-    jclass getJniInstance() { return this->jniInstance; }
 
 private:
-    // jni stuff
-    JavaVM* javaVM = nullptr;       // Java VM
-    JNIEnv* jniEnvPinned = nullptr;    // Jni Environment pinned to our "dispatcher" thread
-
-    jclass jniInstance = nullptr;   // instance configured from Init() method for callbacks to be dispatched on
+    JNIEnv* env = nullptr;
+    jobject jni_instance_globalRef = nullptr;
+    jclass jni_class_globalRef = nullptr;
 
 public:
+    JavaVM* mJavaVM = nullptr;    // Java VM, if we don't have a pinned thread context for dispatch
+
+    void setJniClassReference(string jclass_name) {
+        if(env) {
+            jclass jclass_local = env->FindClass(jclass_name.c_str());
+            jni_class_globalRef = reinterpret_cast<jclass>(env->NewGlobalRef(jclass_local));
+        }
+    }
+    jclass getJniClassReference() {
+        return jni_class_globalRef;
+    }
+
+    int pinFromRxCaptureThread();
+    Atsc3JniEnv* Atsc3_Jni_Capture_Thread_Env = nullptr;
+
+    int pinFromRxStatusThread();
+    Atsc3JniEnv* Atsc3_Jni_Status_Thread_Env = nullptr;
+
     jmethodID mOnLogMsgId = nullptr;                     // java class method id
     jmethodID atsc3_rf_phy_status_callback_ID = nullptr; // java class method id for phy stats
     jmethodID atsc3_update_rf_bw_stats_ID = nullptr;     // java callback method id for by stats
 
-private:
-
-    Atsc3JniEnv* Atsc3_Jni_Status_Thread_Env = NULL;
-
-    bool JReady() {
-        return javaVM && jniEnvPinned && jniInstance ? true : false;
-    }
-
-
-    //todo: refactor this out - ala https://gist.github.com/qiao-tw/6e43fb2311ee3c31752e11a4415deeb1
-
     std::thread atsc3_rxStatusThread;
+
     void RxStatusThread();
     bool rxStatusThreadShouldRun;
 
 };
 
-#define _BRIDGE_NDK_PHY_ERROR(...)   	__LIBATSC3_TIMESTAMP_ERROR(__VA_ARGS__);
-#define _BRIDGE_NDK_PHY_INFO(...)    	__LIBATSC3_TIMESTAMP_INFO(__VA_ARGS__);
+#define _NDK_PHY_BRIDGE_ERROR(...)   	__LIBATSC3_TIMESTAMP_ERROR(__VA_ARGS__);
+#define _NDK_PHY_BRIDGE_WARN(...)   	__LIBATSC3_TIMESTAMP_WARN(__VA_ARGS__);
+#define _NDK_PHY_BRIDGE_INFO(...)   	__LIBATSC3_TIMESTAMP_INFO(__VA_ARGS__);
+#define _NDK_PHY_BRIDGE_DEBUG(...)   	__LIBATSC3_TIMESTAMP_DEBUG(__VA_ARGS__);
+#define _NDK_PHY_BRIDGE_TRACE(...)   	__LIBATSC3_TIMESTAMP_TRACE(__VA_ARGS__);
+
 
 #endif //LIBATSC3_ATSC3NDKPHYBRIDGE_H

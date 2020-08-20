@@ -4,10 +4,10 @@
 
 #include <string.h>
 #include <jni.h>
-#include <atsc3_core_service_player_bridge.h>
 #include <Atsc3LoggingUtils.h>
 #include <Atsc3JniEnv.h>
 #include <atsc3_utils.h>
+#include <atsc3_core_service_player_bridge.h>
 #include <SRTRxSTLTPVirtualPHY.h>
 
 #ifndef LIBATSC3_ANDROID_SAMPLE_APP_W_PHY_SRTRXSTLTPVIRTUALPHYANDROID_H
@@ -23,6 +23,9 @@ public:
     ~SRTRxSTLTPVirtualPHYAndroid();
 
 protected:
+    JNIEnv* env = nullptr;
+    jobject jni_instance_globalRef = nullptr;
+
     void pinProducerThreadAsNeeded() override;
     void releaseProducerThreadAsNeeded() override;
     Atsc3JniEnv* producerJniEnv = nullptr;
@@ -30,12 +33,6 @@ protected:
     void pinConsumerThreadAsNeeded() override;
     void releaseConsumerThreadAsNeeded() override;
     Atsc3JniEnv* consumerJniEnv = nullptr;
-
-    JNIEnv* env = nullptr;
-    jobject jni_instance_globalRef = nullptr;
-
 };
-
-
 
 #endif //LIBATSC3_ANDROID_SAMPLE_APP_W_PHY_SRTRXSTLTPVIRTUALPHYANDROID_H

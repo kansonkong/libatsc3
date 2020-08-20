@@ -413,8 +413,10 @@ bool atsc3_route_sls_patch_mpd_availability_start_time_and_start_number(atsc3_mi
 	block_t* in_flight_last_mpd_payload = block_Duplicate(atsc3_mime_multipart_related_payload->payload);
 
     if(lls_sls_alc_monitor->has_discontiguous_toi_flow || !lls_sls_alc_monitor->last_mpd_payload) {
-        _ATSC3_ROUTE_SLS_PROCESSOR_WARN("atsc3_route_sls_patch_mpd_availability_start_time_and_start_number, has_discontiguous_toi_flow: %d, last_mpd_payload: %p, rebuilding MPD!",
-        		lls_sls_alc_monitor->has_discontiguous_toi_flow,
+        _ATSC3_ROUTE_SLS_PROCESSOR_WARN("atsc3_route_sls_patch_mpd_availability_start_time_and_start_number, lls_sls_alc_monitor: %p, serviceId: %d, has_discontiguous_toi_flow: %d, last_mpd_payload: %p, rebuilding MPD!",
+        		lls_sls_alc_monitor,
+        		(lls_sls_alc_monitor->atsc3_lls_slt_service ? lls_sls_alc_monitor->atsc3_lls_slt_service->service_id : 0),
+				lls_sls_alc_monitor->has_discontiguous_toi_flow,
         		lls_sls_alc_monitor->last_mpd_payload);
     }
     

@@ -16,8 +16,43 @@ SRTRxSTLTPVirtualPHY::SRTRxSTLTPVirtualPHY() {
 }
 
 SRTRxSTLTPVirtualPHY::SRTRxSTLTPVirtualPHY(string srtConnectionSource) : SRTRxSTLTPVirtualPHY() {
+    atsc3_srt_live_receiver_context_set_srt_source_connection_string(atsc3_srt_live_receiver_context, srtConnectionSource.c_str());
+}
 
-	atsc3_srt_live_receiver_context_set_srt_source_connection_string(atsc3_srt_live_receiver_context, srtConnectionSource.c_str());
+/*
+ * default IPHY impl's here
+ */
+
+int SRTRxSTLTPVirtualPHY::init()
+{
+    return 0;
+}
+
+int SRTRxSTLTPVirtualPHY::run()
+{
+    int ret = 0;
+    if(this->atsc3_srt_live_receiver_context) {
+        ret = this->atsc3_srt_thread_run();
+    }
+    return ret;
+}
+
+bool SRTRxSTLTPVirtualPHY::is_running() {
+    return this->is_srt_running();
+}
+
+int SRTRxSTLTPVirtualPHY::stop()
+{
+    int ret = 0;
+    ret = this->atsc3_srt_thread_stop();
+
+    return ret;
+}
+
+int SRTRxSTLTPVirtualPHY::deinit()
+{
+    delete this;
+    return 0;
 }
 
 void SRTRxSTLTPVirtualPHY::set_srt_source_connection_string(const char* srt_source_connection_string) {
@@ -26,54 +61,20 @@ void SRTRxSTLTPVirtualPHY::set_srt_source_connection_string(const char* srt_sour
 }
 
 
-//
-//
-//void SRTRxSTLTPVirtualPHY::atsc3_srt_stltp_listen_ip_port_plp(string ip, string port, uint8_t plp) {
-//
-//	const char* filter_dst_ip = ip.c_str();
-//	const char* filter_dst_port = port.c_str();
-//
-//	//parse ip
-//	uint32_t dst_ip_addr_filter = 0;
-//	uint16_t dst_port_filter_int = 0;
-//
-//	char* pch = strtok ((char*)filter_dst_ip,".");
-//	int offset = 24;
-//	while (pch != NULL && offset>=0) {
-//		uint8_t octet = atoi(pch);
-//		dst_ip_addr_filter |= octet << offset;
-//		offset-=8;
-//		pch = strtok (NULL, ".");
-//	}
-//
-//	//parse port
-//	dst_port_filter_int = 0xFFFF & atoi(filter_dst_port);
-//
-//	atsc3_stltp_depacketizer_context->destination_flow_filter.dst_ip_addr = dst_ip_addr_filter;
-//	atsc3_stltp_depacketizer_context->destination_flow_filter.dst_port = dst_port_filter_int;
-//
-//	//uint8_t stltp_plp_id = atoi();
-//	if(plp >=0 && plp <= 63) {
-//		atsc3_stltp_depacketizer_context->inner_rtp_port_filter = plp + 30000;
-//	} else {
-//		atsc3_stltp_depacketizer_context->inner_rtp_port_filter = 30000;
-//	}
-//}
-
 //jjustman-2020-08-10: todo - mutex guard this
 int SRTRxSTLTPVirtualPHY::atsc3_srt_thread_run() {
 	atsc3_srt_live_receiver_context->should_run = false;
-    SRTRXSTLTP_VIRTUAL_PHY_INFO("atsc3_srt_thread_run: checking for previous srt_thread: producerShutdown: %d, consumerShutdown: %d", srtProducerShutdown, srtConsumerShutdown);
+    _SRTRXSTLTP_VIRTUAL_PHY_INFO("atsc3_srt_thread_run: checking for previous srt_thread: producerShutdown: %d, consumerShutdown: %d", srtProducerShutdown, srtConsumerShutdown);
 
     //e.g. must contain at least srt://
     if(atsc3_srt_live_receiver_context->source_connection_string == NULL || strlen(atsc3_srt_live_receiver_context->source_connection_string) < 7) {
-        SRTRXSTLTP_VIRTUAL_PHY_ERROR("srtConnectionSource is empty or too short!");
+        _SRTRXSTLTP_VIRTUAL_PHY_ERROR("srtConnectionSource is empty or too short!");
         return -1;
     }
 
     while(!srtProducerShutdown || !srtConsumerShutdown) {
     	usleep(100000);
-        SRTRXSTLTP_VIRTUAL_PHY_INFO("atsc3_srt_thread_run: waiting for shutdown for previous srt_thread: producerShutdown: %d, consumerShutdown: %d", srtProducerShutdown, srtConsumerShutdown);
+        _SRTRXSTLTP_VIRTUAL_PHY_INFO("atsc3_srt_thread_run: waiting for shutdown for previous srt_thread: producerShutdown: %d, consumerShutdown: %d", srtProducerShutdown, srtConsumerShutdown);
     }
 
     if(srtProducerThreadPtr.joinable()) {
@@ -84,13 +85,13 @@ int SRTRxSTLTPVirtualPHY::atsc3_srt_thread_run() {
 	}
 
 	atsc3_srt_live_receiver_context->should_run = true;
-    SRTRXSTLTP_VIRTUAL_PHY_INFO("atsc3_srt_thread_run: setting atsc3_srt_live_receiver_context->should_run: %d", atsc3_srt_live_receiver_context->should_run);
+    _SRTRXSTLTP_VIRTUAL_PHY_INFO("atsc3_srt_thread_run: setting atsc3_srt_live_receiver_context->should_run: %d", atsc3_srt_live_receiver_context->should_run);
 
     srtProducerThreadPtr = std::thread([this](){
 		srtProducerShutdown = false;
     	pinProducerThreadAsNeeded();
 
-        SRTRXSTLTP_VIRTUAL_PHY_INFO("SRTRxSTLTPVirtualPHY::atsc3_srt_producer_thread_run with this: %p", this);
+        _SRTRXSTLTP_VIRTUAL_PHY_INFO("SRTRxSTLTPVirtualPHY::atsc3_srt_producer_thread_run with this: %p", this);
         this->srtProducerThreadRun();
         releaseProducerThreadAsNeeded();
     });
@@ -98,15 +99,15 @@ int SRTRxSTLTPVirtualPHY::atsc3_srt_thread_run() {
     srtConsumerThreadPtr = std::thread([this](){
     	srtConsumerShutdown = false;
 		pinConsumerThreadAsNeeded();
-        SRTRXSTLTP_VIRTUAL_PHY_INFO("SRTRxSTLTPVirtualPHY::atsc3_srt_consumer_thread_run with this: %p", this);
+        _SRTRXSTLTP_VIRTUAL_PHY_INFO("SRTRxSTLTPVirtualPHY::atsc3_srt_consumer_thread_run with this: %p", this);
 
         this->srtConsumerThreadRun();
         releaseConsumerThreadAsNeeded();
     });
 
-    SRTRXSTLTP_VIRTUAL_PHY_INFO("atsc3_srt_thread_run: threads created, srtProducerThreadPtr id: %lu, srtConsumerThreadPtr id: %lu",
-                                  __SRTRxSTLTPVirtualPHY_thread_hasher__(srtProducerThreadPtr.get_id()),
-                                  __SRTRxSTLTPVirtualPHY_thread_hasher__(srtConsumerThreadPtr.get_id()));
+    _SRTRXSTLTP_VIRTUAL_PHY_INFO("atsc3_srt_thread_run: threads created, srtProducerThreadPtr id: %lu, srtConsumerThreadPtr id: %lu",
+                                 __SRTRxSTLTPVirtualPHY_thread_hasher__(srtProducerThreadPtr.get_id()),
+                                 __SRTRxSTLTPVirtualPHY_thread_hasher__(srtConsumerThreadPtr.get_id()));
 
     return 0;
 }
@@ -114,8 +115,8 @@ int SRTRxSTLTPVirtualPHY::atsc3_srt_thread_run() {
 int SRTRxSTLTPVirtualPHY::srtLocalCleanup() {
     int spinlock_count = 0;
     while(spinlock_count++ < 10 && (!srtProducerShutdown || !srtConsumerShutdown)) {
-        SRTRXSTLTP_VIRTUAL_PHY_INFO("SRTRxSTLTPVirtualPHY::srtLocalCleanup: waiting for srtProducerShutdown: %d, srtConsumerShutdown: %d, atsc3_srt_live_receiver_context->should_run: %d",
-                srtProducerShutdown, srtConsumerShutdown, atsc3_srt_live_receiver_context->should_run);
+        _SRTRXSTLTP_VIRTUAL_PHY_INFO("SRTRxSTLTPVirtualPHY::srtLocalCleanup: waiting for srtProducerShutdown: %d, srtConsumerShutdown: %d, atsc3_srt_live_receiver_context->should_run: %d",
+                                     srtProducerShutdown, srtConsumerShutdown, atsc3_srt_live_receiver_context->should_run);
         usleep(100000);
     }
     //release any local resources held in our context
@@ -143,7 +144,7 @@ int SRTRxSTLTPVirtualPHY::atsc3_srt_thread_stop() {
 		atsc3_srt_live_receiver_notify_shutdown(atsc3_srt_live_receiver_context);
 	}
 
-    SRTRXSTLTP_VIRTUAL_PHY_INFO("SRTRxSTLTPVirtualPHY::atsc3_srt_thread_stop with this: %p", &srtProducerThreadPtr);
+    _SRTRXSTLTP_VIRTUAL_PHY_INFO("SRTRxSTLTPVirtualPHY::atsc3_srt_thread_stop with this: %p", &srtProducerThreadPtr);
     if(srtProducerThreadPtr.joinable()) {
         srtProducerThreadPtr.join();
     }
@@ -151,7 +152,7 @@ int SRTRxSTLTPVirtualPHY::atsc3_srt_thread_stop() {
     if(srtConsumerThreadPtr.joinable()) {
         srtConsumerThreadPtr.join();
     }
-    SRTRXSTLTP_VIRTUAL_PHY_INFO("SRTRxSTLTPVirtualPHY::atsc3_srt_thread_stop: stopped with this: %p", &srtProducerThreadPtr);
+    _SRTRXSTLTP_VIRTUAL_PHY_INFO("SRTRxSTLTPVirtualPHY::atsc3_srt_thread_stop: stopped with this: %p", &srtProducerThreadPtr);
 
     srtLocalCleanup();
     return 0;
@@ -173,10 +174,10 @@ int SRTRxSTLTPVirtualPHY::srtProducerThreadRun() {
 
     int packet_push_count = 0;
 
-    SRTRXSTLTP_VIRTUAL_PHY_INFO("SRTRxSTLTPVirtualPHY::srtProducerThreadRun with this: %p", this);
+    _SRTRXSTLTP_VIRTUAL_PHY_INFO("SRTRxSTLTPVirtualPHY::srtProducerThreadRun with this: %p", this);
 
     if(!atsc3_stltp_depacketizer_context) {
-        SRTRXSTLTP_VIRTUAL_PHY_INFO("SRTRxSTLTPVirtualPHY::srtProducerThreadRun - ERROR - no atsc3_stltp_depacketizer_context!");
+        _SRTRXSTLTP_VIRTUAL_PHY_INFO("SRTRxSTLTPVirtualPHY::srtProducerThreadRun - ERROR - no atsc3_stltp_depacketizer_context!");
         atsc3_srt_live_receiver_context->should_run = false;
         return -1;
     }
@@ -199,7 +200,7 @@ int SRTRxSTLTPVirtualPHY::srtProducerThreadRun() {
 //                block_t* phy_payload = block_Duplicate_from_position(atsc3_srt_replay_local_context->atsc3_srt_packet_instance.current_srt_packet);
 //                block_Rewind(atsc3_srt_replay_local_context->atsc3_srt_packet_instance.current_srt_packet);
 //                if(phy_payload->p_size && (packet_push_count++ % 10000) == 0) {
-//                    SRTRXSTLTP_VIRTUAL_PHY_INFO("SRTRxSTLTPVirtualPHY::RunsrtThreadParser - pushing to atsc3_core_service_bridge_process_packet_phy: count: %d, len was: %d, new payload: %p (0x%02x 0x%02x), len: %d",
+//                    _SRTRXSTLTP_VIRTUAL_PHY_INFO("SRTRxSTLTPVirtualPHY::RunsrtThreadParser - pushing to atsc3_core_service_bridge_process_packet_phy: count: %d, len was: %d, new payload: %p (0x%02x 0x%02x), len: %d",
 //                            packet_push_count,
 //                            atsc3_srt_replay_local_context->atsc3_srt_packet_instance.current_srt_packet->p_size,
 //                            phy_payload,
@@ -229,7 +230,7 @@ int SRTRxSTLTPVirtualPHY::srtProducerThreadRun() {
 //
 
     atsc3_srt_live_receiver_context->should_run = false;
-    SRTRXSTLTP_VIRTUAL_PHY_INFO("SRTRxSTLTPVirtualPHY::RunsrtThreadParser - unwinding thread, atsc3_srt_live_receiver_context->should_run is false, res: %d", res);
+    _SRTRXSTLTP_VIRTUAL_PHY_INFO("SRTRxSTLTPVirtualPHY::RunsrtThreadParser - unwinding thread, atsc3_srt_live_receiver_context->should_run is false, res: %d", res);
 
     //unlock our consumer thread
     lock_guard<mutex> srt_replay_buffer_queue_guard(srt_rx_buffer_queue_mutex);
@@ -330,48 +331,4 @@ void SRTRxSTLTPVirtualPHY::atsc3_stltp_baseband_alp_packet_collection_received(a
 }
 
 
-
-/*
- * default IPHY impl's here
- */
-
-int SRTRxSTLTPVirtualPHY::Init()
-{
-    return 0;
-}
-
-int SRTRxSTLTPVirtualPHY::Prepare(const char *strDevListInfo, int delim1, int delim2)
-{
-    return 0;
-}
-
-int SRTRxSTLTPVirtualPHY::Open(int fd, int bus, int addr)
-{
-    return 0;
-}
-
-int SRTRxSTLTPVirtualPHY::Tune(int freqKHz, int plpid)
-{
-    return 0;
-}
-
-int SRTRxSTLTPVirtualPHY::Stop()
-{
-    return 0;
-}
-
-int SRTRxSTLTPVirtualPHY::Reset()
-{
-    return 0;
-}
-
-int SRTRxSTLTPVirtualPHY::Close()
-{
-    return 0;
-}
-
-int SRTRxSTLTPVirtualPHY::Uninit()
-{
-    return 0;
-}
 

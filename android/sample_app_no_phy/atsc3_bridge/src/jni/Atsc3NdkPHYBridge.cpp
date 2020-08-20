@@ -1,24 +1,25 @@
 #include "Atsc3NdkPHYBridge.h"
 
-Atsc3NdkPHYBridge* api = NULL;
+Atsc3NdkPHYBridge* atsc3NdkPHYBridge = nullptr;
 
-Atsc3NdkPHYBridge::Atsc3NdkPHYBridge(JavaVM *vm) {
-    this->javaVM = vm;
-    gtl();
+Atsc3NdkPHYBridge::Atsc3NdkPHYBridge(JNIEnv* env, jobject jni_instance) {
+    this->env = env;
+    this->jni_instance_globalRef = env->NewGlobalRef(jni_instance);
 }
 
+//jjustman-2020-08-19: TODO: get (or create) a pinned Atsc3JniEnv from pthread_cur
 void Atsc3NdkPHYBridge::LogMsg(const char *msg)
 {
-    // this method can be called in native thread. we don't safely use pre-assigned mJniEnv.
-    if (!JReady() || !mOnLogMsgId)
+    if (!mOnLogMsgId)
         return;
-    Atsc3JniEnv env(this->javaVM);
+
+    Atsc3JniEnv env(mJavaVM);
     if (!env) {
-        _BRIDGE_NDK_PHY_ERROR("!! err on get jni env");
+        _NDK_PHY_BRIDGE_ERROR("LogMsg: error creating env pin!");
         return;
     }
     jstring js = env.Get()->NewStringUTF(msg);
-    int r = env.Get()->CallIntMethod(jniInstance, mOnLogMsgId, js);
+    int r = env.Get()->CallIntMethod(jni_instance_globalRef, mOnLogMsgId, js);
     env.Get()->DeleteLocalRef(js);
 }
 
@@ -55,14 +56,14 @@ void Atsc3NdkPHYBridge::atsc3_update_rf_stats(int32_t tuner_lock,
                                               uint8_t plp_all) {
 
     // this method can be called in native thread. we don't safely use pre-assigned mJniEnv.
-    if (!JReady() || !atsc3_rf_phy_status_callback_ID)
+    if (!atsc3_rf_phy_status_callback_ID)
         return;
 
     if (!Atsc3_Jni_Status_Thread_Env) {
-        _BRIDGE_NDK_PHY_ERROR("Atsc3NdkPHYBridge:atsc3_update_rf_stats: err on get jni env: Atsc3_Jni_Status_Thread_Env");
+        _NDK_PHY_BRIDGE_ERROR("Atsc3NdkPHYBridge:atsc3_update_rf_stats: err on get jni env: Atsc3_Jni_Status_Thread_Env");
         return;
     }
-    int r = Atsc3_Jni_Status_Thread_Env->Get()->CallIntMethod(jniInstance,
+    int r = Atsc3_Jni_Status_Thread_Env->Get()->CallIntMethod(jni_instance_globalRef,
                                                               atsc3_rf_phy_status_callback_ID,
                                                               tuner_lock,
                                                               rssi,
@@ -86,13 +87,14 @@ void Atsc3NdkPHYBridge::atsc3_update_rf_stats(int32_t tuner_lock,
 void Atsc3NdkPHYBridge::atsc3_update_rf_bw_stats(uint64_t total_pkts,
                                                     uint64_t total_bytes,
                                                     unsigned int total_lmts) {
-    if (!JReady() || !atsc3_update_rf_bw_stats_ID)
+    if (!atsc3_update_rf_bw_stats_ID)
         return;
+
     if (!Atsc3_Jni_Status_Thread_Env) {
-        _BRIDGE_NDK_PHY_ERROR("Atsc3NdkPHYBridge:atsc3_update_rf_bw_stats: err on get jni env: Atsc3_Jni_Status_Thread_Env");
+        _NDK_PHY_BRIDGE_ERROR("Atsc3NdkPHYBridge:atsc3_update_rf_bw_stats: err on get jni env: Atsc3_Jni_Status_Thread_Env");
         return;
     }
-    int r = Atsc3_Jni_Status_Thread_Env->Get()->CallIntMethod(jniInstance,
+    int r = Atsc3_Jni_Status_Thread_Env->Get()->CallIntMethod(jni_instance_globalRef,
             atsc3_update_rf_bw_stats_ID,
             total_pkts,
             total_bytes,
@@ -103,47 +105,59 @@ void Atsc3NdkPHYBridge::setRfPhyStatisticsViewVisible(bool isRfPhyStatisticsVisi
     rxStatusThreadShouldRun = isRfPhyStatisticsVisible;
 }
 
-//Java to native methods
+int Atsc3NdkPHYBridge::pinFromRxCaptureThread() {
+    _NDK_PHY_BRIDGE_INFO("Atsc3NdkPHYBridge::pinFromRxCaptureThread: mJavaVM: %p", mJavaVM);
+    Atsc3_Jni_Capture_Thread_Env = new Atsc3JniEnv(mJavaVM);
+    return 0;
+};
 
-//jjustman-2020-08-18 - is this really needed?
+int Atsc3NdkPHYBridge::pinFromRxStatusThread() {
+    _NDK_PHY_BRIDGE_INFO("Atsc3NdkPHYBridge::pinFromRxStatusThread: mJavaVM: %p", mJavaVM);
+    Atsc3_Jni_Status_Thread_Env = new Atsc3JniEnv(mJavaVM);
+    return 0;
+}
 
 extern "C" JNIEXPORT jint JNICALL
 Java_org_ngbp_libatsc3_middleware_Atsc3NdkPHYBridge_init(JNIEnv *env, jobject instance)
 {
-    api = new Atsc3NdkPHYBridge(atsc3_bridge_ndk_static_loader_get_javaVM());
+    atsc3NdkPHYBridge = new Atsc3NdkPHYBridge(env, instance);
+    _NDK_PHY_BRIDGE_INFO("Java_org_ngbp_libatsc3_middleware_Atsc3NdkPHYBridge_Init: start init, env: %p", env);
+    atsc3NdkPHYBridge->setJniClassReference("org/ngbp/libatsc3/middleware/Atsc3NdkPHYBridge");
+    atsc3NdkPHYBridge->mJavaVM = atsc3_bridge_ndk_static_loader_get_javaVM();
 
-    _BRIDGE_NDK_PHY_INFO("Java_org_ngbp_libatsc3_middleware_Atsc3NdkPHYBridge_Init: start init, env: %p\n", env);
-
-    api->setJniInstance((jclass) env->NewGlobalRef(instance));
-
-    jclass jClazz = env->FindClass("org/ngbp/libatsc3/middleware/Atsc3NdkPHYBridge");
-    if (jClazz == NULL) {
-        _BRIDGE_NDK_PHY_ERROR("PHY_BRIDGE::JNI_OnLoad - Cannot find org/ngbp/libatsc3/middleware/Atsc3NdkPHYBridge java class");
+    if(atsc3NdkPHYBridge->mJavaVM == NULL) {
+        _NDK_PHY_BRIDGE_ERROR("Atsc3NdkPHYBridge_init: atsc3NdkPHYBridge->mJavaVM is NULL!");
         return -1;
     }
 
-    api->mOnLogMsgId = env->GetMethodID(jClazz, "onLogMsg", "(Ljava/lang/String;)I");
-    if (api->mOnLogMsgId == NULL) {
-        _BRIDGE_NDK_PHY_ERROR("PHY_BRIDGE::JNI_OnLoad - Cannot find 'onLogMsg' method id");
+    jclass jniClassReference = atsc3NdkPHYBridge->getJniClassReference();
+
+    if (jniClassReference == NULL) {
+        _NDK_PHY_BRIDGE_ERROR("Atsc3NdkPHYBridge_init: cannot find atsc3NdkPHYBridge java class reference!");
+        return -2;
+    }
+
+    atsc3NdkPHYBridge->mOnLogMsgId = env->GetMethodID(jniClassReference, "onLogMsg", "(Ljava/lang/String;)I");
+    if (atsc3NdkPHYBridge->mOnLogMsgId == NULL) {
+        _NDK_PHY_BRIDGE_ERROR("Atsc3NdkPHYBridge_init: cannot find 'onLogMsg' method id");
         return -1;
     }
 
-    api->atsc3_rf_phy_status_callback_ID = env->GetMethodID(jClazz, "atsc3_rf_phy_status_callback", "(IIIIIIIIIIIIIII)I");
-    if (api->atsc3_rf_phy_status_callback_ID == NULL) {
-        _BRIDGE_NDK_PHY_ERROR("PHY_BRIDGE::JNI_OnLoad - 'atsc3_rf_phy_status_callback' method id");
+    atsc3NdkPHYBridge->atsc3_rf_phy_status_callback_ID = env->GetMethodID(jniClassReference, "atsc3_rf_phy_status_callback", "(IIIIIIIIIIIIIII)I");
+    if (atsc3NdkPHYBridge->atsc3_rf_phy_status_callback_ID == NULL) {
+        _NDK_PHY_BRIDGE_ERROR("Atsc3NdkPHYBridge_init: cannot find 'atsc3_rf_phy_status_callback' method id");
         return -1;
     }
 
     //atsc3_update_rf_bw_stats_ID
-    api->atsc3_update_rf_bw_stats_ID = env->GetMethodID(jClazz, "atsc3_updateRfBwStats", "(JJI)I");
-    if (api->atsc3_update_rf_bw_stats_ID == NULL) {
-        _BRIDGE_NDK_PHY_ERROR("PHY_BRIDGE::JNI_OnLoad - Cannot find 'atsc3_update_rf_bw_stats_ID' method id");
+    atsc3NdkPHYBridge->atsc3_update_rf_bw_stats_ID = env->GetMethodID(jniClassReference, "atsc3_updateRfBwStats", "(JJI)I");
+    if (atsc3NdkPHYBridge->atsc3_update_rf_bw_stats_ID == NULL) {
+        _NDK_PHY_BRIDGE_ERROR("Atsc3NdkPHYBridge_init: cannot find 'atsc3_update_rf_bw_stats_ID' method id");
         return -1;
     }
-
-
-    atsc3_core_service_phy_bridge_init(api);
-    _BRIDGE_NDK_PHY_INFO("Atsc3NdkPHYBridge_Init: with jniInstance: %p", api->getJniInstance());
+    
+    atsc3_core_service_phy_bridge_init(atsc3NdkPHYBridge);
+    _NDK_PHY_BRIDGE_INFO("Atsc3NdkPHYBridge_init: done, with atsc3NdkPHYBridge: %p", atsc3NdkPHYBridge);
     return 0;
 }
 
@@ -152,9 +166,9 @@ extern "C"
 JNIEXPORT jint JNICALL
 Java_org_ngbp_libatsc3_middleware_Atsc3NdkPHYBridge_setRfPhyStatisticsViewVisible(JNIEnv *env, jobject thiz, jboolean is_rf_phy_statistics_visible) {
     if(is_rf_phy_statistics_visible) {
-        api->setRfPhyStatisticsViewVisible(true);
+        atsc3NdkPHYBridge->setRfPhyStatisticsViewVisible(true);
     } else {
-        api->setRfPhyStatisticsViewVisible(false);
+        atsc3NdkPHYBridge->setRfPhyStatisticsViewVisible(false);
     }
     return 0;
 }

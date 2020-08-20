@@ -50,6 +50,8 @@ void alc_process_from_udp_packet(udp_packet_t* udp_packet) {
 
         //auto-assign our first ROUTE service id here
         if(lls_table && lls_table->lls_table_id == SLT) {
+            _SRT_STLTP_VIRTUAL_PHY_ALC_WRITER_INFO("LLS table is:\n%s", lls_table->raw_xml.xml_payload);
+
             for(int i=0; i < lls_table->slt_table.atsc3_lls_slt_service_v.count; i++) {
                 atsc3_lls_slt_service_t* atsc3_lls_slt_service = lls_table->slt_table.atsc3_lls_slt_service_v.data[i];
                 if(atsc3_lls_slt_service->atsc3_slt_broadcast_svc_signalling_v.count &&
@@ -118,7 +120,12 @@ void alc_process_from_udp_packet(udp_packet_t* udp_packet) {
 			_SRT_STLTP_VIRTUAL_PHY_ALC_WRITER_ERROR("Error in ALC decode: %d", retval);
 		}
 	} else {
-		_SRT_STLTP_VIRTUAL_PHY_ALC_WRITER_INFO("Discarding packet: lls_sls_alc_monitor: %p, matching_lls_sls_alc_monitor: %p, matching_lls_slt_alc_session: %p, ", lls_sls_alc_monitor, matching_lls_sls_alc_monitor, matching_lls_slt_alc_session);
+#ifdef __PENDANTIC__
+		_SRT_STLTP_VIRTUAL_PHY_ALC_WRITER_INFO("Discarding packet: lls_sls_alc_monitor: %p, matching_lls_sls_alc_monitor: %p, matching_lls_slt_alc_session: %p, packet: %u.%u.%u.%u:%u, size: %d",
+				lls_sls_alc_monitor, matching_lls_sls_alc_monitor, matching_lls_slt_alc_session,
+				__toipandportnonstruct(udp_packet->udp_flow.dst_ip_addr, udp_packet->udp_flow.dst_port),
+				udp_packet->data->p_size);
+#endif
 	}
 
 udp_packet_free:

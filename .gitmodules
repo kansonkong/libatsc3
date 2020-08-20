@@ -36,3 +36,10 @@
 	path = srt
 	url = https://github.com/jjustman/srt.git
 	
+[submodule "saankhyalabs-slsdk"]
+	path = saankhyalabs-slsdk
+	url = git@ssh.dev.azure.com:v3/NGWP/Mark%20One%20Phone/saankhyalabs-slsdk
+	branch = slsdk-0.10
+[submodule "libusb_android"]
+	path = libusb_android
+	url = https://github.com/jjustman/libusb_android.git
