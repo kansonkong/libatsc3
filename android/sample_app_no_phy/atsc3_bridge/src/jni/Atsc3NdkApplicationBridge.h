@@ -2,11 +2,7 @@
 // Created by Jason Justman on 2019-09-27.
 //
 
-#ifndef LIBATSC3_ATSC3NDKAPPLICATIONBRIDGE_H
-#define LIBATSC3_ATSC3NDKAPPLICATIONBRIDGE_H
-
-#include "Atsc3LoggingUtils.h"
-
+#include <jni.h>
 #include <string.h>
 #include <thread>
 #include <map>
@@ -14,28 +10,34 @@
 #include <mutex>
 #include <semaphore.h>
 #include <list>
-#include <android/asset_manager.h>
-#include <android/asset_manager_jni.h>
 #include <sys/types.h>
 
-#define DEBUG 1
+using namespace std;
 
+#include <android/asset_manager.h>
+#include <android/asset_manager_jni.h>
+
+#ifndef LIBATSC3_ATSC3NDKAPPLICATIONBRIDGE_H
+#define LIBATSC3_ATSC3NDKAPPLICATIONBRIDGE_H
+
+#define MODULE_NAME "Atsc3NdkApplicationBridge"
+
+#include "Atsc3LoggingUtils.h"
 #include "Atsc3JniEnv.h"
 
 // libatsc3 type imports here
 #include <atsc3_utils.h>
 #include <atsc3_logging_externs.h>
 #include <atsc3_lls_types.h>
-#include "atsc3_alc_rx.h"
+#include <atsc3_alc_rx.h>
 #include <atsc3_pcap_type.h>
 #include <atsc3_monitor_events_alc.h>
 #include <atsc3_route_package_utils.h>
 #include <application/IAtsc3NdkApplicationBridge.h>
 
-#include <atsc3_core_service_player_bridge.h>
 #include "Atsc3BridgeNdkStaticJniLoader.h"
 
-#define MODULE_NAME "intf"
+#include <atsc3_core_service_player_bridge.h>
 
 class Atsc3NdkApplicationBridge : public IAtsc3NdkApplicationBridge
 {
@@ -87,17 +89,26 @@ public:
 
     void atsc3_sls_on_held_trigger_received_callback_jni(uint16_t service_id, const char *held_payload);
 
-    //int RxThread();
+    void atsc3_onMfuSampleMissing(uint16_t i, uint32_t i1, uint32_t i2);
 
-    int pinFromRxCaptureThread();
-    int pinFromRxProcessingThread();
-    int pinFromRxStatusThread();
+    std::string get_android_temp_folder();
 
-    int RxThread();
+private:
+    JNIEnv* env = nullptr;
+    jobject jni_instance_globalRef = nullptr;
+    jclass jni_class_globalRef = nullptr;
 
-    //Atsc3JniEnv* Atsc3_Jni_Capture_Thread_Env = NULL;
-    Atsc3JniEnv* Atsc3_Jni_Processing_Thread_Env = NULL;
-    Atsc3JniEnv* Atsc3_Jni_Status_Thread_Env = NULL;
+    std::thread mhRxThread;
+
+    //alc service monitoring
+    vector<int>                     atsc3_slt_alc_additional_services_monitored;
+
+    //global env.Get()->NewGlobalRef(jobjectByteBuffer); for c alloc'd MFU's and NAL's
+    std::vector<jobject> global_jobject_mfu_refs;
+    std::vector<jobject> global_jobject_nal_refs;
+
+public:
+    JavaVM* mJavaVM = nullptr;    // Java VM, if we don't have a pinned thread context for dispatch
 
     void setJniClassReference(string jclass_name) {
         if(env) {
@@ -105,62 +116,15 @@ public:
             jni_class_globalRef = reinterpret_cast<jclass>(env->NewGlobalRef(jclass_local));
         }
     }
+
     jclass getJniClassReference() {
         return jni_class_globalRef;
     }
-private:
-    JNIEnv* env = nullptr;
-    jobject jni_instance_globalRef = nullptr;
-    jclass jni_class_globalRef = nullptr;
 
-    bool mbInit;
+    int pinFromRxProcessingThread();
+    Atsc3JniEnv* Atsc3_Jni_Processing_Thread_Env = nullptr;
 
-    std::thread mhRxThread;
-
-    bool mbLoop, mbRun;
-
-    // statistics
-    uint32_t s_ulLastTickPrint;
-    uint64_t s_ullTotalBytes = 0;
-    uint64_t s_ullTotalPkts;
-    unsigned s_uTotalLmts = 0;
-    std::map<std::string, unsigned> s_mapIpPort;
-    int s_nPrevLmtVer = -1;
-    uint32_t s_ulL1SecBase;
-
-    //alc service monitoring
-    vector<int>                     atsc3_slt_alc_additional_services_monitored;
-
-
-public:
-    jobject     global_pcap_asset_manager_ref = NULL;
-
-private:
-    //global env.Get()->NewGlobalRef(jobjectByteBuffer); for c alloc'd MFU's and NAL's
-    std::vector<jobject> global_jobject_mfu_refs;
-    std::vector<jobject> global_jobject_nal_refs;
-
-public:
-    void ResetStatstics() {
-        s_ulLastTickPrint = 0;
-        s_ullTotalBytes = s_ullTotalPkts = 0;
-        s_uTotalLmts = 0;
-        s_mapIpPort.clear();
-        s_nPrevLmtVer = -1;
-        s_ulL1SecBase = 0;
-    }
-
-public:
-
-    //jjustman-2020-08-18 - todo - remove me - OLD
-    // jni stuff
-    JavaVM* mJavaVM = nullptr;    // Java VM
-
-    bool JReady() {
-        return mJavaVM && env && jni_class_globalRef ? true : false;
-    }
-
-    jmethodID mOnLogMsgId = nullptr;  // java class method id
+    jmethodID mOnLogMsgId = nullptr;
 
     jmethodID atsc3_onSlsTablePresent_ID = nullptr; //push LLS SLT table update
     jmethodID atsc3_onMfuPacketID = nullptr; //java method for pushing to a/v codec buffers
@@ -188,21 +152,17 @@ public:
     jclass packageExtractEnvelopeMetadataAndPayload_MultipartRelatedPayload_jclass_init_env = nullptr;
     jclass packageExtractEnvelopeMetadataAndPayload_MultipartRelatedPayload_jclass_global_ref = nullptr;
 
-
     //todo: refactor this out - ala https://gist.github.com/qiao-tw/6e43fb2311ee3c31752e11a4415deeb1
-
     jclass      jni_java_util_ArrayList = nullptr;
     jmethodID   jni_java_util_ArrayList_cctor = nullptr;
     jmethodID   jni_java_util_ArrayList_add = nullptr;
-
-    void atsc3_onMfuSampleMissing(uint16_t i, uint32_t i1, uint32_t i2);
-
-    std::string get_android_temp_folder();
-
 };
 
 #define _NDK_APPLICATION_BRIDGE_ERROR(...)   	__LIBATSC3_TIMESTAMP_ERROR(__VA_ARGS__);
+#define _NDK_APPLICATION_BRIDGE_WARN(...)   	__LIBATSC3_TIMESTAMP_WARN(__VA_ARGS__);
 #define _NDK_APPLICATION_BRIDGE_INFO(...)   	__LIBATSC3_TIMESTAMP_INFO(__VA_ARGS__);
+#define _NDK_APPLICATION_BRIDGE_DEBUG(...)   	__LIBATSC3_TIMESTAMP_DEBUG(__VA_ARGS__);
+#define _NDK_APPLICATION_BRIDGE_TRACE(...)   	__LIBATSC3_TIMESTAMP_TRACE(__VA_ARGS__);
 
 
 

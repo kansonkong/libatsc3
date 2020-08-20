@@ -22,7 +22,7 @@ android {
             jniDebuggable = true
             debuggable true
         }
-        libatsc3_phy_virtual {
+        libatsc3_phy_saankhya {
 
         }
 
@@ -46,7 +46,6 @@ android {
         // specify the path to your object binaries, or generally:
         doNotStrip '**.so'
     }
-
 }
 
 repositories {
@@ -73,9 +72,6 @@ dependencies {
 
     //implementation project(':atsc3_core')
     //implementation project(':atsc3_bridge')
-
-
-    implementation 'com.android.ndk.thirdparty:openssl:1.1.1d-alpha-1'
 
     debugApi project(':atsc3_core')
     debugApi fileTree(dir: '../atsc3_core/build/intermediates/ndkBuild/debug/obj/local', include: ['**/libatsc3_core.so'])

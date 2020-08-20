@@ -3,4 +3,5 @@
 # 	$(call import-module,prefab/openssl)
 #
 # commented out original top-level makefile:
-# include $(call all-subdir-makefiles)
+#
+include $(call all-subdir-makefiles)

@@ -11,10 +11,17 @@ class Atsc3JniEnv
 {
 public:
     Atsc3JniEnv(JavaVM *jvm): mJvm(jvm) {
-        int r = jvm->GetEnv((void **)&mJniEnv, JNI_VERSION_1_4);
-        if (r == JNI_OK) return;
+        int r = jvm->GetEnv((void **)&mJniEnv, JNI_VERSION_1_6);
+
+        if (r == JNI_OK) {
+            return;
+        }
+
         r = jvm->AttachCurrentThread(&mJniEnv, 0);
-        if (r == 0) mAttached = true;
+
+        if (r == 0) {
+            mAttached = true;
+        }
     }
     virtual ~Atsc3JniEnv() {
         if (mJniEnv && mAttached)

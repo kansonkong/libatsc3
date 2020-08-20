@@ -159,6 +159,13 @@ public class Atsc3NdkApplicationBridge extends Atsc3BridgeNdkStaticJniLoader
 
 
     int atsc3_onExtractedSampleDuration(int packet_id, int mpu_sequence_number, int extracted_sample_duration_us) {
+        //jjustman-2020-08-19 - audio duration work-around for ac-4
+        if (MmtPacketIdContext.audio_packet_id == packet_id && extracted_sample_duration_us <= 0) {
+            extracted_sample_duration_us = MmtPacketIdContext.video_packet_statistics.extracted_sample_duration_us;
+            MmtPacketIdContext.audio_packet_statistics.extracted_sample_duration_us = extracted_sample_duration_us;
+            return 0;
+
+        }
         if(extracted_sample_duration_us <= 0) {
             Log.e("atsc3_onExtractedSampleDuration", String.format("extracted sample duration for packet_id: %d, mpu_sequence_number: %d, value %d is invalid", packet_id, mpu_sequence_number, extracted_sample_duration_us));
             return 0;

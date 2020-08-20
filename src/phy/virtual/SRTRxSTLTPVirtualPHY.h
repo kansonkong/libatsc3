@@ -33,103 +33,83 @@ using namespace std;
  *
  */
 
-class SRTRxSTLTPVirtualPHY : public IAtsc3NdkPHYClient
-{
-public:
-	SRTRxSTLTPVirtualPHY();
-	SRTRxSTLTPVirtualPHY(string srtConnectionSource);
+class SRTRxSTLTPVirtualPHY : public IAtsc3NdkPHYClient {
 
-    int Init();
-    int Prepare(const char *strDevListInfo, int delim1, int delim2);
-    int Open(int fd, int bus, int addr);
-    int Tune(int freqKHz, int plpId);
-    int Stop();
-    int Close();
-    int Reset();
-    int Uninit();
+    public:
+        SRTRxSTLTPVirtualPHY();
+        SRTRxSTLTPVirtualPHY(string srtConnectionSource);
 
-    /*
-     * SRT methods
-     */
+        virtual int init() override;
+        virtual int run() override;
+        virtual bool is_running() override;
+        virtual int stop() override;
+        virtual int deinit() override;
 
-    void set_srt_source_connection_string(const char* srt_source_connection_string);
+        /*
+         * SRT methods
+         */
 
-    int atsc3_srt_thread_run();
-    int atsc3_srt_thread_stop(); 							//will invoke cleanup of context
-
-    bool is_srt_running();
-
-    //special "friend" callback from srt_live_receiver context
-    static void Atsc3_srt_live_rx_udp_packet_process_callback_with_context(block_t* block, void* context);
-    void atsc3_srt_live_rx_udp_packet_received(block_t* block);
-
-    //special "friend" callback from stltp_depacketizer context - plp is an attribute of the alp_packet in collection
-    static void Atsc3_stltp_baseband_alp_packet_collection_callback_with_context(atsc3_alp_packet_collection_t* atsc3_alp_packet_collection, void* context);
-    void atsc3_stltp_baseband_alp_packet_collection_received(atsc3_alp_packet_collection_t* atsc3_alp_packet_collection);
+        void set_srt_source_connection_string(const char* srt_source_connection_string);
 
 
-    virtual ~SRTRxSTLTPVirtualPHY() {
-    	atsc3_srt_thread_stop(); //cleanup just to be sure..
-    	atsc3_stltp_depacketizer_context_free(&atsc3_stltp_depacketizer_context);
-    	atsc3_srt_live_receiver_context_free(&atsc3_srt_live_receiver_context);
-    }
-protected:
+        //special "friend" callback from srt_live_receiver context
+        static void Atsc3_srt_live_rx_udp_packet_process_callback_with_context(block_t* block, void* context);
+        void atsc3_srt_live_rx_udp_packet_received(block_t* block);
 
-    //pcap replay context and locals
-    int srtProducerThreadRun();
-    int srtConsumerThreadRun();
-    int srtLocalCleanup();
-
-    //overloadable callbacks for Android to pin mJavaVM as needed
-    virtual void pinProducerThreadAsNeeded() { };
-    virtual void releaseProducerThreadAsNeeded() { };
-
-    virtual void pinConsumerThreadAsNeeded() { };
-    virtual void releaseConsumerThreadAsNeeded() { };
+        //special "friend" callback from stltp_depacketizer context - plp is an attribute of the alp_packet in collection
+        static void Atsc3_stltp_baseband_alp_packet_collection_callback_with_context(atsc3_alp_packet_collection_t* atsc3_alp_packet_collection, void* context);
+        void atsc3_stltp_baseband_alp_packet_collection_received(atsc3_alp_packet_collection_t* atsc3_alp_packet_collection);
 
 
-    //local member variables for srt management
+        virtual ~SRTRxSTLTPVirtualPHY() {
+            atsc3_srt_thread_stop(); //cleanup just to be sure..
+            atsc3_stltp_depacketizer_context_free(&atsc3_stltp_depacketizer_context);
+            atsc3_srt_live_receiver_context_free(&atsc3_srt_live_receiver_context);
+        }
+    protected:
+        int atsc3_srt_thread_run();
+        int atsc3_srt_thread_stop(); 							//will invoke cleanup of context
+        bool is_srt_running();
 
-    //use atsc3_srt_live_receiver_context->should_run
-    //bool                            srtThreadShouldRun = true;
+        //pcap replay context and locals
+        int srtProducerThreadRun();
+        int srtConsumerThreadRun();
+        int srtLocalCleanup();
 
-    std::thread                     srtProducerThreadPtr;
-    bool                            srtProducerShutdown = true;
+        //local member variables for srt management
+        atsc3_srt_live_receiver_context_t* 		atsc3_srt_live_receiver_context;
 
-    std::thread                     srtConsumerThreadPtr;
-    bool                            srtConsumerShutdown = true;
+        //STLTP depacketizer context
+        //build map of PLP to context's
 
-    queue<block_t*>                 srt_rx_live_receiver_buffer_queue; //holding queue from SRT transport callback, swapped into srt_rx_buffer_queue as needed
-    mutex                           srt_rx_live_receiver_buffer_queue_mutex;
+        atsc3_stltp_depacketizer_context_t* 	atsc3_stltp_depacketizer_context;
 
-    queue<block_t*>                 srt_rx_buffer_queue;
-    mutex                           srt_rx_buffer_queue_mutex;
-    condition_variable              srt_rx_condition;
+        std::thread                     srtProducerThreadPtr;
+        bool                            srtProducerShutdown = true;
 
-    atsc3_srt_live_receiver_context_t* 		atsc3_srt_live_receiver_context;
+        std::thread                     srtConsumerThreadPtr;
+        bool                            srtConsumerShutdown = true;
 
-    //STLTP depacketizer context
-    //build map of PLP to context's
+        queue<block_t*>                 srt_rx_live_receiver_buffer_queue; //holding queue from SRT transport callback, swapped into srt_rx_buffer_queue as needed
+        mutex                           srt_rx_live_receiver_buffer_queue_mutex;
 
-    atsc3_stltp_depacketizer_context_t* 	atsc3_stltp_depacketizer_context;
+        queue<block_t*>                 srt_rx_buffer_queue;
+        mutex                           srt_rx_buffer_queue_mutex;
+        condition_variable              srt_rx_condition;
 
-    /*
-     * depacketizer will need to dispatch via
-     *             if(this->atsc3_rx_udp_packet_process_callback) {
-            	this->atsc3_rx_udp_packet_process_callback(phy_payload_to_process);
-            }
-     *
-     */
-
-//SRTRxSTLTPVirtualPHY
-
+        /*
+         * depacketizer will need to dispatch via
+         *             if(this->atsc3_rx_udp_packet_process_callback) {
+                    this->atsc3_rx_udp_packet_process_callback(phy_payload_to_process);
+                }
+         *
+         */
 };
 
-#define SRTRXSTLTP_VIRTUAL_PHY_ERROR(...)   	__LIBATSC3_TIMESTAMP_ERROR(__VA_ARGS__);
-#define SRTRXSTLTP_VIRTUAL_PHY_WARN(...)  	 	__LIBATSC3_TIMESTAMP_WARN(__VA_ARGS__);
-#define SRTRXSTLTP_VIRTUAL_PHY_INFO(...)   		__LIBATSC3_TIMESTAMP_INFO(__VA_ARGS__);
-#define SRTRXSTLTP_VIRTUAL_PHY_DEBUG(...)   	__LIBATSC3_TIMESTAMP_DEBUG(__VA_ARGS__);
-
-
+#define _SRTRXSTLTP_VIRTUAL_PHY_ERROR(...)   	__LIBATSC3_TIMESTAMP_ERROR(__VA_ARGS__);
+#define _SRTRXSTLTP_VIRTUAL_PHY_WARN(...)  	 	__LIBATSC3_TIMESTAMP_WARN(__VA_ARGS__);
+#define _SRTRXSTLTP_VIRTUAL_PHY_INFO(...)   	__LIBATSC3_TIMESTAMP_INFO(__VA_ARGS__);
+#define _SRTRXSTLTP_VIRTUAL_PHY_DEBUG(...)   	__LIBATSC3_TIMESTAMP_DEBUG(__VA_ARGS__);
+#define _SRTRXSTLTP_VIRTUAL_PHY_TRACE(...)   	__LIBATSC3_TIMESTAMP_TRACE(__VA_ARGS__);
 
 #endif //LIBATSC3_SRTSTLTPVIRTUALPHY_H

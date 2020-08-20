@@ -122,12 +122,13 @@ LOCAL_SRC_FILES += \
 LOCAL_C_INCLUDES += $(LOCAL_PATH)/src/jni
 
 ##for libatsc3 application and phy interface includes
-LOCAL_C_INCLUDES += $(LOCAL_PATH)/../../../src
-LOCAL_C_INCLUDES += $(LOCAL_PATH)/../../../src/phy
-LOCAL_C_INCLUDES += $(LOCAL_PATH)/../../../src/phy/virtual
+LOCAL_C_INCLUDES += \
+	$(LOCAL_PATH)/../../../src \
+	$(LOCAL_PATH)/../../../src/phy \
+	$(LOCAL_PATH)/../../../src/phy/virtual
 
 # prefab-fixup.. for ndk phy bridge/application bridge
-LOCAL_C_INCLUDES += $(LOCAL_PATH)/../libatsc3_bridge/src/jni
+LOCAL_C_INCLUDES += $(LOCAL_PATH)/../atsc3_bridge/src/jni
 
 #libsrt prefab fixup for srt
 LOCAL_C_INCLUDES += $(LOCAL_PATH)/../../..
@@ -138,12 +139,6 @@ LOCAL_C_INCLUDES += $(LOCAL_PATH)/../../../src/phy/virtual/srt/haicrypt
 
 # LOCAL_C_INCLUDES += $(LOCAL_PATH)/../atsc3_core/libsrt/include
 
-#brige includes
-LOCAL_C_INCLUDES += $(LOCAL_PATH)/../atsc3_bridge/src/jni
-
-
-
-
 # shared library missing -fPIC for srt
 
 #jjustman-2020-08-17 - special defines for SRT
@@ -153,12 +148,19 @@ LOCAL_CFLAGS += -g -O1 -fpack-struct=8  \
                  -DANDROID=1 -DHAI_ENABLE_SRT=1 -DHAI_PATCH=1 -DHAVE_INET_PTON=1 -DLINUX=1 -DSRT_ENABLE_APP_READER -DSRT_ENABLE_CLOSE_SYNCH -DSRT_ENABLE_ENCRYPTION -DSRT_VERSION=\"1.4.1\" -DUSE_OPENSSL=1 -D_GNU_SOURCE -Dsrt_shared_EXPORTS
 
 
-LOCAL_LDLIBS += -ldl -lc++_shared -llog -landroid -lz -latsc3_core -latsc3_bridge
-LOCAL_LDFLAGS += -fPIE -fPIC -L $(LOCAL_PATH)/../atsc3_bridge/build/intermediates/ndkBuild/debug/obj/local/$(TARGET_ARCH_ABI)/ -L $(LOCAL_PATH)/../atsc3_core/build/intermediates/ndkBuild/debug/obj/local/$(TARGET_ARCH_ABI)/
+LOCAL_LDLIBS += -ldl -lc++_shared -llog -landroid -lz \
+				-latsc3_core -latsc3_bridge
+
+LOCAL_LDFLAGS += -fPIE -fPIC \
+				-L $(LOCAL_PATH)/../atsc3_bridge/build/intermediates/ndkBuild/debug/obj/local/$(TARGET_ARCH_ABI)/ \
+				-L $(LOCAL_PATH)/../atsc3_core/build/intermediates/ndkBuild/debug/obj/local/$(TARGET_ARCH_ABI)/
 
 # jjustman-2020-08-10 - link in our atsc3_bridge prefab shared library
 # LOCAL_SHARED_LIBRARIES := atsc3_bridge
 # ifneq ($(MAKECMDGOALS),clean)
+
+# libcrypto
+$(info 'before local shared libs' $(MAKECMDGOALS))
 
 ifneq ($(MAKECMDGOALS),clean)
 	ifneq ($(MAKECMDGOALS),generateJsonModelDebug)
@@ -166,14 +168,18 @@ LOCAL_SHARED_LIBRARIES := libssl libcrypto
 	endif
 endif
 
-# libsrt atsc3_bridge atsc3_core
-
 include $(BUILD_SHARED_LIBRARY)
 
 #as per https://android-developers.googleblog.com/2020/02/native-dependencies-in-android-studio-40.html
-$(info $(MAKECMDGOALS))
+# 	ifneq ($(MAKECMDGOALS),generateJsonModelDebug)
+# 	endif
+
+
+# libsrt atsc3_bridge atsc3_core
+$(info 'before call import module with $(MAKECMDGOALS)' )
+
 ifneq ($(MAKECMDGOALS),clean)
-	ifneq ($(MAKECMDGOALS),generateJsonModelDebug)
+ifneq ($(MAKECMDGOALS),generateJsonModelDebug)
 $(call import-module,prefab/openssl)
-	endif
+endif
 endif

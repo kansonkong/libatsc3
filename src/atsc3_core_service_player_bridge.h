@@ -50,7 +50,6 @@ using namespace std;
 #include "phy/IAtsc3NdkPHYBridge.h"
 #include "phy/IAtsc3NdkPHYClient.h"
 
-
 //c++ linkage methods
 
 string atsc3_route_service_context_temp_folder_name(int service_id);
