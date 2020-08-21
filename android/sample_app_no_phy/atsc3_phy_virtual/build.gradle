@@ -74,13 +74,15 @@ dependencies {
     //implementation project(':atsc3_bridge')
 
 
-    implementation 'com.android.ndk.thirdparty:openssl:1.1.1d-alpha-1'
+    implementation 'com.android.ndk.thirdparty:openssl:1.1.1g-alpha-1'
 
-    debugApi project(':atsc3_core')
-    debugApi fileTree(dir: '../atsc3_core/build/intermediates/ndkBuild/debug/obj/local', include: ['**/libatsc3_core.so'])
+    //vmatiash-2020-08-21 - Direct dependency is not necessary. This module shared by ':atsc3_bridge'
+    //debugApi project(':atsc3_core')
+    //debugApi fileTree(dir: '../atsc3_core/build/intermediates/ndkBuild/debug/obj/local', include: ['**/libatsc3_core.so'])
 
     debugApi project(':atsc3_bridge')
-    debugApi fileTree(dir: '../atsc3_bridge/build/intermediates/ndkBuild/debug/obj/local', include: ['**/libatsc3_bridge.so'])
+    //vmatiash-2020-08-21 - Direct dependency is not necessary. This dependency specified in LOCAL_LDLIBS of Android.mk
+    //debugApi fileTree(dir: '../atsc3_bridge/build/intermediates/ndkBuild/debug/obj/local', include: ['**/libatsc3_bridge.so'])
 
     debugApi fileTree(dir: 'build/aar', include: ['*.aar'])
 }
