@@ -250,7 +250,7 @@ int SRTRxSTLTPVirtualPHY::srtConsumerThreadRun() {
     queue<block_t *> to_purge_queue; //perform a shallow copy so we can exit critical section asap
     while (atsc3_srt_live_receiver_context->should_run) {
         {
-            //critical section
+            //critical section, locks are auto-acquired
             unique_lock<mutex> condition_lock(srt_rx_buffer_queue_mutex);
             srt_rx_condition.wait(condition_lock);
             unique_lock<mutex> srt_replay_buffer_queue_guard(srt_rx_live_receiver_buffer_queue_mutex);
