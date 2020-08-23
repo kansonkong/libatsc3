@@ -26,8 +26,6 @@
 #define BUFFER_SIZE       (16*1024*10)
 
 #define __TLV_BUFFER_SIZE      1638
-char processDataCircularBufferForCallback[__TLV_BUFFER_SIZE];
-
 
 #include "CircularBuffer.h"
 #include <sl_utils.h>
@@ -49,6 +47,8 @@ typedef void * (*THREADFUNCPTR)(void *);
 class SaankhyaPHYAndroid : public IAtsc3NdkPHYClient {
 
 public:
+    static mutex Cctor_muxtex;
+
     SaankhyaPHYAndroid(JNIEnv* env, jobject jni_instance);
 
     virtual int  init()       override;
@@ -66,17 +66,7 @@ public:
 
     static void RxDataCallback(unsigned char *data, long len);
 
-    //static/instance hacks
-    int pinFromRxCaptureThread();
-    int pinFromRxProcessingThread();
-    int pinFromRxStatusThread();
-
-    static Atsc3JniEnv*    Atsc3_Jni_Processing_Thread_Env;
-    static Atsc3JniEnv*    Atsc3_Jni_Capture_Thread_Env;
     static Atsc3JniEnv*    Atsc3_Jni_Status_Thread_Env;
-
-    static bool        tunerStatusThreadShouldPollTunerStatus;
-    static bool        tunerStatusThreadShouldRun;
 
     static int         usbFD;
 
@@ -100,12 +90,16 @@ public:
 
 protected:
     void pinProducerThreadAsNeeded() override;
-    void releaseProducerThreadAsNeeded() override;
+    void releasePinnedProducerThreadAsNeeded() override;
     Atsc3JniEnv* producerJniEnv = nullptr;
 
     void pinConsumerThreadAsNeeded() override;
-    void releaseConsumerThreadAsNeeded() override;
+    void releasePinnedConsumerThreadAsNeeded() override;
     Atsc3JniEnv* consumerJniEnv = nullptr;
+
+    void pinStatusThreadAsNeeded() override;
+    void releasePinnedStatusThreadAsNeeded() override;
+    Atsc3JniEnv* statusJniEnv = nullptr;
 
     JNIEnv* env = nullptr;
     jobject jni_instance_globalRef = nullptr;
@@ -143,10 +137,6 @@ private:
     unsigned long int         dThread;
     unsigned long int         sThread;
 
-    unsigned long int         pThread_libusb_handle_events;
-
-
-
     pthread_t   cThreadID;
     pthread_t   pThreadID;
     pthread_t   dThreadID;
@@ -154,6 +144,7 @@ private:
 
     //hack
     static CircularBuffer cb;
+    static mutex CircularBufferMutex;
 
     bool        captureThreadShouldRun = false;;
     bool        captureThreadIsRunning = false;
@@ -164,14 +155,11 @@ private:
     bool        statusThreadShouldRun = false;
     bool        statusThreadIsRunning = false;
 
-
     //thread handling methods
     static void* CaptureThread(void* context);
     static void* ProcessThread(void* context);
     static void* TunerStatusThread(void* context); //TODO: jjustman-2019-11-30: merge with
-    static void* libusb_handle_events_thread(void* context);
 
-    // void atsc3NdkClient::RxStatusThread()
 
     SL_ConfigResult_t configPlatformParams();
 
@@ -190,19 +178,17 @@ private:
     char processDataCircularBufferForCallback[BUFFER_SIZE];
 
     block_t* atsc3_sl_tlv_block = NULL;
+    mutex    atsc3_sl_tlv_block_mutex;
+    void allocate_atsc3_sl_tlv_block();
+
     atsc3_sl_tlv_payload_t* atsc3_sl_tlv_payload = NULL;
-
-
-
-    static mutex CircularBufferMutex;
-    static mutex atsc3_sl_tlv_block_Mutex;
 
     static mutex SL_I2C_command_mutex;
 
 };
 
 #define _SAANKHYA_PHY_ANDROID_ERROR(...)   	__LIBATSC3_TIMESTAMP_ERROR(__VA_ARGS__);
-#define _SAANKHYA_PHY_ANDROID_WARN(...)   	__LIBATSC3_TIMESTAMP_WARN__VA_ARGS__);
+#define _SAANKHYA_PHY_ANDROID_WARN(...)   	__LIBATSC3_TIMESTAMP_WARN(__VA_ARGS__);
 #define _SAANKHYA_PHY_ANDROID_INFO(...)    	__LIBATSC3_TIMESTAMP_INFO(__VA_ARGS__);
 #define _SAANKHYA_PHY_ANDROID_DEBUG(...)    __LIBATSC3_TIMESTAMP_DEBUG(__VA_ARGS__);
 #define _SAANKHYA_PHY_ANDROID_TRACE(...)    __LIBATSC3_TIMESTAMP_TRACE(__VA_ARGS__);

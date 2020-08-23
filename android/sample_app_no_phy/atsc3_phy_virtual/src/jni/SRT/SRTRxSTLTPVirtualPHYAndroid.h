@@ -27,11 +27,11 @@ protected:
     jobject jni_instance_globalRef = nullptr;
 
     void pinProducerThreadAsNeeded() override;
-    void releaseProducerThreadAsNeeded() override;
+    void releasePinnedProducerThreadAsNeeded() override;
     Atsc3JniEnv* producerJniEnv = nullptr;
 
     void pinConsumerThreadAsNeeded() override;
-    void releaseConsumerThreadAsNeeded() override;
+    void releasePinnedConsumerThreadAsNeeded() override;
     Atsc3JniEnv* consumerJniEnv = nullptr;
 };
 

@@ -204,7 +204,7 @@ int PcapSTLTPVirtualPHY::PcapProducerThreadParserRun() {
                 block_t* phy_payload = block_Duplicate_from_position(atsc3_pcap_replay_local_context->atsc3_pcap_packet_instance.current_pcap_packet);
                 block_Rewind(atsc3_pcap_replay_local_context->atsc3_pcap_packet_instance.current_pcap_packet);
                 if(phy_payload->p_size && (packet_push_count++ % 10000) == 0) {
-                    PCAP_DEMUXED_VIRTUAL_PHY_DEBUG("PcapSTLTPVirtualPHY::RunPcapThreadParser - pushing to to_dispatch_queue: count: %d, queue current size: %d, len was: %d, new payload: %p (0x%02x 0x%02x), len: %d",
+                    PCAP_DEMUXED_VIRTUAL_PHY_DEBUG("PcapSTLTPVirtualPHY::RunPcapThreadParser - pushing to to_dispatch_queue: count: %d, queue current size: %lu, len was: %d, new payload: %p (0x%02x 0x%02x), len: %d",
                             packet_push_count,
 							to_dispatch_queue.size(),
                             atsc3_pcap_replay_local_context->atsc3_pcap_packet_instance.current_pcap_packet->p_size,

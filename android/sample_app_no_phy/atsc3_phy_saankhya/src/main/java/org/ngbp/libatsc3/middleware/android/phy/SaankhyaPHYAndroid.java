@@ -23,4 +23,14 @@ public class SaankhyaPHYAndroid extends Atsc3NdkPHYSaankhyaStaticJniLoader  {
     @Override public native int tune(int freqKhz, int single_plp);
     @Override public native int listen_plps(List<Byte> plps);
 
+//  jjustman-2020-08-23 - todo:
+//      assign instanceId in ::init method, and only invoke methods for lookup of saankhyaPHYAndroid map
+//      this.deinit for
+//
+//    @Override
+//    protected void finalize() throws Throwable {
+//        Log.i("SaankhyaPHYAndroid::finalize", "invoking this.deinit() "+this);
+//        this.deinit();
+//        super.finalize();
+//    }
 }

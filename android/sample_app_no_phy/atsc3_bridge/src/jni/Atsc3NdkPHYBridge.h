@@ -84,11 +84,11 @@ public:
         return jni_class_globalRef;
     }
 
-    int pinFromRxCaptureThread();
-    Atsc3JniEnv* Atsc3_Jni_Capture_Thread_Env = nullptr;
+    int pinCaptureThreadAsNeeded();
+    int releasePinnedCaptureThreadAsNeeded();
 
-    int pinFromRxStatusThread();
-    Atsc3JniEnv* Atsc3_Jni_Status_Thread_Env = nullptr;
+    int pinStatusThreadAsNeeded();
+    int releasePinnedStatusThreadAsNeeded();
 
     jmethodID mOnLogMsgId = nullptr;                     // java class method id
     jmethodID atsc3_rf_phy_status_callback_ID = nullptr; // java class method id for phy stats
@@ -98,6 +98,10 @@ public:
 
     void RxStatusThread();
     bool rxStatusThreadShouldRun;
+
+protected:
+    Atsc3JniEnv* pinnedCaptureJniEnv = nullptr;
+    Atsc3JniEnv* pinnedStatusJniEnv = nullptr;
 
 };
 

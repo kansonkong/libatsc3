@@ -27,7 +27,7 @@ void SRTRxSTLTPVirtualPHYAndroid::pinProducerThreadAsNeeded() {
     producerJniEnv = new Atsc3JniEnv(atsc3_ndk_phy_virtual_static_loader_get_javaVM());
 }
 
-void SRTRxSTLTPVirtualPHYAndroid::releaseProducerThreadAsNeeded() {
+void SRTRxSTLTPVirtualPHYAndroid::releasePinnedProducerThreadAsNeeded() {
     delete producerJniEnv;
     producerJniEnv = nullptr;
 }
@@ -35,11 +35,11 @@ void SRTRxSTLTPVirtualPHYAndroid::releaseProducerThreadAsNeeded() {
 void SRTRxSTLTPVirtualPHYAndroid::pinConsumerThreadAsNeeded() {
     consumerJniEnv = new Atsc3JniEnv(atsc3_ndk_phy_virtual_static_loader_get_javaVM());
     if(atsc3_ndk_application_bridge_get_instance()) {
-        atsc3_ndk_application_bridge_get_instance()->pinFromRxProcessingThread();
+        atsc3_ndk_application_bridge_get_instance()->pinConsumerThreadAsNeeded();
     }
 }
 
-void SRTRxSTLTPVirtualPHYAndroid::releaseConsumerThreadAsNeeded() {
+void SRTRxSTLTPVirtualPHYAndroid::releasePinnedConsumerThreadAsNeeded() {
     delete consumerJniEnv;
     consumerJniEnv = nullptr;
 }
