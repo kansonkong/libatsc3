@@ -96,6 +96,21 @@ bool SaankhyaPHYAndroid::is_running() {
 
 int SaankhyaPHYAndroid::stop()
 {
+    if(processThreadIsRunning) {
+        processThreadShouldRun = false;
+        pthread_join(pThreadID, NULL);
+    }
+
+    if(captureThreadIsRunning) {
+        captureThreadShouldRun = false;
+        SL_RxDataStop();
+        pthread_join(cThreadID, NULL);
+    }
+
+    if(statusThreadIsRunning) {
+        statusThreadShouldRun = false;
+        pthread_join(sThreadID, NULL);
+    }
     return 0;
 }
 
@@ -527,8 +542,6 @@ ERROR:
 
 int SaankhyaPHYAndroid::tune(int freqKHz, int plpid)
 {
-
-    //from atsc3.c ::
     unsigned int cFrequency = 0;
     tres = SL_TunerSetFrequency(tUnit, freqKHz*1000);
     if (tres != 0)
@@ -606,32 +619,43 @@ int SaankhyaPHYAndroid::tune(int freqKHz, int plpid)
 
     if (!atsc3_sl_tlv_block) {
         atsc3_sl_tlv_block = block_Alloc(BUFFER_SIZE);
-    }
 
-    printf("creating capture thread, cb buffer size: %d, tlv_block_size: %d",
-           CB_SIZE, BUFFER_SIZE);
-
-    processThreadShouldRun = true;
-    pThread = pthread_create(&pThreadID, NULL, (THREADFUNCPTR)&SaankhyaPHYAndroid::ProcessThread, (void*)this);
-    if (pThread != 0) {
-        //processFlag = 0;
-        printf("\n Process Thread launched unsuccessfully");
-        goto ERROR;
-    } else  {
-        //processFlag = 1;
     }
 
 
-
-    SaankhyaPHYAndroid::captureThreadShouldRun = true;
-    cThread = pthread_create(&cThreadID, NULL, (THREADFUNCPTR)&SaankhyaPHYAndroid::CaptureThread, (void*)this);
-    if (cThread != 0) {
-        printf("\n Capture Thread launched unsuccessfully");
-        goto ERROR;
+    if(!processThreadIsRunning) {
+        processThreadShouldRun = true;
+        pThread = pthread_create(&pThreadID, NULL, (THREADFUNCPTR)&SaankhyaPHYAndroid::ProcessThread, (void*)this);
+        if (pThread != 0) {
+            //processFlag = 0;
+            printf("\n Process Thread failed to launch");
+            goto ERROR;
+        } else  {
+            //processFlag = 1;
+        }
     }
 
+    if(!captureThreadIsRunning) {
+        captureThreadShouldRun = true;
+        printf("creating capture thread with cb buffer size: %d, tlv_block_size: %d",
+               CB_SIZE, BUFFER_SIZE);
+        cThread = pthread_create(&cThreadID, NULL, (THREADFUNCPTR)&SaankhyaPHYAndroid::CaptureThread, (void*)this);
+        if (cThread != 0) {
+            printf("\n Capture Thread failed to launch");
+            goto ERROR;
+        }
 
-    sThread = pthread_create(&sThreadID, NULL, (THREADFUNCPTR) &SaankhyaPHYAndroid::TunerStatusThread, (void*)this);
+
+    }
+
+    if(!statusThreadIsRunning) {
+        statusThreadShouldRun = true;
+        sThread = pthread_create(&sThreadID, NULL, (THREADFUNCPTR) &SaankhyaPHYAndroid::TunerStatusThread, (void*)this);
+        if (sThread != 0) {
+            printf("\n Capture Thread launched unsuccessfully");
+            goto ERROR;
+        }
+    }
 
     while (SL_IsRxDataStarted() != 1)
     {
@@ -653,7 +677,6 @@ int SaankhyaPHYAndroid::tune(int freqKHz, int plpid)
         //SL_Printf("\n SL Demod Output Capture: STARTED : sl-tlv.bin");
     }
     SL_SleepMS(1000); // Delay to accomdate set configurations at SL to take effect
-
 
 
     plpInfo.plp0 = plpid;
@@ -1227,44 +1250,44 @@ int SaankhyaPHYAndroid::pinFromRxStatusThread() {
 
 
 void* SaankhyaPHYAndroid::ProcessThread(void* context)
-//#endif
 {
     printf("atsc3NdkClientSlImpl::ProcessThread: with context: %p", context);
 
     SaankhyaPHYAndroid* apiImpl = (SaankhyaPHYAndroid*) context;
 
     apiImpl->resetProcessThreadStatistics();
-
     (SaankhyaPHYAndroid*)apiImpl->pinFromRxProcessingThread();
 
     if(atsc3_ndk_application_bridge_get_instance()) {
         atsc3_ndk_application_bridge_get_instance()->pinFromRxProcessingThread();
     }
 
+    apiImpl->processThreadIsRunning = true;
+
     while (apiImpl->processThreadShouldRun)
     {
         //printf("atsc3NdkClientSlImpl::ProcessThread: getDataSize is: %d", CircularBufferGetDataSize(cb));
 
-        //hack
         while(CircularBufferGetDataSize(apiImpl->cb) >= BUFFER_SIZE) {
             apiImpl->processTLVFromCallback();
         }
         usleep(10000);
     }
 
+    apiImpl->processThreadIsRunning = false;
     return 0;
 }
 
-
-//#elif __ANDROID__
+//SL_Fx3s_RxDataStop
 void* SaankhyaPHYAndroid::CaptureThread(void* context)
-//#endif
 {
     SaankhyaPHYAndroid* apiImpl = (SaankhyaPHYAndroid*) context;
 
     (SaankhyaPHYAndroid*)apiImpl->pinFromRxCaptureThread();
+    apiImpl->captureThreadIsRunning = true;
 
     SL_RxDataStart((RxDataCB)&SaankhyaPHYAndroid::RxDataCallback);
+    apiImpl->captureThreadIsRunning = false;
     return 0;
 }
 
@@ -1277,6 +1300,8 @@ void* SaankhyaPHYAndroid::TunerStatusThread(void* context)
     if(atsc3_ndk_phy_bridge_get_instance()) {
         atsc3_ndk_phy_bridge_get_instance()->pinFromRxStatusThread();
     }
+
+    apiImpl->statusThreadIsRunning = true;
 
     SL_Result_t sl_res;
     SL_TunerResult_t tres;
@@ -1301,7 +1326,7 @@ void* SaankhyaPHYAndroid::TunerStatusThread(void* context)
     bool first_run = true;
 
     //atsc3NdkClientSlImpl::tunerStatusThreadShouldRun
-    while(true) {
+    while(apiImpl->statusThreadShouldRun) {
 
         //only actively poll the tuner status if the RF status window is visible
 //        if(!atsc3NdkClientSlImpl::tunerStatusThreadShouldPollTunerStatus) {
@@ -1445,6 +1470,8 @@ void* SaankhyaPHYAndroid::TunerStatusThread(void* context)
                                                                           saankhyaPHYAndroid->alp_total_LMTs_recv);
             }
     }
+
+    apiImpl->statusThreadIsRunning = false;
     return 0;
 }
 

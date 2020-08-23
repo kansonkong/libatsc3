@@ -154,10 +154,15 @@ private:
 
     //hack
     static CircularBuffer cb;
-    //CircularBuffer cb;
 
-    bool        captureThreadShouldRun;
-    bool        processThreadShouldRun;
+    bool        captureThreadShouldRun = false;;
+    bool        captureThreadIsRunning = false;
+
+    bool        processThreadShouldRun = false;
+    bool        processThreadIsRunning = false;
+
+    bool        statusThreadShouldRun = false;
+    bool        statusThreadIsRunning = false;
 
 
     //thread handling methods
