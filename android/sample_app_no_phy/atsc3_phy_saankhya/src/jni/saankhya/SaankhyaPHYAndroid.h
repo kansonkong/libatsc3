@@ -136,6 +136,10 @@ private:
     unsigned long int         dThread;
     unsigned long int         sThread;
 
+    unsigned long int         pThread_libusb_handle_events;
+
+
+
     pthread_t   cThreadID;
     pthread_t   pThreadID;
     pthread_t   dThreadID;
@@ -153,9 +157,9 @@ private:
     static void* CaptureThread(void* context);
     static void* ProcessThread(void* context);
     static void* TunerStatusThread(void* context); //TODO: jjustman-2019-11-30: merge with
-    // void atsc3NdkClient::RxStatusThread()
+    static void* libusb_handle_events_thread(void* context);
 
-    static void* LibUSB_Handle_Events_Callback(void* context);
+    // void atsc3NdkClient::RxStatusThread()
 
     SL_ConfigResult_t configPlatformParams();
 

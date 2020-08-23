@@ -99,6 +99,19 @@ int SaankhyaPHYAndroid::deinit()
     return 0;
 }
 
+
+void* SaankhyaPHYAndroid::libusb_handle_events_thread(void* context) {
+    int invocation_count = 0;
+
+    sleep(2);
+    while(true) {
+        printf("libusb_handle_events_thread");
+        libusb_handle_events(NULL);
+        usleep(1000000);
+        _SAANKHYA_PHY_ANDROID_INFO("libusb_handle_events thread, invocation: %d", invocation_count++);
+    }
+}
+
 int SaankhyaPHYAndroid::open(int fd, int bus, int addr)
 {
     SL_SetUsbFd(fd);
@@ -119,6 +132,7 @@ int SaankhyaPHYAndroid::open(int fd, int bus, int addr)
     SL_IQOffsetCorrectionParams_t iqOffSetCorrection;
     SL_DemodBootStatus_t bootStatus;
 
+    SL_SleepMS(5000);
     cres = SL_ConfigGetPlatform(&getPlfConfig);
     if (cres == SL_CONFIG_OK)
     {
