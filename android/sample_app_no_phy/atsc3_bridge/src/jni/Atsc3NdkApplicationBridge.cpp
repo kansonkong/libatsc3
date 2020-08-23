@@ -603,6 +603,22 @@ void Atsc3NdkApplicationBridge::atsc3_onSlsTablePresent(const char *sls_payload_
     Atsc3_Jni_Processing_Thread_Env->Get()->DeleteLocalRef(xml_payload);
 }
 
+void Atsc3NdkApplicationBridge::atsc3_phy_notify_plp_selection_change_set_callback(atsc3_phy_notify_plp_selection_change_f atsc3_phy_notify_plp_selection_change, void* context) {
+    this->atsc3_phy_notify_plp_selection_change = atsc3_phy_notify_plp_selection_change;
+    this->atsc3_phy_notify_plp_selection_change_context = context;
+}
+
+void Atsc3NdkApplicationBridge::atsc3_phy_notify_plp_selection_change_clear_callback() {
+    this->atsc3_phy_notify_plp_selection_change = nullptr;
+}
+
+void Atsc3NdkApplicationBridge::atsc3_phy_notify_plp_selection_changed(vector<uint8_t> plps_to_listen) {
+    if(this->atsc3_phy_notify_plp_selection_change_context) {
+        this->atsc3_phy_notify_plp_selection_change(plps_to_listen, this->atsc3_phy_notify_plp_selection_change_context);
+    }
+
+}
+
 
 //--------------------------------------------------------------------------
 

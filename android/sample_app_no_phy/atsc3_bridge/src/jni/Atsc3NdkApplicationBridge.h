@@ -7,6 +7,7 @@
 #include <thread>
 #include <map>
 #include <queue>
+#include <vector>
 #include <mutex>
 #include <semaphore.h>
 #include <list>
@@ -38,6 +39,7 @@ using namespace std;
 #include "Atsc3BridgeNdkStaticJniLoader.h"
 
 #include <atsc3_core_service_player_bridge.h>
+
 
 class Atsc3NdkApplicationBridge : public IAtsc3NdkApplicationBridge
 {
@@ -92,6 +94,10 @@ public:
     void atsc3_onMfuSampleMissing(uint16_t i, uint32_t i1, uint32_t i2);
 
     std::string get_android_temp_folder();
+
+    void atsc3_phy_notify_plp_selection_change_set_callback(atsc3_phy_notify_plp_selection_change_f atsc3_phy_notify_plp_selection_change, void* context);
+    void atsc3_phy_notify_plp_selection_change_clear_callback();
+    void atsc3_phy_notify_plp_selection_changed(vector<uint8_t> plps_to_listen);
 
 private:
     JNIEnv* env = nullptr;
@@ -156,6 +162,10 @@ public:
     jclass      jni_java_util_ArrayList = nullptr;
     jmethodID   jni_java_util_ArrayList_cctor = nullptr;
     jmethodID   jni_java_util_ArrayList_add = nullptr;
+
+    atsc3_phy_notify_plp_selection_change_f   atsc3_phy_notify_plp_selection_change;
+    void*                                      atsc3_phy_notify_plp_selection_change_context;
+
 };
 
 #define _NDK_APPLICATION_BRIDGE_ERROR(...)   	__LIBATSC3_TIMESTAMP_ERROR(__VA_ARGS__);

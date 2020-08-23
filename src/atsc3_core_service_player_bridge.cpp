@@ -198,6 +198,9 @@ atsc3_lls_slt_service_t* atsc3_phy_mmt_player_bridge_set_single_monitor_a331_ser
             //check if we need to add this PLP based upon our LMT to the phy listener
             //if(atsc3_slt_broadcast_svc_signalling->sls_source_ip_address
             if(atsc3_link_mapping_table_last != NULL) {
+                vector<uint8_t> plps_to_listen;
+                plps_to_listen.push_back(0);
+
                 for(int j=0; j < atsc3_link_mapping_table_last->atsc3_link_mapping_table_plp_v.count; j++) {
                     atsc3_link_mapping_table_plp_t* atsc3_link_mapping_table_plp = atsc3_link_mapping_table_last->atsc3_link_mapping_table_plp_v.data[j];
                     for(int k=0; k < atsc3_link_mapping_table_plp->atsc3_link_mapping_table_multicast_v.count; k++) {
@@ -212,12 +215,23 @@ atsc3_lls_slt_service_t* atsc3_phy_mmt_player_bridge_set_single_monitor_a331_ser
                                                                    atsc3_link_mapping_table_plp->PLP_ID,
                                                                    atsc3_slt_broadcast_svc_signalling->sls_destination_ip_address,
                                                                    atsc3_slt_broadcast_svc_signalling->sls_destination_udp_port);
-
-                            //jjustman-2020-08-10 - TODO: fix me for PLP selection
-                            //Atsc3NdkPHYBridge_ptr->ListenPLP1(atsc3_link_mapping_table_plp->PLP_ID);
+                            bool should_add = true;
+                            for(int i=0; i < plps_to_listen.size(); i++) {
+                                if(plps_to_listen.at(i) == atsc3_link_mapping_table_plp->PLP_ID) {
+                                    should_add = false;
+                                }
+                            }
+                            if(should_add) {
+                                plps_to_listen.push_back(atsc3_link_mapping_table_plp->PLP_ID);
+                            }
                         }
                     }
+
                 }
+                __INFO("atsc3_phy_notify_plp_selection_changed: with %d plp's", plps_to_listen.size());
+                Atsc3NdkApplicationBridge_ptr->atsc3_phy_notify_plp_selection_changed(plps_to_listen);
+            } else {
+                __WARN("No LMT to support serviceID selection change!");
             }
 
 
@@ -1107,8 +1121,6 @@ atsc3_link_mapping_table_t* atsc3_phy_jni_bridge_notify_link_mapping_table(atsc3
             atsc3_link_mapping_table_last = atsc3_link_mapping_table_pending;
         }
     }
-
-
     return atsc3_link_mapping_table_to_free;
 }
 
