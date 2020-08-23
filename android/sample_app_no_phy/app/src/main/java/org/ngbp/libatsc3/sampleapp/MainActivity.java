@@ -868,8 +868,8 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
 
         setupButtonsSLSLayout();
 
-        enableDeviceOpenButtons(false);
-        enableDeviceControlButtons(false);
+//        enableDeviceOpenButtons(false);
+//        enableDeviceControlButtons(false);
 
         mEditFreqMhz = ((EditText)findViewById(R.id.editFreqMhz));
         mEditFreqMhz.setInputType(TYPE_CLASS_PHONE);
@@ -1157,6 +1157,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         editServiceIDText.setEnabled(true);
     }
 
+    private UsbDevice connectedUSBDevice = null;
     private void createServiceHandler() {
 
         serviceHandler = new ServiceHandler() {
@@ -1172,23 +1173,27 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                         @Override
                         public void run() {
                             Log.d(TAG, "handler: connect device");
+                            dumpDevice(device, "conneected");
+                            if(connectedUSBDevice != null && connectedUSBDevice != device) {
+                                connectedUSBDevice = device;
 
-                            //jjustman-2020-08-19- this is slightly messy, but should be seamless for switching to a new device
-                            Atsc3NdkPHYClientBase atsc3NdkPHYClientBaseInstanceResult = usbPHYLayerDeviceTryToInstantiateFromRegisteredPHYNDKs(device);
-                            if (atsc3NdkPHYClientBaseInstanceResult != null) {
-                                //todo - redispatch out of our service handler queue...grr
-                                if (atsc3NdkPHYClientInstance != null) {
-                                    atsc3NdkPHYClientInstance.deinit();
-                                    atsc3NdkPHYClientInstance = null;
+                                //jjustman-2020-08-19- this is slightly messy, but should be seamless for switching to a new device
+                                Atsc3NdkPHYClientBase atsc3NdkPHYClientBaseInstanceResult = usbPHYLayerDeviceTryToInstantiateFromRegisteredPHYNDKs(device);
+                                if (atsc3NdkPHYClientBaseInstanceResult != null) {
+                                    //todo - redispatch out of our service handler queue...grr
+                                    if (atsc3NdkPHYClientInstance != null) {
+                                        atsc3NdkPHYClientInstance.deinit();
+                                        atsc3NdkPHYClientInstance = null;
 
-                                    try {
-                                        Thread.sleep(1000);
-                                    } catch (InterruptedException e) {
-                                        e.printStackTrace();
+                                        try {
+                                            Thread.sleep(1000);
+                                        } catch (InterruptedException e) {
+                                            e.printStackTrace();
+                                        }
+
                                     }
-
+                                    atsc3NdkPHYClientInstance = atsc3NdkPHYClientBaseInstanceResult;
                                 }
-                                atsc3NdkPHYClientInstance = atsc3NdkPHYClientBaseInstanceResult;
                             }
                             Log.d(TAG, "---- end of handling connect device");
                         }}).start();
@@ -1648,13 +1653,14 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                     else {
                         Log.d(TAG, String.format("permission denied for device, dispatching mPermissionIntent: %s, dev: %s", mPermissionIntent, device));
                         final UsbDevice myDeviceNeedingPermission = device;
-                        ServiceHandler.GetInstance().postDelayed(new Runnable() {
-                            @Override
-                            public void run() {
-                                mUsbManager.requestPermission(myDeviceNeedingPermission, mPermissionIntent);
-
-                            }
-                        }, 1000);
+                        mUsbManager.requestPermission(myDeviceNeedingPermission, mPermissionIntent);
+//
+//                        ServiceHandler.GetInstance().postDelayed(new Runnable() {
+//                            @Override
+//                            public void run() {
+//
+//                            }
+//                        }, 1000);
 
                         return;
                     }
