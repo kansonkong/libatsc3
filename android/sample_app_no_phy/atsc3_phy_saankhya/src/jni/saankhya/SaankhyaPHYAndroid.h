@@ -84,6 +84,18 @@ public:
 
     static void NotifyPlpSelectionChangeCallback(vector<uint8_t> plps, void* context);
 
+    //jjustman-2020-08-23 - moving to public for now..
+    uint64_t alp_completed_packets_parsed;
+    uint64_t alp_total_bytes;
+    uint64_t alp_total_LMTs_recv;
+
+    SL_PlpConfigParams_t plpInfo;
+    SL_Atsc3p0Perf_Diag_t perfDiag;
+    SL_Atsc3p0Bsr_Diag_t  bsrDiag;
+    SL_Atsc3p0L1B_Diag_t  l1bDiag;
+    SL_Atsc3p0L1D_Diag_t  l1dDiag;
+
+
 protected:
     void pinProducerThreadAsNeeded() override;
     void releaseProducerThreadAsNeeded() override;
@@ -123,12 +135,6 @@ private:
     SL_TunerConfig_t tunerGetCfg;
     SL_TunerDcOffSet_t tunerIQDcOffSet;
     SL_TunerSignalInfo_t tunerInfo;
-
-    SL_PlpConfigParams_t plpInfo;
-    SL_Atsc3p0Perf_Diag_t perfDiag;
-    SL_Atsc3p0Bsr_Diag_t  bsrDiag;
-    SL_Atsc3p0L1B_Diag_t  l1bDiag;
-    SL_Atsc3p0L1D_Diag_t  l1dDiag;
 
     unsigned long int         cThread;
     unsigned long int         pThread;
@@ -179,16 +185,12 @@ private:
     block_t* atsc3_sl_tlv_block = NULL;
     atsc3_sl_tlv_payload_t* atsc3_sl_tlv_payload = NULL;
 
-    uint64_t alp_completed_packets_parsed;
-    uint64_t alp_total_bytes;
-    uint64_t alp_total_LMTs_recv;
 
 
     static mutex CircularBufferMutex;
     static mutex atsc3_sl_tlv_block_Mutex;
 
-
-
+    static mutex SL_I2C_command_mutex;
 
 };
 
