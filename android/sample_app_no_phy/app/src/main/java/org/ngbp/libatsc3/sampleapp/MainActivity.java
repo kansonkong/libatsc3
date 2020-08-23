@@ -1193,6 +1193,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
 
                                     }
                                     atsc3NdkPHYClientInstance = atsc3NdkPHYClientBaseInstanceResult;
+                                    enableDeviceControlButtons(true);
                                 }
                             }
                             Log.d(TAG, "---- end of handling connect device");
@@ -1792,11 +1793,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                 break;
 
             case R.id.butTune:
-                //showMsg("button Tune\n");
-                if (mCurAt3Device == null) {
-                    showMsg("no atlas device connected yet\n");
-                    break;
-                }
+
                 EditText editFreq = (EditText)findViewById(R.id.editFreqMhz);
 
                 final int freqMHz = Integer.parseInt(editFreq.getText().toString());
