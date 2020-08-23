@@ -605,22 +605,6 @@ int SaankhyaPHYAndroid::tune(int freqKHz, int plpid)
     printf("creating capture thread, cb buffer size: %d, tlv_block_size: %d",
            CB_SIZE, BUFFER_SIZE);
 
-//    utilsres = SL_CreateThread(&pThread, &ProcessThread);
-//    if (utilsres != SL_UTILS_OK)
-//    {
-//        processFlag = 0;
-//        SL_Printf("\n Process Thread launched unsuccessfully");
-//        goto ERROR;
-//    }
-//    else
-//    {
-//        processFlag = 1;
-//        if (SL_SetThreadPriority(&pThread, SL_THREAD_PRIORITY_NORMAL) != SL_UTILS_OK)
-//        {
-//            SL_Printf("\n Set Thread Priority of Process Thread Failed");
-//        }
-//    }
-
     processThreadShouldRun = true;
     pThread = pthread_create(&pThreadID, NULL, (THREADFUNCPTR)&SaankhyaPHYAndroid::ProcessThread, (void*)this);
     if (pThread != 0) {
@@ -632,12 +616,6 @@ int SaankhyaPHYAndroid::tune(int freqKHz, int plpid)
     }
 
 
-//    utilsres = SL_CreateThread(&cThread, &CaptureThread);
-//    if (utilsres != SL_UTILS_OK)
-//    {
-//        SL_Printf("\n Capture Thread launched unsuccessfully");
-//        goto ERROR;
-//    }
 
     SaankhyaPHYAndroid::captureThreadShouldRun = true;
     cThread = pthread_create(&cThreadID, NULL, (THREADFUNCPTR)&SaankhyaPHYAndroid::CaptureThread, (void*)this);
@@ -1186,8 +1164,11 @@ void* SaankhyaPHYAndroid::ProcessThread(void* context)
 
     apiImpl->resetProcessThreadStatistics();
 
-    //TODO: wire this up to our atsvc3NdkClientSL::Atsc3_Jni_Processing_Thread_Env
     (SaankhyaPHYAndroid*)apiImpl->pinFromRxProcessingThread();
+
+    if(atsc3_ndk_application_bridge_get_instance()) {
+        atsc3_ndk_application_bridge_get_instance()->pinFromRxProcessingThread();
+    }
 
     while (apiImpl->processThreadShouldRun)
     {
