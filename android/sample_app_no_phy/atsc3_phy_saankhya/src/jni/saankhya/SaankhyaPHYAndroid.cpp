@@ -27,9 +27,16 @@ SaankhyaPHYAndroid::SaankhyaPHYAndroid(JNIEnv* env, jobject jni_instance) {
     this->env = env;
     this->jni_instance_globalRef = env->NewGlobalRef(jni_instance);
     this->setRxUdpPacketProcessCallback(atsc3_core_service_bridge_process_packet_from_plp_and_block);
+    if(atsc3_ndk_application_bridge_get_instance()) {
+        atsc3_ndk_application_bridge_get_instance()->atsc3_phy_notify_plp_selection_change_set_callback(&SaankhyaPHYAndroid::NotifyPlpSelectionChangeCallback, this);
+    }
 }
 
 SaankhyaPHYAndroid::~SaankhyaPHYAndroid() {
+
+    if(atsc3_ndk_application_bridge_get_instance()) {
+        atsc3_ndk_application_bridge_get_instance()->atsc3_phy_notify_plp_selection_change_clear_callback();
+    }
     if(this->env) {
         if(this->jni_instance_globalRef) {
             env->DeleteGlobalRef(this->jni_instance_globalRef);
@@ -727,8 +734,53 @@ int SaankhyaPHYAndroid::tune(int freqKHz, int plpid)
     return -1;
 }
 
-int SaankhyaPHYAndroid::listen_plps(vector<uint8_t> plps)
+int SaankhyaPHYAndroid::listen_plps(vector<uint8_t> plps_orignal_list)
 {
+    vector<uint8_t> plps;
+    for(int i=0; i < plps_orignal_list.size(); i++) {
+        if(plps_orignal_list.at(i) == 0) {
+            //skip, duplicate plp0 will cause demod to fail
+        } else {
+            plps.push_back(plps_orignal_list.at(i));
+        }
+    }
+
+    if(plps.size() == 0) {
+        //we always need to listen to plp0...kinda
+        plpInfo.plp0 = 0;
+        plpInfo.plp1 = 0xFF;
+        plpInfo.plp2 = 0xFF;
+        plpInfo.plp3 = 0xFF;
+    } else if(plps.size() == 1) {
+        plpInfo.plp0 = 0;
+        plpInfo.plp1 = plps.at(0);
+        plpInfo.plp2 = 0xFF;
+        plpInfo.plp3 = 0xFF;
+    } else if(plps.size() == 2) {
+        plpInfo.plp0 = 0;
+        plpInfo.plp1 = plps.at(0);
+        plpInfo.plp2 = plps.at(1);
+        plpInfo.plp3 = 0xFF;
+    } else if(plps.size() == 3) {
+        plpInfo.plp0 = 0;
+        plpInfo.plp1 = plps.at(0);
+        plpInfo.plp2 = plps.at(1);
+        plpInfo.plp3 = plps.at(2);
+    } else if(plps.size() == 4) {
+        plpInfo.plp0 = plps.at(0);
+        plpInfo.plp1 = plps.at(1);
+        plpInfo.plp2 = plps.at(2);
+        plpInfo.plp3 = plps.at(3);
+    }
+
+    printf("calling SL_DemodConfigPLPS with 0: %02x, 1: %02x, 2: %02x, 3: %02x",
+            plpInfo.plp0,
+            plpInfo.plp1,
+            plpInfo.plp2,
+            plpInfo.plp3);
+
+    slres = SL_DemodConfigPlps(slUnit, &plpInfo);
+
     return 0;
 }
 
@@ -1391,6 +1443,8 @@ void SaankhyaPHYAndroid::processTLVFromCallback()
                             atsc3_core_service_bridge_process_packet_phy(atsc3_alp_packet->alp_payload);
                         } else if(atsc3_alp_packet->alp_packet_header.packet_type == 0x4) {
                             alp_total_LMTs_recv++;
+                            atsc3_link_mapping_table_t* atsc3_link_mapping_table_pending = atsc3_alp_packet_extract_lmt(atsc3_alp_packet);
+                            atsc3_phy_jni_bridge_notify_link_mapping_table(atsc3_link_mapping_table_pending);
                         }
 
                         atsc3_alp_packet_free(&atsc3_alp_packet);
@@ -1444,6 +1498,11 @@ void SaankhyaPHYAndroid::RxDataCallback(unsigned char *data, long len)
     //printf("atsc3NdkClientSlImpl::RxDataCallback: pushing data: %p, len: %d", data, len);
     CircularBufferPush(SaankhyaPHYAndroid::cb, (char *)data, len);
 }
+
+void SaankhyaPHYAndroid::NotifyPlpSelectionChangeCallback(vector<uint8_t> plps, void *context) {
+    ((SaankhyaPHYAndroid *) context)->listen_plps(plps);
+}
+
 
 
 extern "C"

@@ -5,22 +5,18 @@
  *      Author: jjustman
  */
 #include <string>
+#include <vector>
 
 #ifndef SRC_APPLICATION_IATSC3NDKAPPLICATIONBRIDGE_H_
 #define SRC_APPLICATION_IATSC3NDKAPPLICATIONBRIDGE_H_
+
 using namespace std;
+
+typedef void(*atsc3_phy_notify_plp_selection_change_f)(vector<uint8_t> plp, void* context);
 
 class IAtsc3NdkApplicationBridge {
 
     public:
-        /* phy callback method(s)
-         * TODO: for Saankhya use-case
-         *
-            atsc3NdkClient *me = (atsc3NdkClient *)ullUser; // same as &api
-            return me->RxCallbackJJ(pData);
-         */
-       // virtual int atsc3_rx_callback_f(void*, uint64_t ullUser) = 0;
-
         virtual void LogMsg(const char *msg) = 0;
         virtual void LogMsg(const std::string &msg) = 0;
         virtual void LogMsgF(const char *fmt, ...) = 0;
@@ -72,6 +68,10 @@ class IAtsc3NdkApplicationBridge {
         //jni management
 
         virtual int pinFromRxProcessingThread() = 0;
+
+        virtual void atsc3_phy_notify_plp_selection_change_set_callback(atsc3_phy_notify_plp_selection_change_f atsc3_phy_notify_plp_selection_change, void* context) = 0;
+        virtual void atsc3_phy_notify_plp_selection_change_clear_callback() = 0;;
+        virtual void atsc3_phy_notify_plp_selection_changed(vector<uint8_t> plps_to_listen) = 0;
 };
 
 

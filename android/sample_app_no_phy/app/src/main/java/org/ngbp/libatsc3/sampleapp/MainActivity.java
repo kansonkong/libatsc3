@@ -1173,29 +1173,9 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                         @Override
                         public void run() {
                             Log.d(TAG, "handler: connect device");
-                            dumpDevice(device, "conneected");
-                            if(connectedUSBDevice != null && connectedUSBDevice != device) {
-                                connectedUSBDevice = device;
+                            dumpDevice(device, "connected");
+                            usbPHYLayerDeviceInstantiateAndUpdateAtsc3NdkPHYClientInstance(connectedUSBDevice);
 
-                                //jjustman-2020-08-19- this is slightly messy, but should be seamless for switching to a new device
-                                Atsc3NdkPHYClientBase atsc3NdkPHYClientBaseInstanceResult = usbPHYLayerDeviceTryToInstantiateFromRegisteredPHYNDKs(device);
-                                if (atsc3NdkPHYClientBaseInstanceResult != null) {
-                                    //todo - redispatch out of our service handler queue...grr
-                                    if (atsc3NdkPHYClientInstance != null) {
-                                        atsc3NdkPHYClientInstance.deinit();
-                                        atsc3NdkPHYClientInstance = null;
-
-                                        try {
-                                            Thread.sleep(1000);
-                                        } catch (InterruptedException e) {
-                                            e.printStackTrace();
-                                        }
-
-                                    }
-                                    atsc3NdkPHYClientInstance = atsc3NdkPHYClientBaseInstanceResult;
-                                    enableDeviceControlButtons(true);
-                                }
-                            }
                             Log.d(TAG, "---- end of handling connect device");
                         }}).start();
 
@@ -1522,7 +1502,34 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         }
 
         for (UsbDevice usbDevice : deviceList.values()) {
-            usbPHYLayerDeviceTryToInstantiateFromRegisteredPHYNDKs(usbDevice);
+           usbPHYLayerDeviceInstantiateAndUpdateAtsc3NdkPHYClientInstance(usbDevice);
+        }
+    }
+
+    private void usbPHYLayerDeviceInstantiateAndUpdateAtsc3NdkPHYClientInstance(UsbDevice usbDevice) {
+
+        if(connectedUSBDevice == null || (connectedUSBDevice != null && connectedUSBDevice != usbDevice)) {
+            Atsc3NdkPHYClientBase atsc3NdkPHYClientBaseInstanceResult = usbPHYLayerDeviceTryToInstantiateFromRegisteredPHYNDKs(usbDevice);
+            Log.d("atsc3NdkPHYClientInstance", "usbPHYLayerDeviceTryToInstantiateFromRegisteredPHYNDKs returned: " + atsc3NdkPHYClientBaseInstanceResult);
+            if (atsc3NdkPHYClientBaseInstanceResult != null) {
+                //todo - redispatch out of our service handler queue...grr
+                if (atsc3NdkPHYClientInstance != null) {
+                    atsc3NdkPHYClientInstance.deinit();
+                    atsc3NdkPHYClientInstance = null;
+
+                    try {
+                        Thread.sleep(1000);
+                    } catch (InterruptedException e) {
+                        e.printStackTrace();
+                    }
+
+                }
+                atsc3NdkPHYClientInstance = atsc3NdkPHYClientBaseInstanceResult;
+                connectedUSBDevice = usbDevice;
+                Log.d("atsc3NdkPHYClientInstance", "atsc3NdkPHYClientInstance is now: " + atsc3NdkPHYClientInstance);
+
+                enableDeviceControlButtons(true);
+            }
         }
     }
 
