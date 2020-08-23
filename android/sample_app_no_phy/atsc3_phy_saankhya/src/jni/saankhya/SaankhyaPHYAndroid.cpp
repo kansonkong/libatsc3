@@ -543,6 +543,11 @@ ERROR:
 int SaankhyaPHYAndroid::tune(int freqKHz, int plpid)
 {
     unsigned int cFrequency = 0;
+    int ret = 0;
+
+    //acquire our lock for setting tuning parameters (including re-tuning)
+    unique_lock<mutex> SL_I2C_command_mutex_tuner_tune(SL_I2C_command_mutex);
+
     tres = SL_TunerSetFrequency(tUnit, freqKHz*1000);
     if (tres != 0)
     {
@@ -610,6 +615,12 @@ int SaankhyaPHYAndroid::tune(int freqKHz, int plpid)
         SL_Printf("\n Tuner Lock status      : ");
         SL_Printf((tunerInfo.status == 1) ? "LOCKED" : "NOT LOCKED");
         SL_Printf("\n Tuner RSSI             : %3.2f dBm", tunerInfo.signalStrength);
+
+        printf("\n Tuner Lock status      : ");
+        printf((tunerInfo.status == 1) ? "LOCKED" : "NOT LOCKED");
+        printf("\n Tuner RSSI             : %3.2f dBm", tunerInfo.signalStrength);
+
+        printf("tuner frequency: %d", cFrequency);
     }
 
     //setup shared memory allocs
@@ -708,10 +719,15 @@ int SaankhyaPHYAndroid::tune(int freqKHz, int plpid)
         printToConsoleDemodConfiguration(cfgInfo);
     }
 
-    return 0;
+    ret = 0;
 
  ERROR:
-    return -1;
+    ret = -1;
+
+    //unlock our i2c mutext
+    SL_I2C_command_mutex_tuner_tune.unlock();
+    return ret;
+
 }
 
 int SaankhyaPHYAndroid::listen_plps(vector<uint8_t> plps_orignal_list)
