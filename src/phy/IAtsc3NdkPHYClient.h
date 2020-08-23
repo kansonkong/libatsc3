@@ -33,10 +33,14 @@ class IAtsc3NdkPHYClient {
 	protected:
         //overloadable callbacks for Android to pin mJavaVM as needed
         virtual void pinProducerThreadAsNeeded() { };
-        virtual void releaseProducerThreadAsNeeded() { };
+        virtual void releasePinnedProducerThreadAsNeeded() { };
 
         virtual void pinConsumerThreadAsNeeded() { };
-        virtual void releaseConsumerThreadAsNeeded() { };
+        virtual void releasePinnedConsumerThreadAsNeeded() { };
+
+        virtual void pinStatusThreadAsNeeded() { };
+        virtual void releasePinnedStatusThreadAsNeeded() { };
+
 		atsc3_phy_rx_udp_packet_process_callback_f atsc3_phy_rx_udp_packet_process_callback = nullptr;
 };
 

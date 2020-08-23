@@ -41,13 +41,11 @@ class IAtsc3NdkPHYBridge {
         //application callbacks - mapped to native method for Android
         virtual void setRfPhyStatisticsViewVisible(bool isRfPhyStatisticsVisible) = 0;
 
-        virtual int pinFromRxCaptureThread() = 0;
+        virtual int pinCaptureThreadAsNeeded() = 0;
+        virtual int releasePinnedCaptureThreadAsNeeded() = 0;
 
-        virtual int pinFromRxStatusThread() = 0;
-
-    // jjustman-2020-08-10 - TODO: handle this for mapping plp management without having to traverse the JNI boundary
-    //protected:
-    //    IAtsc3NdkPHYClient* iAtsc3NDKPhyClient = nullptr;
+        virtual int pinStatusThreadAsNeeded() = 0;
+        virtual int releasePinnedStatusThreadAsNeeded() = 0;
 
 };
 

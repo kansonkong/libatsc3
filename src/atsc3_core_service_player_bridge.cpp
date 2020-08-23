@@ -232,7 +232,7 @@ atsc3_lls_slt_service_t* atsc3_phy_mmt_player_bridge_set_single_monitor_a331_ser
                     }
 
                 }
-                __INFO("atsc3_phy_notify_plp_selection_changed: with %d plp's", plps_to_listen.size());
+                __INFO("atsc3_phy_notify_plp_selection_changed: with %lu plp's", plps_to_listen.size());
                 Atsc3NdkApplicationBridge_ptr->atsc3_phy_notify_plp_selection_changed(plps_to_listen);
             } else {
                 __WARN("No LMT to support serviceID selection change!");

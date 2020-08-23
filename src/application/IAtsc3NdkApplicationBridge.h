@@ -61,17 +61,17 @@ class IAtsc3NdkApplicationBridge {
 
         virtual void atsc3_onMfuSampleMissing(uint16_t i, uint32_t i1, uint32_t i2) = 0;
 
-        //virtual void set_plp_settings(jint *a_plp_ids, jsize sa_plp_size) = 0;
-
         virtual string get_android_temp_folder() = 0;
 
-        //jni management
-
-        virtual int pinFromRxProcessingThread() = 0;
-
+        //application bridge to phy instance callbacks for PLP selection change
         virtual void atsc3_phy_notify_plp_selection_change_set_callback(atsc3_phy_notify_plp_selection_change_f atsc3_phy_notify_plp_selection_change, void* context) = 0;
         virtual void atsc3_phy_notify_plp_selection_change_clear_callback() = 0;;
         virtual void atsc3_phy_notify_plp_selection_changed(vector<uint8_t> plps_to_listen) = 0;
+
+        //jni management
+        virtual int pinConsumerThreadAsNeeded() = 0;
+        virtual int releasePinnedConsumerThreadAsNeeded() = 0;
+
 };
 
 

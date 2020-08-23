@@ -59,27 +59,27 @@ void Atsc3NdkPHYBridge::atsc3_update_rf_stats(int32_t tuner_lock,
     if (!atsc3_rf_phy_status_callback_ID)
         return;
 
-    if (!Atsc3_Jni_Status_Thread_Env) {
+    if (!pinnedStatusJniEnv) {
         _NDK_PHY_BRIDGE_ERROR("Atsc3NdkPHYBridge:atsc3_update_rf_stats: err on get jni env: Atsc3_Jni_Status_Thread_Env");
         return;
     }
-    int r = Atsc3_Jni_Status_Thread_Env->Get()->CallIntMethod(jni_instance_globalRef,
-                                                              atsc3_rf_phy_status_callback_ID,
-                                                              tuner_lock,
-                                                              rssi,
-                                                              modcod_valid,
-                                                              plp_fec_type,
-                                                              plp_mod,
-                                                              plp_cod,
-                                                              nRfLevel1000,
-                                                              nSnr1000,
-                                                              ber_pre_ldpc_e7,
-                                                              ber_pre_bch_e9,
-                                                              fer_post_bch_e6,
-                                                              demod_lock_status,
-                                                              cpu_status,
-                                                              plp_any,
-                                                              plp_all);
+    int r = pinnedStatusJniEnv->Get()->CallIntMethod(jni_instance_globalRef,
+                                                     atsc3_rf_phy_status_callback_ID,
+                                                     tuner_lock,
+                                                     rssi,
+                                                     modcod_valid,
+                                                     plp_fec_type,
+                                                     plp_mod,
+                                                     plp_cod,
+                                                     nRfLevel1000,
+                                                     nSnr1000,
+                                                     ber_pre_ldpc_e7,
+                                                     ber_pre_bch_e9,
+                                                     fer_post_bch_e6,
+                                                     demod_lock_status,
+                                                     cpu_status,
+                                                     plp_any,
+                                                     plp_all);
 
 }
 
@@ -90,32 +90,52 @@ void Atsc3NdkPHYBridge::atsc3_update_rf_bw_stats(uint64_t total_pkts,
     if (!atsc3_update_rf_bw_stats_ID)
         return;
 
-    if (!Atsc3_Jni_Status_Thread_Env) {
+    if (!pinnedStatusJniEnv) {
         _NDK_PHY_BRIDGE_ERROR("Atsc3NdkPHYBridge:atsc3_update_rf_bw_stats: err on get jni env: Atsc3_Jni_Status_Thread_Env");
         return;
     }
-    int r = Atsc3_Jni_Status_Thread_Env->Get()->CallIntMethod(jni_instance_globalRef,
-            atsc3_update_rf_bw_stats_ID,
-            total_pkts,
-            total_bytes,
-            total_lmts);
+    int r = pinnedStatusJniEnv->Get()->CallIntMethod(jni_instance_globalRef,
+                                                     atsc3_update_rf_bw_stats_ID,
+                                                     total_pkts,
+                                                     total_bytes,
+                                                     total_lmts);
 }
 
 void Atsc3NdkPHYBridge::setRfPhyStatisticsViewVisible(bool isRfPhyStatisticsVisible) {
     rxStatusThreadShouldRun = isRfPhyStatisticsVisible;
 }
 
-int Atsc3NdkPHYBridge::pinFromRxCaptureThread() {
-    _NDK_PHY_BRIDGE_INFO("Atsc3NdkPHYBridge::pinFromRxCaptureThread: mJavaVM: %p", mJavaVM);
-    Atsc3_Jni_Capture_Thread_Env = new Atsc3JniEnv(mJavaVM);
+int Atsc3NdkPHYBridge::pinCaptureThreadAsNeeded() {
+    _NDK_PHY_BRIDGE_DEBUG("Atsc3NdkPHYBridge::pinCaptureThreadAsNeeded: mJavaVM: %p", mJavaVM);
+    pinnedCaptureJniEnv = new Atsc3JniEnv(mJavaVM);
     return 0;
 };
 
-int Atsc3NdkPHYBridge::pinFromRxStatusThread() {
-    _NDK_PHY_BRIDGE_INFO("Atsc3NdkPHYBridge::pinFromRxStatusThread: mJavaVM: %p", mJavaVM);
-    Atsc3_Jni_Status_Thread_Env = new Atsc3JniEnv(mJavaVM);
+int Atsc3NdkPHYBridge::releasePinnedCaptureThreadAsNeeded() {
+    _NDK_PHY_BRIDGE_DEBUG("Atsc3NdkPHYBridge::releasePinnedCaptureThreadAsNeeded: pinnedCaptureJniEnv: %p", pinnedCaptureJniEnv);
+
+    if(pinnedCaptureJniEnv) {
+        delete pinnedCaptureJniEnv;
+    }
     return 0;
 }
+
+int Atsc3NdkPHYBridge::pinStatusThreadAsNeeded() {
+    _NDK_PHY_BRIDGE_DEBUG("Atsc3NdkPHYBridge::pinStatusThreadAsNeeded: mJavaVM: %p", mJavaVM);
+    pinnedStatusJniEnv = new Atsc3JniEnv(mJavaVM);
+    return 0;
+}
+
+int Atsc3NdkPHYBridge::releasePinnedStatusThreadAsNeeded() {
+    _NDK_PHY_BRIDGE_DEBUG("Atsc3NdkPHYBridge::releasePinnedStatusThreadAsNeeded: pinnedStatusJniEnv: %p", pinnedStatusJniEnv);
+
+    if(pinnedStatusJniEnv) {
+        delete pinnedStatusJniEnv;
+    }
+    return 0;
+}
+
+
 
 extern "C" JNIEXPORT jint JNICALL
 Java_org_ngbp_libatsc3_middleware_Atsc3NdkPHYBridge_init(JNIEnv *env, jobject instance)
