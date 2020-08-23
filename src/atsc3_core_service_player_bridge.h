@@ -65,6 +65,7 @@ void atsc3_core_service_application_bridge_init(IAtsc3NdkApplicationBridge* atsc
 IAtsc3NdkApplicationBridge* atsc3_ndk_application_bridge_get_instance();
 
 void atsc3_core_service_phy_bridge_init(IAtsc3NdkPHYBridge* atsc3NdkPHYBridge);
+IAtsc3NdkPHYBridge* atsc3_ndk_phy_bridge_get_instance();
 
 //jjustman-2020-08-18 - signature match for typedef void(*atsc3_phy_rx_udp_packet_process_callback_f)(uint8_t plp_num, block_t* block);
 

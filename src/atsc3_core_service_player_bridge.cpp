@@ -52,6 +52,10 @@ IAtsc3NdkApplicationBridge* atsc3_ndk_application_bridge_get_instance() {
     return Atsc3NdkApplicationBridge_ptr;
 }
 
+IAtsc3NdkPHYBridge* atsc3_ndk_phy_bridge_get_instance() {
+    return Atsc3NdkPHYBridge_ptr;
+}
+
 void atsc3_core_service_application_bridge_init(IAtsc3NdkApplicationBridge* atsc3NdkApplicationBridge) {
     Atsc3NdkApplicationBridge_ptr = atsc3NdkApplicationBridge;
     printf("atsc3_core_service_application_bridge_init with Atsc3NdkApplicationBridge_ptr: %p", Atsc3NdkApplicationBridge_ptr);

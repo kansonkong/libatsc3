@@ -10,12 +10,11 @@ CircularBuffer SaankhyaPHYAndroid::cb = nullptr;
 mutex SaankhyaPHYAndroid::CircularBufferMutex;
 //atsc3_sl_tlv_block_Mutex
 mutex SaankhyaPHYAndroid::atsc3_sl_tlv_block_Mutex;
-
+mutex SaankhyaPHYAndroid::SL_I2C_command_mutex;
 
 Atsc3JniEnv* SaankhyaPHYAndroid::Atsc3_Jni_Capture_Thread_Env = NULL;
 Atsc3JniEnv* SaankhyaPHYAndroid::Atsc3_Jni_Processing_Thread_Env = NULL;
 Atsc3JniEnv* SaankhyaPHYAndroid::Atsc3_Jni_Status_Thread_Env = NULL;
-
 
 /* jjustman-2020-08-19 - todo - cleanup */
 block_t* atsc3_sl_tlv_block = NULL;
@@ -779,7 +778,9 @@ int SaankhyaPHYAndroid::listen_plps(vector<uint8_t> plps_orignal_list)
             plpInfo.plp2,
             plpInfo.plp3);
 
+    unique_lock<mutex> SL_I2C_command_mutex_config_plps(SL_I2C_command_mutex);
     slres = SL_DemodConfigPlps(slUnit, &plpInfo);
+    SL_I2C_command_mutex_config_plps.unlock();
 
     return 0;
 }
@@ -1249,18 +1250,15 @@ void* SaankhyaPHYAndroid::CaptureThread(void* context)
     return 0;
 }
 
-//#ifdef _WIN32
-//DWORD WINAPI TunerStatusThread(LPVOID lpParam)
-//#elif linux
-//int TunerStatusThread()
-//#elif __ANDROID__
 void* SaankhyaPHYAndroid::TunerStatusThread(void* context)
 {
 
     SaankhyaPHYAndroid* apiImpl = (SaankhyaPHYAndroid*) context;
 
-    //TODO: wire this up to our atsvc3NdkClientSL::pinFromRxStatusThread
     (SaankhyaPHYAndroid*)apiImpl->pinFromRxStatusThread();
+    if(atsc3_ndk_phy_bridge_get_instance()) {
+        atsc3_ndk_phy_bridge_get_instance()->pinFromRxStatusThread();
+    }
 
     SL_TunerResult_t tres;
     SL_TunerSignalInfo_t tunerInfo;
@@ -1280,6 +1278,8 @@ void* SaankhyaPHYAndroid::TunerStatusThread(void* context)
     double ber_l1b;
     double ber_l1d;
     double ber_plp0;
+    unique_lock<mutex> SL_I2C_command_mutex_tuner_status_io(SL_I2C_command_mutex, std::defer_lock);
+    bool first_run = true;
 
     //atsc3NdkClientSlImpl::tunerStatusThreadShouldRun
     while(true) {
@@ -1289,6 +1289,11 @@ void* SaankhyaPHYAndroid::TunerStatusThread(void* context)
 //            usleep(1000000);
 //            continue;
 //        }
+
+        if(!first_run) {
+            SL_I2C_command_mutex_tuner_status_io.unlock();
+        }
+        first_run = false;
 
         if(lastCpuStatus == 0xFFFFFFFF) {
             usleep(1000000); //jjustman: target: sleep for 500ms
@@ -1309,7 +1314,8 @@ void* SaankhyaPHYAndroid::TunerStatusThread(void* context)
                 cpuStatus:          (cpuStatus == 0xFFFFFFFF) ? "RUNNING" : "HALTED",
          */
 
-
+        SL_I2C_command_mutex_tuner_status_io.lock();
+        
         tres = SL_TunerGetStatus(apiImpl->tUnit, &tunerInfo);
         if (tres != SL_TUNER_OK) {
             //atsc3NdkClientSlImpl::atsc3NdkClientSLRef->LogMsgF("Error:SL_TunerGetStatus: deviceHandle: %p, res: %d", __deviceHandle_FIXME, tres);
@@ -1383,25 +1389,28 @@ void* SaankhyaPHYAndroid::TunerStatusThread(void* context)
                demodLockStatus,
                perfDiag.GlobalSnrLinearScale);
 
+        if(atsc3_ndk_phy_bridge_get_instance()) {
 
-//        apiImpl->atsc3_update_rf_stats(tunerInfo.status == 1,
-//                tunerInfo.signalStrength,
-//                apiImpl.plpInfo.plp0 == l1dDiag.sf0ParamsStr.Plp0paramsstr.L1dSfPlpId,
-//                l1dDiag.sf0ParamsStr.Plp0paramsstr.L1dSfPlpFecType,
-//                l1dDiag.sf0ParamsStr.Plp0paramsstr.L1dSfPlpModType,
-//                l1dDiag.sf0ParamsStr.Plp0paramsstr.L1dSfPlpCoderate,
-//                tunerInfo.signalStrength/1000,
-//                snr,
-//                ber_l1b,
-//                ber_l1d,
-//                ber_plp0,
-//                demodLockStatus,
-//                cpuStatus == 0xFFFFFFFF,
-//                llsPlpInfo & 0x01 == 0x01,
-//                0);
-//
-//        atsc3NdkClientSLRef->atsc3_update_rf_bw_stats(apiImpl.alp_completed_packets_parsed, apiImpl.alp_total_bytes, apiImpl.alp_total_LMTs_recv);
+            atsc3_ndk_phy_bridge_get_instance()->atsc3_update_rf_stats(tunerInfo.status == 1,
+                tunerInfo.signalStrength,
+                saankhyaPHYAndroid->plpInfo.plp0 == l1dDiag.sfParams[0].PlpParams[0].L1dSfPlpId,
+                l1dDiag.sfParams[0].PlpParams[0].L1dSfPlpFecType,
+                l1dDiag.sfParams[0].PlpParams[0].L1dSfPlpModType,
+                l1dDiag.sfParams[0].PlpParams[0].L1dSfPlpCoderate,
+                tunerInfo.signalStrength/1000,
+                snr,
+                ber_l1b,
+                ber_l1d,
+                ber_plp0,
+                demodLockStatus,
+                cpuStatus == 0xFFFFFFFF,
+                llsPlpInfo & 0x01 == 0x01,
+                0);
 
+            atsc3_ndk_phy_bridge_get_instance()->atsc3_update_rf_bw_stats(saankhyaPHYAndroid->alp_completed_packets_parsed,
+                                                                          saankhyaPHYAndroid->alp_total_bytes,
+                                                                          saankhyaPHYAndroid->alp_total_LMTs_recv);
+            }
     }
     return 0;
 }
