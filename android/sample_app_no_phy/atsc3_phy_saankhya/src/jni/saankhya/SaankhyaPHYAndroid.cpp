@@ -1315,7 +1315,7 @@ void* SaankhyaPHYAndroid::TunerStatusThread(void* context)
          */
 
         SL_I2C_command_mutex_tuner_status_io.lock();
-        
+
         tres = SL_TunerGetStatus(apiImpl->tUnit, &tunerInfo);
         if (tres != SL_TUNER_OK) {
             //atsc3NdkClientSlImpl::atsc3NdkClientSLRef->LogMsgF("Error:SL_TunerGetStatus: deviceHandle: %p, res: %d", __deviceHandle_FIXME, tres);

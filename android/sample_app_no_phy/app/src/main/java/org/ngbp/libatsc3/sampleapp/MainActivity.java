@@ -487,17 +487,9 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         int itemCount = 1;
         int idxSelected = 0;
 
-//        for (Atsc3UsbDevice ad : mAt3Devices) {
-//            if (mCurAt3Device != null && mCurAt3Device.toString().equalsIgnoreCase(ad.toString())) {
-//                idxSelected = itemCount;
-//            } else if(itemSelected != null && itemSelected.equals(ad.toString())) {
-//                idxSelected = itemCount;
-//            }
-//            items.add(ad.toString());
-//
-//            Log.d(TAG, String.format("dropdown idx: %d, fd: %s, deviceName: %s, key: %s", itemCount, ad.fd, ad.dev.getDeviceName(), ad.toString()));
-//            itemCount++;
-//        }
+        if(atsc3NdkPHYClientInstance != null) {
+            items.add(atsc3NdkPHYClientInstance.toString());
+        }
 
         if(prebuiltAssetsForDeviceSelectionVirtualPHY.length > 0) {
             items.add("---");
@@ -875,6 +867,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         mEditFreqMhz.setInputType(TYPE_CLASS_PHONE);
         mEditFreqMhz.addTextChangedListener(new PhoneNumberFormattingTextWatcher());
 
+
         //make sure we can read from device pcap files
         if (ContextCompat.checkSelfPermission(this, Manifest.permission.WRITE_EXTERNAL_STORAGE) != PackageManager.PERMISSION_GRANTED) {
                 Log.w("onCreate","android.permission.WRITE_EXTERNAL_STORAGE missing!");
@@ -882,6 +875,9 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                     new String[]{Manifest.permission.WRITE_EXTERNAL_STORAGE},
                     ServiceHandler.MY_PERMISSIONS_REQUEST_WRITE_EXTERNAL_STORAGE);
         }
+
+        updateSpinnerFromDevList();
+
 
         //auto-debug mode
         ServiceHandler.GetInstance().postDelayed(new Runnable() {
@@ -1577,7 +1573,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                     }
                 }
             }
-            //updateSpinnerFromDevList();
+            updateSpinnerFromDevList();
         }
         return atsc3NdkPHYClientBaseInstantiated;
     }
