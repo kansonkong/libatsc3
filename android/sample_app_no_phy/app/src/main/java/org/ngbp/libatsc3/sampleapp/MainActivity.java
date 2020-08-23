@@ -1170,7 +1170,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                         public void run() {
                             Log.d(TAG, "handler: connect device");
                             dumpDevice(device, "connected");
-                            usbPHYLayerDeviceInstantiateAndUpdateAtsc3NdkPHYClientInstance(connectedUSBDevice);
+                            usbPHYLayerDeviceInstantiateAndUpdateAtsc3NdkPHYClientInstance(device);
 
                             Log.d(TAG, "---- end of handling connect device");
                         }}).start();
