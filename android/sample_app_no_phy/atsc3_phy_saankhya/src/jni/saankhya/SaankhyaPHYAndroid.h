@@ -64,9 +64,7 @@ public:
 
     virtual ~SaankhyaPHYAndroid();
 
-
     static void RxDataCallback(unsigned char *data, long len);
-
 
     //static/instance hacks
     int pinFromRxCaptureThread();
@@ -82,8 +80,9 @@ public:
 
     static int         usbFD;
 
-
     int RxThread();
+
+    static void NotifyPlpSelectionChangeCallback(vector<uint8_t> plps, void* context);
 
 protected:
     void pinProducerThreadAsNeeded() override;
