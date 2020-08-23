@@ -1491,19 +1491,20 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     private void usbPHYLayerDeviceScan() {
         Log.d(TAG, "scanDevices:: calling mUsbManager.getDeviceList()");
         HashMap<String, UsbDevice> deviceList = mUsbManager.getDeviceList();
-        if (deviceList == null) {
+        if (deviceList == null || deviceList.size() == 0) {
             Toast.makeText(getApplicationContext(), "No USB devices detected!", Toast.LENGTH_SHORT).show();
             Log.d(TAG, "No USB devices detected!");
             return;
         }
 
         for (UsbDevice usbDevice : deviceList.values()) {
-           usbPHYLayerDeviceInstantiateAndUpdateAtsc3NdkPHYClientInstance(usbDevice);
+            dumpDevice(usbDevice, "usbPHYLayerDeviceScan");
+
+            usbPHYLayerDeviceInstantiateAndUpdateAtsc3NdkPHYClientInstance(usbDevice);
         }
     }
 
     private void usbPHYLayerDeviceInstantiateAndUpdateAtsc3NdkPHYClientInstance(UsbDevice usbDevice) {
-
         if(connectedUSBDevice == null || (connectedUSBDevice != null && connectedUSBDevice != usbDevice)) {
             Atsc3NdkPHYClientBase atsc3NdkPHYClientBaseInstanceResult = usbPHYLayerDeviceTryToInstantiateFromRegisteredPHYNDKs(usbDevice);
             Log.d("atsc3NdkPHYClientInstance", "usbPHYLayerDeviceTryToInstantiateFromRegisteredPHYNDKs returned: " + atsc3NdkPHYClientBaseInstanceResult);
