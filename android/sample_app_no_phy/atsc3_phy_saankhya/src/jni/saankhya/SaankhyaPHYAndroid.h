@@ -95,6 +95,8 @@ public:
     SL_Atsc3p0L1B_Diag_t  l1bDiag;
     SL_Atsc3p0L1D_Diag_t  l1dDiag;
 
+    void dump_plp_list();
+
 
 protected:
     void pinProducerThreadAsNeeded() override;

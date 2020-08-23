@@ -138,7 +138,6 @@ int SaankhyaPHYAndroid::open(int fd, int bus, int addr)
     SL_IQOffsetCorrectionParams_t iqOffSetCorrection;
     SL_DemodBootStatus_t bootStatus;
 
-    SL_SleepMS(5000);
     cres = SL_ConfigGetPlatform(&getPlfConfig);
     if (cres == SL_CONFIG_OK)
     {
@@ -367,6 +366,7 @@ int SaankhyaPHYAndroid::open(int fd, int bus, int addr)
     plpInfo.plp1 = 0xFF;
     plpInfo.plp2 = 0xFF;
     plpInfo.plp3 = 0xFF;
+
     printf("SL_DemodCreateInstance: before");
     slres = SL_DemodCreateInstance(&slUnit);
     if (slres != SL_OK)
@@ -655,54 +655,12 @@ int SaankhyaPHYAndroid::tune(int freqKHz, int plpid)
     SL_SleepMS(1000); // Delay to accomdate set configurations at SL to take effect
 
 
-    slres = SL_DemodGetLlsPlpList(slUnit, &llsPlpInfo);
-    if (slres != SL_OK)
-    {
-        SL_Printf("\n Error:SL_DemodGetLlsPlpList :");
-        printToConsoleDemodError(slres);
-        if (slres == SL_ERR_CMD_IF_FAILURE)
-        {
-            handleCmdIfFailure();
-            goto ERROR;
-        }
-    }
 
-    plpllscount = 0;
-    for (int plpIndx = 0; (plpIndx < 64) && (plpllscount < 4); plpIndx++)
-    {
-        plpInfoVal = ((llsPlpInfo & (llsPlpMask << plpIndx)) == pow(2, plpIndx)) ? 0x01 : 0xFF;
-        if (plpInfoVal == 0x01)
-        {
-            plpllscount++;
-            if (plpllscount == 1)
-            {
-                plpInfo.plp0 = plpIndx;
-            }
-            else if (plpllscount == 2)
-            {
-                plpInfo.plp1 = plpIndx;
-            }
-            else if (plpllscount == 3)
-            {
-                plpInfo.plp2 = plpIndx;
-            }
-            else if (plpllscount == 4)
-            {
-                plpInfo.plp3 = plpIndx;
-            }
-            else
-            {
-                plpllscount++;
-            }
-        }
-    }
+    plpInfo.plp0 = plpid;
+    plpInfo.plp1 = 0xFF;
+    plpInfo.plp2 = 0xFF;
+    plpInfo.plp3 = 0xFF;
 
-    if (plpInfo.plp0 == -1)
-    {
-        plpInfo.plp0 = 0x00;
-    }
-
-    plpInfo.plp0 = 0x00;
     slres = SL_DemodConfigPlps(slUnit, &plpInfo);
     if (slres != 0)
     {
@@ -780,9 +738,69 @@ int SaankhyaPHYAndroid::listen_plps(vector<uint8_t> plps_orignal_list)
 
     unique_lock<mutex> SL_I2C_command_mutex_config_plps(SL_I2C_command_mutex);
     slres = SL_DemodConfigPlps(slUnit, &plpInfo);
+    if (slres != 0)
+    {
+        printf("Error: SL_DemodConfigPLP: %d", slres);
+        SL_Printf("\n Error:SL_DemodConfigPlps :");
+        printToConsoleDemodError(slres);
+    }
+
     SL_I2C_command_mutex_config_plps.unlock();
 
-    return 0;
+    return slres;
+}
+
+void SaankhyaPHYAndroid::dump_plp_list() {
+    slres = SL_DemodGetLlsPlpList(slUnit, &llsPlpInfo);
+    if (slres != SL_OK)
+    {
+        SL_Printf("\n Error:SL_DemodGetLlsPlpList :");
+        printToConsoleDemodError(slres);
+        if (slres == SL_ERR_CMD_IF_FAILURE)
+        {
+            handleCmdIfFailure();
+            return;
+        }
+    }
+
+    plpllscount = 0;
+    for (int plpIndx = 0; (plpIndx < 64) && (plpllscount < 4); plpIndx++)
+    {
+        plpInfoVal = ((llsPlpInfo & (llsPlpMask << plpIndx)) == pow(2, plpIndx)) ? 0x01 : 0xFF;
+
+        printf("PLP: %d, plpInfoVal: %d", plpIndx, plpInfoVal);
+
+        if (plpInfoVal == 0x01)
+        {
+            plpllscount++;
+            if (plpllscount == 1)
+            {
+                plpInfo.plp0 = plpIndx;
+            }
+            else if (plpllscount == 2)
+            {
+                plpInfo.plp1 = plpIndx;
+            }
+            else if (plpllscount == 3)
+            {
+                plpInfo.plp2 = plpIndx;
+            }
+            else if (plpllscount == 4)
+            {
+                plpInfo.plp3 = plpIndx;
+            }
+            else
+            {
+                plpllscount++;
+            }
+        }
+    }
+
+    if (plpInfo.plp0 == -1)
+    {
+        plpInfo.plp0 = 0x00;
+    }
+
 }
 
 int SaankhyaPHYAndroid::download_bootloader_firmware(int fd) {
@@ -1260,6 +1278,7 @@ void* SaankhyaPHYAndroid::TunerStatusThread(void* context)
         atsc3_ndk_phy_bridge_get_instance()->pinFromRxStatusThread();
     }
 
+    SL_Result_t sl_res;
     SL_TunerResult_t tres;
     SL_TunerSignalInfo_t tunerInfo;
     SL_DemodLockStatus_t demodLockStatus;
@@ -1315,6 +1334,20 @@ void* SaankhyaPHYAndroid::TunerStatusThread(void* context)
          */
 
         SL_I2C_command_mutex_tuner_status_io.lock();
+
+        SL_DemodConfigInfo_t demodInfo;
+        sl_res = SL_DemodGetConfiguration(apiImpl->slUnit, &demodInfo);
+        if(sl_res != SL_OK) {
+            printf("Error calling SL_DemodGetConfiguration");
+            continue;
+        }
+
+        printf("DemodGetConfiguration, plp's: 0: %02x, 1: %02x, 2: %02x, 3: %02x",
+                demodInfo.plpInfo.plp0,
+                demodInfo.plpInfo.plp1,
+                demodInfo.plpInfo.plp2,
+                demodInfo.plpInfo.plp3);
+
 
         tres = SL_TunerGetStatus(apiImpl->tUnit, &tunerInfo);
         if (tres != SL_TUNER_OK) {
