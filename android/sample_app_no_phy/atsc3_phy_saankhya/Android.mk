@@ -35,6 +35,14 @@ LOCAL_SRC_FILES += \
 LOCAL_C_INCLUDES += $(LOCAL_PATH)/../../../libusb_android/libusb
 LOCAL_C_INCLUDES += $(LOCAL_PATH)/../../../libusb_android/android
 
+
+LOCAL_CFLAGS += -g -fpack-struct=8 \
+                -D__ANDROID__ -Dlinux
+
+#jjustman-2020-08-19 - fixup for invalid soname in .so
+LOCAL_LDLIBS += -ldl -lc++_shared -llog -landroid
+
+
 include $(BUILD_SHARED_LIBRARY)
 # ---------------------------
 
@@ -106,13 +114,13 @@ $(LOCAL_MODULE): P3_FW_BUILD_TARGET
 
 $(shell mkdir -p $(LOCAL_PATH)/prebuilt/firmware/fx3s/)
 
-LOCAL_LD_FLAGS := -r -b binary $(LOCAL_PATH)/../../../saankhyalabs-slsdk/slplf/src/slref/fx3s/bin/P3_Firmware_v3.2.2\(KAILASH_DONGLE\).img -o $(LOCAL_PATH)/prebuilt/firmware/fx3s/p3_firmware_KAILASH_DONGLE.o
+LOCAL_LD_FLAGS := -r -b binary $(LOCAL_PATH)/../../../saankhyalabs-slsdk/slplf/src/slref/fx3s/bin/P3_Firmware_v3.1_KAILASH_DONGLE.img -o $(LOCAL_PATH)/prebuilt/firmware/fx3s/p3_firmware_KAILASH_DONGLE.o
 
 # jjustman-2020-05-08 - built for ndk20 gcc 4.9
 # NOTE: conditional linkage based upon arch abi can be applied via:  ifeq ($(TARGET_ARCH_ABI),arm64-v8a) ... else ifeq ($(TARGET_ARCH_ABI),x86) ... else ... endif endif
 P3_FW_BUILD_TARGET:
 	$(info TARGET_LD is $(TARGET_LD))
-	$(TARGET_LD) -r -b binary ./../../../saankhyalabs-slsdk/slplf/src/slref/fx3s/bin/P3_Firmware_v3.2.2\(KAILASH_DONGLE\).img -o prebuilt/firmware/fx3s/p3_firmware_KAILASH_DONGLE.o
+	$(TARGET_LD) -r -b binary ./../../../saankhyalabs-slsdk/slplf/src/slref/fx3s/bin/P3_Firmware_v3.1_KAILASH_DONGLE.img -o prebuilt/firmware/fx3s/p3_firmware_KAILASH_DONGLE.o
 include $(BUILD_SHARED_LIBRARY)
 
 
@@ -189,29 +197,7 @@ LOCAL_C_INCLUDES += $(LOCAL_PATH)/../atsc3_bridge/src/jni
 LIB_PHY_SAANKHYACPP := \
     $(wildcard $(LOCAL_PATH)/src/jni/*.cpp) \
 	$(wildcard $(LOCAL_PATH)/src/jni/saankhya/*.cpp) \
-    $(LOCAL_PATH)/src/jni/utils/CircularBuffer.c \
-    $(LOCAL_PATH)/src/jni/utils/libcyusb.cpp
-#
-# jjustman-2020-08-20 - problematic with CyAPI and sl_fx3s resources being next to each other
-#-rw-r--r--  1 jjustman  932231305  110742 Aug 19 06:18 CyAPI.cpp
-#-rw-r--r--  1 jjustman  932231305   19738 Aug 19 06:18 CyAPI.h
-#-rw-r--r--  1 jjustman  932231305    3433 Aug 19 06:18 CyUSB30_def.h
-#-rw-r--r--  1 jjustman  932231305    2802 Aug 19 06:18 UsbdStatus.h
-#-rw-r--r--  1 jjustman  932231305     802 Aug 19 06:18 VersionNo.h
-#drwxr-xr-x  8 jjustman  932231305     256 Aug 19 06:18 bin
-#-rw-r--r--  1 jjustman  932231305    2371 Aug 19 06:18 controlcenter.h
-#-rw-r--r--  1 jjustman  932231305    6919 Aug 19 06:18 cyioctl.h
-#-rw-r--r--  1 jjustman  932231305   30490 Aug 19 06:18 cyusb.h
-#-rw-r--r--  1 jjustman  932231305   31311 Aug 19 06:18 libcyusb.cpp
-#-rw-r--r--  1 jjustman  932231305    2817 Aug 19 06:18 sl_fx3s_config.h
-#-rw-r--r--  1 jjustman  932231305    3248 Aug 19 06:18 sl_fx3s_gpio.cpp
-#-rw-r--r--  1 jjustman  932231305    2723 Aug 19 06:18 sl_fx3s_gpio.h
-#-rw-r--r--  1 jjustman  932231305   36687 Aug 20 06:09 sl_fx3s_i2c.cpp
-#-rw-r--r--  1 jjustman  932231305    5181 Aug 20 04:26 sl_fx3s_i2c.h
-#-rw-r--r--  1 jjustman  932231305   11135 Aug 19 06:18 sl_fx3s_ts.cpp
-#-rw-r--r--  1 jjustman  932231305    2620 Aug 19 06:18 sl_fx3s_ts.h
-#-rw-r--r--  1 jjustman  932231305    7820 Aug 19 06:18 usb100.h
-#-rw-r--r--  1 jjustman  932231305    2684 Aug 19 06:18 usb200.h
+    $(LOCAL_PATH)/src/jni/utils/CircularBuffer.c
 
 
 LIBSLAPI := \
@@ -222,9 +208,7 @@ LIBSLAPI := \
     $(wildcard $(LOCAL_PATH)/../../../saankhyalabs-slsdk/slapi/src/tuner/situne/*.c) \
     $(wildcard $(LOCAL_PATH)/../../../saankhyalabs-slsdk/slplf/src/slref/*.c) \
     $(wildcard $(LOCAL_PATH)/../../../saankhyalabs-slsdk/slplf/src/slref/fx3s/*.c) \
-    $(LOCAL_PATH)/../../../saankhyalabs-slsdk/slplf/src/slref/fx3s/sl_fx3s_gpio.cpp \
-    $(LOCAL_PATH)/../../../saankhyalabs-slsdk/slplf/src/slref/fx3s/sl_fx3s_i2c.cpp \
-    $(LOCAL_PATH)/../../../saankhyalabs-slsdk/slplf/src/slref/fx3s/sl_fx3s_ts.cpp
+    $(wildcard $(LOCAL_PATH)/../../../saankhyalabs-slsdk/slplf/src/slref/fx3s/*.cpp)
 
 LOCAL_C_INCLUDES += \
 	$(LOCAL_PATH)/../../../saankhyalabs-slsdk/slapi/inc \
@@ -250,7 +234,8 @@ LOCAL_C_INCLUDES += \
 LOCAL_CFLAGS += -g -fpack-struct=8 \
                 -D__DISABLE_LIBPCAP__ -D__DISABLE_ISOBMFF_LINKAGE__ -D__DISABLE_NCURSES__ \
                 -D__MOCK_PCAP_REPLAY__ -D__LIBATSC3_ANDROID__ \
-                -D__ANDROID__ -Dlinux
+                -D__ANDROID__ -Dlinux  \
+
 
 
 # _binary_prebuilt_fw_atsc3_iccm_hex_... use objdump -t p3_firmware_KAILASH_DONGLE.o for investigation
@@ -259,7 +244,6 @@ LOCAL_CFLAGS += -g -fpack-struct=8 \
 #				prebuilt/fw/atsc3/dccm_hex.o \
 #				prebuilt/fw/atsc3/atsc3_hex.o
 #
-\
 
 
 #jjustman-2020-08-19 - fixup for invalid soname in .so

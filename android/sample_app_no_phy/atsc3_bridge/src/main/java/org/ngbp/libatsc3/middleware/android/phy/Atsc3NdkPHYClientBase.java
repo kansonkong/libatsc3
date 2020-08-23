@@ -1,6 +1,7 @@
 package org.ngbp.libatsc3.middleware.android.phy;
 
 import android.hardware.usb.UsbDevice;
+import android.util.Log;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -33,6 +34,8 @@ public abstract class Atsc3NdkPHYClientBase {
     }
 
     public static Atsc3NdkPHYClientBase CreateInstanceFromUSBVendorIDProductIDSupportedPHY(USBVendorIDProductIDSupportedPHY usbVendorIDProductIDSupportedPHY) {
+        Log.w("Atsc3NdkPHYClientBase", "CreateInstanceFromUSBVendorIDProductIDSupportedPHY");
+
         Atsc3NdkPHYClientBase newInstance = null;
         try {
             newInstance = usbVendorIDProductIDSupportedPHY.candidatePHYImplementation.newInstance();
