@@ -6,47 +6,127 @@
 SaankhyaPHYAndroid* saankhyaPHYAndroid = nullptr;
 
 CircularBuffer SaankhyaPHYAndroid::cb = nullptr;
-
+mutex SaankhyaPHYAndroid::Cctor_muxtex;
 mutex SaankhyaPHYAndroid::CircularBufferMutex;
-//atsc3_sl_tlv_block_Mutex
-mutex SaankhyaPHYAndroid::atsc3_sl_tlv_block_Mutex;
 mutex SaankhyaPHYAndroid::SL_I2C_command_mutex;
-
-Atsc3JniEnv* SaankhyaPHYAndroid::Atsc3_Jni_Capture_Thread_Env = NULL;
-Atsc3JniEnv* SaankhyaPHYAndroid::Atsc3_Jni_Processing_Thread_Env = NULL;
-Atsc3JniEnv* SaankhyaPHYAndroid::Atsc3_Jni_Status_Thread_Env = NULL;
-
-/* jjustman-2020-08-19 - todo - cleanup */
-block_t* atsc3_sl_tlv_block = NULL;
-CircularBuffer cb = NULL;
-atsc3_sl_tlv_payload_t* atsc3_sl_tlv_payload = NULL;
-
 
 SaankhyaPHYAndroid::SaankhyaPHYAndroid(JNIEnv* env, jobject jni_instance) {
     this->env = env;
-    this->jni_instance_globalRef = env->NewGlobalRef(jni_instance);
+    this->jni_instance_globalRef = this->env->NewGlobalRef(jni_instance);
     this->setRxUdpPacketProcessCallback(atsc3_core_service_bridge_process_packet_from_plp_and_block);
     if(atsc3_ndk_application_bridge_get_instance()) {
         atsc3_ndk_application_bridge_get_instance()->atsc3_phy_notify_plp_selection_change_set_callback(&SaankhyaPHYAndroid::NotifyPlpSelectionChangeCallback, this);
     }
+
+    _SAANKHYA_PHY_ANDROID_INFO("SaankhyaPHYAndroid::SaankhyaPHYAndroid - created with this: %p", this);
 }
 
 SaankhyaPHYAndroid::~SaankhyaPHYAndroid() {
 
+    _SAANKHYA_PHY_ANDROID_INFO("SaankhyaPHYAndroid::~SaankhyaPHYAndroid - deleting with this: %p", this);
+    this->stop();
+
     if(atsc3_ndk_application_bridge_get_instance()) {
         atsc3_ndk_application_bridge_get_instance()->atsc3_phy_notify_plp_selection_change_clear_callback();
     }
-    if(this->env) {
-        if(this->jni_instance_globalRef) {
-            env->DeleteGlobalRef(this->jni_instance_globalRef);
-            this->jni_instance_globalRef = nullptr;
-        }
-    }
+
     if(this->producerJniEnv) {
         delete this->producerJniEnv;
     }
+
     if(this->consumerJniEnv) {
         delete this->producerJniEnv;
+    }
+
+    if(this->atsc3_sl_tlv_block) {
+        block_Destroy(&this->atsc3_sl_tlv_block);
+    }
+
+    if(atsc3_sl_tlv_payload) {
+        atsc3_sl_tlv_payload_free(&atsc3_sl_tlv_payload);
+    }
+
+    if(cb) {
+        CircularBufferFree(cb);
+    }
+
+    if(false) {
+        /***
+         *
+         *  jjustman-2020-08-23 - TODO: fix this issue with deleting global ref?
+
+            08-24 07:30:12.812 12165 12165 F DEBUG   : *** *** *** *** *** *** *** *** *** *** *** *** *** *** *** ***
+            08-24 07:30:12.812 12165 12165 F DEBUG   : Build fingerprint: 'samsung/beyond2qlteue/beyond2q:10/QP1A.190711.020/G975U1UES4DTG1:user/release-keys'
+            08-24 07:30:12.812 12165 12165 F DEBUG   : Revision: '17'
+            08-24 07:30:12.812 12165 12165 F DEBUG   : ABI: 'arm64'
+            08-24 07:30:12.812  1320  1399 D PkgPredictorService: pkg:org.ngbp.libatsc3 activity:org.ngbp.libatsc3.sampleapp.MainActivity thisTime:-1
+            08-24 07:30:12.812 12165 12165 F DEBUG   : Timestamp: 2020-08-24 07:30:12+0900
+            08-24 07:30:12.812 12165 12165 F DEBUG   : pid: 12018, tid: 12159, name: Thread-9  >>> org.ngbp.libatsc3 <<<
+            08-24 07:30:12.812 12165 12165 F DEBUG   : uid: 10292
+            08-24 07:30:12.812 12165 12165 F DEBUG   : signal 6 (SIGABRT), code -1 (SI_QUEUE), fault addr --------
+            08-24 07:30:12.812 12165 12165 F DEBUG   : Abort message: 'JNI DETECTED ERROR IN APPLICATION: thread Thread[6,tid=12159,Native,Thread*=0x7933322800,peer=0x12f2b0e0,"Thread-9"] using JNIEnv* from thread Thread[1,tid=12018,Runnable,Thread*=0x7933326000,peer=0x72d72ef0,"main"]
+            08-24 07:30:12.812 12165 12165 F DEBUG   :     in call to DeleteGlobalRef
+            08-24 07:30:12.812 12165 12165 F DEBUG   :     from int org.ngbp.libatsc3.middleware.android.phy.SaankhyaPHYAndroid.init()'
+            08-24 07:30:12.812 12165 12165 F DEBUG   :     x0  0000000000000000  x1  0000000000002f7f  x2  0000000000000006  x3  000000789c2feec0
+            08-24 07:30:12.812 12165 12165 F DEBUG   :     x4  fefeff783099cf97  x5  fefeff783099cf97  x6  fefeff783099cf97  x7  7f7f7f7f7fffffff
+            08-24 07:30:12.812 12165 12165 F DEBUG   :     x8  00000000000000f0  x9  dbc96eeb4ea8c79c  x10 0000000000000001  x11 0000000000000000
+            08-24 07:30:12.812 12165 12165 F DEBUG   :     x12 fffffff0fffffbdf  x13 ffffffffffffffff  x14 0000000000000000  x15 ffffffffffffffff
+            08-24 07:30:12.812 12165 12165 F DEBUG   :     x16 0000007930c1d8c0  x17 0000007930bf9fe0  x18 000000783a0be000  x19 0000000000002ef2
+            08-24 07:30:12.812 12165 12165 F DEBUG   :     x20 0000000000002f7f  x21 00000000ffffffff  x22 000000783db74600  x23 00000078aceadcc5
+            08-24 07:30:12.812 12165 12165 F DEBUG   :     x24 00000078acecf8ce  x25 0000000000000001  x26 0000007932efc258  x27 00000079333a6150
+            08-24 07:30:12.812 12165 12165 F DEBUG   :     x28 00000078ad3d9338  x29 000000789c2fef60
+            08-24 07:30:12.812 12165 12165 F DEBUG   :     sp  000000789c2feea0  lr  0000007930bab27c  pc  0000007930bab2a8
+            08-24 07:30:12.891 12165 12165 F DEBUG   : backtrace:
+            08-24 07:30:12.891 12165 12165 F DEBUG   :       #00 pc 00000000000832a8  /apex/com.android.runtime/lib64/bionic/libc.so (abort+160) (BuildId: b0750023d0cf44584c064da02400c159)
+            08-24 07:30:12.891 12165 12165 F DEBUG   :       #01 pc 00000000004b99bc  /apex/com.android.runtime/lib64/libart.so (art::Runtime::Abort(char const*)+2388) (BuildId: 9f61584f79f2db8d8a1869001bfb944e)
+            08-24 07:30:12.891 12165 12165 F DEBUG   :       #02 pc 000000000000b458  /system/lib64/libbase.so (android::base::LogMessage::~LogMessage()+580) (BuildId: 36cd125456a5320dd3dcb8cfbd889a1a)
+            08-24 07:30:12.891 12165 12165 F DEBUG   :       #03 pc 0000000000377fa0  /apex/com.android.runtime/lib64/libart.so (art::JavaVMExt::JniAbort(char const*, char const*)+1584) (BuildId: 9f61584f79f2db8d8a1869001bfb944e)
+            08-24 07:30:12.891 12165 12165 F DEBUG   :       #04 pc 00000000003781c4  /apex/com.android.runtime/lib64/libart.so (art::JavaVMExt::JniAbortV(char const*, char const*, std::__va_list)+108) (BuildId: 9f61584f79f2db8d8a1869001bfb944e)
+            08-24 07:30:12.891 12165 12165 F DEBUG   :       #05 pc 000000000036a5ec  /apex/com.android.runtime/lib64/libart.so (art::(anonymous namespace)::ScopedCheck::AbortF(char const*, ...)+136) (BuildId: 9f61584f79f2db8d8a1869001bfb944e)
+            08-24 07:30:12.891 12165 12165 F DEBUG   :       #06 pc 0000000000368de8  /apex/com.android.runtime/lib64/libart.so (art::(anonymous namespace)::ScopedCheck::CheckPossibleHeapValue(art::ScopedObjectAccess&, char, art::(anonymous namespace)::JniValueType)+416) (BuildId: 9f61584f79f2db8d8a1869001bfb944e)
+            08-24 07:30:12.891 12165 12165 F DEBUG   :       #07 pc 00000000003684a8  /apex/com.android.runtime/lib64/libart.so (art::(anonymous namespace)::ScopedCheck::Check(art::ScopedObjectAccess&, bool, char const*, art::(anonymous namespace)::JniValueType*)+652) (BuildId: 9f61584f79f2db8d8a1869001bfb944e)
+            08-24 07:30:12.891 12165 12165 F DEBUG   :       #08 pc 000000000036b28c  /apex/com.android.runtime/lib64/libart.so (art::(anonymous namespace)::CheckJNI::DeleteRef(char const*, _JNIEnv*, _jobject*, art::IndirectRefKind)+672) (BuildId: 9f61584f79f2db8d8a1869001bfb944e)
+            08-24 07:30:12.891 12165 12165 F DEBUG   :       #09 pc 0000000000017290  /data/app/org.ngbp.libatsc3-nohwIryClhnu1vbwH0TMFg==/base.apk!libatsc3_phy_saankhya.so (offset 0x16d000) (_JNIEnv::DeleteGlobalRef(_jobject*)+40) (BuildId: c718f4141b1baee2331289b1564d0d0db23ad6b7)
+            08-24 07:30:12.891 12165 12165 F DEBUG   :       #10 pc 0000000000017118  /data/app/org.ngbp.libatsc3-nohwIryClhnu1vbwH0TMFg==/base.apk!libatsc3_phy_saankhya.so (offset 0x16d000) (SaankhyaPHYAndroid::~SaankhyaPHYAndroid()+1128) (BuildId: c718f4141b1baee2331289b1564d0d0db23ad6b7)
+            08-24 07:30:12.891 12165 12165 F DEBUG   :       #11 pc 000000000001730c  /data/app/org.ngbp.libatsc3-nohwIryClhnu1vbwH0TMFg==/base.apk!libatsc3_phy_saankhya.so (offset 0x16d000) (SaankhyaPHYAndroid::~SaankhyaPHYAndroid()+36) (BuildId: c718f4141b1baee2331289b1564d0d0db23ad6b7)
+            08-24 07:30:12.891 12165 12165 F DEBUG   :       #12 pc 0000000000017c34  /data/app/org.ngbp.libatsc3-nohwIryClhnu1vbwH0TMFg==/base.apk!libatsc3_phy_saankhya.so (offset 0x16d000) (SaankhyaPHYAndroid::deinit()+84) (BuildId: c718f4141b1baee2331289b1564d0d0db23ad6b7)
+            08-24 07:30:12.891 12165 12165 F DEBUG   :       #13 pc 000000000001cc64  /data/app/org.ngbp.libatsc3-nohwIryClhnu1vbwH0TMFg==/base.apk!libatsc3_phy_saankhya.so (offset 0x16d000) (Java_org_ngbp_libatsc3_middleware_android_phy_SaankhyaPHYAndroid_init+1152) (BuildId: c718f4141b1baee2331289b1564d0d0db23ad6b7)
+            08-24 07:30:12.891 12165 12165 F DEBUG   :       #14 pc 0000000000140350  /apex/com.android.runtime/lib64/libart.so (art_quick_generic_jni_trampoline+144) (BuildId: 9f61584f79f2db8d8a1869001bfb944e)
+            08-24 07:30:12.891 12165 12165 F DEBUG   :       #15 pc 0000000000137334  /apex/com.android.runtime/lib64/libart.so (art_quick_invoke_stub+548) (BuildId: 9f61584f79f2db8d8a1869001bfb944e)
+            08-24 07:30:12.891 12165 12165 F DEBUG   :       #16 pc 0000000000145fec  /apex/com.android.runtime/lib64/libart.so (art::ArtMethod::Invoke(art::Thread*, unsigned int*, unsigned int, art::JValue*, char const*)+244) (BuildId: 9f61584f79f2db8d8a1869001bfb944e)
+            08-24 07:30:12.891 12165 12165 F DEBUG   :       #17 pc 00000000002e3624  /apex/com.android.runtime/lib64/libart.so (art::interpreter::ArtInterpreterToCompiledCodeBridge(art::Thread*, art::ArtMethod*, art::ShadowFrame*, unsigned short, art::JValue*)+384) (BuildId: 9f61584f79f2db8d8a1869001bfb944e)
+            08-24 07:30:12.891 12165 12165 F DEBUG   :       #18 pc 00000000002de884  /apex/com.android.runtime/lib64/libart.so (bool art::interpreter::DoCall<false, false>(art::ArtMethod*, art::Thread*, art::ShadowFrame&, art::Instruction const*, unsigned short, art::JValue*)+892) (BuildId: 9f61584f79f2db8d8a1869001bfb944e)
+            08-24 07:30:12.891 12165 12165 F DEBUG   :       #19 pc 00000000005a14a8  /apex/com.android.runtime/lib64/libart.so (MterpInvokeVirtual+648) (BuildId: 9f61584f79f2db8d8a1869001bfb944e)
+            08-24 07:30:12.891 12165 12165 F DEBUG   :       #20 pc 0000000000131814  /apex/com.android.runtime/lib64/libart.so (mterp_op_invoke_virtual+20) (BuildId: 9f61584f79f2db8d8a1869001bfb944e)
+            08-24 07:30:12.891 12165 12165 F DEBUG   :       #21 pc 000000000001fb54  [anon:dalvik-classes2.dex extracted in memory from /data/app/org.ngbp.libatsc3-nohwIryClhnu1vbwH0TMFg==/base.apk!classes2.dex] (org.ngbp.libatsc3.sampleapp.MainActivity.usbPHYLayerDeviceTryToInstantiateFromRegisteredPHYNDKs+208)
+            08-24 07:30:12.891 12165 12165 F DEBUG   :       #22 pc 00000000005a1768  /apex/com.android.runtime/lib64/libart.so (MterpInvokeVirtual+1352) (BuildId: 9f61584f79f2db8d8a1869001bfb944e)
+            08-24 07:30:12.891 12165 12165 F DEBUG   :       #23 pc 0000000000131814  /apex/com.android.runtime/lib64/libart.so (mterp_op_invoke_virtual+20) (BuildId: 9f61584f79f2db8d8a1869001bfb944e)
+            08-24 07:30:12.891 12165 12165 F DEBUG   :       #24 pc 0000000000021a24  [anon:dalvik-classes2.dex extracted in memory from /data/app/org.ngbp.libatsc3-nohwIryClhnu1vbwH0TMFg==/base.apk!classes2.dex] (org.ngbp.libatsc3.sampleapp.MainActivity.usbPHYLayerDeviceInstantiateAndUpdateAtsc3NdkPHYClientInstance+16)
+            08-24 07:30:12.891 12165 12165 F DEBUG   :       #25 pc 00000000005a3a74  /apex/com.android.runtime/lib64/libart.so (MterpInvokeDirect+1100) (BuildId: 9f61584f79f2db8d8a1869001bfb944e)
+            08-24 07:30:12.891 12165 12165 F DEBUG   :       #26 pc 0000000000131914  /apex/com.android.runtime/lib64/libart.so (mterp_op_invoke_direct+20) (BuildId: 9f61584f79f2db8d8a1869001bfb944e)
+            08-24 07:30:12.891 12165 12165 F DEBUG   :       #27 pc 000000000001fd9c  [anon:dalvik-classes2.dex extracted in memory from /data/app/org.ngbp.libatsc3-nohwIryClhnu1vbwH0TMFg==/base.apk!classes2.dex] (org.ngbp.libatsc3.sampleapp.MainActivity.access$2000)
+            08-24 07:30:12.891 12165 12165 F DEBUG   :       #28 pc 00000000005a4218  /apex/com.android.runtime/lib64/libart.so (MterpInvokeStatic+1040) (BuildId: 9f61584f79f2db8d8a1869001bfb944e)
+            08-24 07:30:12.892 12165 12165 F DEBUG   :       #29 pc 0000000000131994  /apex/com.android.runtime/lib64/libart.so (mterp_op_invoke_static+20) (BuildId: 9f61584f79f2db8d8a1869001bfb944e)
+            08-24 07:30:12.892 12165 12165 F DEBUG   :       #30 pc 000000000001def0  [anon:dalvik-classes2.dex extracted in memory from /data/app/org.ngbp.libatsc3-nohwIryClhnu1vbwH0TMFg==/base.apk!classes2.dex] (org.ngbp.libatsc3.sampleapp.MainActivity$13$1.run+48)
+            08-24 07:30:12.892 12165 12165 F DEBUG   :       #31 pc 00000000005a2f88  /apex/com.android.runtime/lib64/libart.so (MterpInvokeInterface+1788) (BuildId: 9f61584f79f2db8d8a1869001bfb944e)
+            08-24 07:30:12.892 12165 12165 F DEBUG   :       #32 pc 0000000000131a14  /apex/com.android.runtime/lib64/libart.so (mterp_op_invoke_interface+20) (BuildId: 9f61584f79f2db8d8a1869001bfb944e)
+            08-24 07:30:12.892 12165 12165 F DEBUG   :       #33 pc 00000000000eaa54  /apex/com.android.runtime/javalib/core-oj.jar (java.lang.Thread.run+8)
+            08-24 07:30:12.892 12165 12165 F DEBUG   :       #34 pc 00000000002b4938  /apex/com.android.runtime/lib64/libart.so (_ZN3art11interpreterL7ExecuteEPNS_6ThreadERKNS_20CodeItemDataAccessorERNS_11ShadowFrameENS_6JValueEbb.llvm.3584781260104004149+240) (BuildId: 9f61584f79f2db8d8a1869001bfb944e)
+            08-24 07:30:12.892 12165 12165 F DEBUG   :       #35 pc 0000000000592a10  /apex/com.android.runtime/lib64/libart.so (artQuickToInterpreterBridge+1032) (BuildId: 9f61584f79f2db8d8a1869001bfb944e)
+            08-24 07:30:12.892 12165 12165 F DEBUG   :       #36 pc 0000000000140468  /apex/com.android.runtime/lib64/libart.so (art_quick_to_interpreter_bridge+88) (BuildId: 9f61584f79f2db8d8a1869001bfb944e)
+            08-24 07:30:12.892 12165 12165 F DEBUG   :       #37 pc 0000000000137334  /apex/com.android.runtime/lib64/libart.so (art_quick_invoke_stub+548) (BuildId: 9f61584f79f2db8d8a1869001bfb944e)
+            08-24 07:30:12.892 12165 12165 F DEBUG   :       #38 pc 0000000000145fec  /apex/com.android.runtime/lib64/libart.so (art::ArtMethod::Invoke(art::Thread*, unsigned int*, unsigned int, art::JValue*, char const*)+244) (BuildId: 9f61584f79f2db8d8a1869001bfb944e)
+            08-24 07:30:12.892 12165 12165 F DEBUG   :       #39 pc 00000000004b1144  /apex/com.android.runtime/lib64/libart.so (art::(anonymous namespace)::InvokeWithArgArray(art::ScopedObjectAccessAlreadyRunnable const&, art::ArtMethod*, art::(anonymous namespace)::ArgArray*, art::JValue*, char const*)+104) (BuildId: 9f61584f79f2db8d8a1869001bfb944e)
+            08-24 07:30:12.892 12165 12165 F DEBUG   :       #40 pc 00000000004b2258  /apex/com.android.runtime/lib64/libart.so (art::InvokeVirtualOrInterfaceWithJValues(art::ScopedObjectAccessAlreadyRunnable const&, _jobject*, _jmethodID*, jvalue const*)+416) (BuildId: 9f61584f79f2db8d8a1869001bfb944e)
+            08-24 07:30:12.892 12165 12165 F DEBUG   :       #41 pc 00000000004f31c0  /apex/com.android.runtime/lib64/libart.so (art::Thread::CreateCallback(void*)+1176) (BuildId: 9f61584f79f2db8d8a1869001bfb944e)
+            08-24 07:30:12.892 12165 12165 F DEBUG   :       #42 pc 00000000000e6f10  /apex/com.android.runtime/lib64/bionic/libc.so (__pthread_start(void*)+36) (BuildId: b0750023d0cf44584c064da02400c159)
+            08-24 07:30:12.892 12165 12165 F DEBUG   :       #43 pc 00000000000850c8  /apex/com.android.runtime/lib64/bionic/libc.so (__start_thread+64) (BuildId: b0750023d0cf44584c064da02400c159)
+        */
+
+        if (this->env && this->jni_instance_globalRef) {
+            this->env->DeleteGlobalRef(this->jni_instance_globalRef);
+            this->jni_instance_globalRef = nullptr;
+        }
     }
 }
 
@@ -54,21 +134,50 @@ void SaankhyaPHYAndroid::pinProducerThreadAsNeeded() {
     producerJniEnv = new Atsc3JniEnv(atsc3_ndk_phy_saankhya_static_loader_get_javaVM());
 }
 
-void SaankhyaPHYAndroid::releaseProducerThreadAsNeeded() {
-    delete producerJniEnv;
-    producerJniEnv = nullptr;
-}
-
-void SaankhyaPHYAndroid::pinConsumerThreadAsNeeded() {
-    consumerJniEnv = new Atsc3JniEnv(atsc3_ndk_phy_saankhya_static_loader_get_javaVM());
-    if(atsc3_ndk_application_bridge_get_instance()) {
-        atsc3_ndk_application_bridge_get_instance()->pinFromRxProcessingThread();
+void SaankhyaPHYAndroid::releasePinnedProducerThreadAsNeeded() {
+    if(producerJniEnv) {
+        delete producerJniEnv;
+        producerJniEnv = nullptr;
     }
 }
 
-void SaankhyaPHYAndroid::releaseConsumerThreadAsNeeded() {
-    delete consumerJniEnv;
-    consumerJniEnv = nullptr;
+void SaankhyaPHYAndroid::pinConsumerThreadAsNeeded() {
+    _SAANKHYA_PHY_ANDROID_DEBUG("SaankhyaPHYAndroid::pinConsumerThreadAsNeeded: mJavaVM: %p, atsc3_ndk_application_bridge instance: %p", atsc3_ndk_phy_saankhya_static_loader_get_javaVM(), atsc3_ndk_application_bridge_get_instance());
+
+    consumerJniEnv = new Atsc3JniEnv(atsc3_ndk_phy_saankhya_static_loader_get_javaVM());
+    if(atsc3_ndk_application_bridge_get_instance()) {
+        atsc3_ndk_application_bridge_get_instance()->pinConsumerThreadAsNeeded();
+    }
+}
+
+void SaankhyaPHYAndroid::releasePinnedConsumerThreadAsNeeded() {
+    if(consumerJniEnv) {
+        delete consumerJniEnv;
+        consumerJniEnv = nullptr;
+    }
+
+    if(atsc3_ndk_application_bridge_get_instance()) {
+        atsc3_ndk_application_bridge_get_instance()->releasePinnedConsumerThreadAsNeeded();
+    }
+}
+
+void SaankhyaPHYAndroid::pinStatusThreadAsNeeded() {
+    statusJniEnv = new Atsc3JniEnv(atsc3_ndk_phy_saankhya_static_loader_get_javaVM());
+
+    if(atsc3_ndk_phy_bridge_get_instance()) {
+        atsc3_ndk_phy_bridge_get_instance()->pinStatusThreadAsNeeded();
+    }
+}
+
+void SaankhyaPHYAndroid::releasePinnedStatusThreadAsNeeded() {
+    if(statusJniEnv) {
+        delete statusJniEnv;
+        statusJniEnv = nullptr;
+    }
+
+    if(atsc3_ndk_phy_bridge_get_instance()) {
+        atsc3_ndk_phy_bridge_get_instance()->releasePinnedStatusThreadAsNeeded();
+    }
 }
 
 
@@ -91,46 +200,36 @@ int SaankhyaPHYAndroid::run()
 }
 
 bool SaankhyaPHYAndroid::is_running() {
-    return 0;
+
+    return (captureThreadIsRunning && processThreadIsRunning && statusThreadIsRunning);
 }
 
 int SaankhyaPHYAndroid::stop()
 {
-    if(processThreadIsRunning) {
-        processThreadShouldRun = false;
-        pthread_join(pThreadID, NULL);
-    }
-
     if(captureThreadIsRunning) {
         captureThreadShouldRun = false;
         SL_RxDataStop();
         pthread_join(cThreadID, NULL);
+        releasePinnedProducerThreadAsNeeded();
     }
-
+    if(processThreadIsRunning) {
+        processThreadShouldRun = false;
+        pthread_join(pThreadID, NULL);
+        releasePinnedConsumerThreadAsNeeded();
+    }
     if(statusThreadIsRunning) {
         statusThreadShouldRun = false;
         pthread_join(sThreadID, NULL);
+        releasePinnedStatusThreadAsNeeded();
     }
     return 0;
 }
 
 int SaankhyaPHYAndroid::deinit()
 {
+    this->stop();
     delete this;
     return 0;
-}
-
-
-void* SaankhyaPHYAndroid::libusb_handle_events_thread(void* context) {
-    int invocation_count = 0;
-
-    sleep(2);
-    while(true) {
-        printf("libusb_handle_events_thread");
-        libusb_handle_events(NULL);
-        usleep(1000000);
-        _SAANKHYA_PHY_ANDROID_INFO("libusb_handle_events thread, invocation: %d", invocation_count++);
-    }
 }
 
 int SaankhyaPHYAndroid::open(int fd, int bus, int addr)
@@ -629,8 +728,7 @@ int SaankhyaPHYAndroid::tune(int freqKHz, int plpid)
     }
 
     if (!atsc3_sl_tlv_block) {
-        atsc3_sl_tlv_block = block_Alloc(BUFFER_SIZE);
-
+        allocate_atsc3_sl_tlv_block();
     }
 
 
@@ -655,8 +753,6 @@ int SaankhyaPHYAndroid::tune(int freqKHz, int plpid)
             printf("\n Capture Thread failed to launch");
             goto ERROR;
         }
-
-
     }
 
     if(!statusThreadIsRunning) {
@@ -720,11 +816,13 @@ int SaankhyaPHYAndroid::tune(int freqKHz, int plpid)
     }
 
     ret = 0;
+    goto UNLOCK;
 
  ERROR:
     ret = -1;
 
     //unlock our i2c mutext
+UNLOCK:
     SL_I2C_command_mutex_tuner_tune.unlock();
     return ret;
 
@@ -1242,41 +1340,14 @@ void SaankhyaPHYAndroid::printToConsoleDemodError(SL_Result_t err)
     }
 }
 
-
-
-
-int SaankhyaPHYAndroid::pinFromRxCaptureThread() {
-    printf("atsc3NdkClient::Atsc3_Jni_Processing_Thread_Env: mJavaVM: %p", atsc3_ndk_phy_saankhya_static_loader_get_javaVM());
-    Atsc3_Jni_Capture_Thread_Env = new Atsc3JniEnv(atsc3_ndk_phy_saankhya_static_loader_get_javaVM());
-    return 0;
-};
-
-int SaankhyaPHYAndroid::pinFromRxProcessingThread() {
-    printf("atsc3NdkClient::pinFromRxProcessingThread: mJavaVM: %p", atsc3_ndk_phy_saankhya_static_loader_get_javaVM());
-    Atsc3_Jni_Processing_Thread_Env = new Atsc3JniEnv(atsc3_ndk_phy_saankhya_static_loader_get_javaVM());
-    return 0;
-}
-
-
-int SaankhyaPHYAndroid::pinFromRxStatusThread() {
-    printf("atsc3NdkClient::pinFromRxStatusThread: mJavaVM: %p", atsc3_ndk_phy_saankhya_static_loader_get_javaVM());
-    Atsc3_Jni_Status_Thread_Env = new Atsc3JniEnv(atsc3_ndk_phy_saankhya_static_loader_get_javaVM());
-    return 0;
-}
-
-
 void* SaankhyaPHYAndroid::ProcessThread(void* context)
 {
-    printf("atsc3NdkClientSlImpl::ProcessThread: with context: %p", context);
+    printf("SaankhyaPHYAndroid::ProcessThread: with context: %p", context);
 
     SaankhyaPHYAndroid* apiImpl = (SaankhyaPHYAndroid*) context;
+    apiImpl->pinConsumerThreadAsNeeded();
 
     apiImpl->resetProcessThreadStatistics();
-    (SaankhyaPHYAndroid*)apiImpl->pinFromRxProcessingThread();
-
-    if(atsc3_ndk_application_bridge_get_instance()) {
-        atsc3_ndk_application_bridge_get_instance()->pinFromRxProcessingThread();
-    }
 
     apiImpl->processThreadIsRunning = true;
 
@@ -1299,7 +1370,7 @@ void* SaankhyaPHYAndroid::CaptureThread(void* context)
 {
     SaankhyaPHYAndroid* apiImpl = (SaankhyaPHYAndroid*) context;
 
-    (SaankhyaPHYAndroid*)apiImpl->pinFromRxCaptureThread();
+    apiImpl->pinProducerThreadAsNeeded();
     apiImpl->captureThreadIsRunning = true;
 
     SL_RxDataStart((RxDataCB)&SaankhyaPHYAndroid::RxDataCallback);
@@ -1312,10 +1383,7 @@ void* SaankhyaPHYAndroid::TunerStatusThread(void* context)
 
     SaankhyaPHYAndroid* apiImpl = (SaankhyaPHYAndroid*) context;
 
-    (SaankhyaPHYAndroid*)apiImpl->pinFromRxStatusThread();
-    if(atsc3_ndk_phy_bridge_get_instance()) {
-        atsc3_ndk_phy_bridge_get_instance()->pinFromRxStatusThread();
-    }
+    apiImpl->pinStatusThreadAsNeeded();
 
     apiImpl->statusThreadIsRunning = true;
 
@@ -1341,7 +1409,6 @@ void* SaankhyaPHYAndroid::TunerStatusThread(void* context)
     unique_lock<mutex> SL_I2C_command_mutex_tuner_status_io(SL_I2C_command_mutex, std::defer_lock);
     bool first_run = true;
 
-    //atsc3NdkClientSlImpl::tunerStatusThreadShouldRun
     while(apiImpl->statusThreadShouldRun) {
 
         //only actively poll the tuner status if the RF status window is visible
@@ -1491,12 +1558,20 @@ void* SaankhyaPHYAndroid::TunerStatusThread(void* context)
     return 0;
 }
 
+//jjustman-2020-08-23 - TODO: wire up these callbacks in SaankhyaPHYAndroid::cctor rather than direct
+//coupling to atsc3_core_service_bridge
+
 void SaankhyaPHYAndroid::processTLVFromCallback()
 {
+    unique_lock<mutex> CircularBufferMutex_local(CircularBufferMutex);
     int bytesRead = CircularBufferPop(cb, BUFFER_SIZE, (char*)&processDataCircularBufferForCallback);
+    CircularBufferMutex_local.unlock();
+
+    unique_lock<mutex> atsc3_sl_tlv_block_mutex_local(atsc3_sl_tlv_block_mutex);
+
     if(!atsc3_sl_tlv_block) {
-        printf("ERROR: atsc3NdkClientSlImpl::processTLVFromCallback - atsc3_sl_tlv_block is NULL!");
-        return;
+        _SAANKHYA_PHY_ANDROID_WARN("ERROR: atsc3NdkClientSlImpl::processTLVFromCallback - atsc3_sl_tlv_block is NULL!");
+        allocate_atsc3_sl_tlv_block();
     }
 
     if(bytesRead) {
@@ -1576,28 +1651,50 @@ void SaankhyaPHYAndroid::processTLVFromCallback()
             block_Rewind(atsc3_sl_tlv_block);
         }
     }
+
+    atsc3_sl_tlv_block_mutex_local.unlock();
+
 }
 
 void SaankhyaPHYAndroid::RxDataCallback(unsigned char *data, long len)
 {
     //printf("atsc3NdkClientSlImpl::RxDataCallback: pushing data: %p, len: %d", data, len);
+    unique_lock<mutex> CircularBufferMutex_local(CircularBufferMutex);
+
     CircularBufferPush(SaankhyaPHYAndroid::cb, (char *)data, len);
+    CircularBufferMutex_local.unlock();
 }
 
 void SaankhyaPHYAndroid::NotifyPlpSelectionChangeCallback(vector<uint8_t> plps, void *context) {
     ((SaankhyaPHYAndroid *) context)->listen_plps(plps);
 }
 
-
+void SaankhyaPHYAndroid::allocate_atsc3_sl_tlv_block() {
+    unique_lock<mutex> atsc3_sl_tlv_block_mutex_local(atsc3_sl_tlv_block_mutex);
+    if(!atsc3_sl_tlv_block) {
+        atsc3_sl_tlv_block = block_Alloc(BUFFER_SIZE);
+    }
+    atsc3_sl_tlv_block_mutex_local.unlock();
+}
 
 extern "C"
 JNIEXPORT jint JNICALL
 Java_org_ngbp_libatsc3_middleware_android_phy_SaankhyaPHYAndroid_init(JNIEnv *env, jobject instance) {
+    unique_lock<mutex> saankhy_phy_android_cctor_mutex_local(SaankhyaPHYAndroid::Cctor_muxtex);
+
     _SAANKHYA_PHY_ANDROID_DEBUG("Java_org_ngbp_libatsc3_middleware_android_phy_SaankhyaPHYAndroid_init: start init, env: %p", env);
+    if(saankhyaPHYAndroid) {
+        _SAANKHYA_PHY_ANDROID_ERROR("Java_org_ngbp_libatsc3_middleware_android_phy_SaankhyaPHYAndroid_init: start init, saankhyaPHYAndroid is present: %p, calling deinit/delete", saankhyaPHYAndroid);
+        saankhyaPHYAndroid->deinit();
+        delete saankhyaPHYAndroid;
+        saankhyaPHYAndroid = nullptr;
+    }
+
     saankhyaPHYAndroid = new SaankhyaPHYAndroid(env, instance);
     saankhyaPHYAndroid->init();
 
     _SAANKHYA_PHY_ANDROID_DEBUG("Java_org_ngbp_libatsc3_middleware_android_phy_SaankhyaPHYAndroid_init: return init, env: %p", env);
+    saankhy_phy_android_cctor_mutex_local.unlock();
     return 0;
 }
 
@@ -1608,11 +1705,11 @@ Java_org_ngbp_libatsc3_middleware_android_phy_SaankhyaPHYAndroid_run(JNIEnv *env
     int res = 0;
     if(!saankhyaPHYAndroid) {
         _SAANKHYA_PHY_ANDROID_ERROR("Java_org_ngbp_libatsc3_middleware_android_phy_SaankhyaPHYAndroid_run: error, srtRxSTLTPVirtualPHYAndroid is NULL!");
-        return -1;
+        res = -1;
+    } else {
+        res = saankhyaPHYAndroid->run();
+        _SAANKHYA_PHY_ANDROID_DEBUG("Java_org_ngbp_libatsc3_middleware_android_phy_SaankhyaPHYAndroid_run: returning res: %d", res);
     }
-    res = saankhyaPHYAndroid->run();
-    _SAANKHYA_PHY_ANDROID_DEBUG("Java_org_ngbp_libatsc3_middleware_android_phy_SaankhyaPHYAndroid_run: returning res: %d", res);
-
     return res;
 }
 
@@ -1623,9 +1720,10 @@ Java_org_ngbp_libatsc3_middleware_android_phy_SaankhyaPHYAndroid_is_1running(JNI
 
     if(!saankhyaPHYAndroid) {
         _SAANKHYA_PHY_ANDROID_ERROR("Java_org_ngbp_libatsc3_middleware_android_phy_SaankhyaPHYAndroid_is_1running: error, srtRxSTLTPVirtualPHYAndroid is NULL!");
-        return false;
+        res = false;
+    } else {
+        res = saankhyaPHYAndroid->is_running();
     }
-    res = saankhyaPHYAndroid->is_running();
     return res;
 }
 
@@ -1635,25 +1733,29 @@ Java_org_ngbp_libatsc3_middleware_android_phy_SaankhyaPHYAndroid_stop(JNIEnv *en
     int res = 0;
     if(!saankhyaPHYAndroid) {
         _SAANKHYA_PHY_ANDROID_ERROR("Java_org_ngbp_libatsc3_middleware_android_phy_SaankhyaPHYAndroid_stop: error, srtRxSTLTPVirtualPHYAndroid is NULL!");
-        return -1;
+        res = -1;
+    } else {
+        res = saankhyaPHYAndroid->stop();
+        _SAANKHYA_PHY_ANDROID_DEBUG("Java_org_ngbp_libatsc3_middleware_android_phy_SaankhyaPHYAndroid_stop: returning res: %d", res);
     }
-    res = saankhyaPHYAndroid->stop();
-    _SAANKHYA_PHY_ANDROID_DEBUG("Java_org_ngbp_libatsc3_middleware_android_phy_SaankhyaPHYAndroid_stop: returning res: %d", res);
-
     return res;
 }
 
 extern "C" JNIEXPORT jint JNICALL
 Java_org_ngbp_libatsc3_middleware_android_phy_SaankhyaPHYAndroid_deinit(JNIEnv *env, jobject thiz) {
+    unique_lock<mutex> saankhy_phy_android_cctor_mutex_local(SaankhyaPHYAndroid::Cctor_muxtex);
+
     int res = 0;
     if(!saankhyaPHYAndroid) {
         _SAANKHYA_PHY_ANDROID_ERROR("Java_org_ngbp_libatsc3_middleware_android_phy_SaankhyaPHYAndroid_deinit: error, srtRxSTLTPVirtualPHYAndroid is NULL!");
-        return -1;
+        res = -1;
+    } else {
+
+        saankhyaPHYAndroid->deinit();
+        saankhyaPHYAndroid = nullptr;
     }
 
-    saankhyaPHYAndroid->deinit();
-    saankhyaPHYAndroid = nullptr;
-
+    saankhy_phy_android_cctor_mutex_local.unlock();
     return res;
 }
 
@@ -1662,8 +1764,12 @@ Java_org_ngbp_libatsc3_middleware_android_phy_SaankhyaPHYAndroid_download_1bootl
     _SAANKHYA_PHY_ANDROID_DEBUG("Java_org_ngbp_libatsc3_middleware_android_phy_SaankhyaPHYAndroid_download_1bootloader_1firmware: fd: %d", fd);
     int res = 0;
 
-    res = saankhyaPHYAndroid->download_bootloader_firmware(fd); //calls pre_init
-
+    if(!saankhyaPHYAndroid)  {
+        _SAANKHYA_PHY_ANDROID_ERROR("Java_org_ngbp_libatsc3_middleware_android_phy_SaankhyaPHYAndroid_download_1bootloader_1firmware: saankhyaPHYAndroid is NULL!");
+        res = -1;
+    } else {
+        res = saankhyaPHYAndroid->download_bootloader_firmware(fd); //calls pre_init
+    }
     return res;
 }
 
@@ -1672,8 +1778,12 @@ Java_org_ngbp_libatsc3_middleware_android_phy_SaankhyaPHYAndroid_open(JNIEnv *en
     _SAANKHYA_PHY_ANDROID_DEBUG("Java_org_ngbp_libatsc3_middleware_android_phy_SaankhyaPHYAndroid_open: fd: %d", fd);
 
     int res = 0;
-    res = saankhyaPHYAndroid->open(fd, 0, 0);
-
+    if(!saankhyaPHYAndroid) {
+        _SAANKHYA_PHY_ANDROID_ERROR("Java_org_ngbp_libatsc3_middleware_android_phy_SaankhyaPHYAndroid_open: saankhyaPHYAndroid is NULL!");
+        res = -1;
+    } else {
+        res = saankhyaPHYAndroid->open(fd, 0, 0);
+    }
     return res;
 }
 
@@ -1682,9 +1792,12 @@ Java_org_ngbp_libatsc3_middleware_android_phy_SaankhyaPHYAndroid_tune(JNIEnv *en
                                                                       jint freq_khz,
                                                                       jint single_plp) {
     int res = 0;
-
-    res = saankhyaPHYAndroid->tune(freq_khz, single_plp);
-
+    if(!saankhyaPHYAndroid) {
+        _SAANKHYA_PHY_ANDROID_ERROR("Java_org_ngbp_libatsc3_middleware_android_phy_SaankhyaPHYAndroid_tune: saankhyaPHYAndroid is NULL!");
+        res = -1;
+    } else {
+        res = saankhyaPHYAndroid->tune(freq_khz, single_plp);
+    }
     return res;
 }
 extern "C" JNIEXPORT jint JNICALL
@@ -1692,20 +1805,23 @@ Java_org_ngbp_libatsc3_middleware_android_phy_SaankhyaPHYAndroid_listen_1plps(JN
                                                                               jobject thiz,
                                                                               jobject plps) {
     int res = 0;
+    if(!saankhyaPHYAndroid) {
+        _SAANKHYA_PHY_ANDROID_ERROR("Java_org_ngbp_libatsc3_middleware_android_phy_SaankhyaPHYAndroid_listen_1plps: saankhyaPHYAndroid is NULL!");
+        res = -1;
+    } else {
+        vector<uint8_t> listen_plps;
 
-    vector<uint8_t> listen_plps;
+        jobject jIterator = env->CallObjectMethod(plps, env->GetMethodID(env->GetObjectClass(plps), "iterator", "()Ljava/util/Iterator;"));
+        jmethodID nextMid = env->GetMethodID(env->GetObjectClass(jIterator), "next", "()Ljava/lang/Object;");
+        jmethodID hasNextMid = env->GetMethodID(env->GetObjectClass(jIterator), "hasNext", "()Z");
 
-    jobject jIterator = env->CallObjectMethod(plps, env->GetMethodID(env->GetObjectClass(plps), "iterator", "()Ljava/util/Iterator;"));
-    jmethodID nextMid = env->GetMethodID(env->GetObjectClass(jIterator), "next", "()Ljava/lang/Object;");
-    jmethodID hasNextMid = env->GetMethodID(env->GetObjectClass(jIterator), "hasNext", "()Z");
+        while (env->CallBooleanMethod(jIterator, hasNextMid)) {
+            jobject jItem = env->CallObjectMethod(jIterator, nextMid);
+            jbyte jByte = env->CallByteMethod(jItem, env->GetMethodID(env->GetObjectClass(jItem), "byteValue", "()B"));
+            listen_plps.push_back(jByte);
+        }
 
-    while (env->CallBooleanMethod(jIterator, hasNextMid)) {
-        jobject jItem = env->CallObjectMethod(jIterator, nextMid);
-        jbyte jByte = env->CallByteMethod(jItem, env->GetMethodID(env->GetObjectClass(jItem), "byteValue", "()B"));
-        listen_plps.push_back(jByte);
+        res = saankhyaPHYAndroid->listen_plps(listen_plps);
     }
-
-    res = saankhyaPHYAndroid->listen_plps(listen_plps);
-
     return res;
-    }
+}

@@ -127,8 +127,8 @@ public:
         return jni_class_globalRef;
     }
 
-    int pinFromRxProcessingThread();
-    Atsc3JniEnv* Atsc3_Jni_Processing_Thread_Env = nullptr;
+    int pinConsumerThreadAsNeeded();
+    int releasePinnedConsumerThreadAsNeeded();
 
     jmethodID mOnLogMsgId = nullptr;
 
@@ -165,6 +165,10 @@ public:
 
     atsc3_phy_notify_plp_selection_change_f   atsc3_phy_notify_plp_selection_change;
     void*                                      atsc3_phy_notify_plp_selection_change_context;
+
+protected:
+    Atsc3JniEnv* bridgeConsumerJniEnv = nullptr;
+
 
 };
 

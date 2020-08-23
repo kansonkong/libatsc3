@@ -9,7 +9,7 @@ Atsc3NdkApplicationBridge::Atsc3NdkApplicationBridge(JNIEnv* env, jobject jni_in
 
 void Atsc3NdkApplicationBridge::atsc3_onMfuPacket(uint16_t packet_id, uint32_t mpu_sequence_number, uint32_t sample_number, uint8_t* buffer, uint32_t bufferLen, uint64_t presentationUs, uint32_t mfu_fragment_count_rebuilt)
 {
-    if (!Atsc3_Jni_Processing_Thread_Env) {
+    if (!bridgeConsumerJniEnv) {
         _NDK_APPLICATION_BRIDGE_ERROR("ats3_onMfuPacket: Atsc3_Jni_Processing_Thread_Env is NULL!");
         return;
     }
@@ -24,18 +24,18 @@ void Atsc3NdkApplicationBridge::atsc3_onMfuPacket(uint16_t packet_id, uint32_t m
     //_NDK_APPLICATION_BRIDGE_INFO("Atsc3NdkPHYBridge::onMfuPacket, ret: %d, bufferLen: %u", r, bufferLen);
    // env.Get()->DeleteLocalRef(jobjectByteBuffer);
 #else
-    jobject jobjectLocalByteBuffer = Atsc3_Jni_Processing_Thread_Env->Get()->NewDirectByteBuffer(buffer, bufferLen);
+    jobject jobjectLocalByteBuffer = bridgeConsumerJniEnv->Get()->NewDirectByteBuffer(buffer, bufferLen);
 
-    int r = Atsc3_Jni_Processing_Thread_Env->Get()->CallIntMethod(jni_instance_globalRef, atsc3_onMfuPacketID, packet_id, mpu_sequence_number, sample_number, jobjectLocalByteBuffer, bufferLen, presentationUs, mfu_fragment_count_rebuilt);
+    int r = bridgeConsumerJniEnv->Get()->CallIntMethod(jni_instance_globalRef, atsc3_onMfuPacketID, packet_id, mpu_sequence_number, sample_number, jobjectLocalByteBuffer, bufferLen, presentationUs, mfu_fragment_count_rebuilt);
     //_NDK_APPLICATION_BRIDGE_INFO("Atsc3NdkPHYBridge::onMfuPacket, ret: %d, bufferLen: %u", r, bufferLen);
-    Atsc3_Jni_Processing_Thread_Env->Get()->DeleteLocalRef(jobjectLocalByteBuffer);
+    bridgeConsumerJniEnv->Get()->DeleteLocalRef(jobjectLocalByteBuffer);
 #endif
 }
 
 
 void Atsc3NdkApplicationBridge::atsc3_onMfuPacketCorrupt(uint16_t packet_id, uint32_t mpu_sequence_number, uint32_t sample_number, uint8_t* buffer, uint32_t bufferLen, uint64_t presentationUs, uint32_t mfu_fragment_count_expected, uint32_t mfu_fragment_count_rebuilt)
 {
-    if (!Atsc3_Jni_Processing_Thread_Env) {
+    if (!bridgeConsumerJniEnv) {
         _NDK_APPLICATION_BRIDGE_ERROR("ats3_onMfuPacket: Atsc3_Jni_Processing_Thread_Env is NULL!");
         return;
     }
@@ -50,18 +50,18 @@ void Atsc3NdkApplicationBridge::atsc3_onMfuPacketCorrupt(uint16_t packet_id, uin
     //_NDK_APPLICATION_BRIDGE_INFO("Atsc3NdkPHYBridge::onMfuPacket, ret: %d, bufferLen: %u", r, bufferLen);
    // env.Get()->DeleteLocalRef(jobjectByteBuffer);
 #else
-    jobject jobjectLocalByteBuffer = Atsc3_Jni_Processing_Thread_Env->Get()->NewDirectByteBuffer(buffer, bufferLen);
+    jobject jobjectLocalByteBuffer = bridgeConsumerJniEnv->Get()->NewDirectByteBuffer(buffer, bufferLen);
 
-    int r = Atsc3_Jni_Processing_Thread_Env->Get()->CallIntMethod(jni_instance_globalRef, atsc3_onMfuPacketCorruptID, packet_id, mpu_sequence_number, sample_number, jobjectLocalByteBuffer, bufferLen, presentationUs, mfu_fragment_count_expected, mfu_fragment_count_rebuilt);
+    int r = bridgeConsumerJniEnv->Get()->CallIntMethod(jni_instance_globalRef, atsc3_onMfuPacketCorruptID, packet_id, mpu_sequence_number, sample_number, jobjectLocalByteBuffer, bufferLen, presentationUs, mfu_fragment_count_expected, mfu_fragment_count_rebuilt);
     //_NDK_APPLICATION_BRIDGE_INFO("Atsc3NdkPHYBridge::onMfuPacket, ret: %d, bufferLen: %u", r, bufferLen);
-    Atsc3_Jni_Processing_Thread_Env->Get()->DeleteLocalRef(jobjectLocalByteBuffer);
+    bridgeConsumerJniEnv->Get()->DeleteLocalRef(jobjectLocalByteBuffer);
 #endif
 }
 
 
 void Atsc3NdkApplicationBridge::atsc3_onMfuPacketCorruptMmthSampleHeader(uint16_t packet_id, uint32_t mpu_sequence_number, uint32_t sample_number, uint8_t* buffer, uint32_t bufferLen, uint64_t presentationUs, uint32_t mfu_fragment_count_expected, uint32_t mfu_fragment_count_rebuilt)
 {
-    if (!Atsc3_Jni_Processing_Thread_Env) {
+    if (!bridgeConsumerJniEnv) {
         _NDK_APPLICATION_BRIDGE_ERROR("ats3_onMfuPacket: Atsc3_Jni_Processing_Thread_Env is NULL!");
         return;
     }
@@ -76,17 +76,17 @@ void Atsc3NdkApplicationBridge::atsc3_onMfuPacketCorruptMmthSampleHeader(uint16_
     //_NDK_APPLICATION_BRIDGE_INFO("Atsc3NdkPHYBridge::onMfuPacket, ret: %d, bufferLen: %u", r, bufferLen);
    // env.Get()->DeleteLocalRef(jobjectByteBuffer);
 #else
-    jobject jobjectLocalByteBuffer = Atsc3_Jni_Processing_Thread_Env->Get()->NewDirectByteBuffer(buffer, bufferLen);
+    jobject jobjectLocalByteBuffer = bridgeConsumerJniEnv->Get()->NewDirectByteBuffer(buffer, bufferLen);
 
-    int r = Atsc3_Jni_Processing_Thread_Env->Get()->CallIntMethod(jni_instance_globalRef, atsc3_onMfuPacketCorruptMmthSampleHeaderID, packet_id, mpu_sequence_number, sample_number, jobjectLocalByteBuffer, bufferLen, presentationUs, mfu_fragment_count_expected, mfu_fragment_count_rebuilt);
+    int r = bridgeConsumerJniEnv->Get()->CallIntMethod(jni_instance_globalRef, atsc3_onMfuPacketCorruptMmthSampleHeaderID, packet_id, mpu_sequence_number, sample_number, jobjectLocalByteBuffer, bufferLen, presentationUs, mfu_fragment_count_expected, mfu_fragment_count_rebuilt);
     //_NDK_APPLICATION_BRIDGE_INFO("Atsc3NdkPHYBridge::onMfuPacket, ret: %d, bufferLen: %u", r, bufferLen);
-    Atsc3_Jni_Processing_Thread_Env->Get()->DeleteLocalRef(jobjectLocalByteBuffer);
+    bridgeConsumerJniEnv->Get()->DeleteLocalRef(jobjectLocalByteBuffer);
 #endif
 }
 
 //push extracted HEVC nal's to MediaCodec for init
 void Atsc3NdkApplicationBridge::atsc3_onInitHEVC_NAL_Extracted(uint16_t packet_id, uint32_t mpu_sequence_number, uint8_t* buffer, uint32_t bufferLen) {
-    if (!Atsc3_Jni_Processing_Thread_Env) {
+    if (!bridgeConsumerJniEnv) {
         _NDK_APPLICATION_BRIDGE_ERROR("ats3_onMfuPacket: Atsc3_Jni_Processing_Thread_Env is NULL!");
         return;
     }
@@ -101,9 +101,9 @@ void Atsc3NdkApplicationBridge::atsc3_onInitHEVC_NAL_Extracted(uint16_t packet_i
     //_NDK_APPLICATION_BRIDGE_INFO("Atsc3NdkPHYBridge::onMfuPacket, ret: %d, bufferLen: %u", r, bufferLen);
     //env.Get()->DeleteLocalRef(jobjectByteBuffer);
 #else
-    jobject jobjectByteBuffer = Atsc3_Jni_Processing_Thread_Env->Get()->NewDirectByteBuffer(buffer, bufferLen);
-    int r = Atsc3_Jni_Processing_Thread_Env->Get()->CallIntMethod(jni_instance_globalRef, mOnInitHEVC_NAL_Extracted, packet_id, mpu_sequence_number, jobjectByteBuffer, bufferLen);
-    Atsc3_Jni_Processing_Thread_Env->Get()->DeleteLocalRef(jobjectByteBuffer);
+    jobject jobjectByteBuffer = bridgeConsumerJniEnv->Get()->NewDirectByteBuffer(buffer, bufferLen);
+    int r = bridgeConsumerJniEnv->Get()->CallIntMethod(jni_instance_globalRef, mOnInitHEVC_NAL_Extracted, packet_id, mpu_sequence_number, jobjectByteBuffer, bufferLen);
+    bridgeConsumerJniEnv->Get()->DeleteLocalRef(jobjectByteBuffer);
 #endif
 }
 
@@ -118,43 +118,43 @@ void Atsc3NdkApplicationBridge::atsc3_onInitHEVC_NAL_Extracted(uint16_t packet_i
 
 //todo: jjustman-2019-10-20: fixme env should be thread-bound already...
 void Atsc3NdkApplicationBridge::atsc3_signallingContext_notify_video_packet_id_and_mpu_timestamp_descriptor(uint16_t video_packet_id, uint32_t mpu_sequence_number, uint64_t mpu_presentation_time_ntp64, uint32_t mpu_presentation_time_seconds, uint32_t mpu_presentation_time_microseconds) {
-    if (!Atsc3_Jni_Processing_Thread_Env) {
+    if (!bridgeConsumerJniEnv) {
         _NDK_APPLICATION_BRIDGE_ERROR("ats3_onMfuPacket: Atsc3_Jni_Processing_Thread_Env is NULL!");
         return;
     }
 
-    int r = Atsc3_Jni_Processing_Thread_Env->Get()->CallIntMethod(jni_instance_globalRef, atsc3_signallingContext_notify_video_packet_id_and_mpu_timestamp_descriptor_ID, video_packet_id, mpu_sequence_number, mpu_presentation_time_ntp64, mpu_presentation_time_seconds, mpu_presentation_time_microseconds);
+    int r = bridgeConsumerJniEnv->Get()->CallIntMethod(jni_instance_globalRef, atsc3_signallingContext_notify_video_packet_id_and_mpu_timestamp_descriptor_ID, video_packet_id, mpu_sequence_number, mpu_presentation_time_ntp64, mpu_presentation_time_seconds, mpu_presentation_time_microseconds);
 }
 
 
 void Atsc3NdkApplicationBridge::atsc3_signallingContext_notify_audio_packet_id_and_mpu_timestamp_descriptor(uint16_t audio_packet_id, uint32_t mpu_sequence_number, uint64_t mpu_presentation_time_ntp64, uint32_t mpu_presentation_time_seconds, uint32_t mpu_presentation_time_microseconds) {
     // this method can be called in native thread. we don't safely use pre-assigned mJniEnv.
-    if (!Atsc3_Jni_Processing_Thread_Env) {
+    if (!bridgeConsumerJniEnv) {
         _NDK_APPLICATION_BRIDGE_ERROR("ats3_onMfuPacket: Atsc3_Jni_Processing_Thread_Env is NULL!");
         return;
     }
 
-    int r = Atsc3_Jni_Processing_Thread_Env->Get()->CallIntMethod(jni_instance_globalRef, atsc3_signallingContext_notify_audio_packet_id_and_mpu_timestamp_descriptor_ID, audio_packet_id, mpu_sequence_number, mpu_presentation_time_ntp64, mpu_presentation_time_seconds, mpu_presentation_time_microseconds);
+    int r = bridgeConsumerJniEnv->Get()->CallIntMethod(jni_instance_globalRef, atsc3_signallingContext_notify_audio_packet_id_and_mpu_timestamp_descriptor_ID, audio_packet_id, mpu_sequence_number, mpu_presentation_time_ntp64, mpu_presentation_time_seconds, mpu_presentation_time_microseconds);
 }
 
 
 
 void Atsc3NdkApplicationBridge::atsc3_signallingContext_notify_stpp_packet_id_and_mpu_timestamp_descriptor(uint16_t stpp_packet_id, uint32_t mpu_sequence_number, uint64_t mpu_presentation_time_ntp64, uint32_t mpu_presentation_time_seconds, uint32_t mpu_presentation_time_microseconds) {
-    if (!Atsc3_Jni_Processing_Thread_Env) {
+    if (!bridgeConsumerJniEnv) {
         _NDK_APPLICATION_BRIDGE_ERROR("ats3_onMfuPacket: Atsc3_Jni_Processing_Thread_Env is NULL!");
         return;
     }
 
-    int r =  Atsc3_Jni_Processing_Thread_Env->Get()->CallIntMethod(jni_instance_globalRef, atsc3_signallingContext_notify_stpp_packet_id_and_mpu_timestamp_descriptor_ID, stpp_packet_id, mpu_sequence_number, mpu_presentation_time_ntp64, mpu_presentation_time_seconds, mpu_presentation_time_microseconds);
+    int r =  bridgeConsumerJniEnv->Get()->CallIntMethod(jni_instance_globalRef, atsc3_signallingContext_notify_stpp_packet_id_and_mpu_timestamp_descriptor_ID, stpp_packet_id, mpu_sequence_number, mpu_presentation_time_ntp64, mpu_presentation_time_seconds, mpu_presentation_time_microseconds);
 }
 
 void Atsc3NdkApplicationBridge::atsc3_onMfuSampleMissing(uint16_t pcaket_id, uint32_t mpu_sequence_number, uint32_t sample_number) {
-    if (!Atsc3_Jni_Processing_Thread_Env) {
+    if (!bridgeConsumerJniEnv) {
         _NDK_APPLICATION_BRIDGE_ERROR("ats3_onMfuPacket: Atsc3_Jni_Processing_Thread_Env is NULL!");
         return;
     }
 
-    int r = Atsc3_Jni_Processing_Thread_Env->Get()->CallIntMethod(jni_instance_globalRef, atsc3_onMfuSampleMissingID, pcaket_id, mpu_sequence_number, sample_number);
+    int r = bridgeConsumerJniEnv->Get()->CallIntMethod(jni_instance_globalRef, atsc3_onMfuSampleMissingID, pcaket_id, mpu_sequence_number, sample_number);
 }
 
 //jjustman-2020-08-19: TODO: get (or create) a pinned Atsc3JniEnv from pthread_cur
@@ -202,24 +202,31 @@ void Atsc3NdkApplicationBridge::atsc3_onAlcObjectStatusMessage(const char *fmt, 
     msg[sizeof(msg)-1] = 0;
     va_end(v);
 
-    if (!Atsc3_Jni_Processing_Thread_Env) {
+    if (!bridgeConsumerJniEnv) {
         _NDK_APPLICATION_BRIDGE_ERROR("ats3_onMfuPacket: Atsc3_Jni_Processing_Thread_Env is NULL!");
         return;
     }
 
-    jstring js = Atsc3_Jni_Processing_Thread_Env->Get()->NewStringUTF(msg);
+    jstring js = bridgeConsumerJniEnv->Get()->NewStringUTF(msg);
 
-    int r = Atsc3_Jni_Processing_Thread_Env->Get()->CallIntMethod(jni_instance_globalRef, atsc3_on_alc_object_status_message_ID, js);
-    Atsc3_Jni_Processing_Thread_Env->Get()->DeleteLocalRef(js);
+    int r = bridgeConsumerJniEnv->Get()->CallIntMethod(jni_instance_globalRef, atsc3_on_alc_object_status_message_ID, js);
+    bridgeConsumerJniEnv->Get()->DeleteLocalRef(js);
 
 }
 
-int Atsc3NdkApplicationBridge::pinFromRxProcessingThread() {
-    _NDK_APPLICATION_BRIDGE_INFO("Atsc3NdkApplicationBridge::pinFromRxProcessingThread: mJavaVM: %p", mJavaVM);
-    Atsc3_Jni_Processing_Thread_Env = new Atsc3JniEnv(mJavaVM);
+int Atsc3NdkApplicationBridge::pinConsumerThreadAsNeeded() {
+    _NDK_APPLICATION_BRIDGE_INFO("Atsc3NdkApplicationBridge::pinConsumerThreadAsNeeded: mJavaVM: %p", mJavaVM);
+    bridgeConsumerJniEnv = new Atsc3JniEnv(mJavaVM);
     return 0;
 }
 
+int Atsc3NdkApplicationBridge::releasePinnedConsumerThreadAsNeeded() {
+    _NDK_APPLICATION_BRIDGE_INFO("Atsc3NdkApplicationBridge::releasePinnedConsumerThreadAsNeeded: Atsc3_Jni_Processing_Thread_Env is: %p:", bridgeConsumerJniEnv);
+    if(bridgeConsumerJniEnv) {
+        delete bridgeConsumerJniEnv;
+    }
+    return 0;
+}
 
 int Atsc3NdkApplicationBridge::atsc3_slt_selectService(int service_id) {
     int ret = -1;
@@ -236,25 +243,25 @@ int Atsc3NdkApplicationBridge::atsc3_slt_selectService(int service_id) {
 void Atsc3NdkApplicationBridge::atsc3_onExtractedSampleDuration(uint16_t packet_id, uint32_t mpu_sequence_number,
                                                                 uint32_t extracted_sample_duration_us) {
 
-    if (!Atsc3_Jni_Processing_Thread_Env) {
+    if (!bridgeConsumerJniEnv) {
         _NDK_APPLICATION_BRIDGE_ERROR("ats3_onMfuPacket: Atsc3_Jni_Processing_Thread_Env is NULL!");
         return;
     }
-    int r = Atsc3_Jni_Processing_Thread_Env->Get()->CallIntMethod(jni_instance_globalRef, atsc3_onExtractedSampleDurationID,
-                                                                  packet_id,
-                                                                  mpu_sequence_number,
-                                                                  extracted_sample_duration_us);
+    int r = bridgeConsumerJniEnv->Get()->CallIntMethod(jni_instance_globalRef, atsc3_onExtractedSampleDurationID,
+                                                       packet_id,
+                                                       mpu_sequence_number,
+                                                       extracted_sample_duration_us);
 }
 
 
 
 void Atsc3NdkApplicationBridge::atsc3_setVideoWidthHeightFromTrak(uint32_t width, uint32_t height) {
 
-    if (!Atsc3_Jni_Processing_Thread_Env) {
+    if (!bridgeConsumerJniEnv) {
         _NDK_APPLICATION_BRIDGE_ERROR("ats3_onMfuPacket: Atsc3_Jni_Processing_Thread_Env is NULL!");
         return;
     }
-    int r = Atsc3_Jni_Processing_Thread_Env->Get()->CallIntMethod(jni_instance_globalRef, atsc3_setVideoWidthHeightFromTrakID, width, height);
+    int r = bridgeConsumerJniEnv->Get()->CallIntMethod(jni_instance_globalRef, atsc3_setVideoWidthHeightFromTrakID, width, height);
 }
 
 
@@ -418,12 +425,12 @@ void Atsc3NdkApplicationBridge::atsc3_lls_sls_alc_on_object_close_flag_s_tsid_co
 }
 
 void Atsc3NdkApplicationBridge::atsc3_lls_sls_alc_on_route_mpd_patched_jni(uint16_t service_id) {
-    if (!Atsc3_Jni_Processing_Thread_Env) {
+    if (!bridgeConsumerJniEnv) {
         _NDK_APPLICATION_BRIDGE_ERROR("ats3_onMfuPacket: Atsc3_Jni_Processing_Thread_Env is NULL!");
         return;
     }
 
-    int r = Atsc3_Jni_Processing_Thread_Env->Get()->CallIntMethod(jni_instance_globalRef, atsc3_lls_sls_alc_on_route_mpd_patched_ID, service_id);
+    int r = bridgeConsumerJniEnv->Get()->CallIntMethod(jni_instance_globalRef, atsc3_lls_sls_alc_on_route_mpd_patched_ID, service_id);
 }
 
 // https://stackoverflow.com/questions/6343459/get-strings-used-in-java-from-jni
@@ -431,7 +438,7 @@ void Atsc3NdkApplicationBridge::atsc3_lls_sls_alc_on_package_extract_completed_c
     if (!atsc3_lls_sls_alc_on_package_extract_completed_ID)
         return;
 
-    if (!Atsc3_Jni_Processing_Thread_Env) {
+    if (!bridgeConsumerJniEnv) {
         _NDK_APPLICATION_BRIDGE_ERROR("atsc3_lls_sls_alc_on_package_extract_completed_callback_jni::err on get jni env: Atsc3_Jni_Processing_Thread_Env");
         return;
     }
@@ -456,7 +463,7 @@ void Atsc3NdkApplicationBridge::atsc3_lls_sls_alc_on_package_extract_completed_c
 
     //org.ngbp.libatsc3.middleware.android.a331.PackageExtractEnvelopeMetadataAndPayload
     jclass jcls = apiAppBridge->packageExtractEnvelopeMetadataAndPayload_jclass_global_ref;
-    jobject jobj = Atsc3_Jni_Processing_Thread_Env->Get()->AllocObject(jcls);
+    jobject jobj = bridgeConsumerJniEnv->Get()->AllocObject(jcls);
 
     if(!jobj) {
         _NDK_APPLICATION_BRIDGE_ERROR("atsc3_lls_sls_alc_on_package_extract_completed_callback_jni::err unable to allocate packageExtractEnvelopeMetadataAndPayload_jclass_global_ref instance jobj!");
@@ -464,121 +471,121 @@ void Atsc3NdkApplicationBridge::atsc3_lls_sls_alc_on_package_extract_completed_c
     }
 
 
-    jfieldID packageName_valId = Atsc3_Jni_Processing_Thread_Env->Get()->GetFieldID(jcls, "packageName", "Ljava/lang/String;");
-    jstring packageName_payload = Atsc3_Jni_Processing_Thread_Env->Get()->NewStringUTF(atsc3_route_package_extracted_envelope_metadata_and_payload->package_name);
-    Atsc3_Jni_Processing_Thread_Env->Get()->SetObjectField(jobj, packageName_valId, packageName_payload);
+    jfieldID packageName_valId = bridgeConsumerJniEnv->Get()->GetFieldID(jcls, "packageName", "Ljava/lang/String;");
+    jstring packageName_payload = bridgeConsumerJniEnv->Get()->NewStringUTF(atsc3_route_package_extracted_envelope_metadata_and_payload->package_name);
+    bridgeConsumerJniEnv->Get()->SetObjectField(jobj, packageName_valId, packageName_payload);
     to_clean_jstrings.push_back(packageName_payload);
 
-    jfieldID tsi_valId = Atsc3_Jni_Processing_Thread_Env->Get()->GetFieldID(jcls, "tsi", "I");
-    Atsc3_Jni_Processing_Thread_Env->Get()->SetIntField(jobj, tsi_valId, atsc3_route_package_extracted_envelope_metadata_and_payload->tsi);
+    jfieldID tsi_valId = bridgeConsumerJniEnv->Get()->GetFieldID(jcls, "tsi", "I");
+    bridgeConsumerJniEnv->Get()->SetIntField(jobj, tsi_valId, atsc3_route_package_extracted_envelope_metadata_and_payload->tsi);
 
-    jfieldID toi_valId = Atsc3_Jni_Processing_Thread_Env->Get()->GetFieldID(jcls, "toi", "I");
-    Atsc3_Jni_Processing_Thread_Env->Get()->SetIntField(jobj, toi_valId, atsc3_route_package_extracted_envelope_metadata_and_payload->toi);
+    jfieldID toi_valId = bridgeConsumerJniEnv->Get()->GetFieldID(jcls, "toi", "I");
+    bridgeConsumerJniEnv->Get()->SetIntField(jobj, toi_valId, atsc3_route_package_extracted_envelope_metadata_and_payload->toi);
 
-    jfieldID appContextIdList_valId = Atsc3_Jni_Processing_Thread_Env->Get()->GetFieldID(jcls, "appContextIdList", "Ljava/lang/String;");
-    jstring appContextIdList_payload = Atsc3_Jni_Processing_Thread_Env->Get()->NewStringUTF(atsc3_route_package_extracted_envelope_metadata_and_payload->app_context_id_list);
-    Atsc3_Jni_Processing_Thread_Env->Get()->SetObjectField(jobj, appContextIdList_valId, appContextIdList_payload);
+    jfieldID appContextIdList_valId = bridgeConsumerJniEnv->Get()->GetFieldID(jcls, "appContextIdList", "Ljava/lang/String;");
+    jstring appContextIdList_payload = bridgeConsumerJniEnv->Get()->NewStringUTF(atsc3_route_package_extracted_envelope_metadata_and_payload->app_context_id_list);
+    bridgeConsumerJniEnv->Get()->SetObjectField(jobj, appContextIdList_valId, appContextIdList_payload);
     to_clean_jstrings.push_back(appContextIdList_payload);
 
 
-    jfieldID packageExtractPath_valId = Atsc3_Jni_Processing_Thread_Env->Get()->GetFieldID(jcls, "packageExtractPath", "Ljava/lang/String;");
-    jstring packageExtractPath_payload = Atsc3_Jni_Processing_Thread_Env->Get()->NewStringUTF(atsc3_route_package_extracted_envelope_metadata_and_payload->package_extract_path);
-    Atsc3_Jni_Processing_Thread_Env->Get()->SetObjectField(jobj, packageExtractPath_valId, packageExtractPath_payload);
+    jfieldID packageExtractPath_valId = bridgeConsumerJniEnv->Get()->GetFieldID(jcls, "packageExtractPath", "Ljava/lang/String;");
+    jstring packageExtractPath_payload = bridgeConsumerJniEnv->Get()->NewStringUTF(atsc3_route_package_extracted_envelope_metadata_and_payload->package_extract_path);
+    bridgeConsumerJniEnv->Get()->SetObjectField(jobj, packageExtractPath_valId, packageExtractPath_payload);
     to_clean_jstrings.push_back(packageExtractPath_payload);
 
 
-    jfieldID mbmsEnvelopeRawXml_valId = Atsc3_Jni_Processing_Thread_Env->Get()->GetFieldID(jcls, "mbmsEnvelopeRawXml", "Ljava/lang/String;");
-    jstring mbmsEnvelopeRawXml_payload = Atsc3_Jni_Processing_Thread_Env->Get()->NewStringUTF((char*)atsc3_route_package_extracted_envelope_metadata_and_payload->atsc3_mbms_metadata_envelope_raw_xml->p_buffer);
-    Atsc3_Jni_Processing_Thread_Env->Get()->SetObjectField(jobj, mbmsEnvelopeRawXml_valId, mbmsEnvelopeRawXml_payload);
+    jfieldID mbmsEnvelopeRawXml_valId = bridgeConsumerJniEnv->Get()->GetFieldID(jcls, "mbmsEnvelopeRawXml", "Ljava/lang/String;");
+    jstring mbmsEnvelopeRawXml_payload = bridgeConsumerJniEnv->Get()->NewStringUTF((char*)atsc3_route_package_extracted_envelope_metadata_and_payload->atsc3_mbms_metadata_envelope_raw_xml->p_buffer);
+    bridgeConsumerJniEnv->Get()->SetObjectField(jobj, mbmsEnvelopeRawXml_valId, mbmsEnvelopeRawXml_payload);
     to_clean_jstrings.push_back(mbmsEnvelopeRawXml_payload);
 
     if(atsc3_route_package_extracted_envelope_metadata_and_payload->atsc3_mime_multipart_related_payload_v.count > 0) {
 
-        jobject multipartRelatedPayloadList_jobject = Atsc3_Jni_Processing_Thread_Env->Get()->NewObject(apiAppBridge->jni_java_util_ArrayList, apiAppBridge->jni_java_util_ArrayList_cctor, atsc3_route_package_extracted_envelope_metadata_and_payload->atsc3_mime_multipart_related_payload_v.count);
+        jobject multipartRelatedPayloadList_jobject = bridgeConsumerJniEnv->Get()->NewObject(apiAppBridge->jni_java_util_ArrayList, apiAppBridge->jni_java_util_ArrayList_cctor, atsc3_route_package_extracted_envelope_metadata_and_payload->atsc3_mime_multipart_related_payload_v.count);
 
         for(int i=0; i < atsc3_route_package_extracted_envelope_metadata_and_payload->atsc3_mime_multipart_related_payload_v.count; i++) {
             atsc3_mime_multipart_related_payload_t* atsc3_mime_multipart_related_payload = atsc3_route_package_extracted_envelope_metadata_and_payload->atsc3_mime_multipart_related_payload_v.data[i];
-            jobject jobj_multipart_related_payload_jobject = Atsc3_Jni_Processing_Thread_Env->Get()->AllocObject(apiAppBridge->packageExtractEnvelopeMetadataAndPayload_MultipartRelatedPayload_jclass_global_ref);
+            jobject jobj_multipart_related_payload_jobject = bridgeConsumerJniEnv->Get()->AllocObject(apiAppBridge->packageExtractEnvelopeMetadataAndPayload_MultipartRelatedPayload_jclass_global_ref);
 
             to_clean_jobject.push_back(jobj_multipart_related_payload_jobject);
 
-            jfieldID contentLocation_valId = Atsc3_Jni_Processing_Thread_Env->Get()->GetFieldID(apiAppBridge->packageExtractEnvelopeMetadataAndPayload_MultipartRelatedPayload_jclass_global_ref, "contentLocation", "Ljava/lang/String;");
-            jstring contentLocation_jstring = Atsc3_Jni_Processing_Thread_Env->Get()->NewStringUTF(atsc3_mime_multipart_related_payload->sanitizied_content_location);
-            Atsc3_Jni_Processing_Thread_Env->Get()->SetObjectField(jobj_multipart_related_payload_jobject, contentLocation_valId, contentLocation_jstring);
+            jfieldID contentLocation_valId = bridgeConsumerJniEnv->Get()->GetFieldID(apiAppBridge->packageExtractEnvelopeMetadataAndPayload_MultipartRelatedPayload_jclass_global_ref, "contentLocation", "Ljava/lang/String;");
+            jstring contentLocation_jstring = bridgeConsumerJniEnv->Get()->NewStringUTF(atsc3_mime_multipart_related_payload->sanitizied_content_location);
+            bridgeConsumerJniEnv->Get()->SetObjectField(jobj_multipart_related_payload_jobject, contentLocation_valId, contentLocation_jstring);
             to_clean_jstrings.push_back(contentLocation_jstring);
 
             if(atsc3_mime_multipart_related_payload->content_type) {
-                jfieldID contentType_valId = Atsc3_Jni_Processing_Thread_Env->Get()->GetFieldID(apiAppBridge->packageExtractEnvelopeMetadataAndPayload_MultipartRelatedPayload_jclass_global_ref, "contentType", "Ljava/lang/String;");
-                jstring contentType_jstring = Atsc3_Jni_Processing_Thread_Env->Get()->NewStringUTF(atsc3_mime_multipart_related_payload->content_type);
-                Atsc3_Jni_Processing_Thread_Env->Get()->SetObjectField(jobj_multipart_related_payload_jobject, contentType_valId, contentType_jstring);
+                jfieldID contentType_valId = bridgeConsumerJniEnv->Get()->GetFieldID(apiAppBridge->packageExtractEnvelopeMetadataAndPayload_MultipartRelatedPayload_jclass_global_ref, "contentType", "Ljava/lang/String;");
+                jstring contentType_jstring = bridgeConsumerJniEnv->Get()->NewStringUTF(atsc3_mime_multipart_related_payload->content_type);
+                bridgeConsumerJniEnv->Get()->SetObjectField(jobj_multipart_related_payload_jobject, contentType_valId, contentType_jstring);
                 to_clean_jstrings.push_back(contentType_jstring);
             }
 
             if(atsc3_mime_multipart_related_payload->valid_from_string) {
-                jfieldID validFrom_valId = Atsc3_Jni_Processing_Thread_Env->Get()->GetFieldID(apiAppBridge->packageExtractEnvelopeMetadataAndPayload_MultipartRelatedPayload_jclass_global_ref, "validFrom", "Ljava/lang/String;");
-                jstring validFrom_jstring = Atsc3_Jni_Processing_Thread_Env->Get()->NewStringUTF(atsc3_mime_multipart_related_payload->valid_from_string);
-                Atsc3_Jni_Processing_Thread_Env->Get()->SetObjectField(jobj_multipart_related_payload_jobject, validFrom_valId, validFrom_jstring);
+                jfieldID validFrom_valId = bridgeConsumerJniEnv->Get()->GetFieldID(apiAppBridge->packageExtractEnvelopeMetadataAndPayload_MultipartRelatedPayload_jclass_global_ref, "validFrom", "Ljava/lang/String;");
+                jstring validFrom_jstring = bridgeConsumerJniEnv->Get()->NewStringUTF(atsc3_mime_multipart_related_payload->valid_from_string);
+                bridgeConsumerJniEnv->Get()->SetObjectField(jobj_multipart_related_payload_jobject, validFrom_valId, validFrom_jstring);
                 to_clean_jstrings.push_back(validFrom_jstring);
             }
 
             if(atsc3_mime_multipart_related_payload->valid_until_string) {
-                jfieldID validUntil_valId = Atsc3_Jni_Processing_Thread_Env->Get()->GetFieldID(apiAppBridge->packageExtractEnvelopeMetadataAndPayload_MultipartRelatedPayload_jclass_global_ref, "validUntil", "Ljava/lang/String;");
-                jstring validUntil_jstring = Atsc3_Jni_Processing_Thread_Env->Get()->NewStringUTF(atsc3_mime_multipart_related_payload->valid_until_string);
-                Atsc3_Jni_Processing_Thread_Env->Get()->SetObjectField(jobj_multipart_related_payload_jobject, validUntil_valId, validUntil_jstring);
+                jfieldID validUntil_valId = bridgeConsumerJniEnv->Get()->GetFieldID(apiAppBridge->packageExtractEnvelopeMetadataAndPayload_MultipartRelatedPayload_jclass_global_ref, "validUntil", "Ljava/lang/String;");
+                jstring validUntil_jstring = bridgeConsumerJniEnv->Get()->NewStringUTF(atsc3_mime_multipart_related_payload->valid_until_string);
+                bridgeConsumerJniEnv->Get()->SetObjectField(jobj_multipart_related_payload_jobject, validUntil_valId, validUntil_jstring);
                 to_clean_jstrings.push_back(validUntil_jstring);
             }
 
             //version
 
-            jfieldID version_valId = Atsc3_Jni_Processing_Thread_Env->Get()->GetFieldID(apiAppBridge->packageExtractEnvelopeMetadataAndPayload_MultipartRelatedPayload_jclass_global_ref, "version", "I");
-            Atsc3_Jni_Processing_Thread_Env->Get()->SetIntField(jobj_multipart_related_payload_jobject, version_valId, atsc3_mime_multipart_related_payload->version);
+            jfieldID version_valId = bridgeConsumerJniEnv->Get()->GetFieldID(apiAppBridge->packageExtractEnvelopeMetadataAndPayload_MultipartRelatedPayload_jclass_global_ref, "version", "I");
+            bridgeConsumerJniEnv->Get()->SetIntField(jobj_multipart_related_payload_jobject, version_valId, atsc3_mime_multipart_related_payload->version);
 
 
             if(atsc3_mime_multipart_related_payload->next_url_string) {
-                jfieldID nextUrl_valId = Atsc3_Jni_Processing_Thread_Env->Get()->GetFieldID(apiAppBridge->packageExtractEnvelopeMetadataAndPayload_MultipartRelatedPayload_jclass_global_ref, "nextUrl", "Ljava/lang/String;");
-                jstring nextUrl_jstring = Atsc3_Jni_Processing_Thread_Env->Get()->NewStringUTF(atsc3_mime_multipart_related_payload->next_url_string);
-                Atsc3_Jni_Processing_Thread_Env->Get()->SetObjectField(jobj_multipart_related_payload_jobject, nextUrl_valId, nextUrl_jstring);
+                jfieldID nextUrl_valId = bridgeConsumerJniEnv->Get()->GetFieldID(apiAppBridge->packageExtractEnvelopeMetadataAndPayload_MultipartRelatedPayload_jclass_global_ref, "nextUrl", "Ljava/lang/String;");
+                jstring nextUrl_jstring = bridgeConsumerJniEnv->Get()->NewStringUTF(atsc3_mime_multipart_related_payload->next_url_string);
+                bridgeConsumerJniEnv->Get()->SetObjectField(jobj_multipart_related_payload_jobject, nextUrl_valId, nextUrl_jstring);
                 to_clean_jstrings.push_back(nextUrl_jstring);
             }
 
             if(atsc3_mime_multipart_related_payload->avail_at_string) {
-                jfieldID availAt_valId = Atsc3_Jni_Processing_Thread_Env->Get()->GetFieldID(apiAppBridge->packageExtractEnvelopeMetadataAndPayload_MultipartRelatedPayload_jclass_global_ref, "availAt", "Ljava/lang/String;");
-                jstring availAt_jstring = Atsc3_Jni_Processing_Thread_Env->Get()->NewStringUTF(atsc3_mime_multipart_related_payload->avail_at_string);
-                Atsc3_Jni_Processing_Thread_Env->Get()->SetObjectField(jobj_multipart_related_payload_jobject, availAt_valId, availAt_jstring);
+                jfieldID availAt_valId = bridgeConsumerJniEnv->Get()->GetFieldID(apiAppBridge->packageExtractEnvelopeMetadataAndPayload_MultipartRelatedPayload_jclass_global_ref, "availAt", "Ljava/lang/String;");
+                jstring availAt_jstring = bridgeConsumerJniEnv->Get()->NewStringUTF(atsc3_mime_multipart_related_payload->avail_at_string);
+                bridgeConsumerJniEnv->Get()->SetObjectField(jobj_multipart_related_payload_jobject, availAt_valId, availAt_jstring);
                 to_clean_jstrings.push_back(availAt_jstring);
             }
 
             //extractedSize
-            jfieldID extractedSize_valId = Atsc3_Jni_Processing_Thread_Env->Get()->GetFieldID(apiAppBridge->packageExtractEnvelopeMetadataAndPayload_MultipartRelatedPayload_jclass_global_ref, "extractedSize", "I");
-            Atsc3_Jni_Processing_Thread_Env->Get()->SetIntField(jobj_multipart_related_payload_jobject, extractedSize_valId, atsc3_mime_multipart_related_payload->extracted_size);
+            jfieldID extractedSize_valId = bridgeConsumerJniEnv->Get()->GetFieldID(apiAppBridge->packageExtractEnvelopeMetadataAndPayload_MultipartRelatedPayload_jclass_global_ref, "extractedSize", "I");
+            bridgeConsumerJniEnv->Get()->SetIntField(jobj_multipart_related_payload_jobject, extractedSize_valId, atsc3_mime_multipart_related_payload->extracted_size);
 
-            Atsc3_Jni_Processing_Thread_Env->Get()->CallBooleanMethod(multipartRelatedPayloadList_jobject, apiAppBridge->jni_java_util_ArrayList_add, jobj_multipart_related_payload_jobject);
+            bridgeConsumerJniEnv->Get()->CallBooleanMethod(multipartRelatedPayloadList_jobject, apiAppBridge->jni_java_util_ArrayList_add, jobj_multipart_related_payload_jobject);
         }
 
-        jfieldID multipartRelatedPayloadList_valId = Atsc3_Jni_Processing_Thread_Env->Get()->GetFieldID(jcls, "multipartRelatedPayloadList", "Ljava/util/List;");
-        Atsc3_Jni_Processing_Thread_Env->Get()->SetObjectField(jobj, multipartRelatedPayloadList_valId, multipartRelatedPayloadList_jobject);
+        jfieldID multipartRelatedPayloadList_valId = bridgeConsumerJniEnv->Get()->GetFieldID(jcls, "multipartRelatedPayloadList", "Ljava/util/List;");
+        bridgeConsumerJniEnv->Get()->SetObjectField(jobj, multipartRelatedPayloadList_valId, multipartRelatedPayloadList_jobject);
     }
 
-    int r = Atsc3_Jni_Processing_Thread_Env->Get()->CallIntMethod(jni_instance_globalRef, atsc3_lls_sls_alc_on_package_extract_completed_ID, jobj);
+    int r = bridgeConsumerJniEnv->Get()->CallIntMethod(jni_instance_globalRef, atsc3_lls_sls_alc_on_package_extract_completed_ID, jobj);
 
     for (std::list<jstring>::iterator it=to_clean_jstrings.begin(); it != to_clean_jstrings.end(); ++it) {
-        Atsc3_Jni_Processing_Thread_Env->Get()->DeleteLocalRef(*it);
+        bridgeConsumerJniEnv->Get()->DeleteLocalRef(*it);
     }
     to_clean_jstrings.clear();
 
     for (std::list<jobject>::iterator it=to_clean_jobject.begin(); it != to_clean_jobject.end(); ++it) {
-        Atsc3_Jni_Processing_Thread_Env->Get()->DeleteLocalRef(*it);
+        bridgeConsumerJniEnv->Get()->DeleteLocalRef(*it);
     }
     to_clean_jobject.clear();
 
-    Atsc3_Jni_Processing_Thread_Env->Get()->DeleteLocalRef(jobj);
+    bridgeConsumerJniEnv->Get()->DeleteLocalRef(jobj);
 }
 
 void Atsc3NdkApplicationBridge::atsc3_sls_on_held_trigger_received_callback_jni(uint16_t service_id, const char *held_payload) {
 	if (!atsc3_lls_sls_alc_on_route_mpd_patched_ID)
 		return;
 
-	if (!Atsc3_Jni_Processing_Thread_Env) {
+	if (!bridgeConsumerJniEnv) {
 		_NDK_APPLICATION_BRIDGE_ERROR("!! err on get jni env");
 		return;
 	}
@@ -593,14 +600,14 @@ void Atsc3NdkApplicationBridge::atsc3_onSlsTablePresent(const char *sls_payload_
         return;
     }
 
-    if (!Atsc3_Jni_Processing_Thread_Env) {
+    if (!bridgeConsumerJniEnv) {
         _NDK_APPLICATION_BRIDGE_ERROR("!! err on get jni env");
         return;
     }
 
-    jstring xml_payload = Atsc3_Jni_Processing_Thread_Env->Get()->NewStringUTF(sls_payload_xml);
-    int r = Atsc3_Jni_Processing_Thread_Env->Get()->CallIntMethod(jni_instance_globalRef, atsc3_onSlsTablePresent_ID, xml_payload);
-    Atsc3_Jni_Processing_Thread_Env->Get()->DeleteLocalRef(xml_payload);
+    jstring xml_payload = bridgeConsumerJniEnv->Get()->NewStringUTF(sls_payload_xml);
+    int r = bridgeConsumerJniEnv->Get()->CallIntMethod(jni_instance_globalRef, atsc3_onSlsTablePresent_ID, xml_payload);
+    bridgeConsumerJniEnv->Get()->DeleteLocalRef(xml_payload);
 }
 
 void Atsc3NdkApplicationBridge::atsc3_phy_notify_plp_selection_change_set_callback(atsc3_phy_notify_plp_selection_change_f atsc3_phy_notify_plp_selection_change, void* context) {

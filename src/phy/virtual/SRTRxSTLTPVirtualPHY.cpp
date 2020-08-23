@@ -93,7 +93,7 @@ int SRTRxSTLTPVirtualPHY::atsc3_srt_thread_run() {
 
         _SRTRXSTLTP_VIRTUAL_PHY_INFO("SRTRxSTLTPVirtualPHY::atsc3_srt_producer_thread_run with this: %p", this);
         this->srtProducerThreadRun();
-        releaseProducerThreadAsNeeded();
+        releasePinnedProducerThreadAsNeeded();
     });
 
     srtConsumerThreadPtr = std::thread([this](){
@@ -102,7 +102,7 @@ int SRTRxSTLTPVirtualPHY::atsc3_srt_thread_run() {
         _SRTRXSTLTP_VIRTUAL_PHY_INFO("SRTRxSTLTPVirtualPHY::atsc3_srt_consumer_thread_run with this: %p", this);
 
         this->srtConsumerThreadRun();
-        releaseConsumerThreadAsNeeded();
+        releasePinnedConsumerThreadAsNeeded();
     });
 
     _SRTRXSTLTP_VIRTUAL_PHY_INFO("atsc3_srt_thread_run: threads created, srtProducerThreadPtr id: %lu, srtConsumerThreadPtr id: %lu",
