@@ -34,6 +34,7 @@ import android.view.SurfaceView;
 import android.view.View;
 import android.view.ViewGroup;
 import android.view.Window;
+import android.view.WindowManager;
 import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
 import android.widget.Button;
@@ -312,6 +313,9 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     Integer originalVisibility = null;
     Integer lastConfigurationOrientation = null;
 
+    IntentFilter usbIntentFilter = new IntentFilter();
+
+
     @Override
     public void onConfigurationChanged(Configuration newConfig) {
         super.onConfigurationChanged(newConfig);
@@ -566,17 +570,28 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     Boolean hasCalledOnCreate = false;
     @Override
     protected void onCreate(Bundle savedInstanceState) {
-        if(hasCalledOnCreate) {
-            Log.d(TAG, "OnCreate:hasCalledOnCreate is true, returning");
+        Log.d(TAG, "OnCreate: "+savedInstanceState);
+        requestWindowFeature(Window.FEATURE_NO_TITLE);
+
+        super.onCreate(savedInstanceState);
+
+        setContentView(R.layout.activity_main);
+
+        if(savedInstanceState != null) {
+            Log.d(TAG, "OnCreate:savedInstanceState is not null, returning!");
+
             return;
         }
 
-        MmtPacketIdContext.Initialize();
-        requestWindowFeature(Window.FEATURE_NO_TITLE);
 
-        Log.d(TAG, "OnCreate");
-        super.onCreate(savedInstanceState);
-        setContentView(R.layout.activity_main);
+        MmtPacketIdContext.Initialize();
+
+
+        getWindow().setFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN,
+                WindowManager.LayoutParams.FLAG_FULLSCREEN);
+
+        getSupportActionBar().hide();
+
 
         createServiceHandler();
 
@@ -745,14 +760,15 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         // get pending intent, which will be used for requesting permission
         mPermissionIntent = PendingIntent.getBroadcast(this, 0, new Intent(ACTION_USB_PERMISSION), 0);
 
-        // register our own broadcast receiver instance, with filters we are interested in
-        IntentFilter filter = new IntentFilter();
-        filter.addAction(UsbManager.ACTION_USB_DEVICE_ATTACHED);
-        filter.addAction(UsbManager.ACTION_USB_DEVICE_DETACHED);
-        filter.addAction(ACTION_USB_PERMISSION);
+        Log.d(TAG, "onCreate: registering intent to receiver, before addAction: "+ usbIntentFilter+", actions count: "+usbIntentFilter.countActions());
 
-        Log.d(TAG, "onCreate: registering intent to receiver..");
-        registerReceiver(mUsbReceiver, filter);
+        // register our own broadcast receiver instance, with filters we are interested in
+        usbIntentFilter.addAction(UsbManager.ACTION_USB_DEVICE_ATTACHED);
+        usbIntentFilter.addAction(UsbManager.ACTION_USB_DEVICE_DETACHED);
+        usbIntentFilter.addAction(ACTION_USB_PERMISSION);
+
+        Log.d(TAG, "onCreate: registering intent to receiver"+ usbIntentFilter);
+        registerReceiver(mUsbReceiver, usbIntentFilter);
 
         // jjustman-2020-08-18 - wire up our applicationBridge and PHYBridge
         atsc3NdkApplicationBridge = new Atsc3NdkApplicationBridge(this);
@@ -1557,7 +1573,6 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
 
                 for (Atsc3NdkPHYClientBase.USBVendorIDProductIDSupportedPHY candidatePHY : candidatePHYList) {
                     Atsc3NdkPHYClientBase atsc3NdkPHYClientBaseCandidate = Atsc3NdkPHYClientBase.CreateInstanceFromUSBVendorIDProductIDSupportedPHY(candidatePHY);
-                    atsc3NdkPHYClientBaseCandidate.init();
                     int usbFd = atsc3UsbDevice.getFd();
 
                     if (candidatePHY.isBootloader) {

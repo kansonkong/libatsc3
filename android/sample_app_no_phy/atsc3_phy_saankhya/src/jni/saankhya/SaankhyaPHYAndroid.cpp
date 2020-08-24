@@ -210,6 +210,18 @@ int SaankhyaPHYAndroid::stop()
 {
     _SAANKHYA_PHY_ANDROID_DEBUG("SaankhyaPHYAndroid::stop: enter with this: %p", this);
 
+    //tear down status thread first, as its the most 'problematic'
+    if(statusThreadIsRunning) {
+        statusThreadShouldRun = false;
+        _SAANKHYA_PHY_ANDROID_DEBUG("SaankhyaPHYAndroid::stop: setting statusThreadShouldRun: false");
+        while(this->statusThreadIsRunning) {
+            SL_SleepMS(100);
+            _SAANKHYA_PHY_ANDROID_DEBUG("SaankhyaPHYAndroid::stop: this->statusThreadIsRunning: %d", this->statusThreadIsRunning);
+        }
+        pthread_join(sThreadID, NULL);
+        _SAANKHYA_PHY_ANDROID_DEBUG("SaankhyaPHYAndroid::stop: after pthread_join for sThreadID");
+    }
+
     if(captureThreadIsRunning) {
         captureThreadShouldRun = false;
         _SAANKHYA_PHY_ANDROID_DEBUG("SaankhyaPHYAndroid::stop: setting captureThreadShouldRun: false");
@@ -234,16 +246,7 @@ int SaankhyaPHYAndroid::stop()
         _SAANKHYA_PHY_ANDROID_DEBUG("SaankhyaPHYAndroid::stop: after pthread_join for pThreadID");
     }
 
-    if(statusThreadIsRunning) {
-        statusThreadShouldRun = false;
-        _SAANKHYA_PHY_ANDROID_DEBUG("SaankhyaPHYAndroid::stop: setting statusThreadShouldRun: false");
-        while(this->statusThreadIsRunning) {
-            SL_SleepMS(100);
-            _SAANKHYA_PHY_ANDROID_DEBUG("SaankhyaPHYAndroid::stop: this->statusThreadIsRunning: %d", this->statusThreadIsRunning);
-        }
-        pthread_join(sThreadID, NULL);
-        _SAANKHYA_PHY_ANDROID_DEBUG("SaankhyaPHYAndroid::stop: after pthread_join for sThreadID");
-    }
+
     SL_I2cUnInit();
     _SAANKHYA_PHY_ANDROID_DEBUG("SaankhyaPHYAndroid::stop: return with this: %p", this);
     return 0;
@@ -1735,7 +1738,7 @@ Java_org_ngbp_libatsc3_middleware_android_phy_SaankhyaPHYAndroid_init(JNIEnv *en
     saankhyaPHYAndroid = new SaankhyaPHYAndroid(env, instance);
     saankhyaPHYAndroid->init();
 
-    _SAANKHYA_PHY_ANDROID_DEBUG("Java_org_ngbp_libatsc3_middleware_android_phy_SaankhyaPHYAndroid_init: return init, env: %p", env);
+    _SAANKHYA_PHY_ANDROID_DEBUG("Java_org_ngbp_libatsc3_middleware_android_phy_SaankhyaPHYAndroid_init: return, instance: %p", saankhyaPHYAndroid);
     saankhy_phy_android_cctor_mutex_local.unlock();
     return 0;
 }
@@ -1811,6 +1814,9 @@ Java_org_ngbp_libatsc3_middleware_android_phy_SaankhyaPHYAndroid_download_1bootl
         res = -1;
     } else {
         res = saankhyaPHYAndroid->download_bootloader_firmware(fd); //calls pre_init
+        //jjustman-2020-08-23 - hack, clear out our in-flight reference since we should re-enumerate
+        delete saankhyaPHYAndroid;
+        saankhyaPHYAndroid = nullptr;
     }
     return res;
 }
