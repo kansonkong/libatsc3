@@ -1410,6 +1410,17 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         });
     }
 
+
+    @Override
+    public void onAeatTablePresent(String aeatPayloadXML) {
+        Log.d("onAeatTablePresent", String.format("aeatPayloadXML:\n%s", aeatPayloadXML));
+    }
+
+    @Override
+    public void onSlsHeldEmissionPresent(int serviceId, String heldPayloadXML) {
+        Log.d("onSlsHeldEmissionPresent", String.format("serviceId: %d, heldPayloadXML:\n%s", serviceId, heldPayloadXML));
+    }
+
     public void onAlcObjectStatusMessage(String alc_object_status_message) {
         final String alc_object_status_message_to_update = alc_object_status_message;
         ServiceHandler.GetInstance().post(new Runnable() {

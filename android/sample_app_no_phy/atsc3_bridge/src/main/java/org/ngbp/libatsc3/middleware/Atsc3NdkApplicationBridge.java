@@ -51,6 +51,12 @@ public class Atsc3NdkApplicationBridge extends Atsc3BridgeNdkStaticJniLoader
         return 0;
     }
 
+    int atsc3_onAeatTablePresent(String sls_payload_xml) {
+
+        mActivity.onAeatTablePresent(sls_payload_xml);
+        return 0;
+    }
+
     int atsc3_onMfuPacket(int packet_id, int mpu_sequence_number, int sample_number, ByteBuffer byteBuffer, int length, long presentationTimeUs, int mfu_fragment_count_expected) {
         //working - 2019-10-03 - Log.d("AT3DrvIntf", "onMfuPacket, isVideo:"+isVideo+", length: "+length+ ", pts: "+presentationTimeUs);
 
@@ -196,6 +202,11 @@ public class Atsc3NdkApplicationBridge extends Atsc3BridgeNdkStaticJniLoader
 
     int atsc3_lls_sls_alc_on_route_mpd_patched(int service_id) {
         mActivity.routeDash_force_player_reload_mpd(service_id);
+        return 0;
+    }
+
+    int atsc3_onSlsHeldEmissionPresent(int serviceId, String heldPayloadXML) {
+        mActivity.onSlsHeldEmissionPresent(serviceId, heldPayloadXML);
         return 0;
     }
 }

@@ -53,11 +53,12 @@ class IAtsc3NdkApplicationBridge {
 
         virtual void atsc3_lls_sls_alc_on_route_mpd_patched_jni(uint16_t service_id) = 0;
 
-        virtual void atsc3_onSlsTablePresent(const char *sls_payload_xml) = 0;
+        virtual void atsc3_onSlsTablePresent(const char* sls_payload_xml) = 0;
+        virtual void atsc3_onAeatTablePresent(const char* aeat_payload_xml) = 0;
+        virtual void atsc3_onSlsHeldEmissionPresent(uint16_t service_id, const char *held_payload) = 0;
 
         virtual void atsc3_onAlcObjectStatusMessage(const char *fmt, ...) = 0;
 
-        virtual void atsc3_sls_on_held_trigger_received_callback_jni(uint16_t service_id, const char *held_payload) = 0;
 
         virtual void atsc3_onMfuSampleMissing(uint16_t i, uint32_t i1, uint32_t i2) = 0;
 

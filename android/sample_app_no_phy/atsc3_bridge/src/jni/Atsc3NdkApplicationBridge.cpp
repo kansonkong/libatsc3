@@ -10,7 +10,7 @@ Atsc3NdkApplicationBridge::Atsc3NdkApplicationBridge(JNIEnv* env, jobject jni_in
 void Atsc3NdkApplicationBridge::atsc3_onMfuPacket(uint16_t packet_id, uint32_t mpu_sequence_number, uint32_t sample_number, uint8_t* buffer, uint32_t bufferLen, uint64_t presentationUs, uint32_t mfu_fragment_count_rebuilt)
 {
     if (!bridgeConsumerJniEnv) {
-        _NDK_APPLICATION_BRIDGE_ERROR("ats3_onMfuPacket: Atsc3_Jni_Processing_Thread_Env is NULL!");
+        _NDK_APPLICATION_BRIDGE_ERROR("ats3_onMfuPacket: bridgeConsumerJniEnv is NULL!");
         return;
     }
 
@@ -36,7 +36,7 @@ void Atsc3NdkApplicationBridge::atsc3_onMfuPacket(uint16_t packet_id, uint32_t m
 void Atsc3NdkApplicationBridge::atsc3_onMfuPacketCorrupt(uint16_t packet_id, uint32_t mpu_sequence_number, uint32_t sample_number, uint8_t* buffer, uint32_t bufferLen, uint64_t presentationUs, uint32_t mfu_fragment_count_expected, uint32_t mfu_fragment_count_rebuilt)
 {
     if (!bridgeConsumerJniEnv) {
-        _NDK_APPLICATION_BRIDGE_ERROR("ats3_onMfuPacket: Atsc3_Jni_Processing_Thread_Env is NULL!");
+        _NDK_APPLICATION_BRIDGE_ERROR("ats3_onMfuPacket: bridgeConsumerJniEnv is NULL!");
         return;
     }
 
@@ -62,7 +62,7 @@ void Atsc3NdkApplicationBridge::atsc3_onMfuPacketCorrupt(uint16_t packet_id, uin
 void Atsc3NdkApplicationBridge::atsc3_onMfuPacketCorruptMmthSampleHeader(uint16_t packet_id, uint32_t mpu_sequence_number, uint32_t sample_number, uint8_t* buffer, uint32_t bufferLen, uint64_t presentationUs, uint32_t mfu_fragment_count_expected, uint32_t mfu_fragment_count_rebuilt)
 {
     if (!bridgeConsumerJniEnv) {
-        _NDK_APPLICATION_BRIDGE_ERROR("ats3_onMfuPacket: Atsc3_Jni_Processing_Thread_Env is NULL!");
+        _NDK_APPLICATION_BRIDGE_ERROR("ats3_onMfuPacket: bridgeConsumerJniEnv is NULL!");
         return;
     }
 
@@ -87,7 +87,7 @@ void Atsc3NdkApplicationBridge::atsc3_onMfuPacketCorruptMmthSampleHeader(uint16_
 //push extracted HEVC nal's to MediaCodec for init
 void Atsc3NdkApplicationBridge::atsc3_onInitHEVC_NAL_Extracted(uint16_t packet_id, uint32_t mpu_sequence_number, uint8_t* buffer, uint32_t bufferLen) {
     if (!bridgeConsumerJniEnv) {
-        _NDK_APPLICATION_BRIDGE_ERROR("ats3_onMfuPacket: Atsc3_Jni_Processing_Thread_Env is NULL!");
+        _NDK_APPLICATION_BRIDGE_ERROR("ats3_onMfuPacket: bridgeConsumerJniEnv is NULL!");
         return;
     }
 
@@ -119,7 +119,7 @@ void Atsc3NdkApplicationBridge::atsc3_onInitHEVC_NAL_Extracted(uint16_t packet_i
 //todo: jjustman-2019-10-20: fixme env should be thread-bound already...
 void Atsc3NdkApplicationBridge::atsc3_signallingContext_notify_video_packet_id_and_mpu_timestamp_descriptor(uint16_t video_packet_id, uint32_t mpu_sequence_number, uint64_t mpu_presentation_time_ntp64, uint32_t mpu_presentation_time_seconds, uint32_t mpu_presentation_time_microseconds) {
     if (!bridgeConsumerJniEnv) {
-        _NDK_APPLICATION_BRIDGE_ERROR("ats3_onMfuPacket: Atsc3_Jni_Processing_Thread_Env is NULL!");
+        _NDK_APPLICATION_BRIDGE_ERROR("ats3_onMfuPacket: bridgeConsumerJniEnv is NULL!");
         return;
     }
 
@@ -130,7 +130,7 @@ void Atsc3NdkApplicationBridge::atsc3_signallingContext_notify_video_packet_id_a
 void Atsc3NdkApplicationBridge::atsc3_signallingContext_notify_audio_packet_id_and_mpu_timestamp_descriptor(uint16_t audio_packet_id, uint32_t mpu_sequence_number, uint64_t mpu_presentation_time_ntp64, uint32_t mpu_presentation_time_seconds, uint32_t mpu_presentation_time_microseconds) {
     // this method can be called in native thread. we don't safely use pre-assigned mJniEnv.
     if (!bridgeConsumerJniEnv) {
-        _NDK_APPLICATION_BRIDGE_ERROR("ats3_onMfuPacket: Atsc3_Jni_Processing_Thread_Env is NULL!");
+        _NDK_APPLICATION_BRIDGE_ERROR("ats3_onMfuPacket: bridgeConsumerJniEnv is NULL!");
         return;
     }
 
@@ -141,7 +141,7 @@ void Atsc3NdkApplicationBridge::atsc3_signallingContext_notify_audio_packet_id_a
 
 void Atsc3NdkApplicationBridge::atsc3_signallingContext_notify_stpp_packet_id_and_mpu_timestamp_descriptor(uint16_t stpp_packet_id, uint32_t mpu_sequence_number, uint64_t mpu_presentation_time_ntp64, uint32_t mpu_presentation_time_seconds, uint32_t mpu_presentation_time_microseconds) {
     if (!bridgeConsumerJniEnv) {
-        _NDK_APPLICATION_BRIDGE_ERROR("ats3_onMfuPacket: Atsc3_Jni_Processing_Thread_Env is NULL!");
+        _NDK_APPLICATION_BRIDGE_ERROR("ats3_onMfuPacket: bridgeConsumerJniEnv is NULL!");
         return;
     }
 
@@ -150,7 +150,7 @@ void Atsc3NdkApplicationBridge::atsc3_signallingContext_notify_stpp_packet_id_an
 
 void Atsc3NdkApplicationBridge::atsc3_onMfuSampleMissing(uint16_t pcaket_id, uint32_t mpu_sequence_number, uint32_t sample_number) {
     if (!bridgeConsumerJniEnv) {
-        _NDK_APPLICATION_BRIDGE_ERROR("ats3_onMfuPacket: Atsc3_Jni_Processing_Thread_Env is NULL!");
+        _NDK_APPLICATION_BRIDGE_ERROR("ats3_onMfuPacket: bridgeConsumerJniEnv is NULL!");
         return;
     }
 
@@ -203,7 +203,7 @@ void Atsc3NdkApplicationBridge::atsc3_onAlcObjectStatusMessage(const char *fmt, 
     va_end(v);
 
     if (!bridgeConsumerJniEnv) {
-        _NDK_APPLICATION_BRIDGE_ERROR("ats3_onMfuPacket: Atsc3_Jni_Processing_Thread_Env is NULL!");
+        _NDK_APPLICATION_BRIDGE_ERROR("ats3_onMfuPacket: bridgeConsumerJniEnv is NULL!");
         return;
     }
 
@@ -211,7 +211,6 @@ void Atsc3NdkApplicationBridge::atsc3_onAlcObjectStatusMessage(const char *fmt, 
 
     int r = bridgeConsumerJniEnv->Get()->CallIntMethod(jni_instance_globalRef, atsc3_on_alc_object_status_message_ID, js);
     bridgeConsumerJniEnv->Get()->DeleteLocalRef(js);
-
 }
 
 int Atsc3NdkApplicationBridge::pinConsumerThreadAsNeeded() {
@@ -221,7 +220,7 @@ int Atsc3NdkApplicationBridge::pinConsumerThreadAsNeeded() {
 }
 
 int Atsc3NdkApplicationBridge::releasePinnedConsumerThreadAsNeeded() {
-    _NDK_APPLICATION_BRIDGE_INFO("Atsc3NdkApplicationBridge::releasePinnedConsumerThreadAsNeeded: Atsc3_Jni_Processing_Thread_Env is: %p:", bridgeConsumerJniEnv);
+    _NDK_APPLICATION_BRIDGE_INFO("Atsc3NdkApplicationBridge::releasePinnedConsumerThreadAsNeeded: bridgeConsumerJniEnv is: %p:", bridgeConsumerJniEnv);
     if(bridgeConsumerJniEnv) {
         delete bridgeConsumerJniEnv;
     }
@@ -244,7 +243,7 @@ void Atsc3NdkApplicationBridge::atsc3_onExtractedSampleDuration(uint16_t packet_
                                                                 uint32_t extracted_sample_duration_us) {
 
     if (!bridgeConsumerJniEnv) {
-        _NDK_APPLICATION_BRIDGE_ERROR("ats3_onMfuPacket: Atsc3_Jni_Processing_Thread_Env is NULL!");
+        _NDK_APPLICATION_BRIDGE_ERROR("ats3_onMfuPacket: bridgeConsumerJniEnv is NULL!");
         return;
     }
     int r = bridgeConsumerJniEnv->Get()->CallIntMethod(jni_instance_globalRef, atsc3_onExtractedSampleDurationID,
@@ -258,7 +257,7 @@ void Atsc3NdkApplicationBridge::atsc3_onExtractedSampleDuration(uint16_t packet_
 void Atsc3NdkApplicationBridge::atsc3_setVideoWidthHeightFromTrak(uint32_t width, uint32_t height) {
 
     if (!bridgeConsumerJniEnv) {
-        _NDK_APPLICATION_BRIDGE_ERROR("ats3_onMfuPacket: Atsc3_Jni_Processing_Thread_Env is NULL!");
+        _NDK_APPLICATION_BRIDGE_ERROR("ats3_onMfuPacket: bridgeConsumerJniEnv is NULL!");
         return;
     }
     int r = bridgeConsumerJniEnv->Get()->CallIntMethod(jni_instance_globalRef, atsc3_setVideoWidthHeightFromTrakID, width, height);
@@ -426,7 +425,7 @@ void Atsc3NdkApplicationBridge::atsc3_lls_sls_alc_on_object_close_flag_s_tsid_co
 
 void Atsc3NdkApplicationBridge::atsc3_lls_sls_alc_on_route_mpd_patched_jni(uint16_t service_id) {
     if (!bridgeConsumerJniEnv) {
-        _NDK_APPLICATION_BRIDGE_ERROR("ats3_onMfuPacket: Atsc3_Jni_Processing_Thread_Env is NULL!");
+        _NDK_APPLICATION_BRIDGE_ERROR("ats3_onMfuPacket: bridgeConsumerJniEnv is NULL!");
         return;
     }
 
@@ -439,7 +438,7 @@ void Atsc3NdkApplicationBridge::atsc3_lls_sls_alc_on_package_extract_completed_c
         return;
 
     if (!bridgeConsumerJniEnv) {
-        _NDK_APPLICATION_BRIDGE_ERROR("atsc3_lls_sls_alc_on_package_extract_completed_callback_jni::err on get jni env: Atsc3_Jni_Processing_Thread_Env");
+        _NDK_APPLICATION_BRIDGE_ERROR("atsc3_lls_sls_alc_on_package_extract_completed_callback_jni::err on get jni env: bridgeConsumerJniEnv");
         return;
     }
 
@@ -581,17 +580,6 @@ void Atsc3NdkApplicationBridge::atsc3_lls_sls_alc_on_package_extract_completed_c
     bridgeConsumerJniEnv->Get()->DeleteLocalRef(jobj);
 }
 
-void Atsc3NdkApplicationBridge::atsc3_sls_on_held_trigger_received_callback_jni(uint16_t service_id, const char *held_payload) {
-	if (!atsc3_lls_sls_alc_on_route_mpd_patched_ID)
-		return;
-
-	if (!bridgeConsumerJniEnv) {
-		_NDK_APPLICATION_BRIDGE_ERROR("!! err on get jni env");
-		return;
-	}
-
-	atsc3_onAlcObjectStatusMessage("HELD: service_id: %d, xml:\n%s", service_id, held_payload);
-}
 
 void Atsc3NdkApplicationBridge::atsc3_onSlsTablePresent(const char *sls_payload_xml) {
     if (!atsc3_onSlsTablePresent_ID) {
@@ -601,7 +589,7 @@ void Atsc3NdkApplicationBridge::atsc3_onSlsTablePresent(const char *sls_payload_
     }
 
     if (!bridgeConsumerJniEnv) {
-        _NDK_APPLICATION_BRIDGE_ERROR("!! err on get jni env");
+		_NDK_APPLICATION_BRIDGE_ERROR("Atsc3NdkApplicationBridge::atsc3_onSlsHeldEmissionPresent: bridgeConsumerJniEnv is NULL");
         return;
     }
 
@@ -609,6 +597,41 @@ void Atsc3NdkApplicationBridge::atsc3_onSlsTablePresent(const char *sls_payload_
     int r = bridgeConsumerJniEnv->Get()->CallIntMethod(jni_instance_globalRef, atsc3_onSlsTablePresent_ID, xml_payload);
     bridgeConsumerJniEnv->Get()->DeleteLocalRef(xml_payload);
 }
+
+
+
+void Atsc3NdkApplicationBridge::atsc3_onAeatTablePresent(const char *aeat_payload_xml) {
+    if (!atsc3_onAeatTablePresent_ID) {
+        _NDK_APPLICATION_BRIDGE_ERROR("atsc3_onAeatTablePresent: %p", atsc3_onAeatTablePresent_ID);
+
+        return;
+    }
+
+    if (!bridgeConsumerJniEnv) {
+		_NDK_APPLICATION_BRIDGE_ERROR("Atsc3NdkApplicationBridge::atsc3_onSlsHeldEmissionPresent: bridgeConsumerJniEnv is NULL");
+        return;
+    }
+
+    jstring xml_payload = bridgeConsumerJniEnv->Get()->NewStringUTF(aeat_payload_xml);
+    int r = bridgeConsumerJniEnv->Get()->CallIntMethod(jni_instance_globalRef, atsc3_onAeatTablePresent_ID, xml_payload);
+    bridgeConsumerJniEnv->Get()->DeleteLocalRef(xml_payload);
+}
+
+
+void Atsc3NdkApplicationBridge::atsc3_onSlsHeldEmissionPresent(uint16_t service_id, const char *held_payload_xml) {
+	if (!atsc3_onSlsHeldEmissionPresent_ID)
+		return;
+
+	if (!bridgeConsumerJniEnv) {
+		_NDK_APPLICATION_BRIDGE_ERROR("Atsc3NdkApplicationBridge::atsc3_onSlsHeldEmissionPresent: bridgeConsumerJniEnv is NULL");
+		return;
+	}
+
+    jstring xml_payload = bridgeConsumerJniEnv->Get()->NewStringUTF(held_payload_xml);
+    int r = bridgeConsumerJniEnv->Get()->CallIntMethod(jni_instance_globalRef, atsc3_onSlsHeldEmissionPresent_ID, service_id, xml_payload);
+    bridgeConsumerJniEnv->Get()->DeleteLocalRef(xml_payload);
+}
+
 
 void Atsc3NdkApplicationBridge::atsc3_phy_notify_plp_selection_change_set_callback(atsc3_phy_notify_plp_selection_change_f atsc3_phy_notify_plp_selection_change, void* context) {
     this->atsc3_phy_notify_plp_selection_change = atsc3_phy_notify_plp_selection_change;
@@ -651,7 +674,7 @@ Java_org_ngbp_libatsc3_middleware_Atsc3NdkApplicationBridge_init(JNIEnv *env, jo
 
     apiAppBridge->mOnLogMsgId = env->GetMethodID(jniClassReference, "onLogMsg", "(Ljava/lang/String;)I");
     if (apiAppBridge->mOnLogMsgId == NULL) {
-        _NDK_APPLICATION_BRIDGE_ERROR("AppBridge_init - cnnot find 'onLogMsg' method id");
+        _NDK_APPLICATION_BRIDGE_ERROR("AppBridge_init - cannot find 'onLogMsg' method id");
         return -1;
     }
 
@@ -661,6 +684,20 @@ Java_org_ngbp_libatsc3_middleware_Atsc3NdkApplicationBridge_init(JNIEnv *env, jo
         _NDK_APPLICATION_BRIDGE_ERROR("Atsc3NdkApplicationBridge_init: cannot find 'atsc3_onSlsTablePresent_ID' method id");
         return -1;
     }
+
+    //atsc3_onAeatTablePresent_ID
+     apiAppBridge->atsc3_onAeatTablePresent_ID = env->GetMethodID(jniClassReference, "atsc3_onAeatTablePresent", "(Ljava/lang/String;)I");
+     if (apiAppBridge->atsc3_onAeatTablePresent_ID == NULL) {
+         _NDK_APPLICATION_BRIDGE_ERROR("Atsc3NdkApplicationBridge_init: cannot find 'atsc3_onAeatTablePresent_ID' method id");
+         return -1;
+     }
+
+     //atsc3_onSlsHeldEmissionPresent
+     apiAppBridge->atsc3_onSlsHeldEmissionPresent_ID = env->GetMethodID(jniClassReference, "atsc3_onSlsHeldEmissionPresent", "(ILjava/lang/String;)I");
+     if (apiAppBridge->atsc3_onSlsHeldEmissionPresent_ID == NULL) {
+     	_NDK_APPLICATION_BRIDGE_ERROR("Atsc3NdkApplicationBridge_init: cannot find 'atsc3_onSlsHeldEmissionPresent_ID' method id");
+        	return -1;
+     }
 
     //java.nio.ByteBuffer, L: fully qualified class, J: long
     apiAppBridge->atsc3_onMfuPacketID = env->GetMethodID(jniClassReference, "atsc3_onMfuPacket", "(IIILjava/nio/ByteBuffer;IJI)I");
@@ -780,8 +817,13 @@ Java_org_ngbp_libatsc3_middleware_Atsc3NdkApplicationBridge_init(JNIEnv *env, jo
     apiAppBridge->jni_java_util_ArrayList_add  = env->GetMethodID(apiAppBridge->jni_java_util_ArrayList, "add", "(Ljava/lang/Object;)Z");
     _NDK_APPLICATION_BRIDGE_TRACE("Atsc3NdkApplicationBridge_init: creating method ref for  apiAppBridge->jni_java_util_ArrayList_add");
 
+
+
+
     atsc3_core_service_application_bridge_init(apiAppBridge);
     _NDK_APPLICATION_BRIDGE_INFO("Atsc3NdkApplicationBridge_init: done, with apiAppBridge: %p", apiAppBridge);
+
+
 
     return 0;
 }
