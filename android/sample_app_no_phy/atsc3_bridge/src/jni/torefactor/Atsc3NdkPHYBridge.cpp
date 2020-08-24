@@ -116,22 +116,22 @@ void Atsc3NdkPHYBridge::LogMsgF(const char *fmt, ...)
     LogMsg(msg);
 }
 
-int Atsc3NdkPHYBridge::pinFromRxCaptureThread() {
+int Atsc3NdkPHYBridge::pinCaptureThreadAsNeeded() {
     printf("Atsc3NdkPHYBridge::Atsc3_Jni_Processing_Thread_Env: mJavaVM: %p", mJavaVM);
     Atsc3_Jni_Processing_Thread_Env = new Atsc3JniEnv(mJavaVM);
     return 0;
 };
 
 int Atsc3NdkPHYBridge::pinFromRxProcessingThread() {
-    printf("Atsc3NdkPHYBridge::pinFromRxProcessingThread: mJavaVM: %p", mJavaVM);
+    printf("Atsc3NdkPHYBridge::pinConsumerThreadAsNeeded: mJavaVM: %p", mJavaVM);
     Atsc3_Jni_Processing_Thread_Env = new Atsc3JniEnv(mJavaVM);
     return 0;
 }
 
 
-int Atsc3NdkPHYBridge::pinFromRxStatusThread() {
-    printf("Atsc3NdkPHYBridge::pinFromRxStatusThread: mJavaVM: %p", mJavaVM);
-    Atsc3_Jni_Status_Thread_Env = new Atsc3JniEnv(mJavaVM);
+int Atsc3NdkPHYBridge::pinStatusThreadAsNeeded() {
+    printf("Atsc3NdkPHYBridge::pinStatusThreadAsNeeded: mJavaVM: %p", mJavaVM);
+    pinnedStatusJniEnv = new Atsc3JniEnv(mJavaVM);
     return 0;
 }
 
@@ -160,26 +160,26 @@ void Atsc3NdkPHYBridge::atsc3_update_rf_stats(int32_t tuner_lock,
     if (!JReady() || !mOnLogMsgId)
         return;
 
-    if (!Atsc3_Jni_Status_Thread_Env) {
+    if (!pinnedStatusJniEnv) {
         NDK_PHY_BRIDGE_ERROR("Atsc3NdkPHYBridge:atsc3_update_rf_stats: err on get jni env: Atsc3_Jni_Status_Thread_Env");
         return;
     }
-    int r = Atsc3_Jni_Status_Thread_Env->Get()->CallIntMethod(mClsDrvIntf, atsc3_rf_phy_status_callback_ID,
-                                                              tuner_lock,
-                                                              rssi,
-                                                              modcod_valid,
-                                                              plp_fec_type,
-                                                              plp_mod,
-                                                              plp_cod,
-                                                              nRfLevel1000,
-                                                              nSnr1000,
-                                                              ber_pre_ldpc_e7,
-                                                              ber_pre_bch_e9,
-                                                              fer_post_bch_e6,
-                                                              demod_lock_status,
-                                                              cpu_status,
-                                                              plp_any,
-                                                              plp_all);
+    int r = pinnedStatusJniEnv->Get()->CallIntMethod(mClsDrvIntf, atsc3_rf_phy_status_callback_ID,
+                                                     tuner_lock,
+                                                     rssi,
+                                                     modcod_valid,
+                                                     plp_fec_type,
+                                                     plp_mod,
+                                                     plp_cod,
+                                                     nRfLevel1000,
+                                                     nSnr1000,
+                                                     ber_pre_ldpc_e7,
+                                                     ber_pre_bch_e9,
+                                                     fer_post_bch_e6,
+                                                     demod_lock_status,
+                                                     cpu_status,
+                                                     plp_any,
+                                                     plp_all);
 
 }
 
@@ -188,11 +188,11 @@ void Atsc3NdkPHYBridge::atsc3_update_rf_bw_stats(uint64_t total_pkts, uint64_t t
                                                  unsigned int total_lmts) {
     if (!JReady() || !mOnLogMsgId)
         return;
-    if (!Atsc3_Jni_Status_Thread_Env) {
+    if (!pinnedStatusJniEnv) {
         NDK_PHY_BRIDGE_ERROR("Atsc3NdkPHYBridge:atsc3_update_rf_bw_stats: err on get jni env: Atsc3_Jni_Status_Thread_Env");
         return;
     }
-    int r = Atsc3_Jni_Status_Thread_Env->Get()->CallIntMethod(mClsDrvIntf, atsc3_update_rf_bw_stats_ID, total_pkts, total_bytes, total_lmts);
+    int r = pinnedStatusJniEnv->Get()->CallIntMethod(mClsDrvIntf, atsc3_update_rf_bw_stats_ID, total_pkts, total_bytes, total_lmts);
 }
 
 //Java to native methods

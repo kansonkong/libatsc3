@@ -8,7 +8,6 @@ SaankhyaPHYAndroid* saankhyaPHYAndroid = nullptr;
 CircularBuffer SaankhyaPHYAndroid::cb = nullptr;
 mutex SaankhyaPHYAndroid::Cctor_muxtex;
 mutex SaankhyaPHYAndroid::CircularBufferMutex;
-mutex SaankhyaPHYAndroid::SL_I2C_command_mutex;
 
 SaankhyaPHYAndroid::SaankhyaPHYAndroid(JNIEnv* env, jobject jni_instance) {
     this->env = env;
@@ -23,7 +22,7 @@ SaankhyaPHYAndroid::SaankhyaPHYAndroid(JNIEnv* env, jobject jni_instance) {
 
 SaankhyaPHYAndroid::~SaankhyaPHYAndroid() {
 
-    _SAANKHYA_PHY_ANDROID_INFO("SaankhyaPHYAndroid::~SaankhyaPHYAndroid - deleting with this: %p", this);
+    _SAANKHYA_PHY_ANDROID_INFO("SaankhyaPHYAndroid::~SaankhyaPHYAndroid - enter: deleting with this: %p", this);
     this->stop();
 
     if(atsc3_ndk_application_bridge_get_instance()) {
@@ -121,17 +120,20 @@ SaankhyaPHYAndroid::~SaankhyaPHYAndroid() {
             08-24 07:30:12.892 12165 12165 F DEBUG   :       #41 pc 00000000004f31c0  /apex/com.android.runtime/lib64/libart.so (art::Thread::CreateCallback(void*)+1176) (BuildId: 9f61584f79f2db8d8a1869001bfb944e)
             08-24 07:30:12.892 12165 12165 F DEBUG   :       #42 pc 00000000000e6f10  /apex/com.android.runtime/lib64/bionic/libc.so (__pthread_start(void*)+36) (BuildId: b0750023d0cf44584c064da02400c159)
             08-24 07:30:12.892 12165 12165 F DEBUG   :       #43 pc 00000000000850c8  /apex/com.android.runtime/lib64/bionic/libc.so (__start_thread+64) (BuildId: b0750023d0cf44584c064da02400c159)
-        */
+
 
         if (this->env && this->jni_instance_globalRef) {
             this->env->DeleteGlobalRef(this->jni_instance_globalRef);
             this->jni_instance_globalRef = nullptr;
         }
+       */
     }
+
+    _SAANKHYA_PHY_ANDROID_INFO("SaankhyaPHYAndroid::~SaankhyaPHYAndroid - exit: deleting with this: %p", this);
 }
 
 void SaankhyaPHYAndroid::pinProducerThreadAsNeeded() {
-    producerJniEnv = new Atsc3JniEnv(atsc3_ndk_phy_saankhya_static_loader_get_javaVM());
+    producerJniEnv = new Atsc3JniEnv(atsc3_ndk_phy_saankhya_static_loader_get_javaVM(), "SaankhyaPHYAndroid::producerThread");
 }
 
 void SaankhyaPHYAndroid::releasePinnedProducerThreadAsNeeded() {
@@ -144,7 +146,7 @@ void SaankhyaPHYAndroid::releasePinnedProducerThreadAsNeeded() {
 void SaankhyaPHYAndroid::pinConsumerThreadAsNeeded() {
     _SAANKHYA_PHY_ANDROID_DEBUG("SaankhyaPHYAndroid::pinConsumerThreadAsNeeded: mJavaVM: %p, atsc3_ndk_application_bridge instance: %p", atsc3_ndk_phy_saankhya_static_loader_get_javaVM(), atsc3_ndk_application_bridge_get_instance());
 
-    consumerJniEnv = new Atsc3JniEnv(atsc3_ndk_phy_saankhya_static_loader_get_javaVM());
+    consumerJniEnv = new Atsc3JniEnv(atsc3_ndk_phy_saankhya_static_loader_get_javaVM(), "SaankhyaPHYAndroid::consumerThread");
     if(atsc3_ndk_application_bridge_get_instance()) {
         atsc3_ndk_application_bridge_get_instance()->pinConsumerThreadAsNeeded();
     }
@@ -162,7 +164,7 @@ void SaankhyaPHYAndroid::releasePinnedConsumerThreadAsNeeded() {
 }
 
 void SaankhyaPHYAndroid::pinStatusThreadAsNeeded() {
-    statusJniEnv = new Atsc3JniEnv(atsc3_ndk_phy_saankhya_static_loader_get_javaVM());
+    statusJniEnv = new Atsc3JniEnv(atsc3_ndk_phy_saankhya_static_loader_get_javaVM(), "SaankhyaPHYAndroid::statusThread");
 
     if(atsc3_ndk_phy_bridge_get_instance()) {
         atsc3_ndk_phy_bridge_get_instance()->pinStatusThreadAsNeeded();
@@ -206,29 +208,60 @@ bool SaankhyaPHYAndroid::is_running() {
 
 int SaankhyaPHYAndroid::stop()
 {
+    _SAANKHYA_PHY_ANDROID_DEBUG("SaankhyaPHYAndroid::stop: enter with this: %p", this);
+
     if(captureThreadIsRunning) {
         captureThreadShouldRun = false;
+        _SAANKHYA_PHY_ANDROID_DEBUG("SaankhyaPHYAndroid::stop: setting captureThreadShouldRun: false");
+
         SL_RxDataStop();
+        while(this->captureThreadIsRunning) {
+            SL_SleepMS(100);
+            _SAANKHYA_PHY_ANDROID_DEBUG("SaankhyaPHYAndroid::stop: this->captureThreadIsRunning: %d", this->captureThreadIsRunning);
+        }
         pthread_join(cThreadID, NULL);
-        releasePinnedProducerThreadAsNeeded();
+        _SAANKHYA_PHY_ANDROID_DEBUG("SaankhyaPHYAndroid::stop: after pthread_join for cThreadID");
     }
+
     if(processThreadIsRunning) {
         processThreadShouldRun = false;
+        _SAANKHYA_PHY_ANDROID_DEBUG("SaankhyaPHYAndroid::stop: setting processThreadShouldRun: false");
+        while(this->processThreadIsRunning) {
+            SL_SleepMS(100);
+            _SAANKHYA_PHY_ANDROID_DEBUG("SaankhyaPHYAndroid::stop: this->processThreadIsRunning: %d", this->processThreadIsRunning);
+        }
         pthread_join(pThreadID, NULL);
-        releasePinnedConsumerThreadAsNeeded();
+        _SAANKHYA_PHY_ANDROID_DEBUG("SaankhyaPHYAndroid::stop: after pthread_join for pThreadID");
     }
+
     if(statusThreadIsRunning) {
         statusThreadShouldRun = false;
+        _SAANKHYA_PHY_ANDROID_DEBUG("SaankhyaPHYAndroid::stop: setting statusThreadShouldRun: false");
+        while(this->statusThreadIsRunning) {
+            SL_SleepMS(100);
+            _SAANKHYA_PHY_ANDROID_DEBUG("SaankhyaPHYAndroid::stop: this->statusThreadIsRunning: %d", this->statusThreadIsRunning);
+        }
         pthread_join(sThreadID, NULL);
-        releasePinnedStatusThreadAsNeeded();
+        _SAANKHYA_PHY_ANDROID_DEBUG("SaankhyaPHYAndroid::stop: after pthread_join for sThreadID");
     }
+    SL_I2cUnInit();
+    _SAANKHYA_PHY_ANDROID_DEBUG("SaankhyaPHYAndroid::stop: return with this: %p", this);
     return 0;
 }
 
+/*
+ * jjustman-2020-08-23: NOTE - do NOT call delete slApi*, only call deinit() otherwise you will get fortify crashes, ala:
+ *  08-24 08:29:32.717 18991 18991 F libc    : FORTIFY: pthread_mutex_destroy called on a destroyed mutex (0x783b5c87b8)
+ */
+
 int SaankhyaPHYAndroid::deinit()
 {
+    _SAANKHYA_PHY_ANDROID_DEBUG("SaankhyaPHYAndroid::deinit: enter with this: %p", this);
+
     this->stop();
     delete this;
+    _SAANKHYA_PHY_ANDROID_DEBUG("SaankhyaPHYAndroid::deinit: return after delete this, with this: %p", this);
+
     return 0;
 }
 
@@ -1345,11 +1378,11 @@ void* SaankhyaPHYAndroid::ProcessThread(void* context)
     printf("SaankhyaPHYAndroid::ProcessThread: with context: %p", context);
 
     SaankhyaPHYAndroid* apiImpl = (SaankhyaPHYAndroid*) context;
+    apiImpl->processThreadIsRunning = true;
+
     apiImpl->pinConsumerThreadAsNeeded();
 
     apiImpl->resetProcessThreadStatistics();
-
-    apiImpl->processThreadIsRunning = true;
 
     while (apiImpl->processThreadShouldRun)
     {
@@ -1361,7 +1394,11 @@ void* SaankhyaPHYAndroid::ProcessThread(void* context)
         usleep(10000);
     }
 
+    apiImpl->releasePinnedConsumerThreadAsNeeded();
+
     apiImpl->processThreadIsRunning = false;
+    _SAANKHYA_PHY_ANDROID_INFO("SaankhyaPHYAndroid::ProcessThread complete");
+
     return 0;
 }
 
@@ -1369,12 +1406,18 @@ void* SaankhyaPHYAndroid::ProcessThread(void* context)
 void* SaankhyaPHYAndroid::CaptureThread(void* context)
 {
     SaankhyaPHYAndroid* apiImpl = (SaankhyaPHYAndroid*) context;
-
-    apiImpl->pinProducerThreadAsNeeded();
     apiImpl->captureThreadIsRunning = true;
 
+    apiImpl->pinProducerThreadAsNeeded();
+
     SL_RxDataStart((RxDataCB)&SaankhyaPHYAndroid::RxDataCallback);
+
+    apiImpl->releasePinnedProducerThreadAsNeeded();
+
     apiImpl->captureThreadIsRunning = false;
+
+    _SAANKHYA_PHY_ANDROID_INFO("SaankhyaPHYAndroid::CaptureThread complete");
+
     return 0;
 }
 
@@ -1382,10 +1425,9 @@ void* SaankhyaPHYAndroid::TunerStatusThread(void* context)
 {
 
     SaankhyaPHYAndroid* apiImpl = (SaankhyaPHYAndroid*) context;
+    apiImpl->statusThreadIsRunning = true;
 
     apiImpl->pinStatusThreadAsNeeded();
-
-    apiImpl->statusThreadIsRunning = true;
 
     SL_Result_t sl_res;
     SL_TunerResult_t tres;
@@ -1406,7 +1448,7 @@ void* SaankhyaPHYAndroid::TunerStatusThread(void* context)
     double ber_l1b;
     double ber_l1d;
     double ber_plp0;
-    unique_lock<mutex> SL_I2C_command_mutex_tuner_status_io(SL_I2C_command_mutex, std::defer_lock);
+    unique_lock<mutex> SL_I2C_command_mutex_tuner_status_io(apiImpl->SL_I2C_command_mutex, std::defer_lock);
     bool first_run = true;
 
     while(apiImpl->statusThreadShouldRun) {
@@ -1554,6 +1596,7 @@ void* SaankhyaPHYAndroid::TunerStatusThread(void* context)
             }
     }
 
+    apiImpl->releasePinnedStatusThreadAsNeeded();
     apiImpl->statusThreadIsRunning = false;
     return 0;
 }
@@ -1686,7 +1729,6 @@ Java_org_ngbp_libatsc3_middleware_android_phy_SaankhyaPHYAndroid_init(JNIEnv *en
     if(saankhyaPHYAndroid) {
         _SAANKHYA_PHY_ANDROID_ERROR("Java_org_ngbp_libatsc3_middleware_android_phy_SaankhyaPHYAndroid_init: start init, saankhyaPHYAndroid is present: %p, calling deinit/delete", saankhyaPHYAndroid);
         saankhyaPHYAndroid->deinit();
-        delete saankhyaPHYAndroid;
         saankhyaPHYAndroid = nullptr;
     }
 
