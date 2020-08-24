@@ -12,7 +12,9 @@ public interface IAtsc3NdkApplicationBridgeCallbacks {
     public File jni_getCacheDir(); //hack, todo - move to pure NDK impl
 
     //service selection/notification callbacks
-    public void onSlsTablePresent(String sls_payload_xml);
+    public void onSlsTablePresent(String slsPayloadXML);
+    public void onAeatTablePresent(String aeatPayloadXML);
+    public void onSlsHeldEmissionPresent(int serviceId, String heldPayloadXML);
 
     //MMT specific MFU callbacks
     public void pushMfuByteBufferFragment(MfuByteBufferFragment mfuByteBufferFragment);
@@ -22,6 +24,8 @@ public interface IAtsc3NdkApplicationBridgeCallbacks {
     public void onAlcObjectStatusMessage(String alc_object_status_message);
     public void onPackageExtractCompleted(PackageExtractEnvelopeMetadataAndPayload packageExtractEnvelopeMetadataAndPayload);
     public void routeDash_force_player_reload_mpd(int ServiceID);
+
+
 
 
 }

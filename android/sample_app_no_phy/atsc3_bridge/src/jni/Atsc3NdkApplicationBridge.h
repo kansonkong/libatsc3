@@ -86,10 +86,11 @@ public:
     void atsc3_lls_sls_alc_on_route_mpd_patched_jni(uint16_t service_id);
 
     void atsc3_onSlsTablePresent(const char *sls_payload_xml);
+    void atsc3_onAeatTablePresent(const char* aeat_payload_xml);
+    void atsc3_onSlsHeldEmissionPresent(uint16_t service_id, const char *held_payload);
 
     void atsc3_onAlcObjectStatusMessage(const char *fmt, ...);
 
-    void atsc3_sls_on_held_trigger_received_callback_jni(uint16_t service_id, const char *held_payload);
 
     void atsc3_onMfuSampleMissing(uint16_t i, uint32_t i1, uint32_t i2);
 
@@ -133,6 +134,10 @@ public:
     jmethodID mOnLogMsgId = nullptr;
 
     jmethodID atsc3_onSlsTablePresent_ID = nullptr; //push LLS SLT table update
+    jmethodID atsc3_onAeatTablePresent_ID = nullptr;
+    jmethodID atsc3_onSlsHeldEmissionPresent_ID = nullptr;
+
+
     jmethodID atsc3_onMfuPacketID = nullptr; //java method for pushing to a/v codec buffers
     jmethodID atsc3_onMfuPacketCorruptID = nullptr; //java method for pushing to a/v codec buffers
     jmethodID atsc3_onMfuPacketCorruptMmthSampleHeaderID = nullptr; //java method for pushing to a/v codec buffers
@@ -162,6 +167,7 @@ public:
     jclass      jni_java_util_ArrayList = nullptr;
     jmethodID   jni_java_util_ArrayList_cctor = nullptr;
     jmethodID   jni_java_util_ArrayList_add = nullptr;
+
 
     atsc3_phy_notify_plp_selection_change_f   atsc3_phy_notify_plp_selection_change;
     void*                                      atsc3_phy_notify_plp_selection_change_context;
