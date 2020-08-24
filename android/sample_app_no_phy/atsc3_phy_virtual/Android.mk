@@ -18,14 +18,15 @@ MY_CUR_PATH := $(LOCAL_PATH)
 ##---
 
 ##jjustman-2020-08-12 - remove prefab LOCAL_SRC_FILES := $(LOCAL_PATH)/../libatsc3_core/build/intermediates/prefab_package/debug/prefab/modules/atsc3_core/libs/android.$(TARGET_ARCH_ABI)/libatsc3_core.so
-include $(CLEAR_VARS)
-LOCAL_MODULE := local-pv-atsc3_core
-LOCAL_SRC_FILES := $(LOCAL_PATH)/../atsc3_core/build/intermediates/ndkBuild/debug/obj/local/$(TARGET_ARCH_ABI)/libatsc3_core.so
-ifneq ($(MAKECMDGOALS),clean)
-	ifneq ($(MAKECMDGOALS),generateJsonModelDebug)
-include $(PREBUILT_SHARED_LIBRARY)
-	endif
-endif
+##vmatiash-2020-08-21 - module can't depend on libraries that is not built. This dependency specified in LOCAL_LDLIBS
+#include $(CLEAR_VARS)
+#LOCAL_MODULE := local-pv-atsc3_core
+#LOCAL_SRC_FILES := $(LOCAL_PATH)/../atsc3_core/build/intermediates/ndkBuild/debug/obj/local/$(TARGET_ARCH_ABI)/libatsc3_core.so
+#ifneq ($(MAKECMDGOALS),clean)
+#	ifneq ($(MAKECMDGOALS),generateJsonModelDebug)
+#include $(PREBUILT_SHARED_LIBRARY)
+#	endif
+#endif
 
 
 #
@@ -36,17 +37,18 @@ endif
 #ifneq ($(MAKECMDGOALS),clean)
 #	include $(PREBUILT_SHARED_LIBRARY)
 #endif
-##jjustman-2020-08-12 - remove prefab LOCAL_SRC_FILES := $(LOCAL_PATH)/../libatsc3_core/build/intermediates/prefab_package/debug/prefab/modules/atsc3_core/libs/android.$(TARGET_ARCH_ABI)/libatsc3_core.so
-include $(CLEAR_VARS)
-LOCAL_MODULE := local-pv-atsc3_bridge
-LOCAL_SRC_FILES := $(LOCAL_PATH)/../atsc3_bridge/build/intermediates/ndkBuild/debug/obj/local/$(TARGET_ARCH_ABI)/libatsc3_bridge.so
 
-$(info $(MAKECMDGOALS))
-ifneq ($(MAKECMDGOALS),clean)
-	ifneq ($(MAKECMDGOALS),generateJsonModelDebug)
-include $(PREBUILT_SHARED_LIBRARY)
-	endif
-endif
+##jjustman-2020-08-12 - remove prefab LOCAL_SRC_FILES := $(LOCAL_PATH)/../libatsc3_core/build/intermediates/prefab_package/debug/prefab/modules/atsc3_core/libs/android.$(TARGET_ARCH_ABI)/libatsc3_core.so
+##vmatiash-2020-08-21 - module can't depend on libraries that is not built. This dependency specified in LOCAL_LDLIBS
+#include $(CLEAR_VARS)
+#LOCAL_MODULE := local-pv-atsc3_bridge
+#LOCAL_SRC_FILES := $(LOCAL_PATH)/../atsc3_bridge/build/intermediates/ndkBuild/debug/obj/local/$(TARGET_ARCH_ABI)/libatsc3_bridge.so
+#$(info $(MAKECMDGOALS))
+#ifneq ($(MAKECMDGOALS),clean)
+#	ifneq ($(MAKECMDGOALS),generateJsonModelDebug)
+#include $(PREBUILT_SHARED_LIBRARY)
+#	endif
+#endif
 
 # ---
 # libsrt library
