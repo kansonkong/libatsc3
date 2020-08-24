@@ -41,31 +41,31 @@ LOCAL_CFLAGS += -g -O0 -fpack-struct=8 \
 
 #jjustman-2020-08-19 - fixup for invalid soname in .so
 LOCAL_LDLIBS += -ldl -lc++_shared -llog -landroid
-
-
 include $(BUILD_SHARED_LIBRARY)
+
+
 # ---------------------------
-
-include $(CLEAR_VARS)
-LOCAL_MODULE := local-pv-atsc3_core
-LOCAL_SRC_FILES := $(LOCAL_PATH)/../atsc3_core/build/intermediates/ndkBuild/debug/obj/local/$(TARGET_ARCH_ABI)/libatsc3_core.so
-ifneq ($(MAKECMDGOALS),clean)
-	ifneq ($(MAKECMDGOALS),generateJsonModelDebug)
-include $(PREBUILT_SHARED_LIBRARY)
-	endif
-endif
-
-include $(CLEAR_VARS)
-LOCAL_MODULE := local-pv-atsc3_bridge
-LOCAL_SRC_FILES := $(LOCAL_PATH)/../atsc3_bridge/build/intermediates/ndkBuild/debug/obj/local/$(TARGET_ARCH_ABI)/libatsc3_bridge.so
-$(info $(MAKECMDGOALS))
-ifneq ($(MAKECMDGOALS),clean)
-	ifneq ($(MAKECMDGOALS),generateJsonModelDebug)
-include $(PREBUILT_SHARED_LIBRARY)
-	endif
-endif
-
-
+#
+#include $(CLEAR_VARS)
+#LOCAL_MODULE := local-pv-atsc3_core
+#LOCAL_SRC_FILES := $(LOCAL_PATH)/../atsc3_core/build/intermediates/ndkBuild/debug/obj/local/$(TARGET_ARCH_ABI)/libatsc3_core.so
+#ifneq ($(MAKECMDGOALS),clean)
+#	ifneq ($(MAKECMDGOALS),generateJsonModelDebug)
+#include $(PREBUILT_SHARED_LIBRARY)
+#	endif
+#endif
+#
+#include $(CLEAR_VARS)
+#LOCAL_MODULE := local-pv-atsc3_bridge
+#LOCAL_SRC_FILES := $(LOCAL_PATH)/../atsc3_bridge/build/intermediates/ndkBuild/debug/obj/local/$(TARGET_ARCH_ABI)/libatsc3_bridge.so
+#$(info $(MAKECMDGOALS))
+#ifneq ($(MAKECMDGOALS),clean)
+#	ifneq ($(MAKECMDGOALS),generateJsonModelDebug)
+#include $(PREBUILT_SHARED_LIBRARY)
+#	endif
+#endif
+#
+#
 
 # jjustman-2020-08-19: NOTE regarding missing SONAME tag
 #	...this was caused by missing SONAME tag on the generated shared library. When this tag is missing,
@@ -256,12 +256,12 @@ LOCAL_LDLIBS += -ldl -lc++_shared -llog -landroid -lz \
 
 LOCAL_LDFLAGS += -fPIE -fPIC \
 				-L $(LOCAL_PATH)/../atsc3_bridge/build/intermediates/ndkBuild/debug/obj/local/$(TARGET_ARCH_ABI)/ \
-				-L $(LOCAL_PATH)/../atsc3_core/build/intermediates/ndkBuild/debug/obj/local/$(TARGET_ARCH_ABI)/ \
+				-L $(LOCAL_PATH)/../atsc3_core/build/intermediates/ndkBuild/debug/obj/local/$(TARGET_ARCH_ABI)/
 
-
-LOCAL_SHARED_LIBRARIES := P3_FW_BUILD SL_SDR_ICCM_BUILD SL_SDR_DCCM_BUILD SL_SDR_ATSC3_BUILD libusb_android libSiTune_Tuner_Lib-prebuilt libNXP_Tuner_Lib-prebuilt
-
-# libSiTune_Tuner_Lib-prebuilt libNXP_Tuner_Lib-prebuilt
+LOCAL_SHARED_LIBRARIES := P3_FW_BUILD SL_SDR_ICCM_BUILD SL_SDR_DCCM_BUILD SL_SDR_ATSC3_BUILD \
+							libusb_android \
+							libSiTune_Tuner_Lib-prebuilt \
+							libNXP_Tuner_Lib-prebuilt
 
 include $(BUILD_SHARED_LIBRARY)
 

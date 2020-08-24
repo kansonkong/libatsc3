@@ -52,33 +52,16 @@ repositories {
     google()
 }
 dependencies {
-    /*
-        Android NDK: ERROR:/Users/jjustman/Desktop/libatsc3/android/sample_app_no_phy/libatsc3_phy_virtual/Android.mk:atsc3_core: LOCAL_SRC_FILES points to a missing file
-        Android NDK: Check that /Users/jjustman/Desktop/libatsc3/android/sample_app_no_phy/libatsc3_phy_virtual/../libatsc3_core/build/intermediates/prefab_package/debug/prefab/modules/atsc3_core/libs/android.armeabi-v7a/libatsc3_core.so exists  or that its path is correct
-    */
-    //debugApi fileTree(dir: '../libatsc3_core/build/intermediates/prefab_package/debug/prefab/modules/atsc3_core/libs/', include: ['**/*.so'])
-    /*
-    debugApi project(':libatsc3_core')
-    debugApi project(':libatsc3_bridge')
-    */
 
-//    implementation project(path: ':libatsc3_core', configuration: 'debug')
-//    implementation project(path: ':libatsc3_bridge', configuration: 'debug')
-//
-//    debugImplementation project(':libatsc3_core')
-//    debugImplementation project(':libatsc3_bridge')
-//
-//    debugImplementation fileTree(dir: 'build/intermediates/prefab_package/debug/prefab/modules/', include: ['**/*.so'])
-
-    //implementation project(':atsc3_core')
-    //implementation project(':atsc3_bridge')
-
+    //vmatiash-2020-08-21 - Direct dependency is not necessary. This dependency specified in LOCAL_LDLIBS of Android.mk
+    //debugApi fileTree(dir: '../atsc3_bridge/build/intermediates/ndkBuild/debug/obj/local', include: ['**/libatsc3_bridge.so'])
     debugApi project(':atsc3_core')
-    debugApi fileTree(dir: '../atsc3_core/build/intermediates/ndkBuild/debug/obj/local', include: ['**/libatsc3_core.so'])
 
     debugApi project(':atsc3_bridge')
-    debugApi fileTree(dir: '../atsc3_bridge/build/intermediates/ndkBuild/debug/obj/local', include: ['**/libatsc3_bridge.so'])
 
     debugApi fileTree(dir: 'build/aar', include: ['*.aar'])
+    debugApi fileTree(dir: 'build/aar', include: ['*.aar'])
+
+
 }
 

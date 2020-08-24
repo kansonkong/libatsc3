@@ -12,12 +12,13 @@ MY_CUR_PATH := $(LOCAL_PATH)
 LOCAL_PATH := $(MY_LOCAL_PATH)
 
 ##jjustman-2020-08-12 - remove prefab LOCAL_SRC_FILES := $(LOCAL_PATH)/../libatsc3_core/build/intermediates/prefab_package/debug/prefab/modules/atsc3_core/libs/android.$(TARGET_ARCH_ABI)/libatsc3_core.so
-include $(CLEAR_VARS)
-LOCAL_MODULE := local-atsc3_core
-LOCAL_SRC_FILES := $(LOCAL_PATH)/../atsc3_core/build/intermediates/ndkBuild/debug/obj/local/$(TARGET_ARCH_ABI)/libatsc3_core.so
-ifneq ($(MAKECMDGOALS),clean)
-include $(PREBUILT_SHARED_LIBRARY)
-endif
+##vmatiash-2020-08-21 - module can't depend on libraries that is not built. This dependency specified in LOCAL_LDLIBS
+#include $(CLEAR_VARS)
+#LOCAL_MODULE := local-atsc3_core
+#LOCAL_SRC_FILES := $(LOCAL_PATH)/../atsc3_core/build/intermediates/ndkBuild/debug/obj/local/$(TARGET_ARCH_ABI)/libatsc3_core.so
+#ifneq ($(MAKECMDGOALS),clean)
+#include $(PREBUILT_SHARED_LIBRARY)
+#endif
 
 # ---------------------------
 # libatsc3_bridge jni interface
