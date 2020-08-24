@@ -21,6 +21,17 @@ public class Atsc3UsbDevice {
      */
     public static Map<UsbDevice, Atsc3UsbDevice> AllAtsc3UsbDevices = new HashMap<>();
 
+    public static Atsc3UsbDevice FindFromUsbDevice(UsbDevice toSearchDevice) {
+        return AllAtsc3UsbDevices.get(toSearchDevice);
+    }
+
+    public void destroy() {
+        AllAtsc3UsbDevices.remove(this);
+        this.disconnect();
+        this.usbDevice = null;
+        this.conn = null;
+    }
+
     public UsbDevice usbDevice;
     public UsbDeviceConnection conn;
     public Atsc3NdkPHYClientBase atsc3NdkPHYClientBase;
@@ -48,6 +59,8 @@ public class Atsc3UsbDevice {
         conn = null;
         usbDevice = null;
     }
+
+
 
     public String toString() {
         if(usbDevice == null) {

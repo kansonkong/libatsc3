@@ -489,6 +489,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
 
         if(atsc3NdkPHYClientInstance != null) {
             items.add(atsc3NdkPHYClientInstance.toString());
+            idxSelected = 1;
         }
 
         if(prebuiltAssetsForDeviceSelectionVirtualPHY.length > 0) {
@@ -737,8 +738,6 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
 
         mDevListSpinner = (Spinner) findViewById(R.id.spinDevices);
         mDevListSpinner.setOnItemSelectedListener(this);
-
-
 
         // get usb manager
         mUsbManager = (UsbManager) getSystemService(Context.USB_SERVICE);
@@ -1169,7 +1168,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                         @Override
                         public void run() {
                             Log.d(TAG, "handler: connect device");
-                            dumpDevice(device, "connected");
+                            dumpDevice(device, "ServiceHandler:: connected");
                             usbPHYLayerDeviceInstantiateAndUpdateAtsc3NdkPHYClientInstance(device);
 
                             Log.d(TAG, "---- end of handling connect device");
@@ -1504,12 +1503,14 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         }
     }
 
-    private void usbPHYLayerDeviceInstantiateAndUpdateAtsc3NdkPHYClientInstance(UsbDevice usbDevice) {
+    synchronized private void  usbPHYLayerDeviceInstantiateAndUpdateAtsc3NdkPHYClientInstance(UsbDevice usbDevice) {
         if(connectedUSBDevice == null || (connectedUSBDevice != null && connectedUSBDevice != usbDevice)) {
+            Log.d("atsc3NdkPHYClientInstance", "usbPHYLayerDeviceInstantiateAndUpdateAtsc3NdkPHYClientInstance with usbDevice: " + usbDevice);
+
             Atsc3NdkPHYClientBase atsc3NdkPHYClientBaseInstanceResult = usbPHYLayerDeviceTryToInstantiateFromRegisteredPHYNDKs(usbDevice);
             Log.d("atsc3NdkPHYClientInstance", "usbPHYLayerDeviceTryToInstantiateFromRegisteredPHYNDKs returned: " + atsc3NdkPHYClientBaseInstanceResult);
             if (atsc3NdkPHYClientBaseInstanceResult != null) {
-                //todo - redispatch out of our service handler queue...grr
+                //todo - redispatch out of our service handler queue instead of inline here?
                 if (atsc3NdkPHYClientInstance != null) {
                     atsc3NdkPHYClientInstance.deinit();
                     atsc3NdkPHYClientInstance = null;
@@ -1530,7 +1531,15 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         }
     }
 
-    Atsc3NdkPHYClientBase usbPHYLayerDeviceTryToInstantiateFromRegisteredPHYNDKs(UsbDevice usbDevice) {
+    synchronized Atsc3NdkPHYClientBase  usbPHYLayerDeviceTryToInstantiateFromRegisteredPHYNDKs(UsbDevice usbDevice) {
+        Log.d("usbPHYLayerDeviceTryToInstantiateFromRegisteredPHYNDKs", "enter with usbDevice: "+usbDevice);
+
+        Atsc3UsbDevice atsc3UsbDevice = null;
+        if((atsc3UsbDevice = Atsc3UsbDevice.FindFromUsbDevice(usbDevice)) != null) {
+            Log.d("usbPHYLayerDeviceTryToInstantiateFromRegisteredPHYNDKs", "Atsc3UsbDevice already instantiated: "+atsc3UsbDevice);
+            return null;  //eh, hack-ish..
+        }
+
         Atsc3NdkPHYClientBase atsc3NdkPHYClientBaseInstantiated = null;
         ArrayList<Atsc3NdkPHYClientBase.USBVendorIDProductIDSupportedPHY> candidatePHYList = Atsc3NdkPHYClientBase.GetCandidatePHYImplementations(usbDevice);
 
@@ -1545,7 +1554,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
 
             UsbDeviceConnection usbDeviceConnection = mUsbManager.openDevice(usbDevice);
             if(usbDeviceConnection != null) {
-                Atsc3UsbDevice atsc3UsbDevice = new Atsc3UsbDevice(usbDevice, usbDeviceConnection);
+                atsc3UsbDevice = new Atsc3UsbDevice(usbDevice, usbDeviceConnection);
 
                 for (Atsc3NdkPHYClientBase.USBVendorIDProductIDSupportedPHY candidatePHY : candidatePHYList) {
                     Atsc3NdkPHYClientBase atsc3NdkPHYClientBaseCandidate = Atsc3NdkPHYClientBase.CreateInstanceFromUSBVendorIDProductIDSupportedPHY(candidatePHY);
@@ -1573,8 +1582,16 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                         }
                     }
                 }
+
+                if(atsc3NdkPHYClientBaseInstantiated == null) {
+                    atsc3UsbDevice.destroy();
+                }
             }
-            updateSpinnerFromDevList();
+            ServiceHandler.GetInstance().post(new Runnable() {
+                @Override
+                public void run() {
+                    updateSpinnerFromDevList();
+                }});
         }
         return atsc3NdkPHYClientBaseInstantiated;
     }
@@ -1591,7 +1608,6 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         }
         Atsc3UsbDevice.AllAtsc3UsbDevices.clear();
     }
-
 
 
     private void dumpDevice(UsbDevice device, String action) {
@@ -1623,17 +1639,19 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                     UsbDevice device = (UsbDevice)intent.getParcelableExtra(UsbManager.EXTRA_DEVICE);
                     if (device == null) { Log.e(TAG, "null device!"); return; }
 
-                    dumpDevice(device, " has permission");
 
                     //dispatch a message to try to instantiate our PHY - usbPHYLayerDeviceTryToInstantiateFromRegisteredPHYNDKs(device)
                     if (intent.getBooleanExtra(UsbManager.EXTRA_PERMISSION_GRANTED, false)) {
+                        dumpDevice(device, "ACTION_USB_PERMISSION:EXTRA_PERMISSION_GRANTED: permission granted");
+
                         Message msg = mHandler.obtainMessage(2, device);
                         mHandler.sendMessage(msg);
                     }
                     else {
                         Log.d(TAG, "permission denied for device " + device);
+                        dumpDevice(device, "ACTION_USB_PERMISSION:EXTRA_PERMISSION_GRANTED: permission denied");
+
                     }
-                    // mPermissionRequestPending = false;
                     return;
                 }
             }
@@ -1648,7 +1666,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
 
                     if (intent.getBooleanExtra(UsbManager.EXTRA_PERMISSION_GRANTED, false)) {
                         //call method to set up device communication
-                        Log.d(TAG, "permission granted");
+                        Log.d(TAG, "ACTION_USB_DEVICE_ATTACHED:EXTRA_PERMISSION_GRANTED: success");
 
                         //dispatch a message to try to instantiate our PHY - usbPHYLayerDeviceTryToInstantiateFromRegisteredPHYNDKs(device)
 
@@ -1656,17 +1674,9 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                         mHandler.sendMessage(msg);
                     }
                     else {
-                        Log.d(TAG, String.format("permission denied for device, dispatching mPermissionIntent: %s, dev: %s", mPermissionIntent, device));
+                        Log.d(TAG, String.format("ACTION_USB_DEVICE_ATTACHED:EXTRA_PERMISSION_GRANTED permission denied for device, dispatching mPermissionIntent: %s, dev: %s", mPermissionIntent, device));
                         final UsbDevice myDeviceNeedingPermission = device;
                         mUsbManager.requestPermission(myDeviceNeedingPermission, mPermissionIntent);
-//
-//                        ServiceHandler.GetInstance().postDelayed(new Runnable() {
-//                            @Override
-//                            public void run() {
-//
-//                            }
-//                        }, 1000);
-
                         return;
                     }
                 }
@@ -1677,7 +1687,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                     UsbDevice device = (UsbDevice)intent.getParcelableExtra(UsbManager.EXTRA_DEVICE);
                     if (device == null) { Log.e(TAG, "null device!"); return; }
 
-                    dumpDevice(device, " detached");
+                    dumpDevice(device, "ACTION_USB_DEVICE_DETACHED:detached");
 
                     //send a device disconnected, and try to clear/shutdown our atsc3NdkPHYClientBase
                     Message msg = mHandler.obtainMessage(3, device);

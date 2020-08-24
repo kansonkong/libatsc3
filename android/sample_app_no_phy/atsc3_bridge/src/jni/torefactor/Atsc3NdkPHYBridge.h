@@ -52,15 +52,15 @@ public:
     void LogMsg(const std::string &msg);
     void LogMsgF(const char *fmt, ...);
 
-    int pinFromRxCaptureThread();
+    int pinCaptureThreadAsNeeded();
     int pinFromRxProcessingThread();
-    int pinFromRxStatusThread();
+    int pinStatusThreadAsNeeded();
 
 
     int RxThread();
-    Atsc3JniEnv* Atsc3_Jni_Capture_Thread_Env = NULL;
+    Atsc3JniEnv* pinnedCaptureJniEnv = NULL;
     Atsc3JniEnv* Atsc3_Jni_Processing_Thread_Env = NULL;
-    Atsc3JniEnv* Atsc3_Jni_Status_Thread_Env = NULL;
+    Atsc3JniEnv* pinnedStatusJniEnv = NULL;
 
     void set_plp_settings(jint *a_plp_ids, jsize sa_plp_size);
 
