@@ -66,8 +66,6 @@ public:
 
     static void RxDataCallback(unsigned char *data, long len);
 
-    static Atsc3JniEnv*    Atsc3_Jni_Status_Thread_Env;
-
     static int         usbFD;
 
     int RxThread();
@@ -87,6 +85,7 @@ public:
 
     void dump_plp_list();
 
+    mutex SL_I2C_command_mutex;
 
 protected:
     void pinProducerThreadAsNeeded() override;
@@ -183,7 +182,6 @@ private:
 
     atsc3_sl_tlv_payload_t* atsc3_sl_tlv_payload = NULL;
 
-    static mutex SL_I2C_command_mutex;
 
 };
 

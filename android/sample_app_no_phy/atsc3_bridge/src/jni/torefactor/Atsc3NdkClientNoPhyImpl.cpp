@@ -212,7 +212,7 @@ void Atsc3NdkClientNoPhyImpl::RxDataCallback(unsigned char *data, long len)
 
 void* Atsc3NdkClientNoPhyImpl::CaptureThread(void*)
 {
-    Atsc3NdkClientNoPhyImpl::atsc3NdkClient_ref->pinFromRxCaptureThread();
+    Atsc3NdkClientNoPhyImpl::atsc3NdkClient_ref->pinCaptureThreadAsNeeded();
 
     //...((RxDataCB)&Atsc3NdkClientNoPhyImpl::RxDataCallback);
     return 0;
@@ -243,7 +243,7 @@ void* Atsc3NdkClientNoPhyImpl::ProcessThread(void*)
 void* Atsc3NdkClientNoPhyImpl::TunerStatusThread(void*)
 {
 
-    Atsc3NdkClientNoPhyImpl::atsc3NdkClient_ref->pinFromRxStatusThread();
+    Atsc3NdkClientNoPhyImpl::atsc3NdkClient_ref->pinStatusThreadAsNeeded();
 
 
     while(Atsc3NdkClientNoPhyImpl::tunerStatusThreadShouldRun) {

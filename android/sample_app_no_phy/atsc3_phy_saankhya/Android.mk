@@ -231,7 +231,7 @@ LOCAL_C_INCLUDES += \
 	$(LOCAL_PATH)/src/jni/utils/inc
 
 
-LOCAL_CFLAGS += -g -fpack-struct=8 \
+LOCAL_CFLAGS += -g -O0 -fpack-struct=8 \
                 -D__DISABLE_LIBPCAP__ -D__DISABLE_ISOBMFF_LINKAGE__ -D__DISABLE_NCURSES__ \
                 -D__MOCK_PCAP_REPLAY__ -D__LIBATSC3_ANDROID__ \
                 -D__ANDROID__ -Dlinux  \
