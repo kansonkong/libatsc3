@@ -33,12 +33,13 @@ public abstract class Atsc3NdkPHYClientBase {
         public Class<? extends Atsc3NdkPHYClientBase> candidatePHYImplementation;
     }
 
-    public static Atsc3NdkPHYClientBase CreateInstanceFromUSBVendorIDProductIDSupportedPHY(USBVendorIDProductIDSupportedPHY usbVendorIDProductIDSupportedPHY) {
+    synchronized public static Atsc3NdkPHYClientBase CreateInstanceFromUSBVendorIDProductIDSupportedPHY(USBVendorIDProductIDSupportedPHY usbVendorIDProductIDSupportedPHY) {
         Log.w("Atsc3NdkPHYClientBase", "CreateInstanceFromUSBVendorIDProductIDSupportedPHY");
 
         Atsc3NdkPHYClientBase newInstance = null;
         try {
             newInstance = usbVendorIDProductIDSupportedPHY.candidatePHYImplementation.newInstance();
+            newInstance.init();
 
         } catch (IllegalAccessException e) {
             e.printStackTrace();

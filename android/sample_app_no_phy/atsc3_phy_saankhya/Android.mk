@@ -36,7 +36,7 @@ LOCAL_C_INCLUDES += $(LOCAL_PATH)/../../../libusb_android/libusb
 LOCAL_C_INCLUDES += $(LOCAL_PATH)/../../../libusb_android/android
 
 
-LOCAL_CFLAGS += -g -fpack-struct=8 \
+LOCAL_CFLAGS += -g -O0 -fpack-struct=8 \
                 -D__ANDROID__ -Dlinux
 
 #jjustman-2020-08-19 - fixup for invalid soname in .so
