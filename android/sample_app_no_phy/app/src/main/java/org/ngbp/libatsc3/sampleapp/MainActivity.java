@@ -1186,9 +1186,8 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                         if(atsc3UsbDevice.atsc3NdkPHYClientBase != null) {
                             atsc3UsbDevice.atsc3NdkPHYClientBase.deinit();
                             atsc3UsbDevice.atsc3NdkPHYClientBase = null;
-
-                            Atsc3UsbDevice.AllAtsc3UsbDevices.remove(device);
                         }
+                        Atsc3UsbDevice.AllAtsc3UsbDevices.remove(device);
 
                     }
                     Log.d(TAG, "---- end of handling disconnecting device");
