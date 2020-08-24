@@ -88,6 +88,7 @@ void atsc3_core_service_application_bridge_init(IAtsc3NdkApplicationBridge* atsc
             lls_slt_monitor = lls_slt_monitor_create();
             //wire up a lls event for SLS table
             lls_slt_monitor->atsc3_lls_on_sls_table_present_callback = &atsc3_lls_on_sls_table_present_ndk;
+            lls_slt_monitor->atsc3_lls_on_aeat_table_present_callback = &atsc3_lls_on_aeat_table_present_ndk;
 
             mmtp_flow = mmtp_flow_new();
             udp_flow_latest_mpu_sequence_number_container = udp_flow_latest_mpu_sequence_number_container_t_init();
@@ -777,6 +778,31 @@ void atsc3_lls_on_sls_table_present_ndk(lls_table_t* lls_table) {
     free(xml_payload_copy);
 }
 
+
+
+void atsc3_lls_on_aeat_table_present_ndk(lls_table_t* lls_table) {
+    printf("atsc3_lls_on_aeat_table_present_ndk: lls_table is: %p, val: %s", lls_table, lls_table->raw_xml.xml_payload);
+    if(!lls_table) {
+        Atsc3NdkApplicationBridge_ptr->LogMsg("E: atsc3_lls_on_aeat_table_present_ndk: no lls_table for AEAT!");
+        return;
+    }
+    if(!lls_table->raw_xml.xml_payload || !lls_table->raw_xml.xml_payload_size) {
+        Atsc3NdkApplicationBridge_ptr->LogMsg("E: atsc3_lls_on_aeat_table_present_ndk: no raw_xml.xml_payload for AEAT!");
+        return;
+    }
+
+    //copy over our xml_payload.size +1 with a null
+    int len_aligned = lls_table->raw_xml.xml_payload_size + 1;
+    len_aligned += 8-(len_aligned%8);
+    char* xml_payload_copy = (char*)calloc(len_aligned , sizeof(char));
+    strncpy(xml_payload_copy, (char*)lls_table->raw_xml.xml_payload, lls_table->raw_xml.xml_payload_size);
+
+    Atsc3NdkApplicationBridge_ptr->atsc3_onAeatTablePresent((const char*)xml_payload_copy);
+
+    free(xml_payload_copy);
+}
+
+
 //TODO: jjustman-2019-11-08: wire up the service_id in which this alc_emission originated from in addition to tsi/toi
 void atsc3_lls_sls_alc_on_object_close_flag_s_tsid_content_location_ndk(uint32_t tsi, uint32_t toi, char* content_location) {
     Atsc3NdkApplicationBridge_ptr->atsc3_lls_sls_alc_on_object_close_flag_s_tsid_content_location_jni(tsi, toi, content_location);
@@ -801,7 +827,7 @@ void atsc3_sls_on_held_trigger_received_callback_impl(uint16_t service_id, block
     strncpy(xml_payload_copy, (char*)block_ptr, block_len);
     __ATSC3_INFO("HELD: change: %s", xml_payload_copy);
 
-    Atsc3NdkApplicationBridge_ptr->atsc3_sls_on_held_trigger_received_callback_jni(service_id, (const char*)xml_payload_copy);
+    Atsc3NdkApplicationBridge_ptr->atsc3_onSlsHeldEmissionPresent(service_id, (const char*)xml_payload_copy);
 
     free(xml_payload_copy);
 }

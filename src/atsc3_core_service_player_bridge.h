@@ -126,6 +126,8 @@ void atsc3_sls_on_held_trigger_received_callback_impl(uint16_t service_id, block
     */
 
 void atsc3_lls_on_sls_table_present_ndk(lls_table_t* lls_table);
+void atsc3_lls_on_aeat_table_present_ndk(lls_table_t* lls_table);
+
 void atsc3_mmt_mpu_on_sequence_mpu_metadata_present_ndk(uint16_t packet_id, uint32_t mpu_sequence_number, block_t* mmt_mpu_metadata);
 void atsc3_mmt_mpu_mfu_on_sample_complete_ndk(uint16_t packet_id, uint32_t mpu_sequence_number, uint32_t sample_number, block_t* mmt_mfu_sample, uint32_t mfu_fragment_count_rebuilt);
 void atsc3_mmt_mpu_mfu_on_sample_corrupt_ndk(uint16_t packet_id, uint32_t mpu_sequence_number, uint32_t sample_number, block_t* mmt_mfu_sample, uint32_t mfu_fragment_count_expected, uint32_t mfu_fragment_count_rebuilt);
