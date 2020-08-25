@@ -6,11 +6,11 @@ import org.ngbp.libatsc3.middleware.android.phy.virtual.Atsc3NdkPHYVirtualStatic
 
 public class SRTRxSTLTPVirtualPHYAndroid extends Atsc3NdkPHYVirtualStaticJniLoader  {
 
-    @Override public native int init();
-    @Override public native int run();
-    @Override public native boolean is_running();
-    @Override public native int stop();
-    @Override public native int deinit();
+    public native int init();
+    public native int run();
+    public native boolean is_running();
+    public native int stop();
+    public native int deinit();
 
     public native void setSrtSourceConnectionString(String srtSourceConnectionString);
 
