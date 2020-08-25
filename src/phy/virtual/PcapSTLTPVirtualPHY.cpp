@@ -250,8 +250,6 @@ int PcapSTLTPVirtualPHY::PcapProducerThreadParserRun() {
     return 0;
 }
 
-
-
 int PcapSTLTPVirtualPHY::PcapConsumerThreadRun() {
 
     queue<block_t *> to_dispatch_queue; //perform a shallow copy so we can exit critical section asap
