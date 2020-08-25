@@ -48,21 +48,8 @@ LowaSISPHYAndroid::~LowaSISPHYAndroid() {
         atsc3_ndk_application_bridge_get_instance()->atsc3_phy_notify_plp_selection_change_clear_callback();
     }
 
-    if(this->producerJniEnv) {
-        delete this->producerJniEnv;
-    }
-
-    if(this->consumerJniEnv) {
-        delete this->producerJniEnv;
-    }
-
-    if(this->atsc3_sl_tlv_block) {
-        block_Destroy(&this->atsc3_sl_tlv_block);
-    }
-
-    if(atsc3_sl_tlv_payload) {
-        atsc3_sl_tlv_payload_free(&atsc3_sl_tlv_payload);
-    }
+    //jjustman-2020-08-24 - do not attempt to delete producer/consumer/statusJniEnvironment here, as you will
+    //most likely get a JNI threadlocal exception
 
     if(init_completed) {
         AT3DRV_Uninit();
