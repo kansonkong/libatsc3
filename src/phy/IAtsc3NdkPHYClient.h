@@ -23,10 +23,10 @@ class IAtsc3NdkPHYClient {
 		virtual int  deinit()     = 0;
 
 		//optional methods for subclasses to implement if needed
-		virtual int  download_bootloader_firmware(int fd)  { return INT_MIN; }
-        virtual int  open(int fd, int bus, int addr)       { return INT_MIN; }
-        virtual int  tune(int freqKhz, int single_plp)     { return INT_MIN; }
-        virtual int  listen_plps(vector<uint8_t> plps)     { return INT_MIN; }
+		virtual int  download_bootloader_firmware(int fd, string device_path)  { return INT_MIN; }
+        virtual int  open(int fd, string device_path)                          { return INT_MIN; }
+        virtual int  tune(int freqKhz, int single_plp)                         { return INT_MIN; }
+        virtual int  listen_plps(vector<uint8_t> plps)                         { return INT_MIN; }
 
         virtual void setRxUdpPacketProcessCallback(atsc3_phy_rx_udp_packet_process_callback_f atsc3_phy_rx_udp_packet_process_callback) {
 			this->atsc3_phy_rx_udp_packet_process_callback = atsc3_phy_rx_udp_packet_process_callback;

@@ -15,22 +15,44 @@ import java.util.List;
                 -> deinit
  */
 
+interface Atsc3NdkPHYClientBaseBootloaderCallback {
+     boolean RunIsBootloaderCallback(UsbDevice usbDevice);
+}
+
 public abstract class Atsc3NdkPHYClientBase {
 
     public static class USBVendorIDProductIDSupportedPHY {
-        public USBVendorIDProductIDSupportedPHY(int vendorID, int productID, String phyName, boolean isBootloader, Class<? extends Atsc3NdkPHYClientBase> candidatePHYImplementation) {
+        public USBVendorIDProductIDSupportedPHY(int vendorID, int productID, String phyName, boolean isBootloaderFlag, Class<? extends Atsc3NdkPHYClientBase> candidatePHYImplementation) {
             this.vendorID = vendorID;
             this.productID = productID;
             this.phyName = phyName;
-            this.isBootloader = isBootloader;
+            this.isBootloaderFlag = isBootloaderFlag;
+            this.candidatePHYImplementation = candidatePHYImplementation;
+        }
+
+        public USBVendorIDProductIDSupportedPHY(int vendorID, int productID, String phyName, Atsc3NdkPHYClientBaseBootloaderCallback bootloaderCallback, Class<? extends Atsc3NdkPHYClientBase> candidatePHYImplementation) {
+            this.vendorID = vendorID;
+            this.productID = productID;
+            this.phyName = phyName;
+            this.bootloaderCallback = bootloaderCallback;
             this.candidatePHYImplementation = candidatePHYImplementation;
         }
 
         public int vendorID;
         public int productID;
         public String phyName;
-        public boolean isBootloader;
+        public boolean isBootloaderFlag;
+        public Atsc3NdkPHYClientBaseBootloaderCallback bootloaderCallback;
         public Class<? extends Atsc3NdkPHYClientBase> candidatePHYImplementation;
+
+        public boolean getIsBootloader(UsbDevice usbDevice) {
+            if(isBootloaderFlag || (bootloaderCallback != null && bootloaderCallback.RunIsBootloaderCallback(usbDevice))) {
+                return true;
+            } else {
+                return false;
+            }
+        }
+
     }
 
     synchronized public static Atsc3NdkPHYClientBase CreateInstanceFromUSBVendorIDProductIDSupportedPHY(USBVendorIDProductIDSupportedPHY usbVendorIDProductIDSupportedPHY) {
@@ -60,16 +82,11 @@ public abstract class Atsc3NdkPHYClientBase {
         }
         return matchingRegisteredPHYImplementations.size() > 0 ? matchingRegisteredPHYImplementations : null;
     }
-    //
+
     public Atsc3UsbDevice atsc3UsbDevice = null;
     public void setAtsc3UsbDevice(Atsc3UsbDevice atsc3UsbDevice) {
         this.atsc3UsbDevice = atsc3UsbDevice;
     }
-
-
-
-
-
 
     //required jni methods for implementation
     public native int     init();
@@ -81,8 +98,8 @@ public abstract class Atsc3NdkPHYClientBase {
     //optional jni methods, to enable per-PHY use-cases,
     //but un-safe for non context-aware invocation
 
-    public native int     download_bootloader_firmware(int fd);
-    public native int     open(int fd);
+    public native int     download_bootloader_firmware(int fd, String devicePath);
+    public native int     open(int fd, String devicePath);
     public native int     tune(int freqKhz, int single_plp);
     public native int     listen_plps(List<Byte> plps);
 

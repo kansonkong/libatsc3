@@ -57,16 +57,14 @@ public:
     virtual int  stop()       override;
     virtual int  deinit()     override;
 
-    virtual int  download_bootloader_firmware(int fd) override;
-    virtual int  open(int fd, int bus, int addr)   override;
+    virtual int  download_bootloader_firmware(int fd, string devicePath) override;
+    virtual int  open(int fd, string devicePath)   override;
     virtual int  tune(int freqKhz, int single_plp) override;
     virtual int  listen_plps(vector<uint8_t> plps) override;
 
     virtual ~SaankhyaPHYAndroid();
 
     static void RxDataCallback(unsigned char *data, long len);
-
-    static int         usbFD;
 
     int RxThread();
 

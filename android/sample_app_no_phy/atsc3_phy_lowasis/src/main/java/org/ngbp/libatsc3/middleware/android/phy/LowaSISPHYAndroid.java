@@ -20,23 +20,12 @@ public class LowaSISPHYAndroid extends Atsc3NdkPHYLowaSISStaticJniLoader  {
             LowaSIS has a special 'workaround' for determining if this instance is a bootloader
          */
     static {
-
-        Atsc3NdkPHYClientBase.AllRegisteredPHYImplementations.add(new USBVendorIDProductIDSupportedPHY(61525, 7707, "LowaSIS", true, LowaSISPHYAndroid.class));
+        Atsc3NdkPHYClientBase.AllRegisteredPHYImplementations.add(new USBVendorIDProductIDSupportedPHY(61525, 7707, "LowaSIS", LowaSISPHYAndroid::RunIsBootloaderCallback, LowaSISPHYAndroid.class));
         Log.w("LowaSISPHYAndroid", String.format("static constructor, allRegisteredPHYImplementations is now %d elements: ", Atsc3NdkPHYClientBase.AllRegisteredPHYImplementations.size()));
 
     }
 
-    @Override public native int init();
-    @Override public native int run();
-    @Override public native int stop();
-    @Override public native int deinit();
-
-    @Override public native int download_bootloader_firmware(int fd);
-    @Override public native int open(int fd);
-    @Override public native int tune(int freqKhz, int single_plp);
-    @Override public native int listen_plps(List<Byte> plps);
-
-    public boolean isAtlasPrebootDevice(UsbDevice device) {
+    public static boolean RunIsBootloaderCallback(UsbDevice device) {
         // full-function (fwloaded) atlas device has 2 or 3 EPs.
         // preboot (not fwloaded) atlas device has (currently) zero EP.
 
@@ -49,7 +38,21 @@ public class LowaSISPHYAndroid extends Atsc3NdkPHYLowaSISStaticJniLoader  {
         Log.d(TAG, "atlas device: num ep = " + numEp);
 
         if (numEp < 2) return true;
+
         return false;
     }
+
+    @Override public native int init();
+    @Override public native int run();
+    @Override public native int stop();
+    @Override public native int deinit();
+
+    @Override public native int download_bootloader_firmware(int fd, String devicePath);
+    @Override public native int open(int fd, String devicePath);
+    @Override public native int tune(int freqKhz, int single_plp);
+    @Override public native int listen_plps(List<Byte> plps);
+
+
+
 
 }
