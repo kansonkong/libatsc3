@@ -1,4 +1,5 @@
 #include <atsc3_utils.h>
+#include <atsc3_alp_types.h>
 
 #ifndef LIBATSC3_IATSC3NDKPHYCLIENT_H
 #define LIBATSC3_IATSC3NDKPHYCLIENT_H
@@ -8,6 +9,8 @@ using namespace std;
 
 //will dispatch plp_num as 0 if the (virtual/demuxed) phy does not have support to disambiguate (e.g. no LMT reference)
 typedef void(*atsc3_phy_rx_udp_packet_process_callback_f)(uint8_t plp_num, block_t* block);
+typedef atsc3_link_mapping_table_t* (*atsc3_phy_rx_link_mapping_table_process_callback_f)(atsc3_link_mapping_table_t* atsc3_link_mapping_table_pending);
+
 
 class IAtsc3NdkPHYClient {
 
@@ -28,6 +31,11 @@ class IAtsc3NdkPHYClient {
         virtual void setRxUdpPacketProcessCallback(atsc3_phy_rx_udp_packet_process_callback_f atsc3_phy_rx_udp_packet_process_callback) {
 			this->atsc3_phy_rx_udp_packet_process_callback = atsc3_phy_rx_udp_packet_process_callback;
 		}
+
+		virtual void setRxLinkMappingTableProcessCallback(atsc3_phy_rx_link_mapping_table_process_callback_f atsc3_phy_rx_link_mapping_table_process_callback) {
+		    this->atsc3_phy_rx_link_mapping_table_process_callback = atsc3_phy_rx_link_mapping_table_process_callback;
+        }
+
 		virtual ~IAtsc3NdkPHYClient() {};
 
 	protected:
@@ -41,7 +49,9 @@ class IAtsc3NdkPHYClient {
         virtual void pinStatusThreadAsNeeded() { };
         virtual void releasePinnedStatusThreadAsNeeded() { };
 
-		atsc3_phy_rx_udp_packet_process_callback_f atsc3_phy_rx_udp_packet_process_callback = nullptr;
+		atsc3_phy_rx_udp_packet_process_callback_f              atsc3_phy_rx_udp_packet_process_callback = nullptr;
+		atsc3_phy_rx_link_mapping_table_process_callback_f      atsc3_phy_rx_link_mapping_table_process_callback = nullptr;
+
 };
 
 

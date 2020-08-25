@@ -33,6 +33,7 @@ LOCAL_C_INCLUDES += \
 
 LOCAL_C_INCLUDES += \
 	$(LOCAL_PATH)/src/jni \
+	$(LOCAL_PATH)/src/jni/lowasis \
 	$(LOCAL_PATH)/prebuilt/include
 
 LIBATSC3_PHY_LOWASIS_CPP := \

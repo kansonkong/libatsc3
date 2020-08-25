@@ -4,15 +4,19 @@
 
 #include <string.h>
 #include <jni.h>
+#include <thread>
+#include <map>
+
+#include <queue>
+#include <mutex>
+#include <semaphore.h>
+using namespace std;
+
 #include <Atsc3LoggingUtils.h>
 #include <Atsc3JniEnv.h>
 #include <atsc3_utils.h>
 #include <atsc3_sl_tlv_demod_type.h>
 #include <atsc3_alp_parser.h>
-
-#include <mutex>
-#include <semaphore.h>
-#include <pthread.h>
 
 #include <atsc3_core_service_player_bridge.h>
 
@@ -20,6 +24,10 @@
 #define LIBATSC3_ANDROID_SAMPLE_APP_W_PHY_LOWASISPHYANDROID_H
 
 #include <Atsc3NdkPHYLowaSISStaticJniLoader.h>
+
+#include <at3drv_api.h>
+
+#include "atsc3_lowasis_phy_android_rxdata.h"
 
 typedef void * (*THREADFUNCPTR)(void *);
 
@@ -43,11 +51,8 @@ public:
 
     virtual ~LowaSISPHYAndroid();
 
-    static void RxDataCallback(unsigned char *data, long len);
-
-    static int         usbFD;
-
-    int RxThread();
+    static AT3RESULT RxCallbackStatic(S_RX_DATA *pData, uint64_t ullUser);
+    AT3RESULT RxCallbackInstanceScoped(S_RX_DATA *pData);
 
     static void NotifyPlpSelectionChangeCallback(vector<uint8_t> plps, void* context);
 
@@ -55,8 +60,6 @@ public:
     uint64_t alp_completed_packets_parsed;
     uint64_t alp_total_bytes;
     uint64_t alp_total_LMTs_recv;
-
-    void dump_plp_list();
 
 protected:
     void pinProducerThreadAsNeeded() override;
@@ -76,16 +79,52 @@ protected:
 
 private:
 
-    //thread handling methods
-    static void* CaptureThread(void* context);
-    static void* ProcessThread(void* context);
-    static void* TunerStatusThread(void* context); //TODO: jjustman-2019-11-30: merge with
+    bool init_completed = false;
+    bool is_tuned = false;
 
-    block_t* atsc3_sl_tlv_block = NULL;
-    mutex    atsc3_sl_tlv_block_mutex;
-    void allocate_atsc3_sl_tlv_block();
 
-    atsc3_sl_tlv_payload_t* atsc3_sl_tlv_payload = NULL;
+    //uses      pinProducerThreadAsNeeded
+    int         captureThread();
+    std::thread captureThreadHandle;
+    bool        captureThreadShouldRun = false;
+    bool        captureThreadIsRunning = false;
+
+    //uses      pinConsumerThreadAsNeeded
+    int         processThread();
+    std::thread processThreadHandle;
+    bool        processThreadShouldRun = false;
+    bool        processThreadIsRunning = false;
+
+    //uses      pinStatusThreadAsNeeded
+    int         statusThread();
+    std::thread statusThreadHandle;
+    bool        statusThreadShouldRun = false;
+    bool        statusThreadIsRunning = false;
+
+    //internal buffering for AT3DRV_HandleRxData
+
+    queue<atsc3_lowasis_phy_android_rxdata_t*>    lowasis_phy_rx_data_buffer_queue;
+    mutex                                   lowasis_phy_rx_data_buffer_queue_mutex;
+    condition_variable                      lowasis_phy_rx_data_buffer_condition;
+
+    //LowaSIS api specific methods
+
+    //jjustman-2020-08-24 - todo - refactor resetStatstics out?
+    AT3_DEV_KEY mKey;
+    AT3_DEVICE mhDevice;
+
+    AT3_OPTION mAt3Opt;
+    AT3_DEVICE hDevice;
+
+    uint32_t s_ulLastTickPrint;
+    uint64_t s_ullTotalBytes = 0;
+    uint64_t s_ullTotalPkts;
+    unsigned s_uTotalLmts = 0;
+    std::map<std::string, unsigned> s_mapIpPort;
+    int s_nPrevLmtVer = -1;
+    uint32_t s_ulL1SecBase;
+
+    void resetStatstics();
 
 
 };
