@@ -28,11 +28,6 @@ LOCAL_LDLIBS := -ldl -llog -landroid -lz
 
 include $(BUILD_SHARED_LIBRARY)
 
-# notes: jjustman-2019-11-26
-#
-# pack ndk structs for aligned access - http://infocenter.arm.com/help/index.jsp?topic=/com.arm.doc.faqs/ka15414.html
-# https://stackoverflow.com/questions/43559712/android-ndk-c-struct-member-access-causes-sigbus-signal-sigbus-illegal-ali
-# cppFlags "-fpack-struct=8"
 
 
 
