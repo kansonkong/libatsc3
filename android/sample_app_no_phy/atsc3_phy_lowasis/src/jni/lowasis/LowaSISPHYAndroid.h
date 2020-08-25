@@ -44,8 +44,8 @@ public:
     virtual int  stop()       override;
     virtual int  deinit()     override;
 
-    virtual int  download_bootloader_firmware(int fd) override;
-    virtual int  open(int fd, int bus, int addr)   override;
+    virtual int  download_bootloader_firmware(int fd, string device_path) override;
+    virtual int  open(int fd, string device_path)   override;
     virtual int  tune(int freqKhz, int single_plp) override;
     virtual int  listen_plps(vector<uint8_t> plps) override;
 
@@ -110,11 +110,10 @@ private:
     //LowaSIS api specific methods
 
     //jjustman-2020-08-24 - todo - refactor resetStatstics out?
-    AT3_DEV_KEY mKey;
-    AT3_DEVICE mhDevice;
+    AT3_DEV_KEY mKey = 0;
+    AT3_DEVICE mhDevice = 0;
 
-    AT3_OPTION mAt3Opt;
-    AT3_DEVICE hDevice;
+    AT3_OPTION mAt3Opt = 0;
 
     uint32_t s_ulLastTickPrint;
     uint64_t s_ullTotalBytes = 0;

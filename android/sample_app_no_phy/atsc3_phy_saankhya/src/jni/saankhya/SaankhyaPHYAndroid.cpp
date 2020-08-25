@@ -265,9 +265,11 @@ int SaankhyaPHYAndroid::deinit()
     return 0;
 }
 
-int SaankhyaPHYAndroid::open(int fd, int bus, int addr)
+int SaankhyaPHYAndroid::open(int fd, string device_path)
 {
     SL_SetUsbFd(fd);
+
+    _SAANKHYA_PHY_ANDROID_DEBUG("open with fd: %d, device_path: %s", fd, device_path.c_str());
 
     SL_I2cResult_t i2cres;
 
@@ -973,12 +975,12 @@ void SaankhyaPHYAndroid::dump_plp_list() {
 
 }
 
-int SaankhyaPHYAndroid::download_bootloader_firmware(int fd) {
+int SaankhyaPHYAndroid::download_bootloader_firmware(int fd, string device_path) {
     SL_SetUsbFd(fd);
 
     SL_I2cResult_t i2cres;
 
-    printf("SL_I2cPreInit - Before");
+    printf("SL_I2cPreInit - Before, path: %s, fd: %d", device_path.c_str(), fd);
     i2cres = SL_I2cPreInit();
     printf("SL_I2cPreInit returned: %d", i2cres);
 
@@ -1811,7 +1813,7 @@ Java_org_ngbp_libatsc3_middleware_android_phy_SaankhyaPHYAndroid_deinit(JNIEnv *
 }
 
 extern "C" JNIEXPORT jint JNICALL
-Java_org_ngbp_libatsc3_middleware_android_phy_SaankhyaPHYAndroid_download_1bootloader_1firmware(JNIEnv *env, jobject thiz, jint fd) {
+Java_org_ngbp_libatsc3_middleware_android_phy_SaankhyaPHYAndroid_download_1bootloader_1firmware(JNIEnv *env, jobject thiz, jstring device_path_jstring, jint fd) {
     _SAANKHYA_PHY_ANDROID_DEBUG("Java_org_ngbp_libatsc3_middleware_android_phy_SaankhyaPHYAndroid_download_1bootloader_1firmware: fd: %d", fd);
     int res = 0;
 
@@ -1819,7 +1821,12 @@ Java_org_ngbp_libatsc3_middleware_android_phy_SaankhyaPHYAndroid_download_1bootl
         _SAANKHYA_PHY_ANDROID_ERROR("Java_org_ngbp_libatsc3_middleware_android_phy_SaankhyaPHYAndroid_download_1bootloader_1firmware: saankhyaPHYAndroid is NULL!");
         res = -1;
     } else {
-        res = saankhyaPHYAndroid->download_bootloader_firmware(fd); //calls pre_init
+        const char* device_path_weak = env->GetStringUTFChars(device_path_jstring, 0);
+        string device_path(device_path_weak);
+
+        res = saankhyaPHYAndroid->download_bootloader_firmware(fd, device_path); //calls pre_init
+        env->ReleaseStringUTFChars( device_path_jstring, device_path_weak );
+
         //jjustman-2020-08-23 - hack, clear out our in-flight reference since we should re-enumerate
         delete saankhyaPHYAndroid;
         saankhyaPHYAndroid = nullptr;
@@ -1828,7 +1835,7 @@ Java_org_ngbp_libatsc3_middleware_android_phy_SaankhyaPHYAndroid_download_1bootl
 }
 
 extern "C" JNIEXPORT jint JNICALL
-Java_org_ngbp_libatsc3_middleware_android_phy_SaankhyaPHYAndroid_open(JNIEnv *env, jobject thiz, jint fd) {
+Java_org_ngbp_libatsc3_middleware_android_phy_SaankhyaPHYAndroid_open(JNIEnv *env, jobject thiz, jint fd, jstring device_path_jstring) {
     _SAANKHYA_PHY_ANDROID_DEBUG("Java_org_ngbp_libatsc3_middleware_android_phy_SaankhyaPHYAndroid_open: fd: %d", fd);
 
     int res = 0;
@@ -1836,7 +1843,11 @@ Java_org_ngbp_libatsc3_middleware_android_phy_SaankhyaPHYAndroid_open(JNIEnv *en
         _SAANKHYA_PHY_ANDROID_ERROR("Java_org_ngbp_libatsc3_middleware_android_phy_SaankhyaPHYAndroid_open: saankhyaPHYAndroid is NULL!");
         res = -1;
     } else {
-        res = saankhyaPHYAndroid->open(fd, 0, 0);
+        const char* device_path_weak = env->GetStringUTFChars(device_path_jstring, 0);
+        string device_path(device_path_weak);
+
+        res = saankhyaPHYAndroid->open(fd, device_path);
+        env->ReleaseStringUTFChars( device_path_jstring, device_path_weak );
     }
     return res;
 }

@@ -392,13 +392,22 @@ int LowaSISPHYAndroid::deinit()
     return 0;
 }
 
-int LowaSISPHYAndroid::open(int fd, int bus, int addr)
+int LowaSISPHYAndroid::open(int fd, string device_path)
 {
     AT3RESULT ar;
-    _LOWASIS_PHY_ANDROID_DEBUG("LowaSISPHYAndroid::open, this: %p,  with fd: %d, bus: %d, addr: %d", this, fd, bus, addr);
+    _LOWASIS_PHY_ANDROID_DEBUG("LowaSISPHYAndroid::open, this: %p,  with fd: %d, device_path: %s", this, fd, device_path.c_str());
 
     ASSERT(init_completed, "not init");
     ASSERT(!mhDevice, "already open");
+
+    //jjustman-2020-08-24 - hack?
+    int nDevAdded;
+    S_ETA_DEVICE sEtaDevice;
+    sEtaDevice.fd = fd;
+    sEtaDevice.devfs = device_path.c_str();
+
+    ar = AT3DRV_LDR_PolulateUsbDevices(&sEtaDevice, 1, &nDevAdded);
+    AT3_DEVICE hDevice = 0;
 
     if (1) {
         AT3_DEV_KEY keys[32];
@@ -543,29 +552,54 @@ int LowaSISPHYAndroid::listen_plps(vector<uint8_t> plps_original_list)
     return ret;
 }
 
-int LowaSISPHYAndroid::download_bootloader_firmware(int fd) {
-//    SL_SetUsbFd(fd);
-//
-//    SL_I2cResult_t i2cres;
-//
-//    printf("SL_I2cPreInit - Before");
-//    i2cres = SL_I2cPreInit();
-//    printf("SL_I2cPreInit returned: %d", i2cres);
-//
-//    if (i2cres != SL_I2C_OK)
-//    {
-//        if(i2cres == SL_I2C_AWAITING_REENUMERATION) {
-//            printf("\n INFO:SL_I2cPreInit SL_FX3S_I2C_AWAITING_REENUMERATION");
-//            //sleep for 2s
-//            sleep(2);
-//            return 0;
-//        } else {
-//            printf("\n Error:SL_I2cPreInit failed: %d", i2cres);
-//            printToConsoleI2cError(i2cres);
-//        }
-//    }
-//    return -1;
+int LowaSISPHYAndroid::download_bootloader_firmware(int fd, string device_path) {
+    AT3RESULT ar;
+    AT3_DEV_KEY toInitTarget;
 
+    _LOWASIS_PHY_ANDROID_DEBUG("download_bootloader_firmware, this: %p, devicePath: %s, fd: %d", this, device_path.c_str(), fd);
+    //(%llx)", (unsigned long long)hKeyTarget);
+
+    //jjustman-2020-08-24 - hack?
+    int nDevAdded;
+    S_ETA_DEVICE sEtaDevice;
+    sEtaDevice.fd = fd;
+    sEtaDevice.devfs = device_path.c_str();
+
+    ar = AT3DRV_LDR_PolulateUsbDevices(&sEtaDevice, 1, &nDevAdded);
+
+    if (1) {
+        int i, nkey = 0;
+        AT3_DEV_KEY keys[32];
+        bool bDevFound = false;
+
+        ar = AT3DRV_LDR_SearchDevicesByType(eDFF_CypressFx3, keys, 32, &nkey);
+        CHK_AR(ar, "find cyfx3");
+
+        if (nkey <= 0) {
+            _LOWASIS_PHY_ANDROID_DEBUG("download_bootloader_firmware:no cyfx3 detected");
+            return 0;
+        }
+        _LOWASIS_PHY_ANDROID_DEBUG("download_bootloader_firmware: all cypress fx3 devices (%d)", nkey);
+        for (i=0; i<nkey; i++) {
+            _LOWASIS_PHY_ANDROID_DEBUG(" key[%d]: %lx", i, (unsigned long)keys[i]);
+            if (true) {
+                //just assume on android we have 1, so init this hKeyTarget == keys[i]) {
+                toInitTarget = keys[i];
+                bDevFound = true;
+                break;
+            }
+        }
+//        if (!bDevFound) {
+//            _LOWASIS_PHY_ANDROID_DEBUG("download_bootloader_firmware: bDevFound is false for searching key %llx ", (unsigned long long)hKeyTarget);
+//            return -1;
+//        }
+    }
+
+    _LOWASIS_PHY_ANDROID_DEBUG("download_bootloader_firmware: this: %p, before calling AT3DRV_LDR_LoadFirmware %llx", this, (unsigned long)toInitTarget);
+    ar = AT3DRV_LDR_LoadFirmware(toInitTarget);
+    _LOWASIS_PHY_ANDROID_DEBUG("download_bootloader_firmware: this: %p, after calling AT3DRV_LDR_LoadFirmware %llx", this, (unsigned long)toInitTarget);
+
+    CHK_AR(ar, "load");
     return -1;
 }
 
@@ -667,8 +701,10 @@ int LowaSISPHYAndroid::processThread()
             char tmp64[64], tmp128[128];
 
             if (pData->eType == eAT3_RXDTYPE_IP) {
-                _LOWASIS_PHY_ANDROID_TRACE("::processThread() - packetLen: %d", pData->payload->p_size);
 
+#ifdef __ATSC3_LOWASIS_PENDANTIC__
+                _LOWASIS_PHY_ANDROID_TRACE("::processThread() - packetLen: %d", pData->payload->p_size);
+#endif
                 S_AT3DRV_RXDINFO_IP *info = (S_AT3DRV_RXDINFO_IP *) pData->pInfo;
 
                 if (atsc3_phy_rx_udp_packet_process_callback) {
@@ -872,12 +908,12 @@ int LowaSISPHYAndroid::statusThread()
         memset(&s_fe_detail, 0, sizeof(s_fe_detail));
 
         int32_t lock = 1, rssi = -2000;
-        ar = AT3DRV_FE_GetStatus(hDevice, eAT3_RFSTAT_LOCK, &lock);
-        ar = AT3DRV_FE_GetStatus(hDevice, eAT3_RFSTAT_STRENGTH, &rssi);
+        ar = AT3DRV_FE_GetStatus(mhDevice, eAT3_RFSTAT_LOCK, &lock);
+        ar = AT3DRV_FE_GetStatus(mhDevice, eAT3_RFSTAT_STRENGTH, &rssi);
 
         s_fe_detail.flagRequest = 0xffffffff; // all info. too many?
         //s_fe_detail.flagRequest = FE_SIG_MASK_Lock; // | FE_SIG_MASK_RfLevel | FE_SIG_MASK_CarrierOffset | FE_SIG_MASK_SNR | FE_SIG_MASK_BER | FE_SIG_MASK_FecModCod | FE_SIG_MASK_BbpErr;
-        AT3DRV_FE_GetStatus(hDevice, eAT3_FESTAT_RF_DETAIL, &s_fe_detail);
+        AT3DRV_FE_GetStatus(mhDevice, eAT3_FESTAT_RF_DETAIL, &s_fe_detail);
 
         uint8_t modcod_valid = s_fe_detail.aFecModCod[0].valid;
         uint8_t E_L1d_PlpFecType = s_fe_detail.aFecModCod[0].fecType;
@@ -890,7 +926,7 @@ int LowaSISPHYAndroid::statusThread()
             //eAT3_FESTAT_LGD_PLP_V1
             S_LGD_L2_PLPINFO* l2plpInfo = (S_LGD_L2_PLPINFO*)calloc(1, sizeof(S_LGD_L2_PLPINFO));
             l2plpInfo->index = 0;
-            AT3DRV_FE_GetStatus(hDevice, eAT3_FESTAT_LGD_PLP_V1, l2plpInfo);
+            AT3DRV_FE_GetStatus(mhDevice, eAT3_FESTAT_LGD_PLP_V1, l2plpInfo);
             modcod_valid = 1;
             E_L1d_PlpFecType = l2plpInfo->plp_fec_type;
             E_L1d_PlpMod = l2plpInfo->plp_mod;
@@ -1005,7 +1041,7 @@ Java_org_ngbp_libatsc3_middleware_android_phy_LowaSISPHYAndroid_deinit(JNIEnv *e
 }
 
 extern "C" JNIEXPORT jint JNICALL
-Java_org_ngbp_libatsc3_middleware_android_phy_LowaSISPHYAndroid_download_1bootloader_1firmware(JNIEnv *env, jobject thiz, jint fd) {
+Java_org_ngbp_libatsc3_middleware_android_phy_LowaSISPHYAndroid_download_1bootloader_1firmware(JNIEnv *env, jobject thiz, jint fd, jstring device_path_jstring) {
     _LOWASIS_PHY_ANDROID_DEBUG("Java_org_ngbp_libatsc3_middleware_android_phy_LowaSISPHYAndroid_download_1bootloader_1firmware: fd: %d", fd);
     int res = 0;
 
@@ -1013,7 +1049,11 @@ Java_org_ngbp_libatsc3_middleware_android_phy_LowaSISPHYAndroid_download_1bootlo
         _LOWASIS_PHY_ANDROID_ERROR("Java_org_ngbp_libatsc3_middleware_android_phy_LowaSISPHYAndroid_download_1bootloader_1firmware: LowaSISPHYAndroid is NULL!");
         res = -1;
     } else {
-        res = lowaSISPHYAndroid->download_bootloader_firmware(fd); //calls pre_init
+        const char* device_path_weak = env->GetStringUTFChars(device_path_jstring, 0);
+        string device_path(device_path_weak);
+        res = lowaSISPHYAndroid->download_bootloader_firmware(fd, device_path); //calls pre_init
+        env->ReleaseStringUTFChars( device_path_jstring, device_path_weak );
+
         //jjustman-2020-08-23 - hack, clear out our in-flight reference since we should re-enumerate
         delete lowaSISPHYAndroid;
         lowaSISPHYAndroid = nullptr;
@@ -1022,7 +1062,7 @@ Java_org_ngbp_libatsc3_middleware_android_phy_LowaSISPHYAndroid_download_1bootlo
 }
 
 extern "C" JNIEXPORT jint JNICALL
-Java_org_ngbp_libatsc3_middleware_android_phy_LowaSISPHYAndroid_open(JNIEnv *env, jobject thiz, jint fd) {
+Java_org_ngbp_libatsc3_middleware_android_phy_LowaSISPHYAndroid_open(JNIEnv *env, jobject thiz, jint fd, jstring device_path_jstring) {
     _LOWASIS_PHY_ANDROID_DEBUG("Java_org_ngbp_libatsc3_middleware_android_phy_LowaSISPHYAndroid_open: fd: %d", fd);
 
     int res = 0;
@@ -1030,7 +1070,10 @@ Java_org_ngbp_libatsc3_middleware_android_phy_LowaSISPHYAndroid_open(JNIEnv *env
         _LOWASIS_PHY_ANDROID_ERROR("Java_org_ngbp_libatsc3_middleware_android_phy_LowaSISPHYAndroid_open: LowaSISPHYAndroid is NULL!");
         res = -1;
     } else {
-        res = lowaSISPHYAndroid->open(fd, 0, 0);
+        const char* device_path_weak = env->GetStringUTFChars(device_path_jstring, 0);
+        string device_path(device_path_weak);
+        res = lowaSISPHYAndroid->open(fd, device_path);
+        env->ReleaseStringUTFChars( device_path_jstring, device_path_weak );
     }
     return res;
 }
