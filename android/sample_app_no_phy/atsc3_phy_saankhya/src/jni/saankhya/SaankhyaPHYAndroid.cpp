@@ -13,6 +13,8 @@ SaankhyaPHYAndroid::SaankhyaPHYAndroid(JNIEnv* env, jobject jni_instance) {
     this->env = env;
     this->jni_instance_globalRef = this->env->NewGlobalRef(jni_instance);
     this->setRxUdpPacketProcessCallback(atsc3_core_service_bridge_process_packet_from_plp_and_block);
+    this->setRxLinkMappingTableProcessCallback(atsc3_phy_jni_bridge_notify_link_mapping_table);
+
     if(atsc3_ndk_application_bridge_get_instance()) {
         atsc3_ndk_application_bridge_get_instance()->atsc3_phy_notify_plp_selection_change_set_callback(&SaankhyaPHYAndroid::NotifyPlpSelectionChangeCallback, this);
     }
@@ -1645,12 +1647,21 @@ void SaankhyaPHYAndroid::processTLVFromCallback()
                         if(atsc3_alp_packet->alp_packet_header.packet_type == 0x00) {
 
                             block_Rewind(atsc3_alp_packet->alp_payload);
-                            //atsc3_phy_mmt_player_bridge_process_packet_phy(atsc3_alp_packet->alp_payload);
-                            atsc3_core_service_bridge_process_packet_phy(atsc3_alp_packet->alp_payload);
+                            if(atsc3_phy_rx_udp_packet_process_callback) {
+                                atsc3_phy_rx_udp_packet_process_callback(atsc3_sl_tlv_payload->plp_number, atsc3_alp_packet->alp_payload);
+                            }
+
                         } else if(atsc3_alp_packet->alp_packet_header.packet_type == 0x4) {
                             alp_total_LMTs_recv++;
                             atsc3_link_mapping_table_t* atsc3_link_mapping_table_pending = atsc3_alp_packet_extract_lmt(atsc3_alp_packet);
-                            atsc3_phy_jni_bridge_notify_link_mapping_table(atsc3_link_mapping_table_pending);
+
+                            if(atsc3_phy_rx_link_mapping_table_process_callback) {
+                                atsc3_link_mapping_table_t *atsc3_link_mapping_table_to_free = atsc3_phy_rx_link_mapping_table_process_callback(atsc3_link_mapping_table_pending);
+
+                                if (atsc3_link_mapping_table_to_free) {
+                                    atsc3_link_mapping_table_free(&atsc3_link_mapping_table_to_free);
+                                }
+                            }
                         }
 
                         atsc3_alp_packet_free(&atsc3_alp_packet);

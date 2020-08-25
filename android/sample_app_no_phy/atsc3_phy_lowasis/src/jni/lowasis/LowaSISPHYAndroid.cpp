@@ -7,10 +7,31 @@ LowaSISPHYAndroid* lowaSISPHYAndroid = nullptr;
 
 mutex LowaSISPHYAndroid::Cctor_muxtex;
 
+/**
+ * jjustman-2020-08-24 - LowaSIS helper defines
+
+ */
+
+#define ASSERT(cond,s) do { \
+        if (!(cond)) { _LOWASIS_PHY_ANDROID_ERROR("%s: !! %s assert fail, line %d\n", __func__, s, __LINE__); \
+            return -1; } \
+        } while(0)
+
+#define CHK_AR(ar,s) do { \
+		if (ar) { _LOWASIS_PHY_ANDROID_ERROR("%s: !! %s, err %d, line %d\n", __func__, s, ar, __LINE__); \
+			return -1; } \
+		} while(0)
+#define SHOW_AR(ar,s) do { \
+		if (ar) { _LOWASIS_PHY_ANDROID_ERROR("%s: !! %s, err %d, line %d\n", __func__, s, ar, __LINE__); } \
+		} while(0)
+
+
 LowaSISPHYAndroid::LowaSISPHYAndroid(JNIEnv* env, jobject jni_instance) {
     this->env = env;
     this->jni_instance_globalRef = this->env->NewGlobalRef(jni_instance);
     this->setRxUdpPacketProcessCallback(atsc3_core_service_bridge_process_packet_from_plp_and_block);
+    this->setRxLinkMappingTableProcessCallback(atsc3_phy_jni_bridge_notify_link_mapping_table);
+
     if(atsc3_ndk_application_bridge_get_instance()) {
         atsc3_ndk_application_bridge_get_instance()->atsc3_phy_notify_plp_selection_change_set_callback(&LowaSISPHYAndroid::NotifyPlpSelectionChangeCallback, this);
     }
@@ -43,6 +64,10 @@ LowaSISPHYAndroid::~LowaSISPHYAndroid() {
         atsc3_sl_tlv_payload_free(&atsc3_sl_tlv_payload);
     }
 
+    if(init_completed) {
+        AT3DRV_Uninit();
+    }
+    init_completed = false;
 
     if(false) {
         /***
@@ -119,8 +144,158 @@ void LowaSISPHYAndroid::releasePinnedStatusThreadAsNeeded() {
 
 int LowaSISPHYAndroid::init()
 {
+    _LOWASIS_PHY_ANDROID_DEBUG("LowaSISPHYAndroid::init with this: %p", this);
+
+    AT3RESULT ar;
+
+    ar = AT3DRV_Init(AT3DRV_VER);
+    if (!AT3OK(ar)) {
+        _LOWASIS_PHY_ANDROID_ERROR("LowaSISPHYAndroid::init - AT3DRV_Init returned not ok! %d", ar);
+        return ar;
+    }
+
+    S_AT3DRV_VER_INFO vinfo;
+    memset(&vinfo, 0, sizeof(vinfo));
+    AT3DRV_GetVersionInfo(&vinfo);
+
+    //LogMsgF("at3drv ver %s, id %s, branch %s\n", vinfo.ver, vinfo.rev_id, vinfo.rev_branch);
+    _LOWASIS_PHY_ANDROID_DEBUG("LowaSISPHYAndroid::init - at3drv ver is: %s", vinfo.ver);
+
+    init_completed = true;
     return 0;
 }
+
+//jjustman-2020-08-24 - copying from baseline impl
+//
+//int At3DrvIntf::Prepare(const char *strDevListInfo, int delim1, int delim2)
+//{
+//    // format example:  delim1 is colon, delim2 is comma
+//    // "/dev/bus/usb/001/001:21,/dev/bus/usb/001/002:22"
+//
+//    AT3RESULT ar;
+//    auto vsDevInfo = Split(strDevListInfo, (char)delim2);
+//    if (!strDevListInfo || !*strDevListInfo || vsDevInfo.empty()) {
+//        printf("empty device\n");
+//        ar = AT3DRV_LDR_PolulateUsbDevices(nullptr, 0, nullptr);
+//        CHK_AR(ar, "populate");
+//        return 0;
+//    }
+//
+//    int nNumDevs = (int)vsDevInfo.size();
+//    vector<string> vsDevPath(nNumDevs);
+//    vector<S_ETA_DEVICE> vEtaDevs(nNumDevs);
+//
+//    LogMsgF("prepare: %d devices", nNumDevs);
+//    for (int i=0; i<nNumDevs; i++) {
+//        printf("   -- %s\n", vsDevInfo[i].c_str());
+//        auto vs = Split(vsDevInfo[i].c_str(), delim1);
+//        if (vs.size() != 2) { // wrong form
+//            printf("!! num word %d\n", (int)vs.size());
+//            break;
+//        }
+//        int fd = atoi(vs[1].c_str());
+//        if (fd == 0) { // probably wrong fd
+//            printf("!! fd '%s'\n", vs[1].c_str());
+//            break;
+//        }
+//        vsDevPath[i] = vs[0];
+//        vEtaDevs[i].devfs = vsDevPath[i].c_str();
+//        vEtaDevs[i].fd = fd;
+//        printf("   (%d) %s, %d\n", i, vEtaDevs[i].devfs, vEtaDevs[i].fd);
+//    }
+//
+//    int nDevAdded = 0;
+//    ar = AT3DRV_LDR_PolulateUsbDevices(&vEtaDevs[0], nNumDevs, &nDevAdded);
+//    CHK_AR(ar, "populate");
+//    LogMsgF("populate: %d devices added", nDevAdded);
+//
+//    return 0;
+//}
+//
+///*
+// *
+// */
+//std::vector<AT3_DEV_KEY> At3DrvIntf::FindKeys(bool bPrebootDevice)
+//{
+//    E_AT3_DEV_FIND_FILTER filter = bPrebootDevice ? eDFF_CypressFx3 : eDFF_AtlasFx3;
+//    std::vector<AT3_DEV_KEY> vKeys(128); // it can hold max 128 keys
+//    int nKeys = 0;
+//
+//    AT3RESULT ar = AT3DRV_LDR_SearchDevicesByType(filter, &vKeys[0], 128, &nKeys);
+//    if (!AT3OK(ar)) {
+//        LogMsgF("search device failed %d", ar);
+//        vKeys.clear();
+//        return vKeys;
+//    }
+//    printf("%d keys found\n", nKeys);
+//    vKeys.resize(nKeys);
+//    return vKeys;
+//}
+//
+///* Load atlas dongle firmware.
+// * note: target device need to be populated before calling this api
+// */
+//int At3DrvIntf::FwLoad(AT3_DEV_KEY hKeyTarget)
+//{
+//    AT3RESULT ar;
+//
+//    LogMsgF("fwload (%llx)", (unsigned long long)hKeyTarget);
+//
+//    if (1) {
+//        int i, nkey = 0;
+//        AT3_DEV_KEY keys[32];
+//        bool bDevFound = false;
+//
+//        ar = AT3DRV_LDR_SearchDevicesByType(eDFF_CypressFx3, keys, 32, &nkey);
+//        CHK_AR(ar, "find cyfx3");
+//
+//        if (nkey <= 0) {
+//            LogMsgF("no cyfx3");
+//            return 0;
+//        }
+//        LogMsgF("==== all cypress fx3 devices (%d)", nkey);
+//        for (i=0; i<nkey; i++) {
+//            LogMsgF(" key[%d]: %lx", i, (unsigned long)keys[i]);
+//            if (hKeyTarget == keys[i]) {
+//                bDevFound = true;
+//                break;
+//            }
+//        }
+//        if (!bDevFound) {
+//            LogMsgF("!! cyfx3 of key %llx not found", (unsigned long long)hKeyTarget);
+//            return -1;
+//        }
+//    }
+//
+//    LogMsgF("==== load firmware to device with key %lx", (unsigned long)hKeyTarget);
+//    ar = AT3DRV_LDR_LoadFirmware(hKeyTarget);
+//    CHK_AR(ar, "load");
+//
+//#if 1
+//    // do not wait here in UI thread.
+//    // usb device detach & re-attach event will come from android system.
+//#else
+//    LogMsgF("==== wait until fx reboot..");
+//    E_AT3_DEV_TYPE dt;
+//    for (i=0; i<50; i++) {
+//        // ar = AT3DRV_LDR_FindDeviceByType(eDT_AtlasFx3, hKey)
+//        ar = AT3DRV_LDR_CheckDeviceExist(hKey, &dt);
+//        if (AT3OK(ar) && dt == eDT_AtlasFx3) {
+//            printf("ok, atfx3 detected\n");
+//            mKey = hKey;
+//            return 0;
+//        }
+//        printf("."); fflush(stdout);
+//        AT3_DelayMs(100);
+//    }
+//    LogMsgF("dev not detected!");
+//#endif
+//    return 0;
+//}
+
+//jjustman-2020-08-24 - end copying from baseline impl
+
+
 
 int LowaSISPHYAndroid::run()
 {
@@ -129,52 +304,88 @@ int LowaSISPHYAndroid::run()
 
 bool LowaSISPHYAndroid::is_running() {
 
-    return false; //(captureThreadIsRunning && processThreadIsRunning && statusThreadIsRunning);
+    return processThreadIsRunning && captureThreadIsRunning && statusThreadIsRunning;
 }
 
 int LowaSISPHYAndroid::stop()
 {
-    _LOWASIS_PHY_ANDROID_DEBUG("LowaSISPHYAndroid::stop: enter with this: %p", this);
+    AT3RESULT ar;
+    _LOWASIS_PHY_ANDROID_INFO("LowaSISPHYAndroid::stop: enter with this: %p", this);
 
-//    //tear down status thread first, as its the most 'problematic'
-//    if(statusThreadIsRunning) {
-//        statusThreadShouldRun = false;
-//        _LOWASIS_PHY_ANDROID_DEBUG("LowaSISPHYAndroid::stop: setting statusThreadShouldRun: false");
-//        while(this->statusThreadIsRunning) {
-//            SL_SleepMS(100);
-//            _LOWASIS_PHY_ANDROID_DEBUG("LowaSISPHYAndroid::stop: this->statusThreadIsRunning: %d", this->statusThreadIsRunning);
-//        }
-//        pthread_join(sThreadID, NULL);
-//        _LOWASIS_PHY_ANDROID_DEBUG("LowaSISPHYAndroid::stop: after pthread_join for sThreadID");
-//    }
-//
-//    if(captureThreadIsRunning) {
-//        captureThreadShouldRun = false;
-//        _LOWASIS_PHY_ANDROID_DEBUG("LowaSISPHYAndroid::stop: setting captureThreadShouldRun: false");
-//
-//        SL_RxDataStop();
-//        while(this->captureThreadIsRunning) {
-//            SL_SleepMS(100);
-//            _LOWASIS_PHY_ANDROID_DEBUG("LowaSISPHYAndroid::stop: this->captureThreadIsRunning: %d", this->captureThreadIsRunning);
-//        }
-//        pthread_join(cThreadID, NULL);
-//        _LOWASIS_PHY_ANDROID_DEBUG("LowaSISPHYAndroid::stop: after pthread_join for cThreadID");
-//    }
-//
-//    if(processThreadIsRunning) {
-//        processThreadShouldRun = false;
-//        _LOWASIS_PHY_ANDROID_DEBUG("LowaSISPHYAndroid::stop: setting processThreadShouldRun: false");
-//        while(this->processThreadIsRunning) {
-//            SL_SleepMS(100);
-//            _LOWASIS_PHY_ANDROID_DEBUG("LowaSISPHYAndroid::stop: this->processThreadIsRunning: %d", this->processThreadIsRunning);
-//        }
-//        pthread_join(pThreadID, NULL);
-//        _LOWASIS_PHY_ANDROID_DEBUG("LowaSISPHYAndroid::stop: after pthread_join for pThreadID");
-//    }
-//
+    ASSERT(init_completed, "not init");
+    ASSERT(mhDevice, "not open");
 
-    _LOWASIS_PHY_ANDROID_DEBUG("LowaSISPHYAndroid::stop: return with this: %p", this);
-    return 0;
+    ar = AT3DRV_CancelWait(mhDevice);
+    CHK_AR(ar, "CancelWait");
+    _LOWASIS_PHY_ANDROID_DEBUG("AT3DRV_CancelWait:: cancelled\n");
+
+    ar = AT3DRV_FE_Stop(mhDevice);
+    CHK_AR(ar, "FE_Stop");
+
+    //tear down status thread first, as its the most 'problematic'
+    if(statusThreadIsRunning) {
+        statusThreadShouldRun = false;
+        _LOWASIS_PHY_ANDROID_DEBUG("LowaSISPHYAndroid::stop: setting statusThreadShouldRun: false");
+        while(this->statusThreadIsRunning) {
+            usleep(100000);
+            _LOWASIS_PHY_ANDROID_DEBUG("LowaSISPHYAndroid::stop: this->statusThreadIsRunning: %d", this->statusThreadIsRunning);
+        }
+        if(statusThreadHandle.joinable()) {
+            statusThreadHandle.join();
+        }
+        _LOWASIS_PHY_ANDROID_DEBUG("LowaSISPHYAndroid::stop: after join for statusThreadHandle");
+    }
+
+    if(captureThreadIsRunning) {
+        captureThreadShouldRun = false;
+        _LOWASIS_PHY_ANDROID_DEBUG("LowaSISPHYAndroid::stop: setting captureThreadShouldRun: false");
+
+        while(this->captureThreadIsRunning) {
+            usleep(100000);
+            _LOWASIS_PHY_ANDROID_DEBUG("LowaSISPHYAndroid::stop: this->captureThreadIsRunning: %d", this->captureThreadIsRunning);
+        }
+        if(captureThreadHandle.joinable()) {
+            captureThreadHandle.join();
+        }
+        _LOWASIS_PHY_ANDROID_DEBUG("LowaSISPHYAndroid::stop: after join for captureThreadHandle");
+    }
+
+    if(processThreadIsRunning) {
+        processThreadShouldRun = false;
+        _LOWASIS_PHY_ANDROID_DEBUG("LowaSISPHYAndroid::stop: setting processThreadShouldRun: false");
+        while(this->processThreadIsRunning) {
+            usleep(100000);
+            _LOWASIS_PHY_ANDROID_DEBUG("LowaSISPHYAndroid::stop: this->processThreadIsRunning: %d", this->processThreadIsRunning);
+        }
+        if(processThreadHandle.joinable()) {
+            processThreadHandle.join();
+        }
+        _LOWASIS_PHY_ANDROID_DEBUG("LowaSISPHYAndroid::stop: after join for processThreadHandle");
+    }
+
+    // clear ip/port statistics
+    resetStatstics();
+
+    if(mhDevice) {
+        ar = AT3DRV_CloseDevice(mhDevice);
+    }
+
+    ar = AT3DRV_Option_Release(mAt3Opt);
+    SHOW_AR(ar, "Option Release");
+    mAt3Opt = nullptr;
+    mhDevice = 0;
+
+    _LOWASIS_PHY_ANDROID_INFO("LowaSISPHYAndroid::stop: return with this: %p", this);
+    return ar;
+}
+
+void LowaSISPHYAndroid::resetStatstics() {
+    s_ulLastTickPrint = 0;
+    s_ullTotalBytes = s_ullTotalPkts = 0;
+    s_uTotalLmts = 0;
+    s_mapIpPort.clear();
+    s_nPrevLmtVer = -1;
+    s_ulL1SecBase = 0;
 }
 
 /*
@@ -196,75 +407,149 @@ int LowaSISPHYAndroid::deinit()
 
 int LowaSISPHYAndroid::open(int fd, int bus, int addr)
 {
+    AT3RESULT ar;
+    _LOWASIS_PHY_ANDROID_DEBUG("LowaSISPHYAndroid::open, this: %p,  with fd: %d, bus: %d, addr: %d", this, fd, bus, addr);
 
-    printf("OPEN COMPLETE!");
+    ASSERT(init_completed, "not init");
+    ASSERT(!mhDevice, "already open");
+
+    if (1) {
+        AT3_DEV_KEY keys[32];
+        int nkey;
+        bool bFound = false;
+
+        printf("first, list all at3devices..\n");
+        ar = AT3DRV_LDR_SearchDevicesByType(eDFF_Any, keys, 32, &nkey);
+        CHK_AR(ar, "find at3dev");
+
+        _LOWASIS_PHY_ANDROID_INFO("==== all at3 devices (%d)", nkey);
+        for (int i=0; i<nkey; i++) {
+            _LOWASIS_PHY_ANDROID_INFO(" key[%d]: %lx", i, (unsigned long)keys[i]);
+        }
+    }
+
+    ar = AT3DRV_Option_Create(&mAt3Opt);
+    CHK_AR(ar, "Option Create");
+
+    AT3DRV_Option_SetInt(mAt3Opt, "output-ip", 1);
+    AT3DRV_Option_SetInt(mAt3Opt, "get-parsed-lmt", 1);
+    // if this set to 1, S_AT3DRV_RXDINFO_LMT::lmt is returned with valid data.
+    // note that it is not efficient because every received lmt is parsed
+    // regardless of actual lmt change (no checking of version or CRC).
+    // if you can manage raw lmt data, it is better to parse by yourself.
+    //AT3DRV_Option_SetInt(mAt3Opt, "fx-ep2-watchdog", 20);
+
+    //jjustman-2019-11-01 - force ALP standard to USA, this addresses issues with "auto" mode
+    //and multi-PLP configuration and improper IP flow resolution
+    AT3DRV_Option_SetString(mAt3Opt, "alp-standard", "usa");
+    AT3_DEV_KEY hKeyTarget = 0; //hack
+
+    ar = AT3DRV_OpenDevice(&hDevice, hKeyTarget, mAt3Opt);
+    CHK_AR(ar, "OpenDevice");
+
+    mhDevice = hDevice;
+
+    //check if we were re-initalized and might have an open RxThread or RxStatusThread
+
+    if(captureThreadHandle.joinable()) {
+        captureThreadShouldRun = false;
+        _LOWASIS_PHY_ANDROID_INFO("::Open() - setting captureThreadShouldRun to false, Waiting for captureThreadHandle to join()");
+        captureThreadHandle.join();
+    }
+
+    if(processThreadHandle.joinable()) {
+        processThreadShouldRun = false;
+        _LOWASIS_PHY_ANDROID_INFO("::Open() - setting processThreadShouldRun to false, Waiting for processThreadHandle to join()");
+        processThreadHandle.join();
+    }
+
+    if(statusThreadHandle.joinable()) {
+        statusThreadShouldRun = false;
+        _LOWASIS_PHY_ANDROID_INFO("::Open() - setting statusThreadShouldRun to false, Waiting for statusThreadHandle to join()");
+        statusThreadHandle.join();
+    }
+
+    captureThreadShouldRun = true;
+    captureThreadHandle = std::thread([this](){
+        this->captureThread();
+    });
+
+    processThreadShouldRun = true;
+    processThreadHandle = std::thread([this](){
+        this->processThread();
+    });
+
+    statusThreadShouldRun = true;
+    statusThreadHandle = std::thread([this]() {
+        this->statusThread();
+    });
+
+    _LOWASIS_PHY_ANDROID_DEBUG("::open success: %p, returning 0", this);
     return 0;
 
 ERROR:
-
+    _LOWASIS_PHY_ANDROID_ERROR("::open failed: %p, returning -1", this);
     return -1;
 }
 
+
 int LowaSISPHYAndroid::tune(int freqKHz, int plpid)
-{
-   int ret = 0;
-
-//
-//    if(!processThreadIsRunning) {
-//        processThreadShouldRun = true;
-//        pThread = pthread_create(&pThreadID, NULL, (THREADFUNCPTR)&LowaSISPHYAndroid::ProcessThread, (void*)this);
-//        if (pThread != 0) {
-//            //processFlag = 0;
-//            printf("\n Process Thread failed to launch");
-//            goto ERROR;
-//        } else  {
-//            //processFlag = 1;
-//        }
-//    }
-//
-//    if(!captureThreadIsRunning) {
-//        captureThreadShouldRun = true;
-//        printf("creating capture thread with cb buffer size: %d, tlv_block_size: %d",
-//               CB_SIZE, BUFFER_SIZE);
-//        cThread = pthread_create(&cThreadID, NULL, (THREADFUNCPTR)&LowaSISPHYAndroid::CaptureThread, (void*)this);
-//        if (cThread != 0) {
-//            printf("\n Capture Thread failed to launch");
-//            goto ERROR;
-//        }
-//    }
-//
-//    if(!statusThreadIsRunning) {
-//        statusThreadShouldRun = true;
-//        sThread = pthread_create(&sThreadID, NULL, (THREADFUNCPTR) &LowaSISPHYAndroid::TunerStatusThread, (void*)this);
-//        if (sThread != 0) {
-//            printf("\n Capture Thread launched unsuccessfully");
-//            goto ERROR;
-//        }
-//    }
-
-    ret = 0;
-    goto UNLOCK;
-
- ERROR:
-    ret = -1;
-
-    //unlock our i2c mutext
-UNLOCK:
-    return ret;
-
-}
-
-int LowaSISPHYAndroid::listen_plps(vector<uint8_t> plps_orignal_list)
 {
     int ret = 0;
 
-    vector<uint8_t> plps;
-    for(int i=0; i < plps_orignal_list.size(); i++) {
-        if(plps_orignal_list.at(i) == 0) {
+    AT3RESULT ar;
+
+    _LOWASIS_PHY_ANDROID_DEBUG("%s (%d KHz, plp %d)", __func__, freqKHz, plpid);
+    ASSERT(init_completed, "not init");
+    ASSERT(mhDevice, "not open");
+
+    if (plpid < 0 || plpid >= 64) {
+        _LOWASIS_PHY_ANDROID_ERROR("LowaSISPHYAndroid::tune - invalid plp! value: %d", plpid);
+        return -1;
+    }
+
+    ar = AT3DRV_FE_Start(mhDevice, freqKHz, eAT3_DEMOD_ATSC30, plpid);
+    CHK_AR(ar, "FE_Start");
+
+    _LOWASIS_PHY_ANDROID_DEBUG("tuned to freq %d MHz, plp %d", freqKHz/1000, plpid);
+
+    is_tuned = true;
+    return 0;
+}
+
+/*
+ * jjustman-2020-08-24 -  always listen to plp0, so listen_plps may be a maximum of 3 values (4 if 0 is included)
+ */
+int LowaSISPHYAndroid::listen_plps(vector<uint8_t> plps_original_list)
+{
+    AT3RESULT ar;
+    E_AT3_FEVENDOR s;
+
+    int ret = 0;
+    uint8_t u_plp_ids[4] = { 0x00, 0x40, 0x40, 0x40 };
+    int plp_postion = 1;
+
+    for(int i=0; i < plps_original_list.size() && plp_postion < 3; i++) {
+        if(plps_original_list.at(i) == 0) {
             //skip, duplicate plp0 will cause demod to fail
         } else {
-            plps.push_back(plps_orignal_list.at(i));
+            u_plp_ids[plp_postion++] = plps_original_list.at(i);
         }
+    }
+
+    ar = AT3DRV_FE_GetStatus(mhDevice, eAT3_FESTAT_VENDOR, &s);
+
+    //jjustman-2020-02-29 - hack - check if FE vendor is LG3307_R850, only listen to ONE PLP, otherwise listen to multiple
+    if(s == eAT3_FEVENDOR_LGDT3307_R850) {
+
+        u_plp_ids[0] = u_plp_ids[plp_postion-1];
+
+        AT3DRV_FE_SetPLP(mhDevice, u_plp_ids, 1);
+        _LOWASIS_PHY_ANDROID_DEBUG("ListenPLP1: LG3307_R850: setting to SINGLE plp_id[0]: %d", u_plp_ids[0]);
+    } else {
+        AT3DRV_FE_SetPLP(mhDevice, u_plp_ids, plp_postion);
+        _LOWASIS_PHY_ANDROID_DEBUG("listen_plps: MultiPLP count %d, plp_id[0]: %d, plp_id[1]: %d, plp_id[2]: %d, plp_id[3]: %d",
+                                   plp_postion, u_plp_ids[0], u_plp_ids[1], u_plp_ids[2], u_plp_ids[3]);
     }
 
 
@@ -297,210 +582,360 @@ int LowaSISPHYAndroid::download_bootloader_firmware(int fd) {
     return -1;
 }
 
-
-void* LowaSISPHYAndroid::ProcessThread(void* context)
+int LowaSISPHYAndroid::captureThread()
 {
-    printf("LowaSISPHYAndroid::ProcessThread: with context: %p", context);
+    AT3RESULT ar;
+    _LOWASIS_PHY_ANDROID_DEBUG("%s, this: %p", __func__, this);
+    pinProducerThreadAsNeeded();
 
-    LowaSISPHYAndroid* apiImpl = (LowaSISPHYAndroid*) context;
-//    apiImpl->processThreadIsRunning = true;
-//
-//    apiImpl->pinConsumerThreadAsNeeded();
-//
-//    apiImpl->resetProcessThreadStatistics();
-//
-//    while (apiImpl->processThreadShouldRun)
-//    {
-//        //printf("atsc3NdkClientSlImpl::ProcessThread: getDataSize is: %d", CircularBufferGetDataSize(cb));
-//
-//        while(CircularBufferGetDataSize(apiImpl->cb) >= BUFFER_SIZE) {
-//            apiImpl->processTLVFromCallback();
-//        }
-//        usleep(10000);
-//    }
-//
-//    apiImpl->releasePinnedConsumerThreadAsNeeded();
-//
-//    apiImpl->processThreadIsRunning = false;
-    _LOWASIS_PHY_ANDROID_INFO("LowaSISPHYAndroid::ProcessThread complete");
+    ASSERT(init_completed, "not init");
+    ASSERT(mhDevice, "not open");
+
+    this->captureThreadIsRunning = true;
+    while (this->captureThreadShouldRun) {
+        if (!is_tuned) {
+            AT3_DelayMs(100);
+            // user has better improve this using semaphore or event msg, instead of delay.
+            continue;
+        }
+        ar = AT3DRV_WaitRxData(mhDevice, 5000);
+        if (ar == AT3RES_CANCEL) {
+            _LOWASIS_PHY_ANDROID_DEBUG("wait cancelled");
+            AT3_DelayMs(10);
+            continue;
+        }
+        if (AT3ERR(ar)) {
+            _LOWASIS_PHY_ANDROID_ERROR("wait rx data error %d (%s)", ar, AT3_ErrString(ar));
+            if (ar != AT3RES_TIMEOUT)
+                break;
+        }
+        ar = AT3DRV_HandleRxData(mhDevice, RxCallbackStatic, (uint64_t)this);
+        if (AT3ERR(ar)) {
+            _LOWASIS_PHY_ANDROID_ERROR("handle rx data error %d (%s)", ar, AT3_ErrString(ar));
+        }
+    }
+
+    //unlock our consumer thread
+
+    lock_guard<mutex> lowasis_phy_rx_data_buffer_queue_guard(lowasis_phy_rx_data_buffer_queue_mutex);
+    lowasis_phy_rx_data_buffer_condition.notify_one();
+
+    _LOWASIS_PHY_ANDROID_INFO("LowaSISPHYAndroid::captureThread complete");
+
+    this->captureThreadIsRunning = false;
+    releasePinnedProducerThreadAsNeeded();
 
     return 0;
 }
 
-void* LowaSISPHYAndroid::CaptureThread(void* context)
-{
-    LowaSISPHYAndroid* apiImpl = (LowaSISPHYAndroid*) context;
-//    apiImpl->captureThreadIsRunning = true;
-//
-//    apiImpl->pinProducerThreadAsNeeded();
-//
-//    SL_RxDataStart((RxDataCB) & LowaSISPHYAndroid::RxDataCallback);
-//
-//    apiImpl->releasePinnedProducerThreadAsNeeded();
-//
-//    apiImpl->captureThreadIsRunning = false;
 
-    _LOWASIS_PHY_ANDROID_INFO("LowaSISPHYAndroid::CaptureThread complete");
+//re-scoping for AT3DRV_HandleRxData callback method
+AT3RESULT LowaSISPHYAndroid::RxCallbackStatic(S_RX_DATA *pData, uint64_t ullUser)
+{
+    LowaSISPHYAndroid *me = (LowaSISPHYAndroid *)ullUser;
+    return me->RxCallbackInstanceScoped(pData);
+}
+
+//jjustman-2020-08-24 - todo: only push this S_RX_DATA to our processing queue for consumerThread
+AT3RESULT LowaSISPHYAndroid::RxCallbackInstanceScoped(S_RX_DATA *pData) {
+    atsc3_lowasis_phy_android_rxdata_t* lowasis_phy_android_rxdata = atsc3_lowasis_phy_android_rxdata_duplicate_from_s_rx_data(pData);
+
+    lock_guard<mutex> lowasis_phy_rx_data_buffer_queue_guard(lowasis_phy_rx_data_buffer_queue_mutex);
+    lowasis_phy_rx_data_buffer_queue.push(lowasis_phy_android_rxdata);
+    lowasis_phy_rx_data_buffer_condition.notify_one();
+
+    return AT3RES_OK;
+}
+
+int LowaSISPHYAndroid::processThread()
+{
+    _LOWASIS_PHY_ANDROID_INFO("LowaSISPHYAndroid::ProcessThread: with this: %p", this);
+    this->pinConsumerThreadAsNeeded();
+    this->processThreadIsRunning = true;
+
+    queue<atsc3_lowasis_phy_android_rxdata_t*> to_process_queue; //perform a shallow copy so we can exit critical section asap
+    atsc3_lowasis_phy_android_rxdata_t* pData = nullptr;
+
+    while (this->processThreadShouldRun) {
+        //enter critical section with condition wait
+        {
+            unique_lock<mutex> condition_lock(lowasis_phy_rx_data_buffer_queue_mutex);
+            lowasis_phy_rx_data_buffer_condition.wait(condition_lock);
+
+            while (lowasis_phy_rx_data_buffer_queue.size()) {
+                to_process_queue.push(lowasis_phy_rx_data_buffer_queue.front());
+                lowasis_phy_rx_data_buffer_queue.pop();
+            }
+            condition_lock.unlock();
+        }
+        //exit critical section, now we can process our to_process_queue
+
+        while (to_process_queue.size()) {
+            pData = to_process_queue.front();
+            to_process_queue.pop();
+
+            int nSizeMB;
+            bool bShowStat = false;
+            char buf[1024] = {0,};
+            char tmp64[64], tmp128[128];
+
+            if (pData->eType == eAT3_RXDTYPE_IP) {
+                _LOWASIS_PHY_ANDROID_TRACE("::processThread() - packetLen: %d", pData->payload->p_size);
+
+                S_AT3DRV_RXDINFO_IP *info = (S_AT3DRV_RXDINFO_IP *) pData->pInfo;
+
+                if (atsc3_phy_rx_udp_packet_process_callback) {
+                    atsc3_phy_rx_udp_packet_process_callback(info->plp_id, pData->payload);  //make sure to call atsc3_lowasis_phy_android_rxdata_free later
+                }
+
+                s_ullTotalPkts += 1;
+                s_ullTotalBytes += pData->payload->p_size;
+
+                //        if (info->b_discon) bShowStat = true;
+                //        if (info->l1time.flag) bShowStat = true;
+
+                if ((int32_t) (pData->ulTick - s_ulLastTickPrint) >= 1200) bShowStat = true;
+
+                if (pData->payload->p_size > 22) {
+                    uint8_t *p = pData->payload->p_buffer;
+                    sprintf(tmp64, "%d.%d.%d.%d:%d", p[16], p[17], p[18], p[19],
+                            ((uint16_t) p[22] << 8) | p[23]);
+                    std::string ipport = tmp64;
+
+                    auto it = s_mapIpPort.find(ipport);
+                    if (it != s_mapIpPort.end())
+                        it->second += 1;
+                    else
+                        s_mapIpPort[ipport] = 1; // add new ip/port into map
+                }
+
+#ifdef __LOTS_OF_PHY_DEBUGGING__
+                if (bShowStat) {
+                    sprintf(buf, "==== IP: ");
+                    nSizeMB = (int)(s_ullTotalBytes/1024/1024);
+                    sprintf(buf+strlen(buf), "total %u pkts, %u MB received", (int)s_ullTotalPkts, nSizeMB);
+                    if (info->b_discon)
+                        sprintf(buf+strlen(buf), " (pkt dropped!)");
+                    sprintf(buf+strlen(buf), ", %u lmt", (unsigned)s_uTotalLmts);
+                    if (info->l1time.flag) { // print L1D time info.
+                        if (!s_ulL1SecBase) s_ulL1SecBase = info->l1time.sec;
+                        sprintf(buf+strlen(buf), ", %s", AT3_L1TimeString(&(info->l1time), tmp128, s_ulL1SecBase));
+                    }
+        //            printf("%s\n", buf);
+                    strcat(buf, "\n");
+                    int n = 0;
+                    for(auto& x : s_mapIpPort) { // print ip/port pair info
+        //                printf("     %s, %d\n", x.first.c_str(), x.second);
+                        sprintf(buf+strlen(buf), "     %s, %d\n", x.first.c_str(), x.second);
+                        // print max 10 ip/port pairs because it is fixed-sized buffer.
+                        if (++n >= 10) {
+        //                    printf(" ..truncated\n");
+                            strcat(buf, " ..truncated\n");
+                            break;
+                        }
+                    }
+        //            printf("%s", buf);
+                    api.LogMsg(buf);
+                    s_ulLastTickPrint = ulTick;
+                }
+#endif
+
+            } else if (pData->eType == eAT3_RXDTYPE_IP_LMT) {
+                S_AT3DRV_RXDINFO_LMT *info = (S_AT3DRV_RXDINFO_LMT *) pData->pInfo;
+                uint8_t nLmtVer;
+
+                s_uTotalLmts++;
+                nLmtVer = info->lmt_ver;
+                if (nLmtVer != s_nPrevLmtVer) {
+                    _LOWASIS_PHY_ANDROID_INFO("LMT changed, sz %d, v %d", pData->payload->p_size, nLmtVer);
+
+                    atsc3_link_mapping_table_t *atsc3_link_mapping_table = atsc3_link_mapping_table_new();
+                    atsc3_link_mapping_table->alp_additional_header_for_signaling_information_signaling_version = info->lmt_ver;
+
+                    for (int i = 0; i < info->lmt->num_mc; i++) {
+
+                        atsc3_link_mapping_table_plp_t *atsc3_link_mapping_table_plp = NULL;
+                        //hack - check for matching plp
+                        for (int j = 0; j < atsc3_link_mapping_table->atsc3_link_mapping_table_plp_v.count && atsc3_link_mapping_table_plp == NULL; j++) {
+                            if (atsc3_link_mapping_table->atsc3_link_mapping_table_plp_v.data[j]->PLP_ID == info->lmt->mc[i].plp_id) {
+                                atsc3_link_mapping_table_plp = atsc3_link_mapping_table->atsc3_link_mapping_table_plp_v.data[j];
+                            }
+                        }
+
+                        if (atsc3_link_mapping_table_plp == NULL) {
+                            atsc3_link_mapping_table_plp = atsc3_link_mapping_table_plp_new();
+                            atsc3_link_mapping_table_plp->PLP_ID = info->lmt->mc[i].plp_id;
+                            atsc3_link_mapping_table_add_atsc3_link_mapping_table_plp(atsc3_link_mapping_table, atsc3_link_mapping_table_plp);
+                        }
+
+                        atsc3_link_mapping_table_multicast_t *atsc3_link_mapping_table_multicast = atsc3_link_mapping_table_multicast_new();
+
+                        atsc3_link_mapping_table_multicast->src_ip_add = info->lmt->mc[i].src_ip_add;
+                        atsc3_link_mapping_table_multicast->dst_ip_add = info->lmt->mc[i].dst_ip_add;
+
+                        atsc3_link_mapping_table_multicast->src_udp_port = info->lmt->mc[i].src_udp_port;
+                        atsc3_link_mapping_table_multicast->dst_udp_port = info->lmt->mc[i].dst_udp_port;
+
+                        atsc3_link_mapping_table_multicast->sid_flag = info->lmt->mc[i].sid_flag;
+                        atsc3_link_mapping_table_multicast->compressed_flag = info->lmt->mc[i].compressed_flag;
+
+                        if (atsc3_link_mapping_table_multicast->sid_flag) {
+                            atsc3_link_mapping_table_multicast->sid_flag = info->lmt->mc[i].sid;
+                        }
+
+                        if (atsc3_link_mapping_table_multicast->compressed_flag) {
+                            atsc3_link_mapping_table_multicast->compressed_flag = info->lmt->mc[i].context_id;
+                        }
+
+                        atsc3_link_mapping_table_plp_add_atsc3_link_mapping_table_multicast(atsc3_link_mapping_table_plp, atsc3_link_mapping_table_multicast);
+                    }
+
+                    if (atsc3_phy_rx_link_mapping_table_process_callback) {
+                        atsc3_link_mapping_table_t *atsc3_link_mapping_table_to_free = atsc3_phy_rx_link_mapping_table_process_callback(atsc3_link_mapping_table);
+
+                        if (atsc3_link_mapping_table_to_free) {
+                            atsc3_link_mapping_table_free(&atsc3_link_mapping_table_to_free);
+                        }
+                    }
+
+                    //AT3_HexDump(pData->ptr, pData->nLength);
+                    // it dump to stderr which is not valid in android
+                    if (info->lmt) {
+                        AT3_ATSC_PrintLmt(info->lmt, 2);
+                    }
+                    s_nPrevLmtVer = nLmtVer;
+                }
+            } else if (pData->eType == eAT3_RXDTYPE_ALP) {
+                S_AT3DRV_RXDINFO_ALP *info = (S_AT3DRV_RXDINFO_ALP *) pData->pInfo;
+
+                //output delay for logging
+                if ((int32_t) (pData->ulTick - s_ulLastTickPrint) >= 2000) {
+                    bShowStat = true;
+                    s_ulLastTickPrint = pData->ulTick;
+                }
+
+                // update statistics
+                s_ullTotalPkts += 1;
+                s_ullTotalBytes += pData->payload->p_size;
+
+                if (bShowStat) {
+                    nSizeMB = (int) (s_ullTotalBytes / 1024 / 1024);
+                    printf("ALP received total %u pkts, %u MB received %s\n",
+                           (int) s_ullTotalPkts, nSizeMB,
+                           info->b_discon ? "(pkt dropped)" : "");
+                    s_ulLastTickPrint = pData->ulTick;
+                }
+            } else if (pData->eType == eAT3_RXDTYPE_BBPCTR) {
+                S_AT3DRV_RXDINFO_BBPCTR *info = (S_AT3DRV_RXDINFO_BBPCTR *) pData->pInfo;
+
+                if ((int32_t) (pData->ulTick - s_ulLastTickPrint) >= 2000) {
+                    bShowStat = true;
+                }
+
+                // update statistics
+                s_ullTotalPkts += 1;
+                s_ullTotalBytes += pData->payload->p_size;
+
+                if (info->bDiscontinuity)
+                    bShowStat = true;
+
+                if (bShowStat) {
+                    nSizeMB = (int) (s_ullTotalBytes / 1024 / 1024);
+                    printf("BBP received total %u pkts, %u MB received %s\n", (int) s_ullTotalPkts, nSizeMB,
+                           info->bDiscontinuity ? "(pkt dropped)" : "");
+                    s_ulLastTickPrint = pData->ulTick;
+                }
+            } else {
+                printf("!! unknown type %d\n", pData->eType);
+            }
+
+            atsc3_lowasis_phy_android_rxdata_free(&pData);
+        }
+    }
+
+    if(!this->processThreadShouldRun) {
+        //clear out any pending/discards
+        lock_guard<mutex> lowasis_phy_rx_data_buffer_queue_guard(lowasis_phy_rx_data_buffer_queue_mutex);
+
+        while (lowasis_phy_rx_data_buffer_queue.size()) {
+            pData = lowasis_phy_rx_data_buffer_queue.front();
+            atsc3_lowasis_phy_android_rxdata_free(&pData);
+            lowasis_phy_rx_data_buffer_queue.pop();
+        }
+    }
+
+    this->processThreadIsRunning = false;
+    this->releasePinnedConsumerThreadAsNeeded();
+
+    _LOWASIS_PHY_ANDROID_INFO("LowaSISPHYAndroid::processThread complete");
 
     return 0;
 }
 
-void* LowaSISPHYAndroid::TunerStatusThread(void* context)
+int LowaSISPHYAndroid::statusThread()
 {
-    LowaSISPHYAndroid* apiImpl = (LowaSISPHYAndroid*) context;
-//    apiImpl->statusThreadIsRunning = true;
-//    apiImpl->pinStatusThreadAsNeeded();
+    _LOWASIS_PHY_ANDROID_INFO("LowaSISPHYAndroid::statusThread started, this: %p", this);
+    this->pinStatusThreadAsNeeded();
+    this->statusThreadIsRunning = true;
 
-//    while(apiImpl->statusThreadShouldRun) {
+    S_FE_DETAIL s_fe_detail;
+    AT3RESULT ar;
 
-//
-//        if(atsc3_ndk_phy_bridge_get_instance()) {
-//
-//            atsc3_ndk_phy_bridge_get_instance()->atsc3_update_rf_stats(tunerInfo.status == 1,
-//                tunerInfo.signalStrength,
-//                LowaSISPHYAndroid->plpInfo.plp0 == l1dDiag.sfParams[0].PlpParams[0].L1dSfPlpId,
-//                l1dDiag.sfParams[0].PlpParams[0].L1dSfPlpFecType,
-//                l1dDiag.sfParams[0].PlpParams[0].L1dSfPlpModType,
-//                l1dDiag.sfParams[0].PlpParams[0].L1dSfPlpCoderate,
-//                tunerInfo.signalStrength/1000,
-//                snr,
-//                ber_l1b,
-//                ber_l1d,
-//                ber_plp0,
-//                demodLockStatus,
-//                cpuStatus == 0xFFFFFFFF,
-//                llsPlpInfo & 0x01 == 0x01,
-//                0);
-//
-//            atsc3_ndk_phy_bridge_get_instance()->atsc3_update_rf_bw_stats(LowaSISPHYAndroid->alp_completed_packets_parsed,
-//                                                                          LowaSISPHYAndroid->alp_total_bytes,
-//                                                                          LowaSISPHYAndroid->alp_total_LMTs_recv);
-//            }
-//    }
+    while(this->statusThreadShouldRun) {
+        memset(&s_fe_detail, 0, sizeof(s_fe_detail));
 
-//    apiImpl->releasePinnedStatusThreadAsNeeded();
-//    apiImpl->statusThreadIsRunning = false;
+        int32_t lock = 1, rssi = -2000;
+        ar = AT3DRV_FE_GetStatus(hDevice, eAT3_RFSTAT_LOCK, &lock);
+        ar = AT3DRV_FE_GetStatus(hDevice, eAT3_RFSTAT_STRENGTH, &rssi);
+
+        s_fe_detail.flagRequest = 0xffffffff; // all info. too many?
+        //s_fe_detail.flagRequest = FE_SIG_MASK_Lock; // | FE_SIG_MASK_RfLevel | FE_SIG_MASK_CarrierOffset | FE_SIG_MASK_SNR | FE_SIG_MASK_BER | FE_SIG_MASK_FecModCod | FE_SIG_MASK_BbpErr;
+        AT3DRV_FE_GetStatus(hDevice, eAT3_FESTAT_RF_DETAIL, &s_fe_detail);
+
+        uint8_t modcod_valid = s_fe_detail.aFecModCod[0].valid;
+        uint8_t E_L1d_PlpFecType = s_fe_detail.aFecModCod[0].fecType;
+        uint8_t E_L1d_PlpMod = s_fe_detail.aFecModCod[0].mod;
+        uint8_t E_L1d_PlpCod = s_fe_detail.aFecModCod[0].cod;
+
+        if(!modcod_valid) {
+            //try fallback:
+
+            //eAT3_FESTAT_LGD_PLP_V1
+            S_LGD_L2_PLPINFO* l2plpInfo = (S_LGD_L2_PLPINFO*)calloc(1, sizeof(S_LGD_L2_PLPINFO));
+            l2plpInfo->index = 0;
+            AT3DRV_FE_GetStatus(hDevice, eAT3_FESTAT_LGD_PLP_V1, l2plpInfo);
+            modcod_valid = 1;
+            E_L1d_PlpFecType = l2plpInfo->plp_fec_type;
+            E_L1d_PlpMod = l2plpInfo->plp_mod;
+            E_L1d_PlpCod = l2plpInfo->plp_cr;
+            free(l2plpInfo);
+        }
+
+        int32_t nRfLevel1000 = s_fe_detail.nRfLevel1000;
+        int32_t nSnr1000 = s_fe_detail.nSnr1000;
+
+        uint32_t aBerPreLdpcE7 = s_fe_detail.aBerPreLdpcE7[0];   // return BER x 1e7. (uint32_t)-1 if invalid.
+        uint32_t aBerPreBchE9  = s_fe_detail.aBerPreBchE9[0];    // return BER x 1e9. (uint32_t)-1 if invalid.
+        uint32_t aFerPostBchE6 = s_fe_detail.aFerPostBchE6[0];   // return FER x 1e6. (uint32_t)-1 if invalid.
+
+        if(atsc3_ndk_phy_bridge_get_instance()) {
+            atsc3_ndk_phy_bridge_get_instance()->atsc3_update_rf_stats(lock, rssi, modcod_valid, E_L1d_PlpFecType, E_L1d_PlpMod, E_L1d_PlpCod, nRfLevel1000, nSnr1000, aBerPreLdpcE7, aBerPreBchE9, aFerPostBchE6, s_fe_detail.lock.bDemodLock, s_fe_detail.lock.bNoSignal, s_fe_detail.lock.bPlpLockAny, s_fe_detail.lock.bPlpLockAll);
+            atsc3_ndk_phy_bridge_get_instance()->atsc3_update_rf_bw_stats(s_ullTotalPkts, s_ullTotalBytes, s_uTotalLmts);
+        }
+
+        usleep(500000);
+    }
+
+    this->statusThreadIsRunning = false;
+    this->releasePinnedStatusThreadAsNeeded();
+
     return 0;
 }
 
-//jjustman-2020-08-23 - TODO: wire up these callbacks in LowaSISPHYAndroid::cctor rather than direct
-//coupling to atsc3_core_service_bridge
-//
-//void LowaSISPHYAndroid::processTLVFromCallback()
-//{
-//    unique_lock<mutex> CircularBufferMutex_local(CircularBufferMutex);
-//    int bytesRead = CircularBufferPop(cb, BUFFER_SIZE, (char*)&processDataCircularBufferForCallback);
-//    CircularBufferMutex_local.unlock();
-//
-//    unique_lock<mutex> atsc3_sl_tlv_block_mutex_local(atsc3_sl_tlv_block_mutex);
-//
-//    if(!atsc3_sl_tlv_block) {
-//        _LOWASIS_PHY_ANDROID_WARN("ERROR: atsc3NdkClientSlImpl::processTLVFromCallback - atsc3_sl_tlv_block is NULL!");
-//        allocate_atsc3_sl_tlv_block();
-//    }
-//
-//    if(bytesRead) {
-//
-//        block_Write(atsc3_sl_tlv_block, (uint8_t*)&processDataCircularBufferForCallback, bytesRead);
-//        block_Rewind(atsc3_sl_tlv_block);
-//
-//        bool atsc3_sl_tlv_payload_complete = false;
-//
-//        do {
-//            atsc3_sl_tlv_payload = atsc3_sl_tlv_payload_parse_from_block_t(atsc3_sl_tlv_block);
-//
-//            if(atsc3_sl_tlv_payload) {
-//                atsc3_sl_tlv_payload_dump(atsc3_sl_tlv_payload);
-//                if(atsc3_sl_tlv_payload->alp_payload_complete) {
-//                    atsc3_sl_tlv_payload_complete = true;
-//
-//                    block_Rewind(atsc3_sl_tlv_payload->alp_payload);
-//                    atsc3_alp_packet_t* atsc3_alp_packet = atsc3_alp_packet_parse(atsc3_sl_tlv_payload->plp_number, atsc3_sl_tlv_payload->alp_payload);
-//                    if(atsc3_alp_packet) {
-//                        alp_completed_packets_parsed++;
-//
-//                        alp_total_bytes += atsc3_alp_packet->alp_payload->p_size;
-//
-//                        if(atsc3_alp_packet->alp_packet_header.packet_type == 0x00) {
-//
-//                            block_Rewind(atsc3_alp_packet->alp_payload);
-//                            //atsc3_phy_mmt_player_bridge_process_packet_phy(atsc3_alp_packet->alp_payload);
-//                            atsc3_core_service_bridge_process_packet_phy(atsc3_alp_packet->alp_payload);
-//                        } else if(atsc3_alp_packet->alp_packet_header.packet_type == 0x4) {
-//                            alp_total_LMTs_recv++;
-//                            atsc3_link_mapping_table_t* atsc3_link_mapping_table_pending = atsc3_alp_packet_extract_lmt(atsc3_alp_packet);
-//                            atsc3_phy_jni_bridge_notify_link_mapping_table(atsc3_link_mapping_table_pending);
-//                        }
-//
-//                        atsc3_alp_packet_free(&atsc3_alp_packet);
-//                    }
-//                    //free our atsc3_sl_tlv_payload
-//                    atsc3_sl_tlv_payload_free(&atsc3_sl_tlv_payload);
-//
-//                } else {
-//                    atsc3_sl_tlv_payload_complete = false;
-//                    //jjustman-2019-12-29 - noisy, TODO: wrap in __DEBUG macro check
-//                    //printf("alp_payload->alp_payload_complete == FALSE at pos: %d, size: %d", atsc3_sl_tlv_block->i_pos, atsc3_sl_tlv_block->p_size);
-//                }
-//            } else {
-//                atsc3_sl_tlv_payload_complete = false;
-//                //jjustman-2019-12-29 - noisy, TODO: wrap in __DEBUG macro check
-//                //printf("ERROR: alp_payload IS NULL, short TLV read?  at atsc3_sl_tlv_block: i_pos: %d, p_size: %d", atsc3_sl_tlv_block->i_pos, atsc3_sl_tlv_block->p_size);
-//            }
-//
-//        } while(atsc3_sl_tlv_payload_complete);
-//
-//
-//        if(atsc3_sl_tlv_payload && !atsc3_sl_tlv_payload->alp_payload_complete && atsc3_sl_tlv_block->i_pos > atsc3_sl_tlv_payload->sl_tlv_total_parsed_payload_size) {
-//            //accumulate from our last starting point and continue iterating during next bbp
-//            atsc3_sl_tlv_block->i_pos -= atsc3_sl_tlv_payload->sl_tlv_total_parsed_payload_size;
-//            //free our atsc3_sl_tlv_payload
-//            atsc3_sl_tlv_payload_free(&atsc3_sl_tlv_payload);
-//        }
-//
-//        if(atsc3_sl_tlv_block->p_size > atsc3_sl_tlv_block->i_pos) {
-//            //truncate our current block_t starting at i_pos, and then read next i/o block
-//            block_t* temp_sl_tlv_block = block_Duplicate_from_position(atsc3_sl_tlv_block);
-//            block_Destroy(&atsc3_sl_tlv_block);
-//            atsc3_sl_tlv_block = temp_sl_tlv_block;
-//            block_Seek(atsc3_sl_tlv_block, atsc3_sl_tlv_block->p_size);
-//        } else if(atsc3_sl_tlv_block->p_size == atsc3_sl_tlv_block->i_pos) {
-//            //clear out our tlv block as we are the "exact" size of our last alp packet
-//
-//            block_Destroy(&atsc3_sl_tlv_block);
-//            atsc3_sl_tlv_block = block_Alloc(BUFFER_SIZE);
-//        } else {
-//            printf("atsc3_sl_tlv_block: positioning mismatch: i_pos: %d, p_size: %d - rewinding and seeking for magic packet?", atsc3_sl_tlv_block->i_pos, atsc3_sl_tlv_block->p_size);
-//
-//            //jjustman: 2019-11-23: rewind in order to try seek for our magic packet in the next loop here
-//            block_Rewind(atsc3_sl_tlv_block);
-//        }
-//    }
-//
-//    atsc3_sl_tlv_block_mutex_local.unlock();
-//
-//}
-//
-//void LowaSISPHYAndroid::RxDataCallback(unsigned char *data, long len)
-//{
-//    //printf("atsc3NdkClientSlImpl::RxDataCallback: pushing data: %p, len: %d", data, len);
-//    unique_lock<mutex> CircularBufferMutex_local(CircularBufferMutex);
-//
-//    CircularBufferPush(LowaSISPHYAndroid::cb, (char *)data, len);
-//    CircularBufferMutex_local.unlock();
-//}
-//
 void LowaSISPHYAndroid::NotifyPlpSelectionChangeCallback(vector<uint8_t> plps, void *context) {
     ((LowaSISPHYAndroid *) context)->listen_plps(plps);
 }
-//
-//void LowaSISPHYAndroid::allocate_atsc3_sl_tlv_block() {
-//    unique_lock<mutex> atsc3_sl_tlv_block_mutex_local(atsc3_sl_tlv_block_mutex);
-//    if(!atsc3_sl_tlv_block) {
-//        atsc3_sl_tlv_block = block_Alloc(BUFFER_SIZE);
-//    }
-//    atsc3_sl_tlv_block_mutex_local.unlock();
-//}
+
 
 extern "C"
 JNIEXPORT jint JNICALL
