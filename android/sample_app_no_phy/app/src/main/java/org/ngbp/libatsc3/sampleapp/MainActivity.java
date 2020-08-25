@@ -87,6 +87,7 @@ import org.ngbp.libatsc3.middleware.android.phy.models.RfPhyStatistics;
 
 import java.io.File;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -116,6 +117,23 @@ import android.support.v7.widget.RecyclerView;
 
 public class MainActivity extends AppCompatActivity implements View.OnClickListener, AdapterView.OnItemSelectedListener, IAtsc3NdkApplicationBridgeCallbacks, IAtsc3NdkPHYBridgeCallbacks {
 
+    final static String TAG ="MainActivity";
+
+    //jjustman-2020-08-24 this is a "hack" for dynamically loading our module phy types
+    static {
+        List<String> phyModules = Arrays.asList(
+                    "org.ngbp.libatsc3.middleware.android.phy.virtual.PcapDemuxedPHYVirtualAndroid", //either this or .srt.SRTRxSTLTPVirtualPHYAndroid
+                    "org.ngbp.libatsc3.middleware.android.phy.LowaSISPHYAndroid",
+                    "org.ngbp.libatsc3.middleware.android.phy.SaankhyaPHYAndroid"
+                );
+        for(String moduleName : phyModules) {
+            try {
+                Class.forName(moduleName);
+            } catch (Exception ex) {
+                Log.d(TAG, String.format("unable to find static impl loader for %s", moduleName));
+            }
+        }
+    }
     private DashMediaSource.Factory dashMediaSourceFactory;
     public static final String DASH_CONTENT_TYPE = "application/dash+xml";
 
@@ -129,37 +147,15 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         return super.getCacheDir();
     }
 
-    public static Class clazz = MainActivity.class;
 
     private static final String ACTION_USB_PERMISSION = "com.android.example.USB_PERMISSION";
 
-    final static String TAG ="main";
 
     public boolean hasUsbIfSupport = true;
 
     AssetManager assetManager;
 
     private DecoderHandlerThread myDecoderHandlerThread;
-
-    /**
-     * pcap related support for built-in assets and on-device (e.g. sdcard/download) replay
-     *
-     * sample files:
-     *
-     "pcaps/2019-10-17_MMT_HEVC_AAC_IMSC1_tr_FIX-30s-fin.pcap"};
-     "pcaps/2019-06-18-hv-digi-4route-1mmt.pcap";
-     "pcaps/2019-09-18-cleveland-599mhz-replay.pcap";
-     "pcaps/pcap_replay_test.pcap";
-     "pcaps/2019-10-17_MMT_HEVC_AAC_IMSC1_tr_FIX.pcap",
-     "pcaps/2019-10-17_MMT_HEVC_AAC_IMSC1_tr_FIX-30s-fin.pcap",
-     "pcaps/2018-12-17-mmt-airwavz-single-drop.pcap",
-     "pcaps/2018-12-17-mmt-airwavz-recalc.pcap",
-     "pcaps/2019-09-17-cleveland-2nd-pcap-599-mmt-v2.pcap",
-     "pcaps/2019-06-18-hv-digi-4route-1mmt.pcap"
-     "pcaps/2019-06-18-hv-digi-4route-1mmt.pcap";
-     "pcaps/2019-09-18-cleveland-599mhz-replay.pcap";
-     "pcaps/pcap_replay_test.pcap";
-    */
 
     private Boolean inputSelectionFromPcap = false;
 
@@ -1525,7 +1521,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         }
     }
 
-    synchronized private void  usbPHYLayerDeviceInstantiateAndUpdateAtsc3NdkPHYClientInstance(UsbDevice usbDevice) {
+    synchronized private void usbPHYLayerDeviceInstantiateAndUpdateAtsc3NdkPHYClientInstance(UsbDevice usbDevice) {
         if(connectedUSBDevice == null || (connectedUSBDevice != null && connectedUSBDevice != usbDevice)) {
             Log.d("atsc3NdkPHYClientInstance", "usbPHYLayerDeviceInstantiateAndUpdateAtsc3NdkPHYClientInstance with usbDevice: " + usbDevice);
 
@@ -1548,7 +1544,12 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                 connectedUSBDevice = usbDevice;
                 Log.d("atsc3NdkPHYClientInstance", "atsc3NdkPHYClientInstance is now: " + atsc3NdkPHYClientInstance);
 
-                enableDeviceControlButtons(true);
+                ServiceHandler.GetInstance().post(new Runnable() {
+                    @Override
+                    public void run() {
+
+                        enableDeviceControlButtons(true);
+                    }});
             }
         }
     }
@@ -1580,22 +1581,23 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
 
                 for (Atsc3NdkPHYClientBase.USBVendorIDProductIDSupportedPHY candidatePHY : candidatePHYList) {
                     Atsc3NdkPHYClientBase atsc3NdkPHYClientBaseCandidate = Atsc3NdkPHYClientBase.CreateInstanceFromUSBVendorIDProductIDSupportedPHY(candidatePHY);
+                    String devicePath = atsc3UsbDevice.getDeviceName();
                     int usbFd = atsc3UsbDevice.getFd();
 
-                    if (candidatePHY.isBootloader) {
-                        int r = atsc3NdkPHYClientBaseCandidate.download_bootloader_firmware(usbFd);
+                    if (candidatePHY.getIsBootloader(usbDevice)) {
+                        int r = atsc3NdkPHYClientBaseCandidate.download_bootloader_firmware(usbFd, devicePath);
                         if (r < 0) {
-                            Log.d(TAG, String.format("prepareDevices: download_bootloader_firmware with %s failed for fd: %d", atsc3NdkPHYClientBaseCandidate, usbFd));
+                            Log.d(TAG, String.format("prepareDevices: download_bootloader_firmware with %s failed for path: %s, fd: %d", atsc3NdkPHYClientBaseCandidate, devicePath, usbFd));
                         } else {
-                            Log.d(TAG, String.format("prepareDevices: download_bootloader_firmware with %s for fd: %d, success", atsc3NdkPHYClientBaseCandidate, usbFd));
+                            Log.d(TAG, String.format("prepareDevices: download_bootloader_firmware with %s for path: %s, fd: %d, success", atsc3NdkPHYClientBaseCandidate, devicePath, usbFd));
                             //pre-boot devices should re-enumerate, so don't track this connection just yet...
                         }
                     } else {
-                        int r = atsc3NdkPHYClientBaseCandidate.open(usbFd);
+                        int r = atsc3NdkPHYClientBaseCandidate.open(usbFd, devicePath);
                         if (r < 0) {
-                            Log.d(TAG, String.format("prepareDevices: open with %s failed for fd: %d, res: %d", atsc3NdkPHYClientBaseCandidate, usbFd, r));
+                            Log.d(TAG, String.format("prepareDevices: open with %s failed for path: %s, fd: %d, res: %d", atsc3NdkPHYClientBaseCandidate, devicePath, usbFd, r));
                         } else {
-                            Log.d(TAG, String.format("prepareDevices: open with %s for fd: %d, success", atsc3NdkPHYClientBaseCandidate, usbFd));
+                            Log.d(TAG, String.format("prepareDevices: open with %s for path: %s, fd: %d, success", atsc3NdkPHYClientBaseCandidate, devicePath, usbFd));
                             atsc3NdkPHYClientBaseCandidate.setAtsc3UsbDevice(atsc3UsbDevice);
                             atsc3UsbDevice.setAtsc3NdkPHYClientBase(atsc3NdkPHYClientBaseCandidate);
                             atsc3NdkPHYClientBaseInstantiated = atsc3NdkPHYClientBaseCandidate;

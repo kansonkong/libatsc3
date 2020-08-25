@@ -52,6 +52,14 @@ public class Atsc3UsbDevice {
         }
         return 0;
     }
+    //returns back the relevant /dev/bus filesystem path..
+    public String getDeviceName() {
+        if(usbDevice != null) {
+            return usbDevice.getDeviceName();
+        } else {
+            return "";
+        }
+    }
 
     public void disconnect() {
         if (conn != null)
@@ -59,9 +67,7 @@ public class Atsc3UsbDevice {
         conn = null;
         usbDevice = null;
     }
-
-
-
+    
     public String toString() {
         if(usbDevice == null) {
             return "";
