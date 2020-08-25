@@ -8,16 +8,6 @@ include ':atsc3_core',':atsc3_bridge',
         ':atsc3_phy_saankhya',
         ':atsc3_phy_lowasis'
 
-//project(':atsc3_core').projectDir = new File(settingsDir, 'atsc3_core')
-//project(':atsc3_bridge').projectDir = new File(settingsDir, 'atsc3_bridge')
-//project(':atsc3_phy_virtual').projectDir = new File(settingsDir, 'atsc3_phy_virtual')
-
-//include ':app:atsc3_core',':app:atsc3_bridge', ':app:atsc3_phy_virtual'
-//
-//project(':app:atsc3_core').projectDir = new File(settingsDir, 'atsc3_core')
-//project(':app:atsc3_bridge').projectDir = new File(settingsDir, 'atsc3_bridge')
-//project(':app:atsc3_phy_virtual').projectDir = new File(settingsDir, 'atsc3_phy_virtual')
-//
 
 gradle.ext.exoplayerRoot = 'Exoplayer'
 gradle.ext.exoplayerModulePrefix = 'exoplayer-'
