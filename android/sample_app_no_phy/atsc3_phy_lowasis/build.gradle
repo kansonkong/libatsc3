@@ -1,0 +1,67 @@
+apply plugin: 'com.android.library'
+
+android {
+    compileSdkVersion 28
+    defaultConfig {
+        targetSdkVersion 28
+        minSdkVersion 28
+        versionCode 1
+        versionName "1.0"
+
+        ndk {
+            abiFilters 'arm64-v8a' //, 'armeabi-v7a' //, 'arm64-v8a' //'', 'x86_64',
+        }
+    }
+    externalNativeBuild {
+        ndkBuild {
+            path 'Android.mk'
+        }
+    }
+    buildTypes {
+        debug {
+            jniDebuggable = true
+            debuggable true
+        }
+        libatsc3_phy_saankhya {
+
+        }
+
+        release {
+            minifyEnabled false
+            proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
+            jniDebuggable = true
+            debuggable true
+
+        }
+    }
+
+    buildToolsVersion = '29.0.2'
+
+    compileOptions {
+        targetCompatibility JavaVersion.VERSION_1_8
+        sourceCompatibility JavaVersion.VERSION_1_8
+    }
+
+    packagingOptions {
+        // specify the path to your object binaries, or generally:
+        doNotStrip '**.so'
+    }
+}
+
+repositories {
+    google()
+}
+dependencies {
+
+    //vmatiash-2020-08-21 - Direct dependency is not necessary. This dependency specified in LOCAL_LDLIBS of Android.mk
+    //debugApi fileTree(dir: '../atsc3_bridge/build/intermediates/ndkBuild/debug/obj/local', include: ['**/libatsc3_bridge.so'])
+    debugApi project(':atsc3_core')
+
+    debugApi project(':atsc3_bridge')
+
+    debugApi fileTree(dir: 'build/aar', include: ['*.aar'])
+    debugApi fileTree(dir: 'build/aar', include: ['*.aar'])
+
+
+}
+
