@@ -5,6 +5,7 @@
 #include <string.h>
 
 #include <at3drv_api.h>
+#include <at3_atscstd.h>
 
 #ifndef LIBATSC3_ANDROID_SAMPLE_APP_W_PHY_ATSC3_LOWASIS_PHY_ANDROID_RXDATA_H
 #define LIBATSC3_ANDROID_SAMPLE_APP_W_PHY_ATSC3_LOWASIS_PHY_ANDROID_RXDATA_H

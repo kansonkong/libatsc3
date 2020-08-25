@@ -770,26 +770,16 @@ int LowaSISPHYAndroid::processThread()
                 s_uTotalLmts++;
                 nLmtVer = info->lmt_ver;
                 if (nLmtVer != s_nPrevLmtVer) {
-                    _LOWASIS_PHY_ANDROID_INFO("LMT changed, sz %d, v %d", pData->payload->p_size, nLmtVer);
+                    _LOWASIS_PHY_ANDROID_INFO("LMT changed, size: %d, version: %d, num_multicasts: %d", pData->payload->p_size, nLmtVer, info->lmt->num_mc);
 
                     atsc3_link_mapping_table_t *atsc3_link_mapping_table = atsc3_link_mapping_table_new();
                     atsc3_link_mapping_table->alp_additional_header_for_signaling_information_signaling_version = info->lmt_ver;
 
                     for (int i = 0; i < info->lmt->num_mc; i++) {
 
-                        atsc3_link_mapping_table_plp_t *atsc3_link_mapping_table_plp = NULL;
-                        //hack - check for matching plp
-                        for (int j = 0; j < atsc3_link_mapping_table->atsc3_link_mapping_table_plp_v.count && atsc3_link_mapping_table_plp == NULL; j++) {
-                            if (atsc3_link_mapping_table->atsc3_link_mapping_table_plp_v.data[j]->PLP_ID == info->lmt->mc[i].plp_id) {
-                                atsc3_link_mapping_table_plp = atsc3_link_mapping_table->atsc3_link_mapping_table_plp_v.data[j];
-                            }
-                        }
-
-                        if (atsc3_link_mapping_table_plp == NULL) {
-                            atsc3_link_mapping_table_plp = atsc3_link_mapping_table_plp_new();
-                            atsc3_link_mapping_table_plp->PLP_ID = info->lmt->mc[i].plp_id;
-                            atsc3_link_mapping_table_add_atsc3_link_mapping_table_plp(atsc3_link_mapping_table, atsc3_link_mapping_table_plp);
-                        }
+                        atsc3_link_mapping_table_plp_t* atsc3_link_mapping_table_plp = atsc3_link_mapping_table_plp_new();
+                        atsc3_link_mapping_table_plp->PLP_ID = info->lmt->mc[i].plp_id;
+                        atsc3_link_mapping_table_add_atsc3_link_mapping_table_plp(atsc3_link_mapping_table, atsc3_link_mapping_table_plp);
 
                         atsc3_link_mapping_table_multicast_t *atsc3_link_mapping_table_multicast = atsc3_link_mapping_table_multicast_new();
 
@@ -810,6 +800,7 @@ int LowaSISPHYAndroid::processThread()
                             atsc3_link_mapping_table_multicast->compressed_flag = info->lmt->mc[i].context_id;
                         }
 
+                        _LOWASIS_PHY_ANDROID_INFO("LMT: update - adding multicast: dest: %u.%u.%u.%u:%u, PLP: %d", __toipandportnonstruct(atsc3_link_mapping_table_multicast->dst_ip_add, atsc3_link_mapping_table_multicast->dst_udp_port), atsc3_link_mapping_table_plp->PLP_ID);
                         atsc3_link_mapping_table_plp_add_atsc3_link_mapping_table_multicast(atsc3_link_mapping_table_plp, atsc3_link_mapping_table_multicast);
                     }
 
