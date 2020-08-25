@@ -304,17 +304,14 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     private Spinner mDevListSpinner;
 
     public static SurfaceView mSurfaceView1;
-    
 
     Boolean hasSetSurfaceView = false;
     Boolean isSurfaceViewFullScreen = false;
-
 
     Integer originalVisibility = null;
     Integer lastConfigurationOrientation = null;
 
     IntentFilter usbIntentFilter = new IntentFilter();
-
 
     @Override
     public void onConfigurationChanged(Configuration newConfig) {
@@ -438,7 +435,6 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                 Log.i("surfaceChanged", String.format("resizing to: isSurfaceViewFullScreen: false, myWindowRect.w: %d, myWindowRect.h: %d", surfaceLayoutRight, surfaceLayoutBottom));
             }
         }
-        SaankhyaPHYAndroid saankhyaPHYAndroid = new SaankhyaPHYAndroid();
     }
 
     private void hideNonVideoLayouts() {
