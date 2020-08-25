@@ -13,3 +13,4 @@
 .externalNativeBuild
 .cxx
 /.idea/
+/atsc3_phy_lowasis/build/

@@ -1,0 +1,598 @@
+
+libNXP_Tuner_Lib.so:     file format elf64-little
+libNXP_Tuner_Lib.so
+architecture: UNKNOWN!, flags 0x00000150:
+HAS_SYMS, DYNAMIC, D_PAGED
+start address 0x0000000000007e70
+
+Program Header:
+    LOAD off    0x0000000000000000 vaddr 0x0000000000000000 paddr 0x0000000000000000 align 2**16
+         filesz 0x000000000000f268 memsz 0x000000000000f268 flags r-x
+   STACK off    0x0000000000000000 vaddr 0x0000000000000000 paddr 0x0000000000000000 align 2**4
+         filesz 0x0000000000000000 memsz 0x0000000000000000 flags rw-
+EH_FRAME off    0x000000000000e684 vaddr 0x000000000000e684 paddr 0x000000000000e684 align 2**2
+         filesz 0x0000000000000254 memsz 0x0000000000000254 flags r--
+    NOTE off    0x000000000000f1d0 vaddr 0x000000000000f1d0 paddr 0x000000000000f1d0 align 2**2
+         filesz 0x0000000000000098 memsz 0x0000000000000098 flags r--
+    LOAD off    0x000000000000f9a8 vaddr 0x000000000001f9a8 paddr 0x000000000001f9a8 align 2**16
+         filesz 0x0000000000002638 memsz 0x0000000000002650 flags rw-
+   RELRO off    0x000000000000f9a8 vaddr 0x000000000001f9a8 paddr 0x000000000001f9a8 align 2**0
+         filesz 0x0000000000000658 memsz 0x0000000000000658 flags r--
+ DYNAMIC off    0x000000000002a000 vaddr 0x0000000000022000 paddr 0x0000000000022000 align 2**3
+         filesz 0x0000000000000210 memsz 0x0000000000000210 flags rw-
+    LOAD off    0x000000000002a000 vaddr 0x0000000000022000 paddr 0x0000000000022000 align 2**12
+         filesz 0x0000000000003fb0 memsz 0x0000000000003fb0 flags rw-
+
+Dynamic Section:
+  SONAME               libNXP_Tuner_Lib.so
+  NEEDED               libc++_shared.so
+  NEEDED               libm.so
+  NEEDED               libdl.so
+  NEEDED               libc.so
+  INIT_ARRAY           0x000000000001f9a8
+  INIT_ARRAYSZ         0x0000000000000008
+  FINI_ARRAY           0x000000000001f9b0
+  FINI_ARRAYSZ         0x0000000000000010
+  HASH                 0x00000000000255a0
+  GNU_HASH             0x0000000000000bd8
+  STRTAB               0x0000000000022210
+  SYMTAB               0x00000000000016c8
+  STRSZ                0x000000000000338d
+  SYMENT               0x0000000000000018
+  PLTGOT               0x000000000001fbc0
+  PLTRELSZ             0x0000000000000108
+  PLTREL               0x0000000000000007
+  JMPREL               0x0000000000007c98
+  RELA                 0x00000000000070e0
+  RELASZ               0x0000000000000bb8
+  RELAENT              0x0000000000000018
+  FLAGS                0x0000000000000008
+  FLAGS_1              0x0000000000000001
+  VERNEED              0x00000000000070c0
+  VERNEEDNUM           0x0000000000000001
+  VERSYM               0x0000000000006dca
+  RELACOUNT            0x0000000000000004
+
+Version References:
+  required from libc.so:
+    0x00050d63 0x00 02 LIBC
+
+Sections:
+Idx Name          Size      VMA               LMA               File off  Algn
+  0 .gnu.hash     00000aec  0000000000000bd8  0000000000000bd8  00000bd8  2**3
+                  CONTENTS, ALLOC, LOAD, READONLY, DATA
+  1 .dynsym       00002388  00000000000016c8  00000000000016c8  000016c8  2**3
+                  CONTENTS, ALLOC, LOAD, READONLY, DATA
+  2 .gnu.version  000002f6  0000000000006dca  0000000000006dca  00006dca  2**1
+                  CONTENTS, ALLOC, LOAD, READONLY, DATA
+  3 .gnu.version_r 00000020  00000000000070c0  00000000000070c0  000070c0  2**3
+                  CONTENTS, ALLOC, LOAD, READONLY, DATA
+  4 .rela.dyn     00000bb8  00000000000070e0  00000000000070e0  000070e0  2**3
+                  CONTENTS, ALLOC, LOAD, READONLY, DATA
+  5 .rela.plt     00000108  0000000000007c98  0000000000007c98  00007c98  2**3
+                  CONTENTS, ALLOC, LOAD, READONLY, DATA
+  6 .plt          000000d0  0000000000007da0  0000000000007da0  00007da0  2**4
+                  CONTENTS, ALLOC, LOAD, READONLY, CODE
+  7 .text         00006360  0000000000007e70  0000000000007e70  00007e70  2**2
+                  CONTENTS, ALLOC, LOAD, READONLY, CODE
+  8 .rodata       000004b4  000000000000e1d0  000000000000e1d0  0000e1d0  2**0
+                  CONTENTS, ALLOC, LOAD, READONLY, DATA
+  9 .eh_frame_hdr 00000254  000000000000e684  000000000000e684  0000e684  2**2
+                  CONTENTS, ALLOC, LOAD, READONLY, DATA
+ 10 .eh_frame     000008f8  000000000000e8d8  000000000000e8d8  0000e8d8  2**3
+                  CONTENTS, ALLOC, LOAD, READONLY, DATA
+ 11 .note.android.ident 00000098  000000000000f1d0  000000000000f1d0  0000f1d0  2**2
+                  CONTENTS, ALLOC, LOAD, READONLY, DATA
+ 12 .init_array   00000008  000000000001f9a8  000000000001f9a8  0000f9a8  2**3
+                  CONTENTS, ALLOC, LOAD, DATA
+ 13 .fini_array   00000010  000000000001f9b0  000000000001f9b0  0000f9b0  2**3
+                  CONTENTS, ALLOC, LOAD, DATA
+ 14 .got          00000440  000000000001fbc0  000000000001fbc0  0000fbc0  2**3
+                  CONTENTS, ALLOC, LOAD, DATA
+ 15 .data         00001fe0  0000000000020000  0000000000020000  00010000  2**3
+                  CONTENTS, ALLOC, LOAD, DATA
+ 16 .bss          00000018  0000000000021fe0  0000000000021fe0  00011fe0  2**3
+                  ALLOC
+ 17 .comment      00000108  0000000000000000  0000000000000000  00011fe0  2**0
+                  CONTENTS, READONLY
+ 18 .debug_info   00005b27  0000000000000000  0000000000000000  000120e8  2**0
+                  CONTENTS, READONLY, DEBUGGING
+ 19 .debug_abbrev 000003b9  0000000000000000  0000000000000000  00017c0f  2**0
+                  CONTENTS, READONLY, DEBUGGING
+ 20 .debug_line   00003ba5  0000000000000000  0000000000000000  00017fc8  2**0
+                  CONTENTS, READONLY, DEBUGGING
+ 21 .debug_str    000067f4  0000000000000000  0000000000000000  0001bb6d  2**0
+                  CONTENTS, READONLY, DEBUGGING
+ 22 .debug_macinfo 00000003  0000000000000000  0000000000000000  00022361  2**0
+                  CONTENTS, READONLY, DEBUGGING
+ 23 .debug_ranges 000000c0  0000000000000000  0000000000000000  00022364  2**0
+                  CONTENTS, READONLY, DEBUGGING
+ 24 .dynamic      00000210  0000000000022000  0000000000022000  0002a000  2**3
+                  CONTENTS, ALLOC, LOAD, DATA
+ 25 .dynstr       0000338d  0000000000022210  0000000000022210  0002a210  2**3
+                  CONTENTS, ALLOC, LOAD, READONLY, DATA
+ 26 .hash         00000a10  00000000000255a0  00000000000255a0  0002d5a0  2**3
+                  CONTENTS, ALLOC, LOAD, READONLY, DATA
+SYMBOL TABLE:
+00000000000255a0 l    d  .hash	0000000000000000              .hash
+0000000000000bd8 l    d  .gnu.hash	0000000000000000              .gnu.hash
+00000000000016c8 l    d  .dynsym	0000000000000000              .dynsym
+0000000000022210 l    d  .dynstr	0000000000000000              .dynstr
+0000000000006dca l    d  .gnu.version	0000000000000000              .gnu.version
+00000000000070c0 l    d  .gnu.version_r	0000000000000000              .gnu.version_r
+00000000000070e0 l    d  .rela.dyn	0000000000000000              .rela.dyn
+0000000000007c98 l    d  .rela.plt	0000000000000000              .rela.plt
+0000000000007da0 l    d  .plt	0000000000000000              .plt
+0000000000007e70 l    d  .text	0000000000000000              .text
+000000000000e1d0 l    d  .rodata	0000000000000000              .rodata
+000000000000e684 l    d  .eh_frame_hdr	0000000000000000              .eh_frame_hdr
+000000000000e8d8 l    d  .eh_frame	0000000000000000              .eh_frame
+000000000000f1d0 l    d  .note.android.ident	0000000000000000              .note.android.ident
+000000000001f9a8 l    d  .init_array	0000000000000000              .init_array
+000000000001f9b0 l    d  .fini_array	0000000000000000              .fini_array
+0000000000022000 l    d  .dynamic	0000000000000000              .dynamic
+000000000001fbc0 l    d  .got	0000000000000000              .got
+0000000000020000 l    d  .data	0000000000000000              .data
+0000000000021fe0 l    d  .bss	0000000000000000              .bss
+0000000000000000 l    d  .comment	0000000000000000              .comment
+0000000000000000 l    d  .debug_info	0000000000000000              .debug_info
+0000000000000000 l    d  .debug_abbrev	0000000000000000              .debug_abbrev
+0000000000000000 l    d  .debug_line	0000000000000000              .debug_line
+0000000000000000 l    d  .debug_str	0000000000000000              .debug_str
+0000000000000000 l    d  .debug_macinfo	0000000000000000              .debug_macinfo
+0000000000000000 l    d  .debug_ranges	0000000000000000              .debug_ranges
+0000000000000000 l    df *ABS*	0000000000000000              /buildbot/tmp/crtbrand-596aee.o
+000000000000f1d0 l       .note.android.ident	0000000000000000              $d.0
+000000000000f228 l       .note.android.ident	0000000000000000              ndk_build_number
+000000000000f1e8 l       .note.android.ident	0000000000000000              ndk_version
+000000000000f1d0 l     O .note.android.ident	0000000000000098              note_android_ident
+000000000000f1e4 l       .note.android.ident	0000000000000000              note_data
+000000000000f268 l       .note.android.ident	0000000000000000              note_end
+000000000000f1dc l       .note.android.ident	0000000000000000              note_name
+0000000000000000 l    df *ABS*	0000000000000000              crtbegin_so.c
+0000000000020000 l       .data	0000000000000000              $d.1
+000000000001f9b0 l       .fini_array	0000000000000000              $d.2
+000000000001f9b8 l       .fini_array	0000000000000000              $d.3
+0000000000000107 l       .comment	0000000000000000              $d.4
+0000000000007eb8 l       .text	0000000000000000              $x.0
+0000000000007eb8 l     F .text	000000000000000c              __on_dlclose
+0000000000007ec8 l     F .text	0000000000000004              __on_dlclose_late
+0000000000000000 l    df *ABS*	0000000000000000              tmbslTDA18273.cpp
+0000000000000000 l       .debug_macinfo	0000000000000000              $d.10
+0000000000000107 l       .comment	0000000000000000              $d.11
+000000000000e8d8 l       .eh_frame	0000000000000000              $d.12
+0000000000000000 l       .debug_line	0000000000000000              $d.13
+0000000000021fe0 l       .bss	0000000000000000              $d.2
+000000000000e1d0 l       .rodata	0000000000000000              $d.3
+0000000000020008 l       .data	0000000000000000              $d.4
+000000000001f9a8 l       .init_array	0000000000000000              $d.5
+0000000000000000 l       .debug_str	0000000000000000              $d.6
+0000000000000000 l       .debug_abbrev	0000000000000000              $d.7
+0000000000000000 l       .debug_info	0000000000000000              $d.8
+0000000000000000 l       .debug_ranges	0000000000000000              $d.9
+0000000000007e70 l       .text	0000000000000000              $x.0
+0000000000007ef4 l       .text	0000000000000000              $x.1
+0000000000007ea4 l     F .text	0000000000000014              _GLOBAL__sub_I_tmbslTDA18273.cpp
+000000000000d18c l     F .text	00000000000003d4              _ZL16iTDA18273_SetPLLP17_TDA18273Object_t
+0000000000020008 l     O .data	0000000000000348              _ZL21PostDivPrescalerTable
+000000000000d560 l     F .text	0000000000000398              _ZL21iTDA18273_OverrideICPP17_TDA18273Object_tm
+000000000000cbec l     F .text	0000000000000218              _ZL24iTDA18273_LastPassPLD_CCP17_TDA18273Object_t
+000000000000c7a8 l     F .text	00000000000000ec              _ZL25iTDA18273_FirstPassPLD_CCP17_TDA18273Object_t
+00000000000085ac l     F .text	00000000000001b8              _ZL25iTDA18273_SetLLPowerStateP17_TDA18273Object_t21_TDA18273PowerState_t
+0000000000009888 l     F .text	00000000000000f8              _ZL25iTDA18273_WaitXtalCal_EndP17_TDA18273Object_tmm
+000000000000c41c l     F .text	0000000000000188              _ZL26iTDA18273_LastPassLNAPowerP17_TDA18273Object_t
+000000000000ce04 l     F .text	0000000000000388              _ZL26iTDA18273_OverrideWirelessP17_TDA18273Object_t
+000000000000c148 l     F .text	00000000000001f4              _ZL27iTDA18273_CalculateNIntKIntmhhPmS_
+000000000000da28 l     F .text	00000000000000ac              _ZL27iTDA18273_FirstPassLNAPowerP17_TDA18273Object_t
+000000000000c5a4 l     F .text	0000000000000204              _ZL27iTDA18273_OverrideBandsplitP17_TDA18273Object_t
+000000000000d8f8 l     F .text	0000000000000130              _ZL30iTDA18273_OverrideDigitalClockP17_TDA18273Object_tm
+000000000000dd10 l     F .text	0000000000000224              _ZL38iTDA18273_CalculatePostDivAndPrescalermjPhS_
+000000000000dad4 l     F .text	000000000000023c              _ZL49iTDA18273_FindPostDivAndPrescalerWithBetterMarginmPhS_
+0000000000007e70 l     F .text	0000000000000034              __cxx_global_var_init
+0000000000000000 l    df *ABS*	0000000000000000              tmbslTDA18273_Instance.cpp
+0000000000020350 l       .data	0000000000000000              $d.1
+0000000000000000 l       .debug_str	0000000000000000              $d.2
+000000000000020b l       .debug_abbrev	0000000000000000              $d.3
+00000000000030ea l       .debug_info	0000000000000000              $d.4
+0000000000000001 l       .debug_macinfo	0000000000000000              $d.5
+0000000000000107 l       .comment	0000000000000000              $d.6
+000000000000f168 l       .eh_frame	0000000000000000              $d.7
+00000000000038c0 l       .debug_line	0000000000000000              $d.8
+000000000000df34 l       .text	0000000000000000              $x.0
+0000000000000000 l    df *ABS*	0000000000000000              tmbslTDA18273_RegDef.cpp
+000000000000e1d4 l       .rodata	0000000000000000              $d.0
+0000000000000000 l       .debug_str	0000000000000000              $d.1
+000000000000034a l       .debug_abbrev	0000000000000000              $d.2
+0000000000004128 l       .debug_info	0000000000000000              $d.3
+0000000000000002 l       .debug_macinfo	0000000000000000              $d.4
+0000000000000107 l       .comment	0000000000000000              $d.5
+0000000000003b18 l       .debug_line	0000000000000000              $d.6
+0000000000000000 l    df *ABS*	0000000000000000              stdafx.cpp
+0000000000000107 l       .comment	0000000000000000              $d.0
+0000000000000000 l    df *ABS*	0000000000000000              
+0000000000007ecc l     F .text	000000000000000c              __atexit_handler_wrapper
+0000000000007ed8 l     F .text	000000000000001c              atexit
+0000000000020000 l     O .data	0000000000000008              __dso_handle
+000000000001f9c0 l     O *ABS*	0000000000000000              _DYNAMIC
+0000000000007ec4 l     F .text	0000000000000004              __emutls_unregister_key
+000000000000e684 l       .eh_frame_hdr	0000000000000000              __GNU_EH_FRAME_HDR
+000000000001fc30 l     O *ABS*	0000000000000000              _GLOBAL_OFFSET_TABLE_
+0000000000007da0 l       .plt	0000000000000000              $x
+000000000000e340 g     O .rodata	0000000000000004              gTDA18273_Reg_IF_Byte_1__IF_ATSC_Notch
+000000000000e3dc g     O .rodata	0000000000000004              gTDA18273_Reg_Adapt_Top_byte__Range_LNA_Adapt
+000000000000e1fc g     O .rodata	0000000000000004              gTDA18273_Reg_Thermo_byte_2
+000000000000e464 g     O .rodata	0000000000000004              gTDA18273_Reg_RFAGCs_Gain_byte_1__RFAGC_K_8
+0000000000000000       F *UND*	0000000000000000              memcpy@@LIBC
+000000000000e3a0 g     O .rodata	0000000000000004              gTDA18273_Reg_MSM_byte_2__XtalCal_Launch
+000000000000e300 g     O .rodata	0000000000000004              gTDA18273_Reg_W_Filter_byte__W_Filter_Bypass
+000000000000e5fc g     O .rodata	0000000000000004              gTDA18273_Reg_rfcal_log_10
+000000000000e2e4 g     O .rodata	0000000000000004              gTDA18273_Reg_RF_AGC_byte__RFAGC_Adapt_TOP
+000000000000e44c g     O .rodata	0000000000000004              gTDA18273_Reg_RFAGCs_Gain_byte_1__PLD_DAC_Scale
+000000000000e0a4 g     F .text	000000000000012c              iTDA18273_GetInstance
+000000000000e250 g     O .rodata	0000000000000004              gTDA18273_Reg_IRQ_enable__IRQ_Enable
+000000000000e548 g     O .rodata	0000000000000004              gTDA18273_Reg_RFAGCs_Gain_byte_5__RFAGC_Read_K_8
+000000000000e37c g     O .rodata	0000000000000004              gTDA18273_Reg_MSM_byte_1__RSSI_Meas
+000000000000e66c g     O .rodata	0000000000000004              gTDA18273_Reg_Power_Down_byte_3
+000000000000e4a4 g     O .rodata	0000000000000004              gTDA18273_Reg_RF_Cal_byte_2__RFCAL_Offset_Cprog6
+000000000000e390 g     O .rodata	0000000000000004              gTDA18273_Reg_MSM_byte_1__IR_CAL_Wanted
+000000000000e25c g     O .rodata	0000000000000004              gTDA18273_Reg_IRQ_enable__MSM_LOCalc_Enable
+000000000000e49c g     O .rodata	0000000000000004              gTDA18273_Reg_RF_Cal_byte_2__RFCAL_Offset_Cprog4
+000000000000e4bc g     O .rodata	0000000000000004              gTDA18273_Reg_RF_Cal_byte_3__RFCAL_Offset_Cprog11
+000000000000e2c8 g     O .rodata	0000000000000004              gTDA18273_Reg_AGCK_byte_1
+0000000000000000         *UND*	0000000000000000              SL_I2cWriteNoStop
+000000000000e530 g     O .rodata	0000000000000004              gTDA18273_Reg_RFAGCs_Gain_byte_3
+000000000000e4cc g     O .rodata	0000000000000004              gTDA18273_Reg_RF_Filters_byte_1__RF_Filter_Bypass
+000000000000e374 g     O .rodata	0000000000000004              gTDA18273_Reg_RF_Frequency_byte_3__RF_Freq_3
+000000000000e544 g     O .rodata	0000000000000004              gTDA18273_Reg_RFAGCs_Gain_byte_5
+000000000000e50c g     O .rodata	0000000000000004              gTDA18273_Reg_AGCs_DetOut_byte
+000000000000e320 g     O .rodata	0000000000000004              gTDA18273_Reg_AGC5_byte_1__AGC5_Ana
+000000000000e638 g     O .rodata	0000000000000004              gTDA18273_Reg_Sigma_delta_byte_5
+000000000000c33c g     F .text	0000000000000070              tmbslTDA18273_Write
+0000000000000000       F *UND*	0000000000000000              usleep@@LIBC
+000000000000e628 g     O .rodata	0000000000000004              gTDA18273_Reg_Sigma_delta_byte_3
+000000000000e618 g     O .rodata	0000000000000004              gTDA18273_Reg_Sigma_delta_byte_1
+000000000000e664 g     O .rodata	0000000000000004              gTDA18273_Reg_Power_Down_byte_2__PD_Det3
+000000000000e668 g     O .rodata	0000000000000004              gTDA18273_Reg_Power_Down_byte_2__PD_Det1
+000000000000e1e4 g     O .rodata	0000000000000004              gTDA18273_Reg_ID_byte_2__Ident_2
+000000000000e5e4 g     O .rodata	0000000000000004              gTDA18273_Reg_rfcal_log_7
+000000000000e610 g     O .rodata	0000000000000004              gTDA18273_Reg_Main_Post_Divider_byte__LOPostDiv
+000000000000e5d4 g     O .rodata	0000000000000004              gTDA18273_Reg_rfcal_log_5
+000000000000e3ac g     O .rodata	0000000000000004              gTDA18273_Reg_PowerSavingMode__PSM_AGC1
+000000000000e5f4 g     O .rodata	0000000000000004              gTDA18273_Reg_rfcal_log_9
+000000000000ab20 g     F .text	0000000000000108              tmbslTDA18273_SetIF
+000000000000e48c g     O .rodata	0000000000000004              gTDA18273_Reg_RF_Cal_byte_1__RFCAL_Offset_Cprog1
+000000000000e5c4 g     O .rodata	0000000000000004              gTDA18273_Reg_rfcal_log_3
+000000000000e494 g     O .rodata	0000000000000004              gTDA18273_Reg_RF_Cal_byte_1__RFCAL_Offset_Cprog3
+000000000000e57c g     O .rodata	0000000000000004              gTDA18273_Reg_RSSI_byte_2
+000000000000b614 g     F .text	000000000000009c              tmbslTDA18273_SetInternalVsync
+0000000000021fe0 g       *ABS*	0000000000000000              __bss_start__
+000000000000e3bc g     O .rodata	0000000000000004              gTDA18273_Reg_PowerSavingMode__PSM_Ifpoly
+000000000000e33c g     O .rodata	0000000000000004              gTDA18273_Reg_IF_Byte_1__IF_HP_Fc
+000000000000e248 g     O .rodata	0000000000000004              gTDA18273_Reg_IRQ_status__MSM_RCCal_End
+0000000000000000       F *UND*	0000000000000000              _Znam
+00000000000089b4 g     F .text	0000000000000154              UserWrittenI2CRead
+000000000000e4ac g     O .rodata	0000000000000004              gTDA18273_Reg_RF_Cal_byte_3
+000000000000e298 g     O .rodata	0000000000000004              gTDA18273_Reg_IRQ_set__MSM_RSSI_Set
+000000000000e63c g     O .rodata	0000000000000004              gTDA18273_Reg_Sigma_delta_byte_5__N_K_correct_manual
+000000000000e2bc g     O .rodata	0000000000000004              gTDA18273_Reg_AGC1_byte_2__AGC1_Top_Mode
+000000000000e24c g     O .rodata	0000000000000004              gTDA18273_Reg_IRQ_enable
+0000000000008194 g     F .text	0000000000000120              iTDA18273_ReadRegMap
+000000000000e368 g     O .rodata	0000000000000004              gTDA18273_Reg_RF_Frequency_byte_2
+000000000000e380 g     O .rodata	0000000000000004              gTDA18273_Reg_MSM_byte_1__RF_CAL_AV
+000000000000e484 g     O .rodata	0000000000000004              gTDA18273_Reg_RF_Cal_byte_1
+000000000000e21c g     O .rodata	0000000000000004              gTDA18273_Reg_Power_state_byte_2__SM
+0000000000000000         *UND*	0000000000000000              SL_I2cReadNoStop
+000000000000e35c g     O .rodata	0000000000000004              gTDA18273_Reg_IF_Frequency_byte__IF_Freq
+000000000000e674 g     O .rodata	0000000000000004              gTDA18273_Reg_Power_Down_byte_3__Soft_Reset
+000000000000e5b4 g     O .rodata	0000000000000004              gTDA18273_Reg_rfcal_log_1
+000000000000e4c0 g     O .rodata	0000000000000004              gTDA18273_Reg_Bandsplit_Filter_byte
+000000000000e608 g     O .rodata	0000000000000004              gTDA18273_Reg_rfcal_log_11__rfcal_log_11
+000000000000e54c g     O .rodata	0000000000000004              gTDA18273_Reg_RFAGCs_Gain_byte_5__Do_AGC1bis
+000000000000e2a0 g     O .rodata	0000000000000004              gTDA18273_Reg_IRQ_set__MSM_RFCal_Set
+000000000000e23c g     O .rodata	0000000000000004              gTDA18273_Reg_IRQ_status__MSM_LOCalc_End
+000000000000e420 g     O .rodata	0000000000000004              gTDA18273_Reg_IR_Mixer_byte_2
+000000000000c894 g     F .text	0000000000000358              iTDA18273_SetRF_Freq
+000000000000b6b0 g     F .text	00000000000000e4              tmbslTDA18273_GetInternalVsync
+000000000000b84c g     F .text	0000000000000094              tmbslTDA18273_GetPllManual
+000000000000ba64 g     F .text	00000000000000d0              tmbslTDA18273_GetIRQ
+000000000000e598 g     O .rodata	0000000000000004              gTDA18273_Reg_Misc_byte__RFCALPOR_I2C
+000000000000e500 g     O .rodata	0000000000000004              gTDA18273_Reg_CP_Current_byte
+000000000000e47c g     O .rodata	0000000000000004              gTDA18273_Reg_AGC5_byte_2__Force_AGC5_gain
+000000000000e4dc g     O .rodata	0000000000000004              gTDA18273_Reg_RF_Filters_byte_1__RF_Filter_Band
+000000000000e32c g     O .rodata	0000000000000004              gTDA18273_Reg_IF_AGC_byte__IFnotchToRSSI
+000000000000e428 g     O .rodata	0000000000000004              gTDA18273_Reg_IR_Mixer_byte_2__IR_Mixer_Do_step
+000000000000e348 g     O .rodata	0000000000000004              gTDA18273_Reg_IF_Byte_1__LP_Fc
+000000000000e28c g     O .rodata	0000000000000004              gTDA18273_Reg_IRQ_set
+0000000000021ff8 g       *ABS*	0000000000000000              _bss_end__
+000000000000e3d4 g     O .rodata	0000000000000004              gTDA18273_Reg_Adapt_Top_byte
+000000000000e2d4 g     O .rodata	0000000000000004              gTDA18273_Reg_AGCK_byte_1__AGCK_Step
+0000000000021fe0 g       *ABS*	0000000000000000              _edata
+000000000000e2ec g     O .rodata	0000000000000004              gTDA18273_Reg_RF_AGC_byte__RFAGC_Top
+000000000000e51c g     O .rodata	0000000000000004              gTDA18273_Reg_AGCs_DetOut_byte__Do_AGC4
+000000000000e4e4 g     O .rodata	0000000000000004              gTDA18273_Reg_RF_Filters_byte_2__RF_Filter_Cap
+0000000000008bb0 g     F .text	00000000000000b4              UserWrittenPrint
+0000000000008764 g     F .text	0000000000000094              tmbslTDA18273_GetPowerState
+000000000000e394 g     O .rodata	0000000000000004              gTDA18273_Reg_MSM_byte_1__RC_Cal
+000000000000e4e8 g     O .rodata	0000000000000004              gTDA18273_Reg_RF_Filters_byte_3
+000000000000e238 g     O .rodata	0000000000000004              gTDA18273_Reg_IRQ_status__MSM_RSSI_End
+000000000000e4c8 g     O .rodata	0000000000000004              gTDA18273_Reg_RF_Filters_byte_1
+000000000000e228 g     O .rodata	0000000000000004              gTDA18273_Reg_Input_Power_Level_byte__Power_Level
+0000000000021fe0 g     O .bss	0000000000000008              indata
+000000000000e524 g     O .rodata	0000000000000004              gTDA18273_Reg_AGCs_DetOut_byte__Do_AGC2
+000000000000e508 g     O .rodata	0000000000000004              gTDA18273_Reg_CP_Current_byte__N_CP_Current
+000000000000e4b4 g     O .rodata	0000000000000004              gTDA18273_Reg_RF_Cal_byte_3__RFCAL_Offset_Cprog9
+000000000000e474 g     O .rodata	0000000000000004              gTDA18273_Reg_AGC5_byte_2__AGC5_loop_off
+000000000000e510 g     O .rodata	0000000000000004              gTDA18273_Reg_AGCs_DetOut_byte__Up_AGC5
+000000000000e2a4 g     O .rodata	0000000000000004              gTDA18273_Reg_IRQ_set__MSM_IRCAL_Set
+000000000000e1d4 g     O .rodata	0000000000000004              gTDA18273_Reg_ID_byte_1
+000000000000e2f0 g     O .rodata	0000000000000004              gTDA18273_Reg_W_Filter_byte
+000000000000e34c g     O .rodata	0000000000000004              gTDA18273_Reg_Reference_Byte
+000000000000e1e8 g     O .rodata	0000000000000004              gTDA18273_Reg_ID_byte_3
+000000000000e1ec g     O .rodata	0000000000000004              gTDA18273_Reg_ID_byte_3__Major_rev
+000000000000e528 g     O .rodata	0000000000000004              gTDA18273_Reg_AGCs_DetOut_byte__Up_AGC1
+000000000000e210 g     O .rodata	0000000000000004              gTDA18273_Reg_Power_state_byte_1__Vsync_Lock
+0000000000021ff8 g       *ABS*	0000000000000000              __bss_end__
+000000000000e558 g     O .rodata	0000000000000004              gTDA18273_Reg_RFAGCs_Gain_byte_5__Do_LNA_Adapt
+000000000000e200 g     O .rodata	0000000000000004              gTDA18273_Reg_Thermo_byte_2__TM_ON
+0000000000009610 g     F .text	0000000000000278              iTDA18273_Write
+000000000000e408 g     O .rodata	0000000000000004              gTDA18273_Reg_Vsync_Mgt_byte__PD_Vsync_Mgt
+000000000000e2d8 g     O .rodata	0000000000000004              gTDA18273_Reg_AGCK_byte_1__AGCK_Mode
+000000000000e478 g     O .rodata	0000000000000004              gTDA18273_Reg_AGC5_byte_2__AGC5_Do_step
+000000000000e388 g     O .rodata	0000000000000004              gTDA18273_Reg_MSM_byte_1__IR_CAL_Loop
+000000000000e2e0 g     O .rodata	0000000000000004              gTDA18273_Reg_RF_AGC_byte__PD_AGC_Adapt3x
+000000000000e1dc g     O .rodata	0000000000000004              gTDA18273_Reg_ID_byte_1__Ident_1
+0000000000008cb0 g     F .text	0000000000000018              UserWrittenMutexRelease
+000000000000e2b0 g     O .rodata	0000000000000004              gTDA18273_Reg_AGC1_byte_1__AGC1_TOP
+0000000000009a38 g     F .text	0000000000000120              iTDA18273_WriteRegMap
+000000000000e3a8 g     O .rodata	0000000000000004              gTDA18273_Reg_PowerSavingMode
+000000000000e4f0 g     O .rodata	0000000000000004              gTDA18273_Reg_RF_Filters_byte_3__Gain_Taper
+0000000000009980 g     F .text	00000000000000b8              iTDA18273_CheckCalcPLL
+000000000000e2c4 g     O .rodata	0000000000000004              gTDA18273_Reg_AGC2_byte_1__AGC2_TOP
+000000000000e20c g     O .rodata	0000000000000004              gTDA18273_Reg_Power_state_byte_1__AGCs_Lock
+000000000000e58c g     O .rodata	0000000000000004              gTDA18273_Reg_RSSI_byte_2__RSSI_Ck_Speed
+000000000000e434 g     O .rodata	0000000000000004              gTDA18273_Reg_AGC1_byte_3
+000000000000b580 g     F .text	0000000000000094              iTDA18273_Wait
+000000000000e580 g     O .rodata	0000000000000004              gTDA18273_Reg_RSSI_byte_2__RSSI_AV
+000000000000e2ac g     O .rodata	0000000000000004              gTDA18273_Reg_AGC1_byte_1
+000000000000b1f0 g     F .text	00000000000000e0              tmbslTDA18273_GetCF_Offset
+000000000000e538 g     O .rodata	0000000000000004              gTDA18273_Reg_RFAGCs_Gain_byte_3__AGC1_Gain_Read
+0000000000008864 g     F .text	0000000000000150              tmbslTDA18273_GetLLPowerState
+000000000000e2fc g     O .rodata	0000000000000004              gTDA18273_Reg_W_Filter_byte__W_Filter_Enable
+000000000000e318 g     O .rodata	0000000000000004              gTDA18273_Reg_AGC5_byte_1
+000000000000e2dc g     O .rodata	0000000000000004              gTDA18273_Reg_RF_AGC_byte
+000000000000e3d0 g     O .rodata	0000000000000004              gTDA18273_Reg_Power_Level_byte_2__PLD_Gain_Corr
+000000000000e27c g     O .rodata	0000000000000004              gTDA18273_Reg_IRQ_clear__MSM_LOCalc_Clear
+000000000000e43c g     O .rodata	0000000000000004              gTDA18273_Reg_AGC1_byte_3__AGC1_Do_step
+000000000000e3fc g     O .rodata	0000000000000004              gTDA18273_Reg_Vsync_byte__Vsync_Thresh
+000000000000e3b8 g     O .rodata	0000000000000004              gTDA18273_Reg_PowerSavingMode__PSM_Mixer
+000000000000e308 g     O .rodata	0000000000000004              gTDA18273_Reg_W_Filter_byte__W_Filter_Offset
+000000000000b2d0 g     F .text	00000000000002b0              tmbslTDA18273_GetPowerLevel
+0000000000008f94 g     F .text	000000000000067c              tmbslTDA18273_HwInit
+000000000000e208 g     O .rodata	0000000000000004              gTDA18273_Reg_Power_state_byte_1__POR
+0000000000008c64 g     F .text	0000000000000018              UserWrittenMutexInit
+000000000000af88 g     F .text	00000000000000ec              tmbslTDA18273_GetIF
+000000000000e400 g     O .rodata	0000000000000004              gTDA18273_Reg_Vsync_byte__Vsync_Len
+0000000000008c94 g     F .text	000000000000001c              UserWrittenMutexAcquire
+000000000000e670 g     O .rodata	0000000000000004              gTDA18273_Reg_Power_Down_byte_3__Force_Soft_Reset
+000000000000e304 g     O .rodata	0000000000000004              gTDA18273_Reg_W_Filter_byte__W_Filter
+000000000000a960 g     F .text	00000000000001c0              iTDA18273_CheckHwState
+000000000000b0c8 g     F .text	0000000000000094              tmbslTDA18273_GetStandardMode
+000000000000e06c g     F .text	0000000000000038              iTDA18273_DeAllocInstance
+000000000000e60c g     O .rodata	0000000000000004              gTDA18273_Reg_Main_Post_Divider_byte
+000000000000e264 g     O .rodata	0000000000000004              gTDA18273_Reg_IRQ_enable__MSM_IRCAL_Enable
+000000000000e38c g     O .rodata	0000000000000004              gTDA18273_Reg_MSM_byte_1__IR_Cal_Image
+000000000000e5d0 g     O .rodata	0000000000000004              gTDA18273_Reg_rfcal_log_4__rfcal_log_4
+000000000000e3c4 g     O .rodata	0000000000000004              gTDA18273_Reg_Power_Level_byte_2
+000000000000e260 g     O .rodata	0000000000000004              gTDA18273_Reg_IRQ_enable__MSM_RFCal_Enable
+000000000000e350 g     O .rodata	0000000000000004              gTDA18273_Reg_Reference_Byte__Digital_Clock_Mode
+000000000000ac28 g     F .text	0000000000000124              tmbslTDA18273_SetRF
+000000000000e314 g     O .rodata	0000000000000004              gTDA18273_Reg_IR_Mixer_byte_1__IR_Mixer_Top
+000000000000e378 g     O .rodata	0000000000000004              gTDA18273_Reg_MSM_byte_1
+000000000000b9d0 g     F .text	0000000000000094              tmbslTDA18273_GetIRQWaitHwInit
+0000000000021ff0 g     O .bss	0000000000000008              RxLen
+000000000000e680 g     O .rodata	0000000000000004              gTDA18273_Reg_Charge_pump_byte__ICP
+000000000000e5e8 g     O .rodata	0000000000000004              gTDA18273_Reg_rfcal_log_7__rfcal_log_7
+000000000000e2f8 g     O .rodata	0000000000000004              gTDA18273_Reg_W_Filter_byte__RF_Atten_3dB
+000000000000e2e8 g     O .rodata	0000000000000004              gTDA18273_Reg_RF_AGC_byte__RFAGC_Low_BW
+000000000000e444 g     O .rodata	0000000000000004              gTDA18273_Reg_AGC1_byte_3__AGC1_Gain
+000000000000e5a8 g     O .rodata	0000000000000004              gTDA18273_Reg_Misc_byte__IRQ_Polarity
+000000000000e564 g     O .rodata	0000000000000004              gTDA18273_Reg_RFAGCs_Gain_byte_6__RFAGC_Read_K
+000000000000ad4c g     F .text	00000000000000fc              iTDA18273_SetRF
+000000000000e3d8 g     O .rodata	0000000000000004              gTDA18273_Reg_Adapt_Top_byte__Fast_Mode_AGC
+00000000000084a0 g     F .text	000000000000010c              tmbslTDA18273_SetPowerState
+000000000000e1f0 g     O .rodata	0000000000000004              gTDA18273_Reg_ID_byte_3__Minor_rev
+000000000000e5b8 g     O .rodata	0000000000000004              gTDA18273_Reg_rfcal_log_1__rfcal_log_1
+000000000000e430 g     O .rodata	0000000000000004              gTDA18273_Reg_IR_Mixer_byte_2__IF_Notch
+000000000000e1d8 g     O .rodata	0000000000000004              gTDA18273_Reg_ID_byte_1__MS
+000000000000e204 g     O .rodata	0000000000000004              gTDA18273_Reg_Power_state_byte_1
+0000000000008c7c g     F .text	0000000000000018              UserWrittenMutexDeInit
+0000000000020350 g     O .data	0000000000001c90              gTDA18273Instance
+000000000000e2c0 g     O .rodata	0000000000000004              gTDA18273_Reg_AGC2_byte_1
+000000000000ae48 g     F .text	0000000000000140              tmbslTDA18273_GetLockStatus
+000000000000e588 g     O .rodata	0000000000000004              gTDA18273_Reg_RSSI_byte_2__RSSI_Cap_Val
+000000000000df34 g     F .text	00000000000000e0              iTDA18273_AllocInstance
+000000000000e678 g     O .rodata	0000000000000004              gTDA18273_Reg_Charge_pump_byte
+000000000000e3c0 g     O .rodata	0000000000000004              gTDA18273_Reg_PowerSavingMode__PSM_Lodriver
+000000000000e40c g     O .rodata	0000000000000004              gTDA18273_Reg_Vsync_Mgt_byte__PD_Ovld
+000000000000e22c g     O .rodata	0000000000000004              gTDA18273_Reg_IRQ_status
+000000000000e3a4 g     O .rodata	0000000000000004              gTDA18273_Reg_MSM_byte_2__MSM_Launch
+00000000000087f8 g     F .text	000000000000006c              tmbslTDA18273_SetLLPowerState
+000000000000e5a4 g     O .rodata	0000000000000004              gTDA18273_Reg_Misc_byte__IRQ_Mode
+000000000000c3ac g     F .text	0000000000000070              tmbslTDA18273_Read
+000000000000e5b0 g     O .rodata	0000000000000004              gTDA18273_Reg_rfcal_log_0__rfcal_log_0
+000000000000e234 g     O .rodata	0000000000000004              gTDA18273_Reg_IRQ_status__MSM_XtalCal_End
+0000000000009b58 g     F .text	0000000000000110              iTDA18273_SetMSM
+000000000000e1f4 g     O .rodata	0000000000000004              gTDA18273_Reg_Thermo_byte_1
+000000000000e29c g     O .rodata	0000000000000004              gTDA18273_Reg_IRQ_set__MSM_LOCalc_Set
+000000000000e624 g     O .rodata	0000000000000004              gTDA18273_Reg_Sigma_delta_byte_2__LO_Frac_2
+0000000000007ef4 g     F .text	0000000000000038              tmbslTDA18273_GetSWVersion
+000000000000e554 g     O .rodata	0000000000000004              gTDA18273_Reg_RFAGCs_Gain_byte_5__Up_LNA_Adapt
+000000000000e604 g     O .rodata	0000000000000004              gTDA18273_Reg_rfcal_log_11
+000000000000e254 g     O .rodata	0000000000000004              gTDA18273_Reg_IRQ_enable__MSM_XtalCal_Enable
+000000000000e4a8 g     O .rodata	0000000000000004              gTDA18273_Reg_RF_Cal_byte_2__RFCAL_Offset_Cprog7
+000000000000e658 g     O .rodata	0000000000000004              gTDA18273_Reg_Power_Down_byte_2
+000000000000e4a0 g     O .rodata	0000000000000004              gTDA18273_Reg_RF_Cal_byte_2__RFCAL_Offset_Cprog5
+000000000000b7f0 g     F .text	000000000000005c              tmbslTDA18273_SetIRQWait
+000000000000e268 g     O .rodata	0000000000000004              gTDA18273_Reg_IRQ_enable__MSM_RCCal_Enable
+000000000000e59c g     O .rodata	0000000000000004              gTDA18273_Reg_Misc_byte__PD_Underload
+000000000000e654 g     O .rodata	0000000000000004              gTDA18273_Reg_IR_Cal_byte_5__IR_Mixer_Gain
+000000000000e4b8 g     O .rodata	0000000000000004              gTDA18273_Reg_RF_Cal_byte_3__RFCAL_Offset_Cprog10
+0000000000021fe8 g     O .bss	0000000000000008              TxLen
+000000000000e2cc g     O .rodata	0000000000000004              gTDA18273_Reg_AGCK_byte_1__AGCs_Up_Step_assym
+000000000000e560 g     O .rodata	0000000000000004              gTDA18273_Reg_RFAGCs_Gain_byte_6
+000000000000e274 g     O .rodata	0000000000000004              gTDA18273_Reg_IRQ_clear__MSM_XtalCal_Clear
+000000000000e41c g     O .rodata	0000000000000004              gTDA18273_Reg_Vsync_Mgt_byte__AGC_Ovld_Timer
+000000000000e4d8 g     O .rodata	0000000000000004              gTDA18273_Reg_RF_Filters_byte_1__RF_Filter_Gv
+000000000000e328 g     O .rodata	0000000000000004              gTDA18273_Reg_IF_AGC_byte
+000000000000e468 g     O .rodata	0000000000000004              gTDA18273_Reg_RFAGCs_Gain_byte_2
+000000000000e454 g     O .rodata	0000000000000004              gTDA18273_Reg_RFAGCs_Gain_byte_1__PLD_Temp_Enable
+000000000000e53c g     O .rodata	0000000000000004              gTDA18273_Reg_RFAGCs_Gain_byte_4
+000000000000e648 g     O .rodata	0000000000000004              gTDA18273_Reg_Regulators_byte__RF_Reg
+000000000000e2a8 g     O .rodata	0000000000000004              gTDA18273_Reg_IRQ_set__MSM_RCCal_Set
+000000000000e52c g     O .rodata	0000000000000004              gTDA18273_Reg_AGCs_DetOut_byte__Do_AGC1
+000000000000e2f4 g     O .rodata	0000000000000004              gTDA18273_Reg_W_Filter_byte__VHF_III_mode
+000000000000e630 g     O .rodata	0000000000000004              gTDA18273_Reg_Sigma_delta_byte_4
+000000000000e220 g     O .rodata	0000000000000004              gTDA18273_Reg_Power_state_byte_2__SM_XT
+000000000000e620 g     O .rodata	0000000000000004              gTDA18273_Reg_Sigma_delta_byte_2
+000000000000e660 g     O .rodata	0000000000000004              gTDA18273_Reg_Power_Down_byte_2__PD_Det4
+000000000000e448 g     O .rodata	0000000000000004              gTDA18273_Reg_RFAGCs_Gain_byte_1
+000000000000e4ec g     O .rodata	0000000000000004              gTDA18273_Reg_RF_Filters_byte_3__AGC2_Do_step
+000000000000e458 g     O .rodata	0000000000000004              gTDA18273_Reg_RFAGCs_Gain_byte_1__TH_AGC_Adapt34
+000000000000e278 g     O .rodata	0000000000000004              gTDA18273_Reg_IRQ_clear__MSM_RSSI_Clear
+000000000000e3c8 g     O .rodata	0000000000000004              gTDA18273_Reg_Power_Level_byte_2__PD_PLD_read
+000000000000e3e4 g     O .rodata	0000000000000004              gTDA18273_Reg_Adapt_Top_byte__Index_K_Top_Adapt
+000000000000e5dc g     O .rodata	0000000000000004              gTDA18273_Reg_rfcal_log_6
+000000000000e5c0 g     O .rodata	0000000000000004              gTDA18273_Reg_rfcal_log_2__rfcal_log_2
+000000000000e4f8 g     O .rodata	0000000000000004              gTDA18273_Reg_RF_Band_Pass_Filter_byte__RF_BPF_Bypass
+000000000000e5bc g     O .rodata	0000000000000004              gTDA18273_Reg_rfcal_log_2
+000000000000e574 g     O .rodata	0000000000000004              gTDA18273_Reg_RSSI_byte_1
+000000000000e490 g     O .rodata	0000000000000004              gTDA18273_Reg_RF_Cal_byte_1__RFCAL_Offset_Cprog2
+000000000000e5cc g     O .rodata	0000000000000004              gTDA18273_Reg_rfcal_log_4
+000000000000e488 g     O .rodata	0000000000000004              gTDA18273_Reg_RF_Cal_byte_1__RFCAL_Offset_Cprog0
+000000000000e614 g     O .rodata	0000000000000004              gTDA18273_Reg_Main_Post_Divider_byte__LOPresc
+00000000000082b4 g     F .text	00000000000001ec              iTDA18273_Read
+000000000000e5f8 g     O .rodata	0000000000000004              gTDA18273_Reg_rfcal_log_9__rfcal_log_9
+000000000000e534 g     O .rodata	0000000000000004              gTDA18273_Reg_RFAGCs_Gain_byte_3__AGC2_Gain_Read
+000000000000e5ec g     O .rodata	0000000000000004              gTDA18273_Reg_rfcal_log_8
+000000000000e540 g     O .rodata	0000000000000004              gTDA18273_Reg_RFAGCs_Gain_byte_4__Cprog_Read
+000000000000e224 g     O .rodata	0000000000000004              gTDA18273_Reg_Input_Power_Level_byte
+000000000000b974 g     F .text	000000000000005c              tmbslTDA18273_SetIRQWaitHwInit
+000000000000e498 g     O .rodata	0000000000000004              gTDA18273_Reg_RF_Cal_byte_2
+000000000000e290 g     O .rodata	0000000000000004              gTDA18273_Reg_IRQ_set__IRQ_Set
+0000000000021ff8 g       *ABS*	0000000000000000              _end
+000000000000e294 g     O .rodata	0000000000000004              gTDA18273_Reg_IRQ_set__MSM_XtalCal_Set
+000000000000e360 g     O .rodata	0000000000000004              gTDA18273_Reg_RF_Frequency_byte_1
+000000000000e5ac g     O .rodata	0000000000000004              gTDA18273_Reg_rfcal_log_0
+000000000000e370 g     O .rodata	0000000000000004              gTDA18273_Reg_RF_Frequency_byte_3
+000000000000e64c g     O .rodata	0000000000000004              gTDA18273_Reg_IR_Cal_byte_5
+000000000000e65c g     O .rodata	0000000000000004              gTDA18273_Reg_Power_Down_byte_2__PD_LNA
+000000000000e410 g     O .rodata	0000000000000004              gTDA18273_Reg_Vsync_Mgt_byte__PD_Ovld_RF
+000000000000e398 g     O .rodata	0000000000000004              gTDA18273_Reg_MSM_byte_1__Calc_PLL
+000000000000e4f4 g     O .rodata	0000000000000004              gTDA18273_Reg_RF_Band_Pass_Filter_byte
+000000000000e450 g     O .rodata	0000000000000004              gTDA18273_Reg_RFAGCs_Gain_byte_1__PLD_CC_Enable
+000000000000e338 g     O .rodata	0000000000000004              gTDA18273_Reg_IF_Byte_1
+000000000000e244 g     O .rodata	0000000000000004              gTDA18273_Reg_IRQ_status__MSM_IRCAL_End
+000000000000e310 g     O .rodata	0000000000000004              gTDA18273_Reg_IR_Mixer_byte_1__S2D_Gain
+000000000000e5e0 g     O .rodata	0000000000000004              gTDA18273_Reg_rfcal_log_6__rfcal_log_6
+000000000000e5c8 g     O .rodata	0000000000000004              gTDA18273_Reg_rfcal_log_3__rfcal_log_3
+0000000000008cc8 g     F .text	00000000000000f0              tmbslTDA18273_Init
+000000000000e30c g     O .rodata	0000000000000004              gTDA18273_Reg_IR_Mixer_byte_1
+000000000000e404 g     O .rodata	0000000000000004              gTDA18273_Reg_Vsync_Mgt_byte
+000000000000e31c g     O .rodata	0000000000000004              gTDA18273_Reg_AGC5_byte_1__AGCs_Do_Step_assym
+000000000000e4c4 g     O .rodata	0000000000000004              gTDA18273_Reg_Bandsplit_Filter_byte__Bandsplit_Filter_SubBand
+0000000000021ff8 g       *ABS*	0000000000000000              __end__
+000000000000bb34 g     F .text	0000000000000070              tmbslTDA18273_WaitIRQ
+000000000000e55c g     O .rodata	0000000000000004              gTDA18273_Reg_RFAGCs_Gain_byte_5__TOP_AGC3_Read
+000000000000e358 g     O .rodata	0000000000000004              gTDA18273_Reg_IF_Frequency_byte
+000000000000e288 g     O .rodata	0000000000000004              gTDA18273_Reg_IRQ_clear__MSM_RCCal_Clear
+000000000000e570 g     O .rodata	0000000000000004              gTDA18273_Reg_IFAGCs_Gain_byte__AGC4_Gain_Read
+000000000000e014 g     F .text	0000000000000058              iTDA18273_ResetInstance
+0000000000021fe0 g       *ABS*	0000000000000000              __bss_start
+000000000000e514 g     O .rodata	0000000000000004              gTDA18273_Reg_AGCs_DetOut_byte__Do_AGC5
+000000000000e3f4 g     O .rodata	0000000000000004              gTDA18273_Reg_Vsync_byte__Tracer_Step
+0000000000000000       F *UND*	0000000000000000              __cxa_atexit@@LIBC
+000000000000e62c g     O .rodata	0000000000000004              gTDA18273_Reg_Sigma_delta_byte_3__LO_Frac_1
+000000000000e270 g     O .rodata	0000000000000004              gTDA18273_Reg_IRQ_clear__IRQ_Clear
+000000000000b15c g     F .text	0000000000000094              tmbslTDA18273_GetRF
+000000000000e550 g     O .rodata	0000000000000004              gTDA18273_Reg_RFAGCs_Gain_byte_5__AGC1_Top_Adapt_Low
+000000000000e4e0 g     O .rodata	0000000000000004              gTDA18273_Reg_RF_Filters_byte_2
+000000000000e4b0 g     O .rodata	0000000000000004              gTDA18273_Reg_RF_Cal_byte_3__RFCAL_Offset_Cprog8
+000000000000e504 g     O .rodata	0000000000000004              gTDA18273_Reg_CP_Current_byte__LO_CP_Current
+000000000000e640 g     O .rodata	0000000000000004              gTDA18273_Reg_Sigma_delta_byte_5__LO_Calc_Disable
+000000000000e4d4 g     O .rodata	0000000000000004              gTDA18273_Reg_RF_Filters_byte_1__Force_AGC2_gain
+000000000000e67c g     O .rodata	0000000000000004              gTDA18273_Reg_Charge_pump_byte__ICP_Bypass
+000000000000e600 g     O .rodata	0000000000000004              gTDA18273_Reg_rfcal_log_10__rfcal_log_10
+000000000000e518 g     O .rodata	0000000000000004              gTDA18273_Reg_AGCs_DetOut_byte__Up_AGC4
+000000000000e1e0 g     O .rodata	0000000000000004              gTDA18273_Reg_ID_byte_2
+000000000000e5a0 g     O .rodata	0000000000000004              gTDA18273_Reg_Misc_byte__DDS_Polarity
+000000000000e520 g     O .rodata	0000000000000004              gTDA18273_Reg_AGCs_DetOut_byte__Up_AGC2
+0000000000000000       F *UND*	0000000000000000              printf@@LIBC
+0000000000009c68 g     F .text	0000000000000190              iTDA18273_WaitIRQ
+0000000000008b08 g     F .text	0000000000000068              UserWrittenI2CWrite
+000000000000e3e0 g     O .rodata	0000000000000004              gTDA18273_Reg_Adapt_Top_byte__Index_K_LNA_Adapt
+000000000000e354 g     O .rodata	0000000000000004              gTDA18273_Reg_Reference_Byte__XTout
+000000000000e4d0 g     O .rodata	0000000000000004              gTDA18273_Reg_RF_Filters_byte_1__AGC2_loop_off
+000000000000e3b4 g     O .rodata	0000000000000004              gTDA18273_Reg_PowerSavingMode__PSM_RFpoly
+0000000000008b70 g     F .text	0000000000000040              UserWrittenWait
+000000000000e568 g     O .rodata	0000000000000004              gTDA18273_Reg_IFAGCs_Gain_byte
+000000000000e284 g     O .rodata	0000000000000004              gTDA18273_Reg_IRQ_clear__MSM_IRCAL_Clear
+000000000000b074 g     F .text	0000000000000054              tmbslTDA18273_Close
+000000000000e61c g     O .rodata	0000000000000004              gTDA18273_Reg_Sigma_delta_byte_1__LO_Int
+000000000000e438 g     O .rodata	0000000000000004              gTDA18273_Reg_AGC1_byte_3__AGC1_loop_off
+000000000000e2b4 g     O .rodata	0000000000000004              gTDA18273_Reg_AGC1_byte_2
+000000000000e324 g     O .rodata	0000000000000004              gTDA18273_Reg_AGC5_byte_1__AGC5_TOP
+000000000000e418 g     O .rodata	0000000000000004              gTDA18273_Reg_Vsync_Mgt_byte__Up_Step_Ovld
+000000000000e36c g     O .rodata	0000000000000004              gTDA18273_Reg_RF_Frequency_byte_2__RF_Freq_2
+0000000000007f6c g     F .text	0000000000000228              tmbslTDA18273_CheckHWVersion
+000000000000e1f8 g     O .rodata	0000000000000004              gTDA18273_Reg_Thermo_byte_1__TM_D
+0000000000000000       F *UND*	0000000000000000              __cxa_finalize@@LIBC
+000000000000e4fc g     O .rodata	0000000000000004              gTDA18273_Reg_RF_Band_Pass_Filter_byte__RF_BPF
+000000000000e650 g     O .rodata	0000000000000004              gTDA18273_Reg_IR_Cal_byte_5__Mixer_Gain_Bypass
+000000000000e644 g     O .rodata	0000000000000004              gTDA18273_Reg_Regulators_byte
+000000000000e344 g     O .rodata	0000000000000004              gTDA18273_Reg_IF_Byte_1__LP_FC_Offset
+000000000000e214 g     O .rodata	0000000000000004              gTDA18273_Reg_Power_state_byte_1__LO_Lock
+000000000000e364 g     O .rodata	0000000000000004              gTDA18273_Reg_RF_Frequency_byte_1__RF_Freq_1
+000000000000e634 g     O .rodata	0000000000000004              gTDA18273_Reg_Sigma_delta_byte_4__LO_Frac_0
+000000000000e3ec g     O .rodata	0000000000000004              gTDA18273_Reg_Vsync_byte
+000000000000e5f0 g     O .rodata	0000000000000004              gTDA18273_Reg_rfcal_log_8__rfcal_log_8
+000000000000e470 g     O .rodata	0000000000000004              gTDA18273_Reg_AGC5_byte_2
+000000000000bba4 g     F .text	00000000000000d0              tmbslTDA18273_GetXtalCal_End
+000000000000e230 g     O .rodata	0000000000000004              gTDA18273_Reg_IRQ_status__IRQ_status
+000000000000e460 g     O .rodata	0000000000000004              gTDA18273_Reg_RFAGCs_Gain_byte_1__RFAGC_K_Bypass
+000000000000e2b8 g     O .rodata	0000000000000004              gTDA18273_Reg_AGC1_byte_2__AGC1_Top_Mode_Val
+000000000000bc74 g     F .text	00000000000004d4              tmbslTDA18273_SetFineRF
+000000000000e39c g     O .rodata	0000000000000004              gTDA18273_Reg_MSM_byte_2
+000000000000e258 g     O .rodata	0000000000000004              gTDA18273_Reg_IRQ_enable__MSM_RSSI_Enable
+000000000000e424 g     O .rodata	0000000000000004              gTDA18273_Reg_IR_Mixer_byte_2__IR_Mixer_loop_off
+000000000000e414 g     O .rodata	0000000000000004              gTDA18273_Reg_Vsync_Mgt_byte__AGC_Ovld_TOP
+000000000000e3f8 g     O .rodata	0000000000000004              gTDA18273_Reg_Vsync_byte__Vsync_int
+000000000000e45c g     O .rodata	0000000000000004              gTDA18273_Reg_RFAGCs_Gain_byte_1__RFAGC_Sense_Enable
+000000000000e440 g     O .rodata	0000000000000004              gTDA18273_Reg_AGC1_byte_3__Force_AGC1_gain
+000000000000e3f0 g     O .rodata	0000000000000004              gTDA18273_Reg_Vsync_byte__Neg_modulation
+000000000000e590 g     O .rodata	0000000000000004              gTDA18273_Reg_RSSI_byte_2__RSSI_Dicho_not
+000000000000e3cc g     O .rodata	0000000000000004              gTDA18273_Reg_Power_Level_byte_2__PLD_Temp_Slope
+000000000000e584 g     O .rodata	0000000000000004              gTDA18273_Reg_RSSI_byte_2__RSSI_Cap_Reset_En
+000000000000b8e0 g     F .text	0000000000000094              tmbslTDA18273_GetIRQWait
+000000000000e2d0 g     O .rodata	0000000000000004              gTDA18273_Reg_AGCK_byte_1__Pulse_Shaper_Disable
+000000000000e5d8 g     O .rodata	0000000000000004              gTDA18273_Reg_rfcal_log_5__rfcal_log_5
+000000000000e578 g     O .rodata	0000000000000004              gTDA18273_Reg_RSSI_byte_1__RSSI
+000000000000e3b0 g     O .rodata	0000000000000004              gTDA18273_Reg_PowerSavingMode__PSM_Bandsplit_Filter
+000000000000e280 g     O .rodata	0000000000000004              gTDA18273_Reg_IRQ_clear__MSM_RFCal_Clear
+000000000000e594 g     O .rodata	0000000000000004              gTDA18273_Reg_Misc_byte
+000000000000e240 g     O .rodata	0000000000000004              gTDA18273_Reg_IRQ_status__MSM_RFCal_End
+000000000000e3e8 g     O .rodata	0000000000000004              gTDA18273_Reg_Adapt_Top_byte__Ovld_Udld_FastUp
+000000000000e26c g     O .rodata	0000000000000004              gTDA18273_Reg_IRQ_clear
+000000000000e46c g     O .rodata	0000000000000004              gTDA18273_Reg_RFAGCs_Gain_byte_2__RFAGC_K
+0000000000007f2c g     F .text	0000000000000040              tmbslTDA18273_GetSWSettingsVersion
+000000000000b794 g     F .text	000000000000005c              tmbslTDA18273_SetPllManual
+000000000000e56c g     O .rodata	0000000000000004              gTDA18273_Reg_IFAGCs_Gain_byte__AGC5_Gain_Read
+000000000000e218 g     O .rodata	0000000000000004              gTDA18273_Reg_Power_state_byte_2
+000000000000e42c g     O .rodata	0000000000000004              gTDA18273_Reg_IR_Mixer_byte_2__Hi_Pass
+0000000000008db8 g     F .text	00000000000001dc              tmbslTDA18273_Open
+000000000000e384 g     O .rodata	0000000000000004              gTDA18273_Reg_MSM_byte_1__RF_CAL
+000000000000e480 g     O .rodata	0000000000000004              gTDA18273_Reg_AGC5_byte_2__AGC5_Gain
+0000000000009df8 g     F .text	0000000000000b68              tmbslTDA18273_SetStandardMode
+000000000000e330 g     O .rodata	0000000000000004              gTDA18273_Reg_IF_AGC_byte__LPF_DCOffset_Corr
+000000000000e334 g     O .rodata	0000000000000004              gTDA18273_Reg_IF_AGC_byte__IF_level
+
+
