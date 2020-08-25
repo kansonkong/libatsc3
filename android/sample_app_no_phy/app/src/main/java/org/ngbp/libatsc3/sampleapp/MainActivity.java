@@ -117,6 +117,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                 Log.d(TAG, String.format("unable to find static impl loader for %s", moduleName));
             }
         }
+
     }
 
     private String prebuiltAssetsForDeviceSelectionVirtualPHY[] = {
