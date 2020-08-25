@@ -63,19 +63,7 @@ repositories {
 }
 
 dependencies {
-    //implementation project(path: ':libatsc3_core', configuration: 'debug')
-    //compileOnly fileTree(dir: '../libatsc3_core/build/intermediates/prefab_package/debug/prefab/modules/atsc3_core/libs/', include: ['**/*.so'])
 
-//    debugImplementation project(path: ':libatsc3_core')
-//    debugImplementation fileTree(dir: 'build/intermediates/prefab_package/debug/prefab/modules/', include: ['**/*.so'])
-//
-    //api project(':atsc3_core')
-    //debugImplementation project(':atsc3_core')
-
-    // implementation project(path: ':app:atsc3_core', configuration: 'debug')
-    //api project(':app:libatsc3_core')
-
-    //api project(path:':atsc3_core', configuration:'atsc3_core_debug')
     debugApi project(':atsc3_core')
     //vmatiash-2020-08-21 - Direct dependency is not necessary. This dependency specified in LOCAL_LDLIBS of Android.mk
     //debugApi fileTree(dir: '../atsc3_core/build/intermediates/ndkBuild/debug/obj/local', include: ['**/libatsc3_core.so'])
