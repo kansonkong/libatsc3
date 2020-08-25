@@ -3,6 +3,13 @@
 # jjustman@ngbp.org - 2020-08-19
 # jjustman-2020-08-19 - disable LOCAL_ARM_MODE := arm
 
+CHDIR_SHELL := $(SHELL)
+define chdir
+   $(eval _D=$(firstword $(1) $(@D)))
+   $(info $(MAKE): cd $(_D)) $(eval SHELL = cd $(_D); $(CHDIR_SHELL))
+endef
+
+
 MY_LOCAL_PATH := $(call my-dir)
 LOCAL_PATH := $(call my-dir)
 MY_CUR_PATH := $(LOCAL_PATH)
@@ -41,31 +48,9 @@ LOCAL_CFLAGS += -g -O0 -fpack-struct=8 \
 
 #jjustman-2020-08-19 - fixup for invalid soname in .so
 LOCAL_LDLIBS += -ldl -lc++_shared -llog -landroid
+
 include $(BUILD_SHARED_LIBRARY)
 
-
-# ---------------------------
-#
-#include $(CLEAR_VARS)
-#LOCAL_MODULE := local-pv-atsc3_core
-#LOCAL_SRC_FILES := $(LOCAL_PATH)/../atsc3_core/build/intermediates/ndkBuild/debug/obj/local/$(TARGET_ARCH_ABI)/libatsc3_core.so
-#ifneq ($(MAKECMDGOALS),clean)
-#	ifneq ($(MAKECMDGOALS),generateJsonModelDebug)
-#include $(PREBUILT_SHARED_LIBRARY)
-#	endif
-#endif
-#
-#include $(CLEAR_VARS)
-#LOCAL_MODULE := local-pv-atsc3_bridge
-#LOCAL_SRC_FILES := $(LOCAL_PATH)/../atsc3_bridge/build/intermediates/ndkBuild/debug/obj/local/$(TARGET_ARCH_ABI)/libatsc3_bridge.so
-#$(info $(MAKECMDGOALS))
-#ifneq ($(MAKECMDGOALS),clean)
-#	ifneq ($(MAKECMDGOALS),generateJsonModelDebug)
-#include $(PREBUILT_SHARED_LIBRARY)
-#	endif
-#endif
-#
-#
 
 # jjustman-2020-08-19: NOTE regarding missing SONAME tag
 #	...this was caused by missing SONAME tag on the generated shared library. When this tag is missing,
@@ -112,28 +97,29 @@ include $(CLEAR_VARS)
 LOCAL_MODULE :=  P3_FW_BUILD
 $(LOCAL_MODULE): P3_FW_BUILD_TARGET
 
-$(shell mkdir -p $(LOCAL_PATH)/prebuilt/firmware/fx3s/)
+# jjustman-2020-08-25 - this looks like a hack, but it addresses an issue with the symbol linkage from ld which is usually the full file pathname as the export
+#
+#  using full paths for LD results in symbol linkage ala:
+#		_binary____________saankhyalabs_slsdk_slplf_src_slref_fx3s_bin_P3_Firmware_v3_1_KAILASH_DONGLE_img_size
+#
+# 	with "copy/cd/ld/
+#		% objdump -t p3_firmware_KAILASH_DONGLE.o
+#
+#		p3_firmware_KAILASH_DONGLE.o:   file format ELF64-aarch64-little
+#
+#		SYMBOL TABLE:
+#		0000000000000000 l    d  .data  00000000 .data
+#		0000000000023cc0         .data  00000000 _binary___p3_firmware_KAILASH_DONGLE_img_end
+#		0000000000023cc0         *ABS*  00000000 _binary___p3_firmware_KAILASH_DONGLE_img_size
+#		0000000000000000         .data  00000000 _binary___p3_firmware_KAILASH_DONGLE_img_start
+#		jjustman@sdg-komo-mac188 fx3s %
 
-LOCAL_LD_FLAGS := -r -b binary $(LOCAL_PATH)/../../../saankhyalabs-slsdk/slplf/src/slref/fx3s/bin/P3_Firmware_v3.1_KAILASH_DONGLE.img -o $(LOCAL_PATH)/prebuilt/firmware/fx3s/p3_firmware_KAILASH_DONGLE.o
-
-# jjustman-2020-05-08 - built for ndk20 gcc 4.9
-# NOTE: conditional linkage based upon arch abi can be applied via:  ifeq ($(TARGET_ARCH_ABI),arm64-v8a) ... else ifeq ($(TARGET_ARCH_ABI),x86) ... else ... endif endif
 P3_FW_BUILD_TARGET:
-	$(info TARGET_LD is $(TARGET_LD))
-	$(TARGET_LD) -r -b binary ./../../../saankhyalabs-slsdk/slplf/src/slref/fx3s/bin/P3_Firmware_v3.1_KAILASH_DONGLE.img -o prebuilt/firmware/fx3s/p3_firmware_KAILASH_DONGLE.o
+#	$(info TARGET_LD is $(TARGET_LD))
+	$(shell mkdir -p $(LOCAL_PATH)/prebuilt/firmware/fx3s/)
+	$(shell cp $(LOCAL_PATH)/../../../saankhyalabs-slsdk/slplf/src/slref/fx3s/bin/P3_Firmware_v3.1_KAILASH_DONGLE.img $(LOCAL_PATH)/prebuilt/firmware/fx3s/p3_firmware_KAILASH_DONGLE.img)
+	$(shell cd $(LOCAL_PATH)/prebuilt/firmware/fx3s/ ; $(TARGET_LD) -r -b binary ./p3_firmware_KAILASH_DONGLE.img -o ./p3_firmware_KAILASH_DONGLE.o)
 include $(BUILD_SHARED_LIBRARY)
-
-
-# -- v3.2.2
-# P3_Firmware_v3.2.2(KAILASH_DONGLE).img
-# LOCAL_LD_FLAGS := -r -b binary src/main/saankhyalabs-slsdk/slplf/src/slref/fx3s/bin/P3_Firmware_v3.2.2(KAILASH_DONGLE).img -o prebuilt/fw/fx3s/p3_firmware_KAILASH_DONGLE.o
-
-# jjustman-2020-05-08 - built for ndk20 gcc 4.9
-# conditional linkage based upon arch abi can be applied via:  ifeq ($(TARGET_ARCH_ABI),arm64-v8a) ... else ifeq ($(TARGET_ARCH_ABI),x86) ... else ... endif endif
-# P3_FW_BUILD_TARGET:
-# 	$(info TARGET_LD is $(TARGET_LD))
-#	$(TARGET_LD) -r -b binary src/main/saankhyalabs-slsdk/slplf/src/slref/fx3s/bin/P3_Firmware_v3.2.2\(KAILASH_DONGLE\).img -o prebuilt/fw/fx3s/p3_firmware_KAILASH_DONGLE.o
-# include $(BUILD_SHARED_LIBRARY)
 
 
 # ---------------------------
@@ -145,11 +131,10 @@ include $(CLEAR_VARS)
 LOCAL_MODULE :=  SL_SDR_ICCM_BUILD
 $(LOCAL_MODULE): SL_SDR_ICCM_BUILD_TARGET
 
-$(shell mkdir -p $(LOCAL_PATH)/prebuilt/firmware/atsc3_aa/)
-
-LOCAL_LD_FLAGS := -r -b binary $(LOCAL_PATH)/../../../saankhyalabs-slsdk/slapi/bin/atsc3_aa/iccm.hex -o $(LOCAL_PATH)/prebuilt/firmware/atsc3_aa/iccm_hex.o
 SL_SDR_ICCM_BUILD_TARGET:
-	$(TARGET_LD) -r -b binary ./../../../saankhyalabs-slsdk/slapi/bin/atsc3_aa/iccm.hex -o ./prebuilt/firmware/atsc3_aa/iccm_hex.o
+	$(shell mkdir -p $(LOCAL_PATH)/prebuilt/firmware/atsc3_aa/)
+	$(shell cp $(LOCAL_PATH)/../../../saankhyalabs-slsdk/slapi/bin/atsc3_aa/iccm.hex $(LOCAL_PATH)/prebuilt/firmware/atsc3_aa/iccm.hex)
+	$(shell cd $(LOCAL_PATH)/prebuilt/firmware/atsc3_aa/ ; $(TARGET_LD) -r -b binary ./iccm.hex -o ./iccm_hex.o)
 include $(BUILD_SHARED_LIBRARY)
 
 # dccmFile: dccm.hex
@@ -158,9 +143,11 @@ LOCAL_PATH := $(MY_LOCAL_PATH)
 include $(CLEAR_VARS)
 LOCAL_MODULE :=  SL_SDR_DCCM_BUILD
 $(LOCAL_MODULE): SL_SDR_DCCM_BUILD_TARGET
-LOCAL_LD_FLAGS := -r -b binary $(LOCAL_PATH)/../../../saankhyalabs-slsdk/slapi/bin/atsc3_aa/dccm.hex -o $(LOCAL_PATH)/prebuilt/firmware/atsc3_aa/dccm_hex.o
+
 SL_SDR_DCCM_BUILD_TARGET:
-	$(TARGET_LD) -r -b binary ./../../../saankhyalabs-slsdk/slapi/bin/atsc3_aa/dccm.hex -o ./prebuilt/firmware/atsc3_aa/dccm_hex.o
+	$(shell mkdir -p $(LOCAL_PATH)/prebuilt/firmware/atsc3_aa/)
+	$(shell cp $(LOCAL_PATH)/../../../saankhyalabs-slsdk/slapi/bin/atsc3_aa/dccm.hex $(LOCAL_PATH)/prebuilt/firmware/atsc3_aa/dccm.hex)
+	$(shell cd $(LOCAL_PATH)/prebuilt/firmware/atsc3_aa/ ; $(TARGET_LD) -r -b binary ./dccm.hex -o ./dccm_hex.o)
 include $(BUILD_SHARED_LIBRARY)
 
 # secondaryFile: atsc3.hex
@@ -169,9 +156,11 @@ LOCAL_PATH := $(MY_LOCAL_PATH)
 include $(CLEAR_VARS)
 LOCAL_MODULE :=  SL_SDR_ATSC3_BUILD
 $(LOCAL_MODULE): SL_SDR_ATSC3_BUILD_TARGET
-LOCAL_LD_FLAGS := -r -b binary $(LOCAL_PATH)/../../../saankhyalabs-slsdk/slapi/bin/atsc3_aa/atsc3.hex -o $(LOCAL_PATH)/prebuilt/firmware/atsc3_aa/atsc3_hex.o
+
 SL_SDR_ATSC3_BUILD_TARGET:
-	$(TARGET_LD) -r -b binary ./../../../saankhyalabs-slsdk/slapi/bin/atsc3_aa/atsc3.hex -o ./prebuilt/firmware/atsc3_aa/atsc3_hex.o
+	$(shell mkdir -p $(LOCAL_PATH)/prebuilt/firmware/atsc3_aa/)
+	$(shell cp $(LOCAL_PATH)/../../../saankhyalabs-slsdk/slapi/bin/atsc3_aa/atsc3.hex $(LOCAL_PATH)/prebuilt/firmware/atsc3_aa/atsc3.hex)
+	$(shell cd $(LOCAL_PATH)/prebuilt/firmware/atsc3_aa/ ; $(TARGET_LD) -r -b binary ./atsc3.hex -o ./atsc3_hex.o)
 include $(BUILD_SHARED_LIBRARY)
 # END of SL HEX payload binary resource object linkage
 # ---------------------------
