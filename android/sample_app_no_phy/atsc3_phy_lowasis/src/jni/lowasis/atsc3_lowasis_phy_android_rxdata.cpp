@@ -15,8 +15,19 @@ atsc3_lowasis_phy_android_rxdata_t* atsc3_lowasis_phy_android_rxdata_duplicate_f
         atsc3_lowasis_phy_android_rxdata->pInfo = (S_AT3DRV_RXDINFO_IP*) calloc(1, sizeof(S_AT3DRV_RXDINFO_IP));
         memcpy(atsc3_lowasis_phy_android_rxdata->pInfo, s_rx_data->pInfo, sizeof(S_AT3DRV_RXDINFO_IP));
     } else if(s_rx_data->eType == eAT3_RXDTYPE_IP_LMT) {
+        S_AT3DRV_RXDINFO_LMT* s_rx_data_lmt_info = (S_AT3DRV_RXDINFO_LMT*)s_rx_data->pInfo;
+
         atsc3_lowasis_phy_android_rxdata->pInfo = (S_AT3DRV_RXDINFO_LMT*) calloc(1, sizeof(S_AT3DRV_RXDINFO_LMT));
         memcpy(atsc3_lowasis_phy_android_rxdata->pInfo, s_rx_data->pInfo, sizeof(S_AT3DRV_RXDINFO_LMT));
+
+        S_AT3DRV_RXDINFO_LMT* to_update_lmt_info = (S_AT3DRV_RXDINFO_LMT*)atsc3_lowasis_phy_android_rxdata->pInfo;
+        to_update_lmt_info->lmt = (S_AT3_LMT*)calloc(1, sizeof(S_AT3_LMT));
+        to_update_lmt_info->lmt->num_mc = s_rx_data_lmt_info->lmt->num_mc;
+        to_update_lmt_info->lmt->mc = (S_AT3_LMT::S_LMT_MC *) calloc(to_update_lmt_info->lmt->num_mc, sizeof(S_AT3_LMT::S_LMT_MC));
+        for(int i=0; i < s_rx_data_lmt_info->lmt->num_mc; i++) {
+            memcpy(&to_update_lmt_info->lmt->mc[i], &s_rx_data_lmt_info->lmt->mc[i], sizeof(S_AT3_LMT::S_LMT_MC));
+        }
+
     } else if(s_rx_data->eType == eAT3_RXDTYPE_ALP) {
         atsc3_lowasis_phy_android_rxdata->pInfo = (S_AT3DRV_RXDINFO_ALP*) calloc(1, sizeof(S_AT3DRV_RXDINFO_ALP));
         memcpy(atsc3_lowasis_phy_android_rxdata->pInfo, s_rx_data->pInfo, sizeof(S_AT3DRV_RXDINFO_ALP));
@@ -40,6 +51,19 @@ void atsc3_lowasis_phy_android_rxdata_free(atsc3_lowasis_phy_android_rxdata_t** 
             }
 
             if(atsc3_lowasis_phy_android_rxdata->pInfo) {
+                if(atsc3_lowasis_phy_android_rxdata->eType == eAT3_RXDTYPE_IP_LMT) {
+                    S_AT3DRV_RXDINFO_LMT* to_update_lmt_info = (S_AT3DRV_RXDINFO_LMT*)atsc3_lowasis_phy_android_rxdata->pInfo;
+                    if(to_update_lmt_info->lmt) {
+                        if(to_update_lmt_info->lmt->mc) {
+                            free(to_update_lmt_info->lmt->mc);
+                            to_update_lmt_info->lmt->mc = nullptr;
+                            to_update_lmt_info->lmt->num_mc = 0;
+                        }
+
+                        free(to_update_lmt_info->lmt);
+                        to_update_lmt_info->lmt = nullptr;
+                    }
+                }
                 free(atsc3_lowasis_phy_android_rxdata->pInfo);
                 atsc3_lowasis_phy_android_rxdata->pInfo = nullptr;
             }
