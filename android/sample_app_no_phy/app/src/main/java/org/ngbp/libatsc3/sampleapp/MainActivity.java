@@ -99,22 +99,6 @@ import androidx.core.content.ContextCompat;
 
 import static android.text.InputType.TYPE_CLASS_PHONE;
 
-//import android.media.AudioTrack;
-/*
-import android.support.annotation.NonNull;
-import android.support.constraint.ConstraintLayout;
-import android.support.v4.app.ActivityCompat;
-import android.support.v4.content.ContextCompat;
-import android.os.Bundle;
-import android.support.v7.widget.LinearLayoutManager;
-import android.support.v7.widget.RecyclerView;
-
- */
-//import com.google.android.things.contrib.driver.ht16k33.AlphanumericDisplay;
-//import com.google.android.things.contrib.driver.ht16k33.Ht16k33;
-//import com.google.android.things.contrib.driver.rainbowhat.RainbowHat;
-//import org.ngbp.libatsc3.SimpleTextView;
-
 public class MainActivity extends AppCompatActivity implements View.OnClickListener, AdapterView.OnItemSelectedListener, IAtsc3NdkApplicationBridgeCallbacks, IAtsc3NdkPHYBridgeCallbacks {
 
     final static String TAG ="MainActivity";
@@ -134,6 +118,17 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
             }
         }
     }
+
+    private String prebuiltAssetsForDeviceSelectionVirtualPHY[] = {
+            "srt://las.srt.atsc3.com:31350?passphrase=A166AC45-DB7C-4B68-B957-09B8452C76A4",
+            "srt://bna.srt.atsc3.com:31347?passphrase=88731837-0EB5-4951-83AA-F515B3BEBC20",
+            "srt://slc.srt.atsc3.com:31341?passphrase=B9E4F7B8-3CDD-4BA2-ACA6-13088AB855C0",
+            "srt://lab.srt.atsc3.com:31340?passphrase=03760631-667B-4ADB-9E04-E4491B0A7CF1",
+            "--",
+            "pcaps/2019-10-29-239.0.0.18.PLP.1.decoded.pcap",
+            "pcaps/2019-12-17-lab-digi-alp.pcap" };
+
+
     private DashMediaSource.Factory dashMediaSourceFactory;
     public static final String DASH_CONTENT_TYPE = "application/dash+xml";
 
@@ -174,13 +169,6 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     private Boolean inputSelectionFromSRT = false;
     private SRTRxSTLTPVirtualPHYAndroid srtRxSTLTPVirtualPHYAndroid;
 
-    private String prebuiltAssetsForDeviceSelectionVirtualPHY[] = {
-            "srt://bna.srt.atsc3.com:31347?passphrase=88731837-0EB5-4951-83AA-F515B3BEBC20",
-            "srt://las.srt.atsc3.com:31350?passphrase=A166AC45-DB7C-4B68-B957-09B8452C76A4",
-            "srt://lab.srt.atsc3.com:31340?passphrase=03760631-667B-4ADB-9E04-E4491B0A7CF1",
-            "--",
-            "pcaps/2019-10-29-239.0.0.18.PLP.1.decoded.pcap",
-            "pcaps/2019-12-17-lab-digi-alp.pcap" };
 
     public PcapDemuxedPHYVirtualAndroid demuxedPcapVirtualPHY;
 
