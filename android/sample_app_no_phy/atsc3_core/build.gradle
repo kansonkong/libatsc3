@@ -28,7 +28,7 @@ android {
         }
         release {
             minifyEnabled false
-            proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
+            //proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
             jniDebuggable = true
             debuggable true
         }
@@ -64,9 +64,7 @@ repositories {
 }
 
 dependencies {
-    //works but mostly empty .so - try wtih debugApp?
-  //  debugImplementation fileTree(dir: 'build/intermediates/prefab_package/debug/prefab/modules/', include: ['**/*.so'])
+
     //vmatiash-2020-08-21 - Direct dependency is not necessary. This dependency specified in LOCAL_LDLIBS of Android.mk
-    //debugApi fileTree(dir: 'build/intermediates/ndkBuild/debug/obj/local', include: ['**/libatsc3_core.so'])
-    debugApi fileTree(dir: 'build/aar', include: ['*.aar'])
+   // debugApi fileTree(dir: 'build/outputs/aar', include: ['*.aar'])
 }

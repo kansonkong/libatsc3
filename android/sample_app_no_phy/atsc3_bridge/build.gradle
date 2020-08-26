@@ -22,11 +22,14 @@ android {
             jniDebuggable = true
             debuggable true
         }
-        atsc3_bridge_debug {
-        }
+//        atsc3_bridge_debug {
+//        }
+
         release {
             minifyEnabled false
-            proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
+            shrinkResources false
+
+            //proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
             jniDebuggable = true
             debuggable true
         }
@@ -43,19 +46,6 @@ android {
         // specify the path to your object binaries, or generally:
         doNotStrip '**.so'
     }
-//
-//    buildFeatures {
-//        prefabPublishing true
-//    }
-//
-//    /*
-//    jjustman-2020-08-12 - super important, dont append the 'lib' here, it causes the prefab aar build to fail to find a matching target
-//     */
-//    prefab {
-//        atsc3_bridge {
-//        }
-//    }
-
 }
 
 repositories {
@@ -63,9 +53,24 @@ repositories {
 }
 
 dependencies {
+    implementation 'androidx.annotation:annotation:1.1.0@jar'
 
     debugApi project(':atsc3_core')
+
     //vmatiash-2020-08-21 - Direct dependency is not necessary. This dependency specified in LOCAL_LDLIBS of Android.mk
-    //debugApi fileTree(dir: '../atsc3_core/build/intermediates/ndkBuild/debug/obj/local', include: ['**/libatsc3_core.so'])
-    debugApi fileTree(dir: 'build/aar', include: ['*.aar'])
+
+  //  debugApi fileTree(dir: 'build/outputs/aar', include: ['*.aar'])
+  //  releaseApi fileTree(dir: 'build/outputs/aar', include: ['*.aar'])
+/*
+compile(project(:your-library-name)) {
+    transitive=true
+}
+repositories {
+    mavenCentral()
+    flatDir {
+        dirs 'aars'
+    }
+}
+*/
+
 }

@@ -2,6 +2,7 @@
 
 //include $(call all-subdir-makefiles)
 buildscript {
+
     repositories {
         google()
         jcenter()
@@ -16,6 +17,19 @@ buildscript {
         // NOTE: Do not place your application dependencies here; they belong
         // in the individual module build.gradle files
     }
+
+}
+
+tasks.whenTaskAdded { task ->
+    if (task.name.equals("lint")) {
+        //this is for speed up build
+        task.enabled = false
+    }
+    if(task.name.contains("Test"))
+    {
+        //this is what you need
+        task.enabled = false
+    }
 }
 
 allprojects {
@@ -24,12 +38,7 @@ allprojects {
         jcenter()
     }
 }
-//
-//task clean(type: Delete) {
-//    delete rootProject.buildDir
-//}
-
-apply plugin: 'com.android.application'
+apply plugin: 'com.android.library'
 
 android {
     compileSdkVersion 28
@@ -48,8 +57,9 @@ android {
     }
 }
 
+
 dependencies {
-    project(':app')
+    api project(':app')
     implementation 'com.android.ndk.thirdparty:openssl:1.1.1d-alpha-1'
 
 }
