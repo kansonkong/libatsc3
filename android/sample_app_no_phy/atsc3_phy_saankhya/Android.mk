@@ -236,6 +236,7 @@ LOCAL_CFLAGS += -g -O0 -fpack-struct=8 \
 
 
 #jjustman-2020-08-19 - fixup for invalid soname in .so
+
 LOCAL_LDLIBS += -ldl -lc++_shared -llog -landroid -lz \
 				-latsc3_core -latsc3_bridge \
 				$(LOCAL_PATH)/prebuilt/firmware/fx3s/p3_firmware_KAILASH_DONGLE.o \
@@ -251,6 +252,8 @@ LOCAL_SHARED_LIBRARIES := P3_FW_BUILD SL_SDR_ICCM_BUILD SL_SDR_DCCM_BUILD SL_SDR
 							libusb_android \
 							libSiTune_Tuner_Lib-prebuilt \
 							libNXP_Tuner_Lib-prebuilt
+
+LOCAL_PREBUILDS := atsc3_core atsc3_bridge
 
 include $(BUILD_SHARED_LIBRARY)
 

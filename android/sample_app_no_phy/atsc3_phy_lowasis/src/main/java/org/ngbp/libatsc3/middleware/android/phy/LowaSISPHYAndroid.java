@@ -1,5 +1,7 @@
 package org.ngbp.libatsc3.middleware.android.phy;
 
+import org.ngbp.libatsc3.middleware.android.phy.Atsc3NdkPHYClientBase;
+
 import android.hardware.usb.UsbConfiguration;
 import android.hardware.usb.UsbDevice;
 import android.hardware.usb.UsbInterface;

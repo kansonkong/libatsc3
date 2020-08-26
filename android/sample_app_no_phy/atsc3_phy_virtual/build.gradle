@@ -17,23 +17,25 @@ android {
             path 'Android.mk'
         }
     }
-    buildTypes {
-        debug {
-            jniDebuggable = true
-            debuggable true
-        }
-        libatsc3_phy_virtual {
-
-        }
-
-        release {
-            minifyEnabled false
-            proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
-            jniDebuggable = true
-            debuggable true
-
-        }
-    }
+//    buildTypes {
+//        debug {
+//            jniDebuggable = true
+//            debuggable true
+//        }
+//        atsc3_phy_virtual {
+//
+//        }
+//
+//        release {
+//            minifyEnabled false
+//            shrinkResources false
+//
+//            //proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
+//            jniDebuggable = true
+//            debuggable true
+//
+//        }
+//    }
 
     buildToolsVersion = '29.0.2'
 
@@ -53,18 +55,10 @@ repositories {
     google()
 }
 dependencies {
-
-
     implementation 'com.android.ndk.thirdparty:openssl:1.1.1g-alpha-1'
 
-    //vmatiash-2020-08-21 - Direct dependency is not necessary. This module shared by ':atsc3_bridge'
-    //debugApi project(':atsc3_core')
-    //debugApi fileTree(dir: '../atsc3_core/build/intermediates/ndkBuild/debug/obj/local', include: ['**/libatsc3_core.so'])
-
-    debugApi project(':atsc3_bridge')
     //vmatiash-2020-08-21 - Direct dependency is not necessary. This dependency specified in LOCAL_LDLIBS of Android.mk
-    //debugApi fileTree(dir: '../atsc3_bridge/build/intermediates/ndkBuild/debug/obj/local', include: ['**/libatsc3_bridge.so'])
 
-    debugApi fileTree(dir: 'build/aar', include: ['*.aar'])
+    api project(':atsc3_bridge')
 }
 

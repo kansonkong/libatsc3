@@ -18,7 +18,6 @@ public class SaankhyaPHYAndroid extends Atsc3NdkPHYSaankhyaStaticJniLoader  {
     @Override public native int stop();
     @Override public native int deinit();
 
-
     @Override public native int download_bootloader_firmware(int fd, String devicePath);
     @Override public native int open(int fd, String devicePath);
     @Override public native int tune(int freqKhz, int single_plp);
