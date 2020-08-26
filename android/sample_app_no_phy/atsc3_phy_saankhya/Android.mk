@@ -116,9 +116,9 @@ $(LOCAL_MODULE): P3_FW_BUILD_TARGET
 
 P3_FW_BUILD_TARGET:
 #	$(info TARGET_LD is $(TARGET_LD))
-	$(shell mkdir -p $(LOCAL_PATH)/prebuilt/firmware/fx3s/)
+	$(shell mkdir -p "$(LOCAL_PATH)/prebuilt/firmware/fx3s/")
 	$(shell cp $(LOCAL_PATH)/../../../saankhyalabs-slsdk/slplf/src/slref/fx3s/bin/P3_Firmware_v3.1_KAILASH_DONGLE.img $(LOCAL_PATH)/prebuilt/firmware/fx3s/p3_firmware_KAILASH_DONGLE.img)
-	$(shell cd $(LOCAL_PATH)/prebuilt/firmware/fx3s/ ; $(TARGET_LD) -r -b binary ./p3_firmware_KAILASH_DONGLE.img -o ./p3_firmware_KAILASH_DONGLE.o)
+	$(shell cd $(LOCAL_PATH)/prebuilt/firmware/fx3s/ && $(TARGET_LD) -r -b binary ./p3_firmware_KAILASH_DONGLE.img -o ./p3_firmware_KAILASH_DONGLE.o)
 include $(BUILD_SHARED_LIBRARY)
 
 
@@ -132,9 +132,9 @@ LOCAL_MODULE :=  SL_SDR_ICCM_BUILD
 $(LOCAL_MODULE): SL_SDR_ICCM_BUILD_TARGET
 
 SL_SDR_ICCM_BUILD_TARGET:
-	$(shell mkdir -p $(LOCAL_PATH)/prebuilt/firmware/atsc3_aa/)
+	$(shell mkdir -p "$(LOCAL_PATH)/prebuilt/firmware/atsc3_aa/")
 	$(shell cp $(LOCAL_PATH)/../../../saankhyalabs-slsdk/slapi/bin/atsc3_aa/iccm.hex $(LOCAL_PATH)/prebuilt/firmware/atsc3_aa/iccm.hex)
-	$(shell cd $(LOCAL_PATH)/prebuilt/firmware/atsc3_aa/ ; $(TARGET_LD) -r -b binary ./iccm.hex -o ./iccm_hex.o)
+	$(shell cd $(LOCAL_PATH)/prebuilt/firmware/atsc3_aa/ && $(TARGET_LD) -r -b binary ./iccm.hex -o ./iccm_hex.o)
 include $(BUILD_SHARED_LIBRARY)
 
 # dccmFile: dccm.hex
@@ -145,9 +145,9 @@ LOCAL_MODULE :=  SL_SDR_DCCM_BUILD
 $(LOCAL_MODULE): SL_SDR_DCCM_BUILD_TARGET
 
 SL_SDR_DCCM_BUILD_TARGET:
-	$(shell mkdir -p $(LOCAL_PATH)/prebuilt/firmware/atsc3_aa/)
+	$(shell mkdir -p "$(LOCAL_PATH)/prebuilt/firmware/atsc3_aa/")
 	$(shell cp $(LOCAL_PATH)/../../../saankhyalabs-slsdk/slapi/bin/atsc3_aa/dccm.hex $(LOCAL_PATH)/prebuilt/firmware/atsc3_aa/dccm.hex)
-	$(shell cd $(LOCAL_PATH)/prebuilt/firmware/atsc3_aa/ ; $(TARGET_LD) -r -b binary ./dccm.hex -o ./dccm_hex.o)
+	$(shell cd $(LOCAL_PATH)/prebuilt/firmware/atsc3_aa/ && $(TARGET_LD) -r -b binary ./dccm.hex -o ./dccm_hex.o)
 include $(BUILD_SHARED_LIBRARY)
 
 # secondaryFile: atsc3.hex
@@ -158,9 +158,9 @@ LOCAL_MODULE :=  SL_SDR_ATSC3_BUILD
 $(LOCAL_MODULE): SL_SDR_ATSC3_BUILD_TARGET
 
 SL_SDR_ATSC3_BUILD_TARGET:
-	$(shell mkdir -p $(LOCAL_PATH)/prebuilt/firmware/atsc3_aa/)
+	$(shell mkdir -p "$(LOCAL_PATH)/prebuilt/firmware/atsc3_aa/")
 	$(shell cp $(LOCAL_PATH)/../../../saankhyalabs-slsdk/slapi/bin/atsc3_aa/atsc3.hex $(LOCAL_PATH)/prebuilt/firmware/atsc3_aa/atsc3.hex)
-	$(shell cd $(LOCAL_PATH)/prebuilt/firmware/atsc3_aa/ ; $(TARGET_LD) -r -b binary ./atsc3.hex -o ./atsc3_hex.o)
+	$(shell cd $(LOCAL_PATH)/prebuilt/firmware/atsc3_aa/ && $(TARGET_LD) -r -b binary ./atsc3.hex -o ./atsc3_hex.o)
 include $(BUILD_SHARED_LIBRARY)
 # END of SL HEX payload binary resource object linkage
 # ---------------------------
