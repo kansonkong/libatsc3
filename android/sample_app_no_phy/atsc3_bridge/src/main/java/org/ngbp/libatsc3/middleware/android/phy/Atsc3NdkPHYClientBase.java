@@ -6,6 +6,8 @@ import android.util.Log;
 import java.util.ArrayList;
 import java.util.List;
 
+import androidx.annotation.Keep;
+
 /*
     state management overview
 
@@ -15,13 +17,14 @@ import java.util.List;
                 -> deinit
  */
 
-interface Atsc3NdkPHYClientBaseBootloaderCallback {
-     boolean RunIsBootloaderCallback(UsbDevice usbDevice);
-}
-
+@Keep
 public abstract class Atsc3NdkPHYClientBase {
 
-    public static class USBVendorIDProductIDSupportedPHY {
+    @Keep interface Atsc3NdkPHYClientBaseBootloaderCallback {
+        boolean RunIsBootloaderCallback(UsbDevice usbDevice);
+    }
+
+    @Keep public static class USBVendorIDProductIDSupportedPHY {
         public USBVendorIDProductIDSupportedPHY(int vendorID, int productID, String phyName, boolean isBootloaderFlag, Class<? extends Atsc3NdkPHYClientBase> candidatePHYImplementation) {
             this.vendorID = vendorID;
             this.productID = productID;

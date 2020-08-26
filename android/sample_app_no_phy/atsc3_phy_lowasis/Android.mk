@@ -15,7 +15,7 @@ include $(CLEAR_VARS)
 include $(LOCAL_PATH)/At3drvLibPrebuilt.mk
 
 # ---------------------------
-# atsc3_phy_saankhya atsc3_phy_lowasis
+# atsc3_phy_lowasis
 
 LOCAL_PATH := $(MY_LOCAL_PATH)
 include $(CLEAR_VARS)
@@ -57,6 +57,8 @@ LOCAL_LDFLAGS += -fPIE -fPIC \
 				-L $(LOCAL_PATH)/../atsc3_core/build/intermediates/ndkBuild/debug/obj/local/$(TARGET_ARCH_ABI)/
 
 LOCAL_SHARED_LIBRARIES += at3drv at3base usb-atlas
+
+LOCAL_PREBUILDS := atsc3_core atsc3_bridge
 
 include $(BUILD_SHARED_LIBRARY)
 
