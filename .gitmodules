@@ -18,10 +18,13 @@
 [submodule "gpac"]
 	path = gpac
 	url = https://github.com/gpac/gpac.git
+# jjustman-2020-08-25 - adding in daa in ADO DAA branch
 [submodule "android/sample_app_no_phy/ExoPlayer"]
 	path = android/sample_app_no_phy/ExoPlayer
-	url = https://github.com/jjustman/ExoPlayer.git
-	branch = release-v2
+	url = git@ssh.dev.azure.com:v3/NGWP/Middleware/ExoPlayer
+	branch = daa
+	
+	
 # jjustman-2020-03-13 - not yet for protocol dissectors of stltp, alp, lls, route/dash and mmt
 # [submodule "wireshark"]
 #	path = wireshark
