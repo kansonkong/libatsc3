@@ -13,5 +13,19 @@
      See the License for the specific language governing permissions and
      limitations under the License.
 -->
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    package="org.ngbp.libatsc3.phy.lowasis">
 
-<manifest package="org.ngbp.libatsc3.phy.lowasis"/>
+    <application>
+        <provider
+            android:name="androidx.startup.InitializationProvider"
+            android:authorities="${applicationId}.androidx-startup"
+            android:exported="false"
+            tools:node="merge">
+            <meta-data
+                android:name="org.ngbp.libatsc3.middleware.android.LowaSISPHYInitializer"
+                android:value="androidx.startup" />
+        </provider>
+    </application>
+</manifest>
