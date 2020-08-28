@@ -54,9 +54,9 @@ repositories {
 }
 dependencies {
 
-    //vmatiash-2020-08-21 - Direct dependency is not necessary. This dependency specified in LOCAL_LDLIBS of Android.mk
-
     api project(':atsc3_bridge')
 
+    implementation "androidx.annotation:annotation:1.1.0"
+    implementation "androidx.startup:startup-runtime:1.0.0-alpha03"
 }
 
