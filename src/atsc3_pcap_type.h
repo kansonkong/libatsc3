@@ -137,11 +137,14 @@ typedef struct atsc3_pcap_replay_context {
 
 } atsc3_pcap_replay_context_t;
 
+atsc3_pcap_replay_context_t* atsc3_pcap_replay_context_new();
+
 atsc3_pcap_replay_context_t* atsc3_pcap_replay_open_filename(const char* pcap_filename);
 atsc3_pcap_replay_context_t* atsc3_pcap_replay_open_from_fd(const char* pcap_filename, int pcap_fd, long pcap_start, long pcap_length); //used for inclusion of pcap's via android assetManager
 
 atsc3_pcap_replay_context_t* atsc3_pcap_replay_iterate_packet(atsc3_pcap_replay_context_t* atsc3_pcap_replay_context_to_iterate);
 atsc3_pcap_replay_context_t* atsc3_pcap_replay_usleep_packet(atsc3_pcap_replay_context_t* atsc3_pcap_replay_context_to_iterate);
+bool atsc3_pcap_replay_check_file_pos_is_eof(atsc3_pcap_replay_context_t* atsc3_pcap_replay_context_to_iterate);
 
 void atsc3_pcap_replay_free(atsc3_pcap_replay_context_t** atsc3_pcap_replay_context_p);
 

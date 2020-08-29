@@ -23,3 +23,5 @@
 /runStltp-Cleverlogic-STL-FHD
 /mpu/
 /atsc3_mmt_context_stpp_depacketizer_test
+/atsc3_stltp_alp_listener_reflector_test_noasan
+/atsc3_stltp_alp_listener_reflector_test_noasan.dSYM/

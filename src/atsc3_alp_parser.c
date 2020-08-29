@@ -7,6 +7,8 @@
 
 #include "atsc3_alp_parser.h"
 
+#include "atsc3_baseband_packet_types.h"
+
 int _ALP_PARSER_INFO_ENABLED = 0;
 int _ALP_PARSER_DEBUG_ENABLED = 0;
 
@@ -117,7 +119,9 @@ atsc3_baseband_packet_t* atsc3_stltp_parse_baseband_packet(atsc3_stltp_baseband_
     __ALP_PARSER_INFO("Raw hex: 0x%02hhX 0x%02hhX 0x%02hhX 0x%02hhX", binary_payload[0], binary_payload[1], binary_payload[2], binary_payload[3]);
     __ALP_PARSER_INFO("---------------------------------------");
 
-    atsc3_baseband_packet_t* atsc3_baseband_packet = calloc(1, sizeof(atsc3_baseband_packet_t));
+    atsc3_baseband_packet_t* atsc3_baseband_packet = atsc3_baseband_packet_new();
+    atsc3_baseband_packet_set_plp_from_stltp_baseband_packet(atsc3_baseband_packet, atsc3_stltp_baseband_packet);
+
     //base field byte 1
     atsc3_baseband_packet->base_field_mode = (*binary_payload >> 7) & 0x1;
     atsc3_baseband_packet->base_field_pointer = (*binary_payload)   & 0x7F;
@@ -334,11 +338,15 @@ cleanup:
 
 
 //parse relative position of baseband_packet_payload,
-atsc3_alp_packet_t* atsc3_alp_packet_parse(block_t* baseband_packet_payload) {
+
+/*
+ * jjustman-2020-08-17 - TODO: wrap this with better block_t reads so we don't possibly over-read from our starting_block_size
+ */
+atsc3_alp_packet_t* atsc3_alp_packet_parse(uint8_t plp_num, block_t* baseband_packet_payload) {
     uint32_t starting_block_size = block_Remaining_size(baseband_packet_payload);
     
     if(starting_block_size == 0) {
-        __ALP_PARSER_DEBUG("atsc3_alp_packet_parse: remaining size is 0 bytes, returning NULL, ptr: %p, pos: %d, size: %d",
+    	__ALP_PARSER_DEBUG("atsc3_alp_packet_parse: remaining size is 0 bytes, returning NULL, ptr: %p, pos: %d, size: %d",
                            baseband_packet_payload,
                            baseband_packet_payload->i_pos,
                            baseband_packet_payload->p_size);
@@ -346,8 +354,8 @@ atsc3_alp_packet_t* atsc3_alp_packet_parse(block_t* baseband_packet_payload) {
     }
     
     //check for alp underrun which will need re-fragmenting
-    if(starting_block_size < 2) {
-        __ALP_PARSER_WARN("atsc3_alp_packet_parse: remaining size less than 2 bytes, ptr: %p, pos: %d, size: %d",
+    if(starting_block_size < 8) {
+        __ALP_PARSER_DEBUG("atsc3_alp_packet_parse: remaining size less than 8 bytes, ptr: %p, pos: %d, size: %d",
                            baseband_packet_payload,
                            baseband_packet_payload->i_pos,
                            baseband_packet_payload->p_size);
@@ -362,9 +370,12 @@ atsc3_alp_packet_t* atsc3_alp_packet_parse(block_t* baseband_packet_payload) {
 	uint8_t alp_packet_header_byte_2 = *binary_payload++;
     
     atsc3_alp_packet_t* alp_packet = calloc(1, sizeof(atsc3_alp_packet_t));
+    alp_packet->plp_num = plp_num;
+
     __ALP_PARSER_INFO("------------------------------------------------");
-    __ALP_PARSER_INFO("ALP Packet: pointer: %p, payload start pointer: %p, first 2 bytes: 0x%02X, 0x%02X",
-                      alp_packet,
+    __ALP_PARSER_INFO("ALP Packet: recv on plp: %d, pointer: %p, payload start pointer: %p, first 2 bytes: 0x%02X, 0x%02X",
+    				  alp_packet->plp_num,
+    				  alp_packet,
                       alp_binary_payload_start,
                       alp_packet_header_byte_1,
                       alp_packet_header_byte_2);
@@ -447,6 +458,14 @@ atsc3_alp_packet_t* atsc3_alp_packet_parse(block_t* baseband_packet_payload) {
                 uint8_t hef_length_minus1 = *binary_payload++;
                 __ALP_PARSER_INFO("extension type: 0x%x, extension length: %u", hef_type, hef_length_minus1);
                 for(int i=0; i < hef_length_minus1; i++) {
+                	if((starting_block_size - (binary_payload - alp_binary_payload_start)) < 1) {
+                		 __ALP_PARSER_WARN("atsc3_alp_packet_parse: remaining size is %lu bytes, returning NULL, ptr: %p, pos: %d, size: %d",
+								   starting_block_size - (binary_payload - alp_binary_payload_start),
+								   baseband_packet_payload,
+								   baseband_packet_payload->i_pos,
+								   baseband_packet_payload->p_size);
+                		 return NULL;
+                	}
                     binary_payload++;
                 }
             }
@@ -473,6 +492,14 @@ atsc3_alp_packet_t* atsc3_alp_packet_parse(block_t* baseband_packet_payload) {
         
         if(alp_packet_header->payload_configuration == 0 && alp_packet_header->alp_packet_header_mode.header_mode == 0) {
             //read 5.2.1 Additional Header for Signaling Information - 40 bits
+        	if((starting_block_size - (binary_payload - alp_binary_payload_start)) < 1) {
+        		 __ALP_PARSER_WARN("atsc3_alp_packet_parse: remaining size is %lu bytes, returning NULL, ptr: %p, pos: %d, size: %d",
+        									   starting_block_size - (binary_payload - alp_binary_payload_start),
+        									   baseband_packet_payload,
+        									   baseband_packet_payload->i_pos,
+        									   baseband_packet_payload->p_size);
+				 return NULL;
+			}
             uint8_t si_header[5];
             memcpy(&si_header, binary_payload, 5);
             binary_payload+=5;
@@ -534,6 +561,16 @@ atsc3_alp_packet_t* atsc3_alp_packet_parse(block_t* baseband_packet_payload) {
     
     int32_t remaining_binary_payload_bytes = starting_block_size - (binary_payload - alp_binary_payload_start);
 
+    if(remaining_binary_payload_bytes < 1) {
+    	__ALP_PARSER_WARN("atsc3_alp_packet_parse: remaining size is %d bytes, returning NULL, ptr: %p, pos: %d, size: %d",
+    		   remaining_binary_payload_bytes,
+			   baseband_packet_payload,
+			   baseband_packet_payload->i_pos,
+			   baseband_packet_payload->p_size);
+		 return NULL;
+	}
+
+
     if(!alp_payload_length) {
 
         __ALP_PARSER_WARN("ALP payload length is: 0! packet_type is: 0x%x, seeking to end of payload, remaining: %d from pos: %lu, size: %d",
@@ -577,13 +614,13 @@ cleanup:
 }
 
 
-void atsc3_reflect_alp_packet_collection(atsc3_alp_packet_collection_t* atsc3_alp_packet_collection) {
+void atsc3_reflect_alp_packet_collection(atsc3_alp_packet_collection_t* atsc3_alp_packet_collection, pcap_t* atsc3_baseband_alp_output_pcap_device_reference) {
     //iterate thru completd packets
     for(int i=0; i < atsc3_alp_packet_collection->atsc3_alp_packet_v.count; i++) {
         atsc3_alp_packet_t* atsc3_alp_packet = atsc3_alp_packet_collection->atsc3_alp_packet_v.data[i];
 
         //if we are an IP packet, push this via pcap
-        if(atsc3_alp_packet_collection->descrInject && atsc3_alp_packet && atsc3_alp_packet->alp_packet_header.packet_type == 0x0) {
+        if(atsc3_baseband_alp_output_pcap_device_reference && atsc3_alp_packet && atsc3_alp_packet->alp_packet_header.packet_type == 0x0) {
             
             block_Rewind(atsc3_alp_packet->alp_payload);
             uint8_t* alp_payload = block_Get(atsc3_alp_packet->alp_payload);
@@ -625,8 +662,8 @@ void atsc3_reflect_alp_packet_collection(atsc3_alp_packet_collection_t* atsc3_al
                                   eth_frame[11],
                                   atsc3_alp_packet->alp_packet_header.packet_type, eth_frame_size);
                 
-                if (pcap_sendpacket(atsc3_alp_packet_collection->descrInject, eth_frame, eth_frame_size) != 0) {
-                    __ALP_PARSER_ERROR("error sending the packet: %s", pcap_geterr(atsc3_alp_packet_collection->descrInject));
+                if (pcap_sendpacket(atsc3_baseband_alp_output_pcap_device_reference, eth_frame, eth_frame_size) != 0) {
+                    __ALP_PARSER_ERROR("error sending the packet: %s", pcap_geterr(atsc3_baseband_alp_output_pcap_device_reference));
                 }
                 free(eth_frame);
                 eth_frame = NULL;

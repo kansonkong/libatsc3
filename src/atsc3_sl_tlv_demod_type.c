@@ -192,7 +192,7 @@ atsc3_sl_tlv_payload_t* atsc3_sl_tlv_payload_parse_from_block_t_with_metrics(blo
 			
 			//parse our ALP_packet inline
 			block_Rewind(atsc3_sl_tlv_payload->alp_payload);
-			atsc3_alp_packet_t* atsc3_alp_packet = atsc3_alp_packet_parse(atsc3_sl_tlv_payload->alp_payload);
+			atsc3_alp_packet_t* atsc3_alp_packet = atsc3_alp_packet_parse(atsc3_sl_tlv_payload->plp_number, atsc3_sl_tlv_payload->alp_payload);
 			if(!atsc3_alp_packet) {
 				//total_tlv_packets_with_failed_extracted_alp_count
 				atsc3_sl_tlv_payload_metrics->total_tlv_packets_with_failed_extracted_alp_count++;
