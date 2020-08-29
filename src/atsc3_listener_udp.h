@@ -12,6 +12,7 @@
 #define __JJ_PCAP_PKTHDR__
 //hack-ish
 #include <sys/time.h>
+
 struct pcap_pkthdr {
 	struct timeval ts;	/* time stamp */
 	uint32_t caplen;	/* length of portion present */

@@ -43,7 +43,7 @@ lls_sls_monitor_output_buffer_t* atsc3_isobmff_build_joined_alc_isobmff_fragment
         block_Rewind(lls_sls_monitor_output_buffer->joined_isobmff_block);
 
         if(!block_Resize(lls_sls_monitor_output_buffer->joined_isobmff_block, ap4_memory_byte_stream->GetDataSize())) {
-            block_Release(&lls_sls_monitor_output_buffer->joined_isobmff_block);
+        	block_Destroy(&lls_sls_monitor_output_buffer->joined_isobmff_block);
             __ISOBMFF_TOOLS_ERROR("ISOBMFF_track_joiner: block_Resize returned NULL for size: %u, freeing and returning NULL", ap4_memory_byte_stream->GetDataSize());
             return NULL;
         }
@@ -85,7 +85,7 @@ lls_sls_monitor_output_buffer_t* atsc3_isobmff_build_joined_mmt_isobmff_fragment
       	block_Rewind(lls_sls_monitor_output_buffer->joined_isobmff_block);
 
         if(!block_Resize(lls_sls_monitor_output_buffer->joined_isobmff_block, ap4_memory_byte_stream->GetDataSize())) {
-            block_Release(&lls_sls_monitor_output_buffer->joined_isobmff_block);
+        	block_Destroy(&lls_sls_monitor_output_buffer->joined_isobmff_block);
             __ISOBMFF_TOOLS_ERROR("atsc3_isobmff_build_joined_mmt_isobmff_fragment: block_Resize returned NULL for size: %u, freeing and returning NULL", ap4_memory_byte_stream->GetDataSize());
             return NULL;
         }
@@ -125,7 +125,7 @@ lls_sls_monitor_output_buffer_t* atsc3_isobmff_build_joined_mmt_rebuilt_boxes(ll
       	block_Rewind(lls_sls_monitor_output_buffer->joined_isobmff_block);
 
         if(!block_Resize(lls_sls_monitor_output_buffer->joined_isobmff_block, ap4_memory_byte_stream->GetDataSize())) {
-            block_Release(&lls_sls_monitor_output_buffer->joined_isobmff_block);
+        	block_Destroy(&lls_sls_monitor_output_buffer->joined_isobmff_block);
             __ISOBMFF_TOOLS_ERROR("atsc3_isobmff_build_joined_mmt_isobmff_fragment: block_Resize returned NULL for size: %u, freeing and returning NULL", ap4_memory_byte_stream->GetDataSize());
             return NULL;
         }
@@ -250,7 +250,7 @@ lls_sls_monitor_buffer_isobmff_t* atsc3_isobmff_build_patched_mdat_fragment(lls_
 
 				//truncate the mdat box
 				block_t* new_moof_from_flow = block_Duplicate_to_size(lls_sls_monitor_buffer_isobmff->mmt_moof_block_from_flow, moof_size-8);
-				block_Release(&lls_sls_monitor_buffer_isobmff->mmt_moof_block_from_flow);
+				block_Destroy(&lls_sls_monitor_buffer_isobmff->mmt_moof_block_from_flow);
 				lls_sls_monitor_buffer_isobmff->mmt_moof_block_from_flow = new_moof_from_flow;
 			}
 		}

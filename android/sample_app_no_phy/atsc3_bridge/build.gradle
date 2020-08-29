@@ -1,0 +1,76 @@
+apply plugin: 'com.android.library'
+
+android {
+    compileSdkVersion 28
+    defaultConfig {
+        targetSdkVersion 28
+        minSdkVersion 28
+        versionCode 1
+        versionName "1.0"
+
+        ndk {
+            abiFilters 'arm64-v8a' //, 'armeabi-v7a' //, 'arm64-v8a' //'', 'x86_64',
+        }
+    }
+    externalNativeBuild {
+        ndkBuild {
+            path 'Android.mk'
+        }
+    }
+    buildTypes {
+        debug {
+            jniDebuggable = true
+            debuggable true
+        }
+//        atsc3_bridge_debug {
+//        }
+
+        release {
+            minifyEnabled false
+            shrinkResources false
+
+            //proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
+            jniDebuggable = true
+            debuggable true
+        }
+    }
+
+    buildToolsVersion = '29.0.2'
+
+    compileOptions {
+        targetCompatibility JavaVersion.VERSION_1_8
+        sourceCompatibility JavaVersion.VERSION_1_8
+    }
+
+    packagingOptions {
+        // specify the path to your object binaries, or generally:
+        doNotStrip '**.so'
+    }
+}
+
+repositories {
+    google()
+}
+
+dependencies {
+    implementation 'androidx.annotation:annotation:1.1.0@jar'
+
+    debugApi project(':atsc3_core')
+
+    //vmatiash-2020-08-21 - Direct dependency is not necessary. This dependency specified in LOCAL_LDLIBS of Android.mk
+
+  //  debugApi fileTree(dir: 'build/outputs/aar', include: ['*.aar'])
+  //  releaseApi fileTree(dir: 'build/outputs/aar', include: ['*.aar'])
+/*
+compile(project(:your-library-name)) {
+    transitive=true
+}
+repositories {
+    mavenCentral()
+    flatDir {
+        dirs 'aars'
+    }
+}
+*/
+
+}

@@ -2,9 +2,10 @@ package org.ngbp.libatsc3.media;
 
 import android.util.Log;
 
-import org.ngbp.libatsc3.android.DebuggingFlags;
-import org.ngbp.libatsc3.media.sync.mmt.MfuByteBufferFragment;
-import org.ngbp.libatsc3.media.sync.mmt.MmtPacketIdContext;
+import org.ngbp.libatsc3.middleware.android.ATSC3PlayerFlags;
+import org.ngbp.libatsc3.middleware.android.DebuggingFlags;
+import org.ngbp.libatsc3.middleware.android.application.sync.mmt.MfuByteBufferFragment;
+import org.ngbp.libatsc3.middleware.android.application.sync.mmt.MmtPacketIdContext;
 
 public class MfuByteBufferHandler {
 
@@ -14,10 +15,16 @@ public class MfuByteBufferHandler {
             return;
         }
 
-        if(MmtPacketIdContext.video_packet_statistics.extracted_sample_duration_us == 0 ||
-                MmtPacketIdContext.audio_packet_statistics.extracted_sample_duration_us == 0) {
-            Log.d("PushMfuByteBufferFragment", String.format("Discarding packet_id: %d, mpu_sequence_number: %d, missing extracted_sample_duration", mfuByteBufferFragment.packet_id, mfuByteBufferFragment.mpu_sequence_number));
-
+        //jjustman-2020-08-19 - hack-ish workaround for ac-4 and mmt_atsc3_message signalling information w/ sample duration (or avoiding parsing the trun box)
+        if(MmtPacketIdContext.video_packet_statistics.extracted_sample_duration_us != 0 || MmtPacketIdContext.audio_packet_statistics.extracted_sample_duration_us == 0) {
+            Log.d("PushMfuByteBufferFragment:INFO", String.format(" packet_id: %d, mpu_sequence_number: %d, setting audio_packet_statistics.extracted_sample_duration_us to follow video: %d",
+                    mfuByteBufferFragment.packet_id, mfuByteBufferFragment.mpu_sequence_number, MmtPacketIdContext.video_packet_statistics.extracted_sample_duration_us));
+            MmtPacketIdContext.audio_packet_statistics.extracted_sample_duration_us = MmtPacketIdContext.video_packet_statistics.extracted_sample_duration_us;
+        } else if(MmtPacketIdContext.video_packet_statistics.extracted_sample_duration_us == 0 || MmtPacketIdContext.audio_packet_statistics.extracted_sample_duration_us == 0) {
+            Log.d("PushMfuByteBufferFragment:WARN", String.format(" packet_id: %d, mpu_sequence_number: %d, video.duration_us: %d, audio.duration_us: %d, missing extracted_sample_duration",
+                    mfuByteBufferFragment.packet_id, mfuByteBufferFragment.mpu_sequence_number,
+                    MmtPacketIdContext.video_packet_statistics.extracted_sample_duration_us,
+                    MmtPacketIdContext.audio_packet_statistics.extracted_sample_duration_us));
         }
 
         if(MediaCodecInputBufferMfuByteBufferFragmentWorkerRunnable.IsSoftFlushingFromAVPtsDiscontinuity || MediaCodecInputBufferMfuByteBufferFragmentWorkerRunnable.IsHardCodecFlushingFromAVPtsDiscontinuity || MediaCodecInputBufferMfuByteBufferFragmentWorkerRunnable.IsResettingCodecFromDiscontinuity) {

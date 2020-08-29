@@ -25,12 +25,23 @@
 #include "atsc3_logging_externs.h"
 #include "atsc3_vector_builder.h"
 
-#include "libtree.h"
+#include "atsc3_listener_udp.h"
+#include "atsc3_alc_rx.h"
 
+
+#include "libtree.h"
 
 #if defined (__cplusplus)
 extern "C" {
 #endif
+
+
+//ALC dump object output path
+#define __ALC_DUMP_OUTPUT_PATH__ "route/"
+
+#define __ATSC3_ROUTE_OBJECT_PERSIST_BLOCK_SIZE_FLUSH_BYTES__ 	(1500 * 32) //48KB
+
+
 /*
  * atsc3_route_object_lct_packet_received: keep track of this object's received lct packets
  * 		for object recovery and completion tracking
@@ -87,6 +98,9 @@ typedef struct atsc3_route_object_lct_packet_received {
 	unsigned int 			packet_len;
 	unsigned long long 		object_len;
 
+	block_t*				pending_alc_payload_to_persist; 	//promote the atsc3_alc_packet->alc_payload to block_t so we can flush to disk,
+																//perform sparse merge to reduce fseek/fwrite calls when flushing out threshold
+
 } atsc3_route_object_lct_packet_received_t;
 
 typedef struct atsc3_sls_alc_flow atsc3_sls_alc_flow_t;
@@ -103,6 +117,12 @@ typedef struct atsc3_route_object {
 	uint32_t				tsi;											//keep reference for our tsi / toi just to be sure...
 	uint32_t				toi;
 	bool					is_toi_init;
+
+	block_t*				recovery_file_buffer;							//in-flight recovery buffer of block_t pre-alloc for alc packet re-aggregation
+	int64_t					recovery_file_buffer_position;					//position in our file_handle of where the current recovery_file_buffer (e.g. mmap) should be written to
+																			//-1 means its a new allocation - we do not have a reference to where in the recovery_file_handle
+
+	//jjustman-2020-08-05 - TODO for RaptorQ recovery_repair_symbols_v 		if(atsc3_route_object_lct_packet_received->use_sbn_esi) atsc3_route_object_repair_symbol_add(...)
 
 	FILE*					recovery_file_handle;							//keep tracek of our recovery file handle instead of fopen/fclose on every lct packet
 
@@ -136,17 +156,31 @@ void atsc3_route_object_add_atsc3_route_object_lct_packet_len(atsc3_route_object
 void atsc3_route_object_set_is_toi_init_object(atsc3_route_object_t* atsc3_route_object, bool is_toi_init);
 
 void atsc3_route_object_set_temporary_object_recovery_filename_if_null(atsc3_route_object_t* atsc3_route_object, char* temporary_filename);
+char* atsc3_route_object_get_temporary_object_recovery_filename_strdup(atsc3_route_object_t* atsc3_route_object);
+
 void atsc3_route_object_clear_temporary_object_recovery_filename(atsc3_route_object_t* atsc3_route_object);
 void atsc3_route_object_set_final_object_recovery_filename_for_eviction(atsc3_route_object_t* atsc3_route_object, char* final_object_recovery_filename_for_eviction);
 void atsc3_route_object_set_final_object_recovery_filename_for_logging(atsc3_route_object_t* atsc3_route_object, char* final_object_recovery_filename_for_eviction);
 
+bool atsc3_route_object_lct_packet_received_promote_atsc3_alc_packet_alc_payload_to_pending_block(atsc3_route_object_lct_packet_received_t* atsc3_route_object_lct_packet_received, atsc3_alc_packet_t* alc_packet);
+
+//flush out to disk a block size of __ATSC3_ROUTE_OBJECT_PERSIST_BLOCK_SIZE_FLUSH_BYTES__
+//int atsc3_route_object_persist_recovery_block_from_lct_packet_vector(atsc3_route_object_t* atsc3_route_object);
+int atsc3_route_object_persist_recovery_buffer_all_pending_lct_packet_vector(atsc3_route_object_t* atsc3_route_object);
+
+
+//bool atsc3_route_object_recovery_file_buffer_ensure_alloc_and_position(atsc3_route_object_t* atsc3_route_object, atsc3_alc_packet_t* alc_packet);
+
+
+int64_t atsc3_route_object_recovery_file_buffer_flush_block_to_temporary_object_recovery_filename(atsc3_route_object_t* atsc3_route_object);
+
 void atsc3_route_object_set_object_recovery_complete(atsc3_route_object_t* atsc3_route_object);
 
 void atsc3_route_object_recovery_file_handle_assign(atsc3_route_object_t* atsc3_route_object, FILE* recovery_file_handle);
-void atsc3_route_object_recovery_file_handle_close(atsc3_route_object_t* atsc3_route_object);
+void atsc3_route_object_recovery_file_handle_flush_and_close(atsc3_route_object_t* atsc3_route_object);
+void atsc3_route_object_recovery_file_handle_abandon_and_close(atsc3_route_object_t* atsc3_route_object);
 
 void atsc3_route_object_calculate_expected_route_object_lct_packet_count(atsc3_route_object_t* atsc3_route_object, atsc3_route_object_lct_packet_received_t* atsc3_route_object_lct_packet_received);
-
 bool atsc3_route_object_is_complete(atsc3_route_object_t* atsc3_route_object);
 
 void atsc3_route_object_reset_and_free_atsc3_route_object_lct_packet_received(atsc3_route_object_t* atsc3_route_object);
@@ -154,6 +188,9 @@ void atsc3_route_object_reset_and_free_atsc3_route_object_lct_packet_received(at
 //used in atsc3_lls_sls_alc_monitor_check_all_s_tsid_flows_has_given_up_route_objects, unlink abandonded / stale objects from disk after N seconds
 void atsc3_route_object_reset_and_free_and_unlink_recovery_file_atsc3_route_object_lct_packet_received(atsc3_route_object_t* atsc3_route_object);
 void atsc3_route_object_free_lct_packet_received_tree(atsc3_route_object_t* atsc3_route_object);
+
+//jjustman-2020-08-05 - slight refactoring...
+char* alc_packet_dump_to_object_get_temporary_recovering_filename(udp_flow_t *udp_flow, atsc3_alc_packet_t *alc_packet);
 
 #define _ATSC3_ROUTE_OBJECT_ERROR(...)   __LIBATSC3_TIMESTAMP_ERROR(__VA_ARGS__);
 #define _ATSC3_ROUTE_OBJECT_WARN(...)    __LIBATSC3_TIMESTAMP_WARN(__VA_ARGS__);;

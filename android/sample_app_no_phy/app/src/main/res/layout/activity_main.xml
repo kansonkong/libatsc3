@@ -365,7 +365,6 @@
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent">
 
-
         <ToggleButton
             android:id="@+id/btnToggleRfScan"
             android:layout_width="match_parent"
@@ -723,7 +722,7 @@
     </androidx.constraintlayout.widget.ConstraintLayout>
 
 
-    <!--    <org.ngbp.libatsc3.android.MyGLSurfaceView-->
+    <!--    <org.ngbp.libatsc3.middleware.android.MyGLSurfaceView-->
     <!--    android:id="@+id/glsurfaceview1"-->
     <!--        android:layout_width="640px"-->
     <!--        android:layout_height="480px"-->

@@ -1,7 +1,7 @@
 package org.ngbp.libatsc3.media;
 
-import org.ngbp.libatsc3.media.sync.mmt.MfuByteBufferFragment;
-import org.ngbp.libatsc3.media.sync.mmt.MpuMetadata_HEVC_NAL_Payload;
+import org.ngbp.libatsc3.middleware.android.application.sync.mmt.MfuByteBufferFragment;
+import org.ngbp.libatsc3.middleware.android.application.sync.mmt.MpuMetadata_HEVC_NAL_Payload;
 
 import java.util.concurrent.LinkedBlockingDeque;
 

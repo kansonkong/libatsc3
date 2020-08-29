@@ -204,9 +204,9 @@ block_t* block_Alloc(int size_requested) {
 	block_t* new_block = (block_t*)calloc(1, sizeof(block_t));
 	assert(new_block);
 
-	//calloc an extra byte in case we forget to add in null padding for strings, but don't update the p_size with this margin of safey,
+	//calloc an extra byte in case we forget to add in null padding for strings, but don't update the p_size with this margin of safety (16 bytes)
 	//align if size_requested > 0, otherwise alloc 8 as a dummy alloc block
-	uint32_t aligned_size = size_requested ? size_requested + 8 + (8 - (size_requested %8))    :    8;
+	uint32_t aligned_size = size_requested ? size_requested + 16 + (8 - (size_requested %8))    :    8;
 
 	#ifdef __MALLOC_TRACE
 	    _ATSC3_UTILS_INFO("block_Alloc: original size requested: %u, aligned size: %u, alignment factor: %f", src_size_required, aligned_size, aligned_size/8.0);
@@ -219,8 +219,9 @@ block_t* block_Alloc(int size_requested) {
 	new_block->i_pos = 0;
     new_block->_refcnt = 1;
     new_block->_is_alloc = 1;
+    new_block->_a_size = aligned_size - 8; //guard edge
 
-	return new_block;
+    return new_block;
 }
 
 bool block_IsAlloc(block_t* block) {
@@ -587,8 +588,26 @@ block_t* block_Resize(block_t* src, uint32_t src_size_requested) {
     uint32_t src_size_original = src->p_size;
     uint32_t src_i_pos_original = src->i_pos;
 
-	if(src->_a_size >= src_size_requested && src->i_pos < src_size_requested && src->p_size < src_size_requested) {
-    	src->p_size = src_size_requested;
+
+    //try and avoid a realloc if we have enough space from our original _a_size allocation
+	if(src_size_requested <= src->_a_size) {
+		if(src_size_requested > src->p_size) {
+			//soft increase, so null out our "extended" p_size area
+#ifdef __MALLOC_TRACE
+		    _ATSC3_UTILS_WARN("block_Resize: p_size: %d, a_size: %d, src_size_requested: %d, doing memset len: %d",
+		    		src->p_size, src->_a_size, src_size_requested, (src_size_requested - src->p_size));
+#endif
+			memset(&src->p_buffer[src->p_size], 0, (src_size_requested - src->p_size));
+		} else {
+			//soft decrease, set i_pos to 0 - don't null out data (lazy)
+#ifdef __MALLOC_TRACE
+			_ATSC3_UTILS_WARN("block_Resize: p_size: %d, a_size: %d, src_size_requested: %d, no memset",
+					    		src->p_size, src->_a_size, src_size_requested);
+#endif
+			src->i_pos = 0;
+		}
+
+		src->p_size = src_size_requested;
     	return src;
     }
 
@@ -602,7 +621,8 @@ block_t* block_Resize(block_t* src, uint32_t src_size_requested) {
     uint32_t aligned_size = src_size_required + 8 + (8 - (src_size_required %8));
 
 #ifdef __MALLOC_TRACE
-    _ATSC3_UTILS_INFO("block_Resize: original size requested: %u, aligned size: %u, alignment factor: %f", src_size_required, aligned_size, aligned_size/8.0);
+    _ATSC3_UTILS_WARN("block_Resize: p_size: %d, a_size: %d, original size requested: %u, aligned size: %u, alignment factor: %f",
+    		src->p_size, src->_a_size, src_size_required, aligned_size, aligned_size/8.0);
 #endif
 
     src->_a_size = aligned_size;
@@ -689,6 +709,7 @@ void block_Destroy(block_t** a_ptr) {
         if(a->p_buffer) {
             a->i_pos = 0;
             a->p_size = 0;
+            a->_a_size = 0;
             free(a->p_buffer);
             a->p_buffer = NULL;
             free(a);
@@ -1006,13 +1027,11 @@ int mkpath(char *dir, mode_t mode)
     return ret;
 }
 
-
+//don't care if it exists or not, just open the object...
 FILE* atsc3_object_open(char* file_name) {
-	if( access( file_name, F_OK ) != -1 ) {
-		FILE* f = fopen(file_name, "r+");
-		if(f) {
-			return f;
-		}
+	FILE* f = fopen(file_name, "w+");
+	if(f) {
+		return f;
 	}
 
 	return NULL;

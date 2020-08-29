@@ -23,6 +23,7 @@
 const char* SL_TLV_REPLAY_TEST_FILENAME = "testdata/2019-11-22-647mhz.tlv.bin";
 
 atsc3_alp_packet_collection_t* atsc3_alp_packet_collection = NULL;
+pcap_t* descrInject = NULL;
 
 FILE* atsc3_sl_tlv_open_filename(const char* sl_tlv_filename) {
 	FILE* atsc3_sl_tlv_fp = NULL;
@@ -66,10 +67,8 @@ int main(int argc, char* argv[] ) {
 
 
     pcap_lookupnet(devInject, &netpInject, &maskpInject, errbufInject);
-    pcap_t* descrInject = pcap_open_live(devInject, MAX_PCAP_LEN, 1, 1, errbufInject);
-    atsc3_alp_packet_collection->descrInject = descrInject;
+    descrInject = pcap_open_live(devInject, MAX_PCAP_LEN, 1, 1, errbufInject);
     
-
     _ATSC3_SL_TLV_PARSER_TO_ALP_TEST_DEBUG("starting reflection on: %s (pcap i/f: %p), file: %s",
     		devInject, descrInject, SL_TLV_REPLAY_TEST_FILENAME);
 
@@ -100,10 +99,10 @@ int main(int argc, char* argv[] ) {
         				if(atsc3_sl_tlv_payload->alp_payload_complete) {
         					alp_completed_packets_parsed++;
         					block_Rewind(atsc3_sl_tlv_payload->alp_payload);
-        					atsc3_alp_packet_t* atsc3_alp_packet = atsc3_alp_packet_parse(atsc3_sl_tlv_payload->alp_payload);
+        					atsc3_alp_packet_t* atsc3_alp_packet = atsc3_alp_packet_parse(atsc3_sl_tlv_payload->plp_number, atsc3_sl_tlv_payload->alp_payload);
                             atsc3_alp_packet_collection_add_atsc3_alp_packet(atsc3_alp_packet_collection, atsc3_alp_packet);
 							//push a collection of one alp packet for alp reflection to match the method signature
-                            atsc3_reflect_alp_packet_collection(atsc3_alp_packet_collection);
+                            atsc3_reflect_alp_packet_collection(atsc3_alp_packet_collection, descrInject);
 
                             for(int i=0; i < atsc3_alp_packet_collection->atsc3_alp_packet_v.count; i++) {
                                  atsc3_alp_packet_t* atsc3_alp_packet = atsc3_alp_packet_collection->atsc3_alp_packet_v.data[i];
