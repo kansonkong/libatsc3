@@ -55,6 +55,24 @@ ATSC3_VECTOR_BUILDER_METHODS_IMPLEMENTATION(atsc3_stltp_tunnel_packet, atsc3_stl
 ATSC3_VECTOR_BUILDER_METHODS_IMPLEMENTATION(atsc3_stltp_tunnel_packet, atsc3_stltp_preamble_packet);
 ATSC3_VECTOR_BUILDER_METHODS_IMPLEMENTATION(atsc3_stltp_tunnel_packet, atsc3_stltp_timing_management_packet);
 
+bool atsc3_stltp_tunnel_packet_is_rtp_packet_outer_sequence_number_contiguous(atsc3_stltp_tunnel_packet_t* atsc3_stltp_tunnel_packet_last, atsc3_stltp_tunnel_packet_t* atsc3_stltp_tunnel_packet_current) {
+	bool is_sequence_number_contiguous = false;
+	if(atsc3_stltp_tunnel_packet_last && atsc3_stltp_tunnel_packet_last->ip_udp_rtp_packet_outer && atsc3_stltp_tunnel_packet_last->ip_udp_rtp_packet_outer->rtp_header &&
+	   atsc3_stltp_tunnel_packet_current && atsc3_stltp_tunnel_packet_current->ip_udp_rtp_packet_outer && atsc3_stltp_tunnel_packet_current->ip_udp_rtp_packet_outer->rtp_header) {
+		uint16_t last_sequence_number = atsc3_stltp_tunnel_packet_last->ip_udp_rtp_packet_outer->rtp_header->sequence_number;
+		uint16_t current_sequence_number = atsc3_stltp_tunnel_packet_current->ip_udp_rtp_packet_outer->rtp_header->sequence_number;
+
+		//we wrap around at last: 65535, current: 0
+		if(last_sequence_number == 65535 && current_sequence_number == 0) {
+			is_sequence_number_contiguous = true;
+		} else if(last_sequence_number + 1 == current_sequence_number) {
+			is_sequence_number_contiguous = true;
+		}
+	}
+
+	return is_sequence_number_contiguous;
+}
+
 inline const char *ATSC3_CTP_STL_PAYLOAD_TYPE_TO_STRING(int code) {
     switch (code) {
         case ATSC3_STLTP_PAYLOAD_TYPE_TUNNEL:
@@ -81,12 +99,32 @@ atsc3_stltp_baseband_packet_t* atsc3_stltp_baseband_packet_new_and_init(atsc3_st
 
     //ref ip_udp_rtp_packet_inner w/ rtp_header_inner
     atsc3_stltp_baseband_packet->ip_udp_rtp_packet_inner = atsc3_ip_udp_rtp_packet_duplicate(atsc3_stltp_tunnel_packet->ip_udp_rtp_packet_inner);
+
+    if(atsc3_stltp_baseband_packet->ip_udp_rtp_packet_inner->udp_flow.dst_port >= 30000 && atsc3_stltp_baseband_packet->ip_udp_rtp_packet_inner->udp_flow.dst_port < 30064) {
+    	atsc3_stltp_baseband_packet->plp_num = atsc3_stltp_baseband_packet->ip_udp_rtp_packet_inner->udp_flow.dst_port - 30000;
+	} else {
+		atsc3_stltp_baseband_packet->plp_num = 255; //unknown
+	}
     
     //TODO: inner packet size, only if we are from a marker
     atsc3_stltp_baseband_packet->payload_length = atsc3_stltp_baseband_packet->ip_udp_rtp_packet_inner->rtp_header->packet_offset;
     
     return atsc3_stltp_baseband_packet;
 }
+
+void atsc3_baseband_packet_set_plp_from_stltp_baseband_packet(atsc3_baseband_packet_t* atsc3_baseband_packet, atsc3_stltp_baseband_packet_t* atsc3_stltp_baseband_packet) {
+	if(!atsc3_baseband_packet || !atsc3_stltp_baseband_packet) {
+		__STLTP_TYPES_WARN("atsc3_baseband_packet_set_plp_from_stltp_baseband_packet: packet(s) are null: atsc3_baseband_packet: %p, atsc3_stltp_baseband_packet: %p", atsc3_baseband_packet, atsc3_stltp_baseband_packet);
+		return;
+	}
+
+	if(atsc3_stltp_baseband_packet->ip_udp_rtp_packet_inner->udp_flow.dst_port >= 30000 && atsc3_stltp_baseband_packet->ip_udp_rtp_packet_inner->udp_flow.dst_port < 30064) {
+		atsc3_baseband_packet->plp_num = atsc3_stltp_baseband_packet->ip_udp_rtp_packet_inner->udp_flow.dst_port - 30000;
+	} else {
+		atsc3_baseband_packet->plp_num = 255; //unknown
+	}
+}
+
 
 
 /**
@@ -175,10 +213,8 @@ void atsc3_stltp_tunnel_packet_free(atsc3_stltp_tunnel_packet_t** atsc3_stltp_tu
                 atsc3_ip_udp_rtp_packet_free(&atsc3_stltp_tunnel_packet->ip_udp_rtp_packet_pending_concatenation_inner);
             }
             
-            if(atsc3_stltp_tunnel_packet->atsc3_baseband_packet_short_fragment) {
-                block_Destroy(&atsc3_stltp_tunnel_packet->atsc3_baseband_packet_short_fragment);
-            }
-            
+            //jjustman-2020-08-18 - do NOT free atsc3_stltp_tunnel_baseband_packet_pending_by_plp as it is owned by the
+            //atsc3_stltp_depacketizer_context
             
             atsc3_stltp_tunnel_packet_clear_completed_inner_packets(atsc3_stltp_tunnel_packet);
             free(atsc3_stltp_tunnel_packet);
@@ -432,11 +468,15 @@ void atsc3_rtp_header_dump_inner(atsc3_stltp_tunnel_packet_t* atsc3_stltp_tunnel
     atsc3_rtp_header_t* atsc3_rtp_header = atsc3_ip_udp_rtp_packet_inner->rtp_header;
     udp_flow_t atsc3_udp_flow = atsc3_ip_udp_rtp_packet_inner->udp_flow;
     
-    __STLTP_TYPES_DEBUG("  ---inner: payload_type: %s  (%hhu), sequence_number: %d, dst: %u.%u.%u.%u:%u---",
+    __STLTP_TYPES_DEBUG("  ---inner: payload_type: %s  (%hhu), sequence_number: %d, dst: %u.%u.%u.%u:%u, tbp: %p, stltp_bbp: %p, bb_short_frag: %p, alp_pending: %p ---",
                          ATSC3_CTP_STL_PAYLOAD_TYPE_TO_STRING(atsc3_rtp_header->payload_type),
                          atsc3_rtp_header->payload_type,
                          atsc3_rtp_header->sequence_number,
-                         __toipandportnonstruct(atsc3_udp_flow.dst_ip_addr, atsc3_udp_flow.dst_port));
+                         __toipandportnonstruct(atsc3_udp_flow.dst_ip_addr, atsc3_udp_flow.dst_port),
+						 atsc3_stltp_tunnel_packet->atsc3_stltp_tunnel_baseband_packet_pending_by_plp,
+						 atsc3_stltp_tunnel_packet->atsc3_stltp_tunnel_baseband_packet_pending_by_plp->atsc3_stltp_baseband_packet_pending,
+						 atsc3_stltp_tunnel_packet->atsc3_stltp_tunnel_baseband_packet_pending_by_plp->atsc3_baseband_packet_short_fragment,
+						 atsc3_stltp_tunnel_packet->atsc3_stltp_tunnel_baseband_packet_pending_by_plp->atsc3_alp_packet_pending);
     atsc3_rtp_header_dump(atsc3_rtp_header, 9);
     __STLTP_TYPES_DEBUG(" ---inner: end---");
 

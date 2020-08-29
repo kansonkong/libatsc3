@@ -19,10 +19,10 @@ void atsc3_baseband_packet_free_v(atsc3_baseband_packet_t* atsc3_baseband_packet
         }
 
         if(atsc3_baseband_packet->alp_payload_pre_pointer) {
-            block_Release(&atsc3_baseband_packet->alp_payload_pre_pointer);
+            block_Destroy(&atsc3_baseband_packet->alp_payload_pre_pointer);
         }
         if(atsc3_baseband_packet->alp_payload_post_pointer) {
-            block_Release(&atsc3_baseband_packet->alp_payload_post_pointer);
+        	block_Destroy(&atsc3_baseband_packet->alp_payload_post_pointer);
         }
     }
 }
@@ -37,10 +37,10 @@ void atsc3_baseband_packet_free(atsc3_baseband_packet_t** atsc3_baseband_packet_
         }
 
         if(atsc3_baseband_packet->alp_payload_pre_pointer) {
-            block_Release(&atsc3_baseband_packet->alp_payload_pre_pointer);
+        	block_Destroy(&atsc3_baseband_packet->alp_payload_pre_pointer);
         }
         if(atsc3_baseband_packet->alp_payload_post_pointer) {
-            block_Release(&atsc3_baseband_packet->alp_payload_post_pointer);
+        	block_Destroy(&atsc3_baseband_packet->alp_payload_post_pointer);
         }
 
         free(atsc3_baseband_packet);

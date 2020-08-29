@@ -35,21 +35,44 @@
 #
 # A: This may happen when the C++ standard library is linked statically. Prebuilt libstdc++/libc++ often do not use frame pointers, and it breaks fast (frame-pointer-based) unwinding. Either switch to the shared library with the -shared-libstdc++ flag, or use ASAN_OPTIONS=fast_unwind_on_malloc=0. The latter could be very slow.
 # 
+#
+# env ASAN_OPTIONS=detect_container_overflow=0
 
 CC=cc
 CXX=g++
-CFLAGS=-Wno-nullability-completeness -Wno-expansion-to-defined -Wno-builtin-requires-header
+
+CFLAGS=-Wno-nullability-completeness -Wno-expansion-to-defined -Wno-builtin-requires-header -Wno-c++11-extensions
+CXXFLAGS=-std=c++11 
 
 DEBUG=-g
-ASAN=-fsanitize=address -fno-omit-frame-pointer -fno-optimize-sibling-calls -O1 -fsanitize-address-use-after-scope
+# DEBUG=-g -fsanitize=address -fno-omit-frame-pointer -fno-optimize-sibling-calls -O0 -fsanitize-address-use-after-scope
 
-LOCAL_LD_LIBS=-lz -lm -lpthread -lpcap -lpcre2-8
+ASAN=-fsanitize=address -fno-omit-frame-pointer -fno-optimize-sibling-calls -O0 -fsanitize-address-use-after-scope
+
+LOCAL_LD_LIBS=-lz -lm -lpthread -lpcap -lpcre2-8 -lstdc++
 LOCAL_LD_LIBS_NCURSES=$(LOCAL_LD_LIBS) -lncurses
+
+#jjustman-2020-08-17 - sorry, from OSX...
+SRT_PLATFORM_BUILD_DEFS=-DHAI_ENABLE_SRT=1 -DHAI_PATCH=1 -DHAVE_INET_PTON=1 -DOSX=1 -DSRT_ENABLE_APP_READER -DSRT_ENABLE_CLOSE_SYNCH -DSRT_ENABLE_ENCRYPTION -DSRT_ENABLE_VERBOSE_LOCK -DSRT_VERSION=\"1.4.1\" -DUSE_OPENSSL=1 -D_GNU_SOURCE
+
+#jjustman-2020-08-17 - sorry, from OSX - fixme..
+#		-L /usr/local/opt/openssl@1.1/lib \
+#		/Users/jjustman/Desktop/libatsc3/srt/build/lib/libsrt.a \
+#		-lssl -lcrypto \
+
+#LOCAL_LD_LIBS_SRT_PATH=-L ../srt/build/lib -L /usr/local/opt/openssl@1.1/lib 
+#LOCAL_LD_LIBS_SRT=-lsrt -lssl -lcrypto
+# libsrt.a
+
+LOCAL_LD_LIBS_SRT_PATH=-L ../srt/build/lib -L /usr/local/opt/openssl@1.1/lib 
+LOCAL_LD_LIBS_SRT=../srt/build/lib/libsrt.a -lssl -lcrypto
+
 
 all: 	intermediate_lls \
 		intermediate_lls_asan \
 		intermediate_alp \
 		intermediate_baseband \
+		intermediate_stltp \
 		intermediate_mbms \
 		intermediate_sls \
 		intermediate_mmt \
@@ -58,12 +81,14 @@ all: 	intermediate_lls \
 		intermediate_a337 \
 		intermediate_a344 \
 		intermediate_ffplay \
+		intermediate_virtual_phy \
 		interemediate_gpl_and_mock_linkage  \
 		libatsc3_core   \
 		unit_tests \
 		libmicrohttpd_tests \
 		listener_tests \
 		a324_tests \
+		phy_tests \
 		tools \
 		atsc3_sl_phy
 
@@ -100,12 +125,21 @@ clean:
 	-rm -f listener_tests/atsc3_stltp_listener_test
 	-rm -f listener_tests/atsc3_stltp_alp_listener_test
 	-rm -f listener_tests/atsc3_stltp_alp_listener_reflector_test
+	-rm -f listener_tests/atsc3_stltp_alp_listener_reflector_test_noasan	
 	-rm -f listener_tests/atsc3_mmt_context_mfu_depacketizer_test
 	-rm -f listener_tests/atsc3_mmt_context_stpp_depacketizer_test
 	-rm -f a324_tests/a324_dstp_lls_aeat_emission_test	
+	-rm -f phy_tests/pcap_demuxed_virtual_phy_test
+	-rm -f phy_tests/pcap_demuxed_virtual_phy_test_noasan
+	-rm -f phy_tests/pcap_stltp_virtual_phy_test
+	-rm -f phy_tests/pcap_stltp_virtual_phy_test_noasan	
+	-rm -f phy_tests/srt_stltp_virtual_phy_test
+	-rm -f phy_tests/srt_stltp_virtual_phy_test_noasan	
 	-rm -f tools/atsc3_alc_listener_mde_writer
 	-rm -f tools/atsc3_alc_listener_mde_writer_asan
-	-rm -f tools/atsc3_alc_listener_mde_writer_malloc_debug	
+	-rm -f tools/atsc3_alc_listener_mde_writer_malloc_debug
+	-rm -f tools/atsc3_srt_rx_stltp_virtual_phy_alc_listener_writer
+	-rm -f tools/atsc3_srt_rx_stltp_virtual_phy_alc_listener_writer_noasan	
 	-rm -f tools/atsc3_listener_metrics_ncurses
 	-rm -f tools/atsc3_listener_metrics_ncurses_httpd_isobmff
 	-rm -f tools/atsc3_mmt_mfu_monitor
@@ -130,6 +164,9 @@ intermediate_lls_asan: 	atsc3_lls_asan.o \
 intermediate_alp: atsc3_alp_types.o atsc3_alp_parser.o
 
 intermediate_baseband: atsc3_baseband_packet_types.o 
+
+intermediate_stltp:	atsc3_stltp_depacketizer_context.o \
+					atsc3_stltp_depacketizer.o
 
 intermediate_mbms: 	atsc3_mbms_envelope_xml.o \
 					atsc3_mime_multipart_related.o \
@@ -167,6 +204,13 @@ intermediate_a337:	atsc3_sls_held_fragment.o
 intermediate_a344:	atsc3_a344_receiver_query_api.o				
 
 intermediate_ffplay: atsc3_player_ffplay.o
+
+intermediate_virtual_phy: 	PcapDemuxedVirtualPHY.o \
+				 			PcapSTLTPVirtualPHY.o \
+				 			atsc3_srt_live_receiver.o \
+				 			SRTRxSTLTPVirtualPHY.o
+				  
+
 interemediate_gpl_and_mock_linkage: bento4_gpl_link \
 									bento4_mock_link
 libatsc3_core: libatsc3.o
@@ -210,10 +254,18 @@ listener_tests: listener_tests/atsc3_alc_listener_test \
 				listener_tests/atsc3_stltp_listener_test \
 				listener_tests/atsc3_stltp_alp_listener_test \
 				listener_tests/atsc3_stltp_alp_listener_reflector_test \
+				listener_tests/atsc3_stltp_alp_listener_reflector_test_noasan \
 				listener_tests/atsc3_mmt_context_mfu_depacketizer_test \
 				listener_tests/atsc3_mmt_context_stpp_depacketizer_test
 
 a324_tests: a324_tests/a324_dstp_lls_aeat_emission_test
+
+phy_tests:	phy_tests/pcap_demuxed_virtual_phy_test \
+			phy_tests/pcap_demuxed_virtual_phy_test_noasan \
+			phy_tests/pcap_stltp_virtual_phy_test \
+			phy_tests/pcap_stltp_virtual_phy_test_noasan \
+			phy_tests/srt_stltp_virtual_phy_test \
+			phy_tests/srt_stltp_virtual_phy_test_noasan
 
 # real libatsc3 tools for lls, sls, mmt/route and flow analysis
 # only on linux...	tools/atsc3_alc_listener_mde_writer_malloc_debug \
@@ -223,7 +275,9 @@ tools: tools/atsc3_listener_metrics_ncurses \
 	tools/atsc3_mmt_mfu_monitor \
 	tools/atsc3_alc_listener_mde_writer \
 	tools/atsc3_alc_listener_mde_writer_asan \
-	tools/atsc3_mmt_listener_to_http_hls_fmp4
+	tools/atsc3_mmt_listener_to_http_hls_fmp4 \
+	tools/atsc3_srt_rx_stltp_virtual_phy_alc_listener_writer \
+	tools/atsc3_srt_rx_stltp_virtual_phy_alc_listener_writer_noasan
 
 atsc3_sl_phy: atsc3_sl_tlv_demod_type.o	\
 	test_sl/atsc3_sl_tlv_parser_to_alp_test \
@@ -246,6 +300,12 @@ atsc3_baseband_packet_types.o: atsc3_baseband_packet_types.h atsc3_baseband_pack
 
 atsc3_alp_parser.o: atsc3_alp_types.h atsc3_alp_parser.h atsc3_alp_parser.c
 	$(CC) $(CFLAGS) $(DEBUG)  -c atsc3_alp_parser.c 
+	
+atsc3_stltp_depacketizer_context.o: atsc3_stltp_depacketizer_context.h atsc3_stltp_depacketizer_context.c atsc3_alp_types.h atsc3_alp_parser.h
+	$(CC) $(CFLAGS) $(DEBUG)  -c atsc3_stltp_depacketizer_context.c
+	
+atsc3_stltp_depacketizer.o: atsc3_stltp_depacketizer.h atsc3_stltp_depacketizer.c atsc3_stltp_parser.h atsc3_alp_parser.h
+	$(CC) $(CFLAGS) $(DEBUG)  -c atsc3_stltp_depacketizer.c 
 
 atsc3_mbms_envelope_xml.o: atsc3_mbms_envelope_xml.h atsc3_mbms_envelope_xml.c
 	$(CC) $(CFLAGS) $(DEBUG)  -c atsc3_mbms_envelope_xml.c 
@@ -452,10 +512,9 @@ atsc3_pcre2_regex_utils.o: atsc3_pcre2_regex_utils.h atsc3_pcre2_regex_utils.c
 	$(CC) $(CFLAGS) $(DEBUG)  -c atsc3_pcre2_regex_utils.c -o atsc3_pcre2_regex_utils.o
 
 atsc3_route_dash_utils.o: atsc3_route_dash_utils.h atsc3_route_dash_utils.c \
-							atsc3_pcre2_regex_utils.h atsc3_pcre2_regex_utils.c
-	
+							atsc3_pcre2_regex_utils.h atsc3_pcre2_regex_utils.c	
 	$(CC) $(CFLAGS) $(DEBUG)  -c atsc3_route_dash_utils.c -o atsc3_route_dash_utils.o
-	
+
 atsc3_utils_sha256.o: atsc3_utils_sha256.h atsc3_utils_sha256.c
 	$(CC) $(CFLAGS) $(DEBUG)  -c atsc3_utils_sha256.c -o atsc3_utils_sha256.o
 	
@@ -463,12 +522,105 @@ atsc3_route_object.o:	atsc3_route_object.h atsc3_route_object.c
 	$(CC) $(CFLAGS) $(DEBUG) \
 		-c atsc3_route_object.c \
 		-o atsc3_route_object.o
-	
+
 atsc3_sls_alc_flow.o:	atsc3_sls_alc_flow.h atsc3_sls_alc_flow.c
 	$(CC) $(CFLAGS) $(DEBUG)  -c atsc3_sls_alc_flow.c -o atsc3_sls_alc_flow.o
 	
 avltree.o: libtree.h avl.c
 	$(CC) $(CFLAGS) $(DEBUG)  -c avl.c -o avltree.o
+
+PcapDemuxedVirtualPHY.o: phy/virtual/PcapDemuxedVirtualPHY.h phy/virtual/PcapDemuxedVirtualPHY.cpp
+	g++ $(CFLAGS) $(CXXFLAGS) $(DEBUG) \
+		-c phy/virtual/PcapDemuxedVirtualPHY.cpp \
+		-o PcapDemuxedVirtualPHY.o  -I.
+
+PcapSTLTPVirtualPHY.o: phy/virtual/PcapSTLTPVirtualPHY.h phy/virtual/PcapSTLTPVirtualPHY.cpp
+	g++ $(CFLAGS) $(CXXFLAGS) $(DEBUG) \
+		-c phy/virtual/PcapSTLTPVirtualPHY.cpp \
+		-o PcapSTLTPVirtualPHY.o  -I.
+
+# jjustman-2020-08-17 - todo: add in full deps here
+atsc3_srt_live_receiver.o: phy/virtual/srt/atsc3_srt_live_receiver.h \
+							phy/virtual/srt/atsc3_srt_live_receiver.cpp \
+							phy/virtual/srt/atsc3_srt_target.h
+	g++ $(CFLAGS) $(CXXFLAGS) $(DEBUG) \
+		$(SRT_PLATFORM_BUILD_DEFS) \
+	 	-I. -I phy/virtual/srt -I ../srt -I ../srt/build/include \
+		-c phy/virtual/srt/atsc3_srt_live_receiver.cpp \
+		-o atsc3_srt_live_receiver.o 
+
+		
+# phy/virtual/srt/logsupport.cpp \
+		 phy/virtual/srt/socketoptions.cpp \
+		 phy/virtual/srt/transmitmedia.cpp \
+		 phy/virtual/srt/uriparser.cpp \
+		 phy/virtual/srt/verbose.cpp \		
+		 
+atsc3_srt_apputil.o: phy/virtual/srt/apputil.cpp
+	g++ $(CFLAGS) $(CXXFLAGS) $(DEBUG) \
+		$(SRT_PLATFORM_BUILD_DEFS) \
+	 	-I. -I phy/virtual/srt -I ../srt -I ../srt/build/include \
+		-c phy/virtual/srt/apputil.cpp \
+		-o atsc3_srt_apputil.o 
+
+		 
+atsc3_srt_logsupport.o: phy/virtual/srt/logsupport.cpp
+	g++ $(CFLAGS) $(CXXFLAGS) $(DEBUG) \
+		$(SRT_PLATFORM_BUILD_DEFS) \
+	 	-I. -I phy/virtual/srt -I ../srt -I ../srt/build/include \
+		-c phy/virtual/srt/logsupport.cpp \
+		-o atsc3_srt_logsupport.o 
+
+atsc3_srt_socketoptions.o: phy/virtual/srt/socketoptions.cpp
+	g++ $(CFLAGS) $(CXXFLAGS) $(DEBUG) \
+		$(SRT_PLATFORM_BUILD_DEFS) \
+	 	-I. -I phy/virtual/srt -I ../srt -I ../srt/build/include \
+		-c phy/virtual/srt/socketoptions.cpp \
+		-o atsc3_srt_socketoptions.o 
+
+atsc3_srt_transmitmedia.o: phy/virtual/srt/transmitmedia.cpp
+	g++ $(CFLAGS) $(CXXFLAGS) $(DEBUG) \
+		$(SRT_PLATFORM_BUILD_DEFS) \
+	 	-I. -I phy/virtual/srt -I ../srt -I ../srt/build/include \
+		-c phy/virtual/srt/transmitmedia.cpp \
+		-o atsc3_srt_transmitmedia.o 
+		
+atsc3_srt_uriparser.o: phy/virtual/srt/uriparser.cpp
+	g++ $(CFLAGS) $(CXXFLAGS) $(DEBUG) \
+		$(SRT_PLATFORM_BUILD_DEFS) \
+	 	-I. -I phy/virtual/srt -I ../srt -I ../srt/build/include \
+		-c phy/virtual/srt/uriparser.cpp \
+		-o atsc3_srt_uriparser.o 
+		
+atsc3_srt_verbose.o: phy/virtual/srt/verbose.cpp
+	g++ $(CFLAGS) $(CXXFLAGS) $(DEBUG) \
+		$(SRT_PLATFORM_BUILD_DEFS) \
+	 	-I. -I phy/virtual/srt -I ../srt -I ../srt/build/include \
+		-c phy/virtual/srt/verbose.cpp \
+		-o atsc3_srt_verbose.o 
+		
+atsc3_srt_app_libs.o:	atsc3_srt_apputil.o \
+						atsc3_srt_logsupport.o \
+						atsc3_srt_socketoptions.o \
+						atsc3_srt_transmitmedia.o \
+						atsc3_srt_uriparser.o \
+						atsc3_srt_verbose.o 
+						
+	ld -o atsc3_srt_app_libs.o -r \
+						atsc3_srt_apputil.o \
+						atsc3_srt_logsupport.o \
+						atsc3_srt_socketoptions.o \
+						atsc3_srt_transmitmedia.o \
+						atsc3_srt_uriparser.o \
+						atsc3_srt_verbose.o 			
+		
+SRTRxSTLTPVirtualPHY.o: phy/virtual/SRTRxSTLTPVirtualPHY.h phy/virtual/SRTRxSTLTPVirtualPHY.cpp
+	g++ $(CFLAGS) $(CXXFLAGS) $(DEBUG) \
+			$(SRT_PLATFORM_BUILD_DEFS) \
+	 	-I. \
+		-c phy/virtual/SRTRxSTLTPVirtualPHY.cpp \
+		-o SRTRxSTLTPVirtualPHY.o 
+
 
 # unit standalone tests with mock data
 
@@ -515,6 +667,8 @@ libatsc3_intermediate.o: atsc3_lls.o \
 		atsc3_lls_sls_parser.o \
 		atsc3_alp_types.o \
 		atsc3_alp_parser.o \
+		atsc3_stltp_depacketizer_context.o \
+		atsc3_stltp_depacketizer.o \
 		atsc3_baseband_packet_types.o \
 		atsc3_mmtp_packet_types.o \
 		atsc3_mmtp_packet_utils.o \
@@ -569,7 +723,12 @@ libatsc3_intermediate.o: atsc3_lls.o \
 		atsc3_utils_sha256.o \
 		atsc3_route_object.o \
 		atsc3_sls_alc_flow.o \
-		avltree.o
+		avltree.o \
+		PcapDemuxedVirtualPHY.o \
+		PcapSTLTPVirtualPHY.o
+#		 \
+#		atsc3_srt_live_receiver.o \
+#		SRTRxSTLTPVirtualPHY.o 
 
 	ld  -o libatsc3_intermediate.o -r \
 		atsc3_lls.o \
@@ -578,6 +737,8 @@ libatsc3_intermediate.o: atsc3_lls.o \
 		atsc3_lls_sls_parser.o \
 		atsc3_alp_types.o \
 		atsc3_alp_parser.o \
+		atsc3_stltp_depacketizer_context.o \
+		atsc3_stltp_depacketizer.o \
 		atsc3_baseband_packet_types.o \
 		atsc3_mmtp_packet_types.o \
 		atsc3_mmtp_packet_utils.o \
@@ -632,8 +793,12 @@ libatsc3_intermediate.o: atsc3_lls.o \
 		atsc3_utils_sha256.o \
 		atsc3_route_object.o \
 		atsc3_sls_alc_flow.o \
-		avltree.o		
+		avltree.o \
+		PcapDemuxedVirtualPHY.o \
+		PcapSTLTPVirtualPHY.o 
 		
+#		atsc3_srt_live_receiver.o \
+#		SRTRxSTLTPVirtualPHY.o 
 		
 libatsc3_intermediate_asan.o: \
 		atsc3_lls_asan.o \
@@ -643,6 +808,8 @@ libatsc3_intermediate_asan.o: \
 		atsc3_lls_alc_utils_asan.o \
 		atsc3_alp_types.o \
 		atsc3_alp_parser.o \
+		atsc3_stltp_depacketizer_context.o \
+		atsc3_stltp_depacketizer.o \
 		atsc3_baseband_packet_types.o \
 		atsc3_mmtp_packet_types.o \
 		atsc3_mmtp_packet_utils.o \
@@ -696,7 +863,9 @@ libatsc3_intermediate_asan.o: \
 		atsc3_utils_sha256.o \
 		atsc3_route_object.o \
 		atsc3_sls_alc_flow.o \
-		avltree.o
+		avltree.o \
+		PcapDemuxedVirtualPHY.o \
+		PcapSTLTPVirtualPHY.o 
 
 	ld  -o libatsc3_intermediate_asan.o -r \
 		atsc3_lls_asan.o \
@@ -706,6 +875,8 @@ libatsc3_intermediate_asan.o: \
 		atsc3_lls_alc_utils_asan.o \
 		atsc3_alp_types.o \
 		atsc3_alp_parser.o \
+		atsc3_stltp_depacketizer_context.o \
+		atsc3_stltp_depacketizer.o \
 		atsc3_baseband_packet_types.o \
 		atsc3_mmtp_packet_types.o \
 		atsc3_mmtp_packet_utils.o \
@@ -759,8 +930,9 @@ libatsc3_intermediate_asan.o: \
 		atsc3_utils_sha256.o \
 		atsc3_route_object.o \
 		atsc3_sls_alc_flow.o \
-		avltree.o		
-		
+		avltree.o \
+		PcapDemuxedVirtualPHY.o \
+		PcapSTLTPVirtualPHY.o 
 		
 
 libatsc3.o: libatsc3_intermediate.o bento4_mock.o
@@ -870,7 +1042,7 @@ test/atsc3_mime_multipart_related_parser_test: test/atsc3_mime_multipart_related
 	xml.o \
 	strnstr.o \
 	atsc3_utils.o -o test/atsc3_mime_multipart_related_parser_test
-	
+
 test/atsc3_package_mode_mime_multipart_related_parser_test: test/atsc3_package_mode_mime_multipart_related_parser_test.c \
 	atsc3_mbms_envelope_xml.o	\
 	atsc3_mime_multipart_related.o \
@@ -903,8 +1075,7 @@ test/atsc3_package_mode_mime_multipart_related_parser_test: test/atsc3_package_m
 	xml.o \
 	strnstr.o \
 	atsc3_utils.o -o test/atsc3_package_mode_mime_multipart_related_parser_test
-	
-	
+
 test/atsc3_route_package_extract_test: test/atsc3_route_package_extract_test.c \
 	atsc3_mbms_envelope_xml.o	\
 	atsc3_mime_multipart_related.o \
@@ -941,7 +1112,7 @@ test/atsc3_route_package_extract_test: test/atsc3_route_package_extract_test.c \
 	strnstr.o \
 	atsc3_utils_sha256.o \
 	atsc3_utils.o -o test/atsc3_route_package_extract_test
-	
+
 test/atsc3_route_package_extract_test_noasan: test/atsc3_route_package_extract_test.c \
 	atsc3_mbms_envelope_xml.o	\
 	atsc3_mime_multipart_related.o \
@@ -1151,6 +1322,11 @@ listener_tests/atsc3_stltp_alp_listener_reflector_test: listener_tests/atsc3_stl
 	$(CXX)  $(CFLAGS) $(DEBUG) listener_tests/atsc3_stltp_alp_listener_reflector_test.cpp libatsc3.o atsc3_logging_externs.o \
 		$(LOCAL_LD_LIBS) \
 		-o listener_tests/atsc3_stltp_alp_listener_reflector_test
+		
+listener_tests/atsc3_stltp_alp_listener_reflector_test_noasan: listener_tests/atsc3_stltp_alp_listener_reflector_test.cpp libatsc3.o atsc3_logging_externs.o
+	g++ $(CFLAGS) $(DEBUG) listener_tests/atsc3_stltp_alp_listener_reflector_test.cpp libatsc3.o atsc3_logging_externs.o \
+		$(LOCAL_LD_LIBS) \
+		-o listener_tests/atsc3_stltp_alp_listener_reflector_test_noasan
 
 listener_tests/atsc3_mmt_sls_listener_test: listener_tests/atsc3_mmt_sls_listener_test.cpp libatsc3.o
 	$(CXX)  $(ASAN) $(CFLAGS) $(DEBUG)  listener_tests/atsc3_mmt_sls_listener_test.cpp libatsc3.o \
@@ -1208,6 +1384,62 @@ a324_tests/a324_dstp_lls_aeat_emission_test: a324_tests/a324_dstp_lls_aeat_emiss
 		libatsc3_bento4_gpl.o \
 		$(LOCAL_LD_LIBS) \
 		-o a324_tests/a324_dstp_lls_aeat_emission_test
+
+# jjustman-2020-08-10 - phy tests
+
+# Demuxed pcap virtual phy
+phy_tests/pcap_demuxed_virtual_phy_test: phy_tests/PcapDemuxedVirtualPHYTest.cpp libatsc3_bento4_gpl.o
+	g++ $(ASAN) $(CFLAGS) $(CXXFLAGS) $(DEBUG) -I . \
+		phy_tests/PcapDemuxedVirtualPHYTest.cpp \
+		libatsc3_bento4_gpl.o \
+		$(LOCAL_LD_LIBS) \
+		-o phy_tests/pcap_demuxed_virtual_phy_test
+		
+phy_tests/pcap_demuxed_virtual_phy_test_noasan: phy_tests/PcapDemuxedVirtualPHYTest.cpp libatsc3_bento4_gpl.o
+	g++ $(CFLAGS) $(CXXFLAGS) $(DEBUG) -I . \
+		phy_tests/PcapDemuxedVirtualPHYTest.cpp \
+		libatsc3_bento4_gpl.o \
+		$(LOCAL_LD_LIBS) \
+		-o phy_tests/pcap_demuxed_virtual_phy_test_noasan
+		
+		
+# STLTP pcap virtual phy
+phy_tests/pcap_stltp_virtual_phy_test: phy_tests/PcapSTLTPVirtualPHYTest.cpp libatsc3_bento4_gpl.o
+	g++ $(ASAN) $(CFLAGS) $(CXXFLAGS) $(DEBUG) -I . \
+		phy_tests/PcapSTLTPVirtualPHYTest.cpp \
+		libatsc3_bento4_gpl.o \
+		$(LOCAL_LD_LIBS) \
+		-o phy_tests/pcap_stltp_virtual_phy_test
+		
+phy_tests/pcap_stltp_virtual_phy_test_noasan: phy_tests/PcapSTLTPVirtualPHYTest.cpp libatsc3_bento4_gpl.o
+	g++ $(CFLAGS) $(CXXFLAGS) $(DEBUG) -I . \
+		phy_tests/PcapSTLTPVirtualPHYTest.cpp \
+		libatsc3_bento4_gpl.o \
+		$(LOCAL_LD_LIBS) \
+		-o phy_tests/pcap_stltp_virtual_phy_test_noasan
+				
+# jjustman-2020-08-17 - srt virtual phy test		
+phy_tests/srt_stltp_virtual_phy_test: phy_tests/SRTRxSTLTPVirtualPHYTest.cpp libatsc3_bento4_gpl.o atsc3_srt_live_receiver.o atsc3_srt_app_libs.o SRTRxSTLTPVirtualPHY.o
+	g++ $(ASAN) $(CFLAGS) $(CXXFLAGS) $(DEBUG) \
+		$(SRT_PLATFORM_BUILD_DEFS) \
+		-I . \
+		phy_tests/SRTRxSTLTPVirtualPHYTest.cpp \
+		atsc3_srt_live_receiver.o atsc3_srt_app_libs.o SRTRxSTLTPVirtualPHY.o \
+		libatsc3_bento4_gpl.o \
+		$(LOCAL_LD_LIBS) \
+		$(LOCAL_LD_LIBS_SRT_PATH) $(LOCAL_LD_LIBS_SRT) \
+		-o phy_tests/srt_stltp_virtual_phy_test
+		
+phy_tests/srt_stltp_virtual_phy_test_noasan: phy_tests/SRTRxSTLTPVirtualPHYTest.cpp libatsc3_bento4_gpl.o atsc3_srt_live_receiver.o atsc3_srt_app_libs.o SRTRxSTLTPVirtualPHY.o
+	g++ $(CFLAGS) $(CXXFLAGS) $(DEBUG) \
+		$(SRT_PLATFORM_BUILD_DEFS) \
+		-I . \
+		phy_tests/SRTRxSTLTPVirtualPHYTest.cpp \
+		atsc3_srt_live_receiver.o atsc3_srt_app_libs.o SRTRxSTLTPVirtualPHY.o \
+		libatsc3_bento4_gpl.o \
+		$(LOCAL_LD_LIBS) \
+		$(LOCAL_LD_LIBS_SRT_PATH) $(LOCAL_LD_LIBS_SRT) \
+		-o phy_tests/srt_stltp_virtual_phy_test_noasan
 
 # misc utils	
 # isobmfftrackjoiner: bento4/ISOBMFFTrackJoiner.cpp bento4/ISOBMFFTrackJoiner.h atsc3_utils.o \
@@ -1309,7 +1541,32 @@ tools/atsc3_alc_listener_mde_writer_asan: tools/atsc3_alc_listener_mde_writer.cp
 		-I../bento/include/ \
 		$(LOCAL_LD_LIBS) \
 		-o tools/atsc3_alc_listener_mde_writer_asan
-		
+
+# jjustman-2020-08-18 - adding web-ba support tool: atsc3_srt_rx_stltp_virtual_phy_alc_listener_writer
+
+tools/atsc3_srt_rx_stltp_virtual_phy_alc_listener_writer: tools/atsc3_srt_rx_stltp_virtual_phy_alc_listener_writer.cpp libatsc3_bento4_gpl.o
+	g++ $(ASAN) $(CFLAGS) $(CXXFLAGS) $(DEBUG) \
+		$(SRT_PLATFORM_BUILD_DEFS) \
+		-I . \
+		tools/atsc3_srt_rx_stltp_virtual_phy_alc_listener_writer.cpp \
+		atsc3_srt_live_receiver.o atsc3_srt_app_libs.o SRTRxSTLTPVirtualPHY.o \
+		libatsc3_bento4_gpl.o \
+		$(LOCAL_LD_LIBS) \
+		$(LOCAL_LD_LIBS_SRT_PATH) $(LOCAL_LD_LIBS_SRT) \
+		-o tools/atsc3_srt_rx_stltp_virtual_phy_alc_listener_writer
+
+tools/atsc3_srt_rx_stltp_virtual_phy_alc_listener_writer_noasan: tools/atsc3_srt_rx_stltp_virtual_phy_alc_listener_writer.cpp libatsc3_bento4_gpl.o
+	g++  $(CFLAGS) $(CXXFLAGS) $(DEBUG) \
+		$(SRT_PLATFORM_BUILD_DEFS) \
+		-I . \
+		tools/atsc3_srt_rx_stltp_virtual_phy_alc_listener_writer.cpp \
+		atsc3_srt_live_receiver.o atsc3_srt_app_libs.o SRTRxSTLTPVirtualPHY.o \
+		libatsc3_bento4_gpl.o \
+		$(LOCAL_LD_LIBS) \
+		$(LOCAL_LD_LIBS_SRT_PATH) $(LOCAL_LD_LIBS_SRT) \
+		-o tools/atsc3_srt_rx_stltp_virtual_phy_alc_listener_writer_noasan
+
+
 #		
 # tools/atsc3_alc_listener_mde_writer_malloc_debug: tools/atsc3_alc_listener_mde_writer.cpp	libatsc3_bento4_gpl.o
 #	$(CXX)  -D __MALLOC_DEBUGGING \

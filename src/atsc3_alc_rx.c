@@ -103,7 +103,6 @@ void alc_packet_free(atsc3_alc_packet_t** alc_packet_ptr) {
 			alc_packet->def_lct_hdr = NULL;
 		}
 
-
 		if(alc_packet->alc_payload) {
 			free(alc_packet->alc_payload);
 			alc_packet->alc_payload = NULL;

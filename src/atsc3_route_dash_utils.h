@@ -18,10 +18,9 @@ extern "C" {
 #include "atsc3_vector_builder.h"
 
 #include "atsc3_logging_externs.h"
-#include "atsc3_pcre2_regex_utils.h"
-
 #include "atsc3_route_s_tsid.h"
 #include "atsc3_lls_types.h"
+#include "atsc3_pcre2_regex_utils.h"
 
 #define ATSC3_ROUTE_DASH_MPD_REPRESENTATION_ID_SEGMENT_TEMPLATE_START_NUMBER_REGEX_PATTERN "(<Representation.*?id=\"(.*?)\".*?>.*?<SegmentTemplate.*?startNumber=\"(.*?)\".*?<\\/Representation>)"
 #define ATSC3_ROUTE_DASH_MPD_REPRESENTATION_ID_SEGMENT_TEMPLATE_START_NUMBER_REGEX_FLAGS "msg"

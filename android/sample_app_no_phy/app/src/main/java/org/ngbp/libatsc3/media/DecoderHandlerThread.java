@@ -17,11 +17,12 @@ import android.util.Log;
 import android.view.Surface;
 import android.view.SurfaceHolder;
 
-import org.ngbp.libatsc3.android.DebuggingFlags;
-import org.ngbp.libatsc3.android.ServiceHandler;
-import org.ngbp.libatsc3.media.sync.CodecAACSpecificData;
-import org.ngbp.libatsc3.media.sync.mmt.MfuByteBufferFragment;
-import org.ngbp.libatsc3.media.sync.mmt.MmtPacketIdContext;
+import org.ngbp.libatsc3.middleware.android.ATSC3PlayerFlags;
+import org.ngbp.libatsc3.middleware.android.DebuggingFlags;
+import org.ngbp.libatsc3.ServiceHandler;
+import org.ngbp.libatsc3.middleware.android.application.sync.CodecAACSpecificData;
+import org.ngbp.libatsc3.middleware.android.application.sync.mmt.MfuByteBufferFragment;
+import org.ngbp.libatsc3.middleware.android.application.sync.mmt.MmtPacketIdContext;
 import org.ngbp.libatsc3.sampleapp.MainActivity;
 
 import java.io.IOException;
@@ -175,8 +176,6 @@ public class DecoderHandlerThread extends HandlerThread {
         ATSC3PlayerFlags.ReentrantLock.lock();
 
         try {
-
-
             ATSC3PlayerFlags.ATSC3PlayerStartPlayback = true;
             ATSC3PlayerFlags.ATSC3PlayerStopPlayback = false;
             ATSC3PlayerFlags.FirstMfuBufferVideoKeyframeSent = false;
@@ -208,9 +207,25 @@ public class DecoderHandlerThread extends HandlerThread {
             //TODO: use proper values from init box avcc/hvcc/mp4a/etc...
 
             String videoMimeType = "video/hevc";
-            String audioMimeType = "audio/mp4a-latm";
+
             int audioSampleRate = 48000;
             int audioChannelCount = 2;
+            String audioMimeType = "audio/mp4a-latm";
+            audioMediaFormat = CodecAACSpecificData.BuildAACCodecSpecificData(MediaCodecInfo.CodecProfileLevel.AACObjectLC, audioSampleRate, audioChannelCount);
+
+            //jjustman-2020-08-19 - hack-ish for AC-4 audio testing on samsung S10+ with mmt
+            if(true) {
+                audioMimeType = "audio/ac4";
+                audioMediaFormat = new MediaFormat();
+                audioMediaFormat.setString(MediaFormat.KEY_MIME, audioMimeType);
+                audioMediaFormat.setInteger(MediaFormat.KEY_CHANNEL_COUNT, 2);
+                audioMediaFormat.setInteger(MediaFormat.KEY_SAMPLE_RATE, audioSampleRate);
+                //mediaFormat.setInteger("ac4-is-sync", 1); ?
+                //audioMediaFormat.setInteger("ac4-is-sync", 0);
+            }
+
+
+
 
             try {
                 sync = new MediaSync();
@@ -241,12 +256,8 @@ public class DecoderHandlerThread extends HandlerThread {
             } else {
                 //fallback to a "safe" size
                 videoMediaFormat = MediaFormat.createVideoFormat(videoMimeType, MmtPacketIdContext.video_packet_statistics.FALLBACK_WIDTH, MmtPacketIdContext.video_packet_statistics.FALLBACK_HEIGHT);
-
-
             }
             //mf.setFeatureEnabled(MediaCodecInfo.CodecCapabilities.FEATURE_TunneledPlayback, true);
-
-            audioMediaFormat = CodecAACSpecificData.BuildAACCodecSpecificData(MediaCodecInfo.CodecProfileLevel.AACObjectLC, audioSampleRate, audioChannelCount);
 
 
             byte[] nal_check = new byte[8];
@@ -397,7 +408,7 @@ public class DecoderHandlerThread extends HandlerThread {
                         long deltaNanoTime = ((33 + bufferInfo.presentationTimeUs) * 1000) - nanoTime;
 
                         if (true || DebuggingFlags.OutputBuferLoggingEnabled) {
-                            Log.e("\tVideo\tonOutputBufferAvailable", String.format("\tbufferInfoNs:\t%d\tbufferInfoMS:\t%d\tnanoTime:\t%d\tnanoTimeMS:\t%f\tdeltaNanoTime\t%d\tdeltaNanoTimeMS\t%f",
+                            Log.e("\tAudio\tonOutputBufferAvailable", String.format("\tbufferInfoNs:\t%d\tbufferInfoMS:\t%d\tnanoTime:\t%d\tnanoTimeMS:\t%f\tdeltaNanoTime\t%d\tdeltaNanoTimeMS\t%f",
                                     bufferInfo.presentationTimeUs * 1000,
                                     bufferInfo.presentationTimeUs / 1000,
                                     nanoTime,
@@ -488,8 +499,8 @@ public class DecoderHandlerThread extends HandlerThread {
             //sync.setPlaybackParams(new PlaybackParams().setSpeed(0.0f));
             //syncParams.setSyncSource(SyncParams.SYNC_SOURCE_VSYNC); // backlog of vframes queueing up
             // syncParams.setSyncSource(SyncParams.SYNC_SOURCE_DEFAULT);
-            syncParams.setSyncSource(SyncParams.SYNC_SOURCE_SYSTEM_CLOCK); //jitter - lots of jitter
-            //syncParams.setSyncSource(SyncParams.SYNC_SOURCE_AUDIO); //video frames queue up?
+            //syncParams.setSyncSource(SyncParams.SYNC_SOURCE_SYSTEM_CLOCK); //jitter - lots of jitter
+            syncParams.setSyncSource(SyncParams.SYNC_SOURCE_AUDIO); //video frames queue up?
 
             syncPlaybackParamsIsPausedValue = true;
             sync.setSyncParams(syncParams);

@@ -53,6 +53,8 @@ block_t* atsc3_pcap_parse_ethernet_frame(const struct pcap_pkthdr *pkthdr, const
 //from will be promoted to pointer of ->data
 //if you need an independent data block, do: ip_udp_rtp_packet->data = block_Duplicate(ip_udp_rtp_packet->data)
 
+//#define __ATSC3_IP_UDP_RTP_PENDANTIC_DEBUGGING__
+
 atsc3_ip_udp_rtp_packet_t* atsc3_ip_udp_rtp_packet_process_from_blockt_pos(block_t* from) {
     int i = 0;
     int k = 0;
@@ -66,14 +68,40 @@ atsc3_ip_udp_rtp_packet_t* atsc3_ip_udp_rtp_packet_process_from_blockt_pos(block
     
     uint8_t* packet = block_Get(from);
     uint32_t packet_length = block_Remaining_size(from);
+    /*
+     * jjustman-2020-08-17 - guard for too short inner packet:
+     *
+     *
+    frame #5: 0x00000001000d6086 srt_stltp_virtual_phy_test`atsc3_ip_udp_rtp_packet_process_from_blockt_pos(from=0x0000603000048a00) at atsc3_ip_udp_rtp_parser.c:73:22 [opt]
+    frame #6: 0x00000001000e28c0 srt_stltp_virtual_phy_test`atsc3_stltp_tunnel_packet_inner_parse_ip_udp_header_outer_data(atsc3_stltp_tunnel_packet=0x000060b00003ca50) at atsc3_stltp_parser.c:128:62 [opt]
+    frame #7: 0x00000001000e4562 srt_stltp_virtual_phy_test`atsc3_stltp_raw_packet_extract_inner_from_outer_packet(ip_udp_rtp_packet=<unavailable>, atsc3_stltp_tunnel_packet_last=<unavailable>) at atsc3_stltp_parser.c:395:55 [opt]
+    frame #8: 0x000000010008e807 srt_stltp_virtual_phy_test`atsc3_stltp_depacketizer_from_ip_udp_rtp_packet(ip_udp_rtp_packet=<unavailable>, atsc3_stltp_depacketizer_context=<unavailable>) at atsc3_stltp_depacketizer.c:68:78 [opt]
+    frame #9: 0x0000000100091171 srt_stltp_virtual_phy_test`atsc3_stltp_depacketizer_from_blockt(packet_p=0x00007000018aed60, atsc3_stltp_depacketizer_context=0x0000607000000330) at atsc3_stltp_depacketizer.c:381:2 [opt]
+     *
+     */
+    if(packet_length < outer_payload_start) {
+        __LISTENER_UDP_ERROR("udp_packet_process_from_ptr: packet too short for parsing IP/UDP/RTP, needed %d bytes, packet_len is only: %d bytes", outer_payload_start, packet_length);
+    	return NULL;
+    }
     
     for (i = 0; i < udp_header_start; i++) {
-        ip_header[i] = packet[i];
+         ip_header[i] = packet[i];
     }
     
     //check if we are a UDP packet, otherwise bail
     if (ip_header[9] != 0x11) {
-        __LISTENER_UDP_ERROR("udp_packet_process_from_ptr: not a UDP packet!");
+        __LISTENER_UDP_ERROR("udp_packet_process_from_ptr: not a UDP packet! ip_header[9]: 0x%02x", ip_header[9]);
+
+#ifdef __ATSC3_IP_UDP_RTP_PENDANTIC_DEBUGGING__
+        printf("block_t pos: %d, size: %d\t", from->i_pos, from->p_size);
+        for(int i=0; i < 40; i++) {
+        	if(i>0 && ((i % 8) == 0)) {
+        		printf(" ");
+        	}
+        	printf("%02x ", packet[i]);
+        }
+        printf("\n");
+#endif
         return NULL;
     }
     
@@ -104,10 +132,93 @@ atsc3_ip_udp_rtp_packet_t* atsc3_ip_udp_rtp_packet_process_from_blockt_pos(block
     ip_udp_rtp_packet_new->rtp_header = rtp_header;
     
     block_Seek_Relative(from, ATSC_STLTP_IP_UDP_RTP_HEADER_SIZE);
-    ip_udp_rtp_packet_new->data = block_Refcount(from);
+    ip_udp_rtp_packet_new->data = block_Duplicate(from); //block_Refcount(from);
     return ip_udp_rtp_packet_new;
 }
 
+
+atsc3_ip_udp_rtp_packet_t* atsc3_ip_udp_rtp_packet_process_header_only_no_data_block_from_blockt_pos(block_t* from) {
+	 int i = 0;
+	int k = 0;
+	u_char ip_header[24];
+	u_char udp_header[8];
+	int udp_header_start = 20;
+	int rtp_header_start = udp_header_start + 8;
+	int outer_payload_start = rtp_header_start + RTP_HEADER_LENGTH;
+
+	atsc3_ip_udp_rtp_packet_t* ip_udp_rtp_packet_new = NULL;
+
+	uint8_t* packet = block_Get(from);
+	uint32_t packet_length = block_Remaining_size(from);
+	/*
+	 * jjustman-2020-08-17 - guard for too short inner packet:
+	 *
+	 *
+	frame #5: 0x00000001000d6086 srt_stltp_virtual_phy_test`atsc3_ip_udp_rtp_packet_process_from_blockt_pos(from=0x0000603000048a00) at atsc3_ip_udp_rtp_parser.c:73:22 [opt]
+	frame #6: 0x00000001000e28c0 srt_stltp_virtual_phy_test`atsc3_stltp_tunnel_packet_inner_parse_ip_udp_header_outer_data(atsc3_stltp_tunnel_packet=0x000060b00003ca50) at atsc3_stltp_parser.c:128:62 [opt]
+	frame #7: 0x00000001000e4562 srt_stltp_virtual_phy_test`atsc3_stltp_raw_packet_extract_inner_from_outer_packet(ip_udp_rtp_packet=<unavailable>, atsc3_stltp_tunnel_packet_last=<unavailable>) at atsc3_stltp_parser.c:395:55 [opt]
+	frame #8: 0x000000010008e807 srt_stltp_virtual_phy_test`atsc3_stltp_depacketizer_from_ip_udp_rtp_packet(ip_udp_rtp_packet=<unavailable>, atsc3_stltp_depacketizer_context=<unavailable>) at atsc3_stltp_depacketizer.c:68:78 [opt]
+	frame #9: 0x0000000100091171 srt_stltp_virtual_phy_test`atsc3_stltp_depacketizer_from_blockt(packet_p=0x00007000018aed60, atsc3_stltp_depacketizer_context=0x0000607000000330) at atsc3_stltp_depacketizer.c:381:2 [opt]
+	 *
+	 */
+	if(packet_length < outer_payload_start) {
+		__LISTENER_UDP_ERROR("atsc3_ip_udp_rtp_packet_process_header_only_no_data_block_from_blockt_pos: packet too short for parsing IP/UDP/RTP, needed %d bytes, packet_len is only: %d bytes", outer_payload_start, packet_length);
+		return NULL;
+	}
+
+	for (i = 0; i < udp_header_start; i++) {
+		 ip_header[i] = packet[i];
+	}
+
+	//check if we are a UDP packet, otherwise bail
+	if (ip_header[9] != 0x11) {
+		__LISTENER_UDP_ERROR("atsc3_ip_udp_rtp_packet_process_header_only_no_data_block_from_blockt_pos: not a UDP packet! ip_header[9]: 0x%02x", ip_header[9]);
+
+#ifdef __ATSC3_IP_UDP_RTP_PENDANTIC_DEBUGGING__
+		printf("block_t pos: %d, size: %d\t", from->i_pos, from->p_size);
+		for(int i=0; i < 40; i++) {
+			if(i>0 && ((i % 8) == 0)) {
+				printf(" ");
+			}
+			printf("%02x ", packet[i]);
+		}
+		printf("\n");
+#endif
+		return NULL;
+	}
+
+	if ((ip_header[0] & 0x0F) > 5) {
+		udp_header_start = 28;
+	}
+
+	//malloc our udp_packet_header:
+	ip_udp_rtp_packet_new = (atsc3_ip_udp_rtp_packet_t*)calloc(1, sizeof(atsc3_ip_udp_rtp_packet_t));
+	ip_udp_rtp_packet_new->udp_flow.src_ip_addr = ((ip_header[12] & 0xFF) << 24) | ((ip_header[13]  & 0xFF) << 16) | ((ip_header[14]  & 0xFF) << 8) | (ip_header[15] & 0xFF);
+	ip_udp_rtp_packet_new->udp_flow.dst_ip_addr = ((ip_header[16] & 0xFF) << 24) | ((ip_header[17]  & 0xFF) << 16) | ((ip_header[18]  & 0xFF) << 8) | (ip_header[19] & 0xFF);
+
+	for (i = 0; i < 8; i++) {
+		udp_header[i] = packet[udp_header_start + i];
+	}
+
+	ip_udp_rtp_packet_new->udp_flow.src_port = (udp_header[0] << 8) + udp_header[1];
+	ip_udp_rtp_packet_new->udp_flow.dst_port = (udp_header[2] << 8) + udp_header[3];
+
+	uint32_t data_length = packet_length - outer_payload_start;
+
+	if(data_length <= 0 || data_length > MAX_ATSC3_PHY_ALP_DATA_PAYLOAD_SIZE) {
+		__IP_UDP_RTP_PARSER_ERROR("udp_packet_process_from_ptr: invalid data length of udp packet: %d", data_length);
+		return NULL;
+	}
+
+	atsc3_rtp_header_t* rtp_header = atsc3_ip_udp_rtp_parse_header(&packet[rtp_header_start], packet_length);
+	ip_udp_rtp_packet_new->rtp_header = rtp_header;
+
+	block_Seek_Relative(from, ATSC_STLTP_IP_UDP_RTP_HEADER_SIZE);
+
+	//dont duplicate data here, just return the ip_udp_rtp_packet header
+	ip_udp_rtp_packet_new->data = NULL;
+	return ip_udp_rtp_packet_new;
+}
 
 atsc3_rtp_header_t* atsc3_stltp_parse_rtp_header_block(block_t* data) {
     if(!block_Valid(data)) {

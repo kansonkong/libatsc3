@@ -1,11 +1,15 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <!-- Bus 000 Device 007: ID f055:1e1b f055 ATLAS  Serial: 000000000109
-         Bus 000 Device 009: ID f055:1e1b f055 ATLAS  Serial: 000000000019-->
-<!--    <usb-device vendor-id="61525" product-id="7707" />  &lt;!&ndash; lowaSIS &ndash;&gt;-->
-<!--    <usb-device vendor-id="1204" product-id="243" />    &lt;!&ndash; cypress bootloader product id&ndash;&gt;-->
-<!--    <usb-device vendor-id="1204" product-id="240" />    &lt;!&ndash; SL FX3 post-bootloader &ndash;&gt;-->
 
+        <!-- Cypress preboot loader - NOTE: may be one of multiple different PHY implementations using FX2/FX3 -->
+        <usb-device vendor-id="1204" product-id="243" />
 
+        <!-- LowaSIS: VID:0xf055, PID:0x1e1b f055 ATLAS
+                        bootloader:             device release: 0x15B
+                        full firmware running:  device release: 0x0200 ~ 0xFFFF -->
+        <usb-device vendor-id="61525" product-id="7707" />
+
+        <!-- Saankhya Labs - KAILASH -->
+        <usb-device vendor-id="1204" product-id="240" />
 
 </resources>

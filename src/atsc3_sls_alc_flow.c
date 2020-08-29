@@ -393,6 +393,8 @@ void atsc3_route_object_lct_packet_received_set_attributes_from_alc_packet(atsc3
 	atsc3_route_object_lct_packet_received->packet_len = atsc3_alc_packet->alc_len;
 	atsc3_route_object_lct_packet_received->object_len = atsc3_alc_packet->transfer_len;
 
+	atsc3_route_object_lct_packet_received_promote_atsc3_alc_packet_alc_payload_to_pending_block(atsc3_route_object_lct_packet_received, atsc3_alc_packet);
+
 #ifdef __ATSC3_ROUTE_OBJECT_PENDANTIC__
 
 	_ATSC3_SLS_ALC_FLOW_DEBUG("atsc3_route_object_lct_packet_received_set_attributes_from_alc_packet: atsc3_alc_packet: tsi: %d, toi: %d, use_sbn_esi: %d, use_start_offset: %d, atsc3_route_object_lct_packet_received: use_sbn_esi: %d, use_start_offset: %d",
@@ -447,7 +449,6 @@ void atsc3_route_object_lct_packet_received_update_atsc3_route_object(atsc3_rout
 
 	atsc3_route_object->most_recent_atsc3_route_object_lct_packet_received = atsc3_route_object_lct_packet_received;
 }
-
 
 
 uint32_t atsc3_sls_alc_flow_get_first_tsi(atsc3_sls_alc_flow_v* atsc3_sls_alc_flow) {
