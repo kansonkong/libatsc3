@@ -1,6 +1,9 @@
 libatsc3 Overview
 ==========
 ATSC 3.0 NGBP Open Source Library - Parse LMT, LLS and other signaling, object delivery via ROUTE, video playback of MMT and DASH
+## August, 2020 Update: Part 2: PHY Support for Virtual SRT and LowaSIS
+Additional updates for virutal PHY support with live SRT+STLTP transport, and LowaSIS android sample app integration for OTA live ATSC 3.0 support.
+
 ## August, 2020 Update: Part 1: LCT and ROUTE/DASH fixes
 Lots of fixes for LCT handling for object recovery (avoiding incomplete objects being dispatched), ROUTE/DASH manifest patching against S-TSID flows, and ATSC3 ROUTE package extraction for codePoint=3 (and 4, but no signing verification at this time)
 
