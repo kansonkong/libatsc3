@@ -52,12 +52,10 @@ repositories {
 }
 dependencies {
 
-    //vmatiash-2020-08-21 - Direct dependency is not necessary. This dependency specified in LOCAL_LDLIBS of Android.mk
-    //debugApi fileTree(dir: '../atsc3_bridge/build/intermediates/ndkBuild/debug/obj/local', include: ['**/libatsc3_bridge.so'])
+    api project(':atsc3_bridge')
 
-
-    debugApi project(':atsc3_bridge')
-    releaseApi project(':atsc3_bridge')
+    implementation "androidx.annotation:annotation:1.1.0"
+    implementation "androidx.startup:startup-runtime:1.0.0-alpha03"
 
 //    debugApi fileTree(dir: 'build/outputs/aar', include: ['*.aar'])
 //    releaseApi fileTree(dir: 'build/outputs/aar', include: ['*.aar'])

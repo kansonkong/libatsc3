@@ -104,21 +104,22 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     final static String TAG ="MainActivity";
 
     //jjustman-2020-08-24 this is a "hack" for dynamically loading our module phy types
-    static {
-        List<String> phyModules = Arrays.asList(
-                    "org.ngbp.libatsc3.middleware.android.phy.virtual.PcapDemuxedPHYVirtualAndroid", //either this or .srt.SRTRxSTLTPVirtualPHYAndroid
-                    "org.ngbp.libatsc3.middleware.android.phy.LowaSISPHYAndroid",
-                    "org.ngbp.libatsc3.middleware.android.phy.SaankhyaPHYAndroid"
-                );
-        for(String moduleName : phyModules) {
-            try {
-                Class.forName(moduleName);
-            } catch (Exception ex) {
-                Log.d(TAG, String.format("unable to find static impl loader for %s", moduleName));
-            }
-        }
-
-    }
+    //vmatiash-2020-08-28 replaced with initializers LowaSISPHYInitializer and SaankhyaPHYInitializer
+//    static {
+//        List<String> phyModules = Arrays.asList(
+//                    "org.ngbp.libatsc3.middleware.android.phy.virtual.PcapDemuxedPHYVirtualAndroid", //either this or .srt.SRTRxSTLTPVirtualPHYAndroid
+//                    "org.ngbp.libatsc3.middleware.android.phy.LowaSISPHYAndroid",
+//                    "org.ngbp.libatsc3.middleware.android.phy.SaankhyaPHYAndroid"
+//                );
+//        for(String moduleName : phyModules) {
+//            try {
+//                Class.forName(moduleName);
+//            } catch (Exception ex) {
+//                Log.d(TAG, String.format("unable to find static impl loader for %s", moduleName));
+//            }
+//        }
+//
+//    }
 
     private String prebuiltAssetsForDeviceSelectionVirtualPHY[] = {
             "srt://las.srt.atsc3.com:31350?passphrase=A166AC45-DB7C-4B68-B957-09B8452C76A4",
