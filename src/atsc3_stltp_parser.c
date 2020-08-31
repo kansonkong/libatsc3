@@ -36,7 +36,7 @@
 #include "atsc3_stltp_parser.h"
 
 int _STLTP_PARSER_INFO_ENABLED = 1;
-int _STLTP_PARSER_DEBUG_ENABLED = 0;
+int _STLTP_PARSER_DEBUG_ENABLED = 1;
 int _STLTP_PARSER_TRACE_ENABLED = 0;
 
 
@@ -220,6 +220,29 @@ atsc3_stltp_tunnel_packet_t* atsc3_stltp_raw_packet_extract_inner_from_outer_pac
     
     bool processed_refragmentation_or_concatenation_tunnel_packet = false;
     
+    if(atsc3_stltp_tunnel_packet_last) {
+    	if(!atsc3_stltp_tunnel_packet_is_rtp_packet_outer_sequence_number_contiguous(atsc3_stltp_tunnel_packet_last, atsc3_stltp_tunnel_packet_current)) {
+
+    		int32_t last_sequence_number = -1;
+    		int32_t current_sequence_number = -2;
+
+    		if(atsc3_stltp_tunnel_packet_last && atsc3_stltp_tunnel_packet_last->ip_udp_rtp_packet_outer && atsc3_stltp_tunnel_packet_last->ip_udp_rtp_packet_outer->rtp_header) {
+    			last_sequence_number = atsc3_stltp_tunnel_packet_last->ip_udp_rtp_packet_outer->rtp_header->sequence_number;
+    		}
+
+    		if(atsc3_stltp_tunnel_packet_current && atsc3_stltp_tunnel_packet_current->ip_udp_rtp_packet_outer && atsc3_stltp_tunnel_packet_current->ip_udp_rtp_packet_outer->rtp_header) {
+    			current_sequence_number = atsc3_stltp_tunnel_packet_current->ip_udp_rtp_packet_outer->rtp_header->sequence_number;
+    		}
+
+    		__STLTP_PARSER_ERROR("atsc3_stltp_tunnel_packet_extract_inner_from_outer_packet: outer sequence number is not contiguous! outer tunnel packet last: %d, outer tunnel packet current: %d",
+    					last_sequence_number,
+						current_sequence_number);
+    	}
+    } else {
+    	__STLTP_PARSER_ERROR("atsc3_stltp_tunnel_packet_extract_inner_from_outer_packet: no last atsc3_stltp_tunnel_packet_last, current sequence number: %u!",
+    			atsc3_stltp_tunnel_packet_current->ip_udp_rtp_packet_outer->rtp_header->sequence_number);
+    }
+
     //last frame smaller than 40 bytes, for recovering refragmentation of prior frame due to being short for ip_udp_rtp header parsing
     if(atsc3_stltp_tunnel_packet_last && atsc3_stltp_tunnel_packet_last->ip_udp_rtp_packet_pending_refragmentation_outer) {
         
@@ -1178,7 +1201,8 @@ cleanup:
 
 
 void atsc3_timing_management_packet_dump(atsc3_timing_management_packet_t* atsc3_timing_management_packet) {
-    
+	//atsc3_timing_management_packet
+	__STLTP_PARSER_INFO("");
     
 }
 
