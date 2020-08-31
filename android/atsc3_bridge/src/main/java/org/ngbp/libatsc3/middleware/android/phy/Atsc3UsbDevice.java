@@ -2,6 +2,7 @@ package org.ngbp.libatsc3.middleware.android.phy;
 
 import android.hardware.usb.UsbDevice;
 import android.hardware.usb.UsbDeviceConnection;
+import android.util.Log;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -24,9 +25,18 @@ public class Atsc3UsbDevice {
     public static Atsc3UsbDevice FindFromUsbDevice(UsbDevice toSearchDevice) {
         return AllAtsc3UsbDevices.get(toSearchDevice);
     }
+    public static void DumpAllAtsc3UsbDevices() {
+//        Log.d("AllAtsc3UsbDevices", String.format("AllAtsc3UsbDevices has %d entries", AllAtsc3UsbDevices.size()));
+//
+//        for(Map.Entry<UsbDevice, Atsc3UsbDevice> entries : AllAtsc3UsbDevices.entrySet()) {
+//            Log.d("AllAtsc3UsbDevices", String.format("key: %s (%s), val: %s", entries.getKey(), entries.getKey().getDeviceName(), entries.getValue()));
+//        }
+    }
 
     public void destroy() {
-        AllAtsc3UsbDevices.remove(this);
+        AllAtsc3UsbDevices.remove(this.usbDevice);
+//        Log.d("Atsc3UsbDevice", String.format("removing this: %s (usbDevice: %s), entries remaining: %d", this, this.usbDevice, AllAtsc3UsbDevices.size()));
+
         this.disconnect();
         this.usbDevice = null;
         this.conn = null;
