@@ -9,6 +9,6 @@ include ':atsc3_core',':atsc3_bridge',
         ':atsc3_phy_lowasis'
 
 
-gradle.ext.exoplayerRoot = 'Exoplayer'
+gradle.ext.exoplayerRoot = 'ExoPlayer'
 gradle.ext.exoplayerModulePrefix = 'exoplayer-'
 apply from: new File(gradle.ext.exoplayerRoot, 'core_settings.gradle')
