@@ -332,7 +332,6 @@ void atsc3_stltp_depacketizer_from_ip_udp_rtp_packet(atsc3_ip_udp_rtp_packet_t* 
         	_ATSC3_STLTP_DEPACKETIZER_DEBUG("preamble: >>>stltp atsc3_stltp_preamble_packet packet complete: count: %u",  atsc3_stltp_tunnel_packet_processed->atsc3_stltp_preamble_packet_v.count);
             for(int i=0; i < atsc3_stltp_tunnel_packet_processed->atsc3_stltp_preamble_packet_v.count; i++) {
 
-#ifdef PREAMBLE_PACKET_PARSE_AND_LOG
 			  atsc3_stltp_preamble_packet_t* atsc3_stltp_preamble_packet = atsc3_stltp_tunnel_packet_processed->atsc3_stltp_preamble_packet_v.data[i];
 			  atsc3_preamble_packet_t* atsc3_preamble_packet = atsc3_stltp_parse_preamble_packet(atsc3_stltp_preamble_packet);
 			  if(!atsc3_preamble_packet) {
@@ -340,7 +339,6 @@ void atsc3_stltp_depacketizer_from_ip_udp_rtp_packet(atsc3_ip_udp_rtp_packet_t* 
 			  } else {
 				  atsc3_preamble_packet_dump(atsc3_preamble_packet);
 			  }
-#endif
             }
         }
 
@@ -348,7 +346,6 @@ void atsc3_stltp_depacketizer_from_ip_udp_rtp_packet(atsc3_ip_udp_rtp_packet_t* 
         	_ATSC3_STLTP_DEPACKETIZER_DEBUG("timing management: >>>stltp atsc3_stltp_timing_management_packet packet complete: count: %u",  atsc3_stltp_tunnel_packet_processed->atsc3_stltp_timing_management_packet_v.count);
             for(int i=0; i < atsc3_stltp_tunnel_packet_processed->atsc3_stltp_timing_management_packet_v.count; i++) {
 
-#ifdef TIMING_MANAGEMENT_PACKET_PARSE_AND_LOG
 				atsc3_stltp_timing_management_packet_t* atsc3_stltp_timing_management_packet = atsc3_stltp_tunnel_packet_processed->atsc3_stltp_timing_management_packet_v.data[i];
 				atsc3_timing_management_packet_t* atsc3_timing_management_packet = atsc3_stltp_parse_timing_management_packet(atsc3_stltp_timing_management_packet);
             	if(!atsc3_timing_management_packet) {
@@ -356,7 +353,6 @@ void atsc3_stltp_depacketizer_from_ip_udp_rtp_packet(atsc3_ip_udp_rtp_packet_t* 
             	} else {
                    	 atsc3_timing_management_packet_dump(atsc3_timing_management_packet);
                 }
-#endif
             }
         }
 
