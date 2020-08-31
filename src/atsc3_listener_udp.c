@@ -238,18 +238,3 @@ udp_packet_t* udp_packet_prepend_if_not_null(udp_packet_t* from_packet, udp_pack
 	return udp_packet_new;
 }
 
-void udp_packet_free(udp_packet_t** udp_packet_p) {
-	if(udp_packet_p) {
-		udp_packet_t* udp_packet = *udp_packet_p;
-		if(udp_packet) {
-
-			if(udp_packet->data) {
-				block_Destroy(&udp_packet->data);
-			}
-			freesafe(udp_packet);
-			udp_packet = NULL;
-		}
-		*udp_packet_p = NULL;
-	}
-}
-
