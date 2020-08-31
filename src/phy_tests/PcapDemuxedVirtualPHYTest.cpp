@@ -32,7 +32,7 @@ int test_demux_1m_100000_packet_replay() {
 	PcapDemuxedVirtualPHY* pcapDemuxedVirtualPHY = new PcapDemuxedVirtualPHY();
 	//            atsc3_core_service_bridge_process_packet_phy(phy_payload_to_process);
 
-	pcapDemuxedVirtualPHY->SetRxUdpPacketProcessCallback(phy_rx_udp_packet_process_callback);
+	pcapDemuxedVirtualPHY->setRxUdpPacketProcessCallback(phy_rx_udp_packet_process_callback);
 
 	pcapDemuxedVirtualPHY->atsc3_pcap_replay_open_file(PCAP_REPLAY_TEST_FILENAME);
 
