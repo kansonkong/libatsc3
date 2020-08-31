@@ -5,7 +5,7 @@
 #include "LowaSISPHYAndroid.h"
 LowaSISPHYAndroid* lowaSISPHYAndroid = nullptr;
 
-mutex LowaSISPHYAndroid::Cctor_muxtex;
+mutex LowaSISPHYAndroid::CS_global_muxtex;
 
 /**
  * jjustman-2020-08-24 - LowaSIS helper defines
@@ -308,6 +308,8 @@ int LowaSISPHYAndroid::stop()
 
     ar = AT3DRV_FE_Stop(mhDevice);
     CHK_AR(ar, "FE_Stop");
+    //give AT3DRV_WaitRxData enough time to shutdown
+    usleep(5 * 1000000);
 
     //tear down status thread first, as its the most 'problematic'
     if(statusThreadIsRunning) {
@@ -361,6 +363,7 @@ int LowaSISPHYAndroid::stop()
     SHOW_AR(ar, "Option Release");
     mAt3Opt = nullptr;
     mhDevice = 0;
+    init_completed = false;
 
     _LOWASIS_PHY_ANDROID_INFO("LowaSISPHYAndroid::stop: return with this: %p", this);
     return ar;
@@ -654,7 +657,11 @@ int LowaSISPHYAndroid::captureThread()
 AT3RESULT LowaSISPHYAndroid::RxCallbackStatic(S_RX_DATA *pData, uint64_t ullUser)
 {
     LowaSISPHYAndroid *me = (LowaSISPHYAndroid *)ullUser;
-    return me->RxCallbackInstanceScoped(pData);
+    if(me->captureThreadShouldRun) {
+        return me->RxCallbackInstanceScoped(pData);
+    } else {
+        return AT3RES_CANCEL;
+    }
 }
 
 //jjustman-2020-08-24 - todo: only push this S_RX_DATA to our processing queue for consumerThread
@@ -954,7 +961,7 @@ void LowaSISPHYAndroid::NotifyPlpSelectionChangeCallback(vector<uint8_t> plps, v
 extern "C"
 JNIEXPORT jint JNICALL
 Java_org_ngbp_libatsc3_middleware_android_phy_LowaSISPHYAndroid_init(JNIEnv *env, jobject instance) {
-    unique_lock<mutex> saankhy_phy_android_cctor_mutex_local(LowaSISPHYAndroid::Cctor_muxtex);
+    unique_lock<mutex> lowasis_phy_android_cctor_mutex_local(LowaSISPHYAndroid::CS_global_muxtex);
 
     _LOWASIS_PHY_ANDROID_DEBUG("Java_org_ngbp_libatsc3_middleware_android_phy_LowaSISPHYAndroid_init: start init, env: %p", env);
     if(lowaSISPHYAndroid) {
@@ -967,7 +974,7 @@ Java_org_ngbp_libatsc3_middleware_android_phy_LowaSISPHYAndroid_init(JNIEnv *env
     lowaSISPHYAndroid->init();
 
     _LOWASIS_PHY_ANDROID_DEBUG("Java_org_ngbp_libatsc3_middleware_android_phy_LowaSISPHYAndroid_init: return, instance: %p", lowaSISPHYAndroid);
-    saankhy_phy_android_cctor_mutex_local.unlock();
+    lowasis_phy_android_cctor_mutex_local.unlock();
     return 0;
 }
 
@@ -1003,6 +1010,8 @@ Java_org_ngbp_libatsc3_middleware_android_phy_LowaSISPHYAndroid_is_1running(JNIE
 
 extern "C" JNIEXPORT jint JNICALL
 Java_org_ngbp_libatsc3_middleware_android_phy_LowaSISPHYAndroid_stop(JNIEnv *env, jobject thiz) {
+    unique_lock<mutex> lowasis_phy_android_cctor_mutex_local(LowaSISPHYAndroid::CS_global_muxtex);
+
     int res = 0;
     if(!lowaSISPHYAndroid) {
         _LOWASIS_PHY_ANDROID_ERROR("Java_org_ngbp_libatsc3_middleware_android_phy_LowaSISPHYAndroid_stop: error, srtRxSTLTPVirtualPHYAndroid is NULL!");
@@ -1011,12 +1020,14 @@ Java_org_ngbp_libatsc3_middleware_android_phy_LowaSISPHYAndroid_stop(JNIEnv *env
         res = lowaSISPHYAndroid->stop();
         _LOWASIS_PHY_ANDROID_DEBUG("Java_org_ngbp_libatsc3_middleware_android_phy_LowaSISPHYAndroid_stop: returning res: %d", res);
     }
+
+    lowasis_phy_android_cctor_mutex_local.unlock();
     return res;
 }
 
 extern "C" JNIEXPORT jint JNICALL
 Java_org_ngbp_libatsc3_middleware_android_phy_LowaSISPHYAndroid_deinit(JNIEnv *env, jobject thiz) {
-    unique_lock<mutex> saankhy_phy_android_cctor_mutex_local(LowaSISPHYAndroid::Cctor_muxtex);
+    unique_lock<mutex> lowasis_phy_android_cctor_mutex_local(LowaSISPHYAndroid::CS_global_muxtex);
 
     int res = 0;
     if(!lowaSISPHYAndroid) {
@@ -1027,7 +1038,7 @@ Java_org_ngbp_libatsc3_middleware_android_phy_LowaSISPHYAndroid_deinit(JNIEnv *e
         lowaSISPHYAndroid = nullptr;
     }
 
-    saankhy_phy_android_cctor_mutex_local.unlock();
+    lowasis_phy_android_cctor_mutex_local.unlock();
     return res;
 }
 

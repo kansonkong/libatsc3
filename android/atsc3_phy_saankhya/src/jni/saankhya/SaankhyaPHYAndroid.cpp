@@ -6,8 +6,10 @@
 SaankhyaPHYAndroid* saankhyaPHYAndroid = nullptr;
 
 CircularBuffer SaankhyaPHYAndroid::cb = nullptr;
-mutex SaankhyaPHYAndroid::Cctor_muxtex;
 mutex SaankhyaPHYAndroid::CircularBufferMutex;
+
+mutex SaankhyaPHYAndroid::CS_global_mutex;
+
 
 SaankhyaPHYAndroid::SaankhyaPHYAndroid(JNIEnv* env, jobject jni_instance) {
     this->env = env;
@@ -1734,7 +1736,7 @@ void SaankhyaPHYAndroid::allocate_atsc3_sl_tlv_block() {
 extern "C"
 JNIEXPORT jint JNICALL
 Java_org_ngbp_libatsc3_middleware_android_phy_SaankhyaPHYAndroid_init(JNIEnv *env, jobject instance) {
-    unique_lock<mutex> saankhy_phy_android_cctor_mutex_local(SaankhyaPHYAndroid::Cctor_muxtex);
+    unique_lock<mutex> saankhy_phy_android_cctor_mutex_local(SaankhyaPHYAndroid::CS_global_mutex);
 
     _SAANKHYA_PHY_ANDROID_DEBUG("Java_org_ngbp_libatsc3_middleware_android_phy_SaankhyaPHYAndroid_init: start init, env: %p", env);
     if(saankhyaPHYAndroid) {
@@ -1783,6 +1785,8 @@ Java_org_ngbp_libatsc3_middleware_android_phy_SaankhyaPHYAndroid_is_1running(JNI
 
 extern "C" JNIEXPORT jint JNICALL
 Java_org_ngbp_libatsc3_middleware_android_phy_SaankhyaPHYAndroid_stop(JNIEnv *env, jobject thiz) {
+    unique_lock<mutex> saankhy_phy_android_cctor_mutex_local(SaankhyaPHYAndroid::CS_global_mutex);
+
     int res = 0;
     if(!saankhyaPHYAndroid) {
         _SAANKHYA_PHY_ANDROID_ERROR("Java_org_ngbp_libatsc3_middleware_android_phy_SaankhyaPHYAndroid_stop: error, srtRxSTLTPVirtualPHYAndroid is NULL!");
@@ -1791,12 +1795,14 @@ Java_org_ngbp_libatsc3_middleware_android_phy_SaankhyaPHYAndroid_stop(JNIEnv *en
         res = saankhyaPHYAndroid->stop();
         _SAANKHYA_PHY_ANDROID_DEBUG("Java_org_ngbp_libatsc3_middleware_android_phy_SaankhyaPHYAndroid_stop: returning res: %d", res);
     }
+    saankhy_phy_android_cctor_mutex_local.unlock();
+
     return res;
 }
 
 extern "C" JNIEXPORT jint JNICALL
 Java_org_ngbp_libatsc3_middleware_android_phy_SaankhyaPHYAndroid_deinit(JNIEnv *env, jobject thiz) {
-    unique_lock<mutex> saankhy_phy_android_cctor_mutex_local(SaankhyaPHYAndroid::Cctor_muxtex);
+    unique_lock<mutex> saankhy_phy_android_cctor_mutex_local(SaankhyaPHYAndroid::CS_global_mutex);
 
     int res = 0;
     if(!saankhyaPHYAndroid) {
