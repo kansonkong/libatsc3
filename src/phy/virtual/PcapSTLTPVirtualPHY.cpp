@@ -2,6 +2,30 @@
 
 std::hash<std::thread::id> __pcapSTLTPVirtualPHY_thread_hasher__;
 
+
+int PcapSTLTPVirtualPHY::init() {
+
+	return 0;
+}
+
+int PcapSTLTPVirtualPHY::run() {
+
+	return this->atsc3_pcap_thread_run();
+}
+
+bool PcapSTLTPVirtualPHY::is_running() {
+
+	return !pcapProducerShutdown && !pcapConsumerShutdown;
+}
+
+int PcapSTLTPVirtualPHY::stop() {
+	return this->atsc3_pcap_thread_stop();
+}
+
+int PcapSTLTPVirtualPHY::deinit() {
+	return 0;
+}
+
 PcapSTLTPVirtualPHY::PcapSTLTPVirtualPHY() {
 	atsc3_stltp_depacketizer_context = atsc3_stltp_depacketizer_context_new();
 
@@ -315,48 +339,4 @@ void PcapSTLTPVirtualPHY::atsc3_stltp_baseband_alp_packet_collection_received(at
 }
 
 
-
-/*
- * default IPHY impl's here
- */
-
-int PcapSTLTPVirtualPHY::Init()
-{
-    return 0;
-}
-
-int PcapSTLTPVirtualPHY::Prepare(const char *strDevListInfo, int delim1, int delim2)
-{
-    return 0;
-}
-
-int PcapSTLTPVirtualPHY::Open(int fd, int bus, int addr)
-{
-    return 0;
-}
-
-int PcapSTLTPVirtualPHY::Tune(int freqKHz, int plpid)
-{
-    return 0;
-}
-
-int PcapSTLTPVirtualPHY::Stop()
-{
-    return 0;
-}
-
-int PcapSTLTPVirtualPHY::Reset()
-{
-    return 0;
-}
-
-int PcapSTLTPVirtualPHY::Close()
-{
-    return 0;
-}
-
-int PcapSTLTPVirtualPHY::Uninit()
-{
-    return 0;
-}
 

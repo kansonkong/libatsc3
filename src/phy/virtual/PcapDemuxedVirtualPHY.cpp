@@ -1,5 +1,30 @@
 #include "PcapDemuxedVirtualPHY.h"
 
+
+int PcapDemuxedVirtualPHY::init() {
+
+	return 0;
+}
+
+int PcapDemuxedVirtualPHY::run() {
+
+	return this->atsc3_pcap_thread_run();
+}
+
+bool PcapDemuxedVirtualPHY::is_running() {
+
+	return !pcapProducerShutdown && !pcapConsumerShutdown;
+}
+
+int  PcapDemuxedVirtualPHY::stop() {
+	return this->atsc3_pcap_thread_stop();
+}
+
+int PcapDemuxedVirtualPHY::deinit() {
+	return 0;
+}
+
+
 int PcapDemuxedVirtualPHY::atsc3_pcap_replay_open_file(const char *filename) {
 
     atsc3_pcap_replay_context = atsc3_pcap_replay_open_filename(filename);
@@ -250,52 +275,6 @@ int PcapDemuxedVirtualPHY::PcapConsumerThreadRun() {
     }
     pcapConsumerShutdown = true;
 
-    return 0;
-}
-
-
-
-/*
- * default IPHY impl's here
- */
-
-int PcapDemuxedVirtualPHY::Init()
-{
-    return 0;
-}
-
-int PcapDemuxedVirtualPHY::Prepare(const char *strDevListInfo, int delim1, int delim2)
-{
-    return 0;
-}
-
-int PcapDemuxedVirtualPHY::Open(int fd, int bus, int addr)
-{
-    return 0;
-}
-
-int PcapDemuxedVirtualPHY::Tune(int freqKHz, int plpid)
-{
-    return 0;
-}
-
-int PcapDemuxedVirtualPHY::Stop()
-{
-    return 0;
-}
-
-int PcapDemuxedVirtualPHY::Reset()
-{
-    return 0;
-}
-
-int PcapDemuxedVirtualPHY::Close()
-{
-    return 0;
-}
-
-int PcapDemuxedVirtualPHY::Uninit()
-{
     return 0;
 }
 

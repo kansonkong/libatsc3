@@ -155,9 +155,9 @@ int start_srt_rx_stltp_virtual_phy(string srt_connection_string) {
 	int res = -1;
 	srtRxSTLTPVirtualPHY = new SRTRxSTLTPVirtualPHY(srt_connection_string);
 
-	srtRxSTLTPVirtualPHY->SetRxUdpPacketProcessCallback(phy_rx_udp_packet_process_callback);
+	srtRxSTLTPVirtualPHY->setRxUdpPacketProcessCallback(phy_rx_udp_packet_process_callback);
 
-	res = srtRxSTLTPVirtualPHY->atsc3_srt_thread_run();
+	res = srtRxSTLTPVirtualPHY->run();
 
 	srt_thread_run_start_time = gt();
 
@@ -167,7 +167,7 @@ int start_srt_rx_stltp_virtual_phy(string srt_connection_string) {
 int stop_srt_rx_stltp_virtual_phy() {
 	int res = -1;
 	if(srtRxSTLTPVirtualPHY) {
-		res = srtRxSTLTPVirtualPHY->atsc3_srt_thread_stop();
+		res = srtRxSTLTPVirtualPHY->stop();
 
 		delete srtRxSTLTPVirtualPHY;
 	}
@@ -256,9 +256,9 @@ int main(int argc, char* argv[] ) {
 	sleep(1);
 	while(!should_break) {
 		usleep(10000000);
-		_SRT_STLTP_VIRTUAL_PHY_ALC_WRITER_INFO("srt_is_running: %d", srtRxSTLTPVirtualPHY->is_srt_running());
+		_SRT_STLTP_VIRTUAL_PHY_ALC_WRITER_INFO("srt_is_running: %d", srtRxSTLTPVirtualPHY->is_running());
 		if(loop_count++ > 10) {
-			should_break = !srtRxSTLTPVirtualPHY->is_srt_running();
+			should_break = !srtRxSTLTPVirtualPHY->is_running();
 		}
 	}
 
