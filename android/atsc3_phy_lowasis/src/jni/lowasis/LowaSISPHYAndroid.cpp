@@ -522,6 +522,9 @@ int LowaSISPHYAndroid::tune(int freqKHz, int plpid)
         return -1;
     }
 
+    //clear out our atsc3_core_service_player_bridge context
+    atsc3_core_service_application_bridge_reset_context();
+
     ar = AT3DRV_FE_Start(mhDevice, freqKHz, eAT3_DEMOD_ATSC30, plpid);
     CHK_AR(ar, "FE_Start");
 

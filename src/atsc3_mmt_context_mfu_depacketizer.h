@@ -98,6 +98,8 @@ atsc3_mmt_mfu_mpu_timestamp_descriptor_t* atsc3_get_mpu_timestamp_from_packet_id
 
 //wire up dummmy null callback(s) to prevent dispatcher from multiple if(..) checks...
 atsc3_mmt_mfu_context_t* atsc3_mmt_mfu_context_new();
+void atsc3_mmt_mfu_context_free(atsc3_mmt_mfu_context_t** atsc3_mmt_mfu_context_p);
+
 
 
 //Warning: cross boundary processing hooks with callback invocation - impl's in atsc3_mmt_context_mfu_depacketizer.c

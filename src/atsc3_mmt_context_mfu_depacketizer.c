@@ -324,6 +324,49 @@ atsc3_mmt_mfu_context_t* atsc3_mmt_mfu_context_new() {
 	return atsc3_mmt_mfu_context;
 }
 
+void atsc3_mmt_mfu_context_free(atsc3_mmt_mfu_context_t** atsc3_mmt_mfu_context_p) {
+    if(atsc3_mmt_mfu_context_p) {
+        atsc3_mmt_mfu_context_t* atsc3_mmt_mfu_context = *atsc3_mmt_mfu_context_p;
+        if(atsc3_mmt_mfu_context) {
+            if(atsc3_mmt_mfu_context->udp_flow) {
+                free(atsc3_mmt_mfu_context->udp_flow);
+                atsc3_mmt_mfu_context->udp_flow = NULL;
+            }
+
+            if(atsc3_mmt_mfu_context->mmtp_flow) {
+                mmtp_flow_free_mmtp_asset_flow(atsc3_mmt_mfu_context->mmtp_flow);
+                free(atsc3_mmt_mfu_context->mmtp_flow);
+                atsc3_mmt_mfu_context->mmtp_flow = NULL;
+            }
+
+            if(atsc3_mmt_mfu_context->udp_flow_latest_mpu_sequence_number_container) {
+                udp_flow_latest_mpu_sequence_number_container_t_release(atsc3_mmt_mfu_context->udp_flow_latest_mpu_sequence_number_container);
+                atsc3_mmt_mfu_context->udp_flow_latest_mpu_sequence_number_container = NULL;
+            }
+
+            //jjustman-2020-08-31 - todo: check to confirm these aren't shared pointers...
+            if(atsc3_mmt_mfu_context->lls_slt_monitor) {
+                atsc3_lls_slt_monitor_free(&atsc3_mmt_mfu_context->lls_slt_monitor);
+            }
+
+            if(atsc3_mmt_mfu_context->matching_lls_sls_mmt_session) {
+                lls_sls_mmt_session_flows_free(&atsc3_mmt_mfu_context->matching_lls_sls_mmt_session);
+            }
+
+            if(atsc3_mmt_mfu_context->mp_table_last) {
+                //jjustman-2020-08-31: todo - free inner impl
+                free(atsc3_mmt_mfu_context->mp_table_last);
+                atsc3_mmt_mfu_context->mp_table_last = NULL;
+            }
+
+            free(atsc3_mmt_mfu_context);
+            atsc3_mmt_mfu_context = NULL;
+        }
+        *atsc3_mmt_mfu_context_p = NULL;
+    }
+}
+
+
 void mmtp_mfu_process_from_payload_with_context(udp_packet_t *udp_packet,
                                                 mmtp_mpu_packet_t* mmtp_mpu_packet,
                                                 atsc3_mmt_mfu_context_t* atsc3_mmt_mfu_context) {

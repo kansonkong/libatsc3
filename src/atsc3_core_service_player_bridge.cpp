@@ -59,8 +59,6 @@ IAtsc3NdkPHYBridge* atsc3_ndk_phy_bridge_get_instance() {
 void atsc3_core_service_application_bridge_init(IAtsc3NdkApplicationBridge* atsc3NdkApplicationBridge) {
     Atsc3NdkApplicationBridge_ptr = atsc3NdkApplicationBridge;
     printf("atsc3_core_service_application_bridge_init with Atsc3NdkApplicationBridge_ptr: %p", Atsc3NdkApplicationBridge_ptr);
-    Atsc3NdkApplicationBridge_ptr->LogMsg("atsc3_core_service_application_bridge_init->LogMsg()");
-
     Atsc3NdkApplicationBridge_ptr->LogMsgF("atsc3_core_service_application_bridge_init - Atsc3NdkApplicationBridge_ptr: %p", Atsc3NdkApplicationBridge_ptr);
 
     //set global logging levels
@@ -77,67 +75,82 @@ void atsc3_core_service_application_bridge_init(IAtsc3NdkApplicationBridge* atsc
     _LLS_SLT_PARSER_DEBUG_ENABLED = 1;
     _LLS_SLT_PARSER_TRACE_ENABLED = 1;
 #endif
-        _LLS_ALC_UTILS_DEBUG_ENABLED = 0;
-        _ALC_UTILS_DEBUG_ENABLED = 0;
-        _ALC_RX_TRACE_ENABLED = 0;
+    _LLS_ALC_UTILS_DEBUG_ENABLED = 0;
+    _ALC_UTILS_DEBUG_ENABLED = 0;
+    _ALC_RX_TRACE_ENABLED = 0;
 
-        //jjustman-2020-04-23 - TLV parsing metrics enable inline ALP parsing
-        __ATSC3_SL_TLV_USE_INLINE_ALP_PARSER_CALL__ = 1;
+    //jjustman-2020-04-23 - TLV parsing metrics enable inline ALP parsing
+    __ATSC3_SL_TLV_USE_INLINE_ALP_PARSER_CALL__ = 1;
 
-        if(!lls_slt_monitor) {
-            lls_slt_monitor = lls_slt_monitor_create();
-            //wire up a lls event for SLS table
-            lls_slt_monitor->atsc3_lls_on_sls_table_present_callback = &atsc3_lls_on_sls_table_present_ndk;
-            lls_slt_monitor->atsc3_lls_on_aeat_table_present_callback = &atsc3_lls_on_aeat_table_present_ndk;
+    atsc3_core_service_application_bridge_reset_context();
 
-            mmtp_flow = mmtp_flow_new();
-            udp_flow_latest_mpu_sequence_number_container = udp_flow_latest_mpu_sequence_number_container_t_init();
+    atsc3_ndk_cache_temp_folder_path = Atsc3NdkApplicationBridge_ptr->get_android_temp_folder();
 
+    //jjustman-2020-04-16 - hack to clean up cache directory payload and clear out any leftover cache objects (e.g. ROUTE/DASH toi's)
+    //no linkage forfs::remove_all(atsc3_ndk_cache_temp_folder_path + "/");
+    //https://github.com/android/ndk/issues/609
 
-            //MMT/MFU callback contexts
-            atsc3_mmt_mfu_context = atsc3_mmt_mfu_context_new();
+    atsc3_ndk_cache_temp_folder_purge((char*)(atsc3_ndk_cache_temp_folder_path).c_str());
 
-            //wire up atsc3_mmt_mpu_on_sequence_mpu_metadata_present to parse out our NALs as needed for android MediaCodec init
-            atsc3_mmt_mfu_context->atsc3_mmt_mpu_on_sequence_mpu_metadata_present = &atsc3_mmt_mpu_on_sequence_mpu_metadata_present_ndk;
+    chdir(atsc3_ndk_cache_temp_folder_path.c_str());
 
-            atsc3_mmt_mfu_context->atsc3_mmt_mpu_mfu_on_sample_complete = &atsc3_mmt_mpu_mfu_on_sample_complete_ndk;
-            atsc3_mmt_mfu_context->atsc3_mmt_mpu_mfu_on_sample_corrupt = &atsc3_mmt_mpu_mfu_on_sample_corrupt_ndk;
-            //todo: search thru NAL's as needed here and discard anything that intra-NAL..
-            atsc3_mmt_mfu_context->atsc3_mmt_mpu_mfu_on_sample_corrupt_mmthsample_header = &atsc3_mmt_mpu_mfu_on_sample_corrupt_mmthsample_header_ndk;
-            atsc3_mmt_mfu_context->atsc3_mmt_mpu_mfu_on_sample_missing = &atsc3_mmt_mpu_mfu_on_sample_missing_ndk;
+    Atsc3NdkApplicationBridge_ptr->LogMsgF("atsc3_phy_player_bridge_init - completed, temp folder path: %s", atsc3_ndk_cache_temp_folder_path.c_str());
+    /**
+     * additional SLS monitor related callbacks wired up in
+     *
+        lls_sls_alc_monitor->atsc3_lls_sls_alc_on_object_close_flag_s_tsid_content_location = &atsc3_lls_sls_alc_on_object_close_flag_s_tsid_content_location_ndk;
+        //write up event callback for alc MPD patching
+        lls_sls_alc_monitor->atsc3_lls_sls_alc_on_route_mpd_patched = &atsc3_lls_sls_alc_on_route_mpd_patched_ndk;
+     */
+}
 
-            /*
-             * TODO: jjustman-2019-10-20 - extend context callback interface with service_id
-             */
-            atsc3_mmt_mfu_context->atsc3_mmt_signalling_information_on_video_packet_id_with_mpu_timestamp_descriptor = &atsc3_mmt_signalling_information_on_video_packet_id_with_mpu_timestamp_descriptor_ndk;
-            atsc3_mmt_mfu_context->atsc3_mmt_signalling_information_on_audio_packet_id_with_mpu_timestamp_descriptor = &atsc3_mmt_signalling_information_on_audio_packet_id_with_mpu_timestamp_descriptor_ndk;
-            atsc3_mmt_mfu_context->atsc3_mmt_signalling_information_on_stpp_packet_id_with_mpu_timestamp_descriptor  = &atsc3_mmt_signalling_information_on_stpp_packet_id_with_mpu_timestamp_descriptor_ndk;
+/*
+ * jjustman-2020-08-31 - todo: refactor this into a context handle
+ */
+void atsc3_core_service_application_bridge_reset_context() {
+    if (lls_slt_monitor) {
+        atsc3_lls_slt_monitor_free(&lls_slt_monitor);
+    }
+    if(mmtp_flow) {
+        mmtp_flow_free_mmtp_asset_flow(mmtp_flow);
+    }
+    if(udp_flow_latest_mpu_sequence_number_container) {
+        udp_flow_latest_mpu_sequence_number_container_t_release(udp_flow_latest_mpu_sequence_number_container);
+    }
 
-            //extract out one trun sampleduration for essence timing
-            atsc3_mmt_mfu_context->atsc3_mmt_mpu_on_sequence_movie_fragment_metadata_present = &atsc3_mmt_mpu_on_sequence_movie_fragment_metadata_present_ndk;
+    if(atsc3_mmt_mfu_context) {
+        atsc3_mmt_mfu_context_free(&atsc3_mmt_mfu_context);
+    }
 
-            atsc3_ndk_cache_temp_folder_path = Atsc3NdkApplicationBridge_ptr->get_android_temp_folder();
+    lls_slt_monitor = lls_slt_monitor_create();
+    //wire up a lls event for SLS table
+    lls_slt_monitor->atsc3_lls_on_sls_table_present_callback = &atsc3_lls_on_sls_table_present_ndk;
+    lls_slt_monitor->atsc3_lls_on_aeat_table_present_callback = &atsc3_lls_on_aeat_table_present_ndk;
 
-            //jjustman-2020-04-16 - hack to clean up cache directory payload and clear out any leftover cache objects (e.g. ROUTE/DASH toi's)
-            //no linkage forfs::remove_all(atsc3_ndk_cache_temp_folder_path + "/");
-            //https://github.com/android/ndk/issues/609
+    mmtp_flow = mmtp_flow_new();
+    udp_flow_latest_mpu_sequence_number_container = udp_flow_latest_mpu_sequence_number_container_t_init();
 
-            atsc3_ndk_cache_temp_folder_purge((char*)(atsc3_ndk_cache_temp_folder_path).c_str());
+    //MMT/MFU callback contexts
+    atsc3_mmt_mfu_context = atsc3_mmt_mfu_context_new();
 
-            chdir(atsc3_ndk_cache_temp_folder_path.c_str());
+    //wire up atsc3_mmt_mpu_on_sequence_mpu_metadata_present to parse out our NALs as needed for android MediaCodec init
+    atsc3_mmt_mfu_context->atsc3_mmt_mpu_on_sequence_mpu_metadata_present = &atsc3_mmt_mpu_on_sequence_mpu_metadata_present_ndk;
 
-            Atsc3NdkApplicationBridge_ptr->LogMsgF("atsc3_phy_player_bridge_init - completed, temp folder path: %s", atsc3_ndk_cache_temp_folder_path.c_str());
-        } else {
-            Atsc3NdkApplicationBridge_ptr->LogMsgF("atsc3_phy_player_bridge_init - ignoring init as we are already configured");
-        }
+    atsc3_mmt_mfu_context->atsc3_mmt_mpu_mfu_on_sample_complete = &atsc3_mmt_mpu_mfu_on_sample_complete_ndk;
+    atsc3_mmt_mfu_context->atsc3_mmt_mpu_mfu_on_sample_corrupt = &atsc3_mmt_mpu_mfu_on_sample_corrupt_ndk;
+    //todo: search thru NAL's as needed here and discard anything that intra-NAL..
+    atsc3_mmt_mfu_context->atsc3_mmt_mpu_mfu_on_sample_corrupt_mmthsample_header = &atsc3_mmt_mpu_mfu_on_sample_corrupt_mmthsample_header_ndk;
+    atsc3_mmt_mfu_context->atsc3_mmt_mpu_mfu_on_sample_missing = &atsc3_mmt_mpu_mfu_on_sample_missing_ndk;
 
-        /**
-         * additional SLS monitor related callbacks wired up in
-         *
-            lls_sls_alc_monitor->atsc3_lls_sls_alc_on_object_close_flag_s_tsid_content_location = &atsc3_lls_sls_alc_on_object_close_flag_s_tsid_content_location_ndk;
-            //write up event callback for alc MPD patching
-            lls_sls_alc_monitor->atsc3_lls_sls_alc_on_route_mpd_patched = &atsc3_lls_sls_alc_on_route_mpd_patched_ndk;
-         */
+    /*
+     * TODO: jjustman-2019-10-20 - extend context callback interface with service_id
+     */
+    atsc3_mmt_mfu_context->atsc3_mmt_signalling_information_on_video_packet_id_with_mpu_timestamp_descriptor = &atsc3_mmt_signalling_information_on_video_packet_id_with_mpu_timestamp_descriptor_ndk;
+    atsc3_mmt_mfu_context->atsc3_mmt_signalling_information_on_audio_packet_id_with_mpu_timestamp_descriptor = &atsc3_mmt_signalling_information_on_audio_packet_id_with_mpu_timestamp_descriptor_ndk;
+    atsc3_mmt_mfu_context->atsc3_mmt_signalling_information_on_stpp_packet_id_with_mpu_timestamp_descriptor = &atsc3_mmt_signalling_information_on_stpp_packet_id_with_mpu_timestamp_descriptor_ndk;
+
+    //extract out one trun sampleduration for essence timing
+    atsc3_mmt_mfu_context->atsc3_mmt_mpu_on_sequence_movie_fragment_metadata_present = &atsc3_mmt_mpu_on_sequence_movie_fragment_metadata_present_ndk;
 }
 
 void atsc3_core_service_phy_bridge_init(IAtsc3NdkPHYBridge* atsc3NdkPHYBridge) {
