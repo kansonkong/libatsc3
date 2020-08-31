@@ -22,7 +22,7 @@
 # jjustman-2020-08-25 - adding in daa in ADO DAA branch
 [submodule "android/sample_app_no_phy/ExoPlayer"]
 	path = android/sample_app_no_phy/ExoPlayer
-	url = https://dev.azure.com/NGWP/Middleware/_git/NGWP/Middleware/ExoPlayer
+	url = https://dev.azure.com/NGWP/Middleware/_git/ExoPlayer
 	branch = daa
 	
 	
