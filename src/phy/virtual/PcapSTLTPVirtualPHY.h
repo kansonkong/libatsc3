@@ -44,14 +44,11 @@ class PcapSTLTPVirtualPHY : public IAtsc3NdkPHYClient
 public:
     PcapSTLTPVirtualPHY();
 
-    int Init();
-    int Prepare(const char *strDevListInfo, int delim1, int delim2);
-    int Open(int fd, int bus, int addr);
-    int Tune(int freqKHz, int plpId);
-    int Stop();
-    int Close();
-    int Reset();
-    int Uninit();
+	virtual int  init();
+	virtual int  run();
+	virtual bool is_running();
+	virtual int  stop();
+	virtual int  deinit();
 
     /*
      * pcap methods

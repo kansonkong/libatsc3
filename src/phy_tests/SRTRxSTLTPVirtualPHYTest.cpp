@@ -38,9 +38,9 @@ int test_srt_stltp_with_bna_rx() {
 
 	//atsc3_core_service_bridge_process_packet_phy(phy_payload_to_process);
 
-	srtRxSTLTPVirtualPHY->SetRxUdpPacketProcessCallback(phy_rx_udp_packet_process_callback);
+	srtRxSTLTPVirtualPHY->setRxUdpPacketProcessCallback(phy_rx_udp_packet_process_callback);
 
-	srtRxSTLTPVirtualPHY->atsc3_srt_thread_run();
+	srtRxSTLTPVirtualPHY->run();
 
 
 	double srt_thread_run_start_time = gt();
@@ -50,9 +50,9 @@ int test_srt_stltp_with_bna_rx() {
 	sleep(1);
 	while((gt() - srt_thread_run_start_time) < 60 &&  !should_break) {
 		usleep(1000000);
-		_SRT_STLTP_VIRTUAL_TEST_INFO("srt_is_running: %d", srtRxSTLTPVirtualPHY->is_srt_running());
+		_SRT_STLTP_VIRTUAL_TEST_INFO("srt_is_running: %d", srtRxSTLTPVirtualPHY->is_running());
 		if(loop_count++ > 10) {
-			should_break = !srtRxSTLTPVirtualPHY->is_srt_running();
+			should_break = !srtRxSTLTPVirtualPHY->is_running();
 		}
 	}
 	double srt_thread_run_end_time = gt();
@@ -66,7 +66,7 @@ int test_srt_stltp_with_bna_rx() {
 			srt_thread_run_end_time,
 			srt_thread_run_end_time - srt_thread_run_start_time);
 
-	srtRxSTLTPVirtualPHY->atsc3_srt_thread_stop();
+	srtRxSTLTPVirtualPHY->stop();
 
 	delete srtRxSTLTPVirtualPHY;
 

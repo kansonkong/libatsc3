@@ -34,7 +34,7 @@ int test_stltp_1m_100000_packet_replay() {
 
 	//atsc3_core_service_bridge_process_packet_phy(phy_payload_to_process);
 
-	pcapSTLTPVirtualPHY->SetRxUdpPacketProcessCallback(phy_rx_udp_packet_process_callback);
+	pcapSTLTPVirtualPHY->setRxUdpPacketProcessCallback(phy_rx_udp_packet_process_callback);
 	pcapSTLTPVirtualPHY->atsc3_pcap_stltp_listen_ip_port_plp("239.239.239.98", "30000", 0);
 
 
@@ -59,7 +59,7 @@ int test_stltp_1m_100000_packet_replay() {
 	atsc3_pcap_replay_context_volitale = pcapSTLTPVirtualPHY->get_pcap_replay_context_status_volatile();
 
 	double first_packet_ts_s = (atsc3_pcap_replay_context_volitale->first_wallclock_timeval.tv_sec + (atsc3_pcap_replay_context_volitale->first_wallclock_timeval.tv_usec / 1000000.0));
-	double last_packet_ts_s = (atsc3_pcap_replay_context_volitale->last_packet_ts_sec + (atsc3_pcap_replay_context_volitale->last_packet_ts_usec / 1000000.0));
+	double last_packet_ts_s = (atsc3_pcap_replay_context_volitale->last_wallclock_timeval.tv_sec + (atsc3_pcap_replay_context_volitale->last_wallclock_timeval.tv_usec / 1000000.0));
 
 	_PCAP_STLTP_VIRTUAL_TEST_INFO("...completed, start time: %0.3f, end time: %0.3f, duration: %0.3f, first_packet_ts_sec: %0.3f, last_packet_ts_sec: %0.3f, delta: %0.3f",
 			pcap_thread_run_start_time,

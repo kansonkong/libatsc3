@@ -39,11 +39,11 @@ class SRTRxSTLTPVirtualPHY : public IAtsc3NdkPHYClient {
         SRTRxSTLTPVirtualPHY();
         SRTRxSTLTPVirtualPHY(string srtConnectionSource);
 
-        virtual int init() override;
-        virtual int run() override;
+        virtual int  init() override;
+        virtual int  run() override;
         virtual bool is_running() override;
-        virtual int stop() override;
-        virtual int deinit() override;
+        virtual int  stop() override;
+        virtual int  deinit() override;
 
         /*
          * SRT methods
