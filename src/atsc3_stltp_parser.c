@@ -1,5 +1,5 @@
 /*
- * a
+ *
  *
  *  Created on: Mar 16, 2019
  *      Author: jjustman
@@ -36,7 +36,7 @@
 #include "atsc3_stltp_parser.h"
 
 int _STLTP_PARSER_INFO_ENABLED = 1;
-int _STLTP_PARSER_DEBUG_ENABLED = 1;
+int _STLTP_PARSER_DEBUG_ENABLED = 0;
 int _STLTP_PARSER_TRACE_ENABLED = 0;
 
 
