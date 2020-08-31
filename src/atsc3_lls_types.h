@@ -895,12 +895,12 @@ typedef struct lls_slt_monitor {
 	//representative alc SLS - session_flows are all the ALC flow udp/port/tsi tuples
     ATSC3_VECTOR_BUILDER_STRUCT(lls_sls_alc_session_flows);
 
-    //LATEST:	last successfully processed SLT table
-	lls_table_t* lls_latest_slt_table;
-
 	//jjustman-2019-10-19: todo: keep track of lls_slt tables by group_id
 	ATSC3_VECTOR_BUILDER_STRUCT(lls_slt_service_id_group_id_cache);
-    
+
+    //LATEST:	last successfully processed SLT table
+    lls_table_t* lls_latest_slt_table;
+
     //LATEST: 	last successfully processed AEAT table
 	//			use this against aeat_table_latest.atsc3_aeat_table_t
     lls_table_t* lls_latest_aeat_table;
