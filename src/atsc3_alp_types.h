@@ -17,6 +17,7 @@ typedef struct pcap pcap_t;
 #include "atsc3_vector_builder.h"
 #include "atsc3_utils.h"
 #include "atsc3_logging_externs.h"
+#include "atsc3_ip_udp_rtp_types.h"
 #include "atsc3_stltp_types.h"
 
 #if defined (__cplusplus)
@@ -169,6 +170,7 @@ typedef struct alp_packet_header  {
 } alp_packet_header_t;
 
 typedef struct atsc3_alp_packet {
+	atsc3_rtp_header_timestamp_t	bootstrap_timing_data_timestamp_short_reference;
 	uint8_t				plp_num;
 
     alp_packet_header_t alp_packet_header;

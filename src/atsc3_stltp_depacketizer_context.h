@@ -20,6 +20,11 @@
 extern "C" {
 #endif
 
+#define ATSC3_STLTP_DEPACKETIZER_ALL_PLPS_VALUE 255
+#define ATSC3_STLTP_DEPACKETIZER_ALL_PLPS_INNER_RTP_PORT 0
+
+//method callbacks for depacketization for baseband / alp packets, preamble, timing and management
+
 typedef void(*atsc3_stltp_baseband_alp_packet_collection_callback_f)(atsc3_alp_packet_collection_t* atsc3_alp_packet_collection);
 typedef void(*atsc3_stltp_baseband_alp_packet_collection_callback_with_context_f)(atsc3_alp_packet_collection_t* atsc3_alp_packet_collection, void* context);
 
@@ -64,7 +69,6 @@ typedef struct atsc3_stltp_depacketizer_context {
 atsc3_stltp_depacketizer_context_t* atsc3_stltp_depacketizer_context_new();
 void atsc3_stltp_depacketizer_context_free(atsc3_stltp_depacketizer_context_t** atsc3_stltp_depacketizer_context_p);
 
-#define ATSC3_STLTP_DEPACKETIZER_ALL_PLPS_INNER_RTP_PORT 0
 void atsc3_stltp_depacketizer_context_set_all_plps(atsc3_stltp_depacketizer_context_t* atsc3_stltp_depacketizer_context);
 
 //forward declare atsc3_stltp_depacketizer_context_t for now for header circular resolution

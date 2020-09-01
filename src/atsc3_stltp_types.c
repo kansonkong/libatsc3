@@ -126,6 +126,21 @@ void atsc3_baseband_packet_set_plp_from_stltp_baseband_packet(atsc3_baseband_pac
 }
 
 
+void atsc3_baseband_packet_set_bootstrap_timing_ref_from_stltp_baseband_packet(atsc3_baseband_packet_t* atsc3_baseband_packet, atsc3_stltp_baseband_packet_t* atsc3_stltp_baseband_packet) {
+	if(!atsc3_baseband_packet || !atsc3_stltp_baseband_packet || !atsc3_stltp_baseband_packet->ip_udp_rtp_packet_inner || !atsc3_stltp_baseband_packet->ip_udp_rtp_packet_inner->rtp_header) {
+		__STLTP_TYPES_WARN("atsc3_baseband_packet_set_bootstrap_timing_ref_from_stltp_baseband_packet: packet(s) are null: atsc3_baseband_packet: %p, atsc3_stltp_baseband_packet: %p", atsc3_baseband_packet, atsc3_stltp_baseband_packet);
+		return;
+	}
+
+	//first 22 bits from timestamp field
+	atsc3_baseband_packet->bootstrap_timing_data_timestamp_short_reference.seconds_pre = 0x3FFFFF & (atsc3_stltp_baseband_packet->ip_udp_rtp_packet_inner->rtp_header->timestamp >> 10);
+
+	//last 10 bits from timestamp field
+	atsc3_baseband_packet->bootstrap_timing_data_timestamp_short_reference.a_milliseconds_pre = 0x3FF & atsc3_stltp_baseband_packet->ip_udp_rtp_packet_inner->rtp_header->timestamp;
+
+}
+
+
 
 /**
  
