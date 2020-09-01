@@ -34,8 +34,9 @@ extern "C" {
  **/
 
 typedef struct atsc3_baseband_packet {
-	atsc3_rtp_header_timestamp_t	bootstrap_timing_data_timestamp_short_reference;
 	uint8_t		plp_num;
+
+	atsc3_rtp_header_timestamp_t	bootstrap_timing_data_timestamp_short_reference;
 
     uint8_t     base_field_mode;    //1 bit
     uint16_t    base_field_pointer; //either 7 bits or 13 bits

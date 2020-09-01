@@ -16,7 +16,8 @@
  * A/324 Table 8.2
  *
   	seconds_pre shall carry a value equal to the 22 least significant bits (LSBs) of the seconds field of the Bootstrap_Timing_Data (), described in Table 8.3.
-	tha-milliseconds_pre shall carry a 10-bit value identical to the value contained in the 3rd through 12 MSBs of the nanoseconds field of the Bootstrap_Timing_Data (), described in Table 8.3.
+
+	a-milliseconds_pre shall carry a 10-bit value identical to the value contained in the 3rd through 12 MSBs of the nanoseconds field of the Bootstrap_Timing_Data (), described in Table 8.3.
 
 	Note that the a-millisecond_pre value is used in the RTP Header Timestamp only as an identifier of the Reference Emission Time of the Frame in which its contents belong; consequently, the
 	somewhat longer Period of an a-millisecond_pre relative to precisely one millisecond is immaterial for this use.

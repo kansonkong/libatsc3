@@ -74,10 +74,8 @@ https://www.atsc.org/wp-content/uploads/2016/10/A322-2018-Physical-Layer-Protoco
 
 typedef struct atsc3_stltp_baseband_packet {
     atsc3_ip_udp_rtp_packet_t*     ip_udp_rtp_packet_outer;
-    //atsc3_rtp_header_t*            rtp_header_outer; //pointer from ip_udp_rtp_packet_outer->rtp_header
     
     atsc3_ip_udp_rtp_packet_t*     ip_udp_rtp_packet_inner;
-    //atsc3_rtp_header_t*            rtp_header_inner; //pointer from ip_udp_rtp_packet_outer->rtp_header
 
     uint32_t                       fragment_count;
     bool                           is_complete;
@@ -379,8 +377,8 @@ ATSC3_VECTOR_BUILDER_METHODS_INTERFACE(L1_detail_signaling, L1D_bonded_bsid_bloc
 ATSC3_VECTOR_BUILDER_METHODS_INTERFACE(L1_detail_signaling, L1D_subframe_parameters);
 
 typedef struct atsc3_preamble_packet {
-    
-    //TODO: implement L1 basic/L1 detail
+	atsc3_rtp_header_timestamp_t	bootstrap_timing_data_timestamp_short_reference;
+
     uint16_t                    length;
     L1_basic_signaling_t        L1_basic_signaling;
     L1_detail_signaling_t       L1_detail_signaling;
@@ -391,11 +389,9 @@ typedef struct atsc3_preamble_packet {
 typedef struct atsc3_stltp_preamble_packet {
     
     atsc3_ip_udp_rtp_packet_t*      ip_udp_rtp_packet_outer;
-    //atsc3_rtp_header_t*             rtp_header_outer; //pointer from ip_udp_rtp_packet_outer->rtp_header
     
     atsc3_ip_udp_rtp_packet_t*      ip_udp_rtp_packet_inner;
-    //atsc3_rtp_header_t*             rtp_header_inner; //pointer from ip_udp_rtp_packet_outer->rtp_header
-    
+
     uint32_t                        fragment_count;
     bool                            is_complete;
     
@@ -404,16 +400,20 @@ typedef struct atsc3_stltp_preamble_packet {
     uint16_t                         payload_offset;
     uint16_t                         payload_length;
    
-    atsc3_preamble_packet_t          preamble_packet;
+    atsc3_preamble_packet_t*          preamble_packet;
 } atsc3_stltp_preamble_packet_t;
 
     
 //ATSC A/324:2018 - STL
 //Table 8.3 - Timing and Management Stream Packet Payload
 
+#define ATSC3_A324_A_MILLISECOND_PERIOD 1.048576
+
 typedef struct bootstrap_timing_data {
     uint32_t    seconds;
     uint32_t    nanoseconds;
+
+    atsc3_rtp_header_timestamp_t bootstrap_timing_data_timestamp_short_reference;
 } atsc3_bootstrap_timing_data_t;
     
 typedef struct per_transmitter_data {
@@ -438,6 +438,8 @@ typedef struct error_check_data {
 //Table 8.3 - Timing and Management Stream Packet Payload
     
 typedef struct timing_management_packet {
+	atsc3_rtp_header_timestamp_t	bootstrap_timing_data_timestamp_short_reference;
+
     //Structure_Data() {
     uint16_t    length;
 	uint8_t		version_major:4;
@@ -500,7 +502,7 @@ typedef struct atsc3_stltp_timing_management_packet {
 	uint16_t 					    payload_offset;
 	uint16_t 					    payload_length;
 
-	atsc3_timing_management_packet_t      timing_management_packet;
+	atsc3_timing_management_packet_t*	timing_management_packet;
     
 } atsc3_stltp_timing_management_packet_t;
 
@@ -526,6 +528,10 @@ typedef struct atsc3_stltp_tunnel_baseband_packet_pending_by_plp {
 
 } atsc3_stltp_tunnel_baseband_packet_pending_by_plp_t;
 
+
+ATSC3_VECTOR_BUILDER_DISTINCT_TYPEDEF_STRUCT_DEFINITION(atsc3_stltp_preamble_packet);
+ATSC3_VECTOR_BUILDER_DISTINCT_TYPEDEF_STRUCT_DEFINITION(atsc3_stltp_timing_management_packet);
+
 typedef struct atsc3_stltp_tunnel_packet {
 
     //outer RTP packet pointer, make sure to seek 40 bytes for IP/UDP/RTP header offset
@@ -548,12 +554,12 @@ typedef struct atsc3_stltp_tunnel_packet {
     atsc3_stltp_tunnel_baseband_packet_pending_by_plp_t* atsc3_stltp_tunnel_baseband_packet_pending_by_plp;
 
 	//atsc3_stltp_preamble_packet_t* 		atsc3_stltp_preamble_packet;
-    ATSC3_VECTOR_BUILDER_STRUCT(atsc3_stltp_preamble_packet);
+    ATSC3_VECTOR_BUILDER_DISTINCT_TYPEDEF_STRUCT_INSTANCE(atsc3_stltp_preamble_packet);
     atsc3_stltp_preamble_packet_t*          atsc3_stltp_preamble_packet_pending;
     //todo: add short fragment re-assembly for preamble (if needed)
     
     //atsc3_stltp_timing_management_packet_t* atsc3_stltp_timing_management_packet;
-    ATSC3_VECTOR_BUILDER_STRUCT(atsc3_stltp_timing_management_packet);
+    ATSC3_VECTOR_BUILDER_DISTINCT_TYPEDEF_STRUCT_INSTANCE(atsc3_stltp_timing_management_packet);
     atsc3_stltp_timing_management_packet_t* atsc3_stltp_timing_management_packet_pending;
     //todo: add short fragment re-assembly for TMP (timing&management)
 
@@ -566,7 +572,8 @@ ATSC3_VECTOR_BUILDER_METHODS_INTERFACE(atsc3_stltp_tunnel_packet, atsc3_stltp_ba
 atsc3_stltp_baseband_packet_t* atsc3_stltp_baseband_packet_new_and_init(atsc3_stltp_tunnel_packet_t* atsc3_stltp_tunnel_packet);
 void atsc3_baseband_packet_set_plp_from_stltp_baseband_packet(atsc3_baseband_packet_t* atsc3_baseband_packet, atsc3_stltp_baseband_packet_t* atsc3_stltp_baseband_packet);
 void atsc3_baseband_packet_set_bootstrap_timing_ref_from_stltp_baseband_packet(atsc3_baseband_packet_t* atsc3_baseband_packet, atsc3_stltp_baseband_packet_t* atsc3_stltp_baseband_packet);
-
+void atsc3_preamble_packet_set_bootstrap_timing_ref_from_stltp_preamble_packet(atsc3_preamble_packet_t* atsc3_preamble_packet, atsc3_stltp_preamble_packet_t* atsc3_stltp_preamble_packet);
+void atsc3_timing_management_packet_set_bootstrap_timing_ref_from_stltp_preamble_packet(atsc3_timing_management_packet_t* atsc3_timing_management_packet, atsc3_stltp_timing_management_packet_t* atsc3_stltp_timing_management_packet);
 
 ATSC3_VECTOR_BUILDER_METHODS_INTERFACE(atsc3_stltp_tunnel_packet, atsc3_stltp_preamble_packet);
 ATSC3_VECTOR_BUILDER_METHODS_INTERFACE(atsc3_stltp_tunnel_packet, atsc3_stltp_timing_management_packet);
