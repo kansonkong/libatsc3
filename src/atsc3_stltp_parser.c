@@ -36,9 +36,9 @@
 #include "atsc3_stltp_parser.h"
 
 int _STLTP_PARSER_INFO_ENABLED = 1;
+int _STLTP_PARSER_DUMP_ENABLED = 0;
 int _STLTP_PARSER_DEBUG_ENABLED = 0;
 int _STLTP_PARSER_TRACE_ENABLED = 0;
-
 
 
 /*
@@ -1202,7 +1202,7 @@ cleanup:
 
 void atsc3_timing_management_packet_dump(atsc3_timing_management_packet_t* atsc3_timing_management_packet) {
 	//atsc3_timing_management_packet
-	__STLTP_PARSER_INFO("");
+	__STLTP_PARSER_DUMP("");
     
 }
 
@@ -1566,9 +1566,23 @@ cleanup:
     return NULL;
 }
 
+
+void atsc3_baseband_packet_dump(atsc3_baseband_packet_t* atsc3_baseband_packet) {
+    __STLTP_PARSER_DUMP("baseband: PLP: %d, seconds_pre: 0x%02x, a_milli_pre: 0x%02x, base_field_mode: 0x%x, base field pointer: 0x%02x, option_field_mode: 0x%01x, ext_type: 0x%01x, ext_len: 0x%02x, extension: 0x%04x",
+    		atsc3_baseband_packet->plp_num,
+			atsc3_baseband_packet->bootstrap_timing_data_timestamp_short_reference.seconds_pre,
+			atsc3_baseband_packet->bootstrap_timing_data_timestamp_short_reference.a_milliseconds_pre,
+			atsc3_baseband_packet->base_field_mode,
+			atsc3_baseband_packet->base_field_pointer,
+			atsc3_baseband_packet->option_field_mode,
+			atsc3_baseband_packet->ext_type,
+			atsc3_baseband_packet->ext_len,
+			atsc3_baseband_packet->extension);
+}
+
 void atsc3_preamble_packet_dump(atsc3_preamble_packet_t* atsc3_preamble_packet) {
     
-    __STLTP_PARSER_INFO("preamble: L1B: version: %d, mimo: %d, lls_flag: %d, time_info: %d, return_channel: %d, papr_reduction: %d, frame_length mode: %d",
+    __STLTP_PARSER_DUMP("preamble: L1B: version: %d, mimo: %d, lls_flag: %d, time_info: %d, return_channel: %d, papr_reduction: %d, frame_length mode: %d",
                         atsc3_preamble_packet->L1_basic_signaling.L1B_version,
                         atsc3_preamble_packet->L1_basic_signaling.L1B_mimo_scattered_pilot_encoding,
                         atsc3_preamble_packet->L1_basic_signaling.L1B_lls_flag,
@@ -1578,16 +1592,16 @@ void atsc3_preamble_packet_dump(atsc3_preamble_packet_t* atsc3_preamble_packet) 
                         atsc3_preamble_packet->L1_basic_signaling.L1B_frame_length_mode
                         );
     if(atsc3_preamble_packet->L1_basic_signaling.L1B_frame_length_mode == 0) {
-        __STLTP_PARSER_INFO("preamble: L1B: frame length: %d, excess samples per symbol: %d",
+    	__STLTP_PARSER_DUMP("preamble: L1B: frame length: %d, excess samples per symbol: %d",
                             atsc3_preamble_packet->L1_basic_signaling.L1B_frame_length,
                             atsc3_preamble_packet->L1_basic_signaling.L1B_excess_samples_per_symbol);
     } else {
-        __STLTP_PARSER_INFO("preamble: L1B: time offset: %d, additional samples: %d",
+    	__STLTP_PARSER_DUMP("preamble: L1B: time offset: %d, additional samples: %d",
                             atsc3_preamble_packet->L1_basic_signaling.L1B_time_offset,
                             atsc3_preamble_packet->L1_basic_signaling.L1B_additional_samples);
     }
     
-    __STLTP_PARSER_INFO("preamble: L1B: num subframes: %d, preamble num symbols: %d, preamble reduced carriers: %d, l1_detail content tag: %d, l1_detail size bytes: %d",
+    __STLTP_PARSER_DUMP("preamble: L1B: num subframes: %d, preamble num symbols: %d, preamble reduced carriers: %d, l1_detail content tag: %d, l1_detail size bytes: %d",
                         atsc3_preamble_packet->L1_basic_signaling.L1B_num_subframes,
                         atsc3_preamble_packet->L1_basic_signaling.L1B_preamble_num_symbols,
                         atsc3_preamble_packet->L1_basic_signaling.L1B_preamble_reduced_carriers,
@@ -1595,13 +1609,13 @@ void atsc3_preamble_packet_dump(atsc3_preamble_packet_t* atsc3_preamble_packet) 
                         atsc3_preamble_packet->L1_basic_signaling.L1B_L1_Detail_size_bytes
                         );
     
-    __STLTP_PARSER_INFO("preamble: L1B: l1 detail fec type: %d, additional parity mode: %d, l1d total cells: %d",
+    __STLTP_PARSER_DUMP("preamble: L1B: l1 detail fec type: %d, additional parity mode: %d, l1d total cells: %d",
                         atsc3_preamble_packet->L1_basic_signaling.L1B_L1_Detail_fec_type,
                         atsc3_preamble_packet->L1_basic_signaling.L1B_L1_Detail_additional_parity_mode,
 						atsc3_preamble_packet->L1_basic_signaling.L1B_L1_Detail_total_cells
                         );
     
-	__STLTP_PARSER_INFO("preamble: L1B: l1b first sub mimo: %d, first sub miso: %d, first sub fft size: %d, first sub reduced carriers: %d, first sub guard interval: %d",
+    __STLTP_PARSER_DUMP("preamble: L1B: l1b first sub mimo: %d, first sub miso: %d, first sub fft size: %d, first sub reduced carriers: %d, first sub guard interval: %d",
 						atsc3_preamble_packet->L1_basic_signaling.L1B_first_sub_mimo,
 						atsc3_preamble_packet->L1_basic_signaling.L1B_first_sub_miso,
 						atsc3_preamble_packet->L1_basic_signaling.L1B_first_sub_fft_size,
@@ -1609,7 +1623,7 @@ void atsc3_preamble_packet_dump(atsc3_preamble_packet_t* atsc3_preamble_packet) 
 						atsc3_preamble_packet->L1_basic_signaling.L1B_first_sub_guard_interval
 						);
 	
-	__STLTP_PARSER_INFO("preamble: L1B: first sub num ofdm symbols: %d, first sub scattered pilot pattern: %d, first sub scatterd pilot boost: %d, first sub sbs_first: %d, first sub sbs_last: %d",
+    __STLTP_PARSER_DUMP("preamble: L1B: first sub num ofdm symbols: %d, first sub scattered pilot pattern: %d, first sub scatterd pilot boost: %d, first sub sbs_first: %d, first sub sbs_last: %d",
 						atsc3_preamble_packet->L1_basic_signaling.L1B_first_sub_num_ofdm_symbols,
 						atsc3_preamble_packet->L1_basic_signaling.L1B_first_sub_scattered_pilot_pattern,
 						atsc3_preamble_packet->L1_basic_signaling.L1B_first_sub_scattered_pilot_boost,
@@ -1618,7 +1632,7 @@ void atsc3_preamble_packet_dump(atsc3_preamble_packet_t* atsc3_preamble_packet) 
 						);
 	
 	
-	__STLTP_PARSER_INFO("preamble: L1D: version: %d, num_rf: %d, l1d_subframe_count: %d, time_info flag: %d",
+    __STLTP_PARSER_DUMP("preamble: L1D: version: %d, num_rf: %d, l1d_subframe_count: %d, time_info flag: %d",
 						atsc3_preamble_packet->L1_detail_signaling.L1D_version,
 						atsc3_preamble_packet->L1_detail_signaling.L1D_num_rf,
 						atsc3_preamble_packet->L1_detail_signaling.L1D_subframe_parameters_v.count,
@@ -1628,21 +1642,21 @@ void atsc3_preamble_packet_dump(atsc3_preamble_packet_t* atsc3_preamble_packet) 
 	if(atsc3_preamble_packet->L1_basic_signaling.L1B_time_info_flag != 0x0) {
 		if(atsc3_preamble_packet->L1_basic_signaling.L1B_time_info_flag != 0x01) {
             if(atsc3_preamble_packet->L1_basic_signaling.L1B_time_info_flag != 0x02) {
-				__STLTP_PARSER_INFO("preamble: L1D: time: sec: %d, ms: %d, us: %d, ns: %d",
+            	__STLTP_PARSER_DUMP("preamble: L1D: time: sec: %d, ms: %d, us: %d, ns: %d",
 									atsc3_preamble_packet->L1_detail_signaling.L1D_time_sec_block.L1D_time_sec,
 									atsc3_preamble_packet->L1_detail_signaling.L1D_time_sec_block.L1D_time_msec,
 									atsc3_preamble_packet->L1_detail_signaling.L1D_time_sec_block.L1D_time_usec,
 									atsc3_preamble_packet->L1_detail_signaling.L1D_time_sec_block.L1D_time_nsec
 									);
 			} else {
-				__STLTP_PARSER_INFO("preamble: L1D: time: sec: %d, ms: %d, us: %d",
+				__STLTP_PARSER_DUMP("preamble: L1D: time: sec: %d, ms: %d, us: %d",
 												atsc3_preamble_packet->L1_detail_signaling.L1D_time_sec_block.L1D_time_sec,
 												atsc3_preamble_packet->L1_detail_signaling.L1D_time_sec_block.L1D_time_msec,
 												atsc3_preamble_packet->L1_detail_signaling.L1D_time_sec_block.L1D_time_usec
 												);
 			}
 		} else {
-			__STLTP_PARSER_INFO("preamble: L1D: time: sec: %d, ms: %d",
+			__STLTP_PARSER_DUMP("preamble: L1D: time: sec: %d, ms: %d",
 											atsc3_preamble_packet->L1_detail_signaling.L1D_time_sec_block.L1D_time_sec,
 											atsc3_preamble_packet->L1_detail_signaling.L1D_time_sec_block.L1D_time_msec
 											);
@@ -1654,7 +1668,7 @@ void atsc3_preamble_packet_dump(atsc3_preamble_packet_t* atsc3_preamble_packet) 
 	for(int i=0; i < atsc3_preamble_packet->L1_detail_signaling.L1D_subframe_parameters_v.count; i++) {
 		L1D_subframe_parameters_t* L1D_subframe_parameters = atsc3_preamble_packet->L1_detail_signaling.L1D_subframe_parameters_v.data[i];
 		if(i > 0) {
-			__STLTP_PARSER_INFO("preamble: L1D: subframe: %d, L1D_mimo: %d, L1D_miso: %d, L1D_fft_size: %d, L1D_reduced_carriers: %d, L1D_guard_interval: %d, L1D_num_ofdm_symbols: %d",
+			__STLTP_PARSER_DUMP("preamble: L1D: subframe: %d, L1D_mimo: %d, L1D_miso: %d, L1D_fft_size: %d, L1D_reduced_carriers: %d, L1D_guard_interval: %d, L1D_num_ofdm_symbols: %d",
 								i,
 								L1D_subframe_parameters->L1D_mimo,
 								L1D_subframe_parameters->L1D_miso,
@@ -1672,7 +1686,7 @@ void atsc3_preamble_packet_dump(atsc3_preamble_packet_t* atsc3_preamble_packet) 
 								L1D_subframe_parameters->L1D_subframe_multiplex);
 		}
 		
-		__STLTP_PARSER_INFO("preamble: L1D: subframe: %d, L1D_frequency_interleaver: %d, L1D_sbs_null_cells: %d, num_plp: %d ",
+		__STLTP_PARSER_DUMP("preamble: L1D: subframe: %d, L1D_frequency_interleaver: %d, L1D_sbs_null_cells: %d, num_plp: %d ",
 							i,
 							L1D_subframe_parameters->L1D_frequency_interleaver,
 							L1D_subframe_parameters->L1D_sbs_null_cells,
@@ -1681,7 +1695,7 @@ void atsc3_preamble_packet_dump(atsc3_preamble_packet_t* atsc3_preamble_packet) 
 		for(int k=0; k < L1D_subframe_parameters->L1D_PLP_parameters_v.count; k++) {
 			L1D_PLP_parameters_t* L1D_PLP_parameters = L1D_subframe_parameters->L1D_PLP_parameters_v.data[k];
 			
-			__STLTP_PARSER_INFO("preamble: L1D: plp: id: %d, lls_flag: %d, layer: %d, start: %d, size: %d, scrambler: %d, fec: %d, mod: %d, cod: %d",
+			__STLTP_PARSER_DUMP("preamble: L1D: plp: id: %d, lls_flag: %d, layer: %d, start: %d, size: %d, scrambler: %d, fec: %d, mod: %d, cod: %d",
 								L1D_PLP_parameters->L1D_plp_id,
 								L1D_PLP_parameters->L1D_plp_lls_flag,
 								L1D_PLP_parameters->L1D_plp_layer,
@@ -1692,7 +1706,7 @@ void atsc3_preamble_packet_dump(atsc3_preamble_packet_t* atsc3_preamble_packet) 
 								L1D_PLP_parameters->L1D_plp_mod,
 								L1D_PLP_parameters->L1D_plp_cod);
 			
-			__STLTP_PARSER_INFO("preamble: L1D: plp: id: %d, L1D_plp_TI_mode: %d, L1D_plp_type: %d, L1D_plp_num_subslices: %d, L1D_plp_subslice_interval: %d, L1D_plp_ldm_injection_level: %d",
+			__STLTP_PARSER_DUMP("preamble: L1D: plp: id: %d, L1D_plp_TI_mode: %d, L1D_plp_type: %d, L1D_plp_num_subslices: %d, L1D_plp_subslice_interval: %d, L1D_plp_ldm_injection_level: %d",
 								L1D_PLP_parameters->L1D_plp_id,
 								L1D_PLP_parameters->L1D_plp_TI_mode,
 								L1D_PLP_parameters->L1D_plp_type,
@@ -1705,5 +1719,5 @@ void atsc3_preamble_packet_dump(atsc3_preamble_packet_t* atsc3_preamble_packet) 
 	}
 	
     
-	__STLTP_PARSER_INFO("preamble: L1D: bsid: %d", atsc3_preamble_packet->L1_detail_signaling.L1D_bsid);
+	__STLTP_PARSER_DUMP("preamble: L1D: bsid: %d", atsc3_preamble_packet->L1_detail_signaling.L1D_bsid);
 }
