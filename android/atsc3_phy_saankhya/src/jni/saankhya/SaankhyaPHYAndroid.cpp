@@ -1857,6 +1857,8 @@ Java_org_ngbp_libatsc3_middleware_android_phy_SaankhyaPHYAndroid_open(JNIEnv *en
         res = saankhyaPHYAndroid->open(fd, device_path);
         env->ReleaseStringUTFChars( device_path_jstring, device_path_weak );
     }
+    _SAANKHYA_PHY_ANDROID_DEBUG("Java_org_ngbp_libatsc3_middleware_android_phy_SaankhyaPHYAndroid_open: fd: %d, return: %d", fd, res);
+
     return res;
 }
 
