@@ -1008,12 +1008,12 @@ SL_ConfigResult_t SaankhyaPHYAndroid::configPlatformParams() {
      * Assign Platform Configuration Parameters. For other ref platforms, replace settings from
      * comments above
      */
-    sPlfConfig.chipType = SL_CHIP_3010;
+    sPlfConfig.chipType = SL_CHIP_4000;
     sPlfConfig.chipRev = SL_CHIP_REV_AA;
-    sPlfConfig.boardType = SL_KAILASH_DONGLE;
+    sPlfConfig.boardType = SL_BORQS_EVT;
     sPlfConfig.tunerType = TUNER_SI;
     sPlfConfig.demodControlIf = SL_DEMOD_CMD_CONTROL_IF_I2C;
-    sPlfConfig.demodOutputIf = SL_DEMOD_OUTPUTIF_TS;
+    sPlfConfig.demodOutputIf = SL_DEMOD_OUTPUTIF_SDIO;
     sPlfConfig.demodI2cAddr = 0x30; /* SLDemod 7-bit Physical I2C Address */
 
 #ifdef SL_FX3S
