@@ -29,6 +29,8 @@
 extern "C" {
 #endif
 
+#define ATSC3_STLTP_MULTICAST_RANGE_MIN 4009754624
+#define ATSC3_STLTP_MULTICAST_RANGE_MAX 4026531839
 
 void atsc3_stltp_depacketizer_from_ip_udp_rtp_packet(atsc3_ip_udp_rtp_packet_t* ip_udp_rtp_packet, atsc3_stltp_depacketizer_context_t* atsc3_stltp_depacketizer_context);
 bool atsc3_stltp_depacketizer_from_blockt(block_t** packet_p, atsc3_stltp_depacketizer_context_t* atsc3_stltp_depacketizer_context);

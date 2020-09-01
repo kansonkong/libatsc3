@@ -48,7 +48,7 @@ void PcapSTLTPVirtualPHYAndroid::releasePinnedConsumerThreadAsNeeded() {
 extern "C" JNIEXPORT jint JNICALL
 Java_org_ngbp_libatsc3_middleware_android_phy_virtual_PcapSTLTPVirtualPHYAndroid_init(JNIEnv* env, jobject instance)
 {
-    _PCAP_STLTP_VIRTUAL_PHY_DEBUG("Java_org_ngbp_libatsc3_middleware_android_phy_virtual_PcapSTLTPVirtualPHYAndroid_init: start init, env: %p", env);
+    _PCAP_STLTP_VIRTUAL_PHY_WARN("Java_org_ngbp_libatsc3_middleware_android_phy_virtual_PcapSTLTPVirtualPHYAndroid_init: start init, env: %p", env);
 
     pcapSTLTPVirtualPHYAndroid = new PcapSTLTPVirtualPHYAndroid(env, instance);
 
@@ -69,7 +69,7 @@ Java_org_ngbp_libatsc3_middleware_android_phy_virtual_PcapSTLTPVirtualPHYAndroid
 
     int res = 0;
     const char *filename_cstr = env->GetStringUTFChars(filename, NULL);
-    _PCAP_STLTP_VIRTUAL_PHY_DEBUG("Java_org_ngbp_libatsc3_middleware_android_phy_virtual_PcapSTLTPVirtualPHYAndroid_open_1from_1capture: with filename: %s", filename_cstr);
+    _PCAP_STLTP_VIRTUAL_PHY_WARN("Java_org_ngbp_libatsc3_middleware_android_phy_virtual_PcapSTLTPVirtualPHYAndroid_open_1from_1capture: with filename: %s", filename_cstr);
     res = pcapSTLTPVirtualPHYAndroid->atsc3_pcap_replay_open_file(filename_cstr);
 
     env->ReleaseStringUTFChars(filename, filename_cstr);

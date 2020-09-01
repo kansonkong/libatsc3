@@ -64,6 +64,7 @@ void PcapSTLTPVirtualPHY::atsc3_pcap_stltp_listen_ip_port_plp(string ip, string 
 	} else {
 		atsc3_stltp_depacketizer_context->inner_rtp_port_filter = 30000;
 	}
+	atsc3_stltp_depacketizer_context->context_configured = true;
 }
 
 int PcapSTLTPVirtualPHY::atsc3_pcap_replay_open_file(const char *filename) {
@@ -204,6 +205,7 @@ int PcapSTLTPVirtualPHY::atsc3_pcap_thread_stop() {
 int PcapSTLTPVirtualPHY::PcapProducerThreadParserRun() {
 
     int packet_push_count = 0;
+    bool pcapThreadShouldRun_local = true;
 
     _PCAP_STLTP_VIRTUAL_PHY_INFO("PcapSTLTPVirtualPHY::PcapProducerThreadParserRun with this: %p", this);
 
@@ -214,7 +216,7 @@ int PcapSTLTPVirtualPHY::PcapProducerThreadParserRun() {
     }
 
     atsc3_pcap_replay_context_t* atsc3_pcap_replay_local_context = atsc3_pcap_replay_context;
-    while (pcapThreadShouldRun) {
+    while (pcapThreadShouldRun && pcapThreadShouldRun_local) {
         queue<block_t *> to_dispatch_queue; //perform a shallow copy so we can exit critical section asap
 
         //_ATSC3_PCAP_REPLAY_TEST_DEBUG("Opening pcap: %s, context is: %p", PCAP_REPLAY_TEST_FILENAME, atsc3_pcap_replay_local_context);
@@ -251,7 +253,7 @@ int PcapSTLTPVirtualPHY::PcapProducerThreadParserRun() {
                     pcap_replay_condition.notify_one();  //todo: jjustman-2019-11-06 - only signal if we aren't behind packet processing or we have a growing queue
                 }
                 //cleanup happens on the consumer thread for dispatching
-                pcapThreadShouldRun = !atsc3_pcap_replay_check_file_pos_is_eof(atsc3_pcap_replay_local_context);
+                pcapThreadShouldRun_local = !atsc3_pcap_replay_check_file_pos_is_eof(atsc3_pcap_replay_local_context);
             }
         }
     }

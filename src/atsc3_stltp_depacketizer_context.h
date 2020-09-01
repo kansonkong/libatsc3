@@ -39,6 +39,7 @@ typedef void(*atsc3_stltp_timing_management_packet_collection_callback_f)(atsc3_
 //jjustman-2020-08-11- TODO: extend this to contain the relevant bootstrap reference emission time for re-modulation
 
 typedef struct atsc3_stltp_depacketizer_context {
+    bool                            context_configured;
 	udp_flow_t						destination_flow_filter;	//restrict from dst_ip_addr and dst_port
 	uint16_t						inner_rtp_port_filter;		//restrict to PLP0-63 (e.g. 30000+n)
 

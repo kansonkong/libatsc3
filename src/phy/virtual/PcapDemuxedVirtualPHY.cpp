@@ -163,6 +163,7 @@ int PcapDemuxedVirtualPHY::atsc3_pcap_thread_stop() {
 int PcapDemuxedVirtualPHY::PcapProducerThreadParserRun() {
 
     int packet_push_count = 0;
+    bool pcapThreadShouldRun_local = true;
 
     _PCAP_DEMUXED_VIRTUAL_PHY_INFO("PcapDemuxedVirtualPHY::PcapProducerThreadParserRun with this: %p", this);
 
@@ -173,7 +174,7 @@ int PcapDemuxedVirtualPHY::PcapProducerThreadParserRun() {
     }
 
     atsc3_pcap_replay_context_t* atsc3_pcap_replay_local_context = atsc3_pcap_replay_context;
-    while (pcapThreadShouldRun) {
+    while (pcapThreadShouldRun && pcapThreadShouldRun_local) {
         queue<block_t *> to_dispatch_queue; //perform a shallow copy so we can exit critical section asap
 
         //_ATSC3_PCAP_REPLAY_TEST_DEBUG("Opening pcap: %s, context is: %p", PCAP_REPLAY_TEST_FILENAME, atsc3_pcap_replay_local_context);
@@ -210,7 +211,7 @@ int PcapDemuxedVirtualPHY::PcapProducerThreadParserRun() {
                     //printf("PcapDemuxedVirtualPHY::PcapProducerThreadRun - signalling notify_one at count: %d", pushed_count);
                 }
                 //cleanup happens on the consumer thread for dispatching
-                pcapThreadShouldRun = !atsc3_pcap_replay_check_file_pos_is_eof(atsc3_pcap_replay_local_context);
+                pcapThreadShouldRun_local = !atsc3_pcap_replay_check_file_pos_is_eof(atsc3_pcap_replay_local_context);
             }
         }
     }

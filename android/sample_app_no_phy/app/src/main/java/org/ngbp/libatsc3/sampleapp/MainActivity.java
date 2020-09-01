@@ -69,6 +69,7 @@ import org.ngbp.libatsc3.middleware.android.phy.Atsc3UsbDevice;
 import org.ngbp.libatsc3.middleware.android.phy.SaankhyaPHYAndroid;
 import org.ngbp.libatsc3.middleware.android.phy.interfaces.IAtsc3NdkPHYBridgeCallbacks;
 import org.ngbp.libatsc3.middleware.android.phy.virtual.PcapDemuxedVirtualPHYAndroid;
+import org.ngbp.libatsc3.middleware.android.phy.virtual.PcapSTLTPVirtualPHYAndroid;
 import org.ngbp.libatsc3.middleware.android.phy.virtual.srt.SRTRxSTLTPVirtualPHYAndroid;
 import org.ngbp.libatsc3.pcapreplay.PcapFileSelectorActivity;
 import org.ngbp.libatsc3.phy.RfScanUtility;
@@ -106,11 +107,8 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
             "srt://las.srt.atsc3.com:31350?passphrase=A166AC45-DB7C-4B68-B957-09B8452C76A4",
             "srt://bna.srt.atsc3.com:31347?passphrase=88731837-0EB5-4951-83AA-F515B3BEBC20",
             "srt://slc.srt.atsc3.com:31341?passphrase=B9E4F7B8-3CDD-4BA2-ACA6-13088AB855C0",
-            "srt://lab.srt.atsc3.com:31340?passphrase=03760631-667B-4ADB-9E04-E4491B0A7CF1",
-            "--",
-            "pcaps/2019-10-29-239.0.0.18.PLP.1.decoded.pcap",
-            "pcaps/2019-12-17-lab-digi-alp.pcap" };
-
+            "srt://lab.srt.atsc3.com:31340?passphrase=03760631-667B-4ADB-9E04-E4491B0A7CF1"
+    };
 
     private DashMediaSource.Factory dashMediaSourceFactory;
     public static final String DASH_CONTENT_TYPE = "application/dash+xml";
@@ -125,9 +123,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         return super.getCacheDir();
     }
 
-
     private static final String ACTION_USB_PERMISSION = "com.android.example.USB_PERMISSION";
-
 
     public boolean hasUsbIfSupport = true;
 
@@ -135,9 +131,6 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
 
     private DecoderHandlerThread myDecoderHandlerThread;
 
-    private Boolean inputSelectionFromPcap = false;
-
-    private static final String PCAP_URI_PREFIX = "pcaps/";
 
 //jjustman-2020-08-18
 
@@ -148,12 +141,9 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     public Atsc3NdkPHYClientBase     atsc3NdkPHYClientInstance = null; //whomever is currently instantiated (e.g. SRTRxSTLTPVirtualPhyAndroid, etc..)
 
     private static final String SRT_STLTP_URI_PREFIX = "srt://";
+
     private String inputSelectedSRTSource;
     private Boolean inputSelectionFromSRT = false;
-    private SRTRxSTLTPVirtualPHYAndroid srtRxSTLTPVirtualPHYAndroid;
-
-
-    public PcapDemuxedVirtualPHYAndroid demuxedPcapVirtualPHY;
 
     public void stopAndDeInitAtsc3NdkPHYClientInstance() {
         if(atsc3NdkPHYClientInstance != null) {
@@ -170,11 +160,23 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
 
 //end jjustman-2020-08-18
 
+    private static final String PCAP_URI_PREFIX = "pcaps/";
+
+    public static final String SELECT_PCAP_DEMUXED_MESSAGE = "Select PCAP Demuxed from Device...";
+    private Boolean pendingInputSelectionFromPcapDemuxed = false;
+    private Boolean inputSelectionFromPcapDemuxed = false;
+    private String inputSelectedPcapDemuxedFromFilesystem = null;
+    private List<String> pcapDemuxedAssetForFilesystemReplay = new ArrayList<String>();
+
+    public static final String SELECT_PCAP_STLTP_MESSAGE = "Select PCAP STLTP from Device...";
+    private Boolean pendingInputSelectionFromPcapSTLTP = false;
+    private Boolean inputSelectionFromPcapSTLTP = false;
+    private String inputSelectedPcapSTLTPFromFilesystem = null;
+    private List<String> pcapSTLTPAssetForFilesystemReplay = new ArrayList<String>();
+
+
     private String inputSelectedPcapReplayFromAssetManager = null;
 
-    public static final String SELECT_PCAP_MESSAGE = "Select PCAP from Device...";
-    private String inputSelectedPcapReplayFromFilesystem  = null;
-    private List<String> pcapAssetForFilesystemReplay = new ArrayList<String>();
 
     /**
      * end pcap related support..for now
@@ -474,20 +476,33 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
             itemCount++;
 
         }
-
-        items.add(SELECT_PCAP_MESSAGE);
         itemCount++;
+        items.add(SELECT_PCAP_DEMUXED_MESSAGE);
         itemCount++;
-
-
-        for(int i=0; i < pcapAssetForFilesystemReplay.size(); i++) {
-            if(inputSelectedPcapReplayFromFilesystem != null && inputSelectedPcapReplayFromFilesystem.equalsIgnoreCase(pcapAssetForFilesystemReplay.get(i))) {
+        for(int i = 0; i < pcapDemuxedAssetForFilesystemReplay.size(); i++) {
+            if(inputSelectedPcapDemuxedFromFilesystem != null && inputSelectedPcapDemuxedFromFilesystem.equalsIgnoreCase(pcapDemuxedAssetForFilesystemReplay.get(i))) {
                 idxSelected = itemCount;
 
-            } else if(itemSelected != null && itemSelected.equalsIgnoreCase(pcapAssetForFilesystemReplay.get(i))) {
+            } else if(itemSelected != null && itemSelected.equalsIgnoreCase(pcapDemuxedAssetForFilesystemReplay.get(i))) {
                 idxSelected = itemCount;
             }
-            items.add(pcapAssetForFilesystemReplay.get(i));
+            items.add(pcapDemuxedAssetForFilesystemReplay.get(i));
+            itemCount++;
+        }
+
+        items.add("---");
+        itemCount++;
+        items.add(SELECT_PCAP_STLTP_MESSAGE);
+        itemCount++;
+
+        for(int i = 0; i < pcapSTLTPAssetForFilesystemReplay.size(); i++) {
+            if(inputSelectedPcapSTLTPFromFilesystem != null && inputSelectedPcapSTLTPFromFilesystem.equalsIgnoreCase(pcapSTLTPAssetForFilesystemReplay.get(i))) {
+                idxSelected = itemCount;
+
+            } else if(itemSelected != null && itemSelected.equalsIgnoreCase(pcapSTLTPAssetForFilesystemReplay.get(i))) {
+                idxSelected = itemCount;
+            }
+            items.add(pcapSTLTPAssetForFilesystemReplay.get(i));
             itemCount++;
         }
 
@@ -1724,11 +1739,28 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                 String pcapFileToProcess = data.getData().toString();
                 if(pcapFileToProcess != null) {
                     //hack-ish for now..
-                    pcapAssetForFilesystemReplay.clear();
-                    inputSelectionFromPcap = true;
+                    pcapDemuxedAssetForFilesystemReplay.clear();
+                    pcapSTLTPAssetForFilesystemReplay.clear();
 
-                    inputSelectedPcapReplayFromFilesystem = pcapFileToProcess;
-                    pcapAssetForFilesystemReplay.add(inputSelectedPcapReplayFromFilesystem);
+                    if(pendingInputSelectionFromPcapDemuxed) {
+                        Log.d(TAG, "onActivityResult::pendingInputSelectionFromPcapDemuxed");
+
+                        inputSelectionFromPcapDemuxed = true;
+                        inputSelectionFromPcapSTLTP = false;
+                        inputSelectedPcapDemuxedFromFilesystem = pcapFileToProcess;
+                        pcapDemuxedAssetForFilesystemReplay.add(inputSelectedPcapDemuxedFromFilesystem);
+
+                        inputSelectedPcapSTLTPFromFilesystem = null;
+
+                    } else if(pendingInputSelectionFromPcapSTLTP) {
+                        Log.d(TAG, "onActivityResult::pendingInputSelectionFromPcapSTLTP");
+                        inputSelectionFromPcapSTLTP = true;
+                        inputSelectionFromPcapDemuxed = false;
+                        inputSelectedPcapSTLTPFromFilesystem = pcapFileToProcess;
+                        pcapSTLTPAssetForFilesystemReplay.add(inputSelectedPcapSTLTPFromFilesystem);
+
+                        inputSelectedPcapDemuxedFromFilesystem = null;
+                    }
 
                     inputSelectedPcapReplayFromAssetManager = null;
 
@@ -1755,33 +1787,49 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                 stopAllPlayers();
                 stopAndDeInitAtsc3NdkPHYClientInstance();
 
+
                 if(inputSelectionFromSRT) {
-                    srtRxSTLTPVirtualPHYAndroid = new SRTRxSTLTPVirtualPHYAndroid();
-                    atsc3NdkPHYClientInstance = srtRxSTLTPVirtualPHYAndroid;
+                    atsc3NdkPHYClientInstance = new SRTRxSTLTPVirtualPHYAndroid();
 
-                    srtRxSTLTPVirtualPHYAndroid.init();
-                    srtRxSTLTPVirtualPHYAndroid.setSrtSourceConnectionString(inputSelectedSRTSource);
+                    atsc3NdkPHYClientInstance.init();
+                    ((SRTRxSTLTPVirtualPHYAndroid)atsc3NdkPHYClientInstance).setSrtSourceConnectionString(inputSelectedSRTSource);
 
-                    srtRxSTLTPVirtualPHYAndroid.run();
+                    atsc3NdkPHYClientInstance.run();
                     enableDeviceControlButtons(true);
                     return;
                 }
 
-                if(inputSelectionFromPcap) {
-                    demuxedPcapVirtualPHY = new PcapDemuxedVirtualPHYAndroid();
-                    atsc3NdkPHYClientInstance = demuxedPcapVirtualPHY;
+                if(inputSelectionFromPcapDemuxed) {
+                    Log.d(TAG, "open::inputSelectionFromPcapDemuxed");
 
-                    demuxedPcapVirtualPHY.init();
+                    atsc3NdkPHYClientInstance = new PcapDemuxedVirtualPHYAndroid();
+                    atsc3NdkPHYClientInstance.init();
 
                     enableDeviceControlButtons(true);
-                    if(inputSelectedPcapReplayFromFilesystem != null) {
-                        demuxedPcapVirtualPHY.open_from_capture(inputSelectedPcapReplayFromFilesystem);
+                    if(inputSelectedPcapDemuxedFromFilesystem != null) {
+                        atsc3NdkPHYClientInstance.open_from_capture(inputSelectedPcapDemuxedFromFilesystem);
                     }
 //                    } else if(inputSelectedPcapReplayFromAssetManager != null) {
 //                        demuxedPcapVirtualPHY.atsc3_pcap_open_for_replay_from_assetManager(inputSelectedPcapReplayFromAssetManager, assetManager);
 //                    }
 
-                    demuxedPcapVirtualPHY.run();
+                    atsc3NdkPHYClientInstance.run();
+                    enableDeviceControlButtons(true);
+                    return;
+                }
+
+                if(inputSelectionFromPcapSTLTP) {
+                    Log.d(TAG, "open::inputSelectionFromPcapSTLTP, file: "+ inputSelectedPcapSTLTPFromFilesystem);
+
+                    atsc3NdkPHYClientInstance = new PcapSTLTPVirtualPHYAndroid();
+                    atsc3NdkPHYClientInstance.init();
+
+                    enableDeviceControlButtons(true);
+                    if(inputSelectedPcapSTLTPFromFilesystem != null) {
+                        atsc3NdkPHYClientInstance.open_from_capture(inputSelectedPcapSTLTPFromFilesystem);
+                    }
+
+                    atsc3NdkPHYClientInstance.run();
                     enableDeviceControlButtons(true);
                     return;
                 }
@@ -1790,36 +1838,6 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                     showMsg("no FX3 device connected yet\n");
                     break;
                 }
-
-//                showMsg(String.format("opening mCurFx3Device: fd: %d, key: %d", mCurAt3Device.fd, mCurAt3Device.key));
-//
-//                //jjustman-2020-08-18 - TODO - clean this up...
-//                new Thread(new Runnable() {
-//                    @Override
-//                    public void run() {
-//
-//                        int re = atsc3NdkPHYClientInstance.ApiOpen(mCurAt3Device.fd, mCurAt3Device.key);
-//                        if (re < 0) {
-//                            showMsgFromNative(String.format("open: failed, r: %d", re));
-//                            return;
-//                        } else if(re == 240) { //SL_FX3S_I2C_AWAITING_BROADCAST_USB_ATTACHED
-//                            showMsgFromNative(String.format("open: pending SL_FX3S_I2C_AWAITING_BROADCAST_USB_ATTACHED event"));
-//                            return;
-//                        }
-//
-//                        ServiceHandler.GetInstance().post(new Runnable() {
-//                            @Override
-//                            public void run() {
-//                                ((Button)findViewById(R.id.butTune)).setEnabled(true);
-//                                ((Button)findViewById(R.id.butTune)).requestFocus();
-//                                btnToggleRfScan.setEnabled(true);
-//
-//                                ((EditText)findViewById(R.id.editFreqMhz)).setEnabled(true);
-//                                ((EditText)findViewById(R.id.editPlp)).setEnabled(true);
-//                            }
-//                        });
-//                    }
-//                }).start();
 
                 break;
 
@@ -2012,98 +2030,57 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         myDecoderHandlerThread.decoderHandler.sendMessage(myDecoderHandlerThread.decoderHandler.obtainMessage(DecoderHandlerThread.DESTROY));
     }
 
-
-
     @Override
     public void onItemSelected(AdapterView<?> parent, View view, int pos, long id) {
         String s = (String) parent.getItemAtPosition(pos);
         Log.d(TAG, "user selected " + s);
-//        if (s.equals(kSpinnerNotSelect)) {
-//
-//            stopAndDeInitAtsc3NdkPHYClientInstance
-//
-//            // unchoose cur device
-//            if (mCurAt3Device != null) {
-//                atsc3NdkPHYClientInstance.ApiClose();
-//            }
-//            mCurAt3Device = null;
-//            inputSelectedPcapReplayFromFilesystem = null;
-//            inputSelectedPcapReplayFromAssetManager = null;
-//            inputSelectionFromPcap = false;
-//            inputSelectionFromSRT = false;
-//            enableDeviceControlButtons(false);
-//            enableDeviceOpenButtons(false);
-//            return;
-//        }
 
         //launch our file picker for asset selection
-        if(s.startsWith(SELECT_PCAP_MESSAGE)) {
+        if(s.startsWith(SELECT_PCAP_DEMUXED_MESSAGE)) {
+            pendingInputSelectionFromPcapDemuxed = true;
+            pendingInputSelectionFromPcapSTLTP = false;
             Intent intent = new Intent(this, PcapFileSelectorActivity.class);
             startActivityForResult(intent, PcapFileSelectorActivity.CODE_READ_PCAP_FILE);
             //handle this in onActivityResult with the absolute path
             return;
-        } else if(s.equals(inputSelectedPcapReplayFromFilesystem)) {
+        } else if(s.startsWith(SELECT_PCAP_STLTP_MESSAGE)) {
+            pendingInputSelectionFromPcapDemuxed = false;
+            pendingInputSelectionFromPcapSTLTP = true;
+            Intent intent = new Intent(this, PcapFileSelectorActivity.class);
+            startActivityForResult(intent, PcapFileSelectorActivity.CODE_READ_PCAP_FILE);
+            //handle this in onActivityResult with the absolute path
+            return;
+        } else if(s.equals(inputSelectedPcapDemuxedFromFilesystem)) {
             //ignore this onSelect event, as we handle it in the onActivityResult
             return;
         } else if(s.startsWith(PCAP_URI_PREFIX)) {
             //support pre-baked in pcap assets as needed
-            inputSelectedPcapReplayFromFilesystem = null;
+            inputSelectedPcapDemuxedFromFilesystem = null;
             inputSelectedPcapReplayFromAssetManager = s;
-            inputSelectionFromPcap = true;
+            inputSelectionFromPcapDemuxed = true;
             inputSelectionFromSRT = false;
 
             enableDeviceOpenButtons(true);
             return;
         } else if(s.startsWith(SRT_STLTP_URI_PREFIX)) {
             //support SRT_STLTP transport
-            inputSelectedPcapReplayFromFilesystem = null;
+            inputSelectedPcapDemuxedFromFilesystem = null;
             inputSelectedPcapReplayFromAssetManager = null;
-            inputSelectionFromPcap = false;
+
+            pendingInputSelectionFromPcapDemuxed = false;
+            inputSelectionFromPcapDemuxed = false;
+
+            pendingInputSelectionFromPcapSTLTP = false;
+            inputSelectionFromPcapSTLTP = false;
 
             inputSelectedSRTSource = s;
             inputSelectionFromSRT = true;
 
             enableDeviceOpenButtons(true);
             return;
-        }  {
-            inputSelectionFromPcap = false;
-            inputSelectedPcapReplayFromFilesystem = null;
-            inputSelectedPcapReplayFromAssetManager = null;
+        } else {
+            //do not clear out our selected pcap (either demux or stltp here)
         }
-
-//        try {
-//            // parse string and get fd
-//            int end = s.indexOf(":");
-//            if (end <= 0 && end > 10) { // fd digits are probably under 10?
-//                Log.d(TAG, "cannot get fd, " + s);
-//                return;
-//            }
-//            int fd = Integer.parseInt(s.substring(0, end));
-//            Log.d(TAG, "selected device's fd: " + fd);
-//            enableDeviceOpenButtons(true);
-//            enableDeviceControlButtons(false);
-//
-//            // choose the device
-//            for (Atsc3UsbDevice ad : mAt3Devices) {
-//                if (ad.fd == fd) {
-//                    if (mCurAt3Device != ad) {
-//                        //Log.d(TAG, "new device selected");
-//                        showMsg("new device selected\n");
-//                        stopAndDeInitAtsc3NdkPHYClientInstance();
-//
-//                        mCurAt3Device = ad;
-//                    } else {
-//                        Log.d(TAG, "keep previous selection");
-//                    }
-//                    return;
-//                }
-//            }
-//
-//
-//        } catch (Exception ex) {
-//            Log.e("onItemSelected", "exception ex: "+ex);
-//        }
-//        showMsg("device not selected\n");
     }
     @Override
     public void onNothingSelected(AdapterView<?> parent) {
