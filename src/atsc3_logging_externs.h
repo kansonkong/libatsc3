@@ -31,6 +31,10 @@ extern int _ATSC3_UTILS_INFO_ENABLED;
 extern int _ATSC3_UTILS_DEBUG_ENABLED;
 extern int _ATSC3_UTILS_TRACE_ENABLED;
 
+extern int _ATSC3_UDP_INFO_ENABLED;
+extern int _ATSC3_UDP_DEBUG_ENABLED;
+extern int _ATSC3_UDP_TRACE_ENABLED;
+
 extern int _ALP_PARSER_INFO_ENABLED;
 extern int _ALP_PARSER_DEBUG_ENABLED;
 
@@ -119,6 +123,7 @@ extern int _PLAYER_FFPLAY_DEBUG_ENABLED;
 extern int _PLAYER_FFPLAY_TRACE_ENABLED;
 
 extern int _STLTP_PARSER_INFO_ENABLED;
+extern int _STLTP_PARSER_DUMP_ENABLED;
 extern int _STLTP_PARSER_DEBUG_ENABLED;
 extern int _STLTP_PARSER_TRACE_ENABLED;
 
@@ -185,6 +190,16 @@ extern int _ATSC3_STLTP_DEPACKETIZER_INFO_ENABLED;
 extern int _ATSC3_STLTP_DEPACKETIZER_DEBUG_ENABLED;
 extern int _ATSC3_STLTP_DEPACKETIZER_TRACE_ENABLED;
 
+extern int _ATSC3_PCAP_STLTP_VIRTUAL_PHY_INFO_ENABLED;
+extern int _ATSC3_PCAP_STLTP_VIRTUAL_PHY_DEBUG_ENABLED;
+extern int _ATSC3_PCAP_STLTP_VIRTUAL_PHY_TRACE_ENABLED;
+
+extern int _ATSC3_ALP_TYPES_INFO_ENABLED;
+extern int _ATSC3_ALP_TYPES_DUMP_ENABLED;
+extern int _ATSC3_ALP_TYPES_DEBUG_ENABLED;
+extern int _ATSC3_ALP_TYPES_TRACE_ENABLED;
+
+
 
 //c++ linkage
 //extern int _ISOBMFFTRACKJOINER_DEBUG_ENABLED;
@@ -201,12 +216,13 @@ extern char  __ANDROID_LOG_VPRINTF_BUFFER[];
 #define __LIBATSC3_TIMESTAMP_ERROR(format, ...)         {snprintf(__ANDROID_LOG_VPRINTF_BUFFER,__ANDROID_MAX_LOG_LINE_LENGTH__-1, format, ##__VA_ARGS__ );	printf("%-32.32s:%4d:ERROR:%.4f:%s",__FILENAME__,__LINE__,  gt(), __ANDROID_LOG_VPRINTF_BUFFER); }
 #define __LIBATSC3_TIMESTAMP_WARN(format, ...)          {snprintf(__ANDROID_LOG_VPRINTF_BUFFER,__ANDROID_MAX_LOG_LINE_LENGTH__-1, format, ##__VA_ARGS__ );	printf("%-32.32s:%4d:WARN :%.4f:%s",__FILENAME__,__LINE__,  gt(), __ANDROID_LOG_VPRINTF_BUFFER); }
 #define __LIBATSC3_TIMESTAMP_INFO(format, ...)          {snprintf(__ANDROID_LOG_VPRINTF_BUFFER,__ANDROID_MAX_LOG_LINE_LENGTH__-1, format, ##__VA_ARGS__ );	printf("%-32.32s:%4d:INFO :%.4f:%s",__FILENAME__,__LINE__,  gt(), __ANDROID_LOG_VPRINTF_BUFFER); }
+#define __LIBATSC3_TIMESTAMP_DUMP(format, ...)          {snprintf(__ANDROID_LOG_VPRINTF_BUFFER,__ANDROID_MAX_LOG_LINE_LENGTH__-1, format, ##__VA_ARGS__ );	printf("%-32.32s:%4d:DUMP :%.4f:%s",__FILENAME__,__LINE__,  gt(), __ANDROID_LOG_VPRINTF_BUFFER); }
 #define __LIBATSC3_TIMESTAMP_DEBUG(format, ...)         {snprintf(__ANDROID_LOG_VPRINTF_BUFFER,__ANDROID_MAX_LOG_LINE_LENGTH__-1, format, ##__VA_ARGS__ );	printf("%-32.32s:%4d:DEBUG:%.4f:%s",__FILENAME__,__LINE__,  gt(), __ANDROID_LOG_VPRINTF_BUFFER); }
 #define __LIBATSC3_TIMESTAMP_TAB_DEBUG(format, ...)     {snprintf(__ANDROID_LOG_VPRINTF_BUFFER,__ANDROID_MAX_LOG_LINE_LENGTH__-1, format, ##__VA_ARGS__ );	printf("%-32.32s:%4d:DEBUG:%.4f:%s",__FILENAME__,__LINE__,  gt(), __ANDROID_LOG_VPRINTF_BUFFER); }
 #define __LIBATSC3_TIMESTAMP_TRACE(format, ...)         {snprintf(__ANDROID_LOG_VPRINTF_BUFFER,__ANDROID_MAX_LOG_LINE_LENGTH__-1, format, ##__VA_ARGS__ );	printf("%-32.32s:%4d:TRACE:%.4f:%s",__FILENAME__,__LINE__,  gt(), __ANDROID_LOG_VPRINTF_BUFFER); }
 #define __LIBATSC3_TIMESTAMP_TRACE_TAB(format, ...)     {snprintf(__ANDROID_LOG_VPRINTF_BUFFER,__ANDROID_MAX_LOG_LINE_LENGTH__-1, format, ##__VA_ARGS__ );	printf("%-32.32s:%4d:TTRAC:%.4f:%s",__FILENAME__,__LINE__,  gt(), __ANDROID_LOG_VPRINTF_BUFFER); }
 
-#define __ERROR(...)       __LIBATSC3_TIMESTAMP_ERROR(__VA_ARGS__);
+#define __ERROR(...)   __LIBATSC3_TIMESTAMP_ERROR(__VA_ARGS__);
 #define __WARN(...)    __LIBATSC3_TIMESTAMP_WARN(__VA_ARGS__);
 #define __INFO(...)    __LIBATSC3_TIMESTAMP_INFO(__VA_ARGS__);
 
@@ -215,6 +231,7 @@ extern char  __ANDROID_LOG_VPRINTF_BUFFER[];
 #define __LIBATSC3_TIMESTAMP_ERROR(...)     	printf("%-24.24s:%4d:ERROR:%.4f:",__FILENAME__,__LINE__, gt()); printf(__VA_ARGS__); printf("%s%s","\r","\n");
 #define __LIBATSC3_TIMESTAMP_WARN(...)     		printf("%-24.24s:%4d:WARN :%.4f:",__FILENAME__,__LINE__, gt()); printf(__VA_ARGS__); printf("%s%s","\r","\n");
 #define __LIBATSC3_TIMESTAMP_INFO(...)      	printf("%-24.24s:%4d:INFO :%.4f:",__FILENAME__,__LINE__, gt()); printf(__VA_ARGS__); printf("%s%s","\r","\n");
+#define __LIBATSC3_TIMESTAMP_DUMP(...)      	printf("%-24.24s:%4d:DUMP :%.4f:",__FILENAME__,__LINE__, gt()); printf(__VA_ARGS__); printf("%s%s","\r","\n");
 #define __LIBATSC3_TIMESTAMP_DEBUG(...)    		printf("%-24.24s:%4d:DEBUG:%.4f:",__FILENAME__,__LINE__, gt()); printf(__VA_ARGS__); printf("%s%s","\r","\n");
 #define __LIBATSC3_TIMESTAMP_TRACE(...)    		printf("%-24.24s:%4d:TRACE:%.4f:",__FILENAME__,__LINE__, gt()); printf(__VA_ARGS__); printf("%s%s","\r","\n");
 #define __LIBATSC3_TIMESTAMP_TRACE_TAB(...)     printf("%-24.24s\t%4d\tTRACE\t%.4f\t",__FILENAME__,__LINE__, gt()); printf(__VA_ARGS__); printf("%s%s","\r","\n");

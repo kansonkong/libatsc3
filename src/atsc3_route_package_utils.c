@@ -66,19 +66,23 @@ char* atsc3_route_package_generate_path_from_appContextIdList(atsc3_fdt_file_t* 
 	BYTE buf[SHA256_BLOCK_SIZE];
 	sha256_init(&ctx);
 
+	bool sha256_set_from_fdt = false;
+
 	char* package_extract_path = calloc(1 + SHA256_BLOCK_SIZE*2, sizeof(char)); //sha256 -> 32 bytes + 1
 
 	if(atsc3_fdt_file) {
 		if(atsc3_fdt_file->app_context_id_list) {
 			sha256_update(&ctx, (const BYTE *)atsc3_fdt_file->app_context_id_list, strlen(atsc3_fdt_file->app_context_id_list));
 			sha256_final(&ctx, (BYTE *)buf);
+			sha256_set_from_fdt = true;
 		} else if(atsc3_fdt_file->content_location) {
 			sha256_update(&ctx, (const BYTE *)atsc3_fdt_file->content_location, strlen(atsc3_fdt_file->content_location));
 			sha256_final(&ctx, (BYTE *)buf);
+			sha256_set_from_fdt = true;
 		}
 	}
 
-	if(!strlen(package_extract_path)) {
+	if(!sha256_set_from_fdt) {
 		sha256_update(&ctx, (const BYTE *)__ATSC3_ROUTE_PACKAGE_DEFAULT_PACKAGE_NAME__, strlen(__ATSC3_ROUTE_PACKAGE_DEFAULT_PACKAGE_NAME__));
 		sha256_final(&ctx, (BYTE *)buf);
 	}
@@ -224,7 +228,7 @@ atsc3_route_package_extracted_envelope_metadata_and_payload_t* atsc3_route_packa
 			}
 
 		} else {
-			__ROUTE_PACKAGE_UTILS_ERROR("atsc3_mime_multipart_related_instance is null!");
+			__ROUTE_PACKAGE_UTILS_ERROR("atsc3_mime_multipart_related_instance is null! filename: %s", filename);
 			ret = -1;
 		}
 
