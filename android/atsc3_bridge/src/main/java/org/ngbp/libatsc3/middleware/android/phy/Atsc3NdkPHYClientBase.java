@@ -103,6 +103,7 @@ public abstract class Atsc3NdkPHYClientBase {
 
     public native int     download_bootloader_firmware(int fd, String devicePath);
     public native int     open(int fd, String devicePath);
+    public native int     open_from_capture(String filename);
     public native int     tune(int freqKhz, int single_plp);
     public native int     listen_plps(List<Byte> plps);
 
