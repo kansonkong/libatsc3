@@ -103,24 +103,6 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
 
     final static String TAG ="MainActivity";
 
-    //jjustman-2020-08-24 this is a "hack" for dynamically loading our module phy types
-    //vmatiash-2020-08-28 replaced with initializers LowaSISPHYInitializer and SaankhyaPHYInitializer
-//    static {
-//        List<String> phyModules = Arrays.asList(
-//                    "org.ngbp.libatsc3.middleware.android.phy.virtual.PcapDemuxedPHYVirtualAndroid", //either this or .srt.SRTRxSTLTPVirtualPHYAndroid
-//                    "org.ngbp.libatsc3.middleware.android.phy.LowaSISPHYAndroid",
-//                    "org.ngbp.libatsc3.middleware.android.phy.SaankhyaPHYAndroid"
-//                );
-//        for(String moduleName : phyModules) {
-//            try {
-//                Class.forName(moduleName);
-//            } catch (Exception ex) {
-//                Log.d(TAG, String.format("unable to find static impl loader for %s", moduleName));
-//            }
-//        }
-//
-//    }
-
     private String prebuiltAssetsForDeviceSelectionVirtualPHY[] = {
             "srt://las.srt.atsc3.com:31350?passphrase=A166AC45-DB7C-4B68-B957-09B8452C76A4",
             "srt://bna.srt.atsc3.com:31347?passphrase=88731837-0EB5-4951-83AA-F515B3BEBC20",
@@ -947,6 +929,9 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
             }
         }, 3000);
 
+
+        //jjustman-2020-08-31 - force loading of SaankhyaPHYAndroid with SDIO configuration
+        atsc3NdkPHYClientInstance = new SaankhyaPHYAndroid();
 
         hasCalledOnCreate = true;
     }
