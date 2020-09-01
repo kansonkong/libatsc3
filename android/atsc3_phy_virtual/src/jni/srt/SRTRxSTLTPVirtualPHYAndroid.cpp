@@ -82,6 +82,8 @@ Java_org_ngbp_libatsc3_middleware_android_phy_virtual_srt_SRTRxSTLTPVirtualPHYAn
         _SRTRXSTLTP_VIRTUAL_PHY_ERROR("Java_org_ngbp_libatsc3_middleware_android_phy_virtual_srt_SRTRxSTLTPVirtualPHYAndroid_run: error, srtRxSTLTPVirtualPHYAndroid is NULL!");
         return -1;
     }
+    atsc3_core_service_application_bridge_reset_context();
+
     res = srtRxSTLTPVirtualPHYAndroid->run();
     _SRTRXSTLTP_VIRTUAL_PHY_DEBUG("Java_org_ngbp_libatsc3_middleware_android_phy_virtual_srt_SRTRxSTLTPVirtualPHYAndroid_run: returning res: %d", res);
 

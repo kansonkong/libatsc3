@@ -138,6 +138,8 @@ clean:
 	-rm -f tools/atsc3_alc_listener_mde_writer
 	-rm -f tools/atsc3_alc_listener_mde_writer_asan
 	-rm -f tools/atsc3_alc_listener_mde_writer_malloc_debug
+	-rm -f tools/atsc3_alc_listener_mde_writer_from_stltp_pcap
+	-rm -f tools/atsc3_alc_listener_mde_writer_from_stltp_pcap_asan
 	-rm -f tools/atsc3_srt_rx_stltp_virtual_phy_alc_listener_writer
 	-rm -f tools/atsc3_srt_rx_stltp_virtual_phy_alc_listener_writer_noasan	
 	-rm -f tools/atsc3_listener_metrics_ncurses
@@ -258,7 +260,7 @@ listener_tests: listener_tests/atsc3_alc_listener_test \
 				listener_tests/atsc3_stltp_alp_listener_reflector_test \
 				listener_tests/atsc3_stltp_alp_listener_reflector_test_noasan \
 				listener_tests/atsc3_mmt_context_mfu_depacketizer_test \
-				listener_tests/atsc3_mmt_context_stpp_depacketizer_test
+				listener_tests/atsc3_mmt_context_stpp_depacketizer_test \
 
 a324_tests: a324_tests/a324_dstp_lls_aeat_emission_test
 
@@ -277,6 +279,8 @@ tools: tools/atsc3_listener_metrics_ncurses \
 	tools/atsc3_mmt_mfu_monitor \
 	tools/atsc3_alc_listener_mde_writer \
 	tools/atsc3_alc_listener_mde_writer_asan \
+	tools/atsc3_alc_listener_mde_writer_from_stltp_pcap \
+	tools/atsc3_alc_listener_mde_writer_from_stltp_pcap_asan \
 	tools/atsc3_mmt_listener_to_http_hls_fmp4 \
 	tools/atsc3_srt_rx_stltp_virtual_phy_alc_listener_writer \
 	tools/atsc3_srt_rx_stltp_virtual_phy_alc_listener_writer_noasan \
@@ -333,6 +337,7 @@ atsc3_lls_types.o: atsc3_lls_types.h atsc3_lls_types.c \
 		atsc3_monitor_events_sls.h \
 		atsc3_monitor_events_alc.h \
 		atsc3_alc_session.h \
+		atsc3_udp.h \
 		atsc3_listener_udp.h \
 		atsc3_fdt.h \
 		atsc3_sls_metadata_fragment_types.h \
@@ -348,6 +353,7 @@ atsc3_lls_types_asan.o: atsc3_lls_types.h atsc3_lls_types.c \
 		atsc3_monitor_events_sls.h \
 		atsc3_monitor_events_alc.h \
 		atsc3_alc_session.h \
+		atsc3_udp.h \
 		atsc3_listener_udp.h \
 		atsc3_fdt.h \
 		atsc3_sls_metadata_fragment_types.h \
@@ -364,6 +370,9 @@ atsc3_aeat_types_asan.o: atsc3_aeat_types.h atsc3_aeat_types.c
 atsc3_aeat_parser.o: atsc3_aeat_parser.h atsc3_aeat_parser.c
 	$(CC) $(CFLAGS) $(DEBUG)  -c atsc3_aeat_parser.c
 
+atsc3_udp.o: atsc3_udp.h atsc3_udp.c
+	$(CC) $(CFLAGS) $(DEBUG)  -c atsc3_udp.c
+	
 atsc3_listener_udp.o: atsc3_listener_udp.h atsc3_listener_udp.c
 	$(CC) $(CFLAGS) $(DEBUG)  -c atsc3_listener_udp.c
 
@@ -631,12 +640,14 @@ SRTRxSTLTPVirtualPHY.o: phy/virtual/SRTRxSTLTPVirtualPHY.h phy/virtual/SRTRxSTLT
 atsc3_stltp_parser_test: atsc3_stltp_parser_test.c \
 	atsc3_stltp_types.o \
 	atsc3_stltp_parser.o \
+	atsc3_udp.o \
 	atsc3_listener_udp.o \
 	atsc3_ip_udp_rtp_parser.o \
 	atsc3_utils.o
 	$(CC) $(CFLAGS) $(DEBUG)  atsc3_stltp_parser_test.c \
 	atsc3_stltp_types.o \
 	atsc3_stltp_parser.o \
+	atsc3_udp.o \
 	atsc3_ip_udp_rtp_parser.o \
 	atsc3_listener_udp.o \
 	atsc3_utils.o \
@@ -693,6 +704,7 @@ libatsc3_intermediate.o: atsc3_lls.o \
 		atsc3_lls_sls_monitor_output_buffer.o \
 		atsc3_lls_sls_monitor_output_buffer_utils.o \
 		atsc3_lls_mmt_utils.o \
+		atsc3_udp.o \
 		atsc3_listener_udp.o \
 		atsc3_ip_udp_rtp_parser.o \
 		atsc3_gzip.o \
@@ -763,6 +775,7 @@ libatsc3_intermediate.o: atsc3_lls.o \
 		atsc3_lls_sls_monitor_output_buffer.o \
 		atsc3_lls_sls_monitor_output_buffer_utils.o \
 		atsc3_lls_mmt_utils.o \
+		atsc3_udp.o \
 		atsc3_listener_udp.o \
 		atsc3_ip_udp_rtp_parser.o \
 		atsc3_gzip.o \
@@ -833,6 +846,7 @@ libatsc3_intermediate_asan.o: \
 		atsc3_lls_sls_monitor_output_buffer.o \
 		atsc3_lls_sls_monitor_output_buffer_utils.o \
 		atsc3_lls_mmt_utils.o \
+		atsc3_udp.o \
 		atsc3_listener_udp.o \
 		atsc3_ip_udp_rtp_parser.o \
 		atsc3_gzip.o \
@@ -900,6 +914,7 @@ libatsc3_intermediate_asan.o: \
 		atsc3_lls_sls_monitor_output_buffer.o \
 		atsc3_lls_sls_monitor_output_buffer_utils.o \
 		atsc3_lls_mmt_utils.o \
+		atsc3_udp.o \
 		atsc3_listener_udp.o \
 		atsc3_ip_udp_rtp_parser.o \
 		atsc3_gzip.o \
@@ -1357,7 +1372,7 @@ listener_tests/atsc3_alc_listener_test_valgrind: listener_tests/atsc3_alc_listen
 		libatsc3_bento4_gpl.o \
 		$(LOCAL_LD_LIBS) \
 		-o listener_tests/atsc3_alc_listener_test_valgrind
-
+			
 # mfu context depacketizer/callback testing
 
 listener_tests/atsc3_mmt_context_mfu_depacketizer_test: listener_tests/atsc3_mmt_context_mfu_depacketizer_test.cpp \
@@ -1533,18 +1548,37 @@ tools/atsc3_mmt_mfu_monitor: tools/atsc3_mmt_mfu_monitor.cpp \
 
 
 tools/atsc3_alc_listener_mde_writer: tools/atsc3_alc_listener_mde_writer.cpp	libatsc3_bento4_gpl.o
-	$(CXX)  $(CFLAGS) $(DEBUG) tools/atsc3_alc_listener_mde_writer.cpp \
+	$(CXX) $(CFLAGS) $(DEBUG) tools/atsc3_alc_listener_mde_writer.cpp \
 		libatsc3_bento4_gpl.o \
 		-I../bento/include/ \
 		$(LOCAL_LD_LIBS) \
 		-o tools/atsc3_alc_listener_mde_writer
 		
 tools/atsc3_alc_listener_mde_writer_asan: tools/atsc3_alc_listener_mde_writer.cpp	libatsc3_bento4_gpl_asan.o
-	$(CXX)  $(ASAN) $(CFLAGS) $(DEBUG)  tools/atsc3_alc_listener_mde_writer.cpp \
+	$(CXX) $(ASAN) $(CFLAGS) $(DEBUG)  tools/atsc3_alc_listener_mde_writer.cpp \
 		libatsc3_bento4_gpl_asan.o \
 		-I../bento/include/ \
 		$(LOCAL_LD_LIBS) \
 		-o tools/atsc3_alc_listener_mde_writer_asan
+		
+# STLTP pcap replay and ROUTE / ALC extractor
+tools/atsc3_alc_listener_mde_writer_from_stltp_pcap: tools/atsc3_alc_listener_mde_writer_from_stltp_pcap.cpp libatsc3_bento4_gpl.o
+	$(CXX) $(CFLAGS) $(DEBUG) tools/atsc3_alc_listener_mde_writer_from_stltp_pcap.cpp \
+		libatsc3_bento4_gpl.o \
+		-I../bento/include/ \
+		-I . \
+		$(LOCAL_LD_LIBS) \
+		-o tools/atsc3_alc_listener_mde_writer_from_stltp_pcap
+
+# simple ALC/DASH listener that builds a single ISOBMFF segment with v/a muxed in for each MPU
+tools/atsc3_alc_listener_mde_writer_from_stltp_pcap_asan: tools/atsc3_alc_listener_mde_writer_from_stltp_pcap.cpp libatsc3_bento4_gpl.o
+	$(CXX) $(ASAN) $(CFLAGS) $(DEBUG)  tools/atsc3_alc_listener_mde_writer_from_stltp_pcap.cpp \
+		libatsc3_bento4_gpl_asan.o \
+		-I../bento/include/ \
+		-I . \
+		$(LOCAL_LD_LIBS) \
+		-o tools/atsc3_alc_listener_mde_writer_from_stltp_pcap_asan
+		
 
 # jjustman-2020-08-18 - adding web-ba support tool: atsc3_srt_rx_stltp_virtual_phy_alc_listener_writer
 

@@ -4,6 +4,7 @@ std::hash<std::thread::id> __SRTRxSTLTPVirtualPHY_thread_hasher__;
 
 SRTRxSTLTPVirtualPHY::SRTRxSTLTPVirtualPHY() {
 
+    //jjustman-2020-08-31 - TODO: add in impld' callback for     atsc3_core_service_application_bridge_reset_context();
 	atsc3_srt_live_receiver_context = atsc3_srt_live_receiver_context_new();
 	atsc3_srt_live_receiver_context_set_rx_udp_packet_process_callback_with_context(atsc3_srt_live_receiver_context, SRTRxSTLTPVirtualPHY::Atsc3_srt_live_rx_udp_packet_process_callback_with_context, (void*) this);
 

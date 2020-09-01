@@ -62,9 +62,6 @@ udp_packet_t* udp_packet_prepend_if_not_null(udp_packet_t* from_packet, udp_pack
 //see: block_t* atsc3_ip_udp_rtp_dstp_write_to_block_t(atsc3_ip_udp_rtp_dstp_packet_t* atsc3_ip_udp_rtp_dstp_packet) {
 
 
-void udp_packet_free(udp_packet_t** udp_packet_p);
-void cleanup(udp_packet_t** udp_packet_p);
-
 
 #define __LISTENER_UDP_ERROR(...)   printf("%s:%d:ERROR :",__FILE__,__LINE__);printf(__VA_ARGS__);printf("%s%s","\r","\n")
 #ifdef __cplusplus

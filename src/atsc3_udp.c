@@ -75,7 +75,7 @@ void udp_packet_free(udp_packet_t** udp_packet_p) {
 	atsc3_udp_packet_free(udp_packet_p);
 }
 
-void atsc3udp_packet_free(udp_packet_t** udp_packet_p) {
+void atsc3_udp_packet_free(atsc3_udp_packet_t** udp_packet_p) {
 	if(udp_packet_p) {
 		udp_packet_t* udp_packet = *udp_packet_p;
 		if(udp_packet) {
