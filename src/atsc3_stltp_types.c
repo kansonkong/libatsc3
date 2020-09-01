@@ -137,7 +137,35 @@ void atsc3_baseband_packet_set_bootstrap_timing_ref_from_stltp_baseband_packet(a
 
 	//last 10 bits from timestamp field
 	atsc3_baseband_packet->bootstrap_timing_data_timestamp_short_reference.a_milliseconds_pre = 0x3FF & atsc3_stltp_baseband_packet->ip_udp_rtp_packet_inner->rtp_header->timestamp;
+}
 
+
+void atsc3_preamble_packet_set_bootstrap_timing_ref_from_stltp_preamble_packet(atsc3_preamble_packet_t* atsc3_preamble_packet, atsc3_stltp_preamble_packet_t* atsc3_stltp_preamble_packet) {
+	if(!atsc3_preamble_packet || !atsc3_stltp_preamble_packet || !atsc3_stltp_preamble_packet->ip_udp_rtp_packet_inner || !atsc3_stltp_preamble_packet->ip_udp_rtp_packet_inner->rtp_header) {
+		__STLTP_TYPES_WARN("atsc3_preamble_packet_set_bootstrap_timing_ref_from_stltp_preamble_packet: packet(s) are null: atsc3_preamble_packet: %p, atsc3_stltp_preamble_packet: %p", atsc3_preamble_packet, atsc3_stltp_preamble_packet);
+		return;
+	}
+
+	//first 22 bits from timestamp field
+	atsc3_preamble_packet->bootstrap_timing_data_timestamp_short_reference.seconds_pre = 0x3FFFFF & (atsc3_stltp_preamble_packet->ip_udp_rtp_packet_inner->rtp_header->timestamp >> 10);
+
+	//last 10 bits from timestamp field
+	atsc3_preamble_packet->bootstrap_timing_data_timestamp_short_reference.a_milliseconds_pre = 0x3FF & atsc3_stltp_preamble_packet->ip_udp_rtp_packet_inner->rtp_header->timestamp;
+}
+
+
+
+void atsc3_timing_management_packet_set_bootstrap_timing_ref_from_stltp_preamble_packet(atsc3_timing_management_packet_t* atsc3_timing_management_packet, atsc3_stltp_timing_management_packet_t* atsc3_stltp_timing_management_packet) {
+	if(!atsc3_timing_management_packet || !atsc3_stltp_timing_management_packet || !atsc3_stltp_timing_management_packet->ip_udp_rtp_packet_inner || !atsc3_stltp_timing_management_packet->ip_udp_rtp_packet_inner->rtp_header) {
+		__STLTP_TYPES_WARN("atsc3_timing_management_packet_set_bootstrap_timing_ref_from_stltp_preamble_packet: packet(s) are null: atsc3_preamble_packet: %p, atsc3_stltp_timing_management_packet: %p", atsc3_timing_management_packet, atsc3_stltp_timing_management_packet);
+		return;
+	}
+
+	//first 22 bits from timestamp field
+	atsc3_timing_management_packet->bootstrap_timing_data_timestamp_short_reference.seconds_pre = 0x3FFFFF & (atsc3_stltp_timing_management_packet->ip_udp_rtp_packet_inner->rtp_header->timestamp >> 10);
+
+	//last 10 bits from timestamp field
+	atsc3_timing_management_packet->bootstrap_timing_data_timestamp_short_reference.a_milliseconds_pre = 0x3FF & atsc3_stltp_timing_management_packet->ip_udp_rtp_packet_inner->rtp_header->timestamp;
 }
 
 
@@ -382,6 +410,10 @@ void atsc3_stltp_preamble_packet_free_v(atsc3_stltp_preamble_packet_t* atsc3_stl
         atsc3_ip_udp_rtp_packet_free(&atsc3_stltp_preamble_packet->ip_udp_rtp_packet_inner);
         //this should be all boilerplate
     
+        if(atsc3_stltp_preamble_packet->preamble_packet) {
+        	free(atsc3_stltp_preamble_packet->preamble_packet);
+        	atsc3_stltp_preamble_packet->preamble_packet = NULL;
+        }
         if(atsc3_stltp_preamble_packet->payload) {
             free(atsc3_stltp_preamble_packet->payload);
             atsc3_stltp_preamble_packet->payload = NULL;        
@@ -407,6 +439,13 @@ void atsc3_stltp_timing_management_packet_free_v(atsc3_stltp_timing_management_p
         atsc3_ip_udp_rtp_packet_free(&atsc3_stltp_timing_management_packet->ip_udp_rtp_packet_outer);
         atsc3_ip_udp_rtp_packet_free(&atsc3_stltp_timing_management_packet->ip_udp_rtp_packet_inner);
         //this shoudl be all boilerplate
+
+        if(atsc3_stltp_timing_management_packet->timing_management_packet) {
+        	atsc3_timing_management_packet_free_atsc3_bootstrap_timing_data(atsc3_stltp_timing_management_packet->timing_management_packet);
+        	atsc3_timing_management_packet_free_atsc3_per_transmitter_data(atsc3_stltp_timing_management_packet->timing_management_packet);
+        	free(atsc3_stltp_timing_management_packet->timing_management_packet);
+        	atsc3_stltp_timing_management_packet->timing_management_packet = NULL;
+        }
 
         //stltp CTP specific attibutes here
         if(atsc3_stltp_timing_management_packet->payload) {

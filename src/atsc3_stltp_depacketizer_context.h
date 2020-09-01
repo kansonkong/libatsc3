@@ -14,6 +14,7 @@
 #include "atsc3_ip_udp_rtp_parser.h"
 #include "atsc3_alp_types.h"
 #include "atsc3_alp_parser.h"
+#include "atsc3_stltp_types.h"
 
 
 #if defined (__cplusplus)
@@ -29,6 +30,11 @@ typedef void(*atsc3_stltp_baseband_alp_packet_collection_callback_f)(atsc3_alp_p
 typedef void(*atsc3_stltp_baseband_alp_packet_collection_callback_with_context_f)(atsc3_alp_packet_collection_t* atsc3_alp_packet_collection, void* context);
 
 typedef void(*atsc3_stltp_baseband_alp_packet_collection_callback_with_pcap_device_reference_f)(atsc3_alp_packet_collection_t* atsc3_alp_packet_collection, pcap_t* atsc3_baseband_alp_output_pcap_device_reference); //used for re-injection
+
+
+typedef void(*atsc3_stltp_preamble_packet_collection_callback_f)(atsc3_stltp_preamble_packet_tv* atsc3_stltp_preamble_packet_v);
+typedef void(*atsc3_stltp_timing_management_packet_collection_callback_f)(atsc3_stltp_timing_management_packet_tv* atsc3_stltp_timing_management_packet_v);
+
 
 //jjustman-2020-08-11- TODO: extend this to contain the relevant bootstrap reference emission time for re-modulation
 
@@ -63,6 +69,11 @@ typedef struct atsc3_stltp_depacketizer_context {
     		pcap_t* descrInject = pcap_open_live(devInject, MAX_PCAP_LEN, 1, 1, errbufInject);
      *
      */
+
+
+    atsc3_stltp_preamble_packet_collection_callback_f 									atsc3_stltp_preamble_packet_collection_callback;
+    atsc3_stltp_timing_management_packet_collection_callback_f 							atsc3_stltp_timing_management_packet_collection_callback;
+
 
 } atsc3_stltp_depacketizer_context_t;
 
