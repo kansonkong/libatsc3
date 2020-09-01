@@ -18,10 +18,11 @@
 [submodule "gpac"]
 	path = gpac
 	url = https://github.com/gpac/gpac.git
+
 # jjustman-2020-08-25 - adding in daa in ADO DAA branch
 [submodule "android/sample_app_no_phy/ExoPlayer"]
 	path = android/sample_app_no_phy/ExoPlayer
-	url = git@ssh.dev.azure.com:v3/NGWP/Middleware/ExoPlayer
+	url = https://dev.azure.com/NGWP/Middleware/_git/ExoPlayer
 	branch = daa
 	
 	
@@ -41,9 +42,9 @@
 	
 [submodule "saankhyalabs-slsdk"]
 	path = saankhyalabs-slsdk
-	url = git@ssh.dev.azure.com:v3/NGWP/Mark%20One%20Phone/saankhyalabs-slsdk
+	url = https://dev.azure.com/NGWP/Mark%20One%20Phone/_git/saankhyalabs-slsdk
 	branch = slsdk-0.10-borqs
-	
+
 [submodule "libusb_android"]
 	path = libusb_android
 	url = https://github.com/jjustman/libusb_android.git
