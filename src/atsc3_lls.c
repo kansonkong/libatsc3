@@ -538,7 +538,7 @@ error:
 void lls_table_free(lls_table_t** lls_table_p) {
 	lls_table_t* lls_table = *lls_table_p;
 	if(!lls_table) {
-		_LLS_ERROR("lls_table_free: lls_table == NULL");
+		_LLS_DEBUG("lls_table_free: lls_table == NULL");
 		return;
 	}
 
