@@ -250,7 +250,8 @@ int main(int argc,char **argv) {
 
 #endif
 
-	char *file;
+
+	char *filename;
 
     char *stltp_dst_ip = "239.239.239.239";
     char *stltp_dst_port = "30000";
@@ -281,17 +282,19 @@ int main(int argc,char **argv) {
 
     //listen to all flows
     if(argc==2) {
-        file = argv[1];
-        __INFO("opening STLTP pcap for replay: %s", file);
+
+    	filename = argv[1];
+        __INFO("opening STLTP pcap for replay: %s", filename);
 
     } else if(argc==4) {
 
     	//listen to a selected flow
-		file = argv[1];
+
+    	filename = argv[1];
 		stltp_dst_ip = argv[2];
 		stltp_dst_port = argv[3];
 		
-		__INFO("opening STLTP pcap for replay: %s, stltp dst_ip: %s, stltp dst_port: %s", file, stltp_dst_ip, stltp_dst_port);
+		__INFO("opening STLTP pcap for replay: %s, stltp dst_ip: %s, stltp dst_port: %s", filename, stltp_dst_ip, stltp_dst_port);
     } else if (argc==6) {
 		stltp_dst_ip = argv[2];
 		stltp_dst_port = argv[3];
@@ -305,7 +308,7 @@ int main(int argc,char **argv) {
 		dst_port_int = parsePortIntoIntval(dst_port);
 		dst_ip_port_filter = &dst_port_int;
 
-		__INFO("opening STLTP pcap for replay: %s, stltp dst_ip: %s, stltp dst_port: %s, dst_ip: %s, dst_port: %s", file, stltp_dst_ip, stltp_dst_port, dst_ip, dst_port);
+		__INFO("opening STLTP pcap for replay: %s, stltp dst_ip: %s, stltp dst_port: %s, dst_ip: %s, dst_port: %s", filename, stltp_dst_ip, stltp_dst_port, dst_ip, dst_port);
 
 		/* jjustman-2020-03-28 - create a dummy lls_sls_alc_monitor_t for ad-hoc SLS management (e.g. LLS is not present in this pcap flow - may be on a non-listening PLP */
 
@@ -347,10 +350,11 @@ int main(int argc,char **argv) {
     	println("%s - a STLTP de-packetization and ROUTE/ALC extraction tool", argv[0]);
     	println("---");
     	println("args: file (stltp_dst_ip stltp_dst_port"); // (service_id)|
-    	println(" dev: device to listen for udp multicast - defaults to %s:%s", dst_ip, dst_port);
+
+    	println(" file: file to process for stltp extraction  - defaults to %s:%s", stltp_dst_ip, stltp_dst_port);
     	println(" --- optional ---");
-    	println("   dst_ip: stltp dest ip address");
-    	println("   dst_port: stltp dest port");
+    	println("   stltp_dst_ip: stltp dest ip address");
+    	println("   stltp_dst_port: stltp dest port");
     	println("");
     	exit(1);
     }
@@ -363,8 +367,7 @@ int main(int argc,char **argv) {
 
 	pcapSTLTPVirtualPHY->setRxUdpPacketProcessCallback(phy_rx_udp_packet_process_callback);
 	pcapSTLTPVirtualPHY->atsc3_pcap_stltp_listen_ip_port_plp(stltp_dst_ip, stltp_dst_port, ATSC3_STLTP_DEPACKETIZER_ALL_PLPS_VALUE);
-
-	pcapSTLTPVirtualPHY->atsc3_pcap_replay_open_file(file);
+	pcapSTLTPVirtualPHY->atsc3_pcap_replay_open_file(filename);
 
 	pcapSTLTPVirtualPHY->atsc3_pcap_thread_run();
 	atsc3_pcap_replay_context_t* atsc3_pcap_replay_context_volitale = NULL;
