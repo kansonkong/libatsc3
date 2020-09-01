@@ -144,6 +144,8 @@ clean:
 	-rm -f tools/atsc3_listener_metrics_ncurses_httpd_isobmff
 	-rm -f tools/atsc3_mmt_mfu_monitor
 	-rm -f tools/atsc3_mmt_listener_to_http_hls_fmp4
+	-rm -f tools/atsc3_pcap_stltp_preamble_timing_management_validate
+	-rm -f tools/atsc3_pcap_stltp_preamble_timing_management_validate_asan
 	-rm -f test_sl/atsc3_sl_tlv_parser_to_alp_test
 	-rm -f test_sl/atsc3_sl_tlv_parser_to_alp_reflector_test
 	-rm -f test_sl/atsc3_sl_tlv_parser_to_alp_test_with_metrics
@@ -277,7 +279,9 @@ tools: tools/atsc3_listener_metrics_ncurses \
 	tools/atsc3_alc_listener_mde_writer_asan \
 	tools/atsc3_mmt_listener_to_http_hls_fmp4 \
 	tools/atsc3_srt_rx_stltp_virtual_phy_alc_listener_writer \
-	tools/atsc3_srt_rx_stltp_virtual_phy_alc_listener_writer_noasan
+	tools/atsc3_srt_rx_stltp_virtual_phy_alc_listener_writer_noasan \
+	tools/atsc3_pcap_stltp_preamble_timing_management_validate \
+	tools/atsc3_pcap_stltp_preamble_timing_management_validate_asan
 
 atsc3_sl_phy: atsc3_sl_tlv_demod_type.o	\
 	test_sl/atsc3_sl_tlv_parser_to_alp_test \
@@ -1566,6 +1570,24 @@ tools/atsc3_srt_rx_stltp_virtual_phy_alc_listener_writer_noasan: tools/atsc3_srt
 		$(LOCAL_LD_LIBS_SRT_PATH) $(LOCAL_LD_LIBS_SRT) \
 		-o tools/atsc3_srt_rx_stltp_virtual_phy_alc_listener_writer_noasan
 
+tools/atsc3_pcap_stltp_preamble_timing_management_validate: tools/atsc3_pcap_stltp_preamble_timing_management_validate.cpp libatsc3_bento4_gpl.o
+	g++  $(CFLAGS) $(CXXFLAGS) $(DEBUG) \
+		$(SRT_PLATFORM_BUILD_DEFS) \
+		-I . \
+		tools/atsc3_pcap_stltp_preamble_timing_management_validate.cpp \
+		libatsc3_bento4_gpl.o \
+		$(LOCAL_LD_LIBS) \
+		-o tools/atsc3_pcap_stltp_preamble_timing_management_validate
+
+
+tools/atsc3_pcap_stltp_preamble_timing_management_validate_asan: tools/atsc3_pcap_stltp_preamble_timing_management_validate.cpp libatsc3_bento4_gpl.o
+	g++ $(ASAN) $(CFLAGS) $(CXXFLAGS) $(DEBUG) \
+		$(SRT_PLATFORM_BUILD_DEFS) \
+		-I . \
+		tools/atsc3_pcap_stltp_preamble_timing_management_validate.cpp \
+		libatsc3_bento4_gpl.o \
+		$(LOCAL_LD_LIBS) \
+		-o tools/atsc3_pcap_stltp_preamble_timing_management_validate_asan
 
 #		
 # tools/atsc3_alc_listener_mde_writer_malloc_debug: tools/atsc3_alc_listener_mde_writer.cpp	libatsc3_bento4_gpl.o

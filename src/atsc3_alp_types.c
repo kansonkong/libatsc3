@@ -7,6 +7,12 @@
 
 #include "atsc3_alp_types.h"
 
+int _ATSC3_ALP_TYPES_INFO_ENABLED  = 0;
+int _ATSC3_ALP_TYPES_DUMP_ENABLED  = 0;
+int _ATSC3_ALP_TYPES_DEBUG_ENABLED = 0;
+int _ATSC3_ALP_TYPES_TRACE_ENABLED = 0;
+
+
 ATSC3_VECTOR_BUILDER_METHODS_PARENT_IMPLEMENTATION(atsc3_alp_packet_collection);
 ATSC3_VECTOR_BUILDER_METHODS_IMPLEMENTATION(atsc3_alp_packet_collection, atsc3_baseband_packet);
 ATSC3_VECTOR_BUILDER_METHODS_IMPLEMENTATION(atsc3_alp_packet_collection, atsc3_alp_packet);
@@ -30,6 +36,14 @@ atsc3_alp_packet_t* atsc3_alp_packet_clone(atsc3_alp_packet_t* atsc3_alp_packet)
     return atsc3_alp_packet_new;
 }
 
+void atsc3_alp_packet_dump(atsc3_alp_packet_t* atsc3_alp_packet) {
+	_ATSC3_ALP_TYPES_DUMP("alp:      PLP: %d, seconds_pre: 0x%02x, a_milli_pre: 0x%02x, size: %d",
+				atsc3_alp_packet->plp_num,
+				atsc3_alp_packet->bootstrap_timing_data_timestamp_short_reference.seconds_pre,
+				atsc3_alp_packet->bootstrap_timing_data_timestamp_short_reference.a_milliseconds_pre,
+				block_Remaining_size(atsc3_alp_packet->alp_payload)
+		);
+}
 
 void atsc3_alp_packet_free(atsc3_alp_packet_t** atsc3_alp_packet_p) {
     if(atsc3_alp_packet_p) {

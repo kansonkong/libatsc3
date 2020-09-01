@@ -27,6 +27,7 @@ using namespace std;
 
 // libatsc3 type imports here
 #include <atsc3_utils.h>
+#include <atsc3_logging_externs.h>
 #include <atsc3_pcap_type.h>
 #include <atsc3_stltp_parser.h>
 #include <atsc3_alp_parser.h>
@@ -44,14 +45,11 @@ class PcapSTLTPVirtualPHY : public IAtsc3NdkPHYClient
 public:
     PcapSTLTPVirtualPHY();
 
-    int Init();
-    int Prepare(const char *strDevListInfo, int delim1, int delim2);
-    int Open(int fd, int bus, int addr);
-    int Tune(int freqKHz, int plpId);
-    int Stop();
-    int Close();
-    int Reset();
-    int Uninit();
+	virtual int  init();
+	virtual int  run();
+	virtual bool is_running();
+	virtual int  stop();
+	virtual int  deinit();
 
     /*
      * pcap methods
@@ -66,7 +64,8 @@ public:
     int atsc3_pcap_thread_stop(); 							//will invoke cleanup of context
 
     bool is_pcap_replay_running();
-    atsc3_pcap_replay_context_t* get_pcap_replay_context_status_volatile(); //treat this as const*
+    atsc3_pcap_replay_context_t* get_pcap_replay_context_status_volatile(); 	//treat this as const*
+    atsc3_stltp_depacketizer_context_t* get_atsc3_stltp_depacketizer_context() { return this->atsc3_stltp_depacketizer_context; }
 
     //special "friend" callback from stltp_depacketizer context
     static void Atsc3_stltp_baseband_alp_packet_collection_callback_with_context(atsc3_alp_packet_collection_t* atsc3_alp_packet_collection, void* context);
@@ -126,9 +125,8 @@ protected:
 
 #define PCAP_DEMUXED_VIRTUAL_PHY_ERROR(...)   	__LIBATSC3_TIMESTAMP_ERROR(__VA_ARGS__);
 #define PCAP_DEMUXED_VIRTUAL_PHY_WARN(...)   	__LIBATSC3_TIMESTAMP_WARN(__VA_ARGS__);
-#define PCAP_DEMUXED_VIRTUAL_PHY_INFO(...)   	__LIBATSC3_TIMESTAMP_INFO(__VA_ARGS__);
-#define PCAP_DEMUXED_VIRTUAL_PHY_DEBUG(...)   	__LIBATSC3_TIMESTAMP_DEBUG(__VA_ARGS__);
-
-
+#define PCAP_DEMUXED_VIRTUAL_PHY_INFO(...)   	if(_ATSC3_PCAP_STLTP_VIRTUAL_PHY_INFO_ENABLED)  { __LIBATSC3_TIMESTAMP_INFO(__VA_ARGS__); }
+#define PCAP_DEMUXED_VIRTUAL_PHY_DEBUG(...)   	if(_ATSC3_PCAP_STLTP_VIRTUAL_PHY_DEBUG_ENABLED) {__LIBATSC3_TIMESTAMP_DEBUG(__VA_ARGS__); }
+#define PCAP_DEMUXED_VIRTUAL_PHY_TRACE(...)   	if(_ATSC3_PCAP_STLTP_VIRTUAL_PHY_TRACE_ENABLED) {__LIBATSC3_TIMESTAMP_TRACE(__VA_ARGS__); }
 
 #endif //LIBATSC3_PCAPSTLTPVIRTUALPHY_H

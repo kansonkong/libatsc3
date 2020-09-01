@@ -17,6 +17,7 @@ typedef struct pcap pcap_t;
 #include "atsc3_vector_builder.h"
 #include "atsc3_utils.h"
 #include "atsc3_logging_externs.h"
+#include "atsc3_ip_udp_rtp_types.h"
 #include "atsc3_stltp_types.h"
 
 #if defined (__cplusplus)
@@ -169,6 +170,7 @@ typedef struct alp_packet_header  {
 } alp_packet_header_t;
 
 typedef struct atsc3_alp_packet {
+	atsc3_rtp_header_timestamp_t	bootstrap_timing_data_timestamp_short_reference;
 	uint8_t				plp_num;
 
     alp_packet_header_t alp_packet_header;
@@ -226,10 +228,20 @@ ATSC3_VECTOR_BUILDER_METHODS_INTERFACE(atsc3_alp_packet_collection, atsc3_alp_pa
 //TODO: jjustman-2019-08-08 - fixme: clone is a shallow clone (memcpy) and MAY leave dangling pointer references
 atsc3_alp_packet_t* atsc3_alp_packet_clone(atsc3_alp_packet_t* atsc3_alp_packet);
 
+void atsc3_alp_packet_dump(atsc3_alp_packet_t* atsc3_alp_packet);
+
 //always free if created from atsc3_alp_packet_clone when no longer needed
 void atsc3_alp_packet_free(atsc3_alp_packet_t** atsc3_alp_packet_p);
 void atsc3_alp_packet_free_alp_payload(atsc3_alp_packet_t* atsc3_alp_packet);
 void atsc3_link_mapping_table_free(atsc3_link_mapping_table_t** atsc3_link_mapping_table_p);
+
+
+#define _ATSC3_ALP_TYPES_ERROR(...)   __LIBATSC3_TIMESTAMP_ERROR(__VA_ARGS__);
+#define _ATSC3_ALP_TYPES_WARN(...)    __LIBATSC3_TIMESTAMP_WARN(__VA_ARGS__);
+#define _ATSC3_ALP_TYPES_INFO(...)    if(_ATSC3_ALP_TYPES_INFO_ENABLED)  { __LIBATSC3_TIMESTAMP_INFO(__VA_ARGS__);  }
+#define _ATSC3_ALP_TYPES_DUMP(...)    if(_ATSC3_ALP_TYPES_DUMP_ENABLED)  { __LIBATSC3_TIMESTAMP_DUMP(__VA_ARGS__);   }
+#define _ATSC3_ALP_TYPES_DEBUG(...)   if(_ATSC3_ALP_TYPES_DEBUG_ENABLED) { __LIBATSC3_TIMESTAMP_DEBUG(__VA_ARGS__); }
+#define _ATSC3_ALP_TYPES_TRACE(...)   if(_ATSC3_ALP_TYPES_TRACE_ENABLED) { __LIBATSC3_TIMESTAMP_TRACE(__VA_ARGS__); }
 
 #if defined (__cplusplus)
 }

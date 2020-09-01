@@ -73,7 +73,7 @@ char* atsc3_route_package_generate_path_from_appContextIdList(atsc3_fdt_file_t* 
 			sha256_update(&ctx, (const BYTE *)atsc3_fdt_file->app_context_id_list, strlen(atsc3_fdt_file->app_context_id_list));
 			sha256_final(&ctx, (BYTE *)buf);
 		} else if(atsc3_fdt_file->content_location) {
-			sha256_update(&ctx, (const BYTE *)atsc3_fdt_file->app_context_id_list, strlen(atsc3_fdt_file->content_location));
+			sha256_update(&ctx, (const BYTE *)atsc3_fdt_file->content_location, strlen(atsc3_fdt_file->content_location));
 			sha256_final(&ctx, (BYTE *)buf);
 		}
 	}
