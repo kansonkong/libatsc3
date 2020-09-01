@@ -1,3 +1,20 @@
+# linux build
+
+apt-get install tcl libssl-dev
+
+after configure...hack
+
+ubuntu@ip-172-32-34-77:~/libatsc3/srt$ sudo su
+root@ip-172-32-34-77:/home/ubuntu/libatsc3/srt# mkdir /usr/local/include/srt
+root@ip-172-32-34-77:/home/ubuntu/libatsc3/srt# cp version.h /usr/local/include/srt
+root@ip-172-32-34-77:/home/ubuntu/libatsc3/srt# exit
+exit
+ubuntu@ip-172-32-34-77:~/libatsc3/srt$ make
+
+
+
+# osx build (android hack down below)
+
 # srt make
 
 cd srt
