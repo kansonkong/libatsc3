@@ -391,11 +391,34 @@ cleanup:
  * so do NOT try and free ip_udp_rtp
  *
  * *block_t unless we return false;
+ *
+ * A/324: 8 STLTP TRANSPORT PROTOCOL
+    Address Assignments
+        IPv4 packet format and addressing shall be used exclusively on the STL. The Multicast (destination) address range is 224.0.0.0 – 239.255.255.255.
+        Of that range, 239.0.0.0 – 239.255.255.255 are for private addresses and shall be used for both inner Tunneled and outer Tunnel Packets.
  */
 bool atsc3_stltp_depacketizer_from_blockt(block_t** packet_p, atsc3_stltp_depacketizer_context_t* atsc3_stltp_depacketizer_context) {
 	atsc3_ip_udp_rtp_packet_t* ip_udp_rtp_packet = atsc3_ip_udp_rtp_packet_process_from_blockt_pos(*packet_p);
 	if(!ip_udp_rtp_packet) {
 		return false;
+	}
+
+	if(!atsc3_stltp_depacketizer_context->context_configured) {
+        //try and find a flow that might be STLTP, must be in the range of 239.0.0.0-239.255.255.255
+        if (ip_udp_rtp_packet->udp_flow.dst_ip_addr >= ATSC3_STLTP_MULTICAST_RANGE_MIN && ip_udp_rtp_packet->udp_flow.dst_ip_addr <= ATSC3_STLTP_MULTICAST_RANGE_MAX) {
+            //additionally rtp_header->version should be a value of 2
+            if (ip_udp_rtp_packet->rtp_header && ip_udp_rtp_packet->rtp_header->version == 0x2) {
+                atsc3_stltp_depacketizer_context->destination_flow_filter.dst_ip_addr = ip_udp_rtp_packet->udp_flow.dst_ip_addr;
+                atsc3_stltp_depacketizer_context->destination_flow_filter.dst_port = ip_udp_rtp_packet->udp_flow.dst_port;
+                atsc3_stltp_depacketizer_context->inner_rtp_port_filter = ATSC3_STLTP_DEPACKETIZER_ALL_PLPS_INNER_RTP_PORT;
+                atsc3_stltp_depacketizer_context->context_configured = true;
+                _ATSC3_STLTP_DEPACKETIZER_INFO("auto-assigning stltp_depacketizer_context with: dst_ip_addr: %d, dst_port: %d, inner_rtp_port_filter: %d",
+                                               atsc3_stltp_depacketizer_context->destination_flow_filter.dst_ip_addr,
+                                               atsc3_stltp_depacketizer_context->destination_flow_filter.dst_port,
+                                               atsc3_stltp_depacketizer_context->inner_rtp_port_filter);
+
+            }
+        }
 	}
 
 	atsc3_stltp_depacketizer_from_ip_udp_rtp_packet(ip_udp_rtp_packet, atsc3_stltp_depacketizer_context);
