@@ -1583,7 +1583,7 @@ cleanup:
 void atsc3_timing_management_packet_dump(atsc3_timing_management_packet_t* atsc3_timing_management_packet) {
 	__STLTP_PARSER_DUMP("---------");
 	//atsc3_timing_management_packet
-	__STLTP_PARSER_DUMP("timing_management: seconds_pre: 0x%04x, a_milli_pre: 0x%02x, length: %d, version_major: %d (0x%01x), verion_minor: %d (0x%01x), maj_log_rep_cnt_pre: %d, maj_log_rep_cnt_tim: %d",
+	__STLTP_PARSER_DUMP("timing_management: seconds_pre: 0x%06x, a_milli_pre: 0x%04x, length: %d, version_major: %d (0x%01x), verion_minor: %d (0x%01x), maj_log_rep_cnt_pre: %d, maj_log_rep_cnt_tim: %d",
 			atsc3_timing_management_packet->bootstrap_timing_data_timestamp_short_reference.seconds_pre,
 			atsc3_timing_management_packet->bootstrap_timing_data_timestamp_short_reference.a_milliseconds_pre,
 			atsc3_timing_management_packet->length,
@@ -1621,7 +1621,7 @@ void atsc3_timing_management_packet_dump(atsc3_timing_management_packet_t* atsc3
 
 	for(int i=0; i < atsc3_timing_management_packet->atsc3_bootstrap_timing_data_v.count; i++) {
 		atsc3_bootstrap_timing_data_t* atsc3_bootstrap_timing_data = atsc3_timing_management_packet->atsc3_bootstrap_timing_data_v.data[i];
-		__STLTP_PARSER_DUMP("timing_management: atsc3_bootstrap_timing_data: entry: %d, seconds: %d, nanoseconds: %d, seconds_pre: 0x%04x, a_milli_pre: 0x%02x",
+		__STLTP_PARSER_DUMP("timing_management: atsc3_bootstrap_timing_data: entry: %d, seconds: %d, nanoseconds: %d, seconds_pre: 0x%06x, a_milli_pre: 0x%04x",
 				i,
 				atsc3_bootstrap_timing_data->seconds,
 				atsc3_bootstrap_timing_data->nanoseconds,
@@ -1655,7 +1655,7 @@ void atsc3_timing_management_packet_dump(atsc3_timing_management_packet_t* atsc3
 void atsc3_baseband_packet_dump(atsc3_baseband_packet_t* atsc3_baseband_packet) {
 	__STLTP_PARSER_DUMP("---------");
 
-    __STLTP_PARSER_DUMP("baseband: PLP: %d, seconds_pre: 0x%04x, a_milli_pre: 0x%02x, base_field_mode: 0x%x, base field pointer: 0x%02x, option_field_mode: 0x%01x, ext_type: 0x%01x, ext_len: 0x%02x, extension: 0x%04x",
+    __STLTP_PARSER_DUMP("baseband: PLP: %d, seconds_pre: 0x%06x, a_milli_pre: 0x%04x, base_field_mode: 0x%x, base field pointer: 0x%02x, option_field_mode: 0x%01x, ext_type: 0x%01x, ext_len: 0x%02x, extension: 0x%04x",
     		atsc3_baseband_packet->plp_num,
 			atsc3_baseband_packet->bootstrap_timing_data_timestamp_short_reference.seconds_pre,
 			atsc3_baseband_packet->bootstrap_timing_data_timestamp_short_reference.a_milliseconds_pre,
@@ -1672,7 +1672,7 @@ void atsc3_preamble_packet_dump(atsc3_preamble_packet_t* atsc3_preamble_packet) 
     
 	__STLTP_PARSER_DUMP("---------");
 
-    __STLTP_PARSER_DUMP("preamble: seconds_pre: 0x%04x, a_milli_pre: 0x%02x, L1B: version: %d, mimo: %d, lls_flag: %d, time_info: %d, return_channel: %d, papr_reduction: %d, frame_length mode: %d",
+    __STLTP_PARSER_DUMP("preamble: seconds_pre: 0x%06x, a_milli_pre: 0x%04x, L1B: version: %d, mimo: %d, lls_flag: %d, time_info: %d, return_channel: %d, papr_reduction: %d, frame_length mode: %d",
     		atsc3_preamble_packet->bootstrap_timing_data_timestamp_short_reference.seconds_pre,
 			atsc3_preamble_packet->bootstrap_timing_data_timestamp_short_reference.a_milliseconds_pre,
     		atsc3_preamble_packet->L1_basic_signaling.L1B_version,
