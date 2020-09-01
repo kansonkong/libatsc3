@@ -41,6 +41,8 @@ extern "C" {
 
 
 lls_slt_monitor_t* lls_slt_monitor_create(void);
+void atsc3_lls_slt_monitor_free(lls_slt_monitor_t** lls_slt_monitor_p);
+
 
 int lls_slt_table_check_process_update(lls_table_t* lls_table, lls_slt_monitor_t* lls_slt_monitor);
 int lls_slt_table_perform_update(lls_table_t* lls_table, lls_slt_monitor_t* lls_slt_monitor);

@@ -51,7 +51,7 @@ void PcapSTLTPVirtualPHY::atsc3_pcap_stltp_listen_ip_port_plp(string ip, string 
 	dst_ip_addr_filter = parseIpAddressIntoIntval(filter_dst_ip);
 
 	//parse port
-	dst_port_filter_int = 0xFFFF & atoi(filter_dst_port);
+	dst_port_filter_int = parsePortIntoIntval(filter_dst_port);
 
 	atsc3_stltp_depacketizer_context->destination_flow_filter.dst_ip_addr = dst_ip_addr_filter;
 	atsc3_stltp_depacketizer_context->destination_flow_filter.dst_port = dst_port_filter_int;

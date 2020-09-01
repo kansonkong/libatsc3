@@ -921,7 +921,6 @@ void freeclean_uint8_t(uint8_t** tofree) {
 	}
 }
 
-
 uint32_t parseIpAddressIntoIntval(const char* dst_ip_original) {
 	if(!dst_ip_original) {
 		return 0;
@@ -941,7 +940,6 @@ uint32_t parseIpAddressIntoIntval(const char* dst_ip_original) {
 	freesafe(dst_ip);
 	return ipAddressAsInteger;
 }
-
 
 uint16_t parsePortIntoIntval(const char* dst_port) {
 	if(!dst_port) {

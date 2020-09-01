@@ -250,6 +250,7 @@ int main(int argc,char **argv) {
 
 #endif
 
+
 	char *filename;
 
     char *stltp_dst_ip = "239.239.239.239";
@@ -281,12 +282,14 @@ int main(int argc,char **argv) {
 
     //listen to all flows
     if(argc==2) {
+
     	filename = argv[1];
         __INFO("opening STLTP pcap for replay: %s", filename);
 
     } else if(argc==4) {
 
     	//listen to a selected flow
+
     	filename = argv[1];
 		stltp_dst_ip = argv[2];
 		stltp_dst_port = argv[3];
@@ -347,6 +350,7 @@ int main(int argc,char **argv) {
     	println("%s - a STLTP de-packetization and ROUTE/ALC extraction tool", argv[0]);
     	println("---");
     	println("args: file (stltp_dst_ip stltp_dst_port"); // (service_id)|
+
     	println(" file: file to process for stltp extraction  - defaults to %s:%s", stltp_dst_ip, stltp_dst_port);
     	println(" --- optional ---");
     	println("   stltp_dst_ip: stltp dest ip address");
@@ -363,7 +367,6 @@ int main(int argc,char **argv) {
 
 	pcapSTLTPVirtualPHY->setRxUdpPacketProcessCallback(phy_rx_udp_packet_process_callback);
 	pcapSTLTPVirtualPHY->atsc3_pcap_stltp_listen_ip_port_plp(stltp_dst_ip, stltp_dst_port, ATSC3_STLTP_DEPACKETIZER_ALL_PLPS_VALUE);
-
 	pcapSTLTPVirtualPHY->atsc3_pcap_replay_open_file(filename);
 
 	pcapSTLTPVirtualPHY->atsc3_pcap_thread_run();
