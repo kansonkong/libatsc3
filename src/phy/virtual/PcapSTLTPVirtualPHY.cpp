@@ -1,6 +1,35 @@
 #include "PcapSTLTPVirtualPHY.h"
 
+
+int _ATSC3_PCAP_STLTP_VIRTUAL_PHY_INFO_ENABLED  = 0;
+int _ATSC3_PCAP_STLTP_VIRTUAL_PHY_DEBUG_ENABLED = 0;
+int _ATSC3_PCAP_STLTP_VIRTUAL_PHY_TRACE_ENABLED = 0;
+
 std::hash<std::thread::id> __pcapSTLTPVirtualPHY_thread_hasher__;
+
+
+int PcapSTLTPVirtualPHY::init() {
+
+	return 0;
+}
+
+int PcapSTLTPVirtualPHY::run() {
+
+	return this->atsc3_pcap_thread_run();
+}
+
+bool PcapSTLTPVirtualPHY::is_running() {
+
+	return !pcapProducerShutdown && !pcapConsumerShutdown;
+}
+
+int PcapSTLTPVirtualPHY::stop() {
+	return this->atsc3_pcap_thread_stop();
+}
+
+int PcapSTLTPVirtualPHY::deinit() {
+	return 0;
+}
 
 PcapSTLTPVirtualPHY::PcapSTLTPVirtualPHY() {
 	atsc3_stltp_depacketizer_context = atsc3_stltp_depacketizer_context_new();
@@ -19,14 +48,7 @@ void PcapSTLTPVirtualPHY::atsc3_pcap_stltp_listen_ip_port_plp(string ip, string 
 	uint32_t dst_ip_addr_filter = 0;
 	uint16_t dst_port_filter_int = 0;
 
-	char* pch = strtok ((char*)filter_dst_ip,".");
-	int offset = 24;
-	while (pch != NULL && offset>=0) {
-		uint8_t octet = atoi(pch);
-		dst_ip_addr_filter |= octet << offset;
-		offset-=8;
-		pch = strtok (NULL, ".");
-	}
+	dst_ip_addr_filter = parseIpAddressIntoIntval(filter_dst_ip);
 
 	//parse port
 	dst_port_filter_int = 0xFFFF & atoi(filter_dst_port);
@@ -37,6 +59,8 @@ void PcapSTLTPVirtualPHY::atsc3_pcap_stltp_listen_ip_port_plp(string ip, string 
 	//uint8_t stltp_plp_id = atoi();
 	if(plp >=0 && plp <= 63) {
 		atsc3_stltp_depacketizer_context->inner_rtp_port_filter = plp + 30000;
+	} else if(plp == 255) {
+		atsc3_stltp_depacketizer_context->inner_rtp_port_filter = ATSC3_STLTP_DEPACKETIZER_ALL_PLPS_INNER_RTP_PORT;
 	} else {
 		atsc3_stltp_depacketizer_context->inner_rtp_port_filter = 30000;
 	}
@@ -315,48 +339,4 @@ void PcapSTLTPVirtualPHY::atsc3_stltp_baseband_alp_packet_collection_received(at
 }
 
 
-
-/*
- * default IPHY impl's here
- */
-
-int PcapSTLTPVirtualPHY::Init()
-{
-    return 0;
-}
-
-int PcapSTLTPVirtualPHY::Prepare(const char *strDevListInfo, int delim1, int delim2)
-{
-    return 0;
-}
-
-int PcapSTLTPVirtualPHY::Open(int fd, int bus, int addr)
-{
-    return 0;
-}
-
-int PcapSTLTPVirtualPHY::Tune(int freqKHz, int plpid)
-{
-    return 0;
-}
-
-int PcapSTLTPVirtualPHY::Stop()
-{
-    return 0;
-}
-
-int PcapSTLTPVirtualPHY::Reset()
-{
-    return 0;
-}
-
-int PcapSTLTPVirtualPHY::Close()
-{
-    return 0;
-}
-
-int PcapSTLTPVirtualPHY::Uninit()
-{
-    return 0;
-}
 

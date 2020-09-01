@@ -121,6 +121,7 @@ atsc3_baseband_packet_t* atsc3_stltp_parse_baseband_packet(atsc3_stltp_baseband_
 
     atsc3_baseband_packet_t* atsc3_baseband_packet = atsc3_baseband_packet_new();
     atsc3_baseband_packet_set_plp_from_stltp_baseband_packet(atsc3_baseband_packet, atsc3_stltp_baseband_packet);
+    atsc3_baseband_packet_set_bootstrap_timing_ref_from_stltp_baseband_packet(atsc3_baseband_packet, atsc3_stltp_baseband_packet);
 
     //base field byte 1
     atsc3_baseband_packet->base_field_mode = (*binary_payload >> 7) & 0x1;
@@ -611,6 +612,16 @@ cleanup:
     }
     
     return NULL;
+}
+
+void atsc3_alp_packet_packet_set_bootstrap_timing_ref_from_baseband_packet(atsc3_alp_packet_t* atsc3_alp_packet, atsc3_baseband_packet_t* atsc3_baseband_packet) {
+	if(!atsc3_alp_packet || !atsc3_baseband_packet) {
+		__ALP_PARSER_WARN("atsc3_alp_packet_packet_set_bootstrap_timing_ref_from_baseband_packet - atsc3_alp_packet: %p, atsc3_baseband_packet: %p is null!", atsc3_alp_packet, atsc3_baseband_packet);
+		return;
+	}
+	atsc3_alp_packet->bootstrap_timing_data_timestamp_short_reference.seconds_pre = atsc3_baseband_packet->bootstrap_timing_data_timestamp_short_reference.seconds_pre;
+	atsc3_alp_packet->bootstrap_timing_data_timestamp_short_reference.a_milliseconds_pre = atsc3_baseband_packet->bootstrap_timing_data_timestamp_short_reference.a_milliseconds_pre;
+
 }
 
 

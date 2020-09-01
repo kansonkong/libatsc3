@@ -28,6 +28,8 @@ extern "C" {
 
 atsc3_baseband_packet_t* atsc3_stltp_parse_baseband_packet(atsc3_stltp_baseband_packet_t* atsc3_stltp_baseband_packet);
 atsc3_alp_packet_t* atsc3_alp_packet_parse(uint8_t plp_num, block_t* baseband_packet_payload);
+void atsc3_alp_packet_packet_set_bootstrap_timing_ref_from_baseband_packet(atsc3_alp_packet_t* atsc3_alp_packet, atsc3_baseband_packet_t* atsc3_baseband_packet);
+
 
 void atsc3_alp_packet_collection_extract_lmt(atsc3_alp_packet_collection_t* atsc3_alp_packet_collection);
 atsc3_link_mapping_table_t* atsc3_alp_packet_extract_lmt(atsc3_alp_packet_t* atsc3_alp_packet);
