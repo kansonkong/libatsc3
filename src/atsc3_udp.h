@@ -57,7 +57,6 @@ atsc3_udp_packet_t* atsc3_udp_packet_from_block_t(block_t* block_udp_packet);
 void udp_packet_free(udp_packet_t** udp_packet_p);
 void atsc3_udp_packet_free(atsc3_udp_packet_t** udp_packet_p);
 
-
 #define _ATSC3_UDP_ERROR(...)   __LIBATSC3_TIMESTAMP_ERROR(__VA_ARGS__);
 #define _ATSC3_UDP_WARN(...)    __LIBATSC3_TIMESTAMP_WARN(__VA_ARGS__);;
 #define _ATSC3_UDP_INFO(...)    if(_ATSC3_UDP_INFO_ENABLED)  { __LIBATSC3_TIMESTAMP_INFO(__VA_ARGS__); }
