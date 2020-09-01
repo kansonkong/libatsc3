@@ -558,23 +558,6 @@ void atsc3_core_service_bridge_process_packet_phy(block_t* packet) {
 
     //don't auto-select service here, let the lls_slt_monitor->atsc3_lls_on_sls_table_present event callback trigger in a service selection
     if(udp_packet->udp_flow.dst_ip_addr == LLS_DST_ADDR && udp_packet->udp_flow.dst_port == LLS_DST_PORT) {
-        //at3DrvIntf_ptr->LogMsgF("atsc3_core_service_bridge_process_packet_phy got packet: LLS, %p", udp_packet);
-//        __INFO("LLS packet: dst_ip_addr: %u.%u.%u.%u:%u, len: %d",
-//                __toipnonstruct(udp_packet->udp_flow.dst_ip_addr),
-//                udp_packet->udp_flow.dst_port,
-//                udp_packet->data->p_size);
-        //dump SLS packet
-//        if(udp_packet->data->p_size == 351) {
-//
-//                FILE *fp = NULL;
-//                fp = fopen("sls.raw", "w");
-//                if(fp) {
-//                    printf("writing to sls.raw");
-//
-//                    fwrite(udp_packet->data->p_buffer, udp_packet->data->p_size, 1, fp);
-//                    fclose(fp);
-//                }
-//          }
         lls_table_t* lls_table = lls_table_create_or_update_from_lls_slt_monitor(lls_slt_monitor, udp_packet->data);
         if(lls_table) {
             if(lls_table->lls_table_id == SLT) {
