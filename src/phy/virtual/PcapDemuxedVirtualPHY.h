@@ -12,6 +12,7 @@
 #include <mutex>
 #include <semaphore.h>
 #include <list>
+#include <condition_variable>
 
 #include <sys/types.h>
 
