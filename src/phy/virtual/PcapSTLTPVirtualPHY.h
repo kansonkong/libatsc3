@@ -83,16 +83,7 @@ protected:
     int PcapConsumerThreadRun();
     int PcapLocalCleanup();
 
-    //overloadable callbacks for Android to pin mJavaVM as needed
-    virtual void pinPcapProducerThreadAsNeeded() { };
-    virtual void releasePinPcapProducerThreadAsNeeded() { };
-
-    virtual void pinPcapConsumerThreadAsNeeded() { };
-    virtual void releasePcapConsumerThreadAsNeeded() { };
-
-
     //local member variables for pcap replay
-
     char*                           pcap_replay_filename = NULL;
     bool                            pcapThreadShouldRun = false;
 
@@ -124,10 +115,10 @@ protected:
 
 };
 
-#define PCAP_DEMUXED_VIRTUAL_PHY_ERROR(...)   	__LIBATSC3_TIMESTAMP_ERROR(__VA_ARGS__);
-#define PCAP_DEMUXED_VIRTUAL_PHY_WARN(...)   	__LIBATSC3_TIMESTAMP_WARN(__VA_ARGS__);
-#define PCAP_DEMUXED_VIRTUAL_PHY_INFO(...)   	if(_ATSC3_PCAP_STLTP_VIRTUAL_PHY_INFO_ENABLED)  { __LIBATSC3_TIMESTAMP_INFO(__VA_ARGS__); }
-#define PCAP_DEMUXED_VIRTUAL_PHY_DEBUG(...)   	if(_ATSC3_PCAP_STLTP_VIRTUAL_PHY_DEBUG_ENABLED) {__LIBATSC3_TIMESTAMP_DEBUG(__VA_ARGS__); }
-#define PCAP_DEMUXED_VIRTUAL_PHY_TRACE(...)   	if(_ATSC3_PCAP_STLTP_VIRTUAL_PHY_TRACE_ENABLED) {__LIBATSC3_TIMESTAMP_TRACE(__VA_ARGS__); }
+#define _PCAP_STLTP_VIRTUAL_PHY_ERROR(...)   	__LIBATSC3_TIMESTAMP_ERROR(__VA_ARGS__);
+#define _PCAP_STLTP_VIRTUAL_PHY_WARN(...)   	__LIBATSC3_TIMESTAMP_WARN(__VA_ARGS__);
+#define _PCAP_STLTP_VIRTUAL_PHY_INFO(...)   	if(_ATSC3_PCAP_STLTP_VIRTUAL_PHY_INFO_ENABLED)  { __LIBATSC3_TIMESTAMP_INFO(__VA_ARGS__); }
+#define _PCAP_STLTP_VIRTUAL_PHY_DEBUG(...)   	if(_ATSC3_PCAP_STLTP_VIRTUAL_PHY_DEBUG_ENABLED) {__LIBATSC3_TIMESTAMP_DEBUG(__VA_ARGS__); }
+#define _PCAP_STLTP_VIRTUAL_PHY_TRACE(...)   	if(_ATSC3_PCAP_STLTP_VIRTUAL_PHY_TRACE_ENABLED) {__LIBATSC3_TIMESTAMP_TRACE(__VA_ARGS__); }
 
 #endif //LIBATSC3_PCAPSTLTPVIRTUALPHY_H

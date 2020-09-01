@@ -68,6 +68,7 @@ import org.ngbp.libatsc3.middleware.android.phy.Atsc3NdkPHYClientBase;
 import org.ngbp.libatsc3.middleware.android.phy.Atsc3UsbDevice;
 import org.ngbp.libatsc3.middleware.android.phy.SaankhyaPHYAndroid;
 import org.ngbp.libatsc3.middleware.android.phy.interfaces.IAtsc3NdkPHYBridgeCallbacks;
+import org.ngbp.libatsc3.middleware.android.phy.virtual.PcapDemuxedVirtualPHYAndroid;
 import org.ngbp.libatsc3.middleware.android.phy.virtual.srt.SRTRxSTLTPVirtualPHYAndroid;
 import org.ngbp.libatsc3.pcapreplay.PcapFileSelectorActivity;
 import org.ngbp.libatsc3.phy.RfScanUtility;
@@ -80,14 +81,12 @@ import org.ngbp.libatsc3.middleware.android.application.sync.mmt.MfuByteBufferFr
 import org.ngbp.libatsc3.middleware.android.application.sync.mmt.MmtPacketIdContext;
 import org.ngbp.libatsc3.middleware.android.application.sync.mmt.MpuMetadata_HEVC_NAL_Payload;
 
-import org.ngbp.libatsc3.middleware.android.phy.virtual.PcapDemuxedPHYVirtualAndroid;
 import org.ngbp.libatsc3.middleware.android.phy.models.BwPhyStatistics;
 import org.ngbp.libatsc3.phy.RfPhyFecModCodTypes;
 import org.ngbp.libatsc3.middleware.android.phy.models.RfPhyStatistics;
 
 import java.io.File;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -154,7 +153,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     private SRTRxSTLTPVirtualPHYAndroid srtRxSTLTPVirtualPHYAndroid;
 
 
-    public PcapDemuxedPHYVirtualAndroid demuxedPcapVirtualPHY;
+    public PcapDemuxedVirtualPHYAndroid demuxedPcapVirtualPHY;
 
     public void stopAndDeInitAtsc3NdkPHYClientInstance() {
         if(atsc3NdkPHYClientInstance != null) {
@@ -478,6 +477,8 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
 
         items.add(SELECT_PCAP_MESSAGE);
         itemCount++;
+        itemCount++;
+
 
         for(int i=0; i < pcapAssetForFilesystemReplay.size(); i++) {
             if(inputSelectedPcapReplayFromFilesystem != null && inputSelectedPcapReplayFromFilesystem.equalsIgnoreCase(pcapAssetForFilesystemReplay.get(i))) {
@@ -1767,17 +1768,18 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                 }
 
                 if(inputSelectionFromPcap) {
-                    demuxedPcapVirtualPHY = new PcapDemuxedPHYVirtualAndroid();
+                    demuxedPcapVirtualPHY = new PcapDemuxedVirtualPHYAndroid();
                     atsc3NdkPHYClientInstance = demuxedPcapVirtualPHY;
 
                     demuxedPcapVirtualPHY.init();
 
                     enableDeviceControlButtons(true);
                     if(inputSelectedPcapReplayFromFilesystem != null) {
-                        demuxedPcapVirtualPHY.atsc3_pcap_open_for_replay(inputSelectedPcapReplayFromFilesystem);
-                    } else if(inputSelectedPcapReplayFromAssetManager != null) {
-                        demuxedPcapVirtualPHY.atsc3_pcap_open_for_replay_from_assetManager(inputSelectedPcapReplayFromAssetManager, assetManager);
+                        demuxedPcapVirtualPHY.open_from_capture(inputSelectedPcapReplayFromFilesystem);
                     }
+//                    } else if(inputSelectedPcapReplayFromAssetManager != null) {
+//                        demuxedPcapVirtualPHY.atsc3_pcap_open_for_replay_from_assetManager(inputSelectedPcapReplayFromAssetManager, assetManager);
+//                    }
 
                     demuxedPcapVirtualPHY.run();
                     enableDeviceControlButtons(true);
