@@ -62,6 +62,7 @@ extern "C" {
 //methods
 
 void atsc3_core_service_application_bridge_init(IAtsc3NdkApplicationBridge* atsc3NdkApplicationBridge);
+void atsc3_core_service_application_bridge_reset_context();
 IAtsc3NdkApplicationBridge* atsc3_ndk_application_bridge_get_instance();
 
 void atsc3_core_service_phy_bridge_init(IAtsc3NdkPHYBridge* atsc3NdkPHYBridge);
