@@ -45,6 +45,28 @@ lls_slt_monitor_t* lls_slt_monitor_create() {
 	return lls_slt_monitor;
 }
 
+//jjustman-2020-08-31 - TODO: clean up all interior objects
+void atsc3_lls_slt_monitor_free(lls_slt_monitor_t** lls_slt_monitor_p) {
+    if(lls_slt_monitor_p) {
+        lls_slt_monitor_t* lls_slt_monitor = *lls_slt_monitor_p;
+        if(lls_slt_monitor) {
+            lls_slt_monitor_free_lls_slt_service_id(lls_slt_monitor);
+            lls_slt_monitor_free_lls_sls_mmt_monitor(lls_slt_monitor);
+            lls_slt_monitor_free_lls_sls_mmt_session_flows(lls_slt_monitor);
+            lls_slt_monitor_free_lls_sls_alc_monitor(lls_slt_monitor);
+            lls_slt_monitor_free_lls_sls_alc_session_flows(lls_slt_monitor);
+            lls_slt_monitor_free_lls_slt_service_id_group_id_cache(lls_slt_monitor);
+            lls_table_free(&lls_slt_monitor->lls_latest_slt_table);
+            lls_table_free(&lls_slt_monitor->lls_latest_aeat_table);
+            lls_table_free(&lls_slt_monitor->lls_latest_on_screen_message_notification_table);
+
+            free(lls_slt_monitor);
+            lls_slt_monitor = NULL;
+        }
+        *lls_slt_monitor_p = NULL;
+    }
+}
+
 int lls_slt_table_build(lls_table_t *lls_table, xml_node_t *xml_root) {
 	/** bsid **/
 

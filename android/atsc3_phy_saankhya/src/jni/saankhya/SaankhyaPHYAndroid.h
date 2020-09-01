@@ -47,7 +47,7 @@ typedef void * (*THREADFUNCPTR)(void *);
 class SaankhyaPHYAndroid : public IAtsc3NdkPHYClient {
 
 public:
-    static mutex Cctor_muxtex;
+    static mutex CS_global_mutex;
 
     SaankhyaPHYAndroid(JNIEnv* env, jobject jni_instance);
 
