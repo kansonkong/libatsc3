@@ -33,34 +33,12 @@ struct pcap_pkthdr {
 #ifndef ATSC3_LISTENER_UDP_H_
 #define ATSC3_LISTENER_UDP_H_
 
+#include "atsc3_udp.h"
+
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-//jjustman-2019-09-24 - increase to phy maximum of 65535 - to support ATSC A/331:2019 PHY LLS size of 65535
-
-#define MAX_PCAP_LEN MAX_ATSC3_PHY_IP_DATAGRAM_SIZE
-
-
-typedef struct udp_flow {
-	uint32_t		src_ip_addr;
-	uint32_t		dst_ip_addr;
-	uint16_t		src_port;
-	uint16_t		dst_port;
-} udp_flow_t;
-
-typedef struct udp_packet {
-	udp_flow_t		udp_flow;
-    
-    //note - data will be the payload after the following packet headers removed:
-    //[ethernet, ip, udp]
-    block_t*        data;
-    
-	//internals
-	int				raw_packet_length;
-
-} udp_packet_t;
-    
 
 #define udp_packet_get_remaining_bytes(udp_packet) (__MAX(0, udp_packet->data_length - udp_packet->data_position ))
 #define udp_packet_get_ptr(udp_packet) (udp_packet->data_position < udp_packet->data_length ? &udp_packet->data[udp_packet->data_position] : NULL)

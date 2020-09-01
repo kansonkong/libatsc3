@@ -189,9 +189,9 @@ void freesafe(void* tofree);
 void freeclean(void** tofree);
 void freeclean_uint8_t(uint8_t** tofree);
 
-uint32_t parseIpAddressIntoIntval(char* dst_ip);
+uint32_t parseIpAddressIntoIntval(const char* dst_ip);
 
-uint16_t parsePortIntoIntval(char* dst_port);
+uint16_t parsePortIntoIntval(const char* dst_port);
 
 int mkpath(char *dir, mode_t mode);
 

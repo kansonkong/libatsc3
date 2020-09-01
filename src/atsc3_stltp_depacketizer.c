@@ -165,6 +165,7 @@ void atsc3_stltp_depacketizer_from_ip_udp_rtp_packet(atsc3_ip_udp_rtp_packet_t* 
 							} else {
 								//packet is complete after refragmenting -
 								atsc3_alp_packet_pre_pointer->is_alp_payload_complete = true;
+								atsc3_alp_packet_packet_set_bootstrap_timing_ref_from_baseband_packet(atsc3_alp_packet_pre_pointer, atsc3_baseband_packet);
 								atsc3_alp_packet_collection_add_atsc3_alp_packet(atsc3_alp_packet_collection, atsc3_alp_packet_pre_pointer);
 								atsc3_stltp_tunnel_packet_processed->atsc3_stltp_tunnel_baseband_packet_pending_by_plp->atsc3_alp_packet_pending = NULL;
 								atsc3_alp_packet_pre_pointer = NULL;
@@ -197,6 +198,7 @@ void atsc3_stltp_depacketizer_from_ip_udp_rtp_packet(atsc3_ip_udp_rtp_packet_t* 
                     if(atsc3_baseband_packet->alp_payload_pre_pointer && block_Remaining_size(atsc3_baseband_packet->alp_payload_pre_pointer)) {
 
                         while((atsc3_alp_packet = atsc3_alp_packet_parse(atsc3_baseband_packet->plp_num, atsc3_baseband_packet->alp_payload_pre_pointer))) {
+                        	atsc3_alp_packet_packet_set_bootstrap_timing_ref_from_baseband_packet(atsc3_alp_packet, atsc3_baseband_packet);
 
                         	_ATSC3_STLTP_DEPACKETIZER_DEBUG("  atsc3_baseband_packet: carry over:  parse alp_payload_pre_pointer: pos: %d, size: %d",
                                    atsc3_baseband_packet->alp_payload_pre_pointer->i_pos,
@@ -243,6 +245,8 @@ void atsc3_stltp_depacketizer_from_ip_udp_rtp_packet(atsc3_ip_udp_rtp_packet_t* 
 
 
                         while((atsc3_alp_packet = atsc3_alp_packet_parse(atsc3_baseband_packet->plp_num, atsc3_baseband_packet->alp_payload_post_pointer))) {
+                        	atsc3_alp_packet_packet_set_bootstrap_timing_ref_from_baseband_packet(atsc3_alp_packet, atsc3_baseband_packet);
+
                         	_ATSC3_STLTP_DEPACKETIZER_DEBUG("  atsc3_baseband_packet: after parse alp_payload_post_pointer: pos: %d, size: %d",
                                    atsc3_baseband_packet->alp_payload_post_pointer->i_pos,
                                    atsc3_baseband_packet->alp_payload_post_pointer->p_size);
