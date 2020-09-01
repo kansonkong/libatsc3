@@ -37,7 +37,7 @@ atsc3_alp_packet_t* atsc3_alp_packet_clone(atsc3_alp_packet_t* atsc3_alp_packet)
 }
 
 void atsc3_alp_packet_dump(atsc3_alp_packet_t* atsc3_alp_packet) {
-	_ATSC3_ALP_TYPES_DUMP("alp:      PLP: %d, seconds_pre: 0x%02x, a_milli_pre: 0x%02x, size: %d",
+	_ATSC3_ALP_TYPES_DUMP("alp:      PLP: %d, seconds_pre: 0x%06x, a_milli_pre: 0x%04x, size: %d",
 				atsc3_alp_packet->plp_num,
 				atsc3_alp_packet->bootstrap_timing_data_timestamp_short_reference.seconds_pre,
 				atsc3_alp_packet->bootstrap_timing_data_timestamp_short_reference.a_milliseconds_pre,
