@@ -923,10 +923,10 @@ void freeclean_uint8_t(uint8_t** tofree) {
 
 uint32_t parseIpAddressIntoIntval(const char* dst_ip_original) {
 	if(!dst_ip_original) {
-		return NULL;
+		return 0;
 	}
 	uint32_t ipAddressAsInteger = 0;
-	char* dst_ip = strlcopy(dst_ip_original);
+	char* dst_ip = strlcopy((char*)dst_ip_original);
 
 	char* pch = strtok (dst_ip,".");
 	int offset = 24;
@@ -943,7 +943,7 @@ uint32_t parseIpAddressIntoIntval(const char* dst_ip_original) {
 
 uint16_t parsePortIntoIntval(const char* dst_port) {
 	if(!dst_port) {
-		return NULL;
+		return 0;
 	}
 
 	int dst_port_filter_int = atoi(dst_port);

@@ -1,5 +1,10 @@
 #include "PcapSTLTPVirtualPHY.h"
 
+
+int _ATSC3_PCAP_STLTP_VIRTUAL_PHY_INFO_ENABLED  = 0;
+int _ATSC3_PCAP_STLTP_VIRTUAL_PHY_DEBUG_ENABLED = 0;
+int _ATSC3_PCAP_STLTP_VIRTUAL_PHY_TRACE_ENABLED = 0;
+
 std::hash<std::thread::id> __pcapSTLTPVirtualPHY_thread_hasher__;
 
 
