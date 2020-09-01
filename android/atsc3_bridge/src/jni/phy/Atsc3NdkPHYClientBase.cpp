@@ -15,6 +15,12 @@ Java_org_ngbp_libatsc3_middleware_android_phy_Atsc3NdkPHYClientBase_open(JNIEnv 
     return INT_MIN;
 }
 
+extern "C"
+JNIEXPORT jint JNICALL
+Java_org_ngbp_libatsc3_middleware_android_phy_Atsc3NdkPHYClientBase_open_1from_1capture(JNIEnv *env, jobject thiz, jstring filename) {
+    return INT_MIN;
+}
+
 extern "C" JNIEXPORT jint JNICALL
 Java_org_ngbp_libatsc3_middleware_android_phy_Atsc3NdkPHYClientBase_tune(JNIEnv *env, jobject thiz, jint freq_khz, jint single_plp) {
     return INT_MIN;

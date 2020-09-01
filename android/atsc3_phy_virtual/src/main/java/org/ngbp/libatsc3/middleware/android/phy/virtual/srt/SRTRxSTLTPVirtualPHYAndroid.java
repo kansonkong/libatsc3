@@ -2,9 +2,9 @@ package org.ngbp.libatsc3.middleware.android.phy.virtual.srt;
 
 import android.content.res.AssetManager;
 
-import org.ngbp.libatsc3.middleware.android.phy.virtual.Atsc3NdkPHYVirtualStaticJniLoader;
+import org.ngbp.libatsc3.middleware.android.phy.virtual.Atsc3NdkVirtualPHYStaticJniLoader;
 
-public class SRTRxSTLTPVirtualPHYAndroid extends Atsc3NdkPHYVirtualStaticJniLoader  {
+public class SRTRxSTLTPVirtualPHYAndroid extends Atsc3NdkVirtualPHYStaticJniLoader {
 
     @Override public native int init();
     @Override public native int run();
