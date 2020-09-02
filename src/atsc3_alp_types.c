@@ -27,12 +27,15 @@ ATSC3_VECTOR_BUILDER_METHODS_ITEM_FREE(atsc3_link_mapping_table_multicast);
 
 atsc3_alp_packet_t* atsc3_alp_packet_clone(atsc3_alp_packet_t* atsc3_alp_packet) {
     atsc3_alp_packet_t* atsc3_alp_packet_new = calloc(1, sizeof(atsc3_alp_packet_t));
+
+    atsc3_alp_packet_new->bootstrap_timing_data_timestamp_short_reference = atsc3_alp_packet->bootstrap_timing_data_timestamp_short_reference;
     atsc3_alp_packet_new->plp_num = atsc3_alp_packet->plp_num;
 
     memcpy(&atsc3_alp_packet_new->alp_packet_header, &atsc3_alp_packet->alp_packet_header, sizeof(alp_packet_header_t));
     atsc3_alp_packet_new->alp_payload = block_Duplicate(atsc3_alp_packet->alp_payload);
     atsc3_alp_packet_new->is_alp_payload_complete = atsc3_alp_packet->is_alp_payload_complete;
-    
+
+
     return atsc3_alp_packet_new;
 }
 

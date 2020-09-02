@@ -459,6 +459,8 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         if(atsc3NdkPHYClientInstance != null) {
             items.add(atsc3NdkPHYClientInstance.toString());
             idxSelected = 1;
+            itemCount++;
+
         }
 
         if(prebuiltAssetsForDeviceSelectionVirtualPHY.length > 0) {
@@ -476,7 +478,6 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
             itemCount++;
 
         }
-        itemCount++;
         items.add(SELECT_PCAP_DEMUXED_MESSAGE);
         itemCount++;
         for(int i = 0; i < pcapDemuxedAssetForFilesystemReplay.size(); i++) {
@@ -1365,7 +1366,6 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         }
     }
 
-    ArrayAdapter<Service> slsSpinnerArrayAdapter;
     ArrayList<Service> sltServices;
     Boolean serviceSpinnerLastSelectionFromArrayAdapterUpdate = false;
     public void onSlsTablePresent(String sls_payload_xml) {
@@ -1376,8 +1376,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         for(Service s : sltServices) {
             Log.d("SlsTablePresent", String.format("shortServiceName: %s, serviceId: %d, slsProtocol: %d", s.shortServiceName, s.serviceId, (s.broadcastSvcSignalingCollection.get(0) != null ? s.broadcastSvcSignalingCollection.get(0).slsProtocol : -1)));
         }
-
-        slsSpinnerArrayAdapter = new ArrayAdapter<Service>(this, android.R.layout.simple_spinner_item, sltServices);
+        final ArrayAdapter<Service> slsSpinnerArrayAdapter = new ArrayAdapter<Service>(this, android.R.layout.simple_spinner_item, sltServices);
 
         ServiceHandler.GetInstance().post(new Runnable() {
             @Override
