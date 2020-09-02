@@ -532,7 +532,7 @@ bool atsc3_stltp_tunnel_packet_extract_fragment_encapsulated_payload(atsc3_stltp
         }
     } else {
         __STLTP_PARSER_ERROR("Unknown inner payload type of 0x%2x", atsc3_stltp_tunnel_packet_current->ip_udp_rtp_packet_inner->rtp_header->payload_type);
-        return NULL;
+        return false;
     }
     
     return has_completed_packet;
@@ -1470,10 +1470,10 @@ atsc3_preamble_packet_t* atsc3_stltp_parse_preamble_packet(atsc3_stltp_preamble_
 					L1D_PLP_parameters->L1D_plp_channel_bonding_format = block_Read_uint8_bitlen(block, 2);
                     
 					for (int k=0; k <= L1D_PLP_parameters->L1D_plp_num_channel_bonded; k++) {
-						L1D_plp_bonded_rf_id_t* L1D_plp_bonded_rf_id = L1D_plp_bonded_rf_id_new();
+						L1D_plp_bonded_rf_t* L1D_plp_bonded_rf = L1D_plp_bonded_rf_new();
 						//3 bits
-						L1D_plp_bonded_rf_id->L1D_plp_bonded_rf_id = block_Read_uint8_bitlen(block, 2);
-						L1D_PLP_parameters_add_L1D_plp_bonded_rf_id(L1D_PLP_parameters, L1D_plp_bonded_rf_id);
+                        L1D_plp_bonded_rf->L1D_plp_bonded_rf_id = block_Read_uint8_bitlen(block, 2);
+						L1D_PLP_parameters_add_L1D_plp_bonded_rf(L1D_PLP_parameters, L1D_plp_bonded_rf);
                     }
                 }
             }
@@ -1532,7 +1532,7 @@ atsc3_preamble_packet_t* atsc3_stltp_parse_preamble_packet(atsc3_stltp_preamble_
 						L1D_plp_HTI_num_fec_blocks_t* L1D_plp_HTI_num_fec_blocks = L1D_plp_HTI_num_fec_blocks_new();
 						
 						//12
-						L1D_plp_HTI_num_fec_blocks->L1D_plp_HTI_num_fec_blocks = block_Read_uint16_bitlen(block, 12);
+                        L1D_plp_HTI_num_fec_blocks->L1D_plp_HTI_num_fec_blocks_val = block_Read_uint16_bitlen(block, 12);
 						L1D_PLP_parameters_add_L1D_plp_HTI_num_fec_blocks(L1D_PLP_parameters, L1D_plp_HTI_num_fec_blocks);
 					}
 				}

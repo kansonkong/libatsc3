@@ -734,7 +734,7 @@ cleanup:
 	return ret;
 }
 
-char* lls_get_service_category_value(uint service_category) {
+char* lls_get_service_category_value(uint8_t service_category) {
 	int lls_service_category_count = sizeof(LLS_SERVICE_CATEGORY_VALUES) / sizeof(char*);
 	if(service_category < lls_service_category_count-1) {
 		return LLS_SERVICE_CATEGORY_VALUES[service_category];
@@ -743,7 +743,7 @@ char* lls_get_service_category_value(uint service_category) {
 	}
 }
 
-char* lls_get_sls_protocol_value(uint protocol) {
+char* lls_get_sls_protocol_value(uint8_t protocol) {
 	int lls_protocol_count = sizeof(LLS_PROTOCOL_VALUES) / sizeof(char*);
 	if(protocol < lls_protocol_count-1) {
 		return LLS_PROTOCOL_VALUES[protocol];

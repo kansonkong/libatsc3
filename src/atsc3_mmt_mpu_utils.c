@@ -480,6 +480,9 @@ void mmtp_mpu_dump_flow(uint32_t dst_ip, uint16_t dst_port, mmtp_mpu_packet_t* m
 
 //TODO: jjustman-2019-08-10 - switch to generic pipe_buffer per packet_id
 // * callee is responsible for freeing mpu_data_unit_payload
+
+#ifdef __ATSC3_RECON_PIPE_FFPLAY__
+
 void mmtp_mfu_push_to_output_buffer(pipe_ffplay_buffer_t* pipe_ffplay_buffer, mmtp_mpu_packet_t* mmtp_mpu_packet) {
 
 	bool should_signal = false;
@@ -514,3 +517,5 @@ cleanup: ;
 	//noop
 
 }
+
+#endif

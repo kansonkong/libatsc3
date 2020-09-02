@@ -21,12 +21,17 @@ struct pcap_pkthdr {
 #endif
 #endif
 
+#ifdef _WIN32
+#include <winsock2.h>
+#include <Windows.h>
+#else 
 #include <unistd.h>
 #include <stdint.h>
 #include <stdlib.h>
 #include <string.h>
 
 #include <sys/socket.h>
+#endif
 
 #include "atsc3_utils.h"
 
