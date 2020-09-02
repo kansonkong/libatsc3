@@ -9,7 +9,7 @@ debug.log
 ffplay.errors
 libmicrohttpd-0.9.63
 .vscode
-
+**/*.obj
 # Compiled files. Perhaps move them to one directory in the future so the directory can be ignored instead?
 atsc3_fdt_test
 atsc3_isobmff_box_test
