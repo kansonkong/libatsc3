@@ -264,7 +264,7 @@ int SRTRxSTLTPVirtualPHY::srtConsumerThreadRun() {
             condition_lock.unlock();
         }
 
-        //printf("SRTRxSTLTPVirtualPHY::srtConsumerThreadRun - pushing %d packets", to_dispatch_queue.size());
+        printf("\n\n\n\nSRTRxSTLTPVirtualPHY::srtConsumerThreadRun - pushing %d packets\n\n\n\n", to_dispatch_queue.size());
         while(to_dispatch_queue.size()) {
             block_t* phy_payload_to_process = to_dispatch_queue.front();
 
@@ -276,7 +276,7 @@ int SRTRxSTLTPVirtualPHY::srtConsumerThreadRun() {
         }
 
         while(to_purge_queue.size()) {
-            block_t *phy_payload_to_purge = to_purge_queue.front();
+            block_t* phy_payload_to_purge = to_purge_queue.front();
             to_purge_queue.pop();
             block_Destroy(&phy_payload_to_purge);
         }

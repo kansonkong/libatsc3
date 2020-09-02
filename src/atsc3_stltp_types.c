@@ -411,6 +411,10 @@ void atsc3_stltp_preamble_packet_free_v(atsc3_stltp_preamble_packet_t* atsc3_stl
         //this should be all boilerplate
     
         if(atsc3_stltp_preamble_packet->preamble_packet) {
+            
+            L1_detail_signaling_free_L1D_bonded_bsid_block(&atsc3_stltp_preamble_packet->preamble_packet->L1_detail_signaling);
+            L1_detail_signaling_free_L1D_subframe_parameters(&atsc3_stltp_preamble_packet->preamble_packet->L1_detail_signaling);
+
         	free(atsc3_stltp_preamble_packet->preamble_packet);
         	atsc3_stltp_preamble_packet->preamble_packet = NULL;
         }
