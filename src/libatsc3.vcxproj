@@ -36,7 +36,7 @@
     <PlatformToolset>v142</PlatformToolset>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" Label="Configuration">
-    <ConfigurationType>DynamicLibrary</ConfigurationType>
+    <ConfigurationType>StaticLibrary</ConfigurationType>
     <UseDebugLibraries>true</UseDebugLibraries>
     <PlatformToolset>v142</PlatformToolset>
   </PropertyGroup>
@@ -110,6 +110,9 @@
     <Link>
       <AdditionalDependencies>../WpdPack/Lib/x64/Packet.lib;../WpdPack/Lib/x64/wpcap.lib;../vcpkg/packages/zlib_x64-windows/lib/zlib.lib;C:\pthread-win32\cinegy.pthreads-win64.2.9.1.17\runtimes\win-x64\native\release\pthread_lib.lib;C:\Program Files\OpenSSL-Win64\lib\libssl.lib;C:\Program Files\OpenSSL-Win64\lib\libcrypto.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
+    <Lib>
+      <AdditionalDependencies>../WpdPack/Lib/x64/Packet.lib;../WpdPack/Lib/x64/wpcap.lib;../vcpkg/packages/zlib_x64-windows/lib/zlib.lib;C:\pthread-win32\cinegy.pthreads-win64.2.9.1.17\runtimes\win-x64\native\release\pthread_lib.lib;C:\Program Files\OpenSSL-Win64\lib\libssl_static.lib;C:\Program Files\OpenSSL-Win64\lib\libcrypto_static.lib;%(AdditionalDependencies)</AdditionalDependencies>
+    </Lib>
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="atsc3_a344_receiver_query_api.c" />
