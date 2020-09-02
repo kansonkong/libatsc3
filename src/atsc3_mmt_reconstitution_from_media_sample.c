@@ -109,7 +109,9 @@ mmtp_mpu_packet_t* mmtp_process_from_payload(mmtp_mpu_packet_t* mmtp_mpu_packet,
 					//see if we have incremented our mpu_sequence_number with current mmtp_payload
 
 					if(matching_lls_sls_mmt_session->last_udp_flow_packet_id_mpu_sequence_tuple_audio && matching_lls_sls_mmt_session->last_udp_flow_packet_id_mpu_sequence_tuple_audio->mpu_sequence_number < mmtp_mpu_packet->mpu_sequence_number) {
-						lls_sls_monitor_buffer_isobmff_t* lls_sls_monitor_buffer_isobmff_pending_mux = atsc3_isobmff_build_raw_mpu_from_single_sequence_number(&udp_packet->udp_flow,
+#ifdef __ATSC3_ISOBMFF_REBUILD__
+
+                        lls_sls_monitor_buffer_isobmff_t* lls_sls_monitor_buffer_isobmff_pending_mux = atsc3_isobmff_build_raw_mpu_from_single_sequence_number(&udp_packet->udp_flow,
 														   udp_flow_latest_mpu_sequence_number_container,
 														   matching_lls_sls_mmt_session->last_udp_flow_packet_id_mpu_sequence_tuple_audio->packet_id,
 														   matching_lls_sls_mmt_session->last_udp_flow_packet_id_mpu_sequence_tuple_audio->mpu_sequence_number,
@@ -127,7 +129,7 @@ mmtp_mpu_packet_t* mmtp_process_from_payload(mmtp_mpu_packet_t* mmtp_mpu_packet,
 																				lls_slt_monitor->lls_sls_mmt_monitor->atsc3_lls_slt_service->service_id,
 																				matching_lls_sls_mmt_session->last_udp_flow_packet_id_mpu_sequence_tuple_audio->mpu_sequence_number,
 																				"a.rebuilt");
-                        
+#endif                        
                         mpu_sequence_number_mmtp_mpu_packet_collection_t* mpu_sequence_number_mmtp_mpu_packet_collection = mmtp_packet_id_packets_container_find_mpu_sequence_number_mmtp_mpu_packet_collection_from_mpu_sequence_number(mmtp_packet_id_packets_container, matching_lls_sls_mmt_session->last_udp_flow_packet_id_mpu_sequence_tuple_audio->mpu_sequence_number);
                         mmtp_packet_id_packets_container_remove_mpu_sequence_number_mmtp_mpu_packet_collection_non_vector_builder(mmtp_packet_id_packets_container, mpu_sequence_number_mmtp_mpu_packet_collection);
                         //jjustman-2019-09-05 - this might be too agressive here
@@ -140,7 +142,8 @@ mmtp_mpu_packet_t* mmtp_process_from_payload(mmtp_mpu_packet_t* mmtp_mpu_packet,
 					//see if we have incremented our mpu_sequence_number with current mmtp_payload
 
 					if(matching_lls_sls_mmt_session->last_udp_flow_packet_id_mpu_sequence_tuple_video && matching_lls_sls_mmt_session->last_udp_flow_packet_id_mpu_sequence_tuple_video->mpu_sequence_number < mmtp_mpu_packet->mpu_sequence_number) {
-                        
+
+#ifdef __ATSC3_ISOBMFF_REBUILD__
 						lls_sls_monitor_buffer_isobmff_t* lls_sls_monitor_buffer_isobmff_pending_mux = atsc3_isobmff_build_raw_mpu_from_single_sequence_number(&udp_packet->udp_flow,
 														   udp_flow_latest_mpu_sequence_number_container,
 														   matching_lls_sls_mmt_session->last_udp_flow_packet_id_mpu_sequence_tuple_video->packet_id,
@@ -158,6 +161,7 @@ mmtp_mpu_packet_t* mmtp_process_from_payload(mmtp_mpu_packet_t* mmtp_mpu_packet,
 																				lls_slt_monitor->lls_sls_mmt_monitor->atsc3_lls_slt_service->service_id,
 																				matching_lls_sls_mmt_session->last_udp_flow_packet_id_mpu_sequence_tuple_video->mpu_sequence_number,
 																				"v.rebuilt");
+#endif
                         mpu_sequence_number_mmtp_mpu_packet_collection_t* mpu_sequence_number_mmtp_mpu_packet_collection = mmtp_packet_id_packets_container_find_mpu_sequence_number_mmtp_mpu_packet_collection_from_mpu_sequence_number(mmtp_packet_id_packets_container, matching_lls_sls_mmt_session->last_udp_flow_packet_id_mpu_sequence_tuple_video->mpu_sequence_number);
                         mmtp_packet_id_packets_container_remove_mpu_sequence_number_mmtp_mpu_packet_collection_non_vector_builder(mmtp_packet_id_packets_container, mpu_sequence_number_mmtp_mpu_packet_collection);
                         //jjustman-2019-09-05 - this might be too agressive here
@@ -168,6 +172,8 @@ mmtp_mpu_packet_t* mmtp_process_from_payload(mmtp_mpu_packet_t* mmtp_mpu_packet,
 					//keep track of our last mpu_sequence_number...
            			udp_flow_packet_id_mpu_sequence_tuple_free_and_clone(&matching_lls_sls_mmt_session->last_udp_flow_packet_id_mpu_sequence_tuple_video, last_flow_reference);
 				}
+
+#ifdef __ATSC3_ISOBMFF_REBUILD__
 
 				//if we have at least one block in the following, push it to the isobmff track joiner as usual
 				if(lls_slt_monitor->lls_sls_mmt_monitor->lls_sls_monitor_output_buffer.video_output_buffer_isobmff.mmt_mpu_rebuilt_and_appending_for_isobmff_mux &&
@@ -207,6 +213,8 @@ mmtp_mpu_packet_t* mmtp_process_from_payload(mmtp_mpu_packet_t* mmtp_mpu_packet,
                             lls_sls_monitor_reader_mutex_unlock(lls_slt_monitor->lls_sls_mmt_monitor->lls_sls_monitor_output_buffer_mode.http_output_buffer->http_payload_buffer_mutex);
                         }
 
+#ifdef __ATSC3_RECON_PIPE_FFPLAY__
+
                         //ffplay pipe output
                         if(lls_slt_monitor->lls_sls_mmt_monitor->lls_sls_monitor_output_buffer_mode.ffplay_output_enabled && lls_slt_monitor->lls_sls_mmt_monitor->lls_sls_monitor_output_buffer_mode.pipe_ffplay_buffer) {
 
@@ -217,24 +225,27 @@ mmtp_mpu_packet_t* mmtp_process_from_payload(mmtp_mpu_packet_t* mmtp_mpu_packet,
                             lls_slt_monitor->lls_sls_mmt_monitor->lls_sls_monitor_output_buffer.has_written_init_box = true;
 
                             pipe_buffer_notify_semaphore_post(lls_slt_monitor->lls_sls_mmt_monitor->lls_sls_monitor_output_buffer_mode.pipe_ffplay_buffer);
-
                             //check to see if we have shutdown
                             lls_slt_monitor_check_and_handle_pipe_ffplay_buffer_is_shutdown(lls_slt_monitor);
 
                             pipe_buffer_reader_mutex_unlock(lls_slt_monitor->lls_sls_mmt_monitor->lls_sls_monitor_output_buffer_mode.pipe_ffplay_buffer);
                         }
+#endif
 
                         lls_sls_monitor_output_buffer_reset_rebuilt_mpu_moof_and_fragment_position(&lls_slt_monitor->lls_sls_mmt_monitor->lls_sls_monitor_output_buffer);
                     }
-                    //jjustman-2019-09-05 - TODO: fix this hack
-                    //clear out packet_id=0
-                    //mmtp_mpu_packet = NULL;
-                    mmtp_mpu_packet_t* mmtp_mpu_packet = mmtp_mpu_packet_new();
-                    mmtp_mpu_packet->mmtp_packet_id = 0;
-
-                    mmtp_packet_id_packets_container_t* mmtp_packet_id_packets_container_packet_zero = mmtp_asset_find_or_create_packets_container_from_mmt_mpu_packet(mmtp_asset, mmtp_mpu_packet);
-                    mmtp_packet_id_packets_container_free_mmtp_signalling_packet(mmtp_packet_id_packets_container_packet_zero);
                 }
+
+#endif
+
+                //jjustman-2019-09-05 - TODO: fix this hack
+                //clear out packet_id=0
+                //mmtp_mpu_packet = NULL;
+                mmtp_mpu_packet_t* mmtp_mpu_packet = mmtp_mpu_packet_new();
+                mmtp_mpu_packet->mmtp_packet_id = 0;
+
+                mmtp_packet_id_packets_container_t* mmtp_packet_id_packets_container_packet_zero = mmtp_asset_find_or_create_packets_container_from_mmt_mpu_packet(mmtp_asset, mmtp_mpu_packet);
+                mmtp_packet_id_packets_container_free_mmtp_signalling_packet(mmtp_packet_id_packets_container_packet_zero);
             }
         } else {
             //non-timed

@@ -4,7 +4,9 @@
  *  Created on: Jan 6, 2019
  *      Author: jjustman
  */
+#ifndef _WIN32
 #pragma GCC diagnostic ignored "-Wformat-zero-length"
+#endif
 
 #ifdef __LIBATSC3_ANDROID__
 #include <sys/endian.h>
@@ -19,21 +21,37 @@
 #include <stdint.h>
 #include <signal.h>
 #include <string.h>
-#include <strings.h>
-
 #include <time.h>
+
+#ifndef _WIN32
+#include <strings.h>
 #include <sys/time.h>
+#include <libgen.h>
+#include <semaphore.h>
+#else
+#include <winsock2.h>
+#include <Windows.h>
+#include <semaphore.h>
+#ifndef F_OK 
+#define F_OK 0
+#endif
+#endif
+
+
 #include <stdbool.h>
 #include <sys/stat.h>
 
-#include <libgen.h>
 
 
 #ifndef ATSC3_UTILS_H_
 #define ATSC3_UTILS_H_
 
 #include "fixups.h"
+
+#ifndef _WIN32
 #include "unistd.h"
+#endif
+
 #include "endianess.c"
 
 #include "atsc3_logging_externs.h"
@@ -170,8 +188,8 @@ uint64_t block_Read_uint64_ntohul(block_t* src);
 block_t* block_Read_from_filename(char* file_name);
 
 
-#define block_RefZero(a) ({ a->_refcnt = 0; })
-#define block_Release(a) ({ _ATSC3_UTILS_TRACE("UTRACE:DECR:%p:%s, block_Refcount: decrementing to: %d, block: %p (p_buffer: %p)", *a, __FUNCTION__, (*a->_refcnt)-1, *a, *a->p_buffer);  _block_Release(a); })
+//#define block_RefZero(a) ({ a->_refcnt = 0; })
+//#define block_Release(a) ({ _ATSC3_UTILS_TRACE("UTRACE:DECR:%p:%s, block_Refcount: decrementing to: %d, block: %p (p_buffer: %p)", *a, __FUNCTION__, (*a->_refcnt)-1, *a, *a->p_buffer);  _block_Release(a); })
 
 void _block_Release(block_t** a); //_refcnt MUST == 0 for p_buffer to be freed, see block_Refcount
 void _block_Refcount(block_t* a);
@@ -227,6 +245,193 @@ int mkpath(char *dir, mode_t mode);
 
 //check to see if file exists on disk, return FILE* or NULL
 FILE* atsc3_object_open(char* file_name);
+
+//jjustman-2020-09-01 win32 fixups
+
+#ifdef _WIN32
+#include <WinSock2.h>
+#include <windows.h>
+#include <direct.h>
+#include <Shlwapi.h>
+#include <io.h>
+
+#pragma comment(lib, "Shlwapi.lib")
+#pragma comment(lib, "Ws2_32.lib")
+
+
+//hack for non exported method linkage
+static void usleep(int waitTime) {
+    __int64 time1 = 0, time2 = 0, freq = 0;
+
+    QueryPerformanceCounter((LARGE_INTEGER*)&time1);
+    QueryPerformanceFrequency((LARGE_INTEGER*)&freq);
+
+    do {
+        QueryPerformanceCounter((LARGE_INTEGER*)&time2);
+    } while ((time2 - time1) < waitTime);
+}
+
+static char* strcasestr(const char* first, const char* search) {
+    return StrStrIA(first, search);
+}
+
+static char* strndup(const char* s, size_t n)
+{
+
+    char* x = NULL;
+
+    if (n + 1 < n) {
+        return NULL;
+    }
+
+    x = (char*) malloc(n + 1);
+    if (x == NULL) {
+        return NULL;
+    }
+
+    memcpy(x, s, n);
+    x[n] = '\0';
+
+    return x;
+}
+
+#define strncasecmp _strnicmp
+#define strcasecmp _stricmp
+
+#define ftruncate _chsize
+
+
+
+#include < time.h >
+#include < windows.h >
+
+#if defined(_MSC_VER) || defined(_MSC_EXTENSIONS)
+#define DELTA_EPOCH_IN_MICROSECS  11644473600000000Ui64
+#else
+#define DELTA_EPOCH_IN_MICROSECS  11644473600000000ULL
+#endif
+
+#ifndef _TIMEZONE_DEFINED /* also in sys/time.h */
+#define _TIMEZONE_DEFINED
+
+struct timezone
+{
+    int  tz_minuteswest; /* minutes W of Greenwich */
+    int  tz_dsttime;     /* type of dst correction */
+};
+
+inline int gettimeofday(struct timeval* tv, struct timezone* tz)
+{
+    FILETIME ft;
+    unsigned __int64 tmpres = 0;
+    static int tzflag = 0;
+
+    if (NULL != tv)
+    {
+        GetSystemTimeAsFileTime(&ft);
+
+        tmpres |= ft.dwHighDateTime;
+        tmpres <<= 32;
+        tmpres |= ft.dwLowDateTime;
+
+        tmpres /= 10;  /*convert into microseconds*/
+        /*converting file time to unix epoch*/
+        tmpres -= DELTA_EPOCH_IN_MICROSECS;
+        tv->tv_sec = (long)(tmpres / 1000000UL);
+        tv->tv_usec = (long)(tmpres % 1000000UL);
+    }
+
+    if (NULL != tz)
+    {
+        if (!tzflag)
+        {
+            _tzset();
+            tzflag++;
+        }
+        tz->tz_minuteswest = _timezone / 60;
+        tz->tz_dsttime = _daylight;
+    }
+
+    return 0;
+}
+#endif
+
+/* Windows sleep in 100ns units */
+static BOOLEAN nanosleep(LONGLONG ns) {
+    /* Declarations */
+    HANDLE timer;	/* Timer handle */
+    LARGE_INTEGER li;	/* Time defintion */
+    /* Create timer */
+    if (!(timer = CreateWaitableTimer(NULL, TRUE, NULL)))
+        return FALSE;
+    /* Set timer properties */
+    li.QuadPart = -ns;
+    if (!SetWaitableTimer(timer, &li, 0, NULL, NULL, FALSE)) {
+        CloseHandle(timer);
+        return FALSE;
+    }
+    /* Start & wait for timer */
+    WaitForSingleObject(timer, INFINITE);
+    /* Clean resources */
+    CloseHandle(timer);
+    /* Slept without problems */
+    return TRUE;
+}
+
+//
+//#include <stddef.h>
+//#include <stdio.h>
+//#include <stdlib.h>
+//#include <errno.h>
+//#include "HTUtils.h"
+
+/* Read up to (and including) a newline from STREAM into *LINEPTR
+   (and null-terminate it). *LINEPTR is a pointer returned from malloc (or
+   NULL), pointing to *N characters of space.  It is realloc'd as
+   necessary.  Returns the number of characters read (not including the
+   null terminator), or -1 on error or EOF.  */
+
+static int getline(char** lineptr, size_t* n, FILE* stream)
+{
+    static char line[256];
+    char* ptr;
+    unsigned int len;
+
+    if (lineptr == NULL || n == NULL)
+    {
+        errno = EINVAL;
+        return -1;
+    }
+
+    if (ferror(stream))
+        return -1;
+
+    if (feof(stream))
+        return -1;
+
+    fgets(line, 256, stream);
+
+    ptr = strchr(line, '\n');
+    if (ptr)
+        *ptr = '\0';
+
+    len = strlen(line);
+
+    if ((len + 1) < 256)
+    {
+        ptr = (char*) realloc(*lineptr, 256);
+        if (ptr == NULL)
+            return(-1);
+        *lineptr = ptr;
+        *n = 256;
+    }
+
+    strcpy(*lineptr, line);
+    return(len);
+}
+
+
+#endif
 
 #if defined (__cplusplus)
 }

@@ -316,6 +316,24 @@ mmt_signalling_message_header_and_payload_t* mmt_signalling_message_header_and_p
 //}
 //
 
+void mmt_signalling_message_header_and_payload_free(mmt_signalling_message_header_and_payload_t** mmt_signalling_message_header_and_payload_p) {
+	if (mmt_signalling_message_header_and_payload_p) {
+		mmt_signalling_message_header_and_payload_t* mmt_signalling_message_header_and_payload = *mmt_signalling_message_header_and_payload_p;
+		if (mmt_signalling_message_header_and_payload) {
+
+			//jjustman-2020-09-01 TODO!!!! clean up these inner types
+			//mmt_atsc3_message_payload_t			mmt_atsc3_message_payload;
+			//mp_table_t							mp_table;
+			//mmt_scte35_message_payload_t		mmt_scte35_message_payload;
+
+
+			free(mmt_signalling_message_header_and_payload);
+			mmt_signalling_message_header_and_payload = NULL;
+		}
+		*mmt_signalling_message_header_and_payload_p = NULL;
+	}
+}
+
 
 
 uint8_t* pa_message_parse(mmt_signalling_message_header_and_payload_t* mmt_signalling_message_header_and_payload, block_t* udp_packet) {

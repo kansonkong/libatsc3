@@ -35,6 +35,8 @@ int printf(const char *format, ...)  {
 
 #ifndef __DISABLE_NCURSES__
 
+#ifndef _WIN32
+
 #define __DEBUG_LOG_FILE_NAME__ "debug.log"
 
 //overload printf to write to stderr
@@ -59,6 +61,7 @@ int printf(const char *format, ...)  {
     fflush(__DEBUG_LOG_FILE);
 	return 0;
 }
+#endif
 
 #endif
 #endif

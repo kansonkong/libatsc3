@@ -277,7 +277,7 @@ typedef struct atsc3_fdt_instance {
 	char*						file_template;
 	char*						filter_codes;
 
-	ATSC3_VECTOR_BUILDER_STRUCT(atsc3_fdt_file)
+    ATSC3_VECTOR_BUILDER_STRUCT(atsc3_fdt_file);
 
 } atsc3_fdt_instance_t;
 

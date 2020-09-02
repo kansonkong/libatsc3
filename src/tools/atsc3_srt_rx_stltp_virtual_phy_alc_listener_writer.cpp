@@ -253,7 +253,7 @@ int main(int argc, char* argv[] ) {
 
 	int loop_count = 0;
 	bool should_break = false;
-	sleep(1);
+	usleep(1000000);
 	while(!should_break) {
 		usleep(10000000);
 		_SRT_STLTP_VIRTUAL_PHY_ALC_WRITER_INFO("srt_is_running: %d", srtRxSTLTPVirtualPHY->is_running());
