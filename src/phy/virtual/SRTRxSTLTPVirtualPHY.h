@@ -62,6 +62,8 @@ class SRTRxSTLTPVirtualPHY : public IAtsc3NdkPHYClient {
         static void Atsc3_stltp_baseband_alp_packet_collection_callback_with_context(atsc3_alp_packet_collection_t* atsc3_alp_packet_collection, void* context);
         void atsc3_stltp_baseband_alp_packet_collection_received(atsc3_alp_packet_collection_t* atsc3_alp_packet_collection);
 
+        /* stltp supported direct context callback methods via the stltp context*/
+        atsc3_stltp_depacketizer_context_t* get_atsc3_stltp_depacketizer_context() { return this->atsc3_stltp_depacketizer_context; }
 
         virtual ~SRTRxSTLTPVirtualPHY() {
             atsc3_srt_thread_stop(); //cleanup just to be sure..

@@ -1571,6 +1571,10 @@ atsc3_preamble_packet_t* atsc3_stltp_parse_preamble_packet(atsc3_stltp_preamble_
     return atsc3_preamble_packet;
     
 cleanup:
+    if (block) {
+        block_Destroy(&block);
+    }
+
     if(atsc3_preamble_packet) {
         free(atsc3_preamble_packet);
         atsc3_preamble_packet = NULL;
