@@ -348,8 +348,14 @@ inline int gettimeofday(struct timeval* tv, struct timezone* tz)
             _tzset();
             tzflag++;
         }
-        tz->tz_minuteswest = _timezone / 60;
-        tz->tz_dsttime = _daylight;
+        long my_tz;
+        _get_timezone(&my_tz);
+
+        int my_daylight;
+        _get_daylight(&my_daylight);
+
+        tz->tz_minuteswest = my_tz / 60;
+        tz->tz_dsttime = my_daylight;
     }
 
     return 0;
@@ -378,56 +384,75 @@ static BOOLEAN nanosleep(LONGLONG ns) {
     return TRUE;
 }
 
-//
-//#include <stddef.h>
-//#include <stdio.h>
-//#include <stdlib.h>
-//#include <errno.h>
-//#include "HTUtils.h"
 
-/* Read up to (and including) a newline from STREAM into *LINEPTR
-   (and null-terminate it). *LINEPTR is a pointer returned from malloc (or
-   NULL), pointing to *N characters of space.  It is realloc'd as
-   necessary.  Returns the number of characters read (not including the
-   null terminator), or -1 on error or EOF.  */
+//https://github.com/ivanrad/getline/blob/master/getline.c
+#include <stdlib.h>
+#include <errno.h>
+#include <limits.h>
 
-static int getline(char** lineptr, size_t* n, FILE* stream)
-{
-    static char line[256];
-    char* ptr;
-    unsigned int len;
+#include <BaseTsd.h>
+typedef SSIZE_T ssize_t;
 
-    if (lineptr == NULL || n == NULL)
-    {
+static ssize_t getdelim(char** lineptr, size_t* n, int delim, FILE* stream) {
+    char* cur_pos, * new_lineptr;
+    size_t new_lineptr_len;
+    int c;
+
+    if (lineptr == NULL || n == NULL || stream == NULL) {
         errno = EINVAL;
         return -1;
     }
 
-    if (ferror(stream))
-        return -1;
-
-    if (feof(stream))
-        return -1;
-
-    fgets(line, 256, stream);
-
-    ptr = strchr(line, '\n');
-    if (ptr)
-        *ptr = '\0';
-
-    len = strlen(line);
-
-    if ((len + 1) < 256)
-    {
-        ptr = (char*) realloc(*lineptr, 256);
-        if (ptr == NULL)
-            return(-1);
-        *lineptr = ptr;
-        *n = 256;
+    if (*lineptr == NULL) {
+        *n = 128; /* init len */
+        if ((*lineptr = (char*)malloc(*n)) == NULL) {
+            errno = ENOMEM;
+            return -1;
+        }
     }
 
-    strcpy(*lineptr, line);
-    return(len);
+    cur_pos = *lineptr;
+    for (;;) {
+        c = getc(stream);
+
+        if (ferror(stream) || (c == EOF && cur_pos == *lineptr))
+            return -1;
+
+        if (c == EOF)
+            break;
+
+        if ((*lineptr + *n - cur_pos) < 2) {
+            if (MAXSSIZE_T / 2 < *n) {
+#ifdef EOVERFLOW
+                errno = EOVERFLOW;
+#else
+                errno = ERANGE; /* no EOVERFLOW defined */
+#endif
+                return -1;
+            }
+            new_lineptr_len = *n * 2;
+
+            if ((new_lineptr = (char*)realloc(*lineptr, new_lineptr_len)) == NULL) {
+                errno = ENOMEM;
+                return -1;
+            }
+            cur_pos = new_lineptr + (cur_pos - *lineptr);
+            *lineptr = new_lineptr;
+            *n = new_lineptr_len;
+        }
+
+        *cur_pos++ = (char)c;
+
+        if (c == delim)
+            break;
+    }
+
+    *cur_pos = '\0';
+    return (ssize_t)(cur_pos - *lineptr);
+}
+
+static ssize_t getline(char** lineptr, size_t* n, FILE* stream) {
+    return getdelim(lineptr, n, '\n', stream);
 }
 
 

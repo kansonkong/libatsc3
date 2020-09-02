@@ -47,7 +47,7 @@ int test_srt_stltp_with_bna_rx() {
 
 	int loop_count = 0;
 	bool should_break = false;
-	sleep(1);
+	usleep(1000000);
 	while((gt() - srt_thread_run_start_time) < 60 &&  !should_break) {
 		usleep(1000000);
 		_SRT_STLTP_VIRTUAL_TEST_INFO("srt_is_running: %d", srtRxSTLTPVirtualPHY->is_running());
