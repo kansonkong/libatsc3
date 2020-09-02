@@ -1,0 +1,296 @@
+﻿  atsc3_srt_live_receiver.cpp
+C:\Users\LabUser\source\repos\libatsc3\srt\srtcore\utilities.h(907,20): warning C4267: 'initializing': conversion from 'size_t' to 'int', possible loss of data
+C:\Users\LabUser\source\repos\libatsc3\srt\srtcore\sync.h(797,33): warning C4244: 'argument': conversion from 'int64_t' to 'DWORD', possible loss of data
+C:\Users\LabUser\source\repos\libatsc3\src\atsc3_utils.h(418,23): warning C4267: '=': conversion from 'size_t' to 'unsigned int', possible loss of data
+C:\Users\LabUser\source\repos\libatsc3\src\phy\virtual\srt\atsc3_srt_target.h(65,1): warning C4267: 'argument': conversion from 'size_t' to 'uint32_t', possible loss of data
+C:\Users\LabUser\source\repos\libatsc3\src\phy\virtual\srt\atsc3_srt_target.h(70,1): warning C4267: 'argument': conversion from 'size_t' to 'uint32_t', possible loss of data
+C:\Users\LabUser\source\repos\libatsc3\src\phy\virtual\srt\atsc3_srt_target.h(88,13): warning C4477: 'printf' : format string '%lu' requires an argument of type 'unsigned long', but variadic argument 2 has type 'unsigned __int64'
+C:\Users\LabUser\source\repos\libatsc3\src\phy\virtual\srt\atsc3_srt_target.h(88,13): message : consider using '%zu' in the format string
+C:\Users\LabUser\source\repos\libatsc3\src\phy\virtual\srt\atsc3_srt_live_receiver.cpp(115,62): warning C4996: 'strdup': The POSIX name for this item is deprecated. Instead, use the ISO C and C++ conformant name: _strdup. See online help for details.
+C:\Users\LabUser\source\repos\libatsc3\src\phy\virtual\srt\atsc3_srt_live_receiver.cpp(315,1): warning C4297: 'atsc3_srt_live_receiver_start_in_proc': function assumed not to throw an exception but does
+C:\Users\LabUser\source\repos\libatsc3\src\phy\virtual\srt\atsc3_srt_live_receiver.cpp(315,1): message : __declspec(nothrow), throw(), noexcept(true), or noexcept was specified on the function
+  pthread_lib.lib(pthread_mutex_init.obj) : MSIL .netmodule or module compiled with /GL found; restarting link with /LTCG; add /LTCG to the link command line to improve linker performance
+LINK : warning LNK4075: ignoring '/INCREMENTAL' due to '/LTCG' specification
+     Creating library C:\Users\LabUser\source\repos\dektec_atsc3_tools\x64\Debug\libatsc3.lib and object C:\Users\LabUser\source\repos\dektec_atsc3_tools\x64\Debug\libatsc3.exp
+LINK : warning LNK4098: defaultlib 'MSVCRT' conflicts with use of other libs; use /NODEFAULTLIB:library
+  Generating code
+c:\projects\pthread-win32\ptw32_mcs_lock.c(279): warning C4711: function 'sched_yield' selected for automatic inline expansion
+c:\projects\pthread-win32\ptw32_mcs_lock.c(218): warning C4711: function 'ptw32_mcs_flag_wait' selected for automatic inline expansion
+c:\projects\pthread-win32\ptw32_mcs_lock.c(180): warning C4711: function 'ptw32_mcs_flag_set' selected for automatic inline expansion
+c:\projects\pthread-win32\ptw32_mcs_lock.c(224): warning C4711: function 'ptw32_mcs_flag_set' selected for automatic inline expansion
+c:\projects\pthread-win32\ptw32_mcs_lock.c(181): warning C4711: function 'ptw32_mcs_flag_wait' selected for automatic inline expansion
+c:\projects\pthread-win32\pthread_setschedparam.c(86): warning C4711: function 'sched_get_priority_min' selected for automatic inline expansion
+c:\projects\pthread-win32\pthread_setschedparam.c(86): warning C4711: function 'sched_get_priority_max' selected for automatic inline expansion
+c:\projects\pthread-win32\ptw32_mcs_lock.c(180): warning C4711: function 'ptw32_mcs_flag_set' selected for automatic inline expansion
+c:\projects\pthread-win32\ptw32_mcs_lock.c(180): warning C4711: function 'ptw32_mcs_flag_set' selected for automatic inline expansion
+c:\projects\pthread-win32\ptw32_mcs_lock.c(180): warning C4711: function 'ptw32_mcs_flag_set' selected for automatic inline expansion
+c:\projects\pthread-win32\ptw32_mcs_lock.c(181): warning C4711: function 'ptw32_mcs_flag_wait' selected for automatic inline expansion
+c:\projects\pthread-win32\ptw32_mcs_lock.c(181): warning C4711: function 'ptw32_mcs_flag_wait' selected for automatic inline expansion
+c:\projects\pthread-win32\ptw32_mcs_lock.c(181): warning C4711: function 'ptw32_mcs_flag_wait' selected for automatic inline expansion
+c:\projects\pthread-win32\pthread_kill.c(87): warning C4711: function 'ptw32_mcs_lock_acquire' selected for automatic inline expansion
+c:\projects\pthread-win32\ptw32_reuse.c(86): warning C4711: function 'ptw32_mcs_lock_acquire' selected for automatic inline expansion
+c:\projects\pthread-win32\pthread_setschedparam.c(109): warning C4711: function 'ptw32_mcs_lock_acquire' selected for automatic inline expansion
+c:\projects\pthread-win32\ptw32_mcs_lock.c(218): warning C4711: function 'ptw32_mcs_flag_wait' selected for automatic inline expansion
+c:\projects\pthread-win32\ptw32_mcs_lock.c(218): warning C4711: function 'ptw32_mcs_flag_wait' selected for automatic inline expansion
+c:\projects\pthread-win32\ptw32_mcs_lock.c(224): warning C4711: function 'ptw32_mcs_flag_set' selected for automatic inline expansion
+c:\projects\pthread-win32\ptw32_mcs_lock.c(224): warning C4711: function 'ptw32_mcs_flag_set' selected for automatic inline expansion
+c:\projects\pthread-win32\pthread_kill.c(98): warning C4711: function 'ptw32_mcs_lock_release' selected for automatic inline expansion
+c:\projects\pthread-win32\ptw32_reuse.c(106): warning C4711: function 'ptw32_mcs_lock_release' selected for automatic inline expansion
+c:\projects\pthread-win32\ptw32_mcs_lock.c(180): warning C4711: function 'ptw32_mcs_flag_set' selected for automatic inline expansion
+c:\projects\pthread-win32\ptw32_mcs_lock.c(181): warning C4711: function 'ptw32_mcs_flag_wait' selected for automatic inline expansion
+c:\projects\pthread-win32\ptw32_reuse.c(124): warning C4711: function 'ptw32_mcs_lock_acquire' selected for automatic inline expansion
+c:\projects\pthread-win32\ptw32_mcs_lock.c(218): warning C4711: function 'ptw32_mcs_flag_wait' selected for automatic inline expansion
+c:\projects\pthread-win32\ptw32_mcs_lock.c(224): warning C4711: function 'ptw32_mcs_flag_set' selected for automatic inline expansion
+c:\projects\pthread-win32\ptw32_reuse.c(154): warning C4711: function 'ptw32_mcs_lock_release' selected for automatic inline expansion
+c:\projects\pthread-win32\ptw32_mcs_lock.c(180): warning C4711: function 'ptw32_mcs_flag_set' selected for automatic inline expansion
+c:\projects\pthread-win32\ptw32_mcs_lock.c(181): warning C4711: function 'ptw32_mcs_flag_wait' selected for automatic inline expansion
+c:\projects\pthread-win32\pthread_key_delete.c(102): warning C4711: function 'ptw32_mcs_lock_acquire' selected for automatic inline expansion
+c:\projects\pthread-win32\pthread_key_delete.c(109): warning C4711: function 'ptw32_tkAssocDestroy' selected for automatic inline expansion
+c:\projects\pthread-win32\ptw32_mcs_lock.c(218): warning C4711: function 'ptw32_mcs_flag_wait' selected for automatic inline expansion
+c:\projects\pthread-win32\ptw32_mcs_lock.c(224): warning C4711: function 'ptw32_mcs_flag_set' selected for automatic inline expansion
+c:\projects\pthread-win32\pthread_key_delete.c(110): warning C4711: function 'ptw32_mcs_lock_release' selected for automatic inline expansion
+c:\projects\pthread-win32\ptw32_mcs_lock.c(180): warning C4711: function 'ptw32_mcs_flag_set' selected for automatic inline expansion
+c:\projects\pthread-win32\ptw32_mcs_lock.c(181): warning C4711: function 'ptw32_mcs_flag_wait' selected for automatic inline expansion
+c:\projects\pthread-win32\pthread_key_delete.c(119): warning C4711: function 'ptw32_mcs_lock_acquire' selected for automatic inline expansion
+c:\projects\pthread-win32\pthread_setspecific.c(95): warning C4711: function 'pthread_getspecific' selected for automatic inline expansion
+c:\projects\pthread-win32\pthread_setspecific.c(155): warning C4711: function 'ptw32_tkAssocCreate' selected for automatic inline expansion
+c:\projects\pthread-win32\ptw32_mcs_lock.c(180): warning C4711: function 'ptw32_mcs_flag_set' selected for automatic inline expansion
+c:\projects\pthread-win32\ptw32_mcs_lock.c(181): warning C4711: function 'ptw32_mcs_flag_wait' selected for automatic inline expansion
+c:\projects\pthread-win32\ptw32_calluserdestroyroutines.c(103): warning C4711: function 'ptw32_mcs_lock_acquire' selected for automatic inline expansion
+c:\projects\pthread-win32\ptw32_mcs_lock.c(218): warning C4711: function 'ptw32_mcs_flag_wait' selected for automatic inline expansion
+c:\projects\pthread-win32\ptw32_mcs_lock.c(224): warning C4711: function 'ptw32_mcs_flag_set' selected for automatic inline expansion
+c:\projects\pthread-win32\ptw32_calluserdestroyroutines.c(113): warning C4711: function 'ptw32_mcs_lock_release' selected for automatic inline expansion
+c:\projects\pthread-win32\ptw32_mcs_lock.c(180): warning C4711: function 'ptw32_mcs_flag_set' selected for automatic inline expansion
+c:\projects\pthread-win32\ptw32_mcs_lock.c(181): warning C4711: function 'ptw32_mcs_flag_wait' selected for automatic inline expansion
+c:\projects\pthread-win32\ptw32_calluserdestroyroutines.c(126): warning C4711: function 'ptw32_mcs_lock_acquire' selected for automatic inline expansion
+c:\projects\pthread-win32\ptw32_mcs_lock.c(218): warning C4711: function 'ptw32_mcs_flag_wait' selected for automatic inline expansion
+c:\projects\pthread-win32\ptw32_mcs_lock.c(224): warning C4711: function 'ptw32_mcs_flag_set' selected for automatic inline expansion
+c:\projects\pthread-win32\ptw32_calluserdestroyroutines.c(131): warning C4711: function 'ptw32_mcs_lock_release' selected for automatic inline expansion
+c:\projects\pthread-win32\ptw32_calluserdestroyroutines.c(146): warning C4711: function 'ptw32_mcs_lock_try_acquire' selected for automatic inline expansion
+c:\projects\pthread-win32\ptw32_mcs_lock.c(218): warning C4711: function 'ptw32_mcs_flag_wait' selected for automatic inline expansion
+c:\projects\pthread-win32\ptw32_mcs_lock.c(224): warning C4711: function 'ptw32_mcs_flag_set' selected for automatic inline expansion
+c:\projects\pthread-win32\ptw32_calluserdestroyroutines.c(148): warning C4711: function 'ptw32_mcs_lock_release' selected for automatic inline expansion
+c:\projects\pthread-win32\ptw32_mcs_lock.c(218): warning C4711: function 'ptw32_mcs_flag_wait' selected for automatic inline expansion
+c:\projects\pthread-win32\ptw32_mcs_lock.c(224): warning C4711: function 'ptw32_mcs_flag_set' selected for automatic inline expansion
+c:\projects\pthread-win32\ptw32_calluserdestroyroutines.c(185): warning C4711: function 'ptw32_mcs_lock_release' selected for automatic inline expansion
+c:\projects\pthread-win32\ptw32_mcs_lock.c(218): warning C4711: function 'ptw32_mcs_flag_wait' selected for automatic inline expansion
+c:\projects\pthread-win32\ptw32_mcs_lock.c(224): warning C4711: function 'ptw32_mcs_flag_set' selected for automatic inline expansion
+c:\projects\pthread-win32\ptw32_calluserdestroyroutines.c(186): warning C4711: function 'ptw32_mcs_lock_release' selected for automatic inline expansion
+c:\projects\pthread-win32\ptw32_calluserdestroyroutines.c(229): warning C4711: function 'ptw32_tkAssocDestroy' selected for automatic inline expansion
+c:\projects\pthread-win32\ptw32_mcs_lock.c(218): warning C4711: function 'ptw32_mcs_flag_wait' selected for automatic inline expansion
+c:\projects\pthread-win32\ptw32_mcs_lock.c(224): warning C4711: function 'ptw32_mcs_flag_set' selected for automatic inline expansion
+c:\projects\pthread-win32\ptw32_calluserdestroyroutines.c(230): warning C4711: function 'ptw32_mcs_lock_release' selected for automatic inline expansion
+c:\projects\pthread-win32\ptw32_mcs_lock.c(218): warning C4711: function 'ptw32_mcs_flag_wait' selected for automatic inline expansion
+c:\projects\pthread-win32\ptw32_mcs_lock.c(224): warning C4711: function 'ptw32_mcs_flag_set' selected for automatic inline expansion
+c:\projects\pthread-win32\ptw32_calluserdestroyroutines.c(231): warning C4711: function 'ptw32_mcs_lock_release' selected for automatic inline expansion
+c:\projects\pthread-win32\pthread_setschedparam.c(112): warning C5045: Compiler will insert Spectre mitigation for memory load if /Qspectre switch specified
+  c:\projects\pthread-win32\pthread_setschedparam.c(86) : note: index 'prio' range checked by comparison on this line
+  c:\projects\pthread-win32\pthread_setschedparam.c(112) : note: feeds call on this line
+c:\projects\pthread-win32\ptw32_new.c(87): warning C4711: function '_sched_affinitycpuzero' selected for automatic inline expansion
+c:\projects\pthread-win32\ptw32_mcs_lock.c(180): warning C4711: function 'ptw32_mcs_flag_set' selected for automatic inline expansion
+c:\projects\pthread-win32\ptw32_mcs_lock.c(181): warning C4711: function 'ptw32_mcs_flag_wait' selected for automatic inline expansion
+c:\projects\pthread-win32\ptw32_mutex_check_need_init.c(60): warning C4711: function 'ptw32_mcs_lock_acquire' selected for automatic inline expansion
+c:\projects\pthread-win32\ptw32_mutex_check_need_init.c(74): warning C4711: function 'pthread_mutex_init' selected for automatic inline expansion
+c:\projects\pthread-win32\ptw32_mutex_check_need_init.c(78): warning C4711: function 'pthread_mutex_init' selected for automatic inline expansion
+c:\projects\pthread-win32\ptw32_mutex_check_need_init.c(82): warning C4711: function 'pthread_mutex_init' selected for automatic inline expansion
+c:\projects\pthread-win32\ptw32_mcs_lock.c(218): warning C4711: function 'ptw32_mcs_flag_wait' selected for automatic inline expansion
+c:\projects\pthread-win32\ptw32_mcs_lock.c(224): warning C4711: function 'ptw32_mcs_flag_set' selected for automatic inline expansion
+c:\projects\pthread-win32\ptw32_mutex_check_need_init.c(94): warning C4711: function 'ptw32_mcs_lock_release' selected for automatic inline expansion
+c:\projects\pthread-win32\pthread_setschedparam.c(71): warning C5045: Compiler will insert Spectre mitigation for memory load if /Qspectre switch specified
+  c:\projects\pthread-win32\pthread_setschedparam.c(60) : note: index 'policy' range checked by comparison on this line
+  c:\projects\pthread-win32\pthread_setschedparam.c(71) : note: feeds call on this line
+c:\projects\pthread-win32\ptw32_mcs_lock.c(180): warning C4711: function 'ptw32_mcs_flag_set' selected for automatic inline expansion
+c:\projects\pthread-win32\ptw32_mcs_lock.c(181): warning C4711: function 'ptw32_mcs_flag_wait' selected for automatic inline expansion
+c:\projects\pthread-win32\pthread_detach.c(87): warning C4711: function 'ptw32_mcs_lock_acquire' selected for automatic inline expansion
+c:\projects\pthread-win32\ptw32_mcs_lock.c(218): warning C4711: function 'ptw32_mcs_flag_wait' selected for automatic inline expansion
+c:\projects\pthread-win32\ptw32_mcs_lock.c(224): warning C4711: function 'ptw32_mcs_flag_set' selected for automatic inline expansion
+c:\projects\pthread-win32\pthread_detach.c(123): warning C4711: function 'ptw32_mcs_lock_release' selected for automatic inline expansion
+c:\projects\pthread-win32\cleanup.c(149): warning C4711: function 'pthread_getspecific' selected for automatic inline expansion
+c:\projects\pthread-win32\cleanup.c(83): warning C4711: function 'pthread_getspecific' selected for automatic inline expansion
+c:\projects\pthread-win32\cleanup.c(83): warning C4711: function 'pthread_getspecific' selected for automatic inline expansion
+c:\projects\pthread-win32\ptw32_throw.c(176): warning C4711: function 'ptw32_pop_cleanup' selected for automatic inline expansion
+c:\projects\pthread-win32\ptw32_mcs_lock.c(180): warning C4711: function 'ptw32_mcs_flag_set' selected for automatic inline expansion
+c:\projects\pthread-win32\ptw32_mcs_lock.c(181): warning C4711: function 'ptw32_mcs_flag_wait' selected for automatic inline expansion
+c:\projects\pthread-win32\ptw32_processterminate.c(95): warning C4711: function 'ptw32_mcs_lock_acquire' selected for automatic inline expansion
+c:\projects\pthread-win32\ptw32_mcs_lock.c(218): warning C4711: function 'ptw32_mcs_flag_wait' selected for automatic inline expansion
+c:\projects\pthread-win32\ptw32_mcs_lock.c(224): warning C4711: function 'ptw32_mcs_flag_set' selected for automatic inline expansion
+c:\projects\pthread-win32\ptw32_processterminate.c(108): warning C4711: function 'ptw32_mcs_lock_release' selected for automatic inline expansion
+c:\projects\pthread-win32\pthread_win32_attach_detach_np.c(153): warning C4711: function 'pthread_getspecific' selected for automatic inline expansion
+c:\projects\pthread-win32\ptw32_processinitialize.c(88): warning C4711: function 'pthread_key_create' selected for automatic inline expansion
+c:\projects\pthread-win32\ptw32_processinitialize.c(88): warning C4711: function 'pthread_key_create' selected for automatic inline expansion
+c:\projects\pthread-win32\pthread_self.c(80): warning C4711: function 'pthread_getspecific' selected for automatic inline expansion
+c:\projects\pthread-win32\pthread_mutex_unlock.c(96): warning C4711: function 'pthread_equal' selected for automatic inline expansion
+c:\projects\pthread-win32\pthread_mutex_unlock.c(130): warning C4711: function 'pthread_equal' selected for automatic inline expansion
+c:\projects\pthread-win32\pthread_mutex_trylock.c(90): warning C4711: function 'pthread_equal' selected for automatic inline expansion
+c:\projects\pthread-win32\pthread_mutex_trylock.c(131): warning C4711: function 'ptw32_robust_mutex_add' selected for automatic inline expansion
+c:\projects\pthread-win32\pthread_mutex_trylock.c(135): warning C4711: function 'pthread_equal' selected for automatic inline expansion
+c:\projects\pthread-win32\pthread_mutex_trylock.c(142): warning C4711: function 'ptw32_robust_mutex_inherit' selected for automatic inline expansion
+c:\projects\pthread-win32\pthread_mutex_trylock.c(145): warning C4711: function 'ptw32_robust_mutex_add' selected for automatic inline expansion
+c:\projects\pthread-win32\pthread_mutex_lock.c(115): warning C4711: function 'pthread_equal' selected for automatic inline expansion
+c:\projects\pthread-win32\pthread_mutex_lock.c(176): warning C4711: function 'ptw32_robust_mutex_inherit' selected for automatic inline expansion
+c:\projects\pthread-win32\pthread_mutex_lock.c(203): warning C4711: function 'ptw32_robust_mutex_add' selected for automatic inline expansion
+c:\projects\pthread-win32\pthread_mutex_lock.c(218): warning C4711: function 'ptw32_robust_mutex_add' selected for automatic inline expansion
+c:\projects\pthread-win32\pthread_mutex_lock.c(222): warning C4711: function 'pthread_equal' selected for automatic inline expansion
+c:\projects\pthread-win32\pthread_mutex_lock.c(236): warning C4711: function 'ptw32_robust_mutex_inherit' selected for automatic inline expansion
+c:\projects\pthread-win32\pthread_mutex_lock.c(264): warning C4711: function 'ptw32_robust_mutex_add' selected for automatic inline expansion
+c:\projects\pthread-win32\pthread_win32_attach_detach_np.c(215): warning C4711: function 'pthread_getspecific' selected for automatic inline expansion
+c:\projects\pthread-win32\ptw32_mcs_lock.c(180): warning C4711: function 'ptw32_mcs_flag_set' selected for automatic inline expansion
+c:\projects\pthread-win32\ptw32_mcs_lock.c(181): warning C4711: function 'ptw32_mcs_flag_wait' selected for automatic inline expansion
+c:\projects\pthread-win32\pthread_win32_attach_detach_np.c(222): warning C4711: function 'ptw32_mcs_lock_acquire' selected for automatic inline expansion
+c:\projects\pthread-win32\pthread_win32_attach_detach_np.c(236): warning C4711: function 'ptw32_robust_mutex_remove' selected for automatic inline expansion
+c:\projects\pthread-win32\pthread_mutex_unlock.c(164): warning C5045: Compiler will insert Spectre mitigation for memory load if /Qspectre switch specified
+  c:\projects\pthread-win32\pthread_mutex_unlock.c(159) : note: index '' range checked by comparison on this line
+  c:\projects\pthread-win32\pthread_mutex_unlock.c(164) : note: feeds call on this line
+c:\projects\pthread-win32\pthread_mutex_unlock.c(159): warning C5045: Compiler will insert Spectre mitigation for memory load if /Qspectre switch specified
+  c:\projects\pthread-win32\pthread_mutex_unlock.c(64) : note: index 'mx' range checked by comparison on this line
+  c:\projects\pthread-win32\pthread_mutex_unlock.c(159) : note: feeds call on this line
+c:\projects\pthread-win32\pthread_mutex_unlock.c(145): warning C5045: Compiler will insert Spectre mitigation for memory load if /Qspectre switch specified
+  c:\projects\pthread-win32\pthread_mutex_unlock.c(140) : note: index '' range checked by comparison on this line
+  c:\projects\pthread-win32\pthread_mutex_unlock.c(145) : note: feeds call on this line
+c:\projects\pthread-win32\pthread_mutex_unlock.c(140): warning C5045: Compiler will insert Spectre mitigation for memory load if /Qspectre switch specified
+  c:\projects\pthread-win32\pthread_mutex_unlock.c(64) : note: index 'mx' range checked by comparison on this line
+  c:\projects\pthread-win32\pthread_mutex_unlock.c(140) : note: feeds call on this line
+c:\projects\pthread-win32\pthread_mutex_unlock.c(132): warning C5045: Compiler will insert Spectre mitigation for memory load if /Qspectre switch specified
+  c:\projects\pthread-win32\pthread_mutex_unlock.c(64) : note: index 'mx' range checked by comparison on this line
+  c:\projects\pthread-win32\pthread_mutex_unlock.c(132) : note: feeds call on this line
+c:\projects\pthread-win32\pthread_mutex_unlock.c(107): warning C5045: Compiler will insert Spectre mitigation for memory load if /Qspectre switch specified
+  c:\projects\pthread-win32\pthread_mutex_unlock.c(104) : note: index '' range checked by comparison on this line
+  c:\projects\pthread-win32\pthread_mutex_unlock.c(107) : note: feeds call on this line
+c:\projects\pthread-win32\pthread_mutex_unlock.c(104): warning C5045: Compiler will insert Spectre mitigation for memory load if /Qspectre switch specified
+  c:\projects\pthread-win32\pthread_mutex_unlock.c(64) : note: index 'mx' range checked by comparison on this line
+  c:\projects\pthread-win32\pthread_mutex_unlock.c(104) : note: feeds call on this line
+c:\projects\pthread-win32\pthread_mutex_unlock.c(83): warning C5045: Compiler will insert Spectre mitigation for memory load if /Qspectre switch specified
+  c:\projects\pthread-win32\pthread_mutex_unlock.c(78) : note: index 'idx' range checked by comparison on this line
+  c:\projects\pthread-win32\pthread_mutex_unlock.c(83) : note: feeds call on this line
+c:\projects\pthread-win32\pthread_mutex_unlock.c(74): warning C5045: Compiler will insert Spectre mitigation for memory load if /Qspectre switch specified
+  c:\projects\pthread-win32\pthread_mutex_unlock.c(64) : note: index 'mx' range checked by comparison on this line
+  c:\projects\pthread-win32\pthread_mutex_unlock.c(74) : note: feeds call on this line
+c:\projects\pthread-win32\ptw32_throw.c(76): warning C4711: function 'pthread_getspecific' selected for automatic inline expansion
+c:\projects\pthread-win32\pthread_win32_attach_detach_np.c(153): warning C4711: function 'pthread_getspecific' selected for automatic inline expansion
+c:\projects\pthread-win32\autostatic.c(74): warning C4711: function 'pthread_win32_process_detach_np' selected for automatic inline expansion
+c:\projects\pthread-win32\ptw32_mcs_lock.c(180): warning C4711: function 'ptw32_mcs_flag_set' selected for automatic inline expansion
+c:\projects\pthread-win32\ptw32_mcs_lock.c(181): warning C4711: function 'ptw32_mcs_flag_wait' selected for automatic inline expansion
+c:\projects\pthread-win32\pthread_mutex_destroy.c(126): warning C4711: function 'ptw32_mcs_lock_acquire' selected for automatic inline expansion
+c:\projects\pthread-win32\ptw32_mcs_lock.c(218): warning C4711: function 'ptw32_mcs_flag_wait' selected for automatic inline expansion
+c:\projects\pthread-win32\ptw32_mcs_lock.c(224): warning C4711: function 'ptw32_mcs_flag_set' selected for automatic inline expansion
+c:\projects\pthread-win32\pthread_mutex_destroy.c(149): warning C4711: function 'ptw32_mcs_lock_release' selected for automatic inline expansion
+c:\projects\pthread-win32\ptw32_mcs_lock.c(180): warning C4711: function 'ptw32_mcs_flag_set' selected for automatic inline expansion
+c:\projects\pthread-win32\ptw32_mcs_lock.c(181): warning C4711: function 'ptw32_mcs_flag_wait' selected for automatic inline expansion
+c:\projects\pthread-win32\pthread_testcancel.c(95): warning C4711: function 'ptw32_mcs_lock_acquire' selected for automatic inline expansion
+c:\projects\pthread-win32\ptw32_mcs_lock.c(180): warning C4711: function 'ptw32_mcs_flag_set' selected for automatic inline expansion
+c:\projects\pthread-win32\ptw32_mcs_lock.c(181): warning C4711: function 'ptw32_mcs_flag_wait' selected for automatic inline expansion
+c:\projects\pthread-win32\w32_cancelablewait.c(123): warning C4711: function 'ptw32_mcs_lock_acquire' selected for automatic inline expansion
+c:\projects\pthread-win32\pthread_cancel.c(127): warning C4711: function 'pthread_equal' selected for automatic inline expansion
+c:\projects\pthread-win32\ptw32_mcs_lock.c(180): warning C4711: function 'ptw32_mcs_flag_set' selected for automatic inline expansion
+c:\projects\pthread-win32\ptw32_mcs_lock.c(181): warning C4711: function 'ptw32_mcs_flag_wait' selected for automatic inline expansion
+c:\projects\pthread-win32\pthread_cancel.c(134): warning C4711: function 'ptw32_mcs_lock_acquire' selected for automatic inline expansion
+c:\projects\pthread-win32\autostatic.c(67): warning C4711: function 'pthread_win32_process_attach_np' selected for automatic inline expansion
+c:\projects\pthread-win32\sem_init.c(117): warning C4711: function 'pthread_mutex_init' selected for automatic inline expansion
+c:\projects\pthread-win32\ptw32_mcs_lock.c(180): warning C4711: function 'ptw32_mcs_flag_set' selected for automatic inline expansion
+c:\projects\pthread-win32\ptw32_mcs_lock.c(181): warning C4711: function 'ptw32_mcs_flag_wait' selected for automatic inline expansion
+c:\projects\pthread-win32\pthread_join.c(95): warning C4711: function 'ptw32_mcs_lock_acquire' selected for automatic inline expansion
+c:\projects\pthread-win32\ptw32_mcs_lock.c(218): warning C4711: function 'ptw32_mcs_flag_wait' selected for automatic inline expansion
+c:\projects\pthread-win32\ptw32_mcs_lock.c(224): warning C4711: function 'ptw32_mcs_flag_set' selected for automatic inline expansion
+c:\projects\pthread-win32\pthread_join.c(111): warning C4711: function 'ptw32_mcs_lock_release' selected for automatic inline expansion
+c:\projects\pthread-win32\pthread_join.c(124): warning C4711: function 'pthread_equal' selected for automatic inline expansion
+c:\projects\pthread-win32\pthread_join.c(137): warning C4711: function 'pthreadCancelableWait' selected for automatic inline expansion
+c:\projects\pthread-win32\sem_post_multiple.c(120): warning C5045: Compiler will insert Spectre mitigation for memory load if /Qspectre switch specified
+  c:\projects\pthread-win32\sem_post_multiple.c(107) : note: index 'waiters' range checked by comparison on this line
+  c:\projects\pthread-win32\sem_post_multiple.c(120) : note: feeds call on this line
+c:\projects\pthread-win32\sem_wait.c(152): warning C4711: function 'pthreadCancelableWait' selected for automatic inline expansion
+c:\projects\pthread-win32\sem_wait.c(154): warning C4711: function 'ptw32_sem_wait_cleanup' selected for automatic inline expansion
+c:\projects\pthread-win32\sem_timedwait.c(164): warning C4711: function 'ptw32_relmillisecs' selected for automatic inline expansion
+c:\projects\pthread-win32\sem_timedwait.c(201): warning C4711: function 'pthreadCancelableTimedWait' selected for automatic inline expansion
+c:\projects\pthread-win32\sem_timedwait.c(202): warning C4711: function 'ptw32_sem_timedwait_cleanup' selected for automatic inline expansion
+c:\projects\pthread-win32\pthread_cond_wait.c(310): warning C4711: function 'ptw32_get_errno' selected for automatic inline expansion
+c:\projects\pthread-win32\pthread_cond_wait.c(319): warning C4711: function 'sem_post' selected for automatic inline expansion
+c:\projects\pthread-win32\pthread_cond_wait.c(321): warning C4711: function 'ptw32_get_errno' selected for automatic inline expansion
+c:\projects\pthread-win32\pthread_cond_wait.c(340): warning C4711: function 'sem_post' selected for automatic inline expansion
+c:\projects\pthread-win32\pthread_cond_wait.c(342): warning C4711: function 'ptw32_get_errno' selected for automatic inline expansion
+c:\projects\pthread-win32\ptw32_mcs_lock.c(180): warning C4711: function 'ptw32_mcs_flag_set' selected for automatic inline expansion
+c:\projects\pthread-win32\ptw32_mcs_lock.c(181): warning C4711: function 'ptw32_mcs_flag_wait' selected for automatic inline expansion
+c:\projects\pthread-win32\pthread_cond_destroy.c(135): warning C4711: function 'ptw32_mcs_lock_acquire' selected for automatic inline expansion
+c:\projects\pthread-win32\pthread_cond_destroy.c(146): warning C4711: function 'ptw32_get_errno' selected for automatic inline expansion
+c:\projects\pthread-win32\pthread_cond_destroy.c(157): warning C4711: function 'sem_post' selected for automatic inline expansion
+c:\projects\pthread-win32\pthread_cond_destroy.c(172): warning C4711: function 'sem_post' selected for automatic inline expansion
+c:\projects\pthread-win32\pthread_cond_destroy.c(174): warning C4711: function 'ptw32_get_errno' selected for automatic inline expansion
+c:\projects\pthread-win32\pthread_cond_destroy.c(188): warning C4711: function 'ptw32_get_errno' selected for automatic inline expansion
+c:\projects\pthread-win32\pthread_cond_destroy.c(192): warning C4711: function 'ptw32_get_errno' selected for automatic inline expansion
+c:\projects\pthread-win32\ptw32_mcs_lock.c(180): warning C4711: function 'ptw32_mcs_flag_set' selected for automatic inline expansion
+c:\projects\pthread-win32\ptw32_mcs_lock.c(181): warning C4711: function 'ptw32_mcs_flag_wait' selected for automatic inline expansion
+c:\projects\pthread-win32\pthread_cond_destroy.c(230): warning C4711: function 'ptw32_mcs_lock_acquire' selected for automatic inline expansion
+c:\projects\pthread-win32\pthread_cond_init.c(109): warning C4711: function 'ptw32_get_errno' selected for automatic inline expansion
+c:\projects\pthread-win32\pthread_cond_init.c(115): warning C4711: function 'ptw32_get_errno' selected for automatic inline expansion
+c:\projects\pthread-win32\pthread_cond_init.c(119): warning C4711: function 'pthread_mutex_init' selected for automatic inline expansion
+c:\projects\pthread-win32\ptw32_mcs_lock.c(180): warning C4711: function 'ptw32_mcs_flag_set' selected for automatic inline expansion
+c:\projects\pthread-win32\ptw32_mcs_lock.c(181): warning C4711: function 'ptw32_mcs_flag_wait' selected for automatic inline expansion
+c:\projects\pthread-win32\pthread_cond_init.c(148): warning C4711: function 'ptw32_mcs_lock_acquire' selected for automatic inline expansion
+c:\projects\pthread-win32\pthread_cond_signal.c(120): warning C4711: function 'ptw32_get_errno' selected for automatic inline expansion
+c:\projects\pthread-win32\pthread_cond_signal.c(147): warning C4711: function 'sem_post_multiple' selected for automatic inline expansion
+c:\projects\pthread-win32\pthread_cond_signal.c(149): warning C4711: function 'ptw32_get_errno' selected for automatic inline expansion
+c:\projects\pthread-win32\ptw32_mcs_lock.c(180): warning C4711: function 'ptw32_mcs_flag_set' selected for automatic inline expansion
+c:\projects\pthread-win32\ptw32_mcs_lock.c(181): warning C4711: function 'ptw32_mcs_flag_wait' selected for automatic inline expansion
+c:\projects\pthread-win32\ptw32_cond_check_need_init.c(57): warning C4711: function 'ptw32_mcs_lock_acquire' selected for automatic inline expansion
+c:\projects\pthread-win32\ptw32_mcs_lock.c(218): warning C4711: function 'ptw32_mcs_flag_wait' selected for automatic inline expansion
+c:\projects\pthread-win32\ptw32_mcs_lock.c(224): warning C4711: function 'ptw32_mcs_flag_set' selected for automatic inline expansion
+c:\projects\pthread-win32\ptw32_cond_check_need_init.c(80): warning C4711: function 'ptw32_mcs_lock_release' selected for automatic inline expansion
+c:\projects\pthread-win32\pthread_cond_wait.c(391): warning C4711: function 'ptw32_get_errno' selected for automatic inline expansion
+c:\projects\pthread-win32\pthread_cond_wait.c(396): warning C4711: function 'sem_post' selected for automatic inline expansion
+c:\projects\pthread-win32\pthread_cond_wait.c(398): warning C4711: function 'ptw32_get_errno' selected for automatic inline expansion
+c:\projects\pthread-win32\pthread_cond_wait.c(437): warning C4711: function 'ptw32_get_errno' selected for automatic inline expansion
+  Finished generating code
+pthread_lib.lib(pthread_mutex_init.obj) : warning LNK4099: PDB 'pthread_lib.pdb' was not found with 'pthread_lib.lib(pthread_mutex_init.obj)' or at 'C:\Users\LabUser\source\repos\dektec_atsc3_tools\x64\Debug\pthread_lib.pdb'; linking object as if no debug info
+pthread_lib.lib(pthread_mutex_lock.obj) : warning LNK4099: PDB 'pthread_lib.pdb' was not found with 'pthread_lib.lib(pthread_mutex_lock.obj)' or at 'C:\Users\LabUser\source\repos\dektec_atsc3_tools\x64\Debug\pthread_lib.pdb'; linking object as if no debug info
+pthread_lib.lib(pthread_mutex_unlock.obj) : warning LNK4099: PDB 'pthread_lib.pdb' was not found with 'pthread_lib.lib(pthread_mutex_unlock.obj)' or at 'C:\Users\LabUser\source\repos\dektec_atsc3_tools\x64\Debug\pthread_lib.pdb'; linking object as if no debug info
+pthread_lib.lib(autostatic.obj) : warning LNK4099: PDB 'pthread_lib.pdb' was not found with 'pthread_lib.lib(autostatic.obj)' or at 'C:\Users\LabUser\source\repos\dektec_atsc3_tools\x64\Debug\pthread_lib.pdb'; linking object as if no debug info
+pthread_lib.lib(ptw32_mutex_check_need_init.obj) : warning LNK4099: PDB 'pthread_lib.pdb' was not found with 'pthread_lib.lib(ptw32_mutex_check_need_init.obj)' or at 'C:\Users\LabUser\source\repos\dektec_atsc3_tools\x64\Debug\pthread_lib.pdb'; linking object as if no debug info
+pthread_lib.lib(pthread_equal.obj) : warning LNK4099: PDB 'pthread_lib.pdb' was not found with 'pthread_lib.lib(pthread_equal.obj)' or at 'C:\Users\LabUser\source\repos\dektec_atsc3_tools\x64\Debug\pthread_lib.pdb'; linking object as if no debug info
+pthread_lib.lib(pthread_mutex_consistent.obj) : warning LNK4099: PDB 'pthread_lib.pdb' was not found with 'pthread_lib.lib(pthread_mutex_consistent.obj)' or at 'C:\Users\LabUser\source\repos\dektec_atsc3_tools\x64\Debug\pthread_lib.pdb'; linking object as if no debug info
+pthread_lib.lib(pthread_self.obj) : warning LNK4099: PDB 'pthread_lib.pdb' was not found with 'pthread_lib.lib(pthread_self.obj)' or at 'C:\Users\LabUser\source\repos\dektec_atsc3_tools\x64\Debug\pthread_lib.pdb'; linking object as if no debug info
+pthread_lib.lib(pthread_win32_attach_detach_np.obj) : warning LNK4099: PDB 'pthread_lib.pdb' was not found with 'pthread_lib.lib(pthread_win32_attach_detach_np.obj)' or at 'C:\Users\LabUser\source\repos\dektec_atsc3_tools\x64\Debug\pthread_lib.pdb'; linking object as if no debug info
+pthread_lib.lib(ptw32_MCS_lock.obj) : warning LNK4099: PDB 'pthread_lib.pdb' was not found with 'pthread_lib.lib(ptw32_MCS_lock.obj)' or at 'C:\Users\LabUser\source\repos\dektec_atsc3_tools\x64\Debug\pthread_lib.pdb'; linking object as if no debug info
+pthread_lib.lib(global.obj) : warning LNK4099: PDB 'pthread_lib.pdb' was not found with 'pthread_lib.lib(global.obj)' or at 'C:\Users\LabUser\source\repos\dektec_atsc3_tools\x64\Debug\pthread_lib.pdb'; linking object as if no debug info
+pthread_lib.lib(pthread_getspecific.obj) : warning LNK4099: PDB 'pthread_lib.pdb' was not found with 'pthread_lib.lib(pthread_getspecific.obj)' or at 'C:\Users\LabUser\source\repos\dektec_atsc3_tools\x64\Debug\pthread_lib.pdb'; linking object as if no debug info
+pthread_lib.lib(pthread_setspecific.obj) : warning LNK4099: PDB 'pthread_lib.pdb' was not found with 'pthread_lib.lib(pthread_setspecific.obj)' or at 'C:\Users\LabUser\source\repos\dektec_atsc3_tools\x64\Debug\pthread_lib.pdb'; linking object as if no debug info
+pthread_lib.lib(ptw32_processInitialize.obj) : warning LNK4099: PDB 'pthread_lib.pdb' was not found with 'pthread_lib.lib(ptw32_processInitialize.obj)' or at 'C:\Users\LabUser\source\repos\dektec_atsc3_tools\x64\Debug\pthread_lib.pdb'; linking object as if no debug info
+pthread_lib.lib(ptw32_new.obj) : warning LNK4099: PDB 'pthread_lib.pdb' was not found with 'pthread_lib.lib(ptw32_new.obj)' or at 'C:\Users\LabUser\source\repos\dektec_atsc3_tools\x64\Debug\pthread_lib.pdb'; linking object as if no debug info
+pthread_lib.lib(ptw32_reuse.obj) : warning LNK4099: PDB 'pthread_lib.pdb' was not found with 'pthread_lib.lib(ptw32_reuse.obj)' or at 'C:\Users\LabUser\source\repos\dektec_atsc3_tools\x64\Debug\pthread_lib.pdb'; linking object as if no debug info
+pthread_lib.lib(ptw32_processTerminate.obj) : warning LNK4099: PDB 'pthread_lib.pdb' was not found with 'pthread_lib.lib(ptw32_processTerminate.obj)' or at 'C:\Users\LabUser\source\repos\dektec_atsc3_tools\x64\Debug\pthread_lib.pdb'; linking object as if no debug info
+pthread_lib.lib(ptw32_callUserDestroyRoutines.obj) : warning LNK4099: PDB 'pthread_lib.pdb' was not found with 'pthread_lib.lib(ptw32_callUserDestroyRoutines.obj)' or at 'C:\Users\LabUser\source\repos\dektec_atsc3_tools\x64\Debug\pthread_lib.pdb'; linking object as if no debug info
+pthread_lib.lib(pthread_cancel.obj) : warning LNK4099: PDB 'pthread_lib.pdb' was not found with 'pthread_lib.lib(pthread_cancel.obj)' or at 'C:\Users\LabUser\source\repos\dektec_atsc3_tools\x64\Debug\pthread_lib.pdb'; linking object as if no debug info
+pthread_lib.lib(ptw32_threadDestroy.obj) : warning LNK4099: PDB 'pthread_lib.pdb' was not found with 'pthread_lib.lib(ptw32_threadDestroy.obj)' or at 'C:\Users\LabUser\source\repos\dektec_atsc3_tools\x64\Debug\pthread_lib.pdb'; linking object as if no debug info
+pthread_lib.lib(sched_yield.obj) : warning LNK4099: PDB 'pthread_lib.pdb' was not found with 'pthread_lib.lib(sched_yield.obj)' or at 'C:\Users\LabUser\source\repos\dektec_atsc3_tools\x64\Debug\pthread_lib.pdb'; linking object as if no debug info
+pthread_lib.lib(ptw32_tkAssocCreate.obj) : warning LNK4099: PDB 'pthread_lib.pdb' was not found with 'pthread_lib.lib(ptw32_tkAssocCreate.obj)' or at 'C:\Users\LabUser\source\repos\dektec_atsc3_tools\x64\Debug\pthread_lib.pdb'; linking object as if no debug info
+pthread_lib.lib(pthread_key_create.obj) : warning LNK4099: PDB 'pthread_lib.pdb' was not found with 'pthread_lib.lib(pthread_key_create.obj)' or at 'C:\Users\LabUser\source\repos\dektec_atsc3_tools\x64\Debug\pthread_lib.pdb'; linking object as if no debug info
+pthread_lib.lib(sched_setaffinity.obj) : warning LNK4099: PDB 'pthread_lib.pdb' was not found with 'pthread_lib.lib(sched_setaffinity.obj)' or at 'C:\Users\LabUser\source\repos\dektec_atsc3_tools\x64\Debug\pthread_lib.pdb'; linking object as if no debug info
+pthread_lib.lib(pthread_key_delete.obj) : warning LNK4099: PDB 'pthread_lib.pdb' was not found with 'pthread_lib.lib(pthread_key_delete.obj)' or at 'C:\Users\LabUser\source\repos\dektec_atsc3_tools\x64\Debug\pthread_lib.pdb'; linking object as if no debug info
+pthread_lib.lib(ptw32_tkAssocDestroy.obj) : warning LNK4099: PDB 'pthread_lib.pdb' was not found with 'pthread_lib.lib(ptw32_tkAssocDestroy.obj)' or at 'C:\Users\LabUser\source\repos\dektec_atsc3_tools\x64\Debug\pthread_lib.pdb'; linking object as if no debug info
+pthread_lib.lib(ptw32_throw.obj) : warning LNK4099: PDB 'pthread_lib.pdb' was not found with 'pthread_lib.lib(ptw32_throw.obj)' or at 'C:\Users\LabUser\source\repos\dektec_atsc3_tools\x64\Debug\pthread_lib.pdb'; linking object as if no debug info
+pthread_lib.lib(pthread_kill.obj) : warning LNK4099: PDB 'pthread_lib.pdb' was not found with 'pthread_lib.lib(pthread_kill.obj)' or at 'C:\Users\LabUser\source\repos\dektec_atsc3_tools\x64\Debug\pthread_lib.pdb'; linking object as if no debug info
+pthread_lib.lib(cleanup.obj) : warning LNK4099: PDB 'pthread_lib.pdb' was not found with 'pthread_lib.lib(cleanup.obj)' or at 'C:\Users\LabUser\source\repos\dektec_atsc3_tools\x64\Debug\pthread_lib.pdb'; linking object as if no debug info
+pthread_lib.lib(create.obj) : warning LNK4099: PDB 'pthread_lib.pdb' was not found with 'pthread_lib.lib(create.obj)' or at 'C:\Users\LabUser\source\repos\dektec_atsc3_tools\x64\Debug\pthread_lib.pdb'; linking object as if no debug info
+pthread_lib.lib(pthread_join.obj) : warning LNK4099: PDB 'pthread_lib.pdb' was not found with 'pthread_lib.lib(pthread_join.obj)' or at 'C:\Users\LabUser\source\repos\dektec_atsc3_tools\x64\Debug\pthread_lib.pdb'; linking object as if no debug info
+pthread_lib.lib(pthread_mutex_destroy.obj) : warning LNK4099: PDB 'pthread_lib.pdb' was not found with 'pthread_lib.lib(pthread_mutex_destroy.obj)' or at 'C:\Users\LabUser\source\repos\dektec_atsc3_tools\x64\Debug\pthread_lib.pdb'; linking object as if no debug info
+pthread_lib.lib(pthread_mutex_trylock.obj) : warning LNK4099: PDB 'pthread_lib.pdb' was not found with 'pthread_lib.lib(pthread_mutex_trylock.obj)' or at 'C:\Users\LabUser\source\repos\dektec_atsc3_tools\x64\Debug\pthread_lib.pdb'; linking object as if no debug info
+pthread_lib.lib(pthread_cond_init.obj) : warning LNK4099: PDB 'pthread_lib.pdb' was not found with 'pthread_lib.lib(pthread_cond_init.obj)' or at 'C:\Users\LabUser\source\repos\dektec_atsc3_tools\x64\Debug\pthread_lib.pdb'; linking object as if no debug info
+pthread_lib.lib(pthread_cond_destroy.obj) : warning LNK4099: PDB 'pthread_lib.pdb' was not found with 'pthread_lib.lib(pthread_cond_destroy.obj)' or at 'C:\Users\LabUser\source\repos\dektec_atsc3_tools\x64\Debug\pthread_lib.pdb'; linking object as if no debug info
+pthread_lib.lib(pthread_cond_wait.obj) : warning LNK4099: PDB 'pthread_lib.pdb' was not found with 'pthread_lib.lib(pthread_cond_wait.obj)' or at 'C:\Users\LabUser\source\repos\dektec_atsc3_tools\x64\Debug\pthread_lib.pdb'; linking object as if no debug info
+pthread_lib.lib(pthread_cond_signal.obj) : warning LNK4099: PDB 'pthread_lib.pdb' was not found with 'pthread_lib.lib(pthread_cond_signal.obj)' or at 'C:\Users\LabUser\source\repos\dektec_atsc3_tools\x64\Debug\pthread_lib.pdb'; linking object as if no debug info
+pthread_lib.lib(pthread_getw32threadhandle_np.obj) : warning LNK4099: PDB 'pthread_lib.pdb' was not found with 'pthread_lib.lib(pthread_getw32threadhandle_np.obj)' or at 'C:\Users\LabUser\source\repos\dektec_atsc3_tools\x64\Debug\pthread_lib.pdb'; linking object as if no debug info
+pthread_lib.lib(ptw32_threadStart.obj) : warning LNK4099: PDB 'pthread_lib.pdb' was not found with 'pthread_lib.lib(ptw32_threadStart.obj)' or at 'C:\Users\LabUser\source\repos\dektec_atsc3_tools\x64\Debug\pthread_lib.pdb'; linking object as if no debug info
+pthread_lib.lib(pthread_setschedparam.obj) : warning LNK4099: PDB 'pthread_lib.pdb' was not found with 'pthread_lib.lib(pthread_setschedparam.obj)' or at 'C:\Users\LabUser\source\repos\dektec_atsc3_tools\x64\Debug\pthread_lib.pdb'; linking object as if no debug info
+pthread_lib.lib(pthread_detach.obj) : warning LNK4099: PDB 'pthread_lib.pdb' was not found with 'pthread_lib.lib(pthread_detach.obj)' or at 'C:\Users\LabUser\source\repos\dektec_atsc3_tools\x64\Debug\pthread_lib.pdb'; linking object as if no debug info
+pthread_lib.lib(w32_CancelableWait.obj) : warning LNK4099: PDB 'pthread_lib.pdb' was not found with 'pthread_lib.lib(w32_CancelableWait.obj)' or at 'C:\Users\LabUser\source\repos\dektec_atsc3_tools\x64\Debug\pthread_lib.pdb'; linking object as if no debug info
+pthread_lib.lib(sem_destroy.obj) : warning LNK4099: PDB 'pthread_lib.pdb' was not found with 'pthread_lib.lib(sem_destroy.obj)' or at 'C:\Users\LabUser\source\repos\dektec_atsc3_tools\x64\Debug\pthread_lib.pdb'; linking object as if no debug info
+pthread_lib.lib(sem_init.obj) : warning LNK4099: PDB 'pthread_lib.pdb' was not found with 'pthread_lib.lib(sem_init.obj)' or at 'C:\Users\LabUser\source\repos\dektec_atsc3_tools\x64\Debug\pthread_lib.pdb'; linking object as if no debug info
+pthread_lib.lib(ptw32_semwait.obj) : warning LNK4099: PDB 'pthread_lib.pdb' was not found with 'pthread_lib.lib(ptw32_semwait.obj)' or at 'C:\Users\LabUser\source\repos\dektec_atsc3_tools\x64\Debug\pthread_lib.pdb'; linking object as if no debug info
+pthread_lib.lib(sem_post.obj) : warning LNK4099: PDB 'pthread_lib.pdb' was not found with 'pthread_lib.lib(sem_post.obj)' or at 'C:\Users\LabUser\source\repos\dektec_atsc3_tools\x64\Debug\pthread_lib.pdb'; linking object as if no debug info
+pthread_lib.lib(sem_timedwait.obj) : warning LNK4099: PDB 'pthread_lib.pdb' was not found with 'pthread_lib.lib(sem_timedwait.obj)' or at 'C:\Users\LabUser\source\repos\dektec_atsc3_tools\x64\Debug\pthread_lib.pdb'; linking object as if no debug info
+pthread_lib.lib(ptw32_cond_check_need_init.obj) : warning LNK4099: PDB 'pthread_lib.pdb' was not found with 'pthread_lib.lib(ptw32_cond_check_need_init.obj)' or at 'C:\Users\LabUser\source\repos\dektec_atsc3_tools\x64\Debug\pthread_lib.pdb'; linking object as if no debug info
+pthread_lib.lib(sem_wait.obj) : warning LNK4099: PDB 'pthread_lib.pdb' was not found with 'pthread_lib.lib(sem_wait.obj)' or at 'C:\Users\LabUser\source\repos\dektec_atsc3_tools\x64\Debug\pthread_lib.pdb'; linking object as if no debug info
+pthread_lib.lib(sem_post_multiple.obj) : warning LNK4099: PDB 'pthread_lib.pdb' was not found with 'pthread_lib.lib(sem_post_multiple.obj)' or at 'C:\Users\LabUser\source\repos\dektec_atsc3_tools\x64\Debug\pthread_lib.pdb'; linking object as if no debug info
+pthread_lib.lib(sched_get_priority_min.obj) : warning LNK4099: PDB 'pthread_lib.pdb' was not found with 'pthread_lib.lib(sched_get_priority_min.obj)' or at 'C:\Users\LabUser\source\repos\dektec_atsc3_tools\x64\Debug\pthread_lib.pdb'; linking object as if no debug info
+pthread_lib.lib(sched_get_priority_max.obj) : warning LNK4099: PDB 'pthread_lib.pdb' was not found with 'pthread_lib.lib(sched_get_priority_max.obj)' or at 'C:\Users\LabUser\source\repos\dektec_atsc3_tools\x64\Debug\pthread_lib.pdb'; linking object as if no debug info
+pthread_lib.lib(ptw32_relmillisecs.obj) : warning LNK4099: PDB 'pthread_lib.pdb' was not found with 'pthread_lib.lib(ptw32_relmillisecs.obj)' or at 'C:\Users\LabUser\source\repos\dektec_atsc3_tools\x64\Debug\pthread_lib.pdb'; linking object as if no debug info
+pthread_lib.lib(pthread_testcancel.obj) : warning LNK4099: PDB 'pthread_lib.pdb' was not found with 'pthread_lib.lib(pthread_testcancel.obj)' or at 'C:\Users\LabUser\source\repos\dektec_atsc3_tools\x64\Debug\pthread_lib.pdb'; linking object as if no debug info
+  libatsc3.vcxproj -> C:\Users\LabUser\source\repos\dektec_atsc3_tools\x64\Debug\libatsc3.dll

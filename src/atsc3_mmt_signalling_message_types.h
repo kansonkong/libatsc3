@@ -340,7 +340,7 @@ typedef struct mmt_scte35_message_payload {
 	uint8_t		version;
 	uint32_t	length;
 
-	ATSC3_VECTOR_BUILDER_STRUCT(mmt_scte35_signal_descriptor)
+	ATSC3_VECTOR_BUILDER_STRUCT(mmt_scte35_signal_descriptor);
 } mmt_scte35_message_payload_t;
 ATSC3_VECTOR_BUILDER_METHODS_INTERFACE(mmt_scte35_message_payload, mmt_scte35_signal_descriptor);
 
@@ -358,7 +358,8 @@ typedef struct mmt_signalling_message_header_and_payload {
 } mmt_signalling_message_header_and_payload_t;
 
 
-void mmt_signalling_message_header_and_payload_free(mmt_signalling_message_header_and_payload_t**);
+//jjustman-2020-09-01 - confirm this is being chained for cleanup
+void mmt_signalling_message_header_and_payload_free(mmt_signalling_message_header_and_payload_t** mmt_signalling_message_header_and_payload_p);
 
 
 #if defined (__cplusplus)

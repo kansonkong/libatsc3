@@ -48,3 +48,9 @@
 [submodule "libusb_android"]
 	path = libusb_android
 	url = https://github.com/jjustman/libusb_android.git
+[submodule "pcre2-win-build"]
+	path = pcre2-win-build
+	url = https://github.com/kiyolee/pcre2-win-build.git
+[submodule "vcpkg"]
+	path = vcpkg
+	url = https://github.com/microsoft/vcpkg.git

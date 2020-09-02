@@ -13,6 +13,10 @@
 #include "atsc3_listener_udp.h"
 #include "atsc3_ip_udp_rtp_types.h"
 
+#ifdef _WIN32
+#include <winsock2.h>
+#endif
+
 #ifdef __cplusplus
 extern "C" {
 #endif

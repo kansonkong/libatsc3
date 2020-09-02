@@ -51,7 +51,7 @@ typedef struct atsc3_mime_multipart_related_payload {
 typedef struct atsc3_mime_multipart_related_instance {
 	char*	type;
 	char*	boundary;
-	ATSC3_VECTOR_BUILDER_STRUCT(atsc3_mime_multipart_related_payload)
+	ATSC3_VECTOR_BUILDER_STRUCT(atsc3_mime_multipart_related_payload);
 } atsc3_mime_multipart_related_instance_t;
 
 ATSC3_VECTOR_BUILDER_METHODS_INTERFACE(atsc3_mime_multipart_related_instance, atsc3_mime_multipart_related_payload)

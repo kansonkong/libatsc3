@@ -14,7 +14,10 @@
 #ifdef __ANDROID__
 #include <bits/in_addr.h>
 #endif
+
+#ifndef _WIN32
 #include <arpa/inet.h>
+#endif
 
 #include "atsc3_utils.h"
 #include "atsc3_vector_builder.h"
