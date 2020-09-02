@@ -209,7 +209,7 @@ block_t* block_Alloc(int size_requested) {
 	uint32_t aligned_size = size_requested ? size_requested + 16 + (8 - (size_requested %8))    :    8;
 
 	#ifdef __MALLOC_TRACE
-	    _ATSC3_UTILS_INFO("block_Alloc: original size requested: %u, aligned size: %u, alignment factor: %f", src_size_required, aligned_size, aligned_size/8.0);
+	    _ATSC3_UTILS_WARN("block_Alloc: original size requested: %u, aligned size: %u, alignment factor: %f", size_requested, aligned_size, aligned_size/8.0);
 	#endif
 
 	new_block->p_buffer = (uint8_t*)calloc(aligned_size, sizeof(uint8_t));
@@ -221,6 +221,8 @@ block_t* block_Alloc(int size_requested) {
     new_block->_is_alloc = 1;
     new_block->_a_size = aligned_size - 8; //guard edge
 
+	//_ATSC3_UTILS_WARN("block_Alloc  : creating block: %p (p_buffer: %p), size: %d", new_block, new_block->p_buffer, new_block->p_size);
+	
     return new_block;
 }
 
@@ -703,6 +705,8 @@ void _block_Refcount(block_t* a_ptr) {
 void block_Destroy(block_t** a_ptr) {
     block_t* a = *a_ptr;
     if(a) {
+	//	_ATSC3_UTILS_WARN("block_Destroy: freeing  block: %p (p_buffer: %p), size: %d", a, a->p_buffer, a->p_size);
+
         _ATSC3_UTILS_TRACE("block_Destroy: hard freeing block: %p (p_buffer: %p)", a, a->p_buffer);
             
         //jjustman-2020-08-04 - removed && a->p_size as we (can) block_Alloc(0) and still have a p_buffer

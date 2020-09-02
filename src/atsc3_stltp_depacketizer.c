@@ -335,7 +335,6 @@ void atsc3_stltp_depacketizer_from_ip_udp_rtp_packet(atsc3_ip_udp_rtp_packet_t* 
         if(atsc3_stltp_tunnel_packet_processed->atsc3_stltp_preamble_packet_v.count) {
            	_ATSC3_STLTP_DEPACKETIZER_DEBUG("preamble: >>>stltp atsc3_stltp_preamble_packet packet complete: count: %u",  atsc3_stltp_tunnel_packet_processed->atsc3_stltp_preamble_packet_v.count);
 
-
            	for(int i=0; i < atsc3_stltp_tunnel_packet_processed->atsc3_stltp_preamble_packet_v.count; i++) {
 			  atsc3_stltp_preamble_packet_t* atsc3_stltp_preamble_packet = atsc3_stltp_tunnel_packet_processed->atsc3_stltp_preamble_packet_v.data[i];
 			  atsc3_preamble_packet_t* atsc3_preamble_packet = atsc3_stltp_parse_preamble_packet(atsc3_stltp_preamble_packet);
@@ -351,6 +350,10 @@ void atsc3_stltp_depacketizer_from_ip_udp_rtp_packet(atsc3_ip_udp_rtp_packet_t* 
 
             if(atsc3_stltp_depacketizer_context->atsc3_stltp_preamble_packet_collection_callback) {
 				atsc3_stltp_depacketizer_context->atsc3_stltp_preamble_packet_collection_callback(&atsc3_stltp_tunnel_packet_processed->atsc3_stltp_preamble_packet_v);
+            }
+
+            if (atsc3_stltp_depacketizer_context->atsc3_stltp_preamble_packet_collection_callback_with_context) {
+                atsc3_stltp_depacketizer_context->atsc3_stltp_preamble_packet_collection_callback_with_context(&atsc3_stltp_tunnel_packet_processed->atsc3_stltp_preamble_packet_v, atsc3_stltp_depacketizer_context->atsc3_stltp_preamble_packet_collection_callback_context);
             }
         }
 
@@ -375,6 +378,10 @@ void atsc3_stltp_depacketizer_from_ip_udp_rtp_packet(atsc3_ip_udp_rtp_packet_t* 
 			if(atsc3_stltp_depacketizer_context->atsc3_stltp_timing_management_packet_collection_callback) {
 				atsc3_stltp_depacketizer_context->atsc3_stltp_timing_management_packet_collection_callback(&atsc3_stltp_tunnel_packet_processed->atsc3_stltp_timing_management_packet_v);
 			}
+
+            if (atsc3_stltp_depacketizer_context->atsc3_stltp_timing_management_packet_collection_callback_with_context) {
+                atsc3_stltp_depacketizer_context->atsc3_stltp_timing_management_packet_collection_callback_with_context(&atsc3_stltp_tunnel_packet_processed->atsc3_stltp_timing_management_packet_v, atsc3_stltp_depacketizer_context->atsc3_stltp_timing_management_packet_collection_callback_context);
+            }
         }
 
         //this method will clear _v.data inner references
@@ -423,7 +430,6 @@ bool atsc3_stltp_depacketizer_from_blockt(block_t** packet_p, atsc3_stltp_depack
 
 	atsc3_stltp_depacketizer_from_ip_udp_rtp_packet(ip_udp_rtp_packet, atsc3_stltp_depacketizer_context);
 	block_Destroy(packet_p);
-	*packet_p = NULL;
 	return true;
 }
 
