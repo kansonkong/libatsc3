@@ -584,7 +584,16 @@ atsc3_alp_packet_t* atsc3_alp_packet_parse(uint8_t plp_num, block_t* baseband_pa
         baseband_packet_payload->i_pos = baseband_packet_payload->p_size;
         goto cleanup;
     }
-                          
+
+    //copy into our alp_header_payload
+    int alp_header_payload_size = (binary_payload - alp_binary_payload_start - 1);
+    if(alp_header_payload_size > 0) {
+    	alp_packet->alp_packet_header.alp_header_payload = block_Alloc(alp_header_payload_size);
+    	block_Write(alp_packet->alp_packet_header.alp_header_payload, alp_binary_payload_start, alp_header_payload_size);
+    } else {
+    	__ALP_PARSER_WARN("ALP header payload length is %, binary_payload: %p, alp_binary_payload_start: %p",
+    			alp_header_payload_size, binary_payload, alp_binary_payload_start);
+    }
 
     alp_packet->alp_payload = block_Alloc(alp_payload_length);
     int32_t alp_payload_bytes_to_write = __MIN(remaining_binary_payload_bytes, alp_payload_length);

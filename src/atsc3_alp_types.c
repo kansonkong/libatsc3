@@ -32,6 +32,7 @@ atsc3_alp_packet_t* atsc3_alp_packet_clone(atsc3_alp_packet_t* atsc3_alp_packet)
 
     memcpy(&atsc3_alp_packet_new->alp_packet_header, &atsc3_alp_packet->alp_packet_header, sizeof(alp_packet_header_t));
     atsc3_alp_packet_new->alp_payload = block_Duplicate(atsc3_alp_packet->alp_payload);
+    atsc3_alp_packet_new->alp_packet_header.alp_header_payload = block_Duplicate(atsc3_alp_packet->alp_packet_header.alp_header_payload);
     atsc3_alp_packet_new->is_alp_payload_complete = atsc3_alp_packet->is_alp_payload_complete;
 
 
@@ -51,6 +52,9 @@ void atsc3_alp_packet_free(atsc3_alp_packet_t** atsc3_alp_packet_p) {
     if(atsc3_alp_packet_p) {
         atsc3_alp_packet_t* atsc3_alp_packet = *atsc3_alp_packet_p;
         if(atsc3_alp_packet) {
+        	if(atsc3_alp_packet->alp_packet_header.alp_header_payload) {
+        		block_Destroy(&atsc3_alp_packet->alp_packet_header.alp_header_payload);
+        	}
             if(atsc3_alp_packet->alp_payload) {
                 block_Destroy(&atsc3_alp_packet->alp_payload);
             }
@@ -63,6 +67,9 @@ void atsc3_alp_packet_free(atsc3_alp_packet_t** atsc3_alp_packet_p) {
 
 void atsc3_alp_packet_free_alp_payload(atsc3_alp_packet_t* atsc3_alp_packet) {
 	if(atsc3_alp_packet) {
+		if(atsc3_alp_packet->alp_packet_header.alp_header_payload) {
+			block_Destroy(&atsc3_alp_packet->alp_packet_header.alp_header_payload);
+		}
 		if(atsc3_alp_packet->alp_payload) {
 			//block_Release(&atsc3_alp_packet->alp_payload);
             block_Destroy(&atsc3_alp_packet->alp_payload);
