@@ -16,6 +16,8 @@
 #include <sys/ioctl.h>
 #include <ftw.h>
 #endif
+#include <mutex>
+
 using namespace std;
 
 #ifndef LIBATSC3_ATSC3CORESERVICEPLAYERBRIDGE_H

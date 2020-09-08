@@ -9,8 +9,8 @@
 
 #include "atsc3_logging_externs.h"
 
-FILE* __DEBUG_LOG_FILE = NULL;
-bool  __DEBUG_LOG_AVAILABLE = true;
+static FILE* __DEBUG_LOG_FILE = NULL;
+static bool  __DEBUG_LOG_AVAILABLE = true;
 
 
 #ifdef __LIBATSC3_ANDROID__

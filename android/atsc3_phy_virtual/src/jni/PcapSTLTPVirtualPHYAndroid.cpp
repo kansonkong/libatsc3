@@ -96,6 +96,8 @@ Java_org_ngbp_libatsc3_middleware_android_phy_virtual_PcapSTLTPVirtualPHYAndroid
 extern "C" JNIEXPORT jint JNICALL
 Java_org_ngbp_libatsc3_middleware_android_phy_virtual_PcapSTLTPVirtualPHYAndroid_run(JNIEnv* env, jobject instance)
 {
+    _PCAP_STLTP_VIRTUAL_PHY_INFO("Java_org_ngbp_libatsc3_middleware_android_phy_virtual_PcapSTLTPVirtualPHYAndroid_run");
+
     int res = 0;
     if(!pcapSTLTPVirtualPHYAndroid) {
         _PCAP_STLTP_VIRTUAL_PHY_ERROR("Java_org_ngbp_libatsc3_middleware_android_phy_virtual_PcapSTLTPVirtualPHYAndroid_run: error, PcapSTLTPVirtualPHYAndroid is NULL!");
@@ -114,6 +116,8 @@ Java_org_ngbp_libatsc3_middleware_android_phy_virtual_PcapSTLTPVirtualPHYAndroid
 extern "C" JNIEXPORT jboolean JNICALL
 Java_org_ngbp_libatsc3_middleware_android_phy_virtual_PcapSTLTPVirtualPHYAndroid_is_1running(JNIEnv* env, jobject instance)
 {
+    _PCAP_STLTP_VIRTUAL_PHY_INFO("Java_org_ngbp_libatsc3_middleware_android_phy_virtual_PcapSTLTPVirtualPHYAndroid_is_1running");
+
     jboolean res = false;
 
     if(!pcapSTLTPVirtualPHYAndroid) {
@@ -127,6 +131,8 @@ Java_org_ngbp_libatsc3_middleware_android_phy_virtual_PcapSTLTPVirtualPHYAndroid
 extern "C" JNIEXPORT jint JNICALL
 Java_org_ngbp_libatsc3_middleware_android_phy_virtual_PcapSTLTPVirtualPHYAndroid_stop(JNIEnv* env, jobject instance)
 {
+    _PCAP_STLTP_VIRTUAL_PHY_INFO("Java_org_ngbp_libatsc3_middleware_android_phy_virtual_PcapSTLTPVirtualPHYAndroid_stop");
+
     int res = 0;
     if(!pcapSTLTPVirtualPHYAndroid) {
         _PCAP_STLTP_VIRTUAL_PHY_ERROR("Java_org_ngbp_libatsc3_middleware_android_phy_virtual_PcapSTLTPVirtualPHYAndroid_stop: error, PcapSTLTPVirtualPHYAndroid is NULL!");
@@ -142,6 +148,8 @@ Java_org_ngbp_libatsc3_middleware_android_phy_virtual_PcapSTLTPVirtualPHYAndroid
 extern "C" JNIEXPORT jint JNICALL
 Java_org_ngbp_libatsc3_middleware_android_phy_virtual_PcapSTLTPVirtualPHYAndroid_deinit(JNIEnv* env, jobject instance)
 {
+    _PCAP_STLTP_VIRTUAL_PHY_INFO("Java_org_ngbp_libatsc3_middleware_android_phy_virtual_PcapSTLTPVirtualPHYAndroid_deinit");
+
     int res = 0;
     if(!pcapSTLTPVirtualPHYAndroid) {
         _PCAP_STLTP_VIRTUAL_PHY_ERROR("Java_org_ngbp_libatsc3_middleware_android_phy_virtual_PcapSTLTPVirtualPHYAndroid_deinit: error, PcapSTLTPVirtualPHYAndroid is NULL!");
