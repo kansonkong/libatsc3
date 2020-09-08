@@ -5,7 +5,7 @@
 #include "LowaSISPHYAndroid.h"
 LowaSISPHYAndroid* lowaSISPHYAndroid = nullptr;
 
-mutex LowaSISPHYAndroid::CS_global_muxtex;
+mutex LowaSISPHYAndroid::CS_global_mutex;
 
 /**
  * jjustman-2020-08-24 - LowaSIS helper defines
@@ -975,7 +975,7 @@ void LowaSISPHYAndroid::NotifyPlpSelectionChangeCallback(vector<uint8_t> plps, v
 extern "C"
 JNIEXPORT jint JNICALL
 Java_org_ngbp_libatsc3_middleware_android_phy_LowaSISPHYAndroid_init(JNIEnv *env, jobject instance) {
-    unique_lock<mutex> lowasis_phy_android_cctor_mutex_local(LowaSISPHYAndroid::CS_global_muxtex);
+    lock_guard<mutex> lowasis_phy_android_cctor_mutex_local(LowaSISPHYAndroid::CS_global_mutex);
 
     _LOWASIS_PHY_ANDROID_DEBUG("Java_org_ngbp_libatsc3_middleware_android_phy_LowaSISPHYAndroid_init: start init, env: %p", env);
     if(lowaSISPHYAndroid) {
@@ -988,7 +988,6 @@ Java_org_ngbp_libatsc3_middleware_android_phy_LowaSISPHYAndroid_init(JNIEnv *env
     lowaSISPHYAndroid->init();
 
     _LOWASIS_PHY_ANDROID_DEBUG("Java_org_ngbp_libatsc3_middleware_android_phy_LowaSISPHYAndroid_init: return, instance: %p", lowaSISPHYAndroid);
-    lowasis_phy_android_cctor_mutex_local.unlock();
     return 0;
 }
 
@@ -996,7 +995,7 @@ Java_org_ngbp_libatsc3_middleware_android_phy_LowaSISPHYAndroid_init(JNIEnv *env
 extern "C"
 JNIEXPORT jint JNICALL
 Java_org_ngbp_libatsc3_middleware_android_phy_LowaSISPHYAndroid_run(JNIEnv *env, jobject thiz) {
-    unique_lock<mutex> lowasis_phy_android_cctor_mutex_local(LowaSISPHYAndroid::CS_global_muxtex);
+    lock_guard<mutex> lowasis_phy_android_cctor_mutex_local(LowaSISPHYAndroid::CS_global_mutex);
 
     int res = 0;
     if(!lowaSISPHYAndroid) {
@@ -1006,14 +1005,13 @@ Java_org_ngbp_libatsc3_middleware_android_phy_LowaSISPHYAndroid_run(JNIEnv *env,
         res = lowaSISPHYAndroid->run();
         _LOWASIS_PHY_ANDROID_DEBUG("Java_org_ngbp_libatsc3_middleware_android_phy_LowaSISPHYAndroid_run: returning res: %d", res);
     }
-    lowasis_phy_android_cctor_mutex_local.unlock();
     return res;
 }
 
 extern "C" JNIEXPORT jboolean JNICALL
 Java_org_ngbp_libatsc3_middleware_android_phy_LowaSISPHYAndroid_is_1running(JNIEnv* env, jobject instance)
 {
-    unique_lock<mutex> lowasis_phy_android_cctor_mutex_local(LowaSISPHYAndroid::CS_global_muxtex);
+    lock_guard<mutex> lowasis_phy_android_cctor_mutex_local(LowaSISPHYAndroid::CS_global_mutex);
     jboolean res = false;
 
     if(!lowaSISPHYAndroid) {
@@ -1023,53 +1021,50 @@ Java_org_ngbp_libatsc3_middleware_android_phy_LowaSISPHYAndroid_is_1running(JNIE
         res = lowaSISPHYAndroid->is_running();
 
     }
-    lowasis_phy_android_cctor_mutex_local.unlock();
     return res;
 }
 
 
 extern "C" JNIEXPORT jint JNICALL
 Java_org_ngbp_libatsc3_middleware_android_phy_LowaSISPHYAndroid_stop(JNIEnv *env, jobject thiz) {
-    unique_lock<mutex> lowasis_phy_android_cctor_mutex_local(LowaSISPHYAndroid::CS_global_muxtex);
+    lock_guard<mutex> lowasis_phy_android_cctor_mutex_local(LowaSISPHYAndroid::CS_global_mutex);
 
     int res = 0;
     if(!lowaSISPHYAndroid) {
         _LOWASIS_PHY_ANDROID_ERROR("Java_org_ngbp_libatsc3_middleware_android_phy_LowaSISPHYAndroid_stop: error, srtRxSTLTPVirtualPHYAndroid is NULL!");
         res = -1;
     } else {
-        _LOWASIS_PHY_ANDROID_DEBUG("Java_org_ngbp_libatsc3_middleware_android_phy_LowaSISPHYAndroid_stop: enter with lowaSISPHYAndroid: %p, owns_lock: %d", lowaSISPHYAndroid, lowasis_phy_android_cctor_mutex_local.owns_lock());
+        _LOWASIS_PHY_ANDROID_DEBUG("Java_org_ngbp_libatsc3_middleware_android_phy_LowaSISPHYAndroid_stop: enter with lowaSISPHYAndroid: %p", lowaSISPHYAndroid);
 
         res = lowaSISPHYAndroid->stop();
         _LOWASIS_PHY_ANDROID_DEBUG("Java_org_ngbp_libatsc3_middleware_android_phy_LowaSISPHYAndroid_stop: returning res: %d", res);
     }
 
-    lowasis_phy_android_cctor_mutex_local.unlock();
     return res;
 }
 
 extern "C" JNIEXPORT jint JNICALL
 Java_org_ngbp_libatsc3_middleware_android_phy_LowaSISPHYAndroid_deinit(JNIEnv *env, jobject thiz) {
-    unique_lock<mutex> lowasis_phy_android_cctor_mutex_local(LowaSISPHYAndroid::CS_global_muxtex);
+    lock_guard<mutex> lowasis_phy_android_cctor_mutex_local(LowaSISPHYAndroid::CS_global_mutex);
 
     int res = 0;
     if(!lowaSISPHYAndroid) {
         _LOWASIS_PHY_ANDROID_ERROR("Java_org_ngbp_libatsc3_middleware_android_phy_LowaSISPHYAndroid_deinit: error, srtRxSTLTPVirtualPHYAndroid is NULL!");
         res = -1;
     } else {
-        _LOWASIS_PHY_ANDROID_INFO("Java_org_ngbp_libatsc3_middleware_android_phy_LowaSISPHYAndroid_deinit: enter with lowaSISPHYAndroid: %p, owns_lock: %d", lowaSISPHYAndroid, lowasis_phy_android_cctor_mutex_local.owns_lock());
+        _LOWASIS_PHY_ANDROID_INFO("Java_org_ngbp_libatsc3_middleware_android_phy_LowaSISPHYAndroid_deinit: enter with lowaSISPHYAndroid: %p", lowaSISPHYAndroid);
 
         lowaSISPHYAndroid->deinit();
         lowaSISPHYAndroid = nullptr;
-        _LOWASIS_PHY_ANDROID_INFO("Java_org_ngbp_libatsc3_middleware_android_phy_LowaSISPHYAndroid_deinit: exit with lowaSISPHYAndroid: %p, owns_lock: %d", lowaSISPHYAndroid, lowasis_phy_android_cctor_mutex_local.owns_lock());
+        _LOWASIS_PHY_ANDROID_INFO("Java_org_ngbp_libatsc3_middleware_android_phy_LowaSISPHYAndroid_deinit: exit with lowaSISPHYAndroid: %p", lowaSISPHYAndroid);
     }
 
-    lowasis_phy_android_cctor_mutex_local.unlock();
     return res;
 }
 
 extern "C" JNIEXPORT jint JNICALL
 Java_org_ngbp_libatsc3_middleware_android_phy_LowaSISPHYAndroid_download_1bootloader_1firmware(JNIEnv *env, jobject thiz, jint fd, jstring device_path_jstring) {
-    unique_lock<mutex> lowasis_phy_android_cctor_mutex_local(LowaSISPHYAndroid::CS_global_muxtex);
+    lock_guard<mutex> lowasis_phy_android_cctor_mutex_local(LowaSISPHYAndroid::CS_global_mutex);
 
     _LOWASIS_PHY_ANDROID_INFO("Java_org_ngbp_libatsc3_middleware_android_phy_LowaSISPHYAndroid_download_1bootloader_1firmware: fd: %d", fd);
     int res = 0;
@@ -1087,14 +1082,13 @@ Java_org_ngbp_libatsc3_middleware_android_phy_LowaSISPHYAndroid_download_1bootlo
         delete lowaSISPHYAndroid;
         lowaSISPHYAndroid = nullptr;
     }
-    lowasis_phy_android_cctor_mutex_local.unlock();
 
     return res;
 }
 
 extern "C" JNIEXPORT jint JNICALL
 Java_org_ngbp_libatsc3_middleware_android_phy_LowaSISPHYAndroid_open(JNIEnv *env, jobject thiz, jint fd, jstring device_path_jstring) {
-    unique_lock<mutex> lowasis_phy_android_cctor_mutex_local(LowaSISPHYAndroid::CS_global_muxtex);
+    lock_guard<mutex> lowasis_phy_android_cctor_mutex_local(LowaSISPHYAndroid::CS_global_mutex);
 
     _LOWASIS_PHY_ANDROID_DEBUG("Java_org_ngbp_libatsc3_middleware_android_phy_LowaSISPHYAndroid_open: fd: %d", fd);
 
@@ -1108,7 +1102,6 @@ Java_org_ngbp_libatsc3_middleware_android_phy_LowaSISPHYAndroid_open(JNIEnv *env
         res = lowaSISPHYAndroid->open(fd, device_path);
         env->ReleaseStringUTFChars( device_path_jstring, device_path_weak );
     }
-    lowasis_phy_android_cctor_mutex_local.unlock();
     return res;
 }
 
@@ -1116,7 +1109,7 @@ extern "C" JNIEXPORT jint JNICALL
 Java_org_ngbp_libatsc3_middleware_android_phy_LowaSISPHYAndroid_tune(JNIEnv *env, jobject thiz,
                                                                       jint freq_khz,
                                                                       jint single_plp) {
-    unique_lock<mutex> lowasis_phy_android_cctor_mutex_local(LowaSISPHYAndroid::CS_global_muxtex);
+    lock_guard<mutex> lowasis_phy_android_cctor_mutex_local(LowaSISPHYAndroid::CS_global_mutex);
 
     int res = 0;
     if(!lowaSISPHYAndroid) {
@@ -1125,14 +1118,14 @@ Java_org_ngbp_libatsc3_middleware_android_phy_LowaSISPHYAndroid_tune(JNIEnv *env
     } else {
         res = lowaSISPHYAndroid->tune(freq_khz, single_plp);
     }
-    lowasis_phy_android_cctor_mutex_local.unlock();
+
     return res;
 }
 extern "C" JNIEXPORT jint JNICALL
 Java_org_ngbp_libatsc3_middleware_android_phy_LowaSISPHYAndroid_listen_1plps(JNIEnv *env,
                                                                               jobject thiz,
                                                                               jobject plps) {
-    unique_lock<mutex> lowasis_phy_android_cctor_mutex_local(LowaSISPHYAndroid::CS_global_muxtex);
+    lock_guard<mutex> lowasis_phy_android_cctor_mutex_local(LowaSISPHYAndroid::CS_global_mutex);
 
     int res = 0;
     if(!lowaSISPHYAndroid) {
@@ -1154,6 +1147,5 @@ Java_org_ngbp_libatsc3_middleware_android_phy_LowaSISPHYAndroid_listen_1plps(JNI
         res = lowaSISPHYAndroid->listen_plps(listen_plps);
     }
 
-    lowasis_phy_android_cctor_mutex_local.unlock();
     return res;
 }
