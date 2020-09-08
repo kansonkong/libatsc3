@@ -291,7 +291,12 @@ atsc3_mime_multipart_related_instance_t* atsc3_mime_multipart_related_parser(FIL
 		char* line_binary = NULL;
 		size_t line_binary_alloc_len = 0;
 
+		//jjustman-2020-09-02 - hack for asan - AddressSanitizer: attempting free on address which was not malloc
+		line_binary = calloc(8192, sizeof(char*));
+        line_binary_alloc_len = 8192;
+
 		size_t line_binary_len;
+
 
 		//jjustman-2020-07-07 - should work for binary payloads
 
