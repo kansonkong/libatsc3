@@ -2,6 +2,8 @@
 
 PcapDemuxedVirtualPHYAndroid* pcapDemuxedVirtualPHYAndroid = nullptr;
 
+mutex PcapDemuxedVirtualPHYAndroid::CS_global_mutex;
+
 PcapDemuxedVirtualPHYAndroid::PcapDemuxedVirtualPHYAndroid(JNIEnv* env, jobject jni_instance) {
     this->env = env;
     this->jni_instance_globalRef = env->NewGlobalRef(jni_instance);
@@ -43,11 +45,14 @@ void PcapDemuxedVirtualPHYAndroid::releasePinnedConsumerThreadAsNeeded() {
 extern "C" JNIEXPORT jint JNICALL
 Java_org_ngbp_libatsc3_middleware_android_phy_virtual_PcapDemuxedVirtualPHYAndroid_init(JNIEnv* env, jobject instance)
 {
+    lock_guard<mutex> pcapDemuxedVirtualPHYAndroid_cctor_mutex_local(PcapDemuxedVirtualPHYAndroid::CS_global_mutex);
+
     _PCAP_DEMUXED_VIRTUAL_PHY_DEBUG("Java_org_ngbp_libatsc3_middleware_android_phy_virtual_PcapDemuxedVirtualPHYAndroid_init: start init, env: %p", env);
 
     pcapDemuxedVirtualPHYAndroid = new PcapDemuxedVirtualPHYAndroid(env, instance);
 
     _PCAP_DEMUXED_VIRTUAL_PHY_DEBUG("Java_org_ngbp_libatsc3_middleware_android_phy_virtual_PcapDemuxedVirtualPHYAndroid_init: return, PcapDemuxedVirtualPHYAndroid: %p", pcapDemuxedVirtualPHYAndroid);
+
 
     return 0;
 }
@@ -55,6 +60,8 @@ Java_org_ngbp_libatsc3_middleware_android_phy_virtual_PcapDemuxedVirtualPHYAndro
 extern "C"
 JNIEXPORT jint JNICALL
 Java_org_ngbp_libatsc3_middleware_android_phy_virtual_PcapDemuxedVirtualPHYAndroid_open_1from_1capture(JNIEnv *env, jobject thiz, jstring filename) {
+
+    lock_guard<mutex> pcapDemuxedVirtualPHYAndroid_cctor_mutex_local(PcapDemuxedVirtualPHYAndroid::CS_global_mutex);
 
     if(!pcapDemuxedVirtualPHYAndroid) {
         _PCAP_DEMUXED_VIRTUAL_PHY_DEBUG("Java_org_ngbp_libatsc3_middleware_android_phy_virtual_PcapDemuxedVirtualPHYAndroid_open_1from_1capture: error, PcapDemuxedVirtualPHYAndroid is NULL!");
@@ -70,32 +77,18 @@ Java_org_ngbp_libatsc3_middleware_android_phy_virtual_PcapDemuxedVirtualPHYAndro
     return res;
 }
 
-//
-//extern "C" JNIEXPORT void JNICALL
-//Java_org_ngbp_libatsc3_middleware_android_phy_virtual_PcapDemuxedVirtualPHYAndroid_setSrtSourceConnectionString(JNIEnv* env, jobject instance, jstring srtSourceConnectionString)
-//{
-//    if(!pcapDemuxedVirtualPHYAndroid) {
-//        _PCAP_DEMUXED_VIRTUAL_PHY_DEBUG("Java_org_ngbp_libatsc3_middleware_android_phy_virtual_PcapDemuxedVirtualPHYAndroid_setSrtSourceConnectionString: error, PcapDemuxedVirtualPHYAndroid is NULL!");
-//        return;
-//    }
-//
-//    const char *srtSourceConnectionString_cstr = env->GetStringUTFChars(srtSourceConnectionString, NULL);
-//    _PCAP_DEMUXED_VIRTUAL_PHY_DEBUG("Java_org_ngbp_libatsc3_middleware_android_phy_virtual_PcapDemuxedVirtualPHYAndroid_setSrtSourceConnectionString: with: %s", srtSourceConnectionString_cstr);
-//    pcapDemuxedVirtualPHYAndroid->set_srt_source_connection_string(srtSourceConnectionString_cstr);
-//
-//    env->ReleaseStringUTFChars(srtSourceConnectionString, srtSourceConnectionString_cstr);
-//    return;
-//}
-
 
 extern "C" JNIEXPORT jint JNICALL
 Java_org_ngbp_libatsc3_middleware_android_phy_virtual_PcapDemuxedVirtualPHYAndroid_run(JNIEnv* env, jobject instance)
 {
+    lock_guard<mutex> pcapDemuxedVirtualPHYAndroid_cctor_mutex_local(PcapDemuxedVirtualPHYAndroid::CS_global_mutex);
+
     int res = 0;
     if(!pcapDemuxedVirtualPHYAndroid) {
         _PCAP_DEMUXED_VIRTUAL_PHY_ERROR("Java_org_ngbp_libatsc3_middleware_android_phy_virtual_PcapDemuxedVirtualPHYAndroid_run: error, PcapDemuxedVirtualPHYAndroid is NULL!");
         return -1;
     }
+
     atsc3_core_service_application_bridge_reset_context();
 
     res = pcapDemuxedVirtualPHYAndroid->run();
@@ -109,6 +102,8 @@ Java_org_ngbp_libatsc3_middleware_android_phy_virtual_PcapDemuxedVirtualPHYAndro
 extern "C" JNIEXPORT jboolean JNICALL
 Java_org_ngbp_libatsc3_middleware_android_phy_virtual_PcapDemuxedVirtualPHYAndroid_is_1running(JNIEnv* env, jobject instance)
 {
+    lock_guard<mutex> pcapDemuxedVirtualPHYAndroid_cctor_mutex_local(PcapDemuxedVirtualPHYAndroid::CS_global_mutex);
+
     jboolean res = false;
 
     if(!pcapDemuxedVirtualPHYAndroid) {
@@ -122,6 +117,8 @@ Java_org_ngbp_libatsc3_middleware_android_phy_virtual_PcapDemuxedVirtualPHYAndro
 extern "C" JNIEXPORT jint JNICALL
 Java_org_ngbp_libatsc3_middleware_android_phy_virtual_PcapDemuxedVirtualPHYAndroid_stop(JNIEnv* env, jobject instance)
 {
+    lock_guard<mutex> pcapDemuxedVirtualPHYAndroid_cctor_mutex_local(PcapDemuxedVirtualPHYAndroid::CS_global_mutex);
+
     int res = 0;
     if(!pcapDemuxedVirtualPHYAndroid) {
         _PCAP_DEMUXED_VIRTUAL_PHY_ERROR("Java_org_ngbp_libatsc3_middleware_android_phy_virtual_PcapDemuxedVirtualPHYAndroid_stop: error, PcapDemuxedVirtualPHYAndroid is NULL!");
@@ -137,6 +134,8 @@ Java_org_ngbp_libatsc3_middleware_android_phy_virtual_PcapDemuxedVirtualPHYAndro
 extern "C" JNIEXPORT jint JNICALL
 Java_org_ngbp_libatsc3_middleware_android_phy_virtual_PcapDemuxedVirtualPHYAndroid_deinit(JNIEnv* env, jobject instance)
 {
+    lock_guard<mutex> pcapDemuxedVirtualPHYAndroid_cctor_mutex_local(PcapDemuxedVirtualPHYAndroid::CS_global_mutex);
+
     int res = 0;
     if(!pcapDemuxedVirtualPHYAndroid) {
         _PCAP_DEMUXED_VIRTUAL_PHY_ERROR("Java_org_ngbp_libatsc3_middleware_android_phy_virtual_PcapDemuxedVirtualPHYAndroid_deinit: error, PcapDemuxedVirtualPHYAndroid is NULL!");
