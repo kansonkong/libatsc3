@@ -345,7 +345,19 @@ cleanup:
  */
 atsc3_alp_packet_t* atsc3_alp_packet_parse(uint8_t plp_num, block_t* baseband_packet_payload) {
     uint32_t starting_block_size = block_Remaining_size(baseband_packet_payload);
-    
+    if ((baseband_packet_payload->p_buffer[0] & 0x80) >> 5 == 4) {
+        printf("atsc3_alp_packet_parse: size: %d, 0x%02x 0x%02x 0x%02x 0x%02x 0x%02x 0x%02x 0x%02x\n",
+            starting_block_size,
+            baseband_packet_payload->p_buffer[0],
+            baseband_packet_payload->p_buffer[1],
+            baseband_packet_payload->p_buffer[2],
+            baseband_packet_payload->p_buffer[3],
+            baseband_packet_payload->p_buffer[4],
+            baseband_packet_payload->p_buffer[5],
+            baseband_packet_payload->p_buffer[6]
+
+        );
+    }
     if(starting_block_size == 0) {
     	__ALP_PARSER_DEBUG("atsc3_alp_packet_parse: remaining size is 0 bytes, returning NULL, ptr: %p, pos: %d, size: %d",
                            baseband_packet_payload,
@@ -586,7 +598,7 @@ atsc3_alp_packet_t* atsc3_alp_packet_parse(uint8_t plp_num, block_t* baseband_pa
     }
 
     //copy into our alp_header_payload
-    int alp_header_payload_size = (binary_payload - alp_binary_payload_start - 1);
+    int alp_header_payload_size = (binary_payload - alp_binary_payload_start);
     if(alp_header_payload_size > 0) {
     	alp_packet->alp_packet_header.alp_header_payload = block_Alloc(alp_header_payload_size);
     	block_Write(alp_packet->alp_packet_header.alp_header_payload, alp_binary_payload_start, alp_header_payload_size);

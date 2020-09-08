@@ -264,7 +264,7 @@ int SRTRxSTLTPVirtualPHY::srtConsumerThreadRun() {
             condition_lock.unlock();
         }
 
-        printf("\n\n\n\nSRTRxSTLTPVirtualPHY::srtConsumerThreadRun - pushing %d packets\n\n\n\n", to_dispatch_queue.size());
+       //printf("SRTRxSTLTPVirtualPHY::srtConsumerThreadRun - pushing %d packets\n", to_dispatch_queue.size());
         while(to_dispatch_queue.size()) {
             block_t* phy_payload_to_process = to_dispatch_queue.front();
 
@@ -294,7 +294,7 @@ void SRTRxSTLTPVirtualPHY::Atsc3_srt_live_rx_udp_packet_process_callback_with_co
 	srtRxSTLTPVirtualPHY->atsc3_srt_live_rx_udp_packet_received(block);
 }
 
-#define _ATSC3_SRT_STLTP_LIVE_BUFFER_QUEUE_RX_CONDITION_NOTIFY_QUEUE_SIZE_ 100
+#define _ATSC3_SRT_STLTP_LIVE_BUFFER_QUEUE_RX_CONDITION_NOTIFY_QUEUE_SIZE_ 25
 //hand this SRT datagram off to our STLTP listener queue
 //jjustman-2020-08-17 - TODO: SRT flows are only a single dip:dport, so we will need to configure the STLTP context accordingly with the first packet from our received flow...
 //jjustman-2020-08-17 - TODO: buffer this as needed with an internal queue and then push to srt_rx_buffer_queue
