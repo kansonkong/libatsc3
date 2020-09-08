@@ -34,7 +34,7 @@ typedef void * (*THREADFUNCPTR)(void *);
 class LowaSISPHYAndroid : public IAtsc3NdkPHYClient {
 
 public:
-    static mutex CS_global_muxtex;
+    static mutex CS_global_mutex;
 
     LowaSISPHYAndroid(JNIEnv* env, jobject jni_instance);
 
