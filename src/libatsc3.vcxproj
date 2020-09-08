@@ -106,6 +106,7 @@
       <PreprocessorDefinitions>WIN32;_WINDOWS;ENABLE_LOGGING=1;SRT_EXPORTS;SRT_DYNAMIC;SRT_ENABLE_APP_READER;SRT_ENABLE_CLOSE_SYNCH;_WIN32_WINNT=0x0600;HAVE_INET_PTON=1;USE_OPENSSL=1;SRT_ENABLE_ENCRYPTION;WIN32=1;PTW32_STATIC_LIB=1;_GNU_SOURCE;HAI_PATCH=1;HAI_ENABLE_SRT=1;SRT_VERSION="1.4.1";CMAKE_INTDIR="Debug"</PreprocessorDefinitions>
       <WarningLevel>Level3</WarningLevel>
       <TreatSpecificWarningsAsErrors>4005;%(TreatSpecificWarningsAsErrors)</TreatSpecificWarningsAsErrors>
+      <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
     </ClCompile>
     <Link>
       <AdditionalDependencies>../WpdPack/Lib/x64/Packet.lib;../WpdPack/Lib/x64/wpcap.lib;../vcpkg/packages/zlib_x64-windows/lib/zlib.lib;C:\pthread-win32\cinegy.pthreads-win64.2.9.1.17\runtimes\win-x64\native\release\pthread_lib.lib;C:\Program Files\OpenSSL-Win64\lib\libssl.lib;C:\Program Files\OpenSSL-Win64\lib\libcrypto.lib;%(AdditionalDependencies)</AdditionalDependencies>
