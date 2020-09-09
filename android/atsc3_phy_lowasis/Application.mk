@@ -7,9 +7,15 @@
 
 APP_DEBUG := true
 APP_STRIP_MODE := "none"
-#APP_STL := c++_shared
+APP_STL := c++_shared
 
 # APP_ABI := all
 
 APP_CPPFLAGS += -std=c++11  -fexceptions -D_ANDROID
+
+# -fsanitize=address -fno-omit-frame-pointer
+#
+#APP_CFLAGS := -fsanitize=address -fno-omit-frame-pointer
+#APP_LDFLAGS := -fsanitize=address
+
 
