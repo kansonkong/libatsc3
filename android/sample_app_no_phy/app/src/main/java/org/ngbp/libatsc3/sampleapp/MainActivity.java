@@ -459,6 +459,8 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         if(atsc3NdkPHYClientInstance != null) {
             items.add(atsc3NdkPHYClientInstance.toString());
             idxSelected = 1;
+            itemCount++;
+
         }
 
         if(prebuiltAssetsForDeviceSelectionVirtualPHY.length > 0) {
@@ -476,7 +478,6 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
             itemCount++;
 
         }
-        itemCount++;
         items.add(SELECT_PCAP_DEMUXED_MESSAGE);
         itemCount++;
         for(int i = 0; i < pcapDemuxedAssetForFilesystemReplay.size(); i++) {
@@ -662,10 +663,6 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         myDecoderHandlerThread.start();
         mSurfaceView1.getHolder();
 
-        if (hasUsbIfSupport) {
-            // our broadcast receiver
-            mUsbReceiver = new MyReceiver(ServiceHandler.GetInstance());
-        }
 
         assetManager = getAssets();
 
@@ -739,7 +736,6 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
 
         // get pending intent, which will be used for requesting permission
         mPermissionIntent = PendingIntent.getBroadcast(this, 0, new Intent(ACTION_USB_PERMISSION), 0);
-
         Log.d(TAG, "onCreate: registering intent to receiver, before addAction: "+ usbIntentFilter+", actions count: "+usbIntentFilter.countActions());
 
         // register our own broadcast receiver instance, with filters we are interested in
@@ -748,7 +744,19 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         usbIntentFilter.addAction(ACTION_USB_PERMISSION);
 
         Log.d(TAG, "onCreate: registering intent to receiver"+ usbIntentFilter);
-        registerReceiver(mUsbReceiver, usbIntentFilter);
+
+        if (hasUsbIfSupport) {
+            // our broadcast receiver
+            if(MUsbReceiver == null) {
+                MUsbReceiver = new MyReceiver(ServiceHandler.GetInstance());
+                registerReceiver(MUsbReceiver, usbIntentFilter);
+
+            } else {
+                Log.i(TAG, "ignoring duplicate MUsbReceiver instantation");
+            }
+        }
+
+
 
         // jjustman-2020-08-18 - wire up our applicationBridge and PHYBridge
         atsc3NdkApplicationBridge = new Atsc3NdkApplicationBridge(this);
@@ -958,14 +966,18 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         sl_res = atsc3NdkPHYClientInstance.open(-1, "SDIO");
         Log.d(TAG, String.format("SaankhyaPHYAndroid: return from atsc3NdkPHYClientInstance.open(-1, SDIO): %d", sl_res));
 
-        ServiceHandler.GetInstance().post(new Runnable() {
-            @Override
-            public void run() {
-                updateSpinnerFromDevList();
-                enableDeviceControlButtons(true);
-        }});
+        if(sl_res == 0) {
+            ServiceHandler.GetInstance().post(new Runnable() {
+                @Override
+                public void run() {
+                    updateSpinnerFromDevList();
+                    enableDeviceControlButtons(true);
+                }
+            });
 
-
+        } else {
+            stopAndDeInitAtsc3NdkPHYClientInstance(); //clean up our non-existant SDIO SaankhyaPHYAndroid
+        }
         hasCalledOnCreate = true;
     }
 
@@ -1386,7 +1398,6 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         }
     }
 
-    ArrayAdapter<Service> slsSpinnerArrayAdapter;
     ArrayList<Service> sltServices;
     Boolean serviceSpinnerLastSelectionFromArrayAdapterUpdate = false;
     public void onSlsTablePresent(String sls_payload_xml) {
@@ -1397,8 +1408,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         for(Service s : sltServices) {
             Log.d("SlsTablePresent", String.format("shortServiceName: %s, serviceId: %d, slsProtocol: %d", s.shortServiceName, s.serviceId, (s.broadcastSvcSignalingCollection.get(0) != null ? s.broadcastSvcSignalingCollection.get(0).slsProtocol : -1)));
         }
-
-        slsSpinnerArrayAdapter = new ArrayAdapter<Service>(this, android.R.layout.simple_spinner_item, sltServices);
+        final ArrayAdapter<Service> slsSpinnerArrayAdapter = new ArrayAdapter<Service>(this, android.R.layout.simple_spinner_item, sltServices);
 
         ServiceHandler.GetInstance().post(new Runnable() {
             @Override
@@ -1477,7 +1487,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         Log.d(TAG, "onDestroy called");
         stopAndDeInitAtsc3NdkPHYClientInstance();
 
-        unregisterReceiver(mUsbReceiver);
+        unregisterReceiver(MUsbReceiver);
         super.onDestroy();
     }
     @Override
@@ -1485,7 +1495,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         Log.d(TAG, "onBackPressed called");
         stopAndDeInitAtsc3NdkPHYClientInstance();
 
-        unregisterReceiver(mUsbReceiver);
+        unregisterReceiver(MUsbReceiver);
         Log.d(TAG, "uninit ended");
 
         moveTaskToBack(true);
@@ -1652,7 +1662,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     }
 
     // our own broadcast receiver
-    private BroadcastReceiver mUsbReceiver;
+    private static BroadcastReceiver MUsbReceiver;
     public class MyReceiver extends BroadcastReceiver {
         private final Handler mHandler; // Handler used to execute code on the UI thread
 
