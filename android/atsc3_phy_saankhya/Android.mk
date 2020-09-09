@@ -10,7 +10,7 @@
 # or set to kailash to use for KAILASH dongle
 # 			LIB_SL_API_REF and INCLUDE_SL_API_REF and include linkage for firmware
 
-SLAPI_BUILD_TARGET = kailash
+SLAPI_BUILD_TARGET = markone
 # or kailash
 
 MY_LOCAL_PATH := $(call my-dir)
