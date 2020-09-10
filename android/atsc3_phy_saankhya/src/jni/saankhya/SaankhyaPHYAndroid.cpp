@@ -2,6 +2,32 @@
 // Created by Jason Justman on 8/19/20.
 //
 
+/*  MarkONE "workarounds" for /dev handle permissions
+
+
+ADB_IP_ADDRESS="192.168.4.57:5555"
+adb connect $ADB_IP_ADDRESS
+adb root
+adb shell
+
+# copy/paste the following after a reboot...
+
+setenforce 0
+logcat -b all | grep -i "SAANKHYA"  &
+cat /sys/class/i2c-dev/i2c-3/device/3-0030/gpio_reset
+
+
+while :
+do
+chmod 777 /dev/i2c-3
+chmod 777 /dev/saankhya_dev
+chmod 777 /dev/saankhya_sdio_drv
+chmod 777 /dev/input/event7
+sleep 1
+done
+
+ */
+
 #include "SaankhyaPHYAndroid.h"
 SaankhyaPHYAndroid* saankhyaPHYAndroid = nullptr;
 
@@ -308,6 +334,8 @@ int SaankhyaPHYAndroid::open(int fd, string device_path)
         goto ERROR;
     }
 
+    printf("%s:%d - before SL_I2cInit()", __FILE__, __LINE__);
+
     if (getPlfConfig.demodControlIf == SL_DEMOD_CMD_CONTROL_IF_I2C)
     {
         i2cres = SL_I2cInit();
@@ -444,6 +472,8 @@ int SaankhyaPHYAndroid::open(int fd, string device_path)
             }
             else if (getPlfConfig.demodOutputIf == SL_DEMOD_OUTPUTIF_SDIO)
             {
+                printf("%s:%d - SL4000 using SL_DEMOD_OUTPUTIF_SDIO", __FILE__, __LINE__);
+
                 outPutInfo.oif = SL_OUTPUTIF_SDIO;
             }
             else
@@ -498,11 +528,13 @@ int SaankhyaPHYAndroid::open(int fd, string device_path)
     afeInfo.agcRefValue = 125; //afcRefValue in mV
     outPutInfo.TsoClockInvEnable = SL_TSO_CLK_INV_ON;
 
+    printf("%s:%d - before SL_ConfigGetBbCapture", __FILE__, __LINE__);
+
     cres = SL_ConfigGetBbCapture(&getbbValue);
     if (cres != SL_CONFIG_OK)
     {
         _SAANKHYA_PHY_ANDROID_ERROR("ERROR : SL_ConfigGetPlatform Failed");
-
+        printf("%s:%d - ERROR : SL_ConfigGetPlatform Failed", __FILE__, __LINE__);
         SL_Printf("\n ERROR : SL_ConfigGetPlatform Failed ");
         goto ERROR;
     }
@@ -1028,6 +1060,9 @@ SL_ConfigResult_t SaankhyaPHYAndroid::configPlatformParams() {
      * User can just specifying "..", which will point to this directory or can specify full directory path explicitly
      */
     sPlfConfig.slsdkPath = "/data/out"; //from venky 2020-09-07
+
+    sPlfConfig.demodResetGpioPin = 12;   /* 09-10 03:25:56.498     0     0 E SAANKHYA: Reset low GPIO: 12 */
+    sPlfConfig.demodI2cAddr3GpioPin = 37;   /* FX3S GPIO 37 connected to Demod I2C Address3 Pin and used only for SDIO Interface */
 
 #endif
 

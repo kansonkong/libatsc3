@@ -255,12 +255,16 @@ $(info Building MarkONE support)
 		$(LIB_SL_API_CUST:$(LOCAL_PATH)/%=%) \
 		$(LIB_PHY_SAANKHYACPP:$(LOCAL_PATH)/%=%)
 
-	LOCAL_CFLAGS += -DSL_MARKONE
+	LOCAL_CFLAGS += -DSL_MARKONE -DSL_USE_LINKED_FIRMWARE_EXTERN
 
 	LOCAL_LDLIBS += -ldl -lc++_shared -llog -landroid -lz \
-		-latsc3_core -latsc3_bridge
+		-latsc3_core -latsc3_bridge \
+		$(LOCAL_PATH)/prebuilt/firmware/atsc3_aa/iccm_hex.o \
+		$(LOCAL_PATH)/prebuilt/firmware/atsc3_aa/dccm_hex.o \
+		$(LOCAL_PATH)/prebuilt/firmware/atsc3_aa/atsc3_hex.o
 
 	LOCAL_SHARED_LIBRARIES := \
+		SL_SDR_ICCM_BUILD SL_SDR_DCCM_BUILD SL_SDR_ATSC3_BUILD \
 		libusb_android \
 		libSiTune_Tuner_Lib-prebuilt \
 		libNXP_Tuner_Lib-prebuilt
@@ -298,7 +302,9 @@ $(info Building KAILASH support)
 		$(LOCAL_PATH)/prebuilt/firmware/atsc3_aa/dccm_hex.o \
 		$(LOCAL_PATH)/prebuilt/firmware/atsc3_aa/atsc3_hex.o
 
-	LOCAL_SHARED_LIBRARIES := P3_FW_BUILD SL_SDR_ICCM_BUILD SL_SDR_DCCM_BUILD SL_SDR_ATSC3_BUILD \
+	LOCAL_SHARED_LIBRARIES := \
+		P3_FW_BUILD \
+		SL_SDR_ICCM_BUILD SL_SDR_DCCM_BUILD SL_SDR_ATSC3_BUILD \
 		libusb_android \
 		libSiTune_Tuner_Lib-prebuilt \
 		libNXP_Tuner_Lib-prebuilt
