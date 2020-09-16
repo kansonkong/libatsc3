@@ -12,6 +12,10 @@ buildscript {
     }
 }
 
+plugins {
+    id "net.linguica.maven-settings" version "0.5"
+}
+
 allprojects {
     repositories {
         google()
