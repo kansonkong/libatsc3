@@ -30,7 +30,7 @@ steps:
 
   - task: Gradle@2
     inputs:
-      workingDirectory: ''
+      workingDirectory: 'android'
       gradleWrapperFile: 'android/gradlew'
       javaHomeOption: 'JDKVersion'
       publishJUnitResults: true
