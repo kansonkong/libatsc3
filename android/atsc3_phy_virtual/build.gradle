@@ -62,3 +62,4 @@ dependencies {
     api project(':atsc3_bridge')
 }
 
+apply from: '../publish.gradle'

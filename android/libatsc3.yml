@@ -1,0 +1,54 @@
+# Android
+# Build your Android project with Gradle.
+# Add steps that test, sign, and distribute the APK, save build artifacts, and more:
+# https://docs.microsoft.com/azure/devops/pipelines/languages/android
+
+trigger:
+  tags:
+    include:
+      - 1.*
+
+pool:
+  vmImage: 'ubuntu-latest'
+
+variables:
+  - name: ARTIFACT_VERSION
+    value: 0.0.0.0
+
+steps:
+  - powershell: |
+      Write-Host "##vso[task.setvariable variable=ARTIFACT_VERSION]$(git describe --tags)"
+    displayName: 'Setup ARTIFACT_VERSION from tag'
+
+  - bash: echo "y" | sudo $(ANDROID_SDK_ROOT)/tools/bin/sdkmanager --install "ndk;20.0.5594570" --sdk_root=${ANDROID_SDK_ROOT}
+    displayName: 'Setup NDK 20.0.5594570'
+
+  - task: MavenAuthenticate@0
+    displayName: 'Maven Authenticate'
+    inputs:
+      artifactsFeeds: middleware
+
+  - task: Gradle@2
+    inputs:
+      workingDirectory: ''
+      gradleWrapperFile: 'gradlew'
+      javaHomeOption: 'JDKVersion'
+      publishJUnitResults: true
+      testResultsFiles: '**/TEST-*.xml'
+      tasks: 'atsc3_bridge:assembleRelease atsc3_core:assembleRelease atsc3_phy_lowasis:assembleRelease atsc3_phy_virtual:assembleRelease atsc3_bridge:publish atsc3_core:publish atsc3_phy_lowasis:publish atsc3_phy_virtual:publish -PartifactVersion=$(ARTIFACT_VERSION)'
+
+    displayName: gradlew build
+
+  - task: CopyFiles@2
+    displayName: 'Copy .aar files to artifact staging directory'
+    inputs:
+      SourceFolder: '$(system.defaultworkingdirectory)'
+      Contents: '**/*.aar'
+      TargetFolder: '$(build.artifactstagingdirectory)'
+    condition: succeededOrFailed()
+
+  - task: PublishBuildArtifacts@1
+    displayName: 'Publish Artifact: drop'
+    inputs:
+      PathtoPublish: '$(build.artifactstagingdirectory)'
+    condition: succeededOrFailed()
