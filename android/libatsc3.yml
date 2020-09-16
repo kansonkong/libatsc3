@@ -20,8 +20,10 @@ steps:
       Write-Host "##vso[task.setvariable variable=ARTIFACT_VERSION]$(git describe --tags)"
     displayName: 'Setup ARTIFACT_VERSION from tag'
 
-  - bash: echo "y" | sudo $(ANDROID_SDK_ROOT)/tools/bin/sdkmanager --install "ndk;20.0.5594570" --sdk_root=${ANDROID_SDK_ROOT}
-    displayName: 'Setup NDK 20.0.5594570'
+  - bash: 
+      echo "y" | sudo $(ANDROID_SDK_ROOT)/tools/bin/sdkmanager --install "ndk;20.0.5594570" --sdk_root=${ANDROID_SDK_ROOT}
+      echo "y" | sudo $(ANDROID_SDK_ROOT)/tools/bin/sdkmanager --install "ndk;21.0.6113669" --sdk_root=${ANDROID_SDK_ROOT}
+    displayName: 'Setup NDK 20.0.5594570 & 21.0.6113669'  
 
   - task: MavenAuthenticate@0
     displayName: 'Maven Authenticate'
