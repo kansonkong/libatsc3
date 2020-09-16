@@ -37,7 +37,7 @@ steps:
       javaHomeOption: 'JDKVersion'
       publishJUnitResults: true
       testResultsFiles: '**/TEST-*.xml'
-      tasks: 'assembleRelease publish -PartifactVersion=$(ARTIFACT_VERSION)'
+      tasks: 'atsc3_bridge:assembleRelease atsc3_core:assembleRelease atsc3_phy_lowasis:assembleRelease atsc3_phy_virtual:assembleRelease atsc3_bridge:publish atsc3_core:publish atsc3_phy_lowasis:publish atsc3_phy_virtual:publish -PartifactVersion=$(ARTIFACT_VERSION)'
 
     displayName: gradlew build
 
