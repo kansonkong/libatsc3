@@ -74,3 +74,5 @@ repositories {
 */
 
 }
+
+apply from: '../publish.gradle'
