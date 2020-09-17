@@ -5,7 +5,7 @@
 #include "LowaSISPHYAndroid.h"
 LowaSISPHYAndroid* lowaSISPHYAndroid = nullptr;
 
-mutex LowaSISPHYAndroid::CS_global_muxtex;
+mutex LowaSISPHYAndroid::CS_global_mutex;
 
 /**
  * jjustman-2020-08-24 - LowaSIS helper defines
@@ -42,11 +42,8 @@ LowaSISPHYAndroid::LowaSISPHYAndroid(JNIEnv* env, jobject jni_instance) {
 LowaSISPHYAndroid::~LowaSISPHYAndroid() {
 
     _LOWASIS_PHY_ANDROID_INFO("LowaSISPHYAndroid::~LowaSISPHYAndroid - enter: deleting with this: %p", this);
-    this->stop();
 
-    if(atsc3_ndk_application_bridge_get_instance()) {
-        atsc3_ndk_application_bridge_get_instance()->atsc3_phy_notify_plp_selection_change_clear_callback();
-    }
+    this->stop();
 
     if(false) {
         /***
@@ -288,6 +285,10 @@ bool LowaSISPHYAndroid::is_running() {
 
 int LowaSISPHYAndroid::stop()
 {
+    if(atsc3_ndk_application_bridge_get_instance()) {
+        atsc3_ndk_application_bridge_get_instance()->atsc3_phy_notify_plp_selection_change_clear_callback();
+    }
+
     AT3RESULT ar;
     _LOWASIS_PHY_ANDROID_INFO("LowaSISPHYAndroid::stop: enter with this: %p, init_completed: %d, mhDevice: %d",
             this, init_completed, mhDevice);
@@ -308,10 +309,10 @@ int LowaSISPHYAndroid::stop()
 
     //tear down status thread first, as its the most 'problematic'
     if(statusThreadIsRunning) {
-        //give AT3DRV_WaitRxData some time to shutdown, may take up to 2.5s
-        _LOWASIS_PHY_ANDROID_DEBUG("LowaSISPHYAndroid::stop: after AT3DRV_FE_Stop, sleeping 2.5 second for AT3DRV_WaitRxData to wind-down");
+        //give AT3DRV_WaitRxData some time to shutdown, may take up to 1.5s
+        _LOWASIS_PHY_ANDROID_DEBUG("LowaSISPHYAndroid::stop: after AT3DRV_FE_Stop, sleeping 1.5 second for AT3DRV_WaitRxData to wind-down");
 
-        usleep(25 * 100000);
+        usleep(15 * 100000);
 
         statusThreadShouldRun = false;
         _LOWASIS_PHY_ANDROID_DEBUG("LowaSISPHYAndroid::stop: setting statusThreadShouldRun: false");
@@ -402,7 +403,6 @@ void LowaSISPHYAndroid::resetStatstics() {
 int LowaSISPHYAndroid::deinit()
 {
     _LOWASIS_PHY_ANDROID_DEBUG("LowaSISPHYAndroid::deinit: enter with this: %p", this);
-
     this->stop();
     delete this;
     _LOWASIS_PHY_ANDROID_DEBUG("LowaSISPHYAndroid::deinit: return after delete this, with this: %p", this);
@@ -640,7 +640,7 @@ int LowaSISPHYAndroid::captureThread()
             // user has better improve this using semaphore or event msg, instead of delay.
             continue;
         }
-        ar = AT3DRV_WaitRxData(mhDevice, 2500);
+        ar = AT3DRV_WaitRxData(mhDevice, 1500);
         if (ar == AT3RES_CANCEL) {
             _LOWASIS_PHY_ANDROID_DEBUG("wait cancelled");
             AT3_DelayMs(10);
@@ -975,7 +975,7 @@ void LowaSISPHYAndroid::NotifyPlpSelectionChangeCallback(vector<uint8_t> plps, v
 extern "C"
 JNIEXPORT jint JNICALL
 Java_org_ngbp_libatsc3_middleware_android_phy_LowaSISPHYAndroid_init(JNIEnv *env, jobject instance) {
-    unique_lock<mutex> lowasis_phy_android_cctor_mutex_local(LowaSISPHYAndroid::CS_global_muxtex);
+    lock_guard<mutex> lowasis_phy_android_cctor_mutex_local(LowaSISPHYAndroid::CS_global_mutex);
 
     _LOWASIS_PHY_ANDROID_DEBUG("Java_org_ngbp_libatsc3_middleware_android_phy_LowaSISPHYAndroid_init: start init, env: %p", env);
     if(lowaSISPHYAndroid) {
@@ -988,7 +988,6 @@ Java_org_ngbp_libatsc3_middleware_android_phy_LowaSISPHYAndroid_init(JNIEnv *env
     lowaSISPHYAndroid->init();
 
     _LOWASIS_PHY_ANDROID_DEBUG("Java_org_ngbp_libatsc3_middleware_android_phy_LowaSISPHYAndroid_init: return, instance: %p", lowaSISPHYAndroid);
-    lowasis_phy_android_cctor_mutex_local.unlock();
     return 0;
 }
 
@@ -996,6 +995,8 @@ Java_org_ngbp_libatsc3_middleware_android_phy_LowaSISPHYAndroid_init(JNIEnv *env
 extern "C"
 JNIEXPORT jint JNICALL
 Java_org_ngbp_libatsc3_middleware_android_phy_LowaSISPHYAndroid_run(JNIEnv *env, jobject thiz) {
+    lock_guard<mutex> lowasis_phy_android_cctor_mutex_local(LowaSISPHYAndroid::CS_global_mutex);
+
     int res = 0;
     if(!lowaSISPHYAndroid) {
         _LOWASIS_PHY_ANDROID_ERROR("Java_org_ngbp_libatsc3_middleware_android_phy_LowaSISPHYAndroid_run: error, srtRxSTLTPVirtualPHYAndroid is NULL!");
@@ -1010,6 +1011,7 @@ Java_org_ngbp_libatsc3_middleware_android_phy_LowaSISPHYAndroid_run(JNIEnv *env,
 extern "C" JNIEXPORT jboolean JNICALL
 Java_org_ngbp_libatsc3_middleware_android_phy_LowaSISPHYAndroid_is_1running(JNIEnv* env, jobject instance)
 {
+    lock_guard<mutex> lowasis_phy_android_cctor_mutex_local(LowaSISPHYAndroid::CS_global_mutex);
     jboolean res = false;
 
     if(!lowaSISPHYAndroid) {
@@ -1017,6 +1019,7 @@ Java_org_ngbp_libatsc3_middleware_android_phy_LowaSISPHYAndroid_is_1running(JNIE
         res = false;
     } else {
         res = lowaSISPHYAndroid->is_running();
+
     }
     return res;
 }
@@ -1024,46 +1027,46 @@ Java_org_ngbp_libatsc3_middleware_android_phy_LowaSISPHYAndroid_is_1running(JNIE
 
 extern "C" JNIEXPORT jint JNICALL
 Java_org_ngbp_libatsc3_middleware_android_phy_LowaSISPHYAndroid_stop(JNIEnv *env, jobject thiz) {
-    unique_lock<mutex> lowasis_phy_android_cctor_mutex_local(LowaSISPHYAndroid::CS_global_muxtex);
+    lock_guard<mutex> lowasis_phy_android_cctor_mutex_local(LowaSISPHYAndroid::CS_global_mutex);
 
     int res = 0;
     if(!lowaSISPHYAndroid) {
         _LOWASIS_PHY_ANDROID_ERROR("Java_org_ngbp_libatsc3_middleware_android_phy_LowaSISPHYAndroid_stop: error, srtRxSTLTPVirtualPHYAndroid is NULL!");
         res = -1;
     } else {
-        _LOWASIS_PHY_ANDROID_DEBUG("Java_org_ngbp_libatsc3_middleware_android_phy_LowaSISPHYAndroid_stop: enter with lowaSISPHYAndroid: %p, owns_lock: %d", lowaSISPHYAndroid, lowasis_phy_android_cctor_mutex_local.owns_lock());
+        _LOWASIS_PHY_ANDROID_DEBUG("Java_org_ngbp_libatsc3_middleware_android_phy_LowaSISPHYAndroid_stop: enter with lowaSISPHYAndroid: %p", lowaSISPHYAndroid);
 
         res = lowaSISPHYAndroid->stop();
         _LOWASIS_PHY_ANDROID_DEBUG("Java_org_ngbp_libatsc3_middleware_android_phy_LowaSISPHYAndroid_stop: returning res: %d", res);
     }
 
-    lowasis_phy_android_cctor_mutex_local.unlock();
     return res;
 }
 
 extern "C" JNIEXPORT jint JNICALL
 Java_org_ngbp_libatsc3_middleware_android_phy_LowaSISPHYAndroid_deinit(JNIEnv *env, jobject thiz) {
-    unique_lock<mutex> lowasis_phy_android_cctor_mutex_local(LowaSISPHYAndroid::CS_global_muxtex);
+    lock_guard<mutex> lowasis_phy_android_cctor_mutex_local(LowaSISPHYAndroid::CS_global_mutex);
 
     int res = 0;
     if(!lowaSISPHYAndroid) {
         _LOWASIS_PHY_ANDROID_ERROR("Java_org_ngbp_libatsc3_middleware_android_phy_LowaSISPHYAndroid_deinit: error, srtRxSTLTPVirtualPHYAndroid is NULL!");
         res = -1;
     } else {
-        _LOWASIS_PHY_ANDROID_DEBUG("Java_org_ngbp_libatsc3_middleware_android_phy_LowaSISPHYAndroid_deinit: enter with lowaSISPHYAndroid: %p, owns_lock: %d", lowaSISPHYAndroid, lowasis_phy_android_cctor_mutex_local.owns_lock());
+        _LOWASIS_PHY_ANDROID_INFO("Java_org_ngbp_libatsc3_middleware_android_phy_LowaSISPHYAndroid_deinit: enter with lowaSISPHYAndroid: %p", lowaSISPHYAndroid);
 
         lowaSISPHYAndroid->deinit();
         lowaSISPHYAndroid = nullptr;
-        _LOWASIS_PHY_ANDROID_DEBUG("Java_org_ngbp_libatsc3_middleware_android_phy_LowaSISPHYAndroid_deinit: exit with lowaSISPHYAndroid: %p, owns_lock: %d", lowaSISPHYAndroid, lowasis_phy_android_cctor_mutex_local.owns_lock());
+        _LOWASIS_PHY_ANDROID_INFO("Java_org_ngbp_libatsc3_middleware_android_phy_LowaSISPHYAndroid_deinit: exit with lowaSISPHYAndroid: %p", lowaSISPHYAndroid);
     }
 
-    lowasis_phy_android_cctor_mutex_local.unlock();
     return res;
 }
 
 extern "C" JNIEXPORT jint JNICALL
 Java_org_ngbp_libatsc3_middleware_android_phy_LowaSISPHYAndroid_download_1bootloader_1firmware(JNIEnv *env, jobject thiz, jint fd, jstring device_path_jstring) {
-    _LOWASIS_PHY_ANDROID_DEBUG("Java_org_ngbp_libatsc3_middleware_android_phy_LowaSISPHYAndroid_download_1bootloader_1firmware: fd: %d", fd);
+    lock_guard<mutex> lowasis_phy_android_cctor_mutex_local(LowaSISPHYAndroid::CS_global_mutex);
+
+    _LOWASIS_PHY_ANDROID_INFO("Java_org_ngbp_libatsc3_middleware_android_phy_LowaSISPHYAndroid_download_1bootloader_1firmware: fd: %d", fd);
     int res = 0;
 
     if(!lowaSISPHYAndroid)  {
@@ -1079,11 +1082,14 @@ Java_org_ngbp_libatsc3_middleware_android_phy_LowaSISPHYAndroid_download_1bootlo
         delete lowaSISPHYAndroid;
         lowaSISPHYAndroid = nullptr;
     }
+
     return res;
 }
 
 extern "C" JNIEXPORT jint JNICALL
 Java_org_ngbp_libatsc3_middleware_android_phy_LowaSISPHYAndroid_open(JNIEnv *env, jobject thiz, jint fd, jstring device_path_jstring) {
+    lock_guard<mutex> lowasis_phy_android_cctor_mutex_local(LowaSISPHYAndroid::CS_global_mutex);
+
     _LOWASIS_PHY_ANDROID_DEBUG("Java_org_ngbp_libatsc3_middleware_android_phy_LowaSISPHYAndroid_open: fd: %d", fd);
 
     int res = 0;
@@ -1103,6 +1109,8 @@ extern "C" JNIEXPORT jint JNICALL
 Java_org_ngbp_libatsc3_middleware_android_phy_LowaSISPHYAndroid_tune(JNIEnv *env, jobject thiz,
                                                                       jint freq_khz,
                                                                       jint single_plp) {
+    lock_guard<mutex> lowasis_phy_android_cctor_mutex_local(LowaSISPHYAndroid::CS_global_mutex);
+
     int res = 0;
     if(!lowaSISPHYAndroid) {
         _LOWASIS_PHY_ANDROID_ERROR("Java_org_ngbp_libatsc3_middleware_android_phy_LowaSISPHYAndroid_tune: LowaSISPHYAndroid is NULL!");
@@ -1110,12 +1118,15 @@ Java_org_ngbp_libatsc3_middleware_android_phy_LowaSISPHYAndroid_tune(JNIEnv *env
     } else {
         res = lowaSISPHYAndroid->tune(freq_khz, single_plp);
     }
+
     return res;
 }
 extern "C" JNIEXPORT jint JNICALL
 Java_org_ngbp_libatsc3_middleware_android_phy_LowaSISPHYAndroid_listen_1plps(JNIEnv *env,
                                                                               jobject thiz,
                                                                               jobject plps) {
+    lock_guard<mutex> lowasis_phy_android_cctor_mutex_local(LowaSISPHYAndroid::CS_global_mutex);
+
     int res = 0;
     if(!lowaSISPHYAndroid) {
         _LOWASIS_PHY_ANDROID_ERROR("Java_org_ngbp_libatsc3_middleware_android_phy_LowaSISPHYAndroid_listen_1plps: LowaSISPHYAndroid is NULL!");
@@ -1135,5 +1146,6 @@ Java_org_ngbp_libatsc3_middleware_android_phy_LowaSISPHYAndroid_listen_1plps(JNI
 
         res = lowaSISPHYAndroid->listen_plps(listen_plps);
     }
+
     return res;
 }

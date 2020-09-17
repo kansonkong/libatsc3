@@ -18,6 +18,7 @@
 class PcapDemuxedVirtualPHYAndroid : public PcapDemuxedVirtualPHY {
 
 public:
+    static mutex CS_global_mutex;
     PcapDemuxedVirtualPHYAndroid(JNIEnv* env, jobject jni_instance);
 
     ~PcapDemuxedVirtualPHYAndroid();
