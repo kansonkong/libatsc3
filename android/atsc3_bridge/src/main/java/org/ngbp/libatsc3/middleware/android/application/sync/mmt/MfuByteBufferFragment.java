@@ -26,7 +26,28 @@ public class MfuByteBufferFragment {
         this.packet_id = packet_id;
         this.mpu_sequence_number = mpu_sequence_number;
         this.sample_number = sample_number;
-        if(nativeByteBuffer != null && length > 0 ) {
+
+        //jjustman-2020-09-17 - HACK for ac-4 sync frame
+        if(this.packet_id == MmtPacketIdContext.audio_packet_id) {
+//            /* AC-4 sync size is 3 bytes */
+//            header[2] = 0xFF;
+//            header[3] = 0xFF;
+//            /* AC-4 frame size */
+//            header[4] = (unsigned char)((avpkt -> size >> 16) & 0xFF);
+//            header[5] = (unsigned char)((avpkt -> size >> 8) & 0xFF);
+//            header[6] = (unsigned char)((avpkt -> size >> 0) & 0xFF);
+            byte[] header = {(byte) 0xAC, 0x40, (byte)0xFF, (byte)0xFF, 0x00, 0x00, 0x00 };
+            header[4] = (byte) (length >> 16 & 0xFF);
+            header[5] = (byte) (length >> 8& 0xFF);
+            header[6] = (byte) (length & 0xFF);
+
+            length += 7;
+            myByteBuffer = ByteBuffer.allocate(length);
+            myByteBuffer.put(header);
+            myByteBuffer.put(nativeByteBuffer);
+            myByteBuffer.rewind();
+
+        } else if(nativeByteBuffer != null && length > 0 ) {
             myByteBuffer = ByteBuffer.allocate(length);
             myByteBuffer.put(nativeByteBuffer);
             myByteBuffer.rewind();
