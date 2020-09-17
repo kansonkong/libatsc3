@@ -826,7 +826,9 @@ atsc3_link_mapping_table_t* atsc3_alp_packet_extract_lmt(atsc3_alp_packet_t* ats
 			}
 			atsc3_link_mapping_table_add_atsc3_link_mapping_table_plp(atsc3_link_mapping_table, atsc3_link_mapping_table_plp);
 		}
-	}
+	} else {
+        __ALP_PARSER_WARN("atsc3_alp_packet_collection_extract_lmt: alp_payload_length too short, only %d bytes", alp_payload_length);
+    }
 	return atsc3_link_mapping_table;
 }
 
