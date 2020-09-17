@@ -210,8 +210,10 @@ public class DecoderHandlerThread extends HandlerThread {
 
             int audioSampleRate = 48000;
             int audioChannelCount = 2;
-            String audioMimeType = "audio/mp4a-latm";
-            audioMediaFormat = CodecAACSpecificData.BuildAACCodecSpecificData(MediaCodecInfo.CodecProfileLevel.AACObjectLC, audioSampleRate, audioChannelCount);
+            String audioMimeType = "";
+
+//            String audioMimeType = "audio/mp4a-latm";
+//            audioMediaFormat = CodecAACSpecificData.BuildAACCodecSpecificData(MediaCodecInfo.CodecProfileLevel.AACObjectLC, audioSampleRate, audioChannelCount);
 
             //jjustman-2020-08-19 - hack-ish for AC-4 audio testing on samsung S10+ with mmt
             if(true) {
@@ -222,9 +224,8 @@ public class DecoderHandlerThread extends HandlerThread {
                 audioMediaFormat.setInteger(MediaFormat.KEY_SAMPLE_RATE, audioSampleRate);
                 //mediaFormat.setInteger("ac4-is-sync", 1); ?
                 //audioMediaFormat.setInteger("ac4-is-sync", 0);
+                audioMediaFormat.setInteger("ac4-is-sync", 1);
             }
-
-
 
 
             try {

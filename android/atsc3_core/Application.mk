@@ -11,3 +11,9 @@ APP_STRIP_MODE := "none"
 
 APP_CPPFLAGS += -std=c++11 -D_ANDROID
 
+#-fsanitize=address -fno-omit-frame-pointer -g -O0
+#
+#APP_CFLAGS := -fsanitize=address -fno-omit-frame-pointer -g -O0
+#APP_LDFLAGS := -fsanitize=address
+
+
