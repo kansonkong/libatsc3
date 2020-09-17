@@ -19,10 +19,10 @@ steps:
   - script: | 
       git config --global http.https://$ORGANIZATION@dev.azure.com/$ORGANIZATION/.extraheader "AUTHORIZATION: bearer $(System.AccessToken)"
       git lfs install --skip-smudge
-      git config --file=.gitmodules submodule.android/sample_app_no_phy/ExoPlayer.url https://$ORGANIZATION@dev.azure.com/$ORGANIZATION/ExoPlayer/_git/ExoPlayer
+      git config --file=.gitmodules submodule.android/sample_app_no_phy/ExoPlayer.url https://$ORGANIZATION@dev.azure.com/$ORGANIZATION//Middleware/_git/ExoPlayer
       git config --file=.gitmodules submodule.saankhyalabs-slsdk.url https://$PAT@dev.azure.com/$ORGANIZATION/Mark%20One%20Phone/_git/saankhyalabs-slsdk
       git submodule update --init --recursive
-    env:
+    env: 
       PAT: $(myPat)
       ORGANIZATION: $(organizationName)  
 
