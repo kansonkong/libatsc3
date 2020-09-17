@@ -953,6 +953,30 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
             }
         }, 3000);
 
+        int sl_res = 0;
+        //jjustman-2020-08-31 - force loading of SaankhyaPHYAndroid with SDIO configuration
+        atsc3NdkPHYClientInstance = new SaankhyaPHYAndroid();
+        Log.d(TAG, "SaankhyaPHYAndroid: calling atsc3NdkPHYClientInstance.init()");
+        sl_res =  atsc3NdkPHYClientInstance.init();
+        Log.d(TAG, String.format("SaankhyaPHYAndroid: return from atsc3NdkPHYClientInstance.init(): %d", sl_res));
+
+        Log.d(TAG, String.format("SaankhyaPHYAndroid: calling atsc3NdkPHYClientInstance.open(-1, SDIO)"));
+
+        sl_res = atsc3NdkPHYClientInstance.open(-1, "SDIO");
+        Log.d(TAG, String.format("SaankhyaPHYAndroid: return from atsc3NdkPHYClientInstance.open(-1, SDIO): %d", sl_res));
+
+        if(sl_res == 0) {
+            ServiceHandler.GetInstance().post(new Runnable() {
+                @Override
+                public void run() {
+                    updateSpinnerFromDevList();
+                    enableDeviceControlButtons(true);
+                }
+            });
+
+        } else {
+            stopAndDeInitAtsc3NdkPHYClientInstance(); //clean up our non-existant SDIO SaankhyaPHYAndroid
+        }
         hasCalledOnCreate = true;
     }
 

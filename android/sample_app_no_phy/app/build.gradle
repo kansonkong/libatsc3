@@ -51,6 +51,8 @@ android {
         main {
             manifest.srcFile 'src/main/AndroidManifest.xml'
             java.srcDirs = ['src/main/java']
+            jniLibs.srcDirs = ["libs"]
+
         }
     }
     //flavorDimensions 'main'
@@ -77,6 +79,8 @@ dependencies {
     implementation project(':exoplayer-library-core')
     implementation project(':exoplayer-library-dash')
     implementation project(':exoplayer-library-ui')
+    implementation project(':exoplayer-extension-daa')
+
 
     testImplementation 'junit:junit:4.12'
     androidTestImplementation 'com.android.support.test:runner:1.0.1'
