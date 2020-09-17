@@ -25,7 +25,7 @@ steps:
     displayName: 'Setup NDK 20.0.5594570'  
   - bash: 
       echo "y" | sudo $(ANDROID_SDK_ROOT)/tools/bin/sdkmanager --install "ndk;21.0.6113669" --sdk_root=${ANDROID_SDK_ROOT}
-    displayName: '21.0.6113669'    
+    displayName: 'Setup·NDK 21.0.6113669'    
 
   - task: MavenAuthenticate@0
     displayName: 'Maven Authenticate'
