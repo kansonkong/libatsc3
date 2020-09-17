@@ -16,21 +16,28 @@ variables:
     value: 0.0.0.0
 
 steps:
+  - script: | 
+      git config --global http.https://$ORGANIZATION@dev.azure.com/$ORGANIZATION/.extraheader "AUTHORIZATION: bearer $(System.AccessToken)"
+      git lfs install --skip-smudge
+      git config --file=.gitmodules submodule.android/sample_app_no_phy/ExoPlayer.url https://$ORGANIZATION@dev.azure.com/$ORGANIZATION/ExoPlayer/_git/ExoPlayer
+      git config --file=.gitmodules submodule.saankhyalabs-slsdk.url https://$PAT@dev.azure.com/$ORGANIZATION/Mark%20One%20Phone/_git/saankhyalabs-slsdk
+      git submodule update --init --recursive
+    env:
+      PAT: $(myPat)
+      ORGANIZATION: $(organizationName)  
+
   - powershell: |
       Write-Host "##vso[task.setvariable variable=ARTIFACT_VERSION]$(git describe --tags)"
     displayName: 'Setup ARTIFACT_VERSION from tag'
 
-  - bash: 
-      echo "y" | sudo $(ANDROID_SDK_ROOT)/tools/bin/sdkmanager --install "ndk;20.0.5594570" --sdk_root=${ANDROID_SDK_ROOT}
-    displayName: 'Setup NDK 20.0.5594570'  
-  - bash: 
-      echo "y" | sudo $(ANDROID_SDK_ROOT)/tools/bin/sdkmanager --install "ndk;21.0.6113669" --sdk_root=${ANDROID_SDK_ROOT}
-    displayName: 'Setup·NDK 21.0.6113669'    
+  - bash:
+       echo "y" | sudo $(ANDROID_SDK_ROOT)/tools/bin/sdkmanager --install "ndk;21.0.6113669" --sdk_root=${ANDROID_SDK_ROOT}
+    displayName: 'Setup NDK 21.0.6113669'
 
   - task: MavenAuthenticate@0
     displayName: 'Maven Authenticate'
     inputs:
-      artifactsFeeds: middleware
+      artifactsFeeds: testExo
 
   - task: Gradle@2
     inputs:
@@ -39,8 +46,8 @@ steps:
       javaHomeOption: 'JDKVersion'
       publishJUnitResults: true
       testResultsFiles: '**/TEST-*.xml'
-      # tasks: 'atsc3_bridge:assembleRelease atsc3_core:assembleRelease atsc3_phy_lowasis:assembleRelease atsc3_phy_virtual:assembleRelease atsc3_bridge:publish atsc3_core:publish atsc3_phy_lowasis:publish atsc3_phy_virtual:publish -PartifactVersion=$(ARTIFACT_VERSION)'
-      tasks: ':atsc3_core:build :atsc3_bridge:build :atsc3_phy_lowasis:build :atsc3_phy_virtual:build'
+      tasks: ':atsc3_core:build :atsc3_bridge:build :atsc3_phy_virtual:build :atsc3_phy_lowasis:build :atsc3_core:publish :atsc3_bridge:publish :atsc3_phy_lowasis:publish :atsc3_phy_virtual:publish -PartifactVersion=$(ARTIFACT_VERSION)'
+
     displayName: gradlew build
 
   - task: CopyFiles@2
