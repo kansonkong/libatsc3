@@ -670,8 +670,8 @@ void atsc3_core_service_bridge_process_packet_phy(block_t* packet) {
                 mmtp_mfu_process_from_payload_with_context(udp_packet, mmtp_mpu_packet, atsc3_mmt_mfu_context);
 
             } else {
-                //non-timed
-                __ATSC3_WARN("process_packet: mmtp_packet_header_parse_from_block_t - non-timed payload: packet_id: %u", mmtp_packet_header->mmtp_packet_id);
+                //non-timed -
+                __ATSC3_WARN("process_packet: mmtp_packet_header_parse_from_block_t - non-timed payload: packet_id: %u", mmtp_mpu_packet->mmtp_packet_id);
             }
         } else if(mmtp_packet_header->mmtp_payload_type == 0x2) {
 
