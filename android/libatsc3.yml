@@ -46,7 +46,7 @@ steps:
       javaHomeOption: 'JDKVersion'
       publishJUnitResults: true
       testResultsFiles: '**/TEST-*.xml'
-      tasks: ':atsc3_core:build :atsc3_bridge:build :atsc3_phy_virtual:build :atsc3_phy_lowasis:build :atsc3_core:publish :atsc3_bridge:publish :atsc3_phy_lowasis:publish :atsc3_phy_virtual:publish -PartifactVersion=1.0.0.1'
+      tasks: ':atsc3_core:build :atsc3_bridge:build :atsc3_phy_virtual:build :atsc3_phy_lowasis:build :atsc3_core:publish :atsc3_bridge:publish :atsc3_phy_lowasis:publish :atsc3_phy_virtual:publish -PartifactVersion=$(ARTIFACT_VERSION)'
 
     displayName: gradlew build
 
