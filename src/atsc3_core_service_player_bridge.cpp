@@ -26,14 +26,16 @@ uint32_t* dst_ip_addr_filter = NULL;
 uint16_t* dst_ip_port_filter = NULL;
 uint16_t* dst_packet_id_filter = NULL;
 
+recursive_mutex atsc3_core_service_player_bridge_context_mutex;
+
 //jjustman-2019-10-03 - context event callbacks...
-atsc3_mmt_mfu_context_t* atsc3_mmt_mfu_context = NULL;
 lls_slt_monitor_t* lls_slt_monitor = NULL;
 
 //mmtp/sls flow management
 mmtp_flow_t* mmtp_flow;
 udp_flow_latest_mpu_sequence_number_container_t* udp_flow_latest_mpu_sequence_number_container;
 lls_sls_mmt_monitor_t* lls_sls_mmt_monitor = NULL;
+atsc3_mmt_mfu_context_t* atsc3_mmt_mfu_context = NULL;
 
 //route/alc specific parameters
 lls_sls_alc_monitor_t* lls_sls_alc_monitor = NULL;
@@ -108,8 +110,11 @@ void atsc3_core_service_application_bridge_init(IAtsc3NdkApplicationBridge* atsc
  * jjustman-2020-08-31 - todo: refactor this into a context handle
  */
 void atsc3_core_service_application_bridge_reset_context() {
+    lock_guard<recursive_mutex> atsc3_core_service_player_bridge_context_mutex_local(atsc3_core_service_player_bridge_context_mutex);
+
     if (lls_slt_monitor) {
         atsc3_lls_slt_monitor_free(&lls_slt_monitor);
+        lls_sls_alc_monitor = NULL;
     }
     if(mmtp_flow) {
         mmtp_flow_free_mmtp_asset_flow(mmtp_flow);
@@ -151,6 +156,7 @@ void atsc3_core_service_application_bridge_reset_context() {
 
     //extract out one trun sampleduration for essence timing
     atsc3_mmt_mfu_context->atsc3_mmt_mpu_on_sequence_movie_fragment_metadata_present = &atsc3_mmt_mpu_on_sequence_movie_fragment_metadata_present_ndk;
+
 }
 
 void atsc3_core_service_phy_bridge_init(IAtsc3NdkPHYBridge* atsc3NdkPHYBridge) {
@@ -160,12 +166,7 @@ void atsc3_core_service_phy_bridge_init(IAtsc3NdkPHYBridge* atsc3NdkPHYBridge) {
 	}
 }
 
-
-
-
 //A/330 LMT management
-
-
 mmtp_packet_header_t*  mmtp_parse_header_from_udp_packet(udp_packet_t* udp_packet) {
 
     mmtp_packet_header_t* mmtp_packet_header = mmtp_packet_header_parse_from_block_t(udp_packet->data);
@@ -193,6 +194,8 @@ void mmtp_process_sls_from_payload(udp_packet_t *udp_packet, mmtp_signalling_pac
 }
 
 atsc3_lls_slt_service_t* atsc3_phy_mmt_player_bridge_set_single_monitor_a331_service_id(int service_id) {
+    lock_guard<recursive_mutex> atsc3_core_service_player_bridge_context_mutex_local(atsc3_core_service_player_bridge_context_mutex);
+
     __INFO("atsc3_phy_mmt_player_bridge_set_a331_service_id: with service_id: %d", service_id);
     //find our matching LLS service, then assign a monitor reference
 
@@ -356,6 +359,8 @@ atsc3_lls_slt_service_t* atsc3_phy_mmt_player_bridge_set_single_monitor_a331_ser
 }
 
 atsc3_lls_slt_service_t* atsc3_phy_mmt_player_bridge_add_monitor_a331_service_id(int service_id) {
+    lock_guard<recursive_mutex> atsc3_core_service_player_bridge_context_mutex_local(atsc3_core_service_player_bridge_context_mutex);
+
     __INFO("atsc3_phy_mmt_player_bridge_add_monitor_a331_service_id: with service_id: %d", service_id);
 
     atsc3_lls_slt_service_t* atsc3_lls_slt_service = lls_slt_monitor_find_lls_slt_service_id_group_id_cache_entry(lls_slt_monitor, service_id);
@@ -410,8 +415,9 @@ atsc3_lls_slt_service_t* atsc3_phy_mmt_player_bridge_add_monitor_a331_service_id
     return atsc3_lls_slt_service;
 }
 
-//TODO: jjustman-2019-11-07: mutex
 atsc3_lls_slt_service_t* atsc3_phy_mmt_player_bridge_remove_monitor_a331_service_id(int service_id) {
+    lock_guard<recursive_mutex> atsc3_core_service_player_bridge_context_mutex_local(atsc3_core_service_player_bridge_context_mutex);
+
     if(!lls_slt_monitor->lls_sls_alc_monitor || !lls_slt_monitor->lls_sls_alc_monitor_v.count) {
         __ERROR("atsc3_phy_mmt_player_bridge_remove_monitor_a331_service_id: unable to remove service_id: %d, lls_slt_monitor->lls_sls_alc_monitor is: %p, lls_slt_monitor->lls_sls_alc_monitor_v.count is: %d",
                 service_id,
@@ -450,7 +456,9 @@ atsc3_lls_slt_service_t* atsc3_phy_mmt_player_bridge_remove_monitor_a331_service
     return lls_service_removed_lls_sls_alc_monitor;
 }
 
+//jjustman-2020-09-02 - note: non-mutex protected method, expects caller to already own a mutex for lls_slt_monitor
 lls_sls_alc_monitor_t* atsc3_lls_sls_alc_monitor_get_from_service_id(int service_id) {
+
     if(!lls_slt_monitor->lls_sls_alc_monitor || !lls_slt_monitor->lls_sls_alc_monitor_v.count) {
         __ERROR("atsc3_lls_sls_alc_monitor_get_from_service_id: error searching for service_id: %d, alc_monitor is null: lls_slt_monitor->lls_sls_alc_monitor is: %p, lls_slt_monitor->lls_sls_alc_monitor_v.count is: %d",
                 service_id,
@@ -482,6 +490,8 @@ lls_sls_alc_monitor_t* atsc3_lls_sls_alc_monitor_get_from_service_id(int service
 }
 
 atsc3_sls_metadata_fragments_t* atsc3_slt_alc_get_sls_metadata_fragments_from_monitor_service_id(int service_id) {
+    lock_guard<recursive_mutex> atsc3_core_service_player_bridge_context_mutex_local(atsc3_core_service_player_bridge_context_mutex);
+
     lls_sls_alc_monitor_t* lls_sls_alc_monitor = atsc3_lls_sls_alc_monitor_get_from_service_id(service_id);
 
     if(!lls_sls_alc_monitor || !lls_sls_alc_monitor->atsc3_sls_metadata_fragments) {
@@ -497,6 +507,8 @@ atsc3_sls_metadata_fragments_t* atsc3_slt_alc_get_sls_metadata_fragments_from_mo
 }
 
 atsc3_route_s_tsid_t* atsc3_slt_alc_get_sls_route_s_tsid_from_monitor_service_id(int service_id) {
+    lock_guard<recursive_mutex> atsc3_core_service_player_bridge_context_mutex_local(atsc3_core_service_player_bridge_context_mutex);
+
     lls_sls_alc_monitor_t* lls_sls_alc_monitor = atsc3_lls_sls_alc_monitor_get_from_service_id(service_id);
 
     if(!lls_sls_alc_monitor || !lls_sls_alc_monitor->atsc3_sls_metadata_fragments || !lls_sls_alc_monitor->atsc3_sls_metadata_fragments->atsc3_route_s_tsid) {
@@ -529,6 +541,7 @@ void atsc3_core_service_bridge_process_packet_from_plp_and_block(uint8_t plp_num
 
 //void process_packet(u_char *user, const struct pcap_pkthdr *pkthdr, const u_char *packet) {
 void atsc3_core_service_bridge_process_packet_phy(block_t* packet) {
+    lock_guard<recursive_mutex> atsc3_core_service_player_bridge_context_mutex_local(atsc3_core_service_player_bridge_context_mutex);
 
     mmtp_packet_header_t* mmtp_packet_header = NULL;
     lls_sls_mmt_session_t* matching_lls_sls_mmt_session = NULL;
@@ -619,8 +632,6 @@ void atsc3_core_service_bridge_process_packet_phy(block_t* packet) {
 	if(matching_lls_sls_mmt_session && lls_slt_monitor && lls_slt_monitor->lls_sls_mmt_monitor && matching_lls_sls_mmt_session->atsc3_lls_slt_service->service_id == lls_slt_monitor->lls_sls_mmt_monitor->atsc3_lls_slt_service->service_id) {
 
         mmtp_packet_header = mmtp_packet_header_parse_from_block_t(udp_packet->data);
-
-        //at3DrvIntf_ptr->LogMsgF("mmtp_packet_header: %p", mmtp_packet_header);
 
         if(!mmtp_packet_header) {
             goto cleanup;
@@ -753,6 +764,7 @@ error:
 
 
 void atsc3_lls_on_sls_table_present_ndk(lls_table_t* lls_table) {
+
     printf("atsc3_lls_on_sls_table_present_ndk: lls_table is: %p, val: %s", lls_table, lls_table->raw_xml.xml_payload);
     if(!lls_table) {
         Atsc3NdkApplicationBridge_ptr->LogMsg("E: atsc3_lls_on_sls_table_present_ndk: no lls_table for SLS!");
@@ -1161,8 +1173,6 @@ string atsc3_ndk_cache_temp_folder_path_get(int service_id) {
 string atsc3_route_service_context_temp_folder_name(int service_id) {
     return __ALC_DUMP_OUTPUT_PATH__ + to_string(service_id) + "/";
 }
-
-
 
 int atsc3_ndk_cache_temp_unlink_cb(const char *fpath, const struct stat *sb, int typeflag, struct FTW *ftwbuf)
 {

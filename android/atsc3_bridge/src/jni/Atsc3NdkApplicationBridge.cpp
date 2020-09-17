@@ -584,7 +584,6 @@ void Atsc3NdkApplicationBridge::atsc3_lls_sls_alc_on_package_extract_completed_c
 void Atsc3NdkApplicationBridge::atsc3_onSlsTablePresent(const char *sls_payload_xml) {
     if (!atsc3_onSlsTablePresent_ID) {
         _NDK_APPLICATION_BRIDGE_ERROR("atsc3_onSlsTablePresent_ID: %p", atsc3_onSlsTablePresent_ID);
-
         return;
     }
 
@@ -592,6 +591,13 @@ void Atsc3NdkApplicationBridge::atsc3_onSlsTablePresent(const char *sls_payload_
 		_NDK_APPLICATION_BRIDGE_ERROR("Atsc3NdkApplicationBridge::atsc3_onSlsHeldEmissionPresent: bridgeConsumerJniEnv is NULL");
         return;
     }
+    if (!sls_payload_xml || !strlen(sls_payload_xml)) {
+        _NDK_APPLICATION_BRIDGE_ERROR("Atsc3NdkApplicationBridge::atsc3_onSlsHeldEmissionPresent: sls_payload_xml is NULL!");
+        return;
+    }
+
+    _NDK_APPLICATION_BRIDGE_INFO("Atsc3NdkApplicationBridge::atsc3_onSlsHeldEmissionPresent: sls_payload_xml is: %s", sls_payload_xml);
+
 
     jstring xml_payload = bridgeConsumerJniEnv->Get()->NewStringUTF(sls_payload_xml);
     int r = bridgeConsumerJniEnv->Get()->CallIntMethod(jni_instance_globalRef, atsc3_onSlsTablePresent_ID, xml_payload);
