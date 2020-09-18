@@ -141,6 +141,10 @@ uint8_t mmt_signalling_message_parse_packet(mmtp_signalling_packet_t* mmtp_signa
 
 mmt_signalling_message_header_and_payload_t* __mmt_signalling_message_parse_length_long(block_t* udp_packet, mmt_signalling_message_header_and_payload_t* mmt_signalling_message_header_and_payload) {
 	uint32_t mmtp_msg_length_long;
+	if(block_Remaining_size(udp_packet) < 4) {
+	    return NULL;
+	}
+
 	uint8_t* buf = block_Get(udp_packet);
 	buf = extract(buf, (uint8_t*)&mmtp_msg_length_long, 4);
 	mmt_signalling_message_header_and_payload->message_header.length = ntohl(mmtp_msg_length_long);
@@ -548,26 +552,42 @@ cleanup:
 	return NULL;
 }
 
+/*
+ * jjustman-2020-09-17 - TODO: re-implement with block_t readers that are length aware for guards
+ */
 uint8_t* mmt_atsc3_message_payload_parse(mmt_signalling_message_header_and_payload_t* mmt_signalling_message_header_and_payload, block_t* udp_packet) {
 	__mmt_signalling_message_parse_length_long(udp_packet, mmt_signalling_message_header_and_payload);
 
 	uint8_t *raw_buf = block_Get(udp_packet);
+	uint32_t udp_size = block_Remaining_size(udp_packet);
 	uint8_t *buf = raw_buf;
 
 	mmt_atsc3_message_payload_t* mmt_atsc3_message_payload = &mmt_signalling_message_header_and_payload->message_payload.mmt_atsc3_message_payload;
 
+	if((udp_size - (buf - raw_buf)) < 2) {
+	    return NULL;
+	}
 	uint16_t service_id;
 	buf = extract(buf, (uint8_t*)&service_id, 2);
 	mmt_atsc3_message_payload->service_id = ntohs(service_id);
 
+    if((udp_size - (buf - raw_buf)) < 2) {
+        return NULL;
+    }
 	uint16_t atsc3_message_content_type;
 	buf = extract(buf, (uint8_t*)&atsc3_message_content_type, 2);
 	mmt_atsc3_message_payload->atsc3_message_content_type = ntohs(atsc3_message_content_type);
 
+    if((udp_size - (buf - raw_buf)) < 1) {
+        return NULL;
+    }
 	uint8_t atsc3_message_content_version;
 	buf = extract(buf, (uint8_t*)&atsc3_message_content_version, 1);
 	mmt_atsc3_message_payload->atsc3_message_content_version = atsc3_message_content_version;
 
+    if((udp_size - (buf - raw_buf)) < 1) {
+        return NULL;
+    }
 	uint8_t atsc3_message_content_compression;
 	buf = extract(buf, (uint8_t*)&atsc3_message_content_compression, 1);
 	mmt_atsc3_message_payload->atsc3_message_content_compression = atsc3_message_content_compression;
@@ -577,9 +597,15 @@ uint8_t* mmt_atsc3_message_payload_parse(mmt_signalling_message_header_and_paylo
 	mmt_atsc3_message_payload->URI_length = __MAX(0, __MIN(255, URI_length));
 
 	if(URI_length) {
+        if((udp_size - (buf - raw_buf)) < URI_length) {
+            return NULL;
+        }
 		buf = __read_uint8_len_to_string(buf, URI_length, &mmt_atsc3_message_payload->URI_payload);
 	}
 
+    if((udp_size - (buf - raw_buf)) < 4) {
+        return NULL;
+    }
 	uint32_t temp_atsc3_message_content_length;
 	buf = extract(buf, (uint8_t*)&temp_atsc3_message_content_length, 4);
 	temp_atsc3_message_content_length = ntohl(temp_atsc3_message_content_length);
@@ -588,6 +614,9 @@ uint8_t* mmt_atsc3_message_payload_parse(mmt_signalling_message_header_and_paylo
 		//cheat and over-alloc+1 for a null byte
 
 		uint8_t *temp_atsc3_message_content = NULL;
+        if((udp_size - (buf - raw_buf)) < temp_atsc3_message_content_length) {
+            return NULL;
+        }
 		buf = __read_uint32_len_to_string(buf, temp_atsc3_message_content_length, &temp_atsc3_message_content);
 
 		if(mmt_atsc3_message_payload->atsc3_message_content_compression == 0x02) {
