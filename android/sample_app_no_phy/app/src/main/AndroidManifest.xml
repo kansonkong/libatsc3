@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools"
+    android:sharedUserId="android.uid.system"
     package="org.ngbp.libatsc3.sampleapp">
 
     <uses-feature android:name="android.hardware.usb.host" />
@@ -25,7 +26,6 @@
         android:hardwareAccelerated="true"
         android:windowSoftInputMode="adjustNothing|stateHidden"
         android:launchMode="singleInstance"
-        android:sharedUserId="android.uid.system"
         >
 
         <activity android:name="org.ngbp.libatsc3.sampleapp.MainActivity"
