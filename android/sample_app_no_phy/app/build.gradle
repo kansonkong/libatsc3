@@ -91,4 +91,6 @@ dependencies {
     api project(":atsc3_phy_virtual")
     api project(":atsc3_phy_saankhya")
     api project(":atsc3_phy_lowasis")
+    api project(":atsc3_phy_airwavz")
+
 }
