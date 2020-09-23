@@ -2,6 +2,32 @@
 // Created by Jason Justman on 8/19/20.
 //
 
+/*  MarkONE "workarounds" for /dev handle permissions
+
+
+ADB_IP_ADDRESS="192.168.4.57:5555"
+adb connect $ADB_IP_ADDRESS
+adb root
+adb shell
+
+# copy/paste the following after a reboot...
+
+setenforce 0
+logcat -b all | grep -i "SAANKHYA"  &
+cat /sys/class/i2c-dev/i2c-3/device/3-0030/gpio_reset
+
+
+while :
+do
+chmod 777 /dev/i2c-3
+chmod 777 /dev/saankhya_dev
+chmod 777 /dev/saankhya_sdio_drv
+chmod 777 /dev/input/event7
+sleep 1
+done
+
+ */
+
 #include "SaankhyaPHYAndroid.h"
 SaankhyaPHYAndroid* saankhyaPHYAndroid = nullptr;
 
@@ -208,9 +234,7 @@ bool SaankhyaPHYAndroid::is_running() {
 int SaankhyaPHYAndroid::stop()
 {
     _SAANKHYA_PHY_ANDROID_DEBUG("SaankhyaPHYAndroid::stop: enter with this: %p", this);
-    if(atsc3_ndk_application_bridge_get_instance()) {
-        atsc3_ndk_application_bridge_get_instance()->atsc3_phy_notify_plp_selection_change_clear_callback();
-    }
+
     //tear down status thread first, as its the most 'problematic'
     if(statusThreadIsRunning) {
         statusThreadShouldRun = false;
@@ -247,8 +271,11 @@ int SaankhyaPHYAndroid::stop()
         _SAANKHYA_PHY_ANDROID_DEBUG("SaankhyaPHYAndroid::stop: after pthread_join for pThreadID");
     }
 
-
     SL_I2cUnInit();
+
+    if(atsc3_ndk_application_bridge_get_instance()) {
+        atsc3_ndk_application_bridge_get_instance()->atsc3_phy_notify_plp_selection_change_clear_callback();
+    }
     _SAANKHYA_PHY_ANDROID_DEBUG("SaankhyaPHYAndroid::stop: return with this: %p", this);
     return 0;
 }
@@ -271,6 +298,7 @@ int SaankhyaPHYAndroid::deinit()
 
 int SaankhyaPHYAndroid::open(int fd, string device_path)
 {
+
     SL_SetUsbFd(fd);
 
     _SAANKHYA_PHY_ANDROID_DEBUG("open with fd: %d, device_path: %s", fd, device_path.c_str());
@@ -308,6 +336,8 @@ int SaankhyaPHYAndroid::open(int fd, string device_path)
         SL_Printf("\n ERROR : SL_ConfigSetBbCapture Failed ");
         goto ERROR;
     }
+
+    printf("%s:%d - before SL_I2cInit()", __FILE__, __LINE__);
 
     if (getPlfConfig.demodControlIf == SL_DEMOD_CMD_CONTROL_IF_I2C)
     {
@@ -445,6 +475,8 @@ int SaankhyaPHYAndroid::open(int fd, string device_path)
             }
             else if (getPlfConfig.demodOutputIf == SL_DEMOD_OUTPUTIF_SDIO)
             {
+                printf("%s:%d - SL4000 using SL_DEMOD_OUTPUTIF_SDIO", __FILE__, __LINE__);
+
                 outPutInfo.oif = SL_OUTPUTIF_SDIO;
             }
             else
@@ -499,11 +531,13 @@ int SaankhyaPHYAndroid::open(int fd, string device_path)
     afeInfo.agcRefValue = 125; //afcRefValue in mV
     outPutInfo.TsoClockInvEnable = SL_TSO_CLK_INV_ON;
 
+    printf("%s:%d - before SL_ConfigGetBbCapture", __FILE__, __LINE__);
+
     cres = SL_ConfigGetBbCapture(&getbbValue);
     if (cres != SL_CONFIG_OK)
     {
         _SAANKHYA_PHY_ANDROID_ERROR("ERROR : SL_ConfigGetPlatform Failed");
-
+        printf("%s:%d - ERROR : SL_ConfigGetPlatform Failed", __FILE__, __LINE__);
         SL_Printf("\n ERROR : SL_ConfigGetPlatform Failed ");
         goto ERROR;
     }
@@ -1008,32 +1042,53 @@ int SaankhyaPHYAndroid::download_bootloader_firmware(int fd, string device_path)
 SL_ConfigResult_t SaankhyaPHYAndroid::configPlatformParams() {
 
     SL_ConfigResult_t res;
-
-#define SL_DEMOD_OUTPUT_SDIO 1
     /*
-     * Assign Platform Configuration Parameters. For other ref platforms, replace settings from
-     * comments above
-     */
+      * Assign Platform Configuration Parameters. For other ref platforms, replace settings from
+      * comments above
+      */
+
+//jjustman-2020-09-09 MarkONE specific configuration
+#ifdef SL_MARKONE
+
     sPlfConfig.chipType = SL_CHIP_4000;
     sPlfConfig.chipRev = SL_CHIP_REV_AA;
-    sPlfConfig.boardType = SL_BORQS_EVT;
+    sPlfConfig.boardType = SL_EVB_4000; //from venky 2020-09-07 - SL_BORQS_EVT;
     sPlfConfig.tunerType = TUNER_SI;
     sPlfConfig.demodControlIf = SL_DEMOD_CMD_CONTROL_IF_I2C;
     sPlfConfig.demodOutputIf = SL_DEMOD_OUTPUTIF_SDIO;
     sPlfConfig.demodI2cAddr = 0x30; /* SLDemod 7-bit Physical I2C Address */
-
-#ifdef SL_FX3S
-    sPlfConfig.demodResetGpioPin = 47;   /* FX3S GPIO 47 connected to Demod Reset Pin */
-    sPlfConfig.cpldResetGpioPin = 43;   /* FX3S GPIO 43 connected to CPLD Reset Pin and used only for serial TS Interface  */
-    sPlfConfig.demodI2cAddr3GpioPin = 37;   /* FX3S GPIO 37 connected to Demod I2C Address3 Pin and used only for SDIO Interface */
-#endif
-
-    /*
+     /*
      * Relative Path to SLSDK from working directory
      * Example: D:\UNAME\PROJECTS\slsdk
      * User can just specifying "..", which will point to this directory or can specify full directory path explicitly
      */
-    sPlfConfig.slsdkPath = ".";
+    sPlfConfig.slsdkPath = "/data/out"; //from venky 2020-09-07
+
+    sPlfConfig.demodResetGpioPin = 12;   /* 09-10 03:25:56.498     0     0 E SAANKHYA: Reset low GPIO: 12 */
+    sPlfConfig.demodI2cAddr3GpioPin = 37;   /* FX3S GPIO 37 connected to Demod I2C Address3 Pin and used only for SDIO Interface */
+
+#endif
+
+//jjustman-2020-09-09 KAILASH dongle specific configuration
+#ifdef SL_KAILASH
+
+    #define SL_FX3S 1
+    sPlfConfig.chipType = SL_CHIP_3010;
+    sPlfConfig.chipRev = SL_CHIP_REV_AA;
+    sPlfConfig.boardType = SL_KAILASH_DONGLE;
+    sPlfConfig.tunerType = TUNER_SI;
+    sPlfConfig.demodControlIf = SL_DEMOD_CMD_CONTROL_IF_I2C;
+    sPlfConfig.demodOutputIf = SL_DEMOD_OUTPUTIF_TS;
+    sPlfConfig.demodI2cAddr = 0x30; /* SLDemod 7-bit Physical I2C Address */
+
+    sPlfConfig.demodResetGpioPin = 47;   /* FX3S GPIO 47 connected to Demod Reset Pin */
+    sPlfConfig.cpldResetGpioPin = 43;   /* FX3S GPIO 43 connected to CPLD Reset Pin and used only for serial TS Interface  */
+    sPlfConfig.demodI2cAddr3GpioPin = 37;   /* FX3S GPIO 37 connected to Demod I2C Address3 Pin and used only for SDIO Interface */
+    sPlfConfig.slsdkPath = "."; //jjustman-2020-09-09 use extern object linkages for fx3/hex firmware
+
+#endif
+
+
 
     /* Set Configuration Parameters */
     res = SL_ConfigSetPlatform(sPlfConfig);
@@ -1658,7 +1713,7 @@ void SaankhyaPHYAndroid::processTLVFromCallback()
                             alp_total_LMTs_recv++;
                             atsc3_link_mapping_table_t* atsc3_link_mapping_table_pending = atsc3_alp_packet_extract_lmt(atsc3_alp_packet);
 
-                            if(atsc3_phy_rx_link_mapping_table_process_callback) {
+                            if(atsc3_phy_rx_link_mapping_table_process_callback && atsc3_link_mapping_table_pending) {
                                 atsc3_link_mapping_table_t *atsc3_link_mapping_table_to_free = atsc3_phy_rx_link_mapping_table_process_callback(atsc3_link_mapping_table_pending);
 
                                 if (atsc3_link_mapping_table_to_free) {
