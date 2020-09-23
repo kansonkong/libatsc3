@@ -20,15 +20,21 @@ char  __ANDROID_LOG_VPRINTF_BUFFER[__ANDROID_MAX_LOG_LINE_LENGTH__] = { 0 };
 
 //overload printf to write to android logs
 int printf(const char *format, ...)  {
+    int ret = 0;
     va_list argptr;
     va_start(argptr, format);
-    //vsnprintf(__atsc3_android_lsg_msg_buff, __ATSC3_ANDROID_LOG_MSG_BUFF_LEN -1, format, argptr),
-    __android_log_vprint(ANDROID_LOG_DEBUG, "NDK", format, argptr);
+    ret = __android_log_vprint(ANDROID_LOG_DEBUG, "NDK", format, argptr);
     va_end(argptr);
 
-    return 0;
+    return ret;
 }
-//#define printf(...) __android_log_print(ANDROID_LOG_DEBUG, "TAG", __VA_ARGS__);
+
+//jjustman-2020-09-09 - SLSDK sl_utils SL_Printf uses vprintf(), so override for android
+int vprintf(const char* __fp, va_list __args) {
+    int ret = 0;
+    ret = __android_log_vprint(ANDROID_LOG_DEBUG, "NDK", __fp, __args);
+    return ret;
+}
 
 #else
 #ifndef _TEST_RUN_VALGRIND_OSX_

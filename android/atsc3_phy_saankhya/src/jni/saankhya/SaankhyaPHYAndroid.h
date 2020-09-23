@@ -39,8 +39,6 @@
 #include <sl_demod.h>
 #include <sl_utils.h>
 
-#include <cyusb.h>
-
 #include <pthread.h>
 typedef void * (*THREADFUNCPTR)(void *);
 
