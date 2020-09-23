@@ -12,4 +12,8 @@
         <!-- Saankhya Labs - KAILASH -->
         <usb-device vendor-id="1204" product-id="240" />
 
+        <!-- airwavz.tv -->
+        <usb-device vendor-id="5840" product-id="3500" />  <!-- Airwavz.tv RZR-1200 -->
+        <usb-device vendor-id="5840" product-id="3737" />  <!-- Airwavz.tv RZR-1400 -->
+
 </resources>

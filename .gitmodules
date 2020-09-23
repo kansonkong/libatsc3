@@ -7,7 +7,8 @@
 	branch = ffmpeg_update
 [submodule "ffmpeg"]
 	path = ffmpeg
-	url = https://git.ffmpeg.org/ffmpeg.git
+	url = https://github.com/jjustman/ffmpeg.git
+	branch = libdaa
 [submodule "libwebsockets"]
 	path = libwebsockets
 	url = https://github.com/jjustman/libwebsockets.git
@@ -48,3 +49,12 @@
 [submodule "libusb_android"]
 	path = libusb_android
 	url = https://github.com/jjustman/libusb_android.git
+[submodule "libdaa"]
+	path = libdaa
+	url = https://dev.azure.com/NGWP/Middleware/_git/libdaa
+[submodule "codornicesrq"]
+	path = codornicesrq
+	url = https://dev.azure.com/NGWP/Middleware/_git/codornicesrq
+[submodule "airwavz_redzone_sdk"]
+	path = airwavz_redzone_sdk
+	url = https://dev.azure.com/NGWP/Middleware/_git/airwavz_redzone_sdk

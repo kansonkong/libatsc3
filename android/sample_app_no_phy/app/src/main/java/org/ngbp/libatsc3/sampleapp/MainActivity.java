@@ -663,10 +663,6 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         myDecoderHandlerThread.start();
         mSurfaceView1.getHolder();
 
-        if (hasUsbIfSupport) {
-            // our broadcast receiver
-            mUsbReceiver = new MyReceiver(ServiceHandler.GetInstance());
-        }
 
         assetManager = getAssets();
 
@@ -740,7 +736,6 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
 
         // get pending intent, which will be used for requesting permission
         mPermissionIntent = PendingIntent.getBroadcast(this, 0, new Intent(ACTION_USB_PERMISSION), 0);
-
         Log.d(TAG, "onCreate: registering intent to receiver, before addAction: "+ usbIntentFilter+", actions count: "+usbIntentFilter.countActions());
 
         // register our own broadcast receiver instance, with filters we are interested in
@@ -749,7 +744,19 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         usbIntentFilter.addAction(ACTION_USB_PERMISSION);
 
         Log.d(TAG, "onCreate: registering intent to receiver"+ usbIntentFilter);
-        registerReceiver(mUsbReceiver, usbIntentFilter);
+
+        if (hasUsbIfSupport) {
+            // our broadcast receiver
+            if(MUsbReceiver == null) {
+                MUsbReceiver = new MyReceiver(ServiceHandler.GetInstance());
+                registerReceiver(MUsbReceiver, usbIntentFilter);
+
+            } else {
+                Log.i(TAG, "ignoring duplicate MUsbReceiver instantation");
+            }
+        }
+
+
 
         // jjustman-2020-08-18 - wire up our applicationBridge and PHYBridge
         atsc3NdkApplicationBridge = new Atsc3NdkApplicationBridge(this);
@@ -946,6 +953,32 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
             }
         }, 3000);
 
+        if(false) {
+            int sl_res = 0;
+            //jjustman-2020-08-31 - force loading of SaankhyaPHYAndroid with SDIO configuration
+            atsc3NdkPHYClientInstance = new SaankhyaPHYAndroid();
+            Log.d(TAG, "SaankhyaPHYAndroid: calling atsc3NdkPHYClientInstance.init()");
+            sl_res = atsc3NdkPHYClientInstance.init();
+            Log.d(TAG, String.format("SaankhyaPHYAndroid: return from atsc3NdkPHYClientInstance.init(): %d", sl_res));
+
+            Log.d(TAG, String.format("SaankhyaPHYAndroid: calling atsc3NdkPHYClientInstance.open(-1, SDIO)"));
+
+            sl_res = atsc3NdkPHYClientInstance.open(-1, "SDIO");
+            Log.d(TAG, String.format("SaankhyaPHYAndroid: return from atsc3NdkPHYClientInstance.open(-1, SDIO): %d", sl_res));
+
+            if (sl_res == 0) {
+                ServiceHandler.GetInstance().post(new Runnable() {
+                    @Override
+                    public void run() {
+                        updateSpinnerFromDevList();
+                        enableDeviceControlButtons(true);
+                    }
+                });
+
+            } else {
+                stopAndDeInitAtsc3NdkPHYClientInstance(); //clean up our non-existant SDIO SaankhyaPHYAndroid
+            }
+        }
         hasCalledOnCreate = true;
     }
 
@@ -1455,7 +1488,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         Log.d(TAG, "onDestroy called");
         stopAndDeInitAtsc3NdkPHYClientInstance();
 
-        unregisterReceiver(mUsbReceiver);
+        unregisterReceiver(MUsbReceiver);
         super.onDestroy();
     }
     @Override
@@ -1463,7 +1496,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         Log.d(TAG, "onBackPressed called");
         stopAndDeInitAtsc3NdkPHYClientInstance();
 
-        unregisterReceiver(mUsbReceiver);
+        unregisterReceiver(MUsbReceiver);
         Log.d(TAG, "uninit ended");
 
         moveTaskToBack(true);
@@ -1630,7 +1663,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     }
 
     // our own broadcast receiver
-    private BroadcastReceiver mUsbReceiver;
+    private static BroadcastReceiver MUsbReceiver;
     public class MyReceiver extends BroadcastReceiver {
         private final Handler mHandler; // Handler used to execute code on the UI thread
 
