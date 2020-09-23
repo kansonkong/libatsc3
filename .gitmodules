@@ -55,3 +55,6 @@
 [submodule "codornicesrq"]
 	path = codornicesrq
 	url = https://dev.azure.com/NGWP/Middleware/_git/codornicesrq
+[submodule "airwavz_redzone_sdk"]
+	path = airwavz_redzone_sdk
+	url = https://dev.azure.com/NGWP/Middleware/_git/airwavz_redzone_sdk
