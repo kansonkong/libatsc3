@@ -234,9 +234,7 @@ bool SaankhyaPHYAndroid::is_running() {
 int SaankhyaPHYAndroid::stop()
 {
     _SAANKHYA_PHY_ANDROID_DEBUG("SaankhyaPHYAndroid::stop: enter with this: %p", this);
-    if(atsc3_ndk_application_bridge_get_instance()) {
-        atsc3_ndk_application_bridge_get_instance()->atsc3_phy_notify_plp_selection_change_clear_callback();
-    }
+
     //tear down status thread first, as its the most 'problematic'
     if(statusThreadIsRunning) {
         statusThreadShouldRun = false;
@@ -273,8 +271,11 @@ int SaankhyaPHYAndroid::stop()
         _SAANKHYA_PHY_ANDROID_DEBUG("SaankhyaPHYAndroid::stop: after pthread_join for pThreadID");
     }
 
-
     SL_I2cUnInit();
+
+    if(atsc3_ndk_application_bridge_get_instance()) {
+        atsc3_ndk_application_bridge_get_instance()->atsc3_phy_notify_plp_selection_change_clear_callback();
+    }
     _SAANKHYA_PHY_ANDROID_DEBUG("SaankhyaPHYAndroid::stop: return with this: %p", this);
     return 0;
 }
