@@ -13,6 +13,13 @@ APP_STL := c++_shared
 
 APP_CPPFLAGS += -std=c++11  -fexceptions -D_ANDROID
 
+#jjustman-2020-09-23 - hwasan
+
+ifeq ($(ENABLE_HWASAN),armeabi-v7a)
+	APP_CFLAGS := -fsanitize=hwaddress -fno-omit-frame-pointer
+	APP_LDFLAGS := -fsanitize=hwaddress
+endif
+
 
 # -fsanitize=address -fno-omit-frame-pointer
 #
