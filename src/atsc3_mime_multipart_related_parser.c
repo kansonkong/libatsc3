@@ -55,8 +55,9 @@ atsc3_mime_multipart_related_instance_t* atsc3_mime_multipart_related_parser(FIL
 
 	atsc3_mime_multipart_related_instance_t* atsc3_mime_multipart_related_instance = calloc(1, sizeof(atsc3_mime_multipart_related_instance_t));
 
-	char* line_buffer = calloc(ATSC3_MIME_MULTIPART_RELATED_LINE_BUFFER, sizeof(char));
-	char* line_buffer_to_free = line_buffer;
+	char* line_buffer_start = calloc(ATSC3_MIME_MULTIPART_RELATED_LINE_BUFFER, sizeof(char));
+    char* line_buffer = line_buffer_start;
+	char* line_buffer_to_free = line_buffer_start;
 
 	int ret;
 	int token_len;
@@ -68,7 +69,9 @@ atsc3_mime_multipart_related_instance_t* atsc3_mime_multipart_related_parser(FIL
 	//Content-Type: Multipart/Related; boundary=boundary-content;
 
 	while(!feof(fp) && !has_completed_header) {
-		fgets(line_buffer, ATSC3_MIME_MULTIPART_RELATED_LINE_BUFFER, fp);
+        line_buffer = line_buffer_start; //jjustman-2020-09-23 - reset our line_buffer pointer back to our start for our fgets after moving thru line_buffer
+
+        fgets(line_buffer, ATSC3_MIME_MULTIPART_RELATED_LINE_BUFFER, fp);
 		line_count++;
 
 		if(!has_read_content_type) {

@@ -285,10 +285,6 @@ bool LowaSISPHYAndroid::is_running() {
 
 int LowaSISPHYAndroid::stop()
 {
-    if(atsc3_ndk_application_bridge_get_instance()) {
-        atsc3_ndk_application_bridge_get_instance()->atsc3_phy_notify_plp_selection_change_clear_callback();
-    }
-
     AT3RESULT ar;
     _LOWASIS_PHY_ANDROID_INFO("LowaSISPHYAndroid::stop: enter with this: %p, init_completed: %d, mhDevice: %d",
             this, init_completed, mhDevice);
@@ -305,7 +301,6 @@ int LowaSISPHYAndroid::stop()
             _LOWASIS_PHY_ANDROID_WARN("AT3DRV_FE_Stop:: with mhDevice: %d returned ar: %d", mhDevice, ar);
         }
     }
-
 
     //tear down status thread first, as its the most 'problematic'
     if(statusThreadIsRunning) {
@@ -380,6 +375,10 @@ int LowaSISPHYAndroid::stop()
 
     mAt3Opt = nullptr;
     mhDevice = 0;
+
+    if(atsc3_ndk_application_bridge_get_instance()) {
+        atsc3_ndk_application_bridge_get_instance()->atsc3_phy_notify_plp_selection_change_clear_callback();
+    }
 
     _LOWASIS_PHY_ANDROID_INFO("LowaSISPHYAndroid::stop: return with this: %p", this);
     return ar;
@@ -917,48 +916,50 @@ int LowaSISPHYAndroid::statusThread()
     AT3RESULT ar;
 
     while(this->statusThreadShouldRun) {
-        memset(&s_fe_detail, 0, sizeof(s_fe_detail));
-
-        int32_t lock = 1, rssi = -2000;
-        ar = AT3DRV_FE_GetStatus(mhDevice, eAT3_RFSTAT_LOCK, &lock);
-        ar = AT3DRV_FE_GetStatus(mhDevice, eAT3_RFSTAT_STRENGTH, &rssi);
-
-        s_fe_detail.flagRequest = 0xffffffff; // all info. too many?
-        //s_fe_detail.flagRequest = FE_SIG_MASK_Lock; // | FE_SIG_MASK_RfLevel | FE_SIG_MASK_CarrierOffset | FE_SIG_MASK_SNR | FE_SIG_MASK_BER | FE_SIG_MASK_FecModCod | FE_SIG_MASK_BbpErr;
-        AT3DRV_FE_GetStatus(mhDevice, eAT3_FESTAT_RF_DETAIL, &s_fe_detail);
-
-        uint8_t modcod_valid = s_fe_detail.aFecModCod[0].valid;
-        uint8_t E_L1d_PlpFecType = s_fe_detail.aFecModCod[0].fecType;
-        uint8_t E_L1d_PlpMod = s_fe_detail.aFecModCod[0].mod;
-        uint8_t E_L1d_PlpCod = s_fe_detail.aFecModCod[0].cod;
-
-        if(!modcod_valid) {
-            //try fallback:
-
-            //eAT3_FESTAT_LGD_PLP_V1
-            S_LGD_L2_PLPINFO* l2plpInfo = (S_LGD_L2_PLPINFO*)calloc(1, sizeof(S_LGD_L2_PLPINFO));
-            l2plpInfo->index = 0;
-            AT3DRV_FE_GetStatus(mhDevice, eAT3_FESTAT_LGD_PLP_V1, l2plpInfo);
-            modcod_valid = 1;
-            E_L1d_PlpFecType = l2plpInfo->plp_fec_type;
-            E_L1d_PlpMod = l2plpInfo->plp_mod;
-            E_L1d_PlpCod = l2plpInfo->plp_cr;
-            free(l2plpInfo);
-        }
-
-        int32_t nRfLevel1000 = s_fe_detail.nRfLevel1000;
-        int32_t nSnr1000 = s_fe_detail.nSnr1000;
-
-        uint32_t aBerPreLdpcE7 = s_fe_detail.aBerPreLdpcE7[0];   // return BER x 1e7. (uint32_t)-1 if invalid.
-        uint32_t aBerPreBchE9  = s_fe_detail.aBerPreBchE9[0];    // return BER x 1e9. (uint32_t)-1 if invalid.
-        uint32_t aFerPostBchE6 = s_fe_detail.aFerPostBchE6[0];   // return FER x 1e6. (uint32_t)-1 if invalid.
-
-        if(atsc3_ndk_phy_bridge_get_instance()) {
-            atsc3_ndk_phy_bridge_get_instance()->atsc3_update_rf_stats(lock, rssi, modcod_valid, E_L1d_PlpFecType, E_L1d_PlpMod, E_L1d_PlpCod, nRfLevel1000, nSnr1000, aBerPreLdpcE7, aBerPreBchE9, aFerPostBchE6, s_fe_detail.lock.bDemodLock, s_fe_detail.lock.bNoSignal, s_fe_detail.lock.bPlpLockAny, s_fe_detail.lock.bPlpLockAll);
-            atsc3_ndk_phy_bridge_get_instance()->atsc3_update_rf_bw_stats(s_ullTotalPkts, s_ullTotalBytes, s_uTotalLmts);
-        }
-
         usleep(500000);
+
+        if(this->is_tuned) {
+            memset(&s_fe_detail, 0, sizeof(s_fe_detail));
+
+            int32_t lock = 1, rssi = -2000;
+            ar = AT3DRV_FE_GetStatus(mhDevice, eAT3_RFSTAT_LOCK, &lock);
+            ar = AT3DRV_FE_GetStatus(mhDevice, eAT3_RFSTAT_STRENGTH, &rssi);
+
+            s_fe_detail.flagRequest = 0xffffffff; // all info. too many?
+            //s_fe_detail.flagRequest = FE_SIG_MASK_Lock; // | FE_SIG_MASK_RfLevel | FE_SIG_MASK_CarrierOffset | FE_SIG_MASK_SNR | FE_SIG_MASK_BER | FE_SIG_MASK_FecModCod | FE_SIG_MASK_BbpErr;
+            AT3DRV_FE_GetStatus(mhDevice, eAT3_FESTAT_RF_DETAIL, &s_fe_detail);
+
+            uint8_t modcod_valid = s_fe_detail.aFecModCod[0].valid;
+            uint8_t E_L1d_PlpFecType = s_fe_detail.aFecModCod[0].fecType;
+            uint8_t E_L1d_PlpMod = s_fe_detail.aFecModCod[0].mod;
+            uint8_t E_L1d_PlpCod = s_fe_detail.aFecModCod[0].cod;
+
+            if(!modcod_valid) {
+                //try fallback:
+
+                //eAT3_FESTAT_LGD_PLP_V1
+                S_LGD_L2_PLPINFO* l2plpInfo = (S_LGD_L2_PLPINFO*)calloc(1, sizeof(S_LGD_L2_PLPINFO));
+                l2plpInfo->index = 0;
+                AT3DRV_FE_GetStatus(mhDevice, eAT3_FESTAT_LGD_PLP_V1, l2plpInfo);
+                modcod_valid = 1;
+                E_L1d_PlpFecType = l2plpInfo->plp_fec_type;
+                E_L1d_PlpMod = l2plpInfo->plp_mod;
+                E_L1d_PlpCod = l2plpInfo->plp_cr;
+                free(l2plpInfo);
+            }
+
+            int32_t nRfLevel1000 = s_fe_detail.nRfLevel1000;
+            int32_t nSnr1000 = s_fe_detail.nSnr1000;
+
+            uint32_t aBerPreLdpcE7 = s_fe_detail.aBerPreLdpcE7[0];   // return BER x 1e7. (uint32_t)-1 if invalid.
+            uint32_t aBerPreBchE9  = s_fe_detail.aBerPreBchE9[0];    // return BER x 1e9. (uint32_t)-1 if invalid.
+            uint32_t aFerPostBchE6 = s_fe_detail.aFerPostBchE6[0];   // return FER x 1e6. (uint32_t)-1 if invalid.
+
+            if(atsc3_ndk_phy_bridge_get_instance()) {
+                atsc3_ndk_phy_bridge_get_instance()->atsc3_update_rf_stats(lock, rssi, modcod_valid, E_L1d_PlpFecType, E_L1d_PlpMod, E_L1d_PlpCod, nRfLevel1000, nSnr1000, aBerPreLdpcE7, aBerPreBchE9, aFerPostBchE6, s_fe_detail.lock.bDemodLock, s_fe_detail.lock.bNoSignal, s_fe_detail.lock.bPlpLockAny, s_fe_detail.lock.bPlpLockAll);
+                atsc3_ndk_phy_bridge_get_instance()->atsc3_update_rf_bw_stats(s_ullTotalPkts, s_ullTotalBytes, s_uTotalLmts);
+            }
+        }
     }
 
     this->statusThreadIsRunning = false;
