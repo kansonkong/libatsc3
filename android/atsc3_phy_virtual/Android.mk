@@ -140,6 +140,9 @@ LOCAL_C_INCLUDES += $(LOCAL_PATH)/../../src/phy/virtual/srt
 LOCAL_C_INCLUDES += $(LOCAL_PATH)/../../src/phy/virtual/srt/haicrypt
 
 # LOCAL_C_INCLUDES += $(LOCAL_PATH)/../atsc3_core/libsrt/include
+# jjustman-2020-09-17 - raptorQ support
+LOCAL_C_INCLUDES += $(LOCAL_PATH)/../../codornicesrq/CodornicesRq-2.2-Linux-armv7l/include
+
 
 # shared library missing -fPIC for srt
 
@@ -153,9 +156,15 @@ LOCAL_CFLAGS += -g -O1 -fpack-struct=8  \
 LOCAL_LDLIBS += -ldl -lc++_shared -llog -landroid -lz \
 				-latsc3_core -latsc3_bridge
 
+# jjustman-2020-09-08 - missing armv8 libs
+# -lCodornicesRq
+
 LOCAL_LDFLAGS += -fPIE -fPIC \
 				-L $(LOCAL_PATH)/../atsc3_bridge/build/intermediates/ndkBuild/debug/obj/local/$(TARGET_ARCH_ABI)/ \
 				-L $(LOCAL_PATH)/../atsc3_core/build/intermediates/ndkBuild/debug/obj/local/$(TARGET_ARCH_ABI)/
+
+# jjustman-2020-09-08 - missing armv8 libs
+#				-L $(LOCAL_PATH)/../../codornicesrq/CodornicesRq-2.2-Linux-armv7l/lib
 
 # jjustman-2020-08-10 - link in our atsc3_bridge prefab shared library
 # LOCAL_SHARED_LIBRARIES := atsc3_bridge

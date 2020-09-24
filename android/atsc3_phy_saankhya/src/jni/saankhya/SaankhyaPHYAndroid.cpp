@@ -234,7 +234,9 @@ bool SaankhyaPHYAndroid::is_running() {
 int SaankhyaPHYAndroid::stop()
 {
     _SAANKHYA_PHY_ANDROID_DEBUG("SaankhyaPHYAndroid::stop: enter with this: %p", this);
-
+    if(atsc3_ndk_application_bridge_get_instance()) {
+        atsc3_ndk_application_bridge_get_instance()->atsc3_phy_notify_plp_selection_change_clear_callback();
+    }
     //tear down status thread first, as its the most 'problematic'
     if(statusThreadIsRunning) {
         statusThreadShouldRun = false;
@@ -1710,7 +1712,7 @@ void SaankhyaPHYAndroid::processTLVFromCallback()
                             alp_total_LMTs_recv++;
                             atsc3_link_mapping_table_t* atsc3_link_mapping_table_pending = atsc3_alp_packet_extract_lmt(atsc3_alp_packet);
 
-                            if(atsc3_phy_rx_link_mapping_table_process_callback) {
+                            if(atsc3_phy_rx_link_mapping_table_process_callback && atsc3_link_mapping_table_pending) {
                                 atsc3_link_mapping_table_t *atsc3_link_mapping_table_to_free = atsc3_phy_rx_link_mapping_table_process_callback(atsc3_link_mapping_table_pending);
 
                                 if (atsc3_link_mapping_table_to_free) {
@@ -1792,7 +1794,7 @@ void SaankhyaPHYAndroid::allocate_atsc3_sl_tlv_block() {
 extern "C"
 JNIEXPORT jint JNICALL
 Java_org_ngbp_libatsc3_middleware_android_phy_SaankhyaPHYAndroid_init(JNIEnv *env, jobject instance) {
-    unique_lock<mutex> saankhy_phy_android_cctor_mutex_local(SaankhyaPHYAndroid::CS_global_mutex);
+    lock_guard<mutex> saankhy_phy_android_cctor_mutex_local(SaankhyaPHYAndroid::CS_global_mutex);
 
     _SAANKHYA_PHY_ANDROID_DEBUG("Java_org_ngbp_libatsc3_middleware_android_phy_SaankhyaPHYAndroid_init: start init, env: %p", env);
     if(saankhyaPHYAndroid) {
@@ -1805,7 +1807,7 @@ Java_org_ngbp_libatsc3_middleware_android_phy_SaankhyaPHYAndroid_init(JNIEnv *en
     saankhyaPHYAndroid->init();
 
     _SAANKHYA_PHY_ANDROID_DEBUG("Java_org_ngbp_libatsc3_middleware_android_phy_SaankhyaPHYAndroid_init: return, instance: %p", saankhyaPHYAndroid);
-    saankhy_phy_android_cctor_mutex_local.unlock();
+
     return 0;
 }
 
@@ -1813,6 +1815,8 @@ Java_org_ngbp_libatsc3_middleware_android_phy_SaankhyaPHYAndroid_init(JNIEnv *en
 extern "C"
 JNIEXPORT jint JNICALL
 Java_org_ngbp_libatsc3_middleware_android_phy_SaankhyaPHYAndroid_run(JNIEnv *env, jobject thiz) {
+    lock_guard<mutex> saankhy_phy_android_cctor_mutex_local(SaankhyaPHYAndroid::CS_global_mutex);
+
     int res = 0;
     if(!saankhyaPHYAndroid) {
         _SAANKHYA_PHY_ANDROID_ERROR("Java_org_ngbp_libatsc3_middleware_android_phy_SaankhyaPHYAndroid_run: error, srtRxSTLTPVirtualPHYAndroid is NULL!");
@@ -1821,12 +1825,15 @@ Java_org_ngbp_libatsc3_middleware_android_phy_SaankhyaPHYAndroid_run(JNIEnv *env
         res = saankhyaPHYAndroid->run();
         _SAANKHYA_PHY_ANDROID_DEBUG("Java_org_ngbp_libatsc3_middleware_android_phy_SaankhyaPHYAndroid_run: returning res: %d", res);
     }
+
     return res;
 }
 
 extern "C" JNIEXPORT jboolean JNICALL
 Java_org_ngbp_libatsc3_middleware_android_phy_SaankhyaPHYAndroid_is_1running(JNIEnv* env, jobject instance)
 {
+    lock_guard<mutex> saankhy_phy_android_cctor_mutex_local(SaankhyaPHYAndroid::CS_global_mutex);
+
     jboolean res = false;
 
     if(!saankhyaPHYAndroid) {
@@ -1835,13 +1842,14 @@ Java_org_ngbp_libatsc3_middleware_android_phy_SaankhyaPHYAndroid_is_1running(JNI
     } else {
         res = saankhyaPHYAndroid->is_running();
     }
+
     return res;
 }
 
 
 extern "C" JNIEXPORT jint JNICALL
 Java_org_ngbp_libatsc3_middleware_android_phy_SaankhyaPHYAndroid_stop(JNIEnv *env, jobject thiz) {
-    unique_lock<mutex> saankhy_phy_android_cctor_mutex_local(SaankhyaPHYAndroid::CS_global_mutex);
+    lock_guard<mutex> saankhy_phy_android_cctor_mutex_local(SaankhyaPHYAndroid::CS_global_mutex);
 
     int res = 0;
     if(!saankhyaPHYAndroid) {
@@ -1851,14 +1859,13 @@ Java_org_ngbp_libatsc3_middleware_android_phy_SaankhyaPHYAndroid_stop(JNIEnv *en
         res = saankhyaPHYAndroid->stop();
         _SAANKHYA_PHY_ANDROID_DEBUG("Java_org_ngbp_libatsc3_middleware_android_phy_SaankhyaPHYAndroid_stop: returning res: %d", res);
     }
-    saankhy_phy_android_cctor_mutex_local.unlock();
 
     return res;
 }
 
 extern "C" JNIEXPORT jint JNICALL
 Java_org_ngbp_libatsc3_middleware_android_phy_SaankhyaPHYAndroid_deinit(JNIEnv *env, jobject thiz) {
-    unique_lock<mutex> saankhy_phy_android_cctor_mutex_local(SaankhyaPHYAndroid::CS_global_mutex);
+    lock_guard<mutex> saankhy_phy_android_cctor_mutex_local(SaankhyaPHYAndroid::CS_global_mutex);
 
     int res = 0;
     if(!saankhyaPHYAndroid) {
@@ -1870,12 +1877,13 @@ Java_org_ngbp_libatsc3_middleware_android_phy_SaankhyaPHYAndroid_deinit(JNIEnv *
         saankhyaPHYAndroid = nullptr;
     }
 
-    saankhy_phy_android_cctor_mutex_local.unlock();
     return res;
 }
 
 extern "C" JNIEXPORT jint JNICALL
 Java_org_ngbp_libatsc3_middleware_android_phy_SaankhyaPHYAndroid_download_1bootloader_1firmware(JNIEnv *env, jobject thiz, jint fd, jstring device_path_jstring) {
+    lock_guard<mutex> saankhy_phy_android_cctor_mutex_local(SaankhyaPHYAndroid::CS_global_mutex);
+
     _SAANKHYA_PHY_ANDROID_DEBUG("Java_org_ngbp_libatsc3_middleware_android_phy_SaankhyaPHYAndroid_download_1bootloader_1firmware: fd: %d", fd);
     int res = 0;
 
@@ -1893,11 +1901,14 @@ Java_org_ngbp_libatsc3_middleware_android_phy_SaankhyaPHYAndroid_download_1bootl
         delete saankhyaPHYAndroid;
         saankhyaPHYAndroid = nullptr;
     }
+
     return res;
 }
 
 extern "C" JNIEXPORT jint JNICALL
 Java_org_ngbp_libatsc3_middleware_android_phy_SaankhyaPHYAndroid_open(JNIEnv *env, jobject thiz, jint fd, jstring device_path_jstring) {
+    lock_guard<mutex> saankhy_phy_android_cctor_mutex_local(SaankhyaPHYAndroid::CS_global_mutex);
+
     _SAANKHYA_PHY_ANDROID_DEBUG("Java_org_ngbp_libatsc3_middleware_android_phy_SaankhyaPHYAndroid_open: fd: %d", fd);
 
     int res = 0;
@@ -1920,6 +1931,10 @@ extern "C" JNIEXPORT jint JNICALL
 Java_org_ngbp_libatsc3_middleware_android_phy_SaankhyaPHYAndroid_tune(JNIEnv *env, jobject thiz,
                                                                       jint freq_khz,
                                                                       jint single_plp) {
+
+    lock_guard<mutex> saankhy_phy_android_cctor_mutex_local(SaankhyaPHYAndroid::CS_global_mutex);
+
+
     int res = 0;
     if(!saankhyaPHYAndroid) {
         _SAANKHYA_PHY_ANDROID_ERROR("Java_org_ngbp_libatsc3_middleware_android_phy_SaankhyaPHYAndroid_tune: saankhyaPHYAndroid is NULL!");
@@ -1927,12 +1942,15 @@ Java_org_ngbp_libatsc3_middleware_android_phy_SaankhyaPHYAndroid_tune(JNIEnv *en
     } else {
         res = saankhyaPHYAndroid->tune(freq_khz, single_plp);
     }
+
     return res;
 }
 extern "C" JNIEXPORT jint JNICALL
 Java_org_ngbp_libatsc3_middleware_android_phy_SaankhyaPHYAndroid_listen_1plps(JNIEnv *env,
                                                                               jobject thiz,
                                                                               jobject plps) {
+    lock_guard<mutex> saankhy_phy_android_cctor_mutex_local(SaankhyaPHYAndroid::CS_global_mutex);
+
     int res = 0;
     if(!saankhyaPHYAndroid) {
         _SAANKHYA_PHY_ANDROID_ERROR("Java_org_ngbp_libatsc3_middleware_android_phy_SaankhyaPHYAndroid_listen_1plps: saankhyaPHYAndroid is NULL!");
@@ -1952,5 +1970,6 @@ Java_org_ngbp_libatsc3_middleware_android_phy_SaankhyaPHYAndroid_listen_1plps(JN
 
         res = saankhyaPHYAndroid->listen_plps(listen_plps);
     }
+
     return res;
 }
