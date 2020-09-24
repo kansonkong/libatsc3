@@ -167,6 +167,8 @@ typedef struct alp_packet_header  {
     //for payload_type == 4 (bits: 100)
     alp_additional_header_for_signaling_information_t alp_additional_header_for_signaling_information;
     
+    //jjustman-2020-09-08 - raw alp packet header for re-consitution in stltp modulation use-cases for LMT, etc.
+    block_t*	alp_header_payload;
 } alp_packet_header_t;
 
 typedef struct atsc3_alp_packet {

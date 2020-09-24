@@ -18,6 +18,8 @@
 class PcapSTLTPVirtualPHYAndroid : public PcapSTLTPVirtualPHY {
 
 public:
+    static mutex CS_global_mutex;
+
     PcapSTLTPVirtualPHYAndroid(JNIEnv* env, jobject jni_instance);
 
     ~PcapSTLTPVirtualPHYAndroid();
