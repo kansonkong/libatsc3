@@ -1,4 +1,4 @@
-# libastc3: phy_lowasis module
+# libatsc3: phy_lowasis module
 # Copyright (C) 2020, OneMedia 3.0
 # jjustman@ngbp.org - 2020-08-19
 
