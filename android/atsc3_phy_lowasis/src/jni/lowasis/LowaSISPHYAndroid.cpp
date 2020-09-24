@@ -335,14 +335,15 @@ int LowaSISPHYAndroid::stop()
         _LOWASIS_PHY_ANDROID_DEBUG("LowaSISPHYAndroid::stop: after join for captureThreadHandle");
     }
 
-    //unlock our producer thread, RAII scoped block to notify
-    {
-        lock_guard<mutex> lowasis_phy_rx_data_buffer_queue_guard(lowasis_phy_rx_data_buffer_queue_mutex);
-        lowasis_phy_rx_data_buffer_condition.notify_one();
-    }
 
     if(processThreadIsRunning) {
         processThreadShouldRun = false;
+        //unlock our producer thread, RAII scoped block to notify
+        {
+            lock_guard<mutex> lowasis_phy_rx_data_buffer_queue_guard(lowasis_phy_rx_data_buffer_queue_mutex);
+            lowasis_phy_rx_data_buffer_condition.notify_one();
+        }
+
         _LOWASIS_PHY_ANDROID_DEBUG("LowaSISPHYAndroid::stop: setting processThreadShouldRun: false");
         while(this->processThreadIsRunning) {
             usleep(100000);
