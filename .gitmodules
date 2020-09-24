@@ -52,3 +52,6 @@
 [submodule "libdaa"]
 	path = libdaa
 	url = https://dev.azure.com/NGWP/Middleware/_git/libdaa
+[submodule "codornicesrq"]
+	path = codornicesrq
+	url = https://dev.azure.com/NGWP/Middleware/_git/codornicesrq

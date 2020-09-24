@@ -210,8 +210,10 @@ public class DecoderHandlerThread extends HandlerThread {
 
             int audioSampleRate = 48000;
             int audioChannelCount = 2;
-            String audioMimeType = "audio/mp4a-latm";
-            audioMediaFormat = CodecAACSpecificData.BuildAACCodecSpecificData(MediaCodecInfo.CodecProfileLevel.AACObjectLC, audioSampleRate, audioChannelCount);
+            String audioMimeType = "";
+
+//            String audioMimeType = "audio/mp4a-latm";
+//            audioMediaFormat = CodecAACSpecificData.BuildAACCodecSpecificData(MediaCodecInfo.CodecProfileLevel.AACObjectLC, audioSampleRate, audioChannelCount);
 
             //jjustman-2020-08-19 - hack-ish for AC-4 audio testing on samsung S10+ with mmt
             if(true) {
@@ -222,9 +224,8 @@ public class DecoderHandlerThread extends HandlerThread {
                 audioMediaFormat.setInteger(MediaFormat.KEY_SAMPLE_RATE, audioSampleRate);
                 //mediaFormat.setInteger("ac4-is-sync", 1); ?
                 //audioMediaFormat.setInteger("ac4-is-sync", 0);
+                audioMediaFormat.setInteger("ac4-is-sync", 1);
             }
-
-
 
 
             try {
@@ -290,7 +291,7 @@ public class DecoderHandlerThread extends HandlerThread {
                         }
                     */
                     mediaCodecInputBufferVideoQueue.add(i);
-                    Log.d("Video", String.format("onInputBufferAvailable: %d", i));
+                    //Log.d("Video", String.format("onInputBufferAvailable: %d", i));
                 }
 
                 @Override
@@ -313,7 +314,7 @@ public class DecoderHandlerThread extends HandlerThread {
                         //remap from bufferInfo.presentationTimeUs
                         long deltaNanoTime = ((33 + bufferInfo.presentationTimeUs) * 1000) - nanoTime;
 
-                        if (true || DebuggingFlags.OutputBuferLoggingEnabled) {
+                        if (DebuggingFlags.OutputBuferLoggingEnabled) {
                             Log.e("\tVideo\tonOutputBufferAvailable", String.format("\tbufferInfoNs:\t%d\tbufferInfoMS:\t%d\tnanoTime:\t%d\tnanoTimeMS:\t%f\tdeltaNanoTime\t%d\tdeltaNanoTimeMS\t%f",
                                     bufferInfo.presentationTimeUs * 1000,
                                     bufferInfo.presentationTimeUs / 1000,
@@ -387,7 +388,7 @@ public class DecoderHandlerThread extends HandlerThread {
                 @Override
                 public void onInputBufferAvailable(@NonNull MediaCodec mediaCodec, int i) {
                     mediaCodecInputBufferAudioQueue.add(i);
-                    Log.d("Audio", String.format("onInputBufferAvailable: %d", i));
+                    //Log.d("Audio", String.format("onInputBufferAvailable: %d", i));
                 }
 
                 @Override
@@ -407,7 +408,7 @@ public class DecoderHandlerThread extends HandlerThread {
                         //remap from bufferInfo.presentationTimeUs
                         long deltaNanoTime = ((33 + bufferInfo.presentationTimeUs) * 1000) - nanoTime;
 
-                        if (true || DebuggingFlags.OutputBuferLoggingEnabled) {
+                        if (DebuggingFlags.OutputBuferLoggingEnabled) {
                             Log.e("\tAudio\tonOutputBufferAvailable", String.format("\tbufferInfoNs:\t%d\tbufferInfoMS:\t%d\tnanoTime:\t%d\tnanoTimeMS:\t%f\tdeltaNanoTime\t%d\tdeltaNanoTimeMS\t%f",
                                     bufferInfo.presentationTimeUs * 1000,
                                     bufferInfo.presentationTimeUs / 1000,
@@ -499,8 +500,8 @@ public class DecoderHandlerThread extends HandlerThread {
             //sync.setPlaybackParams(new PlaybackParams().setSpeed(0.0f));
             //syncParams.setSyncSource(SyncParams.SYNC_SOURCE_VSYNC); // backlog of vframes queueing up
             // syncParams.setSyncSource(SyncParams.SYNC_SOURCE_DEFAULT);
-            //syncParams.setSyncSource(SyncParams.SYNC_SOURCE_SYSTEM_CLOCK); //jitter - lots of jitter
-            syncParams.setSyncSource(SyncParams.SYNC_SOURCE_AUDIO); //video frames queue up?
+            syncParams.setSyncSource(SyncParams.SYNC_SOURCE_SYSTEM_CLOCK); //jitter - lots of jitter
+            //syncParams.setSyncSource(SyncParams.SYNC_SOURCE_AUDIO); //video frames queue up?
 
             syncPlaybackParamsIsPausedValue = true;
             sync.setSyncParams(syncParams);
