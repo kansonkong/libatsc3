@@ -59,7 +59,7 @@ void PcapSTLTPVirtualPHY::atsc3_pcap_stltp_listen_ip_port_plp(string ip, string 
 	//uint8_t stltp_plp_id = atoi();
 	if(plp >=0 && plp <= 63) {
 		atsc3_stltp_depacketizer_context->inner_rtp_port_filter = plp + 30000;
-	} else if(plp == 255) {
+	} else if(plp == ATSC3_STLTP_DEPACKETIZER_ALL_PLPS_VALUE) {
 		atsc3_stltp_depacketizer_context->inner_rtp_port_filter = ATSC3_STLTP_DEPACKETIZER_ALL_PLPS_INNER_RTP_PORT;
 	} else {
 		atsc3_stltp_depacketizer_context->inner_rtp_port_filter = 30000;
