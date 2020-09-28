@@ -61,3 +61,4 @@ dependencies {
 //    releaseApi fileTree(dir: 'build/outputs/aar', include: ['*.aar'])
 }
 
+apply from: '../publish.gradle'
