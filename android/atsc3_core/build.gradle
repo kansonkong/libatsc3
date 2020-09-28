@@ -68,3 +68,5 @@ dependencies {
     //vmatiash-2020-08-21 - Direct dependency is not necessary. This dependency specified in LOCAL_LDLIBS of Android.mk
    // debugApi fileTree(dir: 'build/outputs/aar', include: ['*.aar'])
 }
+
+apply from: '../publish.gradle'
