@@ -811,7 +811,7 @@ atsc3_link_mapping_table_t* atsc3_alp_packet_extract_lmt(atsc3_alp_packet_t* ats
                     has_reserved_bits_mismatch_multicast = true;
                 }
 
-                if(has_reserved_bits_mismatch_table && has_reserved_bits_mismatch_plp && has_reserved_bits_mismatch_multicast) {
+                if(has_reserved_bits_mismatch_table || has_reserved_bits_mismatch_plp || has_reserved_bits_mismatch_multicast) {
                     __ALP_PARSER_WARN("atsc3_alp_packet_collection_extract_lmt: bailing, reserved bits 0x3F missing for table, plp and multicast entry, packet length: %d, num_PLPs_minus1: %d, num_multicasts: %",
                                       alp_payload_length,
                                       atsc3_link_mapping_table->num_PLPs_minus1,
