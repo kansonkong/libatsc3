@@ -11,7 +11,7 @@ APP_STRIP_MODE := "none"
 
 # APP_ABI := all
 
-APP_CPPFLAGS += -std=c++11  -fexceptions -D_ANDROID
+APP_CPPFLAGS += -std=c++11 -D_ANDROID
 
 
 ifeq ($(ENABLE_HWASAN),armeabi-v7a)

@@ -7,11 +7,10 @@
 
 APP_DEBUG := true
 APP_STRIP_MODE := "none"
-
 APP_STL := c++_shared
-# APP_ABI := all
 
-APP_CPPFLAGS += -std=c++11  -fexceptions -D_ANDROID
+APP_CPPFLAGS += -std=c++11 -D_ANDROID -fexceptions
+# -fexceptions
 
 #jjustman-2020-09-23 - hwasan
 
