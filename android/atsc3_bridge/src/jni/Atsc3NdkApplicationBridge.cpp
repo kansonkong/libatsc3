@@ -649,7 +649,7 @@ void Atsc3NdkApplicationBridge::atsc3_phy_notify_plp_selection_change_clear_call
 }
 
 void Atsc3NdkApplicationBridge::atsc3_phy_notify_plp_selection_changed(vector<uint8_t> plps_to_listen) {
-    if(this->atsc3_phy_notify_plp_selection_change_context) {
+    if(this->atsc3_phy_notify_plp_selection_change && this->atsc3_phy_notify_plp_selection_change_context) {
         this->atsc3_phy_notify_plp_selection_change(plps_to_listen, this->atsc3_phy_notify_plp_selection_change_context);
     }
 
