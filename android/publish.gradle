@@ -1,16 +1,4 @@
-
 apply plugin: 'maven-publish'
-apply plugin: 'net.linguica.maven-settings'
-
-repositories {
-    maven {
-        url 'https://pkgs.dev.azure.com/NGWP/Middleware/_packaging/middleware/maven/v1'
-        name 'middleware'
-        authentication {
-            basic(BasicAuthentication)
-        }
-    }
-}
 
 publishing {
     repositories {
