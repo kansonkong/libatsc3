@@ -682,10 +682,13 @@ AT3RESULT LowaSISPHYAndroid::RxCallbackStatic(S_RX_DATA *pData, uint64_t ullUser
 AT3RESULT LowaSISPHYAndroid::RxCallbackInstanceScoped(S_RX_DATA *pData) {
     atsc3_lowasis_phy_android_rxdata_t* lowasis_phy_android_rxdata = atsc3_lowasis_phy_android_rxdata_duplicate_from_s_rx_data(pData);
 
-    lock_guard<mutex> lowasis_phy_rx_data_buffer_queue_guard(lowasis_phy_rx_data_buffer_queue_mutex);
-    lowasis_phy_rx_data_buffer_queue.push(lowasis_phy_android_rxdata);
-    lowasis_phy_rx_data_buffer_condition.notify_one();
+    //jjustman-2020-09-30 - overflows inside the AT3DRV may cause us to fail to parse the ALP packet types, so check for null rxdata payload
+    if(lowasis_phy_android_rxdata) {
 
+        lock_guard<mutex> lowasis_phy_rx_data_buffer_queue_guard(lowasis_phy_rx_data_buffer_queue_mutex);
+        lowasis_phy_rx_data_buffer_queue.push(lowasis_phy_android_rxdata);
+        lowasis_phy_rx_data_buffer_condition.notify_one();
+    }
     return AT3RES_OK;
 }
 
