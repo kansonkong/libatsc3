@@ -13,7 +13,7 @@ pool:
 
 variables:
   - name: ARTIFACT_VERSION
-    value: 0.0.0.0
+    value: 0.0.0
 
 steps:
   - script: | 
