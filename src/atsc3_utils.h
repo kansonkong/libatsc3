@@ -27,6 +27,7 @@
 #include <sys/stat.h>
 
 #include <libgen.h>
+#include <limits.h>
 
 
 #ifndef ATSC3_UTILS_H_
