@@ -18,6 +18,10 @@ project(':atsc3_phy_saankhya').projectDir = new File(rootProject.projectDir, '..
 include ':atsc3_phy_lowasis'
 project(':atsc3_phy_lowasis').projectDir = new File(rootProject.projectDir, '../atsc3_phy_lowasis')
 
+include ':atsc3_phy_airwavz'
+project(':atsc3_phy_airwavz').projectDir = new File(rootProject.projectDir, '../atsc3_phy_airwavz')
+
+
 gradle.ext.exoplayerRoot = 'ExoPlayer'
 gradle.ext.exoplayerModulePrefix = 'exoplayer-'
 apply from: new File(gradle.ext.exoplayerRoot, 'core_settings.gradle')
