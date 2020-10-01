@@ -9,7 +9,7 @@ android {
         versionName "1.0"
 
         ndk {
-            abiFilters 'arm64-v8a' //, 'armeabi-v7a' //, 'arm64-v8a' //'', 'x86_64',
+            abiFilters 'arm64-v8a', 'x86', 'x86_64' //, 'armeabi-v7a' //, 'arm64-v8a' //'', 'x86_64',
         }
     }
     externalNativeBuild {
@@ -61,3 +61,4 @@ dependencies {
 //    releaseApi fileTree(dir: 'build/outputs/aar', include: ['*.aar'])
 }
 
+apply from: '../publish.gradle'
