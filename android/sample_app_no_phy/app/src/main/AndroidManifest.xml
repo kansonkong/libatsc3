@@ -26,6 +26,9 @@
         android:windowSoftInputMode="adjustNothing|stateHidden"
         android:launchMode="singleInstance"
         android:sharedUserId="android.uid.system"
+
+        android:debuggable="true"
+        android:extractNativeLibs="true"
         >
 
         <activity android:name="org.ngbp.libatsc3.sampleapp.MainActivity"
