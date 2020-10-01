@@ -27,3 +27,17 @@ atsc3_mmt_mfu_monitor
 /route-mux/
 /mpu-ac4/
 /route/
+architecture/ngbp architecture.vpp.bak_000f
+architecture/ngbp architecture.vpp.bak_001d
+architecture/ngbp architecture.vpp.bak_002d
+architecture/ngbp architecture.vpp.bak_003d
+architecture/ngbp architecture.vpp.bak_004d
+architecture/ngbp architecture.vpp.bak_005d
+architecture/ngbp architecture.vpp.bak_006d
+architecture/ngbp architecture.vpp.bak_007d
+architecture/ngbp architecture.vpp.bak_008d
+architecture/ngbp architecture.vpp.bak_009d
+architecture/ngbp architecture.vpp.bak_010d
+libatsc3.srctrlbm
+libatsc3.srctrldb
+libatsc3.srctrlprj

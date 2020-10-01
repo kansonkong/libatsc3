@@ -265,6 +265,20 @@ atsc3_lls_slt_service_t* lls_slt_monitor_find_lls_slt_service_id_group_id_cache_
     return NULL;
 }
 
+bool lls_slt_monitor_free_lls_slt_service_id_group_id_cache_from_lls_group_id(lls_slt_monitor_t* lls_slt_monitor, uint8_t lls_group_id) {
+    lls_slt_service_id_group_id_cache_t* lls_slt_service_id_group_id_cache = lls_slt_monitor_find_lls_slt_service_id_group_id_cache_from_lls_group_id(lls_slt_monitor, lls_group_id);
+    if(!lls_slt_service_id_group_id_cache) {
+        _ATSC3_LLS_TYPES_DEBUG("lls_slt_monitor_free_lls_slt_service_id_group_id_cache_from_lls_group_id: unable to find group_id cache for: %d, returning false", lls_group_id);
+        return false;
+    }
+
+    lls_slt_service_id_group_id_cache_dealloc_atsc3_lls_slt_service_cache(lls_slt_service_id_group_id_cache);
+
+    return true;
+}
+
+
+
 
 void atsc3_lls_sls_alc_monitor_increment_lct_packet_received_count(lls_sls_alc_monitor_t* lls_sls_alc_monitor) {
 	lls_sls_alc_monitor->lct_packets_received_count++;
