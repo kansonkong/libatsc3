@@ -174,6 +174,7 @@ public class DecoderHandlerThread extends HandlerThread {
 
     private void createMfuOuterMediaCodec() throws IOException {
         ATSC3PlayerFlags.ReentrantLock.lock();
+        int spinlock_hevc_nal_count = 0;
 
         try {
             ATSC3PlayerFlags.ATSC3PlayerStartPlayback = true;
@@ -183,7 +184,9 @@ public class DecoderHandlerThread extends HandlerThread {
 
             //TODO: remove this...spinlock...
             while (ATSC3PlayerFlags.ATSC3PlayerStopPlayback == false && ATSC3PlayerMMTFragments.InitMpuMetadata_HEVC_NAL_Payload == null) {
-                Log.d("createMfuOuterMediaCodec", "waiting for initMpuMetadata_HEVC_NAL_Payload != null");
+                if(spinlock_hevc_nal_count++ % 10 == 0) {
+                    Log.d("DecoderHandlerThread:createMfuOuterMediaCodec", String.format("waiting for initMpuMetadata_HEVC_NAL_Payload != null, count: %d", spinlock_hevc_nal_count));
+                }
                 try {
                     Thread.sleep(100);
                 } catch (Exception ex) {

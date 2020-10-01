@@ -105,12 +105,11 @@ int AirwavzPHYAndroid::stop()
     //tear down status thread first, as its the most 'problematic'
     if(statusThreadIsRunning) {
         //give AT3DRV_WaitRxData some time to shutdown, may take up to 1.5s
-        _AIRWAVZ_PHY_ANDROID_DEBUG("AirwavzPHYAndroid::stop: after AT3DRV_FE_Stop, sleeping 1.5 second for AT3DRV_WaitRxData to wind-down");
+        _AIRWAVZ_PHY_ANDROID_DEBUG("AirwavzPHYAndroid::stop: statusThreadIsRunning waiting for thread to to wind-down, setting statusThreadShoulddRun: false");
+        statusThreadShouldRun = false;
 
         usleep(15 * 100000);
 
-        statusThreadShouldRun = false;
-        _AIRWAVZ_PHY_ANDROID_DEBUG("AirwavzPHYAndroid::stop: setting statusThreadShouldRun: false");
         while(this->statusThreadIsRunning) {
             usleep(100000);
             _AIRWAVZ_PHY_ANDROID_DEBUG("AirwavzPHYAndroid::stop: this->statusThreadIsRunning: %d", this->statusThreadIsRunning);
@@ -121,14 +120,13 @@ int AirwavzPHYAndroid::stop()
         _AIRWAVZ_PHY_ANDROID_DEBUG("AirwavzPHYAndroid::stop: after join for statusThreadHandle");
     }
 
-    //unlock our producer thread, RAII scoped block to notify
-    {
-        lock_guard<mutex> airwavz_phy_rx_data_buffer_queue_guard(airwavz_phy_rx_data_buffer_queue_mutex);
-        airwavz_phy_rx_data_buffer_condition.notify_one();
-    }
-
     if(processThreadIsRunning) {
         processThreadShouldRun = false;
+        //unlock our producer thread, RAII scoped block to notify
+        {
+            lock_guard<mutex> airwavz_phy_rx_data_buffer_queue_guard(airwavz_phy_rx_data_buffer_queue_mutex);
+            airwavz_phy_rx_data_buffer_condition.notify_one();
+        }
         _AIRWAVZ_PHY_ANDROID_DEBUG("AirwavzPHYAndroid::stop: setting processThreadShouldRun: false");
         while(this->processThreadIsRunning) {
             usleep(100000);
@@ -139,10 +137,12 @@ int AirwavzPHYAndroid::stop()
         }
         _AIRWAVZ_PHY_ANDROID_DEBUG("AirwavzPHYAndroid::stop: after join for processThreadHandle");
     }
-    
-    if(hRedZoneCapture_started) {
-        RedZoneCaptureStop(hRedZoneCapture);
-    }
+
+    _AIRWAVZ_PHY_ANDROID_DEBUG("AirwavzPHYAndroid::stop: before RedZoneCaptureStop, hRedZoneCapture_started: %d", hRedZoneCapture_started);
+     if(hRedZoneCapture_started) {
+        res = RedZoneCaptureStop(hRedZoneCapture);
+         _AIRWAVZ_PHY_ANDROID_DEBUG("AirwavzPHYAndroid::stop: after RedZoneCaptureStop, res: %d", res);
+     }
 
     hRedZoneCapture_started = false;
 
@@ -173,7 +173,7 @@ int AirwavzPHYAndroid::deinit()
 int AirwavzPHYAndroid::open(int fd, string device_path)
 {
     int     ret = 0;
-    int     drv_verbosity = 3;      // suggest a value of 2 (0 - 9 legal) to set debug output level;
+    int     drv_verbosity = 6;      // suggest a value of 2 (0 - 9 legal) to set debug output level;
 
     _AIRWAVZ_PHY_ANDROID_DEBUG("AirwavzPHYAndroid::open, this: %p,  with fd: %d, device_path: %s", this, fd, device_path.c_str());
     ret = RedZoneCaptureOpen(&hRedZoneCapture);
@@ -461,7 +461,7 @@ int AirwavzPHYAndroid::statusThread()
 
     //jjustman-2020-09-23 - if we have a high bitrate (e.g. 20Mbps), frequent polling of tuning/demod status will cause stream glitches
     while(this->statusThreadShouldRun) {
-        usleep(3000000);
+        usleep(1000000);
 
         if(this->is_tuned) {
             if (atsc3_ndk_phy_bridge_get_instance()) {
@@ -470,35 +470,39 @@ int AirwavzPHYAndroid::statusThread()
                 int SNR, RSSi;
 
                 ret = RedZoneCaptureGetProp(hRedZoneCapture, RedZoneMasterLockProp, &lock, sizeof(lock));
+                usleep(250000);
+
                 ret = RedZoneCaptureGetProp(hRedZoneCapture, RedZoneSNRProp, &SNR, sizeof(SNR));
+                usleep(250000);
+
                 ret = RedZoneCaptureGetProp(hRedZoneCapture, RedZoneRSSIProp, &RSSi, sizeof(RSSi));
-                usleep(100000);
+                usleep(250000);
 
                 //RedZoneMasterLockProp
                 uint8_t master_lock_prop;
                 ret = RedZoneCaptureGetProp(hRedZoneCapture, RedZoneMasterLockProp, &master_lock_prop, sizeof(master_lock_prop));
+                usleep(250000);
 
                 //RedZonePLPSelectionProp
                 RedZonePLPSet plpSet;
                 ret = RedZoneCaptureGetProp(hRedZoneCapture, RedZonePLPSelectionProp, &plpSet, sizeof(plpSet));
-                usleep(100000);
+                usleep(250000);
 
                 //RedZoneL1BasicInfoProp
                 ret = RedZoneCaptureGetProp(hRedZoneCapture, RedZoneL1BasicInfoProp, &RSSi, sizeof(RSSi));
 
                 RedZonePLPSpecificInfo plpSpecificInfo;
                 ret = RedZoneCaptureGetProp(hRedZoneCapture, RedZonePLPSpecificInfoProp, &plpSpecificInfo, sizeof(plpSpecificInfo));
-                usleep(100000);
+                usleep(250000);
 
                 RedZonePLPStatusInfo plpStatusInfo;
                 ret = RedZoneCaptureGetProp(hRedZoneCapture, RedZonePLPStatusInfoProp, &plpStatusInfo, sizeof(plpStatusInfo));
-                usleep(100000);
+                usleep(250000);
 
                 //RedZoneLLSValidBitmaskProp
                 uint64_t llsValid;
                 ret = RedZoneCaptureGetProp(hRedZoneCapture, RedZoneLLSValidBitmaskProp, &llsValid, sizeof(llsValid));
-                usleep(100000);
-
+                usleep(250000);
 
                 atsc3_ndk_phy_bridge_get_instance()->atsc3_update_rf_stats(
                         master_lock_prop,                  // tunerInfo.status == 1,
@@ -669,6 +673,11 @@ Java_org_ngbp_libatsc3_middleware_android_phy_AirwavzPHYAndroid_open(JNIEnv *env
         string device_path(device_path_weak);
         res = airwavzPHYAndroid->open(fd, device_path);
         env->ReleaseStringUTFChars( device_path_jstring, device_path_weak );
+        if(res) {
+            _AIRWAVZ_PHY_ANDROID_WARN("Java_org_ngbp_libatsc3_middleware_android_phy_AirwavzPHYAndroid_open: returned: %d, calling deinit()!", res);
+            airwavzPHYAndroid->deinit();
+            airwavzPHYAndroid = nullptr;
+        }
     }
     return res;
 }
