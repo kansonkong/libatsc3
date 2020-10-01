@@ -377,7 +377,12 @@ uint8_t* __read_uint32_len_to_string(uint8_t* buf, uint32_t len, uint8_t** dest_
 	return buf;
 }
 
+/*
+ * __read_mmt_general_location_info: max read length clamped to 4+4+2+2+2 = 14 bytes
+ */
+
 uint8_t* __read_mmt_general_location_info(uint8_t* buf, mmt_general_location_info_t* mmt_general_location_info) {
+
 	buf = extract(buf, (uint8_t*)&mmt_general_location_info->location_type, 1);
 
 	if(mmt_general_location_info->location_type == 0x00) {
@@ -415,28 +420,42 @@ uint8_t* mpt_message_parse(mmt_signalling_message_header_and_payload_t* mmt_sign
 
 	//we have already consumed the mpt_message, now we are processing the mp_table
 	uint8_t *raw_buf = block_Get(udp_packet);
+	uint16_t remaining_len = block_Remaining_size(udp_packet);
 	uint8_t *buf = raw_buf;
+
 	mp_table_t* mp_table = &mmt_signalling_message_header_and_payload->message_payload.mp_table;
+
+	//jjustman-2020-10-01 - we need at least 5 bytes to get started
+	if(remaining_len < 6) {
+        __MMSM_WARN("mmt_scte35_message_payload_parse: short read for header: need 6 bytes but remaining size is: %d", remaining_len);
+        goto cleanup;
+    }
 
     //jjustman-2019-08-12 - mp_table.id: 8 bit
 	uint8_t table_id;
 	buf = extract(buf, &table_id, 1);
+    remaining_len--;
+
 	mp_table->table_id = table_id;
 
 	//if message_id==20 - full message, otherwise subset n-1
 
 	uint8_t version;
 	buf = extract(buf, &version, 1);
-	mp_table->version = version;
+    remaining_len--;
+
+    mp_table->version = version;
 
 	uint16_t length;
 	buf = extract(buf,(uint8_t*)&length, 2);
-	mp_table->length = ntohs(length);
+    remaining_len -= 2;
 
+    mp_table->length = ntohs(length);
 
 	uint8_t reserved_mp_table_mode;
 	buf = extract(buf, &reserved_mp_table_mode, 1);
-	if((reserved_mp_table_mode >> 2) != 0x3F) {
+    remaining_len--;
+    if((reserved_mp_table_mode >> 2) != 0x3F) {
 		__MMSM_ERROR_23008_1("mp_table RESERVED 6 bits are not set '111111' - message_id: 0x%04x, table_id: 0x%02x", mmt_signalling_message_header_and_payload->message_header.message_id, mp_table->table_id);
 		//goto cleanup;
 	}
@@ -448,24 +467,51 @@ uint8_t* mpt_message_parse(mmt_signalling_message_header_and_payload_t* mmt_sign
 		//read mmt_package_id here
 		uint8_t mmt_package_id_length;
 		buf = extract(buf, &mmt_package_id_length, 1);
-		mp_table->mmt_package_id.mmt_package_id_length = mmt_package_id_length;
+		remaining_len--;
+
+        //jjustman-2020-10-01 - we need at least 5 bytes to get started
+        if(remaining_len < mmt_package_id_length) {
+            __MMSM_WARN("mmt_scte35_message_payload_parse: short read for mmt_package_id_length: need %d bytes but remaining size is: %d", mmt_package_id_length, remaining_len);
+            goto cleanup;
+        }
+
+        mp_table->mmt_package_id.mmt_package_id_length = mmt_package_id_length;
 
 		buf = __read_uint8_len_to_string(buf, mmt_package_id_length, &mp_table->mmt_package_id.mmt_package_id);
-	
+        remaining_len -= mmt_package_id_length;
+
+        //jjustman-2020-10-01 - we need at least 5 bytes to get started
+        if(remaining_len < 2) {
+            __MMSM_WARN("mmt_scte35_message_payload_parse: short read for table_descriptors_length: need %d bytes but remaining size is: %d", 2, remaining_len);
+            goto cleanup;
+        }
+
         uint16_t table_descriptors_length;
         buf = extract(buf, (uint8_t*)&table_descriptors_length, 2);
+        remaining_len -= 2;
         
         mp_table->mp_table_descriptors.mp_table_descriptors_length = ntohs(table_descriptors_length);
         if(mp_table->mp_table_descriptors.mp_table_descriptors_length > 0) {
-            //TODO: bounds check this untrusted read..
+            //jjustman-2020-10-01 - we need at least 5 bytes to get started
+            if(remaining_len < mp_table->mp_table_descriptors.mp_table_descriptors_length ) {
+                __MMSM_WARN("mmt_scte35_message_payload_parse: short read for mp_table->mp_table_descriptors.mp_table_descriptors_length : need %d bytes but remaining size is: %d", mp_table->mp_table_descriptors.mp_table_descriptors_length , remaining_len);
+                goto cleanup;
+            }
+
             __MMSM_DEBUG("reading mp_table_descriptors size: %u", mp_table->mp_table_descriptors.mp_table_descriptors_length);
             mp_table->mp_table_descriptors.mp_table_descriptors_byte = calloc(mp_table->mp_table_descriptors.mp_table_descriptors_length, sizeof(uint8_t));
             buf = extract(buf, (uint8_t*)&mp_table->mp_table_descriptors.mp_table_descriptors_byte, mp_table->mp_table_descriptors.mp_table_descriptors_length);
+            remaining_len -= mp_table->mp_table_descriptors.mp_table_descriptors_length;
         }
     }
 
+    if(remaining_len <  1) {
+        __MMSM_WARN("mmt_scte35_message_payload_parse: short read for number_of_assets : need %d bytes but remaining size is: %d", 1, remaining_len);
+        goto cleanup;
+    }
 	uint8_t number_of_assets;
 	buf = extract(buf, &number_of_assets, 1);
+    remaining_len--;
  	number_of_assets = __CLIP(number_of_assets, 0, 255);
 	mp_table->number_of_assets = number_of_assets;
 
@@ -473,53 +519,109 @@ uint8_t* mpt_message_parse(mmt_signalling_message_header_and_payload_t* mmt_sign
 	for(int i=0; i < mp_table->number_of_assets; i++ ) {
 		mp_table_asset_row_t* row = &mp_table->mp_table_asset_row[i];
 
+        if(remaining_len <  9) {
+            __MMSM_WARN("mmt_scte35_message_payload_parse: short read for number_of_assets loop (%d assets) : need %d bytes but remaining size is: %d", mp_table->number_of_assets, 9, remaining_len);
+            goto cleanup;
+        }
+
 		//grab our identifer mapping
 		uint8_t identifier_type;
 		buf = extract(buf, &identifier_type, 1);
+        remaining_len--;
+
 		row->identifier_mapping.identifier_type = identifier_type;
 		if(row->identifier_mapping.identifier_type == 0x00) {
 			uint32_t asset_id_scheme;
 
 			buf = extract(buf, (uint8_t*)&asset_id_scheme, 4);
 			row->identifier_mapping.asset_id.asset_id_scheme = ntohl(asset_id_scheme);
+            remaining_len -= 4;
 
 			uint32_t asset_id_length;
 			buf = extract(buf, (uint8_t*)&asset_id_length, 4);
+            remaining_len -= 4;
 			row->identifier_mapping.asset_id.asset_id_length = ntohl(asset_id_length);
+            if(remaining_len < row->identifier_mapping.asset_id.asset_id_length) {
+                __MMSM_WARN("mmt_scte35_message_payload_parse: short read for asset: %d, row->identifier_mapping.asset_id.asset_id_length: need %d bytes but remaining size is: %d", i,  row->identifier_mapping.asset_id.asset_id_length, remaining_len);
+                goto cleanup;
+            }
 			buf = __read_uint32_len_to_string(buf, row->identifier_mapping.asset_id.asset_id_length, &row->identifier_mapping.asset_id.asset_id);
-
+            remaining_len -= row->identifier_mapping.asset_id.asset_id_length;
 
 		} else if(row->identifier_mapping.identifier_type == 0x01) {
 			//build url
 
 		}
+
+        if(remaining_len < 5) {
+            __MMSM_WARN("mmt_scte35_message_payload_parse: short read for asset: %d, row->asset_type and default_asset_flag: need %d bytes but remaining size is: %d", i, 5, remaining_len);
+            goto cleanup;
+        }
+
 		buf = extract(buf, (uint8_t*)&row->asset_type, 4);
+        remaining_len -= 4;
 
 		uint8_t reserved_default_asset_flag;
 		buf = extract(buf, (uint8_t*)&reserved_default_asset_flag, 1);
-		row->default_asset_flag = (reserved_default_asset_flag >> 1) & 0x1;
+        remaining_len--;
+
+        row->default_asset_flag = (reserved_default_asset_flag >> 1) & 0x1;
 		row->asset_clock_relation_flag = reserved_default_asset_flag & 0x1;
 		if(row->asset_clock_relation_flag) {
+            if(remaining_len < 6) {
+                __MMSM_WARN("mmt_scte35_message_payload_parse: short read for asset: %d, asset_clock_relation_flag: need %d bytes but remaining size is: %d", i, 6, remaining_len);
+                goto cleanup;
+            }
 			buf = extract(buf, (uint8_t*)&row->asset_clock_relation_id, 1);
-			uint8_t reserved_asset_timescale_flag;
+            remaining_len--;
+
+            uint8_t reserved_asset_timescale_flag;
 			buf = extract(buf, (uint8_t*)&reserved_asset_timescale_flag, 1);
-			row->asset_timescale_flag = reserved_asset_timescale_flag & 0x1;
+            remaining_len--;
+
+            row->asset_timescale_flag = reserved_asset_timescale_flag & 0x1;
 			if(row->asset_timescale_flag) {
 				buf = extract(buf, (uint8_t*)&row->asset_timescale, 4);
 				row->asset_timescale = ntohl(row->asset_timescale);
-
-			}
+                remaining_len -= 4;
+            }
 		}
+
+        if(remaining_len < 1) {
+            __MMSM_WARN("mmt_scte35_message_payload_parse: short read for asset: %d, location_count: need %d bytes but remaining size is: %d", i, 1, remaining_len);
+            goto cleanup;
+        }
 		buf = extract(buf, (uint8_t*)&row->location_count, 1);
+        remaining_len--;
+
+        if(remaining_len < 14) {
+            __MMSM_WARN("mmt_scte35_message_payload_parse: short read for asset: %d, __read_mmt_general_location_info: need %d bytes but remaining size is: %d", i, 14, remaining_len);
+            goto cleanup;
+        }
+
 		//build out mmt_general_location_info N times.....
 		buf = __read_mmt_general_location_info(buf, &row->mmt_general_location_info);
+        //reset our remaining_leng
+        remaining_len = (remaining_len - (buf - raw_buf));
+
+        if(remaining_len < 2) {
+            __MMSM_WARN("mmt_scte35_message_payload_parse: short read for asset: %d, asset_descriptors_length: need %d bytes but remaining size is: %d", i, 2, remaining_len);
+            goto cleanup;
+        }
 
         //asset_descriptors
         uint16_t asset_descriptors_length;
-		buf = extract(buf, (uint8_t*)&asset_descriptors_length, 2);    
+		buf = extract(buf, (uint8_t*)&asset_descriptors_length, 2);
+		remaining_len -= 2;
+
         row->asset_descriptors_length = ntohs(asset_descriptors_length);
 
+        if(remaining_len < row->asset_descriptors_length) {
+            __MMSM_WARN("mmt_scte35_message_payload_parse: short read for asset: %d, row->asset_descriptors_length: need %d bytes but remaining size is: %d", i, row->asset_descriptors_length, remaining_len);
+            goto cleanup;
+        }
 		buf = __read_uint16_len_to_string(buf, row->asset_descriptors_length, &row->asset_descriptors_payload);
+        remaining_len -= row->asset_descriptors_length;
 
         //peek at
         if(row->asset_descriptors_length) {

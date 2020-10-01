@@ -421,32 +421,52 @@ lls_table_t* atsc3_lls_table_create_or_update_from_lls_slt_monitor_with_metrics_
 	(*parsed)++;
 	//check if we should rebuild our signaling, note lls_table_version will roll over at FF
 	//TODO: refactor me for event dispatching logic
+
+	/*
+	 * jjustman-2020-09-30 - todo:
+	 * f(lls_slt_monitor->lls_latest_slt_table->lls_group_id == lls_table_new->lls_group_id &&
+                  lls_slt_monitor->lls_latest_aeat_table->lls_table_version != lls_table_new->lls_table_version)
+	 */
 	if(lls_slt_monitor) {
 		if(lls_slt_monitor->lls_latest_slt_table) {
             _LLS_DEBUG("atsc3_lls_table_create_or_update_from_lls_slt_monitor_with_metrics_single_table: checking lls_latest_slt_table: %p against %p ", lls_slt_monitor->lls_latest_slt_table, lls_table_new);
 
-            if(strncmp((const char*)lls_slt_monitor->lls_latest_slt_table->raw_xml.xml_payload, (const char*)lls_table_new->raw_xml.xml_payload, strlen((const char*)lls_table_new->raw_xml.xml_payload)) != 0 ||
+            /*
+             * jjustman-2020-09-30 remove str comparison of table payload and use the lls_table_version instead
+             *      == strncmp((const char*)lls_slt_monitor->lls_latest_slt_table->raw_xml.xml_payload, (const char*)lls_table_new->raw_xml.xml_payload, strlen((const char*)lls_table_new->raw_xml.xml_payload)) != 0
+             */
+            if(lls_slt_monitor->lls_latest_slt_table->lls_group_id == lls_table_new->lls_group_id &&
                 (lls_table_new->lls_table_version > lls_slt_monitor->lls_latest_slt_table->lls_table_version ||
                 (lls_table_new->lls_table_version == 0x00 && lls_slt_monitor->lls_latest_slt_table->lls_table_version == 0xFF))) {
 
+                //replace our lls_latest_slt_table by freeing it and assigning it new
                 _LLS_DEBUG("atsc3_lls_table_create_or_update_from_lls_slt_monitor_with_metrics_single_table: attempting to free lls_latest_slt_table: %p,  lls_table_new->lls_table_version: %d, lls_slt_monitor->lls_latest_slt_table->lls_table_version: %d",
                            lls_slt_monitor->lls_latest_slt_table,
                            lls_table_new->lls_table_version,
                            lls_slt_monitor->lls_latest_slt_table->lls_table_version
                            );
-				//free our old table and keep the new one
+
+
+                //jjustman-2020-09-30 - clear our lls_slt_service_id_group_id_cache based upon the lls table group_id
+                // from our monitor and force a rebuild
+                lls_slt_monitor_free_lls_slt_service_id_group_id_cache_from_lls_group_id(lls_slt_monitor, lls_slt_monitor->lls_latest_slt_table->lls_group_id);
+
+                //free our old table and keep the new one
 				lls_table_free(&lls_slt_monitor->lls_latest_slt_table);
 				lls_slt_monitor->lls_latest_slt_table = NULL;
+                _LLS_DEBUG("atsc3_lls_table_create_or_update_from_lls_slt_monitor_with_metrics_single_table: updating with  lls_slt_monitor->lls_latest_slt_table: %p", lls_table_new);
 
-			} else {
-				//free our new one and keep the old one
+
+            } else {
+				//no change - free our new one and keep the old one
 				lls_table_free(&lls_table_new);
 
 				return NULL;
 			}
-		}
+		} else {
+            _LLS_DEBUG("atsc3_lls_table_create_or_update_from_lls_slt_monitor_with_metrics_single_table: assigning new lls_slt_monitor->lls_latest_slt_table: %p", lls_table_new);
+        }
 
-        _LLS_DEBUG("atsc3_lls_table_create_or_update_from_lls_slt_monitor_with_metrics_single_table: setting lls_slt_monitor->lls_latest_slt_table: %p", lls_table_new);
         lls_slt_monitor->lls_latest_slt_table = lls_table_new;
 		lls_slt_table_perform_update(lls_table_new, lls_slt_monitor);
 		//jjustman-2019-10-03 - TODO - dispatch updates here for callbacks

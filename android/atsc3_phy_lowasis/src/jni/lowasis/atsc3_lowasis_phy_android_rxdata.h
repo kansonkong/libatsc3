@@ -10,7 +10,9 @@
 #ifndef LIBATSC3_ANDROID_SAMPLE_APP_W_PHY_ATSC3_LOWASIS_PHY_ANDROID_RXDATA_H
 #define LIBATSC3_ANDROID_SAMPLE_APP_W_PHY_ATSC3_LOWASIS_PHY_ANDROID_RXDATA_H
 
+#include <Atsc3LoggingUtils.h>
 #include <atsc3_utils.h>
+#include <atsc3_logging_externs.h>
 
 //mirror of S_RX_DATA but for internal refcounting
 typedef struct lowasis_phy_android_rxdata
@@ -24,5 +26,8 @@ typedef struct lowasis_phy_android_rxdata
 
 atsc3_lowasis_phy_android_rxdata_t* atsc3_lowasis_phy_android_rxdata_duplicate_from_s_rx_data(S_RX_DATA* s_rx_data);
 void atsc3_lowasis_phy_android_rxdata_free(atsc3_lowasis_phy_android_rxdata_t** atsc3_lowasis_phy_android_rxdata_p);
+
+
+#define _LOWASIS_PHY_RXDATA_ANDROID_ERROR(...)   	__LIBATSC3_TIMESTAMP_ERROR(__VA_ARGS__);
 
 #endif //LIBATSC3_ANDROID_SAMPLE_APP_W_PHY_ATSC3_LOWASIS_PHY_ANDROID_RXDATA_H
