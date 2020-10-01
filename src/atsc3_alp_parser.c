@@ -786,6 +786,15 @@ atsc3_link_mapping_table_t* atsc3_alp_packet_extract_lmt(atsc3_alp_packet_t* ats
 
         __ALP_PARSER_INFO("atsc3_alp_packet_collection_extract_lmt: num_PLPs_minus1: %d", atsc3_link_mapping_table->num_PLPs_minus1);
         for(int i=0; i <= atsc3_link_mapping_table->num_PLPs_minus1; i++) {
+            if(block_Remaining_size(atsc3_alp_packet->alp_payload) < 2) {
+                __ALP_PARSER_WARN("atsc3_alp_packet_collection_extract_lmt: num_PLPs_minus1 outer loop: returning null as block_remaining_size is: %d (block original size: %d), num_PLPs_minus1: %d",
+                                  block_Remaining_size(atsc3_alp_packet->alp_payload),
+                                  atsc3_alp_packet->alp_payload->p_size,
+                                  atsc3_link_mapping_table->num_PLPs_minus1);
+                return NULL;
+
+            }
+
             atsc3_link_mapping_table_plp_t* atsc3_link_mapping_table_plp = atsc3_link_mapping_table_plp_new();
             atsc3_link_mapping_table_plp->PLP_ID = block_Read_uint8_bitlen(atsc3_alp_packet->alp_payload, 6);
             atsc3_link_mapping_table_plp->reserved = block_Read_uint8_bitlen(atsc3_alp_packet->alp_payload, 2);
@@ -796,6 +805,17 @@ atsc3_link_mapping_table_t* atsc3_alp_packet_extract_lmt(atsc3_alp_packet_t* ats
 
             atsc3_link_mapping_table_plp->num_multicasts = block_Read_uint8_bitlen(atsc3_alp_packet->alp_payload, 8);
             for(int j=0; j < atsc3_link_mapping_table_plp->num_multicasts; j++) {
+                //we need at least 32 + 32 + 16 + 16 + 8 bits (13 bytes) here for a valid mcast entry
+                if(block_Remaining_size(atsc3_alp_packet->alp_payload) < 13) {
+                    __ALP_PARSER_WARN("atsc3_alp_packet_collection_extract_lmt: num_multicasts inner loop: returning null as block_remaining_size is: %d (block original size: %d), num_PLPs_minus1: %d, num_mcast idx: %d, num_multicasts: %d",
+                                      block_Remaining_size(atsc3_alp_packet->alp_payload),
+                                      atsc3_alp_packet->alp_payload->p_size,
+                                      atsc3_link_mapping_table->num_PLPs_minus1,
+                                      atsc3_link_mapping_table_plp->num_multicasts,
+                                      j);
+                    return NULL;
+
+                }
                 atsc3_link_mapping_table_multicast_t* atsc3_link_mapping_table_multicast = atsc3_link_mapping_table_multicast_new();
                 atsc3_link_mapping_table_multicast->src_ip_add = block_Read_uint32_ntohl(atsc3_alp_packet->alp_payload);
                 atsc3_link_mapping_table_multicast->dst_ip_add = block_Read_uint32_ntohl(atsc3_alp_packet->alp_payload);
@@ -811,12 +831,15 @@ atsc3_link_mapping_table_t* atsc3_alp_packet_extract_lmt(atsc3_alp_packet_t* ats
                     has_reserved_bits_mismatch_multicast = true;
                 }
 
-                if(has_reserved_bits_mismatch_table || has_reserved_bits_mismatch_plp || has_reserved_bits_mismatch_multicast) {
-                    __ALP_PARSER_WARN("atsc3_alp_packet_collection_extract_lmt: bailing, reserved bits 0x3F missing for table, plp and multicast entry, packet length: %d, num_PLPs_minus1: %d, num_multicasts: %",
-                                      alp_payload_length,
-                                      atsc3_link_mapping_table->num_PLPs_minus1,
-                                      atsc3_link_mapping_table_plp->num_multicasts
-                    );
+				if(has_reserved_bits_mismatch_table || has_reserved_bits_mismatch_plp || has_reserved_bits_mismatch_multicast) {
+                    __ALP_PARSER_WARN("atsc3_alp_packet_collection_extract_lmt: bailing, has_reserved_bits_mismatch_table: %d, has_reserved_bits_mismatch_plp: %d, has_reserved_bits_mismatch_multicast: %d, reserved bits 0x3F missing, packet length: %d, num_PLPs_minus1: %d, num_multicasts: %",
+                              has_reserved_bits_mismatch_table,
+                              has_reserved_bits_mismatch_plp,
+                              has_reserved_bits_mismatch_multicast,
+                              alp_payload_length,
+                              atsc3_link_mapping_table->num_PLPs_minus1,
+                              atsc3_link_mapping_table_plp->num_multicasts
+                            );
 
                     atsc3_link_mapping_table_free(&atsc3_link_mapping_table);
                     return NULL;
@@ -846,4 +869,3 @@ atsc3_link_mapping_table_t* atsc3_alp_packet_extract_lmt(atsc3_alp_packet_t* ats
     }
     return atsc3_link_mapping_table;
 }
-

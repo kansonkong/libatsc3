@@ -11,6 +11,12 @@ APP_STRIP_MODE := "none"
 
 APP_CPPFLAGS += -std=c++11 -D_ANDROID
 
+
+ifeq ($(ENABLE_HWASAN),armeabi-v7a)
+	APP_CFLAGS := -fsanitize=hwaddress -fno-omit-frame-pointer
+	APP_LDFLAGS := -fsanitize=hwaddress
+endif
+
 #-fsanitize=address -fno-omit-frame-pointer
 #
 #APP_CFLAGS := -fsanitize=address -fno-omit-frame-pointer
