@@ -141,7 +141,10 @@ LOCAL_C_INCLUDES += $(LOCAL_PATH)/../../src/phy/virtual/srt/haicrypt
 
 # LOCAL_C_INCLUDES += $(LOCAL_PATH)/../atsc3_core/libsrt/include
 # jjustman-2020-09-17 - raptorQ support
-LOCAL_C_INCLUDES += $(LOCAL_PATH)/../../codornicesrq/CodornicesRq-2.2-Linux-armv7l/include
+# jjustman-2020-09-30 - link against arch
+# LOCAL_C_INCLUDES += $(LOCAL_PATH)/../../codornicesrq/CodornicesRq-2.2-Linux-armv7l/include
+
+LOCAL_C_INCLUDES += $(LOCAL_PATH)/../../codornicesrq/CodornicesRq-2.2-Android-aarch64/include
 
 
 # shared library missing -fPIC for srt
@@ -154,14 +157,17 @@ LOCAL_CFLAGS += -g -O1 -fpack-struct=8  \
 
 
 LOCAL_LDLIBS += -ldl -lc++_shared -llog -landroid -lz \
-				-latsc3_core -latsc3_bridge
+				-latsc3_core -latsc3_bridge \
+				-lCodornicesRq
 
 # jjustman-2020-09-08 - missing armv8 libs
 # -lCodornicesRq
 
 LOCAL_LDFLAGS += -fPIE -fPIC \
 				-L $(LOCAL_PATH)/../atsc3_bridge/build/intermediates/ndkBuild/debug/obj/local/$(TARGET_ARCH_ABI)/ \
-				-L $(LOCAL_PATH)/../atsc3_core/build/intermediates/ndkBuild/debug/obj/local/$(TARGET_ARCH_ABI)/
+				-L $(LOCAL_PATH)/../atsc3_core/build/intermediates/ndkBuild/debug/obj/local/$(TARGET_ARCH_ABI)/ \
+				-L $(LOCAL_PATH)/../../codornicesrq/CodornicesRq-2.2-Android-aarch64/lib
+
 
 # jjustman-2020-09-08 - missing armv8 libs
 #				-L $(LOCAL_PATH)/../../codornicesrq/CodornicesRq-2.2-Linux-armv7l/lib
