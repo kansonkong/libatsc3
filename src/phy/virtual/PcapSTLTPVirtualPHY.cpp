@@ -38,6 +38,10 @@ PcapSTLTPVirtualPHY::PcapSTLTPVirtualPHY() {
 	atsc3_stltp_depacketizer_context->atsc3_stltp_baseband_alp_packet_collection_callback_context = (void*)this;
 }
 
+/*
+ * jjustman-2020-10-02 - NOTE: if the STLTP dst_ip and dst_port aren't known, don't call this method and we will auto-determine
+ * 						 these values from a matching RTP header frame
+ */
 
 void PcapSTLTPVirtualPHY::atsc3_pcap_stltp_listen_ip_port_plp(string ip, string port, uint8_t plp) {
 
