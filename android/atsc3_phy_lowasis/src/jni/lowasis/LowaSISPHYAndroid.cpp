@@ -298,7 +298,14 @@ int LowaSISPHYAndroid::stop()
     this->captureThreadShouldRun = false;
     this->processThreadShouldRun = false;
 
+    //jjustman-2020-10-06 - give us 1s to allow callbacks to wind down
+    usleep(1000000);
+
     if(mhDevice) {
+        _LOWASIS_PHY_ANDROID_INFO("LowaSISPHYAndroid::stop: with this: %p, before AT3DRV_CancelWait with mhDevice: %d",
+                                  this,
+                                  mhDevice);
+
         ar = AT3DRV_CancelWait(mhDevice);
         if(ar) {
             _LOWASIS_PHY_ANDROID_WARN("AT3DRV_CancelWait:: with mhDevice: %d returned ar: %d", mhDevice, ar);
@@ -311,7 +318,8 @@ int LowaSISPHYAndroid::stop()
         }
     }
 
-
+    _LOWASIS_PHY_ANDROID_INFO("LowaSISPHYAndroid::stop: with this: %p, before spinlock for statusThreadIsRunning, captureThreadIsRunning, processThreadIsRunning");
+                              this);
     //tear down status thread first, as its the most 'problematic'
     if(statusThreadIsRunning) {
         //give AT3DRV_WaitRxData some time to shutdown, may take up to 1.5s
@@ -650,7 +658,7 @@ int LowaSISPHYAndroid::captureThread()
             // user has better improve this using semaphore or event msg, instead of delay.
             continue;
         }
-        ar = AT3DRV_WaitRxData(mhDevice, 1500);
+        ar = AT3DRV_WaitRxData(mhDevice, 1000);
         if (ar == AT3RES_CANCEL) {
             _LOWASIS_PHY_ANDROID_DEBUG("wait cancelled");
             AT3_DelayMs(10);
@@ -930,6 +938,9 @@ int LowaSISPHYAndroid::statusThread()
 
     while(this->statusThreadShouldRun) {
         usleep(500000);
+        if(!this->statusThreadShouldRun) {
+            break;
+        }
 
         if(this->is_tuned) {
             memset(&s_fe_detail, 0, sizeof(s_fe_detail));
