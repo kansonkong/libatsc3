@@ -333,11 +333,11 @@ int LowaSISPHYAndroid::stop()
             usleep(100000);
             _LOWASIS_PHY_ANDROID_DEBUG("LowaSISPHYAndroid::stop: this->statusThreadIsRunning: %d", this->statusThreadIsRunning);
         }
-        if(statusThreadHandle.joinable()) {
-            statusThreadHandle.join();
-        }
-        _LOWASIS_PHY_ANDROID_DEBUG("LowaSISPHYAndroid::stop: after join for statusThreadHandle");
     }
+    if(statusThreadHandle.joinable()) {
+        statusThreadHandle.join();
+    }
+    _LOWASIS_PHY_ANDROID_DEBUG("LowaSISPHYAndroid::stop: after join for statusThreadHandle");
 
     if(captureThreadIsRunning) {
         captureThreadShouldRun = false;
@@ -347,11 +347,12 @@ int LowaSISPHYAndroid::stop()
             usleep(100000);
             _LOWASIS_PHY_ANDROID_DEBUG("LowaSISPHYAndroid::stop: this->captureThreadIsRunning: %d", this->captureThreadIsRunning);
         }
-        if(captureThreadHandle.joinable()) {
-            captureThreadHandle.join();
-        }
-        _LOWASIS_PHY_ANDROID_DEBUG("LowaSISPHYAndroid::stop: after join for captureThreadHandle");
     }
+
+    if(captureThreadHandle.joinable()) {
+        captureThreadHandle.join();
+    }
+    _LOWASIS_PHY_ANDROID_DEBUG("LowaSISPHYAndroid::stop: after join for captureThreadHandle");
 
 
     if(processThreadIsRunning) {
@@ -366,11 +367,11 @@ int LowaSISPHYAndroid::stop()
             usleep(100000);
             _LOWASIS_PHY_ANDROID_DEBUG("LowaSISPHYAndroid::stop: this->processThreadIsRunning: %d", this->processThreadIsRunning);
         }
-        if(processThreadHandle.joinable()) {
-            processThreadHandle.join();
-        }
-        _LOWASIS_PHY_ANDROID_DEBUG("LowaSISPHYAndroid::stop: after join for processThreadHandle");
     }
+    if(processThreadHandle.joinable()) {
+        processThreadHandle.join();
+    }
+    _LOWASIS_PHY_ANDROID_DEBUG("LowaSISPHYAndroid::stop: after join for processThreadHandle");
 
     // clear ip/port statistics
     resetStatstics();
