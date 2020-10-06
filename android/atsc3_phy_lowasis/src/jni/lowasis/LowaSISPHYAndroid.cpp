@@ -318,8 +318,9 @@ int LowaSISPHYAndroid::stop()
         }
     }
 
-    _LOWASIS_PHY_ANDROID_INFO("LowaSISPHYAndroid::stop: with this: %p, before spinlock for statusThreadIsRunning, captureThreadIsRunning, processThreadIsRunning");
+    _LOWASIS_PHY_ANDROID_INFO("LowaSISPHYAndroid::stop: with this: %p, before spinlock for statusThreadIsRunning, captureThreadIsRunning, processThreadIsRunning",
                               this);
+
     //tear down status thread first, as its the most 'problematic'
     if(statusThreadIsRunning) {
         //give AT3DRV_WaitRxData some time to shutdown, may take up to 1.5s
