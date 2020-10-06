@@ -37,6 +37,7 @@ extern int _ATSC3_UDP_TRACE_ENABLED;
 
 extern int _ALP_PARSER_INFO_ENABLED;
 extern int _ALP_PARSER_DEBUG_ENABLED;
+extern int _ALP_PARSER_TRACE_ENABLED;
 
 extern int _XML_INFO_ENABLED;
 extern int _XML_DEBUG_ENABLED;
