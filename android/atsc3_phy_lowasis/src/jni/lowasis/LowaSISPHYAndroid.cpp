@@ -301,6 +301,68 @@ int LowaSISPHYAndroid::stop()
     //jjustman-2020-10-06 - give us 1s to allow callbacks to wind down
     usleep(1000000);
 
+    if(captureThreadIsRunning) {
+        captureThreadShouldRun = false;
+        _LOWASIS_PHY_ANDROID_DEBUG("LowaSISPHYAndroid::stop: setting captureThreadShouldRun: false");
+
+        while(this->captureThreadIsRunning) {
+            usleep(100000);
+            _LOWASIS_PHY_ANDROID_DEBUG("LowaSISPHYAndroid::stop: this->captureThreadIsRunning: %d", this->captureThreadIsRunning);
+        }
+    }
+    if(captureThreadHandle.joinable()) {
+        captureThreadHandle.join();
+    }
+    _LOWASIS_PHY_ANDROID_DEBUG("LowaSISPHYAndroid::stop: after join for captureThreadHandle");
+
+    if(processThreadIsRunning) {
+        //unlock our producer thread, RAII scoped block to notify
+        {
+            lock_guard<mutex> lowasis_phy_rx_data_buffer_queue_guard(lowasis_phy_rx_data_buffer_queue_mutex);
+            lowasis_phy_rx_data_buffer_condition.notify_one();
+        }
+    }
+    //make sure we unwind our captureThread and have exited AT3DRV_WaitRxData as per at3drv_api.h
+
+    _LOWASIS_PHY_ANDROID_INFO("LowaSISPHYAndroid::stop: with this: %p, before spinlock for statusThreadIsRunning, captureThreadIsRunning, processThreadIsRunning",
+                              this);
+    //tear down status thread first, as its the most 'problematic'
+    if(statusThreadIsRunning) {
+        //give AT3DRV_WaitRxData some time to shutdown, may take up to 1.5s
+        _LOWASIS_PHY_ANDROID_DEBUG("LowaSISPHYAndroid::stop: after AT3DRV_FE_Stop, sleeping 1.5 second for AT3DRV_WaitRxData to wind-down");
+
+        usleep(15 * 100000);
+
+        _LOWASIS_PHY_ANDROID_DEBUG("LowaSISPHYAndroid::stop: setting statusThreadShouldRun: false");
+        while(this->statusThreadIsRunning) {
+            usleep(100000);
+            _LOWASIS_PHY_ANDROID_DEBUG("LowaSISPHYAndroid::stop: this->statusThreadIsRunning: %d", this->statusThreadIsRunning);
+        }
+    }
+    if(statusThreadHandle.joinable()) {
+        statusThreadHandle.join();
+    }
+    _LOWASIS_PHY_ANDROID_DEBUG("LowaSISPHYAndroid::stop: after join for statusThreadHandle");
+
+    if(processThreadIsRunning) {
+        //failsafe if our procesThread hasn't unwound yet...
+        //unlock our producer thread, RAII scoped block to notify
+        {
+            lock_guard<mutex> lowasis_phy_rx_data_buffer_queue_guard(lowasis_phy_rx_data_buffer_queue_mutex);
+            lowasis_phy_rx_data_buffer_condition.notify_one();
+        }
+
+        _LOWASIS_PHY_ANDROID_DEBUG("LowaSISPHYAndroid::stop: setting processThreadShouldRun: false");
+        while(this->processThreadIsRunning) {
+            usleep(100000);
+            _LOWASIS_PHY_ANDROID_DEBUG("LowaSISPHYAndroid::stop: this->processThreadIsRunning: %d", this->processThreadIsRunning);
+        }
+    }
+    if(processThreadHandle.joinable()) {
+        processThreadHandle.join();
+    }
+    _LOWASIS_PHY_ANDROID_DEBUG("LowaSISPHYAndroid::stop: after join for processThreadHandle");
+
     if(mhDevice) {
         _LOWASIS_PHY_ANDROID_INFO("LowaSISPHYAndroid::stop: with this: %p, before AT3DRV_CancelWait with mhDevice: %d",
                                   this,
@@ -316,59 +378,6 @@ int LowaSISPHYAndroid::stop()
         if(ar) {
             _LOWASIS_PHY_ANDROID_WARN("AT3DRV_FE_Stop:: with mhDevice: %d returned ar: %d", mhDevice, ar);
         }
-    }
-
-    _LOWASIS_PHY_ANDROID_INFO("LowaSISPHYAndroid::stop: with this: %p, before spinlock for statusThreadIsRunning, captureThreadIsRunning, processThreadIsRunning");
-                              this);
-    //tear down status thread first, as its the most 'problematic'
-    if(statusThreadIsRunning) {
-        //give AT3DRV_WaitRxData some time to shutdown, may take up to 1.5s
-        _LOWASIS_PHY_ANDROID_DEBUG("LowaSISPHYAndroid::stop: after AT3DRV_FE_Stop, sleeping 1.5 second for AT3DRV_WaitRxData to wind-down");
-
-        usleep(15 * 100000);
-
-        _LOWASIS_PHY_ANDROID_DEBUG("LowaSISPHYAndroid::stop: setting statusThreadShouldRun: false");
-        while(this->statusThreadIsRunning) {
-            usleep(100000);
-            _LOWASIS_PHY_ANDROID_DEBUG("LowaSISPHYAndroid::stop: this->statusThreadIsRunning: %d", this->statusThreadIsRunning);
-        }
-        if(statusThreadHandle.joinable()) {
-            statusThreadHandle.join();
-        }
-        _LOWASIS_PHY_ANDROID_DEBUG("LowaSISPHYAndroid::stop: after join for statusThreadHandle");
-    }
-
-    if(captureThreadIsRunning) {
-        captureThreadShouldRun = false;
-        _LOWASIS_PHY_ANDROID_DEBUG("LowaSISPHYAndroid::stop: setting captureThreadShouldRun: false");
-
-        while(this->captureThreadIsRunning) {
-            usleep(100000);
-            _LOWASIS_PHY_ANDROID_DEBUG("LowaSISPHYAndroid::stop: this->captureThreadIsRunning: %d", this->captureThreadIsRunning);
-        }
-        if(captureThreadHandle.joinable()) {
-            captureThreadHandle.join();
-        }
-        _LOWASIS_PHY_ANDROID_DEBUG("LowaSISPHYAndroid::stop: after join for captureThreadHandle");
-    }
-
-
-    if(processThreadIsRunning) {
-        //unlock our producer thread, RAII scoped block to notify
-        {
-            lock_guard<mutex> lowasis_phy_rx_data_buffer_queue_guard(lowasis_phy_rx_data_buffer_queue_mutex);
-            lowasis_phy_rx_data_buffer_condition.notify_one();
-        }
-
-        _LOWASIS_PHY_ANDROID_DEBUG("LowaSISPHYAndroid::stop: setting processThreadShouldRun: false");
-        while(this->processThreadIsRunning) {
-            usleep(100000);
-            _LOWASIS_PHY_ANDROID_DEBUG("LowaSISPHYAndroid::stop: this->processThreadIsRunning: %d", this->processThreadIsRunning);
-        }
-        if(processThreadHandle.joinable()) {
-            processThreadHandle.join();
-        }
-        _LOWASIS_PHY_ANDROID_DEBUG("LowaSISPHYAndroid::stop: after join for processThreadHandle");
     }
 
     // clear ip/port statistics
@@ -658,27 +667,33 @@ int LowaSISPHYAndroid::captureThread()
             // user has better improve this using semaphore or event msg, instead of delay.
             continue;
         }
-        ar = AT3DRV_WaitRxData(mhDevice, 1000);
+
+        ar = AT3DRV_WaitRxData(mhDevice, 500);
+        //bail early
+        if(!this->captureThreadShouldRun) {
+            break;
+        }
+
         if (ar == AT3RES_CANCEL) {
-            _LOWASIS_PHY_ANDROID_DEBUG("wait cancelled");
+            _LOWASIS_PHY_ANDROID_DEBUG("LowaSISPHYAndroid::captureThread - wait cancelled");
             AT3_DelayMs(10);
             continue;
         }
         if (AT3ERR(ar)) {
-            _LOWASIS_PHY_ANDROID_ERROR("wait rx data error %d (%s)", ar, AT3_ErrString(ar));
+            _LOWASIS_PHY_ANDROID_ERROR("LowaSISPHYAndroid::captureThread - wait rx data error %d (%s)", ar, AT3_ErrString(ar));
             if (ar != AT3RES_TIMEOUT)
                 break;
         }
         ar = AT3DRV_HandleRxData(mhDevice, RxCallbackStatic, (uint64_t)this);
         if (AT3ERR(ar)) {
-            _LOWASIS_PHY_ANDROID_ERROR("handle rx data error %d (%s)", ar, AT3_ErrString(ar));
+            _LOWASIS_PHY_ANDROID_ERROR("LowaSISPHYAndroid::captureThread - handle rx data error %d (%s)", ar, AT3_ErrString(ar));
         }
     }
 
     _LOWASIS_PHY_ANDROID_INFO("LowaSISPHYAndroid::captureThread complete");
 
+    this->releasePinnedProducerThreadAsNeeded();
     this->captureThreadIsRunning = false;
-    releasePinnedProducerThreadAsNeeded();
 
     return 0;
 }
@@ -730,8 +745,13 @@ int LowaSISPHYAndroid::processThread()
             }
             condition_lock.unlock();
         }
-        //exit critical section, now we can process our to_process_queue
 
+        //bail early if we should be shut down
+        if(!this->processThreadShouldRun) {
+            break;
+        }
+
+        //exit critical section, now we can process our to_process_queue
         while (to_process_queue.size()) {
             pData = to_process_queue.front();
             to_process_queue.pop();
@@ -919,8 +939,9 @@ int LowaSISPHYAndroid::processThread()
         }
     }
 
-    this->processThreadIsRunning = false;
     this->releasePinnedConsumerThreadAsNeeded();
+    this->processThreadIsRunning = false;
+
 
     _LOWASIS_PHY_ANDROID_INFO("LowaSISPHYAndroid::processThread complete");
 
@@ -986,8 +1007,8 @@ int LowaSISPHYAndroid::statusThread()
         }
     }
 
-    this->statusThreadIsRunning = false;
     this->releasePinnedStatusThreadAsNeeded();
+    this->statusThreadIsRunning = false;
 
     return 0;
 }
@@ -1068,6 +1089,27 @@ Java_org_ngbp_libatsc3_middleware_android_phy_LowaSISPHYAndroid_stop(JNIEnv *env
     return res;
 }
 
+/*
+    jjustman-2020-10-07 - hack for dangling lowaSIS libusb
+
+    frame #1: 0x0000007d656aebcc libc.so`abort + 344
+    frame #2: 0x00000073af6b08ec libc++_shared.so`::abort_message(format=<unavailable>) at abort_message.cpp:76
+    frame #3: 0x00000073af6b0a08 libc++_shared.so`demangling_terminate_handler() at cxa_default_handlers.cpp:77
+    frame #4: 0x00000073af6c2534 libc++_shared.so`std::__terminate(func=<unavailable>)()) at cxa_handlers.cpp:59
+    frame #5: 0x00000073af6c24dc libc++_shared.so`std::terminate() at cxa_handlers.cpp:92
+    frame #6: 0x00000073af6afdc8 libc++_shared.so`std::__ndk1::thread::~thread(this=<unavailable>) at thread.cpp:47
+    frame #7: 0x00000073afe91454 libatsc3_phy_lowasis.so`LowaSISPHYAndroid::~LowaSISPHYAndroid(this=0x780000468845c180) at LowaSISPHYAndroid.cpp:61
+    frame #8: 0x00000073afe915a8 libatsc3_phy_lowasis.so`LowaSISPHYAndroid::~LowaSISPHYAndroid(this=0x780000468845c180) at LowaSISPHYAndroid.cpp:42
+    frame #9: 0x00000073afe99440 libatsc3_phy_lowasis.so`LowaSISPHYAndroid::deinit(this=0x780000468845c180) at LowaSISPHYAndroid.cpp:432
+
+    wire up a std::exception handler for the ~lowaSISPHYAndroid chained constructure,
+    as the terminate handler for the thrown exception of un-jointed thread from long-polling libusb async fo libsub_handle_events (60s) which is causing above crash
+
+    see: http://libusb.sourceforge.net/api-1.0/libusb_mtasync.html for more details
+
+ */
+
+
 extern "C" JNIEXPORT jint JNICALL
 Java_org_ngbp_libatsc3_middleware_android_phy_LowaSISPHYAndroid_deinit(JNIEnv *env, jobject thiz) {
     lock_guard<mutex> lowasis_phy_android_cctor_mutex_local(LowaSISPHYAndroid::CS_global_mutex);
@@ -1079,8 +1121,13 @@ Java_org_ngbp_libatsc3_middleware_android_phy_LowaSISPHYAndroid_deinit(JNIEnv *e
     } else {
         _LOWASIS_PHY_ANDROID_INFO("Java_org_ngbp_libatsc3_middleware_android_phy_LowaSISPHYAndroid_deinit: enter with lowaSISPHYAndroid: %p", lowaSISPHYAndroid);
 
-        lowaSISPHYAndroid->deinit();
-        lowaSISPHYAndroid = nullptr;
+        try {
+            lowaSISPHYAndroid->deinit();
+            lowaSISPHYAndroid = nullptr;
+        } catch (std::exception& e) {
+            _LOWASIS_PHY_ANDROID_ERROR("Java_org_ngbp_libatsc3_middleware_android_phy_LowaSISPHYAndroid_deinit() - Caught exception in lowaSISPHYAndroid->deinit, ex is: %s", e.what());
+        }
+
         _LOWASIS_PHY_ANDROID_INFO("Java_org_ngbp_libatsc3_middleware_android_phy_LowaSISPHYAndroid_deinit: exit with lowaSISPHYAndroid: %p", lowaSISPHYAndroid);
     }
 
