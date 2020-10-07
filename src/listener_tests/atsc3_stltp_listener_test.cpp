@@ -31,14 +31,14 @@ atsc3_stltp_tunnel_packet_t* atsc3_stltp_tunnel_packet_processed = NULL;
 atsc3_stltp_depacketizer_context_t* atsc3_stltp_depacketizer_context = NULL;
 
 void process_packet(u_char *user, const struct pcap_pkthdr *pkthdr, const u_char *packet) {
-	atsc3_ip_udp_rtp_packet_t* ip_udp_rtp_packet = atsc3_ip_udp_rtp_process_packet_from_pcap(user, pkthdr, packet);
-	if(!ip_udp_rtp_packet) {
+	atsc3_ip_udp_rtp_ctp_packet_t* ip_udp_rtp_ctp_packet = atsc3_ip_udp_rtp_process_packet_from_pcap(user, pkthdr, packet);
+	if(!ip_udp_rtp_ctp_packet) {
 		return;
 	}
 
 	//dispatch for LLS extraction and dump
-	if(ip_udp_rtp_packet->udp_flow.dst_ip_addr == *dst_ip_addr_filter && ip_udp_rtp_packet->udp_flow.dst_port == *dst_ip_port_filter) {
-		atsc3_stltp_tunnel_packet_processed = atsc3_stltp_raw_packet_extract_inner_from_outer_packet(atsc3_stltp_depacketizer_context, ip_udp_rtp_packet, atsc3_stltp_tunnel_packet_processed);
+	if(ip_udp_rtp_ctp_packet->udp_flow.dst_ip_addr == *dst_ip_addr_filter && ip_udp_rtp_ctp_packet->udp_flow.dst_port == *dst_ip_port_filter) {
+		atsc3_stltp_tunnel_packet_processed = atsc3_stltp_raw_packet_extract_inner_from_outer_packet(atsc3_stltp_depacketizer_context, ip_udp_rtp_ctp_packet, atsc3_stltp_tunnel_packet_processed);
 
 		if(atsc3_stltp_tunnel_packet_processed) {
 			if(atsc3_stltp_tunnel_packet_processed->atsc3_stltp_baseband_packet_v.count) {
@@ -64,11 +64,11 @@ void process_packet(u_char *user, const struct pcap_pkthdr *pkthdr, const u_char
             atsc3_stltp_tunnel_packet_clear_completed_inner_packets(atsc3_stltp_tunnel_packet_processed);
 
 		} else {
-            __ERROR("error processing packet: %p, size: %u",  ip_udp_rtp_packet, ip_udp_rtp_packet->data->p_size);
+            __ERROR("error processing packet: %p, size: %u",  ip_udp_rtp_ctp_packet, ip_udp_rtp_ctp_packet->data->p_size);
             
 		}
 	}
-    atsc3_ip_udp_rtp_packet_destroy(&ip_udp_rtp_packet);
+    atsc3_ip_udp_rtp_ctp_packet_destroy(&ip_udp_rtp_ctp_packet);
 }
 
 int main(int argc,char **argv) {
