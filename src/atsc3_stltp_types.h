@@ -73,22 +73,22 @@ https://www.atsc.org/wp-content/uploads/2016/10/A322-2018-Physical-Layer-Protoco
 */
 
 typedef struct atsc3_stltp_baseband_packet {
-    atsc3_ip_udp_rtp_packet_t*     ip_udp_rtp_packet_outer;
+    atsc3_ip_udp_rtp_ctp_packet_t*    	ip_udp_rtp_ctp_packet_outer;
     
-    atsc3_ip_udp_rtp_packet_t*     ip_udp_rtp_packet_inner;
+    atsc3_ip_udp_rtp_ctp_packet_t*   	ip_udp_rtp_ctp_packet_inner;
 
-    uint32_t                       fragment_count;
-    bool                           is_complete;
+    uint32_t                    		fragment_count;
+    bool                           		is_complete;
 
     //TODO: refactor this to block_t for payload/offset/length
-    uint8_t* 	        	       payload;
-    uint32_t 	        	       payload_offset;
-	uint32_t 	        	       payload_length;
+    uint8_t* 	        	  		    payload;
+    uint32_t 	        	      		payload_offset;
+	uint32_t 	        	       		payload_length;
 
     //for reference between stltp inner -> baseband -> alp
-    atsc3_baseband_packet_t        atsc3_baseband_packet;
+    atsc3_baseband_packet_t        		atsc3_baseband_packet;
 
-    uint8_t 					   plp_num;
+    uint8_t 					   		plp_num;
 
 } atsc3_stltp_baseband_packet_t;
 
@@ -377,7 +377,7 @@ ATSC3_VECTOR_BUILDER_METHODS_INTERFACE(L1_detail_signaling, L1D_bonded_bsid_bloc
 ATSC3_VECTOR_BUILDER_METHODS_INTERFACE(L1_detail_signaling, L1D_subframe_parameters);
 
 typedef struct atsc3_preamble_packet {
-	atsc3_rtp_header_timestamp_t	bootstrap_timing_data_timestamp_short_reference;
+	atsc3_rtp_ctp_header_timestamp_t	bootstrap_timing_data_timestamp_short_reference;
 
     uint16_t                    length;
     L1_basic_signaling_t        L1_basic_signaling;
@@ -388,19 +388,19 @@ typedef struct atsc3_preamble_packet {
 
 typedef struct atsc3_stltp_preamble_packet {
     
-    atsc3_ip_udp_rtp_packet_t*      ip_udp_rtp_packet_outer;
+    atsc3_ip_udp_rtp_ctp_packet_t*      ip_udp_rtp_ctp_packet_outer;
     
-    atsc3_ip_udp_rtp_packet_t*      ip_udp_rtp_packet_inner;
+    atsc3_ip_udp_rtp_ctp_packet_t*      ip_udp_rtp_ctp_packet_inner;
 
-    uint32_t                        fragment_count;
-    bool                            is_complete;
+    uint32_t                        	fragment_count;
+    bool                            	is_complete;
     
     //TODO: refactor this to block_t for payload/offset/length
-    uint8_t*                         payload;
-    uint16_t                         payload_offset;
-    uint16_t                         payload_length;
+    uint8_t*                         	payload;
+    uint16_t                         	payload_offset;
+    uint16_t                         	payload_length;
    
-    atsc3_preamble_packet_t*          preamble_packet;
+    atsc3_preamble_packet_t*          	preamble_packet;
 } atsc3_stltp_preamble_packet_t;
 
     
@@ -413,7 +413,7 @@ typedef struct bootstrap_timing_data {
     uint32_t    seconds;
     uint32_t    nanoseconds;
 
-    atsc3_rtp_header_timestamp_t bootstrap_timing_data_timestamp_short_reference;
+    atsc3_rtp_ctp_header_timestamp_t bootstrap_timing_data_timestamp_short_reference;
 } atsc3_bootstrap_timing_data_t;
     
 typedef struct per_transmitter_data {
@@ -438,7 +438,7 @@ typedef struct error_check_data {
 //Table 8.3 - Timing and Management Stream Packet Payload
     
 typedef struct timing_management_packet {
-	atsc3_rtp_header_timestamp_t	bootstrap_timing_data_timestamp_short_reference;
+	atsc3_rtp_ctp_header_timestamp_t	bootstrap_timing_data_timestamp_short_reference;
 
     //Structure_Data() {
     uint16_t    length;
@@ -488,19 +488,17 @@ ATSC3_VECTOR_BUILDER_METHODS_INTERFACE(atsc3_timing_management_packet, atsc3_boo
 ATSC3_VECTOR_BUILDER_METHODS_INTERFACE(atsc3_timing_management_packet, atsc3_per_transmitter_data);
 
 typedef struct atsc3_stltp_timing_management_packet {
-    atsc3_ip_udp_rtp_packet_t*      ip_udp_rtp_packet_outer;
-    //atsc3_rtp_header_t*             rtp_header_outer; //pointer from ip_udp_rtp_packet_outer->rtp_header
+    atsc3_ip_udp_rtp_ctp_packet_t*      ip_udp_rtp_ctp_packet_outer;
     
-    atsc3_ip_udp_rtp_packet_t*      ip_udp_rtp_packet_inner;
-    //atsc3_rtp_header_t*             rtp_header_inner; //pointer from ip_udp_rtp_packet_outer->rtp_header
+    atsc3_ip_udp_rtp_ctp_packet_t*      ip_udp_rtp_ctp_packet_inner;
 
-    uint32_t                        fragment_count;
-    bool                            is_complete;
+    uint32_t                        	fragment_count;
+    bool                            	is_complete;
 
     //TODO: refactor this to block_t for payload/offset/length
-	uint8_t* 					    payload;
-	uint16_t 					    payload_offset;
-	uint16_t 					    payload_length;
+	uint8_t* 					   		payload;
+	uint16_t 					    	payload_offset;
+	uint16_t 					    	payload_length;
 
 	atsc3_timing_management_packet_t*	timing_management_packet;
     
@@ -513,7 +511,7 @@ typedef struct atsc3_stltp_timing_management_packet {
 
                             //incomplete packet for fragmentation
 
-atsc3_stltp_tunnel_packet_set_baseband_packet_pending_from_inner_rtp_for_plp(atsc3_stltp_depacketizer_context, atsc3_stltp_tunnel_packet_current->ip_udp_rtp_packet_inner, atsc3_stltp_tunnel_packet_current);
+atsc3_stltp_tunnel_packet_set_baseband_packet_pending_from_inner_rtp_for_plp(atsc3_stltp_depacketizer_context, atsc3_stltp_tunnel_packet_current->ip_udp_rtp_ctp_packet_inner, atsc3_stltp_tunnel_packet_current);
 
  */
 
@@ -535,18 +533,18 @@ ATSC3_VECTOR_BUILDER_DISTINCT_TYPEDEF_STRUCT_DEFINITION(atsc3_stltp_timing_manag
 typedef struct atsc3_stltp_tunnel_packet {
 
     //outer RTP packet pointer, make sure to seek 40 bytes for IP/UDP/RTP header offset
-	atsc3_ip_udp_rtp_packet_t* ip_udp_rtp_packet_outer;
+	atsc3_ip_udp_rtp_ctp_packet_t* ip_udp_rtp_ctp_packet_outer;
     
     //floating inner packet, may be delinated either by outer->rtp_header->marker OR
     //by reading inner packet length until remaining_bytes==0 for next inner packet
-    atsc3_ip_udp_rtp_packet_t* ip_udp_rtp_packet_inner;
+    atsc3_ip_udp_rtp_ctp_packet_t* ip_udp_rtp_ctp_packet_inner;
 
     //only set this when we have a short packet read (e.g. less than 40 bytes) at the end of a payload,
     //we need to re-fragement it when more outer data is available
-    atsc3_ip_udp_rtp_packet_t* ip_udp_rtp_packet_pending_refragmentation_outer;
+    atsc3_ip_udp_rtp_ctp_packet_t* ip_udp_rtp_ctp_packet_pending_refragmentation_outer;
     
     //only set this when we have a pending baseband/preamble/timing_managent packet and always duplicate and free
-    atsc3_ip_udp_rtp_packet_t* ip_udp_rtp_packet_pending_concatenation_inner;
+    atsc3_ip_udp_rtp_ctp_packet_t* ip_udp_rtp_ctp_packet_pending_concatenation_inner;
 
 	//atsc3_stltp_baseband_packet_t* 		atsc3_stltp_baseband_packet;
     ATSC3_VECTOR_BUILDER_STRUCT(atsc3_stltp_baseband_packet);
@@ -601,9 +599,9 @@ void atsc3_stltp_preamble_packet_free(atsc3_stltp_preamble_packet_t** atsc3_stlt
 void atsc3_stltp_timing_management_packet_free(atsc3_stltp_timing_management_packet_t** atsc3_stltp_timing_management_packet_p);
     
 //utility methods for dumping outer/inner/rtp header payloads
-void atsc3_rtp_header_dump_outer(atsc3_stltp_tunnel_packet_t* atsc3_stltp_tunnel_packet);
-void atsc3_rtp_header_dump_inner(atsc3_stltp_tunnel_packet_t* atsc3_stltp_tunnel_packet);
-void atsc3_rtp_header_dump(atsc3_rtp_header_t* atsc3_rtp_header, int spaces);
+void atsc3_rtp_ctp_header_dump_outer(atsc3_stltp_tunnel_packet_t* atsc3_stltp_tunnel_packet);
+void atsc3_rtp_ctp_header_dump_inner(atsc3_stltp_tunnel_packet_t* atsc3_stltp_tunnel_packet);
+void atsc3_rtp_ctp_header_dump(atsc3_rtp_ctp_header_t* atsc3_rtp_ctp_header, int spaces);
 
     
 
