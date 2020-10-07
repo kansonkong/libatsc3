@@ -298,7 +298,14 @@ int LowaSISPHYAndroid::stop()
     this->captureThreadShouldRun = false;
     this->processThreadShouldRun = false;
 
+    //jjustman-2020-10-06 - give us 1s to allow callbacks to wind down
+    usleep(1000000);
+
     if(mhDevice) {
+        _LOWASIS_PHY_ANDROID_INFO("LowaSISPHYAndroid::stop: with this: %p, before AT3DRV_CancelWait with mhDevice: %d",
+                                  this,
+                                  mhDevice);
+
         ar = AT3DRV_CancelWait(mhDevice);
         if(ar) {
             _LOWASIS_PHY_ANDROID_WARN("AT3DRV_CancelWait:: with mhDevice: %d returned ar: %d", mhDevice, ar);
@@ -311,6 +318,8 @@ int LowaSISPHYAndroid::stop()
         }
     }
 
+    _LOWASIS_PHY_ANDROID_INFO("LowaSISPHYAndroid::stop: with this: %p, before spinlock for statusThreadIsRunning, captureThreadIsRunning, processThreadIsRunning",
+                              this);
 
     //tear down status thread first, as its the most 'problematic'
     if(statusThreadIsRunning) {
@@ -324,11 +333,11 @@ int LowaSISPHYAndroid::stop()
             usleep(100000);
             _LOWASIS_PHY_ANDROID_DEBUG("LowaSISPHYAndroid::stop: this->statusThreadIsRunning: %d", this->statusThreadIsRunning);
         }
-        if(statusThreadHandle.joinable()) {
-            statusThreadHandle.join();
-        }
-        _LOWASIS_PHY_ANDROID_DEBUG("LowaSISPHYAndroid::stop: after join for statusThreadHandle");
     }
+    if(statusThreadHandle.joinable()) {
+        statusThreadHandle.join();
+    }
+    _LOWASIS_PHY_ANDROID_DEBUG("LowaSISPHYAndroid::stop: after join for statusThreadHandle");
 
     if(captureThreadIsRunning) {
         captureThreadShouldRun = false;
@@ -338,11 +347,12 @@ int LowaSISPHYAndroid::stop()
             usleep(100000);
             _LOWASIS_PHY_ANDROID_DEBUG("LowaSISPHYAndroid::stop: this->captureThreadIsRunning: %d", this->captureThreadIsRunning);
         }
-        if(captureThreadHandle.joinable()) {
-            captureThreadHandle.join();
-        }
-        _LOWASIS_PHY_ANDROID_DEBUG("LowaSISPHYAndroid::stop: after join for captureThreadHandle");
     }
+
+    if(captureThreadHandle.joinable()) {
+        captureThreadHandle.join();
+    }
+    _LOWASIS_PHY_ANDROID_DEBUG("LowaSISPHYAndroid::stop: after join for captureThreadHandle");
 
 
     if(processThreadIsRunning) {
@@ -357,11 +367,11 @@ int LowaSISPHYAndroid::stop()
             usleep(100000);
             _LOWASIS_PHY_ANDROID_DEBUG("LowaSISPHYAndroid::stop: this->processThreadIsRunning: %d", this->processThreadIsRunning);
         }
-        if(processThreadHandle.joinable()) {
-            processThreadHandle.join();
-        }
-        _LOWASIS_PHY_ANDROID_DEBUG("LowaSISPHYAndroid::stop: after join for processThreadHandle");
     }
+    if(processThreadHandle.joinable()) {
+        processThreadHandle.join();
+    }
+    _LOWASIS_PHY_ANDROID_DEBUG("LowaSISPHYAndroid::stop: after join for processThreadHandle");
 
     // clear ip/port statistics
     resetStatstics();
@@ -650,7 +660,7 @@ int LowaSISPHYAndroid::captureThread()
             // user has better improve this using semaphore or event msg, instead of delay.
             continue;
         }
-        ar = AT3DRV_WaitRxData(mhDevice, 1500);
+        ar = AT3DRV_WaitRxData(mhDevice, 1000);
         if (ar == AT3RES_CANCEL) {
             _LOWASIS_PHY_ANDROID_DEBUG("wait cancelled");
             AT3_DelayMs(10);
@@ -930,6 +940,9 @@ int LowaSISPHYAndroid::statusThread()
 
     while(this->statusThreadShouldRun) {
         usleep(500000);
+        if(!this->statusThreadShouldRun) {
+            break;
+        }
 
         if(this->is_tuned) {
             memset(&s_fe_detail, 0, sizeof(s_fe_detail));
