@@ -5,6 +5,7 @@
 #include <string.h>
 #include <jni.h>
 #include <thread>
+#include <exception>      // std::set_terminate
 #include <map>
 
 #include <queue>
