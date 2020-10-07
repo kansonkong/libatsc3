@@ -72,15 +72,15 @@ void atsc3_stltp_depacketizer_context_set_all_plps(atsc3_stltp_depacketizer_cont
 }
 
 
-void atsc3_stltp_tunnel_packet_set_baseband_packet_pending_from_inner_rtp_for_plp(atsc3_stltp_depacketizer_context_t* atsc3_stltp_depacketizer_context, atsc3_ip_udp_rtp_packet_t* ip_udp_rtp_packet_inner, atsc3_stltp_tunnel_packet_t* atsc3_stltp_tunnel_packet_current) {
+void atsc3_stltp_tunnel_packet_set_baseband_packet_pending_from_inner_rtp_for_plp(atsc3_stltp_depacketizer_context_t* atsc3_stltp_depacketizer_context, atsc3_ip_udp_rtp_ctp_packet_t* ip_udp_rtp_ctp_packet_inner, atsc3_stltp_tunnel_packet_t* atsc3_stltp_tunnel_packet_current) {
 	int plp_num = 0;
-	if(!ip_udp_rtp_packet_inner) {
-		_ATSC3_STLTP_DEPACKETIZER_CONTEXT_ERROR("atsc3_stltp_tunnel_packet_set_baseband_packet_pending_from_inner_rtp_for_plp - ip_udp_rtp_packet_inner is NULL, returning plp0 by default");
+	if(!ip_udp_rtp_ctp_packet_inner) {
+		_ATSC3_STLTP_DEPACKETIZER_CONTEXT_ERROR("atsc3_stltp_tunnel_packet_set_baseband_packet_pending_from_inner_rtp_for_plp - ip_udp_rtp_ctp_packet_inner is NULL, returning plp0 by default");
 
 	} else {
 
-		if(ip_udp_rtp_packet_inner->udp_flow.dst_port >= 30000 && ip_udp_rtp_packet_inner->udp_flow.dst_port < 30064) {
-			plp_num = ip_udp_rtp_packet_inner->udp_flow.dst_port - 30000;
+		if(ip_udp_rtp_ctp_packet_inner->udp_flow.dst_port >= 30000 && ip_udp_rtp_ctp_packet_inner->udp_flow.dst_port < 30064) {
+			plp_num = ip_udp_rtp_ctp_packet_inner->udp_flow.dst_port - 30000;
 		}
 	}
 

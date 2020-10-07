@@ -324,6 +324,17 @@ atsc3_mmt_mfu_context_t* atsc3_mmt_mfu_context_new() {
 	return atsc3_mmt_mfu_context;
 }
 
+/*
+ *
+ * jjustman-2020-10-06: NOTE: if you are not calling atsc3_lls_slt_monitor_free, you will need to call BEFORE atsc3_mmt_mfu_context_free
+ *
+
+    if(lls_slt_monitor && atsc3_mmt_mfu_context->matching_lls_sls_mmt_session) {
+		lls_sls_mmt_session_flows_remove_lls_sls_mmt_session(lls_slt_monitor, &atsc3_mmt_mfu_context->matching_lls_sls_mmt_session);
+	}
+
+ */
+
 void atsc3_mmt_mfu_context_free(atsc3_mmt_mfu_context_t** atsc3_mmt_mfu_context_p) {
     if(atsc3_mmt_mfu_context_p) {
         atsc3_mmt_mfu_context_t* atsc3_mmt_mfu_context = *atsc3_mmt_mfu_context_p;
@@ -349,9 +360,6 @@ void atsc3_mmt_mfu_context_free(atsc3_mmt_mfu_context_t** atsc3_mmt_mfu_context_
                 atsc3_lls_slt_monitor_free(&atsc3_mmt_mfu_context->lls_slt_monitor);
             }
 
-            if(atsc3_mmt_mfu_context->matching_lls_sls_mmt_session) {
-                lls_sls_mmt_session_flows_free(&atsc3_mmt_mfu_context->matching_lls_sls_mmt_session);
-            }
 
             if(atsc3_mmt_mfu_context->mp_table_last) {
                 //jjustman-2020-08-31: todo - free inner impl
