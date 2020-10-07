@@ -112,20 +112,24 @@ void atsc3_core_service_application_bridge_init(IAtsc3NdkApplicationBridge* atsc
 void atsc3_core_service_application_bridge_reset_context() {
     lock_guard<recursive_mutex> atsc3_core_service_player_bridge_context_mutex_local(atsc3_core_service_player_bridge_context_mutex);
 
+    if(atsc3_mmt_mfu_context) {
+          atsc3_mmt_mfu_context_free(&atsc3_mmt_mfu_context);
+    }
+
     if (lls_slt_monitor) {
         atsc3_lls_slt_monitor_free(&lls_slt_monitor);
         lls_sls_alc_monitor = NULL;
     }
+
     if(mmtp_flow) {
         mmtp_flow_free_mmtp_asset_flow(mmtp_flow);
     }
+
     if(udp_flow_latest_mpu_sequence_number_container) {
         udp_flow_latest_mpu_sequence_number_container_t_release(udp_flow_latest_mpu_sequence_number_container);
     }
 
-    if(atsc3_mmt_mfu_context) {
-        atsc3_mmt_mfu_context_free(&atsc3_mmt_mfu_context);
-    }
+
 
     lls_slt_monitor = lls_slt_monitor_create();
     //wire up a lls event for SLS table
