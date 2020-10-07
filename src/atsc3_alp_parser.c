@@ -11,6 +11,8 @@
 
 int _ALP_PARSER_INFO_ENABLED = 0;
 int _ALP_PARSER_DEBUG_ENABLED = 0;
+int _ALP_PARSER_TRACE_ENABLED = 0;
+
 
 /**
  A/322-2018 - Section 5.2 Baseband Formatting:
@@ -113,8 +115,8 @@ atsc3_baseband_packet_t* atsc3_stltp_parse_baseband_packet(atsc3_stltp_baseband_
     __ALP_PARSER_INFO("---------------------------------------");
     __ALP_PARSER_INFO("Baseband Packet Header: pointer: %p, sequence_number: %d, port: %d, length: %u",
                       binary_payload,
-                      atsc3_stltp_baseband_packet->ip_udp_rtp_packet_inner->rtp_header->sequence_number,
-                      atsc3_stltp_baseband_packet->ip_udp_rtp_packet_inner->udp_flow.dst_port,
+                      atsc3_stltp_baseband_packet->ip_udp_rtp_ctp_packet_inner->rtp_ctp_header->sequence_number,
+                      atsc3_stltp_baseband_packet->ip_udp_rtp_ctp_packet_inner->udp_flow.dst_port,
                       atsc3_stltp_baseband_packet->payload_length);
     __ALP_PARSER_INFO("Raw hex: 0x%02hhX 0x%02hhX 0x%02hhX 0x%02hhX", binary_payload[0], binary_payload[1], binary_payload[2], binary_payload[3]);
     __ALP_PARSER_INFO("---------------------------------------");
@@ -254,16 +256,24 @@ atsc3_baseband_packet_t* atsc3_stltp_parse_baseband_packet(atsc3_stltp_baseband_
             }
             
             //else, other extension field, e.g. counter or reserved, read here for payload...
+
+            //jjustman-2020-10-06 - ext_type == 0x7 is "all padding"
             if(atsc3_baseband_packet->ext_type == 0x7) {
                 uint8_t* old_binary_payload = binary_payload;
                 binary_payload += atsc3_baseband_packet->ext_len;
                 
-                __ALP_PARSER_INFO("seeking past padding (ext_type == 111), from: %p, bytes: %d, to: %p", old_binary_payload, atsc3_baseband_packet->ext_len, binary_payload);
+                __ALP_PARSER_TRACE("atsc3_stltp_parse_baseband_packet: extension payload, seeking past padding (ext_type == 111), from: %p, bytes: %d, to: %p",
+                	                		old_binary_payload,
+                							atsc3_baseband_packet->ext_len,
+                							binary_payload);
+
             } else {
+            	//jjustman-2020-10-06 - TODO: malloc and copy here for atsc3_baseband_packet->ext_len as needed
                 uint8_t* extension_block_start = binary_payload;
-                __ALP_PARSER_WARN(" -> UNKNOWN EXTENSION TYPE: 0x%x, before reading extension block, payload position: %p, extension len: %hu",
+                __ALP_PARSER_WARN("atsc3_stltp_parse_baseband_packet: DISCARDING extension payload -> UNHANDLED EXTENSION TYPE: 0x%x, before reading extension block, payload position: %p, extension len: %hu",
                                   atsc3_baseband_packet->ext_type,
-                                  binary_payload, atsc3_baseband_packet->ext_len);
+                                  binary_payload,
+								  atsc3_baseband_packet->ext_len);
                 for(bbp_pointer_count=0; bbp_pointer_count < atsc3_baseband_packet->ext_len; bbp_pointer_count++) {
                             binary_payload++;
                 }
@@ -591,8 +601,10 @@ atsc3_alp_packet_t* atsc3_alp_packet_parse(uint8_t plp_num, block_t* baseband_pa
     	alp_packet->alp_packet_header.alp_header_payload = block_Alloc(alp_header_payload_size);
     	block_Write(alp_packet->alp_packet_header.alp_header_payload, alp_binary_payload_start, alp_header_payload_size);
     } else {
-    	__ALP_PARSER_WARN("ALP header payload length is %, binary_payload: %p, alp_binary_payload_start: %p",
-    			alp_header_payload_size, binary_payload, alp_binary_payload_start);
+    	__ALP_PARSER_WARN("ALP header payload length is %d, binary_payload: %p, alp_binary_payload_start: %p",
+    			alp_header_payload_size,
+				binary_payload,
+				alp_binary_payload_start);
     }
 
     alp_packet->alp_payload = block_Alloc(alp_payload_length);
@@ -832,7 +844,7 @@ atsc3_link_mapping_table_t* atsc3_alp_packet_extract_lmt(atsc3_alp_packet_t* ats
                 }
 
 				if(has_reserved_bits_mismatch_table || has_reserved_bits_mismatch_plp || has_reserved_bits_mismatch_multicast) {
-                    __ALP_PARSER_WARN("atsc3_alp_packet_collection_extract_lmt: bailing, has_reserved_bits_mismatch_table: %d, has_reserved_bits_mismatch_plp: %d, has_reserved_bits_mismatch_multicast: %d, reserved bits 0x3F missing, packet length: %d, num_PLPs_minus1: %d, num_multicasts: %",
+                    __ALP_PARSER_WARN("atsc3_alp_packet_collection_extract_lmt: bailing, has_reserved_bits_mismatch_table: %d, has_reserved_bits_mismatch_plp: %d, has_reserved_bits_mismatch_multicast: %d, reserved bits 0x3F missing, packet length: %d, num_PLPs_minus1: %d, num_multicasts: %d",
                               has_reserved_bits_mismatch_table,
                               has_reserved_bits_mismatch_plp,
                               has_reserved_bits_mismatch_multicast,

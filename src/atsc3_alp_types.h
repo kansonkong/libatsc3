@@ -172,7 +172,7 @@ typedef struct alp_packet_header  {
 } alp_packet_header_t;
 
 typedef struct atsc3_alp_packet {
-	atsc3_rtp_header_timestamp_t	bootstrap_timing_data_timestamp_short_reference;
+	atsc3_rtp_ctp_header_timestamp_t	bootstrap_timing_data_timestamp_short_reference;
 	uint8_t				plp_num;
 
     alp_packet_header_t alp_packet_header;
