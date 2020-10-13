@@ -41,8 +41,8 @@
 CC=cc
 CXX=g++
 
-CFLAGS=-Wno-nullability-completeness -Wno-expansion-to-defined -Wno-builtin-requires-header -Wno-c++11-extensions -Wc++11-compat-deprecated-writable-strings  -Wno-writable-strings
-CXXFLAGS=-std=c++11 -Wc++11-compat-deprecated-writable-strings -Wno-writable-strings
+CFLAGS=-Wno-nullability-completeness -Wno-expansion-to-defined -Wno-builtin-requires-header -Wno-c++11-extensions -Wno-writable-strings
+CXXFLAGS=-std=c++11 -Wno-writable-strings
 
 DEBUG=-g
 # DEBUG=-g -fsanitize=address -fno-omit-frame-pointer -fno-optimize-sibling-calls -O0 -fsanitize-address-use-after-scope
