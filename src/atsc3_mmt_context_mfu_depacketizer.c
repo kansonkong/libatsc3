@@ -850,7 +850,7 @@ void mmtp_mfu_rebuild_from_packet_id_mpu_sequence_number(atsc3_mmt_mfu_context_t
     }
 
     //jjustman-2019-10-29 - in the spirit of OOO MFU, process the movie fragment metadata as a last resort to extract the sample duration until mmt_atsc3_message support is functional
-    block_t* du_movie_fragment_block_rebuilt;
+    block_t* du_movie_fragment_block_rebuilt = NULL;
 
     for(int i=0; i < mpu_sequence_number_mmtp_mpu_packet_collection->mmtp_mpu_packet_v.count; i++) {
         mmtp_mpu_packet_t *mmtp_mpu_init_packet_to_rebuild = mpu_sequence_number_mmtp_mpu_packet_collection->mmtp_mpu_packet_v.data[i];
