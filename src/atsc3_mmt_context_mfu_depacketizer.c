@@ -324,6 +324,17 @@ atsc3_mmt_mfu_context_t* atsc3_mmt_mfu_context_new() {
 	return atsc3_mmt_mfu_context;
 }
 
+/*
+ *
+ * jjustman-2020-10-06: NOTE: if you are not calling atsc3_lls_slt_monitor_free, you will need to call BEFORE atsc3_mmt_mfu_context_free
+ *
+
+    if(lls_slt_monitor && atsc3_mmt_mfu_context->matching_lls_sls_mmt_session) {
+		lls_sls_mmt_session_flows_remove_lls_sls_mmt_session(lls_slt_monitor, &atsc3_mmt_mfu_context->matching_lls_sls_mmt_session);
+	}
+
+ */
+
 void atsc3_mmt_mfu_context_free(atsc3_mmt_mfu_context_t** atsc3_mmt_mfu_context_p) {
     if(atsc3_mmt_mfu_context_p) {
         atsc3_mmt_mfu_context_t* atsc3_mmt_mfu_context = *atsc3_mmt_mfu_context_p;
@@ -349,9 +360,6 @@ void atsc3_mmt_mfu_context_free(atsc3_mmt_mfu_context_t** atsc3_mmt_mfu_context_
                 atsc3_lls_slt_monitor_free(&atsc3_mmt_mfu_context->lls_slt_monitor);
             }
 
-            if(atsc3_mmt_mfu_context->matching_lls_sls_mmt_session) {
-                lls_sls_mmt_session_flows_free(&atsc3_mmt_mfu_context->matching_lls_sls_mmt_session);
-            }
 
             if(atsc3_mmt_mfu_context->mp_table_last) {
                 //jjustman-2020-08-31: todo - free inner impl
@@ -842,7 +850,7 @@ void mmtp_mfu_rebuild_from_packet_id_mpu_sequence_number(atsc3_mmt_mfu_context_t
     }
 
     //jjustman-2019-10-29 - in the spirit of OOO MFU, process the movie fragment metadata as a last resort to extract the sample duration until mmt_atsc3_message support is functional
-    block_t* du_movie_fragment_block_rebuilt;
+    block_t* du_movie_fragment_block_rebuilt = NULL;
 
     for(int i=0; i < mpu_sequence_number_mmtp_mpu_packet_collection->mmtp_mpu_packet_v.count; i++) {
         mmtp_mpu_packet_t *mmtp_mpu_init_packet_to_rebuild = mpu_sequence_number_mmtp_mpu_packet_collection->mmtp_mpu_packet_v.data[i];
@@ -905,7 +913,9 @@ void mmtp_mfu_rebuild_from_packet_id_mpu_sequence_number(atsc3_mmt_mfu_context_t
                     block_Merge(du_movie_fragment_block_rebuilt,
                                 mmtp_mpu_init_packet_to_rebuild->du_movie_fragment_block);
                     block_Rewind(du_movie_fragment_block_rebuilt);
-                    atsc3_mmt_mfu_context->atsc3_mmt_mpu_on_sequence_mpu_metadata_present(
+                    //jjustman-2020-10-13 - fix: was calling atsc3_mmt_mpu_on_sequence_mpu_metadata_present, but
+                    // we are rebuilding the movie_fragment metadata, thus we should be invoking atsc3_mmt_mpu_on_sequence_movie_fragment_metadata_present
+                    atsc3_mmt_mfu_context->atsc3_mmt_mpu_on_sequence_movie_fragment_metadata_present(
                             mmtp_mpu_init_packet_to_rebuild->mmtp_packet_id,
                             mmtp_mpu_init_packet_to_rebuild->mpu_sequence_number,
                             du_movie_fragment_block_rebuilt);
