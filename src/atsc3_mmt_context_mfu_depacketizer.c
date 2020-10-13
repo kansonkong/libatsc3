@@ -913,7 +913,9 @@ void mmtp_mfu_rebuild_from_packet_id_mpu_sequence_number(atsc3_mmt_mfu_context_t
                     block_Merge(du_movie_fragment_block_rebuilt,
                                 mmtp_mpu_init_packet_to_rebuild->du_movie_fragment_block);
                     block_Rewind(du_movie_fragment_block_rebuilt);
-                    atsc3_mmt_mfu_context->atsc3_mmt_mpu_on_sequence_mpu_metadata_present(
+                    //jjustman-2020-10-13 - fix: was calling atsc3_mmt_mpu_on_sequence_mpu_metadata_present, but
+                    // we are rebuilding the movie_fragment metadata, thus we should be invoking atsc3_mmt_mpu_on_sequence_movie_fragment_metadata_present
+                    atsc3_mmt_mfu_context->atsc3_mmt_mpu_on_sequence_movie_fragment_metadata_present(
                             mmtp_mpu_init_packet_to_rebuild->mmtp_packet_id,
                             mmtp_mpu_init_packet_to_rebuild->mpu_sequence_number,
                             du_movie_fragment_block_rebuilt);
