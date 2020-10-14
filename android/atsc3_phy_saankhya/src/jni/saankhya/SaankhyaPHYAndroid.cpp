@@ -1436,11 +1436,13 @@ int SaankhyaPHYAndroid::statusThread()
 
     while(this->statusThreadShouldRun) {
 
+        //running
         if(lastCpuStatus == 0xFFFFFFFF) {
-            usleep(1000000); //jjustman: target: sleep for 500ms
+            usleep(2000000); //jjustman: target: sleep for 500ms
             //TODO: jjustman-2019-12-05: investigate FX3 firmware and i2c single threaded interrupt handling instead of dma xfer
         } else {
-            usleep(2500000);
+            //halted
+            usleep(5000000);
         }
         lastCpuStatus = 0;
 
@@ -1448,6 +1450,8 @@ int SaankhyaPHYAndroid::statusThread()
         if(!this->statusThreadShouldRun) {
             break;
         }
+
+        //jjustman-2020-10-14 - try to make this loop as small as possible to not upset the SDIO I/F ALP buffer window
 
         SL_I2C_command_mutex_tuner_status_io.lock();
 
@@ -1462,6 +1466,7 @@ int SaankhyaPHYAndroid::statusThread()
                 cpuStatus:          (cpuStatus == 0xFFFFFFFF) ? "RUNNING" : "HALTED",
          */
 
+        //used for PLP demod info
         SL_DemodConfigInfo_t demodInfo;
         sl_res = SL_DemodGetConfiguration(this->slUnit, &demodInfo);
         if(sl_res != SL_OK) {
@@ -1469,18 +1474,21 @@ int SaankhyaPHYAndroid::statusThread()
             goto sl_i2c_tuner_mutex_unlock;
         }
 
+        //jjustman-2020-10-14 - not really worth it on AA as we don't get rssi here
         tres = SL_TunerGetStatus(this->tUnit, &tunerInfo);
         if (tres != SL_TUNER_OK) {
             _SAANKHYA_PHY_ANDROID_ERROR("Error:SL_TunerGetStatus: tres: %d", tres);
             goto sl_i2c_tuner_mutex_unlock;
         }
 
+        //important
         dres = SL_DemodGetStatus(this->slUnit, SL_DEMOD_STATUS_TYPE_LOCK, (SL_DemodLockStatus_t*)&demodLockStatus);
         if (dres != SL_OK) {
             _SAANKHYA_PHY_ANDROID_ERROR("Error:SL_Demod Get Lock Status  : dres: %d", dres);
             goto sl_i2c_tuner_mutex_unlock;
         }
 
+        //important
         dres = SL_DemodGetStatus(this->slUnit, SL_DEMOD_STATUS_TYPE_CPU, (int*)&cpuStatus);
         if (dres != SL_OK) {
             _SAANKHYA_PHY_ANDROID_ERROR("Error:SL_Demod Get CPU Status: dres: %d", dres);
@@ -1489,6 +1497,7 @@ int SaankhyaPHYAndroid::statusThread()
 
         lastCpuStatus = cpuStatus;
 
+        //we need this for SNR
         dres = SL_DemodGetAtsc3p0Diagnostics(this->slUnit, SL_DEMOD_DIAG_TYPE_PERF, (SL_Atsc3p0Perf_Diag_t*)&perfDiag);
         if (dres != SL_OK) {
             _SAANKHYA_PHY_ANDROID_ERROR("Error getting ATSC3.0 Performance Diagnostics : dres: %d", dres);
@@ -1501,12 +1510,17 @@ int SaankhyaPHYAndroid::statusThread()
             goto sl_i2c_tuner_mutex_unlock;
         }
 
+        /*
+         * jjustman-2020-10-14 - omitting
+
         dres = SL_DemodGetAtsc3p0Diagnostics(this->slUnit, SL_DEMOD_DIAG_TYPE_L1B, (SL_Atsc3p0L1B_Diag_t*)&l1bDiag);
         if (dres != SL_OK) {
             _SAANKHYA_PHY_ANDROID_ERROR("Error getting ATSC3.0 L1B Diagnostics  : dres: %d", dres);
             goto sl_i2c_tuner_mutex_unlock;
         }
+        */
 
+        //important for PLP FEC type, and Mod/Cod
         dres = SL_DemodGetAtsc3p0Diagnostics(this->slUnit, SL_DEMOD_DIAG_TYPE_L1D, (SL_Atsc3p0L1D_Diag_t*)&l1dDiag);
         if (dres != SL_OK) {
             _SAANKHYA_PHY_ANDROID_ERROR("Error getting ATSC3.0 L1D Diagnostics  : dres: %d", dres);
