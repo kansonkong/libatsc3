@@ -7,6 +7,10 @@
 #include <atsc3_utils.h>
 #include <atsc3_logging_externs.h>
 
+//jjustman-2020-09-23 - workaround for locale crash: https://android.googlesource.com/platform/ndk/+/master/tests/device/test-libc++-shared/jni/test_1.cc
+#include <iostream>
+#include <locale>
+
 #ifndef LIBATSC3_ANDROID_SAMPLE_APP_W_PHY_ATSC3NDKPHYAIRWAVZSTATICJNILOADER_H
 #define LIBATSC3_ANDROID_SAMPLE_APP_W_PHY_ATSC3NDKPHYAIRWAVZSTATICJNILOADER_H
 
