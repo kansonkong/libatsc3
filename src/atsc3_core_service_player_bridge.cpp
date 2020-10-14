@@ -1024,8 +1024,8 @@ void atsc3_mmt_mpu_mfu_on_sample_corrupt_ndk(uint16_t packet_id, uint32_t mpu_se
         __WARN("atsc3_mmt_mpu_mfu_on_sample_corrupt_ndk: mmt_mfu_sample: %p: returned null atsc3_mmt_mfu_mpu_timestamp_descriptor for packet_id: %d, mpu_sequence_number: %d", mmt_mfu_sample, packet_id, mpu_sequence_number);
     }
 
-    if(!block_Len(mmt_mfu_sample)) {
-        __WARN("atsc3_mmt_mpu_mfu_on_sample_corrupt_ndk: mmt_mfu_sample: %p: block len is 0 for packet_id: %d, mpu_sequence_number: %d", mmt_mfu_sample, packet_id, mpu_sequence_number);
+    if(block_Len(mmt_mfu_sample) < 32 ) {
+        __WARN("atsc3_mmt_mpu_mfu_on_sample_corrupt_ndk: mmt_mfu_sample: %p: block len is < 32 for packet_id: %d, mpu_sequence_number: %d", mmt_mfu_sample, packet_id, mpu_sequence_number);
         return;
     }
 
@@ -1035,8 +1035,9 @@ void atsc3_mmt_mpu_mfu_on_sample_corrupt_ndk(uint16_t packet_id, uint32_t mpu_se
             uint8_t *block_ptr = block_Get(mmt_mfu_sample_rbsp);
             uint32_t block_len = block_Len(mmt_mfu_sample_rbsp);
 
+
             //if((global_mfu_proccessed_count++ % 600) == 0) {
-                __INFO("atsc3_mmt_mpu_mfu_on_sample_corrupt_ndk: total mfu count: %d, packet_id: %d, mpu: %d, sample: %d, sample ptr: %p, orig len: %d (i_pos: %d, p_size: %d), nal ptr: %p, len: %d (i_pos: %d, p_size: %d)",
+                __INFO("atsc3_mmt_mpu_mfu_on_sample_corrupt_ndk: total mfu count: %d, packet_id: %d, mpu: %d, sample: %d, sample ptr: %p, orig len: %d (i_pos: %d, p_size: %d), nal ptr: %p (p_buffer: %p), len: %d (i_pos: %d, p_size: %d)",
                                         global_mfu_proccessed_count,
                                         packet_id,
                                         mpu_sequence_number,
@@ -1047,6 +1048,7 @@ void atsc3_mmt_mpu_mfu_on_sample_corrupt_ndk(uint16_t packet_id, uint32_t mpu_se
                        mmt_mfu_sample->p_size,
                                         block_Len(mmt_mfu_sample),
                                         block_ptr,
+                                        mmt_mfu_sample_rbsp->p_buffer,
                                         block_len,
                        mmt_mfu_sample_rbsp->i_pos,
                                         mmt_mfu_sample_rbsp->p_size);
@@ -1064,8 +1066,11 @@ void atsc3_mmt_mpu_mfu_on_sample_corrupt_ndk(uint16_t packet_id, uint32_t mpu_se
         uint32_t block_len = block_Len(mmt_mfu_sample);
 
         //audio and stpp don't need NAL start codes
-        __INFO("atsc3_mmt_mpu_mfu_on_sample_corrupt_ndk: non NAL, packet_id: %d, mpu_sequence_number: %d, sample_number: %d, block: %p, len: %d, char: %c %c %c %c",
-                    packet_id, mpu_sequence_number, sample_number,  block_ptr, block_len, block_ptr[0], block_ptr[1], block_ptr[2], block_ptr[3]);
+        __INFO("atsc3_mmt_mpu_mfu_on_sample_corrupt_ndk: non NAL, packet_id: %d, mpu_sequence_number: %d, sample_number: %d, block_ptr: %p (p_buffer: %p), len: %d, char: %c %c %c %c",
+                    packet_id, mpu_sequence_number, sample_number,
+                    block_ptr,
+               mmt_mfu_sample->p_buffer,
+               block_len, block_ptr[0], block_ptr[1], block_ptr[2], block_ptr[3]);
 
         Atsc3NdkApplicationBridge_ptr->atsc3_onMfuPacketCorrupt(packet_id, mpu_sequence_number, sample_number, block_ptr, block_len, mpu_timestamp_descriptor, mfu_fragment_count_expected, mfu_fragment_count_rebuilt);
     }
