@@ -101,8 +101,8 @@ protected:
 
 private:
 
-    int slUnit;
-    int tUnit;
+    int slUnit = 0;
+    int tUnit = 0;
 
     SL_PlatFormConfigParams_t getPlfConfig;
     SL_PlatFormConfigParams_t sPlfConfig;

@@ -11,6 +11,8 @@
 
 int _ALP_PARSER_INFO_ENABLED = 0;
 int _ALP_PARSER_DEBUG_ENABLED = 0;
+int _ALP_PARSER_TRACE_ENABLED = 0;
+
 
 /**
  A/322-2018 - Section 5.2 Baseband Formatting:
@@ -113,8 +115,8 @@ atsc3_baseband_packet_t* atsc3_stltp_parse_baseband_packet(atsc3_stltp_baseband_
     __ALP_PARSER_INFO("---------------------------------------");
     __ALP_PARSER_INFO("Baseband Packet Header: pointer: %p, sequence_number: %d, port: %d, length: %u",
                       binary_payload,
-                      atsc3_stltp_baseband_packet->ip_udp_rtp_packet_inner->rtp_header->sequence_number,
-                      atsc3_stltp_baseband_packet->ip_udp_rtp_packet_inner->udp_flow.dst_port,
+                      atsc3_stltp_baseband_packet->ip_udp_rtp_ctp_packet_inner->rtp_ctp_header->sequence_number,
+                      atsc3_stltp_baseband_packet->ip_udp_rtp_ctp_packet_inner->udp_flow.dst_port,
                       atsc3_stltp_baseband_packet->payload_length);
     __ALP_PARSER_INFO("Raw hex: 0x%02hhX 0x%02hhX 0x%02hhX 0x%02hhX", binary_payload[0], binary_payload[1], binary_payload[2], binary_payload[3]);
     __ALP_PARSER_INFO("---------------------------------------");
@@ -254,16 +256,24 @@ atsc3_baseband_packet_t* atsc3_stltp_parse_baseband_packet(atsc3_stltp_baseband_
             }
             
             //else, other extension field, e.g. counter or reserved, read here for payload...
+
+            //jjustman-2020-10-06 - ext_type == 0x7 is "all padding"
             if(atsc3_baseband_packet->ext_type == 0x7) {
                 uint8_t* old_binary_payload = binary_payload;
                 binary_payload += atsc3_baseband_packet->ext_len;
                 
-                __ALP_PARSER_INFO("seeking past padding (ext_type == 111), from: %p, bytes: %d, to: %p", old_binary_payload, atsc3_baseband_packet->ext_len, binary_payload);
+                __ALP_PARSER_TRACE("atsc3_stltp_parse_baseband_packet: extension payload, seeking past padding (ext_type == 111), from: %p, bytes: %d, to: %p",
+                	                		old_binary_payload,
+                							atsc3_baseband_packet->ext_len,
+                							binary_payload);
+
             } else {
+            	//jjustman-2020-10-06 - TODO: malloc and copy here for atsc3_baseband_packet->ext_len as needed
                 uint8_t* extension_block_start = binary_payload;
-                __ALP_PARSER_WARN(" -> UNKNOWN EXTENSION TYPE: 0x%x, before reading extension block, payload position: %p, extension len: %hu",
+                __ALP_PARSER_WARN("atsc3_stltp_parse_baseband_packet: DISCARDING extension payload -> UNHANDLED EXTENSION TYPE: 0x%x, before reading extension block, payload position: %p, extension len: %hu",
                                   atsc3_baseband_packet->ext_type,
-                                  binary_payload, atsc3_baseband_packet->ext_len);
+                                  binary_payload,
+								  atsc3_baseband_packet->ext_len);
                 for(bbp_pointer_count=0; bbp_pointer_count < atsc3_baseband_packet->ext_len; bbp_pointer_count++) {
                             binary_payload++;
                 }
@@ -591,8 +601,10 @@ atsc3_alp_packet_t* atsc3_alp_packet_parse(uint8_t plp_num, block_t* baseband_pa
     	alp_packet->alp_packet_header.alp_header_payload = block_Alloc(alp_header_payload_size);
     	block_Write(alp_packet->alp_packet_header.alp_header_payload, alp_binary_payload_start, alp_header_payload_size);
     } else {
-    	__ALP_PARSER_WARN("ALP header payload length is %, binary_payload: %p, alp_binary_payload_start: %p",
-    			alp_header_payload_size, binary_payload, alp_binary_payload_start);
+    	__ALP_PARSER_WARN("ALP header payload length is %d, binary_payload: %p, alp_binary_payload_start: %p",
+    			alp_header_payload_size,
+				binary_payload,
+				alp_binary_payload_start);
     }
 
     alp_packet->alp_payload = block_Alloc(alp_payload_length);
@@ -763,89 +775,109 @@ void atsc3_alp_packet_collection_extract_lmt(atsc3_alp_packet_collection_t* atsc
 }
 
 
-
 atsc3_link_mapping_table_t* atsc3_alp_packet_extract_lmt(atsc3_alp_packet_t* atsc3_alp_packet) {
-	atsc3_link_mapping_table_t* atsc3_link_mapping_table = NULL;
-	bool has_reserved_bits_mismatch_table = false;
+    atsc3_link_mapping_table_t* atsc3_link_mapping_table = NULL;
+    bool has_reserved_bits_mismatch_table = false;
     bool has_reserved_bits_mismatch_plp = false;
     bool has_reserved_bits_mismatch_multicast = false;
 
-	block_Rewind(atsc3_alp_packet->alp_payload);
-	uint32_t alp_payload_length = block_Remaining_size(atsc3_alp_packet->alp_payload);
-	if(alp_payload_length >=2) { //we need at least one PLP entry to parse out
-		__ALP_PARSER_INFO("atsc3_alp_packet_collection_extract_lmt: alp_payload: %p, alp_payload_length after signalling header extension: %d", atsc3_alp_packet->alp_payload, alp_payload_length);
-		
-		atsc3_link_mapping_table = atsc3_link_mapping_table_new();
-	    atsc3_link_mapping_table->alp_additional_header_for_signaling_information_signaling_version = atsc3_alp_packet->alp_packet_header.alp_additional_header_for_signaling_information.signaling_version;
+    block_Rewind(atsc3_alp_packet->alp_payload);
+    uint32_t alp_payload_length = block_Remaining_size(atsc3_alp_packet->alp_payload);
+    if(alp_payload_length >=2) { //we need at least one PLP entry to parse out
+        __ALP_PARSER_INFO("atsc3_alp_packet_collection_extract_lmt: alp_payload: %p, alp_payload_length after signalling header extension: %d", atsc3_alp_packet->alp_payload, alp_payload_length);
 
-		atsc3_link_mapping_table->num_PLPs_minus1 = block_Read_uint8_bitlen(atsc3_alp_packet->alp_payload, 6);
-		atsc3_link_mapping_table->reserved = block_Read_uint8_bitlen(atsc3_alp_packet->alp_payload, 2);
-		if(atsc3_link_mapping_table->reserved != 0x3) {
-			__ALP_PARSER_WARN("atsc3_alp_packet_collection_extract_lmt: atsc3_link_mapping_table->reserved != 0x3");
+        atsc3_link_mapping_table = atsc3_link_mapping_table_new();
+        atsc3_link_mapping_table->alp_additional_header_for_signaling_information_signaling_version = atsc3_alp_packet->alp_packet_header.alp_additional_header_for_signaling_information.signaling_version;
+
+        atsc3_link_mapping_table->num_PLPs_minus1 = block_Read_uint8_bitlen(atsc3_alp_packet->alp_payload, 6);
+        atsc3_link_mapping_table->reserved = block_Read_uint8_bitlen(atsc3_alp_packet->alp_payload, 2);
+        if(atsc3_link_mapping_table->reserved != 0x3) {
+            __ALP_PARSER_WARN("atsc3_alp_packet_collection_extract_lmt: atsc3_link_mapping_table->reserved != 0x3");
             has_reserved_bits_mismatch_table = true;
-		}
-		
-		__ALP_PARSER_INFO("atsc3_alp_packet_collection_extract_lmt: num_PLPs_minus1: %d", atsc3_link_mapping_table->num_PLPs_minus1);
-		for(int i=0; i <= atsc3_link_mapping_table->num_PLPs_minus1; i++) {
-			atsc3_link_mapping_table_plp_t* atsc3_link_mapping_table_plp = atsc3_link_mapping_table_plp_new();
-			atsc3_link_mapping_table_plp->PLP_ID = block_Read_uint8_bitlen(atsc3_alp_packet->alp_payload, 6);
-			atsc3_link_mapping_table_plp->reserved = block_Read_uint8_bitlen(atsc3_alp_packet->alp_payload, 2);
-			if(atsc3_link_mapping_table_plp->reserved != 0x3) {
-				__ALP_PARSER_WARN("atsc3_alp_packet_collection_extract_lmt: atsc3_link_mapping_table_plp->reserved != 0x3");
+        }
+
+        __ALP_PARSER_INFO("atsc3_alp_packet_collection_extract_lmt: num_PLPs_minus1: %d", atsc3_link_mapping_table->num_PLPs_minus1);
+        for(int i=0; i <= atsc3_link_mapping_table->num_PLPs_minus1; i++) {
+            if(block_Remaining_size(atsc3_alp_packet->alp_payload) < 2) {
+                __ALP_PARSER_WARN("atsc3_alp_packet_collection_extract_lmt: num_PLPs_minus1 outer loop: returning null as block_remaining_size is: %d (block original size: %d), num_PLPs_minus1: %d",
+                                  block_Remaining_size(atsc3_alp_packet->alp_payload),
+                                  atsc3_alp_packet->alp_payload->p_size,
+                                  atsc3_link_mapping_table->num_PLPs_minus1);
+                return NULL;
+
+            }
+
+            atsc3_link_mapping_table_plp_t* atsc3_link_mapping_table_plp = atsc3_link_mapping_table_plp_new();
+            atsc3_link_mapping_table_plp->PLP_ID = block_Read_uint8_bitlen(atsc3_alp_packet->alp_payload, 6);
+            atsc3_link_mapping_table_plp->reserved = block_Read_uint8_bitlen(atsc3_alp_packet->alp_payload, 2);
+            if(atsc3_link_mapping_table_plp->reserved != 0x3) {
+                __ALP_PARSER_WARN("atsc3_alp_packet_collection_extract_lmt: atsc3_link_mapping_table_plp->reserved != 0x3");
                 has_reserved_bits_mismatch_plp = true;
-			}
+            }
 
-			atsc3_link_mapping_table_plp->num_multicasts = block_Read_uint8_bitlen(atsc3_alp_packet->alp_payload, 8);
-			for(int j=0; j < atsc3_link_mapping_table_plp->num_multicasts; j++) {
-				atsc3_link_mapping_table_multicast_t* atsc3_link_mapping_table_multicast = atsc3_link_mapping_table_multicast_new();
-				atsc3_link_mapping_table_multicast->src_ip_add = block_Read_uint32_ntohl(atsc3_alp_packet->alp_payload);
-				atsc3_link_mapping_table_multicast->dst_ip_add = block_Read_uint32_ntohl(atsc3_alp_packet->alp_payload);
-				
-				atsc3_link_mapping_table_multicast->src_udp_port = block_Read_uint16_ntohs(atsc3_alp_packet->alp_payload);
-				atsc3_link_mapping_table_multicast->dst_udp_port = block_Read_uint16_ntohs(atsc3_alp_packet->alp_payload);
-				
-				atsc3_link_mapping_table_multicast->sid_flag = block_Read_uint8_bitlen(atsc3_alp_packet->alp_payload, 1);
-				atsc3_link_mapping_table_multicast->compressed_flag = block_Read_uint8_bitlen(atsc3_alp_packet->alp_payload, 1);
-				atsc3_link_mapping_table_multicast->reserved = block_Read_uint8_bitlen(atsc3_alp_packet->alp_payload, 6);
-				if(atsc3_link_mapping_table_multicast->reserved != 0x3F) {
-					__ALP_PARSER_WARN("atsc3_alp_packet_collection_extract_lmt: atsc3_link_mapping_table_multicast->reserved != 0x3");
+            atsc3_link_mapping_table_plp->num_multicasts = block_Read_uint8_bitlen(atsc3_alp_packet->alp_payload, 8);
+            for(int j=0; j < atsc3_link_mapping_table_plp->num_multicasts; j++) {
+                //we need at least 32 + 32 + 16 + 16 + 8 bits (13 bytes) here for a valid mcast entry
+                if(block_Remaining_size(atsc3_alp_packet->alp_payload) < 13) {
+                    __ALP_PARSER_WARN("atsc3_alp_packet_collection_extract_lmt: num_multicasts inner loop: returning null as block_remaining_size is: %d (block original size: %d), num_PLPs_minus1: %d, num_mcast idx: %d, num_multicasts: %d",
+                                      block_Remaining_size(atsc3_alp_packet->alp_payload),
+                                      atsc3_alp_packet->alp_payload->p_size,
+                                      atsc3_link_mapping_table->num_PLPs_minus1,
+                                      atsc3_link_mapping_table_plp->num_multicasts,
+                                      j);
+                    return NULL;
+
+                }
+                atsc3_link_mapping_table_multicast_t* atsc3_link_mapping_table_multicast = atsc3_link_mapping_table_multicast_new();
+                atsc3_link_mapping_table_multicast->src_ip_add = block_Read_uint32_ntohl(atsc3_alp_packet->alp_payload);
+                atsc3_link_mapping_table_multicast->dst_ip_add = block_Read_uint32_ntohl(atsc3_alp_packet->alp_payload);
+
+                atsc3_link_mapping_table_multicast->src_udp_port = block_Read_uint16_ntohs(atsc3_alp_packet->alp_payload);
+                atsc3_link_mapping_table_multicast->dst_udp_port = block_Read_uint16_ntohs(atsc3_alp_packet->alp_payload);
+
+                atsc3_link_mapping_table_multicast->sid_flag = block_Read_uint8_bitlen(atsc3_alp_packet->alp_payload, 1);
+                atsc3_link_mapping_table_multicast->compressed_flag = block_Read_uint8_bitlen(atsc3_alp_packet->alp_payload, 1);
+                atsc3_link_mapping_table_multicast->reserved = block_Read_uint8_bitlen(atsc3_alp_packet->alp_payload, 6);
+                if(atsc3_link_mapping_table_multicast->reserved != 0x3F) {
+                    __ALP_PARSER_WARN("atsc3_alp_packet_collection_extract_lmt: atsc3_link_mapping_table_multicast->reserved != 0x3");
                     has_reserved_bits_mismatch_multicast = true;
-				}
+                }
 
-				if(has_reserved_bits_mismatch_table && has_reserved_bits_mismatch_plp && has_reserved_bits_mismatch_multicast) {
-                    __ALP_PARSER_WARN("atsc3_alp_packet_collection_extract_lmt: bailing, reserved bits 0x3F missing for table, plp and multicast entry, packet length: %d, num_PLPs_minus1: %d, num_multicasts: %",
-                            alp_payload_length,
-                            atsc3_link_mapping_table->num_PLPs_minus1,
-                            atsc3_link_mapping_table_plp->num_multicasts
+				if(has_reserved_bits_mismatch_table || has_reserved_bits_mismatch_plp || has_reserved_bits_mismatch_multicast) {
+                    __ALP_PARSER_WARN("atsc3_alp_packet_collection_extract_lmt: bailing, has_reserved_bits_mismatch_table: %d, has_reserved_bits_mismatch_plp: %d, has_reserved_bits_mismatch_multicast: %d, reserved bits 0x3F missing, packet length: %d, num_PLPs_minus1: %d, num_multicasts: %d",
+                              has_reserved_bits_mismatch_table,
+                              has_reserved_bits_mismatch_plp,
+                              has_reserved_bits_mismatch_multicast,
+                              alp_payload_length,
+                              atsc3_link_mapping_table->num_PLPs_minus1,
+                              atsc3_link_mapping_table_plp->num_multicasts
                             );
 
                     atsc3_link_mapping_table_free(&atsc3_link_mapping_table);
                     return NULL;
                 }
-				
-				if(atsc3_link_mapping_table_multicast->sid_flag) {
-					atsc3_link_mapping_table_multicast->sid_flag = block_Read_uint8_bitlen(atsc3_alp_packet->alp_payload, 8);
-				}
-				
-				if(atsc3_link_mapping_table_multicast->compressed_flag) {
-					atsc3_link_mapping_table_multicast->compressed_flag = block_Read_uint8_bitlen(atsc3_alp_packet->alp_payload, 8);
-				}
 
-				__ALP_PARSER_DEBUG("atsc3_alp_packet_collection_extract_lmt: plp_id: %d, adding mcast: src: %u.%u.%u.%u:%u, dest: %u.%u.%u.%u:%u, sid_flag: %d, compressed_flag: %d",
-								   atsc3_link_mapping_table_plp->PLP_ID,
-								   __toipandportnonstruct(atsc3_link_mapping_table_multicast->src_ip_add, atsc3_link_mapping_table_multicast->src_udp_port),
-								   __toipandportnonstruct(atsc3_link_mapping_table_multicast->dst_ip_add, atsc3_link_mapping_table_multicast->dst_udp_port),
-									atsc3_link_mapping_table_multicast->sid_flag,
-								   atsc3_link_mapping_table_multicast->compressed_flag);
-								   
-				atsc3_link_mapping_table_plp_add_atsc3_link_mapping_table_multicast(atsc3_link_mapping_table_plp, atsc3_link_mapping_table_multicast);
-			}
-			atsc3_link_mapping_table_add_atsc3_link_mapping_table_plp(atsc3_link_mapping_table, atsc3_link_mapping_table_plp);
-		}
-	} else {
+                if(atsc3_link_mapping_table_multicast->sid_flag) {
+                    atsc3_link_mapping_table_multicast->sid_flag = block_Read_uint8_bitlen(atsc3_alp_packet->alp_payload, 8);
+                }
+
+                if(atsc3_link_mapping_table_multicast->compressed_flag) {
+                    atsc3_link_mapping_table_multicast->compressed_flag = block_Read_uint8_bitlen(atsc3_alp_packet->alp_payload, 8);
+                }
+
+                __ALP_PARSER_DEBUG("atsc3_alp_packet_collection_extract_lmt: plp_id: %d, adding mcast: src: %u.%u.%u.%u:%u, dest: %u.%u.%u.%u:%u, sid_flag: %d, compressed_flag: %d",
+                                   atsc3_link_mapping_table_plp->PLP_ID,
+                                   __toipandportnonstruct(atsc3_link_mapping_table_multicast->src_ip_add, atsc3_link_mapping_table_multicast->src_udp_port),
+                                   __toipandportnonstruct(atsc3_link_mapping_table_multicast->dst_ip_add, atsc3_link_mapping_table_multicast->dst_udp_port),
+                                   atsc3_link_mapping_table_multicast->sid_flag,
+                                   atsc3_link_mapping_table_multicast->compressed_flag);
+
+                atsc3_link_mapping_table_plp_add_atsc3_link_mapping_table_multicast(atsc3_link_mapping_table_plp, atsc3_link_mapping_table_multicast);
+            }
+            atsc3_link_mapping_table_add_atsc3_link_mapping_table_plp(atsc3_link_mapping_table, atsc3_link_mapping_table_plp);
+        }
+    } else {
         __ALP_PARSER_WARN("atsc3_alp_packet_collection_extract_lmt: alp_payload_length too short, only %d bytes", alp_payload_length);
     }
-	return atsc3_link_mapping_table;
+    return atsc3_link_mapping_table;
 }
-
-
