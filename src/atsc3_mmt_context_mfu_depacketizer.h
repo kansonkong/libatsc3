@@ -84,10 +84,10 @@ typedef struct atsc3_mmt_mfu_context {
 	atsc3_mmt_signalling_information_on_mpu_timestamp_descriptor_f 										atsc3_mmt_signalling_information_on_mpu_timestamp_descriptor;
 
 	//MFU specific callbacks
-	atsc3_mmt_mpu_mfu_on_sample_complete_f 																atsc3_mmt_mpu_mfu_on_sample_complete;
-	atsc3_mmt_mpu_mfu_on_sample_corrupt_f 																atsc3_mmt_mpu_mfu_on_sample_corrupt;
-	atsc3_mmt_mpu_mfu_on_sample_corrupt_mmthsample_header_f												atsc3_mmt_mpu_mfu_on_sample_corrupt_mmthsample_header;
-	atsc3_mmt_mpu_mfu_on_sample_missing_f 																atsc3_mmt_mpu_mfu_on_sample_missing;
+	atsc3_mmt_mpu_mfu_on_sample_complete_f 																atsc3_mmt_mpu_mfu_on_sample_complete;                   //REQUIRED: callback to decoder with a fully recovered MFU sample, no DU loss
+	atsc3_mmt_mpu_mfu_on_sample_corrupt_f 																atsc3_mmt_mpu_mfu_on_sample_corrupt;                    //OPTIONAL: callback to decoder with a partially recovered MFU sample, intra DU loss
+	atsc3_mmt_mpu_mfu_on_sample_corrupt_mmthsample_header_f												atsc3_mmt_mpu_mfu_on_sample_corrupt_mmthsample_header;  //OPTIONAL: callback to decoder with a partially recovered MFU sample, missing MMTHSampleHeader information, entire MFU is suspect
+	atsc3_mmt_mpu_mfu_on_sample_missing_f 																atsc3_mmt_mpu_mfu_on_sample_missing;                    //jjustman-2020-10-13: TODO: OPTIONAL: for statistics purposes of completely missing MFU samples (e.g. deep fade), for a RQF-like message
 
 	//Lastly, in the spirit of OOO MMT, movie fragment metadata comes last and should only be used as a last resort...
 	atsc3_mmt_mpu_on_sequence_movie_fragment_metadata_present_f                                         atsc3_mmt_mpu_on_sequence_movie_fragment_metadata_present;
