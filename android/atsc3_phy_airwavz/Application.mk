@@ -6,18 +6,13 @@
 # 3 files found with path 'lib/arm64-v8a/libc++_shared.so'.
 
 APP_DEBUG := true
-APP_STRIP_MODE := "none"
-#APP_STL := c++_shared
 
-# APP_ABI := all
+APP_CPPFLAGS += -D_ANDROID -fexceptions
 
-APP_CPPFLAGS += -std=c++11  -fexceptions -D_ANDROID
-
-
-ifeq ($(ENABLE_HWASAN),armeabi-v7a)
+#ifeq ($(ENABLE_HWASAN),armeabi-v7a)
 	APP_CFLAGS := -fsanitize=hwaddress -fno-omit-frame-pointer
 	APP_LDFLAGS := -fsanitize=hwaddress
-endif
+#endif
 
 # -fsanitize=address -fno-omit-frame-pointer
 #
