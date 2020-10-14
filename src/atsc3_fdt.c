@@ -63,7 +63,7 @@ void atsc3_fdt_instance_free(atsc3_fdt_instance_t** atsc3_fdt_instance_p) {
             free(atsc3_fdt_instance);
             atsc3_fdt_instance = NULL;
         }
-        atsc3_fdt_instance_p = NULL;
+        *atsc3_fdt_instance_p = NULL;
     }
 }
 

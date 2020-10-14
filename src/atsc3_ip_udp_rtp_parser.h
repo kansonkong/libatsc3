@@ -22,35 +22,35 @@ extern "C" {
 
     
 block_t* atsc3_pcap_parse_ethernet_frame(const struct pcap_pkthdr *pkthdr, const u_char *packet);
-atsc3_ip_udp_rtp_packet_t* atsc3_ip_udp_rtp_process_packet_from_pcap(u_char *user, const struct pcap_pkthdr *pkthdr, const u_char *packet);
-atsc3_ip_udp_rtp_packet_t* atsc3_ip_udp_rtp_packet_process_from_blockt_pos(block_t* from);
+atsc3_ip_udp_rtp_ctp_packet_t* atsc3_ip_udp_rtp_process_packet_from_pcap(u_char *user, const struct pcap_pkthdr *pkthdr, const u_char *packet);
+atsc3_ip_udp_rtp_ctp_packet_t* atsc3_ip_udp_rtp_ctp_packet_process_from_blockt_pos(block_t* from);
 
-atsc3_ip_udp_rtp_packet_t* atsc3_ip_udp_rtp_packet_process_header_only_no_data_block_from_blockt_pos(block_t* from);
+atsc3_ip_udp_rtp_ctp_packet_t* atsc3_ip_udp_rtp_ctp_packet_process_header_only_no_data_block_from_blockt_pos(block_t* from);
 
     
 /** jjustman-2019-07-21 todo: remove these for context of outer/inner parsing block, e.g. 1. outer (use Marker bit for identification) and inner(s) based upon size **/
     
-atsc3_rtp_header_t* atsc3_stltp_parse_rtp_header_block(block_t* data);
-atsc3_rtp_header_t* atsc3_ip_udp_rtp_parse_header(uint8_t* data, uint32_t size);
+atsc3_rtp_ctp_header_t* atsc3_stltp_parse_rtp_ctp_header_block(block_t* data);
+atsc3_rtp_ctp_header_t* atsc3_ip_udp_rtp_ctp_parse_header(uint8_t* data, uint32_t size);
 
     
-atsc3_rtp_header_t* atsc3_rtp_header_duplicate(atsc3_rtp_header_t* atsc3_rtp_header_from);
-void atsc3_rtp_header_free(atsc3_rtp_header_t** atsc3_rtp_header_p);
+atsc3_rtp_ctp_header_t* atsc3_rtp_ctp_header_duplicate(atsc3_rtp_ctp_header_t* atsc3_rtp_ctp_header_from);
+void atsc3_rtp_ctp_header_free(atsc3_rtp_ctp_header_t** atsc3_rtp_ctp_header_p);
 
         
-atsc3_ip_udp_rtp_packet_t* atsc3_ip_udp_rtp_packet_duplicate(atsc3_ip_udp_rtp_packet_t* ip_udp_rtp_packet);
-atsc3_ip_udp_rtp_packet_t* atsc3_ip_udp_rtp_packet_duplicate_no_data_block_t(atsc3_ip_udp_rtp_packet_t* ip_udp_rtp_packet);
+atsc3_ip_udp_rtp_ctp_packet_t* atsc3_ip_udp_rtp_ctp_packet_duplicate(atsc3_ip_udp_rtp_ctp_packet_t* ip_udp_rtp_ctp_packet);
+atsc3_ip_udp_rtp_ctp_packet_t* atsc3_ip_udp_rtp_ctp_packet_duplicate_no_data_block_t(atsc3_ip_udp_rtp_ctp_packet_t* ip_udp_rtp_ctp_packet);
 
-atsc3_ip_udp_rtp_packet_t* atsc3_ip_udp_rtp_packet_prepend_if_not_null(atsc3_ip_udp_rtp_packet_t* from_packet, atsc3_ip_udp_rtp_packet_t* to_packet);
+atsc3_ip_udp_rtp_ctp_packet_t* atsc3_ip_udp_rtp_ctp_packet_prepend_if_not_null(atsc3_ip_udp_rtp_ctp_packet_t* from_packet, atsc3_ip_udp_rtp_ctp_packet_t* to_packet);
     
 //will use refcounting for block_t free determination
-void atsc3_ip_udp_rtp_packet_free(atsc3_ip_udp_rtp_packet_t** ip_udp_rtp_packet_p);
+void atsc3_ip_udp_rtp_ctp_packet_free(atsc3_ip_udp_rtp_ctp_packet_t** ip_udp_rtp_ctp_packet_p);
 
 //destroy: hard free at the end of the main pcap loop
-void atsc3_ip_udp_rtp_packet_destroy(atsc3_ip_udp_rtp_packet_t** ip_udp_rtp_packet_p);
+void atsc3_ip_udp_rtp_ctp_packet_destroy(atsc3_ip_udp_rtp_ctp_packet_t** ip_udp_rtp_ctp_packet_p);
     
 //destroy hard free at the end of main pcap outer/inner loop for block_t
-void atsc3_ip_udp_rtp_packet_destroy_outer_inner(atsc3_ip_udp_rtp_packet_t** ip_udp_rtp_packet_outer_p, atsc3_ip_udp_rtp_packet_t** ip_udp_rtp_packet_inner_p);
+void atsc3_ip_udp_rtp_ctp_packet_destroy_outer_inner(atsc3_ip_udp_rtp_ctp_packet_t** ip_udp_rtp_ctp_packet_outer_p, atsc3_ip_udp_rtp_ctp_packet_t** ip_udp_rtp_ctp_packet_inner_p);
 
     
 #define __IP_UDP_RTP_PARSER_ERROR(...)	__LIBATSC3_TIMESTAMP_ERROR(__VA_ARGS__);

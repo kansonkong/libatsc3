@@ -253,6 +253,8 @@ int main(int argc,char **argv) {
 
 	char *filename;
 
+	bool stltp_dst_ip_and_port_manually_configured = false;
+
     char *stltp_dst_ip = "239.239.239.239";
     char *stltp_dst_port = "30000";
 
@@ -287,8 +289,8 @@ int main(int argc,char **argv) {
         __INFO("opening STLTP pcap for replay: %s", filename);
 
     } else if(argc==4) {
-
-    	//listen to a selected flow
+    	//listen to a user-specificed STLTP flow
+    	stltp_dst_ip_and_port_manually_configured = true;
 
     	filename = argv[1];
 		stltp_dst_ip = argv[2];
@@ -296,7 +298,10 @@ int main(int argc,char **argv) {
 		
 		__INFO("opening STLTP pcap for replay: %s, stltp dst_ip: %s, stltp dst_port: %s", filename, stltp_dst_ip, stltp_dst_port);
     } else if (argc==6) {
-		stltp_dst_ip = argv[2];
+    	//listen to a user-specificed STLTP and ALC flow
+      	stltp_dst_ip_and_port_manually_configured = true;
+
+      	stltp_dst_ip = argv[2];
 		stltp_dst_port = argv[3];
 
 		dst_ip = argv[4];
@@ -366,7 +371,10 @@ int main(int argc,char **argv) {
 	//atsc3_core_service_bridge_process_packet_phy(phy_payload_to_process);
 
 	pcapSTLTPVirtualPHY->setRxUdpPacketProcessCallback(phy_rx_udp_packet_process_callback);
-	pcapSTLTPVirtualPHY->atsc3_pcap_stltp_listen_ip_port_plp(stltp_dst_ip, stltp_dst_port, ATSC3_STLTP_DEPACKETIZER_ALL_PLPS_VALUE);
+	if(stltp_dst_ip_and_port_manually_configured) {
+		//auto-detect STLTP dst_ip and dst_port from RTP header frame presence
+		pcapSTLTPVirtualPHY->atsc3_pcap_stltp_listen_ip_port_plp(stltp_dst_ip, stltp_dst_port, ATSC3_STLTP_DEPACKETIZER_ALL_PLPS_VALUE);
+	}
 	pcapSTLTPVirtualPHY->atsc3_pcap_replay_open_file(filename);
 
 	pcapSTLTPVirtualPHY->atsc3_pcap_thread_run();
