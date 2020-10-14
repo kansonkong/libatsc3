@@ -48,17 +48,17 @@ void process_packet(u_char *user, const struct pcap_pkthdr *pkthdr, const u_char
 	__DEBUG("process_packet: pcap packet: %p, pcap len: %d", packet, pkthdr->len);
     
     //extract our outer ip/udp/rtp packet
-    atsc3_ip_udp_rtp_packet_t* ip_udp_rtp_packet = atsc3_ip_udp_rtp_process_packet_from_pcap(user, pkthdr, packet);
-    if(!ip_udp_rtp_packet) {
+    atsc3_ip_udp_rtp_ctp_packet_t* ip_udp_rtp_ctp_packet = atsc3_ip_udp_rtp_process_packet_from_pcap(user, pkthdr, packet);
+    if(!ip_udp_rtp_ctp_packet) {
         return;
     }
     
     //dispatch for STLTP decoding and reflection
-    if(ip_udp_rtp_packet->udp_flow.dst_ip_addr == *dst_ip_addr_filter && ip_udp_rtp_packet->udp_flow.dst_port == *dst_ip_port_filter) {
-        atsc3_stltp_tunnel_packet_processed = atsc3_stltp_raw_packet_extract_inner_from_outer_packet(atsc3_stltp_depacketizer_context, ip_udp_rtp_packet, atsc3_stltp_tunnel_packet_processed);
+    if(ip_udp_rtp_ctp_packet->udp_flow.dst_ip_addr == *dst_ip_addr_filter && ip_udp_rtp_ctp_packet->udp_flow.dst_port == *dst_ip_port_filter) {
+        atsc3_stltp_tunnel_packet_processed = atsc3_stltp_raw_packet_extract_inner_from_outer_packet(atsc3_stltp_depacketizer_context, ip_udp_rtp_ctp_packet, atsc3_stltp_tunnel_packet_processed);
         
         if(!atsc3_stltp_tunnel_packet_processed) {
-            __ERROR("process_packet: atsc3_stltp_tunnel_packet_processed is null, error processing packet: %p, size: %u",  ip_udp_rtp_packet, ip_udp_rtp_packet->data->p_size);
+            __ERROR("process_packet: atsc3_stltp_tunnel_packet_processed is null, error processing packet: %p, size: %u",  ip_udp_rtp_ctp_packet, ip_udp_rtp_ctp_packet->data->p_size);
             goto cleanup;
         }
         
@@ -71,11 +71,11 @@ void process_packet(u_char *user, const struct pcap_pkthdr *pkthdr, const u_char
                 atsc3_alp_packet_t* atsc3_alp_packet = NULL;
                 atsc3_stltp_baseband_packet_t* atsc3_stltp_baseband_packet = atsc3_stltp_tunnel_packet_processed->atsc3_stltp_baseband_packet_v.data[i];
                 __DEBUG("atsc3_baseband_packet: sequence_num: %d, port: %d",
-                       atsc3_stltp_baseband_packet->ip_udp_rtp_packet_inner->rtp_header->sequence_number,
-                       atsc3_stltp_baseband_packet->ip_udp_rtp_packet_inner->udp_flow.dst_port);
+                       atsc3_stltp_baseband_packet->ip_udp_rtp_ctp_packet_inner->rtp_ctp_header->sequence_number,
+                       atsc3_stltp_baseband_packet->ip_udp_rtp_ctp_packet_inner->udp_flow.dst_port);
                 
-				if(atsc3_stltp_baseband_packet->ip_udp_rtp_packet_inner->udp_flow.dst_port != stltp_ip_port_filter) {
-					__DEBUG("ignorning stltp_baseband_packet port: %d",  atsc3_stltp_baseband_packet->ip_udp_rtp_packet_inner->udp_flow.dst_port);
+				if(atsc3_stltp_baseband_packet->ip_udp_rtp_ctp_packet_inner->udp_flow.dst_port != stltp_ip_port_filter) {
+					__DEBUG("ignorning stltp_baseband_packet port: %d",  atsc3_stltp_baseband_packet->ip_udp_rtp_ctp_packet_inner->udp_flow.dst_port);
                     //atsc3_stltp_baseband_packet_free(&atsc3_stltp_baseband_packet);
                     continue;
                 }
@@ -98,8 +98,8 @@ void process_packet(u_char *user, const struct pcap_pkthdr *pkthdr, const u_char
                                   atsc3_baseband_packet->alp_payload_pre_pointer,
                                   atsc3_baseband_packet->alp_payload_pre_pointer->p_size,
                                   (atsc3_stltp_tunnel_packet_processed->atsc3_baseband_packet_short_fragment->p_size + atsc3_baseband_packet->alp_payload_pre_pointer->p_size),
-                                  atsc3_stltp_baseband_packet->ip_udp_rtp_packet_inner->rtp_header->sequence_number,
-                                  atsc3_stltp_baseband_packet->ip_udp_rtp_packet_inner->udp_flow.dst_port);
+                                  atsc3_stltp_baseband_packet->ip_udp_rtp_ctp_packet_inner->rtp_ctp_header->sequence_number,
+                                  atsc3_stltp_baseband_packet->ip_udp_rtp_ctp_packet_inner->udp_flow.dst_port);
                             
                             uint32_t holdover_alp_payload_size = atsc3_stltp_tunnel_packet_processed->atsc3_baseband_packet_short_fragment->p_size;
                             uint32_t old_alp_payload_size = atsc3_baseband_packet->alp_payload_pre_pointer->p_size;
@@ -115,8 +115,8 @@ void process_packet(u_char *user, const struct pcap_pkthdr *pkthdr, const u_char
                                    atsc3_baseband_packet->alp_payload_post_pointer,
                                    atsc3_baseband_packet->alp_payload_post_pointer->p_size,
                                    (atsc3_stltp_tunnel_packet_processed->atsc3_baseband_packet_short_fragment->p_size + atsc3_baseband_packet->alp_payload_post_pointer->p_size),
-                                   atsc3_stltp_baseband_packet->ip_udp_rtp_packet_inner->rtp_header->sequence_number,
-                                   atsc3_stltp_baseband_packet->ip_udp_rtp_packet_inner->udp_flow.dst_port);
+                                   atsc3_stltp_baseband_packet->ip_udp_rtp_ctp_packet_inner->rtp_ctp_header->sequence_number,
+                                   atsc3_stltp_baseband_packet->ip_udp_rtp_ctp_packet_inner->udp_flow.dst_port);
                             
                             
                             uint32_t holdover_alp_payload_size = atsc3_stltp_tunnel_packet_processed->atsc3_baseband_packet_short_fragment->p_size;
@@ -343,7 +343,7 @@ void process_packet(u_char *user, const struct pcap_pkthdr *pkthdr, const u_char
     }
     
 cleanup:
-    atsc3_ip_udp_rtp_packet_destroy(&ip_udp_rtp_packet);
+    atsc3_ip_udp_rtp_ctp_packet_destroy(&ip_udp_rtp_ctp_packet);
 }
 
 int main(int argc,char **argv) {

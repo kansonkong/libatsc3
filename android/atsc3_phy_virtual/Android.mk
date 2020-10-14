@@ -5,50 +5,15 @@ MY_LOCAL_PATH := $(call my-dir)
 LOCAL_PATH := $(call my-dir)
 MY_CUR_PATH := $(LOCAL_PATH)
 
-#
-## ---
-## core library
-#
-#include $(CLEAR_VARS)
-#LOCAL_MODULE := libatsc3_core
-#LOCAL_SRC_FILES := $(LOCAL_PATH)/../libatsc3_core/build/intermediates/prefab_package/debug/prefab/modules/atsc3_core/libs/android.$(TARGET_ARCH_ABI)/libatsc3_core.so
-#ifneq ($(MAKECMDGOALS),clean)
-#	include $(PREBUILT_SHARED_LIBRARY)
-#endif
-##---
 
-##jjustman-2020-08-12 - remove prefab LOCAL_SRC_FILES := $(LOCAL_PATH)/../libatsc3_core/build/intermediates/prefab_package/debug/prefab/modules/atsc3_core/libs/android.$(TARGET_ARCH_ABI)/libatsc3_core.so
-##vmatiash-2020-08-21 - module can't depend on libraries that is not built. This dependency specified in LOCAL_LDLIBS
-#include $(CLEAR_VARS)
-#LOCAL_MODULE := local-pv-atsc3_core
-#LOCAL_SRC_FILES := $(LOCAL_PATH)/../atsc3_core/build/intermediates/ndkBuild/debug/obj/local/$(TARGET_ARCH_ABI)/libatsc3_core.so
-#ifneq ($(MAKECMDGOALS),clean)
-#	ifneq ($(MAKECMDGOALS),generateJsonModelDebug)
-#include $(PREBUILT_SHARED_LIBRARY)
-#	endif
-#endif
+# ---
+# codornicesrq
+include $(CLEAR_VARS)
+LOCAL_MODULE := libCodornicesRq
+LOCAL_SRC_FILES := $(LOCAL_PATH)/../../codornicesrq/CodornicesRq-2.2-Android-$(TARGET_ARCH_ABI)/lib/libCodornicesRq.so
+include $(PREBUILT_SHARED_LIBRARY)
+#---
 
-
-#
-#
-#include $(CLEAR_VARS)
-#LOCAL_MODULE := libatsc3_bridge
-#LOCAL_SRC_FILES := $(LOCAL_PATH)/../libatsc3_bridge/build/intermediates/prefab_package/debug/prefab/modules/atsc3_bridge/libs/android.$(TARGET_ARCH_ABI)/libatsc3_bridge.so
-#ifneq ($(MAKECMDGOALS),clean)
-#	include $(PREBUILT_SHARED_LIBRARY)
-#endif
-
-##jjustman-2020-08-12 - remove prefab LOCAL_SRC_FILES := $(LOCAL_PATH)/../libatsc3_core/build/intermediates/prefab_package/debug/prefab/modules/atsc3_core/libs/android.$(TARGET_ARCH_ABI)/libatsc3_core.so
-##vmatiash-2020-08-21 - module can't depend on libraries that is not built. This dependency specified in LOCAL_LDLIBS
-#include $(CLEAR_VARS)
-#LOCAL_MODULE := local-pv-atsc3_bridge
-#LOCAL_SRC_FILES := $(LOCAL_PATH)/../atsc3_bridge/build/intermediates/ndkBuild/debug/obj/local/$(TARGET_ARCH_ABI)/libatsc3_bridge.so
-#$(info $(MAKECMDGOALS))
-#ifneq ($(MAKECMDGOALS),clean)
-#	ifneq ($(MAKECMDGOALS),generateJsonModelDebug)
-#include $(PREBUILT_SHARED_LIBRARY)
-#	endif
-#endif
 
 # ---
 # libsrt library
@@ -141,10 +106,10 @@ LOCAL_C_INCLUDES += $(LOCAL_PATH)/../../src/phy/virtual/srt/haicrypt
 
 # LOCAL_C_INCLUDES += $(LOCAL_PATH)/../atsc3_core/libsrt/include
 # jjustman-2020-09-17 - raptorQ support
-LOCAL_C_INCLUDES += $(LOCAL_PATH)/../../codornicesrq/CodornicesRq-2.2-Linux-armv7l/include
+# jjustman-2020-09-30 - link against arch
+# LOCAL_C_INCLUDES += $(LOCAL_PATH)/../../codornicesrq/CodornicesRq-2.2-Linux-armv7l/include
 
-
-# shared library missing -fPIC for srt
+LOCAL_C_INCLUDES += $(LOCAL_PATH)/../../codornicesrq/CodornicesRq-2.2-Android-arm64-v8a/include
 
 #jjustman-2020-08-17 - special defines for SRT
 LOCAL_CFLAGS += -g -O1 -fpack-struct=8  \
@@ -156,35 +121,19 @@ LOCAL_CFLAGS += -g -O1 -fpack-struct=8  \
 LOCAL_LDLIBS += -ldl -lc++_shared -llog -landroid -lz \
 				-latsc3_core -latsc3_bridge
 
-# jjustman-2020-09-08 - missing armv8 libs
-# -lCodornicesRq
-
 LOCAL_LDFLAGS += -fPIE -fPIC \
 				-L $(LOCAL_PATH)/../atsc3_bridge/build/intermediates/ndkBuild/debug/obj/local/$(TARGET_ARCH_ABI)/ \
 				-L $(LOCAL_PATH)/../atsc3_core/build/intermediates/ndkBuild/debug/obj/local/$(TARGET_ARCH_ABI)/
 
-# jjustman-2020-09-08 - missing armv8 libs
-#				-L $(LOCAL_PATH)/../../codornicesrq/CodornicesRq-2.2-Linux-armv7l/lib
-
-# jjustman-2020-08-10 - link in our atsc3_bridge prefab shared library
-# LOCAL_SHARED_LIBRARIES := atsc3_bridge
-# ifneq ($(MAKECMDGOALS),clean)
-
-# libcrypto
 $(info 'before local shared libs' $(MAKECMDGOALS))
 
 ifneq ($(MAKECMDGOALS),clean)
 	ifneq ($(MAKECMDGOALS),generateJsonModelDebug)
-LOCAL_SHARED_LIBRARIES := libssl libcrypto
+LOCAL_SHARED_LIBRARIES := libssl libcrypto libCodornicesRq
 	endif
 endif
 
 include $(BUILD_SHARED_LIBRARY)
-
-#as per https://android-developers.googleblog.com/2020/02/native-dependencies-in-android-studio-40.html
-# 	ifneq ($(MAKECMDGOALS),generateJsonModelDebug)
-# 	endif
-
 
 # libsrt atsc3_bridge atsc3_core
 $(info 'before call import module with $(MAKECMDGOALS)' )
