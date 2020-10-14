@@ -31,14 +31,14 @@ raw base64 payload:
 
 //release our packet_header once we have a concrete object type
 mmtp_signalling_packet_t* mmtp_signalling_packet_parse_and_free_packet_header_from_block_t(mmtp_packet_header_t** mmtp_packet_header_p, block_t* udp_packet) {
-    mmtp_packet_header_t* mmtp_packet_header = *mmtp_packet_header_p;
-    mmtp_signalling_packet_t* mmtp_signalling_packet = NULL;
-    if(mmtp_packet_header) {
-        mmtp_signalling_packet = mmtp_signalling_packet_parse_from_block_t(mmtp_packet_header, udp_packet);
-        mmtp_packet_header_free(mmtp_packet_header_p);
-    }
-    
-    return mmtp_signalling_packet;
+	mmtp_packet_header_t* mmtp_packet_header = *mmtp_packet_header_p;
+	mmtp_signalling_packet_t* mmtp_signalling_packet = NULL;
+	if(mmtp_packet_header) {
+		mmtp_signalling_packet = mmtp_signalling_packet_parse_from_block_t(mmtp_packet_header, udp_packet);
+		mmtp_packet_header_free(mmtp_packet_header_p);
+	}
+
+	return mmtp_signalling_packet;
 }
 
 mmtp_signalling_packet_t* mmtp_signalling_packet_parse_from_block_t(mmtp_packet_header_t* mmtp_packet_header, block_t* udp_packet) {
@@ -108,7 +108,7 @@ uint8_t mmt_signalling_message_parse_packet(mmtp_signalling_packet_t* mmtp_signa
 		__MMSM_ERROR("signalling_message_parse_payload_header: mmtp_payload_type 0x02 != 0x%x", mmtp_signalling_packet->mmtp_payload_type);
 		return processed_messages_count;
 	}
-    
+
 	if(mmtp_signalling_packet->si_aggregation_flag) {
 		uint32_t mmtp_aggregation_msg_length;
 		__MMSM_ERROR("mmt_signalling_message_parse_packet: AGGREGATED SI is UNTESTED!");
@@ -117,7 +117,7 @@ uint8_t mmt_signalling_message_parse_packet(mmtp_signalling_packet_t* mmtp_signa
 				//read the full 32 bits for MSG_length
 				buf = extract(buf, (uint8_t*)&mmtp_aggregation_msg_length, 4);
 				mmtp_aggregation_msg_length = ntohl(mmtp_aggregation_msg_length);
-                
+
 
 			} else {
 				//only read 16 bits for MSG_length
@@ -142,7 +142,7 @@ uint8_t mmt_signalling_message_parse_packet(mmtp_signalling_packet_t* mmtp_signa
 mmt_signalling_message_header_and_payload_t* __mmt_signalling_message_parse_length_long(block_t* udp_packet, mmt_signalling_message_header_and_payload_t* mmt_signalling_message_header_and_payload) {
 	uint32_t mmtp_msg_length_long;
 	if(block_Remaining_size(udp_packet) < 4) {
-	    return NULL;
+		return NULL;
 	}
 
 	uint8_t* buf = block_Get(udp_packet);
@@ -174,10 +174,10 @@ uint8_t mmt_signalling_message_parse_id_type(mmtp_signalling_packet_t* mmtp_sign
 
 	uint8_t version;
 	buf = extract(buf, &version, 1);
-    
-    //keep our block_t in sync...by 3 bytes
-    block_Seek_Relative(udp_packet, 3);
-    
+
+	//keep our block_t in sync...by 3 bytes
+	block_Seek_Relative(udp_packet, 3);
+
 	int32_t buf_size = udp_raw_buf_size - (buf - raw_buf);
 
 	mmt_signalling_message_header_and_payload_t* mmt_signalling_message_header_and_payload = mmt_signalling_message_header_and_payload_create(message_id, version);
@@ -381,14 +381,23 @@ uint8_t* __read_uint32_len_to_string(uint8_t* buf, uint32_t len, uint8_t** dest_
  * __read_mmt_general_location_info: max read length clamped to 4+4+2+2+2 = 14 bytes
  */
 
-uint8_t* __read_mmt_general_location_info(uint8_t* buf, mmt_general_location_info_t* mmt_general_location_info) {
+uint8_t* __read_mmt_general_location_info(uint8_t* buf, uint32_t remaining_len, mmt_general_location_info_t* mmt_general_location_info) {
 
+	if(!remaining_len) {
+		return NULL;
+	}
 	buf = extract(buf, (uint8_t*)&mmt_general_location_info->location_type, 1);
 
 	if(mmt_general_location_info->location_type == 0x00) {
+		if(remaining_len < 2) {
+			return NULL;
+		}
 		buf = extract(buf, (uint8_t*)&mmt_general_location_info->packet_id, 2);
 		mmt_general_location_info->packet_id = ntohs(mmt_general_location_info->packet_id);
 	} else if(mmt_general_location_info->location_type == 0x01) {
+		if(remaining_len < 12) {
+			return NULL;
+		}
 		buf = extract(buf, (uint8_t*)&mmt_general_location_info->ipv4_src_addr, 4);
 		mmt_general_location_info->ipv4_src_addr = ntohl(mmt_general_location_info->ipv4_src_addr);
 		buf = extract(buf, (uint8_t*)&mmt_general_location_info->ipv4_dst_addr, 4);
@@ -403,6 +412,9 @@ uint8_t* __read_mmt_general_location_info(uint8_t* buf, mmt_general_location_inf
 	} else if(mmt_general_location_info->location_type == 0x02) {
 		//noop
 	} else if(mmt_general_location_info->location_type == 0x0A) {
+		if(remaining_len < 14) {
+			return NULL;
+		}
 		buf = extract(buf, (uint8_t*)&mmt_general_location_info->ipv4_src_addr, 4);
 		buf = extract(buf, (uint8_t*)&mmt_general_location_info->ipv4_dst_addr, 4);
 		buf = extract(buf, (uint8_t*)&mmt_general_location_info->dst_port, 2);
@@ -427,14 +439,14 @@ uint8_t* mpt_message_parse(mmt_signalling_message_header_and_payload_t* mmt_sign
 
 	//jjustman-2020-10-01 - we need at least 5 bytes to get started
 	if(remaining_len < 6) {
-        __MMSM_WARN("mmt_scte35_message_payload_parse: short read for header: need 6 bytes but remaining size is: %d", remaining_len);
-        goto cleanup;
-    }
+		__MMSM_WARN("mpt_message_parse: short read for header: need 6 bytes but remaining size is: %d", remaining_len);
+		goto cleanup;
+	}
 
-    //jjustman-2019-08-12 - mp_table.id: 8 bit
+	//jjustman-2019-08-12 - mp_table.id: 8 bit
 	uint8_t table_id;
 	buf = extract(buf, &table_id, 1);
-    remaining_len--;
+	remaining_len--;
 
 	mp_table->table_id = table_id;
 
@@ -442,20 +454,20 @@ uint8_t* mpt_message_parse(mmt_signalling_message_header_and_payload_t* mmt_sign
 
 	uint8_t version;
 	buf = extract(buf, &version, 1);
-    remaining_len--;
+	remaining_len--;
 
-    mp_table->version = version;
+	mp_table->version = version;
 
 	uint16_t length;
 	buf = extract(buf,(uint8_t*)&length, 2);
-    remaining_len -= 2;
+	remaining_len -= 2;
 
-    mp_table->length = ntohs(length);
+	mp_table->length = ntohs(length);
 
 	uint8_t reserved_mp_table_mode;
 	buf = extract(buf, &reserved_mp_table_mode, 1);
-    remaining_len--;
-    if((reserved_mp_table_mode >> 2) != 0x3F) {
+	remaining_len--;
+	if((reserved_mp_table_mode >> 2) != 0x3F) {
 		__MMSM_ERROR_23008_1("mp_table RESERVED 6 bits are not set '111111' - message_id: 0x%04x, table_id: 0x%02x", mmt_signalling_message_header_and_payload->message_header.message_id, mp_table->table_id);
 		//goto cleanup;
 	}
@@ -469,65 +481,65 @@ uint8_t* mpt_message_parse(mmt_signalling_message_header_and_payload_t* mmt_sign
 		buf = extract(buf, &mmt_package_id_length, 1);
 		remaining_len--;
 
-        //jjustman-2020-10-01 - we need at least 5 bytes to get started
-        if(remaining_len < mmt_package_id_length) {
-            __MMSM_WARN("mmt_scte35_message_payload_parse: short read for mmt_package_id_length: need %d bytes but remaining size is: %d", mmt_package_id_length, remaining_len);
-            goto cleanup;
-        }
+		//jjustman-2020-10-01 - we need at least 5 bytes to get started
+		if(remaining_len < mmt_package_id_length) {
+			__MMSM_WARN("mpt_message_parse: short read for mmt_package_id_length: need %d bytes but remaining size is: %d", mmt_package_id_length, remaining_len);
+			goto cleanup;
+		}
 
-        mp_table->mmt_package_id.mmt_package_id_length = mmt_package_id_length;
+		mp_table->mmt_package_id.mmt_package_id_length = mmt_package_id_length;
 
 		buf = __read_uint8_len_to_string(buf, mmt_package_id_length, &mp_table->mmt_package_id.mmt_package_id);
-        remaining_len -= mmt_package_id_length;
+		remaining_len -= mmt_package_id_length;
 
-        //jjustman-2020-10-01 - we need at least 5 bytes to get started
-        if(remaining_len < 2) {
-            __MMSM_WARN("mmt_scte35_message_payload_parse: short read for table_descriptors_length: need %d bytes but remaining size is: %d", 2, remaining_len);
-            goto cleanup;
-        }
+		//jjustman-2020-10-01 - we need at least 5 bytes to get started
+		if(remaining_len < 2) {
+			__MMSM_WARN("mpt_message_parse: short read for table_descriptors_length: need %d bytes but remaining size is: %d", 2, remaining_len);
+			goto cleanup;
+		}
 
-        uint16_t table_descriptors_length;
-        buf = extract(buf, (uint8_t*)&table_descriptors_length, 2);
-        remaining_len -= 2;
-        
-        mp_table->mp_table_descriptors.mp_table_descriptors_length = ntohs(table_descriptors_length);
-        if(mp_table->mp_table_descriptors.mp_table_descriptors_length > 0) {
-            //jjustman-2020-10-01 - we need at least 5 bytes to get started
-            if(remaining_len < mp_table->mp_table_descriptors.mp_table_descriptors_length ) {
-                __MMSM_WARN("mmt_scte35_message_payload_parse: short read for mp_table->mp_table_descriptors.mp_table_descriptors_length : need %d bytes but remaining size is: %d", mp_table->mp_table_descriptors.mp_table_descriptors_length , remaining_len);
-                goto cleanup;
-            }
+		uint16_t table_descriptors_length;
+		buf = extract(buf, (uint8_t*)&table_descriptors_length, 2);
+		remaining_len -= 2;
 
-            __MMSM_DEBUG("reading mp_table_descriptors size: %u", mp_table->mp_table_descriptors.mp_table_descriptors_length);
-            mp_table->mp_table_descriptors.mp_table_descriptors_byte = calloc(mp_table->mp_table_descriptors.mp_table_descriptors_length, sizeof(uint8_t));
-            buf = extract(buf, (uint8_t*)&mp_table->mp_table_descriptors.mp_table_descriptors_byte, mp_table->mp_table_descriptors.mp_table_descriptors_length);
-            remaining_len -= mp_table->mp_table_descriptors.mp_table_descriptors_length;
-        }
-    }
+		mp_table->mp_table_descriptors.mp_table_descriptors_length = ntohs(table_descriptors_length);
+		if(mp_table->mp_table_descriptors.mp_table_descriptors_length > 0) {
+			//jjustman-2020-10-01 - we need at least 5 bytes to get started
+			if(remaining_len < mp_table->mp_table_descriptors.mp_table_descriptors_length ) {
+				__MMSM_WARN("mpt_message_parse: short read for mp_table->mp_table_descriptors.mp_table_descriptors_length : need %d bytes but remaining size is: %d", mp_table->mp_table_descriptors.mp_table_descriptors_length , remaining_len);
+				goto cleanup;
+			}
 
-    if(remaining_len <  1) {
-        __MMSM_WARN("mmt_scte35_message_payload_parse: short read for number_of_assets : need %d bytes but remaining size is: %d", 1, remaining_len);
-        goto cleanup;
-    }
+			__MMSM_DEBUG("mpt_message_parse: eading mp_table_descriptors size: %u", mp_table->mp_table_descriptors.mp_table_descriptors_length);
+			mp_table->mp_table_descriptors.mp_table_descriptors_byte = calloc(mp_table->mp_table_descriptors.mp_table_descriptors_length, sizeof(uint8_t));
+			buf = extract(buf, (uint8_t*)&mp_table->mp_table_descriptors.mp_table_descriptors_byte, mp_table->mp_table_descriptors.mp_table_descriptors_length);
+			remaining_len -= mp_table->mp_table_descriptors.mp_table_descriptors_length;
+		}
+	}
+
+	if(remaining_len <  1) {
+		__MMSM_WARN("mpt_message_parse: short read for number_of_assets : need %d bytes but remaining size is: %d", 1, remaining_len);
+		goto cleanup;
+	}
 	uint8_t number_of_assets;
 	buf = extract(buf, &number_of_assets, 1);
-    remaining_len--;
- 	number_of_assets = __CLIP(number_of_assets, 0, 255);
+	remaining_len--;
+	number_of_assets = __CLIP(number_of_assets, 0, 255);
 	mp_table->number_of_assets = number_of_assets;
 
 	mp_table->mp_table_asset_row = calloc(number_of_assets, sizeof(mp_table_asset_row_t));
 	for(int i=0; i < mp_table->number_of_assets; i++ ) {
 		mp_table_asset_row_t* row = &mp_table->mp_table_asset_row[i];
 
-        if(remaining_len <  9) {
-            __MMSM_WARN("mmt_scte35_message_payload_parse: short read for number_of_assets loop (%d assets) : need %d bytes but remaining size is: %d", mp_table->number_of_assets, 9, remaining_len);
-            goto cleanup;
-        }
+		if(remaining_len <  9) {
+			__MMSM_WARN("mpt_message_parse: short read for number_of_assets loop (%d assets) : need %d bytes but remaining size is: %d", mp_table->number_of_assets, 9, remaining_len);
+			goto cleanup;
+		}
 
 		//grab our identifer mapping
 		uint8_t identifier_type;
 		buf = extract(buf, &identifier_type, 1);
-        remaining_len--;
+		remaining_len--;
 
 		row->identifier_mapping.identifier_type = identifier_type;
 		if(row->identifier_mapping.identifier_type == 0x00) {
@@ -535,121 +547,126 @@ uint8_t* mpt_message_parse(mmt_signalling_message_header_and_payload_t* mmt_sign
 
 			buf = extract(buf, (uint8_t*)&asset_id_scheme, 4);
 			row->identifier_mapping.asset_id.asset_id_scheme = ntohl(asset_id_scheme);
-            remaining_len -= 4;
+			remaining_len -= 4;
 
 			uint32_t asset_id_length;
 			buf = extract(buf, (uint8_t*)&asset_id_length, 4);
-            remaining_len -= 4;
+			remaining_len -= 4;
 			row->identifier_mapping.asset_id.asset_id_length = ntohl(asset_id_length);
-            if(remaining_len < row->identifier_mapping.asset_id.asset_id_length) {
-                __MMSM_WARN("mmt_scte35_message_payload_parse: short read for asset: %d, row->identifier_mapping.asset_id.asset_id_length: need %d bytes but remaining size is: %d", i,  row->identifier_mapping.asset_id.asset_id_length, remaining_len);
-                goto cleanup;
-            }
+			if(remaining_len < row->identifier_mapping.asset_id.asset_id_length) {
+				__MMSM_WARN("mpt_message_parse: short read for asset: %d, row->identifier_mapping.asset_id.asset_id_length: need %d bytes but remaining size is: %d", i,  row->identifier_mapping.asset_id.asset_id_length, remaining_len);
+				goto cleanup;
+			}
 			buf = __read_uint32_len_to_string(buf, row->identifier_mapping.asset_id.asset_id_length, &row->identifier_mapping.asset_id.asset_id);
-            remaining_len -= row->identifier_mapping.asset_id.asset_id_length;
+			remaining_len -= row->identifier_mapping.asset_id.asset_id_length;
 
 		} else if(row->identifier_mapping.identifier_type == 0x01) {
 			//build url
 
 		}
 
-        if(remaining_len < 5) {
-            __MMSM_WARN("mmt_scte35_message_payload_parse: short read for asset: %d, row->asset_type and default_asset_flag: need %d bytes but remaining size is: %d", i, 5, remaining_len);
-            goto cleanup;
-        }
+		if(remaining_len < 5) {
+			__MMSM_WARN("mpt_message_parse: short read for asset: %d, row->asset_type and default_asset_flag: need %d bytes but remaining size is: %d", i, 5, remaining_len);
+			goto cleanup;
+		}
 
 		buf = extract(buf, (uint8_t*)&row->asset_type, 4);
-        remaining_len -= 4;
+		remaining_len -= 4;
 
 		uint8_t reserved_default_asset_flag;
 		buf = extract(buf, (uint8_t*)&reserved_default_asset_flag, 1);
-        remaining_len--;
+		remaining_len--;
 
-        row->default_asset_flag = (reserved_default_asset_flag >> 1) & 0x1;
+		row->default_asset_flag = (reserved_default_asset_flag >> 1) & 0x1;
 		row->asset_clock_relation_flag = reserved_default_asset_flag & 0x1;
 		if(row->asset_clock_relation_flag) {
-            if(remaining_len < 6) {
-                __MMSM_WARN("mmt_scte35_message_payload_parse: short read for asset: %d, asset_clock_relation_flag: need %d bytes but remaining size is: %d", i, 6, remaining_len);
-                goto cleanup;
-            }
+			if(remaining_len < 6) {
+				__MMSM_WARN("mpt_message_parse: short read for asset: %d, asset_clock_relation_flag: need %d bytes but remaining size is: %d", i, 6, remaining_len);
+				goto cleanup;
+			}
 			buf = extract(buf, (uint8_t*)&row->asset_clock_relation_id, 1);
-            remaining_len--;
+			remaining_len--;
 
-            uint8_t reserved_asset_timescale_flag;
+			uint8_t reserved_asset_timescale_flag;
 			buf = extract(buf, (uint8_t*)&reserved_asset_timescale_flag, 1);
-            remaining_len--;
+			remaining_len--;
 
-            row->asset_timescale_flag = reserved_asset_timescale_flag & 0x1;
+			row->asset_timescale_flag = reserved_asset_timescale_flag & 0x1;
 			if(row->asset_timescale_flag) {
 				buf = extract(buf, (uint8_t*)&row->asset_timescale, 4);
 				row->asset_timescale = ntohl(row->asset_timescale);
-                remaining_len -= 4;
-            }
+				remaining_len -= 4;
+			}
 		}
 
-        if(remaining_len < 1) {
-            __MMSM_WARN("mmt_scte35_message_payload_parse: short read for asset: %d, location_count: need %d bytes but remaining size is: %d", i, 1, remaining_len);
-            goto cleanup;
-        }
+		if(remaining_len < 1) {
+			__MMSM_WARN("mpt_message_parse: short read for asset: %d, location_count: need %d bytes but remaining size is: %d", i, 1, remaining_len);
+			goto cleanup;
+		}
 		buf = extract(buf, (uint8_t*)&row->location_count, 1);
-        remaining_len--;
+		remaining_len--;
 
-        if(remaining_len < 14) {
-            __MMSM_WARN("mmt_scte35_message_payload_parse: short read for asset: %d, __read_mmt_general_location_info: need %d bytes but remaining size is: %d", i, 14, remaining_len);
-            goto cleanup;
-        }
 
 		//build out mmt_general_location_info N times.....
-		buf = __read_mmt_general_location_info(buf, &row->mmt_general_location_info);
-        //reset our remaining_leng
-        remaining_len = (remaining_len - (buf - raw_buf));
 
-        if(remaining_len < 2) {
-            __MMSM_WARN("mmt_scte35_message_payload_parse: short read for asset: %d, asset_descriptors_length: need %d bytes but remaining size is: %d", i, 2, remaining_len);
-            goto cleanup;
-        }
+		//reset our remaining_leng
+		uint8_t* old_buf = buf;
+		buf = __read_mmt_general_location_info(old_buf, remaining_len, &row->mmt_general_location_info);
 
-        //asset_descriptors
-        uint16_t asset_descriptors_length;
+		if(buf == NULL) {
+			__MMSM_WARN("mpt_message_parse: incomplete table: __read_mmt_general_location_info: asset: %d, returned NULL, had %d bytes remaining len", i, remaining_len);
+			goto cleanup;
+		}
+
+		remaining_len = (remaining_len - (buf - old_buf));
+
+		if(remaining_len < 2) {
+			__MMSM_WARN("mpt_message_parse: short read for asset: %d, asset_descriptors_length: need %d bytes but remaining size is: %d", i, 2, remaining_len);
+			goto cleanup;
+		}
+
+
+		//asset_descriptors
+		uint16_t asset_descriptors_length;
 		buf = extract(buf, (uint8_t*)&asset_descriptors_length, 2);
 		remaining_len -= 2;
 
-        row->asset_descriptors_length = ntohs(asset_descriptors_length);
+		row->asset_descriptors_length = ntohs(asset_descriptors_length);
 
-        if(remaining_len < row->asset_descriptors_length) {
-            __MMSM_WARN("mmt_scte35_message_payload_parse: short read for asset: %d, row->asset_descriptors_length: need %d bytes but remaining size is: %d", i, row->asset_descriptors_length, remaining_len);
-            goto cleanup;
-        }
+		if(remaining_len < row->asset_descriptors_length) {
+			__MMSM_WARN("mpt_message_parse: short read for asset: %d, row->asset_descriptors_length: need %d bytes but remaining size is: %d", i, row->asset_descriptors_length, remaining_len);
+			goto cleanup;
+		}
 		buf = __read_uint16_len_to_string(buf, row->asset_descriptors_length, &row->asset_descriptors_payload);
-        remaining_len -= row->asset_descriptors_length;
+		remaining_len -= row->asset_descriptors_length;
 
-        //peek at
-        if(row->asset_descriptors_length) {
-            if(row->asset_descriptors_payload[0] == 0x00 && row->asset_descriptors_payload[1] == 0x01) {
-                row->mmt_signalling_message_mpu_timestamp_descriptor = calloc(1, sizeof(mmt_signalling_message_mpu_timestamp_descriptor_t));
-                row->mmt_signalling_message_mpu_timestamp_descriptor->descriptor_tag = 0x0001;
-                row->mmt_signalling_message_mpu_timestamp_descriptor->descriptor_length = row->asset_descriptors_payload[2];
-                row->mmt_signalling_message_mpu_timestamp_descriptor->mpu_tuple_n = row->mmt_signalling_message_mpu_timestamp_descriptor->descriptor_length / 12;
-                
-                if(row->mmt_signalling_message_mpu_timestamp_descriptor->mpu_tuple_n) {
-                    row->mmt_signalling_message_mpu_timestamp_descriptor->mpu_tuple = calloc(row->mmt_signalling_message_mpu_timestamp_descriptor->mpu_tuple_n, sizeof(mmt_signalling_message_mpu_tuple_t));
-                    for(int i=0; i < row->mmt_signalling_message_mpu_timestamp_descriptor->mpu_tuple_n; i++) {
-                        uint32_t mpu_sequence_number;
-                        uint64_t mpu_presentation_time;
-                        memcpy(&mpu_sequence_number, &row->asset_descriptors_payload[3 + (i*12)], 4);
-                        memcpy(&mpu_presentation_time, &row->asset_descriptors_payload[7 + (i*12)], 8);
+		//peek at
+		if(row->asset_descriptors_length) {
+			if(row->asset_descriptors_payload[0] == 0x00 && row->asset_descriptors_payload[1] == 0x01) {
+				row->mmt_signalling_message_mpu_timestamp_descriptor = calloc(1, sizeof(mmt_signalling_message_mpu_timestamp_descriptor_t));
+				row->mmt_signalling_message_mpu_timestamp_descriptor->descriptor_tag = 0x0001;
+				row->mmt_signalling_message_mpu_timestamp_descriptor->descriptor_length = row->asset_descriptors_payload[2];
+				row->mmt_signalling_message_mpu_timestamp_descriptor->mpu_tuple_n = row->mmt_signalling_message_mpu_timestamp_descriptor->descriptor_length / 12;
 
-                        row->mmt_signalling_message_mpu_timestamp_descriptor->mpu_tuple[i].mpu_sequence_number = ntohl(mpu_sequence_number);
-                        row->mmt_signalling_message_mpu_timestamp_descriptor->mpu_tuple[i].mpu_presentation_time = ntohll(mpu_presentation_time);
+				if(row->mmt_signalling_message_mpu_timestamp_descriptor->mpu_tuple_n) {
+					row->mmt_signalling_message_mpu_timestamp_descriptor->mpu_tuple = calloc(row->mmt_signalling_message_mpu_timestamp_descriptor->mpu_tuple_n, sizeof(mmt_signalling_message_mpu_tuple_t));
+					for(int i=0; i < row->mmt_signalling_message_mpu_timestamp_descriptor->mpu_tuple_n; i++) {
+						uint32_t mpu_sequence_number;
+						uint64_t mpu_presentation_time;
+						memcpy(&mpu_sequence_number, &row->asset_descriptors_payload[3 + (i*12)], 4);
+						memcpy(&mpu_presentation_time, &row->asset_descriptors_payload[7 + (i*12)], 8);
 
-                    }
-                }
-            }
-        }
+						row->mmt_signalling_message_mpu_timestamp_descriptor->mpu_tuple[i].mpu_sequence_number = ntohl(mpu_sequence_number);
+						row->mmt_signalling_message_mpu_timestamp_descriptor->mpu_tuple[i].mpu_presentation_time = ntohll(mpu_presentation_time);
+
+					}
+				}
+			}
+		}
 	}
 
 
-cleanup:
+	cleanup:
 
 	return NULL;
 }
@@ -667,29 +684,29 @@ uint8_t* mmt_atsc3_message_payload_parse(mmt_signalling_message_header_and_paylo
 	mmt_atsc3_message_payload_t* mmt_atsc3_message_payload = &mmt_signalling_message_header_and_payload->message_payload.mmt_atsc3_message_payload;
 
 	if((udp_size - (buf - raw_buf)) < 2) {
-	    return NULL;
+		return NULL;
 	}
 	uint16_t service_id;
 	buf = extract(buf, (uint8_t*)&service_id, 2);
 	mmt_atsc3_message_payload->service_id = ntohs(service_id);
 
-    if((udp_size - (buf - raw_buf)) < 2) {
-        return NULL;
-    }
+	if((udp_size - (buf - raw_buf)) < 2) {
+		return NULL;
+	}
 	uint16_t atsc3_message_content_type;
 	buf = extract(buf, (uint8_t*)&atsc3_message_content_type, 2);
 	mmt_atsc3_message_payload->atsc3_message_content_type = ntohs(atsc3_message_content_type);
 
-    if((udp_size - (buf - raw_buf)) < 1) {
-        return NULL;
-    }
+	if((udp_size - (buf - raw_buf)) < 1) {
+		return NULL;
+	}
 	uint8_t atsc3_message_content_version;
 	buf = extract(buf, (uint8_t*)&atsc3_message_content_version, 1);
 	mmt_atsc3_message_payload->atsc3_message_content_version = atsc3_message_content_version;
 
-    if((udp_size - (buf - raw_buf)) < 1) {
-        return NULL;
-    }
+	if((udp_size - (buf - raw_buf)) < 1) {
+		return NULL;
+	}
 	uint8_t atsc3_message_content_compression;
 	buf = extract(buf, (uint8_t*)&atsc3_message_content_compression, 1);
 	mmt_atsc3_message_payload->atsc3_message_content_compression = atsc3_message_content_compression;
@@ -699,15 +716,15 @@ uint8_t* mmt_atsc3_message_payload_parse(mmt_signalling_message_header_and_paylo
 	mmt_atsc3_message_payload->URI_length = __MAX(0, __MIN(255, URI_length));
 
 	if(URI_length) {
-        if((udp_size - (buf - raw_buf)) < URI_length) {
-            return NULL;
-        }
+		if((udp_size - (buf - raw_buf)) < URI_length) {
+			return NULL;
+		}
 		buf = __read_uint8_len_to_string(buf, URI_length, &mmt_atsc3_message_payload->URI_payload);
 	}
 
-    if((udp_size - (buf - raw_buf)) < 4) {
-        return NULL;
-    }
+	if((udp_size - (buf - raw_buf)) < 4) {
+		return NULL;
+	}
 	uint32_t temp_atsc3_message_content_length;
 	buf = extract(buf, (uint8_t*)&temp_atsc3_message_content_length, 4);
 	temp_atsc3_message_content_length = ntohl(temp_atsc3_message_content_length);
@@ -716,9 +733,9 @@ uint8_t* mmt_atsc3_message_payload_parse(mmt_signalling_message_header_and_paylo
 		//cheat and over-alloc+1 for a null byte
 
 		uint8_t *temp_atsc3_message_content = NULL;
-        if((udp_size - (buf - raw_buf)) < temp_atsc3_message_content_length) {
-            return NULL;
-        }
+		if((udp_size - (buf - raw_buf)) < temp_atsc3_message_content_length) {
+			return NULL;
+		}
 		buf = __read_uint32_len_to_string(buf, temp_atsc3_message_content_length, &temp_atsc3_message_content);
 
 		if(mmt_atsc3_message_payload->atsc3_message_content_compression == 0x02) {
@@ -731,10 +748,10 @@ uint8_t* mmt_atsc3_message_payload_parse(mmt_signalling_message_header_and_paylo
 
 			if(ret > 0) {
 				mmt_atsc3_message_payload->atsc3_message_content_length = ret;
-                mmt_atsc3_message_payload->atsc3_message_content = calloc(ret, sizeof(char));
-                memcpy(mmt_atsc3_message_payload->atsc3_message_content, decompressed_payload, ret);
-                free(decompressed_payload);
-                decompressed_payload = NULL;
+				mmt_atsc3_message_payload->atsc3_message_content = calloc(ret, sizeof(char));
+				memcpy(mmt_atsc3_message_payload->atsc3_message_content, decompressed_payload, ret);
+				free(decompressed_payload);
+				decompressed_payload = NULL;
 			} else {
 				__MMSM_ERROR("atsc3_message_content_compressed, unable to decompress: error is: %u", ret);
 			}
@@ -796,7 +813,7 @@ uint8_t* mmt_scte35_message_payload_parse(mmt_signalling_message_header_and_payl
 		__MMSM_INFO("mmt_scte35_message_payload_parse: adding signal at NTP_timestamp: %llu, PTS: %llu", mmt_scte35_signal_descriptor->ntp_timestamp, mmt_scte35_signal_descriptor->pts_timestamp);
 	}
 
-parse_incomplete:
+	parse_incomplete:
 
 	return buf;
 }
@@ -837,46 +854,46 @@ uint8_t* si_message_not_supported(mmt_signalling_message_header_and_payload_t* m
 
 
 void mmt_signalling_message_update_lls_sls_mmt_session(mmtp_signalling_packet_t* mmtp_signalling_packet, lls_sls_mmt_session_t* matching_lls_sls_mmt_session) {
-    for(int i=0; i < mmtp_signalling_packet->mmt_signalling_message_header_and_payload_v.count; i++) {
-        mmt_signalling_message_header_and_payload_t* mmt_signalling_message_header_and_payload = mmtp_signalling_packet->mmt_signalling_message_header_and_payload_v.data[i];
-        if(mmt_signalling_message_header_and_payload->message_header.MESSAGE_id_type == MPT_message) {
-            mp_table_t* mp_table = &mmt_signalling_message_header_and_payload->message_payload.mp_table;
-        
-            //update our lls_sls_mmt_session
-            if(matching_lls_sls_mmt_session && mp_table->number_of_assets) {
-                for(int i=0; i < mp_table->number_of_assets; i++) {
-                    //slight hack, check the asset types and default_asset = 1
-                    mp_table_asset_row_t* mp_table_asset_row = &mp_table->mp_table_asset_row[i];
-                    
-                    __MMSM_TRACE("MPT message: checking packet_id: %u, asset_type: %s, default: %u, identifier: %s", mp_table_asset_row->mmt_general_location_info.packet_id, mp_table_asset_row->asset_type, mp_table_asset_row->default_asset_flag, mp_table_asset_row->identifier_mapping.asset_id.asset_id ? (const char*)mp_table_asset_row->identifier_mapping.asset_id.asset_id : "");
-                    if(strncasecmp(ATSC3_MP_TABLE_ASSET_ROW_HEVC_ID, mp_table_asset_row->asset_type, 4) == 0) {
-                        matching_lls_sls_mmt_session->video_packet_id = mp_table_asset_row->mmt_general_location_info.packet_id;
-                        __MMSM_TRACE("MPT message: matching_lls_sls_mmt_session: %p, setting video_packet_id: packet_id: %u, asset_type: %s, default: %u, identifier: %s",
-                        		matching_lls_sls_mmt_session,
-								mp_table_asset_row->mmt_general_location_info.packet_id, mp_table_asset_row->asset_type, mp_table_asset_row->default_asset_flag, mp_table_asset_row->identifier_mapping.asset_id.asset_id ? (const char*)mp_table_asset_row->identifier_mapping.asset_id.asset_id : "");
+	for(int i=0; i < mmtp_signalling_packet->mmt_signalling_message_header_and_payload_v.count; i++) {
+		mmt_signalling_message_header_and_payload_t* mmt_signalling_message_header_and_payload = mmtp_signalling_packet->mmt_signalling_message_header_and_payload_v.data[i];
+		if(mmt_signalling_message_header_and_payload->message_header.MESSAGE_id_type == MPT_message) {
+			mp_table_t* mp_table = &mmt_signalling_message_header_and_payload->message_payload.mp_table;
 
-                    } else if(strncasecmp(ATSC3_MP_TABLE_ASSET_ROW_MP4A_ID, mp_table_asset_row->asset_type, 4) == 0 ||
-                                strncasecmp(ATSC3_MP_TABLE_ASSET_ROW_AC_4_ID, mp_table_asset_row->asset_type, 4) == 0 ||
-                                strncasecmp(ATSC3_MP_TABLE_ASSET_ROW_MHM1_ID, mp_table_asset_row->asset_type, 4) == 0 ||
-                                strncasecmp(ATSC3_MP_TABLE_ASSET_ROW_MHM2_ID, mp_table_asset_row->asset_type, 4) == 0) {
-                                matching_lls_sls_mmt_session->audio_packet_id = mp_table_asset_row->mmt_general_location_info.packet_id;
-                        __MMSM_TRACE("MPT message: matching_lls_sls_mmt_session: %p, setting audio_packet_id: packet_id: %u, asset_type: %s, default: %u, identifier: %s",
-                        		matching_lls_sls_mmt_session,
-								mp_table_asset_row->mmt_general_location_info.packet_id, mp_table_asset_row->asset_type, mp_table_asset_row->default_asset_flag, mp_table_asset_row->identifier_mapping.asset_id.asset_id ? (const char*)mp_table_asset_row->identifier_mapping.asset_id.asset_id : "");
+			//update our lls_sls_mmt_session
+			if(matching_lls_sls_mmt_session && mp_table->number_of_assets) {
+				for(int i=0; i < mp_table->number_of_assets; i++) {
+					//slight hack, check the asset types and default_asset = 1
+					mp_table_asset_row_t* mp_table_asset_row = &mp_table->mp_table_asset_row[i];
 
-                    } else if(strncasecmp(ATSC3_MP_TABLE_ASSET_ROW_IMSC1_ID, mp_table_asset_row->asset_type, 4) == 0) {
-                        matching_lls_sls_mmt_session->stpp_packet_id = mp_table_asset_row->mmt_general_location_info.packet_id;
-                        __MMSM_TRACE("MPT message: matching_lls_sls_mmt_session: %p, setting stpp_packet_id: packet_id: %u, asset_type: %s, default: %u, identifier: %s",
-                        		matching_lls_sls_mmt_session,
-								mp_table_asset_row->mmt_general_location_info.packet_id, mp_table_asset_row->asset_type, mp_table_asset_row->default_asset_flag, mp_table_asset_row->identifier_mapping.asset_id.asset_id ? (const char*)mp_table_asset_row->identifier_mapping.asset_id.asset_id : "");
+					__MMSM_TRACE("MPT message: checking packet_id: %u, asset_type: %s, default: %u, identifier: %s", mp_table_asset_row->mmt_general_location_info.packet_id, mp_table_asset_row->asset_type, mp_table_asset_row->default_asset_flag, mp_table_asset_row->identifier_mapping.asset_id.asset_id ? (const char*)mp_table_asset_row->identifier_mapping.asset_id.asset_id : "");
+					if(strncasecmp(ATSC3_MP_TABLE_ASSET_ROW_HEVC_ID, mp_table_asset_row->asset_type, 4) == 0) {
+						matching_lls_sls_mmt_session->video_packet_id = mp_table_asset_row->mmt_general_location_info.packet_id;
+						__MMSM_TRACE("MPT message: matching_lls_sls_mmt_session: %p, setting video_packet_id: packet_id: %u, asset_type: %s, default: %u, identifier: %s",
+									 matching_lls_sls_mmt_session,
+									 mp_table_asset_row->mmt_general_location_info.packet_id, mp_table_asset_row->asset_type, mp_table_asset_row->default_asset_flag, mp_table_asset_row->identifier_mapping.asset_id.asset_id ? (const char*)mp_table_asset_row->identifier_mapping.asset_id.asset_id : "");
 
-                    }
-                }
-            }
-        } else {
-            __MMSM_DEBUG("mmt_signalling_message_update_lls_sls_mmt_session: Ignoring signal: 0x%x", mmt_signalling_message_header_and_payload->message_header.MESSAGE_id_type);
-        }
-    }
+					} else if(strncasecmp(ATSC3_MP_TABLE_ASSET_ROW_MP4A_ID, mp_table_asset_row->asset_type, 4) == 0 ||
+							  strncasecmp(ATSC3_MP_TABLE_ASSET_ROW_AC_4_ID, mp_table_asset_row->asset_type, 4) == 0 ||
+							  strncasecmp(ATSC3_MP_TABLE_ASSET_ROW_MHM1_ID, mp_table_asset_row->asset_type, 4) == 0 ||
+							  strncasecmp(ATSC3_MP_TABLE_ASSET_ROW_MHM2_ID, mp_table_asset_row->asset_type, 4) == 0) {
+						matching_lls_sls_mmt_session->audio_packet_id = mp_table_asset_row->mmt_general_location_info.packet_id;
+						__MMSM_TRACE("MPT message: matching_lls_sls_mmt_session: %p, setting audio_packet_id: packet_id: %u, asset_type: %s, default: %u, identifier: %s",
+									 matching_lls_sls_mmt_session,
+									 mp_table_asset_row->mmt_general_location_info.packet_id, mp_table_asset_row->asset_type, mp_table_asset_row->default_asset_flag, mp_table_asset_row->identifier_mapping.asset_id.asset_id ? (const char*)mp_table_asset_row->identifier_mapping.asset_id.asset_id : "");
+
+					} else if(strncasecmp(ATSC3_MP_TABLE_ASSET_ROW_IMSC1_ID, mp_table_asset_row->asset_type, 4) == 0) {
+						matching_lls_sls_mmt_session->stpp_packet_id = mp_table_asset_row->mmt_general_location_info.packet_id;
+						__MMSM_TRACE("MPT message: matching_lls_sls_mmt_session: %p, setting stpp_packet_id: packet_id: %u, asset_type: %s, default: %u, identifier: %s",
+									 matching_lls_sls_mmt_session,
+									 mp_table_asset_row->mmt_general_location_info.packet_id, mp_table_asset_row->asset_type, mp_table_asset_row->default_asset_flag, mp_table_asset_row->identifier_mapping.asset_id.asset_id ? (const char*)mp_table_asset_row->identifier_mapping.asset_id.asset_id : "");
+
+					}
+				}
+			}
+		} else {
+			__MMSM_DEBUG("mmt_signalling_message_update_lls_sls_mmt_session: Ignoring signal: 0x%x", mmt_signalling_message_header_and_payload->message_header.MESSAGE_id_type);
+		}
+	}
 }
 
 void signalling_message_mmtp_packet_header_dump(mmtp_packet_header_t* mmtp_packet_header) {
@@ -1001,12 +1018,12 @@ void mpt_message_dump(mmt_signalling_message_header_and_payload_t* mmt_signallin
 		//first entry
 		__MMSM_DEBUG(" asset_descriptors_length                 : %u", mp_table_asset_row->asset_descriptors_length);
 		if(mp_table_asset_row->asset_descriptors_length) {
-            if(mp_table_asset_row->mmt_signalling_message_mpu_timestamp_descriptor) {
-                for(int i=0; i < mp_table_asset_row->mmt_signalling_message_mpu_timestamp_descriptor->mpu_tuple_n; i++) {
-                    __MMSM_DEBUG("   mpu_timestamp_descriptor %u, mpu_sequence_number: %u", i, mp_table_asset_row->mmt_signalling_message_mpu_timestamp_descriptor->mpu_tuple[i].mpu_sequence_number);
-                    __MMSM_DEBUG("   mpu_timestamp_descriptor %u, mpu_presentation_time: %llu", i, mp_table_asset_row->mmt_signalling_message_mpu_timestamp_descriptor->mpu_tuple[i].mpu_presentation_time);
-                }
-            }
+			if(mp_table_asset_row->mmt_signalling_message_mpu_timestamp_descriptor) {
+				for(int i=0; i < mp_table_asset_row->mmt_signalling_message_mpu_timestamp_descriptor->mpu_tuple_n; i++) {
+					__MMSM_DEBUG("   mpu_timestamp_descriptor %u, mpu_sequence_number: %u", i, mp_table_asset_row->mmt_signalling_message_mpu_timestamp_descriptor->mpu_tuple[i].mpu_sequence_number);
+					__MMSM_DEBUG("   mpu_timestamp_descriptor %u, mpu_presentation_time: %llu", i, mp_table_asset_row->mmt_signalling_message_mpu_timestamp_descriptor->mpu_tuple[i].mpu_presentation_time);
+				}
+			}
 		}
 	}
 
