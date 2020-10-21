@@ -28,12 +28,19 @@ atsc3_sl_tlv_payload_t* atsc3_sl_tlv_payload_parse_from_block_t(block_t* atsc3_s
  */
 
 atsc3_sl_tlv_payload_t* atsc3_sl_tlv_payload_parse_from_block_t_with_metrics(block_t* atsc3_sl_tlv_payload_unparsed_block, atsc3_sl_tlv_payload_metrics_t* atsc3_sl_tlv_payload_metrics) {
-	
-    uint8_t* buf_start = block_Get(atsc3_sl_tlv_payload_unparsed_block);
-    uint8_t* buf_end = buf_start + (atsc3_sl_tlv_payload_unparsed_block->p_size - atsc3_sl_tlv_payload_unparsed_block->i_pos);
-    uint8_t* buf = buf_start;
+    atsc3_sl_tlv_payload_t* atsc3_sl_tlv_payload = NULL;
 
-    atsc3_sl_tlv_payload_t* atsc3_sl_tlv_payload = calloc(1, sizeof(atsc3_sl_tlv_payload_t));
+    uint8_t* buf_start = NULL;
+    uint8_t* buf_end = NULL;
+    uint8_t* buf = NULL;
+
+restart_parsing:
+
+    buf_start = block_Get(atsc3_sl_tlv_payload_unparsed_block);
+    buf_end = buf_start + (atsc3_sl_tlv_payload_unparsed_block->p_size - atsc3_sl_tlv_payload_unparsed_block->i_pos);
+    buf = buf_start;
+
+    atsc3_sl_tlv_payload = calloc(1, sizeof(atsc3_sl_tlv_payload_t));
 
     //our TLV header must be at least 188 bytes to parse
     if(buf_end - buf_start < 188) {
@@ -42,14 +49,13 @@ atsc3_sl_tlv_payload_t* atsc3_sl_tlv_payload_parse_from_block_t_with_metrics(blo
     	return NULL;
     }
 
-    //read our magic number
-    //looks like we are already in host order?
+    //read our magic number - looks like we are already in host order?
     //atsc3_sl_tlv_payload->magic_number = ntohl(*((uint32_t*)(buf)));
     __SL_TLV_DEMOD_TRACE("atsc3_sl_tlv_payload_parse_from_block_t: magic number buf is: 0x%08x", *(uint32_t*)buf);
 
     atsc3_sl_tlv_payload->magic_number = *(uint32_t*)(buf);
     if(atsc3_sl_tlv_payload->magic_number != 0x24681357) {
-        __SL_TLV_DEMOD_ERROR("atsc3_sl_tlv_payload_parse_from_block_t: position: %d, magic number is not 0x24681357, parsed as: 0x%08x",
+        __SL_TLV_DEMOD_DEBUG("atsc3_sl_tlv_payload_parse_from_block_t: position: %d, magic number is not 0x24681357, parsed as: 0x%08x",
         		atsc3_sl_tlv_payload_unparsed_block->i_pos,
         		atsc3_sl_tlv_payload->magic_number);
 		atsc3_sl_tlv_payload_metrics->total_tlv_packets_without_matching_magic_count++;
@@ -67,7 +73,7 @@ atsc3_sl_tlv_payload_t* atsc3_sl_tlv_payload_parse_from_block_t_with_metrics(blo
 				atsc3_sl_tlv_payload_metrics->total_tlv_bytes_discarded_due_to_magic_mismatch_count += (buf - buf_start);
                 atsc3_sl_tlv_payload_unparsed_block->i_pos += (buf - buf_start);
 
-                __SL_TLV_DEMOD_ERROR("atsc3_sl_tlv_payload_parse_from_block_t: position: %d, found magic number - parsed as: 0x%08x (expected: 0x24681357), buf start: %p, buf_found: %p, buf end: %p, offset: %d",
+                __SL_TLV_DEMOD_INFO("atsc3_sl_tlv_payload_parse_from_block_t: position: %d, found magic number - parsed as: 0x%08x (expected: 0x24681357), buf start: %p, buf_found: %p, buf end: %p, offset: %d",
                                      atsc3_sl_tlv_payload_unparsed_block->i_pos,
                                      atsc3_sl_tlv_payload->magic_number,
                                      buf_start,
@@ -97,15 +103,17 @@ atsc3_sl_tlv_payload_t* atsc3_sl_tlv_payload_parse_from_block_t_with_metrics(blo
     }
     buf+=4;
 
-
-
     __SL_TLV_DEMOD_TRACE("parsing SL TLV packet with magic: 0x%8x, position: %d", atsc3_sl_tlv_payload->magic_number, atsc3_sl_tlv_payload_unparsed_block->i_pos);
 
     //atsc3_sl_tlv_payload->alp_packet_size = ntohl(*((uint32_t*)(buf)));
     atsc3_sl_tlv_payload->alp_packet_size = *(uint32_t*)(buf);
 	if(atsc3_sl_tlv_payload->alp_packet_size > MAX_ATSC3_PHY_IP_DATAGRAM_SIZE) {
 		atsc3_sl_tlv_payload_metrics->total_tlv_packets_with_TLV_header_ALP_size_greater_than_max_IP_UDP_datagram_size_count++;
-		__SL_TLV_DEMOD_ERROR( "INVALID TLV: alp packet size: %d - (0x%08x), bailing", atsc3_sl_tlv_payload->alp_packet_size, atsc3_sl_tlv_payload->alp_packet_size);
+		__SL_TLV_DEMOD_ERROR( "INVALID TLV: PLP: 0x%02x, at position: %d, alp packet size: %d - (0x%08x), bailing",
+                              atsc3_sl_tlv_payload->plp_number,
+                              atsc3_sl_tlv_payload_unparsed_block->i_pos,
+		                      atsc3_sl_tlv_payload->alp_packet_size,
+		                      atsc3_sl_tlv_payload->alp_packet_size);
 		return NULL;
 	} else {
 		//don't add this value yet if our TLV payload size is incomplete in our block_t, add it in "TLV packet is in this block_t boundary"
@@ -115,12 +123,9 @@ atsc3_sl_tlv_payload_t* atsc3_sl_tlv_payload_parse_from_block_t_with_metrics(blo
     buf+=4;
     
     atsc3_sl_tlv_payload->plp_number = *buf++;
-	if(atsc3_sl_tlv_payload->plp_number > 63) {
-		atsc3_sl_tlv_payload_metrics->total_tlv_packets_with_invalid_PLP_value_count++;
-		//jjustman-2020-04-16 - reduce noisy TLV packets due to possible re-sync or alp buffer continutations
-        __SL_TLV_DEMOD_DEBUG("INVALID TLV: plp number (expected < 63): %d (0x%2x)", atsc3_sl_tlv_payload->plp_number, atsc3_sl_tlv_payload->plp_number);
-
-        //__SL_TLV_DEMOD_ERROR("INVALID TLV: plp number (expected < 63): %d (0x%2x)", atsc3_sl_tlv_payload->plp_number, atsc3_sl_tlv_payload->plp_number);
+	if(atsc3_sl_tlv_payload->plp_number > 63 && atsc3_sl_tlv_payload->plp_number != 0xFF) {
+	    atsc3_sl_tlv_payload_metrics->total_tlv_packets_with_invalid_PLP_value_count++;
+	    __SL_TLV_DEMOD_ERROR("INVALID TLV: plp number (expected < 63): %d (0x%2x)", atsc3_sl_tlv_payload->plp_number, atsc3_sl_tlv_payload->plp_number);
 	} else {
 		__SL_TLV_DEMOD_TRACE(" plp number: %d", atsc3_sl_tlv_payload->plp_number);
 	}
@@ -146,6 +151,7 @@ atsc3_sl_tlv_payload_t* atsc3_sl_tlv_payload_parse_from_block_t_with_metrics(blo
 	
     atsc3_sl_tlv_payload->alp_trailing_padding_size = *buf++;
     __SL_TLV_DEMOD_TRACE(" alp_trailing_padding_size packet size: %d", atsc3_sl_tlv_payload->alp_trailing_padding_size);
+   // __SL_TLV_DEMOD_INFO(" PLP 0x%02x, alp_trailing_padding_size packet size: %d", atsc3_sl_tlv_payload->plp_number, atsc3_sl_tlv_payload->alp_trailing_padding_size);
 
     atsc3_sl_tlv_payload->reserved_b12_b15 = ntohl((*((uint32_t*)(buf))>>8 & 0x00FFFFFF));
     __SL_TLV_DEMOD_TRACE("  reserved_b12_b15: 0x%06x", atsc3_sl_tlv_payload->reserved_b12_b15);
@@ -166,11 +172,64 @@ atsc3_sl_tlv_payload_t* atsc3_sl_tlv_payload_parse_from_block_t_with_metrics(blo
     buf += (188 - 23);
 
     uint32_t remaining_block_t_size = buf_end - buf;
+
+    //jjustman-2020-10-07 - check to see if our PLP == 0xFF, then discard the remaining tlv payload length, and try to restart our processing if enough buffer remaining
+    if(atsc3_sl_tlv_payload->plp_number == 0xFF) {
+        atsc3_sl_tlv_payload_metrics->total_tlv_packets_discarded_for_sdio_padding++;
+
+        /**
+         * jjustman-2020-10-07 - SL_DEMOD_API 0.14
+
+         * Value of 0xFF in PLP field only relevant when output mode SDIO is used.
+         * This packet contains padding data needed for 16byte alignment across 8K boundary.
+         * User needs to ignore this packet.
+         *
+         * We have consumed 9 bytes so far, i.e. 24 - 9 = 15 bytes left of header
+         *                                  (tlv header size)
+         */
+
+        uint32_t to_discard_alp_packet_size = atsc3_sl_tlv_payload->alp_packet_size;
+        uint32_t to_discard_tlv_payload = (buf - buf_start);
+        uint32_t to_discard_tlv_and_alp_packet_size = to_discard_tlv_payload + to_discard_alp_packet_size;
+
+        //jjustman-2020-10-07 - discard this tlv packet completely, try and restart processing with the remaining tlv buffer len, if possible
+
+        if (remaining_block_t_size >= to_discard_tlv_and_alp_packet_size) {
+            __SL_TLV_DEMOD_DEBUG("TLV: plp: 0xFF, SDIO padding, restarting TLV processing after discarding tlv packet, tlv+alp len: %d, remaining tlv payload to restart parsing: %d",
+                                to_discard_alp_packet_size,
+                                to_discard_tlv_and_alp_packet_size);
+
+            atsc3_sl_tlv_payload_unparsed_block->i_pos += to_discard_tlv_and_alp_packet_size;
+            atsc3_sl_tlv_payload_free(&atsc3_sl_tlv_payload);
+
+            goto restart_parsing;
+
+        } else {
+            //jjustman-2020-10-07 - double-whammy, we are a padding packet, BUT techincally we are fragmented between the kernel SDIO ION blocks, so pretend we are a 'holdover' packet,
+            // but will get discarded on the next CircularBuffer push/pop
+
+            __SL_TLV_DEMOD_DEBUG("TLV: plp: 0xFF, SDIO padding, bailing TLV processing after discarding tlv packet, remaining_block_t_size: %d is less than to_discard_alp_packet_size: %d, seeking by %d, atsc3_sl_tlv_payload_unparsed_block->i_pos from: %d to %d, size: %d",
+                                remaining_block_t_size,
+                                to_discard_alp_packet_size,
+                                to_discard_tlv_payload,
+                                atsc3_sl_tlv_payload_unparsed_block->i_pos,
+                                atsc3_sl_tlv_payload_unparsed_block->i_pos + to_discard_tlv_payload,
+                                atsc3_sl_tlv_payload_unparsed_block->p_size);
+
+            //seek forward to at least the current num bytes so far
+            atsc3_sl_tlv_payload->alp_payload_complete = false;
+            atsc3_sl_tlv_payload->alp_payload = NULL;
+            atsc3_sl_tlv_payload->sl_tlv_total_parsed_payload_size = buf_end - buf;
+
+            return NULL;
+        }
+
+    }
     __SL_TLV_DEMOD_TRACE("  remaining block_t size: %d, alp_packet size + trailing size: %d",
-    		remaining_block_t_size,
-			atsc3_sl_tlv_payload->alp_packet_size + atsc3_sl_tlv_payload->alp_trailing_padding_size);
-	
-	//split TLV payload over block_t boundary, so hold this partial frame
+                            remaining_block_t_size,
+                            atsc3_sl_tlv_payload->alp_packet_size + atsc3_sl_tlv_payload->alp_trailing_padding_size);
+
+    //split TLV payload over block_t boundary, so hold this partial frame
     if((atsc3_sl_tlv_payload->alp_packet_size + atsc3_sl_tlv_payload->alp_trailing_padding_size) > (buf_end - buf)) {
     	atsc3_sl_tlv_payload->alp_payload_complete = false;
     	atsc3_sl_tlv_payload->alp_payload = NULL;
@@ -185,71 +244,70 @@ atsc3_sl_tlv_payload_t* atsc3_sl_tlv_payload_parse_from_block_t_with_metrics(blo
         atsc3_sl_tlv_payload->alp_payload = block_Alloc(atsc3_sl_tlv_payload->alp_packet_size);
         block_Write(atsc3_sl_tlv_payload->alp_payload, buf, atsc3_sl_tlv_payload->alp_packet_size);
 
-		//TODO - refactor me?
-		if(__ATSC3_SL_TLV_USE_INLINE_ALP_PARSER_CALL__) {
-			//TODO - make sure this "looks" like an ALP packet header
-			//total_tlv_packets_without_ALP_starting_at_TS_transfer_size_header_length_count
-			
-			//parse our ALP_packet inline
-			block_Rewind(atsc3_sl_tlv_payload->alp_payload);
-			atsc3_alp_packet_t* atsc3_alp_packet = atsc3_alp_packet_parse(atsc3_sl_tlv_payload->plp_number, atsc3_sl_tlv_payload->alp_payload);
-			if(!atsc3_alp_packet) {
-				//total_tlv_packets_with_failed_extracted_alp_count
-				atsc3_sl_tlv_payload_metrics->total_tlv_packets_with_failed_extracted_alp_count++;
-				__SL_TLV_DEMOD_ERROR("FAILED ALP EXTRACTION: at buf: %p, tlv_alp_len: %d", buf, atsc3_sl_tlv_payload->alp_packet_size);
-			} else {
-				atsc3_sl_tlv_payload->atsc3_alp_packet = atsc3_alp_packet;
-			
-				//validate our TLV header ALP_packet_size matches what the ALP packet length in header is
-				//IP  ~ 2 bytes ALP header
-				//LMT ~ 7 bytes ALP header after parsing
-				if((atsc3_alp_packet->alp_packet_header.packet_type == 0x0 && atsc3_sl_tlv_payload->alp_packet_size != atsc3_alp_packet->alp_packet_header.alp_packet_header_mode.length + 2) ||
-				   (atsc3_alp_packet->alp_packet_header.packet_type == 0x4 && atsc3_sl_tlv_payload->alp_packet_size != atsc3_alp_packet->alp_packet_header.alp_packet_header_mode.length + 7)
-				   ) {
-					atsc3_sl_tlv_payload_metrics->total_tlv_packets_with_TLV_header_ALP_size_mismatch_from_parsed_ALP_header_count++;
-					__SL_TLV_DEMOD_ERROR("FAILED ALP SIZE MATCH: at buf: %p, packet_type: 0x%1x, atsc3_sl_tlv_payload->alp_packet_size (%d) != atsc3_alp_packet->alp_packet_header.alp_packet_header_mode.length (%d) + 2 ",
-										 buf,
-										 atsc3_alp_packet->alp_packet_header.packet_type,
-										 atsc3_sl_tlv_payload->alp_packet_size,
-										 atsc3_alp_packet->alp_packet_header.alp_packet_header_mode.length);
-				} else {
-					atsc3_sl_tlv_payload_metrics->total_tlv_packets_with_successfully_extracted_alp_count++;
-					//jjustman-2020-03-13 - ignore alp_segmentation_concatenation for now
-					atsc3_sl_tlv_payload_metrics->total_alp_packets_actual_size_bytes += atsc3_alp_packet->alp_packet_header.alp_packet_header_mode.length + 2;
+        if (__ATSC3_SL_TLV_USE_INLINE_ALP_PARSER_CALL__) {
+            //TODO - make sure this "looks" like an ALP packet header
+            //total_tlv_packets_without_ALP_starting_at_TS_transfer_size_header_length_count
 
-					//ip packet
-					if(atsc3_alp_packet->alp_packet_header.packet_type == 0x0) {
-						atsc3_sl_tlv_payload_metrics->total_alp_packet_type_ip_packets_count++;
-						atsc3_sl_tlv_payload_metrics->total_alp_packet_type_ip_packets_bytes_read += atsc3_alp_packet->alp_packet_header.alp_packet_header_mode.length;
-					} else if(atsc3_alp_packet->alp_packet_header.packet_type == 0x4) {
-						//lmt packet
-						atsc3_sl_tlv_payload_metrics->total_alp_packet_type_link_layer_signalling_packets_count++;
-						atsc3_sl_tlv_payload_metrics->total_alp_packet_type_link_layer_signalling_bytes_read += atsc3_alp_packet->alp_packet_header.alp_packet_header_mode.length;
-					} else if(atsc3_alp_packet->alp_packet_header.packet_type == 0x1 || atsc3_alp_packet->alp_packet_header.packet_type == 0x3 || atsc3_alp_packet->alp_packet_header.packet_type == 0x5) {
-						//RESERVED packet type
-						__SL_TLV_DEMOD_ERROR("RESERVED alp packet type! packet: %p", atsc3_sl_tlv_payload);
-						atsc3_sl_tlv_payload_metrics->total_alp_packet_type_reserved_count++;
-						atsc3_sl_tlv_payload_metrics->total_alp_packet_type_reserved_bytes_read += atsc3_alp_packet->alp_packet_header.alp_packet_header_mode.length;
-					} else {
-						//other non-common packet types
-						if(atsc3_alp_packet->alp_packet_header.packet_type == 0x2) {
-							//alp_packet_type_packet_compressed_ip_packet
-							atsc3_sl_tlv_payload_metrics->total_alp_packet_type_packet_compressed_ip_packet_count++;
-							atsc3_sl_tlv_payload_metrics->total_alp_packet_type_packet_compressed_ip_packet_bytes_read += atsc3_alp_packet->alp_packet_header.alp_packet_header_mode.length;
-						} else if(atsc3_alp_packet->alp_packet_header.packet_type == 0x6) {
-							//alp_packet_type_packet_type_extension
-							atsc3_sl_tlv_payload_metrics->total_alp_packet_type_packet_type_extension_count++;
-							atsc3_sl_tlv_payload_metrics->total_alp_packet_type_packet_type_extension_bytes_read += atsc3_alp_packet->alp_packet_header.alp_packet_header_mode.length;
-						} else if(atsc3_alp_packet->alp_packet_header.packet_type == 0x7) {
-							//alp_packet_type_packet_mpeg2_transport_stream
-							atsc3_sl_tlv_payload_metrics->total_alp_packet_type_packet_mpeg2_transport_stream_count++;
-							atsc3_sl_tlv_payload_metrics->total_alp_packet_type_packet_mpeg2_transport_stream_bytes_read += atsc3_alp_packet->alp_packet_header.alp_packet_header_mode.length;
-						}
-					}
-				}
-			}
-		}
-		
+            //parse our ALP_packet inline
+            block_Rewind(atsc3_sl_tlv_payload->alp_payload);
+            atsc3_alp_packet_t*atsc3_alp_packet = atsc3_alp_packet_parse(atsc3_sl_tlv_payload->plp_number, atsc3_sl_tlv_payload->alp_payload);
+            if (!atsc3_alp_packet) {
+                //total_tlv_packets_with_failed_extracted_alp_count
+                atsc3_sl_tlv_payload_metrics->total_tlv_packets_with_failed_extracted_alp_count++;
+                __SL_TLV_DEMOD_ERROR("FAILED ALP EXTRACTION: at buf: %p, tlv_alp_len: %d", buf, atsc3_sl_tlv_payload->alp_packet_size);
+            } else {
+                atsc3_sl_tlv_payload->atsc3_alp_packet = atsc3_alp_packet;
+
+                //validate our TLV header ALP_packet_size matches what the ALP packet length in header is
+                //IP  ~ 2 bytes ALP header
+                //LMT ~ 7 bytes ALP header after parsing
+                if ((atsc3_alp_packet->alp_packet_header.packet_type == 0x0 && atsc3_sl_tlv_payload->alp_packet_size != atsc3_alp_packet->alp_packet_header.alp_packet_header_mode.length + 2) ||
+                    (atsc3_alp_packet->alp_packet_header.packet_type == 0x4 && atsc3_sl_tlv_payload->alp_packet_size != atsc3_alp_packet->alp_packet_header.alp_packet_header_mode.length + 7)
+                        ) {
+                    atsc3_sl_tlv_payload_metrics->total_tlv_packets_with_TLV_header_ALP_size_mismatch_from_parsed_ALP_header_count++;
+                    __SL_TLV_DEMOD_ERROR("FAILED ALP SIZE MATCH: at buf: %p, packet_type: 0x%1x, atsc3_sl_tlv_payload->alp_packet_size (%d) != atsc3_alp_packet->alp_packet_header.alp_packet_header_mode.length (%d) + 2 ",
+                                         buf,
+                                         atsc3_alp_packet->alp_packet_header.packet_type,
+                                         atsc3_sl_tlv_payload->alp_packet_size,
+                                         atsc3_alp_packet->alp_packet_header.alp_packet_header_mode.length);
+                } else {
+                    atsc3_sl_tlv_payload_metrics->total_tlv_packets_with_successfully_extracted_alp_count++;
+                    //jjustman-2020-03-13 - ignore alp_segmentation_concatenation for now
+                    atsc3_sl_tlv_payload_metrics->total_alp_packets_actual_size_bytes += atsc3_alp_packet->alp_packet_header.alp_packet_header_mode.length + 2;
+
+                    //ip packet
+                    if (atsc3_alp_packet->alp_packet_header.packet_type == 0x0) {
+                        atsc3_sl_tlv_payload_metrics->total_alp_packet_type_ip_packets_count++;
+                        atsc3_sl_tlv_payload_metrics->total_alp_packet_type_ip_packets_bytes_read += atsc3_alp_packet->alp_packet_header.alp_packet_header_mode.length;
+                    } else if (atsc3_alp_packet->alp_packet_header.packet_type == 0x4) {
+                        //lmt packet
+                        atsc3_sl_tlv_payload_metrics->total_alp_packet_type_link_layer_signalling_packets_count++;
+                        atsc3_sl_tlv_payload_metrics->total_alp_packet_type_link_layer_signalling_bytes_read += atsc3_alp_packet->alp_packet_header.alp_packet_header_mode.length;
+                    } else if (atsc3_alp_packet->alp_packet_header.packet_type == 0x1 || atsc3_alp_packet->alp_packet_header.packet_type == 0x3 || atsc3_alp_packet->alp_packet_header.packet_type == 0x5) {
+                        //RESERVED packet type
+                        __SL_TLV_DEMOD_ERROR("RESERVED alp packet type! packet: %p", atsc3_sl_tlv_payload);
+                        atsc3_sl_tlv_payload_metrics->total_alp_packet_type_reserved_count++;
+                        atsc3_sl_tlv_payload_metrics->total_alp_packet_type_reserved_bytes_read += atsc3_alp_packet->alp_packet_header.alp_packet_header_mode.length;
+                    } else {
+                        //other non-common packet types
+                        if (atsc3_alp_packet->alp_packet_header.packet_type == 0x2) {
+                            //alp_packet_type_packet_compressed_ip_packet
+                            atsc3_sl_tlv_payload_metrics->total_alp_packet_type_packet_compressed_ip_packet_count++;
+                            atsc3_sl_tlv_payload_metrics->total_alp_packet_type_packet_compressed_ip_packet_bytes_read += atsc3_alp_packet->alp_packet_header.alp_packet_header_mode.length;
+                        } else if (atsc3_alp_packet->alp_packet_header.packet_type == 0x6) {
+                            //alp_packet_type_packet_type_extension
+                            atsc3_sl_tlv_payload_metrics->total_alp_packet_type_packet_type_extension_count++;
+                            atsc3_sl_tlv_payload_metrics->total_alp_packet_type_packet_type_extension_bytes_read += atsc3_alp_packet->alp_packet_header.alp_packet_header_mode.length;
+                        } else if (atsc3_alp_packet->alp_packet_header.packet_type == 0x7) {
+                            //alp_packet_type_packet_mpeg2_transport_stream
+                            atsc3_sl_tlv_payload_metrics->total_alp_packet_type_packet_mpeg2_transport_stream_count++;
+                            atsc3_sl_tlv_payload_metrics->total_alp_packet_type_packet_mpeg2_transport_stream_bytes_read += atsc3_alp_packet->alp_packet_header.alp_packet_header_mode.length;
+                        }
+                    }
+                }
+            }
+        }
+
         buf += atsc3_sl_tlv_payload->alp_packet_size;
 		
 		if((buf_end - buf) < atsc3_sl_tlv_payload->alp_trailing_padding_size) {
@@ -273,7 +331,8 @@ atsc3_sl_tlv_payload_t* atsc3_sl_tlv_payload_parse_from_block_t_with_metrics(blo
 									 (int)(buf_end - buf));
 			} else {
 				uint32_t peek_magic_number = *(uint32_t*)(buf);
-				if(atsc3_sl_tlv_payload->magic_number != 0x24681357) {
+				//lldb: memory read --size 1 --format x --count 4 buf
+				if(peek_magic_number != 0x24681357) {
 					   __SL_TLV_DEMOD_ERROR("after alp_trailing_padding_size: buf: %p, position: %d, magic number is not 0x24681357, parsed as: 0x%08x",
 							   buf,
 							  (int)(buf - buf_start),
@@ -292,6 +351,7 @@ atsc3_sl_tlv_payload_t* atsc3_sl_tlv_payload_parse_from_block_t_with_metrics(blo
     }
 
     atsc3_sl_tlv_payload_unparsed_block->i_pos += atsc3_sl_tlv_payload->sl_tlv_total_parsed_payload_size;
+
 
     return atsc3_sl_tlv_payload;
 }
