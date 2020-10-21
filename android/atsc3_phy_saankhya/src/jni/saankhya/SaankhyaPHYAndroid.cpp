@@ -651,6 +651,8 @@ int SaankhyaPHYAndroid::tune(int freqKHz, int plpid)
     unsigned int cFrequency = 0;
     int ret = 0;
 
+    int isRxDataStartedSpinCount = 0;
+
 
     //acquire our lock for setting tuning parameters (including re-tuning)
     unique_lock<mutex> SL_I2C_command_mutex_tuner_tune(SL_I2C_command_mutex);
@@ -737,7 +739,7 @@ int SaankhyaPHYAndroid::tune(int freqKHz, int plpid)
     }
 
     //check if we were re-initalized and might have an open threads to wind-down
-
+#ifdef __RESPWAN_THREAD_WORKERS
     if(captureThreadHandle.joinable()) {
         captureThreadShouldRun = false;
         _SAANKHYA_PHY_ANDROID_INFO("::Open() - setting captureThreadShouldRun to false, Waiting for captureThreadHandle to join()");
@@ -755,25 +757,74 @@ int SaankhyaPHYAndroid::tune(int freqKHz, int plpid)
         _SAANKHYA_PHY_ANDROID_INFO("::Open() - setting statusThreadShouldRun to false, Waiting for statusThreadHandle to join()");
         statusThreadHandle.join();
     }
+#endif
 
-    captureThreadShouldRun = true;
-    captureThreadHandle = std::thread([this](){
-        this->captureThread();
-    });
+    if(!this->captureThreadIsRunning) {
+        captureThreadShouldRun = true;
+        captureThreadHandle = std::thread([this]() {
+            this->captureThread();
+        });
 
-    processThreadShouldRun = true;
-    processThreadHandle = std::thread([this](){
-        this->processThread();
-    });
+        //micro spinlock
+        int threadStartupSpinlockCount = 0;
+        while(!this->captureThreadIsRunning && threadStartupSpinlockCount++ < 100) {
+            usleep(10000);
+        }
 
-    statusThreadShouldRun = true;
-    statusThreadHandle = std::thread([this]() {
-        this->statusThread();
-    });
+        if(threadStartupSpinlockCount > 50) {
+            _SAANKHYA_PHY_ANDROID_WARN("::Open() - starting captureThread took %d spins, final state: %d",
+                    threadStartupSpinlockCount,
+                    this->captureThreadIsRunning);
+        }
+    }
+
+    if(!this->processThreadIsRunning) {
+        processThreadShouldRun = true;
+        processThreadHandle = std::thread([this]() {
+            this->processThread();
+        });
+
+        //micro spinlock
+        int threadStartupSpinlockCount = 0;
+        while (!this->processThreadIsRunning && threadStartupSpinlockCount++ < 100) {
+            usleep(10000);
+        }
+
+        if (threadStartupSpinlockCount > 50) {
+            _SAANKHYA_PHY_ANDROID_WARN("::Open() - starting processThreadIsRunning took %d spins, final state: %d",
+                                       threadStartupSpinlockCount,
+                                       this->processThreadIsRunning);
+        }
+    }
+
+    if(!this->statusThreadIsRunning) {
+        statusThreadShouldRun = true;
+        statusThreadHandle = std::thread([this]() {
+            this->statusThread();
+        });
+
+        //micro spinlock
+        int threadStartupSpinlockCount = 0;
+        while (!this->statusThreadIsRunning && threadStartupSpinlockCount++ < 100) {
+            usleep(10000);
+        }
+
+        if (threadStartupSpinlockCount > 50) {
+            _SAANKHYA_PHY_ANDROID_WARN("::Open() - starting statusThread took %d spins, final state: %d",
+                                       threadStartupSpinlockCount,
+                                       this->statusThreadIsRunning);
+        }
+    }
+
 
     while (SL_IsRxDataStarted() != 1)
     {
         SL_SleepMS(100);
+
+        if(((isRxDataStartedSpinCount++) % 100) == 0) {
+            _SAANKHYA_PHY_ANDROID_WARN("::Open() - waiting for SL_IsRxDataStarted, spinCount: %d", isRxDataStartedSpinCount);
+            //jjustman-2020-10-21 - todo: reset demod?
+        }
     }
     _SAANKHYA_PHY_ANDROID_DEBUG("Starting SLDemod: ");
 
