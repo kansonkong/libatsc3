@@ -93,8 +93,9 @@ typedef struct atsc3_sl_tlv_payload_metrics {
 	uint32_t	total_tlv_packets_without_matching_magic_recovered_in_block_count;
 	uint32_t	total_tlv_bytes_discarded_without_matching_magic_recovered_in_block_count;
 
-	//sane mismatch heuristics from TLV header restrictions
+    uint32_t    total_tlv_packets_discarded_for_sdio_padding; //PLP == 0xFF && IF=SDIO, see SL_DEMOD_API.pdf v0.15 pp 29
 
+    //sane mismatch heuristics from TLV header restrictions
 	uint32_t	total_tlv_packets_with_invalid_PLP_value_count; //e.g. PLP > 63
 	uint32_t	total_tlv_packets_with_invalid_TS_transfer_size_count; //SLAPI-0.7 defines this as 188
 	uint32_t	total_tlv_packets_with_invalid_TLV_header_size_value; //SLAPI-0.7 defines this as 24
