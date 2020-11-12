@@ -110,21 +110,18 @@ uint8_t mmt_signalling_message_parse_packet(mmtp_signalling_packet_t* mmtp_signa
 	}
 
 	if(mmtp_signalling_packet->si_aggregation_flag) {
-		uint32_t mmtp_aggregation_msg_length;
-		__MMSM_ERROR("mmt_signalling_message_parse_packet: AGGREGATED SI is UNTESTED!");
+		uint32_t mmtp_aggregation_msg_length = 0;
+		__MMSM_WARN("mmt_signalling_message_parse_packet: AGGREGATED SI is UNTESTED! udp_packet: %p, udp_packet_size: %d", udp_packet, udp_packet_size);
+
 		while(block_Remaining_size(udp_packet)) {
 			if(mmtp_signalling_packet->si_additional_length_header) {
 				//read the full 32 bits for MSG_length
-				buf = extract(buf, (uint8_t*)&mmtp_aggregation_msg_length, 4);
-				mmtp_aggregation_msg_length = ntohl(mmtp_aggregation_msg_length);
-
+                mmtp_aggregation_msg_length = block_Read_uint32_ntohl(udp_packet);
 
 			} else {
 				//only read 16 bits for MSG_length
-				uint16_t aggregation_msg_length_short;
-				buf = extract(buf, (uint8_t*)&aggregation_msg_length_short, 2);
-				mmtp_aggregation_msg_length = ntohs(aggregation_msg_length_short);
-			}
+                mmtp_aggregation_msg_length = block_Read_uint16_ntohs(udp_packet);
+            }
 
 			//build a msg from buf to buf+mmtp_aggregation_msg_length
 			__MMSM_ERROR("mmt_signalling_message_parse_packet: AGGREGATED SI is UNTESTED!");
@@ -140,45 +137,57 @@ uint8_t mmt_signalling_message_parse_packet(mmtp_signalling_packet_t* mmtp_signa
 }
 
 mmt_signalling_message_header_and_payload_t* __mmt_signalling_message_parse_length_long(block_t* udp_packet, mmt_signalling_message_header_and_payload_t* mmt_signalling_message_header_and_payload) {
-	uint32_t mmtp_msg_length_long;
+	uint32_t mmtp_msg_length_long = 0;
+
 	if(block_Remaining_size(udp_packet) < 4) {
+        __MMSM_WARN("__mmt_signalling_message_parse_length_long: needed 4 bytes for msg_length, but only %d bytes remaining in udp_packet",
+                    block_Remaining_size(udp_packet))
 		return NULL;
 	}
 
-	uint8_t* buf = block_Get(udp_packet);
-	buf = extract(buf, (uint8_t*)&mmtp_msg_length_long, 4);
-	mmt_signalling_message_header_and_payload->message_header.length = ntohl(mmtp_msg_length_long);
-	block_Seek_Relative(udp_packet, 4);
-	return mmt_signalling_message_header_and_payload;
+    mmtp_msg_length_long = block_Read_uint32_ntohl(udp_packet);
+	if(mmtp_msg_length_long <= block_Remaining_size(udp_packet)) {
+        mmt_signalling_message_header_and_payload->message_header.length = mmtp_msg_length_long;
+        return mmt_signalling_message_header_and_payload;
+	} else {
+        __MMSM_INFO("__mmt_signalling_message_parse_length_long: truncated mmtp signalling message, mmtp_msg_length_short: %d bytes, but only %d bytes remaining in udp_packet",
+                    mmtp_msg_length_long, block_Remaining_size(udp_packet));
+	}
+	return NULL;
 }
 
 mmt_signalling_message_header_and_payload_t* __mmt_signalling_message_parse_length_short(block_t* udp_packet, mmt_signalling_message_header_and_payload_t* mmt_signalling_message_header_and_payload) {
-	uint16_t mmtp_msg_length_short;
-	uint8_t* buf = block_Get(udp_packet);
-	buf = extract(buf, (uint8_t*)&mmtp_msg_length_short, 2);
-	mmt_signalling_message_header_and_payload->message_header.length = ntohs(mmtp_msg_length_short);
-	block_Seek_Relative(udp_packet, 2);
-	return mmt_signalling_message_header_and_payload;
+	uint16_t mmtp_msg_length_short = 0;
+
+	if(block_Remaining_size(udp_packet) < 2) {
+        __MMSM_WARN("__mmt_signalling_message_parse_length_short: needed 2 bytes for msg_length, but only %d bytes remaining in udp_packet",
+                    block_Remaining_size(udp_packet));
+        return NULL;
+    }
+
+	mmtp_msg_length_short = block_Read_uint16_ntohs(udp_packet);
+    if(mmtp_msg_length_short <= block_Remaining_size(udp_packet)) {
+        mmt_signalling_message_header_and_payload->message_header.length = ntohs(mmtp_msg_length_short);
+        return mmt_signalling_message_header_and_payload;
+    } else {
+        __MMSM_INFO("__mmt_signalling_message_parse_length_short: truncated mmtp signalling message, mmtp_msg_length_short: %d bytes, but only %d bytes remaining in udp_packet",
+                mmtp_msg_length_short, block_Remaining_size(udp_packet));
+    }
+
+	return NULL;
 }
 
 uint8_t mmt_signalling_message_parse_id_type(mmtp_signalling_packet_t* mmtp_signalling_packet, block_t* udp_packet) {
 
-	int32_t	udp_raw_buf_size = block_Remaining_size(udp_packet);
-	uint8_t *raw_buf = block_Get(udp_packet);
-	uint8_t *buf = raw_buf;
+    uint8_t* buf_start = block_Get(udp_packet);
+    uint8_t* buf = NULL;
 
-	//create general signalling message format
-	uint16_t  message_id;
-	buf = extract(buf, (uint8_t*)&message_id, 2);
-	message_id = ntohs(message_id);
+    uint16_t message_id = 0;
+    uint8_t version = 0;
 
-	uint8_t version;
-	buf = extract(buf, &version, 1);
-
-	//keep our block_t in sync...by 3 bytes
-	block_Seek_Relative(udp_packet, 3);
-
-	int32_t buf_size = udp_raw_buf_size - (buf - raw_buf);
+    //create general signalling message format
+	message_id = block_Read_uint16_ntohs(udp_packet);
+    version = block_Read_uint8(udp_packet);
 
 	mmt_signalling_message_header_and_payload_t* mmt_signalling_message_header_and_payload = mmt_signalling_message_header_and_payload_create(message_id, version);
 	mmtp_signalling_packet_add_mmt_signalling_message_header_and_payload(mmtp_signalling_packet, mmt_signalling_message_header_and_payload);
@@ -283,7 +292,10 @@ uint8_t mmt_signalling_message_parse_id_type(mmtp_signalling_packet_t* mmtp_sign
 		buf = si_message_not_supported(mmt_signalling_message_header_and_payload, udp_packet);
 	}
 
-	return (buf != raw_buf);
+	//jjustman-2020-11-11 - keep our udp_packet position up to date
+	block_Seek_Relative(udp_packet, __MAX(0, buf - buf_start));
+
+	return (buf != buf_start);
 
 }
 
@@ -428,7 +440,12 @@ uint8_t* __read_mmt_general_location_info(uint8_t* buf, uint32_t remaining_len, 
 
 
 uint8_t* mpt_message_parse(mmt_signalling_message_header_and_payload_t* mmt_signalling_message_header_and_payload, block_t* udp_packet) {
-	__mmt_signalling_message_parse_length_short(udp_packet, mmt_signalling_message_header_and_payload);
+	if(!__mmt_signalling_message_parse_length_short(udp_packet, mmt_signalling_message_header_and_payload)) {
+        __MMSM_WARN("mpt_message_parse: __mmt_signalling_message_parse_length_short failed to parse, udp_packet bytes remaining: %d",
+                    block_Remaining_size(udp_packet));
+        return NULL;
+	}
+
 
 	//we have already consumed the mpt_message, now we are processing the mp_table
 	uint8_t *raw_buf = block_Get(udp_packet);
@@ -665,8 +682,7 @@ uint8_t* mpt_message_parse(mmt_signalling_message_header_and_payload_t* mmt_sign
 		}
 	}
 
-
-	cleanup:
+cleanup:
 
 	return NULL;
 }
@@ -675,7 +691,11 @@ uint8_t* mpt_message_parse(mmt_signalling_message_header_and_payload_t* mmt_sign
  * jjustman-2020-09-17 - TODO: re-implement with block_t readers that are length aware for guards
  */
 uint8_t* mmt_atsc3_message_payload_parse(mmt_signalling_message_header_and_payload_t* mmt_signalling_message_header_and_payload, block_t* udp_packet) {
-	__mmt_signalling_message_parse_length_long(udp_packet, mmt_signalling_message_header_and_payload);
+	if(!__mmt_signalling_message_parse_length_long(udp_packet, mmt_signalling_message_header_and_payload)) {
+        __MMSM_WARN("mpt_message_parse: __mmt_signalling_message_parse_length_long failed to parse, udp_packet bytes remaining: %d",
+                    block_Remaining_size(udp_packet));
+        return NULL;
+	}
 
 	uint8_t *raw_buf = block_Get(udp_packet);
 	uint32_t udp_size = block_Remaining_size(udp_packet);
