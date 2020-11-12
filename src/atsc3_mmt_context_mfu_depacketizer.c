@@ -547,21 +547,46 @@ void mmtp_mfu_rebuild_from_packet_id_mpu_sequence_number(atsc3_mmt_mfu_context_t
     int32_t mfu_fragment_counter_position = 0;
     int32_t mfu_fragment_count_rebuilt = 0;
 
+    if(!atsc3_mmt_mfu_context) {
+        __MMT_CONTEXT_MPU_WARN("mmtp_mfu_rebuild_from_packet_id_mpu_sequence_number, atsc3_mmt_mfu_context was NULL, mpu_sequence_number: %d",
+                               mpu_sequence_number);
+        return;
+    }
+
+    if(!mmtp_packet_id_packets_container) {
+        __MMT_CONTEXT_MPU_WARN("mmtp_mfu_rebuild_from_packet_id_mpu_sequence_number, mmtp_packet_id_packets_container was NULL, mpu_sequence_number: %d",
+                               mpu_sequence_number);
+        return;
+    }
+
     /* start by attempting to re-assemble our MPU Metadata (mpu_fragment_type == 0x0) */
     mpu_sequence_number_mmtp_mpu_packet_collection_t* mpu_sequence_number_mmtp_mpu_packet_collection = mmtp_packet_id_packets_container_find_mpu_sequence_number_mmtp_mpu_packet_collection_from_mpu_sequence_number(mmtp_packet_id_packets_container, mpu_sequence_number);
+    if(!mpu_sequence_number_mmtp_mpu_packet_collection) {
+        __MMT_CONTEXT_MPU_WARN("mmtp_mfu_rebuild_from_packet_id_mpu_sequence_number, mmtp_packet_id_packets_container_find_mpu_sequence_number_mmtp_mpu_packet_collection_from_mpu_sequence_number returned NULL for packet_id: %d, mpu_sequence_number: %d",
+                               mmtp_packet_id_packets_container->packet_id,
+                               mpu_sequence_number);
+        return;
+    }
+
     for(int i=0; i < mpu_sequence_number_mmtp_mpu_packet_collection->mmtp_mpu_packet_v.count; i++) {
         mmtp_mpu_packet_t *mmtp_mpu_init_packet_to_rebuild = mpu_sequence_number_mmtp_mpu_packet_collection->mmtp_mpu_packet_v.data[i];
+
+        if(!mmtp_mpu_init_packet_to_rebuild) {
+            __MMT_CONTEXT_MPU_WARN("mmtp_mfu_rebuild_from_packet_id_mpu_sequence_number, mmtp_mpu_init_packet_to_rebuild at i: %d was NULL for packet_id: %d, mpu_sequence_number: %d", i, mmtp_packet_id_packets_container->packet_id, mpu_sequence_number);
+            continue;
+        }
 
         if (mmtp_mpu_init_packet_to_rebuild->mfu_reassembly_performed) {
             continue;
         }
 
+        //mpu_fragment_type: 0x0 -> MPU metadata
         //process mpu_metadata, don't send incomplete payloads for init box (e.g. isnt FI==0x00 or endns in 0x03)
         if (mmtp_mpu_init_packet_to_rebuild->mpu_fragment_type == 0x0) {
             //mark this DU as completed for purging at the end of this method
 
             if (!mmtp_mpu_init_packet_to_rebuild->du_mpu_metadata_block) {
-                __MMT_CONTEXT_MPU_WARN("mmtp_mfu_rebuild_from_packet_id_mpu_sequence_number MPU Metadata, missing du_mpu_metadata_block i: %u, psn: %u, with %u:%u and packet_id: %u, mpu_sequence_number: %u, fragment_indicator: %u",
+                __MMT_CONTEXT_MPU_WARN("mmtp_mfu_rebuild_from_packet_id_mpu_sequence_number: MPU Metadata, missing du_mpu_metadata_block i: %u, psn: %u, with %u:%u and packet_id: %u, mpu_sequence_number: %u, fragment_indicator: %u",
                         i, mmtp_mpu_init_packet_to_rebuild->packet_sequence_number,
                         atsc3_mmt_mfu_context->udp_flow->dst_ip_addr,
                         atsc3_mmt_mfu_context->udp_flow->dst_port,
@@ -580,7 +605,8 @@ void mmtp_mfu_rebuild_from_packet_id_mpu_sequence_number(atsc3_mmt_mfu_context_t
                     mmtp_mpu_init_packet_to_rebuild->du_mpu_metadata_block ? mmtp_mpu_init_packet_to_rebuild->du_mpu_metadata_block->p_size : 0,
                     mmtp_mpu_init_packet_to_rebuild->mpu_fragmentation_indicator);
 
-            //one (or more) DU, so mark this as reassembeled, and send this off immediately
+            //mpu_fragmentation_indicator: 0x00 -> payload contains one or more complete data units
+            //one (or more) DU, so mark this as reassembeled, and send this off immediately,
             if (mmtp_mpu_init_packet_to_rebuild->mpu_fragmentation_indicator == 0x00) {
                 mmtp_mpu_init_packet_to_rebuild->mfu_reassembly_performed = true;
 
@@ -588,7 +614,8 @@ void mmtp_mfu_rebuild_from_packet_id_mpu_sequence_number(atsc3_mmt_mfu_context_t
                 atsc3_mmt_mfu_context->atsc3_mmt_mpu_on_sequence_mpu_metadata_present(mmtp_mpu_init_packet_to_rebuild->mmtp_packet_id, mmtp_mpu_init_packet_to_rebuild->mpu_sequence_number, du_mpu_metadata_block_duplicated_for_context_callback_invocation);
                 block_Destroy(&du_mpu_metadata_block_duplicated_for_context_callback_invocation);
             } else if (mmtp_mpu_init_packet_to_rebuild->mpu_fragmentation_indicator == 0x03) {
-                //only if we have reached the last fragment of the data unit, and we have a du_mpu_metadata_block_rebuilt, send if off
+                //mpu_fragmentation_indicator: 0x03 -> payload contains the last fragment of data unit
+                //only if we have reached the last fragment of the data unit, and we have a du_mpu_metadata_block_rebuilt, send if off,
                 if (du_mpu_metadata_block_rebuilt != NULL &&
                     mmtp_mpu_init_packet_to_rebuild->du_mpu_metadata_block) {
                     mmtp_mpu_init_packet_to_rebuild->mfu_reassembly_performed = true;
@@ -606,7 +633,7 @@ void mmtp_mfu_rebuild_from_packet_id_mpu_sequence_number(atsc3_mmt_mfu_context_t
                     atsc3_mmt_mfu_context->atsc3_mmt_mpu_on_sequence_mpu_metadata_present(mmtp_mpu_init_packet_to_rebuild->mmtp_packet_id, mmtp_mpu_init_packet_to_rebuild->mpu_sequence_number, du_mpu_metadata_block_rebuilt);
                     block_Destroy(&du_mpu_metadata_block_rebuilt);
                 } else {
-                    __MMT_CONTEXT_MPU_WARN( "mmtp_mfu_rebuild_from_packet_id_mpu_sequence_number Missing proceeding MPU Metadata i: %u, psn: %u, with %u:%u and packet_id: %u, mpu_sequence_number: %u, fragment_indicator: %u",
+                    __MMT_CONTEXT_MPU_WARN( "mmtp_mfu_rebuild_from_packet_id_mpu_sequence_number: missing proceeding MPU Metadata i: %u, psn: %u, with %u:%u and packet_id: %u, mpu_sequence_number: %u, fragment_indicator: %u",
                             i, mmtp_mpu_init_packet_to_rebuild->packet_sequence_number,
                             atsc3_mmt_mfu_context->udp_flow->dst_ip_addr,
                             atsc3_mmt_mfu_context->udp_flow->dst_port,
@@ -615,14 +642,16 @@ void mmtp_mfu_rebuild_from_packet_id_mpu_sequence_number(atsc3_mmt_mfu_context_t
                             mmtp_mpu_init_packet_to_rebuild->mpu_fragmentation_indicator);
                 }
             } else {
-                //otherwise, prepare our first data unit, clearing out any (possible) duplicate starting du
+                //mpu_fragmentation_indicator: 0x01 -> paylaod contains the first fragment of a data unit
+                //otherwise, prepare our first data unit, clearing out any (possible) duplicate starting du -
                 if (mmtp_mpu_init_packet_to_rebuild->mpu_fragmentation_indicator == 0x01) {
                     if (du_mpu_metadata_block_rebuilt) {
                         block_Destroy(&du_mpu_metadata_block_rebuilt);
                     }
                     du_mpu_metadata_block_rebuilt = block_Duplicate(mmtp_mpu_init_packet_to_rebuild->du_mpu_metadata_block);
                 } else if (mmtp_mpu_init_packet_to_rebuild->mpu_fragmentation_indicator == 0x02) {
-                    //payload contains a fragment of a data unit that is neither the first or the last part, so we MUST have a du_mpu_metadata_block_rebuilt pending
+                    //mpu_fragmentation_indicator: 0x02 -> payload contains a fragment of a data unit that is neither the first or the last part
+                    //so we MUST have a du_mpu_metadata_block_rebuilt pending
                     if (du_mpu_metadata_block_rebuilt) {
                         block_Merge(du_mpu_metadata_block_rebuilt, mmtp_mpu_init_packet_to_rebuild->du_mpu_metadata_block);
                     } else {
@@ -655,14 +684,20 @@ void mmtp_mfu_rebuild_from_packet_id_mpu_sequence_number(atsc3_mmt_mfu_context_t
     for(int i=0; i < mpu_sequence_number_mmtp_mpu_packet_collection->mmtp_mpu_packet_v.count; i++) {
         mmtp_mpu_packet_t *mmtp_mpu_packet_to_rebuild = mpu_sequence_number_mmtp_mpu_packet_collection->mmtp_mpu_packet_v.data[i];
 
+        if(!mmtp_mpu_packet_to_rebuild) {
+            __MMT_CONTEXT_MPU_WARN("mmtp_mfu_rebuild_from_packet_id_mpu_sequence_number, mmtp_mpu_packet_to_rebuild at i: %d was NULL for packet_id: %d, mpu_sequence_number: %d", i, mmtp_packet_id_packets_container->packet_id, mpu_sequence_number);
+            continue;
+        }
+
         if (mmtp_mpu_packet_to_rebuild->mfu_reassembly_performed) {
             continue;
         }
 
+        //mpu_fragment_type: 0x2 -> MFU - sample or subsample of timed media data
         //only rebuild MFU DU's here
         if(mmtp_mpu_packet_to_rebuild->mpu_fragment_type == 0x2) {
 
-            //MFU rebuild any pending packets less than our sample_number,
+            //MFU rebuild any pending packets less than our sample_number and create a dummy block of len 0
             if (!mmtp_mpu_packet_to_rebuild->du_mfu_block) {
                 __MMT_CONTEXT_MPU_WARN("MFU: missing du_mfu_block! creating dummy 0 byte block: %u, psn: %u, with %u:%u and packet_id: %u, mpu_sequence_number: %u, fragment_indicator: %u",
                                                                 i, mmtp_mpu_packet_to_rebuild->packet_sequence_number,
@@ -674,6 +709,7 @@ void mmtp_mfu_rebuild_from_packet_id_mpu_sequence_number(atsc3_mmt_mfu_context_t
                 mmtp_mpu_packet_to_rebuild->du_mfu_block = block_Alloc(0);
             }
 
+            //mpu_fragmentation_indicator: 0x00 -> payload contains one or more complete data units
             if(mmtp_mpu_packet_to_rebuild->mpu_fragmentation_indicator == 0x00) {
                 //otherwise, check mpu_fragmentation_indicator...only process if we are marked as fi=0x00 (complete data unit)
                 //let DU rebuild handle any other packets
@@ -703,6 +739,10 @@ void mmtp_mfu_rebuild_from_packet_id_mpu_sequence_number(atsc3_mmt_mfu_context_t
             //otherwise, walk thru a consecutive set of mfu samples to rebuild
             for(int j=mmtp_mpu_starting_index; j < mpu_sequence_number_mmtp_mpu_packet_collection->mmtp_mpu_packet_v.count && mmtp_mpu_ending_index == -1; j++) {
                 mmtp_mpu_packet_t *mmtp_mpu_packet_to_rebuild_next = mpu_sequence_number_mmtp_mpu_packet_collection->mmtp_mpu_packet_v.data[j];
+                if(!mmtp_mpu_packet_to_rebuild_next) {
+                    __MMT_CONTEXT_MPU_WARN("mmtp_mfu_rebuild_from_packet_id_mpu_sequence_number, mmtp_mpu_packet_to_rebuild_next at j: %d was NULL for packet_id: %d, mpu_sequence_number: %d", j, mmtp_packet_id_packets_container->packet_id, mpu_sequence_number);
+                    continue;
+                }
                 if (mmtp_mpu_packet_to_rebuild->sample_number != mmtp_mpu_packet_to_rebuild_next->sample_number) {
                     mmtp_mpu_ending_index = j;
                 }
@@ -748,7 +788,10 @@ void mmtp_mfu_rebuild_from_packet_id_mpu_sequence_number(atsc3_mmt_mfu_context_t
 
             for(int j=mmtp_mpu_starting_index; j < mmtp_mpu_ending_index; j++) {
                 mmtp_mpu_packet_t *mmtp_mpu_packet_to_rebuild_from_du = mpu_sequence_number_mmtp_mpu_packet_collection->mmtp_mpu_packet_v.data[j];
-
+                if(!mmtp_mpu_packet_to_rebuild_from_du) {
+                    __MMT_CONTEXT_MPU_WARN("mmtp_mfu_rebuild_from_packet_id_mpu_sequence_number, mmtp_mpu_packet_to_rebuild_from_du at j: %d was NULL for packet_id: %d, mpu_sequence_number: %d", j, mmtp_packet_id_packets_container->packet_id, mpu_sequence_number);
+                    continue;
+                }
                 if(!mmtp_mpu_packet_to_rebuild_from_du->du_mfu_block) {
                     continue;
                 }
@@ -804,6 +847,7 @@ void mmtp_mfu_rebuild_from_packet_id_mpu_sequence_number(atsc3_mmt_mfu_context_t
 
             //todo: impl meta cases for corrupt/missing samples/packets, etc
 
+            //jjustman-2020-11-11 - fix this check
             if(du_mfu_block_to_rebuild) {
                 //if we were from alloc, trim off the null tail from i_ptr
                 if(block_IsAlloc(du_mfu_block_to_rebuild)) {
@@ -849,17 +893,21 @@ void mmtp_mfu_rebuild_from_packet_id_mpu_sequence_number(atsc3_mmt_mfu_context_t
     for(int i=0; i < mpu_sequence_number_mmtp_mpu_packet_collection->mmtp_mpu_packet_v.count; i++) {
         mmtp_mpu_packet_t *mmtp_mpu_init_packet_to_rebuild = mpu_sequence_number_mmtp_mpu_packet_collection->mmtp_mpu_packet_v.data[i];
 
-        if (mmtp_mpu_init_packet_to_rebuild->mfu_reassembly_performed) {
+        if(!mmtp_mpu_init_packet_to_rebuild) {
+            __MMT_CONTEXT_MPU_WARN("mmtp_mfu_rebuild_from_packet_id_mpu_sequence_number, mmtp_mpu_init_packet_to_rebuild at i: %d was NULL for packet_id: %d, mpu_sequence_number: %d", i, mmtp_packet_id_packets_container->packet_id, mpu_sequence_number);
             continue;
         }
 
+        if (mmtp_mpu_init_packet_to_rebuild->mfu_reassembly_performed) {
+            continue;
+        }
         //process movie fragment metadata, don't send incomplete payloads for moof box (e.g. isnt FI==0x00 or endns in 0x03)
         if (mmtp_mpu_init_packet_to_rebuild->mpu_fragment_type == 0x1) {
             //mark this DU as completed for purging at the end of this method
 
             if (!mmtp_mpu_init_packet_to_rebuild->du_movie_fragment_block) {
                 __MMT_CONTEXT_MPU_WARN(
-                        "mmtp_mfu_rebuild_from_packet_id_mpu_sequence_number Movie fragment metadata Metadata, missing du_movie_fragment_block i: %u, psn: %u, with %u:%u and packet_id: %u, mpu_sequence_number: %u, fragment_indicator: %u",
+                        "mmtp_mfu_rebuild_from_packet_id_mpu_sequence_number: mmtp_mpu_init_packet_to_rebuild: movie fragment metadata Metadata, missing du_movie_fragment_block i: %u, psn: %u, with %u:%u and packet_id: %u, mpu_sequence_number: %u, fragment_indicator: %u",
                         i, mmtp_mpu_init_packet_to_rebuild->packet_sequence_number,
                         atsc3_mmt_mfu_context->udp_flow->dst_ip_addr,
                         atsc3_mmt_mfu_context->udp_flow->dst_port,
