@@ -157,12 +157,13 @@ uint32_t block_Len(block_t* src);
 bool block_Tail_Truncate(block_t* src, uint32_t len);
 
 //bit-unpacking functions for parsing A/322 variable length L1(b/d) structs
-uint8_t block_Read_uint8_bitlen(block_t* src, int bitlen);
+uint8_t  block_Read_uint8_bitlen(block_t* src, int bitlen);
 uint16_t block_Read_uint16_bitlen(block_t* src, int bitlen);
 uint32_t block_Read_uint32_bitlen(block_t* src, int bitlen);
 uint64_t block_Read_uint64_bitlen(block_t* src, int bitlen);
 
 //read from network to host aligned short/long/double long
+uint8_t  block_Read_uint8(block_t* src);
 uint16_t block_Read_uint16_ntohs(block_t* src);
 uint32_t block_Read_uint32_ntohl(block_t* src);
 uint64_t block_Read_uint64_ntohul(block_t* src);
