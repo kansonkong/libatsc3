@@ -171,6 +171,15 @@ void mmtp_packet_header_free(mmtp_packet_header_t** mmtp_packet_header_p);
     block_t*	du_movie_fragment_block; /* (OOO)0x1 */ \
     block_t*	du_mfu_block;			 /* 0x2 */
 
+/* See 9.3.2.2 MMTP payload header for MPU mode
+ *
+ * Sane min header length must be at least:
+ *
+        32 + 32 + 32 + 8 + 8 bits = 14 bytes
+ *
+*/
+
+#define ATSC3_MMTP_MPU_PACKET_PARSE_FROM_BLOCK_T_MINIMUM_SANE_LENGTH_BYTES 14
 
 typedef struct mmtp_mpu_packet {
     _MMTP_MPU_PACKET_HEADER_FIELDS;
