@@ -858,6 +858,10 @@ uint64_t block_Read_uint64_bitlen(block_t* src, int bitlen) {
 }
 
 //TODO: check for _bitpos
+uint8_t block_Read_uint8(block_t* src) {
+    uint8_t ret = &src->p_buffer[src->i_pos++];
+    return ret;
+}
 //read from network to host aligned short/long/double long
 uint16_t block_Read_uint16_ntohs(block_t* src) {
     uint16_t ret = ntohs(*((uint16_t*)(&src->p_buffer[src->i_pos])));
