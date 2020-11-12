@@ -40,14 +40,13 @@ restart_parsing:
     buf_end = buf_start + (atsc3_sl_tlv_payload_unparsed_block->p_size - atsc3_sl_tlv_payload_unparsed_block->i_pos);
     buf = buf_start;
 
-    atsc3_sl_tlv_payload = calloc(1, sizeof(atsc3_sl_tlv_payload_t));
-
     //our TLV header must be at least 188 bytes to parse
     if(buf_end - buf_start < 188) {
     	__SL_TLV_DEMOD_WARN("atsc3_sl_tlv_payload_parse_from_block_t: remaining payload length is less than TLV 188 bytes: %ld", (buf_end - buf_start));
-    	free(atsc3_sl_tlv_payload);
     	return NULL;
     }
+
+    atsc3_sl_tlv_payload = calloc(1, sizeof(atsc3_sl_tlv_payload_t));
 
     //read our magic number - looks like we are already in host order?
     //atsc3_sl_tlv_payload->magic_number = ntohl(*((uint32_t*)(buf)));
@@ -109,11 +108,20 @@ restart_parsing:
     atsc3_sl_tlv_payload->alp_packet_size = *(uint32_t*)(buf);
 	if(atsc3_sl_tlv_payload->alp_packet_size > MAX_ATSC3_PHY_IP_DATAGRAM_SIZE) {
 		atsc3_sl_tlv_payload_metrics->total_tlv_packets_with_TLV_header_ALP_size_greater_than_max_IP_UDP_datagram_size_count++;
-		__SL_TLV_DEMOD_ERROR( "INVALID TLV: PLP: 0x%02x, at position: %d, alp packet size: %d - (0x%08x), bailing",
+		uint32_t to_discard_from_unparsed_block_length = buf - buf_start; //TODO: investigate why this is such a large gap
+
+		__SL_TLV_DEMOD_ERROR( "INVALID TLV: alp packet size: %d - (0x%08x), PLP: 0x%02x, at position: %d, to_discard_from_unparsed_block: %d, buf_start: %p, buf: %p, buf_end: %p, bailing",
                               atsc3_sl_tlv_payload->plp_number,
                               atsc3_sl_tlv_payload_unparsed_block->i_pos,
 		                      atsc3_sl_tlv_payload->alp_packet_size,
-		                      atsc3_sl_tlv_payload->alp_packet_size);
+		                      atsc3_sl_tlv_payload->alp_packet_size,
+                              to_discard_from_unparsed_block_length,
+                              buf_start,
+                              buf,
+                              buf_end);
+        //jjustman-2020-11-06 - move our pointer forward to discard invalid block so we don't get stuck in a infinite loop and start parsing for magic
+        block_Seek(atsc3_sl_tlv_payload_unparsed_block, to_discard_from_unparsed_block_length);
+
 		return NULL;
 	} else {
 		//don't add this value yet if our TLV payload size is incomplete in our block_t, add it in "TLV packet is in this block_t boundary"
@@ -208,18 +216,19 @@ restart_parsing:
             //jjustman-2020-10-07 - double-whammy, we are a padding packet, BUT techincally we are fragmented between the kernel SDIO ION blocks, so pretend we are a 'holdover' packet,
             // but will get discarded on the next CircularBuffer push/pop
 
-            __SL_TLV_DEMOD_DEBUG("TLV: plp: 0xFF, SDIO padding, bailing TLV processing after discarding tlv packet, remaining_block_t_size: %d is less than to_discard_alp_packet_size: %d, seeking by %d, atsc3_sl_tlv_payload_unparsed_block->i_pos from: %d to %d, size: %d",
+            //seek forward to at least the current num bytes so far
+            atsc3_sl_tlv_payload->alp_payload_complete = false;
+            atsc3_sl_tlv_payload->alp_payload = NULL;
+            atsc3_sl_tlv_payload->sl_tlv_total_parsed_payload_size = buf_end - buf;
+
+            __SL_TLV_DEMOD_TRACE("TLV: plp: 0xFF, SDIO padding, bailing TLV processing after discarding tlv packet, remaining_block_t_size: %d is less than to_discard_alp_packet_size: %d, seeking by %d, atsc3_sl_tlv_payload_unparsed_block->i_pos from: %d to %d, size: %d, sl_tlv_total_parsed_payload_size: %d",
                                 remaining_block_t_size,
                                 to_discard_alp_packet_size,
                                 to_discard_tlv_payload,
                                 atsc3_sl_tlv_payload_unparsed_block->i_pos,
                                 atsc3_sl_tlv_payload_unparsed_block->i_pos + to_discard_tlv_payload,
-                                atsc3_sl_tlv_payload_unparsed_block->p_size);
-
-            //seek forward to at least the current num bytes so far
-            atsc3_sl_tlv_payload->alp_payload_complete = false;
-            atsc3_sl_tlv_payload->alp_payload = NULL;
-            atsc3_sl_tlv_payload->sl_tlv_total_parsed_payload_size = buf_end - buf;
+                                atsc3_sl_tlv_payload_unparsed_block->p_size,
+                                atsc3_sl_tlv_payload->sl_tlv_total_parsed_payload_size);
 
             return NULL;
         }
@@ -336,7 +345,7 @@ restart_parsing:
 					   __SL_TLV_DEMOD_ERROR("after alp_trailing_padding_size: buf: %p, position: %d, magic number is not 0x24681357, parsed as: 0x%08x",
 							   buf,
 							  (int)(buf - buf_start),
-							   atsc3_sl_tlv_payload->magic_number);
+                                            peek_magic_number);
 					atsc3_sl_tlv_payload_metrics->total_tlv_packets_without_magic_number_after_alp_size_data_bytes_consumed_count++;
 					
 				} else {
