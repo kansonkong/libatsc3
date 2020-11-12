@@ -1,6 +1,7 @@
 #include "SRTRxSTLTPVirtualPHYAndroid.h"
 
 SRTRxSTLTPVirtualPHYAndroid* srtRxSTLTPVirtualPHYAndroid = nullptr;
+mutex SRTRxSTLTPVirtualPHYAndroid::CS_global_mutex;
 
 SRTRxSTLTPVirtualPHYAndroid::SRTRxSTLTPVirtualPHYAndroid(JNIEnv* env, jobject jni_instance) {
     this->env = env;
@@ -8,19 +9,33 @@ SRTRxSTLTPVirtualPHYAndroid::SRTRxSTLTPVirtualPHYAndroid(JNIEnv* env, jobject jn
     this->setRxUdpPacketProcessCallback(atsc3_core_service_bridge_process_packet_from_plp_and_block);
 }
 
-SRTRxSTLTPVirtualPHYAndroid::~SRTRxSTLTPVirtualPHYAndroid() {
+/*
+ * #7559 - Fix for destructor invoking delete of producer and consumerJni's, these must be
+ *         deleted under the threadlocal which instanitated its jniEnv reference
+ *          if(this->producerJniEnv) {
+                 delete this->producerJniEnv;
+            }
+            if(this->consumerJniEnv) {
+                delete this->producerJniEnv;
+            }
+
     if(this->env) {
         if(this->jni_instance_globalRef) {
             env->DeleteGlobalRef(this->jni_instance_globalRef);
             this->jni_instance_globalRef = nullptr;
         }
     }
-    if(this->producerJniEnv) {
-        delete this->producerJniEnv;
+ */
+SRTRxSTLTPVirtualPHYAndroid::~SRTRxSTLTPVirtualPHYAndroid() {
+
+    _SRTRXSTLTP_VIRTUAL_PHY_ANDROID_INFO("SRTRxSTLTPVirtualPHYAndroid::~SRTRxSTLTPVirtualPHYAndroid - enter: deleting with this: %p", this);
+    this->stop();
+
+    if(atsc3_ndk_application_bridge_get_instance()) {
+        atsc3_ndk_application_bridge_get_instance()->atsc3_phy_notify_plp_selection_change_clear_callback();
     }
-    if(this->consumerJniEnv) {
-        delete this->producerJniEnv;
-    }
+
+    _SRTRXSTLTP_VIRTUAL_PHY_ANDROID_INFO("SRTRxSTLTPVirtualPHYAndroid::~SRTRxSTLTPVirtualPHYAndroid - exit: deleting with this: %p", this);
 }
 
 void SRTRxSTLTPVirtualPHYAndroid::pinProducerThreadAsNeeded() {
@@ -28,8 +43,10 @@ void SRTRxSTLTPVirtualPHYAndroid::pinProducerThreadAsNeeded() {
 }
 
 void SRTRxSTLTPVirtualPHYAndroid::releasePinnedProducerThreadAsNeeded() {
-    delete producerJniEnv;
-    producerJniEnv = nullptr;
+    if(producerJniEnv) {
+        delete producerJniEnv;
+        producerJniEnv = nullptr;
+    }
 }
 
 void SRTRxSTLTPVirtualPHYAndroid::pinConsumerThreadAsNeeded() {
@@ -40,14 +57,21 @@ void SRTRxSTLTPVirtualPHYAndroid::pinConsumerThreadAsNeeded() {
 }
 
 void SRTRxSTLTPVirtualPHYAndroid::releasePinnedConsumerThreadAsNeeded() {
-    delete consumerJniEnv;
-    consumerJniEnv = nullptr;
+    if(consumerJniEnv) {
+        delete consumerJniEnv;
+        consumerJniEnv = nullptr;
+    }
+
+    if(atsc3_ndk_application_bridge_get_instance()) {
+        atsc3_ndk_application_bridge_get_instance()->releasePinnedConsumerThreadAsNeeded();
+    }
 }
 
 //org.ngbp.libatsc3.middleware.android.phy.virtual.srt.SRTRxSTLTPVirtualPHYAndroid
 extern "C" JNIEXPORT jint JNICALL
-Java_org_ngbp_libatsc3_middleware_android_phy_virtual_srt_SRTRxSTLTPVirtualPHYAndroid_init(JNIEnv* env, jobject instance)
-{
+Java_org_ngbp_libatsc3_middleware_android_phy_virtual_srt_SRTRxSTLTPVirtualPHYAndroid_init(JNIEnv* env, jobject instance) {
+    lock_guard<mutex> srt_rx_stltp_virtual_phy_android_cctor_mutex_local(SRTRxSTLTPVirtualPHYAndroid::CS_global_mutex);
+
     _SRTRXSTLTP_VIRTUAL_PHY_DEBUG("Java_org_ngbp_libatsc3_middleware_android_phy_virtual_srt_SRTRxSTLTPVirtualPHYAndroid_init: start init, env: %p", env);
 
     srtRxSTLTPVirtualPHYAndroid = new SRTRxSTLTPVirtualPHYAndroid(env, instance);
@@ -58,8 +82,9 @@ Java_org_ngbp_libatsc3_middleware_android_phy_virtual_srt_SRTRxSTLTPVirtualPHYAn
 }
 
 extern "C" JNIEXPORT void JNICALL
-Java_org_ngbp_libatsc3_middleware_android_phy_virtual_srt_SRTRxSTLTPVirtualPHYAndroid_setSrtSourceConnectionString(JNIEnv* env, jobject instance, jstring srtSourceConnectionString)
-{
+Java_org_ngbp_libatsc3_middleware_android_phy_virtual_srt_SRTRxSTLTPVirtualPHYAndroid_setSrtSourceConnectionString(JNIEnv* env, jobject instance, jstring srtSourceConnectionString) {
+    lock_guard<mutex> srt_rx_stltp_virtual_phy_android_cctor_mutex_local(SRTRxSTLTPVirtualPHYAndroid::CS_global_mutex);
+
     if(!srtRxSTLTPVirtualPHYAndroid) {
         _SRTRXSTLTP_VIRTUAL_PHY_DEBUG("Java_org_ngbp_libatsc3_middleware_android_phy_virtual_srt_SRTRxSTLTPVirtualPHYAndroid_setSrtSourceConnectionString: error, srtRxSTLTPVirtualPHYAndroid is NULL!");
         return;
@@ -73,10 +98,10 @@ Java_org_ngbp_libatsc3_middleware_android_phy_virtual_srt_SRTRxSTLTPVirtualPHYAn
     return;
 }
 
-
 extern "C" JNIEXPORT jint JNICALL
-Java_org_ngbp_libatsc3_middleware_android_phy_virtual_srt_SRTRxSTLTPVirtualPHYAndroid_run(JNIEnv* env, jobject instance)
-{
+Java_org_ngbp_libatsc3_middleware_android_phy_virtual_srt_SRTRxSTLTPVirtualPHYAndroid_run(JNIEnv* env, jobject instance) {
+    lock_guard<mutex> srt_rx_stltp_virtual_phy_android_cctor_mutex_local(SRTRxSTLTPVirtualPHYAndroid::CS_global_mutex);
+
     int res = 0;
     if(!srtRxSTLTPVirtualPHYAndroid) {
         _SRTRXSTLTP_VIRTUAL_PHY_ERROR("Java_org_ngbp_libatsc3_middleware_android_phy_virtual_srt_SRTRxSTLTPVirtualPHYAndroid_run: error, srtRxSTLTPVirtualPHYAndroid is NULL!");
@@ -90,11 +115,10 @@ Java_org_ngbp_libatsc3_middleware_android_phy_virtual_srt_SRTRxSTLTPVirtualPHYAn
     return res;
 }
 
-
-
 extern "C" JNIEXPORT jboolean JNICALL
-Java_org_ngbp_libatsc3_middleware_android_phy_virtual_srt_SRTRxSTLTPVirtualPHYAndroid_is_1running(JNIEnv* env, jobject instance)
-{
+Java_org_ngbp_libatsc3_middleware_android_phy_virtual_srt_SRTRxSTLTPVirtualPHYAndroid_is_1running(JNIEnv* env, jobject instance) {
+    lock_guard<mutex> srt_rx_stltp_virtual_phy_android_cctor_mutex_local(SRTRxSTLTPVirtualPHYAndroid::CS_global_mutex);
+
     jboolean res = false;
 
     if(!srtRxSTLTPVirtualPHYAndroid) {
@@ -106,8 +130,9 @@ Java_org_ngbp_libatsc3_middleware_android_phy_virtual_srt_SRTRxSTLTPVirtualPHYAn
 }
 
 extern "C" JNIEXPORT jint JNICALL
-Java_org_ngbp_libatsc3_middleware_android_phy_virtual_srt_SRTRxSTLTPVirtualPHYAndroid_stop(JNIEnv* env, jobject instance)
-{
+Java_org_ngbp_libatsc3_middleware_android_phy_virtual_srt_SRTRxSTLTPVirtualPHYAndroid_stop(JNIEnv* env, jobject instance) {
+
+    lock_guard<mutex> srt_rx_stltp_virtual_phy_android_cctor_mutex_local(SRTRxSTLTPVirtualPHYAndroid::CS_global_mutex);
     int res = 0;
     if(!srtRxSTLTPVirtualPHYAndroid) {
         _SRTRXSTLTP_VIRTUAL_PHY_ERROR("Java_org_ngbp_libatsc3_middleware_android_phy_virtual_srt_SRTRxSTLTPVirtualPHYAndroid_stop: error, srtRxSTLTPVirtualPHYAndroid is NULL!");
@@ -121,8 +146,9 @@ Java_org_ngbp_libatsc3_middleware_android_phy_virtual_srt_SRTRxSTLTPVirtualPHYAn
 
 
 extern "C" JNIEXPORT jint JNICALL
-Java_org_ngbp_libatsc3_middleware_android_phy_virtual_srt_SRTRxSTLTPVirtualPHYAndroid_deinit(JNIEnv* env, jobject instance)
-{
+Java_org_ngbp_libatsc3_middleware_android_phy_virtual_srt_SRTRxSTLTPVirtualPHYAndroid_deinit(JNIEnv* env, jobject instance) {
+    lock_guard<mutex> srt_rx_stltp_virtual_phy_android_cctor_mutex_local(SRTRxSTLTPVirtualPHYAndroid::CS_global_mutex);
+
     int res = 0;
     if(!srtRxSTLTPVirtualPHYAndroid) {
         _SRTRXSTLTP_VIRTUAL_PHY_ERROR("Java_org_ngbp_libatsc3_middleware_android_phy_virtual_srt_SRTRxSTLTPVirtualPHYAndroid_deinit: error, srtRxSTLTPVirtualPHYAndroid is NULL!");

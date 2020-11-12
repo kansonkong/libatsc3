@@ -434,9 +434,14 @@ int alc_rx_analyze_packet_a331_compliant(char *data, int len, atsc3_alc_packet_t
 
 			  case EXT_NOP:
 				  /* ignore */
-				  ALC_RX_DEBUG("ignoring EXT_NOP: tsi: %u, toi: %u",  def_lct_hdr->tsi, def_lct_hdr->toi);
-				  header_pos += (hel-1) << 2;
-				  exthdrlen -= (hel-1) << 2;
+				  if(hel > 0) {
+                      ALC_RX_DEBUG("ignoring EXT_NOP: tsi: %u, toi: %u, hel: %d", def_lct_hdr->tsi, def_lct_hdr->toi, hel);
+                      header_pos += (hel-1) << 2;
+                      exthdrlen -= (hel-1) << 2;
+                  } else {
+                      ALC_RX_WARN("ignoring EXT_NOP: tsi: %u, toi: %u, hel: %d - less than 0 - ignoring!", def_lct_hdr->tsi, def_lct_hdr->toi, hel);
+                  }
+
 				  break;
 
 			  case EXT_TIME:
