@@ -63,7 +63,7 @@ aligned(8) class multiLayerInfo extends Box("muli") {
 
 //    mmthsample_header_t* mmthsample_header;
 
-void atsc3_mmt_mpu_sample_format_parse(mmtp_mpu_packet_t* mmtp_mpu_packet, block_t* raw_packet) {
+mmtp_mpu_packet_t* atsc3_mmt_mpu_sample_format_parse(mmtp_mpu_packet_t* mmtp_mpu_packet, block_t* raw_packet) {
     
     int mmtp_mpu_payload_length = block_Remaining_size(raw_packet);
     uint8_t* udp_raw_buf = block_Get(raw_packet);
@@ -139,7 +139,11 @@ void atsc3_mmt_mpu_sample_format_parse(mmtp_mpu_packet_t* mmtp_mpu_packet, block
 
             //make sure multilayerinfo_box_name == muli
             //jjustman-2019-10-25 - time to remove this asset
-            assert(multilayerinfo_box_name == _BOX_MFU_MULI);
+            //assert(multilayerinfo_box_name == _BOX_MFU_MULI);
+            if(multilayerinfo_box_name != _BOX_MFU_MULI) {
+                __MMTP_MPU_SAMPLE_FORMAT_ERROR("atsc3_mmt_mpu_sample_format_parse: multilayerinfo_box_name (0x%08x) != _BOX_MFU_MULI (0x%08x), returning NULL!",
+                        multilayerinfo_box_name, _BOX_MFU_MULI);
+            }
 
             buf = (uint8_t*)extract(buf, &multilayer_flag, 1);
             box_parsed_position++;
@@ -280,4 +284,6 @@ void atsc3_mmt_mpu_sample_format_parse(mmtp_mpu_packet_t* mmtp_mpu_packet, block
     }
     
     block_Seek(raw_packet, (buf - udp_raw_buf));
+
+    return mmtp_mpu_packet;
 }

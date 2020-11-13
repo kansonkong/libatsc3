@@ -171,7 +171,9 @@ mmtp_mpu_packet_t* mmtp_mpu_packet_parse_from_block_t(mmtp_packet_header_t* mmtp
             block_Write(temp_timed_buffer, buf, to_read_packet_length);
             block_Rewind(temp_timed_buffer);
 
-            atsc3_mmt_mpu_sample_format_parse(mmtp_mpu_packet, temp_timed_buffer);
+            if(!atsc3_mmt_mpu_sample_format_parse(mmtp_mpu_packet, temp_timed_buffer)) {
+                goto error;
+            }
 
             mmtp_mpu_packet->du_mfu_block = block_Duplicate_from_position(temp_timed_buffer);
 
