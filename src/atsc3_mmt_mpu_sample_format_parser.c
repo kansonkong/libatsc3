@@ -83,8 +83,8 @@ void atsc3_mmt_mpu_sample_format_parse(mmtp_mpu_packet_t* mmtp_mpu_packet, block
         uint8_t* rewind_buf = buf;
 
         //parse out mmthsample block if this is our first fragment or we are a complete fragment,
-        if(mmtp_mpu_packet->mpu_fragment_type == 2 &&
-            (mmtp_mpu_packet->mpu_fragmentation_indicator == 0 || mmtp_mpu_packet->mpu_fragmentation_indicator  == 1)) {
+        if(mmtp_mpu_packet->mpu_fragment_type == 0x2 &&
+            (mmtp_mpu_packet->mpu_fragmentation_indicator == 0x0 || mmtp_mpu_packet->mpu_fragmentation_indicator == 0x1)) {
 
             //MMTHSample does not subclass box...
             //buf = (uint8_t*)extract(buf, &mmthsample_len, 1);
