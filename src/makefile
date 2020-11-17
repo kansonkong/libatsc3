@@ -39,9 +39,11 @@
 # env ASAN_OPTIONS=detect_container_overflow=0
 
 CC=cc
-CXX=g++
+CXX=$(CXX)
 
-CFLAGS=-Wno-nullability-completeness -Wno-expansion-to-defined -Wno-builtin-requires-header -Wno-c++11-extensions -Wc++11-compat-deprecated-writable-strings  -Wno-writable-strings
+CFLAGS=-Wno-nullability-completeness -Wno-expansion-to-defined -Wno-builtin-requires-header -Wno-c++11-extensions -Wc++11-compat-deprecated-writable-strings  -Wno-writable-strings -I ../android/atsc3_core/libpcre/include
+CFLAGS_OPENSSL_INCLUDE=-I ../openssl/build_ssl/include
+
 CXXFLAGS=-std=c++11 -Wc++11-compat-deprecated-writable-strings -Wno-writable-strings
 
 DEBUG=-g
@@ -49,8 +51,11 @@ DEBUG=-g
 
 ASAN=-fsanitize=address -fno-omit-frame-pointer -fno-optimize-sibling-calls -O0 -fsanitize-address-use-after-scope
 
-LOCAL_LD_LIBS=-lz -lm -lpthread -lpcap -lpcre2-8 -lstdc++
+LOCAL_LD_LIBS=-L /usr/local/lib -lz -lm -lpthread -lpcap -lpcre2-8 -lstdc++
 LOCAL_LD_LIBS_NCURSES=$(LOCAL_LD_LIBS) -lncurses
+
+LOCAL_LD_LIBS_OPENSSL=-L ../openssl/build_ssl/lib -lcrypto -lssl
+
 
 #jjustman-2020-08-17 - sorry, from OSX...
 SRT_PLATFORM_BUILD_DEFS=-DHAI_ENABLE_SRT=1 -DHAI_PATCH=1 -DHAVE_INET_PTON=1 -DOSX=1 -DSRT_ENABLE_APP_READER -DSRT_ENABLE_CLOSE_SYNCH -DSRT_ENABLE_ENCRYPTION -DSRT_ENABLE_VERBOSE_LOCK -DSRT_VERSION=\"1.4.1\" -DUSE_OPENSSL=1 -D_GNU_SOURCE
@@ -82,6 +87,7 @@ all: 	intermediate_lls \
 		intermediate_a344 \
 		intermediate_ffplay \
 		intermediate_virtual_phy \
+		intermediate_smime \
 		interemediate_gpl_and_mock_linkage  \
 		libatsc3_core   \
 		unit_tests \
@@ -213,7 +219,8 @@ intermediate_virtual_phy: 	PcapDemuxedVirtualPHY.o \
 				 			PcapSTLTPVirtualPHY.o \
 				 			atsc3_srt_live_receiver.o \
 				 			SRTRxSTLTPVirtualPHY.o
-				  
+
+intermediate_smime:	atsc3_smime_utils.o				  
 
 interemediate_gpl_and_mock_linkage: bento4_gpl_link \
 									bento4_mock_link
@@ -543,20 +550,26 @@ avltree.o: libtree.h avl.c
 	$(CC) $(CFLAGS) $(DEBUG)  -c avl.c -o avltree.o
 
 PcapDemuxedVirtualPHY.o: phy/virtual/PcapDemuxedVirtualPHY.h phy/virtual/PcapDemuxedVirtualPHY.cpp
-	g++ $(CFLAGS) $(CXXFLAGS) $(DEBUG) \
+	$(CXX) $(CFLAGS) $(CXXFLAGS) $(DEBUG) \
 		-c phy/virtual/PcapDemuxedVirtualPHY.cpp \
 		-o PcapDemuxedVirtualPHY.o  -I.
 
 PcapSTLTPVirtualPHY.o: phy/virtual/PcapSTLTPVirtualPHY.h phy/virtual/PcapSTLTPVirtualPHY.cpp
-	g++ $(CFLAGS) $(CXXFLAGS) $(DEBUG) \
+	$(CXX) $(CFLAGS) $(CXXFLAGS) $(DEBUG) \
 		-c phy/virtual/PcapSTLTPVirtualPHY.cpp \
 		-o PcapSTLTPVirtualPHY.o  -I.
+
+# jjustman-2020-11-17 - smime utils, include headers from 
+
+atsc3_smime_utils.o: atsc3_smime_utils.h atsc3_smime_utils.c
+	$(CC) $(CFLAGS) $(CFLAGS_OPENSSL_INCLUDE) $(DEBUG)  -c atsc3_smime_utils.c -o atsc3_smime_utils.o
+	
 
 # jjustman-2020-08-17 - todo: add in full deps here
 atsc3_srt_live_receiver.o: phy/virtual/srt/atsc3_srt_live_receiver.h \
 							phy/virtual/srt/atsc3_srt_live_receiver.cpp \
 							phy/virtual/srt/atsc3_srt_target.h
-	g++ $(CFLAGS) $(CXXFLAGS) $(DEBUG) \
+	$(CXX) $(CFLAGS) $(CXXFLAGS) $(DEBUG) \
 		$(SRT_PLATFORM_BUILD_DEFS) \
 	 	-I. -I phy/virtual/srt -I ../srt -I ../srt/build/include \
 		-c phy/virtual/srt/atsc3_srt_live_receiver.cpp \
@@ -570,7 +583,7 @@ atsc3_srt_live_receiver.o: phy/virtual/srt/atsc3_srt_live_receiver.h \
 		 phy/virtual/srt/verbose.cpp \		
 		 
 atsc3_srt_apputil.o: phy/virtual/srt/apputil.cpp
-	g++ $(CFLAGS) $(CXXFLAGS) $(DEBUG) \
+	$(CXX) $(CFLAGS) $(CXXFLAGS) $(DEBUG) \
 		$(SRT_PLATFORM_BUILD_DEFS) \
 	 	-I. -I phy/virtual/srt -I ../srt -I ../srt/build/include \
 		-c phy/virtual/srt/apputil.cpp \
@@ -578,35 +591,35 @@ atsc3_srt_apputil.o: phy/virtual/srt/apputil.cpp
 
 		 
 atsc3_srt_logsupport.o: phy/virtual/srt/logsupport.cpp
-	g++ $(CFLAGS) $(CXXFLAGS) $(DEBUG) \
+	$(CXX) $(CFLAGS) $(CXXFLAGS) $(DEBUG) \
 		$(SRT_PLATFORM_BUILD_DEFS) \
 	 	-I. -I phy/virtual/srt -I ../srt -I ../srt/build/include \
 		-c phy/virtual/srt/logsupport.cpp \
 		-o atsc3_srt_logsupport.o 
 
 atsc3_srt_socketoptions.o: phy/virtual/srt/socketoptions.cpp
-	g++ $(CFLAGS) $(CXXFLAGS) $(DEBUG) \
+	$(CXX) $(CFLAGS) $(CXXFLAGS) $(DEBUG) \
 		$(SRT_PLATFORM_BUILD_DEFS) \
 	 	-I. -I phy/virtual/srt -I ../srt -I ../srt/build/include \
 		-c phy/virtual/srt/socketoptions.cpp \
 		-o atsc3_srt_socketoptions.o 
 
 atsc3_srt_transmitmedia.o: phy/virtual/srt/transmitmedia.cpp
-	g++ $(CFLAGS) $(CXXFLAGS) $(DEBUG) \
+	$(CXX) $(CFLAGS) $(CXXFLAGS) $(DEBUG) \
 		$(SRT_PLATFORM_BUILD_DEFS) \
 	 	-I. -I phy/virtual/srt -I ../srt -I ../srt/build/include \
 		-c phy/virtual/srt/transmitmedia.cpp \
 		-o atsc3_srt_transmitmedia.o 
 		
 atsc3_srt_uriparser.o: phy/virtual/srt/uriparser.cpp
-	g++ $(CFLAGS) $(CXXFLAGS) $(DEBUG) \
+	$(CXX) $(CFLAGS) $(CXXFLAGS) $(DEBUG) \
 		$(SRT_PLATFORM_BUILD_DEFS) \
 	 	-I. -I phy/virtual/srt -I ../srt -I ../srt/build/include \
 		-c phy/virtual/srt/uriparser.cpp \
 		-o atsc3_srt_uriparser.o 
 		
 atsc3_srt_verbose.o: phy/virtual/srt/verbose.cpp
-	g++ $(CFLAGS) $(CXXFLAGS) $(DEBUG) \
+	$(CXX) $(CFLAGS) $(CXXFLAGS) $(DEBUG) \
 		$(SRT_PLATFORM_BUILD_DEFS) \
 	 	-I. -I phy/virtual/srt -I ../srt -I ../srt/build/include \
 		-c phy/virtual/srt/verbose.cpp \
@@ -628,7 +641,7 @@ atsc3_srt_app_libs.o:	atsc3_srt_apputil.o \
 						atsc3_srt_verbose.o 			
 		
 SRTRxSTLTPVirtualPHY.o: phy/virtual/SRTRxSTLTPVirtualPHY.h phy/virtual/SRTRxSTLTPVirtualPHY.cpp
-	g++ $(CFLAGS) $(CXXFLAGS) $(DEBUG) \
+	$(CXX) $(CFLAGS) $(CXXFLAGS) $(DEBUG) \
 			$(SRT_PLATFORM_BUILD_DEFS) \
 	 	-I. \
 		-c phy/virtual/SRTRxSTLTPVirtualPHY.cpp \
@@ -1343,7 +1356,7 @@ listener_tests/atsc3_stltp_alp_listener_reflector_test: listener_tests/atsc3_stl
 		-o listener_tests/atsc3_stltp_alp_listener_reflector_test
 		
 listener_tests/atsc3_stltp_alp_listener_reflector_test_noasan: listener_tests/atsc3_stltp_alp_listener_reflector_test.cpp libatsc3.o atsc3_logging_externs.o
-	g++ $(CFLAGS) $(DEBUG) listener_tests/atsc3_stltp_alp_listener_reflector_test.cpp libatsc3.o atsc3_logging_externs.o \
+	$(CXX) $(CFLAGS) $(DEBUG) listener_tests/atsc3_stltp_alp_listener_reflector_test.cpp libatsc3.o atsc3_logging_externs.o \
 		$(LOCAL_LD_LIBS) \
 		-o listener_tests/atsc3_stltp_alp_listener_reflector_test_noasan
 
@@ -1408,14 +1421,14 @@ a324_tests/a324_dstp_lls_aeat_emission_test: a324_tests/a324_dstp_lls_aeat_emiss
 
 # Demuxed pcap virtual phy
 phy_tests/pcap_demuxed_virtual_phy_test: phy_tests/PcapDemuxedVirtualPHYTest.cpp libatsc3_bento4_gpl.o
-	g++ $(ASAN) $(CFLAGS) $(CXXFLAGS) $(DEBUG) -I . \
+	$(CXX) $(ASAN) $(CFLAGS) $(CXXFLAGS) $(DEBUG) -I . \
 		phy_tests/PcapDemuxedVirtualPHYTest.cpp \
 		libatsc3_bento4_gpl.o \
 		$(LOCAL_LD_LIBS) \
 		-o phy_tests/pcap_demuxed_virtual_phy_test
 		
 phy_tests/pcap_demuxed_virtual_phy_test_noasan: phy_tests/PcapDemuxedVirtualPHYTest.cpp libatsc3_bento4_gpl.o
-	g++ $(CFLAGS) $(CXXFLAGS) $(DEBUG) -I . \
+	$(CXX) $(CFLAGS) $(CXXFLAGS) $(DEBUG) -I . \
 		phy_tests/PcapDemuxedVirtualPHYTest.cpp \
 		libatsc3_bento4_gpl.o \
 		$(LOCAL_LD_LIBS) \
@@ -1424,14 +1437,14 @@ phy_tests/pcap_demuxed_virtual_phy_test_noasan: phy_tests/PcapDemuxedVirtualPHYT
 		
 # STLTP pcap virtual phy
 phy_tests/pcap_stltp_virtual_phy_test: phy_tests/PcapSTLTPVirtualPHYTest.cpp libatsc3_bento4_gpl.o
-	g++ $(ASAN) $(CFLAGS) $(CXXFLAGS) $(DEBUG) -I . \
+	$(CXX) $(ASAN) $(CFLAGS) $(CXXFLAGS) $(DEBUG) -I . \
 		phy_tests/PcapSTLTPVirtualPHYTest.cpp \
 		libatsc3_bento4_gpl.o \
 		$(LOCAL_LD_LIBS) \
 		-o phy_tests/pcap_stltp_virtual_phy_test
 		
 phy_tests/pcap_stltp_virtual_phy_test_noasan: phy_tests/PcapSTLTPVirtualPHYTest.cpp libatsc3_bento4_gpl.o
-	g++ $(CFLAGS) $(CXXFLAGS) $(DEBUG) -I . \
+	$(CXX) $(CFLAGS) $(CXXFLAGS) $(DEBUG) -I . \
 		phy_tests/PcapSTLTPVirtualPHYTest.cpp \
 		libatsc3_bento4_gpl.o \
 		$(LOCAL_LD_LIBS) \
@@ -1439,7 +1452,7 @@ phy_tests/pcap_stltp_virtual_phy_test_noasan: phy_tests/PcapSTLTPVirtualPHYTest.
 				
 # jjustman-2020-08-17 - srt virtual phy test		
 phy_tests/srt_stltp_virtual_phy_test: phy_tests/SRTRxSTLTPVirtualPHYTest.cpp libatsc3_bento4_gpl.o atsc3_srt_live_receiver.o atsc3_srt_app_libs.o SRTRxSTLTPVirtualPHY.o
-	g++ $(ASAN) $(CFLAGS) $(CXXFLAGS) $(DEBUG) \
+	$(CXX) $(ASAN) $(CFLAGS) $(CXXFLAGS) $(DEBUG) \
 		$(SRT_PLATFORM_BUILD_DEFS) \
 		-I . \
 		phy_tests/SRTRxSTLTPVirtualPHYTest.cpp \
@@ -1450,7 +1463,7 @@ phy_tests/srt_stltp_virtual_phy_test: phy_tests/SRTRxSTLTPVirtualPHYTest.cpp lib
 		-o phy_tests/srt_stltp_virtual_phy_test
 		
 phy_tests/srt_stltp_virtual_phy_test_noasan: phy_tests/SRTRxSTLTPVirtualPHYTest.cpp libatsc3_bento4_gpl.o atsc3_srt_live_receiver.o atsc3_srt_app_libs.o SRTRxSTLTPVirtualPHY.o
-	g++ $(CFLAGS) $(CXXFLAGS) $(DEBUG) \
+	$(CXX) $(CFLAGS) $(CXXFLAGS) $(DEBUG) \
 		$(SRT_PLATFORM_BUILD_DEFS) \
 		-I . \
 		phy_tests/SRTRxSTLTPVirtualPHYTest.cpp \
@@ -1583,7 +1596,7 @@ tools/atsc3_alc_listener_mde_writer_from_stltp_pcap_asan: tools/atsc3_alc_listen
 # jjustman-2020-08-18 - adding web-ba support tool: atsc3_srt_rx_stltp_virtual_phy_alc_listener_writer
 
 tools/atsc3_srt_rx_stltp_virtual_phy_alc_listener_writer: tools/atsc3_srt_rx_stltp_virtual_phy_alc_listener_writer.cpp libatsc3_bento4_gpl.o
-	g++ $(ASAN) $(CFLAGS) $(CXXFLAGS) $(DEBUG) \
+	$(CXX) $(ASAN) $(CFLAGS) $(CXXFLAGS) $(DEBUG) \
 		$(SRT_PLATFORM_BUILD_DEFS) \
 		-I . \
 		tools/atsc3_srt_rx_stltp_virtual_phy_alc_listener_writer.cpp \
@@ -1594,7 +1607,7 @@ tools/atsc3_srt_rx_stltp_virtual_phy_alc_listener_writer: tools/atsc3_srt_rx_stl
 		-o tools/atsc3_srt_rx_stltp_virtual_phy_alc_listener_writer
 
 tools/atsc3_srt_rx_stltp_virtual_phy_alc_listener_writer_noasan: tools/atsc3_srt_rx_stltp_virtual_phy_alc_listener_writer.cpp libatsc3_bento4_gpl.o
-	g++  $(CFLAGS) $(CXXFLAGS) $(DEBUG) \
+	$(CXX)  $(CFLAGS) $(CXXFLAGS) $(DEBUG) \
 		$(SRT_PLATFORM_BUILD_DEFS) \
 		-I . \
 		tools/atsc3_srt_rx_stltp_virtual_phy_alc_listener_writer.cpp \
@@ -1605,7 +1618,7 @@ tools/atsc3_srt_rx_stltp_virtual_phy_alc_listener_writer_noasan: tools/atsc3_srt
 		-o tools/atsc3_srt_rx_stltp_virtual_phy_alc_listener_writer_noasan
 
 tools/atsc3_pcap_stltp_preamble_timing_management_validate: tools/atsc3_pcap_stltp_preamble_timing_management_validate.cpp libatsc3_bento4_gpl.o
-	g++  $(CFLAGS) $(CXXFLAGS) $(DEBUG) \
+	$(CXX)  $(CFLAGS) $(CXXFLAGS) $(DEBUG) \
 		$(SRT_PLATFORM_BUILD_DEFS) \
 		-I . \
 		tools/atsc3_pcap_stltp_preamble_timing_management_validate.cpp \
@@ -1615,7 +1628,7 @@ tools/atsc3_pcap_stltp_preamble_timing_management_validate: tools/atsc3_pcap_stl
 
 
 tools/atsc3_pcap_stltp_preamble_timing_management_validate_asan: tools/atsc3_pcap_stltp_preamble_timing_management_validate.cpp libatsc3_bento4_gpl.o
-	g++ $(ASAN) $(CFLAGS) $(CXXFLAGS) $(DEBUG) \
+	$(CXX) $(ASAN) $(CFLAGS) $(CXXFLAGS) $(DEBUG) \
 		$(SRT_PLATFORM_BUILD_DEFS) \
 		-I . \
 		tools/atsc3_pcap_stltp_preamble_timing_management_validate.cpp \
