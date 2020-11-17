@@ -123,6 +123,18 @@ char* alc_packet_dump_to_object_get_filename_tsi_toi(udp_flow_t* udp_flow, uint3
     return temporary_file_name;
 }
 
+char* alc_packet_dump_to_object_get_filename_tsi_toi_unsigned(udp_flow_t* udp_flow, uint32_t tsi, uint32_t toi) {
+    char* temporary_file_name = (char *)calloc(255, sizeof(char));
+    snprintf(temporary_file_name, 255, "%s%u.%u.%u.%u.%u.%u-%u.unsigned",
+             __ALC_DUMP_OUTPUT_PATH__,
+             __toipandportnonstruct(udp_flow->dst_ip_addr, udp_flow->dst_port),
+             tsi,
+             toi);
+    
+    return temporary_file_name;
+}
+
+
 
 /**
  * todo:

@@ -65,7 +65,7 @@ int parse_fdt(const char* filename) {
 		atsc3_fdt_instance_dump(atsc3_fdt_instance);
 		//pretend we got our 0/toi here..
 
-		uint32_t* mbms_toi = atsc3_mbms_envelope_find_toi_from_fdt(atsc3_fdt_instance);
+		uint32_t* mbms_toi = atsc3_mbms_envelope_find_multipart_fdt_file_from_fdt_instance(atsc3_fdt_instance);
 
 		if(!mbms_toi) {
 			_ATSC3_FDT_TEST_UTILS_ERROR("Unable to find MBMS TOI for %s", filename);
