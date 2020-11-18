@@ -83,10 +83,12 @@ int main(int argc,char **argv) {
 
 #ifdef __LOTS_OF_DEBUGGING__
 
+
+#endif
+
 	_LLS_DEBUG_ENABLED = 1;
 	_LLS_TRACE_ENABLED = 1;
 
-#endif
 
     char *dev;
     char errbuf[PCAP_ERRBUF_SIZE];

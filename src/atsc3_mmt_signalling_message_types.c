@@ -9,7 +9,8 @@
 
 void mmt_signalling_message_header_and_payload_free(mmt_signalling_message_header_and_payload_t** mmt_signalling_message_header_and_payload_p) {
     mmt_signalling_message_header_and_payload_t* mmt_signalling_message_header_and_payload = *mmt_signalling_message_header_and_payload_p;
-    __MMTP_INFO("mmt_signalling_message_header_and_payload_free: %p: message_id: %d, message type: %d", mmt_signalling_message_header_and_payload, mmt_signalling_message_header_and_payload->message_header.message_id, mmt_signalling_message_header_and_payload->message_header.MESSAGE_id_type);
+    __MMTP_DEBUG("mmt_signalling_message_header_and_payload_free: %p: message_id: %d, message type: %d",
+            mmt_signalling_message_header_and_payload, mmt_signalling_message_header_and_payload->message_header.message_id, mmt_signalling_message_header_and_payload->message_header.MESSAGE_id_type);
     if(mmt_signalling_message_header_and_payload) {
         __MMTP_DEBUG("mmt_signalling_message_header_and_payload_free: clearing MMT_ATSC3_MESSAGE_ID");
     
