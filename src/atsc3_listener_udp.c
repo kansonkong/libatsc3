@@ -9,6 +9,16 @@
 
 #include "atsc3_listener_udp.h"
 
+typedef struct atsc3_udp_reassembly_buffer {
+	udp_flow_t	udp_flow;
+	uint16_t	fragment_offset;
+	uint32_t	fragment_offset_bytes;
+	uint8_t 	udp_reassembly_buffer[MAX_ATSC3_PHY_IP_DATAGRAM_SIZE];
+	uint32_t	udp_reassembly_buffer_length;
+} atsc3_udp_reassembly_buffer_t;
+
+atsc3_udp_reassembly_buffer_t atsc3_udp_reassembly_buffer = { '0' };
+
 udp_packet_t* process_packet_from_pcap(u_char *user, const struct pcap_pkthdr *pkthdr, const u_char *packet) {
 	int i = 0;
 	int k = 0;
@@ -16,7 +26,9 @@ udp_packet_t* process_packet_from_pcap(u_char *user, const struct pcap_pkthdr *p
 	u_char ip_header[24];
 	u_char udp_header[8];
 	int udp_header_start = 34;
+
 	udp_packet_t* udp_packet = NULL;
+	uint32_t data_length = 0;
 
 	for (i = 0; i < 14; i++) {
 		ethernet_packet[i] = packet[0 + i];
@@ -53,17 +65,70 @@ udp_packet_t* process_packet_from_pcap(u_char *user, const struct pcap_pkthdr *p
 	udp_packet->udp_flow.src_port = (udp_header[0] << 8) + udp_header[1];
 	udp_packet->udp_flow.dst_port = (udp_header[2] << 8) + udp_header[3];
 	udp_packet->raw_packet_length = pkthdr->len;
-    
-    uint32_t data_length = pkthdr->len - (udp_header_start + 8);
+
+	data_length = pkthdr->len - (udp_header_start + 8);
     if(data_length <=0 || data_length > MAX_ATSC3_PHY_IP_DATAGRAM_SIZE) {
         __LISTENER_UDP_ERROR("process_packet_from_pcap: invalid udp data length: %d, raw phy frame: %d", data_length, udp_packet->raw_packet_length);
         freesafe(udp_packet);
         return NULL;
     }
+
+	uint8_t  more_fragments = ((ip_header[6] >> 5 ) & 0x1);
+	uint16_t fragment_offset = ((ip_header[6] & 0x1F) << 8 ) | (ip_header[7]);
+	uint32_t fragment_offset_bytes = fragment_offset * 8;
+
+	if((fragment_offset_bytes + data_length) > MAX_ATSC3_PHY_IP_DATAGRAM_SIZE) {
+        __LISTENER_UDP_ERROR("process_packet_from_pcap: fragment_offset_bytes + data_length (%d) exceeds MAX_ATSC3_PHY_IP_DATAGRAM_SIZE (%d), udp data length: %d, raw phy frame: %d",
+        		fragment_offset_bytes + data_length, MAX_ATSC3_PHY_IP_DATAGRAM_SIZE, data_length, udp_packet->raw_packet_length);
+        freesafe(udp_packet);
+        return NULL;
+    }
+
+	if(more_fragments || fragment_offset) {
+		__LISTENER_UDP_ERROR("udp_packet_process_from_ptr: fragmented UDP packet! more_fragments: %d, fragment_offset: %d (bytes: %d), data_length: %d, udp dst_port: %d",
+				more_fragments, fragment_offset, fragment_offset_bytes, data_length, udp_packet->udp_flow.dst_port);
+		data_length += 8;
+		if(fragment_offset == 0) {
+			//first packet, so clear out our assembly buffer
+			memcpy(&atsc3_udp_reassembly_buffer.udp_flow, &udp_packet->udp_flow, sizeof(udp_packet->udp_flow));
+			memcpy(&atsc3_udp_reassembly_buffer.udp_reassembly_buffer, (uint8_t*)&packet[udp_header_start], data_length);
+			atsc3_udp_reassembly_buffer.fragment_offset_bytes = data_length;
+			atsc3_udp_reassembly_buffer.udp_reassembly_buffer_length = data_length;
+
+			return NULL;
+		} else if(atsc3_udp_reassembly_buffer.udp_flow.src_ip_addr == udp_packet->udp_flow.src_ip_addr &&
+				  atsc3_udp_reassembly_buffer.udp_flow.dst_ip_addr == udp_packet->udp_flow.dst_ip_addr) {
+
+			if(atsc3_udp_reassembly_buffer.fragment_offset_bytes == fragment_offset_bytes) {
+				__LISTENER_UDP_ERROR("udp_packet_process_from_ptr: appending UDP packet! more_fragments: %d, fragment_offset: %d (bytes: %d), data_length: %d",
+						more_fragments, fragment_offset, fragment_offset_bytes, data_length);
+
+				memcpy(&atsc3_udp_reassembly_buffer.udp_reassembly_buffer[atsc3_udp_reassembly_buffer.fragment_offset_bytes], (uint8_t*)&packet[udp_header_start], data_length);
+				atsc3_udp_reassembly_buffer.fragment_offset_bytes += data_length;
+				atsc3_udp_reassembly_buffer.udp_reassembly_buffer_length += data_length;
+
+				if(!more_fragments) {
+					udp_packet->data = block_Alloc(atsc3_udp_reassembly_buffer.udp_reassembly_buffer_length - 8);
+					block_Write(udp_packet->data, (uint8_t*)&atsc3_udp_reassembly_buffer.udp_reassembly_buffer[8], atsc3_udp_reassembly_buffer.udp_reassembly_buffer_length - 8);
+					block_Rewind(udp_packet->data);
+
+					//write back our original udp_flow
+					memcpy(&udp_packet->udp_flow, &atsc3_udp_reassembly_buffer.udp_flow, sizeof(udp_packet->udp_flow));
+
+				}
+
+			}
+		}
+	} else {
+		//non-fragmented packet
+		udp_packet->data = block_Alloc(data_length);
+		block_Write(udp_packet->data, (uint8_t*)&packet[udp_header_start + 8], data_length);
+		block_Rewind(udp_packet->data);
+	}
     
-    udp_packet->data = block_Alloc(data_length);
-    block_Write(udp_packet->data, (uint8_t*)&packet[udp_header_start + 8], data_length);
-    block_Rewind(udp_packet->data);
+
+    
+
     return udp_packet;
 }
 
