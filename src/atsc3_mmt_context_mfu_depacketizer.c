@@ -805,6 +805,7 @@ void mmtp_mfu_rebuild_from_packet_id_mpu_sequence_number(atsc3_mmt_mfu_context_t
                 if(mmtp_mpu_packet_to_rebuild_from_du->mpu_fragmentation_indicator == 0x00 || mmtp_mpu_packet_to_rebuild_from_du->mpu_fragmentation_indicator == 0x01) {
                     mfu_fragment_counter_position = mmtp_mpu_packet_to_rebuild_from_du->mpu_fragment_counter;
 
+                    //jjustman-2020-11-17 - TODO: mmtp_mpu_packet_to_rebuild_from_du->mpu_fragmentation_indicator == 0x00  should not block_alloc based upon mmthsample_header, as we are a single MMTP du length
                     if(mmtp_mpu_packet_to_rebuild_from_du->mmthsample_header && mmtp_mpu_packet_to_rebuild_from_du->mmthsample_header->length) {
                         mfu_fragment_counter_mmthsample_header_start = mmtp_mpu_packet_to_rebuild_from_du->mpu_fragment_counter;
 
