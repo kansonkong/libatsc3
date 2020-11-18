@@ -142,6 +142,14 @@ void atsc3_mmt_signalling_information_on_stpp_packet_id_with_mpu_timestamp_descr
 void atsc3_mmt_mpu_on_sequence_movie_fragment_metadata_present_ndk(uint16_t packet_id, uint32_t mpu_sequence_number, block_t* mmt_movie_fragment_metadata);
 
 
+
+
+#define __ATSC3_CORE_SERVICE_PLAYER_BRIDGE_ERROR(...) __LIBATSC3_TIMESTAMP_ERROR(__VA_ARGS__);
+#define __ATSC3_CORE_SERVICE_PLAYER_BRIDGE_WARN(...)  __LIBATSC3_TIMESTAMP_WARN(__VA_ARGS__);
+#define __ATSC3_CORE_SERVICE_PLAYER_BRIDGE_INFO(...)  if(_ATSC3_CORE_SERVICE_PLAYER_BRIDGE_INFO_ENABLED)  { __LIBATSC3_TIMESTAMP_INFO(__VA_ARGS__); }
+#define __ATSC3_CORE_SERVICE_PLAYER_BRIDGE_DEBUG(...) if(_ATSC3_CORE_SERVICE_PLAYER_BRIDGE_DEBUG_ENABLED) { __LIBATSC3_TIMESTAMP_DEBUG(__VA_ARGS__); }
+#define __ATSC3_CORE_SERVICE_PLAYER_BRIDGE_TRACE(...) if(_ATSC3_CORE_SERVICE_PLAYER_BRIDGE_TRACE_ENABLED) { __LIBATSC3_TIMESTAMP_TRACE(__VA_ARGS__); }
+
 #if defined (__cplusplus)
 }
 #endif
