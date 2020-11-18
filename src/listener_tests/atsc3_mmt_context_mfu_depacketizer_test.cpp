@@ -309,12 +309,12 @@ void process_packet(u_char *user, const struct pcap_pkthdr *pkthdr, const u_char
 			if(parsed_count) {
 				mmt_signalling_message_dump(mmtp_signalling_packet);
 
-				__TRACE("process_packet: calling mmt_signalling_message_process_with_context with udp_packet: %p, mmtp_signalling_packet: %p, atsc3_mmt_mfu_context: %p,",
+				__TRACE("process_packet: calling mmt_signalling_message_dispatch_context_notification_callbacks with udp_packet: %p, mmtp_signalling_packet: %p, atsc3_mmt_mfu_context: %p,",
 						udp_packet,
 						mmtp_signalling_packet,
 						atsc3_mmt_mfu_context);
 
-				mmt_signalling_message_process_with_context(udp_packet, mmtp_signalling_packet, atsc3_mmt_mfu_context);
+                mmt_signalling_message_dispatch_context_notification_callbacks(udp_packet, mmtp_signalling_packet, atsc3_mmt_mfu_context);
 
 
 				//internal hacks below
