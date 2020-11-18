@@ -889,7 +889,7 @@ block_t* block_Read_from_filename(const char* file_name) {
 	struct stat st;
 	stat(file_name, &st);
 
-	_ATSC3_UTILS_ERROR("block_Read_from_filename: filename: %s, size: %d", file_name, st.st_size);
+	_ATSC3_UTILS_TRACE("block_Read_from_filename: filename: %s, size: %lld", file_name, st.st_size);
 	
 	block_t* payload = block_Alloc(st.st_size);
 
