@@ -284,6 +284,67 @@ block_t* __block_check_bounaries(const char* method_name, block_t* src) {
 	return src;
 }
 
+block_t* __block_check_bounaries_read_size(const char* method_name, block_t* src, uint32_t read_size) {
+    //these are FATAL conditions, return NULL
+    if(!src) {
+        _ATSC3_UTILS_ERROR("%s: block_t is null: %p", method_name, src);
+        return NULL;
+    }
+
+    if(!src->p_buffer) {
+        _ATSC3_UTILS_ERROR("%s: block: %p, p_buffer is NULL, p_size is: %u, i_pos: %u", method_name, src, src->p_size, src->i_pos);
+        src->p_size = 0;
+        src->i_pos = 0;
+        return NULL;
+    }
+
+    if(src->p_size < 0) {
+        _ATSC3_UTILS_ERROR("%s: block: %p, invalid p_size for p_buffer: %p, p_size is: %u, i_pos: %u", method_name, src, src->p_buffer, src->p_size, src->i_pos);
+        src->p_size = 0;
+        src->i_pos = 0;
+        if(src->p_buffer) {
+            //let this leak
+        }
+        src->p_buffer = NULL;
+        return NULL;
+    }
+
+    //these are under/over-bounary errors and *may* be problematic
+    //re-clamp this position
+    if(src->i_pos < 0) {
+        _ATSC3_UTILS_WARN("%s: block: %p, invalid i_pos, clamping to 0, for p_buffer: %p, p_size is: %u, i_pos: %u", method_name, src, src->p_buffer, src->p_size, src->i_pos);
+        src->i_pos = 0;
+    }
+
+    //is our i_pos past the end of our buffer?
+    if(src->i_pos > src->p_size) {
+        uint32_t new_i_pos = src->p_size - 1;
+        _ATSC3_UTILS_WARN("%s: block: %p, i_pos is past size for p_buffer: %p, p_size is: %u, i_pos: %u, setting to: %u ", method_name, src, src->p_buffer, src->p_size, src->i_pos, new_i_pos);
+        src->i_pos = new_i_pos;
+        src->_overflow_i_pos = true;
+        return NULL;
+    }
+
+    //will our read_size go past the end of our buffer?
+    if((read_size + src->i_pos) > (src->p_size + 1)) {
+        uint32_t new_i_pos = src->p_size - 1;
+        _ATSC3_UTILS_WARN("%s: block: %p, would read past end of buffer, i_pos: %d, p_size: %d, read_size: %d, i_pos + read_size: %d, setting to: %u",
+                method_name,
+                src,
+                src->i_pos,
+                src->p_size,
+                read_size,
+                (src->i_pos + read_size),
+                new_i_pos);
+
+        src->i_pos = new_i_pos;
+        src->_overflow_i_pos = true;
+        return NULL;
+    }
+
+    return src;
+}
+
 uint32_t block_Seek(block_t* block, int32_t seek_pos) {
 	if(!__block_check_bounaries(__FUNCTION__, block)) {
 		block->i_pos = 0;
@@ -766,6 +827,8 @@ bool block_Tail_Truncate(block_t* src, uint32_t len) {
 
  */
 uint8_t block_Read_uint8_bitlen(block_t* src, int bitlen) {
+    if(!__block_check_bounaries_read_size(__FUNCTION__, src, (bitlen / 8))) return 0;
+
     uint8_t ret = 0;
     
     if(bitlen <= (8 - src->_bitpos)) {
@@ -796,6 +859,8 @@ uint8_t block_Read_uint8_bitlen(block_t* src, int bitlen) {
 }
 
 uint16_t block_Read_uint16_bitlen(block_t* src, int bitlen) {
+    if(!__block_check_bounaries_read_size(__FUNCTION__, src, (bitlen / 8))) return 0;
+
     uint16_t ret = 0;
     
     int bits_remaining = bitlen;
@@ -817,10 +882,12 @@ uint16_t block_Read_uint16_bitlen(block_t* src, int bitlen) {
 }
 
 uint32_t block_Read_uint32_bitlen(block_t* src, int bitlen) {
-	uint32_t ret = 0;
-   
-   int bits_remaining = bitlen;
-   while(bits_remaining > 0) {
+    if(!__block_check_bounaries_read_size(__FUNCTION__, src, (bitlen / 8))) return 0;
+
+    uint32_t ret = 0;
+
+    int bits_remaining = bitlen;
+    while(bits_remaining > 0) {
 	   int loop_read_size = (bits_remaining > 8 ? 8 - src->_bitpos : (bits_remaining > (8 - src->_bitpos) ? 8 - src->_bitpos : bits_remaining));
 	   int mask = ((((1 << (loop_read_size - 1)) - 1) << 1) | 1);
 
@@ -838,10 +905,11 @@ uint32_t block_Read_uint32_bitlen(block_t* src, int bitlen) {
 }
 
 uint64_t block_Read_uint64_bitlen(block_t* src, int bitlen) {
-     uint64_t ret = 0;
-   
-   int bits_remaining = bitlen;
-   while(bits_remaining > 0) {
+    if(!__block_check_bounaries_read_size(__FUNCTION__, src, (bitlen / 8))) return 0;
+
+    uint64_t ret = 0;
+    int bits_remaining = bitlen;
+    while(bits_remaining > 0) {
 	   int loop_read_size = (bits_remaining > 8 ? 8 - src->_bitpos : (bits_remaining > (8 - src->_bitpos) ? 8 - src->_bitpos : bits_remaining));
 	   int mask = ((((1 << (loop_read_size - 1)) - 1) << 1) | 1);
 
@@ -861,23 +929,35 @@ uint64_t block_Read_uint64_bitlen(block_t* src, int bitlen) {
 
 //TODO: check for _bitpos
 uint8_t block_Read_uint8(block_t* src) {
+    if(!__block_check_bounaries_read_size(__FUNCTION__, src, 1)) return 0;
+
     uint8_t ret = src->p_buffer[src->i_pos++];
     return ret;
 }
 //read from network to host aligned short/long/double long
 uint16_t block_Read_uint16_ntohs(block_t* src) {
+    if(!__block_check_bounaries_read_size(__FUNCTION__, src, 2)) return 0;
+
     uint16_t ret = ntohs(*((uint16_t*)(&src->p_buffer[src->i_pos])));
     src->i_pos += 2;
     return ret;
 }
 
 uint32_t block_Read_uint32_ntohl(block_t* src) {
+    if(!__block_check_bounaries_read_size(__FUNCTION__, src, 4)) return 0;
+
     uint32_t ret = ntohl(*((uint32_t*)(&src->p_buffer[src->i_pos])));
     src->i_pos += 4;
     return ret;
 }
+
 uint64_t block_Read_uint64_ntohul(block_t* src) {
-    return 0;
+
+    if(!__block_check_bounaries_read_size(__FUNCTION__, src, 8)) return 0;
+
+    uint64_t ret = ntohq(*((uint64_t*)(&src->p_buffer[src->i_pos])));
+    src->i_pos += 8;
+    return ret;
 }
 
 //read from filesyste into block_t
