@@ -199,7 +199,7 @@ atsc3_pcap_replay_context_t* atsc3_pcap_replay_usleep_packet(atsc3_pcap_replay_c
         //jjustman-2019-10-19 - only trigger usleep if our differential is greater than XXms
         //jjustman-2019-11-06 - this is a bit of a hack, but android has challenges scheduling this granular level of pcap emission, so we "round" to the quantized 50ms boundary
 		if(wallclock_runtime_packet_capture_ts_differentialUS > 5000) {
-            _ATSC3_PCAP_TYPE_DEBUG("pcap timing information: current packet timeval: s.us: %ld.%ld, last packet timeval: s.us: %ld.%ld, target sleep duration uS: %lld",
+            _ATSC3_PCAP_TYPE_DEBUG("pcap timing information: current packet timeval: s.us: %ld.%d, last packet timeval: s.us: %ld.%d, target sleep duration uS: %lld",
                   current_packet_timeval.tv_sec,
                   current_packet_timeval.tv_usec,
                   last_packet_timeval.tv_sec,
