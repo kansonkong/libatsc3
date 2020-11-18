@@ -859,7 +859,7 @@ uint64_t block_Read_uint64_bitlen(block_t* src, int bitlen) {
 
 //TODO: check for _bitpos
 uint8_t block_Read_uint8(block_t* src) {
-    uint8_t ret = &src->p_buffer[src->i_pos++];
+    uint8_t ret = src->p_buffer[src->i_pos++];
     return ret;
 }
 //read from network to host aligned short/long/double long
@@ -879,7 +879,7 @@ uint64_t block_Read_uint64_ntohul(block_t* src) {
 }
 
 //read from filesyste into block_t
-block_t* block_Read_from_filename(char* file_name) {
+block_t* block_Read_from_filename(const char* file_name) {
 
 	if( access(file_name, F_OK ) == -1 ) {
 		_ATSC3_UTILS_ERROR("block_Read_from_filename: unable to open file: %s", file_name);
@@ -889,6 +889,8 @@ block_t* block_Read_from_filename(char* file_name) {
 	struct stat st;
 	stat(file_name, &st);
 
+	_ATSC3_UTILS_ERROR("block_Read_from_filename: filename: %s, size: %d", file_name, st.st_size);
+	
 	block_t* payload = block_Alloc(st.st_size);
 
 	FILE* fp = fopen(file_name, "r");
@@ -958,7 +960,7 @@ uint16_t parsePortIntoIntval(const char* dst_port) {
 }
 
 //alloc and copy - note limited to 16k
-char* strlcopy(char* src) {
+char* strlcopy(const char* src) {
 	int len = strnlen(src, 16384);
 	char* dest = (char*)calloc(len+1, sizeof(char));
 	return strncpy(dest, src, len);

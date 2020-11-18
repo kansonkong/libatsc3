@@ -39,7 +39,7 @@
 # env ASAN_OPTIONS=detect_container_overflow=0
 
 CC=cc
-CXX=$(CXX)
+CXX=g++
 
 CFLAGS=-Wno-nullability-completeness -Wno-expansion-to-defined -Wno-builtin-requires-header -Wno-c++11-extensions -Wc++11-compat-deprecated-writable-strings  -Wno-writable-strings -I ../android/atsc3_core/libpcre/include
 CFLAGS_OPENSSL_INCLUDE=-I ../openssl/build_ssl/include
@@ -220,7 +220,7 @@ intermediate_virtual_phy: 	PcapDemuxedVirtualPHY.o \
 				 			atsc3_srt_live_receiver.o \
 				 			SRTRxSTLTPVirtualPHY.o
 
-intermediate_smime:	atsc3_smime_utils.o				  
+intermediate_smime:	atsc3_smime_utils.o	  
 
 interemediate_gpl_and_mock_linkage: bento4_gpl_link \
 									bento4_mock_link
@@ -247,10 +247,13 @@ unit_tests: test/atsc3_lmt_test \
 			test/atsc3_route_package_extract_test \
 			test/atsc3_route_package_extract_test_noasan \
 			test/atsc3_fdt_mbms_envelope_test \
-			test/atsc3_fdt_mbms_envelope_test_2019-09-07-esg-e.1.1.7 \
 			test/atsc3_hevc_nal_extractor_test \
 			test/atsc3_pcap_replay_test \
-			test/atsc3_route_dash_mpd_patch_test
+			test/atsc3_route_dash_mpd_patch_test \
+			test/atsc3_smime_validation_test
+			
+# 			test/atsc3_fdt_mbms_envelope_test_2019-09-07-esg-e.1.1.7 \
+
 
 libmicrohttpd_tests: test/atsc3_libmicrohttpd_test
 
@@ -1322,8 +1325,86 @@ test/atsc3_route_dash_mpd_patch_test: test/atsc3_route_dash_mpd_patch_test.c \
 							avltree.o \
 							strnstr.o \
 							$(LOCAL_LD_LIBS) \
-							-o test/atsc3_route_dash_mpd_patch_test 
+							-o test/atsc3_route_dash_mpd_patch_test
 
+
+test/atsc3_smime_validation_test: test/atsc3_smime_validation_test.c \
+										atsc3_utils.o \
+										atsc3_pcre2_regex_utils.h \
+										atsc3_pcre2_regex_utils.o \
+										atsc3_route_dash_utils.o \
+										atsc3_alc_session.o \
+										atsc3_lls_mmt_utils.o \
+										atsc3_lls_sls_monitor_output_buffer_utils.o \
+										atsc3_lls_sls_monitor_output_buffer.o \
+										atsc3_player_ffplay.o \
+										atsc3_route_s_tsid.o \
+										atsc3_lls_types.o \
+										atsc3_lls_alc_utils.o \
+										atsc3_fdt.o \
+										atsc3_fdt_parser.o \
+										atsc3_sls_metadata_fragment_types.o \
+										atsc3_route_sls_processor.o \
+										atsc3_mbms_envelope_parser.o \
+										atsc3_mime_multipart_related.o \
+										atsc3_mime_multipart_related_parser.o \
+										atsc3_mbms_envelope_xml.o \
+										atsc3_route_mpd.o \
+										atsc3_route_package_utils.o \
+										atsc3_sls_held_fragment.o \
+										atsc3_sls_metadata_fragment_types.o \
+										atsc3_sls_metadata_fragment_types_parser.o \
+										atsc3_route_usbd.o \
+										atsc3_alc_utils.o \
+										xml.o \
+										atsc3_mmtp_ntp32_to_pts.o \
+										atsc3_utils_sha256.o \
+										atsc3_route_object.o \
+										atsc3_sls_alc_flow.o \
+										avltree.o \
+										strnstr.o \
+										atsc3_smime_utils.o
+
+	$(CC) $(ASAN) $(CFLAGS) $(DEBUG) test/atsc3_smime_validation_test.c  \
+							atsc3_utils.o \
+							atsc3_pcre2_regex_utils.o \
+							atsc3_route_dash_utils.o \
+							atsc3_alc_session.o \
+							atsc3_lls_mmt_utils.o \
+							atsc3_lls_sls_monitor_output_buffer_utils.o \
+							atsc3_lls_sls_monitor_output_buffer.o \
+							atsc3_player_ffplay.o \
+							atsc3_route_s_tsid.o \
+							atsc3_lls_types.o \
+							atsc3_lls_alc_utils.o \
+							atsc3_fdt.o \
+							atsc3_fdt_parser.o \
+							atsc3_route_sls_processor.o \
+							atsc3_mbms_envelope_parser.o \
+							atsc3_mime_multipart_related.o \
+							atsc3_mime_multipart_related_parser.o \
+							atsc3_mbms_envelope_xml.o \
+							atsc3_route_mpd.o \
+							atsc3_route_package_utils.o \
+							atsc3_sls_held_fragment.o \
+							atsc3_sls_metadata_fragment_types.o \
+							atsc3_sls_metadata_fragment_types_parser.o \
+							atsc3_route_usbd.o \
+							atsc3_alc_utils.o \
+							xml.o \
+							atsc3_mmtp_ntp32_to_pts.o \
+							atsc3_utils_sha256.o \
+							atsc3_route_object.o \
+							atsc3_sls_alc_flow.o \
+							avltree.o \
+							strnstr.o \
+							atsc3_smime_utils.o \
+							$(LOCAL_LD_LIBS_OPENSSL) \
+							$(LOCAL_LD_LIBS) \
+							-o test/atsc3_smime_validation_test
+							
+							
+							
 
 ### integration tests
 ### TODO: move these into target makefile in listener_test/folder
