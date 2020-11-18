@@ -313,12 +313,12 @@ uint32_t block_Seek_Relative(block_t* block, int32_t seek_pos) {
     int32_t new_seek_pos = block->i_pos + seek_pos;
     
     if(new_seek_pos < 0 ) {
-        _ATSC3_UTILS_WARN("block_Seek: block: %p, invalid seek_pos to: %u, clamping to 0",
-                          block->p_buffer, seek_pos);
+        _ATSC3_UTILS_WARN("block_Seek: block: %p, invalid seek_pos to relative: %u, i_pos: %d, absolute: %d, clamping to 0",
+                          block->p_buffer, seek_pos, block->i_pos, new_seek_pos);
         block->i_pos = 0;
     } else if(new_seek_pos > block->p_size) {
-        _ATSC3_UTILS_WARN("block_Seek: block: %p, invalid seek_pos to: %u, clamping to %u",
-                          block->p_buffer, seek_pos, block->p_size);
+        _ATSC3_UTILS_WARN("block_Seek: block: %p, invalid seek_pos to relative: %u, i_pos: %d, absolute: %d, clamping to %u",
+                          block->p_buffer, seek_pos, block->i_pos, new_seek_pos, block->p_size);
         block->i_pos = block->p_size;
     } else {
         block->i_pos = new_seek_pos;
@@ -344,8 +344,8 @@ block_t* block_Write(block_t* dest, const uint8_t* src_buf, uint32_t src_size) {
 	return dest;
 }
 
-//use src i_pos to append before
-//this will append the leader of the source block...
+//block_Append:
+// append to dest[i_pos] from src, starting at src[0] with length of src[i_pos] bytes
 uint32_t block_Append(block_t* dest, block_t* src) {
 	if(!__block_check_bounaries(__FUNCTION__, dest)) return 0;
 
@@ -363,6 +363,8 @@ uint32_t block_Append(block_t* dest, block_t* src) {
 	return dest->i_pos;
 }
 
+//block_AppendFromSrciPos
+// append to dest[i_pos] from src, starting at src[i_pos] with length of src[remaining()] bytes
 
 //combine two blocks at dest->i_pos, block_Get(src), len: src->p_size - src->i_pos
 
@@ -859,7 +861,7 @@ uint64_t block_Read_uint64_bitlen(block_t* src, int bitlen) {
 
 //TODO: check for _bitpos
 uint8_t block_Read_uint8(block_t* src) {
-    uint8_t ret = &src->p_buffer[src->i_pos++];
+    uint8_t ret = src->p_buffer[src->i_pos++];
     return ret;
 }
 //read from network to host aligned short/long/double long

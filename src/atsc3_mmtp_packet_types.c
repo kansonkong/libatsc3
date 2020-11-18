@@ -46,7 +46,11 @@ void mmtp_signalling_packet_free(mmtp_signalling_packet_t** mmtp_signalling_pack
 		if(mmtp_signalling_packet) {
 			block_Destroy(&mmtp_signalling_packet->raw_packet);
 			block_Destroy(&mmtp_signalling_packet->mmtp_header_extension);
-            __MMTP_INFO("mmtp_signalling_packet_free, packet_id: %d", mmtp_signalling_packet->mmtp_packet_id);
+            __MMTP_TRACE("mmtp_signalling_packet_free, ptr: %p, packet_id: %d", mmtp_signalling_packet, mmtp_signalling_packet->mmtp_packet_id);
+
+            if(mmtp_signalling_packet->udp_packet_inner_msg_payload) {
+                block_Destroy(&mmtp_signalling_packet->udp_packet_inner_msg_payload);
+            }
 
 			mmtp_signalling_packet_free_mmt_signalling_message_header_and_payload(mmtp_signalling_packet);
 			freesafe(mmtp_signalling_packet);
