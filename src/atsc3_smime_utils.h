@@ -216,6 +216,7 @@ typedef struct atsc3_smime_entity {
 	char*	micalg;
 	char*	boundary;
 	
+	char*		raw_smime_payload_filename;
 	block_t*	raw_smime_payload;
 	block_t*	extracted_mime_entity;
 	block_t*	extracted_pkcs7_signature;
@@ -233,17 +234,14 @@ typedef struct atsc3_smime_validation_context {
 
 atsc3_smime_entity_t* atsc3_smime_entity_new();
 
-atsc3_smime_entity_t* atsc3_smime_entity_new_parse_from_file(char* filename);
+atsc3_smime_entity_t* atsc3_smime_entity_new_parse_from_file(const char* filename);
 
 void atsc3_smime_entity_free(atsc3_smime_entity_t** atsc3_smime_entity_p);
 
 atsc3_smime_validation_context_t* atsc3_smime_validation_context_new(atsc3_smime_entity_t* atsc3_smime_entity);
 void atsc3_smime_validation_context_free(atsc3_smime_validation_context_t** atsc3_smime_validation_context_p);
 
-
 atsc3_smime_validation_context_t* atsc3_smime_validate_from_context(atsc3_smime_validation_context_t* atsc3_smime_validation_context);
-
-
 
 #if defined (__cplusplus)
 }
