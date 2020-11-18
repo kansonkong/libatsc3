@@ -69,7 +69,6 @@ FILE* alc_object_open_or_pre_allocate(char* file_name, atsc3_alc_packet_t* alc_p
 
 void alc_recon_file_ptr_set_tsi_toi(FILE* file_ptr, uint32_t tsi, uint32_t toi_init);
 char* alc_packet_dump_to_object_get_filename_tsi_toi(udp_flow_t* udp_flow, uint32_t tsi, uint32_t toi);
-char* alc_packet_dump_to_object_get_filename_tsi_toi_unsigned(udp_flow_t* udp_flow, uint32_t tsi, uint32_t toi);
 
 block_t* alc_get_payload_from_filename(char*);
 

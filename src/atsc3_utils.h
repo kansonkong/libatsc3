@@ -169,7 +169,7 @@ uint32_t block_Read_uint32_ntohl(block_t* src);
 uint64_t block_Read_uint64_ntohul(block_t* src);
 
 //read from filesystem into block_t
-block_t* block_Read_from_filename(const char* file_name);
+block_t* block_Read_from_filename(char* file_name);
 
 
 #define block_RefZero(a) ({ a->_refcnt = 0; })
@@ -181,7 +181,7 @@ void _block_Refcount(block_t* a);
 void block_Destroy(block_t** a); //hard destroy overriding GC
     
 //alloc and copy - note limited to 16k
-char* strlcopy(const char*);
+char* strlcopy(char*);
 char *_ltrim(char *str);
 char* _rtrim(char *str);
 char* __trim(char *str);
