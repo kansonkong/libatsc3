@@ -113,9 +113,9 @@ void mmtp_mfu_rebuild_from_packet_id_mpu_sequence_number(atsc3_mmt_mfu_context_t
 
 
 //MMT signalling information processing
-void mmt_signalling_message_process_with_context(udp_packet_t *udp_packet,
-												mmtp_signalling_packet_t* mmtp_signalling_packet,
-												atsc3_mmt_mfu_context_t* atsc3_mmt_mfu_context);
+void mmt_signalling_message_dispatch_context_notification_callbacks(udp_packet_t *udp_packet,
+                                                                    mmtp_signalling_packet_t* mmtp_signalling_packet,
+                                                                    atsc3_mmt_mfu_context_t* atsc3_mmt_mfu_context);
 
 
 //movie fragment sample duration parsing...non bento4 impl
