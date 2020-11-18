@@ -108,7 +108,7 @@ private:
     std::thread mhRxThread;
 
     //alc service monitoring
-    vector<int>                     atsc3_slt_alc_additional_services_monitored;
+    //vector<int>                     atsc3_slt_alc_additional_services_monitored;
 
     //global env.Get()->NewGlobalRef(jobjectByteBuffer); for c alloc'd MFU's and NAL's
     std::vector<jobject> global_jobject_mfu_refs;
