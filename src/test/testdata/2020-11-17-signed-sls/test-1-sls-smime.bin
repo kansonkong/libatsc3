@@ -1,0 +1,170 @@
+MIME-Version:1.0
+Content-Type: multipart/signed; protocol="application/pkcs7-signature"; 
+ micalg=sha-256; boundary="4_8pYwzZtQa,r-Ej9B24'iXyghNrwRZO+U)A//R6-/+'C5kyG.=sI89YZ.cMdjN+lF02d0"
+
+--4_8pYwzZtQa,r-Ej9B24'iXyghNrwRZO+U)A//R6-/+'C5kyG.=sI89YZ.cMdjN+lF02d0
+Content-Type: multipart/related;
+ type="application/mbms-envelope+xml";
+ boundary=")zvMA?a+6eQLV.JysDXx.cqh,=sc9cDj46,zj2gIoFJ_+vl?NVR0BdkHOhh4zr:HZz7QXv"
+
+--)zvMA?a+6eQLV.JysDXx.cqh,=sc9cDj46,zj2gIoFJ_+vl?NVR0BdkHOhh4zr:HZz7QXv
+Content-Type: application/mbms-envelope+xml
+Content-Location: envelope.xml
+
+<?xml version="1.0" encoding="UTF-8"?>
+<metadataEnvelope xmlns="urn:3gpp:metadata:2005:MBMS:envelope">
+   <item metadataURI="mpd.xml" version="10" contentType="application/dash+xml"/>
+   <item metadataURI="stsid.xml" version="26" contentType="application/route-s-tsid+xml"/>
+   <item metadataURI="usbd.xml" version="2" contentType="application/route-usd+xml"/>
+</metadataEnvelope>
+
+--)zvMA?a+6eQLV.JysDXx.cqh,=sc9cDj46,zj2gIoFJ_+vl?NVR0BdkHOhh4zr:HZz7QXv
+Content-Type: application/dash+xml
+Content-Location: mpd.xml
+
+<?xml version="1.0" encoding="UTF-8"?>
+<MPD availabilityStartTime="1970-01-01T00:00:00Z" maxSegmentDuration="PT2S" minBufferTime="PT2.1S" minimumUpdatePeriod="PT30S" profiles="urn:mpeg:dash:profile:isoff-live:2011" publishTime="2020-10-07T17:01:34Z" timeShiftBufferDepth="PT12S" type="dynamic" xmlns="urn:mpeg:dash:schema:mpd:2011" xmlns:cenc="urn:mpeg:cenc:2013" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="urn:mpeg:dash:schema:mpd:2011 DASH-MPD.xsd">
+   <Period id="P0" start="PT0S">
+      <AdaptationSet contentType="video" id="0" maxFrameRate="60000/1001" maxHeight="1080" maxWidth="1920" mimeType="video/mp4" minFrameRate="60000/1001" minHeight="1080" minWidth="1920" par="16:9" segmentAlignment="true" startWithSAP="1">
+         <Role schemeIdUri="urn:mpeg:dash:role:2011" value="main"/>
+         <Representation bandwidth="3500000" codecs="hev1.2.4.L123.90" frameRate="60000/1001" height="1080" id="v1" sar="1:1" width="1920">
+            <SegmentTemplate duration="2002000" initialization="v1-init.mp4v" media="v1-$Number$.mp4v" startNumber="2" timescale="1000000"/>
+         </Representation>
+      </AdaptationSet>
+      <AdaptationSet contentType="audio" id="1" lang="eng" mimeType="audio/mp4" segmentAlignment="true" startWithSAP="1">
+         <Role schemeIdUri="urn:mpeg:dash:role:2011" value="main"/>
+         <Representation audioSamplingRate="48000" bandwidth="256000" codecs="ac-4.02.00.00" id="a1">
+            <AudioChannelConfiguration schemeIdUri="tag:dolby.com,2015:dash:audio_channel_configuration:2015" value="000047"/>
+            <SegmentTemplate duration="2002000" initialization="a1-init.mp4a" media="a1-$Number$.mp4a" startNumber="2" timescale="1000000"/>
+         </Representation>
+      </AdaptationSet>
+      <AdaptationSet contentType="audio" id="2" lang="spa" mimeType="audio/mp4" segmentAlignment="true" startWithSAP="1">
+         <Role schemeIdUri="urn:mpeg:dash:role:2011" value="alternate"/>
+         <Representation audioSamplingRate="48000" bandwidth="96000" codecs="ac-4.02.00.00" id="a2">
+            <AudioChannelConfiguration schemeIdUri="tag:dolby.com,2015:dash:audio_channel_configuration:2015" value="000001"/>
+            <SegmentTemplate duration="2002000" initialization="a2-init.mp4a" media="a2-$Number$.mp4a" startNumber="2" timescale="1000000"/>
+         </Representation>
+      </AdaptationSet>
+      <AdaptationSet contentType="text" id="3" mimeType="application/mp4" segmentAlignment="true" startWithSAP="1">
+         <SupplementalProperty schemeIdUri="http://dashif.org/guidelines/dash-atsc-closedcaption" value="ar:16-9,er:0,profile:0,3d:0"/>
+         <Role schemeIdUri="urn:mpeg:dash:role:2011" value="caption"/>
+         <Representation bandwidth="410000" codecs="stpp.ttml.im1i" id="d1">
+            <SegmentTemplate duration="2002000" initialization="d1-init.mp4" media="d1-$Number$.m4s" startNumber="2" timescale="1000000"/>
+         </Representation>
+      </AdaptationSet>
+   </Period>
+</MPD>
+
+--)zvMA?a+6eQLV.JysDXx.cqh,=sc9cDj46,zj2gIoFJ_+vl?NVR0BdkHOhh4zr:HZz7QXv
+Content-Type: application/route-s-tsid+xml
+Content-Location: stsid.xml
+
+<?xml version="1.0" encoding="UTF-8"?>
+<S-TSID xmlns="tag:atsc.org,2016:XMLSchemas/ATSC3/Delivery/S-TSID/1.0/" xmlns:afdt="tag:atsc.org,2016:XMLSchemas/ATSC3/Delivery/ATSC-FDT/1.0/" xmlns:fdt="urn:ietf:params:xml:ns:fdt">
+   <RS sIpAddr="192.168.200.2" dIpAddr="239.255.61.1" dPort="49152">
+      <LS tsi="3000" bw="3850000" startTime="2020-10-22T08:57:14Z">
+         <SrcFlow rt="true">
+            <EFDT>
+               <FDT-Instance Expires="4294967295"
+                             afdt:efdtVersion="0"
+                             afdt:fileTemplate="v1-$TOI$.mp4v">
+                  <fdt:File TOI="4294967295" Content-Location="v1-init.mp4v"/>
+               </FDT-Instance>
+            </EFDT>
+            <ContentInfo>
+              <MediaInfo repId="v1" contentType="video"/>
+            </ContentInfo>
+            <Payload codePoint="128" formatId="1" frag="0" order="true"/>
+         </SrcFlow>
+      </LS>
+      <LS tsi="3013" bw="282000" startTime="2020-10-22T08:57:14Z">
+         <SrcFlow rt="true">
+            <EFDT>
+               <FDT-Instance Expires="4294967295"
+                             afdt:efdtVersion="0"
+                             afdt:fileTemplate="a1-$TOI$.mp4a">
+                  <fdt:File TOI="4294967295" Content-Location="a1-init.mp4a"/>
+               </FDT-Instance>
+            </EFDT>
+            <ContentInfo>
+              <MediaInfo repId="a1" contentType="audio"/>
+            </ContentInfo>
+            <Payload codePoint="128" formatId="1" frag="0" order="true"/>
+         </SrcFlow>
+      </LS>
+      <LS tsi="3016" bw="106000" startTime="2020-10-22T08:57:14Z">
+         <SrcFlow rt="true">
+            <EFDT>
+               <FDT-Instance Expires="4294967295"
+                             afdt:efdtVersion="0"
+                             afdt:fileTemplate="a2-$TOI$.mp4a">
+                  <fdt:File TOI="4294967295" Content-Location="a2-init.mp4a"/>
+               </FDT-Instance>
+            </EFDT>
+            <ContentInfo>
+              <MediaInfo repId="a2" contentType="audio"/>
+            </ContentInfo>
+            <Payload codePoint="128" formatId="1" frag="0" order="true"/>
+         </SrcFlow>
+      </LS>
+      <LS tsi="3017" bw="451000" startTime="2020-10-22T08:57:14Z">
+         <SrcFlow rt="true">
+            <EFDT>
+               <FDT-Instance Expires="4294967295"
+                             afdt:efdtVersion="0"
+                             afdt:fileTemplate="d1-$TOI$.m4s">
+                  <fdt:File TOI="4294967295" Content-Location="d1-init.mp4"/>
+               </FDT-Instance>
+            </EFDT>
+            <ContentInfo>
+              <MediaInfo repId="d1" contentType="text"/>
+            </ContentInfo>
+            <Payload codePoint="128" formatId="1" frag="0" order="true"/>
+         </SrcFlow>
+      </LS>
+   </RS>
+</S-TSID>
+
+--)zvMA?a+6eQLV.JysDXx.cqh,=sc9cDj46,zj2gIoFJ_+vl?NVR0BdkHOhh4zr:HZz7QXv
+Content-Type: application/route-usd+xml
+Content-Location: usbd.xml
+
+<?xml version="1.0" encoding="UTF-8"?>
+<BundleDescriptionROUTE xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns="tag:atsc.org,2016:XMLSchemas/ATSC3/Delivery/ROUTEUSD/1.0/" xmlns:routeusd="http://www.atsc.org/XMLSchemas/ATSC3/Delivery/ROUTEUSD/1.0/" xsi:schemaLocation="http://www.atsc.org/XMLSchemas/ATSC3/Delivery/ROUTEUSD/1.0/ ROUTEUSD.xsd">
+   <UserServiceDescription serviceId="1">
+      <Name lang="en">
+         KASW-NG
+      </Name>
+      <DeliveryMethod>
+         <BroadcastAppService>
+            <BasePattern>v1-</BasePattern>
+            <BasePattern>a1-</BasePattern>
+            <BasePattern>a2-</BasePattern>
+            <BasePattern>d1-</BasePattern>
+         </BroadcastAppService>
+      </DeliveryMethod>
+   </UserServiceDescription>
+</BundleDescriptionROUTE>
+
+--)zvMA?a+6eQLV.JysDXx.cqh,=sc9cDj46,zj2gIoFJ_+vl?NVR0BdkHOhh4zr:HZz7QXv--
+
+--4_8pYwzZtQa,r-Ej9B24'iXyghNrwRZO+U)A//R6-/+'C5kyG.=sI89YZ.cMdjN+lF02d0
+Content-Type: application/pkcs7-signature; name=bcsig.p7s; mime-type=signed-data
+Content-Transfer-Encoding: base64;
+Content-Disposition: attachment; filemane="bcsig7.p7s"
+
+MIICXgYJKoZIhvcNAQcCoIICTzCCAksCAQMxDTALBglghkgBZQMEAgEwCwYJKoZI
+hvcNAQcBMYICKDCCAiQCAQOAFDvDSbMVJhECiUSVjY+Af+1m02D8MAsGCWCGSAFl
+AwQCAaBpMBgGCSqGSIb3DQEJAzELBgkqhkiG9w0BBwEwHAYJKoZIhvcNAQkFMQ8X
+DTIwMTAyMjA4NTcxOFowLwYJKoZIhvcNAQkEMSIEIPcrqa8ruKjnwWdEez/2hcnF
+tAZlmhqzQU7DHVPFKOIAMA0GCSqGSIb3DQEBAQUABIIBgKCexOZ4Ni3V/BTPxDz5
+/wJRIpCNrbPf2NCaDOjpbyPYx4LOFCOkjLq3S5QldwQbdUeWEkPGNsAHLj83K+Ks
+EIvlzSYCEuJQlPbCS5owxw4WJv62B9//E2pw9hiNXuJHyKoxbVttJ4osf13i9Lxu
+hUq+4Gci/yCw6gmeTUq1EkaAfWQt96RJx0pIH4maGgWN8+QB7AkpEsirIQ3LGT3i
+1q7R2DVphOKpFNUFp12olqkwyXOMJmK0b5Xy1g+KJRD9rdBzm6iWV8W+IhJ1h3Wj
+y4AFcfLkPc2OuhWq+6rwS3Fcnrycmf4KvPYorkKi1bVmrlDVRyT7BKw1Crgq7Ix/
+09qgZrBKFWV0hB6onnlBShHOPKuh3AxMJFmRj+dRYYbNSFj1Ktunrl+1+PbhwuoU
+MR/QLq4llvSceDE8MirIvh0RLSGaE3HYqYIm+wS4WsZKLqUBzyD96y6Wt5xFBtGG
+4I5vXCzxdfi4MQKaZnYzvUD7pbQcLdiiPfBybUVSKKmepw==
+
+--4_8pYwzZtQa,r-Ej9B24'iXyghNrwRZO+U)A//R6-/+'C5kyG.=sI89YZ.cMdjN+lF02d0--
