@@ -218,27 +218,38 @@ typedef struct atsc3_smime_entity {
 	
 	char*		raw_smime_payload_filename;
 	block_t*	raw_smime_payload;
-	block_t*	extracted_mime_entity;
+	
+	block_t*	cms_verified_extracted_mime_entity;
 	block_t*	extracted_pkcs7_signature;
 	
 } atsc3_smime_entity_t;
 
 
 typedef struct atsc3_smime_validation_context {
-	atsc3_smime_entity_t* atsc3_smime_entity;
-	//other CDT information here...
+	//for NON PRODUCTION usage or without CA ROOT pin
+	//	if true, will set flags for CMS_verify to CMS_BINARY | CMS_NOVERIFY | CMS_NO_SIGNER_CERT_VERIFY | CMS_NOCRL | CMS_NO_ATTR_VERIFY
+	bool 					cms_noverify;
 	
-	bool cms_signature_valid;
+	atsc3_smime_entity_t* 	atsc3_smime_entity;
+	
+	//other CDT information here...
+	block_t*				certificate_payload;
+	
+	bool 					cms_signature_valid;
 		
 } atsc3_smime_validation_context_t;
 
 atsc3_smime_entity_t* atsc3_smime_entity_new();
 
-atsc3_smime_entity_t* atsc3_smime_entity_new_parse_from_file(const char* filename);
+atsc3_smime_entity_t* atsc3_smime_entity_new_parse_from_file(const char* multipart_entity_filename);
 
 void atsc3_smime_entity_free(atsc3_smime_entity_t** atsc3_smime_entity_p);
 
 atsc3_smime_validation_context_t* atsc3_smime_validation_context_new(atsc3_smime_entity_t* atsc3_smime_entity);
+
+atsc3_smime_validation_context_t* atsc3_smime_validation_context_certificate_payload_parse_from_file(atsc3_smime_validation_context_t* atsc3_smime_validation_context, const char* signing_certificate_filename);
+void atsc3_smime_validation_context_set_cms_noverify(atsc3_smime_validation_context_t* atsc3_smime_validation_context, bool noverify_flag);
+
 void atsc3_smime_validation_context_free(atsc3_smime_validation_context_t** atsc3_smime_validation_context_p);
 
 atsc3_smime_validation_context_t* atsc3_smime_validate_from_context(atsc3_smime_validation_context_t* atsc3_smime_validation_context);

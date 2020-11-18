@@ -18,13 +18,14 @@ atsc3_smime_entity_t* atsc3_smime_entity_new() {
 	return atsc3_smime_entity;
 }
 
-atsc3_smime_entity_t* atsc3_smime_entity_new_parse_from_file(const char* filename) {
+atsc3_smime_entity_t* atsc3_smime_entity_new_parse_from_file(const char* multipart_entity_filename) {
 	atsc3_smime_entity_t* atsc3_smime_entity = atsc3_smime_entity_new();
-	atsc3_smime_entity->raw_smime_payload_filename = strlcopy(filename);
-	atsc3_smime_entity->raw_smime_payload = block_Read_from_filename(filename);
+	
+	atsc3_smime_entity->raw_smime_payload_filename = strlcopy(multipart_entity_filename);
+	atsc3_smime_entity->raw_smime_payload = block_Read_from_filename(multipart_entity_filename);
 	
 	if(!atsc3_smime_entity->raw_smime_payload) {
-		_ATSC3_SMIME_UTILS_ERROR("atsc3_smime_entity_new_parse_from_file: unable to read raw smime payload from: %s", filename);
+		_ATSC3_SMIME_UTILS_ERROR("atsc3_smime_entity_new_parse_from_file: unable to read raw smime payload from: %s", multipart_entity_filename);
 		return NULL;
 	}
 	block_Rewind(atsc3_smime_entity->raw_smime_payload);
@@ -61,8 +62,8 @@ void atsc3_smime_entity_free(atsc3_smime_entity_t** atsc3_smime_entity_p) {
 				block_Destroy(&atsc3_smime_entity->raw_smime_payload);
 			}
 			
-			if(atsc3_smime_entity->extracted_mime_entity) {
-				block_Destroy(&atsc3_smime_entity->extracted_mime_entity);
+			if(atsc3_smime_entity->cms_verified_extracted_mime_entity) {
+				block_Destroy(&atsc3_smime_entity->cms_verified_extracted_mime_entity);
 			}
 			
 			if(atsc3_smime_entity->extracted_pkcs7_signature) {
@@ -93,6 +94,10 @@ void atsc3_smime_validation_context_free(atsc3_smime_validation_context_t** atsc
 				atsc3_smime_entity_free(&atsc3_smime_validation_context->atsc3_smime_entity);
 			}
 			
+			if(atsc3_smime_validation_context->certificate_payload) {
+				block_Destroy(&atsc3_smime_validation_context->certificate_payload);
+			}
+			
 			free(atsc3_smime_validation_context);
 			atsc3_smime_validation_context = NULL;
 		}
@@ -102,6 +107,28 @@ void atsc3_smime_validation_context_free(atsc3_smime_validation_context_t** atsc
 }
 
 
+void atsc3_smime_validation_context_set_cms_noverify(atsc3_smime_validation_context_t* atsc3_smime_validation_context, bool noverify_flag) {
+	atsc3_smime_validation_context->cms_noverify = noverify_flag;
+	if(atsc3_smime_validation_context->cms_noverify) {
+		_ATSC3_SMIME_UTILS_WARN("atsc3_smime_validation_context_set_cms_noverify: context: %p, setting noverify to TRUE!", atsc3_smime_validation_context);
+	}
+}
+
+atsc3_smime_validation_context_t* atsc3_smime_validation_context_certificate_payload_parse_from_file(atsc3_smime_validation_context_t* atsc3_smime_validation_context, const char* signing_certificate_filename) {
+	if(atsc3_smime_validation_context->certificate_payload) {
+		block_Destroy(&atsc3_smime_validation_context->certificate_payload);
+	}
+	
+	atsc3_smime_validation_context->certificate_payload = block_Read_from_filename(signing_certificate_filename);
+	
+	if(!atsc3_smime_validation_context->certificate_payload ) {
+		_ATSC3_SMIME_UTILS_ERROR("atsc3_smime_validation_context_certificate_payload_parse_from_file: unable to read signing_certificate_filename from: %s", signing_certificate_filename);
+		return NULL;
+	}
+	block_Rewind(atsc3_smime_validation_context->certificate_payload);
+	
+	return atsc3_smime_validation_context;
+}
 
 /*
  
@@ -124,13 +151,25 @@ void atsc3_smime_validation_context_free(atsc3_smime_validation_context_t** atsc
  */
 
 atsc3_smime_validation_context_t* atsc3_smime_validate_from_context(atsc3_smime_validation_context_t* atsc3_smime_validation_context) {
+	atsc3_smime_validation_context_t* atsc3_smime_validation_context_return = atsc3_smime_validation_context;
 	
-	BIO *in = NULL, *out = NULL, *tbio = NULL, *cont = NULL;
-	X509_STORE *st = NULL;
-	X509 *cacert = NULL;
+	BIO 	*signed_payload_in = NULL;
+	
+	BIO 	*extracted_payload_out = NULL;
+	long 	extracted_payload_out_len = 0;
+	
+	BIO 	*cacert_cdt_payload_in = NULL;
+	BIO 	*cont = NULL;
+	
+	X509_STORE 	*st_root = NULL;
+	X509 		*cacert_root = NULL;
+	
+	X509 		*cacert_cdt = NULL;
 	
 	STACK_OF(X509) *pcerts = NULL;
 	CMS_ContentInfo *cms = NULL;
+	
+	unsigned int cms_verify_flags = 0;
 
 	int ret = 1;
 
@@ -139,113 +178,128 @@ atsc3_smime_validation_context_t* atsc3_smime_validate_from_context(atsc3_smime_
 	OpenSSL_add_all_digests();
 	ERR_load_crypto_strings();
 
-	/* Set up trusted CA certificate store */
+	/* jjustman-2020-11-17: TODO: pin ROOT CA  */
+	st_root = X509_STORE_new();
+	
+	/*
+	 cacert_root = PEM_read_bio_X509(tbio, NULL, 0, NULL);
+	 if (!cacert_root) {
+		goto err;
+	 }
+	 
+	 if (!X509_STORE_add_cert(st_root, cacert_root)) {
+		goto err;
+	 }
+	 */
 
-	st = X509_STORE_new();
+	//intermediate certs from CDT table or testing
 	pcerts = sk_X509_new_null();
 	
-	//X509_STORE_set_trust(st, X509_V_FLAG_IGNORE_CRITICAL);
-	/* Read in CA certificate */
-	//cert4.crt
-	//signal-signing-enensys-SMT.crt
+	block_Rewind(atsc3_smime_validation_context->certificate_payload);
+	uint8_t* cert_cdt_in_bio_mem_buf = block_Get(atsc3_smime_validation_context->certificate_payload);
+	uint32_t cert_cdt_in_bio_mem_buf_len = block_Remaining_size(atsc3_smime_validation_context->certificate_payload);
 
-	tbio = BIO_new_file("signal-signing-enensys-SMT.crt", "r");
-	///Users/jjustman/Desktop/2020-11-17-signalling/sls2/signal-signing-enensys-SMT.crt
-	tbio = BIO_new_file("/Users/jjustman/Desktop/2020-11-17-signalling/sls2/signal-signing-enensys-SMT.crt", "r");
+	cacert_cdt_payload_in = BIO_new_mem_buf(cert_cdt_in_bio_mem_buf, cert_cdt_in_bio_mem_buf_len);
+	_ATSC3_SMIME_UTILS_DEBUG("atsc3_smime_validate_from_context: BIO_new_mem_buf: cacert_cdt_payload_in in: %p, cert_cdt_in_bio_mem_buf_len: %d, cert_cdt_in_bio_mem_buf:\n%s",
+							cacert_cdt_payload_in, cert_cdt_in_bio_mem_buf_len, cert_cdt_in_bio_mem_buf);
 
-	if (!tbio) {
+	if (!cacert_cdt_payload_in) {
 	   goto err;
 	}
 
-	//cacert = PEM_read_bio_X509(tbio, NULL, 0, NULL);
-
-	cacert = PEM_read_bio_X509(tbio, NULL, 0, NULL);
-	/*
-	 ok = X509_add_cert(*pcerts,
-						OSSL_STORE_INFO_get1_CERT(info),
-						X509_ADD_FLAG_DEFAULT);
-	 */
+	cacert_cdt = PEM_read_bio_X509(cacert_cdt_payload_in, NULL, 0, NULL);
 	
-	if (!cacert) {
+	if (!cacert_cdt) {
+		_ATSC3_SMIME_UTILS_WARN("atsc3_smime_validate_from_context: PEM_read_bio_X509 failed, cacert_cdt_payload_in: %p, PEM_read_X509 returned: %p",
+								cacert_cdt_payload_in, cacert_cdt);
 	   goto err;
 	}
-//
-	if (!X509_STORE_add_cert(st, cacert)) {
+	sk_X509_push(pcerts, cacert_cdt);
+
+//	if (!X509_STORE_add_cert(st, cacert)) {
+//	   goto err;
+//	}
+	
+
+	/* convert our block_t raw smime payload to BIO mem buff for input */
+	block_Rewind(atsc3_smime_validation_context->atsc3_smime_entity->raw_smime_payload);
+	uint8_t* signed_payload_in_bio_mem_buf = block_Get(atsc3_smime_validation_context->atsc3_smime_entity->raw_smime_payload);
+	uint32_t signed_payload_in_bio_mem_buf_len = block_Remaining_size(atsc3_smime_validation_context->atsc3_smime_entity->raw_smime_payload);
+
+	signed_payload_in = BIO_new_mem_buf(signed_payload_in_bio_mem_buf, signed_payload_in_bio_mem_buf_len);
+	_ATSC3_SMIME_UTILS_DEBUG("atsc3_smime_validate_from_context: BIO_new_mem_buf: signed_payload_in in: %p, signed_payload_in_bio_mem_buf_len: %d, signed_payload_in_bio_mem_buf:\n%s",
+							signed_payload_in, signed_payload_in_bio_mem_buf_len, signed_payload_in_bio_mem_buf);
+
+	if (!signed_payload_in) {
 	   goto err;
 	}
-	sk_X509_push(pcerts, cacert);
-
-
-	/* Open message being verified */
-	uint8_t* bio_mem_buf_in = block_Get(atsc3_smime_validation_context->atsc3_smime_entity->raw_smime_payload);
-	uint32_t bio_mem_buf_in_len = atsc3_smime_validation_context->atsc3_smime_entity->raw_smime_payload->p_size;
-
-	in = BIO_new_mem_buf(bio_mem_buf_in, bio_mem_buf_in_len);
-	//_ATSC3_SMIME_UTILS_INFO("atsc3_smime_validate_from_context: BIO_new_mem_buf: in: %p, bio_mem_buf_in_len: %d, bio_mem_buf_in:\n%s",
-	//						in, bio_mem_buf_in_len, bio_mem_buf_in);
-
-	//in = BIO_new_file("/Users/jjustman/Desktop/libatsc3/src/test/testdata/2020-11-17-signed-sls/239.1.120.120.49152.0-458826", "r");
-
-	if (!in)
-	   goto err;
-
-	/* parse message */
-	//cms = SMIME_read_CMS(in, &cont);
-	//cont
-	cms = SMIME_read_CMS(in, &cont);
+	
+	/* parse SMIME message */
+	
+	cms = SMIME_read_CMS(signed_payload_in, &cont);
 
 	if (!cms) {
 		_ATSC3_SMIME_UTILS_WARN("atsc3_smime_validate_from_context:SMIME_read_CMS: failed!");
 	   goto err;
 	}
 	
-//    const CMS_CTX *ctx = cms_get0_cmsctx(cms);
-//	_ATSC3_SMIME_UTILS_INFO("atsc3_smime_validate_from_context: cms_get0_cmsctx, cms: %p, ctx: %p", cms, ctx);
-	
-//
-//	const ASN1_OBJECT* ct = CMS_get0_type(cms);
-//	const char* ct_long = OBJ_nid2ln(ct);
-//
-//	ASN1_OCTET_STRING** pconf = CMS_get0_content(cms);
-//
-//	_ATSC3_SMIME_UTILS_INFO("atsc3_smime_validate_from_context: cms: %p, ct: %s, pconf: %s", cms, ct_long, *pconf);
-	/* File to output verified content to */
-	out = BIO_new_file("smver.txt", "w");
-	if (!out)
+	extracted_payload_out = BIO_new(BIO_s_mem());
+
+	if (!extracted_payload_out)
 	   goto err;
 
 	//https://www.openssl.org/docs/man1.1.0/man3/CMS_verify.html
-	//	if (!CMS_verify(cms, NULL, st, cont, out, 0)) {
-
-	//flags:
-	//CMS_NO_SIGNER_CERT_VERIFY
-	//| CMS_NO_ATTR_VERIFY | CMS_ASCIICRLF)
-	//CMS_BINARY | CMS_NOVERIFY | CMS_NO_SIGNER_CERT_VERIFY | CMS_NOCRL | CMS_NO_ATTR_VERIFY)
-	//| CMS_NOVERIFY | CMS_NO_SIGNER_CERT_VERIFY | CMS_NOCRL
-	//cms_resolve_libctx(cms);
-//CMS_BINARY |
-	if (!CMS_verify(cms, pcerts, st, cont, out,  CMS_BINARY | CMS_NOVERIFY | CMS_NO_SIGNER_CERT_VERIFY | CMS_NOCRL | CMS_NO_ATTR_VERIFY )) {
+		
+	if(atsc3_smime_validation_context->cms_noverify) {
+		cms_verify_flags = CMS_BINARY | CMS_NOVERIFY | CMS_NO_SIGNER_CERT_VERIFY | CMS_NOCRL | CMS_NO_ATTR_VERIFY;
+	} else {
+		cms_verify_flags = CMS_BINARY;
+	}
+	
+	if (!CMS_verify(cms, pcerts, st_root, cont, extracted_payload_out, cms_verify_flags)) {
 	   _ATSC3_SMIME_UTILS_WARN("atsc3_smime_validate_from_context:CMS_verify: verification failure");
 	   goto err;
 	}
 
-	_ATSC3_SMIME_UTILS_INFO("atsc3_smime_validate_from_context: verification successful");
+	_ATSC3_SMIME_UTILS_DEBUG("atsc3_smime_validate_from_context: verification successful");
 
 	atsc3_smime_validation_context->cms_signature_valid = true;
+	
+	//copy this to our context->smime_entity->cms_verified_extracted_mime_entity
+	char *extracted_payload_out_char_p = NULL;
+	extracted_payload_out_len = BIO_get_mem_data(extracted_payload_out, &extracted_payload_out_char_p);
+
+	atsc3_smime_validation_context->atsc3_smime_entity->cms_verified_extracted_mime_entity = block_Alloc(extracted_payload_out_len);
+	block_Write(atsc3_smime_validation_context->atsc3_smime_entity->cms_verified_extracted_mime_entity, (uint8_t*) extracted_payload_out_char_p, extracted_payload_out_len);
+	block_Rewind(atsc3_smime_validation_context->atsc3_smime_entity->cms_verified_extracted_mime_entity);
+	
+	_ATSC3_SMIME_UTILS_DEBUG("atsc3_smime_validate_from_context: BIO_get_mem_data: extracted_payload_out_len: %d, extracted_payload_out_char_p:\n%s",
+							 atsc3_smime_validation_context->atsc3_smime_entity->cms_verified_extracted_mime_entity->p_size,
+							 atsc3_smime_validation_context->atsc3_smime_entity->cms_verified_extracted_mime_entity->p_buffer);
+
+	
 
 err:
 
 	if (!atsc3_smime_validation_context->cms_signature_valid) {
 		_ATSC3_SMIME_UTILS_WARN("atsc3_smime_validate_from_context: error verifying data, errors:");
 		ERR_print_errors_fp(stderr);
+		atsc3_smime_validation_context_return = NULL;
 	}
 
 	CMS_ContentInfo_free(cms);
-	X509_free(cacert);
-	BIO_free(in);
-	BIO_free(out);
-	BIO_free(tbio);
 	
-	return atsc3_smime_validation_context;
+	X509_free(cacert_cdt);
+	X509_free(cacert_root);
+	
+	BIO_free(signed_payload_in);
+	BIO_free(extracted_payload_out);
+	BIO_free(cacert_cdt_payload_in);
+	
+	if(cont) {
+		BIO_free(cont);
+	}
+	
+	return atsc3_smime_validation_context_return;
 }
 
