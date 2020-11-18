@@ -139,9 +139,8 @@ mmtp_mpu_packet_t* mmtp_mpu_packet_parse_from_block_t(mmtp_packet_header_t* mmtp
         }
 
         if(to_read_packet_length > (mmtp_mpu_payload_length - (buf - udp_raw_buf))) {
-            __MMT_MPU_PARSER_ERROR("mmtp_mpu_packet_parse_from_block_t: to_read_packet_length: %d is larger than remaining packet length: %lu, mmtp_mpu_packet_parse_from_block_t: udp_packet->i_pos: %d, udp_packet->p_size: %d, udp_packet->p_buffer: %p, mmtp_packet_id is: %d, mmtp_payload_type: 0x%x, packet_counter: %d",
-                    to_read_packet_length,
-					(mmtp_mpu_payload_length - (buf - udp_raw_buf)),
+            __MMT_MPU_PARSER_ERROR("mmtp_mpu_packet_parse_from_block_t: to_read_packet_length: %d is larger than remaining packet length: %d, mmtp_mpu_packet_parse_from_block_t: udp_packet->i_pos: %d, udp_packet->p_size: %d, udp_packet->p_buffer: %p, mmtp_packet_id is: %d, mmtp_payload_type: 0x%x, packet_counter: %d",
+                    to_read_packet_length, (mmtp_mpu_payload_length - (buf - udp_raw_buf)),
                     udp_packet->i_pos,
                     udp_packet->p_size,
                     udp_packet->p_buffer,
