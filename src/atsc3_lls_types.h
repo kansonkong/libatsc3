@@ -350,6 +350,8 @@ typedef struct atsc3_lls_slt_service {
 
 	char*						drm_system_id;					//0..1, For @serviceCategory=6 (DRM Data Service), specifies the DRM System ID of a specific DRM system delivered as part of this Service.
 
+// jjustman-2020-11-18 - TODO: remove vector_builder_struct for 0..1 cardinality elements
+
 	ATSC3_VECTOR_BUILDER_STRUCT(atsc3_slt_simulcast_tsid);				//0..1, see atsc3_simulcast_tsid_t - atsc3_simulcast_tsid_t
 
 	ATSC3_VECTOR_BUILDER_STRUCT(atsc3_slt_svc_capabilities);			//0..1, Required capabilities for decoding and meaningfully presenting content of this Service.

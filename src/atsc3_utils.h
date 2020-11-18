@@ -118,6 +118,9 @@ typedef struct atsc3_block {
 	uint8_t* p_buffer;
 	uint32_t p_size;
 	uint32_t i_pos;
+
+	bool     _overflow_i_pos;
+
     uint8_t  _bitpos;
     uint8_t  _refcnt;
     uint8_t  _is_alloc;
