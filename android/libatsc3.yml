@@ -9,7 +9,7 @@ trigger:
       - 1.*
 
 pool:
-  vmImage: 'ubuntu-latest'
+  vmImage: 'ubuntu-18.04'
 
 variables:
   - name: ARTIFACT_VERSION
