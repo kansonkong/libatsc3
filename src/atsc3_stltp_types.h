@@ -436,7 +436,9 @@ typedef struct error_check_data {
 } error_check_data_t;
 
 //Table 8.3 - Timing and Management Stream Packet Payload
-    
+
+//jjustman-2020-11-18 - at a minimum, we must have at least 112 bits (14 bytes) for TMP packet parsing
+
 typedef struct timing_management_packet {
 	atsc3_rtp_ctp_header_timestamp_t	bootstrap_timing_data_timestamp_short_reference;
 
