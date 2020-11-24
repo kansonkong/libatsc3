@@ -48,7 +48,7 @@ LOCAL_C_INCLUDES += \
 	$(LOCAL_PATH)/../../src/phy/ \
 	$(LOCAL_PATH)/libpcre/include
 
-LOCAL_SHARED_LIBRARIES := libpcre
+LOCAL_SHARED_LIBRARIES := libpcre libssl libcrypto
 
 # jjustman-2020-08-19: logging notes
 # 	-D__ANDROID__ should enable libatsc3 __LIBATSC3_TIMESTAMP_XXX defines to the __ANDROID_LOG_VPRINTF_BUFFER,
@@ -62,3 +62,10 @@ LOCAL_CFLAGS += -g -fpack-struct=8 -fPIC  \
 LOCAL_LDLIBS := -ldl -lc++_shared -llog -landroid -lz -lc
 
 include $(BUILD_SHARED_LIBRARY)
+
+
+ifneq ($(MAKECMDGOALS),clean)
+ifneq ($(MAKECMDGOALS),generateJsonModelDebug)
+$(call import-module,prefab/openssl)
+endif
+endif

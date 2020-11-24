@@ -22,10 +22,11 @@ public interface IAtsc3NdkApplicationBridgeCallbacks {
 
     //ROUTE-DASH specific callbacks
     public void onAlcObjectStatusMessage(String alc_object_status_message);
+
+    public void onAlcObjectClosed(int tsi, int toi, String s_tsid_content_location, String s_tsid_content_type, String cache_file_path);
     public void onPackageExtractCompleted(PackageExtractEnvelopeMetadataAndPayload packageExtractEnvelopeMetadataAndPayload);
+
     public void routeDash_force_player_reload_mpd(int ServiceID);
-
-
 
 
 }
