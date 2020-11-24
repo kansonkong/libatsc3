@@ -17,6 +17,12 @@ android {
             path 'Android.mk'
         }
     }
+
+    buildFeatures {
+        prefab true
+    }
+
+
 //    buildTypes {
 //        debug {
 //            jniDebuggable = true
@@ -62,4 +68,4 @@ dependencies {
     api project(':atsc3_bridge')
 }
 
-apply from: '../publish.gradle'
+//apply from: '../publish.gradle'
