@@ -1216,7 +1216,6 @@ void atsc3_mmt_mpu_on_sequence_mpu_metadata_present_ndk(uint16_t packet_id, uint
     }
 }
 
-
 void atsc3_mmt_signalling_information_on_video_packet_id_with_mpu_timestamp_descriptor_ndk(uint16_t video_packet_id, uint32_t mpu_sequence_number, uint64_t mpu_presentation_time_ntp64, uint32_t mpu_presentation_time_seconds, uint32_t mpu_presentation_time_microseconds) {
     uint64_t last_mpu_timestamp = mpu_presentation_time_seconds * 1000000 + mpu_presentation_time_microseconds;
     global_video_packet_id = video_packet_id;
@@ -1271,10 +1270,11 @@ void atsc3_mmt_mpu_mfu_on_sample_complete_ndk(uint16_t packet_id, uint32_t mpu_s
 //                packet_id, mpu_sequence_number, block_ptr, block_len, mpu_timestamp_descriptor);
 
         if((global_mfu_proccessed_count++ % 600) == 0) {
-            Atsc3NdkApplicationBridge_ptr->LogMsgF("atsc3_mmt_mpu_mfu_on_sample_complete_ndk: total mfu count: %d, packet_id: %d, mpu: %d, sample: %d, orig len: %d, len: %d",
+            Atsc3NdkApplicationBridge_ptr->LogMsgF("atsc3_mmt_mpu_mfu_on_sample_complete_ndk: total mfu count: %d, packet_id: %d, mpu: %d, sample: %d, orig len: %d, len: %d, mpu_timestamp_descriptor: %lu",
                                                    global_mfu_proccessed_count,
                                                    packet_id, mpu_sequence_number, sample_number, block_Len(mmt_mfu_sample),
-                                                   block_len);
+                                                   block_len,
+                                                   mpu_timestamp_descriptor);
 
         }
         Atsc3NdkApplicationBridge_ptr->atsc3_onMfuPacket(packet_id, mpu_sequence_number, sample_number, block_ptr, block_len, mpu_timestamp_descriptor, mfu_fragment_count_rebuilt);
@@ -1448,6 +1448,14 @@ void atsc3_mmt_mpu_on_sequence_movie_fragment_metadata_present_ndk(uint16_t pack
     }
 
     uint32_t extracted_sample_duration_us = atsc3_mmt_movie_fragment_extract_sample_duration(mmt_movie_fragment_metadata);
+
+    if(packet_id == 201) {
+        return;
+    }
+    //jjustman-2020-11-18 - HACK - TODO - FIXME
+    if(packet_id == 200 ) {
+        extracted_sample_duration_us = (1601 * 1000000) / (48000);
+    }
 
     Atsc3NdkApplicationBridge_ptr->atsc3_onExtractedSampleDuration(packet_id, mpu_sequence_number, extracted_sample_duration_us);
 }

@@ -13,6 +13,10 @@ public class MmtPacketIdContext {
     public static MmtSignallingContext video_packet_signalling_information;
     public static MmtMfuStatistics video_packet_statistics;
 
+    //jjustman-2020-11-19 - TODO - fix this     public int atsc3_signallingContext_notify_audio_packet_id_and_mpu_timestamp_descriptor(int audio_packet_id, int mpu_sequence_number, long mpu_presentation_time_ntp64, int mpu_presentation_time_seconds, int mpu_presentation_time_microseconds) {
+    public static void AudioPacketIdUpdateMpuSequenceAndPresentationTime(int toUpdateAudioPacketId, int mpu_sequence_number, long mpu_presentation_time_ntp64, int mpu_presentation_time_seconds, int mpu_presentation_time_microseconds) {
+
+    }
     public static int audio_packet_id = -1;
     public static MmtSignallingContext audio_packet_signalling_information;
     public static MmtMfuStatistics audio_packet_statistics;
