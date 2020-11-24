@@ -216,7 +216,9 @@ void __internal__atsc3_mmt_signalling_information_on_packet_id_with_mpu_timestam
         atsc3_mmt_mfu_mpu_timestamp_descriptor->mpu_presentation_time_ntp64 = mpu_presentation_time_ntp64;
         atsc3_mmt_mfu_mpu_timestamp_descriptor->mpu_presentation_time_seconds = mpu_presentation_time_seconds;
         atsc3_mmt_mfu_mpu_timestamp_descriptor->mpu_presentation_time_microseconds = mpu_presentation_time_microseconds;
-        atsc3_mmt_mfu_mpu_timestamp_descriptor->mpu_presentation_time_as_us_value = mpu_presentation_time_seconds * 1000000 + mpu_presentation_time_microseconds;
+
+        //jjustman-2020-11-19 - make sure to coerce our uS scalar (1000000) as long, otherwise our value will be implicity coerced into (uint32_t) instead of uint64_t 	mpu_presentation_time_as_us_value
+        atsc3_mmt_mfu_mpu_timestamp_descriptor->mpu_presentation_time_as_us_value = mpu_presentation_time_seconds * 1000000L + mpu_presentation_time_microseconds;
 
         atsc3_mmt_mfu_mpu_timestamp_descriptor_rolling_window_add_atsc3_mmt_mfu_mpu_timestamp_descriptor(&atsc3_mmt_mfu_context->packet_id_mpu_timestamp_descriptor_window, atsc3_mmt_mfu_mpu_timestamp_descriptor);
 	}
@@ -1187,6 +1189,64 @@ aligned(8) class FullBox(unsigned int(32) boxtype, unsigned int(8) v, bit(24) f)
 }
 */
 
+/*
+ *
+ * jjustman-2020-11-18 - TODO:
+ *
+ *  from GAM with AC-4 audio
+ *
+ *  1.) parse out moof/mfhd/traf/tfhd to determine if default sample duration is set
+ *
+         [moof] size=8+504
+          [mfhd] size=12+4
+            sequence number = 1
+          [traf] size=8+428
+            [tfhd] size=12+16, flags=2002a
+              track ID = 2
+              sample description index = 1
+              default sample duration = 1601
+              default sample flags = 0
+            [tfdt] size=12+8, version=1
+              base media decode time = 0
+ *
+ * 2.) re-base over init metadata, specifically in moov/mvhd/trak/mdia/mdhd@timescale:
+ *  [ftyp] size=8+16
+  major_brand = mpuf
+  minor_version = 0
+  compatible_brand = isom
+  compatible_brand = mpuf
+[mmpu] size=8+29
+[moov] size=8+1021
+  [mvhd] size=12+96
+    timescale = 1000000
+    duration = 0
+    duration(ms) = 0
+  [trak] size=8+454
+    [tkhd] size=12+80, flags=7
+      enabled = 1
+      id = 2
+      duration = 0
+      volume = 256
+      layer = 0
+      alternate_group = 0
+      matrix_0 = 1.000000
+      matrix_1 = 0.000000
+      matrix_2 = 0.000000
+      matrix_3 = 0.000000
+      matrix_4 = 1.000000
+      matrix_5 = 0.000000
+      matrix_6 = 0.000000
+      matrix_7 = 0.000000
+      matrix_8 = 16384.000000
+      width = 0.000000
+      height = 0.000000
+    [mdia] size=8+354
+      [mdhd] size=12+20
+        timescale = 48000
+
+
+ *
+ */
 uint32_t atsc3_mmt_movie_fragment_extract_sample_duration(block_t* mmt_movie_fragment_metadata) {
     __MMSM_TRACE("atsc3_mmt_movie_fragment_extract_sample_duration: extracting from %p, length: %d", mmt_movie_fragment_metadata, mmt_movie_fragment_metadata->p_size);
 
@@ -1211,6 +1271,10 @@ uint32_t atsc3_mmt_movie_fragment_extract_sample_duration(block_t* mmt_movie_fra
             ptr += 4; //iterate past our box name
             version = *ptr++;
             //next 3 bytes for fullbox flags, 0x000001: data_offset present, 0x000004: first_sample_flags_present
+
+            //jjustman-2020-11-18 - mmt - ac-4 audio     [trun] size=12+368, flags=b01 ->
+            //                                                               binary=0000 1011 0000 0001
+            //                                                               hex=0x0B01 -> 0x0(1011)01
 
             tr_flags = (*ptr++ << 16) |  (*ptr++ << 8) |  (*ptr++);
 
