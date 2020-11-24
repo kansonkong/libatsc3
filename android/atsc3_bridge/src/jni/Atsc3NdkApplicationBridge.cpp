@@ -134,6 +134,11 @@ void Atsc3NdkApplicationBridge::atsc3_signallingContext_notify_audio_packet_id_a
         return;
     }
 
+    //jjustman-2020-11-19 - HACK for testing
+    if(audio_packet_id != 200) {
+        return;
+    }
+
     int r = bridgeConsumerJniEnv->Get()->CallIntMethod(jni_instance_globalRef, atsc3_signallingContext_notify_audio_packet_id_and_mpu_timestamp_descriptor_ID, audio_packet_id, mpu_sequence_number, mpu_presentation_time_ntp64, mpu_presentation_time_seconds, mpu_presentation_time_microseconds);
 }
 
@@ -237,8 +242,6 @@ int Atsc3NdkApplicationBridge::atsc3_slt_selectService(int service_id) {
     return ret;
 }
 
-
-
 void Atsc3NdkApplicationBridge::atsc3_onExtractedSampleDuration(uint16_t packet_id, uint32_t mpu_sequence_number,
                                                                 uint32_t extracted_sample_duration_us) {
 
@@ -294,31 +297,23 @@ std::string Atsc3NdkApplicationBridge::get_android_temp_folder() {
     return temp_folder;
 }
 
-//return -1 on service_id not found
-//return -2 on duplicate additional service_id request
+//add an additional service_id for monitoring, e.g. for ESG use cases to capture the OMA-BCAST payload while presenting the linear a/v route emission
+//
+// sucessful:
+//      returns the a/331 sls_protocol if service selection was successful,
+//
+//  otherwise:
+//      returns -1, for service_id not found (or other failure)
+
 int Atsc3NdkApplicationBridge::atsc3_slt_alc_select_additional_service(int service_id) {
-    //keep track of internally here which "additional service_id's" we have on monitor;
-//
-//    bool is_monitoring_duplicate = false;
-//    for(int i=0; i < atsc3_slt_alc_additional_services_monitored.size() && !is_monitoring_duplicate; i++) {
-//        if(atsc3_slt_alc_additional_services_monitored.at(i) == service_id) {
-//            //duplicate request
-//            is_monitoring_duplicate = true;
-//            continue;
-//        }
-//    }
-//
-//    if(is_monitoring_duplicate) {
-//        return -2;
-//    }
+    int ret = -1;
+
     atsc3_lls_slt_service_t* atsc3_lls_slt_service = atsc3_phy_mmt_player_bridge_add_monitor_a331_service_id(service_id);
-    if(!atsc3_lls_slt_service) {
-        return -1;
+    if(atsc3_lls_slt_service && atsc3_lls_slt_service->atsc3_slt_broadcast_svc_signalling_v.count) {
+        ret = atsc3_lls_slt_service->atsc3_slt_broadcast_svc_signalling_v.data[0]->sls_protocol;
     }
 
-  //  atsc3_slt_alc_additional_services_monitored.push_back(service_id);
-
-    return 0;
+    return ret;
 }
 
 //TODO: jjustman-2019-11-07 - add mutex here around additional_services_monitored collection
