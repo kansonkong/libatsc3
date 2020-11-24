@@ -816,6 +816,9 @@ int atsc3_alc_packet_persist_to_toi_resource_process_sls_mbms_and_emit_callback(
 												atsc3_fdt_file_matching->content_encoding,
 												atsc3_fdt_file_matching->content_length,
 												unzipped_size);
+
+                                bytesWritten = -3;
+                                goto cleanup;
 							} else {
 								__ALC_UTILS_DEBUG("atsc3_unzip_gzip_payload: atsc3_fdt_file_matching: %p, content_location: %s, content_encoding: %s, is_gzip: true, success, returned: %d",
 											atsc3_fdt_file_matching,
@@ -839,10 +842,13 @@ int atsc3_alc_packet_persist_to_toi_resource_process_sls_mbms_and_emit_callback(
 							
 							if(unzipped_size < 0) {
 								__ALC_UTILS_WARN("atsc3_unzip_gzip_payload: atsc3_fdt_file_matching: %p, content_location: %s, content_encoding: %s, is_gzip: true, FAILED, returned: %d",
-								atsc3_fdt_file_matching,
-								atsc3_fdt_file_matching->content_location,
-								atsc3_fdt_file_matching->content_encoding,
-												 unzipped_size);
+                                                atsc3_fdt_file_matching,
+                                                atsc3_fdt_file_matching->content_location,
+                                                atsc3_fdt_file_matching->content_encoding,
+                                                unzipped_size);
+
+                                bytesWritten = -3;
+                                goto cleanup;
 							} else {
 								__ALC_UTILS_DEBUG("atsc3_unzip_gzip_payload: atsc3_fdt_file_matching: %p, content_location: %s, content_encoding: %s, is_gzip: true, success, returned: %d",
 											atsc3_fdt_file_matching,
