@@ -212,14 +212,28 @@ typedef struct mmt_signalling_message_header_and_payload mmt_signalling_message_
 typedef struct mmtp_signalling_packet {
 	_MMTP_PACKET_HEADER_FIELDS;
 
-    uint8_t		si_fragmentation_indiciator:2;  /* f_i */
+    uint8_t		si_fragmentation_indicator:2;  /* f_i */
     uint8_t     si_res:4;                       /* res */
     uint8_t		si_additional_length_header:1;  /* H */
     uint8_t		si_aggregation_flag:1; 		    /* A */
     uint8_t		si_fragmentation_counter:8;     /* frag_counter */
-    uint16_t	si_aggregation_message_length;  /* if A==0, field is omitted, otherwise,
-                                                    16 + 16*H bits is repeated after every MSG_payload */
-   //mmt_signalling_message_vector_t mmt_signalling_message_vector;
+    /*
+     * jjustman-2020-11-12 - do not add in MSG_length, as it is only used for si aggregation messages, handled in: mmt_signalling_message_parse_packet
+     *      si_msg_length uint32_t	si_msg_length;
+     *
+     *  if A==0, field is omitted, otherwise,
+        for each si_message aggregated,
+            if(si_additional_length_header == 0)
+               si_msg_length is 16 bits long  - e.g.    mmtp_si_msg_length = block_Read_uint16_ntohs(udp_packet);
+        else
+            si_msg_length is 32 bits long  - e.g.     mmtp_si_msg_length = block_Read_uint32_ntohl(udp_packet);
+
+        after each MSG_payload
+        */
+
+    //used for de-fragmentation if si_fragmentation_indicator != 0x00
+    block_t*   udp_packet_inner_msg_payload;
+
     ATSC3_VECTOR_BUILDER_STRUCT(mmt_signalling_message_header_and_payload);
 } mmtp_signalling_packet_t;
 

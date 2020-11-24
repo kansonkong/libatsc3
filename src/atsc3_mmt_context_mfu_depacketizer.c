@@ -375,10 +375,7 @@ void atsc3_mmt_mfu_context_free(atsc3_mmt_mfu_context_t** atsc3_mmt_mfu_context_
 }
 
 
-void mmtp_mfu_process_from_payload_with_context(udp_packet_t *udp_packet,
-                                                mmtp_mpu_packet_t* mmtp_mpu_packet,
-                                                atsc3_mmt_mfu_context_t* atsc3_mmt_mfu_context) {
-
+void mmtp_mfu_process_from_payload_with_context(udp_packet_t *udp_packet, mmtp_mpu_packet_t* mmtp_mpu_packet, atsc3_mmt_mfu_context_t* atsc3_mmt_mfu_context) {
 
     if(mmtp_mpu_packet->mmtp_payload_type != 0x0) {
         __MMT_CONTEXT_MPU_WARN("mmtp_mfu_process_from_payload_with_context: got incorrect payload type of: %d for flow: %d:%d, packet_id: %d, psn: %d", mmtp_mpu_packet->mmtp_payload_type, udp_packet->udp_flow.dst_ip_addr, udp_packet->udp_flow.dst_port, mmtp_mpu_packet->mmtp_packet_id, mmtp_mpu_packet->packet_sequence_number);
@@ -431,7 +428,6 @@ void mmtp_mfu_process_from_payload_with_context(udp_packet_t *udp_packet,
          return;
     }
     
-    udp_flow_packet_id_mpu_sequence_tuple_t* last_flow_reference = udp_flow_latest_mpu_sequence_number_add_or_replace_and_check_for_rollover(udp_flow_latest_mpu_sequence_number_container, udp_packet, mmtp_mpu_packet, lls_slt_monitor, matching_lls_sls_mmt_session, mmtp_flow);
 
     //assign our mmtp_mpu_packet to asset/packet_id/mpu_sequence_number flow
     mmtp_asset_flow = mmtp_flow_find_or_create_from_udp_packet(mmtp_flow, udp_packet);
@@ -441,6 +437,10 @@ void mmtp_mfu_process_from_payload_with_context(udp_packet_t *udp_packet,
 
     //persist our mmtp_mpu_packet for mpu reconstitution as per original libatsc3 design
     mpu_sequence_number_mmtp_mpu_packet_collection_add_mmtp_mpu_packet(mpu_sequence_number_mmtp_mpu_packet_collection, mmtp_mpu_packet);
+
+    udp_flow_packet_id_mpu_sequence_tuple_t* last_flow_reference = udp_flow_latest_mpu_sequence_number_add_or_replace_and_check_for_rollover(udp_flow_latest_mpu_sequence_number_container, udp_packet, mmtp_mpu_packet, lls_slt_monitor, matching_lls_sls_mmt_session, mmtp_flow);
+
+    //jjustman-2020-11-12 - TODO - fix me to avoid "fixed" mapping of video/audio/stpp packet_id mapping for mpu_sequence_number changes
 
     //check for rollover for any remaining emissions from our last mpu_sequence tuple, and then current mpu_sequence rebuild
     if(matching_lls_sls_mmt_monitor->video_packet_id == mmtp_mpu_packet->mmtp_packet_id) {
@@ -805,6 +805,7 @@ void mmtp_mfu_rebuild_from_packet_id_mpu_sequence_number(atsc3_mmt_mfu_context_t
                 if(mmtp_mpu_packet_to_rebuild_from_du->mpu_fragmentation_indicator == 0x00 || mmtp_mpu_packet_to_rebuild_from_du->mpu_fragmentation_indicator == 0x01) {
                     mfu_fragment_counter_position = mmtp_mpu_packet_to_rebuild_from_du->mpu_fragment_counter;
 
+                    //jjustman-2020-11-17 - TODO: mmtp_mpu_packet_to_rebuild_from_du->mpu_fragmentation_indicator == 0x00  should not block_alloc based upon mmthsample_header, as we are a single MMTP du length
                     if(mmtp_mpu_packet_to_rebuild_from_du->mmthsample_header && mmtp_mpu_packet_to_rebuild_from_du->mmthsample_header->length) {
                         mfu_fragment_counter_mmthsample_header_start = mmtp_mpu_packet_to_rebuild_from_du->mpu_fragment_counter;
 
@@ -822,7 +823,7 @@ void mmtp_mfu_rebuild_from_packet_id_mpu_sequence_number(atsc3_mmt_mfu_context_t
                         mfu_fragment_counter_missing_mmthsample_header_start = mmtp_mpu_packet_to_rebuild_from_du->mpu_fragment_counter;
                     }
                 } else {
-                    //for neither-first-nor-last (0x10) and last fragment (0x11) of the data unit
+                    //for neither-first-nor-last 0x2 (10)  and last fragment 0x3 (11) of the data unit
 
                     //we should have a workable du_mfu_block_to_rebuild, but if not, clone from our current DU and mark this as missing the MMTHSampleHeader
 
@@ -1012,12 +1013,9 @@ void mmtp_mfu_rebuild_from_packet_id_mpu_sequence_number(atsc3_mmt_mfu_context_t
  * 	NOTE: if adding a new fourcc asset_type for context callbacks, make sure it is also added
  * 		   in atsc3_mmt_signalling_message.c/mmt_signalling_message_update_lls_sls_mmt_session
  *
- *
  */
 
-void mmt_signalling_message_process_with_context(udp_packet_t *udp_packet,
-												 mmtp_signalling_packet_t* mmtp_signalling_packet,
-												 atsc3_mmt_mfu_context_t* atsc3_mmt_mfu_context) {
+void mmt_signalling_message_dispatch_context_notification_callbacks(udp_packet_t *udp_packet, mmtp_signalling_packet_t* mmtp_signalling_packet, atsc3_mmt_mfu_context_t* atsc3_mmt_mfu_context) {
 	atsc3_mmt_mfu_context->udp_flow = &udp_packet->udp_flow;
 
 	for(int i=0; i < mmtp_signalling_packet->mmt_signalling_message_header_and_payload_v.count; i++) {
@@ -1029,15 +1027,15 @@ void mmt_signalling_message_process_with_context(udp_packet_t *udp_packet,
 
 			//dispatched when message_id >= 0x11 (17) && message_id <= 0x19 (31)
 			if(mmt_signalling_message_header_and_payload->message_header.message_id >= MPT_message_start && mmt_signalling_message_header_and_payload->message_header.message_id < MPT_message_end) {
-				__MMSM_TRACE("mmt_signalling_message_process_with_context: partial mp_table, message_id: 0x%02x", mmt_signalling_message_header_and_payload->message_header.message_id);
+				__MMSM_TRACE("mmt_signalling_message_dispatch_context_notification_callbacks: partial mp_table, message_id: 0x%02x", mmt_signalling_message_header_and_payload->message_header.message_id);
 				atsc3_mmt_mfu_context->atsc3_mmt_signalling_information_on_mp_table_subset(mp_table);
 
 			} else if(mmt_signalling_message_header_and_payload->message_header.message_id == MPT_message_end) {
-				__MMSM_TRACE("mmt_signalling_message_process_with_context: complete mp_table, message_id: 0x%02x", mmt_signalling_message_header_and_payload->message_header.message_id);
+				__MMSM_TRACE("mmt_signalling_message_dispatch_context_notification_callbacks: complete mp_table, message_id: 0x%02x", mmt_signalling_message_header_and_payload->message_header.message_id);
 				atsc3_mmt_mfu_context->atsc3_mmt_signalling_information_on_mp_table_complete(mp_table);
 
 			} else {
-				__MMSM_ERROR("mmt_signalling_message_process_with_context: MESSAGE_id_type == MPT_message but message_id not in bounds: 0x%02x", mmt_signalling_message_header_and_payload->message_header.message_id);
+				__MMSM_ERROR("mmt_signalling_message_dispatch_context_notification_callbacks: MESSAGE_id_type == MPT_message but message_id not in bounds: 0x%02x", mmt_signalling_message_header_and_payload->message_header.message_id);
 			}
 
 			if(mp_table->number_of_assets) {
