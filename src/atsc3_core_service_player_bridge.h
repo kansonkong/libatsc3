@@ -96,10 +96,11 @@ atsc3_link_mapping_table_t* atsc3_phy_jni_bridge_notify_link_mapping_table(atsc3
 
 int atsc3_ndk_cache_temp_folder_purge(char *path);
 
-void atsc3_lls_sls_alc_on_object_close_flag_s_tsid_content_location_ndk(uint32_t tsi, uint32_t toi, char* content_location);
-void atsc3_lls_sls_alc_on_route_mpd_patched_ndk(uint16_t service_id);
+void atsc3_lls_sls_alc_on_object_close_flag_s_tsid_content_location_ndk(uint32_t tsi, uint32_t toi, char* s_tsid_content_location, char* s_tsid_content_type, char* cache_file_path);
 
 void atsc3_lls_sls_alc_on_package_extract_completed_callback_ndk(atsc3_route_package_extracted_envelope_metadata_and_payload_t* atsc3_route_package_extracted_envelope_metadata_and_payload_t);
+
+void atsc3_lls_sls_alc_on_route_mpd_patched_ndk(uint16_t service_id);
 
 //#1569
 void atsc3_sls_on_held_trigger_received_callback_impl(uint16_t service_id, block_t* held_payload);
