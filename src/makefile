@@ -1257,6 +1257,7 @@ test/atsc3_pcap_replay_test: test/atsc3_pcap_replay_test.c atsc3_pcap_type.o ats
 
 test/atsc3_route_dash_mpd_patch_test: test/atsc3_route_dash_mpd_patch_test.c \
 										atsc3_utils.o \
+										atsc3_gzip.o \
 										atsc3_pcre2_regex_utils.h \
 										atsc3_pcre2_regex_utils.o \
 										atsc3_route_dash_utils.o \
@@ -1293,6 +1294,7 @@ test/atsc3_route_dash_mpd_patch_test: test/atsc3_route_dash_mpd_patch_test.c \
 
 	$(CC) $(ASAN) $(CFLAGS) $(DEBUG) test/atsc3_route_dash_mpd_patch_test.c  \
 							atsc3_utils.o \
+							atsc3_gzip.o \
 							atsc3_pcre2_regex_utils.o \
 							atsc3_route_dash_utils.o \
 							atsc3_alc_session.o \
@@ -1330,6 +1332,7 @@ test/atsc3_route_dash_mpd_patch_test: test/atsc3_route_dash_mpd_patch_test.c \
 
 test/atsc3_smime_validation_test: test/atsc3_smime_validation_test.c \
 										atsc3_utils.o \
+										atsc3_gzip.o \
 										atsc3_pcre2_regex_utils.h \
 										atsc3_pcre2_regex_utils.o \
 										atsc3_route_dash_utils.o \
@@ -1367,6 +1370,7 @@ test/atsc3_smime_validation_test: test/atsc3_smime_validation_test.c \
 
 	$(CC) $(ASAN) $(CFLAGS) $(DEBUG) test/atsc3_smime_validation_test.c  \
 							atsc3_utils.o \
+							atsc3_gzip.o \
 							atsc3_pcre2_regex_utils.o \
 							atsc3_route_dash_utils.o \
 							atsc3_alc_session.o \

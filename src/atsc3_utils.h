@@ -170,6 +170,7 @@ uint64_t block_Read_uint64_ntohul(block_t* src);
 
 //read from filesystem into block_t
 block_t* block_Read_from_filename(const char* file_name);
+int	block_Write_to_filename(block_t* src, const char* file_name);
 
 
 #define block_RefZero(a) ({ a->_refcnt = 0; })
