@@ -940,7 +940,7 @@ int atsc3_alc_packet_persist_to_toi_resource_process_sls_mbms_and_emit_callback(
             }
 			//emit lls alc context callback
 			if(lls_sls_alc_monitor->atsc3_lls_sls_alc_on_object_close_flag_s_tsid_content_location_callback) {
-				lls_sls_alc_monitor->atsc3_lls_sls_alc_on_object_close_flag_s_tsid_content_location_callback(alc_packet->def_lct_hdr->tsi, alc_packet->def_lct_hdr->toi, s_tsid_content_location, s_tsid_content_type, persisted_cache_file_name);
+				lls_sls_alc_monitor->atsc3_lls_sls_alc_on_object_close_flag_s_tsid_content_location_callback(lls_sls_alc_monitor->atsc3_lls_slt_service->service_id, alc_packet->def_lct_hdr->tsi, alc_packet->def_lct_hdr->toi, s_tsid_content_location, s_tsid_content_type, persisted_cache_file_name);
 			}
 
 			//jjustman-2020-07-28 - purge our lct_packet_received list as we are moved, and remove atsc3_route_object from flow
