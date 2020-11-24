@@ -239,7 +239,7 @@ void Atsc3NdkApplicationBridge::atsc3_onAlcObjectClosed(uint32_t tsi, uint32_t t
 	int r = bridgeConsumerJniEnv->Get()->CallIntMethod(jni_instance_globalRef, atsc3_on_alc_object_closed_ID, tsi, toi, s_tsid_content_location_jstring, s_tsid_content_type_jstring, cache_file_path_jstring);
 
 	if(s_tsid_content_location) {
-		bridgeConsumerJniEnv->Get()->DeleteLocalRef(js);
+		bridgeConsumerJniEnv->Get()->DeleteLocalRef(s_tsid_content_location_jstring);
 	}
 	
 	if(s_tsid_content_type_jstring) {
