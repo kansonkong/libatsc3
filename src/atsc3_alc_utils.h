@@ -17,6 +17,7 @@
 #define ATSC3_ALC_UTILS_H_
 
 #include "atsc3_utils.h"
+#include "atsc3_gzip.h"
 #include "atsc3_alc_rx.h"
 #include "atsc3_player_ffplay.h"
 #include "atsc3_lls_types.h"
@@ -59,6 +60,8 @@ atsc3_fdt_file_t* atsc3_alc_RS_LS_get_matching_toi_file_instance(atsc3_route_s_t
 
 
 char* alc_packet_dump_to_object_get_s_tsid_filename(udp_flow_t* udp_flow, atsc3_alc_packet_t* alc_packet, lls_sls_alc_monitor_t* lls_sls_alc_monitor);
+char* alc_packet_dump_to_object_get_s_tsid_filename_with_atsc3_fdt_file_p(udp_flow_t* udp_flow, atsc3_alc_packet_t* alc_packet, lls_sls_alc_monitor_t* lls_sls_alc_monitor, atsc3_fdt_file_t** atsc3_fdt_file_p);
+
 char* alc_packet_dump_to_object_get_temporary_filename(udp_flow_t* udp_flow, atsc3_alc_packet_t* alc_packet);
 
 FILE* atsc3_alc_object_open(char* file_name);

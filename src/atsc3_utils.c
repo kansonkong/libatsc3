@@ -905,6 +905,21 @@ block_t* block_Read_from_filename(const char* file_name) {
 
 	return payload;
 }
+int block_Write_to_filename(block_t* src, const char* filename) {
+	int ret = 0;
+	block_Rewind(src);
+	
+	uint8_t* block_start = src->p_buffer;
+	uint32_t block_length = src->p_size;
+	
+	FILE* payload_fp = fopen(filename, "w");
+	if(payload_fp) {
+		ret = fwrite(block_start, block_length, 1, payload_fp);
+		fclose(payload_fp);
+	 }
+	
+	return ret;
+}
 
 void freesafe(void* tofree) {
 	if(tofree) {
