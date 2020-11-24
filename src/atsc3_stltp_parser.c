@@ -1006,6 +1006,12 @@ atsc3_timing_management_packet_t* atsc3_stltp_parse_timing_management_packet(ats
     uint8_t *binary_payload_start = binary_payload;
 
     uint32_t binary_payload_length = atsc3_stltp_timing_management_packet->payload_length;
+
+    //jjustman-2020-11-18 - at a minimum, we must have at least 112 bits (14 bytes) for the TMP packet parsing, otherwise bail
+    if(binary_payload_length < 14) {
+        __STLTP_PARSER_WARN("atsc3_stltp_parse_timing_management_packet: binary_payload: %p, length: %d is less than at least 14 bytes, returning NULL!", binary_payload, binary_payload_length);
+        return NULL;
+    }
     
     //jjustman-2020-11-18 - at a minimum, we must have at least 112 bits (14 bytes) for the TMP packet parsing, otherwise bail
     if(binary_payload_length < 14) {

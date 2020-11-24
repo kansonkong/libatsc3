@@ -58,6 +58,3 @@
 [submodule "airwavz_redzone_sdk"]
 	path = airwavz_redzone_sdk
 	url = https://dev.azure.com/NGWP/Middleware/_git/airwavz_redzone_sdk
-[submodule "openssl"]
-	path = openssl
-	url = https://github.com/openssl/openssl.git

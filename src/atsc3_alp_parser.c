@@ -16,37 +16,13 @@ int _ALP_PARSER_TRACE_ENABLED = 0;
 
 /**
  A/322-2018 - Section 5.2 Baseband Formatting:
- ..The baseband formatting block creates one or more PLPs as directed by the Scheduler.
-
- At the output of the baseband formatting block, each PLP consists of a stream of Baseband Packets and there is exactly one Baseband Packet per defined FEC Frame...
+ ..The baseband formatting block creates one or more PLPs as directed by the Scheduler. At the output of the baseband formatting block, each PLP consists of a stream of Baseband Packets and there is exactly one Baseband Packet per defined FEC Frame...
  
  5.2.1 Mapping ALP Packets to Baseband Packets
+ A Baseband Packet shall consist of a header, described in Section 5.2.2, and a payload containing ALP packets, shown in Figure 5.3. Padding, if present, shall be added to the Baseband Packet Header. Baseband Packets have fixed length Kpayload, with the length determined by the outer code type, inner code rate and code length chosen for the target PLP. For specific values of Kpayload , see Table 6.1 and Table 6.2.
+ ALP packets shall be mapped to the payload part in the same order they are received. The reordering of ALP packets in the Baseband Packet is not permitted. When the received ALP packets are not sufficient to create a Baseband Packet of size Kpayload, padding shall be added to the Baseband Packet Header to complete the Baseband Packet. See Section 5.2.2.3.2 for details.
+ When the received ALP packets are enough to fill the Baseband Packet but the last ALP packet does not fit perfectly within the Baseband Packet, that ALP packet may be split between the current Baseband Packet with the remainder of the ALP packet transmitted at the start of the next Baseband Packet. When splitting is used, ALP packets shall be split in byte units only. When the final ALP packet in the Baseband Packet is not split, padding shall be used in the extension field of the Baseband Packet Header to completely fill the Baseband Packet. In Figure 5.3 the final ALP packet is split between the current Baseband Packet and the next Baseband Packet.
  
- A Baseband Packet shall consist of a header, described in Section 5.2.2, and a payload containing ALP packets, shown in Figure 5.3.
-
- Padding, if present, shall be added to the Baseband Packet Header.
-
- Baseband Packets have fixed length Kpayload, with the length determined by the outer code type, inner code rate and code length chosen for the target PLP.
-
- For specific values of Kpayload , see Table 6.1 and Table 6.2.
-
-
- ALP packets shall be mapped to the payload part in the same order they are received.
-
- The reordering of ALP packets in the Baseband Packet is not permitted.
-
- When the received ALP packets are not sufficient to create a Baseband Packet of size Kpayload, padding shall be added to the Baseband Packet Header to complete the Baseband Packet. See Section 5.2.2.3.2 for details.
-
-
- When the received ALP packets are enough to fill the Baseband Packet but the last ALP packet does not fit perfectly within the Baseband Packet,
- 	 that ALP packet may be split between the current Baseband Packet with the remainder of the ALP packet transmitted at the start of the next Baseband Packet.
-
- When splitting is used, ALP packets shall be split in byte units only.
-
- When the final ALP packet in the Baseband Packet is not split, padding shall be used in the extension field of the Baseband Packet Header to completely fill the Baseband Packet.
-
- In Figure 5.3 the final ALP packet is split between the current Baseband Packet and the next Baseband Packet.
-
                                   \| ALP PACKET |    | ALP |    |   ALP PACKET   |  | ALP |  |   ALP P|/ACKET   |
 +----------------------------------\------------------------------------------------------------------+
 | Baseband Packet                   \                                                                 |
