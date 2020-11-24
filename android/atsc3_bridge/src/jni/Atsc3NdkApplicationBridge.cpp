@@ -213,8 +213,8 @@ void Atsc3NdkApplicationBridge::atsc3_onAlcObjectStatusMessage(const char *fmt, 
     bridgeConsumerJniEnv->Get()->DeleteLocalRef(js);
 }
 
-void Atsc3NdkApplicationBridge::atsc3_onAlcObjectClosed(uint32_t tsi, uint32_t toi, char* s_tsid_content_location, char* s_tsid_content_type, char* cache_file_path) {
-	
+void Atsc3NdkApplicationBridge::atsc3_onAlcObjectClosed(uint16_t service_id, uint32_t tsi, uint32_t toi, char* s_tsid_content_location, char* s_tsid_content_type, char* cache_file_path) {
+    int r = 0;
 	if (!bridgeConsumerJniEnv) {
 		  _NDK_APPLICATION_BRIDGE_ERROR("atsc3_onAlcObjectClosed: bridgeConsumerJniEnv is NULL!");
 		  return;
@@ -228,15 +228,15 @@ void Atsc3NdkApplicationBridge::atsc3_onAlcObjectClosed(uint32_t tsi, uint32_t t
 		s_tsid_content_location_jstring = bridgeConsumerJniEnv->Get()->NewStringUTF(s_tsid_content_location);
 	}
 	
-	if(s_tsid_content_type_jstring) {
+	if(s_tsid_content_type) {
 		s_tsid_content_type_jstring = bridgeConsumerJniEnv->Get()->NewStringUTF(s_tsid_content_type);
 	}
 	
-	if(cache_file_path_jstring) {
+	if(cache_file_path) {
 		cache_file_path_jstring = bridgeConsumerJniEnv->Get()->NewStringUTF(cache_file_path);
 	}
 
-	int r = bridgeConsumerJniEnv->Get()->CallIntMethod(jni_instance_globalRef, atsc3_on_alc_object_closed_ID, tsi, toi, s_tsid_content_location_jstring, s_tsid_content_type_jstring, cache_file_path_jstring);
+	r = bridgeConsumerJniEnv->Get()->CallIntMethod(jni_instance_globalRef, atsc3_on_alc_object_closed_ID, service_id, tsi, toi, s_tsid_content_location_jstring, s_tsid_content_type_jstring, cache_file_path_jstring);
 
 	if(s_tsid_content_location) {
 		bridgeConsumerJniEnv->Get()->DeleteLocalRef(s_tsid_content_location_jstring);
@@ -442,12 +442,12 @@ vector<string> Atsc3NdkApplicationBridge::atsc3_slt_alc_get_sls_route_s_tsid_fdt
     return my_fdt_file_content_location_values;
 }
 
-void Atsc3NdkApplicationBridge::atsc3_lls_sls_alc_on_object_close_flag_s_tsid_content_location_jni(uint32_t tsi, uint32_t toi, char* s_tsid_content_location, char* s_tsid_content_type, char* cache_file_path) {
+void Atsc3NdkApplicationBridge::atsc3_lls_sls_alc_on_object_close_flag_s_tsid_content_location_jni(uint16_t service_id, uint32_t tsi, uint32_t toi, char* s_tsid_content_location, char* s_tsid_content_type, char* cache_file_path) {
     //jjustman-2020-01-07: add in alc flow debugging
-    _NDK_APPLICATION_BRIDGE_INFO("atsc3_lls_sls_alc_on_object_close_flag_s_tsid_content_location_jni: tsi: %d, toi: %d, s_tsid_content_location: %s, s_tsid_content_type: %s, cache_file_path: %s",
-								 tsi, toi, s_tsid_content_location, s_tsid_content_type, cache_file_path);
+    _NDK_APPLICATION_BRIDGE_INFO("atsc3_lls_sls_alc_on_object_close_flag_s_tsid_content_location_jni: service_id: %d, tsi: %d, toi: %d, s_tsid_content_location: %s, s_tsid_content_type: %s, cache_file_path: %s",
+                                 service_id, tsi, toi, s_tsid_content_location, s_tsid_content_type, cache_file_path);
 
-	atsc3_onAlcObjectClosed(tsi, toi, s_tsid_content_location, s_tsid_content_type, cache_file_path);
+	atsc3_onAlcObjectClosed(service_id, tsi, toi, s_tsid_content_location, s_tsid_content_type, cache_file_path);
 }
 
 void Atsc3NdkApplicationBridge::atsc3_lls_sls_alc_on_route_mpd_patched_jni(uint16_t service_id) {
@@ -825,7 +825,7 @@ Java_org_ngbp_libatsc3_middleware_Atsc3NdkApplicationBridge_init(JNIEnv *env, jo
 	}
 	
     //jjustman-2020-11-23 - atsc3_on_alc_object_closed_ID
-	apiAppBridge->atsc3_on_alc_object_closed_ID = env->GetMethodID(jniClassReference, "atsc3_on_alc_object_closed", "(IILjava/lang/String;Ljava/lang/String;Ljava/lang/String;)I");
+	apiAppBridge->atsc3_on_alc_object_closed_ID = env->GetMethodID(jniClassReference, "atsc3_on_alc_object_closed", "(IIILjava/lang/String;Ljava/lang/String;Ljava/lang/String;)I");
 	if (apiAppBridge->atsc3_on_alc_object_closed_ID == NULL) {
 	   _NDK_APPLICATION_BRIDGE_ERROR("Atsc3NdkApplicationBridge_init: cannot find 'atsc3_on_alc_object_closed_ID' method id");
 	   return -1;
