@@ -48,8 +48,11 @@ LOCAL_C_INCLUDES += \
 	$(LOCAL_PATH)/../../src/phy/ \
 	$(LOCAL_PATH)/libpcre/include
 
+ifneq ($(MAKECMDGOALS),clean)
+	ifneq ($(MAKECMDGOALS),generateJsonModelDebug)
 LOCAL_SHARED_LIBRARIES := libpcre libssl libcrypto
-
+	endif
+endif
 # jjustman-2020-08-19: logging notes
 # 	-D__ANDROID__ should enable libatsc3 __LIBATSC3_TIMESTAMP_XXX defines to the __ANDROID_LOG_VPRINTF_BUFFER,
 # 	so comment this define out if there is too much logging noise
@@ -59,7 +62,7 @@ LOCAL_CFLAGS += -g -fpack-struct=8 -fPIC  \
                 -D__MOCK_PCAP_REPLAY__ -D__LIBATSC3_ANDROID__ \
                 -D__ANDROID__
 
-LOCAL_LDLIBS := -ldl -lc++_shared -llog -landroid -lz -lc
+LOCAL_LDLIBS := -ldl -llog -landroid -lz -lc
 
 include $(BUILD_SHARED_LIBRARY)
 
