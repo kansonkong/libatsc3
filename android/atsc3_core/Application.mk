@@ -11,8 +11,10 @@ APP_STL := c++_shared
         APP_CPPFLAGS += -std=c++11 -fexceptions -D_ANDROID
 
 # jjustman-2020-10-07 - hwasan is only available on android 10 or higher
-        APP_CFLAGS := -fsanitize=hwaddress -fno-omit-frame-pointer -g -O0
+ifeq ($(ENABLE_HWASAN),armeabi-v7a)
+APP_CFLAGS := -fsanitize=hwaddress -fno-omit-frame-pointer -g -O0
 APP_LDFLAGS := -fsanitize=hwaddress
+endif
 
 # fall back to plain asan
 # ifeq ($(ENABLE_HWASAN),xxxx)
