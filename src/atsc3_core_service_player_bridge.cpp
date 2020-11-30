@@ -1105,8 +1105,8 @@ void atsc3_lls_on_aeat_table_present_ndk(lls_table_t* lls_table) {
 
 
 //TODO: jjustman-2019-11-08: wire up the service_id in which this alc_emission originated from in addition to tsi/toi
-void atsc3_lls_sls_alc_on_object_close_flag_s_tsid_content_location_ndk(uint32_t tsi, uint32_t toi, char* content_location) {
-    Atsc3NdkApplicationBridge_ptr->atsc3_lls_sls_alc_on_object_close_flag_s_tsid_content_location_jni(tsi, toi, content_location);
+void atsc3_lls_sls_alc_on_object_close_flag_s_tsid_content_location_ndk(uint16_t service_id, uint32_t tsi, uint32_t toi, char* s_tsid_content_location, char* s_tsid_content_type, char* cache_file_path) {
+    Atsc3NdkApplicationBridge_ptr->atsc3_lls_sls_alc_on_object_close_flag_s_tsid_content_location_jni(service_id, tsi, toi, s_tsid_content_location, s_tsid_content_type, cache_file_path);
 }
 
 void atsc3_lls_sls_alc_on_route_mpd_patched_ndk(uint16_t service_id) {

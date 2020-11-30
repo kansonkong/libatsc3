@@ -203,7 +203,7 @@ void Atsc3NdkApplicationBridge::atsc3_onAlcObjectStatusMessage(const char *fmt, 
     va_end(v);
 
     if (!bridgeConsumerJniEnv) {
-        _NDK_APPLICATION_BRIDGE_ERROR("ats3_onMfuPacket: bridgeConsumerJniEnv is NULL!");
+        _NDK_APPLICATION_BRIDGE_ERROR("atsc3_onAlcObjectStatusMessage: bridgeConsumerJniEnv is NULL!");
         return;
     }
 
@@ -211,6 +211,44 @@ void Atsc3NdkApplicationBridge::atsc3_onAlcObjectStatusMessage(const char *fmt, 
 
     int r = bridgeConsumerJniEnv->Get()->CallIntMethod(jni_instance_globalRef, atsc3_on_alc_object_status_message_ID, js);
     bridgeConsumerJniEnv->Get()->DeleteLocalRef(js);
+}
+
+void Atsc3NdkApplicationBridge::atsc3_onAlcObjectClosed(uint16_t service_id, uint32_t tsi, uint32_t toi, char* s_tsid_content_location, char* s_tsid_content_type, char* cache_file_path) {
+    int r = 0;
+	if (!bridgeConsumerJniEnv) {
+		  _NDK_APPLICATION_BRIDGE_ERROR("atsc3_onAlcObjectClosed: bridgeConsumerJniEnv is NULL!");
+		  return;
+	}
+
+	jstring s_tsid_content_location_jstring = NULL;
+	jstring s_tsid_content_type_jstring = NULL;
+	jstring cache_file_path_jstring = NULL;
+	
+	if(s_tsid_content_location) {
+		s_tsid_content_location_jstring = bridgeConsumerJniEnv->Get()->NewStringUTF(s_tsid_content_location);
+	}
+	
+	if(s_tsid_content_type) {
+		s_tsid_content_type_jstring = bridgeConsumerJniEnv->Get()->NewStringUTF(s_tsid_content_type);
+	}
+	
+	if(cache_file_path) {
+		cache_file_path_jstring = bridgeConsumerJniEnv->Get()->NewStringUTF(cache_file_path);
+	}
+
+	r = bridgeConsumerJniEnv->Get()->CallIntMethod(jni_instance_globalRef, atsc3_on_alc_object_closed_ID, service_id, tsi, toi, s_tsid_content_location_jstring, s_tsid_content_type_jstring, cache_file_path_jstring);
+
+	if(s_tsid_content_location) {
+		bridgeConsumerJniEnv->Get()->DeleteLocalRef(s_tsid_content_location_jstring);
+	}
+	
+	if(s_tsid_content_type_jstring) {
+		bridgeConsumerJniEnv->Get()->DeleteLocalRef(s_tsid_content_type_jstring);
+	}
+	
+	if(cache_file_path_jstring) {
+		bridgeConsumerJniEnv->Get()->DeleteLocalRef(cache_file_path_jstring);
+	}
 }
 
 int Atsc3NdkApplicationBridge::pinConsumerThreadAsNeeded() {
@@ -294,31 +332,20 @@ std::string Atsc3NdkApplicationBridge::get_android_temp_folder() {
     return temp_folder;
 }
 
-//return -1 on service_id not found
-//return -2 on duplicate additional service_id request
+//add an additional service_id for monitoring, e.g. for ESG use cases to capture the OMA-BCAST payload while presenting the linear a/v route emission
+//
+// sucessful:
+//      returns the a/331 sls_protocol if service selection was successful,
+//
+//  otherwise:
+//      returns -1, for service_id not found (or other failure)
 int Atsc3NdkApplicationBridge::atsc3_slt_alc_select_additional_service(int service_id) {
-    //keep track of internally here which "additional service_id's" we have on monitor;
-//
-//    bool is_monitoring_duplicate = false;
-//    for(int i=0; i < atsc3_slt_alc_additional_services_monitored.size() && !is_monitoring_duplicate; i++) {
-//        if(atsc3_slt_alc_additional_services_monitored.at(i) == service_id) {
-//            //duplicate request
-//            is_monitoring_duplicate = true;
-//            continue;
-//        }
-//    }
-//
-//    if(is_monitoring_duplicate) {
-//        return -2;
-//    }
+    int ret = -1;
     atsc3_lls_slt_service_t* atsc3_lls_slt_service = atsc3_phy_mmt_player_bridge_add_monitor_a331_service_id(service_id);
-    if(!atsc3_lls_slt_service) {
-        return -1;
+    if(atsc3_lls_slt_service && atsc3_lls_slt_service->atsc3_slt_broadcast_svc_signalling_v.count) {
+        ret = atsc3_lls_slt_service->atsc3_slt_broadcast_svc_signalling_v.data[0]->sls_protocol;
     }
-
-  //  atsc3_slt_alc_additional_services_monitored.push_back(service_id);
-
-    return 0;
+    return ret;
 }
 
 //TODO: jjustman-2019-11-07 - add mutex here around additional_services_monitored collection
@@ -415,12 +442,12 @@ vector<string> Atsc3NdkApplicationBridge::atsc3_slt_alc_get_sls_route_s_tsid_fdt
     return my_fdt_file_content_location_values;
 }
 
-void Atsc3NdkApplicationBridge::atsc3_lls_sls_alc_on_object_close_flag_s_tsid_content_location_jni(uint32_t tsi, uint32_t toi, char *content_location) {
+void Atsc3NdkApplicationBridge::atsc3_lls_sls_alc_on_object_close_flag_s_tsid_content_location_jni(uint16_t service_id, uint32_t tsi, uint32_t toi, char* s_tsid_content_location, char* s_tsid_content_type, char* cache_file_path) {
     //jjustman-2020-01-07: add in alc flow debugging
-    _NDK_APPLICATION_BRIDGE_INFO("atsc3_lls_sls_alc_on_object_close_flag_s_tsid_content_location_jni: tsi: %d, toi: %d, content_location: %s", tsi, toi, content_location);
+    _NDK_APPLICATION_BRIDGE_INFO("atsc3_lls_sls_alc_on_object_close_flag_s_tsid_content_location_jni: service_id: %d, tsi: %d, toi: %d, s_tsid_content_location: %s, s_tsid_content_type: %s, cache_file_path: %s",
+                                 service_id, tsi, toi, s_tsid_content_location, s_tsid_content_type, cache_file_path);
 
-    //len: nnn, lost DU: nnn
-    atsc3_onAlcObjectStatusMessage("C: tsi: %d, toi: %d, content_location: %s", tsi, toi, content_location);
+	atsc3_onAlcObjectClosed(service_id, tsi, toi, s_tsid_content_location, s_tsid_content_type, cache_file_path);
 }
 
 void Atsc3NdkApplicationBridge::atsc3_lls_sls_alc_on_route_mpd_patched_jni(uint16_t service_id) {
@@ -794,6 +821,13 @@ Java_org_ngbp_libatsc3_middleware_Atsc3NdkApplicationBridge_init(JNIEnv *env, jo
 	apiAppBridge->atsc3_lls_sls_alc_on_package_extract_completed_ID = env->GetMethodID(jniClassReference, "atsc3_lls_sls_alc_on_package_extract_completed", "(Lorg/ngbp/libatsc3/middleware/android/a331/PackageExtractEnvelopeMetadataAndPayload;)I");
 	if (apiAppBridge->atsc3_lls_sls_alc_on_package_extract_completed_ID == NULL) {
 	   _NDK_APPLICATION_BRIDGE_ERROR("Atsc3NdkApplicationBridge_init: cannot find 'atsc3_lls_sls_alc_on_package_extract_completed_ID' method id");
+	   return -1;
+	}
+	
+    //jjustman-2020-11-23 - atsc3_on_alc_object_closed_ID
+	apiAppBridge->atsc3_on_alc_object_closed_ID = env->GetMethodID(jniClassReference, "atsc3_on_alc_object_closed", "(IIILjava/lang/String;Ljava/lang/String;Ljava/lang/String;)I");
+	if (apiAppBridge->atsc3_on_alc_object_closed_ID == NULL) {
+	   _NDK_APPLICATION_BRIDGE_ERROR("Atsc3NdkApplicationBridge_init: cannot find 'atsc3_on_alc_object_closed_ID' method id");
 	   return -1;
 	}
 
