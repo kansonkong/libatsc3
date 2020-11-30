@@ -80,8 +80,7 @@ public:
     vector<string>
     atsc3_slt_alc_get_sls_route_s_tsid_fdt_file_content_locations_from_monitor_service_id(int service_id);
 
-    void atsc3_lls_sls_alc_on_object_close_flag_s_tsid_content_location_jni(uint32_t tsi, uint32_t toi,
-                                                                            char *content_location);
+    void atsc3_lls_sls_alc_on_object_close_flag_s_tsid_content_location_jni(uint16_t service_id, uint32_t tsi, uint32_t toi, char* s_tsid_content_location, char* s_tsid_content_type, char* cache_file_path);
 
     void atsc3_lls_sls_alc_on_route_mpd_patched_jni(uint16_t service_id);
 
@@ -90,7 +89,7 @@ public:
     void atsc3_onSlsHeldEmissionPresent(uint16_t service_id, const char *held_payload);
 
     void atsc3_onAlcObjectStatusMessage(const char *fmt, ...);
-
+	void atsc3_onAlcObjectClosed(uint16_t service_id, uint32_t tsi, uint32_t toi, char* s_tsid_content_location, char* s_tsid_content_type, char* cache_file_path);
 
     void atsc3_onMfuSampleMissing(uint16_t i, uint32_t i1, uint32_t i2);
 
@@ -137,7 +136,6 @@ public:
     jmethodID atsc3_onAeatTablePresent_ID = nullptr;
     jmethodID atsc3_onSlsHeldEmissionPresent_ID = nullptr;
 
-
     jmethodID atsc3_onMfuPacketID = nullptr; //java method for pushing to a/v codec buffers
     jmethodID atsc3_onMfuPacketCorruptID = nullptr; //java method for pushing to a/v codec buffers
     jmethodID atsc3_onMfuPacketCorruptMmthSampleHeaderID = nullptr; //java method for pushing to a/v codec buffers
@@ -155,6 +153,7 @@ public:
     jmethodID atsc3_lls_sls_alc_on_route_mpd_patched_ID = nullptr;
     jmethodID atsc3_on_alc_object_status_message_ID = nullptr;
 
+	jmethodID atsc3_on_alc_object_closed_ID = nullptr;
     jmethodID atsc3_lls_sls_alc_on_package_extract_completed_ID = nullptr;
 
     jclass packageExtractEnvelopeMetadataAndPayload_jclass_init_env = nullptr;
