@@ -951,7 +951,7 @@ uint32_t block_Read_uint32_ntohl(block_t* src) {
     return ret;
 }
 
-uint64_t block_Read_uint64_ntohul(block_t* src) {
+uint64_t block_Read_uint64_ntohll(block_t* src) {
 
     if(!__block_check_bounaries_read_size(__FUNCTION__, src, 8)) return 0;
 
@@ -961,7 +961,7 @@ uint64_t block_Read_uint64_ntohul(block_t* src) {
 }
 
 //read from filesyste into block_t
-block_t* block_Read_from_filename(char* file_name) {
+block_t* block_Read_from_filename(const char* file_name) {
 
 	if( access(file_name, F_OK ) == -1 ) {
 		_ATSC3_UTILS_ERROR("block_Read_from_filename: unable to open file: %s", file_name);
@@ -984,6 +984,21 @@ block_t* block_Read_from_filename(char* file_name) {
 	fclose(fp);
 
 	return payload;
+}
+int block_Write_to_filename(block_t* src, const char* filename) {
+	int ret = 0;
+	block_Rewind(src);
+	
+	uint8_t* block_start = src->p_buffer;
+	uint32_t block_length = src->p_size;
+	
+	FILE* payload_fp = fopen(filename, "w");
+	if(payload_fp) {
+		ret = fwrite(block_start, block_length, 1, payload_fp);
+		fclose(payload_fp);
+	 }
+	
+	return ret;
 }
 
 void freesafe(void* tofree) {

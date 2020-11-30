@@ -177,7 +177,7 @@ void process_packet(atsc3_udp_packet_t* udp_packet) {
 			__INFO("Discarding packet: lls_sls_alc_monitor: %p, matching_lls_sls_alc_monitor: %p, matching_lls_slt_alc_session: %p, ", lls_sls_alc_monitor, matching_lls_sls_alc_monitor, matching_lls_slt_alc_session);
 		}
 	} else {
-		__INFO("Discarding packet: lls_sls_alc_monitor: %p, matching_lls_sls_alc_monitor: %p, matching_lls_slt_alc_session: %p", lls_sls_alc_monitor, matching_lls_sls_alc_monitor, matching_lls_slt_alc_session);
+		//__INFO("Discarding packet: lls_sls_alc_monitor: %p, matching_lls_sls_alc_monitor: %p, matching_lls_slt_alc_session: %p", lls_sls_alc_monitor, matching_lls_sls_alc_monitor, matching_lls_slt_alc_session);
 	}
 
 udp_packet_free:
