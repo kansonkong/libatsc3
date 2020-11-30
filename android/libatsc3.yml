@@ -34,7 +34,7 @@ steps:
     displayName: 'Setup ARTIFACT_VERSION from tag'
 
   - bash:
-       echo "y" | sudo $(ANDROID_SDK_ROOT)/tools/bin/sdkmanager --install "ndk;21.0.6113669" --sdk_root=${ANDROID_SDK_ROOT}
+       echo "y" | sudo $(ANDROID_SDK_ROOT)/tools/bin/sdkmanager --install "ndk;21.1.6352462" --sdk_root=${ANDROID_SDK_ROOT}
     displayName: 'Setup NDK 21.1.6352462'
 
   - task: MavenAuthenticate@0
