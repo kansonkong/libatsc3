@@ -17,6 +17,7 @@
 #define ATSC3_ALC_UTILS_H_
 
 #include "atsc3_utils.h"
+#include "atsc3_gzip.h"
 #include "atsc3_alc_rx.h"
 #include "atsc3_player_ffplay.h"
 #include "atsc3_lls_types.h"
@@ -38,6 +39,17 @@ extern int _ALC_UTILS_TRACE_ENABLED;
 void atsc3_alc_packet_check_monitor_flow_for_toi_wraparound_discontinuity(atsc3_alc_packet_t* alc_packet, lls_sls_alc_monitor_t* lls_sls_alc_monitor);
 
 atsc3_route_object_t* atsc3_alc_persist_route_object_lct_packet_received_for_lls_sls_alc_monitor_all_flows(atsc3_alc_packet_t* alc_packet, lls_sls_alc_monitor_t* lls_sls_alc_monitor);
+
+/*
+ * return codes:
+ *
+ *  ATSC3_ALC_UTILS_FAILED_GZIP_EXTRACTION - gzip extraction failed
+ */
+
+#define ATSC3_ALC_UTILS_LLS_SLS_ALC_MONITOR_OUTPUT_BUFFER_MODE_NOT_ENABLED -2
+#define ATSC3_ALC_UTILS_SLS_METADATA_FRAGMENTS_NOT_RECEIVED_YET -3
+#define ATSC3_ALC_UTILS_FAILED_GZIP_EXTRACTION -4
+
 int atsc3_alc_packet_persist_to_toi_resource_process_sls_mbms_and_emit_callback(udp_flow_t* udp_flow, atsc3_alc_packet_t* alc_packet, lls_sls_alc_monitor_t* lls_sls_alc_monitor, atsc3_route_object_t* atsc3_route_object);
 
 
@@ -59,6 +71,8 @@ atsc3_fdt_file_t* atsc3_alc_RS_LS_get_matching_toi_file_instance(atsc3_route_s_t
 
 
 char* alc_packet_dump_to_object_get_s_tsid_filename(udp_flow_t* udp_flow, atsc3_alc_packet_t* alc_packet, lls_sls_alc_monitor_t* lls_sls_alc_monitor);
+char* alc_packet_dump_to_object_get_s_tsid_filename_with_atsc3_fdt_file_p(udp_flow_t* udp_flow, atsc3_alc_packet_t* alc_packet, lls_sls_alc_monitor_t* lls_sls_alc_monitor, atsc3_fdt_file_t** atsc3_fdt_file_p);
+
 char* alc_packet_dump_to_object_get_temporary_filename(udp_flow_t* udp_flow, atsc3_alc_packet_t* alc_packet);
 
 FILE* atsc3_alc_object_open(char* file_name);
