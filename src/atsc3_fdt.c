@@ -21,6 +21,20 @@ ATSC3_VECTOR_BUILDER_METHODS_IMPLEMENTATION(atsc3_fdt_instance, atsc3_fdt_file);
 
  atsc3_fdt_fec_attributes_t    atsc3_fdt_fec_attributes;
  */
+
+
+bool atsc3_fdt_file_content_encoding_is_gzip(atsc3_fdt_file_t* atsc3_fdt_file) {
+	bool is_gzip = false;
+	if(atsc3_fdt_file && atsc3_fdt_file->content_encoding) {
+		if(!strncasecmp(ATSC3_FDT_FILE_CONTENT_ENCODING_GZIP, atsc3_fdt_file->content_encoding, __MIN(strlen(ATSC3_FDT_FILE_CONTENT_ENCODING_GZIP), strlen(atsc3_fdt_file->content_encoding)))) {
+			is_gzip = true;
+		}
+	}
+		   
+	return is_gzip;
+}
+
+
 void atsc3_fdt_file_free(atsc3_fdt_file_t** atsc3_fdt_file_p) {
     if(atsc3_fdt_file_p) {
         atsc3_fdt_file_t* atsc3_fdt_file = *atsc3_fdt_file_p;
