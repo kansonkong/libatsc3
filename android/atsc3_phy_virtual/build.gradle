@@ -17,6 +17,12 @@ android {
             path 'Android.mk'
         }
     }
+
+    buildFeatures {
+        prefab true
+    }
+
+
 //    buildTypes {
 //        debug {
 //            jniDebuggable = true
