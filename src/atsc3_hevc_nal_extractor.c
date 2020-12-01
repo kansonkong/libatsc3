@@ -186,8 +186,8 @@ video_decoder_configuration_record_t *video_decoder_configuration_record_new() {
 
 //process either avcC or hvcC, use video_decoder_configuration_record (containing both avcC and hvcC decoder records)
 
-video_decoder_configuration_record_t *atsc3_avc1_hevc_nal_extractor_parse_from_mpu_metadata_block_t(block_t *mpu_metadata_block) {
-    video_decoder_configuration_record_t *video_decoder_configuration_record = video_decoder_configuration_record_new();
+video_decoder_configuration_record_t* atsc3_avc1_hevc_nal_extractor_parse_from_mpu_metadata_block_t(block_t *mpu_metadata_block) {
+    video_decoder_configuration_record_t* video_decoder_configuration_record = video_decoder_configuration_record_new();
 
     if (!mpu_metadata_block || mpu_metadata_block->p_size < 8) {
         goto error;
@@ -256,23 +256,30 @@ video_decoder_configuration_record_t *atsc3_avc1_hevc_nal_extractor_parse_from_m
             _ATSC3_HEVC_NAL_EXTRACTOR_DEBUG("atsc3_hevc_nal_extractor_parse_from_mpu_metadata_block_t: HEVC: found matching hev1 (hvc1) at position: %d", i);
             has_hev1_match = true;
             hev1_match_index = i + 4;
+
+            video_decoder_configuration_record->has_hev1_box = true;
+            video_decoder_configuration_record->has_hvcC_box = true;
         }
-//look for our HEVC hvcC first, then fallback to avcC
+
+            //look for our HEVC hvcC first, then fallback to avcC
         if (mpu_ptr[i] == 'h' && mpu_ptr[i + 1] == 'v' && mpu_ptr[i + 2] == 'c' &&
             mpu_ptr[i + 3] == 'C') {
             _ATSC3_HEVC_NAL_EXTRACTOR_DEBUG("atsc3_hevc_nal_extractor_parse_from_mpu_metadata_block_t: HEVC: found matching hvcC at position: %d", i);
             has_hvcC_match = true;
             hvcC_match_index = i + 4;
+            video_decoder_configuration_record->has_hev1_box = true;
+
         } else if (mpu_ptr[i] == 'a' && mpu_ptr[i + 1] == 'v' && mpu_ptr[i + 2] == 'c' &&
                    mpu_ptr[i + 3] == 'C') {
             _ATSC3_HEVC_NAL_EXTRACTOR_DEBUG("atsc3_hevc_nal_extractor_parse_from_mpu_metadata_block_t: AVC: found matching avcC at position: %d", i);
             has_avcC_match = true;
             avcC_match_index = i + 4;
+
+            video_decoder_configuration_record->has_avcC_box = true;
         }
     }
 
-    if (has_hev1_match && hev1_match_index && !video_decoder_configuration_record->width &&
-        !video_decoder_configuration_record->height) {
+    if (has_hev1_match && hev1_match_index && !video_decoder_configuration_record->width && !video_decoder_configuration_record->height) {
         atsc3_init_parse_HEVCConfigurationBox_for_width_height(video_decoder_configuration_record, &mpu_ptr[hev1_match_index],
                                                                mpu_metadata_block->p_size -
                                                                hev1_match_index);
