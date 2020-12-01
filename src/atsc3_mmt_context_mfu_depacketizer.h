@@ -24,10 +24,12 @@ extern "C" {
  * todo - include byte ranges for lost DU's?
  * NOTE
  */
-typedef void (*atsc3_mmt_mpu_mfu_on_sample_complete_f) (uint16_t packet_id, uint32_t mpu_sequence_number, uint32_t sample_number, block_t* mmt_mfu_sample, uint32_t mfu_fragment_count_rebuilt);
-typedef void (*atsc3_mmt_mpu_mfu_on_sample_corrupt_f)  (uint16_t packet_id, uint32_t mpu_sequence_number, uint32_t sample_number, block_t* mmt_mfu_sample, uint32_t mfu_fragment_count_expected, uint32_t mfu_fragment_count_rebuilt);
-typedef void (*atsc3_mmt_mpu_mfu_on_sample_corrupt_mmthsample_header_f) (uint16_t packet_id, uint32_t mpu_sequence_number, uint32_t sample_number, block_t* mmt_mfu_sample,  uint32_t mfu_fragment_count_expected, uint32_t mfu_fragment_count_rebuilt);
-typedef void (*atsc3_mmt_mpu_mfu_on_sample_missing_f)  (uint16_t packet_id, uint32_t mpu_sequence_number, uint32_t sample_number);
+typedef struct atsc3_mmt_mfu_context atsc3_mmt_mfu_context_t;
+
+typedef void (*atsc3_mmt_mpu_mfu_on_sample_complete_f) (atsc3_mmt_mfu_context_t* atsc3_mmt_mfu_context, uint16_t packet_id, uint32_t mpu_sequence_number, uint32_t sample_number, block_t* mmt_mfu_sample, uint32_t mfu_fragment_count_rebuilt);
+typedef void (*atsc3_mmt_mpu_mfu_on_sample_corrupt_f)  (atsc3_mmt_mfu_context_t* atsc3_mmt_mfu_context, uint16_t packet_id, uint32_t mpu_sequence_number, uint32_t sample_number, block_t* mmt_mfu_sample, uint32_t mfu_fragment_count_expected, uint32_t mfu_fragment_count_rebuilt);
+typedef void (*atsc3_mmt_mpu_mfu_on_sample_corrupt_mmthsample_header_f) (atsc3_mmt_mfu_context_t* atsc3_mmt_mfu_context, uint16_t packet_id, uint32_t mpu_sequence_number, uint32_t sample_number, block_t* mmt_mfu_sample,  uint32_t mfu_fragment_count_expected, uint32_t mfu_fragment_count_rebuilt);
+typedef void (*atsc3_mmt_mpu_mfu_on_sample_missing_f)  (atsc3_mmt_mfu_context_t* atsc3_mmt_mfu_context, uint16_t packet_id, uint32_t mpu_sequence_number, uint32_t sample_number);
 
 typedef struct atsc3_mmt_mfu_mpu_timestamp_descriptor {
 	uint16_t 	packet_id;
@@ -45,6 +47,8 @@ typedef struct atsc3_mmt_mfu_mpu_timestamp_descriptor_rolling_window {
 
 ATSC3_VECTOR_BUILDER_METHODS_INTERFACE(atsc3_mmt_mfu_mpu_timestamp_descriptor_rolling_window, atsc3_mmt_mfu_mpu_timestamp_descriptor);
 
+typedef struct video_decoder_configuration_record video_decoder_configuration_record_t;
+
 typedef struct atsc3_mmt_mfu_context {
 	//INTERNAL data structs
 	udp_flow_t* 	udp_flow;
@@ -56,6 +60,11 @@ typedef struct atsc3_mmt_mfu_context {
 
 	mp_table_t* mp_table_last;
 	atsc3_mmt_mfu_mpu_timestamp_descriptor_rolling_window_t												packet_id_mpu_timestamp_descriptor_window;
+
+    video_decoder_configuration_record_t*       video_decoder_configuration_record;
+
+    //audio specific - TODO - refactor out
+    uint32_t    audio_timebase;
 
 	//INTERNAL event callbacks
 	__internal__atsc3_mmt_signalling_information_on_packet_id_with_mpu_timestamp_descriptor_f			__internal__atsc3_mmt_signalling_information_on_packet_id_with_mpu_timestamp_descriptor;

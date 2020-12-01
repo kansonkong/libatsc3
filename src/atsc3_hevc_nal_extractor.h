@@ -245,10 +245,19 @@ typedef struct avc1_decoder_configuration_record {
 
 //since we don't know if we will get hvcC or avcC markers, be prepared for both configuration record types
 typedef struct video_decoder_configuration_record {
+    bool has_hev1_box;
+    bool has_hvcC_box;
+
     hevc_decoder_configuration_record_t* hevc_decoder_configuration_record;
+
+    bool has_avc1_box;
+    bool has_avcC_box;
     avc1_decoder_configuration_record_t* avc1_decoder_configuration_record;
+
     uint32_t width;
     uint32_t height;
+    uint32_t timebase;
+
 } video_decoder_configuration_record_t;
 
 
