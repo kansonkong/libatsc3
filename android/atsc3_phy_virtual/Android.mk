@@ -1,4 +1,11 @@
 # Android.mk for libatsc3 virtual phy support
+# jjustman-2020-10-29 - TODO: fix this gradle error when trying to clean the project, not honoring target arch
+# Build command failed.
+# Error while executing process /Users/jjustman/Library/Android/sdk/ndk/21.0.6113669/ndk-build with arguments {NDK_PROJECT_PATH=null APP_BUILD_SCRIPT=/Users/jjustman/Desktop/markone/Middleware/libatsc3/android/atsc3_phy_virtual/Android.mk NDK_APPLICATION_MK=/Users/jjustman/Desktop/markone/Middleware/libatsc3/android/atsc3_phy_virtual/Application.mk NDK_GRADLE_INJECTED_IMPORT_PATH=/Users/jjustman/Desktop/markone/Middleware/libatsc3/android/atsc3_phy_virtual/.cxx/ndkBuild/debug/prefab/x86_64 APP_ABI=x86_64 NDK_ALL_ABIS=x86_64 NDK_DEBUG=1 APP_PLATFORM=android-28 NDK_OUT=/Users/jjustman/Desktop/markone/Middleware/libatsc3/android/atsc3_phy_virtual/build/intermediates/ndkBuild/debug/obj NDK_LIBS_OUT=/Users/jjustman/Desktop/markone/Middleware/libatsc3/android/atsc3_phy_virtual/build/intermediates/ndkBuild/debug/lib clean}
+# Android NDK: ERROR:/Users/jjustman/Desktop/markone/Middleware/libatsc3/android/atsc3_phy_virtual/Android.mk:CodornicesRq: LOCAL_SRC_FILES points to a missing file
+# Android NDK: Check that /Users/jjustman/Desktop/markone/Middleware/libatsc3/android/atsc3_phy_virtual/../../codornicesrq/CodornicesRq-2.2-Android-x86_64/lib/libCodornicesRq.so exists  or that its path is correct
+# fcntl(): Bad file descriptor
+# /Users/jjustman/Library/Android/sdk/ndk/21.0.6113669/build/core/prebuilt-library.mk:45: *** Android NDK: Aborting    .  Stop.
 #
 
 MY_LOCAL_PATH := $(call my-dir)
@@ -8,6 +15,12 @@ MY_CUR_PATH := $(LOCAL_PATH)
 
 # ---
 # codornicesrq
+#  /Users/jjustman/Desktop/markone/Middleware/libatsc3/codornicesrq/CodornicesRq-2.2-Android-armeabi-v7a/lib
+# patchelf --set-soname libCodornicesRq.so libCodornicesRq.so
+# patchelf --replace-needed libc.so.6 libc.so libCodornicesRq.so
+# objdump -x libCodornicesRq.so
+
+
 include $(CLEAR_VARS)
 LOCAL_MODULE := libCodornicesRq
 LOCAL_SRC_FILES := $(LOCAL_PATH)/../../codornicesrq/CodornicesRq-2.2-Android-$(TARGET_ARCH_ABI)/lib/libCodornicesRq.so
@@ -124,6 +137,15 @@ LOCAL_LDLIBS += -ldl -lc++_shared -llog -landroid -lz \
 LOCAL_LDFLAGS += -fPIE -fPIC \
 				-L $(LOCAL_PATH)/../atsc3_bridge/build/intermediates/ndkBuild/debug/obj/local/$(TARGET_ARCH_ABI)/ \
 				-L $(LOCAL_PATH)/../atsc3_core/build/intermediates/ndkBuild/debug/obj/local/$(TARGET_ARCH_ABI)/
+
+ifeq ($(TARGET_ARCH_ABI),armeabi-v7a)
+LOCAL_ARM_MODE := arm
+
+LOCAL_CFLAGS += -mhard-float -mfpu=vfp
+LOCAL_LDFLAGS += -Wl,--no-warn-mismatch -mfloat-abi=hard -mfpu=vfp
+
+LOCAL_CFLAGS += -D__LIBC_libCodornicesRq_HACKS__
+endif
 
 $(info 'before local shared libs' $(MAKECMDGOALS))
 
