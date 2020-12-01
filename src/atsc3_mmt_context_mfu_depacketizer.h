@@ -65,6 +65,7 @@ typedef struct atsc3_mmt_mfu_context {
 
     //audio specific - TODO - refactor out
     uint32_t    audio_timebase;
+    uint32_t    audio_samplerate;
 
 	//INTERNAL event callbacks
 	__internal__atsc3_mmt_signalling_information_on_packet_id_with_mpu_timestamp_descriptor_f			__internal__atsc3_mmt_signalling_information_on_packet_id_with_mpu_timestamp_descriptor;
