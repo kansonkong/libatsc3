@@ -79,7 +79,7 @@ dependencies {
     implementation project(':exoplayer-library-core')
     implementation project(':exoplayer-library-dash')
     implementation project(':exoplayer-library-ui')
-    implementation project(':exoplayer-extension-daa')
+    //implementation project(':exoplayer-extension-daa')
 
 
     testImplementation 'junit:junit:4.12'
