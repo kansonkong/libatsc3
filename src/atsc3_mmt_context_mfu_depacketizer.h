@@ -47,10 +47,6 @@ typedef struct atsc3_mmt_mfu_mpu_timestamp_descriptor_rolling_window {
 
 ATSC3_VECTOR_BUILDER_METHODS_INTERFACE(atsc3_mmt_mfu_mpu_timestamp_descriptor_rolling_window, atsc3_mmt_mfu_mpu_timestamp_descriptor);
 
-//jjustman-2020-12-01 - forward declare our (atsc3_)video_decoder_configuration_record_t and atsc3_audio_decoder_configuration_record
-typedef struct video_decoder_configuration_record video_decoder_configuration_record_t;
-typedef struct atsc3_audio_decoder_configuration_record atsc3_audio_decoder_configuration_record_t;
-
 typedef struct atsc3_mmt_mfu_context {
 	//INTERNAL data structs
 	udp_flow_t* 	udp_flow;
@@ -62,9 +58,6 @@ typedef struct atsc3_mmt_mfu_context {
 
 	mp_table_t* mp_table_last;
 	atsc3_mmt_mfu_mpu_timestamp_descriptor_rolling_window_t												packet_id_mpu_timestamp_descriptor_window;
-
-    video_decoder_configuration_record_t*           video_decoder_configuration_record;
-    atsc3_audio_decoder_configuration_record_t*     atsc3_audio_decoder_configuration_record;
 
 	//INTERNAL event callbacks
 	__internal__atsc3_mmt_signalling_information_on_packet_id_with_mpu_timestamp_descriptor_f			__internal__atsc3_mmt_signalling_information_on_packet_id_with_mpu_timestamp_descriptor;
