@@ -1153,6 +1153,9 @@ PPS (Picture Parameter Sets*)
 block_t* __INTERNAL_LAST_NAL_PACKET_TODO_FIXME = NULL;
 
 /*
+ * TODO: JJUSTMAN-2020-12-01 - REFACTOR THIS OUT
+ *
+ *  use mmtp_packet_id_packets_container->atsc3_*_decoder_configuration_record instead
  *
  * track init metadata (i.e. moov)
  *
@@ -1161,25 +1164,24 @@ block_t* __INTERNAL_LAST_NAL_PACKET_TODO_FIXME = NULL;
 void atsc3_mmt_mpu_on_sequence_mpu_metadata_present_ndk(atsc3_mmt_mfu_context_t* atsc3_mmt_mfu_context, uint16_t packet_id, uint32_t mpu_sequence_number, block_t* mmt_mpu_metadata) {
     atsc3_hevc_nals_record_dump("mmt_mpu_metadata", mmt_mpu_metadata);
 
-
-
     if (global_video_packet_id && global_video_packet_id == packet_id) {
         //manually extract our NALs here
-        video_decoder_configuration_record_t* video_decoder_configuration_record = atsc3_avc1_hevc_nal_extractor_parse_from_mpu_metadata_block_t(mmt_mpu_metadata);
+        atsc3_video_decoder_configuration_record_t* atsc3_video_decoder_configuration_record = atsc3_avc1_hevc_nal_extractor_parse_from_mpu_metadata_block_t(mmt_mpu_metadata);
 
         //we will get either avc1 (avcC) NAL or hevc (hvcC) nals back
-        if (video_decoder_configuration_record) {
+        if (atsc3_video_decoder_configuration_record) {
 
-            atsc3_mmt_mfu_context->video_decoder_configuration_record = video_decoder_configuration_record;
+            //jjustman-2020-12-01 - TODO - use mmtp_packet_id_packets_container
+            //atsc3_mmt_mfu_context->atsc3_video_decoder_configuration_record = atsc3_video_decoder_configuration_record;
 
             //set width/height to player
-            if(video_decoder_configuration_record->width && video_decoder_configuration_record->height) {
-                Atsc3NdkApplicationBridge_ptr->atsc3_setVideoWidthHeightFromTrak(video_decoder_configuration_record->width, video_decoder_configuration_record->height);
+            if(atsc3_video_decoder_configuration_record->width && atsc3_video_decoder_configuration_record->height) {
+                Atsc3NdkApplicationBridge_ptr->atsc3_setVideoWidthHeightFromTrak(atsc3_video_decoder_configuration_record->width, atsc3_video_decoder_configuration_record->height);
             }
 
-            if (video_decoder_configuration_record->hevc_decoder_configuration_record) {
+            if (atsc3_video_decoder_configuration_record->hevc_decoder_configuration_record) {
 
-                block_t* hevc_nals_combined = atsc3_hevc_extract_extradata_nals_combined_ffmpegImpl(video_decoder_configuration_record->hevc_decoder_configuration_record->box_data_original);
+                block_t* hevc_nals_combined = atsc3_hevc_extract_extradata_nals_combined_ffmpegImpl(atsc3_video_decoder_configuration_record->hevc_decoder_configuration_record->box_data_original);
 
                 if(hevc_nals_combined->p_size) {
                     //todo - jjustman-2019-10-12 - lock this for race conditions and allocate per flow
@@ -1199,7 +1201,8 @@ void atsc3_mmt_mpu_on_sequence_mpu_metadata_present_ndk(atsc3_mmt_mfu_context_t*
     } else {
         atsc3_audio_decoder_configuration_record_t* atsc3_audio_decoder_configuration_record = atsc3_audio_decoder_configuration_record_parse_from_block_t(mmt_mpu_metadata);
         if(atsc3_audio_decoder_configuration_record) {
-            atsc3_mmt_mfu_context->atsc3_audio_decoder_configuration_record = atsc3_audio_decoder_configuration_record;
+            //jjustman-2020-12-01 - TODO - use mmtp_packet_id_packets_container
+            //atsc3_mmt_mfu_context->atsc3_video_decoder_configuration_record = atsc3_audio_decoder_configuration_record;
         }
 
     }
@@ -1442,16 +1445,16 @@ void atsc3_mmt_mpu_on_sequence_movie_fragment_metadata_present_ndk(atsc3_mmt_mfu
 
     extracted_sample_duration_us = atsc3_mmt_movie_fragment_extract_sample_duration(mmt_movie_fragment_metadata);
 
-    //jjustman-2020-12-01 - TODO - fix me to map with audio configuration record_packet_id
-    if(packet_id == 200) {
-        if(atsc3_mmt_mfu_context->atsc3_audio_decoder_configuration_record && atsc3_mmt_mfu_context->atsc3_audio_decoder_configuration_record->sample_rate) {
-            extracted_sample_duration_us = (extracted_sample_duration_us * atsc3_mmt_mfu_context->atsc3_audio_decoder_configuration_record->timebase) / atsc3_mmt_mfu_context->atsc3_audio_decoder_configuration_record->sample_rate;
-        }
-    }
-
-    if(packet_id == 201) {
-        extracted_sample_duration_us = 0;
-    }
+    //jjustman-2020-12-01 - TODO - fix me to map with audio configuration record_packet_id from mmtp_packet_id_packets_container
+//    if(packet_id == 200) {
+//        if(atsc3_mmt_mfu_context->atsc3_audio_decoder_configuration_record && atsc3_mmt_mfu_context->atsc3_audio_decoder_configuration_record->sample_rate) {
+//            extracted_sample_duration_us = (extracted_sample_duration_us * atsc3_mmt_mfu_context->atsc3_audio_decoder_configuration_record->timebase) / atsc3_mmt_mfu_context->atsc3_audio_decoder_configuration_record->sample_rate;
+//        }
+//    }
+//
+//    if(packet_id == 201) {
+//        extracted_sample_duration_us = 0;
+//    }
 
     //jjustman-2020-11-18 - HACK - TODO - FIXME
 //    if(packet_id == 200 ) {

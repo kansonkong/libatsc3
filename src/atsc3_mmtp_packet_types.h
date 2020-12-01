@@ -255,11 +255,20 @@ typedef struct mmtp_repair_symbol_packet {
 	_MMTP_PACKET_HEADER_FIELDS;
 } mmtp_repair_symbol_packet_t;
 
+//jjustman-2020-12-01 - forward declare our (atsc3_)video_decoder_configuration_record_t and atsc3_audio_decoder_configuration_record
+typedef struct atsc3_video_decoder_configuration_record atsc3_video_decoder_configuration_record_t;
+typedef struct atsc3_audio_decoder_configuration_record atsc3_audio_decoder_configuration_record_t;
+
+
 typedef struct mmtp_packet_id_packets_container {
     uint16_t            packet_id;
-    
+
+    atsc3_video_decoder_configuration_record_t*     atsc3_video_decoder_configuration_record;
+    atsc3_audio_decoder_configuration_record_t*     atsc3_audio_decoder_configuration_record;
+
+
     ATSC3_VECTOR_BUILDER_STRUCT(mpu_sequence_number_mmtp_mpu_packet_collection);
-    ATSC3_VECTOR_BUILDER_STRUCT(mmtp_signalling_packet); //todo - figure out if this should be first class or overloaded
+    ATSC3_VECTOR_BUILDER_STRUCT(mmtp_signalling_packet);
     
     //others not used in atsc3.0
     ATSC3_VECTOR_BUILDER_STRUCT(mmtp_mpu_nontimed_packet);

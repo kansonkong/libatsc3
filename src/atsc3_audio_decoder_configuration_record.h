@@ -48,10 +48,14 @@ typedef struct atsc3_audio_ac4_sample_entry_box {
 
 typedef struct atsc3_audio_decoder_configuration_record {
 
+    //extracted from moov/init segment
     uint16_t channel_count;
     uint16_t sample_depth;
     uint32_t sample_rate;
     uint32_t timebase;
+
+    //extracted from moof/fragment metadata
+    uint32_t sample_duration;
 
     atsc3_audio_ac4_sample_entry_box_t* atsc3_audio_ac4_sample_entry_box;
 
