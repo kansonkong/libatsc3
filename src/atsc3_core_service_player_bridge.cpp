@@ -1152,41 +1152,15 @@ PPS (Picture Parameter Sets*)
 */
 block_t* __INTERNAL_LAST_NAL_PACKET_TODO_FIXME = NULL;
 
+/*
+ *
+ * track init metadata (i.e. moov)
+ *
+ *      note: see atsc3_mmt_mpu_on_sequence_movie_fragment_metadata_present for movie fragment metadata (moof)
+ */
 void atsc3_mmt_mpu_on_sequence_mpu_metadata_present_ndk(atsc3_mmt_mfu_context_t* atsc3_mmt_mfu_context, uint16_t packet_id, uint32_t mpu_sequence_number, block_t* mmt_mpu_metadata) {
     atsc3_hevc_nals_record_dump("mmt_mpu_metadata", mmt_mpu_metadata);
 
-    //look four our mdhd box
-    bool has_mdhd_box = false;
-    int mdhd_match_index = 0;
-    uint8_t version = 0;
-    uint32_t tr_flags = 0;
-    uint32_t mdhd_timescale = 0;
-    uint8_t* mdhd_ptr = block_Get(mmt_mpu_metadata);
-
-    for (int i = 0; !(has_mdhd_box) && (i < mmt_mpu_metadata->p_size - 4); i++) {
-
-        __ATSC3_CORE_SERVICE_PLAYER_BRIDGE_TRACE("atsc3_avc1_hevc_nal_extractor_parse_from_mpu_metadata_block_t: searching for mdhd, position: %d, checking: 0x%02x (%c), 0x%02x (%c), 0x%02x (%c), 0x%02x (%c)",
-                                                 i, mdhd_ptr[i], mdhd_ptr[i], mdhd_ptr[i + 1], mdhd_ptr[i + 1], mdhd_ptr[i + 2], mdhd_ptr[i + 2], mdhd_ptr[i + 3], mdhd_ptr[i + 3]);
-
-        //look for our fourcc
-        if (mdhd_ptr[i] == 'm' && mdhd_ptr[i + 1] == 'd' && mdhd_ptr[i + 2] == 'h' && mdhd_ptr[i + 3] == 'd') {
-            _ATSC3_HEVC_NAL_EXTRACTOR_DEBUG("atsc3_hevc_nal_extractor_parse_from_mpu_metadata_block_t: mdhd: found matching at position: %d", i);
-            has_mdhd_box = true;
-            mdhd_match_index = i + 4; //start at our version (8 bits) and flags (24 bits)
-
-            version = mdhd_ptr[mdhd_match_index++];
-            if(version==1) {
-                //skip over creation_time (64bit) + modification_time (64bit);
-                mdhd_match_index += 16;
-            } else {
-                mdhd_match_index += 8;
-            }
-
-            mdhd_timescale = ntohl(*(uint32_t*)(&mdhd_ptr[mdhd_match_index]));
-
-            break;
-        }
-    }
 
 
     if (global_video_packet_id && global_video_packet_id == packet_id) {
@@ -1195,7 +1169,7 @@ void atsc3_mmt_mpu_on_sequence_mpu_metadata_present_ndk(atsc3_mmt_mfu_context_t*
 
         //we will get either avc1 (avcC) NAL or hevc (hvcC) nals back
         if (video_decoder_configuration_record) {
-            video_decoder_configuration_record->timebase = mdhd_timescale;
+
             atsc3_mmt_mfu_context->video_decoder_configuration_record = video_decoder_configuration_record;
 
             //set width/height to player
@@ -1223,57 +1197,11 @@ void atsc3_mmt_mpu_on_sequence_mpu_metadata_present_ndk(atsc3_mmt_mfu_context_t*
             }
         }
     } else {
+        atsc3_audio_decoder_configuration_record_t* atsc3_audio_decoder_configuration_record = atsc3_audio_decoder_configuration_record_parse_from_block_t(mmt_mpu_metadata);
+        if(atsc3_audio_decoder_configuration_record) {
+            atsc3_mmt_mfu_context->atsc3_audio_decoder_configuration_record = atsc3_audio_decoder_configuration_record;
+        }
 
-        atsc3_mmt_mfu_context->audio_timebase = mdhd_timescale;
-
-        //jjustman-2020-11-30 - hack
-
-        atsc3_mmt_mfu_context->audio_samplerate = 48000;
-
-        /*
-         * track specific sample rate
-            [stbl] size=8+159
-          [stsd] size=12+79
-            entry-count = 1
-            [mp4a] size=8+67
-              data_reference_index = 1
-              channel_count = 6
-              sample_size = 16
-              sample_rate = 48000
-              [esds] size=12+27
-
-
-         */
-
-
-
-        //extract audio timebase
-        //if audio, dump the ESDS box for android MediaCodec
-
-        /*
-         *
-         *  [mp4a] size=8+67
-              data_reference_index = 1
-              channel_count = 2
-              sample_size = 16
-              sample_rate = 48000
-              [esds] size=12+27
-                [ESDescriptor] size=2+25
-                  es_id = 0
-                  stream_priority = 0
-                  [DecoderConfig] size=2+17
-                    stream_type = 5
-                    object_type = 64
-                    up_stream = 0
-                    buffer_size = 8192
-                    max_bitrate = 128000
-                    avg_bitrate = 128000
-                    DecoderSpecificInfo = 11 90
-                  [Descriptor:06] size=2+1
-
-                  https://wiki.multimedia.cx/index.php/Understanding_AAC
-                  https://developer.android.com/reference/android/media/MediaCodecs
-         */
     }
 }
 
@@ -1510,18 +1438,31 @@ void atsc3_mmt_mpu_on_sequence_movie_fragment_metadata_present_ndk(atsc3_mmt_mfu
         return;
     }
 
-    uint32_t extracted_sample_duration_us = atsc3_mmt_movie_fragment_extract_sample_duration(mmt_movie_fragment_metadata);
+    uint32_t extracted_sample_duration_us = 0;
 
+    extracted_sample_duration_us = atsc3_mmt_movie_fragment_extract_sample_duration(mmt_movie_fragment_metadata);
+
+    //jjustman-2020-12-01 - TODO - fix me to map with audio configuration record_packet_id
     if(packet_id == 200) {
-        extracted_sample_duration_us = (extracted_sample_duration_us * atsc3_mmt_mfu_context->audio_timebase) / atsc3_mmt_mfu_context->audio_samplerate;
+        if(atsc3_mmt_mfu_context->atsc3_audio_decoder_configuration_record && atsc3_mmt_mfu_context->atsc3_audio_decoder_configuration_record->sample_rate) {
+            extracted_sample_duration_us = (extracted_sample_duration_us * atsc3_mmt_mfu_context->atsc3_audio_decoder_configuration_record->timebase) / atsc3_mmt_mfu_context->atsc3_audio_decoder_configuration_record->sample_rate;
+        }
     }
+
     if(packet_id == 201) {
-        return;
+        extracted_sample_duration_us = 0;
     }
+
     //jjustman-2020-11-18 - HACK - TODO - FIXME
 //    if(packet_id == 200 ) {
 //        extracted_sample_duration_us = (1601 * 1000000) / (48000);
 //    }
+
+    if(!extracted_sample_duration_us) {
+        __ATSC3_CORE_SERVICE_PLAYER_BRIDGE_WARN("atsc3_mmt_mpu_on_sequence_movie_fragment_metadata_present_ndk: packet_id: %d, mpu_sequence_number: %d, mmt_movie_fragment_metadata: %p, computed extracted_sample_duration_us was 0!",
+                                                packet_id, mpu_sequence_number, mmt_movie_fragment_metadata);
+        return;
+    }
 
     Atsc3NdkApplicationBridge_ptr->atsc3_onExtractedSampleDuration(packet_id, mpu_sequence_number, extracted_sample_duration_us);
 }

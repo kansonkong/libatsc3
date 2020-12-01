@@ -184,10 +184,13 @@ video_decoder_configuration_record_t *video_decoder_configuration_record_new() {
 #define SPS_NAL_unit_type 33
 #define PPS_NAL_unit_type 34
 
-//process either avcC or hvcC, use video_decoder_configuration_record (containing both avcC and hvcC decoder records)
+/*
+ * process either avcC or hvcC, use video_decoder_configuration_record (containing both avcC and hvcC decoder records)
+   from track init box (moov)
+*/
 
 video_decoder_configuration_record_t* atsc3_avc1_hevc_nal_extractor_parse_from_mpu_metadata_block_t(block_t *mpu_metadata_block) {
-    video_decoder_configuration_record_t* video_decoder_configuration_record = video_decoder_configuration_record_new();
+    atsc3_isobmff_mdhd_box_t* atsc3_isobmff_mdhd_box = NULL;
 
     if (!mpu_metadata_block || mpu_metadata_block->p_size < 8) {
         goto error;
@@ -200,6 +203,18 @@ video_decoder_configuration_record_t* atsc3_avc1_hevc_nal_extractor_parse_from_m
 
     _ATSC3_HEVC_NAL_EXTRACTOR_TRACE("atsc3_avc1_hevc_nal_extractor_parse_from_mpu_metadata_block_t: mpu_metadata_block_t: %p, p_buffer: %p, pos: %d, size: %d", mpu_metadata_block, mpu_metadata_block->p_buffer, mpu_metadata_block->i_pos, mpu_metadata_block->p_size);
 
+    video_decoder_configuration_record_t* video_decoder_configuration_record = video_decoder_configuration_record_new();
+
+    atsc3_isobmff_mdhd_box = atsc3_isobmff_box_parser_tools_parse_mdhd_timescale_from_block_t(mpu_metadata_block);
+    if(atsc3_isobmff_mdhd_box) {
+        if (atsc3_isobmff_mdhd_box->version == 1) {
+            video_decoder_configuration_record->timebase = atsc3_isobmff_mdhd_box->atsc3_isobmff_mdhd_box_v1.timescale;
+        } else if (atsc3_isobmff_mdhd_box->version == 0) {
+            video_decoder_configuration_record->timebase = atsc3_isobmff_mdhd_box->atsc3_isobmff_mdhd_box_v0.timescale;
+        }
+
+        atsc3_isobmff_mdhd_box_free(&atsc3_isobmff_mdhd_box);
+    }
 
     uint8_t *tkhd_ptr = block_Get(mpu_metadata_block);
     bool has_tkhd_match = false;

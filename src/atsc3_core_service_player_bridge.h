@@ -47,6 +47,8 @@ using namespace std;
 #include "atsc3_alc_rx.h"
 #include "atsc3_alp_types.h"
 
+#include "atsc3_audio_decoder_configuration_record.h"
+
 //runtime app interface includes (e.g. I/F for android, etc)
 #include "application/IAtsc3NdkApplicationBridge.h"
 #include "phy/IAtsc3NdkPHYBridge.h"
