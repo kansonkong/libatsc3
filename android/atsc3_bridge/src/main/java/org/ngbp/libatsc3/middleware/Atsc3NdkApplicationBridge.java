@@ -137,6 +137,11 @@ public class Atsc3NdkApplicationBridge extends Atsc3BridgeNdkStaticJniLoader
         return 0;
     }
 
+    int atsc3_on_alc_object_closed(int service_id, int tsi, int toi, String s_tsid_content_location, String s_tsid_content_type, String cache_file_path) {
+        mActivity.onAlcObjectClosed(service_id, tsi, toi, s_tsid_content_location, s_tsid_content_type, cache_file_path);
+        return 0;
+    }
+
     int atsc3_lls_sls_alc_on_package_extract_completed(PackageExtractEnvelopeMetadataAndPayload packageExtractEnvelopeMetadataAndPayload) {
         mActivity.onPackageExtractCompleted(packageExtractEnvelopeMetadataAndPayload);
         return 0;
