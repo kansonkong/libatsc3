@@ -218,7 +218,7 @@ void __internal__atsc3_mmt_signalling_information_on_packet_id_with_mpu_timestam
         atsc3_mmt_mfu_mpu_timestamp_descriptor->mpu_presentation_time_microseconds = mpu_presentation_time_microseconds;
 
         //jjustman-2020-11-19 - make sure to coerce our uS scalar (1000000) as long, otherwise our value will be implicity coerced into (uint32_t) instead of uint64_t 	mpu_presentation_time_as_us_value
-        atsc3_mmt_mfu_mpu_timestamp_descriptor->mpu_presentation_time_as_us_value = mpu_presentation_time_seconds * 1000000L + mpu_presentation_time_microseconds;
+        atsc3_mmt_mfu_mpu_timestamp_descriptor->mpu_presentation_time_as_us_value = (uint64_t)mpu_presentation_time_seconds * (uint64_t)1000000L + (uint64_t)mpu_presentation_time_microseconds;
 
         atsc3_mmt_mfu_mpu_timestamp_descriptor_rolling_window_add_atsc3_mmt_mfu_mpu_timestamp_descriptor(&atsc3_mmt_mfu_context->packet_id_mpu_timestamp_descriptor_window, atsc3_mmt_mfu_mpu_timestamp_descriptor);
 	}
