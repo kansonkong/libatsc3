@@ -50,10 +50,11 @@ void mmt_signalling_message_header_and_payload_free(mmt_signalling_message_heade
 			for(int i=0; i < mmt_signalling_message_header_and_payload->message_payload.mp_table.number_of_assets; i++) {
 				mp_table_asset_row_t* mp_table_asset_row = &mmt_signalling_message_header_and_payload->message_payload.mp_table.mp_table_asset_row[i];
 
-                __MMTP_DEBUG("mmt_signalling_message_header_and_payload_free: i: %d, ptr: %p", i, mp_table_asset_row);
-                atsc3_mmt_mp_table_asset_row_free(&mp_table_asset_row);
+                __MMTP_DEBUG("mmt_signalling_message_header_and_payload_free_inner: i: %d, ptr: %p", i, mp_table_asset_row);
+                atsc3_mmt_mp_table_asset_row_free_inner(mp_table_asset_row);
     		}
 
+			//since mp_table_asset_row is allocated as calloc(numAssets, sizeof(mp_table_asset_row_t)), we can only do one free()
 			free(mmt_signalling_message_header_and_payload->message_payload.mp_table.mp_table_asset_row);
 			mmt_signalling_message_header_and_payload->message_payload.mp_table.mp_table_asset_row = NULL;
 
@@ -166,42 +167,37 @@ mp_table_asset_row_t* atsc3_mmt_mp_table_asset_row_duplicate(const mp_table_asse
     return mp_table_asset_row_dst;
 }
 
-void atsc3_mmt_mp_table_asset_row_free(mp_table_asset_row_t** mp_table_asset_row_p) {
-    if(mp_table_asset_row_p) {
-        mp_table_asset_row_t *mp_table_asset_row = *mp_table_asset_row_p;
+/*
+ * jjustman-2020-12-02 - since mp_table_asset_row is allocated as calloc(numAssets, sizeof(mp_table_asset_row_t)), we can only do one free()
+ */
+void atsc3_mmt_mp_table_asset_row_free_inner(mp_table_asset_row_t* mp_table_asset_row) {
 
-        if (mp_table_asset_row) {
-            if (mp_table_asset_row->identifier_mapping.identifier_type == 0x00) {
-                if (mp_table_asset_row->identifier_mapping.asset_id.asset_id) { //mp_table_asset_row->identifier_mapping.asset_id.asset_id_length
-                    mp_table_asset_row->identifier_mapping.asset_id.asset_id_length = 0;
-                    free(mp_table_asset_row->identifier_mapping.asset_id.asset_id);
-                    mp_table_asset_row->identifier_mapping.asset_id.asset_id = NULL;
-                }
-            } else {
-                __MMTP_WARN("atsc3_mmt_mp_table_asset_row_free: TODO: cleanup mp_table_asset_row->identifier_mapping.identifier_type: 0x%02x instance", mp_table_asset_row->identifier_mapping.identifier_type);
+    if (mp_table_asset_row) {
+        if (mp_table_asset_row->identifier_mapping.identifier_type == 0x00) {
+            if (mp_table_asset_row->identifier_mapping.asset_id.asset_id) { //mp_table_asset_row->identifier_mapping.asset_id.asset_id_length
+                mp_table_asset_row->identifier_mapping.asset_id.asset_id_length = 0;
+                free(mp_table_asset_row->identifier_mapping.asset_id.asset_id);
+                mp_table_asset_row->identifier_mapping.asset_id.asset_id = NULL;
             }
-
-            __MMTP_DEBUG("mmt_signalling_message_header_and_payload_free: mmt_signalling_message_mpu_timestamp_descriptor: %p", mp_table_asset_row->mmt_signalling_message_mpu_timestamp_descriptor);
-
-            if (mp_table_asset_row->mmt_signalling_message_mpu_timestamp_descriptor) {
-                if (mp_table_asset_row->mmt_signalling_message_mpu_timestamp_descriptor->mpu_tuple) {
-                    free(mp_table_asset_row->mmt_signalling_message_mpu_timestamp_descriptor->mpu_tuple);
-                    mp_table_asset_row->mmt_signalling_message_mpu_timestamp_descriptor->mpu_tuple = NULL;
-                }
-                free(mp_table_asset_row->mmt_signalling_message_mpu_timestamp_descriptor);
-                mp_table_asset_row->mmt_signalling_message_mpu_timestamp_descriptor = NULL;
-            }
-
-            if (mp_table_asset_row->asset_descriptors_payload) { //mp_table_asset_row->asset_descriptors_length?
-                mp_table_asset_row->asset_descriptors_length = 0;
-                free(mp_table_asset_row->asset_descriptors_payload);
-                mp_table_asset_row->asset_descriptors_payload = NULL;
-            }
-
-            free(mp_table_asset_row);
-            mp_table_asset_row = NULL;
-
+        } else {
+            __MMTP_WARN("atsc3_mmt_mp_table_asset_row_free: TODO: cleanup mp_table_asset_row->identifier_mapping.identifier_type: 0x%02x instance", mp_table_asset_row->identifier_mapping.identifier_type);
         }
-        *mp_table_asset_row_p = NULL;
+
+        __MMTP_DEBUG("mmt_signalling_message_header_and_payload_free: mmt_signalling_message_mpu_timestamp_descriptor: %p", mp_table_asset_row->mmt_signalling_message_mpu_timestamp_descriptor);
+
+        if (mp_table_asset_row->mmt_signalling_message_mpu_timestamp_descriptor) {
+            if (mp_table_asset_row->mmt_signalling_message_mpu_timestamp_descriptor->mpu_tuple) {
+                free(mp_table_asset_row->mmt_signalling_message_mpu_timestamp_descriptor->mpu_tuple);
+                mp_table_asset_row->mmt_signalling_message_mpu_timestamp_descriptor->mpu_tuple = NULL;
+            }
+            free(mp_table_asset_row->mmt_signalling_message_mpu_timestamp_descriptor);
+            mp_table_asset_row->mmt_signalling_message_mpu_timestamp_descriptor = NULL;
+        }
+
+        if (mp_table_asset_row->asset_descriptors_payload) { //mp_table_asset_row->asset_descriptors_length?
+            mp_table_asset_row->asset_descriptors_length = 0;
+            free(mp_table_asset_row->asset_descriptors_payload);
+            mp_table_asset_row->asset_descriptors_payload = NULL;
+        }
     }
 }

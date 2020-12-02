@@ -10,11 +10,11 @@ int _ATSC3_MMT_MFU_CONTEXT_CALLBACKS_DEFAULT_JNI_INFO_ENABLED = 0;
 int _ATSC3_MMT_MFU_CONTEXT_CALLBACKS_DEFAULT_JNI_DEBUG_ENABLED = 0;
 int _ATSC3_MMT_MFU_CONTEXT_CALLBACKS_DEFAULT_JNI_TRACE_ENABLED = 0;
 
+//only local inclusion
+static lls_sls_mmt_monitor_t* lls_sls_mmt_monitor = NULL;
+static atsc3_mmt_mfu_context_t* atsc3_mmt_mfu_context = NULL;
 
-lls_sls_mmt_monitor_t* lls_sls_mmt_monitor = NULL;
-atsc3_mmt_mfu_context_t* atsc3_mmt_mfu_context = NULL;
-
-uint32_t global_mfu_proccessed_count = 0;
+static uint32_t global_mfu_proccessed_count = 0;
 
 void atsc3_ndk_media_mmt_bridge_init(IAtsc3NdkMediaMMTBridge* atsc3NdkMediaMMTBridge) {
     Atsc3NdkMediaMMTBridge_ptr = atsc3NdkMediaMMTBridge;
