@@ -7,7 +7,6 @@
 #ifndef ATSC3_VIDEO_DECODER_CONFIGURATION_RECORD_H_
 #define ATSC3_VIDEO_DECODER_CONFIGURATION_RECORD_H_
 
-
 #include "atsc3_logging_externs.h"
 #include "atsc3_vector_builder.h"
 #include "atsc3_isobmff_box_parser_tools.h"
@@ -15,8 +14,6 @@
 #ifdef __cplusplus
 extern "C" {
 #endif
-
-
 
 //video parameter set
 typedef struct atsc3_nal_unit_vps {

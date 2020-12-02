@@ -158,8 +158,9 @@ typedef struct identifier_mapping {
 
 	//if(identifier_type == 0x00)
 	asset_id_t 		asset_id;
-	//else if type == 0x01
 
+	//else if type == 0x01
+	//jjustman-2020-12-02 - TODO - refactor this to vector
 	uint16_t		url_count;
 	url_length_t*	url_length_list;
 
@@ -219,6 +220,9 @@ typedef struct mmt_signaling_message_mpu_timestamp_descriptor {
 #define ATSC3_MP_TABLE_ASSET_ROW_MP4A_ID "mp4a"
 #define ATSC3_MP_TABLE_ASSET_ROW_AC_4_ID "ac-4"
 
+#define ATSC3_MP_TABLE_ASSET_ROW_H264_ID "avc1"
+
+
 //jjustman-2020-01-08 - adding in MPEG-H mime type support - Thanks Stefan!
 /*
  * ATSC A/342-3:2017
@@ -244,28 +248,29 @@ typedef struct mmt_signaling_message_mpu_timestamp_descriptor {
 #define ATSC3_MP_TABLE_ASSET_ROW_IMSC1_ID "stpp" //MPEG- 4 Part 30 (ISO/IEC 14496-30) defines a way to carry IMSC1-conformat TTM XML in MP4 tracks. Those tracks have a codec 4-character code of stpp.
 
 typedef struct mp_table_asset_row {
-	identifier_mapping_t identifier_mapping;
+	identifier_mapping_t            identifier_mapping;
 
 	//identifer_mapping()
-	char		asset_type[5]; //leave null pad
+	char		                    asset_type[5];          //asset_type – provides the type of Asset. This is described in a four character code (“4CC”) type registered in MP4REG (http://www.mp4ra.org).
+	                                                        // leave null pad
 	//6 bits reserved
-	uint8_t		default_asset_flag;
+	uint8_t		                    default_asset_flag;
 
-	uint8_t		asset_clock_relation_flag;
-	uint8_t		asset_clock_relation_id;
+	uint8_t		                    asset_clock_relation_flag;
+	uint8_t		                    asset_clock_relation_id;
 	//7bits reserved
-	uint8_t		asset_timescale_flag;
-	uint32_t	asset_timescale;
+	uint8_t		                    asset_timescale_flag;
+	uint32_t	                    asset_timescale;
 
 	//asset_location (
-	uint8_t		location_count;
-	mmt_general_location_info_t mmt_general_location_info;
+	uint8_t		                    location_count;
+	mmt_general_location_info_t     mmt_general_location_info;
     
 	//asset_descriptors (
-	uint16_t	asset_descriptors_length;
-	uint8_t*	asset_descriptors_payload;
+	uint16_t	                    asset_descriptors_length;
+	uint8_t*	                    asset_descriptors_payload;
     
-    mmt_signalling_message_mpu_timestamp_descriptor_t* mmt_signalling_message_mpu_timestamp_descriptor;
+    mmt_signalling_message_mpu_timestamp_descriptor_t*      mmt_signalling_message_mpu_timestamp_descriptor;
 } mp_table_asset_row_t;
 
 typedef struct mp_table {
@@ -342,6 +347,7 @@ typedef struct mmt_scte35_message_payload {
 
 	ATSC3_VECTOR_BUILDER_STRUCT(mmt_scte35_signal_descriptor)
 } mmt_scte35_message_payload_t;
+
 ATSC3_VECTOR_BUILDER_METHODS_INTERFACE(mmt_scte35_message_payload, mmt_scte35_signal_descriptor);
 
 /*..fix me..*/
@@ -359,6 +365,9 @@ typedef struct mmt_signalling_message_header_and_payload {
 
 
 void mmt_signalling_message_header_and_payload_free(mmt_signalling_message_header_and_payload_t**);
+
+mp_table_asset_row_t* atsc3_mmt_mp_table_asset_row_duplicate(const mp_table_asset_row_t* mp_table_asset_row);
+void atsc3_mmt_mp_table_asset_row_free(mp_table_asset_row_t** mp_table_asset_row_p);
 
 
 #if defined (__cplusplus)
