@@ -158,6 +158,13 @@ void Atsc3NdkApplicationBridge::atsc3_onAlcObjectClosed(uint16_t service_id, uin
 int Atsc3NdkApplicationBridge::pinConsumerThreadAsNeeded() {
     _NDK_APPLICATION_BRIDGE_INFO("Atsc3NdkApplicationBridge::pinConsumerThreadAsNeeded: mJavaVM: %p", mJavaVM);
     bridgeConsumerJniEnv = new Atsc3JniEnv(mJavaVM);
+
+    //hack
+    IAtsc3NdkMediaMMTBridge* iAtsc3NdkMediaMMTBridge = atsc3_ndk_media_mmt_bridge_get_instance();
+    if(iAtsc3NdkMediaMMTBridge) {
+        iAtsc3NdkMediaMMTBridge->pinConsumerThreadAsNeeded();
+    }
+
     return 0;
 }
 
@@ -166,6 +173,13 @@ int Atsc3NdkApplicationBridge::releasePinnedConsumerThreadAsNeeded() {
     if(bridgeConsumerJniEnv) {
         delete bridgeConsumerJniEnv;
     }
+
+    //hack
+    IAtsc3NdkMediaMMTBridge* iAtsc3NdkMediaMMTBridge = atsc3_ndk_media_mmt_bridge_get_instance();
+    if(iAtsc3NdkMediaMMTBridge) {
+        iAtsc3NdkMediaMMTBridge->releasePinnedConsumerThreadAsNeeded();
+    }
+
     return 0;
 }
 
@@ -688,9 +702,6 @@ Java_org_ngbp_libatsc3_middleware_Atsc3NdkApplicationBridge_init(JNIEnv *env, jo
     _NDK_APPLICATION_BRIDGE_TRACE("Atsc3NdkApplicationBridge_init: creating method ref for apiAppBridge->jni_java_util_ArrayList_cctor");
     apiAppBridge->jni_java_util_ArrayList_add  = env->GetMethodID(apiAppBridge->jni_java_util_ArrayList, "add", "(Ljava/lang/Object;)Z");
     _NDK_APPLICATION_BRIDGE_TRACE("Atsc3NdkApplicationBridge_init: creating method ref for  apiAppBridge->jni_java_util_ArrayList_add");
-
-
-
 
     atsc3_core_service_application_bridge_init(apiAppBridge);
     _NDK_APPLICATION_BRIDGE_INFO("Atsc3NdkApplicationBridge_init: done, with apiAppBridge: %p", apiAppBridge);

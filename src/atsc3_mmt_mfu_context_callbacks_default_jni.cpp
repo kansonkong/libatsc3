@@ -26,6 +26,10 @@ void atsc3_ndk_media_mmt_bridge_init(IAtsc3NdkMediaMMTBridge* atsc3NdkMediaMMTBr
 
 }
 
+IAtsc3NdkMediaMMTBridge* atsc3_ndk_media_mmt_bridge_get_instance() {
+    return Atsc3NdkMediaMMTBridge_ptr;
+}
+
 void atsc3_ndk_media_mmt_bridge_reset_context() {
 
     if(atsc3_mmt_mfu_context) {
