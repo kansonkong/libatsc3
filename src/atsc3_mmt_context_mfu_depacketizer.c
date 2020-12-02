@@ -307,6 +307,10 @@ atsc3_mmt_mfu_mpu_timestamp_descriptor_t* atsc3_get_mpu_timestamp_from_packet_id
 atsc3_mmt_mfu_context_t* atsc3_mmt_mfu_context_new() {
 	atsc3_mmt_mfu_context_t* atsc3_mmt_mfu_context = calloc(1, sizeof(atsc3_mmt_mfu_context_t));
 
+	//internal data structs
+    atsc3_mmt_mfu_context->mmtp_flow = mmtp_flow_new();
+    atsc3_mmt_mfu_context->udp_flow_latest_mpu_sequence_number_container = udp_flow_latest_mpu_sequence_number_container_t_init();
+
 	//internal related callbacks
 	atsc3_mmt_mfu_context->__internal__atsc3_mmt_signalling_information_on_packet_id_with_mpu_timestamp_descriptor = &__internal__atsc3_mmt_signalling_information_on_packet_id_with_mpu_timestamp_descriptor;
 
@@ -393,16 +397,15 @@ void atsc3_mmt_mfu_context_free(atsc3_mmt_mfu_context_t** atsc3_mmt_mfu_context_
     }
 }
 
-mmtp_asset_t* atsc3_mmt_mfu_context_mfu_depacketizer_context_update_find_or_create_mmtp_asset(atsc3_mmt_mfu_context_t* atsc3_mmt_mfu_context, udp_packet_t* udp_packet, mmtp_flow_t* mmtp_flow, lls_slt_monitor_t* lls_slt_monitor, lls_sls_mmt_session_t* matching_lls_sls_mmt_session) {
+mmtp_asset_t* atsc3_mmt_mfu_context_mfu_depacketizer_context_update_find_or_create_mmtp_asset(atsc3_mmt_mfu_context_t* atsc3_mmt_mfu_context, udp_packet_t* udp_packet, lls_slt_monitor_t* lls_slt_monitor, lls_sls_mmt_session_t* matching_lls_sls_mmt_session) {
     mmtp_asset_flow_t* mmtp_asset_flow = NULL;
     mmtp_asset_t* mmtp_asset = NULL;
 
     atsc3_mmt_mfu_context->udp_flow = &udp_packet->udp_flow;
-    atsc3_mmt_mfu_context->mmtp_flow = mmtp_flow;
     atsc3_mmt_mfu_context->lls_slt_monitor = lls_slt_monitor;
     atsc3_mmt_mfu_context->matching_lls_sls_mmt_session = matching_lls_sls_mmt_session;
 
-    mmtp_asset_flow = mmtp_flow_find_or_create_from_udp_packet(mmtp_flow, udp_packet);
+    mmtp_asset_flow = mmtp_flow_find_or_create_from_udp_packet(atsc3_mmt_mfu_context->mmtp_flow, udp_packet);
     atsc3_mmt_mfu_context->mmtp_asset_flow = mmtp_asset_flow;
 
     mmtp_asset = mmtp_asset_flow_find_or_create_asset_from_lls_sls_mmt_session(mmtp_asset_flow, matching_lls_sls_mmt_session);
@@ -979,6 +982,7 @@ void mmtp_mfu_rebuild_from_packet_id_mpu_sequence_number(atsc3_mmt_mfu_context_t
                 mmtp_mpu_init_packet_to_rebuild->mfu_reassembly_performed = true;
 
                 block_t *du_movie_fragment_block_duplicated_for_context_callback_invocation = block_Duplicate(mmtp_mpu_init_packet_to_rebuild->du_movie_fragment_block);
+                block_Rewind(du_movie_fragment_block_duplicated_for_context_callback_invocation);
                 atsc3_mmt_mfu_context->atsc3_mmt_mpu_on_sequence_movie_fragment_metadata_present(atsc3_mmt_mfu_context, mmtp_mpu_init_packet_to_rebuild->mmtp_packet_id, mmtp_mpu_init_packet_to_rebuild->mpu_sequence_number, du_movie_fragment_block_duplicated_for_context_callback_invocation);
                 block_Destroy(&du_movie_fragment_block_duplicated_for_context_callback_invocation);
             } else if (mmtp_mpu_init_packet_to_rebuild->mpu_fragmentation_indicator == 0x03) {
@@ -1326,6 +1330,7 @@ uint32_t atsc3_mmt_movie_fragment_extract_sample_duration_us(block_t* mmt_movie_
         atsc3_isobmff_trun_box = atsc3_isobmff_box_parser_tools_parse_trun_from_block_t(mmt_movie_fragment_metadata);
         if(atsc3_isobmff_trun_box->flag_sample_duration_present && atsc3_isobmff_trun_box->sample_count) {
             //grab the first sample here
+            sample_duration_unrebased = atsc3_isobmff_trun_box->sample_duration;
         }
     }
 
