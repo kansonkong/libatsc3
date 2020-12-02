@@ -157,35 +157,6 @@ void atsc3_core_service_phy_bridge_init(IAtsc3NdkPHYBridge* atsc3NdkPHYBridge) {
 	}
 }
 
-//A/330 LMT management
-mmtp_packet_header_t*  mmtp_parse_header_from_udp_packet(udp_packet_t* udp_packet) {
-
-    mmtp_packet_header_t* mmtp_packet_header = mmtp_packet_header_parse_from_block_t(udp_packet->data);
-
-    if(!mmtp_packet_header) {
-        __ATSC3_CORE_SERVICE_PLAYER_BRIDGE_ERROR("mmtp_parse_header_from_udp_packet: mmtp_packet_header_parse_from_block_t: raw packet ptr is null, parsing failed for flow: %d.%d.%d.%d:(%-10u):%-5u \t ->  %d.%d.%d.%d:(%-10u):%-5u ",
-                __toipandportnonstruct(udp_packet->udp_flow.src_ip_addr, udp_packet->udp_flow.src_port),
-                udp_packet->udp_flow.src_ip_addr,
-                __toipandportnonstruct(udp_packet->udp_flow.dst_ip_addr, udp_packet->udp_flow.dst_port),
-                udp_packet->udp_flow.dst_ip_addr);
-        return NULL;
-    }
-
-    return mmtp_packet_header;
-}
-
-void mmtp_process_sls_from_payload(udp_packet_t *udp_packet, mmtp_signalling_packet_t* mmtp_signalling_packet, lls_sls_mmt_session_t* matching_lls_slt_mmt_session) {
-
-    __ATSC3_CORE_SERVICE_PLAYER_BRIDGE_INFO("mmtp_process_sls_from_payload: processing mmt flow: %d.%d.%d.%d:(%u) packet_id: %d, signalling message: %p",
-           __toipandportnonstruct(udp_packet->udp_flow.dst_ip_addr, udp_packet->udp_flow.dst_port),
-           mmtp_signalling_packet->mmtp_packet_id,
-           mmtp_signalling_packet);
-
-    mmt_signalling_message_dump(mmtp_signalling_packet);
-}
-
-
-
 atsc3_slt_broadcast_svc_signalling_t* atsc3_slt_broadcast_svc_signalling_find_from_service_id(uint16_t service_id) {
     atsc3_slt_broadcast_svc_signalling_t* atsc3_slt_broadcast_svc_signalling = NULL;
 
@@ -253,7 +224,7 @@ atsc3_slt_broadcast_svc_signalling_t* atsc3_phy_add_plp_listener_from_service_id
 
                         if(atsc3_link_mapping_table_multicast->dst_ip_add == sls_destination_ip_address &&
                            atsc3_link_mapping_table_multicast->dst_udp_port == sls_destination_udp_port) {
-                            Atsc3NdkApplicationBridge_ptr->LogMsgF("atsc3_phy_mmt_player_bridge_set_single_monitor_a331_service_id: SLS adding PLP_id: %d (%s: %s)",
+                            Atsc3NdkApplicationBridge_ptr->LogMsgF("atsc3_core_service_player_bridge_set_single_monitor_a331_service_id: SLS adding PLP_id: %d (%s: %s)",
                                                                    atsc3_link_mapping_table_plp->PLP_ID,
                                                                    atsc3_slt_broadcast_svc_signalling->sls_destination_ip_address,
                                                                    atsc3_slt_broadcast_svc_signalling->sls_destination_udp_port);
@@ -291,7 +262,7 @@ atsc3_slt_broadcast_svc_signalling_t* atsc3_phy_add_plp_listener_from_service_id
 /*
  * jjustman-2020-11-18 - TODO: refactor this to avoid juggling lls_slt_monitor and sls_alc and sls_mmt monitors
  */
-atsc3_lls_slt_service_t* atsc3_phy_mmt_player_bridge_set_single_monitor_a331_service_id(int service_id) {
+atsc3_lls_slt_service_t* atsc3_core_service_player_bridge_set_single_monitor_a331_service_id(int service_id) {
     lock_guard<recursive_mutex> atsc3_core_service_player_bridge_context_mutex_local(atsc3_core_service_player_bridge_context_mutex);
 
     //clear out our lls_slt_monitor->lls_slt_service_id
@@ -301,18 +272,18 @@ atsc3_lls_slt_service_t* atsc3_phy_mmt_player_bridge_set_single_monitor_a331_ser
 
     atsc3_lls_slt_service_t* atsc3_lls_slt_service = lls_slt_monitor_find_lls_slt_service_id_group_id_cache_entry(lls_slt_monitor, service_id);
     if(!atsc3_lls_slt_service) {
-        __ATSC3_CORE_SERVICE_PLAYER_BRIDGE_ERROR("atsc3_phy_mmt_player_bridge_set_a331_service_id: unable to find service_id: %d", service_id);
+        __ATSC3_CORE_SERVICE_PLAYER_BRIDGE_ERROR("atsc3_core_service_player_bridge_set_single_monitor_a331_service_id: unable to find service_id: %d", service_id);
         return NULL;
     }
 
-    __ATSC3_CORE_SERVICE_PLAYER_BRIDGE_INFO("atsc3_phy_mmt_player_bridge_set_a331_service_id: with service_id: %d", service_id);
+    __ATSC3_CORE_SERVICE_PLAYER_BRIDGE_INFO("atsc3_core_service_player_bridge_set_single_monitor_a331_service_id: with service_id: %d", service_id);
 
     //find our PLP from LMT with our slt_broadcast_svc_signalling ip/port to update PHY
     atsc3_slt_broadcast_svc_signalling_t* atsc3_slt_broadcast_svc_signalling_plp_selection_changed = NULL;
     atsc3_slt_broadcast_svc_signalling_plp_selection_changed = atsc3_phy_add_plp_listener_from_service_id(service_id);
 
     if(!atsc3_slt_broadcast_svc_signalling_plp_selection_changed) {
-        __ATSC3_CORE_SERVICE_PLAYER_BRIDGE_WARN("atsc3_phy_mmt_player_bridge_set_a331_service_id: atsc3_phy_add_plp_listener_from_service_id: unable to find LMT mapping for service_id: %d, acquisition may fail!", service_id);
+        __ATSC3_CORE_SERVICE_PLAYER_BRIDGE_WARN("atsc3_core_service_player_bridge_set_single_monitor_a331_service_id: atsc3_phy_add_plp_listener_from_service_id: unable to find LMT mapping for service_id: %d, acquisition may fail!", service_id);
     }
 
     //find our matching LLS service, then assign a monitor reference
@@ -322,7 +293,7 @@ atsc3_lls_slt_service_t* atsc3_phy_mmt_player_bridge_set_single_monitor_a331_ser
 
     atsc3_slt_broadcast_svc_signalling = atsc3_slt_broadcast_svc_signalling_find_from_service_id(service_id);
     if(!atsc3_slt_broadcast_svc_signalling) {
-        __ATSC3_CORE_SERVICE_PLAYER_BRIDGE_ERROR("atsc3_phy_mmt_player_bridge_set_a331_service_id: atsc3_slt_broadcast_svc_signalling_find_from_service_id: unable to find atsc3_slt_broadcast_svc_signalling_t for service_id: %d", service_id);
+        __ATSC3_CORE_SERVICE_PLAYER_BRIDGE_ERROR("atsc3_core_service_player_bridge_set_single_monitor_a331_service_id: atsc3_slt_broadcast_svc_signalling_find_from_service_id: unable to find atsc3_slt_broadcast_svc_signalling_t for service_id: %d", service_id);
         return NULL;
     }
 
@@ -334,7 +305,7 @@ atsc3_lls_slt_service_t* atsc3_phy_mmt_player_bridge_set_single_monitor_a331_ser
 
     //wire up MMT, watch out for potentally free'd sessions that aren't NULL'd out properly..
     if(atsc3_slt_broadcast_svc_signalling_mmt != NULL) {
-        __ATSC3_CORE_SERVICE_PLAYER_BRIDGE_INFO("atsc3_phy_mmt_player_bridge_set_a331_service_id: service_id: %d - using MMT with flow: sip: %s, dip: %s:%s",
+        __ATSC3_CORE_SERVICE_PLAYER_BRIDGE_INFO("atsc3_core_service_player_bridge_set_single_monitor_a331_service_id: service_id: %d - using MMT with flow: sip: %s, dip: %s:%s",
                service_id,
                atsc3_slt_broadcast_svc_signalling_mmt->sls_source_ip_address,
                atsc3_slt_broadcast_svc_signalling_mmt->sls_destination_ip_address,
@@ -359,7 +330,7 @@ atsc3_lls_slt_service_t* atsc3_phy_mmt_player_bridge_set_single_monitor_a331_ser
         lls_sls_mmt_session_t* lls_sls_mmt_session = lls_slt_mmt_session_find_from_service_id(lls_slt_monitor, atsc3_lls_slt_service->service_id);
 
         if(!lls_sls_mmt_session) {
-            __ATSC3_CORE_SERVICE_PLAYER_BRIDGE_WARN("lls_slt_mmt_session_find_from_service_id: lls_sls_mmt_session is NULL!");
+            __ATSC3_CORE_SERVICE_PLAYER_BRIDGE_WARN("atsc3_core_service_player_bridge_set_single_monitor_a331_service_id: lls_slt_mmt_session_find_from_service_id: lls_sls_mmt_session is NULL!");
         }
         lls_sls_mmt_monitor->lls_mmt_session = lls_sls_mmt_session;
         lls_slt_monitor->lls_sls_mmt_monitor = lls_sls_mmt_monitor;
@@ -375,7 +346,7 @@ atsc3_lls_slt_service_t* atsc3_phy_mmt_player_bridge_set_single_monitor_a331_ser
 
     //wire up ROUTE
     if(atsc3_slt_broadcast_svc_signalling_route != NULL) {
-        __ATSC3_CORE_SERVICE_PLAYER_BRIDGE_INFO("atsc3_phy_mmt_player_bridge_set_a331_service_id: service_id: %d - using ROUTE with flow: sip: %s, dip: %s:%s",
+        __ATSC3_CORE_SERVICE_PLAYER_BRIDGE_INFO("atsc3_core_service_player_bridge_set_single_monitor_a331_service_id: service_id: %d - using ROUTE with flow: sip: %s, dip: %s:%s",
                service_id,
                atsc3_slt_broadcast_svc_signalling_route->sls_source_ip_address,
                atsc3_slt_broadcast_svc_signalling_route->sls_destination_ip_address,
@@ -393,7 +364,7 @@ atsc3_lls_slt_service_t* atsc3_phy_mmt_player_bridge_set_single_monitor_a331_ser
 
         lls_sls_alc_session_t* lls_sls_alc_session = lls_slt_alc_session_find_from_service_id(lls_slt_monitor, atsc3_lls_slt_service->service_id);
         if(!lls_sls_alc_session) {
-            __ATSC3_CORE_SERVICE_PLAYER_BRIDGE_WARN("lls_slt_alc_session_find_from_service_id: lls_sls_alc_session is NULL!");
+            __ATSC3_CORE_SERVICE_PLAYER_BRIDGE_WARN("atsc3_core_service_player_bridge_set_single_monitor_a331_service_id: lls_slt_alc_session_find_from_service_id: lls_sls_alc_session is NULL!");
         }
         lls_sls_alc_monitor->lls_alc_session = lls_sls_alc_session;
         lls_slt_monitor->lls_sls_alc_monitor = lls_sls_alc_monitor;
@@ -425,16 +396,16 @@ atsc3_lls_slt_service_t* atsc3_phy_mmt_player_bridge_set_single_monitor_a331_ser
     return atsc3_lls_slt_service;
 }
 //jjustman-2020-11-17 - todo: add in additional PLP listener for this service (e.g. for ESG service acquisition)
-atsc3_lls_slt_service_t* atsc3_phy_mmt_player_bridge_add_monitor_a331_service_id(int service_id) {
+atsc3_lls_slt_service_t* atsc3_core_service_player_bridge_add_monitor_a331_service_id(int service_id) {
     lls_sls_alc_monitor_t* lls_sls_alc_monitor_to_add = NULL;
 
     lock_guard<recursive_mutex> atsc3_core_service_player_bridge_context_mutex_local(atsc3_core_service_player_bridge_context_mutex);
 
-    __ATSC3_CORE_SERVICE_PLAYER_BRIDGE_INFO("atsc3_phy_mmt_player_bridge_add_monitor_a331_service_id: with service_id: %d", service_id);
+    __ATSC3_CORE_SERVICE_PLAYER_BRIDGE_INFO("atsc3_core_service_player_bridge_add_monitor_a331_service_id: with service_id: %d", service_id);
 
     atsc3_lls_slt_service_t* atsc3_lls_slt_service = lls_slt_monitor_find_lls_slt_service_id_group_id_cache_entry(lls_slt_monitor, service_id);
     if(!atsc3_lls_slt_service) {
-        __ATSC3_CORE_SERVICE_PLAYER_BRIDGE_ERROR("atsc3_phy_mmt_player_bridge_add_monitor_a331_service_id: unable to find service_id: %d", service_id);
+        __ATSC3_CORE_SERVICE_PLAYER_BRIDGE_ERROR("atsc3_core_service_player_bridge_add_monitor_a331_service_id: unable to find service_id: %d", service_id);
         return NULL;
     }
 
@@ -443,7 +414,7 @@ atsc3_lls_slt_service_t* atsc3_phy_mmt_player_bridge_add_monitor_a331_service_id
     atsc3_slt_broadcast_svc_signalling_plp_selection_changed = atsc3_phy_add_plp_listener_from_service_id(service_id);
 
     if(!atsc3_slt_broadcast_svc_signalling_plp_selection_changed) {
-        __ATSC3_CORE_SERVICE_PLAYER_BRIDGE_WARN("atsc3_phy_mmt_player_bridge_add_monitor_a331_service_id: atsc3_phy_add_plp_listener_from_service_id: unable to find LMT mapping for service_id: %d, acquisition may fail!", service_id);
+        __ATSC3_CORE_SERVICE_PLAYER_BRIDGE_WARN("atsc3_core_service_player_bridge_add_monitor_a331_service_id: atsc3_phy_add_plp_listener_from_service_id: unable to find LMT mapping for service_id: %d, acquisition may fail!", service_id);
     }
 
     //find our matching LLS service, then assign a monitor reference
@@ -451,11 +422,11 @@ atsc3_lls_slt_service_t* atsc3_phy_mmt_player_bridge_add_monitor_a331_service_id
 
     atsc3_slt_broadcast_svc_signalling_route_to_add_monitor = atsc3_slt_broadcast_svc_signalling_find_from_service_id(service_id);
     if(!atsc3_slt_broadcast_svc_signalling_route_to_add_monitor) {
-        __ATSC3_CORE_SERVICE_PLAYER_BRIDGE_ERROR("atsc3_phy_mmt_player_bridge_add_monitor_a331_service_id: atsc3_slt_broadcast_svc_signalling_find_from_service_id: unable to find atsc3_slt_broadcast_svc_signalling_route_to_add_monitor for service_id: %d", service_id);
+        __ATSC3_CORE_SERVICE_PLAYER_BRIDGE_ERROR("atsc3_core_service_player_bridge_add_monitor_a331_service_id: atsc3_slt_broadcast_svc_signalling_find_from_service_id: unable to find atsc3_slt_broadcast_svc_signalling_route_to_add_monitor for service_id: %d", service_id);
         return NULL;
     }
 
-    __ATSC3_CORE_SERVICE_PLAYER_BRIDGE_INFO("atsc3_phy_mmt_player_bridge_add_monitor_a331_service_id: service_id: %d - adding ROUTE with flow: sip: %s, dip: %s:%s",
+    __ATSC3_CORE_SERVICE_PLAYER_BRIDGE_INFO("atsc3_core_service_player_bridge_add_monitor_a331_service_id: service_id: %d - adding ROUTE with flow: sip: %s, dip: %s:%s",
            service_id,
            atsc3_slt_broadcast_svc_signalling_route_to_add_monitor->sls_source_ip_address,
            atsc3_slt_broadcast_svc_signalling_route_to_add_monitor->sls_destination_ip_address,
@@ -472,7 +443,7 @@ atsc3_lls_slt_service_t* atsc3_phy_mmt_player_bridge_add_monitor_a331_service_id
 
     lls_sls_alc_session_t* lls_sls_alc_session = lls_slt_alc_session_find_from_service_id(lls_slt_monitor, atsc3_lls_slt_service->service_id);
     if(!lls_sls_alc_session) {
-        __ATSC3_CORE_SERVICE_PLAYER_BRIDGE_WARN("lls_slt_alc_session_find_from_service_id: %d, lls_sls_alc_session is NULL!", service_id);
+        __ATSC3_CORE_SERVICE_PLAYER_BRIDGE_WARN("atsc3_core_service_player_bridge_add_monitor_a331_service_id: lls_slt_alc_session_find_from_service_id: %d, lls_sls_alc_session is NULL!", service_id);
         return NULL;
     }
     lls_sls_alc_monitor_to_add->lls_alc_session = lls_sls_alc_session;
@@ -491,11 +462,11 @@ atsc3_lls_slt_service_t* atsc3_phy_mmt_player_bridge_add_monitor_a331_service_id
     return atsc3_lls_slt_service;
 }
 
-atsc3_lls_slt_service_t* atsc3_phy_mmt_player_bridge_remove_monitor_a331_service_id(int service_id) {
+atsc3_lls_slt_service_t* atsc3_core_service_player_bridge_remove_monitor_a331_service_id(int service_id) {
     lock_guard<recursive_mutex> atsc3_core_service_player_bridge_context_mutex_local(atsc3_core_service_player_bridge_context_mutex);
 
     if(!lls_slt_monitor->lls_sls_alc_monitor || !lls_slt_monitor->lls_sls_alc_monitor_v.count) {
-        __ATSC3_CORE_SERVICE_PLAYER_BRIDGE_ERROR("atsc3_phy_mmt_player_bridge_remove_monitor_a331_service_id: unable to remove service_id: %d, lls_slt_monitor->lls_sls_alc_monitor is: %p, lls_slt_monitor->lls_sls_alc_monitor_v.count is: %d",
+        __ATSC3_CORE_SERVICE_PLAYER_BRIDGE_ERROR("atsc3_core_service_player_bridge_remove_monitor_a331_service_id: unable to remove service_id: %d, lls_slt_monitor->lls_sls_alc_monitor is: %p, lls_slt_monitor->lls_sls_alc_monitor_v.count is: %d",
                 service_id,
                 lls_slt_monitor->lls_sls_alc_monitor,
                 lls_slt_monitor->lls_sls_alc_monitor_v.count);
@@ -619,22 +590,20 @@ void atsc3_core_service_bridge_process_packet_from_plp_and_block(uint8_t plp_num
 void atsc3_core_service_bridge_process_packet_phy(block_t* packet) {
     lock_guard<recursive_mutex> atsc3_core_service_player_bridge_context_mutex_local(atsc3_core_service_player_bridge_context_mutex);
 
+    //alc types
+    lls_sls_alc_session_t*                  matching_lls_slt_alc_session = NULL;
+    atsc3_alc_packet_t*                     alc_packet = NULL;
+    bool                                    has_matching_lls_slt_service_id = false;
+
     //mmt types
     lls_sls_mmt_session_t*                  matching_lls_sls_mmt_session = NULL;
     mmtp_packet_header_t*                   mmtp_packet_header = NULL;
-    mmtp_asset_flow_t*                      mmtp_asset_flow = NULL;
     mmtp_asset_t*                           mmtp_asset = NULL;
     mmtp_packet_id_packets_container_t*     mmtp_packet_id_packets_container = NULL;
 
     mmtp_mpu_packet_t*                      mmtp_mpu_packet = NULL;
     mmtp_signalling_packet_t*               mmtp_signalling_packet = NULL;
     int8_t                                  mmtp_si_parsed_message_count = 0;
-
-    //alc types
-    lls_sls_alc_session_t*                  matching_lls_slt_alc_session = NULL;
-    atsc3_alc_packet_t*                     alc_packet = NULL;
-    bool                                    has_matching_lls_slt_service_id = false;
-
 
     //udp_packet_t* udp_packet = udp_packet_process_from_ptr_raw_ethernet_packet(block_Get(packet), packet->p_size);
     udp_packet_t* udp_packet = udp_packet_process_from_ptr(block_Get(packet), packet->p_size);
