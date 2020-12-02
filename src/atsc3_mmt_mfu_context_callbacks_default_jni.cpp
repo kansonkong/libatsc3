@@ -10,8 +10,50 @@ int _ATSC3_MMT_MFU_CONTEXT_CALLBACKS_DEFAULT_JNI_INFO_ENABLED = 0;
 int _ATSC3_MMT_MFU_CONTEXT_CALLBACKS_DEFAULT_JNI_DEBUG_ENABLED = 0;
 int _ATSC3_MMT_MFU_CONTEXT_CALLBACKS_DEFAULT_JNI_TRACE_ENABLED = 0;
 
+
+lls_sls_mmt_monitor_t* lls_sls_mmt_monitor = NULL;
+atsc3_mmt_mfu_context_t* atsc3_mmt_mfu_context = NULL;
+
 uint32_t global_mfu_proccessed_count = 0;
 
+void atsc3_ndk_media_mmt_bridge_init(IAtsc3NdkMediaMMTBridge* atsc3NdkMediaMMTBridge) {
+    Atsc3NdkMediaMMTBridge_ptr = atsc3NdkMediaMMTBridge;
+    printf("atsc3_ndk_media_mmt_bridge_init with Atsc3NdkMediaMMTBridge_ptr: %p", Atsc3NdkMediaMMTBridge_ptr);
+
+    atsc3_ndk_media_mmt_bridge_reset_context();
+
+    Atsc3NdkMediaMMTBridge_ptr->LogMsgF("atsc3_ndk_media_mmt_bridge_init - completed");
+
+}
+
+void atsc3_ndk_media_mmt_bridge_reset_context() {
+
+    if(atsc3_mmt_mfu_context) {
+        atsc3_mmt_mfu_context_free(&atsc3_mmt_mfu_context);
+    }
+
+//    lls_sls_mmt_monitor = lls_sls_mmt_monitor_create();
+//    lls_sls_mmt_monitor->atsc3_lls_slt_service = atsc3_lls_slt_service; //HACK!
+//
+//    atsc3_lls_slt_service_t* atsc3_lls_slt_service = atsc3_lls_slt_service_new();
+//    atsc3_lls_slt_service->service_id=31337; //hack
+//
+//    atsc3_slt_broadcast_svc_signalling_t* atsc3_slt_broadcast_svc_signalling = atsc3_slt_broadcast_svc_signalling_new();
+//    atsc3_slt_broadcast_svc_signalling->sls_destination_ip_address = dst_ip;
+//    atsc3_slt_broadcast_svc_signalling->sls_destination_udp_port =  dst_port;
+//    atsc3_slt_broadcast_svc_signalling->sls_protocol = SLS_PROTOCOL_ROUTE;
+//    atsc3_lls_slt_service_add_atsc3_slt_broadcast_svc_signalling(atsc3_lls_slt_service, atsc3_slt_broadcast_svc_signalling);
+//
+//    lls_slt_alc_session_find_or_create(lls_slt_monitor, atsc3_lls_slt_service);
+//
+//    lls_slt_service_id_t* lls_slt_service_id = lls_slt_service_id_new_from_atsc3_lls_slt_service(atsc3_lls_slt_service);
+//    lls_slt_monitor_add_lls_slt_service_id(lls_slt_monitor, lls_slt_service_id);
+//
+
+    lls_sls_mmt_monitor = lls_sls_mmt_monitor_create();
+
+    atsc3_mmt_mfu_context = atsc3_mmt_mfu_context_callbacks_default_jni_new();
+}
 
 /*
  * MMTP event callback: atsc3_mmt_mpu_on_sequence_mpu_metadata_present_ndk
