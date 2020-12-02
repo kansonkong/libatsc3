@@ -367,18 +367,25 @@ void atsc3_mmt_mfu_context_free(atsc3_mmt_mfu_context_t** atsc3_mmt_mfu_context_
                 atsc3_mmt_mfu_context->udp_flow = NULL;
             }
 
+            if(atsc3_mmt_mfu_context->udp_flow_latest_mpu_sequence_number_container) {
+                udp_flow_latest_mpu_sequence_number_container_t_release(atsc3_mmt_mfu_context->udp_flow_latest_mpu_sequence_number_container);
+                atsc3_mmt_mfu_context->udp_flow_latest_mpu_sequence_number_container = NULL;
+            }
+
             if(atsc3_mmt_mfu_context->mmtp_flow) {
                 mmtp_flow_free_mmtp_asset_flow(atsc3_mmt_mfu_context->mmtp_flow);
                 free(atsc3_mmt_mfu_context->mmtp_flow);
                 atsc3_mmt_mfu_context->mmtp_flow = NULL;
             }
 
-            if(atsc3_mmt_mfu_context->udp_flow_latest_mpu_sequence_number_container) {
-                udp_flow_latest_mpu_sequence_number_container_t_release(atsc3_mmt_mfu_context->udp_flow_latest_mpu_sequence_number_container);
-                atsc3_mmt_mfu_context->udp_flow_latest_mpu_sequence_number_container = NULL;
+            if(atsc3_mmt_mfu_context->mmtp_asset_flow) {
+                mmtp_asset_flow_free(&atsc3_mmt_mfu_context->mmtp_asset_flow);
+            }
+            if(atsc3_mmt_mfu_context->mmtp_asset) {
+                mmtp_asset_free(&atsc3_mmt_mfu_context->mmtp_asset);
             }
 
-            //jjustman-2020-08-31 - todo: check to confirm these aren't shared pointers...
+                //jjustman-2020-08-31 - todo: check to confirm these aren't shared pointers...
             if(atsc3_mmt_mfu_context->lls_slt_monitor) {
                 atsc3_lls_slt_monitor_free(&atsc3_mmt_mfu_context->lls_slt_monitor);
             }
@@ -389,6 +396,7 @@ void atsc3_mmt_mfu_context_free(atsc3_mmt_mfu_context_t** atsc3_mmt_mfu_context_
                 free(atsc3_mmt_mfu_context->mp_table_last);
                 atsc3_mmt_mfu_context->mp_table_last = NULL;
             }
+
 
             free(atsc3_mmt_mfu_context);
             atsc3_mmt_mfu_context = NULL;
