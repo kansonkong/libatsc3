@@ -64,6 +64,9 @@ atsc3_mmt_mfu_context_t* atsc3_mmt_mfu_context_internal_flows_new() {
     atsc3_mmt_mfu_context->atsc3_mmt_signalling_information_on_video_essence_packet_id 	= &atsc3_mmt_signalling_information_on_video_essence_packet_id_callback_internal;
     atsc3_mmt_mfu_context->atsc3_mmt_signalling_information_on_stpp_essence_packet_id 	= &atsc3_mmt_signalling_information_on_stpp_essence_packet_id_callback_internal;
 
+    //helper methods
+    atsc3_mmt_mfu_context->get_mpu_timestamp_from_packet_id_mpu_sequence_number         = atsc3_get_mpu_timestamp_from_packet_id_mpu_sequence_number; //&atsc3_get_mpu_timestamp_from_packet_id_mpu_sequence_number_with_last_failsafe;
+
 
     return atsc3_mmt_mfu_context;
 }

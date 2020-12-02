@@ -36,19 +36,19 @@ void atsc3_mmt_signalling_information_on_mp_table_complete_noop(atsc3_mmt_mfu_co
 }
 
 //audio essence packet id extraction
-void atsc3_mmt_signalling_information_on_audio_essence_packet_id_noop(atsc3_mmt_mfu_context_t* atsc3_mmt_mfu_context, uint16_t audio_packet_id) {
+void atsc3_mmt_signalling_information_on_audio_essence_packet_id_noop(atsc3_mmt_mfu_context_t* atsc3_mmt_mfu_context, uint16_t audio_packet_id, mp_table_asset_row_t* mp_table_asset_row) {
     //noop;
     __MMT_CONTEXT_MPU_DEBUG("atsc3_mmt_signalling_information_on_audio_packet_id_noop: audio_packet_id: %u", audio_packet_id);
 }
 
 //video essence packet_id extraction
-void atsc3_mmt_signalling_information_on_video_essence_packet_id_noop(atsc3_mmt_mfu_context_t* atsc3_mmt_mfu_context, uint16_t video_packet_id) {
+void atsc3_mmt_signalling_information_on_video_essence_packet_id_noop(atsc3_mmt_mfu_context_t* atsc3_mmt_mfu_context, uint16_t video_packet_id, mp_table_asset_row_t* mp_table_asset_row) {
     //noop;
     __MMT_CONTEXT_MPU_DEBUG("atsc3_mmt_signalling_information_on_video_packet_id_noop: video_packet_id: %u", video_packet_id);
 }
 
 //stpp essence packet_id extraction
-void atsc3_mmt_signalling_information_on_stpp_essence_packet_id_noop(atsc3_mmt_mfu_context_t* atsc3_mmt_mfu_context, uint16_t stpp_packet_id) {
+void atsc3_mmt_signalling_information_on_stpp_essence_packet_id_noop(atsc3_mmt_mfu_context_t* atsc3_mmt_mfu_context, uint16_t stpp_packet_id, mp_table_asset_row_t* mp_table_asset_row) {
     //noop;
     __MMT_CONTEXT_MPU_DEBUG("atsc3_mmt_signalling_information_on_stpp_packet_id_noop: stpp_packet_id: %u", stpp_packet_id);
 }
@@ -173,9 +173,6 @@ void atsc3_mmt_mpu_on_sequence_movie_fragment_metadata_present_noop(atsc3_mmt_mf
 
 atsc3_mmt_mfu_context_t* atsc3_mmt_mfu_context_callbacks_noop_new() {
     atsc3_mmt_mfu_context_t* atsc3_mmt_mfu_context = atsc3_mmt_mfu_context_internal_flows_new();
-
-    //helper methods
-    atsc3_mmt_mfu_context->get_mpu_timestamp_from_packet_id_mpu_sequence_number         = atsc3_get_mpu_timestamp_from_packet_id_mpu_sequence_number; //&atsc3_get_mpu_timestamp_from_packet_id_mpu_sequence_number_with_last_failsafe;
 
     //MPU related callbacks
     atsc3_mmt_mfu_context->atsc3_mmt_mpu_on_sequence_number_change 						= &atsc3_mmt_mpu_on_sequence_number_change_noop;

@@ -14,6 +14,9 @@ fv * Note: Atsc3NdkPHYBridge - Android NDK Binding against Lowasys API are not i
 
 #include "atsc3_core_service_player_bridge.h"
 
+//jjustman-2020-12-02 - restrict this include to local cpp, as downstream projects otherwise would need to have <pcre2.h> on their include path
+#include "atsc3_alc_utils.h"
+
 int _ATSC3_CORE_SERVICE_PLAYER_BRIDGE_INFO_ENABLED = 0;
 int _ATSC3_CORE_SERVICE_PLAYER_BRIDGE_DEBUG_ENABLED = 0;
 int _ATSC3_CORE_SERVICE_PLAYER_BRIDGE_TRACE_ENABLED = 0;
