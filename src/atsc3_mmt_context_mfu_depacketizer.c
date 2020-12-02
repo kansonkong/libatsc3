@@ -184,15 +184,32 @@ void atsc3_mmt_mpu_mfu_on_sample_corrupt_mmthsample_header_noop(atsc3_mmt_mfu_co
 
 //MPU - init box (mpu_metadata) present
 void atsc3_mmt_mpu_on_sequence_movie_fragment_metadata_present_noop(atsc3_mmt_mfu_context_t* atsc3_mmt_mfu_context, uint16_t packet_id, uint32_t mpu_sequence_number, block_t* mmt_movie_fragment_metadata) {
-    //as a last resort if mmt_atsc3_message isn't present with v/a descriptor timing, persist at least one trun frame duration...
-    uint32_t sample_duration = atsc3_mmt_movie_fragment_extract_sample_duration(mmt_movie_fragment_metadata);
+    uint32_t decoder_configuration_timebase = 1000000; //set as default to uS
+    uint32_t extracted_sample_duration_us = 0;
 
-    __MMT_CONTEXT_MPU_DEBUG("atsc3_mmt_mpu_on_sequence_movie_fragment_metadata_present_noop: packet_id: %u, mpu_sequence_number: %u, mmt_movie_fragment_metadata: %p, size: %d, extracted sample_duration: %d",
+    if(!mmt_movie_fragment_metadata || !mmt_movie_fragment_metadata->p_size) {
+        __MMT_CONTEXT_MPU_WARN("atsc3_mmt_mpu_on_sequence_movie_fragment_metadata_present_noop: packet_id: %d, mpu_sequence_number: %d, mmt_movie_fragment_metadata: %p: returned null or no length!",
+                                                packet_id, mpu_sequence_number, mmt_movie_fragment_metadata);
+        return;
+    }
+
+    if(atsc3_mmt_mfu_context->mmtp_packet_id_packets_container->atsc3_video_decoder_configuration_record && atsc3_mmt_mfu_context->mmtp_packet_id_packets_container->atsc3_video_decoder_configuration_record->timebase) {
+        decoder_configuration_timebase = atsc3_mmt_mfu_context->mmtp_packet_id_packets_container->atsc3_video_decoder_configuration_record->timebase;
+    } else if(atsc3_mmt_mfu_context->mmtp_packet_id_packets_container->atsc3_audio_decoder_configuration_record && atsc3_mmt_mfu_context->mmtp_packet_id_packets_container->atsc3_audio_decoder_configuration_record->timebase) {
+        decoder_configuration_timebase = atsc3_mmt_mfu_context->mmtp_packet_id_packets_container->atsc3_audio_decoder_configuration_record->timebase;
+    } else if(atsc3_mmt_mfu_context->mmtp_packet_id_packets_container->atsc3_stpp_decoder_configuration_record && atsc3_mmt_mfu_context->mmtp_packet_id_packets_container->atsc3_stpp_decoder_configuration_record->timebase) {
+        decoder_configuration_timebase = atsc3_mmt_mfu_context->mmtp_packet_id_packets_container->atsc3_stpp_decoder_configuration_record->timebase;
+    }
+
+    extracted_sample_duration_us = atsc3_mmt_movie_fragment_extract_sample_duration_us(mmt_movie_fragment_metadata, decoder_configuration_timebase);
+
+
+    __MMT_CONTEXT_MPU_DEBUG("atsc3_mmt_mpu_on_sequence_movie_fragment_metadata_present_noop: packet_id: %u, mpu_sequence_number: %u, mmt_movie_fragment_metadata: %p, size: %d, extracted extracted_sample_duration_us: %d",
                             packet_id,
                             mpu_sequence_number,
                             mmt_movie_fragment_metadata,
                             mmt_movie_fragment_metadata->p_size,
-                            sample_duration);
+                            extracted_sample_duration_us);
 }
 
 void __internal__atsc3_mmt_signalling_information_on_packet_id_with_mpu_timestamp_descriptor(atsc3_mmt_mfu_context_t* atsc3_mmt_mfu_context, uint16_t packet_id, uint32_t mpu_sequence_number, uint64_t mpu_presentation_time_ntp64, uint32_t mpu_presentation_time_seconds, uint32_t mpu_presentation_time_microseconds) {
@@ -1281,6 +1298,7 @@ aligned(8) class FullBox(unsigned int(32) boxtype, unsigned int(8) v, bit(24) f)
  */
 uint32_t atsc3_mmt_movie_fragment_extract_sample_duration_us(block_t* mmt_movie_fragment_metadata, uint32_t decoder_configuration_timebase) {
     uint32_t sample_duration_unrebased = 0;
+    uint32_t sample_duration_rebased_us = 0;
 
     atsc3_isobmff_tfhd_box_t* atsc3_isobmff_tfhd_box = NULL;
     atsc3_isobmff_trun_box_t* atsc3_isobmff_trun_box = NULL;
@@ -1305,51 +1323,20 @@ uint32_t atsc3_mmt_movie_fragment_extract_sample_duration_us(block_t* mmt_movie_
         sample_duration_unrebased = atsc3_isobmff_tfhd_box->default_sample_duration;
         __MMSM_TRACE("atsc3_mmt_movie_fragment_extract_sample_duration_us: using tfhd default_sample_duration: %d (unbased)", sample_duration_unrebased);
     } else {
-
+        atsc3_isobmff_trun_box = atsc3_isobmff_box_parser_tools_parse_trun_from_block_t(mmt_movie_fragment_metadata);
+        if(atsc3_isobmff_trun_box->flag_sample_duration_present && atsc3_isobmff_trun_box->sample_count) {
+            //grab the first sample here
+        }
     }
 
-    uint8_t* ptr = block_Get(mmt_movie_fragment_metadata);
-    ptr += 4;
-    for(int i=4; (ptr < mmt_movie_fragment_metadata->p_buffer + (mmt_movie_fragment_metadata->p_size-8)) &&  i < mmt_movie_fragment_metadata->p_size-8 && (sample_duration_timebased == 0); i++) {
-
-
-        if(ptr[0] == 't' && ptr[1] == 'r' && ptr[2] == 'u' && ptr[3] == 'n') {
-            //read our box length from ptr-4
-            box_size = ntohl(*(uint32_t*)(ptr-4));
-            ptr += 4; //iterate past our box name
-            version = *ptr++;
-            //next 3 bytes for fullbox flags, 0x000001: data_offset present, 0x000004: first_sample_flags_present
-
-            //jjustman-2020-11-18 - mmt - ac-4 audio     [trun] size=12+368, flags=b01 ->
-            //                                                               binary=0000 1011 0000 0001
-            //                                                               hex=0x0B01 -> 0x0(1011)01
-
-            tr_flags = (*ptr++ << 16) |  (*ptr++ << 8) |  (*ptr++);
-
-            sample_count = ntohl(*(uint32_t*)(ptr));
-            ptr += 4;
-            if(tr_flags & 0x000001) {
-                data_offset = ntohl(*(uint32_t*)(ptr));
-                ptr += 4;
-            }
-            if(tr_flags & 0x000004) {
-                first_sample_flags = ntohl(*(uint32_t*)(ptr));
-                ptr += 4;
-            }
-
-            if(sample_count > 0) {
-                //iterate internal samples is not needed with MFU mode, so bail
-                if(tr_flags & 0x000100) {
-                    sample_duration_timebased = ntohl(*(uint32_t *) (ptr));
-                    continue;
-                } else {
-                    //use "default" duration
-                    //iso14496-12:2015 - 0x000100 sample‐duration‐present: indicates that each sample has its own duration, otherwise the default is used.
-                }
-            }
+    if(sample_duration_unrebased) {
+        if(decoder_configuration_timebase != 1000000) {
+            sample_duration_rebased_us = ((1000000L) * sample_duration_unrebased) / decoder_configuration_timebase;
+            __MMSM_TRACE("atsc3_mmt_movie_fragment_extract_sample_duration_us: unrebased: %d, decoder_configuration_timebase: %d, sample_duration_rebased_us: %d",
+                         sample_duration_unrebased, decoder_configuration_timebase, sample_duration_rebased_us);
+        } else {
+            sample_duration_rebased_us = sample_duration_unrebased;
         }
-
-        ptr++;
     }
 
     if(atsc3_isobmff_tfhd_box) {
@@ -1360,7 +1347,7 @@ uint32_t atsc3_mmt_movie_fragment_extract_sample_duration_us(block_t* mmt_movie_
         atsc3_isobmff_trun_box_free(&atsc3_isobmff_trun_box);
     }
 
-    return sample_duration_timebased;
+    return sample_duration_rebased_us;
 }
 
 
