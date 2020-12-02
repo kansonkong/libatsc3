@@ -258,9 +258,18 @@ typedef struct mmtp_repair_symbol_packet {
 	_MMTP_PACKET_HEADER_FIELDS;
 } mmtp_repair_symbol_packet_t;
 
+//forward declare as defn is in atsc3_mmt_signalling_message_types.h
+typedef struct mp_table_asset_row mp_table_asset_row_t;
 
 typedef struct mmtp_packet_id_packets_container {
-    uint16_t            packet_id;
+    uint16_t                packet_id;
+
+    //populated from mmt SI mp_table event callbacks,
+    //  invoked from: atsc3_mmt_signalling_information_on_*_essence_packet_id_internal callback,
+    //      invoker: invoked from mmt_signalling_message_dispatch_context_notification_callbacks
+
+    char                    asset_type[4];
+    mp_table_asset_row_t*   mp_table_asset_row;
 
     atsc3_video_decoder_configuration_record_t*     atsc3_video_decoder_configuration_record;
     atsc3_audio_decoder_configuration_record_t*     atsc3_audio_decoder_configuration_record;

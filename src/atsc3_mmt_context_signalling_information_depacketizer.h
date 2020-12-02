@@ -29,7 +29,7 @@ extern "C" {
 typedef struct atsc3_mmt_mfu_context atsc3_mmt_mfu_context_t;
 typedef struct atsc3_mmt_mfu_mpu_timestamp_descriptor atsc3_mmt_mfu_mpu_timestamp_descriptor_t;
 
-typedef void (*__internal__atsc3_mmt_signalling_information_on_packet_id_with_mpu_timestamp_descriptor_f)(atsc3_mmt_mfu_context_t* atsc3_mmt_mfu_context, uint16_t packet_id, uint32_t mpu_sequence_number, uint64_t mpu_presentation_time_ntp64, uint32_t mpu_presentation_time_seconds, uint32_t mpu_presentation_time_microseconds);
+typedef void (*atsc3_mmt_signalling_information_on_packet_id_with_mpu_timestamp_descriptor_internal_f)(atsc3_mmt_mfu_context_t* atsc3_mmt_mfu_context, uint16_t packet_id, uint32_t mpu_sequence_number, uint64_t mpu_presentation_time_ntp64, uint32_t mpu_presentation_time_seconds, uint32_t mpu_presentation_time_microseconds);
 typedef atsc3_mmt_mfu_mpu_timestamp_descriptor_t* (*atsc3_get_mpu_timestamp_from_packet_id_mpu_sequence_number_f)(atsc3_mmt_mfu_context_t* atsc3_mmt_mfu_context, uint16_t packet_id, uint32_t mpu_sequence_number);
 
 //todo- jjustman-2019-10-03: add in flow for un-filtered callback listeners
@@ -38,9 +38,9 @@ typedef atsc3_mmt_mfu_mpu_timestamp_descriptor_t* (*atsc3_get_mpu_timestamp_from
 typedef void (*atsc3_mmt_signalling_information_on_mp_table_subset_f)(atsc3_mmt_mfu_context_t* atsc3_mmt_mfu_context, mp_table_t* mp_table);
 typedef void (*atsc3_mmt_signalling_information_on_mp_table_complete_f)(atsc3_mmt_mfu_context_t* atsc3_mmt_mfu_context, mp_table_t* mp_table);
 
-typedef void (*atsc3_mmt_signalling_information_on_audio_essence_packet_id_f)(atsc3_mmt_mfu_context_t* atsc3_mmt_mfu_context, uint16_t audio_packet_id);
-typedef void (*atsc3_mmt_signalling_information_on_video_essence_packet_id_f)(atsc3_mmt_mfu_context_t* atsc3_mmt_mfu_context, uint16_t video_packet_id);
-typedef void (*atsc3_mmt_signalling_information_on_stpp_essence_packet_id_f) (atsc3_mmt_mfu_context_t* atsc3_mmt_mfu_context, uint16_t stpp_packet_id);
+typedef void (*atsc3_mmt_signalling_information_on_audio_essence_packet_id_f)(atsc3_mmt_mfu_context_t* atsc3_mmt_mfu_context, uint16_t audio_packet_id, mp_table_asset_row_t* mp_table_asset_row);
+typedef void (*atsc3_mmt_signalling_information_on_video_essence_packet_id_f)(atsc3_mmt_mfu_context_t* atsc3_mmt_mfu_context, uint16_t video_packet_id, mp_table_asset_row_t* mp_table_asset_row);
+typedef void (*atsc3_mmt_signalling_information_on_stpp_essence_packet_id_f) (atsc3_mmt_mfu_context_t* atsc3_mmt_mfu_context, uint16_t stpp_packet_id, mp_table_asset_row_t* mp_table_asset_row);
 
 typedef void (*atsc3_mmt_signalling_information_on_audio_packet_id_with_mpu_timestamp_descriptor_f)(atsc3_mmt_mfu_context_t* atsc3_mmt_mfu_context, uint16_t audio_packet_id, uint32_t mpu_sequence_number, uint64_t mpu_presentation_time_ntp64, uint32_t mpu_presentation_time_seconds, uint32_t mpu_presentation_time_microseconds);
 typedef void (*atsc3_mmt_signalling_information_on_video_packet_id_with_mpu_timestamp_descriptor_f)(atsc3_mmt_mfu_context_t* atsc3_mmt_mfu_context, uint16_t video_packet_id, uint32_t mpu_sequence_number, uint64_t mpu_presentation_time_ntp64, uint32_t mpu_presentation_time_seconds, uint32_t mpu_presentation_time_microseconds);
