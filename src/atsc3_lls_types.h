@@ -735,6 +735,10 @@ typedef struct lls_sls_alc_session {
  
     For hybrid delivery, the MMTP-specific SLS can further include the MPD for broadband components.
     Table 7.4 shows the elements and attributes of the MMTP USBD that would be used in practice for ATSC 3.0 service delivery.
+
+
+    IF single v/a/s essence is needed, use lls_sls_mmt_monitor_find_from_service_id(lls_slt_monitor, service_id),
+        and then the returned lls_sls_mmt_monitor->lls_mmt_session to get SINGLE video_packet_id, audio_packet_id, and stpp_packet_id,
  
 **/
 typedef struct lls_sls_mmt_monitor {
@@ -742,14 +746,6 @@ typedef struct lls_sls_mmt_monitor {
 	atsc3_lls_slt_service_t* 				atsc3_lls_slt_service;
 
     lls_sls_mmt_session_t* 					lls_mmt_session;
-
-    /*
-     * jjustman-2020-12-01 - these singled out individual *_packet_id essences are used for MMT transmux to a single a/v/s media essence, e.g. fmp4 or HLS -
-     *                      DO NOT use them for NDK/JNI or OOO tracking
-     */
-    uint16_t 								video_packet_id;
-    uint16_t 								audio_packet_id;
-    uint16_t								stpp_packet_id;
 
     lls_sls_monitor_output_buffer_t 		lls_sls_monitor_output_buffer;
     lls_sls_monitor_output_buffer_mode_t 	lls_sls_monitor_output_buffer_mode;

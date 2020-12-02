@@ -24,6 +24,7 @@ atsc3_mmt_mfu_context_t* atsc3_mmt_mfu_context_callbacks_default_jni_new();
 //NDK/JNI mediaMMTBridge reference pin
 
 void atsc3_ndk_media_mmt_bridge_init(IAtsc3NdkMediaMMTBridge* atsc3NdkMediaMMTBridge);
+IAtsc3NdkMediaMMTBridge* atsc3_ndk_media_mmt_bridge_get_instance();
 
 //mmt mfu context management
 void atsc3_ndk_media_mmt_bridge_reset_context();

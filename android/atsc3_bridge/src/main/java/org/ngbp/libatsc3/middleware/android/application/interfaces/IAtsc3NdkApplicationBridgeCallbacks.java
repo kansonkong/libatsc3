@@ -1,8 +1,6 @@
 package org.ngbp.libatsc3.middleware.android.application.interfaces;
 
 import org.ngbp.libatsc3.middleware.android.a331.PackageExtractEnvelopeMetadataAndPayload;
-import org.ngbp.libatsc3.middleware.android.application.sync.mmt.MfuByteBufferFragment;
-import org.ngbp.libatsc3.middleware.android.application.sync.mmt.MpuMetadata_HEVC_NAL_Payload;
 
 import java.io.File;
 
