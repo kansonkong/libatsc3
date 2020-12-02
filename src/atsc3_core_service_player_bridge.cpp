@@ -37,8 +37,7 @@ lls_slt_monitor_t* lls_slt_monitor = NULL;
 //jjustman-2020-12-01 - TODO - move this into atsc3_mmt_mfu_context
 
 //mmtp/sls flow management
-mmtp_flow_t* mmtp_flow = NULL;
-udp_flow_latest_mpu_sequence_number_container_t* udp_flow_latest_mpu_sequence_number_container = NULL;
+
 lls_sls_mmt_monitor_t* lls_sls_mmt_monitor = NULL;
 atsc3_mmt_mfu_context_t* atsc3_mmt_mfu_context = NULL;
 
@@ -126,23 +125,12 @@ void atsc3_core_service_application_bridge_reset_context() {
         lls_sls_alc_monitor = NULL;
     }
 
-    if(mmtp_flow) {
-        mmtp_flow_free_mmtp_asset_flow(mmtp_flow);
-    }
-
-    if(udp_flow_latest_mpu_sequence_number_container) {
-        udp_flow_latest_mpu_sequence_number_container_t_release(udp_flow_latest_mpu_sequence_number_container);
-    }
-
-
-
     lls_slt_monitor = lls_slt_monitor_create();
     //wire up a lls event for SLS table
     lls_slt_monitor->atsc3_lls_on_sls_table_present_callback = &atsc3_lls_on_sls_table_present_ndk;
     lls_slt_monitor->atsc3_lls_on_aeat_table_present_callback = &atsc3_lls_on_aeat_table_present_ndk;
 
-    mmtp_flow = mmtp_flow_new();
-    udp_flow_latest_mpu_sequence_number_container = udp_flow_latest_mpu_sequence_number_container_t_init();
+
 
     //MMT/MFU callback contexts
     atsc3_mmt_mfu_context = atsc3_mmt_mfu_context_new();
@@ -750,13 +738,13 @@ void atsc3_core_service_bridge_process_packet_phy(block_t* packet) {
 
 	if(matching_lls_sls_mmt_session && lls_slt_monitor && lls_slt_monitor->lls_sls_mmt_monitor && matching_lls_sls_mmt_session->atsc3_lls_slt_service->service_id == lls_slt_monitor->lls_sls_mmt_monitor->atsc3_lls_slt_service->service_id) {
 
-        if(!atsc3_mmt_mfu_context || !mmtp_flow) {
+        if(!atsc3_mmt_mfu_context) {
             goto error;
         }
 
         mmtp_packet_header = mmtp_packet_header_parse_from_block_t(udp_packet->data);
 
-        if(!mmtp_packet_header || !atsc3_mmt_mfu_context || !mmtp_flow) {
+        if(!mmtp_packet_header) {
             goto error;
         }
         mmtp_packet_header_dump(mmtp_packet_header);
@@ -766,7 +754,7 @@ void atsc3_core_service_bridge_process_packet_phy(block_t* packet) {
             goto error;
         }
 
-        mmtp_asset = atsc3_mmt_mfu_context_mfu_depacketizer_context_update_find_or_create_mmtp_asset(atsc3_mmt_mfu_context, udp_packet, mmtp_flow, lls_slt_monitor, matching_lls_sls_mmt_session);
+        mmtp_asset = atsc3_mmt_mfu_context_mfu_depacketizer_context_update_find_or_create_mmtp_asset(atsc3_mmt_mfu_context, udp_packet, lls_slt_monitor, matching_lls_sls_mmt_session);
         mmtp_packet_id_packets_container = atsc3_mmt_mfu_context_mfu_depacketizer_update_find_or_create_mmtp_packet_id_packets_container(atsc3_mmt_mfu_context, mmtp_asset, mmtp_packet_header);
 
         if(mmtp_packet_header->mmtp_payload_type == 0x0) {
@@ -1165,8 +1153,7 @@ void atsc3_mmt_mpu_on_sequence_mpu_metadata_present_ndk(atsc3_mmt_mfu_context_t*
         //we will get either avc1 (avcC) NAL or hevc (hvcC) nals back
         if (atsc3_video_decoder_configuration_record) {
 
-            //jjustman-2020-12-01 - TODO - use mmtp_packet_id_packets_container
-            //atsc3_mmt_mfu_context->atsc3_video_decoder_configuration_record = atsc3_video_decoder_configuration_record;
+            atsc3_mmt_mfu_context->mmtp_packet_id_packets_container->atsc3_video_decoder_configuration_record = atsc3_video_decoder_configuration_record;
 
             //set width/height to player
             if(atsc3_video_decoder_configuration_record->width && atsc3_video_decoder_configuration_record->height) {
@@ -1195,10 +1182,8 @@ void atsc3_mmt_mpu_on_sequence_mpu_metadata_present_ndk(atsc3_mmt_mfu_context_t*
     } else {
         atsc3_audio_decoder_configuration_record_t* atsc3_audio_decoder_configuration_record = atsc3_audio_decoder_configuration_record_parse_from_block_t(mmt_mpu_metadata);
         if(atsc3_audio_decoder_configuration_record) {
-            //jjustman-2020-12-01 - TODO - use mmtp_packet_id_packets_container
-            //atsc3_mmt_mfu_context->atsc3_video_decoder_configuration_record = atsc3_audio_decoder_configuration_record;
+            atsc3_mmt_mfu_context->mmtp_packet_id_packets_container->atsc3_audio_decoder_configuration_record = atsc3_audio_decoder_configuration_record;
         }
-
     }
 }
 
@@ -1227,12 +1212,6 @@ void atsc3_mmt_signalling_information_on_stpp_packet_id_with_mpu_timestamp_descr
 
 void atsc3_mmt_mpu_mfu_on_sample_complete_ndk(atsc3_mmt_mfu_context_t* atsc3_mmt_mfu_context, uint16_t packet_id, uint32_t mpu_sequence_number, uint32_t sample_number, block_t* mmt_mfu_sample, uint32_t mfu_fragment_count_rebuilt) {
     //    void onMfuPacket(bool is_video, uint8_t* buffer, uint32_t bufferLen, uint64_t presentationUs);
-//    at3DrvIntf_ptr->LogMsgF("atsc3_mmt_mpu_mfu_on_sample_complete_ndk: packet_id: %u, mpu_sequence_number: %u, sample_number: %u, size: %u, last_mpu_timestamp: %llu",
-//                packet_id,
-//                mpu_sequence_number,
-//                sample_number,
-//                mmt_mfu_sample->p_size,
-//                last_mpu_timestamp);
 
     //cant process MFU's without the NAL... we should ALWAYS listen for at least mpu metadata
     //in as many MMT flows as possible
@@ -1284,12 +1263,6 @@ void atsc3_mmt_mpu_mfu_on_sample_complete_ndk(atsc3_mmt_mfu_context_t* atsc3_mmt
 }
 
 void atsc3_mmt_mpu_mfu_on_sample_corrupt_ndk(atsc3_mmt_mfu_context_t* atsc3_mmt_mfu_context, uint16_t packet_id, uint32_t mpu_sequence_number, uint32_t sample_number, block_t* mmt_mfu_sample, uint32_t mfu_fragment_count_expected, uint32_t mfu_fragment_count_rebuilt) {
-    //    at3DrvIntf_ptr->LogMsgF("atsc3_mmt_mpu_mfu_on_sample_corrupt_ndk: packet_id: %u, mpu_sequence_number: %u, sample_number: %u, size: %u, last_mpu_timestamp: %llu",
-    //                packet_id,
-    //                mpu_sequence_number,
-    //                sample_number,
-    //                mmt_mfu_sample->p_size,
-    //                last_mpu_timestamp);
 
     //cant process MFU's without the NAL... we should ALWAYS listen for at least mpu metadata
     //in as many MMT flows as possible
@@ -1356,20 +1329,14 @@ void atsc3_mmt_mpu_mfu_on_sample_corrupt_ndk(atsc3_mmt_mfu_context_t* atsc3_mmt_
 
 
 void atsc3_mmt_mpu_mfu_on_sample_corrupt_mmthsample_header_ndk(atsc3_mmt_mfu_context_t* atsc3_mmt_mfu_context, uint16_t packet_id, uint32_t mpu_sequence_number, uint32_t sample_number, block_t* mmt_mfu_sample, uint32_t mfu_fragment_count_expected, uint32_t mfu_fragment_count_rebuilt) {
-    //    void onMfuPacket(bool is_video, uint8_t* buffer, uint32_t bufferLen, uint64_t presentationUs);
-//    at3DrvIntf_ptr->LogMsgF("atsc3_mmt_mpu_mfu_on_sample_complete_ndk: packet_id: %u, mpu_sequence_number: %u, sample_number: %u, size: %u, last_mpu_timestamp: %llu",
-//                packet_id,
-//                mpu_sequence_number,
-//                sample_number,
-//                mmt_mfu_sample->p_size,
-//                last_mpu_timestamp);
+    atsc3_mmt_mfu_mpu_timestamp_descriptor_t* atsc3_mmt_mfu_mpu_timestamp_descriptor = NULL;
 
     if(!mmt_mfu_sample || !mmt_mfu_sample->p_size) {
         __ATSC3_CORE_SERVICE_PLAYER_BRIDGE_WARN("atsc3_mmt_mpu_mfu_on_sample_corrupt_mmthsample_header_ndk: mmt_mfu_sample: %p has no data!", mmt_mfu_sample);
         return;
     }
 
-    atsc3_mmt_mfu_mpu_timestamp_descriptor_t* atsc3_mmt_mfu_mpu_timestamp_descriptor = atsc3_mmt_mfu_context->get_mpu_timestamp_from_packet_id_mpu_sequence_number(atsc3_mmt_mfu_context, packet_id, mpu_sequence_number);
+    atsc3_mmt_mfu_mpu_timestamp_descriptor = atsc3_mmt_mfu_context->get_mpu_timestamp_from_packet_id_mpu_sequence_number(atsc3_mmt_mfu_context, packet_id, mpu_sequence_number);
     uint64_t mpu_timestamp_descriptor = 0;
     if(atsc3_mmt_mfu_mpu_timestamp_descriptor) {
         mpu_timestamp_descriptor = atsc3_mmt_mfu_mpu_timestamp_descriptor->mpu_presentation_time_as_us_value;
