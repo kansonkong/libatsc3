@@ -78,11 +78,11 @@ void atsc3_core_service_bridge_process_packet_from_plp_and_block(uint8_t plp_num
 void atsc3_core_service_bridge_process_packet_phy(block_t* packet);
 
 //change SLT service and wire up a single montior
-atsc3_lls_slt_service_t* atsc3_phy_mmt_player_bridge_set_single_monitor_a331_service_id(int service_id);
+atsc3_lls_slt_service_t* atsc3_core_service_player_bridge_set_single_monitor_a331_service_id(int service_id);
 
 //add additional alc monitor service_id's for supplimentary MMT or ROUTE flows
-atsc3_lls_slt_service_t* atsc3_phy_mmt_player_bridge_add_monitor_a331_service_id(int service_id);
-atsc3_lls_slt_service_t* atsc3_phy_mmt_player_bridge_remove_monitor_a331_service_id(int service_id);
+atsc3_lls_slt_service_t* atsc3_core_service_player_bridge_add_monitor_a331_service_id(int service_id);
+atsc3_lls_slt_service_t* atsc3_core_service_player_bridge_remove_monitor_a331_service_id(int service_id);
 //TODO: wire up ROUTE/ALC and MBMS/FDT event callback hooks for close_object emission (including delivery metrics w.r.t ALC DU loss)
 
 lls_sls_alc_monitor_t* atsc3_lls_sls_alc_monitor_get_from_service_id(int service_id);

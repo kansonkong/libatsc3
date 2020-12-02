@@ -272,7 +272,7 @@ int Atsc3NdkApplicationBridge::releasePinnedConsumerThreadAsNeeded() {
 
 int Atsc3NdkApplicationBridge::atsc3_slt_selectService(int service_id) {
     int ret = -1;
-    atsc3_lls_slt_service_t* atsc3_lls_slt_service = atsc3_phy_mmt_player_bridge_set_single_monitor_a331_service_id(service_id);
+    atsc3_lls_slt_service_t* atsc3_lls_slt_service = atsc3_core_service_player_bridge_set_single_monitor_a331_service_id(service_id);
     if(atsc3_lls_slt_service && atsc3_lls_slt_service->atsc3_slt_broadcast_svc_signalling_v.count) {
         ret = atsc3_lls_slt_service->atsc3_slt_broadcast_svc_signalling_v.data[0]->sls_protocol;
     }
@@ -345,7 +345,7 @@ std::string Atsc3NdkApplicationBridge::get_android_temp_folder() {
 
 int Atsc3NdkApplicationBridge::atsc3_slt_alc_select_additional_service(int service_id) {
     int ret = -1;
-    atsc3_lls_slt_service_t* atsc3_lls_slt_service = atsc3_phy_mmt_player_bridge_add_monitor_a331_service_id(service_id);
+    atsc3_lls_slt_service_t* atsc3_lls_slt_service = atsc3_core_service_player_bridge_add_monitor_a331_service_id(service_id);
     if(atsc3_lls_slt_service && atsc3_lls_slt_service->atsc3_slt_broadcast_svc_signalling_v.count) {
         ret = atsc3_lls_slt_service->atsc3_slt_broadcast_svc_signalling_v.data[0]->sls_protocol;
     }
