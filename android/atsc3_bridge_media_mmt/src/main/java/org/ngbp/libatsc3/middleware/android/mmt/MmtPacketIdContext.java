@@ -26,7 +26,7 @@ public class MmtPacketIdContext {
     public static MmtMfuStatistics stpp_packet_statistics;
     public static int stpp_last_mpu = -1;
 
-    public static MmtCodecContent mmt_codec_context;
+//    public static MmtCodecContent mmt_codec_context;
 
     public static void Initialize() {
         MmtPacketIdContext.libatsc_app_start_time_ms = System.currentTimeMillis();

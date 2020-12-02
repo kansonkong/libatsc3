@@ -367,7 +367,7 @@ typedef struct mmt_signalling_message_header_and_payload {
 void mmt_signalling_message_header_and_payload_free(mmt_signalling_message_header_and_payload_t**);
 
 mp_table_asset_row_t* atsc3_mmt_mp_table_asset_row_duplicate(const mp_table_asset_row_t* mp_table_asset_row);
-void atsc3_mmt_mp_table_asset_row_free(mp_table_asset_row_t** mp_table_asset_row_p);
+void atsc3_mmt_mp_table_asset_row_free_inner(mp_table_asset_row_t* mp_table_asset_row);
 
 
 #if defined (__cplusplus)

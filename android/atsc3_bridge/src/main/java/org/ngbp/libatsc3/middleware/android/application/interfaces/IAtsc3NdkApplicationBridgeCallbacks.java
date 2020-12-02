@@ -16,10 +16,6 @@ public interface IAtsc3NdkApplicationBridgeCallbacks {
     public void onAeatTablePresent(String aeatPayloadXML);
     public void onSlsHeldEmissionPresent(int serviceId, String heldPayloadXML);
 
-    //MMT specific MFU callbacks
-    public void pushMfuByteBufferFragment(MfuByteBufferFragment mfuByteBufferFragment);
-    public void pushMpuMetadata_HEVC_NAL_Payload(MpuMetadata_HEVC_NAL_Payload mpuMetadata_hevc_nal_payload);
-
     //ROUTE-DASH specific callbacks
     public void onAlcObjectStatusMessage(String alc_object_status_message);
 
