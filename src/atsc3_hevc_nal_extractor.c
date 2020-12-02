@@ -31,9 +31,9 @@ atsc3_video_decoder_configuration_record_t* atsc3_avc1_hevc_nal_extractor_parse_
     }
 
     block_Rewind(mpu_metadata_block);
-//first, search for the tkhd
-//then, search for isobmff box: hvcC
-//todo: search for the avcC box for h264 use cases
+    //first, search for the tkhd
+    //then, search for isobmff box: hvcC
+    //todo: search for the avcC box for h264 use cases
 
     _ATSC3_HEVC_NAL_EXTRACTOR_TRACE("atsc3_avc1_hevc_nal_extractor_parse_from_mpu_metadata_block_t: mpu_metadata_block_t: %p, p_buffer: %p, pos: %d, size: %d", mpu_metadata_block, mpu_metadata_block->p_buffer, mpu_metadata_block->i_pos, mpu_metadata_block->p_size);
 
@@ -264,6 +264,15 @@ atsc3_video_decoder_configuration_record_t* atsc3_avc1_hevc_nal_extractor_parse_
         }
 
         atsc3_video_decoder_configuration_record->hevc_decoder_configuration_record = hevc_decoder_configuration_record;
+
+        //build our combined hevc NALs for csd specific data
+        block_t* hevc_nals_combined = atsc3_hevc_extract_extradata_nals_combined_ffmpegImpl(atsc3_video_decoder_configuration_record->hevc_decoder_configuration_record->box_data_original);
+        if(hevc_nals_combined->p_size) {
+            block_Rewind(hevc_nals_combined);
+            atsc3_video_decoder_configuration_record->hevc_decoder_configuration_record->hevc_nals_combined = hevc_nals_combined;
+        }
+
+
         return atsc3_video_decoder_configuration_record;
     }
 

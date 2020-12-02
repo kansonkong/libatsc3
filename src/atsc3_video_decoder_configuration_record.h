@@ -180,6 +180,8 @@ typedef struct hevc_decoder_configuration_record {
     ATSC3_VECTOR_BUILDER_STRUCT(atsc3_nal_unit_prefix_sei);
     ATSC3_VECTOR_BUILDER_STRUCT(atsc3_nal_unit_suffix_sei);
 
+    block_t*     hevc_nals_combined;
+
 } hevc_decoder_configuration_record_t;
 
 ATSC3_VECTOR_BUILDER_METHODS_INTERFACE(hevc_decoder_configuration_record, atsc3_nal_unit_vps);
@@ -231,12 +233,11 @@ typedef struct atsc3_video_decoder_configuration_record {
 
 } atsc3_video_decoder_configuration_record_t;
 
-
-
 atsc3_video_decoder_configuration_record_t* atsc3_video_decoder_configuration_record_new();
-//jjustman-2020-12-01 - TODO: add free method
+void atsc3_video_decoder_configuration_record_free(atsc3_video_decoder_configuration_record_t** atsc3_video_decoder_configuration_record_p);
 
-
+void atsc3_hevc_decoder_configuration_record_free(hevc_decoder_configuration_record_t** hevc_decoder_configuration_record_p);
+void atsc3_avc1_decoder_configuration_record_free(avc1_decoder_configuration_record_t** avc1_decoder_configuration_record_p);
 
 #ifdef __cplusplus
 }

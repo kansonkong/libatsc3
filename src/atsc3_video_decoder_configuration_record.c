@@ -25,6 +25,24 @@ atsc3_video_decoder_configuration_record_t* atsc3_video_decoder_configuration_re
     return atsc3_video_decoder_configuration_record;
 }
 
+void atsc3_video_decoder_configuration_record_free(atsc3_video_decoder_configuration_record_t** atsc3_video_decoder_configuration_record_p) {
+    if(atsc3_video_decoder_configuration_record_p) {
+        atsc3_video_decoder_configuration_record_t* atsc3_video_decoder_configuration_record = *atsc3_video_decoder_configuration_record_p;
+        if(atsc3_video_decoder_configuration_record) {
+            if(atsc3_video_decoder_configuration_record->hevc_decoder_configuration_record) {
+                atsc3_hevc_decoder_configuration_record_free(&atsc3_video_decoder_configuration_record->hevc_decoder_configuration_record);
+            }
+            if(atsc3_video_decoder_configuration_record->avc1_decoder_configuration_record) {
+                atsc3_avc1_decoder_configuration_record_free(&atsc3_video_decoder_configuration_record->avc1_decoder_configuration_record);
+            }
+            free(atsc3_video_decoder_configuration_record);
+            atsc3_video_decoder_configuration_record = NULL;
+        }
+        *atsc3_video_decoder_configuration_record_p = NULL;
+    }
+}
+
+
 /*
 * create a new hevc_decoder_configuration_record
 * set our configuration_version to 1,
@@ -37,6 +55,32 @@ hevc_decoder_configuration_record_t *hevc_decoder_configuration_record_new() {
     return hevc_decoder_configuration_record;
 }
 
+void atsc3_hevc_decoder_configuration_record_free(hevc_decoder_configuration_record_t** hevc_decoder_configuration_record_p) {
+    if(hevc_decoder_configuration_record_p) {
+        hevc_decoder_configuration_record_t* hevc_decoder_configuration_record = *hevc_decoder_configuration_record_p;
+        if(hevc_decoder_configuration_record) {
+            if(hevc_decoder_configuration_record->box_data_original) {
+                block_Destroy(&hevc_decoder_configuration_record->box_data_original);
+            }
+
+            hevc_decoder_configuration_record_free_atsc3_nal_unit_vps(hevc_decoder_configuration_record);
+            hevc_decoder_configuration_record_free_atsc3_nal_unit_sps(hevc_decoder_configuration_record);
+            hevc_decoder_configuration_record_free_atsc3_nal_unit_pps(hevc_decoder_configuration_record);
+
+            hevc_decoder_configuration_record_free_atsc3_nal_unit_prefix_sei(hevc_decoder_configuration_record);
+            hevc_decoder_configuration_record_free_atsc3_nal_unit_suffix_sei(hevc_decoder_configuration_record);
+
+            if(hevc_decoder_configuration_record->hevc_nals_combined) {
+                block_Destroy(&hevc_decoder_configuration_record->hevc_nals_combined);
+            }
+
+            free(hevc_decoder_configuration_record);
+            hevc_decoder_configuration_record = NULL;
+        }
+        *hevc_decoder_configuration_record_p = NULL;
+    }
+}
+
 /*
  * legacy (read: non ATSC/3.0) avcC SPS/PPS support
  */
@@ -45,6 +89,22 @@ avc1_decoder_configuration_record_t *avc1_decoder_configuration_record_new() {
     avc1_decoder_configuration_record_t *avc1_decoder_configuration_record = calloc(1, sizeof(avc1_decoder_configuration_record_t));
     return avc1_decoder_configuration_record;
 }
+
+void atsc3_avc1_decoder_configuration_record_free(avc1_decoder_configuration_record_t** avc1_decoder_configuration_record_p) {
+    if(avc1_decoder_configuration_record_p) {
+        avc1_decoder_configuration_record_t* avc1_decoder_configuration_record = *avc1_decoder_configuration_record_p;
+        if(avc1_decoder_configuration_record) {
+            avc1_decoder_configuration_record_free_atsc3_avc1_nal_unit_sps(avc1_decoder_configuration_record);
+            avc1_decoder_configuration_record_free_atsc3_avc1_nal_unit_pps(avc1_decoder_configuration_record);
+
+            free(avc1_decoder_configuration_record);
+            avc1_decoder_configuration_record = NULL;
+        }
+        *avc1_decoder_configuration_record_p = NULL;
+    }
+}
+
+
 
 
 /**
