@@ -259,12 +259,17 @@ typedef struct mmtp_repair_symbol_packet {
 typedef struct atsc3_video_decoder_configuration_record atsc3_video_decoder_configuration_record_t;
 typedef struct atsc3_audio_decoder_configuration_record atsc3_audio_decoder_configuration_record_t;
 
+//jjustman-2020-12-01 - TODO - refactor this out
+typedef struct atsc3_stpp_decoder_configuration_record {
+    uint32_t        timebase;
+} atsc3_stpp_decoder_configuration_record_t;
 
 typedef struct mmtp_packet_id_packets_container {
     uint16_t            packet_id;
 
     atsc3_video_decoder_configuration_record_t*     atsc3_video_decoder_configuration_record;
     atsc3_audio_decoder_configuration_record_t*     atsc3_audio_decoder_configuration_record;
+    atsc3_stpp_decoder_configuration_record_t*      atsc3_stpp_decoder_configuration_record;
 
 
     ATSC3_VECTOR_BUILDER_STRUCT(mpu_sequence_number_mmtp_mpu_packet_collection);
