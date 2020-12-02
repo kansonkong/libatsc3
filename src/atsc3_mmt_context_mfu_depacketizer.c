@@ -376,6 +376,33 @@ void atsc3_mmt_mfu_context_free(atsc3_mmt_mfu_context_t** atsc3_mmt_mfu_context_
     }
 }
 
+mmtp_asset_t* atsc3_mmt_mfu_context_mfu_depacketizer_context_update_find_or_create_mmtp_asset(atsc3_mmt_mfu_context_t* atsc3_mmt_mfu_context, udp_packet_t* udp_packet, mmtp_flow_t* mmtp_flow, lls_slt_monitor_t* lls_slt_monitor, lls_sls_mmt_session_t* matching_lls_sls_mmt_session) {
+    mmtp_asset_flow_t* mmtp_asset_flow = NULL;
+    mmtp_asset_t* mmtp_asset = NULL;
+
+    atsc3_mmt_mfu_context->udp_flow = &udp_packet->udp_flow;
+    atsc3_mmt_mfu_context->mmtp_flow = mmtp_flow;
+    atsc3_mmt_mfu_context->lls_slt_monitor = lls_slt_monitor;
+    atsc3_mmt_mfu_context->matching_lls_sls_mmt_session = matching_lls_sls_mmt_session;
+
+    mmtp_asset_flow = mmtp_flow_find_or_create_from_udp_packet(mmtp_flow, udp_packet);
+    atsc3_mmt_mfu_context->mmtp_asset_flow = mmtp_asset_flow;
+
+    mmtp_asset = mmtp_asset_flow_find_or_create_asset_from_lls_sls_mmt_session(mmtp_asset_flow, matching_lls_sls_mmt_session);
+    atsc3_mmt_mfu_context->mmtp_asset = mmtp_asset;
+
+    return mmtp_asset;
+}
+
+mmtp_packet_id_packets_container_t* atsc3_mmt_mfu_context_mfu_depacketizer_update_find_or_create_mmtp_packet_id_packets_container(atsc3_mmt_mfu_context_t* atsc3_mmt_mfu_context, mmtp_asset_t* mmtp_asset, mmtp_packet_header_t* mmtp_packet_header) {
+    mmtp_packet_id_packets_container_t* mmtp_packet_id_packets_container = NULL;
+
+    mmtp_packet_id_packets_container = mmtp_asset_find_or_create_packets_container_from_mmtp_packet_header(mmtp_asset, mmtp_packet_header);
+    atsc3_mmt_mfu_context->mmtp_packet_id_packets_container = mmtp_packet_id_packets_container;
+
+    return mmtp_packet_id_packets_container;
+}
+
 
 void mmtp_mfu_process_from_payload_with_context(udp_packet_t *udp_packet, mmtp_mpu_packet_t* mmtp_mpu_packet, atsc3_mmt_mfu_context_t* atsc3_mmt_mfu_context) {
 
@@ -1245,58 +1272,46 @@ aligned(8) class FullBox(unsigned int(32) boxtype, unsigned int(8) v, bit(24) f)
         timescale = 48000
 
 
- *
+ *   1.) check our tfhd box first if default sample duration is set
+            0x000008 default‐sample‐duration‐present
+            (avoid duration‐is‐empty flag)
+    2.) otherwise, fallback to our trun box,
+
+
  */
-uint32_t atsc3_mmt_movie_fragment_extract_sample_duration(block_t* mmt_movie_fragment_metadata) {
-    __MMSM_TRACE("atsc3_mmt_movie_fragment_extract_sample_duration: extracting from %p, length: %d", mmt_movie_fragment_metadata, mmt_movie_fragment_metadata->p_size);
+uint32_t atsc3_mmt_movie_fragment_extract_sample_duration_us(block_t* mmt_movie_fragment_metadata, uint32_t decoder_configuration_timebase) {
+    uint32_t sample_duration_unrebased = 0;
 
-    uint32_t box_size = 0;
-    uint32_t sample_count = 0;
-    uint32_t sample_duration_timebased = 0;
+    atsc3_isobmff_tfhd_box_t* atsc3_isobmff_tfhd_box = NULL;
+    atsc3_isobmff_trun_box_t* atsc3_isobmff_trun_box = NULL;
 
-    uint8_t version = 0;
-    uint32_t tr_flags = 0;
-    uint32_t data_offset = 0;
-    uint32_t first_sample_flags = 0;
+    if(!mmt_movie_fragment_metadata) {
+        __MMSM_ERROR("atsc3_mmt_movie_fragment_extract_sample_duration_us: mmt_movie_fragment_metadata was NULL!");
+        return 0;
+    }
 
-    uint32_t track_id = 0;
+    //we need at least 20 bytes for tfhd box...
+    if(block_Remaining_size(mmt_movie_fragment_metadata) < 20) {
+        __MMSM_ERROR("atsc3_mmt_movie_fragment_extract_sample_duration_us: block_Remaining_size(mmt_movie_fragment_metadata): %d less than 20 bytes!",
+                     block_Remaining_size(mmt_movie_fragment_metadata));
+        return 0;
+    }
 
-    block_Rewind(mmt_movie_fragment_metadata);
+    __MMSM_TRACE("atsc3_mmt_movie_fragment_extract_sample_duration_us: extracting from %p, pos: %d, length: %d, decoder_configuration_timebase: %d",
+            mmt_movie_fragment_metadata, mmt_movie_fragment_metadata->i_pos, mmt_movie_fragment_metadata->p_size, decoder_configuration_timebase);
+
+    atsc3_isobmff_tfhd_box = atsc3_isobmff_box_parser_tools_parse_tfhd_from_block_t(mmt_movie_fragment_metadata);
+    if(atsc3_isobmff_tfhd_box && atsc3_isobmff_tfhd_box->flag_default_sample_duration) {
+        sample_duration_unrebased = atsc3_isobmff_tfhd_box->default_sample_duration;
+        __MMSM_TRACE("atsc3_mmt_movie_fragment_extract_sample_duration_us: using tfhd default_sample_duration: %d (unbased)", sample_duration_unrebased);
+    } else {
+
+    }
 
     uint8_t* ptr = block_Get(mmt_movie_fragment_metadata);
     ptr += 4;
     for(int i=4; (ptr < mmt_movie_fragment_metadata->p_buffer + (mmt_movie_fragment_metadata->p_size-8)) &&  i < mmt_movie_fragment_metadata->p_size-8 && (sample_duration_timebased == 0); i++) {
 
-        //check our tfhd box first if default sample duration is set
-        //0x000008 default‐sample‐duration‐present
-
-        if(ptr[0] == 't' && ptr[1] == 'f' && ptr[2] == 'h' && ptr[3] == 'd') {
-
-            ptr += 4; //iterate past our box name
-            version = *ptr++;
-            //next 3 bytes for fullbox flags, 0x000001: data_offset present, 0x000004: first_sample_flags_present
-
-            tr_flags = (*ptr++ << 16) |  (*ptr++ << 8) |  (*ptr++);
-
-            track_id = ntohl(*(uint32_t*)(ptr));
-            ptr += 4;
-
-            if(tr_flags & 0x000001) {
-                //base_data_offset -> 64 bits
-                ptr += 8;
-            }
-
-            if(tr_flags & 0x000002) {
-                //sample_description_index -> 32 bits
-                ptr += 4;
-            }
-
-            if(tr_flags & 0x000008) {
-                //default_sample_duration -> 32 bits
-                sample_duration_timebased = ntohl(*(uint32_t *) (ptr));
-                break;
-            }
-        }
 
         if(ptr[0] == 't' && ptr[1] == 'r' && ptr[2] == 'u' && ptr[3] == 'n') {
             //read our box length from ptr-4
@@ -1337,7 +1352,13 @@ uint32_t atsc3_mmt_movie_fragment_extract_sample_duration(block_t* mmt_movie_fra
         ptr++;
     }
 
-    __MMSM_TRACE("atsc3_mmt_movie_fragment_extract_sample_duration: returning sample_duration_us as %d", sample_duration_timebased);
+    if(atsc3_isobmff_tfhd_box) {
+        atsc3_isobmff_tfhd_box_free(&atsc3_isobmff_tfhd_box);
+    }
+
+    if(atsc3_isobmff_trun_box) {
+        atsc3_isobmff_trun_box_free(&atsc3_isobmff_trun_box);
+    }
 
     return sample_duration_timebased;
 }

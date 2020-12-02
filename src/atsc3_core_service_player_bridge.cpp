@@ -34,6 +34,8 @@ recursive_mutex atsc3_core_service_player_bridge_context_mutex;
 //jjustman-2019-10-03 - context event callbacks...
 lls_slt_monitor_t* lls_slt_monitor = NULL;
 
+//jjustman-2020-12-01 - TODO - move this into atsc3_mmt_mfu_context
+
 //mmtp/sls flow management
 mmtp_flow_t* mmtp_flow = NULL;
 udp_flow_latest_mpu_sequence_number_container_t* udp_flow_latest_mpu_sequence_number_container = NULL;
@@ -757,23 +759,15 @@ void atsc3_core_service_bridge_process_packet_phy(block_t* packet) {
         if(!mmtp_packet_header || !atsc3_mmt_mfu_context || !mmtp_flow) {
             goto error;
         }
+        mmtp_packet_header_dump(mmtp_packet_header);
 
         //for filtering MMT flows by a specific packet_id
         if(dst_packet_id_filter && *dst_packet_id_filter != mmtp_packet_header->mmtp_packet_id) {
             goto error;
         }
 
-        //get a reference for our mmtp flows to persist if our fragment type is 0x01
-        mmtp_asset_flow = mmtp_flow_find_or_create_from_udp_packet(mmtp_flow, udp_packet);
-        mmtp_asset = mmtp_asset_flow_find_or_create_asset_from_lls_sls_mmt_session(mmtp_asset_flow, matching_lls_sls_mmt_session);
-
-        //jjustman-2020-11-12 - HACK - TODO - clean this up
-        atsc3_mmt_mfu_context->mmtp_flow = mmtp_flow;
-        atsc3_mmt_mfu_context->lls_slt_monitor = lls_slt_monitor;
-        atsc3_mmt_mfu_context->matching_lls_sls_mmt_session = matching_lls_sls_mmt_session;
-        atsc3_mmt_mfu_context->udp_flow_latest_mpu_sequence_number_container = udp_flow_latest_mpu_sequence_number_container;
-
-        mmtp_packet_header_dump(mmtp_packet_header);
+        mmtp_asset = atsc3_mmt_mfu_context_mfu_depacketizer_context_update_find_or_create_mmtp_asset(atsc3_mmt_mfu_context, udp_packet, mmtp_flow, lls_slt_monitor, matching_lls_sls_mmt_session);
+        mmtp_packet_id_packets_container = atsc3_mmt_mfu_context_mfu_depacketizer_update_find_or_create_mmtp_packet_id_packets_container(atsc3_mmt_mfu_context, mmtp_asset, mmtp_packet_header);
 
         if(mmtp_packet_header->mmtp_payload_type == 0x0) {
             mmtp_mpu_packet = mmtp_mpu_packet_parse_and_free_packet_header_from_block_t(&mmtp_packet_header, udp_packet->data);
@@ -1435,15 +1429,24 @@ void atsc3_mmt_mpu_mfu_on_sample_missing_ndk(atsc3_mmt_mfu_context_t* atsc3_mmt_
 }
 
 void atsc3_mmt_mpu_on_sequence_movie_fragment_metadata_present_ndk(atsc3_mmt_mfu_context_t* atsc3_mmt_mfu_context, uint16_t packet_id, uint32_t mpu_sequence_number, block_t* mmt_movie_fragment_metadata) {
+    uint32_t decoder_configuration_timebase = 1000000; //set as default to uS
+    uint32_t extracted_sample_duration_us = 0;
+
     if(!mmt_movie_fragment_metadata || !mmt_movie_fragment_metadata->p_size) {
         __ATSC3_CORE_SERVICE_PLAYER_BRIDGE_WARN("atsc3_mmt_mpu_on_sequence_movie_fragment_metadata_present_ndk: packet_id: %d, mpu_sequence_number: %d, mmt_movie_fragment_metadata: %p: returned null or no length!",
                 packet_id, mpu_sequence_number, mmt_movie_fragment_metadata);
         return;
     }
 
-    uint32_t extracted_sample_duration_us = 0;
+    if(atsc3_mmt_mfu_context->mmtp_packet_id_packets_container->atsc3_video_decoder_configuration_record && atsc3_mmt_mfu_context->mmtp_packet_id_packets_container->atsc3_video_decoder_configuration_record->timebase) {
+        decoder_configuration_timebase = atsc3_mmt_mfu_context->mmtp_packet_id_packets_container->atsc3_video_decoder_configuration_record->timebase;
+    } else if(atsc3_mmt_mfu_context->mmtp_packet_id_packets_container->atsc3_audio_decoder_configuration_record && atsc3_mmt_mfu_context->mmtp_packet_id_packets_container->atsc3_audio_decoder_configuration_record->timebase) {
+        decoder_configuration_timebase = atsc3_mmt_mfu_context->mmtp_packet_id_packets_container->atsc3_audio_decoder_configuration_record->timebase;
+    } else if(atsc3_mmt_mfu_context->mmtp_packet_id_packets_container->atsc3_stpp_decoder_configuration_record && atsc3_mmt_mfu_context->mmtp_packet_id_packets_container->atsc3_stpp_decoder_configuration_record->timebase) {
+        decoder_configuration_timebase = atsc3_mmt_mfu_context->mmtp_packet_id_packets_container->atsc3_stpp_decoder_configuration_record->timebase;
+    }
 
-    extracted_sample_duration_us = atsc3_mmt_movie_fragment_extract_sample_duration(mmt_movie_fragment_metadata);
+    extracted_sample_duration_us = atsc3_mmt_movie_fragment_extract_sample_duration_us(mmt_movie_fragment_metadata, decoder_configuration_timebase);
 
     //jjustman-2020-12-01 - TODO - fix me to map with audio configuration record_packet_id from mmtp_packet_id_packets_container
 //    if(packet_id == 200) {

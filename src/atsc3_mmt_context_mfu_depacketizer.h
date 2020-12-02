@@ -14,6 +14,7 @@
 #include "atsc3_mmtp_packet_types.h"
 #include "atsc3_mmt_context_mpu_depacketizer.h"
 #include "atsc3_mmt_context_signalling_information_depacketizer.h"
+#include "atsc3_isobmff_box_parser_tools.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -48,14 +49,23 @@ typedef struct atsc3_mmt_mfu_mpu_timestamp_descriptor_rolling_window {
 ATSC3_VECTOR_BUILDER_METHODS_INTERFACE(atsc3_mmt_mfu_mpu_timestamp_descriptor_rolling_window, atsc3_mmt_mfu_mpu_timestamp_descriptor);
 
 typedef struct atsc3_mmt_mfu_context {
+
 	//INTERNAL data structs
-	udp_flow_t* 	udp_flow;
-	mmtp_flow_t* 	mmtp_flow;
+	udp_flow_t* 	        udp_flow;
+    udp_flow_latest_mpu_sequence_number_container_t* udp_flow_latest_mpu_sequence_number_container;
 
-	udp_flow_latest_mpu_sequence_number_container_t* udp_flow_latest_mpu_sequence_number_container;
-	lls_slt_monitor_t* lls_slt_monitor;
-	lls_sls_mmt_session_t* matching_lls_sls_mmt_session;
+	mmtp_flow_t* 	                        mmtp_flow;
 
+    //active context
+    mmtp_asset_flow_t*                      mmtp_asset_flow;
+    mmtp_asset_t*                           mmtp_asset;
+    mmtp_packet_id_packets_container_t*     mmtp_packet_id_packets_container;
+
+    //TODO: relax this tight coupling from atsc3 to mmt package
+    lls_slt_monitor_t*                      lls_slt_monitor;
+    lls_sls_mmt_session_t*                  matching_lls_sls_mmt_session;
+
+    //holdover context information
 	mp_table_t* mp_table_last;
 	atsc3_mmt_mfu_mpu_timestamp_descriptor_rolling_window_t												packet_id_mpu_timestamp_descriptor_window;
 
@@ -96,32 +106,33 @@ typedef struct atsc3_mmt_mfu_context {
 
 } atsc3_mmt_mfu_context_t;
 
-atsc3_mmt_mfu_mpu_timestamp_descriptor_t* atsc3_get_mpu_timestamp_from_packet_id_mpu_sequence_number(atsc3_mmt_mfu_context_t* atsc3_mmt_mfu_context, uint16_t packet_id, uint32_t mpu_sequence_number);
 
 //wire up dummmy null callback(s) to prevent dispatcher from multiple if(..) checks...
 atsc3_mmt_mfu_context_t* atsc3_mmt_mfu_context_new();
 void atsc3_mmt_mfu_context_free(atsc3_mmt_mfu_context_t** atsc3_mmt_mfu_context_p);
 
+mmtp_asset_t* atsc3_mmt_mfu_context_mfu_depacketizer_context_update_find_or_create_mmtp_asset(atsc3_mmt_mfu_context_t* atsc3_mmt_mfu_context, udp_packet_t* udp_packet, mmtp_flow_t* mmtp_flow, lls_slt_monitor_t* lls_slt_monitor, lls_sls_mmt_session_t* matching_lls_sls_mmt_session);
+
+mmtp_packet_id_packets_container_t* atsc3_mmt_mfu_context_mfu_depacketizer_update_find_or_create_mmtp_packet_id_packets_container(atsc3_mmt_mfu_context_t* atsc3_mmt_mfu_context, mmtp_asset_t* mmtp_asset, mmtp_packet_header_t* mmtp_packet_header);
+
+atsc3_mmt_mfu_mpu_timestamp_descriptor_t* atsc3_get_mpu_timestamp_from_packet_id_mpu_sequence_number(atsc3_mmt_mfu_context_t* atsc3_mmt_mfu_context, uint16_t packet_id, uint32_t mpu_sequence_number);
+
 
 
 //Warning: cross boundary processing hooks with callback invocation - impl's in atsc3_mmt_context_mfu_depacketizer.c
 
-void mmtp_mfu_process_from_payload_with_context(udp_packet_t *udp_packet,
-												mmtp_mpu_packet_t* mmtp_mpu_packet,
-												atsc3_mmt_mfu_context_t* atsc3_mmt_mfu_context);
+void mmtp_mfu_process_from_payload_with_context(udp_packet_t *udp_packet, mmtp_mpu_packet_t* mmtp_mpu_packet, atsc3_mmt_mfu_context_t* atsc3_mmt_mfu_context);
 
 //MFU re-constituion and emission in context
 void mmtp_mfu_rebuild_from_packet_id_mpu_sequence_number(atsc3_mmt_mfu_context_t* atsc3_mmt_mfu_context, mmtp_packet_id_packets_container_t* mmtp_packet_id_packets_container, uint32_t mpu_sequence_number, uint32_t mfu_sample_number_from_current_du, bool flush_all_fragmentss);
 
 
 //MMT signalling information processing
-void mmt_signalling_message_dispatch_context_notification_callbacks(udp_packet_t *udp_packet,
-                                                                    mmtp_signalling_packet_t* mmtp_signalling_packet,
-                                                                    atsc3_mmt_mfu_context_t* atsc3_mmt_mfu_context);
+void mmt_signalling_message_dispatch_context_notification_callbacks(udp_packet_t *udp_packet, mmtp_signalling_packet_t* mmtp_signalling_packet, atsc3_mmt_mfu_context_t* atsc3_mmt_mfu_context);
 
 
 //movie fragment sample duration parsing...non bento4 impl
-uint32_t atsc3_mmt_movie_fragment_extract_sample_duration(block_t* mmt_movie_fragment_metadata);
+uint32_t atsc3_mmt_movie_fragment_extract_sample_duration_us(block_t* mmt_movie_fragment_metadata, uint32_t decoder_configuration_timebase);
 
 
 #define __MMT_CONTEXT_MPU_ERROR(...)        __LIBATSC3_TIMESTAMP_WARN(__VA_ARGS__);
