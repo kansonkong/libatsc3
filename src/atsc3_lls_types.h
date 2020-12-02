@@ -646,31 +646,38 @@ typedef struct lls_sls_mmt_session {
 
     uint32_t sls_destination_ip_address;
     uint16_t sls_destination_udp_port;
-    
-    uint16_t video_packet_id;
-    uint16_t audio_packet_id;
-    uint16_t stpp_packet_id;
-
-    udp_flow_packet_id_mpu_sequence_tuple_t* last_udp_flow_packet_id_mpu_sequence_tuple_audio;
-    bool last_udp_flow_packet_id_mpu_sequence_tuple_audio_processed;
-    udp_flow_packet_id_mpu_sequence_tuple_t* to_process_udp_flow_packet_id_mpu_sequence_tuple_audio;
-    
-    udp_flow_packet_id_mpu_sequence_tuple_t* last_udp_flow_packet_id_mpu_sequence_tuple_video;
-    bool last_udp_flow_packet_id_mpu_sequence_tuple_video_processed;
-    udp_flow_packet_id_mpu_sequence_tuple_t* to_process_udp_flow_packet_id_mpu_sequence_tuple_video;
-
-	udp_flow_packet_id_mpu_sequence_tuple_t* last_udp_flow_packet_id_mpu_sequence_tuple_stpp;
 
 
-	mmt_arguments_t* mmt_arguments;
-    mmt_session_t* mmt_session;
-    
-} lls_sls_mmt_session_t;
+    /*
+     * jjustman-2020-12-01 - these singled out individual *_packet_id essences are used for MMT transmux to a single a/v/s media essence, e.g. fmp4 or HLS -
+     *                      DO NOT use them for NDK/JNI or OOO tracking
+     *
+     */
+
+        uint16_t video_packet_id;
+        uint16_t audio_packet_id;
+        uint16_t stpp_packet_id;
+
+       udp_flow_packet_id_mpu_sequence_tuple_t* last_udp_flow_packet_id_mpu_sequence_tuple_audio;
+       bool last_udp_flow_packet_id_mpu_sequence_tuple_audio_processed;
+       udp_flow_packet_id_mpu_sequence_tuple_t* to_process_udp_flow_packet_id_mpu_sequence_tuple_audio;
+
+       udp_flow_packet_id_mpu_sequence_tuple_t* last_udp_flow_packet_id_mpu_sequence_tuple_video;
+       bool last_udp_flow_packet_id_mpu_sequence_tuple_video_processed;
+       udp_flow_packet_id_mpu_sequence_tuple_t* to_process_udp_flow_packet_id_mpu_sequence_tuple_video;
+
+       udp_flow_packet_id_mpu_sequence_tuple_t* last_udp_flow_packet_id_mpu_sequence_tuple_stpp;
 
 
-/**
- * used to store all mmt active sessions for this flow
- */
+       mmt_arguments_t* mmt_arguments;
+       mmt_session_t* mmt_session;
+
+   } lls_sls_mmt_session_t;
+
+
+   /**
+    * used to store all mmt active sessions for this flow
+    */
 typedef struct lls_sls_mmt_session_flows {
     lls_table_t* lls_table_slt;
 
@@ -736,6 +743,10 @@ typedef struct lls_sls_mmt_monitor {
 
     lls_sls_mmt_session_t* 					lls_mmt_session;
 
+    /*
+     * jjustman-2020-12-01 - these singled out individual *_packet_id essences are used for MMT transmux to a single a/v/s media essence, e.g. fmp4 or HLS -
+     *                      DO NOT use them for NDK/JNI or OOO tracking
+     */
     uint16_t 								video_packet_id;
     uint16_t 								audio_packet_id;
     uint16_t								stpp_packet_id;

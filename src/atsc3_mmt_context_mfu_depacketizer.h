@@ -13,7 +13,10 @@
 
 #include "atsc3_mmtp_packet_types.h"
 #include "atsc3_mmt_context_mpu_depacketizer.h"
+
 #include "atsc3_mmt_context_signalling_information_depacketizer.h"
+#include "atsc3_mmt_context_signalling_information_callbacks_internal.h"
+
 #include "atsc3_isobmff_box_parser_tools.h"
 
 #ifdef __cplusplus
@@ -48,29 +51,37 @@ typedef struct atsc3_mmt_mfu_mpu_timestamp_descriptor_rolling_window {
 
 ATSC3_VECTOR_BUILDER_METHODS_INTERFACE(atsc3_mmt_mfu_mpu_timestamp_descriptor_rolling_window, atsc3_mmt_mfu_mpu_timestamp_descriptor);
 
+
+/*
+ * atsc3_mmt_mfu_context:
+ *
+ *  See atsc3_mmt_mfu_context_callbacks_noop or atsc3_mmt_mfu_context_callbacks_default_jni for 'auto-wiring' of callbacks for MMTP processing events
+ *
+ */
+
 typedef struct atsc3_mmt_mfu_context {
 
 	//INTERNAL data structs
-	udp_flow_t* 	        udp_flow;
-    udp_flow_latest_mpu_sequence_number_container_t* udp_flow_latest_mpu_sequence_number_container;
+	udp_flow_t* 	                                    udp_flow;
+    udp_flow_latest_mpu_sequence_number_container_t*    udp_flow_latest_mpu_sequence_number_container;
 
-	mmtp_flow_t* 	                        mmtp_flow;
+	mmtp_flow_t* 	                                    mmtp_flow;
 
     //active context
-    mmtp_asset_flow_t*                      mmtp_asset_flow;
-    mmtp_asset_t*                           mmtp_asset;
-    mmtp_packet_id_packets_container_t*     mmtp_packet_id_packets_container;
+    mmtp_asset_flow_t*                                  mmtp_asset_flow;
+    mmtp_asset_t*                                       mmtp_asset;
+    mmtp_packet_id_packets_container_t*                 mmtp_packet_id_packets_container;
 
     //TODO: relax this tight coupling from atsc3 to mmt package
-    lls_slt_monitor_t*                      lls_slt_monitor;
-    lls_sls_mmt_session_t*                  matching_lls_sls_mmt_session;
+    lls_slt_monitor_t*                                  lls_slt_monitor;
+    lls_sls_mmt_session_t*                              matching_lls_sls_mmt_session;
 
     //holdover context information
 	mp_table_t* mp_table_last;
 	atsc3_mmt_mfu_mpu_timestamp_descriptor_rolling_window_t												packet_id_mpu_timestamp_descriptor_window;
 
 	//INTERNAL event callbacks
-	__internal__atsc3_mmt_signalling_information_on_packet_id_with_mpu_timestamp_descriptor_f			__internal__atsc3_mmt_signalling_information_on_packet_id_with_mpu_timestamp_descriptor;
+    atsc3_mmt_signalling_information_on_packet_id_with_mpu_timestamp_descriptor_internal_f		        atsc3_mmt_signalling_information_on_packet_id_with_mpu_timestamp_descriptor_internal;
 
 	//EXTERNAL helper methods
 	atsc3_get_mpu_timestamp_from_packet_id_mpu_sequence_number_f										get_mpu_timestamp_from_packet_id_mpu_sequence_number;
@@ -106,9 +117,8 @@ typedef struct atsc3_mmt_mfu_context {
 
 } atsc3_mmt_mfu_context_t;
 
+atsc3_mmt_mfu_context_t* atsc3_mmt_mfu_context_internal_flows_new();
 
-//wire up dummmy null callback(s) to prevent dispatcher from multiple if(..) checks...
-atsc3_mmt_mfu_context_t* atsc3_mmt_mfu_context_new();
 void atsc3_mmt_mfu_context_free(atsc3_mmt_mfu_context_t** atsc3_mmt_mfu_context_p);
 
 mmtp_asset_t* atsc3_mmt_mfu_context_mfu_depacketizer_context_update_find_or_create_mmtp_asset(atsc3_mmt_mfu_context_t* atsc3_mmt_mfu_context, udp_packet_t* udp_packet, lls_slt_monitor_t* lls_slt_monitor, lls_sls_mmt_session_t* matching_lls_sls_mmt_session);
