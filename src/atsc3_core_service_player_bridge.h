@@ -145,7 +145,6 @@ void atsc3_mmt_signalling_information_on_audio_packet_id_with_mpu_timestamp_desc
 void atsc3_mmt_signalling_information_on_stpp_packet_id_with_mpu_timestamp_descriptor_ndk(atsc3_mmt_mfu_context_t* atsc3_mmt_mfu_context, uint16_t stpp_packet_id, uint32_t mpu_sequence_number, uint64_t mpu_presentation_time_ntp64, uint32_t mpu_presentation_time_seconds, uint32_t mpu_presentation_time_microseconds);
 void atsc3_mmt_mpu_on_sequence_movie_fragment_metadata_present_ndk(atsc3_mmt_mfu_context_t* atsc3_mmt_mfu_context, uint16_t packet_id, uint32_t mpu_sequence_number, block_t* mmt_movie_fragment_metadata);
 
-
 #define __ATSC3_CORE_SERVICE_PLAYER_BRIDGE_ERROR(...) __LIBATSC3_TIMESTAMP_ERROR(__VA_ARGS__);
 #define __ATSC3_CORE_SERVICE_PLAYER_BRIDGE_WARN(...)  __LIBATSC3_TIMESTAMP_WARN(__VA_ARGS__);
 #define __ATSC3_CORE_SERVICE_PLAYER_BRIDGE_INFO(...)  if(_ATSC3_CORE_SERVICE_PLAYER_BRIDGE_INFO_ENABLED)  { __LIBATSC3_TIMESTAMP_INFO(__VA_ARGS__); }
