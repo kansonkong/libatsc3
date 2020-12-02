@@ -44,8 +44,6 @@ atsc3_alc_arguments_t* alc_arguments = NULL;
 
 std::string atsc3_ndk_cache_temp_folder_path = "";
 
-uint32_t global_mfu_proccessed_count = 0;
-
 IAtsc3NdkApplicationBridge* atsc3_ndk_application_bridge_get_instance() {
     return Atsc3NdkApplicationBridge_ptr;
 }
