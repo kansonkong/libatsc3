@@ -43,7 +43,6 @@ using namespace std;
 
 #include "atsc3_hevc_nal_extractor.h"
 
-#include "atsc3_alc_utils.h"
 #include "atsc3_lls_alc_utils.h"
 #include "atsc3_alc_rx.h"
 #include "atsc3_alp_types.h"

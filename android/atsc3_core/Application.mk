@@ -8,7 +8,7 @@ APP_STRIP_MODE := "none"
 APP_STL := c++_shared
 APP_ABI := arm64-v8a armeabi-v7a
 
-APP_CPPFLAGS += -std=c++11 -fexceptions -D_ANDROID
+APP_CPPFLAGS += -std=c++11 -fexceptions -D_ANDROID -g -O1 -fno-optimize-sibling-calls
 
 # jjustman-2020-10-07 - hwasan is only available on android 10 or higher
 ifeq ($(ENABLE_HWASAN),armeabi-v7a)
