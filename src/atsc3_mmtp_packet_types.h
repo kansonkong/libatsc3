@@ -29,6 +29,7 @@ extern "C" {
 
 #include "atsc3_video_decoder_configuration_record.h"
 #include "atsc3_audio_decoder_configuration_record.h"
+#include "atsc3_stpp_decoder_configuration_record.h"
 
 extern int _MMTP_DEBUG_ENABLED;
 extern int _MMTP_TRACE_ENABLED;
@@ -257,10 +258,6 @@ typedef struct mmtp_repair_symbol_packet {
 	_MMTP_PACKET_HEADER_FIELDS;
 } mmtp_repair_symbol_packet_t;
 
-//jjustman-2020-12-01 - TODO - refactor this out
-typedef struct atsc3_stpp_decoder_configuration_record {
-    uint32_t        timebase;
-} atsc3_stpp_decoder_configuration_record_t;
 
 typedef struct mmtp_packet_id_packets_container {
     uint16_t            packet_id;

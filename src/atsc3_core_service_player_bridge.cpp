@@ -34,8 +34,6 @@ recursive_mutex atsc3_core_service_player_bridge_context_mutex;
 //jjustman-2019-10-03 - context event callbacks...
 lls_slt_monitor_t* lls_slt_monitor = NULL;
 
-//jjustman-2020-12-01 - TODO - move this into atsc3_mmt_mfu_context
-
 //mmtp/sls flow management
 
 lls_sls_mmt_monitor_t* lls_sls_mmt_monitor = NULL;
@@ -49,8 +47,6 @@ std::string atsc3_ndk_cache_temp_folder_path = "";
 
 //these should actually be referenced from mmt_sls_monitor for proper flow references
 uint16_t global_video_packet_id = 0;
-uint16_t global_audio_packet_id = 0;
-uint16_t global_stpp_packet_id = 0;
 
 uint32_t global_mfu_proccessed_count = 0;
 
@@ -129,8 +125,6 @@ void atsc3_core_service_application_bridge_reset_context() {
     //wire up a lls event for SLS table
     lls_slt_monitor->atsc3_lls_on_sls_table_present_callback = &atsc3_lls_on_sls_table_present_ndk;
     lls_slt_monitor->atsc3_lls_on_aeat_table_present_callback = &atsc3_lls_on_aeat_table_present_ndk;
-
-
 
     //MMT/MFU callback contexts
     atsc3_mmt_mfu_context = atsc3_mmt_mfu_context_new();
@@ -1160,22 +1154,11 @@ void atsc3_mmt_mpu_on_sequence_mpu_metadata_present_ndk(atsc3_mmt_mfu_context_t*
                 Atsc3NdkApplicationBridge_ptr->atsc3_setVideoWidthHeightFromTrak(atsc3_video_decoder_configuration_record->width, atsc3_video_decoder_configuration_record->height);
             }
 
-            if (atsc3_video_decoder_configuration_record->hevc_decoder_configuration_record) {
-
-                block_t* hevc_nals_combined = atsc3_hevc_extract_extradata_nals_combined_ffmpegImpl(atsc3_video_decoder_configuration_record->hevc_decoder_configuration_record->box_data_original);
-
-                if(hevc_nals_combined->p_size) {
-                    //todo - jjustman-2019-10-12 - lock this for race conditions and allocate per flow
-                    block_Rewind(hevc_nals_combined);
-                    if(__INTERNAL_LAST_NAL_PACKET_TODO_FIXME) {
-                        block_Destroy(&__INTERNAL_LAST_NAL_PACKET_TODO_FIXME);
-                    }
-                    __INTERNAL_LAST_NAL_PACKET_TODO_FIXME = block_Duplicate(hevc_nals_combined);
-
-                    Atsc3NdkApplicationBridge_ptr->atsc3_onInitHEVC_NAL_Extracted(packet_id, mpu_sequence_number, block_Get(hevc_nals_combined), hevc_nals_combined->p_size);
+            if (atsc3_video_decoder_configuration_record->hevc_decoder_configuration_record && atsc3_video_decoder_configuration_record->hevc_decoder_configuration_record->hevc_nals_combined) {
+                if(atsc3_video_decoder_configuration_record->hevc_decoder_configuration_record->hevc_nals_combined->p_size) {
+                    Atsc3NdkApplicationBridge_ptr->atsc3_onInitHEVC_NAL_Extracted(packet_id, mpu_sequence_number, block_Get(atsc3_video_decoder_configuration_record->hevc_decoder_configuration_record->hevc_nals_combined), atsc3_video_decoder_configuration_record->hevc_decoder_configuration_record->hevc_nals_combined->p_size);
                 } else {
                     Atsc3NdkApplicationBridge_ptr->LogMsg("atsc3_mmt_mpu_on_sequence_mpu_metadata_present_ndk - error, no NALs returned!");
-
                 }
             }
         }
@@ -1196,22 +1179,17 @@ void atsc3_mmt_signalling_information_on_video_packet_id_with_mpu_timestamp_desc
 
 void atsc3_mmt_signalling_information_on_audio_packet_id_with_mpu_timestamp_descriptor_ndk(atsc3_mmt_mfu_context_t* atsc3_mmt_mfu_context, uint16_t audio_packet_id, uint32_t mpu_sequence_number, uint64_t mpu_presentation_time_ntp64, uint32_t mpu_presentation_time_seconds, uint32_t mpu_presentation_time_microseconds) {
     uint64_t last_mpu_timestamp = mpu_presentation_time_seconds * 1000000L + mpu_presentation_time_microseconds;
-    global_audio_packet_id = audio_packet_id;
-    //jjustman-2020-11-30 -hack
-    if(audio_packet_id == 201)
-        return;
+
     Atsc3NdkApplicationBridge_ptr->atsc3_signallingContext_notify_audio_packet_id_and_mpu_timestamp_descriptor(audio_packet_id, mpu_sequence_number, mpu_presentation_time_ntp64, mpu_presentation_time_seconds, mpu_presentation_time_microseconds);
 }
 
 void atsc3_mmt_signalling_information_on_stpp_packet_id_with_mpu_timestamp_descriptor_ndk(atsc3_mmt_mfu_context_t* atsc3_mmt_mfu_context, uint16_t stpp_packet_id, uint32_t mpu_sequence_number, uint64_t mpu_presentation_time_ntp64, uint32_t mpu_presentation_time_seconds, uint32_t mpu_presentation_time_microseconds) {
     uint64_t last_mpu_timestamp = mpu_presentation_time_seconds * 1000000L + mpu_presentation_time_microseconds;
-    global_stpp_packet_id = stpp_packet_id;
 
     Atsc3NdkApplicationBridge_ptr->atsc3_signallingContext_notify_stpp_packet_id_and_mpu_timestamp_descriptor(stpp_packet_id, mpu_sequence_number, mpu_presentation_time_ntp64, mpu_presentation_time_seconds, mpu_presentation_time_microseconds);
 }
 
 void atsc3_mmt_mpu_mfu_on_sample_complete_ndk(atsc3_mmt_mfu_context_t* atsc3_mmt_mfu_context, uint16_t packet_id, uint32_t mpu_sequence_number, uint32_t sample_number, block_t* mmt_mfu_sample, uint32_t mfu_fragment_count_rebuilt) {
-    //    void onMfuPacket(bool is_video, uint8_t* buffer, uint32_t bufferLen, uint64_t presentationUs);
 
     //cant process MFU's without the NAL... we should ALWAYS listen for at least mpu metadata
     //in as many MMT flows as possible
