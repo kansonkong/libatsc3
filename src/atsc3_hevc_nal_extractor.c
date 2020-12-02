@@ -39,7 +39,7 @@ atsc3_video_decoder_configuration_record_t* atsc3_avc1_hevc_nal_extractor_parse_
 
     atsc3_video_decoder_configuration_record_t* atsc3_video_decoder_configuration_record = atsc3_video_decoder_configuration_record_new();
 
-    atsc3_isobmff_mdhd_box = atsc3_isobmff_box_parser_tools_parse_mdhd_timescale_from_block_t(mpu_metadata_block);
+    atsc3_isobmff_mdhd_box = atsc3_isobmff_box_parser_tools_parse_mdhd_from_block_t(mpu_metadata_block);
     if(atsc3_isobmff_mdhd_box) {
         if (atsc3_isobmff_mdhd_box->version == 1) {
             atsc3_video_decoder_configuration_record->timebase = atsc3_isobmff_mdhd_box->atsc3_isobmff_mdhd_box_v1.timescale;
