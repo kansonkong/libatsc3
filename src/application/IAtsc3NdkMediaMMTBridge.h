@@ -42,5 +42,4 @@ class IAtsc3NdkMediaMMTBridge {
 };
 
 
-
 #endif /* SRC_APPLICATION_IATSC3NDKMEDIAMMTBRIDGE_H_ */

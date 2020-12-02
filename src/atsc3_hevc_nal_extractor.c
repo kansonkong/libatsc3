@@ -50,6 +50,7 @@ atsc3_video_decoder_configuration_record_t* atsc3_avc1_hevc_nal_extractor_parse_
         atsc3_isobmff_mdhd_box_free(&atsc3_isobmff_mdhd_box);
     }
 
+    block_Rewind(mpu_metadata_block);
     uint8_t *tkhd_ptr = block_Get(mpu_metadata_block);
     bool has_tkhd_match = false;
     int tkhd_match_index = 0;
