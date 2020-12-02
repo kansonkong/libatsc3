@@ -1448,22 +1448,6 @@ void atsc3_mmt_mpu_on_sequence_movie_fragment_metadata_present_ndk(atsc3_mmt_mfu
 
     extracted_sample_duration_us = atsc3_mmt_movie_fragment_extract_sample_duration_us(mmt_movie_fragment_metadata, decoder_configuration_timebase);
 
-    //jjustman-2020-12-01 - TODO - fix me to map with audio configuration record_packet_id from mmtp_packet_id_packets_container
-//    if(packet_id == 200) {
-//        if(atsc3_mmt_mfu_context->atsc3_audio_decoder_configuration_record && atsc3_mmt_mfu_context->atsc3_audio_decoder_configuration_record->sample_rate) {
-//            extracted_sample_duration_us = (extracted_sample_duration_us * atsc3_mmt_mfu_context->atsc3_audio_decoder_configuration_record->timebase) / atsc3_mmt_mfu_context->atsc3_audio_decoder_configuration_record->sample_rate;
-//        }
-//    }
-//
-//    if(packet_id == 201) {
-//        extracted_sample_duration_us = 0;
-//    }
-
-    //jjustman-2020-11-18 - HACK - TODO - FIXME
-//    if(packet_id == 200 ) {
-//        extracted_sample_duration_us = (1601 * 1000000) / (48000);
-//    }
-
     if(!extracted_sample_duration_us) {
         __ATSC3_CORE_SERVICE_PLAYER_BRIDGE_WARN("atsc3_mmt_mpu_on_sequence_movie_fragment_metadata_present_ndk: packet_id: %d, mpu_sequence_number: %d, mmt_movie_fragment_metadata: %p, computed extracted_sample_duration_us was 0!",
                                                 packet_id, mpu_sequence_number, mmt_movie_fragment_metadata);

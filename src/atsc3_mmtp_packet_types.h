@@ -8,16 +8,15 @@
  *
  */
 
+#include <assert.h>
+#include <limits.h>
+
 #ifndef ATSC3_MMTP_PACKET_TYPES_H_
 #define ATSC3_MMTP_PACKET_TYPES_H_
 
 #if defined (__cplusplus)
 extern "C" {
 #endif
-
-
-#include <assert.h>
-#include <limits.h>
 
 #include "atsc3_logging_externs.h"
 #include "atsc3_vector_builder.h"
@@ -27,6 +26,9 @@ extern "C" {
 #include "atsc3_mmt_mpu_sample_format_type.h"
     
 #include "atsc3_listener_udp.h"
+
+#include "atsc3_video_decoder_configuration_record.h"
+#include "atsc3_audio_decoder_configuration_record.h"
 
 extern int _MMTP_DEBUG_ENABLED;
 extern int _MMTP_TRACE_ENABLED;
@@ -255,10 +257,6 @@ typedef struct mmtp_repair_symbol_packet {
 	_MMTP_PACKET_HEADER_FIELDS;
 } mmtp_repair_symbol_packet_t;
 
-//jjustman-2020-12-01 - forward declare our (atsc3_)video_decoder_configuration_record_t and atsc3_audio_decoder_configuration_record
-typedef struct atsc3_video_decoder_configuration_record atsc3_video_decoder_configuration_record_t;
-typedef struct atsc3_audio_decoder_configuration_record atsc3_audio_decoder_configuration_record_t;
-
 //jjustman-2020-12-01 - TODO - refactor this out
 typedef struct atsc3_stpp_decoder_configuration_record {
     uint32_t        timebase;
@@ -270,7 +268,6 @@ typedef struct mmtp_packet_id_packets_container {
     atsc3_video_decoder_configuration_record_t*     atsc3_video_decoder_configuration_record;
     atsc3_audio_decoder_configuration_record_t*     atsc3_audio_decoder_configuration_record;
     atsc3_stpp_decoder_configuration_record_t*      atsc3_stpp_decoder_configuration_record;
-
 
     ATSC3_VECTOR_BUILDER_STRUCT(mpu_sequence_number_mmtp_mpu_packet_collection);
     ATSC3_VECTOR_BUILDER_STRUCT(mmtp_signalling_packet);

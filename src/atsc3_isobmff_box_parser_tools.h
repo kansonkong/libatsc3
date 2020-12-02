@@ -141,6 +141,10 @@ atsc3_isobmff_tfhd_box_t* atsc3_isobmff_tfhd_box_new();
 void atsc3_isobmff_tfhd_box_free(atsc3_isobmff_tfhd_box_t** atsc3_isobmff_tfhd_box_p);
 atsc3_isobmff_tfhd_box_t* atsc3_isobmff_box_parser_tools_parse_tfhd_from_block_t(block_t* isobmff_movie_fragment_metadata_block_t);
 
+atsc3_isobmff_trun_box_t* atsc3_isobmff_trun_box_new();
+void atsc3_isobmff_trun_box_free(atsc3_isobmff_trun_box_t** atsc3_isobmff_trun_box_p);
+atsc3_isobmff_trun_box_t* atsc3_isobmff_box_parser_tools_parse_trun_from_block_t(block_t* isobmff_movie_fragment_metadata_block_t);
+
 
 
 #define _ATSC3_ISOBMFF_BOX_PARSER_TOOLS_ERROR(...) __LIBATSC3_TIMESTAMP_ERROR(__VA_ARGS__);
