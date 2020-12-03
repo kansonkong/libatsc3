@@ -6,7 +6,7 @@
 
 IAtsc3NdkMediaMMTBridge* Atsc3NdkMediaMMTBridge_ptr = NULL;
 
-int _ATSC3_MMT_MFU_CONTEXT_CALLBACKS_DEFAULT_JNI_INFO_ENABLED = 0;
+int _ATSC3_MMT_MFU_CONTEXT_CALLBACKS_DEFAULT_JNI_INFO_ENABLED = 1;
 int _ATSC3_MMT_MFU_CONTEXT_CALLBACKS_DEFAULT_JNI_DEBUG_ENABLED = 0;
 int _ATSC3_MMT_MFU_CONTEXT_CALLBACKS_DEFAULT_JNI_TRACE_ENABLED = 0;
 
@@ -64,28 +64,33 @@ void atsc3_ndk_media_mmt_bridge_reset_context() {
  *                      track init metadata (i.e. moov) is received
  *
  *      note: see atsc3_mmt_mpu_on_sequence_movie_fragment_metadata_present for movie fragment metadata (moof)
+ *         atsc3_hevc_nals_record_dump("mmt_mpu_metadata", mmt_mpu_metadata);
  */
 void atsc3_mmt_mpu_on_sequence_mpu_metadata_present_ndk(atsc3_mmt_mfu_context_t* atsc3_mmt_mfu_context, uint16_t packet_id, uint32_t mpu_sequence_number, block_t* mmt_mpu_metadata) {
-    //atsc3_hevc_nals_record_dump("mmt_mpu_metadata", mmt_mpu_metadata);
 
-    //manually extract our NALs here
-    atsc3_video_decoder_configuration_record_t* atsc3_video_decoder_configuration_record = atsc3_avc1_hevc_nal_extractor_parse_from_mpu_metadata_block_t(mmt_mpu_metadata);
+    bool is_video_packet = (strncasecmp(ATSC3_MP_TABLE_ASSET_ROW_HEVC_ID, atsc3_mmt_mfu_context->mmtp_packet_id_packets_container->asset_type, 4) == 0) ||
+                            (strncasecmp(ATSC3_MP_TABLE_ASSET_ROW_H264_ID, atsc3_mmt_mfu_context->mmtp_packet_id_packets_container->asset_type, 4) == 0);
 
-    //we will get either avc1 (avcC) NAL or hevc (hvcC) nals back
-    if (atsc3_video_decoder_configuration_record) {
+    if(is_video_packet) {
+        //manually extract our csd and NALs here
+        atsc3_video_decoder_configuration_record_t* atsc3_video_decoder_configuration_record = atsc3_avc1_hevc_nal_extractor_parse_from_mpu_metadata_block_t(mmt_mpu_metadata);
 
-        atsc3_mmt_mfu_context->mmtp_packet_id_packets_container->atsc3_video_decoder_configuration_record = atsc3_video_decoder_configuration_record;
+        //we will get either avc1 (avcC) NAL or hevc (hvcC) nals back
+        if (atsc3_video_decoder_configuration_record) {
 
-        //set width/height to player
-        if(atsc3_video_decoder_configuration_record->width && atsc3_video_decoder_configuration_record->height) {
-            Atsc3NdkMediaMMTBridge_ptr->atsc3_setVideoWidthHeightFromTrak(atsc3_video_decoder_configuration_record->width, atsc3_video_decoder_configuration_record->height);
-        }
+            atsc3_mmt_mfu_context->mmtp_packet_id_packets_container->atsc3_video_decoder_configuration_record = atsc3_video_decoder_configuration_record;
 
-        if (atsc3_video_decoder_configuration_record->hevc_decoder_configuration_record && atsc3_video_decoder_configuration_record->hevc_decoder_configuration_record->hevc_nals_combined) {
-            if(atsc3_video_decoder_configuration_record->hevc_decoder_configuration_record->hevc_nals_combined->p_size) {
-                Atsc3NdkMediaMMTBridge_ptr->atsc3_onInitHEVC_NAL_Extracted(packet_id, mpu_sequence_number, block_Get(atsc3_video_decoder_configuration_record->hevc_decoder_configuration_record->hevc_nals_combined), atsc3_video_decoder_configuration_record->hevc_decoder_configuration_record->hevc_nals_combined->p_size);
-            } else {
-                Atsc3NdkMediaMMTBridge_ptr->LogMsg("atsc3_mmt_mpu_on_sequence_mpu_metadata_present_ndk - error, no NALs returned!");
+            //set width/height to player
+            if (atsc3_video_decoder_configuration_record->width && atsc3_video_decoder_configuration_record->height) {
+                Atsc3NdkMediaMMTBridge_ptr->atsc3_setVideoWidthHeightFromTrak(atsc3_video_decoder_configuration_record->width, atsc3_video_decoder_configuration_record->height);
+            }
+
+            if (atsc3_video_decoder_configuration_record->hevc_decoder_configuration_record && atsc3_video_decoder_configuration_record->hevc_decoder_configuration_record->hevc_nals_combined) {
+                if (atsc3_video_decoder_configuration_record->hevc_decoder_configuration_record->hevc_nals_combined->p_size) {
+                    Atsc3NdkMediaMMTBridge_ptr->atsc3_onInitHEVC_NAL_Extracted(packet_id, mpu_sequence_number, block_Get(atsc3_video_decoder_configuration_record->hevc_decoder_configuration_record->hevc_nals_combined), atsc3_video_decoder_configuration_record->hevc_decoder_configuration_record->hevc_nals_combined->p_size);
+                } else {
+                    Atsc3NdkMediaMMTBridge_ptr->LogMsg("atsc3_mmt_mpu_on_sequence_mpu_metadata_present_ndk - error, no NALs returned!");
+                }
             }
         }
     } else {
@@ -97,19 +102,22 @@ void atsc3_mmt_mpu_on_sequence_mpu_metadata_present_ndk(atsc3_mmt_mfu_context_t*
 }
 
 void atsc3_mmt_signalling_information_on_video_packet_id_with_mpu_timestamp_descriptor_ndk(atsc3_mmt_mfu_context_t* atsc3_mmt_mfu_context, uint16_t video_packet_id, uint32_t mpu_sequence_number, uint64_t mpu_presentation_time_ntp64, uint32_t mpu_presentation_time_seconds, uint32_t mpu_presentation_time_microseconds) {
-    uint64_t last_mpu_timestamp = mpu_presentation_time_seconds * 1000000L + mpu_presentation_time_microseconds;
+    _ATSC3_MMT_MFU_CONTEXT_CALLBACKS_DEFAULT_JNI_INFO("atsc3_mmt_signalling_information_on_video_packet_id_with_mpu_timestamp_descriptor_ndk: packet_id: %d, asset_type: %.4s, mp_table_asset_row: %p",
+                video_packet_id, atsc3_mmt_mfu_context->mmtp_packet_id_packets_container->asset_type, atsc3_mmt_mfu_context->mmtp_packet_id_packets_container->mp_table_asset_row);
 
     Atsc3NdkMediaMMTBridge_ptr->atsc3_signallingContext_notify_video_packet_id_and_mpu_timestamp_descriptor(video_packet_id, mpu_sequence_number, mpu_presentation_time_ntp64, mpu_presentation_time_seconds, mpu_presentation_time_microseconds);
 }
 
 void atsc3_mmt_signalling_information_on_audio_packet_id_with_mpu_timestamp_descriptor_ndk(atsc3_mmt_mfu_context_t* atsc3_mmt_mfu_context, uint16_t audio_packet_id, uint32_t mpu_sequence_number, uint64_t mpu_presentation_time_ntp64, uint32_t mpu_presentation_time_seconds, uint32_t mpu_presentation_time_microseconds) {
-    uint64_t last_mpu_timestamp = mpu_presentation_time_seconds * 1000000L + mpu_presentation_time_microseconds;
+    _ATSC3_MMT_MFU_CONTEXT_CALLBACKS_DEFAULT_JNI_INFO("atsc3_mmt_signalling_information_on_audio_packet_id_with_mpu_timestamp_descriptor_ndk: packet_id: %d, asset_type: %.4s, mp_table_asset_row: %p",
+                                                      audio_packet_id, atsc3_mmt_mfu_context->mmtp_packet_id_packets_container->asset_type, atsc3_mmt_mfu_context->mmtp_packet_id_packets_container->mp_table_asset_row);
 
     Atsc3NdkMediaMMTBridge_ptr->atsc3_signallingContext_notify_audio_packet_id_and_mpu_timestamp_descriptor(audio_packet_id, mpu_sequence_number, mpu_presentation_time_ntp64, mpu_presentation_time_seconds, mpu_presentation_time_microseconds);
 }
 
 void atsc3_mmt_signalling_information_on_stpp_packet_id_with_mpu_timestamp_descriptor_ndk(atsc3_mmt_mfu_context_t* atsc3_mmt_mfu_context, uint16_t stpp_packet_id, uint32_t mpu_sequence_number, uint64_t mpu_presentation_time_ntp64, uint32_t mpu_presentation_time_seconds, uint32_t mpu_presentation_time_microseconds) {
-    uint64_t last_mpu_timestamp = mpu_presentation_time_seconds * 1000000L + mpu_presentation_time_microseconds;
+    _ATSC3_MMT_MFU_CONTEXT_CALLBACKS_DEFAULT_JNI_INFO("atsc3_mmt_signalling_information_on_stpp_packet_id_with_mpu_timestamp_descriptor_ndk: packet_id: %d, asset_type: %.4s, mp_table_asset_row: %p",
+                                                      stpp_packet_id, atsc3_mmt_mfu_context->mmtp_packet_id_packets_container->asset_type, atsc3_mmt_mfu_context->mmtp_packet_id_packets_container->mp_table_asset_row);
 
     Atsc3NdkMediaMMTBridge_ptr->atsc3_signallingContext_notify_stpp_packet_id_and_mpu_timestamp_descriptor(stpp_packet_id, mpu_sequence_number, mpu_presentation_time_ntp64, mpu_presentation_time_seconds, mpu_presentation_time_microseconds);
 }
