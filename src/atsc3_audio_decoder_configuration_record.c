@@ -149,6 +149,7 @@ atsc3_audio_decoder_configuration_record_t* atsc3_audio_decoder_configuration_re
           https://wiki.multimedia.cx/index.php/Understanding_AAC
           https://developer.android.com/reference/android/media/MediaCodecs
 
+     jjustman-2020-12-02: TODO: add in additional fourcc parsing types in addition to ac-4
  */
 
 bool atsc3_audio_decoder_configuration_parse_codec_type_and_sample_rate_from_block_t(atsc3_audio_decoder_configuration_record_t* atsc3_audio_decoder_configuration_record, block_t* mmt_mpu_metadata_block) {
