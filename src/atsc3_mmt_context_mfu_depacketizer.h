@@ -35,6 +35,9 @@ typedef void (*atsc3_mmt_mpu_mfu_on_sample_corrupt_f)  (atsc3_mmt_mfu_context_t*
 typedef void (*atsc3_mmt_mpu_mfu_on_sample_corrupt_mmthsample_header_f) (atsc3_mmt_mfu_context_t* atsc3_mmt_mfu_context, uint16_t packet_id, uint32_t mpu_sequence_number, uint32_t sample_number, block_t* mmt_mfu_sample,  uint32_t mfu_fragment_count_expected, uint32_t mfu_fragment_count_rebuilt);
 typedef void (*atsc3_mmt_mpu_mfu_on_sample_missing_f)  (atsc3_mmt_mfu_context_t* atsc3_mmt_mfu_context, uint16_t packet_id, uint32_t mpu_sequence_number, uint32_t sample_number);
 
+typedef bool (*atsc3_mmt_signalling_information_on_routecomponent_message_present_f) (atsc3_mmt_mfu_context_t* atsc3_mmt_mfu_context, mmt_atsc3_route_component_t* mmt_atsc3_route_component);
+typedef void (*atsc3_mmt_signalling_information_on_held_message_present_f) (atsc3_mmt_mfu_context_t* atsc3_mmt_mfu_context, mmt_atsc3_held_message_t* mmt_atsc3_held_message);
+
 typedef struct atsc3_mmt_mfu_mpu_timestamp_descriptor {
 	uint16_t 	packet_id;
 	uint32_t 	mpu_sequence_number;
@@ -114,6 +117,10 @@ typedef struct atsc3_mmt_mfu_context {
 
 	//Lastly, in the spirit of OOO MMT, movie fragment metadata comes last and should only be used as a last resort...
 	atsc3_mmt_mpu_on_sequence_movie_fragment_metadata_present_f                                         atsc3_mmt_mpu_on_sequence_movie_fragment_metadata_present;
+
+    atsc3_mmt_signalling_information_on_routecomponent_message_present_f                                atsc3_mmt_signalling_information_on_routecomponent_message_present;
+    mmt_atsc3_route_component_t*                                                                        mmt_atsc3_route_component_monitored;
+    atsc3_mmt_signalling_information_on_held_message_present_f                                          atsc3_mmt_signalling_information_on_held_message_present;
 
 } atsc3_mmt_mfu_context_t;
 

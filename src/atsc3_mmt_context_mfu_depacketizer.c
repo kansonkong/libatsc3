@@ -67,7 +67,6 @@ atsc3_mmt_mfu_context_t* atsc3_mmt_mfu_context_internal_flows_new() {
     //helper methods
     atsc3_mmt_mfu_context->get_mpu_timestamp_from_packet_id_mpu_sequence_number         = atsc3_get_mpu_timestamp_from_packet_id_mpu_sequence_number; //&atsc3_get_mpu_timestamp_from_packet_id_mpu_sequence_number_with_last_failsafe;
 
-
     return atsc3_mmt_mfu_context;
 }
 
@@ -1049,9 +1048,33 @@ void mmt_signalling_message_dispatch_context_notification_callbacks(udp_packet_t
 					}
 				}
 			}
+		} else if(mmt_signalling_message_header_and_payload->message_header.MESSAGE_id_type == MMT_ATSC3_MESSAGE_ID) {
+            if(mmt_signalling_message_header_and_payload->message_payload.mmt_atsc3_message_payload.mmt_atsc3_route_component) {
+                //dispatch our ROUTEComponent notification here
+                if(atsc3_mmt_mfu_context->atsc3_mmt_signalling_information_on_routecomponent_message_present) {
+                    //jjustman-2020-12-08 - TODO - fixme so we don't free this pinned instance
+                    bool assign_routecomponent_payload_to_context = atsc3_mmt_mfu_context->atsc3_mmt_signalling_information_on_routecomponent_message_present(atsc3_mmt_mfu_context, mmt_signalling_message_header_and_payload->message_payload.mmt_atsc3_message_payload.mmt_atsc3_route_component);
+                    if(assign_routecomponent_payload_to_context) {
+                        //jjustman-2020-08-05 - also atsc3_sls_on_held_trigger_received_with_version_callback
+                        atsc3_mmt_mfu_context->mmt_atsc3_route_component_monitored = mmt_signalling_message_header_and_payload->message_payload.mmt_atsc3_message_payload.mmt_atsc3_route_component;
+                        mmt_signalling_message_header_and_payload->message_payload.mmt_atsc3_message_payload.mmt_atsc3_route_component->__is_pinned_to_context = true;
+                    }
+                }
+            }
+
+            if(mmt_signalling_message_header_and_payload->message_payload.mmt_atsc3_message_payload.mmt_atsc3_held_message) {
+                //dispatch our HELD component here
+                if(atsc3_mmt_mfu_context->atsc3_mmt_signalling_information_on_held_message_present) {
+                    atsc3_mmt_mfu_context->atsc3_mmt_signalling_information_on_held_message_present(atsc3_mmt_mfu_context, mmt_signalling_message_header_and_payload->message_payload.mmt_atsc3_message_payload.mmt_atsc3_held_message);
+                }
+
+            }
+
+
+
 		} else {
-			__MMSM_TRACE("mmt_signalling_message_update_lls_sls_mmt_session: Ignoring signal: 0x%x", mmt_signalling_message_header_and_payload->message_header.MESSAGE_id_type);
-		}
+            __MMSM_TRACE("mmt_signalling_message_update_lls_sls_mmt_session: Ignoring signal: 0x%x", mmt_signalling_message_header_and_payload->message_header.MESSAGE_id_type);
+        }
 	}
 }
 
