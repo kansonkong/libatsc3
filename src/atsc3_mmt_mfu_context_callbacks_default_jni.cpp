@@ -357,5 +357,8 @@ atsc3_mmt_mfu_context_t* atsc3_mmt_mfu_context_callbacks_default_jni_new() {
     //extract out one trun sampleduration for essence timing
     atsc3_mmt_mfu_context->atsc3_mmt_mpu_on_sequence_movie_fragment_metadata_present = &atsc3_mmt_mpu_on_sequence_movie_fragment_metadata_present_ndk;
 
+    //jjustman-2020-12-08 - external users will also need to wire up atsc3_mmt_signalling_information_on_routecomponent_message_present and atsc3_mmt_signalling_information_on_held_message_present
+
+
     return atsc3_mmt_mfu_context;
 }

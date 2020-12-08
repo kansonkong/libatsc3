@@ -134,6 +134,9 @@ void atsc3_sls_on_held_trigger_received_callback_impl(uint16_t service_id, block
 void atsc3_lls_on_sls_table_present_ndk(lls_table_t* lls_table);
 void atsc3_lls_on_aeat_table_present_ndk(lls_table_t* lls_table);
 
+bool atsc3_mmt_signalling_information_on_routecomponent_message_present_ndk(atsc3_mmt_mfu_context_t* atsc3_mmt_mfu_context, mmt_atsc3_route_component_t* mmt_atsc3_route_component);
+void atsc3_mmt_signalling_information_on_held_message_present_ndk(atsc3_mmt_mfu_context_t* atsc3_mmt_mfu_context, mmt_atsc3_held_message_t* mmt_atsc3_held_message);
+
 #define __ATSC3_CORE_SERVICE_PLAYER_BRIDGE_ERROR(...) __LIBATSC3_TIMESTAMP_ERROR(__VA_ARGS__);
 #define __ATSC3_CORE_SERVICE_PLAYER_BRIDGE_WARN(...)  __LIBATSC3_TIMESTAMP_WARN(__VA_ARGS__);
 #define __ATSC3_CORE_SERVICE_PLAYER_BRIDGE_INFO(...)  if(_ATSC3_CORE_SERVICE_PLAYER_BRIDGE_INFO_ENABLED)  { __LIBATSC3_TIMESTAMP_INFO(__VA_ARGS__); }

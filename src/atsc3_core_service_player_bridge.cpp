@@ -126,6 +126,9 @@ void atsc3_core_service_application_bridge_reset_context() {
     //MMT/MFU callback contexts
     atsc3_mmt_mfu_context = atsc3_mmt_mfu_context_callbacks_default_jni_new();
 
+    //jjustman-2020-12-08 - wire up atsc3_mmt_signalling_information_on_routecomponent_message_present and atsc3_mmt_signalling_information_on_held_message_present
+    atsc3_mmt_mfu_context->atsc3_mmt_signalling_information_on_routecomponent_message_present = &atsc3_mmt_signalling_information_on_routecomponent_message_present_ndk;
+    atsc3_mmt_mfu_context->atsc3_mmt_signalling_information_on_held_message_present = &atsc3_mmt_signalling_information_on_held_message_present_ndk;
 }
 
 void atsc3_core_service_phy_bridge_init(IAtsc3NdkPHYBridge* atsc3NdkPHYBridge) {
@@ -134,6 +137,8 @@ void atsc3_core_service_phy_bridge_init(IAtsc3NdkPHYBridge* atsc3NdkPHYBridge) {
 	        Atsc3NdkApplicationBridge_ptr->LogMsgF("atsc3_core_service_phy_bridge_init - Atsc3NdkPHYBridge_ptr: %p", Atsc3NdkPHYBridge_ptr);
 	}
 }
+
+
 
 atsc3_slt_broadcast_svc_signalling_t* atsc3_slt_broadcast_svc_signalling_find_from_service_id(uint16_t service_id) {
     atsc3_slt_broadcast_svc_signalling_t* atsc3_slt_broadcast_svc_signalling = NULL;
@@ -165,6 +170,7 @@ atsc3_slt_broadcast_svc_signalling_t* atsc3_slt_broadcast_svc_signalling_find_fr
 //jjustman-2020-11-17 - TODO: also walk thru lls_slt_monitor->lls_slt_service_id
 //jjustman-2020-11-18 - TODO - we also need to iterate over our S-TSID for our monitored service_id's to ensure
 //                         all IP flows and their corresponding PLP's are listened for
+//jjustman-2020-12-08 - TODO: we will also need to monitor for MMT HELD component to check if we need to add its flow for PLP listening
 
 atsc3_slt_broadcast_svc_signalling_t* atsc3_phy_add_plp_listener_from_service_id(uint16_t service_id) {
     atsc3_slt_broadcast_svc_signalling_t* atsc3_slt_broadcast_svc_signalling = NULL;
@@ -908,6 +914,7 @@ void atsc3_core_service_bridge_process_packet_phy(block_t* packet) {
 
                 //clear and flush out our mmtp_packet_id_packets_container if we came from re-assembly, otherwise handle in cleanup: label
                 if(mmtp_signalling_packet && mmtp_signalling_packet->si_fragmentation_indicator != 0x0) {
+                    //jjustman-2020-12-08 - TODO: impl mmt_signalling_message_free
                     mmtp_packet_id_packets_container_free_mmtp_signalling_packet(mmtp_packet_id_packets_container);
                     mmtp_signalling_packet = NULL;
                 }
@@ -1015,8 +1022,49 @@ void atsc3_lls_sls_alc_on_route_mpd_patched_ndk(uint16_t service_id) {
     Atsc3NdkApplicationBridge_ptr->atsc3_lls_sls_alc_on_route_mpd_patched_jni(service_id);
 }
 
-void atsc3_lls_sls_alc_on_package_extract_completed_callback_ndk(atsc3_route_package_extracted_envelope_metadata_and_payload_t* atsc3_route_package_extracted_envelope_metadata_and_payload_t) {
-    Atsc3NdkApplicationBridge_ptr->atsc3_lls_sls_alc_on_package_extract_completed_callback_jni(atsc3_route_package_extracted_envelope_metadata_and_payload_t);
+void atsc3_lls_sls_alc_on_package_extract_completed_callback_ndk(atsc3_route_package_extracted_envelope_metadata_and_payload_t* atsc3_route_package_extracted_envelope_metadata_and_payload) {
+    Atsc3NdkApplicationBridge_ptr->atsc3_lls_sls_alc_on_package_extract_completed_callback_jni(atsc3_route_package_extracted_envelope_metadata_and_payload);
+}
+
+bool atsc3_mmt_signalling_information_on_routecomponent_message_present_ndk(atsc3_mmt_mfu_context_t* atsc3_mmt_mfu_context, mmt_atsc3_route_component_t* mmt_atsc3_route_component) {
+    //jjustman-2020-12-08 - TODO - add this route_component into our SLT monitoring
+    //borrowed from atsc3_core_service_player_bridge_set_single_monitor_a331_service_id
+    if(atsc3_mmt_mfu_context->mmt_atsc3_route_component_monitored) {
+        __ATSC3_CORE_SERVICE_PLAYER_BRIDGE_WARN("atsc3_mmt_signalling_information_on_routecomponent_message_present_ndk: atsc3_mmt_mfu_context->mmt_atsc3_route_component_monitored is set, ignoring!");
+        return false;
+    }
+
+    lls_sls_alc_monitor = lls_sls_alc_monitor_create();
+    lls_sls_alc_monitor->atsc3_lls_slt_service = atsc3_mmt_mfu_context->matching_lls_sls_mmt_session->atsc3_lls_slt_service;
+    lls_sls_alc_monitor->lls_sls_monitor_output_buffer_mode.file_dump_enabled = true;
+    lls_sls_alc_monitor->has_discontiguous_toi_flow = true; //jjustman-2020-07-27 - hack-ish
+
+    lls_slt_service_id_t* lls_slt_service_id = lls_slt_service_id_new_from_atsc3_lls_slt_service(atsc3_mmt_mfu_context->matching_lls_sls_mmt_session->atsc3_lls_slt_service);
+    lls_slt_monitor_add_lls_slt_service_id(lls_slt_monitor, lls_slt_service_id);
+
+    lls_sls_alc_session_t* lls_sls_alc_session = lls_slt_alc_session_find_or_create_from_ip_udp_values(lls_slt_monitor, atsc3_mmt_mfu_context->matching_lls_sls_mmt_session->atsc3_lls_slt_service, mmt_atsc3_route_component->stsid_destination_ip_address, mmt_atsc3_route_component->stsid_destination_udp_port, mmt_atsc3_route_component->stsid_source_ip_address);
+    if(!lls_sls_alc_session) {
+        __ATSC3_CORE_SERVICE_PLAYER_BRIDGE_WARN("atsc3_core_service_player_bridge_set_single_monitor_a331_service_id: lls_slt_alc_session_find_from_service_id: lls_sls_alc_session is NULL!");
+    }
+    lls_sls_alc_monitor->lls_alc_session = lls_sls_alc_session;
+    lls_slt_monitor->lls_sls_alc_monitor = lls_sls_alc_monitor;
+
+    lls_slt_monitor_add_lls_sls_alc_monitor(lls_slt_monitor, lls_sls_alc_monitor);
+
+
+    //wire up event callback for alc close_object notification
+    lls_sls_alc_monitor->atsc3_lls_sls_alc_on_object_close_flag_s_tsid_content_location_callback = &atsc3_lls_sls_alc_on_object_close_flag_s_tsid_content_location_ndk;
+
+    //wire up event callback for alc MPD patching
+    lls_sls_alc_monitor->atsc3_lls_sls_alc_on_route_mpd_patched_callback = &atsc3_lls_sls_alc_on_route_mpd_patched_ndk;
+    //jjustman-2020-08-05 - also atsc3_lls_sls_alc_on_route_mpd_patched_with_filename_callback
+
+    lls_sls_alc_monitor->atsc3_lls_sls_alc_on_package_extract_completed_callback = &atsc3_lls_sls_alc_on_package_extract_completed_callback_ndk;
+
+    //#1569
+    lls_sls_alc_monitor->atsc3_sls_on_held_trigger_received_callback = &atsc3_sls_on_held_trigger_received_callback_impl;
+
+    return true;
 }
 
 void atsc3_sls_on_held_trigger_received_callback_impl(uint16_t service_id, block_t* held_payload) {
@@ -1034,6 +1082,13 @@ void atsc3_sls_on_held_trigger_received_callback_impl(uint16_t service_id, block
 
     free(xml_payload_copy);
 }
+
+void atsc3_mmt_signalling_information_on_held_message_present_ndk(atsc3_mmt_mfu_context_t* atsc3_mmt_mfu_context, mmt_atsc3_held_message_t* mmt_atsc3_held_message) {
+    if(atsc3_mmt_mfu_context->matching_lls_sls_mmt_session) {
+        atsc3_sls_on_held_trigger_received_callback_impl(atsc3_mmt_mfu_context->matching_lls_sls_mmt_session->service_id, mmt_atsc3_held_message->held_message);
+    }
+}
+
 
 /*
  *
