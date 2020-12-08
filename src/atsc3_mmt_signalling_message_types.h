@@ -139,8 +139,14 @@ typedef struct mmt_atsc3_route_component {
     uint8_t*    stsid_uri_s;
 
     uint8_t*    stsid_destination_ip_address_s;
+    uint32_t    stsid_destination_ip_address;
+
     uint16_t    stsid_destination_udp_port;
     uint8_t*    stsid_source_ip_address_s;
+    uint32_t    stsid_source_ip_address;
+
+    //jjustman-2020-12-08 - TODO - fixme so we don't free this pinned instance
+    bool        __is_pinned_to_context;
 
 } mmt_atsc3_route_component_t;
 

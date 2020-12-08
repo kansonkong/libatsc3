@@ -820,7 +820,7 @@ uint8_t* mmt_atsc3_message_payload_parse(mmt_signalling_message_header_and_paylo
             bool has_open_routecomponent_tag = false;
             uint8_t*   stsid_uri = NULL;
             uint8_t*   stsid_destination_ip_address = NULL;
-            uint16_t    stsid_destination_udp_port = 0;
+            uint16_t   stsid_destination_udp_port = 0;
             uint8_t*   stsid_source_ip_address = NULL;
 
 	        //extract out <ROUTEComponent sTSIDUri="stsid.sls" sTSIDDestinationIpAddress="239.255.70.1" sTSIDDestinationUdpPort="5009" sTSIDSourceIpAddress="172.16.200.1"></ROUTEComponent>
@@ -847,6 +847,7 @@ uint8_t* mmt_atsc3_message_payload_parse(mmt_signalling_message_header_and_paylo
 
                         stsid_destination_ip_address = calloc(len+1, sizeof(uint8_t));
                         memcpy(stsid_destination_ip_address, atsc3_message, len);
+
                     } if(!strncasecmp(MMT_ATSC3_MESSAGE_STSID_DESTINATION_UDP_PORT, atsc3_message, strlen(MMT_ATSC3_MESSAGE_STSID_DESTINATION_UDP_PORT))) {
                         atsc3_message += strlen(MMT_ATSC3_MESSAGE_STSID_DESTINATION_UDP_PORT);
                         char* end = strstr( atsc3_message, "\"");
@@ -871,14 +872,14 @@ uint8_t* mmt_atsc3_message_payload_parse(mmt_signalling_message_header_and_paylo
                 if(mmt_atsc3_route_component) {
                     mmt_atsc3_route_component->stsid_uri_s = stsid_uri;
                     mmt_atsc3_route_component->stsid_destination_ip_address_s = stsid_destination_ip_address;
+                    mmt_atsc3_route_component->stsid_destination_ip_address = parseIpAddressIntoIntval(stsid_destination_ip_address);
                     mmt_atsc3_route_component->stsid_destination_udp_port = stsid_destination_udp_port;
                     if(stsid_source_ip_address) {
                         mmt_atsc3_route_component->stsid_source_ip_address_s = stsid_source_ip_address;
+                        mmt_atsc3_route_component->stsid_source_ip_address = parseIpAddressIntoIntval(stsid_source_ip_address);
                     }
                 }
             }
-
-
 
 	    } else if(mmt_atsc3_message_payload->atsc3_message_content_type == MMT_ATSC3_MESSAGE_CONTENT_TYPE_HELD) {
             mmt_atsc3_held_message_t* mmt_atsc3_held_message = mmt_atsc3_message_payload_add_mmt_atsc3_held_message(mmt_atsc3_message_payload);
@@ -967,13 +968,15 @@ void mmt_atsc3_message_payload_dump(mmt_signalling_message_header_and_payload_t*
 	__MMSM_DEBUG("atsc3_message_content:             %s", mmt_atsc3_message_payload->atsc3_message_content);
 
 	if(mmt_atsc3_message_payload->mmt_atsc3_route_component) {
-        __MMSM_DEBUG("mmt_atsc3_route_component: stsid url: %s, stsid_destination_ip_addr_s: %s, stsid_destination_udp_port: %d, stsid_source_ip_address: %s",
+        __MMSM_DEBUG("mmt_atsc3_route_component: stsid url: %s, stsid_destination_ip_addr_s: %s (%d), stsid_destination_udp_port: %d, stsid_source_ip_address: %s (%d)",
                      mmt_atsc3_message_payload->mmt_atsc3_route_component->stsid_uri_s,
                      mmt_atsc3_message_payload->mmt_atsc3_route_component->stsid_destination_ip_address_s,
+                     mmt_atsc3_message_payload->mmt_atsc3_route_component->stsid_destination_ip_address,
                      mmt_atsc3_message_payload->mmt_atsc3_route_component->stsid_destination_udp_port,
-                     mmt_atsc3_message_payload->mmt_atsc3_route_component->stsid_source_ip_address_s);
+                     mmt_atsc3_message_payload->mmt_atsc3_route_component->stsid_source_ip_address_s,
+                     mmt_atsc3_message_payload->mmt_atsc3_route_component->stsid_source_ip_address);
+    }
 
-	}
 	if(mmt_atsc3_message_payload->mmt_atsc3_held_message) {
         __MMSM_DEBUG("mmt_atsc3_held_message: HELD message:\n%s", mmt_atsc3_message_payload->mmt_atsc3_held_message->held_message->p_buffer);
 
@@ -1045,7 +1048,7 @@ mmt_atsc3_route_component_t* mmt_atsc3_message_payload_add_mmt_atsc3_route_compo
     if(!mmt_atsc3_message_payload) {
         return NULL;
     }
-    mmt_atsc3_route_component_t* mmt_atsc3_route_component = calloc(1, sizeof(mmt_atsc3_route_component));
+    mmt_atsc3_route_component_t* mmt_atsc3_route_component = calloc(1, sizeof(mmt_atsc3_route_component_t));
     mmt_atsc3_message_payload->mmt_atsc3_route_component = mmt_atsc3_route_component;
     return mmt_atsc3_route_component;
 }
@@ -1054,7 +1057,7 @@ mmt_atsc3_held_message_t* mmt_atsc3_message_payload_add_mmt_atsc3_held_message(m
     if(!mmt_atsc3_message_payload) {
         return NULL;
     }
-    mmt_atsc3_held_message_t* mmt_atsc3_held_message = calloc(1, sizeof(mmt_atsc3_held_message));
+    mmt_atsc3_held_message_t* mmt_atsc3_held_message = calloc(1, sizeof(mmt_atsc3_held_message_t));
     mmt_atsc3_message_payload->mmt_atsc3_held_message = mmt_atsc3_held_message;
     return mmt_atsc3_held_message;
 }
