@@ -12,6 +12,7 @@
 extern "C" {
 #endif
 
+
 #include "atsc3_vector_builder.h"
 #include "atsc3_mmtp_packet_types.h"
 
@@ -44,7 +45,37 @@ extern "C" {
 #define	NAMF_message			0x020D
 #define	LDC_message				0x020E
 //Reserved for private use 		0x8000 ~ 0xFFFF
+
+
 #define	MMT_ATSC3_MESSAGE_ID	0x8100
+
+#define MMT_ATSC3_MESSAGE_CONTENT_TYPE_UserServiceDescription               0x0001
+//pointless
+#define MMT_ATSC3_MESSAGE_CONTENT_TYPE_MPD_FROM_DASHIF                      0x0002
+#define MMT_ATSC3_MESSAGE_CONTENT_TYPE_HELD                                 0x0003
+
+//see atsc3_mmt_signalling_message.c: mmt_atsc3_message_payload_parse
+// NOTE: this should be a first class citizen from the signaller direct api invocation for creating this emission,
+// and will be wrapped as an  with relevant ntp_timestamp, see MMT design proposal for this use case in libatsc3
+#define MMT_ATSC3_MESSAGE_CONTENT_TYPE_APPLICATION_EVENT_INFORMATION_A337   0x0004
+
+#define MMT_ATSC3_MESSAGE_CONTENT_TYPE_VIDEO_STREAM_PROPERTIES_DESCRIPTOR   0x0005
+#define MMT_ATSC3_MESSAGE_CONTENT_TYPE_ATSC_STAGGERCAST_DESCRIPTOR          0x0006
+
+//re-wrapping of upstream emsg box "translated" into an inband_event_descriptor, see A/337:2019 table 4.3 for more details
+//remember the emsg box is present in the movie fragment metadata (e.g. mpu_fragment_type = 0x01), so if you are using OOO MMT, this will most likely be delivered "late",
+// as the MOOF atom will come at the close of the mpu sequence/GOP, so use 0x0004 instead as a real-time SI message creation in the signaller
+#define MMT_ATSC3_MESSAGE_CONTENT_TYPE_INBAND_EVENT_DESCRIPTOR_A337         0x0007
+
+#define MMT_ATSC3_MESSAGE_CONTENT_TYPE_CAPTION_ASSET_DESCRIPTOR             0x0008
+#define MMT_ATSC3_MESSAGE_CONTENT_TYPE_AUDIO_STREAM_PROPERTIES_DESCRIPTOR   0x0009
+#define MMT_ATSC3_MESSAGE_CONTENT_TYPE_DWD                                  0x000A
+#define MMT_ATSC3_MESSAGE_CONTENT_TYPE_RSAT_A200                            0x000B
+#define MMT_ATSC3_MESSAGE_CONTENT_TYPE_SECURITY_PROPERTIES_DESCRIPTOR       0x000C
+
+//reserved to 0x000D ~ 0xFFFF
+#define MMT_ATSC3_MESSAGE_CONTENT_TYPE_RESERVED                             0x000D
+
 
 #define MMT_SCTE35_Signal_Message		0xF337	// SCTE35_Signal_Message Type
 #define MMT_SCTE35_Signal_Descriptor	0xF33F	// SCTE35_Signal_Descriptor tag
@@ -104,6 +135,19 @@ enum ATSC3_MESSAGE_CONTENT_COMPRESSION {
 	ATSC3_MESSAGE_CONTENT_COMPRESSION_RESERVED_OTHER=-1
 };
 
+typedef struct mmt_atsc3_route_component {
+    uint8_t*    stsid_uri_s;
+
+    uint8_t*    stsid_destination_ip_address_s;
+    uint16_t    stsid_destination_udp_port;
+    uint8_t*    stsid_source_ip_address_s;
+
+} mmt_atsc3_route_component_t;
+
+typedef struct mmt_atsc3_held_message {
+    block_t*    held_message;
+} mmt_atsc3_held_message_t;
+
 typedef struct mmt_atsc3_message_payload {
 	uint16_t 	service_id;
 	uint16_t 	atsc3_message_content_type;
@@ -121,6 +165,12 @@ typedef struct mmt_atsc3_message_payload {
 
 	//reserved:	8 bits to pad out length
 	//i < length - 11 - URI_length - atsc3_message_content_length
+
+	//<ROUTEComponent sTSIDUri="stsid.sls" sTSIDDestinationIpAddress="239.255.70.1" sTSIDDestinationUdpPort="5009" sTSIDSourceIpAddress="172.16.200.1"></ROUTEComponent>
+	mmt_atsc3_route_component_t*    mmt_atsc3_route_component;
+
+	mmt_atsc3_held_message_t*       mmt_atsc3_held_message;
+
 } mmt_atsc3_message_payload_t;
 
 
@@ -368,6 +418,10 @@ void mmt_signalling_message_header_and_payload_free(mmt_signalling_message_heade
 
 mp_table_asset_row_t* atsc3_mmt_mp_table_asset_row_duplicate(const mp_table_asset_row_t* mp_table_asset_row);
 void atsc3_mmt_mp_table_asset_row_free_inner(mp_table_asset_row_t* mp_table_asset_row);
+
+mmt_atsc3_route_component_t* mmt_atsc3_message_payload_add_mmt_atsc3_route_component(mmt_atsc3_message_payload_t* mmt_atsc3_message_payload);
+mmt_atsc3_held_message_t*    mmt_atsc3_message_payload_add_mmt_atsc3_held_message(mmt_atsc3_message_payload_t* mmt_atsc3_message_payload);
+
 
 
 #if defined (__cplusplus)
