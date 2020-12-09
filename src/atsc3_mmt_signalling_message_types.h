@@ -428,6 +428,9 @@ void atsc3_mmt_mp_table_asset_row_free_inner(mp_table_asset_row_t* mp_table_asse
 mmt_atsc3_route_component_t* mmt_atsc3_message_payload_add_mmt_atsc3_route_component(mmt_atsc3_message_payload_t* mmt_atsc3_message_payload);
 mmt_atsc3_held_message_t*    mmt_atsc3_message_payload_add_mmt_atsc3_held_message(mmt_atsc3_message_payload_t* mmt_atsc3_message_payload);
 
+void mmt_atsc3_route_component_free(mmt_atsc3_route_component_t** mmt_atsc3_route_component_p);
+void mmt_atsc3_held_message_free(mmt_atsc3_held_message_t** mmt_atsc3_held_message_p);
+
 
 
 #if defined (__cplusplus)

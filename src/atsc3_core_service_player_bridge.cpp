@@ -320,6 +320,15 @@ atsc3_lls_slt_service_t* atsc3_core_service_player_bridge_set_single_monitor_a33
         lls_slt_monitor->lls_sls_mmt_monitor = lls_sls_mmt_monitor;
 
         lls_slt_monitor_add_lls_sls_mmt_monitor(lls_slt_monitor, lls_sls_mmt_monitor);
+
+        //clear out atsc3_mmt_mfu_context elements, e.g. our ROUTEComponent entry (if present)
+        if(atsc3_mmt_mfu_context) {
+            if(atsc3_mmt_mfu_context->mmt_atsc3_route_component_monitored) {
+                atsc3_mmt_mfu_context->mmt_atsc3_route_component_monitored->__is_pinned_to_context = false;
+                mmt_atsc3_route_component_free(&atsc3_mmt_mfu_context->mmt_atsc3_route_component_monitored);
+            }
+        }
+
     } else {
         //jjustman-2020-09-17 - use _clear, but keep our lls_sls_mmt_session_flows
         //todo: release any internal lls_sls_mmt_monitor handles
@@ -912,12 +921,10 @@ void atsc3_core_service_bridge_process_packet_phy(block_t* packet) {
                 //update our internal sls_mmt_session info
                 mmt_signalling_message_update_lls_sls_mmt_session(mmtp_signalling_packet, matching_lls_sls_mmt_session);
 
-                //clear and flush out our mmtp_packet_id_packets_container if we came from re-assembly, otherwise handle in cleanup: label
-                if(mmtp_signalling_packet && mmtp_signalling_packet->si_fragmentation_indicator != 0x0) {
-                    //jjustman-2020-12-08 - TODO: impl mmt_signalling_message_free
-                    mmtp_packet_id_packets_container_free_mmtp_signalling_packet(mmtp_packet_id_packets_container);
-                    mmtp_signalling_packet = NULL;
-                }
+                //clear and flush out our mmtp_packet_id_packets_container if we came from re-assembly,
+                // otherwise, final free of mmtp_signalling_packet packet in :cleanup
+                mmtp_packet_id_packets_container_free_mmtp_signalling_packet(mmtp_packet_id_packets_container);
+                mmtp_signalling_packet = NULL;
 
                 goto cleanup;
             }
