@@ -158,14 +158,21 @@ lls_sls_alc_session_t* lls_slt_alc_session_find_from_udp_packet(lls_slt_monitor_
 			
 				for(int k=0; k < lls_slt_monitor->lls_sls_alc_monitor_v.count; k++) {
 					lls_sls_alc_monitor_t* lls_sls_alc_monitor = lls_slt_monitor->lls_sls_alc_monitor_v.data[k];
-					_ATSC3_LLS_ALC_UTILS_TRACE("lls_slt_alc_session_find_from_udp_packet: checking lls_slt_monitor->lls_sls_alc_monitor_v.data[%d] from: %p (service_id: %d) with: %p (service_id: %d)",
-											  k,
-											  lls_slt_monitor->lls_sls_alc_monitor,
-											  lls_slt_monitor->lls_sls_alc_monitor->atsc3_lls_slt_service->service_id,
-											  lls_sls_alc_monitor,
-											  lls_sls_alc_monitor->atsc3_lls_slt_service->service_id);
 
-					if(lls_sls_alc_monitor->atsc3_lls_slt_service && lls_sls_alc_monitor->atsc3_lls_slt_service->service_id == lls_slt_alc_session->service_id) {
+					if(lls_sls_alc_monitor && lls_sls_alc_monitor->atsc3_lls_slt_service) {
+                        _ATSC3_LLS_ALC_UTILS_TRACE("lls_slt_alc_session_find_from_udp_packet: checking lls_slt_monitor->lls_sls_alc_monitor_v.data[%d] from: %p (service_id: %d) with: %p (service_id: %d)",
+                                                   k,
+                                                   lls_slt_monitor->lls_sls_alc_monitor,
+                                                   lls_slt_monitor->lls_sls_alc_monitor->atsc3_lls_slt_service->service_id,
+                                                   lls_sls_alc_monitor,
+                                                   lls_sls_alc_monitor->atsc3_lls_slt_service->service_id);
+					} else {
+                        _ATSC3_LLS_ALC_UTILS_WARN("lls_slt_alc_session_find_from_udp_packet: checking lls_slt_monitor->lls_sls_alc_monitor_v.data[%d] is NULL!",
+                                                   k);
+					}
+
+					if(lls_sls_alc_monitor && lls_sls_alc_monitor->atsc3_lls_slt_service && lls_sls_alc_monitor->atsc3_lls_slt_service->service_id == lls_slt_alc_session->service_id) {
+
 						_ATSC3_LLS_ALC_UTILS_TRACE("lls_slt_alc_session_find_from_udp_packet: updating lls_slt_monitor->lls_sls_alc_monitor from: %p (service_id: %d) to: %p (service_id: %d)",
 												  lls_slt_monitor->lls_sls_alc_monitor, lls_slt_monitor->lls_sls_alc_monitor->atsc3_lls_slt_service->service_id,
 												  lls_sls_alc_monitor, lls_sls_alc_monitor->atsc3_lls_slt_service->service_id);
