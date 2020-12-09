@@ -214,7 +214,6 @@ void mmt_atsc3_route_component_free(mmt_atsc3_route_component_t** mmt_atsc3_rout
     if(mmt_atsc3_route_component_p) {
         mmt_atsc3_route_component_t* mmt_atsc3_route_component = *mmt_atsc3_route_component_p;
         if(mmt_atsc3_route_component) {
-
             if(mmt_atsc3_route_component->stsid_uri_s) {
                 freeclean((void**)&mmt_atsc3_route_component->stsid_uri_s);
             }
@@ -228,7 +227,6 @@ void mmt_atsc3_route_component_free(mmt_atsc3_route_component_t** mmt_atsc3_rout
             free(mmt_atsc3_route_component);
             mmt_atsc3_route_component = NULL;
         }
-
         *mmt_atsc3_route_component_p = NULL;
     }
 }
@@ -242,9 +240,8 @@ void mmt_atsc3_held_message_free(mmt_atsc3_held_message_t** mmt_atsc3_held_messa
             }
 
             free(mmt_atsc3_held_message);
-            mmt_atsc3_held_message_p = NULL;
+            mmt_atsc3_held_message = NULL;
         }
-
         *mmt_atsc3_held_message_p = NULL;
     }
 }

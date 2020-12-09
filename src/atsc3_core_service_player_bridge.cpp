@@ -781,6 +781,7 @@ void atsc3_core_service_bridge_process_packet_phy(block_t* packet) {
                                  mmtp_signalling_packet->si_additional_length_header);
 
                     mmtp_packet_id_packets_container_add_mmtp_signalling_packet(mmtp_packet_id_packets_container, mmtp_signalling_packet);
+                    mmtp_signalling_packet = NULL;
                     goto cleanup; //continue on
 
                 } else {
@@ -872,6 +873,7 @@ void atsc3_core_service_bridge_process_packet_phy(block_t* packet) {
 
                     if(!mmtp_signalling_packet_vector_valid) {
                         mmtp_packet_id_packets_container_free_mmtp_signalling_packet(mmtp_packet_id_packets_container);
+                        mmtp_signalling_packet = NULL; //we will have already freed this packet by clearing the container
                         goto error;
 
                     } else if(mmtp_signalling_packet_vector_complete) {
@@ -886,7 +888,7 @@ void atsc3_core_service_bridge_process_packet_phy(block_t* packet) {
                         }
 
                         //finally, we can now process our signalling_messagae
-                        mmtp_signalling_packet = mmtp_packet_id_packets_container->mmtp_signalling_packet_v.data[0];
+                        mmtp_signalling_packet = mmtp_packet_id_packets_container_pop_mmtp_signalling_packet(mmtp_packet_id_packets_container);
                         block_Destroy(&mmtp_signalling_packet->udp_packet_inner_msg_payload);
                         mmtp_signalling_packet->udp_packet_inner_msg_payload = msg_payload_final;
                         block_Rewind(mmtp_signalling_packet->udp_packet_inner_msg_payload);
@@ -901,7 +903,7 @@ void atsc3_core_service_bridge_process_packet_phy(block_t* packet) {
                     } else {
                         //noop: continue to accumulate
                         __ATSC3_CORE_SERVICE_PLAYER_BRIDGE_TRACE("atsc3_core_service_bridge_process_packet_phy: mmtp_signalling_packet - adding to vector, size: %d", mmtp_signalling_packet_vector_count + 1);
-
+                        mmtp_signalling_packet = NULL; //so we don't free pending accumulated packets
                     }
                 }
             }
@@ -924,8 +926,6 @@ void atsc3_core_service_bridge_process_packet_phy(block_t* packet) {
                 //clear and flush out our mmtp_packet_id_packets_container if we came from re-assembly,
                 // otherwise, final free of mmtp_signalling_packet packet in :cleanup
                 mmtp_packet_id_packets_container_free_mmtp_signalling_packet(mmtp_packet_id_packets_container);
-                mmtp_signalling_packet = NULL;
-
                 goto cleanup;
             }
         } else {
