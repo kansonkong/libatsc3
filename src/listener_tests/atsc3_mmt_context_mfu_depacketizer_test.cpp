@@ -520,7 +520,7 @@ int main(int argc,char **argv) {
     udp_flow_latest_mpu_sequence_number_container = udp_flow_latest_mpu_sequence_number_container_t_init();
 
     //callback contexts
-    atsc3_mmt_mfu_context = atsc3_mmt_mfu_context_new();
+    atsc3_mmt_mfu_context = atsc3_mmt_mfu_context_noop_new();
 
 	//MFU related callbacks
 	atsc3_mmt_mfu_context->atsc3_mmt_mpu_mfu_on_sample_complete = &atsc3_mmt_mpu_mfu_on_sample_complete_dump;

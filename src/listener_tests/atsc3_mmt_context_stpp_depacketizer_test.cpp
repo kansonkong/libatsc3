@@ -542,7 +542,7 @@ int main(int argc,char **argv) {
     udp_flow_latest_mpu_sequence_number_container = udp_flow_latest_mpu_sequence_number_container_t_init();
 
     //callback contexts
-    atsc3_mmt_mfu_context = atsc3_mmt_mfu_context_new();
+    atsc3_mmt_mfu_context = atsc3_mmt_mfu_context_noop_new();
 
     //stpp SLS related callbacks from mp_table
     atsc3_mmt_mfu_context->atsc3_mmt_signalling_information_on_stpp_essence_packet_id = &atsc3_mmt_signalling_information_on_stpp_essence_packet_id_dump;

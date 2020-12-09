@@ -646,31 +646,38 @@ typedef struct lls_sls_mmt_session {
 
     uint32_t sls_destination_ip_address;
     uint16_t sls_destination_udp_port;
-    
-    uint16_t video_packet_id;
-    uint16_t audio_packet_id;
-    uint16_t stpp_packet_id;
-
-    udp_flow_packet_id_mpu_sequence_tuple_t* last_udp_flow_packet_id_mpu_sequence_tuple_audio;
-    bool last_udp_flow_packet_id_mpu_sequence_tuple_audio_processed;
-    udp_flow_packet_id_mpu_sequence_tuple_t* to_process_udp_flow_packet_id_mpu_sequence_tuple_audio;
-    
-    udp_flow_packet_id_mpu_sequence_tuple_t* last_udp_flow_packet_id_mpu_sequence_tuple_video;
-    bool last_udp_flow_packet_id_mpu_sequence_tuple_video_processed;
-    udp_flow_packet_id_mpu_sequence_tuple_t* to_process_udp_flow_packet_id_mpu_sequence_tuple_video;
-
-	udp_flow_packet_id_mpu_sequence_tuple_t* last_udp_flow_packet_id_mpu_sequence_tuple_stpp;
 
 
-	mmt_arguments_t* mmt_arguments;
-    mmt_session_t* mmt_session;
-    
-} lls_sls_mmt_session_t;
+    /*
+     * jjustman-2020-12-01 - these singled out individual *_packet_id essences are used for MMT transmux to a single a/v/s media essence, e.g. fmp4 or HLS -
+     *                      DO NOT use them for NDK/JNI or OOO tracking
+     *
+     */
+
+        uint16_t video_packet_id;
+        uint16_t audio_packet_id;
+        uint16_t stpp_packet_id;
+
+       udp_flow_packet_id_mpu_sequence_tuple_t* last_udp_flow_packet_id_mpu_sequence_tuple_audio;
+       bool last_udp_flow_packet_id_mpu_sequence_tuple_audio_processed;
+       udp_flow_packet_id_mpu_sequence_tuple_t* to_process_udp_flow_packet_id_mpu_sequence_tuple_audio;
+
+       udp_flow_packet_id_mpu_sequence_tuple_t* last_udp_flow_packet_id_mpu_sequence_tuple_video;
+       bool last_udp_flow_packet_id_mpu_sequence_tuple_video_processed;
+       udp_flow_packet_id_mpu_sequence_tuple_t* to_process_udp_flow_packet_id_mpu_sequence_tuple_video;
+
+       udp_flow_packet_id_mpu_sequence_tuple_t* last_udp_flow_packet_id_mpu_sequence_tuple_stpp;
 
 
-/**
- * used to store all mmt active sessions for this flow
- */
+       mmt_arguments_t* mmt_arguments;
+       mmt_session_t* mmt_session;
+
+   } lls_sls_mmt_session_t;
+
+
+   /**
+    * used to store all mmt active sessions for this flow
+    */
 typedef struct lls_sls_mmt_session_flows {
     lls_table_t* lls_table_slt;
 
@@ -728,6 +735,10 @@ typedef struct lls_sls_alc_session {
  
     For hybrid delivery, the MMTP-specific SLS can further include the MPD for broadband components.
     Table 7.4 shows the elements and attributes of the MMTP USBD that would be used in practice for ATSC 3.0 service delivery.
+
+
+    IF single v/a/s essence is needed, use lls_sls_mmt_monitor_find_from_service_id(lls_slt_monitor, service_id),
+        and then the returned lls_sls_mmt_monitor->lls_mmt_session to get SINGLE video_packet_id, audio_packet_id, and stpp_packet_id,
  
 **/
 typedef struct lls_sls_mmt_monitor {
@@ -735,10 +746,6 @@ typedef struct lls_sls_mmt_monitor {
 	atsc3_lls_slt_service_t* 				atsc3_lls_slt_service;
 
     lls_sls_mmt_session_t* 					lls_mmt_session;
-
-    uint16_t 								video_packet_id;
-    uint16_t 								audio_packet_id;
-    uint16_t								stpp_packet_id;
 
     lls_sls_monitor_output_buffer_t 		lls_sls_monitor_output_buffer;
     lls_sls_monitor_output_buffer_mode_t 	lls_sls_monitor_output_buffer_mode;

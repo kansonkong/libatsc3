@@ -10,6 +10,7 @@ android {
 
         ndk {
             abiFilters 'arm64-v8a' //, 'armeabi-v7a' //, 'arm64-v8a' //'', 'x86_64',
+            //jjustman-2020-11-30 - NOTE: 'armeabi-v7a': linkage error: ../../saankhyalabs-slsdk/slapi/src/tuner/situne/sl_situner.c:308: error: undefined reference to 'SiAPISetDCOffset'
         }
     }
     externalNativeBuild {
