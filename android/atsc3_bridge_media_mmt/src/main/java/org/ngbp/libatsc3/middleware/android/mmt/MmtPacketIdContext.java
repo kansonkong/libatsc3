@@ -1,4 +1,4 @@
-package org.ngbp.libatsc3.middleware.android.application.sync.mmt;
+package org.ngbp.libatsc3.middleware.android.mmt;
 
 import android.util.Log;
 
@@ -13,6 +13,10 @@ public class MmtPacketIdContext {
     public static MmtSignallingContext video_packet_signalling_information;
     public static MmtMfuStatistics video_packet_statistics;
 
+    //jjustman-2020-11-19 - TODO - fix this     public int atsc3_signallingContext_notify_audio_packet_id_and_mpu_timestamp_descriptor(int audio_packet_id, int mpu_sequence_number, long mpu_presentation_time_ntp64, int mpu_presentation_time_seconds, int mpu_presentation_time_microseconds) {
+    public static void AudioPacketIdUpdateMpuSequenceAndPresentationTime(int toUpdateAudioPacketId, int mpu_sequence_number, long mpu_presentation_time_ntp64, int mpu_presentation_time_seconds, int mpu_presentation_time_microseconds) {
+
+    }
     public static int audio_packet_id = -1;
     public static MmtSignallingContext audio_packet_signalling_information;
     public static MmtMfuStatistics audio_packet_statistics;
@@ -22,7 +26,7 @@ public class MmtPacketIdContext {
     public static MmtMfuStatistics stpp_packet_statistics;
     public static int stpp_last_mpu = -1;
 
-    public static MmtCodecContent mmt_codec_context;
+//    public static MmtCodecContent mmt_codec_context;
 
     public static void Initialize() {
         MmtPacketIdContext.libatsc_app_start_time_ms = System.currentTimeMillis();

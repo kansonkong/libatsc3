@@ -8,16 +8,15 @@
  *
  */
 
+#include <assert.h>
+#include <limits.h>
+
 #ifndef ATSC3_MMTP_PACKET_TYPES_H_
 #define ATSC3_MMTP_PACKET_TYPES_H_
 
 #if defined (__cplusplus)
 extern "C" {
 #endif
-
-
-#include <assert.h>
-#include <limits.h>
 
 #include "atsc3_logging_externs.h"
 #include "atsc3_vector_builder.h"
@@ -27,6 +26,10 @@ extern "C" {
 #include "atsc3_mmt_mpu_sample_format_type.h"
     
 #include "atsc3_listener_udp.h"
+
+#include "atsc3_video_decoder_configuration_record.h"
+#include "atsc3_audio_decoder_configuration_record.h"
+#include "atsc3_stpp_decoder_configuration_record.h"
 
 extern int _MMTP_DEBUG_ENABLED;
 extern int _MMTP_TRACE_ENABLED;
@@ -255,11 +258,25 @@ typedef struct mmtp_repair_symbol_packet {
 	_MMTP_PACKET_HEADER_FIELDS;
 } mmtp_repair_symbol_packet_t;
 
+//forward declare as defn is in atsc3_mmt_signalling_message_types.h
+typedef struct mp_table_asset_row mp_table_asset_row_t;
+
 typedef struct mmtp_packet_id_packets_container {
-    uint16_t            packet_id;
-    
+    uint16_t                packet_id;
+
+    //populated from mmt SI mp_table event callbacks,
+    //  invoked from: atsc3_mmt_signalling_information_on_*_essence_packet_id_internal callback,
+    //      invoker: invoked from mmt_signalling_message_dispatch_context_notification_callbacks
+
+    char                    asset_type[4];
+    mp_table_asset_row_t*   mp_table_asset_row;
+
+    atsc3_video_decoder_configuration_record_t*     atsc3_video_decoder_configuration_record;
+    atsc3_audio_decoder_configuration_record_t*     atsc3_audio_decoder_configuration_record;
+    atsc3_stpp_decoder_configuration_record_t*      atsc3_stpp_decoder_configuration_record;
+
     ATSC3_VECTOR_BUILDER_STRUCT(mpu_sequence_number_mmtp_mpu_packet_collection);
-    ATSC3_VECTOR_BUILDER_STRUCT(mmtp_signalling_packet); //todo - figure out if this should be first class or overloaded
+    ATSC3_VECTOR_BUILDER_STRUCT(mmtp_signalling_packet);
     
     //others not used in atsc3.0
     ATSC3_VECTOR_BUILDER_STRUCT(mmtp_mpu_nontimed_packet);

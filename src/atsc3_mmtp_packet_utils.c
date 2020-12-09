@@ -50,6 +50,28 @@ mmtp_asset_t* mmtp_asset_flow_find_or_create_asset_from_lls_sls_mmt_session(mmtp
     return mmtp_asset;
 }
 
+mmtp_packet_id_packets_container_t* mmtp_asset_find_or_create_packets_container_from_mmtp_packet_header(mmtp_asset_t* mmtp_asset, mmtp_packet_header_t* mmtp_packet_header) {
+    mmtp_packet_id_packets_container_t* mmtp_packet_id_packets_container = NULL;
+
+    for(int i=0; i < mmtp_asset->mmtp_packet_id_packets_container_v.count; i++) {
+        mmtp_packet_id_packets_container = mmtp_asset->mmtp_packet_id_packets_container_v.data[i];
+        if(mmtp_packet_id_packets_container->packet_id == mmtp_packet_header->mmtp_packet_id) {
+            break;
+        } else {
+            mmtp_packet_id_packets_container = NULL;
+        }
+    }
+
+    if(!mmtp_packet_id_packets_container) {
+        mmtp_packet_id_packets_container = mmtp_packet_id_packets_container_new();
+        mmtp_packet_id_packets_container->packet_id = mmtp_packet_header->mmtp_packet_id;
+
+        mmtp_asset_add_mmtp_packet_id_packets_container(mmtp_asset, mmtp_packet_id_packets_container);
+    }
+
+    return mmtp_packet_id_packets_container;
+}
+
 mmtp_packet_id_packets_container_t* mmtp_asset_find_or_create_packets_container_from_mmt_mpu_packet(mmtp_asset_t* mmtp_asset, mmtp_mpu_packet_t* mmtp_mpu_packet) {
     mmtp_packet_id_packets_container_t* mmtp_packet_id_packets_container = NULL;
 
@@ -133,6 +155,22 @@ mpu_sequence_number_mmtp_mpu_packet_collection_t* mmtp_packet_id_packets_contain
         }
     }
     
+    return mpu_sequence_number_mmtp_mpu_packet_collection;
+}
+
+
+mpu_sequence_number_mmtp_mpu_packet_collection_t* mmtp_packet_id_packets_container_find_not_mpu_sequence_number_mmtp_mpu_packet_collection_from_mpu_sequence_number(mmtp_packet_id_packets_container_t* mmtp_packet_id_packets_container, uint32_t mpu_sequence_number) {
+    mpu_sequence_number_mmtp_mpu_packet_collection_t* mpu_sequence_number_mmtp_mpu_packet_collection = NULL;
+
+    for(int i=0; i < mmtp_packet_id_packets_container->mpu_sequence_number_mmtp_mpu_packet_collection_v.count; i++) {
+        mpu_sequence_number_mmtp_mpu_packet_collection = mmtp_packet_id_packets_container->mpu_sequence_number_mmtp_mpu_packet_collection_v.data[i];
+        if(mpu_sequence_number_mmtp_mpu_packet_collection->mpu_sequence_number != mpu_sequence_number) {
+            break;
+        } else {
+            mpu_sequence_number_mmtp_mpu_packet_collection = NULL;
+        }
+    }
+
     return mpu_sequence_number_mmtp_mpu_packet_collection;
 }
 
