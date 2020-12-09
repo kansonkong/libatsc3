@@ -1,4 +1,4 @@
-package org.ngbp.libatsc3.middleware.android.application.sync.mmt;
+package org.ngbp.libatsc3.middleware.android.mmt;
 
 import android.util.Log;
 

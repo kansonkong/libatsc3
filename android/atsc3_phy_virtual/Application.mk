@@ -6,7 +6,8 @@ APP_DEBUG := true
 APP_STRIP_MODE := "none"
 
 APP_STL := c++_shared
-APP_ABI := arm64-v8a
+
+# APP_ABI := arm64-v8a armeabi-v7a
 
 APP_CPPFLAGS += -std=c++11 -fexceptions -D_ANDROID
 

@@ -15,6 +15,12 @@ MY_CUR_PATH := $(LOCAL_PATH)
 
 # ---
 # codornicesrq
+#  /Users/jjustman/Desktop/markone/Middleware/libatsc3/codornicesrq/CodornicesRq-2.2-Android-armeabi-v7a/lib
+# patchelf --set-soname libCodornicesRq.so libCodornicesRq.so
+# patchelf --replace-needed libc.so.6 libc.so libCodornicesRq.so
+# objdump -x libCodornicesRq.so
+
+
 include $(CLEAR_VARS)
 LOCAL_MODULE := libCodornicesRq
 LOCAL_SRC_FILES := $(LOCAL_PATH)/../../codornicesrq/CodornicesRq-2.2-Android-$(TARGET_ARCH_ABI)/lib/libCodornicesRq.so
@@ -131,6 +137,15 @@ LOCAL_LDLIBS += -ldl -lc++_shared -llog -landroid -lz \
 LOCAL_LDFLAGS += -fPIE -fPIC \
 				-L $(LOCAL_PATH)/../atsc3_bridge/build/intermediates/ndkBuild/debug/obj/local/$(TARGET_ARCH_ABI)/ \
 				-L $(LOCAL_PATH)/../atsc3_core/build/intermediates/ndkBuild/debug/obj/local/$(TARGET_ARCH_ABI)/
+
+ifeq ($(TARGET_ARCH_ABI),armeabi-v7a)
+LOCAL_ARM_MODE := arm
+
+LOCAL_CFLAGS += -mhard-float -mfpu=vfp
+LOCAL_LDFLAGS += -Wl,--no-warn-mismatch -mfloat-abi=hard -mfpu=vfp
+
+LOCAL_CFLAGS += -D__LIBC_libCodornicesRq_HACKS__
+endif
 
 $(info 'before local shared libs' $(MAKECMDGOALS))
 

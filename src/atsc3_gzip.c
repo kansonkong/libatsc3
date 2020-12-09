@@ -104,7 +104,8 @@ int32_t atsc3_unzip_gzip_payload_block_t(block_t* src, block_t* dest) {
 	uint32_t input_payload_size = block_Remaining_size(src);
 	
 	uint8_t* output_payload = block_Get(dest);
-	uint32_t output_payload_available = block_Remaining_size(dest);
+    uint32_t output_payload_allocated = block_Remaining_size(dest);
+    uint32_t output_payload_available = block_Remaining_size(dest);
 	
 	if(input_payload_size > output_payload_available) return -1;
 
@@ -135,6 +136,8 @@ int32_t atsc3_unzip_gzip_payload_block_t(block_t* src, block_t* dest) {
 	if (ret != Z_OK)
 	   return ret;
 
+	int loop_counter_outer = 0;
+	int loop_counter_inner = 0;
 	do {
 		strm.next_in = &input_payload[input_payload_offset];
 
@@ -155,30 +158,26 @@ int32_t atsc3_unzip_gzip_payload_block_t(block_t* src, block_t* dest) {
 				case Z_NEED_DICT:
 					ret = Z_DATA_ERROR;     /* and fall through */
 				case Z_DATA_ERROR:
+                case Z_BUF_ERROR:
 				case Z_MEM_ERROR:
 					(void)inflateEnd(&strm);
+
 				return ret;
 			}
 
-//jjustman-2020-11-23 - do not re-alloc here with fixed block_t size
-//			if(strm.avail_in strm.avail_out == 0) {
-//                output_payload_available += GZIP_CHUNK_OUTPUT_BUFFER_SIZE;
-//                uint output_payload_new_size = output_payload_offset + GZIP_CHUNK_OUTPUT_BUFFER_SIZE + 1;
-//				 output_payload = (uint8_t*)realloc(output_payload, output_payload_new_size);
-//            } else {
-                output_payload_available = strm.avail_out;
-//            }
             output_payload_offset = strm.total_out; //move our append pointer forward
-		} while (ret != Z_STREAM_END && strm.avail_out == 0); //loop until we are out of free output space, then loop input position
+            loop_counter_inner++;
+
+            //jjustman-2020-12-09 - hack, if we are within a few bytes of chunk size, we may fill the buffer, so check against strm.total_out != output_payload_allocated
+
+        } while (ret != Z_STREAM_END && strm.avail_out == 0 && strm.total_out != output_payload_allocated); //loop until we are out of free output space, then loop input position
 
         input_payload_offset = strm.total_in; //move input pointer forward += GZIP_CHUNK_INPUT_READ_SIZE;
 
+        loop_counter_outer++;
 	} while (ret != Z_STREAM_END && input_payload_offset < input_payload_size);
 
-    int paylod_len = strm.total_out; //(output_payload_offset + (GZIP_CHUNK_OUTPUT_BUFFER_SIZE - strm.avail_out));
-	/* clean up and return */
-	//jjustman-2020-11-23 - don't put null terminating character, assumed that block_t will have pre-allocated if needed...
-	//output_payload[paylod_len] = '\0';
+    int paylod_len = strm.total_out;
 
 	(void)inflateEnd(&strm);
 	

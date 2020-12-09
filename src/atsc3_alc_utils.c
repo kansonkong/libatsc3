@@ -826,7 +826,16 @@ int atsc3_alc_packet_persist_to_toi_resource_process_sls_mbms_and_emit_callback(
 												atsc3_fdt_file_matching->content_length,
 												unzipped_size);
 
-								//jjustman-2020-11-24 - discard our atsc3_route_object so we can try and recover on next carousel, since we were corrupt
+                                int failed_persisted_cache_file_name_gz_len = strlen(persisted_cache_file_name) + 12;
+                                char* failed_persisted_cache_file_name_gz = calloc(failed_persisted_cache_file_name_gz_len, sizeof(char));
+
+                                memcpy(failed_persisted_cache_file_name_gz, persisted_cache_file_name, strlen(persisted_cache_file_name)+1);
+                                strncat(failed_persisted_cache_file_name_gz, ".gz.failed", 10);
+                                block_Rewind(atsc3_fdt_file_gzip_contents);
+
+                                block_Write_to_filename(atsc3_fdt_file_gzip_contents, failed_persisted_cache_file_name_gz);
+                                free(failed_persisted_cache_file_name_gz);
+                                //jjustman-2020-11-24 - discard our atsc3_route_object so we can try and recover on next carousel, since we were corrupt
                                 atsc3_route_object_free(&atsc3_route_object);
 
                                 bytesWritten = ATSC3_ALC_UTILS_FAILED_GZIP_EXTRACTION;
