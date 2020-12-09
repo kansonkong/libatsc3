@@ -53,6 +53,11 @@ void atsc3_mmt_signalling_information_on_audio_essence_packet_id_callback_intern
 
     //hack..
     memcpy(atsc3_mmt_mfu_context->mmtp_packet_id_packets_container->asset_type, mp_table_asset_row->asset_type, 4);
+    if(atsc3_mmt_mfu_context->mmtp_packet_id_packets_container->mp_table_asset_row) {
+        atsc3_mmt_mp_table_asset_row_free_inner(atsc3_mmt_mfu_context->mmtp_packet_id_packets_container->mp_table_asset_row);
+        free(atsc3_mmt_mfu_context->mmtp_packet_id_packets_container->mp_table_asset_row);
+        atsc3_mmt_mfu_context->mmtp_packet_id_packets_container->mp_table_asset_row = NULL;
+    }
     atsc3_mmt_mfu_context->mmtp_packet_id_packets_container->mp_table_asset_row = atsc3_mmt_mp_table_asset_row_duplicate(mp_table_asset_row);
 }
 
@@ -62,6 +67,11 @@ void atsc3_mmt_signalling_information_on_video_essence_packet_id_callback_intern
 
     //hack..
     memcpy(atsc3_mmt_mfu_context->mmtp_packet_id_packets_container->asset_type, mp_table_asset_row->asset_type, 4);
+    if(atsc3_mmt_mfu_context->mmtp_packet_id_packets_container->mp_table_asset_row) {
+        atsc3_mmt_mp_table_asset_row_free_inner(atsc3_mmt_mfu_context->mmtp_packet_id_packets_container->mp_table_asset_row);
+        free(atsc3_mmt_mfu_context->mmtp_packet_id_packets_container->mp_table_asset_row);
+        atsc3_mmt_mfu_context->mmtp_packet_id_packets_container->mp_table_asset_row = NULL;
+    }
     atsc3_mmt_mfu_context->mmtp_packet_id_packets_container->mp_table_asset_row = atsc3_mmt_mp_table_asset_row_duplicate(mp_table_asset_row);
 }
 
@@ -71,5 +81,10 @@ void atsc3_mmt_signalling_information_on_stpp_essence_packet_id_callback_interna
 
     //hack..
     memcpy(atsc3_mmt_mfu_context->mmtp_packet_id_packets_container->asset_type, mp_table_asset_row->asset_type, 4);
+    if(atsc3_mmt_mfu_context->mmtp_packet_id_packets_container->mp_table_asset_row) {
+        atsc3_mmt_mp_table_asset_row_free_inner(atsc3_mmt_mfu_context->mmtp_packet_id_packets_container->mp_table_asset_row);
+        free(atsc3_mmt_mfu_context->mmtp_packet_id_packets_container->mp_table_asset_row);
+        atsc3_mmt_mfu_context->mmtp_packet_id_packets_container->mp_table_asset_row = NULL;
+    }
     atsc3_mmt_mfu_context->mmtp_packet_id_packets_container->mp_table_asset_row = atsc3_mmt_mp_table_asset_row_duplicate(mp_table_asset_row);
 }

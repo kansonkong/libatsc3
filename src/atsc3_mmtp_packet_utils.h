@@ -35,7 +35,7 @@ mmtp_packet_id_packets_container_t*                               mmtp_asset_fin
 
 mpu_sequence_number_mmtp_mpu_packet_collection_t*                 mmtp_packet_id_packets_container_find_or_create_mpu_sequence_number_mmtp_mpu_packet_collection_from_mmt_mpu_packet(mmtp_packet_id_packets_container_t* mmtp_packet_id_packets_container, mmtp_mpu_packet_t* mmtp_mpu_packet);
 mpu_sequence_number_mmtp_mpu_packet_collection_t*                 mmtp_packet_id_packets_container_find_mpu_sequence_number_mmtp_mpu_packet_collection_from_mpu_sequence_number(mmtp_packet_id_packets_container_t* mmtp_packet_id_packets_container, uint32_t mpu_sequence_number);
-   
+mpu_sequence_number_mmtp_mpu_packet_collection_t*                 mmtp_packet_id_packets_container_find_not_mpu_sequence_number_mmtp_mpu_packet_collection_from_mpu_sequence_number(mmtp_packet_id_packets_container_t* mmtp_packet_id_packets_container, uint32_t mpu_sequence_number);
 //mmtp_asset_t*       mmtp_asset_flow_find_or_create_asset_from_mmt_mpu_packet(mmtp_asset_flow_t* mmtp_asset_flow, mmtp_mpu_packet_t* mmtp_mpu_packet);
 
 void mmtp_packet_id_packets_container_remove_mpu_sequence_number_mmtp_mpu_packet_collection_non_vector_builder(mmtp_packet_id_packets_container_t* mmtp_packet_id_packets_container, mpu_sequence_number_mmtp_mpu_packet_collection_t* mpu_sequence_number_mmtp_mpu_packet_collection_to_remove);
