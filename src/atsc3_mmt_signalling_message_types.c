@@ -40,7 +40,14 @@ void mmt_signalling_message_header_and_payload_free(mmt_signalling_message_heade
                 free(mmt_signalling_message_header_and_payload->message_payload.mmt_atsc3_message_payload.URI_payload);
                 mmt_signalling_message_header_and_payload->message_payload.mmt_atsc3_message_payload.URI_payload = NULL;
             }
-            
+            if(mmt_signalling_message_header_and_payload->message_payload.mmt_atsc3_message_payload.mmt_atsc3_held_message) {
+                mmt_atsc3_held_message_free(&mmt_signalling_message_header_and_payload->message_payload.mmt_atsc3_message_payload.mmt_atsc3_held_message);
+            }
+            if(mmt_signalling_message_header_and_payload->message_payload.mmt_atsc3_message_payload.mmt_atsc3_route_component) {
+                if(!mmt_signalling_message_header_and_payload->message_payload.mmt_atsc3_message_payload.mmt_atsc3_route_component->__is_pinned_to_context) {
+                    mmt_atsc3_route_component_free(&mmt_signalling_message_header_and_payload->message_payload.mmt_atsc3_message_payload.mmt_atsc3_route_component);
+                }
+            }
 
             
 		} else if(mmt_signalling_message_header_and_payload->message_header.MESSAGE_id_type == MPT_message) {
@@ -199,5 +206,45 @@ void atsc3_mmt_mp_table_asset_row_free_inner(mp_table_asset_row_t* mp_table_asse
             free(mp_table_asset_row->asset_descriptors_payload);
             mp_table_asset_row->asset_descriptors_payload = NULL;
         }
+    }
+}
+
+
+void mmt_atsc3_route_component_free(mmt_atsc3_route_component_t** mmt_atsc3_route_component_p) {
+    if(mmt_atsc3_route_component_p) {
+        mmt_atsc3_route_component_t* mmt_atsc3_route_component = *mmt_atsc3_route_component_p;
+        if(mmt_atsc3_route_component) {
+
+            if(mmt_atsc3_route_component->stsid_uri_s) {
+                freeclean((void**)&mmt_atsc3_route_component->stsid_uri_s);
+            }
+            if(mmt_atsc3_route_component->stsid_destination_ip_address_s) {
+                freeclean((void**)&mmt_atsc3_route_component->stsid_destination_ip_address_s);
+            }
+            if(mmt_atsc3_route_component->stsid_source_ip_address_s) {
+                freeclean((void**)&mmt_atsc3_route_component->stsid_source_ip_address_s);
+            }
+
+            free(mmt_atsc3_route_component);
+            mmt_atsc3_route_component = NULL;
+        }
+
+        *mmt_atsc3_route_component_p = NULL;
+    }
+}
+
+void mmt_atsc3_held_message_free(mmt_atsc3_held_message_t** mmt_atsc3_held_message_p) {
+    if(mmt_atsc3_held_message_p) {
+        mmt_atsc3_held_message_t* mmt_atsc3_held_message = *mmt_atsc3_held_message_p;
+        if(mmt_atsc3_held_message) {
+            if(mmt_atsc3_held_message->held_message) {
+                block_Destroy(&mmt_atsc3_held_message->held_message);
+            }
+
+            free(mmt_atsc3_held_message);
+            mmt_atsc3_held_message_p = NULL;
+        }
+
+        *mmt_atsc3_held_message_p = NULL;
     }
 }
