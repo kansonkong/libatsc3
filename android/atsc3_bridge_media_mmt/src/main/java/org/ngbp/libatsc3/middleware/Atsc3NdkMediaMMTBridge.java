@@ -8,7 +8,6 @@ import org.ngbp.libatsc3.middleware.android.mmt.MfuByteBufferFragment;
 import org.ngbp.libatsc3.middleware.android.mmt.MmtPacketIdContext;
 import org.ngbp.libatsc3.middleware.android.mmt.MpuMetadata_HEVC_NAL_Payload;
 
-import java.io.File;
 import java.nio.ByteBuffer;
 
 /*
@@ -25,6 +24,8 @@ public class Atsc3NdkMediaMMTBridge extends Atsc3NdkMediaMMTBridgeStaticJniLoade
     //native jni methods
     @Override
     public native int init();
+
+    public native int atsc3_process_mmtp_udp_packet(ByteBuffer byteBuffer, int length);
 
     public Atsc3NdkMediaMMTBridge(IAtsc3NdkMediaMMTBridgeCallbacks iAtsc3NdkMediaMMTBridgeCallbacks) {
         mActivity = iAtsc3NdkMediaMMTBridgeCallbacks;

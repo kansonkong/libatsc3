@@ -37,6 +37,8 @@ using namespace std;
 
 #include <atsc3_mmt_mfu_context_callbacks_default_jni.h>
 
+#include "mmt/MMTExtractor.h"
+
 class Atsc3NdkMediaMMTBridge : public IAtsc3NdkMediaMMTBridge
 {
 public:
@@ -63,10 +65,14 @@ public:
 
     void atsc3_onMfuSampleMissing(uint16_t i, uint32_t i1, uint32_t i2);
 
+    void atsc3_extractUdpPacket(block_t* packet);
+
 private:
     JNIEnv* env = nullptr;
     jobject jni_instance_globalRef = nullptr;
     jclass jni_class_globalRef = nullptr;
+
+    MMTExtractor* mmtExtractor;
 
     std::thread mhRxThread;
 
@@ -90,6 +96,7 @@ public:
 
     int pinConsumerThreadAsNeeded();
     int releasePinnedConsumerThreadAsNeeded();
+    bool isConsumerThreadPinned();
 
     jmethodID mOnLogMsgId = nullptr;
 

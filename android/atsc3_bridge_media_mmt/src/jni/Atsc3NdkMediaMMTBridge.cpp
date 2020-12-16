@@ -5,6 +5,8 @@ Atsc3NdkMediaMMTBridge* mediaMMTBridge;
 Atsc3NdkMediaMMTBridge::Atsc3NdkMediaMMTBridge(JNIEnv* env, jobject jni_instance) {
     this->env = env;
     this->jni_instance_globalRef = env->NewGlobalRef(jni_instance);
+
+    mmtExtractor = new MMTExtractor();
 }
 
 //jni management
@@ -20,6 +22,10 @@ int Atsc3NdkMediaMMTBridge::releasePinnedConsumerThreadAsNeeded() {
         delete bridgeConsumerJniEnv;
     }
     return 0;
+}
+
+bool Atsc3NdkMediaMMTBridge::isConsumerThreadPinned() {
+    return bridgeConsumerJniEnv != NULL;
 }
 
 void Atsc3NdkMediaMMTBridge::LogMsg(const char *msg)
@@ -225,6 +231,14 @@ void Atsc3NdkMediaMMTBridge::atsc3_onMfuSampleMissing(uint16_t pcaket_id, uint32
     int r = bridgeConsumerJniEnv->Get()->CallIntMethod(jni_instance_globalRef, atsc3_onMfuSampleMissingID, pcaket_id, mpu_sequence_number, sample_number);
 }
 
+void Atsc3NdkMediaMMTBridge::atsc3_extractUdpPacket(block_t* packet) {
+    if (!mmtExtractor) {
+        _NDK_MEDIA_MMT_BRIDGE_ERROR("atsc3_extractUdpPacket: mmtExtractor is NULL!");
+        return;
+    }
+
+    mmtExtractor->atsc3_core_service_bridge_process_mmt_packet(packet);
+}
 
 //--------------------------------------------------------------------------
 
@@ -328,4 +342,28 @@ Java_org_ngbp_libatsc3_middleware_Atsc3NdkMediaMMTBridge_init(JNIEnv *env, jobje
     _NDK_MEDIA_MMT_BRIDGE_INFO("Atsc3NdkMediaMMTBridge_init: done, with mediaMMTBridge: %p", mediaMMTBridge);
 
     return 0;
+}
+
+extern "C"
+JNIEXPORT jint JNICALL
+Java_org_ngbp_libatsc3_middleware_Atsc3NdkMediaMMTBridge_atsc3_1process_1mmtp_1udp_1packet(
+        JNIEnv *env, jobject thiz, jobject byte_buffer, jint length) {
+
+    //TODO: this should not be here
+    if (!mediaMMTBridge->isConsumerThreadPinned()) {
+        mediaMMTBridge->pinConsumerThreadAsNeeded();
+    }
+
+    uint8_t* buffer = reinterpret_cast<uint8_t*>(env->GetDirectBufferAddress(byte_buffer));
+    jlong size = env->GetDirectBufferCapacity(byte_buffer);
+    if (buffer) {
+        block_t* packet = block_Alloc(length);
+        block_Write(packet, buffer, length);
+        block_Rewind(packet);
+        mediaMMTBridge->atsc3_extractUdpPacket(packet);
+        block_Destroy(&packet);
+        return 0;
+    }
+
+    return -1;
 }

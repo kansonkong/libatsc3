@@ -199,7 +199,8 @@ intermediate_mmt: 	xml.o \
 					atsc3_utils.o \
 					fixups_timespec_get.o \
 					atsc3_mmt_mpu_utils.o \
-					atsc3_bandwidth_statistics.o
+					atsc3_bandwidth_statistics.o \
+					mmt_extractor.o
 
 intermediate_a324: 	atsc3_dstp_types.o
 
@@ -977,6 +978,13 @@ libatsc3_bento4_gpl.o: libatsc3_intermediate.o bento4_gpl.o
 
 libatsc3_bento4_gpl_asan.o: libatsc3_intermediate_asan.o bento4_gpl.o
 	ld  -o libatsc3_bento4_gpl_asan.o -r libatsc3_intermediate_asan.o bento4_gpl.o -L../bento/lib -lap4
+
+mmt_extractor.o: mmt/MMTExtractor.h mmt/MMTExtractor.cpp
+	g++ $(CFLAGS) $(CXXFLAGS) $(DEBUG) \
+	 	-I. -I mmt \
+		-c mmt/MMTExtractor.cpp \
+		-o mmt_extractor.o 
+#	$(CXX) $(CFLAGS) $(DEBUG) -o atsc3_isobmff_tools_gpl.o -c atsc3_isobmff_tools.cpp
 
 ###  unit test generation - drivers are in test/
 
