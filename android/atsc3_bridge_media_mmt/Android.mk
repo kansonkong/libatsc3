@@ -45,6 +45,10 @@ LOCAL_C_INCLUDES += $(LOCAL_PATH)/../../src/
 # jjustman-2020-08-10 - hack-ish... needed for atsc3_pcre2_regex_utils.h
 LOCAL_C_INCLUDES += $(LOCAL_PATH)/../atsc3_core/libpcre/include
 
+LOCAL_C_INCLUDES += $(LOCAL_PATH)/../../src/mmt
+
+LOCAL_SRC_FILES += $(LOCAL_PATH)/../../src/mmt/MMTExtractor.cpp
+
 LOCAL_CFLAGS += -g -fpack-struct=8 -fPIC  \
                 -D__DISABLE_LIBPCAP__ -D__DISABLE_ISOBMFF_LINKAGE__ -D__DISABLE_NCURSES__ \
                 -D__MOCK_PCAP_REPLAY__ -D__LIBATSC3_ANDROID__ -DDEBUG
