@@ -24,6 +24,9 @@ public class Atsc3NdkMediaMMTBridge extends Atsc3NdkMediaMMTBridgeStaticJniLoade
     //native jni methods
     @Override
     public native int init();
+    //free NDK/JNI bound AttachedThread, pseduo finalize()?
+    @Override
+    public native void release();
 
     public native int atsc3_process_mmtp_udp_packet(ByteBuffer byteBuffer, int length);
 

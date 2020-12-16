@@ -18,7 +18,7 @@ using namespace std;
 #ifndef LIBATSC3_ATSC3_NDK_MEDIA_MMT_BRIDGE_H
 #define LIBATSC3_ATSC3_NDK_MEDIA_MMT_BRIDGE_H
 
-#define MODULE_NAME "Atsc3NdkApplicationBridge"
+#define MODULE_NAME "Atsc3NdkMediaMMTBridge"
 
 #include "Atsc3LoggingUtils.h"
 #include "Atsc3JniEnv.h"
@@ -94,9 +94,19 @@ public:
         return jni_class_globalRef;
     }
 
+    static pthread_once_t JniPtrOnce;
+    static pthread_key_t JniPtr;
+    static map<jobject, Atsc3NdkMediaMMTBridge*> MediaBridgePtrMap;
+
+    static void CreateJniAndMediaBridgePtrKey();
+    static void PthreadDestructor(void* prevJniPtr);
+
     int pinConsumerThreadAsNeeded();
     int releasePinnedConsumerThreadAsNeeded();
     bool isConsumerThreadPinned();
+
+    static Atsc3JniEnv* GetBridgeConsumerJniEnv();
+    static Atsc3NdkMediaMMTBridge* GetMediaBridgePtr(JNIEnv *env, jobject instance);
 
     jmethodID mOnLogMsgId = nullptr;
 
@@ -115,21 +125,17 @@ public:
 
     jmethodID atsc3_onMfuSampleMissingID = nullptr;
 
-
     //todo: refactor this out - ala https://gist.github.com/qiao-tw/6e43fb2311ee3c31752e11a4415deeb1
     jclass      jni_java_util_ArrayList = nullptr;
     jmethodID   jni_java_util_ArrayList_cctor = nullptr;
     jmethodID   jni_java_util_ArrayList_add = nullptr;
 
-
-protected:
-    Atsc3JniEnv* bridgeConsumerJniEnv = nullptr;
 };
 
 #define _NDK_MEDIA_MMT_BRIDGE_ERROR(...)   	__LIBATSC3_TIMESTAMP_ERROR(__VA_ARGS__);
 #define _NDK_MEDIA_MMT_BRIDGE_WARN(...)   	__LIBATSC3_TIMESTAMP_WARN(__VA_ARGS__);
 #define _NDK_MEDIA_MMT_BRIDGE_INFO(...)   	__LIBATSC3_TIMESTAMP_INFO(__VA_ARGS__);
 #define _NDK_MEDIA_MMT_BRIDGE_DEBUG(...)   	__LIBATSC3_TIMESTAMP_DEBUG(__VA_ARGS__);
-#define _NDK_MEDIA_MMT_BRIDGE_TRACE(...)   	__LIBATSC3_TIMESTAMP_TRACE(__VA_ARGS__);
+#define _NDK_MEDIA_MMT_BRIDGE_TRACE(...)   	//__LIBATSC3_TIMESTAMP_TRACE(__VA_ARGS__);
 
 #endif //LIBATSC3_ATSC3_NDK_MEDIA_MMT_BRIDGE_H

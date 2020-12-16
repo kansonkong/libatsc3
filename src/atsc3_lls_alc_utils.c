@@ -66,7 +66,7 @@ lls_sls_alc_session_t* lls_slt_alc_session_create_from_ip_and_port_values(atsc3_
         lls_slt_alc_session->sls_destination_ip_address = sls_destination_ip_address;
         lls_slt_alc_session->sls_destination_udp_port = sls_destination_udp_port;
 
-        _ATSC3_LLS_ALC_UTILS_TRACE("adding ALC sls_source ip: %s as: %u.%u.%u.%u| dest: %s:%s as: %u.%u.%u.%u:%u (%u:%u)",
+        _ATSC3_LLS_ALC_UTILS_TRACE("adding ALC sls_source ip: %d as: %u.%u.%u.%u| dest: %d:%d as: %u.%u.%u.%u:%u (%u:%u)",
                                    sls_source_ip_address,
                                    __toipnonstruct(lls_slt_alc_session->sls_source_ip_address),
                                    sls_destination_ip_address,

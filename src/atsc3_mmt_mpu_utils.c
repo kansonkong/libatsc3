@@ -162,7 +162,7 @@ udp_flow_packet_id_mpu_sequence_tuple_t* udp_flow_latest_mpu_sequence_number_add
         }
     } else {
         if(udp_flow_latest_mpu_sequence_number_container->udp_flows_n) {
-            udp_flow_latest_mpu_sequence_number_container->udp_flows = realloc(udp_flow_latest_mpu_sequence_number_container->udp_flows, (udp_flow_latest_mpu_sequence_number_container->udp_flows_n + 1) * sizeof(udp_flow_latest_mpu_sequence_number_container->udp_flows));
+            udp_flow_latest_mpu_sequence_number_container->udp_flows = realloc(udp_flow_latest_mpu_sequence_number_container->udp_flows, (udp_flow_latest_mpu_sequence_number_container->udp_flows_n + 1) * sizeof(*udp_flow_latest_mpu_sequence_number_container->udp_flows));
             //realloc here
         } else {
             udp_flow_latest_mpu_sequence_number_container->udp_flows = calloc(1, sizeof(*udp_flow_latest_mpu_sequence_number_container->udp_flows));

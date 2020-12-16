@@ -7,12 +7,6 @@
 //commandline stream filtering
 uint16_t* dst_packet_id_filter = NULL;
 
-//jjustman-2019-10-03 - context event callbacks...
-lls_slt_monitor_t* lls_slt_monitor = NULL;
-
-//mmtp/sls flow management
-lls_sls_mmt_monitor_t* lls_sls_mmt_monitor = NULL;
-atsc3_mmt_mfu_context_t* atsc3_mmt_mfu_context = NULL;
 
 MMTExtractor::MMTExtractor() {
     atsc3_lls_slt_service = atsc3_lls_slt_service_new();
