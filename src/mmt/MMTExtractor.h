@@ -23,6 +23,13 @@ class MMTExtractor {
 
     private:
     atsc3_lls_slt_service_t* atsc3_lls_slt_service;
+
+    //jjustman-2019-10-03 - context event callbacks...
+    lls_slt_monitor_t* lls_slt_monitor = NULL;
+
+    //mmtp/sls flow management
+    lls_sls_mmt_monitor_t* lls_sls_mmt_monitor = NULL;
+    atsc3_mmt_mfu_context_t* atsc3_mmt_mfu_context = NULL;
 };
 
 #endif //LIBATSC3_MMTEXTRACTOR_H

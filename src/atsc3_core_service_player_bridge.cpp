@@ -227,7 +227,7 @@ atsc3_slt_broadcast_svc_signalling_t* atsc3_phy_add_plp_listener_from_service_id
                     }
 
                 }
-                __ATSC3_CORE_SERVICE_PLAYER_BRIDGE_INFO("atsc3_phy_add_plp_listener_from_service_id: before atsc3_phy_notify_plp_selection_changed: with %lu plp's", plps_to_listen.size());
+                __ATSC3_CORE_SERVICE_PLAYER_BRIDGE_INFO("atsc3_phy_add_plp_listener_from_service_id: before atsc3_phy_notify_plp_selection_changed: with %u plp's", plps_to_listen.size());
                 Atsc3NdkApplicationBridge_ptr->atsc3_phy_notify_plp_selection_changed(plps_to_listen);
                 atsc3_phy_notify_plp_selection_changed_called = true;
             } else {
