@@ -60,7 +60,7 @@ atsc3_audio_decoder_configuration_record_t* atsc3_audio_decoder_configuration_re
 
         //jjustman-2020-11-30 - hack
 
-        /*
+
          *
          *   [stbl] size=8+157
           [stsd] size=12+77
