@@ -50,22 +50,26 @@ public:
     void LogMsgF(const char *fmt, ...);
 
     /* Media MMT Bridge callbacks for ExoPlayer JNI handoff */
-    void atsc3_onInitHEVC_NAL_Extracted(uint16_t packet_id, uint32_t mpu_sequence_number, uint8_t* buffer, uint32_t bufferLen);
 
+    //MMT Initialization callbacks for Video and Audio format(s)
+    void atsc3_onInitHEVC_NAL_Extracted(uint16_t packet_id, uint32_t mpu_sequence_number, uint8_t* buffer, uint32_t bufferLen);
+    void atsc3_onInitAudioDecoderConfigurationRecord(uint16_t packet_id, uint32_t mpu_sequence_number, atsc3_audio_decoder_configuration_record_t* atsc3_audio_decoder_configuration_record);
+
+    //Signalling callbacks
     void atsc3_signallingContext_notify_video_packet_id_and_mpu_timestamp_descriptor(uint16_t video_packet_id, uint32_t mpu_sequence_number, uint64_t mpu_presentation_time_ntp64, uint32_t mpu_presentation_time_seconds, uint32_t mpu_presentation_time_microseconds);
     void atsc3_signallingContext_notify_audio_packet_id_and_mpu_timestamp_descriptor(uint16_t audio_packet_id, uint32_t mpu_sequence_number, uint64_t mpu_presentation_time_ntp64, uint32_t mpu_presentation_time_seconds, uint32_t mpu_presentation_time_microsecond);
     void atsc3_signallingContext_notify_stpp_packet_id_and_mpu_timestamp_descriptor(uint16_t stpp_packet_id, uint32_t mpu_sequence_number, uint64_t mpu_presentation_time_ntp64, uint32_t mpu_presentation_time_seconds, uint32_t mpu_presentation_time_microseconds);
 
+    //Fragment Metadata callbacks
     void atsc3_onExtractedSampleDuration(uint16_t packet_id, uint32_t mpu_sequence_number, uint32_t extracted_sample_duration_us);
-    void atsc3_setVideoWidthHeightFromTrak(uint32_t width, uint32_t height);
+    void atsc3_setVideoWidthHeightFromTrak(uint16_t packet_id, uint32_t width, uint32_t height);
 
+    //MFU callbacks
     void atsc3_onMfuPacket(uint16_t packet_id, uint32_t mpu_sequence_number, uint32_t sample_number, uint8_t* buffer, uint32_t bufferLen, uint64_t presentationUs, uint32_t mfu_fragment_count_expected);
     void atsc3_onMfuPacketCorrupt(uint16_t packet_id, uint32_t mpu_sequence_number, uint32_t sample_number, uint8_t* buffer, uint32_t bufferLen, uint64_t presentationUs, uint32_t mfu_fragment_count_expected, uint32_t mfu_fragment_count_rebuilt);
     void atsc3_onMfuPacketCorruptMmthSampleHeader(uint16_t packet_id, uint32_t mpu_sequence_number, uint32_t sample_number, uint8_t* buffer, uint32_t bufferLen, uint64_t presentationUs, uint32_t mfu_fragment_count_expected, uint32_t mfu_fragment_count_rebuilt);
 
     void atsc3_onMfuSampleMissing(uint16_t i, uint32_t i1, uint32_t i2);
-
-    void atsc3_extractUdpPacket(block_t* packet);
 
 private:
     JNIEnv* env = nullptr;
@@ -115,7 +119,13 @@ public:
 
     jmethodID mOnLogMsgId = nullptr;
 
-    jmethodID mOnInitHEVC_NAL_Extracted = nullptr; //java method for pushing to a/v codec buffers
+    jmethodID atsc3_OnInitHEVC_NAL_Extracted = nullptr; //java method for pushing to a/v codec buffers
+    jmethodID atsc3_OnInitAudioDecoderConfigurationRecord = nullptr; //java method for pushing to a/v codec buffers
+
+    //MMTAudioDecoderConfigurationRecord type ref
+    jclass    mmtAudioDecoderConfigurationRecord_jclass_global_ref = nullptr;
+    jclass    mmtAudioDecoderConfigurationRecord_AudioAC4SampleEntryBox_jclass_global_ref = nullptr;
+    jclass    mmtAudioDecoderConfigurationRecord_AudioAC4SampleEntryBox_AC4SpecificBox_jclass_global_ref = nullptr;
 
     jmethodID atsc3_signallingContext_notify_video_packet_id_and_mpu_timestamp_descriptor_ID = nullptr;  // java class method id
     jmethodID atsc3_signallingContext_notify_audio_packet_id_and_mpu_timestamp_descriptor_ID = nullptr;  // java class method id
