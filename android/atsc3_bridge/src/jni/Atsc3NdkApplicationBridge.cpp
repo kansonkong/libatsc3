@@ -6,60 +6,6 @@ Atsc3NdkApplicationBridge::Atsc3NdkApplicationBridge(JNIEnv* env, jobject jni_in
     this->env = env;
     this->jni_instance_globalRef = env->NewGlobalRef(jni_instance);
 }
-//
-//void Atsc3NdkApplicationBridge::atsc3_onMfuPacket(uint16_t packet_id, uint32_t mpu_sequence_number, uint32_t sample_number, uint8_t* buffer, uint32_t bufferLen, uint64_t presentationUs, uint32_t mfu_fragment_count_rebuilt)
-//{
-//    if (!bridgeConsumerJniEnv) {
-//        _NDK_APPLICATION_BRIDGE_ERROR("ats3_onMfuPacket: bridgeConsumerJniEnv is NULL!");
-//        return;
-//    }
-//
-//#ifdef __JOBJECT_BYTE_BUFFER_GLOBAL_REF__
-//    //jobject NewGlobalRef(JNIEnv *env, jobject obj);
-//    jobject jobjectByteBuffer = env.Get()->NewDirectByteBuffer(buffer, bufferLen);
-//    jobject jobjectGlobalByteBuffer = env.Get()->NewGlobalRef(jobjectByteBuffer);
-//    global_jobject_mfu_refs.push_back(jobjectGlobalByteBuffer);
-//
-//    int r = env.Get()->CallIntMethod(jni_instance_globalRef, atsc3_onMfuPacketID, mpu_sequence_number, is_video, sample_number, jobjectGlobalByteBuffer, bufferLen, presentationUs);
-//    //_NDK_APPLICATION_BRIDGE_INFO("Atsc3NdkPHYBridge::onMfuPacket, ret: %d, bufferLen: %u", r, bufferLen);
-//   // env.Get()->DeleteLocalRef(jobjectByteBuffer);
-//#else
-//    jobject jobjectLocalByteBuffer = bridgeConsumerJniEnv->Get()->NewDirectByteBuffer(buffer, bufferLen);
-//
-//    int r = bridgeConsumerJniEnv->Get()->CallIntMethod(jni_instance_globalRef, atsc3_onMfuPacketID, packet_id, mpu_sequence_number, sample_number, jobjectLocalByteBuffer, bufferLen, presentationUs, mfu_fragment_count_rebuilt);
-//    //_NDK_APPLICATION_BRIDGE_INFO("Atsc3NdkPHYBridge::onMfuPacket, ret: %d, bufferLen: %u", r, bufferLen);
-//    bridgeConsumerJniEnv->Get()->DeleteLocalRef(jobjectLocalByteBuffer);
-//#endif
-//}
-//
-//
-//void Atsc3NdkApplicationBridge::atsc3_onMfuPacketCorrupt(uint16_t packet_id, uint32_t mpu_sequence_number, uint32_t sample_number, uint8_t* buffer, uint32_t bufferLen, uint64_t presentationUs, uint32_t mfu_fragment_count_expected, uint32_t mfu_fragment_count_rebuilt)
-//{
-//    if (!bridgeConsumerJniEnv) {
-//        _NDK_APPLICATION_BRIDGE_ERROR("ats3_onMfuPacket: bridgeConsumerJniEnv is NULL!");
-//        return;
-//    }
-//
-//#ifdef __JOBJECT_BYTE_BUFFER_GLOBAL_REF__
-//    //jobject NewGlobalRef(JNIEnv *env, jobject obj);
-//    jobject jobjectByteBuffer = env.Get()->NewDirectByteBuffer(buffer, bufferLen);
-//    jobject jobjectGlobalByteBuffer = env.Get()->NewGlobalRef(jobjectByteBuffer);
-//    global_jobject_mfu_refs.push_back(jobjectGlobalByteBuffer);
-//
-//    int r = env.Get()->CallIntMethod(jni_instance_globalRef, atsc3_onMfuPacketID, mpu_sequence_number, is_video, sample_number, jobjectGlobalByteBuffer, bufferLen, presentationUs);
-//    //_NDK_APPLICATION_BRIDGE_INFO("Atsc3NdkPHYBridge::onMfuPacket, ret: %d, bufferLen: %u", r, bufferLen);
-//   // env.Get()->DeleteLocalRef(jobjectByteBuffer);
-//#else
-//    jobject jobjectLocalByteBuffer = bridgeConsumerJniEnv->Get()->NewDirectByteBuffer(buffer, bufferLen);
-//
-//    int r = bridgeConsumerJniEnv->Get()->CallIntMethod(jni_instance_globalRef, atsc3_onMfuPacketCorruptID, packet_id, mpu_sequence_number, sample_number, jobjectLocalByteBuffer, bufferLen, presentationUs, mfu_fragment_count_expected, mfu_fragment_count_rebuilt);
-//    //_NDK_APPLICATION_BRIDGE_INFO("Atsc3NdkPHYBridge::onMfuPacket, ret: %d, bufferLen: %u", r, bufferLen);
-//    bridgeConsumerJniEnv->Get()->DeleteLocalRef(jobjectLocalByteBuffer);
-//#endif
-//}
-//
-
-
 
 //jjustman-2020-08-19: TODO: get (or create) a pinned Atsc3JniEnv from pthread_cur
 void Atsc3NdkApplicationBridge::LogMsg(const char *msg)
@@ -192,31 +138,6 @@ int Atsc3NdkApplicationBridge::atsc3_slt_selectService(int service_id) {
 
     return ret;
 }
-
-void Atsc3NdkApplicationBridge::atsc3_onExtractedSampleDuration(uint16_t packet_id, uint32_t mpu_sequence_number,
-                                                                uint32_t extracted_sample_duration_us) {
-
-    if (!bridgeConsumerJniEnv) {
-        _NDK_APPLICATION_BRIDGE_ERROR("ats3_onMfuPacket: bridgeConsumerJniEnv is NULL!");
-        return;
-    }
-    int r = bridgeConsumerJniEnv->Get()->CallIntMethod(jni_instance_globalRef, atsc3_onExtractedSampleDurationID,
-                                                       packet_id,
-                                                       mpu_sequence_number,
-                                                       extracted_sample_duration_us);
-}
-
-
-
-void Atsc3NdkApplicationBridge::atsc3_setVideoWidthHeightFromTrak(uint32_t width, uint32_t height) {
-
-    if (!bridgeConsumerJniEnv) {
-        _NDK_APPLICATION_BRIDGE_ERROR("ats3_onMfuPacket: bridgeConsumerJniEnv is NULL!");
-        return;
-    }
-    int r = bridgeConsumerJniEnv->Get()->CallIntMethod(jni_instance_globalRef, atsc3_setVideoWidthHeightFromTrakID, width, height);
-}
-
 
 void Atsc3NdkApplicationBridge::set_plp_settings(jint *a_plp_ids, jsize a_plp_size) {
 
