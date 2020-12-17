@@ -162,31 +162,138 @@ void Atsc3NdkMediaMMTBridge::extractUdpPacket(block_t* udpPacket) {
     mmtExtractor->atsc3_core_service_bridge_process_mmt_packet(udpPacket);
 }
 
-
 //wired up and invoked from atsc3_mmt_mfu_context_callbacks_default_jni.cpp
 
+//MMT Initialization callbacks for Video and Audio format(s)
 //push extracted HEVC nal's to MediaCodec for init
 void Atsc3NdkMediaMMTBridge::atsc3_onInitHEVC_NAL_Extracted(uint16_t packet_id, uint32_t mpu_sequence_number, uint8_t* buffer, uint32_t bufferLen) {
     if (!Atsc3NdkMediaMMTBridge::GetBridgeConsumerJniEnv()) {
-        _NDK_MEDIA_MMT_BRIDGE_ERROR("ats3_onMfuPacket: Atsc3NdkMediaMMTBridge::GetBridgeConsumerJniEnv( is NULL!");
+        _NDK_MEDIA_MMT_BRIDGE_ERROR("Atsc3NdkMediaMMTBridge::atsc3_onInitHEVC_NAL_Extracted: Atsc3NdkMediaMMTBridge::GetBridgeConsumerJniEnv() is NULL!");
         return;
     }
 
-#ifdef __JOBJECT_BYTE_BUFFER_GLOBAL_REF__
-
-    jobject jobjectByteBuffer = env.Get()->NewDirectByteBuffer(buffer, bufferLen);
-    jobject jobjectGlobalByteBuffer = env.Get()->NewGlobalRef(jobjectByteBuffer);
-    global_jobject_nal_refs.push_back(jobjectGlobalByteBuffer);
-
-    int r = env.Get()->CallIntMethod(jni_instance_globalRef, mOnInitHEVC_NAL_Extracted, is_video, mpu_sequence_number, jobjectGlobalByteBuffer, bufferLen);
-    //_NDK_MEDIA_MMT_BRIDGE_INFO("Atsc3NdkPHYBridge::onMfuPacket, ret: %d, bufferLen: %u", r, bufferLen);
-    //env.Get()->DeleteLocalRef(jobjectByteBuffer);
-#else
     jobject jobjectByteBuffer = Atsc3NdkMediaMMTBridge::GetBridgeConsumerJniEnv()->Get()->NewDirectByteBuffer(buffer, bufferLen);
-    int r = Atsc3NdkMediaMMTBridge::GetBridgeConsumerJniEnv()->Get()->CallIntMethod(jni_instance_globalRef, mOnInitHEVC_NAL_Extracted, packet_id, mpu_sequence_number, jobjectByteBuffer, bufferLen);
+    int r = Atsc3NdkMediaMMTBridge::GetBridgeConsumerJniEnv()->Get()->CallIntMethod(jni_instance_globalRef, atsc3_OnInitHEVC_NAL_Extracted, packet_id, (int64_t)mpu_sequence_number, jobjectByteBuffer, bufferLen);
     Atsc3NdkMediaMMTBridge::GetBridgeConsumerJniEnv()->Get()->DeleteLocalRef(jobjectByteBuffer);
-#endif
 }
+
+void Atsc3NdkMediaMMTBridge::atsc3_onInitAudioDecoderConfigurationRecord(uint16_t packet_id, uint32_t mpu_sequence_number, atsc3_audio_decoder_configuration_record_t* atsc3_audio_decoder_configuration_record) {
+    if (!Atsc3NdkMediaMMTBridge::GetBridgeConsumerJniEnv()) {
+        _NDK_MEDIA_MMT_BRIDGE_ERROR("Atsc3NdkMediaMMTBridge::atsc3_onInitAudioDecoderConfigurationRecord: Atsc3NdkMediaMMTBridge::GetBridgeConsumerJniEnv() is NULL!");
+        return;
+    }
+
+    if(!atsc3_audio_decoder_configuration_record) {
+        _NDK_MEDIA_MMT_BRIDGE_ERROR("Atsc3NdkMediaMMTBridge::atsc3_onInitAudioDecoderConfigurationRecord: atsc3_audio_decoder_configuration_record is NULL!");
+        return;
+    }
+    if(!atsc3_OnInitAudioDecoderConfigurationRecord) {
+        _NDK_MEDIA_MMT_BRIDGE_ERROR("Atsc3NdkMediaMMTBridge::atsc3_onInitAudioDecoderConfigurationRecord: atsc3_OnInitAudioDecoderConfigurationRecord jmethodID is NULL!");
+        return;
+    }
+
+    std::list<jobject> to_clean_jobject;
+
+    jclass jcls = mmtAudioDecoderConfigurationRecord_jclass_global_ref;
+    jobject jobj = Atsc3NdkMediaMMTBridge::GetBridgeConsumerJniEnv()->Get()->AllocObject(jcls);
+
+    if(!jobj) {
+        _NDK_MEDIA_MMT_BRIDGE_ERROR("Atsc3NdkMediaMMTBridge::atsc3_onInitAudioDecoderConfigurationRecord: unable to instantiate mmtAudioDecoderConfigurationRecord_jclass_global_ref, jobj is NULL!");
+        return;
+    }
+
+    jfieldID packet_id_valId = Atsc3NdkMediaMMTBridge::GetBridgeConsumerJniEnv()->Get()->GetFieldID(jcls, "packet_id", "I");
+    Atsc3NdkMediaMMTBridge::GetBridgeConsumerJniEnv()->Get()->SetIntField(jobj, packet_id_valId, packet_id);
+
+    //marshall our uint32_t packet_id to int64_t -> long in java
+    jfieldID mpu_sequence_number_valId = Atsc3NdkMediaMMTBridge::GetBridgeConsumerJniEnv()->Get()->GetFieldID(jcls, "mpu_sequence_number", "J");
+    Atsc3NdkMediaMMTBridge::GetBridgeConsumerJniEnv()->Get()->SetLongField(jobj, mpu_sequence_number_valId, (int64_t)mpu_sequence_number);
+
+    jfieldID channel_count_valId = Atsc3NdkMediaMMTBridge::GetBridgeConsumerJniEnv()->Get()->GetFieldID(jcls, "channel_count", "I");
+    Atsc3NdkMediaMMTBridge::GetBridgeConsumerJniEnv()->Get()->SetIntField(jobj, channel_count_valId, atsc3_audio_decoder_configuration_record->channel_count);
+
+    jfieldID sample_depth_valId = Atsc3NdkMediaMMTBridge::GetBridgeConsumerJniEnv()->Get()->GetFieldID(jcls, "sample_depth", "I");
+    Atsc3NdkMediaMMTBridge::GetBridgeConsumerJniEnv()->Get()->SetIntField(jobj, sample_depth_valId, atsc3_audio_decoder_configuration_record->sample_depth);
+
+    //unsigned 2^31 should be fine...
+    jfieldID sample_rate_valId = Atsc3NdkMediaMMTBridge::GetBridgeConsumerJniEnv()->Get()->GetFieldID(jcls, "sample_rate", "I");
+    Atsc3NdkMediaMMTBridge::GetBridgeConsumerJniEnv()->Get()->SetIntField(jobj, sample_rate_valId, (int32_t)atsc3_audio_decoder_configuration_record->sample_rate);
+
+    jfieldID timebase_valId = Atsc3NdkMediaMMTBridge::GetBridgeConsumerJniEnv()->Get()->GetFieldID(jcls, "timebase", "J");
+    Atsc3NdkMediaMMTBridge::GetBridgeConsumerJniEnv()->Get()->SetLongField(jobj, timebase_valId, (int64_t)atsc3_audio_decoder_configuration_record->timebase);
+
+    jfieldID sample_duration_valId = Atsc3NdkMediaMMTBridge::GetBridgeConsumerJniEnv()->Get()->GetFieldID(jcls, "sample_duration", "J");
+    Atsc3NdkMediaMMTBridge::GetBridgeConsumerJniEnv()->Get()->SetLongField(jobj, sample_duration_valId, (int64_t)atsc3_audio_decoder_configuration_record->sample_duration);
+
+    if(atsc3_audio_decoder_configuration_record->atsc3_audio_ac4_sample_entry_box) {
+        //build our ac4_sample_entry box
+        jclass j_ac4_se_box_cls = mmtAudioDecoderConfigurationRecord_AudioAC4SampleEntryBox_jclass_global_ref;
+        jobject j_ac4_se_box_obj = Atsc3NdkMediaMMTBridge::GetBridgeConsumerJniEnv()->Get()->AllocObject(j_ac4_se_box_cls);
+
+        if(!j_ac4_se_box_obj) {
+            _NDK_MEDIA_MMT_BRIDGE_ERROR("Atsc3NdkMediaMMTBridge::atsc3_onInitAudioDecoderConfigurationRecord: unable to instantiate mmtAudioDecoderConfigurationRecord_AudioAC4SampleEntryBox_jclass_global_ref, j_ac4_se_box_obj is NULL!");
+            return; //todo: goto cleanup
+        }
+
+        to_clean_jobject.push_back(j_ac4_se_box_obj);
+
+        jfieldID ac4_se_box_size_valId = Atsc3NdkMediaMMTBridge::GetBridgeConsumerJniEnv()->Get()->GetFieldID(j_ac4_se_box_cls, "box_size", "J");
+        Atsc3NdkMediaMMTBridge::GetBridgeConsumerJniEnv()->Get()->SetLongField(j_ac4_se_box_obj, ac4_se_box_size_valId, (int64_t)atsc3_audio_decoder_configuration_record->atsc3_audio_ac4_sample_entry_box->box_size);
+
+        //type - int32 is fine as we are really a 4cc
+        jfieldID ac4_se_box_type_valId = Atsc3NdkMediaMMTBridge::GetBridgeConsumerJniEnv()->Get()->GetFieldID(j_ac4_se_box_cls, "type", "I");
+        Atsc3NdkMediaMMTBridge::GetBridgeConsumerJniEnv()->Get()->SetIntField(j_ac4_se_box_obj, ac4_se_box_type_valId, (int32_t)atsc3_audio_decoder_configuration_record->atsc3_audio_ac4_sample_entry_box->type);
+
+        jfieldID ac4_se_box_channel_count_valId = Atsc3NdkMediaMMTBridge::GetBridgeConsumerJniEnv()->Get()->GetFieldID(j_ac4_se_box_cls, "channel_count", "I");
+        Atsc3NdkMediaMMTBridge::GetBridgeConsumerJniEnv()->Get()->SetIntField(j_ac4_se_box_obj, ac4_se_box_channel_count_valId, (int32_t)atsc3_audio_decoder_configuration_record->atsc3_audio_ac4_sample_entry_box->channel_count);
+
+        jfieldID ac4_se_box_sample_size_valId = Atsc3NdkMediaMMTBridge::GetBridgeConsumerJniEnv()->Get()->GetFieldID(j_ac4_se_box_cls, "sample_size", "I");
+        Atsc3NdkMediaMMTBridge::GetBridgeConsumerJniEnv()->Get()->SetIntField(j_ac4_se_box_obj, ac4_se_box_sample_size_valId, (int32_t)atsc3_audio_decoder_configuration_record->atsc3_audio_ac4_sample_entry_box->sample_size);
+
+        jfieldID ac4_se_box_sampling_frequency_valId = Atsc3NdkMediaMMTBridge::GetBridgeConsumerJniEnv()->Get()->GetFieldID(j_ac4_se_box_cls, "sampling_frequency", "I");
+        Atsc3NdkMediaMMTBridge::GetBridgeConsumerJniEnv()->Get()->SetIntField(j_ac4_se_box_obj, ac4_se_box_sampling_frequency_valId, (int32_t)atsc3_audio_decoder_configuration_record->atsc3_audio_ac4_sample_entry_box->sampling_frequency);
+
+        //assumed required that if we are ac4_sample, then we must have an ac4_specific box
+        jclass j_ac4_se_specific_box_cls = mmtAudioDecoderConfigurationRecord_AudioAC4SampleEntryBox_AC4SpecificBox_jclass_global_ref;
+        jobject j_ac4_se_specific_box_obj = Atsc3NdkMediaMMTBridge::GetBridgeConsumerJniEnv()->Get()->AllocObject(j_ac4_se_specific_box_cls);
+
+        if(!j_ac4_se_specific_box_obj) {
+            _NDK_MEDIA_MMT_BRIDGE_ERROR("Atsc3NdkMediaMMTBridge::atsc3_onInitAudioDecoderConfigurationRecord: unable to instantiate mmtAudioDecoderConfigurationRecord_AudioAC4SampleEntryBox_AC4SpecificBox_jclass_global_ref, j_ac4_se_specific_box_obj is NULL!");
+            return; //todo: goto cleanup
+        }
+
+        to_clean_jobject.push_back(j_ac4_se_specific_box_obj);
+
+        jfieldID ac4_se_specific_box_size_valId = Atsc3NdkMediaMMTBridge::GetBridgeConsumerJniEnv()->Get()->GetFieldID(j_ac4_se_specific_box_cls, "box_size", "J");
+        Atsc3NdkMediaMMTBridge::GetBridgeConsumerJniEnv()->Get()->SetLongField(j_ac4_se_specific_box_obj, ac4_se_specific_box_size_valId, (int64_t)atsc3_audio_decoder_configuration_record->atsc3_audio_ac4_sample_entry_box->atsc3_audio_ac4_specific_box.box_size);
+
+        //type - int32 is fine as we are really a 4cc
+        jfieldID ac4_se_specific_box_type_valId = Atsc3NdkMediaMMTBridge::GetBridgeConsumerJniEnv()->Get()->GetFieldID(j_ac4_se_specific_box_cls, "type", "I");
+        Atsc3NdkMediaMMTBridge::GetBridgeConsumerJniEnv()->Get()->SetIntField(j_ac4_se_specific_box_obj, ac4_se_specific_box_type_valId, (int32_t)atsc3_audio_decoder_configuration_record->atsc3_audio_ac4_sample_entry_box->atsc3_audio_ac4_specific_box.type);
+
+        jfieldID ac4_se_box_specific_ac4_dsi_version_valId = Atsc3NdkMediaMMTBridge::GetBridgeConsumerJniEnv()->Get()->GetFieldID(j_ac4_se_specific_box_cls, "ac4_dsi_version", "I");
+        Atsc3NdkMediaMMTBridge::GetBridgeConsumerJniEnv()->Get()->SetIntField(j_ac4_se_specific_box_obj, ac4_se_box_specific_ac4_dsi_version_valId, atsc3_audio_decoder_configuration_record->atsc3_audio_ac4_sample_entry_box->atsc3_audio_ac4_specific_box.ac4_dsi_version);
+
+        jfieldID ac4_se_box_specific_ac4_bitstream_version_valId = Atsc3NdkMediaMMTBridge::GetBridgeConsumerJniEnv()->Get()->GetFieldID(j_ac4_se_specific_box_cls, "bitstream_version", "I");
+        Atsc3NdkMediaMMTBridge::GetBridgeConsumerJniEnv()->Get()->SetIntField(j_ac4_se_specific_box_obj, ac4_se_box_specific_ac4_bitstream_version_valId, atsc3_audio_decoder_configuration_record->atsc3_audio_ac4_sample_entry_box->atsc3_audio_ac4_specific_box.bitstream_version);
+
+        jfieldID ac4_se_box_specific_fs_index_valId = Atsc3NdkMediaMMTBridge::GetBridgeConsumerJniEnv()->Get()->GetFieldID(j_ac4_se_specific_box_cls, "fs_index", "I");
+        Atsc3NdkMediaMMTBridge::GetBridgeConsumerJniEnv()->Get()->SetIntField(j_ac4_se_specific_box_obj, ac4_se_box_specific_fs_index_valId, atsc3_audio_decoder_configuration_record->atsc3_audio_ac4_sample_entry_box->atsc3_audio_ac4_specific_box.fs_index);
+
+        jfieldID ac4_se_box_specific_frame_rate_index_valId = Atsc3NdkMediaMMTBridge::GetBridgeConsumerJniEnv()->Get()->GetFieldID(j_ac4_se_specific_box_cls, "frame_rate_index", "I");
+        Atsc3NdkMediaMMTBridge::GetBridgeConsumerJniEnv()->Get()->SetIntField(j_ac4_se_specific_box_obj, ac4_se_box_specific_frame_rate_index_valId, atsc3_audio_decoder_configuration_record->atsc3_audio_ac4_sample_entry_box->atsc3_audio_ac4_specific_box.frame_rate_index);
+
+        jfieldID ac4_se_box_specific_n_presentations_valId = Atsc3NdkMediaMMTBridge::GetBridgeConsumerJniEnv()->Get()->GetFieldID(j_ac4_se_specific_box_cls, "n_presentations", "I");
+        Atsc3NdkMediaMMTBridge::GetBridgeConsumerJniEnv()->Get()->SetIntField(j_ac4_se_specific_box_obj, ac4_se_box_specific_n_presentations_valId, atsc3_audio_decoder_configuration_record->atsc3_audio_ac4_sample_entry_box->atsc3_audio_ac4_specific_box.n_presentations);
+    }
+
+
+    int r = Atsc3NdkMediaMMTBridge::GetBridgeConsumerJniEnv()->Get()->CallIntMethod(jni_instance_globalRef, atsc3_OnInitAudioDecoderConfigurationRecord, packet_id, (int64_t)mpu_sequence_number, jobj);
+
+    return;
+}
+
+
 
 //MMT Signalling callbacks
 void Atsc3NdkMediaMMTBridge::atsc3_signallingContext_notify_video_packet_id_and_mpu_timestamp_descriptor(uint16_t video_packet_id, uint32_t mpu_sequence_number, uint64_t mpu_presentation_time_ntp64, uint32_t mpu_presentation_time_seconds, uint32_t mpu_presentation_time_microseconds) {
@@ -232,13 +339,13 @@ void Atsc3NdkMediaMMTBridge::atsc3_onExtractedSampleDuration(uint16_t packet_id,
 
 
 //video w/h for rendering
-void Atsc3NdkMediaMMTBridge::atsc3_setVideoWidthHeightFromTrak(uint32_t width, uint32_t height) {
+void Atsc3NdkMediaMMTBridge::atsc3_setVideoWidthHeightFromTrak(uint16_t packet_id, uint32_t width, uint32_t height) {
 
     if (!Atsc3NdkMediaMMTBridge::GetBridgeConsumerJniEnv()) {
         _NDK_MEDIA_MMT_BRIDGE_ERROR("ats3_onMfuPacket: Atsc3NdkMediaMMTBridge::GetBridgeConsumerJniEnv() is NULL!");
         return;
     }
-    int r = Atsc3NdkMediaMMTBridge::GetBridgeConsumerJniEnv()->Get()->CallIntMethod(jni_instance_globalRef, atsc3_setVideoWidthHeightFromTrakID, width, height);
+    int r = Atsc3NdkMediaMMTBridge::GetBridgeConsumerJniEnv()->Get()->CallIntMethod(jni_instance_globalRef, atsc3_setVideoWidthHeightFromTrakID, packet_id, width, height);
 }
 
 //on fully recovered MFU packet
@@ -355,12 +462,49 @@ Java_org_ngbp_libatsc3_middleware_Atsc3NdkMediaMMTBridge_init(JNIEnv *env, jobje
         return -1;
     }
 
-    //java.nio.ByteBuffer
-    mediaMMTBridge->mOnInitHEVC_NAL_Extracted = env->GetMethodID(jniClassReference, "atsc3_onInitHEVC_NAL_Packet", "(IILjava/nio/ByteBuffer;I)I");
-    if (mediaMMTBridge->mOnInitHEVC_NAL_Extracted == NULL) {
+    //MMT Initialization callbacks for Video and Audio format(s)
+
+    mediaMMTBridge->atsc3_OnInitHEVC_NAL_Extracted = env->GetMethodID(jniClassReference, "atsc3_onInitHEVC_NAL_Packet", "(IJLjava/nio/ByteBuffer;I)I");
+    if (mediaMMTBridge->atsc3_OnInitHEVC_NAL_Extracted == NULL) {
         _NDK_MEDIA_MMT_BRIDGE_ERROR("Atsc3NdkMediaMMTBridge_init: cannot find 'atsc3_onInitHEVC_NAL_Packet' method id");
         return -1;
     }
+
+    mediaMMTBridge->atsc3_OnInitAudioDecoderConfigurationRecord = env->GetMethodID(jniClassReference, "atsc3_OnInitAudioDecoderConfigurationRecord", "(IJLorg/ngbp/libatsc3/middleware/android/mmt/models/MMTAudioDecoderConfigurationRecord;)I");
+    if (mediaMMTBridge->atsc3_OnInitAudioDecoderConfigurationRecord == NULL) {
+        _NDK_MEDIA_MMT_BRIDGE_ERROR("Atsc3NdkMediaMMTBridge_init: cannot find 'atsc3_OnInitAudioDecoderConfigurationRecord' method id");
+        return -1;
+    }
+
+    //capture our MMTAudioDecoderConfigurationRecord for marshalling from _t to java class
+    jclass mmtAudioDecoderConfigurationRecord_jclass_init_env = env->FindClass("org/ngbp/libatsc3/middleware/android/mmt/models/MMTAudioDecoderConfigurationRecord");
+    if(!mmtAudioDecoderConfigurationRecord_jclass_init_env) {
+        _NDK_MEDIA_MMT_BRIDGE_ERROR("Atsc3NdkMediaMMTBridge_init: cannot find 'mmtAudioDecoderConfigurationRecord_jclass' class reference");
+        return -1;
+    } else {
+        mediaMMTBridge->mmtAudioDecoderConfigurationRecord_jclass_global_ref = (jclass)(env->NewGlobalRef(mmtAudioDecoderConfigurationRecord_jclass_init_env));
+    }
+
+    //MMTAudioDecoderConfigurationRecord$AudioAC4SampleEntryBox
+    jclass mmtAudioDecoderConfigurationRecord_AudioAC4SampleEntryBox_jclass_init_env = env->FindClass("org/ngbp/libatsc3/middleware/android/mmt/models/MMTAudioDecoderConfigurationRecord$AudioAC4SampleEntryBox");
+    if(!mmtAudioDecoderConfigurationRecord_AudioAC4SampleEntryBox_jclass_init_env) {
+        _NDK_MEDIA_MMT_BRIDGE_ERROR("Atsc3NdkMediaMMTBridge_init: cannot find 'mmtAudioDecoderConfigurationRecord_AudioAC4SampleEntryBox_jclass' class reference");
+        return -1;
+    } else {
+        mediaMMTBridge->mmtAudioDecoderConfigurationRecord_AudioAC4SampleEntryBox_jclass_global_ref = (jclass)(env->NewGlobalRef(mmtAudioDecoderConfigurationRecord_AudioAC4SampleEntryBox_jclass_init_env));
+    }
+
+    //MMTAudioDecoderConfigurationRecord$AudioAC4SampleEntryBox$AC4SpecificBox
+    jclass mmtAudioDecoderConfigurationRecord_AudioAC4SampleEntryBox_AC4SpecificBox_jclass_init_env = env->FindClass("org/ngbp/libatsc3/middleware/android/mmt/models/MMTAudioDecoderConfigurationRecord$AudioAC4SampleEntryBox$AC4SpecificBox");
+    if(!mmtAudioDecoderConfigurationRecord_AudioAC4SampleEntryBox_AC4SpecificBox_jclass_init_env) {
+        _NDK_MEDIA_MMT_BRIDGE_ERROR("Atsc3NdkMediaMMTBridge_init: cannot find 'mmtAudioDecoderConfigurationRecord_AudioAC4SampleEntryBox_AC4SpecificBox_jclass' class reference");
+        return -1;
+    } else {
+        mediaMMTBridge->mmtAudioDecoderConfigurationRecord_AudioAC4SampleEntryBox_AC4SpecificBox_jclass_global_ref = (jclass)(env->NewGlobalRef(mmtAudioDecoderConfigurationRecord_AudioAC4SampleEntryBox_AC4SpecificBox_jclass_init_env));
+    }
+
+
+    //Signalling callbacks
 
     /*
      *  public int atsc3_signallingContext_notify_video_packet_id_and_mpu_timestamp_descriptor(int video_packet_id, int mpu_sequence_number, long mpu_presentation_time_ntp64, int mpu_presentation_time_seconds, int mpu_presentation_time_microseconds);
@@ -368,58 +512,60 @@ Java_org_ngbp_libatsc3_middleware_Atsc3NdkMediaMMTBridge_init(JNIEnv *env, jobje
      *  public int atsc3_signallingContext_notify_stpp_packet_id_and_mpu_timestamp_descriptor(int audio_packet_id, int mpu_sequence_number, long mpu_presentation_time_ntp64, int mpu_presentation_time_seconds, int mpu_presentation_time_microseconds) {
     */
 
-    mediaMMTBridge->atsc3_signallingContext_notify_video_packet_id_and_mpu_timestamp_descriptor_ID = env->GetMethodID(jniClassReference, "atsc3_signallingContext_notify_video_packet_id_and_mpu_timestamp_descriptor", "(IIJJI)I");
+    mediaMMTBridge->atsc3_signallingContext_notify_video_packet_id_and_mpu_timestamp_descriptor_ID = env->GetMethodID(jniClassReference, "atsc3_signallingContext_notify_video_packet_id_and_mpu_timestamp_descriptor", "(IJJJI)I");
     if (mediaMMTBridge->atsc3_signallingContext_notify_video_packet_id_and_mpu_timestamp_descriptor_ID == NULL) {
         _NDK_MEDIA_MMT_BRIDGE_ERROR("Atsc3NdkMediaMMTBridge_init: cannot find 'atsc3_signallingContext_notify_video_packet_id_and_mpu_timestamp_descriptor_ID' method id");
         return -1;
     }
-    mediaMMTBridge->atsc3_signallingContext_notify_audio_packet_id_and_mpu_timestamp_descriptor_ID = env->GetMethodID(jniClassReference, "atsc3_signallingContext_notify_audio_packet_id_and_mpu_timestamp_descriptor", "(IIJJI)I");
+    mediaMMTBridge->atsc3_signallingContext_notify_audio_packet_id_and_mpu_timestamp_descriptor_ID = env->GetMethodID(jniClassReference, "atsc3_signallingContext_notify_audio_packet_id_and_mpu_timestamp_descriptor", "(IJJJI)I");
     if (mediaMMTBridge->atsc3_signallingContext_notify_audio_packet_id_and_mpu_timestamp_descriptor_ID == NULL) {
         _NDK_MEDIA_MMT_BRIDGE_ERROR("Atsc3NdkMediaMMTBridge_init: cannot find 'atsc3_signallingContext_notify_audio_packet_id_and_mpu_timestamp_descriptor_ID' method id");
         return -1;
     }
-    mediaMMTBridge->atsc3_signallingContext_notify_stpp_packet_id_and_mpu_timestamp_descriptor_ID = env->GetMethodID(jniClassReference, "atsc3_signallingContext_notify_stpp_packet_id_and_mpu_timestamp_descriptor", "(IIJJI)I");
+    mediaMMTBridge->atsc3_signallingContext_notify_stpp_packet_id_and_mpu_timestamp_descriptor_ID = env->GetMethodID(jniClassReference, "atsc3_signallingContext_notify_stpp_packet_id_and_mpu_timestamp_descriptor", "(IJJJI)I");
     if (mediaMMTBridge->atsc3_signallingContext_notify_stpp_packet_id_and_mpu_timestamp_descriptor_ID == NULL) {
         _NDK_MEDIA_MMT_BRIDGE_ERROR("Atsc3NdkMediaMMTBridge_init: cannot find 'atsc3_signallingContext_notify_stpp_packet_id_and_mpu_timestamp_descriptor_ID' method id");
         return -1;
     }
 
+    //Fragment Metadata callbacks
     //atsc3_onExtractedSampleDurationID
-    mediaMMTBridge->atsc3_onExtractedSampleDurationID = env->GetMethodID(jniClassReference, "atsc3_onExtractedSampleDuration", "(III)I");
+    mediaMMTBridge->atsc3_onExtractedSampleDurationID = env->GetMethodID(jniClassReference, "atsc3_onExtractedSampleDuration", "(IJI)I");
     if (mediaMMTBridge->atsc3_onExtractedSampleDurationID == NULL) {
         _NDK_MEDIA_MMT_BRIDGE_ERROR("Atsc3NdkMediaMMTBridge_init: cannot find 'atsc3_onExtractedSampleDurationID' method id");
         return -1;
     }
 
     //atsc3_setVideoWidthHeightFromTrakID
-    mediaMMTBridge->atsc3_setVideoWidthHeightFromTrakID = env->GetMethodID(jniClassReference, "atsc3_setVideoWidthHeightFromTrak", "(II)I");
+    mediaMMTBridge->atsc3_setVideoWidthHeightFromTrakID = env->GetMethodID(jniClassReference, "atsc3_setVideoWidthHeightFromTrak", "(III)I");
     if (mediaMMTBridge->atsc3_setVideoWidthHeightFromTrakID == NULL) {
         _NDK_MEDIA_MMT_BRIDGE_ERROR("Atsc3NdkMediaMMTBridge_init: cannot find 'atsc3_setVideoWidthHeightFromTrakID' method id");
         return -1;
     }
 
+    //MFU callbacks
     //java.nio.ByteBuffer, L: fully qualified class, J: long
-    mediaMMTBridge->atsc3_onMfuPacketID = env->GetMethodID(jniClassReference, "atsc3_onMfuPacket", "(IIILjava/nio/ByteBuffer;IJI)I");
+    mediaMMTBridge->atsc3_onMfuPacketID = env->GetMethodID(jniClassReference, "atsc3_onMfuPacket", "(IJILjava/nio/ByteBuffer;IJI)I");
     if (mediaMMTBridge->atsc3_onMfuPacketID == NULL) {
         _NDK_MEDIA_MMT_BRIDGE_ERROR("Atsc3NdkMediaMMTBridge_init: cannot find 'atsc3_onMfuPacket' method id");
         return -1;
     }
     //java.nio.ByteBuffer, L: fully qualified class, J: long
-    mediaMMTBridge->atsc3_onMfuPacketCorruptID = env->GetMethodID(jniClassReference, "atsc3_onMfuPacketCorrupt", "(IIILjava/nio/ByteBuffer;IJII)I");
+    mediaMMTBridge->atsc3_onMfuPacketCorruptID = env->GetMethodID(jniClassReference, "atsc3_onMfuPacketCorrupt", "(IJILjava/nio/ByteBuffer;IJII)I");
     if (mediaMMTBridge->atsc3_onMfuPacketCorruptID == NULL) {
         _NDK_MEDIA_MMT_BRIDGE_ERROR("AppBridge_init - Atsc3NdkMediaMMTBridge_init: cannot find 'atsc3_onMfuPacketCorrupt' method id");
         return -1;
     }
 
     //java.nio.ByteBuffer, L: fully qualified class, J: long
-    mediaMMTBridge->atsc3_onMfuPacketCorruptMmthSampleHeaderID = env->GetMethodID(jniClassReference, "atsc3_onMfuPacketCorruptMmthSampleHeader", "(IIILjava/nio/ByteBuffer;IJII)I");
+    mediaMMTBridge->atsc3_onMfuPacketCorruptMmthSampleHeaderID = env->GetMethodID(jniClassReference, "atsc3_onMfuPacketCorruptMmthSampleHeader", "(IJILjava/nio/ByteBuffer;IJII)I");
     if (mediaMMTBridge->atsc3_onMfuPacketCorruptMmthSampleHeaderID == NULL) {
         _NDK_MEDIA_MMT_BRIDGE_ERROR("Atsc3NdkMediaMMTBridge_init: cannot find 'atsc3_onMfuPacketCorruptMmthSampleHeaderID' method id");
         return -1;
     }
 
     //java.nio.ByteBuffer, L: fully qualified class, J: long
-    mediaMMTBridge->atsc3_onMfuSampleMissingID = env->GetMethodID(jniClassReference, "atsc3_onMfuSampleMissing", "(III)I");
+    mediaMMTBridge->atsc3_onMfuSampleMissingID = env->GetMethodID(jniClassReference, "atsc3_onMfuSampleMissing", "(IJI)I");
     if (mediaMMTBridge->atsc3_onMfuSampleMissingID == NULL) {
         _NDK_MEDIA_MMT_BRIDGE_ERROR("Atsc3NdkMediaMMTBridge_init: cannot find 'atsc3_onMfuSampleMissingID' method id");
         return -1;

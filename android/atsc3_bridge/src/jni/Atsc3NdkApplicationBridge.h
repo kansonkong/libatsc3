@@ -60,7 +60,7 @@ public:
     void atsc3_onExtractedSampleDuration(uint16_t packet_id, uint32_t mpu_sequence_number,
                                          uint32_t extracted_sample_duration_us);
 
-    void atsc3_setVideoWidthHeightFromTrak(uint32_t width, uint32_t height);
+    void atsc3_setVideoWidthHeightFromTrak(uint16_t packet_id, uint32_t width, uint32_t height);
 
     int atsc3_slt_alc_select_additional_service(int service_id);
 
@@ -127,17 +127,6 @@ public:
     jmethodID atsc3_onSlsTablePresent_ID = nullptr; //push LLS SLT table update
     jmethodID atsc3_onAeatTablePresent_ID = nullptr;
     jmethodID atsc3_onSlsHeldEmissionPresent_ID = nullptr;
-//
-//    jmethodID atsc3_onMfuPacketID = nullptr; //java method for pushing to a/v codec buffers
-//    jmethodID atsc3_onMfuPacketCorruptID = nullptr; //java method for pushing to a/v codec buffers
-//    jmethodID atsc3_onMfuPacketCorruptMmthSampleHeaderID = nullptr; //java method for pushing to a/v codec buffers
-//    jmethodID atsc3_onMfuSampleMissingID = nullptr;
-//
-//    jmethodID mOnInitHEVC_NAL_Extracted = nullptr; //java method for pushing to a/v codec buffers
-//
-//    jmethodID atsc3_signallingContext_notify_video_packet_id_and_mpu_timestamp_descriptor_ID = nullptr;  // java class method id
-//    jmethodID atsc3_signallingContext_notify_audio_packet_id_and_mpu_timestamp_descriptor_ID = nullptr;  // java class method id
-//    jmethodID atsc3_signallingContext_notify_stpp_packet_id_and_mpu_timestamp_descriptor_ID = nullptr;  // java class method id
 
     jmethodID atsc3_onExtractedSampleDurationID = nullptr;
     jmethodID atsc3_setVideoWidthHeightFromTrakID = nullptr;
