@@ -30,7 +30,7 @@ MMTExtractor::MMTExtractor() {
 void MMTExtractor::atsc3_core_service_bridge_process_mmt_packet(block_t* packet) {
     udp_packet_t* udp_packet = udp_packet_process_from_ptr(block_Get(packet), packet->p_size);
     if(!udp_packet) {
-        __ATSC3_CORE_SERVICE_PLAYER_BRIDGE_ERROR("atsc3_core_service_bridge_process_mmt_packet: after udp_packet_process_from_ptr: unable to extract packet size: %d, i_pos: %d, 0x%02x 0x%02x",
+        __ATSC3_CORE_SERVICE_PLAYER_BRIDGE_ERROR("MMTExtractor::atsc3_core_service_bridge_process_mmt_packet: after udp_packet_process_from_ptr: unable to extract packet size: %d, i_pos: %d, 0x%02x 0x%02x",
                                                  packet->p_size,
                                                  packet->i_pos,
                                                  packet->p_buffer[0],
@@ -53,7 +53,7 @@ void MMTExtractor::atsc3_core_service_bridge_process_mmt_packet(block_t* packet)
         }
 
         if(!lls_sls_mmt_session) {
-            __ATSC3_CORE_SERVICE_PLAYER_BRIDGE_WARN("atsc3_core_service_bridge_process_mmt_packet: lls_slt_mmt_session_find_from_service_id: lls_sls_mmt_session is NULL!");
+            __ATSC3_CORE_SERVICE_PLAYER_BRIDGE_WARN("MMTExtractor::atsc3_core_service_bridge_process_mmt_packet: lls_slt_mmt_session_find_from_service_id: lls_sls_mmt_session is NULL!");
         }
 
         lls_sls_mmt_monitor->lls_mmt_session = lls_sls_mmt_session;
