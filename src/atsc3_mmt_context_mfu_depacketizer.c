@@ -443,6 +443,7 @@ void mmtp_mfu_rebuild_from_packet_id_mpu_sequence_number(atsc3_mmt_mfu_context_t
                 mmtp_mpu_init_packet_to_rebuild->mfu_reassembly_performed = true;
 
                 block_t *du_mpu_metadata_block_duplicated_for_context_callback_invocation = block_Duplicate(mmtp_mpu_init_packet_to_rebuild->du_mpu_metadata_block);
+                block_Rewind(du_mpu_metadata_block_duplicated_for_context_callback_invocation);
                 if(atsc3_mmt_mfu_context->atsc3_mmt_mpu_on_sequence_mpu_metadata_present) {
                     atsc3_mmt_mfu_context->atsc3_mmt_mpu_on_sequence_mpu_metadata_present(atsc3_mmt_mfu_context, mmtp_mpu_init_packet_to_rebuild->mmtp_packet_id, mmtp_mpu_init_packet_to_rebuild->mpu_sequence_number, du_mpu_metadata_block_duplicated_for_context_callback_invocation);
                 }
@@ -956,10 +957,10 @@ void mmt_signalling_message_dispatch_context_notification_callbacks(udp_packet_t
 								mp_table_asset_row->default_asset_flag,
 								mp_table_asset_row->identifier_mapping.asset_id.asset_id ? (const char*)mp_table_asset_row->identifier_mapping.asset_id.asset_id : "");
 
-					} else if(strncasecmp(ATSC3_MP_TABLE_ASSET_ROW_MP4A_ID, mp_table_asset_row->asset_type, 4) == 0 ||
-					            strncasecmp(ATSC3_MP_TABLE_ASSET_ROW_AC_4_ID, mp_table_asset_row->asset_type, 4) == 0 ||
-                                strncasecmp(ATSC3_MP_TABLE_ASSET_ROW_MHM1_ID, mp_table_asset_row->asset_type, 4) == 0 ||
-                                strncasecmp(ATSC3_MP_TABLE_ASSET_ROW_MHM2_ID, mp_table_asset_row->asset_type, 4) == 0) {
+					} else if(strncasecmp(ATSC3_MP_TABLE_ASSET_ROW_AC_4_ID, mp_table_asset_row->asset_type, 4) == 0 ||
+					          strncasecmp(ATSC3_MP_TABLE_ASSET_ROW_MHM1_ID, mp_table_asset_row->asset_type, 4) == 0 ||
+                              strncasecmp(ATSC3_MP_TABLE_ASSET_ROW_MHM2_ID, mp_table_asset_row->asset_type, 4) == 0 ||
+                              strncasecmp(ATSC3_MP_TABLE_ASSET_ROW_MP4A_ID, mp_table_asset_row->asset_type, 4) == 0) {
 
 						//mp_table_asset_row->asset_type ==  MP4A || AC-4
 						if(atsc3_mmt_mfu_context->atsc3_mmt_signalling_information_on_audio_essence_packet_id) {
