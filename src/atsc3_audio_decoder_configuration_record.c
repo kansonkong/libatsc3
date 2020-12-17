@@ -176,6 +176,7 @@ bool atsc3_audio_decoder_configuration_parse_codec_type_and_sample_rate_from_blo
                 atsc3_audio_decoder_configuration_record->channel_count = atsc3_audio_ac4_sample_entry_box->channel_count;
                 atsc3_audio_decoder_configuration_record->sample_depth = atsc3_audio_ac4_sample_entry_box->sample_size;
                 atsc3_audio_decoder_configuration_record->sample_rate = atsc3_audio_ac4_sample_entry_box->atsc3_audio_ac4_specific_box.fs_index == 0 ? 44100 : 48000;
+                atsc3_audio_decoder_configuration_record->atsc3_audio_ac4_sample_entry_box = atsc3_audio_ac4_sample_entry_box;
             }
             break;
         }

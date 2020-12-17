@@ -272,12 +272,14 @@ typedef struct mmt_signaling_message_mpu_timestamp_descriptor {
     mmt_signalling_message_mpu_tuple_t*    mpu_tuple;
 } mmt_signalling_message_mpu_timestamp_descriptor_t;
 
+//Video: HEVC
 #define ATSC3_MP_TABLE_ASSET_ROW_HEVC_ID "hev1"
-#define ATSC3_MP_TABLE_ASSET_ROW_MP4A_ID "mp4a"
-#define ATSC3_MP_TABLE_ASSET_ROW_AC_4_ID "ac-4"
 
+//Video: h264
 #define ATSC3_MP_TABLE_ASSET_ROW_H264_ID "avc1"
 
+//Audio: AC-4
+#define ATSC3_MP_TABLE_ASSET_ROW_AC_4_ID "ac-4"
 
 //jjustman-2020-01-08 - adding in MPEG-H mime type support - Thanks Stefan!
 /*
@@ -297,10 +299,15 @@ typedef struct mmt_signaling_message_mpu_timestamp_descriptor {
     packet shall be set accordingly
  */
 
+//Audio: MPEG-H
 #define ATSC3_MP_TABLE_ASSET_ROW_MHM1_ID "mhm1"
 #define ATSC3_MP_TABLE_ASSET_ROW_MHM2_ID "mhm2"
 
-//captions support
+//Audio: mp4 (latm?)
+#define ATSC3_MP_TABLE_ASSET_ROW_MP4A_ID "mp4a"
+
+
+//Captions: captions support
 #define ATSC3_MP_TABLE_ASSET_ROW_IMSC1_ID "stpp" //MPEG- 4 Part 30 (ISO/IEC 14496-30) defines a way to carry IMSC1-conformat TTM XML in MP4 tracks. Those tracks have a codec 4-character code of stpp.
 
 typedef struct mp_table_asset_row {
