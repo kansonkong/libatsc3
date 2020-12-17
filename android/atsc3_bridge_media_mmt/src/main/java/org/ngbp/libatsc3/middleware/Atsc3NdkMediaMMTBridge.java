@@ -56,9 +56,7 @@ public class Atsc3NdkMediaMMTBridge extends Atsc3NdkMediaMMTBridgeStaticJniLoade
         Log.d("Atsc3NdkMediaMMTBridge", String.format("atsc3_OnInitAudioDecoderConfigurationRecord, packet_id: %d, mpu_sequence_number: %d, mmtAudioDecoderConfigurationRecord: channel_count: %d, sample_depth: %d, sample_rate: %d, isAC4: %b",
                                                                         packet_id, mpu_sequence_number, mmtAudioDecoderConfigurationRecord.channel_count, mmtAudioDecoderConfigurationRecord.sample_depth, mmtAudioDecoderConfigurationRecord.sample_rate, mmtAudioDecoderConfigurationRecord.audioAC4SampleEntryBox != null));
 
-//        MpuMetadata_HEVC_NAL_Payload mpuMetadata_HEVC_NAL_Payload = new MpuMetadata_HEVC_NAL_Payload(packet_id, mpu_sequence_number, );
-//
-//        mActivity.pushMpuMetadata_HEVC_NAL_Payload(mpuMetadata_HEVC_NAL_Payload);
+        mActivity.pushAudioDecoderConfigurationRecord(mmtAudioDecoderConfigurationRecord);
 
         return 0;
     }
