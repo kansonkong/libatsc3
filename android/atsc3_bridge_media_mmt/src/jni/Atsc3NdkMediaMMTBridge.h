@@ -80,6 +80,8 @@ private:
     std::vector<jobject> global_jobject_mfu_refs;
     std::vector<jobject> global_jobject_nal_refs;
 
+    block_t*    preAllocInFlightUdpPacket;
+
 public:
     JavaVM* mJavaVM = nullptr;    // Java VM, if we don't have a pinned thread context for dispatch
 
@@ -107,6 +109,9 @@ public:
 
     static Atsc3JniEnv* GetBridgeConsumerJniEnv();
     static Atsc3NdkMediaMMTBridge* GetMediaBridgePtr(JNIEnv *env, jobject instance);
+
+    int acceptNdkByteBufferUdpPacket(jobject byte_buffer, jint byte_buffer_length);
+    void extractUdpPacket(block_t* udpPacket);
 
     jmethodID mOnLogMsgId = nullptr;
 
