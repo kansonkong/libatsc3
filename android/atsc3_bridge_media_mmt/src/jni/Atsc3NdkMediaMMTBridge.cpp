@@ -285,6 +285,10 @@ void Atsc3NdkMediaMMTBridge::atsc3_onInitAudioDecoderConfigurationRecord(uint16_
 
         jfieldID ac4_se_box_specific_n_presentations_valId = Atsc3NdkMediaMMTBridge::GetBridgeConsumerJniEnv()->Get()->GetFieldID(j_ac4_se_specific_box_cls, "n_presentations", "I");
         Atsc3NdkMediaMMTBridge::GetBridgeConsumerJniEnv()->Get()->SetIntField(j_ac4_se_specific_box_obj, ac4_se_box_specific_n_presentations_valId, atsc3_audio_decoder_configuration_record->atsc3_audio_ac4_sample_entry_box->atsc3_audio_ac4_specific_box.n_presentations);
+
+        //lastly, set our audioAC4SampleEntryBox
+        jfieldID audioAC4SampleEntryBox_valId = Atsc3NdkMediaMMTBridge::GetBridgeConsumerJniEnv()->Get()->GetFieldID(jcls, "audioAC4SampleEntryBox", "Lorg/ngbp/libatsc3/middleware/android/mmt/models/MMTAudioDecoderConfigurationRecord$AudioAC4SampleEntryBox;");
+        Atsc3NdkMediaMMTBridge::GetBridgeConsumerJniEnv()->Get()->SetObjectField(jobj, audioAC4SampleEntryBox_valId, j_ac4_se_box_obj);
     }
 
 
