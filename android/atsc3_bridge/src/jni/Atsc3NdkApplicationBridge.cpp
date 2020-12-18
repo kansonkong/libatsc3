@@ -102,13 +102,13 @@ void Atsc3NdkApplicationBridge::atsc3_onAlcObjectClosed(uint16_t service_id, uin
 }
 
 int Atsc3NdkApplicationBridge::pinConsumerThreadAsNeeded() {
-    _NDK_APPLICATION_BRIDGE_INFO("Atsc3NdkApplicationBridge::pinConsumerThreadAsNeeded: mJavaVM: %p", mJavaVM);
+    _NDK_APPLICATION_BRIDGE_INFO("Atsc3NdkApplicationBridge::pinConsumerThreadAsNeeded: mJavaVM: %p, atsc3_ndk_media_mmt_bridge_get_instance: %p", mJavaVM, atsc3_ndk_media_mmt_bridge_get_instance());
     bridgeConsumerJniEnv = new Atsc3JniEnv(mJavaVM);
 
     //hack
     IAtsc3NdkMediaMMTBridge* iAtsc3NdkMediaMMTBridge = atsc3_ndk_media_mmt_bridge_get_instance();
     if(iAtsc3NdkMediaMMTBridge) {
-        iAtsc3NdkMediaMMTBridge->pinConsumerThreadAsNeeded();
+        iAtsc3NdkMediaMMTBridge->pinConsumerThreadAsNeeded(); //referenceConsumerJniEnvAsNeeded(bridgeConsumerJniEnv);
     }
 
     return 0;
