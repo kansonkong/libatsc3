@@ -5,10 +5,7 @@ pthread_key_t Atsc3NdkMediaMMTBridge::JniPtr = 0;
 map<jobject, Atsc3NdkMediaMMTBridge*> Atsc3NdkMediaMMTBridge::MediaBridgePtrMap;
 
 Atsc3NdkMediaMMTBridge::Atsc3NdkMediaMMTBridge(JNIEnv* env, jobject jni_instance) {
-    this->env = env;
     this->jni_instance_globalRef = env->NewGlobalRef(jni_instance);
-
-    Atsc3NdkMediaMMTBridge::MediaBridgePtrMap.insert(pair<jobject, Atsc3NdkMediaMMTBridge*>(this->jni_instance_globalRef, this));
 
     this->mmtExtractor = new MMTExtractor();
 
@@ -32,7 +29,7 @@ int Atsc3NdkMediaMMTBridge::pinConsumerThreadAsNeeded() {
     localAtsc3NdkMediaMMTBridgeJniEnv = Atsc3NdkMediaMMTBridge::GetBridgeConsumerJniEnv();
 
     if(localAtsc3NdkMediaMMTBridgeJniEnv) {
-        _NDK_MEDIA_MMT_BRIDGE_TRACE("Atsc3NdkMediaMMTBridge::pinConsumerThreadAsNeeded: mJavaVM: %p, localAtsc3NdkMediaMMTBridge::GetBridgeConsumerJniEnv() already pinned: %p", mJavaVM, localAtsc3NdkMediaMMTBridgeJniEnv);
+        _NDK_MEDIA_MMT_BRIDGE_INFO("Atsc3NdkMediaMMTBridge::pinConsumerThreadAsNeeded: mJavaVM: %p, localAtsc3NdkMediaMMTBridge::GetBridgeConsumerJniEnv() already pinned: %p", mJavaVM, localAtsc3NdkMediaMMTBridgeJniEnv);
     } else {
         localAtsc3NdkMediaMMTBridgeJniEnv = new Atsc3JniEnv(mJavaVM);
         pthread_setspecific(Atsc3NdkMediaMMTBridge::JniPtr, localAtsc3NdkMediaMMTBridgeJniEnv);
@@ -41,6 +38,21 @@ int Atsc3NdkMediaMMTBridge::pinConsumerThreadAsNeeded() {
     return 0;
 }
 
+//special hack so we don't try to double-AttachCurrentThread, but keep a reference of our first (i.e. Atsc3NdkApplicationBridge bridgeConsumerJniEnv) attached JniEnv
+int Atsc3NdkMediaMMTBridge::referenceConsumerJniEnvAsNeeded(Atsc3JniEnv* consumerAtsc3JniEnv) {
+    Atsc3JniEnv* localAtsc3NdkMediaMMTBridgeJniEnv = nullptr;
+
+    localAtsc3NdkMediaMMTBridgeJniEnv = Atsc3NdkMediaMMTBridge::GetBridgeConsumerJniEnv();
+
+    if(localAtsc3NdkMediaMMTBridgeJniEnv) {
+        _NDK_MEDIA_MMT_BRIDGE_TRACE("Atsc3NdkMediaMMTBridge::referenceConsumerJniEnvAsNeeded: localAtsc3NdkMediaMMTBridge is  already persisted to this thread: %p", localAtsc3NdkMediaMMTBridgeJniEnv);
+    } else {
+        pthread_setspecific(Atsc3NdkMediaMMTBridge::JniPtr, consumerAtsc3JniEnv);
+        _NDK_MEDIA_MMT_BRIDGE_INFO("Atsc3NdkMediaMMTBridge::referenceConsumerJniEnvAsNeeded: this: %p, assigning consumerAtsc3JniEnv: %p, jniEnv: %p",  this, consumerAtsc3JniEnv, consumerAtsc3JniEnv->Get());
+    }
+    return 0;
+
+}
 int Atsc3NdkMediaMMTBridge::releasePinnedConsumerThreadAsNeeded() {
     Atsc3JniEnv* localAtsc3NdkMediaMMTBridge = nullptr;
 
@@ -66,19 +78,22 @@ bool Atsc3NdkMediaMMTBridge::isConsumerThreadPinned() {
 
 void Atsc3NdkMediaMMTBridge::LogMsg(const char *msg)
 {
+    this->pinConsumerThreadAsNeeded(); //jjustman-2020-12-17 - hack
+
     if (!mJavaVM) {
         _NDK_MEDIA_MMT_BRIDGE_ERROR("LogMsg: mJavaVM is NULL!");
         return;
     }
 
-    Atsc3JniEnv env(mJavaVM);
-    if (!env) {
+    Atsc3JniEnv* localJniEnv = Atsc3NdkMediaMMTBridge::GetBridgeConsumerJniEnv();
+
+    if (!localJniEnv) {
         _NDK_MEDIA_MMT_BRIDGE_ERROR("LogMsg: error creating env pin!");
         return;
     }
-    jstring js = env.Get()->NewStringUTF(msg);
-    int r = env.Get()->CallIntMethod(jni_instance_globalRef, mOnLogMsgId, js);
-    env.Get()->DeleteLocalRef(js);
+    jstring js = localJniEnv->Get()->NewStringUTF(msg);
+    localJniEnv->Get()->CallIntMethod(jni_instance_globalRef, mOnLogMsgId, js);
+    localJniEnv->Get()->DeleteLocalRef(js);
 }
 
 void Atsc3NdkMediaMMTBridge::LogMsg(const std::string &str)
@@ -167,18 +182,24 @@ void Atsc3NdkMediaMMTBridge::extractUdpPacket(block_t* udpPacket) {
 //MMT Initialization callbacks for Video and Audio format(s)
 //push extracted HEVC nal's to MediaCodec for init
 void Atsc3NdkMediaMMTBridge::atsc3_onInitHEVC_NAL_Extracted(uint16_t packet_id, uint32_t mpu_sequence_number, uint8_t* buffer, uint32_t bufferLen) {
+    this->pinConsumerThreadAsNeeded(); //jjustman-2020-12-17 - hack
+
     if (!Atsc3NdkMediaMMTBridge::GetBridgeConsumerJniEnv()) {
         _NDK_MEDIA_MMT_BRIDGE_ERROR("Atsc3NdkMediaMMTBridge::atsc3_onInitHEVC_NAL_Extracted: Atsc3NdkMediaMMTBridge::GetBridgeConsumerJniEnv() is NULL!");
         return;
     }
 
     jobject jobjectByteBuffer = Atsc3NdkMediaMMTBridge::GetBridgeConsumerJniEnv()->Get()->NewDirectByteBuffer(buffer, bufferLen);
-    int r = Atsc3NdkMediaMMTBridge::GetBridgeConsumerJniEnv()->Get()->CallIntMethod(jni_instance_globalRef, atsc3_OnInitHEVC_NAL_Extracted, packet_id, (int64_t)mpu_sequence_number, jobjectByteBuffer, bufferLen);
+     Atsc3NdkMediaMMTBridge::GetBridgeConsumerJniEnv()->Get()->CallIntMethod(jni_instance_globalRef, atsc3_OnInitHEVC_NAL_Extracted, packet_id, (int64_t)mpu_sequence_number, jobjectByteBuffer, bufferLen);
     Atsc3NdkMediaMMTBridge::GetBridgeConsumerJniEnv()->Get()->DeleteLocalRef(jobjectByteBuffer);
 }
 
 void Atsc3NdkMediaMMTBridge::atsc3_onInitAudioDecoderConfigurationRecord(uint16_t packet_id, uint32_t mpu_sequence_number, atsc3_audio_decoder_configuration_record_t* atsc3_audio_decoder_configuration_record) {
-    if (!Atsc3NdkMediaMMTBridge::GetBridgeConsumerJniEnv()) {
+    this->pinConsumerThreadAsNeeded(); //jjustman-2020-12-17 - hack
+
+    Atsc3JniEnv* jniEnv = Atsc3NdkMediaMMTBridge::GetBridgeConsumerJniEnv();
+
+    if (!jniEnv) {
         _NDK_MEDIA_MMT_BRIDGE_ERROR("Atsc3NdkMediaMMTBridge::atsc3_onInitAudioDecoderConfigurationRecord: Atsc3NdkMediaMMTBridge::GetBridgeConsumerJniEnv() is NULL!");
         return;
     }
@@ -192,107 +213,114 @@ void Atsc3NdkMediaMMTBridge::atsc3_onInitAudioDecoderConfigurationRecord(uint16_
         return;
     }
 
-    std::list<jobject> to_clean_jobject;
-
     jclass jcls = mmtAudioDecoderConfigurationRecord_jclass_global_ref;
-    jobject jobj = Atsc3NdkMediaMMTBridge::GetBridgeConsumerJniEnv()->Get()->AllocObject(jcls);
+    jobject jobj = jniEnv->Get()->AllocObject(jcls);
 
     if(!jobj) {
         _NDK_MEDIA_MMT_BRIDGE_ERROR("Atsc3NdkMediaMMTBridge::atsc3_onInitAudioDecoderConfigurationRecord: unable to instantiate mmtAudioDecoderConfigurationRecord_jclass_global_ref, jobj is NULL!");
         return;
     }
 
-    jfieldID packet_id_valId = Atsc3NdkMediaMMTBridge::GetBridgeConsumerJniEnv()->Get()->GetFieldID(jcls, "packet_id", "I");
-    Atsc3NdkMediaMMTBridge::GetBridgeConsumerJniEnv()->Get()->SetIntField(jobj, packet_id_valId, packet_id);
+    jclass j_ac4_se_box_cls = mmtAudioDecoderConfigurationRecord_AudioAC4SampleEntryBox_jclass_global_ref;
+    jobject j_ac4_se_box_obj = nullptr;
+
+    jclass j_ac4_se_specific_box_cls = mmtAudioDecoderConfigurationRecord_AudioAC4SampleEntryBox_AC4SpecificBox_jclass_global_ref;
+    jobject j_ac4_se_specific_box_obj = nullptr;
+
+    jfieldID packet_id_valId = jniEnv->Get()->GetFieldID(jcls, "packet_id", "I");
+    jniEnv->Get()->SetIntField(jobj, packet_id_valId, packet_id);
 
     //marshall our uint32_t packet_id to int64_t -> long in java
-    jfieldID mpu_sequence_number_valId = Atsc3NdkMediaMMTBridge::GetBridgeConsumerJniEnv()->Get()->GetFieldID(jcls, "mpu_sequence_number", "J");
-    Atsc3NdkMediaMMTBridge::GetBridgeConsumerJniEnv()->Get()->SetLongField(jobj, mpu_sequence_number_valId, (int64_t)mpu_sequence_number);
+    jfieldID mpu_sequence_number_valId = jniEnv->Get()->GetFieldID(jcls, "mpu_sequence_number", "J");
+    jniEnv->Get()->SetLongField(jobj, mpu_sequence_number_valId, (int64_t)mpu_sequence_number);
 
-    jfieldID channel_count_valId = Atsc3NdkMediaMMTBridge::GetBridgeConsumerJniEnv()->Get()->GetFieldID(jcls, "channel_count", "I");
-    Atsc3NdkMediaMMTBridge::GetBridgeConsumerJniEnv()->Get()->SetIntField(jobj, channel_count_valId, atsc3_audio_decoder_configuration_record->channel_count);
+    jfieldID channel_count_valId = jniEnv->Get()->GetFieldID(jcls, "channel_count", "I");
+    jniEnv->Get()->SetIntField(jobj, channel_count_valId, atsc3_audio_decoder_configuration_record->channel_count);
 
-    jfieldID sample_depth_valId = Atsc3NdkMediaMMTBridge::GetBridgeConsumerJniEnv()->Get()->GetFieldID(jcls, "sample_depth", "I");
-    Atsc3NdkMediaMMTBridge::GetBridgeConsumerJniEnv()->Get()->SetIntField(jobj, sample_depth_valId, atsc3_audio_decoder_configuration_record->sample_depth);
+    jfieldID sample_depth_valId = jniEnv->Get()->GetFieldID(jcls, "sample_depth", "I");
+    jniEnv->Get()->SetIntField(jobj, sample_depth_valId, atsc3_audio_decoder_configuration_record->sample_depth);
 
     //unsigned 2^31 should be fine...
-    jfieldID sample_rate_valId = Atsc3NdkMediaMMTBridge::GetBridgeConsumerJniEnv()->Get()->GetFieldID(jcls, "sample_rate", "I");
-    Atsc3NdkMediaMMTBridge::GetBridgeConsumerJniEnv()->Get()->SetIntField(jobj, sample_rate_valId, (int32_t)atsc3_audio_decoder_configuration_record->sample_rate);
+    jfieldID sample_rate_valId = jniEnv->Get()->GetFieldID(jcls, "sample_rate", "I");
+    jniEnv->Get()->SetIntField(jobj, sample_rate_valId, (int32_t)atsc3_audio_decoder_configuration_record->sample_rate);
 
-    jfieldID timebase_valId = Atsc3NdkMediaMMTBridge::GetBridgeConsumerJniEnv()->Get()->GetFieldID(jcls, "timebase", "J");
-    Atsc3NdkMediaMMTBridge::GetBridgeConsumerJniEnv()->Get()->SetLongField(jobj, timebase_valId, (int64_t)atsc3_audio_decoder_configuration_record->timebase);
+    jfieldID timebase_valId = jniEnv->Get()->GetFieldID(jcls, "timebase", "J");
+    jniEnv->Get()->SetLongField(jobj, timebase_valId, (int64_t)atsc3_audio_decoder_configuration_record->timebase);
 
-    jfieldID sample_duration_valId = Atsc3NdkMediaMMTBridge::GetBridgeConsumerJniEnv()->Get()->GetFieldID(jcls, "sample_duration", "J");
-    Atsc3NdkMediaMMTBridge::GetBridgeConsumerJniEnv()->Get()->SetLongField(jobj, sample_duration_valId, (int64_t)atsc3_audio_decoder_configuration_record->sample_duration);
+    jfieldID sample_duration_valId = jniEnv->Get()->GetFieldID(jcls, "sample_duration", "J");
+    jniEnv->Get()->SetLongField(jobj, sample_duration_valId, (int64_t)atsc3_audio_decoder_configuration_record->sample_duration);
 
     if(atsc3_audio_decoder_configuration_record->atsc3_audio_ac4_sample_entry_box) {
         //build our ac4_sample_entry box
-        jclass j_ac4_se_box_cls = mmtAudioDecoderConfigurationRecord_AudioAC4SampleEntryBox_jclass_global_ref;
-        jobject j_ac4_se_box_obj = Atsc3NdkMediaMMTBridge::GetBridgeConsumerJniEnv()->Get()->AllocObject(j_ac4_se_box_cls);
+        j_ac4_se_box_obj = jniEnv->Get()->AllocObject(j_ac4_se_box_cls);
 
         if(!j_ac4_se_box_obj) {
             _NDK_MEDIA_MMT_BRIDGE_ERROR("Atsc3NdkMediaMMTBridge::atsc3_onInitAudioDecoderConfigurationRecord: unable to instantiate mmtAudioDecoderConfigurationRecord_AudioAC4SampleEntryBox_jclass_global_ref, j_ac4_se_box_obj is NULL!");
             return; //todo: goto cleanup
         }
 
-        to_clean_jobject.push_back(j_ac4_se_box_obj);
-
-        jfieldID ac4_se_box_size_valId = Atsc3NdkMediaMMTBridge::GetBridgeConsumerJniEnv()->Get()->GetFieldID(j_ac4_se_box_cls, "box_size", "J");
-        Atsc3NdkMediaMMTBridge::GetBridgeConsumerJniEnv()->Get()->SetLongField(j_ac4_se_box_obj, ac4_se_box_size_valId, (int64_t)atsc3_audio_decoder_configuration_record->atsc3_audio_ac4_sample_entry_box->box_size);
+        jfieldID ac4_se_box_size_valId = jniEnv->Get()->GetFieldID(j_ac4_se_box_cls, "box_size", "J");
+        jniEnv->Get()->SetLongField(j_ac4_se_box_obj, ac4_se_box_size_valId, (int64_t)atsc3_audio_decoder_configuration_record->atsc3_audio_ac4_sample_entry_box->box_size);
 
         //type - int32 is fine as we are really a 4cc
-        jfieldID ac4_se_box_type_valId = Atsc3NdkMediaMMTBridge::GetBridgeConsumerJniEnv()->Get()->GetFieldID(j_ac4_se_box_cls, "type", "I");
-        Atsc3NdkMediaMMTBridge::GetBridgeConsumerJniEnv()->Get()->SetIntField(j_ac4_se_box_obj, ac4_se_box_type_valId, (int32_t)atsc3_audio_decoder_configuration_record->atsc3_audio_ac4_sample_entry_box->type);
+        jfieldID ac4_se_box_type_valId = jniEnv->Get()->GetFieldID(j_ac4_se_box_cls, "type", "I");
+        jniEnv->Get()->SetIntField(j_ac4_se_box_obj, ac4_se_box_type_valId, (int32_t)atsc3_audio_decoder_configuration_record->atsc3_audio_ac4_sample_entry_box->type);
 
-        jfieldID ac4_se_box_channel_count_valId = Atsc3NdkMediaMMTBridge::GetBridgeConsumerJniEnv()->Get()->GetFieldID(j_ac4_se_box_cls, "channel_count", "I");
-        Atsc3NdkMediaMMTBridge::GetBridgeConsumerJniEnv()->Get()->SetIntField(j_ac4_se_box_obj, ac4_se_box_channel_count_valId, (int32_t)atsc3_audio_decoder_configuration_record->atsc3_audio_ac4_sample_entry_box->channel_count);
+        jfieldID ac4_se_box_channel_count_valId = jniEnv->Get()->GetFieldID(j_ac4_se_box_cls, "channel_count", "I");
+        jniEnv->Get()->SetIntField(j_ac4_se_box_obj, ac4_se_box_channel_count_valId, (int32_t)atsc3_audio_decoder_configuration_record->atsc3_audio_ac4_sample_entry_box->channel_count);
 
-        jfieldID ac4_se_box_sample_size_valId = Atsc3NdkMediaMMTBridge::GetBridgeConsumerJniEnv()->Get()->GetFieldID(j_ac4_se_box_cls, "sample_size", "I");
-        Atsc3NdkMediaMMTBridge::GetBridgeConsumerJniEnv()->Get()->SetIntField(j_ac4_se_box_obj, ac4_se_box_sample_size_valId, (int32_t)atsc3_audio_decoder_configuration_record->atsc3_audio_ac4_sample_entry_box->sample_size);
+        jfieldID ac4_se_box_sample_size_valId = jniEnv->Get()->GetFieldID(j_ac4_se_box_cls, "sample_size", "I");
+        jniEnv->Get()->SetIntField(j_ac4_se_box_obj, ac4_se_box_sample_size_valId, (int32_t)atsc3_audio_decoder_configuration_record->atsc3_audio_ac4_sample_entry_box->sample_size);
 
-        jfieldID ac4_se_box_sampling_frequency_valId = Atsc3NdkMediaMMTBridge::GetBridgeConsumerJniEnv()->Get()->GetFieldID(j_ac4_se_box_cls, "sampling_frequency", "I");
-        Atsc3NdkMediaMMTBridge::GetBridgeConsumerJniEnv()->Get()->SetIntField(j_ac4_se_box_obj, ac4_se_box_sampling_frequency_valId, (int32_t)atsc3_audio_decoder_configuration_record->atsc3_audio_ac4_sample_entry_box->sampling_frequency);
+        jfieldID ac4_se_box_sampling_frequency_valId = jniEnv->Get()->GetFieldID(j_ac4_se_box_cls, "sampling_frequency", "I");
+        jniEnv->Get()->SetIntField(j_ac4_se_box_obj, ac4_se_box_sampling_frequency_valId, (int32_t)atsc3_audio_decoder_configuration_record->atsc3_audio_ac4_sample_entry_box->sampling_frequency);
 
         //assumed required that if we are ac4_sample, then we must have an ac4_specific box
-        jclass j_ac4_se_specific_box_cls = mmtAudioDecoderConfigurationRecord_AudioAC4SampleEntryBox_AC4SpecificBox_jclass_global_ref;
-        jobject j_ac4_se_specific_box_obj = Atsc3NdkMediaMMTBridge::GetBridgeConsumerJniEnv()->Get()->AllocObject(j_ac4_se_specific_box_cls);
+        j_ac4_se_specific_box_obj = jniEnv->Get()->AllocObject(j_ac4_se_specific_box_cls);
 
         if(!j_ac4_se_specific_box_obj) {
             _NDK_MEDIA_MMT_BRIDGE_ERROR("Atsc3NdkMediaMMTBridge::atsc3_onInitAudioDecoderConfigurationRecord: unable to instantiate mmtAudioDecoderConfigurationRecord_AudioAC4SampleEntryBox_AC4SpecificBox_jclass_global_ref, j_ac4_se_specific_box_obj is NULL!");
             return; //todo: goto cleanup
         }
 
-        to_clean_jobject.push_back(j_ac4_se_specific_box_obj);
-
-        jfieldID ac4_se_specific_box_size_valId = Atsc3NdkMediaMMTBridge::GetBridgeConsumerJniEnv()->Get()->GetFieldID(j_ac4_se_specific_box_cls, "box_size", "J");
-        Atsc3NdkMediaMMTBridge::GetBridgeConsumerJniEnv()->Get()->SetLongField(j_ac4_se_specific_box_obj, ac4_se_specific_box_size_valId, (int64_t)atsc3_audio_decoder_configuration_record->atsc3_audio_ac4_sample_entry_box->atsc3_audio_ac4_specific_box.box_size);
+        jfieldID ac4_se_specific_box_size_valId = jniEnv->Get()->GetFieldID(j_ac4_se_specific_box_cls, "box_size", "J");
+        jniEnv->Get()->SetLongField(j_ac4_se_specific_box_obj, ac4_se_specific_box_size_valId, (int64_t)atsc3_audio_decoder_configuration_record->atsc3_audio_ac4_sample_entry_box->atsc3_audio_ac4_specific_box.box_size);
 
         //type - int32 is fine as we are really a 4cc
-        jfieldID ac4_se_specific_box_type_valId = Atsc3NdkMediaMMTBridge::GetBridgeConsumerJniEnv()->Get()->GetFieldID(j_ac4_se_specific_box_cls, "type", "I");
-        Atsc3NdkMediaMMTBridge::GetBridgeConsumerJniEnv()->Get()->SetIntField(j_ac4_se_specific_box_obj, ac4_se_specific_box_type_valId, (int32_t)atsc3_audio_decoder_configuration_record->atsc3_audio_ac4_sample_entry_box->atsc3_audio_ac4_specific_box.type);
+        jfieldID ac4_se_specific_box_type_valId = jniEnv->Get()->GetFieldID(j_ac4_se_specific_box_cls, "type", "I");
+        jniEnv->Get()->SetIntField(j_ac4_se_specific_box_obj, ac4_se_specific_box_type_valId, (int32_t)atsc3_audio_decoder_configuration_record->atsc3_audio_ac4_sample_entry_box->atsc3_audio_ac4_specific_box.type);
 
-        jfieldID ac4_se_box_specific_ac4_dsi_version_valId = Atsc3NdkMediaMMTBridge::GetBridgeConsumerJniEnv()->Get()->GetFieldID(j_ac4_se_specific_box_cls, "ac4_dsi_version", "I");
-        Atsc3NdkMediaMMTBridge::GetBridgeConsumerJniEnv()->Get()->SetIntField(j_ac4_se_specific_box_obj, ac4_se_box_specific_ac4_dsi_version_valId, atsc3_audio_decoder_configuration_record->atsc3_audio_ac4_sample_entry_box->atsc3_audio_ac4_specific_box.ac4_dsi_version);
+        jfieldID ac4_se_box_specific_ac4_dsi_version_valId = jniEnv->Get()->GetFieldID(j_ac4_se_specific_box_cls, "ac4_dsi_version", "I");
+        jniEnv->Get()->SetIntField(j_ac4_se_specific_box_obj, ac4_se_box_specific_ac4_dsi_version_valId, atsc3_audio_decoder_configuration_record->atsc3_audio_ac4_sample_entry_box->atsc3_audio_ac4_specific_box.ac4_dsi_version);
 
-        jfieldID ac4_se_box_specific_ac4_bitstream_version_valId = Atsc3NdkMediaMMTBridge::GetBridgeConsumerJniEnv()->Get()->GetFieldID(j_ac4_se_specific_box_cls, "bitstream_version", "I");
-        Atsc3NdkMediaMMTBridge::GetBridgeConsumerJniEnv()->Get()->SetIntField(j_ac4_se_specific_box_obj, ac4_se_box_specific_ac4_bitstream_version_valId, atsc3_audio_decoder_configuration_record->atsc3_audio_ac4_sample_entry_box->atsc3_audio_ac4_specific_box.bitstream_version);
+        jfieldID ac4_se_box_specific_ac4_bitstream_version_valId = jniEnv->Get()->GetFieldID(j_ac4_se_specific_box_cls, "bitstream_version", "I");
+        jniEnv->Get()->SetIntField(j_ac4_se_specific_box_obj, ac4_se_box_specific_ac4_bitstream_version_valId, atsc3_audio_decoder_configuration_record->atsc3_audio_ac4_sample_entry_box->atsc3_audio_ac4_specific_box.bitstream_version);
 
-        jfieldID ac4_se_box_specific_fs_index_valId = Atsc3NdkMediaMMTBridge::GetBridgeConsumerJniEnv()->Get()->GetFieldID(j_ac4_se_specific_box_cls, "fs_index", "I");
-        Atsc3NdkMediaMMTBridge::GetBridgeConsumerJniEnv()->Get()->SetIntField(j_ac4_se_specific_box_obj, ac4_se_box_specific_fs_index_valId, atsc3_audio_decoder_configuration_record->atsc3_audio_ac4_sample_entry_box->atsc3_audio_ac4_specific_box.fs_index);
+        jfieldID ac4_se_box_specific_fs_index_valId = jniEnv->Get()->GetFieldID(j_ac4_se_specific_box_cls, "fs_index", "I");
+        jniEnv->Get()->SetIntField(j_ac4_se_specific_box_obj, ac4_se_box_specific_fs_index_valId, atsc3_audio_decoder_configuration_record->atsc3_audio_ac4_sample_entry_box->atsc3_audio_ac4_specific_box.fs_index);
 
-        jfieldID ac4_se_box_specific_frame_rate_index_valId = Atsc3NdkMediaMMTBridge::GetBridgeConsumerJniEnv()->Get()->GetFieldID(j_ac4_se_specific_box_cls, "frame_rate_index", "I");
-        Atsc3NdkMediaMMTBridge::GetBridgeConsumerJniEnv()->Get()->SetIntField(j_ac4_se_specific_box_obj, ac4_se_box_specific_frame_rate_index_valId, atsc3_audio_decoder_configuration_record->atsc3_audio_ac4_sample_entry_box->atsc3_audio_ac4_specific_box.frame_rate_index);
+        jfieldID ac4_se_box_specific_frame_rate_index_valId = jniEnv->Get()->GetFieldID(j_ac4_se_specific_box_cls, "frame_rate_index", "I");
+        jniEnv->Get()->SetIntField(j_ac4_se_specific_box_obj, ac4_se_box_specific_frame_rate_index_valId, atsc3_audio_decoder_configuration_record->atsc3_audio_ac4_sample_entry_box->atsc3_audio_ac4_specific_box.frame_rate_index);
 
-        jfieldID ac4_se_box_specific_n_presentations_valId = Atsc3NdkMediaMMTBridge::GetBridgeConsumerJniEnv()->Get()->GetFieldID(j_ac4_se_specific_box_cls, "n_presentations", "I");
-        Atsc3NdkMediaMMTBridge::GetBridgeConsumerJniEnv()->Get()->SetIntField(j_ac4_se_specific_box_obj, ac4_se_box_specific_n_presentations_valId, atsc3_audio_decoder_configuration_record->atsc3_audio_ac4_sample_entry_box->atsc3_audio_ac4_specific_box.n_presentations);
+        jfieldID ac4_se_box_specific_n_presentations_valId = jniEnv->Get()->GetFieldID(j_ac4_se_specific_box_cls, "n_presentations", "I");
+        jniEnv->Get()->SetIntField(j_ac4_se_specific_box_obj, ac4_se_box_specific_n_presentations_valId, atsc3_audio_decoder_configuration_record->atsc3_audio_ac4_sample_entry_box->atsc3_audio_ac4_specific_box.n_presentations);
 
         //lastly, set our audioAC4SampleEntryBox
-        jfieldID audioAC4SampleEntryBox_valId = Atsc3NdkMediaMMTBridge::GetBridgeConsumerJniEnv()->Get()->GetFieldID(jcls, "audioAC4SampleEntryBox", "Lorg/ngbp/libatsc3/middleware/android/mmt/models/MMTAudioDecoderConfigurationRecord$AudioAC4SampleEntryBox;");
-        Atsc3NdkMediaMMTBridge::GetBridgeConsumerJniEnv()->Get()->SetObjectField(jobj, audioAC4SampleEntryBox_valId, j_ac4_se_box_obj);
+        jfieldID audioAC4SampleEntryBox_valId = jniEnv->Get()->GetFieldID(jcls, "audioAC4SampleEntryBox", "Lorg/ngbp/libatsc3/middleware/android/mmt/models/MMTAudioDecoderConfigurationRecord$AudioAC4SampleEntryBox;");
+        jniEnv->Get()->SetObjectField(jobj, audioAC4SampleEntryBox_valId, j_ac4_se_box_obj);
     }
 
 
-    int r = Atsc3NdkMediaMMTBridge::GetBridgeConsumerJniEnv()->Get()->CallIntMethod(jni_instance_globalRef, atsc3_OnInitAudioDecoderConfigurationRecord, packet_id, (int64_t)mpu_sequence_number, jobj);
+     jniEnv->Get()->CallIntMethod(jni_instance_globalRef, atsc3_OnInitAudioDecoderConfigurationRecord, packet_id, (int64_t)mpu_sequence_number, jobj);
+    if(j_ac4_se_box_obj) {
+        jniEnv->Get()->DeleteLocalRef(j_ac4_se_box_obj);
+    }
+
+    if(j_ac4_se_specific_box_obj) {
+        jniEnv->Get()->DeleteLocalRef(j_ac4_se_specific_box_obj);
+    }
+
+    jniEnv->Get()->DeleteLocalRef(jobj);
 
     return;
 }
@@ -301,41 +329,44 @@ void Atsc3NdkMediaMMTBridge::atsc3_onInitAudioDecoderConfigurationRecord(uint16_
 
 //MMT Signalling callbacks
 void Atsc3NdkMediaMMTBridge::atsc3_signallingContext_notify_video_packet_id_and_mpu_timestamp_descriptor(uint16_t video_packet_id, uint32_t mpu_sequence_number, uint64_t mpu_presentation_time_ntp64, uint32_t mpu_presentation_time_seconds, uint32_t mpu_presentation_time_microseconds) {
+    this->pinConsumerThreadAsNeeded(); //jjustman-2020-12-17 - hack
     if (!Atsc3NdkMediaMMTBridge::GetBridgeConsumerJniEnv()) {
         _NDK_MEDIA_MMT_BRIDGE_ERROR("ats3_onMfuPacket: Atsc3NdkMediaMMTBridge::GetBridgeConsumerJniEnv() is NULL!");
         return;
     }
 
-    int r = Atsc3NdkMediaMMTBridge::GetBridgeConsumerJniEnv()->Get()->CallIntMethod(jni_instance_globalRef, atsc3_signallingContext_notify_video_packet_id_and_mpu_timestamp_descriptor_ID, video_packet_id, mpu_sequence_number, mpu_presentation_time_ntp64, mpu_presentation_time_seconds, mpu_presentation_time_microseconds);
+     Atsc3NdkMediaMMTBridge::GetBridgeConsumerJniEnv()->Get()->CallIntMethod(jni_instance_globalRef, atsc3_signallingContext_notify_video_packet_id_and_mpu_timestamp_descriptor_ID, video_packet_id, mpu_sequence_number, mpu_presentation_time_ntp64, mpu_presentation_time_seconds, mpu_presentation_time_microseconds);
 }
 
 void Atsc3NdkMediaMMTBridge::atsc3_signallingContext_notify_audio_packet_id_and_mpu_timestamp_descriptor(uint16_t audio_packet_id, uint32_t mpu_sequence_number, uint64_t mpu_presentation_time_ntp64, uint32_t mpu_presentation_time_seconds, uint32_t mpu_presentation_time_microseconds) {
+    this->pinConsumerThreadAsNeeded(); //jjustman-2020-12-17 - hack
     // this method can be called in native thread. we don't safely use pre-assigned mJniEnv.
     if (!Atsc3NdkMediaMMTBridge::GetBridgeConsumerJniEnv()) {
         _NDK_MEDIA_MMT_BRIDGE_ERROR("ats3_onMfuPacket: Atsc3NdkMediaMMTBridge::GetBridgeConsumerJniEnv() is NULL!");
         return;
     }
 
-    int r = Atsc3NdkMediaMMTBridge::GetBridgeConsumerJniEnv()->Get()->CallIntMethod(jni_instance_globalRef, atsc3_signallingContext_notify_audio_packet_id_and_mpu_timestamp_descriptor_ID, audio_packet_id, mpu_sequence_number, mpu_presentation_time_ntp64, mpu_presentation_time_seconds, mpu_presentation_time_microseconds);
+     Atsc3NdkMediaMMTBridge::GetBridgeConsumerJniEnv()->Get()->CallIntMethod(jni_instance_globalRef, atsc3_signallingContext_notify_audio_packet_id_and_mpu_timestamp_descriptor_ID, audio_packet_id, mpu_sequence_number, mpu_presentation_time_ntp64, mpu_presentation_time_seconds, mpu_presentation_time_microseconds);
 }
 
 void Atsc3NdkMediaMMTBridge::atsc3_signallingContext_notify_stpp_packet_id_and_mpu_timestamp_descriptor(uint16_t stpp_packet_id, uint32_t mpu_sequence_number, uint64_t mpu_presentation_time_ntp64, uint32_t mpu_presentation_time_seconds, uint32_t mpu_presentation_time_microseconds) {
-    if (!Atsc3NdkMediaMMTBridge::GetBridgeConsumerJniEnv()) {
+    this->pinConsumerThreadAsNeeded(); //jjustman-2020-12-17 - hack
+     if (!Atsc3NdkMediaMMTBridge::GetBridgeConsumerJniEnv()) {
         _NDK_MEDIA_MMT_BRIDGE_ERROR("ats3_onMfuPacket: Atsc3NdkMediaMMTBridge::GetBridgeConsumerJniEnv() is NULL!");
         return;
     }
 
-    int r = Atsc3NdkMediaMMTBridge::GetBridgeConsumerJniEnv()->Get()->CallIntMethod(jni_instance_globalRef, atsc3_signallingContext_notify_stpp_packet_id_and_mpu_timestamp_descriptor_ID, stpp_packet_id, mpu_sequence_number, mpu_presentation_time_ntp64, mpu_presentation_time_seconds, mpu_presentation_time_microseconds);
+     Atsc3NdkMediaMMTBridge::GetBridgeConsumerJniEnv()->Get()->CallIntMethod(jni_instance_globalRef, atsc3_signallingContext_notify_stpp_packet_id_and_mpu_timestamp_descriptor_ID, stpp_packet_id, mpu_sequence_number, mpu_presentation_time_ntp64, mpu_presentation_time_seconds, mpu_presentation_time_microseconds);
 }
 
 //MFU metadata for sample duration
 void Atsc3NdkMediaMMTBridge::atsc3_onExtractedSampleDuration(uint16_t packet_id, uint32_t mpu_sequence_number, uint32_t extracted_sample_duration_us) {
-
+    this->pinConsumerThreadAsNeeded(); //jjustman-2020-12-17 - hack
     if (!Atsc3NdkMediaMMTBridge::GetBridgeConsumerJniEnv()) {
         _NDK_MEDIA_MMT_BRIDGE_ERROR("ats3_onMfuPacket: Atsc3NdkMediaMMTBridge::GetBridgeConsumerJniEnv() is NULL!");
         return;
     }
-    int r = Atsc3NdkMediaMMTBridge::GetBridgeConsumerJniEnv()->Get()->CallIntMethod(jni_instance_globalRef, atsc3_onExtractedSampleDurationID,
+     Atsc3NdkMediaMMTBridge::GetBridgeConsumerJniEnv()->Get()->CallIntMethod(jni_instance_globalRef, atsc3_onExtractedSampleDurationID,
                                                        packet_id,
                                                        mpu_sequence_number,
                                                        extracted_sample_duration_us);
@@ -344,66 +375,105 @@ void Atsc3NdkMediaMMTBridge::atsc3_onExtractedSampleDuration(uint16_t packet_id,
 
 //video w/h for rendering
 void Atsc3NdkMediaMMTBridge::atsc3_setVideoWidthHeightFromTrak(uint16_t packet_id, uint32_t width, uint32_t height) {
-
+    this->pinConsumerThreadAsNeeded(); //jjustman-2020-12-17 - hack
     if (!Atsc3NdkMediaMMTBridge::GetBridgeConsumerJniEnv()) {
         _NDK_MEDIA_MMT_BRIDGE_ERROR("ats3_onMfuPacket: Atsc3NdkMediaMMTBridge::GetBridgeConsumerJniEnv() is NULL!");
         return;
     }
-    int r = Atsc3NdkMediaMMTBridge::GetBridgeConsumerJniEnv()->Get()->CallIntMethod(jni_instance_globalRef, atsc3_setVideoWidthHeightFromTrakID, packet_id, width, height);
+     Atsc3NdkMediaMMTBridge::GetBridgeConsumerJniEnv()->Get()->CallIntMethod(jni_instance_globalRef, atsc3_setVideoWidthHeightFromTrakID, packet_id, width, height);
 }
 
 //on fully recovered MFU packet
 void Atsc3NdkMediaMMTBridge::atsc3_onMfuPacket(uint16_t packet_id, uint32_t mpu_sequence_number, uint32_t sample_number, uint8_t* buffer, uint32_t bufferLen, uint64_t presentationUs, uint32_t mfu_fragment_count_rebuilt)
-{
-    if (!Atsc3NdkMediaMMTBridge::GetBridgeConsumerJniEnv()) {
+{this->pinConsumerThreadAsNeeded(); //jjustman-2020-12-17 - hack
+    Atsc3JniEnv* localJniEnv = Atsc3NdkMediaMMTBridge::GetBridgeConsumerJniEnv();
+    JNIEnv* e = localJniEnv->Get();
+
+    if (!localJniEnv) {
         _NDK_MEDIA_MMT_BRIDGE_ERROR("ats3_onMfuPacket: Atsc3NdkMediaMMTBridge::GetBridgeConsumerJniEnv() is NULL!");
         return;
     }
 
-    jobject jobjectLocalByteBuffer = Atsc3NdkMediaMMTBridge::GetBridgeConsumerJniEnv()->Get()->NewDirectByteBuffer(buffer, bufferLen);
+    //LogMsg("Atsc3NdkMediaMMTBridge::atsc3_onMfuPacket: before localJniEnv->Get() NewDirectByteBuffer");
 
-    int r = Atsc3NdkMediaMMTBridge::GetBridgeConsumerJniEnv()->Get()->CallIntMethod(jni_instance_globalRef, atsc3_onMfuPacketID, packet_id, mpu_sequence_number, sample_number, jobjectLocalByteBuffer, bufferLen, presentationUs, mfu_fragment_count_rebuilt);
+    //_NDK_MEDIA_MMT_BRIDGE_ERROR("Atsc3NdkMediaMMTBridge::atsc3_onMfuPacket: this: %p, localJniEnv: %p, localJniEnv->get(): %p, packet_id: %d, mpu_sequence_number: %d, buffer: %p, length: %d", this, localJniEnv, localJniEnv->Get(), packet_id, mpu_sequence_number, buffer, bufferLen);
+    jobject jobjectLocalByteBuffer = localJniEnv->Get()->NewDirectByteBuffer(buffer, bufferLen);
+    //LogMsg("Atsc3NdkMediaMMTBridge::atsc3_onMfuPacket: after localJniEnv->Get() NewDirectByteBuffer");
+
+    //_NDK_MEDIA_MMT_BRIDGE_ERROR("Atsc3NdkMediaMMTBridge::atsc3_onMfuPacket: before CallIntMethod, jobjectLocalByteBuffer is: %d, jni_instance_globalRef: %p, method: %d", jobjectLocalByteBuffer, jni_instance_globalRef, atsc3_onMfuPacketID);
+
+    //LogMsg("Atsc3NdkMediaMMTBridge::atsc3_onMfuPacket: before localJniEnv->Get()->CallIntMethod");
+    localJniEnv->Get()->CallIntMethod(jni_instance_globalRef, atsc3_onMfuPacketID, (int32_t) packet_id, (int64_t)mpu_sequence_number, (int32_t)sample_number, jobjectLocalByteBuffer, (int32_t)bufferLen, (int64_t)presentationUs, (int32_t)mfu_fragment_count_rebuilt);
+    //LogMsg("Atsc3NdkMediaMMTBridge::atsc3_onMfuPacket: after localJniEnv->Get()->CallIntMethod");
+
     //_NDK_MEDIA_MMT_BRIDGE_INFO("Atsc3NdkPHYBridge::onMfuPacket, ret: %d, bufferLen: %u", r, bufferLen);
-    Atsc3NdkMediaMMTBridge::GetBridgeConsumerJniEnv()->Get()->DeleteLocalRef(jobjectLocalByteBuffer);
+    //_NDK_MEDIA_MMT_BRIDGE_ERROR("Atsc3NdkMediaMMTBridge::atsc3_onMfuPacket: before delete");
+    //jjustman-2020-12-17 - TODO - confirm -
+    localJniEnv->Get()->DeleteLocalRef(jobjectLocalByteBuffer);
+    //_NDK_MEDIA_MMT_BRIDGE_ERROR("Atsc3NdkMediaMMTBridge::atsc3_onMfuPacket: return");
 }
 
 //on partially corrupt MFU packet data
 void Atsc3NdkMediaMMTBridge::atsc3_onMfuPacketCorrupt(uint16_t packet_id, uint32_t mpu_sequence_number, uint32_t sample_number, uint8_t* buffer, uint32_t bufferLen, uint64_t presentationUs, uint32_t mfu_fragment_count_expected, uint32_t mfu_fragment_count_rebuilt)
-{
-    if (!Atsc3NdkMediaMMTBridge::GetBridgeConsumerJniEnv()) {
+{this->pinConsumerThreadAsNeeded(); //jjustman-2020-12-17 - hack
+    Atsc3JniEnv* localJniEnv = Atsc3NdkMediaMMTBridge::GetBridgeConsumerJniEnv();
+
+    if (!localJniEnv) {
         _NDK_MEDIA_MMT_BRIDGE_ERROR("ats3_onMfuPacket: Atsc3NdkMediaMMTBridge::GetBridgeConsumerJniEnv() is NULL!");
         return;
     }
 
-    jobject jobjectLocalByteBuffer = Atsc3NdkMediaMMTBridge::GetBridgeConsumerJniEnv()->Get()->NewDirectByteBuffer(buffer, bufferLen);
+    //LogMsg("Atsc3NdkMediaMMTBridge::atsc3_onMfuPacketCorrupt: before localJniEnv->Get() NewDirectByteBuffer");
+    //_NDK_MEDIA_MMT_BRIDGE_ERROR("Atsc3NdkMediaMMTBridge::atsc3_onMfuPacketCorrupt: packet_id: %d, mpu_sequence_number: %d, buffer: %p", packet_id, mpu_sequence_number, buffer);
+    jobject jobjectLocalByteBuffer = localJniEnv->Get()->NewDirectByteBuffer(buffer, bufferLen);
+    //LogMsg("Atsc3NdkMediaMMTBridge::atsc3_onMfuPacketCorrupt: after localJniEnv->Get() NewDirectByteBuffer");
 
-    int r = Atsc3NdkMediaMMTBridge::GetBridgeConsumerJniEnv()->Get()->CallIntMethod(jni_instance_globalRef, atsc3_onMfuPacketCorruptID, packet_id, mpu_sequence_number, sample_number, jobjectLocalByteBuffer, bufferLen, presentationUs, mfu_fragment_count_expected, mfu_fragment_count_rebuilt);
+    //_NDK_MEDIA_MMT_BRIDGE_ERROR("Atsc3NdkMediaMMTBridge::atsc3_onMfuPacketCorrupt: jobjectLocalByteBuffer is: %d, jni_instance_globalRef: %p, method: %d, ", jobjectLocalByteBuffer, jni_instance_globalRef, atsc3_onMfuPacketID);
+
+    //LogMsg("Atsc3NdkMediaMMTBridge::atsc3_onMfuPacketCorrupt: before CallIntMethod(jni_instance_globalRef, atsc3_onMfuPacketCorruptID,");
+    localJniEnv->Get()->CallIntMethod(jni_instance_globalRef, atsc3_onMfuPacketCorruptID, (int32_t)packet_id, (int64_t)mpu_sequence_number, (int32_t)sample_number, jobjectLocalByteBuffer, (int32_t)bufferLen, (int64_t)presentationUs, (int32_t)mfu_fragment_count_expected, (int32_t)mfu_fragment_count_rebuilt);
     //_NDK_MEDIA_MMT_BRIDGE_INFO("Atsc3NdkPHYBridge::onMfuPacket, ret: %d, bufferLen: %u", r, bufferLen);
-    Atsc3NdkMediaMMTBridge::GetBridgeConsumerJniEnv()->Get()->DeleteLocalRef(jobjectLocalByteBuffer);
+    //LogMsg("Atsc3NdkMediaMMTBridge::atsc3_onMfuPacketCorrupt: before DeleteLocalRef");
+    localJniEnv->Get()->DeleteLocalRef(jobjectLocalByteBuffer);
+    //LogMsg("Atsc3NdkMediaMMTBridge::atsc3_onMfuPacketCorrupt: after DeleteLocalRef");
 }
 
 //on partially corrupt MFU missing MMTHSample header
 
 void Atsc3NdkMediaMMTBridge::atsc3_onMfuPacketCorruptMmthSampleHeader(uint16_t packet_id, uint32_t mpu_sequence_number, uint32_t sample_number, uint8_t* buffer, uint32_t bufferLen, uint64_t presentationUs, uint32_t mfu_fragment_count_expected, uint32_t mfu_fragment_count_rebuilt)
 {
-    if (!Atsc3NdkMediaMMTBridge::GetBridgeConsumerJniEnv()) {
+    this->pinConsumerThreadAsNeeded(); //jjustman-2020-12-17 - hack
+    Atsc3JniEnv* localJniEnv = Atsc3NdkMediaMMTBridge::GetBridgeConsumerJniEnv();
+
+    if (!localJniEnv) {
         _NDK_MEDIA_MMT_BRIDGE_ERROR("ats3_onMfuPacket: Atsc3NdkMediaMMTBridge::GetBridgeConsumerJniEnv() is NULL!");
         return;
     }
-    jobject jobjectLocalByteBuffer = Atsc3NdkMediaMMTBridge::GetBridgeConsumerJniEnv()->Get()->NewDirectByteBuffer(buffer, bufferLen);
 
-    int r = Atsc3NdkMediaMMTBridge::GetBridgeConsumerJniEnv()->Get()->CallIntMethod(jni_instance_globalRef, atsc3_onMfuPacketCorruptMmthSampleHeaderID, packet_id, mpu_sequence_number, sample_number, jobjectLocalByteBuffer, bufferLen, presentationUs, mfu_fragment_count_expected, mfu_fragment_count_rebuilt);
-    //_NDK_MEDIA_MMT_BRIDGE_INFO("Atsc3NdkPHYBridge::onMfuPacket, ret: %d, bufferLen: %u", r, bufferLen);
-    Atsc3NdkMediaMMTBridge::GetBridgeConsumerJniEnv()->Get()->DeleteLocalRef(jobjectLocalByteBuffer);
+    //LogMsg("Atsc3NdkMediaMMTBridge::atsc3_onMfuPacketCorruptMmthSampleHeader: before NewDirectByteBuffer");
+    //_NDK_MEDIA_MMT_BRIDGE_ERROR("Atsc3NdkMediaMMTBridge::atsc3_onMfuPacketCorruptMmthSampleHeader: packet_id: %d, mpu_sequence_number: %d, buffer: %p, bufferLen: %d", packet_id, mpu_sequence_number, buffer, bufferLen);
+    jobject jobjectLocalByteBuffer = localJniEnv->Get()->NewDirectByteBuffer(buffer, bufferLen);
+    //LogMsg("Atsc3NdkMediaMMTBridge::atsc3_onMfuPacketCorruptMmthSampleHeader: after NewDirectByteBuffer");
+
+    //_NDK_MEDIA_MMT_BRIDGE_ERROR("Atsc3NdkMediaMMTBridge::atsc3_onMfuPacketCorruptMmthSampleHeader: jobjectLocalByteBuffer is: %d, jni_instance_globalRef: %p, method: %d, ", jobjectLocalByteBuffer, jni_instance_globalRef, atsc3_onMfuPacketID);
+
+    //LogMsg("Atsc3NdkMediaMMTBridge::atsc3_onMfuPacketCorruptMmthSampleHeader: before CallIntMethod(jni_instance_globalRef, atsc3_onMfuPacketCorruptMmthSampleHeaderID");
+    localJniEnv->Get()->CallIntMethod(jni_instance_globalRef, atsc3_onMfuPacketCorruptMmthSampleHeaderID, (int32_t)packet_id, (int64_t)mpu_sequence_number, (int32_t)sample_number, jobjectLocalByteBuffer, (int32_t)bufferLen, (int64_t)presentationUs, (int32_t)mfu_fragment_count_expected, (int32_t)mfu_fragment_count_rebuilt);
+    //LogMsg("Atsc3NdkMediaMMTBridge::atsc3_onMfuPacketCorruptMmthSampleHeader: after CallIntMethod(jni_instance_globalRef, atsc3_onMfuPacketCorruptMmthSampleHeaderID");
+
+    //_NDK_MEDIA_MMT_BRIDGE_INFO("Atsc3NdkPHYBridge::atsc3_onMfuPacketCorruptMmthSampleHeader, bufferLen: %u", bufferLen);
+    localJniEnv->Get()->DeleteLocalRef(jobjectLocalByteBuffer);
+    //LogMsg("Atsc3NdkMediaMMTBridge::atsc3_onMfuPacketCorruptMmthSampleHeader: after ->DeleteLocalRef(jobjectLocalByteBuffer);");
 }
 
 void Atsc3NdkMediaMMTBridge::atsc3_onMfuSampleMissing(uint16_t pcaket_id, uint32_t mpu_sequence_number, uint32_t sample_number) {
+    this->pinConsumerThreadAsNeeded(); //jjustman-2020-12-17 - hack
     if (!Atsc3NdkMediaMMTBridge::GetBridgeConsumerJniEnv()) {
         _NDK_MEDIA_MMT_BRIDGE_ERROR("ats3_onMfuPacket: Atsc3NdkMediaMMTBridge::GetBridgeConsumerJniEnv() is NULL!");
         return;
     }
 
-    int r = Atsc3NdkMediaMMTBridge::GetBridgeConsumerJniEnv()->Get()->CallIntMethod(jni_instance_globalRef, atsc3_onMfuSampleMissingID, pcaket_id, mpu_sequence_number, sample_number);
+     Atsc3NdkMediaMMTBridge::GetBridgeConsumerJniEnv()->Get()->CallIntMethod(jni_instance_globalRef, atsc3_onMfuSampleMissingID, pcaket_id, mpu_sequence_number, sample_number);
 }
 
 //--------------------------------------------------------------------------
@@ -413,6 +483,8 @@ void Atsc3NdkMediaMMTBridge::PthreadDestructor(void* prevJniPtr) {
 }
 void Atsc3NdkMediaMMTBridge::CreateJniAndMediaBridgePtrKey() {
     //JniPtr with destructor
+    printf("Atsc3NdkMediaMMTBridge::CreateJniAndMediaBridgePtrKey()");
+
     pthread_key_create(&Atsc3NdkMediaMMTBridge::JniPtr, &Atsc3NdkMediaMMTBridge::PthreadDestructor);
 }
 
@@ -432,20 +504,29 @@ Atsc3NdkMediaMMTBridge* Atsc3NdkMediaMMTBridge::GetMediaBridgePtr(JNIEnv* env, j
 }
 
 Atsc3JniEnv* Atsc3NdkMediaMMTBridge::GetBridgeConsumerJniEnv() {
-    return reinterpret_cast<Atsc3JniEnv*>(pthread_getspecific(Atsc3NdkMediaMMTBridge::JniPtr));
+    Atsc3JniEnv* myAtsc3JniEnv = reinterpret_cast<Atsc3JniEnv*>(pthread_getspecific(Atsc3NdkMediaMMTBridge::JniPtr));
+    if(!myAtsc3JniEnv) {
+        printf("Atsc3NdkMediaMMTBridge::GetBridgeConsumerJniEnv - myAtsc3JniEnv is NULL!");
+    } else {
+        printf("Atsc3NdkMediaMMTBridge::GetBridgeConsumerJniEnv - using myAtsc3JniEnv: %p, JNIEnv: %p", myAtsc3JniEnv, myAtsc3JniEnv->Get());
+    }
+    return myAtsc3JniEnv;
 }
 
 extern "C" JNIEXPORT jint JNICALL
 Java_org_ngbp_libatsc3_middleware_Atsc3NdkMediaMMTBridge_init(JNIEnv *env, jobject instance)
 {
+    //jjustman-2020-12-17 - hack
+
     Atsc3NdkMediaMMTBridge* mediaMMTBridge = nullptr;
 
     pthread_once(&Atsc3NdkMediaMMTBridge::JniPtrOnce, &Atsc3NdkMediaMMTBridge::CreateJniAndMediaBridgePtrKey);
 
     mediaMMTBridge = new Atsc3NdkMediaMMTBridge(env, instance);
+    Atsc3NdkMediaMMTBridge::MediaBridgePtrMap.insert(pair<jobject, Atsc3NdkMediaMMTBridge*>(mediaMMTBridge->jni_instance_globalRef, mediaMMTBridge));
 
     _NDK_MEDIA_MMT_BRIDGE_INFO("Java_org_ngbp_libatsc3_middleware_Atsc3NdkMediaMMTBridge_init:  env: %p", env);
-    mediaMMTBridge->setJniClassReference("org/ngbp/libatsc3/middleware/Atsc3NdkMediaMMTBridge");
+    mediaMMTBridge->setJniClassReference(env, "org/ngbp/libatsc3/middleware/Atsc3NdkMediaMMTBridge");
     mediaMMTBridge->mJavaVM = atsc3_ndk_media_mmt_bridge_static_loader_get_javaVM();
 
     if(mediaMMTBridge->mJavaVM == NULL) {
@@ -585,6 +666,7 @@ extern "C"
 JNIEXPORT jint JNICALL
 Java_org_ngbp_libatsc3_middleware_Atsc3NdkMediaMMTBridge_atsc3_1process_1mmtp_1udp_1packet(JNIEnv *env, jobject instance, jobject byte_buffer, jint length) {
     int ret = -1;
+    _NDK_MEDIA_MMT_BRIDGE_ERROR("Java_org_ngbp_libatsc3_middleware_Atsc3NdkMediaMMTBridge_atsc3_1process_1mmtp_1udp_1packet: ENTER jnienv: %p", env);
 
     Atsc3NdkMediaMMTBridge* mediaMMTBridge = Atsc3NdkMediaMMTBridge::GetMediaBridgePtr(env, instance);
 
@@ -605,6 +687,7 @@ Java_org_ngbp_libatsc3_middleware_Atsc3NdkMediaMMTBridge_release(JNIEnv *env, jo
 
     Atsc3NdkMediaMMTBridge* mediaMMTBridge = Atsc3NdkMediaMMTBridge::GetMediaBridgePtr(env, instance);
 
+    _NDK_MEDIA_MMT_BRIDGE_ERROR("Java_org_ngbp_libatsc3_middleware_Atsc3NdkMediaMMTBridge_release: ENTER jnienv: %p, mediaMMTBridge: %p", env, mediaMMTBridge);
     if(!mediaMMTBridge) {
         printf("Java_org_ngbp_libatsc3_middleware_Atsc3NdkMediaMMTBridge_release: mediaMMTBridge is NULL!");
         return;

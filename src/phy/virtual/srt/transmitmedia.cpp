@@ -337,14 +337,17 @@ int SrtCommon::ConfigurePre(SRTSOCKET sock)
     if ( !m_tsbpdmode )
     {
         result = srt_setsockopt(sock, 0, SRTO_TSBPDMODE, &no, sizeof no);
-        if ( result == -1 )
+        if ( result == -1 ) {
+            printf("SrtCommon::ConfigurePre: srt_setsockopt SRTO_TSBPDMODE failed\n");
             return result;
+        }
     }
 
     result = srt_setsockopt(sock, 0, SRTO_RCVSYN, &no, sizeof no);
-    if ( result == -1 )
+    if ( result == -1 ) {
+        printf("SrtCommon::ConfigurePre: srt_setsockopt SRTO_RCVSYN failed\n");
         return result;
-
+    }
 
     // host is only checked for emptiness and depending on that the connection mode is selected.
     // Here we are not exactly interested with that information.

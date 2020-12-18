@@ -4,11 +4,13 @@
  *  Created on: Dec 2, 2020
  *      Author: jjustman
  */
-#include <string>
+#include <string.h>
 #include <vector>
 
 #ifndef SRC_APPLICATION_IATSC3NDKMEDIAMMTBRIDGE_H_
 #define SRC_APPLICATION_IATSC3NDKMEDIAMMTBRIDGE_H_
+
+#include "Atsc3JniEnv.h"
 
 using namespace std;
 

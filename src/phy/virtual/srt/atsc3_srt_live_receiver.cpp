@@ -301,6 +301,7 @@ int parse_args(LiveTransmitConfig &cfg)
 
 int atsc3_srt_live_receiver_start_in_proc(atsc3_srt_live_receiver_context_t* atsc3_srt_live_receiver_context) {
 
+
 	atsc3_srt_live_receiver_context->is_shutdown = false;
 
 	printf("atsc3srt_live_transmit_startup");
@@ -326,8 +327,6 @@ int atsc3_srt_live_receiver_start_in_proc(atsc3_srt_live_receiver_context_t* ats
             SysCleanupNetwork();
         }
     } cleanupobj;
-
-
 
     LiveTransmitConfig cfg;
 

@@ -100,8 +100,9 @@ int SRTRxSTLTPVirtualPHY::atsc3_srt_thread_run() {
 
     srtConsumerThreadPtr = std::thread([this](){
     	srtConsumerShutdown = false;
+    	printf("SRTRxSTLTPVirtualPHY::atsc3_srt_thread_run - before pinConsumerThreadAsNeeded, this: %p", this);
 		pinConsumerThreadAsNeeded();
-        _SRTRXSTLTP_VIRTUAL_PHY_INFO("SRTRxSTLTPVirtualPHY::atsc3_srt_consumer_thread_run with this: %p", this);
+        _SRTRXSTLTP_VIRTUAL_PHY_INFO("SRTRxSTLTPVirtualPHY::atsc3_srt_consumer_thread_run, after pinConsumerThreadAsNeeded, with this: %p", this);
 
         this->srtConsumerThreadRun();
         releasePinnedConsumerThreadAsNeeded();

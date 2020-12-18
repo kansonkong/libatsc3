@@ -119,8 +119,8 @@ public:
         return jni_class_globalRef;
     }
 
-    int pinConsumerThreadAsNeeded();
-    int releasePinnedConsumerThreadAsNeeded();
+    int pinConsumerThreadAsNeeded() override;
+    int releasePinnedConsumerThreadAsNeeded() override;
 
     jmethodID mOnLogMsgId = nullptr;
 

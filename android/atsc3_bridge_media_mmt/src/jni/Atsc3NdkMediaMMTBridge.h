@@ -31,7 +31,7 @@ using namespace std;
 #include <atsc3_pcap_type.h>
 #include <atsc3_monitor_events_alc.h>
 #include <atsc3_route_package_utils.h>
-#include <application/IAtsc3NdkMediaMMTBridge.h>
+#include "IAtsc3NdkMediaMMTBridge.h"
 
 #include "Atsc3NdkMediaMMTBridgeStaticJniLoader.h"
 
@@ -72,9 +72,7 @@ public:
     void atsc3_onMfuSampleMissing(uint16_t i, uint32_t i1, uint32_t i2);
 
 private:
-    JNIEnv* env = nullptr;
-    jobject jni_instance_globalRef = nullptr;
-    jclass jni_class_globalRef = nullptr;
+
 
     MMTExtractor* mmtExtractor;
 
@@ -87,9 +85,14 @@ private:
     block_t*    preAllocInFlightUdpPacket;
 
 public:
+    //jjustman-2020-12-17 - testing
+
+    jobject jni_instance_globalRef = nullptr;
+    jclass jni_class_globalRef = nullptr;
+
     JavaVM* mJavaVM = nullptr;    // Java VM, if we don't have a pinned thread context for dispatch
 
-    void setJniClassReference(string jclass_name) {
+    void setJniClassReference(JNIEnv* env, string jclass_name) {
         if(env) {
             jclass jclass_local = env->FindClass(jclass_name.c_str());
             jni_class_globalRef = reinterpret_cast<jclass>(env->NewGlobalRef(jclass_local));
@@ -108,6 +111,7 @@ public:
     static void PthreadDestructor(void* prevJniPtr);
 
     int pinConsumerThreadAsNeeded();
+    int referenceConsumerJniEnvAsNeeded(Atsc3JniEnv* consumerAtsc3JniEnv);
     int releasePinnedConsumerThreadAsNeeded();
     bool isConsumerThreadPinned();
 
