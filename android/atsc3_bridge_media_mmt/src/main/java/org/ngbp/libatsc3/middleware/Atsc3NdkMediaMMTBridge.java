@@ -130,11 +130,6 @@ public class Atsc3NdkMediaMMTBridge extends Atsc3NdkMediaMMTBridgeStaticJniLoade
 
     public int atsc3_onMfuPacket(int packet_id, long mpu_sequence_number, int sample_number, ByteBuffer byteBuffer, int length, long presentationTimeUs, int mfu_fragment_count_expected) {
 
-        Log.e("atsc3_onMfuPacket", String.format("Enter: packetId: %d, mpu_sequence_number: %d, sample_number: %d has no length!",
-                packet_id,
-                mpu_sequence_number,
-                sample_number));
-
         if(ATSC3PlayerFlags.ATSC3PlayerStartPlayback) {
             if(length > 0) {
                 MfuByteBufferFragment mfuByteBufferFragment = new MfuByteBufferFragment(packet_id, mpu_sequence_number, sample_number, byteBuffer, length, presentationTimeUs, mfu_fragment_count_expected, mfu_fragment_count_expected);

@@ -506,9 +506,9 @@ Atsc3NdkMediaMMTBridge* Atsc3NdkMediaMMTBridge::GetMediaBridgePtr(JNIEnv* env, j
 Atsc3JniEnv* Atsc3NdkMediaMMTBridge::GetBridgeConsumerJniEnv() {
     Atsc3JniEnv* myAtsc3JniEnv = reinterpret_cast<Atsc3JniEnv*>(pthread_getspecific(Atsc3NdkMediaMMTBridge::JniPtr));
     if(!myAtsc3JniEnv) {
-        printf("Atsc3NdkMediaMMTBridge::GetBridgeConsumerJniEnv - myAtsc3JniEnv is NULL!");
+        //printf("Atsc3NdkMediaMMTBridge::GetBridgeConsumerJniEnv - myAtsc3JniEnv is NULL!");
     } else {
-        printf("Atsc3NdkMediaMMTBridge::GetBridgeConsumerJniEnv - using myAtsc3JniEnv: %p, JNIEnv: %p", myAtsc3JniEnv, myAtsc3JniEnv->Get());
+        //printf("Atsc3NdkMediaMMTBridge::GetBridgeConsumerJniEnv - using myAtsc3JniEnv: %p, JNIEnv: %p", myAtsc3JniEnv, myAtsc3JniEnv->Get());
     }
     return myAtsc3JniEnv;
 }
