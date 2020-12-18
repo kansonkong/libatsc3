@@ -32,17 +32,18 @@ public class Atsc3NdkMediaMMTBridge extends Atsc3NdkMediaMMTBridgeStaticJniLoade
     public native int atsc3_process_mmtp_udp_packet(ByteBuffer byteBuffer, int length);
 
     public Atsc3NdkMediaMMTBridge(IAtsc3NdkMediaMMTBridgeCallbacks iAtsc3NdkMediaMMTBridgeCallbacks) {
+        Log.w("Atsc3NdkMediaMMTBridge", "Atsc3NdkMediaMMTBridge::cctor");
         mActivity = iAtsc3NdkMediaMMTBridgeCallbacks;
         init();
     }
 
-    int onLogMsg(String msg) {
+    public int onLogMsg(String msg) {
         Log.d(TAG, msg);
         mActivity.showMsgFromNative(msg+"\n");
         return 0;
     }
 
-    int atsc3_onInitHEVC_NAL_Packet(int packet_id, long mpu_sequence_number, ByteBuffer byteBuffer, int length) {
+    public int atsc3_onInitHEVC_NAL_Packet(int packet_id, long mpu_sequence_number, ByteBuffer byteBuffer, int length) {
         Log.d("Atsc3NdkMediaMMTBridge", String.format("atsc3_onInitHEVC_NAL_Packet, packet_id: %d, mpu_sequence_number: %d, length: %d", packet_id, mpu_sequence_number, length));
 
         MpuMetadata_HEVC_NAL_Payload mpuMetadata_HEVC_NAL_Payload = new MpuMetadata_HEVC_NAL_Payload(packet_id, mpu_sequence_number, byteBuffer, length);
@@ -52,7 +53,7 @@ public class Atsc3NdkMediaMMTBridge extends Atsc3NdkMediaMMTBridgeStaticJniLoade
         return 0;
     }
 
-    int atsc3_OnInitAudioDecoderConfigurationRecord(int packet_id, long mpu_sequence_number, MMTAudioDecoderConfigurationRecord mmtAudioDecoderConfigurationRecord) {
+    public int atsc3_OnInitAudioDecoderConfigurationRecord(int packet_id, long mpu_sequence_number, MMTAudioDecoderConfigurationRecord mmtAudioDecoderConfigurationRecord) {
         Log.d("Atsc3NdkMediaMMTBridge", String.format("atsc3_OnInitAudioDecoderConfigurationRecord, packet_id: %d, mpu_sequence_number: %d, mmtAudioDecoderConfigurationRecord: channel_count: %d, sample_depth: %d, sample_rate: %d, isAC4: %b",
                                                                         packet_id, mpu_sequence_number, mmtAudioDecoderConfigurationRecord.channel_count, mmtAudioDecoderConfigurationRecord.sample_depth, mmtAudioDecoderConfigurationRecord.sample_rate, mmtAudioDecoderConfigurationRecord.audioAC4SampleEntryBox != null));
 
@@ -94,7 +95,7 @@ public class Atsc3NdkMediaMMTBridge extends Atsc3NdkMediaMMTBridgeStaticJniLoade
         return 0;
     }
 
-    int atsc3_onExtractedSampleDuration(int packet_id, long mpu_sequence_number, int extracted_sample_duration_us) {
+    public int atsc3_onExtractedSampleDuration(int packet_id, long mpu_sequence_number, int extracted_sample_duration_us) {
         //jjustman-2020-08-19 - audio duration work-around for ac-4
         if (MmtPacketIdContext.audio_packet_id == packet_id && extracted_sample_duration_us <= 0) {
             extracted_sample_duration_us = MmtPacketIdContext.video_packet_statistics.extracted_sample_duration_us;
@@ -119,7 +120,7 @@ public class Atsc3NdkMediaMMTBridge extends Atsc3NdkMediaMMTBridgeStaticJniLoade
         return 0;
     }
 
-    int atsc3_setVideoWidthHeightFromTrak(int packet_id, int width, int height) {
+    public int atsc3_setVideoWidthHeightFromTrak(int packet_id, int width, int height) {
         //jjustman-2020-12-17 - TODO: move this to map<packet_id, pair<w, h>>
 
         MmtPacketIdContext.video_packet_id = packet_id;
@@ -129,7 +130,12 @@ public class Atsc3NdkMediaMMTBridge extends Atsc3NdkMediaMMTBridgeStaticJniLoade
         return 0;
     }
 
-    int atsc3_onMfuPacket(int packet_id, long mpu_sequence_number, int sample_number, ByteBuffer byteBuffer, int length, long presentationTimeUs, int mfu_fragment_count_expected) {
+    public int atsc3_onMfuPacket(int packet_id, long mpu_sequence_number, int sample_number, ByteBuffer byteBuffer, int length, long presentationTimeUs, int mfu_fragment_count_expected) {
+
+        Log.e("atsc3_onMfuPacket", String.format("Enter: packetId: %d, mpu_sequence_number: %d, sample_number: %d has no length!",
+                packet_id,
+                mpu_sequence_number,
+                sample_number));
 
         if(ATSC3PlayerFlags.ATSC3PlayerStartPlayback) {
             if(length > 0) {
@@ -147,7 +153,7 @@ public class Atsc3NdkMediaMMTBridge extends Atsc3NdkMediaMMTBridgeStaticJniLoade
         return 0;
     }
 
-    int atsc3_onMfuPacketCorrupt(int packet_id, long mpu_sequence_number, int sample_number, ByteBuffer byteBuffer, int length, long presentationTimeUs, int mfu_fragment_count_expected, int mfu_fragment_count_rebuilt) {
+    public int atsc3_onMfuPacketCorrupt(int packet_id, long mpu_sequence_number, int sample_number, ByteBuffer byteBuffer, int length, long presentationTimeUs, int mfu_fragment_count_expected, int mfu_fragment_count_rebuilt) {
         if(MMT_DISCARD_CORRUPT_FRAMES) {
             return -1;
         }
@@ -169,7 +175,7 @@ public class Atsc3NdkMediaMMTBridge extends Atsc3NdkMediaMMTBridgeStaticJniLoade
         return 0;
     }
 
-    int atsc3_onMfuPacketCorruptMmthSampleHeader(int packet_id, long mpu_sequence_number, int sample_number, ByteBuffer byteBuffer, int length, long presentationTimeUs,  int mfu_fragment_count_expected, int mfu_fragment_count_rebuilt) {
+    public int atsc3_onMfuPacketCorruptMmthSampleHeader(int packet_id, long mpu_sequence_number, int sample_number, ByteBuffer byteBuffer, int length, long presentationTimeUs,  int mfu_fragment_count_expected, int mfu_fragment_count_rebuilt) {
         if(MMT_DISCARD_CORRUPT_FRAMES) {
             return -1;
         }
