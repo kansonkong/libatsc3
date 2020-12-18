@@ -29,11 +29,11 @@ int Atsc3NdkMediaMMTBridge::pinConsumerThreadAsNeeded() {
     localAtsc3NdkMediaMMTBridgeJniEnv = Atsc3NdkMediaMMTBridge::GetBridgeConsumerJniEnv();
 
     if(localAtsc3NdkMediaMMTBridgeJniEnv) {
-        _NDK_MEDIA_MMT_BRIDGE_INFO("Atsc3NdkMediaMMTBridge::pinConsumerThreadAsNeeded: mJavaVM: %p, localAtsc3NdkMediaMMTBridge::GetBridgeConsumerJniEnv() already pinned: %p", mJavaVM, localAtsc3NdkMediaMMTBridgeJniEnv);
+        //_NDK_MEDIA_MMT_BRIDGE_INFO("Atsc3NdkMediaMMTBridge::pinConsumerThreadAsNeeded: mJavaVM: %p, localAtsc3NdkMediaMMTBridge::GetBridgeConsumerJniEnv() already pinned: %p", mJavaVM, localAtsc3NdkMediaMMTBridgeJniEnv);
     } else {
         localAtsc3NdkMediaMMTBridgeJniEnv = new Atsc3JniEnv(mJavaVM);
         pthread_setspecific(Atsc3NdkMediaMMTBridge::JniPtr, localAtsc3NdkMediaMMTBridgeJniEnv);
-        _NDK_MEDIA_MMT_BRIDGE_INFO("Atsc3NdkMediaMMTBridge::pinConsumerThreadAsNeeded: mJavaVM: %p, creating localAtsc3NdkMediaMMTBridge::GetBridgeConsumerJniEnv(): %p", mJavaVM, localAtsc3NdkMediaMMTBridgeJniEnv);
+        //_NDK_MEDIA_MMT_BRIDGE_INFO("Atsc3NdkMediaMMTBridge::pinConsumerThreadAsNeeded: mJavaVM: %p, creating localAtsc3NdkMediaMMTBridge::GetBridgeConsumerJniEnv(): %p", mJavaVM, localAtsc3NdkMediaMMTBridgeJniEnv);
     }
     return 0;
 }
