@@ -12,7 +12,7 @@
 #include "atsc3_mmt_context_mfu_depacketizer.h"
 #include "atsc3_hevc_nal_extractor.h"
 
-#include "application/IAtsc3NdkMediaMMTBridge.h"
+#include "../android/atsc3_bridge_media_mmt/src/jni/IAtsc3NdkMediaMMTBridge.h"
 
 #ifdef __cplusplus
 extern "C" {
