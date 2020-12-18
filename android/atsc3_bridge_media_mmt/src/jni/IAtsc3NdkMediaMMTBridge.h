@@ -17,6 +17,7 @@ class IAtsc3NdkMediaMMTBridge {
     public:
         //jni management
         virtual int pinConsumerThreadAsNeeded() = 0;
+        virtual int referenceConsumerJniEnvAsNeeded(Atsc3JniEnv* consumerAtsc3JniEnv) = 0;
         virtual int releasePinnedConsumerThreadAsNeeded() = 0;
 
         //logging
