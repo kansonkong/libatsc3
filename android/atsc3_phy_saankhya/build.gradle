@@ -12,6 +12,15 @@ android {
             abiFilters 'arm64-v8a' //, 'armeabi-v7a' //, 'arm64-v8a' //'', 'x86_64',
             //jjustman-2020-11-30 - NOTE: 'armeabi-v7a': linkage error: ../../saankhyalabs-slsdk/slapi/src/tuner/situne/sl_situner.c:308: error: undefined reference to 'SiAPISetDCOffset'
         }
+        externalNativeBuild {
+            ndkBuild {
+                if (project.hasProperty('org.gradle.project.debugging_asan_enabled') && project.property('org.gradle.project.debugging_asan_enabled').toString().toBoolean()) {
+                    arguments "debugging_asan_enabled=true"
+                } else if (project.hasProperty('org.gradle.project.debugging_hwasan_enabled') && project.property('org.gradle.project.debugging_hwasan_enabled').toString().toBoolean()) {
+                    arguments "debugging_hwasan_enabled=true"
+                }
+            }
+        }
     }
     externalNativeBuild {
         ndkBuild {
@@ -53,8 +62,8 @@ android {
 repositories {
     google()
 }
-dependencies {
 
+dependencies {
     api project(':atsc3_bridge')
 
     implementation "androidx.annotation:annotation:1.1.0"

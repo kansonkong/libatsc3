@@ -46,46 +46,43 @@ class Atsc3NdkApplicationBridge : public IAtsc3NdkApplicationBridge
 public:
     Atsc3NdkApplicationBridge(JNIEnv* env, jobject jni_instance);
     
-    void LogMsg(const char *msg);
-    void LogMsg(const std::string &msg);
-    void LogMsgF(const char *fmt, ...);
+    void LogMsg(const char *msg) override;
+    void LogMsg(const std::string &msg) override;
+    void LogMsgF(const char *fmt, ...) override;
 
     /** atsc3 service methods **/
-    int atsc3_slt_selectService(int service_id);
+    int atsc3_slt_selectService(int service_id) override;
 
-    void atsc3_lls_sls_alc_on_package_extract_completed_callback_jni(atsc3_route_package_extracted_envelope_metadata_and_payload_t* atsc3_route_package_extracted_envelope_metadata_and_payload_t);
+    void atsc3_lls_sls_alc_on_package_extract_completed_callback_jni(atsc3_route_package_extracted_envelope_metadata_and_payload_t* atsc3_route_package_extracted_envelope_metadata_and_payload_t) override;
 
-    void set_plp_settings(jint *a_plp_ids, jsize sa_plp_size);
+    int atsc3_slt_alc_select_additional_service(int service_id) override;
+
+    int atsc3_slt_alc_clear_additional_service_selections() override;
+
+    vector<string> atsc3_slt_alc_get_sls_metadata_fragments_content_locations_from_monitor_service_id(int service_id, const char* to_match_content_type) override;
+
+    vector<string> atsc3_slt_alc_get_sls_route_s_tsid_fdt_file_content_locations_from_monitor_service_id(int service_id) override;
+
+    void atsc3_lls_sls_alc_on_object_close_flag_s_tsid_content_location_jni(uint16_t service_id, uint32_t tsi, uint32_t toi, char* s_tsid_content_location, char* s_tsid_content_type, char* cache_file_path) override;
+
+    void atsc3_lls_sls_alc_on_route_mpd_patched_jni(uint16_t service_id) override;
+
+    void atsc3_onSlsTablePresent(const char *sls_payload_xml) override;
+    void atsc3_onAeatTablePresent(const char* aeat_payload_xml) override;
+    void atsc3_onSlsHeldEmissionPresent(uint16_t service_id, const char *held_payload) override;
+
+    void atsc3_onAlcObjectStatusMessage(const char *fmt, ...) override;
+	void atsc3_onAlcObjectClosed(uint16_t service_id, uint32_t tsi, uint32_t toi, char* s_tsid_content_location, char* s_tsid_content_type, char* cache_file_path) override;
+
+    std::string get_android_temp_folder() override;
 
 
-    int atsc3_slt_alc_select_additional_service(int service_id);
+    //application bridge to phy instance callbacks for PLP selection change
+    void set_plp_settings(jint *a_plp_ids, jsize sa_plp_size) override;
 
-    int atsc3_slt_alc_clear_additional_service_selections();
-
-    vector<string>
-    atsc3_slt_alc_get_sls_metadata_fragments_content_locations_from_monitor_service_id(int service_id, const char* to_match_content_type);
-
-    vector<string>
-    atsc3_slt_alc_get_sls_route_s_tsid_fdt_file_content_locations_from_monitor_service_id(int service_id);
-
-    void atsc3_lls_sls_alc_on_object_close_flag_s_tsid_content_location_jni(uint16_t service_id, uint32_t tsi, uint32_t toi, char* s_tsid_content_location, char* s_tsid_content_type, char* cache_file_path);
-
-    void atsc3_lls_sls_alc_on_route_mpd_patched_jni(uint16_t service_id);
-
-    void atsc3_onSlsTablePresent(const char *sls_payload_xml);
-    void atsc3_onAeatTablePresent(const char* aeat_payload_xml);
-    void atsc3_onSlsHeldEmissionPresent(uint16_t service_id, const char *held_payload);
-
-    void atsc3_onAlcObjectStatusMessage(const char *fmt, ...);
-	void atsc3_onAlcObjectClosed(uint16_t service_id, uint32_t tsi, uint32_t toi, char* s_tsid_content_location, char* s_tsid_content_type, char* cache_file_path);
-
-    void atsc3_onMfuSampleMissing(uint16_t i, uint32_t i1, uint32_t i2);
-
-    std::string get_android_temp_folder();
-
-    void atsc3_phy_notify_plp_selection_change_set_callback(atsc3_phy_notify_plp_selection_change_f atsc3_phy_notify_plp_selection_change, void* context);
-    void atsc3_phy_notify_plp_selection_change_clear_callback();
-    void atsc3_phy_notify_plp_selection_changed(vector<uint8_t> plps_to_listen);
+    void atsc3_phy_notify_plp_selection_change_set_callback(atsc3_phy_notify_plp_selection_change_f atsc3_phy_notify_plp_selection_change, void* context) override;
+    void atsc3_phy_notify_plp_selection_change_clear_callback() override;
+    void atsc3_phy_notify_plp_selection_changed(vector<uint8_t> plps_to_listen) override;
 
 private:
     JNIEnv* env = nullptr;
