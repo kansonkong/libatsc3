@@ -8,16 +8,15 @@
  *
  */
 
+#include <assert.h>
+#include <limits.h>
+
 #ifndef ATSC3_MMTP_PACKET_TYPES_H_
 #define ATSC3_MMTP_PACKET_TYPES_H_
 
 #if defined (__cplusplus)
 extern "C" {
 #endif
-
-
-#include <assert.h>
-#include <limits.h>
 
 #include "atsc3_logging_externs.h"
 #include "atsc3_vector_builder.h"
@@ -27,6 +26,10 @@ extern "C" {
 #include "atsc3_mmt_mpu_sample_format_type.h"
     
 #include "atsc3_listener_udp.h"
+
+#include "atsc3_video_decoder_configuration_record.h"
+#include "atsc3_audio_decoder_configuration_record.h"
+#include "atsc3_stpp_decoder_configuration_record.h"
 
 extern int _MMTP_DEBUG_ENABLED;
 extern int _MMTP_TRACE_ENABLED;
@@ -212,14 +215,28 @@ typedef struct mmt_signalling_message_header_and_payload mmt_signalling_message_
 typedef struct mmtp_signalling_packet {
 	_MMTP_PACKET_HEADER_FIELDS;
 
-    uint8_t		si_fragmentation_indiciator:2;  /* f_i */
+    uint8_t		si_fragmentation_indicator:2;  /* f_i */
     uint8_t     si_res:4;                       /* res */
     uint8_t		si_additional_length_header:1;  /* H */
     uint8_t		si_aggregation_flag:1; 		    /* A */
     uint8_t		si_fragmentation_counter:8;     /* frag_counter */
-    uint16_t	si_aggregation_message_length;  /* if A==0, field is omitted, otherwise,
-                                                    16 + 16*H bits is repeated after every MSG_payload */
-   //mmt_signalling_message_vector_t mmt_signalling_message_vector;
+    /*
+     * jjustman-2020-11-12 - do not add in MSG_length, as it is only used for si aggregation messages, handled in: mmt_signalling_message_parse_packet
+     *      si_msg_length uint32_t	si_msg_length;
+     *
+     *  if A==0, field is omitted, otherwise,
+        for each si_message aggregated,
+            if(si_additional_length_header == 0)
+               si_msg_length is 16 bits long  - e.g.    mmtp_si_msg_length = block_Read_uint16_ntohs(udp_packet);
+        else
+            si_msg_length is 32 bits long  - e.g.     mmtp_si_msg_length = block_Read_uint32_ntohl(udp_packet);
+
+        after each MSG_payload
+        */
+
+    //used for de-fragmentation if si_fragmentation_indicator != 0x00
+    block_t*   udp_packet_inner_msg_payload;
+
     ATSC3_VECTOR_BUILDER_STRUCT(mmt_signalling_message_header_and_payload);
 } mmtp_signalling_packet_t;
 
@@ -241,11 +258,25 @@ typedef struct mmtp_repair_symbol_packet {
 	_MMTP_PACKET_HEADER_FIELDS;
 } mmtp_repair_symbol_packet_t;
 
+//forward declare as defn is in atsc3_mmt_signalling_message_types.h
+typedef struct mp_table_asset_row mp_table_asset_row_t;
+
 typedef struct mmtp_packet_id_packets_container {
-    uint16_t            packet_id;
-    
+    uint16_t                packet_id;
+
+    //populated from mmt SI mp_table event callbacks,
+    //  invoked from: atsc3_mmt_signalling_information_on_*_essence_packet_id_internal callback,
+    //      invoker: invoked from mmt_signalling_message_dispatch_context_notification_callbacks
+
+    char                    asset_type[4];
+    mp_table_asset_row_t*   mp_table_asset_row;
+
+    atsc3_video_decoder_configuration_record_t*     atsc3_video_decoder_configuration_record;
+    atsc3_audio_decoder_configuration_record_t*     atsc3_audio_decoder_configuration_record;
+    atsc3_stpp_decoder_configuration_record_t*      atsc3_stpp_decoder_configuration_record;
+
     ATSC3_VECTOR_BUILDER_STRUCT(mpu_sequence_number_mmtp_mpu_packet_collection);
-    ATSC3_VECTOR_BUILDER_STRUCT(mmtp_signalling_packet); //todo - figure out if this should be first class or overloaded
+    ATSC3_VECTOR_BUILDER_STRUCT(mmtp_signalling_packet);
     
     //others not used in atsc3.0
     ATSC3_VECTOR_BUILDER_STRUCT(mmtp_mpu_nontimed_packet);

@@ -15,10 +15,9 @@
 #include "atsc3_logging_externs.h"
 
 #define ATSC3_FDT_MULTIPART_RELATED "multipart/related"
-#define ATSC3_FDT_MULTIPART_SIGNED "multipart/signed"
 
-atsc3_fdt_file_t* atsc3_mbms_envelope_find_multipart_fdt_file_from_fdt_instance(atsc3_fdt_instance_t* atsc3_fdt_instance);
-bool atsc3_fdt_file_is_multipart_signed(atsc3_fdt_file_t* atsc3_fdt_file);
+uint32_t* atsc3_mbms_envelope_find_toi_from_fdt(atsc3_fdt_instance_t* atsc3_fdt_instance);
+
 //this is the actual atsc3_mbms_metadata_envelope parser
 atsc3_mbms_metadata_envelope_t* atsc3_mbms_envelope_parse_from_payload(char* payload, char* content_location);
 void atsc3_mbms_metadata_envelope_dump(atsc3_mbms_metadata_envelope_t* atsc3_mbms_metadata_envelope);

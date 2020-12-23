@@ -49,6 +49,39 @@ lls_sls_alc_session_t* lls_slt_alc_session_create(atsc3_lls_slt_service_t* atsc3
 	return lls_slt_alc_session;
 }
 
+
+lls_sls_alc_session_t* lls_slt_alc_session_create_from_ip_and_port_values(atsc3_lls_slt_service_t* atsc3_lls_slt_service, uint32_t sls_destination_ip_address, uint16_t sls_destination_udp_port, uint32_t sls_source_ip_address) {
+    lls_sls_alc_session_t* lls_slt_alc_session = lls_sls_alc_session_new();
+
+    lls_slt_alc_session->atsc3_lls_slt_service = atsc3_lls_slt_service;
+    lls_slt_alc_session->service_id = atsc3_lls_slt_service->service_id;
+
+    lls_slt_alc_session->alc_arguments = (atsc3_alc_arguments_t*)calloc(1, sizeof(atsc3_alc_arguments_t));
+
+    if(atsc3_lls_slt_service->atsc3_slt_broadcast_svc_signalling_v.count) {
+
+        if(sls_source_ip_address) {
+            lls_slt_alc_session->sls_source_ip_address = sls_source_ip_address;
+        }
+        lls_slt_alc_session->sls_destination_ip_address = sls_destination_ip_address;
+        lls_slt_alc_session->sls_destination_udp_port = sls_destination_udp_port;
+
+        _ATSC3_LLS_ALC_UTILS_TRACE("adding ALC sls_source ip: %s as: %u.%u.%u.%u| dest: %s:%s as: %u.%u.%u.%u:%u (%u:%u)",
+                                   sls_source_ip_address,
+                                   __toipnonstruct(lls_slt_alc_session->sls_source_ip_address),
+                                   sls_destination_ip_address,
+                                   sls_destination_udp_port,
+                                   __toipandportnonstruct(lls_slt_alc_session->sls_destination_ip_address, lls_slt_alc_session->sls_destination_udp_port),
+                                   lls_slt_alc_session->sls_destination_ip_address,
+                                   lls_slt_alc_session->sls_destination_udp_port);
+    } else {
+        _ATSC3_LLS_ALC_UTILS_ERROR("lls_slt_alc_session_create: SLT parsing of broadcast_svc_signalling for service_id: %u missing!", atsc3_lls_slt_service->service_id);
+    }
+    lls_slt_alc_session->alc_session = atsc3_open_alc_session(lls_slt_alc_session->alc_arguments);
+
+    return lls_slt_alc_session;
+}
+
 void lls_slt_alc_session_remove(lls_slt_monitor_t* lls_slt_monitor, atsc3_lls_slt_service_t* atsc3_lls_slt_service) {
 	//noop for now
 }
@@ -125,14 +158,21 @@ lls_sls_alc_session_t* lls_slt_alc_session_find_from_udp_packet(lls_slt_monitor_
 			
 				for(int k=0; k < lls_slt_monitor->lls_sls_alc_monitor_v.count; k++) {
 					lls_sls_alc_monitor_t* lls_sls_alc_monitor = lls_slt_monitor->lls_sls_alc_monitor_v.data[k];
-					_ATSC3_LLS_ALC_UTILS_TRACE("lls_slt_alc_session_find_from_udp_packet: checking lls_slt_monitor->lls_sls_alc_monitor_v.data[%d] from: %p (service_id: %d) with: %p (service_id: %d)",
-											  k,
-											  lls_slt_monitor->lls_sls_alc_monitor,
-											  lls_slt_monitor->lls_sls_alc_monitor->atsc3_lls_slt_service->service_id,
-											  lls_sls_alc_monitor,
-											  lls_sls_alc_monitor->atsc3_lls_slt_service->service_id);
 
-					if(lls_sls_alc_monitor->atsc3_lls_slt_service && lls_sls_alc_monitor->atsc3_lls_slt_service->service_id == lls_slt_alc_session->service_id) {
+					if(lls_sls_alc_monitor && lls_sls_alc_monitor->atsc3_lls_slt_service) {
+                        _ATSC3_LLS_ALC_UTILS_TRACE("lls_slt_alc_session_find_from_udp_packet: checking lls_slt_monitor->lls_sls_alc_monitor_v.data[%d] from: %p (service_id: %d) with: %p (service_id: %d)",
+                                                   k,
+                                                   lls_slt_monitor->lls_sls_alc_monitor,
+                                                   lls_slt_monitor->lls_sls_alc_monitor->atsc3_lls_slt_service->service_id,
+                                                   lls_sls_alc_monitor,
+                                                   lls_sls_alc_monitor->atsc3_lls_slt_service->service_id);
+					} else {
+                        _ATSC3_LLS_ALC_UTILS_WARN("lls_slt_alc_session_find_from_udp_packet: checking lls_slt_monitor->lls_sls_alc_monitor_v.data[%d] is NULL!",
+                                                   k);
+					}
+
+					if(lls_sls_alc_monitor && lls_sls_alc_monitor->atsc3_lls_slt_service && lls_sls_alc_monitor->atsc3_lls_slt_service->service_id == lls_slt_alc_session->service_id) {
+
 						_ATSC3_LLS_ALC_UTILS_TRACE("lls_slt_alc_session_find_from_udp_packet: updating lls_slt_monitor->lls_sls_alc_monitor from: %p (service_id: %d) to: %p (service_id: %d)",
 												  lls_slt_monitor->lls_sls_alc_monitor, lls_slt_monitor->lls_sls_alc_monitor->atsc3_lls_slt_service->service_id,
 												  lls_sls_alc_monitor, lls_sls_alc_monitor->atsc3_lls_slt_service->service_id);
@@ -195,6 +235,7 @@ lls_sls_alc_session_t* lls_slt_alc_session_find_from_service_id(lls_slt_monitor_
 }
 
 
+
 int comparator_lls_slt_alc_session_t(const void *a, const void *b) {
 	_ATSC3_LLS_ALC_UTILS_TRACE("comparator_lls_slt_alc_session_t with %u from %u", ((lls_sls_alc_session_t *)a)->service_id, ((lls_sls_alc_session_t *)b)->service_id);
 	if ( ((lls_sls_alc_session_t*)a)->service_id <  ((lls_sls_alc_session_t*)b)->service_id ) return -1;
@@ -215,6 +256,20 @@ lls_sls_alc_session_t* lls_slt_alc_session_find_or_create(lls_slt_monitor_t* lls
 		lls_slt_alc_session->sls_relax_source_ip_check = __LLS_SESSION_RELAX_SOURCE_IP_CHECK__;
 	}
 	return lls_slt_alc_session;
+}
+
+lls_sls_alc_session_t* lls_slt_alc_session_find_or_create_from_ip_udp_values(lls_slt_monitor_t* lls_slt_monitor, atsc3_lls_slt_service_t* atsc3_lls_slt_service, uint32_t sls_destination_ip_address, uint16_t sls_destination_udp_port, uint32_t sls_source_ip_address) {
+    lls_sls_alc_session_t* lls_slt_alc_session = lls_slt_alc_session_find(lls_slt_monitor, atsc3_lls_slt_service);
+    if(!lls_slt_alc_session) {
+        lls_slt_alc_session = lls_slt_alc_session_create_from_ip_and_port_values(atsc3_lls_slt_service, sls_destination_ip_address, sls_destination_udp_port, sls_source_ip_address);
+
+        lls_sls_alc_session_flows_t* lls_sls_alc_session_flows = lls_sls_alc_session_flows_new();
+        lls_sls_alc_session_flows_add_lls_sls_alc_session(lls_sls_alc_session_flows, lls_slt_alc_session);
+
+        lls_slt_monitor_add_lls_sls_alc_session_flows(lls_slt_monitor, lls_sls_alc_session_flows);
+        lls_slt_alc_session->sls_relax_source_ip_check = __LLS_SESSION_RELAX_SOURCE_IP_CHECK__;
+    }
+    return lls_slt_alc_session;
 }
 
 

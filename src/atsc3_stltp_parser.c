@@ -1006,7 +1006,19 @@ atsc3_timing_management_packet_t* atsc3_stltp_parse_timing_management_packet(ats
     uint8_t *binary_payload_start = binary_payload;
 
     uint32_t binary_payload_length = atsc3_stltp_timing_management_packet->payload_length;
+
+    //jjustman-2020-11-18 - at a minimum, we must have at least 112 bits (14 bytes) for the TMP packet parsing, otherwise bail
+    if(binary_payload_length < 14) {
+        __STLTP_PARSER_WARN("atsc3_stltp_parse_timing_management_packet: binary_payload: %p, length: %d is less than at least 14 bytes, returning NULL!", binary_payload, binary_payload_length);
+        return NULL;
+    }
     
+    //jjustman-2020-11-18 - at a minimum, we must have at least 112 bits (14 bytes) for the TMP packet parsing, otherwise bail
+    if(binary_payload_length < 14) {
+        __STLTP_PARSER_WARN("atsc3_stltp_parse_timing_management_packet: binary_payload: %p, length: %d is less than at least 14 bytes, returning NULL!", binary_payload, binary_payload_length);
+        return NULL;
+    }
+
     atsc3_timing_management_packet_t* atsc3_timing_management_packet = calloc(1, sizeof(atsc3_timing_management_packet_t));
 
     atsc3_timing_management_packet_set_bootstrap_timing_ref_from_stltp_preamble_packet(atsc3_timing_management_packet, atsc3_stltp_timing_management_packet);
@@ -1248,16 +1260,35 @@ atsc3_preamble_packet_t* atsc3_stltp_parse_preamble_packet(atsc3_stltp_preamble_
     uint8_t *binary_payload = atsc3_stltp_preamble_packet->payload;
     uint8_t *binary_payload_start = binary_payload;
     uint32_t binary_payload_length = atsc3_stltp_preamble_packet->payload_length;
+
+    //jjustman-2020-11-24 - we need at least 16 bits for the first 'length' field
+    if(binary_payload_length < 2) {
+        __STLTP_PARSER_WARN("preamble packet header: pointer: %p, sequence_number: %d, port: %d, binary_payload_length: %u is less than 2 bytes, returning NULL!",
+                             binary_payload,
+                             atsc3_stltp_preamble_packet->ip_udp_rtp_ctp_packet_inner->rtp_ctp_header->sequence_number,
+                             atsc3_stltp_preamble_packet->ip_udp_rtp_ctp_packet_inner->udp_flow.dst_port,
+                             atsc3_stltp_preamble_packet->payload_length);
+        goto error;
+    }
    
     block_t* block = block_Duplicate_from_ptr(binary_payload, binary_payload_length);
     block_Rewind(block);
     
     atsc3_preamble_packet_t* atsc3_preamble_packet = calloc(1, sizeof(atsc3_preamble_packet_t));
 
-    atsc3_preamble_packet_set_bootstrap_timing_ref_from_stltp_preamble_packet(atsc3_preamble_packet, atsc3_stltp_preamble_packet);
-
     //length: 16
     atsc3_preamble_packet->length = block_Read_uint16_ntohs(block);
+
+    //jjustman-2020-11-24 - make sure our binary payload length is long enough for full parsing
+    if(block_Remaining_size(block) < atsc3_preamble_packet->length) {
+        __STLTP_PARSER_WARN("preamble packet header: pointer: %p, sequence_number: %d, port: %d, binary_payload_length: %u, preamble payload length: %u is less than remaining: %d bytes, returning NULL!",
+                            binary_payload,
+                            atsc3_stltp_preamble_packet->ip_udp_rtp_ctp_packet_inner->rtp_ctp_header->sequence_number,
+                            atsc3_stltp_preamble_packet->ip_udp_rtp_ctp_packet_inner->udp_flow.dst_port,
+                            atsc3_preamble_packet->length,
+                            block_Remaining_size(block));
+        goto error;
+    }
 
     __STLTP_PARSER_DEBUG("---------------------------------------");
     __STLTP_PARSER_DEBUG("preamble packet header: pointer: %p, sequence_number: %d, port: %d, length: %u, PreamblePayload.length: %d",
@@ -1583,17 +1614,22 @@ atsc3_preamble_packet_t* atsc3_stltp_parse_preamble_packet(atsc3_stltp_preamble_
 
     atsc3_preamble_packet->L1_detail_signaling.L1D_crc = block_Read_uint32_bitlen(block, 32);
 
-    
-    
-    
+
+
+    atsc3_preamble_packet_set_bootstrap_timing_ref_from_stltp_preamble_packet(atsc3_preamble_packet, atsc3_stltp_preamble_packet);
+
     __STLTP_PARSER_DEBUG("preamble: L1B_parsed: consumed %d bytes, leaving %d bytes for L1D (payload_start: %p, binary_payload: %p",
                         bytes_processed, bytes_remaining,
                         binary_payload_start, binary_payload);
-    
-    
+
     return atsc3_preamble_packet;
     
-cleanup:
+error:
+
+    if(block) {
+        block_Destroy(&block);
+    }
+
     if(atsc3_preamble_packet) {
         free(atsc3_preamble_packet);
         atsc3_preamble_packet = NULL;

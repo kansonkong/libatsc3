@@ -47,6 +47,8 @@ using namespace std;
 #include "atsc3_alc_rx.h"
 #include "atsc3_alp_types.h"
 
+#include "atsc3_mmt_mfu_context_callbacks_default_jni.h"
+
 //runtime app interface includes (e.g. I/F for android, etc)
 #include "application/IAtsc3NdkApplicationBridge.h"
 #include "phy/IAtsc3NdkPHYBridge.h"
@@ -76,11 +78,11 @@ void atsc3_core_service_bridge_process_packet_from_plp_and_block(uint8_t plp_num
 void atsc3_core_service_bridge_process_packet_phy(block_t* packet);
 
 //change SLT service and wire up a single montior
-atsc3_lls_slt_service_t* atsc3_phy_mmt_player_bridge_set_single_monitor_a331_service_id(int service_id);
+atsc3_lls_slt_service_t* atsc3_core_service_player_bridge_set_single_monitor_a331_service_id(int service_id);
 
 //add additional alc monitor service_id's for supplimentary MMT or ROUTE flows
-atsc3_lls_slt_service_t* atsc3_phy_mmt_player_bridge_add_monitor_a331_service_id(int service_id);
-atsc3_lls_slt_service_t* atsc3_phy_mmt_player_bridge_remove_monitor_a331_service_id(int service_id);
+atsc3_lls_slt_service_t* atsc3_core_service_player_bridge_add_monitor_a331_service_id(int service_id);
+atsc3_lls_slt_service_t* atsc3_core_service_player_bridge_remove_monitor_a331_service_id(int service_id);
 //TODO: wire up ROUTE/ALC and MBMS/FDT event callback hooks for close_object emission (including delivery metrics w.r.t ALC DU loss)
 
 lls_sls_alc_monitor_t* atsc3_lls_sls_alc_monitor_get_from_service_id(int service_id);
@@ -96,10 +98,11 @@ atsc3_link_mapping_table_t* atsc3_phy_jni_bridge_notify_link_mapping_table(atsc3
 
 int atsc3_ndk_cache_temp_folder_purge(char *path);
 
-void atsc3_lls_sls_alc_on_object_close_flag_s_tsid_content_location_ndk(uint32_t tsi, uint32_t toi, char* content_location);
-void atsc3_lls_sls_alc_on_route_mpd_patched_ndk(uint16_t service_id);
+void atsc3_lls_sls_alc_on_object_close_flag_s_tsid_content_location_ndk(uint16_t service_id, uint32_t tsi, uint32_t toi, char* s_tsid_content_location, char* s_tsid_content_type, char* cache_file_path);
 
 void atsc3_lls_sls_alc_on_package_extract_completed_callback_ndk(atsc3_route_package_extracted_envelope_metadata_and_payload_t* atsc3_route_package_extracted_envelope_metadata_and_payload_t);
+
+void atsc3_lls_sls_alc_on_route_mpd_patched_ndk(uint16_t service_id);
 
 //#1569
 void atsc3_sls_on_held_trigger_received_callback_impl(uint16_t service_id, block_t* held_payload);
@@ -131,16 +134,14 @@ void atsc3_sls_on_held_trigger_received_callback_impl(uint16_t service_id, block
 void atsc3_lls_on_sls_table_present_ndk(lls_table_t* lls_table);
 void atsc3_lls_on_aeat_table_present_ndk(lls_table_t* lls_table);
 
-void atsc3_mmt_mpu_on_sequence_mpu_metadata_present_ndk(uint16_t packet_id, uint32_t mpu_sequence_number, block_t* mmt_mpu_metadata);
-void atsc3_mmt_mpu_mfu_on_sample_complete_ndk(uint16_t packet_id, uint32_t mpu_sequence_number, uint32_t sample_number, block_t* mmt_mfu_sample, uint32_t mfu_fragment_count_rebuilt);
-void atsc3_mmt_mpu_mfu_on_sample_corrupt_ndk(uint16_t packet_id, uint32_t mpu_sequence_number, uint32_t sample_number, block_t* mmt_mfu_sample, uint32_t mfu_fragment_count_expected, uint32_t mfu_fragment_count_rebuilt);
-void atsc3_mmt_mpu_mfu_on_sample_corrupt_mmthsample_header_ndk(uint16_t packet_id, uint32_t mpu_sequence_number, uint32_t sample_number, block_t* mmt_mfu_sample, uint32_t mfu_fragment_count_expected, uint32_t mfu_fragment_count_rebuilt);
-void atsc3_mmt_mpu_mfu_on_sample_missing_ndk(uint16_t packet_id, uint32_t mpu_sequence_number, uint32_t sample_number);
-void atsc3_mmt_signalling_information_on_video_packet_id_with_mpu_timestamp_descriptor_ndk(uint16_t video_packet_id, uint32_t mpu_sequence_number, uint64_t mpu_presentation_time_ntp64, uint32_t mpu_presentation_time_seconds, uint32_t mpu_presentation_time_microseconds);
-void atsc3_mmt_signalling_information_on_audio_packet_id_with_mpu_timestamp_descriptor_ndk(uint16_t audio_packet_id, uint32_t mpu_sequence_number, uint64_t mpu_presentation_time_ntp64, uint32_t mpu_presentation_time_seconds, uint32_t mpu_presentation_time_microseconds);
-void atsc3_mmt_signalling_information_on_stpp_packet_id_with_mpu_timestamp_descriptor_ndk(uint16_t stpp_packet_id, uint32_t mpu_sequence_number, uint64_t mpu_presentation_time_ntp64, uint32_t mpu_presentation_time_seconds, uint32_t mpu_presentation_time_microseconds);
-void atsc3_mmt_mpu_on_sequence_movie_fragment_metadata_present_ndk(uint16_t packet_id, uint32_t mpu_sequence_number, block_t* mmt_movie_fragment_metadata);
+bool atsc3_mmt_signalling_information_on_routecomponent_message_present_ndk(atsc3_mmt_mfu_context_t* atsc3_mmt_mfu_context, mmt_atsc3_route_component_t* mmt_atsc3_route_component);
+void atsc3_mmt_signalling_information_on_held_message_present_ndk(atsc3_mmt_mfu_context_t* atsc3_mmt_mfu_context, mmt_atsc3_held_message_t* mmt_atsc3_held_message);
 
+#define __ATSC3_CORE_SERVICE_PLAYER_BRIDGE_ERROR(...) __LIBATSC3_TIMESTAMP_ERROR(__VA_ARGS__);
+#define __ATSC3_CORE_SERVICE_PLAYER_BRIDGE_WARN(...)  __LIBATSC3_TIMESTAMP_WARN(__VA_ARGS__);
+#define __ATSC3_CORE_SERVICE_PLAYER_BRIDGE_INFO(...)  if(_ATSC3_CORE_SERVICE_PLAYER_BRIDGE_INFO_ENABLED)  { __LIBATSC3_TIMESTAMP_INFO(__VA_ARGS__); }
+#define __ATSC3_CORE_SERVICE_PLAYER_BRIDGE_DEBUG(...) if(_ATSC3_CORE_SERVICE_PLAYER_BRIDGE_DEBUG_ENABLED) { __LIBATSC3_TIMESTAMP_DEBUG(__VA_ARGS__); }
+#define __ATSC3_CORE_SERVICE_PLAYER_BRIDGE_TRACE(...) if(_ATSC3_CORE_SERVICE_PLAYER_BRIDGE_TRACE_ENABLED) { __LIBATSC3_TIMESTAMP_TRACE(__VA_ARGS__); }
 
 #if defined (__cplusplus)
 }
