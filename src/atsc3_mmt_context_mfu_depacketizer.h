@@ -13,7 +13,11 @@
 
 #include "atsc3_mmtp_packet_types.h"
 #include "atsc3_mmt_context_mpu_depacketizer.h"
+
 #include "atsc3_mmt_context_signalling_information_depacketizer.h"
+#include "atsc3_mmt_context_signalling_information_callbacks_internal.h"
+
+#include "atsc3_isobmff_box_parser_tools.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -24,10 +28,15 @@ extern "C" {
  * todo - include byte ranges for lost DU's?
  * NOTE
  */
-typedef void (*atsc3_mmt_mpu_mfu_on_sample_complete_f) (uint16_t packet_id, uint32_t mpu_sequence_number, uint32_t sample_number, block_t* mmt_mfu_sample, uint32_t mfu_fragment_count_rebuilt);
-typedef void (*atsc3_mmt_mpu_mfu_on_sample_corrupt_f)  (uint16_t packet_id, uint32_t mpu_sequence_number, uint32_t sample_number, block_t* mmt_mfu_sample, uint32_t mfu_fragment_count_expected, uint32_t mfu_fragment_count_rebuilt);
-typedef void (*atsc3_mmt_mpu_mfu_on_sample_corrupt_mmthsample_header_f) (uint16_t packet_id, uint32_t mpu_sequence_number, uint32_t sample_number, block_t* mmt_mfu_sample,  uint32_t mfu_fragment_count_expected, uint32_t mfu_fragment_count_rebuilt);
-typedef void (*atsc3_mmt_mpu_mfu_on_sample_missing_f)  (uint16_t packet_id, uint32_t mpu_sequence_number, uint32_t sample_number);
+typedef struct atsc3_mmt_mfu_context atsc3_mmt_mfu_context_t;
+
+typedef void (*atsc3_mmt_mpu_mfu_on_sample_complete_f) (atsc3_mmt_mfu_context_t* atsc3_mmt_mfu_context, uint16_t packet_id, uint32_t mpu_sequence_number, uint32_t sample_number, block_t* mmt_mfu_sample, uint32_t mfu_fragment_count_rebuilt);
+typedef void (*atsc3_mmt_mpu_mfu_on_sample_corrupt_f)  (atsc3_mmt_mfu_context_t* atsc3_mmt_mfu_context, uint16_t packet_id, uint32_t mpu_sequence_number, uint32_t sample_number, block_t* mmt_mfu_sample, uint32_t mfu_fragment_count_expected, uint32_t mfu_fragment_count_rebuilt);
+typedef void (*atsc3_mmt_mpu_mfu_on_sample_corrupt_mmthsample_header_f) (atsc3_mmt_mfu_context_t* atsc3_mmt_mfu_context, uint16_t packet_id, uint32_t mpu_sequence_number, uint32_t sample_number, block_t* mmt_mfu_sample,  uint32_t mfu_fragment_count_expected, uint32_t mfu_fragment_count_rebuilt);
+typedef void (*atsc3_mmt_mpu_mfu_on_sample_missing_f)  (atsc3_mmt_mfu_context_t* atsc3_mmt_mfu_context, uint16_t packet_id, uint32_t mpu_sequence_number, uint32_t sample_number);
+
+typedef bool (*atsc3_mmt_signalling_information_on_routecomponent_message_present_f) (atsc3_mmt_mfu_context_t* atsc3_mmt_mfu_context, mmt_atsc3_route_component_t* mmt_atsc3_route_component);
+typedef void (*atsc3_mmt_signalling_information_on_held_message_present_f) (atsc3_mmt_mfu_context_t* atsc3_mmt_mfu_context, mmt_atsc3_held_message_t* mmt_atsc3_held_message);
 
 typedef struct atsc3_mmt_mfu_mpu_timestamp_descriptor {
 	uint16_t 	packet_id;
@@ -45,20 +54,37 @@ typedef struct atsc3_mmt_mfu_mpu_timestamp_descriptor_rolling_window {
 
 ATSC3_VECTOR_BUILDER_METHODS_INTERFACE(atsc3_mmt_mfu_mpu_timestamp_descriptor_rolling_window, atsc3_mmt_mfu_mpu_timestamp_descriptor);
 
+
+/*
+ * atsc3_mmt_mfu_context:
+ *
+ *  See atsc3_mmt_mfu_context_callbacks_noop or atsc3_mmt_mfu_context_callbacks_default_jni for 'auto-wiring' of callbacks for MMTP processing events
+ *
+ */
+
 typedef struct atsc3_mmt_mfu_context {
+
 	//INTERNAL data structs
-	udp_flow_t* 	udp_flow;
-	mmtp_flow_t* 	mmtp_flow;
+	udp_flow_t* 	                                    udp_flow;
+    udp_flow_latest_mpu_sequence_number_container_t*    udp_flow_latest_mpu_sequence_number_container;
 
-	udp_flow_latest_mpu_sequence_number_container_t* udp_flow_latest_mpu_sequence_number_container;
-	lls_slt_monitor_t* lls_slt_monitor;
-	lls_sls_mmt_session_t* matching_lls_sls_mmt_session;
+	mmtp_flow_t* 	                                    mmtp_flow;
 
+    //active context
+    mmtp_asset_flow_t*                                  mmtp_asset_flow;
+    mmtp_asset_t*                                       mmtp_asset;
+    mmtp_packet_id_packets_container_t*                 mmtp_packet_id_packets_container;
+
+    //TODO: relax this tight coupling from atsc3 to mmt package
+    lls_slt_monitor_t*                                  lls_slt_monitor;
+    lls_sls_mmt_session_t*                              matching_lls_sls_mmt_session;
+
+    //holdover context information
 	mp_table_t* mp_table_last;
 	atsc3_mmt_mfu_mpu_timestamp_descriptor_rolling_window_t												packet_id_mpu_timestamp_descriptor_window;
 
 	//INTERNAL event callbacks
-	__internal__atsc3_mmt_signalling_information_on_packet_id_with_mpu_timestamp_descriptor_f			__internal__atsc3_mmt_signalling_information_on_packet_id_with_mpu_timestamp_descriptor;
+    atsc3_mmt_signalling_information_on_packet_id_with_mpu_timestamp_descriptor_internal_f		        atsc3_mmt_signalling_information_on_packet_id_with_mpu_timestamp_descriptor_internal;
 
 	//EXTERNAL helper methods
 	atsc3_get_mpu_timestamp_from_packet_id_mpu_sequence_number_f										get_mpu_timestamp_from_packet_id_mpu_sequence_number;
@@ -92,34 +118,38 @@ typedef struct atsc3_mmt_mfu_context {
 	//Lastly, in the spirit of OOO MMT, movie fragment metadata comes last and should only be used as a last resort...
 	atsc3_mmt_mpu_on_sequence_movie_fragment_metadata_present_f                                         atsc3_mmt_mpu_on_sequence_movie_fragment_metadata_present;
 
+    atsc3_mmt_signalling_information_on_routecomponent_message_present_f                                atsc3_mmt_signalling_information_on_routecomponent_message_present;
+    mmt_atsc3_route_component_t*                                                                        mmt_atsc3_route_component_monitored;
+    atsc3_mmt_signalling_information_on_held_message_present_f                                          atsc3_mmt_signalling_information_on_held_message_present;
+
 } atsc3_mmt_mfu_context_t;
 
-atsc3_mmt_mfu_mpu_timestamp_descriptor_t* atsc3_get_mpu_timestamp_from_packet_id_mpu_sequence_number(atsc3_mmt_mfu_context_t* atsc3_mmt_mfu_context, uint16_t packet_id, uint32_t mpu_sequence_number);
+atsc3_mmt_mfu_context_t* atsc3_mmt_mfu_context_internal_flows_new();
 
-//wire up dummmy null callback(s) to prevent dispatcher from multiple if(..) checks...
-atsc3_mmt_mfu_context_t* atsc3_mmt_mfu_context_new();
 void atsc3_mmt_mfu_context_free(atsc3_mmt_mfu_context_t** atsc3_mmt_mfu_context_p);
+
+mmtp_asset_t* atsc3_mmt_mfu_context_mfu_depacketizer_context_update_find_or_create_mmtp_asset(atsc3_mmt_mfu_context_t* atsc3_mmt_mfu_context, udp_packet_t* udp_packet, lls_slt_monitor_t* lls_slt_monitor, lls_sls_mmt_session_t* matching_lls_sls_mmt_session);
+
+mmtp_packet_id_packets_container_t* atsc3_mmt_mfu_context_mfu_depacketizer_update_find_or_create_mmtp_packet_id_packets_container(atsc3_mmt_mfu_context_t* atsc3_mmt_mfu_context, mmtp_asset_t* mmtp_asset, mmtp_packet_header_t* mmtp_packet_header);
+
+atsc3_mmt_mfu_mpu_timestamp_descriptor_t* atsc3_get_mpu_timestamp_from_packet_id_mpu_sequence_number(atsc3_mmt_mfu_context_t* atsc3_mmt_mfu_context, uint16_t packet_id, uint32_t mpu_sequence_number);
 
 
 
 //Warning: cross boundary processing hooks with callback invocation - impl's in atsc3_mmt_context_mfu_depacketizer.c
 
-void mmtp_mfu_process_from_payload_with_context(udp_packet_t *udp_packet,
-												mmtp_mpu_packet_t* mmtp_mpu_packet,
-												atsc3_mmt_mfu_context_t* atsc3_mmt_mfu_context);
+void mmtp_mfu_process_from_payload_with_context(udp_packet_t *udp_packet, mmtp_mpu_packet_t* mmtp_mpu_packet, atsc3_mmt_mfu_context_t* atsc3_mmt_mfu_context);
 
 //MFU re-constituion and emission in context
 void mmtp_mfu_rebuild_from_packet_id_mpu_sequence_number(atsc3_mmt_mfu_context_t* atsc3_mmt_mfu_context, mmtp_packet_id_packets_container_t* mmtp_packet_id_packets_container, uint32_t mpu_sequence_number, uint32_t mfu_sample_number_from_current_du, bool flush_all_fragmentss);
 
 
 //MMT signalling information processing
-void mmt_signalling_message_process_with_context(udp_packet_t *udp_packet,
-												mmtp_signalling_packet_t* mmtp_signalling_packet,
-												atsc3_mmt_mfu_context_t* atsc3_mmt_mfu_context);
+void mmt_signalling_message_dispatch_context_notification_callbacks(udp_packet_t *udp_packet, mmtp_signalling_packet_t* mmtp_signalling_packet, atsc3_mmt_mfu_context_t* atsc3_mmt_mfu_context);
 
 
 //movie fragment sample duration parsing...non bento4 impl
-uint32_t atsc3_mmt_movie_fragment_extract_sample_duration(block_t* mmt_movie_fragment_metadata);
+uint32_t atsc3_mmt_movie_fragment_extract_sample_duration_us(block_t* mmt_movie_fragment_metadata, uint32_t decoder_configuration_timebase);
 
 
 #define __MMT_CONTEXT_MPU_ERROR(...)        __LIBATSC3_TIMESTAMP_WARN(__VA_ARGS__);

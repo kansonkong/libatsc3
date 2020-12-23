@@ -2,6 +2,10 @@
 // Created by Jason Justman on 8/19/20.
 //
 
+//jjustman-2020-10-30 - workaround for SL_TUNER deinit not decrementing ref count
+#define __SL_TUNER_DEINIT_DISABLED__ true
+
+
 /*  MarkONE "workarounds" for /dev handle permissions
 
 
@@ -67,9 +71,14 @@ SaankhyaPHYAndroid::~SaankhyaPHYAndroid() {
         atsc3_sl_tlv_payload_free(&atsc3_sl_tlv_payload);
     }
 
+    unique_lock<mutex> CircularBufferMutex_local(CircularBufferMutex);
+
     if(cb) {
         CircularBufferFree(cb);
     }
+    cb = nullptr;
+    CircularBufferMutex_local.unlock();
+
 
     _SAANKHYA_PHY_ANDROID_INFO("SaankhyaPHYAndroid::~SaankhyaPHYAndroid - exit: deleting with this: %p", this);
 }
@@ -150,6 +159,8 @@ bool SaankhyaPHYAndroid::is_running() {
 int SaankhyaPHYAndroid::stop()
 {
     SL_I2cResult_t sl_res_uninit = SL_I2C_OK;
+    SL_Result_t sl_result = SL_OK;
+    SL_TunerResult_t sl_tuner_result = SL_TUNER_OK;
 
     _SAANKHYA_PHY_ANDROID_DEBUG("SaankhyaPHYAndroid::stop: enter with this: %p", this);
     _SAANKHYA_PHY_ANDROID_INFO("SaankhyaPHYAndroid::stop: enter with this: %p, slUnit: %d, tUnit: %d, captureThreadIsRunning: %d, statusThreadIsRunning: %d, processThreadIsRunning: %d, sleeping for %d ms",
@@ -212,6 +223,19 @@ int SaankhyaPHYAndroid::stop()
     sl_res_uninit = SL_I2cUnInit();
 
     _SAANKHYA_PHY_ANDROID_DEBUG("SaankhyaPHYAndroid::stop: after SL_I2cUnInit, sl_res_uninit is: %d", sl_res_uninit);
+
+    //jjustman-2020-10-30 - decrement our sl instance count
+    sl_result = SL_DemodUnInit(slUnit);
+    _SAANKHYA_PHY_ANDROID_DEBUG("SaankhyaPHYAndroid::stop: after SL_DemodUnInit, slUnit now: %d, sl_result: %d", slUnit, sl_result);
+    slUnit = -1;
+
+#ifndef __SL_TUNER_DEINIT_DISABLED__
+    //jjustman-2020-10-30 - TODO: SL_TunerInit and SL_TunerUnInit is just a refcount, not an instance handle
+    sl_tuner_result = SL_TunerUnInit(tUnit);
+    tUnit = __MIN(0, tUnit - 1);
+#endif
+
+    _SAANKHYA_PHY_ANDROID_DEBUG("SaankhyaPHYAndroid::stop: after SL_TunerUnInit, tUnit now: %d, sl_tuner_result: %d", tUnit, sl_tuner_result);
 
     if(atsc3_ndk_application_bridge_get_instance()) {
         atsc3_ndk_application_bridge_get_instance()->atsc3_phy_notify_plp_selection_change_clear_callback();
@@ -493,7 +517,7 @@ int SaankhyaPHYAndroid::open(int fd, string device_path)
     plpInfo.plp2 = 0xFF;
     plpInfo.plp3 = 0xFF;
 
-    _SAANKHYA_PHY_ANDROID_DEBUG("SL_DemodCreateInstance: before");
+    _SAANKHYA_PHY_ANDROID_DEBUG("SL_DemodCreateInstance: before invocation, slUnit: %d",slUnit);
     slres = SL_DemodCreateInstance(&slUnit);
     if (slres != SL_OK)
     {
@@ -587,14 +611,24 @@ int SaankhyaPHYAndroid::open(int fd, string device_path)
     if (slres == SL_OK)
     {
         _SAANKHYA_PHY_ANDROID_DEBUG("Demod SW Version: %d.%d", swMajorNo, swMinorNo);
-        _SAANKHYA_PHY_ANDROID_DEBUG("Demod SW Version: %d.%d", swMajorNo, swMinorNo);
     }
 
     /* Tuner Config */
     tunerCfg.bandwidth = SL_TUNER_BW_6MHZ;
     tunerCfg.std = SL_TUNERSTD_ATSC3_0;
 
-    tres = SL_TunerCreateInstance(&tUnit);
+    if(tUnit == -1) {
+        tres = SL_TunerCreateInstance(&tUnit);
+    } else {
+#ifndef __SL_TUNER_DEINIT_DISABLED__
+        //create a new tuner instance
+        tres = SL_TunerCreateInstance(&tUnit);
+#else
+        tres = SL_TUNER_OK;
+#endif
+        //otherwise, don't create a new instance as we will leak due to SL_TunerUnInit not decrementing refcount
+    }
+
     if (tres != 0)
     {
         _SAANKHYA_PHY_ANDROID_DEBUG("Error:SL_TunerCreateInstance :");
@@ -648,15 +682,17 @@ ERROR:
 
 int SaankhyaPHYAndroid::tune(int freqKHz, int plpid)
 {
-    unsigned int cFrequency = 0;
     int ret = 0;
-
+    unsigned int cFrequency = 0;
     int isRxDataStartedSpinCount = 0;
 
+    //create our CB mutex, but don't acquire it yet
+    unique_lock<mutex> CircularBufferMutex_local(CircularBufferMutex, defer_lock);
 
     //acquire our lock for setting tuning parameters (including re-tuning)
     unique_lock<mutex> SL_I2C_command_mutex_tuner_tune(SL_I2C_command_mutex);
     atsc3_core_service_application_bridge_reset_context();
+
 
     tres = SL_TunerSetFrequency(tUnit, freqKHz*1000);
     if (tres != 0)
@@ -729,10 +765,12 @@ int SaankhyaPHYAndroid::tune(int freqKHz, int plpid)
         _SAANKHYA_PHY_ANDROID_DEBUG("tuner frequency: %d", cFrequency);
     }
 
+    CircularBufferMutex_local.lock();
     //setup shared memory allocs
     if(!cb) {
-        cb = CircularBufferCreate(CB_SIZE);
+        cb = CircularBufferCreate(TLV_CIRCULAR_BUFFER_SIZE);
     }
+    CircularBufferMutex_local.unlock();
 
     if (!atsc3_sl_tlv_block) {
         allocate_atsc3_sl_tlv_block();
@@ -1087,7 +1125,12 @@ void SaankhyaPHYAndroid::handleCmdIfFailure(void)
 {
     _SAANKHYA_PHY_ANDROID_DEBUG("SL CMD IF FAILURE: Cannot continue!");
     SL_DemodUnInit(slUnit);
+    slUnit = -1;
+
+#ifndef __SL_TUNER_DEINIT_DISABLED__
     SL_TunerUnInit(tUnit);
+    tUnit = -1;
+#endif
 }
 
 void SaankhyaPHYAndroid::printToConsoleI2cError(SL_I2cResult_t err)
@@ -1428,10 +1471,14 @@ int SaankhyaPHYAndroid::processThread()
     {
         //_SAANKHYA_PHY_ANDROID_DEBUG("atsc3NdkClientSlImpl::ProcessThread: getDataSize is: %d", CircularBufferGetDataSize(cb));
 
-        while(CircularBufferGetDataSize(this->cb) >= BUFFER_SIZE) {
+        //unique_lock<mutex> CircularBufferMutex_local(CircularBufferMutex);
+
+        while(CircularBufferGetDataSize(this->cb) >= TLV_CIRCULAR_BUFFER_MIN_PROCESS_SIZE) {
             this->processTLVFromCallback();
         }
-        usleep(10000);
+       // CircularBufferMutex_local.unlock();
+
+        usleep(33000); //pegs us at ~ 30 spinlocks/sec if no data
     }
 
     this->releasePinnedConsumerThreadAsNeeded();
@@ -1655,11 +1702,17 @@ sl_i2c_tuner_mutex_unlock:
     return 0;
 }
 
+/*
+ * NOTE: invoking spinlock thread MUST have acquired cb lock before invoking processTLVFromCallback
+ *     e.g.
+ *      unique_lock<mutex> CircularBufferMutex_local(CircularBufferMutex);
+ *      processTLVFromCallback()
+ *      CircularBufferMutex_local.unlock();
+ */
+
 void SaankhyaPHYAndroid::processTLVFromCallback()
 {
-    unique_lock<mutex> CircularBufferMutex_local(CircularBufferMutex);
-    int bytesRead = CircularBufferPop(cb, BUFFER_SIZE, (char*)&processDataCircularBufferForCallback);
-    CircularBufferMutex_local.unlock();
+    int bytesRead = CircularBufferPop(cb, TLV_CIRCULAR_BUFFER_PROCESS_BLOCK_SIZE, (char*)&processDataCircularBufferForCallback);
 
     unique_lock<mutex> atsc3_sl_tlv_block_mutex_local(atsc3_sl_tlv_block_mutex);
 
@@ -1669,8 +1722,13 @@ void SaankhyaPHYAndroid::processTLVFromCallback()
     }
 
     if(bytesRead) {
-
+        if(bytesRead < TLV_CIRCULAR_BUFFER_PROCESS_BLOCK_SIZE) {
+            _SAANKHYA_PHY_ANDROID_WARN("ERROR: atsc3NdkClientSlImpl::processTLVFromCallback - short read from CircularBufferPop, got %d bytes, but expected: %d",
+                    bytesRead,
+                    TLV_CIRCULAR_BUFFER_PROCESS_BLOCK_SIZE);
+        }
         block_Write(atsc3_sl_tlv_block, (uint8_t*)&processDataCircularBufferForCallback, bytesRead);
+        //block_Tail_Truncate(atsc3_sl_tlv_block, block_Remaining_size(atsc3_sl_tlv_block));
         block_Rewind(atsc3_sl_tlv_block);
 
         bool atsc3_sl_tlv_payload_complete = false;
@@ -1745,8 +1803,9 @@ void SaankhyaPHYAndroid::processTLVFromCallback()
         } else if(atsc3_sl_tlv_block->p_size == atsc3_sl_tlv_block->i_pos) {
             //clear out our tlv block as we are the "exact" size of our last alp packet
 
+            //jjustman-2020-10-30 - TODO: this can be optimized out without a re-alloc
             block_Destroy(&atsc3_sl_tlv_block);
-            atsc3_sl_tlv_block = block_Alloc(BUFFER_SIZE);
+            atsc3_sl_tlv_block = block_Alloc(TLV_CIRCULAR_BUFFER_PROCESS_BLOCK_SIZE);
         } else {
             _SAANKHYA_PHY_ANDROID_DEBUG("atsc3_sl_tlv_block: positioning mismatch: i_pos: %d, p_size: %d - rewinding and seeking for magic packet?", atsc3_sl_tlv_block->i_pos, atsc3_sl_tlv_block->p_size);
 
@@ -1763,8 +1822,9 @@ void SaankhyaPHYAndroid::RxDataCallback(unsigned char *data, long len)
 {
     //_SAANKHYA_PHY_ANDROID_DEBUG("atsc3NdkClientSlImpl::RxDataCallback: pushing data: %p, len: %d", data, len);
     unique_lock<mutex> CircularBufferMutex_local(CircularBufferMutex);
-
-    CircularBufferPush(SaankhyaPHYAndroid::cb, (char *)data, len);
+    if(SaankhyaPHYAndroid::cb) {
+        CircularBufferPush(SaankhyaPHYAndroid::cb, (char *) data, len);
+    }
     CircularBufferMutex_local.unlock();
 }
 
@@ -1775,7 +1835,7 @@ void SaankhyaPHYAndroid::NotifyPlpSelectionChangeCallback(vector<uint8_t> plps, 
 void SaankhyaPHYAndroid::allocate_atsc3_sl_tlv_block() {
     unique_lock<mutex> atsc3_sl_tlv_block_mutex_local(atsc3_sl_tlv_block_mutex);
     if(!atsc3_sl_tlv_block) {
-        atsc3_sl_tlv_block = block_Alloc(BUFFER_SIZE);
+        atsc3_sl_tlv_block = block_Alloc(TLV_CIRCULAR_BUFFER_PROCESS_BLOCK_SIZE);
     }
     atsc3_sl_tlv_block_mutex_local.unlock();
 }
