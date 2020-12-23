@@ -1,2 +1,2 @@
 rootProject.name = "libatsc3 library"
-include ':atsc3_core', ':atsc3_bridge', ':atsc3_phy_virtual', ':atsc3_phy_lowasis', ':atsc3_phy_saankhya'
+include ':atsc3_core', ':atsc3_bridge', ':atsc3_bridge_media_mmt', ':atsc3_phy_virtual', ':atsc3_phy_lowasis', ':atsc3_phy_saankhya'
