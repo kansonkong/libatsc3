@@ -57,10 +57,6 @@ public:
 
     void set_plp_settings(jint *a_plp_ids, jsize sa_plp_size);
 
-    void atsc3_onExtractedSampleDuration(uint16_t packet_id, uint32_t mpu_sequence_number,
-                                         uint32_t extracted_sample_duration_us);
-
-    void atsc3_setVideoWidthHeightFromTrak(uint16_t packet_id, uint32_t width, uint32_t height);
 
     int atsc3_slt_alc_select_additional_service(int service_id);
 
@@ -127,9 +123,6 @@ public:
     jmethodID atsc3_onSlsTablePresent_ID = nullptr; //push LLS SLT table update
     jmethodID atsc3_onAeatTablePresent_ID = nullptr;
     jmethodID atsc3_onSlsHeldEmissionPresent_ID = nullptr;
-
-    jmethodID atsc3_onExtractedSampleDurationID = nullptr;
-    jmethodID atsc3_setVideoWidthHeightFromTrakID = nullptr;
 
     jmethodID atsc3_lls_sls_alc_on_route_mpd_patched_ID = nullptr;
     jmethodID atsc3_on_alc_object_status_message_ID = nullptr;

@@ -94,21 +94,21 @@ void atsc3_mmt_mpu_on_sequence_mpu_metadata_present_ndk(atsc3_mmt_mfu_context_t*
 }
 
 void atsc3_mmt_signalling_information_on_video_packet_id_with_mpu_timestamp_descriptor_ndk(atsc3_mmt_mfu_context_t* atsc3_mmt_mfu_context, uint16_t video_packet_id, uint32_t mpu_sequence_number, uint64_t mpu_presentation_time_ntp64, uint32_t mpu_presentation_time_seconds, uint32_t mpu_presentation_time_microseconds) {
-    _ATSC3_MMT_MFU_CONTEXT_CALLBACKS_DEFAULT_JNI_INFO("atsc3_mmt_signalling_information_on_video_packet_id_with_mpu_timestamp_descriptor_ndk: packet_id: %d, asset_type: %.4s, mp_table_asset_row: %p",
+    _ATSC3_MMT_MFU_CONTEXT_CALLBACKS_DEFAULT_JNI_DEBUG("atsc3_mmt_signalling_information_on_video_packet_id_with_mpu_timestamp_descriptor_ndk: packet_id: %d, asset_type: %.4s, mp_table_asset_row: %p",
                 video_packet_id, atsc3_mmt_mfu_context->mmtp_packet_id_packets_container->asset_type, atsc3_mmt_mfu_context->mmtp_packet_id_packets_container->mp_table_asset_row);
 
     Atsc3NdkMediaMMTBridge_ptr->atsc3_signallingContext_notify_video_packet_id_and_mpu_timestamp_descriptor(video_packet_id, mpu_sequence_number, mpu_presentation_time_ntp64, mpu_presentation_time_seconds, mpu_presentation_time_microseconds);
 }
 
 void atsc3_mmt_signalling_information_on_audio_packet_id_with_mpu_timestamp_descriptor_ndk(atsc3_mmt_mfu_context_t* atsc3_mmt_mfu_context, uint16_t audio_packet_id, uint32_t mpu_sequence_number, uint64_t mpu_presentation_time_ntp64, uint32_t mpu_presentation_time_seconds, uint32_t mpu_presentation_time_microseconds) {
-    _ATSC3_MMT_MFU_CONTEXT_CALLBACKS_DEFAULT_JNI_INFO("atsc3_mmt_signalling_information_on_audio_packet_id_with_mpu_timestamp_descriptor_ndk: packet_id: %d, asset_type: %.4s, mp_table_asset_row: %p",
+    _ATSC3_MMT_MFU_CONTEXT_CALLBACKS_DEFAULT_JNI_DEBUG("atsc3_mmt_signalling_information_on_audio_packet_id_with_mpu_timestamp_descriptor_ndk: packet_id: %d, asset_type: %.4s, mp_table_asset_row: %p",
                                                       audio_packet_id, atsc3_mmt_mfu_context->mmtp_packet_id_packets_container->asset_type, atsc3_mmt_mfu_context->mmtp_packet_id_packets_container->mp_table_asset_row);
 
     Atsc3NdkMediaMMTBridge_ptr->atsc3_signallingContext_notify_audio_packet_id_and_mpu_timestamp_descriptor(audio_packet_id, mpu_sequence_number, mpu_presentation_time_ntp64, mpu_presentation_time_seconds, mpu_presentation_time_microseconds);
 }
 
 void atsc3_mmt_signalling_information_on_stpp_packet_id_with_mpu_timestamp_descriptor_ndk(atsc3_mmt_mfu_context_t* atsc3_mmt_mfu_context, uint16_t stpp_packet_id, uint32_t mpu_sequence_number, uint64_t mpu_presentation_time_ntp64, uint32_t mpu_presentation_time_seconds, uint32_t mpu_presentation_time_microseconds) {
-    _ATSC3_MMT_MFU_CONTEXT_CALLBACKS_DEFAULT_JNI_INFO("atsc3_mmt_signalling_information_on_stpp_packet_id_with_mpu_timestamp_descriptor_ndk: packet_id: %d, asset_type: %.4s, mp_table_asset_row: %p",
+    _ATSC3_MMT_MFU_CONTEXT_CALLBACKS_DEFAULT_JNI_DEBUG("atsc3_mmt_signalling_information_on_stpp_packet_id_with_mpu_timestamp_descriptor_ndk: packet_id: %d, asset_type: %.4s, mp_table_asset_row: %p",
                                                       stpp_packet_id, atsc3_mmt_mfu_context->mmtp_packet_id_packets_container->asset_type, atsc3_mmt_mfu_context->mmtp_packet_id_packets_container->mp_table_asset_row);
 
     Atsc3NdkMediaMMTBridge_ptr->atsc3_signallingContext_notify_stpp_packet_id_and_mpu_timestamp_descriptor(stpp_packet_id, mpu_sequence_number, mpu_presentation_time_ntp64, mpu_presentation_time_seconds, mpu_presentation_time_microseconds);
