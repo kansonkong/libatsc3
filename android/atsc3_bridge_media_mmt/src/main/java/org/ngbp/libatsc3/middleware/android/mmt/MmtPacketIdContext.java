@@ -105,7 +105,7 @@ public class MmtPacketIdContext {
         }
 
         public Long last_computedPresentationTimestampUs = null;
-        public int extracted_sample_duration_us = 0;
+        public long extracted_sample_duration_us = 0;
 
         public long last_mpu_sequence_number = 0;
         public int last_mfu_sample_number = 0;

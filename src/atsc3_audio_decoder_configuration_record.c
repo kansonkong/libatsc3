@@ -5,7 +5,7 @@
 #include "atsc3_audio_decoder_configuration_record.h"
 
 int _ATSC3_AUDIO_DECODER_CONFIGURATION_RECORD_INFO_ENABLED = 1;
-int _ATSC3_AUDIO_DECODER_CONFIGURATION_RECORD_DEBUG_ENABLED = 1;
+int _ATSC3_AUDIO_DECODER_CONFIGURATION_RECORD_DEBUG_ENABLED = 0;
 int _ATSC3_AUDIO_DECODER_CONFIGURATION_RECORD_TRACE_ENABLED = 0;
 
 atsc3_audio_decoder_configuration_record_t* atsc3_audio_decoder_configuration_record_new() {
