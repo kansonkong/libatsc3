@@ -74,7 +74,7 @@ public class Atsc3NdkMediaMMTBridge extends Atsc3NdkMediaMMTBridgeStaticJniLoade
     }
 
     public int atsc3_signallingContext_notify_audio_packet_id_and_mpu_timestamp_descriptor(int audio_packet_id, long mpu_sequence_number, long mpu_presentation_time_ntp64, long mpu_presentation_time_seconds, int mpu_presentation_time_microseconds) {
-        MmtPacketIdContext.audio_packet_id = audio_packet_id;
+        MmtPacketIdContext.audio_packet_id = 200; //jjustman-2020-12-22 - TODO - fix meaudio_packet_id;
         MmtPacketIdContext.audio_packet_signalling_information.mpu_sequence_number = mpu_sequence_number;
         MmtPacketIdContext.audio_packet_signalling_information.mpu_presentation_time_ntp64 = mpu_presentation_time_ntp64;
         MmtPacketIdContext.audio_packet_signalling_information.mpu_presentation_time_seconds = mpu_presentation_time_seconds;
@@ -93,7 +93,7 @@ public class Atsc3NdkMediaMMTBridge extends Atsc3NdkMediaMMTBridgeStaticJniLoade
         return 0;
     }
 
-    public int atsc3_onExtractedSampleDuration(int packet_id, long mpu_sequence_number, int extracted_sample_duration_us) {
+    public int atsc3_onExtractedSampleDuration(int packet_id, long mpu_sequence_number, long extracted_sample_duration_us) {
         //jjustman-2020-08-19 - audio duration work-around for ac-4
         if (MmtPacketIdContext.audio_packet_id == packet_id && extracted_sample_duration_us <= 0) {
             extracted_sample_duration_us = MmtPacketIdContext.video_packet_statistics.extracted_sample_duration_us;

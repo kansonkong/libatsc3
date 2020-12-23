@@ -362,14 +362,15 @@ void Atsc3NdkMediaMMTBridge::atsc3_signallingContext_notify_stpp_packet_id_and_m
 //MFU metadata for sample duration
 void Atsc3NdkMediaMMTBridge::atsc3_onExtractedSampleDuration(uint16_t packet_id, uint32_t mpu_sequence_number, uint32_t extracted_sample_duration_us) {
     this->pinConsumerThreadAsNeeded(); //jjustman-2020-12-17 - hack
-    if (!Atsc3NdkMediaMMTBridge::GetBridgeConsumerJniEnv()) {
-        _NDK_MEDIA_MMT_BRIDGE_ERROR("ats3_onMfuPacket: Atsc3NdkMediaMMTBridge::GetBridgeConsumerJniEnv() is NULL!");
+
+    Atsc3JniEnv* localJniEnv = Atsc3NdkMediaMMTBridge::GetBridgeConsumerJniEnv();
+
+    if (!localJniEnv) {
+        _NDK_MEDIA_MMT_BRIDGE_ERROR("ats3_onMfuPacket: Atsc3NdkMediaMMTBridge::atsc3_onExtractedSampleDuration: localJniEnv is NULL!");
         return;
     }
-     Atsc3NdkMediaMMTBridge::GetBridgeConsumerJniEnv()->Get()->CallIntMethod(jni_instance_globalRef, atsc3_onExtractedSampleDurationID,
-                                                       packet_id,
-                                                       mpu_sequence_number,
-                                                       extracted_sample_duration_us);
+
+    localJniEnv->Get()->CallIntMethod(jni_instance_globalRef, atsc3_onExtractedSampleDurationID, (int32_t)packet_id, (int64_t)mpu_sequence_number, (int64_t)extracted_sample_duration_us);
 }
 
 
@@ -387,7 +388,6 @@ void Atsc3NdkMediaMMTBridge::atsc3_setVideoWidthHeightFromTrak(uint16_t packet_i
 void Atsc3NdkMediaMMTBridge::atsc3_onMfuPacket(uint16_t packet_id, uint32_t mpu_sequence_number, uint32_t sample_number, uint8_t* buffer, uint32_t bufferLen, uint64_t presentationUs, uint32_t mfu_fragment_count_rebuilt)
 {this->pinConsumerThreadAsNeeded(); //jjustman-2020-12-17 - hack
     Atsc3JniEnv* localJniEnv = Atsc3NdkMediaMMTBridge::GetBridgeConsumerJniEnv();
-    JNIEnv* e = localJniEnv->Get();
 
     if (!localJniEnv) {
         _NDK_MEDIA_MMT_BRIDGE_ERROR("ats3_onMfuPacket: Atsc3NdkMediaMMTBridge::GetBridgeConsumerJniEnv() is NULL!");
@@ -615,7 +615,7 @@ Java_org_ngbp_libatsc3_middleware_Atsc3NdkMediaMMTBridge_init(JNIEnv *env, jobje
 
     //Fragment Metadata callbacks
     //atsc3_onExtractedSampleDurationID
-    mediaMMTBridge->atsc3_onExtractedSampleDurationID = env->GetMethodID(jniClassReference, "atsc3_onExtractedSampleDuration", "(IJI)I");
+    mediaMMTBridge->atsc3_onExtractedSampleDurationID = env->GetMethodID(jniClassReference, "atsc3_onExtractedSampleDuration", "(IJJ)I");
     if (mediaMMTBridge->atsc3_onExtractedSampleDurationID == NULL) {
         _NDK_MEDIA_MMT_BRIDGE_ERROR("Atsc3NdkMediaMMTBridge_init: cannot find 'atsc3_onExtractedSampleDurationID' method id");
         return -1;
