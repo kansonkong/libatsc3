@@ -5,6 +5,7 @@
 #include <string.h>
 #include <jni.h>
 #include <thread>
+#include <exception>      // std::set_terminate
 #include <map>
 
 #include <queue>
@@ -104,8 +105,8 @@ private:
     //internal buffering for AT3DRV_HandleRxData
 
     queue<atsc3_lowasis_phy_android_rxdata_t*>    lowasis_phy_rx_data_buffer_queue;
-    mutex                                   lowasis_phy_rx_data_buffer_queue_mutex;
-    condition_variable                      lowasis_phy_rx_data_buffer_condition;
+    mutex                                         lowasis_phy_rx_data_buffer_queue_mutex;
+    condition_variable                            lowasis_phy_rx_data_buffer_condition;
 
     //LowaSIS api specific methods
 
@@ -117,7 +118,7 @@ private:
 
     uint32_t s_ulLastTickPrint;
     uint64_t s_ullTotalBytes = 0;
-    uint64_t s_ullTotalPkts;
+    uint64_t s_ullTotalPkts = 0;
     unsigned s_uTotalLmts = 0;
     std::map<std::string, unsigned> s_mapIpPort;
     int s_nPrevLmtVer = -1;

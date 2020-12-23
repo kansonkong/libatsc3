@@ -22,10 +22,23 @@ atsc3_lowasis_phy_android_rxdata_t* atsc3_lowasis_phy_android_rxdata_duplicate_f
 
         S_AT3DRV_RXDINFO_LMT* to_update_lmt_info = (S_AT3DRV_RXDINFO_LMT*)atsc3_lowasis_phy_android_rxdata->pInfo;
         to_update_lmt_info->lmt = (S_AT3_LMT*)calloc(1, sizeof(S_AT3_LMT));
-        to_update_lmt_info->lmt->num_mc = s_rx_data_lmt_info->lmt->num_mc;
-        to_update_lmt_info->lmt->mc = (S_AT3_LMT::S_LMT_MC *) calloc(to_update_lmt_info->lmt->num_mc, sizeof(S_AT3_LMT::S_LMT_MC));
-        for(int i=0; i < s_rx_data_lmt_info->lmt->num_mc; i++) {
-            memcpy(&to_update_lmt_info->lmt->mc[i], &s_rx_data_lmt_info->lmt->mc[i], sizeof(S_AT3_LMT::S_LMT_MC));
+        /*
+         * jjustman-2020-09-30: testing with 8k fft+ (16qam and 64qam) plps, and 16k fft + 256qam results in occassional in which s_rx_data_lmt_info->lmt may be null
+         *
+            2020-09-30 15:35:54.035 9541-9575/org.ngbp.libatsc3 E/cutl: _CheckOverrun: [31;1m!! bitBuffer Overrun! required bits 16, bitOffset 111:0, buf 111, 0x9200006ce6e06007[0m
+            2020-09-30 15:35:54.036 9541-9575/org.ngbp.libatsc3 E/alp_: Parse: !! bitbuf overrun, at loop <plp 2/3: mc 3/116>, overrun bits 40
+            2020-09-30 15:35:54.036 9541-9575/org.ngbp.libatsc3 E/dev_: OnRxLmt: !! parselmt err
+         */
+        if(s_rx_data_lmt_info->lmt) {
+            to_update_lmt_info->lmt->num_mc = s_rx_data_lmt_info->lmt->num_mc;
+            to_update_lmt_info->lmt->mc = (S_AT3_LMT::S_LMT_MC*) calloc(to_update_lmt_info->lmt->num_mc, sizeof(S_AT3_LMT::S_LMT_MC));
+            for (int i = 0; i < s_rx_data_lmt_info->lmt->num_mc; i++) {
+                memcpy(&to_update_lmt_info->lmt->mc[i], &s_rx_data_lmt_info->lmt->mc[i], sizeof(S_AT3_LMT::S_LMT_MC));
+            }
+        } else {
+            _LOWASIS_PHY_RXDATA_ANDROID_ERROR("atsc3_lowasis_phy_android_rxdata_duplicate_from_s_rx_data: s_rx_data_lmt_info->lmt is NULL, discarding return data!");
+            atsc3_lowasis_phy_android_rxdata_free(&atsc3_lowasis_phy_android_rxdata);
+            goto error;
         }
 
     } else if(s_rx_data->eType == eAT3_RXDTYPE_ALP) {
@@ -39,6 +52,9 @@ atsc3_lowasis_phy_android_rxdata_t* atsc3_lowasis_phy_android_rxdata_duplicate_f
     atsc3_lowasis_phy_android_rxdata->ulTick = AT3_GetMsTime();
 
     return atsc3_lowasis_phy_android_rxdata;
+
+error:
+    return NULL;
 }
 
 void atsc3_lowasis_phy_android_rxdata_free(atsc3_lowasis_phy_android_rxdata_t** atsc3_lowasis_phy_android_rxdata_p) {

@@ -17,6 +17,7 @@
 #define ATSC3_ALC_UTILS_H_
 
 #include "atsc3_utils.h"
+#include "atsc3_gzip.h"
 #include "atsc3_alc_rx.h"
 #include "atsc3_player_ffplay.h"
 #include "atsc3_lls_types.h"
@@ -59,6 +60,8 @@ atsc3_fdt_file_t* atsc3_alc_RS_LS_get_matching_toi_file_instance(atsc3_route_s_t
 
 
 char* alc_packet_dump_to_object_get_s_tsid_filename(udp_flow_t* udp_flow, atsc3_alc_packet_t* alc_packet, lls_sls_alc_monitor_t* lls_sls_alc_monitor);
+char* alc_packet_dump_to_object_get_s_tsid_filename_with_atsc3_fdt_file_p(udp_flow_t* udp_flow, atsc3_alc_packet_t* alc_packet, lls_sls_alc_monitor_t* lls_sls_alc_monitor, atsc3_fdt_file_t** atsc3_fdt_file_p);
+
 char* alc_packet_dump_to_object_get_temporary_filename(udp_flow_t* udp_flow, atsc3_alc_packet_t* alc_packet);
 
 FILE* atsc3_alc_object_open(char* file_name);
@@ -69,6 +72,7 @@ FILE* alc_object_open_or_pre_allocate(char* file_name, atsc3_alc_packet_t* alc_p
 
 void alc_recon_file_ptr_set_tsi_toi(FILE* file_ptr, uint32_t tsi, uint32_t toi_init);
 char* alc_packet_dump_to_object_get_filename_tsi_toi(udp_flow_t* udp_flow, uint32_t tsi, uint32_t toi);
+char* alc_packet_dump_to_object_get_filename_tsi_toi_unsigned(udp_flow_t* udp_flow, uint32_t tsi, uint32_t toi);
 
 block_t* alc_get_payload_from_filename(char*);
 

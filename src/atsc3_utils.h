@@ -41,7 +41,8 @@
 #include <stdbool.h>
 #include <sys/stat.h>
 
-
+#include <libgen.h>
+#include <limits.h>
 
 #ifndef ATSC3_UTILS_H_
 #define ATSC3_UTILS_H_
@@ -174,18 +175,20 @@ uint32_t block_Len(block_t* src);
 bool block_Tail_Truncate(block_t* src, uint32_t len);
 
 //bit-unpacking functions for parsing A/322 variable length L1(b/d) structs
-uint8_t block_Read_uint8_bitlen(block_t* src, int bitlen);
+uint8_t  block_Read_uint8_bitlen(block_t* src, int bitlen);
 uint16_t block_Read_uint16_bitlen(block_t* src, int bitlen);
 uint32_t block_Read_uint32_bitlen(block_t* src, int bitlen);
 uint64_t block_Read_uint64_bitlen(block_t* src, int bitlen);
 
 //read from network to host aligned short/long/double long
+uint8_t  block_Read_uint8(block_t* src);
 uint16_t block_Read_uint16_ntohs(block_t* src);
 uint32_t block_Read_uint32_ntohl(block_t* src);
 uint64_t block_Read_uint64_ntohul(block_t* src);
 
 //read from filesystem into block_t
-block_t* block_Read_from_filename(char* file_name);
+block_t* block_Read_from_filename(const char* file_name);
+int	block_Write_to_filename(block_t* src, const char* file_name);
 
 
 //#define block_RefZero(a) ({ a->_refcnt = 0; })
@@ -197,7 +200,7 @@ void _block_Refcount(block_t* a);
 void block_Destroy(block_t** a); //hard destroy overriding GC
     
 //alloc and copy - note limited to 16k
-char* strlcopy(char*);
+char* strlcopy(const char*);
 char *_ltrim(char *str);
 char* _rtrim(char *str);
 char* __trim(char *str);

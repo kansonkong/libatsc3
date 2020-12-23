@@ -1,14 +1,17 @@
 # libastc3: phy_saankhya module
 # Copyright (C) 2020, OneMedia 3.0
 # jjustman@ngbp.org - 2020-08-19
-# jjustman-2020-08-19 - disable LOCAL_ARM_MODE := arm
 
-CHDIR_SHELL := $(SHELL)
-define chdir
-   $(eval _D=$(firstword $(1) $(@D)))
-   $(info $(MAKE): cd $(_D)) $(eval SHELL = cd $(_D); $(CHDIR_SHELL))
-endef
+# jjustman-2020-09-08 - Build Tagrget Sources/Linkage: SLAPI_BUILD_TARGET
+#
+# Set to markone to use for MarkONE handset
+#			LIB_SL_API_CUST and INCLUDE_SL_API_CUST and no .o linkage for firmware
+#
+# or set to kailash to use for KAILASH dongle
+# 			LIB_SL_API_REF and INCLUDE_SL_API_REF and include linkage for firmware
 
+SLAPI_BUILD_TARGET = markone
+# or kailash
 
 MY_LOCAL_PATH := $(call my-dir)
 LOCAL_PATH := $(call my-dir)
@@ -94,6 +97,7 @@ include $(PREBUILT_SHARED_LIBRARY)
 # $(LOCAL_PATH)
 LOCAL_PATH := $(MY_LOCAL_PATH)
 include $(CLEAR_VARS)
+
 LOCAL_MODULE :=  P3_FW_BUILD
 $(LOCAL_MODULE): P3_FW_BUILD_TARGET
 
@@ -114,13 +118,16 @@ $(LOCAL_MODULE): P3_FW_BUILD_TARGET
 #		0000000000000000         .data  00000000 _binary___p3_firmware_KAILASH_DONGLE_img_start
 #		jjustman@sdg-komo-mac188 fx3s %
 
+# use release FX3 firmware P3_Firmware_v3.2.2(KAILASH_DONGLE).img
+# $(shell cp $(LOCAL_PATH)/../../saankhyalabs-slsdk/slplf/src/slref/fx3s/bin/P3_Firmware_v3.1_KAILASH_DONGLE.img $(LOCAL_PATH)/prebuilt/firmware/fx3s/p3_firmware_KAILASH_DONGLE.img)
+# 	$(shell cp $(LOCAL_PATH)/../../saankhyalabs-slsdk/slplf/src/slref/fx3s/bin/P3_Firmware_v3.2.2\(KAILASH_DONGLE\).img $(LOCAL_PATH)/prebuilt/firmware/fx3s/p3_firmware_KAILASH_DONGLE.img)
+# 	$(info TARGET_LD is $(TARGET_LD))
+#	$(info PATH for prebuilt fx3 is $(LOCAL_PATH)/prebuilt/firmware/fx3s/)
 P3_FW_BUILD_TARGET:
-#	$(info TARGET_LD is $(TARGET_LD))
 	$(shell mkdir -p "$(LOCAL_PATH)/prebuilt/firmware/fx3s/")
 	$(shell cp $(LOCAL_PATH)/../../saankhyalabs-slsdk/slplf/src/slref/fx3s/bin/P3_Firmware_v3.1_KAILASH_DONGLE.img $(LOCAL_PATH)/prebuilt/firmware/fx3s/p3_firmware_KAILASH_DONGLE.img)
 	$(shell cd $(LOCAL_PATH)/prebuilt/firmware/fx3s/ && $(TARGET_LD) -r -b binary ./p3_firmware_KAILASH_DONGLE.img -o ./p3_firmware_KAILASH_DONGLE.o)
 include $(BUILD_SHARED_LIBRARY)
-
 
 # ---------------------------
 # SL HEX payload binary resource object linkage
@@ -174,30 +181,28 @@ include $(CLEAR_VARS)
 
 LOCAL_MODULE := atsc3_phy_saankhya
 
+# prefab-fixup.. for ndk phy bridge/application bridge
+LOCAL_C_INCLUDES += \
+	$(LOCAL_PATH)/../atsc3_bridge/src/jni
+
 ##for libatsc3 application and phy interface includes
 LOCAL_C_INCLUDES += \
 	$(LOCAL_PATH)/../../src \
-	$(LOCAL_PATH)/../../src/phy
-
-
-# prefab-fixup.. for ndk phy bridge/application bridge
-LOCAL_C_INCLUDES += $(LOCAL_PATH)/../atsc3_bridge/src/jni
+	$(LOCAL_PATH)/../../src/phy \
+	$(LOCAL_PATH)/src/jni \
+	$(LOCAL_PATH)/src/jni/utils/inc
 
 LIB_PHY_SAANKHYACPP := \
     $(wildcard $(LOCAL_PATH)/src/jni/*.cpp) \
 	$(wildcard $(LOCAL_PATH)/src/jni/saankhya/*.cpp) \
     $(LOCAL_PATH)/src/jni/utils/CircularBuffer.c
 
-
-LIBSLAPI := \
+LIB_SL_API := \
 	$(LOCAL_PATH)/../../saankhyalabs-slsdk/slapi/src/sl_config.c \
     $(wildcard $(LOCAL_PATH)/../../saankhyalabs-slsdk/slapi/src/demod/*.c) \
     $(wildcard $(LOCAL_PATH)/../../saankhyalabs-slsdk/slapi/src/tuner/*.c) \
     $(wildcard $(LOCAL_PATH)/../../saankhyalabs-slsdk/slapi/src/tuner/nxp/*.c) \
-    $(wildcard $(LOCAL_PATH)/../../saankhyalabs-slsdk/slapi/src/tuner/situne/*.c) \
-    $(wildcard $(LOCAL_PATH)/../../saankhyalabs-slsdk/slplf/src/slref/*.c) \
-    $(wildcard $(LOCAL_PATH)/../../saankhyalabs-slsdk/slplf/src/slref/fx3s/*.c) \
-    $(wildcard $(LOCAL_PATH)/../../saankhyalabs-slsdk/slplf/src/slref/fx3s/*.cpp)
+    $(wildcard $(LOCAL_PATH)/../../saankhyalabs-slsdk/slapi/src/tuner/situne/*.c)
 
 LOCAL_C_INCLUDES += \
 	$(LOCAL_PATH)/../../saankhyalabs-slsdk/slapi/inc \
@@ -205,55 +210,106 @@ LOCAL_C_INCLUDES += \
 	$(LOCAL_PATH)/../../saankhyalabs-slsdk/slapi/src/tuner/nxp \
 	$(LOCAL_PATH)/../../saankhyalabs-slsdk/slapi/src/tuner/situne \
 	$(LOCAL_PATH)/../../saankhyalabs-slsdk/slplf/inc \
-	$(LOCAL_PATH)/../../saankhyalabs-slsdk/slplf/src/slref/fx3s \
 	$(LOCAL_PATH)/../../libusb_android/libusb
 
-# LOCAL_C_INCLUDES += $(LOCAL_PATH)/src/main/saankhyalabs-slsdk/usom660/include
-# LOCAL_C_INCLUDES += $(LOCAL_PATH)/src/main/CyUSB3_USB_Suite_Source/CyUSB3_Source/inc
+# jjustman-2020-09-08 - for FX3-USB based I/F
+INCLUDE_SL_API_REF := \
+	$(LOCAL_PATH)/../../saankhyalabs-slsdk/slplf/src/slref/fx3s
 
-LOCAL_SRC_FILES += \
-    $(LIBSLAPI:$(LOCAL_PATH)/%=%) \
-    $(LIB_PHY_SAANKHYACPP:$(LOCAL_PATH)/%=%)
+LIB_SL_API_REF := \
+    $(wildcard $(LOCAL_PATH)/../../saankhyalabs-slsdk/slplf/src/slref/*.c) \
+    $(wildcard $(LOCAL_PATH)/../../saankhyalabs-slsdk/slplf/src/slref/fx3s/*.c) \
+    $(wildcard $(LOCAL_PATH)/../../saankhyalabs-slsdk/slplf/src/slref/fx3s/*.cpp)
 
-LOCAL_C_INCLUDES += \
-	$(LOCAL_PATH)/src/jni \
-	$(LOCAL_PATH)/src/jni/utils/inc
+# jjustman-2020-09-08 - for SDIO / SL_REF for BORQS
+INCLUDE_SL_API_CUST := \
+	$(LOCAL_PATH)/../../saankhyalabs-slsdk/slplf/src/slcust \
+	$(LOCAL_PATH)/../../saankhyalabs-slsdk/slplf/src/slcust/inc
 
+LIB_SL_API_CUST := \
+    $(wildcard $(LOCAL_PATH)/../../saankhyalabs-slsdk/slplf/src/slcust/*.c)
 
 LOCAL_CFLAGS += -g -O0 -fpack-struct=8 \
-                -D__DISABLE_LIBPCAP__ -D__DISABLE_ISOBMFF_LINKAGE__ -D__DISABLE_NCURSES__ \
-                -D__MOCK_PCAP_REPLAY__ -D__LIBATSC3_ANDROID__ \
-                -D__ANDROID__ -Dlinux  \
-
-
-
-# _binary_prebuilt_fw_atsc3_iccm_hex_... use objdump -t p3_firmware_KAILASH_DONGLE.o for investigation
-#				prebuilt/fw/fx3s/p3_firmware_KAILASH_DONGLE.o \
-#				prebuilt/fw/atsc3/iccm_hex.o \
-#				prebuilt/fw/atsc3/dccm_hex.o \
-#				prebuilt/fw/atsc3/atsc3_hex.o
-#
-
-
-#jjustman-2020-08-19 - fixup for invalid soname in .so
-
-LOCAL_LDLIBS += -ldl -lc++_shared -llog -landroid -lz \
-				-latsc3_core -latsc3_bridge \
-				$(LOCAL_PATH)/prebuilt/firmware/fx3s/p3_firmware_KAILASH_DONGLE.o \
-				$(LOCAL_PATH)/prebuilt/firmware/atsc3_aa/iccm_hex.o \
-				$(LOCAL_PATH)/prebuilt/firmware/atsc3_aa/dccm_hex.o \
-				$(LOCAL_PATH)/prebuilt/firmware/atsc3_aa/atsc3_hex.o
+	-D__DISABLE_LIBPCAP__ -D__DISABLE_ISOBMFF_LINKAGE__ -D__DISABLE_NCURSES__ \
+	-D__MOCK_PCAP_REPLAY__ -D__LIBATSC3_ANDROID__ \
+	-D__ANDROID__ -Dlinux  \
+	-DSI_TUNER
 
 LOCAL_LDFLAGS += -fPIE -fPIC \
-				-L $(LOCAL_PATH)/../atsc3_bridge/build/intermediates/ndkBuild/debug/obj/local/$(TARGET_ARCH_ABI)/ \
-				-L $(LOCAL_PATH)/../atsc3_core/build/intermediates/ndkBuild/debug/obj/local/$(TARGET_ARCH_ABI)/
-
-LOCAL_SHARED_LIBRARIES := P3_FW_BUILD SL_SDR_ICCM_BUILD SL_SDR_DCCM_BUILD SL_SDR_ATSC3_BUILD \
-							libusb_android \
-							libSiTune_Tuner_Lib-prebuilt \
-							libNXP_Tuner_Lib-prebuilt
+	-L $(LOCAL_PATH)/../atsc3_bridge/build/intermediates/ndkBuild/debug/obj/local/$(TARGET_ARCH_ABI)/ \
+	-L $(LOCAL_PATH)/../atsc3_core/build/intermediates/ndkBuild/debug/obj/local/$(TARGET_ARCH_ABI)/
 
 LOCAL_PREBUILDS := atsc3_core atsc3_bridge
+
+
+# jjustman-2020-09-08 - markone - using LIB_SL_API_CUST and INCLUDE_SL_API_CUST
+ifeq ($(SLAPI_BUILD_TARGET), markone)
+
+$(info Building MarkONE support)
+
+	LOCAL_C_INCLUDES += \
+		$(INCLUDE_SL_API_CUST)
+
+	LOCAL_SRC_FILES += \
+		$(LIB_SL_API:$(LOCAL_PATH)/%=%) \
+		$(LIB_SL_API_CUST:$(LOCAL_PATH)/%=%) \
+		$(LIB_PHY_SAANKHYACPP:$(LOCAL_PATH)/%=%)
+
+	LOCAL_CFLAGS += -DSL_MARKONE -DSL_USE_LINKED_FIRMWARE_EXTERN
+
+	LOCAL_LDLIBS += -ldl -lc++_shared -llog -landroid -lz \
+		-latsc3_core -latsc3_bridge \
+		$(LOCAL_PATH)/prebuilt/firmware/atsc3_aa/iccm_hex.o \
+		$(LOCAL_PATH)/prebuilt/firmware/atsc3_aa/dccm_hex.o \
+		$(LOCAL_PATH)/prebuilt/firmware/atsc3_aa/atsc3_hex.o
+
+	LOCAL_SHARED_LIBRARIES := \
+		SL_SDR_ICCM_BUILD SL_SDR_DCCM_BUILD SL_SDR_ATSC3_BUILD \
+		libusb_android \
+		libSiTune_Tuner_Lib-prebuilt \
+		libNXP_Tuner_Lib-prebuilt
+endif
+
+# jjustman-2020-09-08 - using kailash INCLUDE_SL_API_REF and INCLUDE_SL_API_REF
+
+ifeq ($(SLAPI_BUILD_TARGET), kailash)
+
+$(info Building KAILASH support)
+
+	# _binary_prebuilt_fw_atsc3_iccm_hex_... use objdump -t p3_firmware_KAILASH_DONGLE.o for investigation
+	#				prebuilt/fw/fx3s/p3_firmware_KAILASH_DONGLE.o \
+	#				prebuilt/fw/atsc3/iccm_hex.o \
+	#				prebuilt/fw/atsc3/dccm_hex.o \
+	#				prebuilt/fw/atsc3/atsc3_hex.o
+	#
+
+	#jjustman-2020-08-19 - fixup for invalid soname in .so
+
+	LOCAL_C_INCLUDES += \
+		$(INCLUDE_SL_API_REF)
+
+	LOCAL_SRC_FILES += \
+		$(LIB_SL_API:$(LOCAL_PATH)/%=%) \
+		$(LIB_SL_API_REF:$(LOCAL_PATH)/%=%) \
+		$(LIB_PHY_SAANKHYACPP:$(LOCAL_PATH)/%=%)
+
+	LOCAL_CFLAGS += -DSL_KAILASH -DSL_USE_LINKED_FIRMWARE_EXTERN
+
+	LOCAL_LDLIBS += -ldl -lc++_shared -llog -landroid -lz \
+		-latsc3_core -latsc3_bridge \
+		$(LOCAL_PATH)/prebuilt/firmware/fx3s/p3_firmware_KAILASH_DONGLE.o \
+		$(LOCAL_PATH)/prebuilt/firmware/atsc3_aa/iccm_hex.o \
+		$(LOCAL_PATH)/prebuilt/firmware/atsc3_aa/dccm_hex.o \
+		$(LOCAL_PATH)/prebuilt/firmware/atsc3_aa/atsc3_hex.o
+
+	LOCAL_SHARED_LIBRARIES := \
+		P3_FW_BUILD \
+		SL_SDR_ICCM_BUILD SL_SDR_DCCM_BUILD SL_SDR_ATSC3_BUILD \
+		libusb_android \
+		libSiTune_Tuner_Lib-prebuilt \
+		libNXP_Tuner_Lib-prebuilt
+
+endif
 
 include $(BUILD_SHARED_LIBRARY)
 

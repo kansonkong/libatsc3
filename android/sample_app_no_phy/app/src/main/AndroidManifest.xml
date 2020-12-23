@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools"
+    android:sharedUserId="android.uid.system"
     package="org.ngbp.libatsc3.sampleapp">
 
     <uses-feature android:name="android.hardware.usb.host" />
@@ -10,10 +11,9 @@
     <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" />
     <uses-permission android:name="android.permission.INTERNET" />
 
-<!--         android:hardwareAccelerated="true"
-
-        android:requestLegacyExternalStorage="true"
-
+<!--
+    from venky 2020-09-08
+        android:sharedUserId="android.uid.system"
 -->
 
     <application
@@ -26,10 +26,10 @@
         android:hardwareAccelerated="true"
         android:windowSoftInputMode="adjustNothing|stateHidden"
         android:launchMode="singleInstance"
+
+        android:debuggable="true"
+        android:extractNativeLibs="true"
         >
-<!-- jjustman-2019-11-24: extractNativeLibs may not be needed
-        android:extractNativeLibs="false"
--->
 
         <activity android:name="org.ngbp.libatsc3.sampleapp.MainActivity"
             android:configChanges="orientation|screenSize">

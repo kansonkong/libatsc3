@@ -29,10 +29,12 @@
 #define _SRT_STLTP_VIRTUAL_PHY_ALC_WRITER_INFO(...)    __LIBATSC3_TIMESTAMP_INFO(__VA_ARGS__);
 #define _SRT_STLTP_VIRTUAL_PHY_ALC_WRITER_DEBUG(...)   __LIBATSC3_TIMESTAMP_DEBUG(__VA_ARGS__);
 
+// #define __DEBUGGING_DUMP_TIMING_MANAGEMENT_AND_PREAMBLE_PACKETS 1
+
+
 uint64_t rx_udp_invocation_count = 0;
 SRTRxSTLTPVirtualPHY* srtRxSTLTPVirtualPHY = NULL;
 double srt_thread_run_start_time = 0;
-
 
 lls_slt_monitor_t* lls_slt_monitor;
 lls_sls_alc_monitor_t* lls_sls_alc_monitor;
@@ -151,11 +153,56 @@ void phy_rx_udp_packet_process_callback(uint8_t plp_num, block_t* packet) {
 	alc_process_from_udp_packet(udp_packet);
 }
 
+
+#ifdef __DEBUGGING_DUMP_TIMING_MANAGEMENT_AND_PREAMBLE_PACKETS
+
+void atsc3_stltp_timing_management_packet_collection_callback(atsc3_stltp_timing_management_packet_tv* atsc3_stltp_timing_management_packet_v) {
+	int _LAST_STLTP_PARSER_DUMP_ENABLED = _STLTP_PARSER_DUMP_ENABLED;
+	_STLTP_PARSER_DUMP_ENABLED = 1;
+
+	for(int i=0; i < atsc3_stltp_timing_management_packet_v->count; i++) {
+
+		atsc3_stltp_timing_management_packet_t* atsc3_stltp_timing_management_packet = atsc3_stltp_timing_management_packet_v->data[i];
+		atsc3_timing_management_packet_t* atsc3_timing_management_packet = atsc3_stltp_timing_management_packet->timing_management_packet;
+
+		atsc3_timing_management_packet_dump(atsc3_timing_management_packet);
+	}
+	_STLTP_PARSER_DUMP_ENABLED = _LAST_STLTP_PARSER_DUMP_ENABLED;
+
+}
+
+void atsc3_stltp_preamble_packet_collection_callback(atsc3_stltp_preamble_packet_tv* atsc3_stltp_preamble_packet_v) {
+	int _LAST_STLTP_PARSER_DUMP_ENABLED = _STLTP_PARSER_DUMP_ENABLED;
+	_STLTP_PARSER_DUMP_ENABLED = 1;
+
+	for(int i=0; i < atsc3_stltp_preamble_packet_v->count; i++) {
+
+		atsc3_stltp_preamble_packet_t* atsc3_stltp_preamble_packet = atsc3_stltp_preamble_packet_v->data[i];
+		atsc3_preamble_packet_t* atsc3_preamble_packet = atsc3_stltp_preamble_packet->preamble_packet;
+
+		atsc3_preamble_packet_dump(atsc3_preamble_packet);
+	}
+
+	_STLTP_PARSER_DUMP_ENABLED = _LAST_STLTP_PARSER_DUMP_ENABLED;
+}
+
+#endif
+
 int start_srt_rx_stltp_virtual_phy(string srt_connection_string) {
 	int res = -1;
 	srtRxSTLTPVirtualPHY = new SRTRxSTLTPVirtualPHY(srt_connection_string);
 
 	srtRxSTLTPVirtualPHY->setRxUdpPacketProcessCallback(phy_rx_udp_packet_process_callback);
+
+	//jjustman-2020-10-06 - dump T&M and Preamble packet for extra debugging
+
+#ifdef __DEBUGGING_DUMP_TIMING_MANAGEMENT_AND_PREAMBLE_PACKETS
+	atsc3_stltp_depacketizer_context_t* atsc3_stltp_depacketizer_context = srtRxSTLTPVirtualPHY->get_atsc3_stltp_depacketizer_context();
+
+	atsc3_stltp_depacketizer_context->atsc3_stltp_timing_management_packet_collection_callback = atsc3_stltp_timing_management_packet_collection_callback;
+	atsc3_stltp_depacketizer_context->atsc3_stltp_preamble_packet_collection_callback = atsc3_stltp_preamble_packet_collection_callback;
+#endif
+
 
 	res = srtRxSTLTPVirtualPHY->run();
 
@@ -182,43 +229,6 @@ void configure_lls_sls_monitor() {
 
     lls_sls_alc_monitor = lls_sls_alc_monitor_create();
     lls_slt_monitor_add_lls_sls_alc_monitor(lls_slt_monitor, lls_sls_alc_monitor);
-
-//
-//
-//
-//	atsc3_lls_slt_service_t* atsc3_lls_slt_service = atsc3_lls_slt_service_new();
-//	atsc3_lls_slt_service->service_id=31337; //hack
-//
-//	atsc3_slt_broadcast_svc_signalling_t* atsc3_slt_broadcast_svc_signalling = atsc3_slt_broadcast_svc_signalling_new();
-//	atsc3_slt_broadcast_svc_signalling->sls_destination_ip_address = dst_ip;
-//	atsc3_slt_broadcast_svc_signalling->sls_destination_udp_port =  dst_port;
-//	atsc3_slt_broadcast_svc_signalling->sls_protocol = SLS_PROTOCOL_ROUTE;
-//	atsc3_lls_slt_service_add_atsc3_slt_broadcast_svc_signalling(atsc3_lls_slt_service, atsc3_slt_broadcast_svc_signalling);
-//
-//	lls_slt_alc_session_find_or_create(lls_slt_monitor, atsc3_lls_slt_service);
-//
-//	lls_slt_service_id_t* lls_slt_service_id = lls_slt_service_id_new_from_atsc3_lls_slt_service(atsc3_lls_slt_service);
-//	lls_slt_monitor_add_lls_slt_service_id(lls_slt_monitor, lls_slt_service_id);
-//
-//	lls_sls_alc_session_t* lls_sls_alc_session = lls_slt_alc_session_find_from_service_id(lls_slt_monitor, atsc3_lls_slt_service->service_id);
-//	if(!lls_sls_alc_session) {
-//		__WARN("lls_slt_alc_session_find_from_service_id: lls_sls_alc_session is NULL!");
-//	}
-//
-//	lls_sls_alc_monitor_local->lls_alc_session = lls_sls_alc_session;
-//	lls_sls_alc_monitor_local->atsc3_lls_slt_service = atsc3_lls_slt_service;
-//	lls_sls_alc_monitor_local->lls_sls_monitor_output_buffer_mode.file_dump_enabled = true;
-//
-//
-//	__WARN("process_packet: adding lls_sls_alc_monitor: %p to lls_slt_monitor: %p, service_id: %d",
-//		   lls_sls_alc_monitor_local, lls_slt_monitor, lls_sls_alc_session->service_id);
-//
-//	lls_slt_monitor_add_lls_sls_alc_monitor(lls_slt_monitor, lls_sls_alc_monitor_local);
-//
-//	if(!lls_sls_alc_monitor) {
-//		lls_slt_monitor->lls_sls_alc_monitor = lls_sls_alc_monitor_local;
-//		lls_sls_alc_monitor =  lls_sls_alc_monitor_local;
-//	}
 
 }
 

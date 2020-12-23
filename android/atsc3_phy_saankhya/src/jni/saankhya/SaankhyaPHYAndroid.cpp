@@ -2,6 +2,33 @@
 // Created by Jason Justman on 8/19/20.
 //
 
+/*  MarkONE "workarounds" for /dev handle permissions
+
+
+ADB_IP_ADDRESS="192.168.4.57:5555"
+adb connect $ADB_IP_ADDRESS
+adb root
+adb shell
+
+adb remount
+adb push jjlibatsc3 /
+
+--->jjlibatsc3 contents:
+
+setenforce 0
+cd /dev
+chmod 777 ion
+chmod 777 i2c-3
+chmod 777 saankhya_dev
+while :
+do
+chmod 777 input/event7
+chmod 777 saankhya_sdio_drv
+sleep 1
+done
+
+ */
+
 #include "SaankhyaPHYAndroid.h"
 SaankhyaPHYAndroid* saankhyaPHYAndroid = nullptr;
 
@@ -9,7 +36,6 @@ CircularBuffer SaankhyaPHYAndroid::cb = nullptr;
 mutex SaankhyaPHYAndroid::CircularBufferMutex;
 
 mutex SaankhyaPHYAndroid::CS_global_mutex;
-
 
 SaankhyaPHYAndroid::SaankhyaPHYAndroid(JNIEnv* env, jobject jni_instance) {
     this->env = env;
@@ -33,9 +59,6 @@ SaankhyaPHYAndroid::~SaankhyaPHYAndroid() {
         atsc3_ndk_application_bridge_get_instance()->atsc3_phy_notify_plp_selection_change_clear_callback();
     }
 
-    //jjustman-2020-08-24 - do not attempt to delete producer/consumer/statusJniEnvironment here, as you will
-    //most likely get a JNI threadlocal exception
-
     if(this->atsc3_sl_tlv_block) {
         block_Destroy(&this->atsc3_sl_tlv_block);
     }
@@ -46,86 +69,6 @@ SaankhyaPHYAndroid::~SaankhyaPHYAndroid() {
 
     if(cb) {
         CircularBufferFree(cb);
-    }
-
-    if(false) {
-        /***
-         *
-         *  jjustman-2020-08-23 - TODO: fix this issue with deleting global ref?
-
-            08-24 07:30:12.812 12165 12165 F DEBUG   : *** *** *** *** *** *** *** *** *** *** *** *** *** *** *** ***
-            08-24 07:30:12.812 12165 12165 F DEBUG   : Build fingerprint: 'samsung/beyond2qlteue/beyond2q:10/QP1A.190711.020/G975U1UES4DTG1:user/release-keys'
-            08-24 07:30:12.812 12165 12165 F DEBUG   : Revision: '17'
-            08-24 07:30:12.812 12165 12165 F DEBUG   : ABI: 'arm64'
-            08-24 07:30:12.812  1320  1399 D PkgPredictorService: pkg:org.ngbp.libatsc3 activity:org.ngbp.libatsc3.sampleapp.MainActivity thisTime:-1
-            08-24 07:30:12.812 12165 12165 F DEBUG   : Timestamp: 2020-08-24 07:30:12+0900
-            08-24 07:30:12.812 12165 12165 F DEBUG   : pid: 12018, tid: 12159, name: Thread-9  >>> org.ngbp.libatsc3 <<<
-            08-24 07:30:12.812 12165 12165 F DEBUG   : uid: 10292
-            08-24 07:30:12.812 12165 12165 F DEBUG   : signal 6 (SIGABRT), code -1 (SI_QUEUE), fault addr --------
-            08-24 07:30:12.812 12165 12165 F DEBUG   : Abort message: 'JNI DETECTED ERROR IN APPLICATION: thread Thread[6,tid=12159,Native,Thread*=0x7933322800,peer=0x12f2b0e0,"Thread-9"] using JNIEnv* from thread Thread[1,tid=12018,Runnable,Thread*=0x7933326000,peer=0x72d72ef0,"main"]
-            08-24 07:30:12.812 12165 12165 F DEBUG   :     in call to DeleteGlobalRef
-            08-24 07:30:12.812 12165 12165 F DEBUG   :     from int org.ngbp.libatsc3.middleware.android.phy.SaankhyaPHYAndroid.init()'
-            08-24 07:30:12.812 12165 12165 F DEBUG   :     x0  0000000000000000  x1  0000000000002f7f  x2  0000000000000006  x3  000000789c2feec0
-            08-24 07:30:12.812 12165 12165 F DEBUG   :     x4  fefeff783099cf97  x5  fefeff783099cf97  x6  fefeff783099cf97  x7  7f7f7f7f7fffffff
-            08-24 07:30:12.812 12165 12165 F DEBUG   :     x8  00000000000000f0  x9  dbc96eeb4ea8c79c  x10 0000000000000001  x11 0000000000000000
-            08-24 07:30:12.812 12165 12165 F DEBUG   :     x12 fffffff0fffffbdf  x13 ffffffffffffffff  x14 0000000000000000  x15 ffffffffffffffff
-            08-24 07:30:12.812 12165 12165 F DEBUG   :     x16 0000007930c1d8c0  x17 0000007930bf9fe0  x18 000000783a0be000  x19 0000000000002ef2
-            08-24 07:30:12.812 12165 12165 F DEBUG   :     x20 0000000000002f7f  x21 00000000ffffffff  x22 000000783db74600  x23 00000078aceadcc5
-            08-24 07:30:12.812 12165 12165 F DEBUG   :     x24 00000078acecf8ce  x25 0000000000000001  x26 0000007932efc258  x27 00000079333a6150
-            08-24 07:30:12.812 12165 12165 F DEBUG   :     x28 00000078ad3d9338  x29 000000789c2fef60
-            08-24 07:30:12.812 12165 12165 F DEBUG   :     sp  000000789c2feea0  lr  0000007930bab27c  pc  0000007930bab2a8
-            08-24 07:30:12.891 12165 12165 F DEBUG   : backtrace:
-            08-24 07:30:12.891 12165 12165 F DEBUG   :       #00 pc 00000000000832a8  /apex/com.android.runtime/lib64/bionic/libc.so (abort+160) (BuildId: b0750023d0cf44584c064da02400c159)
-            08-24 07:30:12.891 12165 12165 F DEBUG   :       #01 pc 00000000004b99bc  /apex/com.android.runtime/lib64/libart.so (art::Runtime::Abort(char const*)+2388) (BuildId: 9f61584f79f2db8d8a1869001bfb944e)
-            08-24 07:30:12.891 12165 12165 F DEBUG   :       #02 pc 000000000000b458  /system/lib64/libbase.so (android::base::LogMessage::~LogMessage()+580) (BuildId: 36cd125456a5320dd3dcb8cfbd889a1a)
-            08-24 07:30:12.891 12165 12165 F DEBUG   :       #03 pc 0000000000377fa0  /apex/com.android.runtime/lib64/libart.so (art::JavaVMExt::JniAbort(char const*, char const*)+1584) (BuildId: 9f61584f79f2db8d8a1869001bfb944e)
-            08-24 07:30:12.891 12165 12165 F DEBUG   :       #04 pc 00000000003781c4  /apex/com.android.runtime/lib64/libart.so (art::JavaVMExt::JniAbortV(char const*, char const*, std::__va_list)+108) (BuildId: 9f61584f79f2db8d8a1869001bfb944e)
-            08-24 07:30:12.891 12165 12165 F DEBUG   :       #05 pc 000000000036a5ec  /apex/com.android.runtime/lib64/libart.so (art::(anonymous namespace)::ScopedCheck::AbortF(char const*, ...)+136) (BuildId: 9f61584f79f2db8d8a1869001bfb944e)
-            08-24 07:30:12.891 12165 12165 F DEBUG   :       #06 pc 0000000000368de8  /apex/com.android.runtime/lib64/libart.so (art::(anonymous namespace)::ScopedCheck::CheckPossibleHeapValue(art::ScopedObjectAccess&, char, art::(anonymous namespace)::JniValueType)+416) (BuildId: 9f61584f79f2db8d8a1869001bfb944e)
-            08-24 07:30:12.891 12165 12165 F DEBUG   :       #07 pc 00000000003684a8  /apex/com.android.runtime/lib64/libart.so (art::(anonymous namespace)::ScopedCheck::Check(art::ScopedObjectAccess&, bool, char const*, art::(anonymous namespace)::JniValueType*)+652) (BuildId: 9f61584f79f2db8d8a1869001bfb944e)
-            08-24 07:30:12.891 12165 12165 F DEBUG   :       #08 pc 000000000036b28c  /apex/com.android.runtime/lib64/libart.so (art::(anonymous namespace)::CheckJNI::DeleteRef(char const*, _JNIEnv*, _jobject*, art::IndirectRefKind)+672) (BuildId: 9f61584f79f2db8d8a1869001bfb944e)
-            08-24 07:30:12.891 12165 12165 F DEBUG   :       #09 pc 0000000000017290  /data/app/org.ngbp.libatsc3-nohwIryClhnu1vbwH0TMFg==/base.apk!libatsc3_phy_saankhya.so (offset 0x16d000) (_JNIEnv::DeleteGlobalRef(_jobject*)+40) (BuildId: c718f4141b1baee2331289b1564d0d0db23ad6b7)
-            08-24 07:30:12.891 12165 12165 F DEBUG   :       #10 pc 0000000000017118  /data/app/org.ngbp.libatsc3-nohwIryClhnu1vbwH0TMFg==/base.apk!libatsc3_phy_saankhya.so (offset 0x16d000) (SaankhyaPHYAndroid::~SaankhyaPHYAndroid()+1128) (BuildId: c718f4141b1baee2331289b1564d0d0db23ad6b7)
-            08-24 07:30:12.891 12165 12165 F DEBUG   :       #11 pc 000000000001730c  /data/app/org.ngbp.libatsc3-nohwIryClhnu1vbwH0TMFg==/base.apk!libatsc3_phy_saankhya.so (offset 0x16d000) (SaankhyaPHYAndroid::~SaankhyaPHYAndroid()+36) (BuildId: c718f4141b1baee2331289b1564d0d0db23ad6b7)
-            08-24 07:30:12.891 12165 12165 F DEBUG   :       #12 pc 0000000000017c34  /data/app/org.ngbp.libatsc3-nohwIryClhnu1vbwH0TMFg==/base.apk!libatsc3_phy_saankhya.so (offset 0x16d000) (SaankhyaPHYAndroid::deinit()+84) (BuildId: c718f4141b1baee2331289b1564d0d0db23ad6b7)
-            08-24 07:30:12.891 12165 12165 F DEBUG   :       #13 pc 000000000001cc64  /data/app/org.ngbp.libatsc3-nohwIryClhnu1vbwH0TMFg==/base.apk!libatsc3_phy_saankhya.so (offset 0x16d000) (Java_org_ngbp_libatsc3_middleware_android_phy_SaankhyaPHYAndroid_init+1152) (BuildId: c718f4141b1baee2331289b1564d0d0db23ad6b7)
-            08-24 07:30:12.891 12165 12165 F DEBUG   :       #14 pc 0000000000140350  /apex/com.android.runtime/lib64/libart.so (art_quick_generic_jni_trampoline+144) (BuildId: 9f61584f79f2db8d8a1869001bfb944e)
-            08-24 07:30:12.891 12165 12165 F DEBUG   :       #15 pc 0000000000137334  /apex/com.android.runtime/lib64/libart.so (art_quick_invoke_stub+548) (BuildId: 9f61584f79f2db8d8a1869001bfb944e)
-            08-24 07:30:12.891 12165 12165 F DEBUG   :       #16 pc 0000000000145fec  /apex/com.android.runtime/lib64/libart.so (art::ArtMethod::Invoke(art::Thread*, unsigned int*, unsigned int, art::JValue*, char const*)+244) (BuildId: 9f61584f79f2db8d8a1869001bfb944e)
-            08-24 07:30:12.891 12165 12165 F DEBUG   :       #17 pc 00000000002e3624  /apex/com.android.runtime/lib64/libart.so (art::interpreter::ArtInterpreterToCompiledCodeBridge(art::Thread*, art::ArtMethod*, art::ShadowFrame*, unsigned short, art::JValue*)+384) (BuildId: 9f61584f79f2db8d8a1869001bfb944e)
-            08-24 07:30:12.891 12165 12165 F DEBUG   :       #18 pc 00000000002de884  /apex/com.android.runtime/lib64/libart.so (bool art::interpreter::DoCall<false, false>(art::ArtMethod*, art::Thread*, art::ShadowFrame&, art::Instruction const*, unsigned short, art::JValue*)+892) (BuildId: 9f61584f79f2db8d8a1869001bfb944e)
-            08-24 07:30:12.891 12165 12165 F DEBUG   :       #19 pc 00000000005a14a8  /apex/com.android.runtime/lib64/libart.so (MterpInvokeVirtual+648) (BuildId: 9f61584f79f2db8d8a1869001bfb944e)
-            08-24 07:30:12.891 12165 12165 F DEBUG   :       #20 pc 0000000000131814  /apex/com.android.runtime/lib64/libart.so (mterp_op_invoke_virtual+20) (BuildId: 9f61584f79f2db8d8a1869001bfb944e)
-            08-24 07:30:12.891 12165 12165 F DEBUG   :       #21 pc 000000000001fb54  [anon:dalvik-classes2.dex extracted in memory from /data/app/org.ngbp.libatsc3-nohwIryClhnu1vbwH0TMFg==/base.apk!classes2.dex] (org.ngbp.libatsc3.sampleapp.MainActivity.usbPHYLayerDeviceTryToInstantiateFromRegisteredPHYNDKs+208)
-            08-24 07:30:12.891 12165 12165 F DEBUG   :       #22 pc 00000000005a1768  /apex/com.android.runtime/lib64/libart.so (MterpInvokeVirtual+1352) (BuildId: 9f61584f79f2db8d8a1869001bfb944e)
-            08-24 07:30:12.891 12165 12165 F DEBUG   :       #23 pc 0000000000131814  /apex/com.android.runtime/lib64/libart.so (mterp_op_invoke_virtual+20) (BuildId: 9f61584f79f2db8d8a1869001bfb944e)
-            08-24 07:30:12.891 12165 12165 F DEBUG   :       #24 pc 0000000000021a24  [anon:dalvik-classes2.dex extracted in memory from /data/app/org.ngbp.libatsc3-nohwIryClhnu1vbwH0TMFg==/base.apk!classes2.dex] (org.ngbp.libatsc3.sampleapp.MainActivity.usbPHYLayerDeviceInstantiateAndUpdateAtsc3NdkPHYClientInstance+16)
-            08-24 07:30:12.891 12165 12165 F DEBUG   :       #25 pc 00000000005a3a74  /apex/com.android.runtime/lib64/libart.so (MterpInvokeDirect+1100) (BuildId: 9f61584f79f2db8d8a1869001bfb944e)
-            08-24 07:30:12.891 12165 12165 F DEBUG   :       #26 pc 0000000000131914  /apex/com.android.runtime/lib64/libart.so (mterp_op_invoke_direct+20) (BuildId: 9f61584f79f2db8d8a1869001bfb944e)
-            08-24 07:30:12.891 12165 12165 F DEBUG   :       #27 pc 000000000001fd9c  [anon:dalvik-classes2.dex extracted in memory from /data/app/org.ngbp.libatsc3-nohwIryClhnu1vbwH0TMFg==/base.apk!classes2.dex] (org.ngbp.libatsc3.sampleapp.MainActivity.access$2000)
-            08-24 07:30:12.891 12165 12165 F DEBUG   :       #28 pc 00000000005a4218  /apex/com.android.runtime/lib64/libart.so (MterpInvokeStatic+1040) (BuildId: 9f61584f79f2db8d8a1869001bfb944e)
-            08-24 07:30:12.892 12165 12165 F DEBUG   :       #29 pc 0000000000131994  /apex/com.android.runtime/lib64/libart.so (mterp_op_invoke_static+20) (BuildId: 9f61584f79f2db8d8a1869001bfb944e)
-            08-24 07:30:12.892 12165 12165 F DEBUG   :       #30 pc 000000000001def0  [anon:dalvik-classes2.dex extracted in memory from /data/app/org.ngbp.libatsc3-nohwIryClhnu1vbwH0TMFg==/base.apk!classes2.dex] (org.ngbp.libatsc3.sampleapp.MainActivity$13$1.run+48)
-            08-24 07:30:12.892 12165 12165 F DEBUG   :       #31 pc 00000000005a2f88  /apex/com.android.runtime/lib64/libart.so (MterpInvokeInterface+1788) (BuildId: 9f61584f79f2db8d8a1869001bfb944e)
-            08-24 07:30:12.892 12165 12165 F DEBUG   :       #32 pc 0000000000131a14  /apex/com.android.runtime/lib64/libart.so (mterp_op_invoke_interface+20) (BuildId: 9f61584f79f2db8d8a1869001bfb944e)
-            08-24 07:30:12.892 12165 12165 F DEBUG   :       #33 pc 00000000000eaa54  /apex/com.android.runtime/javalib/core-oj.jar (java.lang.Thread.run+8)
-            08-24 07:30:12.892 12165 12165 F DEBUG   :       #34 pc 00000000002b4938  /apex/com.android.runtime/lib64/libart.so (_ZN3art11interpreterL7ExecuteEPNS_6ThreadERKNS_20CodeItemDataAccessorERNS_11ShadowFrameENS_6JValueEbb.llvm.3584781260104004149+240) (BuildId: 9f61584f79f2db8d8a1869001bfb944e)
-            08-24 07:30:12.892 12165 12165 F DEBUG   :       #35 pc 0000000000592a10  /apex/com.android.runtime/lib64/libart.so (artQuickToInterpreterBridge+1032) (BuildId: 9f61584f79f2db8d8a1869001bfb944e)
-            08-24 07:30:12.892 12165 12165 F DEBUG   :       #36 pc 0000000000140468  /apex/com.android.runtime/lib64/libart.so (art_quick_to_interpreter_bridge+88) (BuildId: 9f61584f79f2db8d8a1869001bfb944e)
-            08-24 07:30:12.892 12165 12165 F DEBUG   :       #37 pc 0000000000137334  /apex/com.android.runtime/lib64/libart.so (art_quick_invoke_stub+548) (BuildId: 9f61584f79f2db8d8a1869001bfb944e)
-            08-24 07:30:12.892 12165 12165 F DEBUG   :       #38 pc 0000000000145fec  /apex/com.android.runtime/lib64/libart.so (art::ArtMethod::Invoke(art::Thread*, unsigned int*, unsigned int, art::JValue*, char const*)+244) (BuildId: 9f61584f79f2db8d8a1869001bfb944e)
-            08-24 07:30:12.892 12165 12165 F DEBUG   :       #39 pc 00000000004b1144  /apex/com.android.runtime/lib64/libart.so (art::(anonymous namespace)::InvokeWithArgArray(art::ScopedObjectAccessAlreadyRunnable const&, art::ArtMethod*, art::(anonymous namespace)::ArgArray*, art::JValue*, char const*)+104) (BuildId: 9f61584f79f2db8d8a1869001bfb944e)
-            08-24 07:30:12.892 12165 12165 F DEBUG   :       #40 pc 00000000004b2258  /apex/com.android.runtime/lib64/libart.so (art::InvokeVirtualOrInterfaceWithJValues(art::ScopedObjectAccessAlreadyRunnable const&, _jobject*, _jmethodID*, jvalue const*)+416) (BuildId: 9f61584f79f2db8d8a1869001bfb944e)
-            08-24 07:30:12.892 12165 12165 F DEBUG   :       #41 pc 00000000004f31c0  /apex/com.android.runtime/lib64/libart.so (art::Thread::CreateCallback(void*)+1176) (BuildId: 9f61584f79f2db8d8a1869001bfb944e)
-            08-24 07:30:12.892 12165 12165 F DEBUG   :       #42 pc 00000000000e6f10  /apex/com.android.runtime/lib64/bionic/libc.so (__pthread_start(void*)+36) (BuildId: b0750023d0cf44584c064da02400c159)
-            08-24 07:30:12.892 12165 12165 F DEBUG   :       #43 pc 00000000000850c8  /apex/com.android.runtime/lib64/bionic/libc.so (__start_thread+64) (BuildId: b0750023d0cf44584c064da02400c159)
-
-
-        if (this->env && this->jni_instance_globalRef) {
-            this->env->DeleteGlobalRef(this->jni_instance_globalRef);
-            this->jni_instance_globalRef = nullptr;
-        }
-       */
     }
 
     _SAANKHYA_PHY_ANDROID_INFO("SaankhyaPHYAndroid::~SaankhyaPHYAndroid - exit: deleting with this: %p", this);
@@ -188,7 +131,6 @@ void SaankhyaPHYAndroid::resetProcessThreadStatistics() {
     alp_total_LMTs_recv = 0;
 }
 
-
 int SaankhyaPHYAndroid::init()
 {
     SaankhyaPHYAndroid::configPlatformParams();
@@ -207,48 +149,73 @@ bool SaankhyaPHYAndroid::is_running() {
 
 int SaankhyaPHYAndroid::stop()
 {
+    SL_I2cResult_t sl_res_uninit = SL_I2C_OK;
+
     _SAANKHYA_PHY_ANDROID_DEBUG("SaankhyaPHYAndroid::stop: enter with this: %p", this);
-    if(atsc3_ndk_application_bridge_get_instance()) {
-        atsc3_ndk_application_bridge_get_instance()->atsc3_phy_notify_plp_selection_change_clear_callback();
-    }
-    //tear down status thread first, as its the most 'problematic'
-    if(statusThreadIsRunning) {
-        statusThreadShouldRun = false;
-        _SAANKHYA_PHY_ANDROID_DEBUG("SaankhyaPHYAndroid::stop: setting statusThreadShouldRun: false");
-        while(this->statusThreadIsRunning) {
-            SL_SleepMS(100);
-            _SAANKHYA_PHY_ANDROID_DEBUG("SaankhyaPHYAndroid::stop: this->statusThreadIsRunning: %d", this->statusThreadIsRunning);
-        }
-        pthread_join(sThreadID, NULL);
-        _SAANKHYA_PHY_ANDROID_DEBUG("SaankhyaPHYAndroid::stop: after pthread_join for sThreadID");
-    }
+    _SAANKHYA_PHY_ANDROID_INFO("SaankhyaPHYAndroid::stop: enter with this: %p, slUnit: %d, tUnit: %d, captureThreadIsRunning: %d, statusThreadIsRunning: %d, processThreadIsRunning: %d, sleeping for %d ms",
+                              this,
+                              this->slUnit,
+                              this->tUnit,
+                              this->captureThreadIsRunning,
+                              this->statusThreadIsRunning,
+                              this->processThreadIsRunning);
 
+
+
+    statusThreadShouldRun = false;
     if(captureThreadIsRunning) {
-        captureThreadShouldRun = false;
         _SAANKHYA_PHY_ANDROID_DEBUG("SaankhyaPHYAndroid::stop: setting captureThreadShouldRun: false");
-
         SL_RxDataStop();
-        while(this->captureThreadIsRunning) {
-            SL_SleepMS(100);
-            _SAANKHYA_PHY_ANDROID_DEBUG("SaankhyaPHYAndroid::stop: this->captureThreadIsRunning: %d", this->captureThreadIsRunning);
-        }
-        pthread_join(cThreadID, NULL);
-        _SAANKHYA_PHY_ANDROID_DEBUG("SaankhyaPHYAndroid::stop: after pthread_join for cThreadID");
     }
+    captureThreadShouldRun = false;
+    processThreadShouldRun = false;
+
+    //tear down status thread first, as its the most 'problematic' with the saankhya i2c i/f processing
+    while(this->statusThreadIsRunning) {
+        SL_SleepMS(100);
+        _SAANKHYA_PHY_ANDROID_DEBUG("SaankhyaPHYAndroid::stop: this->statusThreadIsRunning: %d", this->statusThreadIsRunning);
+    }
+
+    _SAANKHYA_PHY_ANDROID_DEBUG("SaankhyaPHYAndroid::stop: before join for statusThreadHandle");
+    if(statusThreadHandle.joinable()) {
+        statusThreadHandle.join();
+    }
+    _SAANKHYA_PHY_ANDROID_DEBUG("SaankhyaPHYAndroid::stop: after join for statusThreadHandle");
+
+    while(this->captureThreadIsRunning) {
+        SL_SleepMS(100);
+        _SAANKHYA_PHY_ANDROID_DEBUG("SaankhyaPHYAndroid::stop: this->captureThreadIsRunning: %d", this->captureThreadIsRunning);
+    }
+
+    _SAANKHYA_PHY_ANDROID_DEBUG("SaankhyaPHYAndroid::stop: before join for captureThreadHandle");
+    if(captureThreadHandle.joinable()) {
+        captureThreadHandle.join();
+    }
+    _SAANKHYA_PHY_ANDROID_DEBUG("SaankhyaPHYAndroid::stop: after join for captureThreadHandle");
 
     if(processThreadIsRunning) {
-        processThreadShouldRun = false;
         _SAANKHYA_PHY_ANDROID_DEBUG("SaankhyaPHYAndroid::stop: setting processThreadShouldRun: false");
         while(this->processThreadIsRunning) {
             SL_SleepMS(100);
             _SAANKHYA_PHY_ANDROID_DEBUG("SaankhyaPHYAndroid::stop: this->processThreadIsRunning: %d", this->processThreadIsRunning);
         }
-        pthread_join(pThreadID, NULL);
-        _SAANKHYA_PHY_ANDROID_DEBUG("SaankhyaPHYAndroid::stop: after pthread_join for pThreadID");
     }
 
+    _SAANKHYA_PHY_ANDROID_DEBUG("SaankhyaPHYAndroid::stop: before join for processThreadHandle");
+    if(processThreadHandle.joinable()) {
+        processThreadHandle.join();
+    }
+    _SAANKHYA_PHY_ANDROID_DEBUG("SaankhyaPHYAndroid::stop: after join for processThreadHandle");
 
-    SL_I2cUnInit();
+    _SAANKHYA_PHY_ANDROID_DEBUG("SaankhyaPHYAndroid::stop: before SL_I2cUnInit");
+
+    sl_res_uninit = SL_I2cUnInit();
+
+    _SAANKHYA_PHY_ANDROID_DEBUG("SaankhyaPHYAndroid::stop: after SL_I2cUnInit, sl_res_uninit is: %d", sl_res_uninit);
+
+    if(atsc3_ndk_application_bridge_get_instance()) {
+        atsc3_ndk_application_bridge_get_instance()->atsc3_phy_notify_plp_selection_change_clear_callback();
+    }
     _SAANKHYA_PHY_ANDROID_DEBUG("SaankhyaPHYAndroid::stop: return with this: %p", this);
     return 0;
 }
@@ -298,16 +265,18 @@ int SaankhyaPHYAndroid::open(int fd, string device_path)
     }
     else
     {
-        SL_Printf("\n ERROR : SL_ConfigGetPlatform Failed ");
+        _SAANKHYA_PHY_ANDROID_DEBUG("ERROR : SL_ConfigGetPlatform Failed ");
         goto ERROR;
     }
 
     cres = SL_ConfigSetBbCapture(BB_CAPTURE_DISABLE);
     if (cres != SL_CONFIG_OK)
     {
-        SL_Printf("\n ERROR : SL_ConfigSetBbCapture Failed ");
+        _SAANKHYA_PHY_ANDROID_DEBUG("ERROR : SL_ConfigSetBbCapture Failed ");
         goto ERROR;
     }
+
+    _SAANKHYA_PHY_ANDROID_DEBUG("%s:%d - before SL_I2cInit()", __FILE__, __LINE__);
 
     if (getPlfConfig.demodControlIf == SL_DEMOD_CMD_CONTROL_IF_I2C)
     {
@@ -316,24 +285,24 @@ int SaankhyaPHYAndroid::open(int fd, string device_path)
         {
             _SAANKHYA_PHY_ANDROID_ERROR("ERROR : Error:SL_I2cInit failed Failed");
 
-            SL_Printf("\n Error:SL_I2cInit failed :");
+            _SAANKHYA_PHY_ANDROID_DEBUG("Error:SL_I2cInit failed :");
             printToConsoleI2cError(i2cres);
             goto ERROR;
         }
         else
         {
             cmdIf = SL_CMD_CONTROL_IF_I2C;
-            printf("atsc3NdkClientSlImpl: setting cmdIf: %d", cmdIf);
+            _SAANKHYA_PHY_ANDROID_DEBUG("atsc3NdkClientSlImpl: setting cmdIf: %d", cmdIf);
         }
     }
     else if (getPlfConfig.demodControlIf == SL_DEMOD_CMD_CONTROL_IF_SDIO)
     {
-        SL_Printf("\n Error:SL_SdioInit failed :Not Supported");
+        _SAANKHYA_PHY_ANDROID_DEBUG("Error:SL_SdioInit failed :Not Supported");
         goto ERROR;
     }
     else if (getPlfConfig.demodControlIf == SL_DEMOD_CMD_CONTROL_IF_SPI)
     {
-        SL_Printf("\n Error:SL_SpiInit failed :Not Supported");
+        _SAANKHYA_PHY_ANDROID_DEBUG("Error:SL_SpiInit failed :Not Supported");
         goto ERROR;
     }
 
@@ -355,7 +324,7 @@ int SaankhyaPHYAndroid::open(int fd, string device_path)
             }
             else
             {
-                SL_Printf("\n Invalid Tuner Selection");
+                _SAANKHYA_PHY_ANDROID_DEBUG("Invalid Tuner Selection");
             }
 
             if (getPlfConfig.demodOutputIf == SL_DEMOD_OUTPUTIF_TS)
@@ -372,7 +341,7 @@ int SaankhyaPHYAndroid::open(int fd, string device_path)
             }
             else
             {
-                SL_Printf("\n Invalid OutPut Interface Selection");
+                _SAANKHYA_PHY_ANDROID_DEBUG("Invalid OutPut Interface Selection");
             }
 
             afeInfo.iswap = SL_IPOL_SWAP_DISABLE;
@@ -392,14 +361,14 @@ int SaankhyaPHYAndroid::open(int fd, string device_path)
             }
             else if (getPlfConfig.tunerType == TUNER_SI)
             {
-                printf("using TUNER_SI, ifreq: 0");
+                _SAANKHYA_PHY_ANDROID_DEBUG("using TUNER_SI, ifreq: 0");
                 afeInfo.spectrum = SL_SPECTRUM_NORMAL;
                 afeInfo.iftype = SL_IFTYPE_ZIF;
                 afeInfo.ifreq = 0.0;
             }
             else
             {
-                SL_Printf("\n Invalid Tuner Selection");
+                _SAANKHYA_PHY_ANDROID_DEBUG("Invalid Tuner Selection");
             }
 
             if (getPlfConfig.demodOutputIf == SL_DEMOD_OUTPUTIF_TS)
@@ -412,7 +381,7 @@ int SaankhyaPHYAndroid::open(int fd, string device_path)
             }
             else
             {
-                SL_Printf("\n Invalid Output Interface Selection");
+                _SAANKHYA_PHY_ANDROID_DEBUG("Invalid Output Interface Selection");
             }
 
             afeInfo.iswap = SL_IPOL_SWAP_DISABLE;
@@ -432,7 +401,7 @@ int SaankhyaPHYAndroid::open(int fd, string device_path)
             }
             else
             {
-                SL_Printf("\n Invalid Tuner Selection");
+                _SAANKHYA_PHY_ANDROID_DEBUG("Invalid Tuner Selection");
             }
 
             if (getPlfConfig.demodOutputIf == SL_DEMOD_OUTPUTIF_TS)
@@ -445,11 +414,13 @@ int SaankhyaPHYAndroid::open(int fd, string device_path)
             }
             else if (getPlfConfig.demodOutputIf == SL_DEMOD_OUTPUTIF_SDIO)
             {
+                _SAANKHYA_PHY_ANDROID_DEBUG("%s:%d - SL4000 using SL_DEMOD_OUTPUTIF_SDIO", __FILE__, __LINE__);
+
                 outPutInfo.oif = SL_OUTPUTIF_SDIO;
             }
             else
             {
-                SL_Printf("\n Invalid Output Interface Selection");
+                _SAANKHYA_PHY_ANDROID_DEBUG("Invalid Output Interface Selection");
             }
 
             afeInfo.iswap = SL_IPOL_SWAP_DISABLE;
@@ -464,14 +435,14 @@ int SaankhyaPHYAndroid::open(int fd, string device_path)
         case SL_KAILASH_DONGLE:
             if (getPlfConfig.tunerType == TUNER_SI)
             {
-                printf("using SL_KAILASH with SPECTRUM_NORMAL and ZIF");
+                _SAANKHYA_PHY_ANDROID_DEBUG("using SL_KAILASH with SPECTRUM_NORMAL and ZIF");
                 afeInfo.spectrum = SL_SPECTRUM_NORMAL;
                 afeInfo.iftype = SL_IFTYPE_ZIF;
                 afeInfo.ifreq = 0.0;
             }
             else
             {
-                SL_Printf("\n Invalid Tuner Type selected ");
+                _SAANKHYA_PHY_ANDROID_DEBUG("Invalid Tuner Type selected ");
             }
 
             if (getPlfConfig.demodOutputIf == SL_DEMOD_OUTPUTIF_TS)
@@ -480,7 +451,7 @@ int SaankhyaPHYAndroid::open(int fd, string device_path)
             }
             else
             {
-                SL_Printf("\n Invalid OutPut Interface Selection");
+                _SAANKHYA_PHY_ANDROID_DEBUG("Invalid OutPut Interface Selection");
             }
 
             afeInfo.iswap = SL_IPOL_SWAP_DISABLE;
@@ -492,19 +463,21 @@ int SaankhyaPHYAndroid::open(int fd, string device_path)
             break;
 
         default:
-            SL_Printf("\n Invalid Board Type Selected ");
+            _SAANKHYA_PHY_ANDROID_DEBUG("Invalid Board Type Selected ");
             break;
     }
     afeInfo.iqswap = SL_IQSWAP_DISABLE;
     afeInfo.agcRefValue = 125; //afcRefValue in mV
     outPutInfo.TsoClockInvEnable = SL_TSO_CLK_INV_ON;
 
+    _SAANKHYA_PHY_ANDROID_DEBUG("%s:%d - before SL_ConfigGetBbCapture", __FILE__, __LINE__);
+
     cres = SL_ConfigGetBbCapture(&getbbValue);
     if (cres != SL_CONFIG_OK)
     {
         _SAANKHYA_PHY_ANDROID_ERROR("ERROR : SL_ConfigGetPlatform Failed");
-
-        SL_Printf("\n ERROR : SL_ConfigGetPlatform Failed ");
+        _SAANKHYA_PHY_ANDROID_DEBUG("%s:%d - ERROR : SL_ConfigGetPlatform Failed", __FILE__, __LINE__);
+        _SAANKHYA_PHY_ANDROID_DEBUG("ERROR : SL_ConfigGetPlatform Failed ");
         goto ERROR;
     }
 
@@ -520,12 +493,12 @@ int SaankhyaPHYAndroid::open(int fd, string device_path)
     plpInfo.plp2 = 0xFF;
     plpInfo.plp3 = 0xFF;
 
-    printf("SL_DemodCreateInstance: before");
+    _SAANKHYA_PHY_ANDROID_DEBUG("SL_DemodCreateInstance: before");
     slres = SL_DemodCreateInstance(&slUnit);
     if (slres != SL_OK)
     {
-        printf("\n Error:SL_DemodCreateInstance: slres: %d", slres);
-        SL_Printf("\n Error:SL_DemodCreateInstance :");
+        _SAANKHYA_PHY_ANDROID_DEBUG("Error:SL_DemodCreateInstance: slres: %d", slres);
+        _SAANKHYA_PHY_ANDROID_DEBUG("Error:SL_DemodCreateInstance :");
         printToConsoleDemodError(slres);
         goto ERROR;
     }
@@ -534,59 +507,54 @@ int SaankhyaPHYAndroid::open(int fd, string device_path)
     //jjustman-2020-07-29 - disable
     //pthread_create(&pThreadID, NULL, (THREADFUNCPTR)&atsc3NdkClientSlImpl::LibUSB_Handle_Events_Callback, (void*)this);
 
-    SL_Printf("\n Initializing SL Demod..: ");
-    printf("SL_DemodInit: before, slUnit: %d, cmdIf: %d", slUnit, cmdIf);
+    _SAANKHYA_PHY_ANDROID_DEBUG("Initializing SL Demod..: ");
+    _SAANKHYA_PHY_ANDROID_DEBUG("SL_DemodInit: before, slUnit: %d, cmdIf: %d", slUnit, cmdIf);
     slres = SL_DemodInit(slUnit, cmdIf, SL_DEMODSTD_ATSC3_0);
     if (slres != SL_OK)
     {
-        printf("SL_DemodInit: failed, slres: %d", slres);
-        SL_Printf("FAILED");
-        SL_Printf("\n Error:SL_DemodInit :");
+        _SAANKHYA_PHY_ANDROID_DEBUG("SL_DemodInit: failed, slres: %d", slres);
+        _SAANKHYA_PHY_ANDROID_DEBUG("FAILED");
+        _SAANKHYA_PHY_ANDROID_DEBUG("Error:SL_DemodInit :");
         printToConsoleDemodError(slres);
         goto ERROR;
     }
     else
     {
-        printf("SL_DemodInit: SUCCESS, slres: %d", slres);
-        SL_Printf("SUCCESS");
+        _SAANKHYA_PHY_ANDROID_DEBUG("SL_DemodInit: SUCCESS, slres: %d", slres);
     }
 
     do
     {
-        printf("before SL_DemodGetStatus: slres is: %d", slres);
+        _SAANKHYA_PHY_ANDROID_DEBUG("before SL_DemodGetStatus: slres is: %d", slres);
         slres = SL_DemodGetStatus(slUnit, SL_DEMOD_STATUS_TYPE_BOOT, (SL_DemodBootStatus_t*)&bootStatus);
-        printf("SL_DemodGetStatus: slres is: %d", slres);
+        _SAANKHYA_PHY_ANDROID_DEBUG("SL_DemodGetStatus: slres is: %d", slres);
         if (slres != SL_OK)
         {
-            SL_Printf("\n Error:SL_Demod Get Boot Status :");
+            _SAANKHYA_PHY_ANDROID_DEBUG("Error:SL_Demod Get Boot Status :");
             printToConsoleDemodError(slres);
         }
         SL_SleepMS(1000);
     } while (bootStatus != SL_DEMOD_BOOT_STATUS_COMPLETE);
 
-    SL_Printf("\n Demod Boot Status      : ");
-    printf("\n Demod Boot Status      : ");
+    _SAANKHYA_PHY_ANDROID_DEBUG("Demod Boot Status  : ");
     if (bootStatus == SL_DEMOD_BOOT_STATUS_INPROGRESS)
     {
-        SL_Printf("%s", "INPROGRESS");
-        printf("inprogress");
+        _SAANKHYA_PHY_ANDROID_DEBUG("%s", "INPROGRESS");
     }
     else if (bootStatus == SL_DEMOD_BOOT_STATUS_COMPLETE)
     {
-        SL_Printf("%s", "COMPLETED");
-        printf("COMPLETED");
+        _SAANKHYA_PHY_ANDROID_DEBUG("%s", "COMPLETED");
     }
     else if (bootStatus == SL_DEMOD_BOOT_STATUS_ERROR)
     {
-        SL_Printf("%s", "ERROR");
-        printf("ERROR");
+        _SAANKHYA_PHY_ANDROID_DEBUG("%s", "ERROR");
         goto ERROR;
     }
 
     slres = SL_DemodConfigure(slUnit, SL_CONFIGTYPE_AFEIF, &afeInfo);
     if (slres != 0)
     {
-        SL_Printf("\n Error:SL_DemodConfigure :");
+        _SAANKHYA_PHY_ANDROID_DEBUG("Error:SL_DemodConfigure :");
         printToConsoleDemodError(slres);
         goto ERROR;
     }
@@ -594,7 +562,7 @@ int SaankhyaPHYAndroid::open(int fd, string device_path)
     slres = SL_DemodConfigure(slUnit, SL_CONFIG_TYPE_IQ_OFFSET_CORRECTION, &iqOffSetCorrection);
     if (slres != 0)
     {
-        SL_Printf("\n Error:SL_DemodConfigure :");
+        _SAANKHYA_PHY_ANDROID_DEBUG("Error:SL_DemodConfigure :");
         printToConsoleDemodError(slres);
         goto ERROR;
     }
@@ -602,7 +570,7 @@ int SaankhyaPHYAndroid::open(int fd, string device_path)
     slres = SL_DemodConfigure(slUnit, SL_CONFIGTYPE_OUTPUTIF, &outPutInfo);
     if (slres != 0)
     {
-        SL_Printf("\n Error:SL_DemodConfigure :");
+        _SAANKHYA_PHY_ANDROID_DEBUG("Error:SL_DemodConfigure :");
         printToConsoleDemodError(slres);
         goto ERROR;
     }
@@ -610,7 +578,7 @@ int SaankhyaPHYAndroid::open(int fd, string device_path)
     slres = SL_DemodConfigPlps(slUnit, &plpInfo);
     if (slres != 0)
     {
-        SL_Printf("\n Error:SL_DemodConfigPlps :");
+        _SAANKHYA_PHY_ANDROID_DEBUG("Error:SL_DemodConfigPlps :");
         printToConsoleDemodError(slres);
         goto ERROR;
     }
@@ -618,8 +586,8 @@ int SaankhyaPHYAndroid::open(int fd, string device_path)
     slres = SL_DemodGetSoftwareVersion(slUnit, &swMajorNo, &swMinorNo);
     if (slres == SL_OK)
     {
-        SL_Printf("\n Demod SW Version       : %d.%d", swMajorNo, swMinorNo);
-        printf("\n Demod SW Version       : %d.%d", swMajorNo, swMinorNo);
+        _SAANKHYA_PHY_ANDROID_DEBUG("Demod SW Version: %d.%d", swMajorNo, swMinorNo);
+        _SAANKHYA_PHY_ANDROID_DEBUG("Demod SW Version: %d.%d", swMajorNo, swMinorNo);
     }
 
     /* Tuner Config */
@@ -629,7 +597,7 @@ int SaankhyaPHYAndroid::open(int fd, string device_path)
     tres = SL_TunerCreateInstance(&tUnit);
     if (tres != 0)
     {
-        SL_Printf("\n Error:SL_TunerCreateInstance :");
+        _SAANKHYA_PHY_ANDROID_DEBUG("Error:SL_TunerCreateInstance :");
         printToConsoleTunerError(tres);
         goto ERROR;
     }
@@ -637,7 +605,7 @@ int SaankhyaPHYAndroid::open(int fd, string device_path)
     tres = SL_TunerInit(tUnit);
     if (tres != 0)
     {
-        SL_Printf("\n Error:SL_TunerInit :");
+        _SAANKHYA_PHY_ANDROID_DEBUG("Error:SL_TunerInit :");
         printToConsoleTunerError(tres);
         goto ERROR;
     }
@@ -645,7 +613,7 @@ int SaankhyaPHYAndroid::open(int fd, string device_path)
     tres = SL_TunerConfigure(tUnit, &tunerCfg);
     if (tres != 0)
     {
-        SL_Printf("\n Error:SL_TunerConfigure :");
+        _SAANKHYA_PHY_ANDROID_DEBUG("Error:SL_TunerConfigure :");
         printToConsoleTunerError(tres);
         goto ERROR;
     }
@@ -661,7 +629,7 @@ int SaankhyaPHYAndroid::open(int fd, string device_path)
         tres = SL_TunerExSetDcOffSet(tUnit, &tunerIQDcOffSet);
         if (tres != 0)
         {
-            SL_Printf("\n Error:SL_TunerExSetDcOffSet :");
+            _SAANKHYA_PHY_ANDROID_DEBUG("Error:SL_TunerExSetDcOffSet :");
             printToConsoleTunerError(tres);
             if (getPlfConfig.tunerType == TUNER_SI)
             {
@@ -670,7 +638,7 @@ int SaankhyaPHYAndroid::open(int fd, string device_path)
         }
     }
 
-    printf("OPEN COMPLETE!");
+    _SAANKHYA_PHY_ANDROID_DEBUG("OPEN COMPLETE!");
     return 0;
 
 ERROR:
@@ -683,6 +651,8 @@ int SaankhyaPHYAndroid::tune(int freqKHz, int plpid)
     unsigned int cFrequency = 0;
     int ret = 0;
 
+    int isRxDataStartedSpinCount = 0;
+
 
     //acquire our lock for setting tuning parameters (including re-tuning)
     unique_lock<mutex> SL_I2C_command_mutex_tuner_tune(SL_I2C_command_mutex);
@@ -691,7 +661,7 @@ int SaankhyaPHYAndroid::tune(int freqKHz, int plpid)
     tres = SL_TunerSetFrequency(tUnit, freqKHz*1000);
     if (tres != 0)
     {
-        SL_Printf("\n Error:SL_TunerSetFrequency :");
+        _SAANKHYA_PHY_ANDROID_DEBUG("Error:SL_TunerSetFrequency :");
         printToConsoleTunerError(tres);
         goto ERROR;
     }
@@ -699,68 +669,64 @@ int SaankhyaPHYAndroid::tune(int freqKHz, int plpid)
     tres = SL_TunerGetConfiguration(tUnit, &tunerGetCfg);
     if (tres != 0)
     {
-        SL_Printf("\n Error:SL_TunerGetConfiguration :");
+        _SAANKHYA_PHY_ANDROID_DEBUG("Error:SL_TunerGetConfiguration :");
         printToConsoleTunerError(tres);
         goto ERROR;
     } else {
         if (tunerGetCfg.std == SL_TUNERSTD_ATSC3_0)
         {
-            SL_Printf("\n Tuner Config Std       : ATSC3.0");
+            _SAANKHYA_PHY_ANDROID_DEBUG("Tuner Config Std: ATSC3.0");
         }
         else
         {
-            SL_Printf("\n Tuner Config Std       : NA");
+            _SAANKHYA_PHY_ANDROID_DEBUG("Tuner Config Std: NA");
         }
         switch (tunerGetCfg.bandwidth)
         {
             case SL_TUNER_BW_6MHZ:
-                SL_Printf("\n Tuner Config Bandwidth : 6MHz");
+                _SAANKHYA_PHY_ANDROID_DEBUG("Tuner Config Bandwidth : 6MHz");
                 break;
 
             case SL_TUNER_BW_7MHZ:
-                SL_Printf("\n Tuner Config Bandwidth : 7MHz");
+                _SAANKHYA_PHY_ANDROID_DEBUG("Tuner Config Bandwidth : 7MHz");
                 break;
 
             case SL_TUNER_BW_8MHZ:
-                SL_Printf("\n Tuner Config Bandwidth : 8MHz");
+                _SAANKHYA_PHY_ANDROID_DEBUG("Tuner Config Bandwidth : 8MHz");
                 break;
 
             default:
-                SL_Printf("\n Tuner Config Bandwidth : NA");
+                _SAANKHYA_PHY_ANDROID_DEBUG("Tuner Config Bandwidth : NA");
         }
     }
 
     tres = SL_TunerGetFrequency(tUnit, &cFrequency);
     if (tres != 0)
     {
-        SL_Printf("\n Error:SL_TunerGetFrequency :");
+        _SAANKHYA_PHY_ANDROID_DEBUG("Error:SL_TunerGetFrequency :");
         printToConsoleTunerError(tres);
         goto ERROR;
     }
     else
     {
-        SL_Printf("\n Tuner Locked Frequency : %dHz", cFrequency);
+        _SAANKHYA_PHY_ANDROID_DEBUG("Tuner Locked Frequency : %dHz", cFrequency);
 
     }
 
     tres = SL_TunerGetStatus(tUnit, &tunerInfo);
     if (tres != 0)
     {
-        SL_Printf("\n Error:SL_TunerGetStatus :");
+        _SAANKHYA_PHY_ANDROID_DEBUG("Error:SL_TunerGetStatus :");
         printToConsoleTunerError(tres);
         goto ERROR;
     }
     else
     {
-        SL_Printf("\n Tuner Lock status      : ");
-        SL_Printf((tunerInfo.status == 1) ? "LOCKED" : "NOT LOCKED");
-        SL_Printf("\n Tuner RSSI             : %3.2f dBm", tunerInfo.signalStrength);
+        _SAANKHYA_PHY_ANDROID_DEBUG("Tuner Lock status  : ");
+        _SAANKHYA_PHY_ANDROID_DEBUG((tunerInfo.status == 1) ? "LOCKED" : "NOT LOCKED");
+        _SAANKHYA_PHY_ANDROID_DEBUG("Tuner RSSI: %3.2f dBm", tunerInfo.signalStrength);
 
-        printf("\n Tuner Lock status      : ");
-        printf((tunerInfo.status == 1) ? "LOCKED" : "NOT LOCKED");
-        printf("\n Tuner RSSI             : %3.2f dBm", tunerInfo.signalStrength);
-
-        printf("tuner frequency: %d", cFrequency);
+        _SAANKHYA_PHY_ANDROID_DEBUG("tuner frequency: %d", cFrequency);
     }
 
     //setup shared memory allocs
@@ -772,60 +738,110 @@ int SaankhyaPHYAndroid::tune(int freqKHz, int plpid)
         allocate_atsc3_sl_tlv_block();
     }
 
-
-    if(!processThreadIsRunning) {
-        processThreadShouldRun = true;
-        pThread = pthread_create(&pThreadID, NULL, (THREADFUNCPTR)&SaankhyaPHYAndroid::ProcessThread, (void*)this);
-        if (pThread != 0) {
-            //processFlag = 0;
-            printf("\n Process Thread failed to launch");
-            goto ERROR;
-        } else  {
-            //processFlag = 1;
-        }
+    //check if we were re-initalized and might have an open threads to wind-down
+#ifdef __RESPWAN_THREAD_WORKERS
+    if(captureThreadHandle.joinable()) {
+        captureThreadShouldRun = false;
+        _SAANKHYA_PHY_ANDROID_INFO("::Open() - setting captureThreadShouldRun to false, Waiting for captureThreadHandle to join()");
+        captureThreadHandle.join();
     }
 
-    if(!captureThreadIsRunning) {
+    if(processThreadHandle.joinable()) {
+        processThreadShouldRun = false;
+        _SAANKHYA_PHY_ANDROID_INFO("::Open() - setting processThreadShouldRun to false, Waiting for processThreadHandle to join()");
+        processThreadHandle.join();
+    }
+
+    if(statusThreadHandle.joinable()) {
+        statusThreadShouldRun = false;
+        _SAANKHYA_PHY_ANDROID_INFO("::Open() - setting statusThreadShouldRun to false, Waiting for statusThreadHandle to join()");
+        statusThreadHandle.join();
+    }
+#endif
+
+    if(!this->captureThreadIsRunning) {
         captureThreadShouldRun = true;
-        printf("creating capture thread with cb buffer size: %d, tlv_block_size: %d",
-               CB_SIZE, BUFFER_SIZE);
-        cThread = pthread_create(&cThreadID, NULL, (THREADFUNCPTR)&SaankhyaPHYAndroid::CaptureThread, (void*)this);
-        if (cThread != 0) {
-            printf("\n Capture Thread failed to launch");
-            goto ERROR;
+        captureThreadHandle = std::thread([this]() {
+            this->captureThread();
+        });
+
+        //micro spinlock
+        int threadStartupSpinlockCount = 0;
+        while(!this->captureThreadIsRunning && threadStartupSpinlockCount++ < 100) {
+            usleep(10000);
+        }
+
+        if(threadStartupSpinlockCount > 50) {
+            _SAANKHYA_PHY_ANDROID_WARN("::Open() - starting captureThread took %d spins, final state: %d",
+                    threadStartupSpinlockCount,
+                    this->captureThreadIsRunning);
         }
     }
 
-    if(!statusThreadIsRunning) {
-        statusThreadShouldRun = true;
-        sThread = pthread_create(&sThreadID, NULL, (THREADFUNCPTR) &SaankhyaPHYAndroid::TunerStatusThread, (void*)this);
-        if (sThread != 0) {
-            printf("\n Capture Thread launched unsuccessfully");
-            goto ERROR;
+    if(!this->processThreadIsRunning) {
+        processThreadShouldRun = true;
+        processThreadHandle = std::thread([this]() {
+            this->processThread();
+        });
+
+        //micro spinlock
+        int threadStartupSpinlockCount = 0;
+        while (!this->processThreadIsRunning && threadStartupSpinlockCount++ < 100) {
+            usleep(10000);
+        }
+
+        if (threadStartupSpinlockCount > 50) {
+            _SAANKHYA_PHY_ANDROID_WARN("::Open() - starting processThreadIsRunning took %d spins, final state: %d",
+                                       threadStartupSpinlockCount,
+                                       this->processThreadIsRunning);
         }
     }
+
+    if(!this->statusThreadIsRunning) {
+        statusThreadShouldRun = true;
+        statusThreadHandle = std::thread([this]() {
+            this->statusThread();
+        });
+
+        //micro spinlock
+        int threadStartupSpinlockCount = 0;
+        while (!this->statusThreadIsRunning && threadStartupSpinlockCount++ < 100) {
+            usleep(10000);
+        }
+
+        if (threadStartupSpinlockCount > 50) {
+            _SAANKHYA_PHY_ANDROID_WARN("::Open() - starting statusThread took %d spins, final state: %d",
+                                       threadStartupSpinlockCount,
+                                       this->statusThreadIsRunning);
+        }
+    }
+
 
     while (SL_IsRxDataStarted() != 1)
     {
         SL_SleepMS(100);
+
+        if(((isRxDataStartedSpinCount++) % 100) == 0) {
+            _SAANKHYA_PHY_ANDROID_WARN("::Open() - waiting for SL_IsRxDataStarted, spinCount: %d", isRxDataStartedSpinCount);
+            //jjustman-2020-10-21 - todo: reset demod?
+        }
     }
-    SL_Printf("\n Starting SLDemod: ");
+    _SAANKHYA_PHY_ANDROID_DEBUG("Starting SLDemod: ");
 
     slres = SL_DemodStart(slUnit);
 
     if (slres != 0)
     {
-        SL_Printf("\n Saankhya Demod Start Failed");
+        _SAANKHYA_PHY_ANDROID_DEBUG("Saankhya Demod Start Failed");
         goto ERROR;
     }
     else
     {
         demodStartStatus = 1;
-        SL_Printf("SUCCESS");
-        //SL_Printf("\n SL Demod Output Capture: STARTED : sl-tlv.bin");
+        _SAANKHYA_PHY_ANDROID_DEBUG("SUCCESS");
+        //_SAANKHYA_PHY_ANDROID_DEBUG("SL Demod Output Capture: STARTED : sl-tlv.bin");
     }
     SL_SleepMS(1000); // Delay to accomdate set configurations at SL to take effect
-
 
     plpInfo.plp0 = plpid;
     plpInfo.plp1 = 0xFF;
@@ -835,7 +851,7 @@ int SaankhyaPHYAndroid::tune(int freqKHz, int plpid)
     slres = SL_DemodConfigPlps(slUnit, &plpInfo);
     if (slres != 0)
     {
-        SL_Printf("\n Error:SL_DemodConfigPlps :");
+        _SAANKHYA_PHY_ANDROID_DEBUG("Error:SL_DemodConfigPlps :");
         printToConsoleDemodError(slres);
         goto ERROR;
     }
@@ -843,7 +859,7 @@ int SaankhyaPHYAndroid::tune(int freqKHz, int plpid)
     slres = SL_DemodGetConfiguration(slUnit, &cfgInfo);
     if (slres != SL_OK)
     {
-        SL_Printf("\n Error:SL_DemodGetConfiguration :");
+        _SAANKHYA_PHY_ANDROID_DEBUG("Error:SL_DemodGetConfiguration :");
         printToConsoleDemodError(slres);
         if (slres == SL_ERR_CMD_IF_FAILURE)
         {
@@ -908,7 +924,7 @@ int SaankhyaPHYAndroid::listen_plps(vector<uint8_t> plps_orignal_list)
         plpInfo.plp3 = plps.at(3);
     }
 
-    printf("calling SL_DemodConfigPLPS with 0: %02x, 1: %02x, 2: %02x, 3: %02x",
+    _SAANKHYA_PHY_ANDROID_DEBUG("calling SL_DemodConfigPLPS with 0: %02x, 1: %02x, 2: %02x, 3: %02x",
             plpInfo.plp0,
             plpInfo.plp1,
             plpInfo.plp2,
@@ -918,8 +934,8 @@ int SaankhyaPHYAndroid::listen_plps(vector<uint8_t> plps_orignal_list)
     slres = SL_DemodConfigPlps(slUnit, &plpInfo);
     if (slres != 0)
     {
-        printf("Error: SL_DemodConfigPLP: %d", slres);
-        SL_Printf("\n Error:SL_DemodConfigPlps :");
+        _SAANKHYA_PHY_ANDROID_DEBUG("Error: SL_DemodConfigPLP: %d", slres);
+        _SAANKHYA_PHY_ANDROID_DEBUG("Error:SL_DemodConfigPlps :");
         printToConsoleDemodError(slres);
     }
 
@@ -932,7 +948,7 @@ void SaankhyaPHYAndroid::dump_plp_list() {
     slres = SL_DemodGetLlsPlpList(slUnit, &llsPlpInfo);
     if (slres != SL_OK)
     {
-        SL_Printf("\n Error:SL_DemodGetLlsPlpList :");
+        _SAANKHYA_PHY_ANDROID_DEBUG("Error:SL_DemodGetLlsPlpList :");
         printToConsoleDemodError(slres);
         if (slres == SL_ERR_CMD_IF_FAILURE)
         {
@@ -946,7 +962,7 @@ void SaankhyaPHYAndroid::dump_plp_list() {
     {
         plpInfoVal = ((llsPlpInfo & (llsPlpMask << plpIndx)) == pow(2, plpIndx)) ? 0x01 : 0xFF;
 
-        printf("PLP: %d, plpInfoVal: %d", plpIndx, plpInfoVal);
+        _SAANKHYA_PHY_ANDROID_DEBUG("PLP: %d, plpInfoVal: %d", plpIndx, plpInfoVal);
 
         if (plpInfoVal == 0x01)
         {
@@ -986,19 +1002,19 @@ int SaankhyaPHYAndroid::download_bootloader_firmware(int fd, string device_path)
 
     SL_I2cResult_t i2cres;
 
-    printf("SL_I2cPreInit - Before, path: %s, fd: %d", device_path.c_str(), fd);
+    _SAANKHYA_PHY_ANDROID_DEBUG("SL_I2cPreInit - Before, path: %s, fd: %d", device_path.c_str(), fd);
     i2cres = SL_I2cPreInit();
-    printf("SL_I2cPreInit returned: %d", i2cres);
+    _SAANKHYA_PHY_ANDROID_DEBUG("SL_I2cPreInit returned: %d", i2cres);
 
     if (i2cres != SL_I2C_OK)
     {
         if(i2cres == SL_I2C_AWAITING_REENUMERATION) {
-            printf("\n INFO:SL_I2cPreInit SL_FX3S_I2C_AWAITING_REENUMERATION");
+            _SAANKHYA_PHY_ANDROID_DEBUG("INFO:SL_I2cPreInit SL_FX3S_I2C_AWAITING_REENUMERATION");
             //sleep for 2s
             sleep(2);
             return 0;
         } else {
-            printf("\n Error:SL_I2cPreInit failed: %d", i2cres);
+            _SAANKHYA_PHY_ANDROID_DEBUG("Error:SL_I2cPreInit failed: %d", i2cres);
             printToConsoleI2cError(i2cres);
         }
     }
@@ -1008,37 +1024,58 @@ int SaankhyaPHYAndroid::download_bootloader_firmware(int fd, string device_path)
 SL_ConfigResult_t SaankhyaPHYAndroid::configPlatformParams() {
 
     SL_ConfigResult_t res;
-
-#define SL_DEMOD_OUTPUT_SDIO 1
     /*
-     * Assign Platform Configuration Parameters. For other ref platforms, replace settings from
-     * comments above
-     */
+      * Assign Platform Configuration Parameters. For other ref platforms, replace settings from
+      * comments above
+      */
+
+//jjustman-2020-09-09 MarkONE specific configuration
+#ifdef SL_MARKONE
+
     sPlfConfig.chipType = SL_CHIP_4000;
     sPlfConfig.chipRev = SL_CHIP_REV_AA;
-    sPlfConfig.boardType = SL_BORQS_EVT;
+    sPlfConfig.boardType = SL_EVB_4000; //from venky 2020-09-07 - SL_BORQS_EVT;
     sPlfConfig.tunerType = TUNER_SI;
     sPlfConfig.demodControlIf = SL_DEMOD_CMD_CONTROL_IF_I2C;
     sPlfConfig.demodOutputIf = SL_DEMOD_OUTPUTIF_SDIO;
     sPlfConfig.demodI2cAddr = 0x30; /* SLDemod 7-bit Physical I2C Address */
-
-#ifdef SL_FX3S
-    sPlfConfig.demodResetGpioPin = 47;   /* FX3S GPIO 47 connected to Demod Reset Pin */
-    sPlfConfig.cpldResetGpioPin = 43;   /* FX3S GPIO 43 connected to CPLD Reset Pin and used only for serial TS Interface  */
-    sPlfConfig.demodI2cAddr3GpioPin = 37;   /* FX3S GPIO 37 connected to Demod I2C Address3 Pin and used only for SDIO Interface */
-#endif
-
-    /*
+     /*
      * Relative Path to SLSDK from working directory
      * Example: D:\UNAME\PROJECTS\slsdk
      * User can just specifying "..", which will point to this directory or can specify full directory path explicitly
      */
-    sPlfConfig.slsdkPath = ".";
+    sPlfConfig.slsdkPath = "/data/out"; //from venky 2020-09-07
+
+    sPlfConfig.demodResetGpioPin = 12;   /* 09-10 03:25:56.498     0     0 E SAANKHYA: Reset low GPIO: 12 */
+    sPlfConfig.demodI2cAddr3GpioPin = 37;   /* FX3S GPIO 37 connected to Demod I2C Address3 Pin and used only for SDIO Interface */
+
+#endif
+
+//jjustman-2020-09-09 KAILASH dongle specific configuration
+#ifdef SL_KAILASH
+
+    #define SL_FX3S 1
+    sPlfConfig.chipType = SL_CHIP_3010;
+    sPlfConfig.chipRev = SL_CHIP_REV_AA;
+    sPlfConfig.boardType = SL_KAILASH_DONGLE;
+    sPlfConfig.tunerType = TUNER_SI;
+    sPlfConfig.demodControlIf = SL_DEMOD_CMD_CONTROL_IF_I2C;
+    sPlfConfig.demodOutputIf = SL_DEMOD_OUTPUTIF_TS;
+    sPlfConfig.demodI2cAddr = 0x30; /* SLDemod 7-bit Physical I2C Address */
+
+    sPlfConfig.demodResetGpioPin = 47;   /* FX3S GPIO 47 connected to Demod Reset Pin */
+    sPlfConfig.cpldResetGpioPin = 43;   /* FX3S GPIO 43 connected to CPLD Reset Pin and used only for serial TS Interface  */
+    sPlfConfig.demodI2cAddr3GpioPin = 37;   /* FX3S GPIO 37 connected to Demod I2C Address3 Pin and used only for SDIO Interface */
+    sPlfConfig.slsdkPath = "."; //jjustman-2020-09-09 use extern object linkages for fx3/hex firmware
+
+#endif
+
+
 
     /* Set Configuration Parameters */
     res = SL_ConfigSetPlatform(sPlfConfig);
 
-    printf("configPlatformParams: with boardType: %d", sPlfConfig.boardType);
+    _SAANKHYA_PHY_ANDROID_DEBUG("configPlatformParams: with boardType: %d", sPlfConfig.boardType);
 
     return res;
 
@@ -1048,11 +1085,9 @@ SL_ConfigResult_t SaankhyaPHYAndroid::configPlatformParams() {
 
 void SaankhyaPHYAndroid::handleCmdIfFailure(void)
 {
-    SL_Printf("\n SL CMD IF FAILURE: Cannot continue!");
+    _SAANKHYA_PHY_ANDROID_DEBUG("SL CMD IF FAILURE: Cannot continue!");
     SL_DemodUnInit(slUnit);
     SL_TunerUnInit(tUnit);
-    //processFlag = 0;
-    //diagFlag = 0;
 }
 
 void SaankhyaPHYAndroid::printToConsoleI2cError(SL_I2cResult_t err)
@@ -1060,18 +1095,18 @@ void SaankhyaPHYAndroid::printToConsoleI2cError(SL_I2cResult_t err)
     switch (err)
     {
         case SL_I2C_ERR_TRANSFER_FAILED:
-            SL_Printf(" Sl I2C Transfer Failed");
+            _SAANKHYA_PHY_ANDROID_DEBUG(" Sl I2C Transfer Failed");
             break;
         case SL_I2C_ERR_NOT_INITIALIZED:
-            SL_Printf(" Sl I2C Not Initialized");
+            _SAANKHYA_PHY_ANDROID_DEBUG(" Sl I2C Not Initialized");
             break;
 
         case SL_I2C_ERR_BUS_TIMEOUT:
-            SL_Printf(" Sl I2C Bus Timeout");
+            _SAANKHYA_PHY_ANDROID_DEBUG(" Sl I2C Bus Timeout");
             break;
 
         case SL_I2C_ERR_LOST_ARBITRATION:
-            SL_Printf(" Sl I2C Lost Arbitration");
+            _SAANKHYA_PHY_ANDROID_DEBUG(" Sl I2C Lost Arbitration");
             break;
 
         default:
@@ -1084,19 +1119,19 @@ void SaankhyaPHYAndroid::printToConsoleTunerError(SL_TunerResult_t err)
     switch (err)
     {
         case SL_TUNER_ERR_OPERATION_FAILED:
-            SL_Printf(" Sl Tuner Operation Failed");
+            _SAANKHYA_PHY_ANDROID_DEBUG(" Sl Tuner Operation Failed");
             break;
 
         case SL_TUNER_ERR_INVALID_ARGS:
-            SL_Printf(" Sl Tuner Invalid Argument");
+            _SAANKHYA_PHY_ANDROID_DEBUG(" Sl Tuner Invalid Argument");
             break;
 
         case SL_TUNER_ERR_NOT_SUPPORTED:
-            SL_Printf(" Sl Tuner Not Supported");
+            _SAANKHYA_PHY_ANDROID_DEBUG(" Sl Tuner Not Supported");
             break;
 
         case SL_TUNER_ERR_MAX_INSTANCES_REACHED:
-            SL_Printf(" Sl Tuner Maximum Instance Reached");
+            _SAANKHYA_PHY_ANDROID_DEBUG(" Sl Tuner Maximum Instance Reached");
             break;
         default:
             break;
@@ -1105,247 +1140,247 @@ void SaankhyaPHYAndroid::printToConsoleTunerError(SL_TunerResult_t err)
 
 void SaankhyaPHYAndroid::printToConsolePlfConfiguration(SL_PlatFormConfigParams_t cfgInfo)
 {
-    SL_Printf("\n\n SL Platform Configuration");
+    _SAANKHYA_PHY_ANDROID_DEBUG("SL Platform Configuration");
     switch (cfgInfo.boardType)
     {
         case SL_EVB_3000:
-            SL_Printf("\n Board Type             : SL_EVB_3000");
+            _SAANKHYA_PHY_ANDROID_DEBUG("Board Type  : SL_EVB_3000");
             break;
 
         case SL_EVB_3010:
-            SL_Printf("\n Board Type             : SL_EVB_3010");
+            _SAANKHYA_PHY_ANDROID_DEBUG("Board Type  : SL_EVB_3010");
             break;
 
         case SL_EVB_4000:
-            SL_Printf("\n Board Type             : SL_EVB_4000");
+            _SAANKHYA_PHY_ANDROID_DEBUG("Board Type  : SL_EVB_4000");
             break;
 
         case SL_KAILASH_DONGLE:
-            SL_Printf("\n Board Type             : SL_KAILASH_DONGLE");
+            _SAANKHYA_PHY_ANDROID_DEBUG("Board Type  : SL_KAILASH_DONGLE");
             break;
 
         case SL_BORQS_EVT:
-            SL_Printf("\n Board Type             : SL_BORQS_EVT");
+            _SAANKHYA_PHY_ANDROID_DEBUG("Board Type  : SL_BORQS_EVT");
             break;
 
         default:
-            SL_Printf("\n Board Type             : NA");
+            _SAANKHYA_PHY_ANDROID_DEBUG("Board Type  : NA");
     }
 
     switch (cfgInfo.chipType)
     {
         case SL_CHIP_3000:
-            SL_Printf("\n Chip Type              : SL_CHIP_3000");
+            _SAANKHYA_PHY_ANDROID_DEBUG("Chip Type: SL_CHIP_3000");
             break;
 
         case SL_CHIP_3010:
-            SL_Printf("\n Chip Type              : SL_CHIP_3010");
+            _SAANKHYA_PHY_ANDROID_DEBUG("Chip Type: SL_CHIP_3010");
             break;
 
         case SL_CHIP_4000:
-            SL_Printf("\n Chip Type              : SL_CHIP_4000");
+            _SAANKHYA_PHY_ANDROID_DEBUG("Chip Type: SL_CHIP_4000");
             break;
 
         default:
-            SL_Printf("\n Chip Type              : NA");
+            _SAANKHYA_PHY_ANDROID_DEBUG("Chip Type : NA");
     }
 
     if (cfgInfo.chipRev == SL_CHIP_REV_AA)
     {
-        SL_Printf("\n Chip Revision          : SL_CHIP_REV_AA");
+        _SAANKHYA_PHY_ANDROID_DEBUG("Chip Revision: SL_CHIP_REV_AA");
     }
     else if (cfgInfo.chipRev == SL_CHIP_REV_BB)
     {
-        SL_Printf("\n Chip Revision          : SL_CHIP_REV_BB");
+        _SAANKHYA_PHY_ANDROID_DEBUG("Chip Revision: SL_CHIP_REV_BB");
     }
     else
     {
-        SL_Printf("\n Chip Revision          : NA");
+        _SAANKHYA_PHY_ANDROID_DEBUG("Chip Revision: NA");
     }
 
     if (cfgInfo.tunerType == TUNER_NXP)
     {
-        SL_Printf("\n Tuner Type             : TUNER_NXP");
+        _SAANKHYA_PHY_ANDROID_DEBUG("Tuner Type: TUNER_NXP");
     }
     else if (cfgInfo.tunerType == TUNER_SI)
     {
-        SL_Printf("\n Tuner Type             : TUNER_SI");
+        _SAANKHYA_PHY_ANDROID_DEBUG("Tuner Type: TUNER_SI");
     }
     else
     {
-        SL_Printf("\n Tuner Type             : NA");
+        _SAANKHYA_PHY_ANDROID_DEBUG("Tuner Type: NA");
     }
 
     switch (cfgInfo.demodControlIf)
     {
         case SL_DEMOD_CMD_CONTROL_IF_I2C:
-            SL_Printf("\n Command Interface      : SL_DEMOD_CMD_CONTROL_IF_I2C");
+            _SAANKHYA_PHY_ANDROID_DEBUG("Command Interface: SL_DEMOD_CMD_CONTROL_IF_I2C");
             break;
 
         case SL_DEMOD_CMD_CONTROL_IF_SDIO:
-            SL_Printf("\n Command Interface      : SL_DEMOD_CMD_CONTROL_IF_SDIO");
+            _SAANKHYA_PHY_ANDROID_DEBUG("Command Interface: SL_DEMOD_CMD_CONTROL_IF_SDIO");
             break;
 
         case SL_DEMOD_CMD_CONTROL_IF_SPI:
-            SL_Printf("\n Command Interface      : SL_DEMOD_CMD_CONTROL_IF_SPI");
+            _SAANKHYA_PHY_ANDROID_DEBUG("Command Interface: SL_DEMOD_CMD_CONTROL_IF_SPI");
             break;
 
         default:
-            SL_Printf("\n Command Interface      : NA");
+            _SAANKHYA_PHY_ANDROID_DEBUG("Command Interface: NA");
     }
 
     switch (cfgInfo.demodOutputIf)
     {
         case SL_DEMOD_OUTPUTIF_TS:
-            SL_Printf("\n Output Interface       : SL_DEMOD_OUTPUTIF_TS");
+            _SAANKHYA_PHY_ANDROID_DEBUG("Output Interface: SL_DEMOD_OUTPUTIF_TS");
             break;
 
         case SL_DEMOD_OUTPUTIF_SDIO:
-            SL_Printf("\n Output Interface       : SL_DEMOD_OUTPUTIF_SDIO");
+            _SAANKHYA_PHY_ANDROID_DEBUG("Output Interface: SL_DEMOD_OUTPUTIF_SDIO");
             break;
 
         case SL_DEMOD_OUTPUTIF_SPI:
-            SL_Printf("\n Output Interface       : SL_DEMOD_OUTPUTIF_SPI");
+            _SAANKHYA_PHY_ANDROID_DEBUG("Output Interface: SL_DEMOD_OUTPUTIF_SPI");
             break;
 
         default:
-            SL_Printf("\n Output Interface       : NA");
+            _SAANKHYA_PHY_ANDROID_DEBUG("Output Interface: NA");
     }
 
-    SL_Printf("\n Demod I2C Address      : 0x%x\n", cfgInfo.demodI2cAddr);
+    _SAANKHYA_PHY_ANDROID_DEBUG("Demod I2C Address: 0x%x", cfgInfo.demodI2cAddr);
 }
 
 void SaankhyaPHYAndroid::printToConsoleDemodConfiguration(SL_DemodConfigInfo_t cfgInfo)
 {
-    SL_Printf("\n\n SL Demod Configuration");
+    _SAANKHYA_PHY_ANDROID_DEBUG(" SL Demod Configuration");
     switch (cfgInfo.std)
     {
         case SL_DEMODSTD_ATSC3_0:
-            SL_Printf("\n Standard               : ATSC3_0");
+            _SAANKHYA_PHY_ANDROID_DEBUG("Standard: ATSC3_0");
             break;
 
         case SL_DEMODSTD_ATSC1_0:
-            SL_Printf("\n Demod Standard         : ATSC1_0");
+            _SAANKHYA_PHY_ANDROID_DEBUG("Demod Standard  : ATSC1_0");
             break;
 
         default:
-            SL_Printf("\n Demod Standard         : NA");
+            _SAANKHYA_PHY_ANDROID_DEBUG("Demod Standard  : NA");
     }
 
-    SL_Printf("\n PLP Configuration");
-    SL_Printf("\n   PLP0                 : %d", (signed char)cfgInfo.plpInfo.plp0);
-    SL_Printf("\n   PLP1                 : %d", (signed char)cfgInfo.plpInfo.plp1);
-    SL_Printf("\n   PLP2                 : %d", (signed char)cfgInfo.plpInfo.plp2);
-    SL_Printf("\n   PLP3                 : %d", (signed char)cfgInfo.plpInfo.plp3);
+    _SAANKHYA_PHY_ANDROID_DEBUG("PLP Configuration");
+    _SAANKHYA_PHY_ANDROID_DEBUG("  PLP0: %d", (signed char)cfgInfo.plpInfo.plp0);
+    _SAANKHYA_PHY_ANDROID_DEBUG("  PLP1: %d", (signed char)cfgInfo.plpInfo.plp1);
+    _SAANKHYA_PHY_ANDROID_DEBUG("  PLP2: %d", (signed char)cfgInfo.plpInfo.plp2);
+    _SAANKHYA_PHY_ANDROID_DEBUG("  PLP3: %d", (signed char)cfgInfo.plpInfo.plp3);
 
-    SL_Printf("\n Input Configuration");
+    _SAANKHYA_PHY_ANDROID_DEBUG("Input Configuration");
     switch (cfgInfo.afeIfInfo.iftype)
     {
         case SL_IFTYPE_ZIF:
-            SL_Printf("\n   IF Type              : ZIF");
+            _SAANKHYA_PHY_ANDROID_DEBUG("  IF Type: ZIF");
             break;
 
         case SL_IFTYPE_LIF:
-            SL_Printf("\n   IF Type              : LIF");
+            _SAANKHYA_PHY_ANDROID_DEBUG("  IF Type: LIF");
             break;
 
         default:
-            SL_Printf("\n   IF Type              : NA");
+            _SAANKHYA_PHY_ANDROID_DEBUG("  IF Type: NA");
     }
 
     switch (cfgInfo.afeIfInfo.iqswap)
     {
         case SL_IQSWAP_DISABLE:
-            SL_Printf("\n   IQSWAP               : DISABLE");
+            _SAANKHYA_PHY_ANDROID_DEBUG("  IQSWAP : DISABLE");
             break;
 
         case SL_IQSWAP_ENABLE:
-            SL_Printf("\n   IQSWAP               : ENABLE");
+            _SAANKHYA_PHY_ANDROID_DEBUG("  IQSWAP : ENABLE");
             break;
 
         default:
-            SL_Printf("\n   IQSWAP               : NA");
+            _SAANKHYA_PHY_ANDROID_DEBUG("  IQSWAP : NA");
     }
 
     switch (cfgInfo.afeIfInfo.iswap)
     {
         case SL_IPOL_SWAP_DISABLE:
-            SL_Printf("\n   ISWAP                : DISABLE");
+            _SAANKHYA_PHY_ANDROID_DEBUG("  ISWAP  : DISABLE");
             break;
 
         case SL_IPOL_SWAP_ENABLE:
-            SL_Printf("\n   ISWAP                : ENABLE");
+            _SAANKHYA_PHY_ANDROID_DEBUG("  ISWAP  : ENABLE");
             break;
 
         default:
-            SL_Printf("\n   ISWAP                : NA");
+            _SAANKHYA_PHY_ANDROID_DEBUG("  ISWAP  : NA");
     }
 
     switch (cfgInfo.afeIfInfo.qswap)
     {
         case SL_QPOL_SWAP_DISABLE:
-            SL_Printf("\n   QSWAP                : DISABLE");
+            _SAANKHYA_PHY_ANDROID_DEBUG("  QSWAP  : DISABLE");
             break;
 
         case SL_QPOL_SWAP_ENABLE:
-            SL_Printf("\n   QSWAP                : ENABLE");
+            _SAANKHYA_PHY_ANDROID_DEBUG("  QSWAP  : ENABLE");
             break;
 
         default:
-            SL_Printf("\n   QSWAP                : NA");
+            _SAANKHYA_PHY_ANDROID_DEBUG("  QSWAP  : NA");
     }
 
-    SL_Printf("\n   ICoeff1              : %3.4f", cfgInfo.iqOffCorInfo.iCoeff1);
-    SL_Printf("\n   QCoeff1              : %3.4f", cfgInfo.iqOffCorInfo.qCoeff1);
-    SL_Printf("\n   ICoeff2              : %3.4f", cfgInfo.iqOffCorInfo.iCoeff2);
-    SL_Printf("\n   QCoeff2              : %3.4f", cfgInfo.iqOffCorInfo.qCoeff2);
+    _SAANKHYA_PHY_ANDROID_DEBUG("  ICoeff1: %3.4f", cfgInfo.iqOffCorInfo.iCoeff1);
+    _SAANKHYA_PHY_ANDROID_DEBUG("  QCoeff1: %3.4f", cfgInfo.iqOffCorInfo.qCoeff1);
+    _SAANKHYA_PHY_ANDROID_DEBUG("  ICoeff2: %3.4f", cfgInfo.iqOffCorInfo.iCoeff2);
+    _SAANKHYA_PHY_ANDROID_DEBUG("  QCoeff2: %3.4f", cfgInfo.iqOffCorInfo.qCoeff2);
 
-    SL_Printf("\n   AGCReference         : %d mv", cfgInfo.afeIfInfo.agcRefValue);
-    SL_Printf("\n   Tuner IF Frequency   : %3.2f MHz", cfgInfo.afeIfInfo.ifreq);
+    _SAANKHYA_PHY_ANDROID_DEBUG("  AGCReference  : %d mv", cfgInfo.afeIfInfo.agcRefValue);
+    _SAANKHYA_PHY_ANDROID_DEBUG("  Tuner IF Frequency: %3.2f MHz", cfgInfo.afeIfInfo.ifreq);
 
-    SL_Printf("\n Output Configuration");
+    _SAANKHYA_PHY_ANDROID_DEBUG("Output Configuration");
     switch (cfgInfo.oifInfo.oif)
     {
         case SL_OUTPUTIF_TSPARALLEL_LSB_FIRST:
-            SL_Printf("\n   OutputInteface       : TS PARALLEL LSB FIRST");
+            _SAANKHYA_PHY_ANDROID_DEBUG("  OutputInteface: TS PARALLEL LSB FIRST");
             break;
 
         case SL_OUTPUTIF_TSPARALLEL_MSB_FIRST:
-            SL_Printf("\n   OutputInteface       : TS PARALLEL MSB FIRST");
+            _SAANKHYA_PHY_ANDROID_DEBUG("  OutputInteface: TS PARALLEL MSB FIRST");
             break;
 
         case SL_OUTPUTIF_TSSERIAL_LSB_FIRST:
-            SL_Printf("\n   OutputInteface       : TS SERAIL LSB FIRST");
+            _SAANKHYA_PHY_ANDROID_DEBUG("  OutputInteface: TS SERAIL LSB FIRST");
             break;
 
         case SL_OUTPUTIF_TSSERIAL_MSB_FIRST:
-            SL_Printf("\n   OutputInteface       : TS SERIAL MSB FIRST");
+            _SAANKHYA_PHY_ANDROID_DEBUG("  OutputInteface: TS SERIAL MSB FIRST");
             break;
 
         case SL_OUTPUTIF_SDIO:
-            SL_Printf("\n   OutputInteface       : SDIO");
+            _SAANKHYA_PHY_ANDROID_DEBUG("  OutputInteface: SDIO");
             break;
 
         case SL_OUTPUTIF_SPI:
-            SL_Printf("\n   OutputInteface       : SPI");
+            _SAANKHYA_PHY_ANDROID_DEBUG("  OutputInteface: SPI");
             break;
 
         default:
-            SL_Printf("\n   OutputInteface       : NA");
+            _SAANKHYA_PHY_ANDROID_DEBUG("  OutputInteface: NA");
     }
 
     switch (cfgInfo.oifInfo.TsoClockInvEnable)
     {
         case SL_TSO_CLK_INV_OFF:
-            SL_Printf("\n   TS Out Clock Inv     : DISABLED");
+            _SAANKHYA_PHY_ANDROID_DEBUG("  TS Out Clock Inv: DISABLED");
             break;
 
         case SL_TSO_CLK_INV_ON:
-            SL_Printf("\n   TS Out Clock Inv     : ENABLED");
+            _SAANKHYA_PHY_ANDROID_DEBUG("  TS Out Clock Inv: ENABLED");
             break;
 
         default:
-            SL_Printf("\n    TS Out Clock Inv    : NA");
+            _SAANKHYA_PHY_ANDROID_DEBUG("   TS Out Clock Inv: NA");
     }
 }
 
@@ -1354,88 +1389,80 @@ void SaankhyaPHYAndroid::printToConsoleDemodError(SL_Result_t err)
     switch (err)
     {
         case SL_ERR_OPERATION_FAILED:
-            SL_Printf(" Sl Operation Failed");
+            _SAANKHYA_PHY_ANDROID_DEBUG(" Sl Operation Failed");
             break;
 
         case SL_ERR_TOO_MANY_INSTANCES:
-            SL_Printf(" Sl Too Many Instance");
+            _SAANKHYA_PHY_ANDROID_DEBUG(" Sl Too Many Instance");
             break;
 
         case SL_ERR_CODE_DWNLD:
-            SL_Printf(" Sl Code download Failed");
+            _SAANKHYA_PHY_ANDROID_DEBUG(" Sl Code download Failed");
             break;
 
         case SL_ERR_INVALID_ARGUMENTS:
-            SL_Printf(" Sl Invalid Argument");
+            _SAANKHYA_PHY_ANDROID_DEBUG(" Sl Invalid Argument");
             break;
 
         case SL_ERR_CMD_IF_FAILURE:
-            SL_Printf(" Sl Command Interface Failure");
+            _SAANKHYA_PHY_ANDROID_DEBUG(" Sl Command Interface Failure");
             break;
 
         case SL_ERR_NOT_SUPPORTED:
-            SL_Printf(" Sl Not Supported");
+            _SAANKHYA_PHY_ANDROID_DEBUG(" Sl Not Supported");
             break;
         default:
             break;
     }
 }
 
-void* SaankhyaPHYAndroid::ProcessThread(void* context)
+int SaankhyaPHYAndroid::processThread()
 {
-    printf("SaankhyaPHYAndroid::ProcessThread: with context: %p", context);
+    _SAANKHYA_PHY_ANDROID_DEBUG("SaankhyaPHYAndroid::processThread: starting with this: %p", this);
+    this->pinConsumerThreadAsNeeded();
+    this->processThreadIsRunning = true;
 
-    SaankhyaPHYAndroid* apiImpl = (SaankhyaPHYAndroid*) context;
-    apiImpl->processThreadIsRunning = true;
+    this->resetProcessThreadStatistics();
 
-    apiImpl->pinConsumerThreadAsNeeded();
-
-    apiImpl->resetProcessThreadStatistics();
-
-    while (apiImpl->processThreadShouldRun)
+    while (this->processThreadShouldRun)
     {
-        //printf("atsc3NdkClientSlImpl::ProcessThread: getDataSize is: %d", CircularBufferGetDataSize(cb));
+        //_SAANKHYA_PHY_ANDROID_DEBUG("atsc3NdkClientSlImpl::ProcessThread: getDataSize is: %d", CircularBufferGetDataSize(cb));
 
-        while(CircularBufferGetDataSize(apiImpl->cb) >= BUFFER_SIZE) {
-            apiImpl->processTLVFromCallback();
+        while(CircularBufferGetDataSize(this->cb) >= BUFFER_SIZE) {
+            this->processTLVFromCallback();
         }
         usleep(10000);
     }
 
-    apiImpl->releasePinnedConsumerThreadAsNeeded();
+    this->releasePinnedConsumerThreadAsNeeded();
+    this->processThreadIsRunning = false;
 
-    apiImpl->processThreadIsRunning = false;
     _SAANKHYA_PHY_ANDROID_INFO("SaankhyaPHYAndroid::ProcessThread complete");
 
     return 0;
 }
 
-//SL_Fx3s_RxDataStop
-void* SaankhyaPHYAndroid::CaptureThread(void* context)
+int SaankhyaPHYAndroid::captureThread()
 {
-    SaankhyaPHYAndroid* apiImpl = (SaankhyaPHYAndroid*) context;
-    apiImpl->captureThreadIsRunning = true;
-
-    apiImpl->pinProducerThreadAsNeeded();
+    _SAANKHYA_PHY_ANDROID_DEBUG("SaankhyaPHYAndroid::captureThread: starting with this: %p", this);
+    this->pinProducerThreadAsNeeded();
+    this->captureThreadIsRunning = true;
 
     SL_RxDataStart((RxDataCB)&SaankhyaPHYAndroid::RxDataCallback);
 
-    apiImpl->releasePinnedProducerThreadAsNeeded();
-
-    apiImpl->captureThreadIsRunning = false;
+    this->releasePinnedProducerThreadAsNeeded();
+    this->captureThreadIsRunning = false;
 
     _SAANKHYA_PHY_ANDROID_INFO("SaankhyaPHYAndroid::CaptureThread complete");
 
     return 0;
 }
 
-void* SaankhyaPHYAndroid::TunerStatusThread(void* context)
+int SaankhyaPHYAndroid::statusThread()
 {
-
-    SaankhyaPHYAndroid* apiImpl = (SaankhyaPHYAndroid*) context;
-    apiImpl->statusThreadIsRunning = true;
-
-    apiImpl->pinStatusThreadAsNeeded();
+    _SAANKHYA_PHY_ANDROID_DEBUG("SaankhyaPHYAndroid::statusThread: starting with this: %p", this);
+    this->pinStatusThreadAsNeeded();
+    this->statusThreadIsRunning = true;
 
     SL_Result_t sl_res;
     SL_TunerResult_t tres;
@@ -1456,29 +1483,28 @@ void* SaankhyaPHYAndroid::TunerStatusThread(void* context)
     double ber_l1b;
     double ber_l1d;
     double ber_plp0;
-    unique_lock<mutex> SL_I2C_command_mutex_tuner_status_io(apiImpl->SL_I2C_command_mutex, std::defer_lock);
-    bool first_run = true;
+    unique_lock<mutex> SL_I2C_command_mutex_tuner_status_io(this->SL_I2C_command_mutex, std::defer_lock);
 
-    while(apiImpl->statusThreadShouldRun) {
+    while(this->statusThreadShouldRun) {
 
-        //only actively poll the tuner status if the RF status window is visible
-//        if(!atsc3NdkClientSlImpl::tunerStatusThreadShouldPollTunerStatus) {
-//            usleep(1000000);
-//            continue;
-//        }
-
-        if(!first_run) {
-            SL_I2C_command_mutex_tuner_status_io.unlock();
-        }
-        first_run = false;
-
+        //running
         if(lastCpuStatus == 0xFFFFFFFF) {
-            usleep(1000000); //jjustman: target: sleep for 500ms
+            usleep(2000000); //jjustman: target: sleep for 500ms
             //TODO: jjustman-2019-12-05: investigate FX3 firmware and i2c single threaded interrupt handling instead of dma xfer
         } else {
-            usleep(2500000);
+            //halted
+            usleep(5000000);
         }
         lastCpuStatus = 0;
+
+        //bail early if we should shutdown
+        if(!this->statusThreadShouldRun) {
+            break;
+        }
+
+        //jjustman-2020-10-14 - try to make this loop as small as possible to not upset the SDIO I/F ALP buffer window
+
+        SL_I2C_command_mutex_tuner_status_io.lock();
 
         /*jjustman-2020-01-06: For the SL3000/SiTune, we will have 3 status attributes with the following possible values:
 
@@ -1491,80 +1517,74 @@ void* SaankhyaPHYAndroid::TunerStatusThread(void* context)
                 cpuStatus:          (cpuStatus == 0xFFFFFFFF) ? "RUNNING" : "HALTED",
          */
 
-        SL_I2C_command_mutex_tuner_status_io.lock();
-
+        //used for PLP demod info
         SL_DemodConfigInfo_t demodInfo;
-        sl_res = SL_DemodGetConfiguration(apiImpl->slUnit, &demodInfo);
+        sl_res = SL_DemodGetConfiguration(this->slUnit, &demodInfo);
         if(sl_res != SL_OK) {
-            printf("Error calling SL_DemodGetConfiguration");
-            continue;
+            _SAANKHYA_PHY_ANDROID_DEBUG("Error calling SL_DemodGetConfiguration, releasing lock and continue, sl_res: %d", sl_res);
+            goto sl_i2c_tuner_mutex_unlock;
         }
 
-        printf("DemodGetConfiguration, plp's: 0: %02x, 1: %02x, 2: %02x, 3: %02x",
-                demodInfo.plpInfo.plp0,
-                demodInfo.plpInfo.plp1,
-                demodInfo.plpInfo.plp2,
-                demodInfo.plpInfo.plp3);
-
-
-        tres = SL_TunerGetStatus(apiImpl->tUnit, &tunerInfo);
+        //jjustman-2020-10-14 - not really worth it on AA as we don't get rssi here
+        tres = SL_TunerGetStatus(this->tUnit, &tunerInfo);
         if (tres != SL_TUNER_OK) {
-            //atsc3NdkClientSlImpl::atsc3NdkClientSLRef->LogMsgF("Error:SL_TunerGetStatus: deviceHandle: %p, res: %d", __deviceHandle_FIXME, tres);
-            printf("\n Error:SL_TunerGetStatus: tres: %d", tres);
-            //printToConsoleTunerError(tres);
-            continue;
+            _SAANKHYA_PHY_ANDROID_ERROR("Error:SL_TunerGetStatus: tres: %d", tres);
+            goto sl_i2c_tuner_mutex_unlock;
         }
 
-        dres = SL_DemodGetStatus(apiImpl->slUnit, SL_DEMOD_STATUS_TYPE_LOCK, (SL_DemodLockStatus_t*)&demodLockStatus);
+        //important
+        dres = SL_DemodGetStatus(this->slUnit, SL_DEMOD_STATUS_TYPE_LOCK, (SL_DemodLockStatus_t*)&demodLockStatus);
         if (dres != SL_OK) {
-            printf("\n Error:SL_Demod Get Lock Status                :");
-            // printToConsoleDemodError(dres);
-            continue;
+            _SAANKHYA_PHY_ANDROID_ERROR("Error:SL_Demod Get Lock Status  : dres: %d", dres);
+            goto sl_i2c_tuner_mutex_unlock;
         }
 
-        dres = SL_DemodGetStatus(apiImpl->slUnit, SL_DEMOD_STATUS_TYPE_CPU, (int*)&cpuStatus);
+        //important
+        dres = SL_DemodGetStatus(this->slUnit, SL_DEMOD_STATUS_TYPE_CPU, (int*)&cpuStatus);
         if (dres != SL_OK) {
-            printf("\n Error:SL_Demod Get CPU Status                 :");
-            //printToConsoleDemodError(dres);
+            _SAANKHYA_PHY_ANDROID_ERROR("Error:SL_Demod Get CPU Status: dres: %d", dres);
             continue;
         }
 
         lastCpuStatus = cpuStatus;
 
-        dres = SL_DemodGetAtsc3p0Diagnostics(apiImpl->slUnit, SL_DEMOD_DIAG_TYPE_PERF, (SL_Atsc3p0Perf_Diag_t*)&perfDiag);
+        //we need this for SNR
+        dres = SL_DemodGetAtsc3p0Diagnostics(this->slUnit, SL_DEMOD_DIAG_TYPE_PERF, (SL_Atsc3p0Perf_Diag_t*)&perfDiag);
         if (dres != SL_OK) {
-            printf("\n Error getting ATSC3.0 Performance Diagnostics :");
-            // printToConsoleDemodError(dres);
-            continue;
+            _SAANKHYA_PHY_ANDROID_ERROR("Error getting ATSC3.0 Performance Diagnostics : dres: %d", dres);
+            goto sl_i2c_tuner_mutex_unlock;
         }
 
-        dres = SL_DemodGetAtsc3p0Diagnostics(apiImpl->slUnit, SL_DEMOD_DIAG_TYPE_BSR, (SL_Atsc3p0Bsr_Diag_t*)&bsrDiag);
+        dres = SL_DemodGetAtsc3p0Diagnostics(this->slUnit, SL_DEMOD_DIAG_TYPE_BSR, (SL_Atsc3p0Bsr_Diag_t*)&bsrDiag);
         if (dres != SL_OK) {
-            printf("\n Error getting ATSC3.0 Boot Strap Diagnostics  :");
-            //  printToConsoleDemodError(dres);
-            continue;
+            _SAANKHYA_PHY_ANDROID_ERROR("Error getting ATSC3.0 Boot Strap Diagnostics  : dres: %d", dres);
+            goto sl_i2c_tuner_mutex_unlock;
         }
 
-        dres = SL_DemodGetAtsc3p0Diagnostics(apiImpl->slUnit, SL_DEMOD_DIAG_TYPE_L1B, (SL_Atsc3p0L1B_Diag_t*)&l1bDiag);
+        /*
+         * jjustman-2020-10-14 - omitting
+
+        dres = SL_DemodGetAtsc3p0Diagnostics(this->slUnit, SL_DEMOD_DIAG_TYPE_L1B, (SL_Atsc3p0L1B_Diag_t*)&l1bDiag);
         if (dres != SL_OK) {
-            printf("\n Error getting ATSC3.0 L1B Diagnostics         :");
-            // printToConsoleDemodError(dres);
-            continue;
+            _SAANKHYA_PHY_ANDROID_ERROR("Error getting ATSC3.0 L1B Diagnostics  : dres: %d", dres);
+            goto sl_i2c_tuner_mutex_unlock;
         }
+        */
 
-        dres = SL_DemodGetAtsc3p0Diagnostics(apiImpl->slUnit, SL_DEMOD_DIAG_TYPE_L1D, (SL_Atsc3p0L1D_Diag_t*)&l1dDiag);
+        //important for PLP FEC type, and Mod/Cod
+        dres = SL_DemodGetAtsc3p0Diagnostics(this->slUnit, SL_DEMOD_DIAG_TYPE_L1D, (SL_Atsc3p0L1D_Diag_t*)&l1dDiag);
         if (dres != SL_OK) {
-            printf("\n Error getting ATSC3.0 L1D Diagnostics         :");
-            //    printToConsoleDemodError(dres);
-            continue;
+            _SAANKHYA_PHY_ANDROID_ERROR("Error getting ATSC3.0 L1D Diagnostics  : dres: %d", dres);
+            goto sl_i2c_tuner_mutex_unlock;
         }
 
-        int slres = SL_DemodGetLlsPlpList(apiImpl->slUnit, &llsPlpInfo);
-        if (slres != SL_OK) {
-            printf("\n Error:SL_DemodGetLlsPlpList :");
-            continue;
+        sl_res = SL_DemodGetLlsPlpList(this->slUnit, &llsPlpInfo);
+        if (sl_res != SL_OK) {
+            _SAANKHYA_PHY_ANDROID_ERROR("Error:SL_DemodGetLlsPlpList : sl_res: %d", sl_res);
+            goto sl_i2c_tuner_mutex_unlock;
         }
 
+        SL_I2C_command_mutex_tuner_status_io.unlock();
 
         snr = (float)perfDiag.GlobalSnrLinearScale / 16384;
         snr = 10000.0 * log10(snr); //10
@@ -1573,15 +1593,33 @@ void* SaankhyaPHYAndroid::TunerStatusThread(void* context)
         ber_l1d = (float)perfDiag.NumBitErrL1d / perfDiag.NumFecBitsL1d;//aBerPreBchE9,
         ber_plp0 = (float)perfDiag.NumBitErrPlp0 / perfDiag.NumFecBitsPlp0; //aFerPostBchE6,
 
-        printf("atsc3NdkClientSlImpl::TunerStatusThread: tunerInfo.status: %d, tunerInfo.signalStrength: %f, cpuStatus: %s, demodLockStatus: %d, globalSnr: %f",
+        _SAANKHYA_PHY_ANDROID_DEBUG("atsc3NdkClientSlImpl::StatusThread: SNR: %f, tunerInfo.status: %d, tunerInfo.signalStrength: %f, cpuStatus: %s, demodLockStatus: %d,  ber_l1b: %d, ber_l1d: %d, ber_plp0: %d, plps: 0x%02 (fec: %d, mod: %d, cr: %d), 0x%02 (fec: %d, mod: %d, cr: %d), 0x%02 (fec: %d, mod: %d, cr: %d), 0x%02 (fec: %d, mod: %d, cr: %d)",
+                snr / 1000.0,
                tunerInfo.status,
-               tunerInfo.signalStrength,
+               tunerInfo.signalStrength / 1000,
                (cpuStatus == 0xFFFFFFFF) ? "RUNNING" : "HALTED",
                demodLockStatus,
-               perfDiag.GlobalSnrLinearScale);
+               ber_l1b,
+               ber_l1d,
+               ber_plp0,
+               demodInfo.plpInfo.plp0,
+               l1dDiag.sfParams[0].PlpParams[0].L1dSfPlpFecType,
+               l1dDiag.sfParams[0].PlpParams[0].L1dSfPlpModType,
+               l1dDiag.sfParams[0].PlpParams[0].L1dSfPlpCoderate,
+               demodInfo.plpInfo.plp1,
+               l1dDiag.sfParams[1].PlpParams[1].L1dSfPlpFecType,
+               l1dDiag.sfParams[1].PlpParams[1].L1dSfPlpModType,
+               l1dDiag.sfParams[1].PlpParams[1].L1dSfPlpCoderate,
+               demodInfo.plpInfo.plp2,
+               l1dDiag.sfParams[2].PlpParams[2].L1dSfPlpFecType,
+               l1dDiag.sfParams[2].PlpParams[2].L1dSfPlpModType,
+               l1dDiag.sfParams[2].PlpParams[2].L1dSfPlpCoderate,
+               demodInfo.plpInfo.plp3,
+               l1dDiag.sfParams[3].PlpParams[3].L1dSfPlpFecType,
+               l1dDiag.sfParams[3].PlpParams[3].L1dSfPlpModType,
+               l1dDiag.sfParams[3].PlpParams[3].L1dSfPlpCoderate);
 
         if(atsc3_ndk_phy_bridge_get_instance()) {
-
             atsc3_ndk_phy_bridge_get_instance()->atsc3_update_rf_stats(tunerInfo.status == 1,
                 tunerInfo.signalStrength,
                 saankhyaPHYAndroid->plpInfo.plp0 == l1dDiag.sfParams[0].PlpParams[0].L1dSfPlpId,
@@ -1602,15 +1640,20 @@ void* SaankhyaPHYAndroid::TunerStatusThread(void* context)
                                                                           saankhyaPHYAndroid->alp_total_bytes,
                                                                           saankhyaPHYAndroid->alp_total_LMTs_recv);
             }
+        //we've already unlocked, so don't fall thru
+        continue;
+
+sl_i2c_tuner_mutex_unlock:
+        SL_I2C_command_mutex_tuner_status_io.unlock();
+
     }
 
-    apiImpl->releasePinnedStatusThreadAsNeeded();
-    apiImpl->statusThreadIsRunning = false;
+    this->releasePinnedStatusThreadAsNeeded();
+    this->statusThreadIsRunning = false;
+    _SAANKHYA_PHY_ANDROID_INFO("SaankhyaPHYAndroid::statusThread complete");
+
     return 0;
 }
-
-//jjustman-2020-08-23 - TODO: wire up these callbacks in SaankhyaPHYAndroid::cctor rather than direct
-//coupling to atsc3_core_service_bridge
 
 void SaankhyaPHYAndroid::processTLVFromCallback()
 {
@@ -1658,7 +1701,7 @@ void SaankhyaPHYAndroid::processTLVFromCallback()
                             alp_total_LMTs_recv++;
                             atsc3_link_mapping_table_t* atsc3_link_mapping_table_pending = atsc3_alp_packet_extract_lmt(atsc3_alp_packet);
 
-                            if(atsc3_phy_rx_link_mapping_table_process_callback) {
+                            if(atsc3_phy_rx_link_mapping_table_process_callback && atsc3_link_mapping_table_pending) {
                                 atsc3_link_mapping_table_t *atsc3_link_mapping_table_to_free = atsc3_phy_rx_link_mapping_table_process_callback(atsc3_link_mapping_table_pending);
 
                                 if (atsc3_link_mapping_table_to_free) {
@@ -1675,12 +1718,12 @@ void SaankhyaPHYAndroid::processTLVFromCallback()
                 } else {
                     atsc3_sl_tlv_payload_complete = false;
                     //jjustman-2019-12-29 - noisy, TODO: wrap in __DEBUG macro check
-                    //printf("alp_payload->alp_payload_complete == FALSE at pos: %d, size: %d", atsc3_sl_tlv_block->i_pos, atsc3_sl_tlv_block->p_size);
+                    //_SAANKHYA_PHY_ANDROID_DEBUG("alp_payload->alp_payload_complete == FALSE at pos: %d, size: %d", atsc3_sl_tlv_block->i_pos, atsc3_sl_tlv_block->p_size);
                 }
             } else {
                 atsc3_sl_tlv_payload_complete = false;
                 //jjustman-2019-12-29 - noisy, TODO: wrap in __DEBUG macro check
-                //printf("ERROR: alp_payload IS NULL, short TLV read?  at atsc3_sl_tlv_block: i_pos: %d, p_size: %d", atsc3_sl_tlv_block->i_pos, atsc3_sl_tlv_block->p_size);
+                //_SAANKHYA_PHY_ANDROID_DEBUG("ERROR: alp_payload IS NULL, short TLV read?  at atsc3_sl_tlv_block: i_pos: %d, p_size: %d", atsc3_sl_tlv_block->i_pos, atsc3_sl_tlv_block->p_size);
             }
 
         } while(atsc3_sl_tlv_payload_complete);
@@ -1705,7 +1748,7 @@ void SaankhyaPHYAndroid::processTLVFromCallback()
             block_Destroy(&atsc3_sl_tlv_block);
             atsc3_sl_tlv_block = block_Alloc(BUFFER_SIZE);
         } else {
-            printf("atsc3_sl_tlv_block: positioning mismatch: i_pos: %d, p_size: %d - rewinding and seeking for magic packet?", atsc3_sl_tlv_block->i_pos, atsc3_sl_tlv_block->p_size);
+            _SAANKHYA_PHY_ANDROID_DEBUG("atsc3_sl_tlv_block: positioning mismatch: i_pos: %d, p_size: %d - rewinding and seeking for magic packet?", atsc3_sl_tlv_block->i_pos, atsc3_sl_tlv_block->p_size);
 
             //jjustman: 2019-11-23: rewind in order to try seek for our magic packet in the next loop here
             block_Rewind(atsc3_sl_tlv_block);
@@ -1718,7 +1761,7 @@ void SaankhyaPHYAndroid::processTLVFromCallback()
 
 void SaankhyaPHYAndroid::RxDataCallback(unsigned char *data, long len)
 {
-    //printf("atsc3NdkClientSlImpl::RxDataCallback: pushing data: %p, len: %d", data, len);
+    //_SAANKHYA_PHY_ANDROID_DEBUG("atsc3NdkClientSlImpl::RxDataCallback: pushing data: %p, len: %d", data, len);
     unique_lock<mutex> CircularBufferMutex_local(CircularBufferMutex);
 
     CircularBufferPush(SaankhyaPHYAndroid::cb, (char *)data, len);

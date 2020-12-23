@@ -45,6 +45,9 @@ extern "C" {
 
 
 int32_t atsc3_unzip_gzip_payload(uint8_t* input_payload, uint32_t input_payload_size, uint8_t **decompressed_payload);
+int32_t atsc3_unzip_gzip_payload_block_t(block_t* src, block_t* dest);
+int32_t atsc3_unzip_gzip_payload_block_t_with_dynamic_realloc(block_t* src, block_t** dest_p);
+
 
 uint32_t atsc3_compress_gzip_payload(uint8_t* input, uint32_t inputSize, uint8_t* output, uint32_t outputSize);
 

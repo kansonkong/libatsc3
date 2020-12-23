@@ -4,15 +4,17 @@
 
 #include <string.h>
 #include <jni.h>
+#include <thread>
+#include <mutex>
+#include <semaphore.h>
+using namespace std;
+
 #include <Atsc3LoggingUtils.h>
 #include <Atsc3JniEnv.h>
 #include <atsc3_utils.h>
 #include <atsc3_sl_tlv_demod_type.h>
 #include <atsc3_alp_parser.h>
 
-#include <mutex>
-#include <semaphore.h>
-#include <pthread.h>
 #include <atsc3_core_service_player_bridge.h>
 
 #ifndef LIBATSC3_ANDROID_SAMPLE_APP_W_PHY_SAANKHYAPHYANDROID_H
@@ -20,12 +22,10 @@
 
 #include <Atsc3NdkPHYSaankhyaStaticJniLoader.h>
 
-
-#define IF_OFFSET            (0.003453)          // User can Update as needed
+#define IF_OFFSET            (0.003453)   // User can Update as needed
 #define CB_SIZE           (16*1024*100)   // Global  circular buffer size
-#define BUFFER_SIZE       (16*1024*10)
 
-#define __TLV_BUFFER_SIZE      1638
+#define BUFFER_SIZE       (16*1024*2)   //CircularBuffer pending data size threshold for TLV depacketization processing
 
 #include "CircularBuffer.h"
 #include <sl_utils.h>
@@ -39,9 +39,6 @@
 #include <sl_demod.h>
 #include <sl_utils.h>
 
-#include <cyusb.h>
-
-#include <pthread.h>
 typedef void * (*THREADFUNCPTR)(void *);
 
 class SaankhyaPHYAndroid : public IAtsc3NdkPHYClient {
@@ -103,8 +100,8 @@ protected:
 
 private:
 
-    int slUnit;
-    int tUnit;
+    int slUnit = 0;
+    int tUnit = 0;
 
     SL_PlatFormConfigParams_t getPlfConfig;
     SL_PlatFormConfigParams_t sPlfConfig;
@@ -129,34 +126,29 @@ private:
     SL_TunerDcOffSet_t tunerIQDcOffSet;
     SL_TunerSignalInfo_t tunerInfo;
 
-    unsigned long int         cThread;
-    unsigned long int         pThread;
-    unsigned long int         dThread;
-    unsigned long int         sThread;
+    //uses      pinProducerThreadAsNeeded
+    int         captureThread();
+    std::thread captureThreadHandle;
+    bool        captureThreadShouldRun = false;
+    bool        captureThreadIsRunning = false;
 
-    pthread_t   cThreadID;
-    pthread_t   pThreadID;
-    pthread_t   dThreadID;
-    pthread_t   sThreadID;
+    //uses      pinConsumerThreadAsNeeded
+    int         processThread();
+    std::thread processThreadHandle;
+    bool        processThreadShouldRun = false;
+    bool        processThreadIsRunning = false;
+
+    //uses      pinStatusThreadAsNeeded
+    int         statusThread();
+    std::thread statusThreadHandle;
+    bool        statusThreadShouldRun = false;
+    bool        statusThreadIsRunning = false;
 
     //hack
     static CircularBuffer cb;
     static mutex CircularBufferMutex;
 
-    bool        captureThreadShouldRun = false;;
-    bool        captureThreadIsRunning = false;
-
-    bool        processThreadShouldRun = false;
-    bool        processThreadIsRunning = false;
-
-    bool        statusThreadShouldRun = false;
-    bool        statusThreadIsRunning = false;
-
     //thread handling methods
-    static void* CaptureThread(void* context);
-    static void* ProcessThread(void* context);
-    static void* TunerStatusThread(void* context); //TODO: jjustman-2019-11-30: merge with
-
 
     SL_ConfigResult_t configPlatformParams();
 
@@ -179,8 +171,6 @@ private:
     void allocate_atsc3_sl_tlv_block();
 
     atsc3_sl_tlv_payload_t* atsc3_sl_tlv_payload = NULL;
-
-
 };
 
 #define _SAANKHYA_PHY_ANDROID_ERROR(...)   	__LIBATSC3_TIMESTAMP_ERROR(__VA_ARGS__);

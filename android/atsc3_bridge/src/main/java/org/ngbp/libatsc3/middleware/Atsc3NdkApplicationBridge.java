@@ -20,6 +20,7 @@ public class Atsc3NdkApplicationBridge extends Atsc3BridgeNdkStaticJniLoader
     final static String TAG ="intf";
 
     IAtsc3NdkApplicationBridgeCallbacks mActivity;
+    public static final Boolean MMT_DISCARD_CORRUPT_FRAMES = true;
 
     //native jni methods
     @Override
@@ -61,9 +62,15 @@ public class Atsc3NdkApplicationBridge extends Atsc3BridgeNdkStaticJniLoader
         //working - 2019-10-03 - Log.d("AT3DrvIntf", "onMfuPacket, isVideo:"+isVideo+", length: "+length+ ", pts: "+presentationTimeUs);
 
         if(ATSC3PlayerFlags.ATSC3PlayerStartPlayback) {
-            MfuByteBufferFragment mfuByteBufferFragment = new MfuByteBufferFragment(packet_id, mpu_sequence_number, sample_number, byteBuffer, length, presentationTimeUs, mfu_fragment_count_expected, mfu_fragment_count_expected);
-
-            mActivity.pushMfuByteBufferFragment(mfuByteBufferFragment);
+            if(length > 0) {
+                MfuByteBufferFragment mfuByteBufferFragment = new MfuByteBufferFragment(packet_id, mpu_sequence_number, sample_number, byteBuffer, length, presentationTimeUs, mfu_fragment_count_expected, mfu_fragment_count_expected);
+                mActivity.pushMfuByteBufferFragment(mfuByteBufferFragment);
+            } else {
+                Log.e("atsc3_onMfuPacket", String.format("packetId: %d, mpu_sequence_number: %d, sample_number: %d has no length!",
+                        packet_id,
+                        mpu_sequence_number,
+                        sample_number));
+            }
         } else {
             //discard...
         }
@@ -72,11 +79,21 @@ public class Atsc3NdkApplicationBridge extends Atsc3BridgeNdkStaticJniLoader
 
     int atsc3_onMfuPacketCorrupt(int packet_id, int mpu_sequence_number, int sample_number, ByteBuffer byteBuffer, int length, long presentationTimeUs, int mfu_fragment_count_expected, int mfu_fragment_count_rebuilt) {
         //Log.d("AT3DrvIntf", "onMfuPacket, isVideo:"+isVideo+", length: "+length+ ", pts: "+presentationTimeUs);
+        if(MMT_DISCARD_CORRUPT_FRAMES) {
+            return -1;
+        }
 
         if(ATSC3PlayerFlags.ATSC3PlayerStartPlayback) {
-            MfuByteBufferFragment mfuByteBufferFragment = new MfuByteBufferFragment(packet_id, mpu_sequence_number, sample_number, byteBuffer, length, presentationTimeUs, mfu_fragment_count_expected, mfu_fragment_count_rebuilt);
+            if(length > 0) {
+                MfuByteBufferFragment mfuByteBufferFragment = new MfuByteBufferFragment(packet_id, mpu_sequence_number, sample_number, byteBuffer, length, presentationTimeUs, mfu_fragment_count_expected, mfu_fragment_count_rebuilt);
 
-            mActivity.pushMfuByteBufferFragment(mfuByteBufferFragment);
+                mActivity.pushMfuByteBufferFragment(mfuByteBufferFragment);
+            } else {
+                Log.e("atsc3_onMfuPacketCorrupt", String.format("packetId: %d, mpu_sequence_number: %d, sample_number: %d has no length!",
+                        packet_id,
+                        mpu_sequence_number,
+                        sample_number));
+            }
         } else {
             //discard...
         }
@@ -85,11 +102,20 @@ public class Atsc3NdkApplicationBridge extends Atsc3BridgeNdkStaticJniLoader
 
     int atsc3_onMfuPacketCorruptMmthSampleHeader(int packet_id, int mpu_sequence_number, int sample_number, ByteBuffer byteBuffer, int length, long presentationTimeUs,  int mfu_fragment_count_expected, int mfu_fragment_count_rebuilt) {
         //working - 2019-10-03 - Log.d("AT3DrvIntf", "onMfuPacket, isVideo:"+isVideo+", length: "+length+ ", pts: "+presentationTimeUs);
-
+        if(MMT_DISCARD_CORRUPT_FRAMES) {
+            return -1;
+        }
         if(ATSC3PlayerFlags.ATSC3PlayerStartPlayback) {
-            MfuByteBufferFragment mfuByteBufferFragment = new MfuByteBufferFragment(packet_id, mpu_sequence_number, sample_number, byteBuffer, length, presentationTimeUs, mfu_fragment_count_expected, mfu_fragment_count_rebuilt);
+            if(length > 0 ) {
+                MfuByteBufferFragment mfuByteBufferFragment = new MfuByteBufferFragment(packet_id, mpu_sequence_number, sample_number, byteBuffer, length, presentationTimeUs, mfu_fragment_count_expected, mfu_fragment_count_rebuilt);
 
-            mActivity.pushMfuByteBufferFragment(mfuByteBufferFragment);
+                mActivity.pushMfuByteBufferFragment(mfuByteBufferFragment);
+            } else {
+                Log.e("atsc3_onMfuPacketCorruptMmthSampleHeader", String.format("packetId: %d, mpu_sequence_number: %d, sample_number: %d has no length!",
+                        packet_id,
+                        mpu_sequence_number,
+                        sample_number));
+            }
         } else {
             //discard...
         }
