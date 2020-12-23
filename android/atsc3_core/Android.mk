@@ -56,13 +56,16 @@ endif
 # jjustman-2020-08-19: logging notes
 # 	-D__ANDROID__ should enable libatsc3 __LIBATSC3_TIMESTAMP_XXX defines to the __ANDROID_LOG_VPRINTF_BUFFER,
 # 	so comment this define out if there is too much logging noise
+# -fpack-struct=8 -fPIC
 
-LOCAL_CFLAGS += -g -fpack-struct=8 -fPIC  \
+LOCAL_CFLAGS += -g   \
                 -D__DISABLE_LIBPCAP__ -D__DISABLE_ISOBMFF_LINKAGE__ -D__DISABLE_NCURSES__ \
                 -D__MOCK_PCAP_REPLAY__ -D__LIBATSC3_ANDROID__ \
                 -D__ANDROID__
 
 LOCAL_LDLIBS := -ldl -llog -landroid -lz -lc
+
+LOCAL_LDFLAGS += -fPIE -fPIC
 
 include $(BUILD_SHARED_LIBRARY)
 

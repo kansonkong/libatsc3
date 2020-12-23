@@ -48,8 +48,8 @@ LOCAL_C_INCLUDES += $(LOCAL_PATH)/../atsc3_core/libpcre/include
 LOCAL_C_INCLUDES += $(LOCAL_PATH)/../../src/mmt
 
 LOCAL_SRC_FILES += $(LOCAL_PATH)/../../src/mmt/MMTExtractor.cpp
-
-LOCAL_CFLAGS += -g -fpack-struct=8 -fPIC  \
+# -fpack-struct=8
+LOCAL_CFLAGS += -g -fPIC  \
                 -D__DISABLE_LIBPCAP__ -D__DISABLE_ISOBMFF_LINKAGE__ -D__DISABLE_NCURSES__ \
                 -D__MOCK_PCAP_REPLAY__ -D__LIBATSC3_ANDROID__ -DDEBUG
 

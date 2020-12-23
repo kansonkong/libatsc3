@@ -7,28 +7,17 @@
 
 APP_DEBUG := true
 APP_STRIP_MODE := "none"
-#APP_STL := c++_shared
 
-# jjustman-2020-10-07 - hwasan is only available on android 10 or higher
-#APP_CFLAGS := -fsanitize=hwaddress -fno-omit-frame-pointer -g -O0
-#APP_LDFLAGS := -fsanitize=hwaddress
-
-# fall back to plain asan
-
-#APP_CFLAGS := -fsanitize=address -fno-omit-frame-pointer -g -O1 -fno-optimize-sibling-calls
-#APP_LDFLAGS := -fsanitize=address
-
-
+APP_STL := c++_shared
 APP_CPPFLAGS += -std=c++11 -D_ANDROID
+LOCAL_ARM_MODE := arm
 
-ifeq ($(ENABLE_HWASAN),armeabi-v7a)
-	APP_CFLAGS := -fsanitize=hwaddress -fno-omit-frame-pointer
-	APP_LDFLAGS := -fsanitize=hwaddress
+ifeq ($(debugging_asan_enabled), true)
+$(info building atsc3_bridge with debugging_asan_enabled )
+	APP_CFLAGS += -fsanitize=address -fno-omit-frame-pointer -g -O0 -fno-optimize-sibling-calls -fsanitize-address-use-after-scope
+	APP_LDFLAGS += -fsanitize=address
+else ifeq ($(debugging_hwasan_enabled), true)
+$(info building atsc3_bridge with debugging_hwasan_enabled )
+	APP_CFLAGS += -fsanitize=hwaddress -fno-omit-frame-pointer  -g -O0 -fno-optimize-sibling-calls -fsanitize-address-use-after-scope
+	APP_LDFLAGS += -fsanitize=hwaddress
 endif
-
-#-fsanitize=address -fno-omit-frame-pointer
-#
-#APP_CFLAGS := -fsanitize=address -fno-omit-frame-pointer
-#APP_LDFLAGS := -fsanitize=address
-
-
