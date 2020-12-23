@@ -52,6 +52,7 @@ int SRTRxSTLTPVirtualPHY::stop()
 
 int SRTRxSTLTPVirtualPHY::deinit()
 {
+    this->stop();
     delete this;
     return 0;
 }
@@ -113,13 +114,22 @@ int SRTRxSTLTPVirtualPHY::atsc3_srt_thread_run() {
     return 0;
 }
 
+/*
+ * jjustman-2020-10-20 - wait up to 10s for SRT RX connection to unwind
+ */
 int SRTRxSTLTPVirtualPHY::srtLocalCleanup() {
     int spinlock_count = 0;
-    while(spinlock_count++ < 10 && (!srtProducerShutdown || !srtConsumerShutdown)) {
+    while(spinlock_count++ < 100 && (!srtProducerShutdown || !srtConsumerShutdown)) {
         _SRTRXSTLTP_VIRTUAL_PHY_INFO("SRTRxSTLTPVirtualPHY::srtLocalCleanup: waiting for srtProducerShutdown: %d, srtConsumerShutdown: %d, atsc3_srt_live_receiver_context->should_run: %d",
                                      srtProducerShutdown, srtConsumerShutdown, atsc3_srt_live_receiver_context->should_run);
         usleep(100000);
     }
+
+    if(!srtProducerShutdown || !srtConsumerShutdown) {
+        _SRTRXSTLTP_VIRTUAL_PHY_WARN("SRTRxSTLTPVirtualPHY::srtLocalCleanup: expired spinlock count: %d, bailing waiting for srtProducerShutdown: %d, srtConsumerShutdown: %d, atsc3_srt_live_receiver_context->should_run: %d",
+                                     spinlock_count, srtProducerShutdown, srtConsumerShutdown, atsc3_srt_live_receiver_context->should_run);
+    }
+
     //release any local resources held in our context
 	atsc3_stltp_depacketizer_context_free(&atsc3_stltp_depacketizer_context);
     atsc3_srt_live_receiver_context_free(&atsc3_srt_live_receiver_context);
@@ -185,50 +195,6 @@ int SRTRxSTLTPVirtualPHY::srtProducerThreadRun() {
 
     atsc3_srt_live_receiver_context->should_run = true;
     res = atsc3_srt_live_receiver_start_in_proc(this->atsc3_srt_live_receiver_context);
-
-//    atsc3_srt_replay_context_t* atsc3_srt_replay_local_context = atsc3_srt_replay_context;
-//    while (atsc3_srt_live_receiver_context->should_run) {
-//        queue<block_t *> to_dispatch_queue; //perform a shallow copy so we can exit critical section asap
-//
-//        //_ATSC3_srt_REPLAY_TEST_DEBUG("Opening srt: %s, context is: %p", srt_REPLAY_TEST_FILENAME, atsc3_srt_replay_local_context);
-//        if(atsc3_srt_replay_local_context) {
-//            while(atsc3_srt_live_receiver_context->should_run && (atsc3_srt_replay_local_context = atsc3_srt_replay_iterate_packet(atsc3_srt_replay_local_context))) {
-//                atsc3_srt_replay_usleep_packet(atsc3_srt_replay_local_context);
-//                //push block_t as packet buffer to consumer queue
-//
-//                block_Seek(atsc3_srt_replay_local_context->atsc3_srt_packet_instance.current_srt_packet, ATSC3_srt_ETH_HEADER_LENGTH);
-//
-//                block_t* phy_payload = block_Duplicate_from_position(atsc3_srt_replay_local_context->atsc3_srt_packet_instance.current_srt_packet);
-//                block_Rewind(atsc3_srt_replay_local_context->atsc3_srt_packet_instance.current_srt_packet);
-//                if(phy_payload->p_size && (packet_push_count++ % 10000) == 0) {
-//                    _SRTRXSTLTP_VIRTUAL_PHY_INFO("SRTRxSTLTPVirtualPHY::RunsrtThreadParser - pushing to atsc3_core_service_bridge_process_packet_phy: count: %d, len was: %d, new payload: %p (0x%02x 0x%02x), len: %d",
-//                            packet_push_count,
-//                            atsc3_srt_replay_local_context->atsc3_srt_packet_instance.current_srt_packet->p_size,
-//                            phy_payload,
-//                            phy_payload->p_buffer[0], phy_payload->p_buffer[1],
-//                            phy_payload->p_size);
-//                }
-//
-//                if(phy_payload->p_size) {
-//                    to_dispatch_queue.push(phy_payload);
-//                }
-//
-//                if(!atsc3_srt_replay_local_context->delay_delta_behind_rt_replay || to_dispatch_queue.size() > 10) { //srt_replay_buffer_queue.size() doesn't seem to be accurate...
-//                    int pushed_count = to_dispatch_queue.size();
-//                    lock_guard<mutex> srt_replay_buffer_queue_guard(srt_rx_buffer_queue_mutex);
-//                    while(to_dispatch_queue.size()) {
-//                        srt_rx_buffer_queue.push(to_dispatch_queue.front());
-//                        to_dispatch_queue.pop();
-//                    }
-//                    srt_rx_condition.notify_one();  //todo: jjustman-2019-11-06 - only signal if we aren't behind packet processing or we have a growing queue
-//                    //printf("SRTRxSTLTPVirtualPHY::srtProducerThreadRun - signalling notify_one at count: %d", pushed_count);
-//                }
-//                //cleanup happens on the consumer thread for dispatching
-//                atsc3_srt_live_receiver_context->should_run = !atsc3_srt_replay_check_file_pos_is_eof(atsc3_srt_replay_local_context);
-//            }
-//        }
-//    }
-//
 
     atsc3_srt_live_receiver_context->should_run = false;
     _SRTRXSTLTP_VIRTUAL_PHY_INFO("SRTRxSTLTPVirtualPHY::RunsrtThreadParser - unwinding thread, atsc3_srt_live_receiver_context->should_run is false, res: %d", res);
