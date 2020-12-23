@@ -862,26 +862,35 @@ uint16_t block_Read_uint16_bitlen(block_t* src, int bitlen) {
     if(!__block_check_bounaries_read_size(__FUNCTION__, src, (bitlen / 8))) return 0;
 
     uint16_t ret = 0;
-    
+	
     int bits_remaining = bitlen;
     while(bits_remaining > 0) {
-        int loop_read_size = (bits_remaining > 8 ? 8 - src->_bitpos : (bits_remaining > (8 - src->_bitpos) ? 8 - src->_bitpos : bits_remaining));
-        int mask = ((((1 << (loop_read_size - 1)) - 1) << 1) | 1);
-
-        ret |= (src->p_buffer[src->i_pos] & mask) << (bits_remaining - loop_read_size);
-        
-        bits_remaining -= loop_read_size;
-        
-        src->_bitpos = (src->_bitpos + loop_read_size) % 8;
-        if(src->_bitpos == 0) {
-            src->i_pos++;
-        }
+		int loop_read_size = (bits_remaining > 8 ? 8 - src->_bitpos : (bits_remaining > (8 - src->_bitpos) ? 8 - src->_bitpos : bits_remaining));
+		int8_t mask = 0;
+		int8_t shift = 0;
+		
+		if(bits_remaining > 8) {
+			mask = ((((1 << (loop_read_size - 1)) - 1) << 1) | 1);
+		} else {
+			mask = ~(( 1 << (8 - loop_read_size)) -1);
+			shift = 8 - loop_read_size;
+		}
+		
+		ret |= ((src->p_buffer[src->i_pos] & mask) >> shift) << (bits_remaining - loop_read_size);
+		 
+		bits_remaining -= loop_read_size;
+		 
+		src->_bitpos = (src->_bitpos + loop_read_size) % 8;
+		if(src->_bitpos == 0) {
+			src->i_pos++;
+		}
     }
 
     return ret;
 }
 
 uint32_t block_Read_uint32_bitlen(block_t* src, int bitlen) {
+
     if(!__block_check_bounaries_read_size(__FUNCTION__, src, (bitlen / 8))) return 0;
 
     uint32_t ret = 0;
@@ -889,12 +898,20 @@ uint32_t block_Read_uint32_bitlen(block_t* src, int bitlen) {
     int bits_remaining = bitlen;
     while(bits_remaining > 0) {
 	   int loop_read_size = (bits_remaining > 8 ? 8 - src->_bitpos : (bits_remaining > (8 - src->_bitpos) ? 8 - src->_bitpos : bits_remaining));
-	   int mask = ((((1 << (loop_read_size - 1)) - 1) << 1) | 1);
-
-	   ret |= (src->p_buffer[src->i_pos] & mask) << (bits_remaining - loop_read_size);
+	   int8_t mask = 0;
+	   int8_t shift = 0;
 	   
+	   if(bits_remaining > 8) {
+		   mask = ((((1 << (loop_read_size - 1)) - 1) << 1) | 1);
+	   } else {
+		   mask = ~(( 1 << (8 - loop_read_size)) -1);
+		   shift = 8 - loop_read_size;
+	   }
+	   
+	   ret |= ((src->p_buffer[src->i_pos] & mask) >> shift) << (bits_remaining - loop_read_size);
+		
 	   bits_remaining -= loop_read_size;
-	   
+		
 	   src->_bitpos = (src->_bitpos + loop_read_size) % 8;
 	   if(src->_bitpos == 0) {
 		   src->i_pos++;
@@ -905,18 +922,27 @@ uint32_t block_Read_uint32_bitlen(block_t* src, int bitlen) {
 }
 
 uint64_t block_Read_uint64_bitlen(block_t* src, int bitlen) {
+
     if(!__block_check_bounaries_read_size(__FUNCTION__, src, (bitlen / 8))) return 0;
 
     uint64_t ret = 0;
     int bits_remaining = bitlen;
     while(bits_remaining > 0) {
 	   int loop_read_size = (bits_remaining > 8 ? 8 - src->_bitpos : (bits_remaining > (8 - src->_bitpos) ? 8 - src->_bitpos : bits_remaining));
-	   int mask = ((((1 << (loop_read_size - 1)) - 1) << 1) | 1);
-
-	   ret |= (src->p_buffer[src->i_pos] & mask) << (bits_remaining - loop_read_size);
+	   int8_t mask = 0;
+	   int8_t shift = 0;
 	   
+	   if(bits_remaining > 8) {
+		   mask = ((((1 << (loop_read_size - 1)) - 1) << 1) | 1);
+	   } else {
+		   mask = ~(( 1 << (8 - loop_read_size)) -1);
+		   shift = 8 - loop_read_size;
+	   }
+	   
+	   ret |= ((src->p_buffer[src->i_pos] & mask) >> shift) << (bits_remaining - loop_read_size);
+		
 	   bits_remaining -= loop_read_size;
-	   
+		
 	   src->_bitpos = (src->_bitpos + loop_read_size) % 8;
 	   if(src->_bitpos == 0) {
 		   src->i_pos++;
@@ -924,7 +950,6 @@ uint64_t block_Read_uint64_bitlen(block_t* src, int bitlen) {
    }
 
    return ret;
-	
 }
 
 //TODO: check for _bitpos
