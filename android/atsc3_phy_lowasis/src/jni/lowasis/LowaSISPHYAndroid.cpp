@@ -45,18 +45,6 @@ LowaSISPHYAndroid::~LowaSISPHYAndroid() {
 
     this->stop();
 
-    if(false) {
-        /***
-         *
-         *  jjustman-2020-08-23 - TODO: fix this issue with deleting global ref?
-
-        if (this->env && this->jni_instance_globalRef) {
-            this->env->DeleteGlobalRef(this->jni_instance_globalRef);
-            this->jni_instance_globalRef = nullptr;
-        }
-       */
-    }
-
     _LOWASIS_PHY_ANDROID_INFO("LowaSISPHYAndroid::~LowaSISPHYAndroid - exit: deleting with this: %p", this);
 }
 
@@ -109,14 +97,6 @@ void LowaSISPHYAndroid::releasePinnedStatusThreadAsNeeded() {
         atsc3_ndk_phy_bridge_get_instance()->releasePinnedStatusThreadAsNeeded();
     }
 }
-
-//
-//void LowaSISPHYAndroid::resetProcessThreadStatistics() {
-//    alp_completed_packets_parsed = 0;
-//    alp_total_bytes = 0;
-//    alp_total_LMTs_recv = 0;
-//}
-
 
 int LowaSISPHYAndroid::init()
 {
@@ -282,88 +262,104 @@ bool LowaSISPHYAndroid::is_running() {
 
     return processThreadIsRunning && captureThreadIsRunning && statusThreadIsRunning;
 }
+/*
+ * stop()
+ *
+ * unpin and tear down our threads in the following order:
+ *
+ *      captureThreadShouldRun
+ *      statusThreadShouldRun
+ *      processThreadShouldRun
+ *
+ *      and make sure to .join() to prevent std::terminate being called in the ~thread()
+ */
 
+#define __LOWASIS_STOP_USLEEP_DURATION_MS 1000000
 int LowaSISPHYAndroid::stop()
 {
-    if(atsc3_ndk_application_bridge_get_instance()) {
-        atsc3_ndk_application_bridge_get_instance()->atsc3_phy_notify_plp_selection_change_clear_callback();
+    AT3RESULT ar;
+    _LOWASIS_PHY_ANDROID_INFO("LowaSISPHYAndroid::stop: enter with this: %p, init_completed: %d, mhDevice: %d, captureThreadIsRunning: %d, statusThreadIsRunning: %d, processThreadIsRunning: %d, sleeping for %d ms",
+            this, init_completed, mhDevice,
+              this->captureThreadIsRunning,
+              this->statusThreadIsRunning,
+              this->processThreadIsRunning,
+              __LOWASIS_STOP_USLEEP_DURATION_MS);
+
+    //jjustman-2020-09-30 - immediately set our semaphores to wind down worker threads, in case we miss the callback in AT3DRV_WaitRxData/AT3DRVHandleRxData
+
+    this->captureThreadShouldRun = false;
+    this->statusThreadShouldRun = false;
+    this->processThreadShouldRun = false;
+
+    //jjustman-2020-10-06 - give us 1s to allow callbacks to wind down
+    usleep(__LOWASIS_STOP_USLEEP_DURATION_MS);
+
+    //tear down captureThread first, this will prevent any blocking calls to AT3DRV_WaitRxData or callback invocations into (volatile) this w/ AT3DRV_HandleRxData
+    //make sure we unwind our captureThread and have exited AT3DRV_WaitRxData as per at3drv_api.h
+
+    while(this->captureThreadIsRunning) {
+        usleep(100000);
+        _LOWASIS_PHY_ANDROID_DEBUG("LowaSISPHYAndroid::stop: this->captureThreadIsRunning: %d", this->captureThreadIsRunning);
     }
 
-    AT3RESULT ar;
-    _LOWASIS_PHY_ANDROID_INFO("LowaSISPHYAndroid::stop: enter with this: %p, init_completed: %d, mhDevice: %d",
-            this, init_completed, mhDevice);
+    _LOWASIS_PHY_ANDROID_DEBUG("LowaSISPHYAndroid::stop: before join for captureThreadHandle");
+    if(captureThreadHandle.joinable()) {
+        captureThreadHandle.join();
+    }
+    _LOWASIS_PHY_ANDROID_DEBUG("LowaSISPHYAndroid::stop: after join for captureThreadHandle");
+
+
+    while(this->statusThreadIsRunning) {
+        usleep(100000);
+        _LOWASIS_PHY_ANDROID_DEBUG("LowaSISPHYAndroid::stop: this->statusThreadIsRunning: %d", this->statusThreadIsRunning);
+    }
+
+    _LOWASIS_PHY_ANDROID_DEBUG("LowaSISPHYAndroid::stop: before join for statusThreadHandle");
+    if(statusThreadHandle.joinable()) {
+        statusThreadHandle.join();
+    }
+    _LOWASIS_PHY_ANDROID_DEBUG("LowaSISPHYAndroid::stop: after join for statusThreadHandle");
+
+    if(processThreadIsRunning) {
+        //failsafe if our procesThread hasn't unwound yet...
+        //unlock our producer thread, RAII scoped block to notify
+        {
+            lock_guard<mutex> lowasis_phy_rx_data_buffer_queue_guard(lowasis_phy_rx_data_buffer_queue_mutex);
+            lowasis_phy_rx_data_buffer_condition.notify_one();
+        }
+
+        while(this->processThreadIsRunning) {
+            usleep(100000);
+            _LOWASIS_PHY_ANDROID_DEBUG("LowaSISPHYAndroid::stop: this->processThreadIsRunning: %d", this->processThreadIsRunning);
+        }
+    }
+
+    _LOWASIS_PHY_ANDROID_DEBUG("LowaSISPHYAndroid::stop: before join for processThreadHandle");
+    if(processThreadHandle.joinable()) {
+        processThreadHandle.join();
+    }
+    _LOWASIS_PHY_ANDROID_DEBUG("LowaSISPHYAndroid::stop: after join for processThreadHandle");
 
     if(mhDevice) {
+        _LOWASIS_PHY_ANDROID_INFO("LowaSISPHYAndroid::stop: with this: %p, before AT3DRV_CancelWait with mhDevice: %d",
+                                  this,
+                                  mhDevice);
+
         ar = AT3DRV_CancelWait(mhDevice);
-        if(ar) {
+        if (ar) {
             _LOWASIS_PHY_ANDROID_WARN("AT3DRV_CancelWait:: with mhDevice: %d returned ar: %d", mhDevice, ar);
         }
         _LOWASIS_PHY_ANDROID_DEBUG("AT3DRV_CancelWait:: cancelled");
 
         ar = AT3DRV_FE_Stop(mhDevice);
-        if(ar) {
+        if (ar) {
             _LOWASIS_PHY_ANDROID_WARN("AT3DRV_FE_Stop:: with mhDevice: %d returned ar: %d", mhDevice, ar);
         }
-    }
 
-
-    //tear down status thread first, as its the most 'problematic'
-    if(statusThreadIsRunning) {
-        //give AT3DRV_WaitRxData some time to shutdown, may take up to 1.5s
-        _LOWASIS_PHY_ANDROID_DEBUG("LowaSISPHYAndroid::stop: after AT3DRV_FE_Stop, sleeping 1.5 second for AT3DRV_WaitRxData to wind-down");
-
-        usleep(15 * 100000);
-
-        statusThreadShouldRun = false;
-        _LOWASIS_PHY_ANDROID_DEBUG("LowaSISPHYAndroid::stop: setting statusThreadShouldRun: false");
-        while(this->statusThreadIsRunning) {
-            usleep(100000);
-            _LOWASIS_PHY_ANDROID_DEBUG("LowaSISPHYAndroid::stop: this->statusThreadIsRunning: %d", this->statusThreadIsRunning);
-        }
-        if(statusThreadHandle.joinable()) {
-            statusThreadHandle.join();
-        }
-        _LOWASIS_PHY_ANDROID_DEBUG("LowaSISPHYAndroid::stop: after join for statusThreadHandle");
-    }
-
-    if(captureThreadIsRunning) {
-        captureThreadShouldRun = false;
-        _LOWASIS_PHY_ANDROID_DEBUG("LowaSISPHYAndroid::stop: setting captureThreadShouldRun: false");
-
-        while(this->captureThreadIsRunning) {
-            usleep(100000);
-            _LOWASIS_PHY_ANDROID_DEBUG("LowaSISPHYAndroid::stop: this->captureThreadIsRunning: %d", this->captureThreadIsRunning);
-        }
-        if(captureThreadHandle.joinable()) {
-            captureThreadHandle.join();
-        }
-        _LOWASIS_PHY_ANDROID_DEBUG("LowaSISPHYAndroid::stop: after join for captureThreadHandle");
-    }
-
-    //unlock our producer thread, RAII scoped block to notify
-    {
-        lock_guard<mutex> lowasis_phy_rx_data_buffer_queue_guard(lowasis_phy_rx_data_buffer_queue_mutex);
-        lowasis_phy_rx_data_buffer_condition.notify_one();
-    }
-
-    if(processThreadIsRunning) {
-        processThreadShouldRun = false;
-        _LOWASIS_PHY_ANDROID_DEBUG("LowaSISPHYAndroid::stop: setting processThreadShouldRun: false");
-        while(this->processThreadIsRunning) {
-            usleep(100000);
-            _LOWASIS_PHY_ANDROID_DEBUG("LowaSISPHYAndroid::stop: this->processThreadIsRunning: %d", this->processThreadIsRunning);
-        }
-        if(processThreadHandle.joinable()) {
-            processThreadHandle.join();
-        }
-        _LOWASIS_PHY_ANDROID_DEBUG("LowaSISPHYAndroid::stop: after join for processThreadHandle");
-    }
-
-    // clear ip/port statistics
-    resetStatstics();
-
-    if(mhDevice) {
         ar = AT3DRV_CloseDevice(mhDevice);
+        if (ar) {
+            _LOWASIS_PHY_ANDROID_WARN("AT3DRV_CloseDevice:: with mhDevice: %d returned ar: %d", mhDevice, ar);
+        }
     }
 
     if(mAt3Opt) {
@@ -380,6 +376,13 @@ int LowaSISPHYAndroid::stop()
 
     mAt3Opt = nullptr;
     mhDevice = 0;
+
+    // clear ip/port statistics
+    resetStatstics();
+
+    if(atsc3_ndk_application_bridge_get_instance()) {
+        atsc3_ndk_application_bridge_get_instance()->atsc3_phy_notify_plp_selection_change_clear_callback();
+    }
 
     _LOWASIS_PHY_ANDROID_INFO("LowaSISPHYAndroid::stop: return with this: %p", this);
     return ar;
@@ -564,7 +567,9 @@ int LowaSISPHYAndroid::listen_plps(vector<uint8_t> plps_original_list)
         AT3DRV_FE_SetPLP(mhDevice, u_plp_ids, 1);
         _LOWASIS_PHY_ANDROID_DEBUG("ListenPLP1: LG3307_R850: setting to SINGLE plp_id[0]: %d", u_plp_ids[0]);
     } else {
+        //non testing behavior
         AT3DRV_FE_SetPLP(mhDevice, u_plp_ids, plp_postion);
+
         _LOWASIS_PHY_ANDROID_DEBUG("listen_plps: MultiPLP count %d, plp_id[0]: %d, plp_id[1]: %d, plp_id[2]: %d, plp_id[3]: %d",
                                    plp_postion, u_plp_ids[0], u_plp_ids[1], u_plp_ids[2], u_plp_ids[3]);
     }
@@ -640,28 +645,33 @@ int LowaSISPHYAndroid::captureThread()
             // user has better improve this using semaphore or event msg, instead of delay.
             continue;
         }
-        ar = AT3DRV_WaitRxData(mhDevice, 1500);
+
+        ar = AT3DRV_WaitRxData(mhDevice, 500);
+        //bail early
+        if(!this->captureThreadShouldRun) {
+            break;
+        }
+
         if (ar == AT3RES_CANCEL) {
-            _LOWASIS_PHY_ANDROID_DEBUG("wait cancelled");
+            _LOWASIS_PHY_ANDROID_DEBUG("LowaSISPHYAndroid::captureThread - wait cancelled");
             AT3_DelayMs(10);
             continue;
         }
         if (AT3ERR(ar)) {
-            _LOWASIS_PHY_ANDROID_ERROR("wait rx data error %d (%s)", ar, AT3_ErrString(ar));
+            _LOWASIS_PHY_ANDROID_ERROR("LowaSISPHYAndroid::captureThread - wait rx data error %d (%s)", ar, AT3_ErrString(ar));
             if (ar != AT3RES_TIMEOUT)
                 break;
         }
         ar = AT3DRV_HandleRxData(mhDevice, RxCallbackStatic, (uint64_t)this);
         if (AT3ERR(ar)) {
-            _LOWASIS_PHY_ANDROID_ERROR("handle rx data error %d (%s)", ar, AT3_ErrString(ar));
+            _LOWASIS_PHY_ANDROID_ERROR("LowaSISPHYAndroid::captureThread - handle rx data error %d (%s)", ar, AT3_ErrString(ar));
         }
     }
 
-
     _LOWASIS_PHY_ANDROID_INFO("LowaSISPHYAndroid::captureThread complete");
 
+    this->releasePinnedProducerThreadAsNeeded();
     this->captureThreadIsRunning = false;
-    releasePinnedProducerThreadAsNeeded();
 
     return 0;
 }
@@ -682,10 +692,13 @@ AT3RESULT LowaSISPHYAndroid::RxCallbackStatic(S_RX_DATA *pData, uint64_t ullUser
 AT3RESULT LowaSISPHYAndroid::RxCallbackInstanceScoped(S_RX_DATA *pData) {
     atsc3_lowasis_phy_android_rxdata_t* lowasis_phy_android_rxdata = atsc3_lowasis_phy_android_rxdata_duplicate_from_s_rx_data(pData);
 
-    lock_guard<mutex> lowasis_phy_rx_data_buffer_queue_guard(lowasis_phy_rx_data_buffer_queue_mutex);
-    lowasis_phy_rx_data_buffer_queue.push(lowasis_phy_android_rxdata);
-    lowasis_phy_rx_data_buffer_condition.notify_one();
+    //jjustman-2020-09-30 - overflows inside the AT3DRV may cause us to fail to parse the ALP packet types, so check for null rxdata payload
+    if(lowasis_phy_android_rxdata) {
 
+        lock_guard<mutex> lowasis_phy_rx_data_buffer_queue_guard(lowasis_phy_rx_data_buffer_queue_mutex);
+        lowasis_phy_rx_data_buffer_queue.push(lowasis_phy_android_rxdata);
+        lowasis_phy_rx_data_buffer_condition.notify_one();
+    }
     return AT3RES_OK;
 }
 
@@ -710,8 +723,13 @@ int LowaSISPHYAndroid::processThread()
             }
             condition_lock.unlock();
         }
-        //exit critical section, now we can process our to_process_queue
 
+        //bail early if we should be shut down
+        if(!this->processThreadShouldRun) {
+            break;
+        }
+
+        //exit critical section, now we can process our to_process_queue
         while (to_process_queue.size()) {
             pData = to_process_queue.front();
             to_process_queue.pop();
@@ -899,11 +917,10 @@ int LowaSISPHYAndroid::processThread()
         }
     }
 
-    this->processThreadIsRunning = false;
     this->releasePinnedConsumerThreadAsNeeded();
+    this->processThreadIsRunning = false;
 
     _LOWASIS_PHY_ANDROID_INFO("LowaSISPHYAndroid::processThread complete");
-
     return 0;
 }
 
@@ -917,52 +934,57 @@ int LowaSISPHYAndroid::statusThread()
     AT3RESULT ar;
 
     while(this->statusThreadShouldRun) {
-        memset(&s_fe_detail, 0, sizeof(s_fe_detail));
-
-        int32_t lock = 1, rssi = -2000;
-        ar = AT3DRV_FE_GetStatus(mhDevice, eAT3_RFSTAT_LOCK, &lock);
-        ar = AT3DRV_FE_GetStatus(mhDevice, eAT3_RFSTAT_STRENGTH, &rssi);
-
-        s_fe_detail.flagRequest = 0xffffffff; // all info. too many?
-        //s_fe_detail.flagRequest = FE_SIG_MASK_Lock; // | FE_SIG_MASK_RfLevel | FE_SIG_MASK_CarrierOffset | FE_SIG_MASK_SNR | FE_SIG_MASK_BER | FE_SIG_MASK_FecModCod | FE_SIG_MASK_BbpErr;
-        AT3DRV_FE_GetStatus(mhDevice, eAT3_FESTAT_RF_DETAIL, &s_fe_detail);
-
-        uint8_t modcod_valid = s_fe_detail.aFecModCod[0].valid;
-        uint8_t E_L1d_PlpFecType = s_fe_detail.aFecModCod[0].fecType;
-        uint8_t E_L1d_PlpMod = s_fe_detail.aFecModCod[0].mod;
-        uint8_t E_L1d_PlpCod = s_fe_detail.aFecModCod[0].cod;
-
-        if(!modcod_valid) {
-            //try fallback:
-
-            //eAT3_FESTAT_LGD_PLP_V1
-            S_LGD_L2_PLPINFO* l2plpInfo = (S_LGD_L2_PLPINFO*)calloc(1, sizeof(S_LGD_L2_PLPINFO));
-            l2plpInfo->index = 0;
-            AT3DRV_FE_GetStatus(mhDevice, eAT3_FESTAT_LGD_PLP_V1, l2plpInfo);
-            modcod_valid = 1;
-            E_L1d_PlpFecType = l2plpInfo->plp_fec_type;
-            E_L1d_PlpMod = l2plpInfo->plp_mod;
-            E_L1d_PlpCod = l2plpInfo->plp_cr;
-            free(l2plpInfo);
-        }
-
-        int32_t nRfLevel1000 = s_fe_detail.nRfLevel1000;
-        int32_t nSnr1000 = s_fe_detail.nSnr1000;
-
-        uint32_t aBerPreLdpcE7 = s_fe_detail.aBerPreLdpcE7[0];   // return BER x 1e7. (uint32_t)-1 if invalid.
-        uint32_t aBerPreBchE9  = s_fe_detail.aBerPreBchE9[0];    // return BER x 1e9. (uint32_t)-1 if invalid.
-        uint32_t aFerPostBchE6 = s_fe_detail.aFerPostBchE6[0];   // return FER x 1e6. (uint32_t)-1 if invalid.
-
-        if(atsc3_ndk_phy_bridge_get_instance()) {
-            atsc3_ndk_phy_bridge_get_instance()->atsc3_update_rf_stats(lock, rssi, modcod_valid, E_L1d_PlpFecType, E_L1d_PlpMod, E_L1d_PlpCod, nRfLevel1000, nSnr1000, aBerPreLdpcE7, aBerPreBchE9, aFerPostBchE6, s_fe_detail.lock.bDemodLock, s_fe_detail.lock.bNoSignal, s_fe_detail.lock.bPlpLockAny, s_fe_detail.lock.bPlpLockAll);
-            atsc3_ndk_phy_bridge_get_instance()->atsc3_update_rf_bw_stats(s_ullTotalPkts, s_ullTotalBytes, s_uTotalLmts);
-        }
-
         usleep(500000);
+        if(!this->statusThreadShouldRun) {
+            break;
+        }
+
+        if(this->is_tuned) {
+            memset(&s_fe_detail, 0, sizeof(s_fe_detail));
+
+            int32_t lock = 1, rssi = -2000;
+            ar = AT3DRV_FE_GetStatus(mhDevice, eAT3_RFSTAT_LOCK, &lock);
+            ar = AT3DRV_FE_GetStatus(mhDevice, eAT3_RFSTAT_STRENGTH, &rssi);
+
+            s_fe_detail.flagRequest = 0xffffffff; // all info. too many?
+            //s_fe_detail.flagRequest = FE_SIG_MASK_Lock; // | FE_SIG_MASK_RfLevel | FE_SIG_MASK_CarrierOffset | FE_SIG_MASK_SNR | FE_SIG_MASK_BER | FE_SIG_MASK_FecModCod | FE_SIG_MASK_BbpErr;
+            AT3DRV_FE_GetStatus(mhDevice, eAT3_FESTAT_RF_DETAIL, &s_fe_detail);
+
+            uint8_t modcod_valid = s_fe_detail.aFecModCod[0].valid;
+            uint8_t E_L1d_PlpFecType = s_fe_detail.aFecModCod[0].fecType;
+            uint8_t E_L1d_PlpMod = s_fe_detail.aFecModCod[0].mod;
+            uint8_t E_L1d_PlpCod = s_fe_detail.aFecModCod[0].cod;
+
+            if(!modcod_valid) {
+                //try fallback:
+
+                //eAT3_FESTAT_LGD_PLP_V1
+                S_LGD_L2_PLPINFO* l2plpInfo = (S_LGD_L2_PLPINFO*)calloc(1, sizeof(S_LGD_L2_PLPINFO));
+                l2plpInfo->index = 0;
+                AT3DRV_FE_GetStatus(mhDevice, eAT3_FESTAT_LGD_PLP_V1, l2plpInfo);
+                modcod_valid = 1;
+                E_L1d_PlpFecType = l2plpInfo->plp_fec_type;
+                E_L1d_PlpMod = l2plpInfo->plp_mod;
+                E_L1d_PlpCod = l2plpInfo->plp_cr;
+                free(l2plpInfo);
+            }
+
+            int32_t nRfLevel1000 = s_fe_detail.nRfLevel1000;
+            int32_t nSnr1000 = s_fe_detail.nSnr1000;
+
+            uint32_t aBerPreLdpcE7 = s_fe_detail.aBerPreLdpcE7[0];   // return BER x 1e7. (uint32_t)-1 if invalid.
+            uint32_t aBerPreBchE9  = s_fe_detail.aBerPreBchE9[0];    // return BER x 1e9. (uint32_t)-1 if invalid.
+            uint32_t aFerPostBchE6 = s_fe_detail.aFerPostBchE6[0];   // return FER x 1e6. (uint32_t)-1 if invalid.
+
+            if(atsc3_ndk_phy_bridge_get_instance()) {
+                atsc3_ndk_phy_bridge_get_instance()->atsc3_update_rf_stats(lock, rssi, modcod_valid, E_L1d_PlpFecType, E_L1d_PlpMod, E_L1d_PlpCod, nRfLevel1000, nSnr1000, aBerPreLdpcE7, aBerPreBchE9, aFerPostBchE6, s_fe_detail.lock.bDemodLock, s_fe_detail.lock.bNoSignal, s_fe_detail.lock.bPlpLockAny, s_fe_detail.lock.bPlpLockAll);
+                atsc3_ndk_phy_bridge_get_instance()->atsc3_update_rf_bw_stats(s_ullTotalPkts, s_ullTotalBytes, s_uTotalLmts);
+            }
+        }
     }
 
-    this->statusThreadIsRunning = false;
     this->releasePinnedStatusThreadAsNeeded();
+    this->statusThreadIsRunning = false;
 
     return 0;
 }
@@ -1043,6 +1065,27 @@ Java_org_ngbp_libatsc3_middleware_android_phy_LowaSISPHYAndroid_stop(JNIEnv *env
     return res;
 }
 
+/*
+    jjustman-2020-10-07 - hack for dangling lowaSIS libusb
+
+    frame #1: 0x0000007d656aebcc libc.so`abort + 344
+    frame #2: 0x00000073af6b08ec libc++_shared.so`::abort_message(format=<unavailable>) at abort_message.cpp:76
+    frame #3: 0x00000073af6b0a08 libc++_shared.so`demangling_terminate_handler() at cxa_default_handlers.cpp:77
+    frame #4: 0x00000073af6c2534 libc++_shared.so`std::__terminate(func=<unavailable>)()) at cxa_handlers.cpp:59
+    frame #5: 0x00000073af6c24dc libc++_shared.so`std::terminate() at cxa_handlers.cpp:92
+    frame #6: 0x00000073af6afdc8 libc++_shared.so`std::__ndk1::thread::~thread(this=<unavailable>) at thread.cpp:47
+    frame #7: 0x00000073afe91454 libatsc3_phy_lowasis.so`LowaSISPHYAndroid::~LowaSISPHYAndroid(this=0x780000468845c180) at LowaSISPHYAndroid.cpp:61
+    frame #8: 0x00000073afe915a8 libatsc3_phy_lowasis.so`LowaSISPHYAndroid::~LowaSISPHYAndroid(this=0x780000468845c180) at LowaSISPHYAndroid.cpp:42
+    frame #9: 0x00000073afe99440 libatsc3_phy_lowasis.so`LowaSISPHYAndroid::deinit(this=0x780000468845c180) at LowaSISPHYAndroid.cpp:432
+
+    wire up a std::exception handler for the ~lowaSISPHYAndroid chained constructure,
+    as the terminate handler for the thrown exception of un-jointed thread from long-polling libusb async fo libsub_handle_events (60s) which is causing above crash
+
+    see: http://libusb.sourceforge.net/api-1.0/libusb_mtasync.html for more details
+
+ */
+
+
 extern "C" JNIEXPORT jint JNICALL
 Java_org_ngbp_libatsc3_middleware_android_phy_LowaSISPHYAndroid_deinit(JNIEnv *env, jobject thiz) {
     lock_guard<mutex> lowasis_phy_android_cctor_mutex_local(LowaSISPHYAndroid::CS_global_mutex);
@@ -1054,8 +1097,13 @@ Java_org_ngbp_libatsc3_middleware_android_phy_LowaSISPHYAndroid_deinit(JNIEnv *e
     } else {
         _LOWASIS_PHY_ANDROID_INFO("Java_org_ngbp_libatsc3_middleware_android_phy_LowaSISPHYAndroid_deinit: enter with lowaSISPHYAndroid: %p", lowaSISPHYAndroid);
 
-        lowaSISPHYAndroid->deinit();
-        lowaSISPHYAndroid = nullptr;
+        try {
+            lowaSISPHYAndroid->deinit();
+            lowaSISPHYAndroid = nullptr;
+        } catch (std::exception& e) {
+            _LOWASIS_PHY_ANDROID_ERROR("Java_org_ngbp_libatsc3_middleware_android_phy_LowaSISPHYAndroid_deinit() - Caught exception in lowaSISPHYAndroid->deinit, ex is: %s", e.what());
+        }
+
         _LOWASIS_PHY_ANDROID_INFO("Java_org_ngbp_libatsc3_middleware_android_phy_LowaSISPHYAndroid_deinit: exit with lowaSISPHYAndroid: %p", lowaSISPHYAndroid);
     }
 

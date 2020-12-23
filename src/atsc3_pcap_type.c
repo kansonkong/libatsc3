@@ -139,6 +139,11 @@ atsc3_pcap_replay_context_t* atsc3_pcap_replay_iterate_packet(atsc3_pcap_replay_
 
 	//jjustman-2020-01-16 - fixme? should just be packet header size?
 	atsc3_pcap_replay_context_to_iterate->pcap_file_pos += sizeof(atsc3_pcap_global_header_t) + sizeof(atsc3_pcap_packet_header_t);
+	
+	//jjustman-2020-11-23 - if atsc3_pcap_replay_context_to_iterate->atsc3_pcap_packet_instance.atsc3_pcap_packet_header.incl_len is greater tahn 262114, we probably have a corrupt frame and should bail
+	if(atsc3_pcap_replay_context_to_iterate->atsc3_pcap_packet_instance.atsc3_pcap_packet_header.incl_len > 262114) {
+		return NULL;
+	}
 
 	//jjustman-2020-08-11 - don't re-allocate if we are the same block size, just rewind
 	if(atsc3_pcap_replay_context_to_iterate->atsc3_pcap_packet_instance.current_pcap_packet) {
@@ -199,7 +204,7 @@ atsc3_pcap_replay_context_t* atsc3_pcap_replay_usleep_packet(atsc3_pcap_replay_c
         //jjustman-2019-10-19 - only trigger usleep if our differential is greater than XXms
         //jjustman-2019-11-06 - this is a bit of a hack, but android has challenges scheduling this granular level of pcap emission, so we "round" to the quantized 50ms boundary
 		if(wallclock_runtime_packet_capture_ts_differentialUS > 5000) {
-            _ATSC3_PCAP_TYPE_DEBUG("pcap timing information: current packet timeval: s.us: %ld.%ld, last packet timeval: s.us: %ld.%ld, target sleep duration uS: %lld",
+            _ATSC3_PCAP_TYPE_DEBUG("pcap timing information: current packet timeval: s.us: %ld.%d, last packet timeval: s.us: %ld.%d, target sleep duration uS: %lld",
                   current_packet_timeval.tv_sec,
                   current_packet_timeval.tv_usec,
                   last_packet_timeval.tv_sec,

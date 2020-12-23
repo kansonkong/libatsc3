@@ -1,0 +1,124 @@
+MIME-Version:1.0
+Content-Type: multipart/signed; protocol="application/pkcs7-signature"; 
+ micalg=sha-256; boundary="AZo1dgOq(NcU,8(/(ZB-yZFrg4os'8ot(I,u2'r232KeC_gtYoAc8:Q74'llw5utTczJZU"
+
+--AZo1dgOq(NcU,8(/(ZB-yZFrg4os'8ot(I,u2'r232KeC_gtYoAc8:Q74'llw5utTczJZU
+Content-Type: multipart/related;
+ type="application/mbms-envelope+xml";
+ boundary="o'Upm1tAhkPGHkHy8cvdKYNxMC/p7,fj,1?MF6GPyrGJf1r-S7hdME-)NxtRjdK9I,xxG3"
+
+--o'Upm1tAhkPGHkHy8cvdKYNxMC/p7,fj,1?MF6GPyrGJf1r-S7hdME-)NxtRjdK9I,xxG3
+Content-Type: application/mbms-envelope+xml
+Content-Location: envelope.xml
+
+<?xml version="1.0" encoding="UTF-8"?>
+<metadataEnvelope xmlns="urn:3gpp:metadata:2005:MBMS:envelope">
+   <item metadataURI="mpd.xml" version="71" contentType="application/dash+xml"/>
+   <item metadataURI="stsid.xml" version="5" contentType="application/route-s-tsid+xml"/>
+   <item metadataURI="usbd.xml" version="0" contentType="application/route-usd+xml"/>
+</metadataEnvelope>
+
+--o'Upm1tAhkPGHkHy8cvdKYNxMC/p7,fj,1?MF6GPyrGJf1r-S7hdME-)NxtRjdK9I,xxG3
+Content-Type: application/dash+xml
+Content-Location: mpd.xml
+
+<?xml version="1.0" encoding="UTF-8"?>
+<MPD availabilityStartTime="1522-09-10T-13:-56:-21Z" maxSegmentDuration="PT2S" minBufferTime="PT2.0S" minimumUpdatePeriod="PT30S" profiles="urn:mpeg:dash:profile:isoff-broadcast:2015" publishTime="2020-11-05T19:59:38Z" timeShiftBufferDepth="PT12S" type="dynamic" xmlns="urn:mpeg:dash:schema:mpd:2011" xmlns:cenc="urn:mpeg:cenc:2013" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="urn:mpeg:dash:schema:mpd:2011 DASH-MPD.xsd">
+   <Period id="P0" start="PT0S">
+      <AdaptationSet contentType="video" id="0" maxFrameRate="25" maxHeight="720" maxWidth="1280" mimeType="video/mp4" minFrameRate="25" minHeight="720" minWidth="1280" par="16:9" segmentAlignment="true" startWithSAP="1">
+         <Role schemeIdUri="urn:mpeg:dash:role:2011" value="main"/>
+         <Representation bandwidth="2000000" codecs="hev1.2.4.L93.90" frameRate="25" height="720" id="v1_1" sar="1:1" width="1280">
+            <SegmentTemplate duration="2000000" initialization="video-init.mp4" media="video-$Number$.mp4v" startNumber="5977" timescale="1000000"/>
+         </Representation>
+      </AdaptationSet>
+      <AdaptationSet contentType="audio" id="1" lang="fre" mimeType="audio/mp4" segmentAlignment="true" startWithSAP="1">
+         <Role schemeIdUri="urn:mpeg:dash:role:2011" value="main"/>
+         <Representation audioSamplingRate="48000" bandwidth="128000" codecs="mp4a.40.2" id="a2_2">
+            <AudioChannelConfiguration schemeIdUri="urn:mpeg:dash:23003:3:audio_channel_configuration:2011" value="2"/>
+            <SegmentTemplate duration="2000000" initialization="audio-0-init.mp4" media="audio-0-$Number$.mp4a" startNumber="5977" timescale="1000000"/>
+         </Representation>
+      </AdaptationSet>
+   </Period>
+</MPD>
+
+--o'Upm1tAhkPGHkHy8cvdKYNxMC/p7,fj,1?MF6GPyrGJf1r-S7hdME-)NxtRjdK9I,xxG3
+Content-Type: application/route-s-tsid+xml
+Content-Location: stsid.xml
+
+<?xml version="1.0" encoding="UTF-8"?>
+<S-TSID xmlns="tag:atsc.org,2016:XMLSchemas/ATSC3/Delivery/S-TSID/1.0/" xmlns:afdt="tag:atsc.org,2016:XMLSchemas/ATSC3/Delivery/ATSC-FDT/1.0/" xmlns:fdt="urn:ietf:params:xml:ns:fdt">
+   <RS sIpAddr="10.12.79.120" dIpAddr="239.1.120.120" dPort="49152">
+      <LS tsi="3000" bw="2200000" startTime="2020-11-05T19:59:26Z">
+         <SrcFlow rt="true">
+            <EFDT>
+               <FDT-Instance Expires="4294967295"
+                             afdt:efdtVersion="0"
+                             afdt:fileTemplate="video-$TOI$.mp4v">
+                  <fdt:File TOI="4294967295" Content-Location="video-init.mp4"/>
+               </FDT-Instance>
+            </EFDT>
+            <ContentInfo>
+              <MediaInfo repId="v1_1" contentType="video"/>
+            </ContentInfo>
+            <Payload codePoint="128" formatId="1" frag="0" order="true"/>
+         </SrcFlow>
+      </LS>
+      <LS tsi="3003" bw="141000" startTime="2020-11-05T19:59:26Z">
+         <SrcFlow rt="true">
+            <EFDT>
+               <FDT-Instance Expires="4294967295"
+                             afdt:efdtVersion="0"
+                             afdt:fileTemplate="audio-0-$TOI$.mp4a">
+                  <fdt:File TOI="4294967295" Content-Location="audio-0-init.mp4"/>
+               </FDT-Instance>
+            </EFDT>
+            <ContentInfo>
+              <MediaInfo repId="a2_2" contentType="audio"/>
+            </ContentInfo>
+            <Payload codePoint="128" formatId="1" frag="0" order="true"/>
+         </SrcFlow>
+      </LS>
+   </RS>
+</S-TSID>
+
+--o'Upm1tAhkPGHkHy8cvdKYNxMC/p7,fj,1?MF6GPyrGJf1r-S7hdME-)NxtRjdK9I,xxG3
+Content-Type: application/route-usd+xml
+Content-Location: usbd.xml
+
+<?xml version="1.0" encoding="UTF-8"?>
+<BundleDescriptionROUTE xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns="tag:atsc.org,2016:XMLSchemas/ATSC3/Delivery/ROUTEUSD/1.0/" xmlns:routeusd="http://www.atsc.org/XMLSchemas/ATSC3/Delivery/ROUTEUSD/1.0/" xsi:schemaLocation="http://www.atsc.org/XMLSchemas/ATSC3/Delivery/ROUTEUSD/1.0/ ROUTEUSD.xsd">
+   <UserServiceDescription serviceId="1">
+      <Name lang="en">
+         BBD1
+      </Name>
+      <DeliveryMethod>
+         <BroadcastAppService>
+            <BasePattern>video-</BasePattern>
+            <BasePattern>audio-0-</BasePattern>
+         </BroadcastAppService>
+      </DeliveryMethod>
+   </UserServiceDescription>
+</BundleDescriptionROUTE>
+
+--o'Upm1tAhkPGHkHy8cvdKYNxMC/p7,fj,1?MF6GPyrGJf1r-S7hdME-)NxtRjdK9I,xxG3--
+
+--AZo1dgOq(NcU,8(/(ZB-yZFrg4os'8ot(I,u2'r232KeC_gtYoAc8:Q74'llw5utTczJZU
+Content-Type: application/pkcs7-signature; name=bcsig.p7s; mime-type=signed-data
+Content-Transfer-Encoding: base64;
+Content-Disposition: attachment; filemane="bcsig7.p7s"
+
+MIICXgYJKoZIhvcNAQcCoIICTzCCAksCAQMxDTALBglghkgBZQMEAgEwCwYJKoZI
+hvcNAQcBMYICKDCCAiQCAQOAFK3ctxQf/TQvkxUJ2eZXvYL44UtzMAsGCWCGSAFl
+AwQCAaBpMBgGCSqGSIb3DQEJAzELBgkqhkiG9w0BBwEwHAYJKoZIhvcNAQkFMQ8X
+DTIwMTEwNTE5NTkzNFowLwYJKoZIhvcNAQkEMSIEICipdZWY75JYSRuC9gjVh/gh
+pLQsT0HFRhjnYDjJRiYYMA0GCSqGSIb3DQEBAQUABIIBgB1BVGFLoSXXn8Bvqcrd
+E7qR0V6hthwenO0VPRNNh2XoRdGaYAMnI7gSDozLle7Dv0DqRGIXfBWS1VF+bAAe
+skfJSJNxtfmQnHypn2e/zKBX51HMnPl4P00GRhLetcElEyXSXCtyTFQa1X8sOYi/
+A3JXrabLn+4/olxpMDsP7yhABob1NBGwz9/i+VuuAK1z3woRlUySkI6zvhTsM/pr
+q6b/HwtMEI56XWHCpbV3z8AlZ3z5pohpYY1ux/0tV2bbpjHmPFT7LISjLhwxmmOa
+w0PrPacTglwLK/+QkFVQXOoGEd3cs/Zu38EoHhxaIepuUbUmNrLbaN6Mb/3kELGB
+UIkX6J0UKyplK3B7FEh1u5Wipj2fHriS0vQIrrev4Wblp52E81KAQq+fT8o/xbrj
+WQoxYtIxR8lNhRxU+GfA7pe8V9Q97uxfCxRXTWUo4czNWYgzziitleg5lEp0Dc+u
+Vm8ShvHMbEjJ7Yh00/NxTka9wXDh11TnzkoGyT1o6P05rQ==
+
+--AZo1dgOq(NcU,8(/(ZB-yZFrg4os'8ot(I,u2'r232KeC_gtYoAc8:Q74'llw5utTczJZU--

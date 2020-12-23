@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<FDT-Instance xmlns="urn:ietf:params:xml:ns:fdt"
+              xmlns:afdt="tag:atsc.org,2016:XMLSchemas/ATSC3/Delivery/ATSC-FDT/1.0/"
+              Expires="4294967295"
+              afdt:efdtVersion="74">
+   <File Content-Location="sls"
+         TOI="458826"
+         Content-Length="6758"
+         Content-Type="multipart/signed"/>
+</FDT-Instance>

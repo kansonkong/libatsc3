@@ -26,22 +26,22 @@ uint32_t* dst_ip_addr_filter = NULL;
 uint16_t* dst_ip_port_filter = NULL;
 uint16_t* dst_packet_id_filter = NULL;
 
-mutex atsc3_core_service_player_bridge_context_mutex;
+recursive_mutex atsc3_core_service_player_bridge_context_mutex;
 
 //jjustman-2019-10-03 - context event callbacks...
 lls_slt_monitor_t* lls_slt_monitor = NULL;
 
 //mmtp/sls flow management
-mmtp_flow_t* mmtp_flow;
-udp_flow_latest_mpu_sequence_number_container_t* udp_flow_latest_mpu_sequence_number_container;
+mmtp_flow_t* mmtp_flow = NULL;
+udp_flow_latest_mpu_sequence_number_container_t* udp_flow_latest_mpu_sequence_number_container = NULL;
 lls_sls_mmt_monitor_t* lls_sls_mmt_monitor = NULL;
 atsc3_mmt_mfu_context_t* atsc3_mmt_mfu_context = NULL;
 
 //route/alc specific parameters
 lls_sls_alc_monitor_t* lls_sls_alc_monitor = NULL;
-atsc3_alc_arguments_t* alc_arguments;
+atsc3_alc_arguments_t* alc_arguments = NULL;
 
-std::string atsc3_ndk_cache_temp_folder_path;
+std::string atsc3_ndk_cache_temp_folder_path = "";
 
 //these should actually be referenced from mmt_sls_monitor for proper flow references
 uint16_t global_video_packet_id = 0;
@@ -110,22 +110,26 @@ void atsc3_core_service_application_bridge_init(IAtsc3NdkApplicationBridge* atsc
  * jjustman-2020-08-31 - todo: refactor this into a context handle
  */
 void atsc3_core_service_application_bridge_reset_context() {
-    lock_guard<mutex> atsc3_core_service_player_bridge_context_mutex_local(atsc3_core_service_player_bridge_context_mutex);
+    lock_guard<recursive_mutex> atsc3_core_service_player_bridge_context_mutex_local(atsc3_core_service_player_bridge_context_mutex);
+
+    if(atsc3_mmt_mfu_context) {
+          atsc3_mmt_mfu_context_free(&atsc3_mmt_mfu_context);
+    }
 
     if (lls_slt_monitor) {
         atsc3_lls_slt_monitor_free(&lls_slt_monitor);
         lls_sls_alc_monitor = NULL;
     }
+
     if(mmtp_flow) {
         mmtp_flow_free_mmtp_asset_flow(mmtp_flow);
     }
+
     if(udp_flow_latest_mpu_sequence_number_container) {
         udp_flow_latest_mpu_sequence_number_container_t_release(udp_flow_latest_mpu_sequence_number_container);
     }
 
-    if(atsc3_mmt_mfu_context) {
-        atsc3_mmt_mfu_context_free(&atsc3_mmt_mfu_context);
-    }
+
 
     lls_slt_monitor = lls_slt_monitor_create();
     //wire up a lls event for SLS table
@@ -194,7 +198,7 @@ void mmtp_process_sls_from_payload(udp_packet_t *udp_packet, mmtp_signalling_pac
 }
 
 atsc3_lls_slt_service_t* atsc3_phy_mmt_player_bridge_set_single_monitor_a331_service_id(int service_id) {
-    lock_guard<mutex> atsc3_core_service_player_bridge_context_mutex_local(atsc3_core_service_player_bridge_context_mutex);
+    lock_guard<recursive_mutex> atsc3_core_service_player_bridge_context_mutex_local(atsc3_core_service_player_bridge_context_mutex);
 
     __INFO("atsc3_phy_mmt_player_bridge_set_a331_service_id: with service_id: %d", service_id);
     //find our matching LLS service, then assign a monitor reference
@@ -272,7 +276,7 @@ atsc3_lls_slt_service_t* atsc3_phy_mmt_player_bridge_set_single_monitor_a331_ser
                atsc3_slt_broadcast_svc_signalling_mmt->sls_destination_ip_address,
                atsc3_slt_broadcast_svc_signalling_mmt->sls_destination_udp_port);
 
-        //clear any active SLS monitors
+        //clear any active SLS monitors, don't destroy our serviceId flows
         lls_slt_monitor_clear_lls_sls_mmt_monitor(lls_slt_monitor);
 
         //TODO - remove this logic to a unified process...
@@ -298,12 +302,11 @@ atsc3_lls_slt_service_t* atsc3_phy_mmt_player_bridge_set_single_monitor_a331_ser
 
         lls_slt_monitor_add_lls_sls_mmt_monitor(lls_slt_monitor, lls_sls_mmt_monitor);
     } else {
+        //jjustman-2020-09-17 - use _clear, but keep our lls_sls_mmt_session_flows
+        //todo: release any internal lls_sls_mmt_monitor handles
         lls_slt_monitor_clear_lls_sls_mmt_monitor(lls_slt_monitor);
-        if(lls_slt_monitor->lls_sls_mmt_monitor) {
-            lls_sls_mmt_monitor_free(&lls_slt_monitor->lls_sls_mmt_monitor);
-        }
+        lls_slt_monitor->lls_sls_mmt_monitor = NULL;
         lls_sls_mmt_monitor = NULL;
-
     }
 
     //wire up ROUTE
@@ -359,7 +362,7 @@ atsc3_lls_slt_service_t* atsc3_phy_mmt_player_bridge_set_single_monitor_a331_ser
 }
 
 atsc3_lls_slt_service_t* atsc3_phy_mmt_player_bridge_add_monitor_a331_service_id(int service_id) {
-    lock_guard<mutex> atsc3_core_service_player_bridge_context_mutex_local(atsc3_core_service_player_bridge_context_mutex);
+    lock_guard<recursive_mutex> atsc3_core_service_player_bridge_context_mutex_local(atsc3_core_service_player_bridge_context_mutex);
 
     __INFO("atsc3_phy_mmt_player_bridge_add_monitor_a331_service_id: with service_id: %d", service_id);
 
@@ -416,7 +419,7 @@ atsc3_lls_slt_service_t* atsc3_phy_mmt_player_bridge_add_monitor_a331_service_id
 }
 
 atsc3_lls_slt_service_t* atsc3_phy_mmt_player_bridge_remove_monitor_a331_service_id(int service_id) {
-    lock_guard<mutex> atsc3_core_service_player_bridge_context_mutex_local(atsc3_core_service_player_bridge_context_mutex);
+    lock_guard<recursive_mutex> atsc3_core_service_player_bridge_context_mutex_local(atsc3_core_service_player_bridge_context_mutex);
 
     if(!lls_slt_monitor->lls_sls_alc_monitor || !lls_slt_monitor->lls_sls_alc_monitor_v.count) {
         __ERROR("atsc3_phy_mmt_player_bridge_remove_monitor_a331_service_id: unable to remove service_id: %d, lls_slt_monitor->lls_sls_alc_monitor is: %p, lls_slt_monitor->lls_sls_alc_monitor_v.count is: %d",
@@ -490,7 +493,7 @@ lls_sls_alc_monitor_t* atsc3_lls_sls_alc_monitor_get_from_service_id(int service
 }
 
 atsc3_sls_metadata_fragments_t* atsc3_slt_alc_get_sls_metadata_fragments_from_monitor_service_id(int service_id) {
-    lock_guard<mutex> atsc3_core_service_player_bridge_context_mutex_local(atsc3_core_service_player_bridge_context_mutex);
+    lock_guard<recursive_mutex> atsc3_core_service_player_bridge_context_mutex_local(atsc3_core_service_player_bridge_context_mutex);
 
     lls_sls_alc_monitor_t* lls_sls_alc_monitor = atsc3_lls_sls_alc_monitor_get_from_service_id(service_id);
 
@@ -507,7 +510,7 @@ atsc3_sls_metadata_fragments_t* atsc3_slt_alc_get_sls_metadata_fragments_from_mo
 }
 
 atsc3_route_s_tsid_t* atsc3_slt_alc_get_sls_route_s_tsid_from_monitor_service_id(int service_id) {
-    lock_guard<mutex> atsc3_core_service_player_bridge_context_mutex_local(atsc3_core_service_player_bridge_context_mutex);
+    lock_guard<recursive_mutex> atsc3_core_service_player_bridge_context_mutex_local(atsc3_core_service_player_bridge_context_mutex);
 
     lls_sls_alc_monitor_t* lls_sls_alc_monitor = atsc3_lls_sls_alc_monitor_get_from_service_id(service_id);
 
@@ -541,7 +544,7 @@ void atsc3_core_service_bridge_process_packet_from_plp_and_block(uint8_t plp_num
 
 //void process_packet(u_char *user, const struct pcap_pkthdr *pkthdr, const u_char *packet) {
 void atsc3_core_service_bridge_process_packet_phy(block_t* packet) {
-    lock_guard<mutex> atsc3_core_service_player_bridge_context_mutex_local(atsc3_core_service_player_bridge_context_mutex);
+    lock_guard<recursive_mutex> atsc3_core_service_player_bridge_context_mutex_local(atsc3_core_service_player_bridge_context_mutex);
 
     mmtp_packet_header_t* mmtp_packet_header = NULL;
     lls_sls_mmt_session_t* matching_lls_sls_mmt_session = NULL;
@@ -670,8 +673,8 @@ void atsc3_core_service_bridge_process_packet_phy(block_t* packet) {
                 mmtp_mfu_process_from_payload_with_context(udp_packet, mmtp_mpu_packet, atsc3_mmt_mfu_context);
 
             } else {
-                //non-timed
-                __ATSC3_WARN("process_packet: mmtp_packet_header_parse_from_block_t - non-timed payload: packet_id: %u", mmtp_packet_header->mmtp_packet_id);
+                //non-timed -
+                __ATSC3_WARN("process_packet: mmtp_packet_header_parse_from_block_t - non-timed payload: packet_id: %u", mmtp_mpu_packet->mmtp_packet_id);
             }
         } else if(mmtp_packet_header->mmtp_payload_type == 0x2) {
 
@@ -812,8 +815,8 @@ void atsc3_lls_on_aeat_table_present_ndk(lls_table_t* lls_table) {
 
 
 //TODO: jjustman-2019-11-08: wire up the service_id in which this alc_emission originated from in addition to tsi/toi
-void atsc3_lls_sls_alc_on_object_close_flag_s_tsid_content_location_ndk(uint32_t tsi, uint32_t toi, char* content_location) {
-    Atsc3NdkApplicationBridge_ptr->atsc3_lls_sls_alc_on_object_close_flag_s_tsid_content_location_jni(tsi, toi, content_location);
+void atsc3_lls_sls_alc_on_object_close_flag_s_tsid_content_location_ndk(uint32_t tsi, uint32_t toi, char* s_tsid_content_location, char* s_tsid_content_type, char* cache_file_path) {
+    Atsc3NdkApplicationBridge_ptr->atsc3_lls_sls_alc_on_object_close_flag_s_tsid_content_location_jni(tsi, toi, s_tsid_content_location, s_tsid_content_type, cache_file_path);
 }
 
 void atsc3_lls_sls_alc_on_route_mpd_patched_ndk(uint16_t service_id) {
@@ -1021,8 +1024,8 @@ void atsc3_mmt_mpu_mfu_on_sample_corrupt_ndk(uint16_t packet_id, uint32_t mpu_se
         __WARN("atsc3_mmt_mpu_mfu_on_sample_corrupt_ndk: mmt_mfu_sample: %p: returned null atsc3_mmt_mfu_mpu_timestamp_descriptor for packet_id: %d, mpu_sequence_number: %d", mmt_mfu_sample, packet_id, mpu_sequence_number);
     }
 
-    if(!block_Len(mmt_mfu_sample)) {
-        __WARN("atsc3_mmt_mpu_mfu_on_sample_corrupt_ndk: mmt_mfu_sample: %p: block len is 0 for packet_id: %d, mpu_sequence_number: %d", mmt_mfu_sample, packet_id, mpu_sequence_number);
+    if(block_Len(mmt_mfu_sample) < 32 ) {
+        __WARN("atsc3_mmt_mpu_mfu_on_sample_corrupt_ndk: mmt_mfu_sample: %p: block len is < 32 for packet_id: %d, mpu_sequence_number: %d", mmt_mfu_sample, packet_id, mpu_sequence_number);
         return;
     }
 
@@ -1032,8 +1035,9 @@ void atsc3_mmt_mpu_mfu_on_sample_corrupt_ndk(uint16_t packet_id, uint32_t mpu_se
             uint8_t *block_ptr = block_Get(mmt_mfu_sample_rbsp);
             uint32_t block_len = block_Len(mmt_mfu_sample_rbsp);
 
+
             //if((global_mfu_proccessed_count++ % 600) == 0) {
-                __INFO("atsc3_mmt_mpu_mfu_on_sample_corrupt_ndk: total mfu count: %d, packet_id: %d, mpu: %d, sample: %d, sample ptr: %p, orig len: %d (i_pos: %d, p_size: %d), nal ptr: %p, len: %d (i_pos: %d, p_size: %d)",
+                __INFO("atsc3_mmt_mpu_mfu_on_sample_corrupt_ndk: total mfu count: %d, packet_id: %d, mpu: %d, sample: %d, sample ptr: %p, orig len: %d (i_pos: %d, p_size: %d), nal ptr: %p (p_buffer: %p), len: %d (i_pos: %d, p_size: %d)",
                                         global_mfu_proccessed_count,
                                         packet_id,
                                         mpu_sequence_number,
@@ -1044,6 +1048,7 @@ void atsc3_mmt_mpu_mfu_on_sample_corrupt_ndk(uint16_t packet_id, uint32_t mpu_se
                        mmt_mfu_sample->p_size,
                                         block_Len(mmt_mfu_sample),
                                         block_ptr,
+                                        mmt_mfu_sample_rbsp->p_buffer,
                                         block_len,
                        mmt_mfu_sample_rbsp->i_pos,
                                         mmt_mfu_sample_rbsp->p_size);
@@ -1061,8 +1066,11 @@ void atsc3_mmt_mpu_mfu_on_sample_corrupt_ndk(uint16_t packet_id, uint32_t mpu_se
         uint32_t block_len = block_Len(mmt_mfu_sample);
 
         //audio and stpp don't need NAL start codes
-        __INFO("atsc3_mmt_mpu_mfu_on_sample_corrupt_ndk: non NAL, packet_id: %d, mpu_sequence_number: %d, sample_number: %d, block: %p, len: %d, char: %c %c %c %c",
-                    packet_id, mpu_sequence_number, sample_number,  block_ptr, block_len, block_ptr[0], block_ptr[1], block_ptr[2], block_ptr[3]);
+        __INFO("atsc3_mmt_mpu_mfu_on_sample_corrupt_ndk: non NAL, packet_id: %d, mpu_sequence_number: %d, sample_number: %d, block_ptr: %p (p_buffer: %p), len: %d, char: %c %c %c %c",
+                    packet_id, mpu_sequence_number, sample_number,
+                    block_ptr,
+               mmt_mfu_sample->p_buffer,
+               block_len, block_ptr[0], block_ptr[1], block_ptr[2], block_ptr[3]);
 
         Atsc3NdkApplicationBridge_ptr->atsc3_onMfuPacketCorrupt(packet_id, mpu_sequence_number, sample_number, block_ptr, block_len, mpu_timestamp_descriptor, mfu_fragment_count_expected, mfu_fragment_count_rebuilt);
     }
@@ -1077,6 +1085,11 @@ void atsc3_mmt_mpu_mfu_on_sample_corrupt_mmthsample_header_ndk(uint16_t packet_i
 //                sample_number,
 //                mmt_mfu_sample->p_size,
 //                last_mpu_timestamp);
+
+    if(!mmt_mfu_sample || !mmt_mfu_sample->p_size) {
+        __WARN("atsc3_mmt_mpu_mfu_on_sample_corrupt_mmthsample_header_ndk: mmt_mfu_sample: %p has no data!", mmt_mfu_sample);
+        return;
+    }
 
     atsc3_mmt_mfu_mpu_timestamp_descriptor_t* atsc3_mmt_mfu_mpu_timestamp_descriptor = atsc3_mmt_mfu_context->get_mpu_timestamp_from_packet_id_mpu_sequence_number(atsc3_mmt_mfu_context, packet_id, mpu_sequence_number);
     uint64_t mpu_timestamp_descriptor = 0;
@@ -1114,14 +1127,22 @@ void atsc3_mmt_mpu_mfu_on_sample_corrupt_mmthsample_header_ndk(uint16_t packet_i
             block_Destroy(&mmt_mfu_sample_rbsp);
         }
     } else {
-        uint8_t *block_ptr = block_Get(mmt_mfu_sample);
-        uint32_t block_len = block_Len(mmt_mfu_sample);
+        if (mmt_mfu_sample) {
+            block_Rewind(mmt_mfu_sample);
 
-        __INFO("atsc3_mmt_mpu_mfu_on_sample_corrupt_mmthsample_header_ndk: non NAL, packet_id: %d, mpu_sequence_number: %d, sample: %d, block: %p, len: %d, char: %c %c %c %c",
-               packet_id, mpu_sequence_number, sample_number, block_ptr, block_len, block_ptr[0], block_ptr[1], block_ptr[2], block_ptr[3]);
+            uint8_t *block_ptr = block_Get(mmt_mfu_sample);
+            uint32_t block_len = block_Len(mmt_mfu_sample);
 
-        //audio and stpp don't need NAL start codes
-        Atsc3NdkApplicationBridge_ptr->atsc3_onMfuPacketCorruptMmthSampleHeader(packet_id, mpu_sequence_number, sample_number, block_ptr, block_len, mpu_timestamp_descriptor, mfu_fragment_count_expected, mfu_fragment_count_rebuilt);
+            __INFO("atsc3_mmt_mpu_mfu_on_sample_corrupt_mmthsample_header_ndk: non NAL, packet_id: %d, mpu_sequence_number: %d, sample: %d, block: %p, len: %d, char: %c %c %c %c",
+                   packet_id, mpu_sequence_number, sample_number, block_ptr, block_len, block_ptr[0], block_ptr[1], block_ptr[2], block_ptr[3]);
+
+            //audio and stpp don't need NAL start codes
+            Atsc3NdkApplicationBridge_ptr->atsc3_onMfuPacketCorruptMmthSampleHeader(packet_id, mpu_sequence_number, sample_number, block_ptr, block_len, mpu_timestamp_descriptor, mfu_fragment_count_expected, mfu_fragment_count_rebuilt);
+        } else {
+            __ERROR("atsc3_mmt_mpu_mfu_on_sample_corrupt_mmthsample_header_ndk: non NAL, packet_id: %d, mpu_sequence_number: %d, sample: %d - block is NULL!",
+                   packet_id, mpu_sequence_number, sample_number);
+
+        }
     }
 }
 

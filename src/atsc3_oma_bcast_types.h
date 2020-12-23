@@ -33,6 +33,9 @@
  *
  */
 
+#include <atsc3_utils.h>
+#include <atsc3_vector_builder.h>
+
 #ifndef ATSC3_A332_OMA_BCAST_TYPES_H_
 #define ATSC3_A332_OMA_BCAST_TYPES_H_
 
@@ -265,7 +268,160 @@ In the following, the way of signaling changes in Service Guide fragments is spe
 
  */
 
+/*
+ example s-tsid for ESG service:
+ 
+	<?xml version="1.0" encoding="UTF-8"?>
+	<S-TSID xmlns="tag:atsc.org,2016:XMLSchemas/ATSC3/Delivery/S-TSID/1.0/" xmlns:afdt="tag:atsc.org,2016:XMLSchemas/ATSC3/Delivery/ATSC-FDT/1.0/" xmlns:fdt="urn:ietf:params:xml:ns:fdt">
+	   <RS sIpAddr="172.16.200.1" dIpAddr="239.255.50.6" dPort="5006">
+		  <LS tsi="50">
+			 <SrcFlow>
+				<EFDT>
+				   <FDT-Instance Expires="4294967295" afdt:efdtVersion="0">
+					  <fdt:File TOI="1220" Content-Location="sgdd_1220" Content-Length="45677" Transfer-Length="3931" Content-Type="application/vnd.oma.bcast.sgdd+xml" Content-Encoding="gzip" />
+				   </FDT-Instance>
+				</EFDT>
+				<Payload codePoint="1" formatId="1" frag="0" order="true" />
+			 </SrcFlow>
+		  </LS>
+		  <LS tsi="60">
+			 <SrcFlow>
+				<EFDT>
+				   <FDT-Instance Expires="4294967295" afdt:efdtVersion="0">
+					  <fdt:File TOI="3303" Content-Location="sgdu_short_3303" Content-Length="102900" Transfer-Length="11191" Content-Type="application/vnd.oma.bcast.sgdu" Content-Encoding="gzip" />
+					  <fdt:File TOI="4439" Content-Location="sgdu_service_schedule_4439" Content-Length="19322" Transfer-Length="2173" Content-Type="application/vnd.oma.bcast.sgdu" Content-Encoding="gzip" />
+				   </FDT-Instance>
+				</EFDT>
+				<Payload codePoint="1" formatId="1" frag="0" order="true" />
+			 </SrcFlow>
+		  </LS>
+		  <LS tsi="70">
+			 <SrcFlow>
+				<EFDT>
+				   <FDT-Instance Expires="4294967295" afdt:efdtVersion="0">
+					  <fdt:File TOI="2299" Content-Location="sgdu_long_2299" Content-Length="106689" Transfer-Length="12876" Content-Type="application/vnd.oma.bcast.sgdu" Content-Encoding="gzip" />
+					  <fdt:File TOI="2300" Content-Location="sgdu_long_2300" Content-Length="2819" Transfer-Length="999" Content-Type="application/vnd.oma.bcast.sgdu" Content-Encoding="gzip" />
+					  <fdt:File TOI="2301" Content-Location="sgdu_long_2301" Content-Length="101356" Transfer-Length="11652" Content-Type="application/vnd.oma.bcast.sgdu" Content-Encoding="gzip" />
+					  <fdt:File TOI="2302" Content-Location="sgdu_long_2302" Content-Length="1425" Transfer-Length="709" Content-Type="application/vnd.oma.bcast.sgdu" Content-Encoding="gzip" />
+					  <fdt:File TOI="2304" Content-Location="sgdu_long_2304" Content-Length="80136" Transfer-Length="9452" Content-Type="application/vnd.oma.bcast.sgdu" Content-Encoding="gzip" />
+					  <fdt:File TOI="4440" Content-Location="sgdu_service_schedule_4440" Content-Length="52972" Transfer-Length="4934" Content-Type="application/vnd.oma.bcast.sgdu" Content-Encoding="gzip" />
+				   </FDT-Instance>
+				</EFDT>
+				<Payload codePoint="1" formatId="1" frag="0" order="true" />
+			 </SrcFlow>
+		  </LS>
+		  <LS tsi="80">
+			 <SrcFlow>
+				<EFDT>
+				   <FDT-Instance Expires="4294967295" afdt:efdtVersion="0">
+					  <fdt:File TOI="5873" Content-Location="s53098_ll_h3_ab.png" Content-Length="9034" Transfer-Length="8727" Content-Encoding="gzip" />
+					  <fdt:File TOI="5874" Content-Location="s28717_h3_aa.png" Content-Length="56251" Transfer-Length="56173" Content-Encoding="gzip" />
+					  <fdt:File TOI="5875" Content-Location="s10269_ll_h3_ab.png" Content-Length="16121" Transfer-Length="16069" Content-Encoding="gzip" />
+					  <fdt:File TOI="5876" Content-Location="s11118_ll_h3_ab.png" Content-Length="17470" Transfer-Length="17008" Content-Encoding="gzip" />
+				   </FDT-Instance>
+				</EFDT>
+				<Payload codePoint="1" formatId="1" frag="0" order="true" />
+			 </SrcFlow>
+		  </LS>
+	   </RS>
+	</S-TSID>
+ 
+ 
+ 
+ -> file instances and types
+ 
+ <fdt:File TOI="1220" Content-Location="sgdd_1220" Content-Length="45677" Transfer-Length="3931" Content-Type="application/vnd.oma.bcast.sgdd+xml" Content-Encoding="gzip" />
+
+ <fdt:File TOI="3303" Content-Location="sgdu_short_3303" Content-Length="102900" Transfer-Length="11191" Content-Type="application/vnd.oma.bcast.sgdu" Content-Encoding="gzip" />
+ <fdt:File TOI="4439" Content-Location="sgdu_service_schedule_4439" Content-Length="19322" Transfer-Length="2173" Content-Type="application/vnd.oma.bcast.sgdu" Content-Encoding="gzip" />
+ 
+ <!-- extracted payload has preamble of atsc3_service_guide_delivery_unit_t -->
+ 
+ <fdt:File TOI="2299" Content-Location="sgdu_long_2299" Content-Length="106689" Transfer-Length="12876" Content-Type="application/vnd.oma.bcast.sgdu" Content-Encoding="gzip" />
+ <fdt:File TOI="2300" Content-Location="sgdu_long_2300" Content-Length="2819" Transfer-Length="999" Content-Type="application/vnd.oma.bcast.sgdu" Content-Encoding="gzip" />
+ <fdt:File TOI="2301" Content-Location="sgdu_long_2301" Content-Length="101356" Transfer-Length="11652" Content-Type="application/vnd.oma.bcast.sgdu" Content-Encoding="gzip" />
+ <fdt:File TOI="2302" Content-Location="sgdu_long_2302" Content-Length="1425" Transfer-Length="709" Content-Type="application/vnd.oma.bcast.sgdu" Content-Encoding="gzip" />
+ <fdt:File TOI="2304" Content-Location="sgdu_long_2304" Content-Length="80136" Transfer-Length="9452" Content-Type="application/vnd.oma.bcast.sgdu" Content-Encoding="gzip" />
+ <fdt:File TOI="4440" Content-Location="sgdu_service_schedule_4440" Content-Length="52972" Transfer-Length="4934" Content-Type="application/vnd.oma.bcast.sgdu" Content-Encoding="gzip" />
+ 
+ 
+ <fdt:File TOI="5873" Content-Location="s53098_ll_h3_ab.png" Content-Length="9034" Transfer-Length="8727" Content-Encoding="gzip" />
+ <fdt:File TOI="5874" Content-Location="s28717_h3_aa.png" Content-Length="56251" Transfer-Length="56173" Content-Encoding="gzip" />
+ <fdt:File TOI="5875" Content-Location="s10269_ll_h3_ab.png" Content-Length="16121" Transfer-Length="16069" Content-Encoding="gzip" />
+ <fdt:File TOI="5876" Content-Location="s11118_ll_h3_ab.png" Content-Length="17470" Transfer-Length="17008" Content-Encoding="gzip" />
 
 
+ 
+ */
+/*
+ * Service Guide Delivery Descriptor
+ * Ref: 5.4.1.5.2 - https://www.openmobilealliance.org/release/BCAST/V1_1-20131029-A/OMA-TS-BCAST_Service_Guide-V1_1-20131029-A.pdf
+ *
+ * Processing: gzip extraction of payload
+ */
+
+
+
+/*
+ * Service Guide Delivery Unit
+ * Ref: 5.4.1.3 - https://www.openmobilealliance.org/release/BCAST/V1_1-20131029-A/OMA-TS-BCAST_Service_Guide-V1_1-20131029-A.pdf
+ *
+ * Processing: gzip extraction of payload
+ * 				extract interior payload
+ */
+
+typedef struct atsc3_service_guide_fragment_header {
+	uint32_t	fragment_transport_id;
+	uint32_t	fragment_version;
+	uint32_t	offset;
+} atsc3_service_guide_fragment_header_t;
+
+typedef struct atsc3_service_guide_fragment_payload {
+	uint8_t 	fragment_encoding;
+
+	//fragmentEncoding == 0;
+	uint8_t		fragment_type;
+	block_t*	byte_string;
+
+	//fragmentEncoding == 1
+	uint32_t	valid_from;
+	uint32_t	valid_to;
+	block_t*	fragment_id;
+	block_t*	sdp_fragment;
+
+	//fragmentEncoding == 2
+	uint32_t	valid_from;
+	uint32_t	valid_to;
+	block_t*	fragment_id;
+	block_t*	usbd_fragment;
+
+	//fragmentEncoding == 3
+	uint32_t	valid_from;
+	uint32_t	valid_to;
+	block_t*	fragment_id;
+	block_t*	adp_fragment;
+
+
+} atsc3_service_guide_fragment_payload_t;
+
+typedef struct atsc3_service_guide_delivery_unit {
+	uint32_t 	extension_offset;
+	uint16_t	reserved;
+	uint32_t	n_o_service_guide_fragments:24;
+
+	ATSC3_VECTOR_BUILDER_STRUCT(atsc3_service_guide_fragment_header);
+	ATSC3_VECTOR_BUILDER_STRUCT(atsc3_service_guide_fragment_payload);
+
+	//extension_offset > 0
+	uint8_t		extension_type;
+	uint32_t	next_extension_offset;
+	block_t*	extension_data;
+
+
+} atsc3_service_guide_delivery_unit_t;
+
+
+ATSC3_VECTOR_BUILDER_METHODS_INTERFACE(atsc3_service_guide_delivery_unit, atsc3_service_guide_fragment_header);
+ATSC3_VECTOR_BUILDER_METHODS_INTERFACE(atsc3_service_guide_delivery_unit, atsc3_service_guide_fragment_payload);
 
 #endif /* ATSC3_A332_OMA_BCAST_TYPES_H_ */

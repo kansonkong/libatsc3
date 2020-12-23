@@ -799,20 +799,28 @@ uint8_t block_Read_uint8_bitlen(block_t* src, int bitlen) {
 
 uint16_t block_Read_uint16_bitlen(block_t* src, int bitlen) {
     uint16_t ret = 0;
-    
+	
     int bits_remaining = bitlen;
     while(bits_remaining > 0) {
-        int loop_read_size = (bits_remaining > 8 ? 8 - src->_bitpos : (bits_remaining > (8 - src->_bitpos) ? 8 - src->_bitpos : bits_remaining));
-        int mask = ((((1 << (loop_read_size - 1)) - 1) << 1) | 1);
-
-        ret |= (src->p_buffer[src->i_pos] & mask) << (bits_remaining - loop_read_size);
-        
-        bits_remaining -= loop_read_size;
-        
-        src->_bitpos = (src->_bitpos + loop_read_size) % 8;
-        if(src->_bitpos == 0) {
-            src->i_pos++;
-        }
+		int loop_read_size = (bits_remaining > 8 ? 8 - src->_bitpos : (bits_remaining > (8 - src->_bitpos) ? 8 - src->_bitpos : bits_remaining));
+		int8_t mask = 0;
+		int8_t shift = 0;
+		
+		if(bits_remaining > 8) {
+			mask = ((((1 << (loop_read_size - 1)) - 1) << 1) | 1);
+		} else {
+			mask = ~(( 1 << (8 - loop_read_size)) -1);
+			shift = 8 - loop_read_size;
+		}
+		
+		ret |= ((src->p_buffer[src->i_pos] & mask) >> shift) << (bits_remaining - loop_read_size);
+		 
+		bits_remaining -= loop_read_size;
+		 
+		src->_bitpos = (src->_bitpos + loop_read_size) % 8;
+		if(src->_bitpos == 0) {
+			src->i_pos++;
+		}
     }
 
     return ret;
@@ -821,15 +829,23 @@ uint16_t block_Read_uint16_bitlen(block_t* src, int bitlen) {
 uint32_t block_Read_uint32_bitlen(block_t* src, int bitlen) {
 	uint32_t ret = 0;
    
-   int bits_remaining = bitlen;
-   while(bits_remaining > 0) {
+	int bits_remaining = bitlen;
+	while(bits_remaining > 0) {
 	   int loop_read_size = (bits_remaining > 8 ? 8 - src->_bitpos : (bits_remaining > (8 - src->_bitpos) ? 8 - src->_bitpos : bits_remaining));
-	   int mask = ((((1 << (loop_read_size - 1)) - 1) << 1) | 1);
-
-	   ret |= (src->p_buffer[src->i_pos] & mask) << (bits_remaining - loop_read_size);
+	   int8_t mask = 0;
+	   int8_t shift = 0;
 	   
+	   if(bits_remaining > 8) {
+		   mask = ((((1 << (loop_read_size - 1)) - 1) << 1) | 1);
+	   } else {
+		   mask = ~(( 1 << (8 - loop_read_size)) -1);
+		   shift = 8 - loop_read_size;
+	   }
+	   
+	   ret |= ((src->p_buffer[src->i_pos] & mask) >> shift) << (bits_remaining - loop_read_size);
+		
 	   bits_remaining -= loop_read_size;
-	   
+		
 	   src->_bitpos = (src->_bitpos + loop_read_size) % 8;
 	   if(src->_bitpos == 0) {
 		   src->i_pos++;
@@ -840,17 +856,25 @@ uint32_t block_Read_uint32_bitlen(block_t* src, int bitlen) {
 }
 
 uint64_t block_Read_uint64_bitlen(block_t* src, int bitlen) {
-     uint64_t ret = 0;
+	uint64_t ret = 0;
    
-   int bits_remaining = bitlen;
-   while(bits_remaining > 0) {
+	int bits_remaining = bitlen;
+	while(bits_remaining > 0) {
 	   int loop_read_size = (bits_remaining > 8 ? 8 - src->_bitpos : (bits_remaining > (8 - src->_bitpos) ? 8 - src->_bitpos : bits_remaining));
-	   int mask = ((((1 << (loop_read_size - 1)) - 1) << 1) | 1);
-
-	   ret |= (src->p_buffer[src->i_pos] & mask) << (bits_remaining - loop_read_size);
+	   int8_t mask = 0;
+	   int8_t shift = 0;
 	   
+	   if(bits_remaining > 8) {
+		   mask = ((((1 << (loop_read_size - 1)) - 1) << 1) | 1);
+	   } else {
+		   mask = ~(( 1 << (8 - loop_read_size)) -1);
+		   shift = 8 - loop_read_size;
+	   }
+	   
+	   ret |= ((src->p_buffer[src->i_pos] & mask) >> shift) << (bits_remaining - loop_read_size);
+		
 	   bits_remaining -= loop_read_size;
-	   
+		
 	   src->_bitpos = (src->_bitpos + loop_read_size) % 8;
 	   if(src->_bitpos == 0) {
 		   src->i_pos++;
@@ -858,10 +882,13 @@ uint64_t block_Read_uint64_bitlen(block_t* src, int bitlen) {
    }
 
    return ret;
-	
 }
 
 //TODO: check for _bitpos
+uint8_t block_Read_uint8(block_t* src) {
+    uint8_t ret = src->p_buffer[src->i_pos++];
+    return ret;
+}
 //read from network to host aligned short/long/double long
 uint16_t block_Read_uint16_ntohs(block_t* src) {
     uint16_t ret = ntohs(*((uint16_t*)(&src->p_buffer[src->i_pos])));
@@ -879,7 +906,7 @@ uint64_t block_Read_uint64_ntohul(block_t* src) {
 }
 
 //read from filesyste into block_t
-block_t* block_Read_from_filename(char* file_name) {
+block_t* block_Read_from_filename(const char* file_name) {
 
 	if( access(file_name, F_OK ) == -1 ) {
 		_ATSC3_UTILS_ERROR("block_Read_from_filename: unable to open file: %s", file_name);
@@ -889,6 +916,8 @@ block_t* block_Read_from_filename(char* file_name) {
 	struct stat st;
 	stat(file_name, &st);
 
+	_ATSC3_UTILS_TRACE("block_Read_from_filename: filename: %s, size: %lld", file_name, st.st_size);
+	
 	block_t* payload = block_Alloc(st.st_size);
 
 	FILE* fp = fopen(file_name, "r");
@@ -902,6 +931,21 @@ block_t* block_Read_from_filename(char* file_name) {
 	fclose(fp);
 
 	return payload;
+}
+int block_Write_to_filename(block_t* src, const char* filename) {
+	int ret = 0;
+	block_Rewind(src);
+	
+	uint8_t* block_start = src->p_buffer;
+	uint32_t block_length = src->p_size;
+	
+	FILE* payload_fp = fopen(filename, "w");
+	if(payload_fp) {
+		ret = fwrite(block_start, block_length, 1, payload_fp);
+		fclose(payload_fp);
+	 }
+	
+	return ret;
 }
 
 void freesafe(void* tofree) {
@@ -958,7 +1002,7 @@ uint16_t parsePortIntoIntval(const char* dst_port) {
 }
 
 //alloc and copy - note limited to 16k
-char* strlcopy(char* src) {
+char* strlcopy(const char* src) {
 	int len = strnlen(src, 16384);
 	char* dest = (char*)calloc(len+1, sizeof(char));
 	return strncpy(dest, src, len);

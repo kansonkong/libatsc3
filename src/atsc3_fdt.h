@@ -283,7 +283,9 @@ typedef struct atsc3_fdt_instance {
 
 ATSC3_VECTOR_BUILDER_METHODS_INTERFACE(atsc3_fdt_instance, atsc3_fdt_file)
 
+#define ATSC3_FDT_FILE_CONTENT_ENCODING_GZIP "gzip"
 
+bool atsc3_fdt_file_content_encoding_is_gzip(atsc3_fdt_file_t* atsc3_fdt_file);
 void atsc3_fdt_instance_free(atsc3_fdt_instance_t** atsc3_fdt_instance_p);
 
 
