@@ -1285,7 +1285,8 @@ atsc3_preamble_packet_t* atsc3_stltp_parse_preamble_packet(atsc3_stltp_preamble_
                             binary_payload,
                             atsc3_stltp_preamble_packet->ip_udp_rtp_ctp_packet_inner->rtp_ctp_header->sequence_number,
                             atsc3_stltp_preamble_packet->ip_udp_rtp_ctp_packet_inner->udp_flow.dst_port,
-                            atsc3_preamble_packet->length,
+							block_Remaining_size(block),
+							atsc3_preamble_packet->length,
                             block_Remaining_size(block));
         goto error;
     }
