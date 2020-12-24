@@ -1,6 +1,7 @@
 //
 // Created by Jason Justman on 8/19/20.
 //
+#define __JJUSTMAN_2020_12_24_SEA_533_SINGLE_PLP_TUNE_ONLY__
 
 #include "LowaSISPHYAndroid.h"
 LowaSISPHYAndroid* lowaSISPHYAndroid = nullptr;
@@ -448,6 +449,12 @@ int LowaSISPHYAndroid::open(int fd, string device_path)
     ar = AT3DRV_Option_Create(&mAt3Opt);
     CHK_AR(ar, "Option Create");
 
+
+    //jjustman-2020-12-24 - testing sea 533 for plp0 and plp1 lock...
+    //AT3UTL_SetAllDbgLevel(999);
+    //AT3DRV_Option_SetInt(mAt3Opt, "output-bbp", 1);
+    //AT3DRV_Option_SetInt(mAt3Opt, "output-alp", 1);
+
     AT3DRV_Option_SetInt(mAt3Opt, "output-ip", 1);
     AT3DRV_Option_SetInt(mAt3Opt, "get-parsed-lmt", 1);
     // if this set to 1, S_AT3DRV_RXDINFO_LMT::lmt is returned with valid data.
@@ -534,6 +541,7 @@ int LowaSISPHYAndroid::tune(int freqKHz, int plpid)
     _LOWASIS_PHY_ANDROID_DEBUG("tuned to freq %d MHz, plp %d", freqKHz/1000, plpid);
 
     is_tuned = true;
+
     return 0;
 }
 
@@ -567,11 +575,19 @@ int LowaSISPHYAndroid::listen_plps(vector<uint8_t> plps_original_list)
         AT3DRV_FE_SetPLP(mhDevice, u_plp_ids, 1);
         _LOWASIS_PHY_ANDROID_INFO("ListenPLP1: LG3307_R850: setting to SINGLE plp_id[0]: %d", u_plp_ids[0]);
     } else {
+
+#ifdef __JJUSTMAN_2020_12_24_SEA_533_SINGLE_PLP_TUNE_ONLY__
+        u_plp_ids[0] = u_plp_ids[plp_postion-1];
+
+        AT3DRV_FE_SetPLP(mhDevice, u_plp_ids, 1);
+        _LOWASIS_PHY_ANDROID_INFO("listen_plps: forcing to SINGLE plp_id[0]: %d (#defined __JJUSTMAN_2020_12_24_SEA_533_SINGLE_PLP_TUNE_ONLY__)", u_plp_ids[0]);
+#else
         //non testing behavior
         AT3DRV_FE_SetPLP(mhDevice, u_plp_ids, plp_postion);
 
         _LOWASIS_PHY_ANDROID_INFO("listen_plps: MultiPLP count %d, plp_id[0]: %d, plp_id[1]: %d, plp_id[2]: %d, plp_id[3]: %d",
                                    plp_postion, u_plp_ids[0], u_plp_ids[1], u_plp_ids[2], u_plp_ids[3]);
+#endif
     }
 
 
@@ -861,6 +877,9 @@ int LowaSISPHYAndroid::processThread()
             } else if (pData->eType == eAT3_RXDTYPE_ALP) {
                 S_AT3DRV_RXDINFO_ALP *info = (S_AT3DRV_RXDINFO_ALP *) pData->pInfo;
 
+                _LOWASIS_PHY_ANDROID_INFO("LowaSISPHYAndroid::ProcessThread: loop: eAT3_RXDTYPE_ALP: plp_id: %d, packet_type: %d, header_len: %d, b_discon: %d, pData is: %p, pData->payload->p_size: %d\n",
+                                          info->plp_id, info->packet_type, info->header_len, info->b_discon, pData, pData->payload->p_size);
+
                 //output delay for logging
                 if ((int32_t) (pData->ulTick - s_ulLastTickPrint) >= 2000) {
                     bShowStat = true;
@@ -880,6 +899,9 @@ int LowaSISPHYAndroid::processThread()
                 }
             } else if (pData->eType == eAT3_RXDTYPE_BBPCTR) {
                 S_AT3DRV_RXDINFO_BBPCTR *info = (S_AT3DRV_RXDINFO_BBPCTR *) pData->pInfo;
+
+                _LOWASIS_PHY_ANDROID_INFO("LowaSISPHYAndroid::ProcessThread: loop: eAT3_RXDTYPE_BBPCTR: b_discon: %d, pData is: %p, pData->payload->p_size: %d\n",
+                                           info->bDiscontinuity, pData, pData->payload->p_size);
 
                 if ((int32_t) (pData->ulTick - s_ulLastTickPrint) >= 2000) {
                     bShowStat = true;
