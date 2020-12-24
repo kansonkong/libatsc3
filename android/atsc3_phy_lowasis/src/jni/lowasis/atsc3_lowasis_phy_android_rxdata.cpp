@@ -9,6 +9,10 @@ atsc3_lowasis_phy_android_rxdata_t* atsc3_lowasis_phy_android_rxdata_duplicate_f
 
     atsc3_lowasis_phy_android_rxdata->eType = s_rx_data->eType;
     atsc3_lowasis_phy_android_rxdata->payload = block_Duplicate_from_ptr(s_rx_data->ptr, s_rx_data->nLength);
+    _LOWASIS_PHY_RXDATA_ANDROID_ERROR("atsc3_lowasis_phy_android_rxdata_duplicate_from_s_rx_data: atsc3_lowasis_phy_android_rxdata->eType: %d, s_rx_data->ptr: %p, s_rx_data->nLength: %d\n",
+                                      atsc3_lowasis_phy_android_rxdata->eType,
+                                      s_rx_data->ptr, s_rx_data->nLength);
+
     block_Rewind(atsc3_lowasis_phy_android_rxdata->payload);
 
     if (s_rx_data->eType == eAT3_RXDTYPE_IP) {

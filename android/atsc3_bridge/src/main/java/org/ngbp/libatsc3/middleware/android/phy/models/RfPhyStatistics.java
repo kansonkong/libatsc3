@@ -35,4 +35,24 @@ public class RfPhyStatistics {
         this.plp_any = plp_any;
         this.plp_all = plp_all;
     }
+
+    @Override
+    public String toString() {
+        return String.format("TunLock: %d, DemodLock: %d, CpuStatus: %s, RSSI: %d.%03d dB, SNR: %.2f, ModCod: G: %d, %s (%d), %s (%d), %s (%d), BER: pre_ldpc: %d, pre_bch: %d, post_bch: %d",
+                this.tuner_lock,
+                this.demod_lock_status,
+                this.cpu_status == 1 ? "R" : "H",
+                (this.rssi) / 1000,
+                ((-this.rssi) % 1000),
+                (float) this.nSnr1000 / 1000.0,
+                this.modcod_valid,
+                RfPhyFecModCodTypes.L1d_PlpFecType.getOrDefault(this.plp_fec_type, RfPhyFecModCodTypes.L1d_PlpFecType.get(255)),
+                this.plp_fec_type,
+                RfPhyFecModCodTypes.L1d_PlpMod.getOrDefault(this.plp_mod, RfPhyFecModCodTypes.L1d_PlpMod.get(255)),
+                this.plp_mod,
+                RfPhyFecModCodTypes.L1d_PlpCod.getOrDefault(this.plp_cod, RfPhyFecModCodTypes.L1d_PlpCod.get(255)),
+                this.plp_cod,
+                this.ber_pre_ldpc_e7, this.ber_pre_bch_e9, this.fer_post_bch_e6);
+
+    }
 }

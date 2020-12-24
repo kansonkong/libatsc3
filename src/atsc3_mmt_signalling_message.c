@@ -836,33 +836,38 @@ uint8_t* mmt_atsc3_message_payload_parse(mmt_signalling_message_header_and_paylo
                     if(!strncasecmp(MMT_ATSC3_MESSAGE_STSID_URI, atsc3_message, strlen(MMT_ATSC3_MESSAGE_STSID_URI))) {
                         atsc3_message += strlen(MMT_ATSC3_MESSAGE_STSID_URI);
                         char* end = strstr( atsc3_message, "\"");
-                        int len = end - (char*)atsc3_message;
-
-                        stsid_uri = calloc(len+1, sizeof(uint8_t));
-                        memcpy(stsid_uri, atsc3_message, len);
+                        if(end) {
+							int len = end - (char *) atsc3_message;
+							stsid_uri = calloc(len + 1, sizeof(uint8_t));
+							memcpy(stsid_uri, atsc3_message, len);
+						}
                     } else if(!strncasecmp(MMT_ATSC3_MESSAGE_STSID_DESTINATION_IP_ADDRESS, atsc3_message, strlen(MMT_ATSC3_MESSAGE_STSID_DESTINATION_IP_ADDRESS))) {
                         atsc3_message += strlen(MMT_ATSC3_MESSAGE_STSID_DESTINATION_IP_ADDRESS);
                         char* end = strstr( atsc3_message, "\"");
-                        int len = end - (char*)atsc3_message;
-
-                        stsid_destination_ip_address = calloc(len+1, sizeof(uint8_t));
-                        memcpy(stsid_destination_ip_address, atsc3_message, len);
-
+                        if(end) {
+	                        int len = end - (char*)atsc3_message;
+	                        stsid_destination_ip_address = calloc(len+1, sizeof(uint8_t));
+                        	memcpy(stsid_destination_ip_address, atsc3_message, len);
+}
                     } if(!strncasecmp(MMT_ATSC3_MESSAGE_STSID_DESTINATION_UDP_PORT, atsc3_message, strlen(MMT_ATSC3_MESSAGE_STSID_DESTINATION_UDP_PORT))) {
                         atsc3_message += strlen(MMT_ATSC3_MESSAGE_STSID_DESTINATION_UDP_PORT);
                         char* end = strstr( atsc3_message, "\"");
-                        int len = end - (char*)atsc3_message;
-                        uint8_t* stsid_port_s = calloc(len+1, sizeof(uint8_t));
-                        memcpy(stsid_port_s, atsc3_message, len);
-                        stsid_destination_udp_port = atoi(stsid_port_s);
-                        free(stsid_port_s);
+                        if(end) {
+							int len = end - (char *) atsc3_message;
+							uint8_t *stsid_port_s = calloc(len + 1, sizeof(uint8_t));
+							memcpy(stsid_port_s, atsc3_message, len);
+							stsid_destination_udp_port = atoi(stsid_port_s);
+							free(stsid_port_s);
+						}
                     } if(!strncasecmp(MMT_ATSC3_MESSAGE_STSID_SOURCE_IP_ADDRESS, atsc3_message, strlen(MMT_ATSC3_MESSAGE_STSID_SOURCE_IP_ADDRESS))) {
                         atsc3_message += strlen(MMT_ATSC3_MESSAGE_STSID_SOURCE_IP_ADDRESS);
                         char* end = strstr( atsc3_message, "\"");
-                        int len = end - (char*)atsc3_message;
+                        if(end) {
+							int len = end - (char *) atsc3_message;
 
-                        stsid_source_ip_address = calloc(len+1, sizeof(uint8_t));
-                        memcpy(stsid_source_ip_address, atsc3_message, len);
+							stsid_source_ip_address = calloc(len + 1, sizeof(uint8_t));
+							memcpy(stsid_source_ip_address, atsc3_message, len);
+						}
                     }
                 }
             }
@@ -879,6 +884,16 @@ uint8_t* mmt_atsc3_message_payload_parse(mmt_signalling_message_header_and_paylo
                         mmt_atsc3_route_component->stsid_source_ip_address = parseIpAddressIntoIntval(stsid_source_ip_address);
                     }
                 }
+            } else {
+            	if(stsid_uri) {
+            		freeclean(&stsid_uri);
+            	}
+            	if(stsid_destination_ip_address) {
+                    freeclean(&stsid_destination_ip_address);
+            	}
+            	if(stsid_source_ip_address) {
+            		freeclean(&stsid_source_ip_address);
+            	}
             }
 
 	    } else if(mmt_atsc3_message_payload->atsc3_message_content_type == MMT_ATSC3_MESSAGE_CONTENT_TYPE_HELD) {
