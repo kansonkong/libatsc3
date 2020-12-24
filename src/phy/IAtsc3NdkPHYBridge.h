@@ -6,6 +6,7 @@
  */
 #include <string>
 #include "IAtsc3NdkPHYClient.h"
+#include "IAtsc3NdkPHYClientRFMetrics.h"
 
 using namespace std;
 
@@ -35,6 +36,8 @@ class IAtsc3NdkPHYBridge {
                                       uint8_t signal,
                                       uint8_t plp_any,
                                       uint8_t plp_all) =0; //15
+
+        virtual void atsc3_update_rf_stats_from_atsc3_ndk_phy_client_rf_metrics_t(atsc3_ndk_phy_client_rf_metrics_t* atsc3_ndk_phy_client_rf_metrics) = 0;
 
         virtual void atsc3_update_rf_bw_stats(uint64_t total_pkts, uint64_t total_bytes, unsigned int total_lmts) = 0;
 

@@ -14,9 +14,6 @@
 
 using namespace std;
 
-#include <android/asset_manager.h>
-#include <android/asset_manager_jni.h>
-
 #ifndef LIBATSC3_ATSC3NDKPHYBRIDGE_H
 #define LIBATSC3_ATSC3NDKPHYBRIDGE_H
 
@@ -30,7 +27,9 @@ using namespace std;
 #include <atsc3_logging_externs.h>
 #include <atsc3_pcap_type.h>
 #include <atsc3_route_package_utils.h>
+
 #include <phy/IAtsc3NdkPHYBridge.h>
+#include <phy/IAtsc3NdkPHYClientRFMetrics.h>
 
 #include "Atsc3BridgeNdkStaticJniLoader.h"
 
@@ -60,6 +59,8 @@ public:
                                        uint8_t signal,
                                        uint8_t plp_any,
                                        uint8_t plp_all); //15
+
+    void atsc3_update_rf_stats_from_atsc3_ndk_phy_client_rf_metrics_t(atsc3_ndk_phy_client_rf_metrics_t* atsc3_ndk_phy_client_rf_metrics);
 
     void atsc3_update_rf_bw_stats(uint64_t total_pkts, uint64_t total_bytes, unsigned int total_lmts);
 
@@ -92,6 +93,11 @@ public:
 
     jmethodID mOnLogMsgId = nullptr;                     // java class method id
     jmethodID atsc3_rf_phy_status_callback_ID = nullptr; // java class method id for phy stats
+
+    jmethodID atsc3_rf_phy_status_callback_with_rf_phy_statistics_type_ID = nullptr;
+    jclass    atsc3_nkd_phy_client_rf_metrics_jclass_init_env = nullptr;
+    jclass    atsc3_nkd_phy_client_rf_metrics_jclass_global_ref = nullptr;
+
     jmethodID atsc3_update_rf_bw_stats_ID = nullptr;     // java callback method id for by stats
 
     std::thread atsc3_rxStatusThread;
