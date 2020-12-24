@@ -33,13 +33,13 @@ atsc3_route_dash_matching_s_tsid_representation_media_info_alc_flow_match_vector
 			atsc3_sls_alc_flow_t* atsc3_sls_alc_flow = atsc3_sls_alc_flow_v->data[j];
 
 			atsc3_route_s_tsid_RS_LS_SrcFlow_ContentInfo_MediaInfo_t* media_info = atsc3_sls_alc_flow->media_info;
-			if(!media_info) {
+			if(!media_info || !media_info->rep_id) {
 				continue;
 			}
-			__ROUTE_DASH_UTILS_TRACE("mpd_representation_id: %s, rep_id: %s", mpd_representation_id, media_info->rep_id);
+			__ROUTE_DASH_UTILS_TRACE("atsc3_route_dash_find_matching_s_tsid_representations_from_mpd_pcre2_regex_matches: mpd extracted representation_id: %s, compairing against S-TSID:mediaInfo: rep_id: %s", mpd_representation_id, media_info->rep_id);
 
-			//only push this candidate if we have a last_closed_toi value
-			if(atsc3_sls_alc_flow->last_closed_toi && media_info && media_info->rep_id) {
+			//only push this candidate if we have a last_closed_toi value, this is keyed by the ALC TSI, and is only set in atsc3_alc_packet_persist_to_toi_resource_process_sls_mbms_and_emit_callback when we have recovered all data units for this object
+			if(atsc3_sls_alc_flow->last_closed_toi) {
 				if(strcasecmp(mpd_representation_id, media_info->rep_id) == 0) {
 					atsc3_preg2_regex_match_capture_t* atsc3_preg2_regex_match_capture_start_number = atsc3_preg2_regex_match_capture_group->atsc3_preg2_regex_match_capture_v.data[ATSC3_ROUTE_DASH_MPD_REPRESENTATION_ID_SEGMENT_TEMPLATE_START_NUMBER_REGEX_START_OFFSET_CAPTURE_REFERENCE];
 
