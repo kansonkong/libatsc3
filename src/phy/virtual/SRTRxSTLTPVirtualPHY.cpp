@@ -247,6 +247,7 @@ int SRTRxSTLTPVirtualPHY::srtConsumerThreadRun() {
             to_purge_queue.pop();
             block_Destroy(&phy_payload_to_purge);
         }
+        this_thread::yield();
 
     }
     srtConsumerShutdown = true;
