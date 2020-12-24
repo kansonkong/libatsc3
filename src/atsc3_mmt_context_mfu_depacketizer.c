@@ -195,7 +195,9 @@ mmtp_asset_t* atsc3_mmt_mfu_context_mfu_depacketizer_context_update_find_or_crea
     mmtp_asset_flow_t* mmtp_asset_flow = NULL;
     mmtp_asset_t* mmtp_asset = NULL;
 
-    atsc3_mmt_mfu_context->udp_flow = &udp_packet->udp_flow;
+    //jjustman-2020-12-24 - we need to clone this instance, as udp_packet is transient and udp_flow is an instance field in the struct, not a ptr
+    atsc3_mmt_mfu_context->udp_flow = atsc3_udp_flow_clone_from_udp_packet(udp_packet);
+
     atsc3_mmt_mfu_context->lls_slt_monitor = lls_slt_monitor;
     atsc3_mmt_mfu_context->matching_lls_sls_mmt_session = matching_lls_sls_mmt_session;
 
@@ -238,7 +240,7 @@ void mmtp_mfu_process_from_payload_with_context(udp_packet_t *udp_packet, mmtp_m
     atsc3_global_statistics->packet_counter_mmt_mpu++;
     atsc3_global_statistics->packet_counter_mmt_timed_mpu++;
 
-	atsc3_mmt_mfu_context->udp_flow = &udp_packet->udp_flow;
+	atsc3_mmt_mfu_context->udp_flow = atsc3_udp_flow_clone_from_udp_packet(udp_packet);
 
 	//borrow from our context
 	mmtp_flow_t *mmtp_flow = atsc3_mmt_mfu_context->mmtp_flow;
@@ -866,7 +868,7 @@ void mmtp_mfu_rebuild_from_packet_id_mpu_sequence_number(atsc3_mmt_mfu_context_t
  */
 
 void mmt_signalling_message_dispatch_context_notification_callbacks(udp_packet_t *udp_packet, mmtp_signalling_packet_t* mmtp_signalling_packet, atsc3_mmt_mfu_context_t* atsc3_mmt_mfu_context) {
-	atsc3_mmt_mfu_context->udp_flow = &udp_packet->udp_flow;
+	atsc3_mmt_mfu_context->udp_flow = atsc3_udp_flow_clone_from_udp_packet(udp_packet);
 
 	for(int i=0; i < mmtp_signalling_packet->mmt_signalling_message_header_and_payload_v.count; i++) {
 		mmt_signalling_message_header_and_payload_t* mmt_signalling_message_header_and_payload = mmtp_signalling_packet->mmt_signalling_message_header_and_payload_v.data[i];
