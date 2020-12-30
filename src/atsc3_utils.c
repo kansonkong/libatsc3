@@ -895,6 +895,7 @@ uint16_t block_Read_uint16_bitlen(block_t* src, int bitlen) {
 }
 
 uint32_t block_Read_uint32_bitlen(block_t* src, int bitlen) {
+
     if(!__block_check_bounaries_read_size(__FUNCTION__, src, (bitlen / 8))) return 0;
 
 	uint32_t ret = 0;
@@ -926,6 +927,7 @@ uint32_t block_Read_uint32_bitlen(block_t* src, int bitlen) {
 }
 
 uint64_t block_Read_uint64_bitlen(block_t* src, int bitlen) {
+
     if(!__block_check_bounaries_read_size(__FUNCTION__, src, (bitlen / 8))) return 0;
 
 	uint64_t ret = 0;
