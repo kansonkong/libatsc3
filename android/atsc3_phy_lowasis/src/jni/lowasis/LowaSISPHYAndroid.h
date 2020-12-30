@@ -26,6 +26,8 @@ using namespace std;
 
 #include <Atsc3NdkPHYLowaSISStaticJniLoader.h>
 
+#include <IAtsc3NdkPHYClientRFMetrics.h>
+
 #include <at3drv_api.h>
 
 #include "atsc3_lowasis_phy_android_rxdata.h"

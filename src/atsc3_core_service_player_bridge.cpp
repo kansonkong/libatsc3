@@ -1003,6 +1003,7 @@ void atsc3_lls_on_aeat_table_present_ndk(lls_table_t* lls_table) {
         Atsc3NdkApplicationBridge_ptr->LogMsg("E: atsc3_lls_on_aeat_table_present_ndk: no lls_table for AEAT!");
         return;
     }
+
     if(!lls_table->raw_xml.xml_payload || !lls_table->raw_xml.xml_payload_size) {
         Atsc3NdkApplicationBridge_ptr->LogMsg("E: atsc3_lls_on_aeat_table_present_ndk: no raw_xml.xml_payload for AEAT!");
         return;
