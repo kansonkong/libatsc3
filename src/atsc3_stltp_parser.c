@@ -1576,19 +1576,19 @@ atsc3_preamble_packet_t* atsc3_stltp_parse_preamble_packet(atsc3_stltp_preamble_
 					L1D_PLP_parameters->L1D_plp_HTI_num_ti_blocks = block_Read_uint8_bitlen(block, 4);
 					//12
 					L1D_PLP_parameters->L1D_plp_HTI_num_fec_blocks_max = block_Read_uint16_bitlen(block, 12);
-				}
 				
-				if (L1D_PLP_parameters->L1D_plp_HTI_inter_subframe == 0) {
-					//12
-					L1D_PLP_parameters->L1D_plp_HTI_num_fec_blocks = block_Read_uint16_bitlen(block, 12);
-				} else {
-					for (int k=0; k <= L1D_PLP_parameters->L1D_plp_HTI_num_ti_blocks; k++) {
-						//fix me
-						L1D_plp_HTI_num_fec_blocks_t* L1D_plp_HTI_num_fec_blocks = L1D_plp_HTI_num_fec_blocks_new();
-						
+					if (L1D_PLP_parameters->L1D_plp_HTI_inter_subframe == 0) {
 						//12
-						L1D_plp_HTI_num_fec_blocks->L1D_plp_HTI_num_fec_blocks = block_Read_uint16_bitlen(block, 12);
-						L1D_PLP_parameters_add_L1D_plp_HTI_num_fec_blocks(L1D_PLP_parameters, L1D_plp_HTI_num_fec_blocks);
+						L1D_PLP_parameters->L1D_plp_HTI_num_fec_blocks = block_Read_uint16_bitlen(block, 12);
+					} else {
+						for (int k=0; k <= L1D_PLP_parameters->L1D_plp_HTI_num_ti_blocks; k++) {
+							//fix me
+							L1D_plp_HTI_num_fec_blocks_t* L1D_plp_HTI_num_fec_blocks = L1D_plp_HTI_num_fec_blocks_new();
+							
+							//12
+							L1D_plp_HTI_num_fec_blocks->L1D_plp_HTI_num_fec_blocks = block_Read_uint16_bitlen(block, 12);
+							L1D_PLP_parameters_add_L1D_plp_HTI_num_fec_blocks(L1D_PLP_parameters, L1D_plp_HTI_num_fec_blocks);
+						}
 					}
 				}
 				//1 bit
@@ -1608,13 +1608,12 @@ atsc3_preamble_packet_t* atsc3_stltp_parse_preamble_packet(atsc3_stltp_preamble_
     }
 
 	//16 bits
-    atsc3_preamble_packet->L1_detail_signaling.L1D_bsid = block_Read_uint16_bitlen(block, 16);
+    atsc3_preamble_packet->L1_detail_signaling.L1D_bsid = block_Read_uint16_ntohs(block);
 
     //as needed...
 	//L1D_reserved
 
-    atsc3_preamble_packet->L1_detail_signaling.L1D_crc = block_Read_uint32_bitlen(block, 32);
-
+	atsc3_preamble_packet->L1_detail_signaling.L1D_crc = block_Read_uint32_ntohl(block);
 
 
     atsc3_preamble_packet_set_bootstrap_timing_ref_from_stltp_preamble_packet(atsc3_preamble_packet, atsc3_stltp_preamble_packet);
