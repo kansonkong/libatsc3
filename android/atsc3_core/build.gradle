@@ -22,6 +22,8 @@ android {
                     arguments "debugging_asan_enabled=true"
                 } else if (project.hasProperty('org.gradle.project.debugging_hwasan_enabled') && project.property('org.gradle.project.debugging_hwasan_enabled').toString().toBoolean()) {
                     arguments "debugging_hwasan_enabled=true"
+                } else if (project.hasProperty('org.gradle.project.debugging_g_optimization_zero_flags') && project.property('org.gradle.project.debugging_g_optimization_zero_flags').toString().toBoolean()) {
+                    arguments "debugging_g_optimization_zero_flags=true"
                 }
             }
         }

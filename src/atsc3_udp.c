@@ -71,6 +71,22 @@ atsc3_udp_packet_t* atsc3_udp_packet_from_block_t(block_t* block_udp_packet) {
 	return udp_packet;
 }
 
+atsc3_udp_flow_t* atsc3_udp_flow_clone_from_udp_packet(atsc3_udp_packet_t* atsc3_udp_packet) {
+	atsc3_udp_flow_t* atsc3_udp_flow = NULL;
+
+	if(atsc3_udp_packet) {
+		atsc3_udp_flow = calloc(1, sizeof(atsc3_udp_flow_t));
+
+		atsc3_udp_flow->src_ip_addr = atsc3_udp_packet->udp_flow.src_ip_addr;
+		atsc3_udp_flow->src_port 	= atsc3_udp_packet->udp_flow.src_port;
+		atsc3_udp_flow->dst_ip_addr = atsc3_udp_packet->udp_flow.dst_ip_addr;
+		atsc3_udp_flow->dst_port 	= atsc3_udp_packet->udp_flow.dst_port;
+	}
+
+	return atsc3_udp_flow;
+}
+
+
 void udp_packet_free(udp_packet_t** udp_packet_p) {
 	atsc3_udp_packet_free(udp_packet_p);
 }

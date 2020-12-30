@@ -1285,7 +1285,8 @@ atsc3_preamble_packet_t* atsc3_stltp_parse_preamble_packet(atsc3_stltp_preamble_
                             binary_payload,
                             atsc3_stltp_preamble_packet->ip_udp_rtp_ctp_packet_inner->rtp_ctp_header->sequence_number,
                             atsc3_stltp_preamble_packet->ip_udp_rtp_ctp_packet_inner->udp_flow.dst_port,
-                            atsc3_preamble_packet->length,
+							block_Remaining_size(block),
+							atsc3_preamble_packet->length,
                             block_Remaining_size(block));
         goto error;
     }
@@ -1368,7 +1369,7 @@ atsc3_preamble_packet_t* atsc3_stltp_parse_preamble_packet(atsc3_stltp_preamble_
     atsc3_preamble_packet->L1_basic_signaling.L1B_first_sub_guard_interval = block_Read_uint8_bitlen(block, 4);
 
     //11 bits - 5 = 6
-    atsc3_preamble_packet->L1_basic_signaling.L1B_first_sub_num_ofdm_symbols = block_Read_uint16_bitlen(block, 11);
+	atsc3_preamble_packet->L1_basic_signaling.L1B_first_sub_num_ofdm_symbols = block_Read_uint16_bitlen(block, 11);
     
     //L1B_first_sub_scattered_pilot_pattern:5
     atsc3_preamble_packet->L1_basic_signaling.L1B_first_sub_scattered_pilot_pattern = block_Read_uint8_bitlen(block, 5);
@@ -1753,9 +1754,10 @@ void atsc3_preamble_packet_dump(atsc3_preamble_packet_t* atsc3_preamble_packet) 
 				atsc3_preamble_packet->L1_basic_signaling.L1B_additional_samples);
     }
     
-    __STLTP_PARSER_DUMP("preamble: L1B: num subframes: %d, preamble num symbols: %d, preamble reduced carriers: %d, l1_detail content tag: %d, l1_detail size bytes: %d",
+    __STLTP_PARSER_DUMP("preamble: L1B: num subframes: %d, preamble num symbols: %d (N: %d), preamble reduced carriers: %d, l1_detail content tag: %d, l1_detail size bytes: %d",
     		atsc3_preamble_packet->L1_basic_signaling.L1B_num_subframes,
 			atsc3_preamble_packet->L1_basic_signaling.L1B_preamble_num_symbols,
+			atsc3_preamble_packet->L1_basic_signaling.L1B_preamble_num_symbols + 1,
 			atsc3_preamble_packet->L1_basic_signaling.L1B_preamble_reduced_carriers,
 			atsc3_preamble_packet->L1_basic_signaling.L1B_L1_Detail_content_tag,
 			atsc3_preamble_packet->L1_basic_signaling.L1B_L1_Detail_size_bytes
@@ -1775,8 +1777,9 @@ void atsc3_preamble_packet_dump(atsc3_preamble_packet_t* atsc3_preamble_packet) 
 			atsc3_preamble_packet->L1_basic_signaling.L1B_first_sub_guard_interval
     );
 	
-    __STLTP_PARSER_DUMP("preamble: L1B: first sub num ofdm symbols: %d, first sub scattered pilot pattern: %d, first sub scatterd pilot boost: %d, first sub sbs_first: %d, first sub sbs_last: %d",
+    __STLTP_PARSER_DUMP("preamble: L1B: first sub num ofdm symbols: %d (N: %d), first sub scattered pilot pattern: %d, first sub scatterd pilot boost: %d, first sub sbs_first: %d, first sub sbs_last: %d",
     		atsc3_preamble_packet->L1_basic_signaling.L1B_first_sub_num_ofdm_symbols,
+			atsc3_preamble_packet->L1_basic_signaling.L1B_first_sub_num_ofdm_symbols + 1,
 			atsc3_preamble_packet->L1_basic_signaling.L1B_first_sub_scattered_pilot_pattern,
 			atsc3_preamble_packet->L1_basic_signaling.L1B_first_sub_scattered_pilot_boost,
 			atsc3_preamble_packet->L1_basic_signaling.L1B_first_sub_sbs_first,
@@ -1820,14 +1823,15 @@ void atsc3_preamble_packet_dump(atsc3_preamble_packet_t* atsc3_preamble_packet) 
 	for(int i=0; i < atsc3_preamble_packet->L1_detail_signaling.L1D_subframe_parameters_v.count; i++) {
 		L1D_subframe_parameters_t* L1D_subframe_parameters = atsc3_preamble_packet->L1_detail_signaling.L1D_subframe_parameters_v.data[i];
 		if(i > 0) {
-			__STLTP_PARSER_DUMP("preamble: L1D: subframe: %d, L1D_mimo: %d, L1D_miso: %d, L1D_fft_size: %d, L1D_reduced_carriers: %d, L1D_guard_interval: %d, L1D_num_ofdm_symbols: %d",
+			__STLTP_PARSER_DUMP("preamble: L1D: subframe: %d, L1D_mimo: %d, L1D_miso: %d, L1D_fft_size: %d, L1D_reduced_carriers: %d, L1D_guard_interval: %d, L1D_num_ofdm_symbols: %d (N: %d)",
 								i,
 								L1D_subframe_parameters->L1D_mimo,
 								L1D_subframe_parameters->L1D_miso,
 								L1D_subframe_parameters->L1D_fft_size,
 								L1D_subframe_parameters->L1D_reduced_carriers,
 								L1D_subframe_parameters->L1D_guard_interval,
-								L1D_subframe_parameters->L1D_num_ofdm_symbols);
+								L1D_subframe_parameters->L1D_num_ofdm_symbols,
+								L1D_subframe_parameters->L1D_num_ofdm_symbols + 1);
 			
 			__STLTP_PARSER_INFO("preamble: L1D: subframe: %d, L1D_scattered_pilot_pattern: %d, L1D_scattered_pilot_boost: %d, L1D_sbs_first: %d, L1D_sbs_last: %d, L1D_subframe_multiplex: %d",
 								i,

@@ -83,10 +83,100 @@ void Atsc3NdkPHYBridge::atsc3_update_rf_stats(int32_t tuner_lock,
 
 }
 
+void Atsc3NdkPHYBridge::atsc3_update_rf_stats_from_atsc3_ndk_phy_client_rf_metrics_t(atsc3_ndk_phy_client_rf_metrics_t* atsc3_ndk_phy_client_rf_metrics) {
+    JNIEnv* env = pinnedStatusJniEnv->Get();
 
-void Atsc3NdkPHYBridge::atsc3_update_rf_bw_stats(uint64_t total_pkts,
-                                                    uint64_t total_bytes,
-                                                    unsigned int total_lmts) {
+    // this method can be called in native thread. we don't safely use pre-assigned mJniEnv.
+    if (!atsc3_rf_phy_status_callback_with_rf_phy_statistics_type_ID)
+        return;
+
+    if (!pinnedStatusJniEnv) {
+        _NDK_PHY_BRIDGE_ERROR("Atsc3NdkPHYBridge:atsc3_update_rf_stats_from_atsc3_ndk_phy_client_rf_metrics_t: err on get jni env: pinnedStatusJniEnv");
+        return;
+    }
+
+    jclass jcls = atsc3_nkd_phy_client_rf_metrics_jclass_global_ref;
+    jobject jobj = env->AllocObject(jcls);
+
+    if(!jobj) {
+        _NDK_PHY_BRIDGE_ERROR("Atsc3NdkPHYBridge:atsc3_update_rf_stats_from_atsc3_ndk_phy_client_rf_metrics_t::err unable to allocate atsc3_nkd_phy_client_rf_metrics_jclass_global_ref instance jobj!");
+        return;
+    }
+
+    //map fields...
+    env->SetIntField(jobj, env->GetFieldID(jcls, "tuner_lock", "I"), atsc3_ndk_phy_client_rf_metrics->tuner_lock);
+    env->SetIntField(jobj, env->GetFieldID(jcls, "demod_lock", "I"), atsc3_ndk_phy_client_rf_metrics->demod_lock);
+
+    //some casting over the jni buffer
+    env->SetIntField(jobj, env->GetFieldID(jcls, "plp_lock_any", "I"), (int32_t)atsc3_ndk_phy_client_rf_metrics->plp_lock_any);
+    env->SetIntField(jobj, env->GetFieldID(jcls, "plp_lock_all", "I"), (int32_t)atsc3_ndk_phy_client_rf_metrics->plp_lock_all);
+    env->SetIntField(jobj, env->GetFieldID(jcls, "plp_lock_by_setplp_index", "I"), (int32_t)atsc3_ndk_phy_client_rf_metrics->plp_lock_by_setplp_index);
+
+    env->SetIntField(jobj, env->GetFieldID(jcls, "cpu_status", "I"), atsc3_ndk_phy_client_rf_metrics->cpu_status);
+
+    env->SetIntField(jobj, env->GetFieldID(jcls, "rssi", "I"), atsc3_ndk_phy_client_rf_metrics->rssi);
+    env->SetIntField(jobj, env->GetFieldID(jcls, "snr1000", "I"), atsc3_ndk_phy_client_rf_metrics->snr1000);
+    env->SetIntField(jobj, env->GetFieldID(jcls, "rfLevel1000", "I"), atsc3_ndk_phy_client_rf_metrics->rfLevel1000);
+
+    env->SetIntField(jobj, env->GetFieldID(jcls, "bootstrap_system_bw", "I"), (int32_t) atsc3_ndk_phy_client_rf_metrics->bootstrap_system_bw);
+    env->SetIntField(jobj, env->GetFieldID(jcls, "bootstrap_ea_wakeup", "I"), (int32_t) atsc3_ndk_phy_client_rf_metrics->bootstrap_ea_wakeup);
+
+    //jjustman-2020-12-24 - HACK - todo - fix me for proper typing
+    atsc3_ndk_phy_client_rf_plp_metrics_t* atsc3_ndk_phy_client_rf_plp_metrics = nullptr;
+
+    atsc3_ndk_phy_client_rf_plp_metrics = &atsc3_ndk_phy_client_rf_metrics->phy_client_rf_plp_metrics[0];
+    env->SetIntField(jobj, env->GetFieldID(jcls, "plp_id_0", "I"), (int32_t) atsc3_ndk_phy_client_rf_plp_metrics->plp_id);
+    env->SetIntField(jobj, env->GetFieldID(jcls, "modcod_valid_0", "I"), (int32_t) atsc3_ndk_phy_client_rf_plp_metrics->modcod_valid);
+    env->SetIntField(jobj, env->GetFieldID(jcls, "plp_fec_type_0", "I"), (int32_t) atsc3_ndk_phy_client_rf_plp_metrics->plp_fec_type);
+    env->SetIntField(jobj, env->GetFieldID(jcls, "plp_mod_0", "I"), (int32_t) atsc3_ndk_phy_client_rf_plp_metrics->plp_mod);
+    env->SetIntField(jobj, env->GetFieldID(jcls, "plp_cod_0", "I"), (int32_t) atsc3_ndk_phy_client_rf_plp_metrics->plp_cod);
+    env->SetIntField(jobj, env->GetFieldID(jcls, "ber_pre_ldpc_0", "I"), (int32_t) atsc3_ndk_phy_client_rf_plp_metrics->ber_pre_ldpc);
+    env->SetIntField(jobj, env->GetFieldID(jcls, "ber_pre_bch_0", "I"), (int32_t) atsc3_ndk_phy_client_rf_plp_metrics->ber_pre_bch);
+    env->SetIntField(jobj, env->GetFieldID(jcls, "fer_post_bch_0", "I"), (int32_t) atsc3_ndk_phy_client_rf_plp_metrics->fer_post_bch);
+
+    atsc3_ndk_phy_client_rf_plp_metrics = &atsc3_ndk_phy_client_rf_metrics->phy_client_rf_plp_metrics[1];
+    env->SetIntField(jobj, env->GetFieldID(jcls, "plp_id_1", "I"), (int32_t) atsc3_ndk_phy_client_rf_plp_metrics->plp_id);
+    env->SetIntField(jobj, env->GetFieldID(jcls, "modcod_valid_1", "I"), (int32_t) atsc3_ndk_phy_client_rf_plp_metrics->modcod_valid);
+    env->SetIntField(jobj, env->GetFieldID(jcls, "plp_fec_type_1", "I"), (int32_t) atsc3_ndk_phy_client_rf_plp_metrics->plp_fec_type);
+    env->SetIntField(jobj, env->GetFieldID(jcls, "plp_mod_1", "I"), (int32_t) atsc3_ndk_phy_client_rf_plp_metrics->plp_mod);
+    env->SetIntField(jobj, env->GetFieldID(jcls, "plp_cod_1", "I"), (int32_t) atsc3_ndk_phy_client_rf_plp_metrics->plp_cod);
+    env->SetIntField(jobj, env->GetFieldID(jcls, "ber_pre_ldpc_1", "I"), (int32_t) atsc3_ndk_phy_client_rf_plp_metrics->ber_pre_ldpc);
+    env->SetIntField(jobj, env->GetFieldID(jcls, "ber_pre_bch_1", "I"), (int32_t) atsc3_ndk_phy_client_rf_plp_metrics->ber_pre_bch);
+    env->SetIntField(jobj, env->GetFieldID(jcls, "fer_post_bch_1", "I"), (int32_t) atsc3_ndk_phy_client_rf_plp_metrics->fer_post_bch);
+
+
+    atsc3_ndk_phy_client_rf_plp_metrics = &atsc3_ndk_phy_client_rf_metrics->phy_client_rf_plp_metrics[2];
+    env->SetIntField(jobj, env->GetFieldID(jcls, "plp_id_2", "I"), (int32_t) atsc3_ndk_phy_client_rf_plp_metrics->plp_id);
+    env->SetIntField(jobj, env->GetFieldID(jcls, "modcod_valid_2", "I"), (int32_t) atsc3_ndk_phy_client_rf_plp_metrics->modcod_valid);
+    env->SetIntField(jobj, env->GetFieldID(jcls, "plp_fec_type_2", "I"), (int32_t) atsc3_ndk_phy_client_rf_plp_metrics->plp_fec_type);
+    env->SetIntField(jobj, env->GetFieldID(jcls, "plp_mod_2", "I"), (int32_t) atsc3_ndk_phy_client_rf_plp_metrics->plp_mod);
+    env->SetIntField(jobj, env->GetFieldID(jcls, "plp_cod_2", "I"), (int32_t) atsc3_ndk_phy_client_rf_plp_metrics->plp_cod);
+    env->SetIntField(jobj, env->GetFieldID(jcls, "ber_pre_ldpc_2", "I"), (int32_t) atsc3_ndk_phy_client_rf_plp_metrics->ber_pre_ldpc);
+    env->SetIntField(jobj, env->GetFieldID(jcls, "ber_pre_bch_2", "I"), (int32_t) atsc3_ndk_phy_client_rf_plp_metrics->ber_pre_bch);
+    env->SetIntField(jobj, env->GetFieldID(jcls, "fer_post_bch_2", "I"), (int32_t) atsc3_ndk_phy_client_rf_plp_metrics->fer_post_bch);
+
+    atsc3_ndk_phy_client_rf_plp_metrics = &atsc3_ndk_phy_client_rf_metrics->phy_client_rf_plp_metrics[3];
+    env->SetIntField(jobj, env->GetFieldID(jcls, "plp_id_3", "I"), (int32_t) atsc3_ndk_phy_client_rf_plp_metrics->plp_id);
+    env->SetIntField(jobj, env->GetFieldID(jcls, "modcod_valid_3", "I"), (int32_t) atsc3_ndk_phy_client_rf_plp_metrics->modcod_valid);
+    env->SetIntField(jobj, env->GetFieldID(jcls, "plp_fec_type_3", "I"), (int32_t) atsc3_ndk_phy_client_rf_plp_metrics->plp_fec_type);
+    env->SetIntField(jobj, env->GetFieldID(jcls, "plp_mod_3", "I"), (int32_t) atsc3_ndk_phy_client_rf_plp_metrics->plp_mod);
+    env->SetIntField(jobj, env->GetFieldID(jcls, "plp_cod_3", "I"), (int32_t) atsc3_ndk_phy_client_rf_plp_metrics->plp_cod);
+    env->SetIntField(jobj, env->GetFieldID(jcls, "ber_pre_ldpc_3", "I"), (int32_t) atsc3_ndk_phy_client_rf_plp_metrics->ber_pre_ldpc);
+    env->SetIntField(jobj, env->GetFieldID(jcls, "ber_pre_bch_3", "I"), (int32_t) atsc3_ndk_phy_client_rf_plp_metrics->ber_pre_bch);
+    env->SetIntField(jobj, env->GetFieldID(jcls, "fer_post_bch_3", "I"), (int32_t) atsc3_ndk_phy_client_rf_plp_metrics->fer_post_bch);
+
+
+
+
+
+    //invoke our callback with 'strong' type
+    int r = pinnedStatusJniEnv->Get()->CallIntMethod(jni_instance_globalRef, atsc3_rf_phy_status_callback_with_rf_phy_statistics_type_ID, jobj);
+
+
+}
+
+
+void Atsc3NdkPHYBridge::atsc3_update_rf_bw_stats(uint64_t total_pkts, uint64_t total_bytes, unsigned int total_lmts) {
     if (!atsc3_update_rf_bw_stats_ID)
         return;
 
@@ -167,6 +257,22 @@ Java_org_ngbp_libatsc3_middleware_Atsc3NdkPHYBridge_init(JNIEnv *env, jobject in
     if (atsc3NdkPHYBridge->atsc3_rf_phy_status_callback_ID == NULL) {
         _NDK_PHY_BRIDGE_ERROR("Atsc3NdkPHYBridge_init: cannot find 'atsc3_rf_phy_status_callback' method id");
         return -1;
+    }
+
+    //jjustman-2020-12-24 - atsc3_rf_phy_status_callback_with_all_plps_ID
+    atsc3NdkPHYBridge->atsc3_rf_phy_status_callback_with_rf_phy_statistics_type_ID = env->GetMethodID(jniClassReference, "atsc3_rf_phy_status_callback_with_rf_phy_statistics_type", "(Lorg/ngbp/libatsc3/middleware/android/phy/models/RfPhyStatistics;)I");
+    if (atsc3NdkPHYBridge->atsc3_rf_phy_status_callback_with_rf_phy_statistics_type_ID == NULL) {
+        _NDK_PHY_BRIDGE_ERROR("Atsc3NdkPHYBridge_init: cannot find 'atsc3_rf_phy_status_callback_with_all_plps_ID' method id");
+        return -1;
+    }
+
+    atsc3NdkPHYBridge->atsc3_nkd_phy_client_rf_metrics_jclass_init_env = env->FindClass("org/ngbp/libatsc3/middleware/android/phy/models/RfPhyStatistics");
+
+    if (atsc3NdkPHYBridge->atsc3_nkd_phy_client_rf_metrics_jclass_init_env == NULL) {
+        _NDK_PHY_BRIDGE_ERROR("Atsc3NdkPHYBridge_init: cannot find 'RfPhyStatistics' class reference");
+        return -1;
+    } else {
+        atsc3NdkPHYBridge->atsc3_nkd_phy_client_rf_metrics_jclass_global_ref = (jclass)(env->NewGlobalRef(atsc3NdkPHYBridge->atsc3_nkd_phy_client_rf_metrics_jclass_init_env));
     }
 
     //atsc3_update_rf_bw_stats_ID

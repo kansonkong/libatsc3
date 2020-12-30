@@ -41,6 +41,8 @@
 CC=cc
 CXX=g++
 
+INCLUDE_PATHS=-I../android/atsc3_core/libpcre/include
+
 CFLAGS=-Wno-nullability-completeness -Wno-expansion-to-defined -Wno-builtin-requires-header -Wno-c++11-extensions -Wc++11-compat-deprecated-writable-strings  -Wno-writable-strings
 CXXFLAGS=-std=c++11 -Wc++11-compat-deprecated-writable-strings -Wno-writable-strings
 
@@ -49,7 +51,7 @@ DEBUG=-g
 
 ASAN=-fsanitize=address -fno-omit-frame-pointer -fno-optimize-sibling-calls -O0 -fsanitize-address-use-after-scope
 
-LOCAL_LD_LIBS=-lz -lm -lpthread -lpcap -lpcre2-8 -lstdc++
+LOCAL_LD_LIBS=-L/usr/local/lib -lz -lm -lpthread -lpcap -lpcre2-8 -lstdc++
 LOCAL_LD_LIBS_NCURSES=$(LOCAL_LD_LIBS) -lncurses
 
 #jjustman-2020-08-17 - sorry, from OSX...
@@ -439,7 +441,7 @@ atsc3_mmtp_ntp32_to_pts.o: atsc3_mmtp_ntp32_to_pts.c atsc3_mmtp_ntp32_to_pts.h
 	$(CC) $(CFLAGS) $(DEBUG)  -c atsc3_mmtp_ntp32_to_pts.c
 
 atsc3_mmt_mpu_utils.o: atsc3_mmt_mpu_utils.h atsc3_mmt_mpu_utils.c
-	$(CC) $(CFLAGS) $(DEBUG)  -c atsc3_mmt_mpu_utils.c
+	$(CC) $(CFLAGS) $(INCLUDE_PATHS) $(DEBUG)  -c atsc3_mmt_mpu_utils.c
 
 atsc3_mmt_context_mfu_depacketizer.o: atsc3_mmt_context_mfu_depacketizer.h \
 		atsc3_mmt_context_mpu_depacketizer.h \
@@ -460,7 +462,7 @@ atsc3_alc_session.o: atsc3_alc_session.h atsc3_alc_session.c
 	$(CC) $(CFLAGS) $(DEBUG)  -c atsc3_alc_session.c
 
 atsc3_alc_utils.o: atsc3_alc_utils.h atsc3_alc_utils.c
-	$(CC) $(CFLAGS) $(DEBUG)  -c atsc3_alc_utils.c -o atsc3_alc_utils.o
+	$(CC) $(CFLAGS) $(INCLUDE_PATHS) $(DEBUG)  -c atsc3_alc_utils.c -o atsc3_alc_utils.o
 
 atsc3_gzip.o: atsc3_gzip.h atsc3_gzip.c
 	$(CC) $(CFLAGS) $(DEBUG)  -c atsc3_gzip.c -o atsc3_gzip.o
@@ -508,7 +510,7 @@ atsc3_mbms_envelope_parser.o: atsc3_mbms_envelope_parser.h atsc3_mbms_envelope_p
 	$(CC) $(CFLAGS) $(DEBUG)  -c atsc3_mbms_envelope_parser.c -o atsc3_mbms_envelope_parser.o
 
 atsc3_route_sls_processor.o: atsc3_route_sls_processor.h atsc3_route_sls_processor.c
-	$(CC) $(CFLAGS) $(DEBUG)  -c atsc3_route_sls_processor.c -o atsc3_route_sls_processor.o
+	$(CC) $(CFLAGS) $(INCLUDE_PATHS) $(DEBUG)  -c atsc3_route_sls_processor.c -o atsc3_route_sls_processor.o
 
 atsc3_dstp_types.o: atsc3_dstp_types.h atsc3_dstp_types.c
 	$(CC) $(CFLAGS) $(DEBUG)  -c atsc3_dstp_types.c -o atsc3_dstp_types.o
@@ -530,11 +532,11 @@ atsc3_route_package_utils.o: atsc3_route_package_utils.h atsc3_route_package_uti
 	$(CC) $(CFLAGS) $(DEBUG)  -c atsc3_route_package_utils.c -o atsc3_route_package_utils.o
 
 atsc3_pcre2_regex_utils.o: atsc3_pcre2_regex_utils.h atsc3_pcre2_regex_utils.c
-	$(CC) $(CFLAGS) $(DEBUG)  -c atsc3_pcre2_regex_utils.c -o atsc3_pcre2_regex_utils.o
+	$(CC) $(CFLAGS) $(INCLUDE_PATHS) $(DEBUG)  -c atsc3_pcre2_regex_utils.c -o atsc3_pcre2_regex_utils.o
 
 atsc3_route_dash_utils.o: atsc3_route_dash_utils.h atsc3_route_dash_utils.c \
 							atsc3_pcre2_regex_utils.h atsc3_pcre2_regex_utils.c	
-	$(CC) $(CFLAGS) $(DEBUG)  -c atsc3_route_dash_utils.c -o atsc3_route_dash_utils.o
+	$(CC) $(CFLAGS) $(INCLUDE_PATHS) $(DEBUG)  -c atsc3_route_dash_utils.c -o atsc3_route_dash_utils.o
 
 atsc3_utils_sha256.o: atsc3_utils_sha256.h atsc3_utils_sha256.c
 	$(CC) $(CFLAGS) $(DEBUG)  -c atsc3_utils_sha256.c -o atsc3_utils_sha256.o
@@ -1332,7 +1334,7 @@ test/atsc3_route_dash_mpd_patch_test: test/atsc3_route_dash_mpd_patch_test.c \
 										avltree.o \
 										strnstr.o
 
-	$(CC) $(ASAN) $(CFLAGS) $(DEBUG) test/atsc3_route_dash_mpd_patch_test.c  \
+	$(CC) $(ASAN) $(INCLUDE_PATHS) $(CFLAGS) $(DEBUG) test/atsc3_route_dash_mpd_patch_test.c  \
 							atsc3_utils.o \
 							atsc3_gzip.o \
 							atsc3_pcre2_regex_utils.o \
@@ -1495,14 +1497,14 @@ listener_tests/atsc3_mmt_listener_test: listener_tests/atsc3_mmt_listener_test.c
 
 # simple ALC/DASH listener that builds a single ISOBMFF segment with v/a muxed in for each MPU
 listener_tests/atsc3_alc_listener_test: listener_tests/atsc3_alc_listener_test.cpp libatsc3_bento4_gpl.o
-	$(CXX)  $(ASAN) $(CFLAGS) $(DEBUG)  listener_tests/atsc3_alc_listener_test.cpp \
+	$(CXX) $(ASAN) $(INCLUDE_PATHS) $(CFLAGS) $(DEBUG)  listener_tests/atsc3_alc_listener_test.cpp \
 		libatsc3_bento4_gpl.o \
 		$(LOCAL_LD_LIBS) \
 		-o listener_tests/atsc3_alc_listener_test
 
 # simple ALC/DASH listener that builds a single ISOBMFF segment with v/a muxed in for each MPU
 listener_tests/atsc3_alc_listener_test_valgrind: listener_tests/atsc3_alc_listener_test.cpp libatsc3_bento4_gpl.o
-	$(CXX)  $(ASAN) -D _TEST_RUN_VALGRIND_OSX_=true $(CFLAGS) $(DEBUG)  listener_tests/atsc3_alc_listener_test.cpp \
+	$(CXX)  $(ASAN) $(INCLUDE_PATHS) -D _TEST_RUN_VALGRIND_OSX_=true $(CFLAGS) $(DEBUG)  listener_tests/atsc3_alc_listener_test.cpp \
 		libatsc3_bento4_gpl.o \
 		$(LOCAL_LD_LIBS) \
 		-o listener_tests/atsc3_alc_listener_test_valgrind
@@ -1611,7 +1613,7 @@ tools/atsc3_listener_metrics_ncurses: tools/atsc3_listener_metrics_ncurses.cpp \
 								atsc3_isobmff_tools_gpl.o \
 								libatsc3_bento4_gpl.o
 
-	$(CXX)  -Wno-deprecated -D OUTPUT_STATISTICS=NCURSES $(CFLAGS) $(DEBUG)  tools/atsc3_listener_metrics_ncurses.cpp \
+	$(CXX) $(INCLUDE_PATHS) -Wno-deprecated -D OUTPUT_STATISTICS=NCURSES $(CFLAGS) $(DEBUG)  tools/atsc3_listener_metrics_ncurses.cpp \
 			libatsc3_bento4_gpl.o \
 			atsc3_isobmff_tools_gpl.o \
 			atsc3_output_statistics_ncurses.c \
@@ -1633,7 +1635,7 @@ tools/atsc3_listener_metrics_ncurses_httpd_isobmff: tools/atsc3_listener_metrics
 								atsc3_isobmff_tools_gpl.o \
 								libatsc3_bento4_gpl.o
 
-	$(CXX)  -Wno-deprecated -D OUTPUT_STATISTICS=NCURSES $(CFLAGS) $(DEBUG)  tools/atsc3_listener_metrics_ncurses_httpd_isobmff.cpp \
+	$(CXX) $(INCLUDE_PATHS)  -Wno-deprecated -D OUTPUT_STATISTICS=NCURSES $(CFLAGS) $(DEBUG)  tools/atsc3_listener_metrics_ncurses_httpd_isobmff.cpp \
 			libatsc3_bento4_gpl.o \
 			atsc3_isobmff_tools_gpl.o \
 			atsc3_output_statistics_ncurses.c \
@@ -1659,7 +1661,7 @@ tools/atsc3_mmt_mfu_monitor: tools/atsc3_mmt_mfu_monitor.cpp \
 						atsc3_isobmff_tools_gpl.o \
 						libatsc3_bento4_gpl.o
 
-	$(CXX)  -Wno-deprecated -D OUTPUT_STATISTICS=NCURSES $(CFLAGS) $(DEBUG) \
+	$(CXX) $(INCLUDE_PATHS)  -Wno-deprecated -D OUTPUT_STATISTICS=NCURSES $(CFLAGS) $(DEBUG) \
 			tools/atsc3_mmt_mfu_monitor.cpp \
 			libatsc3_bento4_gpl.o \
 			atsc3_isobmff_tools_gpl.o \
@@ -1682,14 +1684,14 @@ tools/atsc3_mmt_mfu_monitor: tools/atsc3_mmt_mfu_monitor.cpp \
 
 
 tools/atsc3_alc_listener_mde_writer: tools/atsc3_alc_listener_mde_writer.cpp	libatsc3_bento4_gpl.o
-	$(CXX) $(CFLAGS) $(DEBUG) tools/atsc3_alc_listener_mde_writer.cpp \
+	$(CXX) $(INCLUDE_PATHS) $(CFLAGS) $(DEBUG) tools/atsc3_alc_listener_mde_writer.cpp \
 		libatsc3_bento4_gpl.o \
 		-I../bento/include/ \
 		$(LOCAL_LD_LIBS) \
 		-o tools/atsc3_alc_listener_mde_writer
 		
 tools/atsc3_alc_listener_mde_writer_asan: tools/atsc3_alc_listener_mde_writer.cpp	libatsc3_bento4_gpl_asan.o
-	$(CXX) $(ASAN) $(CFLAGS) $(DEBUG)  tools/atsc3_alc_listener_mde_writer.cpp \
+	$(CXX) $(INCLUDE_PATHS) $(ASAN) $(CFLAGS) $(DEBUG)  tools/atsc3_alc_listener_mde_writer.cpp \
 		libatsc3_bento4_gpl_asan.o \
 		-I../bento/include/ \
 		$(LOCAL_LD_LIBS) \
@@ -1697,7 +1699,7 @@ tools/atsc3_alc_listener_mde_writer_asan: tools/atsc3_alc_listener_mde_writer.cp
 		
 # STLTP pcap replay and ROUTE / ALC extractor
 tools/atsc3_alc_listener_mde_writer_from_stltp_pcap: tools/atsc3_alc_listener_mde_writer_from_stltp_pcap.cpp libatsc3_bento4_gpl.o
-	$(CXX) $(CFLAGS) $(DEBUG) tools/atsc3_alc_listener_mde_writer_from_stltp_pcap.cpp \
+	$(CXX) $(INCLUDE_PATHS) $(CFLAGS) $(DEBUG) tools/atsc3_alc_listener_mde_writer_from_stltp_pcap.cpp \
 		libatsc3_bento4_gpl.o \
 		-I../bento/include/ \
 		-I . \
@@ -1706,7 +1708,7 @@ tools/atsc3_alc_listener_mde_writer_from_stltp_pcap: tools/atsc3_alc_listener_md
 
 # simple ALC/DASH listener that builds a single ISOBMFF segment with v/a muxed in for each MPU
 tools/atsc3_alc_listener_mde_writer_from_stltp_pcap_asan: tools/atsc3_alc_listener_mde_writer_from_stltp_pcap.cpp libatsc3_bento4_gpl.o
-	$(CXX) $(ASAN) $(CFLAGS) $(DEBUG)  tools/atsc3_alc_listener_mde_writer_from_stltp_pcap.cpp \
+	$(CXX) $(INCLUDE_PATHS) $(ASAN) $(CFLAGS) $(DEBUG)  tools/atsc3_alc_listener_mde_writer_from_stltp_pcap.cpp \
 		libatsc3_bento4_gpl_asan.o \
 		-I../bento/include/ \
 		-I . \
@@ -1717,7 +1719,7 @@ tools/atsc3_alc_listener_mde_writer_from_stltp_pcap_asan: tools/atsc3_alc_listen
 # jjustman-2020-08-18 - adding web-ba support tool: atsc3_srt_rx_stltp_virtual_phy_alc_listener_writer
 
 tools/atsc3_srt_rx_stltp_virtual_phy_alc_listener_writer: tools/atsc3_srt_rx_stltp_virtual_phy_alc_listener_writer.cpp libatsc3_bento4_gpl.o
-	g++ $(ASAN) $(CFLAGS) $(CXXFLAGS) $(DEBUG) \
+	g++ $(ASAN) $(CFLAGS) $(CXXFLAGS) $(INCLUDE_PATHS) $(DEBUG) \
 		$(SRT_PLATFORM_BUILD_DEFS) \
 		-I . \
 		tools/atsc3_srt_rx_stltp_virtual_phy_alc_listener_writer.cpp \
@@ -1728,7 +1730,7 @@ tools/atsc3_srt_rx_stltp_virtual_phy_alc_listener_writer: tools/atsc3_srt_rx_stl
 		-o tools/atsc3_srt_rx_stltp_virtual_phy_alc_listener_writer
 
 tools/atsc3_srt_rx_stltp_virtual_phy_alc_listener_writer_noasan: tools/atsc3_srt_rx_stltp_virtual_phy_alc_listener_writer.cpp libatsc3_bento4_gpl.o
-	g++  $(CFLAGS) $(CXXFLAGS) $(DEBUG) \
+	g++  $(CFLAGS) $(CXXFLAGS) $(INCLUDE_PATHS) $(DEBUG) \
 		$(SRT_PLATFORM_BUILD_DEFS) \
 		-I . \
 		tools/atsc3_srt_rx_stltp_virtual_phy_alc_listener_writer.cpp \
@@ -1739,7 +1741,7 @@ tools/atsc3_srt_rx_stltp_virtual_phy_alc_listener_writer_noasan: tools/atsc3_srt
 		-o tools/atsc3_srt_rx_stltp_virtual_phy_alc_listener_writer_noasan
 
 tools/atsc3_pcap_stltp_preamble_timing_management_validate: tools/atsc3_pcap_stltp_preamble_timing_management_validate.cpp libatsc3_bento4_gpl.o
-	g++  $(CFLAGS) $(CXXFLAGS) $(DEBUG) \
+	g++  $(CFLAGS) $(CXXFLAGS) $(INCLUDE_PATHS) $(DEBUG) \
 		$(SRT_PLATFORM_BUILD_DEFS) \
 		-I . \
 		tools/atsc3_pcap_stltp_preamble_timing_management_validate.cpp \
@@ -1749,7 +1751,7 @@ tools/atsc3_pcap_stltp_preamble_timing_management_validate: tools/atsc3_pcap_stl
 
 
 tools/atsc3_pcap_stltp_preamble_timing_management_validate_asan: tools/atsc3_pcap_stltp_preamble_timing_management_validate.cpp libatsc3_bento4_gpl.o
-	g++ $(ASAN) $(CFLAGS) $(CXXFLAGS) $(DEBUG) \
+	g++ $(ASAN) $(CFLAGS) $(CXXFLAGS) $(INCLUDE_PATHS) $(DEBUG) \
 		$(SRT_PLATFORM_BUILD_DEFS) \
 		-I . \
 		tools/atsc3_pcap_stltp_preamble_timing_management_validate.cpp \
@@ -1773,7 +1775,7 @@ tools/atsc3_mmt_listener_to_http_hls_fmp4: tools/atsc3_mmt_listener_to_http_hls_
 								atsc3_isobmff_tools_gpl.o \
 								libatsc3_bento4_gpl.o
 
-	$(CXX)  -Wno-deprecated -D OUTPUT_STATISTICS=NCURSES $(CFLAGS) $(DEBUG)  tools/atsc3_mmt_listener_to_http_hls_fmp4.cpp \
+	$(CXX) $(INCLUDE_PATHS)  -Wno-deprecated -D OUTPUT_STATISTICS=NCURSES $(CFLAGS) $(DEBUG)  tools/atsc3_mmt_listener_to_http_hls_fmp4.cpp \
 		libatsc3_bento4_gpl.o \
 		atsc3_isobmff_tools_gpl.o \
 		atsc3_mmt_reconstitution_from_media_sample.c atsc3_logging_externs.o \
