@@ -36,6 +36,7 @@ int PACKET_COUNTER=0;
 #include "../atsc3_logging_externs.h"
 
 #include "../atsc3_mmt_context_mfu_depacketizer.h"
+#include "../atsc3_mmt_context_mfu_depacketizer_callbacks_noop.h"
 
 //commandline stream filtering per flow
 
@@ -60,13 +61,13 @@ atsc3_mmt_mfu_context_t* atsc3_mmt_mfu_context;
 //stpp packet_id under test
 uint16_t atsc3_mmt_context_stpp_packet_id_for_testing = 19;
 
-void atsc3_mmt_signalling_information_on_stpp_essence_packet_id_dump(uint16_t stpp_packet_id) {
+void atsc3_mmt_signalling_information_on_stpp_essence_packet_id_dump(atsc3_mmt_mfu_context_t* atsc3_mmt_mfu_context, uint16_t stpp_packet_id, mp_table_asset_row_t* mp_table_asset_row) {
 	__MMT_CONTEXT_MPU_DEBUG("atsc3_mmt_signalling_information_on_stpp_essence_packet_id_dump: stpp mp_table packet_id: %u, stpp_packet_id_under_test: %u",
 			stpp_packet_id,
 			atsc3_mmt_context_stpp_packet_id_for_testing);
 }
 
-void atsc3_mmt_signalling_information_on_stpp_packet_id_with_mpu_timestamp_descriptor_dump(uint16_t stpp_packet_id, uint32_t mpu_sequence_number, uint64_t mpu_presentation_time_ntp64, uint32_t mpu_presentation_time_seconds, uint32_t mpu_presentation_time_microseconds) {
+void atsc3_mmt_signalling_information_on_stpp_packet_id_with_mpu_timestamp_descriptor_dump(atsc3_mmt_mfu_context_t* atsc3_mmt_mfu_context, uint16_t stpp_packet_id, uint32_t mpu_sequence_number, uint64_t mpu_presentation_time_ntp64, uint32_t mpu_presentation_time_seconds, uint32_t mpu_presentation_time_microseconds) {
 	__MMT_CONTEXT_MPU_DEBUG("atsc3_mmt_signalling_information_on_stpp_packet_id_with_mpu_timestamp_descriptor_dump: stpp mp_table packet_id: %u, stpp_packet_id_under_test: %u, mpu_sequence_number: %d, mpu_presentation_time_ntp64: %llu, mpu_presentation_time_seconds: %u, mpu_presentation_time_microseconds: %u",
 				stpp_packet_id,
 				atsc3_mmt_context_stpp_packet_id_for_testing,
@@ -78,7 +79,7 @@ void atsc3_mmt_signalling_information_on_stpp_packet_id_with_mpu_timestamp_descr
 
 
 
-void atsc3_mmt_mpu_mfu_on_sample_complete_dump(uint16_t packet_id, uint32_t mpu_sequence_number, uint32_t sample_number, block_t* mmt_mfu_sample, uint32_t mfu_fragment_count_rebuilt) {
+void atsc3_mmt_mpu_mfu_on_sample_complete_dump(atsc3_mmt_mfu_context_t* atsc3_mmt_mfu_context, uint16_t packet_id, uint32_t mpu_sequence_number, uint32_t sample_number, block_t* mmt_mfu_sample, uint32_t mfu_fragment_count_rebuilt) {
 	if(packet_id != atsc3_mmt_context_stpp_packet_id_for_testing) {
 		return;
 	}
@@ -109,7 +110,7 @@ void atsc3_mmt_mpu_mfu_on_sample_complete_dump(uint16_t packet_id, uint32_t mpu_
     }
 }
 
-void atsc3_mmt_mpu_mfu_on_sample_corrupt_dump(uint16_t packet_id, uint32_t mpu_sequence_number, uint32_t sample_number, block_t* mmt_mfu_sample, uint32_t mfu_fragment_count_expected, uint32_t mfu_fragment_count_rebuilt) {
+void atsc3_mmt_mpu_mfu_on_sample_corrupt_dump(atsc3_mmt_mfu_context_t* atsc3_mmt_mfu_context, uint16_t packet_id, uint32_t mpu_sequence_number, uint32_t sample_number, block_t* mmt_mfu_sample, uint32_t mfu_fragment_count_expected, uint32_t mfu_fragment_count_rebuilt) {
 	if(packet_id != atsc3_mmt_context_stpp_packet_id_for_testing) {
 		return;
 	}
@@ -141,7 +142,7 @@ void atsc3_mmt_mpu_mfu_on_sample_corrupt_dump(uint16_t packet_id, uint32_t mpu_s
 
 
 
-void atsc3_mmt_mpu_mfu_on_sample_missing_dump(uint16_t packet_id, uint32_t mpu_sequence_number, uint32_t sample_number) {
+void atsc3_mmt_mpu_mfu_on_sample_missing_dump(atsc3_mmt_mfu_context_t* atsc3_mmt_mfu_context, uint16_t packet_id, uint32_t mpu_sequence_number, uint32_t sample_number) {
 	if(packet_id != atsc3_mmt_context_stpp_packet_id_for_testing) {
 		return;
 	}
@@ -256,20 +257,7 @@ void process_packet(u_char *user, const struct pcap_pkthdr *pkthdr, const u_char
 			__TRACE("Checking lls_sls_mmt_monitor->lls_mmt_session: %p,", lls_sls_mmt_monitor->lls_mmt_session);
 		}
 
-		//recheck video_packet_id/audio_packet_id
-		if(lls_sls_mmt_monitor && lls_sls_mmt_monitor->lls_mmt_session) {
-			if(!lls_sls_mmt_monitor->video_packet_id) {
-				lls_sls_mmt_session_t* lls_sls_mmt_session = lls_slt_mmt_session_find_from_service_id(lls_slt_monitor, lls_sls_mmt_monitor->lls_mmt_session->service_id);
-				lls_sls_mmt_monitor->video_packet_id = lls_sls_mmt_session->video_packet_id;
-				lls_sls_mmt_monitor->audio_packet_id = lls_sls_mmt_session->audio_packet_id;
-				lls_sls_mmt_monitor->stpp_packet_id  = lls_sls_mmt_session->stpp_packet_id;
-				__INFO("service: %d, setting audio_packet_id/video_packet_id/stpp: %u, %u, %u",
-						lls_sls_mmt_session->atsc3_lls_slt_service->service_id,
-						lls_sls_mmt_monitor->audio_packet_id,
-						lls_sls_mmt_monitor->video_packet_id,
-						lls_sls_mmt_monitor->stpp_packet_id);
-			}
-		}
+		
 		return udp_packet_free(&udp_packet);
 	}
 
@@ -374,18 +362,6 @@ void process_packet(u_char *user, const struct pcap_pkthdr *pkthdr, const u_char
 							matching_lls_sls_mmt_session->audio_packet_id,
 							matching_lls_sls_mmt_session->video_packet_id,
 							matching_lls_sls_mmt_session->stpp_packet_id);
-
-					if(matching_lls_sls_mmt_session->audio_packet_id) {
-						lls_sls_mmt_monitor->audio_packet_id = matching_lls_sls_mmt_session->audio_packet_id;
-					}
-
-					if(matching_lls_sls_mmt_session->video_packet_id) {
-						lls_sls_mmt_monitor->video_packet_id = matching_lls_sls_mmt_session->video_packet_id;
-					}
-
-					if(matching_lls_sls_mmt_session->stpp_packet_id) {
-						lls_sls_mmt_monitor->stpp_packet_id = matching_lls_sls_mmt_session->stpp_packet_id;
-					}
 				}
 			}
 
@@ -542,7 +518,7 @@ int main(int argc,char **argv) {
     udp_flow_latest_mpu_sequence_number_container = udp_flow_latest_mpu_sequence_number_container_t_init();
 
     //callback contexts
-    atsc3_mmt_mfu_context = atsc3_mmt_mfu_context_noop_new();
+    atsc3_mmt_mfu_context = atsc3_mmt_mfu_context_callbacks_noop_new();
 
     //stpp SLS related callbacks from mp_table
     atsc3_mmt_mfu_context->atsc3_mmt_signalling_information_on_stpp_essence_packet_id = &atsc3_mmt_signalling_information_on_stpp_essence_packet_id_dump;
