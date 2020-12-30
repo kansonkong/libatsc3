@@ -1450,6 +1450,18 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
 
     }
 
+    @Override
+    public void onAlcObjectClosed(int service_id, int tsi, int toi, String s_tsid_content_location, String s_tsid_content_type, String cache_file_path) {
+        Log.d("onAlcObjectClosed", String.format("service_id: %d, tsi: %d, toi: %d, s_tsid_content_location: %s, s_tsid_content_type: %s, cache_file_path:%s",
+                service_id,
+                tsi,
+                toi,
+                s_tsid_content_location,
+                s_tsid_content_type,
+                cache_file_path));
+
+    }
+
     public void onPackageExtractCompleted(PackageExtractEnvelopeMetadataAndPayload packageExtractEnvelopeMetadataAndPayload) {
         if(packageExtractEnvelopeMetadataAndPayload != null && packageExtractEnvelopeMetadataAndPayload.packageExtractPath != null) {
             Log.d("onPackageExtractCompleted", String.format("packageExtractEnvelopeMetadataAndPayload: packageName: %s, path: %s, count: %d", packageExtractEnvelopeMetadataAndPayload.packageName, packageExtractEnvelopeMetadataAndPayload.packageExtractPath, packageExtractEnvelopeMetadataAndPayload.multipartRelatedPayloadList.size()));
