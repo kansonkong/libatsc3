@@ -45,6 +45,9 @@ android {
     packagingOptions {
         // specify the path to your object binaries, or generally:
         doNotStrip '**.so'
+        pickFirst 'lib/arm64-v8a/libcrypto.so'
+        pickFirst 'lib/arm64-v8a/libssl.so'
+        pickFirst 'lib/arm64-v8a/libc++_shared.so'
     }
 
     sourceSets {
@@ -79,7 +82,7 @@ dependencies {
     implementation project(':exoplayer-library-core')
     implementation project(':exoplayer-library-dash')
     implementation project(':exoplayer-library-ui')
-    implementation project(':exoplayer-extension-daa')
+    //implementation project(':exoplayer-extension-daa')
 
 
     testImplementation 'junit:junit:4.12'
