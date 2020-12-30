@@ -117,8 +117,7 @@ LOCAL_C_INCLUDES += $(LOCAL_PATH)/../../codornicesrq/CodornicesRq-2.2-Android-ar
 
 #jjustman-2020-08-17 - special defines for SRT
 # -fpack-struct=8 -fPIE -fPIC
-LOCAL_CFLAGS += -g -O0  \
-                -D__DISABLE_LIBPCAP__ -D__DISABLE_ISOBMFF_LINKAGE__ -D__DISABLE_NCURSES__ \
+LOCAL_CFLAGS += -D__DISABLE_LIBPCAP__ -D__DISABLE_ISOBMFF_LINKAGE__ -D__DISABLE_NCURSES__ \
                 -D__MOCK_PCAP_REPLAY__ -D__LIBATSC3_ANDROID__ \
                  -DANDROID=1 \
                  -DSRT_IMPORT_EVENT \

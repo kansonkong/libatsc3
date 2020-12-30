@@ -1,6 +1,7 @@
 //
 // Created by Jason Justman on 8/19/20.
 //
+#define __JJUSTMAN_2020_12_24_SEA_533_SINGLE_PLP_TUNE_ONLY__
 
 #include "LowaSISPHYAndroid.h"
 LowaSISPHYAndroid* lowaSISPHYAndroid = nullptr;
@@ -448,6 +449,12 @@ int LowaSISPHYAndroid::open(int fd, string device_path)
     ar = AT3DRV_Option_Create(&mAt3Opt);
     CHK_AR(ar, "Option Create");
 
+
+    //jjustman-2020-12-24 - testing sea 533 for plp0 and plp1 lock...
+    //AT3UTL_SetAllDbgLevel(999);
+    //AT3DRV_Option_SetInt(mAt3Opt, "output-bbp", 1);
+    //AT3DRV_Option_SetInt(mAt3Opt, "output-alp", 1);
+
     AT3DRV_Option_SetInt(mAt3Opt, "output-ip", 1);
     AT3DRV_Option_SetInt(mAt3Opt, "get-parsed-lmt", 1);
     // if this set to 1, S_AT3DRV_RXDINFO_LMT::lmt is returned with valid data.
@@ -534,6 +541,7 @@ int LowaSISPHYAndroid::tune(int freqKHz, int plpid)
     _LOWASIS_PHY_ANDROID_DEBUG("tuned to freq %d MHz, plp %d", freqKHz/1000, plpid);
 
     is_tuned = true;
+
     return 0;
 }
 
@@ -565,13 +573,21 @@ int LowaSISPHYAndroid::listen_plps(vector<uint8_t> plps_original_list)
         u_plp_ids[0] = u_plp_ids[plp_postion-1];
 
         AT3DRV_FE_SetPLP(mhDevice, u_plp_ids, 1);
-        _LOWASIS_PHY_ANDROID_DEBUG("ListenPLP1: LG3307_R850: setting to SINGLE plp_id[0]: %d", u_plp_ids[0]);
+        _LOWASIS_PHY_ANDROID_INFO("ListenPLP1: LG3307_R850: setting to SINGLE plp_id[0]: %d", u_plp_ids[0]);
     } else {
+
+#ifdef __JJUSTMAN_2020_12_24_SEA_533_SINGLE_PLP_TUNE_ONLY__
+        u_plp_ids[0] = u_plp_ids[plp_postion-1];
+
+        AT3DRV_FE_SetPLP(mhDevice, u_plp_ids, 1);
+        _LOWASIS_PHY_ANDROID_INFO("listen_plps: forcing to SINGLE plp_id[0]: %d (#defined __JJUSTMAN_2020_12_24_SEA_533_SINGLE_PLP_TUNE_ONLY__)", u_plp_ids[0]);
+#else
         //non testing behavior
         AT3DRV_FE_SetPLP(mhDevice, u_plp_ids, plp_postion);
 
-        _LOWASIS_PHY_ANDROID_DEBUG("listen_plps: MultiPLP count %d, plp_id[0]: %d, plp_id[1]: %d, plp_id[2]: %d, plp_id[3]: %d",
+        _LOWASIS_PHY_ANDROID_INFO("listen_plps: MultiPLP count %d, plp_id[0]: %d, plp_id[1]: %d, plp_id[2]: %d, plp_id[3]: %d",
                                    plp_postion, u_plp_ids[0], u_plp_ids[1], u_plp_ids[2], u_plp_ids[3]);
+#endif
     }
 
 
@@ -861,6 +877,9 @@ int LowaSISPHYAndroid::processThread()
             } else if (pData->eType == eAT3_RXDTYPE_ALP) {
                 S_AT3DRV_RXDINFO_ALP *info = (S_AT3DRV_RXDINFO_ALP *) pData->pInfo;
 
+                _LOWASIS_PHY_ANDROID_INFO("LowaSISPHYAndroid::ProcessThread: loop: eAT3_RXDTYPE_ALP: plp_id: %d, packet_type: %d, header_len: %d, b_discon: %d, pData is: %p, pData->payload->p_size: %d\n",
+                                          info->plp_id, info->packet_type, info->header_len, info->b_discon, pData, pData->payload->p_size);
+
                 //output delay for logging
                 if ((int32_t) (pData->ulTick - s_ulLastTickPrint) >= 2000) {
                     bShowStat = true;
@@ -880,6 +899,9 @@ int LowaSISPHYAndroid::processThread()
                 }
             } else if (pData->eType == eAT3_RXDTYPE_BBPCTR) {
                 S_AT3DRV_RXDINFO_BBPCTR *info = (S_AT3DRV_RXDINFO_BBPCTR *) pData->pInfo;
+
+                _LOWASIS_PHY_ANDROID_INFO("LowaSISPHYAndroid::ProcessThread: loop: eAT3_RXDTYPE_BBPCTR: b_discon: %d, pData is: %p, pData->payload->p_size: %d\n",
+                                           info->bDiscontinuity, pData, pData->payload->p_size);
 
                 if ((int32_t) (pData->ulTick - s_ulLastTickPrint) >= 2000) {
                     bShowStat = true;
@@ -924,6 +946,41 @@ int LowaSISPHYAndroid::processThread()
     return 0;
 }
 
+/*
+ * jjustman-2020-12-24 - todo - add in other phy metrics, e.g.
+ *
+ * S_AT3_PHY_L1D_COMMON
+ *
+ * eAT3_FESTAT_L1BASIC
+ *
+ * eAT3_FESTAT_L1PREAMBLE
+ *
+ * eAT3_FESTAT_BOOTSTRAP_PARAM
+ *
+ *
+ * dead code?
+ *
+
+//            uint8_t modcod_valid = s_fe_detail.aFecModCod[0].valid;
+//            uint8_t E_L1d_PlpFecType = s_fe_detail.aFecModCod[0].fecType;
+//            uint8_t E_L1d_PlpMod = s_fe_detail.aFecModCod[0].mod;
+//            uint8_t E_L1d_PlpCod = s_fe_detail.aFecModCod[0].cod;
+//
+//            if(!modcod_valid) {
+//                //try fallback:
+//
+//                //eAT3_FESTAT_LGD_PLP_V1
+//                S_LGD_L2_PLPINFO* l2plpInfo = (S_LGD_L2_PLPINFO*)calloc(1, sizeof(S_LGD_L2_PLPINFO));
+//                l2plpInfo->index = 0;
+//                AT3DRV_FE_GetStatus(mhDevice, eAT3_FESTAT_LGD_PLP_V1, l2plpInfo);
+//                modcod_valid = 1;
+//                E_L1d_PlpFecType = l2plpInfo->plp_fec_type;
+//                E_L1d_PlpMod = l2plpInfo->plp_mod;
+//                E_L1d_PlpCod = l2plpInfo->plp_cr;
+//                free(l2plpInfo);
+//            }
+ */
+
 int LowaSISPHYAndroid::statusThread()
 {
     _LOWASIS_PHY_ANDROID_INFO("LowaSISPHYAndroid::statusThread started, this: %p", this);
@@ -932,6 +989,7 @@ int LowaSISPHYAndroid::statusThread()
 
     S_FE_DETAIL s_fe_detail;
     AT3RESULT ar;
+    atsc3_ndk_phy_client_rf_metrics_t atsc3_ndk_phy_client_rf_metrics = { '0' };
 
     while(this->statusThreadShouldRun) {
         usleep(500000);
@@ -943,41 +1001,41 @@ int LowaSISPHYAndroid::statusThread()
             memset(&s_fe_detail, 0, sizeof(s_fe_detail));
 
             int32_t lock = 1, rssi = -2000;
+
             ar = AT3DRV_FE_GetStatus(mhDevice, eAT3_RFSTAT_LOCK, &lock);
+            atsc3_ndk_phy_client_rf_metrics.tuner_lock = lock;
+
             ar = AT3DRV_FE_GetStatus(mhDevice, eAT3_RFSTAT_STRENGTH, &rssi);
+            atsc3_ndk_phy_client_rf_metrics.rssi = rssi;
 
             s_fe_detail.flagRequest = 0xffffffff; // all info. too many?
             //s_fe_detail.flagRequest = FE_SIG_MASK_Lock; // | FE_SIG_MASK_RfLevel | FE_SIG_MASK_CarrierOffset | FE_SIG_MASK_SNR | FE_SIG_MASK_BER | FE_SIG_MASK_FecModCod | FE_SIG_MASK_BbpErr;
             AT3DRV_FE_GetStatus(mhDevice, eAT3_FESTAT_RF_DETAIL, &s_fe_detail);
 
-            uint8_t modcod_valid = s_fe_detail.aFecModCod[0].valid;
-            uint8_t E_L1d_PlpFecType = s_fe_detail.aFecModCod[0].fecType;
-            uint8_t E_L1d_PlpMod = s_fe_detail.aFecModCod[0].mod;
-            uint8_t E_L1d_PlpCod = s_fe_detail.aFecModCod[0].cod;
+            atsc3_ndk_phy_client_rf_metrics.demod_lock = s_fe_detail.lock.bDemodLock;
 
-            if(!modcod_valid) {
-                //try fallback:
+            atsc3_ndk_phy_client_rf_metrics.plp_lock_any = s_fe_detail.lock.bPlpLockAny;
+            atsc3_ndk_phy_client_rf_metrics.plp_lock_all = s_fe_detail.lock.bPlpLockAll;
+            atsc3_ndk_phy_client_rf_metrics.plp_lock_by_setplp_index = s_fe_detail.lock.bmPlpLock;
 
-                //eAT3_FESTAT_LGD_PLP_V1
-                S_LGD_L2_PLPINFO* l2plpInfo = (S_LGD_L2_PLPINFO*)calloc(1, sizeof(S_LGD_L2_PLPINFO));
-                l2plpInfo->index = 0;
-                AT3DRV_FE_GetStatus(mhDevice, eAT3_FESTAT_LGD_PLP_V1, l2plpInfo);
-                modcod_valid = 1;
-                E_L1d_PlpFecType = l2plpInfo->plp_fec_type;
-                E_L1d_PlpMod = l2plpInfo->plp_mod;
-                E_L1d_PlpCod = l2plpInfo->plp_cr;
-                free(l2plpInfo);
+            atsc3_ndk_phy_client_rf_metrics.rfLevel1000 = s_fe_detail.nRfLevel1000;
+            atsc3_ndk_phy_client_rf_metrics.snr1000 = s_fe_detail.nSnr1000;
+
+            for(int i=0; i < 4; i++) {
+                atsc3_ndk_phy_client_rf_metrics.phy_client_rf_plp_metrics[i].plp_id         = s_fe_detail.idPlps[i];
+
+                atsc3_ndk_phy_client_rf_metrics.phy_client_rf_plp_metrics[i].modcod_valid   = s_fe_detail.aFecModCod[i].valid;
+                atsc3_ndk_phy_client_rf_metrics.phy_client_rf_plp_metrics[i].plp_fec_type   = s_fe_detail.aFecModCod[i].fecType;
+                atsc3_ndk_phy_client_rf_metrics.phy_client_rf_plp_metrics[i].plp_mod        = s_fe_detail.aFecModCod[i].mod;
+                atsc3_ndk_phy_client_rf_metrics.phy_client_rf_plp_metrics[i].plp_cod        = s_fe_detail.aFecModCod[i].cod;
+
+                atsc3_ndk_phy_client_rf_metrics.phy_client_rf_plp_metrics[i].ber_pre_ldpc   = s_fe_detail.aBerPreLdpcE7[i];
+                atsc3_ndk_phy_client_rf_metrics.phy_client_rf_plp_metrics[i].ber_pre_bch    = s_fe_detail.aBerPreBchE9[i];
+                atsc3_ndk_phy_client_rf_metrics.phy_client_rf_plp_metrics[i].fer_post_bch   = s_fe_detail.aFerPostBchE6[i];
             }
 
-            int32_t nRfLevel1000 = s_fe_detail.nRfLevel1000;
-            int32_t nSnr1000 = s_fe_detail.nSnr1000;
-
-            uint32_t aBerPreLdpcE7 = s_fe_detail.aBerPreLdpcE7[0];   // return BER x 1e7. (uint32_t)-1 if invalid.
-            uint32_t aBerPreBchE9  = s_fe_detail.aBerPreBchE9[0];    // return BER x 1e9. (uint32_t)-1 if invalid.
-            uint32_t aFerPostBchE6 = s_fe_detail.aFerPostBchE6[0];   // return FER x 1e6. (uint32_t)-1 if invalid.
-
             if(atsc3_ndk_phy_bridge_get_instance()) {
-                atsc3_ndk_phy_bridge_get_instance()->atsc3_update_rf_stats(lock, rssi, modcod_valid, E_L1d_PlpFecType, E_L1d_PlpMod, E_L1d_PlpCod, nRfLevel1000, nSnr1000, aBerPreLdpcE7, aBerPreBchE9, aFerPostBchE6, s_fe_detail.lock.bDemodLock, s_fe_detail.lock.bNoSignal, s_fe_detail.lock.bPlpLockAny, s_fe_detail.lock.bPlpLockAll);
+                atsc3_ndk_phy_bridge_get_instance()->atsc3_update_rf_stats_from_atsc3_ndk_phy_client_rf_metrics_t(&atsc3_ndk_phy_client_rf_metrics);
                 atsc3_ndk_phy_bridge_get_instance()->atsc3_update_rf_bw_stats(s_ullTotalPkts, s_ullTotalBytes, s_uTotalLmts);
             }
         }
