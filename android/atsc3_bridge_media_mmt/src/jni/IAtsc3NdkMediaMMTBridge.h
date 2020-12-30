@@ -10,7 +10,7 @@
 #ifndef SRC_APPLICATION_IATSC3NDKMEDIAMMTBRIDGE_H_
 #define SRC_APPLICATION_IATSC3NDKMEDIAMMTBRIDGE_H_
 
-#include "Atsc3JniEnv.h"
+#include "IAtsc3JniEnv.h"
 
 using namespace std;
 
@@ -19,7 +19,7 @@ class IAtsc3NdkMediaMMTBridge {
     public:
         //jni management
         virtual int pinConsumerThreadAsNeeded() = 0;
-        virtual int referenceConsumerJniEnvAsNeeded(Atsc3JniEnv* consumerAtsc3JniEnv) = 0;
+        virtual int referenceConsumerJniEnvAsNeeded(IAtsc3JniEnv* consumerAtsc3JniEnv) = 0;
         virtual int releasePinnedConsumerThreadAsNeeded() = 0;
 
         //logging
