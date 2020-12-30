@@ -200,6 +200,13 @@ intermediate_mmt: 	xml.o \
 					fixups_timespec_get.o \
 					atsc3_mmt_mpu_utils.o \
 					atsc3_bandwidth_statistics.o \
+					atsc3_audio_decoder_configuration_record.o \
+					atsc3_video_decoder_configuration_record.o \
+					atsc3_stpp_decoder_configuration_record.o \
+					atsc3_hevc_nal_extractor.o \
+					atsc3_isobmff_box_parser_tools.c \
+					atsc3_mmt_context_signalling_information_callbacks_internal.c \
+					atsc3_mmt_context_mfu_depacketizer_callbacks_noop.c \
 					mmt_extractor.o
 
 intermediate_a324: 	atsc3_dstp_types.o
@@ -662,6 +669,30 @@ atsc3_bandwidth_statistics.o: atsc3_bandwidth_statistics.h atsc3_bandwidth_stati
 atsc3_packet_statistics.o: atsc3_packet_statistics.h atsc3_packet_statistics.c
 	$(CC) $(CFLAGS) $(DEBUG)  -c atsc3_packet_statistics.c
 
+atsc3_audio_decoder_configuration_record.o: atsc3_audio_decoder_configuration_record.h atsc3_audio_decoder_configuration_record.c
+	$(CC) $(CFLAGS) $(DEBUG)  -c atsc3_audio_decoder_configuration_record.c
+	
+atsc3_video_decoder_configuration_record.o: atsc3_video_decoder_configuration_record.h atsc3_audio_decoder_configuration_record.c
+	$(CC) $(CFLAGS) $(DEBUG)  -c atsc3_video_decoder_configuration_record.c
+	
+atsc3_stpp_decoder_configuration_record.o: atsc3_stpp_decoder_configuration_record.h atsc3_stpp_decoder_configuration_record.c
+	$(CC) $(CFLAGS) $(DEBUG)  -c atsc3_stpp_decoder_configuration_record.c
+
+atsc3_isobmff_box_parser_tools.o: atsc3_isobmff_box_parser_tools.h atsc3_isobmff_box_parser_tools.c
+	$(CC) $(CFLAGS) $(DEBUG)  -c atsc3_isobmff_box_parser_tools.c
+
+atsc3_mmt_context_signalling_information_callbacks_internal.o: atsc3_mmt_context_signalling_information_callbacks_internal.h atsc3_mmt_context_signalling_information_callbacks_internal.c
+	$(CC) $(CFLAGS) $(DEBUG)  -c atsc3_mmt_context_signalling_information_callbacks_internal.c
+
+atsc3_mmt_context_mfu_depacketizer_callbacks_noop.o: atsc3_mmt_context_mfu_depacketizer_callbacks_noop.h atsc3_mmt_context_mfu_depacketizer_callbacks_noop.c
+	$(CC) $(CFLAGS) $(DEBUG)  -c atsc3_mmt_context_mfu_depacketizer_callbacks_noop.c
+
+mmt_extractor.o: mmt/MMTExtractor.h mmt/MMTExtractor.cpp
+		g++ $(CFLAGS) $(CXXFLAGS) $(DEBUG) \
+			-I. -I mmt \
+			-c mmt/MMTExtractor.cpp \
+			-o mmt_extractor.o
+
 # -L ../Collections-C/build/src
 test_collection: test_collection.c
 	$(CC) test_collection.c -I ../Collections-C/src/include/ ../Collections-C/build/src/libcollectc.a -L ../Collections-C/build/src -o test_collection 
@@ -742,8 +773,14 @@ libatsc3_intermediate.o: atsc3_lls.o \
 		atsc3_sls_alc_flow.o \
 		avltree.o \
 		PcapDemuxedVirtualPHY.o \
-		PcapSTLTPVirtualPHY.o
-#		 \
+		PcapSTLTPVirtualPHY.o \
+		atsc3_audio_decoder_configuration_record.o \
+		atsc3_video_decoder_configuration_record.o \
+		atsc3_stpp_decoder_configuration_record.o \
+		atsc3_isobmff_box_parser_tools.o \
+		atsc3_mmt_context_signalling_information_callbacks_internal.o \
+		atsc3_mmt_context_mfu_depacketizer_callbacks_noop.o
+
 #		atsc3_srt_live_receiver.o \
 #		SRTRxSTLTPVirtualPHY.o 
 
@@ -813,7 +850,14 @@ libatsc3_intermediate.o: atsc3_lls.o \
 		atsc3_sls_alc_flow.o \
 		avltree.o \
 		PcapDemuxedVirtualPHY.o \
-		PcapSTLTPVirtualPHY.o 
+		PcapSTLTPVirtualPHY.o \
+		atsc3_audio_decoder_configuration_record.o \
+		atsc3_video_decoder_configuration_record.o \
+		atsc3_stpp_decoder_configuration_record.o \
+		atsc3_isobmff_box_parser_tools.o \
+		atsc3_mmt_context_signalling_information_callbacks_internal.o \
+		atsc3_mmt_context_mfu_depacketizer_callbacks_noop.o
+
 		
 #		atsc3_srt_live_receiver.o \
 #		SRTRxSTLTPVirtualPHY.o 
@@ -884,7 +928,13 @@ libatsc3_intermediate_asan.o: \
 		atsc3_sls_alc_flow.o \
 		avltree.o \
 		PcapDemuxedVirtualPHY.o \
-		PcapSTLTPVirtualPHY.o 
+		PcapSTLTPVirtualPHY.o \
+		atsc3_audio_decoder_configuration_record.o \
+		atsc3_video_decoder_configuration_record.o \
+		atsc3_stpp_decoder_configuration_record.o \
+		atsc3_isobmff_box_parser_tools.o \
+		atsc3_mmt_context_signalling_information_callbacks_internal.o \
+		atsc3_mmt_context_mfu_depacketizer_callbacks_noop.o
 
 	ld  -o libatsc3_intermediate_asan.o -r \
 		atsc3_lls_asan.o \
@@ -952,9 +1002,14 @@ libatsc3_intermediate_asan.o: \
 		atsc3_sls_alc_flow.o \
 		avltree.o \
 		PcapDemuxedVirtualPHY.o \
-		PcapSTLTPVirtualPHY.o 
-		
-
+		PcapSTLTPVirtualPHY.o \
+		atsc3_audio_decoder_configuration_record.o \
+		atsc3_video_decoder_configuration_record.o \
+		atsc3_stpp_decoder_configuration_record.o \
+		atsc3_isobmff_box_parser_tools.o \
+		atsc3_mmt_context_signalling_information_callbacks_internal.o \
+		atsc3_mmt_context_mfu_depacketizer_callbacks_noop.o
+	
 libatsc3.o: libatsc3_intermediate.o bento4_mock.o
 	ld  -o libatsc3.o -r libatsc3_intermediate.o bento4_mock.o
 
@@ -978,13 +1033,6 @@ libatsc3_bento4_gpl.o: libatsc3_intermediate.o bento4_gpl.o
 
 libatsc3_bento4_gpl_asan.o: libatsc3_intermediate_asan.o bento4_gpl.o
 	ld  -o libatsc3_bento4_gpl_asan.o -r libatsc3_intermediate_asan.o bento4_gpl.o -L../bento/lib -lap4
-
-mmt_extractor.o: mmt/MMTExtractor.h mmt/MMTExtractor.cpp
-	g++ $(CFLAGS) $(CXXFLAGS) $(DEBUG) \
-	 	-I. -I mmt \
-		-c mmt/MMTExtractor.cpp \
-		-o mmt_extractor.o 
-#	$(CXX) $(CFLAGS) $(DEBUG) -o atsc3_isobmff_tools_gpl.o -c atsc3_isobmff_tools.cpp
 
 ###  unit test generation - drivers are in test/
 
