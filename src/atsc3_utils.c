@@ -719,14 +719,18 @@ block_t* block_Resize(block_t* src, uint32_t src_size_requested) {
 	return src;
 }
 
+/*
+ jjustman-2020-12-31: REVERT:
+ 
+	 jjustman-2020-12-16 - off-by-one fix
+	 if((src->p_size - src->i_pos) == 1) {
+		 _ATSC3_UTILS_WARN("block_Remaining_size: off-by-one workaround applied (src->p_size: %d, src->i_pos: %d), retuning remaining_size: 0", src->p_size, src->i_pos);
+		 return 0;
+	 }
+ */
 uint32_t block_Remaining_size(block_t* src) {
     if(!__block_check_bounaries(__FUNCTION__, src)) return 0;
-    //jjustman-2020-12-16 - off-by-one fix
-    if((src->p_size - src->i_pos) == 1) {
-		_ATSC3_UTILS_INFO("block_Remaining_size: off-by-one workaround applied (src->p_size: %d, src->i_pos: %d), retuning remaining_size: 0", src->p_size, src->i_pos);
-		return 0;
-    }
-    return src->p_size - src->i_pos;
+	return (src->p_size > src->i_pos) ? (src->p_size - src->i_pos) : 0;
 }
 
 bool block_Valid(block_t* src) {
