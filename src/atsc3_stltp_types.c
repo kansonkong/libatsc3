@@ -31,7 +31,21 @@ ATSC3_VECTOR_BUILDER_METHODS_IMPLEMENTATION(L1_detail_signaling, L1D_bonded_bsid
 ATSC3_VECTOR_BUILDER_METHODS_ITEM_FREE(L1D_bonded_bsid_block);
 
 ATSC3_VECTOR_BUILDER_METHODS_IMPLEMENTATION(L1_detail_signaling, L1D_subframe_parameters);
-ATSC3_VECTOR_BUILDER_METHODS_ITEM_FREE(L1D_subframe_parameters);
+
+//ATSC3_VECTOR_BUILDER_METHODS_ITEM_FREE(L1D_subframe_parameters);
+void L1D_subframe_parameters_free(L1D_subframe_parameters_t** L1D_subframe_parameters_p) {
+	if(L1D_subframe_parameters_p) {
+		L1D_subframe_parameters_t* L1D_subframe_parameters = *L1D_subframe_parameters_p;
+		if(L1D_subframe_parameters) {
+			//clear inner allocs
+			L1D_subframe_parameters_free_L1D_PLP_parameters(L1D_subframe_parameters);
+			
+			free(L1D_subframe_parameters);
+			L1D_subframe_parameters = NULL;
+		}
+		*L1D_subframe_parameters_p = NULL;
+	}
+}
 
 ATSC3_VECTOR_BUILDER_METHODS_IMPLEMENTATION(L1D_PLP_parameters, L1D_plp_bonded_rf_id);
 ATSC3_VECTOR_BUILDER_METHODS_ITEM_FREE(L1D_plp_bonded_rf_id);
