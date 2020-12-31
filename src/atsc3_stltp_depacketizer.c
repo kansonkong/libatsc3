@@ -303,14 +303,10 @@ void atsc3_stltp_depacketizer_from_ip_udp_rtp_ctp_packet(atsc3_ip_udp_rtp_ctp_pa
                             if(atsc3_alp_packet->is_alp_payload_complete) {
                                 atsc3_alp_packet_collection_add_atsc3_alp_packet(atsc3_alp_packet_collection, atsc3_alp_packet);
                             } else {
-                                //carry-over as atsc3_stltp_tunnel_packet_processed->atsc3_stltp_tunnel_baseband_packet_pending_by_plp->atsc3_alp_packet_pending
-
-                                if(atsc3_alp_packet && !atsc3_alp_packet->is_alp_payload_complete) {
-                                    atsc3_stltp_tunnel_packet_processed->atsc3_stltp_tunnel_baseband_packet_pending_by_plp->atsc3_alp_packet_pending = atsc3_alp_packet_clone(atsc3_alp_packet);
-                                    _ATSC3_STLTP_DEPACKETIZER_DEBUG("  atsc3_stltp_tunnel_packet_processed->atsc3_stltp_tunnel_baseband_packet_pending_by_plp->atsc3_alp_packet_pending is now: %p", atsc3_stltp_tunnel_packet_processed->atsc3_stltp_tunnel_baseband_packet_pending_by_plp->atsc3_alp_packet_pending);
-
-                                    atsc3_alp_packet_free(&atsc3_alp_packet);
-                                }
+								//carry-over as atsc3_stltp_tunnel_packet_processed->atsc3_stltp_tunnel_baseband_packet_pending_by_plp->atsc3_alp_packet_pending
+								atsc3_stltp_tunnel_packet_processed->atsc3_stltp_tunnel_baseband_packet_pending_by_plp->atsc3_alp_packet_pending = atsc3_alp_packet_clone(atsc3_alp_packet);
+								_ATSC3_STLTP_DEPACKETIZER_DEBUG("  atsc3_stltp_tunnel_packet_processed->atsc3_stltp_tunnel_baseband_packet_pending_by_plp->atsc3_alp_packet_pending is now: %p", atsc3_stltp_tunnel_packet_processed->atsc3_stltp_tunnel_baseband_packet_pending_by_plp->atsc3_alp_packet_pending);
+								atsc3_alp_packet_free(&atsc3_alp_packet);
                                 break;
                             }
                         }
