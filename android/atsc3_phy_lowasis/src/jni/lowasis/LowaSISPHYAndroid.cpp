@@ -1,7 +1,7 @@
 //
 // Created by Jason Justman on 8/19/20.
 //
-#define __JJUSTMAN_2020_12_24_SEA_533_SINGLE_PLP_TUNE_ONLY__
+//#define __JJUSTMAN_2020_12_24_SEA_533_SINGLE_PLP_TUNE_ONLY__
 
 #include "LowaSISPHYAndroid.h"
 LowaSISPHYAndroid* lowaSISPHYAndroid = nullptr;
@@ -115,11 +115,20 @@ int LowaSISPHYAndroid::init()
     memset(&vinfo, 0, sizeof(vinfo));
     AT3DRV_GetVersionInfo(&vinfo);
 
-    //LogMsgF("at3drv ver %s, id %s, branch %s\n", vinfo.ver, vinfo.rev_id, vinfo.rev_branch);
     _LOWASIS_PHY_ANDROID_DEBUG("LowaSISPHYAndroid::init - at3drv ver is: %s", vinfo.ver);
 
     init_completed = true;
     return 0;
+}
+
+const char* LowaSISPHYAndroid::getPhyFeVendorNameString(E_AT3_FEVENDOR phyFeVendor) {
+    if(phyFeVendor == eAT3_FEVENDOR_LGDT3307_R850) {
+        return "LG.3307";
+    } else if(phyFeVendor == eAT3_FEVENDOR_CXD2878_ASCOT3) {
+        return "SONY.2878";
+    } else {
+        return "(unknown)";
+    }
 }
 
 //jjustman-2020-08-24 - copying from baseline impl
@@ -473,6 +482,14 @@ int LowaSISPHYAndroid::open(int fd, string device_path)
 
     mhDevice = hDevice;
 
+    //jjustman-2020-12-25 - keep track of our FE PHY Demod Vendor (e.g. LG, Sony, etc..)
+    ar = AT3DRV_FE_GetStatus(mhDevice, eAT3_FESTAT_HW_INFO, (S_AT3_FE_INFO*)&this->phyFeVendorDemodInfo);
+    if (!AT3OK(ar)) {
+        _LOWASIS_PHY_ANDROID_WARN("LowaSISPHYAndroid::init - AT3DRV_FE_GetStatus w/ eAT3_FESTAT_VENDOR returned not ok! %d", ar);
+    }
+
+    _LOWASIS_PHY_ANDROID_DEBUG("LowaSISPHYAndroid::init - PHY info: vendor: %s, hwrev: 0x%08x, fwrev: %s", getPhyFeVendorNameString(this->phyFeVendorDemodInfo.vendor), this->phyFeVendorDemodInfo.hwrev, this->phyFeVendorDemodInfo.fwrev);
+
     //check if we were re-initalized and might have an open RxThread or RxStatusThread
 
     if(captureThreadHandle.joinable()) {
@@ -550,8 +567,6 @@ int LowaSISPHYAndroid::tune(int freqKHz, int plpid)
  */
 int LowaSISPHYAndroid::listen_plps(vector<uint8_t> plps_original_list)
 {
-    AT3RESULT ar;
-    E_AT3_FEVENDOR s;
 
     int ret = 0;
     uint8_t u_plp_ids[4] = { 0x00, 0x40, 0x40, 0x40 };
@@ -565,11 +580,8 @@ int LowaSISPHYAndroid::listen_plps(vector<uint8_t> plps_original_list)
         }
     }
 
-    ar = AT3DRV_FE_GetStatus(mhDevice, eAT3_FESTAT_VENDOR, &s);
-
     //jjustman-2020-02-29 - hack - check if FE vendor is LG3307_R850, only listen to ONE PLP, otherwise listen to multiple
-    if(s == eAT3_FEVENDOR_LGDT3307_R850) {
-
+    if(this->phyFeVendorDemodInfo.vendor == eAT3_FEVENDOR_LGDT3307_R850) {
         u_plp_ids[0] = u_plp_ids[plp_postion-1];
 
         AT3DRV_FE_SetPLP(mhDevice, u_plp_ids, 1);
@@ -579,8 +591,8 @@ int LowaSISPHYAndroid::listen_plps(vector<uint8_t> plps_original_list)
 #ifdef __JJUSTMAN_2020_12_24_SEA_533_SINGLE_PLP_TUNE_ONLY__
         u_plp_ids[0] = u_plp_ids[plp_postion-1];
 
-        AT3DRV_FE_SetPLP(mhDevice, u_plp_ids, 1);
         _LOWASIS_PHY_ANDROID_INFO("listen_plps: forcing to SINGLE plp_id[0]: %d (#defined __JJUSTMAN_2020_12_24_SEA_533_SINGLE_PLP_TUNE_ONLY__)", u_plp_ids[0]);
+        AT3DRV_FE_SetPLP(mhDevice, u_plp_ids, 1);
 #else
         //non testing behavior
         AT3DRV_FE_SetPLP(mhDevice, u_plp_ids, plp_postion);
@@ -983,13 +995,16 @@ int LowaSISPHYAndroid::processThread()
 
 int LowaSISPHYAndroid::statusThread()
 {
+    AT3RESULT ar;
+
+    S_FE_DETAIL              s_fe_detail    = { '0' };
+    S_LGDEMOD_L2_SIG_STATUS  s_fe_detail_lg = { '0' };
+
+    atsc3_ndk_phy_client_rf_metrics_t atsc3_ndk_phy_client_rf_metrics = { '0' };
+
     _LOWASIS_PHY_ANDROID_INFO("LowaSISPHYAndroid::statusThread started, this: %p", this);
     this->pinStatusThreadAsNeeded();
     this->statusThreadIsRunning = true;
-
-    S_FE_DETAIL s_fe_detail;
-    AT3RESULT ar;
-    atsc3_ndk_phy_client_rf_metrics_t atsc3_ndk_phy_client_rf_metrics = { '0' };
 
     while(this->statusThreadShouldRun) {
         usleep(500000);
@@ -998,40 +1013,84 @@ int LowaSISPHYAndroid::statusThread()
         }
 
         if(this->is_tuned) {
-            memset(&s_fe_detail, 0, sizeof(s_fe_detail));
-
             int32_t lock = 1, rssi = -2000;
 
-            ar = AT3DRV_FE_GetStatus(mhDevice, eAT3_RFSTAT_LOCK, &lock);
-            atsc3_ndk_phy_client_rf_metrics.tuner_lock = lock;
+            memset(&s_fe_detail, 0, sizeof(s_fe_detail));
+            memset(&s_fe_detail_lg, 0, sizeof(s_fe_detail_lg));
 
-            ar = AT3DRV_FE_GetStatus(mhDevice, eAT3_RFSTAT_STRENGTH, &rssi);
-            atsc3_ndk_phy_client_rf_metrics.rssi = rssi;
+            //jjustman-2020-12-25 - lg 3307 has different AT3DRV_FE_GetStatus type/struct for RF _and_ PLP statistics
 
-            s_fe_detail.flagRequest = 0xffffffff; // all info. too many?
-            //s_fe_detail.flagRequest = FE_SIG_MASK_Lock; // | FE_SIG_MASK_RfLevel | FE_SIG_MASK_CarrierOffset | FE_SIG_MASK_SNR | FE_SIG_MASK_BER | FE_SIG_MASK_FecModCod | FE_SIG_MASK_BbpErr;
-            AT3DRV_FE_GetStatus(mhDevice, eAT3_FESTAT_RF_DETAIL, &s_fe_detail);
+            if(this->phyFeVendorDemodInfo.vendor == eAT3_FEVENDOR_LGDT3307_R850) {
+                s_fe_detail.flagRequest = 0xffffffff; // all info. too many?
+                //s_fe_detail.flagRequest = FE_SIG_MASK_Lock; // | FE_SIG_MASK_RfLevel | FE_SIG_MASK_CarrierOffset | FE_SIG_MASK_SNR | FE_SIG_MASK_BER | FE_SIG_MASK_FecModCod | FE_SIG_MASK_BbpErr;
+                AT3DRV_FE_GetStatus(mhDevice, eAT3_FESTAT_RF_DETAIL, &s_fe_detail);
 
-            atsc3_ndk_phy_client_rf_metrics.demod_lock = s_fe_detail.lock.bDemodLock;
+                ar = AT3DRV_FE_GetStatus(mhDevice, eAT3_FESTAT_LGD_SIGSTAT_V1, &s_fe_detail_lg);
 
-            atsc3_ndk_phy_client_rf_metrics.plp_lock_any = s_fe_detail.lock.bPlpLockAny;
-            atsc3_ndk_phy_client_rf_metrics.plp_lock_all = s_fe_detail.lock.bPlpLockAll;
-            atsc3_ndk_phy_client_rf_metrics.plp_lock_by_setplp_index = s_fe_detail.lock.bmPlpLock;
+                //missing tuner_lock
+                //missing rssi
 
-            atsc3_ndk_phy_client_rf_metrics.rfLevel1000 = s_fe_detail.nRfLevel1000;
-            atsc3_ndk_phy_client_rf_metrics.snr1000 = s_fe_detail.nSnr1000;
+                atsc3_ndk_phy_client_rf_metrics.demod_lock = s_fe_detail_lg.demodLock;
 
-            for(int i=0; i < 4; i++) {
-                atsc3_ndk_phy_client_rf_metrics.phy_client_rf_plp_metrics[i].plp_id         = s_fe_detail.idPlps[i];
+                /* missing? */
+                atsc3_ndk_phy_client_rf_metrics.plp_lock_any = s_fe_detail.lock.bPlpLockAny;
+                atsc3_ndk_phy_client_rf_metrics.plp_lock_all = s_fe_detail.lock.bPlpLockAll;
+                atsc3_ndk_phy_client_rf_metrics.plp_lock_by_setplp_index = s_fe_detail.lock.bmPlpLock;
 
-                atsc3_ndk_phy_client_rf_metrics.phy_client_rf_plp_metrics[i].modcod_valid   = s_fe_detail.aFecModCod[i].valid;
-                atsc3_ndk_phy_client_rf_metrics.phy_client_rf_plp_metrics[i].plp_fec_type   = s_fe_detail.aFecModCod[i].fecType;
-                atsc3_ndk_phy_client_rf_metrics.phy_client_rf_plp_metrics[i].plp_mod        = s_fe_detail.aFecModCod[i].mod;
-                atsc3_ndk_phy_client_rf_metrics.phy_client_rf_plp_metrics[i].plp_cod        = s_fe_detail.aFecModCod[i].cod;
+                atsc3_ndk_phy_client_rf_metrics.rfLevel1000 = s_fe_detail.nRfLevel1000;
+                atsc3_ndk_phy_client_rf_metrics.snr1000 = s_fe_detail_lg.snr * 1000;
 
-                atsc3_ndk_phy_client_rf_metrics.phy_client_rf_plp_metrics[i].ber_pre_ldpc   = s_fe_detail.aBerPreLdpcE7[i];
-                atsc3_ndk_phy_client_rf_metrics.phy_client_rf_plp_metrics[i].ber_pre_bch    = s_fe_detail.aBerPreBchE9[i];
-                atsc3_ndk_phy_client_rf_metrics.phy_client_rf_plp_metrics[i].fer_post_bch   = s_fe_detail.aFerPostBchE6[i];
+                for(int i=0; i < 4; i++) {
+                    S_LGD_L2_PLPINFO lgL2PlpInfo = { 0 };
+                    lgL2PlpInfo.index = i;
+                    AT3DRV_FE_GetStatus(mhDevice, eAT3_FESTAT_LGD_PLP_V1, &lgL2PlpInfo);
+
+                    atsc3_ndk_phy_client_rf_metrics.phy_client_rf_plp_metrics[i].plp_id         = lgL2PlpInfo.l1d_plp_id;
+
+                    atsc3_ndk_phy_client_rf_metrics.phy_client_rf_plp_metrics[i].modcod_valid   = 1; //jjustman-2020-12-25 - not present in lgL2PlpInfo;
+                    atsc3_ndk_phy_client_rf_metrics.phy_client_rf_plp_metrics[i].plp_fec_type   = lgL2PlpInfo.plp_fec_type;
+                    atsc3_ndk_phy_client_rf_metrics.phy_client_rf_plp_metrics[i].plp_mod        = lgL2PlpInfo.plp_mod;
+                    atsc3_ndk_phy_client_rf_metrics.phy_client_rf_plp_metrics[i].plp_cod        = lgL2PlpInfo.plp_cr;
+
+                    //jjustman-2020-12-25 - todo: investigate if this is returned for LG3307 in lowaSIS API
+                    atsc3_ndk_phy_client_rf_metrics.phy_client_rf_plp_metrics[i].ber_pre_ldpc   = s_fe_detail_lg.ber; // pass in aggregate BER? s_fe_detail.aBerPreLdpcE7[i];
+                    atsc3_ndk_phy_client_rf_metrics.phy_client_rf_plp_metrics[i].ber_pre_bch    = 0; //s_fe_detail.aBerPreBchE9[i];
+                    atsc3_ndk_phy_client_rf_metrics.phy_client_rf_plp_metrics[i].fer_post_bch   = 0; //s_fe_detail.aFerPostBchE6[i];
+                }
+
+            } else {
+
+                ar = AT3DRV_FE_GetStatus(mhDevice, eAT3_RFSTAT_LOCK, &lock);
+                atsc3_ndk_phy_client_rf_metrics.tuner_lock = lock;
+
+                ar = AT3DRV_FE_GetStatus(mhDevice, eAT3_RFSTAT_STRENGTH, &rssi);
+                atsc3_ndk_phy_client_rf_metrics.rssi = rssi;
+
+                s_fe_detail.flagRequest = 0xffffffff; // all info. too many?
+                //s_fe_detail.flagRequest = FE_SIG_MASK_Lock; // | FE_SIG_MASK_RfLevel | FE_SIG_MASK_CarrierOffset | FE_SIG_MASK_SNR | FE_SIG_MASK_BER | FE_SIG_MASK_FecModCod | FE_SIG_MASK_BbpErr;
+                AT3DRV_FE_GetStatus(mhDevice, eAT3_FESTAT_RF_DETAIL, &s_fe_detail);
+
+                atsc3_ndk_phy_client_rf_metrics.demod_lock = s_fe_detail.lock.bDemodLock;
+
+                atsc3_ndk_phy_client_rf_metrics.plp_lock_any = s_fe_detail.lock.bPlpLockAny;
+                atsc3_ndk_phy_client_rf_metrics.plp_lock_all = s_fe_detail.lock.bPlpLockAll;
+                atsc3_ndk_phy_client_rf_metrics.plp_lock_by_setplp_index = s_fe_detail.lock.bmPlpLock;
+
+                atsc3_ndk_phy_client_rf_metrics.rfLevel1000 = s_fe_detail.nRfLevel1000;
+                atsc3_ndk_phy_client_rf_metrics.snr1000 = s_fe_detail.nSnr1000;
+
+                for(int i=0; i < 4; i++) {
+                    atsc3_ndk_phy_client_rf_metrics.phy_client_rf_plp_metrics[i].plp_id         = s_fe_detail.idPlps[i];
+
+                    atsc3_ndk_phy_client_rf_metrics.phy_client_rf_plp_metrics[i].modcod_valid   = s_fe_detail.aFecModCod[i].valid;
+                    atsc3_ndk_phy_client_rf_metrics.phy_client_rf_plp_metrics[i].plp_fec_type   = s_fe_detail.aFecModCod[i].fecType;
+                    atsc3_ndk_phy_client_rf_metrics.phy_client_rf_plp_metrics[i].plp_mod        = s_fe_detail.aFecModCod[i].mod;
+                    atsc3_ndk_phy_client_rf_metrics.phy_client_rf_plp_metrics[i].plp_cod        = s_fe_detail.aFecModCod[i].cod;
+
+                    atsc3_ndk_phy_client_rf_metrics.phy_client_rf_plp_metrics[i].ber_pre_ldpc   = s_fe_detail.aBerPreLdpcE7[i];
+                    atsc3_ndk_phy_client_rf_metrics.phy_client_rf_plp_metrics[i].ber_pre_bch    = s_fe_detail.aBerPreBchE9[i];
+                    atsc3_ndk_phy_client_rf_metrics.phy_client_rf_plp_metrics[i].fer_post_bch   = s_fe_detail.aFerPostBchE6[i];
+                }
             }
 
             if(atsc3_ndk_phy_bridge_get_instance()) {

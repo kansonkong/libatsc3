@@ -200,6 +200,7 @@ char* strlcopy(char*);
 char *_ltrim(char *str);
 char* _rtrim(char *str);
 char* __trim(char *str);
+bool str_is_utf8(const char* str);
 
 void freesafe(void* tofree);
 
