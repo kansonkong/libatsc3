@@ -93,10 +93,12 @@ atsc3_ip_udp_rtp_ctp_packet_t* atsc3_ip_udp_rtp_ctp_packet_process_from_blockt_p
 	
 	if(atsc3_stltp_depacketizer_context) {
 		if(atsc3_stltp_depacketizer_context->destination_flow_filter.dst_ip_addr && atsc3_stltp_depacketizer_context->destination_flow_filter.dst_ip_addr != ip_udp_rtp_ctp_packet_new->udp_flow.dst_ip_addr) {
+			atsc3_ip_udp_rtp_ctp_packet_destroy(&ip_udp_rtp_ctp_packet_new);
 			return NULL;
 		}
 		
 		if(atsc3_stltp_depacketizer_context->destination_flow_filter.dst_port && atsc3_stltp_depacketizer_context->destination_flow_filter.dst_port != ip_udp_rtp_ctp_packet_new->udp_flow.dst_port) {
+			atsc3_ip_udp_rtp_ctp_packet_destroy(&ip_udp_rtp_ctp_packet_new);
 			return NULL;
 		}
 	}
@@ -138,6 +140,7 @@ void atsc3_stltp_depacketizer_from_ip_udp_rtp_ctp_packet(atsc3_ip_udp_rtp_ctp_pa
 
     	atsc3_stltp_depacketizer_context->atsc3_stltp_tunnel_packet_processed = atsc3_stltp_raw_packet_extract_inner_from_outer_packet(atsc3_stltp_depacketizer_context, ip_udp_rtp_ctp_packet, atsc3_stltp_depacketizer_context->atsc3_stltp_tunnel_packet_processed);
     	atsc3_stltp_tunnel_packet_processed = atsc3_stltp_depacketizer_context->atsc3_stltp_tunnel_packet_processed;
+		
 #ifdef __ATSC3_STLTP_DEPACKETIZER_PENDANTIC__
     	_ATSC3_STLTP_DEPACKETIZER_WARN("atsc3_stltp_depacketizer_from_ip_udp_rtp_ctp_packet: packet: %p, pcap len: %d, atsc3_stltp_tunnel_packet_processed: %p", ip_udp_rtp_ctp_packet, ip_udp_rtp_ctp_packet->data->p_size, atsc3_stltp_tunnel_packet_processed);
 #endif
@@ -252,12 +255,14 @@ void atsc3_stltp_depacketizer_from_ip_udp_rtp_ctp_packet(atsc3_ip_udp_rtp_ctp_pa
 							//if our refragmenting is short, try and recover based upon baseband packet split
 							if(final_alp_packet_short_bytes_remaining) {
 								if(atsc3_baseband_packet->alp_payload_post_pointer) {
-								   __WARN("atsc3_baseband_packet: pending packet: short and post pointer: %d bytes still remaining, atsc3_alp_packet_pre_pointer->alp_payload size: %d, pos: %d, atsc3_baseband_packet->alp_payload_pre_pointer size: %d, pos: %d",
+								   __WARN("atsc3_baseband_packet: pending packet: short and post pointer: %d bytes still remaining, atsc3_alp_packet_pre_pointer->alp_payload size: %d, pos: %d, atsc3_baseband_packet->alp_payload_pre_pointer size: %d, pos: %d, atsc3_stltp_tunnel_packet_processed->atsc3_stltp_baseband_packet_v.count: %d",
 										   final_alp_packet_short_bytes_remaining,
 										   atsc3_alp_packet_pending->alp_payload->p_size,
 										   atsc3_alp_packet_pending->alp_payload->i_pos,
 										   atsc3_baseband_packet->alp_payload_pre_pointer->p_size,
-										   atsc3_baseband_packet->alp_payload_pre_pointer->i_pos);
+										   atsc3_baseband_packet->alp_payload_pre_pointer->i_pos,
+										   atsc3_stltp_tunnel_packet_processed->atsc3_stltp_baseband_packet_v.count
+										  );
 
 								} else {
 									_ATSC3_STLTP_DEPACKETIZER_DEBUG("atsc3_baseband_packet: carry over pending packet: short:  %d bytes still remaining", final_alp_packet_short_bytes_remaining);
@@ -353,7 +358,6 @@ void atsc3_stltp_depacketizer_from_ip_udp_rtp_ctp_packet(atsc3_ip_udp_rtp_ctp_pa
                                 break;
                             }
                         }
-                        block_Destroy(&atsc3_stltp_tunnel_packet_processed->atsc3_stltp_tunnel_baseband_packet_pending_by_plp->atsc3_baseband_packet_short_fragment);
                  	}
 					
                     //process post_pointer for our baseband frame
