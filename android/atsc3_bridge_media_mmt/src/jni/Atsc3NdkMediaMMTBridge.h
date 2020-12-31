@@ -21,6 +21,7 @@ using namespace std;
 #define MODULE_NAME "Atsc3NdkMediaMMTBridge"
 
 #include "Atsc3LoggingUtils.h"
+#include "IAtsc3JniEnv.h"
 #include "Atsc3JniEnv.h"
 
 // libatsc3 type imports here
@@ -111,7 +112,7 @@ public:
     static void PthreadDestructor(void* prevJniPtr);
 
     int pinConsumerThreadAsNeeded();
-    int referenceConsumerJniEnvAsNeeded(Atsc3JniEnv* consumerAtsc3JniEnv);
+    int referenceConsumerJniEnvAsNeeded(IAtsc3JniEnv* consumerAtsc3JniEnv);
     int releasePinnedConsumerThreadAsNeeded();
     bool isConsumerThreadPinned();
 
