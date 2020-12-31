@@ -36,9 +36,9 @@
 #include "atsc3_stltp_parser.h"
 
 int _STLTP_PARSER_INFO_ENABLED = 1;
-int _STLTP_PARSER_DUMP_ENABLED = 0;
-int _STLTP_PARSER_DEBUG_ENABLED = 0;
-int _STLTP_PARSER_TRACE_ENABLED = 0;
+int _STLTP_PARSER_DUMP_ENABLED = 1;
+int _STLTP_PARSER_DEBUG_ENABLED = 1;
+int _STLTP_PARSER_TRACE_ENABLED = 1;
 
 
 /*
@@ -190,13 +190,14 @@ atsc3_stltp_tunnel_packet_t* atsc3_stltp_raw_packet_extract_inner_from_outer_pac
     	//atsc3_stltp_tunnel_packet_current->atsc3_stltp_tunnel_baseband_packet_pending_by_plp
 
         //map any pending non baseband packets over to our packet_current
-        atsc3_stltp_tunnel_packet_current->atsc3_stltp_preamble_packet_pending          	= atsc3_stltp_tunnel_packet_last->atsc3_stltp_preamble_packet_pending;
-        atsc3_stltp_tunnel_packet_current->atsc3_stltp_timing_management_packet_pending 	= atsc3_stltp_tunnel_packet_last->atsc3_stltp_timing_management_packet_pending;
-        
+        atsc3_stltp_tunnel_packet_current->atsc3_stltp_preamble_packet_pending          	 = atsc3_stltp_tunnel_packet_last->atsc3_stltp_preamble_packet_pending;
+        atsc3_stltp_tunnel_packet_current->atsc3_stltp_timing_management_packet_pending 	 = atsc3_stltp_tunnel_packet_last->atsc3_stltp_timing_management_packet_pending;
+        atsc3_stltp_tunnel_packet_current->atsc3_stltp_tunnel_baseband_packet_pending_by_plp = atsc3_stltp_tunnel_packet_last->atsc3_stltp_tunnel_baseband_packet_pending_by_plp;
+		
         //null out any last packet references, otherwise we will doublefree()
-        atsc3_stltp_tunnel_packet_last->atsc3_stltp_tunnel_baseband_packet_pending_by_plp   = NULL;
-        atsc3_stltp_tunnel_packet_last->atsc3_stltp_preamble_packet_pending            		= NULL;
-        atsc3_stltp_tunnel_packet_last->atsc3_stltp_timing_management_packet_pending   		= NULL;
+		atsc3_stltp_tunnel_packet_last->atsc3_stltp_tunnel_baseband_packet_pending_by_plp    = NULL;
+	    atsc3_stltp_tunnel_packet_last->atsc3_stltp_preamble_packet_pending            		 = NULL;
+        atsc3_stltp_tunnel_packet_last->atsc3_stltp_timing_management_packet_pending   		 = NULL;
     }
     
     //rewind raw packet buffer to outer packet
