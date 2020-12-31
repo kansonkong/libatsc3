@@ -105,7 +105,7 @@ mmtp_mpu_packet_t* atsc3_mmt_mpu_sample_format_parse(mmtp_mpu_packet_t* mmtp_mpu
         }
 
         //we need at least 8 bytes for a proper isobmff box child
-        while(block_Remaining_size(raw_packet) && (mmtp_mpu_packet->mmthsample_header->atsc3_mmt_multiLayerInfoBox.box_size - (raw_packet->i_pos - muliBoxStartPosition)) > 8) {
+        while(block_Remaining_size(raw_packet) > 8  && (mmtp_mpu_packet->mmthsample_header->atsc3_mmt_multiLayerInfoBox.box_size - (raw_packet->i_pos - muliBoxStartPosition)) > 8) {
             //try and parse out known 'private' isobmff boxes prepended to this sample
             //jjustman-2020-12-16 - TODO: construct these as first class models for MJSD and MJGP
             uint32_t privateBoxStartPosition = raw_packet->i_pos;

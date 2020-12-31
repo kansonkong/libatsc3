@@ -164,25 +164,11 @@ void atsc3_mmt_mfu_context_free(atsc3_mmt_mfu_context_t** atsc3_mmt_mfu_context_
                 atsc3_mmt_mfu_context->mmtp_flow = NULL;
             }
 
-            if(atsc3_mmt_mfu_context->mmtp_asset_flow) {
-                mmtp_asset_flow_free(&atsc3_mmt_mfu_context->mmtp_asset_flow);
-            }
-            if(atsc3_mmt_mfu_context->mmtp_asset) {
-                mmtp_asset_free(&atsc3_mmt_mfu_context->mmtp_asset);
-            }
-
-                //jjustman-2020-08-31 - todo: check to confirm these aren't shared pointers...
-            if(atsc3_mmt_mfu_context->lls_slt_monitor) {
-                atsc3_lls_slt_monitor_free(&atsc3_mmt_mfu_context->lls_slt_monitor);
-            }
-
-
             if(atsc3_mmt_mfu_context->mp_table_last) {
                 //jjustman-2020-08-31: todo - free inner impl
                 free(atsc3_mmt_mfu_context->mp_table_last);
                 atsc3_mmt_mfu_context->mp_table_last = NULL;
             }
-
 
             free(atsc3_mmt_mfu_context);
             atsc3_mmt_mfu_context = NULL;
@@ -198,14 +184,15 @@ mmtp_asset_t* atsc3_mmt_mfu_context_mfu_depacketizer_context_update_find_or_crea
     //jjustman-2020-12-24 - we need to clone this instance, as udp_packet is transient and udp_flow is an instance field in the struct, not a ptr
     atsc3_mmt_mfu_context->udp_flow = atsc3_udp_flow_clone_from_udp_packet(udp_packet);
 
-    atsc3_mmt_mfu_context->lls_slt_monitor = lls_slt_monitor;
+    atsc3_mmt_mfu_context->transients.lls_slt_monitor = lls_slt_monitor;
     atsc3_mmt_mfu_context->matching_lls_sls_mmt_session = matching_lls_sls_mmt_session;
 
     mmtp_asset_flow = mmtp_flow_find_or_create_from_udp_packet(atsc3_mmt_mfu_context->mmtp_flow, udp_packet);
-    atsc3_mmt_mfu_context->mmtp_asset_flow = mmtp_asset_flow;
+    atsc3_mmt_mfu_context->transients.mmtp_asset_flow = mmtp_asset_flow;
 
+    //jjustman-2020-12-24 - reset context is causing a doublefree here...
     mmtp_asset = mmtp_asset_flow_find_or_create_asset_from_lls_sls_mmt_session(mmtp_asset_flow, matching_lls_sls_mmt_session);
-    atsc3_mmt_mfu_context->mmtp_asset = mmtp_asset;
+    atsc3_mmt_mfu_context->transients.mmtp_asset = mmtp_asset;
 
     return mmtp_asset;
 }
@@ -244,7 +231,7 @@ void mmtp_mfu_process_from_payload_with_context(udp_packet_t *udp_packet, mmtp_m
 
 	//borrow from our context
 	mmtp_flow_t *mmtp_flow = atsc3_mmt_mfu_context->mmtp_flow;
-	lls_slt_monitor_t* lls_slt_monitor = atsc3_mmt_mfu_context->lls_slt_monitor;
+	lls_slt_monitor_t* lls_slt_monitor = atsc3_mmt_mfu_context->transients.lls_slt_monitor;
 	lls_sls_mmt_session_t* matching_lls_sls_mmt_session = atsc3_mmt_mfu_context->matching_lls_sls_mmt_session;
 	udp_flow_latest_mpu_sequence_number_container_t* udp_flow_latest_mpu_sequence_number_container = atsc3_mmt_mfu_context->udp_flow_latest_mpu_sequence_number_container;
 
@@ -253,7 +240,6 @@ void mmtp_mfu_process_from_payload_with_context(udp_packet_t *udp_packet, mmtp_m
     mmtp_asset_t* mmtp_asset = NULL;
     mmtp_packet_id_packets_container_t* mmtp_packet_id_packets_container = NULL;
     mpu_sequence_number_mmtp_mpu_packet_collection_t* mpu_sequence_number_mmtp_mpu_packet_collection = NULL;
-
 
     lls_sls_mmt_monitor_t *matching_lls_sls_mmt_monitor = lls_sls_mmt_monitor_find_from_service_id(lls_slt_monitor, matching_lls_sls_mmt_session->service_id);
 
@@ -268,11 +254,11 @@ void mmtp_mfu_process_from_payload_with_context(udp_packet_t *udp_packet, mmtp_m
         return;
     }
 
-    if (!(matching_lls_sls_mmt_monitor->atsc3_lls_slt_service->service_id == matching_lls_sls_mmt_session->service_id &&
+    if (!(matching_lls_sls_mmt_monitor->transients.atsc3_lls_slt_service->service_id == matching_lls_sls_mmt_session->service_id &&
           matching_lls_sls_mmt_session->sls_destination_ip_address == udp_packet->udp_flow.dst_ip_addr &&
           matching_lls_sls_mmt_session->sls_destination_udp_port == udp_packet->udp_flow.dst_port)) {
         __MMT_CONTEXT_MPU_TRACE("mmtp_mfu_process_from_payload_with_context: sls monitor flow: %d:%d, service_id: %d not matching for flow: %d:%d, service_id: %d, packet_id: %d, mpu_sequence_number: %d, psn: %d",
-                                matching_lls_sls_mmt_session->sls_destination_ip_address, matching_lls_sls_mmt_session->sls_destination_udp_port, matching_lls_sls_mmt_monitor->atsc3_lls_slt_service->service_id,
+                                matching_lls_sls_mmt_session->sls_destination_ip_address, matching_lls_sls_mmt_session->sls_destination_udp_port, matching_lls_sls_mmt_monitor->transients.atsc3_lls_slt_service->service_id,
                                 udp_packet->udp_flow.dst_ip_addr, udp_packet->udp_flow.dst_port, matching_lls_sls_mmt_session->service_id, mmtp_mpu_packet->mmtp_packet_id, mmtp_mpu_packet->mpu_sequence_number, mmtp_mpu_packet->packet_sequence_number);
         return;
     }

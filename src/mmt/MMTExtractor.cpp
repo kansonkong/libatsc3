@@ -13,7 +13,7 @@ MMTExtractor::MMTExtractor() {
     atsc3_lls_slt_service->service_id = 1;
 
     lls_sls_mmt_monitor = lls_sls_mmt_monitor_create();
-    lls_sls_mmt_monitor->atsc3_lls_slt_service = atsc3_lls_slt_service; //HACK!
+    lls_sls_mmt_monitor->transients.atsc3_lls_slt_service = atsc3_lls_slt_service; //transient HACK!
 
     lls_slt_monitor = lls_slt_monitor_create();
     //wire up a lls event for SLS table
@@ -39,7 +39,7 @@ void MMTExtractor::atsc3_core_service_bridge_process_mmt_packet(block_t* packet)
         return;
     }
 
-    lls_sls_mmt_session_t* lls_sls_mmt_session = lls_sls_mmt_monitor->lls_mmt_session;
+    lls_sls_mmt_session_t* lls_sls_mmt_session = lls_sls_mmt_monitor->transients.lls_mmt_session;
     if (!lls_sls_mmt_session) {
         lls_sls_mmt_session = lls_slt_mmt_session_find_from_service_id(lls_slt_monitor, atsc3_lls_slt_service->service_id);
 
@@ -56,7 +56,7 @@ void MMTExtractor::atsc3_core_service_bridge_process_mmt_packet(block_t* packet)
             __ATSC3_CORE_SERVICE_PLAYER_BRIDGE_WARN("MMTExtractor::atsc3_core_service_bridge_process_mmt_packet: lls_slt_mmt_session_find_from_service_id: lls_sls_mmt_session is NULL!");
         }
 
-        lls_sls_mmt_monitor->lls_mmt_session = lls_sls_mmt_session;
+        lls_sls_mmt_monitor->transients.lls_mmt_session = lls_sls_mmt_session;
         lls_slt_monitor->lls_sls_mmt_monitor = lls_sls_mmt_monitor;
         lls_slt_monitor_add_lls_sls_mmt_monitor(lls_slt_monitor, lls_sls_mmt_monitor);
     }

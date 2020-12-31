@@ -5,7 +5,6 @@
 APP_DEBUG := true
 APP_STRIP_MODE := "none"
 APP_CPPFLAGS += -std=c++11  -fexceptions -D_ANDROID
-APP_ABI := arm64-v8a
 
 ifeq ($(debugging_asan_enabled), true)
 $(info building atsc3_phy_lowasis with debugging_asan_enabled )
