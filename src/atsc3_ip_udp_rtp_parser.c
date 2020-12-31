@@ -483,6 +483,7 @@ void atsc3_ip_udp_rtp_ctp_packet_destroy(atsc3_ip_udp_rtp_ctp_packet_t** ip_udp_
                 freesafe(ip_udp_rtp_ctp_packet->rtp_ctp_header);
             }
             ip_udp_rtp_ctp_packet->rtp_ctp_header = NULL;
+			
             free(ip_udp_rtp_ctp_packet);
             ip_udp_rtp_ctp_packet = NULL;
             
