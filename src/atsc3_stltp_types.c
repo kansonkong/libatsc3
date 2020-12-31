@@ -8,8 +8,8 @@
 
 #include "atsc3_stltp_types.h"
 
-int _STLTP_TYPES_DEBUG_ENABLED = 1;
-int _STLTP_TYPES_TRACE_ENABLED = 1;
+int _STLTP_TYPES_DEBUG_ENABLED = 0;
+int _STLTP_TYPES_TRACE_ENABLED = 0;
 
 //L1_detail vector(s)
 
@@ -202,6 +202,7 @@ void atsc3_timing_management_packet_set_bootstrap_timing_ref_from_stltp_preamble
 
 void atsc3_stltp_tunnel_packet_clear_completed_inner_packets(atsc3_stltp_tunnel_packet_t* atsc3_stltp_tunnel_packet) {
     if(atsc3_stltp_tunnel_packet) {
+		
         if(atsc3_stltp_tunnel_packet->atsc3_stltp_baseband_packet_v.count) {
             for(int i=0; i < atsc3_stltp_tunnel_packet->atsc3_stltp_baseband_packet_v.count; i++) {
                 atsc3_stltp_baseband_packet_free_v(atsc3_stltp_tunnel_packet->atsc3_stltp_baseband_packet_v.data[i]);
@@ -572,9 +573,10 @@ void atsc3_rtp_ctp_header_dump_inner(atsc3_stltp_tunnel_packet_t* atsc3_stltp_tu
 
 void atsc3_rtp_ctp_header_dump(atsc3_rtp_ctp_header_t* atsc3_rtp_ctp_header, int spaces) {
     
-    __STLTP_TYPES_DEBUG("%*smarker: %x,  version: %x, padding: %x, extension: %x, csrc_count: %x",
+    __STLTP_TYPES_DEBUG("%*smarker: %x (offset: %d),  version: %x, padding: %x, extension: %x, csrc_count: %x",
                         spaces, "",
                         atsc3_rtp_ctp_header->marker,
+						atsc3_rtp_ctp_header->packet_offset,
                         atsc3_rtp_ctp_header->version,
                         atsc3_rtp_ctp_header->padding,
                         atsc3_rtp_ctp_header->extension,
