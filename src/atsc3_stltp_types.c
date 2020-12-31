@@ -112,6 +112,12 @@ atsc3_stltp_baseband_packet_t* atsc3_stltp_baseband_packet_new_and_init(atsc3_st
     return atsc3_stltp_baseband_packet;
 }
 
+atsc3_preamble_packet_t* atsc3_preamble_packet_new() {
+	atsc3_preamble_packet_t* atsc3_preamble_packet = calloc(1, sizeof(atsc3_preamble_packet_t));
+	
+	return atsc3_preamble_packet;
+}
+
 void atsc3_baseband_packet_set_plp_from_stltp_baseband_packet(atsc3_baseband_packet_t* atsc3_baseband_packet, atsc3_stltp_baseband_packet_t* atsc3_stltp_baseband_packet) {
 	if(!atsc3_baseband_packet || !atsc3_stltp_baseband_packet) {
 		__STLTP_TYPES_WARN("atsc3_baseband_packet_set_plp_from_stltp_baseband_packet: packet(s) are null: atsc3_baseband_packet: %p, atsc3_stltp_baseband_packet: %p", atsc3_baseband_packet, atsc3_stltp_baseband_packet);
@@ -411,9 +417,9 @@ void atsc3_stltp_preamble_packet_free_v(atsc3_stltp_preamble_packet_t* atsc3_stl
         //this should be all boilerplate
     
         if(atsc3_stltp_preamble_packet->preamble_packet) {
-        	free(atsc3_stltp_preamble_packet->preamble_packet);
-        	atsc3_stltp_preamble_packet->preamble_packet = NULL;
-        }
+			atsc3_preamble_packet_free(&atsc3_stltp_preamble_packet->preamble_packet);
+		}
+		
         if(atsc3_stltp_preamble_packet->payload) {
             free(atsc3_stltp_preamble_packet->payload);
             atsc3_stltp_preamble_packet->payload = NULL;        
@@ -495,6 +501,20 @@ void atsc3_stltp_timing_management_packet_free(atsc3_stltp_timing_management_pac
 }
 
 
+
+void atsc3_preamble_packet_free(atsc3_preamble_packet_t** atsc3_preamble_packet_p) {
+	if(atsc3_preamble_packet_p) {
+		atsc3_preamble_packet_t* atsc3_preamble_packet = *atsc3_preamble_packet_p;
+		if(atsc3_preamble_packet) {
+			L1_detail_signaling_free_L1D_bonded_bsid_block(&atsc3_preamble_packet->L1_detail_signaling);
+			L1_detail_signaling_free_L1D_subframe_parameters(&atsc3_preamble_packet->L1_detail_signaling);
+			
+			free(atsc3_preamble_packet);
+			atsc3_preamble_packet = NULL;
+		}
+		*atsc3_preamble_packet_p = NULL;
+	}
+}
 /**
  header dump methods
  **/
