@@ -313,33 +313,19 @@ atsc3_stltp_tunnel_packet_t* atsc3_stltp_raw_packet_extract_inner_from_outer_pac
                 atsc3_stltp_tunnel_packet_extract_fragment_encapsulated_payload(atsc3_stltp_tunnel_packet_current);
                 processed_refragmentation_or_concatenation_tunnel_packet = true;
                 
-                //adjust for outer marker
-				if(atsc3_stltp_tunnel_packet_last->ip_udp_rtp_ctp_packet_outer->rtp_ctp_header->marker) {
-					if(atsc3_stltp_tunnel_packet_current->ip_udp_rtp_ctp_packet_outer->data->i_pos != atsc3_stltp_tunnel_packet_last->ip_udp_rtp_ctp_packet_outer->rtp_ctp_header->packet_offset) {
-						__STLTP_PARSER_WARN("atsc3_stltp_tunnel_packet_extract_inner_from_outer_packet: final ip_udp_rtp_ctp_packet_outer does not match marker packet_offset, sequence_number: %d, ip_udp_rtp_ctp_packet_outer->data->i_pos: %u (size: %d), ip_udp_rtp_ctp_packet_outer->rtp_ctp_header->packet_offset: %u",
-											atsc3_stltp_tunnel_packet_current->ip_udp_rtp_ctp_packet_outer->rtp_ctp_header->sequence_number,
-											atsc3_stltp_tunnel_packet_current->ip_udp_rtp_ctp_packet_outer->data->i_pos,
-											atsc3_stltp_tunnel_packet_current->ip_udp_rtp_ctp_packet_outer->data->p_size,
-											atsc3_stltp_tunnel_packet_last->ip_udp_rtp_ctp_packet_outer->rtp_ctp_header->packet_offset);
-							
-						block_Seek(atsc3_stltp_tunnel_packet_current->ip_udp_rtp_ctp_packet_outer->data, atsc3_stltp_tunnel_packet_last->ip_udp_rtp_ctp_packet_outer->rtp_ctp_header->packet_offset);
-					}
-				} else {
-					//otherwise we need to move forward ATSC_STLTP_IP_UDP_RTP_HEADER_SIZE bytes
-					block_Seek_Relative(atsc3_stltp_tunnel_packet_current->ip_udp_rtp_ctp_packet_outer->data, ATSC_STLTP_IP_UDP_RTP_HEADER_SIZE - last_outer_packet_bytes_remaining_to_parse);
-				
-					if(atsc3_stltp_tunnel_packet_current->ip_udp_rtp_ctp_packet_outer->data->i_pos != atsc3_stltp_tunnel_packet_current->ip_udp_rtp_ctp_packet_outer->data->p_size)  {
-						__STLTP_PARSER_WARN("atsc3_stltp_tunnel_packet_extract_inner_from_outer_packet: final ip_udp_rtp_ctp_packet_outer does not match pos: %u, size: %u, sequence: %d, last_outer_packet_bytes_remaining_to_parse: %d",
-										atsc3_stltp_tunnel_packet_current->ip_udp_rtp_ctp_packet_outer->data->i_pos,
-										atsc3_stltp_tunnel_packet_current->ip_udp_rtp_ctp_packet_outer->data->p_size,
-										atsc3_stltp_tunnel_packet_current->ip_udp_rtp_ctp_packet_outer->rtp_ctp_header->sequence_number,
-										last_outer_packet_bytes_remaining_to_parse);
+				block_Seek_Relative(atsc3_stltp_tunnel_packet_current->ip_udp_rtp_ctp_packet_outer->data, ATSC_STLTP_IP_UDP_RTP_HEADER_SIZE - last_outer_packet_bytes_remaining_to_parse);
+			
+				if(atsc3_stltp_tunnel_packet_current->ip_udp_rtp_ctp_packet_outer->data->i_pos != atsc3_stltp_tunnel_packet_current->ip_udp_rtp_ctp_packet_outer->data->p_size)  {
+					__STLTP_PARSER_WARN("atsc3_stltp_tunnel_packet_extract_inner_from_outer_packet: final ip_udp_rtp_ctp_packet_outer does not match pos: %u, size: %u, sequence: %d, last_outer_packet_bytes_remaining_to_parse: %d",
+									atsc3_stltp_tunnel_packet_current->ip_udp_rtp_ctp_packet_outer->data->i_pos,
+									atsc3_stltp_tunnel_packet_current->ip_udp_rtp_ctp_packet_outer->data->p_size,
+									atsc3_stltp_tunnel_packet_current->ip_udp_rtp_ctp_packet_outer->rtp_ctp_header->sequence_number,
+									last_outer_packet_bytes_remaining_to_parse);
 
-						int _LAST_STLTP_TYPES_DEBUG_ENABLED = _STLTP_TYPES_DEBUG_ENABLED;
-						_STLTP_TYPES_DEBUG_ENABLED = 1;
-						atsc3_rtp_ctp_header_dump_inner(atsc3_stltp_tunnel_packet_current);
-						_STLTP_TYPES_DEBUG_ENABLED = _LAST_STLTP_TYPES_DEBUG_ENABLED;
-					}
+					int _LAST_STLTP_TYPES_DEBUG_ENABLED = _STLTP_TYPES_DEBUG_ENABLED;
+					_STLTP_TYPES_DEBUG_ENABLED = 1;
+					atsc3_rtp_ctp_header_dump_inner(atsc3_stltp_tunnel_packet_current);
+					_STLTP_TYPES_DEBUG_ENABLED = _LAST_STLTP_TYPES_DEBUG_ENABLED;
 				}
             } else {
                 //sequence gap
@@ -631,7 +617,7 @@ atsc3_stltp_baseband_packet_t* atsc3_stltp_baseband_packet_extract(atsc3_stltp_t
         atsc3_stltp_baseband_packet_pending->ip_udp_rtp_ctp_packet_inner->rtp_ctp_header->marker = 0; //hack so we don't wipe our our concatenating payloads
 
         atsc3_stltp_tunnel_packet_current->atsc3_stltp_tunnel_baseband_packet_pending_by_plp->atsc3_stltp_baseband_packet_pending = atsc3_stltp_baseband_packet_pending;
-        
+		        
     } else if(atsc3_stltp_baseband_packet_pending != NULL && atsc3_stltp_baseband_packet_pending->payload) {
     	__STLTP_PARSER_DEBUG("atsc3_stltp_baseband_packet_extract: using pending baseband packet: %p, data: %p", atsc3_stltp_baseband_packet_pending, atsc3_stltp_baseband_packet_pending->payload);
     } else {
@@ -670,7 +656,7 @@ atsc3_stltp_baseband_packet_t* atsc3_stltp_baseband_packet_extract(atsc3_stltp_t
 		 */
         
         uint32_t baseband_header_packet_length = atsc3_stltp_baseband_packet_pending->ip_udp_rtp_ctp_packet_inner->rtp_ctp_header->packet_offset; //SSRC packet length
-        //jdj-2019-07-31 - hack for A324 - 2019 compatability
+        //jdj-2019-07-31 - hack for A324 - 2019 compatability - restrict to uint16t
         baseband_header_packet_length &= 0xFFFF;
         assert(baseband_header_packet_length);
         if(atsc3_stltp_baseband_packet_pending->payload) {
@@ -707,12 +693,14 @@ atsc3_stltp_baseband_packet_t* atsc3_stltp_baseband_packet_extract(atsc3_stltp_t
                          atsc3_stltp_baseband_packet_pending->payload_offset,
                          block_remaining_length,
                          atsc3_stltp_baseband_packet_pending->payload_length - atsc3_stltp_baseband_packet_pending->payload_offset - block_remaining_length);
-    __STLTP_PARSER_DEBUG("      stltp-inner: before seek: pos: %u, size: %u, after seek: %u, inner p_size: %u,  frag len remaining: %u",
+    __STLTP_PARSER_DEBUG("      stltp-inner: before seek: pos: %u, size: %u, after seek: %u, inner p_size: %u,  frag len remaining: %u, bbp size remaining: before copy: %u, after copy: %u",
                          packet->i_pos,
                          block_Remaining_size(packet),
                          packet->i_pos + block_remaining_length,
                          packet->p_size,
-                         packet->p_size - (packet->i_pos + block_remaining_length));
+                         packet->p_size - (packet->i_pos + block_remaining_length),
+						 atsc3_stltp_baseband_packet_pending->payload_length - atsc3_stltp_baseband_packet_pending->payload_offset,
+						 atsc3_stltp_baseband_packet_pending->payload_length - (atsc3_stltp_baseband_packet_pending->payload_offset + block_remaining_length));
     
 	memcpy(&atsc3_stltp_baseband_packet_pending->payload[atsc3_stltp_baseband_packet_pending->payload_offset], block_Get(packet), block_remaining_length);
 
