@@ -394,7 +394,7 @@ void atsc3_stltp_depacketizer_from_ip_udp_rtp_ctp_packet(atsc3_ip_udp_rtp_ctp_pa
             if(atsc3_stltp_depacketizer_context->atsc3_stltp_preamble_packet_collection_callback) {
 				atsc3_stltp_depacketizer_context->atsc3_stltp_preamble_packet_collection_callback(&atsc3_stltp_tunnel_packet_processed->atsc3_stltp_preamble_packet_v);
             }
-        }
+		}
 
         if(atsc3_stltp_tunnel_packet_processed->atsc3_stltp_timing_management_packet_v.count) {
         	_ATSC3_STLTP_DEPACKETIZER_DEBUG("timing management: >>>stltp atsc3_stltp_timing_management_packet packet complete: count: %u",  atsc3_stltp_tunnel_packet_processed->atsc3_stltp_timing_management_packet_v.count);
@@ -422,9 +422,8 @@ void atsc3_stltp_depacketizer_from_ip_udp_rtp_ctp_packet(atsc3_ip_udp_rtp_ctp_pa
         //this method will clear _v.data inner references
         atsc3_stltp_tunnel_packet_clear_completed_inner_packets(atsc3_stltp_tunnel_packet_processed);
     }
-
 cleanup:
-    atsc3_ip_udp_rtp_ctp_packet_destroy(&ip_udp_rtp_ctp_packet);
+	return;
 }
 
 /* jjustman-2020-08-18 - TODO: verify this...
@@ -466,6 +465,8 @@ bool atsc3_stltp_depacketizer_from_blockt(block_t** packet_p, atsc3_stltp_depack
 	atsc3_stltp_depacketizer_from_ip_udp_rtp_ctp_packet(ip_udp_rtp_ctp_packet, atsc3_stltp_depacketizer_context);
 	block_Destroy(packet_p);
 	*packet_p = NULL;
+
+	atsc3_ip_udp_rtp_ctp_packet_destroy(&ip_udp_rtp_ctp_packet);
 	return true;
 }
 
@@ -478,6 +479,7 @@ void atsc3_stltp_depacketizer_from_pcap_frame(u_char *user, const struct pcap_pk
     }
 
     atsc3_stltp_depacketizer_from_ip_udp_rtp_ctp_packet(ip_udp_rtp_ctp_packet, atsc3_stltp_depacketizer_context);
+	atsc3_ip_udp_rtp_ctp_packet_destroy(&ip_udp_rtp_ctp_packet);
 }
 
 
