@@ -219,9 +219,8 @@ atsc3_stltp_tunnel_packet_t* atsc3_stltp_raw_packet_extract_inner_from_outer_pac
 	if(!atsc3_stltp_tunnel_packet_current->ip_udp_rtp_ctp_packet_outer->rtp_ctp_header || atsc3_stltp_tunnel_packet_current->ip_udp_rtp_ctp_packet_outer->rtp_ctp_header->payload_type != ATSC3_STLTP_PAYLOAD_TYPE_TUNNEL) {
 		__STLTP_PARSER_ERROR("atsc3_stltp_tunnel_packet_extract_inner_from_outer_packet: unknown outer tunnel packet: %u", (atsc3_stltp_tunnel_packet_current->ip_udp_rtp_ctp_packet_outer->rtp_ctp_header ? atsc3_stltp_tunnel_packet_current->ip_udp_rtp_ctp_packet_outer->rtp_ctp_header->payload_type : -1));
         
-        atsc3_stltp_tunnel_packet_free(&atsc3_stltp_tunnel_packet_last);
         atsc3_stltp_tunnel_packet_free(&atsc3_stltp_tunnel_packet_current);
-		return NULL;
+		return atsc3_stltp_tunnel_packet_last;
 	}
     
     bool processed_refragmentation_or_concatenation_tunnel_packet = false;
@@ -269,8 +268,7 @@ atsc3_stltp_tunnel_packet_t* atsc3_stltp_raw_packet_extract_inner_from_outer_pac
             	__STLTP_PARSER_WARN("atsc3_stltp_raw_packet_extract_inner_from_outer_packet: atsc3_stltp_read_from_outer_packet: inner_payload_current is null!");
 				block_Destroy(&inner_payload_last_short_frame);
 				atsc3_stltp_tunnel_packet_free(&atsc3_stltp_tunnel_packet_last);
-				atsc3_stltp_tunnel_packet_free(&atsc3_stltp_tunnel_packet_current);
-				return NULL;
+				return atsc3_stltp_tunnel_packet_current;
             }
 
             uint32_t inner_payload_current_size = inner_payload_current->p_size;
@@ -289,8 +287,7 @@ atsc3_stltp_tunnel_packet_t* atsc3_stltp_raw_packet_extract_inner_from_outer_pac
 				block_Destroy(&inner_payload_last_short_frame);
                 block_Destroy(&inner_payload_current);
 				atsc3_stltp_tunnel_packet_free(&atsc3_stltp_tunnel_packet_last);
-				atsc3_stltp_tunnel_packet_free(&atsc3_stltp_tunnel_packet_current);
-                return NULL;
+                return atsc3_stltp_tunnel_packet_current;
             }
         
             if(!inner_packet) {
@@ -299,8 +296,7 @@ atsc3_stltp_tunnel_packet_t* atsc3_stltp_raw_packet_extract_inner_from_outer_pac
 				block_Destroy(&inner_payload_last_short_frame);
 				block_Destroy(&inner_payload_current);
 				atsc3_stltp_tunnel_packet_free(&atsc3_stltp_tunnel_packet_last);
-				atsc3_stltp_tunnel_packet_free(&atsc3_stltp_tunnel_packet_current);
-                return NULL;
+                return atsc3_stltp_tunnel_packet_current;
             }
             
             __STLTP_PARSER_DEBUG("atsc3_stltp_tunnel_packet_extract_inner_from_outer_packet: re-fragmentation from previous packet fragment of len: %u, fragment payload type: %u, merged length is: %u",
@@ -317,24 +313,34 @@ atsc3_stltp_tunnel_packet_t* atsc3_stltp_raw_packet_extract_inner_from_outer_pac
                 atsc3_stltp_tunnel_packet_extract_fragment_encapsulated_payload(atsc3_stltp_tunnel_packet_current);
                 processed_refragmentation_or_concatenation_tunnel_packet = true;
                 
-                //hack - seek to the proper location of bytes consumed from inner_payload_current_size for marker positioning on parsing next inner packet
-                //jjustman-2020-08-19 - this seems to work only for BBP, not for preamble or t&m?
+                //adjust for outer marker
+				if(atsc3_stltp_tunnel_packet_last->ip_udp_rtp_ctp_packet_outer->rtp_ctp_header->marker) {
+					if(atsc3_stltp_tunnel_packet_current->ip_udp_rtp_ctp_packet_outer->data->i_pos != atsc3_stltp_tunnel_packet_last->ip_udp_rtp_ctp_packet_outer->rtp_ctp_header->packet_offset) {
+						__STLTP_PARSER_WARN("atsc3_stltp_tunnel_packet_extract_inner_from_outer_packet: final ip_udp_rtp_ctp_packet_outer does not match marker packet_offset, sequence_number: %d, ip_udp_rtp_ctp_packet_outer->data->i_pos: %u (size: %d), ip_udp_rtp_ctp_packet_outer->rtp_ctp_header->packet_offset: %u",
+											atsc3_stltp_tunnel_packet_current->ip_udp_rtp_ctp_packet_outer->rtp_ctp_header->sequence_number,
+											atsc3_stltp_tunnel_packet_current->ip_udp_rtp_ctp_packet_outer->data->i_pos,
+											atsc3_stltp_tunnel_packet_current->ip_udp_rtp_ctp_packet_outer->data->p_size,
+											atsc3_stltp_tunnel_packet_last->ip_udp_rtp_ctp_packet_outer->rtp_ctp_header->packet_offset);
+							
+						block_Seek(atsc3_stltp_tunnel_packet_current->ip_udp_rtp_ctp_packet_outer->data, atsc3_stltp_tunnel_packet_last->ip_udp_rtp_ctp_packet_outer->rtp_ctp_header->packet_offset);
+					}
+				} else {
+					//otherwise we need to move forward ATSC_STLTP_IP_UDP_RTP_HEADER_SIZE bytes
+					block_Seek_Relative(atsc3_stltp_tunnel_packet_current->ip_udp_rtp_ctp_packet_outer->data, ATSC_STLTP_IP_UDP_RTP_HEADER_SIZE - last_outer_packet_bytes_remaining_to_parse);
+				
+					if(atsc3_stltp_tunnel_packet_current->ip_udp_rtp_ctp_packet_outer->data->i_pos != atsc3_stltp_tunnel_packet_current->ip_udp_rtp_ctp_packet_outer->data->p_size)  {
+						__STLTP_PARSER_WARN("atsc3_stltp_tunnel_packet_extract_inner_from_outer_packet: final ip_udp_rtp_ctp_packet_outer does not match pos: %u, size: %u, sequence: %d, last_outer_packet_bytes_remaining_to_parse: %d",
+										atsc3_stltp_tunnel_packet_current->ip_udp_rtp_ctp_packet_outer->data->i_pos,
+										atsc3_stltp_tunnel_packet_current->ip_udp_rtp_ctp_packet_outer->data->p_size,
+										atsc3_stltp_tunnel_packet_current->ip_udp_rtp_ctp_packet_outer->rtp_ctp_header->sequence_number,
+										last_outer_packet_bytes_remaining_to_parse);
 
-                block_Seek_Relative(atsc3_stltp_tunnel_packet_current->ip_udp_rtp_ctp_packet_outer->data, ATSC_STLTP_IP_UDP_RTP_HEADER_SIZE - last_outer_packet_bytes_remaining_to_parse);
-                //todo: end - refactor this common pattern out here
-                
-                if(atsc3_stltp_tunnel_packet_current->ip_udp_rtp_ctp_packet_outer->data->i_pos != atsc3_stltp_tunnel_packet_current->ip_udp_rtp_ctp_packet_outer->data->p_size)  {
-                    __STLTP_PARSER_WARN("atsc3_stltp_tunnel_packet_extract_inner_from_outer_packet: final ip_udp_rtp_ctp_packet_outer does not match pos: %u, size: %u, sequence: %d, last_outer_packet_bytes_remaining_to_parse: %d",
-                                    atsc3_stltp_tunnel_packet_current->ip_udp_rtp_ctp_packet_outer->data->i_pos,
-                                    atsc3_stltp_tunnel_packet_current->ip_udp_rtp_ctp_packet_outer->data->p_size,
-									atsc3_stltp_tunnel_packet_current->ip_udp_rtp_ctp_packet_outer->rtp_ctp_header->sequence_number,
-									last_outer_packet_bytes_remaining_to_parse);
-
-                    int _LAST_STLTP_TYPES_DEBUG_ENABLED = _STLTP_TYPES_DEBUG_ENABLED;
-                    _STLTP_TYPES_DEBUG_ENABLED = 1;
-                    atsc3_rtp_ctp_header_dump_inner(atsc3_stltp_tunnel_packet_current);
-                    _STLTP_TYPES_DEBUG_ENABLED = _LAST_STLTP_TYPES_DEBUG_ENABLED;
-                }
+						int _LAST_STLTP_TYPES_DEBUG_ENABLED = _STLTP_TYPES_DEBUG_ENABLED;
+						_STLTP_TYPES_DEBUG_ENABLED = 1;
+						atsc3_rtp_ctp_header_dump_inner(atsc3_stltp_tunnel_packet_current);
+						_STLTP_TYPES_DEBUG_ENABLED = _LAST_STLTP_TYPES_DEBUG_ENABLED;
+					}
+				}
             } else {
                 //sequence gap
                 __STLTP_PARSER_ERROR("atsc3_stltp_tunnel_packet_extract_inner_from_outer_packet: re-fragmentation sequence gap, from: %u to %u",
@@ -470,9 +476,8 @@ concatenation_check_for_outer_marker: ;
         block_t* outer_reference_inner_payload_current = atsc3_stltp_read_from_outer_packet(atsc3_stltp_tunnel_packet_current->ip_udp_rtp_ctp_packet_outer, true);
         if(!outer_reference_inner_payload_current) {
             __STLTP_PARSER_ERROR("atsc3_stltp_tunnel_packet_extract_inner_from_outer_packet: atsc3_stltp_read_from_outer_packet outer_reference_inner_payload_current returned NULL!");
-			atsc3_stltp_tunnel_packet_free(&atsc3_stltp_tunnel_packet_last);
-			atsc3_stltp_tunnel_packet_free(&atsc3_stltp_tunnel_packet_current);
-			return NULL;
+			atsc3_stltp_tunnel_packet_free(&atsc3_stltp_tunnel_packet_last); //don't discard our atsc3_stltp_tunnel_packet_current, as we might need it for re-fragmentation on the next packet
+			return atsc3_stltp_tunnel_packet_current;
         }
 
         if(outer_reference_inner_payload_current) {
@@ -484,9 +489,8 @@ concatenation_check_for_outer_marker: ;
                                      atsc3_stltp_tunnel_packet_current->ip_udp_rtp_ctp_packet_outer->data->i_pos,
                                      atsc3_stltp_tunnel_packet_current->ip_udp_rtp_ctp_packet_outer->data->p_size);
 				block_Destroy(&outer_reference_inner_payload_current);
-				atsc3_stltp_tunnel_packet_free(&atsc3_stltp_tunnel_packet_last);
-				atsc3_stltp_tunnel_packet_free(&atsc3_stltp_tunnel_packet_current);
-                return NULL;
+				atsc3_stltp_tunnel_packet_free(&atsc3_stltp_tunnel_packet_last); //don't discard our atsc3_stltp_tunnel_packet_current, as we might need it for re-fragmentation on the next packet
+                return atsc3_stltp_tunnel_packet_current;
             }
             
             //persist our pending baseband frames from inner ip/udp/rtp for plp number

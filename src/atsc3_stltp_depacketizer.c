@@ -7,9 +7,116 @@
 
 #include "atsc3_stltp_depacketizer.h"
 
-int _ATSC3_STLTP_DEPACKETIZER_INFO_ENABLED = 0;
+int _ATSC3_STLTP_DEPACKETIZER_INFO_ENABLED = 1;
 int _ATSC3_STLTP_DEPACKETIZER_DEBUG_ENABLED = 0;
 int _ATSC3_STLTP_DEPACKETIZER_TRACE_ENABLED = 0;
+
+//jjustman-2020-12-31 - copy - paste warning from atsc3_ip_udp_rtp_parser.c
+atsc3_ip_udp_rtp_ctp_packet_t* atsc3_ip_udp_rtp_process_packet_from_pcap_frame_with_stltp_depacketizer_context(atsc3_stltp_depacketizer_context_t* atsc3_stltp_depacketizer_context, u_char *user, const struct pcap_pkthdr *pkthdr, const u_char *packet) {
+	atsc3_ip_udp_rtp_ctp_packet_t* ip_udp_rtp_ctp_packet = NULL;
+    
+    block_t* ip_udp_rtp_raw_block = atsc3_pcap_parse_ethernet_frame(pkthdr, packet);
+    if(ip_udp_rtp_raw_block) {
+        block_Rewind(ip_udp_rtp_raw_block);
+        ip_udp_rtp_ctp_packet = atsc3_ip_udp_rtp_ctp_packet_process_from_blockt_pos_with_stltp_depacketizer_context(atsc3_stltp_depacketizer_context, ip_udp_rtp_raw_block);
+		block_Destroy(&ip_udp_rtp_raw_block);
+    }
+	
+    return ip_udp_rtp_ctp_packet;
+}
+
+atsc3_ip_udp_rtp_ctp_packet_t* atsc3_ip_udp_rtp_ctp_packet_process_from_blockt_pos_with_stltp_depacketizer_context(atsc3_stltp_depacketizer_context_t* atsc3_stltp_depacketizer_context, block_t* from) {
+	int i = 0;
+	int k = 0;
+	u_char ip_header[24];
+	u_char udp_header[8];
+	int udp_header_start = 20;
+	int rtp_header_start = udp_header_start + 8;
+	int outer_payload_start = rtp_header_start + RTP_HEADER_LENGTH;
+
+	atsc3_ip_udp_rtp_ctp_packet_t* ip_udp_rtp_ctp_packet_new = NULL;
+
+	uint8_t* packet = block_Get(from);
+	uint32_t packet_length = block_Remaining_size(from);
+	/*
+	 * jjustman-2020-08-17 - guard for too short inner packet:
+	 *
+	 *
+	frame #5: 0x00000001000d6086 srt_stltp_virtual_phy_test`atsc3_ip_udp_rtp_ctp_packet_process_from_blockt_pos(from=0x0000603000048a00) at atsc3_ip_udp_rtp_parser.c:73:22 [opt]
+	frame #6: 0x00000001000e28c0 srt_stltp_virtual_phy_test`atsc3_stltp_tunnel_packet_inner_parse_ip_udp_header_outer_data(atsc3_stltp_tunnel_packet=0x000060b00003ca50) at atsc3_stltp_parser.c:128:62 [opt]
+	frame #7: 0x00000001000e4562 srt_stltp_virtual_phy_test`atsc3_stltp_raw_packet_extract_inner_from_outer_packet(ip_udp_rtp_ctp_packet=<unavailable>, atsc3_stltp_tunnel_packet_last=<unavailable>) at atsc3_stltp_parser.c:395:55 [opt]
+	frame #8: 0x000000010008e807 srt_stltp_virtual_phy_test`atsc3_stltp_depacketizer_from_ip_udp_rtp_ctp_packet(ip_udp_rtp_ctp_packet=<unavailable>, atsc3_stltp_depacketizer_context=<unavailable>) at atsc3_stltp_depacketizer.c:68:78 [opt]
+	frame #9: 0x0000000100091171 srt_stltp_virtual_phy_test`atsc3_stltp_depacketizer_from_blockt(packet_p=0x00007000018aed60, atsc3_stltp_depacketizer_context=0x0000607000000330) at atsc3_stltp_depacketizer.c:381:2 [opt]
+	 *
+	 */
+	if(packet_length < outer_payload_start) {
+		__LISTENER_UDP_ERROR("atsc3_ip_udp_rtp_ctp_packet_process_from_blockt_pos: packet too short for parsing IP/UDP/RTP, needed %d bytes, packet_len is only: %d bytes", outer_payload_start, packet_length);
+		return NULL;
+	}
+
+	for (i = 0; i < udp_header_start; i++) {
+		 ip_header[i] = packet[i];
+	}
+
+	//check if we are a UDP packet, otherwise bail
+	if (ip_header[9] != 0x11) {
+		__LISTENER_UDP_ERROR("atsc3_ip_udp_rtp_ctp_packet_process_from_blockt_pos: not a UDP packet! ip_header[9]: 0x%02x", ip_header[9]);
+
+	#ifdef __ATSC3_IP_UDP_RTP_PENDANTIC_DEBUGGING__
+		printf("block_t pos: %d, size: %d\t", from->i_pos, from->p_size);
+		for(int i=0; i < 40; i++) {
+			if(i>0 && ((i % 8) == 0)) {
+				printf(" ");
+			}
+			printf("%02x ", packet[i]);
+		}
+		printf("\n");
+	#endif
+		return NULL;
+	}
+
+	if ((ip_header[0] & 0x0F) > 5) {
+		udp_header_start = 28;
+	}
+
+	//malloc our udp_packet_header:
+	ip_udp_rtp_ctp_packet_new = (atsc3_ip_udp_rtp_ctp_packet_t*)calloc(1, sizeof(atsc3_ip_udp_rtp_ctp_packet_t));
+	ip_udp_rtp_ctp_packet_new->udp_flow.src_ip_addr = ((ip_header[12] & 0xFF) << 24) | ((ip_header[13]  & 0xFF) << 16) | ((ip_header[14]  & 0xFF) << 8) | (ip_header[15] & 0xFF);
+	ip_udp_rtp_ctp_packet_new->udp_flow.dst_ip_addr = ((ip_header[16] & 0xFF) << 24) | ((ip_header[17]  & 0xFF) << 16) | ((ip_header[18]  & 0xFF) << 8) | (ip_header[19] & 0xFF);
+
+	for (i = 0; i < 8; i++) {
+		udp_header[i] = packet[udp_header_start + i];
+	}
+
+	ip_udp_rtp_ctp_packet_new->udp_flow.src_port = (udp_header[0] << 8) + udp_header[1];
+	ip_udp_rtp_ctp_packet_new->udp_flow.dst_port = (udp_header[2] << 8) + udp_header[3];
+	
+	if(atsc3_stltp_depacketizer_context) {
+		if(atsc3_stltp_depacketizer_context->destination_flow_filter.dst_ip_addr && atsc3_stltp_depacketizer_context->destination_flow_filter.dst_ip_addr != ip_udp_rtp_ctp_packet_new->udp_flow.dst_ip_addr) {
+			return NULL;
+		}
+		
+		if(atsc3_stltp_depacketizer_context->destination_flow_filter.dst_port && atsc3_stltp_depacketizer_context->destination_flow_filter.dst_port != ip_udp_rtp_ctp_packet_new->udp_flow.dst_port) {
+			return NULL;
+		}
+	}
+
+	uint32_t data_length = packet_length - outer_payload_start;
+
+	if(data_length <= 0 || data_length > MAX_ATSC3_PHY_ALP_DATA_PAYLOAD_SIZE) {
+		__IP_UDP_RTP_PARSER_ERROR("atsc3_ip_udp_rtp_ctp_packet_process_from_blockt_pos: invalid data length of udp packet: %d", data_length);
+		return NULL;
+	}
+
+	atsc3_rtp_ctp_header_t* rtp_header = atsc3_ip_udp_rtp_ctp_parse_header(&packet[rtp_header_start], packet_length);
+	ip_udp_rtp_ctp_packet_new->rtp_ctp_header = rtp_header;
+
+	block_Seek_Relative(from, ATSC_STLTP_IP_UDP_RTP_HEADER_SIZE);
+	ip_udp_rtp_ctp_packet_new->data = block_Duplicate(from); //block_Refcount(from);
+	return ip_udp_rtp_ctp_packet_new;
+}
+//end jjustman-2020-12-31 - copy - paste warning from atsc3_ip_udp_rtp_parser.c
+
 
 
 //TODO - add SMPTE-2022.1 FEC decoding (see fork of prompeg-decoder - https://github.com/jjustman/prompeg-decoder)
@@ -132,22 +239,23 @@ void atsc3_stltp_depacketizer_from_ip_udp_rtp_ctp_packet(atsc3_ip_udp_rtp_ctp_pa
 								   remaining_baseband_frame_bytes,
 								   atsc3_baseband_packet->alp_payload_pre_pointer->p_size);
 
-							//we may overrun this clamping...
+							//this is messy, as atsc3_baseband_packet will have alp_payload pointers to alp_payload..
+							atsc3_alp_packet_t* atsc3_alp_packet_pending = atsc3_stltp_tunnel_packet_processed->atsc3_stltp_tunnel_baseband_packet_pending_by_plp->atsc3_alp_packet_pending;
+
+							//seek to move atsc3_baseband_packet->alp_payload_pre_pointer->i_pos to the end of our alp packet for when we call block_Append
 							block_Seek(atsc3_baseband_packet->alp_payload_pre_pointer, __MIN(remaining_packet_pending_bytes, remaining_baseband_frame_bytes));
 
-							//this is messy, as atsc3_baseband_packet will have alp_payload pointers to alp_payload..
-							atsc3_alp_packet_t* atsc3_alp_packet_pre_pointer = atsc3_stltp_tunnel_packet_processed->atsc3_stltp_tunnel_baseband_packet_pending_by_plp->atsc3_alp_packet_pending;
-
-							block_Append(atsc3_alp_packet_pre_pointer->alp_payload, atsc3_baseband_packet->alp_payload_pre_pointer);
-							uint32_t final_alp_packet_short_bytes_remaining = block_Remaining_size(atsc3_stltp_tunnel_packet_processed->atsc3_stltp_tunnel_baseband_packet_pending_by_plp->atsc3_alp_packet_pending->alp_payload);
+							block_Append(atsc3_alp_packet_pending->alp_payload, atsc3_baseband_packet->alp_payload_pre_pointer);
+							
+							uint32_t final_alp_packet_short_bytes_remaining = block_Remaining_size(atsc3_alp_packet_pending->alp_payload);
 
 							//if our refragmenting is short, try and recover based upon baseband packet split
 							if(final_alp_packet_short_bytes_remaining) {
 								if(atsc3_baseband_packet->alp_payload_post_pointer) {
 								   __WARN("atsc3_baseband_packet: pending packet: short and post pointer: %d bytes still remaining, atsc3_alp_packet_pre_pointer->alp_payload size: %d, pos: %d, atsc3_baseband_packet->alp_payload_pre_pointer size: %d, pos: %d",
 										   final_alp_packet_short_bytes_remaining,
-										   atsc3_alp_packet_pre_pointer->alp_payload->p_size,
-										   atsc3_alp_packet_pre_pointer->alp_payload->i_pos,
+										   atsc3_alp_packet_pending->alp_payload->p_size,
+										   atsc3_alp_packet_pending->alp_payload->i_pos,
 										   atsc3_baseband_packet->alp_payload_pre_pointer->p_size,
 										   atsc3_baseband_packet->alp_payload_pre_pointer->i_pos);
 
@@ -156,79 +264,51 @@ void atsc3_stltp_depacketizer_from_ip_udp_rtp_ctp_packet(atsc3_ip_udp_rtp_ctp_pa
 								}
 
 								//do not attempt to free atsc3_stltp_tunnel_packet_processed->atsc3_stltp_tunnel_baseband_packet_pending_by_plp->atsc3_alp_packet_pending, as it will free our interm reference to atsc3_alp_packet
-								atsc3_alp_packet_pre_pointer->is_alp_payload_complete  = false;
-								atsc3_stltp_tunnel_packet_processed->atsc3_stltp_tunnel_baseband_packet_pending_by_plp->atsc3_alp_packet_pending = atsc3_alp_packet_clone(atsc3_alp_packet_pre_pointer);
+								atsc3_alp_packet_pending->is_alp_payload_complete  = false;
+								atsc3_stltp_tunnel_packet_processed->atsc3_stltp_tunnel_baseband_packet_pending_by_plp->atsc3_alp_packet_pending = atsc3_alp_packet_clone(atsc3_alp_packet_pending);
                                 __ERROR("  atsc3_stltp_tunnel_packet_processed->atsc3_stltp_tunnel_baseband_packet_pending_by_plp->atsc3_alp_packet_pending is now: %p", atsc3_stltp_tunnel_packet_processed->atsc3_stltp_tunnel_baseband_packet_pending_by_plp->atsc3_alp_packet_pending);
 
-								atsc3_alp_packet_free(&atsc3_alp_packet_pre_pointer);
+								atsc3_alp_packet_free(&atsc3_alp_packet_pending);
 
 							} else {
 								//packet is complete after refragmenting -
-								atsc3_alp_packet_pre_pointer->is_alp_payload_complete = true;
-								atsc3_alp_packet_packet_set_bootstrap_timing_ref_from_baseband_packet(atsc3_alp_packet_pre_pointer, atsc3_baseband_packet);
-								atsc3_alp_packet_collection_add_atsc3_alp_packet(atsc3_alp_packet_collection, atsc3_alp_packet_pre_pointer);
+								atsc3_alp_packet_pending->is_alp_payload_complete = true;
+								atsc3_alp_packet_packet_set_bootstrap_timing_ref_from_baseband_packet(atsc3_alp_packet_pending, atsc3_baseband_packet);
+								atsc3_alp_packet_collection_add_atsc3_alp_packet(atsc3_alp_packet_collection, atsc3_alp_packet_pending);
+								
 								atsc3_stltp_tunnel_packet_processed->atsc3_stltp_tunnel_baseband_packet_pending_by_plp->atsc3_alp_packet_pending = NULL;
-								atsc3_alp_packet_pre_pointer = NULL;
-
+																
 								uint32_t remaining_baseband_frame_bytes = block_Remaining_size(atsc3_baseband_packet->alp_payload_pre_pointer);
 								_ATSC3_STLTP_DEPACKETIZER_DEBUG("atsc3_baseband_packet: pushed:  bb pre_pointer frame bytes remaining: %d, bb pre_pointer size: %d",
-									   remaining_baseband_frame_bytes,
-									   atsc3_baseband_packet->alp_payload_pre_pointer->p_size);
+																	   remaining_baseband_frame_bytes,
+																	   atsc3_baseband_packet->alp_payload_pre_pointer->p_size);
 
-								if(remaining_baseband_frame_bytes) {
-									//push remaining bytes to post-pointer,
-									if(atsc3_baseband_packet->alp_payload_post_pointer) {
-										__INFO("atsc3_baseband_packet: prepending alp_payload_pre_pointer with alp_payload_post_pointer");
-										block_t* alp_payload_post_pointer_orig = atsc3_baseband_packet->alp_payload_post_pointer;
-
-										atsc3_baseband_packet->alp_payload_post_pointer = block_Duplicate_from_position(atsc3_baseband_packet->alp_payload_pre_pointer);
-
-										block_Merge(atsc3_baseband_packet->alp_payload_post_pointer, alp_payload_post_pointer_orig);
-										block_Destroy(&alp_payload_post_pointer_orig);
-									} else {
-										atsc3_baseband_packet->alp_payload_post_pointer = block_Duplicate_from_position(atsc3_baseband_packet->alp_payload_pre_pointer);
-										block_Destroy(&atsc3_baseband_packet->alp_payload_pre_pointer);
-									}
-								}
+								block_Destroy(&atsc3_baseband_packet->alp_payload_pre_pointer);
+								atsc3_alp_packet_pending = NULL;
+								
+								//jjustman-2020-12-31 - this should _not_ be needed...
+//								if(remaining_baseband_frame_bytes) {
+//									//push remaining bytes to post-pointer,
+//									if(atsc3_baseband_packet->alp_payload_post_pointer) {
+//										__INFO("atsc3_baseband_packet: prepending alp_payload_pre_pointer with alp_payload_post_pointer");
+//										block_t* alp_payload_post_pointer_orig = atsc3_baseband_packet->alp_payload_post_pointer;
+//
+//										atsc3_baseband_packet->alp_payload_post_pointer = block_Duplicate_from_position(atsc3_baseband_packet->alp_payload_pre_pointer);
+//
+//										block_Merge(atsc3_baseband_packet->alp_payload_post_pointer, alp_payload_post_pointer_orig);
+//										block_Destroy(&alp_payload_post_pointer_orig);
+//									} else {
+//										atsc3_baseband_packet->alp_payload_post_pointer = block_Duplicate_from_position(atsc3_baseband_packet->alp_payload_pre_pointer);
+//										block_Destroy(&atsc3_baseband_packet->alp_payload_pre_pointer);
+//									}
+//								}
 							}
 						}
                     }
-					
-					if(atsc3_baseband_packet->alp_payload_pre_pointer) {
-						block_Rewind(atsc3_baseband_packet->alp_payload_pre_pointer);
-					}
-					if(atsc3_baseband_packet->alp_payload_post_pointer) {
-						block_Rewind(atsc3_baseband_packet->alp_payload_post_pointer);
-					}
-					
-					//jjustman-2020-12-30 - TODO: if we have a pending ALP packet, try and consume as much as possible from our atsc3_baseband_packet->alp_payload_pre_pointer / atsc3_baseband_packet->alp_payload_post_pointer if necessary
-				
-					//jjustman-2020-12-30 - TODO: only append if bbp seq numbers are sequential, start at alp_payload_pre_ptr_start_position
-					if(atsc3_baseband_packet->alp_payload_pre_pointer && atsc3_stltp_tunnel_packet_processed->atsc3_stltp_tunnel_baseband_packet_pending_by_plp && atsc3_stltp_tunnel_packet_processed->atsc3_stltp_tunnel_baseband_packet_pending_by_plp->atsc3_alp_packet_pending) {
-						atsc3_alp_packet_packet_set_bootstrap_timing_ref_from_baseband_packet(atsc3_alp_packet, atsc3_baseband_packet);
 
-						int remaining_size_alp_pending = block_Remaining_size(atsc3_stltp_tunnel_packet_processed->atsc3_stltp_tunnel_baseband_packet_pending_by_plp->atsc3_alp_packet_pending->alp_payload);
-						
-						uint8_t* alp_payload_pre_ptr = block_Get(atsc3_baseband_packet->alp_payload_pre_pointer);
-						uint32_t alp_payload_pre_ptr_len = block_Remaining_size(atsc3_baseband_packet->alp_payload_pre_pointer);
-						if(alp_payload_pre_ptr && alp_payload_pre_ptr_len) {
-							if(alp_payload_pre_ptr_len > remaining_size_alp_pending) {
-								atsc3_stltp_tunnel_packet_processed->atsc3_stltp_tunnel_baseband_packet_pending_by_plp->atsc3_alp_packet_pending->is_alp_payload_complete = true;
-								block_Write(atsc3_stltp_tunnel_packet_processed->atsc3_stltp_tunnel_baseband_packet_pending_by_plp->atsc3_alp_packet_pending->alp_payload, alp_payload_pre_ptr, remaining_size_alp_pending);
-								block_Seek_Relative(atsc3_baseband_packet->alp_payload_pre_pointer, remaining_size_alp_pending);
-								atsc3_alp_packet_collection_add_atsc3_alp_packet(atsc3_alp_packet_collection, atsc3_stltp_tunnel_packet_processed->atsc3_stltp_tunnel_baseband_packet_pending_by_plp->atsc3_alp_packet_pending);
-								atsc3_stltp_tunnel_packet_processed->atsc3_stltp_tunnel_baseband_packet_pending_by_plp->atsc3_alp_packet_pending = NULL;
-								atsc3_alp_packet = NULL;
-							} else {
-								block_Write(atsc3_stltp_tunnel_packet_processed->atsc3_stltp_tunnel_baseband_packet_pending_by_plp->atsc3_alp_packet_pending->alp_payload, alp_payload_pre_ptr, alp_payload_pre_ptr_len);
-								block_Seek_Relative(atsc3_baseband_packet->alp_payload_pre_pointer, alp_payload_pre_ptr_len);
-							}
-						}
-					}
-						
-                    //process our pre_pointers from a baseband fragment for alp, only if we have a pending atsc3_stltp_tunnel_baseband_packet_pending_by_plp->atsc3_alp_packet_pending
-                    if(atsc3_baseband_packet->alp_payload_pre_pointer && block_Remaining_size(atsc3_baseband_packet->alp_payload_pre_pointer) && atsc3_stltp_tunnel_packet_processed->atsc3_stltp_tunnel_baseband_packet_pending_by_plp && atsc3_stltp_tunnel_packet_processed->atsc3_stltp_tunnel_baseband_packet_pending_by_plp->atsc3_alp_packet_pending) {
-									
+                 	if(atsc3_baseband_packet->alp_payload_pre_pointer && block_Remaining_size(atsc3_baseband_packet->alp_payload_pre_pointer)) {
+						_ATSC3_STLTP_DEPACKETIZER_DEBUG("  atsc3_baseband_packet->alp_payload_pre_pointer: %p, atsc3_stltp_tunnel_packet_processed->atsc3_stltp_tunnel_baseband_packet_pending_by_plp->atsc3_alp_packet_pending: %p, block_Remaining_size(atsc3_baseband_packet->alp_payload_pre_pointer): %d", atsc3_baseband_packet->alp_payload_pre_pointer, atsc3_stltp_tunnel_packet_processed->atsc3_stltp_tunnel_baseband_packet_pending_by_plp->atsc3_alp_packet_pending, block_Remaining_size(atsc3_baseband_packet->alp_payload_pre_pointer));
+
                         while((atsc3_alp_packet = atsc3_alp_packet_parse(atsc3_baseband_packet->plp_num, atsc3_baseband_packet->alp_payload_pre_pointer))) {
                         	atsc3_alp_packet_packet_set_bootstrap_timing_ref_from_baseband_packet(atsc3_alp_packet, atsc3_baseband_packet);
 
@@ -240,26 +320,32 @@ void atsc3_stltp_depacketizer_from_ip_udp_rtp_ctp_packet(atsc3_ip_udp_rtp_ctp_pa
                                 atsc3_alp_packet_collection_add_atsc3_alp_packet(atsc3_alp_packet_collection, atsc3_alp_packet);
                             } else {
                                 if(atsc3_stltp_tunnel_packet_processed->atsc3_stltp_tunnel_baseband_packet_pending_by_plp->atsc3_alp_packet_pending && atsc3_stltp_tunnel_packet_processed->atsc3_stltp_tunnel_baseband_packet_pending_by_plp->atsc3_alp_packet_pending->alp_payload) {
-                                    __ERROR("  incomplete fragment for atsc3_alp_packet->is_alp_payload_complete == false, atsc3_alp_packet_pending, FIXME! holding over as atsc3_alp_packet_pending! atsc3_alp_packet_pending: %p, pos: %d, size: %d, alp_packet_header.type: %d, alp_packet_header.type: %d",
+                                    _ATSC3_STLTP_DEPACKETIZER_WARN("  incomplete fragment for atsc3_alp_packet->is_alp_payload_complete == false, atsc3_alp_packet_pending, FIXME! holding over as atsc3_alp_packet_pending! atsc3_alp_packet_pending: %p, pos: %d, size: %d, alp_packet_header.type: %d, alp_packet_header.type: %d",
                                             atsc3_stltp_tunnel_packet_processed->atsc3_stltp_tunnel_baseband_packet_pending_by_plp->atsc3_alp_packet_pending,
                                             atsc3_stltp_tunnel_packet_processed->atsc3_stltp_tunnel_baseband_packet_pending_by_plp->atsc3_alp_packet_pending->alp_payload->i_pos,
                                             atsc3_stltp_tunnel_packet_processed->atsc3_stltp_tunnel_baseband_packet_pending_by_plp->atsc3_alp_packet_pending->alp_payload->p_size,
                                             atsc3_stltp_tunnel_packet_processed->atsc3_stltp_tunnel_baseband_packet_pending_by_plp->atsc3_alp_packet_pending->alp_packet_header.alp_packet_header_mode.header_mode,
                                             atsc3_stltp_tunnel_packet_processed->atsc3_stltp_tunnel_baseband_packet_pending_by_plp->atsc3_alp_packet_pending->alp_packet_header.alp_packet_header_mode.length);
+									atsc3_alp_packet_free(&atsc3_stltp_tunnel_packet_processed->atsc3_stltp_tunnel_baseband_packet_pending_by_plp->atsc3_alp_packet_pending);
+
                                 } else if(atsc3_stltp_tunnel_packet_processed->atsc3_stltp_tunnel_baseband_packet_pending_by_plp->atsc3_alp_packet_pending) {
-                                    __ERROR("  incomplete fragment for atsc3_alp_packet->is_alp_payload_complete == false, but atsc3_alp_packet_pending, FIXME! holding over as atsc3_alp_packet_pending! atsc3_alp_packet_pending: %p, alp_packet_header.type: %d, alp_packet_header.length: %d",
+                                    _ATSC3_STLTP_DEPACKETIZER_WARN("  incomplete fragment for atsc3_alp_packet->is_alp_payload_complete == false, but atsc3_alp_packet_pending, freeing, FIXME! holding over as atsc3_alp_packet_pending! atsc3_alp_packet_pending: %p, alp_packet_header.type: %d, alp_packet_header.length: %d",
                                             atsc3_stltp_tunnel_packet_processed->atsc3_stltp_tunnel_baseband_packet_pending_by_plp->atsc3_alp_packet_pending,
                                             atsc3_stltp_tunnel_packet_processed->atsc3_stltp_tunnel_baseband_packet_pending_by_plp->atsc3_alp_packet_pending->alp_packet_header.alp_packet_header_mode.header_mode,
                                             atsc3_stltp_tunnel_packet_processed->atsc3_stltp_tunnel_baseband_packet_pending_by_plp->atsc3_alp_packet_pending->alp_packet_header.alp_packet_header_mode.length);
+									atsc3_alp_packet_free(&atsc3_stltp_tunnel_packet_processed->atsc3_stltp_tunnel_baseband_packet_pending_by_plp->atsc3_alp_packet_pending);
+
                                 } else {
-                                    __ERROR("  fragment for atsc3_alp_packet->is_alp_payload_complete == false, discarding as we cannot have a pre-ptr fragment with atsc3_alp_packet_pending!");
-                                }
-				
-															
-								__ERROR("  atsc3_stltp_tunnel_packet_processed->atsc3_stltp_tunnel_baseband_packet_pending_by_plp->atsc3_alp_packet_pending is now: %p, type 0x%02x, i_pos: %d, p_size: %d", atsc3_stltp_tunnel_packet_processed->atsc3_stltp_tunnel_baseband_packet_pending_by_plp->atsc3_alp_packet_pending,
-										atsc3_stltp_tunnel_packet_processed->atsc3_stltp_tunnel_baseband_packet_pending_by_plp->atsc3_alp_packet_pending->alp_packet_header.packet_type,
-										atsc3_stltp_tunnel_packet_processed->atsc3_stltp_tunnel_baseband_packet_pending_by_plp->atsc3_alp_packet_pending->alp_payload->i_pos,
-										atsc3_stltp_tunnel_packet_processed->atsc3_stltp_tunnel_baseband_packet_pending_by_plp->atsc3_alp_packet_pending->alp_payload->p_size);
+									if(!block_Remaining_size(atsc3_baseband_packet->alp_payload_pre_pointer) && atsc3_baseband_packet->alp_payload_post_pointer) {
+										_ATSC3_STLTP_DEPACKETIZER_WARN("  fragment for atsc3_alp_packet->is_alp_payload_complete == false, atsc3_baseband_packet->alp_payload_pre_pointer->i_pos: %d, atsc3_baseband_packet->alp_payload_pre_pointer->p_size: %d, carrying over from: %p, alp_payload->i_pos: %d, alp_payload->p_size: %d, atsc3_baseband_packet->alp_payload_post_pointer: %p", atsc3_baseband_packet->alp_payload_pre_pointer->i_pos, atsc3_baseband_packet->alp_payload_pre_pointer->p_size, atsc3_alp_packet, atsc3_alp_packet->alp_payload->i_pos, atsc3_alp_packet->alp_payload->p_size, atsc3_baseband_packet->alp_payload_post_pointer);
+									} else {
+										_ATSC3_STLTP_DEPACKETIZER_DEBUG("  fragment for atsc3_alp_packet->is_alp_payload_complete == false, atsc3_baseband_packet->alp_payload_pre_pointer->i_pos: %d, atsc3_baseband_packet->alp_payload_pre_pointer->p_size: %d, carrying over from: %p, alp_payload->i_pos: %d, alp_payload->p_size: %d, atsc3_baseband_packet->alp_payload_post_pointer: %p", atsc3_baseband_packet->alp_payload_pre_pointer->i_pos, atsc3_baseband_packet->alp_payload_pre_pointer->p_size, atsc3_alp_packet, atsc3_alp_packet->alp_payload->i_pos, atsc3_alp_packet->alp_payload->p_size, atsc3_baseband_packet->alp_payload_post_pointer);
+
+									}
+								}
+								
+								atsc3_stltp_tunnel_packet_processed->atsc3_stltp_tunnel_baseband_packet_pending_by_plp->atsc3_alp_packet_pending = atsc3_alp_packet_clone(atsc3_alp_packet);
+								_ATSC3_STLTP_DEPACKETIZER_DEBUG("  atsc3_stltp_tunnel_packet_processed->atsc3_stltp_tunnel_baseband_packet_pending_by_plp->atsc3_alp_packet_pending is now: %p", atsc3_stltp_tunnel_packet_processed->atsc3_stltp_tunnel_baseband_packet_pending_by_plp->atsc3_alp_packet_pending);
 
 								if(atsc3_alp_packet) {
 									atsc3_alp_packet_free(&atsc3_alp_packet);
@@ -268,30 +354,24 @@ void atsc3_stltp_depacketizer_from_ip_udp_rtp_ctp_packet(atsc3_ip_udp_rtp_ctp_pa
                             }
                         }
                         block_Destroy(&atsc3_stltp_tunnel_packet_processed->atsc3_stltp_tunnel_baseband_packet_pending_by_plp->atsc3_baseband_packet_short_fragment);
-					} else if (atsc3_stltp_tunnel_packet_processed->atsc3_stltp_tunnel_baseband_packet_pending_by_plp->atsc3_alp_packet_pending) {
-						//free this pending packet, as we will not have a trailing payload to re-assemble
-						__ERROR("  no atsc3_baseband_packet->alp_payload_pre_pointer but atsc3_stltp_tunnel_baseband_packet_pending_by_plp->atsc3_alp_packet_pending, discarding as we cannot have packet pending without a pre-ptr!");
-
-						atsc3_alp_packet_free(&atsc3_stltp_tunnel_packet_processed->atsc3_stltp_tunnel_baseband_packet_pending_by_plp->atsc3_alp_packet_pending);
-					}
-
+                 	}
+					
                     //process post_pointer for our baseband frame
                     if(atsc3_baseband_packet->alp_payload_post_pointer) {
+						
+						//we cannot have a pre pending alp packet, UNLESS we don't have a post ptr (start of new alp packet), so continue on...
+						if(atsc3_stltp_tunnel_packet_processed->atsc3_stltp_tunnel_baseband_packet_pending_by_plp->atsc3_alp_packet_pending) {
+
+							_ATSC3_STLTP_DEPACKETIZER_ERROR("  atsc3_baseband_packet->alp_payload_post_pointer, discarding atsc3_stltp_tunnel_packet_processed->atsc3_stltp_tunnel_baseband_packet_pending_by_plp->atsc3_alp_packet_pending, was: %p, type 0x%02x, i_pos: %d, p_size: %d", atsc3_stltp_tunnel_packet_processed->atsc3_stltp_tunnel_baseband_packet_pending_by_plp->atsc3_alp_packet_pending,
+									atsc3_stltp_tunnel_packet_processed->atsc3_stltp_tunnel_baseband_packet_pending_by_plp->atsc3_alp_packet_pending->alp_packet_header.packet_type,
+									atsc3_stltp_tunnel_packet_processed->atsc3_stltp_tunnel_baseband_packet_pending_by_plp->atsc3_alp_packet_pending->alp_payload->i_pos,
+									atsc3_stltp_tunnel_packet_processed->atsc3_stltp_tunnel_baseband_packet_pending_by_plp->atsc3_alp_packet_pending->alp_payload->p_size);
+							atsc3_alp_packet_free(&atsc3_stltp_tunnel_packet_processed->atsc3_stltp_tunnel_baseband_packet_pending_by_plp->atsc3_alp_packet_pending);
+						}
+						
                     	_ATSC3_STLTP_DEPACKETIZER_DEBUG("atsc3_baseband_packet: starting alp_payload_post_pointer: pos: %d, size: %d",
                                atsc3_baseband_packet->alp_payload_post_pointer->i_pos,
                                atsc3_baseband_packet->alp_payload_post_pointer->p_size);
-
-						
-						//we cannot have a pre pending frame, so clear out
-						if(atsc3_stltp_tunnel_packet_processed->atsc3_stltp_tunnel_baseband_packet_pending_by_plp->atsc3_alp_packet_pending) {
-							
-							__ERROR("  atsc3_baseband_packet->alp_payload_post_pointer, discarding atsc3_stltp_tunnel_packet_processed->atsc3_stltp_tunnel_baseband_packet_pending_by_plp->atsc3_alp_packet_pending, was: %p, type 0x%02x, i_pos: %d, p_size: %d", atsc3_stltp_tunnel_packet_processed->atsc3_stltp_tunnel_baseband_packet_pending_by_plp->atsc3_alp_packet_pending,
-								atsc3_stltp_tunnel_packet_processed->atsc3_stltp_tunnel_baseband_packet_pending_by_plp->atsc3_alp_packet_pending->alp_packet_header.packet_type,
-								atsc3_stltp_tunnel_packet_processed->atsc3_stltp_tunnel_baseband_packet_pending_by_plp->atsc3_alp_packet_pending->alp_payload->i_pos,
-								atsc3_stltp_tunnel_packet_processed->atsc3_stltp_tunnel_baseband_packet_pending_by_plp->atsc3_alp_packet_pending->alp_payload->p_size);
-								atsc3_alp_packet_free(&atsc3_stltp_tunnel_packet_processed->atsc3_stltp_tunnel_baseband_packet_pending_by_plp->atsc3_alp_packet_pending);
-							atsc3_alp_packet_free(&atsc3_stltp_tunnel_packet_processed->atsc3_stltp_tunnel_baseband_packet_pending_by_plp->atsc3_alp_packet_pending);
-						}
 
                         while((atsc3_alp_packet = atsc3_alp_packet_parse(atsc3_baseband_packet->plp_num, atsc3_baseband_packet->alp_payload_post_pointer))) {
                         	atsc3_alp_packet_packet_set_bootstrap_timing_ref_from_baseband_packet(atsc3_alp_packet, atsc3_baseband_packet);
@@ -469,7 +549,7 @@ bool atsc3_stltp_depacketizer_from_blockt(block_t** packet_p, atsc3_stltp_depack
 void atsc3_stltp_depacketizer_from_pcap_frame(u_char *user, const struct pcap_pkthdr *pkthdr, const u_char *packet, atsc3_stltp_depacketizer_context_t* atsc3_stltp_depacketizer_context) {
 
     //extract our outer ip/udp/rtp packet
-    atsc3_ip_udp_rtp_ctp_packet_t* ip_udp_rtp_ctp_packet = atsc3_ip_udp_rtp_process_packet_from_pcap(user, pkthdr, packet);
+    atsc3_ip_udp_rtp_ctp_packet_t* ip_udp_rtp_ctp_packet = atsc3_ip_udp_rtp_process_packet_from_pcap_frame_with_stltp_depacketizer_context(atsc3_stltp_depacketizer_context, user, pkthdr, packet);
     if(!ip_udp_rtp_ctp_packet) {
         return;
     }
