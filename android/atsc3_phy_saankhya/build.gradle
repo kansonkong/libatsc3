@@ -9,9 +9,13 @@ android {
         versionName "1.0"
 
         ndk {
-            abiFilters 'arm64-v8a' //, 'armeabi-v7a' //, 'arm64-v8a' //'', 'x86_64',
-            //jjustman-2020-11-30 - NOTE: 'armeabi-v7a': linkage error: ../../saankhyalabs-slsdk/slapi/src/tuner/situne/sl_situner.c:308: error: undefined reference to 'SiAPISetDCOffset'
+            if (project.hasProperty('org.gradle.project.debugging_hwasan_enabled') && project.property('org.gradle.project.debugging_hwasan_enabled').toString().toBoolean()) {
+                abiFilters 'arm64-v8a'
+            } else {
+                abiFilters 'arm64-v8a', 'armeabi-v7a' //, 'armeabi-v7a' //, 'arm64-v8a' //'', 'x86_64',
+            }
         }
+
         externalNativeBuild {
             ndkBuild {
                 if (project.hasProperty('org.gradle.project.debugging_asan_enabled') && project.property('org.gradle.project.debugging_asan_enabled').toString().toBoolean()) {
@@ -29,24 +33,22 @@ android {
             path 'Android.mk'
         }
     }
-//    buildTypes {
-//        debug {
-//            jniDebuggable = true
-//            debuggable true
-//        }
-//
-//        atsc3_phy_saankhya {
-//        }
-//
-//        release {
-//            minifyEnabled false
-//            shrinkResources false
-//
-//            //proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
-//            jniDebuggable = true
-//            debuggable true
-//        }
-//    }
+
+    buildTypes {
+        debug {
+            jniDebuggable = true
+            debuggable true
+        }
+
+        release {
+            minifyEnabled false
+            shrinkResources false
+
+            //proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
+            jniDebuggable = true
+            debuggable true
+        }
+    }
 
     buildToolsVersion = '29.0.2'
 
