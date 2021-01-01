@@ -63,6 +63,7 @@ include $(BUILD_SHARED_LIBRARY)
 #     objdump -p libNXP_Tuner_Lib.so
 ## ---------------------------
 # NXP Tuner Libraries - prebuilt - reference to slsdk path
+# jjustman-2020-12-31 - fixup for missing SONAME:  patchelf --set-soname libNXP_Tuner_Lib.so libNXP_Tuner_Lib.so
 # $(LOCAL_PATH)/
 include $(CLEAR_VARS)
 LOCAL_MODULE := libNXP_Tuner_Lib-prebuilt
@@ -70,6 +71,7 @@ LOCAL_SRC_FILES := ../../saankhyalabs-slsdk/slapi/lib/android/$(TARGET_ARCH_ABI)
 include $(PREBUILT_SHARED_LIBRARY)
 
 # SiTune Libraries - prebuilt - reference to slsdk path
+# jjustman-2020-12-31 - fixup for missing SONAME: patchelf --set-soname libSiTune_Tuner_Lib.so libSiTune_Tuner_Lib.so
 # $(LOCAL_PATH)/
 include $(CLEAR_VARS)
 LOCAL_MODULE := libSiTune_Tuner_Lib-prebuilt
