@@ -45,15 +45,12 @@ LOCAL_SRC_FILES += \
 LOCAL_C_INCLUDES += $(LOCAL_PATH)/../../libusb_android/libusb
 LOCAL_C_INCLUDES += $(LOCAL_PATH)/../../libusb_android/android
 
-
-LOCAL_CFLAGS += -g -O0 -fpack-struct=8 \
-                -D__ANDROID__ -Dlinux
+LOCAL_CFLAGS += -D__ANDROID__ -Dlinux
 
 #jjustman-2020-08-19 - fixup for invalid soname in .so
 LOCAL_LDLIBS += -ldl -lc++_shared -llog -landroid
 
 include $(BUILD_SHARED_LIBRARY)
-
 
 # jjustman-2020-08-19: NOTE regarding missing SONAME tag
 #	...this was caused by missing SONAME tag on the generated shared library. When this tag is missing,
@@ -79,7 +76,6 @@ LOCAL_MODULE := libSiTune_Tuner_Lib-prebuilt
 LOCAL_SRC_FILES := ../../saankhyalabs-slsdk/slapi/lib/android/$(TARGET_ARCH_ABI)/libSiTune_Tuner_Lib.so
 include $(PREBUILT_SHARED_LIBRARY)
 ## ---------------------------
-
 
 ## ---------------------------
 # FX3 firmware binary compilation - build fx3 f/w into atsc3NdkClient
@@ -123,6 +119,7 @@ $(LOCAL_MODULE): P3_FW_BUILD_TARGET
 # 	$(shell cp $(LOCAL_PATH)/../../saankhyalabs-slsdk/slplf/src/slref/fx3s/bin/P3_Firmware_v3.2.2\(KAILASH_DONGLE\).img $(LOCAL_PATH)/prebuilt/firmware/fx3s/p3_firmware_KAILASH_DONGLE.img)
 # 	$(info TARGET_LD is $(TARGET_LD))
 #	$(info PATH for prebuilt fx3 is $(LOCAL_PATH)/prebuilt/firmware/fx3s/)
+# jjustman-2020-12-31 - TODO: for building armeabi-v7a: $(TARGET_ARCH_ABI)
 P3_FW_BUILD_TARGET:
 	$(shell mkdir -p "$(LOCAL_PATH)/prebuilt/firmware/fx3s/")
 	$(shell cp $(LOCAL_PATH)/../../saankhyalabs-slsdk/slplf/src/slref/fx3s/bin/P3_Firmware_v3.1_KAILASH_DONGLE.img $(LOCAL_PATH)/prebuilt/firmware/fx3s/p3_firmware_KAILASH_DONGLE.img)
@@ -229,18 +226,21 @@ INCLUDE_SL_API_CUST := \
 LIB_SL_API_CUST := \
     $(wildcard $(LOCAL_PATH)/../../saankhyalabs-slsdk/slplf/src/slcust/*.c)
 
-LOCAL_CFLAGS += -g -O0 -fpack-struct=8 \
-	-D__DISABLE_LIBPCAP__ -D__DISABLE_ISOBMFF_LINKAGE__ -D__DISABLE_NCURSES__ \
-	-D__MOCK_PCAP_REPLAY__ -D__LIBATSC3_ANDROID__ \
-	-D__ANDROID__ -Dlinux  \
-	-DSI_TUNER
+# jjustman-2020-12-31 - TODO: remove conditional arch define -D__ANDROID_ARCH_$(TARGET_ARCH_ABI)__ as workaround for  missing linkage in armeabi-v7a only libSiTune_Tuner_Lib.so in SLAPI-0.10
+LOCAL_CFLAGS += -D__DISABLE_LIBPCAP__ \
+				-D__DISABLE_ISOBMFF_LINKAGE__ \
+				-D__DISABLE_NCURSES__ \
+				-D__MOCK_PCAP_REPLAY__ \
+				-D__LIBATSC3_ANDROID__ \
+				-D__ANDROID__ \
+				-Dlinux  \
+				-DSI_TUNER \
+				-D__ANDROID_ARCH_$(TARGET_ARCH_ABI)__
 
-LOCAL_LDFLAGS += -fPIE -fPIC \
-	-L $(LOCAL_PATH)/../atsc3_bridge/build/intermediates/ndkBuild/debug/obj/local/$(TARGET_ARCH_ABI)/ \
-	-L $(LOCAL_PATH)/../atsc3_core/build/intermediates/ndkBuild/debug/obj/local/$(TARGET_ARCH_ABI)/
+LOCAL_LDFLAGS += -L $(LOCAL_PATH)/../atsc3_bridge/build/intermediates/ndkBuild/debug/obj/local/$(TARGET_ARCH_ABI)/ \
+				 -L $(LOCAL_PATH)/../atsc3_core/build/intermediates/ndkBuild/debug/obj/local/$(TARGET_ARCH_ABI)/
 
 LOCAL_PREBUILDS := atsc3_core atsc3_bridge
-
 
 # jjustman-2020-09-08 - markone - using LIB_SL_API_CUST and INCLUDE_SL_API_CUST
 ifeq ($(SLAPI_BUILD_TARGET), markone)
@@ -255,7 +255,8 @@ $(info Building MarkONE support)
 		$(LIB_SL_API_CUST:$(LOCAL_PATH)/%=%) \
 		$(LIB_PHY_SAANKHYACPP:$(LOCAL_PATH)/%=%)
 
-	LOCAL_CFLAGS += -DSL_MARKONE -DSL_USE_LINKED_FIRMWARE_EXTERN
+	LOCAL_CFLAGS += -DSL_MARKONE \
+					-DSL_USE_LINKED_FIRMWARE_EXTERN
 
 	LOCAL_LDLIBS += -ldl -lc++_shared -llog -landroid -lz \
 		-latsc3_core -latsc3_bridge \
