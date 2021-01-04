@@ -322,10 +322,7 @@ atsc3_stltp_tunnel_packet_t* atsc3_stltp_raw_packet_extract_inner_from_outer_pac
 									atsc3_stltp_tunnel_packet_current->ip_udp_rtp_ctp_packet_outer->rtp_ctp_header->sequence_number,
 									last_outer_packet_bytes_remaining_to_parse);
 
-					int _LAST_STLTP_TYPES_DEBUG_ENABLED = _STLTP_TYPES_DEBUG_ENABLED;
-					_STLTP_TYPES_DEBUG_ENABLED = 1;
 					atsc3_rtp_ctp_header_dump_inner(atsc3_stltp_tunnel_packet_current);
-					_STLTP_TYPES_DEBUG_ENABLED = _LAST_STLTP_TYPES_DEBUG_ENABLED;
 				}
             } else {
                 //sequence gap
