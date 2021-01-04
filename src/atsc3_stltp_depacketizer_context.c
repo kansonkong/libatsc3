@@ -8,6 +8,9 @@
 
 #include "atsc3_stltp_depacketizer_context.h"
 
+_ATSC3_STLTP_DEPACKETIZER_CONTEXT_INFO_ENABLED = 0;
+_ATSC3_STLTP_DEPACKETIZER_CONTEXT_DEBUG_ENABLED = 0;
+
 atsc3_stltp_depacketizer_context_t* atsc3_stltp_depacketizer_context_new() {
 	atsc3_stltp_depacketizer_context_t* atsc3_stltp_depacketizer_context = calloc(1, sizeof(atsc3_stltp_depacketizer_context_t));
 
