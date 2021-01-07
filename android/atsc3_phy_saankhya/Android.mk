@@ -228,7 +228,6 @@ INCLUDE_SL_API_CUST := \
 LIB_SL_API_CUST := \
     $(wildcard $(LOCAL_PATH)/../../saankhyalabs-slsdk/slplf/src/slcust/*.c)
 
-# jjustman-2020-12-31 - TODO: remove conditional arch define -D__ANDROID_ARCH_$(TARGET_ARCH_ABI)__ as workaround for  missing linkage in armeabi-v7a only libSiTune_Tuner_Lib.so in SLAPI-0.10
 LOCAL_CFLAGS += -D__DISABLE_LIBPCAP__ \
 				-D__DISABLE_ISOBMFF_LINKAGE__ \
 				-D__DISABLE_NCURSES__ \
