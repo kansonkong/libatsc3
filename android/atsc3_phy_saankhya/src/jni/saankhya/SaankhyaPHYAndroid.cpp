@@ -854,32 +854,33 @@ int SaankhyaPHYAndroid::tune(int freqKHz, int plpid)
         }
     }
 
+    if(!demodStartStatus) {
+        while (SL_IsRxDataStarted() != 1)
+        {
+            SL_SleepMS(100);
 
-    while (SL_IsRxDataStarted() != 1)
-    {
-        SL_SleepMS(100);
-
-        if(((isRxDataStartedSpinCount++) % 100) == 0) {
-            _SAANKHYA_PHY_ANDROID_WARN("::Open() - waiting for SL_IsRxDataStarted, spinCount: %d", isRxDataStartedSpinCount);
-            //jjustman-2020-10-21 - todo: reset demod?
+            if(((isRxDataStartedSpinCount++) % 100) == 0) {
+                _SAANKHYA_PHY_ANDROID_WARN("::Open() - waiting for SL_IsRxDataStarted, spinCount: %d", isRxDataStartedSpinCount);
+                //jjustman-2020-10-21 - todo: reset demod?
+            }
         }
-    }
-    _SAANKHYA_PHY_ANDROID_DEBUG("Starting SLDemod: ");
+        _SAANKHYA_PHY_ANDROID_DEBUG("Starting SLDemod: ");
 
-    slres = SL_DemodStart(slUnit);
+        slres = SL_DemodStart(slUnit);
 
-    if (slres != 0)
-    {
-        _SAANKHYA_PHY_ANDROID_DEBUG("Saankhya Demod Start Failed");
-        goto ERROR;
+        if (slres != 0)
+        {
+            _SAANKHYA_PHY_ANDROID_DEBUG("Saankhya Demod Start Failed");
+            goto ERROR;
+        }
+        else
+        {
+            demodStartStatus = 1;
+            _SAANKHYA_PHY_ANDROID_DEBUG("SUCCESS");
+            //_SAANKHYA_PHY_ANDROID_DEBUG("SL Demod Output Capture: STARTED : sl-tlv.bin");
+        }
+        SL_SleepMS(1000); // Delay to accomdate set configurations at SL to take effect
     }
-    else
-    {
-        demodStartStatus = 1;
-        _SAANKHYA_PHY_ANDROID_DEBUG("SUCCESS");
-        //_SAANKHYA_PHY_ANDROID_DEBUG("SL Demod Output Capture: STARTED : sl-tlv.bin");
-    }
-    SL_SleepMS(1000); // Delay to accomdate set configurations at SL to take effect
 
     plpInfo.plp0 = plpid;
     plpInfo.plp1 = 0xFF;
