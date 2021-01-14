@@ -58,8 +58,7 @@ endif
 # 	so comment this define out if there is too much logging noise
 # -fpack-struct=8 -fPIC
 
-LOCAL_CFLAGS += -g   \
-                -D__DISABLE_LIBPCAP__ -D__DISABLE_ISOBMFF_LINKAGE__ -D__DISABLE_NCURSES__ \
+LOCAL_CFLAGS += -D__DISABLE_LIBPCAP__ -D__DISABLE_ISOBMFF_LINKAGE__ -D__DISABLE_NCURSES__ \
                 -D__MOCK_PCAP_REPLAY__ -D__LIBATSC3_ANDROID__ \
                 -D__ANDROID__
 
