@@ -740,6 +740,7 @@ int atsc3_srt_live_receiver_start_in_proc(atsc3_srt_live_receiver_context_t* ats
                 {
                     while (dataqueue.size() < cfg.buffering)
                     {
+                        //jjustman-2020-12-22 - move this out of local scope so we aren't re-creating mediapacket container, instead just clear collection
                         std::shared_ptr<MediaPacket> pkt(new MediaPacket(transmit_chunk_size));
                         const int res = src->Read(transmit_chunk_size, *pkt, out_stats);
 
