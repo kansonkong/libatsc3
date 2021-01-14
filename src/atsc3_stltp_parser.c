@@ -1601,10 +1601,9 @@ atsc3_preamble_packet_t* atsc3_stltp_parse_preamble_packet(atsc3_stltp_preamble_
 							L1D_PLP_parameters_add_L1D_plp_HTI_num_fec_blocks(L1D_PLP_parameters, L1D_plp_HTI_num_fec_blocks);
 						}
 					}
+                    //1 bit
+                    L1D_PLP_parameters->L1D_plp_HTI_cell_interleaver = block_Read_uint8_bitlen(block, 1);
 				}
-				//1 bit
-				L1D_PLP_parameters->L1D_plp_HTI_cell_interleaver = block_Read_uint8_bitlen(block, 1);
-
             } else {
 				//5 bits
 				L1D_PLP_parameters->L1D_plp_ldm_injection_level = block_Read_uint8_bitlen(block, 5);

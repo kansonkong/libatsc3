@@ -77,7 +77,7 @@ public:
 			if(atsc3_srt_live_receiver_context->atsc3_srt_live_rx_udp_packet_process_callback_with_context && atsc3_srt_live_receiver_context->atsc3_srt_live_rx_udp_packet_process_callback_context) {
 				atsc3_srt_live_receiver_context->atsc3_srt_live_rx_udp_packet_process_callback_with_context(block, atsc3_srt_live_receiver_context->atsc3_srt_live_rx_udp_packet_process_callback_context);
 			}
-       		//don't destory, keep for repeated dispatch to callback
+       		//don't destory our underlying block, keep for repeated dispatch to callback
     	}
 
     	return (int) size;
