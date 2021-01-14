@@ -330,6 +330,9 @@ int SaankhyaPHYAndroid::open(int fd, string device_path)
         goto ERROR;
     }
 
+    //jjustman-2021-01-13 - set our demod as not started
+    demodStartStatus = 0;
+
     /* Demod Config */
     switch (getPlfConfig.boardType)
     {
