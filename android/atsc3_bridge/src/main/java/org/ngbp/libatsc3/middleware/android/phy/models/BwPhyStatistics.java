@@ -1,5 +1,8 @@
 package org.ngbp.libatsc3.middleware.android.phy.models;
 
+import com.google.firebase.perf.FirebasePerformance;
+import com.google.firebase.perf.metrics.Trace;
+
 public class BwPhyStatistics {
     public static long AppStartTimeMs = System.currentTimeMillis();
 
@@ -51,12 +54,24 @@ public class BwPhyStatistics {
         return avgValue;
     }
 
+    Boolean hasCalledComputeBwMetrics = false;
+
+    double currentRuntimeDurationS = 0;
+    float last_1s_bw_bitsSec = 0;
+    float last_1s_bw_pps = 0;
+
+    private void computeBwMetricsOnce() {
+        if(!hasCalledComputeBwMetrics) {
+            currentRuntimeDurationS = (float) (System.currentTimeMillis() - AppStartTimeMs) / 1000.0;
+            last_1s_bw_bitsSec = ComputeLast1sBwBitsSec(this.total_bytes);
+            last_1s_bw_pps = ComputeLast1sBwPPS(this.total_pkts);
+        }
+        hasCalledComputeBwMetrics = true;
+    }
 
     @Override
     public String toString() {
-        double currentRuntimeDurationS = (float) (System.currentTimeMillis() - AppStartTimeMs) / 1000.0;
-        float last_1s_bw_bitsSec = ComputeLast1sBwBitsSec(this.total_bytes);
-        float last_1s_bw_pps = ComputeLast1sBwPPS(this.total_pkts);
+        computeBwMetricsOnce();
 
         return String.format("Runtime: %.2fs, Total Packets: %d, Total Bytes: %.2f MB, Last 1s: %.2f Mbit/sec, %.0f PPS, Sess. Avg: %.2f Mbit/sec, Total LMT: %d",
             currentRuntimeDurationS,
@@ -67,5 +82,25 @@ public class BwPhyStatistics {
             (float) ((this.total_bytes * 8.0) / (1024.0 * 1024.0)) / currentRuntimeDurationS,
             this.total_lmts);
 
+    }
+
+    public void sampleBwPhyStatisticsForTrace() {
+        computeBwMetricsOnce();
+
+        Trace bwPhyStatisticsTrace = FirebasePerformance.getInstance().newTrace("phy_bw_statistics_sample");
+        bwPhyStatisticsTrace.start();
+
+        bwPhyStatisticsTrace.putMetric("app_runtime_duration", (int)currentRuntimeDurationS);
+
+        bwPhyStatisticsTrace.putMetric("last_1s_bw_bitsSec", (int)last_1s_bw_bitsSec);
+        bwPhyStatisticsTrace.putMetric("last_1s_bw_pps", (int)last_1s_bw_pps);
+
+        bwPhyStatisticsTrace.putMetric("total_pkts_rx", (int)total_pkts);
+        bwPhyStatisticsTrace.putMetric("total_bytes_rx", (int)total_bytes);
+        bwPhyStatisticsTrace.putMetric("total_lmts_rx", (int)total_lmts);
+
+        bwPhyStatisticsTrace.putMetric("avg_bits_sec_rx_over_app_runtime_duration", (int)((this.total_bytes * 8) / currentRuntimeDurationS));
+
+        bwPhyStatisticsTrace.stop();
     }
 }
