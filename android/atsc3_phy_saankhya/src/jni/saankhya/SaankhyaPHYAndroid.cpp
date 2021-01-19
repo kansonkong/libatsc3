@@ -40,6 +40,7 @@ CircularBuffer SaankhyaPHYAndroid::cb = nullptr;
 mutex SaankhyaPHYAndroid::CircularBufferMutex;
 
 mutex SaankhyaPHYAndroid::CS_global_mutex;
+atomic_bool SaankhyaPHYAndroid::cb_should_discard;
 
 SaankhyaPHYAndroid::SaankhyaPHYAndroid(JNIEnv* env, jobject jni_instance) {
     this->env = env;
@@ -52,11 +53,13 @@ SaankhyaPHYAndroid::SaankhyaPHYAndroid(JNIEnv* env, jobject jni_instance) {
     }
 
     _SAANKHYA_PHY_ANDROID_INFO("SaankhyaPHYAndroid::SaankhyaPHYAndroid - created with this: %p", this);
+    SaankhyaPHYAndroid::cb_should_discard = false;
 }
 
 SaankhyaPHYAndroid::~SaankhyaPHYAndroid() {
 
     _SAANKHYA_PHY_ANDROID_INFO("SaankhyaPHYAndroid::~SaankhyaPHYAndroid - enter: deleting with this: %p", this);
+
     this->stop();
 
     if(atsc3_ndk_application_bridge_get_instance()) {
@@ -171,8 +174,7 @@ int SaankhyaPHYAndroid::stop()
                               this->statusThreadIsRunning,
                               this->processThreadIsRunning);
 
-
-
+    SaankhyaPHYAndroid::cb_should_discard = true;
     statusThreadShouldRun = false;
     captureThreadShouldRun = false;
     processThreadShouldRun = false;
@@ -692,10 +694,12 @@ int SaankhyaPHYAndroid::tune(int freqKHz, int plpid)
     //create our CB mutex, but don't acquire it yet
     unique_lock<mutex> CircularBufferMutex_local(CircularBufferMutex, defer_lock);
 
+    //tell any RXDataCallback event that we should discard
+    SaankhyaPHYAndroid::cb_should_discard = true;
+
     //acquire our lock for setting tuning parameters (including re-tuning)
     unique_lock<mutex> SL_I2C_command_mutex_tuner_tune(SL_I2C_command_mutex);
     atsc3_core_service_application_bridge_reset_context();
-
 
     tres = SL_TunerSetFrequency(tUnit, freqKHz*1000);
     if (tres != 0)
@@ -768,16 +772,24 @@ int SaankhyaPHYAndroid::tune(int freqKHz, int plpid)
         _SAANKHYA_PHY_ANDROID_DEBUG("tuner frequency: %d", cFrequency);
     }
 
+    if (!atsc3_sl_tlv_block) {
+        allocate_atsc3_sl_tlv_block();
+    }
+
     CircularBufferMutex_local.lock();
     //setup shared memory allocs
     if(!cb) {
         cb = CircularBufferCreate(TLV_CIRCULAR_BUFFER_SIZE);
+    } else {
+        //jjustman-2021-01-19 - clear out our current cb on re-tune
+        CircularBufferReset(cb);
+        //just in case any last pending SDIO transactions arent completed yet...
+        SL_SleepMS(100);
     }
-    CircularBufferMutex_local.unlock();
 
-    if (!atsc3_sl_tlv_block) {
-        allocate_atsc3_sl_tlv_block();
-    }
+    //jjustman-2021-01-19 - allow for cb to start acumulating TLV frames
+    SaankhyaPHYAndroid::cb_should_discard = false;
+    CircularBufferMutex_local.unlock();
 
     //check if we were re-initalized and might have an open threads to wind-down
 #ifdef __RESPWAN_THREAD_WORKERS
@@ -1738,13 +1750,13 @@ void SaankhyaPHYAndroid::processTLVFromCallback()
         if (bytesRead) {
             block_Write(atsc3_sl_tlv_block, (uint8_t *) &processDataCircularBufferForCallback, bytesRead);
             if (bytesRead < TLV_CIRCULAR_BUFFER_PROCESS_BLOCK_SIZE) {
-                _SAANKHYA_PHY_ANDROID_DEBUG("atsc3NdkClientSlImpl::processTLVFromCallback() - short read from CircularBufferPop, got %d bytes, but expected: %d", bytesRead, TLV_CIRCULAR_BUFFER_PROCESS_BLOCK_SIZE);
+                //_SAANKHYA_PHY_ANDROID_TRACE("atsc3NdkClientSlImpl::processTLVFromCallback() - short read from CircularBufferPop, got %d bytes, but expected: %d", bytesRead, TLV_CIRCULAR_BUFFER_PROCESS_BLOCK_SIZE);
                 break;
             }
 
             block_Rewind(atsc3_sl_tlv_block);
 
-            _SAANKHYA_PHY_ANDROID_DEBUG("atsc3NdkClientSlImpl::processTLVFromCallback() - processTLVFromCallbackInvocationCount: %d, inner loop count: %d, atsc3_sl_tlv_block.p_size: %d, atsc3_sl_tlv_block.i_pos: %d", processTLVFromCallbackInvocationCount, ++innerLoopCount, atsc3_sl_tlv_block->p_size, atsc3_sl_tlv_block->i_pos);
+            //_SAANKHYA_PHY_ANDROID_DEBUG("atsc3NdkClientSlImpl::processTLVFromCallback() - processTLVFromCallbackInvocationCount: %d, inner loop count: %d, atsc3_sl_tlv_block.p_size: %d, atsc3_sl_tlv_block.i_pos: %d", processTLVFromCallbackInvocationCount, ++innerLoopCount, atsc3_sl_tlv_block->p_size, atsc3_sl_tlv_block->i_pos);
 
             bool atsc3_sl_tlv_payload_complete = false;
 
@@ -1835,6 +1847,10 @@ void SaankhyaPHYAndroid::processTLVFromCallback()
 
 void SaankhyaPHYAndroid::RxDataCallback(unsigned char *data, long len)
 {
+    if(SaankhyaPHYAndroid::cb_should_discard) {
+        return;
+    }
+
     //_SAANKHYA_PHY_ANDROID_DEBUG("atsc3NdkClientSlImpl::RxDataCallback: pushing data: %p, len: %d", data, len);
     unique_lock<mutex> CircularBufferMutex_local(CircularBufferMutex);
     if(SaankhyaPHYAndroid::cb) {
