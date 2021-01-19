@@ -25,6 +25,7 @@ IAtsc3NdkApplicationBridge* Atsc3NdkApplicationBridge_ptr = NULL;
 IAtsc3NdkPHYBridge*         Atsc3NdkPHYBridge_ptr = NULL;
 
 atsc3_link_mapping_table*   atsc3_link_mapping_table_last = NULL;
+uint32_t                    atsc3_link_mapping_table_missing_dropped_packets = 0;
 
 //commandline stream filtering
 uint32_t* dst_ip_addr_filter = NULL;
@@ -127,6 +128,11 @@ void atsc3_core_service_application_bridge_reset_context() {
         lls_sls_mmt_monitor = NULL;
         lls_sls_alc_monitor = NULL;
     }
+
+    if(atsc3_link_mapping_table_last) {
+        atsc3_link_mapping_table_free(&atsc3_link_mapping_table_last);
+    }
+    atsc3_link_mapping_table_missing_dropped_packets = 0;
 
     lls_slt_monitor = lls_slt_monitor_create();
     //wire up a lls event for SLS table
@@ -586,6 +592,14 @@ atsc3_route_s_tsid_t* atsc3_slt_alc_get_sls_route_s_tsid_from_monitor_service_id
 
 //jjustman-2020-08-18 - todo: keep track of plp_num's?
 void atsc3_core_service_bridge_process_packet_from_plp_and_block(uint8_t plp_num, block_t* block) {
+    //jjustman-2021-01-19 - only process packets if we have a link mapping table for <flow, PLP> management
+    if(!atsc3_link_mapping_table_last) {
+        if(!atsc3_link_mapping_table_missing_dropped_packets || (atsc3_link_mapping_table_missing_dropped_packets++ % 1000) == 0) {
+            __ATSC3_CORE_SERVICE_PLAYER_BRIDGE_WARN("atsc3_core_service_bridge_process_packet_from_plp_and_block: dropping due to !atsc3_link_mappping_table_last, plp: %d, dropped_packets: %d", plp_num, atsc3_link_mapping_table_missing_dropped_packets);
+        }
+        return;
+    }
+
 	atsc3_core_service_bridge_process_packet_phy(block);
 }
 
