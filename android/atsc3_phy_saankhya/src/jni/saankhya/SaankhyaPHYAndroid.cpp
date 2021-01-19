@@ -54,6 +54,7 @@ SaankhyaPHYAndroid::SaankhyaPHYAndroid(JNIEnv* env, jobject jni_instance) {
 
     _SAANKHYA_PHY_ANDROID_INFO("SaankhyaPHYAndroid::SaankhyaPHYAndroid - created with this: %p", this);
     SaankhyaPHYAndroid::cb_should_discard = false;
+    SL_I2C_last_command_extra_sleep = false;
 }
 
 SaankhyaPHYAndroid::~SaankhyaPHYAndroid() {
@@ -166,7 +167,7 @@ int SaankhyaPHYAndroid::stop()
     SL_TunerResult_t sl_tuner_result = SL_TUNER_OK;
 
     _SAANKHYA_PHY_ANDROID_DEBUG("SaankhyaPHYAndroid::stop: enter with this: %p", this);
-    _SAANKHYA_PHY_ANDROID_INFO("SaankhyaPHYAndroid::stop: enter with this: %p, slUnit: %d, tUnit: %d, captureThreadIsRunning: %d, statusThreadIsRunning: %d, processThreadIsRunning: %d, sleeping for %d ms",
+    _SAANKHYA_PHY_ANDROID_INFO("SaankhyaPHYAndroid::stop: enter with this: %p, slUnit: %d, tUnit: %d, captureThreadIsRunning: %d, statusThreadIsRunning: %d, processThreadIsRunning: %d",
                               this,
                               this->slUnit,
                               this->tUnit,
@@ -691,14 +692,15 @@ int SaankhyaPHYAndroid::tune(int freqKHz, int plpid)
     unsigned int cFrequency = 0;
     int isRxDataStartedSpinCount = 0;
 
-    //create our CB mutex, but don't acquire it yet
-    unique_lock<mutex> CircularBufferMutex_local(CircularBufferMutex, defer_lock);
-
-    //tell any RXDataCallback event that we should discard
+    //tell any RXDataCallback or process event that we should discard
     SaankhyaPHYAndroid::cb_should_discard = true;
+
+    //acquire our CB mutex so we don't push stale TLV packets
+    unique_lock<mutex> CircularBufferMutex_local(CircularBufferMutex);
 
     //acquire our lock for setting tuning parameters (including re-tuning)
     unique_lock<mutex> SL_I2C_command_mutex_tuner_tune(SL_I2C_command_mutex);
+    SL_I2C_last_command_extra_sleep = true;
     atsc3_core_service_application_bridge_reset_context();
 
     tres = SL_TunerSetFrequency(tUnit, freqKHz*1000);
@@ -776,7 +778,6 @@ int SaankhyaPHYAndroid::tune(int freqKHz, int plpid)
         allocate_atsc3_sl_tlv_block();
     }
 
-    CircularBufferMutex_local.lock();
     //setup shared memory allocs
     if(!cb) {
         cb = CircularBufferCreate(TLV_CIRCULAR_BUFFER_SIZE);
@@ -932,7 +933,7 @@ int SaankhyaPHYAndroid::tune(int freqKHz, int plpid)
  ERROR:
     ret = -1;
 
-    //unlock our i2c mutext
+    //unlock our i2c mutex
 UNLOCK:
     SL_I2C_command_mutex_tuner_tune.unlock();
     return ret;
@@ -985,6 +986,7 @@ int SaankhyaPHYAndroid::listen_plps(vector<uint8_t> plps_orignal_list)
             plpInfo.plp3);
 
     unique_lock<mutex> SL_I2C_command_mutex_config_plps(SL_I2C_command_mutex);
+    SL_I2C_last_command_extra_sleep = true;
     slres = SL_DemodConfigPlps(slUnit, &plpInfo);
     if (slres != 0)
     {
@@ -1549,6 +1551,11 @@ int SaankhyaPHYAndroid::statusThread()
     double ber_plp0;
     unique_lock<mutex> SL_I2C_command_mutex_tuner_status_io(this->SL_I2C_command_mutex, std::defer_lock);
 
+    //wait for demod to come up before polling status
+    while(!this->demodStartStatus && this->statusThreadShouldRun) {
+        usleep(1000000);
+    }
+
     while(this->statusThreadShouldRun) {
 
         //running
@@ -1569,6 +1576,12 @@ int SaankhyaPHYAndroid::statusThread()
         //jjustman-2020-10-14 - try to make this loop as small as possible to not upset the SDIO I/F ALP buffer window
 
         SL_I2C_command_mutex_tuner_status_io.lock();
+
+        //if our last command was a tune or PLP change, then give us some extra sleep time
+        if(SL_I2C_last_command_extra_sleep) {
+            usleep(2000000);
+            SL_I2C_last_command_extra_sleep = false;
+        }
 
         /*jjustman-2020-01-06: For the SL3000/SiTune, we will have 3 status attributes with the following possible values:
 
@@ -1657,7 +1670,7 @@ int SaankhyaPHYAndroid::statusThread()
         ber_l1d = (float)perfDiag.NumBitErrL1d / perfDiag.NumFecBitsL1d;//aBerPreBchE9,
         ber_plp0 = (float)perfDiag.NumBitErrPlp0 / perfDiag.NumFecBitsPlp0; //aFerPostBchE6,
 
-        _SAANKHYA_PHY_ANDROID_DEBUG("atsc3NdkClientSlImpl::StatusThread: SNR: %f, tunerInfo.status: %d, tunerInfo.signalStrength: %f, cpuStatus: %s, demodLockStatus: %d,  ber_l1b: %d, ber_l1d: %d, ber_plp0: %d, plps: 0x%02 (fec: %d, mod: %d, cr: %d), 0x%02 (fec: %d, mod: %d, cr: %d), 0x%02 (fec: %d, mod: %d, cr: %d), 0x%02 (fec: %d, mod: %d, cr: %d)",
+        _SAANKHYA_PHY_ANDROID_DEBUG("atsc3NdkClientSlImpl::StatusThread: SNR: %f, tunerInfo.status: %d, tunerInfo.signalStrength: %f, cpuStatus: %s, demodLockStatus: %d,  ber_l1b: %d, ber_l1d: %d, ber_plp0: %d, plps: 0x%02x (fec: %d, mod: %d, cr: %d), 0x%02x (fec: %d, mod: %d, cr: %d), 0x%02x (fec: %d, mod: %d, cr: %d), 0x%02x (fec: %d, mod: %d, cr: %d)",
                 snr / 1000.0,
                tunerInfo.status,
                tunerInfo.signalStrength / 1000,
@@ -1720,11 +1733,9 @@ sl_i2c_tuner_mutex_unlock:
 }
 
 /*
- * NOTE: invoking spinlock thread MUST have acquired cb lock before invoking processTLVFromCallback
- *     e.g.
- *      unique_lock<mutex> CircularBufferMutex_local(CircularBufferMutex);
- *      processTLVFromCallback()
- *      CircularBufferMutex_local.unlock();
+ * NOTE: jjustman-2021-01-19 - moved critical section mutex from outer wrapper to only CircularBufferPop critical section
+ *          moved CS from processTLVFromCallback which was acquired for all of the TLV processing, which is not necessary
+ *
  */
 
 void SaankhyaPHYAndroid::processTLVFromCallback()
@@ -1740,6 +1751,11 @@ void SaankhyaPHYAndroid::processTLVFromCallback()
         CircularBufferMutex_local.lock();
         bytesRead = CircularBufferPop(cb, TLV_CIRCULAR_BUFFER_PROCESS_BLOCK_SIZE, (char*)&processDataCircularBufferForCallback);
         CircularBufferMutex_local.unlock();
+
+        //jjustman-2021-01-19 - if we don't get any data back, or the cb_should_discard flag is set, bail
+        if(!bytesRead || SaankhyaPHYAndroid::cb_should_discard) {
+            return;
+        }
 
         atsc3_sl_tlv_block_mutex_local.lock();
         if (!atsc3_sl_tlv_block) {

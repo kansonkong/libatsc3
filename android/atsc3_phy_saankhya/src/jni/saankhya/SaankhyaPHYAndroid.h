@@ -94,6 +94,7 @@ public:
     void dump_plp_list();
 
     mutex SL_I2C_command_mutex;
+    bool SL_I2C_last_command_extra_sleep;
 
 protected:
     void pinProducerThreadAsNeeded() override;
