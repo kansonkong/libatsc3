@@ -742,10 +742,11 @@ typedef struct lls_sls_alc_session {
  
 **/
 typedef struct lls_sls_mmt_monitor {
-    
-	atsc3_lls_slt_service_t* 				atsc3_lls_slt_service;
 
-    lls_sls_mmt_session_t* 					lls_mmt_session;
+	struct atsc3_lls_sls_mmt_monitor_transients {
+		atsc3_lls_slt_service_t *atsc3_lls_slt_service;
+		lls_sls_mmt_session_t *lls_mmt_session;
+	} transients;
 
     lls_sls_monitor_output_buffer_t 		lls_sls_monitor_output_buffer;
     lls_sls_monitor_output_buffer_mode_t 	lls_sls_monitor_output_buffer_mode;

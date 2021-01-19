@@ -43,6 +43,7 @@ typedef struct atsc3_audio_ac4_sample_entry_box {
     uint16_t                        sampling_frequency;
     uint16_t                        reserved_16;            //2 bytes reserved
 
+    //assumed required that if we are ac4_sample, then we must have an ac4_specific box
     atsc3_audio_ac4_specific_box_t  atsc3_audio_ac4_specific_box;
 } atsc3_audio_ac4_sample_entry_box_t;
 
@@ -52,10 +53,10 @@ typedef struct atsc3_audio_decoder_configuration_record {
     uint16_t channel_count;
     uint16_t sample_depth;
     uint32_t sample_rate;
-    uint32_t timebase;
+    uint32_t timebase;  //14496-12:2015 - timescale is uint32_t
 
     //extracted from moof/fragment metadata
-    uint32_t sample_duration;
+    uint32_t sample_duration;   //14496-12:2015 - duration is uint32_t
 
     atsc3_audio_ac4_sample_entry_box_t* atsc3_audio_ac4_sample_entry_box;
 

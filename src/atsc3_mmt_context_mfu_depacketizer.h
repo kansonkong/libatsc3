@@ -71,12 +71,8 @@ typedef struct atsc3_mmt_mfu_context {
 	mmtp_flow_t* 	                                    mmtp_flow;
 
     //active context
-    mmtp_asset_flow_t*                                  mmtp_asset_flow;
-    mmtp_asset_t*                                       mmtp_asset;
     mmtp_packet_id_packets_container_t*                 mmtp_packet_id_packets_container;
 
-    //TODO: relax this tight coupling from atsc3 to mmt package
-    lls_slt_monitor_t*                                  lls_slt_monitor;
     lls_sls_mmt_session_t*                              matching_lls_sls_mmt_session;
 
     //holdover context information
@@ -121,6 +117,18 @@ typedef struct atsc3_mmt_mfu_context {
     atsc3_mmt_signalling_information_on_routecomponent_message_present_f                                atsc3_mmt_signalling_information_on_routecomponent_message_present;
     mmt_atsc3_route_component_t*                                                                        mmt_atsc3_route_component_monitored;
     atsc3_mmt_signalling_information_on_held_message_present_f                                          atsc3_mmt_signalling_information_on_held_message_present;
+
+	//jjustman-2020-12-24 - TODO: relax this tight coupling from atsc3 to mmt package
+	//shared pointers that we don't own
+    struct atsc3_mmt_mfu_context_transients {
+    	//chained from lls_slt_monitor - see atsc3_lls_slt_monitor_free(...)
+		lls_slt_monitor_t*                                  lls_slt_monitor;
+
+		//mmtp_ specific transients are chained from vector_builder, and is part of a mmtp_flow collection (or sub-collection),
+		//see atsc3_mmt_mfu_context_free impl: mmtp_flow_free_mmtp_asset_flow(atsc3_mmt_mfu_context->mmtp_flow);
+		mmtp_asset_flow_t*                                  mmtp_asset_flow;
+		mmtp_asset_t*                                       mmtp_asset;
+	} transients;
 
 } atsc3_mmt_mfu_context_t;
 

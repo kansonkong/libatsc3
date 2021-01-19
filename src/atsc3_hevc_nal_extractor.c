@@ -268,7 +268,7 @@ atsc3_video_decoder_configuration_record_t* atsc3_avc1_hevc_nal_extractor_parse_
 
         //build our combined hevc NALs for csd specific data
         block_t* hevc_nals_combined = atsc3_hevc_extract_extradata_nals_combined_ffmpegImpl(atsc3_video_decoder_configuration_record->hevc_decoder_configuration_record->box_data_original);
-        if(hevc_nals_combined->p_size) {
+        if(hevc_nals_combined && hevc_nals_combined->p_size) {
             block_Rewind(hevc_nals_combined);
             atsc3_video_decoder_configuration_record->hevc_decoder_configuration_record->hevc_nals_combined = hevc_nals_combined;
         }
@@ -314,8 +314,7 @@ atsc3_video_decoder_configuration_record_t* atsc3_avc1_hevc_nal_extractor_parse_
         _ATSC3_HEVC_NAL_EXTRACTOR_DEBUG("atsc3_hevc_nal_extractor_parse_from_mpu_metadata_block_t: avc1: num_of_sequence_parameter_sets: %u", avc1_decoder_configuration_record->num_of_sequence_parameter_sets);
 
 //start parsing SPS here
-        for (int i = 0;
-                i < avc1_decoder_configuration_record->num_of_sequence_parameter_sets; i++) {
+        for (int i = 0; i < avc1_decoder_configuration_record->num_of_sequence_parameter_sets; i++) {
             atsc3_avc1_nal_unit_sps_t *atsc3_avc1_nal_unit_sps = atsc3_avc1_nal_unit_sps_new();
             atsc3_avc1_nal_unit_sps->nal_unit_length = ntohs(*((uint16_t *) (&mpu_ptr[avc_offset])));
             avc_offset += 2;
@@ -332,8 +331,7 @@ atsc3_video_decoder_configuration_record_t* atsc3_avc1_hevc_nal_extractor_parse_
         _ATSC3_HEVC_NAL_EXTRACTOR_DEBUG("atsc3_hevc_nal_extractor_parse_from_mpu_metadata_block_t: avc1: num_of_picture_parameter_sets: %u", avc1_decoder_configuration_record->num_of_picture_parameter_sets);
 
 //start parsing PPS here
-        for (int i = 0;
-                i < avc1_decoder_configuration_record->num_of_sequence_parameter_sets; i++) {
+        for (int i = 0; i < avc1_decoder_configuration_record->num_of_sequence_parameter_sets; i++) {
             atsc3_avc1_nal_unit_pps_t *atsc3_avc1_nal_unit_pps = atsc3_avc1_nal_unit_pps_new();
             atsc3_avc1_nal_unit_pps->nal_unit_length = ntohs(*((uint16_t *) (&mpu_ptr[avc_offset])));
             avc_offset += 2;

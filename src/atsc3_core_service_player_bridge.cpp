@@ -7,7 +7,7 @@
  * Android MMT MFU Playback with SLS event driven callbacks
  *
  *
-fv * Note: Atsc3NdkPHYBridge - Android NDK Binding against Lowasys API are not included
+ * Note: Atsc3NdkPHYBridge - Android NDK Binding against Lowasys API are not included
  */
 
 #ifndef __JJ_PHY_MMT_PLAYER_BRIDGE_DISABLED
@@ -37,9 +37,9 @@ recursive_mutex atsc3_core_service_player_bridge_context_mutex;
 lls_slt_monitor_t* lls_slt_monitor = NULL;
 
 //mmtp/sls flow management
+atsc3_mmt_mfu_context_t* atsc3_mmt_mfu_context = NULL;
 
 lls_sls_mmt_monitor_t* lls_sls_mmt_monitor = NULL;
-atsc3_mmt_mfu_context_t* atsc3_mmt_mfu_context = NULL;
 
 //route/alc specific parameters
 lls_sls_alc_monitor_t* lls_sls_alc_monitor = NULL;
@@ -110,11 +110,21 @@ void atsc3_core_service_application_bridge_reset_context() {
     lock_guard<recursive_mutex> atsc3_core_service_player_bridge_context_mutex_local(atsc3_core_service_player_bridge_context_mutex);
 
     if(atsc3_mmt_mfu_context) {
-          atsc3_mmt_mfu_context_free(&atsc3_mmt_mfu_context);
+        atsc3_mmt_mfu_context_free(&atsc3_mmt_mfu_context);
     }
 
     if (lls_slt_monitor) {
         atsc3_lls_slt_monitor_free(&lls_slt_monitor);
+        /*
+           atsc3_lls_slt_monitor_free chains calls to:
+                lls_slt_monitor_free_lls_sls_mmt_monitor(lls_slt_monitor); ->  MISSING IMPL lls_sls_mmt_monitor_free(), but not needed as only ptr ref's are transient
+            -and-
+                lls_slt_monitor_free_lls_sls_alc_monitor(lls_slt_monitor); -> lls_sls_alc_monitor_free
+
+            so just clear out our local ref:
+                lls_sls_mmt_monitor and lls_sls_alc_monitor
+        */
+        lls_sls_mmt_monitor = NULL;
         lls_sls_alc_monitor = NULL;
     }
 
@@ -227,7 +237,7 @@ atsc3_slt_broadcast_svc_signalling_t* atsc3_phy_add_plp_listener_from_service_id
                     }
 
                 }
-                __ATSC3_CORE_SERVICE_PLAYER_BRIDGE_INFO("atsc3_phy_add_plp_listener_from_service_id: before atsc3_phy_notify_plp_selection_changed: with %lu plp's", plps_to_listen.size());
+                __ATSC3_CORE_SERVICE_PLAYER_BRIDGE_INFO("atsc3_phy_add_plp_listener_from_service_id: before atsc3_phy_notify_plp_selection_changed: with %u plp's", plps_to_listen.size());
                 Atsc3NdkApplicationBridge_ptr->atsc3_phy_notify_plp_selection_changed(plps_to_listen);
                 atsc3_phy_notify_plp_selection_changed_called = true;
             } else {
@@ -304,7 +314,7 @@ atsc3_lls_slt_service_t* atsc3_core_service_player_bridge_set_single_monitor_a33
         lls_sls_alc_monitor = NULL; //make sure to clear out our ref
 
         lls_sls_mmt_monitor = lls_sls_mmt_monitor_create();
-        lls_sls_mmt_monitor->atsc3_lls_slt_service = atsc3_lls_slt_service; //HACK!
+        lls_sls_mmt_monitor->transients.atsc3_lls_slt_service = atsc3_lls_slt_service; //transient HACK!
         lls_slt_service_id_t* lls_slt_service_id = lls_slt_service_id_new_from_atsc3_lls_slt_service(atsc3_lls_slt_service);
 
         lls_slt_monitor_add_lls_slt_service_id(lls_slt_monitor, lls_slt_service_id);
@@ -316,7 +326,7 @@ atsc3_lls_slt_service_t* atsc3_core_service_player_bridge_set_single_monitor_a33
         if(!lls_sls_mmt_session) {
             __ATSC3_CORE_SERVICE_PLAYER_BRIDGE_WARN("atsc3_core_service_player_bridge_set_single_monitor_a331_service_id: lls_slt_mmt_session_find_from_service_id: lls_sls_mmt_session is NULL!");
         }
-        lls_sls_mmt_monitor->lls_mmt_session = lls_sls_mmt_session;
+        lls_sls_mmt_monitor->transients.lls_mmt_session = lls_sls_mmt_session;
         lls_slt_monitor->lls_sls_mmt_monitor = lls_sls_mmt_monitor;
 
         lls_slt_monitor_add_lls_sls_mmt_monitor(lls_slt_monitor, lls_sls_mmt_monitor);
@@ -692,7 +702,7 @@ void atsc3_core_service_bridge_process_packet_phy(block_t* packet) {
     matching_lls_sls_mmt_session = lls_slt_mmt_session_find_from_udp_packet(lls_slt_monitor, udp_packet->udp_flow.src_ip_addr, udp_packet->udp_flow.dst_ip_addr, udp_packet->udp_flow.dst_port);
     __ATSC3_CORE_SERVICE_PLAYER_BRIDGE_TRACE("Checking matching_lls_sls_mmt_session: %p,", matching_lls_sls_mmt_session);
 
-	if(matching_lls_sls_mmt_session && lls_slt_monitor && lls_slt_monitor->lls_sls_mmt_monitor && matching_lls_sls_mmt_session->atsc3_lls_slt_service->service_id == lls_slt_monitor->lls_sls_mmt_monitor->atsc3_lls_slt_service->service_id) {
+	if(matching_lls_sls_mmt_session && lls_slt_monitor && lls_slt_monitor->lls_sls_mmt_monitor && matching_lls_sls_mmt_session->atsc3_lls_slt_service->service_id == lls_slt_monitor->lls_sls_mmt_monitor->transients.atsc3_lls_slt_service->service_id) {
 
         if(!atsc3_mmt_mfu_context) {
             goto error;
@@ -1003,6 +1013,7 @@ void atsc3_lls_on_aeat_table_present_ndk(lls_table_t* lls_table) {
         Atsc3NdkApplicationBridge_ptr->LogMsg("E: atsc3_lls_on_aeat_table_present_ndk: no lls_table for AEAT!");
         return;
     }
+
     if(!lls_table->raw_xml.xml_payload || !lls_table->raw_xml.xml_payload_size) {
         Atsc3NdkApplicationBridge_ptr->LogMsg("E: atsc3_lls_on_aeat_table_present_ndk: no raw_xml.xml_payload for AEAT!");
         return;
@@ -1076,14 +1087,19 @@ bool atsc3_mmt_signalling_information_on_routecomponent_message_present_ndk(atsc
 
 void atsc3_sls_on_held_trigger_received_callback_impl(uint16_t service_id, block_t* held_payload) {
     block_Rewind(held_payload);
-    uint8_t *block_ptr = block_Get(held_payload);
+    uint8_t* block_ptr = block_Get(held_payload);
     uint32_t block_len = block_Len(held_payload);
+
+    if(!str_is_utf8((const char*)block_ptr)) {
+        __ATSC3_CORE_SERVICE_PLAYER_BRIDGE_WARN("atsc3_sls_on_held_trigger_received_callback_impl: HELD: is not utf-8!: %s", block_ptr);
+        return;
+    }
 
     int len_aligned = block_len + 1;
     len_aligned += 8-(len_aligned%8);
     char* xml_payload_copy = (char*)calloc(len_aligned , sizeof(char));
     strncpy(xml_payload_copy, (char*)block_ptr, block_len);
-    __ATSC3_CORE_SERVICE_PLAYER_BRIDGE_INFO("HELD: change: %s", xml_payload_copy);
+    __ATSC3_CORE_SERVICE_PLAYER_BRIDGE_DEBUG("atsc3_sls_on_held_trigger_received_callback_impl: HELD: payload: %s", xml_payload_copy);
 
     Atsc3NdkApplicationBridge_ptr->atsc3_onSlsHeldEmissionPresent(service_id, (const char*)xml_payload_copy);
 

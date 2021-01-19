@@ -15,7 +15,9 @@
 extern "C" {
 #endif
 
-
+/*
+ * Note: callee must block_Duplicate(...) and when completed with processing block_Destroy(...) as provided block will be re-used for subsequent invocations
+ */
 typedef void(*atsc3_srt_live_rx_udp_packet_process_callback_f)(block_t* block);
 typedef void(*atsc3_srt_live_rx_udp_packet_process_callback_with_context_f)(block_t* block, void* context);
 

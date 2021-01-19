@@ -8,7 +8,9 @@
 #include <jni.h>
 #include <stdlib.h>
 
-class Atsc3JniEnv
+#include "IAtsc3JniEnv.h"
+
+class Atsc3JniEnv : public IAtsc3JniEnv
 {
 public:
     Atsc3JniEnv(JavaVM *jvm): mJvm(jvm) {

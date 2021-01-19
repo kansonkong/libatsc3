@@ -39,7 +39,7 @@ MPU_timestamp_descriptor: 0x0001
 #include "atsc3_mmtp_packet_types.h"
 
 int _MMT_CONTEXT_MPU_SIGNAL_INFO_ENABLED = 0;
-int _MMT_CONTEXT_MPU_DEBUG_ENABLED = 1;
+int _MMT_CONTEXT_MPU_DEBUG_ENABLED = 0;
 int _MMT_CONTEXT_MPU_TRACE_ENABLED = 0;
 
 ATSC3_VECTOR_BUILDER_METHODS_IMPLEMENTATION(atsc3_mmt_mfu_mpu_timestamp_descriptor_rolling_window, atsc3_mmt_mfu_mpu_timestamp_descriptor);
@@ -164,25 +164,11 @@ void atsc3_mmt_mfu_context_free(atsc3_mmt_mfu_context_t** atsc3_mmt_mfu_context_
                 atsc3_mmt_mfu_context->mmtp_flow = NULL;
             }
 
-            if(atsc3_mmt_mfu_context->mmtp_asset_flow) {
-                mmtp_asset_flow_free(&atsc3_mmt_mfu_context->mmtp_asset_flow);
-            }
-            if(atsc3_mmt_mfu_context->mmtp_asset) {
-                mmtp_asset_free(&atsc3_mmt_mfu_context->mmtp_asset);
-            }
-
-                //jjustman-2020-08-31 - todo: check to confirm these aren't shared pointers...
-            if(atsc3_mmt_mfu_context->lls_slt_monitor) {
-                atsc3_lls_slt_monitor_free(&atsc3_mmt_mfu_context->lls_slt_monitor);
-            }
-
-
             if(atsc3_mmt_mfu_context->mp_table_last) {
                 //jjustman-2020-08-31: todo - free inner impl
                 free(atsc3_mmt_mfu_context->mp_table_last);
                 atsc3_mmt_mfu_context->mp_table_last = NULL;
             }
-
 
             free(atsc3_mmt_mfu_context);
             atsc3_mmt_mfu_context = NULL;
@@ -195,15 +181,18 @@ mmtp_asset_t* atsc3_mmt_mfu_context_mfu_depacketizer_context_update_find_or_crea
     mmtp_asset_flow_t* mmtp_asset_flow = NULL;
     mmtp_asset_t* mmtp_asset = NULL;
 
-    atsc3_mmt_mfu_context->udp_flow = &udp_packet->udp_flow;
-    atsc3_mmt_mfu_context->lls_slt_monitor = lls_slt_monitor;
+    //jjustman-2020-12-24 - we need to clone this instance, as udp_packet is transient and udp_flow is an instance field in the struct, not a ptr
+    atsc3_mmt_mfu_context->udp_flow = atsc3_udp_flow_clone_from_udp_packet(udp_packet);
+
+    atsc3_mmt_mfu_context->transients.lls_slt_monitor = lls_slt_monitor;
     atsc3_mmt_mfu_context->matching_lls_sls_mmt_session = matching_lls_sls_mmt_session;
 
     mmtp_asset_flow = mmtp_flow_find_or_create_from_udp_packet(atsc3_mmt_mfu_context->mmtp_flow, udp_packet);
-    atsc3_mmt_mfu_context->mmtp_asset_flow = mmtp_asset_flow;
+    atsc3_mmt_mfu_context->transients.mmtp_asset_flow = mmtp_asset_flow;
 
+    //jjustman-2020-12-24 - reset context is causing a doublefree here...
     mmtp_asset = mmtp_asset_flow_find_or_create_asset_from_lls_sls_mmt_session(mmtp_asset_flow, matching_lls_sls_mmt_session);
-    atsc3_mmt_mfu_context->mmtp_asset = mmtp_asset;
+    atsc3_mmt_mfu_context->transients.mmtp_asset = mmtp_asset;
 
     return mmtp_asset;
 }
@@ -238,11 +227,11 @@ void mmtp_mfu_process_from_payload_with_context(udp_packet_t *udp_packet, mmtp_m
     atsc3_global_statistics->packet_counter_mmt_mpu++;
     atsc3_global_statistics->packet_counter_mmt_timed_mpu++;
 
-	atsc3_mmt_mfu_context->udp_flow = &udp_packet->udp_flow;
+	atsc3_mmt_mfu_context->udp_flow = atsc3_udp_flow_clone_from_udp_packet(udp_packet);
 
 	//borrow from our context
 	mmtp_flow_t *mmtp_flow = atsc3_mmt_mfu_context->mmtp_flow;
-	lls_slt_monitor_t* lls_slt_monitor = atsc3_mmt_mfu_context->lls_slt_monitor;
+	lls_slt_monitor_t* lls_slt_monitor = atsc3_mmt_mfu_context->transients.lls_slt_monitor;
 	lls_sls_mmt_session_t* matching_lls_sls_mmt_session = atsc3_mmt_mfu_context->matching_lls_sls_mmt_session;
 	udp_flow_latest_mpu_sequence_number_container_t* udp_flow_latest_mpu_sequence_number_container = atsc3_mmt_mfu_context->udp_flow_latest_mpu_sequence_number_container;
 
@@ -251,7 +240,6 @@ void mmtp_mfu_process_from_payload_with_context(udp_packet_t *udp_packet, mmtp_m
     mmtp_asset_t* mmtp_asset = NULL;
     mmtp_packet_id_packets_container_t* mmtp_packet_id_packets_container = NULL;
     mpu_sequence_number_mmtp_mpu_packet_collection_t* mpu_sequence_number_mmtp_mpu_packet_collection = NULL;
-
 
     lls_sls_mmt_monitor_t *matching_lls_sls_mmt_monitor = lls_sls_mmt_monitor_find_from_service_id(lls_slt_monitor, matching_lls_sls_mmt_session->service_id);
 
@@ -266,11 +254,11 @@ void mmtp_mfu_process_from_payload_with_context(udp_packet_t *udp_packet, mmtp_m
         return;
     }
 
-    if (!(matching_lls_sls_mmt_monitor->atsc3_lls_slt_service->service_id == matching_lls_sls_mmt_session->service_id &&
+    if (!(matching_lls_sls_mmt_monitor->transients.atsc3_lls_slt_service->service_id == matching_lls_sls_mmt_session->service_id &&
           matching_lls_sls_mmt_session->sls_destination_ip_address == udp_packet->udp_flow.dst_ip_addr &&
           matching_lls_sls_mmt_session->sls_destination_udp_port == udp_packet->udp_flow.dst_port)) {
         __MMT_CONTEXT_MPU_TRACE("mmtp_mfu_process_from_payload_with_context: sls monitor flow: %d:%d, service_id: %d not matching for flow: %d:%d, service_id: %d, packet_id: %d, mpu_sequence_number: %d, psn: %d",
-                                matching_lls_sls_mmt_session->sls_destination_ip_address, matching_lls_sls_mmt_session->sls_destination_udp_port, matching_lls_sls_mmt_monitor->atsc3_lls_slt_service->service_id,
+                                matching_lls_sls_mmt_session->sls_destination_ip_address, matching_lls_sls_mmt_session->sls_destination_udp_port, matching_lls_sls_mmt_monitor->transients.atsc3_lls_slt_service->service_id,
                                 udp_packet->udp_flow.dst_ip_addr, udp_packet->udp_flow.dst_port, matching_lls_sls_mmt_session->service_id, mmtp_mpu_packet->mmtp_packet_id, mmtp_mpu_packet->mpu_sequence_number, mmtp_mpu_packet->packet_sequence_number);
         return;
     }
@@ -443,6 +431,7 @@ void mmtp_mfu_rebuild_from_packet_id_mpu_sequence_number(atsc3_mmt_mfu_context_t
                 mmtp_mpu_init_packet_to_rebuild->mfu_reassembly_performed = true;
 
                 block_t *du_mpu_metadata_block_duplicated_for_context_callback_invocation = block_Duplicate(mmtp_mpu_init_packet_to_rebuild->du_mpu_metadata_block);
+                block_Rewind(du_mpu_metadata_block_duplicated_for_context_callback_invocation);
                 if(atsc3_mmt_mfu_context->atsc3_mmt_mpu_on_sequence_mpu_metadata_present) {
                     atsc3_mmt_mfu_context->atsc3_mmt_mpu_on_sequence_mpu_metadata_present(atsc3_mmt_mfu_context, mmtp_mpu_init_packet_to_rebuild->mmtp_packet_id, mmtp_mpu_init_packet_to_rebuild->mpu_sequence_number, du_mpu_metadata_block_duplicated_for_context_callback_invocation);
                 }
@@ -865,7 +854,7 @@ void mmtp_mfu_rebuild_from_packet_id_mpu_sequence_number(atsc3_mmt_mfu_context_t
  */
 
 void mmt_signalling_message_dispatch_context_notification_callbacks(udp_packet_t *udp_packet, mmtp_signalling_packet_t* mmtp_signalling_packet, atsc3_mmt_mfu_context_t* atsc3_mmt_mfu_context) {
-	atsc3_mmt_mfu_context->udp_flow = &udp_packet->udp_flow;
+	atsc3_mmt_mfu_context->udp_flow = atsc3_udp_flow_clone_from_udp_packet(udp_packet);
 
 	for(int i=0; i < mmtp_signalling_packet->mmt_signalling_message_header_and_payload_v.count; i++) {
 		mmt_signalling_message_header_and_payload_t* mmt_signalling_message_header_and_payload = mmtp_signalling_packet->mmt_signalling_message_header_and_payload_v.data[i];
@@ -956,10 +945,10 @@ void mmt_signalling_message_dispatch_context_notification_callbacks(udp_packet_t
 								mp_table_asset_row->default_asset_flag,
 								mp_table_asset_row->identifier_mapping.asset_id.asset_id ? (const char*)mp_table_asset_row->identifier_mapping.asset_id.asset_id : "");
 
-					} else if(strncasecmp(ATSC3_MP_TABLE_ASSET_ROW_MP4A_ID, mp_table_asset_row->asset_type, 4) == 0 ||
-					            strncasecmp(ATSC3_MP_TABLE_ASSET_ROW_AC_4_ID, mp_table_asset_row->asset_type, 4) == 0 ||
-                                strncasecmp(ATSC3_MP_TABLE_ASSET_ROW_MHM1_ID, mp_table_asset_row->asset_type, 4) == 0 ||
-                                strncasecmp(ATSC3_MP_TABLE_ASSET_ROW_MHM2_ID, mp_table_asset_row->asset_type, 4) == 0) {
+					} else if(strncasecmp(ATSC3_MP_TABLE_ASSET_ROW_AC_4_ID, mp_table_asset_row->asset_type, 4) == 0 ||
+					          strncasecmp(ATSC3_MP_TABLE_ASSET_ROW_MHM1_ID, mp_table_asset_row->asset_type, 4) == 0 ||
+                              strncasecmp(ATSC3_MP_TABLE_ASSET_ROW_MHM2_ID, mp_table_asset_row->asset_type, 4) == 0 ||
+                              strncasecmp(ATSC3_MP_TABLE_ASSET_ROW_MP4A_ID, mp_table_asset_row->asset_type, 4) == 0) {
 
 						//mp_table_asset_row->asset_type ==  MP4A || AC-4
 						if(atsc3_mmt_mfu_context->atsc3_mmt_signalling_information_on_audio_essence_packet_id) {
@@ -1170,7 +1159,7 @@ uint32_t atsc3_mmt_movie_fragment_extract_sample_duration_us(block_t* mmt_movie_
         __MMSM_TRACE("atsc3_mmt_movie_fragment_extract_sample_duration_us: using tfhd default_sample_duration: %d (unbased)", sample_duration_unrebased);
     } else {
         atsc3_isobmff_trun_box = atsc3_isobmff_box_parser_tools_parse_trun_from_block_t(mmt_movie_fragment_metadata);
-        if(atsc3_isobmff_trun_box->flag_sample_duration_present && atsc3_isobmff_trun_box->sample_count) {
+        if(atsc3_isobmff_trun_box && atsc3_isobmff_trun_box->flag_sample_duration_present && atsc3_isobmff_trun_box->sample_count) {
             //grab the first sample here
             sample_duration_unrebased = atsc3_isobmff_trun_box->sample_duration;
         }

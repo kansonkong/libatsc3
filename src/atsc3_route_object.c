@@ -39,6 +39,19 @@ atsc3_route_object_t* atsc3_route_object_new() {
 	return atsc3_route_object;
 }
 
+/*
+ * jjustman-2020-12-23 - be VERY careful about making sure to also remove any dangling references to this route_object in the lls_sls_alc_monitor, for faster carousel recovery for corrupted payloads, ala:
+ *
+ * 	e.g. atsc3_alc_utils.c:atsc3_alc_packet_persist_to_toi_resource_process_sls_mbms_and_emit_callback
+ *
+ * 		if((matching_sls_alc_flow = atsc3_sls_alc_flow_find_entry_tsi(&lls_sls_alc_monitor->atsc3_sls_alc_all_s_tsid_flow_v, alc_packet->def_lct_hdr->tsi))) {
+				atsc3_route_object_reset_and_free_and_unlink_recovery_file_atsc3_route_object_lct_packet_received(atsc3_route_object);
+				atsc3_sls_alc_flow_remove_atsc3_route_object(matching_sls_alc_flow, atsc3_route_object);
+				atsc3_route_object_free(&atsc3_route_object);
+		}
+
+	as by default atsc3_lls_types.c: atsc3_lls_sls_alc_monitor_check_all_s_tsid_flows_has_given_up_route_objects will handle invocation and freeing of this atsc3_route_object after local expiry
+ */
 void atsc3_route_object_free(atsc3_route_object_t** atsc3_route_object_p) {
 	if(atsc3_route_object_p) {
 		atsc3_route_object_t* atsc3_route_object = *atsc3_route_object_p;
