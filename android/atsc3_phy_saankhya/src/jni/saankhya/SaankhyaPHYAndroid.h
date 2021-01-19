@@ -150,6 +150,7 @@ private:
     std::thread processThreadHandle;
     bool        processThreadShouldRun = false;
     bool        processThreadIsRunning = false;
+    int         processTLVFromCallbackInvocationCount = 0;
 
     //uses      pinStatusThreadAsNeeded
     int         statusThread();

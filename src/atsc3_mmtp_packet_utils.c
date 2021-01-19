@@ -123,9 +123,9 @@ mmtp_packet_id_packets_container_t* mmtp_asset_find_or_create_packets_container_
 mpu_sequence_number_mmtp_mpu_packet_collection_t* mmtp_packet_id_packets_container_find_or_create_mpu_sequence_number_mmtp_mpu_packet_collection_from_mmt_mpu_packet(mmtp_packet_id_packets_container_t* mmtp_packet_id_packets_container, mmtp_mpu_packet_t* mmtp_mpu_packet) {
     mpu_sequence_number_mmtp_mpu_packet_collection_t* mpu_sequence_number_mmtp_mpu_packet_collection = NULL;
     
-    for(int i=0; i < mmtp_packet_id_packets_container->mpu_sequence_number_mmtp_mpu_packet_collection_v.count; i++) {
+    for(int i=0; i < mmtp_packet_id_packets_container->mpu_sequence_number_mmtp_mpu_packet_collection_v.count && mpu_sequence_number_mmtp_mpu_packet_collection == NULL; i++) {
         mpu_sequence_number_mmtp_mpu_packet_collection = mmtp_packet_id_packets_container->mpu_sequence_number_mmtp_mpu_packet_collection_v.data[i];
-        if(mpu_sequence_number_mmtp_mpu_packet_collection->mpu_sequence_number == mmtp_mpu_packet->mpu_sequence_number) {
+        if(mpu_sequence_number_mmtp_mpu_packet_collection->packet_id == mmtp_mpu_packet->mmtp_packet_id && mpu_sequence_number_mmtp_mpu_packet_collection->mpu_sequence_number == mmtp_mpu_packet->mpu_sequence_number) {
             break;
         } else {
             mpu_sequence_number_mmtp_mpu_packet_collection = NULL;
@@ -180,11 +180,12 @@ void mmtp_packet_id_packets_container_remove_mpu_sequence_number_mmtp_mpu_packet
     bool removed_mmtp_mpu_packet_collection_entry = false;
     int i=0;
     
-    for(; i < mmtp_packet_id_packets_container->mpu_sequence_number_mmtp_mpu_packet_collection_v.count; i++) {
+    for(; i < mmtp_packet_id_packets_container->mpu_sequence_number_mmtp_mpu_packet_collection_v.count && !removed_mmtp_mpu_packet_collection_entry; i++) {
         mpu_sequence_number_mmtp_mpu_packet_collection = mmtp_packet_id_packets_container->mpu_sequence_number_mmtp_mpu_packet_collection_v.data[i];
         
         if(mpu_sequence_number_mmtp_mpu_packet_collection == mpu_sequence_number_mmtp_mpu_packet_collection_to_remove) {
             mpu_sequence_number_mmtp_mpu_packet_collection_free(&mpu_sequence_number_mmtp_mpu_packet_collection);
+            mmtp_packet_id_packets_container->mpu_sequence_number_mmtp_mpu_packet_collection_v.data[i] = NULL;
             removed_mmtp_mpu_packet_collection_entry = true;
             break;
         }

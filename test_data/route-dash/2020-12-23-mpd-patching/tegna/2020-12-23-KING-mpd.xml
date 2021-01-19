@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+
+<MPD profiles="urn:mpeg:dash:profile:isoff-broadcast:2015" type="dynamic" availabilityStartTime="2020-12-22T17:07:30Z" minimumUpdatePeriod="PT12.0S" minBufferTime="PT2.002S" maxSegmentDuration="PT2.002S" publishTime="2020-12-22T17:07:26Z" timeShiftBufferDepth="PT60.0S" suggestedPresentationDelay="PT2.002S" xmlns="urn:mpeg:dash:schema:mpd:2011" xmlns:dolby="http://www.dolby.com/ns/online/DASH" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="urn:mpeg:dash:schema:mpd:2011 DASH-MPD.xsd">
+
+	<Period start="PT0S" id="1">
+
+		<AdaptationSet mimeType="video/mp4" segmentAlignment="true" startWithSAP="1">
+			<SupplementalProperty schemeIdUri="http://dashif.org/guidelines/dash-atsc-cgcompatibility" value="1"/>
+			<RandomAccess interval="480480"/>
+			<SegmentTemplate duration="480480" initialization="$RepresentationID$_init.m4i" media="$RepresentationID$_Segment-$Number$.m4v" presentationTimeOffset="0" startNumber="1" timescale="240000"/>
+			
+		<Representation bandwidth="4000000" codecs="hvc1.2.4.L123.B0" frameRate="60000/1001" height="1080" id="1608656841598item-01item" scanType="progressive" width="1920"/>
+</AdaptationSet>
+<AdaptationSet lang="spa" mimeType="audio/mp4" segmentAlignment="true" startWithSAP="1">
+			<RandomAccess interval="480480"/>
+			<SegmentTemplate duration="480480" initialization="$RepresentationID$_init.m4i" media="$RepresentationID$_Segment-$Number$.m4a" presentationTimeOffset="0" startNumber="1" timescale="240000"/>
+			
+		<Representation audioSamplingRate="48000" bandwidth="96000" codecs="ac-4.02.01.00" id="1608656841598item-03item">
+				<AudioChannelConfiguration schemeIdUri="urn:mpeg:mpegB:cicp:ChannelConfiguration" value="2"/>
+			</Representation>
+</AdaptationSet>
+<AdaptationSet lang="eng" mimeType="audio/mp4" segmentAlignment="true" startWithSAP="1">
+			<RandomAccess interval="480480"/>
+			<SegmentTemplate duration="480480" initialization="$RepresentationID$_init.m4i" media="$RepresentationID$_Segment-$Number$.m4a" presentationTimeOffset="0" startNumber="1" timescale="240000"/>
+			
+		<Representation audioSamplingRate="48000" bandwidth="192000" codecs="ac-4.02.01.01" id="1608656841598item-02item">
+				<AudioChannelConfiguration schemeIdUri="urn:mpeg:mpegB:cicp:ChannelConfiguration" value="6"/>
+			</Representation>
+</AdaptationSet>
+<AdaptationSet lang="eng" mimeType="application/mp4" segmentAlignment="true" startWithSAP="1">
+			<SupplementalProperty schemeIdUri="http://dashif.org/guidelines/dash-atsc-closedcaption" value="ar:16-9;er:0;profile:0;3d:0"/>
+			<Role schemeIdUri="urn:mpeg:dash:role:2011" value="caption"/>
+			<SegmentTemplate duration="480480" initialization="$RepresentationID$_init.m4i" media="$RepresentationID$_Segment-$Number$.m4s" presentationTimeOffset="0" startNumber="1" timescale="240000"/>
+			
+		<Representation bandwidth="15000" codecs="stpp.ttml.im1t" id="1608656841598item-04item"/>
+</AdaptationSet>
+
+
+	</Period>
+
+</MPD>

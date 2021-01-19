@@ -369,7 +369,7 @@ int parse_hevc_nal_test_ffmpeg(const char* filename, bool expect_avcC_fallback) 
 
         block_t* hevc_mpu_metadata_block = block_Duplicate_from_ptr(mpu_metadata_payload, mpu_metadata_payload_size);
 
-        video_decoder_configuration_record_t* video_decoder_configuration_record = atsc3_avc1_hevc_nal_extractor_parse_from_mpu_metadata_block_t(hevc_mpu_metadata_block);
+        atsc3_video_decoder_configuration_record_t* video_decoder_configuration_record = atsc3_avc1_hevc_nal_extractor_parse_from_mpu_metadata_block_t(hevc_mpu_metadata_block);
 
 //        AVCodecContext* avctx = (AVCodecContext*)calloc(1, sizeof(AVCodecContext));
 //        avctx->extradata = block_Get(video_decoder_configuration_record->hevc_decoder_configuration_record->box_data_original);

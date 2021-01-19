@@ -32,6 +32,10 @@ extern "C" {
 #define ATSC3_STLTP_MULTICAST_RANGE_MIN 4009754624
 #define ATSC3_STLTP_MULTICAST_RANGE_MAX 4026531839
 
+atsc3_ip_udp_rtp_ctp_packet_t* atsc3_ip_udp_rtp_process_packet_from_pcap_frame_with_stltp_depacketizer_context(atsc3_stltp_depacketizer_context_t* atsc3_stltp_depacketizer_context, u_char *user, const struct pcap_pkthdr *pkthdr, const u_char *packet);
+atsc3_ip_udp_rtp_ctp_packet_t* atsc3_ip_udp_rtp_ctp_packet_process_from_blockt_pos_with_stltp_depacketizer_context(atsc3_stltp_depacketizer_context_t* atsc3_stltp_depacketizer_context, block_t* from);
+
+
 void atsc3_stltp_depacketizer_from_ip_udp_rtp_ctp_packet(atsc3_ip_udp_rtp_ctp_packet_t* ip_udp_rtp_ctp_packet, atsc3_stltp_depacketizer_context_t* atsc3_stltp_depacketizer_context);
 bool atsc3_stltp_depacketizer_from_blockt(block_t** packet_p, atsc3_stltp_depacketizer_context_t* atsc3_stltp_depacketizer_context);
 void atsc3_stltp_depacketizer_from_pcap_frame(u_char *user, const struct pcap_pkthdr *pkthdr, const u_char *packet, atsc3_stltp_depacketizer_context_t* atsc3_stltp_depacketizer_context);

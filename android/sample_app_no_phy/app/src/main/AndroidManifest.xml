@@ -1,8 +1,12 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools"
-    android:sharedUserId="android.uid.system"
     package="org.ngbp.libatsc3.sampleapp">
+
+    <!--
+        from venky 2020-09-08
+            android:sharedUserId="android.uid.system"
+    -->
 
     <uses-feature android:name="android.hardware.usb.host" />
 
@@ -11,10 +15,6 @@
     <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" />
     <uses-permission android:name="android.permission.INTERNET" />
 
-<!--
-    from venky 2020-09-08
-        android:sharedUserId="android.uid.system"
--->
 
     <application
         android:allowBackup="true"
