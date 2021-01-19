@@ -221,10 +221,17 @@ atsc3_slt_broadcast_svc_signalling_t* atsc3_phy_add_plp_listener_from_service_id
 
                         uint32_t sls_destination_ip_address = parseIpAddressIntoIntval(atsc3_slt_broadcast_svc_signalling->sls_destination_ip_address);
                         uint16_t sls_destination_udp_port = parsePortIntoIntval(atsc3_slt_broadcast_svc_signalling->sls_destination_udp_port);
+                        __ATSC3_CORE_SERVICE_PLAYER_BRIDGE_INFO("atsc3_phy_add_plp_listener_from_service_id: service_id: %d, checking lmt->dst_ip:port %d:%d, sls_dest_ip:port: %d: %d, plp_id: %d",
+                                                                service_id,
+                                                                atsc3_link_mapping_table_multicast->dst_ip_add,
+                                                                atsc3_link_mapping_table_multicast->dst_udp_port,
+                                                                sls_destination_ip_address,
+                                                                sls_destination_udp_port,
+                                                                atsc3_link_mapping_table_plp->PLP_ID);
 
                         if(atsc3_link_mapping_table_multicast->dst_ip_add == sls_destination_ip_address &&
                            atsc3_link_mapping_table_multicast->dst_udp_port == sls_destination_udp_port) {
-                            Atsc3NdkApplicationBridge_ptr->LogMsgF("atsc3_core_service_player_bridge_set_single_monitor_a331_service_id: SLS adding PLP_id: %d (%s: %s)",
+                            Atsc3NdkApplicationBridge_ptr->LogMsgF("atsc3_phy_add_plp_listener_from_service_id: SLS adding PLP_id: %d (%s: %s)",
                                                                    atsc3_link_mapping_table_plp->PLP_ID,
                                                                    atsc3_slt_broadcast_svc_signalling->sls_destination_ip_address,
                                                                    atsc3_slt_broadcast_svc_signalling->sls_destination_udp_port);
@@ -255,6 +262,7 @@ atsc3_slt_broadcast_svc_signalling_t* atsc3_phy_add_plp_listener_from_service_id
     if(found_atsc3_slt_broadcast_svc_signalling && atsc3_phy_notify_plp_selection_changed_called) {
         return atsc3_slt_broadcast_svc_signalling;
     } else {
+        __ATSC3_CORE_SERVICE_PLAYER_BRIDGE_WARN("atsc3_phy_add_plp_listener_from_service_id: found_atsc3_slt_broadcast_svc_signalling: %d, atsc3_phy_notify_plp_selection_changed_called: %p", found_atsc3_slt_broadcast_svc_signalling, atsc3_phy_notify_plp_selection_changed_called);
         return NULL;
     }
 }
@@ -594,8 +602,8 @@ atsc3_route_s_tsid_t* atsc3_slt_alc_get_sls_route_s_tsid_from_monitor_service_id
 void atsc3_core_service_bridge_process_packet_from_plp_and_block(uint8_t plp_num, block_t* block) {
     //jjustman-2021-01-19 - only process packets if we have a link mapping table for <flow, PLP> management
     if(!atsc3_link_mapping_table_last) {
-        if(!atsc3_link_mapping_table_missing_dropped_packets || (atsc3_link_mapping_table_missing_dropped_packets++ % 1000) == 0) {
-            __ATSC3_CORE_SERVICE_PLAYER_BRIDGE_WARN("atsc3_core_service_bridge_process_packet_from_plp_and_block: dropping due to !atsc3_link_mappping_table_last, plp: %d, dropped_packets: %d", plp_num, atsc3_link_mapping_table_missing_dropped_packets);
+        if((atsc3_link_mapping_table_missing_dropped_packets++ % 1000) == 0) {
+            __ATSC3_CORE_SERVICE_PLAYER_BRIDGE_WARN("atsc3_core_service_bridge_process_packet_from_plp_and_block: dropping due to atsc3_link_mappping_table_last == NULL, plp: %d, dropped_packets: %d", plp_num, atsc3_link_mapping_table_missing_dropped_packets);
         }
         return;
     }
