@@ -161,6 +161,9 @@ private:
     //hack
     static CircularBuffer cb;
     static mutex CircularBufferMutex;
+    //jjustman-2021-01-19 - used for when we are in a tuning operation and may have in-flight async RxDataCallbacks fired,
+    //          if set to true, we should discard the TLV payload in RxDataCallback
+    static atomic_bool cb_should_discard;
 
     //thread handling methods
 
