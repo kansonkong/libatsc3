@@ -135,24 +135,25 @@ atsc3_mmt_mfu_mpu_timestamp_descriptor_t* atsc3_get_mpu_timestamp_from_packet_id
         }
 
         //See https://tools.ietf.org/html/rfc5905#section-6, ntp64 has 32bit seconds and 32bit fractional which resolves to 232 picoseconds. (1,000,000uS in a pS)
-        uint64_t mmtp_timestamp_differential_ntp64 = ((uint64_t)(mmtp_timestamp_differential_s) << 32) | ((uint32_t)((mmtp_timestamp_differential_us << 32) / 1000000));
+        uint64_t mmtp_timestamp_differential_ntp64 = ((uint64_t)(mmtp_timestamp_differential_s) << 32) | ((uint32_t)(mmtp_timestamp_differential_us / 1000000));
 
         uint64_t mpu_presentation_time_ntp64_adjusted_from_mmtp_timestamp_differential = atsc3_mmt_mfu_mpu_timestamp_descriptor_max->mpu_presentation_time_ntp64 + mmtp_timestamp_differential_ntp64;
         compute_ntp64_to_seconds_microseconds(mpu_presentation_time_ntp64_adjusted_from_mmtp_timestamp_differential, &mpu_presentation_time_seconds_adjusted_from_mmtp_timestamp_differential, &mpu_presentation_time_microseconds_adjusted_from_mmtp_timestamp_differential);
 
-        mpu_presentation_time_as_us_value_adjusted_from_mmtp_timestamp_differential = compute_seconds_microseconds_to_scalar64(mpu_presentation_time_seconds_adjusted_from_mmtp_timestamp_differential, mpu_presentation_time_seconds_adjusted_from_mmtp_timestamp_differential);
+        mpu_presentation_time_as_us_value_adjusted_from_mmtp_timestamp_differential = compute_seconds_microseconds_to_scalar64(mpu_presentation_time_seconds_adjusted_from_mmtp_timestamp_differential, mpu_presentation_time_microseconds_adjusted_from_mmtp_timestamp_differential);
 
         //otherwise, prepare this new atsc3_mmt_mfu_mpu_timestamp_descriptor
-        __MMT_CONTEXT_MPU_INFO("atsc3_get_mpu_timestamp_from_packet_id_mpu_sequence_number_with_mmtp_timestamp_recovery_differential: missing matching packet_id: %d, mpu_sequence_number: %u, differential: %d.%06d, differential ntp64: %" PRIu64", using: "
+        __MMT_CONTEXT_MPU_INFO("atsc3_get_mpu_timestamp_from_packet_id_mpu_sequence_number_with_mmtp_timestamp_recovery_differential: missing matching packet_id: %d, mpu_sequence_number: %u, mpu_presentation_timestamp differential: %f, differential: %d.%06d, differential ntp64: %" PRIu64", using: "
                                 "atsc3_mmt_mfu_mpu_timestamp_descriptor_max:\n"
                                 "max: mmtp_timestamp\t%u\tmpu_sequence_number\t%u\tmpu_presentation_time_as_us_value\t%" PRIu64 "\tmpu_presentation_time_ntp64_adjusted_from_mmtp_timestamp_differential\t%" PRIu64"\tfrom recovery flag: %d\n"
                                 "new: mmtp_timestamp\t%u\tmpu_sequence_number\t%u\tmpu_presentation_time_as_us_value\t%" PRIu64 "\tmpu_presentation_time_ntp64_adjusted_from_mmtp_timestamp_differential\t%" PRIu64"\n",
                                 packet_id,
                                 mpu_sequence_number,
+                                (mpu_presentation_time_as_us_value_adjusted_from_mmtp_timestamp_differential - atsc3_mmt_mfu_mpu_timestamp_descriptor_max->mpu_presentation_time_as_us_value) / 1000000.0,
                                 mmtp_timestamp_differential_s,
                                 mmtp_timestamp_differential_us,
                                 mmtp_timestamp_differential_ntp64,
-                                
+
                                 atsc3_mmt_mfu_mpu_timestamp_descriptor_max->mmtp_timestamp,
                                 atsc3_mmt_mfu_mpu_timestamp_descriptor_max->mpu_sequence_number,
                                 atsc3_mmt_mfu_mpu_timestamp_descriptor_max->mpu_presentation_time_as_us_value,
