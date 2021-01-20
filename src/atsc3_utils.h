@@ -213,6 +213,8 @@ uint16_t parsePortIntoIntval(const char* dst_port);
 
 int mkpath(char *dir, mode_t mode);
 
+//see also atsc3_mmtp_ntp32_to_pts
+uint64_t compute_seconds_microseconds_to_scalar64(uint32_t seconds, uint32_t microseconds);
 
 /*
  * Concatenate preprocessor tokens A and B without expanding macro definitions
