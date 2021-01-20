@@ -1259,3 +1259,11 @@ FILE* atsc3_object_open(char* file_name) {
 
 	return NULL;
 }
+
+
+uint64_t compute_seconds_microseconds_to_scalar64(uint32_t seconds, uint32_t microseconds) {
+	return (uint64_t) seconds * (uint64_t) 1000000L + (uint64_t) microseconds;
+};
+
+
+

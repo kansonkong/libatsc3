@@ -62,7 +62,8 @@ void atsc3_core_service_application_bridge_init(IAtsc3NdkApplicationBridge* atsc
     Atsc3NdkApplicationBridge_ptr->LogMsgF("atsc3_core_service_application_bridge_init - Atsc3NdkApplicationBridge_ptr: %p", Atsc3NdkApplicationBridge_ptr);
 
     //set global logging levels
-    _MMT_CONTEXT_MPU_DEBUG_ENABLED = 0;
+    //jjustman-2021-01-19 - testing for mpu_timestamp_descriptor patching
+    _MMT_CONTEXT_MPU_DEBUG_ENABLED = 1;
     _ALC_UTILS_IOTRACE_ENABLED = 0;
     _ROUTE_SLS_PROCESSOR_INFO_ENABLED = 1;
     _ROUTE_SLS_PROCESSOR_DEBUG_ENABLED = 0;

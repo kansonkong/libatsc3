@@ -30,21 +30,38 @@ extern "C" {
  */
 typedef struct atsc3_mmt_mfu_context atsc3_mmt_mfu_context_t;
 
-typedef void (*atsc3_mmt_mpu_mfu_on_sample_complete_f) (atsc3_mmt_mfu_context_t* atsc3_mmt_mfu_context, uint16_t packet_id, uint32_t mpu_sequence_number, uint32_t sample_number, block_t* mmt_mfu_sample, uint32_t mfu_fragment_count_rebuilt);
-typedef void (*atsc3_mmt_mpu_mfu_on_sample_corrupt_f)  (atsc3_mmt_mfu_context_t* atsc3_mmt_mfu_context, uint16_t packet_id, uint32_t mpu_sequence_number, uint32_t sample_number, block_t* mmt_mfu_sample, uint32_t mfu_fragment_count_expected, uint32_t mfu_fragment_count_rebuilt);
-typedef void (*atsc3_mmt_mpu_mfu_on_sample_corrupt_mmthsample_header_f) (atsc3_mmt_mfu_context_t* atsc3_mmt_mfu_context, uint16_t packet_id, uint32_t mpu_sequence_number, uint32_t sample_number, block_t* mmt_mfu_sample,  uint32_t mfu_fragment_count_expected, uint32_t mfu_fragment_count_rebuilt);
+typedef void (*atsc3_mmt_mpu_mfu_on_sample_complete_f) (atsc3_mmt_mfu_context_t* atsc3_mmt_mfu_context, uint16_t packet_id, uint32_t mmtp_timestamp, uint32_t mpu_sequence_number, uint32_t sample_number, block_t* mmt_mfu_sample, uint32_t mfu_fragment_count_rebuilt);
+typedef void (*atsc3_mmt_mpu_mfu_on_sample_corrupt_f)  (atsc3_mmt_mfu_context_t* atsc3_mmt_mfu_context, uint16_t packet_id, uint32_t mmtp_timestamp, uint32_t mpu_sequence_number, uint32_t sample_number, block_t* mmt_mfu_sample, uint32_t mfu_fragment_count_expected, uint32_t mfu_fragment_count_rebuilt);
+typedef void (*atsc3_mmt_mpu_mfu_on_sample_corrupt_mmthsample_header_f) (atsc3_mmt_mfu_context_t* atsc3_mmt_mfu_context, uint16_t packet_id, uint32_t mmtp_timestamp, uint32_t mpu_sequence_number, uint32_t sample_number, block_t* mmt_mfu_sample,  uint32_t mfu_fragment_count_expected, uint32_t mfu_fragment_count_rebuilt);
 typedef void (*atsc3_mmt_mpu_mfu_on_sample_missing_f)  (atsc3_mmt_mfu_context_t* atsc3_mmt_mfu_context, uint16_t packet_id, uint32_t mpu_sequence_number, uint32_t sample_number);
 
 typedef bool (*atsc3_mmt_signalling_information_on_routecomponent_message_present_f) (atsc3_mmt_mfu_context_t* atsc3_mmt_mfu_context, mmt_atsc3_route_component_t* mmt_atsc3_route_component);
 typedef void (*atsc3_mmt_signalling_information_on_held_message_present_f) (atsc3_mmt_mfu_context_t* atsc3_mmt_mfu_context, mmt_atsc3_held_message_t* mmt_atsc3_held_message);
 
+/*
+ * From: https://tools.ietf.org/html/rfc5905#section-6
+ *
+ * The 64-bit timestamp format is used in packet headers and other
+   places with limited word size.  It includes a 32-bit unsigned seconds
+   field spanning 136 years and a 32-bit fraction field resolving 232
+   picoseconds.
+ */
 typedef struct atsc3_mmt_mfu_mpu_timestamp_descriptor {
 	uint16_t 	packet_id;
+	uint32_t	mmtp_timestamp;
+
 	uint32_t 	mpu_sequence_number;
+
 	uint64_t 	mpu_presentation_time_ntp64;
 	uint32_t 	mpu_presentation_time_seconds;
 	uint32_t 	mpu_presentation_time_microseconds;
 	uint64_t 	mpu_presentation_time_as_us_value; //%" PRIu64
+
+	//jjustman-2021-01-19 - for when we "recover" the mpu_presentation_time values by a differential of the most recent <packet_id, mpu_sequence_number, mpu_presentation_time_ntp64>
+	bool 		mpu_presentation_time_computed_from_recovery_mmtp_timestamp_flag;
+	uint32_t	recovery_mmtp_timestamp;
+	uint32_t	recovery_mpu_sequence_number;
+	uint64_t	recovery_mpu_presentation_time_ntp64;
 
 } atsc3_mmt_mfu_mpu_timestamp_descriptor_t;
 
@@ -77,13 +94,14 @@ typedef struct atsc3_mmt_mfu_context {
 
     //holdover context information
 	mp_table_t* mp_table_last;
-	atsc3_mmt_mfu_mpu_timestamp_descriptor_rolling_window_t												packet_id_mpu_timestamp_descriptor_window;
+	atsc3_mmt_mfu_mpu_timestamp_descriptor_rolling_window_t														packet_id_mpu_timestamp_descriptor_window;
 
 	//INTERNAL event callbacks
-    atsc3_mmt_signalling_information_on_packet_id_with_mpu_timestamp_descriptor_internal_f		        atsc3_mmt_signalling_information_on_packet_id_with_mpu_timestamp_descriptor_internal;
+    atsc3_mmt_signalling_information_on_packet_id_with_mpu_timestamp_descriptor_internal_f		        		atsc3_mmt_signalling_information_on_packet_id_with_mpu_timestamp_descriptor_internal;
 
 	//EXTERNAL helper methods
-	atsc3_get_mpu_timestamp_from_packet_id_mpu_sequence_number_f										get_mpu_timestamp_from_packet_id_mpu_sequence_number;
+	atsc3_get_mpu_timestamp_from_packet_id_mpu_sequence_number_f												get_mpu_timestamp_from_packet_id_mpu_sequence_number;
+	atsc3_get_mpu_timestamp_from_packet_id_mpu_sequence_number_with_mmtp_timestamp_recovery_differential_f		get_mpu_timestamp_from_packet_id_mpu_sequence_number_with_mmtp_timestamp_recovery_differential;
 
 	//EXTERNAL in-proc event callbacks
 
@@ -142,7 +160,9 @@ mmtp_packet_id_packets_container_t* atsc3_mmt_mfu_context_mfu_depacketizer_updat
 
 atsc3_mmt_mfu_mpu_timestamp_descriptor_t* atsc3_get_mpu_timestamp_from_packet_id_mpu_sequence_number(atsc3_mmt_mfu_context_t* atsc3_mmt_mfu_context, uint16_t packet_id, uint32_t mpu_sequence_number);
 
-
+//jjustman-2021-01-19 - get our mpu_timestamp_descriptor, either from the SI messsage or from recovering via mmtp_timestamp differential if our SI message was lost
+//		note: injects a "synthetic" mpu_timestamp_descriptor for durability in the condition of a possibly sustained SI message loss
+atsc3_mmt_mfu_mpu_timestamp_descriptor_t* atsc3_get_mpu_timestamp_from_packet_id_mpu_sequence_number_with_mmtp_timestamp_recovery_differential(atsc3_mmt_mfu_context_t* atsc3_mmt_mfu_context, uint16_t packet_id, uint32_t mmtp_timestamp, uint32_t mpu_sequence_number);
 
 //Warning: cross boundary processing hooks with callback invocation - impl's in atsc3_mmt_context_mfu_depacketizer.c
 
