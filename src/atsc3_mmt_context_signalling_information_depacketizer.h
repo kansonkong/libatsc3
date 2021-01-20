@@ -29,8 +29,15 @@ extern "C" {
 typedef struct atsc3_mmt_mfu_context atsc3_mmt_mfu_context_t;
 typedef struct atsc3_mmt_mfu_mpu_timestamp_descriptor atsc3_mmt_mfu_mpu_timestamp_descriptor_t;
 
-typedef void (*atsc3_mmt_signalling_information_on_packet_id_with_mpu_timestamp_descriptor_internal_f)(atsc3_mmt_mfu_context_t* atsc3_mmt_mfu_context, uint16_t packet_id, uint32_t mpu_sequence_number, uint64_t mpu_presentation_time_ntp64, uint32_t mpu_presentation_time_seconds, uint32_t mpu_presentation_time_microseconds);
+typedef void (*atsc3_mmt_signalling_information_on_packet_id_with_mpu_timestamp_descriptor_internal_f)(atsc3_mmt_mfu_context_t* atsc3_mmt_mfu_context, uint16_t packet_id, uint32_t mmtp_timestamp, uint32_t mpu_sequence_number, uint64_t mpu_presentation_time_ntp64, uint32_t mpu_presentation_time_seconds, uint32_t mpu_presentation_time_microseconds);
+
+//get mpu_timestamp_descriptor from a received MP_table emission, will return null if SI message was not received
 typedef atsc3_mmt_mfu_mpu_timestamp_descriptor_t* (*atsc3_get_mpu_timestamp_from_packet_id_mpu_sequence_number_f)(atsc3_mmt_mfu_context_t* atsc3_mmt_mfu_context, uint16_t packet_id, uint32_t mpu_sequence_number);
+
+//get mpu_timestamp_descriptor from a received MP_table emission with recovery fallback differential based upon mmtp_timestamp if SI message was not received
+typedef atsc3_mmt_mfu_mpu_timestamp_descriptor_t* (*atsc3_get_mpu_timestamp_from_packet_id_mpu_sequence_number_with_mmtp_timestamp_recovery_differential_f)(atsc3_mmt_mfu_context_t* atsc3_mmt_mfu_context, uint16_t packet_id, uint32_t mmtp_timestamp, uint32_t mpu_sequence_number);
+
+
 
 //todo- jjustman-2019-10-03: add in flow for un-filtered callback listeners
 

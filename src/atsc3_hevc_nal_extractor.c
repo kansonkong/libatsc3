@@ -2053,9 +2053,9 @@ void ff_free_vlc(VLC *vlc);
 #define INIT_LE_VLC_STATIC(vlc, bits, a, b, c, d, e, f, g, static_size) \
     INIT_LE_VLC_SPARSE_STATIC(vlc, bits, a, b, c, d, e, f, g, NULL, 0, 0, static_size)
 
-
+#ifndef INT_MAX
 #define INT_MAX INT32_MAX
-
+#endif
 
 #if defined(__cplusplus) && !defined(__STDC_CONSTANT_MACROS) && !defined(UINT64_C)
 #error missing -D__STDC_CONSTANT_MACROS / #define __STDC_CONSTANT_MACROS
@@ -2782,6 +2782,16 @@ return ((((uint32_t)(sign ^ cache)) >> (32 - n)) ^ sign) - sign;
 #endif
 }
 
+
+#ifndef sign_extend
+    static inline av_const int sign_extend(int val, unsigned bits)
+    {
+    unsigned shift = 8 * sizeof(int) - bits;
+    union { unsigned u; int s; } v = { (unsigned) val << shift };
+    return v.s >> shift;
+    }
+#endif
+
 #if !CACHED_BITSTREAM_READER
 
 static inline int get_xbits_le(GetBitContext *s, int n) {
@@ -3490,7 +3500,9 @@ enum AVAudioServiceType {
 #define BUFFER_FLAG_REALLOCATABLE (1 << 1)
 
 
+#ifndef ATOMIC_FLAG_INIT
 #define ATOMIC_FLAG_INIT 0
+#endif
 
 #define ATOMIC_VAR_INIT(value) (value)
 

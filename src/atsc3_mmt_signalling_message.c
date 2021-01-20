@@ -829,39 +829,39 @@ uint8_t* mmt_atsc3_message_payload_parse(mmt_signalling_message_header_and_paylo
             for(int i=0; i < mmt_atsc3_message_payload->atsc3_message_content_length - 44; i++) {
                 uint8_t* atsc3_message = &mmt_atsc3_message_payload->atsc3_message_content[i];
 
-                if(!strncasecmp(MMT_ATSC3_MESSAGE_ROUTECOMPONENT, atsc3_message, strlen(MMT_ATSC3_MESSAGE_ROUTECOMPONENT))) {
+                if(!strncasecmp(MMT_ATSC3_MESSAGE_ROUTECOMPONENT, (const char*)atsc3_message, strlen(MMT_ATSC3_MESSAGE_ROUTECOMPONENT))) {
                     //we have our opening ROUTE tag, now process interior elements
                     has_open_routecomponent_tag = true;
                 } else if(has_open_routecomponent_tag) {
-                    if(!strncasecmp(MMT_ATSC3_MESSAGE_STSID_URI, atsc3_message, strlen(MMT_ATSC3_MESSAGE_STSID_URI))) {
+                    if(!strncasecmp(MMT_ATSC3_MESSAGE_STSID_URI, (const char*)atsc3_message, strlen(MMT_ATSC3_MESSAGE_STSID_URI))) {
                         atsc3_message += strlen(MMT_ATSC3_MESSAGE_STSID_URI);
-                        char* end = strstr( atsc3_message, "\"");
+                        char* end = strstr( (const char*)atsc3_message, "\"");
                         if(end) {
 							int len = end - (char *) atsc3_message;
 							stsid_uri = calloc(len + 1, sizeof(uint8_t));
 							memcpy(stsid_uri, atsc3_message, len);
 						}
-                    } else if(!strncasecmp(MMT_ATSC3_MESSAGE_STSID_DESTINATION_IP_ADDRESS, atsc3_message, strlen(MMT_ATSC3_MESSAGE_STSID_DESTINATION_IP_ADDRESS))) {
+                    } else if(!strncasecmp(MMT_ATSC3_MESSAGE_STSID_DESTINATION_IP_ADDRESS, (const char*)atsc3_message, strlen(MMT_ATSC3_MESSAGE_STSID_DESTINATION_IP_ADDRESS))) {
                         atsc3_message += strlen(MMT_ATSC3_MESSAGE_STSID_DESTINATION_IP_ADDRESS);
-                        char* end = strstr( atsc3_message, "\"");
+                        char* end = strstr( (const char*)atsc3_message, "\"");
                         if(end) {
 	                        int len = end - (char*)atsc3_message;
 	                        stsid_destination_ip_address = calloc(len+1, sizeof(uint8_t));
                         	memcpy(stsid_destination_ip_address, atsc3_message, len);
 }
-                    } if(!strncasecmp(MMT_ATSC3_MESSAGE_STSID_DESTINATION_UDP_PORT, atsc3_message, strlen(MMT_ATSC3_MESSAGE_STSID_DESTINATION_UDP_PORT))) {
+                    } if(!strncasecmp(MMT_ATSC3_MESSAGE_STSID_DESTINATION_UDP_PORT, (const char*)atsc3_message, strlen(MMT_ATSC3_MESSAGE_STSID_DESTINATION_UDP_PORT))) {
                         atsc3_message += strlen(MMT_ATSC3_MESSAGE_STSID_DESTINATION_UDP_PORT);
-                        char* end = strstr( atsc3_message, "\"");
+                        char* end = strstr( (const char*)atsc3_message, "\"");
                         if(end) {
 							int len = end - (char *) atsc3_message;
 							uint8_t *stsid_port_s = calloc(len + 1, sizeof(uint8_t));
 							memcpy(stsid_port_s, atsc3_message, len);
-							stsid_destination_udp_port = atoi(stsid_port_s);
+							stsid_destination_udp_port = atoi((const char*)stsid_port_s);
 							free(stsid_port_s);
 						}
-                    } if(!strncasecmp(MMT_ATSC3_MESSAGE_STSID_SOURCE_IP_ADDRESS, atsc3_message, strlen(MMT_ATSC3_MESSAGE_STSID_SOURCE_IP_ADDRESS))) {
+                    } if(!strncasecmp(MMT_ATSC3_MESSAGE_STSID_SOURCE_IP_ADDRESS, (const char*)atsc3_message, strlen(MMT_ATSC3_MESSAGE_STSID_SOURCE_IP_ADDRESS))) {
                         atsc3_message += strlen(MMT_ATSC3_MESSAGE_STSID_SOURCE_IP_ADDRESS);
-                        char* end = strstr( atsc3_message, "\"");
+                        char* end = strstr( (const char*)atsc3_message, "\"");
                         if(end) {
 							int len = end - (char *) atsc3_message;
 
@@ -877,22 +877,22 @@ uint8_t* mmt_atsc3_message_payload_parse(mmt_signalling_message_header_and_paylo
                 if(mmt_atsc3_route_component) {
                     mmt_atsc3_route_component->stsid_uri_s = stsid_uri;
                     mmt_atsc3_route_component->stsid_destination_ip_address_s = stsid_destination_ip_address;
-                    mmt_atsc3_route_component->stsid_destination_ip_address = parseIpAddressIntoIntval(stsid_destination_ip_address);
+                    mmt_atsc3_route_component->stsid_destination_ip_address = parseIpAddressIntoIntval((const char*)stsid_destination_ip_address);
                     mmt_atsc3_route_component->stsid_destination_udp_port = stsid_destination_udp_port;
                     if(stsid_source_ip_address) {
                         mmt_atsc3_route_component->stsid_source_ip_address_s = stsid_source_ip_address;
-                        mmt_atsc3_route_component->stsid_source_ip_address = parseIpAddressIntoIntval(stsid_source_ip_address);
+                        mmt_atsc3_route_component->stsid_source_ip_address = parseIpAddressIntoIntval((const char*)stsid_source_ip_address);
                     }
                 }
             } else {
             	if(stsid_uri) {
-            		freeclean(&stsid_uri);
+            		freeclean((void**)&stsid_uri);
             	}
             	if(stsid_destination_ip_address) {
-                    freeclean(&stsid_destination_ip_address);
+                    freeclean((void**)&stsid_destination_ip_address);
             	}
             	if(stsid_source_ip_address) {
-            		freeclean(&stsid_source_ip_address);
+            		freeclean((void**)&stsid_source_ip_address);
             	}
             }
 
@@ -929,7 +929,8 @@ uint8_t* mmt_scte35_message_payload_parse(mmt_signalling_message_header_and_payl
 	for(int i=0; i < scte35_signal_descriptor_n && (udp_raw_buf_size > (buf-raw_buf)); i++) {
 		//make sure we have at least 19 bytes available (16+16+64+7+33+16)
 		if(19 < udp_raw_buf_size - (buf-raw_buf)) {
-			__MMSM_WARN("mmt_scte35_message_payload_parse: short read for descriptor: %u, need 19 but remaining is: %ld", i, (udp_raw_buf_size - (buf-raw_buf)));
+			//llvm printf can't decide if this is %llu or %lu based upon armv7/armv8, so just force it to %u
+			__MMSM_WARN("mmt_scte35_message_payload_parse: short read for descriptor: %u, need 19 but remaining is: %u", i, (uint32_t)((udp_raw_buf_size - (buf-raw_buf))));
 			goto parse_incomplete;
 		}
 
@@ -942,19 +943,20 @@ uint8_t* mmt_scte35_message_payload_parse(mmt_signalling_message_header_and_payl
 		//pts_timestamp is 1+32
 		uint8_t pts_timestamp_block[5];
 		buf = extract(buf, (uint8_t*)&pts_timestamp_block, 5);
-		mmt_scte35_signal_descriptor->pts_timestamp |= ((pts_timestamp_block[0] & 0x1UL) << 33);
+		mmt_scte35_signal_descriptor->pts_timestamp |= (((uint64_t)pts_timestamp_block[0] & 0x1UL) << 33);
 		mmt_scte35_signal_descriptor->pts_timestamp |= ntohl(*(uint32_t*)(&pts_timestamp_block[1]));
 
 		buf = extract(buf, (uint8_t*)&mmt_scte35_signal_descriptor->signal_length, 2);
 
 		if(mmt_scte35_signal_descriptor->signal_length > udp_raw_buf_size - (buf-raw_buf)) {
-			__MMSM_WARN("mmt_scte35_message_payload_parse: signal length for descriptor: %u, need %u but remaining is: %ld", i, mmt_scte35_signal_descriptor->signal_length, (udp_raw_buf_size - (buf-raw_buf)));
+			//llvm printf can't decide if this is %llu or %lu based upon armv7/armv8, so just force it to %u
+			__MMSM_WARN("mmt_scte35_message_payload_parse: signal length for descriptor: %u, need %u but remaining is: %u", i, mmt_scte35_signal_descriptor->signal_length, (uint32_t)((udp_raw_buf_size - (buf-raw_buf))));
 			goto parse_incomplete;
 		}
 
 		buf = extract(buf, (uint8_t*)&mmt_scte35_signal_descriptor->signal_byte, mmt_scte35_signal_descriptor->signal_length);
 		mmt_scte35_message_payload_add_mmt_scte35_signal_descriptor(&mmt_signalling_message_header_and_payload->message_payload.mmt_scte35_message_payload, mmt_scte35_signal_descriptor);
-		__MMSM_INFO("mmt_scte35_message_payload_parse: adding signal at NTP_timestamp: %llu, PTS: %llu", mmt_scte35_signal_descriptor->ntp_timestamp, mmt_scte35_signal_descriptor->pts_timestamp);
+		__MMSM_INFO("mmt_scte35_message_payload_parse: adding signal at NTP_timestamp: %" PRIu64 ", PTS: %" PRIu64, mmt_scte35_signal_descriptor->ntp_timestamp, mmt_scte35_signal_descriptor->pts_timestamp);
 	}
 
 	parse_incomplete:
@@ -1201,7 +1203,7 @@ void mpt_message_dump(mmt_signalling_message_header_and_payload_t* mmt_signallin
 			if(mp_table_asset_row->mmt_signalling_message_mpu_timestamp_descriptor) {
 				for(int i=0; i < mp_table_asset_row->mmt_signalling_message_mpu_timestamp_descriptor->mpu_tuple_n; i++) {
 					__MMSM_DEBUG("   mpu_timestamp_descriptor %u, mpu_sequence_number: %u", i, mp_table_asset_row->mmt_signalling_message_mpu_timestamp_descriptor->mpu_tuple[i].mpu_sequence_number);
-					__MMSM_DEBUG("   mpu_timestamp_descriptor %u, mpu_presentation_time: %llu", i, mp_table_asset_row->mmt_signalling_message_mpu_timestamp_descriptor->mpu_tuple[i].mpu_presentation_time);
+					__MMSM_DEBUG("   mpu_timestamp_descriptor %u, mpu_presentation_time: %" PRIu64, i, mp_table_asset_row->mmt_signalling_message_mpu_timestamp_descriptor->mpu_tuple[i].mpu_presentation_time);
 				}
 			}
 		}
