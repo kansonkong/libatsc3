@@ -735,7 +735,7 @@ void mmtp_mfu_rebuild_from_packet_id_mpu_sequence_number(atsc3_mmt_mfu_context_t
         if (mmtp_mpu_init_packet_to_rebuild->mfu_reassembly_performed) {
             continue;
         }
-        //process movie fragment metadata, don't send incomplete payloads for moof box (e.g. isnt FI==0x00 or endns in 0x03)
+        //process movie fragment metadata, don't send incomplete payloads for moof box (e.g. isnt FI==0x00 or ends in 0x03)
         if (mmtp_mpu_init_packet_to_rebuild->mpu_fragment_type == 0x1) {
             //mark this DU as completed for purging at the end of this method
 
@@ -795,13 +795,18 @@ void mmtp_mfu_rebuild_from_packet_id_mpu_sequence_number(atsc3_mmt_mfu_context_t
                     block_Destroy(&du_movie_fragment_block_rebuilt);
                 } else {
                     //can't send if off if we don't have our block_rebuilt or are missing our du_movie_fragment_block for this DU
-                    __MMT_CONTEXT_MPU_WARN("mmtp_mfu_rebuild_from_packet_id_mpu_sequence_number Missing proceeding movie fragment metadata i: %u, psn: %u, with %u:%u and packet_id: %u, mpu_sequence_number: %u, fragment_indicator: %u",
-                            i, mmtp_mpu_init_packet_to_rebuild->packet_sequence_number,
-                            atsc3_mmt_mfu_context->udp_flow->dst_ip_addr,
-                            atsc3_mmt_mfu_context->udp_flow->dst_port,
-                            mmtp_mpu_init_packet_to_rebuild->mmtp_packet_id,
-                            mmtp_mpu_init_packet_to_rebuild->mpu_sequence_number,
-                            mmtp_mpu_init_packet_to_rebuild->mpu_fragmentation_indicator);
+                    if(!mmtp_mpu_init_packet_to_rebuild->mmtp_mpu_init_packet_missing_du_movie_fragment_block_warning_logged) {
+                        __MMT_CONTEXT_MPU_WARN("mmtp_mfu_rebuild_from_packet_id_mpu_sequence_number: Missing proceeding movie fragment metadata i: %u, psn: %u, with %u:%u and packet_id: %u, mpu_sequence_number: %u, fragment_indicator: %u",
+                                i, mmtp_mpu_init_packet_to_rebuild->packet_sequence_number,
+                                atsc3_mmt_mfu_context->udp_flow->dst_ip_addr,
+                                atsc3_mmt_mfu_context->udp_flow->dst_port,
+                                mmtp_mpu_init_packet_to_rebuild->mmtp_packet_id,
+                                mmtp_mpu_init_packet_to_rebuild->mpu_sequence_number,
+                                mmtp_mpu_init_packet_to_rebuild->mpu_fragmentation_indicator);
+                            mmtp_mpu_init_packet_to_rebuild->mmtp_mpu_init_packet_missing_du_movie_fragment_block_warning_logged = true;
+                    } else {
+                        //noop
+                    }
                 }
             } else {
                 //first fragment of DU, so clear out any (improper) du_movie_fragment_block_rebuilt that may be garbage
@@ -817,7 +822,7 @@ void mmtp_mfu_rebuild_from_packet_id_mpu_sequence_number(atsc3_mmt_mfu_context_t
                         block_Merge(du_movie_fragment_block_rebuilt, mmtp_mpu_init_packet_to_rebuild->du_movie_fragment_block);
                     } else {
                         __MMT_CONTEXT_MPU_WARN(
-                                "mmtp_mfu_rebuild_from_packet_id_mpu_sequence_number Missing initial movie fragment m]etadata i: %u, psn: %u, with %u:%u and packet_id: %u, mpu_sequence_number: %u, fragment_indicator: %u",
+                                "mmtp_mfu_rebuild_from_packet_id_mpu_sequence_number: Missing initial movie fragment metadata block_t: du_movie_fragment_block_rebuilt: i: %u, psn: %u, with %u:%u and packet_id: %u, mpu_sequence_number: %u, fragment_indicator: %u",
                                 i, mmtp_mpu_init_packet_to_rebuild->packet_sequence_number,
                                 atsc3_mmt_mfu_context->udp_flow->dst_ip_addr,
                                 atsc3_mmt_mfu_context->udp_flow->dst_port,
