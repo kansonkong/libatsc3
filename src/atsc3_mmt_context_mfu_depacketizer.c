@@ -134,8 +134,9 @@ atsc3_mmt_mfu_mpu_timestamp_descriptor_t* atsc3_get_mpu_timestamp_from_packet_id
             return NULL;
         }
 
-        //See https://tools.ietf.org/html/rfc5905#section-6, ntp64 has 32bit seconds and 32bit fractional which resolves to 232 picoseconds. (1,000,000uS in a pS)
-        uint64_t mmtp_timestamp_differential_ntp64 = ((uint64_t)(mmtp_timestamp_differential_s) << 32) | ((uint32_t)(mmtp_timestamp_differential_us / 1000000));
+        //See https://tools.ietf.org/html/rfc5905#section-6, ntp64 has 32bit seconds and 32bit fractional which resolves to 232 picoseconds. (1,000,000uS in a pS) and
+        //http://waitingkuo.blogspot.com/2012/06/conversion-between-ntp-time-and-unix.html
+        uint64_t mmtp_timestamp_differential_ntp64 = ((uint64_t)(mmtp_timestamp_differential_s) << 32) | (uint32_t)( (double)(mmtp_timestamp_differential_us+1) * (double)(1LL<<32) * 1.0e-6 );
 
         uint64_t mpu_presentation_time_ntp64_adjusted_from_mmtp_timestamp_differential = atsc3_mmt_mfu_mpu_timestamp_descriptor_max->mpu_presentation_time_ntp64 + mmtp_timestamp_differential_ntp64;
         compute_ntp64_to_seconds_microseconds(mpu_presentation_time_ntp64_adjusted_from_mmtp_timestamp_differential, &mpu_presentation_time_seconds_adjusted_from_mmtp_timestamp_differential, &mpu_presentation_time_microseconds_adjusted_from_mmtp_timestamp_differential);
