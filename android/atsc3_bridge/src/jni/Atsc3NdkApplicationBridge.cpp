@@ -129,23 +129,88 @@ int Atsc3NdkApplicationBridge::releasePinnedConsumerThreadAsNeeded() {
     return 0;
 }
 
-int Atsc3NdkApplicationBridge::atsc3_slt_selectService(int service_id) {
+int Atsc3NdkApplicationBridge::atsc3_slt_select_service(int service_id) {
     int ret = -1;
+    vector<uint8_t> updated_plp_listeners;
+
     atsc3_lls_slt_service_t* atsc3_lls_slt_service = atsc3_core_service_player_bridge_set_single_monitor_a331_service_id(service_id);
     if(atsc3_lls_slt_service && atsc3_lls_slt_service->atsc3_slt_broadcast_svc_signalling_v.count) {
         ret = atsc3_lls_slt_service->atsc3_slt_broadcast_svc_signalling_v.data[0]->sls_protocol;
+
+        //refresh our listened PLPs based upon the updated SLS ip:port flow now added to lls_slt_monitor->lls_slt_service_id_v collection from the LMT
+        if(ret) {
+
+            //RAII acquire our context mutex
+            {
+                //make it safe for us to have a reference of lls_slt_monitor
+                recursive_mutex& atsc3_core_service_player_bridge_context_mutex = atsc3_core_service_player_bridge_get_context_mutex();
+                lock_guard<recursive_mutex> atsc3_core_service_player_bridge_context_mutex_local(atsc3_core_service_player_bridge_context_mutex);
+
+                lls_slt_monitor_t* lls_slt_monitor = atsc3_core_service_player_bridge_get_lls_slt_montior();
+                updated_plp_listeners = atsc3_phy_build_plp_listeners_from_lls_slt_monitor(lls_slt_monitor);
+            } //release our context mutex before invoking atsc3_phy_notify_plp_selection_changed with our updated_plp_listeners values
+
+            if(updated_plp_listeners.size()) {
+                atsc3_phy_notify_plp_selection_changed(updated_plp_listeners);
+            }
+        }
     }
 
     return ret;
 }
 
-void Atsc3NdkApplicationBridge::set_plp_settings(jint *a_plp_ids, jsize a_plp_size) {
+//add an additional service_id for monitoring, e.g. for ESG use cases to capture the OMA-BCAST payload while presenting the linear a/v route emission
+//
+// sucessful:
+//      returns the a/331 sls_protocol if service selection was successful,
+//
+//  otherwise:
+//      returns -1, for service_id not found (or other failure)
 
-    uint8_t* u_plp_ids = (uint8_t*)calloc(a_plp_size, sizeof(uint8_t));
-    for(int i=0; i < a_plp_size; i++) {
-        u_plp_ids[i] = (uint8_t)a_plp_ids[i];
+int Atsc3NdkApplicationBridge::atsc3_slt_alc_select_additional_service(int service_id) {
+    int ret = -1;
+    vector<uint8_t> updated_plp_listeners;
+
+    atsc3_lls_slt_service_t* atsc3_lls_slt_service = atsc3_core_service_player_bridge_add_monitor_a331_service_id(service_id);
+    if(atsc3_lls_slt_service && atsc3_lls_slt_service->atsc3_slt_broadcast_svc_signalling_v.count) {
+        ret = atsc3_lls_slt_service->atsc3_slt_broadcast_svc_signalling_v.data[0]->sls_protocol;
+
+        //refresh our listened PLPs based upon the updated SLS ip:port flow now added to lls_slt_monitor->lls_slt_service_id_v collection from the LMT
+        if(ret) {
+
+            //RAII acquire our context mutex
+            {
+                //make it safe for us to have a reference of lls_slt_monitor
+                recursive_mutex& atsc3_core_service_player_bridge_context_mutex = atsc3_core_service_player_bridge_get_context_mutex();
+                lock_guard<recursive_mutex> atsc3_core_service_player_bridge_context_mutex_local(atsc3_core_service_player_bridge_context_mutex);
+
+                lls_slt_monitor_t* lls_slt_monitor = atsc3_core_service_player_bridge_get_lls_slt_montior();
+                updated_plp_listeners = atsc3_phy_build_plp_listeners_from_lls_slt_monitor(lls_slt_monitor);
+            } //release our context mutex before invoking atsc3_phy_notify_plp_selection_changed with our updated_plp_listeners values
+
+            if(updated_plp_listeners.size()) {
+                atsc3_phy_notify_plp_selection_changed(updated_plp_listeners);
+            }
+        }
     }
+
+    return ret;
 }
+
+//TODO: jjustman-2019-11-07 - add mutex here around additional_services_monitored collection
+int Atsc3NdkApplicationBridge::atsc3_slt_alc_clear_additional_service_selections() {
+
+//    for(int i=0; i < atsc3_slt_alc_additional_services_monitored.size(); i++) {
+//        int to_remove_monitor_service_id = atsc3_slt_alc_additional_services_monitored.at(i);
+//        atsc3_phy_mmt_player_bridge_remove_monitor_a331_service_id(to_remove_monitor_service_id);
+//    }
+//
+//    atsc3_slt_alc_additional_services_monitored.clear();
+
+    return 0;
+}
+
+
 
 std::string Atsc3NdkApplicationBridge::get_android_temp_folder() {
     if(!apiAppBridge) {
@@ -169,35 +234,6 @@ std::string Atsc3NdkApplicationBridge::get_android_temp_folder() {
     return temp_folder;
 }
 
-//add an additional service_id for monitoring, e.g. for ESG use cases to capture the OMA-BCAST payload while presenting the linear a/v route emission
-//
-// sucessful:
-//      returns the a/331 sls_protocol if service selection was successful,
-//
-//  otherwise:
-//      returns -1, for service_id not found (or other failure)
-
-int Atsc3NdkApplicationBridge::atsc3_slt_alc_select_additional_service(int service_id) {
-    int ret = -1;
-    atsc3_lls_slt_service_t* atsc3_lls_slt_service = atsc3_core_service_player_bridge_add_monitor_a331_service_id(service_id);
-    if(atsc3_lls_slt_service && atsc3_lls_slt_service->atsc3_slt_broadcast_svc_signalling_v.count) {
-        ret = atsc3_lls_slt_service->atsc3_slt_broadcast_svc_signalling_v.data[0]->sls_protocol;
-    }
-    return ret;
-}
-
-//TODO: jjustman-2019-11-07 - add mutex here around additional_services_monitored collection
-int Atsc3NdkApplicationBridge::atsc3_slt_alc_clear_additional_service_selections() {
-
-//    for(int i=0; i < atsc3_slt_alc_additional_services_monitored.size(); i++) {
-//        int to_remove_monitor_service_id = atsc3_slt_alc_additional_services_monitored.at(i);
-//        atsc3_phy_mmt_player_bridge_remove_monitor_a331_service_id(to_remove_monitor_service_id);
-//    }
-//
-//    atsc3_slt_alc_additional_services_monitored.clear();
-
-    return 0;
-}
 
 //use 2nd param to_match_content_type to filter down to MPD via const char* to_match_content_type
 //application/dash+xml
@@ -637,24 +673,9 @@ JNIEXPORT jint JNICALL
 Java_org_ngbp_libatsc3_middleware_Atsc3NdkApplicationBridge_atsc3_1slt_1selectService(JNIEnv *env, jobject thiz,
                                                          jint service_id) {
     _NDK_APPLICATION_BRIDGE_INFO("Java_org_ngbp_libatsc3_middleware_Atsc3NdkApplicationBridge_atsc3_1slt_1selectService, service_id: %d\n", (int)service_id);
-    int ret = apiAppBridge->atsc3_slt_selectService((int)service_id);
+    int ret = apiAppBridge->atsc3_slt_select_service((int)service_id);
 
     return ret;
-}
-
-extern "C"
-JNIEXPORT jint JNICALL
-Java_org_ngbp_libatsc3_middleware_Atsc3NdkApplicationBridge_apiAppBridgeSetPLP(JNIEnv *env, jobject thiz, jintArray a_plp_ids) {
-    // TODO: implement apiAppBridgeSetPLP()
-//
-//    jsize len = *env->GetArrayLength(a_plp_ids);
-//    jint *a_body = *env->GetIntArrayElements(a_plp_ids, 0);
-////    for (int i=0; i<len; i++) {
-////        sum += body[i];
-////    }
-//    apiAppBridge->set_plp_settings(a_body, len);
-
-    return -1;
 }
 
 extern "C"

@@ -29,7 +29,8 @@ class IAtsc3NdkApplicationBridge {
         virtual void atsc3_onAeatTablePresent(const char* aeat_payload_xml) = 0;
 
         /** atsc3 service methods **/
-        virtual int atsc3_slt_selectService(int service_id) = 0;
+
+        virtual int atsc3_slt_select_service(int service_id) = 0;  //jjustman-2021-01-21 - renamed to match c/c++ _ style instead of camelCase
         virtual int atsc3_slt_alc_select_additional_service(int service_id) = 0;
         virtual int atsc3_slt_alc_clear_additional_service_selections() = 0;
 
@@ -52,9 +53,6 @@ class IAtsc3NdkApplicationBridge {
         virtual string get_android_temp_folder() = 0;
 
         //application bridge to phy instance callbacks for PLP selection change
-		//jjustman-2020-12-30 - old signature, w/ jni types virtual void set_plp_settings(jint *a_plp_ids, jsize sa_plp_size) = 0;
-        virtual void set_plp_settings(int *a_plp_ids, int sa_plp_size) = 0;
-	
         virtual void atsc3_phy_notify_plp_selection_change_set_callback(atsc3_phy_notify_plp_selection_change_f atsc3_phy_notify_plp_selection_change, void* context) = 0;
         virtual void atsc3_phy_notify_plp_selection_change_clear_callback() = 0;
         virtual void atsc3_phy_notify_plp_selection_changed(vector<uint8_t> plps_to_listen) = 0;
