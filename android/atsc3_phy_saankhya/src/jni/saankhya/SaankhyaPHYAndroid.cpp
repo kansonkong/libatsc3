@@ -1802,8 +1802,7 @@ void SaankhyaPHYAndroid::processTLVFromCallback()
                                 alp_total_LMTs_recv++;
                                 atsc3_link_mapping_table_t *atsc3_link_mapping_table_pending = atsc3_alp_packet_extract_lmt(atsc3_alp_packet);
 
-                                if (atsc3_phy_rx_link_mapping_table_process_callback &&
-                                atsc3_link_mapping_table_pending) {
+                                if (atsc3_phy_rx_link_mapping_table_process_callback && atsc3_link_mapping_table_pending) {
                                     atsc3_link_mapping_table_t *atsc3_link_mapping_table_to_free = atsc3_phy_rx_link_mapping_table_process_callback(atsc3_link_mapping_table_pending);
 
                                     if (atsc3_link_mapping_table_to_free) {

@@ -552,6 +552,9 @@ int LowaSISPHYAndroid::tune(int freqKHz, int plpid)
     //clear out our atsc3_core_service_player_bridge context
     atsc3_core_service_application_bridge_reset_context();
 
+    //reset our last cached reference for LMT
+    s_nPrevLmtVer = -1;
+
     ar = AT3DRV_FE_Start(mhDevice, freqKHz, eAT3_DEMOD_ATSC30, plpid);
     CHK_AR(ar, "FE_Start");
 
@@ -872,11 +875,15 @@ int LowaSISPHYAndroid::processThread()
                     }
 
                     if (atsc3_phy_rx_link_mapping_table_process_callback) {
+                        _LOWASIS_PHY_ANDROID_INFO("LMT: update - invoking atsc3_phy_rx_link_mapping_table_process_callback with atsc3_link_mapping_table: %p", atsc3_link_mapping_table);
+
                         atsc3_link_mapping_table_t *atsc3_link_mapping_table_to_free = atsc3_phy_rx_link_mapping_table_process_callback(atsc3_link_mapping_table);
 
                         if (atsc3_link_mapping_table_to_free) {
                             atsc3_link_mapping_table_free(&atsc3_link_mapping_table_to_free);
                         }
+                    } else {
+                        _LOWASIS_PHY_ANDROID_WARN("LMT: update - atsc3_phy_rx_link_mapping_table_process_callback is NULL!");
                     }
 
                     //AT3_HexDump(pData->ptr, pData->nLength);
