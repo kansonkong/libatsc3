@@ -51,7 +51,7 @@ public:
     void LogMsgF(const char *fmt, ...) override;
 
     /** atsc3 service methods **/
-    int atsc3_slt_selectService(int service_id) override;
+    int atsc3_slt_select_service(int service_id) override;
 
     void atsc3_lls_sls_alc_on_package_extract_completed_callback_jni(atsc3_route_package_extracted_envelope_metadata_and_payload_t* atsc3_route_package_extracted_envelope_metadata_and_payload_t) override;
 
@@ -76,10 +76,7 @@ public:
 
     std::string get_android_temp_folder() override;
 
-
     //application bridge to phy instance callbacks for PLP selection change
-    void set_plp_settings(jint *a_plp_ids, jsize sa_plp_size) override;
-
     void atsc3_phy_notify_plp_selection_change_set_callback(atsc3_phy_notify_plp_selection_change_f atsc3_phy_notify_plp_selection_change, void* context) override;
     void atsc3_phy_notify_plp_selection_change_clear_callback() override;
     void atsc3_phy_notify_plp_selection_changed(vector<uint8_t> plps_to_listen) override;
@@ -139,7 +136,7 @@ public:
     jmethodID   jni_java_util_ArrayList_add = nullptr;
 
 
-    atsc3_phy_notify_plp_selection_change_f   atsc3_phy_notify_plp_selection_change;
+    atsc3_phy_notify_plp_selection_change_f    atsc3_phy_notify_plp_selection_change;
     void*                                      atsc3_phy_notify_plp_selection_change_context;
 
 protected:
