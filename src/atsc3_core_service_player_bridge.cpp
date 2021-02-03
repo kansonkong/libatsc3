@@ -214,6 +214,8 @@ vector<uint8_t>  atsc3_phy_build_plp_listeners_from_lls_slt_monitor(lls_slt_moni
     bool found_atsc3_slt_broadcast_svc_signalling = false;
     bool atsc3_phy_notify_plp_selection_changed_called = false;
 
+    int8_t first_plp = -1; //keep track of our "first" PLP for priority use cases, e.g. with LG3307
+
     set<uint8_t> plps_to_check;         //use this as a temporary collection of de-dup'd PLPs
     set<uint8_t>::iterator it;
 
@@ -277,7 +279,11 @@ vector<uint8_t>  atsc3_phy_build_plp_listeners_from_lls_slt_monitor(lls_slt_moni
                                         atsc3_slt_broadcast_svc_signalling->sls_destination_ip_address,
                                         atsc3_slt_broadcast_svc_signalling->sls_destination_udp_port);
 
-                                plps_to_check.insert(atsc3_link_mapping_table_plp->PLP_ID);
+                                if(first_plp == -1 ) {
+                                    first_plp = atsc3_link_mapping_table_plp->PLP_ID;
+                                } else {
+                                    plps_to_check.insert(atsc3_link_mapping_table_plp->PLP_ID);
+                                }
                             }
                         }
                     }
@@ -285,6 +291,11 @@ vector<uint8_t>  atsc3_phy_build_plp_listeners_from_lls_slt_monitor(lls_slt_moni
             }
         }
      } //finally, release our RAII context mutex
+
+     if(first_plp == -1) {
+         __ATSC3_CORE_SERVICE_PLAYER_BRIDGE_WARN("atsc3_phy_update_plp_listeners_from_lls_slt_monitor: first_plp is -1, this should never happen, bailing!");
+         return plps_to_listen; //empty set
+     }
 
      bool has_plp0_in_set = false;
 
@@ -294,6 +305,13 @@ vector<uint8_t>  atsc3_phy_build_plp_listeners_from_lls_slt_monitor(lls_slt_moni
          }
      }
 
+     //jjustman-2021-02-03 - treat our selected PLP's as priority fifo (e.g selected service, then additional service(s)) to ensure LG3307 demod (which can only reliably decode 1 plp at a time) can pick plps_to_listen.first()
+    plps_to_listen.push_back(first_plp);
+
+    for(it = plps_to_check.begin(); it != plps_to_check.end(); it++) {
+        plps_to_listen.push_back(*it);
+    }
+
      //if we don't have plp0 in our set, add it first if our size is less than 4 entries (e.g. 0 + 3plps < max of 4)
      if(!has_plp0_in_set) {
          if(plps_to_check.size() < 4) {
@@ -301,12 +319,6 @@ vector<uint8_t>  atsc3_phy_build_plp_listeners_from_lls_slt_monitor(lls_slt_moni
          } else {
              __ATSC3_CORE_SERVICE_PLAYER_BRIDGE_WARN("atsc3_phy_update_plp_listeners_from_lls_slt_monitor: plps_to_check contains 4 entries, but is missing plp0!");
          }
-    }
-
-    for(it = plps_to_check.begin(); !has_plp0_in_set && it != plps_to_check.end(); it++) {
-        if ((*it) != 0) {
-            plps_to_listen.push_back(*it);
-        }
     }
 
     //ugh, hack
