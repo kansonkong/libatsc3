@@ -39,11 +39,12 @@ using namespace std;
 #include <atsc3_mmt_mfu_context_callbacks_default_jni.h>
 
 #include "mmt/MMTExtractor.h"
+#include "Atsc3RingBuffer.h"
 
 class Atsc3NdkMediaMMTBridge : public IAtsc3NdkMediaMMTBridge
 {
 public:
-    Atsc3NdkMediaMMTBridge(JNIEnv* env, jobject jni_instance);
+    Atsc3NdkMediaMMTBridge(JNIEnv* env, jobject jni_instance, jobject fragment_buffer, jint max_fragment_count);
 
     //logging
     void LogMsg(const char *msg);
@@ -76,6 +77,7 @@ private:
 
 
     MMTExtractor* mmtExtractor;
+    Atsc3RingBuffer* fragmentBuffer;
 
     //global env.Get()->NewGlobalRef(jobjectByteBuffer); for c alloc'd MFU's and NAL's
     std::vector<jobject> global_jobject_mfu_refs;
@@ -119,6 +121,9 @@ public:
 
     int acceptNdkByteBufferUdpPacket(jobject byte_buffer, jint byte_buffer_length);
     void extractUdpPacket(block_t* udpPacket);
+
+    uint32_t getFragmentBufferCurrentPosition();
+    uint32_t getFragmentBufferCurrentPageNumber();
 
     jmethodID mOnLogMsgId = nullptr;
 
