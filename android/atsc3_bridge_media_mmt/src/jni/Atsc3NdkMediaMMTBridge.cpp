@@ -5,10 +5,15 @@ pthread_key_t Atsc3NdkMediaMMTBridge::JniPtr = 0;
 map<jobject, Atsc3NdkMediaMMTBridge*> Atsc3NdkMediaMMTBridge::MediaBridgePtrMap;
 int _NDK_MEDIA_MMT_BRIDGE_atsc3_onMfuPacket_counter = 0;
 
-Atsc3NdkMediaMMTBridge::Atsc3NdkMediaMMTBridge(JNIEnv* env, jobject jni_instance) {
+Atsc3NdkMediaMMTBridge::Atsc3NdkMediaMMTBridge(JNIEnv* env, jobject jni_instance, jobject fragment_buffer, jint max_fragment_count) {
     this->jni_instance_globalRef = env->NewGlobalRef(jni_instance);
 
     this->mmtExtractor = new MMTExtractor();
+
+    uint8_t* fragmentBufferPtr = reinterpret_cast<uint8_t*>(env->GetDirectBufferAddress(fragment_buffer));
+    uint32_t fragmentBufferSize = (uint32_t)(env->GetDirectBufferCapacity(fragment_buffer));
+    this->fragmentBuffer = new Atsc3RingBuffer(fragmentBufferPtr, fragmentBufferSize, fragmentBufferSize / max_fragment_count);
+
 
     /* notes:
       keep a single block_t instance for udp processing:
@@ -169,6 +174,7 @@ int Atsc3NdkMediaMMTBridge::acceptNdkByteBufferUdpPacket(jobject byte_buffer, ji
 
     return ret;
 }
+
 void Atsc3NdkMediaMMTBridge::extractUdpPacket(block_t* udpPacket) {
     if (!this->mmtExtractor) {
         _NDK_MEDIA_MMT_BRIDGE_ERROR("Atsc3NdkMediaMMTBridge::extractUdpPacket: this->mmtExtractor is NULL!");
@@ -178,24 +184,44 @@ void Atsc3NdkMediaMMTBridge::extractUdpPacket(block_t* udpPacket) {
     mmtExtractor->atsc3_core_service_bridge_process_mmt_packet(udpPacket);
 }
 
+uint32_t Atsc3NdkMediaMMTBridge::getFragmentBufferCurrentPosition() {
+    if (fragmentBuffer) {
+        return fragmentBuffer->getCurrentPosition();
+    }
+
+    return 0;
+}
+
+uint32_t Atsc3NdkMediaMMTBridge::getFragmentBufferCurrentPageNumber() {
+    if (fragmentBuffer) {
+        return fragmentBuffer->getCurrentPageNumber();
+    }
+
+    return 0;
+}
+
+
 //wired up and invoked from atsc3_mmt_mfu_context_callbacks_default_jni.cpp
 
 //MMT Initialization callbacks for Video and Audio format(s)
 //push extracted HEVC nal's to MediaCodec for init
 void Atsc3NdkMediaMMTBridge::atsc3_onInitHEVC_NAL_Extracted(uint16_t service_id, uint16_t packet_id, uint32_t mpu_sequence_number, uint8_t* buffer, uint32_t bufferLen) {
-    this->pinConsumerThreadAsNeeded(); //jjustman-2020-12-17 - hack
+//    this->pinConsumerThreadAsNeeded(); //jjustman-2020-12-17 - hack
+//
+//    if (!Atsc3NdkMediaMMTBridge::GetBridgeConsumerJniEnv()) {
+//        _NDK_MEDIA_MMT_BRIDGE_ERROR("Atsc3NdkMediaMMTBridge::atsc3_onInitHEVC_NAL_Extracted: Atsc3NdkMediaMMTBridge::GetBridgeConsumerJniEnv() is NULL!");
+//        return;
+//    }
+//
+//    _NDK_MEDIA_MMT_BRIDGE_DEBUG("Atsc3NdkMediaMMTBridge::atsc3_onInitHEVC_NAL_Extracted: with service_id: %d, packet_id: %d, mpu_sequence_number: %d, bufferLen: %d",
+//                               service_id, packet_id, mpu_sequence_number, bufferLen);
+//
+//    jobject jobjectByteBuffer = Atsc3NdkMediaMMTBridge::GetBridgeConsumerJniEnv()->Get()->NewDirectByteBuffer(buffer, bufferLen);
+//     Atsc3NdkMediaMMTBridge::GetBridgeConsumerJniEnv()->Get()->CallIntMethod(jni_instance_globalRef, atsc3_OnInitHEVC_NAL_Extracted, packet_id, (int64_t)mpu_sequence_number, jobjectByteBuffer, bufferLen);
+//    Atsc3NdkMediaMMTBridge::GetBridgeConsumerJniEnv()->Get()->DeleteLocalRef(jobjectByteBuffer);
 
-    if (!Atsc3NdkMediaMMTBridge::GetBridgeConsumerJniEnv()) {
-        _NDK_MEDIA_MMT_BRIDGE_ERROR("Atsc3NdkMediaMMTBridge::atsc3_onInitHEVC_NAL_Extracted: Atsc3NdkMediaMMTBridge::GetBridgeConsumerJniEnv() is NULL!");
-        return;
-    }
-
-    _NDK_MEDIA_MMT_BRIDGE_DEBUG("Atsc3NdkMediaMMTBridge::atsc3_onInitHEVC_NAL_Extracted: with service_id: %d, packet_id: %d, mpu_sequence_number: %d, bufferLen: %d",
-                               service_id, packet_id, mpu_sequence_number, bufferLen);
-
-    jobject jobjectByteBuffer = Atsc3NdkMediaMMTBridge::GetBridgeConsumerJniEnv()->Get()->NewDirectByteBuffer(buffer, bufferLen);
-     Atsc3NdkMediaMMTBridge::GetBridgeConsumerJniEnv()->Get()->CallIntMethod(jni_instance_globalRef, atsc3_OnInitHEVC_NAL_Extracted, packet_id, (int64_t)mpu_sequence_number, jobjectByteBuffer, bufferLen);
-    Atsc3NdkMediaMMTBridge::GetBridgeConsumerJniEnv()->Get()->DeleteLocalRef(jobjectByteBuffer);
+    //writeToRingBuffer(RING_BUFFER_PAGE_INIT, packet_id, 0, 0, buffer, bufferLen);
+    fragmentBuffer->write(Atsc3RingBuffer::RING_BUFFER_PAGE_INIT, packet_id, 0, 0, buffer, bufferLen);
 }
 
 void Atsc3NdkMediaMMTBridge::atsc3_onInitAudioDecoderConfigurationRecord(uint16_t service_id, uint16_t packet_id, uint32_t mpu_sequence_number, atsc3_audio_decoder_configuration_record_t* atsc3_audio_decoder_configuration_record) {
@@ -393,85 +419,72 @@ void Atsc3NdkMediaMMTBridge::atsc3_setVideoWidthHeightFromTrak(uint16_t packet_i
 
 //on fully recovered MFU packet
 void Atsc3NdkMediaMMTBridge::atsc3_onMfuPacket(uint16_t service_id, uint16_t packet_id, uint32_t mpu_sequence_number, uint32_t sample_number, uint8_t* buffer, uint32_t bufferLen, uint64_t presentationUs, uint32_t mfu_fragment_count_rebuilt) {
-    Atsc3JniEnv* localJniEnv = Atsc3NdkMediaMMTBridge::GetBridgeConsumerJniEnv();
+//    Atsc3JniEnv* localJniEnv = Atsc3NdkMediaMMTBridge::GetBridgeConsumerJniEnv();
+//
+//    if (!localJniEnv) {
+//        _NDK_MEDIA_MMT_BRIDGE_ERROR("ats3_onMfuPacket: Atsc3NdkMediaMMTBridge::GetBridgeConsumerJniEnv() is NULL!");
+//        return;
+//    }
+//
+//    //LogMsg("Atsc3NdkMediaMMTBridge::atsc3_onMfuPacket: before localJniEnv->Get() NewDirectByteBuffer");
+//
+//    //_NDK_MEDIA_MMT_BRIDGE_ERROR("Atsc3NdkMediaMMTBridge::atsc3_onMfuPacket: this: %p, localJniEnv: %p, localJniEnv->get(): %p, packet_id: %d, mpu_sequence_number: %d, buffer: %p, length: %d", this, localJniEnv, localJniEnv->Get(), packet_id, mpu_sequence_number, buffer, bufferLen);
+//    jobject jobjectLocalByteBuffer = localJniEnv->Get()->NewDirectByteBuffer(buffer, bufferLen);
+//    //LogMsg("Atsc3NdkMediaMMTBridge::atsc3_onMfuPacket: after localJniEnv->Get() NewDirectByteBuffer");
+//
+//    //_NDK_MEDIA_MMT_BRIDGE_ERROR("Atsc3NdkMediaMMTBridge::atsc3_onMfuPacket: before CallIntMethod, jobjectLocalByteBuffer is: %d, jni_instance_globalRef: %p, method: %d", jobjectLocalByteBuffer, jni_instance_globalRef, atsc3_onMfuPacketID);
+//
+//    //LogMsg("Atsc3NdkMediaMMTBridge::atsc3_onMfuPacket: before localJniEnv->Get()->CallIntMethod");
+//    localJniEnv->Get()->CallIntMethod(jni_instance_globalRef, atsc3_onMfuPacketID, (int32_t) packet_id, (int64_t)mpu_sequence_number, (int32_t)sample_number, jobjectLocalByteBuffer, (int32_t)bufferLen, (int64_t)presentationUs, (int32_t)mfu_fragment_count_rebuilt);
+//    //LogMsg("Atsc3NdkMediaMMTBridge::atsc3_onMfuPacket: after localJniEnv->Get()->CallIntMethod");
+//
+//    //_NDK_MEDIA_MMT_BRIDGE_INFO("Atsc3NdkPHYBridge::onMfuPacket, ret: %d, bufferLen: %u", r, bufferLen);
+//    //_NDK_MEDIA_MMT_BRIDGE_ERROR("Atsc3NdkMediaMMTBridge::atsc3_onMfuPacket: before delete");
+//    //jjustman-2020-12-17 - TODO - confirm -
+//    localJniEnv->Get()->DeleteLocalRef(jobjectLocalByteBuffer);
+//    //_NDK_MEDIA_MMT_BRIDGE_ERROR("Atsc3NdkMediaMMTBridge::atsc3_onMfuPacket: return");
+//
+//    if((_NDK_MEDIA_MMT_BRIDGE_atsc3_onMfuPacket_counter++ < 10) || ((_NDK_MEDIA_MMT_BRIDGE_atsc3_onMfuPacket_counter % 1000) == 0)) {
+//        _NDK_MEDIA_MMT_BRIDGE_INFO("Atsc3NdkMediaMMTBridge::atsc3_onMfuPacket: Atsc3RingBuffer::RING_BUFFER_PAGE_FRAGMENT, this: %p, service_id: %d, packet_id: %d, mpu_sequence_number: %d, buffer: %p, length: %d, onMfuPacket_counter: %d", this, service_id, packet_id, mpu_sequence_number, buffer, bufferLen, _NDK_MEDIA_MMT_BRIDGE_atsc3_onMfuPacket_counter);
+//    }
 
-    if (!localJniEnv) {
-        _NDK_MEDIA_MMT_BRIDGE_ERROR("ats3_onMfuPacket: Atsc3NdkMediaMMTBridge::GetBridgeConsumerJniEnv() is NULL!");
-        return;
-    }
-
-    //LogMsg("Atsc3NdkMediaMMTBridge::atsc3_onMfuPacket: before localJniEnv->Get() NewDirectByteBuffer");
-
-    //_NDK_MEDIA_MMT_BRIDGE_ERROR("Atsc3NdkMediaMMTBridge::atsc3_onMfuPacket: this: %p, localJniEnv: %p, localJniEnv->get(): %p, packet_id: %d, mpu_sequence_number: %d, buffer: %p, length: %d", this, localJniEnv, localJniEnv->Get(), packet_id, mpu_sequence_number, buffer, bufferLen);
-    jobject jobjectLocalByteBuffer = localJniEnv->Get()->NewDirectByteBuffer(buffer, bufferLen);
-    //LogMsg("Atsc3NdkMediaMMTBridge::atsc3_onMfuPacket: after localJniEnv->Get() NewDirectByteBuffer");
-
-    //_NDK_MEDIA_MMT_BRIDGE_ERROR("Atsc3NdkMediaMMTBridge::atsc3_onMfuPacket: before CallIntMethod, jobjectLocalByteBuffer is: %d, jni_instance_globalRef: %p, method: %d", jobjectLocalByteBuffer, jni_instance_globalRef, atsc3_onMfuPacketID);
-
-    //LogMsg("Atsc3NdkMediaMMTBridge::atsc3_onMfuPacket: before localJniEnv->Get()->CallIntMethod");
-    localJniEnv->Get()->CallIntMethod(jni_instance_globalRef, atsc3_onMfuPacketID, (int32_t) packet_id, (int64_t)mpu_sequence_number, (int32_t)sample_number, jobjectLocalByteBuffer, (int32_t)bufferLen, (int64_t)presentationUs, (int32_t)mfu_fragment_count_rebuilt);
-    //LogMsg("Atsc3NdkMediaMMTBridge::atsc3_onMfuPacket: after localJniEnv->Get()->CallIntMethod");
-
-    //_NDK_MEDIA_MMT_BRIDGE_INFO("Atsc3NdkPHYBridge::onMfuPacket, ret: %d, bufferLen: %u", r, bufferLen);
-    //_NDK_MEDIA_MMT_BRIDGE_ERROR("Atsc3NdkMediaMMTBridge::atsc3_onMfuPacket: before delete");
-    //jjustman-2020-12-17 - TODO - confirm -
-    localJniEnv->Get()->DeleteLocalRef(jobjectLocalByteBuffer);
-    //_NDK_MEDIA_MMT_BRIDGE_ERROR("Atsc3NdkMediaMMTBridge::atsc3_onMfuPacket: return");
-
-    if((_NDK_MEDIA_MMT_BRIDGE_atsc3_onMfuPacket_counter++ < 10) || ((_NDK_MEDIA_MMT_BRIDGE_atsc3_onMfuPacket_counter % 1000) == 0)) {
-        _NDK_MEDIA_MMT_BRIDGE_INFO("Atsc3NdkMediaMMTBridge::atsc3_onMfuPacket: Atsc3RingBuffer::RING_BUFFER_PAGE_FRAGMENT, this: %p, service_id: %d, packet_id: %d, mpu_sequence_number: %d, buffer: %p, length: %d, onMfuPacket_counter: %d", this, service_id, packet_id, mpu_sequence_number, buffer, bufferLen, _NDK_MEDIA_MMT_BRIDGE_atsc3_onMfuPacket_counter);
-    }
+    //writeToRingBuffer(RING_BUFFER_PAGE_FRAGMENT, packet_id, sample_number, presentationUs, buffer, bufferLen);
+    fragmentBuffer->write(Atsc3RingBuffer::RING_BUFFER_PAGE_FRAGMENT, packet_id, sample_number, presentationUs, buffer, bufferLen);
 }
 
 //on partially corrupt MFU packet data
 void Atsc3NdkMediaMMTBridge::atsc3_onMfuPacketCorrupt(uint16_t service_id, uint16_t packet_id, uint32_t mpu_sequence_number, uint32_t sample_number, uint8_t* buffer, uint32_t bufferLen, uint64_t presentationUs, uint32_t mfu_fragment_count_expected, uint32_t mfu_fragment_count_rebuilt) {
-    Atsc3JniEnv* localJniEnv = Atsc3NdkMediaMMTBridge::GetBridgeConsumerJniEnv();
+//    Atsc3JniEnv* localJniEnv = Atsc3NdkMediaMMTBridge::GetBridgeConsumerJniEnv();
+//
+//    if (!localJniEnv) {
+//        _NDK_MEDIA_MMT_BRIDGE_ERROR("ats3_onMfuPacket: Atsc3NdkMediaMMTBridge::GetBridgeConsumerJniEnv() is NULL!");
+//        return;
+//    }
 
-    if (!localJniEnv) {
-        _NDK_MEDIA_MMT_BRIDGE_ERROR("ats3_onMfuPacket: Atsc3NdkMediaMMTBridge::GetBridgeConsumerJniEnv() is NULL!");
-        return;
-    }
-
-    //LogMsg("Atsc3NdkMediaMMTBridge::atsc3_onMfuPacketCorrupt: before localJniEnv->Get() NewDirectByteBuffer");
-    //_NDK_MEDIA_MMT_BRIDGE_ERROR("Atsc3NdkMediaMMTBridge::atsc3_onMfuPacketCorrupt: packet_id: %d, mpu_sequence_number: %d, buffer: %p", packet_id, mpu_sequence_number, buffer);
-    jobject jobjectLocalByteBuffer = localJniEnv->Get()->NewDirectByteBuffer(buffer, bufferLen);
-    //LogMsg("Atsc3NdkMediaMMTBridge::atsc3_onMfuPacketCorrupt: after localJniEnv->Get() NewDirectByteBuffer");
-
-    //_NDK_MEDIA_MMT_BRIDGE_ERROR("Atsc3NdkMediaMMTBridge::atsc3_onMfuPacketCorrupt: jobjectLocalByteBuffer is: %d, jni_instance_globalRef: %p, method: %d, ", jobjectLocalByteBuffer, jni_instance_globalRef, atsc3_onMfuPacketCorruptID);
-
-    //LogMsg("Atsc3NdkMediaMMTBridge::atsc3_onMfuPacketCorrupt: before CallIntMethod(jni_instance_globalRef, atsc3_onMfuPacketCorruptID,");
-    localJniEnv->Get()->CallIntMethod(jni_instance_globalRef, atsc3_onMfuPacketCorruptID, (int32_t)packet_id, (int64_t)mpu_sequence_number, (int32_t)sample_number, jobjectLocalByteBuffer, (int32_t)bufferLen, (int64_t)presentationUs, (int32_t)mfu_fragment_count_expected, (int32_t)mfu_fragment_count_rebuilt);
-    //_NDK_MEDIA_MMT_BRIDGE_INFO("Atsc3NdkPHYBridge::onMfuPacket, ret: %d, bufferLen: %u", r, bufferLen);
-    //LogMsg("Atsc3NdkMediaMMTBridge::atsc3_onMfuPacketCorrupt: before DeleteLocalRef");
-    localJniEnv->Get()->DeleteLocalRef(jobjectLocalByteBuffer);
-    //LogMsg("Atsc3NdkMediaMMTBridge::atsc3_onMfuPacketCorrupt: after DeleteLocalRef");
+    //writeToRingBuffer(RING_BUFFER_PAGE_FRAGMENT, packet_id, sample_number, presentationUs, buffer, bufferLen);
+    fragmentBuffer->write(Atsc3RingBuffer::RING_BUFFER_PAGE_FRAGMENT, packet_id, sample_number, presentationUs, buffer, bufferLen);
 }
 
 //on partially corrupt MFU missing MMTHSample header
 
 void Atsc3NdkMediaMMTBridge::atsc3_onMfuPacketCorruptMmthSampleHeader(uint16_t service_id, uint16_t packet_id, uint32_t mpu_sequence_number, uint32_t sample_number, uint8_t* buffer, uint32_t bufferLen, uint64_t presentationUs, uint32_t mfu_fragment_count_expected, uint32_t mfu_fragment_count_rebuilt) {
-    this->pinConsumerThreadAsNeeded(); //jjustman-2020-12-17 - hack
-    Atsc3JniEnv* localJniEnv = Atsc3NdkMediaMMTBridge::GetBridgeConsumerJniEnv();
+//    this->pinConsumerThreadAsNeeded(); //jjustman-2020-12-17 - hack
+//    Atsc3JniEnv* localJniEnv = Atsc3NdkMediaMMTBridge::GetBridgeConsumerJniEnv();
+//
+//    if (!localJniEnv) {
+//        _NDK_MEDIA_MMT_BRIDGE_ERROR("ats3_onMfuPacket: Atsc3NdkMediaMMTBridge::GetBridgeConsumerJniEnv() is NULL!");
+//        return;
+//    }
+//
+//    //LogMsg("Atsc3NdkMediaMMTBridge::atsc3_onMfuPacketCorruptMmthSampleHeader: before NewDirectByteBuffer");
+//    //_NDK_MEDIA_MMT_BRIDGE_ERROR("Atsc3NdkMediaMMTBridge::atsc3_onMfuPacketCorruptMmthSampleHeader: packet_id: %d, mpu_sequence_number: %d, buffer: %p, bufferLen: %d", packet_id, mpu_sequence_number, buffer, bufferLen);
+//    jobject jobjectLocalByteBuffer = localJniEnv->Get()->NewDirectByteBuffer(buffer, bufferLen);
+//    //LogMsg("Atsc3NdkMediaMMTBridge::atsc3_onMfuPacketCorruptMmthSampleHeader: after NewDirectByteBuffer");
+//
+//    //_NDK_MEDIA_MMT_BRIDGE_ERROR("Atsc3NdkMediaMMTBridge::atsc3_onMfuPacketCorruptMmthSampleHeader: jobjectLocalByteBuffer is: %d, jni_instance_globalRef: %p, method: %d, ", jobjectLocalByteBuffer, jni_instance_globalRef, atsc3_onMfuPacketCorruptMmthSampleHeaderID);
 
-    if (!localJniEnv) {
-        _NDK_MEDIA_MMT_BRIDGE_ERROR("ats3_onMfuPacket: Atsc3NdkMediaMMTBridge::GetBridgeConsumerJniEnv() is NULL!");
-        return;
-    }
-
-    //LogMsg("Atsc3NdkMediaMMTBridge::atsc3_onMfuPacketCorruptMmthSampleHeader: before NewDirectByteBuffer");
-    //_NDK_MEDIA_MMT_BRIDGE_ERROR("Atsc3NdkMediaMMTBridge::atsc3_onMfuPacketCorruptMmthSampleHeader: packet_id: %d, mpu_sequence_number: %d, buffer: %p, bufferLen: %d", packet_id, mpu_sequence_number, buffer, bufferLen);
-    jobject jobjectLocalByteBuffer = localJniEnv->Get()->NewDirectByteBuffer(buffer, bufferLen);
-    //LogMsg("Atsc3NdkMediaMMTBridge::atsc3_onMfuPacketCorruptMmthSampleHeader: after NewDirectByteBuffer");
-
-    //_NDK_MEDIA_MMT_BRIDGE_ERROR("Atsc3NdkMediaMMTBridge::atsc3_onMfuPacketCorruptMmthSampleHeader: jobjectLocalByteBuffer is: %d, jni_instance_globalRef: %p, method: %d, ", jobjectLocalByteBuffer, jni_instance_globalRef, atsc3_onMfuPacketCorruptMmthSampleHeaderID);
-
-    //LogMsg("Atsc3NdkMediaMMTBridge::atsc3_onMfuPacketCorruptMmthSampleHeader: before CallIntMethod(jni_instance_globalRef, atsc3_onMfuPacketCorruptMmthSampleHeaderID");
-    localJniEnv->Get()->CallIntMethod(jni_instance_globalRef, atsc3_onMfuPacketCorruptMmthSampleHeaderID, (int32_t)packet_id, (int64_t)mpu_sequence_number, (int32_t)sample_number, jobjectLocalByteBuffer, (int32_t)bufferLen, (int64_t)presentationUs, (int32_t)mfu_fragment_count_expected, (int32_t)mfu_fragment_count_rebuilt);
-    //LogMsg("Atsc3NdkMediaMMTBridge::atsc3_onMfuPacketCorruptMmthSampleHeader: after CallIntMethod(jni_instance_globalRef, atsc3_onMfuPacketCorruptMmthSampleHeaderID");
-
-    //_NDK_MEDIA_MMT_BRIDGE_INFO("Atsc3NdkPHYBridge::atsc3_onMfuPacketCorruptMmthSampleHeader, bufferLen: %u", bufferLen);
-    localJniEnv->Get()->DeleteLocalRef(jobjectLocalByteBuffer);
-    //LogMsg("Atsc3NdkMediaMMTBridge::atsc3_onMfuPacketCorruptMmthSampleHeader: after ->DeleteLocalRef(jobjectLocalByteBuffer);");
+    //writeToRingBuffer(RING_BUFFER_PAGE_FRAGMENT, packet_id, sample_number, presentationUs, buffer, bufferLen);
+    fragmentBuffer->write(Atsc3RingBuffer::RING_BUFFER_PAGE_FRAGMENT, packet_id, sample_number, presentationUs, buffer, bufferLen);
 }
 
 void Atsc3NdkMediaMMTBridge::atsc3_onMfuSampleMissing(uint16_t packet_id, uint32_t mpu_sequence_number, uint32_t sample_number) {
@@ -522,7 +535,7 @@ Atsc3JniEnv* Atsc3NdkMediaMMTBridge::GetBridgeConsumerJniEnv() {
 }
 
 extern "C" JNIEXPORT jint JNICALL
-Java_org_ngbp_libatsc3_middleware_Atsc3NdkMediaMMTBridge_init(JNIEnv *env, jobject instance)
+Java_org_ngbp_libatsc3_middleware_Atsc3NdkMediaMMTBridge_init(JNIEnv *env, jobject instance, jobject fragment_buffer, jint max_fragment_count)
 {
     //jjustman-2020-12-17 - hack
 
@@ -530,7 +543,7 @@ Java_org_ngbp_libatsc3_middleware_Atsc3NdkMediaMMTBridge_init(JNIEnv *env, jobje
 
     pthread_once(&Atsc3NdkMediaMMTBridge::JniPtrOnce, &Atsc3NdkMediaMMTBridge::CreateJniAndMediaBridgePtrKey);
 
-    mediaMMTBridge = new Atsc3NdkMediaMMTBridge(env, instance);
+    mediaMMTBridge = new Atsc3NdkMediaMMTBridge(env, instance, fragment_buffer, max_fragment_count);
     Atsc3NdkMediaMMTBridge::MediaBridgePtrMap.insert(pair<jobject, Atsc3NdkMediaMMTBridge*>(mediaMMTBridge->jni_instance_globalRef, mediaMMTBridge));
 
     _NDK_MEDIA_MMT_BRIDGE_INFO("Java_org_ngbp_libatsc3_middleware_Atsc3NdkMediaMMTBridge_init:  env: %p", env);
@@ -707,4 +720,20 @@ Java_org_ngbp_libatsc3_middleware_Atsc3NdkMediaMMTBridge_release(JNIEnv *env, jo
 
     //jjustman-2020-12-16 - TODO: delete mediaMMTBridge; (and block_destory(preAllocInFlightUdpPacket))
     return;
+}
+
+extern "C"
+JNIEXPORT jint JNICALL
+Java_org_ngbp_libatsc3_middleware_Atsc3NdkMediaMMTBridge_getFragmentBufferCurrentPosition(JNIEnv *env, jobject thiz) {
+    Atsc3NdkMediaMMTBridge* mediaMMTBridge = Atsc3NdkMediaMMTBridge::GetMediaBridgePtr(env, thiz);
+
+    return mediaMMTBridge->getFragmentBufferCurrentPosition();
+}
+
+extern "C"
+JNIEXPORT jint JNICALL
+Java_org_ngbp_libatsc3_middleware_Atsc3NdkMediaMMTBridge_getFragmentBufferCurrentPageNumber(JNIEnv *env, jobject thiz) {
+    Atsc3NdkMediaMMTBridge* mediaMMTBridge = Atsc3NdkMediaMMTBridge::GetMediaBridgePtr(env, thiz);
+
+    return mediaMMTBridge->getFragmentBufferCurrentPageNumber();
 }
