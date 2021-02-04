@@ -39,7 +39,6 @@ using namespace std;
 #define TLV_CIRCULAR_BUFFER_MIN_PROCESS_SIZE    (16 * 1024 * 2)         //CircularBuffer pending data size threshold for TLV depacketization processing, pinned at 8KB to match SL4000 ALP buffer
 #define TLV_CIRCULAR_BUFFER_PROCESS_BLOCK_SIZE  (16 * 1024 * 2)    //CircularBuffer block read size for depacketization callback processing ~ 65KB
 
-
 #include "CircularBuffer.h"
 #include <sl_utils.h>
 #include <sl_config.h>
@@ -189,6 +188,10 @@ private:
     void allocate_atsc3_sl_tlv_block();
 
     atsc3_sl_tlv_payload_t* atsc3_sl_tlv_payload = NULL;
+
+    //jjustman-2021-02-04 - global error flag if i2c txn fails, usually due to demod crash
+    static SL_Result_t      global_sl_result_error_flag;
+    static SL_I2cResult_t   global_sl_i2c_result_error_flag;
 };
 
 #define _SAANKHYA_PHY_ANDROID_ERROR(...)   	__LIBATSC3_TIMESTAMP_ERROR(__VA_ARGS__);

@@ -44,6 +44,8 @@ public:
     void LogMsg(const std::string &msg);
     void LogMsgF(const char *fmt, ...);
 
+    void atsc3_notify_phy_error(const char* fmt, ...);
+
     void atsc3_update_rf_stats(int32_t tuner_lock,    //1
                                        int32_t rssi,
                                        uint8_t modcod_valid,
@@ -92,6 +94,8 @@ public:
     int releasePinnedStatusThreadAsNeeded();
 
     jmethodID mOnLogMsgId = nullptr;                     // java class method id
+    jmethodID mOnPhyErrorId = nullptr;
+
     jmethodID atsc3_rf_phy_status_callback_ID = nullptr; // java class method id for phy stats
 
     jmethodID atsc3_rf_phy_status_callback_with_rf_phy_statistics_type_ID = nullptr;

@@ -20,6 +20,9 @@ class IAtsc3NdkPHYBridge {
         virtual void LogMsg(const std::string &msg) = 0;
         virtual void LogMsgF(const char *fmt, ...) = 0;
 
+        //jjustman-2021-02-04 - for "catastrophic" PHY error reporting to application UI
+        virtual void atsc3_notify_phy_error(const char* fmt, ...) = 0;
+
         //moving to "friend" scope
         virtual void atsc3_update_rf_stats(int32_t tuner_lock,    //1
                                       int32_t rssi,

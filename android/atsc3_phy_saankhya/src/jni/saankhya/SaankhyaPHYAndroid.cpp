@@ -5,9 +5,7 @@
 //jjustman-2020-10-30 - workaround for SL_TUNER deinit not decrementing ref count
 #define __SL_TUNER_DEINIT_DISABLED__ true
 
-
 /*  MarkONE "workarounds" for /dev handle permissions
-
 
 ADB_IP_ADDRESS="192.168.4.57:5555"
 adb connect $ADB_IP_ADDRESS
@@ -41,6 +39,12 @@ mutex SaankhyaPHYAndroid::CircularBufferMutex;
 
 mutex SaankhyaPHYAndroid::CS_global_mutex;
 atomic_bool SaankhyaPHYAndroid::cb_should_discard;
+
+//jjustman-2021-02-04 - global error flag if i2c txn fails, usually due to demod crash
+//      TODO: reset SL demod and re-initalize automatically if this error is SL_ERR_CMD_IF_FAILURE
+
+SL_Result_t     SaankhyaPHYAndroid::global_sl_result_error_flag = SL_OK;
+SL_I2cResult_t  SaankhyaPHYAndroid::global_sl_i2c_result_error_flag = SL_I2C_OK;
 
 SaankhyaPHYAndroid::SaankhyaPHYAndroid(JNIEnv* env, jobject jni_instance) {
     this->env = env;
@@ -310,9 +314,14 @@ int SaankhyaPHYAndroid::open(int fd, string device_path)
         i2cres = SL_I2cInit();
         if (i2cres != SL_I2C_OK)
         {
-            _SAANKHYA_PHY_ANDROID_ERROR("ERROR : Error:SL_I2cInit failed Failed");
+            global_sl_i2c_result_error_flag = i2cres;
 
-            _SAANKHYA_PHY_ANDROID_DEBUG("Error:SL_I2cInit failed :");
+            if(atsc3_ndk_phy_bridge_get_instance()) {
+                atsc3_ndk_phy_bridge_get_instance()->atsc3_notify_phy_error("SaankhyaPHYAndroid::open() - ERROR: SL_I2cInit failed: code: %d", global_sl_i2c_result_error_flag);
+            }
+
+            _SAANKHYA_PHY_ANDROID_ERROR("SaankhyaPHYAndroid::open() - ERROR: Error:SL_I2cInit failed:");
+
             printToConsoleI2cError(i2cres);
             goto ERROR;
         }
@@ -1156,21 +1165,23 @@ void SaankhyaPHYAndroid::printToConsoleI2cError(SL_I2cResult_t err)
     switch (err)
     {
         case SL_I2C_ERR_TRANSFER_FAILED:
-            _SAANKHYA_PHY_ANDROID_DEBUG(" Sl I2C Transfer Failed");
+            _SAANKHYA_PHY_ANDROID_WARN(" Sl I2C Transfer Failed");
             break;
         case SL_I2C_ERR_NOT_INITIALIZED:
-            _SAANKHYA_PHY_ANDROID_DEBUG(" Sl I2C Not Initialized");
+            _SAANKHYA_PHY_ANDROID_WARN(" Sl I2C Not Initialized");
             break;
 
         case SL_I2C_ERR_BUS_TIMEOUT:
-            _SAANKHYA_PHY_ANDROID_DEBUG(" Sl I2C Bus Timeout");
+            _SAANKHYA_PHY_ANDROID_WARN(" Sl I2C Bus Timeout");
             break;
 
         case SL_I2C_ERR_LOST_ARBITRATION:
-            _SAANKHYA_PHY_ANDROID_DEBUG(" Sl I2C Lost Arbitration");
+            _SAANKHYA_PHY_ANDROID_WARN(" Sl I2C Lost Arbitration");
             break;
 
         default:
+            _SAANKHYA_PHY_ANDROID_WARN(" Sl I2C other error: %d", err);
+
             break;
     }
 }
@@ -1524,6 +1535,8 @@ int SaankhyaPHYAndroid::captureThread()
     return 0;
 }
 
+#define JJ_DISABLE_L1D_DIAG_DATA_FOR_DEMOD_STABILITY
+
 int SaankhyaPHYAndroid::statusThread()
 {
     _SAANKHYA_PHY_ANDROID_DEBUG("SaankhyaPHYAndroid::statusThread: starting with this: %p", this);
@@ -1543,7 +1556,7 @@ int SaankhyaPHYAndroid::statusThread()
     SL_Atsc3p0Perf_Diag_t perfDiag;
     SL_Atsc3p0Bsr_Diag_t  bsrDiag;
     SL_Atsc3p0L1B_Diag_t  l1bDiag;
-    SL_Atsc3p0L1D_Diag_t  l1dDiag;
+    SL_Atsc3p0L1D_Diag_t  l1dDiag = { 0 };
 
     double snr;
     double ber_l1b;
@@ -1598,6 +1611,8 @@ int SaankhyaPHYAndroid::statusThread()
         SL_DemodConfigInfo_t demodInfo;
         sl_res = SL_DemodGetConfiguration(this->slUnit, &demodInfo);
         if(sl_res != SL_OK) {
+            global_sl_result_error_flag = sl_res;
+
             _SAANKHYA_PHY_ANDROID_DEBUG("Error calling SL_DemodGetConfiguration, releasing lock and continue, sl_res: %d", sl_res);
             goto sl_i2c_tuner_mutex_unlock;
         }
@@ -1648,12 +1663,14 @@ int SaankhyaPHYAndroid::statusThread()
         }
         */
 
+#ifndef JJ_DISABLE_L1D_DIAG_DATA_FOR_DEMOD_STABILITY
         //important for PLP FEC type, and Mod/Cod
         dres = SL_DemodGetAtsc3p0Diagnostics(this->slUnit, SL_DEMOD_DIAG_TYPE_L1D, (SL_Atsc3p0L1D_Diag_t*)&l1dDiag);
         if (dres != SL_OK) {
             _SAANKHYA_PHY_ANDROID_ERROR("Error getting ATSC3.0 L1D Diagnostics  : dres: %d", dres);
             goto sl_i2c_tuner_mutex_unlock;
         }
+#endif
 
         sl_res = SL_DemodGetLlsPlpList(this->slUnit, &llsPlpInfo);
         if (sl_res != SL_OK) {
@@ -1722,6 +1739,12 @@ int SaankhyaPHYAndroid::statusThread()
 
 sl_i2c_tuner_mutex_unlock:
         SL_I2C_command_mutex_tuner_status_io.unlock();
+
+        if(global_sl_result_error_flag != SL_OK || global_sl_i2c_result_error_flag != SL_I2C_OK) {
+            if(atsc3_ndk_phy_bridge_get_instance()) {
+                atsc3_ndk_phy_bridge_get_instance()->atsc3_notify_phy_error("SaankhyaPHYAndroid::tunerStatusThread() - ERROR: command failed, error code: sl_res error code: %d, sl_i2c_res: %d", global_sl_result_error_flag, global_sl_i2c_result_error_flag);
+            }
+        }
 
     }
 
