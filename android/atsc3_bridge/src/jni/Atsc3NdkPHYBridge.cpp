@@ -39,6 +39,32 @@ void Atsc3NdkPHYBridge::LogMsgF(const char *fmt, ...)
     LogMsg(msg);
 }
 
+void Atsc3NdkPHYBridge::atsc3_notify_phy_error(const char* fmt, ...) {
+    va_list v;
+    char msg[1024];
+    va_start(v, fmt);
+    vsnprintf(msg, sizeof(msg)-1, fmt, v);
+    msg[sizeof(msg)-1] = 0;
+    va_end(v);
+
+    _NDK_PHY_BRIDGE_WARN("Atsc3NdkPHYBridge::atsc3_notify_phy_error: %s", msg);
+
+    if (!mOnPhyErrorId) {
+        _NDK_PHY_BRIDGE_ERROR("Atsc3NdkPHYBridge::atsc3_notify_phy_error, unable to find mOnPhyErrorId callback method id!");
+        return;
+    }
+
+    Atsc3JniEnv env(mJavaVM);
+    if (!env) {
+        _NDK_PHY_BRIDGE_ERROR("atsc3_notify_phy_error: error creating env pin!");
+        return;
+    }
+    jstring js = env.Get()->NewStringUTF(msg);
+    int r = env.Get()->CallIntMethod(jni_instance_globalRef, mOnPhyErrorId, js);
+    env.Get()->DeleteLocalRef(js);
+}
+
+
 void Atsc3NdkPHYBridge::atsc3_update_rf_stats(int32_t tuner_lock,
                                               int32_t rssi,
                                               uint8_t modcod_valid,
@@ -250,6 +276,12 @@ Java_org_ngbp_libatsc3_middleware_Atsc3NdkPHYBridge_init(JNIEnv *env, jobject in
     atsc3NdkPHYBridge->mOnLogMsgId = env->GetMethodID(jniClassReference, "onLogMsg", "(Ljava/lang/String;)I");
     if (atsc3NdkPHYBridge->mOnLogMsgId == NULL) {
         _NDK_PHY_BRIDGE_ERROR("Atsc3NdkPHYBridge_init: cannot find 'onLogMsg' method id");
+        return -1;
+    }
+
+    atsc3NdkPHYBridge->mOnPhyErrorId = env->GetMethodID(jniClassReference, "onPhyError", "(Ljava/lang/String;)I");
+    if (atsc3NdkPHYBridge->mOnPhyErrorId == NULL) {
+        _NDK_PHY_BRIDGE_ERROR("Atsc3NdkPHYBridge_init: cannot find 'onPhyError' method id");
         return -1;
     }
 
