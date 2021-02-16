@@ -5,12 +5,12 @@ import java.nio.ByteBuffer;
 public class MpuMetadata_HEVC_NAL_Payload {
 
     public int packet_id;
-    public int my_mpu_sequence_number;
+    public long my_mpu_sequence_number; //technically, mpu_sequence_number is uint32_t, so we need int64_t to handle it properly in java
     public int myLength;
 
     public ByteBuffer myByteBuffer;
 
-    public MpuMetadata_HEVC_NAL_Payload(int packet_id, int mpu_sequence_number, ByteBuffer nativeByteBuffer, int length) {
+    public MpuMetadata_HEVC_NAL_Payload(int packet_id, long mpu_sequence_number, ByteBuffer nativeByteBuffer, int length) {
         this.packet_id = packet_id;
         my_mpu_sequence_number = mpu_sequence_number;
         myByteBuffer = ByteBuffer.allocate(length);

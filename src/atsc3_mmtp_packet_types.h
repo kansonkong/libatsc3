@@ -186,19 +186,28 @@ void mmtp_packet_header_free(mmtp_packet_header_t** mmtp_packet_header_p);
 
 typedef struct mmtp_mpu_packet {
     _MMTP_MPU_PACKET_HEADER_FIELDS;
-    uint32_t    movie_fragment_sequence_number;
-    uint32_t    sample_number;
-    uint32_t    offset;
-    uint8_t     priority;
-    uint8_t     dep_counter;
-    
-    //todo: other attributes for re-fragmentation should be under the
-    //  mpu_sample,
-    //      and then mpu_fragments based upon mpu_fragmentation_counter
-    mmthsample_header_t* mmthsample_header;
+
+    //if mpu_timed_flag == 1
+        uint32_t    movie_fragment_sequence_number;
+        uint32_t    sample_number;
+        uint32_t    offset;
+        uint8_t     priority;
+        uint8_t     dep_counter;
+
+        //todo: other attributes for re-fragmentation should be under the
+        //  mpu_sample,
+        //      and then mpu_fragments based upon mpu_fragmentation_counter
+        mmthsample_header_t* mmthsample_header;
+
+    // else (non-timed MFU) - see 9.3.2.2 Fig 13
+        uint32_t    item_id;
 
     //jjustman-2019-10-23: hack-ish for MFU re-assembly
     bool mfu_reassembly_performed;
+
+    //jjustman-2021-01-19: limit warn logging for missing re-assembly
+    bool mmtp_mpu_init_packet_missing_du_movie_fragment_block_warning_logged;
+
 } mmtp_mpu_packet_t;
     
 typedef struct {
