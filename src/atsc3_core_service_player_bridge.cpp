@@ -1233,7 +1233,7 @@ atsc3_link_mapping_table_t* atsc3_phy_jni_bridge_notify_link_mapping_table(atsc3
         }
     }
 
-    __ATSC3_CORE_SERVICE_PLAYER_BRIDGE_WARN("atsc3_phy_jni_bridge_notify_link_mapping_table: callback complete, atsc3_link_mapping_table_last is: %p, invoked with atsc3_link_mapping_table_pending: %p, returning to free: %p",
+    __ATSC3_CORE_SERVICE_PLAYER_BRIDGE_DEBUG("atsc3_phy_jni_bridge_notify_link_mapping_table: callback complete, atsc3_link_mapping_table_last is: %p, invoked with atsc3_link_mapping_table_pending: %p, returning to free: %p",
             atsc3_link_mapping_table_last, atsc3_link_mapping_table_pending, atsc3_link_mapping_table_to_free);
 
     return atsc3_link_mapping_table_to_free;
