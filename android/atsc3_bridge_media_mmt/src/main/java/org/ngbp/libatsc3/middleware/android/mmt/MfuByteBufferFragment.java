@@ -8,7 +8,7 @@ public class MfuByteBufferFragment {
     //TODO: jjustman-2019-10-20 - add ServiceID and lls_group information..
 
     public int packet_id;
-    public int mpu_sequence_number;
+    public long mpu_sequence_number;
     public int sample_number;
     public int bytebuffer_length;
 
@@ -22,7 +22,7 @@ public class MfuByteBufferFragment {
     public ByteBuffer myByteBuffer;
 
     /* note, original pointer behind this ByteBuffer (nativeAllocation) should still be valid...? */
-    public MfuByteBufferFragment(int packet_id, int mpu_sequence_number, int sample_number, ByteBuffer nativeByteBuffer, int length, long mpu_presentation_time_uS_from_SI, int mfu_fragment_count_expected, int mfu_fragment_count_rebuilt) {
+    public MfuByteBufferFragment(int packet_id, long mpu_sequence_number, int sample_number, ByteBuffer nativeByteBuffer, int length, long mpu_presentation_time_uS_from_SI, int mfu_fragment_count_expected, int mfu_fragment_count_rebuilt) {
         this.packet_id = packet_id;
         this.mpu_sequence_number = mpu_sequence_number;
         this.sample_number = sample_number;

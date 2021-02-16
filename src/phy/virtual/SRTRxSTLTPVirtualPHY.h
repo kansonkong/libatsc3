@@ -21,6 +21,7 @@ using namespace std;
 
 // libatsc3 type imports here
 #include <atsc3_utils.h>
+#include <atsc3_logging_externs.h>
 #include <atsc3_pcap_type.h>
 #include <atsc3_stltp_parser.h>
 #include <atsc3_alp_types.h>
@@ -114,8 +115,8 @@ class SRTRxSTLTPVirtualPHY : public IAtsc3NdkPHYClient {
 
 #define _SRTRXSTLTP_VIRTUAL_PHY_ERROR(...)   	__LIBATSC3_TIMESTAMP_ERROR(__VA_ARGS__);
 #define _SRTRXSTLTP_VIRTUAL_PHY_WARN(...)  	 	__LIBATSC3_TIMESTAMP_WARN(__VA_ARGS__);
-#define _SRTRXSTLTP_VIRTUAL_PHY_INFO(...)   	__LIBATSC3_TIMESTAMP_INFO(__VA_ARGS__);
-#define _SRTRXSTLTP_VIRTUAL_PHY_DEBUG(...)   	__LIBATSC3_TIMESTAMP_DEBUG(__VA_ARGS__);
-#define _SRTRXSTLTP_VIRTUAL_PHY_TRACE(...)   	__LIBATSC3_TIMESTAMP_TRACE(__VA_ARGS__);
+#define _SRTRXSTLTP_VIRTUAL_PHY_INFO(...)   	if(_ATSC3_SRTRXSTLTPVIRTUALPHY_INFO_ENABLED)  { __LIBATSC3_TIMESTAMP_INFO(__VA_ARGS__);  }
+#define _SRTRXSTLTP_VIRTUAL_PHY_DEBUG(...)   	if(_ATSC3_SRTRXSTLTPVIRTUALPHY_DEBUG_ENABLED) { __LIBATSC3_TIMESTAMP_DEBUG(__VA_ARGS__); }
+#define _SRTRXSTLTP_VIRTUAL_PHY_TRACE(...)   	if(_ATSC3_SRTRXSTLTPVIRTUALPHY_TRACE_ENABLED) { __LIBATSC3_TIMESTAMP_TRACE(__VA_ARGS__); }
 
 #endif //LIBATSC3_SRTSTLTPVIRTUALPHY_H

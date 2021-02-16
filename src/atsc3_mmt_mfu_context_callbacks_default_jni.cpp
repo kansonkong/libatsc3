@@ -36,24 +36,6 @@ void atsc3_ndk_media_mmt_bridge_reset_context() {
         atsc3_mmt_mfu_context_free(&atsc3_mmt_mfu_context);
     }
 
-//    lls_sls_mmt_monitor = lls_sls_mmt_monitor_create();
-//    lls_sls_mmt_monitor->atsc3_lls_slt_service = atsc3_lls_slt_service; //HACK!
-//
-//    atsc3_lls_slt_service_t* atsc3_lls_slt_service = atsc3_lls_slt_service_new();
-//    atsc3_lls_slt_service->service_id=31337; //hack
-//
-//    atsc3_slt_broadcast_svc_signalling_t* atsc3_slt_broadcast_svc_signalling = atsc3_slt_broadcast_svc_signalling_new();
-//    atsc3_slt_broadcast_svc_signalling->sls_destination_ip_address = dst_ip;
-//    atsc3_slt_broadcast_svc_signalling->sls_destination_udp_port =  dst_port;
-//    atsc3_slt_broadcast_svc_signalling->sls_protocol = SLS_PROTOCOL_ROUTE;
-//    atsc3_lls_slt_service_add_atsc3_slt_broadcast_svc_signalling(atsc3_lls_slt_service, atsc3_slt_broadcast_svc_signalling);
-//
-//    lls_slt_alc_session_find_or_create(lls_slt_monitor, atsc3_lls_slt_service);
-//
-//    lls_slt_service_id_t* lls_slt_service_id = lls_slt_service_id_new_from_atsc3_lls_slt_service(atsc3_lls_slt_service);
-//    lls_slt_monitor_add_lls_slt_service_id(lls_slt_monitor, lls_slt_service_id);
-//
-
     lls_sls_mmt_monitor = lls_sls_mmt_monitor_create();
 
     atsc3_mmt_mfu_context = atsc3_mmt_mfu_context_callbacks_default_jni_new();
@@ -69,7 +51,14 @@ void atsc3_ndk_media_mmt_bridge_reset_context() {
 void atsc3_mmt_mpu_on_sequence_mpu_metadata_present_ndk(atsc3_mmt_mfu_context_t* atsc3_mmt_mfu_context, uint16_t packet_id, uint32_t mpu_sequence_number, block_t* mmt_mpu_metadata) {
 
     bool is_video_packet = (strncasecmp(ATSC3_MP_TABLE_ASSET_ROW_HEVC_ID, atsc3_mmt_mfu_context->mmtp_packet_id_packets_container->asset_type, 4) == 0) ||
-                            (strncasecmp(ATSC3_MP_TABLE_ASSET_ROW_H264_ID, atsc3_mmt_mfu_context->mmtp_packet_id_packets_container->asset_type, 4) == 0);
+                           (strncasecmp(ATSC3_MP_TABLE_ASSET_ROW_H264_ID, atsc3_mmt_mfu_context->mmtp_packet_id_packets_container->asset_type, 4) == 0);
+
+    bool is_audio_packet = (strncasecmp(ATSC3_MP_TABLE_ASSET_ROW_AC_4_ID, atsc3_mmt_mfu_context->mmtp_packet_id_packets_container->asset_type, 4) == 0) ||
+                           (strncasecmp(ATSC3_MP_TABLE_ASSET_ROW_MHM1_ID, atsc3_mmt_mfu_context->mmtp_packet_id_packets_container->asset_type, 4) == 0) ||
+                           (strncasecmp(ATSC3_MP_TABLE_ASSET_ROW_MHM2_ID, atsc3_mmt_mfu_context->mmtp_packet_id_packets_container->asset_type, 4) == 0) ||
+                           (strncasecmp(ATSC3_MP_TABLE_ASSET_ROW_MP4A_ID, atsc3_mmt_mfu_context->mmtp_packet_id_packets_container->asset_type, 4) == 0);
+
+    bool is_stpp_packet =  (strncasecmp(ATSC3_MP_TABLE_ASSET_ROW_IMSC1_ID, atsc3_mmt_mfu_context->mmtp_packet_id_packets_container->asset_type, 4) == 0);
 
     if(is_video_packet) {
         //manually extract our csd and NALs here
@@ -82,7 +71,7 @@ void atsc3_mmt_mpu_on_sequence_mpu_metadata_present_ndk(atsc3_mmt_mfu_context_t*
 
             //set width/height to player
             if (atsc3_video_decoder_configuration_record->width && atsc3_video_decoder_configuration_record->height) {
-                Atsc3NdkMediaMMTBridge_ptr->atsc3_setVideoWidthHeightFromTrak(atsc3_video_decoder_configuration_record->width, atsc3_video_decoder_configuration_record->height);
+                Atsc3NdkMediaMMTBridge_ptr->atsc3_setVideoWidthHeightFromTrak(packet_id, atsc3_video_decoder_configuration_record->width, atsc3_video_decoder_configuration_record->height);
             }
 
             if (atsc3_video_decoder_configuration_record->hevc_decoder_configuration_record && atsc3_video_decoder_configuration_record->hevc_decoder_configuration_record->hevc_nals_combined) {
@@ -93,30 +82,33 @@ void atsc3_mmt_mpu_on_sequence_mpu_metadata_present_ndk(atsc3_mmt_mfu_context_t*
                 }
             }
         }
-    } else {
+    } else if(is_audio_packet){
         atsc3_audio_decoder_configuration_record_t* atsc3_audio_decoder_configuration_record = atsc3_audio_decoder_configuration_record_parse_from_block_t(mmt_mpu_metadata);
         if(atsc3_audio_decoder_configuration_record) {
             atsc3_mmt_mfu_context->mmtp_packet_id_packets_container->atsc3_audio_decoder_configuration_record = atsc3_audio_decoder_configuration_record;
+            Atsc3NdkMediaMMTBridge_ptr->atsc3_onInitAudioDecoderConfigurationRecord(packet_id, mpu_sequence_number, atsc3_audio_decoder_configuration_record);
         }
+    } else if(is_stpp_packet) {
+        //jjustman-2020-12-17 - TODO - impl STPP callback
     }
 }
 
 void atsc3_mmt_signalling_information_on_video_packet_id_with_mpu_timestamp_descriptor_ndk(atsc3_mmt_mfu_context_t* atsc3_mmt_mfu_context, uint16_t video_packet_id, uint32_t mpu_sequence_number, uint64_t mpu_presentation_time_ntp64, uint32_t mpu_presentation_time_seconds, uint32_t mpu_presentation_time_microseconds) {
-    _ATSC3_MMT_MFU_CONTEXT_CALLBACKS_DEFAULT_JNI_INFO("atsc3_mmt_signalling_information_on_video_packet_id_with_mpu_timestamp_descriptor_ndk: packet_id: %d, asset_type: %.4s, mp_table_asset_row: %p",
+    _ATSC3_MMT_MFU_CONTEXT_CALLBACKS_DEFAULT_JNI_DEBUG("atsc3_mmt_signalling_information_on_video_packet_id_with_mpu_timestamp_descriptor_ndk: packet_id: %d, asset_type: %.4s, mp_table_asset_row: %p",
                 video_packet_id, atsc3_mmt_mfu_context->mmtp_packet_id_packets_container->asset_type, atsc3_mmt_mfu_context->mmtp_packet_id_packets_container->mp_table_asset_row);
 
     Atsc3NdkMediaMMTBridge_ptr->atsc3_signallingContext_notify_video_packet_id_and_mpu_timestamp_descriptor(video_packet_id, mpu_sequence_number, mpu_presentation_time_ntp64, mpu_presentation_time_seconds, mpu_presentation_time_microseconds);
 }
 
 void atsc3_mmt_signalling_information_on_audio_packet_id_with_mpu_timestamp_descriptor_ndk(atsc3_mmt_mfu_context_t* atsc3_mmt_mfu_context, uint16_t audio_packet_id, uint32_t mpu_sequence_number, uint64_t mpu_presentation_time_ntp64, uint32_t mpu_presentation_time_seconds, uint32_t mpu_presentation_time_microseconds) {
-    _ATSC3_MMT_MFU_CONTEXT_CALLBACKS_DEFAULT_JNI_INFO("atsc3_mmt_signalling_information_on_audio_packet_id_with_mpu_timestamp_descriptor_ndk: packet_id: %d, asset_type: %.4s, mp_table_asset_row: %p",
+    _ATSC3_MMT_MFU_CONTEXT_CALLBACKS_DEFAULT_JNI_DEBUG("atsc3_mmt_signalling_information_on_audio_packet_id_with_mpu_timestamp_descriptor_ndk: packet_id: %d, asset_type: %.4s, mp_table_asset_row: %p",
                                                       audio_packet_id, atsc3_mmt_mfu_context->mmtp_packet_id_packets_container->asset_type, atsc3_mmt_mfu_context->mmtp_packet_id_packets_container->mp_table_asset_row);
 
     Atsc3NdkMediaMMTBridge_ptr->atsc3_signallingContext_notify_audio_packet_id_and_mpu_timestamp_descriptor(audio_packet_id, mpu_sequence_number, mpu_presentation_time_ntp64, mpu_presentation_time_seconds, mpu_presentation_time_microseconds);
 }
 
 void atsc3_mmt_signalling_information_on_stpp_packet_id_with_mpu_timestamp_descriptor_ndk(atsc3_mmt_mfu_context_t* atsc3_mmt_mfu_context, uint16_t stpp_packet_id, uint32_t mpu_sequence_number, uint64_t mpu_presentation_time_ntp64, uint32_t mpu_presentation_time_seconds, uint32_t mpu_presentation_time_microseconds) {
-    _ATSC3_MMT_MFU_CONTEXT_CALLBACKS_DEFAULT_JNI_INFO("atsc3_mmt_signalling_information_on_stpp_packet_id_with_mpu_timestamp_descriptor_ndk: packet_id: %d, asset_type: %.4s, mp_table_asset_row: %p",
+    _ATSC3_MMT_MFU_CONTEXT_CALLBACKS_DEFAULT_JNI_DEBUG("atsc3_mmt_signalling_information_on_stpp_packet_id_with_mpu_timestamp_descriptor_ndk: packet_id: %d, asset_type: %.4s, mp_table_asset_row: %p",
                                                       stpp_packet_id, atsc3_mmt_mfu_context->mmtp_packet_id_packets_container->asset_type, atsc3_mmt_mfu_context->mmtp_packet_id_packets_container->mp_table_asset_row);
 
     Atsc3NdkMediaMMTBridge_ptr->atsc3_signallingContext_notify_stpp_packet_id_and_mpu_timestamp_descriptor(stpp_packet_id, mpu_sequence_number, mpu_presentation_time_ntp64, mpu_presentation_time_seconds, mpu_presentation_time_microseconds);
@@ -124,9 +116,9 @@ void atsc3_mmt_signalling_information_on_stpp_packet_id_with_mpu_timestamp_descr
 
 //cant process MFU's without the NAL... we should ALWAYS listen for at least mpu metadata
 //in as many MMT flows as possible
-void atsc3_mmt_mpu_mfu_on_sample_complete_ndk(atsc3_mmt_mfu_context_t* atsc3_mmt_mfu_context, uint16_t packet_id, uint32_t mpu_sequence_number, uint32_t sample_number, block_t* mmt_mfu_sample, uint32_t mfu_fragment_count_rebuilt) {
+void atsc3_mmt_mpu_mfu_on_sample_complete_ndk(atsc3_mmt_mfu_context_t* atsc3_mmt_mfu_context, uint16_t packet_id, uint32_t mmtp_timestamp, uint32_t mpu_sequence_number, uint32_t sample_number, block_t* mmt_mfu_sample, uint32_t mfu_fragment_count_rebuilt) {
 
-    atsc3_mmt_mfu_mpu_timestamp_descriptor_t* atsc3_mmt_mfu_mpu_timestamp_descriptor = atsc3_mmt_mfu_context->get_mpu_timestamp_from_packet_id_mpu_sequence_number(atsc3_mmt_mfu_context, packet_id, mpu_sequence_number);
+    atsc3_mmt_mfu_mpu_timestamp_descriptor_t* atsc3_mmt_mfu_mpu_timestamp_descriptor = atsc3_mmt_mfu_context->get_mpu_timestamp_from_packet_id_mpu_sequence_number_with_mmtp_timestamp_recovery_differential(atsc3_mmt_mfu_context, packet_id, mmtp_timestamp, mpu_sequence_number);
 
     uint64_t mpu_timestamp_descriptor = 0;
     if(atsc3_mmt_mfu_mpu_timestamp_descriptor) {
@@ -139,8 +131,10 @@ void atsc3_mmt_mpu_mfu_on_sample_complete_ndk(atsc3_mmt_mfu_context_t* atsc3_mmt
        atsc3_mmt_mfu_context->mmtp_packet_id_packets_container->atsc3_video_decoder_configuration_record->hevc_decoder_configuration_record &&
        atsc3_mmt_mfu_context->mmtp_packet_id_packets_container->atsc3_video_decoder_configuration_record->hevc_decoder_configuration_record->hevc_nals_combined) {
 
-        block_t *mmt_mfu_sample_rbsp = atsc3_hevc_extract_mp4toannexb_filter_ffmpegImpl(mmt_mfu_sample, atsc3_mmt_mfu_context->mmtp_packet_id_packets_container->atsc3_video_decoder_configuration_record->hevc_decoder_configuration_record->hevc_nals_combined);
-        uint8_t *block_ptr = block_Get(mmt_mfu_sample_rbsp);
+        block_t* mmt_mfu_sample_rbsp = atsc3_hevc_extract_mp4toannexb_filter_ffmpegImpl(mmt_mfu_sample, atsc3_mmt_mfu_context->mmtp_packet_id_packets_container->atsc3_video_decoder_configuration_record->hevc_decoder_configuration_record->hevc_nals_combined);
+
+        block_Rewind(mmt_mfu_sample_rbsp);
+        uint8_t* block_ptr = block_Get(mmt_mfu_sample_rbsp);
         uint32_t block_len = block_Len(mmt_mfu_sample_rbsp);
 
         if ((global_mfu_proccessed_count++ % 600) == 0) {
@@ -166,12 +160,12 @@ void atsc3_mmt_mpu_mfu_on_sample_complete_ndk(atsc3_mmt_mfu_context_t* atsc3_mmt
     }
 }
 
-void atsc3_mmt_mpu_mfu_on_sample_corrupt_ndk(atsc3_mmt_mfu_context_t* atsc3_mmt_mfu_context, uint16_t packet_id, uint32_t mpu_sequence_number, uint32_t sample_number, block_t* mmt_mfu_sample, uint32_t mfu_fragment_count_expected, uint32_t mfu_fragment_count_rebuilt) {
+void atsc3_mmt_mpu_mfu_on_sample_corrupt_ndk(atsc3_mmt_mfu_context_t* atsc3_mmt_mfu_context, uint16_t packet_id, uint32_t mmtp_timestamp, uint32_t mpu_sequence_number, uint32_t sample_number, block_t* mmt_mfu_sample, uint32_t mfu_fragment_count_expected, uint32_t mfu_fragment_count_rebuilt) {
 
     //cant process MFU's without the NAL... we should ALWAYS listen for at least mpu metadata
     //in as many MMT flows as possible
 
-    atsc3_mmt_mfu_mpu_timestamp_descriptor_t* atsc3_mmt_mfu_mpu_timestamp_descriptor = atsc3_mmt_mfu_context->get_mpu_timestamp_from_packet_id_mpu_sequence_number(atsc3_mmt_mfu_context, packet_id, mpu_sequence_number);
+    atsc3_mmt_mfu_mpu_timestamp_descriptor_t* atsc3_mmt_mfu_mpu_timestamp_descriptor = atsc3_mmt_mfu_context->get_mpu_timestamp_from_packet_id_mpu_sequence_number_with_mmtp_timestamp_recovery_differential(atsc3_mmt_mfu_context, packet_id, mmtp_timestamp, mpu_sequence_number);
     uint64_t mpu_timestamp_descriptor = 0;
     if(atsc3_mmt_mfu_mpu_timestamp_descriptor) {
         mpu_timestamp_descriptor = atsc3_mmt_mfu_mpu_timestamp_descriptor->mpu_presentation_time_as_us_value;
@@ -190,6 +184,7 @@ void atsc3_mmt_mpu_mfu_on_sample_corrupt_ndk(atsc3_mmt_mfu_context_t* atsc3_mmt_
 
         block_t *mmt_mfu_sample_rbsp = atsc3_hevc_extract_mp4toannexb_filter_ffmpegImpl(mmt_mfu_sample, atsc3_mmt_mfu_context->mmtp_packet_id_packets_container->atsc3_video_decoder_configuration_record->hevc_decoder_configuration_record->hevc_nals_combined);
         if(mmt_mfu_sample_rbsp && block_Len(mmt_mfu_sample_rbsp)) {
+            block_Rewind(mmt_mfu_sample_rbsp);
             uint8_t *block_ptr = block_Get(mmt_mfu_sample_rbsp);
             uint32_t block_len = block_Len(mmt_mfu_sample_rbsp);
 
@@ -220,6 +215,7 @@ void atsc3_mmt_mpu_mfu_on_sample_corrupt_ndk(atsc3_mmt_mfu_context_t* atsc3_mmt_
             _ATSC3_MMT_MFU_CONTEXT_CALLBACKS_DEFAULT_JNI_ERROR("atsc3_mmt_mpu_mfu_on_sample_corrupt_ndk: mmt_mfu_sample: %p (len: %d) - returned null mmt_mfu_sample_rbsp!", mmt_mfu_sample, mmt_mfu_sample ? mmt_mfu_sample->p_size : -1);
         }
     } else {
+        block_Rewind(mmt_mfu_sample);
         uint8_t *block_ptr = block_Get(mmt_mfu_sample);
         uint32_t block_len = block_Len(mmt_mfu_sample);
 
@@ -235,7 +231,7 @@ void atsc3_mmt_mpu_mfu_on_sample_corrupt_ndk(atsc3_mmt_mfu_context_t* atsc3_mmt_
 }
 
 
-void atsc3_mmt_mpu_mfu_on_sample_corrupt_mmthsample_header_ndk(atsc3_mmt_mfu_context_t* atsc3_mmt_mfu_context, uint16_t packet_id, uint32_t mpu_sequence_number, uint32_t sample_number, block_t* mmt_mfu_sample, uint32_t mfu_fragment_count_expected, uint32_t mfu_fragment_count_rebuilt) {
+void atsc3_mmt_mpu_mfu_on_sample_corrupt_mmthsample_header_ndk(atsc3_mmt_mfu_context_t* atsc3_mmt_mfu_context, uint16_t packet_id, uint32_t mmtp_timestamp, uint32_t mpu_sequence_number, uint32_t sample_number, block_t* mmt_mfu_sample, uint32_t mfu_fragment_count_expected, uint32_t mfu_fragment_count_rebuilt) {
     atsc3_mmt_mfu_mpu_timestamp_descriptor_t* atsc3_mmt_mfu_mpu_timestamp_descriptor = NULL;
 
     if(!mmt_mfu_sample || !mmt_mfu_sample->p_size) {
@@ -243,7 +239,7 @@ void atsc3_mmt_mpu_mfu_on_sample_corrupt_mmthsample_header_ndk(atsc3_mmt_mfu_con
         return;
     }
 
-    atsc3_mmt_mfu_mpu_timestamp_descriptor = atsc3_mmt_mfu_context->get_mpu_timestamp_from_packet_id_mpu_sequence_number(atsc3_mmt_mfu_context, packet_id, mpu_sequence_number);
+    atsc3_mmt_mfu_mpu_timestamp_descriptor = atsc3_mmt_mfu_context->get_mpu_timestamp_from_packet_id_mpu_sequence_number_with_mmtp_timestamp_recovery_differential(atsc3_mmt_mfu_context, packet_id, mmtp_timestamp, mpu_sequence_number);
     uint64_t mpu_timestamp_descriptor = 0;
     if(atsc3_mmt_mfu_mpu_timestamp_descriptor) {
         mpu_timestamp_descriptor = atsc3_mmt_mfu_mpu_timestamp_descriptor->mpu_presentation_time_as_us_value;
@@ -257,6 +253,8 @@ void atsc3_mmt_mpu_mfu_on_sample_corrupt_mmthsample_header_ndk(atsc3_mmt_mfu_con
        atsc3_mmt_mfu_context->mmtp_packet_id_packets_container->atsc3_video_decoder_configuration_record->hevc_decoder_configuration_record->hevc_nals_combined) {
             block_t *mmt_mfu_sample_rbsp = atsc3_hevc_extract_mp4toannexb_filter_ffmpegImpl(mmt_mfu_sample, atsc3_mmt_mfu_context->mmtp_packet_id_packets_container->atsc3_video_decoder_configuration_record->hevc_decoder_configuration_record->hevc_nals_combined);
             if(mmt_mfu_sample_rbsp) {
+
+                block_Rewind(mmt_mfu_sample_rbsp);
                 uint8_t *block_ptr = block_Get(mmt_mfu_sample_rbsp);
                 uint32_t block_len = block_Len(mmt_mfu_sample_rbsp);
 

@@ -47,12 +47,13 @@ typedef struct atsc3_pcre2_regex_context {
 
 
 typedef struct atsc3_preg2_regex_match_capture {
-	int			capture_reference_id; // e.g. $0
-
+	int			capture_reference_id; 	// e.g. $0
+	char*		capture_name; 			//optional, if capture group is named, e.g. (?'repId'.*?)
+	
 	PCRE2_SIZE	match_start;
 	PCRE2_SIZE	match_end;
 
-	//first-class substring promoted from PCRE2_SPTR and PCRE2_SIZE
+	//first-class substring capture value promoted from PCRE2_SPTR and PCRE2_SIZE
 	block_t* 	substring;
 
 	//internal
@@ -78,6 +79,9 @@ ATSC3_VECTOR_BUILDER_METHODS_INTERFACE(atsc3_pcre2_regex_match_capture_vector, a
 
 atsc3_pcre2_regex_context_t* atsc3_pcre2_regex_context_new(const char* pcre2_regex_pattern);
 atsc3_pcre2_regex_match_capture_vector_t* atsc3_pcre2_regex_match(atsc3_pcre2_regex_context_t* atsc3_pcre2_regex_context, block_t* subject);
+
+//PCRE2_SPTR subject, PCRE2_SIZE subject_length
+void atsc3_preg2_regex_extract_and_assign_named_capture_groups(atsc3_pcre2_regex_context_t *atsc3_pcre2_regex_context, atsc3_preg2_regex_match_capture_group_t *atsc3_preg2_regex_match_capture_group, PCRE2_SPTR subject, PCRE2_SIZE subject_length);
 
 //jjustman-2020-07-14 - todo: macro _new and _free for ATSC3_ALLOC() with chained VECTOR_BUILDER destructors..
 
