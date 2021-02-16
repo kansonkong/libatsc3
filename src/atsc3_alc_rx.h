@@ -40,7 +40,9 @@ typedef struct atsc3_alc_packet {
 	atsc3_def_lct_hdr_t* 	def_lct_hdr;
 	uint8_t 				fec_encoding_id;
     
-    //for fec_encoding_id == 128, raptor fec
+    //jjustman-2021-02-03 - for fec_encoding_id=6 - raptorQ
+    //  all others, see A/331:2020
+
     bool 					use_sbn_esi;
     uint8_t 				sbn;	//sbn: source block number for fec recovery
 	uint32_t 				esi; 	//esi: encoding symbol id, our 24bit offset
