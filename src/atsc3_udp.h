@@ -33,6 +33,8 @@ typedef struct udp_flow {
 	uint16_t		dst_port;
 } udp_flow_t;
 
+typedef struct udp_flow atsc3_udp_flow_t;
+
 
 typedef struct udp_packet {
 	udp_flow_t		udp_flow;
@@ -53,6 +55,8 @@ typedef struct udp_packet atsc3_udp_packet_t;
 #define MAX_PCAP_LEN MAX_ATSC3_PHY_IP_DATAGRAM_SIZE
 
 atsc3_udp_packet_t* atsc3_udp_packet_from_block_t(block_t* block_udp_packet);
+
+atsc3_udp_flow_t* atsc3_udp_flow_clone_from_udp_packet(atsc3_udp_packet_t* atsc3_udp_packet);
 
 void udp_packet_free(udp_packet_t** udp_packet_p);
 void atsc3_udp_packet_free(atsc3_udp_packet_t** udp_packet_p);

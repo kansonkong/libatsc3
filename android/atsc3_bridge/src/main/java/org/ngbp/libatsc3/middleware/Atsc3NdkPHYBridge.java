@@ -39,10 +39,15 @@ public class Atsc3NdkPHYBridge extends Atsc3BridgeNdkStaticJniLoader {
         init();
     }
 
-
     int onLogMsg(String msg) {
         Log.d(TAG, msg);
-        mActivity.showMsgFromNative(msg+"\n");
+        mActivity.onPhyLogMessage(msg+"\n");
+        return 0;
+    }
+
+    int onPhyError(String msg) {
+        Log.e(TAG, msg);
+        mActivity.onPhyError(msg+"\n");
         return 0;
     }
 
@@ -81,6 +86,11 @@ public class Atsc3NdkPHYBridge extends Atsc3BridgeNdkStaticJniLoader {
 
         mActivity.pushRfPhyStatisticsUpdate(rfPhyStatistics);
 
+        return 0;
+    }
+
+    int atsc3_rf_phy_status_callback_with_rf_phy_statistics_type(RfPhyStatistics rfPhyStatistics) {
+        mActivity.pushRfPhyStatisticsUpdate(rfPhyStatistics);
         return 0;
     }
 
