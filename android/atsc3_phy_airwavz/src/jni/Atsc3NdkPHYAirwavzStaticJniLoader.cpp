@@ -4,7 +4,7 @@
 
 #include "Atsc3NdkPHYAirwavzStaticJniLoader.h"
 
-JavaVM* javaVM_scoped = nullptr;
+static JavaVM* javaVM_scoped = nullptr;
 
 JavaVM* atsc3_ndk_phy_airwavz_static_loader_get_javaVM() {
     return javaVM_scoped;
@@ -16,6 +16,7 @@ extern "C" JNIEXPORT jint JNI_OnLoad(JavaVM* vm, void* reserved) {
     }
     javaVM_scoped = vm;
 
-_PHY_AIRWAVZ_NDK_STATIC_JNI_LOADER_INFO("Atsc3NdkPHYAirwavzSStaticJniLoader::JNI_OnLoad complete, vm: %p", javaVM_scoped);
+    _PHY_AIRWAVZ_NDK_STATIC_JNI_LOADER_INFO("Atsc3NdkPHYAirwavzSStaticJniLoader::JNI_OnLoad complete, vm: %p", javaVM_scoped);
+
     return JNI_VERSION_1_6;
 }

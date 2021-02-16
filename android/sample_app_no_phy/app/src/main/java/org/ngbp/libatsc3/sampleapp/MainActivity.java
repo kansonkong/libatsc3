@@ -953,7 +953,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
             }
         }, 3000);
 
-        if(false) {
+        if(true) {
             int sl_res = 0;
             //jjustman-2020-08-31 - force loading of SaankhyaPHYAndroid with SDIO configuration
             atsc3NdkPHYClientInstance = new SaankhyaPHYAndroid();
