@@ -24,17 +24,28 @@ int _ATSC3_CORE_SERVICE_PLAYER_BRIDGE_TRACE_ENABLED = 0;
 IAtsc3NdkApplicationBridge* Atsc3NdkApplicationBridge_ptr = NULL;
 IAtsc3NdkPHYBridge*         Atsc3NdkPHYBridge_ptr = NULL;
 
-atsc3_link_mapping_table*   atsc3_link_mapping_table_last = NULL;
-
 //commandline stream filtering
 uint32_t* dst_ip_addr_filter = NULL;
 uint16_t* dst_ip_port_filter = NULL;
 uint16_t* dst_packet_id_filter = NULL;
 
+//jjustman-2021-01-21 - special 'friend' mutex access so we can get lls_slt_monitor as needed, etc..
 recursive_mutex atsc3_core_service_player_bridge_context_mutex;
+
+recursive_mutex& atsc3_core_service_player_bridge_get_context_mutex() {
+    return atsc3_core_service_player_bridge_context_mutex;
+}
 
 //jjustman-2019-10-03 - context event callbacks...
 lls_slt_monitor_t* lls_slt_monitor = NULL;
+
+//friend accessor for our lls_slt_monitor, until we are refactored to have a proper context
+lls_slt_monitor_t* atsc3_core_service_player_bridge_get_lls_slt_montior() {
+    return lls_slt_monitor;
+}
+
+atsc3_link_mapping_table*   atsc3_link_mapping_table_last = NULL;
+uint32_t                    atsc3_link_mapping_table_missing_dropped_packets = 0;
 
 //mmtp/sls flow management
 atsc3_mmt_mfu_context_t* atsc3_mmt_mfu_context = NULL;
@@ -61,6 +72,7 @@ void atsc3_core_service_application_bridge_init(IAtsc3NdkApplicationBridge* atsc
     Atsc3NdkApplicationBridge_ptr->LogMsgF("atsc3_core_service_application_bridge_init - Atsc3NdkApplicationBridge_ptr: %p", Atsc3NdkApplicationBridge_ptr);
 
     //set global logging levels
+    //jjustman-2021-01-19 - testing for mpu_timestamp_descriptor patching
     _MMT_CONTEXT_MPU_DEBUG_ENABLED = 0;
     _ALC_UTILS_IOTRACE_ENABLED = 0;
     _ROUTE_SLS_PROCESSOR_INFO_ENABLED = 1;
@@ -107,6 +119,8 @@ void atsc3_core_service_application_bridge_init(IAtsc3NdkApplicationBridge* atsc
  * jjustman-2020-08-31 - todo: refactor this into a context handle
  */
 void atsc3_core_service_application_bridge_reset_context() {
+    __ATSC3_CORE_SERVICE_PLAYER_BRIDGE_WARN("atsc3_core_service_application_bridge_reset_context!");
+
     lock_guard<recursive_mutex> atsc3_core_service_player_bridge_context_mutex_local(atsc3_core_service_player_bridge_context_mutex);
 
     if(atsc3_mmt_mfu_context) {
@@ -127,6 +141,11 @@ void atsc3_core_service_application_bridge_reset_context() {
         lls_sls_mmt_monitor = NULL;
         lls_sls_alc_monitor = NULL;
     }
+
+    if(atsc3_link_mapping_table_last) {
+        atsc3_link_mapping_table_free(&atsc3_link_mapping_table_last);
+    }
+    atsc3_link_mapping_table_missing_dropped_packets = 0;
 
     lls_slt_monitor = lls_slt_monitor_create();
     //wire up a lls event for SLS table
@@ -182,79 +201,148 @@ atsc3_slt_broadcast_svc_signalling_t* atsc3_slt_broadcast_svc_signalling_find_fr
 //                         all IP flows and their corresponding PLP's are listened for
 //jjustman-2020-12-08 - TODO: we will also need to monitor for MMT HELD component to check if we need to add its flow for PLP listening
 
-atsc3_slt_broadcast_svc_signalling_t* atsc3_phy_add_plp_listener_from_service_id(uint16_t service_id) {
+/*
+ * jjustman-2021-01-21: NOTE: final PLP selection is not completed until invoking:
+ *
+ *      Atsc3NdkApplicationBridge_ptr->atsc3_phy_notify_plp_selection_changed(plps_to_listen);
+ *
+ *   with plps_to_listen as the returned vector from this call, allowing the callee to adjust as needed
+ */
+vector<uint8_t>  atsc3_phy_build_plp_listeners_from_lls_slt_monitor(lls_slt_monitor_t* lls_slt_monitor) {
     atsc3_slt_broadcast_svc_signalling_t* atsc3_slt_broadcast_svc_signalling = NULL;
 
     bool found_atsc3_slt_broadcast_svc_signalling = false;
     bool atsc3_phy_notify_plp_selection_changed_called = false;
 
-    atsc3_lls_slt_service_t* atsc3_lls_slt_service = lls_slt_monitor_find_lls_slt_service_id_group_id_cache_entry(lls_slt_monitor, service_id);
-    if(!atsc3_lls_slt_service) {
-        __ATSC3_CORE_SERVICE_PLAYER_BRIDGE_ERROR("atsc3_phy_add_plp_listener_from_service_id: unable to find service_id: %d", service_id);
-        return NULL;
+    int8_t first_plp = -1; //keep track of our "first" PLP for priority use cases, e.g. with LG3307
+
+    set<uint8_t> plps_to_check;         //use this as a temporary collection of de-dup'd PLPs
+    set<uint8_t>::iterator it;
+
+    vector<uint8_t> plps_to_listen;
+
+    if(!atsc3_link_mapping_table_last) {
+        __ATSC3_CORE_SERVICE_PLAYER_BRIDGE_ERROR("atsc3_phy_update_plp_listeners_from_lls_slt_monitor: atsc3_link_mapping_table_last is NULL!");
+        return plps_to_listen;
     }
 
-    //broadcast_svc_signalling has cardinality (0..1), any other signalling location is represented by SvcInetUrl (0..N)
+    if(!lls_slt_monitor) {
+        __ATSC3_CORE_SERVICE_PLAYER_BRIDGE_ERROR("atsc3_phy_update_plp_listeners_from_lls_slt_monitor: lls_slt_monitor is NULL!");
+        return plps_to_listen;
+    }
 
-    for(int i=0; i < atsc3_lls_slt_service->atsc3_slt_broadcast_svc_signalling_v.count && !found_atsc3_slt_broadcast_svc_signalling; i++) {
-        atsc3_slt_broadcast_svc_signalling = atsc3_lls_slt_service->atsc3_slt_broadcast_svc_signalling_v.data[i];
+    //acquire our mutex for "pseudo-context" w/ lls_slt_monitor so it won't change out from under (hopefully)..
+    {
+        lock_guard<recursive_mutex> atsc3_core_service_player_bridge_context_mutex_local(atsc3_core_service_player_bridge_context_mutex);
 
-        //jjustman-2020-11-18 - relax this check - for sls_protocol to just ensuring that we have a dst_ip and dst_port and then proceed with LMT matching
-        // if(atsc3_slt_broadcast_svc_signalling->sls_protocol == SLS_PROTOCOL_MMTP || atsc3_slt_broadcast_svc_signalling->sls_protocol == SLS_PROTOCOL_ROUTE) {
-        if(atsc3_slt_broadcast_svc_signalling->sls_destination_ip_address && atsc3_slt_broadcast_svc_signalling->sls_destination_udp_port) {
-            //check if we need to add this PLP based upon our LMT to the phy listener
-            //if(atsc3_slt_broadcast_svc_signalling->sls_source_ip_address
-            if(atsc3_link_mapping_table_last != NULL) {
-                vector<uint8_t> plps_to_listen;
-                plps_to_listen.push_back(0);
+        for(int i=0; i < lls_slt_monitor->lls_slt_service_id_v.count; i++) {
+            lls_slt_service_id_t* lls_slt_service_id = lls_slt_monitor->lls_slt_service_id_v.data[i];
 
-                for(int j=0; j < atsc3_link_mapping_table_last->atsc3_link_mapping_table_plp_v.count && !found_atsc3_slt_broadcast_svc_signalling; j++) {
-                    atsc3_link_mapping_table_plp_t* atsc3_link_mapping_table_plp = atsc3_link_mapping_table_last->atsc3_link_mapping_table_plp_v.data[j];
-                    for(int k=0; k < atsc3_link_mapping_table_plp->atsc3_link_mapping_table_multicast_v.count && !found_atsc3_slt_broadcast_svc_signalling; k++) {
-                        atsc3_link_mapping_table_multicast_t* atsc3_link_mapping_table_multicast = atsc3_link_mapping_table_plp->atsc3_link_mapping_table_multicast_v.data[k];
+            //find our cache entry from this service_id
+            atsc3_lls_slt_service_t* atsc3_lls_slt_service = lls_slt_monitor_find_lls_slt_service_id_group_id_cache_entry(lls_slt_monitor, lls_slt_service_id->service_id);
+            if(!atsc3_lls_slt_service) {
+                __ATSC3_CORE_SERVICE_PLAYER_BRIDGE_WARN("atsc3_phy_update_plp_listeners_from_lls_slt_monitor: unable to find service_id: %d, skipping from PLP selection!", lls_slt_service_id->service_id);
+                continue;
+            }
 
-                        uint32_t sls_destination_ip_address = parseIpAddressIntoIntval(atsc3_slt_broadcast_svc_signalling->sls_destination_ip_address);
-                        uint16_t sls_destination_udp_port = parsePortIntoIntval(atsc3_slt_broadcast_svc_signalling->sls_destination_udp_port);
+            uint16_t service_id = lls_slt_service_id->service_id;
 
-                        if(atsc3_link_mapping_table_multicast->dst_ip_add == sls_destination_ip_address &&
-                           atsc3_link_mapping_table_multicast->dst_udp_port == sls_destination_udp_port) {
-                            Atsc3NdkApplicationBridge_ptr->LogMsgF("atsc3_core_service_player_bridge_set_single_monitor_a331_service_id: SLS adding PLP_id: %d (%s: %s)",
-                                                                   atsc3_link_mapping_table_plp->PLP_ID,
-                                                                   atsc3_slt_broadcast_svc_signalling->sls_destination_ip_address,
-                                                                   atsc3_slt_broadcast_svc_signalling->sls_destination_udp_port);
-                            found_atsc3_slt_broadcast_svc_signalling = true;
+            //broadcast_svc_signalling has cardinality (0..1), any other signalling location is represented by SvcInetUrl (0..N)
+            //jjustman-2021-01-21 - TODO: fix this cardinality mistake
+            for(int j=0; j < atsc3_lls_slt_service->atsc3_slt_broadcast_svc_signalling_v.count; j++) {
+                atsc3_slt_broadcast_svc_signalling = atsc3_lls_slt_service->atsc3_slt_broadcast_svc_signalling_v.data[j];
 
-                            bool should_add = true;
-                            for(int i=0; i < plps_to_listen.size(); i++) {
-                                if(plps_to_listen.at(i) == atsc3_link_mapping_table_plp->PLP_ID) {
-                                    should_add = false;
+                //jjustman-2020-11-18 - relax this check - for sls_protocol to just ensuring that we have a dst_ip and dst_port and then proceed with LMT matching
+                // if(atsc3_slt_broadcast_svc_signalling->sls_protocol == SLS_PROTOCOL_MMTP || atsc3_slt_broadcast_svc_signalling->sls_protocol == SLS_PROTOCOL_ROUTE) {
+
+                if(atsc3_slt_broadcast_svc_signalling->sls_destination_ip_address && atsc3_slt_broadcast_svc_signalling->sls_destination_udp_port) {
+                    for(int k=0; k < atsc3_link_mapping_table_last->atsc3_link_mapping_table_plp_v.count && !found_atsc3_slt_broadcast_svc_signalling; k++) {
+                        atsc3_link_mapping_table_plp_t* atsc3_link_mapping_table_plp = atsc3_link_mapping_table_last->atsc3_link_mapping_table_plp_v.data[k];
+
+                        for(int l=0; l < atsc3_link_mapping_table_plp->atsc3_link_mapping_table_multicast_v.count && !found_atsc3_slt_broadcast_svc_signalling; l++) {
+                            atsc3_link_mapping_table_multicast_t* atsc3_link_mapping_table_multicast = atsc3_link_mapping_table_plp->atsc3_link_mapping_table_multicast_v.data[l];
+
+                            uint32_t sls_destination_ip_address = parseIpAddressIntoIntval(atsc3_slt_broadcast_svc_signalling->sls_destination_ip_address);
+                            uint16_t sls_destination_udp_port = parsePortIntoIntval(atsc3_slt_broadcast_svc_signalling->sls_destination_udp_port);
+
+                            __ATSC3_CORE_SERVICE_PLAYER_BRIDGE_INFO("atsc3_phy_update_plp_listeners_from_lls_slt_monitor: service_id: %d, checking lmt->dst_ip:port %d:%d, sls_dest_ip:port: %d: %d, plp_id: %d",
+                                    service_id,
+                                    atsc3_link_mapping_table_multicast->dst_ip_add,
+                                    atsc3_link_mapping_table_multicast->dst_udp_port,
+                                    sls_destination_ip_address,
+                                    sls_destination_udp_port,
+                                    atsc3_link_mapping_table_plp->PLP_ID);
+
+                            if(atsc3_link_mapping_table_multicast->dst_ip_add == sls_destination_ip_address && atsc3_link_mapping_table_multicast->dst_udp_port == sls_destination_udp_port) {
+                                Atsc3NdkApplicationBridge_ptr->LogMsgF("atsc3_phy_update_plp_listeners_from_lls_slt_monitor: SLS adding PLP_id: %d (%s: %s)",
+                                        atsc3_link_mapping_table_plp->PLP_ID,
+                                        atsc3_slt_broadcast_svc_signalling->sls_destination_ip_address,
+                                        atsc3_slt_broadcast_svc_signalling->sls_destination_udp_port);
+
+                                if(first_plp == -1 ) {
+                                    first_plp = atsc3_link_mapping_table_plp->PLP_ID;
+                                } else {
+                                    plps_to_check.insert(atsc3_link_mapping_table_plp->PLP_ID);
                                 }
-                            }
-                            if(should_add) {
-                                plps_to_listen.push_back(atsc3_link_mapping_table_plp->PLP_ID);
                             }
                         }
                     }
-
                 }
-                __ATSC3_CORE_SERVICE_PLAYER_BRIDGE_INFO("atsc3_phy_add_plp_listener_from_service_id: before atsc3_phy_notify_plp_selection_changed: with %u plp's", plps_to_listen.size());
-                Atsc3NdkApplicationBridge_ptr->atsc3_phy_notify_plp_selection_changed(plps_to_listen);
-                atsc3_phy_notify_plp_selection_changed_called = true;
-            } else {
-                __ATSC3_CORE_SERVICE_PLAYER_BRIDGE_WARN("atsc3_phy_add_plp_listener_from_service_id: No LMT to support serviceID selection change!");
             }
         }
+     } //finally, release our RAII context mutex
+
+     if(first_plp == -1) {
+         __ATSC3_CORE_SERVICE_PLAYER_BRIDGE_WARN("atsc3_phy_update_plp_listeners_from_lls_slt_monitor: first_plp is -1, this should never happen, bailing!");
+         return plps_to_listen; //empty set
+     }
+
+     bool has_plp0_in_set = false;
+
+     for(it = plps_to_check.begin(); !has_plp0_in_set && it != plps_to_check.end(); it++) {
+         if((*it) == 0) {
+             has_plp0_in_set = true;
+         }
+     }
+
+     //jjustman-2021-02-03 - treat our selected PLP's as priority fifo (e.g selected service, then additional service(s)) to ensure LG3307 demod (which can only reliably decode 1 plp at a time) can pick plps_to_listen.first()
+    plps_to_listen.push_back(first_plp);
+
+    for(it = plps_to_check.begin(); it != plps_to_check.end(); it++) {
+        plps_to_listen.push_back(*it);
     }
 
-    if(found_atsc3_slt_broadcast_svc_signalling && atsc3_phy_notify_plp_selection_changed_called) {
-        return atsc3_slt_broadcast_svc_signalling;
-    } else {
-        return NULL;
+     //if we don't have plp0 in our set, add it first if our size is less than 4 entries (e.g. 0 + 3plps < max of 4)
+     if(!has_plp0_in_set) {
+         if(plps_to_check.size() < 4) {
+             plps_to_listen.push_back(0);
+         } else {
+             __ATSC3_CORE_SERVICE_PLAYER_BRIDGE_WARN("atsc3_phy_update_plp_listeners_from_lls_slt_monitor: plps_to_check contains 4 entries, but is missing plp0!");
+         }
     }
+
+    //ugh, hack
+    if(!plps_to_listen.size()) {
+        __ATSC3_CORE_SERVICE_PLAYER_BRIDGE_WARN("atsc3_phy_update_plp_listeners_from_lls_slt_monitor: plps_to_check contains 0 entries?! forcing plp[0]: 0");
+        plps_to_listen.push_back(0);
+    } else if(plps_to_listen.size() == 1) {
+        __ATSC3_CORE_SERVICE_PLAYER_BRIDGE_INFO("atsc3_phy_update_plp_listeners_from_lls_slt_monitor: final plps_to_listen is: %d entries: plp[0]: %d", plps_to_listen.size(), plps_to_listen[0]);
+    } else if(plps_to_listen.size() == 2) {
+        __ATSC3_CORE_SERVICE_PLAYER_BRIDGE_INFO("atsc3_phy_update_plp_listeners_from_lls_slt_monitor: final plps_to_listen is: %d entries: plp[0]: %d, plp[1]: %d", plps_to_listen.size(), plps_to_listen[0], plps_to_listen[1]);
+    } else if(plps_to_listen.size() == 3) {
+        __ATSC3_CORE_SERVICE_PLAYER_BRIDGE_INFO("atsc3_phy_update_plp_listeners_from_lls_slt_monitor: final plps_to_listen is: %d entries: plp[0]: %d, plp[1]: %d, plp[2]: %d", plps_to_listen.size(), plps_to_listen[0], plps_to_listen[1], plps_to_listen[2]);
+    } else if(plps_to_listen.size() == 4) {
+        __ATSC3_CORE_SERVICE_PLAYER_BRIDGE_INFO("atsc3_phy_update_plp_listeners_from_lls_slt_monitor: final plps_to_listen is: %d entries: plp[0]: %d, plp[1]: %d, plp[2]: %d, plp[3]: %d", plps_to_listen.size(), plps_to_listen[0], plps_to_listen[1], plps_to_listen[2], plps_to_listen[3]);
+    }
+
+    return plps_to_listen;
 }
 
 /*
- * jjustman-2020-11-18 - TODO: refactor this to avoid juggling lls_slt_monitor and sls_alc and sls_mmt monitors
+ * atsc3_core_service_player_bridge_set_single_monitor_a331_service_id: set a single service to be monitored
+ *
+ *      NOTE: will _NOT_ attempt to manage PLP selections, must be configured after this (and any additional services via add_monitor) by:
+ *              atsc3_phy_build_plp_listeners_from_lls_slt_monitor(lls_slt_monitor);
  */
 atsc3_lls_slt_service_t* atsc3_core_service_player_bridge_set_single_monitor_a331_service_id(int service_id) {
     lock_guard<recursive_mutex> atsc3_core_service_player_bridge_context_mutex_local(atsc3_core_service_player_bridge_context_mutex);
@@ -268,16 +356,6 @@ atsc3_lls_slt_service_t* atsc3_core_service_player_bridge_set_single_monitor_a33
     if(!atsc3_lls_slt_service) {
         __ATSC3_CORE_SERVICE_PLAYER_BRIDGE_ERROR("atsc3_core_service_player_bridge_set_single_monitor_a331_service_id: unable to find service_id: %d", service_id);
         return NULL;
-    }
-
-    __ATSC3_CORE_SERVICE_PLAYER_BRIDGE_INFO("atsc3_core_service_player_bridge_set_single_monitor_a331_service_id: with service_id: %d", service_id);
-
-    //find our PLP from LMT with our slt_broadcast_svc_signalling ip/port to update PHY
-    atsc3_slt_broadcast_svc_signalling_t* atsc3_slt_broadcast_svc_signalling_plp_selection_changed = NULL;
-    atsc3_slt_broadcast_svc_signalling_plp_selection_changed = atsc3_phy_add_plp_listener_from_service_id(service_id);
-
-    if(!atsc3_slt_broadcast_svc_signalling_plp_selection_changed) {
-        __ATSC3_CORE_SERVICE_PLAYER_BRIDGE_WARN("atsc3_core_service_player_bridge_set_single_monitor_a331_service_id: atsc3_phy_add_plp_listener_from_service_id: unable to find LMT mapping for service_id: %d, acquisition may fail!", service_id);
     }
 
     //find our matching LLS service, then assign a monitor reference
@@ -398,7 +476,10 @@ atsc3_lls_slt_service_t* atsc3_core_service_player_bridge_set_single_monitor_a33
 
     return atsc3_lls_slt_service;
 }
-//jjustman-2020-11-17 - todo: add in additional PLP listener for this service (e.g. for ESG service acquisition)
+//jjustman-2020-11-17 - NOTE: middleware app should invoke this any supplimental services needed for full ATSC 3.0 reception, e.g:
+//      ESG, which would be SLT.Service@serviceCategory == 4, or
+//      others as defined in A/331:2020 Table 6.4
+
 atsc3_lls_slt_service_t* atsc3_core_service_player_bridge_add_monitor_a331_service_id(int service_id) {
     lls_sls_alc_monitor_t* lls_sls_alc_monitor_to_add = NULL;
 
@@ -410,14 +491,6 @@ atsc3_lls_slt_service_t* atsc3_core_service_player_bridge_add_monitor_a331_servi
     if(!atsc3_lls_slt_service) {
         __ATSC3_CORE_SERVICE_PLAYER_BRIDGE_ERROR("atsc3_core_service_player_bridge_add_monitor_a331_service_id: unable to find service_id: %d", service_id);
         return NULL;
-    }
-
-    //find our PLP from LMT with our slt_broadcast_svc_signalling ip/port to update PHY
-    atsc3_slt_broadcast_svc_signalling_t* atsc3_slt_broadcast_svc_signalling_plp_selection_changed = NULL;
-    atsc3_slt_broadcast_svc_signalling_plp_selection_changed = atsc3_phy_add_plp_listener_from_service_id(service_id);
-
-    if(!atsc3_slt_broadcast_svc_signalling_plp_selection_changed) {
-        __ATSC3_CORE_SERVICE_PLAYER_BRIDGE_WARN("atsc3_core_service_player_bridge_add_monitor_a331_service_id: atsc3_phy_add_plp_listener_from_service_id: unable to find LMT mapping for service_id: %d, acquisition may fail!", service_id);
     }
 
     //find our matching LLS service, then assign a monitor reference
@@ -454,7 +527,6 @@ atsc3_lls_slt_service_t* atsc3_core_service_player_bridge_add_monitor_a331_servi
 
     //add in supplimentary callback hook for additional ALC emissions
     lls_sls_alc_monitor_to_add->atsc3_lls_sls_alc_on_object_close_flag_s_tsid_content_location_callback = &atsc3_lls_sls_alc_on_object_close_flag_s_tsid_content_location_ndk;
-
 
     //add a supplimentry sls_alc monitor
     // TODO: fix me? NOTE: do not replace the primary lls_slt_monitor->lls_sls_alc_monitor entry if set
@@ -586,6 +658,14 @@ atsc3_route_s_tsid_t* atsc3_slt_alc_get_sls_route_s_tsid_from_monitor_service_id
 
 //jjustman-2020-08-18 - todo: keep track of plp_num's?
 void atsc3_core_service_bridge_process_packet_from_plp_and_block(uint8_t plp_num, block_t* block) {
+    //jjustman-2021-01-19 - only process packets if we have a link mapping table for <flow, PLP> management
+    if(!atsc3_link_mapping_table_last) {
+        if((atsc3_link_mapping_table_missing_dropped_packets++ % 1000) == 0) {
+            __ATSC3_CORE_SERVICE_PLAYER_BRIDGE_WARN("atsc3_core_service_bridge_process_packet_from_plp_and_block: dropping due to atsc3_link_mappping_table_last == NULL, plp: %d, dropped_packets: %d", plp_num, atsc3_link_mapping_table_missing_dropped_packets);
+        }
+        return;
+    }
+
 	atsc3_core_service_bridge_process_packet_phy(block);
 }
 
@@ -1135,6 +1215,9 @@ block_t* __INTERNAL_LAST_NAL_PACKET_TODO_FIXME = NULL;
 atsc3_link_mapping_table_t* atsc3_phy_jni_bridge_notify_link_mapping_table(atsc3_link_mapping_table_t* atsc3_link_mapping_table_pending) {
     atsc3_link_mapping_table_t* atsc3_link_mapping_table_to_free = NULL;
 
+    //jjustman-2021-01-21 - acquire our context mutex
+    lock_guard<recursive_mutex> atsc3_core_service_player_bridge_context_mutex_local(atsc3_core_service_player_bridge_context_mutex);
+
     //no last link mapping table, so take ownership of pending ptr
     if(!atsc3_link_mapping_table_last) {
         atsc3_link_mapping_table_last = atsc3_link_mapping_table_pending;
@@ -1149,6 +1232,10 @@ atsc3_link_mapping_table_t* atsc3_phy_jni_bridge_notify_link_mapping_table(atsc3
             atsc3_link_mapping_table_last = atsc3_link_mapping_table_pending;
         }
     }
+
+    __ATSC3_CORE_SERVICE_PLAYER_BRIDGE_DEBUG("atsc3_phy_jni_bridge_notify_link_mapping_table: callback complete, atsc3_link_mapping_table_last is: %p, invoked with atsc3_link_mapping_table_pending: %p, returning to free: %p",
+            atsc3_link_mapping_table_last, atsc3_link_mapping_table_pending, atsc3_link_mapping_table_to_free);
+
     return atsc3_link_mapping_table_to_free;
 }
 

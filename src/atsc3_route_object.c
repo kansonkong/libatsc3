@@ -351,19 +351,32 @@ int atsc3_route_object_persist_recovery_buffer_all_pending_lct_packet_vector(ats
 	//step 1 - rebuild our atsc3_route_object->recovery_file_buffer
 	for(int i=0; i < atsc3_route_object->atsc3_route_object_lct_packet_received_v.count; i++) {
 		atsc3_route_object_lct_packet_received = atsc3_route_object->atsc3_route_object_lct_packet_received_v.data[i];
-		if(atsc3_route_object_lct_packet_received->use_start_offset && atsc3_route_object_lct_packet_received->pending_alc_payload_to_persist) {
-			block_Seek(atsc3_route_object->recovery_file_buffer, atsc3_route_object_lct_packet_received->start_offset);
-			block_AppendFull(atsc3_route_object->recovery_file_buffer, atsc3_route_object_lct_packet_received->pending_alc_payload_to_persist);
-			recovery_rebuilt_payload_size += atsc3_route_object_lct_packet_received->pending_alc_payload_to_persist->p_size;
-
-
+		if(atsc3_route_object_lct_packet_received->pending_alc_payload_to_persist) {
+		    if(atsc3_route_object_lct_packet_received->use_start_offset) {
+                block_Seek(atsc3_route_object->recovery_file_buffer, atsc3_route_object_lct_packet_received->start_offset);
+                block_AppendFull(atsc3_route_object->recovery_file_buffer, atsc3_route_object_lct_packet_received->pending_alc_payload_to_persist);
+                recovery_rebuilt_payload_size += atsc3_route_object_lct_packet_received->pending_alc_payload_to_persist->p_size;
+            } else {
+                //jjustman-2021-02-03 - add support for (optional sbn)^esi for codepoint==128, otherwise, TBD
+                if(atsc3_route_object_lct_packet_received->codepoint == 128) {
+                    block_Seek(atsc3_route_object->recovery_file_buffer, atsc3_route_object_lct_packet_received->esi);
+                    block_AppendFull(atsc3_route_object->recovery_file_buffer, atsc3_route_object_lct_packet_received->pending_alc_payload_to_persist);
+                    recovery_rebuilt_payload_size += atsc3_route_object_lct_packet_received->pending_alc_payload_to_persist->p_size;
+                } else {
+                    _ATSC3_ROUTE_OBJECT_ERROR("atsc3_route_object_persist_recovery_buffer_all_pending_lct_packet_vector: i: %d, codepoint: %d, atsc3_route_object_lct_packet_received: %p, ERROR: use_start_offset: %d, atsc3_route_object_lct_packet_received->pending_alc_payload_to_persist: %p",
+                                              i,
+                                              atsc3_route_object_lct_packet_received->codepoint,
+                                              atsc3_route_object_lct_packet_received,
+                                              atsc3_route_object_lct_packet_received->use_start_offset,
+                                              atsc3_route_object_lct_packet_received->pending_alc_payload_to_persist);
+                }
+            }
 		} else {
 			_ATSC3_ROUTE_OBJECT_ERROR("atsc3_route_object_persist_recovery_buffer_all_pending_lct_packet_vector: i: %d, atsc3_route_object_lct_packet_received: %p, ERROR: use_start_offset: %d, atsc3_route_object_lct_packet_received->pending_alc_payload_to_persist: %p",
 					i,
 					atsc3_route_object_lct_packet_received,
 					atsc3_route_object_lct_packet_received->use_start_offset,
 					atsc3_route_object_lct_packet_received->pending_alc_payload_to_persist);
-
 		}
 	}
 
@@ -602,7 +615,7 @@ void atsc3_route_object_calculate_expected_route_object_lct_packet_count(atsc3_r
 
 }
 
-
+/* jjustman-2021-02-03 - fix for use_sbn_esi comparator to use sbn_esi_merged */
 int atsc3_route_object_lct_packet_received_generic_sbn_start_offset_comparator(const void *a_dp, const void *b_dp) {
 	atsc3_route_object_lct_packet_received_t* a = *(atsc3_route_object_lct_packet_received_t**)a_dp;
 	atsc3_route_object_lct_packet_received_t* b = *(atsc3_route_object_lct_packet_received_t**)b_dp;
@@ -611,9 +624,9 @@ int atsc3_route_object_lct_packet_received_generic_sbn_start_offset_comparator(c
 
 		_ATSC3_ROUTE_OBJECT_TRACE("atsc3_route_object_lct_packet_received_generic_sbn_start_offset_comparator, using sbn_esi, with a: %d, b: %d", a->sbn, b->sbn);
 
-		if ( a->sbn <  b->sbn) return -1;
-		if ( a->sbn == b->sbn) return  0;
-		if ( a->sbn >  b->sbn) return  1;
+		if ( a->sbn_esi_merged <  b->sbn_esi_merged) return -1;
+		if ( a->sbn_esi_merged == b->sbn_esi_merged) return  0;
+		if ( a->sbn_esi_merged >  b->sbn_esi_merged) return  1;
 
 	} else if(a->use_start_offset && b->use_start_offset) {
 

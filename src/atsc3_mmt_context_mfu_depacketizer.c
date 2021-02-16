@@ -65,19 +65,15 @@ atsc3_mmt_mfu_context_t* atsc3_mmt_mfu_context_internal_flows_new() {
     atsc3_mmt_mfu_context->atsc3_mmt_signalling_information_on_stpp_essence_packet_id 	= &atsc3_mmt_signalling_information_on_stpp_essence_packet_id_callback_internal;
 
     //helper methods
-    atsc3_mmt_mfu_context->get_mpu_timestamp_from_packet_id_mpu_sequence_number         = atsc3_get_mpu_timestamp_from_packet_id_mpu_sequence_number; //&atsc3_get_mpu_timestamp_from_packet_id_mpu_sequence_number_with_last_failsafe;
+    atsc3_mmt_mfu_context->get_mpu_timestamp_from_packet_id_mpu_sequence_number                                           = atsc3_get_mpu_timestamp_from_packet_id_mpu_sequence_number; //&atsc3_get_mpu_timestamp_from_packet_id_mpu_sequence_number_with_last_failsafe;
+    atsc3_mmt_mfu_context->get_mpu_timestamp_from_packet_id_mpu_sequence_number_with_mmtp_timestamp_recovery_differential = atsc3_get_mpu_timestamp_from_packet_id_mpu_sequence_number_with_mmtp_timestamp_recovery_differential; //&atsc3_get_mpu_timestamp_from_packet_id_mpu_sequence_number_with_last_failsafe;
 
     return atsc3_mmt_mfu_context;
 }
 
 
 atsc3_mmt_mfu_mpu_timestamp_descriptor_t* atsc3_get_mpu_timestamp_from_packet_id_mpu_sequence_number(atsc3_mmt_mfu_context_t* atsc3_mmt_mfu_context, uint16_t packet_id, uint32_t mpu_sequence_number) {
-//    __MMT_CONTEXT_MPU_DEBUG("atsc3_get_mpu_timestamp_from_packet_id_mpu_sequence_number: entries: %d, looking for packet_id: %d, mpu_sequence_number: %d",
-//                            atsc3_mmt_mfu_context->packet_id_mpu_timestamp_descriptor_window.atsc3_mmt_mfu_mpu_timestamp_descriptor_v.count,
-//                            packet_id,
-//                            mpu_sequence_number);
-
-    atsc3_mmt_mfu_mpu_timestamp_descriptor_t* atsc3_mmt_mfu_mpu_timestamp_descriptor_max = NULL;
+//    __MMT_CONTEXT_MPU_DEBUG("atsc3_get_mpu_timestamp_from_packet_id_mpu_sequence_number: entries: %d, looking for packet_id: %d, mpu_sequence_number: %d",  atsc3_mmt_mfu_context->packet_id_mpu_timestamp_descriptor_window.atsc3_mmt_mfu_mpu_timestamp_descriptor_v.count, packet_id, mpu_sequence_number);
 
     for(int i=0; i < atsc3_mmt_mfu_context->packet_id_mpu_timestamp_descriptor_window.atsc3_mmt_mfu_mpu_timestamp_descriptor_v.count; i++) {
         atsc3_mmt_mfu_mpu_timestamp_descriptor_t* atsc3_mmt_mfu_mpu_timestamp_descriptor = atsc3_mmt_mfu_context->packet_id_mpu_timestamp_descriptor_window.atsc3_mmt_mfu_mpu_timestamp_descriptor_v.data[i];
@@ -93,6 +89,112 @@ atsc3_mmt_mfu_mpu_timestamp_descriptor_t* atsc3_get_mpu_timestamp_from_packet_id
     return NULL;
 }
 
+atsc3_mmt_mfu_mpu_timestamp_descriptor_t* atsc3_get_mpu_timestamp_from_packet_id_mpu_sequence_number_with_mmtp_timestamp_recovery_differential(atsc3_mmt_mfu_context_t* atsc3_mmt_mfu_context, uint16_t packet_id, uint32_t mmtp_timestamp, uint32_t mpu_sequence_number) {
+//    __MMT_CONTEXT_MPU_DEBUG("atsc3_get_mpu_timestamp_from_packet_id_mpu_sequence_number_with_mmtp_timestamp_recovery_differential: entries: %d, looking for packet_id: %d, mmtp_timestamp: %u, mpu_sequence_number: %d",  atsc3_mmt_mfu_context->packet_id_mpu_timestamp_descriptor_window.atsc3_mmt_mfu_mpu_timestamp_descriptor_v.count, packet_id, mmtp_timestamp, mpu_sequence_number);
+
+    atsc3_mmt_mfu_mpu_timestamp_descriptor_t* atsc3_mmt_mfu_mpu_timestamp_descriptor_max = NULL;
+
+    for(int i=0; i < atsc3_mmt_mfu_context->packet_id_mpu_timestamp_descriptor_window.atsc3_mmt_mfu_mpu_timestamp_descriptor_v.count; i++) {
+        atsc3_mmt_mfu_mpu_timestamp_descriptor_t* atsc3_mmt_mfu_mpu_timestamp_descriptor = atsc3_mmt_mfu_context->packet_id_mpu_timestamp_descriptor_window.atsc3_mmt_mfu_mpu_timestamp_descriptor_v.data[i];
+        if(atsc3_mmt_mfu_mpu_timestamp_descriptor->packet_id == packet_id) {
+            atsc3_mmt_mfu_mpu_timestamp_descriptor_max = atsc3_mmt_mfu_mpu_timestamp_descriptor;
+            if(atsc3_mmt_mfu_mpu_timestamp_descriptor->mpu_sequence_number == mpu_sequence_number) {
+                __MMT_CONTEXT_MPU_TRACE("atsc3_get_mpu_timestamp_from_packet_id_mpu_sequence_number_with_mmtp_timestamp_recovery_differential: found matching packet_id: %d, mpu_sequence_number: %d, computed_from_recovery: %d, mpu_presentation_time_as_us_value: %" PRIu64,
+                                        packet_id, mpu_sequence_number, atsc3_mmt_mfu_mpu_timestamp_descriptor->mpu_presentation_time_computed_from_recovery_mmtp_timestamp_flag, atsc3_mmt_mfu_mpu_timestamp_descriptor->mpu_presentation_time_as_us_value);
+
+                return atsc3_mmt_mfu_mpu_timestamp_descriptor;
+            }
+        }
+    }
+
+    if(atsc3_mmt_mfu_mpu_timestamp_descriptor_max != NULL) {
+        //compute our mmtp_timestamp differental(s)
+        uint16_t mmtp_timestamp_differential_s = 0;
+        uint16_t mmtp_timestamp_differential_us = 0;
+
+        uint32_t mpu_presentation_time_seconds_adjusted_from_mmtp_timestamp_differential = 0;
+        uint32_t mpu_presentation_time_microseconds_adjusted_from_mmtp_timestamp_differential = 0;
+        uint64_t mpu_presentation_time_as_us_value_adjusted_from_mmtp_timestamp_differential = 0;
+
+        uint32_t mmtp_timestamp_differential_ntp32 = mmtp_timestamp - atsc3_mmt_mfu_mpu_timestamp_descriptor_max->mmtp_timestamp;
+
+        compute_ntp32_to_seconds_microseconds(mmtp_timestamp_differential_ntp32, &mmtp_timestamp_differential_s, &mmtp_timestamp_differential_us);
+        if(mmtp_timestamp_differential_s > 60) {
+            __MMT_CONTEXT_MPU_ERROR("atsc3_get_mpu_timestamp_from_packet_id_mpu_sequence_number_with_mmtp_timestamp_recovery_differential: computed differental of %d.%06d is too large, bailing!"
+                                    "matching packet_id: %d, mpu_sequence_number: %u, using: atsc3_mmt_mfu_mpu_timestamp_descriptor_max: mmtp_timestamp: %u, mpu_sequence_number: %u, mpu_presentation_time_as_us_value: %" PRIu64 " from_recovery: %d, our current mmtp_timestamp: %u",
+                                    mmtp_timestamp_differential_s,
+                                    mmtp_timestamp_differential_us,
+                                    packet_id,
+                                    mpu_sequence_number,
+                                    atsc3_mmt_mfu_mpu_timestamp_descriptor_max->mmtp_timestamp,
+                                    atsc3_mmt_mfu_mpu_timestamp_descriptor_max->mpu_sequence_number,
+                                    atsc3_mmt_mfu_mpu_timestamp_descriptor_max->mpu_presentation_time_as_us_value,
+                                    atsc3_mmt_mfu_mpu_timestamp_descriptor_max->mpu_presentation_time_computed_from_recovery_mmtp_timestamp_flag,
+                                    mmtp_timestamp);
+            return NULL;
+        }
+
+        //See https://tools.ietf.org/html/rfc5905#section-6, ntp64 has 32bit seconds and 32bit fractional which resolves to 232 picoseconds. (1,000,000uS in a pS) and
+        //http://waitingkuo.blogspot.com/2012/06/conversion-between-ntp-time-and-unix.html
+        uint64_t mmtp_timestamp_differential_ntp64 = ((uint64_t)(mmtp_timestamp_differential_s) << 32) | (uint32_t)( (double)(mmtp_timestamp_differential_us+1) * (double)(1LL<<32) * 1.0e-6 );
+
+        uint64_t mpu_presentation_time_ntp64_adjusted_from_mmtp_timestamp_differential = atsc3_mmt_mfu_mpu_timestamp_descriptor_max->mpu_presentation_time_ntp64 + mmtp_timestamp_differential_ntp64;
+        compute_ntp64_to_seconds_microseconds(mpu_presentation_time_ntp64_adjusted_from_mmtp_timestamp_differential, &mpu_presentation_time_seconds_adjusted_from_mmtp_timestamp_differential, &mpu_presentation_time_microseconds_adjusted_from_mmtp_timestamp_differential);
+
+        mpu_presentation_time_as_us_value_adjusted_from_mmtp_timestamp_differential = compute_seconds_microseconds_to_scalar64(mpu_presentation_time_seconds_adjusted_from_mmtp_timestamp_differential, mpu_presentation_time_microseconds_adjusted_from_mmtp_timestamp_differential);
+
+        //otherwise, prepare this new atsc3_mmt_mfu_mpu_timestamp_descriptor
+        __MMT_CONTEXT_MPU_INFO("atsc3_get_mpu_timestamp_from_packet_id_mpu_sequence_number_with_mmtp_timestamp_recovery_differential: missing matching packet_id: %d, mpu_sequence_number: %u, mpu_presentation_timestamp differential: %f, differential: %d.%06d, differential ntp64: %" PRIu64", using: "
+                                "atsc3_mmt_mfu_mpu_timestamp_descriptor_max:\n"
+                                "max: mmtp_timestamp\t%u\tmpu_sequence_number\t%u\tmpu_presentation_time_as_us_value\t%" PRIu64 "\tmpu_presentation_time_ntp64_adjusted_from_mmtp_timestamp_differential\t%" PRIu64"\tfrom recovery flag: %d\n"
+                                "new: mmtp_timestamp\t%u\tmpu_sequence_number\t%u\tmpu_presentation_time_as_us_value\t%" PRIu64 "\tmpu_presentation_time_ntp64_adjusted_from_mmtp_timestamp_differential\t%" PRIu64"\n",
+                                packet_id,
+                                mpu_sequence_number,
+                                (mpu_presentation_time_as_us_value_adjusted_from_mmtp_timestamp_differential - atsc3_mmt_mfu_mpu_timestamp_descriptor_max->mpu_presentation_time_as_us_value) / 1000000.0,
+                                mmtp_timestamp_differential_s,
+                                mmtp_timestamp_differential_us,
+                                mmtp_timestamp_differential_ntp64,
+
+                                atsc3_mmt_mfu_mpu_timestamp_descriptor_max->mmtp_timestamp,
+                                atsc3_mmt_mfu_mpu_timestamp_descriptor_max->mpu_sequence_number,
+                                atsc3_mmt_mfu_mpu_timestamp_descriptor_max->mpu_presentation_time_as_us_value,
+                                atsc3_mmt_mfu_mpu_timestamp_descriptor_max->mpu_presentation_time_ntp64,
+                                atsc3_mmt_mfu_mpu_timestamp_descriptor_max->mpu_presentation_time_computed_from_recovery_mmtp_timestamp_flag,
+
+                                mmtp_timestamp,
+                                mpu_sequence_number,
+                                mpu_presentation_time_as_us_value_adjusted_from_mmtp_timestamp_differential,
+                                mpu_presentation_time_ntp64_adjusted_from_mmtp_timestamp_differential);
+
+        //borrowed from atsc3_mmt_signalling_information_callbacks_internal.c:  atsc3_mmt_signalling_information_on_packet_id_with_mpu_timestamp_descriptor_callback_internal
+        atsc3_mmt_mfu_mpu_timestamp_descriptor_t* atsc3_mmt_mfu_mpu_timestamp_descriptor = atsc3_mmt_mfu_mpu_timestamp_descriptor_new();
+        atsc3_mmt_mfu_mpu_timestamp_descriptor->packet_id = packet_id;
+
+        //set our recovery anchor attributes
+        atsc3_mmt_mfu_mpu_timestamp_descriptor->mpu_presentation_time_computed_from_recovery_mmtp_timestamp_flag = true;
+        atsc3_mmt_mfu_mpu_timestamp_descriptor->recovery_mmtp_timestamp              = atsc3_mmt_mfu_mpu_timestamp_descriptor_max->mmtp_timestamp;
+        atsc3_mmt_mfu_mpu_timestamp_descriptor->recovery_mpu_sequence_number         = atsc3_mmt_mfu_mpu_timestamp_descriptor_max->mpu_sequence_number;
+        atsc3_mmt_mfu_mpu_timestamp_descriptor->recovery_mpu_presentation_time_ntp64 = atsc3_mmt_mfu_mpu_timestamp_descriptor_max->recovery_mpu_presentation_time_ntp64;
+
+        atsc3_mmt_mfu_mpu_timestamp_descriptor->mmtp_timestamp      = mmtp_timestamp;
+        atsc3_mmt_mfu_mpu_timestamp_descriptor->mpu_sequence_number = mpu_sequence_number;
+
+        //shift and add our differential into our mpu_presentation_time_ntp64
+        atsc3_mmt_mfu_mpu_timestamp_descriptor->mpu_presentation_time_ntp64 = mpu_presentation_time_ntp64_adjusted_from_mmtp_timestamp_differential;
+
+        atsc3_mmt_mfu_mpu_timestamp_descriptor->mpu_presentation_time_seconds       = mpu_presentation_time_seconds_adjusted_from_mmtp_timestamp_differential;
+        atsc3_mmt_mfu_mpu_timestamp_descriptor->mpu_presentation_time_microseconds  = mpu_presentation_time_microseconds_adjusted_from_mmtp_timestamp_differential;
+
+        //jjustman-2020-11-19 - make sure to coerce our uS scalar (1000000) as long, otherwise our value will be implicity coerced into (uint32_t) instead of uint64_t 	mpu_presentation_time_as_us_value
+        atsc3_mmt_mfu_mpu_timestamp_descriptor->mpu_presentation_time_as_us_value   = mpu_presentation_time_as_us_value_adjusted_from_mmtp_timestamp_differential;
+
+        atsc3_mmt_mfu_mpu_timestamp_descriptor_rolling_window_add_atsc3_mmt_mfu_mpu_timestamp_descriptor(&atsc3_mmt_mfu_context->packet_id_mpu_timestamp_descriptor_window, atsc3_mmt_mfu_mpu_timestamp_descriptor);
+
+        return atsc3_mmt_mfu_mpu_timestamp_descriptor;
+    } else {
+        return NULL;
+    }
+}
 
 atsc3_mmt_mfu_mpu_timestamp_descriptor_t* atsc3_get_mpu_timestamp_from_packet_id_mpu_sequence_number_with_last_failsafe(atsc3_mmt_mfu_context_t* atsc3_mmt_mfu_context, uint16_t packet_id, uint32_t mpu_sequence_number) {
     __MMT_CONTEXT_MPU_DEBUG("atsc3_get_mpu_timestamp_from_packet_id_mpu_sequence_number_with_last_failsafe: entries: %d, looking for packet_id: %d, mpu_sequence_number: %d",
@@ -552,7 +654,7 @@ void mmtp_mfu_rebuild_from_packet_id_mpu_sequence_number(atsc3_mmt_mfu_context_t
                 block_Rewind(mmtp_mpu_packet_to_rebuild->du_mfu_block);
                 block_t* du_mfu_block_duplicated_for_context_callback_invocation = block_Duplicate(mmtp_mpu_packet_to_rebuild->du_mfu_block);
                 if(atsc3_mmt_mfu_context->atsc3_mmt_mpu_mfu_on_sample_complete) {
-                    atsc3_mmt_mfu_context->atsc3_mmt_mpu_mfu_on_sample_complete(atsc3_mmt_mfu_context, mmtp_mpu_packet_to_rebuild->mmtp_packet_id, mmtp_mpu_packet_to_rebuild->mpu_sequence_number, mmtp_mpu_packet_to_rebuild->sample_number, du_mfu_block_duplicated_for_context_callback_invocation, 1);
+                    atsc3_mmt_mfu_context->atsc3_mmt_mpu_mfu_on_sample_complete(atsc3_mmt_mfu_context, mmtp_mpu_packet_to_rebuild->mmtp_packet_id, mmtp_mpu_packet_to_rebuild->mmtp_timestamp, mmtp_mpu_packet_to_rebuild->mpu_sequence_number, mmtp_mpu_packet_to_rebuild->sample_number, du_mfu_block_duplicated_for_context_callback_invocation, 1);
                 }
                 mmtp_mpu_packet_to_rebuild->mfu_reassembly_performed = true;
                 block_Destroy(&du_mfu_block_duplicated_for_context_callback_invocation);
@@ -696,21 +798,22 @@ void mmtp_mfu_rebuild_from_packet_id_mpu_sequence_number(atsc3_mmt_mfu_context_t
                     if (mfu_fragment_counter_mmthsample_header_start - (mfu_fragment_count_rebuilt - 1) == 0) {
                         //REQUIRED
                         if(atsc3_mmt_mfu_context->atsc3_mmt_mpu_mfu_on_sample_complete) {
-                            atsc3_mmt_mfu_context->atsc3_mmt_mpu_mfu_on_sample_complete(atsc3_mmt_mfu_context, mmtp_mpu_packet_to_rebuild->mmtp_packet_id, mmtp_mpu_packet_to_rebuild->mpu_sequence_number, mmtp_mpu_packet_to_rebuild->sample_number, du_mfu_block_to_rebuild, mfu_fragment_count_rebuilt);
+                            //jjustman-2021-01-19 - todo: use the mmtp_timestamp from the first packet emission, not the "last"
+                            atsc3_mmt_mfu_context->atsc3_mmt_mpu_mfu_on_sample_complete(atsc3_mmt_mfu_context, mmtp_mpu_packet_to_rebuild->mmtp_packet_id, mmtp_mpu_packet_to_rebuild->mmtp_timestamp, mmtp_mpu_packet_to_rebuild->mpu_sequence_number, mmtp_mpu_packet_to_rebuild->sample_number, du_mfu_block_to_rebuild, mfu_fragment_count_rebuilt);
                         }
                         //__MMT_CONTEXT_MPU_DEBUG("mmtp_mfu_rebuild_from_packet_id_mpu_sequence_number MFU DU with MMTHSample, packet_id: %u, mpu_sequence_number: %u, building emission: sample_number: %u, fragment_counter: %u, psn: %u, flow with %u:%u, fi: %u, du_mfu_block_to_rebuild: %p, ->p_size: %u, mfu_fragment_counter_mmthsample_header_start: %d, mfu_fragment_count_rebuilt: %d",
                         //       mmtp_mpu_packet_to_rebuild->mmtp_packet_id, mmtp_mpu_packet_to_rebuild->mpu_sequence_number, mmtp_mpu_packet_to_rebuild->sample_number, mmtp_mpu_packet_to_rebuild->mpu_fragment_counter, mmtp_mpu_packet_to_rebuild->packet_sequence_number, atsc3_mmt_mfu_context->udp_flow->dst_ip_addr, atsc3_mmt_mfu_context->udp_flow->dst_port, mmtp_mpu_packet_to_rebuild->mpu_fragmentation_indicator, du_mfu_block_to_rebuild, du_mfu_block_to_rebuild ? du_mfu_block_to_rebuild->p_size : 0, mfu_fragment_counter_mmthsample_header_start, mfu_fragment_count_rebuilt);
                     } else {
                         //OPTIONAL
                         if(atsc3_mmt_mfu_context->atsc3_mmt_mpu_mfu_on_sample_corrupt) {
-                            atsc3_mmt_mfu_context->atsc3_mmt_mpu_mfu_on_sample_corrupt(atsc3_mmt_mfu_context, mmtp_mpu_packet_to_rebuild->mmtp_packet_id, mmtp_mpu_packet_to_rebuild->mpu_sequence_number, mmtp_mpu_packet_to_rebuild->sample_number, du_mfu_block_to_rebuild, mfu_fragment_counter_mmthsample_header_start, mfu_fragment_count_rebuilt);
+                            atsc3_mmt_mfu_context->atsc3_mmt_mpu_mfu_on_sample_corrupt(atsc3_mmt_mfu_context, mmtp_mpu_packet_to_rebuild->mmtp_packet_id, mmtp_mpu_packet_to_rebuild->mmtp_timestamp, mmtp_mpu_packet_to_rebuild->mpu_sequence_number, mmtp_mpu_packet_to_rebuild->sample_number, du_mfu_block_to_rebuild, mfu_fragment_counter_mmthsample_header_start, mfu_fragment_count_rebuilt);
                         }
                         __MMT_CONTEXT_MPU_INFO("mmtp_mfu_rebuild_from_packet_id_mpu_sequence_number MFU DU with corrupt payload, packet_id: %u, mpu_sequence_number: %u, building emission: sample_number: %u, fragment_counter: %u, psn: %u, flow with %u:%u, fi: %u,  du_mfu_block_to_rebuild: %p, du_mfu_block_to_rebuild->p_size: %u, mfu_fragment_counter_mmthsample_header_start: %d, mfu_fragment_count_rebuilt: %d", mmtp_mpu_packet_to_rebuild->mmtp_packet_id, mmtp_mpu_packet_to_rebuild->mpu_sequence_number, mmtp_mpu_packet_to_rebuild->sample_number, mmtp_mpu_packet_to_rebuild->mpu_fragment_counter, mmtp_mpu_packet_to_rebuild->packet_sequence_number, atsc3_mmt_mfu_context->udp_flow->dst_ip_addr, atsc3_mmt_mfu_context->udp_flow->dst_port, mmtp_mpu_packet_to_rebuild->mpu_fragmentation_indicator, du_mfu_block_to_rebuild, du_mfu_block_to_rebuild ? du_mfu_block_to_rebuild->p_size : 0, mfu_fragment_counter_mmthsample_header_start, mfu_fragment_count_rebuilt);
                     }
                 } else {
                     //OPTIONAL
                     if(atsc3_mmt_mfu_context->atsc3_mmt_mpu_mfu_on_sample_corrupt_mmthsample_header) {
-                        atsc3_mmt_mfu_context->atsc3_mmt_mpu_mfu_on_sample_corrupt_mmthsample_header(atsc3_mmt_mfu_context, mmtp_mpu_packet_to_rebuild->mmtp_packet_id, mmtp_mpu_packet_to_rebuild->mpu_sequence_number, mmtp_mpu_packet_to_rebuild->sample_number, du_mfu_block_to_rebuild, mfu_fragment_counter_missing_mmthsample_header_start, mfu_fragment_count_rebuilt);
+                        atsc3_mmt_mfu_context->atsc3_mmt_mpu_mfu_on_sample_corrupt_mmthsample_header(atsc3_mmt_mfu_context, mmtp_mpu_packet_to_rebuild->mmtp_packet_id, mmtp_mpu_packet_to_rebuild->mmtp_timestamp, mmtp_mpu_packet_to_rebuild->mpu_sequence_number, mmtp_mpu_packet_to_rebuild->sample_number, du_mfu_block_to_rebuild, mfu_fragment_counter_missing_mmthsample_header_start, mfu_fragment_count_rebuilt);
                     }
                     __MMT_CONTEXT_MPU_DEBUG("mmtp_mfu_rebuild_from_packet_id_mpu_sequence_number MFU DU with missing mmthsample header, packet_id: %u, mpu_sequence_number: %u, building emission: sample_number: %u, fragment_counter: %u, psn: %u, flow with %u:%u, fi: %u, du_mfu_block_to_rebuild: %p, du_mfu_block_to_rebuild->p_size: %u", mmtp_mpu_packet_to_rebuild->mmtp_packet_id, mmtp_mpu_packet_to_rebuild->mpu_sequence_number, mmtp_mpu_packet_to_rebuild->sample_number, mmtp_mpu_packet_to_rebuild->mpu_fragment_counter, mmtp_mpu_packet_to_rebuild->packet_sequence_number, atsc3_mmt_mfu_context->udp_flow->dst_ip_addr, atsc3_mmt_mfu_context->udp_flow->dst_port, mmtp_mpu_packet_to_rebuild->mpu_fragmentation_indicator, du_mfu_block_to_rebuild, du_mfu_block_to_rebuild ? du_mfu_block_to_rebuild->p_size : 0);
                 }
@@ -735,7 +838,7 @@ void mmtp_mfu_rebuild_from_packet_id_mpu_sequence_number(atsc3_mmt_mfu_context_t
         if (mmtp_mpu_init_packet_to_rebuild->mfu_reassembly_performed) {
             continue;
         }
-        //process movie fragment metadata, don't send incomplete payloads for moof box (e.g. isnt FI==0x00 or endns in 0x03)
+        //process movie fragment metadata, don't send incomplete payloads for moof box (e.g. isnt FI==0x00 or ends in 0x03)
         if (mmtp_mpu_init_packet_to_rebuild->mpu_fragment_type == 0x1) {
             //mark this DU as completed for purging at the end of this method
 
@@ -795,13 +898,18 @@ void mmtp_mfu_rebuild_from_packet_id_mpu_sequence_number(atsc3_mmt_mfu_context_t
                     block_Destroy(&du_movie_fragment_block_rebuilt);
                 } else {
                     //can't send if off if we don't have our block_rebuilt or are missing our du_movie_fragment_block for this DU
-                    __MMT_CONTEXT_MPU_WARN("mmtp_mfu_rebuild_from_packet_id_mpu_sequence_number Missing proceeding movie fragment metadata i: %u, psn: %u, with %u:%u and packet_id: %u, mpu_sequence_number: %u, fragment_indicator: %u",
-                            i, mmtp_mpu_init_packet_to_rebuild->packet_sequence_number,
-                            atsc3_mmt_mfu_context->udp_flow->dst_ip_addr,
-                            atsc3_mmt_mfu_context->udp_flow->dst_port,
-                            mmtp_mpu_init_packet_to_rebuild->mmtp_packet_id,
-                            mmtp_mpu_init_packet_to_rebuild->mpu_sequence_number,
-                            mmtp_mpu_init_packet_to_rebuild->mpu_fragmentation_indicator);
+                    if(!mmtp_mpu_init_packet_to_rebuild->mmtp_mpu_init_packet_missing_du_movie_fragment_block_warning_logged) {
+                        __MMT_CONTEXT_MPU_WARN("mmtp_mfu_rebuild_from_packet_id_mpu_sequence_number: Missing proceeding movie fragment metadata i: %u, psn: %u, with %u:%u and packet_id: %u, mpu_sequence_number: %u, fragment_indicator: %u",
+                                i, mmtp_mpu_init_packet_to_rebuild->packet_sequence_number,
+                                atsc3_mmt_mfu_context->udp_flow->dst_ip_addr,
+                                atsc3_mmt_mfu_context->udp_flow->dst_port,
+                                mmtp_mpu_init_packet_to_rebuild->mmtp_packet_id,
+                                mmtp_mpu_init_packet_to_rebuild->mpu_sequence_number,
+                                mmtp_mpu_init_packet_to_rebuild->mpu_fragmentation_indicator);
+                            mmtp_mpu_init_packet_to_rebuild->mmtp_mpu_init_packet_missing_du_movie_fragment_block_warning_logged = true;
+                    } else {
+                        //noop
+                    }
                 }
             } else {
                 //first fragment of DU, so clear out any (improper) du_movie_fragment_block_rebuilt that may be garbage
@@ -817,7 +925,7 @@ void mmtp_mfu_rebuild_from_packet_id_mpu_sequence_number(atsc3_mmt_mfu_context_t
                         block_Merge(du_movie_fragment_block_rebuilt, mmtp_mpu_init_packet_to_rebuild->du_movie_fragment_block);
                     } else {
                         __MMT_CONTEXT_MPU_WARN(
-                                "mmtp_mfu_rebuild_from_packet_id_mpu_sequence_number Missing initial movie fragment m]etadata i: %u, psn: %u, with %u:%u and packet_id: %u, mpu_sequence_number: %u, fragment_indicator: %u",
+                                "mmtp_mfu_rebuild_from_packet_id_mpu_sequence_number: Missing initial movie fragment metadata block_t: du_movie_fragment_block_rebuilt: i: %u, psn: %u, with %u:%u and packet_id: %u, mpu_sequence_number: %u, fragment_indicator: %u",
                                 i, mmtp_mpu_init_packet_to_rebuild->packet_sequence_number,
                                 atsc3_mmt_mfu_context->udp_flow->dst_ip_addr,
                                 atsc3_mmt_mfu_context->udp_flow->dst_port,
@@ -903,7 +1011,7 @@ void mmt_signalling_message_dispatch_context_notification_callbacks(udp_packet_t
 
 							compute_ntp64_to_seconds_microseconds(mmt_signaling_message_mpu_tuple->mpu_presentation_time, &mpu_presentation_time_seconds, &mpu_presentation_time_microseconds);
 
-							__MMSM_DEBUG("packet_id: %u, mpu_sequence_number: %u to mpu_presentation_time: %llu, seconds: %u, ms: %u",
+							__MMSM_DEBUG("packet_id: %u, mpu_sequence_number: %u to mpu_presentation_time: %" PRIu64 ", seconds: %u, ms: %u",
 									mp_table_asset_row->mmt_general_location_info.packet_id,
 									mmt_signaling_message_mpu_tuple->mpu_sequence_number,
 									mmt_signaling_message_mpu_tuple->mpu_presentation_time,
@@ -925,13 +1033,15 @@ void mmt_signalling_message_dispatch_context_notification_callbacks(udp_packet_t
 						if(mpu_sequence_number_p && mpu_presentation_time_ntp64_p) {
 							atsc3_mmt_mfu_context->atsc3_mmt_signalling_information_on_packet_id_with_mpu_timestamp_descriptor_internal(atsc3_mmt_mfu_context,
 																																		   mp_table_asset_row->mmt_general_location_info.packet_id,
+																																		   mmtp_signalling_packet->mmtp_timestamp,
 																																		   *mpu_sequence_number_p,
 																																		   *mpu_presentation_time_ntp64_p,
 																																		   mpu_presentation_time_seconds,
 																																		   mpu_presentation_time_microseconds);
 
 							if(atsc3_mmt_mfu_context->atsc3_mmt_signalling_information_on_video_packet_id_with_mpu_timestamp_descriptor) {
-                                atsc3_mmt_mfu_context->atsc3_mmt_signalling_information_on_video_packet_id_with_mpu_timestamp_descriptor(atsc3_mmt_mfu_context, mp_table_asset_row->mmt_general_location_info.packet_id,
+                                atsc3_mmt_mfu_context->atsc3_mmt_signalling_information_on_video_packet_id_with_mpu_timestamp_descriptor(atsc3_mmt_mfu_context,
+                                                                                                                                         mp_table_asset_row->mmt_general_location_info.packet_id,
                                                                                                                                          *mpu_sequence_number_p,
                                                                                                                                          *mpu_presentation_time_ntp64_p,
                                                                                                                                          mpu_presentation_time_seconds,
@@ -958,6 +1068,7 @@ void mmt_signalling_message_dispatch_context_notification_callbacks(udp_packet_t
 						if(mpu_sequence_number_p && mpu_presentation_time_ntp64_p) {
 							atsc3_mmt_mfu_context->atsc3_mmt_signalling_information_on_packet_id_with_mpu_timestamp_descriptor_internal(atsc3_mmt_mfu_context,
 																																		   mp_table_asset_row->mmt_general_location_info.packet_id,
+																																		   mmtp_signalling_packet->mmtp_timestamp,
 																																		   *mpu_sequence_number_p,
 																																		   *mpu_presentation_time_ntp64_p,
 																																		   mpu_presentation_time_seconds,
@@ -988,7 +1099,8 @@ void mmt_signalling_message_dispatch_context_notification_callbacks(udp_packet_t
 						if(mpu_sequence_number_p && mpu_presentation_time_ntp64_p) {
 							atsc3_mmt_mfu_context->atsc3_mmt_signalling_information_on_packet_id_with_mpu_timestamp_descriptor_internal(atsc3_mmt_mfu_context,
 																																				 mp_table_asset_row->mmt_general_location_info.packet_id,
-																																				 *mpu_sequence_number_p,
+                                                                                                                                                 mmtp_signalling_packet->mmtp_timestamp,
+                                                                                                                                                 *mpu_sequence_number_p,
 																																				 *mpu_presentation_time_ntp64_p,
 																																				 mpu_presentation_time_seconds,
 																																				 mpu_presentation_time_microseconds);

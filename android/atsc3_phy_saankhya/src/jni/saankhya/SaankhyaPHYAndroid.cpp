@@ -5,9 +5,7 @@
 //jjustman-2020-10-30 - workaround for SL_TUNER deinit not decrementing ref count
 #define __SL_TUNER_DEINIT_DISABLED__ true
 
-
 /*  MarkONE "workarounds" for /dev handle permissions
-
 
 ADB_IP_ADDRESS="192.168.4.57:5555"
 adb connect $ADB_IP_ADDRESS
@@ -40,6 +38,13 @@ CircularBuffer SaankhyaPHYAndroid::cb = nullptr;
 mutex SaankhyaPHYAndroid::CircularBufferMutex;
 
 mutex SaankhyaPHYAndroid::CS_global_mutex;
+atomic_bool SaankhyaPHYAndroid::cb_should_discard;
+
+//jjustman-2021-02-04 - global error flag if i2c txn fails, usually due to demod crash
+//      TODO: reset SL demod and re-initalize automatically if this error is SL_ERR_CMD_IF_FAILURE
+
+SL_Result_t     SaankhyaPHYAndroid::global_sl_result_error_flag = SL_OK;
+SL_I2cResult_t  SaankhyaPHYAndroid::global_sl_i2c_result_error_flag = SL_I2C_OK;
 
 SaankhyaPHYAndroid::SaankhyaPHYAndroid(JNIEnv* env, jobject jni_instance) {
     this->env = env;
@@ -52,11 +57,14 @@ SaankhyaPHYAndroid::SaankhyaPHYAndroid(JNIEnv* env, jobject jni_instance) {
     }
 
     _SAANKHYA_PHY_ANDROID_INFO("SaankhyaPHYAndroid::SaankhyaPHYAndroid - created with this: %p", this);
+    SaankhyaPHYAndroid::cb_should_discard = false;
+    SL_I2C_last_command_extra_sleep = false;
 }
 
 SaankhyaPHYAndroid::~SaankhyaPHYAndroid() {
 
     _SAANKHYA_PHY_ANDROID_INFO("SaankhyaPHYAndroid::~SaankhyaPHYAndroid - enter: deleting with this: %p", this);
+
     this->stop();
 
     if(atsc3_ndk_application_bridge_get_instance()) {
@@ -163,7 +171,7 @@ int SaankhyaPHYAndroid::stop()
     SL_TunerResult_t sl_tuner_result = SL_TUNER_OK;
 
     _SAANKHYA_PHY_ANDROID_DEBUG("SaankhyaPHYAndroid::stop: enter with this: %p", this);
-    _SAANKHYA_PHY_ANDROID_INFO("SaankhyaPHYAndroid::stop: enter with this: %p, slUnit: %d, tUnit: %d, captureThreadIsRunning: %d, statusThreadIsRunning: %d, processThreadIsRunning: %d, sleeping for %d ms",
+    _SAANKHYA_PHY_ANDROID_INFO("SaankhyaPHYAndroid::stop: enter with this: %p, slUnit: %d, tUnit: %d, captureThreadIsRunning: %d, statusThreadIsRunning: %d, processThreadIsRunning: %d",
                               this,
                               this->slUnit,
                               this->tUnit,
@@ -171,8 +179,7 @@ int SaankhyaPHYAndroid::stop()
                               this->statusThreadIsRunning,
                               this->processThreadIsRunning);
 
-
-
+    SaankhyaPHYAndroid::cb_should_discard = true;
     statusThreadShouldRun = false;
     captureThreadShouldRun = false;
     processThreadShouldRun = false;
@@ -307,9 +314,14 @@ int SaankhyaPHYAndroid::open(int fd, string device_path)
         i2cres = SL_I2cInit();
         if (i2cres != SL_I2C_OK)
         {
-            _SAANKHYA_PHY_ANDROID_ERROR("ERROR : Error:SL_I2cInit failed Failed");
+            global_sl_i2c_result_error_flag = i2cres;
 
-            _SAANKHYA_PHY_ANDROID_DEBUG("Error:SL_I2cInit failed :");
+            if(atsc3_ndk_phy_bridge_get_instance()) {
+                atsc3_ndk_phy_bridge_get_instance()->atsc3_notify_phy_error("SaankhyaPHYAndroid::open() - ERROR: SL_I2cInit failed: code: %d", global_sl_i2c_result_error_flag);
+            }
+
+            _SAANKHYA_PHY_ANDROID_ERROR("SaankhyaPHYAndroid::open() - ERROR: Error:SL_I2cInit failed:");
+
             printToConsoleI2cError(i2cres);
             goto ERROR;
         }
@@ -689,13 +701,16 @@ int SaankhyaPHYAndroid::tune(int freqKHz, int plpid)
     unsigned int cFrequency = 0;
     int isRxDataStartedSpinCount = 0;
 
-    //create our CB mutex, but don't acquire it yet
-    unique_lock<mutex> CircularBufferMutex_local(CircularBufferMutex, defer_lock);
+    //tell any RXDataCallback or process event that we should discard
+    SaankhyaPHYAndroid::cb_should_discard = true;
+
+    //acquire our CB mutex so we don't push stale TLV packets
+    unique_lock<mutex> CircularBufferMutex_local(CircularBufferMutex);
 
     //acquire our lock for setting tuning parameters (including re-tuning)
     unique_lock<mutex> SL_I2C_command_mutex_tuner_tune(SL_I2C_command_mutex);
+    SL_I2C_last_command_extra_sleep = true;
     atsc3_core_service_application_bridge_reset_context();
-
 
     tres = SL_TunerSetFrequency(tUnit, freqKHz*1000);
     if (tres != 0)
@@ -768,16 +783,23 @@ int SaankhyaPHYAndroid::tune(int freqKHz, int plpid)
         _SAANKHYA_PHY_ANDROID_DEBUG("tuner frequency: %d", cFrequency);
     }
 
-    CircularBufferMutex_local.lock();
-    //setup shared memory allocs
-    if(!cb) {
-        cb = CircularBufferCreate(TLV_CIRCULAR_BUFFER_SIZE);
-    }
-    CircularBufferMutex_local.unlock();
-
     if (!atsc3_sl_tlv_block) {
         allocate_atsc3_sl_tlv_block();
     }
+
+    //setup shared memory allocs
+    if(!cb) {
+        cb = CircularBufferCreate(TLV_CIRCULAR_BUFFER_SIZE);
+    } else {
+        //jjustman-2021-01-19 - clear out our current cb on re-tune
+        CircularBufferReset(cb);
+        //just in case any last pending SDIO transactions arent completed yet...
+        SL_SleepMS(100);
+    }
+
+    //jjustman-2021-01-19 - allow for cb to start acumulating TLV frames
+    SaankhyaPHYAndroid::cb_should_discard = false;
+    CircularBufferMutex_local.unlock();
 
     //check if we were re-initalized and might have an open threads to wind-down
 #ifdef __RESPWAN_THREAD_WORKERS
@@ -920,7 +942,7 @@ int SaankhyaPHYAndroid::tune(int freqKHz, int plpid)
  ERROR:
     ret = -1;
 
-    //unlock our i2c mutext
+    //unlock our i2c mutex
 UNLOCK:
     SL_I2C_command_mutex_tuner_tune.unlock();
     return ret;
@@ -973,6 +995,7 @@ int SaankhyaPHYAndroid::listen_plps(vector<uint8_t> plps_orignal_list)
             plpInfo.plp3);
 
     unique_lock<mutex> SL_I2C_command_mutex_config_plps(SL_I2C_command_mutex);
+    SL_I2C_last_command_extra_sleep = true;
     slres = SL_DemodConfigPlps(slUnit, &plpInfo);
     if (slres != 0)
     {
@@ -1142,21 +1165,23 @@ void SaankhyaPHYAndroid::printToConsoleI2cError(SL_I2cResult_t err)
     switch (err)
     {
         case SL_I2C_ERR_TRANSFER_FAILED:
-            _SAANKHYA_PHY_ANDROID_DEBUG(" Sl I2C Transfer Failed");
+            _SAANKHYA_PHY_ANDROID_WARN(" Sl I2C Transfer Failed");
             break;
         case SL_I2C_ERR_NOT_INITIALIZED:
-            _SAANKHYA_PHY_ANDROID_DEBUG(" Sl I2C Not Initialized");
+            _SAANKHYA_PHY_ANDROID_WARN(" Sl I2C Not Initialized");
             break;
 
         case SL_I2C_ERR_BUS_TIMEOUT:
-            _SAANKHYA_PHY_ANDROID_DEBUG(" Sl I2C Bus Timeout");
+            _SAANKHYA_PHY_ANDROID_WARN(" Sl I2C Bus Timeout");
             break;
 
         case SL_I2C_ERR_LOST_ARBITRATION:
-            _SAANKHYA_PHY_ANDROID_DEBUG(" Sl I2C Lost Arbitration");
+            _SAANKHYA_PHY_ANDROID_WARN(" Sl I2C Lost Arbitration");
             break;
 
         default:
+            _SAANKHYA_PHY_ANDROID_WARN(" Sl I2C other error: %d", err);
+
             break;
     }
 }
@@ -1510,6 +1535,8 @@ int SaankhyaPHYAndroid::captureThread()
     return 0;
 }
 
+#define JJ_DISABLE_L1D_DIAG_DATA_FOR_DEMOD_STABILITY
+
 int SaankhyaPHYAndroid::statusThread()
 {
     _SAANKHYA_PHY_ANDROID_DEBUG("SaankhyaPHYAndroid::statusThread: starting with this: %p", this);
@@ -1529,13 +1556,18 @@ int SaankhyaPHYAndroid::statusThread()
     SL_Atsc3p0Perf_Diag_t perfDiag;
     SL_Atsc3p0Bsr_Diag_t  bsrDiag;
     SL_Atsc3p0L1B_Diag_t  l1bDiag;
-    SL_Atsc3p0L1D_Diag_t  l1dDiag;
+    SL_Atsc3p0L1D_Diag_t  l1dDiag = { 0 };
 
     double snr;
     double ber_l1b;
     double ber_l1d;
     double ber_plp0;
     unique_lock<mutex> SL_I2C_command_mutex_tuner_status_io(this->SL_I2C_command_mutex, std::defer_lock);
+
+    //wait for demod to come up before polling status
+    while(!this->demodStartStatus && this->statusThreadShouldRun) {
+        usleep(1000000);
+    }
 
     while(this->statusThreadShouldRun) {
 
@@ -1558,6 +1590,12 @@ int SaankhyaPHYAndroid::statusThread()
 
         SL_I2C_command_mutex_tuner_status_io.lock();
 
+        //if our last command was a tune or PLP change, then give us some extra sleep time
+        if(SL_I2C_last_command_extra_sleep) {
+            usleep(2000000);
+            SL_I2C_last_command_extra_sleep = false;
+        }
+
         /*jjustman-2020-01-06: For the SL3000/SiTune, we will have 3 status attributes with the following possible values:
 
                 tunerInfo.status:   SL_TUNER_STATUS_NOT_LOCKED (0)
@@ -1573,6 +1611,8 @@ int SaankhyaPHYAndroid::statusThread()
         SL_DemodConfigInfo_t demodInfo;
         sl_res = SL_DemodGetConfiguration(this->slUnit, &demodInfo);
         if(sl_res != SL_OK) {
+            global_sl_result_error_flag = sl_res;
+
             _SAANKHYA_PHY_ANDROID_DEBUG("Error calling SL_DemodGetConfiguration, releasing lock and continue, sl_res: %d", sl_res);
             goto sl_i2c_tuner_mutex_unlock;
         }
@@ -1623,12 +1663,14 @@ int SaankhyaPHYAndroid::statusThread()
         }
         */
 
+#ifndef JJ_DISABLE_L1D_DIAG_DATA_FOR_DEMOD_STABILITY
         //important for PLP FEC type, and Mod/Cod
         dres = SL_DemodGetAtsc3p0Diagnostics(this->slUnit, SL_DEMOD_DIAG_TYPE_L1D, (SL_Atsc3p0L1D_Diag_t*)&l1dDiag);
         if (dres != SL_OK) {
             _SAANKHYA_PHY_ANDROID_ERROR("Error getting ATSC3.0 L1D Diagnostics  : dres: %d", dres);
             goto sl_i2c_tuner_mutex_unlock;
         }
+#endif
 
         sl_res = SL_DemodGetLlsPlpList(this->slUnit, &llsPlpInfo);
         if (sl_res != SL_OK) {
@@ -1645,7 +1687,7 @@ int SaankhyaPHYAndroid::statusThread()
         ber_l1d = (float)perfDiag.NumBitErrL1d / perfDiag.NumFecBitsL1d;//aBerPreBchE9,
         ber_plp0 = (float)perfDiag.NumBitErrPlp0 / perfDiag.NumFecBitsPlp0; //aFerPostBchE6,
 
-        _SAANKHYA_PHY_ANDROID_DEBUG("atsc3NdkClientSlImpl::StatusThread: SNR: %f, tunerInfo.status: %d, tunerInfo.signalStrength: %f, cpuStatus: %s, demodLockStatus: %d,  ber_l1b: %d, ber_l1d: %d, ber_plp0: %d, plps: 0x%02 (fec: %d, mod: %d, cr: %d), 0x%02 (fec: %d, mod: %d, cr: %d), 0x%02 (fec: %d, mod: %d, cr: %d), 0x%02 (fec: %d, mod: %d, cr: %d)",
+        _SAANKHYA_PHY_ANDROID_DEBUG("atsc3NdkClientSlImpl::StatusThread: SNR: %f, tunerInfo.status: %d, tunerInfo.signalStrength: %f, cpuStatus: %s, demodLockStatus: %d,  ber_l1b: %d, ber_l1d: %d, ber_plp0: %d, plps: 0x%02x (fec: %d, mod: %d, cr: %d), 0x%02x (fec: %d, mod: %d, cr: %d), 0x%02x (fec: %d, mod: %d, cr: %d), 0x%02x (fec: %d, mod: %d, cr: %d)",
                 snr / 1000.0,
                tunerInfo.status,
                tunerInfo.signalStrength / 1000,
@@ -1698,6 +1740,12 @@ int SaankhyaPHYAndroid::statusThread()
 sl_i2c_tuner_mutex_unlock:
         SL_I2C_command_mutex_tuner_status_io.unlock();
 
+        if(global_sl_result_error_flag != SL_OK || global_sl_i2c_result_error_flag != SL_I2C_OK) {
+            if(atsc3_ndk_phy_bridge_get_instance()) {
+                atsc3_ndk_phy_bridge_get_instance()->atsc3_notify_phy_error("SaankhyaPHYAndroid::tunerStatusThread() - ERROR: command failed, error code: sl_res error code: %d, sl_i2c_res: %d", global_sl_result_error_flag, global_sl_i2c_result_error_flag);
+            }
+        }
+
     }
 
     this->releasePinnedStatusThreadAsNeeded();
@@ -1708,11 +1756,9 @@ sl_i2c_tuner_mutex_unlock:
 }
 
 /*
- * NOTE: invoking spinlock thread MUST have acquired cb lock before invoking processTLVFromCallback
- *     e.g.
- *      unique_lock<mutex> CircularBufferMutex_local(CircularBufferMutex);
- *      processTLVFromCallback()
- *      CircularBufferMutex_local.unlock();
+ * NOTE: jjustman-2021-01-19 - moved critical section mutex from outer wrapper to only CircularBufferPop critical section
+ *          moved CS from processTLVFromCallback which was acquired for all of the TLV processing, which is not necessary
+ *
  */
 
 void SaankhyaPHYAndroid::processTLVFromCallback()
@@ -1729,6 +1775,11 @@ void SaankhyaPHYAndroid::processTLVFromCallback()
         bytesRead = CircularBufferPop(cb, TLV_CIRCULAR_BUFFER_PROCESS_BLOCK_SIZE, (char*)&processDataCircularBufferForCallback);
         CircularBufferMutex_local.unlock();
 
+        //jjustman-2021-01-19 - if we don't get any data back, or the cb_should_discard flag is set, bail
+        if(!bytesRead || SaankhyaPHYAndroid::cb_should_discard) {
+            return;
+        }
+
         atsc3_sl_tlv_block_mutex_local.lock();
         if (!atsc3_sl_tlv_block) {
             _SAANKHYA_PHY_ANDROID_WARN("ERROR: atsc3NdkClientSlImpl::processTLVFromCallback - atsc3_sl_tlv_block is NULL!");
@@ -1738,13 +1789,13 @@ void SaankhyaPHYAndroid::processTLVFromCallback()
         if (bytesRead) {
             block_Write(atsc3_sl_tlv_block, (uint8_t *) &processDataCircularBufferForCallback, bytesRead);
             if (bytesRead < TLV_CIRCULAR_BUFFER_PROCESS_BLOCK_SIZE) {
-                _SAANKHYA_PHY_ANDROID_DEBUG("atsc3NdkClientSlImpl::processTLVFromCallback() - short read from CircularBufferPop, got %d bytes, but expected: %d", bytesRead, TLV_CIRCULAR_BUFFER_PROCESS_BLOCK_SIZE);
+                //_SAANKHYA_PHY_ANDROID_TRACE("atsc3NdkClientSlImpl::processTLVFromCallback() - short read from CircularBufferPop, got %d bytes, but expected: %d", bytesRead, TLV_CIRCULAR_BUFFER_PROCESS_BLOCK_SIZE);
                 break;
             }
 
             block_Rewind(atsc3_sl_tlv_block);
 
-            _SAANKHYA_PHY_ANDROID_DEBUG("atsc3NdkClientSlImpl::processTLVFromCallback() - processTLVFromCallbackInvocationCount: %d, inner loop count: %d, atsc3_sl_tlv_block.p_size: %d, atsc3_sl_tlv_block.i_pos: %d", processTLVFromCallbackInvocationCount, ++innerLoopCount, atsc3_sl_tlv_block->p_size, atsc3_sl_tlv_block->i_pos);
+            //_SAANKHYA_PHY_ANDROID_DEBUG("atsc3NdkClientSlImpl::processTLVFromCallback() - processTLVFromCallbackInvocationCount: %d, inner loop count: %d, atsc3_sl_tlv_block.p_size: %d, atsc3_sl_tlv_block.i_pos: %d", processTLVFromCallbackInvocationCount, ++innerLoopCount, atsc3_sl_tlv_block->p_size, atsc3_sl_tlv_block->i_pos);
 
             bool atsc3_sl_tlv_payload_complete = false;
 
@@ -1774,8 +1825,7 @@ void SaankhyaPHYAndroid::processTLVFromCallback()
                                 alp_total_LMTs_recv++;
                                 atsc3_link_mapping_table_t *atsc3_link_mapping_table_pending = atsc3_alp_packet_extract_lmt(atsc3_alp_packet);
 
-                                if (atsc3_phy_rx_link_mapping_table_process_callback &&
-                                atsc3_link_mapping_table_pending) {
+                                if (atsc3_phy_rx_link_mapping_table_process_callback && atsc3_link_mapping_table_pending) {
                                     atsc3_link_mapping_table_t *atsc3_link_mapping_table_to_free = atsc3_phy_rx_link_mapping_table_process_callback(atsc3_link_mapping_table_pending);
 
                                     if (atsc3_link_mapping_table_to_free) {
@@ -1835,6 +1885,10 @@ void SaankhyaPHYAndroid::processTLVFromCallback()
 
 void SaankhyaPHYAndroid::RxDataCallback(unsigned char *data, long len)
 {
+    if(SaankhyaPHYAndroid::cb_should_discard) {
+        return;
+    }
+
     //_SAANKHYA_PHY_ANDROID_DEBUG("atsc3NdkClientSlImpl::RxDataCallback: pushing data: %p, len: %d", data, len);
     unique_lock<mutex> CircularBufferMutex_local(CircularBufferMutex);
     if(SaankhyaPHYAndroid::cb) {

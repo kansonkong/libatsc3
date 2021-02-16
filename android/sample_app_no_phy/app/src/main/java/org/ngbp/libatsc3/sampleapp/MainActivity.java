@@ -1374,9 +1374,14 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     }
 
     // show log message (used in non-ui thread)
-    public void showMsgFromNative(String str) {
+    public void onPhyLogMessage(String str) {
         Message msg = ServiceHandler.GetInstance().obtainMessage(1, str );
         ServiceHandler.GetInstance().sendMessage(msg);
+    }
+
+    // show PHY error message as toast message
+    public void onPhyError(String str) {
+        Toast.makeText(getApplicationContext(), String.format("PHY Error: %s", str), Toast.LENGTH_SHORT).show();
     }
 
     public int mfuStatsVideoICount = 0;
@@ -1879,7 +1884,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                         public void run() {
                             int re = atsc3NdkPHYClientInstance.tune(freqMHz * 1000, plp);
                             if (re != 0) {
-                                showMsgFromNative(String.format("Tune failed with res: %d", re));
+                                onPhyLogMessage(String.format("Tune failed with res: %d", re));
                                 return;
                             }
 

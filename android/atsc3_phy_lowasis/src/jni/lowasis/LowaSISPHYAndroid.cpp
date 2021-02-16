@@ -552,6 +552,9 @@ int LowaSISPHYAndroid::tune(int freqKHz, int plpid)
     //clear out our atsc3_core_service_player_bridge context
     atsc3_core_service_application_bridge_reset_context();
 
+    //reset our last cached reference for LMT
+    s_nPrevLmtVer = -1;
+
     ar = AT3DRV_FE_Start(mhDevice, freqKHz, eAT3_DEMOD_ATSC30, plpid);
     CHK_AR(ar, "FE_Start");
 
@@ -567,26 +570,26 @@ int LowaSISPHYAndroid::tune(int freqKHz, int plpid)
  */
 int LowaSISPHYAndroid::listen_plps(vector<uint8_t> plps_original_list)
 {
-
     int ret = 0;
-    uint8_t u_plp_ids[4] = { 0x00, 0x40, 0x40, 0x40 };
-    int plp_postion = 1;
+    uint8_t u_plp_ids[4] = { 0x40, 0x40, 0x40, 0x40 };
+    int plp_postion = 0;
 
-    for(int i=0; i < plps_original_list.size() && plp_postion < 3; i++) {
-        if(plps_original_list.at(i) == 0) {
-            //skip, duplicate plp0 will cause demod to fail
-        } else {
-            u_plp_ids[plp_postion++] = plps_original_list.at(i);
-        }
+    if(!plps_original_list.size()) {
+        _LOWASIS_PHY_ANDROID_ERROR("LowaSISPHYAndroid::listen_plps - size is 0, bailing!");
+        return -1;
     }
 
-    //jjustman-2020-02-29 - hack - check if FE vendor is LG3307_R850, only listen to ONE PLP, otherwise listen to multiple
+    //jjustman-2020-02-29 - hack - check if FE vendor is LG3307_R850, only listen to the FIRST PLP listed in the index
     if(this->phyFeVendorDemodInfo.vendor == eAT3_FEVENDOR_LGDT3307_R850) {
-        u_plp_ids[0] = u_plp_ids[plp_postion-1];
+        u_plp_ids[0] = plps_original_list.at(0);
 
         AT3DRV_FE_SetPLP(mhDevice, u_plp_ids, 1);
-        _LOWASIS_PHY_ANDROID_INFO("ListenPLP1: LG3307_R850: setting to SINGLE plp_id[0]: %d", u_plp_ids[0]);
+        _LOWASIS_PHY_ANDROID_INFO("listen_plps: LG3307_R850: setting to SINGLE plp_id[0]: %d", u_plp_ids[0]);
     } else {
+
+        for(int i=0; i < plps_original_list.size() && plp_postion < 3; i++) {
+            u_plp_ids[plp_postion++] = plps_original_list.at(i);
+        }
 
 #ifdef __JJUSTMAN_2020_12_24_SEA_533_SINGLE_PLP_TUNE_ONLY__
         u_plp_ids[0] = u_plp_ids[plp_postion-1];
@@ -594,7 +597,7 @@ int LowaSISPHYAndroid::listen_plps(vector<uint8_t> plps_original_list)
         _LOWASIS_PHY_ANDROID_INFO("listen_plps: forcing to SINGLE plp_id[0]: %d (#defined __JJUSTMAN_2020_12_24_SEA_533_SINGLE_PLP_TUNE_ONLY__)", u_plp_ids[0]);
         AT3DRV_FE_SetPLP(mhDevice, u_plp_ids, 1);
 #else
-        //non testing behavior
+        //jjustman-2021-02-03 - otherwise, listen to all PLPs provided (up to 4)
         AT3DRV_FE_SetPLP(mhDevice, u_plp_ids, plp_postion);
 
         _LOWASIS_PHY_ANDROID_INFO("listen_plps: MultiPLP count %d, plp_id[0]: %d, plp_id[1]: %d, plp_id[2]: %d, plp_id[3]: %d",
@@ -872,11 +875,15 @@ int LowaSISPHYAndroid::processThread()
                     }
 
                     if (atsc3_phy_rx_link_mapping_table_process_callback) {
+                        _LOWASIS_PHY_ANDROID_INFO("LMT: update - invoking atsc3_phy_rx_link_mapping_table_process_callback with atsc3_link_mapping_table: %p", atsc3_link_mapping_table);
+
                         atsc3_link_mapping_table_t *atsc3_link_mapping_table_to_free = atsc3_phy_rx_link_mapping_table_process_callback(atsc3_link_mapping_table);
 
                         if (atsc3_link_mapping_table_to_free) {
                             atsc3_link_mapping_table_free(&atsc3_link_mapping_table_to_free);
                         }
+                    } else {
+                        _LOWASIS_PHY_ANDROID_WARN("LMT: update - atsc3_phy_rx_link_mapping_table_process_callback is NULL!");
                     }
 
                     //AT3_HexDump(pData->ptr, pData->nLength);
