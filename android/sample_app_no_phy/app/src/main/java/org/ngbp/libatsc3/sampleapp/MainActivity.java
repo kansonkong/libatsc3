@@ -1239,18 +1239,18 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                 } else if (msg.what == RF_PHY_STATISTICS_UPDATED) {
                     RfPhyStatistics rfPhyStatistics = (RfPhyStatistics) msg.obj;
                     mRfFecModCod.setText(String.format("FEC MOD/COD: Valid: %d, %s (%d), %s (%d), %s (%d)",
-                            rfPhyStatistics.modcod_valid,
-                            RfPhyFecModCodTypes.L1d_PlpFecType.getOrDefault(rfPhyStatistics.plp_fec_type, RfPhyFecModCodTypes.L1d_PlpFecType.get(255)),
-                            rfPhyStatistics.plp_fec_type,
-                            RfPhyFecModCodTypes.L1d_PlpMod.getOrDefault(rfPhyStatistics.plp_mod, RfPhyFecModCodTypes.L1d_PlpMod.get(255)),
-                            rfPhyStatistics.plp_mod,
-                            RfPhyFecModCodTypes.L1d_PlpCod.getOrDefault(rfPhyStatistics.plp_cod, RfPhyFecModCodTypes.L1d_PlpCod.get(255)),
-                            rfPhyStatistics.plp_cod));
+                            rfPhyStatistics.modcod_valid_0,
+                            RfPhyFecModCodTypes.L1d_PlpFecType.getOrDefault(rfPhyStatistics.plp_fec_type_0, RfPhyFecModCodTypes.L1d_PlpFecType.get(255)),
+                            rfPhyStatistics.plp_fec_type_0,
+                            RfPhyFecModCodTypes.L1d_PlpMod.getOrDefault(rfPhyStatistics.plp_mod_0, RfPhyFecModCodTypes.L1d_PlpMod.get(255)),
+                            rfPhyStatistics.plp_mod_0,
+                            RfPhyFecModCodTypes.L1d_PlpCod.getOrDefault(rfPhyStatistics.plp_cod_0, RfPhyFecModCodTypes.L1d_PlpCod.get(255)),
+                            rfPhyStatistics.plp_cod_0));
 
                     //        LogMsgF("signal %s, strength -%d.%03d dB", lock ? "Lock" : "Unlock", (-rssi)/1000, (-rssi)%1000);
                     mRfRssiText.setText(String.format("RSSI: %d.%03d dB", (rfPhyStatistics.rssi) / 1000, (-rfPhyStatistics.rssi) % 1000));
-                    mRfSNRText.setText(String.format("SNR: %.2f, cpu: %s, tuner lock: %d, demod lock: %d", (float) rfPhyStatistics.nSnr1000 / 1000.0, (rfPhyStatistics.cpu_status == 1 ? "R" : "H"), rfPhyStatistics.tuner_lock, rfPhyStatistics.demod_lock_status));
-                    mRfBERText.setText(String.format("BER: pre_ldpc: %d, pre_bch: %d, post_bch: %d", rfPhyStatistics.ber_pre_ldpc_e7, rfPhyStatistics.ber_pre_bch_e9, rfPhyStatistics.fer_post_bch_e6));
+                    mRfSNRText.setText(String.format("SNR: %.2f, cpu: %s, tuner lock: %d, demod lock: %d", (float) rfPhyStatistics.snr1000 / 1000.0, (rfPhyStatistics.cpu_status == 1 ? "R" : "H"), rfPhyStatistics.tuner_lock, rfPhyStatistics.demod_lock));
+                    mRfBERText.setText(String.format("BER: pre_ldpc: %d, pre_bch: %d, post_bch: %d", rfPhyStatistics.ber_pre_ldpc_0, rfPhyStatistics.ber_pre_bch_0, rfPhyStatistics.fer_post_bch_0));
 
 
                 } else if (msg.what == BW_PHY_STATISTICS_UPDATED) {
@@ -1374,9 +1374,14 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     }
 
     // show log message (used in non-ui thread)
-    public void showMsgFromNative(String str) {
+    public void onPhyLogMessage(String str) {
         Message msg = ServiceHandler.GetInstance().obtainMessage(1, str );
         ServiceHandler.GetInstance().sendMessage(msg);
+    }
+
+    // show PHY error message as toast message
+    public void onPhyError(String str) {
+        Toast.makeText(getApplicationContext(), String.format("PHY Error: %s", str), Toast.LENGTH_SHORT).show();
     }
 
     public int mfuStatsVideoICount = 0;
@@ -1447,6 +1452,18 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                 }
             }
         });
+
+    }
+
+    @Override
+    public void onAlcObjectClosed(int service_id, int tsi, int toi, String s_tsid_content_location, String s_tsid_content_type, String cache_file_path) {
+        Log.d("onAlcObjectClosed", String.format("service_id: %d, tsi: %d, toi: %d, s_tsid_content_location: %s, s_tsid_content_type: %s, cache_file_path:%s",
+                service_id,
+                tsi,
+                toi,
+                s_tsid_content_location,
+                s_tsid_content_type,
+                cache_file_path));
 
     }
 
@@ -1867,7 +1884,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                         public void run() {
                             int re = atsc3NdkPHYClientInstance.tune(freqMHz * 1000, plp);
                             if (re != 0) {
-                                showMsgFromNative(String.format("Tune failed with res: %d", re));
+                                onPhyLogMessage(String.format("Tune failed with res: %d", re));
                                 return;
                             }
 
