@@ -88,7 +88,9 @@ void atsc3_stltp_tunnel_packet_set_baseband_packet_pending_from_inner_rtp_for_pl
 void atsc3_stltp_tunnel_packet_set_baseband_packet_pending_from_plp(atsc3_stltp_depacketizer_context_t* atsc3_stltp_depacketizer_context, uint8_t from_plp_num, atsc3_stltp_tunnel_packet_t* atsc3_stltp_tunnel_packet_current);
 
 #define _ATSC3_STLTP_DEPACKETIZER_CONTEXT_ERROR(...)   __LIBATSC3_TIMESTAMP_ERROR(__VA_ARGS__);
-
+#define _ATSC3_STLTP_DEPACKETIZER_CONTEXT_WARN(...)    __LIBATSC3_TIMESTAMP_WARN(__VA_ARGS__);
+#define _ATSC3_STLTP_DEPACKETIZER_CONTEXT_INFO(...)    if(_ATSC3_STLTP_DEPACKETIZER_CONTEXT_INFO_ENABLED) { __LIBATSC3_TIMESTAMP_INFO(__VA_ARGS__); }
+#define _ATSC3_STLTP_DEPACKETIZER_CONTEXT_DEBUG(...)   if(_ATSC3_STLTP_DEPACKETIZER_CONTEXT_DEBUG_ENABLED) { __LIBATSC3_TIMESTAMP_DEBUG(__VA_ARGS__); }
 
 #if defined (__cplusplus)
 }

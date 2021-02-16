@@ -1,5 +1,8 @@
 #include "SRTRxSTLTPVirtualPHY.h"
 
+int _ATSC3_SRTRXSTLTPVIRTUALPHY_INFO_ENABLED = 1;
+int _ATSC3_SRTRXSTLTPVIRTUALPHY_DEBUG_ENABLED = 0;
+int _ATSC3_SRTRXSTLTPVIRTUALPHY_TRACE_ENABLED = 0;
 std::hash<std::thread::id> __SRTRxSTLTPVirtualPHY_thread_hasher__;
 
 SRTRxSTLTPVirtualPHY::SRTRxSTLTPVirtualPHY() {
@@ -100,8 +103,9 @@ int SRTRxSTLTPVirtualPHY::atsc3_srt_thread_run() {
 
     srtConsumerThreadPtr = std::thread([this](){
     	srtConsumerShutdown = false;
+    	printf("SRTRxSTLTPVirtualPHY::atsc3_srt_thread_run - before pinConsumerThreadAsNeeded, this: %p", this);
 		pinConsumerThreadAsNeeded();
-        _SRTRXSTLTP_VIRTUAL_PHY_INFO("SRTRxSTLTPVirtualPHY::atsc3_srt_consumer_thread_run with this: %p", this);
+        _SRTRXSTLTP_VIRTUAL_PHY_INFO("SRTRxSTLTPVirtualPHY::atsc3_srt_consumer_thread_run, after pinConsumerThreadAsNeeded, with this: %p", this);
 
         this->srtConsumerThreadRun();
         releasePinnedConsumerThreadAsNeeded();
@@ -209,8 +213,6 @@ int SRTRxSTLTPVirtualPHY::srtProducerThreadRun() {
     return res;
 }
 
-
-
 int SRTRxSTLTPVirtualPHY::srtConsumerThreadRun() {
 
     queue<block_t *> to_dispatch_queue; //perform a shallow copy so we can exit critical section asap
@@ -230,22 +232,33 @@ int SRTRxSTLTPVirtualPHY::srtConsumerThreadRun() {
             condition_lock.unlock();
         }
 
+        _SRTRXSTLTP_VIRTUAL_PHY_DEBUG("SRTRxSTLTPVirtualPHY::srtConsumerThreadRun: to_dispatch_queue size is: %d", to_dispatch_queue.size());
+
         //printf("SRTRxSTLTPVirtualPHY::srtConsumerThreadRun - pushing %d packets", to_dispatch_queue.size());
         while(to_dispatch_queue.size()) {
             block_t* phy_payload_to_process = to_dispatch_queue.front();
 
             //jjustman-2020-08-11 - dispatch this for processing against our stltp_depacketizer context
             if(!atsc3_stltp_depacketizer_from_blockt(&phy_payload_to_process, atsc3_stltp_depacketizer_context)) {
-            	to_purge_queue.push(phy_payload_to_process); //we were unable to process this block, so purge
+                //we were unable to process this block
+                _SRTRXSTLTP_VIRTUAL_PHY_INFO("SRTRxSTLTPVirtualPHY::srtConsumerThreadRun: atsc3_stltp_depacketizer_from_blockt returned false, block: %p, i_pos: %d, p_size: %d",
+                                              phy_payload_to_process, phy_payload_to_process->i_pos, phy_payload_to_process->p_size);
             }
+
+            //jjustman-2021-01-13 - push this in our queue to purge, since it was created via block_Duplicate(...)
+            to_purge_queue.push(phy_payload_to_process);
+
             to_dispatch_queue.pop();
         }
 
+        _SRTRXSTLTP_VIRTUAL_PHY_DEBUG("SRTRxSTLTPVirtualPHY::srtConsumerThreadRun: to_purge_queue size is: %d", to_purge_queue.size());
+
         while(to_purge_queue.size()) {
             block_t *phy_payload_to_purge = to_purge_queue.front();
-            to_purge_queue.pop();
             block_Destroy(&phy_payload_to_purge);
+            to_purge_queue.pop();
         }
+        this_thread::yield();
 
     }
     srtConsumerShutdown = true;
@@ -278,10 +291,12 @@ void SRTRxSTLTPVirtualPHY::Atsc3_stltp_baseband_alp_packet_collection_callback_w
 	srtRxSTLTPVirtualPHY->atsc3_stltp_baseband_alp_packet_collection_received(atsc3_alp_packet_collection);
 }
 
-/*
- * jjustman-2020-08-11: NOTE - we will only process ALP packets here with packet_type = 0x0
- *
- */
+//jjustman-2021-01-20 - push our decoded LMT for atsc3_core_service_player_bridge::atsc3_core_service_bridge_process_packet_from_plp_and_block
+// which now gates on having a LMT before processing _any_ packets to prevent a premature dispatch
+// from the application layer of SLT for service selection without having a mapping of IP flow to PLP
+//
+// copy/paste warning: see PcapSTLTPVirtualPHY.cpp
+
 void SRTRxSTLTPVirtualPHY::atsc3_stltp_baseband_alp_packet_collection_received(atsc3_alp_packet_collection_t* atsc3_alp_packet_collection) {
 
 	for(int i=0; i < atsc3_alp_packet_collection->atsc3_alp_packet_v.count; i++) {
@@ -292,6 +307,17 @@ void SRTRxSTLTPVirtualPHY::atsc3_stltp_baseband_alp_packet_collection_received(a
 			//if we are an IP packet, push this via our IAtsc3NdkPHYClient callback
 			if(atsc3_phy_rx_udp_packet_process_callback && atsc3_alp_packet && atsc3_alp_packet->alp_packet_header.packet_type == 0x0) {
 				atsc3_phy_rx_udp_packet_process_callback(atsc3_alp_packet->plp_num, atsc3_alp_packet->alp_payload);
+			} else if (atsc3_phy_rx_link_mapping_table_process_callback && atsc3_alp_packet && atsc3_alp_packet->alp_packet_header.packet_type == 0x4) {
+
+                atsc3_link_mapping_table_t *atsc3_link_mapping_table_pending = atsc3_alp_packet_extract_lmt(atsc3_alp_packet);
+
+                if (atsc3_link_mapping_table_pending) {
+                    atsc3_link_mapping_table_t *atsc3_link_mapping_table_to_free = atsc3_phy_rx_link_mapping_table_process_callback(atsc3_link_mapping_table_pending);
+
+                    if (atsc3_link_mapping_table_to_free) {
+                        atsc3_link_mapping_table_free(&atsc3_link_mapping_table_to_free);
+                    }
+                }
 			}
 		}
 	}
