@@ -318,7 +318,7 @@ atsc3_mime_multipart_related_instance_t* atsc3_mime_multipart_related_parser(FIL
 
 			//first 2 chars should be --
 			if(!strncmp("--", line_binary, 2)) {
-				__MIME_PARSER_INFO("candidate length: %zu, boundary len: %lu", line_binary_len, strlen(atsc3_mime_multipart_related_instance->boundary));
+				__MIME_PARSER_INFO("candidate length: %zu, boundary len: %zu", line_binary_len, strlen(atsc3_mime_multipart_related_instance->boundary));
 
 				char* candidate_boundary = strndup(line_binary, line_binary_len);
 

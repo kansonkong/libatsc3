@@ -277,7 +277,7 @@ atsc3_baseband_packet_t* atsc3_stltp_parse_baseband_packet(atsc3_stltp_baseband_
                 for(bbp_pointer_count=0; bbp_pointer_count < atsc3_baseband_packet->ext_len; bbp_pointer_count++) {
                             binary_payload++;
                 }
-                __ALP_PARSER_INFO(" -> after reading extension block, payload position : %p, diff: %lu", binary_payload, (binary_payload - extension_block_start));
+                __ALP_PARSER_INFO(" -> after reading extension block, payload position : %p, diff: %d", binary_payload, (binary_payload - extension_block_start));
             }
         }
         baseband_pre_pointer_payload_start = binary_payload;

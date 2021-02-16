@@ -21,7 +21,8 @@ HAICRYPT_DECLARE_LOG_DISPATCHER(LOG_EMERG);
 
 #define HCRYPT_LOG_INIT()
 #define HCRYPT_LOG_EXIT()
-#define HCRYPT_LOG(lvl, fmt, ...) HaiCrypt_LogF_##lvl (__FILE__, __LINE__, __FUNCTION__, fmt, __VA_ARGS__)
+// #define HCRYPT_LOG(lvl, fmt, ...) HaiCrypt_LogF_##lvl (__FILE__, __LINE__, __FUNCTION__, fmt, __VA_ARGS__)
+#define HCRYPT_LOG(lvl, fmt, ...) printf("%-24.24s:%4d:ERROR:",__FILENAME__,__LINE__); printf(__VA_ARGS__); printf("%s%s","\r","\n"); 
 
 #if ENABLE_HAICRYPT_LOGGING == 2
 #define HCRYPT_DEV 1

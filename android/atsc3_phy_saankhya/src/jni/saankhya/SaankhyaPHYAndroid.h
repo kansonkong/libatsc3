@@ -39,7 +39,6 @@ using namespace std;
 #define TLV_CIRCULAR_BUFFER_MIN_PROCESS_SIZE    (16 * 1024 * 2)         //CircularBuffer pending data size threshold for TLV depacketization processing, pinned at 8KB to match SL4000 ALP buffer
 #define TLV_CIRCULAR_BUFFER_PROCESS_BLOCK_SIZE  (16 * 1024 * 2)    //CircularBuffer block read size for depacketization callback processing ~ 65KB
 
-
 #include "CircularBuffer.h"
 #include <sl_utils.h>
 #include <sl_config.h>
@@ -94,6 +93,7 @@ public:
     void dump_plp_list();
 
     mutex SL_I2C_command_mutex;
+    bool SL_I2C_last_command_extra_sleep;
 
 protected:
     void pinProducerThreadAsNeeded() override;
@@ -150,6 +150,7 @@ private:
     std::thread processThreadHandle;
     bool        processThreadShouldRun = false;
     bool        processThreadIsRunning = false;
+    int         processTLVFromCallbackInvocationCount = 0;
 
     //uses      pinStatusThreadAsNeeded
     int         statusThread();
@@ -160,6 +161,9 @@ private:
     //hack
     static CircularBuffer cb;
     static mutex CircularBufferMutex;
+    //jjustman-2021-01-19 - used for when we are in a tuning operation and may have in-flight async RxDataCallbacks fired,
+    //          if set to true, we should discard the TLV payload in RxDataCallback
+    static atomic_bool cb_should_discard;
 
     //thread handling methods
 
@@ -184,6 +188,10 @@ private:
     void allocate_atsc3_sl_tlv_block();
 
     atsc3_sl_tlv_payload_t* atsc3_sl_tlv_payload = NULL;
+
+    //jjustman-2021-02-04 - global error flag if i2c txn fails, usually due to demod crash
+    static SL_Result_t      global_sl_result_error_flag;
+    static SL_I2cResult_t   global_sl_i2c_result_error_flag;
 };
 
 #define _SAANKHYA_PHY_ANDROID_ERROR(...)   	__LIBATSC3_TIMESTAMP_ERROR(__VA_ARGS__);

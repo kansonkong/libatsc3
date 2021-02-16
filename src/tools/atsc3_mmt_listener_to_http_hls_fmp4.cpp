@@ -721,25 +721,29 @@ void process_packet(u_char *user, const struct pcap_pkthdr *pkthdr, const u_char
         
         //recheck video_packet_id/audio_packet_id
         if(lls_sls_mmt_monitor && lls_sls_mmt_monitor->lls_mmt_session) {
-            if(!lls_sls_mmt_monitor->video_packet_id) {
-                lls_sls_mmt_session_t* lls_sls_mmt_session = lls_slt_mmt_session_find_from_service_id(lls_slt_monitor, lls_sls_mmt_monitor->lls_mmt_session->service_id);
-                lls_sls_mmt_monitor->video_packet_id = lls_sls_mmt_session->video_packet_id;
-                lls_sls_mmt_monitor->audio_packet_id = lls_sls_mmt_session->audio_packet_id;
-            }
+//jjustman-2020-12-30 - TODO - fixme
+
+//            if(!lls_sls_mmt_monitor->video_packet_id) {
+//                lls_sls_mmt_session_t* lls_sls_mmt_session = lls_slt_mmt_session_find_from_service_id(lls_slt_monitor, lls_sls_mmt_monitor->lls_mmt_session->service_id);
+//                lls_sls_mmt_monitor->video_packet_id = lls_sls_mmt_session->video_packet_id;
+//                lls_sls_mmt_monitor->audio_packet_id = lls_sls_mmt_session->audio_packet_id;
+ //           }
             
-            if(lls_sls_mmt_monitor->video_packet_id) {
-                lls_sls_mmt_monitor->lls_sls_monitor_output_buffer.has_written_init_box = false;
-                lls_slt_monitor->lls_sls_mmt_monitor->lls_sls_monitor_output_buffer_mode.file_dump_enabled = true;
-                
-                //todo - jjustman-2019-09-05 - refactor this logic out
-                
-                if(!lls_slt_monitor->lls_sls_mmt_monitor->lls_sls_monitor_output_buffer_mode.http_output_buffer) {
-                    lls_slt_monitor->lls_sls_mmt_monitor->lls_sls_monitor_output_buffer_mode.http_output_buffer = (http_output_buffer_t*)calloc(1, sizeof(http_output_buffer_t));
-                    lls_slt_monitor->lls_sls_mmt_monitor->lls_sls_monitor_output_buffer_mode.http_output_buffer->http_payload_buffer_mutex = lls_sls_monitor_reader_mutext_create();
-                }
-                lls_slt_monitor->lls_sls_mmt_monitor->lls_sls_monitor_output_buffer_mode.http_output_enabled = true;
-            }
-        }
+//            if(lls_sls_mmt_monitor->video_packet_id) {
+//                lls_sls_mmt_monitor->lls_sls_monitor_output_buffer.has_written_init_box = false;
+//                lls_slt_monitor->lls_sls_mmt_monitor->lls_sls_monitor_output_buffer_mode.file_dump_enabled = true;
+//
+//                //todo - jjustman-2019-09-05 - refactor this logic out
+//
+//                if(!lls_slt_monitor->lls_sls_mmt_monitor->lls_sls_monitor_output_buffer_mode.http_output_buffer) {
+//                    lls_slt_monitor->lls_sls_mmt_monitor->lls_sls_monitor_output_buffer_mode.http_output_buffer = (http_output_buffer_t*)calloc(1, sizeof(http_output_buffer_t));
+//                    lls_slt_monitor->lls_sls_mmt_monitor->lls_sls_monitor_output_buffer_mode.http_output_buffer->http_payload_buffer_mutex = lls_sls_monitor_reader_mutext_create();
+//                }
+//                lls_slt_monitor->lls_sls_mmt_monitor->lls_sls_monitor_output_buffer_mode.http_output_enabled = true;
+//            }
+//
+			
+		}
 		return udp_packet_free(&udp_packet);
 	}
 
