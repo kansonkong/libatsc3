@@ -17,7 +17,6 @@
 #include <pcre2.h>
 
 #include "../atsc3_pcre2_regex_utils.h"
-
 #include "../atsc3_route_dash_utils.h"
 
 #define _ATSC3_ROUTE_DASH_MPD_PATCH_TEST_ERROR(...)   printf("%s:%d:ERROR:",__FILE__,__LINE__);_ATSC3_UTILS_PRINTLN(__VA_ARGS__);
@@ -26,6 +25,17 @@
 #define _ATSC3_ROUTE_DASH_MPD_PATCH_TEST_DEBUG(...)   printf("%s:%d:DEBUG:",__FILE__,__LINE__);_ATSC3_UTILS_PRINTLN(__VA_ARGS__);
 
 #define LEAK_CHECK_RUN_COUNT 1000
+
+#define TEST_MPD_MULTIPLE_AUDIO_ADAPTATION_SETS "../../test_data/route-dash/2020-07-02-mpd-patching/route-5004/mpd.mpd"
+#define TEST_MPD_ADAPTATION_SET_CONTAINS_BOTH_REPRESENTATION_AND_SEGMENT_TEMPLATE_NODES_NO_CHILDREN_TEGNA_HARMONIC "../../test_data/route-dash/2020-12-23-mpd-patching/tegna/2020-12-23-KING-mpd.xml"
+
+//#define TEST_MPD_REGEX_PATTERN "(<Representation.*?id=\"(.*?)\".*?>.*?<SegmentTemplate.*?startNumber=\"(.*?)\".*?<\\/Representation>)"
+
+#define TEST_MPD_REGEX_PATTERN ATSC3_ROUTE_DASH_MPD_REPRESENTATION_ID_SEGMENT_TEMPLATE_START_NUMBER_REGEX_PATTERN
+
+#define TEST_MPD_REGEX_PATTERN_FLAGS "msg"
+
+
 
 
 int test_simple_regex_extended_compare() {
@@ -208,9 +218,6 @@ Group 3.	3035-3036	0
 
  *
  */
-#define TEST_MPD_MULTIPLE_AUDIO_ADAPTATION_SETS "../../test_data/route-dash/2020-07-02-mpd-patching/route-5004/mpd.mpd"
-#define TEST_MPD_REGEX_PATTERN "(<Representation.*?id=\"(.*?)\".*?>.*?<SegmentTemplate.*?startNumber=\"(.*?)\".*?<\\/Representation>)"
-#define TEST_MPD_REGEX_PATTERN_FLAGS "msg"
 
 int test_parse_mpd_with_multiple_audio_adaption_sets() {
 
@@ -1166,6 +1173,8 @@ int test_replace_mpd_with_multiple_audio_adaption_sets_pcre2_regex_utils() {
 	atsc3_pcre2_regex_match_capture_vector_dump(atsc3_pcre2_regex_match_capture_vector);
 
 	atsc3_route_dash_matching_s_tsid_representation_media_info_alc_flow_match_vector_t* match_vector = atsc3_route_dash_find_matching_s_tsid_representations_from_mpd_pcre2_regex_matches(atsc3_pcre2_regex_match_capture_vector, &lls_sls_alc_monitor->atsc3_sls_alc_all_s_tsid_flow_v);
+	assert(match_vector);
+	
 	_ATSC3_ROUTE_DASH_MPD_PATCH_TEST_INFO("got back %d match tuples <capture, media_info, alc_flow>", match_vector->atsc3_route_dash_matching_s_tsid_representation_media_info_alc_flow_match_v.count);
 
 	for(int i=0; i < match_vector->atsc3_route_dash_matching_s_tsid_representation_media_info_alc_flow_match_v.count; i++) {
@@ -1195,6 +1204,104 @@ int test_replace_mpd_with_multiple_audio_adaption_sets_pcre2_regex_utils() {
 
 	block_Destroy(&block_mpd);
 
+
+	return 0;
+}
+
+
+int test_replace_mpd_with_multiple_audio_adaption_sets_contains_both_representation_and_segment_template_nodes_no_children_tegna_harmonic_pcre2_regex_utils() {
+
+	uint32_t tsi = 0;
+	atsc3_sls_alc_flow_t* atsc3_sls_alc_all_mediainfo_flow = NULL;
+
+	atsc3_route_s_tsid_RS_LS_SrcFlow_ContentInfo_MediaInfo_t* media_info = atsc3_route_s_tsid_RS_LS_SrcFlow_ContentInfo_MediaInfo_new();
+
+	lls_sls_alc_monitor_t* lls_sls_alc_monitor = lls_sls_alc_monitor_new();
+
+	/*
+	 * create a dummy map of representations with id's, expected lastClosedTOI:
+	 
+			Video: 		TSI=100, repId=1608656841598item-01item, lastClosedTOI: 500
+			Audio: 		TSI=200, repId=1608656841598item-03item, lastClosedTOI: 1000
+			Audio: 		TSI=201, repId=1608656841598item-02item, lastClosedTOI: 31337
+			Subtitles: 	TSI=300, repId=1608656841598item-04item, lastClosedTOI: 168502
+
+		LS.Srcflow.ContentInfo.MediaInfo repId values
+
+		atsc3_route_s_tsid_RS_LS_SrcFlow_ContentInfo_MediaInfo_t
+	*/
+
+	char* contentType_video = "video";
+	char* TSI100_video = "1608656841598item-01item";
+
+	char* contentType_audio = "audio";
+	char* TSI200_audio = "1608656841598item-03item";
+	char* TSI201_audio = "1608656841598item-02item";
+
+	char* contentType_subtitles = "subtitles";
+	char* TSI300_subtitles = "1608656841598item-04item";
+
+	tsi=100;
+	media_info->content_type = contentType_video;
+	media_info->rep_id = TSI100_video;
+	atsc3_sls_alc_all_mediainfo_flow = atsc3_sls_alc_flow_add_entry_unique_tsi(&lls_sls_alc_monitor->atsc3_sls_alc_all_s_tsid_flow_v, tsi, media_info);
+	atsc3_sls_alc_all_mediainfo_flow->last_closed_toi = 500;
+
+	tsi=200;
+	media_info->content_type = contentType_audio;
+	media_info->rep_id = TSI200_audio;
+	atsc3_sls_alc_all_mediainfo_flow = atsc3_sls_alc_flow_add_entry_unique_tsi(&lls_sls_alc_monitor->atsc3_sls_alc_all_s_tsid_flow_v, tsi, media_info);
+	atsc3_sls_alc_all_mediainfo_flow->last_closed_toi = 1000;
+
+	tsi=201;
+	media_info->content_type = contentType_audio;
+	media_info->rep_id = TSI201_audio;
+	atsc3_sls_alc_all_mediainfo_flow = atsc3_sls_alc_flow_add_entry_unique_tsi(&lls_sls_alc_monitor->atsc3_sls_alc_all_s_tsid_flow_v, tsi, media_info);
+	atsc3_sls_alc_all_mediainfo_flow->last_closed_toi = 31337;
+
+	tsi=300;
+	media_info->content_type = contentType_subtitles;
+	media_info->rep_id = TSI300_subtitles;
+	atsc3_sls_alc_all_mediainfo_flow = atsc3_sls_alc_flow_add_entry_unique_tsi(&lls_sls_alc_monitor->atsc3_sls_alc_all_s_tsid_flow_v, tsi, media_info);
+	atsc3_sls_alc_all_mediainfo_flow->last_closed_toi = 168502;
+	
+	atsc3_pcre2_regex_context_t* atsc3_pcre2_regex_context = atsc3_pcre2_regex_context_new(TEST_MPD_REGEX_PATTERN);
+	block_t* block_mpd = block_Read_from_filename(TEST_MPD_ADAPTATION_SET_CONTAINS_BOTH_REPRESENTATION_AND_SEGMENT_TEMPLATE_NODES_NO_CHILDREN_TEGNA_HARMONIC);
+
+	atsc3_pcre2_regex_match_capture_vector_t* atsc3_pcre2_regex_match_capture_vector = atsc3_pcre2_regex_match(atsc3_pcre2_regex_context, block_mpd);
+	atsc3_pcre2_regex_match_capture_vector_dump(atsc3_pcre2_regex_match_capture_vector);
+
+	atsc3_route_dash_matching_s_tsid_representation_media_info_alc_flow_match_vector_t* match_vector = atsc3_route_dash_find_matching_s_tsid_representations_from_mpd_pcre2_regex_matches(atsc3_pcre2_regex_match_capture_vector, &lls_sls_alc_monitor->atsc3_sls_alc_all_s_tsid_flow_v);
+	assert(match_vector);
+	
+	_ATSC3_ROUTE_DASH_MPD_PATCH_TEST_INFO("test_replace_mpd_with_multiple_audio_adaption_sets_contains_both_representation_and_segment_template_nodes_no_children_tegna_harmonic_pcre2_regex_utils: got back %d match tuples <capture, media_info, alc_flow>", match_vector->atsc3_route_dash_matching_s_tsid_representation_media_info_alc_flow_match_v.count);
+
+	for(int i=0; i < match_vector->atsc3_route_dash_matching_s_tsid_representation_media_info_alc_flow_match_v.count; i++) {
+		atsc3_route_dash_matching_s_tsid_representation_media_info_alc_flow_match_t* atsc3_route_dash_matching_s_tsid_representation_media_info_alc_flow_match = match_vector->atsc3_route_dash_matching_s_tsid_representation_media_info_alc_flow_match_v.data[i];
+
+		_ATSC3_ROUTE_DASH_MPD_PATCH_TEST_INFO("test_replace_mpd_with_multiple_audio_adaption_sets_contains_both_representation_and_segment_template_nodes_no_children_tegna_harmonic_pcre2_regex_utils: s-tsid repId: %s, contentType: %s, startNumber replace start: %zu, end: %zu, toi value: %d",
+				atsc3_route_dash_matching_s_tsid_representation_media_info_alc_flow_match->atsc3_route_s_content_info_media_info->rep_id,
+				atsc3_route_dash_matching_s_tsid_representation_media_info_alc_flow_match->atsc3_route_s_content_info_media_info->content_type,
+				atsc3_route_dash_matching_s_tsid_representation_media_info_alc_flow_match->atsc3_preg2_regex_match_capture_start_number->match_start,
+				atsc3_route_dash_matching_s_tsid_representation_media_info_alc_flow_match->atsc3_preg2_regex_match_capture_start_number->match_end,
+				atsc3_route_dash_matching_s_tsid_representation_media_info_alc_flow_match->atsc3_sls_alc_flow->last_closed_toi);
+
+	}
+
+	block_t* patched_mpd = atsc3_route_dash_patch_mpd_manifest_from_matching_matching_s_tsid_representation_media_info_alc_flow_match_vector(match_vector , block_mpd);
+	block_Rewind(patched_mpd);
+
+	_ATSC3_ROUTE_DASH_MPD_PATCH_TEST_INFO("test_replace_mpd_with_multiple_audio_adaption_sets_contains_both_representation_and_segment_template_nodes_no_children_tegna_harmonic_pcre2_regex_utils: patched MPD is now:\n%s", block_Get(patched_mpd));
+
+	block_Destroy(&patched_mpd);
+
+	atsc3_route_dash_matching_s_tsid_representation_media_info_alc_flow_match_vector_free(&match_vector);
+
+	atsc3_pcre2_regex_match_capture_vector_free(&atsc3_pcre2_regex_match_capture_vector);
+
+	atsc3_pcre2_regex_context_free(&atsc3_pcre2_regex_context);
+
+	block_Destroy(&block_mpd);
 
 	return 0;
 }
@@ -1249,6 +1356,11 @@ int main(int argc, char* argv[] ) {
 	if(true) {
 		_ATSC3_ROUTE_DASH_MPD_PATCH_TEST_INFO("test_replace_mpd_with_multiple_audio_adaption_sets_pcre2_regex_utils");
 		test_replace_mpd_with_multiple_audio_adaption_sets_pcre2_regex_utils();
+	}
+
+	if(true) {
+		_ATSC3_ROUTE_DASH_MPD_PATCH_TEST_INFO("test_replace_mpd_with_multiple_audio_adaption_sets_contains_both_representation_and_segment_template_nodes_no_children_tegna_harmonic_pcre2_regex_utils");
+		test_replace_mpd_with_multiple_audio_adaption_sets_contains_both_representation_and_segment_template_nodes_no_children_tegna_harmonic_pcre2_regex_utils();
 	}
 
 	return 0;

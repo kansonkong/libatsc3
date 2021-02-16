@@ -197,20 +197,10 @@ lls_sls_mmt_monitor_t* lls_sls_mmt_monitor_find_from_service_id(lls_slt_monitor_
 
 	for(int i=0; i < lls_slt_monitor->lls_sls_mmt_monitor_v.count; i++) {
 		lls_sls_mmt_monitor_t* lls_sls_mmt_monitor = lls_slt_monitor->lls_sls_mmt_monitor_v.data[i];
-		if(lls_sls_mmt_monitor->atsc3_lls_slt_service && lls_sls_mmt_monitor->atsc3_lls_slt_service->service_id == service_id) {
-			if(!lls_sls_mmt_monitor->lls_mmt_session) {
+		if(lls_sls_mmt_monitor->transients.atsc3_lls_slt_service && lls_sls_mmt_monitor->transients.atsc3_lls_slt_service->service_id == service_id) {
+			if(!lls_sls_mmt_monitor->transients.lls_mmt_session) {
 				//jjustman-2019-10-19: TODO - fix me, everyone should have a lls_mmt_session if they are in monitor
 				_ATSC3_LLS_MMT_UTILS_ERROR("lls_sls_mmt_monitor_find_from_service_id: %p, service_id: %d, lls_mmt_session is NULL", lls_sls_mmt_monitor, service_id);
-			}
-			if(!lls_sls_mmt_monitor->audio_packet_id) {
-				_ATSC3_LLS_MMT_UTILS_WARN("lls_sls_mmt_monitor_find_from_service_id: %p, service_id: %d, audio_packet_id is NULL", lls_sls_mmt_monitor, service_id);
-			}
-			if(!lls_sls_mmt_monitor->video_packet_id) {
-				_ATSC3_LLS_MMT_UTILS_WARN("lls_sls_mmt_monitor_find_from_service_id: %p, service_id: %d, video_packet_id is NULL", lls_sls_mmt_monitor, service_id);
-			}
-			//jjustman-2019-10-19: debugging note for now...eventually will be a WARN
-			if(!lls_sls_mmt_monitor->stpp_packet_id) {
-				_ATSC3_LLS_MMT_UTILS_DEBUG("lls_sls_mmt_monitor_find_from_service_id: %p, service_id: %d, stpp_packet_id is NULL", lls_sls_mmt_monitor, service_id);
 			}
 
 			return lls_sls_mmt_monitor;

@@ -21,7 +21,7 @@ extern "C" {
 extern int _MMTP_MPU_SAMPLE_FORMAT_DEBUG_ENABLED;
 extern int _MMTP_MPU_SAMPLE_FORMAT_TRACE_ENABLED;
 
-void atsc3_mmt_mpu_sample_format_parse(mmtp_mpu_packet_t* mmtp_mpu_packet, block_t* raw_packet);
+mmtp_mpu_packet_t* atsc3_mmt_mpu_sample_format_parse(mmtp_mpu_packet_t* mmtp_mpu_packet, block_t* raw_packet);
 
 #define __MMTP_MPU_SAMPLE_FORMAT_ERROR(...)   __LIBATSC3_TIMESTAMP_ERROR(__VA_ARGS__);
 #define __MMTP_MPU_SAMPLE_FORMAT_WARN(...)    __LIBATSC3_TIMESTAMP_WARN(__VA_ARGS__);

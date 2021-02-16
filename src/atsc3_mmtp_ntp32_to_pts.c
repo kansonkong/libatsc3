@@ -74,4 +74,3 @@ int64_t rebase_now_with_ntp32(uint16_t mmtp_timestamp_s, uint16_t mmtp_timestamp
 
 	return pts;
 }
-
