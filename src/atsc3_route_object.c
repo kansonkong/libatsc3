@@ -39,6 +39,19 @@ atsc3_route_object_t* atsc3_route_object_new() {
 	return atsc3_route_object;
 }
 
+/*
+ * jjustman-2020-12-23 - be VERY careful about making sure to also remove any dangling references to this route_object in the lls_sls_alc_monitor, for faster carousel recovery for corrupted payloads, ala:
+ *
+ * 	e.g. atsc3_alc_utils.c:atsc3_alc_packet_persist_to_toi_resource_process_sls_mbms_and_emit_callback
+ *
+ * 		if((matching_sls_alc_flow = atsc3_sls_alc_flow_find_entry_tsi(&lls_sls_alc_monitor->atsc3_sls_alc_all_s_tsid_flow_v, alc_packet->def_lct_hdr->tsi))) {
+				atsc3_route_object_reset_and_free_and_unlink_recovery_file_atsc3_route_object_lct_packet_received(atsc3_route_object);
+				atsc3_sls_alc_flow_remove_atsc3_route_object(matching_sls_alc_flow, atsc3_route_object);
+				atsc3_route_object_free(&atsc3_route_object);
+		}
+
+	as by default atsc3_lls_types.c: atsc3_lls_sls_alc_monitor_check_all_s_tsid_flows_has_given_up_route_objects will handle invocation and freeing of this atsc3_route_object after local expiry
+ */
 void atsc3_route_object_free(atsc3_route_object_t** atsc3_route_object_p) {
 	if(atsc3_route_object_p) {
 		atsc3_route_object_t* atsc3_route_object = *atsc3_route_object_p;
@@ -338,19 +351,32 @@ int atsc3_route_object_persist_recovery_buffer_all_pending_lct_packet_vector(ats
 	//step 1 - rebuild our atsc3_route_object->recovery_file_buffer
 	for(int i=0; i < atsc3_route_object->atsc3_route_object_lct_packet_received_v.count; i++) {
 		atsc3_route_object_lct_packet_received = atsc3_route_object->atsc3_route_object_lct_packet_received_v.data[i];
-		if(atsc3_route_object_lct_packet_received->use_start_offset && atsc3_route_object_lct_packet_received->pending_alc_payload_to_persist) {
-			block_Seek(atsc3_route_object->recovery_file_buffer, atsc3_route_object_lct_packet_received->start_offset);
-			block_AppendFull(atsc3_route_object->recovery_file_buffer, atsc3_route_object_lct_packet_received->pending_alc_payload_to_persist);
-			recovery_rebuilt_payload_size += atsc3_route_object_lct_packet_received->pending_alc_payload_to_persist->p_size;
-
-
+		if(atsc3_route_object_lct_packet_received->pending_alc_payload_to_persist) {
+		    if(atsc3_route_object_lct_packet_received->use_start_offset) {
+                block_Seek(atsc3_route_object->recovery_file_buffer, atsc3_route_object_lct_packet_received->start_offset);
+                block_AppendFull(atsc3_route_object->recovery_file_buffer, atsc3_route_object_lct_packet_received->pending_alc_payload_to_persist);
+                recovery_rebuilt_payload_size += atsc3_route_object_lct_packet_received->pending_alc_payload_to_persist->p_size;
+            } else {
+                //jjustman-2021-02-03 - add support for (optional sbn)^esi for codepoint==128, otherwise, TBD
+                if(atsc3_route_object_lct_packet_received->codepoint == 128) {
+                    block_Seek(atsc3_route_object->recovery_file_buffer, atsc3_route_object_lct_packet_received->esi);
+                    block_AppendFull(atsc3_route_object->recovery_file_buffer, atsc3_route_object_lct_packet_received->pending_alc_payload_to_persist);
+                    recovery_rebuilt_payload_size += atsc3_route_object_lct_packet_received->pending_alc_payload_to_persist->p_size;
+                } else {
+                    _ATSC3_ROUTE_OBJECT_ERROR("atsc3_route_object_persist_recovery_buffer_all_pending_lct_packet_vector: i: %d, codepoint: %d, atsc3_route_object_lct_packet_received: %p, ERROR: use_start_offset: %d, atsc3_route_object_lct_packet_received->pending_alc_payload_to_persist: %p",
+                                              i,
+                                              atsc3_route_object_lct_packet_received->codepoint,
+                                              atsc3_route_object_lct_packet_received,
+                                              atsc3_route_object_lct_packet_received->use_start_offset,
+                                              atsc3_route_object_lct_packet_received->pending_alc_payload_to_persist);
+                }
+            }
 		} else {
 			_ATSC3_ROUTE_OBJECT_ERROR("atsc3_route_object_persist_recovery_buffer_all_pending_lct_packet_vector: i: %d, atsc3_route_object_lct_packet_received: %p, ERROR: use_start_offset: %d, atsc3_route_object_lct_packet_received->pending_alc_payload_to_persist: %p",
 					i,
 					atsc3_route_object_lct_packet_received,
 					atsc3_route_object_lct_packet_received->use_start_offset,
 					atsc3_route_object_lct_packet_received->pending_alc_payload_to_persist);
-
 		}
 	}
 
@@ -589,7 +615,7 @@ void atsc3_route_object_calculate_expected_route_object_lct_packet_count(atsc3_r
 
 }
 
-
+/* jjustman-2021-02-03 - fix for use_sbn_esi comparator to use sbn_esi_merged */
 int atsc3_route_object_lct_packet_received_generic_sbn_start_offset_comparator(const void *a_dp, const void *b_dp) {
 	atsc3_route_object_lct_packet_received_t* a = *(atsc3_route_object_lct_packet_received_t**)a_dp;
 	atsc3_route_object_lct_packet_received_t* b = *(atsc3_route_object_lct_packet_received_t**)b_dp;
@@ -598,9 +624,9 @@ int atsc3_route_object_lct_packet_received_generic_sbn_start_offset_comparator(c
 
 		_ATSC3_ROUTE_OBJECT_TRACE("atsc3_route_object_lct_packet_received_generic_sbn_start_offset_comparator, using sbn_esi, with a: %d, b: %d", a->sbn, b->sbn);
 
-		if ( a->sbn <  b->sbn) return -1;
-		if ( a->sbn == b->sbn) return  0;
-		if ( a->sbn >  b->sbn) return  1;
+		if ( a->sbn_esi_merged <  b->sbn_esi_merged) return -1;
+		if ( a->sbn_esi_merged == b->sbn_esi_merged) return  0;
+		if ( a->sbn_esi_merged >  b->sbn_esi_merged) return  1;
 
 	} else if(a->use_start_offset && b->use_start_offset) {
 

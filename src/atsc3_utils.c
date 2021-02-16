@@ -719,9 +719,18 @@ block_t* block_Resize(block_t* src, uint32_t src_size_requested) {
 	return src;
 }
 
+/*
+ jjustman-2020-12-31: REVERT:
+ 
+	 jjustman-2020-12-16 - off-by-one fix
+	 if((src->p_size - src->i_pos) == 1) {
+		 _ATSC3_UTILS_WARN("block_Remaining_size: off-by-one workaround applied (src->p_size: %d, src->i_pos: %d), retuning remaining_size: 0", src->p_size, src->i_pos);
+		 return 0;
+	 }
+ */
 uint32_t block_Remaining_size(block_t* src) {
     if(!__block_check_bounaries(__FUNCTION__, src)) return 0;
-    return src->p_size - src->i_pos;
+	return (src->p_size > src->i_pos) ? (src->p_size - src->i_pos) : 0;
 }
 
 bool block_Valid(block_t* src) {
@@ -893,10 +902,10 @@ uint32_t block_Read_uint32_bitlen(block_t* src, int bitlen) {
 
     if(!__block_check_bounaries_read_size(__FUNCTION__, src, (bitlen / 8))) return 0;
 
-    uint32_t ret = 0;
-
-    int bits_remaining = bitlen;
-    while(bits_remaining > 0) {
+	uint32_t ret = 0;
+   
+	int bits_remaining = bitlen;
+	while(bits_remaining > 0) {
 	   int loop_read_size = (bits_remaining > 8 ? 8 - src->_bitpos : (bits_remaining > (8 - src->_bitpos) ? 8 - src->_bitpos : bits_remaining));
 	   int8_t mask = 0;
 	   int8_t shift = 0;
@@ -925,9 +934,10 @@ uint64_t block_Read_uint64_bitlen(block_t* src, int bitlen) {
 
     if(!__block_check_bounaries_read_size(__FUNCTION__, src, (bitlen / 8))) return 0;
 
-    uint64_t ret = 0;
-    int bits_remaining = bitlen;
-    while(bits_remaining > 0) {
+	uint64_t ret = 0;
+   
+	int bits_remaining = bitlen;
+	while(bits_remaining > 0) {
 	   int loop_read_size = (bits_remaining > 8 ? 8 - src->_bitpos : (bits_remaining > (8 - src->_bitpos) ? 8 - src->_bitpos : bits_remaining));
 	   int8_t mask = 0;
 	   int8_t shift = 0;
@@ -1129,6 +1139,87 @@ char* __trim(char *str)
     return _ltrim(_rtrim(str));
 }
 
+
+bool str_is_utf8(const char* string) {
+
+	if(!string)
+		return 0;
+
+	const unsigned char * bytes = (const unsigned char *)string;
+	while(*bytes)
+	{
+		if( (// ASCII
+				// use bytes[0] <= 0x7F to allow ASCII control characters
+				bytes[0] == 0x09 ||
+				bytes[0] == 0x0A ||
+				bytes[0] == 0x0D ||
+				(0x20 <= bytes[0] && bytes[0] <= 0x7E)
+		)
+				) {
+			bytes += 1;
+			continue;
+		}
+
+		if( (// non-overlong 2-byte
+				(0xC2 <= bytes[0] && bytes[0] <= 0xDF) &&
+				(0x80 <= bytes[1] && bytes[1] <= 0xBF)
+		)
+				) {
+			bytes += 2;
+			continue;
+		}
+
+		if( (// excluding overlongs
+					bytes[0] == 0xE0 &&
+					(0xA0 <= bytes[1] && bytes[1] <= 0xBF) &&
+					(0x80 <= bytes[2] && bytes[2] <= 0xBF)
+			) ||
+			(// straight 3-byte
+					((0xE1 <= bytes[0] && bytes[0] <= 0xEC) ||
+					 bytes[0] == 0xEE ||
+					 bytes[0] == 0xEF) &&
+					(0x80 <= bytes[1] && bytes[1] <= 0xBF) &&
+					(0x80 <= bytes[2] && bytes[2] <= 0xBF)
+			) ||
+			(// excluding surrogates
+					bytes[0] == 0xED &&
+					(0x80 <= bytes[1] && bytes[1] <= 0x9F) &&
+					(0x80 <= bytes[2] && bytes[2] <= 0xBF)
+			)
+				) {
+			bytes += 3;
+			continue;
+		}
+
+		if( (// planes 1-3
+					bytes[0] == 0xF0 &&
+					(0x90 <= bytes[1] && bytes[1] <= 0xBF) &&
+					(0x80 <= bytes[2] && bytes[2] <= 0xBF) &&
+					(0x80 <= bytes[3] && bytes[3] <= 0xBF)
+			) ||
+			(// planes 4-15
+					(0xF1 <= bytes[0] && bytes[0] <= 0xF3) &&
+					(0x80 <= bytes[1] && bytes[1] <= 0xBF) &&
+					(0x80 <= bytes[2] && bytes[2] <= 0xBF) &&
+					(0x80 <= bytes[3] && bytes[3] <= 0xBF)
+			) ||
+			(// plane 16
+					bytes[0] == 0xF4 &&
+					(0x80 <= bytes[1] && bytes[1] <= 0x8F) &&
+					(0x80 <= bytes[2] && bytes[2] <= 0xBF) &&
+					(0x80 <= bytes[3] && bytes[3] <= 0xBF)
+			)
+				) {
+			bytes += 4;
+			continue;
+		}
+
+		return 0;
+	}
+
+	return 1;
+}
+
 //jjustman-2020-08-04 - dirname() is not reliable to be portable between linux/osx/android
 int mkpath(char *dir, mode_t mode)
 {
@@ -1168,3 +1259,11 @@ FILE* atsc3_object_open(char* file_name) {
 
 	return NULL;
 }
+
+
+uint64_t compute_seconds_microseconds_to_scalar64(uint32_t seconds, uint32_t microseconds) {
+	return (uint64_t) seconds * (uint64_t) 1000000L + (uint64_t) microseconds;
+};
+
+
+

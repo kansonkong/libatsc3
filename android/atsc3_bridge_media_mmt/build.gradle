@@ -1,0 +1,78 @@
+apply plugin: 'com.android.library'
+
+android {
+    compileSdkVersion rootProject.ext.compileSdkVersion
+    defaultConfig {
+        minSdkVersion rootProject.ext.minSdkVersion
+        targetSdkVersion rootProject.ext.targetSdkVersion
+
+        versionCode 1
+        versionName "1.0"
+
+        ndk {
+            if (project.hasProperty('org.gradle.project.debugging_hwasan_enabled') && project.property('org.gradle.project.debugging_hwasan_enabled').toString().toBoolean()) {
+                abiFilters 'arm64-v8a'
+            } else {
+                abiFilters 'arm64-v8a', 'armeabi-v7a' //, 'armeabi-v7a' //, 'arm64-v8a' //'', 'x86_64',
+            }
+        }
+
+        externalNativeBuild {
+            ndkBuild {
+                if (project.hasProperty('org.gradle.project.debugging_asan_enabled') && project.property('org.gradle.project.debugging_asan_enabled').toString().toBoolean()) {
+                    arguments "debugging_asan_enabled=true"
+                } else if (project.hasProperty('org.gradle.project.debugging_hwasan_enabled') && project.property('org.gradle.project.debugging_hwasan_enabled').toString().toBoolean()) {
+                    arguments "debugging_hwasan_enabled=true"
+                } else if (project.hasProperty('org.gradle.project.debugging_g_optimization_zero_flags') && project.property('org.gradle.project.debugging_g_optimization_zero_flags').toString().toBoolean()) {
+                    arguments "debugging_g_optimization_zero_flags=true"
+                }
+            }
+        }
+    }
+    externalNativeBuild {
+        ndkBuild {
+            path 'Android.mk'
+        }
+    }
+    buildTypes {
+        debug {
+            jniDebuggable = true
+            debuggable true
+            minifyEnabled false
+            shrinkResources false
+        }
+
+        release {
+            minifyEnabled false
+            shrinkResources false
+
+            //proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
+            jniDebuggable = true
+            debuggable true
+        }
+    }
+
+    buildToolsVersion = '29.0.2'
+
+    compileOptions {
+        targetCompatibility JavaVersion.VERSION_1_8
+        sourceCompatibility JavaVersion.VERSION_1_8
+    }
+
+    packagingOptions {
+        // specify the path to your object binaries, or generally:
+        doNotStrip '**.so'
+    }
+}
+
+repositories {
+    google()
+}
+
+dependencies {
+    implementation 'androidx.annotation:annotation:1.1.0@jar'
+
+    debugApi project(':atsc3_core')
+}
+
+apply from: '../publish.gradle'
