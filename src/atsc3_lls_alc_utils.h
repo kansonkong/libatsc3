@@ -28,10 +28,12 @@ extern "C" {
 
 lls_sls_alc_monitor_t* lls_sls_alc_monitor_create(void);
 lls_sls_alc_session_t* lls_slt_alc_session_find_or_create(lls_slt_monitor_t* lls_slt_monitor, atsc3_lls_slt_service_t* atsc3_lls_slt_service);
+lls_sls_alc_session_t* lls_slt_alc_session_find_or_create_from_ip_udp_values(lls_slt_monitor_t* lls_slt_monitor, atsc3_lls_slt_service_t* atsc3_lls_slt_service, uint32_t sls_destination_ip_address, uint16_t sls_destination_udp_port, uint32_t sls_source_ip_address);
 lls_sls_alc_monitor_t* atsc3_lls_sls_alc_monitor_find_from_udp_packet(lls_slt_monitor_t* lls_slt_monitor, uint32_t src_ip_addr, uint32_t dst_ip_addr, uint16_t dst_port);
 
 //jjustman-202-03-28 - internal methods for lls_sls_alc_session creation without adding to a monitor
 lls_sls_alc_session_t* lls_slt_alc_session_create(atsc3_lls_slt_service_t* atsc3_lls_slt_service);
+lls_sls_alc_session_t* lls_slt_alc_session_create_from_ip_and_port_values(atsc3_lls_slt_service_t* atsc3_lls_slt_service, uint32_t sls_destination_ip_address, uint16_t sls_destination_udp_port, uint32_t sls_source_ip_address);
 
 //jjustman-2020-03-25: TODO - deprecate single lls_sls_alc_session resolution, instead use lls_sls_alc_montitor_t for alc session extraction
 lls_sls_alc_session_t* lls_slt_alc_session_find(lls_slt_monitor_t* lls_slt_monitor, atsc3_lls_slt_service_t* atsc3_lls_slt_service);

@@ -19,12 +19,10 @@
 [submodule "gpac"]
 	path = gpac
 	url = https://github.com/gpac/gpac.git
-
-# jjustman-2020-08-25 - adding in daa in ADO DAA branch
 [submodule "android/sample_app_no_phy/ExoPlayer"]
 	path = android/sample_app_no_phy/ExoPlayer
-	url = https://dev.azure.com/NGWP/Middleware/_git/ExoPlayer
-	branch = daa
+	url = https://github.com/jjustman/ExoPlayer.git
+	branch = release-v2
 	
 	
 # jjustman-2020-03-13 - not yet for protocol dissectors of stltp, alp, lls, route/dash and mmt
@@ -40,15 +38,15 @@
 [submodule "srt"]
 	path = srt
 	url = https://github.com/jjustman/srt.git
-	
+[submodule "libusb_android"]
+	path = libusb_android
+	url = https://github.com/jjustman/libusb_android.git
+
+# jjustman-2020-11-30 - all modules below here are not available for 3rd party re-distribution
 [submodule "saankhyalabs-slsdk"]
 	path = saankhyalabs-slsdk
 	url = https://dev.azure.com/NGWP/Mark%20One%20Phone/_git/saankhyalabs-slsdk
 	branch = slsdk-0.10-borqs
-
-[submodule "libusb_android"]
-	path = libusb_android
-	url = https://github.com/jjustman/libusb_android.git
 [submodule "libdaa"]
 	path = libdaa
 	url = https://dev.azure.com/NGWP/Middleware/_git/libdaa

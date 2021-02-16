@@ -88,6 +88,18 @@ long gtl();
 #define ABS(x)           (((x) < 0) ? -(x) : (x))
 #endif
 
+#ifndef ntohq
+#ifndef ntohll
+#define ntohll(x) ( ( (uint64_t)(ntohl( (uint32_t)((x << 32) >> 32) )) << 32) | ntohl( ((uint32_t)(x >> 32)) ) )
+#endif
+#ifndef htonll
+#define htonll(x) ntohll(x)
+#endif
+//jjustman-2020-11-24 - wrap this for android/bionic 64bit network to host
+#define ntohq(x) ntohll(x)
+
+#endif
+
 /* clip v in [min, max] */
 #define __CLIP(v, min, max)    __MIN(__MAX((v), (min)), (max))
 
@@ -169,11 +181,11 @@ uint64_t block_Read_uint64_bitlen(block_t* src, int bitlen);
 uint8_t  block_Read_uint8(block_t* src);
 uint16_t block_Read_uint16_ntohs(block_t* src);
 uint32_t block_Read_uint32_ntohl(block_t* src);
-uint64_t block_Read_uint64_ntohul(block_t* src);
+uint64_t block_Read_uint64_ntohll(block_t* src);
 
 //read from filesystem into block_t
-block_t* block_Read_from_filename(char* file_name);
-
+block_t* block_Read_from_filename(const char* file_name);
+int	block_Write_to_filename(block_t* src, const char* file_name);
 
 #define block_RefZero(a) ({ a->_refcnt = 0; })
 #define block_Release(a) ({ _ATSC3_UTILS_TRACE("UTRACE:DECR:%p:%s, block_Refcount: decrementing to: %d, block: %p (p_buffer: %p)", *a, __FUNCTION__, (*a->_refcnt)-1, *a, *a->p_buffer);  _block_Release(a); })
@@ -188,6 +200,7 @@ char* strlcopy(char*);
 char *_ltrim(char *str);
 char* _rtrim(char *str);
 char* __trim(char *str);
+bool str_is_utf8(const char* str);
 
 void freesafe(void* tofree);
 
@@ -200,6 +213,8 @@ uint16_t parsePortIntoIntval(const char* dst_port);
 
 int mkpath(char *dir, mode_t mode);
 
+//see also atsc3_mmtp_ntp32_to_pts
+uint64_t compute_seconds_microseconds_to_scalar64(uint32_t seconds, uint32_t microseconds);
 
 /*
  * Concatenate preprocessor tokens A and B without expanding macro definitions

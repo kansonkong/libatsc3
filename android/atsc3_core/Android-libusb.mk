@@ -71,8 +71,8 @@ LOCAL_C_INCLUDES += $(LOCAL_PATH)/../../src/phy
 LOCAL_C_INCLUDES += $(LOCAL_PATH)/libpcre/include
 
 LOCAL_SHARED_LIBRARIES := libpcre
-
-LOCAL_CFLAGS += -g -fpack-struct=8 -fPIC  \
+# -fpack-struct=8 -fPIC
+LOCAL_CFLAGS += -g  \
                 -D__DISABLE_LIBPCAP__ -D__DISABLE_ISOBMFF_LINKAGE__ -D__DISABLE_NCURSES__ \
                 -D__MOCK_PCAP_REPLAY__ -D__LIBATSC3_ANDROID__
 
