@@ -33,6 +33,18 @@ LOCAL_SRC_FILES := 	$(LOCAL_PATH)/../../airwavz_redzone_sdk/lib/android/$(TARGET
 include $(PREBUILT_SHARED_LIBRARY)
 # ---------------------------
 
+
+
+
+
+# ---------------------------
+include $(CLEAR_VARS)
+LIB_NAME:= libredzone_c_vdev_api
+LOCAL_MODULE:= $(LIB_NAME)
+LOCAL_SRC_FILES := 	$(LOCAL_PATH)/../../airwavz_redzone_sdk/lib/android/$(TARGET_ARCH_ABI)/$(LIB_NAME).so
+include $(PREBUILT_SHARED_LIBRARY)
+# ---------------------------
+
 # ---------------------------
 include $(CLEAR_VARS)
 LIB_NAME:= libRedZoneATSC3Parsers
@@ -44,6 +56,15 @@ include $(PREBUILT_SHARED_LIBRARY)
 # ---------------------------
 include $(CLEAR_VARS)
 LIB_NAME:= libusb1.0
+LOCAL_MODULE:= $(LIB_NAME)
+LOCAL_SRC_FILES := 	$(LOCAL_PATH)/../../airwavz_redzone_sdk/lib/android/$(TARGET_ARCH_ABI)/$(LIB_NAME).so
+include $(PREBUILT_SHARED_LIBRARY)
+# ---------------------------
+
+
+# ---------------------------
+include $(CLEAR_VARS)
+LIB_NAME:= libstdc++
 LOCAL_MODULE:= $(LIB_NAME)
 LOCAL_SRC_FILES := 	$(LOCAL_PATH)/../../airwavz_redzone_sdk/lib/android/$(TARGET_ARCH_ABI)/$(LIB_NAME).so
 include $(PREBUILT_SHARED_LIBRARY)
@@ -87,19 +108,30 @@ LIBATSC3_PHY_AIRWAVZ_CPP := \
 LOCAL_SRC_FILES += \
     $(LIBATSC3_PHY_AIRWAVZ_CPP:$(LOCAL_PATH)/%=%)
 
-LOCAL_CFLAGS += -g -O0 -fpack-struct=8 \
-                -D__DISABLE_LIBPCAP__ -D__DISABLE_ISOBMFF_LINKAGE__ -D__DISABLE_NCURSES__ \
+LOCAL_CFLAGS += -std=c++14 -g -O0 -fpack-struct=8 \
+				-D__DISABLE_LIBPCAP__ -D__DISABLE_ISOBMFF_LINKAGE__ -D__DISABLE_NCURSES__ \
                 -D__MOCK_PCAP_REPLAY__ -D__LIBATSC3_ANDROID__ \
-                -D__ANDROID__ -Dlinux  \
+                -D__ANDROID__ -Dlinux
+#
+#LOCAL_LDLIBS += -ldl -lc++_shared -lstdc++  -llog -landroid -lz \
+#				-latsc3_core -latsc3_bridge
+#
+#LOCAL_LDFLAGS += -fPIE -fPIC \
 
-LOCAL_LDLIBS += -ldl -lc++_shared -lstdc++  -llog -landroid -lz \
+#LOCAL_LDLIBS += -ldl -latsc3_core -latsc3_bridge -llog -landroid
+## 				-fPIE -fPIC
+
+LOCAL_LDLIBS += -ldl -llog -landroid -lz \
 				-latsc3_core -latsc3_bridge
 
-LOCAL_LDFLAGS += -fPIE -fPIC \
-				-L $(LOCAL_PATH)/../atsc3_bridge/build/intermediates/ndkBuild/debug/obj/local/$(TARGET_ARCH_ABI)/ \
+				 # -lc++_shared
+
+LOCAL_LDFLAGS +=-L $(LOCAL_PATH)/../atsc3_bridge/build/intermediates/ndkBuild/debug/obj/local/$(TARGET_ARCH_ABI)/ \
 				-L $(LOCAL_PATH)/../atsc3_core/build/intermediates/ndkBuild/debug/obj/local/$(TARGET_ARCH_ABI)/
 
-LOCAL_SHARED_LIBRARIES += redzone_api redzone_c_api RedZoneATSC3Parsers usb1.0 log
+# redzone_api
+# redzone_c_vdev_api
+LOCAL_SHARED_LIBRARIES += redzone_c_api  redzone_api RedZoneATSC3Parsers usb1.0 stdc++ log
 
 LOCAL_PREBUILDS := atsc3_core atsc3_bridge
 
