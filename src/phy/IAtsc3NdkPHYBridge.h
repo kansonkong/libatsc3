@@ -6,6 +6,7 @@
  */
 #include <string>
 #include "IAtsc3NdkPHYClient.h"
+#include "IAtsc3NdkPHYClientRFMetrics.h"
 
 using namespace std;
 
@@ -18,6 +19,9 @@ class IAtsc3NdkPHYBridge {
         virtual void LogMsg(const char *msg) = 0;
         virtual void LogMsg(const std::string &msg) = 0;
         virtual void LogMsgF(const char *fmt, ...) = 0;
+
+        //jjustman-2021-02-04 - for "catastrophic" PHY error reporting to application UI
+        virtual void atsc3_notify_phy_error(const char* fmt, ...) = 0;
 
         //moving to "friend" scope
         virtual void atsc3_update_rf_stats(int32_t tuner_lock,    //1
@@ -35,6 +39,8 @@ class IAtsc3NdkPHYBridge {
                                       uint8_t signal,
                                       uint8_t plp_any,
                                       uint8_t plp_all) =0; //15
+
+        virtual void atsc3_update_rf_stats_from_atsc3_ndk_phy_client_rf_metrics_t(atsc3_ndk_phy_client_rf_metrics_t* atsc3_ndk_phy_client_rf_metrics) = 0;
 
         virtual void atsc3_update_rf_bw_stats(uint64_t total_pkts, uint64_t total_bytes, unsigned int total_lmts) = 0;
 

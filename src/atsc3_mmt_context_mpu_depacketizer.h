@@ -23,11 +23,13 @@
 extern "C" {
 #endif
 
-typedef void (*atsc3_mmt_mpu_on_sequence_number_change_f)(uint16_t packet_id, uint32_t mpu_sequence_number_old, uint32_t mpu_sequence_number_new);
+typedef struct atsc3_mmt_mfu_context atsc3_mmt_mfu_context_t;
 
-typedef void (*atsc3_mmt_mpu_on_sequence_mpu_metadata_present_f)(uint16_t packet_id, uint32_t mpu_sequence_number, block_t* mmt_mpu_metadata);
+typedef void (*atsc3_mmt_mpu_on_sequence_number_change_f)(atsc3_mmt_mfu_context_t* atsc3_mmt_mfu_context, uint16_t packet_id, uint32_t mpu_sequence_number_old, uint32_t mpu_sequence_number_new);
 
-typedef void (*atsc3_mmt_mpu_on_sequence_movie_fragment_metadata_present_f)(uint16_t packet_id, uint32_t mpu_sequence_number, block_t* mmt_movie_fragment_metadata);
+typedef void (*atsc3_mmt_mpu_on_sequence_mpu_metadata_present_f)(atsc3_mmt_mfu_context_t* atsc3_mmt_mfu_context, uint16_t packet_id, uint32_t mpu_sequence_number, block_t* mmt_mpu_metadata);
+
+typedef void (*atsc3_mmt_mpu_on_sequence_movie_fragment_metadata_present_f)(atsc3_mmt_mfu_context_t* atsc3_mmt_mfu_context, uint16_t packet_id, uint32_t mpu_sequence_number, block_t* mmt_movie_fragment_metadata);
 
 #ifdef __cplusplus
 }

@@ -4,11 +4,21 @@
 
 #include "atsc3_lowasis_phy_android_rxdata.h"
 
+int _ATSC3_LOWASIS_PHY_RXDATA_ANDROID_INFO_ENABLED = 0;
+int _ATSC3_LOWASIS_PHY_RXDATA_ANDROID_DEBUG_ENABLED = 0;
+int _ATSC3_LOWASIS_PHY_RXDATA_ANDROID_TRACE_ENABLED = 0;
+
+
 atsc3_lowasis_phy_android_rxdata_t* atsc3_lowasis_phy_android_rxdata_duplicate_from_s_rx_data(S_RX_DATA* s_rx_data) {
     atsc3_lowasis_phy_android_rxdata_t* atsc3_lowasis_phy_android_rxdata = (atsc3_lowasis_phy_android_rxdata_t*)calloc(1, sizeof(atsc3_lowasis_phy_android_rxdata_t));
 
     atsc3_lowasis_phy_android_rxdata->eType = s_rx_data->eType;
     atsc3_lowasis_phy_android_rxdata->payload = block_Duplicate_from_ptr(s_rx_data->ptr, s_rx_data->nLength);
+
+    _LOWASIS_PHY_RXDATA_ANDROID_TRACE("atsc3_lowasis_phy_android_rxdata_duplicate_from_s_rx_data: atsc3_lowasis_phy_android_rxdata->eType: %d, s_rx_data->ptr: %p, s_rx_data->nLength: %d\n",
+                                      atsc3_lowasis_phy_android_rxdata->eType,
+                                      s_rx_data->ptr, s_rx_data->nLength);
+
     block_Rewind(atsc3_lowasis_phy_android_rxdata->payload);
 
     if (s_rx_data->eType == eAT3_RXDTYPE_IP) {
