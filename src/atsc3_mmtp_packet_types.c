@@ -87,6 +87,16 @@ void mmtp_packet_id_packets_container_free(mmtp_packet_id_packets_container_t** 
 		mmtp_packet_id_packets_container_t* mmtp_packet_id_packets_container = *mmtp_packet_id_packets_container_p;
 
 		if(mmtp_packet_id_packets_container) {
+
+		    if(mmtp_packet_id_packets_container->atsc3_video_decoder_configuration_record) {
+                atsc3_video_decoder_configuration_record_free(&mmtp_packet_id_packets_container->atsc3_video_decoder_configuration_record);
+            }
+            if(mmtp_packet_id_packets_container->atsc3_audio_decoder_configuration_record) {
+                atsc3_audio_decoder_configuration_record_free(&mmtp_packet_id_packets_container->atsc3_audio_decoder_configuration_record);
+            }
+            if(mmtp_packet_id_packets_container->atsc3_stpp_decoder_configuration_record) {
+                atsc3_stpp_decoder_configuration_record_free(&mmtp_packet_id_packets_container->atsc3_stpp_decoder_configuration_record);
+            }
 			mmtp_packet_id_packets_container_free_mpu_sequence_number_mmtp_mpu_packet_collection(mmtp_packet_id_packets_container);
 			mmtp_packet_id_packets_container_free_mmtp_signalling_packet(mmtp_packet_id_packets_container);
 			mmtp_packet_id_packets_container_free_mmtp_mpu_nontimed_packet(mmtp_packet_id_packets_container);

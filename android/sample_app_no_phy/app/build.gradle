@@ -4,11 +4,11 @@ android {
     aaptOptions {
         noCompress "pcap"
     }
-    compileSdkVersion 28
+    compileSdkVersion 29
     defaultConfig {
         applicationId "org.ngbp.libatsc3"
         minSdkVersion 28
-        targetSdkVersion 28
+        targetSdkVersion 29
         versionCode 1
         versionName "1.0"
         testInstrumentationRunner "android.support.test.runner.AndroidJUnitRunner"
@@ -45,6 +45,9 @@ android {
     packagingOptions {
         // specify the path to your object binaries, or generally:
         doNotStrip '**.so'
+        pickFirst 'lib/arm64-v8a/libcrypto.so'
+        pickFirst 'lib/arm64-v8a/libssl.so'
+        pickFirst 'lib/arm64-v8a/libc++_shared.so'
     }
 
     sourceSets {
@@ -79,13 +82,13 @@ dependencies {
     implementation project(':exoplayer-library-core')
     implementation project(':exoplayer-library-dash')
     implementation project(':exoplayer-library-ui')
-    implementation project(':exoplayer-extension-daa')
+    //implementation project(':exoplayer-extension-daa')
 
 
     testImplementation 'junit:junit:4.12'
     androidTestImplementation 'com.android.support.test:runner:1.0.1'
     androidTestImplementation 'com.android.support.test.espresso:espresso-core:3.0.1'
-
+//
     api project(":atsc3_core")
     api project(":atsc3_bridge")
     api project(":atsc3_phy_virtual")
