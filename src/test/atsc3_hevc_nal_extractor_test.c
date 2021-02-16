@@ -53,50 +53,50 @@ int parse_hevc_nal_test(const char* filename, bool expect_avcC_fallback) {
 
 		block_t* hevc_mpu_metadata_block = block_Duplicate_from_ptr(mpu_metadata_payload, mpu_metadata_payload_size);
 
-		video_decoder_configuration_record_t* video_decoder_configuration_record = atsc3_avc1_hevc_nal_extractor_parse_from_mpu_metadata_block_t(hevc_mpu_metadata_block);
+        atsc3_video_decoder_configuration_record_t* atsc3_video_decoder_configuration_record = atsc3_avc1_hevc_nal_extractor_parse_from_mpu_metadata_block_t(hevc_mpu_metadata_block);
 
 		block_Destroy(&hevc_mpu_metadata_block);
 
-		if(!video_decoder_configuration_record) {
+		if(!atsc3_video_decoder_configuration_record) {
 			ret = __ERROR_PARSE_FROM_BLOCK_T;
 		} else {
 			//avc1: check  sps, pps
-			if(expect_avcC_fallback && video_decoder_configuration_record->avc1_decoder_configuration_record) {
+			if(expect_avcC_fallback && atsc3_video_decoder_configuration_record->avc1_decoder_configuration_record) {
 				_ATSC3_HEVC_NAL_EXTRACTOR_TEST_INFO("...-> got back avc1_decoder: %p, sps: %d, pps: %d",
-						video_decoder_configuration_record->avc1_decoder_configuration_record,
-						video_decoder_configuration_record->avc1_decoder_configuration_record->atsc3_avc1_nal_unit_sps_v.count,
-						video_decoder_configuration_record->avc1_decoder_configuration_record->atsc3_avc1_nal_unit_pps_v.count);
+                                                    atsc3_video_decoder_configuration_record->avc1_decoder_configuration_record,
+                                                    atsc3_video_decoder_configuration_record->avc1_decoder_configuration_record->atsc3_avc1_nal_unit_sps_v.count,
+                                                    atsc3_video_decoder_configuration_record->avc1_decoder_configuration_record->atsc3_avc1_nal_unit_pps_v.count);
                 
-                atsc3_avc1_decoder_configuration_record_dump(video_decoder_configuration_record->avc1_decoder_configuration_record);
+                atsc3_avc1_decoder_configuration_record_dump(atsc3_video_decoder_configuration_record->avc1_decoder_configuration_record);
 
-                ret = video_decoder_configuration_record->avc1_decoder_configuration_record->atsc3_avc1_nal_unit_sps_v.count
-                        + video_decoder_configuration_record->avc1_decoder_configuration_record->atsc3_avc1_nal_unit_pps_v.count;
+                ret = atsc3_video_decoder_configuration_record->avc1_decoder_configuration_record->atsc3_avc1_nal_unit_sps_v.count
+                        + atsc3_video_decoder_configuration_record->avc1_decoder_configuration_record->atsc3_avc1_nal_unit_pps_v.count;
 
 			} else {
 				//HEVC: vps, sps, pps
 				_ATSC3_HEVC_NAL_EXTRACTOR_TEST_INFO("...-> got back hevcC_decoder: %p, vps: %d, sps: %d, pps: %d",
-										video_decoder_configuration_record->hevc_decoder_configuration_record,
-										video_decoder_configuration_record->hevc_decoder_configuration_record->atsc3_nal_unit_vps_v.count,
-										video_decoder_configuration_record->hevc_decoder_configuration_record->atsc3_nal_unit_sps_v.count,
-										video_decoder_configuration_record->hevc_decoder_configuration_record->atsc3_nal_unit_pps_v.count);
+                                                    atsc3_video_decoder_configuration_record->hevc_decoder_configuration_record,
+                                                    atsc3_video_decoder_configuration_record->hevc_decoder_configuration_record->atsc3_nal_unit_vps_v.count,
+                                                    atsc3_video_decoder_configuration_record->hevc_decoder_configuration_record->atsc3_nal_unit_sps_v.count,
+                                                    atsc3_video_decoder_configuration_record->hevc_decoder_configuration_record->atsc3_nal_unit_pps_v.count);
                 
-                atsc3_hevc_decoder_configuration_record_dump(video_decoder_configuration_record->hevc_decoder_configuration_record);
+                atsc3_hevc_decoder_configuration_record_dump(atsc3_video_decoder_configuration_record->hevc_decoder_configuration_record);
 
-                block_t* nals_vps_combined = atsc3_hevc_decoder_configuration_record_get_nals_vps_combined(video_decoder_configuration_record->hevc_decoder_configuration_record);
+                block_t* nals_vps_combined = atsc3_hevc_decoder_configuration_record_get_nals_vps_combined(atsc3_video_decoder_configuration_record->hevc_decoder_configuration_record);
                 _ATSC3_HEVC_NAL_EXTRACTOR_TEST_INFO("VPS_combined: nals_vps_combined: %p, p_buffer: %p, i_pos: %d, p_size: %d",
                 		nals_vps_combined, nals_vps_combined->p_buffer, nals_vps_combined->i_pos, nals_vps_combined->p_size);
 
-                block_t* nals_sps_combined = atsc3_hevc_decoder_configuration_record_get_nals_sps_combined(video_decoder_configuration_record->hevc_decoder_configuration_record);
+                block_t* nals_sps_combined = atsc3_hevc_decoder_configuration_record_get_nals_sps_combined(atsc3_video_decoder_configuration_record->hevc_decoder_configuration_record);
                 _ATSC3_HEVC_NAL_EXTRACTOR_TEST_INFO("SPS_combined: nals_vps_combined: %p, p_buffer: %p, i_pos: %d, p_size: %d",
                  		nals_sps_combined, nals_sps_combined->p_buffer, nals_sps_combined->i_pos, nals_sps_combined->p_size);
 
-                block_t* nals_pps_combined = atsc3_hevc_decoder_configuration_record_get_nals_pps_combined(video_decoder_configuration_record->hevc_decoder_configuration_record);
+                block_t* nals_pps_combined = atsc3_hevc_decoder_configuration_record_get_nals_pps_combined(atsc3_video_decoder_configuration_record->hevc_decoder_configuration_record);
                 _ATSC3_HEVC_NAL_EXTRACTOR_TEST_INFO("PPS_combined: nals_vps_combined: %p, p_buffer: %p, i_pos: %d, p_size: %d",
                 		nals_pps_combined, nals_pps_combined->p_buffer, nals_pps_combined->i_pos, nals_pps_combined->p_size);
 
-                ret = video_decoder_configuration_record->hevc_decoder_configuration_record->atsc3_nal_unit_vps_v.count
-                                     + video_decoder_configuration_record->hevc_decoder_configuration_record->atsc3_nal_unit_sps_v.count
-                                     + video_decoder_configuration_record->hevc_decoder_configuration_record->atsc3_nal_unit_pps_v.count;
+                ret = atsc3_video_decoder_configuration_record->hevc_decoder_configuration_record->atsc3_nal_unit_vps_v.count
+                                     + atsc3_video_decoder_configuration_record->hevc_decoder_configuration_record->atsc3_nal_unit_sps_v.count
+                                     + atsc3_video_decoder_configuration_record->hevc_decoder_configuration_record->atsc3_nal_unit_pps_v.count;
 
                 atsc3_hevc_nals_record_dump("vps", nals_vps_combined);
                 atsc3_hevc_nals_record_dump("sps", nals_sps_combined);
@@ -192,44 +192,44 @@ int parse_hevc_nal_test_atsc3_phy_mmt_player_bridge(const char* filename, bool e
 
 		block_t* hevc_mpu_metadata_block = block_Duplicate_from_ptr(mpu_metadata_payload, mpu_metadata_payload_size);
 
-		video_decoder_configuration_record_t* video_decoder_configuration_record = atsc3_avc1_hevc_nal_extractor_parse_from_mpu_metadata_block_t(hevc_mpu_metadata_block);
+		atsc3_video_decoder_configuration_record_t* atsc3_video_decoder_configuration_record = atsc3_avc1_hevc_nal_extractor_parse_from_mpu_metadata_block_t(hevc_mpu_metadata_block);
 
 		block_Destroy(&hevc_mpu_metadata_block);
 
-		if(!video_decoder_configuration_record) {
+		if(!atsc3_video_decoder_configuration_record) {
 			ret = __ERROR_PARSE_FROM_BLOCK_T;
 		} else {
 			//avc1: check  sps, pps
-			if(expect_avcC_fallback && video_decoder_configuration_record->avc1_decoder_configuration_record) {
+			if(expect_avcC_fallback && atsc3_video_decoder_configuration_record->avc1_decoder_configuration_record) {
 				_ATSC3_HEVC_NAL_EXTRACTOR_TEST_INFO("...-> got back avc1_decoder: %p, sps: %d, pps: %d",
-						video_decoder_configuration_record->avc1_decoder_configuration_record,
-						video_decoder_configuration_record->avc1_decoder_configuration_record->atsc3_avc1_nal_unit_sps_v.count,
-						video_decoder_configuration_record->avc1_decoder_configuration_record->atsc3_avc1_nal_unit_pps_v.count);
+                                                    atsc3_video_decoder_configuration_record->avc1_decoder_configuration_record,
+                                                    atsc3_video_decoder_configuration_record->avc1_decoder_configuration_record->atsc3_avc1_nal_unit_sps_v.count,
+                                                    atsc3_video_decoder_configuration_record->avc1_decoder_configuration_record->atsc3_avc1_nal_unit_pps_v.count);
 
-                atsc3_avc1_decoder_configuration_record_dump(video_decoder_configuration_record->avc1_decoder_configuration_record);
+                atsc3_avc1_decoder_configuration_record_dump(atsc3_video_decoder_configuration_record->avc1_decoder_configuration_record);
 
-                ret = video_decoder_configuration_record->avc1_decoder_configuration_record->atsc3_avc1_nal_unit_sps_v.count
-                        + video_decoder_configuration_record->avc1_decoder_configuration_record->atsc3_avc1_nal_unit_pps_v.count;
+                ret = atsc3_video_decoder_configuration_record->avc1_decoder_configuration_record->atsc3_avc1_nal_unit_sps_v.count
+                        + atsc3_video_decoder_configuration_record->avc1_decoder_configuration_record->atsc3_avc1_nal_unit_pps_v.count;
 
 			} else {
 				//HEVC: vps, sps, pps
 				_ATSC3_HEVC_NAL_EXTRACTOR_TEST_INFO("...-> got back hevcC_decoder: %p, vps: %d, sps: %d, pps: %d",
-										video_decoder_configuration_record->hevc_decoder_configuration_record,
-										video_decoder_configuration_record->hevc_decoder_configuration_record->atsc3_nal_unit_vps_v.count,
-										video_decoder_configuration_record->hevc_decoder_configuration_record->atsc3_nal_unit_sps_v.count,
-										video_decoder_configuration_record->hevc_decoder_configuration_record->atsc3_nal_unit_pps_v.count);
+                                                    atsc3_video_decoder_configuration_record->hevc_decoder_configuration_record,
+                                                    atsc3_video_decoder_configuration_record->hevc_decoder_configuration_record->atsc3_nal_unit_vps_v.count,
+                                                    atsc3_video_decoder_configuration_record->hevc_decoder_configuration_record->atsc3_nal_unit_sps_v.count,
+                                                    atsc3_video_decoder_configuration_record->hevc_decoder_configuration_record->atsc3_nal_unit_pps_v.count);
 
-                atsc3_hevc_decoder_configuration_record_dump(video_decoder_configuration_record->hevc_decoder_configuration_record);
+                atsc3_hevc_decoder_configuration_record_dump(atsc3_video_decoder_configuration_record->hevc_decoder_configuration_record);
 
 				 block_t* hevc_nals_combined = block_Alloc(0);
 
 
 				 block_t* nals_vps_combined = atsc3_hevc_decoder_configuration_record_get_nals_vps_combined_optional_start_code(
-						 video_decoder_configuration_record->hevc_decoder_configuration_record, true);
+                         atsc3_video_decoder_configuration_record->hevc_decoder_configuration_record, true);
 				 block_t* nals_sps_combined = atsc3_hevc_decoder_configuration_record_get_nals_sps_combined_optional_start_code(
-						 video_decoder_configuration_record->hevc_decoder_configuration_record, true);
+                         atsc3_video_decoder_configuration_record->hevc_decoder_configuration_record, true);
 				 block_t* nals_pps_combined = atsc3_hevc_decoder_configuration_record_get_nals_pps_combined_optional_start_code(
-						 video_decoder_configuration_record->hevc_decoder_configuration_record, true);
+                         atsc3_video_decoder_configuration_record->hevc_decoder_configuration_record, true);
 
 
 				_ATSC3_HEVC_NAL_EXTRACTOR_TEST_INFO("VPS_combined: nals_vps_combined: %p, p_buffer: %p, i_pos: %d, p_size: %d",
@@ -263,9 +263,9 @@ int parse_hevc_nal_test_atsc3_phy_mmt_player_bridge(const char* filename, bool e
 				 }
 
 
-                ret = video_decoder_configuration_record->hevc_decoder_configuration_record->atsc3_nal_unit_vps_v.count
-                                     + video_decoder_configuration_record->hevc_decoder_configuration_record->atsc3_nal_unit_sps_v.count
-                                     + video_decoder_configuration_record->hevc_decoder_configuration_record->atsc3_nal_unit_pps_v.count;
+                ret = atsc3_video_decoder_configuration_record->hevc_decoder_configuration_record->atsc3_nal_unit_vps_v.count
+                                     + atsc3_video_decoder_configuration_record->hevc_decoder_configuration_record->atsc3_nal_unit_sps_v.count
+                                     + atsc3_video_decoder_configuration_record->hevc_decoder_configuration_record->atsc3_nal_unit_pps_v.count;
 
 			}
 		}
@@ -369,7 +369,7 @@ int parse_hevc_nal_test_ffmpeg(const char* filename, bool expect_avcC_fallback) 
 
         block_t* hevc_mpu_metadata_block = block_Duplicate_from_ptr(mpu_metadata_payload, mpu_metadata_payload_size);
 
-        video_decoder_configuration_record_t* video_decoder_configuration_record = atsc3_avc1_hevc_nal_extractor_parse_from_mpu_metadata_block_t(hevc_mpu_metadata_block);
+        atsc3_video_decoder_configuration_record_t* video_decoder_configuration_record = atsc3_avc1_hevc_nal_extractor_parse_from_mpu_metadata_block_t(hevc_mpu_metadata_block);
 
 //        AVCodecContext* avctx = (AVCodecContext*)calloc(1, sizeof(AVCodecContext));
 //        avctx->extradata = block_Get(video_decoder_configuration_record->hevc_decoder_configuration_record->box_data_original);

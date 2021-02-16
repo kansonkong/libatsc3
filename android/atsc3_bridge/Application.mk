@@ -1,34 +1,32 @@
 #
 # Application.mk
-#
-# note that APP_ABI is overridden by build.gradle setting.
-# jjustman-2020-08-12- remove individual linkage to APP_STL := c++_shared as android studio 4.0 complains about
-# 3 files found with path 'lib/arm64-v8a/libc++_shared.so'.
 
-APP_DEBUG := true
 APP_STRIP_MODE := "none"
-#APP_STL := c++_shared
 
-# jjustman-2020-10-07 - hwasan is only available on android 10 or higher
-#APP_CFLAGS := -fsanitize=hwaddress -fno-omit-frame-pointer -g -O0
-#APP_LDFLAGS := -fsanitize=hwaddress
-
-# fall back to plain asan
-
-#APP_CFLAGS := -fsanitize=address -fno-omit-frame-pointer -g -O1 -fno-optimize-sibling-calls
-#APP_LDFLAGS := -fsanitize=address
-
-
+APP_STL := c++_shared
 APP_CPPFLAGS += -std=c++11 -D_ANDROID
 
-ifeq ($(ENABLE_HWASAN),armeabi-v7a)
-	APP_CFLAGS := -fsanitize=hwaddress -fno-omit-frame-pointer
-	APP_LDFLAGS := -fsanitize=hwaddress
+ifeq ($(debugging_asan_enabled), true)
+$(info 'building atsc3_bridge with debugging_asan_enabled' )
+	APP_DEBUG := true
+	LOCAL_ARM_MODE := arm
+
+	APP_CFLAGS += -fsanitize=address -fno-omit-frame-pointer -g -O0 -fno-optimize-sibling-calls -fsanitize-address-use-after-scope
+	APP_LDFLAGS += -fsanitize=address
+else ifeq ($(debugging_hwasan_enabled), true)
+$(info 'building atsc3_bridge with debugging_hwasan_enabled' )
+	APP_DEBUG := true
+	LOCAL_ARM_MODE := arm
+
+	APP_CFLAGS += -fsanitize=hwaddress -fno-omit-frame-pointer  -g -O0 -fno-optimize-sibling-calls -fsanitize-address-use-after-scope
+	APP_LDFLAGS += -fsanitize=hwaddress
+else ifeq ($(debugging_g_optimization_zero_flags), true)
+$(info 'building atsc3_bridge with debugging_g_optimization_zero_flags' )
+	APP_DEBUG := true
+	LOCAL_ARM_MODE := arm
+
+	APP_CFLAGS += -g -O0 -fno-optimize-sibling-calls
+else
+$(info 'building atsc3_bridge with APP_CLFAGS += -O2' )
+	APP_CFLAGS += -O2
 endif
-
-#-fsanitize=address -fno-omit-frame-pointer
-#
-#APP_CFLAGS := -fsanitize=address -fno-omit-frame-pointer
-#APP_LDFLAGS := -fsanitize=address
-
-
