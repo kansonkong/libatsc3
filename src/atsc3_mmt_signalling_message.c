@@ -292,6 +292,9 @@ uint8_t mmt_signalling_message_parse_id_type(mmtp_signalling_packet_t* mmtp_sign
 		buf = mmt_atsc3_message_payload_parse(mmt_signalling_message_header_and_payload, udp_packet);
 		mmt_signalling_message_header_and_payload->message_header.MESSAGE_id_type = MMT_ATSC3_MESSAGE_ID;
 
+		//jjustman-2020-12-03: TODO: perform any additional processing based upon the internal atsc3_message_content_type
+        mmt_atsc3_message_payload_dump(mmt_signalling_message_header_and_payload);
+
 	} else if(mmt_signalling_message_header->message_id == MMT_SCTE35_Signal_Message) {
 		buf = mmt_scte35_message_payload_parse(mmt_signalling_message_header_and_payload, udp_packet);
 		mmt_signalling_message_header_and_payload->message_header.MESSAGE_id_type = MMT_SCTE35_Signal_Message;
@@ -709,6 +712,14 @@ cleanup:
 /*
  * jjustman-2020-09-17 - TODO: re-implement with block_t readers that are length aware for guards
  */
+
+#define MMT_ATSC3_MESSAGE_ROUTECOMPONENT "<ROUTEComponent"
+#define MMT_ATSC3_MESSAGE_STSID_URI "sTSIDUri=\""
+#define MMT_ATSC3_MESSAGE_STSID_DESTINATION_IP_ADDRESS "sTSIDDestinationIpAddress=\""
+#define MMT_ATSC3_MESSAGE_STSID_DESTINATION_UDP_PORT "sTSIDDestinationUdpPort=\""
+#define MMT_ATSC3_MESSAGE_STSID_SOURCE_IP_ADDRESS "sTSIDSourceIpAddress=\""
+
+
 uint8_t* mmt_atsc3_message_payload_parse(mmt_signalling_message_header_and_payload_t* mmt_signalling_message_header_and_payload, block_t* udp_packet) {
 	if(!__mmt_signalling_message_parse_length_long(udp_packet, mmt_signalling_message_header_and_payload)) {
         __MMSM_WARN("mpt_message_parse: __mmt_signalling_message_parse_length_long failed to parse, udp_packet bytes remaining: %d",
@@ -802,6 +813,100 @@ uint8_t* mmt_atsc3_message_payload_parse(mmt_signalling_message_header_and_paylo
 		}
 	}
 
+	if(mmt_atsc3_message_payload->atsc3_message_content) {
+	    //parse internal mmt_atsc3 message
+
+	    if(mmt_atsc3_message_payload->atsc3_message_content_type == MMT_ATSC3_MESSAGE_CONTENT_TYPE_UserServiceDescription) {
+            bool has_open_routecomponent_tag = false;
+            uint8_t*   stsid_uri = NULL;
+            uint8_t*   stsid_destination_ip_address = NULL;
+            uint16_t   stsid_destination_udp_port = 0;
+            uint8_t*   stsid_source_ip_address = NULL;
+
+	        //extract out <ROUTEComponent sTSIDUri="stsid.sls" sTSIDDestinationIpAddress="239.255.70.1" sTSIDDestinationUdpPort="5009" sTSIDSourceIpAddress="172.16.200.1"></ROUTEComponent>
+            //jjustman-2020-12-08 - TODO: use preg2 to handle this...
+            //25 is the longest match for stsidDestinationIpAddress with all octets
+            for(int i=0; i < mmt_atsc3_message_payload->atsc3_message_content_length - 44; i++) {
+                uint8_t* atsc3_message = &mmt_atsc3_message_payload->atsc3_message_content[i];
+
+                if(!strncasecmp(MMT_ATSC3_MESSAGE_ROUTECOMPONENT, (const char*)atsc3_message, strlen(MMT_ATSC3_MESSAGE_ROUTECOMPONENT))) {
+                    //we have our opening ROUTE tag, now process interior elements
+                    has_open_routecomponent_tag = true;
+                } else if(has_open_routecomponent_tag) {
+                    if(!strncasecmp(MMT_ATSC3_MESSAGE_STSID_URI, (const char*)atsc3_message, strlen(MMT_ATSC3_MESSAGE_STSID_URI))) {
+                        atsc3_message += strlen(MMT_ATSC3_MESSAGE_STSID_URI);
+                        char* end = strstr( (const char*)atsc3_message, "\"");
+                        if(end) {
+							int len = end - (char *) atsc3_message;
+							stsid_uri = calloc(len + 1, sizeof(uint8_t));
+							memcpy(stsid_uri, atsc3_message, len);
+						}
+                    } else if(!strncasecmp(MMT_ATSC3_MESSAGE_STSID_DESTINATION_IP_ADDRESS, (const char*)atsc3_message, strlen(MMT_ATSC3_MESSAGE_STSID_DESTINATION_IP_ADDRESS))) {
+                        atsc3_message += strlen(MMT_ATSC3_MESSAGE_STSID_DESTINATION_IP_ADDRESS);
+                        char* end = strstr( (const char*)atsc3_message, "\"");
+                        if(end) {
+	                        int len = end - (char*)atsc3_message;
+	                        stsid_destination_ip_address = calloc(len+1, sizeof(uint8_t));
+                        	memcpy(stsid_destination_ip_address, atsc3_message, len);
+}
+                    } if(!strncasecmp(MMT_ATSC3_MESSAGE_STSID_DESTINATION_UDP_PORT, (const char*)atsc3_message, strlen(MMT_ATSC3_MESSAGE_STSID_DESTINATION_UDP_PORT))) {
+                        atsc3_message += strlen(MMT_ATSC3_MESSAGE_STSID_DESTINATION_UDP_PORT);
+                        char* end = strstr( (const char*)atsc3_message, "\"");
+                        if(end) {
+							int len = end - (char *) atsc3_message;
+							uint8_t *stsid_port_s = calloc(len + 1, sizeof(uint8_t));
+							memcpy(stsid_port_s, atsc3_message, len);
+							stsid_destination_udp_port = atoi((const char*)stsid_port_s);
+							free(stsid_port_s);
+						}
+                    } if(!strncasecmp(MMT_ATSC3_MESSAGE_STSID_SOURCE_IP_ADDRESS, (const char*)atsc3_message, strlen(MMT_ATSC3_MESSAGE_STSID_SOURCE_IP_ADDRESS))) {
+                        atsc3_message += strlen(MMT_ATSC3_MESSAGE_STSID_SOURCE_IP_ADDRESS);
+                        char* end = strstr( (const char*)atsc3_message, "\"");
+                        if(end) {
+							int len = end - (char *) atsc3_message;
+
+							stsid_source_ip_address = calloc(len + 1, sizeof(uint8_t));
+							memcpy(stsid_source_ip_address, atsc3_message, len);
+						}
+                    }
+                }
+            }
+
+            if(stsid_uri && stsid_destination_ip_address && stsid_destination_udp_port) {
+                mmt_atsc3_route_component_t* mmt_atsc3_route_component = mmt_atsc3_message_payload_add_mmt_atsc3_route_component(mmt_atsc3_message_payload);
+                if(mmt_atsc3_route_component) {
+                    mmt_atsc3_route_component->stsid_uri_s = stsid_uri;
+                    mmt_atsc3_route_component->stsid_destination_ip_address_s = stsid_destination_ip_address;
+                    mmt_atsc3_route_component->stsid_destination_ip_address = parseIpAddressIntoIntval((const char*)stsid_destination_ip_address);
+                    mmt_atsc3_route_component->stsid_destination_udp_port = stsid_destination_udp_port;
+                    if(stsid_source_ip_address) {
+                        mmt_atsc3_route_component->stsid_source_ip_address_s = stsid_source_ip_address;
+                        mmt_atsc3_route_component->stsid_source_ip_address = parseIpAddressIntoIntval((const char*)stsid_source_ip_address);
+                    }
+                }
+            } else {
+            	if(stsid_uri) {
+            		freeclean((void**)&stsid_uri);
+            	}
+            	if(stsid_destination_ip_address) {
+                    freeclean((void**)&stsid_destination_ip_address);
+            	}
+            	if(stsid_source_ip_address) {
+            		freeclean((void**)&stsid_source_ip_address);
+            	}
+            }
+
+	    } else if(mmt_atsc3_message_payload->atsc3_message_content_type == MMT_ATSC3_MESSAGE_CONTENT_TYPE_HELD) {
+            mmt_atsc3_held_message_t* mmt_atsc3_held_message = mmt_atsc3_message_payload_add_mmt_atsc3_held_message(mmt_atsc3_message_payload);
+            if(mmt_atsc3_held_message) {
+                mmt_atsc3_held_message->held_message = block_Duplicate_from_ptr(mmt_atsc3_message_payload->atsc3_message_content, mmt_atsc3_message_payload->atsc3_message_content_length);
+            }
+	    } else {
+            __MMSM_INFO("mmt_atsc3_message_payload_parse, ignornig mmt_atsc3 message type: 0x%02x", mmt_atsc3_message_payload->atsc3_message_content_type);
+
+        }
+	}
+
 	return buf;
 }
 
@@ -824,7 +929,8 @@ uint8_t* mmt_scte35_message_payload_parse(mmt_signalling_message_header_and_payl
 	for(int i=0; i < scte35_signal_descriptor_n && (udp_raw_buf_size > (buf-raw_buf)); i++) {
 		//make sure we have at least 19 bytes available (16+16+64+7+33+16)
 		if(19 < udp_raw_buf_size - (buf-raw_buf)) {
-			__MMSM_WARN("mmt_scte35_message_payload_parse: short read for descriptor: %u, need 19 but remaining is: %ld", i, (udp_raw_buf_size - (buf-raw_buf)));
+			//llvm printf can't decide if this is %llu or %lu based upon armv7/armv8, so just force it to %u
+			__MMSM_WARN("mmt_scte35_message_payload_parse: short read for descriptor: %u, need 19 but remaining is: %u", i, (uint32_t)((udp_raw_buf_size - (buf-raw_buf))));
 			goto parse_incomplete;
 		}
 
@@ -837,19 +943,20 @@ uint8_t* mmt_scte35_message_payload_parse(mmt_signalling_message_header_and_payl
 		//pts_timestamp is 1+32
 		uint8_t pts_timestamp_block[5];
 		buf = extract(buf, (uint8_t*)&pts_timestamp_block, 5);
-		mmt_scte35_signal_descriptor->pts_timestamp |= ((pts_timestamp_block[0] & 0x1UL) << 33);
+		mmt_scte35_signal_descriptor->pts_timestamp |= (((uint64_t)pts_timestamp_block[0] & 0x1UL) << 33);
 		mmt_scte35_signal_descriptor->pts_timestamp |= ntohl(*(uint32_t*)(&pts_timestamp_block[1]));
 
 		buf = extract(buf, (uint8_t*)&mmt_scte35_signal_descriptor->signal_length, 2);
 
 		if(mmt_scte35_signal_descriptor->signal_length > udp_raw_buf_size - (buf-raw_buf)) {
-			__MMSM_WARN("mmt_scte35_message_payload_parse: signal length for descriptor: %u, need %u but remaining is: %ld", i, mmt_scte35_signal_descriptor->signal_length, (udp_raw_buf_size - (buf-raw_buf)));
+			//llvm printf can't decide if this is %llu or %lu based upon armv7/armv8, so just force it to %u
+			__MMSM_WARN("mmt_scte35_message_payload_parse: signal length for descriptor: %u, need %u but remaining is: %u", i, mmt_scte35_signal_descriptor->signal_length, (uint32_t)((udp_raw_buf_size - (buf-raw_buf))));
 			goto parse_incomplete;
 		}
 
 		buf = extract(buf, (uint8_t*)&mmt_scte35_signal_descriptor->signal_byte, mmt_scte35_signal_descriptor->signal_length);
 		mmt_scte35_message_payload_add_mmt_scte35_signal_descriptor(&mmt_signalling_message_header_and_payload->message_payload.mmt_scte35_message_payload, mmt_scte35_signal_descriptor);
-		__MMSM_INFO("mmt_scte35_message_payload_parse: adding signal at NTP_timestamp: %llu, PTS: %llu", mmt_scte35_signal_descriptor->ntp_timestamp, mmt_scte35_signal_descriptor->pts_timestamp);
+		__MMSM_INFO("mmt_scte35_message_payload_parse: adding signal at NTP_timestamp: %" PRIu64 ", PTS: %" PRIu64, mmt_scte35_signal_descriptor->ntp_timestamp, mmt_scte35_signal_descriptor->pts_timestamp);
 	}
 
 	parse_incomplete:
@@ -877,6 +984,21 @@ void mmt_atsc3_message_payload_dump(mmt_signalling_message_header_and_payload_t*
 	__MMSM_DEBUG("atsc3_message_content_length:      %u", mmt_atsc3_message_payload->atsc3_message_content_length);
 	__MMSM_DEBUG("atsc3_message_content:             %s", mmt_atsc3_message_payload->atsc3_message_content);
 
+	if(mmt_atsc3_message_payload->mmt_atsc3_route_component) {
+        __MMSM_DEBUG("mmt_atsc3_route_component: stsid url: %s, stsid_destination_ip_addr_s: %s (%d), stsid_destination_udp_port: %d, stsid_source_ip_address: %s (%d)",
+                     mmt_atsc3_message_payload->mmt_atsc3_route_component->stsid_uri_s,
+                     mmt_atsc3_message_payload->mmt_atsc3_route_component->stsid_destination_ip_address_s,
+                     mmt_atsc3_message_payload->mmt_atsc3_route_component->stsid_destination_ip_address,
+                     mmt_atsc3_message_payload->mmt_atsc3_route_component->stsid_destination_udp_port,
+                     mmt_atsc3_message_payload->mmt_atsc3_route_component->stsid_source_ip_address_s,
+                     mmt_atsc3_message_payload->mmt_atsc3_route_component->stsid_source_ip_address);
+    }
+
+	if(mmt_atsc3_message_payload->mmt_atsc3_held_message) {
+        __MMSM_DEBUG("mmt_atsc3_held_message: HELD message:\n%s", mmt_atsc3_message_payload->mmt_atsc3_held_message->held_message->p_buffer);
+
+	}
+
 }
 
 
@@ -891,6 +1013,9 @@ uint8_t* si_message_not_supported(mmt_signalling_message_header_and_payload_t* m
 	return NULL;
 }
 
+/*
+ * jjustman-2020-12-01 - TODO - fix me to remove single *_packet_id references
+ */
 
 void mmt_signalling_message_update_lls_sls_mmt_session(mmtp_signalling_packet_t* mmtp_signalling_packet, lls_sls_mmt_session_t* matching_lls_sls_mmt_session) {
 	for(int i=0; i < mmtp_signalling_packet->mmt_signalling_message_header_and_payload_v.count; i++) {
@@ -905,16 +1030,17 @@ void mmt_signalling_message_update_lls_sls_mmt_session(mmtp_signalling_packet_t*
 					mp_table_asset_row_t* mp_table_asset_row = &mp_table->mp_table_asset_row[i];
 
 					__MMSM_TRACE("MPT message: checking packet_id: %u, asset_type: %s, default: %u, identifier: %s", mp_table_asset_row->mmt_general_location_info.packet_id, mp_table_asset_row->asset_type, mp_table_asset_row->default_asset_flag, mp_table_asset_row->identifier_mapping.asset_id.asset_id ? (const char*)mp_table_asset_row->identifier_mapping.asset_id.asset_id : "");
-					if(strncasecmp(ATSC3_MP_TABLE_ASSET_ROW_HEVC_ID, mp_table_asset_row->asset_type, 4) == 0) {
+					if(strncasecmp(ATSC3_MP_TABLE_ASSET_ROW_HEVC_ID, mp_table_asset_row->asset_type, 4) == 0 ||
+					    strncasecmp(ATSC3_MP_TABLE_ASSET_ROW_H264_ID, mp_table_asset_row->asset_type, 4) == 0) {
 						matching_lls_sls_mmt_session->video_packet_id = mp_table_asset_row->mmt_general_location_info.packet_id;
 						__MMSM_TRACE("MPT message: matching_lls_sls_mmt_session: %p, setting video_packet_id: packet_id: %u, asset_type: %s, default: %u, identifier: %s",
 									 matching_lls_sls_mmt_session,
 									 mp_table_asset_row->mmt_general_location_info.packet_id, mp_table_asset_row->asset_type, mp_table_asset_row->default_asset_flag, mp_table_asset_row->identifier_mapping.asset_id.asset_id ? (const char*)mp_table_asset_row->identifier_mapping.asset_id.asset_id : "");
 
-					} else if(strncasecmp(ATSC3_MP_TABLE_ASSET_ROW_MP4A_ID, mp_table_asset_row->asset_type, 4) == 0 ||
-							  strncasecmp(ATSC3_MP_TABLE_ASSET_ROW_AC_4_ID, mp_table_asset_row->asset_type, 4) == 0 ||
+					} else if(strncasecmp(ATSC3_MP_TABLE_ASSET_ROW_AC_4_ID, mp_table_asset_row->asset_type, 4) == 0 ||
 							  strncasecmp(ATSC3_MP_TABLE_ASSET_ROW_MHM1_ID, mp_table_asset_row->asset_type, 4) == 0 ||
-							  strncasecmp(ATSC3_MP_TABLE_ASSET_ROW_MHM2_ID, mp_table_asset_row->asset_type, 4) == 0) {
+							  strncasecmp(ATSC3_MP_TABLE_ASSET_ROW_MHM2_ID, mp_table_asset_row->asset_type, 4) == 0 ||
+							  strncasecmp(ATSC3_MP_TABLE_ASSET_ROW_MP4A_ID, mp_table_asset_row->asset_type, 4) == 0) {
 						matching_lls_sls_mmt_session->audio_packet_id = mp_table_asset_row->mmt_general_location_info.packet_id;
 						__MMSM_TRACE("MPT message: matching_lls_sls_mmt_session: %p, setting audio_packet_id: packet_id: %u, asset_type: %s, default: %u, identifier: %s",
 									 matching_lls_sls_mmt_session,
@@ -934,6 +1060,25 @@ void mmt_signalling_message_update_lls_sls_mmt_session(mmtp_signalling_packet_t*
 		}
 	}
 }
+
+mmt_atsc3_route_component_t* mmt_atsc3_message_payload_add_mmt_atsc3_route_component(mmt_atsc3_message_payload_t* mmt_atsc3_message_payload) {
+    if(!mmt_atsc3_message_payload) {
+        return NULL;
+    }
+    mmt_atsc3_route_component_t* mmt_atsc3_route_component = calloc(1, sizeof(mmt_atsc3_route_component_t));
+    mmt_atsc3_message_payload->mmt_atsc3_route_component = mmt_atsc3_route_component;
+    return mmt_atsc3_route_component;
+}
+
+mmt_atsc3_held_message_t* mmt_atsc3_message_payload_add_mmt_atsc3_held_message(mmt_atsc3_message_payload_t* mmt_atsc3_message_payload) {
+    if(!mmt_atsc3_message_payload) {
+        return NULL;
+    }
+    mmt_atsc3_held_message_t* mmt_atsc3_held_message = calloc(1, sizeof(mmt_atsc3_held_message_t));
+    mmt_atsc3_message_payload->mmt_atsc3_held_message = mmt_atsc3_held_message;
+    return mmt_atsc3_held_message;
+}
+
 
 void signalling_message_mmtp_packet_header_dump(mmtp_packet_header_t* mmtp_packet_header) {
 	__MMSM_DEBUG("------------------");
@@ -1058,7 +1203,7 @@ void mpt_message_dump(mmt_signalling_message_header_and_payload_t* mmt_signallin
 			if(mp_table_asset_row->mmt_signalling_message_mpu_timestamp_descriptor) {
 				for(int i=0; i < mp_table_asset_row->mmt_signalling_message_mpu_timestamp_descriptor->mpu_tuple_n; i++) {
 					__MMSM_DEBUG("   mpu_timestamp_descriptor %u, mpu_sequence_number: %u", i, mp_table_asset_row->mmt_signalling_message_mpu_timestamp_descriptor->mpu_tuple[i].mpu_sequence_number);
-					__MMSM_DEBUG("   mpu_timestamp_descriptor %u, mpu_presentation_time: %llu", i, mp_table_asset_row->mmt_signalling_message_mpu_timestamp_descriptor->mpu_tuple[i].mpu_presentation_time);
+					__MMSM_DEBUG("   mpu_timestamp_descriptor %u, mpu_presentation_time: %" PRIu64, i, mp_table_asset_row->mmt_signalling_message_mpu_timestamp_descriptor->mpu_tuple[i].mpu_presentation_time);
 				}
 			}
 		}
