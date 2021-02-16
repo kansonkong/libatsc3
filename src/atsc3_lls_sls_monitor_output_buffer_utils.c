@@ -1148,7 +1148,7 @@ void lls_slt_monitor_check_and_handle_pipe_ffplay_buffer_is_shutdown(lls_slt_mon
 			bool is_shutdown_mmt = pipe_buffer_reader_check_if_shutdown(&lls_slt_monitor->lls_sls_mmt_monitor->lls_sls_monitor_output_buffer_mode.pipe_ffplay_buffer);
 			if(is_shutdown_mmt) {
 				__LLS_SLS_MONITOR_OUTPUT_BUFFER_UTILS_INFO("lls_slt_monitor: ffplay is shutdown for MMT service_id: %u, setting ffplay_output_enabled = false",
-						lls_slt_monitor->lls_sls_mmt_monitor->atsc3_lls_slt_service->service_id);
+						lls_slt_monitor->lls_sls_mmt_monitor->transients.atsc3_lls_slt_service->service_id);
 				lls_slt_monitor->lls_sls_mmt_monitor->lls_sls_monitor_output_buffer_mode.ffplay_output_enabled = false;
 			}
 		}
