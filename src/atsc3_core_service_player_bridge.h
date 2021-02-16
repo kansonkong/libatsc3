@@ -14,6 +14,7 @@
 #include <limits.h>
 #include <ftw.h>
 #include <mutex>
+#include <set>
 
 using namespace std;
 
@@ -72,6 +73,7 @@ IAtsc3NdkApplicationBridge* atsc3_ndk_application_bridge_get_instance();
 void atsc3_core_service_phy_bridge_init(IAtsc3NdkPHYBridge* atsc3NdkPHYBridge);
 IAtsc3NdkPHYBridge* atsc3_ndk_phy_bridge_get_instance();
 
+
 //jjustman-2020-08-18 - signature match for typedef void(*atsc3_phy_rx_udp_packet_process_callback_f)(uint8_t plp_num, block_t* block);
 
 void atsc3_core_service_bridge_process_packet_from_plp_and_block(uint8_t plp_num, block_t* block);
@@ -83,9 +85,44 @@ atsc3_lls_slt_service_t* atsc3_core_service_player_bridge_set_single_monitor_a33
 //add additional alc monitor service_id's for supplimentary MMT or ROUTE flows
 atsc3_lls_slt_service_t* atsc3_core_service_player_bridge_add_monitor_a331_service_id(int service_id);
 atsc3_lls_slt_service_t* atsc3_core_service_player_bridge_remove_monitor_a331_service_id(int service_id);
+
+//jjustman-2021-01-21 - friend helper from atsc3NdkApplicationBridge when setting a new service or adding an additional monitor
+//  NOTE: final update of listened PLP's needs to happen after this call with returned vector, e.g.
+//                                      Atsc3NdkApplicationBridge_ptr->atsc3_phy_notify_plp_selection_changed(plps_to_listen);
+//  we return a 'sparse' list (e.g. only set plps we want to listen to), this allows us to 'decorate' as needed... if phy needs special markers to ignore unused slots, e.g. 0xFF
+
+vector<uint8_t>  atsc3_phy_build_plp_listeners_from_lls_slt_monitor(lls_slt_monitor_t* lls_slt_monitor);
+
+
 //TODO: wire up ROUTE/ALC and MBMS/FDT event callback hooks for close_object emission (including delivery metrics w.r.t ALC DU loss)
 
+//jjustman-2021-01-21 - acquire our context_mutex before using lls_slt_monitor or lls_sls_alc_monitor
+//use with RAII style scoping for acquisition/release, e.g.
+/*
+ * void atsc3_...() {
+ *
+ *      //acquire RAII block scope for mutex boundary
+ *     {
+ *          lock_guard<recursive_mutex> atsc3_core_service_player_bridge_context_mutex_local(atsc3_core_service_player_bridge_context_mutex);
+ *
+ *          ...
+ *     }
+ *     //mutex is implicity released
+ *
+ *     ...
+ *
+ *     return;
+ *  }
+ */
+recursive_mutex& atsc3_core_service_player_bridge_get_context_mutex();
+
+lls_slt_monitor_t* atsc3_core_service_player_bridge_get_lls_slt_montior();
+
 lls_sls_alc_monitor_t* atsc3_lls_sls_alc_monitor_get_from_service_id(int service_id);
+
+//end mutex context accessors
+
+
 
 //ALC/ROUTE: use case: parse out the atsc3_mbms_metadata_envelope to get MPD from metadataURI
 atsc3_sls_metadata_fragments_t* atsc3_slt_alc_get_sls_metadata_fragments_from_monitor_service_id(int service_id);

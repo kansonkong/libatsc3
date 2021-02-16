@@ -49,10 +49,11 @@ uint16_t* dst_packet_id_filter = NULL;
 //dump essences out
 
 
-void atsc3_mmt_mpu_mfu_on_sample_complete_dump(atsc3_mmt_mfu_context_t* atsc3_mmt_mfu_context, uint16_t packet_id, uint32_t mpu_sequence_number, uint32_t sample_number, block_t* mmt_mfu_sample, uint32_t mfu_fragment_count_rebuilt) {
+void atsc3_mmt_mpu_mfu_on_sample_complete_dump(atsc3_mmt_mfu_context_t* atsc3_mmt_mfu_context, uint16_t packet_id, uint32_t mmtp_timestamp, uint32_t mpu_sequence_number, uint32_t sample_number, block_t* mmt_mfu_sample, uint32_t mfu_fragment_count_rebuilt) {
 
-	__MMT_CONTEXT_MPU_DEBUG("atsc3_mmt_mpu_mfu_on_sample_complete_dump: packet_id: %u, mpu_sequence_number: %u, sample_number: %u, mmt_mfu_sample: %p, len: %d, mfu_fragment_count_rebuilt: %d",
+	__MMT_CONTEXT_MPU_DEBUG("atsc3_mmt_mpu_mfu_on_sample_complete_dump: packet_id: %u, mmtp_timestamp: %u, mpu_sequence_number: %u, sample_number: %u, mmt_mfu_sample: %p, len: %d, mfu_fragment_count_rebuilt: %d",
 			packet_id,
+            mmtp_timestamp,
             mpu_sequence_number,
             sample_number,
 			mmt_mfu_sample,
@@ -78,9 +79,10 @@ void atsc3_mmt_mpu_mfu_on_sample_complete_dump(atsc3_mmt_mfu_context_t* atsc3_mm
     }
 }
 
-void atsc3_mmt_mpu_mfu_on_sample_corrupt_dump(atsc3_mmt_mfu_context_t* atsc3_mmt_mfu_context, uint16_t packet_id, uint32_t mpu_sequence_number, uint32_t sample_number, block_t* mmt_mfu_sample, uint32_t mfu_fragment_count_expected, uint32_t mfu_fragment_count_rebuilt) {
-	__MMT_CONTEXT_MPU_DEBUG("atsc3_mmt_mpu_mfu_on_sample_corrupt_dump: packet_id: %u, mpu_sequence_number: %u, sample_number: %u, mmt_mfu_sample: %p, len: %d, mfu_fragment_count_expected: %d, mfu_fragment_count_rebuilt: %d",
+void atsc3_mmt_mpu_mfu_on_sample_corrupt_dump(atsc3_mmt_mfu_context_t* atsc3_mmt_mfu_context, uint16_t packet_id, uint32_t mmtp_timestamp, uint32_t mpu_sequence_number, uint32_t sample_number, block_t* mmt_mfu_sample, uint32_t mfu_fragment_count_expected, uint32_t mfu_fragment_count_rebuilt) {
+	__MMT_CONTEXT_MPU_DEBUG("atsc3_mmt_mpu_mfu_on_sample_corrupt_dump: packet_id: %u, mmtp_timestamp: %u, mpu_sequence_number: %u, sample_number: %u, mmt_mfu_sample: %p, len: %d, mfu_fragment_count_expected: %d, mfu_fragment_count_rebuilt: %d",
 				packet_id,
+	            mmtp_timestamp,
 	            mpu_sequence_number,
 	            sample_number,
 				mmt_mfu_sample,

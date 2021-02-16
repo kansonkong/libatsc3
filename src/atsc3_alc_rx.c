@@ -604,6 +604,13 @@ int alc_rx_analyze_packet_a331_compliant(char *data, int len, atsc3_alc_packet_t
 	alc_packet->ext_route_presentation_ntp_timestamp = ext_route_presentation_ntp_timestamp;
 
 
+	/* jjustman-2021-02-03 - A/331:2020 if cp >=128 && cp <= 255, then:
+	 *      Attributes of this type of packet are signalled by attributes given in the SrcFlow.Payload element associated with the CodePoint vlaue
+	 *          @formatId: Per Payload element
+	 *          @frag: Per Payload element
+	 *          @order: Per Payload element
+	 */
+	
     if(alc_packet->fec_encoding_id == SB_LB_E_FEC_ENC_ID) {
         alc_packet->use_sbn_esi = true;
         alc_packet->sbn = (fec_payload_id_to_parse >> 24) & 0xFF; //upper 8 bits for sbn

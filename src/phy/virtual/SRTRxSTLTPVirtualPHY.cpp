@@ -291,10 +291,12 @@ void SRTRxSTLTPVirtualPHY::Atsc3_stltp_baseband_alp_packet_collection_callback_w
 	srtRxSTLTPVirtualPHY->atsc3_stltp_baseband_alp_packet_collection_received(atsc3_alp_packet_collection);
 }
 
-/*
- * jjustman-2020-08-11: NOTE - we will only process ALP packets here with packet_type = 0x0
- *
- */
+//jjustman-2021-01-20 - push our decoded LMT for atsc3_core_service_player_bridge::atsc3_core_service_bridge_process_packet_from_plp_and_block
+// which now gates on having a LMT before processing _any_ packets to prevent a premature dispatch
+// from the application layer of SLT for service selection without having a mapping of IP flow to PLP
+//
+// copy/paste warning: see PcapSTLTPVirtualPHY.cpp
+
 void SRTRxSTLTPVirtualPHY::atsc3_stltp_baseband_alp_packet_collection_received(atsc3_alp_packet_collection_t* atsc3_alp_packet_collection) {
 
 	for(int i=0; i < atsc3_alp_packet_collection->atsc3_alp_packet_v.count; i++) {
@@ -305,6 +307,17 @@ void SRTRxSTLTPVirtualPHY::atsc3_stltp_baseband_alp_packet_collection_received(a
 			//if we are an IP packet, push this via our IAtsc3NdkPHYClient callback
 			if(atsc3_phy_rx_udp_packet_process_callback && atsc3_alp_packet && atsc3_alp_packet->alp_packet_header.packet_type == 0x0) {
 				atsc3_phy_rx_udp_packet_process_callback(atsc3_alp_packet->plp_num, atsc3_alp_packet->alp_payload);
+			} else if (atsc3_phy_rx_link_mapping_table_process_callback && atsc3_alp_packet && atsc3_alp_packet->alp_packet_header.packet_type == 0x4) {
+
+                atsc3_link_mapping_table_t *atsc3_link_mapping_table_pending = atsc3_alp_packet_extract_lmt(atsc3_alp_packet);
+
+                if (atsc3_link_mapping_table_pending) {
+                    atsc3_link_mapping_table_t *atsc3_link_mapping_table_to_free = atsc3_phy_rx_link_mapping_table_process_callback(atsc3_link_mapping_table_pending);
+
+                    if (atsc3_link_mapping_table_to_free) {
+                        atsc3_link_mapping_table_free(&atsc3_link_mapping_table_to_free);
+                    }
+                }
 			}
 		}
 	}

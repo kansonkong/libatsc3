@@ -39,10 +39,15 @@ public class Atsc3NdkPHYBridge extends Atsc3BridgeNdkStaticJniLoader {
         init();
     }
 
-
     int onLogMsg(String msg) {
         Log.d(TAG, msg);
-        mActivity.showMsgFromNative(msg+"\n");
+        mActivity.onPhyLogMessage(msg+"\n");
+        return 0;
+    }
+
+    int onPhyError(String msg) {
+        Log.e(TAG, msg);
+        mActivity.onPhyError(msg+"\n");
         return 0;
     }
 

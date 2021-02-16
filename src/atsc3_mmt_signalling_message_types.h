@@ -256,12 +256,10 @@ typedef struct mmt_general_location_info {
 
 } mmt_general_location_info_t;
 
-
 typedef struct mmt_signaling_message_mpu_tuple {
     uint32_t mpu_sequence_number;
-    uint64_t mpu_presentation_time;
+    uint64_t mpu_presentation_time; //jjustman-2021-01-19 - for _debug, use  "...%" PRIu64
 } mmt_signalling_message_mpu_tuple_t;
-
 
 //mpu_timestamp_descriptor_tag is 0x0001
 

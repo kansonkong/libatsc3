@@ -204,6 +204,10 @@ typedef struct mmtp_mpu_packet {
 
     //jjustman-2019-10-23: hack-ish for MFU re-assembly
     bool mfu_reassembly_performed;
+
+    //jjustman-2021-01-19: limit warn logging for missing re-assembly
+    bool mmtp_mpu_init_packet_missing_du_movie_fragment_block_warning_logged;
+
 } mmtp_mpu_packet_t;
     
 typedef struct {
