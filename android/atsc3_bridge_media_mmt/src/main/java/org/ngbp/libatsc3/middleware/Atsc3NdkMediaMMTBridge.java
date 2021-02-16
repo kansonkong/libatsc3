@@ -148,6 +148,11 @@ public class Atsc3NdkMediaMMTBridge extends Atsc3NdkMediaMMTBridgeStaticJniLoade
     }
 
     public int atsc3_onMfuPacketCorrupt(int packet_id, long mpu_sequence_number, int sample_number, ByteBuffer byteBuffer, int length, long presentationTimeUs, int mfu_fragment_count_expected, int mfu_fragment_count_rebuilt) {
+        Log.e("atsc3_onMfuPacketCorrupt", String.format("packetId: %d, mpu_sequence_number: %d, sample_number: %d has no length!",
+                packet_id,
+                mpu_sequence_number,
+                sample_number));
+
         if(MMT_DISCARD_CORRUPT_FRAMES) {
             return -1;
         }
@@ -170,6 +175,11 @@ public class Atsc3NdkMediaMMTBridge extends Atsc3NdkMediaMMTBridgeStaticJniLoade
     }
 
     public int atsc3_onMfuPacketCorruptMmthSampleHeader(int packet_id, long mpu_sequence_number, int sample_number, ByteBuffer byteBuffer, int length, long presentationTimeUs,  int mfu_fragment_count_expected, int mfu_fragment_count_rebuilt) {
+        Log.e("atsc3_onMfuPacketCorruptMmthSampleHeader", String.format("packetId: %d, mpu_sequence_number: %d, sample_number: %d has no length!",
+                packet_id,
+                mpu_sequence_number,
+                sample_number));
+
         if(MMT_DISCARD_CORRUPT_FRAMES) {
             return -1;
         }
@@ -191,6 +201,10 @@ public class Atsc3NdkMediaMMTBridge extends Atsc3NdkMediaMMTBridgeStaticJniLoade
     }
 
     public int atsc3_onMfuSampleMissing(int packet_id, long mpu_sequence_number, int sample_number) {
+        Log.e("atsc3_onMfuSampleMissing", String.format("packetId: %d, mpu_sequence_number: %d, sample_number: %d has no length!",
+                packet_id,
+                mpu_sequence_number,
+                sample_number));
         if(ATSC3PlayerFlags.ATSC3PlayerStartPlayback) {
             if (MmtPacketIdContext.video_packet_id == packet_id) {
                 MmtPacketIdContext.video_packet_statistics.missing_mfu_samples_count++;
