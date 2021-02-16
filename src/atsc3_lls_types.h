@@ -350,7 +350,9 @@ typedef struct atsc3_lls_slt_service {
 
 	char*						drm_system_id;					//0..1, For @serviceCategory=6 (DRM Data Service), specifies the DRM System ID of a specific DRM system delivered as part of this Service.
 
-// jjustman-2020-11-18 - TODO: remove vector_builder_struct for 0..1 cardinality elements
+    // jjustman-2020-11-18 - TODO: remove vector_builder_struct for 0..1 cardinality elements
+
+    // jjustman-2021-01-21 - TODO: once proper cardinality is implemented (e.g. change vector_builders to just _t* pointers), make sure to regress against null ptrs
 
 	ATSC3_VECTOR_BUILDER_STRUCT(atsc3_slt_simulcast_tsid);				//0..1, see atsc3_simulcast_tsid_t - atsc3_simulcast_tsid_t
 
@@ -742,10 +744,11 @@ typedef struct lls_sls_alc_session {
  
 **/
 typedef struct lls_sls_mmt_monitor {
-    
-	atsc3_lls_slt_service_t* 				atsc3_lls_slt_service;
 
-    lls_sls_mmt_session_t* 					lls_mmt_session;
+	struct atsc3_lls_sls_mmt_monitor_transients {
+		atsc3_lls_slt_service_t *atsc3_lls_slt_service;
+		lls_sls_mmt_session_t *lls_mmt_session;
+	} transients;
 
     lls_sls_monitor_output_buffer_t 		lls_sls_monitor_output_buffer;
     lls_sls_monitor_output_buffer_mode_t 	lls_sls_monitor_output_buffer_mode;

@@ -8,6 +8,9 @@
 
 #include "atsc3_stltp_depacketizer_context.h"
 
+int _ATSC3_STLTP_DEPACKETIZER_CONTEXT_INFO_ENABLED = 0;
+int _ATSC3_STLTP_DEPACKETIZER_CONTEXT_DEBUG_ENABLED = 0;
+
 atsc3_stltp_depacketizer_context_t* atsc3_stltp_depacketizer_context_new() {
 	atsc3_stltp_depacketizer_context_t* atsc3_stltp_depacketizer_context = calloc(1, sizeof(atsc3_stltp_depacketizer_context_t));
 
@@ -76,15 +79,15 @@ void atsc3_stltp_tunnel_packet_set_baseband_packet_pending_from_inner_rtp_for_pl
 	int plp_num = 0;
 	if(!ip_udp_rtp_ctp_packet_inner) {
 		_ATSC3_STLTP_DEPACKETIZER_CONTEXT_ERROR("atsc3_stltp_tunnel_packet_set_baseband_packet_pending_from_inner_rtp_for_plp - ip_udp_rtp_ctp_packet_inner is NULL, returning plp0 by default");
-
 	} else {
-
 		if(ip_udp_rtp_ctp_packet_inner->udp_flow.dst_port >= 30000 && ip_udp_rtp_ctp_packet_inner->udp_flow.dst_port < 30064) {
 			plp_num = ip_udp_rtp_ctp_packet_inner->udp_flow.dst_port - 30000;
 		}
 	}
 
 	atsc3_stltp_tunnel_packet_current->atsc3_stltp_tunnel_baseband_packet_pending_by_plp = &atsc3_stltp_depacketizer_context->atsc3_stltp_tunnel_baseband_packet_pending_by_plp_collection[plp_num];
+	
+	_ATSC3_STLTP_DEPACKETIZER_CONTEXT_INFO("atsc3_stltp_tunnel_packet_set_baseband_packet_pending_from_inner_rtp_for_plp: plp: %d, setting atsc3_stltp_tunnel_packet_current->atsc3_stltp_tunnel_baseband_packet_pending_by_plp to: %p", plp_num, atsc3_stltp_tunnel_packet_current->atsc3_stltp_tunnel_baseband_packet_pending_by_plp);
 }
 
 
@@ -92,12 +95,13 @@ void atsc3_stltp_tunnel_packet_set_baseband_packet_pending_from_plp(atsc3_stltp_
 	int plp_num = 0;
 	if(from_plp_num > 63) {
 		_ATSC3_STLTP_DEPACKETIZER_CONTEXT_ERROR("atsc3_stltp_tunnel_packet_set_baseband_packet_pending_from_plp - from_plp_num too large: %d, using 0", from_plp_num);
-
 	} else {
 		plp_num = from_plp_num;
 	}
 
 	atsc3_stltp_tunnel_packet_current->atsc3_stltp_tunnel_baseband_packet_pending_by_plp = &atsc3_stltp_depacketizer_context->atsc3_stltp_tunnel_baseband_packet_pending_by_plp_collection[plp_num];
+	_ATSC3_STLTP_DEPACKETIZER_CONTEXT_INFO("atsc3_stltp_tunnel_packet_set_baseband_packet_pending_from_plp: plp: %d, setting atsc3_stltp_tunnel_packet_current->atsc3_stltp_tunnel_baseband_packet_pending_by_plp to: %p", plp_num, atsc3_stltp_tunnel_packet_current->atsc3_stltp_tunnel_baseband_packet_pending_by_plp);
+
 }
 
 
