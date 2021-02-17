@@ -1,0 +1,4 @@
+build notes for windows:
+
+https://srtlab.github.io/srt-cookbook/getting-started/build-on-windows/
+
