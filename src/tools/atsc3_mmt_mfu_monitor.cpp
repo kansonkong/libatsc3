@@ -15,21 +15,30 @@ int PACKET_COUNTER=0;
 #include <stdio.h>
 #include <stdlib.h>
 #include <errno.h>
+
+#ifdef _WIN32
+#include <WinSock2.h>
+#include <Windows.h>
+#include <common\win\wintime.h>
+
+#else
 #include <sys/socket.h>
 #include <netinet/in.h>
 #include <arpa/inet.h>
 #include <netinet/if_ether.h>
 #include <netinet/ip.h>
+#include <sys/ioctl.h>
+#include <ncurses.h>
+#include <strings.h>
+
+#endif
+
 #include <string.h>
 #include <sys/stat.h>
 #include <time.h>
 #include <signal.h>
-#include <sys/ioctl.h>
-#include <ncurses.h>
 #include <limits.h>
-#include <strings.h>
 
-#include "../bento4/ISOBMFFTrackJoiner.h"
 #include "../atsc3_isobmff_tools.h"
 
 #include "../atsc3_listener_udp.h"
@@ -288,7 +297,6 @@ int main(int argc,char **argv) {
     _PLAYER_FFPLAY_TRACE_ENABLED = 0;
     _ALC_UTILS_DEBUG_ENABLED = 1;
     _ALC_UTILS_TRACE_ENABLED = 1;
-    _ISOBMFFTRACKJOINER_DEBUG_ENABLED = 0;
 
     char *dev;
 
@@ -300,8 +308,9 @@ int main(int argc,char **argv) {
     int dst_ip_port_filter_int;
     int dst_packet_id_filter_int;
 
+#ifndef _WIN32
     sigset_t player_signal_mask;
-
+#endif
 
     //listen to all flows
     if(argc == 2) {
@@ -379,6 +388,8 @@ int main(int argc,char **argv) {
 
 #ifndef _TEST_RUN_VALGRIND_OSX_
 
+
+#ifndef _WIN32
 	//block sigpipe before creating our threads
 	sigemptyset (&player_signal_mask);
 	sigaddset (&player_signal_mask, SIGPIPE);
@@ -387,10 +398,14 @@ int main(int argc,char **argv) {
 		  __WARN("Unable to block SIGPIPE, this may result in a runtime crash when closing ffplay!");
 	}
 
-
 	pthread_t global_ncurses_input_thread_id;
 	int ncurses_input_ret = pthread_create(&global_ncurses_input_thread_id, NULL, ncurses_input_run_thread, (void*)lls_slt_monitor);
 	assert(!ncurses_input_ret);
+
+	pthread_t global_slt_thread_id;
+	pthread_create(&global_slt_thread_id, NULL, print_lls_instance_table_thread, (void*)lls_slt_monitor);
+
+#endif
 
 	pthread_t global_bandwidth_thread_id;
 	pthread_create(&global_bandwidth_thread_id, NULL, print_bandwidth_statistics_thread, NULL);
@@ -398,8 +413,6 @@ int main(int argc,char **argv) {
 	pthread_t global_stats_thread_id;
 	pthread_create(&global_stats_thread_id, NULL, print_mfu_statistics_thread, NULL);
 
-	pthread_t global_slt_thread_id;
-	pthread_create(&global_slt_thread_id, NULL, print_lls_instance_table_thread, (void*)lls_slt_monitor);
 
 	
 	pthread_t global_pcap_thread_id;
@@ -408,7 +421,11 @@ int main(int argc,char **argv) {
 
     
 	pthread_join(global_pcap_thread_id, NULL);
+
+#ifndef _WIN32
+
 	pthread_join(global_ncurses_input_thread_id, NULL);
+#endif
 
 #else
 	pcap_loop_run_thread(dev);

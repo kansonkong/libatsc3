@@ -33,7 +33,10 @@ typedef void(*atsc3_stltp_baseband_alp_packet_collection_callback_with_pcap_devi
 
 
 typedef void(*atsc3_stltp_preamble_packet_collection_callback_f)(atsc3_stltp_preamble_packet_tv* atsc3_stltp_preamble_packet_v);
+typedef void(*atsc3_stltp_preamble_packet_collection_callback_with_context_f)(atsc3_stltp_preamble_packet_tv* atsc3_stltp_preamble_packet_v, void* context);
+
 typedef void(*atsc3_stltp_timing_management_packet_collection_callback_f)(atsc3_stltp_timing_management_packet_tv* atsc3_stltp_timing_management_packet_v);
+typedef void(*atsc3_stltp_timing_management_packet_collection_callback_with_context_f)(atsc3_stltp_timing_management_packet_tv* atsc3_stltp_timing_management_packet_v, void* context);
 
 
 //jjustman-2020-08-11- TODO: extend this to contain the relevant bootstrap reference emission time for re-modulation
@@ -54,7 +57,6 @@ typedef struct atsc3_stltp_depacketizer_context {
 	//no context
 	atsc3_stltp_baseband_alp_packet_collection_callback_f								atsc3_stltp_baseband_alp_packet_collection_callback; //callback method for our alp packet collection for a/331 processing
 
-
 	//generic context for class instance re-scoping
 	atsc3_stltp_baseband_alp_packet_collection_callback_with_context_f					atsc3_stltp_baseband_alp_packet_collection_callback_with_context; //callback method for our alp packet collection for a/331 processing
 	void*																				atsc3_stltp_baseband_alp_packet_collection_callback_context; //if needed for instance casting...
@@ -73,8 +75,14 @@ typedef struct atsc3_stltp_depacketizer_context {
 
 
     atsc3_stltp_preamble_packet_collection_callback_f 									atsc3_stltp_preamble_packet_collection_callback;
+
+	atsc3_stltp_preamble_packet_collection_callback_with_context_f						atsc3_stltp_preamble_packet_collection_callback_with_context;
+	void*																				atsc3_stltp_preamble_packet_collection_callback_context;
+
     atsc3_stltp_timing_management_packet_collection_callback_f 							atsc3_stltp_timing_management_packet_collection_callback;
 
+	atsc3_stltp_timing_management_packet_collection_callback_with_context_f				atsc3_stltp_timing_management_packet_collection_callback_with_context;
+	void*																				atsc3_stltp_timing_management_packet_collection_callback_context;
 
 } atsc3_stltp_depacketizer_context_t;
 

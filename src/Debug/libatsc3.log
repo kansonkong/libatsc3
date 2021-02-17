@@ -1,0 +1,109 @@
+﻿C:\Program Files (x86)\Microsoft Visual Studio\2019\Professional\MSBuild\Microsoft\VC\v160\Microsoft.CppBuild.targets(1044,5): warning MSB8027: Two or more files with the name of apputil.cpp will produce outputs to the same location. This can lead to an incorrect build result.  The files involved are phy\virtual\srt\apputil.cpp, srt-work-in-progress\apputil.cpp.
+C:\Program Files (x86)\Microsoft Visual Studio\2019\Professional\MSBuild\Microsoft\VC\v160\Microsoft.CppBuild.targets(1044,5): warning MSB8027: Two or more files with the name of logsupport.cpp will produce outputs to the same location. This can lead to an incorrect build result.  The files involved are phy\virtual\srt\logsupport.cpp, srt-work-in-progress\logsupport.cpp.
+C:\Program Files (x86)\Microsoft Visual Studio\2019\Professional\MSBuild\Microsoft\VC\v160\Microsoft.CppBuild.targets(1044,5): warning MSB8027: Two or more files with the name of socketoptions.cpp will produce outputs to the same location. This can lead to an incorrect build result.  The files involved are phy\virtual\srt\socketoptions.cpp, srt-work-in-progress\socketoptions.cpp.
+C:\Program Files (x86)\Microsoft Visual Studio\2019\Professional\MSBuild\Microsoft\VC\v160\Microsoft.CppBuild.targets(1044,5): warning MSB8027: Two or more files with the name of transmitmedia.cpp will produce outputs to the same location. This can lead to an incorrect build result.  The files involved are phy\virtual\srt\transmitmedia.cpp, srt-work-in-progress\transmitmedia.cpp.
+C:\Program Files (x86)\Microsoft Visual Studio\2019\Professional\MSBuild\Microsoft\VC\v160\Microsoft.CppBuild.targets(1044,5): warning MSB8027: Two or more files with the name of uriparser.cpp will produce outputs to the same location. This can lead to an incorrect build result.  The files involved are phy\virtual\srt\uriparser.cpp, srt-work-in-progress\uriparser.cpp.
+C:\Program Files (x86)\Microsoft Visual Studio\2019\Professional\MSBuild\Microsoft\VC\v160\Microsoft.CppBuild.targets(1044,5): warning MSB8027: Two or more files with the name of verbose.cpp will produce outputs to the same location. This can lead to an incorrect build result.  The files involved are phy\virtual\srt\verbose.cpp, srt-work-in-progress\verbose.cpp.
+C:\Program Files (x86)\Microsoft Visual Studio\2019\Professional\MSBuild\Microsoft\VC\v160\Microsoft.CppBuild.targets(1044,5): warning MSB8027: Two or more files with the name of PcapSTLTPVirtualPHYTest.cpp will produce outputs to the same location. This can lead to an incorrect build result.  The files involved are phy_tests\PcapSTLTPVirtualPHYTest.cpp, tools\PcapSTLTPVirtualPHYTest.cpp.
+  a324_dstp_lls_aeat_emission_test.cpp
+C:\Users\LabUser\source\repos\libatsc3\src\a324_tests\a324_dstp_lls_aeat_emission_test.cpp(12,10): fatal error C1083: Cannot open include file: 'pcap.h': No such file or directory
+  atsc3_core_service_player_bridge.cpp
+C:\Users\LabUser\source\repos\libatsc3\src\atsc3_core_service_player_bridge.h(13,10): fatal error C1083: Cannot open include file: 'sys/ioctl.h': No such file or directory
+  atsc3_isobmff_tools.cpp
+C:\Users\LabUser\source\repos\libatsc3\src\atsc3_utils.h(7,9): warning C4068: unknown pragma 'GCC'
+C:\Users\LabUser\source\repos\libatsc3\src\atsc3_utils.h(22,10): fatal error C1083: Cannot open include file: 'strings.h': No such file or directory
+  ISOBMFFTrackJoiner.cpp
+C:\Users\LabUser\source\repos\libatsc3\src\atsc3_utils.h(7,9): warning C4068: unknown pragma 'GCC'
+C:\Users\LabUser\source\repos\libatsc3\src\atsc3_utils.h(22,10): fatal error C1083: Cannot open include file: 'strings.h': No such file or directory
+  ISOBMFFTrackJoiner_mock.cpp
+C:\Users\LabUser\source\repos\libatsc3\src\atsc3_utils.h(7,9): warning C4068: unknown pragma 'GCC'
+C:\Users\LabUser\source\repos\libatsc3\src\atsc3_utils.h(22,10): fatal error C1083: Cannot open include file: 'strings.h': No such file or directory
+  MPUProcessor.cpp
+C:\Users\LabUser\source\repos\libatsc3\src\bento4\MPUProcessor.cpp(42,10): fatal error C1083: Cannot open include file: 'Ap4.h': No such file or directory
+  MPUtoISOBMFFProcessor.cpp
+C:\Users\LabUser\source\repos\libatsc3\src\bento4\MPUtoISOBMFFProcessor.cpp(41,10): fatal error C1083: Cannot open include file: 'Ap4.h': No such file or directory
+  atsc3_alc_listener_test.cpp
+C:\Users\LabUser\source\repos\libatsc3\src\listener_tests\atsc3_alc_listener_test.cpp(28,10): fatal error C1083: Cannot open include file: 'pcap.h': No such file or directory
+  atsc3_lls_listener_test.cpp
+C:\Users\LabUser\source\repos\libatsc3\src\listener_tests\atsc3_lls_listener_test.cpp(28,10): fatal error C1083: Cannot open include file: 'pcap.h': No such file or directory
+  atsc3_mmt_context_mfu_depacketizer_test.cpp
+C:\Users\LabUser\source\repos\libatsc3\src\listener_tests\atsc3_mmt_context_mfu_depacketizer_test.cpp(19,10): fatal error C1083: Cannot open include file: 'sys/ioctl.h': No such file or directory
+  atsc3_mmt_context_stpp_depacketizer_test.cpp
+C:\Users\LabUser\source\repos\libatsc3\src\listener_tests\atsc3_mmt_context_stpp_depacketizer_test.cpp(19,10): fatal error C1083: Cannot open include file: 'sys/ioctl.h': No such file or directory
+  atsc3_mmt_listener_test.cpp
+C:\Users\LabUser\source\repos\libatsc3\src\listener_tests\atsc3_mmt_listener_test.cpp(10,10): fatal error C1083: Cannot open include file: 'pcap.h': No such file or directory
+  atsc3_mmt_sls_listener_test.cpp
+C:\Users\LabUser\source\repos\libatsc3\src\listener_tests\atsc3_mmt_sls_listener_test.cpp(22,10): fatal error C1083: Cannot open include file: 'sys/ioctl.h': No such file or directory
+  atsc3_stltp_alp_listener_reflector_test.cpp
+C:\Users\LabUser\source\repos\libatsc3\src\listener_tests\atsc3_stltp_alp_listener_reflector_test.cpp(12,10): fatal error C1083: Cannot open include file: 'pcap.h': No such file or directory
+  atsc3_stltp_alp_listener_reflector_test_inline.cpp
+C:\Users\LabUser\source\repos\libatsc3\src\listener_tests\atsc3_stltp_alp_listener_reflector_test_inline.cpp(12,10): fatal error C1083: Cannot open include file: 'pcap.h': No such file or directory
+  atsc3_stltp_alp_listener_test.cpp
+C:\Users\LabUser\source\repos\libatsc3\src\listener_tests\atsc3_stltp_alp_listener_test.cpp(10,10): fatal error C1083: Cannot open include file: 'pcap.h': No such file or directory
+  atsc3_stltp_listener_test.cpp
+C:\Users\LabUser\source\repos\libatsc3\src\listener_tests\atsc3_stltp_listener_test.cpp(10,10): fatal error C1083: Cannot open include file: 'pcap.h': No such file or directory
+  atsc3_listener_metrics_test.cpp
+  atsc3_listener_test.cpp
+  atsc3_mmt_listener_test_bento.cpp
+  Generating Code...
+  Compiling...
+  PcapDemuxedVirtualPHY.cpp
+C:\Users\LabUser\source\repos\libatsc3\src\phy\virtual\PcapDemuxedVirtualPHY.h(13,10): fatal error C1083: Cannot open include file: 'semaphore.h': No such file or directory
+  PcapSTLTPVirtualPHY.cpp
+C:\Users\LabUser\source\repos\libatsc3\src\phy\virtual\PcapSTLTPVirtualPHY.h(13,10): fatal error C1083: Cannot open include file: 'semaphore.h': No such file or directory
+  SRTRxSTLTPVirtualPHY.cpp
+C:\Users\LabUser\source\repos\libatsc3\src\phy\virtual\SRTRxSTLTPVirtualPHY.h(20,10): fatal error C1083: Cannot open include file: 'phy/IAtsc3NdkPHYClient.h': No such file or directory
+  apputil.cpp
+C:\Users\LabUser\source\repos\libatsc3\src\phy\virtual\srt\apputil.hpp(21,10): fatal error C1083: Cannot open include file: 'srtcore/netinet_any.h': No such file or directory
+  atsc3_srt_live_receiver.cpp
+C:\Users\LabUser\source\repos\libatsc3\src\phy\virtual\srt\apputil.hpp(21,10): fatal error C1083: Cannot open include file: 'srtcore/netinet_any.h': No such file or directory
+  haicrypt_log.cpp
+  logsupport.cpp
+C:\Users\LabUser\source\repos\libatsc3\src\phy\virtual\srt\logsupport.hpp(14,10): fatal error C1083: Cannot open include file: 'srtcore/srt.h': No such file or directory
+  socketoptions.cpp
+C:\Users\LabUser\source\repos\libatsc3\src\phy\virtual\srt\socketoptions.hpp(18,10): fatal error C1083: Cannot open include file: 'srtcore/srt.h': No such file or directory
+  transmitmedia.cpp
+C:\Users\LabUser\source\repos\libatsc3\src\phy\virtual\srt\transmitmedia.cpp(30,10): fatal error C1083: Cannot open include file: 'srtcore/srt.h': No such file or directory
+  uriparser.cpp
+C:\Users\LabUser\source\repos\libatsc3\src\phy\virtual\srt\uriparser.hpp(17,10): fatal error C1083: Cannot open include file: 'srtcore/utilities.h': No such file or directory
+  verbose.cpp
+  PcapDemuxedVirtualPHYTest.cpp
+C:\Users\LabUser\source\repos\libatsc3\src\phy_tests\PcapDemuxedVirtualPHYTest.cpp(12,10): fatal error C1083: Cannot open include file: 'atsc3_utils.h': No such file or directory
+  PcapSTLTPVirtualPHYTest.cpp
+C:\Users\LabUser\source\repos\libatsc3\src\phy_tests\PcapSTLTPVirtualPHYTest.cpp(12,10): fatal error C1083: Cannot open include file: 'atsc3_utils.h': No such file or directory
+  SRTRxSTLTPVirtualPHYTest.cpp
+C:\Users\LabUser\source\repos\libatsc3\src\phy_tests\SRTRxSTLTPVirtualPHYTest.cpp(12,10): fatal error C1083: Cannot open include file: 'atsc3_utils.h': No such file or directory
+  apputil.cpp
+C:\Users\LabUser\source\repos\libatsc3\src\srt-work-in-progress\apputil.hpp(21,10): fatal error C1083: Cannot open include file: 'netinet_any.h': No such file or directory
+  Atsc3SRT_live_transmit.cpp
+C:\Users\LabUser\source\repos\libatsc3\src\srt-work-in-progress\apputil.hpp(21,10): fatal error C1083: Cannot open include file: 'netinet_any.h': No such file or directory
+  logsupport.cpp
+C:\Users\LabUser\source\repos\libatsc3\src\srt-work-in-progress\logsupport.hpp(14,10): fatal error C1083: Cannot open include file: '../srtcore/srt.h': No such file or directory
+  socketoptions.cpp
+C:\Users\LabUser\source\repos\libatsc3\src\srt-work-in-progress\socketoptions.hpp(18,10): fatal error C1083: Cannot open include file: '../srtcore/srt.h': No such file or directory
+  transmitmedia.cpp
+C:\Users\LabUser\source\repos\libatsc3\src\srt-work-in-progress\transmitmedia.cpp(21,10): fatal error C1083: Cannot open include file: 'srt.h': No such file or directory
+  uriparser.cpp
+C:\Users\LabUser\source\repos\libatsc3\src\srt-work-in-progress\uriparser.hpp(17,10): fatal error C1083: Cannot open include file: 'utilities.h': No such file or directory
+  Generating Code...
+  Compiling...
+  verbose.cpp
+  atsc3_alc_listener_mde_writer.cpp
+C:\Users\LabUser\source\repos\libatsc3\src\tools\atsc3_alc_listener_mde_writer.cpp(21,10): fatal error C1083: Cannot open include file: 'pcap.h': No such file or directory
+  atsc3_alc_listener_mde_writer_from_stltp_pcap.cpp
+C:\Users\LabUser\source\repos\libatsc3\src\tools\atsc3_alc_listener_mde_writer_from_stltp_pcap.cpp(19,10): fatal error C1083: Cannot open include file: 'pcap.h': No such file or directory
+  atsc3_listener_metrics_ncurses.cpp
+C:\Users\LabUser\source\repos\libatsc3\src\tools\atsc3_listener_metrics_ncurses.cpp(57,10): fatal error C1083: Cannot open include file: 'pcap.h': No such file or directory
+  atsc3_listener_metrics_ncurses_httpd_isobmff.cpp
+C:\Users\LabUser\source\repos\libatsc3\src\tools\atsc3_listener_metrics_ncurses_httpd_isobmff.cpp(21,10): fatal error C1083: Cannot open include file: 'pcap.h': No such file or directory
+  atsc3_mmt_listener_to_http_hls_fmp4.cpp
+C:\Users\LabUser\source\repos\libatsc3\src\tools\atsc3_mmt_listener_to_http_hls_fmp4.cpp(19,10): fatal error C1083: Cannot open include file: 'pcap.h': No such file or directory
+  atsc3_mmt_mfu_monitor.cpp
+C:\Users\LabUser\source\repos\libatsc3\src\tools\atsc3_mmt_mfu_monitor.cpp(14,10): fatal error C1083: Cannot open include file: 'pcap.h': No such file or directory
+  atsc3_pcap_stltp_preamble_timing_management_validate.cpp
+C:\Users\LabUser\source\repos\libatsc3\src\tools\atsc3_pcap_stltp_preamble_timing_management_validate.cpp(12,10): fatal error C1083: Cannot open include file: 'atsc3_utils.h': No such file or directory
+  atsc3_srt_rx_stltp_virtual_phy_alc_listener_writer.cpp
+C:\Users\LabUser\source\repos\libatsc3\src\tools\atsc3_srt_rx_stltp_virtual_phy_alc_listener_writer.cpp(16,10): fatal error C1083: Cannot open include file: 'atsc3_utils.h': No such file or directory
+  PcapSTLTPVirtualPHYTest.cpp
+C:\Users\LabUser\source\repos\libatsc3\src\tools\PcapSTLTPVirtualPHYTest.cpp(12,10): fatal error C1083: Cannot open include file: 'atsc3_utils.h': No such file or directory
+  Generating Code...

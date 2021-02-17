@@ -1,0 +1,346 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup Label="ProjectConfigurations">
+    <ProjectConfiguration Include="Debug|Win32">
+      <Configuration>Debug</Configuration>
+      <Platform>Win32</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Release|Win32">
+      <Configuration>Release</Configuration>
+      <Platform>Win32</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Debug|x64">
+      <Configuration>Debug</Configuration>
+      <Platform>x64</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Release|x64">
+      <Configuration>Release</Configuration>
+      <Platform>x64</Platform>
+    </ProjectConfiguration>
+  </ItemGroup>
+  <PropertyGroup Label="Globals">
+    <VCProjectVersion>16.0</VCProjectVersion>
+    <ProjectGuid>{2907F29F-4C5F-4B7E-9271-5EA623CFCDDF}</ProjectGuid>
+    <Keyword>Win32Proj</Keyword>
+    <WindowsTargetPlatformVersion>10.0</WindowsTargetPlatformVersion>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
+    <ConfigurationType>DynamicLibrary</ConfigurationType>
+    <UseDebugLibraries>true</UseDebugLibraries>
+    <PlatformToolset>v142</PlatformToolset>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="Configuration">
+    <ConfigurationType>DynamicLibrary</ConfigurationType>
+    <UseDebugLibraries>false</UseDebugLibraries>
+    <PlatformToolset>v142</PlatformToolset>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" Label="Configuration">
+    <ConfigurationType>StaticLibrary</ConfigurationType>
+    <UseDebugLibraries>true</UseDebugLibraries>
+    <PlatformToolset>v142</PlatformToolset>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" Label="Configuration">
+    <ConfigurationType>Application</ConfigurationType>
+    <UseDebugLibraries>false</UseDebugLibraries>
+    <PlatformToolset>v142</PlatformToolset>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
+  <ImportGroup Label="ExtensionSettings">
+  </ImportGroup>
+  <ImportGroup Label="Shared">
+  </ImportGroup>
+  <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <PropertyGroup Label="UserMacros" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+    <LinkIncremental>true</LinkIncremental>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+    <LinkIncremental>true</LinkIncremental>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
+    <IncludePath>../srt;../srt/common;.;C:\pthread-win32\cinegy.pthreads-win64.2.9.1.17\sources;../WpdPack/Include;../WpdPack/Include/pcap;../vcpkg/packages/zlib_x64-windows/include;C:\Program Files\OpenSSL-Win64\include;../pcre2-win-build/include;$(IncludePath)</IncludePath>
+  </PropertyGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+    <ClCompile>
+      <PreprocessorDefinitions>WIN32;_DEBUG;_WINDOWS;_USRDLL;LIBATSC3_EXPORTS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <RuntimeLibrary>MultiThreadedDebugDLL</RuntimeLibrary>
+      <WarningLevel>Level3</WarningLevel>
+      <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
+      <Optimization>Disabled</Optimization>
+    </ClCompile>
+    <Link>
+      <TargetMachine>MachineX86</TargetMachine>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+      <SubSystem>Windows</SubSystem>
+    </Link>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+    <ClCompile>
+      <PreprocessorDefinitions>WIN32;NDEBUG;_WINDOWS;_USRDLL;LIBATSC3_EXPORTS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <RuntimeLibrary>MultiThreadedDLL</RuntimeLibrary>
+      <WarningLevel>Level3</WarningLevel>
+      <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
+    </ClCompile>
+    <Link>
+      <TargetMachine>MachineX86</TargetMachine>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+      <SubSystem>Windows</SubSystem>
+      <EnableCOMDATFolding>true</EnableCOMDATFolding>
+      <OptimizeReferences>true</OptimizeReferences>
+    </Link>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
+    <ClCompile>
+      <PreprocessorDefinitions>WIN32;_WINDOWS;ENABLE_LOGGING=1;SRT_EXPORTS;SRT_DYNAMIC;SRT_ENABLE_APP_READER;SRT_ENABLE_CLOSE_SYNCH;_WIN32_WINNT=0x0600;HAVE_INET_PTON=1;USE_OPENSSL=1;SRT_ENABLE_ENCRYPTION;WIN32=1;PTW32_STATIC_LIB=1;_GNU_SOURCE;HAI_PATCH=1;HAI_ENABLE_SRT=1;SRT_VERSION="1.4.1";CMAKE_INTDIR="Debug"</PreprocessorDefinitions>
+      <WarningLevel>Level3</WarningLevel>
+      <TreatSpecificWarningsAsErrors>4005;%(TreatSpecificWarningsAsErrors)</TreatSpecificWarningsAsErrors>
+      <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
+    </ClCompile>
+    <Link>
+      <AdditionalDependencies>../WpdPack/Lib/x64/Packet.lib;../WpdPack/Lib/x64/wpcap.lib;../vcpkg/packages/zlib_x64-windows/lib/zlib.lib;C:\pthread-win32\cinegy.pthreads-win64.2.9.1.17\runtimes\win-x64\native\release\pthread_lib.lib;C:\Program Files\OpenSSL-Win64\lib\libssl.lib;C:\Program Files\OpenSSL-Win64\lib\libcrypto.lib;%(AdditionalDependencies)</AdditionalDependencies>
+    </Link>
+    <Lib>
+      <AdditionalDependencies>../WpdPack/Lib/x64/Packet.lib;../WpdPack/Lib/x64/wpcap.lib;../vcpkg/packages/zlib_x64-windows/lib/zlib.lib;C:\pthread-win32\cinegy.pthreads-win64.2.9.1.17\runtimes\win-x64\native\release\pthread_lib.lib;C:\Program Files\OpenSSL-Win64\lib\libssl_static.lib;C:\Program Files\OpenSSL-Win64\lib\libcrypto_static.lib;%(AdditionalDependencies)</AdditionalDependencies>
+    </Lib>
+  </ItemDefinitionGroup>
+  <ItemGroup>
+    <ClCompile Include="atsc3_a344_receiver_query_api.c" />
+    <ClCompile Include="atsc3_aeat_parser.c" />
+    <ClCompile Include="atsc3_aeat_types.c" />
+    <ClCompile Include="atsc3_alc_rx.c" />
+    <ClCompile Include="atsc3_alc_session.c" />
+    <ClCompile Include="atsc3_alc_utils.c" />
+    <ClCompile Include="atsc3_alp_parser.c" />
+    <ClCompile Include="atsc3_alp_types.c" />
+    <ClCompile Include="atsc3_bandwidth_statistics.c" />
+    <ClCompile Include="atsc3_baseband_packet_types.c" />
+    <ClCompile Include="atsc3_fdt.c" />
+    <ClCompile Include="atsc3_fdt_parser.c" />
+    <ClCompile Include="atsc3_gzip.c" />
+    <ClCompile Include="atsc3_ip_udp_rtp_parser.c" />
+    <ClCompile Include="atsc3_listener_udp.c" />
+    <ClCompile Include="atsc3_lls.c" />
+    <ClCompile Include="atsc3_lls_alc_utils.c" />
+    <ClCompile Include="atsc3_lls_mmt_utils.c" />
+    <ClCompile Include="atsc3_lls_sls_monitor_output_buffer.c" />
+    <ClCompile Include="atsc3_lls_sls_monitor_output_buffer_utils.c" />
+    <ClCompile Include="atsc3_lls_sls_parser.c" />
+    <ClCompile Include="atsc3_lls_slt_parser.c" />
+    <ClCompile Include="atsc3_lls_types.c" />
+    <ClCompile Include="atsc3_logging_externs.c" />
+    <ClCompile Include="atsc3_mbms_envelope_parser.c" />
+    <ClCompile Include="atsc3_mbms_envelope_xml.c" />
+    <ClCompile Include="atsc3_mime_multipart_related.c" />
+    <ClCompile Include="atsc3_mime_multipart_related_parser.c" />
+    <ClCompile Include="atsc3_mmtp_ntp32_to_pts.c" />
+    <ClCompile Include="atsc3_mmtp_packet_types.c" />
+    <ClCompile Include="atsc3_mmtp_packet_utils.c" />
+    <ClCompile Include="atsc3_mmtp_parser.c" />
+    <ClCompile Include="atsc3_mmt_context_mfu_depacketizer.c" />
+    <ClCompile Include="atsc3_mmt_mpu_parser.c" />
+    <ClCompile Include="atsc3_mmt_mpu_sample_format_parser.c" />
+    <ClCompile Include="atsc3_mmt_mpu_utils.c" />
+    <ClCompile Include="atsc3_mmt_reconstitution_from_media_sample.c" />
+    <ClCompile Include="atsc3_mmt_signalling_message.c" />
+    <ClCompile Include="atsc3_packet_statistics.c" />
+    <ClCompile Include="atsc3_packet_statistics_types.c" />
+    <ClCompile Include="atsc3_pcap_type.c" />
+    <ClCompile Include="atsc3_pcre2_regex_utils.c" />
+    <ClCompile Include="atsc3_route_dash_utils.c" />
+    <ClCompile Include="atsc3_route_mpd.c" />
+    <ClCompile Include="atsc3_route_object.c" />
+    <ClCompile Include="atsc3_route_package_utils.c" />
+    <ClCompile Include="atsc3_route_sls_processor.c" />
+    <ClCompile Include="atsc3_route_s_tsid.c" />
+    <ClCompile Include="atsc3_route_usbd.c" />
+    <ClCompile Include="atsc3_sls_alc_flow.c" />
+    <ClCompile Include="atsc3_sls_held_fragment.c" />
+    <ClCompile Include="atsc3_sls_metadata_fragment_types.c" />
+    <ClCompile Include="atsc3_sls_metadata_fragment_types_parser.c" />
+    <ClCompile Include="atsc3_sl_tlv_demod_type.c" />
+    <ClCompile Include="atsc3_stltp_depacketizer.c" />
+    <ClCompile Include="atsc3_stltp_depacketizer_context.c" />
+    <ClCompile Include="atsc3_stltp_parser.c" />
+    <ClCompile Include="atsc3_stltp_types.c" />
+    <ClCompile Include="atsc3_udp.c" />
+    <ClCompile Include="atsc3_utils.c" />
+    <ClCompile Include="atsc3_utils_sha256.c" />
+    <ClCompile Include="avl.c" />
+    <ClCompile Include="endianess.c" />
+    <ClCompile Include="fixups_timespec_get.c" />
+    <ClCompile Include="phy\virtual\PcapDemuxedVirtualPHY.cpp" />
+    <ClCompile Include="phy\virtual\PcapSTLTPVirtualPHY.cpp" />
+    <ClCompile Include="phy\virtual\SRTRxSTLTPVirtualPHY.cpp" />
+    <ClCompile Include="phy\virtual\srt\apputil.cpp" />
+    <ClCompile Include="phy\virtual\srt\atsc3_srt_live_receiver.cpp" />
+    <ClCompile Include="phy\virtual\srt\haicrypt\cryspr-openssl.c" />
+    <ClCompile Include="phy\virtual\srt\haicrypt\cryspr.c" />
+    <ClCompile Include="phy\virtual\srt\haicrypt\haicrypt_log.cpp" />
+    <ClCompile Include="phy\virtual\srt\haicrypt\hcrypt.c" />
+    <ClCompile Include="phy\virtual\srt\haicrypt\hcrypt_ctx_rx.c" />
+    <ClCompile Include="phy\virtual\srt\haicrypt\hcrypt_ctx_tx.c" />
+    <ClCompile Include="phy\virtual\srt\haicrypt\hcrypt_rx.c" />
+    <ClCompile Include="phy\virtual\srt\haicrypt\hcrypt_sa.c" />
+    <ClCompile Include="phy\virtual\srt\haicrypt\hcrypt_tx.c" />
+    <ClCompile Include="phy\virtual\srt\haicrypt\hcrypt_xpt_srt.c" />
+    <ClCompile Include="phy\virtual\srt\logsupport.cpp" />
+    <ClCompile Include="phy\virtual\srt\socketoptions.cpp" />
+    <ClCompile Include="phy\virtual\srt\transmitmedia.cpp" />
+    <ClCompile Include="phy\virtual\srt\uriparser.cpp" />
+    <ClCompile Include="phy\virtual\srt\verbose.cpp" />
+    <ClCompile Include="strnstr.c" />
+    <ClCompile Include="xml.c" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="application\IAtsc3NdkApplicationBridge.h" />
+    <ClInclude Include="atsc3_a332_oma_bcast_types.h" />
+    <ClInclude Include="atsc3_a344_receiver_query_api.h" />
+    <ClInclude Include="atsc3_aeat_parser.h" />
+    <ClInclude Include="atsc3_aeat_types.h" />
+    <ClInclude Include="atsc3_alc_rx.h" />
+    <ClInclude Include="atsc3_alc_session.h" />
+    <ClInclude Include="atsc3_alc_utils.h" />
+    <ClInclude Include="atsc3_alp_parser.h" />
+    <ClInclude Include="atsc3_alp_types.h" />
+    <ClInclude Include="atsc3_bandwidth_statistics.h" />
+    <ClInclude Include="atsc3_baseband_packet_types.h" />
+    <ClInclude Include="atsc3_dstp_types.h" />
+    <ClInclude Include="atsc3_fdt.h" />
+    <ClInclude Include="atsc3_fdt_parser.h" />
+    <ClInclude Include="atsc3_gzip.h" />
+    <ClInclude Include="atsc3_hevc_nal_extractor.h" />
+    <ClInclude Include="atsc3_ip_udp_rtp_parser.h" />
+    <ClInclude Include="atsc3_ip_udp_rtp_types.h" />
+    <ClInclude Include="atsc3_isobmff_tools.h" />
+    <ClInclude Include="atsc3_isobmff_trun_box.h" />
+    <ClInclude Include="atsc3_lct_hdr.h" />
+    <ClInclude Include="atsc3_listener_udp.h" />
+    <ClInclude Include="atsc3_lls.h" />
+    <ClInclude Include="atsc3_lls_alc_utils.h" />
+    <ClInclude Include="atsc3_lls_mmt_utils.h" />
+    <ClInclude Include="atsc3_lls_sls_monitor_output_buffer.h" />
+    <ClInclude Include="atsc3_lls_sls_monitor_output_buffer_utils.h" />
+    <ClInclude Include="atsc3_lls_sls_parser.h" />
+    <ClInclude Include="atsc3_lls_slt_parser.h" />
+    <ClInclude Include="atsc3_lls_slt_utils.h" />
+    <ClInclude Include="atsc3_lls_types.h" />
+    <ClInclude Include="atsc3_logging_externs.h" />
+    <ClInclude Include="atsc3_mbms_envelope_parser.h" />
+    <ClInclude Include="atsc3_mbms_envelope_xml.h" />
+    <ClInclude Include="atsc3_mime_multipart_related.h" />
+    <ClInclude Include="atsc3_mime_multipart_related_parser.h" />
+    <ClInclude Include="atsc3_mmtp_ntp32_to_pts.h" />
+    <ClInclude Include="atsc3_mmtp_packet_types.h" />
+    <ClInclude Include="atsc3_mmtp_packet_utils.h" />
+    <ClInclude Include="atsc3_mmtp_parser.h" />
+    <ClInclude Include="atsc3_mmt_context_mfu_depacketizer.h" />
+    <ClInclude Include="atsc3_mmt_context_mpu_depacketizer.h" />
+    <ClInclude Include="atsc3_mmt_context_signalling_information_depacketizer.h" />
+    <ClInclude Include="atsc3_mmt_mpu_parser.h" />
+    <ClInclude Include="atsc3_mmt_mpu_sample_format_parser.h" />
+    <ClInclude Include="atsc3_mmt_mpu_sample_format_type.h" />
+    <ClInclude Include="atsc3_mmt_mpu_utils.h" />
+    <ClInclude Include="atsc3_mmt_reconstitution_from_media_sample.h" />
+    <ClInclude Include="atsc3_mmt_signalling_message.h" />
+    <ClInclude Include="atsc3_mmt_signalling_message_types.h" />
+    <ClInclude Include="atsc3_monitor_events_alc.h" />
+    <ClInclude Include="atsc3_monitor_events_lls.h" />
+    <ClInclude Include="atsc3_monitor_events_sls.h" />
+    <ClInclude Include="atsc3_packet_statistics.h" />
+    <ClInclude Include="atsc3_pcap_type.h" />
+    <ClInclude Include="atsc3_route_dash_utils.h" />
+    <ClInclude Include="atsc3_route_mpd.h" />
+    <ClInclude Include="atsc3_route_object.h" />
+    <ClInclude Include="atsc3_route_package_utils.h" />
+    <ClInclude Include="atsc3_route_sls_processor.h" />
+    <ClInclude Include="atsc3_route_s_tsid.h" />
+    <ClInclude Include="atsc3_route_usbd.h" />
+    <ClInclude Include="atsc3_sls_alc_flow.h" />
+    <ClInclude Include="atsc3_sls_held_fragment.h" />
+    <ClInclude Include="atsc3_sls_metadata_fragment_types.h" />
+    <ClInclude Include="atsc3_sls_metadata_fragment_types_parser.h" />
+    <ClInclude Include="atsc3_sl_tlv_demod_type.h" />
+    <ClInclude Include="atsc3_stltp_depacketizer.h" />
+    <ClInclude Include="atsc3_stltp_depacketizer_context.h" />
+    <ClInclude Include="atsc3_stltp_parser.h" />
+    <ClInclude Include="atsc3_stltp_types.h" />
+    <ClInclude Include="atsc3_udp.h" />
+    <ClInclude Include="atsc3_utils.h" />
+    <ClInclude Include="atsc3_utils_sha256.h" />
+    <ClInclude Include="atsc3_vector_builder.h" />
+    <ClInclude Include="fixups.h" />
+    <ClInclude Include="win_stdatomic.h" />
+    <ClInclude Include="libtree.h" />
+    <ClInclude Include="phy\IAtsc3NdkPHYBridge.h" />
+    <ClInclude Include="phy\IAtsc3NdkPHYClient.h" />
+    <ClInclude Include="phy\virtual\PcapDemuxedVirtualPHY.h" />
+    <ClInclude Include="phy\virtual\PcapSTLTPVirtualPHY.h" />
+    <ClInclude Include="phy\virtual\SRTRxSTLTPVirtualPHY.h" />
+    <ClInclude Include="phy\virtual\srt\apputil.hpp" />
+    <ClInclude Include="phy\virtual\srt\atsc3_srt_live_receiver.h" />
+    <ClInclude Include="phy\virtual\srt\atsc3_srt_target.h" />
+    <ClInclude Include="phy\virtual\srt\haicrypt\cryspr-config.h" />
+    <ClInclude Include="phy\virtual\srt\haicrypt\cryspr-gnutls.h" />
+    <ClInclude Include="phy\virtual\srt\haicrypt\cryspr-mbedtls.h" />
+    <ClInclude Include="phy\virtual\srt\haicrypt\cryspr-openssl.h" />
+    <ClInclude Include="phy\virtual\srt\haicrypt\cryspr.h" />
+    <ClInclude Include="phy\virtual\srt\haicrypt\haicrypt.h" />
+    <ClInclude Include="phy\virtual\srt\haicrypt\haicrypt_log.h" />
+    <ClInclude Include="phy\virtual\srt\haicrypt\hcrypt.h" />
+    <ClInclude Include="phy\virtual\srt\haicrypt\hcrypt_ctx.h" />
+    <ClInclude Include="phy\virtual\srt\haicrypt\hcrypt_msg.h" />
+    <ClInclude Include="phy\virtual\srt\logsupport.hpp" />
+    <ClInclude Include="phy\virtual\srt\socketoptions.hpp" />
+    <ClInclude Include="phy\virtual\srt\srtcore\logging.h" />
+    <ClInclude Include="phy\virtual\srt\srtcore\netinet_any.h" />
+    <ClInclude Include="phy\virtual\srt\srtcore\srt_compat.h" />
+    <ClInclude Include="phy\virtual\srt\srtcore\sync.h" />
+    <ClInclude Include="phy\virtual\srt\srtcore\threadname.h" />
+    <ClInclude Include="phy\virtual\srt\srtcore\udt.h" />
+    <ClInclude Include="phy\virtual\srt\srtcore\utilities.h" />
+    <ClInclude Include="phy\virtual\srt\transmitbase.hpp" />
+    <ClInclude Include="phy\virtual\srt\transmitmedia.hpp" />
+    <ClInclude Include="phy\virtual\srt\uriparser.hpp" />
+    <ClInclude Include="phy\virtual\srt\verbose.hpp" />
+    <ClInclude Include="srt-work-in-progress\Atsc3SRT_Target.h" />
+    <ClInclude Include="srt-work-in-progress\logsupport.hpp" />
+    <ClInclude Include="srt-work-in-progress\socketoptions.hpp" />
+    <ClInclude Include="srt-work-in-progress\transmitbase.hpp" />
+    <ClInclude Include="srt-work-in-progress\transmitmedia.hpp" />
+    <ClInclude Include="srt-work-in-progress\uriparser.hpp" />
+    <ClInclude Include="srt-work-in-progress\verbose.hpp" />
+    <ClInclude Include="strnstr.h" />
+    <ClInclude Include="stubs\atsc3_alc_stubs.h" />
+    <ClInclude Include="xml.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="test\testdata\mmt\signalling_info\239.155.1.1.49152.6425.9816.33024.atsc3_mmt_message.bin" />
+    <None Include="test\testdata\mmt\signalling_info\239.255.1.1.49152.6426.14247.mpt.3.bin" />
+    <None Include="test\testdata\mmt\signalling_info\239.255.1.1.49152.6426.14453.mpt.0.bin" />
+    <None Include="test_sl\testdata\2019-11-22-647mhz-impulse-doppler.tlv.bin" />
+    <None Include="test_sl\testdata\2019-11-22-647mhz.tlv.bin" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\pcre2-win-build\build-VS2019\libpcre2-8\libpcre2-8.vcxproj">
+      <Project>{65c28da0-c6aa-4ede-a3c5-c3ab84903eae}</Project>
+    </ProjectReference>
+    <ProjectReference Include="..\srt\_build\srt_virtual.vcxproj">
+      <Project>{2b5e84ac-611f-30b5-a388-146a849cc282}</Project>
+    </ProjectReference>
+  </ItemGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
+  <ImportGroup Label="ExtensionTargets">
+  </ImportGroup>
+</Project>

@@ -88,6 +88,8 @@ block_t* alc_get_payload_from_filename(char*);
 
 
 
+#ifdef __ATSC3_RECON_PIPE_FFPLAY__
+
 //jjustman-2020-03-11
 //deprecated - used for isobmff de-fragmentation to handoff a standalone media presentation unit from alc media fragment
 void alc_recon_file_buffer_struct_set_tsi_toi(pipe_ffplay_buffer_t* pipe_ffplay_buffer, uint32_t tsi, uint32_t toi_init);
@@ -97,6 +99,7 @@ void alc_recon_file_buffer_struct_monitor_fragment_with_init_box(udp_flow_t* udp
 void __alc_prepend_fragment_with_init_box(char* file_name, atsc3_alc_packet_t* alc_packet);
 void __alc_recon_fragment_with_init_box(char* file_name, atsc3_alc_packet_t* alc_packet, uint32_t tsi, uint32_t toi_init, const char* to_write_filename);
 //end deprecated
+#endif
 
 #if defined (__cplusplus)
 }

@@ -3,6 +3,16 @@
  *
  *  Created on: Mar 6, 2019
  *      Author: jjustman
+ * 
+ * 
+ * windows
+ * 
+
+C:\Users\LabUser\source\repos\libatsc3>vcpkg\vcpkg.exe install zlib --triplet x64-windows
+
+
+
+
  */
 
 #include <stdint.h>

@@ -13,9 +13,9 @@ int32_t atsc3_unzip_gzip_payload(uint8_t* input_payload, uint32_t input_payload_
 
 	if(input_payload_size > GZIP_CHUNK_INPUT_SIZE_MAX) return -1;
 
-	uint input_payload_offset = 0;
-	uint output_payload_offset = 0;
-    uint output_payload_available = GZIP_CHUNK_OUTPUT_BUFFER_SIZE;
+	uint32_t input_payload_offset = 0;
+	uint32_t output_payload_offset = 0;
+	uint32_t output_payload_available = GZIP_CHUNK_OUTPUT_BUFFER_SIZE;
     unsigned char *output_payload = (unsigned char*)calloc(GZIP_CHUNK_OUTPUT_BUFFER_SIZE + 1, sizeof(unsigned char));
 
 	if(!output_payload) {
@@ -44,7 +44,7 @@ int32_t atsc3_unzip_gzip_payload(uint8_t* input_payload, uint32_t input_payload_
 	do {
 		strm.next_in = &input_payload[input_payload_offset];
 
-		uint payload_chunk_size = input_payload_size - input_payload_offset > GZIP_CHUNK_INPUT_READ_SIZE ? GZIP_CHUNK_INPUT_READ_SIZE : input_payload_size - input_payload_offset;
+		uint32_t payload_chunk_size = input_payload_size - input_payload_offset > GZIP_CHUNK_INPUT_READ_SIZE ? GZIP_CHUNK_INPUT_READ_SIZE : input_payload_size - input_payload_offset;
 		strm.avail_in = payload_chunk_size;
 
 		if (strm.avail_in <= 0)
@@ -68,7 +68,7 @@ int32_t atsc3_unzip_gzip_payload(uint8_t* input_payload, uint32_t input_payload_
 
 			if(strm.avail_in > 0 && strm.avail_out == 0) {
                 output_payload_available += GZIP_CHUNK_OUTPUT_BUFFER_SIZE;
-                uint output_payload_new_size = output_payload_offset + GZIP_CHUNK_OUTPUT_BUFFER_SIZE + 1;
+				uint32_t output_payload_new_size = output_payload_offset + GZIP_CHUNK_OUTPUT_BUFFER_SIZE + 1;
 				output_payload = (uint8_t*)realloc(output_payload, output_payload_new_size);
             } else {
                 output_payload_available = strm.avail_out;

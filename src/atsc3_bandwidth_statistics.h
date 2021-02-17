@@ -7,9 +7,13 @@
 #include <time.h>
 #include <stdlib.h>
 #include <time.h>
+
+#ifndef _WIN32
 #include <sys/time.h>
-#include <stdbool.h>
 #include <unistd.h>
+#endif
+
+#include <stdbool.h>
 #include <locale.h>
 
 #include "atsc3_output_statistics_ncurses.h"

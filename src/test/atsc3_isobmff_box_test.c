@@ -230,10 +230,17 @@
 
  */
 #include <stdio.h>
+#include <stdint.h>
 #include <string.h>
+
+#ifdef _WIN32
+#include <windows.h>
+#else
 #include <strings.h>
-#include <stdlib.h>
 #include <netinet/in.h>
+#endif
+
+#include <stdlib.h>
 #include <stdbool.h>
 
 #define __UNIT_TEST 1

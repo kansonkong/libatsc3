@@ -22,6 +22,10 @@ extern "C" {
 #include "bento4/ISOBMFFTrackJoiner_firewall_gpl.h"
 #endif
 
+#ifdef _WIN32
+#include <pthread.h>
+#endif
+
 extern int _LLS_SLS_MONITOR_OUTPUT_BUFFER_UTILS_DEBUG_ENABLED;
 extern int _LLS_SLS_MONITOR_OUTPUT_BUFFER_UTILS_TRACE_ENABLED;
 
