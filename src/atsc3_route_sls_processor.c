@@ -110,35 +110,25 @@ void atsc3_route_sls_process_from_alc_packet_and_file(udp_flow_t* udp_flow, atsc
 	} else {
 		//check to see if we have a pending atsc3_fdt_instance and if we need to swap/roll forward any flows
 		if(lls_sls_alc_monitor && lls_sls_alc_monitor->atsc3_fdt_instance_pending) {
-			uint32_t mbms_toi = 0;
-			
 			atsc3_fdt_instance_t* atsc3_fdt_instance_pending = lls_sls_alc_monitor->atsc3_fdt_instance_pending;
-			atsc3_fdt_file_t* atsc3_fdt_file = atsc3_mbms_envelope_find_multipart_fdt_file_from_fdt_instance(atsc3_fdt_instance_pending);
 			
-			if(!atsc3_fdt_file || !atsc3_fdt_file->toi) {
-				_ATSC3_ROUTE_SLS_PROCESSOR_ERROR("Unable to find MBMS TOI for atsc3_fdt_instance_pending: %p, atsc3_fdt_file: %p", atsc3_fdt_instance_pending, atsc3_fdt_file);
+			uint32_t* mbms_toi = atsc3_mbms_envelope_find_toi_from_fdt(atsc3_fdt_instance_pending);
+			if(!mbms_toi) {
+				_ATSC3_ROUTE_SLS_PROCESSOR_ERROR("Unable to find MBMS TOI for atsc3_fdt_instance_pending: %p", atsc3_fdt_instance_pending);
+				goto cleanup;
+			}
+
+			mbms_toi_filename = alc_packet_dump_to_object_get_filename_tsi_toi(udp_flow, 0, *mbms_toi);
+
+			fp_mbms = fopen(mbms_toi_filename, "r");
+			if(!fp_mbms) {
+				_ATSC3_ROUTE_SLS_PROCESSOR_ERROR("alc_packet tsi/toi:0/%u filename: %s is null for pending: %p!", *mbms_toi, mbms_toi_filename, atsc3_fdt_instance_pending);
 				goto cleanup;
 			}
 			
-			if(atsc3_fdt_file_is_multipart_signed(atsc3_fdt_file)) {
-				//extract and verify our signing, and extract payload to alc_packet_dump_to_object_get_filename_tsi_toi_unsigned
-				
-				
-			} else {
-				//non-signed payload parsing
-				mbms_toi = atsc3_fdt_file->toi;
-				mbms_toi_filename = alc_packet_dump_to_object_get_filename_tsi_toi(udp_flow, 0, mbms_toi);
-				fp_mbms = fopen(mbms_toi_filename, "r");
-				if(!fp_mbms) {
-					_ATSC3_ROUTE_SLS_PROCESSOR_ERROR("alc_packet tsi/toi:0/%u filename: %s is null for pending: %p!", mbms_toi, mbms_toi_filename, atsc3_fdt_instance_pending);
-					goto cleanup;
-				}
-				
-				atsc3_sls_metadata_fragments_pending = atsc3_mbms_envelope_to_sls_metadata_fragments_parse_from_fdt_fp(fp_mbms);
-			}
-			
+			atsc3_sls_metadata_fragments_pending = atsc3_mbms_envelope_to_sls_metadata_fragments_parse_from_fdt_fp(fp_mbms);
 			if(!atsc3_sls_metadata_fragments_pending) {
-				_ATSC3_ROUTE_SLS_PROCESSOR_ERROR("atsc3_sls_metadata_fragments_pending is NULL, tsi/toi:0/%u filename: %s for pending: %p!", mbms_toi, mbms_toi_filename, atsc3_fdt_instance_pending);
+				_ATSC3_ROUTE_SLS_PROCESSOR_ERROR("atsc3_sls_metadata_fragments_pending is NULL, tsi/toi:0/%u filename: %s for pending: %p!", *mbms_toi, mbms_toi_filename, atsc3_fdt_instance_pending);
 				goto cleanup;
 			}
 			
@@ -150,7 +140,7 @@ void atsc3_route_sls_process_from_alc_packet_and_file(udp_flow_t* udp_flow, atsc
 			}
 			
 			// #1569
-			// jjustman-2020-07-20 - TODO - add SLS TOI value here - mbms_toi
+			// jjustman-2020-07-20 - TODO - add SLS TOI value here - *mbms_toi
 			bool held_payload_has_changed = atsc3_lls_sls_alc_monitor_sls_metadata_fragements_has_held_changed(lls_sls_alc_monitor, atsc3_sls_metadata_fragments_pending);
 			
 			if(held_payload_has_changed) {

@@ -436,7 +436,9 @@ typedef struct error_check_data {
 } error_check_data_t;
 
 //Table 8.3 - Timing and Management Stream Packet Payload
-    
+
+//jjustman-2020-11-18 - at a minimum, we must have at least 112 bits (14 bytes) for TMP packet parsing
+
 typedef struct timing_management_packet {
 	atsc3_rtp_ctp_header_timestamp_t	bootstrap_timing_data_timestamp_short_reference;
 
@@ -573,6 +575,8 @@ void atsc3_baseband_packet_set_bootstrap_timing_ref_from_stltp_baseband_packet(a
 void atsc3_preamble_packet_set_bootstrap_timing_ref_from_stltp_preamble_packet(atsc3_preamble_packet_t* atsc3_preamble_packet, atsc3_stltp_preamble_packet_t* atsc3_stltp_preamble_packet);
 void atsc3_timing_management_packet_set_bootstrap_timing_ref_from_stltp_preamble_packet(atsc3_timing_management_packet_t* atsc3_timing_management_packet, atsc3_stltp_timing_management_packet_t* atsc3_stltp_timing_management_packet);
 
+atsc3_preamble_packet_t* atsc3_preamble_packet_new();
+
 ATSC3_VECTOR_BUILDER_METHODS_INTERFACE(atsc3_stltp_tunnel_packet, atsc3_stltp_preamble_packet);
 ATSC3_VECTOR_BUILDER_METHODS_INTERFACE(atsc3_stltp_tunnel_packet, atsc3_stltp_timing_management_packet);
 void atsc3_stltp_tunnel_packet_clear_completed_inner_packets(atsc3_stltp_tunnel_packet_t* atsc3_stltp_tunnel_packet);
@@ -598,6 +602,8 @@ void atsc3_stltp_baseband_packet_free(atsc3_stltp_baseband_packet_t** atsc3_stlt
 void atsc3_stltp_preamble_packet_free(atsc3_stltp_preamble_packet_t** atsc3_stltp_preamble_packet_p);
 void atsc3_stltp_timing_management_packet_free(atsc3_stltp_timing_management_packet_t** atsc3_stltp_timing_management_packet_p);
     
+void atsc3_preamble_packet_free(atsc3_preamble_packet_t** atsc3_preamble_packet_p);
+
 //utility methods for dumping outer/inner/rtp header payloads
 void atsc3_rtp_ctp_header_dump_outer(atsc3_stltp_tunnel_packet_t* atsc3_stltp_tunnel_packet);
 void atsc3_rtp_ctp_header_dump_inner(atsc3_stltp_tunnel_packet_t* atsc3_stltp_tunnel_packet);
