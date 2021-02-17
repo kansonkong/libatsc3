@@ -31,10 +31,24 @@ ATSC3_VECTOR_BUILDER_METHODS_IMPLEMENTATION(L1_detail_signaling, L1D_bonded_bsid
 ATSC3_VECTOR_BUILDER_METHODS_ITEM_FREE(L1D_bonded_bsid_block);
 
 ATSC3_VECTOR_BUILDER_METHODS_IMPLEMENTATION(L1_detail_signaling, L1D_subframe_parameters);
-ATSC3_VECTOR_BUILDER_METHODS_ITEM_FREE(L1D_subframe_parameters);
 
-ATSC3_VECTOR_BUILDER_METHODS_IMPLEMENTATION(L1D_PLP_parameters, L1D_plp_bonded_rf);
-ATSC3_VECTOR_BUILDER_METHODS_ITEM_FREE(L1D_plp_bonded_rf);
+//ATSC3_VECTOR_BUILDER_METHODS_ITEM_FREE(L1D_subframe_parameters);
+void L1D_subframe_parameters_free(L1D_subframe_parameters_t** L1D_subframe_parameters_p) {
+	if(L1D_subframe_parameters_p) {
+		L1D_subframe_parameters_t* L1D_subframe_parameters = *L1D_subframe_parameters_p;
+		if(L1D_subframe_parameters) {
+			//clear inner allocs
+			L1D_subframe_parameters_free_L1D_PLP_parameters(L1D_subframe_parameters);
+			
+			free(L1D_subframe_parameters);
+			L1D_subframe_parameters = NULL;
+		}
+		*L1D_subframe_parameters_p = NULL;
+	}
+}
+
+ATSC3_VECTOR_BUILDER_METHODS_IMPLEMENTATION(L1D_PLP_parameters, L1D_plp_bonded_rf_id);
+ATSC3_VECTOR_BUILDER_METHODS_ITEM_FREE(L1D_plp_bonded_rf_id);
 
 ATSC3_VECTOR_BUILDER_METHODS_IMPLEMENTATION(L1D_PLP_parameters, L1D_plp_HTI_num_fec_blocks);
 ATSC3_VECTOR_BUILDER_METHODS_ITEM_FREE(L1D_plp_HTI_num_fec_blocks);
@@ -112,6 +126,12 @@ atsc3_stltp_baseband_packet_t* atsc3_stltp_baseband_packet_new_and_init(atsc3_st
     return atsc3_stltp_baseband_packet;
 }
 
+atsc3_preamble_packet_t* atsc3_preamble_packet_new() {
+	atsc3_preamble_packet_t* atsc3_preamble_packet = calloc(1, sizeof(atsc3_preamble_packet_t));
+	
+	return atsc3_preamble_packet;
+}
+
 void atsc3_baseband_packet_set_plp_from_stltp_baseband_packet(atsc3_baseband_packet_t* atsc3_baseband_packet, atsc3_stltp_baseband_packet_t* atsc3_stltp_baseband_packet) {
 	if(!atsc3_baseband_packet || !atsc3_stltp_baseband_packet) {
 		__STLTP_TYPES_WARN("atsc3_baseband_packet_set_plp_from_stltp_baseband_packet: packet(s) are null: atsc3_baseband_packet: %p, atsc3_stltp_baseband_packet: %p", atsc3_baseband_packet, atsc3_stltp_baseband_packet);
@@ -182,6 +202,7 @@ void atsc3_timing_management_packet_set_bootstrap_timing_ref_from_stltp_preamble
 
 void atsc3_stltp_tunnel_packet_clear_completed_inner_packets(atsc3_stltp_tunnel_packet_t* atsc3_stltp_tunnel_packet) {
     if(atsc3_stltp_tunnel_packet) {
+		
         if(atsc3_stltp_tunnel_packet->atsc3_stltp_baseband_packet_v.count) {
             for(int i=0; i < atsc3_stltp_tunnel_packet->atsc3_stltp_baseband_packet_v.count; i++) {
                 atsc3_stltp_baseband_packet_free_v(atsc3_stltp_tunnel_packet->atsc3_stltp_baseband_packet_v.data[i]);
@@ -411,13 +432,9 @@ void atsc3_stltp_preamble_packet_free_v(atsc3_stltp_preamble_packet_t* atsc3_stl
         //this should be all boilerplate
     
         if(atsc3_stltp_preamble_packet->preamble_packet) {
-            
-            L1_detail_signaling_free_L1D_bonded_bsid_block(&atsc3_stltp_preamble_packet->preamble_packet->L1_detail_signaling);
-            L1_detail_signaling_free_L1D_subframe_parameters(&atsc3_stltp_preamble_packet->preamble_packet->L1_detail_signaling);
-
-        	free(atsc3_stltp_preamble_packet->preamble_packet);
-        	atsc3_stltp_preamble_packet->preamble_packet = NULL;
-        }
+			atsc3_preamble_packet_free(&atsc3_stltp_preamble_packet->preamble_packet);
+		}
+		
         if(atsc3_stltp_preamble_packet->payload) {
             free(atsc3_stltp_preamble_packet->payload);
             atsc3_stltp_preamble_packet->payload = NULL;        
@@ -499,6 +516,20 @@ void atsc3_stltp_timing_management_packet_free(atsc3_stltp_timing_management_pac
 }
 
 
+
+void atsc3_preamble_packet_free(atsc3_preamble_packet_t** atsc3_preamble_packet_p) {
+	if(atsc3_preamble_packet_p) {
+		atsc3_preamble_packet_t* atsc3_preamble_packet = *atsc3_preamble_packet_p;
+		if(atsc3_preamble_packet) {
+			L1_detail_signaling_free_L1D_bonded_bsid_block(&atsc3_preamble_packet->L1_detail_signaling);
+			L1_detail_signaling_free_L1D_subframe_parameters(&atsc3_preamble_packet->L1_detail_signaling);
+			
+			free(atsc3_preamble_packet);
+			atsc3_preamble_packet = NULL;
+		}
+		*atsc3_preamble_packet_p = NULL;
+	}
+}
 /**
  header dump methods
  **/
@@ -542,9 +573,10 @@ void atsc3_rtp_ctp_header_dump_inner(atsc3_stltp_tunnel_packet_t* atsc3_stltp_tu
 
 void atsc3_rtp_ctp_header_dump(atsc3_rtp_ctp_header_t* atsc3_rtp_ctp_header, int spaces) {
     
-    __STLTP_TYPES_DEBUG("%*smarker: %x,  version: %x, padding: %x, extension: %x, csrc_count: %x",
+    __STLTP_TYPES_DEBUG("%*smarker: %x (offset: %d),  version: %x, padding: %x, extension: %x, csrc_count: %x",
                         spaces, "",
                         atsc3_rtp_ctp_header->marker,
+						atsc3_rtp_ctp_header->packet_offset,
                         atsc3_rtp_ctp_header->version,
                         atsc3_rtp_ctp_header->padding,
                         atsc3_rtp_ctp_header->extension,

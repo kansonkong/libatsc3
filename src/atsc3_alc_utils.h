@@ -39,6 +39,17 @@ extern int _ALC_UTILS_TRACE_ENABLED;
 void atsc3_alc_packet_check_monitor_flow_for_toi_wraparound_discontinuity(atsc3_alc_packet_t* alc_packet, lls_sls_alc_monitor_t* lls_sls_alc_monitor);
 
 atsc3_route_object_t* atsc3_alc_persist_route_object_lct_packet_received_for_lls_sls_alc_monitor_all_flows(atsc3_alc_packet_t* alc_packet, lls_sls_alc_monitor_t* lls_sls_alc_monitor);
+
+/*
+ * return codes:
+ *
+ *  ATSC3_ALC_UTILS_FAILED_GZIP_EXTRACTION - gzip extraction failed
+ */
+
+#define ATSC3_ALC_UTILS_LLS_SLS_ALC_MONITOR_OUTPUT_BUFFER_MODE_NOT_ENABLED -2
+#define ATSC3_ALC_UTILS_SLS_METADATA_FRAGMENTS_NOT_RECEIVED_YET -3
+#define ATSC3_ALC_UTILS_FAILED_GZIP_EXTRACTION -4
+
 int atsc3_alc_packet_persist_to_toi_resource_process_sls_mbms_and_emit_callback(udp_flow_t* udp_flow, atsc3_alc_packet_t* alc_packet, lls_sls_alc_monitor_t* lls_sls_alc_monitor, atsc3_route_object_t* atsc3_route_object);
 
 
@@ -72,7 +83,6 @@ FILE* alc_object_open_or_pre_allocate(char* file_name, atsc3_alc_packet_t* alc_p
 
 void alc_recon_file_ptr_set_tsi_toi(FILE* file_ptr, uint32_t tsi, uint32_t toi_init);
 char* alc_packet_dump_to_object_get_filename_tsi_toi(udp_flow_t* udp_flow, uint32_t tsi, uint32_t toi);
-char* alc_packet_dump_to_object_get_filename_tsi_toi_unsigned(udp_flow_t* udp_flow, uint32_t tsi, uint32_t toi);
 
 block_t* alc_get_payload_from_filename(char*);
 

@@ -20,7 +20,9 @@ atsc3_ip_udp_rtp_ctp_packet_t* atsc3_ip_udp_rtp_process_packet_from_pcap(u_char 
     if(ip_udp_rtp_raw_block) {
         block_Rewind(ip_udp_rtp_raw_block);
         ip_udp_rtp_ctp_packet = atsc3_ip_udp_rtp_ctp_packet_process_from_blockt_pos(ip_udp_rtp_raw_block);
+		block_Destroy(&ip_udp_rtp_raw_block);
     }
+	
     return ip_udp_rtp_ctp_packet;
 }
 
@@ -481,6 +483,7 @@ void atsc3_ip_udp_rtp_ctp_packet_destroy(atsc3_ip_udp_rtp_ctp_packet_t** ip_udp_
                 freesafe(ip_udp_rtp_ctp_packet->rtp_ctp_header);
             }
             ip_udp_rtp_ctp_packet->rtp_ctp_header = NULL;
+			
             free(ip_udp_rtp_ctp_packet);
             ip_udp_rtp_ctp_packet = NULL;
             
