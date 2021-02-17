@@ -66,8 +66,6 @@ class SRTRxSTLTPVirtualPHY : public IAtsc3NdkPHYClient {
         //special accessor for T&M and Preamble packet callback hooks
         atsc3_stltp_depacketizer_context_t* get_atsc3_stltp_depacketizer_context() { return this->atsc3_stltp_depacketizer_context; }
 
-
-
         virtual ~SRTRxSTLTPVirtualPHY() {
             atsc3_srt_thread_stop(); //cleanup just to be sure..
             atsc3_stltp_depacketizer_context_free(&atsc3_stltp_depacketizer_context);

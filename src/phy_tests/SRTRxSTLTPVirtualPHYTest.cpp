@@ -23,8 +23,8 @@ uint64_t rx_udp_invocation_count = 0;
 
 void phy_rx_udp_packet_process_callback(uint8_t plp_num, block_t* packet) {
 	//if((rx_udp_invocation_count % 1000) == 0) {
-		_SRT_STLTP_VIRTUAL_TEST_DEBUG("PLP: %d, packet number: %llu, packet: %p, len: %d",
-				plp_num, rx_udp_invocation_count, packet, packet->p_size);
+	/*	_SRT_STLTP_VIRTUAL_TEST_DEBUG("PLP: %d, packet number: %llu, packet: %p, len: %d",
+				plp_num, rx_udp_invocation_count, packet, packet->p_size);*/
 
 	//}
 	rx_udp_invocation_count++;
@@ -32,7 +32,7 @@ void phy_rx_udp_packet_process_callback(uint8_t plp_num, block_t* packet) {
 }
 
 int test_srt_stltp_with_bna_rx() {
-	const char* SRT_HOST_CONNECTION_STRING = "srt://bna.srt.atsc3.com:31347?passphrase=88731837-0EB5-4951-83AA-F515B3BEBC20";
+	const char* SRT_HOST_CONNECTION_STRING = "srt://bna.srt.atsc3.com:31348?passphrase=88731837-0EB5-4951-83AA-F515B3BEBC20";
 
 	SRTRxSTLTPVirtualPHY* srtRxSTLTPVirtualPHY = new SRTRxSTLTPVirtualPHY(SRT_HOST_CONNECTION_STRING);
 
@@ -42,13 +42,12 @@ int test_srt_stltp_with_bna_rx() {
 
 	srtRxSTLTPVirtualPHY->run();
 
-
 	double srt_thread_run_start_time = gt();
 
 	int loop_count = 0;
 	bool should_break = false;
-	sleep(1);
-	while((gt() - srt_thread_run_start_time) < 60 &&  !should_break) {
+	usleep(1000000);
+	while((gt() - srt_thread_run_start_time) < 3600 &&  !should_break) {
 		usleep(1000000);
 		_SRT_STLTP_VIRTUAL_TEST_INFO("srt_is_running: %d", srtRxSTLTPVirtualPHY->is_running());
 		if(loop_count++ > 10) {
@@ -75,19 +74,19 @@ int test_srt_stltp_with_bna_rx() {
 
 int main(int argc, char* argv[] ) {
 
-	_ALP_PARSER_INFO_ENABLED = 1;
-	_ALP_PARSER_DEBUG_ENABLED = 1;
+	_ALP_PARSER_INFO_ENABLED = 0;
+	_ALP_PARSER_DEBUG_ENABLED = 0;
 
-	_ATSC3_STLTP_DEPACKETIZER_INFO_ENABLED = 1;
-	_ATSC3_STLTP_DEPACKETIZER_DEBUG_ENABLED = 1;
-	_ATSC3_STLTP_DEPACKETIZER_TRACE_ENABLED = 1;
+	_ATSC3_STLTP_DEPACKETIZER_INFO_ENABLED = 0;
+	_ATSC3_STLTP_DEPACKETIZER_DEBUG_ENABLED = 0;
+	_ATSC3_STLTP_DEPACKETIZER_TRACE_ENABLED = 0;
 
-	_STLTP_PARSER_INFO_ENABLED = 1;
-	_STLTP_PARSER_DEBUG_ENABLED = 1;
-	_STLTP_PARSER_TRACE_ENABLED = 1;
+	_STLTP_PARSER_INFO_ENABLED = 0;
+	_STLTP_PARSER_DEBUG_ENABLED = 0;
+	_STLTP_PARSER_TRACE_ENABLED = 0;
 
-	_STLTP_TYPES_DEBUG_ENABLED = 1;
-	_STLTP_TYPES_TRACE_ENABLED = 1;
+	_STLTP_TYPES_DEBUG_ENABLED = 0;
+	_STLTP_TYPES_TRACE_ENABLED = 0;
 
 	_SRT_STLTP_VIRTUAL_TEST_INFO("starting test_srt_stltp_with_bna_rx test");
 

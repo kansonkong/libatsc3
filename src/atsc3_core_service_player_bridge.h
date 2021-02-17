@@ -10,9 +10,12 @@
 #include <sys/stat.h>
 #include <time.h>
 #include <signal.h>
-#include <sys/ioctl.h>
 #include <limits.h>
+
+#ifndef _WIN32
+#include <sys/ioctl.h>
 #include <ftw.h>
+#endif
 #include <mutex>
 #include <set>
 

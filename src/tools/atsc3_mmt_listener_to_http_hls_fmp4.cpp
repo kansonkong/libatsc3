@@ -20,19 +20,27 @@ int PACKET_COUNTER=0;
 #include <stdio.h>
 #include <stdlib.h>
 #include <errno.h>
+
+#ifdef _WIN32
+#include <WinSock2.h>
+#include <Windows.h>
+#else
+
 #include <sys/socket.h>
 #include <netinet/in.h>
 #include <arpa/inet.h>
 #include <netinet/if_ether.h>
 #include <netinet/ip.h>
+#include <sys/ioctl.h>
+#include <ncurses.h>
+#include <strings.h>
+#endif
+
 #include <string.h>
 #include <sys/stat.h>
 #include <time.h>
 #include <signal.h>
-#include <sys/ioctl.h>
-#include <ncurses.h>
 #include <limits.h>
-#include <strings.h>
 
 #include "../bento4/ISOBMFFTrackJoiner.h"
 #include "../atsc3_isobmff_tools.h"
