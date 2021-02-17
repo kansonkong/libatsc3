@@ -29,25 +29,32 @@ extern "C" {
 typedef struct atsc3_mmt_mfu_context atsc3_mmt_mfu_context_t;
 typedef struct atsc3_mmt_mfu_mpu_timestamp_descriptor atsc3_mmt_mfu_mpu_timestamp_descriptor_t;
 
-typedef void (*__internal__atsc3_mmt_signalling_information_on_packet_id_with_mpu_timestamp_descriptor_f)(atsc3_mmt_mfu_context_t* atsc3_mmt_mfu_context, uint16_t packet_id, uint32_t mpu_sequence_number, uint64_t mpu_presentation_time_ntp64, uint32_t mpu_presentation_time_seconds, uint32_t mpu_presentation_time_microseconds);
+typedef void (*atsc3_mmt_signalling_information_on_packet_id_with_mpu_timestamp_descriptor_internal_f)(atsc3_mmt_mfu_context_t* atsc3_mmt_mfu_context, uint16_t packet_id, uint32_t mmtp_timestamp, uint32_t mpu_sequence_number, uint64_t mpu_presentation_time_ntp64, uint32_t mpu_presentation_time_seconds, uint32_t mpu_presentation_time_microseconds);
+
+//get mpu_timestamp_descriptor from a received MP_table emission, will return null if SI message was not received
 typedef atsc3_mmt_mfu_mpu_timestamp_descriptor_t* (*atsc3_get_mpu_timestamp_from_packet_id_mpu_sequence_number_f)(atsc3_mmt_mfu_context_t* atsc3_mmt_mfu_context, uint16_t packet_id, uint32_t mpu_sequence_number);
+
+//get mpu_timestamp_descriptor from a received MP_table emission with recovery fallback differential based upon mmtp_timestamp if SI message was not received
+typedef atsc3_mmt_mfu_mpu_timestamp_descriptor_t* (*atsc3_get_mpu_timestamp_from_packet_id_mpu_sequence_number_with_mmtp_timestamp_recovery_differential_f)(atsc3_mmt_mfu_context_t* atsc3_mmt_mfu_context, uint16_t packet_id, uint32_t mmtp_timestamp, uint32_t mpu_sequence_number);
+
+
 
 //todo- jjustman-2019-10-03: add in flow for un-filtered callback listeners
 
 //EXTERNAL event callback typedefs
-typedef void (*atsc3_mmt_signalling_information_on_mp_table_subset_f)(mp_table_t* mp_table);
-typedef void (*atsc3_mmt_signalling_information_on_mp_table_complete_f)(mp_table_t* mp_table);
+typedef void (*atsc3_mmt_signalling_information_on_mp_table_subset_f)(atsc3_mmt_mfu_context_t* atsc3_mmt_mfu_context, mp_table_t* mp_table);
+typedef void (*atsc3_mmt_signalling_information_on_mp_table_complete_f)(atsc3_mmt_mfu_context_t* atsc3_mmt_mfu_context, mp_table_t* mp_table);
 
-typedef void (*atsc3_mmt_signalling_information_on_audio_essence_packet_id_f)(uint16_t audio_packet_id);
-typedef void (*atsc3_mmt_signalling_information_on_video_essence_packet_id_f)(uint16_t video_packet_id);
-typedef void (*atsc3_mmt_signalling_information_on_stpp_essence_packet_id_f) (uint16_t stpp_packet_id);
+typedef void (*atsc3_mmt_signalling_information_on_audio_essence_packet_id_f)(atsc3_mmt_mfu_context_t* atsc3_mmt_mfu_context, uint16_t audio_packet_id, mp_table_asset_row_t* mp_table_asset_row);
+typedef void (*atsc3_mmt_signalling_information_on_video_essence_packet_id_f)(atsc3_mmt_mfu_context_t* atsc3_mmt_mfu_context, uint16_t video_packet_id, mp_table_asset_row_t* mp_table_asset_row);
+typedef void (*atsc3_mmt_signalling_information_on_stpp_essence_packet_id_f) (atsc3_mmt_mfu_context_t* atsc3_mmt_mfu_context, uint16_t stpp_packet_id, mp_table_asset_row_t* mp_table_asset_row);
 
-typedef void (*atsc3_mmt_signalling_information_on_audio_packet_id_with_mpu_timestamp_descriptor_f)(uint16_t audio_packet_id, uint32_t mpu_sequence_number, uint64_t mpu_presentation_time_ntp64, uint32_t mpu_presentation_time_seconds, uint32_t mpu_presentation_time_microseconds);
-typedef void (*atsc3_mmt_signalling_information_on_video_packet_id_with_mpu_timestamp_descriptor_f)(uint16_t video_packet_id, uint32_t mpu_sequence_number, uint64_t mpu_presentation_time_ntp64, uint32_t mpu_presentation_time_seconds, uint32_t mpu_presentation_time_microseconds);
-typedef void (*atsc3_mmt_signalling_information_on_stpp_packet_id_with_mpu_timestamp_descriptor_f) (uint16_t stpp_packet_id, uint32_t mpu_sequence_number, uint64_t mpu_presentation_time_ntp64, uint32_t mpu_presentation_time_seconds, uint32_t mpu_presentation_time_microseconds);
+typedef void (*atsc3_mmt_signalling_information_on_audio_packet_id_with_mpu_timestamp_descriptor_f)(atsc3_mmt_mfu_context_t* atsc3_mmt_mfu_context, uint16_t audio_packet_id, uint32_t mpu_sequence_number, uint64_t mpu_presentation_time_ntp64, uint32_t mpu_presentation_time_seconds, uint32_t mpu_presentation_time_microseconds);
+typedef void (*atsc3_mmt_signalling_information_on_video_packet_id_with_mpu_timestamp_descriptor_f)(atsc3_mmt_mfu_context_t* atsc3_mmt_mfu_context, uint16_t video_packet_id, uint32_t mpu_sequence_number, uint64_t mpu_presentation_time_ntp64, uint32_t mpu_presentation_time_seconds, uint32_t mpu_presentation_time_microseconds);
+typedef void (*atsc3_mmt_signalling_information_on_stpp_packet_id_with_mpu_timestamp_descriptor_f) (atsc3_mmt_mfu_context_t* atsc3_mmt_mfu_context, uint16_t stpp_packet_id, uint32_t mpu_sequence_number, uint64_t mpu_presentation_time_ntp64, uint32_t mpu_presentation_time_seconds, uint32_t mpu_presentation_time_microseconds);
 
 
-typedef void (*atsc3_mmt_signalling_information_on_mpu_timestamp_descriptor_f)(uint16_t packet_id, uint32_t mpu_sequence_number, mmt_signalling_message_mpu_timestamp_descriptor_t* mmt_signalling_message_mpu_timestamp_descriptor);
+typedef void (*atsc3_mmt_signalling_information_on_mpu_timestamp_descriptor_f)(atsc3_mmt_mfu_context_t* atsc3_mmt_mfu_context, uint16_t packet_id, uint32_t mpu_sequence_number, mmt_signalling_message_mpu_timestamp_descriptor_t* mmt_signalling_message_mpu_timestamp_descriptor);
 
 //we will return mmtp_mpu_packet if it was successfully persisted, otherwise it will be null'd out
 //mmtp_mpu_packet_t* mmtp_process_from_payload(mmtp_mpu_packet_t* mmtp_mpu_packet,

@@ -56,12 +56,19 @@ atsc3_route_object_t* atsc3_sls_alc_flow_route_object_add_unique_lct_packet_rece
 	//find or create our route_object
 	atsc3_route_object = atsc3_sls_alc_flow_find_or_create_route_object_from_alc_packet(atsc3_sls_alc_flow, atsc3_alc_packet);
 
-	_ATSC3_SLS_ALC_FLOW_TRACE("atsc3_sls_alc_flow_route_object_add_unique_lct_packet_received after find_or_create_route_object, obj: %p, tsi: %d, toi: %d, atsc3_sls_alc_flow: %p, count: %d ",
+	_ATSC3_SLS_ALC_FLOW_TRACE("atsc3_sls_alc_flow_route_object_add_unique_lct_packet_received after find_or_create_route_object, obj: %p, tsi: %d, toi: %d, atsc3_sls_alc_flow: %p, route_object_v.count: %d, route_object.atsc3_route_object_lct_packet_received: %d",
 			atsc3_route_object,
 			atsc3_alc_packet->def_lct_hdr->tsi, atsc3_alc_packet->def_lct_hdr->toi,
-			atsc3_sls_alc_flow, atsc3_sls_alc_flow->atsc3_route_object_v.count);
+			atsc3_sls_alc_flow, atsc3_sls_alc_flow->atsc3_route_object_v.count,
+			atsc3_route_object->atsc3_route_object_lct_packet_received_v.count);
 
 	atsc3_route_object_add_or_update_lct_packet_received(atsc3_route_object, atsc3_alc_packet);
+
+    _ATSC3_SLS_ALC_FLOW_TRACE("atsc3_sls_alc_flow_route_object_add_unique_lct_packet_received after atsc3_route_object_add_or_update_lct_packet_received, obj: %p, tsi: %d, toi: %d, atsc3_sls_alc_flow: %p, route_object_v.count: %d, route_object.atsc3_route_object_lct_packet_received: %d",
+                              atsc3_route_object,
+                              atsc3_alc_packet->def_lct_hdr->tsi, atsc3_alc_packet->def_lct_hdr->toi,
+                              atsc3_sls_alc_flow, atsc3_sls_alc_flow->atsc3_route_object_v.count,
+                              atsc3_route_object->atsc3_route_object_lct_packet_received_v.count);
 
 	return atsc3_route_object;
 }
@@ -367,7 +374,7 @@ void atsc3_route_object_lct_packet_received_set_source_attributes_from_alc_packe
 	atsc3_route_object_lct_packet_received->use_sbn_esi = atsc3_alc_packet->use_sbn_esi;
 	atsc3_route_object_lct_packet_received->sbn = atsc3_alc_packet->sbn;
 	atsc3_route_object_lct_packet_received->esi = atsc3_alc_packet->esi;
-	uint32_t sbn_esi_merged = (atsc3_alc_packet->sbn & 0xFF) << 24 || (atsc3_alc_packet->esi & 0xFFFFFF);
+	uint32_t sbn_esi_merged = ((atsc3_alc_packet->sbn & 0xFF) << 24) | (atsc3_alc_packet->esi & 0xFFFFFF);
 
 	atsc3_route_object_lct_packet_received->sbn_esi_merged = sbn_esi_merged;
 

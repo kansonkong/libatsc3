@@ -106,6 +106,18 @@ long gtl();
 #define ABS(x)           (((x) < 0) ? -(x) : (x))
 #endif
 
+#ifndef ntohq
+#ifndef ntohll
+#define ntohll(x) ( ( (uint64_t)(ntohl( (uint32_t)((x << 32) >> 32) )) << 32) | ntohl( ((uint32_t)(x >> 32)) ) )
+#endif
+#ifndef htonll
+#define htonll(x) ntohll(x)
+#endif
+//jjustman-2020-11-24 - wrap this for android/bionic 64bit network to host
+#define ntohq(x) ntohll(x)
+
+#endif
+
 /* clip v in [min, max] */
 #define __CLIP(v, min, max)    __MIN(__MAX((v), (min)), (max))
 
@@ -136,6 +148,9 @@ typedef struct atsc3_block {
 	uint8_t* p_buffer;
 	uint32_t p_size;
 	uint32_t i_pos;
+
+	bool     _overflow_i_pos;
+
     uint8_t  _bitpos;
     uint8_t  _refcnt;
     uint8_t  _is_alloc;
@@ -184,15 +199,14 @@ uint64_t block_Read_uint64_bitlen(block_t* src, int bitlen);
 uint8_t  block_Read_uint8(block_t* src);
 uint16_t block_Read_uint16_ntohs(block_t* src);
 uint32_t block_Read_uint32_ntohl(block_t* src);
-uint64_t block_Read_uint64_ntohul(block_t* src);
+uint64_t block_Read_uint64_ntohll(block_t* src);
 
 //read from filesystem into block_t
 block_t* block_Read_from_filename(const char* file_name);
 int	block_Write_to_filename(block_t* src, const char* file_name);
 
-
-//#define block_RefZero(a) ({ a->_refcnt = 0; })
-//#define block_Release(a) ({ _ATSC3_UTILS_TRACE("UTRACE:DECR:%p:%s, block_Refcount: decrementing to: %d, block: %p (p_buffer: %p)", *a, __FUNCTION__, (*a->_refcnt)-1, *a, *a->p_buffer);  _block_Release(a); })
+#define block_RefZero(a) ({ a->_refcnt = 0; })
+#define block_Release(a) ({ _ATSC3_UTILS_TRACE("UTRACE:DECR:%p:%s, block_Refcount: decrementing to: %d, block: %p (p_buffer: %p)", *a, __FUNCTION__, (*a->_refcnt)-1, *a, *a->p_buffer);  _block_Release(a); })
 
 void _block_Release(block_t** a); //_refcnt MUST == 0 for p_buffer to be freed, see block_Refcount
 void _block_Refcount(block_t* a);
@@ -200,10 +214,11 @@ void _block_Refcount(block_t* a);
 void block_Destroy(block_t** a); //hard destroy overriding GC
     
 //alloc and copy - note limited to 16k
-char* strlcopy(const char*);
+char* strlcopy(char*);
 char *_ltrim(char *str);
 char* _rtrim(char *str);
 char* __trim(char *str);
+bool str_is_utf8(const char* str);
 
 void freesafe(void* tofree);
 
@@ -216,6 +231,8 @@ uint16_t parsePortIntoIntval(const char* dst_port);
 
 int mkpath(char *dir, mode_t mode);
 
+//see also atsc3_mmtp_ntp32_to_pts
+uint64_t compute_seconds_microseconds_to_scalar64(uint32_t seconds, uint32_t microseconds);
 
 /*
  * Concatenate preprocessor tokens A and B without expanding macro definitions

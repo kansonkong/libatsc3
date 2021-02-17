@@ -1,13 +1,17 @@
 # Android.mk for libatsc3 virtual phy support
-#
 
 MY_LOCAL_PATH := $(call my-dir)
 LOCAL_PATH := $(call my-dir)
 MY_CUR_PATH := $(LOCAL_PATH)
 
-
 # ---
 # codornicesrq
+#  /Users/jjustman/Desktop/markone/Middleware/libatsc3/codornicesrq/CodornicesRq-2.2-Android-armeabi-v7a/lib
+# patchelf --set-soname libCodornicesRq.so libCodornicesRq.so
+# patchelf --replace-needed libc.so.6 libc.so libCodornicesRq.so
+# objdump -x libCodornicesRq.so
+
+
 include $(CLEAR_VARS)
 LOCAL_MODULE := libCodornicesRq
 LOCAL_SRC_FILES := $(LOCAL_PATH)/../../codornicesrq/CodornicesRq-2.2-Android-$(TARGET_ARCH_ABI)/lib/libCodornicesRq.so
@@ -112,24 +116,53 @@ LOCAL_C_INCLUDES += $(LOCAL_PATH)/../../src/phy/virtual/srt/haicrypt
 LOCAL_C_INCLUDES += $(LOCAL_PATH)/../../codornicesrq/CodornicesRq-2.2-Android-arm64-v8a/include
 
 #jjustman-2020-08-17 - special defines for SRT
-LOCAL_CFLAGS += -g -O1 -fpack-struct=8  \
-                -D__DISABLE_LIBPCAP__ -D__DISABLE_ISOBMFF_LINKAGE__ -D__DISABLE_NCURSES__ \
+# -fpack-struct=8 -fPIE -fPIC
+LOCAL_CFLAGS += -D__DISABLE_LIBPCAP__ -D__DISABLE_ISOBMFF_LINKAGE__ -D__DISABLE_NCURSES__ \
                 -D__MOCK_PCAP_REPLAY__ -D__LIBATSC3_ANDROID__ \
-                 -DANDROID=1 -DHAI_ENABLE_SRT=1 -DHAI_PATCH=1 -DHAVE_INET_PTON=1 -DLINUX=1 -DSRT_ENABLE_APP_READER -DSRT_ENABLE_CLOSE_SYNCH -DSRT_ENABLE_ENCRYPTION -DSRT_VERSION=\"1.4.1\" -DUSE_OPENSSL=1 -D_GNU_SOURCE -Dsrt_shared_EXPORTS
+                 -DANDROID=1 \
+                 -DSRT_IMPORT_EVENT \
+                 -DHAI_ENABLE_SRT=1 \
+                 -DHAI_PATCH=1 \
+                 -DHAVE_INET_PTON=1 \
+                 -DLINUX=1 \
+                 -DSRT_ENABLE_APP_READER \
+                 -DSRT_ENABLE_CLOSE_SYNCH \
+                 -DSRT_ENABLE_ENCRYPTION \
+                 -DSRT_VERSION=\"1.4.1\" \
+                 -DUSE_OPENSSL \
+                 -Dsrt_shared_EXPORTS \
+                 -D_GNU_SOURCE \
 
+# 2020-12-17 - working on Sony tv... but crashes in NDK flow
+# -DHCRYPT_DEV \
+#-DENABLE_HAICRYPT_LOGGING
 
-LOCAL_LDLIBS += -ldl -lc++_shared -llog -landroid -lz \
-				-latsc3_core -latsc3_bridge
+# -D_GNU_SOURCE \
+
+LOCAL_LDLIBS += -ldl -llog -landroid -lz \
+				-latsc3_core -latsc3_bridge \
+				-lssl -lcrypto -lc++_shared
 
 LOCAL_LDFLAGS += -fPIE -fPIC \
 				-L $(LOCAL_PATH)/../atsc3_bridge/build/intermediates/ndkBuild/debug/obj/local/$(TARGET_ARCH_ABI)/ \
 				-L $(LOCAL_PATH)/../atsc3_core/build/intermediates/ndkBuild/debug/obj/local/$(TARGET_ARCH_ABI)/
 
+ifeq ($(TARGET_ARCH_ABI),armeabi-v7a)
+#LOCAL_ARM_MODE := arm
+#
+#LOCAL_CFLAGS += -mhard-float -mfpu=vfp
+#LOCAL_LDFLAGS += -Wl,--no-warn-mismatch -mfloat-abi=hard -mfpu=vfp
+
+LOCAL_LDFLAGS += -Wl,--no-warn-mismatch -mfpu=vfp
+
+LOCAL_CFLAGS += -D__LIBC_libCodornicesRq_HACKS__ -D_LARGEFILE64_SOURCE -D_GNU_SOURCE -DLINUX
+endif
+
 $(info 'before local shared libs' $(MAKECMDGOALS))
 
 ifneq ($(MAKECMDGOALS),clean)
 	ifneq ($(MAKECMDGOALS),generateJsonModelDebug)
-LOCAL_SHARED_LIBRARIES := libssl libcrypto libCodornicesRq
+LOCAL_SHARED_LIBRARIES := libCodornicesRq libssl libcrypto
 	endif
 endif
 
