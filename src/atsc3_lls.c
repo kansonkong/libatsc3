@@ -257,32 +257,26 @@ lls_table_t* lls_create_xml_table(block_t* lls_packet_block) {
 	return NULL;
 }
 
-/*
- return: SLT table (even if we are a signed multi-table
- */
 lls_table_t* lls_table_create_or_update_from_lls_slt_monitor(lls_slt_monitor_t* lls_slt_monitor, block_t* lls_packet_block) {
 	uint32_t parsed;
 	uint32_t parsed_update;
 	uint32_t parsed_error;
 
-	lls_table_t* parsed_lls_table = lls_table_create_or_update_from_lls_slt_monitor_with_metrics(lls_slt_monitor, lls_packet_block, &parsed, &parsed_update, &parsed_error);
-	lls_table_t* to_return_slt_table = parsed_lls_table;
-	
-	if(parsed_lls_table) {
-	    if(parsed_lls_table->lls_table_id == SignedMultiTable) {
-	        for(int i=0; i < parsed_lls_table->signed_multi_table.atsc3_signed_multi_table_lls_payload_v.count; i++) {
-	            atsc3_signed_multi_table_lls_payload_t* atsc3_signed_multi_table_lls_payload = parsed_lls_table->signed_multi_table.atsc3_signed_multi_table_lls_payload_v.data[i];
+	lls_table_t* lls_table = lls_table_create_or_update_from_lls_slt_monitor_with_metrics(lls_slt_monitor, lls_packet_block, &parsed, &parsed_update, &parsed_error);
+
+	if(lls_table) {
+	    if(lls_table->lls_table_id == SignedMultiTable) {
+	        for(int i=0; i < lls_table->signed_multi_table.atsc3_signed_multi_table_lls_payload_v.count; i++) {
+	            atsc3_signed_multi_table_lls_payload_t* atsc3_signed_multi_table_lls_payload = lls_table->signed_multi_table.atsc3_signed_multi_table_lls_payload_v.data[i];
                 atsc3_lls_table_create_or_update_from_lls_slt_monitor_dispatcher(lls_slt_monitor, atsc3_signed_multi_table_lls_payload->lls_table);
-				if(atsc3_signed_multi_table_lls_payload->lls_table->lls_table_id == SLT) {
-					to_return_slt_table = atsc3_signed_multi_table_lls_payload->lls_table;
-				}
 	        }
 	    } else {
-            atsc3_lls_table_create_or_update_from_lls_slt_monitor_dispatcher(lls_slt_monitor, parsed_lls_table);
+            atsc3_lls_table_create_or_update_from_lls_slt_monitor_dispatcher(lls_slt_monitor, lls_table);
 	    }
+
     }
 
-	return to_return_slt_table;
+	return lls_table;
 }
 
 lls_table_t* atsc3_lls_table_create_or_update_from_lls_slt_monitor_dispatcher(lls_slt_monitor_t* lls_slt_monitor, lls_table_t* lls_table) {
@@ -816,13 +810,6 @@ void lls_dump_instance_table(lls_table_t* base_table) {
 	}
 
 	_LLS_INFO_I(" --------------------------");
-	
-	if(base_table->lls_table_id == SignedMultiTable) {
-		for(int i=0; i < base_table->signed_multi_table.atsc3_signed_multi_table_lls_payload_v.count; i++) {
-			   atsc3_signed_multi_table_lls_payload_t *lls_table_payload = base_table->signed_multi_table.atsc3_signed_multi_table_lls_payload_v.data[i];
-			   lls_dump_instance_table(lls_table_payload->lls_table);
-		}
-	}
 
 	if(base_table->lls_table_id == SLT) {
 

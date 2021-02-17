@@ -46,7 +46,11 @@ void mmtp_signalling_packet_free(mmtp_signalling_packet_t** mmtp_signalling_pack
 		if(mmtp_signalling_packet) {
 			block_Destroy(&mmtp_signalling_packet->raw_packet);
 			block_Destroy(&mmtp_signalling_packet->mmtp_header_extension);
-            __MMTP_INFO("mmtp_signalling_packet_free, packet_id: %d", mmtp_signalling_packet->mmtp_packet_id);
+            __MMTP_TRACE("mmtp_signalling_packet_free, ptr: %p, packet_id: %d", mmtp_signalling_packet, mmtp_signalling_packet->mmtp_packet_id);
+
+            if(mmtp_signalling_packet->udp_packet_inner_msg_payload) {
+                block_Destroy(&mmtp_signalling_packet->udp_packet_inner_msg_payload);
+            }
 
 			mmtp_signalling_packet_free_mmt_signalling_message_header_and_payload(mmtp_signalling_packet);
 			freesafe(mmtp_signalling_packet);
@@ -83,6 +87,16 @@ void mmtp_packet_id_packets_container_free(mmtp_packet_id_packets_container_t** 
 		mmtp_packet_id_packets_container_t* mmtp_packet_id_packets_container = *mmtp_packet_id_packets_container_p;
 
 		if(mmtp_packet_id_packets_container) {
+
+		    if(mmtp_packet_id_packets_container->atsc3_video_decoder_configuration_record) {
+                atsc3_video_decoder_configuration_record_free(&mmtp_packet_id_packets_container->atsc3_video_decoder_configuration_record);
+            }
+            if(mmtp_packet_id_packets_container->atsc3_audio_decoder_configuration_record) {
+                atsc3_audio_decoder_configuration_record_free(&mmtp_packet_id_packets_container->atsc3_audio_decoder_configuration_record);
+            }
+            if(mmtp_packet_id_packets_container->atsc3_stpp_decoder_configuration_record) {
+                atsc3_stpp_decoder_configuration_record_free(&mmtp_packet_id_packets_container->atsc3_stpp_decoder_configuration_record);
+            }
 			mmtp_packet_id_packets_container_free_mpu_sequence_number_mmtp_mpu_packet_collection(mmtp_packet_id_packets_container);
 			mmtp_packet_id_packets_container_free_mmtp_signalling_packet(mmtp_packet_id_packets_container);
 			mmtp_packet_id_packets_container_free_mmtp_mpu_nontimed_packet(mmtp_packet_id_packets_container);

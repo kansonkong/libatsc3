@@ -7,6 +7,8 @@ SRTRxSTLTPVirtualPHYAndroid::SRTRxSTLTPVirtualPHYAndroid(JNIEnv* env, jobject jn
     this->env = env;
     this->jni_instance_globalRef = env->NewGlobalRef(jni_instance);
     this->setRxUdpPacketProcessCallback(atsc3_core_service_bridge_process_packet_from_plp_and_block);
+    this->setRxLinkMappingTableProcessCallback(atsc3_phy_jni_bridge_notify_link_mapping_table);
+
 }
 
 /*
@@ -50,17 +52,20 @@ void SRTRxSTLTPVirtualPHYAndroid::releasePinnedProducerThreadAsNeeded() {
 }
 
 void SRTRxSTLTPVirtualPHYAndroid::pinConsumerThreadAsNeeded() {
+    _SRTRXSTLTP_VIRTUAL_PHY_ANDROID_INFO("SRTRxSTLTPVirtualPHYAndroid::pinConsumerThreadAsNeeded - enter: with this: %p, chained: atsc3_ndk_application_bridge_get_instance: %p", this, atsc3_ndk_application_bridge_get_instance());
     consumerJniEnv = new Atsc3JniEnv(atsc3_ndk_phy_virtual_static_loader_get_javaVM());
     if(atsc3_ndk_application_bridge_get_instance()) {
         atsc3_ndk_application_bridge_get_instance()->pinConsumerThreadAsNeeded();
+        _SRTRXSTLTP_VIRTUAL_PHY_ANDROID_INFO("SRTRxSTLTPVirtualPHYAndroid::pinConsumerThreadAsNeeded - after call to atsc3_ndk_application_bridge_get_instance()->pinConsumerThreadAsNeeded()");
     }
 }
 
 void SRTRxSTLTPVirtualPHYAndroid::releasePinnedConsumerThreadAsNeeded() {
-    if(consumerJniEnv) {
-        delete consumerJniEnv;
-        consumerJniEnv = nullptr;
-    }
+    _SRTRXSTLTP_VIRTUAL_PHY_WARN("SRTRxSTLTPVirtualPHYAndroid::releasePinnedConsumerThreadAsNeeded");
+//    if(consumerJniEnv) {
+//        delete consumerJniEnv;
+//        consumerJniEnv = nullptr;
+//    }
 
     if(atsc3_ndk_application_bridge_get_instance()) {
         atsc3_ndk_application_bridge_get_instance()->releasePinnedConsumerThreadAsNeeded();

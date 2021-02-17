@@ -26,6 +26,8 @@ using namespace std;
 
 #include <Atsc3NdkPHYLowaSISStaticJniLoader.h>
 
+#include <IAtsc3NdkPHYClientRFMetrics.h>
+
 #include <at3drv_api.h>
 
 #include "atsc3_lowasis_phy_android_rxdata.h"
@@ -81,8 +83,10 @@ protected:
 private:
 
     bool init_completed = false;
-    bool is_tuned = false;
+    S_AT3_FE_INFO phyFeVendorDemodInfo = { };
+    const char* getPhyFeVendorNameString(E_AT3_FEVENDOR phyFeVendor);
 
+    bool is_tuned = false;
 
     //uses      pinProducerThreadAsNeeded
     int         captureThread();

@@ -9,7 +9,7 @@ trigger:
       - 1.*
 
 pool:
-  vmImage: 'ubuntu-latest'
+  vmImage: 'ubuntu-18.04'
 
 variables:
   - name: ARTIFACT_VERSION
@@ -34,8 +34,8 @@ steps:
     displayName: 'Setup ARTIFACT_VERSION from tag'
 
   - bash:
-       echo "y" | sudo $(ANDROID_SDK_ROOT)/tools/bin/sdkmanager --install "ndk;21.0.6113669" --sdk_root=${ANDROID_SDK_ROOT}
-    displayName: 'Setup NDK 21.0.6113669'
+       echo "y" | sudo $(ANDROID_SDK_ROOT)/tools/bin/sdkmanager --install "ndk;21.1.6352462" --sdk_root=${ANDROID_SDK_ROOT}
+    displayName: 'Setup NDK 21.1.6352462'
 
   - task: MavenAuthenticate@0
     displayName: 'Maven Authenticate'
@@ -49,7 +49,7 @@ steps:
       javaHomeOption: 'JDKVersion'
       publishJUnitResults: true
       testResultsFiles: '**/TEST-*.xml'
-      tasks: ':atsc3_core:build :atsc3_bridge:build :atsc3_phy_virtual:build :atsc3_phy_lowasis:build :atsc3_phy_saankhya:build :atsc3_core:publish :atsc3_bridge:publish :atsc3_phy_virtual:publish :atsc3_phy_lowasis:publish :atsc3_phy_saankhya:publish -PartifactVersion=$(ARTIFACT_VERSION)'
+      tasks: ':atsc3_core:build :atsc3_bridge:build :atsc3_bridge_media_mmt:build :atsc3_phy_virtual:build :atsc3_phy_lowasis:build :atsc3_phy_saankhya:build :atsc3_core:publish :atsc3_bridge:publish :atsc3_bridge_media_mmt:publish :atsc3_phy_virtual:publish :atsc3_phy_lowasis:publish :atsc3_phy_saankhya:publish -PartifactVersion=$(ARTIFACT_VERSION)'
 
     displayName: gradlew build
 
