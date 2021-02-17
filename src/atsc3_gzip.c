@@ -109,8 +109,8 @@ int32_t atsc3_unzip_gzip_payload_block_t(block_t* src, block_t* dest) {
 	
 	if(input_payload_size > output_payload_available) return -1;
 
-	uint input_payload_offset = 0;
-	uint output_payload_offset = 0;
+	unsigned int input_payload_offset = 0;
+	unsigned int output_payload_offset = 0;
 
 	if(!output_payload) {
 		return -1;
@@ -141,7 +141,7 @@ int32_t atsc3_unzip_gzip_payload_block_t(block_t* src, block_t* dest) {
 	do {
 		strm.next_in = &input_payload[input_payload_offset];
 
-		uint payload_chunk_size = input_payload_size - input_payload_offset > GZIP_CHUNK_INPUT_READ_SIZE ? GZIP_CHUNK_INPUT_READ_SIZE : input_payload_size - input_payload_offset;
+		unsigned int payload_chunk_size = input_payload_size - input_payload_offset > GZIP_CHUNK_INPUT_READ_SIZE ? GZIP_CHUNK_INPUT_READ_SIZE : input_payload_size - input_payload_offset;
 		strm.avail_in = payload_chunk_size;
 
 		if (strm.avail_in <= 0)
@@ -197,11 +197,11 @@ int32_t atsc3_unzip_gzip_payload_block_t_with_dynamic_realloc(block_t* src, bloc
 	*dest_p = block_Alloc(0);
 	block_t* dest = *dest_p;
 	
-    uint output_payload_available = GZIP_CHUNK_OUTPUT_BUFFER_SIZE;
+    unsigned int output_payload_available = GZIP_CHUNK_OUTPUT_BUFFER_SIZE;
     unsigned char *output_payload = (unsigned char*)calloc(GZIP_CHUNK_OUTPUT_BUFFER_SIZE + 1, sizeof(unsigned char));
 
-	uint input_payload_offset = 0;
-	uint output_payload_offset = 0;
+	unsigned int input_payload_offset = 0;
+	unsigned int output_payload_offset = 0;
 
 	if(!output_payload) {
 		return -1;
@@ -230,7 +230,7 @@ int32_t atsc3_unzip_gzip_payload_block_t_with_dynamic_realloc(block_t* src, bloc
 	do {
 		strm.next_in = &input_payload[input_payload_offset];
 
-		uint payload_chunk_size = input_payload_size - input_payload_offset > GZIP_CHUNK_INPUT_READ_SIZE ? GZIP_CHUNK_INPUT_READ_SIZE : input_payload_size - input_payload_offset;
+		unsigned int payload_chunk_size = input_payload_size - input_payload_offset > GZIP_CHUNK_INPUT_READ_SIZE ? GZIP_CHUNK_INPUT_READ_SIZE : input_payload_size - input_payload_offset;
 		strm.avail_in = payload_chunk_size;
 
 		if (strm.avail_in <= 0)
