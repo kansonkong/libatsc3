@@ -53,9 +53,15 @@
  */
 #ifdef UINTPTR_MAX
 
+#ifndef _WIN32
 struct bstree_node {
 	uintptr_t left, right;
 } __attribute__((aligned(2)));
+#else
+struct bstree_node {
+	uintptr_t left, right;
+} __declspec(align(2));
+#endif
 
 #else
 
@@ -97,10 +103,19 @@ enum rb_color {
 
 #ifdef UINTPTR_MAX
 
+#ifndef _WIN32
 struct rbtree_node {
 	struct rbtree_node *left, *right;
 	uintptr_t parent;
 } __attribute__((aligned(2)));
+#else
+
+struct rbtree_node {
+	struct rbtree_node* left, * right;
+	uintptr_t parent;
+} __declspec(align(2));
+
+#endif
 
 #else
 
@@ -137,10 +152,17 @@ int rbtree_init(struct rbtree *tree, rbtree_cmp_fn_t cmp, unsigned long flags);
  */
 #if defined UINTPTR_MAX && UINTPTR_MAX == UINT64_MAX
 
+#ifndef _WIN32
 struct avltree_node {
 	struct avltree_node *left, *right;
 	uintptr_t parent;		/* balance factor [0:4] */
 } __attribute__((aligned(8)));
+#else
+struct avltree_node {
+	struct avltree_node* left, * right;
+	uintptr_t parent;		/* balance factor [0:4] */
+} __declspec(align(8));
+#endif
 
 #else
 
@@ -178,9 +200,15 @@ int avltree_init(struct avltree *tree, avltree_cmp_fn_t cmp, unsigned long flags
  */
 #ifdef UINTPTR_MAX
 
+#ifndef _WIN32
 struct splaytree_node {
 	uintptr_t left, right;
 } __attribute__((aligned(2)));
+#else
+struct splaytree_node {
+	uintptr_t left, right;
+} __declspec(align(2));
+#endif
 
 #else
 

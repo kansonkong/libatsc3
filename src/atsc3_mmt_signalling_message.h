@@ -59,8 +59,9 @@
 #include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
+#ifndef _WIN32
 #include <arpa/inet.h>
-
+#endif
 
 #ifndef ATSC3_MMT_SIGNALLING_MESSAGE_H
 #define ATSC3_MMT_SIGNALLING_MESSAGE_H

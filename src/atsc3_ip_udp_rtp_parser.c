@@ -49,7 +49,7 @@ block_t* atsc3_pcap_parse_ethernet_frame(const struct pcap_pkthdr *pkthdr, const
     
     block_t* ip_udp_rtp = block_Alloc(ip_udp_rtp_size);
     block_Write(ip_udp_rtp, (uint8_t*)&packet[14], ip_udp_rtp_size);
-    block_RefZero(ip_udp_rtp);
+    //block_RefZero(ip_udp_rtp);
     return ip_udp_rtp;
 }
 

@@ -438,14 +438,23 @@ char* alc_packet_dump_to_object_get_s_tsid_filename_with_atsc3_fdt_file_p(udp_fl
                                                                     fread(to_trim_payload, new_mde_payload_size, 1, temp_fp);
                                                                     int ret = ftruncate(fileno(temp_fp), new_mde_payload_size);
                                                                     //printf("ftruncate for fd: %d, ret is: %d", fileno(temp_fp), ret);
+																	//jjustman-2020-09-01 - grr
+#ifndef _WIN32
                                                                     fsync(fileno(temp_fp));
+#else
+																	fflush(temp_fp);
+#endif
                                                                     fseek(temp_fp, 0, SEEK_SET);
                                                                     fwrite(to_trim_payload, new_mde_payload_size, 1, temp_fp);
                                                                    /* for(int i=0; i < 32; i++) {
                                                                         printf("to_trim_payload[%d]: 0x%02x (%c)", i, to_trim_payload[i], to_trim_payload[i]);
                                                                     }*/
 
-                                                                    fsync(fileno(temp_fp));
+#ifndef _WIN32
+																	fsync(fileno(temp_fp));
+#else
+																	fflush(temp_fp);
+#endif
 
                                                                     free(to_trim_payload);
                                                                     to_trim_payload = NULL;
@@ -1103,6 +1112,8 @@ cleanup:
 
 bool __ALC_RECON_HAS_WRITTEN_INIT_BOX = false;
 
+#ifdef __ATSC3_RECON_PIPE_FFPLAY__
+
 void __alc_recon_fragment_with_init_box(char* file_name, atsc3_alc_packet_t* alc_packet, uint32_t tsi, uint32_t toi_init, const char* to_write_filename) {
 
 
@@ -1437,6 +1448,8 @@ cleanup:
 
 	return;
 }
+#endif
+
 
 /*
  * atsc3_alc_persist_route_object_lct_packet_received_for_lls_sls_alc_monitor_all_flows

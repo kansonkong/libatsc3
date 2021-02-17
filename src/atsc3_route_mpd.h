@@ -218,7 +218,7 @@ typedef struct atsc3_route_period {
 	char* 			id;
 	char*			start;
 	atsc3_xlink_t* 	atsc3_xlink;
-	ATSC3_VECTOR_BUILDER_STRUCT(atsc3_route_adaptation_set)
+	ATSC3_VECTOR_BUILDER_STRUCT(atsc3_route_adaptation_set);
 
 } atsc3_route_period_t;
 
@@ -242,7 +242,7 @@ typedef struct atsc3_route_mpd {
 	char* time_shift_buffer_depth;
 	char* type;
 
-	ATSC3_VECTOR_BUILDER_STRUCT(atsc3_route_period)
+	ATSC3_VECTOR_BUILDER_STRUCT(atsc3_route_period);
 
 } atsc3_route_mpd_t;
 

@@ -15,7 +15,11 @@
 
 #include <pthread.h>
 #include <stdlib.h>
+
+#ifndef _WIN32
 #include <sys/ioctl.h>
+#endif
+
 #include <signal.h>
 
 #include "atsc3_lls.h"
@@ -31,7 +35,9 @@ extern "C" {
 
 
 void ncurses_init(void);
+#ifndef __DISABLE_NCURSES__
 void* ncurses_input_run_thread(void *vargp);
+#endif
 
 extern pthread_mutex_t ncurses_writer_lock;
 void ncurses_mutext_init(void);

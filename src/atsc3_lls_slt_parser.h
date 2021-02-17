@@ -49,8 +49,8 @@ int lls_slt_table_perform_update(lls_table_t* lls_table, lls_slt_monitor_t* lls_
 
 
 //etst methods
-char* lls_get_service_category_value(uint service_category);
-char* lls_get_sls_protocol_value(uint protocol);
+char* lls_get_service_category_value(uint8_t service_category);
+char* lls_get_sls_protocol_value(uint8_t protocol);
 
 
 int lls_slt_table_build(lls_table_t* lls_table, xml_node_t *xml_root);

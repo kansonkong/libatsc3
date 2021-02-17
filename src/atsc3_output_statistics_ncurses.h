@@ -6,6 +6,12 @@
  *
  */
 
+#ifdef _WIN32
+#define __DISABLE_NCURSES__
+#else
+#include <sys/ioctl.h>
+#endif
+
 
 #include <stdarg.h>
 
@@ -15,8 +21,8 @@
 
 #include <pthread.h>
 #include <stdlib.h>
-#include <sys/ioctl.h>
 #include <signal.h>
+
 
 #include "atsc3_lls.h"
 #include "atsc3_lls_slt_parser.h"
