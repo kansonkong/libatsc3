@@ -782,7 +782,11 @@ void atsc3_hevc_nals_record_dump(const char *label, block_t *block) {
 //for libavcodec/ffmpeg SXS nals extraction
 #include <errno.h>
 #include <pthread.h>
+#ifndef _WIN32
 #include <stdatomic.h>
+#else
+#include "win_stdatomic.h"
+#endif
 
 ///end SXS
 
