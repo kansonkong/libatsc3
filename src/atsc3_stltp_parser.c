@@ -1538,7 +1538,7 @@ atsc3_preamble_packet_t* atsc3_stltp_parse_preamble_packet(atsc3_stltp_preamble_
 					for (int k=0; k <= L1D_PLP_parameters->L1D_plp_num_channel_bonded; k++) {
 						L1D_plp_bonded_rf_id_t* L1D_plp_bonded_rf_id = L1D_plp_bonded_rf_id_new();
 						//3 bits
-						L1D_plp_bonded_rf_id->L1D_plp_bonded_rf_id = block_Read_uint8_bitlen(block, 2);
+						L1D_plp_bonded_rf_id->L1D_plp_bonded_rf_id_val = block_Read_uint8_bitlen(block, 2);
 						L1D_PLP_parameters_add_L1D_plp_bonded_rf_id(L1D_PLP_parameters, L1D_plp_bonded_rf_id);
                     }
                 }
@@ -1597,7 +1597,7 @@ atsc3_preamble_packet_t* atsc3_stltp_parse_preamble_packet(atsc3_stltp_preamble_
 							L1D_plp_HTI_num_fec_blocks_t* L1D_plp_HTI_num_fec_blocks = L1D_plp_HTI_num_fec_blocks_new();
 							
 							//12
-							L1D_plp_HTI_num_fec_blocks->L1D_plp_HTI_num_fec_blocks = block_Read_uint16_bitlen(block, 12);
+							L1D_plp_HTI_num_fec_blocks->L1D_plp_HTI_num_fec_blocks_val = block_Read_uint16_bitlen(block, 12);
 							L1D_PLP_parameters_add_L1D_plp_HTI_num_fec_blocks(L1D_PLP_parameters, L1D_plp_HTI_num_fec_blocks);
 						}
 					}

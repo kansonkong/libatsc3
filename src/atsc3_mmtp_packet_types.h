@@ -185,7 +185,7 @@ void mmtp_packet_header_free(mmtp_packet_header_t** mmtp_packet_header_p);
 #define ATSC3_MMTP_MPU_PACKET_PARSE_FROM_BLOCK_T_MINIMUM_SANE_LENGTH_BYTES 14
 
 typedef struct mmtp_mpu_packet {
-    _MMTP_MPU_PACKET_HEADER_FIELDS;
+    _MMTP_MPU_PACKET_HEADER_FIELDS
 
     //if mpu_timed_flag == 1
         uint32_t    movie_fragment_sequence_number;

@@ -107,6 +107,7 @@
       <WarningLevel>Level3</WarningLevel>
       <TreatSpecificWarningsAsErrors>4005;%(TreatSpecificWarningsAsErrors)</TreatSpecificWarningsAsErrors>
       <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
+      <AdditionalIncludeDirectories>C:\pthread-win32\cinegy.pthreads-win64.2.9.1.17\sources</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <AdditionalDependencies>../WpdPack/Lib/x64/Packet.lib;../WpdPack/Lib/x64/wpcap.lib;../vcpkg/packages/zlib_x64-windows/lib/zlib.lib;C:\pthread-win32\cinegy.pthreads-win64.2.9.1.17\runtimes\win-x64\native\release\pthread_lib.lib;C:\Program Files\OpenSSL-Win64\lib\libssl.lib;C:\Program Files\OpenSSL-Win64\lib\libcrypto.lib;%(AdditionalDependencies)</AdditionalDependencies>

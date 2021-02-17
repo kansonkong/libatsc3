@@ -231,12 +231,12 @@ typedef struct L1D_time_sec_block {
     
     
 typedef struct L1D_plp_bonded_rf_id {
-    uint8_t     L1D_plp_bonded_rf_id : 3;
+    uint8_t     L1D_plp_bonded_rf_id_val:3;
 } L1D_plp_bonded_rf_id_t;
 
     
 typedef struct L1D_plp_HTI_num_fec_blocks {
-    uint16_t    L1D_plp_HTI_num_fec_blocks:12;
+    uint16_t    L1D_plp_HTI_num_fec_blocks_val:12;
 } L1D_plp_HTI_num_fec_blocks_t;
     
 typedef struct L1D_PLP_parameters {
