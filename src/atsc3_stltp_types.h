@@ -230,13 +230,13 @@ typedef struct L1D_time_sec_block {
 } L1D_time_sec_block_t;
     
     
-typedef struct L1D_plp_bonded_rf {
+typedef struct L1D_plp_bonded_rf_id {
     uint8_t     L1D_plp_bonded_rf_id : 3;
-} L1D_plp_bonded_rf_t;
+} L1D_plp_bonded_rf_id_t;
 
     
 typedef struct L1D_plp_HTI_num_fec_blocks {
-    uint16_t    L1D_plp_HTI_num_fec_blocks_val : 12;
+    uint16_t    L1D_plp_HTI_num_fec_blocks:12;
 } L1D_plp_HTI_num_fec_blocks_t;
     
 typedef struct L1D_PLP_parameters {
@@ -270,7 +270,7 @@ typedef struct L1D_PLP_parameters {
 		uint8_t     L1D_plp_channel_bonding_format : 2;
 		
 			//for (k=0..L1D_plp_num_channel_bonded) {
-			ATSC3_VECTOR_BUILDER_STRUCT(L1D_plp_bonded_rf);
+			ATSC3_VECTOR_BUILDER_STRUCT(L1D_plp_bonded_rf_id);
 	
 			//}
         //}
@@ -316,7 +316,7 @@ typedef struct L1D_PLP_parameters {
     
 } L1D_PLP_parameters_t;
 
-ATSC3_VECTOR_BUILDER_METHODS_INTERFACE(L1D_PLP_parameters, L1D_plp_bonded_rf);
+ATSC3_VECTOR_BUILDER_METHODS_INTERFACE(L1D_PLP_parameters, L1D_plp_bonded_rf_id);
 ATSC3_VECTOR_BUILDER_METHODS_INTERFACE(L1D_PLP_parameters, L1D_plp_HTI_num_fec_blocks);
 
 
