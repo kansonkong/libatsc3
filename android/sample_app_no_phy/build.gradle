@@ -10,7 +10,7 @@ buildscript {
     dependencies {
         // android studio - canary - classpath 'com.android.tools.build:gradle:4.2.0-alpha07'
         // android studio 4.0
-        classpath "com.android.tools.build:gradle:4.0.1"
+        classpath "com.android.tools.build:gradle:4.1.0"
 
         //classpath 'com.android.tools.build:gradle:3.6.3'
         //classpath 'com.ydq.android.gradle.build.tool:nativeBundle:1.0.6'
@@ -41,10 +41,10 @@ allprojects {
 apply plugin: 'com.android.library'
 
 android {
-    compileSdkVersion 28
+    compileSdkVersion 29
     defaultConfig {
-        minSdkVersion 28
-        targetSdkVersion 28
+        minSdkVersion 29
+        targetSdkVersion 29
         ndk {
             abiFilters 'arm64-v8a'
         }

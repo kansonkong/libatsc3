@@ -11,196 +11,46 @@ int _ATSC3_HEVC_NAL_EXTRACTOR_INFO_ENABLED = 0;
 int _ATSC3_HEVC_NAL_EXTRACTOR_DEBUG_ENABLED = 0;
 int _ATSC3_HEVC_NAL_EXTRACTOR_TRACE_ENABLED = 0;
 
-//default atsc3_vector_builder collection for hevc nal types
-
-ATSC3_VECTOR_BUILDER_METHODS_IMPLEMENTATION(hevc_decoder_configuration_record, atsc3_nal_unit_vps);
-
-ATSC3_VECTOR_BUILDER_METHODS_IMPLEMENTATION(hevc_decoder_configuration_record, atsc3_nal_unit_sps);
-
-ATSC3_VECTOR_BUILDER_METHODS_IMPLEMENTATION(hevc_decoder_configuration_record, atsc3_nal_unit_pps);
-
-ATSC3_VECTOR_BUILDER_METHODS_IMPLEMENTATION(hevc_decoder_configuration_record, atsc3_nal_unit_prefix_sei);
-
-ATSC3_VECTOR_BUILDER_METHODS_IMPLEMENTATION(hevc_decoder_configuration_record, atsc3_nal_unit_suffix_sei);
-
-ATSC3_VECTOR_BUILDER_METHODS_IMPLEMENTATION(avc1_decoder_configuration_record, atsc3_avc1_nal_unit_sps);
-
-ATSC3_VECTOR_BUILDER_METHODS_IMPLEMENTATION(avc1_decoder_configuration_record, atsc3_avc1_nal_unit_pps);
-
-/*
- * create a new hevc_decoder_configuration_record
- * set our configuration_version to 1,
- * 	todo: set MSB bitmasks to 1 to match ISO 14496-15:2019 spec
- */
-hevc_decoder_configuration_record_t *hevc_decoder_configuration_record_new() {
-    hevc_decoder_configuration_record_t *hevc_decoder_configuration_record = calloc(1, sizeof(hevc_decoder_configuration_record_t));
-    hevc_decoder_configuration_record->configuration_version = 1;
-
-    return hevc_decoder_configuration_record;
-}
-
-/*
- * legacy (read: non ATSC/3.0) avcC SPS/PPS support
- */
-
-avc1_decoder_configuration_record_t *avc1_decoder_configuration_record_new() {
-    avc1_decoder_configuration_record_t *avc1_decoder_configuration_record = calloc(1, sizeof(avc1_decoder_configuration_record_t));
-    return avc1_decoder_configuration_record;
-}
 
 
-/**
- * add default _free methods for each one of these to block_Destroy nal_unit, e.g.:
- *
- * void atsc3_nal_unit_vps_free(atsc3_nal_unit_vps_t** atsc3_nal_unit_vps_p) {
-	if(atsc3_nal_unit_vps_p) {
-		atsc3_nal_unit_vps_t* atsc3_nal_unit_vps = *atsc3_nal_unit_vps_p;
-		if(atsc3_nal_unit_vps) {
-			//todo: more impl's as needed
-			block_Destroy(&atsc3_nal_unit_vps->nal_unit);
-
-			free(atsc3_nal_unit_vps);
-		}
-		atsc3_nal_unit_vps = NULL;
-		*atsc3_nal_unit_vps_p = NULL;
-	}
-}
-
-s/nal_unit_vps/nal_unit_sps ...etc
-*/
-
-//atsc3_nal_unit_vps_free
-void atsc3_nal_unit_vps_free(atsc3_nal_unit_vps_t **atsc3_nal_unit_vps_p) {
-    if (atsc3_nal_unit_vps_p) {
-        atsc3_nal_unit_vps_t *atsc3_nal_unit_vps = *atsc3_nal_unit_vps_p;
-        if (atsc3_nal_unit_vps) {
-//todo: more impl's as needed
-            block_Destroy(&atsc3_nal_unit_vps->nal_unit);
-
-            free(atsc3_nal_unit_vps);
-        }
-        atsc3_nal_unit_vps = NULL;
-        *atsc3_nal_unit_vps_p = NULL;
-    }
-}
-
-//atsc3_nal_unit_sps
-void atsc3_nal_unit_sps_free(atsc3_nal_unit_sps_t **atsc3_nal_unit_sps_p) {
-    if (atsc3_nal_unit_sps_p) {
-        atsc3_nal_unit_sps_t *atsc3_nal_unit_sps = *atsc3_nal_unit_sps_p;
-        if (atsc3_nal_unit_sps) {
-//todo: more impl's as needed
-            block_Destroy(&atsc3_nal_unit_sps->nal_unit);
-
-            free(atsc3_nal_unit_sps);
-        }
-        atsc3_nal_unit_sps = NULL;
-        *atsc3_nal_unit_sps_p = NULL;
-    }
-}
-
-//atsc3_nal_unit_pps
-void atsc3_nal_unit_pps_free(atsc3_nal_unit_pps_t **atsc3_nal_unit_pps_p) {
-    if (atsc3_nal_unit_pps_p) {
-        atsc3_nal_unit_pps_t *atsc3_nal_unit_pps = *atsc3_nal_unit_pps_p;
-        if (atsc3_nal_unit_pps) {
-//todo: more impl's as needed
-            block_Destroy(&atsc3_nal_unit_pps->nal_unit);
-
-            free(atsc3_nal_unit_pps);
-        }
-        atsc3_nal_unit_pps = NULL;
-        *atsc3_nal_unit_pps_p = NULL;
-    }
-}
-
-//atsc3_nal_unit_prefix_sei
-void atsc3_nal_unit_prefix_sei_free(atsc3_nal_unit_prefix_sei_t **atsc3_nal_unit_prefix_sei_p) {
-    if (atsc3_nal_unit_prefix_sei_p) {
-        atsc3_nal_unit_prefix_sei_t *atsc3_nal_unit_prefix_sei = *atsc3_nal_unit_prefix_sei_p;
-        if (atsc3_nal_unit_prefix_sei) {
-//todo: more impl's as needed
-            block_Destroy(&atsc3_nal_unit_prefix_sei->nal_unit);
-
-            free(atsc3_nal_unit_prefix_sei);
-        }
-        atsc3_nal_unit_prefix_sei = NULL;
-        *atsc3_nal_unit_prefix_sei_p = NULL;
-    }
-}
-
-//atsc3_nal_unit_suffix_sei
-void atsc3_nal_unit_suffix_sei_free(atsc3_nal_unit_suffix_sei_t **atsc3_nal_unit_suffix_sei_p) {
-    if (atsc3_nal_unit_suffix_sei_p) {
-        atsc3_nal_unit_suffix_sei_t *atsc3_nal_unit_suffix_sei = *atsc3_nal_unit_suffix_sei_p;
-        if (atsc3_nal_unit_suffix_sei) {
-//todo: more impl's as needed
-            block_Destroy(&atsc3_nal_unit_suffix_sei->nal_unit);
-
-            free(atsc3_nal_unit_suffix_sei);
-        }
-        atsc3_nal_unit_suffix_sei = NULL;
-        *atsc3_nal_unit_suffix_sei_p = NULL;
-    }
-}
-
-
-//atsc3_avc1_nal_unit_sps
-void atsc3_avc1_nal_unit_sps_free(atsc3_avc1_nal_unit_sps_t **atsc3_avc1_nal_unit_sps_p) {
-    if (atsc3_avc1_nal_unit_sps_p) {
-        atsc3_avc1_nal_unit_sps_t *atsc3_avc1_nal_unit_sps = *atsc3_avc1_nal_unit_sps_p;
-        if (atsc3_avc1_nal_unit_sps) {
-//todo: more impl's as needed
-            block_Destroy(&atsc3_avc1_nal_unit_sps->nal_unit);
-
-            free(atsc3_avc1_nal_unit_sps);
-        }
-        atsc3_avc1_nal_unit_sps = NULL;
-        *atsc3_avc1_nal_unit_sps_p = NULL;
-    }
-}
-
-//atsc3_avc1_nal_unit_pps
-void atsc3_avc1_nal_unit_pps_free(atsc3_avc1_nal_unit_pps_t **atsc3_avc1_nal_unit_pps_p) {
-    if (atsc3_avc1_nal_unit_pps_p) {
-        atsc3_avc1_nal_unit_pps_t *atsc3_avc1_nal_unit_pps = *atsc3_avc1_nal_unit_pps_p;
-        if (atsc3_avc1_nal_unit_pps) {
-//todo: more impl's as needed
-            block_Destroy(&atsc3_avc1_nal_unit_pps->nal_unit);
-
-            free(atsc3_avc1_nal_unit_pps);
-        }
-        atsc3_avc1_nal_unit_pps = NULL;
-        *atsc3_avc1_nal_unit_pps_p = NULL;
-    }
-}
-
-video_decoder_configuration_record_t *video_decoder_configuration_record_new() {
-    video_decoder_configuration_record_t *video_decoder_configuration_record = calloc(1, sizeof(video_decoder_configuration_record_t));
-    return video_decoder_configuration_record;
-}
 
 #define VPS_NAL_unit_type 32
 #define SPS_NAL_unit_type 33
 #define PPS_NAL_unit_type 34
 
-//process either avcC or hvcC, use video_decoder_configuration_record (containing both avcC and hvcC decoder records)
+/*
+ * process either avcC or hvcC, use atsc3_video_decoder_configuration_record (containing both avcC and hvcC decoder records)
+   from track init box (moov)
+*/
 
-video_decoder_configuration_record_t *atsc3_avc1_hevc_nal_extractor_parse_from_mpu_metadata_block_t(block_t *mpu_metadata_block) {
-    video_decoder_configuration_record_t *video_decoder_configuration_record = video_decoder_configuration_record_new();
+atsc3_video_decoder_configuration_record_t* atsc3_avc1_hevc_nal_extractor_parse_from_mpu_metadata_block_t(block_t *mpu_metadata_block) {
+    atsc3_isobmff_mdhd_box_t* atsc3_isobmff_mdhd_box = NULL;
 
     if (!mpu_metadata_block || mpu_metadata_block->p_size < 8) {
         goto error;
     }
 
     block_Rewind(mpu_metadata_block);
-//first, search for the tkhd
-//then, search for isobmff box: hvcC
-//todo: search for the avcC box for h264 use cases
+    //first, search for the tkhd
+    //then, search for isobmff box: hvcC
+    //todo: search for the avcC box for h264 use cases
 
     _ATSC3_HEVC_NAL_EXTRACTOR_TRACE("atsc3_avc1_hevc_nal_extractor_parse_from_mpu_metadata_block_t: mpu_metadata_block_t: %p, p_buffer: %p, pos: %d, size: %d", mpu_metadata_block, mpu_metadata_block->p_buffer, mpu_metadata_block->i_pos, mpu_metadata_block->p_size);
 
+    atsc3_video_decoder_configuration_record_t* atsc3_video_decoder_configuration_record = atsc3_video_decoder_configuration_record_new();
 
+    atsc3_isobmff_mdhd_box = atsc3_isobmff_box_parser_tools_parse_mdhd_from_block_t(mpu_metadata_block);
+    if(atsc3_isobmff_mdhd_box) {
+        if (atsc3_isobmff_mdhd_box->version == 1) {
+            atsc3_video_decoder_configuration_record->timebase = atsc3_isobmff_mdhd_box->atsc3_isobmff_mdhd_box_v1.timescale;
+        } else if (atsc3_isobmff_mdhd_box->version == 0) {
+            atsc3_video_decoder_configuration_record->timebase = atsc3_isobmff_mdhd_box->atsc3_isobmff_mdhd_box_v0.timescale;
+        }
+
+        atsc3_isobmff_mdhd_box_free(&atsc3_isobmff_mdhd_box);
+    }
+
+    block_Rewind(mpu_metadata_block);
     uint8_t *tkhd_ptr = block_Get(mpu_metadata_block);
     bool has_tkhd_match = false;
     int tkhd_match_index = 0;
@@ -222,16 +72,16 @@ video_decoder_configuration_record_t *atsc3_avc1_hevc_nal_extractor_parse_from_m
     }
 
     if (has_tkhd_match && tkhd_match_index) {
-        atsc3_init_parse_tkhd_for_width_height(video_decoder_configuration_record, &tkhd_ptr[tkhd_match_index], init_buff_remaining);
+        atsc3_init_parse_tkhd_for_width_height(atsc3_video_decoder_configuration_record, &tkhd_ptr[tkhd_match_index], init_buff_remaining);
 
-        if (video_decoder_configuration_record->width < 64) {
-            _ATSC3_HEVC_NAL_EXTRACTOR_TRACE("atsc3_avc1_hevc_nal_extractor_parse_from_mpu_metadata_block_t: atsc3_init_parse_tkhd_for_width_height return - video_decoder_configuration_record->width < 64 (%d), setting to 0!", video_decoder_configuration_record->width);
-            video_decoder_configuration_record->width = 0;
+        if (atsc3_video_decoder_configuration_record->width < 64) {
+            _ATSC3_HEVC_NAL_EXTRACTOR_TRACE("atsc3_avc1_hevc_nal_extractor_parse_from_mpu_metadata_block_t: atsc3_init_parse_tkhd_for_width_height return - atsc3_video_decoder_configuration_record->width < 64 (%d), setting to 0!", atsc3_video_decoder_configuration_record->width);
+            atsc3_video_decoder_configuration_record->width = 0;
         }
 
-        if (video_decoder_configuration_record->height < 64) {
-            _ATSC3_HEVC_NAL_EXTRACTOR_TRACE("atsc3_avc1_hevc_nal_extractor_parse_from_mpu_metadata_block_t: atsc3_init_parse_tkhd_for_width_height - return video_decoder_configuration_record->height < 64 (%d), setting to 0!", video_decoder_configuration_record->height);
-            video_decoder_configuration_record->height = 0;
+        if (atsc3_video_decoder_configuration_record->height < 64) {
+            _ATSC3_HEVC_NAL_EXTRACTOR_TRACE("atsc3_avc1_hevc_nal_extractor_parse_from_mpu_metadata_block_t: atsc3_init_parse_tkhd_for_width_height - return atsc3_video_decoder_configuration_record->height < 64 (%d), setting to 0!", atsc3_video_decoder_configuration_record->height);
+            atsc3_video_decoder_configuration_record->height = 0;
         }
     }
     uint8_t *mpu_ptr = block_Get(mpu_metadata_block);
@@ -256,24 +106,31 @@ video_decoder_configuration_record_t *atsc3_avc1_hevc_nal_extractor_parse_from_m
             _ATSC3_HEVC_NAL_EXTRACTOR_DEBUG("atsc3_hevc_nal_extractor_parse_from_mpu_metadata_block_t: HEVC: found matching hev1 (hvc1) at position: %d", i);
             has_hev1_match = true;
             hev1_match_index = i + 4;
+
+            atsc3_video_decoder_configuration_record->has_hev1_box = true;
+            atsc3_video_decoder_configuration_record->has_hvcC_box = true;
         }
-//look for our HEVC hvcC first, then fallback to avcC
+
+            //look for our HEVC hvcC first, then fallback to avcC
         if (mpu_ptr[i] == 'h' && mpu_ptr[i + 1] == 'v' && mpu_ptr[i + 2] == 'c' &&
             mpu_ptr[i + 3] == 'C') {
             _ATSC3_HEVC_NAL_EXTRACTOR_DEBUG("atsc3_hevc_nal_extractor_parse_from_mpu_metadata_block_t: HEVC: found matching hvcC at position: %d", i);
             has_hvcC_match = true;
             hvcC_match_index = i + 4;
+            atsc3_video_decoder_configuration_record->has_hev1_box = true;
+
         } else if (mpu_ptr[i] == 'a' && mpu_ptr[i + 1] == 'v' && mpu_ptr[i + 2] == 'c' &&
                    mpu_ptr[i + 3] == 'C') {
             _ATSC3_HEVC_NAL_EXTRACTOR_DEBUG("atsc3_hevc_nal_extractor_parse_from_mpu_metadata_block_t: AVC: found matching avcC at position: %d", i);
             has_avcC_match = true;
             avcC_match_index = i + 4;
+
+            atsc3_video_decoder_configuration_record->has_avcC_box = true;
         }
     }
 
-    if (has_hev1_match && hev1_match_index && !video_decoder_configuration_record->width &&
-        !video_decoder_configuration_record->height) {
-        atsc3_init_parse_HEVCConfigurationBox_for_width_height(video_decoder_configuration_record, &mpu_ptr[hev1_match_index],
+    if (has_hev1_match && hev1_match_index && !atsc3_video_decoder_configuration_record->width && !atsc3_video_decoder_configuration_record->height) {
+        atsc3_init_parse_HEVCConfigurationBox_for_width_height(atsc3_video_decoder_configuration_record, &mpu_ptr[hev1_match_index],
                                                                mpu_metadata_block->p_size -
                                                                hev1_match_index);
     }
@@ -285,14 +142,14 @@ video_decoder_configuration_record_t *atsc3_avc1_hevc_nal_extractor_parse_from_m
 //jjustman-2019-11-14 - if we don't have a sane value for  width or height yet,
 // either from trak/tkhd.width|height, or from hev1.width|height, set these to zero and warn...
 
-    if (video_decoder_configuration_record->width < 64) {
-        _ATSC3_HEVC_NAL_EXTRACTOR_WARN("atsc3_avc1_hevc_nal_extractor_parse_from_mpu_metadata_block_t: video_decoder_configuration_record->width < 64 (%d), setting to 0!", video_decoder_configuration_record->width);
-        video_decoder_configuration_record->width = 0;
+    if (atsc3_video_decoder_configuration_record->width < 64) {
+        _ATSC3_HEVC_NAL_EXTRACTOR_WARN("atsc3_avc1_hevc_nal_extractor_parse_from_mpu_metadata_block_t: atsc3_video_decoder_configuration_record->width < 64 (%d), setting to 0!", atsc3_video_decoder_configuration_record->width);
+        atsc3_video_decoder_configuration_record->width = 0;
     }
 
-    if (video_decoder_configuration_record->height < 64) {
-        _ATSC3_HEVC_NAL_EXTRACTOR_WARN("atsc3_avc1_hevc_nal_extractor_parse_from_mpu_metadata_block_t: video_decoder_configuration_record->height < 64 (%d), setting to 0!", video_decoder_configuration_record->height);
-        video_decoder_configuration_record->height = 0;
+    if (atsc3_video_decoder_configuration_record->height < 64) {
+        _ATSC3_HEVC_NAL_EXTRACTOR_WARN("atsc3_avc1_hevc_nal_extractor_parse_from_mpu_metadata_block_t: atsc3_video_decoder_configuration_record->height < 64 (%d), setting to 0!", atsc3_video_decoder_configuration_record->height);
+        atsc3_video_decoder_configuration_record->height = 0;
     }
 
 //process as HEVC w/ hvcC match
@@ -407,8 +264,17 @@ video_decoder_configuration_record_t *atsc3_avc1_hevc_nal_extractor_parse_from_m
             }
         }
 
-        video_decoder_configuration_record->hevc_decoder_configuration_record = hevc_decoder_configuration_record;
-        return video_decoder_configuration_record;
+        atsc3_video_decoder_configuration_record->hevc_decoder_configuration_record = hevc_decoder_configuration_record;
+
+        //build our combined hevc NALs for csd specific data
+        block_t* hevc_nals_combined = atsc3_hevc_extract_extradata_nals_combined_ffmpegImpl(atsc3_video_decoder_configuration_record->hevc_decoder_configuration_record->box_data_original);
+        if(hevc_nals_combined && hevc_nals_combined->p_size) {
+            block_Rewind(hevc_nals_combined);
+            atsc3_video_decoder_configuration_record->hevc_decoder_configuration_record->hevc_nals_combined = hevc_nals_combined;
+        }
+
+
+        return atsc3_video_decoder_configuration_record;
     }
 
 //AVC1/avcC NAL processing
@@ -448,8 +314,7 @@ video_decoder_configuration_record_t *atsc3_avc1_hevc_nal_extractor_parse_from_m
         _ATSC3_HEVC_NAL_EXTRACTOR_DEBUG("atsc3_hevc_nal_extractor_parse_from_mpu_metadata_block_t: avc1: num_of_sequence_parameter_sets: %u", avc1_decoder_configuration_record->num_of_sequence_parameter_sets);
 
 //start parsing SPS here
-        for (int i = 0;
-                i < avc1_decoder_configuration_record->num_of_sequence_parameter_sets; i++) {
+        for (int i = 0; i < avc1_decoder_configuration_record->num_of_sequence_parameter_sets; i++) {
             atsc3_avc1_nal_unit_sps_t *atsc3_avc1_nal_unit_sps = atsc3_avc1_nal_unit_sps_new();
             atsc3_avc1_nal_unit_sps->nal_unit_length = ntohs(*((uint16_t *) (&mpu_ptr[avc_offset])));
             avc_offset += 2;
@@ -466,8 +331,7 @@ video_decoder_configuration_record_t *atsc3_avc1_hevc_nal_extractor_parse_from_m
         _ATSC3_HEVC_NAL_EXTRACTOR_DEBUG("atsc3_hevc_nal_extractor_parse_from_mpu_metadata_block_t: avc1: num_of_picture_parameter_sets: %u", avc1_decoder_configuration_record->num_of_picture_parameter_sets);
 
 //start parsing PPS here
-        for (int i = 0;
-                i < avc1_decoder_configuration_record->num_of_sequence_parameter_sets; i++) {
+        for (int i = 0; i < avc1_decoder_configuration_record->num_of_sequence_parameter_sets; i++) {
             atsc3_avc1_nal_unit_pps_t *atsc3_avc1_nal_unit_pps = atsc3_avc1_nal_unit_pps_new();
             atsc3_avc1_nal_unit_pps->nal_unit_length = ntohs(*((uint16_t *) (&mpu_ptr[avc_offset])));
             avc_offset += 2;
@@ -479,8 +343,8 @@ video_decoder_configuration_record_t *atsc3_avc1_hevc_nal_extractor_parse_from_m
             _ATSC3_HEVC_NAL_EXTRACTOR_DEBUG("atsc3_hevc_nal_extractor_parse_from_mpu_metadata_block_t: avc1: adding pps: %d, nal_length: %u, nal_unit->p_size: %d", i, atsc3_avc1_nal_unit_pps->nal_unit_length, atsc3_avc1_nal_unit_pps->nal_unit->p_size);
         }
 
-        video_decoder_configuration_record->avc1_decoder_configuration_record = avc1_decoder_configuration_record;
-        return video_decoder_configuration_record;
+        atsc3_video_decoder_configuration_record->avc1_decoder_configuration_record = avc1_decoder_configuration_record;
+        return atsc3_video_decoder_configuration_record;
 
     }
 
@@ -493,9 +357,9 @@ video_decoder_configuration_record_t *atsc3_avc1_hevc_nal_extractor_parse_from_m
 
 _ATSC3_HEVC_NAL_EXTRACTOR_ERROR("atsc3_hevc_nal_extractor_parse_from_mpu_metadata_block_t: error processing: ptr: %p, size: %d", mpu_metadata_block, mpu_metadata_block->p_size);
 
-    if (video_decoder_configuration_record) {
-        free(video_decoder_configuration_record);
-        video_decoder_configuration_record = NULL;
+    if (atsc3_video_decoder_configuration_record) {
+        free(atsc3_video_decoder_configuration_record);
+        atsc3_video_decoder_configuration_record = NULL;
     }
 
     return NULL;
@@ -637,7 +501,7 @@ void atsc3_hevc_decoder_configuration_record_dump(hevc_decoder_configuration_rec
 
  */
 
-void atsc3_init_parse_tkhd_for_width_height(video_decoder_configuration_record_t *video_decoder_configuration_record, uint8_t *tkhd_ptr_start, uint32_t init_buff_remaining) {
+void atsc3_init_parse_tkhd_for_width_height(atsc3_video_decoder_configuration_record_t* atsc3_video_decoder_configuration_record, uint8_t *tkhd_ptr_start, uint32_t init_buff_remaining) {
     uint8_t version = *tkhd_ptr_start++;
     tkhd_ptr_start += 3;  //complete fullbox
     if (version == 1) {
@@ -656,8 +520,8 @@ void atsc3_init_parse_tkhd_for_width_height(video_decoder_configuration_record_t
     uint32_t height = ntohs(*(uint16_t *) (tkhd_ptr_start));
 
     _ATSC3_HEVC_NAL_EXTRACTOR_DEBUG("atsc3_init_parse_tkhd_for_width_height, got width: %d, height: %d", width, height);
-    video_decoder_configuration_record->width = width;
-    video_decoder_configuration_record->height = height;
+    atsc3_video_decoder_configuration_record->width = width;
+    atsc3_video_decoder_configuration_record->height = height;
 }
 
 //try and extract from hev1 box - HEVCConfigurationBox
@@ -682,7 +546,7 @@ void atsc3_init_parse_tkhd_for_width_height(video_decoder_configuration_record_t
         }
      */
 
-void atsc3_init_parse_HEVCConfigurationBox_for_width_height(video_decoder_configuration_record_t *video_decoder_configuration_record, uint8_t *configurationBox_ptr_start, uint32_t init_buff_remaining) {
+void atsc3_init_parse_HEVCConfigurationBox_for_width_height(atsc3_video_decoder_configuration_record_t* atsc3_video_decoder_configuration_record, uint8_t *configurationBox_ptr_start, uint32_t init_buff_remaining) {
     configurationBox_ptr_start += 8 + 16; //fullbox + avc1 box struct internals
 
     uint16_t width = ntohs(*((uint16_t *) (configurationBox_ptr_start)));
@@ -691,8 +555,8 @@ void atsc3_init_parse_HEVCConfigurationBox_for_width_height(video_decoder_config
 
     if (width >= 64 && height >= 64) {
         _ATSC3_HEVC_NAL_EXTRACTOR_DEBUG("c, got width: %d, height: %d", width, height);
-        video_decoder_configuration_record->width = width;
-        video_decoder_configuration_record->height = height;
+        atsc3_video_decoder_configuration_record->width = width;
+        atsc3_video_decoder_configuration_record->height = height;
     } else {
         _ATSC3_HEVC_NAL_EXTRACTOR_DEBUG("atsc3_init_parse_HEVCConfigurationBox_for_width_height, discarding invalid w/h: width: %d, height: %d", width, height);
     }
@@ -2193,9 +2057,9 @@ void ff_free_vlc(VLC *vlc);
 #define INIT_LE_VLC_STATIC(vlc, bits, a, b, c, d, e, f, g, static_size) \
     INIT_LE_VLC_SPARSE_STATIC(vlc, bits, a, b, c, d, e, f, g, NULL, 0, 0, static_size)
 
-
+#ifndef INT_MAX
 #define INT_MAX INT32_MAX
-
+#endif
 
 #if defined(__cplusplus) && !defined(__STDC_CONSTANT_MACROS) && !defined(UINT64_C)
 #error missing -D__STDC_CONSTANT_MACROS / #define __STDC_CONSTANT_MACROS
@@ -2922,6 +2786,16 @@ return ((((uint32_t)(sign ^ cache)) >> (32 - n)) ^ sign) - sign;
 #endif
 }
 
+
+#ifndef sign_extend
+    static inline av_const int sign_extend(int val, unsigned bits)
+    {
+    unsigned shift = 8 * sizeof(int) - bits;
+    union { unsigned u; int s; } v = { (unsigned) val << shift };
+    return v.s >> shift;
+    }
+#endif
+
 #if !CACHED_BITSTREAM_READER
 
 static inline int get_xbits_le(GetBitContext *s, int n) {
@@ -3630,7 +3504,9 @@ enum AVAudioServiceType {
 #define BUFFER_FLAG_REALLOCATABLE (1 << 1)
 
 
+#ifndef ATOMIC_FLAG_INIT
 #define ATOMIC_FLAG_INIT 0
+#endif
 
 #define ATOMIC_VAR_INIT(value) (value)
 

@@ -140,7 +140,7 @@ void atsc3_lls_slt_service_free(atsc3_lls_slt_service_t** atsc3_lls_slt_service_
 
 ATSC3_VECTOR_BUILDER_METHODS_ITEM_FREE(lls_slt_service_id); //no pointers
 
-ATSC3_VECTOR_BUILDER_METHODS_ITEM_FREE(lls_sls_mmt_monitor);
+ATSC3_VECTOR_BUILDER_METHODS_ITEM_FREE(lls_sls_mmt_monitor); //custom impl not needed, atsc3_lls_slt_service_t* and lls_sls_mmt_session_t* are both transients
 ATSC3_VECTOR_BUILDER_METHODS_ITEM_FREE(lls_sls_mmt_session_flows);
 
 //ATSC3_VECTOR_BUILDER_METHODS_ITEM_FREE(lls_sls_alc_monitor);
@@ -148,7 +148,6 @@ void lls_sls_alc_monitor_free(lls_sls_alc_monitor_t** lls_sls_alc_monitor_p) {
     if(lls_sls_alc_monitor_p) {
         lls_sls_alc_monitor_t* lls_sls_alc_monitor = *lls_sls_alc_monitor_p;
         if(lls_sls_alc_monitor) {
-
 
         	//jjustman-2020-07-14 - TODO: clear
         	//atsc3_lls_slt_service

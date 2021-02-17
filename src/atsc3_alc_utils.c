@@ -123,18 +123,6 @@ char* alc_packet_dump_to_object_get_filename_tsi_toi(udp_flow_t* udp_flow, uint3
     return temporary_file_name;
 }
 
-char* alc_packet_dump_to_object_get_filename_tsi_toi_unsigned(udp_flow_t* udp_flow, uint32_t tsi, uint32_t toi) {
-    char* temporary_file_name = (char *)calloc(255, sizeof(char));
-    snprintf(temporary_file_name, 255, "%s%u.%u.%u.%u.%u.%u-%u.unsigned",
-             __ALC_DUMP_OUTPUT_PATH__,
-             __toipandportnonstruct(udp_flow->dst_ip_addr, udp_flow->dst_port),
-             tsi,
-             toi);
-    
-    return temporary_file_name;
-}
-
-
 
 /**
  * todo:
@@ -688,8 +676,9 @@ int alc_packet_write_fragment(FILE* f, char* file_name, uint32_t offset, atsc3_a
  */
 
 int atsc3_alc_packet_persist_to_toi_resource_process_sls_mbms_and_emit_callback(udp_flow_t *udp_flow, atsc3_alc_packet_t *alc_packet, lls_sls_alc_monitor_t *lls_sls_alc_monitor, atsc3_route_object_t* atsc3_route_object) {
-	
-	atsc3_fdt_file_t* atsc3_fdt_file_matching = NULL;
+
+	atsc3_sls_alc_flow_t* 	matching_sls_alc_flow = NULL;
+	atsc3_fdt_file_t* 		atsc3_fdt_file_matching = NULL;
 
 	char* temporary_recovery_filename = NULL;
 	char* s_tsid_content_location = NULL;
@@ -702,7 +691,7 @@ int atsc3_alc_packet_persist_to_toi_resource_process_sls_mbms_and_emit_callback(
 
 	//jjustman-2020-08-05 - deprecate file_dump_enabled option
 	if(!lls_sls_alc_monitor || (lls_sls_alc_monitor && !lls_sls_alc_monitor->lls_sls_monitor_output_buffer_mode.file_dump_enabled)) {
-		return -2;
+		return ATSC3_ALC_UTILS_LLS_SLS_ALC_MONITOR_OUTPUT_BUFFER_MODE_NOT_ENABLED;
 	}
 
 	//get a local copy of our temporary object recovery filename for promoting to final payload objet filename
@@ -721,13 +710,14 @@ int atsc3_alc_packet_persist_to_toi_resource_process_sls_mbms_and_emit_callback(
     //jjustman-2020-08-05 - allow is_toi_init to re-write our object on carousel emission
     if(atsc3_route_object_is_complete(atsc3_route_object) && (atsc3_route_object->is_toi_init || !atsc3_route_object->recovery_complete_timestamp)) {
 
-    	//build our full recovery recovery_file_buffer block_t payload here...
-    	atsc3_route_object_persist_recovery_buffer_all_pending_lct_packet_vector(atsc3_route_object);
 
-        atsc3_route_object_recovery_file_handle_flush_and_close(atsc3_route_object);
-
-        //update our sls here if we have a service we are listenting to
+        //update our sls here if we have a service we are listening to
         if(lls_sls_alc_monitor && lls_sls_alc_monitor->atsc3_lls_slt_service && alc_packet->def_lct_hdr->tsi == 0) {
+
+            //build our full recovery recovery_file_buffer block_t payload here...
+            atsc3_route_object_persist_recovery_buffer_all_pending_lct_packet_vector(atsc3_route_object);
+
+            atsc3_route_object_recovery_file_handle_flush_and_close(atsc3_route_object);
 
             char* final_mbms_toi_filename = alc_packet_dump_to_object_get_filename_tsi_toi(udp_flow, 0, alc_packet->def_lct_hdr->toi);
             rename(temporary_recovery_filename, final_mbms_toi_filename);
@@ -750,7 +740,6 @@ int atsc3_alc_packet_persist_to_toi_resource_process_sls_mbms_and_emit_callback(
             free(final_mbms_toi_filename);
 
         } else {
-        	//jjustman-2020-07-28 - todo: use atsc3_route_object for fp handle reference
 
         	//jjustman-2020-08-05 - dirty hack - don't process ROUTE object completion if we don't have our SLS parsed yet,
         	// i.e. lls_sls_alc_monitor->atsc3_sls_metadata_fragments is null
@@ -758,15 +747,20 @@ int atsc3_alc_packet_persist_to_toi_resource_process_sls_mbms_and_emit_callback(
         	if(!lls_sls_alc_monitor->atsc3_sls_metadata_fragments) {
                 __ALC_UTILS_ERROR("lls_sls_alc_monitor->atsc3_sls_metadata_fragments is NULL, tsi: %u, toi: %u, bailing on object recovery complete!",
                         alc_packet->def_lct_hdr->tsi, alc_packet->def_lct_hdr->toi);
-                bytesWritten = -3;
+                bytesWritten = ATSC3_ALC_UTILS_SLS_METADATA_FRAGMENTS_NOT_RECEIVED_YET;
                 goto cleanup;
             }
+
+            //build our full recovery recovery_file_buffer block_t payload here...
+            atsc3_route_object_persist_recovery_buffer_all_pending_lct_packet_vector(atsc3_route_object);
+            atsc3_route_object_recovery_file_handle_flush_and_close(atsc3_route_object);
 			
             s_tsid_content_location = alc_packet_dump_to_object_get_s_tsid_filename_with_atsc3_fdt_file_p(udp_flow, alc_packet, lls_sls_alc_monitor, &atsc3_fdt_file_matching);
 			if(atsc3_fdt_file_matching && atsc3_fdt_file_matching->content_type) {
 				s_tsid_content_type = strlcopy(atsc3_fdt_file_matching->content_type);
 			}
-     
+
+			//if our s_tsid_content_location is different than our 'temporary' recovery filename
             if(strncmp(temporary_recovery_filename, s_tsid_content_location, __MIN(strlen(temporary_recovery_filename), strlen(s_tsid_content_location))) !=0) {
                 snprintf(new_file_name_raw_buffer, 1024, __ALC_DUMP_OUTPUT_PATH__"%d/%s", lls_sls_alc_monitor->atsc3_lls_slt_service->service_id, s_tsid_content_location);
                 
@@ -807,7 +801,7 @@ int atsc3_alc_packet_persist_to_toi_resource_process_sls_mbms_and_emit_callback(
 					
 						rename(temporary_recovery_filename, persisted_cache_file_name_gz);
 						
-						__ALC_UTILS_WARN("atsc3_fdt_file_matching: %p, content_location: %s, content_encoding: %s, is_gzip: true, content_length is too large: %d! (max 64MB), renaming to .gz: %s",
+						__ALC_UTILS_WARN("atsc3_alc_packet_persist_to_toi_resource_process_sls_mbms_and_emit_callback: atsc3_fdt_file_matching: %p, content_location: %s, content_encoding: %s, is_gzip: true, content_length is too large: %d! (max 64MB), renaming to .gz: %s",
 									atsc3_fdt_file_matching,
 									atsc3_fdt_file_matching->content_location,
 									atsc3_fdt_file_matching->content_encoding,
@@ -818,25 +812,57 @@ int atsc3_alc_packet_persist_to_toi_resource_process_sls_mbms_and_emit_callback(
 						
 					} else {
 						if(atsc3_fdt_file_matching->content_length) {
-							__ALC_UTILS_DEBUG("atsc3_fdt_file_matching: %p, content_location: %s, content_encoding: %s, is_gzip: true, content_length is: %d",
+							__ALC_UTILS_DEBUG("atsc3_alc_packet_persist_to_toi_resource_process_sls_mbms_and_emit_callback: atsc3_fdt_file_matching: %p, content_location: %s, content_encoding: %s, is_gzip: true, content_length is: %d",
 							atsc3_fdt_file_matching,
 							atsc3_fdt_file_matching->content_location,
 							atsc3_fdt_file_matching->content_encoding,
 							atsc3_fdt_file_matching->content_length);
 							
 							block_t* atsc3_fdt_file_gzip_contents = block_Read_from_filename(temporary_recovery_filename);
-							block_Rewind(atsc3_fdt_file_gzip_contents);
+                            unlink(temporary_recovery_filename);
+
+                            block_Rewind(atsc3_fdt_file_gzip_contents);
 							block_t* atsc3_decompressed_payload = block_Alloc(atsc3_fdt_file_matching->content_length);
 
 							int32_t unzipped_size = atsc3_unzip_gzip_payload_block_t(atsc3_fdt_file_gzip_contents, atsc3_decompressed_payload);
 				
 							if(unzipped_size < 0 || (unzipped_size != atsc3_fdt_file_matching->content_length)) {
-								__ALC_UTILS_WARN("atsc3_unzip_gzip_payload: atsc3_fdt_file_matching: %p, content_location: %s, content_encoding: %s, is_gzip: true, content_length: %d, FAILED, returned: %d",
-												atsc3_fdt_file_matching,
-												atsc3_fdt_file_matching->content_location,
-												atsc3_fdt_file_matching->content_encoding,
-												atsc3_fdt_file_matching->content_length,
-												unzipped_size);
+
+                                int failed_persisted_cache_file_name_gz_len = strlen(persisted_cache_file_name) + 12;
+                                char* failed_persisted_cache_file_name_gz = calloc(failed_persisted_cache_file_name_gz_len, sizeof(char));
+
+                                memcpy(failed_persisted_cache_file_name_gz, persisted_cache_file_name, strlen(persisted_cache_file_name)+1);
+                                strncat(failed_persisted_cache_file_name_gz, ".gz.failed", 10);
+
+								__ALC_UTILS_WARN("atsc3_alc_packet_persist_to_toi_resource_process_sls_mbms_and_emit_callback: atsc3_unzip_gzip_payload: temporary_recovery_filename: %s, compressed size: %d, atsc3_fdt_file_matching: %p, content_location: %s, content_encoding: %s, is_gzip: true, content_length: %d, FAILED, returned: %d, dumping failed file to: %s",
+												 temporary_recovery_filename,
+												 atsc3_fdt_file_gzip_contents->p_size,
+												 atsc3_fdt_file_matching,
+												 atsc3_fdt_file_matching->content_location,
+												 atsc3_fdt_file_matching->content_encoding,
+												 atsc3_fdt_file_matching->content_length,
+												 unzipped_size,
+												 failed_persisted_cache_file_name_gz);
+
+                                block_Rewind(atsc3_fdt_file_gzip_contents);
+
+                                block_Write_to_filename(atsc3_fdt_file_gzip_contents, failed_persisted_cache_file_name_gz);
+                                free(failed_persisted_cache_file_name_gz);
+
+                                //jjustman-2020-11-24 - discard our atsc3_route_object so we can try and recover on next carousel, since we were corrupt
+								if((matching_sls_alc_flow = atsc3_sls_alc_flow_find_entry_tsi(&lls_sls_alc_monitor->atsc3_sls_alc_all_s_tsid_flow_v, alc_packet->def_lct_hdr->tsi))) {
+									atsc3_route_object_reset_and_free_and_unlink_recovery_file_atsc3_route_object_lct_packet_received(atsc3_route_object);
+									atsc3_sls_alc_flow_remove_atsc3_route_object(matching_sls_alc_flow, atsc3_route_object);
+                                	atsc3_route_object_free(&atsc3_route_object);
+								} else {
+									__ALC_UTILS_WARN("atsc3_alc_packet_persist_to_toi_resource_process_sls_mbms_and_emit_callback: unable to find matching sls_alc_flow for tsi: %d, leaking atsc3_route_object: %p!",
+													 alc_packet->def_lct_hdr->tsi,
+						 							 atsc3_route_object);
+									atsc3_route_object = NULL;
+								}
+
+                                bytesWritten = ATSC3_ALC_UTILS_FAILED_GZIP_EXTRACTION;
+                                goto cleanup;
 							} else {
 								__ALC_UTILS_DEBUG("atsc3_unzip_gzip_payload: atsc3_fdt_file_matching: %p, content_location: %s, content_encoding: %s, is_gzip: true, success, returned: %d",
 											atsc3_fdt_file_matching,
@@ -860,10 +886,24 @@ int atsc3_alc_packet_persist_to_toi_resource_process_sls_mbms_and_emit_callback(
 							
 							if(unzipped_size < 0) {
 								__ALC_UTILS_WARN("atsc3_unzip_gzip_payload: atsc3_fdt_file_matching: %p, content_location: %s, content_encoding: %s, is_gzip: true, FAILED, returned: %d",
-								atsc3_fdt_file_matching,
-								atsc3_fdt_file_matching->content_location,
-								atsc3_fdt_file_matching->content_encoding,
-												 unzipped_size);
+                                                atsc3_fdt_file_matching,
+                                                atsc3_fdt_file_matching->content_location,
+                                                atsc3_fdt_file_matching->content_encoding,
+                                                unzipped_size);
+
+                                //jjustman-2020-11-24 - discard our atsc3_route_object so we can try and recover on next carousel, since we were corrupt
+								if((matching_sls_alc_flow = atsc3_sls_alc_flow_find_entry_tsi(&lls_sls_alc_monitor->atsc3_sls_alc_all_s_tsid_flow_v, alc_packet->def_lct_hdr->tsi))) {
+									atsc3_route_object_reset_and_free_and_unlink_recovery_file_atsc3_route_object_lct_packet_received(atsc3_route_object);
+									atsc3_sls_alc_flow_remove_atsc3_route_object(matching_sls_alc_flow, atsc3_route_object);
+									atsc3_route_object_free(&atsc3_route_object);
+								} else {
+									__ALC_UTILS_WARN("atsc3_alc_packet_persist_to_toi_resource_process_sls_mbms_and_emit_callback: unable to find matching sls_alc_flow for tsi: %d, leaking atsc3_route_object: %p!",
+													 alc_packet->def_lct_hdr->tsi,
+													 atsc3_route_object);
+									atsc3_route_object = NULL;
+								}
+                                bytesWritten = ATSC3_ALC_UTILS_FAILED_GZIP_EXTRACTION;
+                                goto cleanup;
 							} else {
 								__ALC_UTILS_DEBUG("atsc3_unzip_gzip_payload: atsc3_fdt_file_matching: %p, content_location: %s, content_encoding: %s, is_gzip: true, success, returned: %d",
 											atsc3_fdt_file_matching,
@@ -875,7 +915,6 @@ int atsc3_alc_packet_persist_to_toi_resource_process_sls_mbms_and_emit_callback(
 							}
 						}
 					}
-					unlink(temporary_recovery_filename);
 				} else {
                 
 					rename(temporary_recovery_filename, persisted_cache_file_name);
@@ -886,7 +925,6 @@ int atsc3_alc_packet_persist_to_toi_resource_process_sls_mbms_and_emit_callback(
 				
             	atsc3_route_object_clear_temporary_object_recovery_filename(atsc3_route_object);
 				atsc3_route_object_set_final_object_recovery_filename_for_logging(atsc3_route_object, persisted_cache_file_name);
-                atsc3_sls_alc_flow_t* matching_sls_alc_flow = NULL;
 
 				//jjustman-2020-07-14 - global route dash representationId patching for s-tsid flows
 				//atsc3_sls_alc_all_mediainfo_flow_v
@@ -961,7 +999,7 @@ int atsc3_alc_packet_persist_to_toi_resource_process_sls_mbms_and_emit_callback(
             }
 			//emit lls alc context callback
 			if(lls_sls_alc_monitor->atsc3_lls_sls_alc_on_object_close_flag_s_tsid_content_location_callback) {
-				lls_sls_alc_monitor->atsc3_lls_sls_alc_on_object_close_flag_s_tsid_content_location_callback(alc_packet->def_lct_hdr->tsi, alc_packet->def_lct_hdr->toi, s_tsid_content_location, s_tsid_content_type, persisted_cache_file_name);
+				lls_sls_alc_monitor->atsc3_lls_sls_alc_on_object_close_flag_s_tsid_content_location_callback(lls_sls_alc_monitor->atsc3_lls_slt_service->service_id, alc_packet->def_lct_hdr->tsi, alc_packet->def_lct_hdr->toi, s_tsid_content_location, s_tsid_content_type, persisted_cache_file_name);
 			}
 
 			//jjustman-2020-07-28 - purge our lct_packet_received list as we are moved, and remove atsc3_route_object from flow
