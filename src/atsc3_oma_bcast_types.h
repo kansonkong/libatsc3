@@ -383,22 +383,18 @@ typedef struct atsc3_service_guide_fragment_payload {
 	uint8_t		fragment_type;
 	block_t*	byte_string;
 
-	//fragmentEncoding == 1
-	uint32_t	valid_from;
-	uint32_t	valid_to;
-	block_t*	fragment_id;
+	//fragmentEncoding == 1 || 2 || 3
+    uint32_t	valid_from;
+    uint32_t	valid_to;
+    block_t*	fragment_id;
+
+    //fragmentEncoding == 1
 	block_t*	sdp_fragment;
 
 	//fragmentEncoding == 2
-	uint32_t	valid_from;
-	uint32_t	valid_to;
-	block_t*	fragment_id;
 	block_t*	usbd_fragment;
 
 	//fragmentEncoding == 3
-	uint32_t	valid_from;
-	uint32_t	valid_to;
-	block_t*	fragment_id;
 	block_t*	adp_fragment;
 
 

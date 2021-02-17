@@ -237,8 +237,8 @@ void* global_autoplay_run_thread(void*p) {
             //TODO - jjustman-2019-10-03 - fix this hack
             lls_sls_mmt_monitor->atsc3_lls_slt_service = lls_sls_mmt_session->atsc3_lls_slt_service;
             
-            lls_sls_mmt_monitor->video_packet_id = lls_sls_mmt_session->video_packet_id;
-            lls_sls_mmt_monitor->audio_packet_id = lls_sls_mmt_session->audio_packet_id;
+//            lls_sls_mmt_monitor->video_packet_id = lls_sls_mmt_session->video_packet_id;
+//            lls_sls_mmt_monitor->audio_packet_id = lls_sls_mmt_session->audio_packet_id;
             
             lls_sls_mmt_monitor->lls_sls_monitor_output_buffer.has_written_init_box = false;
             lls_slt_monitor->lls_sls_mmt_monitor = lls_sls_mmt_monitor;

@@ -8,6 +8,7 @@ PcapSTLTPVirtualPHYAndroid::PcapSTLTPVirtualPHYAndroid(JNIEnv* env, jobject jni_
     this->env = env;
     this->jni_instance_globalRef = env->NewGlobalRef(jni_instance);
     this->setRxUdpPacketProcessCallback(atsc3_core_service_bridge_process_packet_from_plp_and_block);
+    this->setRxLinkMappingTableProcessCallback(atsc3_phy_jni_bridge_notify_link_mapping_table);
 }
 
 PcapSTLTPVirtualPHYAndroid::~PcapSTLTPVirtualPHYAndroid() {

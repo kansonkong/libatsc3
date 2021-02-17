@@ -22,7 +22,27 @@ extern "C" {
 #include "atsc3_lls_types.h"
 #include "atsc3_pcre2_regex_utils.h"
 
-#define ATSC3_ROUTE_DASH_MPD_REPRESENTATION_ID_SEGMENT_TEMPLATE_START_NUMBER_REGEX_PATTERN "(<Representation.*?id=\"(.*?)\".*?>.*?<SegmentTemplate.*?startNumber=\"(.*?)\".*?<\\/Representation>)"
+/*
+	jjustman-2020-12-24 - https://standards.iso.org/ittf/PubliclyAvailableStandards/MPEG-DASH_schema_files/DASH-MPD.xsd
+
+	<AdaptationSet> children may contain in any order:
+ 
+			<SegmentTemplate> or <Representation>
+ 
+					-and- more confusingly
+
+			<Representation> may contain a <SegmentTemplate> child
+ 
+	so we are now using named capture groups for:
+		repId and segTempStartNum
+	
+*/
+
+#define ATSC3_ROUTE_DASH_MPD_REPRESENTATION_ID_SEGMENT_TEMPLATE_START_NUMBER_REGEX_PATTERN_OLD_DIGI_PACKAGER "(<Representation.*?id=\"(.*?)\".*?>.*?<SegmentTemplate.*?startNumber=\"(.*?)\".*?<\\/Representation>)"
+
+#define ATSC3_ROUTE_DASH_MPD_REPRESENTATION_ID_SEGMENT_TEMPLATE_START_NUMBER_REGEX_PATTERN "(<AdaptationSet .*?(?=.*?<Representation .*?id=\"(?'repId'.*?)\".*?)(?=.*?<SegmentTemplate .*?startNumber=\"(?'segTempStartNum'.*?)\".*?).*?<\\/AdaptationSet>)"
+
+//regex101.com - passes with flags /gxs
 #define ATSC3_ROUTE_DASH_MPD_REPRESENTATION_ID_SEGMENT_TEMPLATE_START_NUMBER_REGEX_FLAGS "msg"
 #define ATSC3_ROUTE_DASH_MPD_REPRESENTATION_ID_SEGMENT_TEMPLATE_START_NUMBER_REGEX_REPRESENTATION_ID_CAPTURE_REFERENCE 2
 #define ATSC3_ROUTE_DASH_MPD_REPRESENTATION_ID_SEGMENT_TEMPLATE_START_NUMBER_REGEX_START_OFFSET_CAPTURE_REFERENCE 3

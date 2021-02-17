@@ -23,9 +23,21 @@ using namespace std;
 #include <Atsc3NdkPHYSaankhyaStaticJniLoader.h>
 
 #define IF_OFFSET            (0.003453)   // User can Update as needed
-#define CB_SIZE           (16*1024*100)   // Global  circular buffer size
 
-#define BUFFER_SIZE       (16*1024*2)   //CircularBuffer pending data size threshold for TLV depacketization processing
+//TLV circular buffer sizing - use
+//  unique_lock<mutex> CircularBufferMutex_local(CircularBufferMutex);
+//  and CircularBufferMutex_local.unlock();
+//for concurrency protection
+//
+//#define TLV_CIRCULAR_BUFFER_SIZE                 4096000            // TLV circular buffer size, calculated for 2 seconds of user-space interruption at ~15Mbit/sec -> 1.875 * 2 -> 4 MB
+//#define TLV_CIRCULAR_BUFFER_MIN_PROCESS_SIZE    (8 * 1024)          //CircularBuffer pending data size threshold for TLV depacketization processing, pinned at 8KB to match SL4000 ALP buffer
+//#define TLV_CIRCULAR_BUFFER_PROCESS_BLOCK_SIZE  (16 * 1024 * 4)     //CircularBuffer block read size for depacketization callback processing ~ 65KB
+
+//jjustman-2020-11-06 rolling back to prev values-ish
+
+#define TLV_CIRCULAR_BUFFER_SIZE                 4096000            // TLV circular buffer size, calculated for 2 seconds of user-space interruption at ~15Mbit/sec -> 1.875 * 2 -> 4 MB
+#define TLV_CIRCULAR_BUFFER_MIN_PROCESS_SIZE    (16 * 1024 * 2)         //CircularBuffer pending data size threshold for TLV depacketization processing, pinned at 8KB to match SL4000 ALP buffer
+#define TLV_CIRCULAR_BUFFER_PROCESS_BLOCK_SIZE  (16 * 1024 * 2)    //CircularBuffer block read size for depacketization callback processing ~ 65KB
 
 #include "CircularBuffer.h"
 #include <sl_utils.h>
@@ -81,6 +93,7 @@ public:
     void dump_plp_list();
 
     mutex SL_I2C_command_mutex;
+    bool SL_I2C_last_command_extra_sleep;
 
 protected:
     void pinProducerThreadAsNeeded() override;
@@ -100,8 +113,8 @@ protected:
 
 private:
 
-    int slUnit = 0;
-    int tUnit = 0;
+    int slUnit = -1;
+    int tUnit = -1;
 
     SL_PlatFormConfigParams_t getPlfConfig;
     SL_PlatFormConfigParams_t sPlfConfig;
@@ -137,6 +150,7 @@ private:
     std::thread processThreadHandle;
     bool        processThreadShouldRun = false;
     bool        processThreadIsRunning = false;
+    int         processTLVFromCallbackInvocationCount = 0;
 
     //uses      pinStatusThreadAsNeeded
     int         statusThread();
@@ -147,6 +161,9 @@ private:
     //hack
     static CircularBuffer cb;
     static mutex CircularBufferMutex;
+    //jjustman-2021-01-19 - used for when we are in a tuning operation and may have in-flight async RxDataCallbacks fired,
+    //          if set to true, we should discard the TLV payload in RxDataCallback
+    static atomic_bool cb_should_discard;
 
     //thread handling methods
 
@@ -164,13 +181,17 @@ private:
     void resetProcessThreadStatistics();
 
     void processTLVFromCallback();
-    char processDataCircularBufferForCallback[BUFFER_SIZE];
+    char processDataCircularBufferForCallback[TLV_CIRCULAR_BUFFER_PROCESS_BLOCK_SIZE];
 
     block_t* atsc3_sl_tlv_block = NULL;
     mutex    atsc3_sl_tlv_block_mutex;
     void allocate_atsc3_sl_tlv_block();
 
     atsc3_sl_tlv_payload_t* atsc3_sl_tlv_payload = NULL;
+
+    //jjustman-2021-02-04 - global error flag if i2c txn fails, usually due to demod crash
+    static SL_Result_t      global_sl_result_error_flag;
+    static SL_I2cResult_t   global_sl_i2c_result_error_flag;
 };
 
 #define _SAANKHYA_PHY_ANDROID_ERROR(...)   	__LIBATSC3_TIMESTAMP_ERROR(__VA_ARGS__);

@@ -286,6 +286,67 @@ block_t* __block_check_bounaries(const char* method_name, block_t* src) {
 	return src;
 }
 
+block_t* __block_check_bounaries_read_size(const char* method_name, block_t* src, uint32_t read_size) {
+    //these are FATAL conditions, return NULL
+    if(!src) {
+        _ATSC3_UTILS_ERROR("%s: block_t is null: %p", method_name, src);
+        return NULL;
+    }
+
+    if(!src->p_buffer) {
+        _ATSC3_UTILS_ERROR("%s: block: %p, p_buffer is NULL, p_size is: %u, i_pos: %u", method_name, src, src->p_size, src->i_pos);
+        src->p_size = 0;
+        src->i_pos = 0;
+        return NULL;
+    }
+
+    if(src->p_size < 0) {
+        _ATSC3_UTILS_ERROR("%s: block: %p, invalid p_size for p_buffer: %p, p_size is: %u, i_pos: %u", method_name, src, src->p_buffer, src->p_size, src->i_pos);
+        src->p_size = 0;
+        src->i_pos = 0;
+        if(src->p_buffer) {
+            //let this leak
+        }
+        src->p_buffer = NULL;
+        return NULL;
+    }
+
+    //these are under/over-bounary errors and *may* be problematic
+    //re-clamp this position
+    if(src->i_pos < 0) {
+        _ATSC3_UTILS_WARN("%s: block: %p, invalid i_pos, clamping to 0, for p_buffer: %p, p_size is: %u, i_pos: %u", method_name, src, src->p_buffer, src->p_size, src->i_pos);
+        src->i_pos = 0;
+    }
+
+    //is our i_pos past the end of our buffer?
+    if(src->i_pos > src->p_size) {
+        uint32_t new_i_pos = src->p_size - 1;
+        _ATSC3_UTILS_WARN("%s: block: %p, i_pos is past size for p_buffer: %p, p_size is: %u, i_pos: %u, setting to: %u ", method_name, src, src->p_buffer, src->p_size, src->i_pos, new_i_pos);
+        src->i_pos = new_i_pos;
+        src->_overflow_i_pos = true;
+        return NULL;
+    }
+
+    //will our read_size go past the end of our buffer?
+    if((read_size + src->i_pos) > (src->p_size + 1)) {
+        uint32_t new_i_pos = src->p_size - 1;
+        _ATSC3_UTILS_WARN("%s: block: %p, would read past end of buffer, i_pos: %d, p_size: %d, read_size: %d, i_pos + read_size: %d, setting to: %u",
+                method_name,
+                src,
+                src->i_pos,
+                src->p_size,
+                read_size,
+                (src->i_pos + read_size),
+                new_i_pos);
+
+        src->i_pos = new_i_pos;
+        src->_overflow_i_pos = true;
+        return NULL;
+    }
+
+    return src;
+}
+
 uint32_t block_Seek(block_t* block, int32_t seek_pos) {
 	if(!__block_check_bounaries(__FUNCTION__, block)) {
 		block->i_pos = 0;
@@ -315,12 +376,12 @@ uint32_t block_Seek_Relative(block_t* block, int32_t seek_pos) {
     int32_t new_seek_pos = block->i_pos + seek_pos;
     
     if(new_seek_pos < 0 ) {
-        _ATSC3_UTILS_WARN("block_Seek: block: %p, invalid seek_pos to: %u, clamping to 0",
-                          block->p_buffer, seek_pos);
+        _ATSC3_UTILS_WARN("block_Seek: block: %p, invalid seek_pos to relative: %u, i_pos: %d, absolute: %d, clamping to 0",
+                          block->p_buffer, seek_pos, block->i_pos, new_seek_pos);
         block->i_pos = 0;
     } else if(new_seek_pos > block->p_size) {
-        _ATSC3_UTILS_WARN("block_Seek: block: %p, invalid seek_pos to: %u, clamping to %u",
-                          block->p_buffer, seek_pos, block->p_size);
+        _ATSC3_UTILS_WARN("block_Seek: block: %p, invalid seek_pos to relative: %u, i_pos: %d, absolute: %d, clamping to %u",
+                          block->p_buffer, seek_pos, block->i_pos, new_seek_pos, block->p_size);
         block->i_pos = block->p_size;
     } else {
         block->i_pos = new_seek_pos;
@@ -346,8 +407,8 @@ block_t* block_Write(block_t* dest, const uint8_t* src_buf, uint32_t src_size) {
 	return dest;
 }
 
-//use src i_pos to append before
-//this will append the leader of the source block...
+//block_Append:
+// append to dest[i_pos] from src, starting at src[0] with length of src[i_pos] bytes
 uint32_t block_Append(block_t* dest, block_t* src) {
 	if(!__block_check_bounaries(__FUNCTION__, dest)) return 0;
 
@@ -365,6 +426,8 @@ uint32_t block_Append(block_t* dest, block_t* src) {
 	return dest->i_pos;
 }
 
+//block_AppendFromSrciPos
+// append to dest[i_pos] from src, starting at src[i_pos] with length of src[remaining()] bytes
 
 //combine two blocks at dest->i_pos, block_Get(src), len: src->p_size - src->i_pos
 
@@ -658,9 +721,18 @@ block_t* block_Resize(block_t* src, uint32_t src_size_requested) {
 	return src;
 }
 
+/*
+ jjustman-2020-12-31: REVERT:
+ 
+	 jjustman-2020-12-16 - off-by-one fix
+	 if((src->p_size - src->i_pos) == 1) {
+		 _ATSC3_UTILS_WARN("block_Remaining_size: off-by-one workaround applied (src->p_size: %d, src->i_pos: %d), retuning remaining_size: 0", src->p_size, src->i_pos);
+		 return 0;
+	 }
+ */
 uint32_t block_Remaining_size(block_t* src) {
     if(!__block_check_bounaries(__FUNCTION__, src)) return 0;
-    return src->p_size - src->i_pos;
+	return (src->p_size > src->i_pos) ? (src->p_size - src->i_pos) : 0;
 }
 
 bool block_Valid(block_t* src) {
@@ -768,6 +840,8 @@ bool block_Tail_Truncate(block_t* src, uint32_t len) {
 
  */
 uint8_t block_Read_uint8_bitlen(block_t* src, int bitlen) {
+    if(!__block_check_bounaries_read_size(__FUNCTION__, src, (bitlen / 8))) return 0;
+
     uint8_t ret = 0;
     
     if(bitlen <= (8 - src->_bitpos)) {
@@ -798,6 +872,8 @@ uint8_t block_Read_uint8_bitlen(block_t* src, int bitlen) {
 }
 
 uint16_t block_Read_uint16_bitlen(block_t* src, int bitlen) {
+    if(!__block_check_bounaries_read_size(__FUNCTION__, src, (bitlen / 8))) return 0;
+
     uint16_t ret = 0;
 	
     int bits_remaining = bitlen;
@@ -827,6 +903,8 @@ uint16_t block_Read_uint16_bitlen(block_t* src, int bitlen) {
 }
 
 uint32_t block_Read_uint32_bitlen(block_t* src, int bitlen) {
+    if(!__block_check_bounaries_read_size(__FUNCTION__, src, (bitlen / 8))) return 0;
+
 	uint32_t ret = 0;
    
 	int bits_remaining = bitlen;
@@ -856,10 +934,11 @@ uint32_t block_Read_uint32_bitlen(block_t* src, int bitlen) {
 }
 
 uint64_t block_Read_uint64_bitlen(block_t* src, int bitlen) {
-	uint64_t ret = 0;
-   
-	int bits_remaining = bitlen;
-	while(bits_remaining > 0) {
+    if(!__block_check_bounaries_read_size(__FUNCTION__, src, (bitlen / 8))) return 0;
+
+    uint64_t ret = 0;
+    int bits_remaining = bitlen;
+    while(bits_remaining > 0) {
 	   int loop_read_size = (bits_remaining > 8 ? 8 - src->_bitpos : (bits_remaining > (8 - src->_bitpos) ? 8 - src->_bitpos : bits_remaining));
 	   int8_t mask = 0;
 	   int8_t shift = 0;
@@ -886,23 +965,35 @@ uint64_t block_Read_uint64_bitlen(block_t* src, int bitlen) {
 
 //TODO: check for _bitpos
 uint8_t block_Read_uint8(block_t* src) {
+    if(!__block_check_bounaries_read_size(__FUNCTION__, src, 1)) return 0;
+
     uint8_t ret = src->p_buffer[src->i_pos++];
     return ret;
 }
 //read from network to host aligned short/long/double long
 uint16_t block_Read_uint16_ntohs(block_t* src) {
+    if(!__block_check_bounaries_read_size(__FUNCTION__, src, 2)) return 0;
+
     uint16_t ret = ntohs(*((uint16_t*)(&src->p_buffer[src->i_pos])));
     src->i_pos += 2;
     return ret;
 }
 
 uint32_t block_Read_uint32_ntohl(block_t* src) {
+    if(!__block_check_bounaries_read_size(__FUNCTION__, src, 4)) return 0;
+
     uint32_t ret = ntohl(*((uint32_t*)(&src->p_buffer[src->i_pos])));
     src->i_pos += 4;
     return ret;
 }
-uint64_t block_Read_uint64_ntohul(block_t* src) {
-    return 0;
+
+uint64_t block_Read_uint64_ntohll(block_t* src) {
+
+    if(!__block_check_bounaries_read_size(__FUNCTION__, src, 8)) return 0;
+
+    uint64_t ret = ntohq(*((uint64_t*)(&src->p_buffer[src->i_pos])));
+    src->i_pos += 8;
+    return ret;
 }
 
 //read from filesyste into block_t
@@ -916,8 +1007,6 @@ block_t* block_Read_from_filename(const char* file_name) {
 	struct stat st;
 	stat(file_name, &st);
 
-	_ATSC3_UTILS_TRACE("block_Read_from_filename: filename: %s, size: %lld", file_name, st.st_size);
-	
 	block_t* payload = block_Alloc(st.st_size);
 
 	FILE* fp = fopen(file_name, "r");
@@ -1002,7 +1091,7 @@ uint16_t parsePortIntoIntval(const char* dst_port) {
 }
 
 //alloc and copy - note limited to 16k
-char* strlcopy(const char* src) {
+char* strlcopy(char* src) {
 	int len = strnlen(src, 16384);
 	char* dest = (char*)calloc(len+1, sizeof(char));
 	return strncpy(dest, src, len);
@@ -1051,6 +1140,87 @@ char* __trim(char *str)
     return _ltrim(_rtrim(str));
 }
 
+
+bool str_is_utf8(const char* string) {
+
+	if(!string)
+		return 0;
+
+	const unsigned char * bytes = (const unsigned char *)string;
+	while(*bytes)
+	{
+		if( (// ASCII
+				// use bytes[0] <= 0x7F to allow ASCII control characters
+				bytes[0] == 0x09 ||
+				bytes[0] == 0x0A ||
+				bytes[0] == 0x0D ||
+				(0x20 <= bytes[0] && bytes[0] <= 0x7E)
+		)
+				) {
+			bytes += 1;
+			continue;
+		}
+
+		if( (// non-overlong 2-byte
+				(0xC2 <= bytes[0] && bytes[0] <= 0xDF) &&
+				(0x80 <= bytes[1] && bytes[1] <= 0xBF)
+		)
+				) {
+			bytes += 2;
+			continue;
+		}
+
+		if( (// excluding overlongs
+					bytes[0] == 0xE0 &&
+					(0xA0 <= bytes[1] && bytes[1] <= 0xBF) &&
+					(0x80 <= bytes[2] && bytes[2] <= 0xBF)
+			) ||
+			(// straight 3-byte
+					((0xE1 <= bytes[0] && bytes[0] <= 0xEC) ||
+					 bytes[0] == 0xEE ||
+					 bytes[0] == 0xEF) &&
+					(0x80 <= bytes[1] && bytes[1] <= 0xBF) &&
+					(0x80 <= bytes[2] && bytes[2] <= 0xBF)
+			) ||
+			(// excluding surrogates
+					bytes[0] == 0xED &&
+					(0x80 <= bytes[1] && bytes[1] <= 0x9F) &&
+					(0x80 <= bytes[2] && bytes[2] <= 0xBF)
+			)
+				) {
+			bytes += 3;
+			continue;
+		}
+
+		if( (// planes 1-3
+					bytes[0] == 0xF0 &&
+					(0x90 <= bytes[1] && bytes[1] <= 0xBF) &&
+					(0x80 <= bytes[2] && bytes[2] <= 0xBF) &&
+					(0x80 <= bytes[3] && bytes[3] <= 0xBF)
+			) ||
+			(// planes 4-15
+					(0xF1 <= bytes[0] && bytes[0] <= 0xF3) &&
+					(0x80 <= bytes[1] && bytes[1] <= 0xBF) &&
+					(0x80 <= bytes[2] && bytes[2] <= 0xBF) &&
+					(0x80 <= bytes[3] && bytes[3] <= 0xBF)
+			) ||
+			(// plane 16
+					bytes[0] == 0xF4 &&
+					(0x80 <= bytes[1] && bytes[1] <= 0x8F) &&
+					(0x80 <= bytes[2] && bytes[2] <= 0xBF) &&
+					(0x80 <= bytes[3] && bytes[3] <= 0xBF)
+			)
+				) {
+			bytes += 4;
+			continue;
+		}
+
+		return 0;
+	}
+
+	return 1;
+}
+
 //jjustman-2020-08-04 - dirname() is not reliable to be portable between linux/osx/android
 int mkpath(char *dir, mode_t mode)
 {
@@ -1090,3 +1260,11 @@ FILE* atsc3_object_open(char* file_name) {
 
 	return NULL;
 }
+
+
+uint64_t compute_seconds_microseconds_to_scalar64(uint32_t seconds, uint32_t microseconds) {
+	return (uint64_t) seconds * (uint64_t) 1000000L + (uint64_t) microseconds;
+};
+
+
+
