@@ -47,6 +47,19 @@
 	path = saankhyalabs-slsdk
 	url = https://dev.azure.com/NGWP/Mark%20One%20Phone/_git/saankhyalabs-slsdk
 	branch = slsdk-0.10-borqs
+
+[submodule "libusb_android"]
+	path = libusb_android
+	url = https://github.com/jjustman/libusb_android.git
+
+
+[submodule "pcre2-win-build"]
+	path = pcre2-win-build
+	url = https://github.com/kiyolee/pcre2-win-build.git
+[submodule "vcpkg"]
+	path = vcpkg
+	url = https://github.com/microsoft/vcpkg.git
+
 [submodule "libdaa"]
 	path = libdaa
 	url = https://dev.azure.com/NGWP/Middleware/_git/libdaa
@@ -56,3 +69,8 @@
 [submodule "airwavz_redzone_sdk"]
 	path = airwavz_redzone_sdk
 	url = https://dev.azure.com/NGWP/Middleware/_git/airwavz_redzone_sdk
+
+[submodule "openssl"]
+	path = openssl
+	url = https://github.com/openssl/openssl.git
+

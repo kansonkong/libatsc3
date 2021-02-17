@@ -8,9 +8,13 @@
 #include <time.h>
 #include <stdlib.h>
 #include <time.h>
+#ifdef _WIN32
+
+#else
 #include <sys/time.h>
-#include <stdbool.h>
 #include <unistd.h>
+#endif
+#include <stdbool.h>
 #include <locale.h>
 #include "atsc3_utils.h"
 #include "atsc3_lls.h"

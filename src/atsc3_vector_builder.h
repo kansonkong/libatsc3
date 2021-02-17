@@ -23,7 +23,7 @@
     PPCAT(vector_item_name,_t)** data; \
     uint32_t count; \
    	uint32_t size; \
- } PPCAT(vector_item_name, _v);
+ } PPCAT(vector_item_name, _v)
 
 
 
@@ -37,7 +37,7 @@
 
 
 #define ATSC3_VECTOR_BUILDER_DISTINCT_TYPEDEF_STRUCT_INSTANCE(vector_item_name) \
- PPCAT(vector_item_name, _tv) PPCAT(vector_item_name, _v);
+ PPCAT(vector_item_name, _tv) PPCAT(vector_item_name, _v)
 
 /**
  *

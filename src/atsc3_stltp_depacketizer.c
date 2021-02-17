@@ -457,33 +457,35 @@ void atsc3_stltp_depacketizer_from_ip_udp_rtp_ctp_packet(atsc3_ip_udp_rtp_ctp_pa
         if(atsc3_stltp_tunnel_packet_processed->atsc3_stltp_preamble_packet_v.count) {
            	_ATSC3_STLTP_DEPACKETIZER_DEBUG("preamble: >>>stltp atsc3_stltp_preamble_packet packet complete: count: %u",  atsc3_stltp_tunnel_packet_processed->atsc3_stltp_preamble_packet_v.count);
 
-
            	for(int i=0; i < atsc3_stltp_tunnel_packet_processed->atsc3_stltp_preamble_packet_v.count; i++) {
-			  atsc3_stltp_preamble_packet_t* atsc3_stltp_preamble_packet = atsc3_stltp_tunnel_packet_processed->atsc3_stltp_preamble_packet_v.data[i];
-			  atsc3_preamble_packet_t* atsc3_preamble_packet = atsc3_stltp_parse_preamble_packet(atsc3_stltp_preamble_packet);
-			  if(!atsc3_preamble_packet) {
-				  _ATSC3_STLTP_DEPACKETIZER_WARN("atsc3_preamble_packet is NULL for i: %d", i);
-			  } else {
-				  atsc3_stltp_preamble_packet->preamble_packet = atsc3_preamble_packet;
-			  }
+                atsc3_stltp_preamble_packet_t* atsc3_stltp_preamble_packet = atsc3_stltp_tunnel_packet_processed->atsc3_stltp_preamble_packet_v.data[i];
+                atsc3_preamble_packet_t* atsc3_preamble_packet = atsc3_stltp_parse_preamble_packet(atsc3_stltp_preamble_packet);
+                if(!atsc3_preamble_packet) {
+                    _ATSC3_STLTP_DEPACKETIZER_WARN("atsc3_preamble_packet is NULL for i: %d", i);
+                } else {
+                    atsc3_stltp_preamble_packet->preamble_packet = atsc3_preamble_packet;
+                }
             }
 
-			//send our preamble packets
-           	//simple impl: 	atsc3_preamble_packet_dump(atsc3_preamble_packet);
+                  //send our preamble packets
+            //simple impl: 	atsc3_preamble_packet_dump(atsc3_preamble_packet);
 
             if(atsc3_stltp_depacketizer_context->atsc3_stltp_preamble_packet_collection_callback) {
-				atsc3_stltp_depacketizer_context->atsc3_stltp_preamble_packet_collection_callback(&atsc3_stltp_tunnel_packet_processed->atsc3_stltp_preamble_packet_v);
+                         atsc3_stltp_depacketizer_context->atsc3_stltp_preamble_packet_collection_callback(&atsc3_stltp_tunnel_packet_processed->atsc3_stltp_preamble_packet_v);
             }
-		}
+
+            if (atsc3_stltp_depacketizer_context->atsc3_stltp_preamble_packet_collection_callback_with_context) {
+                    atsc3_stltp_depacketizer_context->atsc3_stltp_preamble_packet_collection_callback_with_context(&atsc3_stltp_tunnel_packet_processed->atsc3_stltp_preamble_packet_v, atsc3_stltp_depacketizer_context->atsc3_stltp_preamble_packet_collection_callback_context);
+            }
+        }
 
         if(atsc3_stltp_tunnel_packet_processed->atsc3_stltp_timing_management_packet_v.count) {
         	_ATSC3_STLTP_DEPACKETIZER_DEBUG("timing management: >>>stltp atsc3_stltp_timing_management_packet packet complete: count: %u",  atsc3_stltp_tunnel_packet_processed->atsc3_stltp_timing_management_packet_v.count);
 
 
         	for(int i=0; i < atsc3_stltp_tunnel_packet_processed->atsc3_stltp_timing_management_packet_v.count; i++) {
-
-				atsc3_stltp_timing_management_packet_t* atsc3_stltp_timing_management_packet = atsc3_stltp_tunnel_packet_processed->atsc3_stltp_timing_management_packet_v.data[i];
-				atsc3_timing_management_packet_t* atsc3_timing_management_packet = atsc3_stltp_parse_timing_management_packet(atsc3_stltp_timing_management_packet);
+        	    atsc3_stltp_timing_management_packet_t* atsc3_stltp_timing_management_packet = atsc3_stltp_tunnel_packet_processed->atsc3_stltp_timing_management_packet_v.data[i];
+        	    atsc3_timing_management_packet_t* atsc3_timing_management_packet = atsc3_stltp_parse_timing_management_packet(atsc3_stltp_timing_management_packet);
             	if(!atsc3_timing_management_packet) {
             		_ATSC3_STLTP_DEPACKETIZER_WARN("atsc3_timing_management_packet is NULL for i: %d", i);
             	} else {
@@ -494,9 +496,13 @@ void atsc3_stltp_depacketizer_from_ip_udp_rtp_ctp_packet(atsc3_ip_udp_rtp_ctp_pa
         	//send our timing and management packets
         	//simple impl       	 atsc3_timing_management_packet_dump(atsc3_timing_management_packet);
 
-			if(atsc3_stltp_depacketizer_context->atsc3_stltp_timing_management_packet_collection_callback) {
-				atsc3_stltp_depacketizer_context->atsc3_stltp_timing_management_packet_collection_callback(&atsc3_stltp_tunnel_packet_processed->atsc3_stltp_timing_management_packet_v);
-			}
+			    if(atsc3_stltp_depacketizer_context->atsc3_stltp_timing_management_packet_collection_callback) {
+				    atsc3_stltp_depacketizer_context->atsc3_stltp_timing_management_packet_collection_callback(&atsc3_stltp_tunnel_packet_processed->atsc3_stltp_timing_management_packet_v);
+			    }
+
+            if (atsc3_stltp_depacketizer_context->atsc3_stltp_timing_management_packet_collection_callback_with_context) {
+                atsc3_stltp_depacketizer_context->atsc3_stltp_timing_management_packet_collection_callback_with_context(&atsc3_stltp_tunnel_packet_processed->atsc3_stltp_timing_management_packet_v, atsc3_stltp_depacketizer_context->atsc3_stltp_timing_management_packet_collection_callback_context);
+            }
         }
 
         //this method will clear _v.data inner references

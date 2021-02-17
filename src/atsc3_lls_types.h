@@ -15,6 +15,7 @@
 
 #include <sys/types.h>
 
+
 #ifndef ATSC3_LLS_TYPES_H_
 #define ATSC3_LLS_TYPES_H_
 
@@ -150,7 +151,7 @@ children: 569:dump_xml_string::xml_string: len: 7, is_self_closing: 0, val: |Ser
  *
  */
 typedef struct slt_entry {
-	uint bsid; //broadcast stream id
+	uint16_t bsid; //broadcast stream id
 
 } slt_entry_t;
 

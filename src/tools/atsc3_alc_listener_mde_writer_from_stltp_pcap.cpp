@@ -20,11 +20,18 @@ int PACKET_COUNTER=0;
 #include <stdio.h>
 #include <stdlib.h>
 #include <errno.h>
+#ifdef _WIN32
+#include <WinSock2.h>
+#include <Windows.h>
+#else
+
 #include <sys/socket.h>
 #include <netinet/in.h>
 #include <arpa/inet.h>
 #include <netinet/if_ether.h>
 #include <netinet/ip.h>
+#endif
+
 #include <string.h>
 #include <sys/stat.h>
 
@@ -273,9 +280,11 @@ int main(int argc,char **argv) {
     bpf_u_int32 netp;
 
 	//wire up our required lls and sls structs here, if needed for "ad-hoc" IP based ROUTE flow selection without LLS/SLS
-	
+#ifndef _WIN32	
     mkdir("route", 0777);
-
+#else
+	mkdir("route");
+#endif
     lls_slt_monitor = lls_slt_monitor_create();
 	alc_arguments = (atsc3_alc_arguments_t*)calloc(1, sizeof(atsc3_alc_arguments_t));
     
@@ -381,7 +390,7 @@ int main(int argc,char **argv) {
 	atsc3_pcap_replay_context_t* atsc3_pcap_replay_context_volitale = NULL;
 
 	double pcap_thread_run_start_time = gt();
-	sleep(1);
+	usleep(1000000);
 	while(pcapSTLTPVirtualPHY->is_pcap_replay_running()) {
 		usleep(1000000);
 		atsc3_pcap_replay_context_volitale = pcapSTLTPVirtualPHY->get_pcap_replay_context_status_volatile();
