@@ -1,0 +1,659 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <Filter Include="Source Files">
+      <UniqueIdentifier>{4FC737F1-C7A5-4376-A066-2A32D752A2FF}</UniqueIdentifier>
+      <Extensions>cpp;c;cc;cxx;def;odl;idl;hpj;bat;asm;asmx</Extensions>
+    </Filter>
+    <Filter Include="Header Files">
+      <UniqueIdentifier>{93995380-89BD-4b04-88EB-625FBE52EBFB}</UniqueIdentifier>
+      <Extensions>h;hh;hpp;hxx;hm;inl;inc;xsd</Extensions>
+    </Filter>
+    <Filter Include="Resource Files">
+      <UniqueIdentifier>{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}</UniqueIdentifier>
+      <Extensions>rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tiff;tif;png;wav</Extensions>
+    </Filter>
+    <Filter Include="tools">
+      <UniqueIdentifier>{e7760903-187e-440c-9501-110608b050a7}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="atsc3_a344_receiver_query_api.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="atsc3_aeat_parser.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="atsc3_aeat_types.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="atsc3_alc_rx.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="atsc3_alc_session.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="atsc3_alc_utils.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="atsc3_alp_parser.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="atsc3_alp_types.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="atsc3_bandwidth_statistics.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="atsc3_baseband_packet_types.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="atsc3_fdt.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="atsc3_fdt_parser.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="atsc3_gzip.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="atsc3_ip_udp_rtp_parser.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="atsc3_listener_udp.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="atsc3_lls.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="atsc3_lls_alc_utils.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="atsc3_lls_mmt_utils.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="atsc3_lls_sls_monitor_output_buffer.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="atsc3_lls_sls_monitor_output_buffer_utils.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="atsc3_lls_sls_parser.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="atsc3_lls_slt_parser.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="atsc3_lls_types.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="atsc3_logging_externs.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="atsc3_mbms_envelope_parser.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="atsc3_mbms_envelope_xml.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="atsc3_mime_multipart_related.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="atsc3_mime_multipart_related_parser.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="atsc3_mmtp_ntp32_to_pts.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="atsc3_mmtp_packet_types.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="atsc3_mmtp_packet_utils.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="atsc3_mmtp_parser.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="atsc3_mmt_context_mfu_depacketizer.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="atsc3_mmt_mpu_parser.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="atsc3_mmt_mpu_sample_format_parser.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="atsc3_mmt_mpu_utils.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="atsc3_mmt_reconstitution_from_media_sample.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="atsc3_mmt_signalling_message.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="atsc3_packet_statistics.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="atsc3_packet_statistics_types.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="atsc3_pcap_type.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="atsc3_route_dash_utils.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="atsc3_route_mpd.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="atsc3_route_object.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="atsc3_route_package_utils.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="atsc3_route_sls_processor.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="atsc3_route_s_tsid.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="atsc3_route_usbd.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="atsc3_sls_alc_flow.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="atsc3_sls_held_fragment.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="atsc3_sls_metadata_fragment_types.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="atsc3_sls_metadata_fragment_types_parser.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="atsc3_sl_tlv_demod_type.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="atsc3_stltp_depacketizer.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="atsc3_stltp_depacketizer_context.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="atsc3_stltp_parser.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="atsc3_stltp_types.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="atsc3_udp.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="atsc3_utils.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="atsc3_utils_sha256.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="avl.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="endianess.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="fixups_timespec_get.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="strnstr.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="xml.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="phy\virtual\PcapDemuxedVirtualPHY.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="phy\virtual\PcapSTLTPVirtualPHY.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="phy\virtual\SRTRxSTLTPVirtualPHY.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="phy\virtual\srt\apputil.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="phy\virtual\srt\atsc3_srt_live_receiver.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="phy\virtual\srt\logsupport.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="phy\virtual\srt\socketoptions.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="phy\virtual\srt\transmitmedia.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="phy\virtual\srt\uriparser.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="phy\virtual\srt\verbose.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="phy\virtual\srt\haicrypt\haicrypt_log.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="phy\virtual\srt\haicrypt\cryspr-openssl.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="phy\virtual\srt\haicrypt\cryspr.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="phy\virtual\srt\haicrypt\hcrypt.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="phy\virtual\srt\haicrypt\hcrypt_ctx_rx.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="phy\virtual\srt\haicrypt\hcrypt_ctx_tx.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="phy\virtual\srt\haicrypt\hcrypt_rx.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="phy\virtual\srt\haicrypt\hcrypt_sa.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="phy\virtual\srt\haicrypt\hcrypt_tx.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="phy\virtual\srt\haicrypt\hcrypt_xpt_srt.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="atsc3_pcre2_regex_utils.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="atsc3_a332_oma_bcast_types.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="atsc3_a344_receiver_query_api.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="atsc3_aeat_parser.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="atsc3_aeat_types.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="atsc3_alc_rx.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="atsc3_alc_session.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="atsc3_alc_utils.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="atsc3_alp_parser.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="atsc3_alp_types.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="atsc3_bandwidth_statistics.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="atsc3_baseband_packet_types.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="atsc3_dstp_types.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="atsc3_fdt.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="atsc3_fdt_parser.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="atsc3_gzip.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="atsc3_hevc_nal_extractor.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="atsc3_ip_udp_rtp_parser.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="atsc3_ip_udp_rtp_types.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="atsc3_isobmff_tools.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="atsc3_isobmff_trun_box.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="atsc3_lct_hdr.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="atsc3_listener_udp.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="atsc3_lls.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="atsc3_lls_alc_utils.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="atsc3_lls_mmt_utils.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="atsc3_lls_sls_monitor_output_buffer.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="atsc3_lls_sls_monitor_output_buffer_utils.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="atsc3_lls_sls_parser.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="atsc3_lls_slt_parser.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="atsc3_lls_slt_utils.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="atsc3_lls_types.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="atsc3_logging_externs.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="atsc3_mbms_envelope_parser.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="atsc3_mbms_envelope_xml.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="atsc3_mime_multipart_related.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="atsc3_mime_multipart_related_parser.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="atsc3_mmtp_ntp32_to_pts.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="atsc3_mmtp_packet_types.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="atsc3_mmtp_packet_utils.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="atsc3_mmtp_parser.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="atsc3_mmt_context_mfu_depacketizer.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="atsc3_mmt_context_mpu_depacketizer.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="atsc3_mmt_context_signalling_information_depacketizer.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="atsc3_mmt_mpu_parser.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="atsc3_mmt_mpu_sample_format_parser.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="atsc3_mmt_mpu_sample_format_type.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="atsc3_mmt_mpu_utils.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="atsc3_mmt_reconstitution_from_media_sample.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="atsc3_mmt_signalling_message.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="atsc3_mmt_signalling_message_types.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="atsc3_monitor_events_alc.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="atsc3_monitor_events_lls.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="atsc3_monitor_events_sls.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="atsc3_packet_statistics.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="atsc3_pcap_type.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="atsc3_route_dash_utils.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="atsc3_route_mpd.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="atsc3_route_object.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="atsc3_route_package_utils.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="atsc3_route_sls_processor.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="atsc3_route_s_tsid.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="atsc3_route_usbd.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="atsc3_sls_alc_flow.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="atsc3_sls_held_fragment.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="atsc3_sls_metadata_fragment_types.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="atsc3_sls_metadata_fragment_types_parser.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="atsc3_sl_tlv_demod_type.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="atsc3_stltp_depacketizer.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="atsc3_stltp_depacketizer_context.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="atsc3_stltp_parser.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="atsc3_stltp_types.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="atsc3_udp.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="atsc3_utils.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="atsc3_utils_sha256.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="atsc3_vector_builder.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="fixups.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="libtree.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="strnstr.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="xml.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="application\IAtsc3NdkApplicationBridge.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="phy\IAtsc3NdkPHYBridge.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="phy\IAtsc3NdkPHYClient.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="phy\virtual\PcapDemuxedVirtualPHY.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="phy\virtual\PcapSTLTPVirtualPHY.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="phy\virtual\SRTRxSTLTPVirtualPHY.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="phy\virtual\srt\atsc3_srt_live_receiver.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="phy\virtual\srt\atsc3_srt_target.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="phy\virtual\srt\apputil.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="phy\virtual\srt\logsupport.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="phy\virtual\srt\socketoptions.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="phy\virtual\srt\transmitbase.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="phy\virtual\srt\transmitmedia.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="phy\virtual\srt\uriparser.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="phy\virtual\srt\verbose.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="phy\virtual\srt\haicrypt\cryspr-config.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="phy\virtual\srt\haicrypt\cryspr-gnutls.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="phy\virtual\srt\haicrypt\cryspr-mbedtls.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="phy\virtual\srt\haicrypt\cryspr-openssl.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="phy\virtual\srt\haicrypt\cryspr.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="phy\virtual\srt\haicrypt\haicrypt.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="phy\virtual\srt\haicrypt\haicrypt_log.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="phy\virtual\srt\haicrypt\hcrypt.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="phy\virtual\srt\haicrypt\hcrypt_ctx.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="phy\virtual\srt\haicrypt\hcrypt_msg.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="phy\virtual\srt\srtcore\logging.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="phy\virtual\srt\srtcore\netinet_any.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="phy\virtual\srt\srtcore\srt_compat.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="phy\virtual\srt\srtcore\sync.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="phy\virtual\srt\srtcore\threadname.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="phy\virtual\srt\srtcore\udt.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="phy\virtual\srt\srtcore\utilities.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="srt-work-in-progress\Atsc3SRT_Target.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="srt-work-in-progress\logsupport.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="srt-work-in-progress\socketoptions.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="srt-work-in-progress\transmitbase.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="srt-work-in-progress\transmitmedia.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="srt-work-in-progress\uriparser.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="srt-work-in-progress\verbose.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="stubs\atsc3_alc_stubs.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="win_stdatomic.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="test\testdata\mmt\signalling_info\239.155.1.1.49152.6425.9816.33024.atsc3_mmt_message.bin">
+      <Filter>Resource Files</Filter>
+    </None>
+    <None Include="test\testdata\mmt\signalling_info\239.255.1.1.49152.6426.14247.mpt.3.bin">
+      <Filter>Resource Files</Filter>
+    </None>
+    <None Include="test\testdata\mmt\signalling_info\239.255.1.1.49152.6426.14453.mpt.0.bin">
+      <Filter>Resource Files</Filter>
+    </None>
+    <None Include="test_sl\testdata\2019-11-22-647mhz-impulse-doppler.tlv.bin">
+      <Filter>Resource Files</Filter>
+    </None>
+    <None Include="test_sl\testdata\2019-11-22-647mhz.tlv.bin">
+      <Filter>Resource Files</Filter>
+    </None>
+  </ItemGroup>
+</Project>
