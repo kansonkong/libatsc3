@@ -117,6 +117,7 @@ private:
 
     int slUnit = -1;
     int tUnit = -1;
+    int slCmdIfFailureCount = 0;
 
     SL_PlatFormConfigParams_t getPlfConfig;
     SL_PlatFormConfigParams_t sPlfConfig;
