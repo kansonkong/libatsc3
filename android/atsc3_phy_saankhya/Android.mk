@@ -203,12 +203,13 @@ LIB_PHY_SAANKHYACPP := \
     $(LOCAL_PATH)/src/jni/utils/CircularBuffer.c
 
 LIB_SL_API := \
-	$(LOCAL_PATH)/../../saankhyalabs-slsdk/slapi/src/sl_config.c \
     $(wildcard $(LOCAL_PATH)/../../saankhyalabs-slsdk/slapi/src/demod/*.c) \
     $(wildcard $(LOCAL_PATH)/../../saankhyalabs-slsdk/slapi/src/tuner/*.c) \
     $(wildcard $(LOCAL_PATH)/../../saankhyalabs-slsdk/slapi/src/tuner/nxp/*.c) \
     $(wildcard $(LOCAL_PATH)/../../saankhyalabs-slsdk/slapi/src/tuner/silabs/*.c) \
-    $(wildcard $(LOCAL_PATH)/../../saankhyalabs-slsdk/slapi/src/tuner/situne/*.c)
+    $(wildcard $(LOCAL_PATH)/../../saankhyalabs-slsdk/slapi/src/tuner/situne/*.c) \
+   	$(LOCAL_PATH)/../../saankhyalabs-slsdk/slplf/src/slconfig/sl_config.c
+
 
 LOCAL_C_INCLUDES += \
 	$(LOCAL_PATH)/../../saankhyalabs-slsdk/slapi/inc \
