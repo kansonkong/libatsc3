@@ -532,6 +532,8 @@ int SaankhyaPHYAndroid::open(int fd, string device_path)
     plpInfo.plp2 = 0xFF;
     plpInfo.plp3 = 0xFF;
 
+    regionInfo = SL_ATSC3P0_REGION_US;
+
     _SAANKHYA_PHY_ANDROID_DEBUG("SL_DemodCreateInstance: before invocation, slUnit: %d",slUnit);
     slres = SL_DemodCreateInstance(&slUnit);
     if (slres != SL_OK)
@@ -559,14 +561,14 @@ int SaankhyaPHYAndroid::open(int fd, string device_path)
     }
     else
     {
-        _SAANKHYA_PHY_ANDROID_DEBUG("SL_DemodInit: SUCCESS, slres: %d", slres);
+        _SAANKHYA_PHY_ANDROID_DEBUG("SL_DemodInit: SUCCESS, slUnit: %d, slres: %d", slUnit, slres);
     }
 
     do
     {
-        _SAANKHYA_PHY_ANDROID_DEBUG("before SL_DemodGetStatus: slres is: %d", slres);
+        _SAANKHYA_PHY_ANDROID_DEBUG("before SL_DemodGetStatus: slUnit: %d, slres is: %d", slUnit, slres);
         slres = SL_DemodGetStatus(slUnit, SL_DEMOD_STATUS_TYPE_BOOT, (SL_DemodBootStatus_t*)&bootStatus);
-        _SAANKHYA_PHY_ANDROID_DEBUG("SL_DemodGetStatus: slres is: %d", slres);
+        _SAANKHYA_PHY_ANDROID_DEBUG("SL_DemodGetStatus: slUnit: %d, slres is: %d", slUnit, slres);
         if (slres != SL_OK)
         {
             _SAANKHYA_PHY_ANDROID_DEBUG("Error:SL_Demod Get Boot Status :");
@@ -622,6 +624,13 @@ int SaankhyaPHYAndroid::open(int fd, string device_path)
         goto ERROR;
     }
 
+    slres = SL_DemodSetAtsc3p0Region(slUnit, regionInfo);
+    if (slres != 0)
+    {
+        _SAANKHYA_PHY_ANDROID_DEBUG("\n Error:SL_DemodSetAtsc3p0Region :");
+        printToConsoleDemodError(slres);
+        goto ERROR;
+    }
     slres = SL_DemodGetSoftwareVersion(slUnit, &swMajorNo, &swMinorNo);
     if (slres == SL_OK)
     {
@@ -1128,9 +1137,10 @@ SL_ConfigResult_t SaankhyaPHYAndroid::configPlatformParams() {
     sPlfConfig.demodOutputIf = SL_DEMOD_OUTPUTIF_TS;
     sPlfConfig.demodI2cAddr = 0x30; /* SLDemod 7-bit Physical I2C Address */
 
-    sPlfConfig.demodResetGpioPin = 47;   /* FX3S GPIO 47 connected to Demod Reset Pin */
-    sPlfConfig.cpldResetGpioPin = 43;   /* FX3S GPIO 43 connected to CPLD Reset Pin and used only for serial TS Interface  */
-    sPlfConfig.demodI2cAddr3GpioPin = 37;   /* FX3S GPIO 37 connected to Demod I2C Address3 Pin and used only for SDIO Interface */
+    sPlfConfig.demodResetGpioPin = 47;      /* FX3S GPIO 47 connected to Demod Reset Pin */
+    sPlfConfig.cpldResetGpioPin = 43;       /* FX3S GPIO 43 connected to CPLD Reset Pin and used only for serial TS Interface  */
+    sPlfConfig.tunerResetGpioPin = 23;    /* FX3S GPIO 23 connected to Tuner Reset Pin */
+
     sPlfConfig.slsdkPath = "."; //jjustman-2020-09-09 use extern object linkages for fx3/hex firmware
 
 #endif
