@@ -356,7 +356,7 @@ cleanup:
 atsc3_alp_packet_t* atsc3_alp_packet_parse(uint8_t plp_num, block_t* baseband_packet_payload) {
     uint32_t starting_block_size = block_Remaining_size(baseband_packet_payload);
     if ((baseband_packet_payload->p_buffer[0] & 0x80) >> 5 == 4) {
-        printf("atsc3_alp_packet_parse: size: %d, 0x%02x 0x%02x 0x%02x 0x%02x 0x%02x 0x%02x 0x%02x\n",
+        __ALP_PARSER_DEBUG("atsc3_alp_packet_parse: size: %d, 0x%02x 0x%02x 0x%02x 0x%02x 0x%02x 0x%02x 0x%02x\n",
             starting_block_size,
             baseband_packet_payload->p_buffer[0],
             baseband_packet_payload->p_buffer[1],

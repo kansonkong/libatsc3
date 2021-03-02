@@ -532,6 +532,8 @@ int SaankhyaPHYAndroid::open(int fd, string device_path)
     plpInfo.plp2 = 0xFF;
     plpInfo.plp3 = 0xFF;
 
+    regionInfo = SL_ATSC3P0_REGION_US;
+
     _SAANKHYA_PHY_ANDROID_DEBUG("SL_DemodCreateInstance: before invocation, slUnit: %d",slUnit);
     slres = SL_DemodCreateInstance(&slUnit);
     if (slres != SL_OK)
@@ -559,14 +561,14 @@ int SaankhyaPHYAndroid::open(int fd, string device_path)
     }
     else
     {
-        _SAANKHYA_PHY_ANDROID_DEBUG("SL_DemodInit: SUCCESS, slres: %d", slres);
+        _SAANKHYA_PHY_ANDROID_DEBUG("SL_DemodInit: SUCCESS, slUnit: %d, slres: %d", slUnit, slres);
     }
 
     do
     {
-        _SAANKHYA_PHY_ANDROID_DEBUG("before SL_DemodGetStatus: slres is: %d", slres);
+        _SAANKHYA_PHY_ANDROID_DEBUG("before SL_DemodGetStatus: slUnit: %d, slres is: %d", slUnit, slres);
         slres = SL_DemodGetStatus(slUnit, SL_DEMOD_STATUS_TYPE_BOOT, (SL_DemodBootStatus_t*)&bootStatus);
-        _SAANKHYA_PHY_ANDROID_DEBUG("SL_DemodGetStatus: slres is: %d", slres);
+        _SAANKHYA_PHY_ANDROID_DEBUG("SL_DemodGetStatus: slUnit: %d, slres is: %d", slUnit, slres);
         if (slres != SL_OK)
         {
             _SAANKHYA_PHY_ANDROID_DEBUG("Error:SL_Demod Get Boot Status :");
@@ -618,6 +620,14 @@ int SaankhyaPHYAndroid::open(int fd, string device_path)
     if (slres != 0)
     {
         _SAANKHYA_PHY_ANDROID_DEBUG("Error:SL_DemodConfigPlps :");
+        printToConsoleDemodError(slres);
+        goto ERROR;
+    }
+
+    slres = SL_DemodSetAtsc3p0Region(slUnit, regionInfo);
+    if (slres != 0)
+    {
+        _SAANKHYA_PHY_ANDROID_DEBUG("\n Error:SL_DemodSetAtsc3p0Region :");
         printToConsoleDemodError(slres);
         goto ERROR;
     }
@@ -719,6 +729,8 @@ int SaankhyaPHYAndroid::tune(int freqKHz, int plpid)
         printToConsoleTunerError(tres);
         goto ERROR;
     }
+    //jjustman-2021-02-24 - SLAPI 0.14 crashes here on 2nd sequential tune?
+    SL_SleepMS(1000);
 
     tres = SL_TunerGetConfiguration(tUnit, &tunerGetCfg);
     if (tres != 0)
@@ -880,11 +892,10 @@ int SaankhyaPHYAndroid::tune(int freqKHz, int plpid)
     }
 
     if(!demodStartStatus) {
-        while (SL_IsRxDataStarted() != 1)
-        {
+        while (SL_IsRxDataStarted() != 1) {
             SL_SleepMS(100);
 
-            if(((isRxDataStartedSpinCount++) % 100) == 0) {
+            if (((isRxDataStartedSpinCount++) % 100) == 0) {
                 _SAANKHYA_PHY_ANDROID_WARN("::Open() - waiting for SL_IsRxDataStarted, spinCount: %d", isRxDataStartedSpinCount);
                 //jjustman-2020-10-21 - todo: reset demod?
             }
@@ -893,19 +904,17 @@ int SaankhyaPHYAndroid::tune(int freqKHz, int plpid)
 
         slres = SL_DemodStart(slUnit);
 
-        if (slres != 0)
-        {
+        if (!(slres == SL_OK || slres == SL_ERR_ALREADY_STARTED)) {
             _SAANKHYA_PHY_ANDROID_DEBUG("Saankhya Demod Start Failed");
+            demodStartStatus = 0;
             goto ERROR;
-        }
-        else
-        {
+        } else {
             demodStartStatus = 1;
             _SAANKHYA_PHY_ANDROID_DEBUG("SUCCESS");
             //_SAANKHYA_PHY_ANDROID_DEBUG("SL Demod Output Capture: STARTED : sl-tlv.bin");
         }
-        SL_SleepMS(1000); // Delay to accomdate set configurations at SL to take effect
     }
+    SL_SleepMS(1000); // Delay to accomdate set configurations at SL to take effect
 
     plpInfo.plp0 = plpid;
     plpInfo.plp1 = 0xFF;
@@ -919,6 +928,7 @@ int SaankhyaPHYAndroid::tune(int freqKHz, int plpid)
         printToConsoleDemodError(slres);
         goto ERROR;
     }
+    SL_SleepMS(1000); // Delay to accomdate set configurations at SL to take effect
 
     slres = SL_DemodGetConfiguration(slUnit, &cfgInfo);
     if (slres != SL_OK)
@@ -1094,7 +1104,7 @@ SL_ConfigResult_t SaankhyaPHYAndroid::configPlatformParams() {
       * comments above
       */
 
-//jjustman-2020-09-09 MarkONE specific configuration
+
 #ifdef SL_MARKONE
 
     sPlfConfig.chipType = SL_CHIP_4000;
@@ -1104,15 +1114,16 @@ SL_ConfigResult_t SaankhyaPHYAndroid::configPlatformParams() {
     sPlfConfig.demodControlIf = SL_DEMOD_CMD_CONTROL_IF_I2C;
     sPlfConfig.demodOutputIf = SL_DEMOD_OUTPUTIF_SDIO;
     sPlfConfig.demodI2cAddr = 0x30; /* SLDemod 7-bit Physical I2C Address */
-     /*
-     * Relative Path to SLSDK from working directory
-     * Example: D:\UNAME\PROJECTS\slsdk
-     * User can just specifying "..", which will point to this directory or can specify full directory path explicitly
-     */
+    /*
+    * Relative Path to SLSDK from working directory
+    * Example: D:\UNAME\PROJECTS\slsdk
+    * User can just specifying "..", which will point to this directory or can specify full directory path explicitly
+    */
     sPlfConfig.slsdkPath = "/data/out"; //from venky 2020-09-07
 
     sPlfConfig.demodResetGpioPin = 12;   /* 09-10 03:25:56.498     0     0 E SAANKHYA: Reset low GPIO: 12 */
     sPlfConfig.demodI2cAddr3GpioPin = 37;   /* FX3S GPIO 37 connected to Demod I2C Address3 Pin and used only for SDIO Interface */
+    sPlfConfig.tunerResetGpioPin = 23;    /* FX3S GPIO 23 connected to Tuner Reset Pin */
 
 #endif
 
@@ -1128,9 +1139,10 @@ SL_ConfigResult_t SaankhyaPHYAndroid::configPlatformParams() {
     sPlfConfig.demodOutputIf = SL_DEMOD_OUTPUTIF_TS;
     sPlfConfig.demodI2cAddr = 0x30; /* SLDemod 7-bit Physical I2C Address */
 
-    sPlfConfig.demodResetGpioPin = 47;   /* FX3S GPIO 47 connected to Demod Reset Pin */
-    sPlfConfig.cpldResetGpioPin = 43;   /* FX3S GPIO 43 connected to CPLD Reset Pin and used only for serial TS Interface  */
-    sPlfConfig.demodI2cAddr3GpioPin = 37;   /* FX3S GPIO 37 connected to Demod I2C Address3 Pin and used only for SDIO Interface */
+    sPlfConfig.demodResetGpioPin = 47;      /* FX3S GPIO 47 connected to Demod Reset Pin */
+    sPlfConfig.cpldResetGpioPin = 43;       /* FX3S GPIO 43 connected to CPLD Reset Pin and used only for serial TS Interface  */
+    sPlfConfig.tunerResetGpioPin = 23;    /* FX3S GPIO 23 connected to Tuner Reset Pin */
+
     sPlfConfig.slsdkPath = "."; //jjustman-2020-09-09 use extern object linkages for fx3/hex firmware
 
 #endif
@@ -1150,9 +1162,15 @@ SL_ConfigResult_t SaankhyaPHYAndroid::configPlatformParams() {
 
 void SaankhyaPHYAndroid::handleCmdIfFailure(void)
 {
-    _SAANKHYA_PHY_ANDROID_DEBUG("SL CMD IF FAILURE: Cannot continue!");
-    SL_DemodUnInit(slUnit);
-    slUnit = -1;
+    if(slCmdIfFailureCount < 30) {
+
+        _SAANKHYA_PHY_ANDROID_DEBUG("SL CMD IF FAILURE: cmdIfFailureCount: %d, Cannot continue - leaving demod init for now...", ++slCmdIfFailureCount);
+    } else {
+        _SAANKHYA_PHY_ANDROID_DEBUG("SL CMD IF FAILURE: cmdIfFailureCount: %d, TODO: reboot demod", ++slCmdIfFailureCount);
+//jjustman-2021-02-24 - TODO - reboot demod
+//        SL_DemodUnInit(slUnit);
+//        slUnit = -1;
+    }
 
 #ifndef __SL_TUNER_DEINIT_DISABLED__
     SL_TunerUnInit(tUnit);
@@ -1585,6 +1603,7 @@ int SaankhyaPHYAndroid::statusThread()
         if(!this->statusThreadShouldRun) {
             break;
         }
+
 
         //jjustman-2020-10-14 - try to make this loop as small as possible to not upset the SDIO I/F ALP buffer window
 

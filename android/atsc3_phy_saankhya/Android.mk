@@ -12,6 +12,7 @@
 
 SLAPI_BUILD_TARGET = markone
 # or kailash
+#SLAPI_BUILD_TARGET = kailash
 
 MY_LOCAL_PATH := $(call my-dir)
 LOCAL_PATH := $(call my-dir)
@@ -79,6 +80,11 @@ LOCAL_SRC_FILES := ../../saankhyalabs-slsdk/slapi/lib/android/$(TARGET_ARCH_ABI)
 include $(PREBUILT_SHARED_LIBRARY)
 ## ---------------------------
 
+# Silicon Labs Libraries - prebuilt
+include $(CLEAR_VARS)
+LOCAL_MODULE := libSiLabs_Tuner_Lib-prebuilt
+LOCAL_SRC_FILES := ../../saankhyalabs-slsdk/slapi/lib/android/$(TARGET_ARCH_ABI)/libSiLabs_Tuner_Lib.so
+include $(PREBUILT_SHARED_LIBRARY)
 ## ---------------------------
 # FX3 firmware binary compilation - build fx3 f/w into atsc3NdkClient
 #
@@ -197,16 +203,19 @@ LIB_PHY_SAANKHYACPP := \
     $(LOCAL_PATH)/src/jni/utils/CircularBuffer.c
 
 LIB_SL_API := \
-	$(LOCAL_PATH)/../../saankhyalabs-slsdk/slapi/src/sl_config.c \
     $(wildcard $(LOCAL_PATH)/../../saankhyalabs-slsdk/slapi/src/demod/*.c) \
     $(wildcard $(LOCAL_PATH)/../../saankhyalabs-slsdk/slapi/src/tuner/*.c) \
     $(wildcard $(LOCAL_PATH)/../../saankhyalabs-slsdk/slapi/src/tuner/nxp/*.c) \
-    $(wildcard $(LOCAL_PATH)/../../saankhyalabs-slsdk/slapi/src/tuner/situne/*.c)
+    $(wildcard $(LOCAL_PATH)/../../saankhyalabs-slsdk/slapi/src/tuner/silabs/*.c) \
+    $(wildcard $(LOCAL_PATH)/../../saankhyalabs-slsdk/slapi/src/tuner/situne/*.c) \
+   	$(LOCAL_PATH)/../../saankhyalabs-slsdk/slplf/src/slconfig/sl_config.c
+
 
 LOCAL_C_INCLUDES += \
 	$(LOCAL_PATH)/../../saankhyalabs-slsdk/slapi/inc \
 	$(LOCAL_PATH)/../../saankhyalabs-slsdk/slapi/src/demod \
 	$(LOCAL_PATH)/../../saankhyalabs-slsdk/slapi/src/tuner/nxp \
+	$(LOCAL_PATH)/../../saankhyalabs-slsdk/slapi/src/tuner/silabs \
 	$(LOCAL_PATH)/../../saankhyalabs-slsdk/slapi/src/tuner/situne \
 	$(LOCAL_PATH)/../../saankhyalabs-slsdk/slplf/inc \
 	$(LOCAL_PATH)/../../libusb_android/libusb
@@ -269,6 +278,7 @@ $(info Building MarkONE support)
 		SL_SDR_ICCM_BUILD SL_SDR_DCCM_BUILD SL_SDR_ATSC3_BUILD \
 		libusb_android \
 		libSiTune_Tuner_Lib-prebuilt \
+		libSiLabs_Tuner_Lib-prebuilt \
 		libNXP_Tuner_Lib-prebuilt
 endif
 
@@ -309,6 +319,7 @@ $(info Building KAILASH support)
 		SL_SDR_ICCM_BUILD SL_SDR_DCCM_BUILD SL_SDR_ATSC3_BUILD \
 		libusb_android \
 		libSiTune_Tuner_Lib-prebuilt \
+		libSiLabs_Tuner_Lib-prebuilt \
 		libNXP_Tuner_Lib-prebuilt
 
 endif
