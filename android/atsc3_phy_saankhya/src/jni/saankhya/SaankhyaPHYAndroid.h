@@ -85,6 +85,8 @@ public:
     uint64_t alp_total_LMTs_recv;
 
     SL_PlpConfigParams_t plpInfo;
+    SL_Atsc3p0Region_t   regionInfo;
+
     SL_Atsc3p0Perf_Diag_t perfDiag;
     SL_Atsc3p0Bsr_Diag_t  bsrDiag;
     SL_Atsc3p0L1B_Diag_t  l1bDiag;
@@ -115,6 +117,7 @@ private:
 
     int slUnit = -1;
     int tUnit = -1;
+    int slCmdIfFailureCount = 0;
 
     SL_PlatFormConfigParams_t getPlfConfig;
     SL_PlatFormConfigParams_t sPlfConfig;
