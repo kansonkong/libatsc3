@@ -11,18 +11,22 @@
 int _ROUTE_MBMS_ENVELOPE_PARSER_INFO_ENABLED = 0;
 int _ROUTE_MBMS_ENVELOPE_PARSER_DEBUG_ENABLED = 0;
 
-uint32_t* atsc3_mbms_envelope_find_toi_from_fdt(atsc3_fdt_instance_t* atsc3_fdt_instance) {
+atsc3_fdt_file_t* atsc3_mbms_envelope_find_multipart_fdt_file_from_fdt_instance(atsc3_fdt_instance_t* atsc3_fdt_instance) {
 
 	for(int i=0; i < atsc3_fdt_instance->atsc3_fdt_file_v.count; i++) {
 		atsc3_fdt_file_t* atsc3_fdt_file = atsc3_fdt_instance->atsc3_fdt_file_v.data[i];
 		if(!strncasecmp(ATSC3_MBMS_ENVELOPE_CONTENT_TYPE, atsc3_fdt_file->content_type, strlen(ATSC3_MBMS_ENVELOPE_CONTENT_TYPE))) {
 			_ATSC3_ROUTE_MBMS_ENVELOPE_PARSER_DEBUG("returning MBMS matching type: %s for toi: %u",  ATSC3_MBMS_ENVELOPE_CONTENT_TYPE, atsc3_fdt_file->toi);
 
-			return &atsc3_fdt_file->toi;
+			return atsc3_fdt_file;
         } else if(!strncasecmp(ATSC3_FDT_MULTIPART_RELATED, atsc3_fdt_file->content_type, strlen(ATSC3_FDT_MULTIPART_RELATED))) {
             _ATSC3_ROUTE_MBMS_ENVELOPE_PARSER_DEBUG("returning multipart/related matching type: %s for toi: %u",  ATSC3_FDT_MULTIPART_RELATED, atsc3_fdt_file->toi);
             
-            return &atsc3_fdt_file->toi;
+            return atsc3_fdt_file;
+        } else if(!strncasecmp(ATSC3_FDT_MULTIPART_SIGNED, atsc3_fdt_file->content_type, strlen(ATSC3_FDT_MULTIPART_SIGNED))) {
+            _ATSC3_ROUTE_MBMS_ENVELOPE_PARSER_INFO("returning multipart/signed matching type: %s for toi: %u",  ATSC3_FDT_MULTIPART_SIGNED, atsc3_fdt_file->toi);
+            
+            return atsc3_fdt_file;
         } else {
 			_ATSC3_ROUTE_MBMS_ENVELOPE_PARSER_DEBUG("ignoring fdt_file: toi: %u, type: %s, name: %s", atsc3_fdt_file->toi, atsc3_fdt_file->content_type, atsc3_fdt_file->content_location);
 		}
@@ -31,6 +35,53 @@ uint32_t* atsc3_mbms_envelope_find_toi_from_fdt(atsc3_fdt_instance_t* atsc3_fdt_
 	return NULL;
 }
 
+/*
+ 
+ NOTE: 	jjustman-2021-03-01 - we can't rely on the fdt_file content_type to be accurate here
+
+
+ (atsc3_fdt_file_t) $5 = {
+   content_location = 0x0000000100c075b0 "SLS"
+   toi = 458755
+   content_length = 7785
+   transfer_length = 7785
+   content_type = 0x0000000100c075d0 "application/mbms-envelope+xml"
+   content_encoding = 0x0000000000000000
+   content_md5 = 0x0000000000000000
+   app_context_id_list = 0x0000000000000000
+   filter_codes = 0x0000000000000000
+   atsc3_fdt_fec_attributes = {
+	 fec_oti_fec_encoding_id = '\0'
+	 fec_oti_fec_instance_id = 0
+	 fec_oti_maximum_source_block_length = 0
+	 fec_oti_encoding_symbol_length = 0
+	 fec_oti_max_number_of_encoding_symbols = 0
+	 fec_oti_sceheme_specific_info = 0x0000000000000000
+   }
+
+ */
+
+bool atsc3_fdt_file_is_multipart_signed(atsc3_fdt_file_t* atsc3_fdt_file) {
+	bool fdt_file_content_type_matches_multipart_signed = false;
+	
+	fdt_file_content_type_matches_multipart_signed = !strncasecmp(ATSC3_FDT_MULTIPART_SIGNED, atsc3_fdt_file->content_type, strlen(ATSC3_FDT_MULTIPART_SIGNED));
+	if(fdt_file_content_type_matches_multipart_signed) {
+		return true;
+	}
+	return false;
+}
+
+bool atsc3_fdt_file_is_multipart_signed_from_payload(block_t* atsc3_fdt_file_contents) {
+	bool fdt_file_content_type_matches_multipart_signed = false;
+	
+	//jjustman-2021-03-01 - TODO: restrict this to the initial mime header preamble
+	fdt_file_content_type_matches_multipart_signed = (NULL != strnstr(atsc3_fdt_file_contents->p_buffer, ATSC3_FDT_FILE_MULTIPART_SIGNED_CONTENT_TYPE, atsc3_fdt_file_contents->p_size));
+	
+	if(fdt_file_content_type_matches_multipart_signed) {
+		return true;
+	}
+	return false;
+}
 
 
 /**

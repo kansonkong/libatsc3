@@ -62,9 +62,9 @@ void atsc3_route_package_extracted_envelope_metadata_and_payload_free(atsc3_rout
 #define __ATSC3_ROUTE_PACKAGE_DEFAULT_PACKAGE_NAME__ "undefined"
 char* atsc3_route_package_generate_path_from_appContextIdList(atsc3_fdt_file_t* atsc3_fdt_file) {
 
-	SHA256_CTX ctx;
+	atsc3_SHA256_CTX ctx;
 	BYTE buf[SHA256_BLOCK_SIZE];
-	sha256_init(&ctx);
+	atsc3_sha256_init(&ctx);
 
 	bool sha256_set_from_fdt = false;
 
@@ -72,19 +72,19 @@ char* atsc3_route_package_generate_path_from_appContextIdList(atsc3_fdt_file_t* 
 
 	if(atsc3_fdt_file) {
 		if(atsc3_fdt_file->app_context_id_list) {
-			sha256_update(&ctx, (const BYTE *)atsc3_fdt_file->app_context_id_list, strlen(atsc3_fdt_file->app_context_id_list));
-			sha256_final(&ctx, (BYTE *)buf);
+			atsc3_sha256_update(&ctx, (const BYTE *)atsc3_fdt_file->app_context_id_list, strlen(atsc3_fdt_file->app_context_id_list));
+			atsc3_sha256_final(&ctx, (BYTE *)buf);
 			sha256_set_from_fdt = true;
 		} else if(atsc3_fdt_file->content_location) {
-			sha256_update(&ctx, (const BYTE *)atsc3_fdt_file->content_location, strlen(atsc3_fdt_file->content_location));
-			sha256_final(&ctx, (BYTE *)buf);
+			atsc3_sha256_update(&ctx, (const BYTE *)atsc3_fdt_file->content_location, strlen(atsc3_fdt_file->content_location));
+			atsc3_sha256_final(&ctx, (BYTE *)buf);
 			sha256_set_from_fdt = true;
 		}
 	}
 
 	if(!sha256_set_from_fdt) {
-		sha256_update(&ctx, (const BYTE *)__ATSC3_ROUTE_PACKAGE_DEFAULT_PACKAGE_NAME__, strlen(__ATSC3_ROUTE_PACKAGE_DEFAULT_PACKAGE_NAME__));
-		sha256_final(&ctx, (BYTE *)buf);
+		atsc3_sha256_update(&ctx, (const BYTE *)__ATSC3_ROUTE_PACKAGE_DEFAULT_PACKAGE_NAME__, strlen(__ATSC3_ROUTE_PACKAGE_DEFAULT_PACKAGE_NAME__));
+		atsc3_sha256_final(&ctx, (BYTE *)buf);
 	}
 
 	for(int i=0; i < SHA256_BLOCK_SIZE; i++) {

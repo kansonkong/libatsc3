@@ -79,14 +79,16 @@ void atsc3_mmt_signalling_information_on_stpp_packet_id_with_mpu_timestamp_descr
 
 
 
-void atsc3_mmt_mpu_mfu_on_sample_complete_dump(atsc3_mmt_mfu_context_t* atsc3_mmt_mfu_context, uint16_t packet_id, uint32_t mpu_sequence_number, uint32_t sample_number, block_t* mmt_mfu_sample, uint32_t mfu_fragment_count_rebuilt) {
+
+void atsc3_mmt_mpu_mfu_on_sample_complete_dump(atsc3_mmt_mfu_context_t* atsc3_mmt_mfu_context, uint16_t packet_id, uint32_t mmtp_timestamp, uint32_t mpu_sequence_number, uint32_t sample_number, block_t* mmt_mfu_sample, uint32_t mfu_fragment_count_rebuilt) {
 	if(packet_id != atsc3_mmt_context_stpp_packet_id_for_testing) {
 		return;
 	}
 
-	__MMT_CONTEXT_MPU_DEBUG("atsc3_mmt_mpu_mfu_on_sample_complete_dump: packet_id: %u, mpu_sequence_number: %u, sample_number: %u, mmt_mfu_sample: %p, len: %d",
+	__MMT_CONTEXT_MPU_DEBUG("atsc3_mmt_mpu_mfu_on_sample_complete_dump: packet_id: %u, mpu_sequence_number: %u, mmtp_timestamp: %u, sample_number: %u, mmt_mfu_sample: %p, len: %d",
 			packet_id,
             mpu_sequence_number,
+			mmtp_timestamp,
             sample_number,
 			mmt_mfu_sample,
 			mmt_mfu_sample->p_size);
@@ -110,13 +112,14 @@ void atsc3_mmt_mpu_mfu_on_sample_complete_dump(atsc3_mmt_mfu_context_t* atsc3_mm
     }
 }
 
-void atsc3_mmt_mpu_mfu_on_sample_corrupt_dump(atsc3_mmt_mfu_context_t* atsc3_mmt_mfu_context, uint16_t packet_id, uint32_t mpu_sequence_number, uint32_t sample_number, block_t* mmt_mfu_sample, uint32_t mfu_fragment_count_expected, uint32_t mfu_fragment_count_rebuilt) {
+void atsc3_mmt_mpu_mfu_on_sample_corrupt_dump(atsc3_mmt_mfu_context_t* atsc3_mmt_mfu_context, uint16_t packet_id, uint32_t mmtp_timestamp, uint32_t mpu_sequence_number, uint32_t sample_number, block_t* mmt_mfu_sample, uint32_t mfu_fragment_count_expected, uint32_t mfu_fragment_count_rebuilt) {
 	if(packet_id != atsc3_mmt_context_stpp_packet_id_for_testing) {
 		return;
 	}
-	__MMT_CONTEXT_MPU_DEBUG("atsc3_mmt_mpu_mfu_on_sample_corrupt_dump: packet_id: %u, mpu_sequence_number: %u, sample_number: %u, mmt_mfu_sample: %p, len: %d",
+	__MMT_CONTEXT_MPU_DEBUG("atsc3_mmt_mpu_mfu_on_sample_corrupt_dump: packet_id: %u, mpu_sequence_number: %u, mmtp_timestamp: %u, sample_number: %u, mmt_mfu_sample: %p, len: %d",
 				packet_id,
 	            mpu_sequence_number,
+				mmtp_timestamp,
 	            sample_number,
 				mmt_mfu_sample,
 				mmt_mfu_sample->p_size);
@@ -229,7 +232,7 @@ void process_packet(u_char *user, const struct pcap_pkthdr *pkthdr, const u_char
 								__INFO("Adding service: %d", atsc3_lls_slt_service->service_id);
 
 								lls_sls_mmt_monitor = lls_sls_mmt_monitor_create();
-								lls_sls_mmt_monitor->atsc3_lls_slt_service = atsc3_lls_slt_service; //HACK!
+								lls_sls_mmt_monitor->transients.atsc3_lls_slt_service = atsc3_lls_slt_service; //HACK!
 								lls_slt_service_id_t* lls_slt_service_id = lls_slt_service_id_new_from_atsc3_lls_slt_service(atsc3_lls_slt_service);
 
 								lls_slt_monitor_add_lls_slt_service_id(lls_slt_monitor, lls_slt_service_id);
@@ -240,7 +243,7 @@ void process_packet(u_char *user, const struct pcap_pkthdr *pkthdr, const u_char
 								if(!lls_sls_mmt_session) {
 									__WARN("lls_slt_mmt_session_find_from_service_id: lls_sls_mmt_session is NULL!");
 								}
-								lls_sls_mmt_monitor->lls_mmt_session = lls_sls_mmt_session;
+								lls_sls_mmt_monitor->transients.lls_mmt_session = lls_sls_mmt_session;
 								lls_slt_monitor->lls_sls_mmt_monitor = lls_sls_mmt_monitor;
 
 								lls_slt_monitor_add_lls_sls_mmt_monitor(lls_slt_monitor, lls_sls_mmt_monitor);
@@ -253,7 +256,7 @@ void process_packet(u_char *user, const struct pcap_pkthdr *pkthdr, const u_char
 
 		__TRACE("Checking lls_sls_mmt_monitor: %p,", lls_sls_mmt_monitor);
 
-		if(lls_sls_mmt_monitor && lls_sls_mmt_monitor->lls_mmt_session) {
+		if(lls_sls_mmt_monitor && lls_sls_mmt_monitor->transients.lls_mmt_session) {
 			__TRACE("Checking lls_sls_mmt_monitor->lls_mmt_session: %p,", lls_sls_mmt_monitor->lls_mmt_session);
 		}
 
@@ -270,7 +273,7 @@ void process_packet(u_char *user, const struct pcap_pkthdr *pkthdr, const u_char
     lls_sls_mmt_session_t* matching_lls_sls_mmt_session = lls_slt_mmt_session_find_from_udp_packet(lls_slt_monitor, udp_packet->udp_flow.src_ip_addr, udp_packet->udp_flow.dst_ip_addr, udp_packet->udp_flow.dst_port);
 	__TRACE("Checking matching_lls_sls_mmt_session: %p,", matching_lls_sls_mmt_session);
 
-	if(matching_lls_sls_mmt_session && lls_slt_monitor && lls_slt_monitor->lls_sls_mmt_monitor && matching_lls_sls_mmt_session->atsc3_lls_slt_service->service_id == lls_slt_monitor->lls_sls_mmt_monitor->atsc3_lls_slt_service->service_id) {
+	if(matching_lls_sls_mmt_session && lls_slt_monitor && lls_slt_monitor->lls_sls_mmt_monitor && matching_lls_sls_mmt_session->atsc3_lls_slt_service->service_id == lls_slt_monitor->lls_sls_mmt_monitor->transients.atsc3_lls_slt_service->service_id) {
 
 		mmtp_packet_header = mmtp_packet_header_parse_from_block_t(udp_packet->data);
         
@@ -307,7 +310,7 @@ void process_packet(u_char *user, const struct pcap_pkthdr *pkthdr, const u_char
 
 				atsc3_mmt_mfu_context->mmtp_flow = mmtp_flow;
 				atsc3_mmt_mfu_context->udp_flow_latest_mpu_sequence_number_container = udp_flow_latest_mpu_sequence_number_container;
-				atsc3_mmt_mfu_context->lls_slt_monitor = lls_slt_monitor;
+				atsc3_mmt_mfu_context->transients.lls_slt_monitor = lls_slt_monitor;
 				atsc3_mmt_mfu_context->matching_lls_sls_mmt_session = matching_lls_sls_mmt_session;
 
 				__TRACE("process_packet: mmtp_mfu_process_from_payload_with_context with udp_packet: %p, mmtp_mpu_packet: %p, atsc3_mmt_mfu_context: %p,",
@@ -356,7 +359,7 @@ void process_packet(u_char *user, const struct pcap_pkthdr *pkthdr, const u_char
 				//TODO - remap this
 				//add in flows 				lls_sls_mmt_session_t* lls_sls_mmt_session = lls_slt_mmt_session_find_from_service_id(lls_slt_monitor, lls_sls_mmt_monitor->lls_mmt_session->service_id);
 
-				if(lls_sls_mmt_monitor && lls_sls_mmt_monitor->lls_mmt_session && matching_lls_sls_mmt_session) {
+				if(lls_sls_mmt_monitor && lls_sls_mmt_monitor->transients.lls_mmt_session && matching_lls_sls_mmt_session) {
 					__INFO("mmt_signalling_information: from atsc3 service_id: %u, patching: seting audio_packet_id/video_packet_id/stpp_packet_id: %u, %u, %u",
 							matching_lls_sls_mmt_session->atsc3_lls_slt_service->service_id,
 							matching_lls_sls_mmt_session->audio_packet_id,

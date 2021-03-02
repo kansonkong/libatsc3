@@ -592,7 +592,7 @@ void process_mmtp_payload(udp_packet_t *udp_packet, lls_sls_mmt_session_t* match
 	}
     
     //check if we are monitoring this service_id by flow
-    if(!lls_slt_monitor || !lls_slt_monitor->lls_sls_mmt_monitor || !(lls_slt_monitor->lls_sls_mmt_monitor->atsc3_lls_slt_service->service_id == matching_lls_sls_mmt_session->service_id)) {
+    if(!lls_slt_monitor || !lls_slt_monitor->lls_sls_mmt_monitor || !(lls_slt_monitor->lls_sls_mmt_monitor->transients.atsc3_lls_slt_service->service_id == matching_lls_sls_mmt_session->service_id)) {
         goto cleanup;
     }
 
@@ -718,8 +718,8 @@ void process_packet(u_char *user, const struct pcap_pkthdr *pkthdr, const u_char
 
                                 //we may not be initialized yet, so re-check again later
                                 lls_sls_mmt_session_t* lls_sls_mmt_session = lls_slt_mmt_session_find_from_service_id(lls_slt_monitor, atsc3_lls_slt_service->service_id);
-                                lls_sls_mmt_monitor->lls_mmt_session = lls_sls_mmt_session;
-                                lls_sls_mmt_monitor->atsc3_lls_slt_service = atsc3_lls_slt_service;
+                                lls_sls_mmt_monitor->transients.lls_mmt_session = lls_sls_mmt_session;
+                                lls_sls_mmt_monitor->transients.atsc3_lls_slt_service = atsc3_lls_slt_service;
                             }
                         }
                     }
@@ -728,7 +728,7 @@ void process_packet(u_char *user, const struct pcap_pkthdr *pkthdr, const u_char
 		}
         
         //recheck video_packet_id/audio_packet_id
-        if(lls_sls_mmt_monitor && lls_sls_mmt_monitor->lls_mmt_session) {
+        if(lls_sls_mmt_monitor && lls_sls_mmt_monitor->transients.lls_mmt_session) {
 //jjustman-2020-12-30 - TODO - fixme
 
 //            if(!lls_sls_mmt_monitor->video_packet_id) {

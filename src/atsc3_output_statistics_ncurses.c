@@ -167,9 +167,9 @@ void* ncurses_input_run_thread(void* lls_slt_monitor_ptr) {
                     if(lls_sls_mmt_session) {
                         //TODO - free and teardown if we already have an active montiro
                         lls_sls_mmt_monitor = lls_sls_mmt_monitor_create();
-                        lls_sls_mmt_monitor->lls_mmt_session = lls_sls_mmt_session;
+                        lls_sls_mmt_monitor->transients.lls_mmt_session = lls_sls_mmt_session;
 
-                        lls_sls_mmt_monitor->atsc3_lls_slt_service = lls_sls_mmt_session->atsc3_lls_slt_service;
+                        lls_sls_mmt_monitor->transients.atsc3_lls_slt_service = lls_sls_mmt_session->atsc3_lls_slt_service;
                         
 //                        lls_sls_mmt_monitor->video_packet_id = lls_sls_mmt_session->video_packet_id;
 //                        lls_sls_mmt_monitor->audio_packet_id = lls_sls_mmt_session->audio_packet_id;
@@ -204,8 +204,6 @@ void* ncurses_input_run_thread(void* lls_slt_monitor_ptr) {
 					play_mode = 0;
 					mtl_clear();
 					wprintw(my_window, "Exiting ALC/ROUTE capture mode");
-                    //todo - remove me
-					alc_recon_file_buffer_struct_set_tsi_toi(NULL, 0, 0);
                     if(lls_slt_monitor && lls_slt_monitor->lls_sls_alc_monitor) {
                         lls_slt_monitor->lls_sls_alc_monitor->lls_sls_monitor_output_buffer_mode.file_dump_enabled = false;
                     }
