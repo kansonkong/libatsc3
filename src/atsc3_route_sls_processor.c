@@ -27,7 +27,11 @@ int _ROUTE_SLS_PROCESSOR_TRACE_ENABLED = 0;
 void atsc3_route_sls_process_from_alc_packet_and_file(udp_flow_t* udp_flow, atsc3_alc_packet_t* alc_packet, lls_sls_alc_monitor_t* lls_sls_alc_monitor) {
     char* file_name = NULL;
     char* mbms_toi_filename = NULL;
-    
+	char* unsigned_sls_filename = NULL;
+	char* signing_certificate_filename = NULL;  //jjustman-2021-03-01: TODO: this needs to be changed from the CDT table
+
+	block_t* atsc3_fdt_file_contents = NULL;
+	
     FILE *fp = NULL;
     FILE *fp_mbms = NULL;
     
@@ -110,25 +114,70 @@ void atsc3_route_sls_process_from_alc_packet_and_file(udp_flow_t* udp_flow, atsc
 	} else {
 		//check to see if we have a pending atsc3_fdt_instance and if we need to swap/roll forward any flows
 		if(lls_sls_alc_monitor && lls_sls_alc_monitor->atsc3_fdt_instance_pending) {
-			atsc3_fdt_instance_t* atsc3_fdt_instance_pending = lls_sls_alc_monitor->atsc3_fdt_instance_pending;
+			uint32_t mbms_toi = 0;
 			
-			uint32_t* mbms_toi = atsc3_mbms_envelope_find_toi_from_fdt(atsc3_fdt_instance_pending);
-			if(!mbms_toi) {
-				_ATSC3_ROUTE_SLS_PROCESSOR_ERROR("Unable to find MBMS TOI for atsc3_fdt_instance_pending: %p", atsc3_fdt_instance_pending);
+			atsc3_fdt_instance_t* atsc3_fdt_instance_pending = lls_sls_alc_monitor->atsc3_fdt_instance_pending;
+			atsc3_fdt_file_t* atsc3_fdt_file = atsc3_mbms_envelope_find_multipart_fdt_file_from_fdt_instance(atsc3_fdt_instance_pending);
+			
+			if(!atsc3_fdt_file || !atsc3_fdt_file->toi) {
+				_ATSC3_ROUTE_SLS_PROCESSOR_ERROR("Unable to find MBMS TOI for atsc3_fdt_instance_pending: %p, atsc3_fdt_file: %p", atsc3_fdt_instance_pending, atsc3_fdt_file);
 				goto cleanup;
 			}
+			
+			mbms_toi = atsc3_fdt_file->toi;
+			mbms_toi_filename = alc_packet_dump_to_object_get_filename_tsi_toi(udp_flow, 0, mbms_toi);
 
-			mbms_toi_filename = alc_packet_dump_to_object_get_filename_tsi_toi(udp_flow, 0, *mbms_toi);
+			atsc3_fdt_file_contents = block_Read_from_filename(mbms_toi_filename);
+					
+			if(atsc3_fdt_file_is_multipart_signed(atsc3_fdt_file) || atsc3_fdt_file_is_multipart_signed_from_payload(atsc3_fdt_file_contents)) {
+				unsigned_sls_filename = alc_packet_dump_to_object_get_filename_tsi_toi_unsigned(udp_flow, 0, mbms_toi);
 
-			fp_mbms = fopen(mbms_toi_filename, "r");
-			if(!fp_mbms) {
-				_ATSC3_ROUTE_SLS_PROCESSOR_ERROR("alc_packet tsi/toi:0/%u filename: %s is null for pending: %p!", *mbms_toi, mbms_toi_filename, atsc3_fdt_instance_pending);
-				goto cleanup;
+				//extract and verify our signing, and extract payload to alc_packet_dump_to_object_get_filename_tsi_toi_unsigned
+				atsc3_smime_entity_t* atsc3_smime_entity = atsc3_smime_entity_new_parse_from_file(mbms_toi_filename);
+				atsc3_smime_validation_context_t* atsc3_smime_validation_context = atsc3_smime_validation_context_new(atsc3_smime_entity);
+				
+//jjustman-2021-03-01 - we need to parse our signing certificate from our CDT (chain) cert(s)
+//				atsc3_smime_validation_context_certificate_payload_parse_from_file(atsc3_smime_validation_context, signing_certificate_filename);
+				atsc3_smime_validation_context_set_cms_noverify(atsc3_smime_validation_context, true);
+//jjustman-2021-03-01 - TODO - FIX ME if we have a CDT chain...
+				atsc3_smime_validation_context_set_cms_no_content_verify(atsc3_smime_validation_context, true);
+
+				atsc3_smime_validation_context_certificate_payload_parse_from_file_with_root_fallback(atsc3_smime_validation_context, signing_certificate_filename);
+
+				atsc3_smime_validation_context_t* atsc3_smime_validation_context_ret = atsc3_smime_validate_from_context(atsc3_smime_validation_context);
+				
+				if(atsc3_smime_validation_context_ret && atsc3_smime_validation_context_ret->atsc3_smime_entity && atsc3_smime_validation_context_ret->atsc3_smime_entity->cms_verified_extracted_mime_entity) {
+					block_Write_to_filename(atsc3_smime_validation_context->atsc3_smime_entity->cms_verified_extracted_mime_entity, unsigned_sls_filename);
+					fp_mbms = fopen(unsigned_sls_filename, "r");
+					
+					if(!fp_mbms) {
+						_ATSC3_ROUTE_SLS_PROCESSOR_ERROR("alc_packet tsi/toi:0/%u filename: %s is null for signed pending: %p!", mbms_toi, mbms_toi_filename, atsc3_fdt_instance_pending);
+						goto cleanup;
+					}
+					
+				} else {
+					_ATSC3_ROUTE_SLS_PROCESSOR_ERROR("alc_packet tsi/toi:0/%u signed pending: atsc3_smime_validation_context_ret: %p, atsc3_smime_validation_context_ret->atsc3_smime_entity: %p, cms_verified_extracted_mime_entity: %p", mbms_toi, atsc3_smime_validation_context_ret,
+													 (atsc3_smime_validation_context_ret ? atsc3_smime_validation_context_ret->atsc3_smime_entity : NULL),
+													 (atsc3_smime_validation_context_ret && atsc3_smime_validation_context_ret->atsc3_smime_entity ? atsc3_smime_validation_context_ret->atsc3_smime_entity->cms_verified_extracted_mime_entity : NULL));
+
+				}
+				
+			} else {
+				
+				//non-signed payload parsing
+				mbms_toi_filename = alc_packet_dump_to_object_get_filename_tsi_toi(udp_flow, 0, mbms_toi);
+				fp_mbms = fopen(mbms_toi_filename, "r");
+				if(!fp_mbms) {
+					_ATSC3_ROUTE_SLS_PROCESSOR_ERROR("alc_packet tsi/toi:0/%u filename: %s is null for unsigned pending: %p!", mbms_toi, mbms_toi_filename, atsc3_fdt_instance_pending);
+					goto cleanup;
+				}
+							
 			}
 			
 			atsc3_sls_metadata_fragments_pending = atsc3_mbms_envelope_to_sls_metadata_fragments_parse_from_fdt_fp(fp_mbms);
+			
 			if(!atsc3_sls_metadata_fragments_pending) {
-				_ATSC3_ROUTE_SLS_PROCESSOR_ERROR("atsc3_sls_metadata_fragments_pending is NULL, tsi/toi:0/%u filename: %s for pending: %p!", *mbms_toi, mbms_toi_filename, atsc3_fdt_instance_pending);
+				_ATSC3_ROUTE_SLS_PROCESSOR_ERROR("atsc3_sls_metadata_fragments_pending is NULL, tsi/toi:0/%u filename: %s for pending: %p!", mbms_toi, mbms_toi_filename, atsc3_fdt_instance_pending);
 				goto cleanup;
 			}
 			
@@ -140,7 +189,7 @@ void atsc3_route_sls_process_from_alc_packet_and_file(udp_flow_t* udp_flow, atsc
 			}
 			
 			// #1569
-			// jjustman-2020-07-20 - TODO - add SLS TOI value here - *mbms_toi
+			// jjustman-2020-07-20 - TODO - add SLS TOI value here - mbms_toi
 			bool held_payload_has_changed = atsc3_lls_sls_alc_monitor_sls_metadata_fragements_has_held_changed(lls_sls_alc_monitor, atsc3_sls_metadata_fragments_pending);
 			
 			if(held_payload_has_changed) {
@@ -234,6 +283,15 @@ cleanup:
         free(file_name);
         file_name = NULL;
     }
+
+	if(atsc3_fdt_file_contents) {
+		block_Destroy(&atsc3_fdt_file_contents);
+	}
+	
+	if(unsigned_sls_filename) {
+		free(unsigned_sls_filename);
+		unsigned_sls_filename = NULL;
+	}
     
     if(mbms_toi_filename) {
         free(mbms_toi_filename);
