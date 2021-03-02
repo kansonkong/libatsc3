@@ -23,6 +23,7 @@
 #include "atsc3_mime_multipart_related_parser.h"
 #include "atsc3_route_dash_utils.h"
 #include "atsc3_pcre2_regex_utils.h"
+#include "atsc3_smime_utils.h"
 
 
 void atsc3_route_sls_process_from_alc_packet_and_file(udp_flow_t* udp_flow, atsc3_alc_packet_t* alc_packet, lls_sls_alc_monitor_t* lls_sls_alc_monitor);

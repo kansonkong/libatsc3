@@ -183,8 +183,8 @@ void* ncurses_input_run_thread(void* lls_slt_monitor_ptr) {
                         //build our atsc3_alc_session map
                         
                         lls_sls_mmt_monitor = lls_sls_mmt_monitor_create();
-                        lls_sls_mmt_monitor->lls_mmt_session = lls_sls_mmt_session;
-                        lls_sls_mmt_monitor->atsc3_lls_slt_service = lls_sls_mmt_session->atsc3_lls_slt_service;
+                        lls_sls_mmt_monitor->transients.lls_mmt_session = lls_sls_mmt_session;
+                        lls_sls_mmt_monitor->transients.atsc3_lls_slt_service = lls_sls_mmt_session->atsc3_lls_slt_service;
 
 //                        lls_sls_mmt_monitor->video_packet_id = lls_sls_mmt_session->video_packet_id;
 //                        lls_sls_mmt_monitor->audio_packet_id = lls_sls_mmt_session->audio_packet_id;

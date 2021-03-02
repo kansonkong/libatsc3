@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<SLT xmlns="tag:atsc.org,2016:XMLSchemas/ATSC3/Delivery/SLT/1.0/" xmlns:xs="http://www.w3.org/2001/XMLSchema" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="tag:atsc.org,2016:XMLSchemas/ATSC3/Delivery/SLT/1.0/ SLT-1.0-20180228.xsd" bsid="0">
+    <Service serviceId="1" globalServiceID="tag:enensys.com,2020:globalServiceID/1" sltSvcSeqNum="0" majorChannelNo="77" minorChannelNo="80" serviceCategory="1" shortServiceName="BBD1">
+        <BroadcastSvcSignaling slsProtocol="1" slsMajorProtocolVersion="1" slsMinorProtocolVersion="0" slsDestinationIpAddress="239.1.120.120" slsDestinationUdpPort="49152" slsSourceIpAddress="10.12.79.120"/>
+    </Service>
+</SLT>
