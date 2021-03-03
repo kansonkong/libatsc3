@@ -127,8 +127,9 @@ private:
     int tUnit = -1;
     int slCmdIfFailureCount = 0;
 
-    SL_PlatFormConfigParams_t getPlfConfig;
-    SL_PlatFormConfigParams_t sPlfConfig;
+    SL_PlatFormConfigParams_t getPlfConfig = SL_PLATFORM_CONFIG_PARAMS_NULL_INITIALIZER;
+    SL_PlatFormConfigParams_t sPlfConfig   = SL_PLATFORM_CONFIG_PARAMS_NULL_INITIALIZER;
+
     SL_CmdControlIf_t         cmdIf;
     SL_BbCapture_t            getbbValue = BB_CAPTURE_DISABLE;
 
