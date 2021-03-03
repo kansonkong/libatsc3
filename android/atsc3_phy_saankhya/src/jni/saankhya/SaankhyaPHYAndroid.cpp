@@ -150,7 +150,7 @@ void SaankhyaPHYAndroid::resetProcessThreadStatistics() {
 
 int SaankhyaPHYAndroid::init()
 {
-    SaankhyaPHYAndroid::configPlatformParams();
+    //jjustman-2021-03-02 - noop
     return 0;
 }
 
@@ -267,11 +267,38 @@ int SaankhyaPHYAndroid::deinit()
     return 0;
 }
 
+SL_ConfigResult_t SaankhyaPHYAndroid::configPlatformParams_autodetect(int fd, string device_path) {
+
+    SL_ConfigResult_t res = SL_CONFIG_OK;
+    _SAANKHYA_PHY_ANDROID_DEBUG("configPlatformParams_autodetect:: open with fd: %d, device_path: %s", fd, device_path.c_str());
+
+    if(fd == SL_HOSTINTERFACE_TYPE_MARKONE_FD && device_path.c_str() && !strcasecmp(SL_HOSTINTERFACE_TYPE_MARKONE_PATH, device_path.c_str())) {
+        //configure as aa_MarkONE
+        res = configPlatformParams_aa_markone();
+    } else {
+        //configure as (aa/bb) FX3
+        res = configPlatformParams_aa_fx3();
+        //or
+        //configPlatformParams_bb_fx3()
+    }
+
+    _SAANKHYA_PHY_ANDROID_DEBUG("configPlatformParams_autodetect::retun res: %d", res);
+
+    return res;
+}
 int SaankhyaPHYAndroid::open(int fd, string device_path)
 {
-    SL_SetUsbFd(fd);
+    _SAANKHYA_PHY_ANDROID_DEBUG("open: with fd: %d, device_path: %s", fd, device_path.c_str());
 
-    _SAANKHYA_PHY_ANDROID_DEBUG("open with fd: %d, device_path: %s", fd, device_path.c_str());
+    SL_ConfigResult_t sl_configResult = SL_CONFIG_OK;
+    sl_configResult = configPlatformParams_autodetect(fd, device_path);
+
+    if(sl_configResult != SL_CONFIG_OK) {
+        _SAANKHYA_PHY_ANDROID_DEBUG("open: configPlatformParams_autodetect failed, with fd: %d, device_path: %s, configResult failed, res: %d", fd, device_path.c_str(), sl_configResult);
+        return -1;
+    }
+
+    SL_SetUsbFd(fd);
 
     SL_I2cResult_t i2cres;
 
@@ -314,15 +341,20 @@ int SaankhyaPHYAndroid::open(int fd, string device_path)
         i2cres = SL_I2cInit();
         if (i2cres != SL_I2C_OK)
         {
-            global_sl_i2c_result_error_flag = i2cres;
+            if(i2cres == SL_I2C_DEV_NODE_NOT_FOUND) {
+                //this is most likely markone auto-probing on a non markone handset
+                _SAANKHYA_PHY_ANDROID_INFO("SaankhyaPHYAndroid::open() - unable to find /dev/i2c markone handle - (e.g /dev/i2c-3)");
+            } else {
+                global_sl_i2c_result_error_flag = i2cres;
 
-            if(atsc3_ndk_phy_bridge_get_instance()) {
-                atsc3_ndk_phy_bridge_get_instance()->atsc3_notify_phy_error("SaankhyaPHYAndroid::open() - ERROR: SL_I2cInit failed: code: %d", global_sl_i2c_result_error_flag);
+                if(atsc3_ndk_phy_bridge_get_instance()) {
+                    atsc3_ndk_phy_bridge_get_instance()->atsc3_notify_phy_error("SaankhyaPHYAndroid::open() - ERROR: SL_I2cInit failed: code: %d", global_sl_i2c_result_error_flag);
+                }
+
+                _SAANKHYA_PHY_ANDROID_ERROR("SaankhyaPHYAndroid::open() - ERROR: Error:SL_I2cInit failed:");
+                printToConsoleI2cError(i2cres);
             }
 
-            _SAANKHYA_PHY_ANDROID_ERROR("SaankhyaPHYAndroid::open() - ERROR: Error:SL_I2cInit failed:");
-
-            printToConsoleI2cError(i2cres);
             goto ERROR;
         }
         else
@@ -1073,20 +1105,28 @@ void SaankhyaPHYAndroid::dump_plp_list() {
 }
 
 int SaankhyaPHYAndroid::download_bootloader_firmware(int fd, string device_path) {
-    SL_SetUsbFd(fd);
+    _SAANKHYA_PHY_ANDROID_DEBUG("download_bootloader_firmware, path: %s, fd: %d", device_path.c_str(), fd);
 
+    SL_ConfigResult_t sl_configResult = SL_CONFIG_OK;
+    sl_configResult = configPlatformParams_autodetect(fd, device_path);
+
+    if(sl_configResult != SL_CONFIG_OK) {
+        _SAANKHYA_PHY_ANDROID_DEBUG("download_bootloader_firmware: configPlatformParams_autodetect failed - fd: %d, device_path: %s, configResult failed, res: %d", fd, device_path.c_str(), sl_configResult);
+        return -1;
+    }
+
+    SL_SetUsbFd(fd);
     SL_I2cResult_t i2cres;
 
-    _SAANKHYA_PHY_ANDROID_DEBUG("SL_I2cPreInit - Before, path: %s, fd: %d", device_path.c_str(), fd);
     i2cres = SL_I2cPreInit();
-    _SAANKHYA_PHY_ANDROID_DEBUG("SL_I2cPreInit returned: %d", i2cres);
+    _SAANKHYA_PHY_ANDROID_DEBUG("download_bootloader_firmware: SL_I2cPreInit returned: %d", i2cres);
 
     if (i2cres != SL_I2C_OK)
     {
         if(i2cres == SL_I2C_AWAITING_REENUMERATION) {
-            _SAANKHYA_PHY_ANDROID_DEBUG("INFO:SL_I2cPreInit SL_FX3S_I2C_AWAITING_REENUMERATION");
-            //sleep for 2s
-            sleep(2);
+            _SAANKHYA_PHY_ANDROID_DEBUG("download_bootloader_firmware: INFO:SL_I2cPreInit SL_FX3S_I2C_AWAITING_REENUMERATION");
+            //sleep for 3s?
+            //sleep(3);
             return 0;
         } else {
             _SAANKHYA_PHY_ANDROID_DEBUG("Error:SL_I2cPreInit failed: %d", i2cres);
@@ -1096,45 +1136,17 @@ int SaankhyaPHYAndroid::download_bootloader_firmware(int fd, string device_path)
     return -1;
 }
 
-SL_ConfigResult_t SaankhyaPHYAndroid::configPlatformParams() {
-
-    SL_ConfigResult_t res;
-    /*
-      * Assign Platform Configuration Parameters. For other ref platforms, replace settings from
-      * comments above
-      */
-
-
-#ifdef SL_MARKONE
-
-    sPlfConfig.chipType = SL_CHIP_4000;
-    sPlfConfig.chipRev = SL_CHIP_REV_AA;
-    sPlfConfig.boardType = SL_EVB_4000; //from venky 2020-09-07 - SL_BORQS_EVT;
-    sPlfConfig.tunerType = TUNER_SI;
-    sPlfConfig.demodControlIf = SL_DEMOD_CMD_CONTROL_IF_I2C;
-    sPlfConfig.demodOutputIf = SL_DEMOD_OUTPUTIF_SDIO;
-    sPlfConfig.demodI2cAddr = 0x30; /* SLDemod 7-bit Physical I2C Address */
-    /*
-    * Relative Path to SLSDK from working directory
-    * Example: D:\UNAME\PROJECTS\slsdk
-    * User can just specifying "..", which will point to this directory or can specify full directory path explicitly
-    */
-    sPlfConfig.slsdkPath = "/data/out"; //from venky 2020-09-07
-
-    sPlfConfig.demodResetGpioPin = 12;   /* 09-10 03:25:56.498     0     0 E SAANKHYA: Reset low GPIO: 12 */
-    sPlfConfig.demodI2cAddr3GpioPin = 37;   /* FX3S GPIO 37 connected to Demod I2C Address3 Pin and used only for SDIO Interface */
-    sPlfConfig.tunerResetGpioPin = 23;    /* FX3S GPIO 23 connected to Tuner Reset Pin */
-
-#endif
-
 //jjustman-2020-09-09 KAILASH dongle specific configuration
-#ifdef SL_KAILASH
+SL_ConfigResult_t SaankhyaPHYAndroid::configPlatformParams_aa_fx3() {
 
-    #define SL_FX3S 1
+    SL_ConfigResult_t res = SL_CONFIG_OK;
+
     sPlfConfig.chipType = SL_CHIP_3010;
     sPlfConfig.chipRev = SL_CHIP_REV_AA;
     sPlfConfig.boardType = SL_KAILASH_DONGLE;
     sPlfConfig.tunerType = TUNER_SI;
+    sPlfConfig.hostInterfaceType = SL_HostInterfaceType_FX3;
+
     sPlfConfig.demodControlIf = SL_DEMOD_CMD_CONTROL_IF_I2C;
     sPlfConfig.demodOutputIf = SL_DEMOD_OUTPUTIF_TS;
     sPlfConfig.demodI2cAddr = 0x30; /* SLDemod 7-bit Physical I2C Address */
@@ -1145,17 +1157,100 @@ SL_ConfigResult_t SaankhyaPHYAndroid::configPlatformParams() {
 
     sPlfConfig.slsdkPath = "."; //jjustman-2020-09-09 use extern object linkages for fx3/hex firmware
 
-#endif
+    /* Set Configuration Parameters */
+    res = SL_ConfigSetPlatform(sPlfConfig);
+
+    _SAANKHYA_PHY_ANDROID_DEBUG("configPlatformParams_aa_fx3: with chipType: %d, chipRev: %d, boardType: %d, tunerType: %d, hostInterfaceType: %d, ",
+                                sPlfConfig.chipType,
+                                sPlfConfig.chipRev,
+                                sPlfConfig.boardType,
+                                sPlfConfig.tunerType,
+                                sPlfConfig.hostInterfaceType);
 
 
+    //reconfigure method callbacks for cust_markone
+    SL_ConfigureGpio_slref();
+    SL_ConfigureI2c_slref();
+    SL_ConfigureTs_slref();
+
+    return res;
+}
+
+SL_ConfigResult_t SaankhyaPHYAndroid::configPlatformParams_aa_markone() {
+
+    SL_ConfigResult_t res = SL_CONFIG_OK;
+
+    sPlfConfig.chipType = SL_CHIP_4000;
+    sPlfConfig.chipRev = SL_CHIP_REV_AA;
+    sPlfConfig.boardType = SL_EVB_4000; //from venky 2020-09-07 - SL_BORQS_EVT;
+    sPlfConfig.tunerType = TUNER_SI;
+    sPlfConfig.hostInterfaceType = SL_HostInterfaceType_MarkONE;
+
+    sPlfConfig.demodControlIf = SL_DEMOD_CMD_CONTROL_IF_I2C;
+    sPlfConfig.demodOutputIf = SL_DEMOD_OUTPUTIF_SDIO;
+    sPlfConfig.demodI2cAddr = 0x30; /* SLDemod 7-bit Physical I2C Address */
+
+    sPlfConfig.slsdkPath = "."; //jjustman-2020-09-09 use extern object linkages for fx3/hex firmware
+
+    sPlfConfig.demodResetGpioPin = 12;   /* 09-10 03:25:56.498     0     0 E SAANKHYA: Reset low GPIO: 12 */
+    sPlfConfig.demodI2cAddr3GpioPin = 37;   /* FX3S GPIO 37 connected to Demod I2C Address3 Pin and used only for SDIO Interface */
+    sPlfConfig.tunerResetGpioPin = 23;    /* FX3S GPIO 23 connected to Tuner Reset Pin */
 
     /* Set Configuration Parameters */
     res = SL_ConfigSetPlatform(sPlfConfig);
 
-    _SAANKHYA_PHY_ANDROID_DEBUG("configPlatformParams: with boardType: %d", sPlfConfig.boardType);
+    _SAANKHYA_PHY_ANDROID_DEBUG("configPlatformParams_aa_markone: with chipType: %d, chipRev: %d, boardType: %d, tunerType: %d, hostInterfaceType: %d, ",
+            sPlfConfig.chipType,
+            sPlfConfig.chipRev,
+            sPlfConfig.boardType,
+            sPlfConfig.tunerType,
+            sPlfConfig.hostInterfaceType);
+
+    //reconfigure method callbacks for cust_markone
+    SL_ConfigureGpio_markone();
+    SL_ConfigureI2c_markone();
+    SL_ConfigureTs_markone();
 
     return res;
+}
 
+
+//jjustman-2020-09-09 KAILASH dongle specific configuration
+SL_ConfigResult_t SaankhyaPHYAndroid::configPlatformParams_bb_fx3() {
+
+    SL_ConfigResult_t res = SL_CONFIG_ERR_NOT_SUPPORTED;
+//
+//    sPlfConfig.chipType = SL_CHIP_3010;
+//    sPlfConfig.chipRev = SL_CHIP_REV_BB;
+//    sPlfConfig.boardType = SL_KAILASH_DONGLE_2;
+//    sPlfConfig.tunerType = TUNER_SI;
+//    sPlfConfig.hostInterfaceType = SL_HostInterfaceType_FX3;
+//
+//    sPlfConfig.demodControlIf = SL_DEMOD_CMD_CONTROL_IF_I2C;
+//    sPlfConfig.demodOutputIf = SL_DEMOD_OUTPUTIF_TS;
+//    sPlfConfig.demodI2cAddr = 0x30; /* SLDemod 7-bit Physical I2C Address */
+//
+//    sPlfConfig.demodResetGpioPin = 47;      /* FX3S GPIO 47 connected to Demod Reset Pin */
+//    sPlfConfig.cpldResetGpioPin = 43;       /* FX3S GPIO 43 connected to CPLD Reset Pin and used only for serial TS Interface  */
+//    sPlfConfig.tunerResetGpioPin = 23;    /* FX3S GPIO 23 connected to Tuner Reset Pin */
+//
+//    sPlfConfig.slsdkPath = "."; //jjustman-2020-09-09 use extern object linkages for fx3/hex firmware
+//
+//    /* Set Configuration Parameters */
+//    res = SL_ConfigSetPlatform(sPlfConfig);
+//
+//    _SAANKHYA_PHY_ANDROID_DEBUG("configPlatformParams_bb_fx3: with chipType: %d, chipRev: %d, boardType: %d, tunerType: %d, hostInterfaceType: %d, ",
+//                                sPlfConfig.chipType,
+//                                sPlfConfig.chipRev,
+//                                sPlfConfig.boardType,
+//                                sPlfConfig.tunerType,
+//                                sPlfConfig.hostInterfaceType);
+//   //reconfigure method callbacks for cust_markone
+//    SL_ConfigureGpio_slref();
+//    SL_ConfigureI2c_slref();
+//    SL_ConfigureTS_slref();
+
+    return res;
 }
 
 

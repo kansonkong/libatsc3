@@ -39,7 +39,12 @@ using namespace std;
 #define TLV_CIRCULAR_BUFFER_MIN_PROCESS_SIZE    (16 * 1024 * 2)         //CircularBuffer pending data size threshold for TLV depacketization processing, pinned at 8KB to match SL4000 ALP buffer
 #define TLV_CIRCULAR_BUFFER_PROCESS_BLOCK_SIZE  (16 * 1024 * 2)    //CircularBuffer block read size for depacketization callback processing ~ 65KB
 
+//jjustman-2021-03-02 - fixups for runtime configuration between FX3(aa/bb) and MarkONE(aa)
+#define SL_HOSTINTERFACE_TYPE_MARKONE_FD   -1
+#define SL_HOSTINTERFACE_TYPE_MARKONE_PATH "SDIO"
+
 #include "CircularBuffer.h"
+
 #include <sl_utils.h>
 #include <sl_config.h>
 #include <sl_demod.h>
@@ -50,6 +55,9 @@ using namespace std;
 #include <sl_gpio.h>
 #include <sl_demod.h>
 #include <sl_utils.h>
+
+//jjustman-2021-03-02 - dispatch reconfigure for markone methods
+#include <sl_cust_markone_dispatcher.h>
 
 typedef void * (*THREADFUNCPTR)(void *);
 
@@ -168,9 +176,14 @@ private:
     //          if set to true, we should discard the TLV payload in RxDataCallback
     static atomic_bool cb_should_discard;
 
-    //thread handling methods
+    //jjustman-2021-03-02 - expanded for runtime implementation support between FX3(aa/bb) and MarkONE,
+    // current configuration logic is invoked from int SaankhyaPHYAndroid::open(int fd, string device_path)
+    SL_ConfigResult_t configPlatformParams_autodetect(int fd, string device_path);
 
-    SL_ConfigResult_t configPlatformParams();
+    SL_ConfigResult_t configPlatformParams_aa_fx3();
+    SL_ConfigResult_t configPlatformParams_aa_markone();
+    SL_ConfigResult_t configPlatformParams_bb_fx3();
+
 
     void printToConsolePlfConfiguration(SL_PlatFormConfigParams_t cfgInfo);
     void printToConsoleDemodConfiguration(SL_DemodConfigInfo_t cfgInfo);
