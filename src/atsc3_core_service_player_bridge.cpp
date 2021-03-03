@@ -669,6 +669,10 @@ void atsc3_core_service_bridge_process_packet_from_plp_and_block(uint8_t plp_num
 	atsc3_core_service_bridge_process_packet_phy(block);
 }
 
+int mdi_multicast_emission_fd = -1;
+struct sockaddr_in mdi_multicast_emission_addr = { 0 };
+
+
 //void process_packet(u_char *user, const struct pcap_pkthdr *pkthdr, const u_char *packet) {
 void atsc3_core_service_bridge_process_packet_phy(block_t* packet) {
     lock_guard<recursive_mutex> atsc3_core_service_player_bridge_context_mutex_local(atsc3_core_service_player_bridge_context_mutex);
@@ -699,6 +703,44 @@ void atsc3_core_service_bridge_process_packet_phy(block_t* packet) {
                 packet->p_buffer[1]);
 
         goto error;
+    }
+
+    //jjustman-2021-02-18 - special udp:port for MDI (DRM) support flow from lab at 239.255.50.69:31337
+    if(udp_packet->udp_flow.dst_ip_addr == 4026479173 && udp_packet->udp_flow.dst_port == 31337) {
+        __ATSC3_CORE_SERVICE_PLAYER_BRIDGE_WARN("atsc3_core_service_bridge_process_packet_phy: got MDI/DRM packet at 239.255.50.69:31337, raw packet: len: %d, i_pos: %d, 0x%02x 0x%02x, datagram: len: %d, i_pos: %d, 0x%02x 0x%02x",
+                                                 packet->p_size,
+                                                 packet->i_pos,
+                                                 packet->p_buffer[0],
+                                                 packet->p_buffer[1],
+                                                 udp_packet->data->p_size,
+                                                 udp_packet->data->i_pos,
+                                                 udp_packet->data->p_buffer[0],
+                                                 udp_packet->data->p_buffer[1]);
+
+        if(mdi_multicast_emission_fd == -1) {
+            mdi_multicast_emission_fd = socket(AF_INET, SOCK_DGRAM, 0);
+            if (mdi_multicast_emission_fd < 0) {
+                __ATSC3_CORE_SERVICE_PLAYER_BRIDGE_ERROR("atsc3_core_service_bridge_process_packet_phy: unable to open socket(AF_INET, SOCK_DGRAM, 0)");
+
+                goto error;
+            }
+
+            // set up destination address
+            memset(&mdi_multicast_emission_addr, 0, sizeof(mdi_multicast_emission_addr));
+            mdi_multicast_emission_addr.sin_family = AF_INET;
+            mdi_multicast_emission_addr.sin_addr.s_addr = inet_addr("239.255.50.69");
+            mdi_multicast_emission_addr.sin_port = htons(31337);
+        }
+
+
+        // now just sendto() our destination!
+        char ch = 0;
+        int nbytes = sendto(mdi_multicast_emission_fd, block_Get(udp_packet->data), block_Remaining_size(udp_packet->data), 0, (struct sockaddr*) &mdi_multicast_emission_addr, sizeof(mdi_multicast_emission_addr));
+        if (nbytes < 0) {
+            __ATSC3_CORE_SERVICE_PLAYER_BRIDGE_ERROR("atsc3_core_service_bridge_process_packet_phy: unable to call sendto, nbytes: %d", nbytes);
+        }
+
+        goto cleanup;
     }
 
     //drop mdNS
