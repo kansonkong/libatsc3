@@ -752,7 +752,10 @@ int SaankhyaPHYAndroid::tune(int freqKHz, int plpid)
     //acquire our lock for setting tuning parameters (including re-tuning)
     unique_lock<mutex> SL_I2C_command_mutex_tuner_tune(SL_I2C_command_mutex);
     SL_I2C_last_command_extra_sleep = true;
+
     atsc3_core_service_application_bridge_reset_context();
+
+    printf("SaankhyaPHYAndroid::tune: Frequency: %d, PLP: %d", freqKHz, plpid);
 
     tres = SL_TunerSetFrequency(tUnit, freqKHz*1000);
     if (tres != 0)
@@ -761,8 +764,6 @@ int SaankhyaPHYAndroid::tune(int freqKHz, int plpid)
         printToConsoleTunerError(tres);
         goto ERROR;
     }
-    //jjustman-2021-02-24 - SLAPI 0.14 crashes here on 2nd sequential tune?
-    SL_SleepMS(1000);
 
     tres = SL_TunerGetConfiguration(tUnit, &tunerGetCfg);
     if (tres != 0)
@@ -945,8 +946,11 @@ int SaankhyaPHYAndroid::tune(int freqKHz, int plpid)
             _SAANKHYA_PHY_ANDROID_DEBUG("SUCCESS");
             //_SAANKHYA_PHY_ANDROID_DEBUG("SL Demod Output Capture: STARTED : sl-tlv.bin");
         }
+    } else {
+        _SAANKHYA_PHY_ANDROID_DEBUG("SLDemod: already running");
     }
-    SL_SleepMS(1000); // Delay to accomdate set configurations at SL to take effect
+    SL_SleepMS(500); // Delay to accomdate set configurations at SL to take effect
+
 
     plpInfo.plp0 = plpid;
     plpInfo.plp1 = 0xFF;
@@ -954,13 +958,12 @@ int SaankhyaPHYAndroid::tune(int freqKHz, int plpid)
     plpInfo.plp3 = 0xFF;
 
     slres = SL_DemodConfigPlps(slUnit, &plpInfo);
-    if (slres != 0)
-    {
+    if (slres != 0) {
         _SAANKHYA_PHY_ANDROID_DEBUG("Error:SL_DemodConfigPlps :");
         printToConsoleDemodError(slres);
         goto ERROR;
     }
-    SL_SleepMS(1000); // Delay to accomdate set configurations at SL to take effect
+    SL_SleepMS(500); // Delay to accomdate set configurations at SL to take effect
 
     slres = SL_DemodGetConfiguration(slUnit, &cfgInfo);
     if (slres != SL_OK)
@@ -991,14 +994,22 @@ UNLOCK:
 
 }
 
-int SaankhyaPHYAndroid::listen_plps(vector<uint8_t> plps_orignal_list)
+int SaankhyaPHYAndroid::listen_plps(vector<uint8_t> plps_original_list)
 {
     vector<uint8_t> plps;
-    for(int i=0; i < plps_orignal_list.size(); i++) {
-        if(plps_orignal_list.at(i) == 0) {
+    for(int i=0; i < plps_original_list.size(); i++) {
+        if(plps_original_list.at(i) == 0) {
             //skip, duplicate plp0 will cause demod to fail
         } else {
-            plps.push_back(plps_orignal_list.at(i));
+            bool duplicate = false;
+            for(int j=0; j < plps.size(); j++) {
+                 if(plps.at(j) == plps_original_list.at(i)) {
+                     duplicate = true;
+                 }
+            }
+            if(!duplicate) {
+                plps.push_back(plps_original_list.at(i));
+            }
         }
     }
 
@@ -1193,8 +1204,10 @@ SL_ConfigResult_t SaankhyaPHYAndroid::configPlatformParams_aa_markone() {
     sPlfConfig.slsdkPath = "."; //jjustman-2020-09-09 use extern object linkages for fx3/hex firmware
 
     sPlfConfig.demodResetGpioPin = 12;   /* 09-10 03:25:56.498     0     0 E SAANKHYA: Reset low GPIO: 12 */
-    sPlfConfig.demodI2cAddr3GpioPin = 37;   /* FX3S GPIO 37 connected to Demod I2C Address3 Pin and used only for SDIO Interface */
-    sPlfConfig.tunerResetGpioPin = 23;    /* FX3S GPIO 23 connected to Tuner Reset Pin */
+    sPlfConfig.demodI2cAddr3GpioPin = 0;   /* not used on markone AA ? */
+
+    //from: sdm660-qrd-kf.dtsi
+    sPlfConfig.tunerResetGpioPin = 13;
 
     /* Set Configuration Parameters */
     res = SL_ConfigSetPlatform(sPlfConfig);
