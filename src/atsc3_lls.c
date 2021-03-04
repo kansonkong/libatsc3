@@ -378,18 +378,18 @@ lls_table_t* atsc3_lls_table_create_or_update_from_lls_slt_monitor_with_metrics_
     //jjustman-2019-09-18 - TODO: refactor this out from union to *
     if(lls_table_new->lls_table_id == AEAT) {
         if(!lls_slt_monitor->lls_latest_aeat_table) {
-            _LLS_INFO("Adding new AEAT table reference: %s", lls_table_new->aeat_table.aeat_xml_fragment_latest);
+            _LLS_INFO_AEAT("Adding new AEAT table reference: %s", lls_table_new->aeat_table.aeat_xml_fragment_latest);
             lls_slt_monitor->lls_latest_aeat_table = lls_table_new;
         } else if(lls_slt_monitor->lls_latest_aeat_table->lls_group_id == lls_table_new->lls_group_id &&
                   lls_slt_monitor->lls_latest_aeat_table->lls_table_version != lls_table_new->lls_table_version) {
-            _LLS_INFO("Updating new AEAT table reference: %s", lls_table_new->aeat_table.aeat_xml_fragment_latest);
+            _LLS_INFO_AEAT("Updating new AEAT table reference: %s", lls_table_new->aeat_table.aeat_xml_fragment_latest);
             
             lls_table_free(&lls_slt_monitor->lls_latest_aeat_table);
             lls_slt_monitor->lls_latest_aeat_table = lls_table_new;
         } else {
             lls_table_free(&lls_table_new);
         }
-        return NULL; //TODO - fix me - jjustman-2019-09-18
+        return lls_table_new;
     }
     
     //jjustman-2019-09-18 - TODO: refactor this out from union to *
@@ -406,8 +406,7 @@ lls_table_t* atsc3_lls_table_create_or_update_from_lls_slt_monitor_with_metrics_
         } else {
             lls_table_free(&lls_table_new);
         }
-        return NULL; //TODO - fix me - jjustman-2019-09-18
-
+        return lls_table_new;
     }
    
     //unhandled lls_table_id
