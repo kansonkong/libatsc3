@@ -55,6 +55,7 @@ using namespace std;
 #include <sl_gpio.h>
 #include <sl_demod.h>
 #include <sl_utils.h>
+#include <sl_atsc3_diag.h>
 
 //jjustman-2021-03-02 - dispatch reconfigure for markone methods
 #include <sl_cust_markone_dispatcher.h>
@@ -92,18 +93,29 @@ public:
     uint64_t alp_total_bytes;
     uint64_t alp_total_LMTs_recv;
 
-    SL_PlpConfigParams_t plpInfo;
-    SL_Atsc3p0Region_t   regionInfo;
+    mutex SL_I2C_command_mutex;
+    mutex SL_PlpConfigParams_mutex;
 
-    SL_Atsc3p0Perf_Diag_t perfDiag;
-    SL_Atsc3p0Bsr_Diag_t  bsrDiag;
-    SL_Atsc3p0L1B_Diag_t  l1bDiag;
-    SL_Atsc3p0L1D_Diag_t  l1dDiag;
+    //jjustman-2021-03-03   this is expected to be always accurate, when using, be sure to acquire SL_plpConfigParams_mutex, and SL_I2c_command_mutex, if necessary
+    SL_PlpConfigParams_t    plpInfo;
 
+    SL_Atsc3p0Region_t      regionInfo;
+
+    //status thread details - use statusMetricsResetFromContextChange to initalize or to reset when tune() is completed or when PLP selection has changed
+    SL_TunerSignalInfo_t    tunerInfo;
+    SL_DemodLockStatus_t    demodLockStatus;
+    uint                    cpuStatus = 0;
+
+    //jjustman-2021-03-03 - NOTE: the following _Diag's are only polled after acqusition of the relevant RF/L1B/L1D lock, and must be 'cleared' when the tuner is re-tuned
+    SL_Atsc3p0Perf_Diag_t   perfDiag = { 0 };
+    SL_Atsc3p0Bsr_Diag_t    bsrDiag = { 0 };
+    SL_Atsc3p0L1B_Diag_t    l1bDiag = { 0 };
+    SL_Atsc3p0L1D_Diag_t    l1dDiag = { 0 };
+
+
+    //jjustman-2021-03-02 - don't use this method...
     void dump_plp_list();
 
-    mutex SL_I2C_command_mutex;
-    bool SL_I2C_last_command_extra_sleep;
 
 protected:
     void pinProducerThreadAsNeeded() override;
@@ -149,7 +161,6 @@ private:
     SL_TunerConfig_t tunerCfg;
     SL_TunerConfig_t tunerGetCfg;
     SL_TunerDcOffSet_t tunerIQDcOffSet;
-    SL_TunerSignalInfo_t tunerInfo;
 
     //uses      pinProducerThreadAsNeeded
     int         captureThread();
@@ -170,9 +181,29 @@ private:
     bool        statusThreadShouldRun = false;
     bool        statusThreadIsRunning = false;
 
+    void        statusMetricsResetFromTuneChange();
+    void        statusMetricsResetFromPLPListenChange();
+
+    void        resetProcessThreadStatistics();
+
+    //if this is our first loop after a Tune() command has completed, dump SL_DemodGetConfiguration
+    bool        statusThreadFirstLoopAfterTuneComplete = false;
+
+    //if this is our first loop after a Tune() command has completed AND...
+
+    // we have RF_DemodLock, then get BSR_Diag
+    bool        statusThreadFirstLoopAfterTuneComplete_HasBootstrapLock_for_BSR_Diag = false;
+
+    // we have L1B_DemodLock, then get full L1B_Diag
+    bool        statusThreadFirstLoopAfterTuneComplete_HasL1B_DemodLock_for_L1B_Diag = false;
+
+    // we have L1D_DemodLock, then get full L1D diag data
+    bool        statusThreadFirstLoopAfterTuneComplete_HasL1D_DemodLock_for_L1D_Diag = false;
+
     //hack
     static CircularBuffer cb;
     static mutex CircularBufferMutex;
+
     //jjustman-2021-01-19 - used for when we are in a tuning operation and may have in-flight async RxDataCallbacks fired,
     //          if set to true, we should discard the TLV payload in RxDataCallback
     static atomic_bool cb_should_discard;
@@ -185,7 +216,6 @@ private:
     SL_ConfigResult_t configPlatformParams_aa_markone();
     SL_ConfigResult_t configPlatformParams_bb_fx3();
 
-
     void printToConsolePlfConfiguration(SL_PlatFormConfigParams_t cfgInfo);
     void printToConsoleDemodConfiguration(SL_DemodConfigInfo_t cfgInfo);
 
@@ -195,7 +225,6 @@ private:
 
     void handleCmdIfFailure(void);
 
-    void resetProcessThreadStatistics();
 
     void processTLVFromCallback();
     char processDataCircularBufferForCallback[TLV_CIRCULAR_BUFFER_PROCESS_BLOCK_SIZE];
