@@ -91,7 +91,16 @@ Java_org_ngbp_libatsc3_middleware_android_phy_virtual_PcapDemuxedVirtualPHYAndro
 
     atsc3_core_service_application_bridge_reset_context();
 
+    //jjustman-2021-03-04 - inject a "dummy" atsc3_link_mapping_table as our bridge callback is expecting this for gating with demod/tuner PLP selection and acquisition
+    atsc3_link_mapping_table_t* atsc3_link_mapping_table_pcap_demuxed_injected = atsc3_link_mapping_table_new();
+    atsc3_phy_jni_bridge_notify_link_mapping_table(atsc3_link_mapping_table_pcap_demuxed_injected);
+
+    //ownership of _t* is transferred to the bridge callback, and the LMT* will be freed when either:
+    // 1. atsc3_core_service_application_bridge_reset_context is invoked (e.g. phy or source change), or
+    // 2. a real LMT is received, adn the pending LMT will be freed
+
     res = pcapDemuxedVirtualPHYAndroid->run();
+
     _PCAP_DEMUXED_VIRTUAL_PHY_DEBUG("Java_org_ngbp_libatsc3_middleware_android_phy_virtual_PcapDemuxedVirtualPHYAndroid_run: returning res: %d", res);
 
     return res;
