@@ -103,6 +103,10 @@ void Atsc3NdkApplicationBridge::atsc3_onAlcObjectClosed(uint16_t service_id, uin
 
 int Atsc3NdkApplicationBridge::pinConsumerThreadAsNeeded() {
     _NDK_APPLICATION_BRIDGE_INFO("Atsc3NdkApplicationBridge::pinConsumerThreadAsNeeded: mJavaVM: %p, atsc3_ndk_media_mmt_bridge_get_instance: %p", mJavaVM, atsc3_ndk_media_mmt_bridge_get_instance());
+    if(bridgeConsumerJniEnv) {
+        _NDK_APPLICATION_BRIDGE_WARN("Atsc3NdkApplicationBridge::pinConsumerThreadAsNeeded: mJavaVM: %p, atsc3_ndk_media_mmt_bridge_get_instance: %p, bridgeConsumerJniEnv is NOT NULL: %p - This will cause JNI pinned thread issues!", mJavaVM, atsc3_ndk_media_mmt_bridge_get_instance(), bridgeConsumerJniEnv);
+    }
+
     bridgeConsumerJniEnv = new Atsc3JniEnv(mJavaVM);
 
     //hack
