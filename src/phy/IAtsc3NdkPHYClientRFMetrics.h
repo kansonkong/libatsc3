@@ -13,7 +13,8 @@ using namespace std;
 typedef struct atsc3_ndk_phy_client_rf_plp_metrics {
     uint8_t     plp_id;
 
-    uint32_t    modcod_valid;
+    uint32_t    modcod_valid; //i.e. is PLP[n] ALP data able to be demod?  e.g. SL_DEMOD_LOCK_STATUS_MASK_BB_PLP0_LOCK
+
     uint8_t     plp_fec_type;
     uint8_t     plp_mod;
     uint8_t     plp_cod;
