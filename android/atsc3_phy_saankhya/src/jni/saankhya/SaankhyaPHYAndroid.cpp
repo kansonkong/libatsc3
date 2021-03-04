@@ -1933,9 +1933,11 @@ int SaankhyaPHYAndroid::statusThread()
         memset(&myPlps[0], 0, sizeof(SL_Atsc3p0L1DPlp_Diag_t));
         memset(&myPlps[1], 0, sizeof(SL_Atsc3p0L1DPlp_Diag_t));
         memset(&myPlps[2], 0, sizeof(SL_Atsc3p0L1DPlp_Diag_t));
+        memset(&myPlps[3], 0, sizeof(SL_Atsc3p0L1DPlp_Diag_t));
 
+//L1dSfNumPlp2Decode
         for(int subframeIdx = 0; subframeIdx <= l1bDiag.L1bNoOfSubframes; subframeIdx++) {
-            for(int plpIdx = 0; plpIdx <= l1dDiag.sfParams[subframeIdx].L1dSfNumPlps; plpIdx++) {
+            for(int plpIdx = 0; plpIdx < (0xFF & l1dDiag.sfParams[subframeIdx].L1dSfNumPlp2Decode); plpIdx++) {
 
                 if(loop_plpInfo.plp0 == l1dDiag.sfParams[subframeIdx].PlpParams[plpIdx].L1dSfPlpId) {
                     myPlps[0] = l1dDiag.sfParams[subframeIdx].PlpParams[plpIdx];
