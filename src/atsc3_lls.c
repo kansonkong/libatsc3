@@ -600,7 +600,7 @@ void lls_table_free(lls_table_t** lls_table_p) {
 	}
 
 	free(lls_table);
-	lls_table_p = NULL;
+	*lls_table_p = NULL;
 }
 
 /**
