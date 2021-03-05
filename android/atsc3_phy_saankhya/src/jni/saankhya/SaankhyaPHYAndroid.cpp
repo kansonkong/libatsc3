@@ -746,6 +746,14 @@ int SaankhyaPHYAndroid::tune(int freqKHz, int plpid)
     //acquire our CB mutex so we don't push stale TLV packets
     unique_lock<mutex> CircularBufferMutex_local(CircularBufferMutex);
 
+    if(cb) {
+        //forcibly flush any in-flight TLV packets in cb here by calling, need (cb_should_discard == true),
+        // as our type is atomic_bool and we can't printf its value here due to:
+        //                  call to implicitly-deleted copy constructor of 'std::__ndk1::atomic_bool' (aka 'atomic<bool>')
+        _SAANKHYA_PHY_ANDROID_INFO("SaankhyaPHYAndroid::tune - cb_should_discard: %u, cb_GetDataSize: %d, calling CircularBufferReset(), cb: %p, early in tune() call", (cb_should_discard == true), cb, CircularBufferGetDataSize(this->cb));
+        CircularBufferReset(cb);
+    }
+
     //acquire our lock for setting tuning parameters (including re-tuning)
     unique_lock<mutex> SL_I2C_command_mutex_tuner_tune(SL_I2C_command_mutex);
     unique_lock<mutex> SL_PlpConfigParams_mutex_update_plps(SL_PlpConfigParams_mutex, std::defer_lock);
