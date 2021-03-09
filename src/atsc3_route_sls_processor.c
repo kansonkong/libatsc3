@@ -128,6 +128,11 @@ void atsc3_route_sls_process_from_alc_packet_and_file(udp_flow_t* udp_flow, atsc
 			mbms_toi_filename = alc_packet_dump_to_object_get_filename_tsi_toi(udp_flow, 0, mbms_toi);
 
 			atsc3_fdt_file_contents = block_Read_from_filename(mbms_toi_filename);
+
+            if(!atsc3_fdt_file_contents) {
+                _ATSC3_ROUTE_SLS_PROCESSOR_ERROR("atsc3_route_sls_process_from_alc_packet_and_file: tsi/toi:0/%u filename: %s, payload is null for pending: %p!", mbms_toi, mbms_toi_filename, atsc3_fdt_instance_pending);
+                goto cleanup;
+            }
 					
 			if(atsc3_fdt_file_is_multipart_signed(atsc3_fdt_file) || atsc3_fdt_file_is_multipart_signed_from_payload(atsc3_fdt_file_contents)) {
 				unsigned_sls_filename = alc_packet_dump_to_object_get_filename_tsi_toi_unsigned(udp_flow, 0, mbms_toi);
