@@ -21,6 +21,9 @@ extern "C" {
 #endif
 
 lls_sls_mmt_monitor_t* lls_sls_mmt_monitor_create(void);
+void lls_slt_mmt_session_and_monitor_mark_all_atsc3_lls_slt_service_as_transient_stale(lls_slt_monitor_t* lls_slt_monitor);
+void lls_slt_mmt_session_and_monitor_remove_all_atsc3_lls_slt_service_with_matching_transient_stale(lls_slt_monitor_t* lls_slt_monitor);
+
 
 lls_sls_mmt_session_t* lls_slt_mmt_session_create(atsc3_lls_slt_service_t* atsc3_lls_slt_service);
 lls_sls_mmt_session_t* lls_slt_mmt_session_find_or_create(lls_slt_monitor_t* lls_slt_monitor, atsc3_lls_slt_service_t* atsc3_lls_slt_service);

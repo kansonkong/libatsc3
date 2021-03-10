@@ -16,6 +16,7 @@ lls_sls_alc_monitor_t* lls_sls_alc_monitor_create() {
 	return lls_sls_alc_monitor;
 }
 
+//jjustman-2021-03-10 - warning: atsc3_lls_slt_service is a reference to our new lls_table, so if we have a LLS update, we need to update any transient references
 lls_sls_alc_session_t* lls_slt_alc_session_create(atsc3_lls_slt_service_t* atsc3_lls_slt_service) {
 	lls_sls_alc_session_t* lls_slt_alc_session = lls_sls_alc_session_new();
 
@@ -47,6 +48,58 @@ lls_sls_alc_session_t* lls_slt_alc_session_create(atsc3_lls_slt_service_t* atsc3
 	lls_slt_alc_session->alc_session = atsc3_open_alc_session(lls_slt_alc_session->alc_arguments);
 
 	return lls_slt_alc_session;
+}
+
+
+void lls_slt_alc_session_and_monitor_mark_all_atsc3_lls_slt_service_as_transient_stale(lls_slt_monitor_t* lls_slt_monitor) {
+    for(int i=0; i < lls_slt_monitor->lls_sls_alc_session_flows_v.count; i++) {
+        lls_sls_alc_session_flows_t* lls_sls_alc_session_flows = lls_slt_monitor->lls_sls_alc_session_flows_v.data[i];
+
+        for(int j=0; j < lls_sls_alc_session_flows->lls_sls_alc_session_v.count; j++ ) {
+            lls_sls_alc_session_t* lls_slt_alc_session = lls_sls_alc_session_flows->lls_sls_alc_session_v.data[j];
+            lls_slt_alc_session->transients.atsc3_lls_slt_service_stale = lls_slt_alc_session->atsc3_lls_slt_service;
+
+            for(int k=0; k < lls_slt_monitor->lls_sls_alc_monitor_v.count; k++) {
+                lls_sls_alc_monitor_t* lls_sls_alc_monitor = lls_slt_monitor->lls_sls_alc_monitor_v.data[k];
+                lls_sls_alc_monitor->transients.atsc3_lls_slt_service_stale = lls_sls_alc_monitor->atsc3_lls_slt_service;
+            }
+        }
+    }
+}
+
+
+void lls_slt_alc_session_and_monitor_remove_all_atsc3_lls_slt_service_with_matching_transient_stale(lls_slt_monitor_t* lls_slt_monitor) {
+    for(int i=0; i < lls_slt_monitor->lls_sls_alc_session_flows_v.count; i++) {
+        lls_sls_alc_session_flows_t* lls_sls_alc_session_flows = lls_slt_monitor->lls_sls_alc_session_flows_v.data[i];
+
+        for(int j=0; j < lls_sls_alc_session_flows->lls_sls_alc_session_v.count; j++ ) {
+            lls_sls_alc_session_t* lls_slt_alc_session = lls_sls_alc_session_flows->lls_sls_alc_session_v.data[j];
+
+            for(int k=0; k < lls_slt_monitor->lls_sls_alc_monitor_v.count; k++) {
+                lls_sls_alc_monitor_t* lls_sls_alc_monitor = lls_slt_monitor->lls_sls_alc_monitor_v.data[k];
+
+                if(lls_sls_alc_monitor->atsc3_lls_slt_service && lls_sls_alc_monitor->transients.atsc3_lls_slt_service_stale && lls_sls_alc_monitor->atsc3_lls_slt_service == lls_sls_alc_monitor->transients.atsc3_lls_slt_service_stale) {
+                    //remove this monitor
+
+                    //jjustman-2021-03-10 - hack workaround here
+                    lls_sls_alc_monitor->atsc3_lls_slt_service = NULL;
+                    lls_sls_alc_monitor->transients.atsc3_lls_slt_service_stale = NULL;
+                }
+            }
+
+            if(lls_slt_alc_session->atsc3_lls_slt_service && lls_slt_alc_session->transients.atsc3_lls_slt_service_stale && lls_slt_alc_session->atsc3_lls_slt_service == lls_slt_alc_session->transients.atsc3_lls_slt_service_stale) {
+                //remove immediately
+
+                //jjustman-2021-03-10 - hack workaround here
+                lls_slt_alc_session->atsc3_lls_slt_service = NULL;
+                lls_slt_alc_session->transients.atsc3_lls_slt_service_stale = NULL;
+            }
+        }
+    }
+}
+
+void lls_slt_alc_session_remove(lls_slt_monitor_t* lls_slt_monitor, atsc3_lls_slt_service_t* atsc3_lls_slt_service) {
+    //noop for now
 }
 
 
@@ -82,9 +135,9 @@ lls_sls_alc_session_t* lls_slt_alc_session_create_from_ip_and_port_values(atsc3_
     return lls_slt_alc_session;
 }
 
-void lls_slt_alc_session_remove(lls_slt_monitor_t* lls_slt_monitor, atsc3_lls_slt_service_t* atsc3_lls_slt_service) {
-	//noop for now
-}
+
+
+
 
 
 lls_sls_alc_session_t* lls_slt_alc_session_find(lls_slt_monitor_t* lls_slt_monitor, atsc3_lls_slt_service_t* atsc3_lls_slt_service) {
@@ -244,6 +297,9 @@ int comparator_lls_slt_alc_session_t(const void *a, const void *b) {
 	return 0;
 }
 
+/*
+ * jjustman-2021-03-10 - warning: atsc3_lls_slt_service is a reference to our new lls_table, so if we have a LLS update, we need to update any transient references
+ */
 lls_sls_alc_session_t* lls_slt_alc_session_find_or_create(lls_slt_monitor_t* lls_slt_monitor, atsc3_lls_slt_service_t* atsc3_lls_slt_service) {
 	lls_sls_alc_session_t* lls_slt_alc_session = lls_slt_alc_session_find(lls_slt_monitor, atsc3_lls_slt_service);
 	if(!lls_slt_alc_session) {
@@ -254,7 +310,22 @@ lls_sls_alc_session_t* lls_slt_alc_session_find_or_create(lls_slt_monitor_t* lls
 
 		lls_slt_monitor_add_lls_sls_alc_session_flows(lls_slt_monitor, lls_sls_alc_session_flows);
 		lls_slt_alc_session->sls_relax_source_ip_check = __LLS_SESSION_RELAX_SOURCE_IP_CHECK__;
-	}
+	} else {
+	    //update with our new atsc3_lls_slt_service and NULL out our stale ref, including all our monitor(s)
+
+        for(int k=0; k < lls_slt_monitor->lls_sls_alc_monitor_v.count; k++) {
+            lls_sls_alc_monitor_t* lls_sls_alc_monitor = lls_slt_monitor->lls_sls_alc_monitor_v.data[k];
+
+            if(lls_sls_alc_monitor->atsc3_lls_slt_service && lls_sls_alc_monitor->atsc3_lls_slt_service->service_id == atsc3_lls_slt_service->service_id) {
+                lls_sls_alc_monitor->atsc3_lls_slt_service = atsc3_lls_slt_service;
+                lls_sls_alc_monitor->transients.atsc3_lls_slt_service_stale = NULL;
+            }
+        }
+
+        lls_slt_alc_session->atsc3_lls_slt_service = atsc3_lls_slt_service;
+        lls_slt_alc_session->transients.atsc3_lls_slt_service_stale = NULL;
+    }
+
 	return lls_slt_alc_session;
 }
 
@@ -268,6 +339,18 @@ lls_sls_alc_session_t* lls_slt_alc_session_find_or_create_from_ip_udp_values(lls
 
         lls_slt_monitor_add_lls_sls_alc_session_flows(lls_slt_monitor, lls_sls_alc_session_flows);
         lls_slt_alc_session->sls_relax_source_ip_check = __LLS_SESSION_RELAX_SOURCE_IP_CHECK__;
+    } else {
+        for(int k=0; k < lls_slt_monitor->lls_sls_alc_monitor_v.count; k++) {
+            lls_sls_alc_monitor_t* lls_sls_alc_monitor = lls_slt_monitor->lls_sls_alc_monitor_v.data[k];
+
+            if(lls_sls_alc_monitor->atsc3_lls_slt_service && lls_sls_alc_monitor->atsc3_lls_slt_service->service_id == atsc3_lls_slt_service->service_id) {
+                lls_sls_alc_monitor->atsc3_lls_slt_service = atsc3_lls_slt_service;
+                lls_sls_alc_monitor->transients.atsc3_lls_slt_service_stale = NULL;
+            }
+        }
+
+        lls_slt_alc_session->atsc3_lls_slt_service = atsc3_lls_slt_service;
+        lls_slt_alc_session->transients.atsc3_lls_slt_service_stale = NULL;
     }
     return lls_slt_alc_session;
 }

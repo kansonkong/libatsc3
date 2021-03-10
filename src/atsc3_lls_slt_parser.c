@@ -267,8 +267,17 @@ cleanup:
 					__LLS_SLT_PARSER_ERROR("MMT: Unable to instantiate session for service_id: %d via SLS_PROTOCOL_MMTP", atsc3_lls_slt_service->service_id);
 					goto cleanup;
 				}
+
+jjustman-2021-03-10 - warning: atsc3_lls_slt_service is a reference to our new lls_table, so if we have a LLS update, we need to update any transient references
+
  */
 int lls_slt_table_perform_update(lls_table_t* lls_table, lls_slt_monitor_t* lls_slt_monitor) {
+
+    //jjustman-2021-03-10 - first, mark any lls_slt_alc_session(s) or lls_sls_alc_monitor(s) with transient.atsc3_lls_slt_service_stale so we can either update them wtih our new atsc3_lls_slt_service (if applicable) or remove
+    //j                     similar for lls_slt_mmt_session(s) ... and clear out any lls_slt_mmt sessions (if applicable)
+
+    lls_slt_alc_session_and_monitor_mark_all_atsc3_lls_slt_service_as_transient_stale(lls_slt_monitor);
+    lls_slt_mmt_session_and_monitor_mark_all_atsc3_lls_slt_service_as_transient_stale(lls_slt_monitor);
 
     for(int i=0; i < lls_table->slt_table.atsc3_lls_slt_service_v.count; i++) {
 
@@ -317,7 +326,13 @@ int lls_slt_table_perform_update(lls_table_t* lls_table, lls_slt_monitor_t* lls_
 		}
 	}
 
-	return 0;
+    //jjustman-2021-03-10 - TODO - clear out any lls_slt_alc sessions / monitors that have a null atsc3_lls_slt_service
+    //jjustman-2021-03-10 - TODO - clear out any lls_slt_mmt sessions / monitors that have a null atsc3_lls_slt_service
+
+    lls_slt_alc_session_and_monitor_remove_all_atsc3_lls_slt_service_with_matching_transient_stale(lls_slt_monitor);
+    lls_slt_mmt_session_and_monitor_remove_all_atsc3_lls_slt_service_with_matching_transient_stale(lls_slt_monitor);
+
+    return 0;
 
 cleanup:
 	return -1;

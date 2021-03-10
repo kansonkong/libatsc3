@@ -642,7 +642,14 @@ typedef struct mmt_session {
 
 typedef struct lls_sls_mmt_session {
     uint16_t service_id;
+
+    //jjustman-2021-03-10 - TODO: refactor this to transients
     atsc3_lls_slt_service_t* atsc3_lls_slt_service;
+
+    struct atsc3_lls_sls_mmt_session_transients {
+        atsc3_lls_slt_service_t* atsc3_lls_slt_service_stale;
+    } transients;
+
     
     uint32_t sls_source_ip_address;
 	bool	 sls_relax_source_ip_check;
@@ -709,8 +716,14 @@ ATSC3_VECTOR_BUILDER_METHODS_INTERFACE(lls_sls_mmt_session_flows, lls_sls_mmt_se
 
 typedef struct lls_sls_alc_session {
 	uint16_t service_id;
+
+	//jjustman-2021-03-10 - TODO refactor this out to transient
 	//jjustman-2019-10-03 - hack-ish
 	atsc3_lls_slt_service_t* atsc3_lls_slt_service;
+
+	struct atsc3_lls_sls_alc_session_transients {
+        atsc3_lls_slt_service_t* atsc3_lls_slt_service_stale;
+    } transients;
 
 	bool sls_relax_source_ip_check;
 	uint32_t sls_source_ip_address;
@@ -748,8 +761,10 @@ typedef struct lls_sls_mmt_monitor {
 
 	struct atsc3_lls_sls_mmt_monitor_transients {
 		atsc3_lls_slt_service_t *atsc3_lls_slt_service;
-		lls_sls_mmt_session_t *lls_mmt_session;
-	} transients;
+        atsc3_lls_slt_service_t* atsc3_lls_slt_service_stale;
+
+        lls_sls_mmt_session_t *lls_mmt_session;
+    } transients;
 
     lls_sls_monitor_output_buffer_t 		lls_sls_monitor_output_buffer;
     lls_sls_monitor_output_buffer_mode_t 	lls_sls_monitor_output_buffer_mode;
@@ -797,8 +812,13 @@ A/331 - Section 7:
 
 typedef struct lls_sls_alc_monitor {
 	atsc3_lls_slt_service_t* 				atsc3_lls_slt_service;
-    
-	lls_sls_alc_session_t* 					lls_alc_session;
+
+    struct atsc3_lls_sls_alc_monitor_transients {
+        atsc3_lls_slt_service_t*            atsc3_lls_slt_service_stale;
+    } transients;
+
+
+    lls_sls_alc_session_t* 					lls_alc_session;
 	
 	atsc3_fdt_instance_t* 					atsc3_fdt_instance;
 	atsc3_fdt_instance_t* 					atsc3_fdt_instance_pending; 			//used for a new pending fdt_instance for our SLS, invoked in atsc3_route_sls_process_from_alc_packet_and_file
