@@ -234,10 +234,71 @@ lls_sls_mmt_session_t* lls_slt_mmt_session_find_or_create(lls_slt_monitor_t* lls
 		lls_sls_mmt_session_flows_add_lls_sls_mmt_session(lls_sls_mmt_session_flows, lls_slt_mmt_session);
 
 		lls_slt_monitor_add_lls_sls_mmt_session_flows(lls_slt_monitor, lls_sls_mmt_session_flows);
+	} else {
+
+        for(int k=0; k < lls_slt_monitor->lls_sls_mmt_monitor_v.count; k++) {
+            lls_sls_mmt_monitor_t* lls_sls_mmt_monitor = lls_slt_monitor->lls_sls_mmt_monitor_v.data[k];
+
+            if(lls_sls_mmt_monitor->transients.atsc3_lls_slt_service && lls_sls_mmt_monitor->transients.atsc3_lls_slt_service->service_id == atsc3_lls_slt_service->service_id) {
+                lls_sls_mmt_monitor->transients.atsc3_lls_slt_service = atsc3_lls_slt_service;
+                lls_sls_mmt_monitor->transients.atsc3_lls_slt_service_stale = NULL;
+            }
+        }
+
+        lls_slt_mmt_session->atsc3_lls_slt_service = atsc3_lls_slt_service;
+        lls_slt_mmt_session->transients.atsc3_lls_slt_service_stale = NULL;
 	}
 
 	return lls_slt_mmt_session;
 }
+
+void lls_slt_mmt_session_and_monitor_mark_all_atsc3_lls_slt_service_as_transient_stale(lls_slt_monitor_t* lls_slt_monitor) {
+    for(int i=0; i < lls_slt_monitor->lls_sls_mmt_session_flows_v.count; i++) {
+        lls_sls_mmt_session_flows_t* lls_sls_mmt_session_flows = lls_slt_monitor->lls_sls_mmt_session_flows_v.data[i];
+
+        for(int j=0; j < lls_sls_mmt_session_flows->lls_sls_mmt_session_v.count; j++ ) {
+            lls_sls_mmt_session_t* lls_slt_mmt_session = lls_sls_mmt_session_flows->lls_sls_mmt_session_v.data[j];
+            lls_slt_mmt_session->transients.atsc3_lls_slt_service_stale = lls_slt_mmt_session->atsc3_lls_slt_service;
+
+            for(int k=0; k < lls_slt_monitor->lls_sls_mmt_monitor_v.count; k++) {
+                lls_sls_mmt_monitor_t* lls_sls_mmt_monitor = lls_slt_monitor->lls_sls_mmt_monitor_v.data[k];
+                lls_sls_mmt_monitor->transients.atsc3_lls_slt_service_stale = lls_sls_mmt_monitor->transients.atsc3_lls_slt_service;
+            }
+        }
+    }
+}
+
+
+void lls_slt_mmt_session_and_monitor_remove_all_atsc3_lls_slt_service_with_matching_transient_stale(lls_slt_monitor_t* lls_slt_monitor) {
+    for(int i=0; i < lls_slt_monitor->lls_sls_mmt_session_flows_v.count; i++) {
+        lls_sls_mmt_session_flows_t* lls_sls_mmt_session_flows = lls_slt_monitor->lls_sls_mmt_session_flows_v.data[i];
+
+        for(int j=0; j < lls_sls_mmt_session_flows->lls_sls_mmt_session_v.count; j++ ) {
+            lls_sls_mmt_session_t* lls_slt_mmt_session = lls_sls_mmt_session_flows->lls_sls_mmt_session_v.data[j];
+
+            for(int k=0; k < lls_slt_monitor->lls_sls_mmt_monitor_v.count; k++) {
+                lls_sls_mmt_monitor_t* lls_sls_mmt_monitor = lls_slt_monitor->lls_sls_mmt_monitor_v.data[k];
+
+                if(lls_sls_mmt_monitor->transients.atsc3_lls_slt_service && lls_sls_mmt_monitor->transients.atsc3_lls_slt_service_stale && lls_sls_mmt_monitor->transients.atsc3_lls_slt_service == lls_sls_mmt_monitor->transients.atsc3_lls_slt_service_stale) {
+                    //remove this monitor
+
+                    //jjustman-2021-03-10 - hack workaround here
+                    lls_sls_mmt_monitor->transients.atsc3_lls_slt_service = NULL;
+                    lls_sls_mmt_monitor->transients.atsc3_lls_slt_service_stale = NULL;
+                }
+            }
+
+            if(lls_slt_mmt_session->atsc3_lls_slt_service && lls_slt_mmt_session->transients.atsc3_lls_slt_service_stale && lls_slt_mmt_session->atsc3_lls_slt_service == lls_slt_mmt_session->transients.atsc3_lls_slt_service_stale) {
+                //remove immediately
+
+                //jjustman-2021-03-10 - hack workaround here
+                lls_slt_mmt_session->atsc3_lls_slt_service = NULL;
+                lls_slt_mmt_session->transients.atsc3_lls_slt_service_stale = NULL;
+            }
+        }
+    }
+}
+
 
 
 
