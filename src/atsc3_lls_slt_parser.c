@@ -309,16 +309,9 @@ int lls_slt_table_perform_update(lls_table_t* lls_table, lls_slt_monitor_t* lls_
 						atsc3_lls_slt_service->atsc3_slt_broadcast_svc_signalling_v.data[0]->sls_destination_ip_address,
 						atsc3_lls_slt_service->atsc3_slt_broadcast_svc_signalling_v.data[0]->sls_destination_udp_port);
 
-				lls_sls_mmt_session_t* lls_sls_mmt_session_previous = lls_slt_mmt_session_find(lls_slt_monitor, atsc3_lls_slt_service);
-				if(lls_sls_mmt_session_previous) {
-					//update our atsc3_lls_slt_service instance here
-					lls_sls_mmt_session_previous->atsc3_lls_slt_service = atsc3_lls_slt_service;
-				} else {
-					//create a new lls_sls_mmt_session
-					lls_sls_mmt_session_t* lls_sls_mmt_session_new = lls_slt_mmt_session_find_or_create(lls_slt_monitor, atsc3_lls_slt_service);
-				}
+                lls_sls_mmt_session_t* lls_sls_mmt_session = lls_slt_mmt_session_find_or_create(lls_slt_monitor, atsc3_lls_slt_service);
 
-			} else {
+            } else {
 				__LLS_SLT_PARSER_ERROR("SLT: atsc3_lls_slt_service id: %u, unable to process not implemented for sls_protocol: %d", atsc3_lls_slt_service->service_id, atsc3_lls_slt_service->atsc3_slt_broadcast_svc_signalling_v.data[0]->sls_protocol);
 			}
 		} else {
