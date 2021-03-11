@@ -746,6 +746,9 @@ int SaankhyaPHYAndroid::tune(int freqKHz, int plpid)
     //acquire our CB mutex so we don't push stale TLV packets
     unique_lock<mutex> CircularBufferMutex_local(CircularBufferMutex);
 
+    //jjustman-2021-03-10 - also acquire our atsc3_sl_tlv_block_mutex so we can safely discard any pending TLV frames
+    atsc3_sl_tlv_block_mutex.lock();
+
     if(cb) {
         //forcibly flush any in-flight TLV packets in cb here by calling, need (cb_should_discard == true),
         // as our type is atomic_bool and we can't printf its value here due to:
@@ -753,6 +756,16 @@ int SaankhyaPHYAndroid::tune(int freqKHz, int plpid)
         _SAANKHYA_PHY_ANDROID_INFO("SaankhyaPHYAndroid::tune - cb_should_discard: %u, cb_GetDataSize: %d, calling CircularBufferReset(), cb: %p, early in tune() call", (cb_should_discard == true), cb, CircularBufferGetDataSize(this->cb));
         CircularBufferReset(cb);
     }
+
+    //jjustman-2021-03-10 - destroy (and let processTLVFromCallback) recreate our atsc3_sl_tlv_block and atsc3_sl_tlv_payload to avoid race condition between cb mutex and sl_tlv block processing
+    if(atsc3_sl_tlv_block) {
+        block_Destroy(&atsc3_sl_tlv_block);
+    }
+
+    if(atsc3_sl_tlv_payload) {
+        atsc3_sl_tlv_payload_free(&atsc3_sl_tlv_payload);
+    }
+
 
     //acquire our lock for setting tuning parameters (including re-tuning)
     unique_lock<mutex> SL_I2C_command_mutex_tuner_tune(SL_I2C_command_mutex);
@@ -833,11 +846,7 @@ int SaankhyaPHYAndroid::tune(int freqKHz, int plpid)
         _SAANKHYA_PHY_ANDROID_DEBUG("tuner frequency: %d", cFrequency);
     }
 
-    if (!atsc3_sl_tlv_block) {
-        allocate_atsc3_sl_tlv_block();
-    }
-
-    //setup shared memory allocs
+    //setup shared memory for cb callback (or reset if already allocated)
     if(!cb) {
         cb = CircularBufferCreate(TLV_CIRCULAR_BUFFER_SIZE);
     } else {
@@ -847,9 +856,12 @@ int SaankhyaPHYAndroid::tune(int freqKHz, int plpid)
         SL_SleepMS(100);
     }
 
+
+    atsc3_sl_tlv_block_mutex.unlock();
+    CircularBufferMutex_local.unlock();
+
     //jjustman-2021-01-19 - allow for cb to start acumulating TLV frames
     SaankhyaPHYAndroid::cb_should_discard = false;
-    CircularBufferMutex_local.unlock();
 
     //check if we were re-initalized and might have an open threads to wind-down
 #ifdef __RESPWAN_THREAD_WORKERS
@@ -2070,120 +2082,121 @@ void SaankhyaPHYAndroid::processTLVFromCallback()
     int bytesRead = 0;
 
     unique_lock<mutex> CircularBufferMutex_local(CircularBufferMutex, std::defer_lock);
-    unique_lock<mutex> atsc3_sl_tlv_block_mutex_local(atsc3_sl_tlv_block_mutex, std::defer_lock);
+    //promoted from unique_lock, std::defer_lock to recursive_mutex: atsc3_sl_tlv_block_mutex
 
-    //jjustman-2020-12-07 - loop while we have data in our cb, mutex lock to
-    while(true) {
+    //jjustman-2020-12-07 - loop while we have data in our cb, or break if cb_should_discard is true
+    while(true && !SaankhyaPHYAndroid::cb_should_discard) {
         CircularBufferMutex_local.lock();
         bytesRead = CircularBufferPop(cb, TLV_CIRCULAR_BUFFER_PROCESS_BLOCK_SIZE, (char*)&processDataCircularBufferForCallback);
         CircularBufferMutex_local.unlock();
 
         //jjustman-2021-01-19 - if we don't get any data back, or the cb_should_discard flag is set, bail
         if(!bytesRead || SaankhyaPHYAndroid::cb_should_discard) {
-            return;
+            break; //we need to issue a matching sl_tlv_block_mutex ublock...
         }
 
-        atsc3_sl_tlv_block_mutex_local.lock();
+        atsc3_sl_tlv_block_mutex.lock();
         if (!atsc3_sl_tlv_block) {
             _SAANKHYA_PHY_ANDROID_WARN("ERROR: atsc3NdkClientSlImpl::processTLVFromCallback - atsc3_sl_tlv_block is NULL!");
             allocate_atsc3_sl_tlv_block();
         }
 
-        if (bytesRead) {
-            block_Write(atsc3_sl_tlv_block, (uint8_t *) &processDataCircularBufferForCallback, bytesRead);
-            if (bytesRead < TLV_CIRCULAR_BUFFER_PROCESS_BLOCK_SIZE) {
-                //_SAANKHYA_PHY_ANDROID_TRACE("atsc3NdkClientSlImpl::processTLVFromCallback() - short read from CircularBufferPop, got %d bytes, but expected: %d", bytesRead, TLV_CIRCULAR_BUFFER_PROCESS_BLOCK_SIZE);
-                break;
-            }
+        block_Write(atsc3_sl_tlv_block, (uint8_t *) &processDataCircularBufferForCallback, bytesRead);
+        if (bytesRead < TLV_CIRCULAR_BUFFER_PROCESS_BLOCK_SIZE) {
+            //_SAANKHYA_PHY_ANDROID_TRACE("atsc3NdkClientSlImpl::processTLVFromCallback() - short read from CircularBufferPop, got %d bytes, but expected: %d", bytesRead, TLV_CIRCULAR_BUFFER_PROCESS_BLOCK_SIZE);
+            //release our recursive lock early as we are bailing this method
+            atsc3_sl_tlv_block_mutex.unlock();
+            break;
+        }
 
-            block_Rewind(atsc3_sl_tlv_block);
+        block_Rewind(atsc3_sl_tlv_block);
 
-            //_SAANKHYA_PHY_ANDROID_DEBUG("atsc3NdkClientSlImpl::processTLVFromCallback() - processTLVFromCallbackInvocationCount: %d, inner loop count: %d, atsc3_sl_tlv_block.p_size: %d, atsc3_sl_tlv_block.i_pos: %d", processTLVFromCallbackInvocationCount, ++innerLoopCount, atsc3_sl_tlv_block->p_size, atsc3_sl_tlv_block->i_pos);
+        //_SAANKHYA_PHY_ANDROID_DEBUG("atsc3NdkClientSlImpl::processTLVFromCallback() - processTLVFromCallbackInvocationCount: %d, inner loop count: %d, atsc3_sl_tlv_block.p_size: %d, atsc3_sl_tlv_block.i_pos: %d", processTLVFromCallbackInvocationCount, ++innerLoopCount, atsc3_sl_tlv_block->p_size, atsc3_sl_tlv_block->i_pos);
 
-            bool atsc3_sl_tlv_payload_complete = false;
+        bool atsc3_sl_tlv_payload_complete = false;
 
-            do {
-                atsc3_sl_tlv_payload = atsc3_sl_tlv_payload_parse_from_block_t(atsc3_sl_tlv_block);
+        do {
+            atsc3_sl_tlv_payload = atsc3_sl_tlv_payload_parse_from_block_t(atsc3_sl_tlv_block);
 
-                if (atsc3_sl_tlv_payload) {
-                    atsc3_sl_tlv_payload_dump(atsc3_sl_tlv_payload);
-                    if (atsc3_sl_tlv_payload->alp_payload_complete) {
-                        atsc3_sl_tlv_payload_complete = true;
+            if (atsc3_sl_tlv_payload) {
+                atsc3_sl_tlv_payload_dump(atsc3_sl_tlv_payload);
+                if (atsc3_sl_tlv_payload->alp_payload_complete) {
+                    atsc3_sl_tlv_payload_complete = true;
 
-                        block_Rewind(atsc3_sl_tlv_payload->alp_payload);
-                        atsc3_alp_packet_t *atsc3_alp_packet = atsc3_alp_packet_parse(atsc3_sl_tlv_payload->plp_number, atsc3_sl_tlv_payload->alp_payload);
-                        if (atsc3_alp_packet) {
-                            alp_completed_packets_parsed++;
+                    block_Rewind(atsc3_sl_tlv_payload->alp_payload);
+                    atsc3_alp_packet_t *atsc3_alp_packet = atsc3_alp_packet_parse(atsc3_sl_tlv_payload->plp_number, atsc3_sl_tlv_payload->alp_payload);
+                    if (atsc3_alp_packet) {
+                        alp_completed_packets_parsed++;
 
-                            alp_total_bytes += atsc3_alp_packet->alp_payload->p_size;
+                        alp_total_bytes += atsc3_alp_packet->alp_payload->p_size;
 
-                            if (atsc3_alp_packet->alp_packet_header.packet_type == 0x00) {
+                        if (atsc3_alp_packet->alp_packet_header.packet_type == 0x00) {
 
-                                block_Rewind(atsc3_alp_packet->alp_payload);
-                                if (atsc3_phy_rx_udp_packet_process_callback) {
-                                    atsc3_phy_rx_udp_packet_process_callback(atsc3_sl_tlv_payload->plp_number, atsc3_alp_packet->alp_payload);
-                                }
-
-                            } else if (atsc3_alp_packet->alp_packet_header.packet_type == 0x4) {
-                                alp_total_LMTs_recv++;
-                                atsc3_link_mapping_table_t *atsc3_link_mapping_table_pending = atsc3_alp_packet_extract_lmt(atsc3_alp_packet);
-
-                                if (atsc3_phy_rx_link_mapping_table_process_callback && atsc3_link_mapping_table_pending) {
-                                    atsc3_link_mapping_table_t *atsc3_link_mapping_table_to_free = atsc3_phy_rx_link_mapping_table_process_callback(atsc3_link_mapping_table_pending);
-
-                                    if (atsc3_link_mapping_table_to_free) {
-                                        atsc3_link_mapping_table_free(&atsc3_link_mapping_table_to_free);
-                                    }
-                                }
+                            block_Rewind(atsc3_alp_packet->alp_payload);
+                            if (atsc3_phy_rx_udp_packet_process_callback) {
+                                atsc3_phy_rx_udp_packet_process_callback(atsc3_sl_tlv_payload->plp_number, atsc3_alp_packet->alp_payload);
                             }
 
-                            atsc3_alp_packet_free(&atsc3_alp_packet);
-                        }
-                        //free our atsc3_sl_tlv_payload
-                        atsc3_sl_tlv_payload_free(&atsc3_sl_tlv_payload);
+                        } else if (atsc3_alp_packet->alp_packet_header.packet_type == 0x4) {
+                            alp_total_LMTs_recv++;
+                            atsc3_link_mapping_table_t *atsc3_link_mapping_table_pending = atsc3_alp_packet_extract_lmt(atsc3_alp_packet);
 
-                    } else {
-                        atsc3_sl_tlv_payload_complete = false;
-                        //jjustman-2019-12-29 - noisy, TODO: wrap in __DEBUG macro check
-                        //_SAANKHYA_PHY_ANDROID_DEBUG("alp_payload->alp_payload_complete == FALSE at pos: %d, size: %d", atsc3_sl_tlv_block->i_pos, atsc3_sl_tlv_block->p_size);
+                            if (atsc3_phy_rx_link_mapping_table_process_callback && atsc3_link_mapping_table_pending) {
+                                atsc3_link_mapping_table_t *atsc3_link_mapping_table_to_free = atsc3_phy_rx_link_mapping_table_process_callback(atsc3_link_mapping_table_pending);
+
+                                if (atsc3_link_mapping_table_to_free) {
+                                    atsc3_link_mapping_table_free(&atsc3_link_mapping_table_to_free);
+                                }
+                            }
+                        }
+
+                        atsc3_alp_packet_free(&atsc3_alp_packet);
                     }
+                    //free our atsc3_sl_tlv_payload
+                    atsc3_sl_tlv_payload_free(&atsc3_sl_tlv_payload);
+
                 } else {
                     atsc3_sl_tlv_payload_complete = false;
                     //jjustman-2019-12-29 - noisy, TODO: wrap in __DEBUG macro check
-                    //_SAANKHYA_PHY_ANDROID_DEBUG("ERROR: alp_payload IS NULL, short TLV read?  at atsc3_sl_tlv_block: i_pos: %d, p_size: %d", atsc3_sl_tlv_block->i_pos, atsc3_sl_tlv_block->p_size);
+                    //_SAANKHYA_PHY_ANDROID_DEBUG("alp_payload->alp_payload_complete == FALSE at pos: %d, size: %d", atsc3_sl_tlv_block->i_pos, atsc3_sl_tlv_block->p_size);
                 }
-
-            } while (atsc3_sl_tlv_payload_complete);
-
-            if (atsc3_sl_tlv_payload && !atsc3_sl_tlv_payload->alp_payload_complete && atsc3_sl_tlv_block->i_pos > atsc3_sl_tlv_payload->sl_tlv_total_parsed_payload_size) {
-                //accumulate from our last starting point and continue iterating during next bbp
-                atsc3_sl_tlv_block->i_pos -= atsc3_sl_tlv_payload->sl_tlv_total_parsed_payload_size;
-                //free our atsc3_sl_tlv_payload
-                atsc3_sl_tlv_payload_free(&atsc3_sl_tlv_payload);
-            }
-
-            if (atsc3_sl_tlv_block->p_size > atsc3_sl_tlv_block->i_pos) {
-                //truncate our current block_t starting at i_pos, and then read next i/o block
-                block_t *temp_sl_tlv_block = block_Duplicate_from_position(atsc3_sl_tlv_block);
-                block_Destroy(&atsc3_sl_tlv_block);
-                atsc3_sl_tlv_block = temp_sl_tlv_block;
-                block_Seek(atsc3_sl_tlv_block, atsc3_sl_tlv_block->p_size);
-            } else if (atsc3_sl_tlv_block->p_size == atsc3_sl_tlv_block->i_pos) {
-                //clear out our tlv block as we are the "exact" size of our last alp packet
-
-                //jjustman-2020-10-30 - TODO: this can be optimized out without a re-alloc
-                block_Destroy(&atsc3_sl_tlv_block);
-                atsc3_sl_tlv_block = block_Alloc(TLV_CIRCULAR_BUFFER_PROCESS_BLOCK_SIZE);
             } else {
-                _SAANKHYA_PHY_ANDROID_WARN("atsc3_sl_tlv_block: positioning mismatch: i_pos: %d, p_size: %d - rewinding and seeking for magic packet?", atsc3_sl_tlv_block->i_pos, atsc3_sl_tlv_block->p_size);
-
-                //jjustman: 2019-11-23: rewind in order to try seek for our magic packet in the next loop here
-                block_Rewind(atsc3_sl_tlv_block);
+                atsc3_sl_tlv_payload_complete = false;
+                //jjustman-2019-12-29 - noisy, TODO: wrap in __DEBUG macro check
+                //_SAANKHYA_PHY_ANDROID_DEBUG("ERROR: alp_payload IS NULL, short TLV read?  at atsc3_sl_tlv_block: i_pos: %d, p_size: %d", atsc3_sl_tlv_block->i_pos, atsc3_sl_tlv_block->p_size);
             }
+
+        } while (atsc3_sl_tlv_payload_complete);
+
+        if (atsc3_sl_tlv_payload && !atsc3_sl_tlv_payload->alp_payload_complete && atsc3_sl_tlv_block->i_pos > atsc3_sl_tlv_payload->sl_tlv_total_parsed_payload_size) {
+            //accumulate from our last starting point and continue iterating during next bbp
+            atsc3_sl_tlv_block->i_pos -= atsc3_sl_tlv_payload->sl_tlv_total_parsed_payload_size;
+            //free our atsc3_sl_tlv_payload
+            atsc3_sl_tlv_payload_free(&atsc3_sl_tlv_payload);
         }
 
-        atsc3_sl_tlv_block_mutex_local.unlock();
+        if (atsc3_sl_tlv_block->p_size > atsc3_sl_tlv_block->i_pos) {
+            //truncate our current block_t starting at i_pos, and then read next i/o block
+            block_t *temp_sl_tlv_block = block_Duplicate_from_position(atsc3_sl_tlv_block);
+            block_Destroy(&atsc3_sl_tlv_block);
+            atsc3_sl_tlv_block = temp_sl_tlv_block;
+            block_Seek(atsc3_sl_tlv_block, atsc3_sl_tlv_block->p_size);
+        } else if (atsc3_sl_tlv_block->p_size == atsc3_sl_tlv_block->i_pos) {
+            //clear out our tlv block as we are the "exact" size of our last alp packet
+
+            //jjustman-2020-10-30 - TODO: this can be optimized out without a re-alloc
+            block_Destroy(&atsc3_sl_tlv_block);
+            atsc3_sl_tlv_block = block_Alloc(TLV_CIRCULAR_BUFFER_PROCESS_BLOCK_SIZE);
+        } else {
+            _SAANKHYA_PHY_ANDROID_WARN("atsc3_sl_tlv_block: positioning mismatch: i_pos: %d, p_size: %d - rewinding and seeking for magic packet?", atsc3_sl_tlv_block->i_pos, atsc3_sl_tlv_block->p_size);
+
+            //jjustman: 2019-11-23: rewind in order to try seek for our magic packet in the next loop here
+            block_Rewind(atsc3_sl_tlv_block);
+        }
+        //unlock for our inner loop
+        atsc3_sl_tlv_block_mutex.unlock();
     }
+    //atsc3_sl_tlv_block_mutex is now unlocked from either bytesRead < TLV_CIRCULAR_BUFFER_PROCESS_BLOCK_SIZE _or_ 2 lines above...
 }
 
 void SaankhyaPHYAndroid::RxDataCallback(unsigned char *data, long len)
@@ -2205,11 +2218,13 @@ void SaankhyaPHYAndroid::NotifyPlpSelectionChangeCallback(vector<uint8_t> plps, 
 }
 
 void SaankhyaPHYAndroid::allocate_atsc3_sl_tlv_block() {
-    unique_lock<mutex> atsc3_sl_tlv_block_mutex_local(atsc3_sl_tlv_block_mutex);
+    //protect for de-alloc with using recursive lock here
+    atsc3_sl_tlv_block_mutex.lock();
+
     if(!atsc3_sl_tlv_block) {
         atsc3_sl_tlv_block = block_Alloc(TLV_CIRCULAR_BUFFER_PROCESS_BLOCK_SIZE);
     }
-    atsc3_sl_tlv_block_mutex_local.unlock();
+    atsc3_sl_tlv_block_mutex.unlock();
 }
 
 extern "C"

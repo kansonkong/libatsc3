@@ -229,11 +229,13 @@ private:
     void processTLVFromCallback();
     char processDataCircularBufferForCallback[TLV_CIRCULAR_BUFFER_PROCESS_BLOCK_SIZE];
 
-    block_t* atsc3_sl_tlv_block = NULL;
-    mutex    atsc3_sl_tlv_block_mutex;
-    void allocate_atsc3_sl_tlv_block();
+    void                    allocate_atsc3_sl_tlv_block();
 
+    recursive_mutex         atsc3_sl_tlv_block_mutex;   //both atsc3_sl_tlv_block and atsc3_sl_tlv_payload are guarded by atsc3_sl_tlv_block_mutex
+    block_t*                atsc3_sl_tlv_block = NULL;
     atsc3_sl_tlv_payload_t* atsc3_sl_tlv_payload = NULL;
+
+
 
     //jjustman-2021-02-04 - global error flag if i2c txn fails, usually due to demod crash
     static SL_Result_t      global_sl_result_error_flag;
