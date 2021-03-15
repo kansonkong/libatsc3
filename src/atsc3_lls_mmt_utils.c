@@ -239,7 +239,7 @@ lls_sls_mmt_session_t* lls_slt_mmt_session_find_or_create(lls_slt_monitor_t* lls
         for(int k=0; k < lls_slt_monitor->lls_sls_mmt_monitor_v.count; k++) {
             lls_sls_mmt_monitor_t* lls_sls_mmt_monitor = lls_slt_monitor->lls_sls_mmt_monitor_v.data[k];
 
-            if(lls_sls_mmt_monitor->transients.atsc3_lls_slt_service && lls_sls_mmt_monitor->transients.atsc3_lls_slt_service->service_id == atsc3_lls_slt_service->service_id) {
+            if(lls_sls_mmt_monitor && lls_sls_mmt_monitor->transients.atsc3_lls_slt_service && lls_sls_mmt_monitor->transients.atsc3_lls_slt_service->service_id == atsc3_lls_slt_service->service_id) {
                 lls_sls_mmt_monitor->transients.atsc3_lls_slt_service = atsc3_lls_slt_service;
                 lls_sls_mmt_monitor->transients.atsc3_lls_slt_service_stale = NULL;
             }

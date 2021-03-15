@@ -317,7 +317,7 @@ lls_sls_alc_session_t* lls_slt_alc_session_find_or_create(lls_slt_monitor_t* lls
         for(int k=0; k < lls_slt_monitor->lls_sls_alc_monitor_v.count; k++) {
             lls_sls_alc_monitor_t* lls_sls_alc_monitor = lls_slt_monitor->lls_sls_alc_monitor_v.data[k];
 
-            if(lls_sls_alc_monitor->atsc3_lls_slt_service && lls_sls_alc_monitor->atsc3_lls_slt_service->service_id == atsc3_lls_slt_service->service_id) {
+            if(lls_sls_alc_monitor && lls_sls_alc_monitor->atsc3_lls_slt_service && lls_sls_alc_monitor->atsc3_lls_slt_service->service_id == atsc3_lls_slt_service->service_id) {
                 lls_sls_alc_monitor->atsc3_lls_slt_service = atsc3_lls_slt_service;
                 lls_sls_alc_monitor->transients.atsc3_lls_slt_service_stale = NULL;
             }
