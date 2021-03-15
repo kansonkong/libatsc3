@@ -273,6 +273,8 @@ jjustman-2021-03-10 - warning: atsc3_lls_slt_service is a reference to our new l
  */
 int lls_slt_table_perform_update(lls_table_t* lls_table, lls_slt_monitor_t* lls_slt_monitor) {
 
+    __LLS_SLT_PARSER_INFO("lls_slt_table_perform_update:  lls_table: %p", lls_table);
+
     //jjustman-2021-03-10 - first, mark any lls_slt_alc_session(s) or lls_sls_alc_monitor(s) with transient.atsc3_lls_slt_service_stale so we can either update them wtih our new atsc3_lls_slt_service (if applicable) or remove
     //j                     similar for lls_slt_mmt_session(s) ... and clear out any lls_slt_mmt sessions (if applicable)
 

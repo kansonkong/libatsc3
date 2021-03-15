@@ -438,23 +438,27 @@ lls_table_t* atsc3_lls_table_create_or_update_from_lls_slt_monitor_with_metrics_
                 (lls_table_new->lls_table_version > lls_slt_monitor->lls_latest_slt_table->lls_table_version ||
                 (lls_table_new->lls_table_version == 0x00 && lls_slt_monitor->lls_latest_slt_table->lls_table_version == 0xFF))) {
 
+                lls_table_t* lls_slt_table_to_free = lls_slt_monitor->lls_latest_slt_table;
+
                 //replace our lls_latest_slt_table by freeing it and assigning it new
-                _LLS_DEBUG("atsc3_lls_table_create_or_update_from_lls_slt_monitor_with_metrics_single_table: attempting to free lls_latest_slt_table: %p,  lls_table_new->lls_table_version: %d, lls_slt_monitor->lls_latest_slt_table->lls_table_version: %d",
-                           lls_slt_monitor->lls_latest_slt_table,
-                           lls_table_new->lls_table_version,
-                           lls_slt_monitor->lls_latest_slt_table->lls_table_version
-                           );
+                _LLS_WARN("atsc3_lls_table_create_or_update_from_lls_slt_monitor_with_metrics_single_table: lls_slt_table_to_free: %p (lls_table_version: %d), replacing with latest: %p (lls_table_version: %d)",
+                          lls_slt_table_to_free,
+                          lls_slt_table_to_free->lls_table_version,
+                          lls_table_new,
+                          lls_table_new->lls_table_version);
 
 
                 //jjustman-2020-09-30 - clear our lls_slt_service_id_group_id_cache based upon the lls table group_id
                 // from our monitor and force a rebuild
-                lls_slt_monitor_free_lls_slt_service_id_group_id_cache_from_lls_group_id(lls_slt_monitor, lls_slt_monitor->lls_latest_slt_table->lls_group_id);
+                lls_slt_monitor_free_lls_slt_service_id_group_id_cache_from_lls_group_id(lls_slt_monitor, lls_slt_table_to_free->lls_group_id);
 
-                //free our old table and keep the new one
-				lls_table_free(&lls_slt_monitor->lls_latest_slt_table);
-				lls_slt_monitor->lls_latest_slt_table = NULL;
-                _LLS_DEBUG("atsc3_lls_table_create_or_update_from_lls_slt_monitor_with_metrics_single_table: updating with  lls_slt_monitor->lls_latest_slt_table: %p", lls_table_new);
+                //perform our lls update first, then free the "old" table once any transient references are nulled out
+                lls_slt_table_perform_update(lls_table_new, lls_slt_monitor);
+                lls_slt_monitor->lls_latest_slt_table = lls_table_new;
 
+                //free our old table, as all references _SHOULD_ (must have) been replaced or null'd out with lls_slt_table_perform_update
+                _LLS_DEBUG("atsc3_lls_table_create_or_update_from_lls_slt_monitor_with_metrics_single_table: freeing with lls_slt_table_to_free: %p", lls_slt_table_to_free);
+              	lls_table_free(&lls_slt_table_to_free);
 
             } else {
 				//no change - free our new one and keep the old one
@@ -464,12 +468,10 @@ lls_table_t* atsc3_lls_table_create_or_update_from_lls_slt_monitor_with_metrics_
 			}
 		} else {
             _LLS_DEBUG("atsc3_lls_table_create_or_update_from_lls_slt_monitor_with_metrics_single_table: assigning new lls_slt_monitor->lls_latest_slt_table: %p", lls_table_new);
+
+            lls_slt_monitor->lls_latest_slt_table = lls_table_new;
+            lls_slt_table_perform_update(lls_table_new, lls_slt_monitor);
         }
-
-        lls_slt_monitor->lls_latest_slt_table = lls_table_new;
-		lls_slt_table_perform_update(lls_table_new, lls_slt_monitor);
-		//jjustman-2019-10-03 - TODO - dispatch updates here for callbacks
-
 
 		(*parsed_update)++;
 		return lls_slt_monitor->lls_latest_slt_table;
