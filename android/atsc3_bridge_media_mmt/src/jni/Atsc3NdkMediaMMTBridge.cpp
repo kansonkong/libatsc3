@@ -221,7 +221,7 @@ void Atsc3NdkMediaMMTBridge::atsc3_onInitHEVC_NAL_Extracted(uint16_t service_id,
 //    Atsc3NdkMediaMMTBridge::GetBridgeConsumerJniEnv()->Get()->DeleteLocalRef(jobjectByteBuffer);
 
     //writeToRingBuffer(RING_BUFFER_PAGE_INIT, packet_id, 0, 0, buffer, bufferLen);
-    fragmentBuffer->write(Atsc3RingBuffer::RING_BUFFER_PAGE_INIT, packet_id, 0, 0, buffer, bufferLen);
+    fragmentBuffer->write(Atsc3RingBuffer::RING_BUFFER_PAGE_INIT, service_id, packet_id, 0, 0, buffer, bufferLen);
 }
 
 void Atsc3NdkMediaMMTBridge::atsc3_onInitAudioDecoderConfigurationRecord(uint16_t service_id, uint16_t packet_id, uint32_t mpu_sequence_number, atsc3_audio_decoder_configuration_record_t* atsc3_audio_decoder_configuration_record) {
@@ -449,7 +449,7 @@ void Atsc3NdkMediaMMTBridge::atsc3_onMfuPacket(uint16_t service_id, uint16_t pac
 //    }
 
     //writeToRingBuffer(RING_BUFFER_PAGE_FRAGMENT, packet_id, sample_number, presentationUs, buffer, bufferLen);
-    fragmentBuffer->write(Atsc3RingBuffer::RING_BUFFER_PAGE_FRAGMENT, packet_id, sample_number, presentationUs, buffer, bufferLen);
+    fragmentBuffer->write(Atsc3RingBuffer::RING_BUFFER_PAGE_FRAGMENT, service_id, packet_id, sample_number, presentationUs, buffer, bufferLen);
 }
 
 //on partially corrupt MFU packet data
@@ -462,7 +462,7 @@ void Atsc3NdkMediaMMTBridge::atsc3_onMfuPacketCorrupt(uint16_t service_id, uint1
 //    }
 
     //writeToRingBuffer(RING_BUFFER_PAGE_FRAGMENT, packet_id, sample_number, presentationUs, buffer, bufferLen);
-    fragmentBuffer->write(Atsc3RingBuffer::RING_BUFFER_PAGE_FRAGMENT, packet_id, sample_number, presentationUs, buffer, bufferLen);
+    fragmentBuffer->write(Atsc3RingBuffer::RING_BUFFER_PAGE_FRAGMENT, service_id, packet_id, sample_number, presentationUs, buffer, bufferLen);
 }
 
 //on partially corrupt MFU missing MMTHSample header
@@ -484,7 +484,7 @@ void Atsc3NdkMediaMMTBridge::atsc3_onMfuPacketCorruptMmthSampleHeader(uint16_t s
 //    //_NDK_MEDIA_MMT_BRIDGE_ERROR("Atsc3NdkMediaMMTBridge::atsc3_onMfuPacketCorruptMmthSampleHeader: jobjectLocalByteBuffer is: %d, jni_instance_globalRef: %p, method: %d, ", jobjectLocalByteBuffer, jni_instance_globalRef, atsc3_onMfuPacketCorruptMmthSampleHeaderID);
 
     //writeToRingBuffer(RING_BUFFER_PAGE_FRAGMENT, packet_id, sample_number, presentationUs, buffer, bufferLen);
-    fragmentBuffer->write(Atsc3RingBuffer::RING_BUFFER_PAGE_FRAGMENT, packet_id, sample_number, presentationUs, buffer, bufferLen);
+    fragmentBuffer->write(Atsc3RingBuffer::RING_BUFFER_PAGE_FRAGMENT, service_id, packet_id, sample_number, presentationUs, buffer, bufferLen);
 }
 
 void Atsc3NdkMediaMMTBridge::atsc3_onMfuSampleMissing(uint16_t packet_id, uint32_t mpu_sequence_number, uint32_t sample_number) {
