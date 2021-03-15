@@ -6,6 +6,7 @@ typedef struct {
     int32_t page_num;
     int32_t length;
     int8_t  page_type;
+    int32_t service_id;
     int32_t packet_id;
     int32_t sample_number;
     int64_t presentationUs;
@@ -19,7 +20,7 @@ Atsc3RingBuffer::Atsc3RingBuffer(uint8_t* buffer_ptr, uint32_t buffer_size, uint
     this->buffer_page_size = page_size;
 }
 
-void Atsc3RingBuffer::write(int8_t type, uint16_t packet_id, uint32_t sample_number, uint64_t presentationUs, uint8_t *buffer, uint32_t bufferLen) {
+void Atsc3RingBuffer::write(int8_t type, uint16_t service_id, uint16_t packet_id, uint32_t sample_number, uint64_t presentationUs, uint8_t *buffer, uint32_t bufferLen) {
     uint32_t remaining = bufferLen;
     int32_t page_num = ++buffer_page_number;
     uint8_t page_segment_number = 0;
@@ -37,6 +38,7 @@ void Atsc3RingBuffer::write(int8_t type, uint16_t packet_id, uint32_t sample_num
         header->page_num = page_num;
         header->length = bufferLen;
         header->page_type = type;
+        header->service_id = service_id;
         header->packet_id = packet_id;
         header->sample_number = sample_number;
         header->presentationUs = presentationUs;
