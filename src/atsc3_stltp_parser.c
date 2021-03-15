@@ -488,8 +488,9 @@ concatenation_check_for_outer_marker: ;
             
             bool last_inner_packet_complete = atsc3_stltp_tunnel_packet_extract_fragment_encapsulated_payload(atsc3_stltp_tunnel_packet_current);
 			//jjustman-2020-12-30 - hack - only free our ->data block as the inner packet is just a pointer to atsc3_stltp_tunnel_packet->ip_udp_rtp_ctp_packet_inner
-			if(inner_packet->data) {
-				block_Destroy(&inner_packet->data);
+			//jjustman-2021-03-15 - BUT atsc3_stltp_tunnel_packet->ip_udp_rtp_ctp_packet_inner may have been free'd above, so don't ref inner_packet, only atsc3_stltp_tunnel_packet->ip_udp_rtp_ctp_packet_inner
+			if(atsc3_stltp_tunnel_packet_current->ip_udp_rtp_ctp_packet_inner->data) {
+				block_Destroy(&atsc3_stltp_tunnel_packet_current->ip_udp_rtp_ctp_packet_inner->data);
 			}
 			block_Destroy(&outer_reference_inner_payload_current);
         }
@@ -784,7 +785,7 @@ atsc3_stltp_preamble_packet_t* atsc3_stltp_preamble_packet_extract(atsc3_stltp_t
         if(atsc3_stltp_tunnel_packet_current->ip_udp_rtp_ctp_packet_pending_concatenation_inner) {
             atsc3_ip_udp_rtp_ctp_packet_free(&atsc3_stltp_tunnel_packet_current->ip_udp_rtp_ctp_packet_pending_concatenation_inner);
         }
-        
+
         atsc3_ip_udp_rtp_ctp_packet_free(&atsc3_stltp_tunnel_packet_current->ip_udp_rtp_ctp_packet_inner);
         return NULL;
     }
