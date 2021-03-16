@@ -183,22 +183,6 @@ void Atsc3NdkMediaMMTBridge::extractUdpPacket(block_t* udpPacket) {
     mmtExtractor->atsc3_core_service_bridge_process_mmt_packet(udpPacket);
 }
 
-uint32_t Atsc3NdkMediaMMTBridge::getFragmentBufferCurrentPosition() {
-    if (fragmentBuffer) {
-        return fragmentBuffer->getCurrentPosition();
-    }
-
-    return 0;
-}
-
-uint32_t Atsc3NdkMediaMMTBridge::getFragmentBufferCurrentPageNumber() {
-    if (fragmentBuffer) {
-        return fragmentBuffer->getCurrentPageNumber();
-    }
-
-    return 0;
-}
-
 
 //wired up and invoked from atsc3_mmt_mfu_context_callbacks_default_jni.cpp
 
@@ -216,8 +200,7 @@ void Atsc3NdkMediaMMTBridge::atsc3_onInitHEVC_NAL_Extracted(uint16_t service_id,
 //     Atsc3NdkMediaMMTBridge::GetBridgeConsumerJniEnv()->Get()->CallIntMethod(jni_instance_globalRef, atsc3_OnInitHEVC_NAL_Extracted, packet_id, (int64_t)mpu_sequence_number, jobjectByteBuffer, bufferLen);
 //    Atsc3NdkMediaMMTBridge::GetBridgeConsumerJniEnv()->Get()->DeleteLocalRef(jobjectByteBuffer);
 
-    //writeToRingBuffer(RING_BUFFER_PAGE_INIT, packet_id, 0, 0, buffer, bufferLen);
-    fragmentBuffer->write(Atsc3RingBuffer::RING_BUFFER_PAGE_INIT, service_id, packet_id, 0, 0, buffer, bufferLen);
+    writeToRingBuffer(Atsc3RingBuffer::RING_BUFFER_PAGE_INIT, service_id, packet_id, 0, 0, buffer, bufferLen);
 }
 
 void Atsc3NdkMediaMMTBridge::atsc3_onInitAudioDecoderConfigurationRecord(uint16_t packet_id, uint32_t mpu_sequence_number, atsc3_audio_decoder_configuration_record_t* atsc3_audio_decoder_configuration_record) {
@@ -438,8 +421,7 @@ void Atsc3NdkMediaMMTBridge::atsc3_onMfuPacket(uint16_t service_id, uint16_t pac
 //    localJniEnv->Get()->DeleteLocalRef(jobjectLocalByteBuffer);
 //    //_NDK_MEDIA_MMT_BRIDGE_ERROR("Atsc3NdkMediaMMTBridge::atsc3_onMfuPacket: return");
 
-    //writeToRingBuffer(RING_BUFFER_PAGE_FRAGMENT, packet_id, sample_number, presentationUs, buffer, bufferLen);
-    fragmentBuffer->write(Atsc3RingBuffer::RING_BUFFER_PAGE_FRAGMENT, service_id, packet_id, sample_number, presentationUs, buffer, bufferLen);
+    writeToRingBuffer(Atsc3RingBuffer::RING_BUFFER_PAGE_FRAGMENT, service_id, packet_id, sample_number, presentationUs, buffer, bufferLen);
 }
 
 //on partially corrupt MFU packet data
@@ -466,8 +448,7 @@ void Atsc3NdkMediaMMTBridge::atsc3_onMfuPacketCorrupt(uint16_t service_id, uint1
 //    localJniEnv->Get()->DeleteLocalRef(jobjectLocalByteBuffer);
 //    //LogMsg("Atsc3NdkMediaMMTBridge::atsc3_onMfuPacketCorrupt: after DeleteLocalRef");
 
-    //writeToRingBuffer(RING_BUFFER_PAGE_FRAGMENT, packet_id, sample_number, presentationUs, buffer, bufferLen);
-    fragmentBuffer->write(Atsc3RingBuffer::RING_BUFFER_PAGE_FRAGMENT, service_id, packet_id, sample_number, presentationUs, buffer, bufferLen);
+    writeToRingBuffer(Atsc3RingBuffer::RING_BUFFER_PAGE_FRAGMENT, service_id, packet_id, sample_number, presentationUs, buffer, bufferLen);
 }
 
 //on partially corrupt MFU missing MMTHSample header
@@ -496,8 +477,7 @@ void Atsc3NdkMediaMMTBridge::atsc3_onMfuPacketCorruptMmthSampleHeader(uint16_t s
 //    localJniEnv->Get()->DeleteLocalRef(jobjectLocalByteBuffer);
 //    //LogMsg("Atsc3NdkMediaMMTBridge::atsc3_onMfuPacketCorruptMmthSampleHeader: after ->DeleteLocalRef(jobjectLocalByteBuffer);");
 
-    //writeToRingBuffer(RING_BUFFER_PAGE_FRAGMENT, packet_id, sample_number, presentationUs, buffer, bufferLen);
-    fragmentBuffer->write(Atsc3RingBuffer::RING_BUFFER_PAGE_FRAGMENT, service_id, packet_id, sample_number, presentationUs, buffer, bufferLen);
+    writeToRingBuffer(Atsc3RingBuffer::RING_BUFFER_PAGE_FRAGMENT, service_id, packet_id, sample_number, presentationUs, buffer, bufferLen);
 }
 
 void Atsc3NdkMediaMMTBridge::atsc3_onMfuSampleMissing(uint16_t packet_id, uint32_t mpu_sequence_number, uint32_t sample_number) {
@@ -508,6 +488,16 @@ void Atsc3NdkMediaMMTBridge::atsc3_onMfuSampleMissing(uint16_t packet_id, uint32
     }
 
      Atsc3NdkMediaMMTBridge::GetBridgeConsumerJniEnv()->Get()->CallIntMethod(jni_instance_globalRef, atsc3_onMfuSampleMissingID, (int32_t)packet_id, (int64_t)mpu_sequence_number, (int32_t)sample_number);
+}
+
+void Atsc3NdkMediaMMTBridge::writeToRingBuffer(int8_t type, uint16_t service_id, uint16_t packet_id, uint32_t sample_number, uint64_t presentationUs, uint8_t* buffer, uint32_t bufferLen) {
+    // Reset the buffer if MMT emission service was changed
+    if (last_service_id != service_id) {
+        fragmentBuffer->rewind();
+        last_service_id = service_id;
+    }
+
+    fragmentBuffer->write(type, service_id, packet_id, sample_number, presentationUs, buffer, bufferLen);
 }
 
 //--------------------------------------------------------------------------
@@ -733,20 +723,4 @@ Java_org_ngbp_libatsc3_middleware_Atsc3NdkMediaMMTBridge_release(JNIEnv *env, jo
 
     //jjustman-2020-12-16 - TODO: delete mediaMMTBridge; (and block_destory(preAllocInFlightUdpPacket))
     return;
-}
-
-extern "C"
-JNIEXPORT jint JNICALL
-Java_org_ngbp_libatsc3_middleware_Atsc3NdkMediaMMTBridge_getFragmentBufferCurrentPosition(JNIEnv *env, jobject thiz) {
-    Atsc3NdkMediaMMTBridge* mediaMMTBridge = Atsc3NdkMediaMMTBridge::GetMediaBridgePtr(env, thiz);
-
-    return mediaMMTBridge->getFragmentBufferCurrentPosition();
-}
-
-extern "C"
-JNIEXPORT jint JNICALL
-Java_org_ngbp_libatsc3_middleware_Atsc3NdkMediaMMTBridge_getFragmentBufferCurrentPageNumber(JNIEnv *env, jobject thiz) {
-    Atsc3NdkMediaMMTBridge* mediaMMTBridge = Atsc3NdkMediaMMTBridge::GetMediaBridgePtr(env, thiz);
-
-    return mediaMMTBridge->getFragmentBufferCurrentPageNumber();
 }
