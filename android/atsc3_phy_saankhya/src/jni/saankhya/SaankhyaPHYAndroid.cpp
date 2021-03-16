@@ -1759,6 +1759,12 @@ int SaankhyaPHYAndroid::statusThread()
         }
 
         //jjustman-2020-10-14 - try to make this loop as small as possible to not upset the SDIO I/F ALP buffer window
+        /*
+         * jjustman-2021-03-16 - to restart loop, be sure to use:
+         *          goto sl_i2c_tuner_mutex_unlock;
+         * rather than continue; as we need to release this mutex for other threads to (possibly) access i2c
+         */
+
         SL_I2C_command_mutex_tuner_status_io.lock();
 
         //PLP info we will use for this stats iteration
@@ -1833,7 +1839,7 @@ int SaankhyaPHYAndroid::statusThread()
         dres = SL_DemodGetStatus(this->slUnit, SL_DEMOD_STATUS_TYPE_CPU, (int*)&cpuStatus);
         if (dres != SL_OK) {
             _SAANKHYA_PHY_ANDROID_ERROR("Error:SL_Demod Get CPU Status: dres: %d", dres);
-            continue;
+            goto sl_i2c_tuner_mutex_unlock;
         }
         lastCpuStatus = cpuStatus;
 
@@ -1932,7 +1938,7 @@ int SaankhyaPHYAndroid::statusThread()
             goto sl_i2c_tuner_mutex_unlock;
         }
 
-
+        //jjustman-2021-03-16 - exit our i2c critical section while we build and push our PHY statistics, we can use "continue" for next loop iteration after this point
         SL_I2C_command_mutex_tuner_status_io.unlock();
 
         snr = (float)perfDiag.GlobalSnrLinearScale / 16384;
