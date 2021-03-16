@@ -87,6 +87,9 @@ private:
 
     block_t*    preAllocInFlightUdpPacket;
 
+    uint16_t    last_service_id = 0;
+    void writeToRingBuffer(int8_t type, uint16_t service_id, uint16_t packet_id, uint32_t sample_number, uint64_t presentationUs, uint8_t* buffer, uint32_t bufferLen);
+
 public:
     //jjustman-2020-12-17 - testing
 
@@ -123,9 +126,6 @@ public:
 
     int acceptNdkByteBufferUdpPacket(jobject byte_buffer, jint byte_buffer_length);
     void extractUdpPacket(block_t* udpPacket);
-
-    uint32_t getFragmentBufferCurrentPosition();
-    uint32_t getFragmentBufferCurrentPageNumber();
 
     jmethodID mOnLogMsgId = nullptr;
 
