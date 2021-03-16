@@ -56,10 +56,6 @@ void Atsc3RingBuffer::write(int8_t type, uint16_t service_id, uint16_t packet_id
     }
 }
 
-uint32_t Atsc3RingBuffer::getCurrentPosition() {
-    return buffer_position;
-}
-
-uint32_t Atsc3RingBuffer::getCurrentPageNumber() {
-    return buffer_page_number;
+void Atsc3RingBuffer::rewind() {
+    buffer_position = 0;
 }
