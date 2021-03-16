@@ -32,9 +32,6 @@ public class Atsc3NdkMediaMMTBridge extends Atsc3NdkMediaMMTBridgeStaticJniLoade
 
     public native int atsc3_process_mmtp_udp_packet(ByteBuffer byteBuffer, int length);
 
-    public native int getFragmentBufferCurrentPosition();
-    public native int getFragmentBufferCurrentPageNumber();
-
     public Atsc3NdkMediaMMTBridge(IAtsc3NdkMediaMMTBridgeCallbacks iAtsc3NdkMediaMMTBridgeCallbacks, ByteBuffer fragmentBuffer, int maxFragmentCount) {
         Log.w("Atsc3NdkMediaMMTBridge", "Atsc3NdkMediaMMTBridge::cctor");
         mActivity = iAtsc3NdkMediaMMTBridgeCallbacks;
