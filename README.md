@@ -2,6 +2,16 @@ libatsc3 Overview
 ==========
 ATSC 3.0 NGBP Open Source Library - Parse LMT, LLS and other signaling, object delivery via ROUTE, video playback of MMT and DASH
 
+## Get Started
+checkout libatsc3:
+
+> git clone --branch develop --recurse-submodules https://github.com/jjustman/libatsc3.git 
+
+build for linux:
+
+> cd src; ./build_linux.sh 
+
+
 ## March, 2021 Update: Join the libatsc3 slack workspace for development support and updates
 
 https://communityinviter.com/apps/libatsc3/join-the-libatsc3-slack-workspace-for-development-support-and-updates
