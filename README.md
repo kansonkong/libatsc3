@@ -3,14 +3,17 @@ libatsc3 Overview
 ATSC 3.0 NGBP Open Source Library - Parse LMT, LLS and other signaling, object delivery via ROUTE, video playback of MMT and DASH
 
 ## March, 2021 Update: Join the libatsc3 slack workspace for development support and updates
+
 https://communityinviter.com/apps/libatsc3/join-the-libatsc3-slack-workspace-for-development-support-and-updates
 
 ## Feb, 2021 Update: ExoPlayer MMT plugin released
 We've released our first cut of our ExoPlayer MMT Plugin to support ISO23008-1 playback of MPEG Media Transport here:  
+
 https://github.com/jjustman/ExoPlayer_MMT_Plugin
 
 ## Dec, 2020 Update: STLTP pcap samples
 libatsc3 supports both live multicast and pcap flows of both STLTP and demultiplexed IP flows for ATSC3.0, and have a handful of pcap captures for testing here:
+
 https://github.com/jjustman/atsc3_stltp_pcaps
 
 ## August, 2020 Update: Part 2: PHY Support for Virtual SRT and LowaSIS
