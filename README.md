@@ -5,6 +5,10 @@ ATSC 3.0 NGBP Open Source Library - Parse LMT, LLS and other signaling, object d
 ## March, 2021 Update: Join the libatsc3 slack workspace for development support and updates
 https://communityinviter.com/apps/libatsc3/join-the-libatsc3-slack-workspace-for-development-support-and-updates
 
+## Feb, 2021 Update: ExoPlayer MMT plugin released
+We've released our first cut of our ExoPlayer MMT Plugin to support ISO23008-1 playback of MPEG Media Transport here:  
+https://github.com/jjustman/ExoPlayer_MMT_Plugin
+
 ## August, 2020 Update: Part 2: PHY Support for Virtual SRT and LowaSIS
 Additional updates for virutal PHY support with live SRT+STLTP transport, and LowaSIS android sample app integration for OTA live ATSC 3.0 support.
 
