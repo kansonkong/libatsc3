@@ -49,6 +49,7 @@ public:
      */
 
     int atsc3_pcap_replay_open_file(const char *filename);
+	int atsc3_pcap_replay_open_file(const char *filename, int fd, int length);
     int atsc3_pcap_thread_run();
     int atsc3_pcap_thread_stop(); 							//will invoke cleanup of context
 
