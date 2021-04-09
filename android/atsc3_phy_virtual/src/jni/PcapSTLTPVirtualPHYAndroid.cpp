@@ -84,6 +84,24 @@ Java_org_ngbp_libatsc3_middleware_android_phy_virtual_PcapSTLTPVirtualPHYAndroid
 }
 
 extern "C" JNIEXPORT jint JNICALL
+Java_org_ngbp_libatsc3_middleware_android_phy_virtual_PcapSTLTPVirtualPHYAndroid_open_1from_1capture_1fd(JNIEnv *env, jobject thiz, jstring filename, jint fd, jlong length) {
+    unique_lock<mutex> pcapSTLTPVirtualPHYAndroid_cctor_mutex_local(PcapSTLTPVirtualPHYAndroid::CS_global_mutex);
+
+    if(!pcapSTLTPVirtualPHYAndroid) {
+        _PCAP_STLTP_VIRTUAL_PHY_ERROR("Java_org_ngbp_libatsc3_middleware_android_phy_virtual_PcapSTLTPVirtualPHYAndroid_open_1from_1capture_1fd: error, pcapSTLTPVirtualPHYAndroid is NULL!");
+        return -1;
+    }
+
+    int res = 0;
+    const char *filename_cstr = env->GetStringUTFChars(filename, NULL);
+    _PCAP_STLTP_VIRTUAL_PHY_WARN("Java_org_ngbp_libatsc3_middleware_android_phy_virtual_PcapSTLTPVirtualPHYAndroid_open_1from_1capture: with filename: %s", filename_cstr);
+    res = pcapSTLTPVirtualPHYAndroid->atsc3_pcap_replay_open_file(filename_cstr, fd, length);
+
+    env->ReleaseStringUTFChars(filename, filename_cstr);
+    return res;
+}
+
+extern "C" JNIEXPORT jint JNICALL
 Java_org_ngbp_libatsc3_middleware_android_phy_virtual_PcapSTLTPVirtualPHYAndroid_run(JNIEnv* env, jobject instance)
 {
     unique_lock<mutex> pcapSTLTPVirtualPHYAndroid_cctor_mutex_local(PcapSTLTPVirtualPHYAndroid::CS_global_mutex);
