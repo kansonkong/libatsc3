@@ -34,7 +34,6 @@
 
 #include "atsc3_listener_udp.h"
 
-
 #include "atsc3_fdt.h"
 #include "atsc3_sls_metadata_fragment_types.h"
 
@@ -124,11 +123,11 @@ typedef lls_table_t atsc3_lls_table_t;
  TODO: jjustman-2019-09-18 - move to block_t
  **/
 typedef struct lls_xml_payload {
-	uint8_t 	*xml_payload_compressed;
+	uint8_t*	xml_payload_compressed;
 	uint32_t 	xml_payload_compressed_size;
-	uint8_t 	*xml_payload;
+	
+	uint8_t*	xml_payload;
 	uint32_t 	xml_payload_size;
-
 } lls_xml_payload_t;
 
 /**
@@ -639,17 +638,23 @@ typedef struct mmt_session {
  sls_source_ip_address      : (null)
 **/
 
+	
+//jjustman-2021-04-16 - TODO: refactor out cross linkage for lls_sls_(alc|mmt) requirement when running linker
+
+typedef struct atsc3_mmt_mfu_context atsc3_mmt_mfu_context_t;
 
 typedef struct lls_sls_mmt_session {
-    uint16_t service_id;
+    uint16_t 						service_id;
 
     //jjustman-2021-03-10 - TODO: refactor this to transients
-    atsc3_lls_slt_service_t* atsc3_lls_slt_service;
+    atsc3_lls_slt_service_t* 		atsc3_lls_slt_service;
 
     struct atsc3_lls_sls_mmt_session_transients {
-        atsc3_lls_slt_service_t* atsc3_lls_slt_service_stale;
+        atsc3_lls_slt_service_t* 	atsc3_lls_slt_service_stale;
     } transients;
-
+	
+	//jjustman-2021-04-16 - adding in reference for optional atsc3_mmt_mfu_context, TODO: make this part of concrete instance?
+	atsc3_mmt_mfu_context_t*	atsc3_mmt_mfu_context;
     
     uint32_t sls_source_ip_address;
 	bool	 sls_relax_source_ip_check;

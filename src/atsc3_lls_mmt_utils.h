@@ -16,6 +16,8 @@
 #include "atsc3_lls_types.h"
 #include "atsc3_logging_externs.h"
 
+#include "atsc3_mmt_context_mfu_depacketizer.h"
+
 #if defined (__cplusplus)
 extern "C" {
 #endif
