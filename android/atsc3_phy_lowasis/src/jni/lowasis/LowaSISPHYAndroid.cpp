@@ -423,7 +423,7 @@ int LowaSISPHYAndroid::deinit()
     return 0;
 }
 
-int LowaSISPHYAndroid::open(int fd, string device_path)
+int LowaSISPHYAndroid::open(int fd, int device_type, string device_path)
 {
     AT3RESULT ar;
     _LOWASIS_PHY_ANDROID_DEBUG("LowaSISPHYAndroid::open, this: %p,  with fd: %d, device_path: %s", this, fd, device_path.c_str());
@@ -609,7 +609,7 @@ int LowaSISPHYAndroid::listen_plps(vector<uint8_t> plps_original_list)
     return ret;
 }
 
-int LowaSISPHYAndroid::download_bootloader_firmware(int fd, string device_path) {
+int LowaSISPHYAndroid::download_bootloader_firmware(int fd, int device_type, string device_path) {
     AT3RESULT ar;
     AT3_DEV_KEY toInitTarget;
 
@@ -1235,7 +1235,7 @@ Java_org_ngbp_libatsc3_middleware_android_phy_LowaSISPHYAndroid_deinit(JNIEnv *e
 }
 
 extern "C" JNIEXPORT jint JNICALL
-Java_org_ngbp_libatsc3_middleware_android_phy_LowaSISPHYAndroid_download_1bootloader_1firmware(JNIEnv *env, jobject thiz, jint fd, jstring device_path_jstring) {
+Java_org_ngbp_libatsc3_middleware_android_phy_LowaSISPHYAndroid_download_1bootloader_1firmware(JNIEnv *env, jobject thiz, jint fd, jint device_type, jstring device_path_jstring) {
     lock_guard<mutex> lowasis_phy_android_cctor_mutex_local(LowaSISPHYAndroid::CS_global_mutex);
 
     _LOWASIS_PHY_ANDROID_INFO("Java_org_ngbp_libatsc3_middleware_android_phy_LowaSISPHYAndroid_download_1bootloader_1firmware: fd: %d", fd);
@@ -1247,7 +1247,7 @@ Java_org_ngbp_libatsc3_middleware_android_phy_LowaSISPHYAndroid_download_1bootlo
     } else {
         const char* device_path_weak = env->GetStringUTFChars(device_path_jstring, 0);
         string device_path(device_path_weak);
-        res = lowaSISPHYAndroid->download_bootloader_firmware(fd, device_path); //calls pre_init
+        res = lowaSISPHYAndroid->download_bootloader_firmware(fd, device_type, device_path); //calls pre_init
         env->ReleaseStringUTFChars( device_path_jstring, device_path_weak );
 
         //jjustman-2020-08-23 - hack, clear out our in-flight reference since we should re-enumerate
@@ -1259,7 +1259,7 @@ Java_org_ngbp_libatsc3_middleware_android_phy_LowaSISPHYAndroid_download_1bootlo
 }
 
 extern "C" JNIEXPORT jint JNICALL
-Java_org_ngbp_libatsc3_middleware_android_phy_LowaSISPHYAndroid_open(JNIEnv *env, jobject thiz, jint fd, jstring device_path_jstring) {
+Java_org_ngbp_libatsc3_middleware_android_phy_LowaSISPHYAndroid_open(JNIEnv *env, jobject thiz, jint fd, jint device_type, jstring device_path_jstring) {
     lock_guard<mutex> lowasis_phy_android_cctor_mutex_local(LowaSISPHYAndroid::CS_global_mutex);
 
     _LOWASIS_PHY_ANDROID_DEBUG("Java_org_ngbp_libatsc3_middleware_android_phy_LowaSISPHYAndroid_open: fd: %d", fd);
@@ -1271,7 +1271,7 @@ Java_org_ngbp_libatsc3_middleware_android_phy_LowaSISPHYAndroid_open(JNIEnv *env
     } else {
         const char* device_path_weak = env->GetStringUTFChars(device_path_jstring, 0);
         string device_path(device_path_weak);
-        res = lowaSISPHYAndroid->open(fd, device_path);
+        res = lowaSISPHYAndroid->open(fd, device_type, device_path);
         env->ReleaseStringUTFChars( device_path_jstring, device_path_weak );
     }
     return res;

@@ -104,8 +104,8 @@ public abstract class Atsc3NdkPHYClientBase {
     //optional jni methods, to enable per-PHY use-cases,
     //but un-safe for non context-aware invocation
 
-    public native int     download_bootloader_firmware(int fd, String devicePath);
-    public native int     open(int fd, String devicePath);
+    public native int     download_bootloader_firmware(int fd, int deviceType, String devicePath);
+    public native int     open(int fd, int deviceType, String devicePath);
     public native int     open_from_capture(String filename);
     public native int     tune(int freqKhz, int single_plp);
     public native int     listen_plps(List<Byte> plps);
