@@ -454,6 +454,10 @@ atsc3_mmt_context_mfu_depacketizer.o: atsc3_mmt_context_mfu_depacketizer.h \
 		atsc3_mmt_context_signalling_information_depacketizer.h \
 		atsc3_mmt_context_mfu_depacketizer.c
 	$(CC) $(CFLAGS) $(DEBUG)  -c atsc3_mmt_context_mfu_depacketizer.c
+	
+	
+atsc3_mmt_mfu_context_free_noop.o: atsc3_mmt_mfu_context_free_noop.c
+	$(CC) $(CFLAGS) $(DEBUG)  -c atsc3_mmt_mfu_context_free_noop.c
 
 atsc3_utils.o: atsc3_utils.h atsc3_utils.c  
 	$(CC) $(CFLAGS) $(DEBUG)  -c atsc3_utils.c
@@ -1388,7 +1392,8 @@ test/atsc3_route_dash_mpd_patch_test: test/atsc3_route_dash_mpd_patch_test.c \
 										atsc3_sls_alc_flow.o \
 										avltree.o \
 										strnstr.o \
-										atsc3_smime_utils.o
+										atsc3_smime_utils.o \
+										atsc3_mmt_mfu_context_free_noop.o
 
 	$(CC) $(ASAN) $(INCLUDE_PATHS) $(CFLAGS) $(DEBUG) test/atsc3_route_dash_mpd_patch_test.c  \
 							atsc3_utils.o \
@@ -1424,7 +1429,8 @@ test/atsc3_route_dash_mpd_patch_test: test/atsc3_route_dash_mpd_patch_test.c \
 							atsc3_sls_alc_flow.o \
 							avltree.o \
 							strnstr.o \
-							atsc3_smime_utils.o\
+							atsc3_smime_utils.o \
+							atsc3_mmt_mfu_context_free_noop.o \
 							$(LOCAL_LD_LIBS_OPENSSL) \
 							$(LOCAL_LD_LIBS) \
 							-o test/atsc3_route_dash_mpd_patch_test 
@@ -1465,7 +1471,8 @@ test/atsc3_smime_validation_test: test/atsc3_smime_validation_test.c \
 										atsc3_sls_alc_flow.o \
 										avltree.o \
 										strnstr.o \
-										atsc3_smime_utils.o
+										atsc3_smime_utils.o \
+										atsc3_mmt_mfu_context_free_noop.o
 
 	$(CC) $(ASAN) $(CFLAGS) $(DEBUG) test/atsc3_smime_validation_test.c  \
 							atsc3_utils.o \
@@ -1502,6 +1509,7 @@ test/atsc3_smime_validation_test: test/atsc3_smime_validation_test.c \
 							avltree.o \
 							strnstr.o \
 							atsc3_smime_utils.o \
+							atsc3_mmt_mfu_context_free_noop.o \
 							$(LOCAL_LD_LIBS_OPENSSL) \
 							$(LOCAL_LD_LIBS) \
 							-o test/atsc3_smime_validation_test
