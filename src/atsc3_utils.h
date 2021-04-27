@@ -214,7 +214,7 @@ void _block_Refcount(block_t* a);
 void block_Destroy(block_t** a); //hard destroy overriding GC
     
 //alloc and copy - note limited to 16k
-char* strlcopy(char*);
+char* strlcopy(const char*);
 char *_ltrim(char *str);
 char* _rtrim(char *str);
 char* __trim(char *str);
