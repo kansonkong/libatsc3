@@ -12,6 +12,7 @@ MY_CUR_PATH := $(LOCAL_PATH)
 # objdump -x libCodornicesRq.so
 
 
+# jjustman-2021-03-30 - TODO: use this as conditional compilation option for sample app
 include $(CLEAR_VARS)
 LOCAL_MODULE := libCodornicesRq
 LOCAL_SRC_FILES := $(LOCAL_PATH)/../../codornicesrq/CodornicesRq-2.2-Android-$(TARGET_ARCH_ABI)/lib/libCodornicesRq.so
@@ -130,6 +131,7 @@ LOCAL_CFLAGS += -D__DISABLE_LIBPCAP__ -D__DISABLE_ISOBMFF_LINKAGE__ -D__DISABLE_
                  -DSRT_ENABLE_ENCRYPTION \
                  -DSRT_VERSION=\"1.4.1\" \
                  -DUSE_OPENSSL \
+                 -DSRT_HAS_RAPTORQ=1 \
                  -Dsrt_shared_EXPORTS \
                  -D_GNU_SOURCE \
 

@@ -156,7 +156,7 @@ public class RfPhyStatistics {
         rfPhyStatisticsTrace.putAttribute("plp_lock_all", demod_lock == 1 ? "true" : "false");
         rfPhyStatisticsTrace.putAttribute("cpu_status", this.cpu_status == 1 ? "R" : "H");
 
-        rfPhyStatisticsTrace.putMetric("rssi1000", (long)(1000.0 * (Double.parseDouble(String.format("%d.%03d", (this.rssi) / 1000, ((-this.rssi) % 1000))))));
+        rfPhyStatisticsTrace.putMetric("rssi1000", this.rssi);
         rfPhyStatisticsTrace.putMetric("snr1000", this.snr1000);
 
         rfPhyStatisticsTrace.putAttribute("modcod_valid_0", this.modcod_valid_0 == 1 ? "true" : "false");
