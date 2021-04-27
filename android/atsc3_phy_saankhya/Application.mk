@@ -1,7 +1,8 @@
 #
 # Application.mk
 #
-APP_DEBUG := true
+# saankhy phy build configurations for asan/hwasan/debug/release
+
 APP_STRIP_MODE := "none"
 APP_CPPFLAGS += -std=c++11  -fexceptions -D_ANDROID
 

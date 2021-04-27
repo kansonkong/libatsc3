@@ -111,10 +111,10 @@ restart_parsing:
 		uint32_t to_discard_from_unparsed_block_length = buf - buf_start; //TODO: investigate why this is such a large gap
 
 		__SL_TLV_DEMOD_ERROR( "INVALID TLV: alp packet size: %d - (0x%08x), PLP: 0x%02x, at position: %d, to_discard_from_unparsed_block: %d, buf_start: %p, buf: %p, buf_end: %p, bailing",
+                              atsc3_sl_tlv_payload->alp_packet_size,
+                              atsc3_sl_tlv_payload->alp_packet_size,
                               atsc3_sl_tlv_payload->plp_number,
                               atsc3_sl_tlv_payload_unparsed_block->i_pos,
-		                      atsc3_sl_tlv_payload->alp_packet_size,
-		                      atsc3_sl_tlv_payload->alp_packet_size,
                               to_discard_from_unparsed_block_length,
                               buf_start,
                               buf,
@@ -152,7 +152,7 @@ restart_parsing:
     atsc3_sl_tlv_payload->tlv_size = *buf++;
 	if(atsc3_sl_tlv_payload->tlv_size != 24) {
 		atsc3_sl_tlv_payload_metrics->total_tlv_packets_with_invalid_TLV_header_size_value++;
-		__SL_TLV_DEMOD_ERROR("INVALID:  tlv_size packet size: %d", atsc3_sl_tlv_payload->tlv_size);
+		__SL_TLV_DEMOD_ERROR("INVALID: tlv_size packet size: %d, plp: %d", atsc3_sl_tlv_payload->tlv_size, atsc3_sl_tlv_payload->plp_number);
 	} else {
 		__SL_TLV_DEMOD_TRACE(" tlv_size packet size: %d", atsc3_sl_tlv_payload->tlv_size);
 	}
@@ -263,7 +263,7 @@ restart_parsing:
             if (!atsc3_alp_packet) {
                 //total_tlv_packets_with_failed_extracted_alp_count
                 atsc3_sl_tlv_payload_metrics->total_tlv_packets_with_failed_extracted_alp_count++;
-                __SL_TLV_DEMOD_ERROR("FAILED ALP EXTRACTION: at buf: %p, tlv_alp_len: %d", buf, atsc3_sl_tlv_payload->alp_packet_size);
+                __SL_TLV_DEMOD_ERROR("FAILED ALP EXTRACTION: plp: %d, at buf: %p, tlv_alp_len: %d", atsc3_sl_tlv_payload->plp_number, buf, atsc3_sl_tlv_payload->alp_packet_size);
             } else {
                 atsc3_sl_tlv_payload->atsc3_alp_packet = atsc3_alp_packet;
 

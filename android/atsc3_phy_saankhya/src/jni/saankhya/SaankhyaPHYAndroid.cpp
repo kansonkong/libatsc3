@@ -279,9 +279,10 @@ SL_ConfigResult_t SaankhyaPHYAndroid::configPlatformParams_autodetect(int fd, st
         res = configPlatformParams_aa_fx3();
         //or
         //configPlatformParams_bb_fx3()
+        //res = configPlatformParams_bb_fx3();
     }
 
-    _SAANKHYA_PHY_ANDROID_DEBUG("configPlatformParams_autodetect::retun res: %d", res);
+    _SAANKHYA_PHY_ANDROID_DEBUG("configPlatformParams_autodetect::return res: %d", res);
 
     return res;
 }
@@ -501,7 +502,8 @@ int SaankhyaPHYAndroid::open(int fd, string device_path)
             break;
 
         case SL_KAILASH_DONGLE:
-            if (getPlfConfig.tunerType == TUNER_SI)
+        case SL_KAILASH_DONGLE_2:
+            if (getPlfConfig.tunerType == TUNER_SI || getPlfConfig.tunerType == TUNER_SI_P)
             {
                 _SAANKHYA_PHY_ANDROID_DEBUG("using SL_KAILASH with SPECTRUM_NORMAL and ZIF");
                 afeInfo.spectrum = SL_SPECTRUM_NORMAL;
@@ -530,10 +532,39 @@ int SaankhyaPHYAndroid::open(int fd, string device_path)
             iqOffSetCorrection.qCoeff2 = (float)0.0436508327768608;
             break;
 
+
+        case SL_KAILASH_DONGLE_3:
+            if (getPlfConfig.tunerType == TUNER_SILABS)
+            {
+                afeInfo.spectrum = SL_SPECTRUM_INVERTED;
+                afeInfo.iftype = SL_IFTYPE_LIF;
+                afeInfo.ifreq = 4.4;
+            }
+            else
+            {
+                _SAANKHYA_PHY_ANDROID_DEBUG("Invalid Tuner Selection");
+            }
+            if (getPlfConfig.demodOutputIf == SL_DEMOD_OUTPUTIF_SDIO)
+            {
+                outPutInfo.oif = SL_OUTPUTIF_SDIO;
+            }
+            else
+            {
+                _SAANKHYA_PHY_ANDROID_DEBUG("Invalid OutPut Interface Selection");
+            }
+            afeInfo.iswap = SL_IPOL_SWAP_DISABLE;
+            afeInfo.qswap = SL_QPOL_SWAP_DISABLE;
+            iqOffSetCorrection.iCoeff1 = 1.0;
+            iqOffSetCorrection.qCoeff1 = 1.0;
+            iqOffSetCorrection.iCoeff2 = 0.0;
+            iqOffSetCorrection.qCoeff2 = 0.0;
+            break;
+
         default:
             _SAANKHYA_PHY_ANDROID_DEBUG("Invalid Board Type Selected ");
             break;
     }
+
     afeInfo.iqswap = SL_IQSWAP_DISABLE;
     afeInfo.agcRefValue = 125; //afcRefValue in mV
     outPutInfo.TsoClockInvEnable = SL_TSO_CLK_INV_ON;
@@ -1183,7 +1214,8 @@ int SaankhyaPHYAndroid::download_bootloader_firmware(int fd, string device_path)
         if(i2cres == SL_I2C_AWAITING_REENUMERATION) {
             _SAANKHYA_PHY_ANDROID_DEBUG("download_bootloader_firmware: INFO:SL_I2cPreInit SL_FX3S_I2C_AWAITING_REENUMERATION");
             //sleep for 3s?
-            //sleep(3);
+            //jjustman-2021-04-13 - force a 3s sleep?
+            sleep(3);
             return 0;
         } else {
             _SAANKHYA_PHY_ANDROID_DEBUG("Error:SL_I2cPreInit failed: %d", i2cres);
@@ -1274,40 +1306,43 @@ SL_ConfigResult_t SaankhyaPHYAndroid::configPlatformParams_aa_markone() {
 }
 
 
-//jjustman-2020-09-09 KAILASH dongle specific configuration
+//jjustman-2020-09-09 YOGA dongle specific configuration
 SL_ConfigResult_t SaankhyaPHYAndroid::configPlatformParams_bb_fx3() {
 
-    SL_ConfigResult_t res = SL_CONFIG_ERR_NOT_SUPPORTED;
-//
-//    sPlfConfig.chipType = SL_CHIP_3010;
-//    sPlfConfig.chipRev = SL_CHIP_REV_BB;
-//    sPlfConfig.boardType = SL_KAILASH_DONGLE_2;
-//    sPlfConfig.tunerType = TUNER_SI;
-//    sPlfConfig.hostInterfaceType = SL_HostInterfaceType_FX3;
-//
-//    sPlfConfig.demodControlIf = SL_DEMOD_CMD_CONTROL_IF_I2C;
-//    sPlfConfig.demodOutputIf = SL_DEMOD_OUTPUTIF_TS;
-//    sPlfConfig.demodI2cAddr = 0x30; /* SLDemod 7-bit Physical I2C Address */
-//
-//    sPlfConfig.demodResetGpioPin = 47;      /* FX3S GPIO 47 connected to Demod Reset Pin */
-//    sPlfConfig.cpldResetGpioPin = 43;       /* FX3S GPIO 43 connected to CPLD Reset Pin and used only for serial TS Interface  */
-//    sPlfConfig.tunerResetGpioPin = 23;    /* FX3S GPIO 23 connected to Tuner Reset Pin */
-//
-//    sPlfConfig.slsdkPath = "."; //jjustman-2020-09-09 use extern object linkages for fx3/hex firmware
-//
-//    /* Set Configuration Parameters */
-//    res = SL_ConfigSetPlatform(sPlfConfig);
-//
-//    _SAANKHYA_PHY_ANDROID_DEBUG("configPlatformParams_bb_fx3: with chipType: %d, chipRev: %d, boardType: %d, tunerType: %d, hostInterfaceType: %d, ",
-//                                sPlfConfig.chipType,
-//                                sPlfConfig.chipRev,
-//                                sPlfConfig.boardType,
-//                                sPlfConfig.tunerType,
-//                                sPlfConfig.hostInterfaceType);
-//   //reconfigure method callbacks for cust_markone
-//    SL_ConfigureGpio_slref();
-//    SL_ConfigureI2c_slref();
-//    SL_ConfigureTS_slref();
+    SL_ConfigResult_t res = SL_CONFIG_OK;
+
+    sPlfConfig.chipType = SL_CHIP_3000;
+    sPlfConfig.chipRev = SL_CHIP_REV_BB;
+    sPlfConfig.boardType = SL_KAILASH_DONGLE_3;
+    sPlfConfig.tunerType = TUNER_SILABS;
+    sPlfConfig.hostInterfaceType = SL_HostInterfaceType_FX3;
+
+    sPlfConfig.demodControlIf = SL_DEMOD_CMD_CONTROL_IF_I2C;
+    sPlfConfig.demodOutputIf = SL_DEMOD_OUTPUTIF_SDIO;
+    sPlfConfig.demodI2cAddr = 0x30; /* SLDemod 7-bit Physical I2C Address */
+
+    sPlfConfig.demodResetGpioPin = 47;      /* FX3S GPIO 47 connected to Demod Reset Pin - S1_SD1/UART_CTS*/
+    sPlfConfig.cpldResetGpioPin = 43;       /* FX3S GPIO 43 connected to CPLD Reset Pin and used only for serial TS Interface  */
+    sPlfConfig.tunerResetGpioPin = 23;    /* FX3S GPIO 23 connected to Tuner Reset Pin */
+    sPlfConfig.demodI2cAddr3GpioPin = 37; /* FX3S GPIO 37 connected to SL3000_I2CADDR3 */
+
+    sPlfConfig.slsdkPath = "."; //jjustman-2020-09-09 use extern object linkages for fx3/hex firmware
+
+    /* Set Configuration Parameters */
+    res = SL_ConfigSetPlatform(sPlfConfig);
+
+    _SAANKHYA_PHY_ANDROID_DEBUG("configPlatformParams_bb_fx3: with chipType: %d, chipRev: %d, boardType: %d, tunerType: %d, hostInterfaceType: %d, ",
+                                sPlfConfig.chipType,
+                                sPlfConfig.chipRev,
+                                sPlfConfig.boardType,
+                                sPlfConfig.tunerType,
+                                sPlfConfig.hostInterfaceType);
+
+
+    //reconfigure method callbacks for yoga dongle (bb)
+    SL_ConfigureGpio_slref();
+    SL_ConfigureI2c_slref();
+    SL_ConfigureTs_slref();
 
     return res;
 }
@@ -1399,8 +1434,8 @@ void SaankhyaPHYAndroid::printToConsolePlfConfiguration(SL_PlatFormConfigParams_
             _SAANKHYA_PHY_ANDROID_DEBUG("Board Type  : SL_EVB_4000");
             break;
 
-        case SL_KAILASH_DONGLE:
-            _SAANKHYA_PHY_ANDROID_DEBUG("Board Type  : SL_KAILASH_DONGLE");
+        case SL_KAILASH_DONGLE_3:
+            _SAANKHYA_PHY_ANDROID_DEBUG("Board Type  : SL_KAILASH_DONGLE_3 (Yoga)");
             break;
 
         case SL_BORQS_EVT:

@@ -1,6 +1,8 @@
-# atsc3_bridge_media_mmt
+#
 # Application.mk
 #
+# atsc3_bridge_media_mmt build configurations for asan/hwasan/debug/release
+
 APP_STRIP_MODE := "none"
 
 APP_STL := c++_shared
