@@ -271,6 +271,11 @@ void atsc3_mmt_mfu_context_free(atsc3_mmt_mfu_context_t** atsc3_mmt_mfu_context_
                 free(atsc3_mmt_mfu_context->mp_table_last);
                 atsc3_mmt_mfu_context->mp_table_last = NULL;
             }
+			
+			if(atsc3_mmt_mfu_context->mmt_atsc3_route_component_monitored) {
+				atsc3_mmt_mfu_context->mmt_atsc3_route_component_monitored->__is_pinned_to_context = false;
+				mmt_atsc3_route_component_free(&atsc3_mmt_mfu_context->mmt_atsc3_route_component_monitored);
+			}
 
             free(atsc3_mmt_mfu_context);
             atsc3_mmt_mfu_context = NULL;
@@ -284,8 +289,10 @@ mmtp_asset_t* atsc3_mmt_mfu_context_mfu_depacketizer_context_update_find_or_crea
     mmtp_asset_t* mmtp_asset = NULL;
 
     //jjustman-2020-12-24 - we need to clone this instance, as udp_packet is transient and udp_flow is an instance field in the struct, not a ptr
-    atsc3_mmt_mfu_context->udp_flow = atsc3_udp_flow_clone_from_udp_packet(udp_packet);
-
+	if(!atsc3_mmt_mfu_context->udp_flow) {
+		atsc3_mmt_mfu_context->udp_flow = atsc3_udp_flow_clone_from_udp_packet(udp_packet);
+	}
+	
     atsc3_mmt_mfu_context->transients.lls_slt_monitor = lls_slt_monitor;
     atsc3_mmt_mfu_context->matching_lls_sls_mmt_session = matching_lls_sls_mmt_session;
 

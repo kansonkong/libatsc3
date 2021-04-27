@@ -20,11 +20,14 @@ lls_sls_mmt_monitor_t* lls_sls_mmt_monitor_create() {
 	return lls_sls_mmt_monitor;
 }
 
+//jjustman-2021-04-16 - TODO - fix method name to be lls_sls_mmt_session_create NOT lls_slt_mmt_session_create
+
 lls_sls_mmt_session_t* lls_slt_mmt_session_create(atsc3_lls_slt_service_t* atsc3_lls_slt_service) {
 	lls_sls_mmt_session_t* lls_slt_mmt_session = lls_sls_mmt_session_new();
 	//hack
 	lls_slt_mmt_session->sls_relax_source_ip_check = 1;
 
+	//jjustman-2021-04-16 - TODO: move this to transients
 	lls_slt_mmt_session->atsc3_lls_slt_service = atsc3_lls_slt_service;
 	lls_slt_mmt_session->service_id = atsc3_lls_slt_service->service_id;
 
@@ -224,7 +227,9 @@ int comparator_lls_slt_mmt_session_t(const void *a, const void *b) {
 	return 0;
 }
 
-
+/*
+ SLS flows for MMT are instantiated in atsc3_lls_slt_parser: int lls_slt_table_perform_update(lls_table_t* lls_table, lls_slt_monitor_t* lls_slt_monitor)
+ */
 lls_sls_mmt_session_t* lls_slt_mmt_session_find_or_create(lls_slt_monitor_t* lls_slt_monitor, atsc3_lls_slt_service_t* atsc3_lls_slt_service) {
 	lls_sls_mmt_session_t* lls_slt_mmt_session = lls_slt_mmt_session_find(lls_slt_monitor, atsc3_lls_slt_service);
 	if(!lls_slt_mmt_session) {
@@ -299,17 +304,3 @@ void lls_slt_mmt_session_and_monitor_remove_all_atsc3_lls_slt_service_with_match
         }
     }
 }
-
-
-
-
-void lls_sls_mmt_session_free(lls_sls_mmt_session_t** lls_sls_mmt_session_ptr) {
-    lls_sls_mmt_session_t* lls_sls_mmt_session = *lls_sls_mmt_session_ptr;
-    if(lls_sls_mmt_session) {
-
-        free(lls_sls_mmt_session);
-    }
-    *lls_sls_mmt_session_ptr = NULL;
-}
-
-

@@ -75,7 +75,7 @@ bool atsc3_fdt_file_is_multipart_signed_from_payload(block_t* atsc3_fdt_file_con
 	bool fdt_file_content_type_matches_multipart_signed = false;
 	
 	//jjustman-2021-03-01 - TODO: restrict this to the initial mime header preamble
-	fdt_file_content_type_matches_multipart_signed = (NULL != strnstr(atsc3_fdt_file_contents->p_buffer, ATSC3_FDT_FILE_MULTIPART_SIGNED_CONTENT_TYPE, atsc3_fdt_file_contents->p_size));
+	fdt_file_content_type_matches_multipart_signed = (NULL != strnstr((const char*)atsc3_fdt_file_contents->p_buffer, ATSC3_FDT_FILE_MULTIPART_SIGNED_CONTENT_TYPE, atsc3_fdt_file_contents->p_size));
 	
 	if(fdt_file_content_type_matches_multipart_signed) {
 		return true;
