@@ -9,6 +9,9 @@
 #define ATSC3_MBMS_ENVELOPE_PARSER_H_
 
 #include "atsc3_utils.h"
+//jjustman-2021-04-27 - todo: fix me?
+#include "strnstr.h"
+
 #include "atsc3_mbms_envelope_xml.h"
 #include "atsc3_fdt.h"
 #include "atsc3_sls_metadata_fragment_types.h"

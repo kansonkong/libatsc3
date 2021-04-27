@@ -130,8 +130,11 @@ P3_FW_BUILD_TARGET:
 	$(shell mkdir -p "$(LOCAL_PATH)/prebuilt/firmware/fx3s/")
 
 	$(shell cp $(LOCAL_PATH)/../../saankhyalabs-slsdk/slplf/src/slref/fx3s/bin/P3_Firmware_v3.1_KAILASH_DONGLE.img $(LOCAL_PATH)/prebuilt/firmware/fx3s/p3_firmware_KAILASH_DONGLE.img)
+	$(shell cp $(LOCAL_PATH)/../../saankhyalabs-slsdk/slplf/src/slref/fx3s/bin/BB/26MHz/P3_CyFirmware_USB3.0\(SL_x0x0_BB_SDIO\).img $(LOCAL_PATH)/prebuilt/firmware/fx3s/bb_26mhz_p3_firmware_YOGA_DONGLE.img)
 
 	$(shell cd $(LOCAL_PATH)/prebuilt/firmware/fx3s/ && $(TARGET_LD) -r -b binary ./p3_firmware_KAILASH_DONGLE.img -o ./p3_firmware_KAILASH_DONGLE.o)
+	$(shell cd $(LOCAL_PATH)/prebuilt/firmware/fx3s/ && $(TARGET_LD) -r -b binary ./bb_26mhz_p3_firmware_YOGA_DONGLE.img -o ./bb_26mhz_p3_firmware_YOGA_DONGLE.o)
+
 include $(BUILD_SHARED_LIBRARY)
 
 # ---------------------------
@@ -293,6 +296,7 @@ LOCAL_LDLIBS += \
 	-ldl -lc++_shared -llog -landroid -lz \
 	-latsc3_core -latsc3_bridge \
 	$(LOCAL_PATH)/prebuilt/firmware/fx3s/p3_firmware_KAILASH_DONGLE.o \
+	$(LOCAL_PATH)/prebuilt/firmware/fx3s/bb_26mhz_p3_firmware_YOGA_DONGLE.o \
 	$(LOCAL_PATH)/prebuilt/firmware/atsc3/iccm_aa_fx3_hex.o \
 	$(LOCAL_PATH)/prebuilt/firmware/atsc3/iccm_aa_markone_hex.o \
 	$(LOCAL_PATH)/prebuilt/firmware/atsc3/iccm_bb_fx3_hex.o \

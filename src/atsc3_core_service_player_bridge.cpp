@@ -784,7 +784,34 @@ void atsc3_core_service_bridge_process_packet_phy(block_t* packet) {
     if(lls_sls_alc_monitor && matching_lls_slt_alc_session) {
         for (int i = 0; i < lls_slt_monitor->lls_slt_service_id_v.count && !has_matching_lls_slt_service_id; i++) {
             lls_slt_service_id_t *lls_slt_service_id_to_check = lls_slt_monitor->lls_slt_service_id_v.data[i];
-            if (lls_slt_service_id_to_check->service_id == matching_lls_slt_alc_session->atsc3_lls_slt_service->service_id) {
+            /*
+             * jjustman-2021-03-23 - add additional checks
+             *
+                Build fingerprint: 'qti/sdm660_64/sdm660_64:9/jjj/root02040230:userdebug/test-keys'
+                Revision: '0'
+                ABI: 'arm64'
+                pid: 5327, tid: 5681, name: SaankhyaPHYAndr  >>> com.nextgenbroadcast.mobile.middleware.sample <<<
+                signal 11 (SIGSEGV), code 1 (SEGV_MAPERR), fault addr 0x0
+                Cause: null pointer dereference
+                    x0  0000000000000000  x1  00000000ac10c801  x2  00000000efff4601  x3  000000000000138d
+                    x4  00000073ed6d9054  x5  00000073ed6d67f8  x6  746163696c707061  x7  736d626d2f6e6f69
+                    x8  00000073ed055b90  x9  0000000000000000  x10 000000000000138b  x11 0000000000000001
+                    x12 00000073eeaae851  x13 746163696c707061  x14 aaaaaaaaaaaaaaab  x15 0000000000000001
+                    x16 00000073eeaed6d0  x17 00000073ee9dd8b0  x18 0000000000000000  x19 00000073ed0574f0
+                    x20 00000073ed0574f0  x21 00000073ed0574f0  x22 0000007402a9be90  x23 00000073edee8c10
+                    x24 00000073ed057570  x25 00000073ecf5a000  x26 00000074915535e0  x27 000000000000000b
+                    x28 0000007fcbc4fc20  x29 00000073ed056e70
+                    sp  00000073ed055430  lr  00000073eea9c528  pc  00000073eea9c5e0
+
+                backtrace:
+                    #00 pc 00000000001155e0  /data/app/com.nextgenbroadcast.mobile.middleware.sample-OXzmqynlUoyraucDnZ_FZg==/lib/arm64/libatsc3_core.so (atsc3_core_service_bridge_process_packet_phy+4192)
+                    #01 pc 0000000000114570  /data/app/com.nextgenbroadcast.mobile.middleware.sample-OXzmqynlUoyraucDnZ_FZg==/lib/arm64/libatsc3_core.so (atsc3_core_service_bridge_process_packet_from_plp_and_block+524)
+             */
+            if(!lls_slt_service_id_to_check) {
+                __ATSC3_CORE_SERVICE_PLAYER_BRIDGE_ERROR("lls_slt_service_id_to_check is NULL! index: %d, lls_slt_monitor->lls_slt_service_id_v.count: %d", i, lls_slt_monitor->lls_slt_service_id_v.count)
+            } else if(!matching_lls_slt_alc_session->atsc3_lls_slt_service) {
+                __ATSC3_CORE_SERVICE_PLAYER_BRIDGE_ERROR("matching_lls_slt_alc_session->atsc3_lls_slt_service is NULL! matching_lls_slt_alc_session: %p", matching_lls_slt_alc_session);
+            } else if (lls_slt_service_id_to_check->service_id == matching_lls_slt_alc_session->atsc3_lls_slt_service->service_id) {
                 has_matching_lls_slt_service_id = true;
             }
         }

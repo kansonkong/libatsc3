@@ -35,7 +35,7 @@ public class Atsc3UsbDevice {
 
     public void destroy() {
         AllAtsc3UsbDevices.remove(this.usbDevice);
-//        Log.d("Atsc3UsbDevice", String.format("removing this: %s (usbDevice: %s), entries remaining: %d", this, this.usbDevice, AllAtsc3UsbDevices.size()));
+        Log.d("Atsc3UsbDevice", String.format("removing this: %s (usbDevice: %s), entries remaining: %d", this, this.usbDevice, AllAtsc3UsbDevices.size()));
 
         this.disconnect();
         this.usbDevice = null;
@@ -72,8 +72,10 @@ public class Atsc3UsbDevice {
     }
 
     public void disconnect() {
-        if (conn != null)
+        if (conn != null) {
+            Log.d("Atsc3UsbDevice", String.format("disconnect with conn: %s", conn));
             conn.close();
+        }
         conn = null;
         usbDevice = null;
     }

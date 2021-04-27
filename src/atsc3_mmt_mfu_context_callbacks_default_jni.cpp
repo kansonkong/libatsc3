@@ -128,9 +128,10 @@ void atsc3_mmt_mpu_mfu_on_sample_complete_ndk(atsc3_mmt_mfu_context_t* atsc3_mmt
     }
 
     if(atsc3_mmt_mfu_context->mmtp_packet_id_packets_container->atsc3_video_decoder_configuration_record &&
-       atsc3_mmt_mfu_context->mmtp_packet_id_packets_container->atsc3_video_decoder_configuration_record->hevc_decoder_configuration_record &&
-       atsc3_mmt_mfu_context->mmtp_packet_id_packets_container->atsc3_video_decoder_configuration_record->hevc_decoder_configuration_record->hevc_nals_combined) {
+        atsc3_mmt_mfu_context->mmtp_packet_id_packets_container->atsc3_video_decoder_configuration_record->hevc_decoder_configuration_record &&
+        atsc3_mmt_mfu_context->mmtp_packet_id_packets_container->atsc3_video_decoder_configuration_record->hevc_decoder_configuration_record->hevc_nals_combined) {
 
+        //get our raw byte sequence payload, android medicacodec decoder for HEVC needs this...
         block_t* mmt_mfu_sample_rbsp = atsc3_hevc_extract_mp4toannexb_filter_ffmpegImpl(mmt_mfu_sample, atsc3_mmt_mfu_context->mmtp_packet_id_packets_container->atsc3_video_decoder_configuration_record->hevc_decoder_configuration_record->hevc_nals_combined);
 
         block_Rewind(mmt_mfu_sample_rbsp);
@@ -138,10 +139,10 @@ void atsc3_mmt_mpu_mfu_on_sample_complete_ndk(atsc3_mmt_mfu_context_t* atsc3_mmt
         uint32_t block_len = block_Len(mmt_mfu_sample_rbsp);
 
         if ((global_mfu_proccessed_count++ % 600) == 0) {
-            Atsc3NdkMediaMMTBridge_ptr->LogMsgF("atsc3_mmt_mpu_mfu_on_sample_complete_ndk: total mfu count: %d, packet_id: %d, mpu: %d, sample: %d, orig len: %d, len: %d, mpu_timestamp_descriptor: %lu",
+            Atsc3NdkMediaMMTBridge_ptr->LogMsgF("atsc3_mmt_mpu_mfu_on_sample_complete_ndk: hevc_nals: global mfu count: %d, packet_id: %d, mpu: %d, sample: %d, orig len: %d, rbsp len: %d, mpu_timestamp_descriptor: %lu",
                                                 global_mfu_proccessed_count,
-                                                packet_id, mpu_sequence_number, sample_number, block_Len(mmt_mfu_sample),
-                                                block_len,
+                                                packet_id, mpu_sequence_number, sample_number,
+                                                block_Len(mmt_mfu_sample), block_len,
                                                 mpu_timestamp_descriptor);
 
         }
@@ -150,12 +151,19 @@ void atsc3_mmt_mpu_mfu_on_sample_complete_ndk(atsc3_mmt_mfu_context_t* atsc3_mmt
         block_Destroy(&mmt_mfu_sample_rbsp);
 
     } else {
+        //audio and stpp don't need NAL start codes
         block_Rewind(mmt_mfu_sample);
         uint8_t *block_ptr = block_Get(mmt_mfu_sample);
         uint32_t block_len = block_Len(mmt_mfu_sample);
 
+        if ((global_mfu_proccessed_count++ % 600) == 0) {
+            Atsc3NdkMediaMMTBridge_ptr->LogMsgF("atsc3_mmt_mpu_mfu_on_sample_complete_ndk: non-nal mfu: global mfu count: %d, packet_id: %d, mpu: %d, sample: %d, len: %d, mpu_timestamp_descriptor: %lu",
+                                            global_mfu_proccessed_count,
+                                            packet_id, mpu_sequence_number, sample_number,
+                                            block_len,
+                                            mpu_timestamp_descriptor);
+        }
 
-        //audio and stpp don't need NAL start codes
         Atsc3NdkMediaMMTBridge_ptr->atsc3_onMfuPacket(packet_id, mpu_sequence_number, sample_number, block_ptr, block_len, mpu_timestamp_descriptor, mfu_fragment_count_rebuilt);
     }
 }
@@ -195,10 +203,7 @@ void atsc3_mmt_mpu_mfu_on_sample_corrupt_ndk(atsc3_mmt_mfu_context_t* atsc3_mmt_
                                                     packet_id,
                                                     mpu_sequence_number,
                                                     sample_number,
-                                                    mmt_mfu_sample,
-                                                    mmt_mfu_sample->i_pos,
-
-                                                    mmt_mfu_sample->p_size,
+                                                    mmt_mfu_sample, mmt_mfu_sample->i_pos, mmt_mfu_sample->p_size,
                                                     block_Len(mmt_mfu_sample),
                                                     block_ptr,
                                                     mmt_mfu_sample_rbsp->p_buffer,
@@ -265,9 +270,7 @@ void atsc3_mmt_mpu_mfu_on_sample_corrupt_mmthsample_header_ndk(atsc3_mmt_mfu_con
                                                     mpu_sequence_number,
                                                     sample_number,
                                                     mmt_mfu_sample,
-                                                    block_Len(mmt_mfu_sample),
-                                                    mmt_mfu_sample->i_pos,
-                                                    mmt_mfu_sample->p_size,
+                                                    block_Len(mmt_mfu_sample), mmt_mfu_sample->i_pos,  mmt_mfu_sample->p_size,
                                                     block_ptr,
                                                     block_len,
                                                     mmt_mfu_sample_rbsp->i_pos,
