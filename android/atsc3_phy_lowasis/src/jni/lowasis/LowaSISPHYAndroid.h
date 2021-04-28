@@ -47,8 +47,8 @@ public:
     virtual int  stop()       override;
     virtual int  deinit()     override;
 
-    virtual int  download_bootloader_firmware(int fd, string device_path) override;
-    virtual int  open(int fd, string device_path)   override;
+    virtual int  download_bootloader_firmware(int fd, int device_type, string device_path) override;
+    virtual int  open(int fd, int device_type, string device_path)   override;
     virtual int  tune(int freqKhz, int single_plp) override;
     virtual int  listen_plps(vector<uint8_t> plps) override;
 

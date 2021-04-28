@@ -43,6 +43,10 @@ using namespace std;
 #define SL_HOSTINTERFACE_TYPE_MARKONE_FD   -1
 #define SL_HOSTINTERFACE_TYPE_MARKONE_PATH "SDIO"
 
+#define SL_DEVICE_TYPE_MARKONE        0
+#define SL_DEVICE_TYPE_FX3_KAILASH    1
+#define SL_DEVICE_TYPE_FX3_YOGA       3
+
 #include "CircularBuffer.h"
 
 #include <sl_utils.h>
@@ -75,8 +79,8 @@ public:
     virtual int  stop()       override;
     virtual int  deinit()     override;
 
-    virtual int  download_bootloader_firmware(int fd, string devicePath) override;
-    virtual int  open(int fd, string devicePath)   override;
+    virtual int  download_bootloader_firmware(int fd, int device_type, string devicePath) override;
+    virtual int  open(int fd, int device_type, string devicePath)   override;
     virtual int  tune(int freqKhz, int single_plp) override;
     virtual int  listen_plps(vector<uint8_t> plps) override;
 
@@ -210,7 +214,7 @@ private:
 
     //jjustman-2021-03-02 - expanded for runtime implementation support between FX3(aa/bb) and MarkONE,
     // current configuration logic is invoked from int SaankhyaPHYAndroid::open(int fd, string device_path)
-    SL_ConfigResult_t configPlatformParams_autodetect(int fd, string device_path);
+    SL_ConfigResult_t configPlatformParams_autodetect(int device_type, string device_path);
 
     SL_ConfigResult_t configPlatformParams_aa_fx3();
     SL_ConfigResult_t configPlatformParams_aa_markone();

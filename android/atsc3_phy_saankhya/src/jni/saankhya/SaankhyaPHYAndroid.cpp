@@ -266,27 +266,27 @@ int SaankhyaPHYAndroid::deinit()
     return 0;
 }
 
-SL_ConfigResult_t SaankhyaPHYAndroid::configPlatformParams_autodetect(int fd, string device_path) {
+SL_ConfigResult_t SaankhyaPHYAndroid::configPlatformParams_autodetect(int device_type, string device_path) {
 
     SL_ConfigResult_t res = SL_CONFIG_OK;
-    _SAANKHYA_PHY_ANDROID_DEBUG("configPlatformParams_autodetect:: open with fd: %d, device_path: %s", fd, device_path.c_str());
+    _SAANKHYA_PHY_ANDROID_DEBUG("configPlatformParams_autodetect:: open with core type: %d, device_path: %s", device_type, device_path.c_str());
 
-    if(fd == SL_HOSTINTERFACE_TYPE_MARKONE_FD && device_path.c_str() && !strcasecmp(SL_HOSTINTERFACE_TYPE_MARKONE_PATH, device_path.c_str())) {
+    if(device_type == SL_DEVICE_TYPE_MARKONE && device_path.c_str() && !strcasecmp(SL_HOSTINTERFACE_TYPE_MARKONE_PATH, device_path.c_str())) {
         //configure as aa_MarkONE
         res = configPlatformParams_aa_markone();
-    } else {
-        //configure as (aa/bb) FX3
+    } else if (device_type == SL_DEVICE_TYPE_FX3_KAILASH) {
+        //configure as aa FX3
         res = configPlatformParams_aa_fx3();
-        //or
-        //configPlatformParams_bb_fx3()
-        //res = configPlatformParams_bb_fx3();
+    } else if (device_type == SL_DEVICE_TYPE_FX3_YOGA) {
+        //configure as bb FX3
+        res = configPlatformParams_bb_fx3();
     }
 
     _SAANKHYA_PHY_ANDROID_DEBUG("configPlatformParams_autodetect::return res: %d", res);
 
     return res;
 }
-int SaankhyaPHYAndroid::open(int fd, string device_path)
+int SaankhyaPHYAndroid::open(int fd, int device_type, string device_path)
 {
     _SAANKHYA_PHY_ANDROID_DEBUG("open: with fd: %d, device_path: %s", fd, device_path.c_str());
 
@@ -298,7 +298,7 @@ int SaankhyaPHYAndroid::open(int fd, string device_path)
     SL_UtilsResult_t utilsres;
 
     SL_ConfigResult_t sl_configResult = SL_CONFIG_OK;
-    sl_configResult = configPlatformParams_autodetect(fd, device_path);
+    sl_configResult = configPlatformParams_autodetect(device_type, device_path);
 
     if(sl_configResult != SL_CONFIG_OK) {
         _SAANKHYA_PHY_ANDROID_DEBUG("open: configPlatformParams_autodetect failed, with fd: %d, device_path: %s, configResult failed, res: %d", fd, device_path.c_str(), sl_configResult);
@@ -1192,11 +1192,11 @@ UNLOCK:
     SL_PlpConfigParams_mutex_update_plps.unlock();
 }
 
-int SaankhyaPHYAndroid::download_bootloader_firmware(int fd, string device_path) {
-    _SAANKHYA_PHY_ANDROID_DEBUG("download_bootloader_firmware, path: %s, fd: %d", device_path.c_str(), fd);
+int SaankhyaPHYAndroid::download_bootloader_firmware(int fd, int device_type, string device_path) {
+    _SAANKHYA_PHY_ANDROID_DEBUG("download_bootloader_firmware, path: %s, device_type: %d, fd: %d", device_path.c_str(), device_type, fd);
 
     SL_ConfigResult_t sl_configResult = SL_CONFIG_OK;
-    sl_configResult = configPlatformParams_autodetect(fd, device_path);
+    sl_configResult = configPlatformParams_autodetect(device_type, device_path);
 
     if(sl_configResult != SL_CONFIG_OK) {
         _SAANKHYA_PHY_ANDROID_DEBUG("download_bootloader_firmware: configPlatformParams_autodetect failed - fd: %d, device_path: %s, configResult failed, res: %d", fd, device_path.c_str(), sl_configResult);
@@ -2358,7 +2358,7 @@ Java_org_ngbp_libatsc3_middleware_android_phy_SaankhyaPHYAndroid_deinit(JNIEnv *
 }
 
 extern "C" JNIEXPORT jint JNICALL
-Java_org_ngbp_libatsc3_middleware_android_phy_SaankhyaPHYAndroid_download_1bootloader_1firmware(JNIEnv *env, jobject thiz, jint fd, jstring device_path_jstring) {
+Java_org_ngbp_libatsc3_middleware_android_phy_SaankhyaPHYAndroid_download_1bootloader_1firmware(JNIEnv *env, jobject thiz, jint fd, jint device_type, jstring device_path_jstring) {
     lock_guard<mutex> saankhy_phy_android_cctor_mutex_local(SaankhyaPHYAndroid::CS_global_mutex);
 
     _SAANKHYA_PHY_ANDROID_DEBUG("Java_org_ngbp_libatsc3_middleware_android_phy_SaankhyaPHYAndroid_download_1bootloader_1firmware: fd: %d", fd);
@@ -2371,7 +2371,7 @@ Java_org_ngbp_libatsc3_middleware_android_phy_SaankhyaPHYAndroid_download_1bootl
         const char* device_path_weak = env->GetStringUTFChars(device_path_jstring, 0);
         string device_path(device_path_weak);
 
-        res = saankhyaPHYAndroid->download_bootloader_firmware(fd, device_path); //calls pre_init
+        res = saankhyaPHYAndroid->download_bootloader_firmware(fd, device_type, device_path); //calls pre_init
         env->ReleaseStringUTFChars( device_path_jstring, device_path_weak );
 
         //jjustman-2020-08-23 - hack, clear out our in-flight reference since we should re-enumerate
@@ -2383,7 +2383,7 @@ Java_org_ngbp_libatsc3_middleware_android_phy_SaankhyaPHYAndroid_download_1bootl
 }
 
 extern "C" JNIEXPORT jint JNICALL
-Java_org_ngbp_libatsc3_middleware_android_phy_SaankhyaPHYAndroid_open(JNIEnv *env, jobject thiz, jint fd, jstring device_path_jstring) {
+Java_org_ngbp_libatsc3_middleware_android_phy_SaankhyaPHYAndroid_open(JNIEnv *env, jobject thiz, jint fd, jint device_type, jstring device_path_jstring) {
     lock_guard<mutex> saankhy_phy_android_cctor_mutex_local(SaankhyaPHYAndroid::CS_global_mutex);
 
     _SAANKHYA_PHY_ANDROID_DEBUG("Java_org_ngbp_libatsc3_middleware_android_phy_SaankhyaPHYAndroid_open: fd: %d", fd);
@@ -2396,7 +2396,7 @@ Java_org_ngbp_libatsc3_middleware_android_phy_SaankhyaPHYAndroid_open(JNIEnv *en
         const char* device_path_weak = env->GetStringUTFChars(device_path_jstring, 0);
         string device_path(device_path_weak);
 
-        res = saankhyaPHYAndroid->open(fd, device_path);
+        res = saankhyaPHYAndroid->open(fd, device_type, device_path);
         env->ReleaseStringUTFChars( device_path_jstring, device_path_weak );
     }
     _SAANKHYA_PHY_ANDROID_DEBUG("Java_org_ngbp_libatsc3_middleware_android_phy_SaankhyaPHYAndroid_open: fd: %d, return: %d", fd, res);
