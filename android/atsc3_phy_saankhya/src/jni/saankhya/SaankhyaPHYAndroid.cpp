@@ -239,9 +239,12 @@ int SaankhyaPHYAndroid::stop()
     //jjustman-2020-10-30 - TODO: SL_TunerInit and SL_TunerUnInit is just a refcount, not an instance handle
     sl_tuner_result = SL_TunerUnInit(tUnit);
     tUnit = __MIN(0, tUnit - 1);
+    _SAANKHYA_PHY_ANDROID_DEBUG("SaankhyaPHYAndroid::stop: after SL_TunerUnInit, tUnit now: %d, sl_tuner_result: %d", tUnit, sl_tuner_result);
+
+#else
+    _SAANKHYA_PHY_ANDROID_DEBUG("SaankhyaPHYAndroid::stop: not calling SL_TunerUnInit, tUnit now: %d, sl_tuner_result: %d", tUnit, sl_tuner_result);
 #endif
 
-    _SAANKHYA_PHY_ANDROID_DEBUG("SaankhyaPHYAndroid::stop: after SL_TunerUnInit, tUnit now: %d, sl_tuner_result: %d", tUnit, sl_tuner_result);
 
     if(atsc3_ndk_application_bridge_get_instance()) {
         atsc3_ndk_application_bridge_get_instance()->atsc3_phy_notify_plp_selection_change_clear_callback();
@@ -288,7 +291,7 @@ SL_ConfigResult_t SaankhyaPHYAndroid::configPlatformParams_autodetect(int device
 }
 int SaankhyaPHYAndroid::open(int fd, int device_type, string device_path)
 {
-    _SAANKHYA_PHY_ANDROID_DEBUG("open: with fd: %d, device_path: %s", fd, device_path.c_str());
+    _SAANKHYA_PHY_ANDROID_DEBUG("open: with fd: %d, device_type: %d, device_path: %s", fd, device_type, device_path.c_str());
 
     SL_I2cResult_t i2cres;
 
@@ -1213,9 +1216,6 @@ int SaankhyaPHYAndroid::download_bootloader_firmware(int fd, int device_type, st
     {
         if(i2cres == SL_I2C_AWAITING_REENUMERATION) {
             _SAANKHYA_PHY_ANDROID_DEBUG("download_bootloader_firmware: INFO:SL_I2cPreInit SL_FX3S_I2C_AWAITING_REENUMERATION");
-            //sleep for 3s?
-            //jjustman-2021-04-13 - force a 3s sleep?
-            sleep(3);
             return 0;
         } else {
             _SAANKHYA_PHY_ANDROID_DEBUG("Error:SL_I2cPreInit failed: %d", i2cres);
@@ -1432,6 +1432,10 @@ void SaankhyaPHYAndroid::printToConsolePlfConfiguration(SL_PlatFormConfigParams_
 
         case SL_EVB_4000:
             _SAANKHYA_PHY_ANDROID_DEBUG("Board Type  : SL_EVB_4000");
+            break;
+
+        case SL_KAILASH_DONGLE:
+            _SAANKHYA_PHY_ANDROID_DEBUG("Board Type  : SL_KAILASH_DONGLE");
             break;
 
         case SL_KAILASH_DONGLE_3:
