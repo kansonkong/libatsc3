@@ -5,10 +5,11 @@
 
 #include "atsc3_sl_tlv_demod_type.h"
 
-int _SL_TLV_DEMOD_DEBUG_ENABLED = 1;
+int _SL_TLV_DEMOD_DEBUG_ENABLED = 0;
 int _SL_TLV_DEMOD_TRACE_ENABLED = 0;
 
-int __ATSC3_SL_TLV_USE_INLINE_ALP_PARSER_CALL__ = 1;
+//jjustman-2021-05-04 - tested working int __ATSC3_SL_TLV_USE_INLINE_ALP_PARSER_CALL__ = 1;
+int __ATSC3_SL_TLV_USE_INLINE_ALP_PARSER_CALL__ = 0;
 
 //impl for default metrics collection
 atsc3_sl_tlv_payload_metrics_t __GLOBAL_DEFAULT_SL_TLV_PAYLOAD_METRICS;
@@ -107,7 +108,7 @@ restart_parsing:
     }
 
     //next 32
-    __SL_TLV_DEMOD_DEBUG("atsc3_sl_tlv_payload_parse_from_block_t: next 32 bytes, starting: %p:"
+    __SL_TLV_DEMOD_TRACE("atsc3_sl_tlv_payload_parse_from_block_t: next 32 bytes, starting: %p:"
                          "\n0x%02x 0x%02x 0x%02x 0x%02x  0x%02x 0x%02x 0x%02x 0x%02x"
                          "\n0x%02x 0x%02x 0x%02x 0x%02x  0x%02x 0x%02x 0x%02x 0x%02x"
                          "\n0x%02x 0x%02x 0x%02x 0x%02x  0x%02x 0x%02x 0x%02x 0x%02x"
@@ -181,7 +182,7 @@ restart_parsing:
     atsc3_sl_tlv_payload->plp_number = *buf++;
 	if(atsc3_sl_tlv_payload->plp_number > 63 && atsc3_sl_tlv_payload->plp_number != 0xFF) {
 	    atsc3_sl_tlv_payload_metrics->total_tlv_packets_with_invalid_PLP_value_count++;
-	    __SL_TLV_DEMOD_ERROR("INVALID TLV: plp number (expected < 63): %d (0x%2x)", atsc3_sl_tlv_payload->plp_number, atsc3_sl_tlv_payload->plp_number);
+        __SL_TLV_DEMOD_WARN("INVALID TLV: plp number (expected < 63): %d (0x%2x)", atsc3_sl_tlv_payload->plp_number, atsc3_sl_tlv_payload->plp_number);
 	} else {
 		__SL_TLV_DEMOD_TRACE(" plp number: %d", atsc3_sl_tlv_payload->plp_number);
 	}
@@ -190,7 +191,9 @@ restart_parsing:
 	if(atsc3_sl_tlv_payload->ts_size != 188) {
 		atsc3_sl_tlv_payload_metrics->total_tlv_packets_with_invalid_TS_transfer_size_count++;
         //jjustman-2020-04-16 - reduce noisy TLV packets due to possible re-sync or alp buffer continutations
-        __SL_TLV_DEMOD_DEBUG("INVALID: TS transfer size (ts_size) packet size (expected 188) : %d", atsc3_sl_tlv_payload->ts_size);
+        if(atsc3_sl_tlv_payload_metrics->total_tlv_packets_with_invalid_TS_transfer_size_count < 100 || (atsc3_sl_tlv_payload_metrics->total_tlv_packets_with_invalid_TS_transfer_size_count % 1000 == 0)) {
+            __SL_TLV_DEMOD_WARN("INVALID: TS transfer size (ts_size) packet size (expected 188) : %d, count: %d", atsc3_sl_tlv_payload->ts_size, atsc3_sl_tlv_payload_metrics->total_tlv_packets_with_invalid_TS_transfer_size_count);
+        }
 
         //__SL_TLV_DEMOD_ERROR("INVALID: TS transfer size (ts_size) packet size (expected 188) : %d", atsc3_sl_tlv_payload->ts_size);
 	} else {
@@ -200,7 +203,7 @@ restart_parsing:
     atsc3_sl_tlv_payload->tlv_size = *buf++;
 	if(atsc3_sl_tlv_payload->tlv_size != 24) {
 		atsc3_sl_tlv_payload_metrics->total_tlv_packets_with_invalid_TLV_header_size_value++;
-		__SL_TLV_DEMOD_ERROR("INVALID: tlv_size packet size: %d, plp: %d", atsc3_sl_tlv_payload->tlv_size, atsc3_sl_tlv_payload->plp_number);
+        __SL_TLV_DEMOD_WARN("INVALID: tlv_size packet size: %d, plp: %d", atsc3_sl_tlv_payload->tlv_size, atsc3_sl_tlv_payload->plp_number);
 	} else {
 		__SL_TLV_DEMOD_TRACE(" tlv_size packet size: %d", atsc3_sl_tlv_payload->tlv_size);
 	}
@@ -300,14 +303,14 @@ restart_parsing:
             //TODO - make sure this "looks" like an ALP packet header
             //total_tlv_packets_without_ALP_starting_at_TS_transfer_size_header_length_count
 
-            __SL_TLV_DEMOD_TRACE("__ATSC3_SL_TLV_USE_INLINE_ALP_PARSER_CALL__ - atsc3_sl_tlv_payload_unparsed_block: %p, atsc3_sl_tlv_payload_unparsed_block->i_pos: %d, atsc3_sl_tlv_payload_unparsed_block->p_size: %d",
-                                 atsc3_sl_tlv_payload_unparsed_block, atsc3_sl_tlv_payload_unparsed_block->i_pos, atsc3_sl_tlv_payload_unparsed_block->p_size);
+            __SL_TLV_DEMOD_TRACE("__ATSC3_SL_TLV_USE_INLINE_ALP_PARSER_CALL__: %d, atsc3_sl_tlv_payload_unparsed_block: %p, atsc3_sl_tlv_payload_unparsed_block->i_pos: %d, atsc3_sl_tlv_payload_unparsed_block->p_size: %d",
+                                 __ATSC3_SL_TLV_USE_INLINE_ALP_PARSER_CALL__, atsc3_sl_tlv_payload_unparsed_block, atsc3_sl_tlv_payload_unparsed_block->i_pos, atsc3_sl_tlv_payload_unparsed_block->p_size);
 
 
             uint32_t to_process_inner_alp_payload_start_block_p_offset = (buf - atsc3_sl_tlv_payload_unparsed_block->p_buffer);
 
-            __SL_TLV_DEMOD_TRACE("__ATSC3_SL_TLV_USE_INLINE_ALP_PARSER_CALL__ - buf: %p, buf_start: %p, to_process_inner_alp_payload_start_block_p: %d",
-                                buf, buf_start, to_process_inner_alp_payload_start_block_p_offset);
+            __SL_TLV_DEMOD_TRACE("__ATSC3_SL_TLV_USE_INLINE_ALP_PARSER_CALL__: %d, buf: %p, buf_start: %p, to_process_inner_alp_payload_start_block_p: %d",
+                                 __ATSC3_SL_TLV_USE_INLINE_ALP_PARSER_CALL__, buf, buf_start, to_process_inner_alp_payload_start_block_p_offset);
 
             //absolute seek to resync
             block_Seek(atsc3_sl_tlv_payload_unparsed_block, to_process_inner_alp_payload_start_block_p_offset);
@@ -342,6 +345,10 @@ restart_parsing:
 
 
                 atsc3_sl_tlv_payload_metrics->total_tlv_header_alp_size_bytes_read += atsc3_sl_tlv_payload->alp_packet_size;
+
+                atsc3_sl_tlv_payload_metrics->total_tlv_header_alp_trailing_padding_size_bytes += atsc3_sl_tlv_payload->alp_trailing_padding_size;
+                block_Seek_Relative(atsc3_sl_tlv_payload_unparsed_block, atsc3_sl_tlv_payload->alp_trailing_padding_size);
+
                 atsc3_sl_tlv_payload->alp_payload_complete = true;
 
                 //validate our TLV header ALP_packet_size matches what the ALP packet length in header is
@@ -361,7 +368,7 @@ restart_parsing:
                     atsc3_sl_tlv_payload_metrics->total_alp_packets_actual_size_bytes += atsc3_alp_packet->alp_packet_header.alp_packet_header_mode.length + 2;
 
                     atsc3_sl_tlv_payload_metrics->total_tlv_header_alp_size_bytes_read += atsc3_sl_tlv_payload->alp_packet_size;
-                    atsc3_sl_tlv_payload->alp_payload_complete = true;
+                    //atsc3_sl_tlv_payload->alp_payload_complete = true;
 
                     //ip packet
                     if (atsc3_alp_packet->alp_packet_header.packet_type == 0x0) {
@@ -403,11 +410,11 @@ restart_parsing:
 
             buf += atsc3_sl_tlv_payload->alp_packet_size;
 
-
             if((buf_end - buf) < atsc3_sl_tlv_payload->alp_trailing_padding_size) {
                 //TODO: FIX ME for holdver trailing padding case so we don't lose the next TLV packet due to a missing magic
                 //don't walk over end of block_t,
-                __SL_TLV_DEMOD_WARN("atsc3_sl_tlv_payload->alp_trailing_padding_size: %d, not enough space remaining in block_t, truncating to len: %d",
+                __SL_TLV_DEMOD_WARN("__ATSC3_SL_TLV_USE_INLINE_ALP_PARSER_CALL__: %d, atsc3_sl_tlv_payload->alp_trailing_padding_size: %d, not enough space remaining in block_t, truncating to len: %d",
+                                    __ATSC3_SL_TLV_USE_INLINE_ALP_PARSER_CALL__,
                                     atsc3_sl_tlv_payload->alp_trailing_padding_size,
                                     (int)(buf_end - buf));
                 buf = buf_end;
@@ -419,7 +426,8 @@ restart_parsing:
 
                 if(buf_end - buf < 4) {
                     //not enough space to do a peek for the next magic
-                    __SL_TLV_DEMOD_TRACE("after alp_trailing_padding_size, not enough space to peek for magic: buf_end: %p, buf: %p, len: %d",
+                    __SL_TLV_DEMOD_TRACE("__ATSC3_SL_TLV_USE_INLINE_ALP_PARSER_CALL__: %d, after alp_trailing_padding_size, not enough space to peek for magic: buf_end: %p, buf: %p, len: %d",
+                                         __ATSC3_SL_TLV_USE_INLINE_ALP_PARSER_CALL__,
                                          buf_end,
                                          buf,
                                          (int)(buf_end - buf));
@@ -427,8 +435,9 @@ restart_parsing:
                     uint32_t peek_magic_number = *(uint32_t*)(buf);
                     //lldb: memory read --size 1 --format x --count 4 buf
                     if(peek_magic_number != 0x24681357) {
-                           __SL_TLV_DEMOD_ERROR("after alp_trailing_padding_size: buf: %p, position: %d, magic number is not 0x24681357, parsed as: 0x%08x",
-                                   buf,
+                           __SL_TLV_DEMOD_TRACE("__ATSC3_SL_TLV_USE_INLINE_ALP_PARSER_CALL__: %d, after alp_trailing_padding_size: buf: %p, position: %d, magic number is not 0x24681357, parsed as: 0x%08x",
+                                                __ATSC3_SL_TLV_USE_INLINE_ALP_PARSER_CALL__,
+                                                buf,
                                   (int)(buf - buf_start),
                                                 peek_magic_number);
                         atsc3_sl_tlv_payload_metrics->total_tlv_packets_without_magic_number_after_alp_size_data_bytes_consumed_count++;
@@ -442,9 +451,14 @@ restart_parsing:
                 }
             }
             atsc3_sl_tlv_payload->sl_tlv_total_parsed_payload_size = buf - buf_start;
-        }
 
-        atsc3_sl_tlv_payload_unparsed_block->i_pos += atsc3_sl_tlv_payload->sl_tlv_total_parsed_payload_size;
+            uint32_t atsc3_sl_tlv_payload_unparsed_block_before_alp_extract_i_pos = atsc3_sl_tlv_payload_unparsed_block->i_pos;
+            atsc3_sl_tlv_payload_unparsed_block->i_pos += atsc3_sl_tlv_payload->sl_tlv_total_parsed_payload_size;
+            __SL_TLV_DEMOD_TRACE("__ATSC3_SL_TLV_USE_INLINE_ALP_PARSER_CALL__: %d, atsc3_sl_tlv_payload_unparsed_block_before_alp_extract_i_pos: %d, now atsc3_sl_tlv_payload_unparsed_block->i_pos: %d",
+                                 __ATSC3_SL_TLV_USE_INLINE_ALP_PARSER_CALL__,
+                                 atsc3_sl_tlv_payload_unparsed_block_before_alp_extract_i_pos,
+                                 atsc3_sl_tlv_payload_unparsed_block->i_pos);
+        }
     }
 
 
@@ -469,7 +483,8 @@ void atsc3_sl_tlv_payload_free(atsc3_sl_tlv_payload_t** atsc3_sl_tlv_payload_p) 
 void atsc3_sl_tlv_payload_dump(atsc3_sl_tlv_payload_t* atsc3_sl_tlv_payload) {
     if(atsc3_sl_tlv_payload) {
     	if(atsc3_sl_tlv_payload->alp_payload_complete) {
-    		__SL_TLV_DEMOD_DEBUG("SL_TLV: magic_number valid: %d, ALP payload complete, total parsed payload size: %d, PLP: %d, alp_packet_size: %d (block_t->p_size: %d), alp_trailing_padding: %d, alp first two bytes: 0x%02x 0x%02x, alp last two bytes: 0x%02x 0x%02x",
+    		__SL_TLV_DEMOD_TRACE("SL_TLV: __ATSC3_SL_TLV_USE_INLINE_ALP_PARSER_CALL__: %d, magic_number valid: %d, ALP payload complete, total parsed payload size: %d, PLP: %d, alp_packet_size: %d (block_t->p_size: %d), alp_trailing_padding: %d, alp first two bytes: 0x%02x 0x%02x, alp last two bytes: 0x%02x 0x%02x",
+    		                 __ATSC3_SL_TLV_USE_INLINE_ALP_PARSER_CALL__,
                              atsc3_sl_tlv_payload->magic_number == 0x24681357,
 							 atsc3_sl_tlv_payload->sl_tlv_total_parsed_payload_size,
                              atsc3_sl_tlv_payload->plp_number,
@@ -481,8 +496,9 @@ void atsc3_sl_tlv_payload_dump(atsc3_sl_tlv_payload_t* atsc3_sl_tlv_payload) {
 							 atsc3_sl_tlv_payload->alp_payload->p_buffer[atsc3_sl_tlv_payload->alp_payload->p_size-2],
 							 atsc3_sl_tlv_payload->alp_payload->p_buffer[atsc3_sl_tlv_payload->alp_payload->p_size-1]);
     	} else {
-    		__SL_TLV_DEMOD_DEBUG("SL_TLV: magic_number valid: %d, ALP payload NOT complete, total incomplete parsed payload size: %d, PLP: %d, alp_packet_size: %d, alp_trailing_padding: %d",
-    		                             atsc3_sl_tlv_payload->magic_number == 0x24681357,
+    		__SL_TLV_DEMOD_DEBUG("SL_TLV: __ATSC3_SL_TLV_USE_INLINE_ALP_PARSER_CALL__: %d, magic_number valid: %d, ALP payload NOT complete, total incomplete parsed payload size: %d, PLP: %d, alp_packet_size: %d, alp_trailing_padding: %d",
+    		                             __ATSC3_SL_TLV_USE_INLINE_ALP_PARSER_CALL__,
+                                         atsc3_sl_tlv_payload->magic_number == 0x24681357,
     									 atsc3_sl_tlv_payload->sl_tlv_total_parsed_payload_size,
     		                             atsc3_sl_tlv_payload->plp_number,
     		                             atsc3_sl_tlv_payload->alp_packet_size,

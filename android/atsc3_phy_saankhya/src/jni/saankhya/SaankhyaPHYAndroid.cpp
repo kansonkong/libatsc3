@@ -40,6 +40,9 @@ mutex SaankhyaPHYAndroid::CircularBufferMutex;
 mutex SaankhyaPHYAndroid::CS_global_mutex;
 atomic_bool SaankhyaPHYAndroid::cb_should_discard;
 
+int _SAANKHYA_PHY_ANDROID_DEBUG_ENABLED = 1;
+int _SAANKHYA_PHY_ANDROID_TRACE_ENABLED = 0;
+
 //jjustman-2021-02-04 - global error flag if i2c txn fails, usually due to demod crash
 //      TODO: reset SL demod and re-initalize automatically if this error is SL_ERR_CMD_IF_FAILURE
 
@@ -2221,7 +2224,7 @@ void SaankhyaPHYAndroid::processTLVFromCallback()
 
         do {
             atsc3_sl_tlv_payload = atsc3_sl_tlv_payload_parse_from_block_t(atsc3_sl_tlv_block);
-            _SAANKHYA_PHY_ANDROID_DEBUG("atsc3NdkClientSlImpl::processTLVFromCallback() - processTLVFromCallbackInvocationCount: %d, inner loop count: %d, atsc3_sl_tlv_block.p_size: %d, atsc3_sl_tlv_block.i_pos: %d", processTLVFromCallbackInvocationCount, ++innerLoopCount, atsc3_sl_tlv_block->p_size, atsc3_sl_tlv_block->i_pos, atsc3_sl_tlv_payload);
+            _SAANKHYA_PHY_ANDROID_TRACE("atsc3NdkClientSlImpl::processTLVFromCallback() - processTLVFromCallbackInvocationCount: %d, inner loop count: %d, atsc3_sl_tlv_block.p_size: %d, atsc3_sl_tlv_block.i_pos: %d", processTLVFromCallbackInvocationCount, ++innerLoopCount, atsc3_sl_tlv_block->p_size, atsc3_sl_tlv_block->i_pos, atsc3_sl_tlv_payload);
 
             if (atsc3_sl_tlv_payload) {
                 atsc3_sl_tlv_payload_dump(atsc3_sl_tlv_payload);
