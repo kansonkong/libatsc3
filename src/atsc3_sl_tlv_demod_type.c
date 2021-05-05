@@ -8,8 +8,9 @@
 int _SL_TLV_DEMOD_DEBUG_ENABLED = 0;
 int _SL_TLV_DEMOD_TRACE_ENABLED = 0;
 
-//jjustman-2021-05-04 - tested working int __ATSC3_SL_TLV_USE_INLINE_ALP_PARSER_CALL__ = 1;
-int __ATSC3_SL_TLV_USE_INLINE_ALP_PARSER_CALL__ = 0;
+//jjustman-2021-05-04 - tested working int
+__ATSC3_SL_TLV_USE_INLINE_ALP_PARSER_CALL__ = 1;
+//int __ATSC3_SL_TLV_USE_INLINE_ALP_PARSER_CALL__ = 0;
 
 //impl for default metrics collection
 atsc3_sl_tlv_payload_metrics_t __GLOBAL_DEFAULT_SL_TLV_PAYLOAD_METRICS;
