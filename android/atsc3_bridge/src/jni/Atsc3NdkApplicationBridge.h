@@ -67,7 +67,7 @@ public:
 
     void atsc3_lls_sls_alc_on_route_mpd_patched_jni(uint16_t service_id) override;
 
-    void atsc3_onSlsTablePresent(const char *sls_payload_xml) override;
+    void atsc3_onSltTablePresent(const char *slt_payload_xml) override;
     void atsc3_onAeatTablePresent(const char* aeat_payload_xml) override;
     void atsc3_onSlsHeldEmissionPresent(uint16_t service_id, const char *held_payload) override;
 
@@ -114,7 +114,7 @@ public:
 
     jmethodID mOnLogMsgId = nullptr;
 
-    jmethodID atsc3_onSlsTablePresent_ID = nullptr; //push LLS SLT table update
+    jmethodID atsc3_onSltTablePresent_ID = nullptr; //push LLS SLT table update
     jmethodID atsc3_onAeatTablePresent_ID = nullptr;
     jmethodID atsc3_onSlsHeldEmissionPresent_ID = nullptr;
 

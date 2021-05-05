@@ -494,26 +494,26 @@ void Atsc3NdkApplicationBridge::atsc3_lls_sls_alc_on_package_extract_completed_c
 }
 
 
-void Atsc3NdkApplicationBridge::atsc3_onSlsTablePresent(const char *sls_payload_xml) {
-    if (!atsc3_onSlsTablePresent_ID) {
-        _NDK_APPLICATION_BRIDGE_ERROR("atsc3_onSlsTablePresent_ID: %p", atsc3_onSlsTablePresent_ID);
+void Atsc3NdkApplicationBridge::atsc3_onSltTablePresent(const char* slt_payload_xml) {
+    if (!atsc3_onSltTablePresent_ID) {
+        _NDK_APPLICATION_BRIDGE_ERROR("atsc3_onSltTablePresent_ID: %p", atsc3_onSltTablePresent_ID);
         return;
     }
 
     if (!bridgeConsumerJniEnv) {
-		_NDK_APPLICATION_BRIDGE_ERROR("Atsc3NdkApplicationBridge::atsc3_onSlsHeldEmissionPresent: bridgeConsumerJniEnv is NULL");
+		_NDK_APPLICATION_BRIDGE_ERROR("Atsc3NdkApplicationBridge::atsc3_onSltTablePresent: bridgeConsumerJniEnv is NULL");
         return;
     }
-    if (!sls_payload_xml || !strlen(sls_payload_xml)) {
-        _NDK_APPLICATION_BRIDGE_ERROR("Atsc3NdkApplicationBridge::atsc3_onSlsHeldEmissionPresent: sls_payload_xml is NULL!");
+    if (!slt_payload_xml || !strlen(slt_payload_xml)) {
+        _NDK_APPLICATION_BRIDGE_ERROR("Atsc3NdkApplicationBridge::atsc3_onSltTablePresent: slt_payload_xml is NULL!");
         return;
     }
 
-    _NDK_APPLICATION_BRIDGE_INFO("Atsc3NdkApplicationBridge::atsc3_onSlsHeldEmissionPresent: sls_payload_xml is: %s", sls_payload_xml);
+    _NDK_APPLICATION_BRIDGE_INFO("Atsc3NdkApplicationBridge::atsc3_onSltTablePresent: slt_payload_xml is: %s", slt_payload_xml);
 
 
-    jstring xml_payload = bridgeConsumerJniEnv->Get()->NewStringUTF(sls_payload_xml);
-    int r = bridgeConsumerJniEnv->Get()->CallIntMethod(jni_instance_globalRef, atsc3_onSlsTablePresent_ID, xml_payload);
+    jstring xml_payload = bridgeConsumerJniEnv->Get()->NewStringUTF(slt_payload_xml);
+    int r = bridgeConsumerJniEnv->Get()->CallIntMethod(jni_instance_globalRef, atsc3_onSltTablePresent_ID, xml_payload);
     bridgeConsumerJniEnv->Get()->DeleteLocalRef(xml_payload);
 }
 
@@ -596,10 +596,10 @@ Java_org_ngbp_libatsc3_middleware_Atsc3NdkApplicationBridge_init(JNIEnv *env, jo
         return -1;
     }
 
-    //atsc3_onSlsTablePresent_ID
-    apiAppBridge->atsc3_onSlsTablePresent_ID = env->GetMethodID(jniClassReference, "atsc3_onSlsTablePresent", "(Ljava/lang/String;)I");
-    if (apiAppBridge->atsc3_onSlsTablePresent_ID == NULL) {
-        _NDK_APPLICATION_BRIDGE_ERROR("Atsc3NdkApplicationBridge_init: cannot find 'atsc3_onSlsTablePresent_ID' method id");
+    //atsc3_onSltTablePresent_ID
+    apiAppBridge->atsc3_onSltTablePresent_ID = env->GetMethodID(jniClassReference, "atsc3_onSltTablePresent", "(Ljava/lang/String;)I");
+    if (apiAppBridge->atsc3_onSltTablePresent_ID == NULL) {
+        _NDK_APPLICATION_BRIDGE_ERROR("Atsc3NdkApplicationBridge_init: cannot find 'atsc3_onSltTablePresent_ID' method id");
         return -1;
     }
 

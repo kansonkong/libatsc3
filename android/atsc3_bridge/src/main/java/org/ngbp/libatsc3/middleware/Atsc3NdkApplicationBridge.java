@@ -6,7 +6,6 @@ import org.ngbp.libatsc3.middleware.android.a331.PackageExtractEnvelopeMetadataA
 import org.ngbp.libatsc3.middleware.android.application.interfaces.IAtsc3NdkApplicationBridgeCallbacks;
 
 import java.io.File;
-import java.nio.ByteBuffer;
 
 /*
  */
@@ -42,15 +41,15 @@ public class Atsc3NdkApplicationBridge extends Atsc3BridgeNdkStaticJniLoader
         return 0;
     }
 
-    int atsc3_onSlsTablePresent(String sls_payload_xml) {
+    int atsc3_onSltTablePresent(String slt_payload_xml) {
 
-        mActivity.onSlsTablePresent(sls_payload_xml);
+        mActivity.onSltTablePresent(slt_payload_xml);
         return 0;
     }
 
-    int atsc3_onAeatTablePresent(String sls_payload_xml) {
+    int atsc3_onAeatTablePresent(String aeat_table_xml) {
 
-        mActivity.onAeatTablePresent(sls_payload_xml);
+        mActivity.onAeatTablePresent(aeat_table_xml);
         return 0;
     }
 
