@@ -3,7 +3,7 @@
 //
 
 //jjustman-2020-10-30 - workaround for SL_TUNER deinit not decrementing ref count
-#define __SL_TUNER_DEINIT_DISABLED__ true
+//#define __SL_TUNER_DEINIT_DISABLED__ true
 
 /*  MarkONE "workarounds" for /dev handle permissions
 
@@ -238,7 +238,7 @@ int SaankhyaPHYAndroid::stop()
 #ifndef __SL_TUNER_DEINIT_DISABLED__
     //jjustman-2020-10-30 - TODO: SL_TunerInit and SL_TunerUnInit is just a refcount, not an instance handle
     sl_tuner_result = SL_TunerUnInit(tUnit);
-    tUnit = __MIN(0, tUnit - 1);
+    tUnit = __MAX(-1, tUnit - 1);
     _SAANKHYA_PHY_ANDROID_DEBUG("SaankhyaPHYAndroid::stop: after SL_TunerUnInit, tUnit now: %d, sl_tuner_result: %d", tUnit, sl_tuner_result);
 
 #else
@@ -807,6 +807,31 @@ int SaankhyaPHYAndroid::tune(int freqKHz, int plpid)
 
     atsc3_core_service_application_bridge_reset_context();
 
+    /*
+
+       jjustman-2021-05-04 - testing for (seemingly) random YOGA cpu crashes:
+
+          2021-05-04 19:17:38.042 4722-4865/com.nextgenbroadcast.mobile.middleware.sample D/NDK: SaankhyaPHYAndroid.cpp          : 627:DEBUG:1620170258.0428:SL_DemodInit: SUCCESS, slUnit: 0, slres: 0
+          2021-05-04 19:17:38.043 4722-4865/com.nextgenbroadcast.mobile.middleware.sample D/NDK: SaankhyaPHYAndroid.cpp          : 632:DEBUG:1620170258.0432:before SL_DemodGetStatus: slUnit: 0, slres is: 0
+          2021-05-04 19:17:38.045 4722-4865/com.nextgenbroadcast.mobile.middleware.sample D/NDK: SaankhyaPHYAndroid.cpp          : 634:DEBUG:1620170258.0454:SL_DemodGetStatus: slUnit: 0, slres is: 0
+          2021-05-04 19:17:38.295 4722-4865/com.nextgenbroadcast.mobile.middleware.sample D/NDK: SaankhyaPHYAndroid.cpp          : 643:DEBUG:1620170258.2957:Demod Boot Status  :
+          2021-05-04 19:17:38.296 4722-4865/com.nextgenbroadcast.mobile.middleware.sample D/NDK: SaankhyaPHYAndroid.cpp          : 650:DEBUG:1620170258.2960:COMPLETED
+          2021-05-04 19:17:38.316 4722-4865/com.nextgenbroadcast.mobile.middleware.sample D/NDK: SL_DemodConfigPlps, instance: 0, plp [0]: 0x00, [1]: 0xff, [2]: 0xff, [3]: 0xff
+          2021-05-04 19:17:38.325 4722-4865/com.nextgenbroadcast.mobile.middleware.sample D/NDK: SaankhyaPHYAndroid.cpp          : 701:DEBUG:1620170258.3259:Demod SW Version: 3.24
+          2021-05-04 19:17:38.669 4722-4865/com.nextgenbroadcast.mobile.middleware.sample D/NDK: SaankhyaPHYAndroid.cpp          : 763:DEBUG:1620170258.6698:OPEN COMPLETE!
+          2021-05-04 19:17:38.670 4722-4865/com.nextgenbroadcast.mobile.middleware.sample D/NDK: SaankhyaPHYAndroid.cpp          :2431:DEBUG:1620170258.6701:Java_org_ngbp_libatsc3_middleware_android_phy_SaankhyaPHYAndroid_open: fd: 145, return: 0
+          2021-05-04 19:17:38.670 4722-4865/com.nextgenbroadcast.mobile.middleware.sample D/UsbAtsc3Source: prepareDevices: open with org.ngbp.libatsc3.middleware.android.phy.SaankhyaPHYAndroid@d66354a for path: /dev/bus/usb/002/002, fd: 145, success
+          2021-05-04 19:17:38.710 4722-4865/com.nextgenbroadcast.mobile.middleware.sample D/NDK: atsc3_core_service_player_bridge: 122:WARN :1620170258.7103:atsc3_core_service_application_bridge_reset_context!
+          2021-05-04 19:17:38.710 4722-4865/com.nextgenbroadcast.mobile.middleware.sample D/NDK: SaankhyaPHYAndroid::tune: Frequency: 593000, PLP: 0
+          2021-05-04 19:17:38.740 4722-4865/com.nextgenbroadcast.mobile.middleware.sample D/NDK: SaankhyaPHYAndroid.cpp          : 815:DEBUG:1620170258.7400:Error:SL_TunerSetFrequency :
+          2021-05-04 19:17:38.740 4722-4865/com.nextgenbroadcast.mobile.middleware.sample D/NDK: SaankhyaPHYAndroid.cpp          :1412:DEBUG:1620170258.7401: Sl Tuner Operation Failed
+    */
+    if (getPlfConfig.boardType == SL_KAILASH_DONGLE_3) {
+        _SAANKHYA_PHY_ANDROID_DEBUG("::tune - before SL_DemodStart - sleeping for 500ms to avoid double SL_DemodConfigPlps call(s)");
+        usleep(500000);
+
+    }
+
     printf("SaankhyaPHYAndroid::tune: Frequency: %d, PLP: %d", freqKHz, plpid);
 
     tres = SL_TunerSetFrequency(tUnit, freqKHz*1000);
@@ -984,6 +1009,34 @@ int SaankhyaPHYAndroid::tune(int freqKHz, int plpid)
                 //jjustman-2020-10-21 - todo: reset demod?
             }
         }
+
+        /*
+
+         jjustman-2021-05-04 - testing for (seemingly) random YOGA cpu crashes:
+
+            2021-05-04 19:17:38.042 4722-4865/com.nextgenbroadcast.mobile.middleware.sample D/NDK: SaankhyaPHYAndroid.cpp          : 627:DEBUG:1620170258.0428:SL_DemodInit: SUCCESS, slUnit: 0, slres: 0
+            2021-05-04 19:17:38.043 4722-4865/com.nextgenbroadcast.mobile.middleware.sample D/NDK: SaankhyaPHYAndroid.cpp          : 632:DEBUG:1620170258.0432:before SL_DemodGetStatus: slUnit: 0, slres is: 0
+            2021-05-04 19:17:38.045 4722-4865/com.nextgenbroadcast.mobile.middleware.sample D/NDK: SaankhyaPHYAndroid.cpp          : 634:DEBUG:1620170258.0454:SL_DemodGetStatus: slUnit: 0, slres is: 0
+            2021-05-04 19:17:38.295 4722-4865/com.nextgenbroadcast.mobile.middleware.sample D/NDK: SaankhyaPHYAndroid.cpp          : 643:DEBUG:1620170258.2957:Demod Boot Status  :
+            2021-05-04 19:17:38.296 4722-4865/com.nextgenbroadcast.mobile.middleware.sample D/NDK: SaankhyaPHYAndroid.cpp          : 650:DEBUG:1620170258.2960:COMPLETED
+            2021-05-04 19:17:38.316 4722-4865/com.nextgenbroadcast.mobile.middleware.sample D/NDK: SL_DemodConfigPlps, instance: 0, plp [0]: 0x00, [1]: 0xff, [2]: 0xff, [3]: 0xff
+            2021-05-04 19:17:38.325 4722-4865/com.nextgenbroadcast.mobile.middleware.sample D/NDK: SaankhyaPHYAndroid.cpp          : 701:DEBUG:1620170258.3259:Demod SW Version: 3.24
+            2021-05-04 19:17:38.669 4722-4865/com.nextgenbroadcast.mobile.middleware.sample D/NDK: SaankhyaPHYAndroid.cpp          : 763:DEBUG:1620170258.6698:OPEN COMPLETE!
+            2021-05-04 19:17:38.670 4722-4865/com.nextgenbroadcast.mobile.middleware.sample D/NDK: SaankhyaPHYAndroid.cpp          :2431:DEBUG:1620170258.6701:Java_org_ngbp_libatsc3_middleware_android_phy_SaankhyaPHYAndroid_open: fd: 145, return: 0
+            2021-05-04 19:17:38.670 4722-4865/com.nextgenbroadcast.mobile.middleware.sample D/UsbAtsc3Source: prepareDevices: open with org.ngbp.libatsc3.middleware.android.phy.SaankhyaPHYAndroid@d66354a for path: /dev/bus/usb/002/002, fd: 145, success
+            2021-05-04 19:17:38.710 4722-4865/com.nextgenbroadcast.mobile.middleware.sample D/NDK: atsc3_core_service_player_bridge: 122:WARN :1620170258.7103:atsc3_core_service_application_bridge_reset_context!
+            2021-05-04 19:17:38.710 4722-4865/com.nextgenbroadcast.mobile.middleware.sample D/NDK: SaankhyaPHYAndroid::tune: Frequency: 593000, PLP: 0
+            2021-05-04 19:17:38.740 4722-4865/com.nextgenbroadcast.mobile.middleware.sample D/NDK: SaankhyaPHYAndroid.cpp          : 815:DEBUG:1620170258.7400:Error:SL_TunerSetFrequency :
+            2021-05-04 19:17:38.740 4722-4865/com.nextgenbroadcast.mobile.middleware.sample D/NDK: SaankhyaPHYAndroid.cpp          :1412:DEBUG:1620170258.7401: Sl Tuner Operation Failed
+
+
+        if (getPlfConfig.boardType == SL_KAILASH_DONGLE_3) {
+            _SAANKHYA_PHY_ANDROID_DEBUG("::tune - before SL_DemodStart - sleeping for 2000 seconds to avoid double SL_DemodConfigPlps call(s)");
+            usleep(2000000);
+
+        }
+         */
+
         _SAANKHYA_PHY_ANDROID_DEBUG("Starting SLDemod: ");
 
         slres = SL_DemodStart(slUnit);
@@ -1489,6 +1542,10 @@ void SaankhyaPHYAndroid::printToConsolePlfConfiguration(SL_PlatFormConfigParams_
     {
         _SAANKHYA_PHY_ANDROID_DEBUG("Tuner Type: TUNER_SI");
     }
+    else if(cfgInfo.tunerType == TUNER_SILABS)
+    {
+        _SAANKHYA_PHY_ANDROID_DEBUG("Tuner Type: TUNER_SILABS");
+    }
     else
     {
         _SAANKHYA_PHY_ANDROID_DEBUG("Tuner Type: NA");
@@ -1756,9 +1813,9 @@ int SaankhyaPHYAndroid::statusThread()
     unique_lock<mutex> SL_I2C_command_mutex_tuner_status_io(this->SL_I2C_command_mutex, std::defer_lock);
     unique_lock<mutex> SL_PlpConfigParams_mutex_get_plps(SL_PlpConfigParams_mutex, std::defer_lock);
 
-    SL_Result_t dres;
-    SL_Result_t sl_res;
-    SL_TunerResult_t tres;
+    SL_Result_t dres = SL_OK;
+    SL_Result_t sl_res = SL_OK;
+    SL_TunerResult_t tres = SL_TUNER_OK;
 
     uint lastCpuStatus = 0;
 
@@ -2100,9 +2157,11 @@ int SaankhyaPHYAndroid::statusThread()
 sl_i2c_tuner_mutex_unlock:
         SL_I2C_command_mutex_tuner_status_io.unlock();
 
-        if(global_sl_result_error_flag != SL_OK || global_sl_i2c_result_error_flag != SL_I2C_OK) {
+        if(global_sl_result_error_flag != SL_OK || global_sl_i2c_result_error_flag != SL_I2C_OK || dres != SL_OK || sl_res != SL_OK || tres != SL_OK) {
             if(atsc3_ndk_phy_bridge_get_instance()) {
-                atsc3_ndk_phy_bridge_get_instance()->atsc3_notify_phy_error("SaankhyaPHYAndroid::tunerStatusThread() - ERROR: command failed, error code: sl_res error code: %d, sl_i2c_res: %d", global_sl_result_error_flag, global_sl_i2c_result_error_flag);
+                atsc3_ndk_phy_bridge_get_instance()->atsc3_notify_phy_error("SaankhyaPHYAndroid::tunerStatusThread() - ERROR: command failed: global_sl_res: %d, global_sl_i2c_res: %d, dres: %d, sl_res, tres: %d",
+                        global_sl_result_error_flag, global_sl_i2c_result_error_flag,
+                        dres, sl_res, tres);
             }
         }
 
@@ -2162,6 +2221,7 @@ void SaankhyaPHYAndroid::processTLVFromCallback()
 
         do {
             atsc3_sl_tlv_payload = atsc3_sl_tlv_payload_parse_from_block_t(atsc3_sl_tlv_block);
+            _SAANKHYA_PHY_ANDROID_DEBUG("atsc3NdkClientSlImpl::processTLVFromCallback() - processTLVFromCallbackInvocationCount: %d, inner loop count: %d, atsc3_sl_tlv_block.p_size: %d, atsc3_sl_tlv_block.i_pos: %d", processTLVFromCallbackInvocationCount, ++innerLoopCount, atsc3_sl_tlv_block->p_size, atsc3_sl_tlv_block->i_pos, atsc3_sl_tlv_payload);
 
             if (atsc3_sl_tlv_payload) {
                 atsc3_sl_tlv_payload_dump(atsc3_sl_tlv_payload);
@@ -2197,19 +2257,26 @@ void SaankhyaPHYAndroid::processTLVFromCallback()
 
                         atsc3_alp_packet_free(&atsc3_alp_packet);
                     }
+
                     //free our atsc3_sl_tlv_payload
                     atsc3_sl_tlv_payload_free(&atsc3_sl_tlv_payload);
+                    continue;
 
                 } else {
+
+                    atsc3_sl_tlv_payload_free(&atsc3_sl_tlv_payload);
                     atsc3_sl_tlv_payload_complete = false;
-                    //jjustman-2019-12-29 - noisy, TODO: wrap in __DEBUG macro check
-                    //_SAANKHYA_PHY_ANDROID_DEBUG("alp_payload->alp_payload_complete == FALSE at pos: %d, size: %d", atsc3_sl_tlv_block->i_pos, atsc3_sl_tlv_block->p_size);
+                    break; //jjustman-2021-05-04 - gross, i know...
                 }
-            } else {
-                atsc3_sl_tlv_payload_complete = false;
-                //jjustman-2019-12-29 - noisy, TODO: wrap in __DEBUG macro check
-                //_SAANKHYA_PHY_ANDROID_DEBUG("ERROR: alp_payload IS NULL, short TLV read?  at atsc3_sl_tlv_block: i_pos: %d, p_size: %d", atsc3_sl_tlv_block->i_pos, atsc3_sl_tlv_block->p_size);
             }
+
+            if(atsc3_sl_tlv_block->i_pos > (atsc3_sl_tlv_block->p_size - 188)) {
+                atsc3_sl_tlv_payload_complete = false;
+            } else {
+                atsc3_sl_tlv_payload_complete = true;
+            }
+            //jjustman-2019-12-29 - noisy, TODO: wrap in __DEBUG macro check
+            //_SAANKHYA_PHY_ANDROID_DEBUG("ERROR: alp_payload IS NULL, short TLV read?  at atsc3_sl_tlv_block: i_pos: %d, p_size: %d", atsc3_sl_tlv_block->i_pos, atsc3_sl_tlv_block->p_size);
 
         } while (atsc3_sl_tlv_payload_complete);
 
