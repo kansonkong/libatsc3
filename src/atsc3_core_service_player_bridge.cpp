@@ -91,7 +91,7 @@ void atsc3_core_service_application_bridge_init(IAtsc3NdkApplicationBridge* atsc
     _ALC_RX_TRACE_ENABLED = 0;
 
     //jjustman-2020-04-23 - TLV parsing metrics enable inline ALP parsing
-    //__ATSC3_SL_TLV_USE_INLINE_ALP_PARSER_CALL__ = 1;
+    __ATSC3_SL_TLV_USE_INLINE_ALP_PARSER_CALL__ = 1;
 
     atsc3_core_service_application_bridge_reset_context();
 
