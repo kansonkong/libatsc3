@@ -829,6 +829,8 @@ typedef struct lls_sls_alc_monitor {
 	atsc3_fdt_instance_t* 					atsc3_fdt_instance_pending; 			//used for a new pending fdt_instance for our SLS, invoked in atsc3_route_sls_process_from_alc_packet_and_file
 
     atsc3_sls_metadata_fragments_t* 		atsc3_sls_metadata_fragments;
+    uint64_t                                atsc3_sls_metadata_fragments_missing_carousel_count;
+
     atsc3_sls_metadata_fragments_t* 		atsc3_sls_metadata_fragments_pending;	//used for a new pending set of SLS fragments, which need to be checked for changes before re-dispatching events
 
     uint32_t 	usbd_tsi;
