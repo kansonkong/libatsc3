@@ -357,6 +357,15 @@ void Atsc3NdkApplicationBridge::atsc3_lls_sls_alc_on_package_extract_completed_c
         return;
     }
 
+    //jjustman-2021-05-04 -     if(!str_is_utf8((const char*)block_ptr)) { sanity check for ndk/jni UTF-8 marshalling across boundary / unhandled exceptions
+
+    if(!str_is_utf8((const char*)atsc3_route_package_extracted_envelope_metadata_and_payload->atsc3_mbms_metadata_envelope_raw_xml->p_buffer)) {
+        _NDK_APPLICATION_BRIDGE_ERROR("atsc3_lls_sls_alc_on_package_extract_completed_callback_jni::err atsc3_route_package_extracted_envelope_metadata_and_payload->atsc3_mbms_metadata_envelope_raw_xml->p_buffer fails str_is_utf8 check for NDK/JNI UTF-8 marshalling!");
+        printf("atsc3_lls_sls_alc_on_package_extract_completed_callback_jni::atsc3_route_package_extracted_envelope_metadata_and_payload->atsc3_mbms_metadata_envelope_raw_xml->p_buffer is:\n%s", atsc3_route_package_extracted_envelope_metadata_and_payload->atsc3_mbms_metadata_envelope_raw_xml->p_buffer);
+        return;
+    }
+
+
     if(!atsc3_route_package_extracted_envelope_metadata_and_payload->package_name) {
     	_NDK_APPLICATION_BRIDGE_ERROR("atsc3_lls_sls_alc_on_package_extract_completed_callback_jni::err atsc3_route_package_extracted_envelope_metadata_and_payload->package_name is NULL");
         return;
@@ -373,7 +382,6 @@ void Atsc3NdkApplicationBridge::atsc3_lls_sls_alc_on_package_extract_completed_c
         _NDK_APPLICATION_BRIDGE_ERROR("atsc3_lls_sls_alc_on_package_extract_completed_callback_jni::err unable to allocate packageExtractEnvelopeMetadataAndPayload_jclass_global_ref instance jobj!");
         return;
     }
-
 
     jfieldID packageName_valId = bridgeConsumerJniEnv->Get()->GetFieldID(jcls, "packageName", "Ljava/lang/String;");
     jstring packageName_payload = bridgeConsumerJniEnv->Get()->NewStringUTF(atsc3_route_package_extracted_envelope_metadata_and_payload->package_name);
