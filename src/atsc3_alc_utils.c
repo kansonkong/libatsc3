@@ -757,8 +757,12 @@ int atsc3_alc_packet_persist_to_toi_resource_process_sls_mbms_and_emit_callback(
         	// i.e. lls_sls_alc_monitor->atsc3_sls_metadata_fragments is null
 
         	if(!lls_sls_alc_monitor->atsc3_sls_metadata_fragments) {
-                __ALC_UTILS_ERROR("lls_sls_alc_monitor->atsc3_sls_metadata_fragments is NULL, tsi: %u, toi: %u, bailing on object recovery complete!",
-                        alc_packet->def_lct_hdr->tsi, alc_packet->def_lct_hdr->toi);
+        	    lls_sls_alc_monitor->atsc3_sls_metadata_fragments_missing_carousel_count++;
+        	    if(lls_sls_alc_monitor->atsc3_sls_metadata_fragments_missing_carousel_count < 100 || (lls_sls_alc_monitor->atsc3_sls_metadata_fragments_missing_carousel_count % 1000) == 0) {
+                    __ALC_UTILS_WARN("lls_sls_alc_monitor->atsc3_sls_metadata_fragments is NULL, tsi: %u, toi: %u, bailing on object recovery complete, count: %d!",
+                        alc_packet->def_lct_hdr->tsi, alc_packet->def_lct_hdr->toi, lls_sls_alc_monitor->atsc3_sls_metadata_fragments_missing_carousel_count);
+        	    }
+
                 bytesWritten = ATSC3_ALC_UTILS_SLS_METADATA_FRAGMENTS_NOT_RECEIVED_YET;
                 goto cleanup;
             }
