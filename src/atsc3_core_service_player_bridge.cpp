@@ -1149,7 +1149,7 @@ void atsc3_lls_on_sls_table_present_ndk(lls_table_t* lls_table) {
     char* xml_payload_copy = (char*)calloc(len_aligned , sizeof(char));
     strncpy(xml_payload_copy, (char*)lls_table->raw_xml.xml_payload, lls_table->raw_xml.xml_payload_size);
 
-    Atsc3NdkApplicationBridge_ptr->atsc3_onSlsTablePresent((const char*)xml_payload_copy);
+    Atsc3NdkApplicationBridge_ptr->atsc3_onSltTablePresent((const char*)xml_payload_copy);
 
     free(xml_payload_copy);
 }
