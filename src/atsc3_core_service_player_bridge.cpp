@@ -274,7 +274,7 @@ vector<uint8_t>  atsc3_phy_build_plp_listeners_from_lls_slt_monitor(lls_slt_moni
                                     atsc3_link_mapping_table_plp->PLP_ID);
 
                             if(atsc3_link_mapping_table_multicast->dst_ip_add == sls_destination_ip_address && atsc3_link_mapping_table_multicast->dst_udp_port == sls_destination_udp_port) {
-                                Atsc3NdkApplicationBridge_ptr->LogMsgF("atsc3_phy_update_plp_listeners_from_lls_slt_monitor: SLS adding PLP_id: %d (%s: %s)",
+                                Atsc3NdkApplicationBridge_ptr->LogMsgF("atsc3_phy_update_plp_listeners_from_lls_slt_monitor: SLS adding PLP_id: %d (%s:%s)",
                                         atsc3_link_mapping_table_plp->PLP_ID,
                                         atsc3_slt_broadcast_svc_signalling->sls_destination_ip_address,
                                         atsc3_slt_broadcast_svc_signalling->sls_destination_udp_port);
