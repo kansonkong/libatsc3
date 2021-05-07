@@ -120,6 +120,9 @@ atsc3_mmt_mfu_mpu_timestamp_descriptor_t* atsc3_get_mpu_timestamp_from_packet_id
 
         compute_ntp32_to_seconds_microseconds(mmtp_timestamp_differential_ntp32, &mmtp_timestamp_differential_s, &mmtp_timestamp_differential_us);
         if(mmtp_timestamp_differential_s > 60) {
+
+#ifdef __ATSC3_MMT_CONTEXT_MFU_DEPACKETIZER_ERROR_ON_MMTP_TIMESTAMP_DIFFERENTAL_GREATER_THAN_60S__
+
             __MMT_CONTEXT_MPU_ERROR("atsc3_get_mpu_timestamp_from_packet_id_mpu_sequence_number_with_mmtp_timestamp_recovery_differential: computed differental of %d.%06d is too large, bailing!"
                                     "matching packet_id: %d, mpu_sequence_number: %u, using: atsc3_mmt_mfu_mpu_timestamp_descriptor_max: mmtp_timestamp: %u, mpu_sequence_number: %u, mpu_presentation_time_as_us_value: %" PRIu64 " from_recovery: %d, our current mmtp_timestamp: %u",
                                     mmtp_timestamp_differential_s,
@@ -132,6 +135,20 @@ atsc3_mmt_mfu_mpu_timestamp_descriptor_t* atsc3_get_mpu_timestamp_from_packet_id
                                     atsc3_mmt_mfu_mpu_timestamp_descriptor_max->mpu_presentation_time_computed_from_recovery_mmtp_timestamp_flag,
                                     mmtp_timestamp);
             return NULL;
+#else
+
+            __MMT_CONTEXT_MPU_WARN("atsc3_get_mpu_timestamp_from_packet_id_mpu_sequence_number_with_mmtp_timestamp_recovery_differential: computed differental of %d.%06d is too large, bailing!"
+                                   "matching packet_id: %d, mpu_sequence_number: %u, using: atsc3_mmt_mfu_mpu_timestamp_descriptor_max: mmtp_timestamp: %u, mpu_sequence_number: %u, mpu_presentation_time_as_us_value: %" PRIu64 " from_recovery: %d, our current mmtp_timestamp: %u",
+                                   mmtp_timestamp_differential_s,
+                                   mmtp_timestamp_differential_us,
+                                   packet_id,
+                                   mpu_sequence_number,
+                                   atsc3_mmt_mfu_mpu_timestamp_descriptor_max->mmtp_timestamp,
+                                   atsc3_mmt_mfu_mpu_timestamp_descriptor_max->mpu_sequence_number,
+                                   atsc3_mmt_mfu_mpu_timestamp_descriptor_max->mpu_presentation_time_as_us_value,
+                                   atsc3_mmt_mfu_mpu_timestamp_descriptor_max->mpu_presentation_time_computed_from_recovery_mmtp_timestamp_flag,
+                                   mmtp_timestamp);
+#endif
         }
 
         //See https://tools.ietf.org/html/rfc5905#section-6, ntp64 has 32bit seconds and 32bit fractional which resolves to 232 picoseconds. (1,000,000uS in a pS) and
