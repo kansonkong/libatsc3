@@ -90,7 +90,7 @@ mmtp_signalling_packet_t* mmtp_signalling_packet_parse_from_block_t(mmtp_packet_
 	//bit 7 is Aggregation
 	mmtp_signalling_packet->si_aggregation_flag = (mmtp_si_fi_reserved_ha_byte & 0x1);
 
-	//count of for how many fragments follow this message, e.g si_fragmentation_indiciator != 0
+	//count of for how many fragments follow this message, e.g si_fragmentation_indicator != 0
 	//note, packets are not allowed to be both aggregated and fragmented
 
 	mmtp_signalling_packet->si_fragmentation_counter = mmtp_si_frag_counter;
@@ -220,7 +220,7 @@ uint8_t mmt_signalling_message_parse_id_type(mmtp_signalling_packet_t* mmtp_sign
 		buf = pa_message_parse(mmt_signalling_message_header_and_payload, udp_packet);
 		mmt_signalling_message_header_and_payload->message_header.MESSAGE_id_type = PA_message;
 
-	} else if(mmt_signalling_message_header->message_id >= MPI_message_start && mmt_signalling_message_header->message_id < MPI_message_end) {
+	} else if(mmt_signalling_message_header->message_id >= MPI_message_start && mmt_signalling_message_header->message_id <= MPI_message_end) {
 		buf = mpi_message_parse(mmt_signalling_message_header_and_payload, udp_packet);
 		mmt_signalling_message_header_and_payload->message_header.MESSAGE_id_type = MPI_message;
 
@@ -405,8 +405,8 @@ uint8_t* __read_mmt_general_location_info(uint8_t* buf, uint32_t remaining_len, 
 		buf = extract(buf, (uint8_t*)&mmt_general_location_info->ipv4_dst_addr, 4);
 		mmt_general_location_info->ipv4_dst_addr = ntohl(mmt_general_location_info->ipv4_dst_addr);
 
-		buf = extract(buf, (uint8_t*)&mmt_general_location_info->dst_port, 2);
-		mmt_general_location_info->packet_id = ntohs(mmt_general_location_info->dst_port);
+		buf = extract(buf, (uint8_t*)&mmt_general_location_info->ipv4_dst_port, 2);
+		mmt_general_location_info->ipv4_dst_port = ntohs(mmt_general_location_info->ipv4_dst_port);
 
 		buf = extract(buf, (uint8_t*)&mmt_general_location_info->packet_id, 2);
 		mmt_general_location_info->packet_id = ntohs(mmt_general_location_info->packet_id);
@@ -419,10 +419,11 @@ uint8_t* __read_mmt_general_location_info(uint8_t* buf, uint32_t remaining_len, 
 		}
 		buf = extract(buf, (uint8_t*)&mmt_general_location_info->ipv4_src_addr, 4);
 		buf = extract(buf, (uint8_t*)&mmt_general_location_info->ipv4_dst_addr, 4);
-		buf = extract(buf, (uint8_t*)&mmt_general_location_info->dst_port, 2);
+		buf = extract(buf, (uint8_t*)&mmt_general_location_info->ipv4_dst_port, 2);
 		buf = extract(buf, (uint8_t*)&mmt_general_location_info->packet_id, 2);
 		buf = extract(buf, (uint8_t*)&mmt_general_location_info->message_id, 2);
-
+	} else {
+		__MMSM_WARN("MMT_SI: descriptor MMT_general_location_info for location_type: 0x%02x is not supported!", mmt_general_location_info->location_type);
 	}
 
 	return buf;
@@ -772,7 +773,7 @@ uint8_t* mmt_atsc3_message_payload_parse(mmt_signalling_message_header_and_paylo
 
 			if(ret > 0) {
 				mmt_atsc3_message_payload->atsc3_message_content_length = ret;
-				mmt_atsc3_message_payload->atsc3_message_content = calloc(ret, sizeof(char));
+				mmt_atsc3_message_payload->atsc3_message_content = calloc(ret + 1, sizeof(char));
 				memcpy(mmt_atsc3_message_payload->atsc3_message_content, decompressed_payload, ret);
 				free(decompressed_payload);
 				decompressed_payload = NULL;
@@ -991,7 +992,9 @@ uint8_t* si_message_not_supported(mmt_signalling_message_header_and_payload_t* m
  * jjustman-2020-12-01 - TODO - fix me to remove single *_packet_id references
  */
 
-void mmt_signalling_message_update_lls_sls_mmt_session(mmtp_signalling_packet_t* mmtp_signalling_packet, lls_sls_mmt_session_t* matching_lls_sls_mmt_session) {
+bool mmt_signalling_message_update_lls_sls_mmt_session(mmtp_signalling_packet_t* mmtp_signalling_packet, lls_sls_mmt_session_t* matching_lls_sls_mmt_session) {
+	bool has_atsc3_mmt_sls_mpt_location_info_added = false;
+
 	for(int i=0; i < mmtp_signalling_packet->mmt_signalling_message_header_and_payload_v.count; i++) {
 		mmt_signalling_message_header_and_payload_t* mmt_signalling_message_header_and_payload = mmtp_signalling_packet->mmt_signalling_message_header_and_payload_v.data[i];
 		if(mmt_signalling_message_header_and_payload->message_header.MESSAGE_id_type == MPT_message) {
@@ -1000,32 +1003,76 @@ void mmt_signalling_message_update_lls_sls_mmt_session(mmtp_signalling_packet_t*
 			//update our lls_sls_mmt_session
 			if(matching_lls_sls_mmt_session && mp_table->number_of_assets) {
 				for(int i=0; i < mp_table->number_of_assets; i++) {
-					//slight hack, check the asset types and default_asset = 1
 					mp_table_asset_row_t* mp_table_asset_row = &mp_table->mp_table_asset_row[i];
 
-					__MMSM_TRACE("MPT message: checking packet_id: %u, asset_type: %s, default: %u, identifier: %s", mp_table_asset_row->mmt_general_location_info.packet_id, mp_table_asset_row->asset_type, mp_table_asset_row->default_asset_flag, mp_table_asset_row->identifier_mapping.asset_id.asset_id ? (const char*)mp_table_asset_row->identifier_mapping.asset_id.asset_id : "");
-					if(strncasecmp(ATSC3_MP_TABLE_ASSET_ROW_HEVC_ID, mp_table_asset_row->asset_type, 4) == 0 ||
-					    strncasecmp(ATSC3_MP_TABLE_ASSET_ROW_H264_ID, mp_table_asset_row->asset_type, 4) == 0) {
-						matching_lls_sls_mmt_session->video_packet_id = mp_table_asset_row->mmt_general_location_info.packet_id;
-						__MMSM_TRACE("MPT message: matching_lls_sls_mmt_session: %p, setting video_packet_id: packet_id: %u, asset_type: %s, default: %u, identifier: %s",
-									 matching_lls_sls_mmt_session,
-									 mp_table_asset_row->mmt_general_location_info.packet_id, mp_table_asset_row->asset_type, mp_table_asset_row->default_asset_flag, mp_table_asset_row->identifier_mapping.asset_id.asset_id ? (const char*)mp_table_asset_row->identifier_mapping.asset_id.asset_id : "");
+					if(mp_table_asset_row->mmt_general_location_info.location_type != 0x01) {
+						__MMSM_WARN("mp_table_asset_row index: %d, ptr: %p is missing mmt_general_location_info!", i, mp_table_asset_row);
+						continue;
+					} else {
+						//slight hack, check the asset types and default_asset = 1
+						
+						atsc3_mmt_sls_mpt_location_info_t* atsc3_mmt_sls_mpt_location_info = NULL;
+						bool loop_atsc3_mmt_sls_mpt_location_info_added = false;
+						for(int j=0; !atsc3_mmt_sls_mpt_location_info && j < matching_lls_sls_mmt_session->atsc3_mmt_sls_mpt_location_info_v.count; j++) {
+							atsc3_mmt_sls_mpt_location_info_t* atsc3_mmt_sls_mpt_location_info_to_check = matching_lls_sls_mmt_session->atsc3_mmt_sls_mpt_location_info_v.data[j];
+							if(mp_table_asset_row->mmt_general_location_info.packet_id == atsc3_mmt_sls_mpt_location_info_to_check->packet_id) {
+								atsc3_mmt_sls_mpt_location_info = atsc3_mmt_sls_mpt_location_info_to_check;
+							}
+						}
+						
+						if(atsc3_mmt_sls_mpt_location_info) {
+							atsc3_mmt_sls_mpt_location_info = atsc3_mmt_sls_mpt_location_info_new();
+							lls_sls_mmt_session_add_atsc3_mmt_sls_mpt_location_info(matching_lls_sls_mmt_session, atsc3_mmt_sls_mpt_location_info);
+							loop_atsc3_mmt_sls_mpt_location_info_added = true;
+							
+							atsc3_mmt_sls_mpt_location_info->packet_id = mp_table_asset_row->mmt_general_location_info.packet_id;
+							if(mp_table_asset_row->identifier_mapping.asset_id.asset_id) {
+								atsc3_mmt_sls_mpt_location_info->asset_id = strndup(mp_table_asset_row->identifier_mapping.asset_id.asset_id, mp_table_asset_row->identifier_mapping.asset_id.asset_id_length);
+								atsc3_mmt_sls_mpt_location_info->asset_id_length = mp_table_asset_row->identifier_mapping.asset_id.asset_id_length;
+								atsc3_mmt_sls_mpt_location_info->asset_id_scheme = mp_table_asset_row->identifier_mapping.asset_id.asset_id_scheme;
+							}
+						}
+						
+						memcpy(&atsc3_mmt_sls_mpt_location_info->asset_type, mp_table_asset_row->asset_type, sizeof(mp_table_asset_row->asset_type));
+						
+						//jjustman-2021-05-11 - just for MMT IPv4 PLP selection for now...
+						if(mp_table_asset_row->mmt_general_location_info.location_type == 0x01) {
+							atsc3_mmt_sls_mpt_location_info->ipv4_src_addr = mp_table_asset_row->mmt_general_location_info.ipv4_src_addr;
+							atsc3_mmt_sls_mpt_location_info->ipv4_dst_addr = mp_table_asset_row->mmt_general_location_info.ipv4_dst_addr;
+							atsc3_mmt_sls_mpt_location_info->ipv4_dst_port = mp_table_asset_row->mmt_general_location_info.ipv4_dst_port;
+							
+							if(loop_atsc3_mmt_sls_mpt_location_info_added) {
+								__MMSM_DEBUG("MPT message: added atsc3_mmt_sls_mpt_location_info for packet_id: %u, asset_type: %s, ipv4_dst_addr: %d, ipv4_dst_port: %d",
+										 atsc3_mmt_sls_mpt_location_info->packet_id, atsc3_mmt_sls_mpt_location_info->asset_type, atsc3_mmt_sls_mpt_location_info->ipv4_dst_addr, atsc3_mmt_sls_mpt_location_info->ipv4_dst_port);
+								has_atsc3_mmt_sls_mpt_location_info_added = true;
+								
+							}
+						}
+						
+						__MMSM_TRACE("MPT message: checking packet_id: %u, asset_type: %s, default: %u, identifier: %s", mp_table_asset_row->mmt_general_location_info.packet_id, mp_table_asset_row->asset_type, mp_table_asset_row->default_asset_flag, mp_table_asset_row->identifier_mapping.asset_id.asset_id ? (const char*)mp_table_asset_row->identifier_mapping.asset_id.asset_id : "");
+						if(strncasecmp(ATSC3_MP_TABLE_ASSET_ROW_HEVC_ID, mp_table_asset_row->asset_type, 4) == 0 ||
+							strncasecmp(ATSC3_MP_TABLE_ASSET_ROW_H264_ID, mp_table_asset_row->asset_type, 4) == 0) {
+							matching_lls_sls_mmt_session->video_packet_id = mp_table_asset_row->mmt_general_location_info.packet_id;
+							__MMSM_TRACE("MPT message: matching_lls_sls_mmt_session: %p, setting video_packet_id: packet_id: %u, asset_type: %s, default: %u, identifier: %s",
+										 matching_lls_sls_mmt_session,
+										 mp_table_asset_row->mmt_general_location_info.packet_id, mp_table_asset_row->asset_type, mp_table_asset_row->default_asset_flag, mp_table_asset_row->identifier_mapping.asset_id.asset_id ? (const char*)mp_table_asset_row->identifier_mapping.asset_id.asset_id : "");
 
-					} else if(strncasecmp(ATSC3_MP_TABLE_ASSET_ROW_AC_4_ID, mp_table_asset_row->asset_type, 4) == 0 ||
-							  strncasecmp(ATSC3_MP_TABLE_ASSET_ROW_MHM1_ID, mp_table_asset_row->asset_type, 4) == 0 ||
-							  strncasecmp(ATSC3_MP_TABLE_ASSET_ROW_MHM2_ID, mp_table_asset_row->asset_type, 4) == 0 ||
-							  strncasecmp(ATSC3_MP_TABLE_ASSET_ROW_MP4A_ID, mp_table_asset_row->asset_type, 4) == 0) {
-						matching_lls_sls_mmt_session->audio_packet_id = mp_table_asset_row->mmt_general_location_info.packet_id;
-						__MMSM_TRACE("MPT message: matching_lls_sls_mmt_session: %p, setting audio_packet_id: packet_id: %u, asset_type: %s, default: %u, identifier: %s",
-									 matching_lls_sls_mmt_session,
-									 mp_table_asset_row->mmt_general_location_info.packet_id, mp_table_asset_row->asset_type, mp_table_asset_row->default_asset_flag, mp_table_asset_row->identifier_mapping.asset_id.asset_id ? (const char*)mp_table_asset_row->identifier_mapping.asset_id.asset_id : "");
+						} else if(strncasecmp(ATSC3_MP_TABLE_ASSET_ROW_AC_4_ID, mp_table_asset_row->asset_type, 4) == 0 ||
+								  strncasecmp(ATSC3_MP_TABLE_ASSET_ROW_MHM1_ID, mp_table_asset_row->asset_type, 4) == 0 ||
+								  strncasecmp(ATSC3_MP_TABLE_ASSET_ROW_MHM2_ID, mp_table_asset_row->asset_type, 4) == 0 ||
+								  strncasecmp(ATSC3_MP_TABLE_ASSET_ROW_MP4A_ID, mp_table_asset_row->asset_type, 4) == 0) {
+							matching_lls_sls_mmt_session->audio_packet_id = mp_table_asset_row->mmt_general_location_info.packet_id;
+							__MMSM_TRACE("MPT message: matching_lls_sls_mmt_session: %p, setting audio_packet_id: packet_id: %u, asset_type: %s, default: %u, identifier: %s",
+										 matching_lls_sls_mmt_session,
+										 mp_table_asset_row->mmt_general_location_info.packet_id, mp_table_asset_row->asset_type, mp_table_asset_row->default_asset_flag, mp_table_asset_row->identifier_mapping.asset_id.asset_id ? (const char*)mp_table_asset_row->identifier_mapping.asset_id.asset_id : "");
 
-					} else if(strncasecmp(ATSC3_MP_TABLE_ASSET_ROW_IMSC1_ID, mp_table_asset_row->asset_type, 4) == 0) {
-						matching_lls_sls_mmt_session->stpp_packet_id = mp_table_asset_row->mmt_general_location_info.packet_id;
-						__MMSM_TRACE("MPT message: matching_lls_sls_mmt_session: %p, setting stpp_packet_id: packet_id: %u, asset_type: %s, default: %u, identifier: %s",
-									 matching_lls_sls_mmt_session,
-									 mp_table_asset_row->mmt_general_location_info.packet_id, mp_table_asset_row->asset_type, mp_table_asset_row->default_asset_flag, mp_table_asset_row->identifier_mapping.asset_id.asset_id ? (const char*)mp_table_asset_row->identifier_mapping.asset_id.asset_id : "");
+						} else if(strncasecmp(ATSC3_MP_TABLE_ASSET_ROW_IMSC1_ID, mp_table_asset_row->asset_type, 4) == 0) {
+							matching_lls_sls_mmt_session->stpp_packet_id = mp_table_asset_row->mmt_general_location_info.packet_id;
+							__MMSM_TRACE("MPT message: matching_lls_sls_mmt_session: %p, setting stpp_packet_id: packet_id: %u, asset_type: %s, default: %u, identifier: %s",
+										 matching_lls_sls_mmt_session,
+										 mp_table_asset_row->mmt_general_location_info.packet_id, mp_table_asset_row->asset_type, mp_table_asset_row->default_asset_flag, mp_table_asset_row->identifier_mapping.asset_id.asset_id ? (const char*)mp_table_asset_row->identifier_mapping.asset_id.asset_id : "");
 
+						}
 					}
 				}
 			}
@@ -1033,6 +1080,8 @@ void mmt_signalling_message_update_lls_sls_mmt_session(mmtp_signalling_packet_t*
 			__MMSM_DEBUG("mmt_signalling_message_update_lls_sls_mmt_session: Ignoring signal: 0x%x", mmt_signalling_message_header_and_payload->message_header.MESSAGE_id_type);
 		}
 	}
+	
+	return has_atsc3_mmt_sls_mpt_location_info_added;
 }
 
 mmt_atsc3_route_component_t* mmt_atsc3_message_payload_add_mmt_atsc3_route_component(mmt_atsc3_message_payload_t* mmt_atsc3_message_payload) {
@@ -1081,12 +1130,12 @@ void mmt_signalling_message_dump(mmtp_signalling_packet_t* mmtp_signalling_packe
 	__MMSM_DEBUG("------------------");
 	/**
 	 * dump si payload header fields
-	 * 	uint8_t		si_fragmentation_indiciator; //2 bits,
+	 * 	uint8_t		si_fragmentation_indicator; //2 bits,
 		uint8_t		si_additional_length_header; //1 bit
 		uint8_t		si_aggregation_flag; 		 //1 bit
 		uint8_t		si_fragmentation_counter;    //8 bits
 	 */
-	__MMSM_DEBUG(" fragmentation_indiciator   : %d", 	mmtp_signalling_packet->si_fragmentation_indicator);
+	__MMSM_DEBUG(" si_fragmentation_indicator   : %d", 	mmtp_signalling_packet->si_fragmentation_indicator);
 	__MMSM_DEBUG(" additional_length_header   : %d", 	mmtp_signalling_packet->si_additional_length_header);
 	__MMSM_DEBUG(" aggregation_flag           : %d",	mmtp_signalling_packet->si_aggregation_flag);
 	__MMSM_DEBUG(" fragmentation_counter      : %d",	mmtp_signalling_packet->si_fragmentation_counter);
@@ -1105,9 +1154,9 @@ void mmt_signalling_message_dump(mmtp_signalling_packet_t* mmtp_signalling_packe
 
 		if(mmt_signalling_message_header_and_payload->message_header.message_id == PA_message) {
 			pa_message_dump(mmt_signalling_message_header_and_payload);
-		} else if(mmt_signalling_message_header_and_payload->message_header.message_id >= MPI_message_start && mmt_signalling_message_header_and_payload->message_header.message_id < MPI_message_end) {
+		} else if(mmt_signalling_message_header_and_payload->message_header.message_id >= MPI_message_start && mmt_signalling_message_header_and_payload->message_header.message_id <= MPI_message_end) {
 			mpi_message_dump(mmt_signalling_message_header_and_payload);
-		} else if(mmt_signalling_message_header_and_payload->message_header.message_id >= MPT_message_start && mmt_signalling_message_header_and_payload->message_header.message_id < MPT_message_end) {
+		} else if(mmt_signalling_message_header_and_payload->message_header.message_id >= MPT_message_start && mmt_signalling_message_header_and_payload->message_header.message_id <= MPT_message_end) {
 			mpt_message_dump(mmt_signalling_message_header_and_payload);
 		} else if(mmt_signalling_message_header_and_payload->message_header.message_id == MMT_ATSC3_MESSAGE_ID) {
 			mmt_atsc3_message_payload_dump(mmt_signalling_message_header_and_payload);
@@ -1168,7 +1217,7 @@ void mpt_message_dump(mmt_signalling_message_header_and_payload_t* mmt_signallin
 		__MMSM_DEBUG(" mmt_general_location_info pkt_id         : %u", mp_table_asset_row->mmt_general_location_info.packet_id);
 		__MMSM_DEBUG(" mmt_general_location_info ipv4 src addr  : %u", mp_table_asset_row->mmt_general_location_info.ipv4_src_addr);
 		__MMSM_DEBUG(" mmt_general_location_info ipv4 dest addr : %u", mp_table_asset_row->mmt_general_location_info.ipv4_dst_addr);
-		__MMSM_DEBUG(" mmt_general_location_info ipv4 dest port : %u", mp_table_asset_row->mmt_general_location_info.dst_port);
+		__MMSM_DEBUG(" mmt_general_location_info ipv4 dest port : %u", mp_table_asset_row->mmt_general_location_info.ipv4_dst_port);
 		__MMSM_DEBUG(" mmt_general_location_info message id     : %u", mp_table_asset_row->mmt_general_location_info.message_id);
 
 		//first entry

@@ -288,6 +288,49 @@ vector<uint8_t>  atsc3_phy_build_plp_listeners_from_lls_slt_monitor(lls_slt_moni
                         }
                     }
                 }
+				
+				if(atsc3_slt_broadcast_svc_signalling->sls_protocol == SLS_PROTOCOL_MMTP) {
+					//iterate over our lls_slt_monitor's child lls_sls_mmt_monitor and assign any lls_mmt_sessions
+					for(int l=0; l < lls_slt_monitor->lls_sls_mmt_session_flows_v.count; l++) {
+						lls_sls_mmt_session_flows_t* lls_sls_mmt_session_flows = lls_slt_monitor->lls_sls_mmt_session_flows_v.data[l];
+						
+						for(int m=0; m < lls_sls_mmt_session_flows->lls_sls_mmt_session_v.count; m++) {
+							lls_sls_mmt_session_t* lls_sls_mmt_session = lls_sls_mmt_session_flows->lls_sls_mmt_session_v.data[m];
+							
+							if(lls_sls_mmt_session->atsc3_lls_slt_service->service_id == service_id) {
+								//add any atsc3_mmt_sls_mpt_location_info flows into our lmt
+								
+								for(int n=0; n < lls_sls_mmt_session->atsc3_mmt_sls_mpt_location_info_v.count; n++) {
+									atsc3_mmt_sls_mpt_location_info_t * atsc3_mmt_sls_mpt_location_info = lls_sls_mmt_session->atsc3_mmt_sls_mpt_location_info_v.data[n];
+									
+									for(int k=0; k < atsc3_link_mapping_table_last->atsc3_link_mapping_table_plp_v.count; k++) {
+										atsc3_link_mapping_table_plp_t* atsc3_link_mapping_table_plp = atsc3_link_mapping_table_last->atsc3_link_mapping_table_plp_v.data[k];
+
+										for(int p=0; l < atsc3_link_mapping_table_plp->atsc3_link_mapping_table_multicast_v.count; p++) {
+											atsc3_link_mapping_table_multicast_t* atsc3_link_mapping_table_multicast = atsc3_link_mapping_table_plp->atsc3_link_mapping_table_multicast_v.data[p];
+
+
+
+											if(atsc3_link_mapping_table_multicast->dst_ip_add == atsc3_mmt_sls_mpt_location_info->ipv4_dst_addr && atsc3_link_mapping_table_multicast->dst_udp_port == atsc3_mmt_sls_mpt_location_info->ipv4_dst_port) {
+												Atsc3NdkApplicationBridge_ptr->LogMsgF("atsc3_phy_update_plp_listeners_from_lls_slt_monitor: MMT - adding PLP_id: %d (%s: %s) for packet_id: %d",
+																					   atsc3_link_mapping_table_plp->PLP_ID,
+																					   atsc3_mmt_sls_mpt_location_info->ipv4_dst_addr,
+																					   atsc3_mmt_sls_mpt_location_info->ipv4_dst_port,
+																					   atsc3_mmt_sls_mpt_location_info->packet_id);
+
+												if(first_plp == -1 ) {
+													first_plp = atsc3_link_mapping_table_plp->PLP_ID;
+												} else {
+													plps_to_check.insert(atsc3_link_mapping_table_plp->PLP_ID);
+												}
+											}
+										}
+									}
+								}
+							}
+						}
+					}
+				}
             }
         }
      } //finally, release our RAII context mutex
@@ -1053,8 +1096,25 @@ void atsc3_core_service_bridge_process_packet_phy(block_t* packet) {
                 mmt_signalling_message_dispatch_context_notification_callbacks(udp_packet, mmtp_signalling_packet, atsc3_mmt_mfu_context);
 
                 //update our internal sls_mmt_session info
-                mmt_signalling_message_update_lls_sls_mmt_session(mmtp_signalling_packet, matching_lls_sls_mmt_session);
+				bool has_updated_atsc3_mmt_sls_mpt_location_info = false;
+				
+				has_updated_atsc3_mmt_sls_mpt_location_info = mmt_signalling_message_update_lls_sls_mmt_session(mmtp_signalling_packet, matching_lls_sls_mmt_session);
+				if(has_updated_atsc3_mmt_sls_mpt_location_info) {
+					//RAII acquire our context mutex
+					  {
+						  //make it safe for us to have a reference of lls_slt_monitor
+						  recursive_mutex& atsc3_core_service_player_bridge_context_mutex = atsc3_core_service_player_bridge_get_context_mutex();
+						  lock_guard<recursive_mutex> atsc3_core_service_player_bridge_context_mutex_local(atsc3_core_service_player_bridge_context_mutex);
 
+						  lls_slt_monitor_t* lls_slt_monitor = atsc3_core_service_player_bridge_get_lls_slt_montior();
+						  updated_plp_listeners = atsc3_phy_build_plp_listeners_from_lls_slt_monitor(lls_slt_monitor);
+					  } //release our context mutex before invoking atsc3_phy_notify_plp_selection_changed with our updated_plp_listeners values
+
+					  if(updated_plp_listeners.size()) {
+						  atsc3_phy_notify_plp_selection_changed(updated_plp_listeners);
+					  }
+				}
+				
                 //clear and flush out our mmtp_packet_id_packets_container if we came from re-assembly,
                 // otherwise, final free of mmtp_signalling_packet packet in :cleanup
                 mmtp_packet_id_packets_container_free_mmtp_signalling_packet(mmtp_packet_id_packets_container);

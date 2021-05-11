@@ -643,6 +643,23 @@ typedef struct mmt_session {
 
 typedef struct atsc3_mmt_mfu_context atsc3_mmt_mfu_context_t;
 
+typedef struct atsc3_mmt_sls_mpt_location_info {
+	uint16_t 	packet_id;
+	char        asset_type[5];
+
+	uint32_t	asset_id_scheme;
+	uint32_t	asset_id_length;
+	uint8_t*	asset_id;
+	
+	//borrowed from atsc3_mmt_signalling_message_types.h
+	uint8_t 	location_type;
+	
+	//for location_type == 0x01
+	uint32_t 	ipv4_src_addr;
+	uint32_t 	ipv4_dst_addr;
+	uint16_t 	ipv4_dst_port;
+} atsc3_mmt_sls_mpt_location_info_t;
+
 typedef struct lls_sls_mmt_session {
     uint16_t 						service_id;
 
@@ -662,6 +679,7 @@ typedef struct lls_sls_mmt_session {
     uint32_t sls_destination_ip_address;
     uint16_t sls_destination_udp_port;
 
+	ATSC3_VECTOR_BUILDER_STRUCT(atsc3_mmt_sls_mpt_location_info);
 
     /*
      * jjustman-2020-12-01 - these singled out individual *_packet_id essences are used for MMT transmux to a single a/v/s media essence, e.g. fmp4 or HLS -
@@ -687,7 +705,10 @@ typedef struct lls_sls_mmt_session {
        mmt_arguments_t* mmt_arguments;
        mmt_session_t* mmt_session;
 
-   } lls_sls_mmt_session_t;
+} lls_sls_mmt_session_t;
+
+ATSC3_VECTOR_BUILDER_METHODS_INTERFACE(lls_sls_mmt_session, atsc3_mmt_sls_mpt_location_info);
+
 
 
    /**
