@@ -108,7 +108,7 @@ mmtp_signalling_packet_t* mmtp_signalling_packet_parse_from_block_t(mmtp_packet_
 int8_t mmt_signalling_message_parse_packet(mmtp_signalling_packet_t* mmtp_signalling_packet, block_t* udp_packet_block);
     
 //context callbacks
-void mmt_signalling_message_update_lls_sls_mmt_session(mmtp_signalling_packet_t* mmtp_signalling_packet, lls_sls_mmt_session_t* matching_lls_sls_mmt_session);
+bool mmt_signalling_message_update_lls_sls_mmt_session(mmtp_signalling_packet_t* mmtp_signalling_packet, lls_sls_mmt_session_t* matching_lls_sls_mmt_session);
     
 
 void mmt_signalling_message_dump(mmtp_signalling_packet_t* mmtp_signalling_packet);
