@@ -244,13 +244,38 @@ typedef struct mmt_package_id {
 	uint8_t*	mmt_package_id;
 } mmt_package_id_t;
 
+/*
+ 
+ From ISO 23008-1:2017 10.6.1.3 Semantics for Table 56 — MMT_general_location_info syntax
+ 
+  Value Description
+  ----- -----------
+  0x01  MMTP packet flow over UDP/IP (version 4)
+  0x02  MMTP packet flow over UDP/IP (version 6)
+  0x03  An elementary stream within an MPEG-2 TS in a broadcast network.
+  0x04  An elementary stream (ES) in an MPEG-2 TS over the IP broadcast network
+  0x05  URL
+  0x06  Reserved for private location information
+  0x07  The same signalling message as the one that carries the data structure to which this MMT_ general_location_info() belongs
+  0x08  A signalling message delivered in the same data path as the one that carries the data structure to which this MMT_general_location_info() belongs
+  0x09  A signalling message delivered in a data path in the same UDP/IP flow as the one that carries the data structure to which this MMT_general_location_info() belongs
+  0x0A  A signalling message delivered in a data path in a UDP/IP (version 4) flow
+  0x0B  A signalling message delivered in a data path in a UDP/IP (version 6) flow
+  0x0C  An elementary stream (ES) in an MPEG-2 TS over the IP v4 broadcast network
+ 
+ */
 
 typedef struct mmt_general_location_info {
 	uint8_t location_type;
+	
+	//for _most_ location_type values (e.g. 0x00, 0x01, !0x03, !0x04, !0x05, ...etc)
 	uint16_t packet_id;
+	
+	//for location_type == 0x01
 	uint32_t ipv4_src_addr;
 	uint32_t ipv4_dst_addr;
-	uint16_t dst_port;
+	uint16_t ipv4_dst_port;
+	
 	//ignoring ipv6
 	uint16_t message_id;
 
