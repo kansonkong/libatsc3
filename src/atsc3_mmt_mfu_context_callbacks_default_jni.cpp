@@ -75,8 +75,13 @@ void atsc3_mmt_mpu_on_sequence_mpu_metadata_present_ndk(atsc3_mmt_mfu_context_t*
             }
 
             if (atsc3_video_decoder_configuration_record->hevc_decoder_configuration_record && atsc3_video_decoder_configuration_record->hevc_decoder_configuration_record->hevc_nals_combined) {
+                uint16_t service_id = 0;
+                if (atsc3_mmt_mfu_context->matching_lls_sls_mmt_session) {
+                    service_id = atsc3_mmt_mfu_context->matching_lls_sls_mmt_session->service_id;
+                }
+
                 if (atsc3_video_decoder_configuration_record->hevc_decoder_configuration_record->hevc_nals_combined->p_size) {
-                    Atsc3NdkMediaMMTBridge_ptr->atsc3_onInitHEVC_NAL_Extracted(packet_id, mpu_sequence_number, block_Get(atsc3_video_decoder_configuration_record->hevc_decoder_configuration_record->hevc_nals_combined), atsc3_video_decoder_configuration_record->hevc_decoder_configuration_record->hevc_nals_combined->p_size);
+                    Atsc3NdkMediaMMTBridge_ptr->atsc3_onInitHEVC_NAL_Extracted(service_id, packet_id, mpu_sequence_number, block_Get(atsc3_video_decoder_configuration_record->hevc_decoder_configuration_record->hevc_nals_combined), atsc3_video_decoder_configuration_record->hevc_decoder_configuration_record->hevc_nals_combined->p_size);
                 } else {
                     Atsc3NdkMediaMMTBridge_ptr->LogMsg("atsc3_mmt_mpu_on_sequence_mpu_metadata_present_ndk - error, no NALs returned!");
                 }
@@ -127,6 +132,11 @@ void atsc3_mmt_mpu_mfu_on_sample_complete_ndk(atsc3_mmt_mfu_context_t* atsc3_mmt
         _ATSC3_MMT_MFU_CONTEXT_CALLBACKS_DEFAULT_JNI_WARN("atsc3_mmt_mpu_mfu_on_sample_complete_ndk: mmt_mfu_sample: %p: returned null atsc3_mmt_mfu_mpu_timestamp_descriptor for packet_id: %d, mpu_sequence_number: %d", mmt_mfu_sample, packet_id, mpu_sequence_number);
     }
 
+    uint16_t service_id = 0;
+    if (atsc3_mmt_mfu_context->matching_lls_sls_mmt_session) {
+        service_id = atsc3_mmt_mfu_context->matching_lls_sls_mmt_session->service_id;
+    }
+
     if(atsc3_mmt_mfu_context->mmtp_packet_id_packets_container->atsc3_video_decoder_configuration_record &&
         atsc3_mmt_mfu_context->mmtp_packet_id_packets_container->atsc3_video_decoder_configuration_record->hevc_decoder_configuration_record &&
         atsc3_mmt_mfu_context->mmtp_packet_id_packets_container->atsc3_video_decoder_configuration_record->hevc_decoder_configuration_record->hevc_nals_combined) {
@@ -146,7 +156,8 @@ void atsc3_mmt_mpu_mfu_on_sample_complete_ndk(atsc3_mmt_mfu_context_t* atsc3_mmt
                                                 mpu_timestamp_descriptor);
 
         }
-        Atsc3NdkMediaMMTBridge_ptr->atsc3_onMfuPacket(packet_id, mpu_sequence_number, sample_number, block_ptr, block_len, mpu_timestamp_descriptor, mfu_fragment_count_rebuilt);
+
+        Atsc3NdkMediaMMTBridge_ptr->atsc3_onMfuPacket(service_id, packet_id, mpu_sequence_number, sample_number, block_ptr, block_len, mpu_timestamp_descriptor, mfu_fragment_count_rebuilt);
 
         block_Destroy(&mmt_mfu_sample_rbsp);
 
@@ -164,7 +175,7 @@ void atsc3_mmt_mpu_mfu_on_sample_complete_ndk(atsc3_mmt_mfu_context_t* atsc3_mmt
                                             mpu_timestamp_descriptor);
         }
 
-        Atsc3NdkMediaMMTBridge_ptr->atsc3_onMfuPacket(packet_id, mpu_sequence_number, sample_number, block_ptr, block_len, mpu_timestamp_descriptor, mfu_fragment_count_rebuilt);
+        Atsc3NdkMediaMMTBridge_ptr->atsc3_onMfuPacket(service_id, packet_id, mpu_sequence_number, sample_number, block_ptr, block_len, mpu_timestamp_descriptor, mfu_fragment_count_rebuilt);
     }
 }
 
@@ -184,6 +195,11 @@ void atsc3_mmt_mpu_mfu_on_sample_corrupt_ndk(atsc3_mmt_mfu_context_t* atsc3_mmt_
     if(block_Len(mmt_mfu_sample) < 32 ) {
         _ATSC3_MMT_MFU_CONTEXT_CALLBACKS_DEFAULT_JNI_WARN("atsc3_mmt_mpu_mfu_on_sample_corrupt_ndk: mmt_mfu_sample: %p: block len is < 32 for packet_id: %d, mpu_sequence_number: %d", mmt_mfu_sample, packet_id, mpu_sequence_number);
         return;
+    }
+
+    uint16_t service_id = 0;
+    if (atsc3_mmt_mfu_context->matching_lls_sls_mmt_session) {
+        service_id = atsc3_mmt_mfu_context->matching_lls_sls_mmt_session->service_id;
     }
 
     if(atsc3_mmt_mfu_context->mmtp_packet_id_packets_container->atsc3_video_decoder_configuration_record &&
@@ -213,7 +229,7 @@ void atsc3_mmt_mpu_mfu_on_sample_corrupt_ndk(atsc3_mmt_mfu_context_t* atsc3_mmt_
 
             //}
 
-            Atsc3NdkMediaMMTBridge_ptr->atsc3_onMfuPacketCorrupt(packet_id, mpu_sequence_number, sample_number, block_ptr, block_len, mpu_timestamp_descriptor, mfu_fragment_count_expected, mfu_fragment_count_rebuilt);
+            Atsc3NdkMediaMMTBridge_ptr->atsc3_onMfuPacketCorrupt(service_id, packet_id, mpu_sequence_number, sample_number, block_ptr, block_len, mpu_timestamp_descriptor, mfu_fragment_count_expected, mfu_fragment_count_rebuilt);
 
             block_Destroy(&mmt_mfu_sample_rbsp);
         } else {
@@ -231,7 +247,7 @@ void atsc3_mmt_mpu_mfu_on_sample_corrupt_ndk(atsc3_mmt_mfu_context_t* atsc3_mmt_
                                                 mmt_mfu_sample->p_buffer,
                                                 block_len, block_ptr[0], block_ptr[1], block_ptr[2], block_ptr[3]);
 
-        Atsc3NdkMediaMMTBridge_ptr->atsc3_onMfuPacketCorrupt(packet_id, mpu_sequence_number, sample_number, block_ptr, block_len, mpu_timestamp_descriptor, mfu_fragment_count_expected, mfu_fragment_count_rebuilt);
+        Atsc3NdkMediaMMTBridge_ptr->atsc3_onMfuPacketCorrupt(service_id, packet_id, mpu_sequence_number, sample_number, block_ptr, block_len, mpu_timestamp_descriptor, mfu_fragment_count_expected, mfu_fragment_count_rebuilt);
     }
 }
 
@@ -252,6 +268,11 @@ void atsc3_mmt_mpu_mfu_on_sample_corrupt_mmthsample_header_ndk(atsc3_mmt_mfu_con
         _ATSC3_MMT_MFU_CONTEXT_CALLBACKS_DEFAULT_JNI_WARN("atsc3_mmt_mpu_mfu_on_sample_corrupt_mmthsample_header_ndk: mmt_mfu_sample: %p: returned null atsc3_mmt_mfu_mpu_timestamp_descriptor for packet_id: %d, mpu_sequence_number: %d", mmt_mfu_sample, packet_id, mpu_sequence_number);
     }
     //TODO: jjustman-2019-10-23: determine if we can still extract NAL's from this payload...
+
+    uint16_t service_id = 0;
+    if (atsc3_mmt_mfu_context->matching_lls_sls_mmt_session) {
+        service_id = atsc3_mmt_mfu_context->matching_lls_sls_mmt_session->service_id;
+    }
 
     if(atsc3_mmt_mfu_context->mmtp_packet_id_packets_container->atsc3_video_decoder_configuration_record &&
        atsc3_mmt_mfu_context->mmtp_packet_id_packets_container->atsc3_video_decoder_configuration_record->hevc_decoder_configuration_record &&
@@ -276,7 +297,7 @@ void atsc3_mmt_mpu_mfu_on_sample_corrupt_mmthsample_header_ndk(atsc3_mmt_mfu_con
                                                     mmt_mfu_sample_rbsp->i_pos,
                                                     mmt_mfu_sample_rbsp->p_size);
 
-            Atsc3NdkMediaMMTBridge_ptr->atsc3_onMfuPacketCorruptMmthSampleHeader(packet_id, mpu_sequence_number, sample_number, block_ptr, block_len, mpu_timestamp_descriptor, mfu_fragment_count_expected, mfu_fragment_count_rebuilt);
+            Atsc3NdkMediaMMTBridge_ptr->atsc3_onMfuPacketCorruptMmthSampleHeader(service_id, packet_id, mpu_sequence_number, sample_number, block_ptr, block_len, mpu_timestamp_descriptor, mfu_fragment_count_expected, mfu_fragment_count_rebuilt);
 
             block_Destroy(&mmt_mfu_sample_rbsp);
         }
@@ -291,7 +312,7 @@ void atsc3_mmt_mpu_mfu_on_sample_corrupt_mmthsample_header_ndk(atsc3_mmt_mfu_con
                                                     packet_id, mpu_sequence_number, sample_number, block_ptr, block_len, block_ptr[0], block_ptr[1], block_ptr[2], block_ptr[3]);
 
             //audio and stpp don't need NAL start codes
-            Atsc3NdkMediaMMTBridge_ptr->atsc3_onMfuPacketCorruptMmthSampleHeader(packet_id, mpu_sequence_number, sample_number, block_ptr, block_len, mpu_timestamp_descriptor, mfu_fragment_count_expected, mfu_fragment_count_rebuilt);
+            Atsc3NdkMediaMMTBridge_ptr->atsc3_onMfuPacketCorruptMmthSampleHeader(service_id, packet_id, mpu_sequence_number, sample_number, block_ptr, block_len, mpu_timestamp_descriptor, mfu_fragment_count_expected, mfu_fragment_count_rebuilt);
         } else {
             _ATSC3_MMT_MFU_CONTEXT_CALLBACKS_DEFAULT_JNI_ERROR("atsc3_mmt_mpu_mfu_on_sample_corrupt_mmthsample_header_ndk: non NAL, packet_id: %d, mpu_sequence_number: %d, sample: %d - block is NULL!",
                                                      packet_id, mpu_sequence_number, sample_number);

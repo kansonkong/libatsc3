@@ -1,6 +1,9 @@
 package org.ngbp.libatsc3.middleware.android.mmt;
 
+import android.util.ArrayMap;
 import android.util.Log;
+
+import androidx.annotation.Nullable;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -17,9 +20,25 @@ public class MmtPacketIdContext {
     public static void AudioPacketIdUpdateMpuSequenceAndPresentationTime(int toUpdateAudioPacketId, int mpu_sequence_number, long mpu_presentation_time_ntp64, int mpu_presentation_time_seconds, int mpu_presentation_time_microseconds) {
 
     }
-    public static int audio_packet_id = -1;
+    //public static int audio_packet_id = -1;
     public static MmtSignallingContext audio_packet_signalling_information;
-    public static MmtMfuStatistics audio_packet_statistics;
+    //public static MmtMfuStatistics audio_packet_statistics;
+    private static final Map<Integer, MmtMfuStatistics> audio_packet_statistics_map = new ArrayMap<>();
+
+    public static boolean isAudioPacket(int packet_id) {
+        return audio_packet_statistics_map.containsKey(packet_id);
+    }
+
+    public static void createAudioPacketStatistic(int packet_id) {
+        if (!audio_packet_statistics_map.containsKey(packet_id)) {
+            audio_packet_statistics_map.put(packet_id, new MmtMfuStatistics("audio"));
+        }
+    }
+
+    @Nullable
+    public static MmtMfuStatistics getAudioPacketStatistic(int packet_id) {
+        return audio_packet_statistics_map.get(packet_id);
+    }
 
     public static int stpp_packet_id = -1;
     public static MmtSignallingContext stpp_packet_signalling_information;
@@ -36,7 +55,7 @@ public class MmtPacketIdContext {
         MmtPacketIdContext.stpp_packet_signalling_information = new MmtSignallingContext();
 
         MmtPacketIdContext.video_packet_statistics = new MmtMfuStatistics("video");
-        MmtPacketIdContext.audio_packet_statistics = new MmtMfuStatistics("audio");
+        //MmtPacketIdContext.audio_packet_statistics = new MmtMfuStatistics("audio");
         MmtPacketIdContext.stpp_packet_statistics = new MmtMfuStatistics("stpp");
     };
 
