@@ -39,11 +39,12 @@ using namespace std;
 #include <atsc3_mmt_mfu_context_callbacks_default_jni.h>
 
 #include "mmt/MMTExtractor.h"
+#include "Atsc3RingBuffer.h"
 
 class Atsc3NdkMediaMMTBridge : public IAtsc3NdkMediaMMTBridge
 {
 public:
-    Atsc3NdkMediaMMTBridge(JNIEnv* env, jobject jni_instance);
+    Atsc3NdkMediaMMTBridge(JNIEnv* env, jobject jni_instance, jobject fragment_buffer, jint max_fragment_count);
 
     //logging
     void LogMsg(const char *msg);
@@ -53,7 +54,7 @@ public:
     /* Media MMT Bridge callbacks for ExoPlayer JNI handoff */
 
     //MMT Initialization callbacks for Video and Audio format(s)
-    void atsc3_onInitHEVC_NAL_Extracted(uint16_t packet_id, uint32_t mpu_sequence_number, uint8_t* buffer, uint32_t bufferLen);
+    void atsc3_onInitHEVC_NAL_Extracted(uint16_t service_id, uint16_t packet_id, uint32_t mpu_sequence_number, uint8_t* buffer, uint32_t bufferLen);
     void atsc3_onInitAudioDecoderConfigurationRecord(uint16_t packet_id, uint32_t mpu_sequence_number, atsc3_audio_decoder_configuration_record_t* atsc3_audio_decoder_configuration_record);
 
     //Signalling callbacks
@@ -66,9 +67,9 @@ public:
     void atsc3_setVideoWidthHeightFromTrak(uint16_t packet_id, uint32_t width, uint32_t height);
 
     //MFU callbacks
-    void atsc3_onMfuPacket(uint16_t packet_id, uint32_t mpu_sequence_number, uint32_t sample_number, uint8_t* buffer, uint32_t bufferLen, uint64_t presentationUs, uint32_t mfu_fragment_count_expected);
-    void atsc3_onMfuPacketCorrupt(uint16_t packet_id, uint32_t mpu_sequence_number, uint32_t sample_number, uint8_t* buffer, uint32_t bufferLen, uint64_t presentationUs, uint32_t mfu_fragment_count_expected, uint32_t mfu_fragment_count_rebuilt);
-    void atsc3_onMfuPacketCorruptMmthSampleHeader(uint16_t packet_id, uint32_t mpu_sequence_number, uint32_t sample_number, uint8_t* buffer, uint32_t bufferLen, uint64_t presentationUs, uint32_t mfu_fragment_count_expected, uint32_t mfu_fragment_count_rebuilt);
+    void atsc3_onMfuPacket(uint16_t service_id, uint16_t packet_id, uint32_t mpu_sequence_number, uint32_t sample_number, uint8_t* buffer, uint32_t bufferLen, uint64_t presentationUs, uint32_t mfu_fragment_count_expected);
+    void atsc3_onMfuPacketCorrupt(uint16_t service_id, uint16_t packet_id, uint32_t mpu_sequence_number, uint32_t sample_number, uint8_t* buffer, uint32_t bufferLen, uint64_t presentationUs, uint32_t mfu_fragment_count_expected, uint32_t mfu_fragment_count_rebuilt);
+    void atsc3_onMfuPacketCorruptMmthSampleHeader(uint16_t service_id, uint16_t packet_id, uint32_t mpu_sequence_number, uint32_t sample_number, uint8_t* buffer, uint32_t bufferLen, uint64_t presentationUs, uint32_t mfu_fragment_count_expected, uint32_t mfu_fragment_count_rebuilt);
 
     void atsc3_onMfuSampleMissing(uint16_t i, uint32_t i1, uint32_t i2);
 
@@ -76,6 +77,7 @@ private:
 
 
     MMTExtractor* mmtExtractor;
+    Atsc3RingBuffer* fragmentBuffer;
 
     std::thread mhRxThread;
 
@@ -84,6 +86,9 @@ private:
     std::vector<jobject> global_jobject_nal_refs;
 
     block_t*    preAllocInFlightUdpPacket;
+
+    uint16_t    last_service_id = 0;
+    void writeToRingBuffer(int8_t type, uint16_t service_id, uint16_t packet_id, uint32_t sample_number, uint64_t presentationUs, uint8_t* buffer, uint32_t bufferLen);
 
 public:
     //jjustman-2020-12-17 - testing

@@ -28,7 +28,7 @@ public class MfuByteBufferFragment {
         this.sample_number = sample_number;
 
         //jjustman-2020-09-17 - HACK for ac-4 sync frame
-        if(this.packet_id == MmtPacketIdContext.audio_packet_id) {
+        if(MmtPacketIdContext.isAudioPacket(this.packet_id)) {
 //            /* AC-4 sync size is 3 bytes */
 //            header[2] = 0xFF;
 //            header[3] = 0xFF;
@@ -61,10 +61,11 @@ public class MfuByteBufferFragment {
         //only assign our mfu_presentation_time_uS_computed if we have our mpu_presentation_time from SI
 
         if(this.mpu_presentation_time_uS_from_SI != null && this.mpu_presentation_time_uS_from_SI > 0) {
+            long extracted_sample_duration_us;
             if (this.packet_id == MmtPacketIdContext.video_packet_id && MmtPacketIdContext.video_packet_statistics.extracted_sample_duration_us > 0) {
                 mfu_presentation_time_uS_computed = mpu_presentation_time_uS_from_SI + (sample_number - 1) * MmtPacketIdContext.video_packet_statistics.extracted_sample_duration_us;
-            } else if (this.packet_id == MmtPacketIdContext.audio_packet_id && MmtPacketIdContext.audio_packet_statistics.extracted_sample_duration_us > 0) {
-                mfu_presentation_time_uS_computed = mpu_presentation_time_uS_from_SI + (sample_number - 1) * MmtPacketIdContext.audio_packet_statistics.extracted_sample_duration_us;
+            } else if (MmtPacketIdContext.isAudioPacket(this.packet_id) && (extracted_sample_duration_us = MmtPacketIdContext.getAudioPacketStatistic(this.packet_id).extracted_sample_duration_us) > 0) {
+                mfu_presentation_time_uS_computed = mpu_presentation_time_uS_from_SI + (sample_number - 1) * extracted_sample_duration_us;
             } else if (this.packet_id == MmtPacketIdContext.stpp_packet_id && MmtPacketIdContext.stpp_packet_statistics.extracted_sample_duration_us > 0) {
                 mfu_presentation_time_uS_computed = mpu_presentation_time_uS_from_SI + (sample_number - 1) * MmtPacketIdContext.stpp_packet_statistics.extracted_sample_duration_us;
             }
