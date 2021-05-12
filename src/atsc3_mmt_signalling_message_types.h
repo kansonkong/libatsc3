@@ -265,6 +265,9 @@ typedef struct mmt_package_id {
  
  */
 
+#define MMT_GENERAL_LOCATION_INFO_LOCATION_TYPE_MMTP_PACKET_FLOW_SAME_AS_SI 0x00
+#define MMT_GENERAL_LOCATION_INFO_LOCATION_TYPE_MMTP_PACKET_FLOW_UDP_IP_V4  0x01
+
 typedef struct mmt_general_location_info {
 	uint8_t location_type;
 	
@@ -294,6 +297,9 @@ typedef struct mmt_signaling_message_mpu_timestamp_descriptor {
     uint8_t                                mpu_tuple_n; //mpu_tuple_n = descriptor_length/12 = (32+64)/8
     mmt_signalling_message_mpu_tuple_t*    mpu_tuple;
 } mmt_signalling_message_mpu_timestamp_descriptor_t;
+
+
+#define MP_TABLE_ASSET_ROW_ASSET_TYPE_LENGTH 4
 
 //Video: HEVC
 #define ATSC3_MP_TABLE_ASSET_ROW_HEVC_ID "hev1"

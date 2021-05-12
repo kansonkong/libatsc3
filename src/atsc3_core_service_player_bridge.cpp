@@ -17,9 +17,9 @@
 //jjustman-2020-12-02 - restrict this include to local cpp, as downstream projects otherwise would need to have <pcre2.h> on their include path
 #include "atsc3_alc_utils.h"
 
-int _ATSC3_CORE_SERVICE_PLAYER_BRIDGE_INFO_ENABLED = 0;
-int _ATSC3_CORE_SERVICE_PLAYER_BRIDGE_DEBUG_ENABLED = 0;
-int _ATSC3_CORE_SERVICE_PLAYER_BRIDGE_TRACE_ENABLED = 0;
+int _ATSC3_CORE_SERVICE_PLAYER_BRIDGE_INFO_ENABLED = 1;
+int _ATSC3_CORE_SERVICE_PLAYER_BRIDGE_DEBUG_ENABLED = 1;
+int _ATSC3_CORE_SERVICE_PLAYER_BRIDGE_TRACE_ENABLED = 1;
 
 IAtsc3NdkApplicationBridge* Atsc3NdkApplicationBridge_ptr = NULL;
 IAtsc3NdkPHYBridge*         Atsc3NdkPHYBridge_ptr = NULL;
@@ -231,6 +231,10 @@ vector<uint8_t>  atsc3_phy_build_plp_listeners_from_lls_slt_monitor(lls_slt_moni
         return plps_to_listen;
     }
 
+    __ATSC3_CORE_SERVICE_PLAYER_BRIDGE_TRACE("atsc3_phy_build_plp_listeners_from_lls_slt_monitor: lls_slt_monitor: %p, lls_slt_monitor->lls_slt_service_id_v.count: %d",
+                                             lls_slt_monitor,
+                                             lls_slt_monitor->lls_slt_service_id_v.count);
+
     //acquire our mutex for "pseudo-context" w/ lls_slt_monitor so it won't change out from under (hopefully)..
     {
         lock_guard<recursive_mutex> atsc3_core_service_player_bridge_context_mutex_local(atsc3_core_service_player_bridge_context_mutex);
@@ -290,13 +294,21 @@ vector<uint8_t>  atsc3_phy_build_plp_listeners_from_lls_slt_monitor(lls_slt_moni
                 }
 				
 				if(atsc3_slt_broadcast_svc_signalling->sls_protocol == SLS_PROTOCOL_MMTP) {
+                    __ATSC3_CORE_SERVICE_PLAYER_BRIDGE_TRACE("atsc3_phy_build_plp_listeners_from_lls_slt_monitor: processing SLS_PROTOCOL_MMTP for service_id: %d, lls_slt_monitor: %p, lls_slt_monitor->lls_slt_service_id_v.count: %d",
+                                                             service_id,
+                                                             lls_slt_monitor,
+                                                             lls_slt_monitor->lls_slt_service_id_v.count);
 					//iterate over our lls_slt_monitor's child lls_sls_mmt_monitor and assign any lls_mmt_sessions
 					for(int l=0; l < lls_slt_monitor->lls_sls_mmt_session_flows_v.count; l++) {
 						lls_sls_mmt_session_flows_t* lls_sls_mmt_session_flows = lls_slt_monitor->lls_sls_mmt_session_flows_v.data[l];
 						
 						for(int m=0; m < lls_sls_mmt_session_flows->lls_sls_mmt_session_v.count; m++) {
 							lls_sls_mmt_session_t* lls_sls_mmt_session = lls_sls_mmt_session_flows->lls_sls_mmt_session_v.data[m];
-							
+							if(!lls_sls_mmt_session || !lls_sls_mmt_session->atsc3_lls_slt_service) {
+                                __ATSC3_CORE_SERVICE_PLAYER_BRIDGE_WARN("lls_sls_mmt_session index m: %d, %p is missing atsc3_lls_slt_service", m, lls_sls_mmt_session);
+                                continue;
+							}
+
 							if(lls_sls_mmt_session->atsc3_lls_slt_service->service_id == service_id) {
 								//add any atsc3_mmt_sls_mpt_location_info flows into our lmt
 								
@@ -891,7 +903,7 @@ void atsc3_core_service_bridge_process_packet_phy(block_t* packet) {
     //jjustman-2020-11-12 - TODO: extract this core MMT logic out for ExoPlayer MMT native depacketization
 
     //MMT: Find a matching SLS service from this packet flow, and if the selected atsc3_lls_slt_service is monitored, enqueue for MFU DU re-constituion and emission
-    matching_lls_sls_mmt_session = lls_slt_mmt_session_find_from_udp_packet(lls_slt_monitor, udp_packet->udp_flow.src_ip_addr, udp_packet->udp_flow.dst_ip_addr, udp_packet->udp_flow.dst_port);
+    matching_lls_sls_mmt_session = lls_sls_mmt_session_find_from_udp_packet(lls_slt_monitor, udp_packet->udp_flow.src_ip_addr, udp_packet->udp_flow.dst_ip_addr, udp_packet->udp_flow.dst_port);
     __ATSC3_CORE_SERVICE_PLAYER_BRIDGE_TRACE("Checking matching_lls_sls_mmt_session: %p,", matching_lls_sls_mmt_session);
 
 	if(matching_lls_sls_mmt_session && lls_slt_monitor && lls_slt_monitor->lls_sls_mmt_monitor && matching_lls_sls_mmt_session->atsc3_lls_slt_service->service_id == lls_slt_monitor->lls_sls_mmt_monitor->transients.atsc3_lls_slt_service->service_id) {
@@ -1124,23 +1136,42 @@ void atsc3_core_service_bridge_process_packet_phy(block_t* packet) {
 
                 //update our internal sls_mmt_session info
 				bool has_updated_atsc3_mmt_sls_mpt_location_info = false;
-				
+
+                __ATSC3_CORE_SERVICE_PLAYER_BRIDGE_TRACE("atsc3_core_service_bridge_process_packet_phy - before mmt_signalling_message_update_lls_sls_mmt_session with matching_lls_sls_mmt_session: %p", matching_lls_sls_mmt_session);
+
 				has_updated_atsc3_mmt_sls_mpt_location_info = mmt_signalling_message_update_lls_sls_mmt_session(mmtp_signalling_packet, matching_lls_sls_mmt_session);
-				if(has_updated_atsc3_mmt_sls_mpt_location_info) {
-					//RAII acquire our context mutex
+
+                __ATSC3_CORE_SERVICE_PLAYER_BRIDGE_TRACE("atsc3_core_service_bridge_process_packet_phy - after mmt_signalling_message_update_lls_sls_mmt_session with matching_lls_sls_mmt_session: %p, has_updated_atsc3_mmt_sls_mpt_location_info: %d", matching_lls_sls_mmt_session, has_updated_atsc3_mmt_sls_mpt_location_info);
+
+                if(has_updated_atsc3_mmt_sls_mpt_location_info) {
+
+                    vector<uint8_t> updated_plp_listeners;
+
+                    //RAII acquire our context mutex
 					  {
 						  //make it safe for us to have a reference of lls_slt_monitor
-						  recursive_mutex& atsc3_core_service_player_bridge_context_mutex = atsc3_core_service_player_bridge_get_context_mutex();
-						  lock_guard<recursive_mutex> atsc3_core_service_player_bridge_context_mutex_local(atsc3_core_service_player_bridge_context_mutex);
 
-						  lls_slt_monitor_t* lls_slt_monitor = atsc3_core_service_player_bridge_get_lls_slt_montior();
-						  updated_plp_listeners = atsc3_phy_build_plp_listeners_from_lls_slt_monitor(lls_slt_monitor);
-					  } //release our context mutex before invoking atsc3_phy_notify_plp_selection_changed with our updated_plp_listeners values
+                          __ATSC3_CORE_SERVICE_PLAYER_BRIDGE_TRACE("atsc3_core_service_bridge_process_packet_phy - before atsc3_core_service_player_bridge_get_context_mutex");
+                          recursive_mutex& atsc3_core_service_player_bridge_context_mutex = atsc3_core_service_player_bridge_get_context_mutex();
+						  lock_guard<recursive_mutex> atsc3_core_service_player_bridge_context_mutex_local(atsc3_core_service_player_bridge_context_mutex);
+                          __ATSC3_CORE_SERVICE_PLAYER_BRIDGE_TRACE("atsc3_core_service_bridge_process_packet_phy - after atsc3_core_service_player_bridge_get_context_mutex");
+
+                          lls_slt_monitor_t* lls_slt_monitor = atsc3_core_service_player_bridge_get_lls_slt_montior();
+                          __ATSC3_CORE_SERVICE_PLAYER_BRIDGE_TRACE("atsc3_core_service_bridge_process_packet_phy - after atsc3_core_service_player_bridge_get_lls_slt_montior");
+
+                          updated_plp_listeners = atsc3_phy_build_plp_listeners_from_lls_slt_monitor(lls_slt_monitor);
+                          __ATSC3_CORE_SERVICE_PLAYER_BRIDGE_TRACE("atsc3_core_service_bridge_process_packet_phy - after atsc3_phy_build_plp_listeners_from_lls_slt_monitor, with lls_slt_monitor: %p, updated_plp_listeners.size: %d", lls_slt_monitor, updated_plp_listeners.size());
+
+                      } //release our context mutex before invoking atsc3_phy_notify_plp_selection_changed with our updated_plp_listeners values
 
 					  if(updated_plp_listeners.size()) {
-						  atsc3_phy_notify_plp_selection_changed(updated_plp_listeners);
-					  }
-				}
+                          __ATSC3_CORE_SERVICE_PLAYER_BRIDGE_TRACE("atsc3_core_service_bridge_process_packet_phy - before atsc3_phy_notify_plp_selection_changed");
+                          Atsc3NdkApplicationBridge_ptr->atsc3_phy_notify_plp_selection_changed(updated_plp_listeners);
+                          __ATSC3_CORE_SERVICE_PLAYER_BRIDGE_TRACE("atsc3_core_service_bridge_process_packet_phy - after atsc3_phy_notify_plp_selection_changed");
+                      }
+                    __ATSC3_CORE_SERVICE_PLAYER_BRIDGE_TRACE("atsc3_core_service_bridge_process_packet_phy - exit has_updated_atsc3_mmt_sls_mpt_location_info logic");
+
+                }
 				
                 //clear and flush out our mmtp_packet_id_packets_container if we came from re-assembly,
                 // otherwise, final free of mmtp_signalling_packet packet in :cleanup

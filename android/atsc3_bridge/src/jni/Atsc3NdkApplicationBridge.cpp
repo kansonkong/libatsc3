@@ -146,19 +146,32 @@ int Atsc3NdkApplicationBridge::atsc3_slt_select_service(int service_id) {
 
             //RAII acquire our context mutex
             {
+                _NDK_APPLICATION_BRIDGE_INFO("Atsc3NdkApplicationBridge::atsc3_slt_select_service - before atsc3_core_service_player_bridge_get_context_mutex with service_id: %d", service_id);
+
                 //make it safe for us to have a reference of lls_slt_monitor
                 recursive_mutex& atsc3_core_service_player_bridge_context_mutex = atsc3_core_service_player_bridge_get_context_mutex();
                 lock_guard<recursive_mutex> atsc3_core_service_player_bridge_context_mutex_local(atsc3_core_service_player_bridge_context_mutex);
 
+                _NDK_APPLICATION_BRIDGE_INFO("Atsc3NdkApplicationBridge::atsc3_slt_select_service - before atsc3_core_service_player_bridge_get_lls_slt_montior with service_id: %d", service_id);
+
                 lls_slt_monitor_t* lls_slt_monitor = atsc3_core_service_player_bridge_get_lls_slt_montior();
+                _NDK_APPLICATION_BRIDGE_INFO("Atsc3NdkApplicationBridge::atsc3_slt_select_service - before atsc3_phy_build_plp_listeners_from_lls_slt_monitor with service_id: %d", service_id);
+
                 updated_plp_listeners = atsc3_phy_build_plp_listeners_from_lls_slt_monitor(lls_slt_monitor);
+                _NDK_APPLICATION_BRIDGE_INFO("Atsc3NdkApplicationBridge::atsc3_slt_select_service - after atsc3_phy_build_plp_listeners_from_lls_slt_monitor with service_id: %d", service_id);
+
             } //release our context mutex before invoking atsc3_phy_notify_plp_selection_changed with our updated_plp_listeners values
 
             if(updated_plp_listeners.size()) {
+                _NDK_APPLICATION_BRIDGE_INFO("Atsc3NdkApplicationBridge::atsc3_slt_select_service - before from atsc3_phy_notify_plp_selection_changed with service_id: %d", service_id);
                 atsc3_phy_notify_plp_selection_changed(updated_plp_listeners);
+                _NDK_APPLICATION_BRIDGE_INFO("Atsc3NdkApplicationBridge::atsc3_slt_select_service - return from atsc3_phy_notify_plp_selection_changed with service_id: %d", service_id);
             }
+
         }
     }
+
+    _NDK_APPLICATION_BRIDGE_INFO("Atsc3NdkApplicationBridge::atsc3_slt_select_service - return service_id: %d", service_id);
 
     return ret;
 }
@@ -504,6 +517,7 @@ void Atsc3NdkApplicationBridge::atsc3_onSltTablePresent(const char* slt_payload_
 		_NDK_APPLICATION_BRIDGE_ERROR("Atsc3NdkApplicationBridge::atsc3_onSltTablePresent: bridgeConsumerJniEnv is NULL");
         return;
     }
+
     if (!slt_payload_xml || !strlen(slt_payload_xml)) {
         _NDK_APPLICATION_BRIDGE_ERROR("Atsc3NdkApplicationBridge::atsc3_onSltTablePresent: slt_payload_xml is NULL!");
         return;

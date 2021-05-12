@@ -175,7 +175,7 @@ void atsc3_mmt_sls_mpt_location_info_free(atsc3_mmt_sls_mpt_location_info_t** at
 		atsc3_mmt_sls_mpt_location_info_t* atsc3_mmt_sls_mpt_location_info = *atsc3_mmt_sls_mpt_location_info_p;
 		if(atsc3_mmt_sls_mpt_location_info) {
 			if(atsc3_mmt_sls_mpt_location_info->asset_id) {
-				freeclean(atsc3_mmt_sls_mpt_location_info->asset_id);
+				freeclean((void**)&atsc3_mmt_sls_mpt_location_info->asset_id);
 			}
 			
 			free(atsc3_mmt_sls_mpt_location_info);
