@@ -16,7 +16,7 @@
 #include "atsc3_mmt_signalling_message.h"
 #include "atsc3_mmtp_packet_types.h"
 
-int _MMTP_DEBUG_ENABLED = 0;
+int _MMTP_DEBUG_ENABLED = 1;
 int _MMTP_TRACE_ENABLED = 0;
 
 /*
