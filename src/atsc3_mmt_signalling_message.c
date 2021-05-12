@@ -1086,7 +1086,7 @@ uint8_t* si_message_not_supported(mmt_signalling_message_header_and_payload_t* m
  */
 
 bool mmt_signalling_message_update_lls_sls_mmt_session(mmtp_signalling_packet_t* mmtp_signalling_packet, lls_sls_mmt_session_t* matching_lls_sls_mmt_session) {
-	bool has_atsc3_mmt_sls_mpt_location_info_added = false;
+	bool has_atsc3_mmt_sls_mpt_location_info_updated = false;
 
 	for(int i=0; i < mmtp_signalling_packet->mmt_signalling_message_header_and_payload_v.count; i++) {
 
@@ -1109,7 +1109,7 @@ bool mmt_signalling_message_update_lls_sls_mmt_session(mmtp_signalling_packet_t*
                     } else {
 				        //slight hack, check the asset types and default_asset = 1
                         atsc3_mmt_sls_mpt_location_info_t* atsc3_mmt_sls_mpt_location_info = NULL;
-                        bool loop_atsc3_mmt_sls_mpt_location_info_added = false;
+                        bool loop_atsc3_mmt_sls_mpt_location_info_updated = false;
 
                         for(int k=0; !atsc3_mmt_sls_mpt_location_info && k < matching_lls_sls_mmt_session->atsc3_mmt_sls_mpt_location_info_v.count; k++) {
                             atsc3_mmt_sls_mpt_location_info_t* atsc3_mmt_sls_mpt_location_info_to_check = matching_lls_sls_mmt_session->atsc3_mmt_sls_mpt_location_info_v.data[k];
@@ -1119,9 +1119,13 @@ bool mmt_signalling_message_update_lls_sls_mmt_session(mmtp_signalling_packet_t*
                         }
 
                         if(!atsc3_mmt_sls_mpt_location_info) {
+                            //jjustman-2021-05-11 - todo: refactor me into a custom __cctor for setting ipv4 relax source ip check
                             atsc3_mmt_sls_mpt_location_info = atsc3_mmt_sls_mpt_location_info_new();
+                            atsc3_mmt_sls_mpt_location_info->ipv4_relax_source_ip_check = 1;
+                            atsc3_mmt_sls_mpt_location_info->location_type = mp_table_asset_row->mmt_general_location_info.location_type;
+
                             lls_sls_mmt_session_add_atsc3_mmt_sls_mpt_location_info(matching_lls_sls_mmt_session, atsc3_mmt_sls_mpt_location_info);
-                            loop_atsc3_mmt_sls_mpt_location_info_added = true;
+                            loop_atsc3_mmt_sls_mpt_location_info_updated = true;
 
                             atsc3_mmt_sls_mpt_location_info->packet_id = mp_table_asset_row->mmt_general_location_info.packet_id;
                             if(mp_table_asset_row->identifier_mapping.asset_id.asset_id) {
@@ -1138,13 +1142,14 @@ bool mmt_signalling_message_update_lls_sls_mmt_session(mmtp_signalling_packet_t*
                             atsc3_mmt_sls_mpt_location_info->ipv4_src_addr = mp_table_asset_row->mmt_general_location_info.ipv4_src_addr;
                             atsc3_mmt_sls_mpt_location_info->ipv4_dst_addr = mp_table_asset_row->mmt_general_location_info.ipv4_dst_addr;
                             atsc3_mmt_sls_mpt_location_info->ipv4_dst_port = mp_table_asset_row->mmt_general_location_info.ipv4_dst_port;
+                            __MMSM_DEBUG("MPT message: added atsc3_mmt_sls_mpt_location_info for packet_id: %u, asset_type: %s, ipv4_dst_addr: %d, ipv4_dst_port: %d",
+                                         atsc3_mmt_sls_mpt_location_info->packet_id, atsc3_mmt_sls_mpt_location_info->asset_type, atsc3_mmt_sls_mpt_location_info->ipv4_dst_addr, atsc3_mmt_sls_mpt_location_info->ipv4_dst_port);
 
-                            if(loop_atsc3_mmt_sls_mpt_location_info_added) {
-                                __MMSM_DEBUG("MPT message: added atsc3_mmt_sls_mpt_location_info for packet_id: %u, asset_type: %s, ipv4_dst_addr: %d, ipv4_dst_port: %d",
-                                                            atsc3_mmt_sls_mpt_location_info->packet_id, atsc3_mmt_sls_mpt_location_info->asset_type, atsc3_mmt_sls_mpt_location_info->ipv4_dst_addr, atsc3_mmt_sls_mpt_location_info->ipv4_dst_port);
-                                has_atsc3_mmt_sls_mpt_location_info_added = true;
+                        }
+                        //jjustman-2021-05-11: TODO - handle additional MMT_general_location_info::location_type's
 
-                            }
+                        if(loop_atsc3_mmt_sls_mpt_location_info_updated) {
+                            has_atsc3_mmt_sls_mpt_location_info_updated = true;
                         }
 
                         //jjustman-2021-05-11 - legacy video/audio/captions packet_id monitoring for matching_lls_sls_mmt_session for transmux, e.g. HLS output
@@ -1175,7 +1180,7 @@ bool mmt_signalling_message_update_lls_sls_mmt_session(mmtp_signalling_packet_t*
 		}
 	}
 	
-	return has_atsc3_mmt_sls_mpt_location_info_added;
+	return has_atsc3_mmt_sls_mpt_location_info_updated;
 }
 
 mmt_atsc3_route_component_t* mmt_atsc3_message_payload_add_mmt_atsc3_route_component(mmt_atsc3_message_payload_t* mmt_atsc3_message_payload) {

@@ -658,6 +658,9 @@ typedef struct atsc3_mmt_sls_mpt_location_info {
 	uint32_t 	ipv4_src_addr;
 	uint32_t 	ipv4_dst_addr;
 	uint16_t 	ipv4_dst_port;
+
+    bool        ipv4_relax_source_ip_check;
+
 } atsc3_mmt_sls_mpt_location_info_t;
 
 typedef struct lls_sls_mmt_session {

@@ -274,13 +274,16 @@ vector<uint8_t>  atsc3_phy_build_plp_listeners_from_lls_slt_monitor(lls_slt_moni
                         for(int l=0; l < atsc3_link_mapping_table_plp->atsc3_link_mapping_table_multicast_v.count && !found_atsc3_slt_broadcast_svc_signalling; l++) {
                             atsc3_link_mapping_table_multicast_t* atsc3_link_mapping_table_multicast = atsc3_link_mapping_table_plp->atsc3_link_mapping_table_multicast_v.data[l];
 
-                            __ATSC3_CORE_SERVICE_PLAYER_BRIDGE_INFO("atsc3_phy_update_plp_listeners_from_lls_slt_monitor: service_id: %d, checking lmt->dst_ip:port %d:%d, sls_dest_ip:port: %d: %d, plp_id: %d",
+                            if(!atsc3_link_mapping_table_multicast) {
+                                __ATSC3_CORE_SERVICE_PLAYER_BRIDGE_WARN("atsc3_phy_update_plp_listeners_from_lls_slt_monitor: atsc3_link_mapping_table_plp: %p, index: %d, atsc3_link_mapping_table_multicast is NULL!", atsc3_link_mapping_table_plp, l);
+                                continue;
+                            }
+
+                            __ATSC3_CORE_SERVICE_PLAYER_BRIDGE_INFO("atsc3_phy_update_plp_listeners_from_lls_slt_monitor: service_id: %d, plp_id: %d, checking lmt->dst_ip:port %u.%u.%u.%u:%u, sls_dest_ip:port: %u.%u.%u.%u:%u",
                                     service_id,
-                                    atsc3_link_mapping_table_multicast->dst_ip_add,
-                                    atsc3_link_mapping_table_multicast->dst_udp_port,
-                                    sls_destination_ip_address,
-                                    sls_destination_udp_port,
-                                    atsc3_link_mapping_table_plp->PLP_ID);
+                                    atsc3_link_mapping_table_plp->PLP_ID,
+                                    __toipandportnonstruct(atsc3_link_mapping_table_multicast->dst_ip_add, atsc3_link_mapping_table_multicast->dst_udp_port),
+                                    __toipandportnonstruct(sls_destination_ip_address, sls_destination_udp_port));
 
                             if(atsc3_link_mapping_table_multicast->dst_ip_add == sls_destination_ip_address && atsc3_link_mapping_table_multicast->dst_udp_port == sls_destination_udp_port) {
                                 Atsc3NdkApplicationBridge_ptr->LogMsgF("atsc3_phy_update_plp_listeners_from_lls_slt_monitor: SLS adding PLP_id: %d (%s:%s)",
@@ -321,11 +324,18 @@ vector<uint8_t>  atsc3_phy_build_plp_listeners_from_lls_slt_monitor(lls_slt_moni
 									atsc3_mmt_sls_mpt_location_info_t * atsc3_mmt_sls_mpt_location_info = lls_sls_mmt_session->atsc3_mmt_sls_mpt_location_info_v.data[n];
 									if(atsc3_mmt_sls_mpt_location_info->location_type == MMT_GENERAL_LOCATION_INFO_LOCATION_TYPE_MMTP_PACKET_FLOW_UDP_IP_V4) {
 
+
                                         for(int k=0; k < atsc3_link_mapping_table_last->atsc3_link_mapping_table_plp_v.count; k++) {
                                             atsc3_link_mapping_table_plp_t* atsc3_link_mapping_table_plp = atsc3_link_mapping_table_last->atsc3_link_mapping_table_plp_v.data[k];
 
-                                            for(int p=0; l < atsc3_link_mapping_table_plp->atsc3_link_mapping_table_multicast_v.count; p++) {
+                                            for(int p=0; p < atsc3_link_mapping_table_plp->atsc3_link_mapping_table_multicast_v.count; p++) {
                                                 atsc3_link_mapping_table_multicast_t* atsc3_link_mapping_table_multicast = atsc3_link_mapping_table_plp->atsc3_link_mapping_table_multicast_v.data[p];
+
+                                                if(!atsc3_link_mapping_table_multicast) {
+                                                    __ATSC3_CORE_SERVICE_PLAYER_BRIDGE_WARN("atsc3_phy_update_plp_listeners_from_lls_slt_monitor: atsc3_link_mapping_table_plp: %p, index: %d, atsc3_link_mapping_table_multicast is NULL!", atsc3_link_mapping_table_plp, p);
+                                                    continue;
+                                                }
+
                                                 __ATSC3_CORE_SERVICE_PLAYER_BRIDGE_TRACE("atsc3_phy_update_plp_listeners_from_lls_slt_monitor: MMT checking PLP: %d, with atsc3_link_mapping_table_multicast: %p, atsc3_mmt_sls_mpt_location_info: %p",
                                                                                             atsc3_link_mapping_table_plp->PLP_ID,
                                                                                             atsc3_link_mapping_table_multicast,
@@ -915,7 +925,15 @@ void atsc3_core_service_bridge_process_packet_phy(block_t* packet) {
 
     //MMT: Find a matching SLS service from this packet flow, and if the selected atsc3_lls_slt_service is monitored, enqueue for MFU DU re-constituion and emission
     matching_lls_sls_mmt_session = lls_sls_mmt_session_find_from_udp_packet(lls_slt_monitor, udp_packet->udp_flow.src_ip_addr, udp_packet->udp_flow.dst_ip_addr, udp_packet->udp_flow.dst_port);
-    __ATSC3_CORE_SERVICE_PLAYER_BRIDGE_TRACE("Checking matching_lls_sls_mmt_session: %p,", matching_lls_sls_mmt_session);
+
+    if(matching_lls_sls_mmt_session && lls_slt_monitor && lls_slt_monitor->lls_sls_mmt_monitor && lls_slt_monitor->lls_sls_mmt_monitor->transients.atsc3_lls_slt_service) {
+        __ATSC3_CORE_SERVICE_PLAYER_BRIDGE_TRACE("atsc3_core_service_bridge_process_packet_phy: lls_sls_mmt_monitor service_id: %d, checking flow: %u.%u.%u.%u:%u, found candidate matching_lls_sls_mmt_session: %p, matching_lls_sls_mmt_session->atsc3_lls_slt_service->service_id: %d ",
+                                                 lls_slt_monitor->lls_sls_mmt_monitor->transients.atsc3_lls_slt_service->service_id,
+                                                 __toipandportnonstruct(udp_packet->udp_flow.dst_ip_addr, udp_packet->udp_flow.dst_port),
+                                                 matching_lls_sls_mmt_session,
+                                                 matching_lls_sls_mmt_session->atsc3_lls_slt_service ? matching_lls_sls_mmt_session->atsc3_lls_slt_service->service_id : -1);
+
+    }
 
 	if(matching_lls_sls_mmt_session && lls_slt_monitor && lls_slt_monitor->lls_sls_mmt_monitor && matching_lls_sls_mmt_session->atsc3_lls_slt_service->service_id == lls_slt_monitor->lls_sls_mmt_monitor->transients.atsc3_lls_slt_service->service_id) {
 
