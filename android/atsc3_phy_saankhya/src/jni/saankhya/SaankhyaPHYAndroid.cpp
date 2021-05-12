@@ -2053,6 +2053,7 @@ int SaankhyaPHYAndroid::statusThread()
         atsc3_ndk_phy_client_rf_metrics.snr1000 = snr;
         ///
 
+        //jjustman-2021-05-11 - fixme to just be perfDiag values
         ber_l1b = (float)perfDiag.NumBitErrL1b / perfDiag.NumFecBitsL1b; // //aBerPreLdpcE7,
         ber_l1d = (float)perfDiag.NumBitErrL1d / perfDiag.NumFecBitsL1d;//aBerPreBchE9,
         ber_plp0 = (float)perfDiag.NumBitErrPlp0 / perfDiag.NumFecBitsPlp0; //aFerPostBchE6,
