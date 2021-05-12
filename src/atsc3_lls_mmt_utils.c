@@ -12,7 +12,7 @@
 
 int _LLS_MMT_UTILS_INFO_ENABLED = 1;
 int _LLS_MMT_UTILS_DEBUG_ENABLED = 1;
-int _LLS_MMT_UTILS_TRACE_ENABLED = 1;
+int _LLS_MMT_UTILS_TRACE_ENABLED = 0;
 
 
 lls_sls_mmt_monitor_t* lls_sls_mmt_monitor_create() {
