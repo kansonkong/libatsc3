@@ -390,13 +390,13 @@ uint8_t* __read_mmt_general_location_info(uint8_t* buf, uint32_t remaining_len, 
 	}
 	buf = extract(buf, (uint8_t*)&mmt_general_location_info->location_type, 1);
 
-	if(mmt_general_location_info->location_type == 0x00) {
+	if(mmt_general_location_info->location_type == MMT_GENERAL_LOCATION_INFO_LOCATION_TYPE_MMTP_PACKET_FLOW_SAME_AS_SI) {
 		if(remaining_len < 2) {
 			return NULL;
 		}
 		buf = extract(buf, (uint8_t*)&mmt_general_location_info->packet_id, 2);
 		mmt_general_location_info->packet_id = ntohs(mmt_general_location_info->packet_id);
-	} else if(mmt_general_location_info->location_type == 0x01) {
+	} else if(mmt_general_location_info->location_type == MMT_GENERAL_LOCATION_INFO_LOCATION_TYPE_MMTP_PACKET_FLOW_UDP_IP_V4) {
 		if(remaining_len < 12) {
 			return NULL;
 		}
@@ -1089,83 +1089,84 @@ bool mmt_signalling_message_update_lls_sls_mmt_session(mmtp_signalling_packet_t*
 	bool has_atsc3_mmt_sls_mpt_location_info_added = false;
 
 	for(int i=0; i < mmtp_signalling_packet->mmt_signalling_message_header_and_payload_v.count; i++) {
+
 		mmt_signalling_message_header_and_payload_t* mmt_signalling_message_header_and_payload = mmtp_signalling_packet->mmt_signalling_message_header_and_payload_v.data[i];
 		if(mmt_signalling_message_header_and_payload->message_header.MESSAGE_id_type == MPT_message) {
 			mp_table_t* mp_table = &mmt_signalling_message_header_and_payload->message_payload.mp_table;
 
 			//update our lls_sls_mmt_session
 			if(matching_lls_sls_mmt_session && mp_table->number_of_assets) {
-				for(int i=0; i < mp_table->number_of_assets; i++) {
-					mp_table_asset_row_t* mp_table_asset_row = &mp_table->mp_table_asset_row[i];
 
-					if(mp_table_asset_row->mmt_general_location_info.location_type != 0x01) {
-						__MMSM_WARN("mp_table_asset_row index: %d, ptr: %p is missing mmt_general_location_info!", i, mp_table_asset_row);
+				for(int j=0; j < mp_table->number_of_assets; j++) {
+					mp_table_asset_row_t* mp_table_asset_row = &mp_table->mp_table_asset_row[j];
+
+					if(!mp_table_asset_row) {
+						__MMSM_WARN("mp_table_asset_row index: %d, ptr: %p is missing mp_table_asset_row!", j, mp_table_asset_row);
 						continue;
-					} else {
-						//slight hack, check the asset types and default_asset = 1
-						
-						atsc3_mmt_sls_mpt_location_info_t* atsc3_mmt_sls_mpt_location_info = NULL;
-						bool loop_atsc3_mmt_sls_mpt_location_info_added = false;
-						for(int j=0; !atsc3_mmt_sls_mpt_location_info && j < matching_lls_sls_mmt_session->atsc3_mmt_sls_mpt_location_info_v.count; j++) {
-							atsc3_mmt_sls_mpt_location_info_t* atsc3_mmt_sls_mpt_location_info_to_check = matching_lls_sls_mmt_session->atsc3_mmt_sls_mpt_location_info_v.data[j];
-							if(mp_table_asset_row->mmt_general_location_info.packet_id == atsc3_mmt_sls_mpt_location_info_to_check->packet_id) {
-								atsc3_mmt_sls_mpt_location_info = atsc3_mmt_sls_mpt_location_info_to_check;
-							}
-						}
-						
-						if(atsc3_mmt_sls_mpt_location_info) {
-							atsc3_mmt_sls_mpt_location_info = atsc3_mmt_sls_mpt_location_info_new();
-							lls_sls_mmt_session_add_atsc3_mmt_sls_mpt_location_info(matching_lls_sls_mmt_session, atsc3_mmt_sls_mpt_location_info);
-							loop_atsc3_mmt_sls_mpt_location_info_added = true;
-							
-							atsc3_mmt_sls_mpt_location_info->packet_id = mp_table_asset_row->mmt_general_location_info.packet_id;
-							if(mp_table_asset_row->identifier_mapping.asset_id.asset_id) {
-								atsc3_mmt_sls_mpt_location_info->asset_id = strndup(mp_table_asset_row->identifier_mapping.asset_id.asset_id, mp_table_asset_row->identifier_mapping.asset_id.asset_id_length);
-								atsc3_mmt_sls_mpt_location_info->asset_id_length = mp_table_asset_row->identifier_mapping.asset_id.asset_id_length;
-								atsc3_mmt_sls_mpt_location_info->asset_id_scheme = mp_table_asset_row->identifier_mapping.asset_id.asset_id_scheme;
-							}
-						}
-						
-						memcpy(&atsc3_mmt_sls_mpt_location_info->asset_type, mp_table_asset_row->asset_type, sizeof(mp_table_asset_row->asset_type));
-						
-						//jjustman-2021-05-11 - just for MMT IPv4 PLP selection for now...
-						if(mp_table_asset_row->mmt_general_location_info.location_type == 0x01) {
-							atsc3_mmt_sls_mpt_location_info->ipv4_src_addr = mp_table_asset_row->mmt_general_location_info.ipv4_src_addr;
-							atsc3_mmt_sls_mpt_location_info->ipv4_dst_addr = mp_table_asset_row->mmt_general_location_info.ipv4_dst_addr;
-							atsc3_mmt_sls_mpt_location_info->ipv4_dst_port = mp_table_asset_row->mmt_general_location_info.ipv4_dst_port;
-							
-							if(loop_atsc3_mmt_sls_mpt_location_info_added) {
-								__MMSM_DEBUG("MPT message: added atsc3_mmt_sls_mpt_location_info for packet_id: %u, asset_type: %s, ipv4_dst_addr: %d, ipv4_dst_port: %d",
-										 atsc3_mmt_sls_mpt_location_info->packet_id, atsc3_mmt_sls_mpt_location_info->asset_type, atsc3_mmt_sls_mpt_location_info->ipv4_dst_addr, atsc3_mmt_sls_mpt_location_info->ipv4_dst_port);
-								has_atsc3_mmt_sls_mpt_location_info_added = true;
-								
-							}
-						}
-						
-						__MMSM_TRACE("MPT message: checking packet_id: %u, asset_type: %s, default: %u, identifier: %s", mp_table_asset_row->mmt_general_location_info.packet_id, mp_table_asset_row->asset_type, mp_table_asset_row->default_asset_flag, mp_table_asset_row->identifier_mapping.asset_id.asset_id ? (const char*)mp_table_asset_row->identifier_mapping.asset_id.asset_id : "");
-						if(strncasecmp(ATSC3_MP_TABLE_ASSET_ROW_HEVC_ID, mp_table_asset_row->asset_type, 4) == 0 ||
-							strncasecmp(ATSC3_MP_TABLE_ASSET_ROW_H264_ID, mp_table_asset_row->asset_type, 4) == 0) {
-							matching_lls_sls_mmt_session->video_packet_id = mp_table_asset_row->mmt_general_location_info.packet_id;
-							__MMSM_TRACE("MPT message: matching_lls_sls_mmt_session: %p, setting video_packet_id: packet_id: %u, asset_type: %s, default: %u, identifier: %s",
-										 matching_lls_sls_mmt_session,
-										 mp_table_asset_row->mmt_general_location_info.packet_id, mp_table_asset_row->asset_type, mp_table_asset_row->default_asset_flag, mp_table_asset_row->identifier_mapping.asset_id.asset_id ? (const char*)mp_table_asset_row->identifier_mapping.asset_id.asset_id : "");
+					} else if(mp_table_asset_row->mmt_general_location_info.location_type != MMT_GENERAL_LOCATION_INFO_LOCATION_TYPE_MMTP_PACKET_FLOW_UDP_IP_V4) {
+                        __MMSM_INFO("mp_table_asset_row index: %d, ptr: %p, mp_table_asset_row->mmt_general_location_info.location_type is: 0x%02x", j, mp_table_asset_row, mp_table_asset_row->mmt_general_location_info.location_type);
+                        continue;
+                    } else {
+				        //slight hack, check the asset types and default_asset = 1
+                        atsc3_mmt_sls_mpt_location_info_t* atsc3_mmt_sls_mpt_location_info = NULL;
+                        bool loop_atsc3_mmt_sls_mpt_location_info_added = false;
 
-						} else if(strncasecmp(ATSC3_MP_TABLE_ASSET_ROW_AC_4_ID, mp_table_asset_row->asset_type, 4) == 0 ||
-								  strncasecmp(ATSC3_MP_TABLE_ASSET_ROW_MHM1_ID, mp_table_asset_row->asset_type, 4) == 0 ||
-								  strncasecmp(ATSC3_MP_TABLE_ASSET_ROW_MHM2_ID, mp_table_asset_row->asset_type, 4) == 0 ||
-								  strncasecmp(ATSC3_MP_TABLE_ASSET_ROW_MP4A_ID, mp_table_asset_row->asset_type, 4) == 0) {
-							matching_lls_sls_mmt_session->audio_packet_id = mp_table_asset_row->mmt_general_location_info.packet_id;
-							__MMSM_TRACE("MPT message: matching_lls_sls_mmt_session: %p, setting audio_packet_id: packet_id: %u, asset_type: %s, default: %u, identifier: %s",
-										 matching_lls_sls_mmt_session,
-										 mp_table_asset_row->mmt_general_location_info.packet_id, mp_table_asset_row->asset_type, mp_table_asset_row->default_asset_flag, mp_table_asset_row->identifier_mapping.asset_id.asset_id ? (const char*)mp_table_asset_row->identifier_mapping.asset_id.asset_id : "");
+                        for(int k=0; !atsc3_mmt_sls_mpt_location_info && k < matching_lls_sls_mmt_session->atsc3_mmt_sls_mpt_location_info_v.count; k++) {
+                            atsc3_mmt_sls_mpt_location_info_t* atsc3_mmt_sls_mpt_location_info_to_check = matching_lls_sls_mmt_session->atsc3_mmt_sls_mpt_location_info_v.data[k];
+                            if(mp_table_asset_row->mmt_general_location_info.packet_id == atsc3_mmt_sls_mpt_location_info_to_check->packet_id) {
+                                atsc3_mmt_sls_mpt_location_info = atsc3_mmt_sls_mpt_location_info_to_check;
+                            }
+                        }
 
-						} else if(strncasecmp(ATSC3_MP_TABLE_ASSET_ROW_IMSC1_ID, mp_table_asset_row->asset_type, 4) == 0) {
-							matching_lls_sls_mmt_session->stpp_packet_id = mp_table_asset_row->mmt_general_location_info.packet_id;
-							__MMSM_TRACE("MPT message: matching_lls_sls_mmt_session: %p, setting stpp_packet_id: packet_id: %u, asset_type: %s, default: %u, identifier: %s",
-										 matching_lls_sls_mmt_session,
-										 mp_table_asset_row->mmt_general_location_info.packet_id, mp_table_asset_row->asset_type, mp_table_asset_row->default_asset_flag, mp_table_asset_row->identifier_mapping.asset_id.asset_id ? (const char*)mp_table_asset_row->identifier_mapping.asset_id.asset_id : "");
+                        if(!atsc3_mmt_sls_mpt_location_info) {
+                            atsc3_mmt_sls_mpt_location_info = atsc3_mmt_sls_mpt_location_info_new();
+                            lls_sls_mmt_session_add_atsc3_mmt_sls_mpt_location_info(matching_lls_sls_mmt_session, atsc3_mmt_sls_mpt_location_info);
+                            loop_atsc3_mmt_sls_mpt_location_info_added = true;
 
-						}
+                            atsc3_mmt_sls_mpt_location_info->packet_id = mp_table_asset_row->mmt_general_location_info.packet_id;
+                            if(mp_table_asset_row->identifier_mapping.asset_id.asset_id) {
+                                atsc3_mmt_sls_mpt_location_info->asset_id = strndup(mp_table_asset_row->identifier_mapping.asset_id.asset_id, mp_table_asset_row->identifier_mapping.asset_id.asset_id_length);
+                                atsc3_mmt_sls_mpt_location_info->asset_id_length = mp_table_asset_row->identifier_mapping.asset_id.asset_id_length;
+                                atsc3_mmt_sls_mpt_location_info->asset_id_scheme = mp_table_asset_row->identifier_mapping.asset_id.asset_id_scheme;
+                            }
+                        }
+
+                        memcpy(atsc3_mmt_sls_mpt_location_info->asset_type, mp_table_asset_row->asset_type, MP_TABLE_ASSET_ROW_ASSET_TYPE_LENGTH);
+
+                        //jjustman-2021-05-11 - just for MMT IPv4 PLP selection for now...
+                        if(mp_table_asset_row->mmt_general_location_info.location_type == MMT_GENERAL_LOCATION_INFO_LOCATION_TYPE_MMTP_PACKET_FLOW_UDP_IP_V4) {
+                            atsc3_mmt_sls_mpt_location_info->ipv4_src_addr = mp_table_asset_row->mmt_general_location_info.ipv4_src_addr;
+                            atsc3_mmt_sls_mpt_location_info->ipv4_dst_addr = mp_table_asset_row->mmt_general_location_info.ipv4_dst_addr;
+                            atsc3_mmt_sls_mpt_location_info->ipv4_dst_port = mp_table_asset_row->mmt_general_location_info.ipv4_dst_port;
+
+                            if(loop_atsc3_mmt_sls_mpt_location_info_added) {
+                                __MMSM_DEBUG("MPT message: added atsc3_mmt_sls_mpt_location_info for packet_id: %u, asset_type: %s, ipv4_dst_addr: %d, ipv4_dst_port: %d",
+                                                            atsc3_mmt_sls_mpt_location_info->packet_id, atsc3_mmt_sls_mpt_location_info->asset_type, atsc3_mmt_sls_mpt_location_info->ipv4_dst_addr, atsc3_mmt_sls_mpt_location_info->ipv4_dst_port);
+                                has_atsc3_mmt_sls_mpt_location_info_added = true;
+
+                            }
+                        }
+
+                        //jjustman-2021-05-11 - legacy video/audio/captions packet_id monitoring for matching_lls_sls_mmt_session for transmux, e.g. HLS output
+                        __MMSM_TRACE("MPT message: checking packet_id: %u, asset_type: %s, default: %u, identifier: %s", mp_table_asset_row->mmt_general_location_info.packet_id, mp_table_asset_row->asset_type, mp_table_asset_row->default_asset_flag, mp_table_asset_row->identifier_mapping.asset_id.asset_id ? (const char*)mp_table_asset_row->identifier_mapping.asset_id.asset_id : "");
+                        if(strncasecmp(ATSC3_MP_TABLE_ASSET_ROW_HEVC_ID, mp_table_asset_row->asset_type, 4) == 0 || strncasecmp(ATSC3_MP_TABLE_ASSET_ROW_H264_ID, mp_table_asset_row->asset_type, 4) == 0) {
+                            matching_lls_sls_mmt_session->video_packet_id = mp_table_asset_row->mmt_general_location_info.packet_id;
+                            __MMSM_TRACE("MPT message: matching_lls_sls_mmt_session: %p, setting video_packet_id: packet_id: %u, asset_type: %s, default: %u, identifier: %s",
+                                        matching_lls_sls_mmt_session,
+                                        mp_table_asset_row->mmt_general_location_info.packet_id, mp_table_asset_row->asset_type, mp_table_asset_row->default_asset_flag, mp_table_asset_row->identifier_mapping.asset_id.asset_id ? (const char*)mp_table_asset_row->identifier_mapping.asset_id.asset_id : "");
+
+                        } else if(strncasecmp(ATSC3_MP_TABLE_ASSET_ROW_AC_4_ID, mp_table_asset_row->asset_type, 4) == 0 ||  strncasecmp(ATSC3_MP_TABLE_ASSET_ROW_MHM1_ID, mp_table_asset_row->asset_type, 4) == 0 ||
+                                    strncasecmp(ATSC3_MP_TABLE_ASSET_ROW_MHM2_ID, mp_table_asset_row->asset_type, 4) == 0 || strncasecmp(ATSC3_MP_TABLE_ASSET_ROW_MP4A_ID, mp_table_asset_row->asset_type, 4) == 0) {
+                            matching_lls_sls_mmt_session->audio_packet_id = mp_table_asset_row->mmt_general_location_info.packet_id;
+                            __MMSM_TRACE("MPT message: matching_lls_sls_mmt_session: %p, setting audio_packet_id: packet_id: %u, asset_type: %s, default: %u, identifier: %s",
+                                        matching_lls_sls_mmt_session, mp_table_asset_row->mmt_general_location_info.packet_id, mp_table_asset_row->asset_type, mp_table_asset_row->default_asset_flag, mp_table_asset_row->identifier_mapping.asset_id.asset_id ? (const char*)mp_table_asset_row->identifier_mapping.asset_id.asset_id : "");
+
+                        } else if(strncasecmp(ATSC3_MP_TABLE_ASSET_ROW_IMSC1_ID, mp_table_asset_row->asset_type, 4) == 0) {
+                            matching_lls_sls_mmt_session->stpp_packet_id = mp_table_asset_row->mmt_general_location_info.packet_id;
+                            __MMSM_TRACE("MPT message: matching_lls_sls_mmt_session: %p, setting stpp_packet_id: packet_id: %u, asset_type: %s, default: %u, identifier: %s",
+                                        matching_lls_sls_mmt_session,
+                                        mp_table_asset_row->mmt_general_location_info.packet_id, mp_table_asset_row->asset_type, mp_table_asset_row->default_asset_flag, mp_table_asset_row->identifier_mapping.asset_id.asset_id ? (const char*)mp_table_asset_row->identifier_mapping.asset_id.asset_id : "");
+					    }
 					}
 				}
 			}
