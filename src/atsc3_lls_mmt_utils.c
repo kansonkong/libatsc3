@@ -10,9 +10,9 @@
 
 #include "atsc3_lls_mmt_utils.h"
 
-int _LLS_MMT_UTILS_INFO_ENABLED = 0;
-int _LLS_MMT_UTILS_DEBUG_ENABLED = 0;
-int _LLS_MMT_UTILS_TRACE_ENABLED = 0;
+int _LLS_MMT_UTILS_INFO_ENABLED = 1;
+int _LLS_MMT_UTILS_DEBUG_ENABLED = 1;
+int _LLS_MMT_UTILS_TRACE_ENABLED = 1;
 
 
 lls_sls_mmt_monitor_t* lls_sls_mmt_monitor_create() {
@@ -161,11 +161,15 @@ lls_sls_mmt_session_t* lls_sls_mmt_session_find_from_udp_packet(lls_slt_monitor_
 				return lls_sls_mmt_session;
 			}
 
+			_ATSC3_LLS_MMT_UTILS_TRACE("lls_sls_mmt_session_find_from_udp_packet: starting atsc3_mmt_sls_mpt_location_info_v, lls_sls_mmt_session->atsc3_mmt_sls_mpt_location_info_v.count is: %d", lls_sls_mmt_session->atsc3_mmt_sls_mpt_location_info_v.count);
+
 			//jjustman-2021-05-11 - otherwise, iterate over our atsc3_mmt_sls_mpt_location_info to see if we have a matching <ip:port> tuple packet_oid
 			for(int k=0; k < lls_sls_mmt_session->atsc3_mmt_sls_mpt_location_info_v.count; k++) {
-                atsc3_mmt_sls_mpt_location_info_t* atsc3_mmt_sls_mpt_location_info = lls_sls_mmt_session->atsc3_mmt_sls_mpt_location_info_v.data[i];
+                atsc3_mmt_sls_mpt_location_info_t* atsc3_mmt_sls_mpt_location_info = lls_sls_mmt_session->atsc3_mmt_sls_mpt_location_info_v.data[k];
+                _ATSC3_LLS_MMT_UTILS_TRACE("lls_sls_mmt_session_find_from_udp_packet: index: %d, location_type is: %d, dst ipv4: %u.%u.%u.%u:%u", k,  atsc3_mmt_sls_mpt_location_info->location_type, __toipandportnonstruct(atsc3_mmt_sls_mpt_location_info->ipv4_dst_addr, atsc3_mmt_sls_mpt_location_info->ipv4_dst_port));
+
                 if(atsc3_mmt_sls_mpt_location_info->location_type == MMT_GENERAL_LOCATION_INFO_LOCATION_TYPE_MMTP_PACKET_FLOW_UDP_IP_V4) {
-                    if((lls_sls_mmt_session->sls_relax_source_ip_check || (!lls_sls_mmt_session->sls_relax_source_ip_check && atsc3_mmt_sls_mpt_location_info->ipv4_src_addr == src_ip_addr)) &&
+                    if((atsc3_mmt_sls_mpt_location_info->ipv4_relax_source_ip_check || (!atsc3_mmt_sls_mpt_location_info->ipv4_relax_source_ip_check && atsc3_mmt_sls_mpt_location_info->ipv4_src_addr == src_ip_addr)) &&
                             atsc3_mmt_sls_mpt_location_info->ipv4_dst_addr == dst_ip_addr &&
                             atsc3_mmt_sls_mpt_location_info->ipv4_dst_port == dst_port) {
 
@@ -174,16 +178,10 @@ lls_sls_mmt_session_t* lls_sls_mmt_session_find_from_udp_packet(lls_slt_monitor_
                     }
                 }
 			}
-
-
-            _ATSC3_LLS_MMT_UTILS_TRACE("lls_sls_mmt_session_find_from_udp_packet: not matching sip: %u to %u, dip: %u to %u, port: %u.%u.%u.%u:%u to %u.%u.%u.%u:%u ((sls_relax_source_ip_check: %d)",
-                                       __toipnonstruct(lls_sls_mmt_session->sls_source_ip_address), __toipnonstruct(src_ip_addr),
-                                       __toipandportnonstruct(lls_sls_mmt_session->sls_destination_ip_address, dst_ip_addr), __toipandportnonstruct(lls_sls_mmt_session->sls_destination_udp_port, dst_port),
-                                       lls_sls_mmt_session->sls_relax_source_ip_check);
         }
 	}
 
-    _ATSC3_LLS_MMT_UTILS_TRACE("lls_sls_mmt_session_find_from_udp_packet: no matching MMT flow for SLS or MMT_general_location_info for flow: src ip: %u.%u.%u.%u / dest flow: %u.%u.%u.%u:%u ",
+    _ATSC3_LLS_MMT_UTILS_TRACE("lls_sls_mmt_session_find_from_udp_packet: no matching MMT flow for SLS or MMT_general_location_info for flow: src ip: %u.%u.%u.%u / dest flow: %u.%u.%u.%u:%u",
                                __toipnonstruct(src_ip_addr),
                                __toipandportnonstruct(dst_ip_addr, dst_port));
 
