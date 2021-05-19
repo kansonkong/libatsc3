@@ -22,6 +22,10 @@ class IAtsc3NdkPHYClient {
 		virtual int  stop()       = 0;
 		virtual int  deinit()     = 0;
 
+		//for NdkPHYClient sdk/firmware details, default to empty string for jstring marshalling via NewStringUTF(env, ...);
+		virtual string get_sdk_version()  { return ""; }
+		virtual string get_firmware_version() { return ""; }
+
 		//optional methods for subclasses to implement if needed
 		virtual int  download_bootloader_firmware(int fd, int device_type, string device_path)  { return INT_MIN; }
         virtual int  open(int fd, int device_type, string device_path)                          { return INT_MIN; }

@@ -12,6 +12,8 @@ int _IP_UDP_RTP_PARSER_INFO_ENABLED = 0;
 int _IP_UDP_RTP_PARSER_DEBUG_ENABLED = 0;
 int _IP_UDP_RTP_PARSER_TRACE_ENABLED = 0;
 
+int _IP_UDP_RTP_PARSER_WARN_UNKNOWN_PAYLOAD_TYPE_COUNT = 0;
+
 //from a pcap packet, extract ip/udp and rtp header, data[0] will be start of inner payload
 atsc3_ip_udp_rtp_ctp_packet_t* atsc3_ip_udp_rtp_process_packet_from_pcap(u_char *user, const struct pcap_pkthdr *pkthdr, const u_char *packet) {
    atsc3_ip_udp_rtp_ctp_packet_t* ip_udp_rtp_ctp_packet = NULL;
@@ -269,12 +271,16 @@ atsc3_rtp_ctp_header_t* atsc3_ip_udp_rtp_ctp_parse_header(uint8_t* data, uint32_
 	   atsc3_rtp_ctp_header->payload_type != ATSC3_RTP_CTP_PAYLOAD_TYPE_STLTP_INNER_TIMING_MANAGEMENT &&
 	   atsc3_rtp_ctp_header->payload_type != ATSC3_RTP_CTP_PAYLOAD_TYPE_STLTP_INNER_PREAMBLE &&
 	   atsc3_rtp_ctp_header->payload_type != ATSC3_RTP_CTP_PAYLOAD_TYPE_STLTP_INNER_BASEBAND_PACKET) {
-        __IP_UDP_RTP_PARSER_WARN("atsc3_ip_udp_rtp_ctp_parse_header: payload_type is unknown: 0x%02x, setting to 127 (UNKNOWN), rtp[0]: 0x%02x 0x%02x, ptr: %p, len: %d",
-        		atsc3_rtp_ctp_header->payload_type,
-				data[0],
-				data[1],
-				data,
-				size);
+
+        if((_IP_UDP_RTP_PARSER_WARN_UNKNOWN_PAYLOAD_TYPE_COUNT++ < 100) || ((_IP_UDP_RTP_PARSER_WARN_UNKNOWN_PAYLOAD_TYPE_COUNT % 1000) == 0)) {
+            __IP_UDP_RTP_PARSER_WARN("atsc3_ip_udp_rtp_ctp_parse_header: payload_type is unknown: 0x%02x, setting to 127 (UNKNOWN), rtp[0]: 0x%02x 0x%02x, ptr: %p, len: %d, total unknown payload count: %d",
+                                     atsc3_rtp_ctp_header->payload_type,
+                                     data[0],
+                                     data[1],
+                                     data,
+                                     size,
+                                     _IP_UDP_RTP_PARSER_WARN_UNKNOWN_PAYLOAD_TYPE_COUNT);
+        }
 
         atsc3_rtp_ctp_header->payload_type = ATSC3_RTP_CTP_PAYLOAD_TYPE_UNKNOWN;
     }
