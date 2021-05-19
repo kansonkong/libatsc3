@@ -200,10 +200,13 @@ void Atsc3NdkMediaMMTBridge::atsc3_onInitHEVC_NAL_Extracted(uint16_t service_id,
 //     Atsc3NdkMediaMMTBridge::GetBridgeConsumerJniEnv()->Get()->CallIntMethod(jni_instance_globalRef, atsc3_OnInitHEVC_NAL_Extracted, packet_id, (int64_t)mpu_sequence_number, jobjectByteBuffer, bufferLen);
 //    Atsc3NdkMediaMMTBridge::GetBridgeConsumerJniEnv()->Get()->DeleteLocalRef(jobjectByteBuffer);
 
+    _NDK_MEDIA_MMT_BRIDGE_INFO("Atsc3NdkMediaMMTBridge::atsc3_onInitHEVC_NAL_Extracted: with service_id: %d, packet_id: %d, mpu_sequence_number: %d, bufferLen: %d",
+                               service_id, packet_id, mpu_sequence_number, bufferLen);
+
     writeToRingBuffer(Atsc3RingBuffer::RING_BUFFER_PAGE_INIT, service_id, packet_id, 0, 0, buffer, bufferLen);
 }
 
-void Atsc3NdkMediaMMTBridge::atsc3_onInitAudioDecoderConfigurationRecord(uint16_t packet_id, uint32_t mpu_sequence_number, atsc3_audio_decoder_configuration_record_t* atsc3_audio_decoder_configuration_record) {
+void Atsc3NdkMediaMMTBridge::atsc3_onInitAudioDecoderConfigurationRecord(uint16_t service_id, uint16_t packet_id, uint32_t mpu_sequence_number, atsc3_audio_decoder_configuration_record_t* atsc3_audio_decoder_configuration_record) {
     this->pinConsumerThreadAsNeeded(); //jjustman-2020-12-17 - hack
 
     Atsc3JniEnv* jniEnv = Atsc3NdkMediaMMTBridge::GetBridgeConsumerJniEnv();
@@ -320,7 +323,10 @@ void Atsc3NdkMediaMMTBridge::atsc3_onInitAudioDecoderConfigurationRecord(uint16_
     }
 
 
-     jniEnv->Get()->CallIntMethod(jni_instance_globalRef, atsc3_OnInitAudioDecoderConfigurationRecord, packet_id, (int64_t)mpu_sequence_number, jobj);
+    _NDK_MEDIA_MMT_BRIDGE_INFO("Atsc3NdkMediaMMTBridge::atsc3_onInitAudioDecoderConfigurationRecord: with service_id: %d, packet_id: %d, mpu_sequence_number: %d, atsc3_audio_decoder_configuration_record: %p, channel_count: %d",
+                               service_id, packet_id, mpu_sequence_number, atsc3_audio_decoder_configuration_record, atsc3_audio_decoder_configuration_record->channel_count);
+
+    jniEnv->Get()->CallIntMethod(jni_instance_globalRef, atsc3_OnInitAudioDecoderConfigurationRecord, packet_id, (int64_t)mpu_sequence_number, jobj);
     if(j_ac4_se_box_obj) {
         jniEnv->Get()->DeleteLocalRef(j_ac4_se_box_obj);
     }
