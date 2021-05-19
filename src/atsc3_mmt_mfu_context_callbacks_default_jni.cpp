@@ -50,6 +50,11 @@ void atsc3_ndk_media_mmt_bridge_reset_context() {
  */
 void atsc3_mmt_mpu_on_sequence_mpu_metadata_present_ndk(atsc3_mmt_mfu_context_t* atsc3_mmt_mfu_context, uint16_t packet_id, uint32_t mpu_sequence_number, block_t* mmt_mpu_metadata) {
 
+    uint16_t service_id = 0;
+    if (atsc3_mmt_mfu_context && atsc3_mmt_mfu_context->matching_lls_sls_mmt_session) {
+        service_id = atsc3_mmt_mfu_context->matching_lls_sls_mmt_session->service_id;
+    }
+
     bool is_video_packet = (strncasecmp(ATSC3_MP_TABLE_ASSET_ROW_HEVC_ID, atsc3_mmt_mfu_context->mmtp_packet_id_packets_container->asset_type, 4) == 0) ||
                            (strncasecmp(ATSC3_MP_TABLE_ASSET_ROW_H264_ID, atsc3_mmt_mfu_context->mmtp_packet_id_packets_container->asset_type, 4) == 0);
 
@@ -75,10 +80,6 @@ void atsc3_mmt_mpu_on_sequence_mpu_metadata_present_ndk(atsc3_mmt_mfu_context_t*
             }
 
             if (atsc3_video_decoder_configuration_record->hevc_decoder_configuration_record && atsc3_video_decoder_configuration_record->hevc_decoder_configuration_record->hevc_nals_combined) {
-                uint16_t service_id = 0;
-                if (atsc3_mmt_mfu_context->matching_lls_sls_mmt_session) {
-                    service_id = atsc3_mmt_mfu_context->matching_lls_sls_mmt_session->service_id;
-                }
 
                 if (atsc3_video_decoder_configuration_record->hevc_decoder_configuration_record->hevc_nals_combined->p_size) {
                     Atsc3NdkMediaMMTBridge_ptr->atsc3_onInitHEVC_NAL_Extracted(service_id, packet_id, mpu_sequence_number, block_Get(atsc3_video_decoder_configuration_record->hevc_decoder_configuration_record->hevc_nals_combined), atsc3_video_decoder_configuration_record->hevc_decoder_configuration_record->hevc_nals_combined->p_size);
@@ -91,7 +92,7 @@ void atsc3_mmt_mpu_on_sequence_mpu_metadata_present_ndk(atsc3_mmt_mfu_context_t*
         atsc3_audio_decoder_configuration_record_t* atsc3_audio_decoder_configuration_record = atsc3_audio_decoder_configuration_record_parse_from_block_t(mmt_mpu_metadata);
         if(atsc3_audio_decoder_configuration_record) {
             atsc3_mmt_mfu_context->mmtp_packet_id_packets_container->atsc3_audio_decoder_configuration_record = atsc3_audio_decoder_configuration_record;
-            Atsc3NdkMediaMMTBridge_ptr->atsc3_onInitAudioDecoderConfigurationRecord(packet_id, mpu_sequence_number, atsc3_audio_decoder_configuration_record);
+            Atsc3NdkMediaMMTBridge_ptr->atsc3_onInitAudioDecoderConfigurationRecord(service_id, packet_id, mpu_sequence_number, atsc3_audio_decoder_configuration_record);
         }
     } else if(is_stpp_packet) {
         //jjustman-2020-12-17 - TODO - impl STPP callback
