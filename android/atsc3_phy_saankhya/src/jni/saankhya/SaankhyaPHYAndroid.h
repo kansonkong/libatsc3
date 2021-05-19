@@ -49,6 +49,8 @@ using namespace std;
 
 #include "CircularBuffer.h"
 
+#include <sl_sdk_version.h>
+
 #include <sl_utils.h>
 #include <sl_config.h>
 #include <sl_demod.h>
