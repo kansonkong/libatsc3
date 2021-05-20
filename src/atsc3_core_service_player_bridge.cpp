@@ -29,6 +29,8 @@ uint32_t* dst_ip_addr_filter = NULL;
 uint16_t* dst_ip_port_filter = NULL;
 uint16_t* dst_packet_id_filter = NULL;
 
+int _ATSC3_CORE_SERVICE_PLAYER_BRIDGE_atsc3_core_service_bridge_process_packet_phy_got_mdi_counter = 0;
+
 //jjustman-2021-01-21 - special 'friend' mutex access so we can get lls_slt_monitor as needed, etc..
 recursive_mutex atsc3_core_service_player_bridge_context_mutex;
 
@@ -783,7 +785,8 @@ void atsc3_core_service_bridge_process_packet_phy(block_t* packet) {
 
     //jjustman-2021-02-18 - special udp:port for MDI (DRM) support flow from lab at 239.255.50.69:31337
     if(udp_packet->udp_flow.dst_ip_addr == 4026479173 && udp_packet->udp_flow.dst_port == 31337) {
-        __ATSC3_CORE_SERVICE_PLAYER_BRIDGE_WARN("atsc3_core_service_bridge_process_packet_phy: got MDI/DRM packet at 239.255.50.69:31337, raw packet: len: %d, i_pos: %d, 0x%02x 0x%02x, datagram: len: %d, i_pos: %d, 0x%02x 0x%02x",
+        if((_ATSC3_CORE_SERVICE_PLAYER_BRIDGE_atsc3_core_service_bridge_process_packet_phy_got_mdi_counter++ < 10) || ((_ATSC3_CORE_SERVICE_PLAYER_BRIDGE_atsc3_core_service_bridge_process_packet_phy_got_mdi_counter % 100) == 0)) {
+            __ATSC3_CORE_SERVICE_PLAYER_BRIDGE_INFO("atsc3_core_service_bridge_process_packet_phy: got MDI/DRM packet at 239.255.50.69:31337, raw packet: len: %d, i_pos: %d, 0x%02x 0x%02x, datagram: len: %d, i_pos: %d, 0x%02x 0x%02x, got_mdi_counter: %d",
                                                  packet->p_size,
                                                  packet->i_pos,
                                                  packet->p_buffer[0],
@@ -791,7 +794,9 @@ void atsc3_core_service_bridge_process_packet_phy(block_t* packet) {
                                                  udp_packet->data->p_size,
                                                  udp_packet->data->i_pos,
                                                  udp_packet->data->p_buffer[0],
-                                                 udp_packet->data->p_buffer[1]);
+                                                 udp_packet->data->p_buffer[1],
+                                                 _ATSC3_CORE_SERVICE_PLAYER_BRIDGE_atsc3_core_service_bridge_process_packet_phy_got_mdi_counter);
+        }
 
         if(mdi_multicast_emission_fd == -1) {
             mdi_multicast_emission_fd = socket(AF_INET, SOCK_DGRAM, 0);
