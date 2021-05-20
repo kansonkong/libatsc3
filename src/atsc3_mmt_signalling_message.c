@@ -1104,7 +1104,7 @@ bool mmt_signalling_message_update_lls_sls_mmt_session(mmtp_signalling_packet_t*
 						__MMSM_WARN("mp_table_asset_row index: %d, ptr: %p is missing mp_table_asset_row!", j, mp_table_asset_row);
 						continue;
 					} else if(mp_table_asset_row->mmt_general_location_info.location_type != MMT_GENERAL_LOCATION_INFO_LOCATION_TYPE_MMTP_PACKET_FLOW_UDP_IP_V4) {
-                        __MMSM_INFO("mp_table_asset_row index: %d, ptr: %p, mp_table_asset_row->mmt_general_location_info.location_type is: 0x%02x", j, mp_table_asset_row, mp_table_asset_row->mmt_general_location_info.location_type);
+                        __MMSM_DEBUG("mp_table_asset_row index: %d, ptr: %p, mp_table_asset_row->mmt_general_location_info.location_type is: 0x%02x", j, mp_table_asset_row, mp_table_asset_row->mmt_general_location_info.location_type);
                         continue;
                     } else {
 				        //slight hack, check the asset types and default_asset = 1
