@@ -20,7 +20,8 @@ public class MmtPacketIdContext {
     public static void AudioPacketIdUpdateMpuSequenceAndPresentationTime(int toUpdateAudioPacketId, int mpu_sequence_number, long mpu_presentation_time_ntp64, int mpu_presentation_time_seconds, int mpu_presentation_time_microseconds) {
 
     }
-    //public static int audio_packet_id = -1;
+    public static int selected_audio_packet_id = -1;
+
     public static MmtSignallingContext audio_packet_signalling_information;
     //public static MmtMfuStatistics audio_packet_statistics;
     private static final Map<Integer, MmtMfuStatistics> audio_packet_statistics_map = new ArrayMap<>();
@@ -37,6 +38,9 @@ public class MmtPacketIdContext {
 
     @Nullable
     public static MmtMfuStatistics getAudioPacketStatistic(int packet_id) {
+        //jjustman-2021-05-24 - just to be safe..
+        createAudioPacketStatistic(packet_id);
+
         return audio_packet_statistics_map.get(packet_id);
     }
 
