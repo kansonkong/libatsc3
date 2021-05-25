@@ -24,7 +24,7 @@ public class Atsc3NdkMediaMMTBridge extends Atsc3NdkMediaMMTBridgeStaticJniLoade
 
     //native jni methods
     @Override
-    public native int init(ByteBuffer fragmentBuffer, int maxFragmentCount);
+    public native int init();
 
     //free NDK/JNI bound AttachedThread, pseduo finalize()?
     @Override
@@ -32,10 +32,10 @@ public class Atsc3NdkMediaMMTBridge extends Atsc3NdkMediaMMTBridgeStaticJniLoade
 
     public native int atsc3_process_mmtp_udp_packet(ByteBuffer byteBuffer, int length);
 
-    public Atsc3NdkMediaMMTBridge(IAtsc3NdkMediaMMTBridgeCallbacks iAtsc3NdkMediaMMTBridgeCallbacks, ByteBuffer fragmentBuffer, int maxFragmentCount) {
+    public Atsc3NdkMediaMMTBridge(IAtsc3NdkMediaMMTBridgeCallbacks iAtsc3NdkMediaMMTBridgeCallbacks) {
         Log.w("Atsc3NdkMediaMMTBridge", "Atsc3NdkMediaMMTBridge::cctor");
         mActivity = iAtsc3NdkMediaMMTBridgeCallbacks;
-        init(fragmentBuffer, maxFragmentCount);
+        init();
     }
 
     public int onLogMsg(String msg) {
