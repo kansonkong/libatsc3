@@ -44,6 +44,7 @@ public class Atsc3NdkMediaMMTBridge extends Atsc3NdkMediaMMTBridgeStaticJniLoade
         return 0;
     }
 
+    //jjustman-2021-05-19 - todo: add service_id method callback signature invocation
     public int atsc3_onInitHEVC_NAL_Packet(int packet_id, long mpu_sequence_number, ByteBuffer byteBuffer, int length) {
         Log.d("Atsc3NdkMediaMMTBridge", String.format("atsc3_onInitHEVC_NAL_Packet, packet_id: %d, mpu_sequence_number: %d, length: %d", packet_id, mpu_sequence_number, length));
 
@@ -54,6 +55,7 @@ public class Atsc3NdkMediaMMTBridge extends Atsc3NdkMediaMMTBridgeStaticJniLoade
         return 0;
     }
 
+    //jjustman-2021-05-19 - todo: add service_id method callback signature invocation
     public int atsc3_OnInitAudioDecoderConfigurationRecord(int packet_id, long mpu_sequence_number, MMTAudioDecoderConfigurationRecord mmtAudioDecoderConfigurationRecord) {
         Log.d("Atsc3NdkMediaMMTBridge", String.format("atsc3_OnInitAudioDecoderConfigurationRecord, packet_id: %d, mpu_sequence_number: %d, mmtAudioDecoderConfigurationRecord: channel_count: %d, sample_depth: %d, sample_rate: %d, isAC4: %b",
                                                                         packet_id, mpu_sequence_number, mmtAudioDecoderConfigurationRecord.channel_count, mmtAudioDecoderConfigurationRecord.sample_depth, mmtAudioDecoderConfigurationRecord.sample_rate, mmtAudioDecoderConfigurationRecord.audioAC4SampleEntryBox != null));
@@ -75,7 +77,8 @@ public class Atsc3NdkMediaMMTBridge extends Atsc3NdkMediaMMTBridgeStaticJniLoade
     }
 
     public int atsc3_signallingContext_notify_audio_packet_id_and_mpu_timestamp_descriptor(int audio_packet_id, long mpu_sequence_number, long mpu_presentation_time_ntp64, long mpu_presentation_time_seconds, int mpu_presentation_time_microseconds) {
-        MmtPacketIdContext.audio_packet_id = 200; //jjustman-2020-12-22 - TODO - fix meaudio_packet_id;
+        //MmtPacketIdContext.audio_packet_id = 200; //jjustman-2020-12-22 - TODO - fix meaudio_packet_id;
+        MmtPacketIdContext.createAudioPacketStatistic(audio_packet_id);
         MmtPacketIdContext.audio_packet_signalling_information.mpu_sequence_number = mpu_sequence_number;
         MmtPacketIdContext.audio_packet_signalling_information.mpu_presentation_time_ntp64 = mpu_presentation_time_ntp64;
         MmtPacketIdContext.audio_packet_signalling_information.mpu_presentation_time_seconds = mpu_presentation_time_seconds;
@@ -96,9 +99,9 @@ public class Atsc3NdkMediaMMTBridge extends Atsc3NdkMediaMMTBridgeStaticJniLoade
 
     public int atsc3_onExtractedSampleDuration(int packet_id, long mpu_sequence_number, long extracted_sample_duration_us) {
         //jjustman-2020-08-19 - audio duration work-around for ac-4
-        if (MmtPacketIdContext.audio_packet_id == packet_id && extracted_sample_duration_us <= 0) {
+        if (MmtPacketIdContext.isAudioPacket(packet_id) && extracted_sample_duration_us <= 0) {
             extracted_sample_duration_us = MmtPacketIdContext.video_packet_statistics.extracted_sample_duration_us;
-            MmtPacketIdContext.audio_packet_statistics.extracted_sample_duration_us = extracted_sample_duration_us;
+            MmtPacketIdContext.getAudioPacketStatistic(packet_id).extracted_sample_duration_us = extracted_sample_duration_us;
             return 0;
 
         }
@@ -110,8 +113,8 @@ public class Atsc3NdkMediaMMTBridge extends Atsc3NdkMediaMMTBridgeStaticJniLoade
         if(ATSC3PlayerFlags.ATSC3PlayerStartPlayback) {
             if (MmtPacketIdContext.video_packet_id == packet_id) {
                 MmtPacketIdContext.video_packet_statistics.extracted_sample_duration_us = extracted_sample_duration_us;
-            } else if (MmtPacketIdContext.audio_packet_id == packet_id) {
-                MmtPacketIdContext.audio_packet_statistics.extracted_sample_duration_us = extracted_sample_duration_us;
+            } else if (MmtPacketIdContext.isAudioPacket(packet_id)) {
+                MmtPacketIdContext.getAudioPacketStatistic(packet_id).extracted_sample_duration_us = extracted_sample_duration_us;
             } else if (MmtPacketIdContext.stpp_packet_id == packet_id) {
                 MmtPacketIdContext.stpp_packet_statistics.extracted_sample_duration_us = extracted_sample_duration_us;
             }
@@ -208,8 +211,8 @@ public class Atsc3NdkMediaMMTBridge extends Atsc3NdkMediaMMTBridgeStaticJniLoade
         if(ATSC3PlayerFlags.ATSC3PlayerStartPlayback) {
             if (MmtPacketIdContext.video_packet_id == packet_id) {
                 MmtPacketIdContext.video_packet_statistics.missing_mfu_samples_count++;
-            } else if (MmtPacketIdContext.audio_packet_id == packet_id) {
-                MmtPacketIdContext.audio_packet_statistics.missing_mfu_samples_count++;
+            } else if (MmtPacketIdContext.isAudioPacket(packet_id)) {
+                MmtPacketIdContext.getAudioPacketStatistic(packet_id).missing_mfu_samples_count++;
             } else {
                 // ...
             }

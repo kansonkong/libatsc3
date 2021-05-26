@@ -643,6 +643,26 @@ typedef struct mmt_session {
 
 typedef struct atsc3_mmt_mfu_context atsc3_mmt_mfu_context_t;
 
+typedef struct atsc3_mmt_sls_mpt_location_info {
+	uint16_t 	packet_id;
+	char        asset_type[5];
+
+	uint32_t	asset_id_scheme;
+	uint32_t	asset_id_length;
+	uint8_t*	asset_id;
+	
+	//borrowed from atsc3_mmt_signalling_message_types.h
+	uint8_t 	location_type;
+	
+	//for location_type == 0x01
+	uint32_t 	ipv4_src_addr;
+	uint32_t 	ipv4_dst_addr;
+	uint16_t 	ipv4_dst_port;
+
+    bool        ipv4_relax_source_ip_check;
+
+} atsc3_mmt_sls_mpt_location_info_t;
+
 typedef struct lls_sls_mmt_session {
     uint16_t 						service_id;
 
@@ -654,40 +674,44 @@ typedef struct lls_sls_mmt_session {
     } transients;
 	
 	//jjustman-2021-04-16 - adding in reference for optional atsc3_mmt_mfu_context, TODO: make this part of concrete instance?
-	atsc3_mmt_mfu_context_t*	atsc3_mmt_mfu_context;
+	atsc3_mmt_mfu_context_t*	    atsc3_mmt_mfu_context;
     
-    uint32_t sls_source_ip_address;
-	bool	 sls_relax_source_ip_check;
+    uint32_t                        sls_source_ip_address;
+	bool	                        sls_relax_source_ip_check;
 
-    uint32_t sls_destination_ip_address;
-    uint16_t sls_destination_udp_port;
+    uint32_t                        sls_destination_ip_address;
+    uint16_t                        sls_destination_udp_port;
 
+	ATSC3_VECTOR_BUILDER_STRUCT(atsc3_mmt_sls_mpt_location_info);
 
     /*
      * jjustman-2020-12-01 - these singled out individual *_packet_id essences are used for MMT transmux to a single a/v/s media essence, e.g. fmp4 or HLS -
      *                      DO NOT use them for NDK/JNI or OOO tracking
      *
      */
+#ifndef __MMT_DEPACKETIZER_DEPRECATED_SINGLE_V_A_S_PACKET_ID_SELECTOR__
+    uint16_t video_packet_id;
+    uint16_t audio_packet_id;
+    uint16_t stpp_packet_id;
 
-        uint16_t video_packet_id;
-        uint16_t audio_packet_id;
-        uint16_t stpp_packet_id;
+    udp_flow_packet_id_mpu_sequence_tuple_t* last_udp_flow_packet_id_mpu_sequence_tuple_audio;
+    bool last_udp_flow_packet_id_mpu_sequence_tuple_audio_processed;
+    udp_flow_packet_id_mpu_sequence_tuple_t* to_process_udp_flow_packet_id_mpu_sequence_tuple_audio;
 
-       udp_flow_packet_id_mpu_sequence_tuple_t* last_udp_flow_packet_id_mpu_sequence_tuple_audio;
-       bool last_udp_flow_packet_id_mpu_sequence_tuple_audio_processed;
-       udp_flow_packet_id_mpu_sequence_tuple_t* to_process_udp_flow_packet_id_mpu_sequence_tuple_audio;
+    udp_flow_packet_id_mpu_sequence_tuple_t* last_udp_flow_packet_id_mpu_sequence_tuple_video;
+    bool last_udp_flow_packet_id_mpu_sequence_tuple_video_processed;
+    udp_flow_packet_id_mpu_sequence_tuple_t* to_process_udp_flow_packet_id_mpu_sequence_tuple_video;
 
-       udp_flow_packet_id_mpu_sequence_tuple_t* last_udp_flow_packet_id_mpu_sequence_tuple_video;
-       bool last_udp_flow_packet_id_mpu_sequence_tuple_video_processed;
-       udp_flow_packet_id_mpu_sequence_tuple_t* to_process_udp_flow_packet_id_mpu_sequence_tuple_video;
-
-       udp_flow_packet_id_mpu_sequence_tuple_t* last_udp_flow_packet_id_mpu_sequence_tuple_stpp;
-
+    udp_flow_packet_id_mpu_sequence_tuple_t* last_udp_flow_packet_id_mpu_sequence_tuple_stpp;
+#endif
 
        mmt_arguments_t* mmt_arguments;
        mmt_session_t* mmt_session;
 
-   } lls_sls_mmt_session_t;
+} lls_sls_mmt_session_t;
+
+ATSC3_VECTOR_BUILDER_METHODS_INTERFACE(lls_sls_mmt_session, atsc3_mmt_sls_mpt_location_info);
+
 
 
    /**
