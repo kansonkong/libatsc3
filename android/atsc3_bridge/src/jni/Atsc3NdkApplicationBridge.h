@@ -136,13 +136,11 @@ public:
     jmethodID   jni_java_util_ArrayList_add = nullptr;
 
 
-    atsc3_phy_notify_plp_selection_change_f    atsc3_phy_notify_plp_selection_change;
-    void*                                      atsc3_phy_notify_plp_selection_change_context;
+    atsc3_phy_notify_plp_selection_change_f    atsc3_phy_notify_plp_selection_change = nullptr;;
+    void*                                      atsc3_phy_notify_plp_selection_change_context = nullptr;;
 
 protected:
     Atsc3JniEnv* bridgeConsumerJniEnv = nullptr;
-
-
 };
 
 #define _NDK_APPLICATION_BRIDGE_ERROR(...)   	__LIBATSC3_TIMESTAMP_ERROR(__VA_ARGS__);

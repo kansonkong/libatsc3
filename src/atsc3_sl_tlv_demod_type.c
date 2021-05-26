@@ -316,8 +316,8 @@ restart_parsing:
             //absolute seek to resync
             block_Seek(atsc3_sl_tlv_payload_unparsed_block, to_process_inner_alp_payload_start_block_p_offset);
 
-            uint32_t* alp_payload_start = block_Get(atsc3_sl_tlv_payload_unparsed_block);
-            uint32_t* alp_payload_end = NULL;
+            uint8_t* alp_payload_start = block_Get(atsc3_sl_tlv_payload_unparsed_block);
+            uint8_t* alp_payload_end = NULL;
 
             //parse our ALP_packet inline
             atsc3_alp_packet_t* atsc3_alp_packet = atsc3_alp_packet_parse(atsc3_sl_tlv_payload->plp_number, atsc3_sl_tlv_payload_unparsed_block);
@@ -330,7 +330,7 @@ restart_parsing:
 
                 alp_payload_end = block_Get(atsc3_sl_tlv_payload_unparsed_block);
                 //jjustman-2021-05-04 - gross...type promotion against pointer arithmetic https://www.eskimo.com/~scs/cclass/int/sx4cb.html
-                atsc3_sl_tlv_payload->alp_packet_size = (uint64_t)alp_payload_end - (uint64_t)alp_payload_start;
+                atsc3_sl_tlv_payload->alp_packet_size = alp_payload_end - alp_payload_start;
 
                 __SL_TLV_DEMOD_TRACE("atsc3_sl_tlv_payload: %p, atsc3_sl_tlv_payload->atsc3_alp_packet: %p, alp_payload_start: %p, alp_payload_end: %p, setting atsc3_sl_tlv_payload->alp_packet_size to: %d",
                                      atsc3_sl_tlv_payload, atsc3_sl_tlv_payload->atsc3_alp_packet,
