@@ -40,6 +40,7 @@ int _STLTP_PARSER_DUMP_ENABLED  = 0;
 int _STLTP_PARSER_DEBUG_ENABLED = 0;
 int _STLTP_PARSER_TRACE_ENABLED = 0;
 
+int _STLTP_PARSER_WARN_atsc3_stltp_tunnel_packet_extract_inner_from_outer_packet_final_ip_udp_rtp_ctp_packet_outer_position_mismatch_count = 0;
 
 /*
  read inner data from outer packet position
@@ -316,13 +317,17 @@ atsc3_stltp_tunnel_packet_t* atsc3_stltp_raw_packet_extract_inner_from_outer_pac
 				block_Seek_Relative(atsc3_stltp_tunnel_packet_current->ip_udp_rtp_ctp_packet_outer->data, ATSC_STLTP_IP_UDP_RTP_HEADER_SIZE - last_outer_packet_bytes_remaining_to_parse);
 			
 				if(atsc3_stltp_tunnel_packet_current->ip_udp_rtp_ctp_packet_outer->data->i_pos != atsc3_stltp_tunnel_packet_current->ip_udp_rtp_ctp_packet_outer->data->p_size)  {
-					__STLTP_PARSER_WARN("atsc3_stltp_tunnel_packet_extract_inner_from_outer_packet: final ip_udp_rtp_ctp_packet_outer does not match pos: %u, size: %u, sequence: %d, last_outer_packet_bytes_remaining_to_parse: %d",
+
+				    if((_STLTP_PARSER_WARN_atsc3_stltp_tunnel_packet_extract_inner_from_outer_packet_final_ip_udp_rtp_ctp_packet_outer_position_mismatch_count++ < 10) || ((_STLTP_PARSER_WARN_atsc3_stltp_tunnel_packet_extract_inner_from_outer_packet_final_ip_udp_rtp_ctp_packet_outer_position_mismatch_count % 100) == 0)) {
+					    __STLTP_PARSER_WARN("atsc3_stltp_tunnel_packet_extract_inner_from_outer_packet: final ip_udp_rtp_ctp_packet_outer does not match pos: %u, size: %u, sequence: %d, last_outer_packet_bytes_remaining_to_parse: %d, warning count: %d",
 									atsc3_stltp_tunnel_packet_current->ip_udp_rtp_ctp_packet_outer->data->i_pos,
 									atsc3_stltp_tunnel_packet_current->ip_udp_rtp_ctp_packet_outer->data->p_size,
 									atsc3_stltp_tunnel_packet_current->ip_udp_rtp_ctp_packet_outer->rtp_ctp_header->sequence_number,
-									last_outer_packet_bytes_remaining_to_parse);
+									last_outer_packet_bytes_remaining_to_parse,
+                                    _STLTP_PARSER_WARN_atsc3_stltp_tunnel_packet_extract_inner_from_outer_packet_final_ip_udp_rtp_ctp_packet_outer_position_mismatch_count);
 
-					atsc3_rtp_ctp_header_dump_inner(atsc3_stltp_tunnel_packet_current);
+				        atsc3_rtp_ctp_header_dump_inner(atsc3_stltp_tunnel_packet_current);
+                    }
 				}
             } else {
                 //sequence gap

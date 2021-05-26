@@ -1941,6 +1941,9 @@ int SaankhyaPHYAndroid::statusThread()
             goto sl_i2c_tuner_mutex_unlock;
         }
         lastCpuStatus = cpuStatus;
+        //jjustman-2021-05-11 - give 256qam 11/15 fec bitrates a chance to flush ALP buffer without oveflowing and lose bootstrap/l1b/l1d lock
+        SL_SleepMS(100);
+
 
         //jjustman-2020-10-14 - not really worth it on AA as we don't get rssi here
         tres = SL_TunerGetStatus(this->tUnit, &tunerInfo);
@@ -1948,6 +1951,8 @@ int SaankhyaPHYAndroid::statusThread()
             _SAANKHYA_PHY_ANDROID_ERROR("Error:SL_TunerGetStatus: tres: %d", tres);
             goto sl_i2c_tuner_mutex_unlock;
         }
+
+        SL_SleepMS(100);
 
         atsc3_ndk_phy_client_rf_metrics.tuner_lock = (tunerInfo.status == 1);
 
@@ -1957,6 +1962,8 @@ int SaankhyaPHYAndroid::statusThread()
             _SAANKHYA_PHY_ANDROID_ERROR("Error:SL_Demod Get Lock Status  : dres: %d", dres);
             goto sl_i2c_tuner_mutex_unlock;
         }
+        SL_SleepMS(100);
+
 
         atsc3_ndk_phy_client_rf_metrics.demod_lock = demodLockStatus;
 
@@ -2025,17 +2032,14 @@ int SaankhyaPHYAndroid::statusThread()
             goto sl_i2c_tuner_mutex_unlock;
         }
 
-        dres = SL_DemodGetAtsc3p0Diagnostics(this->slUnit, SL_DEMOD_DIAG_TYPE_BSR, (SL_Atsc3p0Bsr_Diag_t*)&bsrDiag);
-        if (dres != SL_OK) {
-            _SAANKHYA_PHY_ANDROID_ERROR("Error getting ATSC3.0 Boot Strap Diagnostics  : dres: %d", dres);
-            goto sl_i2c_tuner_mutex_unlock;
-        }
-
-        sl_res = SL_DemodGetLlsPlpList(this->slUnit, &llsPlpInfo);
-        if (sl_res != SL_OK) {
-            _SAANKHYA_PHY_ANDROID_ERROR("Error:SL_DemodGetLlsPlpList : sl_res: %d", sl_res);
-            goto sl_i2c_tuner_mutex_unlock;
-        }
+        //jjustman-2021-05-11 - TODO: only run this at PLP selection lock, e.g.:
+        //  for each PLPne.g. demodLockStatus & SL_DEMOD_LOCK_STATUS_MASK_BB_PLPn_LOCK) != 0;
+        //
+        //        sl_res = SL_DemodGetLlsPlpList(this->slUnit, &llsPlpInfo);
+        //        if (sl_res != SL_OK) {
+        //            _SAANKHYA_PHY_ANDROID_ERROR("Error:SL_DemodGetLlsPlpList : sl_res: %d", sl_res);
+        //            goto sl_i2c_tuner_mutex_unlock;
+        //        }
 
         //jjustman-2021-03-16 - exit our i2c critical section while we build and push our PHY statistics, we can use "continue" for next loop iteration after this point
         SL_I2C_command_mutex_tuner_status_io.unlock();
@@ -2049,6 +2053,7 @@ int SaankhyaPHYAndroid::statusThread()
         atsc3_ndk_phy_client_rf_metrics.snr1000 = snr;
         ///
 
+        //jjustman-2021-05-11 - fixme to just be perfDiag values
         ber_l1b = (float)perfDiag.NumBitErrL1b / perfDiag.NumFecBitsL1b; // //aBerPreLdpcE7,
         ber_l1d = (float)perfDiag.NumBitErrL1d / perfDiag.NumFecBitsL1d;//aBerPreBchE9,
         ber_plp0 = (float)perfDiag.NumBitErrPlp0 / perfDiag.NumFecBitsPlp0; //aFerPostBchE6,
