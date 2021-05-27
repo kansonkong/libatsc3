@@ -2,9 +2,6 @@
 // Created by Jason Justman on 8/19/20.
 //
 
-//jjustman-2020-10-30 - workaround for SL_TUNER deinit not decrementing ref count
-//#define __SL_TUNER_DEINIT_DISABLED__ true
-
 /*  MarkONE "workarounds" for /dev handle permissions
 
 ADB_IP_ADDRESS="192.168.4.57:5555"
@@ -227,31 +224,26 @@ int SaankhyaPHYAndroid::stop()
     }
     _SAANKHYA_PHY_ANDROID_DEBUG("SaankhyaPHYAndroid::stop: after join for processThreadHandle");
 
+    //SL_I2c doesnt use refcounts
     _SAANKHYA_PHY_ANDROID_DEBUG("SaankhyaPHYAndroid::stop: before SL_I2cUnInit");
-
     sl_res_uninit = SL_I2cUnInit();
-
     _SAANKHYA_PHY_ANDROID_DEBUG("SaankhyaPHYAndroid::stop: after SL_I2cUnInit, sl_res_uninit is: %d", sl_res_uninit);
 
     //jjustman-2020-10-30 - decrement our sl instance count
     sl_result = SL_DemodUnInit(slUnit);
     _SAANKHYA_PHY_ANDROID_DEBUG("SaankhyaPHYAndroid::stop: after SL_DemodUnInit, slUnit now: %d, sl_result: %d", slUnit, sl_result);
-    slUnit = -1;
+    sl_result = SL_DemodDeleteInstance(slUnit);
+    _SAANKHYA_PHY_ANDROID_DEBUG("SaankhyaPHYAndroid::stop: after SL_DemodDeleteInstance, slUnit now: %d, sl_result: %d", slUnit, sl_result);
 
-#ifndef __SL_TUNER_DEINIT_DISABLED__
-    //jjustman-2020-10-30 - TODO: SL_TunerInit and SL_TunerUnInit is just a refcount, not an instance handle
     sl_tuner_result = SL_TunerUnInit(tUnit);
-    tUnit = __MAX(-1, tUnit - 1);
     _SAANKHYA_PHY_ANDROID_DEBUG("SaankhyaPHYAndroid::stop: after SL_TunerUnInit, tUnit now: %d, sl_tuner_result: %d", tUnit, sl_tuner_result);
-
-#else
-    _SAANKHYA_PHY_ANDROID_DEBUG("SaankhyaPHYAndroid::stop: not calling SL_TunerUnInit, tUnit now: %d, sl_tuner_result: %d", tUnit, sl_tuner_result);
-#endif
-
+    sl_tuner_result = SL_TunerDeleteInstance(tUnit);
+    _SAANKHYA_PHY_ANDROID_DEBUG("SaankhyaPHYAndroid::stop: after SL_TunerDeleteInstance, tUnit now: %d, sl_tuner_result: %d", tUnit, sl_tuner_result);
 
     if(atsc3_ndk_application_bridge_get_instance()) {
         atsc3_ndk_application_bridge_get_instance()->atsc3_phy_notify_plp_selection_change_clear_callback();
     }
+
     _SAANKHYA_PHY_ANDROID_DEBUG("SaankhyaPHYAndroid::stop: return with this: %p", this);
     return 0;
 }
@@ -708,18 +700,7 @@ int SaankhyaPHYAndroid::open(int fd, int device_type, string device_path)
     tunerCfg.bandwidth = SL_TUNER_BW_6MHZ;
     tunerCfg.std = SL_TUNERSTD_ATSC3_0;
 
-    if(tUnit == -1) {
-        tres = SL_TunerCreateInstance(&tUnit);
-    } else {
-#ifndef __SL_TUNER_DEINIT_DISABLED__
-        //create a new tuner instance
-        tres = SL_TunerCreateInstance(&tUnit);
-#else
-        tres = SL_TUNER_OK;
-#endif
-        //otherwise, don't create a new instance as we will leak due to SL_TunerUnInit not decrementing refcount
-    }
-
+    tres = SL_TunerCreateInstance(&tUnit);
     if (tres != 0)
     {
         _SAANKHYA_PHY_ANDROID_DEBUG("Error:SL_TunerCreateInstance :");
@@ -1411,16 +1392,10 @@ void SaankhyaPHYAndroid::handleCmdIfFailure(void)
 
         _SAANKHYA_PHY_ANDROID_DEBUG("SL CMD IF FAILURE: cmdIfFailureCount: %d, Cannot continue - leaving demod init for now...", ++slCmdIfFailureCount);
     } else {
-        _SAANKHYA_PHY_ANDROID_DEBUG("SL CMD IF FAILURE: cmdIfFailureCount: %d, TODO: reboot demod", ++slCmdIfFailureCount);
-//jjustman-2021-02-24 - TODO - reboot demod
-//        SL_DemodUnInit(slUnit);
-//        slUnit = -1;
-    }
+        _SAANKHYA_PHY_ANDROID_DEBUG("SL CMD IF FAILURE: cmdIfFailureCount: %d, TODO: reset demod", ++slCmdIfFailureCount);
 
-#ifndef __SL_TUNER_DEINIT_DISABLED__
-    SL_TunerUnInit(tUnit);
-    tUnit = -1;
-#endif
+        //..reset()
+    }
 }
 
 void SaankhyaPHYAndroid::printToConsoleI2cError(SL_I2cResult_t err)
