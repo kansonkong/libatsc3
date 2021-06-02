@@ -7,9 +7,21 @@ import org.ngbp.libatsc3.middleware.android.application.interfaces.IAtsc3NdkAppl
 
 import java.io.File;
 
-/*
- */
 
+/** \addtogroup Atsc3ApplicationBridge
+ *  @{
+ *      \defgroup Atsc3JniApplicationBridge libatsc3 JNI Bridge
+ *
+ *      Java interface contract for NDK method invocation and NDK bridge callback method interface reference wire-up
+ *
+ *      @{
+ *          \defgroup Atsc3JniApplicationBridgeNdkMethods libatsc3 JNI Bridge Methods into NDK
+ *
+ *          Java NDK method definitions and dispatcher for NDK application bridge callbacks
+ *
+ *          @{
+ *
+ */
 public class Atsc3NdkApplicationBridge extends Atsc3BridgeNdkStaticJniLoader
 {
     final static String TAG ="intf";
@@ -84,3 +96,8 @@ public class Atsc3NdkApplicationBridge extends Atsc3BridgeNdkStaticJniLoader
     }
 }
 
+/**
+ *           @}
+ *      @}
+ * @}
+*/
