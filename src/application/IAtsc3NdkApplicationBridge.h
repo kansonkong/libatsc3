@@ -4,6 +4,18 @@
  *  Created on: Aug 10, 2020
  *      Author: jjustman
  */
+
+
+
+/** \defgroup Atsc3ApplicationBridge libatsc3 Application Bridge
+ *
+ *	libatsc3 c++ interface for subclasses to implement contract for both NDK and JNI interface layer
+ *
+ *  \sa Atsc3NdkApplicationBridge
+ *
+ *	@{
+ */
+
 #include <string>
 #include <vector>
 
@@ -13,6 +25,12 @@
 using namespace std;
 
 typedef void(*atsc3_phy_notify_plp_selection_change_f)(vector<uint8_t> plp, void* context);
+
+/**     \defgroup Atsc3NdkApplicationBridge libatsc3 NDK Bridge
+ *
+ *      c++ interface contract for NDK bridge methods
+ *      @{
+ */
 
 class IAtsc3NdkApplicationBridge {
 
@@ -62,3 +80,9 @@ class IAtsc3NdkApplicationBridge {
 
 
 #endif /* SRC_APPLICATION_IATSC3NDKAPPLICATIONBRIDGE_H_ */
+
+/**
+ *      }@
+ *
+ *  }@
+ */

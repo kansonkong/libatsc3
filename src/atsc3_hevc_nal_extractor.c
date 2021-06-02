@@ -5530,11 +5530,11 @@ uint64_t error[AV_NUM_DATA_POINTERS];
     int nb_side_data;
 
 /**
- * @defgroup lavu_frame_flags AV_FRAME_FLAGS
- * @ingroup lavu_frame
+ * @xxxdefgroup lavu_frame_flags AV_FRAME_FLAGS
+ * @xxxingroup lavu_frame
  * Flags describing additional frame properties.
  *
- * @{
+ * @xxx{
  */
 
 /**
@@ -5546,7 +5546,7 @@ uint64_t error[AV_NUM_DATA_POINTERS];
  */
 #define AV_FRAME_FLAG_DISCARD   (1 << 2)
 /**
- * @}
+ * @xxx}
  */
 
 /**

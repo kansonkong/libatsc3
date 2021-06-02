@@ -4,6 +4,16 @@ import org.ngbp.libatsc3.middleware.android.a331.PackageExtractEnvelopeMetadataA
 
 import java.io.File;
 
+
+/** \addtogroup Atsc3JniApplicationBridge
+ *  @{
+ *      \defgroup Atsc3JniApplicationBridgeCallbacks libatsc3 JNI Bridge Callbacks
+ *
+ *      Java interface contract for NDK bridge callback methods
+ *
+ *      @{
+ */
+
 public interface IAtsc3NdkApplicationBridgeCallbacks {
     public void showMsgFromNative(String message);
 
@@ -21,6 +31,9 @@ public interface IAtsc3NdkApplicationBridgeCallbacks {
     public void onPackageExtractCompleted(PackageExtractEnvelopeMetadataAndPayload packageExtractEnvelopeMetadataAndPayload);
 
     public void routeDash_force_player_reload_mpd(int ServiceID);
-
-
 }
+
+/**
+ *      @}
+ * @}
+*/
