@@ -30,6 +30,7 @@ public class MmtPacketIdContext {
         return audio_packet_statistics_map.containsKey(packet_id);
     }
 
+    //jjustman-2021-06-02 - ONLY calleee should be from Atsc3NdkMediaMMTBridge::atsc3_signallingContext_notify_audio_packet_id_and_mpu_timestamp_descriptor
     public static void createAudioPacketStatistic(int packet_id) {
         if (!audio_packet_statistics_map.containsKey(packet_id)) {
             audio_packet_statistics_map.put(packet_id, new MmtMfuStatistics("audio"));
@@ -38,9 +39,6 @@ public class MmtPacketIdContext {
 
     @Nullable
     public static MmtMfuStatistics getAudioPacketStatistic(int packet_id) {
-        //jjustman-2021-05-24 - just to be safe..
-        createAudioPacketStatistic(packet_id);
-
         return audio_packet_statistics_map.get(packet_id);
     }
 
