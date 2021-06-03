@@ -20,5 +20,9 @@ cd ../srt && ./configure --prefix `pwd`/build && make && make install
 
 cd $LIBATSC3_SRC_DIR
 
+cd ../openssl && KERNEL_BITS=64 ./Configure  no-asm -g3 -O0 -fno-omit-frame-pointer -fno-inline-functions --prefix=`pwd`/build_ssl --openssldir=`pwd`/build_ssl '-Wl,-rpath,$(LIBRPATH)'c && make && make install
+
+cd $LIBATSC3_SRC_DIR
+
 # Compile libatsc3
 make clean && make all
