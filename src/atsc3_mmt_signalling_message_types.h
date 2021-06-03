@@ -191,9 +191,151 @@ typedef struct mmt_atsc3_message_content_type_application_event_information_a337
 	void* TODO;
 } mmt_atsc3_message_content_type_application_event_information_a337_t;
 
+
+
+typedef struct mmt_atsc3_message_content_type_video_stream_properties_descriptor_asset {
+	uint8_t		codec_codec[4];
+	uint8_t		temporal_scalability_present:1;
+	uint8_t		scalability_info_present:1;
+	uint8_t		multiview_info_present:1;
+	uint8_t		res_cf_bd_info_present:1;
+	uint8_t		pr_info_present:1;
+	uint8_t		br_info_present:1;
+	uint8_t		color_info_present:1;
+	uint8_t		reserved_1:1;
+
+	//if (temporal_scalability_present) {
+	//
+		struct  {
+			uint8_t	max_sub_layers_instream:6;
+			uint8_t	sub_layer_profile_tier_level_info_present:1;
+			uint8_t	temporal_filter_present:1;
+			uint8_t	tid_max:3;
+			uint8_t	tid_min:3;
+
+			//if (temporal_filter_present) {
+				uint8_t	tfweight:2;
+			//} else {
+				uint8_t	reserved_2:2;
+			//}
+		} temporal_scalability_info;
+	//}
+
+	//if(scalability_info_present) {
+	//	mmt_atsc3_message_content_type_video_stream_properties_descriptor_scalability_info_t	scalability_info;
+		struct {
+			uint8_t		asset_layer_id:6;
+			uint8_t		reserved:2;
+
+		} scalability_info;
+	//}
+
+	//if(multiview_info_present) {
+	//	mmt_atsc3_message_content_type_video_stream_properties_descriptor_multview_info_t		multiview_info;
+		struct {
+			uint8_t		view_nuh_layer_id:6;
+			uint8_t		view_pos:6;
+			uint8_t		reserved_4:4;
+			uint16_t	min_disp_with_offset:11;
+			uint16_t	max_disp_range:11;
+			uint8_t		reserved_2:2;
+		} multiview_info;
+	//}
+
+	//if(res_cf_bd_info_present) {
+		//mmt_atsc3_message_content_type_video_stream_properties_descriptor_res_cf_bd_info_t		res_cf_bd_info;
+		struct {
+			uint16_t 		pic_width_in_luma_samples;
+			uint16_t		pic_height_in_luma_samples;
+			uint8_t			chroma_format_idc:3;
+			//if(chroma_format_idc == 3) {
+				uint8_t		separate_colour_plane_flag:1;
+				uint8_t		reserved_3:3;
+			//} else {
+				uint8_t		reserved_4:4;
+			//}
+
+			uint8_t			video_still_present:1;
+			uint8_t			video_24hr_pic_present:1;
+			uint8_t			bit_depth_luma_minus8:4;
+			uint8_t			bit_depth_chroma_minus8:4;
+
+		} res_cf_bd_info;
+	//}
+
+	//if(pr_info_present) {
+		//if(sub_layer_profile_tier_level_info_present) {
+			//pr_info(max_sub_layers_instream-1)
+		//} else {
+			//pr_info(0)
+		//}
+	//}
+
+	//pr_info() {
+		//for(i=0; i <= maxSubLayersMinus1; i++) {
+			uint8_t			picture_rate_code[255];
+			uint16_t		average_picture_rate[255]; //only if picture_rate_code[i] ==
+		//}
+	//}
+
+
+	//if(br_info_present) {
+		//if(sub_layer_profile_tier_level_info_present) {
+			//br_info(max_sub_layers_instream-1)
+		//} else {
+			//br_info(0)
+		//}
+	//}
+	//br_info() {
+		//for(i=0; i < maxSubLayersMinus1; i++) {
+			uint16_t		average_bitrate[255];
+			uint16_t		maximum_bitrate[255];
+		//}
+	//}
+
+	//if(color_info_present) {
+		struct {
+				uint8_t		colour_primaries;
+				uint8_t		transfer_characteristics;
+				uint8_t		matrix_coeffs;
+
+				//if(colour_primaries>=9) {
+					uint8_t 	cg_compatibility:1;
+					uint8_t		reserved_7_cp:7;
+				//}
+
+				//if(transfer_characteristics>=16) {
+					uint8_t		eotf_info_present:1;
+					//if(eotf_info_present) {
+						uint16_t	eotf_info_len_minus1:15;
+						struct {
+							uint8_t		num_SEIs_minus1;
+							uint16_t	SEI_NUT_length_minus1[255];
+							uint8_t*	SEI_NUT_data[255];  //alloc to uint8_t, len: 8*(SEI_NUT_length_minus1[ i ]+1)
+							///eotf_info()
+						} eotf_info;
+					//}
+				//} else {
+					uint8_t		reserved_7_tf;
+				//}
+			};
+	//}
+
+	//if(sub_layer_profile_tier_level_info_present) {
+		//profile_tier_level(1, max_sub_layers_instream-1)
+	//} else {
+		//profile_tier_level(1, 0)
+	//}
+	//A/331:2021 Table 7.1 lists this as var length in "H.265" format?
+	uint8_t*	profile_tier_level[255];  //up to max_sub_layers_instream-1 of var length
+
+} mmt_atsc3_message_content_type_video_stream_properties_descriptor_asset_t;
+
 //TODO: jjustman-2021-06-03: MMT_ATSC3_MESSAGE_CONTENT_TYPE_VIDEO_STREAM_PROPERTIES_DESCRIPTOR
 typedef struct mmt_atsc3_message_content_type_video_stream_properties_descriptor {
-	void* TODO;
+	mmt_atsc3_message_content_type_asset_heaader_t										asset_header;
+	ATSC3_VECTOR_BUILDER_STRUCT(mmt_atsc3_message_content_type_video_stream_properties_descriptor_asset);
+
 } mmt_atsc3_message_content_type_video_stream_properties_descriptor_t;
 
 //TODO: jjustman-2021-06-03: MMT_ATSC3_MESSAGE_CONTENT_TYPE_ATSC_STAGGERCAST_DESCRIPTOR
