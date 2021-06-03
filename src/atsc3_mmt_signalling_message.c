@@ -8,8 +8,8 @@
 #include "atsc3_mmt_signalling_message.h"
 
 int _MMT_SIGNALLING_MESSAGE_ERROR_23008_1_ENABLED = 0;
-int _MMT_SIGNALLING_MESSAGE_DEBUG_ENABLED = 0;
-int _MMT_SIGNALLING_MESSAGE_TRACE_ENABLED = 0;
+int _MMT_SIGNALLING_MESSAGE_DEBUG_ENABLED = 1;
+int _MMT_SIGNALLING_MESSAGE_TRACE_ENABLED = 1;
 
 
 /**
@@ -1073,10 +1073,10 @@ void mmt_atsc3_message_payload_dump(mmt_signalling_message_header_and_payload_t*
 uint8_t* si_message_not_supported(mmt_signalling_message_header_and_payload_t* mmt_signalling_message_header_and_payload, block_t* udp_packet) {
 	if(mmt_signalling_message_header_and_payload->message_header.message_id == 0x0204 || mmt_signalling_message_header_and_payload->message_header.message_id == 0x020A) {
 		//hrmb messages
-		__MMSM_TRACE("signalling information message id not supported: 0x%04x", mmt_signalling_message_header_and_payload->message_header.message_id);
+		__MMSM_TRACE("signalling information message id not supported (hrbm): 0x%04x", mmt_signalling_message_header_and_payload->message_header.message_id);
 
 	} else {
-		__MMSM_WARN("signalling information message id not supported: 0x%04x", mmt_signalling_message_header_and_payload->message_header.message_id);
+		__MMSM_WARN("signalling information message id not supported (other SI): 0x%04x", mmt_signalling_message_header_and_payload->message_header.message_id);
 	}
 	return NULL;
 }
