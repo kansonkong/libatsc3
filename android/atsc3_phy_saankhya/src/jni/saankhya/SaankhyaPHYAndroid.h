@@ -252,6 +252,9 @@ private:
     //jjustman-2021-02-04 - global error flag if i2c txn fails, usually due to demod crash
     static SL_Result_t      global_sl_result_error_flag;
     static SL_I2cResult_t   global_sl_i2c_result_error_flag;
+
+    //jjustman-2021-06-07 # 11798: compute global/l1b/l1d/plpN SNR metrics
+    double compute_snr(int snr_linear_scale);
 };
 
 #define _SAANKHYA_PHY_ANDROID_ERROR(...)   	__LIBATSC3_TIMESTAMP_ERROR(__VA_ARGS__);
