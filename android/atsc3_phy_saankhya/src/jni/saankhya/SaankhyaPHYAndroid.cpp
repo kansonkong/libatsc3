@@ -247,7 +247,12 @@ int SaankhyaPHYAndroid::stop()
     _SAANKHYA_PHY_ANDROID_DEBUG("SaankhyaPHYAndroid::stop: return with this: %p", this);
     return 0;
 }
+double SaankhyaPHYAndroid::compute_snr(int snr_linear_scale) {
+    double snr = (float)perfDiag.GlobalSnrLinearScale / 16384;
+    snr = 10000.0 * log10(snr); //10
 
+    return snr;
+}
 /*
  * jjustman-2020-08-23: NOTE - do NOT call delete slApi*, only call deinit() otherwise you will get fortify crashes, ala:
  *  08-24 08:29:32.717 18991 18991 F libc    : FORTIFY: pthread_mutex_destroy called on a destroyed mutex (0x783b5c87b8)
@@ -1810,7 +1815,21 @@ int SaankhyaPHYAndroid::statusThread()
     SL_PlpConfigParams_t  loop_plpInfo = { 0 };
     unsigned long long    llsPlpInfo;
 
-    double snr;
+    /* jjustman-2021-06-07 - #11798
+     *  int L1bSnrLinearScale;
+        int L1dSnrLinearScale;
+        int Plp0SnrLinearScale;
+        int Plp1SnrLinearScale;
+        int Plp2SnrLinearScale;
+        int Plp3SnrLinearScale;
+        int GlobalSnrLinearScale;
+     */
+    double snr_global;
+    double snr_l1b;
+    double snr_l1d;
+    double snr_plp[4];
+
+
     double ber_l1b;
     double ber_l1d;
     double ber_plp0;
@@ -1949,7 +1968,6 @@ int SaankhyaPHYAndroid::statusThread()
         }
         SL_SleepMS(100);
 
-
         atsc3_ndk_phy_client_rf_metrics.demod_lock = demodLockStatus;
 
         atsc3_ndk_phy_client_rf_metrics.plp_lock_any = (demodLockStatus & SL_DEMOD_LOCK_STATUS_MASK_BB_PLP0_LOCK) ||
@@ -2029,13 +2047,30 @@ int SaankhyaPHYAndroid::statusThread()
         //jjustman-2021-03-16 - exit our i2c critical section while we build and push our PHY statistics, we can use "continue" for next loop iteration after this point
         SL_I2C_command_mutex_tuner_status_io.unlock();
 
-        snr = (float)perfDiag.GlobalSnrLinearScale / 16384;
-        snr = 10000.0 * log10(snr); //10
+        snr_global = compute_snr(perfDiag.GlobalSnrLinearScale);
+        atsc3_ndk_phy_client_rf_metrics.snr1000_global = snr_global;
+
+        snr_l1b = compute_snr(perfDiag.L1bSnrLinearScale);
+        atsc3_ndk_phy_client_rf_metrics.snr1000_global = snr_l1b;
+
+        snr_l1d = compute_snr(perfDiag.L1dSnrLinearScale);
+        atsc3_ndk_phy_client_rf_metrics.snr1000_global = snr_l1d;
+
+        snr_plp[0] = compute_snr(perfDiag.Plp0SnrLinearScale);
+        atsc3_ndk_phy_client_rf_metrics.phy_client_rf_plp_metrics[0].snr1000 = snr_plp[0];
+
+        snr_plp[1] = compute_snr(perfDiag.Plp1SnrLinearScale);
+        atsc3_ndk_phy_client_rf_metrics.phy_client_rf_plp_metrics[1].snr1000 = snr_plp[1];
+
+        snr_plp[2] = compute_snr(perfDiag.Plp2SnrLinearScale);
+        atsc3_ndk_phy_client_rf_metrics.phy_client_rf_plp_metrics[2].snr1000 = snr_plp[2];
+
+        snr_plp[3] = compute_snr(perfDiag.Plp3SnrLinearScale);
+        atsc3_ndk_phy_client_rf_metrics.phy_client_rf_plp_metrics[3].snr1000 = snr_plp[3];
 
         //hacks...
         atsc3_ndk_phy_client_rf_metrics.rssi = tunerInfo.signalStrength;
         atsc3_ndk_phy_client_rf_metrics.rfLevel1000 = tunerInfo.signalStrength/1000;
-        atsc3_ndk_phy_client_rf_metrics.snr1000 = snr;
         ///
 
         //jjustman-2021-05-11 - fixme to just be perfDiag values
@@ -2111,8 +2146,11 @@ int SaankhyaPHYAndroid::statusThread()
         atsc3_ndk_phy_client_rf_metrics.phy_client_rf_plp_metrics[3].fer_post_bch   = (perfDiag.NumFrameErrPlp3 * 1000000) / perfDiag.NumFecFramePlp3;  //FER 1xe6
 
 
-        _SAANKHYA_PHY_ANDROID_DEBUG("atsc3NdkClientSlImpl::StatusThread: SNR: %f, tunerInfo.status: %d, tunerInfo.signalStrength: %f, cpuStatus: %s, demodLockStatus: %d,  ber_l1b: %d, ber_l1d: %d, ber_plp0: %d, plps: 0x%02x (fec: %d, mod: %d, cr: %d), 0x%02x (fec: %d, mod: %d, cr: %d), 0x%02x (fec: %d, mod: %d, cr: %d), 0x%02x (fec: %d, mod: %d, cr: %d)",
-                snr / 1000.0,
+        _SAANKHYA_PHY_ANDROID_DEBUG("atsc3NdkClientSlImpl::StatusThread: global_SNR: %f, l1b_SNR: %f, l1d_SNR: %f tunerInfo.status: %d, tunerInfo.signalStrength: %f, cpuStatus: %s, demodLockStatus: %d,  ber_l1b: %d, ber_l1d: %d, ber_plp0: %d, plps: 0x%02x (fec: %d, mod: %d, cr: %d, snr: %f), 0x%02x (fec: %d, mod: %d, cr: %d, snr: %f), 0x%02x (fec: %d, mod: %d, cr: %d, snr: %f), 0x%02x (fec: %d, mod: %d, cr: %d, snr: %f)",
+                snr_global / 1000.0,
+                snr_l1b / 1000.0,
+                snr_l1d / 1000.0,
+
                tunerInfo.status,
                tunerInfo.signalStrength / 1000,
                (cpuStatus == 0xFFFFFFFF) ? "RUNNING" : "HALTED",
@@ -2124,18 +2162,23 @@ int SaankhyaPHYAndroid::statusThread()
                 myPlps[0].L1dSfPlpFecType,
                 myPlps[0].L1dSfPlpModType,
                 myPlps[0].L1dSfPlpCoderate,
-               loop_plpInfo.plp1,
+                atsc3_ndk_phy_client_rf_metrics.phy_client_rf_plp_metrics[0].snr1000 / 1000.0,
+                loop_plpInfo.plp1,
                 myPlps[1].L1dSfPlpFecType,
                 myPlps[1].L1dSfPlpModType,
                 myPlps[1].L1dSfPlpCoderate,
+                atsc3_ndk_phy_client_rf_metrics.phy_client_rf_plp_metrics[1].snr1000 / 1000.0,
                loop_plpInfo.plp2,
                 myPlps[2].L1dSfPlpFecType,
                 myPlps[2].L1dSfPlpModType,
                 myPlps[2].L1dSfPlpCoderate,
+                atsc3_ndk_phy_client_rf_metrics.phy_client_rf_plp_metrics[2].snr1000 / 1000.0,
                 loop_plpInfo.plp3,
                 myPlps[3].L1dSfPlpFecType,
                 myPlps[3].L1dSfPlpModType,
-                myPlps[3].L1dSfPlpCoderate);
+                myPlps[3].L1dSfPlpCoderate,
+                atsc3_ndk_phy_client_rf_metrics.phy_client_rf_plp_metrics[3].snr1000 / 1000.0
+        );
 
         if(atsc3_ndk_phy_bridge_get_instance()) {
             atsc3_ndk_phy_bridge_get_instance()->atsc3_update_rf_stats_from_atsc3_ndk_phy_client_rf_metrics_t(&atsc3_ndk_phy_client_rf_metrics);
