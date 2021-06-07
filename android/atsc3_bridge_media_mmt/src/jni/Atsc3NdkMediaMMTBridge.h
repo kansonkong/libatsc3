@@ -77,8 +77,6 @@ private:
 
     MMTExtractor* mmtExtractor;
 
-    std::thread mhRxThread;
-
     //global env.Get()->NewGlobalRef(jobjectByteBuffer); for c alloc'd MFU's and NAL's
     std::vector<jobject> global_jobject_mfu_refs;
     std::vector<jobject> global_jobject_nal_refs;
