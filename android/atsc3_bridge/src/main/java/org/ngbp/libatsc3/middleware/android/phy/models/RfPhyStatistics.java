@@ -90,7 +90,7 @@ public class RfPhyStatistics {
 
     @Override
     public String toString() {
-        return String.format("TunLk: %d, DmLk: %d, PLk:Any: 0x%02x, All: 0x%02x, Cpu: %s, RSSI: %d.%03d dB (raw: %.2f), GSNR: %.2f, L1B_SNR: %.2f, L1D_SNR: %.2f\n" +
+        return String.format("TunLk: %d, DmLk: %d, PLk:Any: 0x%02x, All: 0x%02x, Cpu: %s, RSSI: %d.%03d dB (raw: %d), GSNR: %.2f, L1B_SNR: %.2f, L1D_SNR: %.2f\n" +
                                 "P0: SNR: %.2f, M/C: G: %d, %s (%d), %s (%d), %s (%d), BER: pre_ldpc: %d, pre_bch: %d, post_bch: %d\n" +
                                 "P1: SNR: %.2f, M/C: G: %d, %s (%d), %s (%d), %s (%d), BER: pre_ldpc: %d, pre_bch: %d, post_bch: %d\n" +
                                 "P2: SNR: %.2f, M/C: G: %d, %s (%d), %s (%d), %s (%d), BER: pre_ldpc: %d, pre_bch: %d, post_bch: %d\n" +
@@ -102,21 +102,28 @@ public class RfPhyStatistics {
                 this.plp_lock_all,
 
                 this.cpu_status == 1 ? "R" : "H",
+
                 (this.rssi) / 1000,
                 ((-this.rssi) % 1000),
                 this.rssi,
+
                 (float) this.snr1000_global / 1000.0,
                 (float) this.snr1000_l1b / 1000.0,
                 (float) this.snr1000_l1d / 1000.0,
 
                 (float)this.plp_snr1000_0 / 1000.0,
+
                 this.modcod_valid_0,
+
                 RfPhyFecModCodTypes.L1d_PlpFecType.getOrDefault(this.plp_fec_type_0, RfPhyFecModCodTypes.L1d_PlpFecType.get(255)),
                 this.plp_fec_type_0,
+
                 RfPhyFecModCodTypes.L1d_PlpMod.getOrDefault(this.plp_mod_0, RfPhyFecModCodTypes.L1d_PlpMod.get(255)),
                 this.plp_mod_0,
+
                 RfPhyFecModCodTypes.L1d_PlpCod.getOrDefault(this.plp_cod_0, RfPhyFecModCodTypes.L1d_PlpCod.get(255)),
                 this.plp_cod_0,
+
                 this.ber_pre_ldpc_0,
                 this.ber_pre_bch_0,
                 this.fer_post_bch_0,
@@ -129,11 +136,14 @@ public class RfPhyStatistics {
                 this.plp_mod_1,
                 RfPhyFecModCodTypes.L1d_PlpCod.getOrDefault(this.plp_cod_1, RfPhyFecModCodTypes.L1d_PlpCod.get(255)),
                 this.plp_cod_1,
+
                 this.ber_pre_ldpc_1,
                 this.ber_pre_bch_1,
                 this.fer_post_bch_1,
 
                 (float)this.plp_snr1000_2 / 1000.0,
+                this.modcod_valid_2,
+
                 RfPhyFecModCodTypes.L1d_PlpFecType.getOrDefault(this.plp_fec_type_2, RfPhyFecModCodTypes.L1d_PlpFecType.get(255)),
                 this.plp_fec_type_2,
                 RfPhyFecModCodTypes.L1d_PlpMod.getOrDefault(this.plp_mod_2, RfPhyFecModCodTypes.L1d_PlpMod.get(255)),
@@ -145,6 +155,8 @@ public class RfPhyStatistics {
                 this.fer_post_bch_2,
 
                 (float)this.plp_snr1000_3 / 1000.0,
+                this.modcod_valid_3,
+
                 RfPhyFecModCodTypes.L1d_PlpFecType.getOrDefault(this.plp_fec_type_3, RfPhyFecModCodTypes.L1d_PlpFecType.get(255)),
                 this.plp_fec_type_3,
                 RfPhyFecModCodTypes.L1d_PlpMod.getOrDefault(this.plp_mod_3, RfPhyFecModCodTypes.L1d_PlpMod.get(255)),

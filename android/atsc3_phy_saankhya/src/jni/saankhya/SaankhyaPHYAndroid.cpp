@@ -28,6 +28,9 @@ done
 
  */
 
+//jjustman-2021-06-07 - uncomment to enable 100ms sleep between tuner status thread i2c polling commands
+#define _JJ_I2C_TUNER_STATUS_THREAD_SLEEP_MS_ENABLED_
+
 #include "SaankhyaPHYAndroid.h"
 SaankhyaPHYAndroid* saankhyaPHYAndroid = nullptr;
 
@@ -1946,7 +1949,10 @@ int SaankhyaPHYAndroid::statusThread()
         }
         lastCpuStatus = cpuStatus;
         //jjustman-2021-05-11 - give 256qam 11/15 fec bitrates a chance to flush ALP buffer without oveflowing and lose bootstrap/l1b/l1d lock
+
+#ifdef _JJ_I2C_TUNER_STATUS_THREAD_SLEEP_MS_ENABLED_
         SL_SleepMS(100);
+#endif
 
 
         //jjustman-2020-10-14 - not really worth it on AA as we don't get rssi here
@@ -1956,7 +1962,9 @@ int SaankhyaPHYAndroid::statusThread()
             goto sl_i2c_tuner_mutex_unlock;
         }
 
+#ifdef _JJ_I2C_TUNER_STATUS_THREAD_SLEEP_MS_ENABLED_
         SL_SleepMS(100);
+#endif
 
         atsc3_ndk_phy_client_rf_metrics.tuner_lock = (tunerInfo.status == 1);
 
@@ -1966,7 +1974,10 @@ int SaankhyaPHYAndroid::statusThread()
             _SAANKHYA_PHY_ANDROID_ERROR("Error:SL_Demod Get Lock Status  : dres: %d", dres);
             goto sl_i2c_tuner_mutex_unlock;
         }
-        SL_SleepMS(100);
+
+#ifdef _JJ_I2C_TUNER_STATUS_THREAD_SLEEP_MS_ENABLED_
+SL_SleepMS(100);
+#endif
 
         atsc3_ndk_phy_client_rf_metrics.demod_lock = demodLockStatus;
 
@@ -2070,13 +2081,13 @@ int SaankhyaPHYAndroid::statusThread()
 
         //hacks...
         atsc3_ndk_phy_client_rf_metrics.rssi = tunerInfo.signalStrength;
-        atsc3_ndk_phy_client_rf_metrics.rfLevel1000 = tunerInfo.signalStrength/1000;
+        atsc3_ndk_phy_client_rf_metrics.rfLevel1000 = tunerInfo.signalStrength * 1000.0;
         ///
 
         //jjustman-2021-05-11 - fixme to just be perfDiag values
-        ber_l1b = (float)perfDiag.NumBitErrL1b / perfDiag.NumFecBitsL1b; // //aBerPreLdpcE7,
-        ber_l1d = (float)perfDiag.NumBitErrL1d / perfDiag.NumFecBitsL1d;//aBerPreBchE9,
-        ber_plp0 = (float)perfDiag.NumBitErrPlp0 / perfDiag.NumFecBitsPlp0; //aFerPostBchE6,
+        ber_l1b = perfDiag.NumBitErrL1b; //(float)perfDiag.NumBitErrL1b / perfDiag.NumFecBitsL1b; // //aBerPreLdpcE7,
+        ber_l1d = perfDiag.NumBitErrL1b; //(float) perfDiag.NumBitErrL1d / perfDiag.NumFecBitsL1d;//aBerPreBchE9,
+        ber_plp0 = perfDiag.NumBitErrPlp0;// (float)perfDiag.NumBitErrPlp0 / perfDiag.NumFecBitsPlp0; //aFerPostBchE6,
 
         //build our listen plp details
 
@@ -2109,8 +2120,8 @@ int SaankhyaPHYAndroid::statusThread()
         atsc3_ndk_phy_client_rf_metrics.phy_client_rf_plp_metrics[0].plp_cod        = myPlps[0].L1dSfPlpCoderate;
 
         atsc3_ndk_phy_client_rf_metrics.phy_client_rf_plp_metrics[0].ber_pre_ldpc   = perfDiag.LdpcItrnsPlp0; // over ???//BER x1e7
-        atsc3_ndk_phy_client_rf_metrics.phy_client_rf_plp_metrics[0].ber_pre_bch    = (perfDiag.NumBitErrPlp0 * 1000000000) / (perfDiag.Plp0StreamByteCount * 8); //s_fe_detail.aBerPreBchE9[i]; //BER 1xe9
-        atsc3_ndk_phy_client_rf_metrics.phy_client_rf_plp_metrics[0].fer_post_bch   = (perfDiag.NumFrameErrPlp0 * 1000000) / perfDiag.NumFecFramePlp0;  //FER 1xe6
+        atsc3_ndk_phy_client_rf_metrics.phy_client_rf_plp_metrics[0].ber_pre_bch    = perfDiag.NumBitErrPlp0; //(perfDiag.NumBitErrPlp0 * 1000000000) / (perfDiag.Plp0StreamByteCount * 8); //s_fe_detail.aBerPreBchE9[i]; //BER 1xe9
+        atsc3_ndk_phy_client_rf_metrics.phy_client_rf_plp_metrics[0].fer_post_bch   = perfDiag.NumFrameErrPlp0; //(perfDiag.NumFrameErrPlp0 * 1000000) / perfDiag.NumFecFramePlp0;  //FER 1xe6
 
         //plp[1]
         atsc3_ndk_phy_client_rf_metrics.phy_client_rf_plp_metrics[1].plp_id         = loop_plpInfo.plp1;
@@ -2120,8 +2131,8 @@ int SaankhyaPHYAndroid::statusThread()
         atsc3_ndk_phy_client_rf_metrics.phy_client_rf_plp_metrics[1].plp_cod        = myPlps[1].L1dSfPlpCoderate;
 
         atsc3_ndk_phy_client_rf_metrics.phy_client_rf_plp_metrics[1].ber_pre_ldpc   = perfDiag.LdpcItrnsPlp1; // over ???//BER x1e7
-        atsc3_ndk_phy_client_rf_metrics.phy_client_rf_plp_metrics[1].ber_pre_bch    = (perfDiag.NumBitErrPlp1 * 1000000000) / (perfDiag.Plp1StreamByteCount * 8); //s_fe_detail.aBerPreBchE9[i]; //BER 1xe9
-        atsc3_ndk_phy_client_rf_metrics.phy_client_rf_plp_metrics[1].fer_post_bch   = (perfDiag.NumFrameErrPlp1 * 1000000) / perfDiag.NumFecFramePlp1;  //FER 1xe6
+        atsc3_ndk_phy_client_rf_metrics.phy_client_rf_plp_metrics[1].ber_pre_bch    = perfDiag.NumBitErrPlp1; //(perfDiag.NumBitErrPlp1 * 1000000000) / (perfDiag.Plp1StreamByteCount * 8); //s_fe_detail.aBerPreBchE9[i]; //BER 1xe9
+        atsc3_ndk_phy_client_rf_metrics.phy_client_rf_plp_metrics[1].fer_post_bch   = perfDiag.NumFrameErrPlp1; //(perfDiag.NumFrameErrPlp1 * 1000000) / perfDiag.NumFecFramePlp1;  //FER 1xe6
 
         //plp[2]
         atsc3_ndk_phy_client_rf_metrics.phy_client_rf_plp_metrics[2].plp_id         = loop_plpInfo.plp2;
@@ -2131,8 +2142,8 @@ int SaankhyaPHYAndroid::statusThread()
         atsc3_ndk_phy_client_rf_metrics.phy_client_rf_plp_metrics[2].plp_cod        = myPlps[2].L1dSfPlpCoderate;
 
         atsc3_ndk_phy_client_rf_metrics.phy_client_rf_plp_metrics[2].ber_pre_ldpc   = perfDiag.LdpcItrnsPlp2; // over ???//BER x1e7
-        atsc3_ndk_phy_client_rf_metrics.phy_client_rf_plp_metrics[2].ber_pre_bch    = (perfDiag.NumBitErrPlp2 * 1000000000) / (perfDiag.Plp2StreamByteCount * 8); //s_fe_detail.aBerPreBchE9[i]; //BER 1xe9
-        atsc3_ndk_phy_client_rf_metrics.phy_client_rf_plp_metrics[2].fer_post_bch   = (perfDiag.NumFrameErrPlp2 * 1000000) / perfDiag.NumFecFramePlp2;  //FER 1xe6
+        atsc3_ndk_phy_client_rf_metrics.phy_client_rf_plp_metrics[2].ber_pre_bch    = perfDiag.NumBitErrPlp2; //(perfDiag.NumBitErrPlp2 * 1000000000) / (perfDiag.Plp2StreamByteCount * 8); //s_fe_detail.aBerPreBchE9[i]; //BER 1xe9
+        atsc3_ndk_phy_client_rf_metrics.phy_client_rf_plp_metrics[2].fer_post_bch   = perfDiag.NumFrameErrPlp2; //(perfDiag.NumFrameErrPlp2 * 1000000) / perfDiag.NumFecFramePlp2;  //FER 1xe6
 
         //plp[3]
         atsc3_ndk_phy_client_rf_metrics.phy_client_rf_plp_metrics[3].plp_id         = loop_plpInfo.plp3;
@@ -2142,8 +2153,8 @@ int SaankhyaPHYAndroid::statusThread()
         atsc3_ndk_phy_client_rf_metrics.phy_client_rf_plp_metrics[3].plp_cod        = myPlps[3].L1dSfPlpCoderate;
 
         atsc3_ndk_phy_client_rf_metrics.phy_client_rf_plp_metrics[3].ber_pre_ldpc   = perfDiag.LdpcItrnsPlp3; // over ???//BER x1e7
-        atsc3_ndk_phy_client_rf_metrics.phy_client_rf_plp_metrics[3].ber_pre_bch    = (perfDiag.NumBitErrPlp3 * 1000000000) / (perfDiag.Plp3StreamByteCount * 8); //s_fe_detail.aBerPreBchE9[i]; //BER 1xe9
-        atsc3_ndk_phy_client_rf_metrics.phy_client_rf_plp_metrics[3].fer_post_bch   = (perfDiag.NumFrameErrPlp3 * 1000000) / perfDiag.NumFecFramePlp3;  //FER 1xe6
+        atsc3_ndk_phy_client_rf_metrics.phy_client_rf_plp_metrics[3].ber_pre_bch    = perfDiag.NumBitErrPlp3; //(perfDiag.NumBitErrPlp3 * 1000000000) / (perfDiag.Plp3StreamByteCount * 8); //s_fe_detail.aBerPreBchE9[i]; //BER 1xe9
+        atsc3_ndk_phy_client_rf_metrics.phy_client_rf_plp_metrics[3].fer_post_bch   = perfDiag.NumFrameErrPlp3; //(perfDiag.NumFrameErrPlp3 * 1000000) / perfDiag.NumFecFramePlp3;  //FER 1xe6
 
 
         _SAANKHYA_PHY_ANDROID_DEBUG("atsc3NdkClientSlImpl::StatusThread: global_SNR: %f, l1b_SNR: %f, l1d_SNR: %f tunerInfo.status: %d, tunerInfo.signalStrength: %f, cpuStatus: %s, demodLockStatus: %d,  ber_l1b: %d, ber_l1d: %d, ber_plp0: %d, plps: 0x%02x (fec: %d, mod: %d, cr: %d, snr: %f), 0x%02x (fec: %d, mod: %d, cr: %d, snr: %f), 0x%02x (fec: %d, mod: %d, cr: %d, snr: %f), 0x%02x (fec: %d, mod: %d, cr: %d, snr: %f)",
