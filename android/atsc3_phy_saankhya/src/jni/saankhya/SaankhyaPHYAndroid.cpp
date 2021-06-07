@@ -264,6 +264,15 @@ int SaankhyaPHYAndroid::deinit()
     return 0;
 }
 
+string SaankhyaPHYAndroid::get_sdk_version()  {
+    return SL_SDK_VERSION;
+};
+
+string SaankhyaPHYAndroid::get_firmware_version() {
+    return demodVersion;
+};
+
+
 SL_ConfigResult_t SaankhyaPHYAndroid::configPlatformParams_autodetect(int device_type, string device_path) {
 
     SL_ConfigResult_t res = SL_CONFIG_OK;
@@ -694,6 +703,7 @@ int SaankhyaPHYAndroid::open(int fd, int device_type, string device_path)
     if (slres == SL_OK)
     {
         _SAANKHYA_PHY_ANDROID_DEBUG("Demod SW Version: %d.%d", swMajorNo, swMinorNo);
+        demodVersion = swMajorNo + "." + swMinorNo;
     }
 
     /* Tuner Config */

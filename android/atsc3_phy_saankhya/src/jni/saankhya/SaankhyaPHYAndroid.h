@@ -81,6 +81,9 @@ public:
     virtual int  stop()       override;
     virtual int  deinit()     override;
 
+    virtual string get_sdk_version()  override;
+    virtual string get_firmware_version() override;
+
     virtual int  download_bootloader_firmware(int fd, int device_type, string devicePath) override;
     virtual int  open(int fd, int device_type, string devicePath)   override;
     virtual int  tune(int freqKhz, int single_plp) override;
@@ -101,6 +104,9 @@ public:
 
     mutex SL_I2C_command_mutex;
     mutex SL_PlpConfigParams_mutex;
+
+    //jjustman-2021-06-07 - from demod_start
+    string                  demodVersion;
 
     //jjustman-2021-03-03   this is expected to be always accurate, when using, be sure to acquire SL_plpConfigParams_mutex, and SL_I2c_command_mutex, if necessary
     SL_PlpConfigParams_t    plpInfo;
