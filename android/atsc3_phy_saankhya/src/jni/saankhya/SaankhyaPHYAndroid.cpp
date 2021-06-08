@@ -2062,10 +2062,10 @@ SL_SleepMS(100);
         atsc3_ndk_phy_client_rf_metrics.snr1000_global = snr_global;
 
         snr_l1b = compute_snr(perfDiag.L1bSnrLinearScale);
-        atsc3_ndk_phy_client_rf_metrics.snr1000_global = snr_l1b;
+        atsc3_ndk_phy_client_rf_metrics.snr1000_l1b = snr_l1b;
 
         snr_l1d = compute_snr(perfDiag.L1dSnrLinearScale);
-        atsc3_ndk_phy_client_rf_metrics.snr1000_global = snr_l1d;
+        atsc3_ndk_phy_client_rf_metrics.snr1000_l1d = snr_l1d;
 
         snr_plp[0] = compute_snr(perfDiag.Plp0SnrLinearScale);
         atsc3_ndk_phy_client_rf_metrics.phy_client_rf_plp_metrics[0].snr1000 = snr_plp[0];
@@ -2079,10 +2079,8 @@ SL_SleepMS(100);
         snr_plp[3] = compute_snr(perfDiag.Plp3SnrLinearScale);
         atsc3_ndk_phy_client_rf_metrics.phy_client_rf_plp_metrics[3].snr1000 = snr_plp[3];
 
-        //hacks...
         atsc3_ndk_phy_client_rf_metrics.rssi = tunerInfo.signalStrength;
         atsc3_ndk_phy_client_rf_metrics.rfLevel1000 = tunerInfo.signalStrength * 1000.0;
-        ///
 
         //jjustman-2021-05-11 - fixme to just be perfDiag values
         ber_l1b = perfDiag.NumBitErrL1b; //(float)perfDiag.NumBitErrL1b / perfDiag.NumFecBitsL1b; // //aBerPreLdpcE7,
@@ -2113,48 +2111,55 @@ SL_SleepMS(100);
         }
 
         //plp[0]
-        atsc3_ndk_phy_client_rf_metrics.phy_client_rf_plp_metrics[0].plp_id         = loop_plpInfo.plp0;
-        atsc3_ndk_phy_client_rf_metrics.phy_client_rf_plp_metrics[0].modcod_valid   = (demodLockStatus & SL_DEMOD_LOCK_STATUS_MASK_BB_PLP0_LOCK) != 0;
-        atsc3_ndk_phy_client_rf_metrics.phy_client_rf_plp_metrics[0].plp_fec_type   = myPlps[0].L1dSfPlpFecType;
-        atsc3_ndk_phy_client_rf_metrics.phy_client_rf_plp_metrics[0].plp_mod        = myPlps[0].L1dSfPlpModType;
-        atsc3_ndk_phy_client_rf_metrics.phy_client_rf_plp_metrics[0].plp_cod        = myPlps[0].L1dSfPlpCoderate;
+        atsc3_ndk_phy_client_rf_metrics.phy_client_rf_plp_metrics[0].plp_id          = loop_plpInfo.plp0;
+        atsc3_ndk_phy_client_rf_metrics.phy_client_rf_plp_metrics[0].modcod_valid    = (demodLockStatus & SL_DEMOD_LOCK_STATUS_MASK_BB_PLP0_LOCK) != 0;
+        atsc3_ndk_phy_client_rf_metrics.phy_client_rf_plp_metrics[0].plp_fec_type    = myPlps[0].L1dSfPlpFecType;
+        atsc3_ndk_phy_client_rf_metrics.phy_client_rf_plp_metrics[0].plp_mod         = myPlps[0].L1dSfPlpModType;
+        atsc3_ndk_phy_client_rf_metrics.phy_client_rf_plp_metrics[0].plp_cod         = myPlps[0].L1dSfPlpCoderate;
 
-        atsc3_ndk_phy_client_rf_metrics.phy_client_rf_plp_metrics[0].ber_pre_ldpc   = perfDiag.LdpcItrnsPlp0; // over ???//BER x1e7
-        atsc3_ndk_phy_client_rf_metrics.phy_client_rf_plp_metrics[0].ber_pre_bch    = perfDiag.NumBitErrPlp0; //(perfDiag.NumBitErrPlp0 * 1000000000) / (perfDiag.Plp0StreamByteCount * 8); //s_fe_detail.aBerPreBchE9[i]; //BER 1xe9
-        atsc3_ndk_phy_client_rf_metrics.phy_client_rf_plp_metrics[0].fer_post_bch   = perfDiag.NumFrameErrPlp0; //(perfDiag.NumFrameErrPlp0 * 1000000) / perfDiag.NumFecFramePlp0;  //FER 1xe6
+        atsc3_ndk_phy_client_rf_metrics.phy_client_rf_plp_metrics[0].ber_pre_ldpc    = perfDiag.LdpcItrnsPlp0; // over ???//BER x1e7
+        atsc3_ndk_phy_client_rf_metrics.phy_client_rf_plp_metrics[0].ber_pre_bch     = perfDiag.NumBitErrPlp0; //(perfDiag.NumBitErrPlp0 * 1000000000) / (perfDiag.Plp0StreamByteCount * 8); //s_fe_detail.aBerPreBchE9[i]; //BER 1xe9
+        atsc3_ndk_phy_client_rf_metrics.phy_client_rf_plp_metrics[0].fer_post_bch    = perfDiag.NumFecBitsPlp0; //(perfDiag.NumFrameErrPlp0 * 1000000) / perfDiag.NumFecFramePlp0;  //FER 1xe6
+        atsc3_ndk_phy_client_rf_metrics.phy_client_rf_plp_metrics[0].total_fec       = perfDiag.NumFecFramePlp0;
+        atsc3_ndk_phy_client_rf_metrics.phy_client_rf_plp_metrics[0].total_error_fec = perfDiag.NumFrameErrPlp0;
 
         //plp[1]
-        atsc3_ndk_phy_client_rf_metrics.phy_client_rf_plp_metrics[1].plp_id         = loop_plpInfo.plp1;
-        atsc3_ndk_phy_client_rf_metrics.phy_client_rf_plp_metrics[1].modcod_valid   = (demodLockStatus & SL_DEMOD_LOCK_STATUS_MASK_BB_PLP1_LOCK) != 0;
-        atsc3_ndk_phy_client_rf_metrics.phy_client_rf_plp_metrics[1].plp_fec_type   = myPlps[1].L1dSfPlpFecType;
-        atsc3_ndk_phy_client_rf_metrics.phy_client_rf_plp_metrics[1].plp_mod        = myPlps[1].L1dSfPlpModType;
-        atsc3_ndk_phy_client_rf_metrics.phy_client_rf_plp_metrics[1].plp_cod        = myPlps[1].L1dSfPlpCoderate;
+        atsc3_ndk_phy_client_rf_metrics.phy_client_rf_plp_metrics[1].plp_id          = loop_plpInfo.plp1;
+        atsc3_ndk_phy_client_rf_metrics.phy_client_rf_plp_metrics[1].modcod_valid    = (demodLockStatus & SL_DEMOD_LOCK_STATUS_MASK_BB_PLP1_LOCK) != 0;
+        atsc3_ndk_phy_client_rf_metrics.phy_client_rf_plp_metrics[1].plp_fec_type    = myPlps[1].L1dSfPlpFecType;
+        atsc3_ndk_phy_client_rf_metrics.phy_client_rf_plp_metrics[1].plp_mod         = myPlps[1].L1dSfPlpModType;
+        atsc3_ndk_phy_client_rf_metrics.phy_client_rf_plp_metrics[1].plp_cod         = myPlps[1].L1dSfPlpCoderate;
 
-        atsc3_ndk_phy_client_rf_metrics.phy_client_rf_plp_metrics[1].ber_pre_ldpc   = perfDiag.LdpcItrnsPlp1; // over ???//BER x1e7
-        atsc3_ndk_phy_client_rf_metrics.phy_client_rf_plp_metrics[1].ber_pre_bch    = perfDiag.NumBitErrPlp1; //(perfDiag.NumBitErrPlp1 * 1000000000) / (perfDiag.Plp1StreamByteCount * 8); //s_fe_detail.aBerPreBchE9[i]; //BER 1xe9
-        atsc3_ndk_phy_client_rf_metrics.phy_client_rf_plp_metrics[1].fer_post_bch   = perfDiag.NumFrameErrPlp1; //(perfDiag.NumFrameErrPlp1 * 1000000) / perfDiag.NumFecFramePlp1;  //FER 1xe6
-
+        atsc3_ndk_phy_client_rf_metrics.phy_client_rf_plp_metrics[1].ber_pre_ldpc    = perfDiag.LdpcItrnsPlp1; // over ???//BER x1e7
+        atsc3_ndk_phy_client_rf_metrics.phy_client_rf_plp_metrics[1].ber_pre_bch     = perfDiag.NumBitErrPlp1; //(perfDiag.NumBitErrPlp1 * 1000000000) / (perfDiag.Plp1StreamByteCount * 8); //s_fe_detail.aBerPreBchE9[i]; //BER 1xe9
+        atsc3_ndk_phy_client_rf_metrics.phy_client_rf_plp_metrics[1].fer_post_bch    = perfDiag.NumFecBitsPlp1; //(perfDiag.NumFrameErrPlp1 * 1000000) / perfDiag.NumFecFramePlp1;  //FER 1xe6
+        atsc3_ndk_phy_client_rf_metrics.phy_client_rf_plp_metrics[1].total_fec       = perfDiag.NumFecFramePlp1;
+        atsc3_ndk_phy_client_rf_metrics.phy_client_rf_plp_metrics[1].total_error_fec = perfDiag.NumFrameErrPlp1;
         //plp[2]
-        atsc3_ndk_phy_client_rf_metrics.phy_client_rf_plp_metrics[2].plp_id         = loop_plpInfo.plp2;
-        atsc3_ndk_phy_client_rf_metrics.phy_client_rf_plp_metrics[2].modcod_valid   = (demodLockStatus & SL_DEMOD_LOCK_STATUS_MASK_BB_PLP2_LOCK) != 0;
-        atsc3_ndk_phy_client_rf_metrics.phy_client_rf_plp_metrics[2].plp_fec_type   = myPlps[2].L1dSfPlpFecType;
-        atsc3_ndk_phy_client_rf_metrics.phy_client_rf_plp_metrics[2].plp_mod        = myPlps[2].L1dSfPlpModType;
-        atsc3_ndk_phy_client_rf_metrics.phy_client_rf_plp_metrics[2].plp_cod        = myPlps[2].L1dSfPlpCoderate;
+        atsc3_ndk_phy_client_rf_metrics.phy_client_rf_plp_metrics[2].plp_id          = loop_plpInfo.plp2;
+        atsc3_ndk_phy_client_rf_metrics.phy_client_rf_plp_metrics[2].modcod_valid    = (demodLockStatus & SL_DEMOD_LOCK_STATUS_MASK_BB_PLP2_LOCK) != 0;
+        atsc3_ndk_phy_client_rf_metrics.phy_client_rf_plp_metrics[2].plp_fec_type    = myPlps[2].L1dSfPlpFecType;
+        atsc3_ndk_phy_client_rf_metrics.phy_client_rf_plp_metrics[2].plp_mod         = myPlps[2].L1dSfPlpModType;
+        atsc3_ndk_phy_client_rf_metrics.phy_client_rf_plp_metrics[2].plp_cod         = myPlps[2].L1dSfPlpCoderate;
 
-        atsc3_ndk_phy_client_rf_metrics.phy_client_rf_plp_metrics[2].ber_pre_ldpc   = perfDiag.LdpcItrnsPlp2; // over ???//BER x1e7
-        atsc3_ndk_phy_client_rf_metrics.phy_client_rf_plp_metrics[2].ber_pre_bch    = perfDiag.NumBitErrPlp2; //(perfDiag.NumBitErrPlp2 * 1000000000) / (perfDiag.Plp2StreamByteCount * 8); //s_fe_detail.aBerPreBchE9[i]; //BER 1xe9
-        atsc3_ndk_phy_client_rf_metrics.phy_client_rf_plp_metrics[2].fer_post_bch   = perfDiag.NumFrameErrPlp2; //(perfDiag.NumFrameErrPlp2 * 1000000) / perfDiag.NumFecFramePlp2;  //FER 1xe6
+        atsc3_ndk_phy_client_rf_metrics.phy_client_rf_plp_metrics[2].ber_pre_ldpc    = perfDiag.LdpcItrnsPlp2; // over ???//BER x1e7
+        atsc3_ndk_phy_client_rf_metrics.phy_client_rf_plp_metrics[2].ber_pre_bch     = perfDiag.NumBitErrPlp2; //(perfDiag.NumBitErrPlp2 * 1000000000) / (perfDiag.Plp2StreamByteCount * 8); //s_fe_detail.aBerPreBchE9[i]; //BER 1xe9
+        atsc3_ndk_phy_client_rf_metrics.phy_client_rf_plp_metrics[2].fer_post_bch    = perfDiag.NumFecBitsPlp2; //(perfDiag.NumFrameErrPlp2 * 1000000) / perfDiag.NumFecFramePlp2;  //FER 1xe6
+        atsc3_ndk_phy_client_rf_metrics.phy_client_rf_plp_metrics[2].total_fec       = perfDiag.NumFecFramePlp2;
+        atsc3_ndk_phy_client_rf_metrics.phy_client_rf_plp_metrics[2].total_error_fec = perfDiag.NumFrameErrPlp2;
 
         //plp[3]
-        atsc3_ndk_phy_client_rf_metrics.phy_client_rf_plp_metrics[3].plp_id         = loop_plpInfo.plp3;
-        atsc3_ndk_phy_client_rf_metrics.phy_client_rf_plp_metrics[3].modcod_valid   = (demodLockStatus & SL_DEMOD_LOCK_STATUS_MASK_BB_PLP3_LOCK) != 0;
-        atsc3_ndk_phy_client_rf_metrics.phy_client_rf_plp_metrics[3].plp_fec_type   = myPlps[3].L1dSfPlpFecType;
-        atsc3_ndk_phy_client_rf_metrics.phy_client_rf_plp_metrics[3].plp_mod        = myPlps[3].L1dSfPlpModType;
-        atsc3_ndk_phy_client_rf_metrics.phy_client_rf_plp_metrics[3].plp_cod        = myPlps[3].L1dSfPlpCoderate;
+        atsc3_ndk_phy_client_rf_metrics.phy_client_rf_plp_metrics[3].plp_id          = loop_plpInfo.plp3;
+        atsc3_ndk_phy_client_rf_metrics.phy_client_rf_plp_metrics[3].modcod_valid    = (demodLockStatus & SL_DEMOD_LOCK_STATUS_MASK_BB_PLP3_LOCK) != 0;
+        atsc3_ndk_phy_client_rf_metrics.phy_client_rf_plp_metrics[3].plp_fec_type    = myPlps[3].L1dSfPlpFecType;
+        atsc3_ndk_phy_client_rf_metrics.phy_client_rf_plp_metrics[3].plp_mod         = myPlps[3].L1dSfPlpModType;
+        atsc3_ndk_phy_client_rf_metrics.phy_client_rf_plp_metrics[3].plp_cod         = myPlps[3].L1dSfPlpCoderate;
 
-        atsc3_ndk_phy_client_rf_metrics.phy_client_rf_plp_metrics[3].ber_pre_ldpc   = perfDiag.LdpcItrnsPlp3; // over ???//BER x1e7
-        atsc3_ndk_phy_client_rf_metrics.phy_client_rf_plp_metrics[3].ber_pre_bch    = perfDiag.NumBitErrPlp3; //(perfDiag.NumBitErrPlp3 * 1000000000) / (perfDiag.Plp3StreamByteCount * 8); //s_fe_detail.aBerPreBchE9[i]; //BER 1xe9
-        atsc3_ndk_phy_client_rf_metrics.phy_client_rf_plp_metrics[3].fer_post_bch   = perfDiag.NumFrameErrPlp3; //(perfDiag.NumFrameErrPlp3 * 1000000) / perfDiag.NumFecFramePlp3;  //FER 1xe6
+        atsc3_ndk_phy_client_rf_metrics.phy_client_rf_plp_metrics[3].ber_pre_ldpc    = perfDiag.LdpcItrnsPlp3; // over ???//BER x1e7
+        atsc3_ndk_phy_client_rf_metrics.phy_client_rf_plp_metrics[3].ber_pre_bch     = perfDiag.NumBitErrPlp3; //(perfDiag.NumBitErrPlp3 * 1000000000) / (perfDiag.Plp3StreamByteCount * 8); //s_fe_detail.aBerPreBchE9[i]; //BER 1xe9
+        atsc3_ndk_phy_client_rf_metrics.phy_client_rf_plp_metrics[3].fer_post_bch    = perfDiag.NumFecBitsPlp3; //(perfDiag.NumFrameErrPlp3 * 1000000) / perfDiag.NumFecFramePlp3;  //FER 1xe6
+        atsc3_ndk_phy_client_rf_metrics.phy_client_rf_plp_metrics[3].total_fec       = perfDiag.NumFecFramePlp3;
+        atsc3_ndk_phy_client_rf_metrics.phy_client_rf_plp_metrics[3].total_error_fec = perfDiag.NumFrameErrPlp3;
 
 
         _SAANKHYA_PHY_ANDROID_DEBUG("atsc3NdkClientSlImpl::StatusThread: global_SNR: %f, l1b_SNR: %f, l1d_SNR: %f tunerInfo.status: %d, tunerInfo.signalStrength: %f, cpuStatus: %s, demodLockStatus: %d,  ber_l1b: %d, ber_l1d: %d, ber_plp0: %d, plps: 0x%02x (fec: %d, mod: %d, cr: %d, snr: %f), 0x%02x (fec: %d, mod: %d, cr: %d, snr: %f), 0x%02x (fec: %d, mod: %d, cr: %d, snr: %f), 0x%02x (fec: %d, mod: %d, cr: %d, snr: %f)",

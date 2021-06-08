@@ -162,6 +162,8 @@ void Atsc3NdkPHYBridge::atsc3_update_rf_stats_from_atsc3_ndk_phy_client_rf_metri
     env->SetIntField(jobj, env->GetFieldID(jcls, "ber_pre_ldpc_0", "I"), (int32_t) atsc3_ndk_phy_client_rf_plp_metrics->ber_pre_ldpc);
     env->SetIntField(jobj, env->GetFieldID(jcls, "ber_pre_bch_0", "I"), (int32_t) atsc3_ndk_phy_client_rf_plp_metrics->ber_pre_bch);
     env->SetIntField(jobj, env->GetFieldID(jcls, "fer_post_bch_0", "I"), (int32_t) atsc3_ndk_phy_client_rf_plp_metrics->fer_post_bch);
+    env->SetIntField(jobj, env->GetFieldID(jcls, "total_fec_0", "I"), (int32_t) atsc3_ndk_phy_client_rf_plp_metrics->total_fec);
+    env->SetIntField(jobj, env->GetFieldID(jcls, "total_error_fec_0", "I"), (int32_t) atsc3_ndk_phy_client_rf_plp_metrics->total_error_fec);
     env->SetIntField(jobj, env->GetFieldID(jcls, "plp_snr1000_0", "I"), (int32_t) atsc3_ndk_phy_client_rf_plp_metrics->snr1000);
 
     atsc3_ndk_phy_client_rf_plp_metrics = &atsc3_ndk_phy_client_rf_metrics->phy_client_rf_plp_metrics[1];
@@ -173,6 +175,8 @@ void Atsc3NdkPHYBridge::atsc3_update_rf_stats_from_atsc3_ndk_phy_client_rf_metri
     env->SetIntField(jobj, env->GetFieldID(jcls, "ber_pre_ldpc_1", "I"), (int32_t) atsc3_ndk_phy_client_rf_plp_metrics->ber_pre_ldpc);
     env->SetIntField(jobj, env->GetFieldID(jcls, "ber_pre_bch_1", "I"), (int32_t) atsc3_ndk_phy_client_rf_plp_metrics->ber_pre_bch);
     env->SetIntField(jobj, env->GetFieldID(jcls, "fer_post_bch_1", "I"), (int32_t) atsc3_ndk_phy_client_rf_plp_metrics->fer_post_bch);
+    env->SetIntField(jobj, env->GetFieldID(jcls, "total_fec_1", "I"), (int32_t) atsc3_ndk_phy_client_rf_plp_metrics->total_fec);
+    env->SetIntField(jobj, env->GetFieldID(jcls, "total_error_fec_1", "I"), (int32_t) atsc3_ndk_phy_client_rf_plp_metrics->total_error_fec);
     env->SetIntField(jobj, env->GetFieldID(jcls, "plp_snr1000_1", "I"), (int32_t) atsc3_ndk_phy_client_rf_plp_metrics->snr1000);
 
 
@@ -185,6 +189,8 @@ void Atsc3NdkPHYBridge::atsc3_update_rf_stats_from_atsc3_ndk_phy_client_rf_metri
     env->SetIntField(jobj, env->GetFieldID(jcls, "ber_pre_ldpc_2", "I"), (int32_t) atsc3_ndk_phy_client_rf_plp_metrics->ber_pre_ldpc);
     env->SetIntField(jobj, env->GetFieldID(jcls, "ber_pre_bch_2", "I"), (int32_t) atsc3_ndk_phy_client_rf_plp_metrics->ber_pre_bch);
     env->SetIntField(jobj, env->GetFieldID(jcls, "fer_post_bch_2", "I"), (int32_t) atsc3_ndk_phy_client_rf_plp_metrics->fer_post_bch);
+    env->SetIntField(jobj, env->GetFieldID(jcls, "total_fec_2", "I"), (int32_t) atsc3_ndk_phy_client_rf_plp_metrics->total_fec);
+    env->SetIntField(jobj, env->GetFieldID(jcls, "total_error_fec_2", "I"), (int32_t) atsc3_ndk_phy_client_rf_plp_metrics->total_error_fec);
     env->SetIntField(jobj, env->GetFieldID(jcls, "plp_snr1000_2", "I"), (int32_t) atsc3_ndk_phy_client_rf_plp_metrics->snr1000);
 
     atsc3_ndk_phy_client_rf_plp_metrics = &atsc3_ndk_phy_client_rf_metrics->phy_client_rf_plp_metrics[3];
@@ -196,6 +202,8 @@ void Atsc3NdkPHYBridge::atsc3_update_rf_stats_from_atsc3_ndk_phy_client_rf_metri
     env->SetIntField(jobj, env->GetFieldID(jcls, "ber_pre_ldpc_3", "I"), (int32_t) atsc3_ndk_phy_client_rf_plp_metrics->ber_pre_ldpc);
     env->SetIntField(jobj, env->GetFieldID(jcls, "ber_pre_bch_3", "I"), (int32_t) atsc3_ndk_phy_client_rf_plp_metrics->ber_pre_bch);
     env->SetIntField(jobj, env->GetFieldID(jcls, "fer_post_bch_3", "I"), (int32_t) atsc3_ndk_phy_client_rf_plp_metrics->fer_post_bch);
+    env->SetIntField(jobj, env->GetFieldID(jcls, "total_fec_3", "I"), (int32_t) atsc3_ndk_phy_client_rf_plp_metrics->total_fec);
+    env->SetIntField(jobj, env->GetFieldID(jcls, "total_error_fec_3", "I"), (int32_t) atsc3_ndk_phy_client_rf_plp_metrics->total_error_fec);
     env->SetIntField(jobj, env->GetFieldID(jcls, "plp_snr1000_3", "I"), (int32_t) atsc3_ndk_phy_client_rf_plp_metrics->snr1000);
 
 
