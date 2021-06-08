@@ -200,7 +200,7 @@ uint64_t block_Read_uint64_bitlen(block_t* src, int bitlen);
 
 //read from network to host aligned short/long/double long
 uint8_t  block_Read_uint8(block_t* src);
-uint8_t* block_Read_uint8_varlen(block_t* src, uint32_t varlen); //for var length uint8_t* blocks, callee will be owner of memory calloc
+uint8_t* block_Read_uint8_varlen(block_t* src, uint32_t varlen); //for var length uint8_t* blocks, caller will be owner of memory calloc
 uint16_t block_Read_uint16_ntohs(block_t* src);
 uint32_t block_Read_uint32_ntohl(block_t* src);
 uint64_t block_Read_uint64_ntohll(block_t* src);
