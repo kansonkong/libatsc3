@@ -1155,7 +1155,7 @@ bool mmt_signalling_message_update_lls_sls_mmt_session(mmtp_signalling_packet_t*
 
                         //jjustman-2021-05-11 - legacy video/audio/captions packet_id monitoring for matching_lls_sls_mmt_session for transmux, e.g. HLS output
                         __MMSM_TRACE("MPT message: checking packet_id: %u, asset_type: %s, default: %u, identifier: %s", mp_table_asset_row->mmt_general_location_info.packet_id, mp_table_asset_row->asset_type, mp_table_asset_row->default_asset_flag, mp_table_asset_row->identifier_mapping.asset_id.asset_id ? (const char*)mp_table_asset_row->identifier_mapping.asset_id.asset_id : "");
-                        if(strncasecmp(ATSC3_MP_TABLE_ASSET_ROW_HEVC_ID, mp_table_asset_row->asset_type, 4) == 0 || strncasecmp(ATSC3_MP_TABLE_ASSET_ROW_H264_ID, mp_table_asset_row->asset_type, 4) == 0) {
+                        if(ATSC3_MP_TABLE_IS_VIDEO_ASSET_TYPE_ANY(mp_table_asset_row->asset_type)) {
                             matching_lls_sls_mmt_session->video_packet_id = mp_table_asset_row->mmt_general_location_info.packet_id;
                             __MMSM_TRACE("MPT message: matching_lls_sls_mmt_session: %p, setting video_packet_id: packet_id: %u, asset_type: %s, default: %u, identifier: %s",
                                         matching_lls_sls_mmt_session,

@@ -509,6 +509,7 @@ bool atsc3_route_sls_patch_mpd_availability_start_time_and_start_number(atsc3_mi
             //                 1         2
 
 	    //jjustman-2020-05-06 - hack, linux strftime will truncate 1 character short, ignore since we are null padded
+	        bool ast_has_ms_precisison = false;
             char iso_now_timestamp[_ISO8601_DATE_TIME_LENGTH_ + 2] = { 0 };
             strftime((char*)&iso_now_timestamp, _ISO8601_DATE_TIME_LENGTH_+1, "%Y-%m-%dT%H:%M:%SZ", gmtime(&now));
 
@@ -524,11 +525,37 @@ bool atsc3_route_sls_patch_mpd_availability_start_time_and_start_number(atsc3_mi
                                             lls_sls_alc_monitor->last_text_toi,
                                             lls_sls_alc_monitor->last_closed_text_toi);
                                         */
-            
-            for(int i=0; i < _ISO8601_DATE_TIME_LENGTH_; i++) {
-                to_start_ptr[i] = iso_now_timestamp[i];
+            /* jjustman-2021-06-08 -
+             * stomp over milliseconds if we have them, e.g.
+             *      availabilityStartTime="1970-01-01T00:00:00.000Z" vs.
+             *              vs.
+             *
+             *      2021-06-08T18:05:12Z
+             *      012345678901234567890
+             *                1
+             */
+
+            if(_ISO8601_DATE_TIME_LENGTH_) {
+                if(to_start_ptr[_ISO8601_DATE_TIME_LENGTH_-1] == '.') {
+                    ast_has_ms_precisison = true;
+                }
             }
-            
+
+            if(!ast_has_ms_precisison) {
+                for (int i = 0; i < _ISO8601_DATE_TIME_LENGTH_; i++) {
+                    to_start_ptr[i] = iso_now_timestamp[i];
+                }
+            } else {
+                //don't append our own Z, use the millisecond precision as specified (ick...)
+                for (int i = 0; i < _ISO8601_DATE_TIME_LENGTH_ - 1; i++) {
+                    to_start_ptr[i] = iso_now_timestamp[i];
+                }
+                for(int i = 1; i < 3; i++) {
+                    if(to_start_ptr[_ISO8601_DATE_TIME_LENGTH_ + i] && !((to_start_ptr[_ISO8601_DATE_TIME_LENGTH_ + i] == 'Z' || to_start_ptr[_ISO8601_DATE_TIME_LENGTH_ + i] == 'z' ))) {
+                        to_start_ptr[_ISO8601_DATE_TIME_LENGTH_ + i] = '0';
+                    }
+                }
+            }
             //jjustman-2020-07-14
 
             atsc3_pcre2_regex_context = atsc3_pcre2_regex_context_new(ATSC3_ROUTE_DASH_MPD_REPRESENTATION_ID_SEGMENT_TEMPLATE_START_NUMBER_REGEX_PATTERN);
