@@ -556,11 +556,43 @@ typedef struct mmt_signaling_message_mpu_timestamp_descriptor {
 
 #define MP_TABLE_ASSET_ROW_ASSET_TYPE_LENGTH 4
 
-//Video: HEVC
-#define ATSC3_MP_TABLE_ASSET_ROW_HEVC_ID "hev1"
+/*
+ * Video: HEVC
+ *
+ * A/331:2021 pp. 99:
+ *
+ * codec_code – This field shall specify a 4-character code for a codec.
+ *
+ *      The value of these four characters shall be one of 'hev1', 'hev2', 'hvc1', 'hvc2', 'lhv1' or 'lhe1' with semantic meaning for these codes as specified in ISO/IEC 14496-15 [35] as amended.
+*/
+
+#define ATSC3_MP_TABLE_ASSET_ROW_HEVC_ID_HEV1 "hev1"
+#define ATSC3_MP_TABLE_ASSET_ROW_HEVC_ID_HEV2 "hev2"
+#define ATSC3_MP_TABLE_ASSET_ROW_HEVC_ID_HVC1 "hvc1"
+#define ATSC3_MP_TABLE_ASSET_ROW_HEVC_ID_HVC2 "hvc2"
+#define ATSC3_MP_TABLE_ASSET_ROW_HEVC_ID_LVH1 "lvh1"
+#define ATSC3_MP_TABLE_ASSET_ROW_HEVC_ID_LHE1 "lhe1"
+
+#define ATSC3_MP_TABLE_IS_VIDEO_ASSET_TYPE_HEVC(asset_type) \
+    (\
+        strncasecmp(ATSC3_MP_TABLE_ASSET_ROW_HEVC_ID_HEV1, asset_type, 4) == 0 || \
+        strncasecmp(ATSC3_MP_TABLE_ASSET_ROW_HEVC_ID_HEV2, asset_type, 4) == 0 || \
+        strncasecmp(ATSC3_MP_TABLE_ASSET_ROW_HEVC_ID_HVC1, asset_type, 4) == 0 || \
+        strncasecmp(ATSC3_MP_TABLE_ASSET_ROW_HEVC_ID_HVC2, asset_type, 4) == 0 || \
+        strncasecmp(ATSC3_MP_TABLE_ASSET_ROW_HEVC_ID_LVH1, asset_type, 4) == 0 || \
+        strncasecmp(ATSC3_MP_TABLE_ASSET_ROW_HEVC_ID_LHE1, asset_type, 4) == 0 \
+    )
 
 //Video: h264
 #define ATSC3_MP_TABLE_ASSET_ROW_H264_ID "avc1"
+
+#define ATSC3_MP_TABLE_IS_VIDEO_ASSET_TYPE_H264(asset_type) \
+    (\
+        strncasecmp(ATSC3_MP_TABLE_ASSET_ROW_H264_ID, asset_type, 4) == 0 \
+    )
+
+#define ATSC3_MP_TABLE_IS_VIDEO_ASSET_TYPE_ANY(asset_type) \
+    ( ATSC3_MP_TABLE_IS_VIDEO_ASSET_TYPE_HEVC(asset_type) || ATSC3_MP_TABLE_IS_VIDEO_ASSET_TYPE_H264(asset_type) )
 
 //Audio: AC-4
 #define ATSC3_MP_TABLE_ASSET_ROW_AC_4_ID "ac-4"
