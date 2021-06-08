@@ -7,6 +7,24 @@
 
 #include "atsc3_mmt_signalling_message_types.h"
 
+ATSC3_VECTOR_BUILDER_METHODS_IMPLEMENTATION(mmt_si_security_properties_descriptor_system, mmt_si_security_properties_descriptor_kid);
+//jjustman-2021-06-08 - TODO - impl for any uint8_t* refs for cleanup
+ATSC3_VECTOR_BUILDER_METHODS_ITEM_FREE(mmt_si_security_properties_descriptor_kid);
+
+
+ATSC3_VECTOR_BUILDER_METHODS_IMPLEMENTATION(mmt_si_security_properties_descriptor, mmt_si_security_properties_descriptor_system);
+//jjustman-2021-06-08 - TODO - impl for any uint8_t* refs for cleanup
+ATSC3_VECTOR_BUILDER_METHODS_ITEM_FREE(mmt_si_security_properties_descriptor_system);
+
+ATSC3_VECTOR_BUILDER_METHODS_IMPLEMENTATION(mmt_atsc3_message_content_type_security_properties_descriptor_LAURL_asset, mmt_atsc3_message_content_type_security_properties_descriptor_LAURL_asset_license_info)
+//jjustman-2021-06-08 - TODO - impl for any uint8_t* refs for cleanup
+ATSC3_VECTOR_BUILDER_METHODS_ITEM_FREE(mmt_atsc3_message_content_type_security_properties_descriptor_LAURL_asset_license_info);
+
+ATSC3_VECTOR_BUILDER_METHODS_PARENT_IMPLEMENTATION(mmt_atsc3_message_content_type_security_properties_descriptor_LAURL);
+ATSC3_VECTOR_BUILDER_METHODS_IMPLEMENTATION(mmt_atsc3_message_content_type_security_properties_descriptor_LAURL, mmt_atsc3_message_content_type_security_properties_descriptor_LAURL_asset)
+//jjustman-2021-06-08 - TODO - impl for any uint8_t* refs for cleanup
+ATSC3_VECTOR_BUILDER_METHODS_ITEM_FREE(mmt_atsc3_message_content_type_security_properties_descriptor_LAURL_asset);
+
 void mmt_signalling_message_header_and_payload_free(mmt_signalling_message_header_and_payload_t** mmt_signalling_message_header_and_payload_p) {
     mmt_signalling_message_header_and_payload_t* mmt_signalling_message_header_and_payload = *mmt_signalling_message_header_and_payload_p;
     __MMTP_DEBUG("mmt_signalling_message_header_and_payload_free: %p: message_id: %d, message type: %d",
@@ -29,6 +47,10 @@ void mmt_signalling_message_header_and_payload_free(mmt_signalling_message_heade
 				mmt_signalling_message_header_and_payload->message_payload.mmt_atsc3_message_payload.atsc3_message_content = NULL;
 			}
 
+            if(mmt_signalling_message_header_and_payload->message_payload.mmt_atsc3_message_payload.atsc3_message_content_blockt) {
+				block_Destroy(&mmt_signalling_message_header_and_payload->message_payload.mmt_atsc3_message_payload.atsc3_message_content_blockt);
+			}
+
             __MMTP_DEBUG("mmt_signalling_message_header_and_payload->message_payload.mmt_atsc3_message_payload.atsc3_message_content_compressed ptr: %p", mmt_signalling_message_header_and_payload->message_payload.mmt_atsc3_message_payload.atsc3_message_content_compressed);
             if(mmt_signalling_message_header_and_payload->message_payload.mmt_atsc3_message_payload.atsc3_message_content_compressed) {
 				free(mmt_signalling_message_header_and_payload->message_payload.mmt_atsc3_message_payload.atsc3_message_content_compressed);
@@ -40,9 +62,11 @@ void mmt_signalling_message_header_and_payload_free(mmt_signalling_message_heade
                 free(mmt_signalling_message_header_and_payload->message_payload.mmt_atsc3_message_payload.URI_payload);
                 mmt_signalling_message_header_and_payload->message_payload.mmt_atsc3_message_payload.URI_payload = NULL;
             }
+
             if(mmt_signalling_message_header_and_payload->message_payload.mmt_atsc3_message_payload.mmt_atsc3_held_message) {
                 mmt_atsc3_held_message_free(&mmt_signalling_message_header_and_payload->message_payload.mmt_atsc3_message_payload.mmt_atsc3_held_message);
             }
+
             if(mmt_signalling_message_header_and_payload->message_payload.mmt_atsc3_message_payload.mmt_atsc3_route_component) {
                 if(!mmt_signalling_message_header_and_payload->message_payload.mmt_atsc3_message_payload.mmt_atsc3_route_component->__is_pinned_to_context) {
                     mmt_atsc3_route_component_free(&mmt_signalling_message_header_and_payload->message_payload.mmt_atsc3_message_payload.mmt_atsc3_route_component);
