@@ -1248,11 +1248,15 @@ void mmt_atsc3_message_payload_dump(mmt_signalling_message_header_and_payload_t*
 
 			for(int j=0; j < mmt_si_security_properties_descriptor->security_system_count; j++) {
 				mmt_si_security_properties_descriptor_system_t* mmt_si_security_properties_descriptor_system = mmt_si_security_properties_descriptor->mmt_si_security_properties_descriptor_system_v.data[j];
-				__MMSM_DEBUG("    mmt_si_security_properties_descriptor_system: idx: %d, ptr: %p, system_id: 0x%32x, kid_count: %d",
+				__MMSM_DEBUG("    mmt_si_security_properties_descriptor_system: idx: %d, ptr: %p, kid_count: %d, system_id:",
 						j, mmt_si_security_properties_descriptor_system,
-						mmt_si_security_properties_descriptor_system->system_id,
 						mmt_si_security_properties_descriptor_system->kid_count);
+				printf(" ");
+				for(int hex=0; hex < 16; hex++) {
+					printf("%02x", mmt_si_security_properties_descriptor_system->system_id[hex]);
+				}
 
+				printf("\n");
 				for(int k=0; k < mmt_si_security_properties_descriptor_system->kid_count; k++) {
 
 					mmt_si_security_properties_descriptor_kid_t* mmt_si_security_properties_descriptor_kid = mmt_si_security_properties_descriptor_system->mmt_si_security_properties_descriptor_kid_v.data[k];
