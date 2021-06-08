@@ -1255,9 +1255,13 @@ void mmt_atsc3_message_payload_dump(mmt_signalling_message_header_and_payload_t*
 
 
 
-				__MMSM_DEBUG("         data_size: %d, data:\n%s",
-						mmt_si_security_properties_descriptor_system->data_size,
-						mmt_si_security_properties_descriptor_system->data_size > 0 ? mmt_si_security_properties_descriptor_system->data : "(null)");
+				__MMSM_DEBUG("         data_size: %d, data:\n", mmt_si_security_properties_descriptor_system->data_size);
+
+				if(_MMT_SIGNALLING_MESSAGE_TRACE_ENABLED) {
+					for(int hex=0; hex < mmt_si_security_properties_descriptor_system->data_size; hex++) {
+						printf("%02x", mmt_si_security_properties_descriptor_system->data[hex]);
+					}
+				}
 
 			}
 
