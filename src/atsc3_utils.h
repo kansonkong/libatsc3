@@ -163,6 +163,9 @@ typedef struct atsc3_block {
     a; })
     
     
+#define ATSC3_UTILS_GET_ALIGNED_SIZE_FOR_CALLOC(size_requested)  size_requested ? size_requested + 16 + (8 - (size_requested %8))    :    8;
+
+
 //block_t* _block_Refcount(block_t*); //used for sharing pointers between ref's
 block_t* block_Alloc(int len);
 bool block_IsAlloc(block_t*);
@@ -197,6 +200,7 @@ uint64_t block_Read_uint64_bitlen(block_t* src, int bitlen);
 
 //read from network to host aligned short/long/double long
 uint8_t  block_Read_uint8(block_t* src);
+uint8_t* block_Read_uint8_varlen(block_t* src, uint32_t varlen); //for var length uint8_t* blocks, callee will be owner of memory calloc
 uint16_t block_Read_uint16_ntohs(block_t* src);
 uint32_t block_Read_uint32_ntohl(block_t* src);
 uint64_t block_Read_uint64_ntohll(block_t* src);
