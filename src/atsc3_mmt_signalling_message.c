@@ -1059,7 +1059,7 @@ uint8_t* mmt_atsc3_message_payload_parse(mmt_signalling_message_header_and_paylo
 								for(int N3=0; N3 < mmt_si_security_properties_descriptor_system->kid_count; N3++) {
 									mmt_si_security_properties_descriptor_kid_t* mmt_si_security_properties_descriptor_kid = mmt_si_security_properties_descriptor_kid_new();
 									for(int j=0; j < 16; j++) {
-										mmt_si_security_properties_descriptor_kid->kid[i] = block_Read_uint8(src);
+										mmt_si_security_properties_descriptor_kid->kid[j] = block_Read_uint8(src);
 									}
 									mmt_si_security_properties_descriptor_system_add_mmt_si_security_properties_descriptor_kid(mmt_si_security_properties_descriptor_system, mmt_si_security_properties_descriptor_kid);
 								}
@@ -1205,15 +1205,15 @@ void mmt_atsc3_message_payload_dump(mmt_signalling_message_header_and_payload_t*
 			}
 
 			if(mmt_atsc3_message_content_type_security_properties_descriptor_LAURL_asset->default_KID_present) {
-				__MMSM_DEBUG(" 	default_KID_length: %d, default_KID:\n",
-						mmt_atsc3_message_content_type_security_properties_descriptor_LAURL_asset->default_KID_length));
-						if(_MMT_SIGNALLING_MESSAGE_DEBUG_ENABLED) {
-							printf(" ");
-							for(int hex=0; hex < mmt_atsc3_message_content_type_security_properties_descriptor_LAURL_asset->default_KID_length ; hex++) {
-								printf("%02x", mmt_atsc3_message_content_type_security_properties_descriptor_LAURL_asset->default_KID[hex]);
-							}
-							printf("\n");
-						}
+				__MMSM_DEBUG(" 	default_KID_length: %d, default_KID:",
+						mmt_atsc3_message_content_type_security_properties_descriptor_LAURL_asset->default_KID_length);
+				if(_MMT_SIGNALLING_MESSAGE_DEBUG_ENABLED) {
+					printf(" ");
+					for(int hex=0; hex < mmt_atsc3_message_content_type_security_properties_descriptor_LAURL_asset->default_KID_length ; hex++) {
+						printf("%02x", mmt_atsc3_message_content_type_security_properties_descriptor_LAURL_asset->default_KID[hex]);
+					}
+					printf("\n");
+				}
 
 			}
 
@@ -1256,7 +1256,7 @@ void mmt_atsc3_message_payload_dump(mmt_signalling_message_header_and_payload_t*
 				for(int k=0; k < mmt_si_security_properties_descriptor_system->kid_count; k++) {
 
 					mmt_si_security_properties_descriptor_kid_t* mmt_si_security_properties_descriptor_kid = mmt_si_security_properties_descriptor_system->mmt_si_security_properties_descriptor_kid_v.data[k];
-					__MMSM_DEBUG("         kid: idx: %d, ptr: %p, key: \n", k, mmt_si_security_properties_descriptor_kid);
+					__MMSM_DEBUG("         kid: idx: %d, ptr: %p, key:", k, mmt_si_security_properties_descriptor_kid);
 
 					if(_MMT_SIGNALLING_MESSAGE_DEBUG_ENABLED) {
 						printf(" ");
@@ -1270,7 +1270,7 @@ void mmt_atsc3_message_payload_dump(mmt_signalling_message_header_and_payload_t*
 
 
 
-				__MMSM_DEBUG("         data_size: %d, data:\n", mmt_si_security_properties_descriptor_system->data_size);
+				__MMSM_DEBUG("         data_size: %d, data:", mmt_si_security_properties_descriptor_system->data_size);
 
 				if(_MMT_SIGNALLING_MESSAGE_TRACE_ENABLED) {
 					printf(" ");
