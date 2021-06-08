@@ -206,7 +206,7 @@ block_t* block_Alloc(int size_requested) {
 
 	//calloc an extra byte in case we forget to add in null padding for strings, but don't update the p_size with this margin of safety (16 bytes)
 	//align if size_requested > 0, otherwise alloc 8 as a dummy alloc block
-	uint32_t aligned_size = size_requested ? size_requested + 16 + (8 - (size_requested %8))    :    8;
+	uint32_t aligned_size = ATSC3_UTILS_GET_ALIGNED_SIZE_FOR_CALLOC(size_requested);
 
 	#ifdef __MALLOC_TRACE
 	    _ATSC3_UTILS_WARN("block_Alloc: original size requested: %u, aligned size: %u, alignment factor: %f", size_requested, aligned_size, aligned_size/8.0);
@@ -968,6 +968,18 @@ uint8_t block_Read_uint8(block_t* src) {
     if(!__block_check_bounaries_read_size(__FUNCTION__, src, 1)) return 0;
 
     uint8_t ret = src->p_buffer[src->i_pos++];
+    return ret;
+}
+
+uint8_t* block_Read_uint8_varlen(block_t* src, uint32_t varlen) {
+    if(!__block_check_bounaries_read_size(__FUNCTION__, src, varlen)) return NULL;
+
+	uint32_t aligned_size = ATSC3_UTILS_GET_ALIGNED_SIZE_FOR_CALLOC(varlen);
+
+    uint8_t* ret = calloc(aligned_size, sizeof(uint8_t));
+    memcpy(ret, &src->p_buffer[src->i_pos], varlen);
+    src->i_pos += varlen;
+
     return ret;
 }
 //read from network to host aligned short/long/double long
