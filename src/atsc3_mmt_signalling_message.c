@@ -1205,9 +1205,16 @@ void mmt_atsc3_message_payload_dump(mmt_signalling_message_header_and_payload_t*
 			}
 
 			if(mmt_atsc3_message_content_type_security_properties_descriptor_LAURL_asset->default_KID_present) {
-				__MMSM_DEBUG(" 	default_KID_length: %d, default_KID: %s",
-						mmt_atsc3_message_content_type_security_properties_descriptor_LAURL_asset->default_KID_length,
-						mmt_atsc3_message_content_type_security_properties_descriptor_LAURL_asset->default_KID_length > 0 ? (char*)mmt_atsc3_message_content_type_security_properties_descriptor_LAURL_asset->default_KID : "(null)");
+				__MMSM_DEBUG(" 	default_KID_length: %d, default_KID:\n",
+						mmt_atsc3_message_content_type_security_properties_descriptor_LAURL_asset->default_KID_length));
+						if(_MMT_SIGNALLING_MESSAGE_DEBUG_ENABLED) {
+							printf(" ");
+							for(int hex=0; hex < mmt_atsc3_message_content_type_security_properties_descriptor_LAURL_asset->default_KID_length ; hex++) {
+								printf("%02x", mmt_atsc3_message_content_type_security_properties_descriptor_LAURL_asset->default_KID[hex]);
+							}
+							printf("\n");
+						}
+
 			}
 
 			if(mmt_atsc3_message_content_type_security_properties_descriptor_LAURL_asset->license_info_present) {
@@ -1249,7 +1256,15 @@ void mmt_atsc3_message_payload_dump(mmt_signalling_message_header_and_payload_t*
 				for(int k=0; k < mmt_si_security_properties_descriptor_system->kid_count; k++) {
 
 					mmt_si_security_properties_descriptor_kid_t* mmt_si_security_properties_descriptor_kid = mmt_si_security_properties_descriptor_system->mmt_si_security_properties_descriptor_kid_v.data[k];
-					__MMSM_DEBUG("         kid: idx: %d, ptr: %p, key: 0x%32x", k, mmt_si_security_properties_descriptor_kid, mmt_si_security_properties_descriptor_kid->kid);
+					__MMSM_DEBUG("         kid: idx: %d, ptr: %p, key: \n", k, mmt_si_security_properties_descriptor_kid);
+
+					if(_MMT_SIGNALLING_MESSAGE_DEBUG_ENABLED) {
+						printf(" ");
+						for(int hex=0; hex < 16; hex++) {
+							printf("%02x", mmt_si_security_properties_descriptor_kid->kid[hex]);
+						}
+						printf("\n");
+					}
 
 				}
 
