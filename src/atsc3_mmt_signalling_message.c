@@ -8,8 +8,8 @@
 #include "atsc3_mmt_signalling_message.h"
 
 int _MMT_SIGNALLING_MESSAGE_ERROR_23008_1_ENABLED = 0;
-int _MMT_SIGNALLING_MESSAGE_DEBUG_ENABLED = 1;
-int _MMT_SIGNALLING_MESSAGE_TRACE_ENABLED = 1;
+int _MMT_SIGNALLING_MESSAGE_DEBUG_ENABLED = 0;
+int _MMT_SIGNALLING_MESSAGE_TRACE_ENABLED = 0;
 
 
 /**
@@ -976,8 +976,10 @@ uint8_t* mmt_atsc3_message_payload_parse(mmt_signalling_message_header_and_paylo
 				{
 					block_t* src = mmt_atsc3_message_payload->atsc3_message_content_blockt;
 					__MMSM_INFO("mmt_atsc3_message_payload_parse, parsing mmt_atsc3 message type: MMT_ATSC3_MESSAGE_CONTENT_TYPE_SECURITY_PROPERTIES_DESCRIPTOR_LAURL (0x%04x)", mmt_atsc3_message_payload->atsc3_message_content_type);
-					for(int i=0; i < src->p_size; i++) {
-						printf("0x%02x ", src->p_buffer[i]);
+					if(_MMT_SIGNALLING_MESSAGE_TRACE_ENABLED) {
+					    for(int i=0; i < src->p_size; i++) {
+					        printf("0x%02x ", src->p_buffer[i]);
+					    }
 					}
 
 					mmt_atsc3_message_content_type_security_properties_descriptor_LAURL_t* mmt_atsc3_message_content_type_security_properties_descriptor_LAURL = mmt_atsc3_message_content_type_security_properties_descriptor_LAURL_new();
@@ -1251,12 +1253,16 @@ void mmt_atsc3_message_payload_dump(mmt_signalling_message_header_and_payload_t*
 				__MMSM_DEBUG("    mmt_si_security_properties_descriptor_system: idx: %d, ptr: %p, kid_count: %d, system_id:",
 						j, mmt_si_security_properties_descriptor_system,
 						mmt_si_security_properties_descriptor_system->kid_count);
-				printf(" ");
-				for(int hex=0; hex < 16; hex++) {
-					printf("%02x", mmt_si_security_properties_descriptor_system->system_id[hex]);
-				}
 
-				printf("\n");
+                if(_MMT_SIGNALLING_MESSAGE_DEBUG_ENABLED) {
+                    printf(" ");
+                    for (int hex = 0; hex < 16; hex++) {
+                        printf("%02x", mmt_si_security_properties_descriptor_system->system_id[hex]);
+                    }
+
+                    printf("\n");
+                }
+
 				for(int k=0; k < mmt_si_security_properties_descriptor_system->kid_count; k++) {
 
 					mmt_si_security_properties_descriptor_kid_t* mmt_si_security_properties_descriptor_kid = mmt_si_security_properties_descriptor_system->mmt_si_security_properties_descriptor_kid_v.data[k];
