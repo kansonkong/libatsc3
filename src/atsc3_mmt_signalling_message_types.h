@@ -80,11 +80,13 @@ extern "C" {
 #define MMT_ATSC3_MESSAGE_CONTENT_TYPE_DWD                                  0x000A
 #define MMT_ATSC3_MESSAGE_CONTENT_TYPE_RSAT_A200                            0x000B
 
-//jjustman-2021-06-03: TODO - implement additional SI for LA_url support
 #define MMT_ATSC3_MESSAGE_CONTENT_TYPE_SECURITY_PROPERTIES_DESCRIPTOR       0x000C
 
-//reserved to 0x000D ~ 0xFFFF
-#define MMT_ATSC3_MESSAGE_CONTENT_TYPE_RESERVED_FUTURE                      0x000D
+//jjustman-2021-06-03: TODO - implement additional SI for LA_url support
+#define MMT_ATSC3_MESSAGE_CONTENT_TYPE_SECURITY_PROPERTIES_DESCRIPTOR_LAURL	0x000D
+
+//reserved to 0x000E ~ 0xFFFF
+#define MMT_ATSC3_MESSAGE_CONTENT_TYPE_RESERVED_FUTURE                      0x000E
 
 
 #define MMT_SCTE35_Signal_Message		0xF337	// SCTE35_Signal_Message Type
@@ -136,6 +138,7 @@ enum ATSC3_MESSAGE_CONTENT_TYPE {
 	ATSC3_MESSAGE_CONTENT_TYPE_DWD=MMT_ATSC3_MESSAGE_CONTENT_TYPE_DWD,
 	ATSC3_MESSAGE_CONTENT_TYPE_RSAT=MMT_ATSC3_MESSAGE_CONTENT_TYPE_RSAT_A200,
 	ATSC3_MESSAGE_CONTENT_TYPE_SI_DESCRIPTOR=MMT_ATSC3_MESSAGE_CONTENT_TYPE_SECURITY_PROPERTIES_DESCRIPTOR,
+	ATSC3_MESSAGE_CONTENT_TYPE_SI_DESCRIPTOR_LAURL=MMT_ATSC3_MESSAGE_CONTENT_TYPE_SECURITY_PROPERTIES_DESCRIPTOR_LAURL,
 	ATSC3_MESSAGE_CONTENT_TYPE_ATSC_RESERVED_FUTURE=MMT_ATSC3_MESSAGE_CONTENT_TYPE_RESERVED_FUTURE
 };
 
@@ -147,16 +150,22 @@ enum ATSC3_MESSAGE_CONTENT_COMPRESSION {
 	ATSC3_MESSAGE_CONTENT_COMPRESSION_RESERVED_OTHER=-1
 };
 
-typedef struct mmt_atsc3_message_content_type_descriptor_header {
+
+typedef struct mmt_signalling_information_message_descriptor_header {
+	uint16_t	descriptor_tag;
+	uint16_t	descriptor_length;
+} mmt_signalling_information_message_descriptor_header_t;
+
+typedef struct mmt_atsc3_message_content_type_descriptor_number_of_assets_header {
 	uint16_t	descriptor_tag;
 	uint16_t	descriptor_length;
 	uint8_t		number_of_assets;
 
-} mmt_atsc3_message_content_type_descriptor_header_t;
+} mmt_atsc3_message_content_type_descriptor_number_of_assets_header_t;
 
 typedef struct mmt_atsc3_message_content_type_asset_heaader {
-	uint32_t	asset_id_length;
-	char*		asset_id;
+	uint32_t		asset_id_length;
+	uint8_t*		asset_id;
 } mmt_atsc3_message_content_type_asset_heaader_t;
 
 typedef struct mmt_atsc3_message_content_type_language_heaader {
@@ -377,7 +386,7 @@ typedef struct mmt_atsc3_message_content_type_caption_asset_descriptor_asset {
 
 //TODO: jjustman-2021-06-03: MMT_ATSC3_MESSAGE_CONTENT_TYPE_CAPTION_ASSET_DESCRIPTOR
 typedef struct mmt_atsc3_message_content_type_caption_asset_descriptor {
-	mmt_atsc3_message_content_type_descriptor_header_t		descriptor_header;
+	mmt_atsc3_message_content_type_descriptor_number_of_assets_header_t		descriptor_header;
 
 	ATSC3_VECTOR_BUILDER_STRUCT(mmt_atsc3_message_content_type_caption_asset_descriptor_asset);
 
@@ -388,24 +397,197 @@ typedef struct mmt_atsc3_message_content_type_caption_asset_descriptor {
 
 //TODO: jjustman-2021-06-03: MMT_ATSC3_MESSAGE_CONTENT_TYPE_AUDIO_STREAM_PROPERTIES_DESCRIPTOR
 typedef struct mmt_atsc3_message_content_type_audio_stream_properties_descriptor {
+	mmt_atsc3_message_content_type_descriptor_number_of_assets_header_t		descriptor_header;
+
 	void* TODO;
 } mmt_atsc3_message_content_type_audio_stream_properties_descriptor_t;
 
 //TODO: jjustman-2021-06-03: MMT_ATSC3_MESSAGE_CONTENT_TYPE_DWD
 typedef struct mmt_atsc3_message_content_type_dwd {
+	mmt_atsc3_message_content_type_descriptor_number_of_assets_header_t		descriptor_header;
+
 	void* TODO;
 } mmt_atsc3_message_content_type_dwd_t;
 
 //TODO: jjustman-2021-06-03: MMT_ATSC3_MESSAGE_CONTENT_TYPE_RSAT_A200
 typedef struct mmt_atsc3_message_content_type_rsat_a200 {
+	mmt_atsc3_message_content_type_descriptor_number_of_assets_header_t		descriptor_header;
+
 	void* TODO;
 } mmt_atsc3_message_content_type_rsat_a200_t;
 
+//jjustman-2021-06-08 - todo: refactor out into MMT SI types?
+/**
+ *
+ 23008-1:2017 Section 10.5.5.2: SI descriptor syntax
+
+ Syntax										Value		No. of Bits		Mnemonic
+ ------										-----		-----------		--------
+ SI_descriptor {
+ 	 descriptor_tag										16
+ 	 descriptor_length									16
+ 	 security_system_count					N1			8
+ 	 reserved								"000 0000"	7
+ 	 system_provider_url_flag				1
+
+ 	 if(system_provider_url_flag) {
+ 	 	 system_provider_url_length 		N2			8
+ 	 	 for(i=0; i < N2; i++) {
+ 	 	 	 system_provider_url_byte					8
+ 	 	 }
+ 	 }
+
+ 	 for(i=0; i < N1; i++) {
+		 system_id										16*8
+		 kid_count							N3			16
+		 for(j=0; j < N3; j++) {
+			 KID										16*8 		(note per KID)
+		 }
+		 data_size										32
+		 for(j=0; j < N4; j++) {
+			 data										8
+		 }
+	}
+ }
+ */
+typedef struct mmt_si_security_properties_descriptor_kid {
+	uint8_t			kid[16]; //8*16
+} mmt_si_security_properties_descriptor_kid_t;
+
+typedef struct mmt_si_security_properties_descriptor_system {
+
+	uint8_t	 													system_id[16];
+	uint16_t													kid_count;
+		 //for(j=0; j < N3; j++) {
+
+	ATSC3_VECTOR_BUILDER_STRUCT(mmt_si_security_properties_descriptor_kid);
+		 //}
+
+	uint32_t													data_size;
+
+		 //for(j=0; j < N4; j++) {
+			 uint8_t*											data;
+		 //}
+} mmt_si_security_properties_descriptor_system_t;
+ATSC3_VECTOR_BUILDER_METHODS_INTERFACE(mmt_si_security_properties_descriptor_system, mmt_si_security_properties_descriptor_kid);
+
+typedef struct mmt_si_security_properties_descriptor {
+	mmt_signalling_information_message_descriptor_header_t		descriptor_header;
+	uint8_t														security_system_count;		//N1
+	uint8_t														reserved_7_0:7; 			//000 0000
+	uint8_t														system_provider_url_flag:1;
+
+	//if(system_provider_url_flag) {
+	uint8_t														system_provider_url_length;
+	 	 //for(i=0; i < N2; i++) {
+	uint8_t*							 						system_provider_url;
+	 	 //}
+	 //}
+
+	 //for(i=0; i < N1; i++) {
+	ATSC3_VECTOR_BUILDER_STRUCT(mmt_si_security_properties_descriptor_system);
+
+	//}
+} mmt_si_security_properties_descriptor_t;
+ATSC3_VECTOR_BUILDER_METHODS_INTERFACE(mmt_si_security_properties_descriptor, mmt_si_security_properties_descriptor_system);
+
+
 //TODO: jjustman-2021-06-03: MMT_ATSC3_MESSAGE_CONTENT_TYPE_SECURITY_PROPERTIES_DESCRIPTOR
 typedef struct mmt_atsc3_message_content_type_security_properties_descriptor {
+	mmt_atsc3_message_content_type_descriptor_number_of_assets_header_t				descriptor_header;
+
 	void* TODO;
 } mmt_atsc3_message_content_type_security_properties_descriptor_t;
 
+
+/*
+ * DRAFT: 2021-06-08 RP MMT DRM
+ *
+  Syntax																Bits		Format
+  -----------------------------------------								-------     --------
+  security_properties_descriptor_LAURL() {
+	descriptor_tag
+	descriptor_length
+	number_of_assets
+	for (i=0; i<number_of_assets; i++) {
+		asset_id_length
+		for (j=0; j<asset_id_length; j++) {
+			asset_id_byte
+		}
+		scheme_code_present												1
+		default_KID_present												1
+		license_info_present											1
+        reserved														5			00000
+		if (schme_code_present) {
+			scheme_code													4*8			uimsbf
+		}
+		if (default_KID_present) {
+		    default_KID_length											8
+	 	    for (j=0; j<default_KID_length; j++) {
+			default_KID_byte											8
+		    }
+		}
+		if (license_info_present) {
+        	number_of_license_info										8
+            for (i=0; i<number_of_license_info; i++) {
+		        license_type											8
+		        LA_URL_length											8
+		        for (j=0; j<URL_length; j++) {
+			    	LA_URL_byte											8
+		       }
+        	}
+		}
+
+		SI_descriptor()													var			Subclause 10.5.5 of 23008-1
+	}
+}
+ *
+ */
+
+typedef struct mmt_atsc3_message_content_type_security_properties_descriptor_LAURL_asset_license_info {
+	uint8_t		license_type;
+	uint8_t		LA_URL_length;
+	uint8_t*	LA_URL;
+
+} mmt_atsc3_message_content_type_security_properties_descriptor_LAURL_asset_license_info_t;
+
+
+typedef struct mmt_atsc3_message_content_type_security_properties_descriptor_LAURL_asset {
+	mmt_atsc3_message_content_type_asset_heaader_t						asset_header;
+
+	uint8_t																scheme_code_present:1;
+	uint8_t																default_KID_present:1;
+	uint8_t																license_info_present:1;
+	uint8_t																reserved_5_0:5;		 //5 bits: 00000
+
+	//if(scheme_code_present) {
+	uint8_t																scheme_code[4]; 	//8*4
+	//}
+
+	//if(default_KID_present) {
+	uint8_t																default_KID_length;
+	uint8_t*															default_KID;		//varchar
+	//}
+
+	//if(license_info_present) {
+	uint8_t																number_of_license_info;
+	ATSC3_VECTOR_BUILDER_STRUCT(mmt_atsc3_message_content_type_security_properties_descriptor_LAURL_asset_license_info);
+	//}
+
+	//si_descriptor_23008-1-10.5.5
+	mmt_si_security_properties_descriptor_t								mmt_si_security_properties_descriptor;
+
+} mmt_atsc3_message_content_type_security_properties_descriptor_LAURL_asset_t;
+
+ATSC3_VECTOR_BUILDER_METHODS_INTERFACE(mmt_atsc3_message_content_type_security_properties_descriptor_LAURL_asset, mmt_atsc3_message_content_type_security_properties_descriptor_LAURL_asset_license_info);
+
+//TODO: jjustman-2021-06-03: MMT_ATSC3_MESSAGE_CONTENT_TYPE_SECURITY_PROPERTIES_DESCRIPTOR_LAURL
+typedef struct mmt_atsc3_message_content_type_security_properties_descriptor_LAURL {
+	mmt_atsc3_message_content_type_descriptor_number_of_assets_header_t		descriptor_header;
+	ATSC3_VECTOR_BUILDER_STRUCT(mmt_atsc3_message_content_type_security_properties_descriptor_LAURL_asset);
+
+} mmt_atsc3_message_content_type_security_properties_descriptor_LAURL_t;
+ATSC3_VECTOR_BUILDER_METHODS_INTERFACE(mmt_atsc3_message_content_type_security_properties_descriptor_LAURL, mmt_atsc3_message_content_type_security_properties_descriptor_LAURL_asset);
 
 
 
@@ -418,8 +600,11 @@ typedef struct mmt_atsc3_message_payload {
 	uint8_t 	URI_length;
 	uint8_t* 	URI_payload;
 
+	//jjustman-2021-06-08 - todo: map this into block_t*
 	uint32_t	atsc3_message_content_length;
 	uint8_t*	atsc3_message_content;
+
+	block_t*	atsc3_message_content_blockt;
 
 	uint32_t	atsc3_message_content_length_compressed;
 	uint8_t*	atsc3_message_content_compressed;
@@ -431,6 +616,10 @@ typedef struct mmt_atsc3_message_payload {
 	mmt_atsc3_route_component_t*    mmt_atsc3_route_component;
 
 	mmt_atsc3_held_message_t*       mmt_atsc3_held_message;
+
+
+	//other content_types as needed
+	mmt_atsc3_message_content_type_security_properties_descriptor_LAURL_t* mmt_atsc3_message_content_type_security_properties_descriptor_LAURL;
 
 } mmt_atsc3_message_payload_t;
 
@@ -556,11 +745,43 @@ typedef struct mmt_signaling_message_mpu_timestamp_descriptor {
 
 #define MP_TABLE_ASSET_ROW_ASSET_TYPE_LENGTH 4
 
-//Video: HEVC
-#define ATSC3_MP_TABLE_ASSET_ROW_HEVC_ID "hev1"
+/*
+ * Video: HEVC
+ *
+ * A/331:2021 pp. 99:
+ *
+ * codec_code – This field shall specify a 4-character code for a codec.
+ *
+ *      The value of these four characters shall be one of 'hev1', 'hev2', 'hvc1', 'hvc2', 'lhv1' or 'lhe1' with semantic meaning for these codes as specified in ISO/IEC 14496-15 [35] as amended.
+*/
+
+#define ATSC3_MP_TABLE_ASSET_ROW_HEVC_ID_HEV1 "hev1"
+#define ATSC3_MP_TABLE_ASSET_ROW_HEVC_ID_HEV2 "hev2"
+#define ATSC3_MP_TABLE_ASSET_ROW_HEVC_ID_HVC1 "hvc1"
+#define ATSC3_MP_TABLE_ASSET_ROW_HEVC_ID_HVC2 "hvc2"
+#define ATSC3_MP_TABLE_ASSET_ROW_HEVC_ID_LVH1 "lvh1"
+#define ATSC3_MP_TABLE_ASSET_ROW_HEVC_ID_LHE1 "lhe1"
+
+#define ATSC3_MP_TABLE_IS_VIDEO_ASSET_TYPE_HEVC(asset_type) \
+    (\
+        strncasecmp(ATSC3_MP_TABLE_ASSET_ROW_HEVC_ID_HEV1, asset_type, 4) == 0 || \
+        strncasecmp(ATSC3_MP_TABLE_ASSET_ROW_HEVC_ID_HEV2, asset_type, 4) == 0 || \
+        strncasecmp(ATSC3_MP_TABLE_ASSET_ROW_HEVC_ID_HVC1, asset_type, 4) == 0 || \
+        strncasecmp(ATSC3_MP_TABLE_ASSET_ROW_HEVC_ID_HVC2, asset_type, 4) == 0 || \
+        strncasecmp(ATSC3_MP_TABLE_ASSET_ROW_HEVC_ID_LVH1, asset_type, 4) == 0 || \
+        strncasecmp(ATSC3_MP_TABLE_ASSET_ROW_HEVC_ID_LHE1, asset_type, 4) == 0 \
+    )
 
 //Video: h264
 #define ATSC3_MP_TABLE_ASSET_ROW_H264_ID "avc1"
+
+#define ATSC3_MP_TABLE_IS_VIDEO_ASSET_TYPE_H264(asset_type) \
+    (\
+        strncasecmp(ATSC3_MP_TABLE_ASSET_ROW_H264_ID, asset_type, 4) == 0 \
+    )
+
+#define ATSC3_MP_TABLE_IS_VIDEO_ASSET_TYPE_ANY(asset_type) \
+    ( ATSC3_MP_TABLE_IS_VIDEO_ASSET_TYPE_HEVC(asset_type) || ATSC3_MP_TABLE_IS_VIDEO_ASSET_TYPE_H264(asset_type) )
 
 //Audio: AC-4
 #define ATSC3_MP_TABLE_ASSET_ROW_AC_4_ID "ac-4"
