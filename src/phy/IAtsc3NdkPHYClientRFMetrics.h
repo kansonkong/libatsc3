@@ -23,6 +23,9 @@ typedef struct atsc3_ndk_phy_client_rf_plp_metrics {
     uint32_t    ber_pre_bch; //BER x 1e9
     uint32_t    fer_post_bch; //FER x 1e6
 
+    uint32_t    total_fec;
+    uint32_t    total_error_fec;
+
     int32_t     snr1000;
 
 } atsc3_ndk_phy_client_rf_plp_metrics_t;
