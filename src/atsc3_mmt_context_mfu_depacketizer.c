@@ -39,7 +39,7 @@ MPU_timestamp_descriptor: 0x0001
 #include "atsc3_mmtp_packet_types.h"
 
 int _MMT_CONTEXT_MPU_SIGNAL_INFO_ENABLED = 0;
-int _MMT_CONTEXT_MPU_DEBUG_ENABLED = 0;
+int _MMT_CONTEXT_MPU_DEBUG_ENABLED = 1;
 int _MMT_CONTEXT_MPU_TRACE_ENABLED = 0;
 
 ATSC3_VECTOR_BUILDER_METHODS_IMPLEMENTATION(atsc3_mmt_mfu_mpu_timestamp_descriptor_rolling_window, atsc3_mmt_mfu_mpu_timestamp_descriptor);
@@ -917,6 +917,14 @@ void mmtp_mfu_rebuild_from_packet_id_mpu_sequence_number(atsc3_mmt_mfu_context_t
                     //jjustman-2020-10-13 - fix: was calling atsc3_mmt_mpu_on_sequence_mpu_metadata_present, but
                     // we are rebuilding the movie_fragment metadata, thus we should be invoking atsc3_mmt_mpu_on_sequence_movie_fragment_metadata_present
                     if(atsc3_mmt_mfu_context->atsc3_mmt_mpu_on_sequence_movie_fragment_metadata_present) {
+                        __MMT_CONTEXT_MPU_DEBUG( "mmtp_mfu_rebuild_from_packet_id_mpu_sequence_number: invoking atsc3_mmt_mpu_on_sequence_movie_fragment_metadata_present: %p, i: %u, psn: %u, with %u:%u and packet_id: %u, mpu_sequence_number: %u, fragment_indicator: %u",
+                                                 atsc3_mmt_mfu_context->atsc3_mmt_mpu_on_sequence_movie_fragment_metadata_present,
+                                                 i, mmtp_mpu_init_packet_to_rebuild->packet_sequence_number,
+                                                 atsc3_mmt_mfu_context->udp_flow->dst_ip_addr,
+                                                 atsc3_mmt_mfu_context->udp_flow->dst_port,
+                                                 mmtp_mpu_init_packet_to_rebuild->mmtp_packet_id,
+                                                 mmtp_mpu_init_packet_to_rebuild->mpu_sequence_number,
+                                                 mmtp_mpu_init_packet_to_rebuild->mpu_fragmentation_indicator);
                         atsc3_mmt_mfu_context->atsc3_mmt_mpu_on_sequence_movie_fragment_metadata_present(atsc3_mmt_mfu_context, mmtp_mpu_init_packet_to_rebuild->mmtp_packet_id, mmtp_mpu_init_packet_to_rebuild->mpu_sequence_number, du_movie_fragment_block_rebuilt);
                     }
                     block_Destroy(&du_movie_fragment_block_rebuilt);
@@ -1048,8 +1056,7 @@ void mmt_signalling_message_dispatch_context_notification_callbacks(udp_packet_t
 					__MMSM_DEBUG("atsc3_mmt_context_mfu_depacketizer: MPT message: checking packet_id: %u, asset_type: %s, default: %u, identifier: %s", mp_table_asset_row->mmt_general_location_info.packet_id, mp_table_asset_row->asset_type, mp_table_asset_row->default_asset_flag, mp_table_asset_row->identifier_mapping.asset_id.asset_id ? (const char*)mp_table_asset_row->identifier_mapping.asset_id.asset_id : "");
 
 					//mp_table_asset_row->asset_type == HEVC or H264
-					if(strncasecmp(ATSC3_MP_TABLE_ASSET_ROW_HEVC_ID, mp_table_asset_row->asset_type, 4) == 0 ||
-					    strncasecmp(ATSC3_MP_TABLE_ASSET_ROW_H264_ID, mp_table_asset_row->asset_type, 4) == 0) {
+					if(ATSC3_MP_TABLE_IS_VIDEO_ASSET_TYPE_ANY(mp_table_asset_row->asset_type)) {
 
 					    if(atsc3_mmt_mfu_context->atsc3_mmt_signalling_information_on_video_essence_packet_id) {
                             atsc3_mmt_mfu_context->atsc3_mmt_signalling_information_on_video_essence_packet_id(atsc3_mmt_mfu_context, mp_table_asset_row->mmt_general_location_info.packet_id, mp_table_asset_row);

@@ -30,6 +30,8 @@ done
 
 //jjustman-2021-06-07 - uncomment to enable 100ms sleep between tuner status thread i2c polling commands
 #define _JJ_I2C_TUNER_STATUS_THREAD_SLEEP_MS_ENABLED_
+#define _JJ_TUNER_STATUS_THREAD_PRINT_PERF_DIAGNOSTICS_ENABLED_
+
 
 #include "SaankhyaPHYAndroid.h"
 SaankhyaPHYAndroid* saankhyaPHYAndroid = nullptr;
@@ -2057,6 +2059,11 @@ SL_SleepMS(100);
 
         //jjustman-2021-03-16 - exit our i2c critical section while we build and push our PHY statistics, we can use "continue" for next loop iteration after this point
         SL_I2C_command_mutex_tuner_status_io.unlock();
+
+        //jjustman-2021-06-08 - for debugging purposes only
+#ifdef _JJ_TUNER_STATUS_THREAD_PRINT_PERF_DIAGNOSTICS_ENABLED_
+printAtsc3PerfDiagnostics(perfDiag, 0);
+#endif
 
         snr_global = compute_snr(perfDiag.GlobalSnrLinearScale);
         atsc3_ndk_phy_client_rf_metrics.snr1000_global = snr_global;
