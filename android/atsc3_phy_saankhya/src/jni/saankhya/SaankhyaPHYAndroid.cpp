@@ -253,7 +253,7 @@ int SaankhyaPHYAndroid::stop()
     return 0;
 }
 double SaankhyaPHYAndroid::compute_snr(int snr_linear_scale) {
-    double snr = (float)perfDiag.GlobalSnrLinearScale / 16384;
+    double snr = (float)snr_linear_scale / 16384;
     snr = 10000.0 * log10(snr); //10
 
     return snr;
