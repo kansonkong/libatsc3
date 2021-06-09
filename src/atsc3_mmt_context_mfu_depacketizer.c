@@ -39,7 +39,7 @@ MPU_timestamp_descriptor: 0x0001
 #include "atsc3_mmtp_packet_types.h"
 
 int _MMT_CONTEXT_MPU_SIGNAL_INFO_ENABLED = 0;
-int _MMT_CONTEXT_MPU_DEBUG_ENABLED = 1;
+int _MMT_CONTEXT_MPU_DEBUG_ENABLED = 0;
 int _MMT_CONTEXT_MPU_TRACE_ENABLED = 0;
 
 ATSC3_VECTOR_BUILDER_METHODS_IMPLEMENTATION(atsc3_mmt_mfu_mpu_timestamp_descriptor_rolling_window, atsc3_mmt_mfu_mpu_timestamp_descriptor);
