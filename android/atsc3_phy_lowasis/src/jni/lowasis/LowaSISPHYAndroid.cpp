@@ -1045,7 +1045,7 @@ int LowaSISPHYAndroid::statusThread()
                 atsc3_ndk_phy_client_rf_metrics.plp_lock_by_setplp_index = s_fe_detail.lock.bmPlpLock;
 
                 atsc3_ndk_phy_client_rf_metrics.rfLevel1000 = s_fe_detail.nRfLevel1000;
-                atsc3_ndk_phy_client_rf_metrics.snr1000 = s_fe_detail_lg.snr * 1000;
+                atsc3_ndk_phy_client_rf_metrics.snr1000_global = s_fe_detail_lg.snr * 1000;
 
                 for(int i=0; i < 4; i++) {
                     S_LGD_L2_PLPINFO lgL2PlpInfo = { 0 };
@@ -1084,7 +1084,7 @@ int LowaSISPHYAndroid::statusThread()
                 atsc3_ndk_phy_client_rf_metrics.plp_lock_by_setplp_index = s_fe_detail.lock.bmPlpLock;
 
                 atsc3_ndk_phy_client_rf_metrics.rfLevel1000 = s_fe_detail.nRfLevel1000;
-                atsc3_ndk_phy_client_rf_metrics.snr1000 = s_fe_detail.nSnr1000;
+                atsc3_ndk_phy_client_rf_metrics.snr1000_global = s_fe_detail.nSnr1000;
 
                 for(int i=0; i < 4; i++) {
                     atsc3_ndk_phy_client_rf_metrics.phy_client_rf_plp_metrics[i].plp_id         = s_fe_detail.idPlps[i];

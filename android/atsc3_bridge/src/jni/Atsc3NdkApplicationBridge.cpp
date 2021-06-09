@@ -5,6 +5,14 @@ Atsc3NdkApplicationBridge* apiAppBridge;
 Atsc3NdkApplicationBridge::Atsc3NdkApplicationBridge(JNIEnv* env, jobject jni_instance) {
     this->env = env;
     this->jni_instance_globalRef = env->NewGlobalRef(jni_instance);
+
+    libatsc3_android_test_populate_system_properties(&this->libatsc3_android_system_properties);
+
+    _NDK_APPLICATION_BRIDGE_INFO("Atsc3NdkApplicationBridge::cctor - libatsc3_android_test_populate_system_properties:\n boot_serialno: %s, serialno: %s\n sdk_ver_str: %s, sdk_ver: %d",
+                                 libatsc3_android_system_properties.boot_serialno_str,
+                                 libatsc3_android_system_properties.serialno_str,
+                                 libatsc3_android_system_properties.sdk_ver_str,
+                                 libatsc3_android_system_properties.sdk_ver);
 }
 
 //jjustman-2020-08-19: TODO: get (or create) a pinned Atsc3JniEnv from pthread_cur
