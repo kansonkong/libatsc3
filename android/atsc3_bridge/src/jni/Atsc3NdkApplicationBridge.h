@@ -24,7 +24,9 @@ using namespace std;
 #define MODULE_NAME "Atsc3NdkApplicationBridge"
 
 #include "Atsc3LoggingUtils.h"
+#include "Atsc3AndroidPropertyUtils.h"
 #include "Atsc3JniEnv.h"
+
 
 // libatsc3 type imports here
 #include <atsc3_utils.h>
@@ -86,7 +88,7 @@ private:
     jobject jni_instance_globalRef = nullptr;
     jclass jni_class_globalRef = nullptr;
 
-    std::thread mhRxThread;
+    libatsc3_android_system_properties_t libatsc3_android_system_properties = { 0 };
 
     //alc service monitoring
     //vector<int>                     atsc3_slt_alc_additional_services_monitored;
