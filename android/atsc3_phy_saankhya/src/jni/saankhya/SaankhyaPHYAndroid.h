@@ -81,6 +81,9 @@ public:
     virtual int  stop()       override;
     virtual int  deinit()     override;
 
+    virtual string get_sdk_version()  override;
+    virtual string get_firmware_version() override;
+
     virtual int  download_bootloader_firmware(int fd, int device_type, string devicePath) override;
     virtual int  open(int fd, int device_type, string devicePath)   override;
     virtual int  tune(int freqKhz, int single_plp) override;
@@ -101,6 +104,9 @@ public:
 
     mutex SL_I2C_command_mutex;
     mutex SL_PlpConfigParams_mutex;
+
+    //jjustman-2021-06-07 - from demod_start
+    string                  demodVersion;
 
     //jjustman-2021-03-03   this is expected to be always accurate, when using, be sure to acquire SL_plpConfigParams_mutex, and SL_I2c_command_mutex, if necessary
     SL_PlpConfigParams_t    plpInfo;
@@ -246,6 +252,9 @@ private:
     //jjustman-2021-02-04 - global error flag if i2c txn fails, usually due to demod crash
     static SL_Result_t      global_sl_result_error_flag;
     static SL_I2cResult_t   global_sl_i2c_result_error_flag;
+
+    //jjustman-2021-06-07 # 11798: compute global/l1b/l1d/plpN SNR metrics
+    double compute_snr(int snr_linear_scale);
 };
 
 #define _SAANKHYA_PHY_ANDROID_ERROR(...)   	__LIBATSC3_TIMESTAMP_ERROR(__VA_ARGS__);
