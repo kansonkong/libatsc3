@@ -36,4 +36,7 @@ public class SaankhyaPHYAndroid extends Atsc3NdkPHYSaankhyaStaticJniLoader  {
     @Override public native int tune(int freqKhz, int single_plp);
     @Override public native int listen_plps(List<Byte> plps);
 
+    @Override public native String get_sdk_version();
+    @Override public native String get_firmware_version();
+    @Override public native String get_demod_version();
 }

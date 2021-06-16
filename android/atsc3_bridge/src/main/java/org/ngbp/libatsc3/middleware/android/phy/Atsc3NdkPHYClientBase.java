@@ -110,6 +110,10 @@ public abstract class Atsc3NdkPHYClientBase {
     public native int     tune(int freqKhz, int single_plp);
     public native int     listen_plps(List<Byte> plps);
 
+    public native String     get_sdk_version();
+    public native String     get_firmware_version();
+    public native String     get_demod_version();
+
     //jjustman-2021-01-14 - integrate firebase performance tracing
     protected Trace phyOpenDurationTrace = null;
     public void startPhyOpenTrace() {
