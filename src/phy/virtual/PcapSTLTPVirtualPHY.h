@@ -60,6 +60,7 @@ public:
     void atsc3_pcap_stltp_listen_ip_port_plp(string ip, string port, uint8_t plp);
 
     int atsc3_pcap_replay_open_file(const char *filename);
+	int atsc3_pcap_replay_open_file(const char *filename, int fd, long length);
 
     int atsc3_pcap_thread_run();
     int atsc3_pcap_thread_stop(); 							//will invoke cleanup of context
