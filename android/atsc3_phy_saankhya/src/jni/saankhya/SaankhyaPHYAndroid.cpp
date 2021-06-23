@@ -362,12 +362,7 @@ int SaankhyaPHYAndroid::open(int fd, int device_type, string device_path)
             } else {
                 global_sl_i2c_result_error_flag = i2cres;
 
-                if(atsc3_ndk_phy_bridge_get_instance()) {
-                    atsc3_ndk_phy_bridge_get_instance()->atsc3_notify_phy_error("SaankhyaPHYAndroid::open() - ERROR: SL_I2cInit failed: code: %d", global_sl_i2c_result_error_flag);
-                }
-
-                _SAANKHYA_PHY_ANDROID_ERROR("SaankhyaPHYAndroid::open() - ERROR: Error:SL_I2cInit failed:");
-                printToConsoleI2cError(i2cres);
+                printToConsoleI2cError("SL_I2cInit", i2cres);
             }
 
             goto ERROR;
@@ -418,7 +413,8 @@ int SaankhyaPHYAndroid::open(int fd, int device_type, string device_path)
                 outPutInfo.oif = SL_OUTPUTIF_TSSERIAL_LSB_FIRST;
                 /* CPLD Reset */
                 SL_GpioSetPin(getPlfConfig.cpldResetGpioPin, 0x00);          // Low
-                SL_SleepMS(100); // 100ms delay for Toggle
+                //jjustman-2021-04-13 - updating to 250ms as 100ms may cause issues on ICCM download on KAILASH
+                SL_SleepMS(250); // jjustman-2021-06-23 - FIXUP AGAIN?!  was 100ms delay for Toggle
                 SL_GpioSetPin(getPlfConfig.cpldResetGpioPin, 0x01);          // High
             }
             else if (getPlfConfig.demodOutputIf == SL_DEMOD_OUTPUTIF_SDIO)
@@ -495,7 +491,8 @@ int SaankhyaPHYAndroid::open(int fd, int device_type, string device_path)
                 outPutInfo.oif = SL_OUTPUTIF_TSSERIAL_LSB_FIRST;
                 /* CPLD Reset */
                 SL_GpioSetPin(getPlfConfig.cpldResetGpioPin, 0x00); // Low
-                SL_SleepMS(100); // 100ms delay for Toggle
+                //jjustman-2021-06-23 - additional adjustments for sleep to 250ms
+                SL_SleepMS(250); // 100ms delay for Toggle
                 SL_GpioSetPin(getPlfConfig.cpldResetGpioPin, 0x01); // High
             }
             else if (getPlfConfig.demodOutputIf == SL_DEMOD_OUTPUTIF_SDIO)
@@ -615,9 +612,7 @@ int SaankhyaPHYAndroid::open(int fd, int device_type, string device_path)
     slres = SL_DemodCreateInstance(&slUnit);
     if (slres != SL_OK)
     {
-        _SAANKHYA_PHY_ANDROID_DEBUG("Error:SL_DemodCreateInstance: slres: %d", slres);
-        _SAANKHYA_PHY_ANDROID_DEBUG("Error:SL_DemodCreateInstance :");
-        printToConsoleDemodError(slres);
+        printToConsoleDemodError("SL_DemodCreateInstance", slres);
         goto ERROR;
     }
 
@@ -630,10 +625,7 @@ int SaankhyaPHYAndroid::open(int fd, int device_type, string device_path)
     slres = SL_DemodInit(slUnit, cmdIf, SL_DEMODSTD_ATSC3_0);
     if (slres != SL_OK)
     {
-        _SAANKHYA_PHY_ANDROID_DEBUG("SL_DemodInit: failed, slres: %d", slres);
-        _SAANKHYA_PHY_ANDROID_DEBUG("FAILED");
-        _SAANKHYA_PHY_ANDROID_DEBUG("Error:SL_DemodInit :");
-        printToConsoleDemodError(slres);
+        printToConsoleDemodError("SL_DemodInit", slres);
         goto ERROR;
     }
     else
@@ -648,8 +640,7 @@ int SaankhyaPHYAndroid::open(int fd, int device_type, string device_path)
         _SAANKHYA_PHY_ANDROID_DEBUG("SL_DemodGetStatus: slUnit: %d, slres is: %d", slUnit, slres);
         if (slres != SL_OK)
         {
-            _SAANKHYA_PHY_ANDROID_DEBUG("Error:SL_Demod Get Boot Status :");
-            printToConsoleDemodError(slres);
+            printToConsoleDemodError("SL_DemodGetStatus:Boot", slres);
         }
         SL_SleepMS(250);
     } while (bootStatus != SL_DEMOD_BOOT_STATUS_COMPLETE);
@@ -672,40 +663,35 @@ int SaankhyaPHYAndroid::open(int fd, int device_type, string device_path)
     slres = SL_DemodConfigure(slUnit, SL_CONFIGTYPE_AFEIF, &afeInfo);
     if (slres != 0)
     {
-        _SAANKHYA_PHY_ANDROID_DEBUG("Error:SL_DemodConfigure :");
-        printToConsoleDemodError(slres);
+        printToConsoleDemodError("SL_DemodConfigure:SL_CONFIGTYPE_AFEIF", slres);
         goto ERROR;
     }
 
     slres = SL_DemodConfigure(slUnit, SL_CONFIG_TYPE_IQ_OFFSET_CORRECTION, &iqOffSetCorrection);
     if (slres != 0)
     {
-        _SAANKHYA_PHY_ANDROID_DEBUG("Error:SL_DemodConfigure :");
-        printToConsoleDemodError(slres);
+        printToConsoleDemodError("SL_DemodConfigure:SL_CONFIG_TYPE_IQ_OFFSET_CORRECTION", slres);
         goto ERROR;
     }
 
     slres = SL_DemodConfigure(slUnit, SL_CONFIGTYPE_OUTPUTIF, &outPutInfo);
     if (slres != 0)
     {
-        _SAANKHYA_PHY_ANDROID_DEBUG("Error:SL_DemodConfigure :");
-        printToConsoleDemodError(slres);
+        printToConsoleDemodError("SL_DemodConfigure:SL_CONFIGTYPE_OUTPUTIF", slres);
         goto ERROR;
     }
 
     slres = SL_DemodConfigPlps(slUnit, &plpInfo);
     if (slres != 0)
     {
-        _SAANKHYA_PHY_ANDROID_DEBUG("Error:SL_DemodConfigPlps :");
-        printToConsoleDemodError(slres);
+        printToConsoleDemodError("SL_DemodConfigPlps", slres);
         goto ERROR;
     }
 
     slres = SL_DemodSetAtsc3p0Region(slUnit, regionInfo);
     if (slres != 0)
     {
-        _SAANKHYA_PHY_ANDROID_DEBUG("\n Error:SL_DemodSetAtsc3p0Region :");
-        printToConsoleDemodError(slres);
+        printToConsoleDemodError("SL_DemodSetAtsc3p0Region", slres);
         goto ERROR;
     }
 
@@ -713,7 +699,7 @@ int SaankhyaPHYAndroid::open(int fd, int device_type, string device_path)
     if (slres == SL_OK)
     {
         _SAANKHYA_PHY_ANDROID_DEBUG("Demod SW Version: %d.%d", swMajorNo, swMinorNo);
-        demodVersion = swMajorNo + "." + swMinorNo;
+        demodVersion = to_string(swMajorNo) + "." + to_string(swMinorNo);
     }
 
     /* Tuner Config */
@@ -723,24 +709,21 @@ int SaankhyaPHYAndroid::open(int fd, int device_type, string device_path)
     tres = SL_TunerCreateInstance(&tUnit);
     if (tres != 0)
     {
-        _SAANKHYA_PHY_ANDROID_DEBUG("Error:SL_TunerCreateInstance :");
-        printToConsoleTunerError(tres);
+        printToConsoleTunerError("SL_TunerCreateInstance", tres);
         goto ERROR;
     }
 
     tres = SL_TunerInit(tUnit);
     if (tres != 0)
     {
-        _SAANKHYA_PHY_ANDROID_DEBUG("Error:SL_TunerInit :");
-        printToConsoleTunerError(tres);
+        printToConsoleTunerError("SL_TunerInit", tres);
         goto ERROR;
     }
 
     tres = SL_TunerConfigure(tUnit, &tunerCfg);
     if (tres != 0)
     {
-        _SAANKHYA_PHY_ANDROID_DEBUG("Error:SL_TunerConfigure :");
-        printToConsoleTunerError(tres);
+        printToConsoleTunerError("SL_TunerConfigure", tres);
         goto ERROR;
     }
 
@@ -755,8 +738,7 @@ int SaankhyaPHYAndroid::open(int fd, int device_type, string device_path)
         tres = SL_TunerExSetDcOffSet(tUnit, &tunerIQDcOffSet);
         if (tres != 0)
         {
-            _SAANKHYA_PHY_ANDROID_DEBUG("Error:SL_TunerExSetDcOffSet :");
-            printToConsoleTunerError(tres);
+            printToConsoleTunerError("SL_TunerExSetDcOffSet", tres);
             if (getPlfConfig.tunerType == TUNER_SI)
             {
                 goto ERROR;
@@ -791,7 +773,7 @@ int SaankhyaPHYAndroid::tune(int freqKHz, int plpid)
         //forcibly flush any in-flight TLV packets in cb here by calling, need (cb_should_discard == true),
         // as our type is atomic_bool and we can't printf its value here due to:
         //                  call to implicitly-deleted copy constructor of 'std::__ndk1::atomic_bool' (aka 'atomic<bool>')
-        _SAANKHYA_PHY_ANDROID_INFO("SaankhyaPHYAndroid::tune - cb_should_discard: %u, cb_GetDataSize: %d, calling CircularBufferReset(), cb: %p, early in tune() call", (cb_should_discard == true), cb, CircularBufferGetDataSize(this->cb));
+        _SAANKHYA_PHY_ANDROID_INFO("SaankhyaPHYAndroid::tune - cb_should_discard: %u, cb_GetDataSize: %d, calling CircularBufferReset(), cb: %p, early in tune() call", (cb_should_discard == true), CircularBufferGetDataSize(this->cb), cb);
         CircularBufferReset(cb);
     }
 
@@ -841,16 +823,14 @@ int SaankhyaPHYAndroid::tune(int freqKHz, int plpid)
     tres = SL_TunerSetFrequency(tUnit, freqKHz*1000);
     if (tres != 0)
     {
-        _SAANKHYA_PHY_ANDROID_DEBUG("Error:SL_TunerSetFrequency :");
-        printToConsoleTunerError(tres);
+        printToConsoleTunerError("SL_TunerSetFrequency", tres);
         goto ERROR;
     }
 
     tres = SL_TunerGetConfiguration(tUnit, &tunerGetCfg);
     if (tres != 0)
     {
-        _SAANKHYA_PHY_ANDROID_DEBUG("Error:SL_TunerGetConfiguration :");
-        printToConsoleTunerError(tres);
+        printToConsoleTunerError("SL_TunerGetConfiguration", tres);
         goto ERROR;
     } else {
         if (tunerGetCfg.std == SL_TUNERSTD_ATSC3_0)
@@ -883,8 +863,7 @@ int SaankhyaPHYAndroid::tune(int freqKHz, int plpid)
     tres = SL_TunerGetFrequency(tUnit, &cFrequency);
     if (tres != 0)
     {
-        _SAANKHYA_PHY_ANDROID_DEBUG("Error:SL_TunerGetFrequency :");
-        printToConsoleTunerError(tres);
+        printToConsoleTunerError("SL_TunerGetFrequency", tres);
         goto ERROR;
     }
     else
@@ -896,8 +875,7 @@ int SaankhyaPHYAndroid::tune(int freqKHz, int plpid)
     tres = SL_TunerGetStatus(tUnit, &tunerInfo);
     if (tres != 0)
     {
-        _SAANKHYA_PHY_ANDROID_DEBUG("Error:SL_TunerGetStatus :");
-        printToConsoleTunerError(tres);
+        printToConsoleTunerError("SL_TunerGetStatus", tres);
         goto ERROR;
     }
     else
@@ -1072,8 +1050,7 @@ int SaankhyaPHYAndroid::tune(int freqKHz, int plpid)
     SL_PlpConfigParams_mutex_update_plps.unlock();
 
     if (slres != 0) {
-        _SAANKHYA_PHY_ANDROID_DEBUG("Error:SL_DemodConfigPlps :");
-        printToConsoleDemodError(slres);
+        printToConsoleDemodError("SL_DemodConfigPlps", slres);
         goto ERROR;
     }
 
@@ -1181,8 +1158,7 @@ int SaankhyaPHYAndroid::listen_plps(vector<uint8_t> plps_original_list)
 
     if (slres != 0)
     {
-        _SAANKHYA_PHY_ANDROID_DEBUG("Error: SL_DemodConfigPLP: %d", slres);
-        printToConsoleDemodError(slres);
+        printToConsoleDemodError("SL_DemodConfigPLP", slres);
     }
 
     statusMetricsResetFromPLPListenChange();
@@ -1197,8 +1173,7 @@ void SaankhyaPHYAndroid::dump_plp_list() {
     slres = SL_DemodGetLlsPlpList(slUnit, &llsPlpInfo);
     if (slres != SL_OK)
     {
-        _SAANKHYA_PHY_ANDROID_DEBUG("Error:SL_DemodGetLlsPlpList :");
-        printToConsoleDemodError(slres);
+        printToConsoleDemodError("SL_DemodGetLlsPlpList", slres);
         if (slres == SL_ERR_CMD_IF_FAILURE)
         {
             handleCmdIfFailure();
@@ -1275,8 +1250,7 @@ int SaankhyaPHYAndroid::download_bootloader_firmware(int fd, int device_type, st
             _SAANKHYA_PHY_ANDROID_DEBUG("download_bootloader_firmware: INFO:SL_I2cPreInit SL_FX3S_I2C_AWAITING_REENUMERATION");
             return 0;
         } else {
-            _SAANKHYA_PHY_ANDROID_DEBUG("Error:SL_I2cPreInit failed: %d", i2cres);
-            printToConsoleI2cError(i2cres);
+            printToConsoleI2cError("SL_I2cPreInit", i2cres);
         }
     }
     return -1;
@@ -1418,50 +1392,50 @@ void SaankhyaPHYAndroid::handleCmdIfFailure(void)
     }
 }
 
-void SaankhyaPHYAndroid::printToConsoleI2cError(SL_I2cResult_t err)
+void SaankhyaPHYAndroid::printToConsoleI2cError(const char* methodName, SL_I2cResult_t err)
 {
     switch (err)
     {
         case SL_I2C_ERR_TRANSFER_FAILED:
-            _SAANKHYA_PHY_ANDROID_WARN(" Sl I2C Transfer Failed");
+            _SAANKHYA_PHY_ANDROID_ERROR_NOTIFY_BRIDGE_INSTANCE(methodName, "Sl I2C Transfer Failed", err);
             break;
+
         case SL_I2C_ERR_NOT_INITIALIZED:
-            _SAANKHYA_PHY_ANDROID_WARN(" Sl I2C Not Initialized");
+            _SAANKHYA_PHY_ANDROID_ERROR_NOTIFY_BRIDGE_INSTANCE(methodName, "Sl I2C Not Initialized", err);
             break;
 
         case SL_I2C_ERR_BUS_TIMEOUT:
-            _SAANKHYA_PHY_ANDROID_WARN(" Sl I2C Bus Timeout");
+            _SAANKHYA_PHY_ANDROID_ERROR_NOTIFY_BRIDGE_INSTANCE(methodName, "Sl I2C Bus Timeout", err);
             break;
 
         case SL_I2C_ERR_LOST_ARBITRATION:
-            _SAANKHYA_PHY_ANDROID_WARN(" Sl I2C Lost Arbitration");
+            _SAANKHYA_PHY_ANDROID_ERROR_NOTIFY_BRIDGE_INSTANCE(methodName, "Sl I2C Lost Arbitration", err);
             break;
 
         default:
-            _SAANKHYA_PHY_ANDROID_WARN(" Sl I2C other error: %d", err);
-
+            _SAANKHYA_PHY_ANDROID_ERROR_NOTIFY_BRIDGE_INSTANCE(methodName, "Sl I2C other error", err);
             break;
     }
 }
 
-void SaankhyaPHYAndroid::printToConsoleTunerError(SL_TunerResult_t err)
+void SaankhyaPHYAndroid::printToConsoleTunerError(const char* methodName, SL_TunerResult_t err)
 {
     switch (err)
     {
         case SL_TUNER_ERR_OPERATION_FAILED:
-            _SAANKHYA_PHY_ANDROID_DEBUG(" Sl Tuner Operation Failed");
+            _SAANKHYA_PHY_ANDROID_ERROR_NOTIFY_BRIDGE_INSTANCE(methodName, "Sl Tuner Operation Failed", err);
             break;
 
         case SL_TUNER_ERR_INVALID_ARGS:
-            _SAANKHYA_PHY_ANDROID_DEBUG(" Sl Tuner Invalid Argument");
+            _SAANKHYA_PHY_ANDROID_ERROR_NOTIFY_BRIDGE_INSTANCE(methodName, "Sl Tuner Invalid Argument", err);
             break;
 
         case SL_TUNER_ERR_NOT_SUPPORTED:
-            _SAANKHYA_PHY_ANDROID_DEBUG(" Sl Tuner Not Supported");
+            _SAANKHYA_PHY_ANDROID_ERROR_NOTIFY_BRIDGE_INSTANCE(methodName, "Sl Tuner Not Supported", err);
             break;
 
         case SL_TUNER_ERR_MAX_INSTANCES_REACHED:
-            _SAANKHYA_PHY_ANDROID_DEBUG(" Sl Tuner Maximum Instance Reached");
+            _SAANKHYA_PHY_ANDROID_ERROR_NOTIFY_BRIDGE_INSTANCE(methodName, "Sl Tuner Maximum Instance Reached", err);
             break;
         default:
             break;
@@ -1722,34 +1696,36 @@ void SaankhyaPHYAndroid::printToConsoleDemodConfiguration(SL_DemodConfigInfo_t c
     }
 }
 
-void SaankhyaPHYAndroid::printToConsoleDemodError(SL_Result_t err)
+void SaankhyaPHYAndroid::printToConsoleDemodError(const char* methodName, SL_Result_t err)
 {
     switch (err)
     {
         case SL_ERR_OPERATION_FAILED:
-            _SAANKHYA_PHY_ANDROID_DEBUG(" Sl Operation Failed");
+            _SAANKHYA_PHY_ANDROID_ERROR_NOTIFY_BRIDGE_INSTANCE(methodName, "Sl Operation Failed", err);
             break;
 
         case SL_ERR_TOO_MANY_INSTANCES:
-            _SAANKHYA_PHY_ANDROID_DEBUG(" Sl Too Many Instance");
+            _SAANKHYA_PHY_ANDROID_ERROR_NOTIFY_BRIDGE_INSTANCE(methodName, "Sl Too Many Instances", err);
             break;
 
         case SL_ERR_CODE_DWNLD:
-            _SAANKHYA_PHY_ANDROID_DEBUG(" Sl Code download Failed");
+            _SAANKHYA_PHY_ANDROID_ERROR_NOTIFY_BRIDGE_INSTANCE(methodName, "Sl Code download Failed", err);
             break;
 
         case SL_ERR_INVALID_ARGUMENTS:
-            _SAANKHYA_PHY_ANDROID_DEBUG(" Sl Invalid Argument");
+            _SAANKHYA_PHY_ANDROID_ERROR_NOTIFY_BRIDGE_INSTANCE(methodName, "Sl Invalid Argument", err);
             break;
 
         case SL_ERR_CMD_IF_FAILURE:
-            _SAANKHYA_PHY_ANDROID_DEBUG(" Sl Command Interface Failure");
+            _SAANKHYA_PHY_ANDROID_ERROR_NOTIFY_BRIDGE_INSTANCE(methodName, "Sl Command Interface Failure", err);
             break;
 
         case SL_ERR_NOT_SUPPORTED:
-            _SAANKHYA_PHY_ANDROID_DEBUG(" Sl Not Supported");
+            _SAANKHYA_PHY_ANDROID_ERROR_NOTIFY_BRIDGE_INSTANCE(methodName, "Sl Not Supported", err);
             break;
+
         default:
+            _SAANKHYA_PHY_ANDROID_ERROR_NOTIFY_BRIDGE_INSTANCE(methodName, "Sl Other Error", err);
             break;
     }
 }
@@ -1891,8 +1867,7 @@ int SaankhyaPHYAndroid::statusThread()
             slres = SL_DemodGetConfiguration(slUnit, &cfgInfo);
             if (slres != SL_OK)
             {
-                _SAANKHYA_PHY_ANDROID_ERROR("Error:SL_TunerGetStatus: tres: %d", tres);
-                printToConsoleDemodError(slres);
+                printToConsoleDemodError("SL_TunerGetStatus", slres);
                 if (slres == SL_ERR_CMD_IF_FAILURE)
                 {
                     handleCmdIfFailure();
