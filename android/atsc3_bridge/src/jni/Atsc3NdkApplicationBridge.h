@@ -111,6 +111,10 @@ public:
         return jni_class_globalRef;
     }
 
+    libatsc3_android_system_properties_t getAndroidSystemProperties() {
+        return libatsc3_android_system_properties;
+    }
+
     int pinConsumerThreadAsNeeded() override;
     int releasePinnedConsumerThreadAsNeeded() override;
 
@@ -140,6 +144,9 @@ public:
 
     atsc3_phy_notify_plp_selection_change_f    atsc3_phy_notify_plp_selection_change = nullptr;;
     void*                                      atsc3_phy_notify_plp_selection_change_context = nullptr;;
+
+    jclass    atsc3_nkd_app_bridge_system_properties_jclass_init_env = nullptr;
+    jclass    atsc3_nkd_app_bridge_system_properties_jclass_global_ref = nullptr;
 
 protected:
     Atsc3JniEnv* bridgeConsumerJniEnv = nullptr;
