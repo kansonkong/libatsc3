@@ -149,7 +149,7 @@ int SRTRxSTLTPVirtualPHY::srtLocalCleanup() {
 }
 
 bool SRTRxSTLTPVirtualPHY::is_srt_running() {
-	return !atsc3_srt_live_receiver_context->is_shutdown && !srtProducerShutdown && !srtConsumerShutdown;
+	return atsc3_srt_live_receiver_context && !atsc3_srt_live_receiver_context->is_shutdown && !srtProducerShutdown && !srtConsumerShutdown;
 }
 
 

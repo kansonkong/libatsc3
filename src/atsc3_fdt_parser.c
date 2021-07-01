@@ -54,12 +54,29 @@ atsc3_fdt_instance_t* atsc3_efdt_instance_parse_from_xml_node(xml_node_t* xml_ef
 				xml_node_t* fdt_child = xml_node_child(root_child, j);
 				if (xml_node_equals_ignore_case(fdt_child, "File")) {
 					atsc3_fdt_file_t* atsc3_fdt_file = atsc3_fdt_file_parse_from_xml_fdt_instance(fdt_child);
+					
 					if (atsc3_fdt_file) {
-						_ATSC3_FDT_PARSER_DEBUG("atsc3_fdt_parse_from_xml_fdt_instance: adding file: %u, toi: %u, location: %s, length: %u, type: %s",
+						_ATSC3_FDT_PARSER_DEBUG("atsc3_fdt_parse_from_xml_fdt_instance: adding file: %u, toi: %u, location: %s, length: %u, type: %s, fdt-instance: appContextIdList: %s, file: appContextIdList: %s",
 								i, atsc3_fdt_file->toi,
 								atsc3_fdt_file->content_location,
 								atsc3_fdt_file->content_length,
-								atsc3_fdt_file->content_type);
+								atsc3_fdt_file->content_type,
+								atsc3_fdt_instance->app_context_id_list,
+								atsc3_fdt_file->app_context_id_list);
+						//add to atsc3_fdt_instance
+						
+						//jjustman-2021-07-01 - "inherit" from our fdt-instance appContextIdList if present and not present in atsc3_fdt_file
+						if(!atsc3_fdt_file->app_context_id_list && atsc3_fdt_instance->app_context_id_list) {
+							
+							atsc3_fdt_file->app_context_id_list = strdup(atsc3_fdt_instance->app_context_id_list);
+							
+								_ATSC3_FDT_PARSER_DEBUG("atsc3_fdt_parse_from_xml_fdt_instance: file: %u, toi: %u, location: %s, inheriting file: appContextIdList from fdt-instance appContextIdList: %s, now set to: file->appContextIdList: %s",
+										i, atsc3_fdt_file->toi,
+										atsc3_fdt_instance->app_context_id_list,
+										atsc3_fdt_file->app_context_id_list);
+						}
+
+												
 						//add to atsc3_fdt_instance
 						atsc3_fdt_instance_add_atsc3_fdt_file(atsc3_fdt_instance, atsc3_fdt_file);
 					}
