@@ -231,9 +231,9 @@ private:
     void printToConsolePlfConfiguration(SL_PlatFormConfigParams_t cfgInfo);
     void printToConsoleDemodConfiguration(SL_DemodConfigInfo_t cfgInfo);
 
-    void printToConsoleI2cError(SL_I2cResult_t err);
-    void printToConsoleTunerError(SL_TunerResult_t err);
-    void printToConsoleDemodError(SL_Result_t err);
+    void printToConsoleI2cError(const char* methodName, SL_I2cResult_t err);
+    void printToConsoleTunerError(const char* methodName, SL_TunerResult_t err);
+    void printToConsoleDemodError(const char* methodName, SL_Result_t err);
 
     void handleCmdIfFailure(void);
 
@@ -256,6 +256,15 @@ private:
     //jjustman-2021-06-07 # 11798: compute global/l1b/l1d/plpN SNR metrics
     double compute_snr(int snr_linear_scale);
 };
+
+#define _SAANKHYA_PHY_ANDROID_ERROR_NOTIFY_BRIDGE_INSTANCE(method, message, cmd_res) \
+    if(atsc3_ndk_phy_bridge_get_instance()) { \
+        atsc3_ndk_phy_bridge_get_instance()->atsc3_notify_phy_error("SaankhyaPHYAndroid::%s - ERROR: %s, global_sl_res: %d, global_sl_i2c_res: %d, cmd res: %d", \
+        method, message, global_sl_result_error_flag, global_sl_i2c_result_error_flag, cmd_res); \
+    } \
+    __LIBATSC3_TIMESTAMP_ERROR("SaankhyaPHYAndroid::%s - ERROR: %s, global_sl_res: %d, global_sl_i2c_res: %d, cmd_res: %d", \
+        method, message, global_sl_result_error_flag, global_sl_i2c_result_error_flag, cmd_res);
+
 
 #define _SAANKHYA_PHY_ANDROID_ERROR(...)   	__LIBATSC3_TIMESTAMP_ERROR(__VA_ARGS__);
 #define _SAANKHYA_PHY_ANDROID_WARN(...)   	__LIBATSC3_TIMESTAMP_WARN(__VA_ARGS__);
