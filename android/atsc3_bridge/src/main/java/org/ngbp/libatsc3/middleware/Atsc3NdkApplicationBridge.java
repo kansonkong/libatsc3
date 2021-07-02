@@ -4,6 +4,7 @@ import android.util.Log;
 
 import org.ngbp.libatsc3.middleware.android.a331.PackageExtractEnvelopeMetadataAndPayload;
 import org.ngbp.libatsc3.middleware.android.application.interfaces.IAtsc3NdkApplicationBridgeCallbacks;
+import org.ngbp.libatsc3.middleware.android.application.models.AndroidSystemProperties;
 
 import java.io.File;
 
@@ -41,6 +42,8 @@ public class Atsc3NdkApplicationBridge extends Atsc3BridgeNdkStaticJniLoader
     //NOTE: these methods may return an empty collection if the MBMS carousel or S-TSID has not been received after selecting service/additional_service
     public native String[] atsc3_slt_alc_get_sls_metadata_fragments_content_locations_from_monitor_service_id(int service_id, String to_match_content_type);
     public native String[] atsc3_slt_alc_get_sls_route_s_tsid_fdt_file_content_locations_from_monitor_service_id(int service_id);
+
+    public native AndroidSystemProperties atsc3_slt_alc_get_system_properties();      //clear ALC additional service listeners
 
     public Atsc3NdkApplicationBridge(IAtsc3NdkApplicationBridgeCallbacks iAtsc3NdkApplicationBridgeCallbacks) {
         mActivity = iAtsc3NdkApplicationBridgeCallbacks;
