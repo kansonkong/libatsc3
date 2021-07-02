@@ -12,6 +12,7 @@ pool:
   vmImage: 'ubuntu-18.04'
 
 variables:
+  - group: MarkOne
   - name: ARTIFACT_VERSION
     value: 0.0.0
 
@@ -20,13 +21,12 @@ steps:
       git config --global http.https://$ORGANIZATION@dev.azure.com/$ORGANIZATION/.extraheader "AUTHORIZATION: bearer $(System.AccessToken)"
       git lfs install --skip-smudge
       git config --file=.gitmodules submodule.android/sample_app_no_phy/ExoPlayer.url https://$ORGANIZATION@dev.azure.com/$ORGANIZATION/Middleware/_git/ExoPlayer
-      git config --file=.gitmodules submodule.saankhyalabs-slsdk.url https://$PAT@dev.azure.com/$ORGANIZATION/Mark%20One%20Phone/_git/saankhyalabs-slsdk
+      git config --file=.gitmodules submodule.saankhyalabs-slsdk.url https://$(PAT)@dev.azure.com/$ORGANIZATION/Mark%20One%20Phone/_git/saankhyalabs-slsdk
       git config --file=.gitmodules submodule.airwavz_redzone_sdk.url https://$ORGANIZATION@dev.azure.com/$ORGANIZATION/Middleware/_git/airwavz_redzone_sdk
       git config --file=.gitmodules submodule.codornicesrq.url https://$ORGANIZATION@dev.azure.com/$ORGANIZATION/Middleware/_git/codornicesrq
       git config --file=.gitmodules submodule.libdaa.url https://$ORGANIZATION@dev.azure.com/$ORGANIZATION/Middleware/_git/libdaa
       git submodule update --init --recursive
     env: 
-      PAT: $(myPat)
       ORGANIZATION: $(organizationName)  
 
   - powershell: |

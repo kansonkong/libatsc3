@@ -41,3 +41,5 @@ architecture/ngbp architecture.vpp.bak_010d
 libatsc3.srctrlbm
 libatsc3.srctrldb
 libatsc3.srctrlprj
+html/
+latex/

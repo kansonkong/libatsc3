@@ -277,7 +277,7 @@ atsc3_baseband_packet_t* atsc3_stltp_parse_baseband_packet(atsc3_stltp_baseband_
                 for(bbp_pointer_count=0; bbp_pointer_count < atsc3_baseband_packet->ext_len; bbp_pointer_count++) {
                             binary_payload++;
                 }
-                __ALP_PARSER_INFO(" -> after reading extension block, payload position : %p, diff: %d", binary_payload, (binary_payload - extension_block_start));
+                __ALP_PARSER_INFO(" -> after reading extension block, payload position : %p, diff: %lu", binary_payload, (binary_payload - extension_block_start));
             }
         }
         baseband_pre_pointer_payload_start = binary_payload;
@@ -356,7 +356,7 @@ cleanup:
 atsc3_alp_packet_t* atsc3_alp_packet_parse(uint8_t plp_num, block_t* baseband_packet_payload) {
     uint32_t starting_block_size = block_Remaining_size(baseband_packet_payload);
     if ((baseband_packet_payload->p_buffer[0] & 0x80) >> 5 == 4) {
-        printf("atsc3_alp_packet_parse: size: %d, 0x%02x 0x%02x 0x%02x 0x%02x 0x%02x 0x%02x 0x%02x\n",
+        __ALP_PARSER_DEBUG("atsc3_alp_packet_parse: size: %d, 0x%02x 0x%02x 0x%02x 0x%02x 0x%02x 0x%02x 0x%02x\n",
             starting_block_size,
             baseband_packet_payload->p_buffer[0],
             baseband_packet_payload->p_buffer[1],

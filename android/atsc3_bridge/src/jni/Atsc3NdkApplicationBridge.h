@@ -24,7 +24,9 @@ using namespace std;
 #define MODULE_NAME "Atsc3NdkApplicationBridge"
 
 #include "Atsc3LoggingUtils.h"
+#include "Atsc3AndroidPropertyUtils.h"
 #include "Atsc3JniEnv.h"
+
 
 // libatsc3 type imports here
 #include <atsc3_utils.h>
@@ -67,7 +69,7 @@ public:
 
     void atsc3_lls_sls_alc_on_route_mpd_patched_jni(uint16_t service_id) override;
 
-    void atsc3_onSlsTablePresent(const char *sls_payload_xml) override;
+    void atsc3_onSltTablePresent(const char *slt_payload_xml) override;
     void atsc3_onAeatTablePresent(const char* aeat_payload_xml) override;
     void atsc3_onSlsHeldEmissionPresent(uint16_t service_id, const char *held_payload) override;
 
@@ -86,7 +88,7 @@ private:
     jobject jni_instance_globalRef = nullptr;
     jclass jni_class_globalRef = nullptr;
 
-    std::thread mhRxThread;
+    libatsc3_android_system_properties_t libatsc3_android_system_properties = { 0 };
 
     //alc service monitoring
     //vector<int>                     atsc3_slt_alc_additional_services_monitored;
@@ -114,7 +116,7 @@ public:
 
     jmethodID mOnLogMsgId = nullptr;
 
-    jmethodID atsc3_onSlsTablePresent_ID = nullptr; //push LLS SLT table update
+    jmethodID atsc3_onSltTablePresent_ID = nullptr; //push LLS SLT table update
     jmethodID atsc3_onAeatTablePresent_ID = nullptr;
     jmethodID atsc3_onSlsHeldEmissionPresent_ID = nullptr;
 
@@ -136,13 +138,11 @@ public:
     jmethodID   jni_java_util_ArrayList_add = nullptr;
 
 
-    atsc3_phy_notify_plp_selection_change_f    atsc3_phy_notify_plp_selection_change;
-    void*                                      atsc3_phy_notify_plp_selection_change_context;
+    atsc3_phy_notify_plp_selection_change_f    atsc3_phy_notify_plp_selection_change = nullptr;;
+    void*                                      atsc3_phy_notify_plp_selection_change_context = nullptr;;
 
 protected:
     Atsc3JniEnv* bridgeConsumerJniEnv = nullptr;
-
-
 };
 
 #define _NDK_APPLICATION_BRIDGE_ERROR(...)   	__LIBATSC3_TIMESTAMP_ERROR(__VA_ARGS__);

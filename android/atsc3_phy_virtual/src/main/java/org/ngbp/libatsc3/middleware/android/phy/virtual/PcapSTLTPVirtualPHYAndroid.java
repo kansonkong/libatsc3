@@ -10,5 +10,6 @@ public class PcapSTLTPVirtualPHYAndroid extends Atsc3NdkVirtualPHYStaticJniLoade
     @Override public native int deinit();
 
     @Override public native int open_from_capture(String filename);
+    @Override public native int open_from_capture_fd(String filename, int fd, long length);
 
 }

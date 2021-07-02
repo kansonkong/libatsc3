@@ -1128,7 +1128,8 @@ block_t* lls_sls_monitor_output_buffer_copy_mmt_moof_from_flow_isobmff_box_no_pa
 	return isobmff_mmt_full_flow_block;
 }
 
-#ifdef __ATSC3_RECON_PIPE_FFPLAY__
+//jjustman-2021-03-01 - relax ifdef
+//#ifdef __ATSC3_RECON_PIPE_FFPLAY__
 
 void lls_slt_monitor_check_and_handle_pipe_ffplay_buffer_is_shutdown(lls_slt_monitor_t* lls_slt_monitor) {
 	if(lls_slt_monitor->lls_sls_alc_monitor) {
@@ -1155,7 +1156,8 @@ void lls_slt_monitor_check_and_handle_pipe_ffplay_buffer_is_shutdown(lls_slt_mon
 		}
 	}
 }
-#endif
+//jjustman-2021-03-01 - relax ifdef
+//#endif
 
 void lls_sls_monitor_output_buffer_alc_file_dump(lls_sls_monitor_output_buffer_t* lls_sls_monitor_output_buffer, const char* directory_path, uint32_t mpu_sequence_number_audio, uint32_t mpu_sequence_number_video) {
 

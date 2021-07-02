@@ -34,6 +34,8 @@ ATSC3_VECTOR_BUILDER_METHODS_ITEM_FREE(atsc3_signed_multi_table_lls_payload);
 ATSC3_VECTOR_BUILDER_METHODS_IMPLEMENTATION(lls_sls_alc_session_flows, lls_sls_alc_session);
 
 
+ATSC3_VECTOR_BUILDER_METHODS_IMPLEMENTATION(lls_sls_mmt_session, atsc3_mmt_sls_mpt_location_info);
+
 //lls_sls_alc_session_vector
 //TODO: jjustman-2019-10-03
 //lls_sls_mmt_monitor_new needs 	lls_slt_mmt_session->sls_relax_source_ip_check = 1;
@@ -141,7 +143,67 @@ void atsc3_lls_slt_service_free(atsc3_lls_slt_service_t** atsc3_lls_slt_service_
 ATSC3_VECTOR_BUILDER_METHODS_ITEM_FREE(lls_slt_service_id); //no pointers
 
 ATSC3_VECTOR_BUILDER_METHODS_ITEM_FREE(lls_sls_mmt_monitor); //custom impl not needed, atsc3_lls_slt_service_t* and lls_sls_mmt_session_t* are both transients
+
 ATSC3_VECTOR_BUILDER_METHODS_ITEM_FREE(lls_sls_mmt_session_flows);
+
+//jjustman-2021-04-16 - default impl for lls_sls_mmt_session_flows_free should be fine, and chain to lls_sls_mmt_session_free
+//
+//void lls_sls_mmt_session_flows_free(lls_sls_mmt_session_flows_t** lls_sls_mmt_session_flows_p) {
+//	if(lls_sls_mmt_session_flows_p) {
+//		lls_sls_mmt_session_flows_t* lls_sls_mmt_session_flows = *lls_sls_mmt_session_flows_p;
+//		if(lls_sls_mmt_session_flows) {
+//
+//			for(int i=0; i < lls_sls_mmt_session_flows->lls_sls_mmt_session_v.count; i++) {
+//				lls_sls_mmt_session_t* lls_sls_mmt_session = lls_sls_mmt_session_flows->lls_sls_mmt_session_v.data[i];
+//				lls_sls_mmt_session_free(&lls_sls_mmt_session);
+//			}
+//
+//			free(lls_sls_mmt_session_flows);
+//			lls_sls_mmt_session_flows = NULL;
+//		}
+//		*lls_sls_mmt_session_flows_p = NULL;
+//	}
+//}
+
+//jjustman-2021-04-16 - TODO: refactor out cross linkage for lls_sls_(alc|mmt) requirement when running linker
+void atsc3_mmt_mfu_context_free(atsc3_mmt_mfu_context_t** atsc3_mmt_mfu_context_p);
+
+
+
+void atsc3_mmt_sls_mpt_location_info_free(atsc3_mmt_sls_mpt_location_info_t** atsc3_mmt_sls_mpt_location_info_p) {
+	if(atsc3_mmt_sls_mpt_location_info_p) {
+		atsc3_mmt_sls_mpt_location_info_t* atsc3_mmt_sls_mpt_location_info = *atsc3_mmt_sls_mpt_location_info_p;
+		if(atsc3_mmt_sls_mpt_location_info) {
+			if(atsc3_mmt_sls_mpt_location_info->asset_id) {
+				freeclean((void**)&atsc3_mmt_sls_mpt_location_info->asset_id);
+			}
+			
+			free(atsc3_mmt_sls_mpt_location_info);
+			atsc3_mmt_sls_mpt_location_info = NULL;
+		}
+		*atsc3_mmt_sls_mpt_location_info_p = NULL;
+	}
+}
+
+void lls_sls_mmt_session_free(lls_sls_mmt_session_t** lls_sls_mmt_session_ptr) {
+	if(lls_sls_mmt_session_ptr) {
+		lls_sls_mmt_session_t* lls_sls_mmt_session = *lls_sls_mmt_session_ptr;
+		if(lls_sls_mmt_session) {
+			if(lls_sls_mmt_session->atsc3_mmt_mfu_context) {
+				atsc3_mmt_mfu_context_free(&lls_sls_mmt_session->atsc3_mmt_mfu_context);
+			}
+
+			lls_sls_mmt_session_free_atsc3_mmt_sls_mpt_location_info(lls_sls_mmt_session);
+			
+			free(lls_sls_mmt_session);
+			lls_sls_mmt_session = NULL;
+		}
+		*lls_sls_mmt_session_ptr = NULL;
+	}
+}
+
+
+
 
 //ATSC3_VECTOR_BUILDER_METHODS_ITEM_FREE(lls_sls_alc_monitor);
 void lls_sls_alc_monitor_free(lls_sls_alc_monitor_t** lls_sls_alc_monitor_p) {

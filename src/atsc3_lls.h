@@ -59,7 +59,11 @@ int build_onscreen_message_notification_table(lls_table_t* lls_table, xml_node_t
 
 #define _LLS_ERROR(...)   printf("%s:%d:ERROR:%.4f: ",__FILE__,__LINE__, gt());_LLS_PRINTLN(__VA_ARGS__);
 #define _LLS_WARN(...)    printf("%s:%d:WARN:%.4f: ",__FILE__,__LINE__, gt());_LLS_PRINTLN(__VA_ARGS__);
+
 #define _LLS_INFO(...)    if(_LLS_INFO_ENABLED) { printf("%s:%d:INFO:%.4f: ",__FILE__,__LINE__, gt());_LLS_PRINTLN(__VA_ARGS__); }
+
+#define _LLS_INFO_AEAT(...) printf("%s:%d:INFO_AEAT:%.4f: ",__FILE__,__LINE__, gt());_LLS_PRINTLN(__VA_ARGS__);
+
 #define _LLS_INFO_I(...)  if(_LLS_INFO_ENABLED) { printf(" "); _LLS_PRINTLN(__VA_ARGS__); }
 
 #define _LLS_DEBUG(...)   if(_LLS_DEBUG_ENABLED) { printf("%s:%d:DEBUG:%.4f: ",__FILE__,__LINE__, gt());_LLS_PRINTLN(__VA_ARGS__); }
