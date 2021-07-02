@@ -4,6 +4,18 @@
  *  Created on: Aug 10, 2020
  *      Author: jjustman
  */
+
+
+
+/** \defgroup Atsc3ApplicationBridge libatsc3 Application Bridge
+ *
+ *	libatsc3 c++ interface for subclasses to implement contract for both NDK and JNI interface layer
+ *
+ *  \sa Atsc3NdkApplicationBridge
+ *
+ *	@{
+ */
+
 #include <string>
 #include <vector>
 
@@ -13,6 +25,12 @@
 using namespace std;
 
 typedef void(*atsc3_phy_notify_plp_selection_change_f)(vector<uint8_t> plp, void* context);
+
+/**     \defgroup Atsc3NdkApplicationBridge libatsc3 NDK Bridge
+ *
+ *      c++ interface contract for NDK bridge methods
+ *      @{
+ */
 
 class IAtsc3NdkApplicationBridge {
 
@@ -34,7 +52,7 @@ class IAtsc3NdkApplicationBridge {
         virtual int atsc3_slt_alc_select_additional_service(int service_id) = 0;
         virtual int atsc3_slt_alc_clear_additional_service_selections() = 0;
 
-        virtual void atsc3_onSlsTablePresent(const char* sls_payload_xml) = 0;
+        virtual void atsc3_onSltTablePresent(const char* slt_payload_xml) = 0;
         virtual void atsc3_onSlsHeldEmissionPresent(uint16_t service_id, const char *held_payload) = 0;
 
         virtual void atsc3_lls_sls_alc_on_package_extract_completed_callback_jni(atsc3_route_package_extracted_envelope_metadata_and_payload_t* atsc3_route_package_extracted_envelope_metadata_and_payload_t) = 0;
@@ -62,3 +80,9 @@ class IAtsc3NdkApplicationBridge {
 
 
 #endif /* SRC_APPLICATION_IATSC3NDKAPPLICATIONBRIDGE_H_ */
+
+/**
+ *      }@
+ *
+ *  }@
+ */

@@ -34,18 +34,20 @@ extern "C" {
 #endif
 
 
-void ncurses_init(void);
 #ifndef __DISABLE_NCURSES__
-void* ncurses_input_run_thread(void *vargp);
-#endif
+void ncurses_init(void);
 
+void* ncurses_input_run_thread(void *vargp);
 extern pthread_mutex_t ncurses_writer_lock;
 void ncurses_mutext_init(void);
+void create_or_update_window_sizes(bool should_reload_term_size);
+
+#endif
+
 
 void ncurses_writer_lock_mutex_acquire(void);
 void ncurses_writer_lock_mutex_release(void);
 void ncurses_writer_lock_mutex_destroy(void);
-void create_or_update_window_sizes(bool should_reload_term_size);
 void handle_winch(int sig);
 void handle_sighup(int sig);
 

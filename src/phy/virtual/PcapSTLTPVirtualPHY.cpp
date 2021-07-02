@@ -81,6 +81,16 @@ int PcapSTLTPVirtualPHY::atsc3_pcap_replay_open_file(const char *filename) {
     return 0;
 }
 
+int PcapSTLTPVirtualPHY::atsc3_pcap_replay_open_file(const char *filename, int fd, long length) {
+
+    atsc3_pcap_replay_context = atsc3_pcap_replay_open_from_fd(filename, fd, 0, length);
+    _PCAP_STLTP_VIRTUAL_PHY_INFO("PcapSTLTPVirtualPHY::atsc3_pcap_replay_open_file: file: %s, replay context: %p", filename, atsc3_pcap_replay_context);
+    if(!atsc3_pcap_replay_context) {
+        return -1;
+    }
+    return 0;
+}
+
 
 //jjustman-2020-08-10: todo - mutex guard this
 int PcapSTLTPVirtualPHY::atsc3_pcap_thread_run() {

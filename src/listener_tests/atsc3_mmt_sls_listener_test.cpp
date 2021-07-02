@@ -101,14 +101,22 @@ void process_packet(u_char *user, const struct pcap_pkthdr *pkthdr, const u_char
         return udp_packet_free(&udp_packet);
     }
 
-    lls_sls_mmt_session_t* matching_lls_slt_mmt_session = lls_slt_mmt_session_find_from_udp_packet(lls_slt_monitor, udp_packet->udp_flow.src_ip_addr, udp_packet->udp_flow.dst_ip_addr, udp_packet->udp_flow.dst_port);
+    lls_sls_mmt_session_t* matching_lls_slt_mmt_session = lls_sls_mmt_session_find_from_udp_packet(lls_slt_monitor, udp_packet->udp_flow.src_ip_addr, udp_packet->udp_flow.dst_ip_addr, udp_packet->udp_flow.dst_port);
     if(matching_lls_slt_mmt_session) {
 
+		int8_t mmtp_si_parsed_message_count = 0;
     	mmtp_packet_header_t* mmtp_packet_header = mmtp_parse_header_from_udp_packet(udp_packet);
         if(mmtp_packet_header && mmtp_packet_header->mmtp_payload_type == 0x02) {
 
         	mmtp_signalling_packet_t* mmtp_signalling_packet = mmtp_signalling_packet_parse_and_free_packet_header_from_block_t(&mmtp_packet_header, udp_packet->data);
-        	mmtp_process_sls_from_payload(udp_packet, mmtp_signalling_packet, matching_lls_slt_mmt_session);
+			if(mmtp_signalling_packet->si_fragmentation_indicator == 0x0) {
+
+				mmtp_si_parsed_message_count = mmt_signalling_message_parse_packet(mmtp_signalling_packet, udp_packet->data);
+				__INFO("mmt_signalling_message_parse_packet: mmtp_si_parsed_message_count is: %d", mmtp_si_parsed_message_count);
+				mmtp_process_sls_from_payload(udp_packet, mmtp_signalling_packet, matching_lls_slt_mmt_session);
+			} else {
+				__INFO("mmt_signalling_message_parse_packet: TODO: inline mmtp_si fragment reassembly for si_fragmentation_indicator: %d", mmtp_signalling_packet->si_fragmentation_indicator );			
+			}
         }
 
         return udp_packet_free(&udp_packet);
@@ -168,6 +176,7 @@ int main(int argc,char **argv) {
 
 	_MMT_SIGNALLING_MESSAGE_DEBUG_ENABLED = 1;
 	_MMT_SIGNALLING_MESSAGE_TRACE_ENABLED = 1;
+	
 
     char *dev;
 
@@ -228,8 +237,8 @@ int main(int argc,char **argv) {
     	println("---");
     	println("args: dev (dst_ip) (dst_port) (packet_id)");
     	println(" dev: device to listen for udp multicast, default listen to 0.0.0.0:0");
-    	println(" (dst_ip): optional, filter to specific ip address");
-    	println(" (dst_port): optional, filter to specific port");
+    	println(" (dst_ip): optional, filter to specific ip address, or * for wildcard");
+    	println(" (dst_port): optional, filter to specific port, or * for wildcard");
 
     	println("");
     	exit(1);

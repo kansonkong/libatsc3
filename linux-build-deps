@@ -1,0 +1,1 @@
+sudo apt-get install libpcap-dev zlib1g-dev ncurses-dev libmicrohttpd-dev cmake make gcc g++ libpcre2-dev gpac valgrind libssl-dev tclsh -y

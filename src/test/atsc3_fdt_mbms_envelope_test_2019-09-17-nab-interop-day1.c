@@ -65,7 +65,15 @@ int parse_fdt(const char* filename) {
 		atsc3_fdt_instance_dump(atsc3_fdt_instance);
 		//pretend we got our 0/toi here..
 
-		uint32_t* mbms_toi = atsc3_mbms_envelope_find_toi_from_fdt(atsc3_fdt_instance);
+		
+		atsc3_fdt_file_t* atsc3_fdt_file = atsc3_mbms_envelope_find_multipart_fdt_file_from_fdt_instance(atsc3_fdt_instance);
+		
+		if(!atsc3_fdt_file) {
+			_ATSC3_FDT_TEST_UTILS_ERROR("atsc3_mbms_envelope_find_multipart_fdt_file_from_fdt_instance: returned NULL for atsc3_fdt_file!");
+			return -2;
+		}
+
+		uint32_t mbms_toi = atsc3_fdt_file->toi;
 
 		if(!mbms_toi) {
 			_ATSC3_FDT_TEST_UTILS_ERROR("Unable to find MBMS TOI for %s", filename);
@@ -73,7 +81,7 @@ int parse_fdt(const char* filename) {
 		}
 
 		char* mbms_toi_filename = calloc(65, sizeof(char*));
-		snprintf(mbms_toi_filename, 64, "%s/0-%d", __TEST_SPECIMEN_PATH__, *mbms_toi);
+		snprintf(mbms_toi_filename, 64, "%s/0-%d", __TEST_SPECIMEN_PATH__, mbms_toi);
 
 		FILE *fp_mbms = fopen(mbms_toi_filename, "r");
 

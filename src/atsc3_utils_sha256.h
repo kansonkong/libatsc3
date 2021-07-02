@@ -5,6 +5,8 @@
  *      Author: jjustman
  *
  *      borrowed from: https://raw.githubusercontent.com/B-Con/crypto-algorithms/master/sha256.h
+ *
+ *		2021-03-01: prefixed with atsc3_ to prevent typedef and method collisions with openssl linkage for CMS verification
  */
 
 
@@ -18,9 +20,6 @@
 * Disclaimer: This code is presented "as is" without any guarantees.
 * Details:    Defines the API for the corresponding SHA1 implementation.
 *********************************************************************/
-
-#ifndef SHA256_H
-#define SHA256_H
 
 /*************************** HEADER FILES ***************************/
 #include <stddef.h>
@@ -42,13 +41,11 @@ typedef struct {
 	WORD datalen;
 	unsigned long long bitlen;
 	WORD state[8];
-} SHA256_CTX;
+} atsc3_SHA256_CTX;
 
 /*********************** FUNCTION DECLARATIONS **********************/
-void sha256_init(SHA256_CTX *ctx);
-void sha256_update(SHA256_CTX *ctx, const BYTE data[], size_t len);
-void sha256_final(SHA256_CTX *ctx, BYTE hash[]);
-
-#endif   // SHA256_H
+void atsc3_sha256_init(atsc3_SHA256_CTX *ctx);
+void atsc3_sha256_update(atsc3_SHA256_CTX *ctx, const BYTE data[], size_t len);
+void atsc3_sha256_final(atsc3_SHA256_CTX *ctx, BYTE hash[]);
 
 #endif /* ATSC3_UTILS_SHA256_H_ */

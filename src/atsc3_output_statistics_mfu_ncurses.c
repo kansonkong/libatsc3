@@ -25,8 +25,8 @@ extern void trace (const unsigned int);
 
 #define BRIGHT_WHITE  15
 
-void ncurses_init() {
 #ifndef __DISABLE_NCURSES__
+void ncurses_init() {
 
 	ncurses_mutext_init();
 	def_prog_mode();
@@ -61,22 +61,22 @@ void ncurses_init() {
 	create_or_update_window_sizes(false);
 	//clearok(curscr, false);
 	//scrollok(curscr, false);
-#endif
 }
+#endif
 
 int play_mode = 0;
 uint32_t my_service_id = 0;
 uint32_t my_route_tsi = 0;
 uint32_t my_route_toi_init_fragment = 0;
 
-void mtl_clear() {
 #ifndef __DISABLE_NCURSES__
+void mtl_clear() {
 
 	wmove(my_window, 0, 1);
 	wclrtoeol(my_window);
 	wmove(my_window, 0, 1);
-#endif
 }
+#endif
 
 #ifndef __DISABLE_NCURSES__
 void* ncurses_input_run_thread(void* lls_slt_monitor_ptr) {
@@ -183,8 +183,8 @@ void* ncurses_input_run_thread(void* lls_slt_monitor_ptr) {
                         //build our atsc3_alc_session map
                         
                         lls_sls_mmt_monitor = lls_sls_mmt_monitor_create();
-                        lls_sls_mmt_monitor->lls_mmt_session = lls_sls_mmt_session;
-                        lls_sls_mmt_monitor->atsc3_lls_slt_service = lls_sls_mmt_session->atsc3_lls_slt_service;
+                        lls_sls_mmt_monitor->transients.lls_mmt_session = lls_sls_mmt_session;
+                        lls_sls_mmt_monitor->transients.atsc3_lls_slt_service = lls_sls_mmt_session->atsc3_lls_slt_service;
 
 //                        lls_sls_mmt_monitor->video_packet_id = lls_sls_mmt_session->video_packet_id;
 //                        lls_sls_mmt_monitor->audio_packet_id = lls_sls_mmt_session->audio_packet_id;
@@ -305,12 +305,15 @@ endwin:
 #endif
 
 
+#ifndef __DISABLE_NCURSES__
 void ncurses_mutext_init() {
 	if (pthread_mutex_init(&ncurses_writer_lock, NULL) != 0) {
 		printf("ncurses_mutex_init failed");
 		abort();
 	}
 }
+#endif
+
 void ncurses_writer_lock_mutex_acquire() {
     pthread_mutex_lock(&ncurses_writer_lock);
 }
@@ -323,8 +326,8 @@ void ncurses_writer_lock_mutex_destroy() {
 
 WINDOW* signaling_global_stats_window_outline;
 
-void create_or_update_window_sizes(bool should_reload_term_size) {
 #ifndef __DISABLE_NCURSES__
+void create_or_update_window_sizes(bool should_reload_term_size) {
 
 	int rows, cols;
 
@@ -438,8 +441,8 @@ void create_or_update_window_sizes(bool should_reload_term_size) {
 	immedok(bottom_window_outline, false);
 	//doupdate();
 
-#endif
 }
+#endif
 
 void handle_winch(int sig)
 {

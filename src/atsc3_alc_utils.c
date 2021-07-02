@@ -123,6 +123,18 @@ char* alc_packet_dump_to_object_get_filename_tsi_toi(udp_flow_t* udp_flow, uint3
     return temporary_file_name;
 }
 
+char* alc_packet_dump_to_object_get_filename_tsi_toi_unsigned(udp_flow_t* udp_flow, uint32_t tsi, uint32_t toi) {
+    char* temporary_file_name = (char *)calloc(255, sizeof(char));
+    snprintf(temporary_file_name, 255, "%s%u.%u.%u.%u.%u.%u-%u.unsigned",
+             __ALC_DUMP_OUTPUT_PATH__,
+             __toipandportnonstruct(udp_flow->dst_ip_addr, udp_flow->dst_port),
+             tsi,
+             toi);
+    
+    return temporary_file_name;
+}
+
+
 
 /**
  * todo:
@@ -745,8 +757,12 @@ int atsc3_alc_packet_persist_to_toi_resource_process_sls_mbms_and_emit_callback(
         	// i.e. lls_sls_alc_monitor->atsc3_sls_metadata_fragments is null
 
         	if(!lls_sls_alc_monitor->atsc3_sls_metadata_fragments) {
-                __ALC_UTILS_ERROR("lls_sls_alc_monitor->atsc3_sls_metadata_fragments is NULL, tsi: %u, toi: %u, bailing on object recovery complete!",
-                        alc_packet->def_lct_hdr->tsi, alc_packet->def_lct_hdr->toi);
+        	    lls_sls_alc_monitor->atsc3_sls_metadata_fragments_missing_carousel_count++;
+        	    if(lls_sls_alc_monitor->atsc3_sls_metadata_fragments_missing_carousel_count < 100 || (lls_sls_alc_monitor->atsc3_sls_metadata_fragments_missing_carousel_count % 1000) == 0) {
+                    __ALC_UTILS_WARN("lls_sls_alc_monitor->atsc3_sls_metadata_fragments is NULL, tsi: %u, toi: %u, bailing on object recovery complete, count: %"PRIu64"!",
+                        alc_packet->def_lct_hdr->tsi, alc_packet->def_lct_hdr->toi, lls_sls_alc_monitor->atsc3_sls_metadata_fragments_missing_carousel_count);
+        	    }
+
                 bytesWritten = ATSC3_ALC_UTILS_SLS_METADATA_FRAGMENTS_NOT_RECEIVED_YET;
                 goto cleanup;
             }
@@ -790,7 +806,7 @@ int atsc3_alc_packet_persist_to_toi_resource_process_sls_mbms_and_emit_callback(
 				 */
 				if(atsc3_fdt_file_matching && atsc3_fdt_file_content_encoding_is_gzip(atsc3_fdt_file_matching)) {
 					
-					//if we have a "sane" content length, then gzip decompress
+					//if we don't have a "sane" content length, persist to disk, otherwise gzip decompress
 					if(atsc3_fdt_file_matching->content_length > 64000000) {
 						
 						int persisted_cache_file_name_gz_len = strlen(persisted_cache_file_name) + 4;
@@ -819,6 +835,18 @@ int atsc3_alc_packet_persist_to_toi_resource_process_sls_mbms_and_emit_callback(
 							atsc3_fdt_file_matching->content_length);
 							
 							block_t* atsc3_fdt_file_gzip_contents = block_Read_from_filename(temporary_recovery_filename);
+							if(!atsc3_fdt_file_gzip_contents) {
+								__ALC_UTILS_WARN("atsc3_alc_packet_persist_to_toi_resource_process_sls_mbms_and_emit_callback: block_Read_from_filename: %p, unable to read file: %s, content_location: %s, content_encoding: %s, is_gzip: true, content_length is: %d",
+								atsc3_fdt_file_matching,
+								temporary_recovery_filename,
+								atsc3_fdt_file_matching->content_location,
+								atsc3_fdt_file_matching->content_encoding,
+								atsc3_fdt_file_matching->content_length);
+								bytesWritten = ATSC3_ALC_UTILS_FAILED_GZIP_EXTRACTION;
+								goto cleanup;
+
+							}
+							
                             unlink(temporary_recovery_filename);
 
                             block_Rewind(atsc3_fdt_file_gzip_contents);
