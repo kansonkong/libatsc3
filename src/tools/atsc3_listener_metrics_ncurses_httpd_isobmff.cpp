@@ -233,9 +233,9 @@ void* global_autoplay_run_thread(void*p) {
         lls_sls_mmt_session_t* lls_sls_mmt_session = lls_slt_mmt_session_find_from_service_id(lls_slt_monitor, my_service_id);
         if(lls_sls_mmt_session) {
             lls_sls_mmt_monitor = lls_sls_mmt_monitor_create();
-            lls_sls_mmt_monitor->lls_mmt_session = lls_sls_mmt_session;
+            lls_sls_mmt_monitor->transients.lls_mmt_session = lls_sls_mmt_session;
             //TODO - jjustman-2019-10-03 - fix this hack
-            lls_sls_mmt_monitor->atsc3_lls_slt_service = lls_sls_mmt_session->atsc3_lls_slt_service;
+            lls_sls_mmt_monitor->transients.atsc3_lls_slt_service = lls_sls_mmt_session->atsc3_lls_slt_service;
             
 //            lls_sls_mmt_monitor->video_packet_id = lls_sls_mmt_session->video_packet_id;
 //            lls_sls_mmt_monitor->audio_packet_id = lls_sls_mmt_session->audio_packet_id;
@@ -558,7 +558,7 @@ void process_packet(u_char *user, const struct pcap_pkthdr *pkthdr, const u_char
 	}
 
 	//find our matching MMT flow and push it to reconsitution
-    lls_sls_mmt_session_t* matching_lls_sls_mmt_session = lls_slt_mmt_session_find_from_udp_packet(lls_slt_monitor, udp_packet->udp_flow.src_ip_addr, udp_packet->udp_flow.dst_ip_addr, udp_packet->udp_flow.dst_port);
+    lls_sls_mmt_session_t* matching_lls_sls_mmt_session = lls_sls_mmt_session_find_from_udp_packet(lls_slt_monitor, udp_packet->udp_flow.src_ip_addr, udp_packet->udp_flow.dst_ip_addr, udp_packet->udp_flow.dst_port);
     if(matching_lls_sls_mmt_session) {
         __TRACE("data len: %d", udp_packet->data_length);
         update_global_mmtp_statistics_from_udp_packet_t(matching_lls_sls_mmt_session, udp_packet);

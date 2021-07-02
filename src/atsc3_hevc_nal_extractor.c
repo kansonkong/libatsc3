@@ -5530,11 +5530,11 @@ uint64_t error[AV_NUM_DATA_POINTERS];
     int nb_side_data;
 
 /**
- * @defgroup lavu_frame_flags AV_FRAME_FLAGS
- * @ingroup lavu_frame
+ * @xxxdefgroup lavu_frame_flags AV_FRAME_FLAGS
+ * @xxxingroup lavu_frame
  * Flags describing additional frame properties.
  *
- * @{
+ * @xxx{
  */
 
 /**
@@ -5546,7 +5546,7 @@ uint64_t error[AV_NUM_DATA_POINTERS];
  */
 #define AV_FRAME_FLAG_DISCARD   (1 << 2)
 /**
- * @}
+ * @xxx}
  */
 
 /**
@@ -13439,6 +13439,8 @@ void ff_hevc_ps_uninit(HEVCParamSets *ps) {
     ps->vps = NULL;
 }
 
+/* jjustman-2021-06-02 - TODO: support multiple vps/sps/pps? */
+
 block_t *atsc3_hevc_extract_extradata_nals_combined_ffmpegImpl(block_t *hvcc_box) {
     block_t *nals_combined = NULL;
 
@@ -13471,10 +13473,10 @@ block_t *atsc3_hevc_extract_extradata_nals_combined_ffmpegImpl(block_t *hvcc_box
 
     ret = ff_hevc_decode_extradata(block_Get(hvcc_box), block_Len(hvcc_box), &ps, &sei, &is_nalff, &nal_length_size, 0, 1, avctx);
     if (ret < 0) {
+        _ATSC3_HEVC_NAL_EXTRACTOR_ERROR("atsc3_hevc_extract_extradata_nals_combined_ffmpegImpl: ff_hevc_decode_extradata, ret is: %d", ret);
+
         goto error;
-
     }
-
 
     for (i = 0; i < HEVC_MAX_VPS_COUNT; i++) {
         if (ps.vps_list[i]) {
@@ -13490,13 +13492,22 @@ block_t *atsc3_hevc_extract_extradata_nals_combined_ffmpegImpl(block_t *hvcc_box
         }
     }
 
+    //try to find our sps based upon pps reference, otherwise iterate over sps list
+    //jjustman-2021-06-02 - revisit this NAL extraction logic
     if (pps) {
         if (ps.sps_list[pps->sps_id]) {
             sps = (const HEVCSPS *) ps.sps_list[pps->sps_id]->data;
         }
+    } else {
+        for(i = 0; i < HEVC_MAX_SPS_COUNT; i++) {
+            if(ps.sps_list[i]) {
+                sps = (const HEVCSPS *) ps.sps_list[i]->data;
+                break;
+            }
+        }
     }
 
-    if (vps && pps && sps) {
+    if (vps && sps && pps) {
         uint8_t *data;
         int data_size;
 
@@ -13514,10 +13525,30 @@ block_t *atsc3_hevc_extract_extradata_nals_combined_ffmpegImpl(block_t *hvcc_box
         block_Write(nals_combined, pps_data, pps_data_size);
         block_Rewind(nals_combined);
 
-        _ATSC3_HEVC_NAL_EXTRACTOR_INFO("avctx: width: %d, height: %d", avctx->width, avctx->height);
+        _ATSC3_HEVC_NAL_EXTRACTOR_INFO("atsc3_hevc_extract_extradata_nals_combined_ffmpegImpl: avctx: width: %d, height: %d", avctx->width, avctx->height);
 
     } else {
-        _ATSC3_HEVC_NAL_EXTRACTOR_ERROR("Could not extract VPS/PPS/SPS from extradata");
+        //jjustman-2021-06-02 - try and parse as much of our vps and sps (pps optional)?
+        if(vps && sps) {
+            _ATSC3_HEVC_NAL_EXTRACTOR_INFO("atsc3_hevc_extract_extradata_nals_combined_ffmpegImpl: have VPS: %p, SPS: %p, but missing PPS", vps, sps);
+
+            uint8_t *data;
+            int data_size;
+
+            if ((ret = h2645_ps_to_nalu(vps->data, vps->data_size, &vps_data, &vps_data_size)) < 0 ||
+                (ret = h2645_ps_to_nalu(sps->data, sps->data_size, &sps_data, &sps_data_size)) < 0) {
+                goto done;
+            }
+
+            data_size = vps_data_size + sps_data_size;
+            nals_combined = block_Alloc(data_size);
+
+            block_Write(nals_combined, vps_data, vps_data_size);
+            block_Write(nals_combined, sps_data, sps_data_size);
+            block_Rewind(nals_combined);
+        } else {
+            _ATSC3_HEVC_NAL_EXTRACTOR_ERROR("atsc3_hevc_extract_extradata_nals_combined_ffmpegImpl: Could not extract VPS/PPS/SPS from extradata, vps: %p, pps: %p, sps: %p", vps, pps, sps);
+        }
     }
 //will return NULL on error
     error:

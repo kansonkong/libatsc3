@@ -120,6 +120,9 @@ atsc3_mmt_mfu_mpu_timestamp_descriptor_t* atsc3_get_mpu_timestamp_from_packet_id
 
         compute_ntp32_to_seconds_microseconds(mmtp_timestamp_differential_ntp32, &mmtp_timestamp_differential_s, &mmtp_timestamp_differential_us);
         if(mmtp_timestamp_differential_s > 60) {
+
+#ifdef __ATSC3_MMT_CONTEXT_MFU_DEPACKETIZER_ERROR_ON_MMTP_TIMESTAMP_DIFFERENTAL_GREATER_THAN_60S__
+
             __MMT_CONTEXT_MPU_ERROR("atsc3_get_mpu_timestamp_from_packet_id_mpu_sequence_number_with_mmtp_timestamp_recovery_differential: computed differental of %d.%06d is too large, bailing!"
                                     "matching packet_id: %d, mpu_sequence_number: %u, using: atsc3_mmt_mfu_mpu_timestamp_descriptor_max: mmtp_timestamp: %u, mpu_sequence_number: %u, mpu_presentation_time_as_us_value: %" PRIu64 " from_recovery: %d, our current mmtp_timestamp: %u",
                                     mmtp_timestamp_differential_s,
@@ -132,6 +135,20 @@ atsc3_mmt_mfu_mpu_timestamp_descriptor_t* atsc3_get_mpu_timestamp_from_packet_id
                                     atsc3_mmt_mfu_mpu_timestamp_descriptor_max->mpu_presentation_time_computed_from_recovery_mmtp_timestamp_flag,
                                     mmtp_timestamp);
             return NULL;
+#else
+
+            __MMT_CONTEXT_MPU_WARN("atsc3_get_mpu_timestamp_from_packet_id_mpu_sequence_number_with_mmtp_timestamp_recovery_differential: computed differental of %d.%06d is too large, bailing!"
+                                   "matching packet_id: %d, mpu_sequence_number: %u, using: atsc3_mmt_mfu_mpu_timestamp_descriptor_max: mmtp_timestamp: %u, mpu_sequence_number: %u, mpu_presentation_time_as_us_value: %" PRIu64 " from_recovery: %d, our current mmtp_timestamp: %u",
+                                   mmtp_timestamp_differential_s,
+                                   mmtp_timestamp_differential_us,
+                                   packet_id,
+                                   mpu_sequence_number,
+                                   atsc3_mmt_mfu_mpu_timestamp_descriptor_max->mmtp_timestamp,
+                                   atsc3_mmt_mfu_mpu_timestamp_descriptor_max->mpu_sequence_number,
+                                   atsc3_mmt_mfu_mpu_timestamp_descriptor_max->mpu_presentation_time_as_us_value,
+                                   atsc3_mmt_mfu_mpu_timestamp_descriptor_max->mpu_presentation_time_computed_from_recovery_mmtp_timestamp_flag,
+                                   mmtp_timestamp);
+#endif
         }
 
         //See https://tools.ietf.org/html/rfc5905#section-6, ntp64 has 32bit seconds and 32bit fractional which resolves to 232 picoseconds. (1,000,000uS in a pS) and
@@ -271,6 +288,11 @@ void atsc3_mmt_mfu_context_free(atsc3_mmt_mfu_context_t** atsc3_mmt_mfu_context_
                 free(atsc3_mmt_mfu_context->mp_table_last);
                 atsc3_mmt_mfu_context->mp_table_last = NULL;
             }
+			
+			if(atsc3_mmt_mfu_context->mmt_atsc3_route_component_monitored) {
+				atsc3_mmt_mfu_context->mmt_atsc3_route_component_monitored->__is_pinned_to_context = false;
+				mmt_atsc3_route_component_free(&atsc3_mmt_mfu_context->mmt_atsc3_route_component_monitored);
+			}
 
             free(atsc3_mmt_mfu_context);
             atsc3_mmt_mfu_context = NULL;
@@ -284,8 +306,10 @@ mmtp_asset_t* atsc3_mmt_mfu_context_mfu_depacketizer_context_update_find_or_crea
     mmtp_asset_t* mmtp_asset = NULL;
 
     //jjustman-2020-12-24 - we need to clone this instance, as udp_packet is transient and udp_flow is an instance field in the struct, not a ptr
-    atsc3_mmt_mfu_context->udp_flow = atsc3_udp_flow_clone_from_udp_packet(udp_packet);
-
+	if(!atsc3_mmt_mfu_context->udp_flow) {
+		atsc3_mmt_mfu_context->udp_flow = atsc3_udp_flow_clone_from_udp_packet(udp_packet);
+	}
+	
     atsc3_mmt_mfu_context->transients.lls_slt_monitor = lls_slt_monitor;
     atsc3_mmt_mfu_context->matching_lls_sls_mmt_session = matching_lls_sls_mmt_session;
 
@@ -652,12 +676,12 @@ void mmtp_mfu_rebuild_from_packet_id_mpu_sequence_number(atsc3_mmt_mfu_context_t
 //                                        mmtp_mpu_packet_to_rebuild->mpu_fragmentation_indicator);
 
                 block_Rewind(mmtp_mpu_packet_to_rebuild->du_mfu_block);
-                block_t* du_mfu_block_duplicated_for_context_callback_invocation = block_Duplicate(mmtp_mpu_packet_to_rebuild->du_mfu_block);
+                block_t* du_mfu_block_duplicated_for_context_callback_invocation = mmtp_mpu_packet_to_rebuild->du_mfu_block;//block_Duplicate(mmtp_mpu_packet_to_rebuild->du_mfu_block);
                 if(atsc3_mmt_mfu_context->atsc3_mmt_mpu_mfu_on_sample_complete) {
                     atsc3_mmt_mfu_context->atsc3_mmt_mpu_mfu_on_sample_complete(atsc3_mmt_mfu_context, mmtp_mpu_packet_to_rebuild->mmtp_packet_id, mmtp_mpu_packet_to_rebuild->mmtp_timestamp, mmtp_mpu_packet_to_rebuild->mpu_sequence_number, mmtp_mpu_packet_to_rebuild->sample_number, du_mfu_block_duplicated_for_context_callback_invocation, 1);
                 }
                 mmtp_mpu_packet_to_rebuild->mfu_reassembly_performed = true;
-                block_Destroy(&du_mfu_block_duplicated_for_context_callback_invocation);
+                //block_Destroy(&du_mfu_block_duplicated_for_context_callback_invocation);
 
                 continue;
             }
@@ -893,6 +917,14 @@ void mmtp_mfu_rebuild_from_packet_id_mpu_sequence_number(atsc3_mmt_mfu_context_t
                     //jjustman-2020-10-13 - fix: was calling atsc3_mmt_mpu_on_sequence_mpu_metadata_present, but
                     // we are rebuilding the movie_fragment metadata, thus we should be invoking atsc3_mmt_mpu_on_sequence_movie_fragment_metadata_present
                     if(atsc3_mmt_mfu_context->atsc3_mmt_mpu_on_sequence_movie_fragment_metadata_present) {
+                        __MMT_CONTEXT_MPU_DEBUG( "mmtp_mfu_rebuild_from_packet_id_mpu_sequence_number: invoking atsc3_mmt_mpu_on_sequence_movie_fragment_metadata_present: %p, i: %u, psn: %u, with %u:%u and packet_id: %u, mpu_sequence_number: %u, fragment_indicator: %u",
+                                                 atsc3_mmt_mfu_context->atsc3_mmt_mpu_on_sequence_movie_fragment_metadata_present,
+                                                 i, mmtp_mpu_init_packet_to_rebuild->packet_sequence_number,
+                                                 atsc3_mmt_mfu_context->udp_flow->dst_ip_addr,
+                                                 atsc3_mmt_mfu_context->udp_flow->dst_port,
+                                                 mmtp_mpu_init_packet_to_rebuild->mmtp_packet_id,
+                                                 mmtp_mpu_init_packet_to_rebuild->mpu_sequence_number,
+                                                 mmtp_mpu_init_packet_to_rebuild->mpu_fragmentation_indicator);
                         atsc3_mmt_mfu_context->atsc3_mmt_mpu_on_sequence_movie_fragment_metadata_present(atsc3_mmt_mfu_context, mmtp_mpu_init_packet_to_rebuild->mmtp_packet_id, mmtp_mpu_init_packet_to_rebuild->mpu_sequence_number, du_movie_fragment_block_rebuilt);
                     }
                     block_Destroy(&du_movie_fragment_block_rebuilt);
@@ -1024,8 +1056,7 @@ void mmt_signalling_message_dispatch_context_notification_callbacks(udp_packet_t
 					__MMSM_DEBUG("atsc3_mmt_context_mfu_depacketizer: MPT message: checking packet_id: %u, asset_type: %s, default: %u, identifier: %s", mp_table_asset_row->mmt_general_location_info.packet_id, mp_table_asset_row->asset_type, mp_table_asset_row->default_asset_flag, mp_table_asset_row->identifier_mapping.asset_id.asset_id ? (const char*)mp_table_asset_row->identifier_mapping.asset_id.asset_id : "");
 
 					//mp_table_asset_row->asset_type == HEVC or H264
-					if(strncasecmp(ATSC3_MP_TABLE_ASSET_ROW_HEVC_ID, mp_table_asset_row->asset_type, 4) == 0 ||
-					    strncasecmp(ATSC3_MP_TABLE_ASSET_ROW_H264_ID, mp_table_asset_row->asset_type, 4) == 0) {
+					if(ATSC3_MP_TABLE_IS_VIDEO_ASSET_TYPE_ANY(mp_table_asset_row->asset_type)) {
 
 					    if(atsc3_mmt_mfu_context->atsc3_mmt_signalling_information_on_video_essence_packet_id) {
                             atsc3_mmt_mfu_context->atsc3_mmt_signalling_information_on_video_essence_packet_id(atsc3_mmt_mfu_context, mp_table_asset_row->mmt_general_location_info.packet_id, mp_table_asset_row);

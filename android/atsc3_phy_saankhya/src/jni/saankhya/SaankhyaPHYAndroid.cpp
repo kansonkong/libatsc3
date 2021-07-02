@@ -2,9 +2,6 @@
 // Created by Jason Justman on 8/19/20.
 //
 
-//jjustman-2020-10-30 - workaround for SL_TUNER deinit not decrementing ref count
-#define __SL_TUNER_DEINIT_DISABLED__ true
-
 /*  MarkONE "workarounds" for /dev handle permissions
 
 ADB_IP_ADDRESS="192.168.4.57:5555"
@@ -31,6 +28,11 @@ done
 
  */
 
+//jjustman-2021-06-07 - uncomment to enable 100ms sleep between tuner status thread i2c polling commands
+#define _JJ_I2C_TUNER_STATUS_THREAD_SLEEP_MS_ENABLED_
+#define _JJ_TUNER_STATUS_THREAD_PRINT_PERF_DIAGNOSTICS_ENABLED_
+
+
 #include "SaankhyaPHYAndroid.h"
 SaankhyaPHYAndroid* saankhyaPHYAndroid = nullptr;
 
@@ -39,6 +41,9 @@ mutex SaankhyaPHYAndroid::CircularBufferMutex;
 
 mutex SaankhyaPHYAndroid::CS_global_mutex;
 atomic_bool SaankhyaPHYAndroid::cb_should_discard;
+
+int _SAANKHYA_PHY_ANDROID_DEBUG_ENABLED = 1;
+int _SAANKHYA_PHY_ANDROID_TRACE_ENABLED = 0;
 
 //jjustman-2021-02-04 - global error flag if i2c txn fails, usually due to demod crash
 //      TODO: reset SL demod and re-initalize automatically if this error is SL_ERR_CMD_IF_FAILURE
@@ -58,7 +63,6 @@ SaankhyaPHYAndroid::SaankhyaPHYAndroid(JNIEnv* env, jobject jni_instance) {
 
     _SAANKHYA_PHY_ANDROID_INFO("SaankhyaPHYAndroid::SaankhyaPHYAndroid - created with this: %p", this);
     SaankhyaPHYAndroid::cb_should_discard = false;
-    SL_I2C_last_command_extra_sleep = false;
 }
 
 SaankhyaPHYAndroid::~SaankhyaPHYAndroid() {
@@ -150,7 +154,7 @@ void SaankhyaPHYAndroid::resetProcessThreadStatistics() {
 
 int SaankhyaPHYAndroid::init()
 {
-    SaankhyaPHYAndroid::configPlatformParams();
+    statusMetricsResetFromTuneChange();
     return 0;
 }
 
@@ -225,32 +229,35 @@ int SaankhyaPHYAndroid::stop()
     }
     _SAANKHYA_PHY_ANDROID_DEBUG("SaankhyaPHYAndroid::stop: after join for processThreadHandle");
 
+    //SL_I2c doesnt use refcounts
     _SAANKHYA_PHY_ANDROID_DEBUG("SaankhyaPHYAndroid::stop: before SL_I2cUnInit");
-
     sl_res_uninit = SL_I2cUnInit();
-
     _SAANKHYA_PHY_ANDROID_DEBUG("SaankhyaPHYAndroid::stop: after SL_I2cUnInit, sl_res_uninit is: %d", sl_res_uninit);
 
     //jjustman-2020-10-30 - decrement our sl instance count
     sl_result = SL_DemodUnInit(slUnit);
     _SAANKHYA_PHY_ANDROID_DEBUG("SaankhyaPHYAndroid::stop: after SL_DemodUnInit, slUnit now: %d, sl_result: %d", slUnit, sl_result);
-    slUnit = -1;
+    sl_result = SL_DemodDeleteInstance(slUnit);
+    _SAANKHYA_PHY_ANDROID_DEBUG("SaankhyaPHYAndroid::stop: after SL_DemodDeleteInstance, slUnit now: %d, sl_result: %d", slUnit, sl_result);
 
-#ifndef __SL_TUNER_DEINIT_DISABLED__
-    //jjustman-2020-10-30 - TODO: SL_TunerInit and SL_TunerUnInit is just a refcount, not an instance handle
     sl_tuner_result = SL_TunerUnInit(tUnit);
-    tUnit = __MIN(0, tUnit - 1);
-#endif
-
     _SAANKHYA_PHY_ANDROID_DEBUG("SaankhyaPHYAndroid::stop: after SL_TunerUnInit, tUnit now: %d, sl_tuner_result: %d", tUnit, sl_tuner_result);
+    sl_tuner_result = SL_TunerDeleteInstance(tUnit);
+    _SAANKHYA_PHY_ANDROID_DEBUG("SaankhyaPHYAndroid::stop: after SL_TunerDeleteInstance, tUnit now: %d, sl_tuner_result: %d", tUnit, sl_tuner_result);
 
     if(atsc3_ndk_application_bridge_get_instance()) {
         atsc3_ndk_application_bridge_get_instance()->atsc3_phy_notify_plp_selection_change_clear_callback();
     }
+
     _SAANKHYA_PHY_ANDROID_DEBUG("SaankhyaPHYAndroid::stop: return with this: %p", this);
     return 0;
 }
+double SaankhyaPHYAndroid::compute_snr(int snr_linear_scale) {
+    double snr = (float)snr_linear_scale / 16384;
+    snr = 10000.0 * log10(snr); //10
 
+    return snr;
+}
 /*
  * jjustman-2020-08-23: NOTE - do NOT call delete slApi*, only call deinit() otherwise you will get fortify crashes, ala:
  *  08-24 08:29:32.717 18991 18991 F libc    : FORTIFY: pthread_mutex_destroy called on a destroyed mutex (0x783b5c87b8)
@@ -267,11 +274,38 @@ int SaankhyaPHYAndroid::deinit()
     return 0;
 }
 
-int SaankhyaPHYAndroid::open(int fd, string device_path)
-{
-    SL_SetUsbFd(fd);
+string SaankhyaPHYAndroid::get_sdk_version()  {
+    return SL_SDK_VERSION;
+};
 
-    _SAANKHYA_PHY_ANDROID_DEBUG("open with fd: %d, device_path: %s", fd, device_path.c_str());
+string SaankhyaPHYAndroid::get_firmware_version() {
+    return demodVersion;
+};
+
+
+SL_ConfigResult_t SaankhyaPHYAndroid::configPlatformParams_autodetect(int device_type, string device_path) {
+
+    SL_ConfigResult_t res = SL_CONFIG_OK;
+    _SAANKHYA_PHY_ANDROID_DEBUG("configPlatformParams_autodetect:: open with core type: %d, device_path: %s", device_type, device_path.c_str());
+
+    if(device_type == SL_DEVICE_TYPE_MARKONE && device_path.c_str() && !strcasecmp(SL_HOSTINTERFACE_TYPE_MARKONE_PATH, device_path.c_str())) {
+        //configure as aa_MarkONE
+        res = configPlatformParams_aa_markone();
+    } else if (device_type == SL_DEVICE_TYPE_FX3_KAILASH) {
+        //configure as aa FX3
+        res = configPlatformParams_aa_fx3();
+    } else if (device_type == SL_DEVICE_TYPE_FX3_YOGA) {
+        //configure as bb FX3
+        res = configPlatformParams_bb_fx3();
+    }
+
+    _SAANKHYA_PHY_ANDROID_DEBUG("configPlatformParams_autodetect::return res: %d", res);
+
+    return res;
+}
+int SaankhyaPHYAndroid::open(int fd, int device_type, string device_path)
+{
+    _SAANKHYA_PHY_ANDROID_DEBUG("open: with fd: %d, device_type: %d, device_path: %s", fd, device_type, device_path.c_str());
 
     SL_I2cResult_t i2cres;
 
@@ -279,9 +313,17 @@ int SaankhyaPHYAndroid::open(int fd, string device_path)
     SL_ConfigResult_t cres;
     SL_TunerResult_t tres;
     SL_UtilsResult_t utilsres;
-    SL_TunerConfig_t tunerCfg;
-    SL_TunerConfig_t tunerGetCfg;
-    SL_TunerSignalInfo_t tunerInfo;
+
+    SL_ConfigResult_t sl_configResult = SL_CONFIG_OK;
+    sl_configResult = configPlatformParams_autodetect(device_type, device_path);
+
+    if(sl_configResult != SL_CONFIG_OK) {
+        _SAANKHYA_PHY_ANDROID_DEBUG("open: configPlatformParams_autodetect failed, with fd: %d, device_path: %s, configResult failed, res: %d", fd, device_path.c_str(), sl_configResult);
+        return -1;
+    }
+
+    SL_SetUsbFd(fd);
+
     int swMajorNo, swMinorNo;
     unsigned int cFrequency = 0;
     SL_AfeIfConfigParams_t afeInfo;
@@ -314,15 +356,15 @@ int SaankhyaPHYAndroid::open(int fd, string device_path)
         i2cres = SL_I2cInit();
         if (i2cres != SL_I2C_OK)
         {
-            global_sl_i2c_result_error_flag = i2cres;
+            if(i2cres == SL_I2C_DEV_NODE_NOT_FOUND) {
+                //this is most likely markone auto-probing on a non markone handset
+                _SAANKHYA_PHY_ANDROID_INFO("SaankhyaPHYAndroid::open() - unable to find /dev/i2c markone handle - (e.g /dev/i2c-3)");
+            } else {
+                global_sl_i2c_result_error_flag = i2cres;
 
-            if(atsc3_ndk_phy_bridge_get_instance()) {
-                atsc3_ndk_phy_bridge_get_instance()->atsc3_notify_phy_error("SaankhyaPHYAndroid::open() - ERROR: SL_I2cInit failed: code: %d", global_sl_i2c_result_error_flag);
+                printToConsoleI2cError("SL_I2cInit", i2cres);
             }
 
-            _SAANKHYA_PHY_ANDROID_ERROR("SaankhyaPHYAndroid::open() - ERROR: Error:SL_I2cInit failed:");
-
-            printToConsoleI2cError(i2cres);
             goto ERROR;
         }
         else
@@ -371,7 +413,8 @@ int SaankhyaPHYAndroid::open(int fd, string device_path)
                 outPutInfo.oif = SL_OUTPUTIF_TSSERIAL_LSB_FIRST;
                 /* CPLD Reset */
                 SL_GpioSetPin(getPlfConfig.cpldResetGpioPin, 0x00);          // Low
-                SL_SleepMS(100); // 100ms delay for Toggle
+                //jjustman-2021-04-13 - updating to 250ms as 100ms may cause issues on ICCM download on KAILASH
+                SL_SleepMS(250); // jjustman-2021-06-23 - FIXUP AGAIN?!  was 100ms delay for Toggle
                 SL_GpioSetPin(getPlfConfig.cpldResetGpioPin, 0x01);          // High
             }
             else if (getPlfConfig.demodOutputIf == SL_DEMOD_OUTPUTIF_SDIO)
@@ -448,7 +491,8 @@ int SaankhyaPHYAndroid::open(int fd, string device_path)
                 outPutInfo.oif = SL_OUTPUTIF_TSSERIAL_LSB_FIRST;
                 /* CPLD Reset */
                 SL_GpioSetPin(getPlfConfig.cpldResetGpioPin, 0x00); // Low
-                SL_SleepMS(100); // 100ms delay for Toggle
+                //jjustman-2021-06-23 - additional adjustments for sleep to 250ms
+                SL_SleepMS(250); // 100ms delay for Toggle
                 SL_GpioSetPin(getPlfConfig.cpldResetGpioPin, 0x01); // High
             }
             else if (getPlfConfig.demodOutputIf == SL_DEMOD_OUTPUTIF_SDIO)
@@ -472,7 +516,8 @@ int SaankhyaPHYAndroid::open(int fd, string device_path)
             break;
 
         case SL_KAILASH_DONGLE:
-            if (getPlfConfig.tunerType == TUNER_SI)
+        case SL_KAILASH_DONGLE_2:
+            if (getPlfConfig.tunerType == TUNER_SI || getPlfConfig.tunerType == TUNER_SI_P)
             {
                 _SAANKHYA_PHY_ANDROID_DEBUG("using SL_KAILASH with SPECTRUM_NORMAL and ZIF");
                 afeInfo.spectrum = SL_SPECTRUM_NORMAL;
@@ -501,10 +546,39 @@ int SaankhyaPHYAndroid::open(int fd, string device_path)
             iqOffSetCorrection.qCoeff2 = (float)0.0436508327768608;
             break;
 
+
+        case SL_KAILASH_DONGLE_3:
+            if (getPlfConfig.tunerType == TUNER_SILABS)
+            {
+                afeInfo.spectrum = SL_SPECTRUM_INVERTED;
+                afeInfo.iftype = SL_IFTYPE_LIF;
+                afeInfo.ifreq = 4.4;
+            }
+            else
+            {
+                _SAANKHYA_PHY_ANDROID_DEBUG("Invalid Tuner Selection");
+            }
+            if (getPlfConfig.demodOutputIf == SL_DEMOD_OUTPUTIF_SDIO)
+            {
+                outPutInfo.oif = SL_OUTPUTIF_SDIO;
+            }
+            else
+            {
+                _SAANKHYA_PHY_ANDROID_DEBUG("Invalid OutPut Interface Selection");
+            }
+            afeInfo.iswap = SL_IPOL_SWAP_DISABLE;
+            afeInfo.qswap = SL_QPOL_SWAP_DISABLE;
+            iqOffSetCorrection.iCoeff1 = 1.0;
+            iqOffSetCorrection.qCoeff1 = 1.0;
+            iqOffSetCorrection.iCoeff2 = 0.0;
+            iqOffSetCorrection.qCoeff2 = 0.0;
+            break;
+
         default:
             _SAANKHYA_PHY_ANDROID_DEBUG("Invalid Board Type Selected ");
             break;
     }
+
     afeInfo.iqswap = SL_IQSWAP_DISABLE;
     afeInfo.agcRefValue = 125; //afcRefValue in mV
     outPutInfo.TsoClockInvEnable = SL_TSO_CLK_INV_ON;
@@ -532,13 +606,13 @@ int SaankhyaPHYAndroid::open(int fd, string device_path)
     plpInfo.plp2 = 0xFF;
     plpInfo.plp3 = 0xFF;
 
+    regionInfo = SL_ATSC3P0_REGION_US;
+
     _SAANKHYA_PHY_ANDROID_DEBUG("SL_DemodCreateInstance: before invocation, slUnit: %d",slUnit);
     slres = SL_DemodCreateInstance(&slUnit);
     if (slres != SL_OK)
     {
-        _SAANKHYA_PHY_ANDROID_DEBUG("Error:SL_DemodCreateInstance: slres: %d", slres);
-        _SAANKHYA_PHY_ANDROID_DEBUG("Error:SL_DemodCreateInstance :");
-        printToConsoleDemodError(slres);
+        printToConsoleDemodError("SL_DemodCreateInstance", slres);
         goto ERROR;
     }
 
@@ -551,28 +625,24 @@ int SaankhyaPHYAndroid::open(int fd, string device_path)
     slres = SL_DemodInit(slUnit, cmdIf, SL_DEMODSTD_ATSC3_0);
     if (slres != SL_OK)
     {
-        _SAANKHYA_PHY_ANDROID_DEBUG("SL_DemodInit: failed, slres: %d", slres);
-        _SAANKHYA_PHY_ANDROID_DEBUG("FAILED");
-        _SAANKHYA_PHY_ANDROID_DEBUG("Error:SL_DemodInit :");
-        printToConsoleDemodError(slres);
+        printToConsoleDemodError("SL_DemodInit", slres);
         goto ERROR;
     }
     else
     {
-        _SAANKHYA_PHY_ANDROID_DEBUG("SL_DemodInit: SUCCESS, slres: %d", slres);
+        _SAANKHYA_PHY_ANDROID_DEBUG("SL_DemodInit: SUCCESS, slUnit: %d, slres: %d", slUnit, slres);
     }
 
     do
     {
-        _SAANKHYA_PHY_ANDROID_DEBUG("before SL_DemodGetStatus: slres is: %d", slres);
+        _SAANKHYA_PHY_ANDROID_DEBUG("before SL_DemodGetStatus: slUnit: %d, slres is: %d", slUnit, slres);
         slres = SL_DemodGetStatus(slUnit, SL_DEMOD_STATUS_TYPE_BOOT, (SL_DemodBootStatus_t*)&bootStatus);
-        _SAANKHYA_PHY_ANDROID_DEBUG("SL_DemodGetStatus: slres is: %d", slres);
+        _SAANKHYA_PHY_ANDROID_DEBUG("SL_DemodGetStatus: slUnit: %d, slres is: %d", slUnit, slres);
         if (slres != SL_OK)
         {
-            _SAANKHYA_PHY_ANDROID_DEBUG("Error:SL_Demod Get Boot Status :");
-            printToConsoleDemodError(slres);
+            printToConsoleDemodError("SL_DemodGetStatus:Boot", slres);
         }
-        SL_SleepMS(1000);
+        SL_SleepMS(250);
     } while (bootStatus != SL_DEMOD_BOOT_STATUS_COMPLETE);
 
     _SAANKHYA_PHY_ANDROID_DEBUG("Demod Boot Status  : ");
@@ -593,32 +663,35 @@ int SaankhyaPHYAndroid::open(int fd, string device_path)
     slres = SL_DemodConfigure(slUnit, SL_CONFIGTYPE_AFEIF, &afeInfo);
     if (slres != 0)
     {
-        _SAANKHYA_PHY_ANDROID_DEBUG("Error:SL_DemodConfigure :");
-        printToConsoleDemodError(slres);
+        printToConsoleDemodError("SL_DemodConfigure:SL_CONFIGTYPE_AFEIF", slres);
         goto ERROR;
     }
 
     slres = SL_DemodConfigure(slUnit, SL_CONFIG_TYPE_IQ_OFFSET_CORRECTION, &iqOffSetCorrection);
     if (slres != 0)
     {
-        _SAANKHYA_PHY_ANDROID_DEBUG("Error:SL_DemodConfigure :");
-        printToConsoleDemodError(slres);
+        printToConsoleDemodError("SL_DemodConfigure:SL_CONFIG_TYPE_IQ_OFFSET_CORRECTION", slres);
         goto ERROR;
     }
 
     slres = SL_DemodConfigure(slUnit, SL_CONFIGTYPE_OUTPUTIF, &outPutInfo);
     if (slres != 0)
     {
-        _SAANKHYA_PHY_ANDROID_DEBUG("Error:SL_DemodConfigure :");
-        printToConsoleDemodError(slres);
+        printToConsoleDemodError("SL_DemodConfigure:SL_CONFIGTYPE_OUTPUTIF", slres);
         goto ERROR;
     }
 
     slres = SL_DemodConfigPlps(slUnit, &plpInfo);
     if (slres != 0)
     {
-        _SAANKHYA_PHY_ANDROID_DEBUG("Error:SL_DemodConfigPlps :");
-        printToConsoleDemodError(slres);
+        printToConsoleDemodError("SL_DemodConfigPlps", slres);
+        goto ERROR;
+    }
+
+    slres = SL_DemodSetAtsc3p0Region(slUnit, regionInfo);
+    if (slres != 0)
+    {
+        printToConsoleDemodError("SL_DemodSetAtsc3p0Region", slres);
         goto ERROR;
     }
 
@@ -626,44 +699,31 @@ int SaankhyaPHYAndroid::open(int fd, string device_path)
     if (slres == SL_OK)
     {
         _SAANKHYA_PHY_ANDROID_DEBUG("Demod SW Version: %d.%d", swMajorNo, swMinorNo);
+        demodVersion = to_string(swMajorNo) + "." + to_string(swMinorNo);
     }
 
     /* Tuner Config */
     tunerCfg.bandwidth = SL_TUNER_BW_6MHZ;
     tunerCfg.std = SL_TUNERSTD_ATSC3_0;
 
-    if(tUnit == -1) {
-        tres = SL_TunerCreateInstance(&tUnit);
-    } else {
-#ifndef __SL_TUNER_DEINIT_DISABLED__
-        //create a new tuner instance
-        tres = SL_TunerCreateInstance(&tUnit);
-#else
-        tres = SL_TUNER_OK;
-#endif
-        //otherwise, don't create a new instance as we will leak due to SL_TunerUnInit not decrementing refcount
-    }
-
+    tres = SL_TunerCreateInstance(&tUnit);
     if (tres != 0)
     {
-        _SAANKHYA_PHY_ANDROID_DEBUG("Error:SL_TunerCreateInstance :");
-        printToConsoleTunerError(tres);
+        printToConsoleTunerError("SL_TunerCreateInstance", tres);
         goto ERROR;
     }
 
     tres = SL_TunerInit(tUnit);
     if (tres != 0)
     {
-        _SAANKHYA_PHY_ANDROID_DEBUG("Error:SL_TunerInit :");
-        printToConsoleTunerError(tres);
+        printToConsoleTunerError("SL_TunerInit", tres);
         goto ERROR;
     }
 
     tres = SL_TunerConfigure(tUnit, &tunerCfg);
     if (tres != 0)
     {
-        _SAANKHYA_PHY_ANDROID_DEBUG("Error:SL_TunerConfigure :");
-        printToConsoleTunerError(tres);
+        printToConsoleTunerError("SL_TunerConfigure", tres);
         goto ERROR;
     }
 
@@ -678,8 +738,7 @@ int SaankhyaPHYAndroid::open(int fd, string device_path)
         tres = SL_TunerExSetDcOffSet(tUnit, &tunerIQDcOffSet);
         if (tres != 0)
         {
-            _SAANKHYA_PHY_ANDROID_DEBUG("Error:SL_TunerExSetDcOffSet :");
-            printToConsoleTunerError(tres);
+            printToConsoleTunerError("SL_TunerExSetDcOffSet", tres);
             if (getPlfConfig.tunerType == TUNER_SI)
             {
                 goto ERROR;
@@ -707,24 +766,71 @@ int SaankhyaPHYAndroid::tune(int freqKHz, int plpid)
     //acquire our CB mutex so we don't push stale TLV packets
     unique_lock<mutex> CircularBufferMutex_local(CircularBufferMutex);
 
+    //jjustman-2021-03-10 - also acquire our atsc3_sl_tlv_block_mutex so we can safely discard any pending TLV frames
+    atsc3_sl_tlv_block_mutex.lock();
+
+    if(cb) {
+        //forcibly flush any in-flight TLV packets in cb here by calling, need (cb_should_discard == true),
+        // as our type is atomic_bool and we can't printf its value here due to:
+        //                  call to implicitly-deleted copy constructor of 'std::__ndk1::atomic_bool' (aka 'atomic<bool>')
+        _SAANKHYA_PHY_ANDROID_INFO("SaankhyaPHYAndroid::tune - cb_should_discard: %u, cb_GetDataSize: %d, calling CircularBufferReset(), cb: %p, early in tune() call", (cb_should_discard == true), CircularBufferGetDataSize(this->cb), cb);
+        CircularBufferReset(cb);
+    }
+
+    //jjustman-2021-03-10 - destroy (and let processTLVFromCallback) recreate our atsc3_sl_tlv_block and atsc3_sl_tlv_payload to avoid race condition between cb mutex and sl_tlv block processing
+    if(atsc3_sl_tlv_block) {
+        block_Destroy(&atsc3_sl_tlv_block);
+    }
+
+    if(atsc3_sl_tlv_payload) {
+        atsc3_sl_tlv_payload_free(&atsc3_sl_tlv_payload);
+    }
+
+
     //acquire our lock for setting tuning parameters (including re-tuning)
     unique_lock<mutex> SL_I2C_command_mutex_tuner_tune(SL_I2C_command_mutex);
-    SL_I2C_last_command_extra_sleep = true;
+    unique_lock<mutex> SL_PlpConfigParams_mutex_update_plps(SL_PlpConfigParams_mutex, std::defer_lock);
+
     atsc3_core_service_application_bridge_reset_context();
+
+    /*
+
+       jjustman-2021-05-04 - testing for (seemingly) random YOGA cpu crashes:
+
+          2021-05-04 19:17:38.042 4722-4865/com.nextgenbroadcast.mobile.middleware.sample D/NDK: SaankhyaPHYAndroid.cpp          : 627:DEBUG:1620170258.0428:SL_DemodInit: SUCCESS, slUnit: 0, slres: 0
+          2021-05-04 19:17:38.043 4722-4865/com.nextgenbroadcast.mobile.middleware.sample D/NDK: SaankhyaPHYAndroid.cpp          : 632:DEBUG:1620170258.0432:before SL_DemodGetStatus: slUnit: 0, slres is: 0
+          2021-05-04 19:17:38.045 4722-4865/com.nextgenbroadcast.mobile.middleware.sample D/NDK: SaankhyaPHYAndroid.cpp          : 634:DEBUG:1620170258.0454:SL_DemodGetStatus: slUnit: 0, slres is: 0
+          2021-05-04 19:17:38.295 4722-4865/com.nextgenbroadcast.mobile.middleware.sample D/NDK: SaankhyaPHYAndroid.cpp          : 643:DEBUG:1620170258.2957:Demod Boot Status  :
+          2021-05-04 19:17:38.296 4722-4865/com.nextgenbroadcast.mobile.middleware.sample D/NDK: SaankhyaPHYAndroid.cpp          : 650:DEBUG:1620170258.2960:COMPLETED
+          2021-05-04 19:17:38.316 4722-4865/com.nextgenbroadcast.mobile.middleware.sample D/NDK: SL_DemodConfigPlps, instance: 0, plp [0]: 0x00, [1]: 0xff, [2]: 0xff, [3]: 0xff
+          2021-05-04 19:17:38.325 4722-4865/com.nextgenbroadcast.mobile.middleware.sample D/NDK: SaankhyaPHYAndroid.cpp          : 701:DEBUG:1620170258.3259:Demod SW Version: 3.24
+          2021-05-04 19:17:38.669 4722-4865/com.nextgenbroadcast.mobile.middleware.sample D/NDK: SaankhyaPHYAndroid.cpp          : 763:DEBUG:1620170258.6698:OPEN COMPLETE!
+          2021-05-04 19:17:38.670 4722-4865/com.nextgenbroadcast.mobile.middleware.sample D/NDK: SaankhyaPHYAndroid.cpp          :2431:DEBUG:1620170258.6701:Java_org_ngbp_libatsc3_middleware_android_phy_SaankhyaPHYAndroid_open: fd: 145, return: 0
+          2021-05-04 19:17:38.670 4722-4865/com.nextgenbroadcast.mobile.middleware.sample D/UsbAtsc3Source: prepareDevices: open with org.ngbp.libatsc3.middleware.android.phy.SaankhyaPHYAndroid@d66354a for path: /dev/bus/usb/002/002, fd: 145, success
+          2021-05-04 19:17:38.710 4722-4865/com.nextgenbroadcast.mobile.middleware.sample D/NDK: atsc3_core_service_player_bridge: 122:WARN :1620170258.7103:atsc3_core_service_application_bridge_reset_context!
+          2021-05-04 19:17:38.710 4722-4865/com.nextgenbroadcast.mobile.middleware.sample D/NDK: SaankhyaPHYAndroid::tune: Frequency: 593000, PLP: 0
+          2021-05-04 19:17:38.740 4722-4865/com.nextgenbroadcast.mobile.middleware.sample D/NDK: SaankhyaPHYAndroid.cpp          : 815:DEBUG:1620170258.7400:Error:SL_TunerSetFrequency :
+          2021-05-04 19:17:38.740 4722-4865/com.nextgenbroadcast.mobile.middleware.sample D/NDK: SaankhyaPHYAndroid.cpp          :1412:DEBUG:1620170258.7401: Sl Tuner Operation Failed
+    */
+    if (getPlfConfig.boardType == SL_KAILASH_DONGLE_3) {
+        _SAANKHYA_PHY_ANDROID_DEBUG("::tune - before SL_DemodStart - sleeping for 500ms to avoid double SL_DemodConfigPlps call(s)");
+        usleep(500000);
+
+    }
+
+    printf("SaankhyaPHYAndroid::tune: Frequency: %d, PLP: %d", freqKHz, plpid);
 
     tres = SL_TunerSetFrequency(tUnit, freqKHz*1000);
     if (tres != 0)
     {
-        _SAANKHYA_PHY_ANDROID_DEBUG("Error:SL_TunerSetFrequency :");
-        printToConsoleTunerError(tres);
+        printToConsoleTunerError("SL_TunerSetFrequency", tres);
         goto ERROR;
     }
 
     tres = SL_TunerGetConfiguration(tUnit, &tunerGetCfg);
     if (tres != 0)
     {
-        _SAANKHYA_PHY_ANDROID_DEBUG("Error:SL_TunerGetConfiguration :");
-        printToConsoleTunerError(tres);
+        printToConsoleTunerError("SL_TunerGetConfiguration", tres);
         goto ERROR;
     } else {
         if (tunerGetCfg.std == SL_TUNERSTD_ATSC3_0)
@@ -757,8 +863,7 @@ int SaankhyaPHYAndroid::tune(int freqKHz, int plpid)
     tres = SL_TunerGetFrequency(tUnit, &cFrequency);
     if (tres != 0)
     {
-        _SAANKHYA_PHY_ANDROID_DEBUG("Error:SL_TunerGetFrequency :");
-        printToConsoleTunerError(tres);
+        printToConsoleTunerError("SL_TunerGetFrequency", tres);
         goto ERROR;
     }
     else
@@ -770,8 +875,7 @@ int SaankhyaPHYAndroid::tune(int freqKHz, int plpid)
     tres = SL_TunerGetStatus(tUnit, &tunerInfo);
     if (tres != 0)
     {
-        _SAANKHYA_PHY_ANDROID_DEBUG("Error:SL_TunerGetStatus :");
-        printToConsoleTunerError(tres);
+        printToConsoleTunerError("SL_TunerGetStatus", tres);
         goto ERROR;
     }
     else
@@ -783,11 +887,7 @@ int SaankhyaPHYAndroid::tune(int freqKHz, int plpid)
         _SAANKHYA_PHY_ANDROID_DEBUG("tuner frequency: %d", cFrequency);
     }
 
-    if (!atsc3_sl_tlv_block) {
-        allocate_atsc3_sl_tlv_block();
-    }
-
-    //setup shared memory allocs
+    //setup shared memory for cb callback (or reset if already allocated)
     if(!cb) {
         cb = CircularBufferCreate(TLV_CIRCULAR_BUFFER_SIZE);
     } else {
@@ -797,9 +897,12 @@ int SaankhyaPHYAndroid::tune(int freqKHz, int plpid)
         SL_SleepMS(100);
     }
 
+
+    atsc3_sl_tlv_block_mutex.unlock();
+    CircularBufferMutex_local.unlock();
+
     //jjustman-2021-01-19 - allow for cb to start acumulating TLV frames
     SaankhyaPHYAndroid::cb_should_discard = false;
-    CircularBufferMutex_local.unlock();
 
     //check if we were re-initalized and might have an open threads to wind-down
 #ifdef __RESPWAN_THREAD_WORKERS
@@ -880,32 +983,62 @@ int SaankhyaPHYAndroid::tune(int freqKHz, int plpid)
     }
 
     if(!demodStartStatus) {
-        while (SL_IsRxDataStarted() != 1)
-        {
+        while (SL_IsRxDataStarted() != 1) {
             SL_SleepMS(100);
 
-            if(((isRxDataStartedSpinCount++) % 100) == 0) {
+            if (((isRxDataStartedSpinCount++) % 100) == 0) {
                 _SAANKHYA_PHY_ANDROID_WARN("::Open() - waiting for SL_IsRxDataStarted, spinCount: %d", isRxDataStartedSpinCount);
                 //jjustman-2020-10-21 - todo: reset demod?
             }
         }
+
+        /*
+
+         jjustman-2021-05-04 - testing for (seemingly) random YOGA cpu crashes:
+
+            2021-05-04 19:17:38.042 4722-4865/com.nextgenbroadcast.mobile.middleware.sample D/NDK: SaankhyaPHYAndroid.cpp          : 627:DEBUG:1620170258.0428:SL_DemodInit: SUCCESS, slUnit: 0, slres: 0
+            2021-05-04 19:17:38.043 4722-4865/com.nextgenbroadcast.mobile.middleware.sample D/NDK: SaankhyaPHYAndroid.cpp          : 632:DEBUG:1620170258.0432:before SL_DemodGetStatus: slUnit: 0, slres is: 0
+            2021-05-04 19:17:38.045 4722-4865/com.nextgenbroadcast.mobile.middleware.sample D/NDK: SaankhyaPHYAndroid.cpp          : 634:DEBUG:1620170258.0454:SL_DemodGetStatus: slUnit: 0, slres is: 0
+            2021-05-04 19:17:38.295 4722-4865/com.nextgenbroadcast.mobile.middleware.sample D/NDK: SaankhyaPHYAndroid.cpp          : 643:DEBUG:1620170258.2957:Demod Boot Status  :
+            2021-05-04 19:17:38.296 4722-4865/com.nextgenbroadcast.mobile.middleware.sample D/NDK: SaankhyaPHYAndroid.cpp          : 650:DEBUG:1620170258.2960:COMPLETED
+            2021-05-04 19:17:38.316 4722-4865/com.nextgenbroadcast.mobile.middleware.sample D/NDK: SL_DemodConfigPlps, instance: 0, plp [0]: 0x00, [1]: 0xff, [2]: 0xff, [3]: 0xff
+            2021-05-04 19:17:38.325 4722-4865/com.nextgenbroadcast.mobile.middleware.sample D/NDK: SaankhyaPHYAndroid.cpp          : 701:DEBUG:1620170258.3259:Demod SW Version: 3.24
+            2021-05-04 19:17:38.669 4722-4865/com.nextgenbroadcast.mobile.middleware.sample D/NDK: SaankhyaPHYAndroid.cpp          : 763:DEBUG:1620170258.6698:OPEN COMPLETE!
+            2021-05-04 19:17:38.670 4722-4865/com.nextgenbroadcast.mobile.middleware.sample D/NDK: SaankhyaPHYAndroid.cpp          :2431:DEBUG:1620170258.6701:Java_org_ngbp_libatsc3_middleware_android_phy_SaankhyaPHYAndroid_open: fd: 145, return: 0
+            2021-05-04 19:17:38.670 4722-4865/com.nextgenbroadcast.mobile.middleware.sample D/UsbAtsc3Source: prepareDevices: open with org.ngbp.libatsc3.middleware.android.phy.SaankhyaPHYAndroid@d66354a for path: /dev/bus/usb/002/002, fd: 145, success
+            2021-05-04 19:17:38.710 4722-4865/com.nextgenbroadcast.mobile.middleware.sample D/NDK: atsc3_core_service_player_bridge: 122:WARN :1620170258.7103:atsc3_core_service_application_bridge_reset_context!
+            2021-05-04 19:17:38.710 4722-4865/com.nextgenbroadcast.mobile.middleware.sample D/NDK: SaankhyaPHYAndroid::tune: Frequency: 593000, PLP: 0
+            2021-05-04 19:17:38.740 4722-4865/com.nextgenbroadcast.mobile.middleware.sample D/NDK: SaankhyaPHYAndroid.cpp          : 815:DEBUG:1620170258.7400:Error:SL_TunerSetFrequency :
+            2021-05-04 19:17:38.740 4722-4865/com.nextgenbroadcast.mobile.middleware.sample D/NDK: SaankhyaPHYAndroid.cpp          :1412:DEBUG:1620170258.7401: Sl Tuner Operation Failed
+
+
+        if (getPlfConfig.boardType == SL_KAILASH_DONGLE_3) {
+            _SAANKHYA_PHY_ANDROID_DEBUG("::tune - before SL_DemodStart - sleeping for 2000 seconds to avoid double SL_DemodConfigPlps call(s)");
+            usleep(2000000);
+
+        }
+         */
+
         _SAANKHYA_PHY_ANDROID_DEBUG("Starting SLDemod: ");
 
         slres = SL_DemodStart(slUnit);
 
-        if (slres != 0)
-        {
+        if (!(slres == SL_OK || slres == SL_ERR_ALREADY_STARTED)) {
             _SAANKHYA_PHY_ANDROID_DEBUG("Saankhya Demod Start Failed");
+            demodStartStatus = 0;
             goto ERROR;
-        }
-        else
-        {
+        } else {
             demodStartStatus = 1;
             _SAANKHYA_PHY_ANDROID_DEBUG("SUCCESS");
             //_SAANKHYA_PHY_ANDROID_DEBUG("SL Demod Output Capture: STARTED : sl-tlv.bin");
         }
-        SL_SleepMS(1000); // Delay to accomdate set configurations at SL to take effect
+        SL_SleepMS(500); // Delay to accomdate set configurations at SL to take effect for SL_DemodStart()
+
+    } else {
+        _SAANKHYA_PHY_ANDROID_DEBUG("SLDemod: already running");
     }
+
+    SL_PlpConfigParams_mutex_update_plps.lock();
 
     plpInfo.plp0 = plpid;
     plpInfo.plp1 = 0xFF;
@@ -913,33 +1046,20 @@ int SaankhyaPHYAndroid::tune(int freqKHz, int plpid)
     plpInfo.plp3 = 0xFF;
 
     slres = SL_DemodConfigPlps(slUnit, &plpInfo);
-    if (slres != 0)
-    {
-        _SAANKHYA_PHY_ANDROID_DEBUG("Error:SL_DemodConfigPlps :");
-        printToConsoleDemodError(slres);
+
+    SL_PlpConfigParams_mutex_update_plps.unlock();
+
+    if (slres != 0) {
+        printToConsoleDemodError("SL_DemodConfigPlps", slres);
         goto ERROR;
     }
 
-    slres = SL_DemodGetConfiguration(slUnit, &cfgInfo);
-    if (slres != SL_OK)
-    {
-        _SAANKHYA_PHY_ANDROID_DEBUG("Error:SL_DemodGetConfiguration :");
-        printToConsoleDemodError(slres);
-        if (slres == SL_ERR_CMD_IF_FAILURE)
-        {
-            handleCmdIfFailure();
-            goto ERROR;
-        }
-    }
-    else
-    {
-        printToConsoleDemodConfiguration(cfgInfo);
-    }
+    statusMetricsResetFromTuneChange();
 
     ret = 0;
     goto UNLOCK;
 
- ERROR:
+ERROR:
     ret = -1;
 
     //unlock our i2c mutex
@@ -949,16 +1069,52 @@ UNLOCK:
 
 }
 
-int SaankhyaPHYAndroid::listen_plps(vector<uint8_t> plps_orignal_list)
+void SaankhyaPHYAndroid::statusMetricsResetFromTuneChange() {
+    _SAANKHYA_PHY_ANDROID_INFO("statusMetricsResetFromContextChange - resetting statusThreadFirstLoopAfterTuneComplete");
+
+    statusThreadFirstLoopAfterTuneComplete = true; //will dump DemodGetconfiguration from statusThread
+
+    statusMetricsResetFromPLPListenChange(); //clear our diag flags and metrics types also...
+}
+
+void SaankhyaPHYAndroid::statusMetricsResetFromPLPListenChange() {
+    _SAANKHYA_PHY_ANDROID_INFO("statusMetricsResetFromPLPListenChange - resetting statusThreadFirstLoop_*Lock flags and clearing TunerSignalInfo/_Diag's");
+
+    statusThreadFirstLoopAfterTuneComplete_HasBootstrapLock_for_BSR_Diag = false;
+    statusThreadFirstLoopAfterTuneComplete_HasL1B_DemodLock_for_L1B_Diag = false;
+    statusThreadFirstLoopAfterTuneComplete_HasL1D_DemodLock_for_L1D_Diag = false;
+
+    demodLockStatus = 0;
+    cpuStatus = 0;
+
+    //hack for re-initializing our status structs/diag after a tune()
+    memset(&tunerInfo,  0, sizeof(SL_TunerSignalInfo_t));
+    memset(&perfDiag,   0, sizeof(SL_Atsc3p0Perf_Diag_t));
+    memset(&bsrDiag,    0, sizeof(SL_Atsc3p0Bsr_Diag_t));
+    memset(&l1bDiag,    0, sizeof(SL_Atsc3p0L1B_Diag_t));
+    memset(&l1dDiag,    0, sizeof(SL_Atsc3p0L1D_Diag_t));
+}
+
+int SaankhyaPHYAndroid::listen_plps(vector<uint8_t> plps_original_list)
 {
     vector<uint8_t> plps;
-    for(int i=0; i < plps_orignal_list.size(); i++) {
-        if(plps_orignal_list.at(i) == 0) {
+    for(int i=0; i < plps_original_list.size(); i++) {
+        if(plps_original_list.at(i) == 0) {
             //skip, duplicate plp0 will cause demod to fail
         } else {
-            plps.push_back(plps_orignal_list.at(i));
+            bool duplicate = false;
+            for(int j=0; j < plps.size(); j++) {
+                 if(plps.at(j) == plps_original_list.at(i)) {
+                     duplicate = true;
+                 }
+            }
+            if(!duplicate) {
+                plps.push_back(plps_original_list.at(i));
+            }
         }
     }
+
+    unique_lock<mutex> SL_PlpConfigParams_mutex_update_plps(SL_PlpConfigParams_mutex);
 
     if(plps.size() == 0) {
         //we always need to listen to plp0...kinda
@@ -994,31 +1150,34 @@ int SaankhyaPHYAndroid::listen_plps(vector<uint8_t> plps_orignal_list)
             plpInfo.plp2,
             plpInfo.plp3);
 
-    unique_lock<mutex> SL_I2C_command_mutex_config_plps(SL_I2C_command_mutex);
-    SL_I2C_last_command_extra_sleep = true;
+    unique_lock<mutex> SL_I2C_command_mutex_demod_configure_plps(SL_I2C_command_mutex);
+
     slres = SL_DemodConfigPlps(slUnit, &plpInfo);
+    SL_I2C_command_mutex_demod_configure_plps.unlock();
+    SL_PlpConfigParams_mutex_update_plps.unlock();
+
     if (slres != 0)
     {
-        _SAANKHYA_PHY_ANDROID_DEBUG("Error: SL_DemodConfigPLP: %d", slres);
-        _SAANKHYA_PHY_ANDROID_DEBUG("Error:SL_DemodConfigPlps :");
-        printToConsoleDemodError(slres);
+        printToConsoleDemodError("SL_DemodConfigPLP", slres);
     }
 
-    SL_I2C_command_mutex_config_plps.unlock();
+    statusMetricsResetFromPLPListenChange();
 
     return slres;
 }
 
 void SaankhyaPHYAndroid::dump_plp_list() {
+    unique_lock<mutex> SL_PlpConfigParams_mutex_update_plps(SL_PlpConfigParams_mutex);
+    unique_lock<mutex> SL_I2C_command_mutex_demod_configure_plps(SL_I2C_command_mutex);
+
     slres = SL_DemodGetLlsPlpList(slUnit, &llsPlpInfo);
     if (slres != SL_OK)
     {
-        _SAANKHYA_PHY_ANDROID_DEBUG("Error:SL_DemodGetLlsPlpList :");
-        printToConsoleDemodError(slres);
+        printToConsoleDemodError("SL_DemodGetLlsPlpList", slres);
         if (slres == SL_ERR_CMD_IF_FAILURE)
         {
             handleCmdIfFailure();
-            return;
+            goto ERROR;
         }
     }
 
@@ -1060,150 +1219,223 @@ void SaankhyaPHYAndroid::dump_plp_list() {
         plpInfo.plp0 = 0x00;
     }
 
+ERROR:
+    _SAANKHYA_PHY_ANDROID_ERROR("Error:dump_plp_list failed!");
+
+UNLOCK:
+    SL_I2C_command_mutex_demod_configure_plps.unlock();
+    SL_PlpConfigParams_mutex_update_plps.unlock();
 }
 
-int SaankhyaPHYAndroid::download_bootloader_firmware(int fd, string device_path) {
-    SL_SetUsbFd(fd);
+int SaankhyaPHYAndroid::download_bootloader_firmware(int fd, int device_type, string device_path) {
+    _SAANKHYA_PHY_ANDROID_DEBUG("download_bootloader_firmware, path: %s, device_type: %d, fd: %d", device_path.c_str(), device_type, fd);
 
+    SL_ConfigResult_t sl_configResult = SL_CONFIG_OK;
+    sl_configResult = configPlatformParams_autodetect(device_type, device_path);
+
+    if(sl_configResult != SL_CONFIG_OK) {
+        _SAANKHYA_PHY_ANDROID_DEBUG("download_bootloader_firmware: configPlatformParams_autodetect failed - fd: %d, device_path: %s, configResult failed, res: %d", fd, device_path.c_str(), sl_configResult);
+        return -1;
+    }
+
+    SL_SetUsbFd(fd);
     SL_I2cResult_t i2cres;
 
-    _SAANKHYA_PHY_ANDROID_DEBUG("SL_I2cPreInit - Before, path: %s, fd: %d", device_path.c_str(), fd);
     i2cres = SL_I2cPreInit();
-    _SAANKHYA_PHY_ANDROID_DEBUG("SL_I2cPreInit returned: %d", i2cres);
+    _SAANKHYA_PHY_ANDROID_DEBUG("download_bootloader_firmware: SL_I2cPreInit returned: %d", i2cres);
 
     if (i2cres != SL_I2C_OK)
     {
         if(i2cres == SL_I2C_AWAITING_REENUMERATION) {
-            _SAANKHYA_PHY_ANDROID_DEBUG("INFO:SL_I2cPreInit SL_FX3S_I2C_AWAITING_REENUMERATION");
-            //sleep for 2s
-            sleep(2);
+            _SAANKHYA_PHY_ANDROID_DEBUG("download_bootloader_firmware: INFO:SL_I2cPreInit SL_FX3S_I2C_AWAITING_REENUMERATION");
             return 0;
         } else {
-            _SAANKHYA_PHY_ANDROID_DEBUG("Error:SL_I2cPreInit failed: %d", i2cres);
-            printToConsoleI2cError(i2cres);
+            printToConsoleI2cError("SL_I2cPreInit", i2cres);
         }
     }
     return -1;
 }
 
-SL_ConfigResult_t SaankhyaPHYAndroid::configPlatformParams() {
+//jjustman-2020-09-09 KAILASH dongle specific configuration
+SL_ConfigResult_t SaankhyaPHYAndroid::configPlatformParams_aa_fx3() {
 
-    SL_ConfigResult_t res;
-    /*
-      * Assign Platform Configuration Parameters. For other ref platforms, replace settings from
-      * comments above
-      */
+    SL_ConfigResult_t res = SL_CONFIG_OK;
 
-//jjustman-2020-09-09 MarkONE specific configuration
-#ifdef SL_MARKONE
+    sPlfConfig.chipType = SL_CHIP_3010;
+    sPlfConfig.chipRev = SL_CHIP_REV_AA;
+    sPlfConfig.boardType = SL_KAILASH_DONGLE;
+    sPlfConfig.tunerType = TUNER_SI;
+    sPlfConfig.hostInterfaceType = SL_HostInterfaceType_FX3;
+
+    sPlfConfig.demodControlIf = SL_DEMOD_CMD_CONTROL_IF_I2C;
+    sPlfConfig.demodOutputIf = SL_DEMOD_OUTPUTIF_TS;
+    sPlfConfig.demodI2cAddr = 0x30; /* SLDemod 7-bit Physical I2C Address */
+
+    sPlfConfig.demodResetGpioPin = 47;      /* FX3S GPIO 47 connected to Demod Reset Pin */
+    sPlfConfig.cpldResetGpioPin = 43;       /* FX3S GPIO 43 connected to CPLD Reset Pin and used only for serial TS Interface  */
+    sPlfConfig.tunerResetGpioPin = 23;    /* FX3S GPIO 23 connected to Tuner Reset Pin */
+
+    sPlfConfig.slsdkPath = "."; //jjustman-2020-09-09 use extern object linkages for fx3/hex firmware
+
+    /* Set Configuration Parameters */
+    res = SL_ConfigSetPlatform(sPlfConfig);
+
+    _SAANKHYA_PHY_ANDROID_DEBUG("configPlatformParams_aa_fx3: with chipType: %d, chipRev: %d, boardType: %d, tunerType: %d, hostInterfaceType: %d, ",
+                                sPlfConfig.chipType,
+                                sPlfConfig.chipRev,
+                                sPlfConfig.boardType,
+                                sPlfConfig.tunerType,
+                                sPlfConfig.hostInterfaceType);
+
+
+    //reconfigure method callbacks for cust_markone
+    SL_ConfigureGpio_slref();
+    SL_ConfigureI2c_slref();
+    SL_ConfigureTs_slref();
+
+    return res;
+}
+
+SL_ConfigResult_t SaankhyaPHYAndroid::configPlatformParams_aa_markone() {
+
+    SL_ConfigResult_t res = SL_CONFIG_OK;
 
     sPlfConfig.chipType = SL_CHIP_4000;
     sPlfConfig.chipRev = SL_CHIP_REV_AA;
     sPlfConfig.boardType = SL_EVB_4000; //from venky 2020-09-07 - SL_BORQS_EVT;
     sPlfConfig.tunerType = TUNER_SI;
+    sPlfConfig.hostInterfaceType = SL_HostInterfaceType_MarkONE;
+
     sPlfConfig.demodControlIf = SL_DEMOD_CMD_CONTROL_IF_I2C;
     sPlfConfig.demodOutputIf = SL_DEMOD_OUTPUTIF_SDIO;
     sPlfConfig.demodI2cAddr = 0x30; /* SLDemod 7-bit Physical I2C Address */
-     /*
-     * Relative Path to SLSDK from working directory
-     * Example: D:\UNAME\PROJECTS\slsdk
-     * User can just specifying "..", which will point to this directory or can specify full directory path explicitly
-     */
-    sPlfConfig.slsdkPath = "/data/out"; //from venky 2020-09-07
 
-    sPlfConfig.demodResetGpioPin = 12;   /* 09-10 03:25:56.498     0     0 E SAANKHYA: Reset low GPIO: 12 */
-    sPlfConfig.demodI2cAddr3GpioPin = 37;   /* FX3S GPIO 37 connected to Demod I2C Address3 Pin and used only for SDIO Interface */
-
-#endif
-
-//jjustman-2020-09-09 KAILASH dongle specific configuration
-#ifdef SL_KAILASH
-
-    #define SL_FX3S 1
-    sPlfConfig.chipType = SL_CHIP_3010;
-    sPlfConfig.chipRev = SL_CHIP_REV_AA;
-    sPlfConfig.boardType = SL_KAILASH_DONGLE;
-    sPlfConfig.tunerType = TUNER_SI;
-    sPlfConfig.demodControlIf = SL_DEMOD_CMD_CONTROL_IF_I2C;
-    sPlfConfig.demodOutputIf = SL_DEMOD_OUTPUTIF_TS;
-    sPlfConfig.demodI2cAddr = 0x30; /* SLDemod 7-bit Physical I2C Address */
-
-    sPlfConfig.demodResetGpioPin = 47;   /* FX3S GPIO 47 connected to Demod Reset Pin */
-    sPlfConfig.cpldResetGpioPin = 43;   /* FX3S GPIO 43 connected to CPLD Reset Pin and used only for serial TS Interface  */
-    sPlfConfig.demodI2cAddr3GpioPin = 37;   /* FX3S GPIO 37 connected to Demod I2C Address3 Pin and used only for SDIO Interface */
     sPlfConfig.slsdkPath = "."; //jjustman-2020-09-09 use extern object linkages for fx3/hex firmware
 
-#endif
+    sPlfConfig.demodResetGpioPin = 12;   /* 09-10 03:25:56.498     0     0 E SAANKHYA: Reset low GPIO: 12 */
+    sPlfConfig.demodI2cAddr3GpioPin = 0;   /* not used on markone AA ? */
 
-
+    //from: sdm660-qrd-kf.dtsi
+    sPlfConfig.tunerResetGpioPin = 13;
 
     /* Set Configuration Parameters */
     res = SL_ConfigSetPlatform(sPlfConfig);
 
-    _SAANKHYA_PHY_ANDROID_DEBUG("configPlatformParams: with boardType: %d", sPlfConfig.boardType);
+    _SAANKHYA_PHY_ANDROID_DEBUG("configPlatformParams_aa_markone: with chipType: %d, chipRev: %d, boardType: %d, tunerType: %d, hostInterfaceType: %d, ",
+            sPlfConfig.chipType,
+            sPlfConfig.chipRev,
+            sPlfConfig.boardType,
+            sPlfConfig.tunerType,
+            sPlfConfig.hostInterfaceType);
+
+    //reconfigure method callbacks for cust_markone
+    SL_ConfigureGpio_markone();
+    SL_ConfigureI2c_markone();
+    SL_ConfigureTs_markone();
 
     return res;
+}
 
+
+//jjustman-2020-09-09 YOGA dongle specific configuration
+SL_ConfigResult_t SaankhyaPHYAndroid::configPlatformParams_bb_fx3() {
+
+    SL_ConfigResult_t res = SL_CONFIG_OK;
+
+    sPlfConfig.chipType = SL_CHIP_3000;
+    sPlfConfig.chipRev = SL_CHIP_REV_BB;
+    sPlfConfig.boardType = SL_KAILASH_DONGLE_3;
+    sPlfConfig.tunerType = TUNER_SILABS;
+    sPlfConfig.hostInterfaceType = SL_HostInterfaceType_FX3;
+
+    sPlfConfig.demodControlIf = SL_DEMOD_CMD_CONTROL_IF_I2C;
+    sPlfConfig.demodOutputIf = SL_DEMOD_OUTPUTIF_SDIO;
+    sPlfConfig.demodI2cAddr = 0x30; /* SLDemod 7-bit Physical I2C Address */
+
+    sPlfConfig.demodResetGpioPin = 47;      /* FX3S GPIO 47 connected to Demod Reset Pin - S1_SD1/UART_CTS*/
+    sPlfConfig.cpldResetGpioPin = 43;       /* FX3S GPIO 43 connected to CPLD Reset Pin and used only for serial TS Interface  */
+    sPlfConfig.tunerResetGpioPin = 23;    /* FX3S GPIO 23 connected to Tuner Reset Pin */
+    sPlfConfig.demodI2cAddr3GpioPin = 37; /* FX3S GPIO 37 connected to SL3000_I2CADDR3 */
+
+    sPlfConfig.slsdkPath = "."; //jjustman-2020-09-09 use extern object linkages for fx3/hex firmware
+
+    /* Set Configuration Parameters */
+    res = SL_ConfigSetPlatform(sPlfConfig);
+
+    _SAANKHYA_PHY_ANDROID_DEBUG("configPlatformParams_bb_fx3: with chipType: %d, chipRev: %d, boardType: %d, tunerType: %d, hostInterfaceType: %d, ",
+                                sPlfConfig.chipType,
+                                sPlfConfig.chipRev,
+                                sPlfConfig.boardType,
+                                sPlfConfig.tunerType,
+                                sPlfConfig.hostInterfaceType);
+
+
+    //reconfigure method callbacks for yoga dongle (bb)
+    SL_ConfigureGpio_slref();
+    SL_ConfigureI2c_slref();
+    SL_ConfigureTs_slref();
+
+    return res;
 }
 
 
 
 void SaankhyaPHYAndroid::handleCmdIfFailure(void)
 {
-    _SAANKHYA_PHY_ANDROID_DEBUG("SL CMD IF FAILURE: Cannot continue!");
-    SL_DemodUnInit(slUnit);
-    slUnit = -1;
+    if(slCmdIfFailureCount < 30) {
 
-#ifndef __SL_TUNER_DEINIT_DISABLED__
-    SL_TunerUnInit(tUnit);
-    tUnit = -1;
-#endif
+        _SAANKHYA_PHY_ANDROID_DEBUG("SL CMD IF FAILURE: cmdIfFailureCount: %d, Cannot continue - leaving demod init for now...", ++slCmdIfFailureCount);
+    } else {
+        _SAANKHYA_PHY_ANDROID_DEBUG("SL CMD IF FAILURE: cmdIfFailureCount: %d, TODO: reset demod", ++slCmdIfFailureCount);
+
+        //..reset()
+    }
 }
 
-void SaankhyaPHYAndroid::printToConsoleI2cError(SL_I2cResult_t err)
+void SaankhyaPHYAndroid::printToConsoleI2cError(const char* methodName, SL_I2cResult_t err)
 {
     switch (err)
     {
         case SL_I2C_ERR_TRANSFER_FAILED:
-            _SAANKHYA_PHY_ANDROID_WARN(" Sl I2C Transfer Failed");
+            _SAANKHYA_PHY_ANDROID_ERROR_NOTIFY_BRIDGE_INSTANCE(methodName, "Sl I2C Transfer Failed", err);
             break;
+
         case SL_I2C_ERR_NOT_INITIALIZED:
-            _SAANKHYA_PHY_ANDROID_WARN(" Sl I2C Not Initialized");
+            _SAANKHYA_PHY_ANDROID_ERROR_NOTIFY_BRIDGE_INSTANCE(methodName, "Sl I2C Not Initialized", err);
             break;
 
         case SL_I2C_ERR_BUS_TIMEOUT:
-            _SAANKHYA_PHY_ANDROID_WARN(" Sl I2C Bus Timeout");
+            _SAANKHYA_PHY_ANDROID_ERROR_NOTIFY_BRIDGE_INSTANCE(methodName, "Sl I2C Bus Timeout", err);
             break;
 
         case SL_I2C_ERR_LOST_ARBITRATION:
-            _SAANKHYA_PHY_ANDROID_WARN(" Sl I2C Lost Arbitration");
+            _SAANKHYA_PHY_ANDROID_ERROR_NOTIFY_BRIDGE_INSTANCE(methodName, "Sl I2C Lost Arbitration", err);
             break;
 
         default:
-            _SAANKHYA_PHY_ANDROID_WARN(" Sl I2C other error: %d", err);
-
+            _SAANKHYA_PHY_ANDROID_ERROR_NOTIFY_BRIDGE_INSTANCE(methodName, "Sl I2C other error", err);
             break;
     }
 }
 
-void SaankhyaPHYAndroid::printToConsoleTunerError(SL_TunerResult_t err)
+void SaankhyaPHYAndroid::printToConsoleTunerError(const char* methodName, SL_TunerResult_t err)
 {
     switch (err)
     {
         case SL_TUNER_ERR_OPERATION_FAILED:
-            _SAANKHYA_PHY_ANDROID_DEBUG(" Sl Tuner Operation Failed");
+            _SAANKHYA_PHY_ANDROID_ERROR_NOTIFY_BRIDGE_INSTANCE(methodName, "Sl Tuner Operation Failed", err);
             break;
 
         case SL_TUNER_ERR_INVALID_ARGS:
-            _SAANKHYA_PHY_ANDROID_DEBUG(" Sl Tuner Invalid Argument");
+            _SAANKHYA_PHY_ANDROID_ERROR_NOTIFY_BRIDGE_INSTANCE(methodName, "Sl Tuner Invalid Argument", err);
             break;
 
         case SL_TUNER_ERR_NOT_SUPPORTED:
-            _SAANKHYA_PHY_ANDROID_DEBUG(" Sl Tuner Not Supported");
+            _SAANKHYA_PHY_ANDROID_ERROR_NOTIFY_BRIDGE_INSTANCE(methodName, "Sl Tuner Not Supported", err);
             break;
 
         case SL_TUNER_ERR_MAX_INSTANCES_REACHED:
-            _SAANKHYA_PHY_ANDROID_DEBUG(" Sl Tuner Maximum Instance Reached");
+            _SAANKHYA_PHY_ANDROID_ERROR_NOTIFY_BRIDGE_INSTANCE(methodName, "Sl Tuner Maximum Instance Reached", err);
             break;
         default:
             break;
@@ -1229,6 +1461,10 @@ void SaankhyaPHYAndroid::printToConsolePlfConfiguration(SL_PlatFormConfigParams_
 
         case SL_KAILASH_DONGLE:
             _SAANKHYA_PHY_ANDROID_DEBUG("Board Type  : SL_KAILASH_DONGLE");
+            break;
+
+        case SL_KAILASH_DONGLE_3:
+            _SAANKHYA_PHY_ANDROID_DEBUG("Board Type  : SL_KAILASH_DONGLE_3 (Yoga)");
             break;
 
         case SL_BORQS_EVT:
@@ -1277,6 +1513,10 @@ void SaankhyaPHYAndroid::printToConsolePlfConfiguration(SL_PlatFormConfigParams_
     else if (cfgInfo.tunerType == TUNER_SI)
     {
         _SAANKHYA_PHY_ANDROID_DEBUG("Tuner Type: TUNER_SI");
+    }
+    else if(cfgInfo.tunerType == TUNER_SILABS)
+    {
+        _SAANKHYA_PHY_ANDROID_DEBUG("Tuner Type: TUNER_SILABS");
     }
     else
     {
@@ -1456,34 +1696,36 @@ void SaankhyaPHYAndroid::printToConsoleDemodConfiguration(SL_DemodConfigInfo_t c
     }
 }
 
-void SaankhyaPHYAndroid::printToConsoleDemodError(SL_Result_t err)
+void SaankhyaPHYAndroid::printToConsoleDemodError(const char* methodName, SL_Result_t err)
 {
     switch (err)
     {
         case SL_ERR_OPERATION_FAILED:
-            _SAANKHYA_PHY_ANDROID_DEBUG(" Sl Operation Failed");
+            _SAANKHYA_PHY_ANDROID_ERROR_NOTIFY_BRIDGE_INSTANCE(methodName, "Sl Operation Failed", err);
             break;
 
         case SL_ERR_TOO_MANY_INSTANCES:
-            _SAANKHYA_PHY_ANDROID_DEBUG(" Sl Too Many Instance");
+            _SAANKHYA_PHY_ANDROID_ERROR_NOTIFY_BRIDGE_INSTANCE(methodName, "Sl Too Many Instances", err);
             break;
 
         case SL_ERR_CODE_DWNLD:
-            _SAANKHYA_PHY_ANDROID_DEBUG(" Sl Code download Failed");
+            _SAANKHYA_PHY_ANDROID_ERROR_NOTIFY_BRIDGE_INSTANCE(methodName, "Sl Code download Failed", err);
             break;
 
         case SL_ERR_INVALID_ARGUMENTS:
-            _SAANKHYA_PHY_ANDROID_DEBUG(" Sl Invalid Argument");
+            _SAANKHYA_PHY_ANDROID_ERROR_NOTIFY_BRIDGE_INSTANCE(methodName, "Sl Invalid Argument", err);
             break;
 
         case SL_ERR_CMD_IF_FAILURE:
-            _SAANKHYA_PHY_ANDROID_DEBUG(" Sl Command Interface Failure");
+            _SAANKHYA_PHY_ANDROID_ERROR_NOTIFY_BRIDGE_INSTANCE(methodName, "Sl Command Interface Failure", err);
             break;
 
         case SL_ERR_NOT_SUPPORTED:
-            _SAANKHYA_PHY_ANDROID_DEBUG(" Sl Not Supported");
+            _SAANKHYA_PHY_ANDROID_ERROR_NOTIFY_BRIDGE_INSTANCE(methodName, "Sl Not Supported", err);
             break;
+
         default:
+            _SAANKHYA_PHY_ANDROID_ERROR_NOTIFY_BRIDGE_INSTANCE(methodName, "Sl Other Error", err);
             break;
     }
 }
@@ -1535,34 +1777,47 @@ int SaankhyaPHYAndroid::captureThread()
     return 0;
 }
 
-#define JJ_DISABLE_L1D_DIAG_DATA_FOR_DEMOD_STABILITY
-
 int SaankhyaPHYAndroid::statusThread()
 {
     _SAANKHYA_PHY_ANDROID_DEBUG("SaankhyaPHYAndroid::statusThread: starting with this: %p", this);
+
     this->pinStatusThreadAsNeeded();
     this->statusThreadIsRunning = true;
 
-    SL_Result_t sl_res;
-    SL_TunerResult_t tres;
-    SL_TunerSignalInfo_t tunerInfo;
-    SL_DemodLockStatus_t demodLockStatus;
-    uint cpuStatus = 0;
+    unique_lock<mutex> SL_I2C_command_mutex_tuner_status_io(this->SL_I2C_command_mutex, std::defer_lock);
+    unique_lock<mutex> SL_PlpConfigParams_mutex_get_plps(SL_PlpConfigParams_mutex, std::defer_lock);
+
+    SL_Result_t dres = SL_OK;
+    SL_Result_t sl_res = SL_OK;
+    SL_TunerResult_t tres = SL_TUNER_OK;
+
     uint lastCpuStatus = 0;
-    SL_Result_t dres;
 
-    unsigned long long llsPlpInfo;
+    SL_PlpConfigParams_t  loop_plpInfo = { 0 };
+    unsigned long long    llsPlpInfo;
 
-    SL_Atsc3p0Perf_Diag_t perfDiag;
-    SL_Atsc3p0Bsr_Diag_t  bsrDiag;
-    SL_Atsc3p0L1B_Diag_t  l1bDiag;
-    SL_Atsc3p0L1D_Diag_t  l1dDiag = { 0 };
+    /* jjustman-2021-06-07 - #11798
+     *  int L1bSnrLinearScale;
+        int L1dSnrLinearScale;
+        int Plp0SnrLinearScale;
+        int Plp1SnrLinearScale;
+        int Plp2SnrLinearScale;
+        int Plp3SnrLinearScale;
+        int GlobalSnrLinearScale;
+     */
+    double snr_global;
+    double snr_l1b;
+    double snr_l1d;
+    double snr_plp[4];
 
-    double snr;
+
     double ber_l1b;
     double ber_l1d;
     double ber_plp0;
-    unique_lock<mutex> SL_I2C_command_mutex_tuner_status_io(this->SL_I2C_command_mutex, std::defer_lock);
+
+    SL_Atsc3p0L1DPlp_Diag_t myPlps[4];
+
+    atsc3_ndk_phy_client_rf_metrics_t atsc3_ndk_phy_client_rf_metrics = { '0' };
 
     //wait for demod to come up before polling status
     while(!this->demodStartStatus && this->statusThreadShouldRun) {
@@ -1573,7 +1828,8 @@ int SaankhyaPHYAndroid::statusThread()
 
         //running
         if(lastCpuStatus == 0xFFFFFFFF) {
-            usleep(2000000); //jjustman: target: sleep for 500ms
+            usleep(2000000);
+            //jjustman: target: sleep for 500ms
             //TODO: jjustman-2019-12-05: investigate FX3 firmware and i2c single threaded interrupt handling instead of dma xfer
         } else {
             //halted
@@ -1587,35 +1843,94 @@ int SaankhyaPHYAndroid::statusThread()
         }
 
         //jjustman-2020-10-14 - try to make this loop as small as possible to not upset the SDIO I/F ALP buffer window
+        /*
+         * jjustman-2021-03-16 - to restart loop, be sure to use:
+         *          goto sl_i2c_tuner_mutex_unlock;
+         * rather than continue; as we need to release this mutex for other threads to (possibly) access i2c
+         */
 
         SL_I2C_command_mutex_tuner_status_io.lock();
 
-        //if our last command was a tune or PLP change, then give us some extra sleep time
-        if(SL_I2C_last_command_extra_sleep) {
-            usleep(2000000);
-            SL_I2C_last_command_extra_sleep = false;
+        //PLP info we will use for this stats iteration
+        SL_PlpConfigParams_mutex_get_plps.lock();
+        loop_plpInfo.plp0 = plpInfo.plp0;
+        loop_plpInfo.plp1 = plpInfo.plp1;
+        loop_plpInfo.plp2 = plpInfo.plp2;
+        loop_plpInfo.plp3 = plpInfo.plp3;
+        SL_PlpConfigParams_mutex_get_plps.unlock();
+
+        //if this is our first loop after a Tune() command has completed, dump SL_DemodGetConfiguration
+        if(statusThreadFirstLoopAfterTuneComplete) {
+            SL_SleepMS(250); // Delay to accomdate set configurations at SL to take effect
+            statusThreadFirstLoopAfterTuneComplete = false;
+
+            slres = SL_DemodGetConfiguration(slUnit, &cfgInfo);
+            if (slres != SL_OK)
+            {
+                printToConsoleDemodError("SL_TunerGetStatus", slres);
+                if (slres == SL_ERR_CMD_IF_FAILURE)
+                {
+                    handleCmdIfFailure();
+                    goto sl_i2c_tuner_mutex_unlock;
+                }
+            }
+            else
+            {
+                printToConsoleDemodConfiguration(cfgInfo);
+            }
         }
 
         /*jjustman-2020-01-06: For the SL3000/SiTune, we will have 3 status attributes with the following possible values:
+                cpuStatus:          (cpuStatus == 0xFFFFFFFF) ? "RUNNING" : "HALTED",
 
                 tunerInfo.status:   SL_TUNER_STATUS_NOT_LOCKED (0)
                                     SL_TUNER_STATUS_LOCKED (1)
 
-                demodLockStatus:    SL_DEMOD_STATUS_NOT_LOCK (0)
-                                    SL_DEMOD_STATUS_LOCK (1)
+                demodLockStatus:   Updated as of SLAPI-0.14:
 
-                cpuStatus:          (cpuStatus == 0xFFFFFFFF) ? "RUNNING" : "HALTED",
-         */
+                        This data type represents the signal lock status of the SL demodulator.
 
-        //used for PLP demod info
-        SL_DemodConfigInfo_t demodInfo;
-        sl_res = SL_DemodGetConfiguration(this->slUnit, &demodInfo);
-        if(sl_res != SL_OK) {
-            global_sl_result_error_flag = sl_res;
+                        Bit Number  Value   Description         Details
+                        ----------  -----   -----------         ---------------
+                        0           0       RF UnLocked         -
+                                    1       RF Locked           RF LOCKED: Bootstrap Information decoded and available
 
-            _SAANKHYA_PHY_ANDROID_DEBUG("Error calling SL_DemodGetConfiguration, releasing lock and continue, sl_res: %d", sl_res);
+                        1           0       L1B UnLocked        -
+                                    1       L1B Locked          L1B LOCKED: L1B information available
+
+                        2           0       L1D UnLocked        -
+                                    1       L1D Locked          L1D LOCKED: L1D related information available
+
+                        3           Reserved
+
+                        4           0       BB PLP0 Not Locked  -
+                                    1       BB PLP0 Locked      BB PLP0 Locked: PLP0 ALP Data coming out of SLDemod
+
+                        5           0       BB PLP1 Not Locked  -
+                                    1       BB PLP1 Locked      BB PLP1 Locked: PLP1 ALP Data coming out of SLDemod
+
+                        6           0       BB PLP2 Not Locked  -
+                                    1       BB PLP2 Locked      BB PLP2 Locked: PLP2 ALP Data coming out of SLDemod
+
+                        7           0       BB PLP3 Not Locked  -
+                                    1       BB PLP3 Locked      BB PLP3 Locked: PLP3 ALP Data coming out of SLDemod
+
+                        8-31        Reserved
+
+        */
+
+        dres = SL_DemodGetStatus(this->slUnit, SL_DEMOD_STATUS_TYPE_CPU, (int*)&cpuStatus);
+        if (dres != SL_OK) {
+            _SAANKHYA_PHY_ANDROID_ERROR("Error:SL_Demod Get CPU Status: dres: %d", dres);
             goto sl_i2c_tuner_mutex_unlock;
         }
+        lastCpuStatus = cpuStatus;
+        //jjustman-2021-05-11 - give 256qam 11/15 fec bitrates a chance to flush ALP buffer without oveflowing and lose bootstrap/l1b/l1d lock
+
+#ifdef _JJ_I2C_TUNER_STATUS_THREAD_SLEEP_MS_ENABLED_
+        SL_SleepMS(100);
+#endif
+
 
         //jjustman-2020-10-14 - not really worth it on AA as we don't get rssi here
         tres = SL_TunerGetStatus(this->tUnit, &tunerInfo);
@@ -1624,21 +1939,82 @@ int SaankhyaPHYAndroid::statusThread()
             goto sl_i2c_tuner_mutex_unlock;
         }
 
-        //important
+#ifdef _JJ_I2C_TUNER_STATUS_THREAD_SLEEP_MS_ENABLED_
+        SL_SleepMS(100);
+#endif
+
+        atsc3_ndk_phy_client_rf_metrics.tuner_lock = (tunerInfo.status == 1);
+
+        //important, we should only query BSR, L1B, and L1D Diag data after each relevant lock has been acquired to prevent i2c bus txns from crashing the demod...
         dres = SL_DemodGetStatus(this->slUnit, SL_DEMOD_STATUS_TYPE_LOCK, (SL_DemodLockStatus_t*)&demodLockStatus);
         if (dres != SL_OK) {
             _SAANKHYA_PHY_ANDROID_ERROR("Error:SL_Demod Get Lock Status  : dres: %d", dres);
             goto sl_i2c_tuner_mutex_unlock;
         }
 
-        //important
-        dres = SL_DemodGetStatus(this->slUnit, SL_DEMOD_STATUS_TYPE_CPU, (int*)&cpuStatus);
-        if (dres != SL_OK) {
-            _SAANKHYA_PHY_ANDROID_ERROR("Error:SL_Demod Get CPU Status: dres: %d", dres);
-            continue;
+#ifdef _JJ_I2C_TUNER_STATUS_THREAD_SLEEP_MS_ENABLED_
+SL_SleepMS(100);
+#endif
+
+        atsc3_ndk_phy_client_rf_metrics.demod_lock = demodLockStatus;
+
+        atsc3_ndk_phy_client_rf_metrics.plp_lock_any = (demodLockStatus & SL_DEMOD_LOCK_STATUS_MASK_BB_PLP0_LOCK) ||
+                                                        (demodLockStatus & SL_DEMOD_LOCK_STATUS_MASK_BB_PLP1_LOCK) ||
+                                                        (demodLockStatus & SL_DEMOD_LOCK_STATUS_MASK_BB_PLP2_LOCK) ||
+                                                        (demodLockStatus & SL_DEMOD_LOCK_STATUS_MASK_BB_PLP3_LOCK);
+
+
+        atsc3_ndk_phy_client_rf_metrics.plp_lock_all = (loop_plpInfo.plp0 != 0xFF && (demodLockStatus & SL_DEMOD_LOCK_STATUS_MASK_BB_PLP0_LOCK)) &&
+                                                        (loop_plpInfo.plp1 != 0xFF && (demodLockStatus & SL_DEMOD_LOCK_STATUS_MASK_BB_PLP1_LOCK)) &&
+                                                        (loop_plpInfo.plp2 != 0xFF && (demodLockStatus & SL_DEMOD_LOCK_STATUS_MASK_BB_PLP2_LOCK)) &&
+                                                        (loop_plpInfo.plp3 != 0xFF && (demodLockStatus & SL_DEMOD_LOCK_STATUS_MASK_BB_PLP3_LOCK));
+
+        //we have RF / Bootstrap lock
+        if(demodLockStatus & SL_DEMOD_LOCK_STATUS_MASK_RF_LOCK) {
+            if(!statusThreadFirstLoopAfterTuneComplete_HasBootstrapLock_for_BSR_Diag) {
+                statusThreadFirstLoopAfterTuneComplete_HasBootstrapLock_for_BSR_Diag = true;
+
+                dres = SL_DemodGetAtsc3p0Diagnostics(this->slUnit, SL_DEMOD_DIAG_TYPE_BSR, (SL_Atsc3p0Bsr_Diag_t*)&bsrDiag);
+                if (dres != SL_OK) {
+                    _SAANKHYA_PHY_ANDROID_ERROR("Error: SL_DemodGetAtsc3p0Diagnostics with SL_DEMOD_DIAG_TYPE_BSR failed, res: %d", dres);
+                    goto sl_i2c_tuner_mutex_unlock;
+                }
+
+                printAtsc3BsrDiagnostics(bsrDiag, 0);
+            }
         }
 
-        lastCpuStatus = cpuStatus;
+        //we have L1B_Lock
+        if(demodLockStatus & SL_DEMOD_LOCK_STATUS_MASK_L1B_LOCK) {
+
+            if(!statusThreadFirstLoopAfterTuneComplete_HasL1B_DemodLock_for_L1B_Diag) {
+                statusThreadFirstLoopAfterTuneComplete_HasL1B_DemodLock_for_L1B_Diag = true;
+
+                dres = SL_DemodGetAtsc3p0Diagnostics(this->slUnit, SL_DEMOD_DIAG_TYPE_L1B, (SL_Atsc3p0L1B_Diag_t*)&l1bDiag);
+                if (dres != SL_OK) {
+                    _SAANKHYA_PHY_ANDROID_ERROR("Error: SL_DemodGetAtsc3p0Diagnostics with SL_DEMOD_DIAG_TYPE_L1B failed, res: %d", dres);
+                    goto sl_i2c_tuner_mutex_unlock;
+                }
+
+                printAtsc3L1bDiagnostics(l1bDiag, 0);
+            }
+        }
+
+        //we have L1D_Lock
+        if(demodLockStatus & SL_DEMOD_LOCK_STATUS_MASK_L1D_LOCK) {
+            if(!statusThreadFirstLoopAfterTuneComplete_HasL1D_DemodLock_for_L1D_Diag) {
+                statusThreadFirstLoopAfterTuneComplete_HasL1D_DemodLock_for_L1D_Diag = true;
+
+                dres = SL_DemodGetAtsc3p0Diagnostics(this->slUnit, SL_DEMOD_DIAG_TYPE_L1D, (SL_Atsc3p0L1D_Diag_t*)&l1dDiag);
+                if (dres != SL_OK) {
+                    _SAANKHYA_PHY_ANDROID_ERROR("Error: SL_DemodGetAtsc3p0Diagnostics with SL_DEMOD_DIAG_TYPE_L1D failed, res: %d", dres);
+                    goto sl_i2c_tuner_mutex_unlock;
+                }
+
+                printAtsc3L1dDiagnostics(l1bDiag.L1bNoOfSubframes, l1dDiag, 0);
+                printAtsc3SignalDetails(l1bDiag.L1bNoOfSubframes, l1dDiag, 0);
+            }
+        }
 
         //we need this for SNR
         dres = SL_DemodGetAtsc3p0Diagnostics(this->slUnit, SL_DEMOD_DIAG_TYPE_PERF, (SL_Atsc3p0Perf_Diag_t*)&perfDiag);
@@ -1647,48 +2023,132 @@ int SaankhyaPHYAndroid::statusThread()
             goto sl_i2c_tuner_mutex_unlock;
         }
 
-        dres = SL_DemodGetAtsc3p0Diagnostics(this->slUnit, SL_DEMOD_DIAG_TYPE_BSR, (SL_Atsc3p0Bsr_Diag_t*)&bsrDiag);
-        if (dres != SL_OK) {
-            _SAANKHYA_PHY_ANDROID_ERROR("Error getting ATSC3.0 Boot Strap Diagnostics  : dres: %d", dres);
-            goto sl_i2c_tuner_mutex_unlock;
-        }
+        //jjustman-2021-05-11 - TODO: only run this at PLP selection lock, e.g.:
+        //  for each PLPne.g. demodLockStatus & SL_DEMOD_LOCK_STATUS_MASK_BB_PLPn_LOCK) != 0;
+        //
+        //        sl_res = SL_DemodGetLlsPlpList(this->slUnit, &llsPlpInfo);
+        //        if (sl_res != SL_OK) {
+        //            _SAANKHYA_PHY_ANDROID_ERROR("Error:SL_DemodGetLlsPlpList : sl_res: %d", sl_res);
+        //            goto sl_i2c_tuner_mutex_unlock;
+        //        }
 
-        /*
-         * jjustman-2020-10-14 - omitting
-
-        dres = SL_DemodGetAtsc3p0Diagnostics(this->slUnit, SL_DEMOD_DIAG_TYPE_L1B, (SL_Atsc3p0L1B_Diag_t*)&l1bDiag);
-        if (dres != SL_OK) {
-            _SAANKHYA_PHY_ANDROID_ERROR("Error getting ATSC3.0 L1B Diagnostics  : dres: %d", dres);
-            goto sl_i2c_tuner_mutex_unlock;
-        }
-        */
-
-#ifndef JJ_DISABLE_L1D_DIAG_DATA_FOR_DEMOD_STABILITY
-        //important for PLP FEC type, and Mod/Cod
-        dres = SL_DemodGetAtsc3p0Diagnostics(this->slUnit, SL_DEMOD_DIAG_TYPE_L1D, (SL_Atsc3p0L1D_Diag_t*)&l1dDiag);
-        if (dres != SL_OK) {
-            _SAANKHYA_PHY_ANDROID_ERROR("Error getting ATSC3.0 L1D Diagnostics  : dres: %d", dres);
-            goto sl_i2c_tuner_mutex_unlock;
-        }
-#endif
-
-        sl_res = SL_DemodGetLlsPlpList(this->slUnit, &llsPlpInfo);
-        if (sl_res != SL_OK) {
-            _SAANKHYA_PHY_ANDROID_ERROR("Error:SL_DemodGetLlsPlpList : sl_res: %d", sl_res);
-            goto sl_i2c_tuner_mutex_unlock;
-        }
-
+        //jjustman-2021-03-16 - exit our i2c critical section while we build and push our PHY statistics, we can use "continue" for next loop iteration after this point
         SL_I2C_command_mutex_tuner_status_io.unlock();
 
-        snr = (float)perfDiag.GlobalSnrLinearScale / 16384;
-        snr = 10000.0 * log10(snr); //10
+        //jjustman-2021-06-08 - for debugging purposes only
+#ifdef _JJ_TUNER_STATUS_THREAD_PRINT_PERF_DIAGNOSTICS_ENABLED_
+printAtsc3PerfDiagnostics(perfDiag, 0);
+#endif
 
-        ber_l1b = (float)perfDiag.NumBitErrL1b / perfDiag.NumFecBitsL1b; // //aBerPreLdpcE7,
-        ber_l1d = (float)perfDiag.NumBitErrL1d / perfDiag.NumFecBitsL1d;//aBerPreBchE9,
-        ber_plp0 = (float)perfDiag.NumBitErrPlp0 / perfDiag.NumFecBitsPlp0; //aFerPostBchE6,
+        snr_global = compute_snr(perfDiag.GlobalSnrLinearScale);
+        atsc3_ndk_phy_client_rf_metrics.snr1000_global = snr_global;
 
-        _SAANKHYA_PHY_ANDROID_DEBUG("atsc3NdkClientSlImpl::StatusThread: SNR: %f, tunerInfo.status: %d, tunerInfo.signalStrength: %f, cpuStatus: %s, demodLockStatus: %d,  ber_l1b: %d, ber_l1d: %d, ber_plp0: %d, plps: 0x%02x (fec: %d, mod: %d, cr: %d), 0x%02x (fec: %d, mod: %d, cr: %d), 0x%02x (fec: %d, mod: %d, cr: %d), 0x%02x (fec: %d, mod: %d, cr: %d)",
-                snr / 1000.0,
+        snr_l1b = compute_snr(perfDiag.L1bSnrLinearScale);
+        atsc3_ndk_phy_client_rf_metrics.snr1000_l1b = snr_l1b;
+
+        snr_l1d = compute_snr(perfDiag.L1dSnrLinearScale);
+        atsc3_ndk_phy_client_rf_metrics.snr1000_l1d = snr_l1d;
+
+        snr_plp[0] = compute_snr(perfDiag.Plp0SnrLinearScale);
+        atsc3_ndk_phy_client_rf_metrics.phy_client_rf_plp_metrics[0].snr1000 = snr_plp[0];
+
+        snr_plp[1] = compute_snr(perfDiag.Plp1SnrLinearScale);
+        atsc3_ndk_phy_client_rf_metrics.phy_client_rf_plp_metrics[1].snr1000 = snr_plp[1];
+
+        snr_plp[2] = compute_snr(perfDiag.Plp2SnrLinearScale);
+        atsc3_ndk_phy_client_rf_metrics.phy_client_rf_plp_metrics[2].snr1000 = snr_plp[2];
+
+        snr_plp[3] = compute_snr(perfDiag.Plp3SnrLinearScale);
+        atsc3_ndk_phy_client_rf_metrics.phy_client_rf_plp_metrics[3].snr1000 = snr_plp[3];
+
+        atsc3_ndk_phy_client_rf_metrics.rssi = tunerInfo.signalStrength;
+        atsc3_ndk_phy_client_rf_metrics.rfLevel1000 = tunerInfo.signalStrength * 1000.0;
+
+        //jjustman-2021-05-11 - fixme to just be perfDiag values
+        ber_l1b = perfDiag.NumBitErrL1b; //(float)perfDiag.NumBitErrL1b / perfDiag.NumFecBitsL1b; // //aBerPreLdpcE7,
+        ber_l1d = perfDiag.NumBitErrL1b; //(float) perfDiag.NumBitErrL1d / perfDiag.NumFecBitsL1d;//aBerPreBchE9,
+        ber_plp0 = perfDiag.NumBitErrPlp0;// (float)perfDiag.NumBitErrPlp0 / perfDiag.NumFecBitsPlp0; //aFerPostBchE6,
+
+        //build our listen plp details
+
+        memset(&myPlps[0], 0, sizeof(SL_Atsc3p0L1DPlp_Diag_t));
+        memset(&myPlps[1], 0, sizeof(SL_Atsc3p0L1DPlp_Diag_t));
+        memset(&myPlps[2], 0, sizeof(SL_Atsc3p0L1DPlp_Diag_t));
+        memset(&myPlps[3], 0, sizeof(SL_Atsc3p0L1DPlp_Diag_t));
+
+//L1dSfNumPlp2Decode
+        for(int subframeIdx = 0; subframeIdx <= l1bDiag.L1bNoOfSubframes; subframeIdx++) {
+            for(int plpIdx = 0; plpIdx < (0xFF & l1dDiag.sfParams[subframeIdx].L1dSfNumPlp2Decode); plpIdx++) {
+
+                if(loop_plpInfo.plp0 == l1dDiag.sfParams[subframeIdx].PlpParams[plpIdx].L1dSfPlpId) {
+                    myPlps[0] = l1dDiag.sfParams[subframeIdx].PlpParams[plpIdx];
+                } else if(loop_plpInfo.plp1 == l1dDiag.sfParams[subframeIdx].PlpParams[plpIdx].L1dSfPlpId) {
+                    myPlps[1] = l1dDiag.sfParams[subframeIdx].PlpParams[plpIdx];
+                } else if(loop_plpInfo.plp2 == l1dDiag.sfParams[subframeIdx].PlpParams[plpIdx].L1dSfPlpId) {
+                    myPlps[2] = l1dDiag.sfParams[subframeIdx].PlpParams[plpIdx];
+                } else if(loop_plpInfo.plp3 == l1dDiag.sfParams[subframeIdx].PlpParams[plpIdx].L1dSfPlpId) {
+                    myPlps[3] = l1dDiag.sfParams[subframeIdx].PlpParams[plpIdx];
+                }
+            }
+        }
+
+        //plp[0]
+        atsc3_ndk_phy_client_rf_metrics.phy_client_rf_plp_metrics[0].plp_id          = loop_plpInfo.plp0;
+        atsc3_ndk_phy_client_rf_metrics.phy_client_rf_plp_metrics[0].modcod_valid    = (demodLockStatus & SL_DEMOD_LOCK_STATUS_MASK_BB_PLP0_LOCK) != 0;
+        atsc3_ndk_phy_client_rf_metrics.phy_client_rf_plp_metrics[0].plp_fec_type    = myPlps[0].L1dSfPlpFecType;
+        atsc3_ndk_phy_client_rf_metrics.phy_client_rf_plp_metrics[0].plp_mod         = myPlps[0].L1dSfPlpModType;
+        atsc3_ndk_phy_client_rf_metrics.phy_client_rf_plp_metrics[0].plp_cod         = myPlps[0].L1dSfPlpCoderate;
+
+        atsc3_ndk_phy_client_rf_metrics.phy_client_rf_plp_metrics[0].ber_pre_ldpc    = perfDiag.LdpcItrnsPlp0; // over ???//BER x1e7
+        atsc3_ndk_phy_client_rf_metrics.phy_client_rf_plp_metrics[0].ber_pre_bch     = perfDiag.NumBitErrPlp0; //(perfDiag.NumBitErrPlp0 * 1000000000) / (perfDiag.Plp0StreamByteCount * 8); //s_fe_detail.aBerPreBchE9[i]; //BER 1xe9
+        atsc3_ndk_phy_client_rf_metrics.phy_client_rf_plp_metrics[0].fer_post_bch    = perfDiag.NumFecBitsPlp0; //(perfDiag.NumFrameErrPlp0 * 1000000) / perfDiag.NumFecFramePlp0;  //FER 1xe6
+        atsc3_ndk_phy_client_rf_metrics.phy_client_rf_plp_metrics[0].total_fec       = perfDiag.NumFecFramePlp0;
+        atsc3_ndk_phy_client_rf_metrics.phy_client_rf_plp_metrics[0].total_error_fec = perfDiag.NumFrameErrPlp0;
+
+        //plp[1]
+        atsc3_ndk_phy_client_rf_metrics.phy_client_rf_plp_metrics[1].plp_id          = loop_plpInfo.plp1;
+        atsc3_ndk_phy_client_rf_metrics.phy_client_rf_plp_metrics[1].modcod_valid    = (demodLockStatus & SL_DEMOD_LOCK_STATUS_MASK_BB_PLP1_LOCK) != 0;
+        atsc3_ndk_phy_client_rf_metrics.phy_client_rf_plp_metrics[1].plp_fec_type    = myPlps[1].L1dSfPlpFecType;
+        atsc3_ndk_phy_client_rf_metrics.phy_client_rf_plp_metrics[1].plp_mod         = myPlps[1].L1dSfPlpModType;
+        atsc3_ndk_phy_client_rf_metrics.phy_client_rf_plp_metrics[1].plp_cod         = myPlps[1].L1dSfPlpCoderate;
+
+        atsc3_ndk_phy_client_rf_metrics.phy_client_rf_plp_metrics[1].ber_pre_ldpc    = perfDiag.LdpcItrnsPlp1; // over ???//BER x1e7
+        atsc3_ndk_phy_client_rf_metrics.phy_client_rf_plp_metrics[1].ber_pre_bch     = perfDiag.NumBitErrPlp1; //(perfDiag.NumBitErrPlp1 * 1000000000) / (perfDiag.Plp1StreamByteCount * 8); //s_fe_detail.aBerPreBchE9[i]; //BER 1xe9
+        atsc3_ndk_phy_client_rf_metrics.phy_client_rf_plp_metrics[1].fer_post_bch    = perfDiag.NumFecBitsPlp1; //(perfDiag.NumFrameErrPlp1 * 1000000) / perfDiag.NumFecFramePlp1;  //FER 1xe6
+        atsc3_ndk_phy_client_rf_metrics.phy_client_rf_plp_metrics[1].total_fec       = perfDiag.NumFecFramePlp1;
+        atsc3_ndk_phy_client_rf_metrics.phy_client_rf_plp_metrics[1].total_error_fec = perfDiag.NumFrameErrPlp1;
+        //plp[2]
+        atsc3_ndk_phy_client_rf_metrics.phy_client_rf_plp_metrics[2].plp_id          = loop_plpInfo.plp2;
+        atsc3_ndk_phy_client_rf_metrics.phy_client_rf_plp_metrics[2].modcod_valid    = (demodLockStatus & SL_DEMOD_LOCK_STATUS_MASK_BB_PLP2_LOCK) != 0;
+        atsc3_ndk_phy_client_rf_metrics.phy_client_rf_plp_metrics[2].plp_fec_type    = myPlps[2].L1dSfPlpFecType;
+        atsc3_ndk_phy_client_rf_metrics.phy_client_rf_plp_metrics[2].plp_mod         = myPlps[2].L1dSfPlpModType;
+        atsc3_ndk_phy_client_rf_metrics.phy_client_rf_plp_metrics[2].plp_cod         = myPlps[2].L1dSfPlpCoderate;
+
+        atsc3_ndk_phy_client_rf_metrics.phy_client_rf_plp_metrics[2].ber_pre_ldpc    = perfDiag.LdpcItrnsPlp2; // over ???//BER x1e7
+        atsc3_ndk_phy_client_rf_metrics.phy_client_rf_plp_metrics[2].ber_pre_bch     = perfDiag.NumBitErrPlp2; //(perfDiag.NumBitErrPlp2 * 1000000000) / (perfDiag.Plp2StreamByteCount * 8); //s_fe_detail.aBerPreBchE9[i]; //BER 1xe9
+        atsc3_ndk_phy_client_rf_metrics.phy_client_rf_plp_metrics[2].fer_post_bch    = perfDiag.NumFecBitsPlp2; //(perfDiag.NumFrameErrPlp2 * 1000000) / perfDiag.NumFecFramePlp2;  //FER 1xe6
+        atsc3_ndk_phy_client_rf_metrics.phy_client_rf_plp_metrics[2].total_fec       = perfDiag.NumFecFramePlp2;
+        atsc3_ndk_phy_client_rf_metrics.phy_client_rf_plp_metrics[2].total_error_fec = perfDiag.NumFrameErrPlp2;
+
+        //plp[3]
+        atsc3_ndk_phy_client_rf_metrics.phy_client_rf_plp_metrics[3].plp_id          = loop_plpInfo.plp3;
+        atsc3_ndk_phy_client_rf_metrics.phy_client_rf_plp_metrics[3].modcod_valid    = (demodLockStatus & SL_DEMOD_LOCK_STATUS_MASK_BB_PLP3_LOCK) != 0;
+        atsc3_ndk_phy_client_rf_metrics.phy_client_rf_plp_metrics[3].plp_fec_type    = myPlps[3].L1dSfPlpFecType;
+        atsc3_ndk_phy_client_rf_metrics.phy_client_rf_plp_metrics[3].plp_mod         = myPlps[3].L1dSfPlpModType;
+        atsc3_ndk_phy_client_rf_metrics.phy_client_rf_plp_metrics[3].plp_cod         = myPlps[3].L1dSfPlpCoderate;
+
+        atsc3_ndk_phy_client_rf_metrics.phy_client_rf_plp_metrics[3].ber_pre_ldpc    = perfDiag.LdpcItrnsPlp3; // over ???//BER x1e7
+        atsc3_ndk_phy_client_rf_metrics.phy_client_rf_plp_metrics[3].ber_pre_bch     = perfDiag.NumBitErrPlp3; //(perfDiag.NumBitErrPlp3 * 1000000000) / (perfDiag.Plp3StreamByteCount * 8); //s_fe_detail.aBerPreBchE9[i]; //BER 1xe9
+        atsc3_ndk_phy_client_rf_metrics.phy_client_rf_plp_metrics[3].fer_post_bch    = perfDiag.NumFecBitsPlp3; //(perfDiag.NumFrameErrPlp3 * 1000000) / perfDiag.NumFecFramePlp3;  //FER 1xe6
+        atsc3_ndk_phy_client_rf_metrics.phy_client_rf_plp_metrics[3].total_fec       = perfDiag.NumFecFramePlp3;
+        atsc3_ndk_phy_client_rf_metrics.phy_client_rf_plp_metrics[3].total_error_fec = perfDiag.NumFrameErrPlp3;
+
+
+        _SAANKHYA_PHY_ANDROID_DEBUG("atsc3NdkClientSlImpl::StatusThread: global_SNR: %f, l1b_SNR: %f, l1d_SNR: %f tunerInfo.status: %d, tunerInfo.signalStrength: %f, cpuStatus: %s, demodLockStatus: %d,  ber_l1b: %d, ber_l1d: %d, ber_plp0: %d, plps: 0x%02x (fec: %d, mod: %d, cr: %d, snr: %f), 0x%02x (fec: %d, mod: %d, cr: %d, snr: %f), 0x%02x (fec: %d, mod: %d, cr: %d, snr: %f), 0x%02x (fec: %d, mod: %d, cr: %d, snr: %f)",
+                snr_global / 1000.0,
+                snr_l1b / 1000.0,
+                snr_l1d / 1000.0,
+
                tunerInfo.status,
                tunerInfo.signalStrength / 1000,
                (cpuStatus == 0xFFFFFFFF) ? "RUNNING" : "HALTED",
@@ -1696,53 +2156,46 @@ int SaankhyaPHYAndroid::statusThread()
                ber_l1b,
                ber_l1d,
                ber_plp0,
-               demodInfo.plpInfo.plp0,
-               l1dDiag.sfParams[0].PlpParams[0].L1dSfPlpFecType,
-               l1dDiag.sfParams[0].PlpParams[0].L1dSfPlpModType,
-               l1dDiag.sfParams[0].PlpParams[0].L1dSfPlpCoderate,
-               demodInfo.plpInfo.plp1,
-               l1dDiag.sfParams[1].PlpParams[1].L1dSfPlpFecType,
-               l1dDiag.sfParams[1].PlpParams[1].L1dSfPlpModType,
-               l1dDiag.sfParams[1].PlpParams[1].L1dSfPlpCoderate,
-               demodInfo.plpInfo.plp2,
-               l1dDiag.sfParams[2].PlpParams[2].L1dSfPlpFecType,
-               l1dDiag.sfParams[2].PlpParams[2].L1dSfPlpModType,
-               l1dDiag.sfParams[2].PlpParams[2].L1dSfPlpCoderate,
-               demodInfo.plpInfo.plp3,
-               l1dDiag.sfParams[3].PlpParams[3].L1dSfPlpFecType,
-               l1dDiag.sfParams[3].PlpParams[3].L1dSfPlpModType,
-               l1dDiag.sfParams[3].PlpParams[3].L1dSfPlpCoderate);
+               loop_plpInfo.plp0,
+                myPlps[0].L1dSfPlpFecType,
+                myPlps[0].L1dSfPlpModType,
+                myPlps[0].L1dSfPlpCoderate,
+                atsc3_ndk_phy_client_rf_metrics.phy_client_rf_plp_metrics[0].snr1000 / 1000.0,
+                loop_plpInfo.plp1,
+                myPlps[1].L1dSfPlpFecType,
+                myPlps[1].L1dSfPlpModType,
+                myPlps[1].L1dSfPlpCoderate,
+                atsc3_ndk_phy_client_rf_metrics.phy_client_rf_plp_metrics[1].snr1000 / 1000.0,
+               loop_plpInfo.plp2,
+                myPlps[2].L1dSfPlpFecType,
+                myPlps[2].L1dSfPlpModType,
+                myPlps[2].L1dSfPlpCoderate,
+                atsc3_ndk_phy_client_rf_metrics.phy_client_rf_plp_metrics[2].snr1000 / 1000.0,
+                loop_plpInfo.plp3,
+                myPlps[3].L1dSfPlpFecType,
+                myPlps[3].L1dSfPlpModType,
+                myPlps[3].L1dSfPlpCoderate,
+                atsc3_ndk_phy_client_rf_metrics.phy_client_rf_plp_metrics[3].snr1000 / 1000.0
+        );
 
         if(atsc3_ndk_phy_bridge_get_instance()) {
-            atsc3_ndk_phy_bridge_get_instance()->atsc3_update_rf_stats(tunerInfo.status == 1,
-                tunerInfo.signalStrength,
-                saankhyaPHYAndroid->plpInfo.plp0 == l1dDiag.sfParams[0].PlpParams[0].L1dSfPlpId,
-                l1dDiag.sfParams[0].PlpParams[0].L1dSfPlpFecType,
-                l1dDiag.sfParams[0].PlpParams[0].L1dSfPlpModType,
-                l1dDiag.sfParams[0].PlpParams[0].L1dSfPlpCoderate,
-                tunerInfo.signalStrength/1000,
-                snr,
-                ber_l1b,
-                ber_l1d,
-                ber_plp0,
-                demodLockStatus,
-                cpuStatus == 0xFFFFFFFF,
-                llsPlpInfo & 0x01 == 0x01,
-                0);
-
+            atsc3_ndk_phy_bridge_get_instance()->atsc3_update_rf_stats_from_atsc3_ndk_phy_client_rf_metrics_t(&atsc3_ndk_phy_client_rf_metrics);
             atsc3_ndk_phy_bridge_get_instance()->atsc3_update_rf_bw_stats(saankhyaPHYAndroid->alp_completed_packets_parsed,
                                                                           saankhyaPHYAndroid->alp_total_bytes,
                                                                           saankhyaPHYAndroid->alp_total_LMTs_recv);
-            }
+         }
+
         //we've already unlocked, so don't fall thru
         continue;
 
 sl_i2c_tuner_mutex_unlock:
         SL_I2C_command_mutex_tuner_status_io.unlock();
 
-        if(global_sl_result_error_flag != SL_OK || global_sl_i2c_result_error_flag != SL_I2C_OK) {
+        if(global_sl_result_error_flag != SL_OK || global_sl_i2c_result_error_flag != SL_I2C_OK || dres != SL_OK || sl_res != SL_OK || tres != SL_OK) {
             if(atsc3_ndk_phy_bridge_get_instance()) {
-                atsc3_ndk_phy_bridge_get_instance()->atsc3_notify_phy_error("SaankhyaPHYAndroid::tunerStatusThread() - ERROR: command failed, error code: sl_res error code: %d, sl_i2c_res: %d", global_sl_result_error_flag, global_sl_i2c_result_error_flag);
+                atsc3_ndk_phy_bridge_get_instance()->atsc3_notify_phy_error("SaankhyaPHYAndroid::tunerStatusThread() - ERROR: command failed: global_sl_res: %d, global_sl_i2c_res: %d, dres: %d, sl_res, tres: %d",
+                        global_sl_result_error_flag, global_sl_i2c_result_error_flag,
+                        dres, sl_res, tres);
             }
         }
 
@@ -1767,120 +2220,129 @@ void SaankhyaPHYAndroid::processTLVFromCallback()
     int bytesRead = 0;
 
     unique_lock<mutex> CircularBufferMutex_local(CircularBufferMutex, std::defer_lock);
-    unique_lock<mutex> atsc3_sl_tlv_block_mutex_local(atsc3_sl_tlv_block_mutex, std::defer_lock);
+    //promoted from unique_lock, std::defer_lock to recursive_mutex: atsc3_sl_tlv_block_mutex
 
-    //jjustman-2020-12-07 - loop while we have data in our cb, mutex lock to
-    while(true) {
+    //jjustman-2020-12-07 - loop while we have data in our cb, or break if cb_should_discard is true
+    while(true && !SaankhyaPHYAndroid::cb_should_discard) {
         CircularBufferMutex_local.lock();
         bytesRead = CircularBufferPop(cb, TLV_CIRCULAR_BUFFER_PROCESS_BLOCK_SIZE, (char*)&processDataCircularBufferForCallback);
         CircularBufferMutex_local.unlock();
 
         //jjustman-2021-01-19 - if we don't get any data back, or the cb_should_discard flag is set, bail
         if(!bytesRead || SaankhyaPHYAndroid::cb_should_discard) {
-            return;
+            break; //we need to issue a matching sl_tlv_block_mutex ublock...
         }
 
-        atsc3_sl_tlv_block_mutex_local.lock();
+        atsc3_sl_tlv_block_mutex.lock();
         if (!atsc3_sl_tlv_block) {
             _SAANKHYA_PHY_ANDROID_WARN("ERROR: atsc3NdkClientSlImpl::processTLVFromCallback - atsc3_sl_tlv_block is NULL!");
             allocate_atsc3_sl_tlv_block();
         }
 
-        if (bytesRead) {
-            block_Write(atsc3_sl_tlv_block, (uint8_t *) &processDataCircularBufferForCallback, bytesRead);
-            if (bytesRead < TLV_CIRCULAR_BUFFER_PROCESS_BLOCK_SIZE) {
-                //_SAANKHYA_PHY_ANDROID_TRACE("atsc3NdkClientSlImpl::processTLVFromCallback() - short read from CircularBufferPop, got %d bytes, but expected: %d", bytesRead, TLV_CIRCULAR_BUFFER_PROCESS_BLOCK_SIZE);
-                break;
-            }
-
-            block_Rewind(atsc3_sl_tlv_block);
-
-            //_SAANKHYA_PHY_ANDROID_DEBUG("atsc3NdkClientSlImpl::processTLVFromCallback() - processTLVFromCallbackInvocationCount: %d, inner loop count: %d, atsc3_sl_tlv_block.p_size: %d, atsc3_sl_tlv_block.i_pos: %d", processTLVFromCallbackInvocationCount, ++innerLoopCount, atsc3_sl_tlv_block->p_size, atsc3_sl_tlv_block->i_pos);
-
-            bool atsc3_sl_tlv_payload_complete = false;
-
-            do {
-                atsc3_sl_tlv_payload = atsc3_sl_tlv_payload_parse_from_block_t(atsc3_sl_tlv_block);
-
-                if (atsc3_sl_tlv_payload) {
-                    atsc3_sl_tlv_payload_dump(atsc3_sl_tlv_payload);
-                    if (atsc3_sl_tlv_payload->alp_payload_complete) {
-                        atsc3_sl_tlv_payload_complete = true;
-
-                        block_Rewind(atsc3_sl_tlv_payload->alp_payload);
-                        atsc3_alp_packet_t *atsc3_alp_packet = atsc3_alp_packet_parse(atsc3_sl_tlv_payload->plp_number, atsc3_sl_tlv_payload->alp_payload);
-                        if (atsc3_alp_packet) {
-                            alp_completed_packets_parsed++;
-
-                            alp_total_bytes += atsc3_alp_packet->alp_payload->p_size;
-
-                            if (atsc3_alp_packet->alp_packet_header.packet_type == 0x00) {
-
-                                block_Rewind(atsc3_alp_packet->alp_payload);
-                                if (atsc3_phy_rx_udp_packet_process_callback) {
-                                    atsc3_phy_rx_udp_packet_process_callback(atsc3_sl_tlv_payload->plp_number, atsc3_alp_packet->alp_payload);
-                                }
-
-                            } else if (atsc3_alp_packet->alp_packet_header.packet_type == 0x4) {
-                                alp_total_LMTs_recv++;
-                                atsc3_link_mapping_table_t *atsc3_link_mapping_table_pending = atsc3_alp_packet_extract_lmt(atsc3_alp_packet);
-
-                                if (atsc3_phy_rx_link_mapping_table_process_callback && atsc3_link_mapping_table_pending) {
-                                    atsc3_link_mapping_table_t *atsc3_link_mapping_table_to_free = atsc3_phy_rx_link_mapping_table_process_callback(atsc3_link_mapping_table_pending);
-
-                                    if (atsc3_link_mapping_table_to_free) {
-                                        atsc3_link_mapping_table_free(&atsc3_link_mapping_table_to_free);
-                                    }
-                                }
-                            }
-
-                            atsc3_alp_packet_free(&atsc3_alp_packet);
-                        }
-                        //free our atsc3_sl_tlv_payload
-                        atsc3_sl_tlv_payload_free(&atsc3_sl_tlv_payload);
-
-                    } else {
-                        atsc3_sl_tlv_payload_complete = false;
-                        //jjustman-2019-12-29 - noisy, TODO: wrap in __DEBUG macro check
-                        //_SAANKHYA_PHY_ANDROID_DEBUG("alp_payload->alp_payload_complete == FALSE at pos: %d, size: %d", atsc3_sl_tlv_block->i_pos, atsc3_sl_tlv_block->p_size);
-                    }
-                } else {
-                    atsc3_sl_tlv_payload_complete = false;
-                    //jjustman-2019-12-29 - noisy, TODO: wrap in __DEBUG macro check
-                    //_SAANKHYA_PHY_ANDROID_DEBUG("ERROR: alp_payload IS NULL, short TLV read?  at atsc3_sl_tlv_block: i_pos: %d, p_size: %d", atsc3_sl_tlv_block->i_pos, atsc3_sl_tlv_block->p_size);
-                }
-
-            } while (atsc3_sl_tlv_payload_complete);
-
-            if (atsc3_sl_tlv_payload && !atsc3_sl_tlv_payload->alp_payload_complete && atsc3_sl_tlv_block->i_pos > atsc3_sl_tlv_payload->sl_tlv_total_parsed_payload_size) {
-                //accumulate from our last starting point and continue iterating during next bbp
-                atsc3_sl_tlv_block->i_pos -= atsc3_sl_tlv_payload->sl_tlv_total_parsed_payload_size;
-                //free our atsc3_sl_tlv_payload
-                atsc3_sl_tlv_payload_free(&atsc3_sl_tlv_payload);
-            }
-
-            if (atsc3_sl_tlv_block->p_size > atsc3_sl_tlv_block->i_pos) {
-                //truncate our current block_t starting at i_pos, and then read next i/o block
-                block_t *temp_sl_tlv_block = block_Duplicate_from_position(atsc3_sl_tlv_block);
-                block_Destroy(&atsc3_sl_tlv_block);
-                atsc3_sl_tlv_block = temp_sl_tlv_block;
-                block_Seek(atsc3_sl_tlv_block, atsc3_sl_tlv_block->p_size);
-            } else if (atsc3_sl_tlv_block->p_size == atsc3_sl_tlv_block->i_pos) {
-                //clear out our tlv block as we are the "exact" size of our last alp packet
-
-                //jjustman-2020-10-30 - TODO: this can be optimized out without a re-alloc
-                block_Destroy(&atsc3_sl_tlv_block);
-                atsc3_sl_tlv_block = block_Alloc(TLV_CIRCULAR_BUFFER_PROCESS_BLOCK_SIZE);
-            } else {
-                _SAANKHYA_PHY_ANDROID_WARN("atsc3_sl_tlv_block: positioning mismatch: i_pos: %d, p_size: %d - rewinding and seeking for magic packet?", atsc3_sl_tlv_block->i_pos, atsc3_sl_tlv_block->p_size);
-
-                //jjustman: 2019-11-23: rewind in order to try seek for our magic packet in the next loop here
-                block_Rewind(atsc3_sl_tlv_block);
-            }
+        block_Write(atsc3_sl_tlv_block, (uint8_t *) &processDataCircularBufferForCallback, bytesRead);
+        if (bytesRead < TLV_CIRCULAR_BUFFER_PROCESS_BLOCK_SIZE) {
+            //_SAANKHYA_PHY_ANDROID_TRACE("atsc3NdkClientSlImpl::processTLVFromCallback() - short read from CircularBufferPop, got %d bytes, but expected: %d", bytesRead, TLV_CIRCULAR_BUFFER_PROCESS_BLOCK_SIZE);
+            //release our recursive lock early as we are bailing this method
+            atsc3_sl_tlv_block_mutex.unlock();
+            break;
         }
 
-        atsc3_sl_tlv_block_mutex_local.unlock();
+        block_Rewind(atsc3_sl_tlv_block);
+
+        //_SAANKHYA_PHY_ANDROID_DEBUG("atsc3NdkClientSlImpl::processTLVFromCallback() - processTLVFromCallbackInvocationCount: %d, inner loop count: %d, atsc3_sl_tlv_block.p_size: %d, atsc3_sl_tlv_block.i_pos: %d", processTLVFromCallbackInvocationCount, ++innerLoopCount, atsc3_sl_tlv_block->p_size, atsc3_sl_tlv_block->i_pos);
+
+        bool atsc3_sl_tlv_payload_complete = false;
+
+        do {
+            atsc3_sl_tlv_payload = atsc3_sl_tlv_payload_parse_from_block_t(atsc3_sl_tlv_block);
+            _SAANKHYA_PHY_ANDROID_TRACE("atsc3NdkClientSlImpl::processTLVFromCallback() - processTLVFromCallbackInvocationCount: %d, inner loop count: %d, atsc3_sl_tlv_block.p_size: %d, atsc3_sl_tlv_block.i_pos: %d", processTLVFromCallbackInvocationCount, ++innerLoopCount, atsc3_sl_tlv_block->p_size, atsc3_sl_tlv_block->i_pos, atsc3_sl_tlv_payload);
+
+            if (atsc3_sl_tlv_payload) {
+                atsc3_sl_tlv_payload_dump(atsc3_sl_tlv_payload);
+                if (atsc3_sl_tlv_payload->alp_payload_complete) {
+                    atsc3_sl_tlv_payload_complete = true;
+
+                    block_Rewind(atsc3_sl_tlv_payload->alp_payload);
+                    atsc3_alp_packet_t *atsc3_alp_packet = atsc3_alp_packet_parse(atsc3_sl_tlv_payload->plp_number, atsc3_sl_tlv_payload->alp_payload);
+                    if (atsc3_alp_packet) {
+                        alp_completed_packets_parsed++;
+
+                        alp_total_bytes += atsc3_alp_packet->alp_payload->p_size;
+
+                        if (atsc3_alp_packet->alp_packet_header.packet_type == 0x00) {
+
+                            block_Rewind(atsc3_alp_packet->alp_payload);
+                            if (atsc3_phy_rx_udp_packet_process_callback) {
+                                atsc3_phy_rx_udp_packet_process_callback(atsc3_sl_tlv_payload->plp_number, atsc3_alp_packet->alp_payload);
+                            }
+
+                        } else if (atsc3_alp_packet->alp_packet_header.packet_type == 0x4) {
+                            alp_total_LMTs_recv++;
+                            atsc3_link_mapping_table_t *atsc3_link_mapping_table_pending = atsc3_alp_packet_extract_lmt(atsc3_alp_packet);
+
+                            if (atsc3_phy_rx_link_mapping_table_process_callback && atsc3_link_mapping_table_pending) {
+                                atsc3_link_mapping_table_t *atsc3_link_mapping_table_to_free = atsc3_phy_rx_link_mapping_table_process_callback(atsc3_link_mapping_table_pending);
+
+                                if (atsc3_link_mapping_table_to_free) {
+                                    atsc3_link_mapping_table_free(&atsc3_link_mapping_table_to_free);
+                                }
+                            }
+                        }
+
+                        atsc3_alp_packet_free(&atsc3_alp_packet);
+                    }
+
+                    //free our atsc3_sl_tlv_payload
+                    atsc3_sl_tlv_payload_free(&atsc3_sl_tlv_payload);
+                    continue;
+
+                } else {
+
+                    atsc3_sl_tlv_payload_free(&atsc3_sl_tlv_payload);
+                    atsc3_sl_tlv_payload_complete = false;
+                    break; //jjustman-2021-05-04 - gross, i know...
+                }
+            }
+
+            if(atsc3_sl_tlv_block->i_pos > (atsc3_sl_tlv_block->p_size - 188)) {
+                atsc3_sl_tlv_payload_complete = false;
+            } else {
+                atsc3_sl_tlv_payload_complete = true;
+            }
+            //jjustman-2019-12-29 - noisy, TODO: wrap in __DEBUG macro check
+            //_SAANKHYA_PHY_ANDROID_DEBUG("ERROR: alp_payload IS NULL, short TLV read?  at atsc3_sl_tlv_block: i_pos: %d, p_size: %d", atsc3_sl_tlv_block->i_pos, atsc3_sl_tlv_block->p_size);
+
+        } while (atsc3_sl_tlv_payload_complete);
+
+        if (atsc3_sl_tlv_payload && !atsc3_sl_tlv_payload->alp_payload_complete && atsc3_sl_tlv_block->i_pos > atsc3_sl_tlv_payload->sl_tlv_total_parsed_payload_size) {
+            //accumulate from our last starting point and continue iterating during next bbp
+            atsc3_sl_tlv_block->i_pos -= atsc3_sl_tlv_payload->sl_tlv_total_parsed_payload_size;
+            //free our atsc3_sl_tlv_payload
+            atsc3_sl_tlv_payload_free(&atsc3_sl_tlv_payload);
+        }
+
+        if (atsc3_sl_tlv_block->p_size > atsc3_sl_tlv_block->i_pos) {
+            //truncate our current block_t starting at i_pos, and then read next i/o block
+            block_t *temp_sl_tlv_block = block_Duplicate_from_position(atsc3_sl_tlv_block);
+            block_Destroy(&atsc3_sl_tlv_block);
+            atsc3_sl_tlv_block = temp_sl_tlv_block;
+            block_Seek(atsc3_sl_tlv_block, atsc3_sl_tlv_block->p_size);
+        } else if (atsc3_sl_tlv_block->p_size == atsc3_sl_tlv_block->i_pos) {
+            //clear out our tlv block as we are the "exact" size of our last alp packet
+
+            //jjustman-2020-10-30 - TODO: this can be optimized out without a re-alloc
+            block_Destroy(&atsc3_sl_tlv_block);
+            atsc3_sl_tlv_block = block_Alloc(TLV_CIRCULAR_BUFFER_PROCESS_BLOCK_SIZE);
+        } else {
+            _SAANKHYA_PHY_ANDROID_WARN("atsc3_sl_tlv_block: positioning mismatch: i_pos: %d, p_size: %d - rewinding and seeking for magic packet?", atsc3_sl_tlv_block->i_pos, atsc3_sl_tlv_block->p_size);
+
+            //jjustman: 2019-11-23: rewind in order to try seek for our magic packet in the next loop here
+            block_Rewind(atsc3_sl_tlv_block);
+        }
+        //unlock for our inner loop
+        atsc3_sl_tlv_block_mutex.unlock();
     }
+    //atsc3_sl_tlv_block_mutex is now unlocked from either bytesRead < TLV_CIRCULAR_BUFFER_PROCESS_BLOCK_SIZE _or_ 2 lines above...
 }
 
 void SaankhyaPHYAndroid::RxDataCallback(unsigned char *data, long len)
@@ -1902,11 +2364,13 @@ void SaankhyaPHYAndroid::NotifyPlpSelectionChangeCallback(vector<uint8_t> plps, 
 }
 
 void SaankhyaPHYAndroid::allocate_atsc3_sl_tlv_block() {
-    unique_lock<mutex> atsc3_sl_tlv_block_mutex_local(atsc3_sl_tlv_block_mutex);
+    //protect for de-alloc with using recursive lock here
+    atsc3_sl_tlv_block_mutex.lock();
+
     if(!atsc3_sl_tlv_block) {
         atsc3_sl_tlv_block = block_Alloc(TLV_CIRCULAR_BUFFER_PROCESS_BLOCK_SIZE);
     }
-    atsc3_sl_tlv_block_mutex_local.unlock();
+    atsc3_sl_tlv_block_mutex.unlock();
 }
 
 extern "C"
@@ -1999,7 +2463,7 @@ Java_org_ngbp_libatsc3_middleware_android_phy_SaankhyaPHYAndroid_deinit(JNIEnv *
 }
 
 extern "C" JNIEXPORT jint JNICALL
-Java_org_ngbp_libatsc3_middleware_android_phy_SaankhyaPHYAndroid_download_1bootloader_1firmware(JNIEnv *env, jobject thiz, jint fd, jstring device_path_jstring) {
+Java_org_ngbp_libatsc3_middleware_android_phy_SaankhyaPHYAndroid_download_1bootloader_1firmware(JNIEnv *env, jobject thiz, jint fd, jint device_type, jstring device_path_jstring) {
     lock_guard<mutex> saankhy_phy_android_cctor_mutex_local(SaankhyaPHYAndroid::CS_global_mutex);
 
     _SAANKHYA_PHY_ANDROID_DEBUG("Java_org_ngbp_libatsc3_middleware_android_phy_SaankhyaPHYAndroid_download_1bootloader_1firmware: fd: %d", fd);
@@ -2012,7 +2476,7 @@ Java_org_ngbp_libatsc3_middleware_android_phy_SaankhyaPHYAndroid_download_1bootl
         const char* device_path_weak = env->GetStringUTFChars(device_path_jstring, 0);
         string device_path(device_path_weak);
 
-        res = saankhyaPHYAndroid->download_bootloader_firmware(fd, device_path); //calls pre_init
+        res = saankhyaPHYAndroid->download_bootloader_firmware(fd, device_type, device_path); //calls pre_init
         env->ReleaseStringUTFChars( device_path_jstring, device_path_weak );
 
         //jjustman-2020-08-23 - hack, clear out our in-flight reference since we should re-enumerate
@@ -2024,7 +2488,7 @@ Java_org_ngbp_libatsc3_middleware_android_phy_SaankhyaPHYAndroid_download_1bootl
 }
 
 extern "C" JNIEXPORT jint JNICALL
-Java_org_ngbp_libatsc3_middleware_android_phy_SaankhyaPHYAndroid_open(JNIEnv *env, jobject thiz, jint fd, jstring device_path_jstring) {
+Java_org_ngbp_libatsc3_middleware_android_phy_SaankhyaPHYAndroid_open(JNIEnv *env, jobject thiz, jint fd, jint device_type, jstring device_path_jstring) {
     lock_guard<mutex> saankhy_phy_android_cctor_mutex_local(SaankhyaPHYAndroid::CS_global_mutex);
 
     _SAANKHYA_PHY_ANDROID_DEBUG("Java_org_ngbp_libatsc3_middleware_android_phy_SaankhyaPHYAndroid_open: fd: %d", fd);
@@ -2037,7 +2501,7 @@ Java_org_ngbp_libatsc3_middleware_android_phy_SaankhyaPHYAndroid_open(JNIEnv *en
         const char* device_path_weak = env->GetStringUTFChars(device_path_jstring, 0);
         string device_path(device_path_weak);
 
-        res = saankhyaPHYAndroid->open(fd, device_path);
+        res = saankhyaPHYAndroid->open(fd, device_type, device_path);
         env->ReleaseStringUTFChars( device_path_jstring, device_path_weak );
     }
     _SAANKHYA_PHY_ANDROID_DEBUG("Java_org_ngbp_libatsc3_middleware_android_phy_SaankhyaPHYAndroid_open: fd: %d, return: %d", fd, res);
@@ -2090,4 +2554,22 @@ Java_org_ngbp_libatsc3_middleware_android_phy_SaankhyaPHYAndroid_listen_1plps(JN
     }
 
     return res;
+}
+
+extern "C" JNIEXPORT jstring JNICALL
+Java_org_ngbp_libatsc3_middleware_android_phy_SaankhyaPHYAndroid_get_1sdk_1version(JNIEnv *env, jobject thiz) {
+    string sdk_version = saankhyaPHYAndroid->get_sdk_version();
+    return env->NewStringUTF(sdk_version.c_str());
+}
+
+extern "C" JNIEXPORT jstring JNICALL
+Java_org_ngbp_libatsc3_middleware_android_phy_SaankhyaPHYAndroid_get_1firmware_1version(JNIEnv *env, jobject thiz) {
+    string firmware_version = saankhyaPHYAndroid->get_firmware_version();
+    return env->NewStringUTF(firmware_version.c_str());
+}
+
+extern "C" JNIEXPORT jstring JNICALL
+Java_org_ngbp_libatsc3_middleware_android_phy_SaankhyaPHYAndroid_get_1demod_1version(JNIEnv *env, jobject thiz) {
+    string demod_version = saankhyaPHYAndroid->demodVersion;
+    return env->NewStringUTF(demod_version.c_str());
 }

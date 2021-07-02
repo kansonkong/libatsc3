@@ -47,11 +47,19 @@ extern "C" {
 //Reserved for private use 		0x8000 ~ 0xFFFF
 
 
-#define	MMT_ATSC3_MESSAGE_ID	0x8100
+#define	MMT_ATSC3_MESSAGE_ID		0x8100
+#define	SIGNED_MMT_ATSC3_MESSAGE_ID	0x8101
+
+//From A/331:2020 - Table 7.8 Code Values for atsc3_message_content_type
+
+#define MMT_ATSC3_MESSAGE_CONTENT_TYPE_RESERVED			                    0x0000
 
 #define MMT_ATSC3_MESSAGE_CONTENT_TYPE_UserServiceDescription               0x0001
-//pointless
+
+//redundant, but...as needed...
 #define MMT_ATSC3_MESSAGE_CONTENT_TYPE_MPD_FROM_DASHIF                      0x0002
+
+//HELD trigger is in the MMT SLS (SI message), not as part of the fdt-instance as in ROUTE
 #define MMT_ATSC3_MESSAGE_CONTENT_TYPE_HELD                                 0x0003
 
 //see atsc3_mmt_signalling_message.c: mmt_atsc3_message_payload_parse
@@ -71,10 +79,14 @@ extern "C" {
 #define MMT_ATSC3_MESSAGE_CONTENT_TYPE_AUDIO_STREAM_PROPERTIES_DESCRIPTOR   0x0009
 #define MMT_ATSC3_MESSAGE_CONTENT_TYPE_DWD                                  0x000A
 #define MMT_ATSC3_MESSAGE_CONTENT_TYPE_RSAT_A200                            0x000B
+
 #define MMT_ATSC3_MESSAGE_CONTENT_TYPE_SECURITY_PROPERTIES_DESCRIPTOR       0x000C
 
-//reserved to 0x000D ~ 0xFFFF
-#define MMT_ATSC3_MESSAGE_CONTENT_TYPE_RESERVED                             0x000D
+//jjustman-2021-06-03: TODO - implement additional SI for LA_url support
+#define MMT_ATSC3_MESSAGE_CONTENT_TYPE_SECURITY_PROPERTIES_DESCRIPTOR_LAURL	0x000D
+
+//reserved to 0x000E ~ 0xFFFF
+#define MMT_ATSC3_MESSAGE_CONTENT_TYPE_RESERVED_FUTURE                      0x000E
 
 
 #define MMT_SCTE35_Signal_Message		0xF337	// SCTE35_Signal_Message Type
@@ -113,18 +125,21 @@ typedef struct mmt_signalling_message_header {
  */
 
 enum ATSC3_MESSAGE_CONTENT_TYPE {
-	ATSC3_MESSAGE_CONTENT_TYPE_ATSC_RESERVED=0,
-	ATSC3_MESSAGE_CONTENT_TYPE_USERSERVICEDESCRIPTION=1,
-	ATSC3_MESSAGE_CONTENT_TYPE_MPD=2,
-	ATSC3_MESSAGE_CONTENT_TYPE_HELD=3,
-	ATSC3_MESSAGE_CONTENT_TYPE_APPLICATION_EVENT_INFORMATION=4,
-	ATSC3_MESSAGE_CONTENT_TYPE_VIDEO_STREAM_PROPERTIES_DESCRIPTOR=5,
-	ATSC3_MESSAGE_CONTENT_TYPE_STAGGERCAST_DESCRIPTOR=6,
-	ATSC3_MESSAGE_CONTENT_TYPE_INBAND_EVENT_DESCRIPTOR=7,
-	ATSC3_MESSAGE_CONTENT_TYPE_CAPTION_ASSET_DESCRIPTOR=8,
-	ATSC3_MESSAGE_CONTENT_TYPE_AUDIO_STREAM_PROPERTIES=9,
-	ATSC3_MESSAGE_CONTENT_TYPE_DWD=0xA,
-	ATSC3_MESSAGE_CONTENT_TYPE_ATSC_RESERVED_OTHER=-1
+	ATSC3_MESSAGE_CONTENT_TYPE_ATSC_RESERVED=MMT_ATSC3_MESSAGE_CONTENT_TYPE_RESERVED,
+	ATSC3_MESSAGE_CONTENT_TYPE_USERSERVICEDESCRIPTION=MMT_ATSC3_MESSAGE_CONTENT_TYPE_UserServiceDescription,
+	ATSC3_MESSAGE_CONTENT_TYPE_MPD=MMT_ATSC3_MESSAGE_CONTENT_TYPE_MPD_FROM_DASHIF,
+	ATSC3_MESSAGE_CONTENT_TYPE_HELD=MMT_ATSC3_MESSAGE_CONTENT_TYPE_HELD,
+	ATSC3_MESSAGE_CONTENT_TYPE_APPLICATION_EVENT_INFORMATION=MMT_ATSC3_MESSAGE_CONTENT_TYPE_APPLICATION_EVENT_INFORMATION_A337,
+	ATSC3_MESSAGE_CONTENT_TYPE_VIDEO_STREAM_PROPERTIES_DESCRIPTOR=MMT_ATSC3_MESSAGE_CONTENT_TYPE_VIDEO_STREAM_PROPERTIES_DESCRIPTOR,
+	ATSC3_MESSAGE_CONTENT_TYPE_STAGGERCAST_DESCRIPTOR=MMT_ATSC3_MESSAGE_CONTENT_TYPE_ATSC_STAGGERCAST_DESCRIPTOR,
+	ATSC3_MESSAGE_CONTENT_TYPE_INBAND_EVENT_DESCRIPTOR=MMT_ATSC3_MESSAGE_CONTENT_TYPE_INBAND_EVENT_DESCRIPTOR_A337,
+	ATSC3_MESSAGE_CONTENT_TYPE_CAPTION_ASSET_DESCRIPTOR=MMT_ATSC3_MESSAGE_CONTENT_TYPE_CAPTION_ASSET_DESCRIPTOR,
+	ATSC3_MESSAGE_CONTENT_TYPE_AUDIO_STREAM_PROPERTIES=MMT_ATSC3_MESSAGE_CONTENT_TYPE_AUDIO_STREAM_PROPERTIES_DESCRIPTOR,
+	ATSC3_MESSAGE_CONTENT_TYPE_DWD=MMT_ATSC3_MESSAGE_CONTENT_TYPE_DWD,
+	ATSC3_MESSAGE_CONTENT_TYPE_RSAT=MMT_ATSC3_MESSAGE_CONTENT_TYPE_RSAT_A200,
+	ATSC3_MESSAGE_CONTENT_TYPE_SI_DESCRIPTOR=MMT_ATSC3_MESSAGE_CONTENT_TYPE_SECURITY_PROPERTIES_DESCRIPTOR,
+	ATSC3_MESSAGE_CONTENT_TYPE_SI_DESCRIPTOR_LAURL=MMT_ATSC3_MESSAGE_CONTENT_TYPE_SECURITY_PROPERTIES_DESCRIPTOR_LAURL,
+	ATSC3_MESSAGE_CONTENT_TYPE_ATSC_RESERVED_FUTURE=MMT_ATSC3_MESSAGE_CONTENT_TYPE_RESERVED_FUTURE
 };
 
 enum ATSC3_MESSAGE_CONTENT_COMPRESSION {
@@ -135,6 +150,31 @@ enum ATSC3_MESSAGE_CONTENT_COMPRESSION {
 	ATSC3_MESSAGE_CONTENT_COMPRESSION_RESERVED_OTHER=-1
 };
 
+
+typedef struct mmt_signalling_information_message_descriptor_header {
+	uint16_t	descriptor_tag;
+	uint16_t	descriptor_length;
+} mmt_signalling_information_message_descriptor_header_t;
+
+typedef struct mmt_atsc3_message_content_type_descriptor_number_of_assets_header {
+	uint16_t	descriptor_tag;
+	uint16_t	descriptor_length;
+	uint8_t		number_of_assets;
+
+} mmt_atsc3_message_content_type_descriptor_number_of_assets_header_t;
+
+typedef struct mmt_atsc3_message_content_type_asset_heaader {
+	uint32_t		asset_id_length;
+	uint8_t*		asset_id;
+} mmt_atsc3_message_content_type_asset_heaader_t;
+
+typedef struct mmt_atsc3_message_content_type_language_heaader {
+	uint8_t		language_length;
+	char*		language;
+} mmt_atsc3_message_content_type_language_heaader_t;
+
+
+//Used in MMT_ATSC3_MESSAGE_CONTENT_TYPE_UserServiceDescription
 typedef struct mmt_atsc3_route_component {
     uint8_t*    stsid_uri_s;
 
@@ -150,9 +190,406 @@ typedef struct mmt_atsc3_route_component {
 
 } mmt_atsc3_route_component_t;
 
+//Used in MMT_ATSC3_MESSAGE_CONTENT_TYPE_HELD
 typedef struct mmt_atsc3_held_message {
     block_t*    held_message;
 } mmt_atsc3_held_message_t;
+
+//TODO: jjustman-2021-06-03: MMT_ATSC3_MESSAGE_CONTENT_TYPE_APPLICATION_EVENT_INFORMATION_A337
+typedef struct mmt_atsc3_message_content_type_application_event_information_a337 {
+	void* TODO;
+} mmt_atsc3_message_content_type_application_event_information_a337_t;
+
+
+
+typedef struct mmt_atsc3_message_content_type_video_stream_properties_descriptor_asset {
+	uint8_t		codec_codec[4];
+	uint8_t		temporal_scalability_present:1;
+	uint8_t		scalability_info_present:1;
+	uint8_t		multiview_info_present:1;
+	uint8_t		res_cf_bd_info_present:1;
+	uint8_t		pr_info_present:1;
+	uint8_t		br_info_present:1;
+	uint8_t		color_info_present:1;
+	uint8_t		reserved_1:1;
+
+	//if (temporal_scalability_present) {
+	//
+		struct  {
+			uint8_t	max_sub_layers_instream:6;
+			uint8_t	sub_layer_profile_tier_level_info_present:1;
+			uint8_t	temporal_filter_present:1;
+			uint8_t	tid_max:3;
+			uint8_t	tid_min:3;
+
+			//if (temporal_filter_present) {
+				uint8_t	tfweight:2;
+			//} else {
+				uint8_t	reserved_2:2;
+			//}
+		} temporal_scalability_info;
+	//}
+
+	//if(scalability_info_present) {
+	//	mmt_atsc3_message_content_type_video_stream_properties_descriptor_scalability_info_t	scalability_info;
+		struct {
+			uint8_t		asset_layer_id:6;
+			uint8_t		reserved:2;
+
+		} scalability_info;
+	//}
+
+	//if(multiview_info_present) {
+	//	mmt_atsc3_message_content_type_video_stream_properties_descriptor_multview_info_t		multiview_info;
+		struct {
+			uint8_t		view_nuh_layer_id:6;
+			uint8_t		view_pos:6;
+			uint8_t		reserved_4:4;
+			uint16_t	min_disp_with_offset:11;
+			uint16_t	max_disp_range:11;
+			uint8_t		reserved_2:2;
+		} multiview_info;
+	//}
+
+	//if(res_cf_bd_info_present) {
+		//mmt_atsc3_message_content_type_video_stream_properties_descriptor_res_cf_bd_info_t		res_cf_bd_info;
+		struct {
+			uint16_t 		pic_width_in_luma_samples;
+			uint16_t		pic_height_in_luma_samples;
+			uint8_t			chroma_format_idc:3;
+			//if(chroma_format_idc == 3) {
+				uint8_t		separate_colour_plane_flag:1;
+				uint8_t		reserved_3:3;
+			//} else {
+				uint8_t		reserved_4:4;
+			//}
+
+			uint8_t			video_still_present:1;
+			uint8_t			video_24hr_pic_present:1;
+			uint8_t			bit_depth_luma_minus8:4;
+			uint8_t			bit_depth_chroma_minus8:4;
+
+		} res_cf_bd_info;
+	//}
+
+	//if(pr_info_present) {
+		//if(sub_layer_profile_tier_level_info_present) {
+			//pr_info(max_sub_layers_instream-1)
+		//} else {
+			//pr_info(0)
+		//}
+	//}
+
+	//pr_info() {
+		//for(i=0; i <= maxSubLayersMinus1; i++) {
+			uint8_t			picture_rate_code[255];
+			uint16_t		average_picture_rate[255]; //only if picture_rate_code[i] ==
+		//}
+	//}
+
+
+	//if(br_info_present) {
+		//if(sub_layer_profile_tier_level_info_present) {
+			//br_info(max_sub_layers_instream-1)
+		//} else {
+			//br_info(0)
+		//}
+	//}
+	//br_info() {
+		//for(i=0; i < maxSubLayersMinus1; i++) {
+			uint16_t		average_bitrate[255];
+			uint16_t		maximum_bitrate[255];
+		//}
+	//}
+
+	//if(color_info_present) {
+		struct {
+				uint8_t		colour_primaries;
+				uint8_t		transfer_characteristics;
+				uint8_t		matrix_coeffs;
+
+				//if(colour_primaries>=9) {
+					uint8_t 	cg_compatibility:1;
+					uint8_t		reserved_7_cp:7;
+				//}
+
+				//if(transfer_characteristics>=16) {
+					uint8_t		eotf_info_present:1;
+					//if(eotf_info_present) {
+						uint16_t	eotf_info_len_minus1:15;
+						struct {
+							uint8_t		num_SEIs_minus1;
+							uint16_t	SEI_NUT_length_minus1[255];
+							uint8_t*	SEI_NUT_data[255];  //alloc to uint8_t, len: 8*(SEI_NUT_length_minus1[ i ]+1)
+							///eotf_info()
+						} eotf_info;
+					//}
+				//} else {
+					uint8_t		reserved_7_tf;
+				//}
+			};
+	//}
+
+	//if(sub_layer_profile_tier_level_info_present) {
+		//profile_tier_level(1, max_sub_layers_instream-1)
+	//} else {
+		//profile_tier_level(1, 0)
+	//}
+	//A/331:2021 Table 7.1 lists this as var length in "H.265" format?
+	uint8_t*	profile_tier_level[255];  //up to max_sub_layers_instream-1 of var length
+
+} mmt_atsc3_message_content_type_video_stream_properties_descriptor_asset_t;
+
+//TODO: jjustman-2021-06-03: MMT_ATSC3_MESSAGE_CONTENT_TYPE_VIDEO_STREAM_PROPERTIES_DESCRIPTOR
+typedef struct mmt_atsc3_message_content_type_video_stream_properties_descriptor {
+	mmt_atsc3_message_content_type_asset_heaader_t										asset_header;
+	ATSC3_VECTOR_BUILDER_STRUCT(mmt_atsc3_message_content_type_video_stream_properties_descriptor_asset);
+
+} mmt_atsc3_message_content_type_video_stream_properties_descriptor_t;
+
+//TODO: jjustman-2021-06-03: MMT_ATSC3_MESSAGE_CONTENT_TYPE_ATSC_STAGGERCAST_DESCRIPTOR
+typedef struct mmt_atsc3_message_content_type_atsc_staggercast_descriptor {
+	void* TODO;
+} mmt_atsc3_message_content_type_atsc_staggercast_descriptor_t;
+
+//TODO: jjustman-2021-06-03: MMT_ATSC3_MESSAGE_CONTENT_TYPE_INBAND_EVENT_DESCRIPTOR_A337
+typedef struct mmt_atsc3_message_content_type_inband_event_descriptor_a337 {
+	void* TODO;
+} mmt_atsc3_message_content_type_inband_event_descriptor_a337_t;
+
+enum MMT_ATSC3_MESSAGE_CONTENT_TYPE_CAPTION_ASSET_DESCRIPTOR_ASSET_ROLE {
+	MMT_ATSC3_MESSAGE_CONTENT_TYPE_CAPTION_ASSET_DESCRIPTOR_ASSET_ROLE_MAIN =				0x0,
+	MMT_ATSC3_MESSAGE_CONTENT_TYPE_CAPTION_ASSET_DESCRIPTOR_ASSET_ROLE_ALTERNATE =			0x1,
+	MMT_ATSC3_MESSAGE_CONTENT_TYPE_CAPTION_ASSET_DESCRIPTOR_ASSET_ROLE_COMMENTARY =			0x2,
+	MMT_ATSC3_MESSAGE_CONTENT_TYPE_CAPTION_ASSET_DESCRIPTOR_ASSET_ROLE_RESERVED =			0x3
+};
+
+enum MMT_ATSC3_MESSAGE_CONTENT_TYPE_CAPTION_ASSET_DESCRIPTOR_ASSET_ASPECT_RATIO {
+	MMT_ATSC3_MESSAGE_CONTENT_TYPE_CAPTION_ASSET_DESCRIPTOR_ASSET_ASPECT_RATIO_16X9 =		0x0,
+	MMT_ATSC3_MESSAGE_CONTENT_TYPE_CAPTION_ASSET_DESCRIPTOR_ASSET_ASPECT_RATIO_4X3 =		0x1,
+	MMT_ATSC3_MESSAGE_CONTENT_TYPE_CAPTION_ASSET_DESCRIPTOR_ASSET_ASPECT_RATIO_21X9 =		0x2,
+	MMT_ATSC3_MESSAGE_CONTENT_TYPE_CAPTION_ASSET_DESCRIPTOR_ASSET_ASPECT_RATIO_RESERVED =	0x3
+};
+
+typedef struct mmt_atsc3_message_content_type_caption_asset_descriptor_asset {
+	mmt_atsc3_message_content_type_asset_heaader_t										asset_header;
+	mmt_atsc3_message_content_type_language_heaader_t									language_header;
+
+	enum MMT_ATSC3_MESSAGE_CONTENT_TYPE_CAPTION_ASSET_DESCRIPTOR_ASSET_ROLE 			role;
+	enum MMT_ATSC3_MESSAGE_CONTENT_TYPE_CAPTION_ASSET_DESCRIPTOR_ASSET_ASPECT_RATIO		aspect_ratio;
+	uint8_t																				easy_reader:1;
+	uint8_t																				profile:2;
+	uint8_t																				flag_3d_support:1;
+	uint8_t																				reserved:4;
+
+} mmt_atsc3_message_content_type_caption_asset_descriptor_asset_t;
+
+//TODO: jjustman-2021-06-03: MMT_ATSC3_MESSAGE_CONTENT_TYPE_CAPTION_ASSET_DESCRIPTOR
+typedef struct mmt_atsc3_message_content_type_caption_asset_descriptor {
+	mmt_atsc3_message_content_type_descriptor_number_of_assets_header_t		descriptor_header;
+
+	ATSC3_VECTOR_BUILDER_STRUCT(mmt_atsc3_message_content_type_caption_asset_descriptor_asset);
+
+	uint8_t													reserved:8;
+
+} mmt_atsc3_message_content_type_caption_asset_descriptor_t;
+
+
+//TODO: jjustman-2021-06-03: MMT_ATSC3_MESSAGE_CONTENT_TYPE_AUDIO_STREAM_PROPERTIES_DESCRIPTOR
+typedef struct mmt_atsc3_message_content_type_audio_stream_properties_descriptor {
+	mmt_atsc3_message_content_type_descriptor_number_of_assets_header_t		descriptor_header;
+
+	void* TODO;
+} mmt_atsc3_message_content_type_audio_stream_properties_descriptor_t;
+
+//TODO: jjustman-2021-06-03: MMT_ATSC3_MESSAGE_CONTENT_TYPE_DWD
+typedef struct mmt_atsc3_message_content_type_dwd {
+	mmt_atsc3_message_content_type_descriptor_number_of_assets_header_t		descriptor_header;
+
+	void* TODO;
+} mmt_atsc3_message_content_type_dwd_t;
+
+//TODO: jjustman-2021-06-03: MMT_ATSC3_MESSAGE_CONTENT_TYPE_RSAT_A200
+typedef struct mmt_atsc3_message_content_type_rsat_a200 {
+	mmt_atsc3_message_content_type_descriptor_number_of_assets_header_t		descriptor_header;
+
+	void* TODO;
+} mmt_atsc3_message_content_type_rsat_a200_t;
+
+//jjustman-2021-06-08 - todo: refactor out into MMT SI types?
+/**
+ *
+ 23008-1:2017 Section 10.5.5.2: SI descriptor syntax
+
+ Syntax										Value		No. of Bits		Mnemonic
+ ------										-----		-----------		--------
+ SI_descriptor {
+ 	 descriptor_tag										16
+ 	 descriptor_length									16
+ 	 security_system_count					N1			8
+ 	 reserved								"000 0000"	7
+ 	 system_provider_url_flag				1
+
+ 	 if(system_provider_url_flag) {
+ 	 	 system_provider_url_length 		N2			8
+ 	 	 for(i=0; i < N2; i++) {
+ 	 	 	 system_provider_url_byte					8
+ 	 	 }
+ 	 }
+
+ 	 for(i=0; i < N1; i++) {
+		 system_id										16*8
+		 kid_count							N3			16
+		 for(j=0; j < N3; j++) {
+			 KID										16*8 		(note per KID)
+		 }
+		 data_size										32
+		 for(j=0; j < N4; j++) {
+			 data										8
+		 }
+	}
+ }
+ */
+typedef struct mmt_si_security_properties_descriptor_kid {
+	uint8_t			kid[16]; //8*16
+} mmt_si_security_properties_descriptor_kid_t;
+
+typedef struct mmt_si_security_properties_descriptor_system {
+
+	uint8_t	 													system_id[16];
+	uint16_t													kid_count;
+		 //for(j=0; j < N3; j++) {
+
+	ATSC3_VECTOR_BUILDER_STRUCT(mmt_si_security_properties_descriptor_kid);
+		 //}
+
+	uint32_t													data_size;
+
+		 //for(j=0; j < N4; j++) {
+			 uint8_t*											data;
+		 //}
+} mmt_si_security_properties_descriptor_system_t;
+ATSC3_VECTOR_BUILDER_METHODS_INTERFACE(mmt_si_security_properties_descriptor_system, mmt_si_security_properties_descriptor_kid);
+
+typedef struct mmt_si_security_properties_descriptor {
+	mmt_signalling_information_message_descriptor_header_t		descriptor_header;
+	uint8_t														security_system_count;		//N1
+	uint8_t														reserved_7_0:7; 			//000 0000
+	uint8_t														system_provider_url_flag:1;
+
+	//if(system_provider_url_flag) {
+	uint8_t														system_provider_url_length;
+	 	 //for(i=0; i < N2; i++) {
+	uint8_t*							 						system_provider_url;
+	 	 //}
+	 //}
+
+	 //for(i=0; i < N1; i++) {
+	ATSC3_VECTOR_BUILDER_STRUCT(mmt_si_security_properties_descriptor_system);
+
+	//}
+} mmt_si_security_properties_descriptor_t;
+ATSC3_VECTOR_BUILDER_METHODS_INTERFACE(mmt_si_security_properties_descriptor, mmt_si_security_properties_descriptor_system);
+
+
+//TODO: jjustman-2021-06-03: MMT_ATSC3_MESSAGE_CONTENT_TYPE_SECURITY_PROPERTIES_DESCRIPTOR
+typedef struct mmt_atsc3_message_content_type_security_properties_descriptor {
+	mmt_atsc3_message_content_type_descriptor_number_of_assets_header_t				descriptor_header;
+
+	void* TODO;
+} mmt_atsc3_message_content_type_security_properties_descriptor_t;
+
+
+/*
+ * DRAFT: 2021-06-08 RP MMT DRM
+ *
+  Syntax																Bits		Format
+  -----------------------------------------								-------     --------
+  security_properties_descriptor_LAURL() {
+	descriptor_tag
+	descriptor_length
+	number_of_assets
+	for (i=0; i<number_of_assets; i++) {
+		asset_id_length
+		for (j=0; j<asset_id_length; j++) {
+			asset_id_byte
+		}
+		scheme_code_present												1
+		default_KID_present												1
+		license_info_present											1
+        reserved														5			00000
+		if (schme_code_present) {
+			scheme_code													4*8			uimsbf
+		}
+		if (default_KID_present) {
+		    default_KID_length											8
+	 	    for (j=0; j<default_KID_length; j++) {
+			default_KID_byte											8
+		    }
+		}
+		if (license_info_present) {
+        	number_of_license_info										8
+            for (i=0; i<number_of_license_info; i++) {
+		        license_type											8
+		        LA_URL_length											8
+		        for (j=0; j<URL_length; j++) {
+			    	LA_URL_byte											8
+		       }
+        	}
+		}
+
+		SI_descriptor()													var			Subclause 10.5.5 of 23008-1
+	}
+}
+ *
+ */
+
+typedef struct mmt_atsc3_message_content_type_security_properties_descriptor_LAURL_asset_license_info {
+	uint8_t		license_type;
+	uint8_t		LA_URL_length;
+	uint8_t*	LA_URL;
+
+} mmt_atsc3_message_content_type_security_properties_descriptor_LAURL_asset_license_info_t;
+
+
+typedef struct mmt_atsc3_message_content_type_security_properties_descriptor_LAURL_asset {
+	mmt_atsc3_message_content_type_asset_heaader_t						asset_header;
+
+	uint8_t																scheme_code_present:1;
+	uint8_t																default_KID_present:1;
+	uint8_t																license_info_present:1;
+	uint8_t																reserved_5_0:5;		 //5 bits: 00000
+
+	//if(scheme_code_present) {
+	uint8_t																scheme_code[4]; 	//8*4
+	//}
+
+	//if(default_KID_present) {
+	uint8_t																default_KID_length;
+	uint8_t*															default_KID;		//varchar
+	//}
+
+	//if(license_info_present) {
+	uint8_t																number_of_license_info;
+	ATSC3_VECTOR_BUILDER_STRUCT(mmt_atsc3_message_content_type_security_properties_descriptor_LAURL_asset_license_info);
+	//}
+
+	//si_descriptor_23008-1-10.5.5
+	mmt_si_security_properties_descriptor_t								mmt_si_security_properties_descriptor;
+
+} mmt_atsc3_message_content_type_security_properties_descriptor_LAURL_asset_t;
+
+ATSC3_VECTOR_BUILDER_METHODS_INTERFACE(mmt_atsc3_message_content_type_security_properties_descriptor_LAURL_asset, mmt_atsc3_message_content_type_security_properties_descriptor_LAURL_asset_license_info);
+
+//TODO: jjustman-2021-06-03: MMT_ATSC3_MESSAGE_CONTENT_TYPE_SECURITY_PROPERTIES_DESCRIPTOR_LAURL
+typedef struct mmt_atsc3_message_content_type_security_properties_descriptor_LAURL {
+	mmt_atsc3_message_content_type_descriptor_number_of_assets_header_t		descriptor_header;
+	ATSC3_VECTOR_BUILDER_STRUCT(mmt_atsc3_message_content_type_security_properties_descriptor_LAURL_asset);
+
+} mmt_atsc3_message_content_type_security_properties_descriptor_LAURL_t;
+ATSC3_VECTOR_BUILDER_METHODS_INTERFACE(mmt_atsc3_message_content_type_security_properties_descriptor_LAURL, mmt_atsc3_message_content_type_security_properties_descriptor_LAURL_asset);
+
+
 
 typedef struct mmt_atsc3_message_payload {
 	uint16_t 	service_id;
@@ -163,8 +600,11 @@ typedef struct mmt_atsc3_message_payload {
 	uint8_t 	URI_length;
 	uint8_t* 	URI_payload;
 
+	//jjustman-2021-06-08 - todo: map this into block_t*
 	uint32_t	atsc3_message_content_length;
 	uint8_t*	atsc3_message_content;
+
+	block_t*	atsc3_message_content_blockt;
 
 	uint32_t	atsc3_message_content_length_compressed;
 	uint8_t*	atsc3_message_content_compressed;
@@ -176,6 +616,10 @@ typedef struct mmt_atsc3_message_payload {
 	mmt_atsc3_route_component_t*    mmt_atsc3_route_component;
 
 	mmt_atsc3_held_message_t*       mmt_atsc3_held_message;
+
+
+	//other content_types as needed
+	mmt_atsc3_message_content_type_security_properties_descriptor_LAURL_t* mmt_atsc3_message_content_type_security_properties_descriptor_LAURL;
 
 } mmt_atsc3_message_payload_t;
 
@@ -244,13 +688,41 @@ typedef struct mmt_package_id {
 	uint8_t*	mmt_package_id;
 } mmt_package_id_t;
 
+/*
+ 
+ From ISO 23008-1:2017 10.6.1.3 Semantics for Table 56 — MMT_general_location_info syntax
+ 
+  Value Description
+  ----- -----------
+  0x01  MMTP packet flow over UDP/IP (version 4)
+  0x02  MMTP packet flow over UDP/IP (version 6)
+  0x03  An elementary stream within an MPEG-2 TS in a broadcast network.
+  0x04  An elementary stream (ES) in an MPEG-2 TS over the IP broadcast network
+  0x05  URL
+  0x06  Reserved for private location information
+  0x07  The same signalling message as the one that carries the data structure to which this MMT_ general_location_info() belongs
+  0x08  A signalling message delivered in the same data path as the one that carries the data structure to which this MMT_general_location_info() belongs
+  0x09  A signalling message delivered in a data path in the same UDP/IP flow as the one that carries the data structure to which this MMT_general_location_info() belongs
+  0x0A  A signalling message delivered in a data path in a UDP/IP (version 4) flow
+  0x0B  A signalling message delivered in a data path in a UDP/IP (version 6) flow
+  0x0C  An elementary stream (ES) in an MPEG-2 TS over the IP v4 broadcast network
+ 
+ */
+
+#define MMT_GENERAL_LOCATION_INFO_LOCATION_TYPE_MMTP_PACKET_FLOW_SAME_AS_SI 0x00
+#define MMT_GENERAL_LOCATION_INFO_LOCATION_TYPE_MMTP_PACKET_FLOW_UDP_IP_V4  0x01
 
 typedef struct mmt_general_location_info {
 	uint8_t location_type;
+	
+	//for _most_ location_type values (e.g. 0x00, 0x01, !0x03, !0x04, !0x05, ...etc)
 	uint16_t packet_id;
+	
+	//for location_type == 0x01
 	uint32_t ipv4_src_addr;
 	uint32_t ipv4_dst_addr;
-	uint16_t dst_port;
+	uint16_t ipv4_dst_port;
+	
 	//ignoring ipv6
 	uint16_t message_id;
 
@@ -270,11 +742,46 @@ typedef struct mmt_signaling_message_mpu_timestamp_descriptor {
     mmt_signalling_message_mpu_tuple_t*    mpu_tuple;
 } mmt_signalling_message_mpu_timestamp_descriptor_t;
 
-//Video: HEVC
-#define ATSC3_MP_TABLE_ASSET_ROW_HEVC_ID "hev1"
+
+#define MP_TABLE_ASSET_ROW_ASSET_TYPE_LENGTH 4
+
+/*
+ * Video: HEVC
+ *
+ * A/331:2021 pp. 99:
+ *
+ * codec_code – This field shall specify a 4-character code for a codec.
+ *
+ *      The value of these four characters shall be one of 'hev1', 'hev2', 'hvc1', 'hvc2', 'lhv1' or 'lhe1' with semantic meaning for these codes as specified in ISO/IEC 14496-15 [35] as amended.
+*/
+
+#define ATSC3_MP_TABLE_ASSET_ROW_HEVC_ID_HEV1 "hev1"
+#define ATSC3_MP_TABLE_ASSET_ROW_HEVC_ID_HEV2 "hev2"
+#define ATSC3_MP_TABLE_ASSET_ROW_HEVC_ID_HVC1 "hvc1"
+#define ATSC3_MP_TABLE_ASSET_ROW_HEVC_ID_HVC2 "hvc2"
+#define ATSC3_MP_TABLE_ASSET_ROW_HEVC_ID_LVH1 "lvh1"
+#define ATSC3_MP_TABLE_ASSET_ROW_HEVC_ID_LHE1 "lhe1"
+
+#define ATSC3_MP_TABLE_IS_VIDEO_ASSET_TYPE_HEVC(asset_type) \
+    (\
+        strncasecmp(ATSC3_MP_TABLE_ASSET_ROW_HEVC_ID_HEV1, asset_type, 4) == 0 || \
+        strncasecmp(ATSC3_MP_TABLE_ASSET_ROW_HEVC_ID_HEV2, asset_type, 4) == 0 || \
+        strncasecmp(ATSC3_MP_TABLE_ASSET_ROW_HEVC_ID_HVC1, asset_type, 4) == 0 || \
+        strncasecmp(ATSC3_MP_TABLE_ASSET_ROW_HEVC_ID_HVC2, asset_type, 4) == 0 || \
+        strncasecmp(ATSC3_MP_TABLE_ASSET_ROW_HEVC_ID_LVH1, asset_type, 4) == 0 || \
+        strncasecmp(ATSC3_MP_TABLE_ASSET_ROW_HEVC_ID_LHE1, asset_type, 4) == 0 \
+    )
 
 //Video: h264
 #define ATSC3_MP_TABLE_ASSET_ROW_H264_ID "avc1"
+
+#define ATSC3_MP_TABLE_IS_VIDEO_ASSET_TYPE_H264(asset_type) \
+    (\
+        strncasecmp(ATSC3_MP_TABLE_ASSET_ROW_H264_ID, asset_type, 4) == 0 \
+    )
+
+#define ATSC3_MP_TABLE_IS_VIDEO_ASSET_TYPE_ANY(asset_type) \
+    ( ATSC3_MP_TABLE_IS_VIDEO_ASSET_TYPE_HEVC(asset_type) || ATSC3_MP_TABLE_IS_VIDEO_ASSET_TYPE_H264(asset_type) )
 
 //Audio: AC-4
 #define ATSC3_MP_TABLE_ASSET_ROW_AC_4_ID "ac-4"
