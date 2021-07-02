@@ -2567,9 +2567,3 @@ Java_org_ngbp_libatsc3_middleware_android_phy_SaankhyaPHYAndroid_get_1firmware_1
     string firmware_version = saankhyaPHYAndroid->get_firmware_version();
     return env->NewStringUTF(firmware_version.c_str());
 }
-
-extern "C" JNIEXPORT jstring JNICALL
-Java_org_ngbp_libatsc3_middleware_android_phy_SaankhyaPHYAndroid_get_1demod_1version(JNIEnv *env, jobject thiz) {
-    string demod_version = saankhyaPHYAndroid->demodVersion;
-    return env->NewStringUTF(demod_version.c_str());
-}
