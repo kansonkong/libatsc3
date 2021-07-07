@@ -81,8 +81,8 @@ indicate any of the above modes using the @srcFecPayloadId attribute.
  *
  */
 
-int _ALC_RX_DEBUG_ENABLED = 0;
-int _ALC_RX_TRACE_ENABLED = 0;
+int _ALC_RX_DEBUG_ENABLED = 1;
+int _ALC_RX_TRACE_ENABLED = 1;
 int _ALC_RX_TRACE_TAB_ENABLED = 0;
 
 typedef struct route_fragment {
@@ -146,9 +146,10 @@ int alc_rx_analyze_packet_a331_compliant(char *data, int len, atsc3_alc_packet_t
 	unsigned short reserved = 0; /* Reserved */ 
 
 	/* EXT_FTI */
+    uint64_t	        transfer_len_scratch_64t = 0;
 
-	unsigned long long transfer_len = 0; /* L */
-	uint64_t	transfer_len_scratch_64t;
+	unsigned long long  transfer_len = 0; /* L */
+	bool                transfer_len_set = false;
 
 	unsigned char finite_field = 0; /* m */
 	unsigned char nb_of_es_per_group = 0; /* G */
@@ -242,10 +243,6 @@ int alc_rx_analyze_packet_a331_compliant(char *data, int len, atsc3_alc_packet_t
 	header_pos++;
 
 	def_lct_hdr->cci = __readuint32(data, header_pos);
-	ALC_RX_TRACE("ALC: tsi: %u, toi: %u, def_lct_hdr->flag_c: %d, header_len is: %d, cci is: %u",
-			def_lct_hdr->tsi,
-			def_lct_hdr->toi,
-			def_lct_hdr->flag_c, header_pos, def_lct_hdr->cci);
 	header_pos += 4;
 
 	def_lct_hdr->tsi = __readuint32(data, header_pos);
@@ -254,7 +251,10 @@ int alc_rx_analyze_packet_a331_compliant(char *data, int len, atsc3_alc_packet_t
 	def_lct_hdr->toi = __readuint32(data, header_pos);
 	header_pos += 4;
 
-	ALC_RX_TRACE("ALC: tsi: %u, toi: %u, codepoint: %u", def_lct_hdr->tsi , def_lct_hdr->toi, def_lct_hdr->codepoint);
+    ALC_RX_TRACE("ALC: tsi: %u, toi: %u, def_lct_hdr->flag_c: %d, header_len is: %d, cci is: %u, codepoint: %u",
+                 def_lct_hdr->tsi,
+                 def_lct_hdr->toi,
+                 def_lct_hdr->flag_c, header_pos, def_lct_hdr->cci, def_lct_hdr->codepoint);
 
 
 	if(def_lct_hdr->flag_a == 1) {
@@ -359,8 +359,9 @@ int alc_rx_analyze_packet_a331_compliant(char *data, int len, atsc3_alc_packet_t
 
 				  //6 bytes for transfer len
 				  transfer_len = ((word & 0x0000FFFF) << 16);
-
 				  transfer_len |= __readuint32(data, header_pos);
+				  transfer_len_set = true;
+
 				  header_pos+=4;
 				  exthdrlen-=4;
 				  ALC_RX_TRACE("Reading FTI TSI: transfer len: %llu", transfer_len);
@@ -495,6 +496,7 @@ int alc_rx_analyze_packet_a331_compliant(char *data, int len, atsc3_alc_packet_t
 				   */
 
   				  transfer_len = (word & 0x00FFFFFF);
+  				  transfer_len_set = true;
 
                   ALC_RX_DEBUG("EXT_TOL (24 bit), tsi: %u, toi: %u,  het is: %d, hel is: %d, exthdrlen: %d, toi transfer len: %llu", def_lct_hdr->tsi, def_lct_hdr->toi, het,  hel, exthdrlen, transfer_len);
 
@@ -521,6 +523,8 @@ int alc_rx_analyze_packet_a331_compliant(char *data, int len, atsc3_alc_packet_t
 				  transfer_len = (transfer_len_scratch_64t<< 32) ;
 				  word = __readuint32(data, header_pos);
 				  transfer_len |= word;
+
+				  transfer_len_set = true;
 
 				  header_pos += 4;
 				  exthdrlen-=4;
