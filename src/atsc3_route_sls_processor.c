@@ -187,7 +187,7 @@ void atsc3_route_sls_process_from_alc_packet_and_file(udp_flow_t* udp_flow, atsc
 			}
 			
 			if(atsc3_sls_metadata_fragments_pending->atsc3_route_s_tsid) {
-			  lls_sls_alc_update_s_tsid_RS_dIpAddr_dPort_if_missing(udp_flow, lls_sls_alc_monitor, atsc3_sls_metadata_fragments_pending->atsc3_route_s_tsid);
+			    lls_sls_alc_update_s_tsid_RS_dIpAddr_dPort_if_missing(udp_flow, lls_sls_alc_monitor, atsc3_sls_metadata_fragments_pending->atsc3_route_s_tsid);
 
 				//update our mediainfo audio and video tsi and init
 				lls_sls_alc_update_all_mediainfo_flow_v_from_route_s_tsid(lls_sls_alc_monitor, atsc3_sls_metadata_fragments_pending->atsc3_route_s_tsid);
@@ -248,8 +248,14 @@ void atsc3_route_sls_process_from_alc_packet_and_file(udp_flow_t* udp_flow, atsc
 			}
 			lls_sls_alc_monitor->atsc3_sls_metadata_fragments = atsc3_sls_metadata_fragments_pending;
 			lls_sls_alc_monitor->atsc3_sls_metadata_fragments_pending = NULL;
-			
-		} else if (lls_sls_alc_monitor && lls_sls_alc_monitor->atsc3_sls_metadata_fragments) {
+
+            //jjustman-2021-07-07 - update our relevant lls_sls_alc_monitor with any new ip flows from the s-tsid by calling sls_metadata_fragments_update
+
+            if(lls_sls_alc_monitor->atsc3_lls_sls_alc_on_metadata_fragments_updated_callback) {
+                lls_sls_alc_monitor->atsc3_lls_sls_alc_on_metadata_fragments_updated_callback(lls_sls_alc_monitor);
+            }
+
+        } else if (lls_sls_alc_monitor && lls_sls_alc_monitor->atsc3_sls_metadata_fragments) {
 			//perform a sanity check to make sure our sls fragments are present on disk, this should not normally happen with a monitored service and atsc3_route_object, which will avoid eviction for SLS fragments
 
 			for(int i=0; i < lls_sls_alc_monitor->atsc3_sls_metadata_fragments->atsc3_mime_multipart_related_instance->atsc3_mime_multipart_related_payload_v.count; i++) {
