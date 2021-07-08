@@ -396,12 +396,182 @@ typedef struct mmt_atsc3_message_content_type_caption_asset_descriptor {
 ATSC3_VECTOR_BUILDER_METHODS_INTERFACE(mmt_atsc3_message_content_type_caption_asset_descriptor, mmt_atsc3_message_content_type_caption_asset_descriptor_asset);
 
 
-//TODO: jjustman-2021-06-03: MMT_ATSC3_MESSAGE_CONTENT_TYPE_AUDIO_STREAM_PROPERTIES_DESCRIPTOR
+//MMT_ATSC3_MESSAGE_CONTENT_TYPE_AUDIO_STREAM_PROPERTIES_DESCRIPTOR
+
+typedef struct mmt_atsc3_message_content_type_audio_stream_properties_descriptor_asset_presentation_language {
+	uint8_t		language_length;
+	char*		language;
+} mmt_atsc3_message_content_type_audio_stream_properties_descriptor_asset_presentation_language_t;
+
+typedef struct mmt_atsc3_message_content_type_audio_stream_properties_descriptor_asset_presentation_profile_channel_config_presentation_aux_stream_info {
+	uint8_t		num_presentation_aux_streams;
+	//for(m=0; m< num_presentation_aux_streams;m++) {
+		uint8_t	aux_stream_id[255];
+	//}
+} mmt_atsc3_message_content_type_audio_stream_properties_descriptor_asset_presentation_profile_channel_config_presentation_aux_stream_info_t;
+
+
+typedef struct mmt_atsc3_message_content_type_audio_stream_properties_descriptor_asset_multi_stream_info {
+	uint8_t	this_is_main_stream:1;
+	uint8_t	this_stream_id:7;
+	uint8_t	r_1:1;
+	uint8_t	bundle_id:7;
+	
+	//if(this_is_main_stream) {
+	uint8_t	r_2:1;
+	uint8_t num_auxiliary_streams:7;
+	
+	//for(m=0; m < num_auxiliary_streams; m++) {
+	//hack
+		uint8_t delivery_method[127]; // 1 bit
+		uint8_t auxiliary_stream_id[127]; //7 bits
+	//
+} mmt_atsc3_message_content_type_audio_stream_properties_descriptor_asset_multi_stream_info_t;
+
+typedef struct mmt_atsc3_message_content_type_audio_stream_properties_descriptor_asset_emergency_information_time_info {
+	uint8_t		emergency_information_start_time_present:1;
+	uint8_t		emergency_information_end_time_present:1;
+	uint8_t		reserved:6;
+	
+	//if(emergency_information_start_time_present) {
+	uint32_t	emergency_information_start_time;
+	uint8_t		r_1:6;
+	uint16_t	emergency_information_start_time_ms:10;
+	//}
+	
+	//if(emergency_information_end_time_present) {
+	uint32_t	emergency_information_end_time;
+	uint8_t		r_2:6;
+	uint16_t	emergency_information_end_time_ms:10;
+	//}
+} mmt_atsc3_message_content_type_audio_stream_properties_descriptor_asset_emergency_information_time_info_t;
+
+/*
+ Notes:
+ 
+ profile_long – A 1-bit Boolean flag that shall indicate, when set to ‘1’, that profile level information for this Presentation is signaled using 3 bytes (“long format”). When set to ‘0’, this flag shall indicate that profile level information for this Presentation is signaled using 1 byte (“short format”). In the case of AC-4 Audio [8] this field shall be set to ‘1’. In the case of MPEG-H
+ Audio [9] this field shall be set to ‘0’.
+ 
+ channel_config_long – A 1-bit Boolean flag that shall indicate, when set to ‘1’, that channel
+ configuration information for this Presentation is signaled using 3 bytes (“long format”). When set to ‘0’, this flag shall indicate that channel configuration information for this Presentation is signaled using 1 byte (“short format”). In the case of AC-4 Audio [8] this field shall be set to ‘1’. In the case of MPEG-H Audio [9] this field shall be set to ‘0’.
+ */
+
+typedef struct mmt_atsc3_message_content_type_audio_stream_properties_descriptor_asset_presentation_profile_level_indication_long_ac4 {
+	uint8_t bitstream_version:7;
+	uint8_t presentation_version;
+	uint8_t mdcompat:3;
+	uint8_t reserved_6:6;
+} mmt_atsc3_message_content_type_audio_stream_properties_descriptor_asset_presentation_profile_level_indication_long_ac4_t;
+
+//1 byte - mpegh3daProfileLevelIndication - iso 23008-3 5.3.2
+typedef struct mmt_atsc3_message_content_type_audio_stream_properties_descriptor_asset_presentation_profile_level_indication_mpeg_h {
+	uint8_t flags; //jjustman-2021-07-08 todo
+} mmt_atsc3_message_content_type_audio_stream_properties_descriptor_asset_presentation_profile_level_indication_mpeg_h_t;
+
+//3 bytes - ac4
+typedef struct mmt_atsc3_message_content_type_audio_stream_properties_descriptor_asset_presentation_audio_channel_config_long_ac4 {
+	uint8_t	flags[3]; //jjustman-2021-07-08: todo  AC-4 bit stream according to Table A.27 in Annex A.3 of ETSI TS 103 190-2 [13].
+} mmt_atsc3_message_content_type_audio_stream_properties_descriptor_asset_presentation_audio_channel_config_long_ac4_t;
+
+//1 byte - mpeg-h
+typedef struct mmt_atsc3_message_content_type_audio_stream_properties_descriptor_asset_presentation_audio_channel_config_mpeg_h {
+	uint8_t	channel_configuration:6;
+	uint8_t reserved_2:2;
+} mmt_atsc3_message_content_type_audio_stream_properties_descriptor_asset_presentation_audio_channel_config_mpeg_h_t;
+
+typedef struct mmt_atsc3_message_content_type_audio_stream_properties_descriptor_asset_presentation {
+	uint8_t		presentation_id;
+	
+	uint8_t		interactivity_enabled:1;
+	uint8_t		profile_channel_config_present:1;
+	uint8_t		profile_long:1;
+	uint8_t		channel_config_long:1;
+	uint8_t		audio_rendering_info_present:1;
+	uint8_t		language_present:1;
+	uint8_t		accessibility_role_present:1;
+	uint8_t		label_present:1;
+	
+	//if(profile_channel_config_present) {
+		
+		union {
+			//profile_long: 24bits - ac-4
+			mmt_atsc3_message_content_type_audio_stream_properties_descriptor_asset_presentation_profile_level_indication_long_ac4_t mmt_atsc3_message_content_type_audio_stream_properties_descriptor_asset_presentation_profile_level_indication_long_ac4;
+			
+			//!profile_long: 8bits - mpeg-h
+			mmt_atsc3_message_content_type_audio_stream_properties_descriptor_asset_presentation_profile_level_indication_mpeg_h_t mmt_atsc3_message_content_type_audio_stream_properties_descriptor_asset_presentation_profile_level_indication_mpeg_h;
+		} profile_level_indication;
+	
+		union {
+			//channel_config_long: 24bits - ac-4
+			mmt_atsc3_message_content_type_audio_stream_properties_descriptor_asset_presentation_audio_channel_config_long_ac4_t mmt_atsc3_message_content_type_audio_stream_properties_descriptor_asset_presentation_audio_channel_config_long_ac4;
+
+			//!channel_config_long: 8bits - mpeg-h
+			mmt_atsc3_message_content_type_audio_stream_properties_descriptor_asset_presentation_audio_channel_config_mpeg_h_t mmt_atsc3_message_content_type_audio_stream_properties_descriptor_asset_presentation_audio_channel_config_mpeg_h;
+		} audio_channel_config;
+	//}
+	
+	//if(audio_rendering_info_present) {
+		uint8_t	audio_rendering_indication;
+	//}
+	
+	//if(language_present) {
+		uint8_t	num_languages_minus1:8;
+		//for(k=0; k < num_languages_minus1 + 1; k++) {
+		ATSC3_VECTOR_BUILDER_STRUCT(mmt_atsc3_message_content_type_audio_stream_properties_descriptor_asset_presentation_language);
+		//}
+	//}
+	
+	//if(accessibility_role_present) {
+		//for(k=0; k < num_languages_minus1 + 1; k++) { -hack static alloc
+			uint8_t	accessibility[255];
+		//}
+		uint8_t			role;
+	//}
+	
+	//if(label_present) {
+		uint8_t		label_length;
+		//for(k=0; k < label_length; k++) {
+		char*	label_data_byte;
+		//}
+		//if(multi_stream_info_present) {
+			mmt_atsc3_message_content_type_audio_stream_properties_descriptor_asset_presentation_profile_channel_config_presentation_aux_stream_info_t presentation_aux_stream_info;
+		//}
+	//}
+} mmt_atsc3_message_content_type_audio_stream_properties_descriptor_asset_presentation_t;
+ATSC3_VECTOR_BUILDER_METHODS_INTERFACE(mmt_atsc3_message_content_type_audio_stream_properties_descriptor_asset_presentation, mmt_atsc3_message_content_type_audio_stream_properties_descriptor_asset_presentation_language);
+
+typedef struct mmt_atsc3_message_content_type_audio_stream_properties_descriptor_asset {
+	mmt_atsc3_message_content_type_asset_heaader_t																	asset_header;
+	uint8_t																											codec_code[4]; 	//8*4
+	uint8_t																											num_presentations;
+	uint8_t																											multi_stream_info_present:1;
+	uint8_t																											emergency_info_time_present:1;
+	uint8_t																											reserved_6:6;
+	
+	//for (j=0; j<num_presentations; j++) {
+	ATSC3_VECTOR_BUILDER_STRUCT(mmt_atsc3_message_content_type_audio_stream_properties_descriptor_asset_presentation);
+	//if(multi_stream_info_present) {
+		mmt_atsc3_message_content_type_audio_stream_properties_descriptor_asset_multi_stream_info_t					mmt_atsc3_message_content_type_audio_stream_properties_descriptor_asset_multi_stream_info;
+	//}
+	
+	//if(emergency_info_time_present) {
+		mmt_atsc3_message_content_type_audio_stream_properties_descriptor_asset_emergency_information_time_info_t	mmt_atsc3_message_content_type_audio_stream_properties_descriptor_asset_emergency_information_time_info;
+	//}
+
+} mmt_atsc3_message_content_type_audio_stream_properties_descriptor_asset_t;
+ATSC3_VECTOR_BUILDER_METHODS_INTERFACE(mmt_atsc3_message_content_type_audio_stream_properties_descriptor_asset, mmt_atsc3_message_content_type_audio_stream_properties_descriptor_asset_presentation);
+
+
 typedef struct mmt_atsc3_message_content_type_audio_stream_properties_descriptor {
 	mmt_atsc3_message_content_type_descriptor_number_of_assets_header_t		descriptor_header;
+	
+	ATSC3_VECTOR_BUILDER_STRUCT(mmt_atsc3_message_content_type_audio_stream_properties_descriptor_asset);
 
 	void* TODO;
 } mmt_atsc3_message_content_type_audio_stream_properties_descriptor_t;
+ATSC3_VECTOR_BUILDER_METHODS_INTERFACE(mmt_atsc3_message_content_type_audio_stream_properties_descriptor, mmt_atsc3_message_content_type_audio_stream_properties_descriptor_asset);
+
+
 
 //TODO: jjustman-2021-06-03: MMT_ATSC3_MESSAGE_CONTENT_TYPE_DWD
 typedef struct mmt_atsc3_message_content_type_dwd {
@@ -614,22 +784,22 @@ typedef struct mmt_atsc3_message_payload {
 	//i < length - 11 - URI_length - atsc3_message_content_length
 
 	//<ROUTEComponent sTSIDUri="stsid.sls" sTSIDDestinationIpAddress="239.255.70.1" sTSIDDestinationUdpPort="5009" sTSIDSourceIpAddress="172.16.200.1"></ROUTEComponent>
-	mmt_atsc3_route_component_t*    mmt_atsc3_route_component;
+	mmt_atsc3_route_component_t*    										mmt_atsc3_route_component;
 
 	//MMT_ATSC3_MESSAGE_CONTENT_TYPE_HELD
-	mmt_atsc3_held_message_t*       mmt_atsc3_held_message;
-
+	mmt_atsc3_held_message_t*       										mmt_atsc3_held_message;
 	
 	//MMT_ATSC3_MESSAGE_CONTENT_TYPE_CAPTION_ASSET_DESCRIPTOR
-	mmt_atsc3_message_content_type_caption_asset_descriptor_t* mmt_atsc3_message_content_type_caption_asset_descriptor;
+	mmt_atsc3_message_content_type_caption_asset_descriptor_t* 				mmt_atsc3_message_content_type_caption_asset_descriptor;
 	
+	//MMT_ATSC3_MESSAGE_CONTENT_TYPE_AUDIO_STREAM_PROPERTIES_DESCRIPTOR
+	mmt_atsc3_message_content_type_audio_stream_properties_descriptor_t* 	mmt_atsc3_message_content_type_audio_stream_properties_descriptor;
 
 	//MMT_ATSC3_MESSAGE_CONTENT_TYPE_SECURITY_PROPERTIES_DESCRIPTOR_LAURL
-	mmt_atsc3_message_content_type_security_properties_descriptor_LAURL_t* mmt_atsc3_message_content_type_security_properties_descriptor_LAURL;
+	mmt_atsc3_message_content_type_security_properties_descriptor_LAURL_t* 	mmt_atsc3_message_content_type_security_properties_descriptor_LAURL;
+		
 	//other content_types as needed
 
-	
-	
 } mmt_atsc3_message_payload_t;
 
 
