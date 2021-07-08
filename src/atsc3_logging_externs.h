@@ -256,13 +256,13 @@ extern char  __ANDROID_LOG_VPRINTF_BUFFER[];
 
 #else
 
-#define __LIBATSC3_TIMESTAMP_ERROR(...)     	printf("%-24.24s:%4d:ERROR:%.4f:",__FILENAME__,__LINE__, gt()); printf(__VA_ARGS__); printf("%s%s","\r","\n");
-#define __LIBATSC3_TIMESTAMP_WARN(...)     		printf("%-24.24s:%4d:WARN :%.4f:",__FILENAME__,__LINE__, gt()); printf(__VA_ARGS__); printf("%s%s","\r","\n");
-#define __LIBATSC3_TIMESTAMP_INFO(...)      	printf("%-24.24s:%4d:INFO :%.4f:",__FILENAME__,__LINE__, gt()); printf(__VA_ARGS__); printf("%s%s","\r","\n");
-#define __LIBATSC3_TIMESTAMP_DUMP(...)      	printf("%-24.24s:%4d:DUMP :%.4f:",__FILENAME__,__LINE__, gt()); printf(__VA_ARGS__); printf("%s%s","\r","\n");
-#define __LIBATSC3_TIMESTAMP_DEBUG(...)    		printf("%-24.24s:%4d:DEBUG:%.4f:",__FILENAME__,__LINE__, gt()); printf(__VA_ARGS__); printf("%s%s","\r","\n");
-#define __LIBATSC3_TIMESTAMP_TRACE(...)    		printf("%-24.24s:%4d:TRACE:%.4f:",__FILENAME__,__LINE__, gt()); printf(__VA_ARGS__); printf("%s%s","\r","\n");
-#define __LIBATSC3_TIMESTAMP_TRACE_TAB(...)     printf("%-24.24s\t%4d\tTRACE\t%.4f\t",__FILENAME__,__LINE__, gt()); printf(__VA_ARGS__); printf("%s%s","\r","\n");
+#define __LIBATSC3_TIMESTAMP_ERROR(...)     	printf("%-24.24s:%4d:ERROR:%.3f:",__FILENAME__,__LINE__, gt()); printf(__VA_ARGS__); printf("%s%s","\r","\n");
+#define __LIBATSC3_TIMESTAMP_WARN(...)     		printf("%-24.24s:%4d:WARN :%.3f:",__FILENAME__,__LINE__, gt()); printf(__VA_ARGS__); printf("%s%s","\r","\n");
+#define __LIBATSC3_TIMESTAMP_INFO(...)      	printf("%-24.24s:%4d:INFO :%.3f:",__FILENAME__,__LINE__, gt()); printf(__VA_ARGS__); printf("%s%s","\r","\n");
+#define __LIBATSC3_TIMESTAMP_DUMP(...)      	printf("%-24.24s:%4d:DUMP :%.3f:",__FILENAME__,__LINE__, gt()); printf(__VA_ARGS__); printf("%s%s","\r","\n");
+#define __LIBATSC3_TIMESTAMP_DEBUG(...)    		printf("%-24.24s:%4d:DEBUG:%.3f:",__FILENAME__,__LINE__, gt()); printf(__VA_ARGS__); printf("%s%s","\r","\n");
+#define __LIBATSC3_TIMESTAMP_TRACE(...)    		printf("%-24.24s:%4d:TRACE:%.6f:",__FILENAME__,__LINE__, gt()); printf(__VA_ARGS__); printf("%s%s","\r","\n");
+#define __LIBATSC3_TIMESTAMP_TRACE_TAB(...)     printf("%-24.24s\t%4d\tTRACE\t%.6\t",__FILENAME__,__LINE__, gt()); printf(__VA_ARGS__); printf("%s%s","\r","\n");
 
 #define __ERROR(...)   __LIBATSC3_TIMESTAMP_ERROR(__VA_ARGS__);
 #define __WARN(...)    __LIBATSC3_TIMESTAMP_WARN(__VA_ARGS__);

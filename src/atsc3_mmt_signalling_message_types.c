@@ -7,10 +7,21 @@
 
 #include "atsc3_mmt_signalling_message_types.h"
 
+//jjustman-2021-07-07 - TODO: add all common A/331 MMT SI message types
+
+
+//MMT_ATSC3_MESSAGE_CONTENT_TYPE_CAPTION_ASSET_DESCRIPTOR
+
+ATSC3_VECTOR_BUILDER_METHODS_IMPLEMENTATION(mmt_atsc3_message_content_type_caption_asset_descriptor, mmt_atsc3_message_content_type_caption_asset_descriptor_asset);
+ATSC3_VECTOR_BUILDER_METHODS_ITEM_FREE(mmt_atsc3_message_content_type_caption_asset_descriptor_asset);
+ATSC3_VECTOR_BUILDER_METHODS_PARENT_IMPLEMENTATION(mmt_atsc3_message_content_type_caption_asset_descriptor);
+
+
+
+//MMT_ATSC3_MESSAGE_CONTENT_TYPE_SECURITY_PROPERTIES_DESCRIPTOR_LAURL
 ATSC3_VECTOR_BUILDER_METHODS_IMPLEMENTATION(mmt_si_security_properties_descriptor_system, mmt_si_security_properties_descriptor_kid);
 //jjustman-2021-06-08 - TODO - impl for any uint8_t* refs for cleanup
 ATSC3_VECTOR_BUILDER_METHODS_ITEM_FREE(mmt_si_security_properties_descriptor_kid);
-
 
 ATSC3_VECTOR_BUILDER_METHODS_IMPLEMENTATION(mmt_si_security_properties_descriptor, mmt_si_security_properties_descriptor_system);
 //jjustman-2021-06-08 - TODO - impl for any uint8_t* refs for cleanup
