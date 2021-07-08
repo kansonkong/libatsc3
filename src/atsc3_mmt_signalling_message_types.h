@@ -393,6 +393,7 @@ typedef struct mmt_atsc3_message_content_type_caption_asset_descriptor {
 	uint8_t													reserved:8;
 
 } mmt_atsc3_message_content_type_caption_asset_descriptor_t;
+ATSC3_VECTOR_BUILDER_METHODS_INTERFACE(mmt_atsc3_message_content_type_caption_asset_descriptor, mmt_atsc3_message_content_type_caption_asset_descriptor_asset);
 
 
 //TODO: jjustman-2021-06-03: MMT_ATSC3_MESSAGE_CONTENT_TYPE_AUDIO_STREAM_PROPERTIES_DESCRIPTOR
@@ -615,12 +616,20 @@ typedef struct mmt_atsc3_message_payload {
 	//<ROUTEComponent sTSIDUri="stsid.sls" sTSIDDestinationIpAddress="239.255.70.1" sTSIDDestinationUdpPort="5009" sTSIDSourceIpAddress="172.16.200.1"></ROUTEComponent>
 	mmt_atsc3_route_component_t*    mmt_atsc3_route_component;
 
+	//MMT_ATSC3_MESSAGE_CONTENT_TYPE_HELD
 	mmt_atsc3_held_message_t*       mmt_atsc3_held_message;
 
+	
+	//MMT_ATSC3_MESSAGE_CONTENT_TYPE_CAPTION_ASSET_DESCRIPTOR
+	mmt_atsc3_message_content_type_caption_asset_descriptor_t* mmt_atsc3_message_content_type_caption_asset_descriptor;
+	
 
-	//other content_types as needed
+	//MMT_ATSC3_MESSAGE_CONTENT_TYPE_SECURITY_PROPERTIES_DESCRIPTOR_LAURL
 	mmt_atsc3_message_content_type_security_properties_descriptor_LAURL_t* mmt_atsc3_message_content_type_security_properties_descriptor_LAURL;
+	//other content_types as needed
 
+	
+	
 } mmt_atsc3_message_payload_t;
 
 
