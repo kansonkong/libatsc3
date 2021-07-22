@@ -19,8 +19,8 @@ atsc3_route_object.c    : 166:DEBUG:1595953002.6642:atsc3_route_object_reset_and
 ATSC3_VECTOR_BUILDER_METHODS_IMPLEMENTATION(atsc3_route_object, atsc3_route_object_lct_packet_received);
 
 int _ROUTE_OBJECT_INFO_ENABLED = 1;
-int _ROUTE_OBJECT_DEBUG_ENABLED = 0;
-int _ROUTE_OBJECT_TRACE_ENABLED = 0;
+int _ROUTE_OBJECT_DEBUG_ENABLED = 1;
+int _ROUTE_OBJECT_TRACE_ENABLED = 1;
 
 int atsc3_route_object_lct_packet_received_cmp_fn(const struct avltree_node *a, const struct avltree_node *b)
 {
@@ -684,12 +684,30 @@ int atsc3_route_object_lct_packet_received_generic_sbn_start_offset_comparator(c
 #endif
  */
 
+#define __ATSC3_ROUTE_OBJECT_PENDANTIC__
+#define __ATSC3_JJ_PENDANTIC_2021_07_07__
+
 bool atsc3_route_object_is_complete(atsc3_route_object_t* atsc3_route_object) {
 	atsc3_route_object_lct_packet_received_t* atsc3_route_object_lct_packet_received = NULL;
 	bool has_missing_source_blocks = false;
 	uint32_t last_object_position = 0;
+	uint64_t total_bytes_recovered = 0;
 
-	int atsc3_route_object_length_threshold = __MAX(1, (int)atsc3_route_object->object_length - 1500);
+#ifdef __ATSC3_JJ_PENDANTIC_2021_07_07__
+    for(int i=0; i < atsc3_route_object->atsc3_route_object_lct_packet_received_v.count; i++) {
+        atsc3_route_object_lct_packet_received = atsc3_route_object->atsc3_route_object_lct_packet_received_v.data[i];
+
+        total_bytes_recovered += atsc3_route_object_lct_packet_received->packet_len;
+    }
+
+    _ATSC3_ROUTE_OBJECT_DEBUG("atsc3_route_object_is_complete: atsc3_route_object: %p, tsi: %d, toi: %d, atsc3_route_object_lct_packet_received_v.count: %d, total_bytes_recovered: %lu",
+                              atsc3_route_object,
+                              atsc3_route_object->tsi, atsc3_route_object->toi,
+                              atsc3_route_object->atsc3_route_object_lct_packet_received_v.count,
+                              total_bytes_recovered);
+#endif
+
+    int atsc3_route_object_length_threshold = __MAX(1, (int)atsc3_route_object->object_length - 1500);
 
 	if(atsc3_route_object->recovery_complete_timestamp) {
 		_ATSC3_ROUTE_OBJECT_DEBUG("atsc3_route_object_is_complete: true, using recovery_complete_timestamp, atsc3_route_object: %p, tsi: %d, toi: %d, atsc3_route_object_lct_packet_received_v.count: %d, recovery_complete_timestamp: %lu, final_object_recovery_filename_for_logging: %s",
