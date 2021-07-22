@@ -15,20 +15,20 @@ atsc3_fdt_file_t* atsc3_mbms_envelope_find_multipart_fdt_file_from_fdt_instance(
 
 	for(int i=0; i < atsc3_fdt_instance->atsc3_fdt_file_v.count; i++) {
 		atsc3_fdt_file_t* atsc3_fdt_file = atsc3_fdt_instance->atsc3_fdt_file_v.data[i];
-		if(!strncasecmp(ATSC3_MBMS_ENVELOPE_CONTENT_TYPE, atsc3_fdt_file->content_type, strlen(ATSC3_MBMS_ENVELOPE_CONTENT_TYPE))) {
+		if(atsc3_fdt_file->content_type && !strncasecmp(ATSC3_MBMS_ENVELOPE_CONTENT_TYPE, atsc3_fdt_file->content_type, __MIN(strlen(atsc3_fdt_file->content_type), strlen(ATSC3_MBMS_ENVELOPE_CONTENT_TYPE)))) {
 			_ATSC3_ROUTE_MBMS_ENVELOPE_PARSER_DEBUG("returning MBMS matching type: %s for toi: %u",  ATSC3_MBMS_ENVELOPE_CONTENT_TYPE, atsc3_fdt_file->toi);
 
 			return atsc3_fdt_file;
-        } else if(!strncasecmp(ATSC3_FDT_MULTIPART_RELATED, atsc3_fdt_file->content_type, strlen(ATSC3_FDT_MULTIPART_RELATED))) {
+        } else if(atsc3_fdt_file->content_type && !strncasecmp(ATSC3_FDT_MULTIPART_RELATED, atsc3_fdt_file->content_type, __MIN(strlen(atsc3_fdt_file->content_type), strlen(ATSC3_FDT_MULTIPART_RELATED)))) {
             _ATSC3_ROUTE_MBMS_ENVELOPE_PARSER_DEBUG("returning multipart/related matching type: %s for toi: %u",  ATSC3_FDT_MULTIPART_RELATED, atsc3_fdt_file->toi);
             
             return atsc3_fdt_file;
-        } else if(!strncasecmp(ATSC3_FDT_MULTIPART_SIGNED, atsc3_fdt_file->content_type, strlen(ATSC3_FDT_MULTIPART_SIGNED))) {
+        } else if(atsc3_fdt_file->content_type && !strncasecmp(ATSC3_FDT_MULTIPART_SIGNED, atsc3_fdt_file->content_type, __MIN(strlen(atsc3_fdt_file->content_type), strlen(ATSC3_FDT_MULTIPART_SIGNED)))) {
             _ATSC3_ROUTE_MBMS_ENVELOPE_PARSER_INFO("returning multipart/signed matching type: %s for toi: %u",  ATSC3_FDT_MULTIPART_SIGNED, atsc3_fdt_file->toi);
             
             return atsc3_fdt_file;
         } else {
-			_ATSC3_ROUTE_MBMS_ENVELOPE_PARSER_DEBUG("ignoring fdt_file: toi: %u, type: %s, name: %s", atsc3_fdt_file->toi, atsc3_fdt_file->content_type, atsc3_fdt_file->content_location);
+			_ATSC3_ROUTE_MBMS_ENVELOPE_PARSER_INFO("ignoring fdt_file: toi: %u, type: %s, name: %s", atsc3_fdt_file->toi, atsc3_fdt_file->content_type ? atsc3_fdt_file->content_type : "(null)", atsc3_fdt_file->content_location ? atsc3_fdt_file->content_location : "(null)");
 		}
 	}
 

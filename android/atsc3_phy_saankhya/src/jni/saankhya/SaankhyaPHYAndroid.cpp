@@ -580,7 +580,7 @@ int SaankhyaPHYAndroid::open(int fd, int device_type, string device_path)
     }
 
     afeInfo.iqswap = SL_IQSWAP_DISABLE;
-    afeInfo.agcRefValue = 125; //afcRefValue in mV
+    afeInfo.agcRefValue = 125; //afcRefValue in mV //125?
     outPutInfo.TsoClockInvEnable = SL_TSO_CLK_INV_ON;
 
     _SAANKHYA_PHY_ANDROID_DEBUG("%s:%d - before SL_ConfigGetBbCapture", __FILE__, __LINE__);
@@ -731,9 +731,13 @@ int SaankhyaPHYAndroid::open(int fd, int device_type, string device_path)
     {
         /*
          * Apply tuner IQ offset. Relevant to SITUNE Tuner
-         */
-        tunerIQDcOffSet.iOffSet = 15;
+         *
+         *         tunerIQDcOffSet.iOffSet = 15;
         tunerIQDcOffSet.qOffSet = 14;
+
+         */
+        tunerIQDcOffSet.iOffSet = 14;
+        tunerIQDcOffSet.qOffSet = 12;
 
         tres = SL_TunerExSetDcOffSet(tUnit, &tunerIQDcOffSet);
         if (tres != 0)
@@ -2040,6 +2044,8 @@ SL_SleepMS(100);
 printAtsc3PerfDiagnostics(perfDiag, 0);
 #endif
 
+
+        atsc3_ndk_phy_client_rf_metrics.cpu_status = (cpuStatus == 0xFFFFFFFF); //0xFFFFFFFF -> running -> 1 to jni layer
         snr_global = compute_snr(perfDiag.GlobalSnrLinearScale);
         atsc3_ndk_phy_client_rf_metrics.snr1000_global = snr_global;
 
@@ -2144,7 +2150,7 @@ printAtsc3PerfDiagnostics(perfDiag, 0);
         atsc3_ndk_phy_client_rf_metrics.phy_client_rf_plp_metrics[3].total_error_fec = perfDiag.NumFrameErrPlp3;
 
 
-        _SAANKHYA_PHY_ANDROID_DEBUG("atsc3NdkClientSlImpl::StatusThread: global_SNR: %f, l1b_SNR: %f, l1d_SNR: %f tunerInfo.status: %d, tunerInfo.signalStrength: %f, cpuStatus: %s, demodLockStatus: %d,  ber_l1b: %d, ber_l1d: %d, ber_plp0: %d, plps: 0x%02x (fec: %d, mod: %d, cr: %d, snr: %f), 0x%02x (fec: %d, mod: %d, cr: %d, snr: %f), 0x%02x (fec: %d, mod: %d, cr: %d, snr: %f), 0x%02x (fec: %d, mod: %d, cr: %d, snr: %f)",
+        _SAANKHYA_PHY_ANDROID_DEBUG("atsc3NdkClientSlImpl::StatusThread: global_SNR: %f, l1b_SNR: %f, l1d_SNR: %f tunerInfo.status: %d, tunerInfo.signalStrength: %f, cpuStatus: %s, demodLockStatus: %d (RF: %d, L1B: %d, L1D: %d),  ber_l1b: %d, ber_l1d: %d, ber_plp0: %d, plps: 0x%02x (fec: %d, mod: %d, cr: %d, snr: %f), 0x%02x (fec: %d, mod: %d, cr: %d, snr: %f), 0x%02x (fec: %d, mod: %d, cr: %d, snr: %f), 0x%02x (fec: %d, mod: %d, cr: %d, snr: %f)",
                 snr_global / 1000.0,
                 snr_l1b / 1000.0,
                 snr_l1d / 1000.0,
@@ -2153,7 +2159,11 @@ printAtsc3PerfDiagnostics(perfDiag, 0);
                tunerInfo.signalStrength / 1000,
                (cpuStatus == 0xFFFFFFFF) ? "RUNNING" : "HALTED",
                demodLockStatus,
-               ber_l1b,
+                demodLockStatus & SL_DEMOD_LOCK_STATUS_MASK_RF_LOCK,
+                demodLockStatus & SL_DEMOD_LOCK_STATUS_MASK_L1B_LOCK,
+                demodLockStatus & SL_DEMOD_LOCK_STATUS_MASK_L1B_LOCK,
+
+                ber_l1b,
                ber_l1d,
                ber_plp0,
                loop_plpInfo.plp0,
