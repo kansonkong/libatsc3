@@ -97,7 +97,7 @@ public class RfPhyStatistics {
 
     @Override
     public String toString() {
-        return String.format("TunLk: %d, DmLk: %d, PLk:Any: 0x%02x, All: 0x%02x, Cpu: %s\n"+
+        return String.format("TunLk: %d, DmLk: %d (RF: %d, L1B: %d, L1D: %d), PLk:Any: 0x%02x, All: 0x%02x, Cpu: %s\n"+
                                 "RSSI: %d.%03d dB (raw: %d), GSNR: %.2f, L1B_SNR: %.2f, L1D_SNR: %.2f\n" +
                                 "P0: SNR: %.2f, M/C: G: %d, %s (%d), %s (%d), %s (%d), BER: p_ldpc: %d, p_bch: %d, post_bch: %d, t_fec: %d, t_e_fec: %d\n" +
                                 "P1: SNR: %.2f, M/C: G: %d, %s (%d), %s (%d), %s (%d), BER: p_ldpc: %d, p_bch: %d, post_bch: %d, t_fec: %d, t_e_fec: %d\n" +
@@ -106,6 +106,11 @@ public class RfPhyStatistics {
                 
                 this.tuner_lock,
                 this.demod_lock,
+
+                (this.demod_lock >> 0) & 0x01,
+                (this.demod_lock >> 1) & 0x01,
+                (this.demod_lock >> 2) & 0x01,
+
                 this.plp_lock_any,
                 this.plp_lock_all,
 
