@@ -104,6 +104,11 @@ typedef struct atsc3_mmt_multiLayerInfoBox {
               unsigned int(16) item_ID;
            }
         }
+
+        //senc IV -> if signaled subsample values
+
+
+
 */
 
 typedef struct mmthsample_header {
