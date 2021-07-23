@@ -81,8 +81,8 @@ indicate any of the above modes using the @srcFecPayloadId attribute.
  *
  */
 
-int _ALC_RX_DEBUG_ENABLED = 1;
-int _ALC_RX_TRACE_ENABLED = 1;
+int _ALC_RX_DEBUG_ENABLED = 0;
+int _ALC_RX_TRACE_ENABLED = 0;
 int _ALC_RX_TRACE_TAB_ENABLED = 0;
 
 typedef struct route_fragment {

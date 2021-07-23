@@ -59,6 +59,7 @@ lls_sls_alc_monitor_t* lls_sls_alc_monitor = NULL;
 atsc3_alc_arguments_t* alc_arguments = NULL;
 
 std::string atsc3_ndk_cache_temp_folder_path = "";
+std::string atsc3_ndk_cache_temp_folder_route_path = "";
 
 IAtsc3NdkApplicationBridge* atsc3_ndk_application_bridge_get_instance() {
     return Atsc3NdkApplicationBridge_ptr;
@@ -77,7 +78,7 @@ void atsc3_core_service_application_bridge_init(IAtsc3NdkApplicationBridge* atsc
     //jjustman-2021-01-19 - testing for mpu_timestamp_descriptor patching
     _MMT_CONTEXT_MPU_DEBUG_ENABLED = 0;
     _ALC_UTILS_IOTRACE_ENABLED = 0;
-    _ROUTE_SLS_PROCESSOR_INFO_ENABLED = 1;
+    _ROUTE_SLS_PROCESSOR_INFO_ENABLED = 0;
     _ROUTE_SLS_PROCESSOR_DEBUG_ENABLED = 0;
     _ALC_UTILS_IOTRACE_ENABLED = 0;
 
@@ -103,11 +104,14 @@ void atsc3_core_service_application_bridge_init(IAtsc3NdkApplicationBridge* atsc
     //no linkage forfs::remove_all(atsc3_ndk_cache_temp_folder_path + "/");
     //https://github.com/android/ndk/issues/609
 
-    atsc3_ndk_cache_temp_folder_purge((char*)(atsc3_ndk_cache_temp_folder_path).c_str());
+    // __ALC_DUMP_OUTPUT_PATH__ -> route
+    atsc3_ndk_cache_temp_folder_route_path = atsc3_ndk_cache_temp_folder_path + "/" + __ALC_DUMP_OUTPUT_PATH__;
+
+    atsc3_ndk_cache_temp_folder_purge((char*)(atsc3_ndk_cache_temp_folder_route_path).c_str());
 
     chdir(atsc3_ndk_cache_temp_folder_path.c_str());
 
-    Atsc3NdkApplicationBridge_ptr->LogMsgF("atsc3_phy_player_bridge_init - completed, temp folder path: %s", atsc3_ndk_cache_temp_folder_path.c_str());
+    Atsc3NdkApplicationBridge_ptr->LogMsgF("atsc3_phy_player_bridge_init - completed, cache temp folder path: %s", atsc3_ndk_cache_temp_folder_path.c_str());
     /**
      * additional SLS monitor related callbacks wired up in
      *
@@ -1454,14 +1458,16 @@ int atsc3_ndk_cache_temp_unlink_cb(const char *fpath, const struct stat *sb, int
 {
     int rv = 0;
 
-    if(strcmp(fpath, atsc3_ndk_cache_temp_folder_path.c_str()) != 0) {
-        printf("atsc3_ndk_cache_temp_unlink_cb: removing cache path: %s", fpath);
+    if(strstr(fpath, atsc3_ndk_cache_temp_folder_path.c_str()) == fpath && strstr(fpath, "/route/") ==  (fpath + atsc3_ndk_cache_temp_folder_path.length())) {
+        printf("atsc3_ndk_cache_temp_unlink_cb: removing cache path object: %s", fpath);
 
         rv = remove(fpath);
 
         if (rv) {
             printf("atsc3_ndk_cache_temp_unlink_cb: unable to remove path: %s, err from remove is: %d", fpath, rv);
         }
+    } else {
+        printf("atsc3_ndk_cache_temp_unlink_cb: persisting cache path object: %s", fpath);
     }
     return rv;
 }
