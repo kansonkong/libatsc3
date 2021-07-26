@@ -110,6 +110,7 @@ typedef struct atsc3_mmt_mfu_context {
     atsc3_mmt_mpu_on_sequence_mpu_metadata_present_f               										atsc3_mmt_mpu_on_sequence_mpu_metadata_present;			//dispatched when a new mpu_metadata (init box) is present and re-constituted
     																														//use atsc3_hevc_nal_extractor to convert init to NAL's as needed for HEVC decoder
 	//from ATSC3_MMT_CONTEXT_SIGNALLING_INFORMATION_DEPACKETIZER_H
+	//ISO23008-1 SI messages
 	atsc3_mmt_signalling_information_on_mp_table_subset_f 												atsc3_mmt_signalling_information_on_mp_table_subset; 	//dispatched when table_id >= 0x11 (17) && table_id <= 0x19 (31)
 	atsc3_mmt_signalling_information_on_mp_table_complete_f 											atsc3_mmt_signalling_information_on_mp_table_complete; 	//dispatched when table_id == 0x20 (32)
 
@@ -122,6 +123,13 @@ typedef struct atsc3_mmt_mfu_context {
 	atsc3_mmt_signalling_information_on_stpp_packet_id_with_mpu_timestamp_descriptor_f					atsc3_mmt_signalling_information_on_stpp_packet_id_with_mpu_timestamp_descriptor;
 
 	atsc3_mmt_signalling_information_on_mpu_timestamp_descriptor_f 										atsc3_mmt_signalling_information_on_mpu_timestamp_descriptor;
+	
+	//A/331:2021 SI messages (e.g. table_id >=8100)
+
+	//jjustman-2021-07-26: TODO: USBD payload dispatch to application tier
+	//jjustman-2021-07-26: TODO: C/A/D properties descriptors
+	
+	
 
 	//MFU specific callbacks
 	atsc3_mmt_mpu_mfu_on_sample_complete_f 																atsc3_mmt_mpu_mfu_on_sample_complete;                   //REQUIRED: callback to decoder with a fully recovered MFU sample, no DU loss
