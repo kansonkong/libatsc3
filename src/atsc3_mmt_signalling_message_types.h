@@ -175,6 +175,12 @@ typedef struct mmt_atsc3_message_content_type_language_heaader {
 
 
 //Used in MMT_ATSC3_MESSAGE_CONTENT_TYPE_UserServiceDescription
+
+typedef struct mmt_atsc3_signalling_information_usbd_component {
+	
+	block_t* 	usbd_payload;
+} mmt_atsc3_signalling_information_usbd_component_t;
+
 typedef struct mmt_atsc3_route_component {
     uint8_t*    stsid_uri_s;
 
@@ -782,6 +788,12 @@ typedef struct mmt_atsc3_message_payload {
 
 	//reserved:	8 bits to pad out length
 	//i < length - 11 - URI_length - atsc3_message_content_length
+	
+	//jjustman-2021-07-26: TODO: make sure mmt_atsc3_message_payload ::~ cleans up:
+	//	_ mmt_atsc3_signalling_information_usbd_component
+	//	_ ...
+	
+	mmt_atsc3_signalling_information_usbd_component_t* 						mmt_atsc3_signalling_information_usbd_component;
 
 	//<ROUTEComponent sTSIDUri="stsid.sls" sTSIDDestinationIpAddress="239.255.70.1" sTSIDDestinationUdpPort="5009" sTSIDSourceIpAddress="172.16.200.1"></ROUTEComponent>
 	mmt_atsc3_route_component_t*    										mmt_atsc3_route_component;
@@ -1117,9 +1129,12 @@ void mmt_signalling_message_header_and_payload_free(mmt_signalling_message_heade
 mp_table_asset_row_t* atsc3_mmt_mp_table_asset_row_duplicate(const mp_table_asset_row_t* mp_table_asset_row);
 void atsc3_mmt_mp_table_asset_row_free_inner(mp_table_asset_row_t* mp_table_asset_row);
 
-mmt_atsc3_route_component_t* mmt_atsc3_message_payload_add_mmt_atsc3_route_component(mmt_atsc3_message_payload_t* mmt_atsc3_message_payload);
-mmt_atsc3_held_message_t*    mmt_atsc3_message_payload_add_mmt_atsc3_held_message(mmt_atsc3_message_payload_t* mmt_atsc3_message_payload);
+//ATSC3 MMT SI: internal helper methods / aggregation for inner payload type marshalling
+mmt_atsc3_signalling_information_usbd_component_t* 		mmt_atsc3_message_payload_add_mmt_atsc3_signalling_information_usbd_component(mmt_atsc3_message_payload_t* mmt_atsc3_message_payload);
+mmt_atsc3_route_component_t* 							mmt_atsc3_message_payload_add_mmt_atsc3_route_component(mmt_atsc3_message_payload_t* mmt_atsc3_message_payload);
+mmt_atsc3_held_message_t*    							mmt_atsc3_message_payload_add_mmt_atsc3_held_message(mmt_atsc3_message_payload_t* mmt_atsc3_message_payload);
 
+void mmt_atsc3_signalling_information_usbd_component_free(mmt_atsc3_signalling_information_usbd_component_t** mmt_atsc3_signalling_information_usbd_component_p);
 void mmt_atsc3_route_component_free(mmt_atsc3_route_component_t** mmt_atsc3_route_component_p);
 void mmt_atsc3_held_message_free(mmt_atsc3_held_message_t** mmt_atsc3_held_message_p);
 
