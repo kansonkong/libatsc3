@@ -48,6 +48,7 @@ ATSC3_VECTOR_BUILDER_METHODS_IMPLEMENTATION(mmt_atsc3_message_content_type_secur
 //jjustman-2021-06-08 - TODO - impl for any uint8_t* refs for cleanup
 ATSC3_VECTOR_BUILDER_METHODS_ITEM_FREE(mmt_atsc3_message_content_type_security_properties_descriptor_LAURL_asset);
 
+//jjustman-2021-07-26 - TODO: add additional cleanup for MMT_ATSC3 message type processing (e.g. >= 0x8100) and internal mp_* ISO23008-1 types
 void mmt_signalling_message_header_and_payload_free(mmt_signalling_message_header_and_payload_t** mmt_signalling_message_header_and_payload_p) {
     mmt_signalling_message_header_and_payload_t* mmt_signalling_message_header_and_payload = *mmt_signalling_message_header_and_payload_p;
     __MMTP_DEBUG("mmt_signalling_message_header_and_payload_free: %p: message_id: %d, message type: %d",
@@ -56,7 +57,7 @@ void mmt_signalling_message_header_and_payload_free(mmt_signalling_message_heade
         __MMTP_DEBUG("mmt_signalling_message_header_and_payload_free: clearing MMT_ATSC3_MESSAGE_ID");
     
 		//determine if we have any internal mallocs to clear
-		if(mmt_signalling_message_header_and_payload->message_header.MESSAGE_id_type == MMT_ATSC3_MESSAGE_ID) {
+		if(mmt_signalling_message_header_and_payload->message_header.MESSAGE_id_type >= MMT_ATSC3_MESSAGE_ID) {
 			//free structs from mmt_atsc3_message_payload_t
             __MMTP_DEBUG("mmt_signalling_message_header_and_payload->message_payload.mmt_atsc3_message_payload.URI_payload ptr: %p", mmt_signalling_message_header_and_payload->message_payload.mmt_atsc3_message_payload.URI_payload);
             if(mmt_signalling_message_header_and_payload->message_payload.mmt_atsc3_message_payload.URI_payload) {
@@ -79,23 +80,25 @@ void mmt_signalling_message_header_and_payload_free(mmt_signalling_message_heade
 				free(mmt_signalling_message_header_and_payload->message_payload.mmt_atsc3_message_payload.atsc3_message_content_compressed);
 				mmt_signalling_message_header_and_payload->message_payload.mmt_atsc3_message_payload.atsc3_message_content_compressed = NULL;
 			}
-            
-            __MMTP_DEBUG("mmt_signalling_message_header_and_payload->message_payload.mmt_atsc3_message_payload.URI_payload ptr: %p", mmt_signalling_message_header_and_payload->message_payload.mmt_atsc3_message_payload.URI_payload);
-            if(mmt_signalling_message_header_and_payload->message_payload.mmt_atsc3_message_payload.URI_payload) {
-                free(mmt_signalling_message_header_and_payload->message_payload.mmt_atsc3_message_payload.URI_payload);
-                mmt_signalling_message_header_and_payload->message_payload.mmt_atsc3_message_payload.URI_payload = NULL;
-            }
 
+			//mmt_atsc3_signalling_information_usbd_component_free
+			if(mmt_signalling_message_header_and_payload->message_payload.mmt_atsc3_message_payload.mmt_atsc3_signalling_information_usbd_component) {
+				mmt_atsc3_signalling_information_usbd_component_free(&mmt_signalling_message_header_and_payload->message_payload.mmt_atsc3_message_payload.mmt_atsc3_signalling_information_usbd_component);
+			}
+			
+			//mmt_atsc3_route_component
+			if(mmt_signalling_message_header_and_payload->message_payload.mmt_atsc3_message_payload.mmt_atsc3_route_component) {
+				if(!mmt_signalling_message_header_and_payload->message_payload.mmt_atsc3_message_payload.mmt_atsc3_route_component->__is_pinned_to_context) {
+					mmt_atsc3_route_component_free(&mmt_signalling_message_header_and_payload->message_payload.mmt_atsc3_message_payload.mmt_atsc3_route_component);
+				}
+			}
+
+			//mmt_atsc3_held_message
             if(mmt_signalling_message_header_and_payload->message_payload.mmt_atsc3_message_payload.mmt_atsc3_held_message) {
                 mmt_atsc3_held_message_free(&mmt_signalling_message_header_and_payload->message_payload.mmt_atsc3_message_payload.mmt_atsc3_held_message);
             }
 
-            if(mmt_signalling_message_header_and_payload->message_payload.mmt_atsc3_message_payload.mmt_atsc3_route_component) {
-                if(!mmt_signalling_message_header_and_payload->message_payload.mmt_atsc3_message_payload.mmt_atsc3_route_component->__is_pinned_to_context) {
-                    mmt_atsc3_route_component_free(&mmt_signalling_message_header_and_payload->message_payload.mmt_atsc3_message_payload.mmt_atsc3_route_component);
-                }
-            }
-
+			
             
 		} else if(mmt_signalling_message_header_and_payload->message_header.MESSAGE_id_type == MPT_message) {
 			//clear out mp_table
@@ -254,6 +257,22 @@ void atsc3_mmt_mp_table_asset_row_free_inner(mp_table_asset_row_t* mp_table_asse
             mp_table_asset_row->asset_descriptors_payload = NULL;
         }
     }
+}
+
+
+
+void mmt_atsc3_signalling_information_usbd_component_free(mmt_atsc3_signalling_information_usbd_component_t** mmt_atsc3_signalling_information_usbd_component_p) {
+	if(mmt_atsc3_signalling_information_usbd_component_p) {
+		mmt_atsc3_signalling_information_usbd_component_t* mmt_atsc3_signalling_information_usbd_component = *mmt_atsc3_signalling_information_usbd_component_p;
+		if(mmt_atsc3_signalling_information_usbd_component) {
+			if(mmt_atsc3_signalling_information_usbd_component->usbd_payload) {
+				block_Destroy(&mmt_atsc3_signalling_information_usbd_component->usbd_payload);
+			}
+			free(mmt_atsc3_signalling_information_usbd_component);
+			mmt_atsc3_signalling_information_usbd_component = NULL;
+		}
+		*mmt_atsc3_signalling_information_usbd_component_p = NULL;
+	}
 }
 
 
