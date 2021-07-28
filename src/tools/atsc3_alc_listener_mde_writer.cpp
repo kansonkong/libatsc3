@@ -44,8 +44,8 @@ int PACKET_COUNTER=0;
 #include "../atsc3_listener_udp.h"
 #include "../atsc3_logging_externs.h"
 
-lls_slt_monitor_t* lls_slt_monitor;
-lls_sls_alc_monitor_t* lls_sls_alc_monitor;
+lls_slt_monitor_t* lls_slt_monitor = NULL;
+lls_sls_alc_monitor_t* lls_sls_alc_monitor = NULL;
 
 uint32_t* dst_ip_addr_filter = NULL;
 uint16_t* dst_ip_port_filter = NULL;
@@ -55,6 +55,21 @@ atsc3_alc_arguments_t* alc_arguments;
 atsc3_alc_session_t* atsc3_alc_session;
 
 uint32_t alc_packet_received_count = 0;
+
+
+
+
+//NOTE: this will _not_ by default update the PHY with a new list of PLPs to listen, this needs to performed in the atsc3_core_service_player_bridge.cpp
+void atsc3_lls_sls_alc_on_metadata_fragments_updated_callback_internal_add_monitor_and_alc_session_flows(lls_sls_alc_monitor_t* lls_sls_alc_monitor) {
+	int ip_mulitcast_flows_added_count = 0;
+
+	ip_mulitcast_flows_added_count = lls_sls_alc_add_additional_ip_flows_from_route_s_tsid(lls_slt_monitor, lls_sls_alc_monitor, lls_sls_alc_monitor->atsc3_sls_metadata_fragments->atsc3_route_s_tsid);
+
+	if(ip_mulitcast_flows_added_count) {
+		__INFO("atsc3_lls_sls_alc_on_metadata_fragments_updated_callback_internal_add_monitor_and_alc_session_flows: added %d ip mulitcast flows for alc monitor and session", ip_mulitcast_flows_added_count);
+	}
+}
+
 
 //#define __AIRWAVZ_PCAP_FIXUP__ 1
 //#define __AIRWAVZ_PCAP_FIXUP_DEBUG__ 1
@@ -147,9 +162,16 @@ void process_packet(u_char *user, const struct pcap_pkthdr *pkthdr, const u_char
         if(lls_table && lls_table->lls_table_id == SLT) {
             for(int i=0; i < lls_table->slt_table.atsc3_lls_slt_service_v.count; i++) {
                 atsc3_lls_slt_service_t* atsc3_lls_slt_service = lls_table->slt_table.atsc3_lls_slt_service_v.data[i];
+				if(dst_service_id_filter != NULL && atsc3_lls_slt_service->service_id != *dst_service_id_filter) {
+					__WARN("lls_slt_alc_session_find_from_service_id: skipping lls_table service: %d as we are filtering against %d", atsc3_lls_slt_service->service_id, *dst_service_id_filter);
+					continue;
+				}
+
                 if(atsc3_lls_slt_service->atsc3_slt_broadcast_svc_signalling_v.count &&
                    atsc3_lls_slt_service->atsc3_slt_broadcast_svc_signalling_v.data[0]->sls_protocol == SLS_PROTOCOL_ROUTE) {
+										
 					lls_sls_alc_monitor_t* lls_sls_alc_monitor_local = lls_sls_alc_monitor_create();
+					lls_sls_alc_monitor_local->atsc3_lls_sls_alc_on_metadata_fragments_updated_callback = &atsc3_lls_sls_alc_on_metadata_fragments_updated_callback_internal_add_monitor_and_alc_session_flows;
 								
 					lls_slt_service_id_t* lls_slt_service_id = lls_slt_service_id_new_from_atsc3_lls_slt_service(atsc3_lls_slt_service);
 					lls_slt_monitor_add_lls_slt_service_id(lls_slt_monitor, lls_slt_service_id);
@@ -158,12 +180,13 @@ void process_packet(u_char *user, const struct pcap_pkthdr *pkthdr, const u_char
 					if(!lls_sls_alc_session) {
 						__WARN("lls_slt_alc_session_find_from_service_id: lls_sls_alc_session is NULL!");
 					}
+					
 					lls_sls_alc_monitor_local->lls_alc_session = lls_sls_alc_session;
 					lls_sls_alc_monitor_local->atsc3_lls_slt_service = atsc3_lls_slt_service;
 					lls_sls_alc_monitor_local->lls_sls_monitor_output_buffer_mode.file_dump_enabled = true;
 
 
-					__WARN("process_packet: adding lls_sls_alc_monitor: %p to lls_slt_monitor: %p, service_id: %d",
+					__INFO("process_packet: auto-assigning adding lls_sls_alc_monitor: %p to lls_slt_monitor: %p, service_id: %d",
 						   lls_sls_alc_monitor_local, lls_slt_monitor, lls_sls_alc_session->service_id);
 
 					lls_slt_monitor_add_lls_sls_alc_monitor(lls_slt_monitor, lls_sls_alc_monitor_local);
@@ -249,7 +272,7 @@ void process_packet(u_char *user, const struct pcap_pkthdr *pkthdr, const u_char
 			__INFO("Discarding packet: lls_sls_alc_monitor: %p, matching_lls_sls_alc_monitor: %p, matching_lls_slt_alc_session: %p, ", lls_sls_alc_monitor, matching_lls_sls_alc_monitor, matching_lls_slt_alc_session);
 		}
 	} else {
-		__INFO("Discarding packet: lls_sls_alc_monitor: %p, matching_lls_sls_alc_monitor: %p, matching_lls_slt_alc_session: %p", lls_sls_alc_monitor, matching_lls_sls_alc_monitor, matching_lls_slt_alc_session);
+		__TRACE("Discarding packet: lls_sls_alc_monitor: %p, matching_lls_sls_alc_monitor: %p, matching_lls_slt_alc_session: %p", lls_sls_alc_monitor, matching_lls_sls_alc_monitor, matching_lls_slt_alc_session);
 	}
 
 udp_packet_free:
@@ -393,6 +416,8 @@ int main(int argc,char **argv) {
 		}
 		
 		lls_sls_alc_monitor_t* lls_sls_alc_monitor_local = lls_sls_alc_monitor_create();
+		lls_sls_alc_monitor_local->atsc3_lls_sls_alc_on_metadata_fragments_updated_callback = &atsc3_lls_sls_alc_on_metadata_fragments_updated_callback_internal_add_monitor_and_alc_session_flows;
+
 		lls_sls_alc_monitor_local->lls_alc_session = lls_sls_alc_session;
 		lls_sls_alc_monitor_local->atsc3_lls_slt_service = atsc3_lls_slt_service;
 		lls_sls_alc_monitor_local->lls_sls_monitor_output_buffer_mode.file_dump_enabled = true;

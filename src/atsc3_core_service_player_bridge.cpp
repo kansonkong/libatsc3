@@ -169,8 +169,8 @@ void atsc3_lls_sls_alc_on_metadata_fragments_updated_callback_ndk(lls_sls_alc_mo
     ip_mulitcast_flows_added_count = lls_sls_alc_add_additional_ip_flows_from_route_s_tsid(lls_slt_monitor, lls_sls_alc_monitor, lls_sls_alc_monitor->atsc3_sls_metadata_fragments->atsc3_route_s_tsid);
 
     if(ip_mulitcast_flows_added_count) {
-        //re-calculate our LMT here..
-        __ATSC3_CORE_SERVICE_PLAYER_BRIDGE_INFO("atsc3_lls_sls_alc_on_metadata_fragments_updated_callback_ndk: added %d ip mulitcast flows for alc, TODO: refresh listen plps as needed", ip_mulitcast_flows_added_count);
+        //jjustman-2021-07-28 - TODO: re-calculate our distinct IP flows here.. and listen to any additional PLP's as needed
+        __ATSC3_CORE_SERVICE_PLAYER_BRIDGE_WARN("atsc3_lls_sls_alc_on_metadata_fragments_updated_callback_ndk: added %d ip mulitcast flows for alc, TODO: refresh listen plps as needed", ip_mulitcast_flows_added_count);
     }
 }
 
@@ -183,6 +183,7 @@ lls_sls_alc_monitor_t* atsc3_lls_sls_alc_monitor_create_with_core_service_player
     lls_sls_alc_monitor_new->atsc3_lls_slt_service = atsc3_lls_slt_service;
 
     //process any unmapped s-tsid RS dstIpAddr/dPort tuples into our alc flow
+	//jjustman-2021-07-28 - process this as a lls_sls_alc_monitor callback so we can listen to any additional plps as needed
     lls_sls_alc_monitor_new->atsc3_lls_sls_alc_on_metadata_fragments_updated_callback = &atsc3_lls_sls_alc_on_metadata_fragments_updated_callback_ndk;
 
     //wire up event callback for alc close_object notification

@@ -66,6 +66,19 @@ atsc3_alc_session_t* atsc3_alc_session;
 
 uint32_t alc_packet_received_count = 0;
 
+
+//NOTE: this will _not_ by default update the PHY with a new list of PLPs to listen, this needs to performed in the atsc3_core_service_player_bridge.cpp
+void atsc3_lls_sls_alc_on_metadata_fragments_updated_callback_internal_add_monitor_and_alc_session_flows(lls_sls_alc_monitor_t* lls_sls_alc_monitor) {
+	int ip_mulitcast_flows_added_count = 0;
+
+	ip_mulitcast_flows_added_count = lls_sls_alc_add_additional_ip_flows_from_route_s_tsid(lls_slt_monitor, lls_sls_alc_monitor, lls_sls_alc_monitor->atsc3_sls_metadata_fragments->atsc3_route_s_tsid);
+
+	if(ip_mulitcast_flows_added_count) {
+		__INFO("atsc3_lls_sls_alc_on_metadata_fragments_updated_callback_internal_add_monitor_and_alc_session_flows: added %d ip mulitcast flows for alc monitor and session", ip_mulitcast_flows_added_count);
+	}
+}
+
+
 void process_packet(atsc3_udp_packet_t* udp_packet) {
 
   if(!udp_packet) {
@@ -86,6 +99,8 @@ void process_packet(atsc3_udp_packet_t* udp_packet) {
                 if(atsc3_lls_slt_service->atsc3_slt_broadcast_svc_signalling_v.count &&
                    atsc3_lls_slt_service->atsc3_slt_broadcast_svc_signalling_v.data[0]->sls_protocol == SLS_PROTOCOL_ROUTE) {
 					lls_sls_alc_monitor_t* lls_sls_alc_monitor_local = lls_sls_alc_monitor_create();
+					lls_sls_alc_monitor_local->atsc3_lls_sls_alc_on_metadata_fragments_updated_callback = &atsc3_lls_sls_alc_on_metadata_fragments_updated_callback_internal_add_monitor_and_alc_session_flows;
+
 								
 					lls_slt_service_id_t* lls_slt_service_id = lls_slt_service_id_new_from_atsc3_lls_slt_service(atsc3_lls_slt_service);
 					lls_slt_monitor_add_lls_slt_service_id(lls_slt_monitor, lls_slt_service_id);
@@ -346,6 +361,8 @@ int main(int argc,char **argv) {
 		}
 
 		lls_sls_alc_monitor_t* lls_sls_alc_monitor_local = lls_sls_alc_monitor_create();
+		lls_sls_alc_monitor_local->atsc3_lls_sls_alc_on_metadata_fragments_updated_callback = &atsc3_lls_sls_alc_on_metadata_fragments_updated_callback_internal_add_monitor_and_alc_session_flows;
+
 		lls_sls_alc_monitor_local->lls_alc_session = lls_sls_alc_session;
 		lls_sls_alc_monitor_local->atsc3_lls_slt_service = atsc3_lls_slt_service;
 		lls_sls_alc_monitor_local->lls_sls_monitor_output_buffer_mode.file_dump_enabled = true;
