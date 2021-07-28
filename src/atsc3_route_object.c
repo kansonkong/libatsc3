@@ -705,6 +705,14 @@ bool atsc3_route_object_is_complete(atsc3_route_object_t* atsc3_route_object) {
                               atsc3_route_object->tsi, atsc3_route_object->toi,
                               atsc3_route_object->atsc3_route_object_lct_packet_received_v.count,
                               total_bytes_recovered);
+	
+	if(atsc3_route_object->tsi == 7 && atsc3_route_object->toi == 5) {
+		_ATSC3_ROUTE_OBJECT_INFO("atsc3_route_object_is_complete: atsc3_route_object: %p, tsi: %d, toi: %d, atsc3_route_object_lct_packet_received_v.count: %d, total_bytes_recovered: %lu",
+								  atsc3_route_object,
+								  atsc3_route_object->tsi, atsc3_route_object->toi,
+								  atsc3_route_object->atsc3_route_object_lct_packet_received_v.count,
+								  total_bytes_recovered);
+	}
 #endif
 
     int atsc3_route_object_length_threshold = __MAX(1, (int)atsc3_route_object->object_length - 1500);
