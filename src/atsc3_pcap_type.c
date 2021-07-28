@@ -139,13 +139,20 @@ atsc3_pcap_replay_context_t* atsc3_pcap_replay_iterate_packet(atsc3_pcap_replay_
 
 	//jjustman-2020-01-16 - fixme? should just be packet header size?
 	atsc3_pcap_replay_context_to_iterate->pcap_file_pos += sizeof(atsc3_pcap_global_header_t) + sizeof(atsc3_pcap_packet_header_t);
-	
+
+    //jjustman-2021-07-07 - if incl_len == 0, we are probably EOF
+    if(!atsc3_pcap_replay_context_to_iterate->atsc3_pcap_packet_instance.atsc3_pcap_packet_header.incl_len) {
+        _ATSC3_PCAP_TYPE_ERROR("atsc3_pcap_replay_iterate_packet: atsc3_pcap_packet_header.incl_len is: %d, ftell is: %ld", 0, ftell(atsc3_pcap_replay_context_to_iterate->pcap_fp));
+        return NULL;
+    }
+
 	//jjustman-2020-11-23 - if atsc3_pcap_replay_context_to_iterate->atsc3_pcap_packet_instance.atsc3_pcap_packet_header.incl_len is greater tahn 262114, we probably have a corrupt frame and should bail
 	if(atsc3_pcap_replay_context_to_iterate->atsc3_pcap_packet_instance.atsc3_pcap_packet_header.incl_len > 262114) {
+        _ATSC3_PCAP_TYPE_ERROR("atsc3_pcap_replay_iterate_packet: atsc3_pcap_packet_header.incl_len is: %d > 262114 , ftell is: %ld", atsc3_pcap_replay_context_to_iterate->atsc3_pcap_packet_instance.atsc3_pcap_packet_header.incl_len, ftell(atsc3_pcap_replay_context_to_iterate->pcap_fp));
 		return NULL;
 	}
 
-	//jjustman-2020-08-11 - don't re-allocate if we are the same block size, just rewind
+    //jjustman-2020-08-11 - don't re-allocate if we are the same block size, just rewind
 	if(atsc3_pcap_replay_context_to_iterate->atsc3_pcap_packet_instance.current_pcap_packet) {
 		block_Resize(atsc3_pcap_replay_context_to_iterate->atsc3_pcap_packet_instance.current_pcap_packet, atsc3_pcap_replay_context_to_iterate->atsc3_pcap_packet_instance.atsc3_pcap_packet_header.incl_len);
 		block_Rewind(atsc3_pcap_replay_context_to_iterate->atsc3_pcap_packet_instance.current_pcap_packet);
