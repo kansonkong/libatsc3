@@ -171,9 +171,7 @@ int lls_sls_alc_add_additional_ip_flows_from_route_s_tsid(lls_slt_monitor_t* lls
 
 void lls_slt_alc_session_remove(lls_slt_monitor_t* lls_slt_monitor, atsc3_lls_slt_service_t* atsc3_lls_slt_service);
 
-
 lls_sls_alc_monitor_t* lls_monitor_sls_alc_session_create(atsc3_lls_slt_service_t* atsc3_lls_slt_service);
-
 
 void lls_sls_alc_session_free(lls_sls_alc_session_t** lls_session_ptr);
 
