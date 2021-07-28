@@ -162,6 +162,45 @@ void atsc3_core_service_application_bridge_reset_context() {
     atsc3_mmt_mfu_context->atsc3_mmt_signalling_information_on_held_message_present = &atsc3_mmt_signalling_information_on_held_message_present_ndk;
 }
 
+void atsc3_lls_sls_alc_on_metadata_fragments_updated_callback_ndk(lls_sls_alc_monitor_t* lls_sls_alc_monitor) {
+    //jjustman-2021-07-07 - walk thru our S-TSID and ensure all RS dstIpAddr and dstPort flows are assigned into our lls_slt_monitor alc flows
+    int ip_mulitcast_flows_added_count = 0;
+
+    ip_mulitcast_flows_added_count = lls_sls_alc_add_additional_ip_flows_from_route_s_tsid(lls_slt_monitor, lls_sls_alc_monitor, lls_sls_alc_monitor->atsc3_sls_metadata_fragments->atsc3_route_s_tsid);
+
+    if(ip_mulitcast_flows_added_count) {
+        //re-calculate our LMT here..
+        __ATSC3_CORE_SERVICE_PLAYER_BRIDGE_INFO("atsc3_lls_sls_alc_on_metadata_fragments_updated_callback_ndk: added %d ip mulitcast flows for alc, TODO: refresh listen plps as needed", ip_mulitcast_flows_added_count);
+    }
+}
+
+lls_sls_alc_monitor_t* atsc3_lls_sls_alc_monitor_create_with_core_service_player_bridge_default_callbacks(atsc3_lls_slt_service_t* atsc3_lls_slt_service) {
+    lls_sls_alc_monitor_t* lls_sls_alc_monitor_new = lls_sls_alc_monitor_create();
+
+    lls_sls_alc_monitor_new->lls_sls_monitor_output_buffer_mode.file_dump_enabled = true;
+    lls_sls_alc_monitor_new->has_discontiguous_toi_flow = true; //jjustman-2020-07-27 - hack-ish
+
+    lls_sls_alc_monitor_new->atsc3_lls_slt_service = atsc3_lls_slt_service;
+
+    //process any unmapped s-tsid RS dstIpAddr/dPort tuples into our alc flow
+    lls_sls_alc_monitor_new->atsc3_lls_sls_alc_on_metadata_fragments_updated_callback = &atsc3_lls_sls_alc_on_metadata_fragments_updated_callback_ndk;
+
+    //wire up event callback for alc close_object notification
+    lls_sls_alc_monitor_new->atsc3_lls_sls_alc_on_object_close_flag_s_tsid_content_location_callback = &atsc3_lls_sls_alc_on_object_close_flag_s_tsid_content_location_ndk;
+
+    //wire up event callback for alc MPD patching
+    lls_sls_alc_monitor_new->atsc3_lls_sls_alc_on_route_mpd_patched_callback = &atsc3_lls_sls_alc_on_route_mpd_patched_ndk;
+
+    //jjustman-2020-08-05 - also atsc3_lls_sls_alc_on_route_mpd_patched_with_filename_callback
+    lls_sls_alc_monitor_new->atsc3_lls_sls_alc_on_package_extract_completed_callback = &atsc3_lls_sls_alc_on_package_extract_completed_callback_ndk;
+
+    //#1569
+    lls_sls_alc_monitor_new->atsc3_sls_on_held_trigger_received_callback = &atsc3_sls_on_held_trigger_received_callback_impl;
+
+    return lls_sls_alc_monitor_new;
+}
+
+
 void atsc3_core_service_phy_bridge_init(IAtsc3NdkPHYBridge* atsc3NdkPHYBridge) {
 	Atsc3NdkPHYBridge_ptr = atsc3NdkPHYBridge;
 	if(Atsc3NdkApplicationBridge_ptr) {
@@ -281,11 +320,6 @@ vector<uint8_t>  atsc3_phy_build_plp_listeners_from_lls_slt_monitor(lls_slt_moni
                                 continue;
                             }
 
-                            __ATSC3_CORE_SERVICE_PLAYER_BRIDGE_INFO("atsc3_phy_update_plp_listeners_from_lls_slt_monitor: service_id: %d, plp_id: %d, checking lmt->dst_ip:port %u.%u.%u.%u:%u, sls_dest_ip:port: %u.%u.%u.%u:%u",
-                                    service_id,
-                                    atsc3_link_mapping_table_plp->PLP_ID,
-                                    __toipandportnonstruct(atsc3_link_mapping_table_multicast->dst_ip_add, atsc3_link_mapping_table_multicast->dst_udp_port),
-                                    __toipandportnonstruct(sls_destination_ip_address, sls_destination_udp_port));
 
                             if(atsc3_link_mapping_table_multicast->dst_ip_add == sls_destination_ip_address && atsc3_link_mapping_table_multicast->dst_udp_port == sls_destination_udp_port) {
                                 Atsc3NdkApplicationBridge_ptr->LogMsgF("atsc3_phy_update_plp_listeners_from_lls_slt_monitor: SLS adding PLP_id: %d (%s:%s)",
@@ -513,10 +547,7 @@ atsc3_lls_slt_service_t* atsc3_core_service_player_bridge_set_single_monitor_a33
 
         lls_slt_monitor_clear_lls_sls_alc_monitor(lls_slt_monitor);
 
-        lls_sls_alc_monitor = lls_sls_alc_monitor_create();
-        lls_sls_alc_monitor->atsc3_lls_slt_service = atsc3_lls_slt_service;
-        lls_sls_alc_monitor->lls_sls_monitor_output_buffer_mode.file_dump_enabled = true;
-        lls_sls_alc_monitor->has_discontiguous_toi_flow = true; //jjustman-2020-07-27 - hack-ish
+        lls_sls_alc_monitor = atsc3_lls_sls_alc_monitor_create_with_core_service_player_bridge_default_callbacks(atsc3_lls_slt_service);
 
         lls_slt_service_id_t* lls_slt_service_id = lls_slt_service_id_new_from_atsc3_lls_slt_service(atsc3_lls_slt_service);
         lls_slt_monitor_add_lls_slt_service_id(lls_slt_monitor, lls_slt_service_id);
@@ -529,20 +560,6 @@ atsc3_lls_slt_service_t* atsc3_core_service_player_bridge_set_single_monitor_a33
         lls_slt_monitor->lls_sls_alc_monitor = lls_sls_alc_monitor;
 
         lls_slt_monitor_add_lls_sls_alc_monitor(lls_slt_monitor, lls_sls_alc_monitor);
-
-
-        //wire up event callback for alc close_object notification
-        lls_sls_alc_monitor->atsc3_lls_sls_alc_on_object_close_flag_s_tsid_content_location_callback = &atsc3_lls_sls_alc_on_object_close_flag_s_tsid_content_location_ndk;
-
-        //wire up event callback for alc MPD patching
-        lls_sls_alc_monitor->atsc3_lls_sls_alc_on_route_mpd_patched_callback = &atsc3_lls_sls_alc_on_route_mpd_patched_ndk;
-        //jjustman-2020-08-05 - also atsc3_lls_sls_alc_on_route_mpd_patched_with_filename_callback
-
-        lls_sls_alc_monitor->atsc3_lls_sls_alc_on_package_extract_completed_callback = &atsc3_lls_sls_alc_on_package_extract_completed_callback_ndk;
-
-        //#1569
-        lls_sls_alc_monitor->atsc3_sls_on_held_trigger_received_callback = &atsc3_sls_on_held_trigger_received_callback_impl;
-        //jjustman-2020-08-05 - also atsc3_sls_on_held_trigger_received_with_version_callback
 
     } else {
         lls_slt_monitor_clear_lls_sls_alc_monitor(lls_slt_monitor);
@@ -586,9 +603,7 @@ atsc3_lls_slt_service_t* atsc3_core_service_player_bridge_add_monitor_a331_servi
            atsc3_slt_broadcast_svc_signalling_route_to_add_monitor->sls_destination_ip_address,
            atsc3_slt_broadcast_svc_signalling_route_to_add_monitor->sls_destination_udp_port);
 
-    lls_sls_alc_monitor_to_add = lls_sls_alc_monitor_create();
-    lls_sls_alc_monitor_to_add->lls_sls_monitor_output_buffer_mode.file_dump_enabled = true; //jjustman-2020-11-17 - todo: fix me
-    lls_sls_alc_monitor_to_add->atsc3_lls_slt_service = atsc3_lls_slt_service;
+    lls_sls_alc_monitor_to_add = atsc3_lls_sls_alc_monitor_create_with_core_service_player_bridge_default_callbacks(atsc3_lls_slt_service);
 
     lls_slt_service_id_t* lls_slt_service_id = lls_slt_service_id_new_from_atsc3_lls_slt_service(atsc3_lls_slt_service);
     lls_slt_monitor_add_lls_slt_service_id(lls_slt_monitor, lls_slt_service_id);
@@ -908,7 +923,7 @@ void atsc3_core_service_bridge_process_packet_phy(block_t* packet) {
                 atsc3_alc_packet_check_monitor_flow_for_toi_wraparound_discontinuity(alc_packet, lls_slt_monitor->lls_sls_alc_monitor);
 
                 //keep track of our EXT_FTI and update last_toi as needed for TOI length and manual set of the close_object flag
-                atsc3_route_object_t *atsc3_route_object = atsc3_alc_persist_route_object_lct_packet_received_for_lls_sls_alc_monitor_all_flows(alc_packet, lls_slt_monitor->lls_sls_alc_monitor);
+                atsc3_route_object_t* atsc3_route_object = atsc3_alc_persist_route_object_lct_packet_received_for_lls_sls_alc_monitor_all_flows(alc_packet, lls_slt_monitor->lls_sls_alc_monitor);
 
                 //persist to disk, process sls mbms and/or emit ROUTE media_delivery_event complete to the application tier if
                 //the full packet has been recovered (e.g. no missing data units in the forward transmission)
@@ -1331,35 +1346,22 @@ bool atsc3_mmt_signalling_information_on_routecomponent_message_present_ndk(atsc
         return false;
     }
 
-    lls_sls_alc_monitor = lls_sls_alc_monitor_create();
-    lls_sls_alc_monitor->atsc3_lls_slt_service = atsc3_mmt_mfu_context->matching_lls_sls_mmt_session->atsc3_lls_slt_service;
-    lls_sls_alc_monitor->lls_sls_monitor_output_buffer_mode.file_dump_enabled = true;
-    lls_sls_alc_monitor->has_discontiguous_toi_flow = true; //jjustman-2020-07-27 - hack-ish
+    lls_sls_alc_monitor = atsc3_lls_sls_alc_monitor_create_with_core_service_player_bridge_default_callbacks(atsc3_mmt_mfu_context->matching_lls_sls_mmt_session->atsc3_lls_slt_service);
 
     lls_slt_service_id_t* lls_slt_service_id = lls_slt_service_id_new_from_atsc3_lls_slt_service(atsc3_mmt_mfu_context->matching_lls_sls_mmt_session->atsc3_lls_slt_service);
     lls_slt_monitor_add_lls_slt_service_id(lls_slt_monitor, lls_slt_service_id);
 
+    //kick start our ROUTE SLS for s-tsid processing
     lls_sls_alc_session_t* lls_sls_alc_session = lls_slt_alc_session_find_or_create_from_ip_udp_values(lls_slt_monitor, atsc3_mmt_mfu_context->matching_lls_sls_mmt_session->atsc3_lls_slt_service, mmt_atsc3_route_component->stsid_destination_ip_address, mmt_atsc3_route_component->stsid_destination_udp_port, mmt_atsc3_route_component->stsid_source_ip_address);
     if(!lls_sls_alc_session) {
         __ATSC3_CORE_SERVICE_PLAYER_BRIDGE_WARN("atsc3_core_service_player_bridge_set_single_monitor_a331_service_id: lls_slt_alc_session_find_from_service_id: lls_sls_alc_session is NULL!");
     }
     lls_sls_alc_monitor->lls_alc_session = lls_sls_alc_session;
+
+    //jjustman-2021-07-07 - TODO: deprecate me
     lls_slt_monitor->lls_sls_alc_monitor = lls_sls_alc_monitor;
 
     lls_slt_monitor_add_lls_sls_alc_monitor(lls_slt_monitor, lls_sls_alc_monitor);
-
-
-    //wire up event callback for alc close_object notification
-    lls_sls_alc_monitor->atsc3_lls_sls_alc_on_object_close_flag_s_tsid_content_location_callback = &atsc3_lls_sls_alc_on_object_close_flag_s_tsid_content_location_ndk;
-
-    //wire up event callback for alc MPD patching
-    lls_sls_alc_monitor->atsc3_lls_sls_alc_on_route_mpd_patched_callback = &atsc3_lls_sls_alc_on_route_mpd_patched_ndk;
-    //jjustman-2020-08-05 - also atsc3_lls_sls_alc_on_route_mpd_patched_with_filename_callback
-
-    lls_sls_alc_monitor->atsc3_lls_sls_alc_on_package_extract_completed_callback = &atsc3_lls_sls_alc_on_package_extract_completed_callback_ndk;
-
-    //#1569
-    lls_sls_alc_monitor->atsc3_sls_on_held_trigger_received_callback = &atsc3_sls_on_held_trigger_received_callback_impl;
 
     return true;
 }

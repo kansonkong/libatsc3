@@ -11,6 +11,7 @@
 #include "atsc3_utils.h"
 //jjustman-2021-04-27 - todo: fix me?
 #include "strnstr.h"
+#include "string.h"
 
 #include "atsc3_mbms_envelope_xml.h"
 #include "atsc3_fdt.h"
