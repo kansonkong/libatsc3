@@ -701,6 +701,9 @@ int atsc3_alc_packet_persist_to_toi_resource_process_sls_mbms_and_emit_callback(
 
 	int bytesWritten = 0;
 
+	block_t* atsc3_fdt_file_gzip_contents = NULL;
+	block_t* atsc3_decompressed_payload = NULL;
+	
 	//jjustman-2020-08-05 - deprecate file_dump_enabled option
 	if(!lls_sls_alc_monitor || (lls_sls_alc_monitor && !lls_sls_alc_monitor->lls_sls_monitor_output_buffer_mode.file_dump_enabled)) {
 		return ATSC3_ALC_UTILS_LLS_SLS_ALC_MONITOR_OUTPUT_BUFFER_MODE_NOT_ENABLED;
@@ -834,7 +837,7 @@ int atsc3_alc_packet_persist_to_toi_resource_process_sls_mbms_and_emit_callback(
 							atsc3_fdt_file_matching->content_encoding,
 							atsc3_fdt_file_matching->content_length);
 							
-							block_t* atsc3_fdt_file_gzip_contents = block_Read_from_filename(temporary_recovery_filename);
+							atsc3_fdt_file_gzip_contents = block_Read_from_filename(temporary_recovery_filename);
 							if(!atsc3_fdt_file_gzip_contents) {
 								__ALC_UTILS_WARN("atsc3_alc_packet_persist_to_toi_resource_process_sls_mbms_and_emit_callback: block_Read_from_filename: %p, unable to read file: %s, content_location: %s, content_encoding: %s, is_gzip: true, content_length is: %d",
 								atsc3_fdt_file_matching,
@@ -850,7 +853,7 @@ int atsc3_alc_packet_persist_to_toi_resource_process_sls_mbms_and_emit_callback(
                             unlink(temporary_recovery_filename);
 
                             block_Rewind(atsc3_fdt_file_gzip_contents);
-							block_t* atsc3_decompressed_payload = block_Alloc(atsc3_fdt_file_matching->content_length);
+							atsc3_decompressed_payload = block_Alloc(atsc3_fdt_file_matching->content_length);
 
 							int32_t unzipped_size = atsc3_unzip_gzip_payload_block_t(atsc3_fdt_file_gzip_contents, atsc3_decompressed_payload);
 				
@@ -900,15 +903,15 @@ int atsc3_alc_packet_persist_to_toi_resource_process_sls_mbms_and_emit_callback(
 								
 								block_Write_to_filename(atsc3_decompressed_payload, persisted_cache_file_name);
 							}
+
 						} else {
 							__ALC_UTILS_INFO("atsc3_fdt_file_matching: %p, content_location: %s, content_encoding: %s, is_gzip: true, content_length is missing, using dynamic alloc!",
 													atsc3_fdt_file_matching,
 													atsc3_fdt_file_matching->content_location,
 													atsc3_fdt_file_matching->content_encoding);
 							
-							block_t* atsc3_fdt_file_gzip_contents = block_Read_from_filename(temporary_recovery_filename);
+							atsc3_fdt_file_gzip_contents = block_Read_from_filename(temporary_recovery_filename);
 							block_Rewind(atsc3_fdt_file_gzip_contents);
-							block_t* atsc3_decompressed_payload = NULL;
 													
 							int32_t unzipped_size = atsc3_unzip_gzip_payload_block_t_with_dynamic_realloc(atsc3_fdt_file_gzip_contents, &atsc3_decompressed_payload);
 							
@@ -1057,6 +1060,14 @@ cleanup:
 	if(s_tsid_content_type) {
 		free(s_tsid_content_type);
 		s_tsid_content_type = NULL;
+	}
+	
+	if(atsc3_fdt_file_gzip_contents) {
+		block_Destroy(&atsc3_fdt_file_gzip_contents);
+	}
+	
+	if(atsc3_decompressed_payload) {
+		block_Destroy(&atsc3_decompressed_payload);
 	}
 
 	return bytesWritten;
