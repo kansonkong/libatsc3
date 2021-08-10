@@ -1030,7 +1030,7 @@ int atsc3_alc_packet_persist_to_toi_resource_process_sls_mbms_and_emit_callback(
             }
 
 			//emit "pseduo" lls_sls_alc_monitor lls alc context callback for on close object flag
-			if(lls_sls_alc_monitor->atsc3_lls_sls_alc_on_object_close_flag_s_tsid_content_location_callback) {
+			if(lls_sls_alc_monitor->atsc3_lls_sls_alc_on_object_close_flag_s_tsid_content_location_callback && lls_sls_alc_monitor && lls_sls_alc_monitor->atsc3_lls_slt_service) {
 				lls_sls_alc_monitor->atsc3_lls_sls_alc_on_object_close_flag_s_tsid_content_location_callback(lls_sls_alc_monitor->atsc3_lls_slt_service->service_id, alc_packet->def_lct_hdr->tsi, alc_packet->def_lct_hdr->toi, s_tsid_content_location, s_tsid_content_type, persisted_cache_file_name);
 			}
 
