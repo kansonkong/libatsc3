@@ -166,7 +166,7 @@ typedef struct mmt_atsc3_message_content_type_descriptor_number_of_assets_header
 typedef struct mmt_atsc3_message_content_type_asset_heaader {
 	uint32_t		asset_id_length;
 	uint8_t*		asset_id;
-} mmt_atsc3_message_content_type_asset_heaader_t;
+} mmt_atsc3_message_content_type_asset_header_t;
 
 typedef struct mmt_atsc3_message_content_type_language_heaader {
 	uint8_t		language_length;
@@ -348,7 +348,7 @@ typedef struct mmt_atsc3_message_content_type_video_stream_properties_descriptor
 
 //TODO: jjustman-2021-06-03: MMT_ATSC3_MESSAGE_CONTENT_TYPE_VIDEO_STREAM_PROPERTIES_DESCRIPTOR
 typedef struct mmt_atsc3_message_content_type_video_stream_properties_descriptor {
-	mmt_atsc3_message_content_type_asset_heaader_t										asset_header;
+	mmt_atsc3_message_content_type_asset_header_t										asset_header;
 	ATSC3_VECTOR_BUILDER_STRUCT(mmt_atsc3_message_content_type_video_stream_properties_descriptor_asset);
 
 } mmt_atsc3_message_content_type_video_stream_properties_descriptor_t;
@@ -378,7 +378,7 @@ enum MMT_ATSC3_MESSAGE_CONTENT_TYPE_CAPTION_ASSET_DESCRIPTOR_ASSET_ASPECT_RATIO 
 };
 
 typedef struct mmt_atsc3_message_content_type_caption_asset_descriptor_asset {
-	mmt_atsc3_message_content_type_asset_heaader_t										asset_header;
+	mmt_atsc3_message_content_type_asset_header_t										asset_header;
 	mmt_atsc3_message_content_type_language_heaader_t									language_header;
 
 	enum MMT_ATSC3_MESSAGE_CONTENT_TYPE_CAPTION_ASSET_DESCRIPTOR_ASSET_ROLE 			role;
@@ -547,7 +547,7 @@ typedef struct mmt_atsc3_message_content_type_audio_stream_properties_descriptor
 ATSC3_VECTOR_BUILDER_METHODS_INTERFACE(mmt_atsc3_message_content_type_audio_stream_properties_descriptor_asset_presentation, mmt_atsc3_message_content_type_audio_stream_properties_descriptor_asset_presentation_language);
 
 typedef struct mmt_atsc3_message_content_type_audio_stream_properties_descriptor_asset {
-	mmt_atsc3_message_content_type_asset_heaader_t																	asset_header;
+	mmt_atsc3_message_content_type_asset_header_t																	asset_header;
 	uint8_t																											codec_code[4]; 	//8*4
 	uint8_t																											num_presentations;
 	uint8_t																											multi_stream_info_present:1;
@@ -730,7 +730,7 @@ typedef struct mmt_atsc3_message_content_type_security_properties_descriptor_LAU
 
 
 typedef struct mmt_atsc3_message_content_type_security_properties_descriptor_LAURL_asset {
-	mmt_atsc3_message_content_type_asset_heaader_t						asset_header;
+	mmt_atsc3_message_content_type_asset_header_t						asset_header;
 
 	uint8_t																scheme_code_present:1;
 	uint8_t																default_KID_present:1;
@@ -1138,6 +1138,15 @@ void mmt_atsc3_signalling_information_usbd_component_free(mmt_atsc3_signalling_i
 void mmt_atsc3_route_component_free(mmt_atsc3_route_component_t** mmt_atsc3_route_component_p);
 void mmt_atsc3_held_message_free(mmt_atsc3_held_message_t** mmt_atsc3_held_message_p);
 
+void mmt_atsc3_message_content_type_asset_header_free_asset_id(mmt_atsc3_message_content_type_asset_header_t* mmt_atsc3_message_content_type_asset_heaader);
+
+
+
+#define __MMT_SI_TYPES_ERROR(...)   if(_MMT_SI_TYPES_ERROR_ENABLED) { __LIBATSC3_TIMESTAMP_ERROR(__VA_ARGS__); }
+#define __MMT_SI_TYPES_WARN(...)    if(_MMT_SI_TYPES_WARN_ENABLED)  { __LIBATSC3_TIMESTAMP_WARN(__VA_ARGS__);  }
+#define __MMT_SI_TYPES_INFO(...)    if(_MMT_SI_TYPES_INFO_ENABLED)  { __LIBATSC3_TIMESTAMP_INFO(__VA_ARGS__);  }
+#define __MMT_SI_TYPES_DEBUG(...)   if(_MMT_SI_TYPES_DEBUG_ENABLED) { __LIBATSC3_TIMESTAMP_DEBUG(__VA_ARGS__); }
+#define __MMT_SI_TYPES_TRACE(...)   if(_MMT_SI_TYPES_TRACE_ENABLED) { __LIBATSC3_TIMESTAMP_TRACE(__VA_ARGS__); }
 
 
 #if defined (__cplusplus)

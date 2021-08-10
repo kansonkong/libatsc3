@@ -551,11 +551,24 @@ void process_from_udp_packet(udp_packet_t* udp_packet) {
 	}
 
 udp_packet_free:
-	alc_packet_free(&alc_packet);
-	alc_packet = NULL;
-
+    if(alc_packet) {
+        alc_packet_free(&alc_packet);
+        alc_packet = NULL;
+    }
 error:
 cleanup:
+
+    //jjustman-2020-11-12 - this should be freed already from mmtp_*_free_packet_header_from_block_t, but just in case...
+    if(mmtp_packet_header) {
+        mmtp_packet_header_free(&mmtp_packet_header);
+    }
+
+    //jjustman-2020-11-12 - note: do not free mmtp_mpu_packet or mmtp_signalling_packet as they may have been added to a mmtp_*_packet_collection for re-assembly
+    //unless si_fragmentation_indicator == 0x0, then we can safely release, as we do not push single units to the mmtp_packet_id_packets_container->mmtp_signalling_packet_v
+    if(mmtp_signalling_packet && mmtp_signalling_packet->si_fragmentation_indicator == 0x0) {
+        mmtp_signalling_packet_free(&mmtp_signalling_packet);
+    }
+
     return udp_packet_free(&udp_packet);
 }
 
