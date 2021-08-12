@@ -14,6 +14,8 @@ typedef struct {
 } RingBufferPageHeader;
 #pragma pack(pop)
 
+mutex Atsc3RingBuffer::CS_global_mutex;
+
 Atsc3RingBuffer::Atsc3RingBuffer(uint8_t* buffer_ptr, uint32_t buffer_size, uint32_t page_size) {
     this->buffer_ptr = buffer_ptr;
     this->buffer_size = buffer_size;
@@ -21,6 +23,8 @@ Atsc3RingBuffer::Atsc3RingBuffer(uint8_t* buffer_ptr, uint32_t buffer_size, uint
 }
 
 void Atsc3RingBuffer::write(int8_t type, uint16_t service_id, uint16_t packet_id, uint32_t sample_number, uint64_t presentationUs, uint8_t *buffer, uint32_t bufferLen) {
+    lock_guard<mutex> atsc3_ring_buffer_cctor_mutex_local(Atsc3RingBuffer::CS_global_mutex);
+
     uint32_t remaining = bufferLen;
     int32_t page_num = ++buffer_page_number;
     uint8_t page_segment_number = 0;
@@ -57,5 +61,8 @@ void Atsc3RingBuffer::write(int8_t type, uint16_t service_id, uint16_t packet_id
 }
 
 void Atsc3RingBuffer::rewind() {
+    lock_guard<mutex> atsc3_ring_buffer_cctor_mutex_local(Atsc3RingBuffer::CS_global_mutex);
+
     buffer_position = 0;
+    memset(buffer_ptr, 0, sizeof(RingBufferPageHeader));
 }

@@ -125,6 +125,8 @@ public:
     int acceptNdkByteBufferUdpPacket(jobject byte_buffer, jint byte_buffer_length);
     void extractUdpPacket(block_t* udpPacket);
 
+    void rewindRingBuffer();
+
     jmethodID mOnLogMsgId = nullptr;
 
     jmethodID atsc3_OnInitHEVC_NAL_Extracted = nullptr; //java method for pushing to a/v codec buffers
