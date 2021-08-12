@@ -3,6 +3,7 @@
 #include <sys/types.h>
 #include <vector>
 #include <list>
+#include <mutex>
 
 using namespace std;
 
@@ -12,6 +13,8 @@ using namespace std;
 class Atsc3RingBuffer
 {
 public:
+    static mutex CS_global_mutex;
+
     static const int8_t RING_BUFFER_PAGE_INIT = 1;
     static const int8_t RING_BUFFER_PAGE_FRAGMENT = 2;
 
