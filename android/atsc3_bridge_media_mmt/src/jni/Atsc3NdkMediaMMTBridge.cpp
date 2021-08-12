@@ -184,6 +184,9 @@ void Atsc3NdkMediaMMTBridge::extractUdpPacket(block_t* udpPacket) {
     mmtExtractor->atsc3_core_service_bridge_process_mmt_packet(udpPacket);
 }
 
+void Atsc3NdkMediaMMTBridge::rewindRingBuffer() {
+    fragmentBuffer->rewind();
+}
 
 //wired up and invoked from atsc3_mmt_mfu_context_callbacks_default_jni.cpp
 
@@ -480,7 +483,7 @@ void Atsc3NdkMediaMMTBridge::atsc3_onMfuSampleMissing(uint16_t packet_id, uint32
 void Atsc3NdkMediaMMTBridge::writeToRingBuffer(int8_t type, uint16_t service_id, uint16_t packet_id, uint32_t sample_number, uint64_t presentationUs, uint8_t* buffer, uint32_t bufferLen) {
     // Reset the buffer if MMT emission service was changed
     if (last_service_id != service_id) {
-        fragmentBuffer->rewind();
+        rewindRingBuffer();
         last_service_id = service_id;
     }
 
@@ -710,4 +713,13 @@ Java_org_ngbp_libatsc3_middleware_Atsc3NdkMediaMMTBridge_release(JNIEnv *env, jo
 
     //jjustman-2020-12-16 - TODO: delete mediaMMTBridge; (and block_destory(preAllocInFlightUdpPacket))
     return;
+}
+
+extern "C"
+JNIEXPORT void JNICALL
+Java_org_ngbp_libatsc3_middleware_Atsc3NdkMediaMMTBridge_rewindBuffer(JNIEnv *env, jobject thiz) {
+    Atsc3NdkMediaMMTBridge* mediaMMTBridge = Atsc3NdkMediaMMTBridge::GetMediaBridgePtr(env, thiz);
+    if(mediaMMTBridge) {
+        mediaMMTBridge->rewindRingBuffer();
+    }
 }
