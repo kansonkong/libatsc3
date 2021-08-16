@@ -2,14 +2,17 @@
 
 #pragma pack(push, 1)
 typedef struct {
-    int8_t page_lock;
+    /* page header */
+    int8_t  page_lock;
     int32_t page_num;
-    int32_t length;
-    int8_t  page_type;
+    int32_t payload_length;
+    /* payload header */
+    int8_t  type;
     int32_t service_id;
     int32_t packet_id;
     int32_t sample_number;
     int64_t presentationUs;
+    /* reserved for feature use */
     int8_t  reserved[7];
 } RingBufferPageHeader;
 #pragma pack(pop)
@@ -40,8 +43,8 @@ void Atsc3RingBuffer::write(int8_t type, uint16_t service_id, uint16_t packet_id
         RingBufferPageHeader *header = ((RingBufferPageHeader *) fragmentBuffer);
         header->page_lock = 1;
         header->page_num = page_num;
-        header->length = bufferLen;
-        header->page_type = type;
+        header->payload_length = bufferLen;
+        header->type = type;
         header->service_id = service_id;
         header->packet_id = packet_id;
         header->sample_number = sample_number;
