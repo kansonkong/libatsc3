@@ -63,9 +63,10 @@ void Atsc3RingBuffer::write(int8_t type, uint16_t service_id, uint16_t packet_id
     }
 }
 
-void Atsc3RingBuffer::rewind() {
+void Atsc3RingBuffer::reset() {
     lock_guard<mutex> atsc3_ring_buffer_cctor_mutex_local(Atsc3RingBuffer::CS_global_mutex);
 
+    buffer_page_number = 0;
     buffer_position = 0;
-    memset(buffer_ptr, 0, sizeof(RingBufferPageHeader));
+    memset(buffer_ptr, 0, buffer_size);
 }
