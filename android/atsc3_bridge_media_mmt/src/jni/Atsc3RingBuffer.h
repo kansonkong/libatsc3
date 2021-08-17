@@ -30,7 +30,7 @@ public:
     Atsc3RingBuffer(uint8_t* buffer_ptr, uint32_t buffer_size, uint32_t page_size);
 
     void write(int8_t type, uint16_t service_id, uint16_t packet_id, uint32_t sample_number, uint64_t presentationUs, uint8_t* buffer, uint32_t bufferLen);
-    void rewind();
+    void reset();
 };
 
 #endif //LIBATSC3_RING_BUFFER_H

@@ -185,7 +185,7 @@ void Atsc3NdkMediaMMTBridge::extractUdpPacket(block_t* udpPacket) {
 }
 
 void Atsc3NdkMediaMMTBridge::rewindRingBuffer() {
-    fragmentBuffer->rewind();
+    fragmentBuffer->reset();
 }
 
 //wired up and invoked from atsc3_mmt_mfu_context_callbacks_default_jni.cpp
