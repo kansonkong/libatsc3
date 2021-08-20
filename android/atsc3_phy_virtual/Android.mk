@@ -141,9 +141,11 @@ LOCAL_CFLAGS += -D__DISABLE_LIBPCAP__ -D__DISABLE_ISOBMFF_LINKAGE__ -D__DISABLE_
 
 # -D_GNU_SOURCE \
 
+# jjustman-2021-08-20 - -lssl -lcrypto  should be linked via prefab from $(call import-module,prefab/openssl)
+
 LOCAL_LDLIBS += -ldl -llog -landroid -lz \
 				-latsc3_core -latsc3_bridge \
-				-lssl -lcrypto -lc++_shared
+				-lc++_shared
 
 LOCAL_LDFLAGS += -fPIE -fPIC \
 				-L $(LOCAL_PATH)/../atsc3_bridge/build/intermediates/ndkBuild/debug/obj/local/$(TARGET_ARCH_ABI)/ \
@@ -164,7 +166,7 @@ $(info 'before local shared libs' $(MAKECMDGOALS))
 
 ifneq ($(MAKECMDGOALS),clean)
 	ifneq ($(MAKECMDGOALS),generateJsonModelDebug)
-LOCAL_SHARED_LIBRARIES := libCodornicesRq libssl libcrypto
+LOCAL_SHARED_LIBRARIES := libCodornicesRq ssl crypto
 	endif
 endif
 
@@ -175,6 +177,13 @@ $(info 'before call import module with $(MAKECMDGOALS)' )
 
 ifneq ($(MAKECMDGOALS),clean)
 ifneq ($(MAKECMDGOALS),generateJsonModelDebug)
+
+ifneq ($(call ndk-major-at-least,21),true)
+    $(call import-add-path,$(NDK_GRADLE_INJECTED_IMPORT_PATH))
+endif
+
+$(call import-add-path,/out)
+
 $(call import-module,prefab/openssl)
 endif
 endif
