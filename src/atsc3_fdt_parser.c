@@ -72,6 +72,7 @@ atsc3_fdt_instance_t* atsc3_efdt_instance_parse_from_xml_node(xml_node_t* xml_ef
 							
 								_ATSC3_FDT_PARSER_DEBUG("atsc3_fdt_parse_from_xml_fdt_instance: file: %u, toi: %u, location: %s, inheriting file: appContextIdList from fdt-instance appContextIdList: %s, now set to: file->appContextIdList: %s",
 										i, atsc3_fdt_file->toi,
+										atsc3_fdt_file->content_location,
 										atsc3_fdt_instance->app_context_id_list,
 										atsc3_fdt_file->app_context_id_list);
 						}
