@@ -547,6 +547,8 @@ bool atsc3_stltp_tunnel_packet_extract_fragment_encapsulated_payload(atsc3_stltp
     uint32_t pre_extract_container_size = 0;
     bool	has_completed_packet = false;
 
+	__STLTP_PARSER_ERROR("atsc3_stltp_tunnel_packet_extract_fragment_encapsulated_payload: ip_udp_rtp_ctp_packet_inner->rtp_ctp_header ip: 0x%08x (%u.%u.%u.%u:%u)", atsc3_stltp_tunnel_packet_current->ip_udp_rtp_ctp_packet_inner->udp_flow.dst_ip_addr, __toipandportnonstruct(atsc3_stltp_tunnel_packet_current->ip_udp_rtp_ctp_packet_inner->udp_flow.dst_ip_addr, atsc3_stltp_tunnel_packet_current->ip_udp_rtp_ctp_packet_inner->udp_flow.dst_port));
+	
     if(atsc3_stltp_tunnel_packet_current->ip_udp_rtp_ctp_packet_inner->rtp_ctp_header->payload_type == ATSC3_STLTP_PAYLOAD_TYPE_BASEBAND_PACKET) {
     	pre_extract_container_size = atsc3_stltp_tunnel_packet_current->atsc3_stltp_baseband_packet_v.count;
 
