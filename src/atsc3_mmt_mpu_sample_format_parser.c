@@ -61,14 +61,6 @@ mmtp_mpu_packet_t* atsc3_mmt_mpu_sample_format_parse(mmtp_mpu_packet_t* mmtp_mpu
         mmtp_mpu_packet->mmthsample_header->offset = block_Read_uint32_ntohl(raw_packet);
         mmtp_mpu_packet->mmthsample_header->length = block_Read_uint32_ntohl(raw_packet);
 
-//             //hi skt!
-//            if(mmthsample_sequence_number[0] == 'S' && mmthsample_sequence_number[1] == 'K' && mmthsample_sequence_number[2] == 'T') {
-//                mmtp_mpu_packet->mmthsample_header->sequence_number  = mmtp_mpu_packet->mpu_sequence_number;
-//                mmtp_mpu_packet->mmthsample_header->samplenumber = mmtp_mpu_packet->sample_number;
-//                mmtp_mpu_packet->mmthsample_header->movie_fragment_sequence_number = mmtp_mpu_packet->movie_fragment_sequence_number;
-//                mmtp_mpu_packet->mmthsample_header->offset = mmtp_mpu_packet->offset + 8;
-//            }
-
         //read multilayerinfo - see atsc3_mmt_multiLayerInfoBox for ISO 14496 "Box" defns.
         uint32_t muliBoxStartPosition = raw_packet->i_pos;
 
