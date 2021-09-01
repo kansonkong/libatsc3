@@ -90,16 +90,36 @@ public class RfPhyStatistics {
         this.plp_lock_all = plp_all;
     }
 
+    /*
+     "P%d:SNR:%4.2f, MC:G:%d, %s (%d), %s (%d), %s (%d), BER:p_ldpc: %d, p_bch: %d, post_bch: %d, t_fec: %d, t_e_fec: %d\n" +
+     "P%d:SNR:%4.2f, MC:G:%d, %s (%d), %s (%d), %s (%d), BER:p_ldpc: %d, p_bch: %d, post_bch: %d, t_fec: %d, t_e_fec: %d\n" +
+     "P%d:SNR:%4.2f, MC:G:%d, %s (%d), %s (%d), %s (%d), BER:p_ldpc: %d, p_bch: %d, post_bch: %d, t_fec: %d, t_e_fec: %d\n",
+     //3.3E
+     */
     @Override
     public String toString() {
-        return String.format("TunLk: %d, DmLk: %d (RF: %d, L1B: %d, L1D: %d), PLk:Any: 0x%02x, All: 0x%02x, Cpu: %s\n"+
-                                "RSSI: %d.%03d dB (raw: %d), GSNR: %.2f, L1B_SNR: %.2f, L1D_SNR: %.2f\n" +
-                                "P0: SNR: %.2f, M/C: G: %d, %s (%d), %s (%d), %s (%d), BER: p_ldpc: %d, p_bch: %d, post_bch: %d, t_fec: %d, t_e_fec: %d\n" +
-                                "P1: SNR: %.2f, M/C: G: %d, %s (%d), %s (%d), %s (%d), BER: p_ldpc: %d, p_bch: %d, post_bch: %d, t_fec: %d, t_e_fec: %d\n" +
-                                "P2: SNR: %.2f, M/C: G: %d, %s (%d), %s (%d), %s (%d), BER: p_ldpc: %d, p_bch: %d, post_bch: %d, t_fec: %d, t_e_fec: %d\n" +
-                                "P3: SNR: %.2f, M/C: G: %d, %s (%d), %s (%d), %s (%d), BER: p_ldpc: %d, p_bch: %d, post_bch: %d, t_fec: %d, t_e_fec: %d\n",
-                
-                this.tuner_lock,
+        return String.format("TunLk: %d, DmLk: %d (RF: %d, L1B: %d, L1D: %d)\n"+
+                             "PLk:Any: 0x%02x, All: 0x%02x, Cpu: %s\n"+
+                             "RSSI: %d.%03d dB (raw: %d), SNR: G:%4.2f, L1B:%4.2f, L1D: %4.2f\n\n" +
+
+                             "P%d:SNR:%4.2f, MC:G:%d, %s (%d), %s (%d), %s (%d)\n" +
+                             "  BER: p_ldpc: %d, p_bch: %d\n" +
+                             "     pst_bch: %d, t_fec: %d, t_e_fec: %d\n\n" +
+
+                        "P%d:SNR:%4.2f, MC:G:%d, %s (%d), %s (%d), %s (%d)\n" +
+                        "  BER: p_ldpc: %d, p_bch: %d\n" +
+                        "     pst_bch: %d, t_fec: %d, t_e_fec: %d\n\n" +
+
+                        "P%d:SNR:%4.2f, MC:G:%d, %s (%d), %s (%d), %s (%d)\n" +
+                        "  BER: p_ldpc: %d, p_bch: %d\n" +
+                        "     pst_bch: %d, t_fec: %d, t_e_fec: %d\n\n" +
+
+                        "P%d:SNR:%4.2f, MC:G:%d, %s (%d), %s (%d), %s (%d)\n" +
+                        "  BER: p_ldpc: %d, p_bch: %d\n" +
+                        "     pst_bch: %d, t_fec: %d, t_e_fec: %d\n" ,
+
+
+                        this.tuner_lock,
                 this.demod_lock,
 
                 (this.demod_lock >> 0) & 0x01,
@@ -119,8 +139,9 @@ public class RfPhyStatistics {
                 (float) this.snr1000_l1b / 1000.0,
                 (float) this.snr1000_l1d / 1000.0,
 
+                //PLP[0]
+                this.plp_id_0,
                 (float)this.plp_snr1000_0 / 1000.0,
-
                 this.modcod_valid_0,
 
                 RfPhyFecModCodTypes.L1d_PlpFecType.getOrDefault(this.plp_fec_type_0, RfPhyFecModCodTypes.L1d_PlpFecType.get(255)),
@@ -138,6 +159,9 @@ public class RfPhyStatistics {
                 this.total_fec_0,
                 this.total_error_fec_0,
 
+                //PLP[1]
+                this.plp_id_1,
+
                 (float)this.plp_snr1000_1 / 1000.0,
                 this.modcod_valid_1,
                 RfPhyFecModCodTypes.L1d_PlpFecType.getOrDefault(this.plp_fec_type_1, RfPhyFecModCodTypes.L1d_PlpFecType.get(255)),
@@ -152,6 +176,9 @@ public class RfPhyStatistics {
                 this.fer_post_bch_1,
                 this.total_fec_1,
                 this.total_error_fec_1,
+
+                //PLP[2]
+                this.plp_id_2,
 
                 (float)this.plp_snr1000_2 / 1000.0,
                 this.modcod_valid_2,
@@ -168,6 +195,8 @@ public class RfPhyStatistics {
                 this.total_fec_2,
                 this.total_error_fec_2,
 
+                //PLP[3]
+                this.plp_id_3,
 
                 (float)this.plp_snr1000_3 / 1000.0,
                 this.modcod_valid_3,

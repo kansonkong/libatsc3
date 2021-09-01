@@ -28,6 +28,15 @@ done
 
  */
 
+//set in android.mk LOCAL_CFLAGS to compute I Q offset values
+#ifdef __JJ_CALIBRATION_ENABLED
+//jjustman-2021-09-01 - original value
+// #define CALIBRATION_BLOCK_SIZE (122 * 8192)        // I&Q DC Calibration Block Size
+#define CALIBRATION_BLOCK_SIZE (1024 * 8192)        // I&Q DC Calibration Block Size
+
+int                       calibrationStatus;
+#endif
+
 #ifndef SL_YOGA_DONGLE
 #define SL_YOGA_DONGLE 31337
 #endif
@@ -36,6 +45,12 @@ done
 //#define _JJ_I2C_TUNER_STATUS_THREAD_SLEEP_MS_ENABLED_
 //#define _JJ_TUNER_STATUS_THREAD_PRINT_PERF_DIAGNOSTICS_ENABLED_
 
+//poll BSR for ea_wakeup bits
+//#define __JJ_DEBUG_BSR_EA_WAKEUP
+#define __JJ_DEBUG_BSR_EA_WAKEUP_USLEEP 250000
+#define __JJ_DEBUG_BSR_EA_WAKEUP_ITERATIONS 2000000 / __JJ_DEBUG_BSR_EA_WAKEUP_USLEEP
+
+//poll L1D for timeinfo_* fields
 #define __JJ_DEBUG_L1D_TIMEINFO
 #define __JJ_DEBUG_L1D_TIMEINFO_USLEEP 500000
 #define __JJ_DEBUG_L1D_TIMEINFO_DEMOD_GET_ITERATIONS 2000000 / __JJ_DEBUG_L1D_TIMEINFO_USLEEP
@@ -50,7 +65,7 @@ mutex SaankhyaPHYAndroid::CircularBufferMutex;
 mutex SaankhyaPHYAndroid::CS_global_mutex;
 atomic_bool SaankhyaPHYAndroid::cb_should_discard;
 
-int _SAANKHYA_PHY_ANDROID_DEBUG_ENABLED = 1;
+int _SAANKHYA_PHY_ANDROID_DEBUG_ENABLED = 0;
 int _SAANKHYA_PHY_ANDROID_TRACE_ENABLED = 0;
 
 //jjustman-2021-02-04 - global error flag if i2c txn fails, usually due to demod crash
@@ -671,9 +686,14 @@ int SaankhyaPHYAndroid::open(int fd, int device_type, string device_path)
     //jjustman-2020-07-29 - disable
     //pthread_create(&pThreadID, NULL, (THREADFUNCPTR)&atsc3NdkClientSlImpl::LibUSB_Handle_Events_Callback, (void*)this);
 
-    _SAANKHYA_PHY_ANDROID_DEBUG("Initializing SL Demod..: ");
-    _SAANKHYA_PHY_ANDROID_DEBUG("SL_DemodInit: before, slUnit: %d, cmdIf: %d", slUnit, cmdIf);
+#ifdef __JJ_CALIBRATION_ENABLED
+    _SAANKHYA_PHY_ANDROID_DEBUG("SL_DemodInit: before, slUnit: %d, cmdIf: %d, std: %d", slUnit, cmdIf, SL_DEMODSTD_INT_CALIBRATION);
+    slres = SL_DemodInit(slUnit, cmdIf, SL_DEMODSTD_INT_CALIBRATION);
+#else
+    _SAANKHYA_PHY_ANDROID_DEBUG("SL_DemodInit: before, slUnit: %d, cmdIf: %d, std: %d", slUnit, cmdIf, SL_DEMODSTD_ATSC3_0);
     slres = SL_DemodInit(slUnit, cmdIf, SL_DEMODSTD_ATSC3_0);
+#endif
+
     if (slres != SL_OK)
     {
         printToConsoleDemodError("SL_DemodInit", slres);
@@ -750,12 +770,14 @@ int SaankhyaPHYAndroid::open(int fd, int device_type, string device_path)
         goto ERROR;
     }
 
+#ifndef __JJ_CALIBRATION_ENABLED
     slres = SL_DemodSetAtsc3p0Region(slUnit, regionInfo);
     if (slres != 0)
     {
         printToConsoleDemodError("SL_DemodSetAtsc3p0Region", slres);
         goto ERROR;
     }
+#endif
 
     slres = SL_DemodGetSoftwareVersion(slUnit, &swMajorNo, &swMinorNo);
     if (slres == SL_OK)
@@ -794,8 +816,15 @@ int SaankhyaPHYAndroid::open(int fd, int device_type, string device_path)
             tunerIQDcOffSet.qOffSet = 14;
 
          */
+
+/* jjustman-2021-09-01 - working values
         tunerIQDcOffSet.iOffSet = 14;
         tunerIQDcOffSet.qOffSet = 12;
+*/
+
+//jjustman-2021-09-01 - from calib run iO->13|14
+        tunerIQDcOffSet.iOffSet = 14;
+        tunerIQDcOffSet.qOffSet = 14;
 
         tres = SL_TunerExSetDcOffSet(tUnit, &tunerIQDcOffSet);
         if (tres != 0)
@@ -948,6 +977,66 @@ int SaankhyaPHYAndroid::tune(int freqKHz, int plpid)
 
         _SAANKHYA_PHY_ANDROID_DEBUG("tuner frequency: %d", cFrequency);
     }
+
+#ifdef __JJ_CALIBRATION_ENABLED
+    tunerIQDcOffSet.iOffSet = 00;
+    tunerIQDcOffSet.qOffSet = 00;
+
+    if (getPlfConfig.tunerType == TUNER_SI || getPlfConfig.tunerType == TUNER_SI_P)
+    {
+        SL_Printf("\n\n-------------------------SL Demod Calibration-");
+        do
+        {
+            tres = SL_TunerExSetDcOffSet(tUnit, &tunerIQDcOffSet);
+            if (tres != 0)
+            {
+                printToConsoleTunerError("SL_TunerExSetDcOffSet", tres);
+                goto TEST_ERROR;
+            }
+            SL_SleepMS(50); // Delay to accomdate set configurations at tuner to take effect
+            slres = SL_DemodStartCalibration(slUnit, CALIBRATION_BLOCK_SIZE);
+            if (tres != 0)
+            {
+                printToConsoleDemodError("SL_DemodStartCalibration", slres);
+                goto TEST_ERROR;
+            }
+
+            do
+            {
+                SL_SleepMS(50); // Delay to accomdate wait for calibration Complete
+                slres = SL_DemodGetCalibrationStatus(slUnit, &calibrationStatus);
+                if (tres != 0)
+                {
+                    printToConsoleDemodError("SL_DemodGetCalibrationStatus", slres);
+                    goto TEST_ERROR;
+                }
+            } while (calibrationStatus == 0);
+            slres = SL_DemodGetIQOffSet(slUnit, &tunerIQDcOffSet.iOffSet, &tunerIQDcOffSet.qOffSet);
+            if (tres != 0)
+            {
+                printToConsoleDemodError("SL_DemodGetIQOffSet", slres);
+                goto TEST_ERROR;
+            }
+            SL_Printf("-");
+        } while (calibrationStatus == 0 || calibrationStatus == 1);
+
+        _SAANKHYA_PHY_ANDROID_INFO("Completing calibration with status: %d", calibrationStatus);
+        _SAANKHYA_PHY_ANDROID_INFO("I Off Set Value        : %d", tunerIQDcOffSet.iOffSet);
+        _SAANKHYA_PHY_ANDROID_INFO("Q Off Set Value        : %d", tunerIQDcOffSet.qOffSet);
+
+        usleep(10000000);
+        tres = SL_TunerExSetDcOffSet(tUnit, &tunerIQDcOffSet);
+        //jjustman-2021-09-01 - after getting our IQ offset values, we need to re-initialize and re-configure sdr (including hex f/w linkaage)
+
+    }
+    else
+    {
+TEST_ERROR:
+        SL_Printf("\n Invalid Tuner Calibration Failed");
+    }
+
+
+#endif
 
     //setup shared memory for cb callback (or reset if already allocated)
     if(!cb) {
@@ -2033,33 +2122,62 @@ int SaankhyaPHYAndroid::statusThread()
         //running
         if(lastCpuStatus == 0xFFFFFFFF) {
 
-#ifdef __JJ_DEBUG_L1D_TIMEINFO
+#if defined(__JJ_DEBUG_BSR_EA_WAKEUP) || defined(__JJ_DEBUG_L1D_TIMEINFO)
 
+            int bsrLoopCount = 0;
             int l1dLoopCount = 0;
-            while(l1dLoopCount++ < __JJ_DEBUG_L1D_TIMEINFO_DEMOD_GET_ITERATIONS && demodLockStatus & SL_DEMOD_LOCK_STATUS_MASK_L1D_LOCK) {
+
+            while(true) {
+
+#ifdef __JJ_DEBUG_BSR_EA_WAKEUP
+                dres = SL_DemodGetAtsc3p0Diagnostics(this->slUnit, SL_DEMOD_DIAG_TYPE_BSR, (SL_Atsc3p0Bsr_Diag_t*)&bsrDiag);
+                if (dres != SL_OK) {
+                    _SAANKHYA_PHY_ANDROID_ERROR("SaankhyaPHYAndroid::StatusThread: Error: SL_DemodGetAtsc3p0Diagnostics with SL_DEMOD_DIAG_TYPE_BSR failed, res: %d", dres);
+                } else {
+                    _SAANKHYA_PHY_ANDROID_DEBUG("SaankhyaPHYAndroid::StatusThread: BSR: Bsr1EAWakeup1: %d, Bsr1EAWakeup2: %d", bsrDiag.Bsr1EAWakeup1, bsrDiag.Bsr1EAWakeup2);
+                    //jjustman-2021-09-01 - push to phy bridge
+                }
+
+                usleep(__JJ_DEBUG_BSR_EA_WAKEUP_USLEEP);
+
+                if(bsrLoopCount++ > __JJ_DEBUG_BSR_EA_WAKEUP_ITERATIONS) {
+                    break;
+                }
+#endif
+
+#ifdef __JJ_DEBUG_L1D_TIMEINFO
+                //optional gate check:
+                //demodLockStatus & SL_DEMOD_LOCK_STATUS_MASK_L1D_LOCK
                 dres = SL_DemodGetAtsc3p0Diagnostics(slUnit, SL_DEMOD_DIAG_TYPE_L1B, (SL_Atsc3p0L1B_Diag_t*)&l1bDiag);
                 dres = SL_DemodGetAtsc3p0Diagnostics(slUnit, SL_DEMOD_DIAG_TYPE_L1D, (SL_Atsc3p0L1D_Diag_t*)&l1dDiag);
                 printToConsoleAtsc3L1dDiagnostics(l1dDiag);
 
-                _SAANKHYA_PHY_ANDROID_DEBUG("SaankhyaPHYAndroid::StatusTrhead: L1time: flag: %d, s: %d, ms: %d, us: %d, ns: %d",
+                _SAANKHYA_PHY_ANDROID_DEBUG("SaankhyaPHYAndroid::StatusThread: L1time: flag: %d, s: %d, ms: %d, us: %d, ns: %d",
                                             l1bDiag.L1bTimeInfoFlag, l1dDiag.l1dGlobalParamsStr.L1dTimeSec, l1dDiag.l1dGlobalParamsStr.L1dTimeMsec, l1dDiag.l1dGlobalParamsStr.L1dTimeUsec, l1dDiag.l1dGlobalParamsStr.L1dTimeNsec);
 
                 if(atsc3_ndk_phy_bridge_get_instance()) {
                     atsc3_ndk_phy_bridge_get_instance()->atsc3_update_l1d_time_information( l1bDiag.L1bTimeInfoFlag, l1dDiag.l1dGlobalParamsStr.L1dTimeSec, l1dDiag.l1dGlobalParamsStr.L1dTimeMsec, l1dDiag.l1dGlobalParamsStr.L1dTimeUsec, l1dDiag.l1dGlobalParamsStr.L1dTimeNsec);
                 }
 
+                usleep(__JJ_DEBUG_L1D_TIMEINFO_USLEEP);
+
+                if(l1dLoopCount++ > __JJ_DEBUG_L1D_TIMEINFO_DEMOD_GET_ITERATIONS) {
+                    break;
+                }
+
+#endif
+
 #ifdef __JJ_DEBUG_L1D_TIMEINFO_CYCLE_STOP_START_DEMOD
-                slres = SL_DemodStop(slUnit);
-                _SAANKHYA_PHY_ANDROID_DEBUG("after SL_DemodStop, count: %d, slRes: %d", l1dLoopCount);
-                usleep(__JJ_DEBUG_L1D_TIMEINFO_USLEEP);
-                slres = SL_DemodStart(slUnit);
-                _SAANKHYA_PHY_ANDROID_DEBUG("after SL_DemodStart, count: %d, slRes: %d", l1dLoopCount);
-                usleep(__JJ_DEBUG_L1D_TIMEINFO_USLEEP);
-#else
-                usleep(__JJ_DEBUG_L1D_TIMEINFO_USLEEP);
+    slres = SL_DemodStop(slUnit);
+    _SAANKHYA_PHY_ANDROID_DEBUG("after SL_DemodStop, count: %d, slRes: %d", l1dLoopCount);
+    usleep(__JJ_DEBUG_L1D_TIMEINFO_USLEEP);
+    slres = SL_DemodStart(slUnit);
+    _SAANKHYA_PHY_ANDROID_DEBUG("after SL_DemodStart, count: %d, slRes: %d", l1dLoopCount);
+    usleep(__JJ_DEBUG_L1D_TIMEINFO_USLEEP);
 #endif
             }
 #else
+
             usleep(2000000);
             //jjustman: target: sleep for 500ms
             //TODO: jjustman-2019-12-05: investigate FX3 firmware and i2c single threaded interrupt handling instead of dma xfer
