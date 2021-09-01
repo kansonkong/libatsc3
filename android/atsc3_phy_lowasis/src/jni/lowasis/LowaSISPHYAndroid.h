@@ -82,6 +82,15 @@ protected:
 
 private:
 
+    //jjustman-2021-08-19 - if we recieve a hotplug event for the fx3 preboot pid, the lowaSISPHYAndroid.java driver will invoke
+    // download_bootloader_firmware and the usb device will re-enumerate (i.e. disconnect from the usb bus).
+    // A race condition might occur if the ::stop() method (invoked from ~LowaSISPhy) is sleeping and the fx3 re-enumeration/hotplug event occurs in this sleeping window.
+    // Under the assumption we are waiting for producer/consumer/status threads to unwind from ...threadShouldRun = false, but in the preboot flow,
+    // there are no worker threads launched and thus no need to sleep when finalizing our object, otherwise the USB_DEVICE_ATTACHED event and
+    // corresponding FD may be processed via the HAL broadcastIntent in java and inadvertantly release the newly granted usb fd.
+
+    bool instance_is_preboot_device = false;
+
     bool init_completed = false;
     S_AT3_FE_INFO phyFeVendorDemodInfo = { };
     const char* getPhyFeVendorNameString(E_AT3_FEVENDOR phyFeVendor);
