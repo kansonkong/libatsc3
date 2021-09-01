@@ -70,16 +70,12 @@ public class BwPhyStatistics {
     public String toString() {
         computeBwMetricsOnce();
 
-        return String.format("Last 1s: %.2f Mbit/sec, %.0f PPS\n"+
-                             "Totals : Bytes: %.2f MB, Packets: %d, LMT: %d\n" + "" +
-                             "Runtime: %.2fs, Sess. Avg: %.2f Mbit/sec",
-                (float) last_1s_bw_bitsSec / (1024.0 * 1024.0),
-                last_1s_bw_pps,
-                (float) (this.total_bytes / (1024.0 * 1024.0)),
-                this.total_pkts,
-                this.total_lmts,
+        return String.format("Last 1s: %.2f Mbit/s, %.0f PPS\n"+
+                             "Avg    : %.2f Mbit/s\n" +
+                             "Totals : %.2f MB, Pkt: %d, LMT: %d, Run: %.2fs",
+                (float) last_1s_bw_bitsSec / (1024.0 * 1024.0), last_1s_bw_pps,
                 (float) ((this.total_bytes * 8.0) / (1024.0 * 1024.0)) / currentRuntimeDurationS,
-                currentRuntimeDurationS
+                (float) (this.total_bytes / (1024.0 * 1024.0)), this.total_pkts, this.total_lmts, currentRuntimeDurationS
         );
     }
 }
