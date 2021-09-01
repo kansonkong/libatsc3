@@ -3,6 +3,9 @@
 //
 //#define __JJUSTMAN_2020_12_24_SEA_533_SINGLE_PLP_TUNE_ONLY__
 
+//jjustman-2021-09-01 - TODO: add in hook for:
+//AT3DRV_RegisterL1DTimeInfoCallback(AT3_DEVICE hDev, AT3DRV_L1D_TIME_INFO_CB fnCallback, uint64_t ullUser);
+
 #include "LowaSISPHYAndroid.h"
 LowaSISPHYAndroid* lowaSISPHYAndroid = nullptr;
 
@@ -710,13 +713,30 @@ int LowaSISPHYAndroid::captureThread()
     return 0;
 }
 
-
 //re-scoping for AT3DRV_HandleRxData callback method
 AT3RESULT LowaSISPHYAndroid::RxCallbackStatic(S_RX_DATA *pData, uint64_t ullUser)
 {
     LowaSISPHYAndroid *me = (LowaSISPHYAndroid *)ullUser;
     if(me->captureThreadShouldRun) {
         return me->RxCallbackInstanceScoped(pData);
+    } else {
+        return AT3RES_CANCEL;
+    }
+}
+
+//re-scoping for AT3DRV_RegisterL1DTimeInfoCallback and AT3DRV_L1D_TIME_INFO_CB fnCallback
+AT3RESULT LowaSISPHYAndroid::L1DTimeInfoCallback(uint32_t sec, uint16_t msec, uint16_t usec, uint16_t nsec, uint64_t ullUser) {
+
+    LowaSISPHYAndroid *me = (LowaSISPHYAndroid *)ullUser;
+    if(me->statusThreadShouldRun) {
+        //jjustman-2021-09-01 - we dont't have an accurate value for time_info_flag in this callback
+        _LOWASIS_PHY_ANDROID_DEBUG("LowaSISPHYAndroid::L1DTimeInfoCallback: L1time: flag: %d, s: %d, ms: %d, us: %d, ns: %d", -1, sec, msec, usec, nsec);
+
+        if(atsc3_ndk_phy_bridge_get_instance()) {
+            atsc3_ndk_phy_bridge_get_instance()->atsc3_update_l1d_time_information(0x3, sec, msec, usec, nsec);
+        }
+
+        return AT3RES_OK;
     } else {
         return AT3RES_CANCEL;
     }
@@ -780,8 +800,8 @@ int LowaSISPHYAndroid::processThread()
 #endif
                 S_AT3DRV_RXDINFO_IP *info = (S_AT3DRV_RXDINFO_IP *) pData->pInfo;
 
+#ifdef __LOWASIS_USE_PROCESS_THREAD_RXDATA_L1D_TIME_FOR_UPDATE
                 if (info->l1time.flag) { // dump L1D time info.
-
                     _LOWASIS_PHY_ANDROID_DEBUG("LowaSISPHYAndroid::ProcessThread: L1time: flag: %d, s: %d, ms: %d, us: %d, ns: %d",
                                                info->l1time.flag, info->l1time.sec, info->l1time.msec, info->l1time.usec, info->l1time.nsec);
 
@@ -789,7 +809,7 @@ int LowaSISPHYAndroid::processThread()
                         atsc3_ndk_phy_bridge_get_instance()->atsc3_update_l1d_time_information(info->l1time.flag, info->l1time.sec, info->l1time.msec, info->l1time.usec, info->l1time.nsec);
                     }
                 }
-
+#endif
                 if (atsc3_phy_rx_udp_packet_process_callback) {
                     atsc3_phy_rx_udp_packet_process_callback(info->plp_id, pData->payload);  //make sure to call atsc3_lowasis_phy_android_rxdata_free later
                 }
@@ -1017,6 +1037,7 @@ int LowaSISPHYAndroid::statusThread()
 {
     AT3RESULT ar;
 
+    S_AT3_PHY_BSP            s_fe_bootstrap = { '0' };
     S_FE_DETAIL              s_fe_detail    = { '0' };
     S_LGDEMOD_L2_SIG_STATUS  s_fe_detail_lg = { '0' };
 
@@ -1025,6 +1046,8 @@ int LowaSISPHYAndroid::statusThread()
     _LOWASIS_PHY_ANDROID_INFO("LowaSISPHYAndroid::statusThread started, this: %p", this);
     this->pinStatusThreadAsNeeded();
     this->statusThreadIsRunning = true;
+
+    AT3DRV_RegisterL1DTimeInfoCallback(mhDevice, L1DTimeInfoCallback, (uint64_t)this);
 
     while(this->statusThreadShouldRun) {
         usleep(500000);
@@ -1039,11 +1062,12 @@ int LowaSISPHYAndroid::statusThread()
             memset(&s_fe_detail_lg, 0, sizeof(s_fe_detail_lg));
 
             //jjustman-2020-12-25 - lg 3307 has different AT3DRV_FE_GetStatus type/struct for RF _and_ PLP statistics
+            s_fe_detail.flagRequest = 0xffffffff; // all info. too many?
+            //s_fe_detail.flagRequest = FE_SIG_MASK_Lock; // | FE_SIG_MASK_RfLevel | FE_SIG_MASK_CarrierOffset | FE_SIG_MASK_SNR | FE_SIG_MASK_BER | FE_SIG_MASK_FecModCod | FE_SIG_MASK_BbpErr;
+            AT3DRV_FE_GetStatus(mhDevice, eAT3_FESTAT_RF_DETAIL, &s_fe_detail);
+            _LOWASIS_PHY_ANDROID_INFO("LowaSISPHYAndroid::statusThread: s_fe_detail: 0x%08x, s_fe_detail.sBootstrap.eaWakeUp is: 0x%02x", s_fe_detail.flagReturned, s_fe_detail.sBootstrap.eaWakeUp);
 
             if(this->phyFeVendorDemodInfo.vendor == eAT3_FEVENDOR_LGDT3307_R850) {
-                s_fe_detail.flagRequest = 0xffffffff; // all info. too many?
-                //s_fe_detail.flagRequest = FE_SIG_MASK_Lock; // | FE_SIG_MASK_RfLevel | FE_SIG_MASK_CarrierOffset | FE_SIG_MASK_SNR | FE_SIG_MASK_BER | FE_SIG_MASK_FecModCod | FE_SIG_MASK_BbpErr;
-                AT3DRV_FE_GetStatus(mhDevice, eAT3_FESTAT_RF_DETAIL, &s_fe_detail);
 
                 ar = AT3DRV_FE_GetStatus(mhDevice, eAT3_FESTAT_LGD_SIGSTAT_V1, &s_fe_detail_lg);
 
@@ -1086,9 +1110,7 @@ int LowaSISPHYAndroid::statusThread()
                 ar = AT3DRV_FE_GetStatus(mhDevice, eAT3_RFSTAT_STRENGTH, &rssi);
                 atsc3_ndk_phy_client_rf_metrics.rssi = rssi;
 
-                s_fe_detail.flagRequest = 0xffffffff; // all info. too many?
                 //s_fe_detail.flagRequest = FE_SIG_MASK_Lock; // | FE_SIG_MASK_RfLevel | FE_SIG_MASK_CarrierOffset | FE_SIG_MASK_SNR | FE_SIG_MASK_BER | FE_SIG_MASK_FecModCod | FE_SIG_MASK_BbpErr;
-                AT3DRV_FE_GetStatus(mhDevice, eAT3_FESTAT_RF_DETAIL, &s_fe_detail);
 
                 atsc3_ndk_phy_client_rf_metrics.demod_lock = s_fe_detail.lock.bDemodLock;
 
