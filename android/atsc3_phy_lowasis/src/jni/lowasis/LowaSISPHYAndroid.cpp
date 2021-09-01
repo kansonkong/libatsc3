@@ -288,8 +288,8 @@ bool LowaSISPHYAndroid::is_running() {
 int LowaSISPHYAndroid::stop()
 {
     AT3RESULT ar;
-    _LOWASIS_PHY_ANDROID_INFO("LowaSISPHYAndroid::stop: enter with this: %p, init_completed: %d, mhDevice: %d, captureThreadIsRunning: %d, statusThreadIsRunning: %d, processThreadIsRunning: %d, sleeping for %d ms",
-            this, init_completed, mhDevice,
+    _LOWASIS_PHY_ANDROID_INFO("LowaSISPHYAndroid::stop: enter with this: %p, instance_is_preboot_device: %d, init_completed: %d, mhDevice: %d, captureThreadIsRunning: %d, statusThreadIsRunning: %d, processThreadIsRunning: %d, sleeping for %d ms",
+            this, this->instance_is_preboot_device, init_completed, mhDevice,
               this->captureThreadIsRunning,
               this->statusThreadIsRunning,
               this->processThreadIsRunning,
@@ -301,8 +301,10 @@ int LowaSISPHYAndroid::stop()
     this->statusThreadShouldRun = false;
     this->processThreadShouldRun = false;
 
-    //jjustman-2020-10-06 - give us 1s to allow callbacks to wind down
-    usleep(__LOWASIS_STOP_USLEEP_DURATION_MS);
+    if(!this->instance_is_preboot_device) {
+        //jjustman-2020-10-06 - give us 1s to allow callbacks to wind down
+        usleep(__LOWASIS_STOP_USLEEP_DURATION_MS);
+    }
 
     //tear down captureThread first, this will prevent any blocking calls to AT3DRV_WaitRxData or callback invocations into (volatile) this w/ AT3DRV_HandleRxData
     //make sure we unwind our captureThread and have exited AT3DRV_WaitRxData as per at3drv_api.h
@@ -386,6 +388,7 @@ int LowaSISPHYAndroid::stop()
 
     mAt3Opt = nullptr;
     mhDevice = 0;
+    this->instance_is_preboot_device = false;
 
     // clear ip/port statistics
     resetStatstics();
@@ -614,7 +617,7 @@ int LowaSISPHYAndroid::download_bootloader_firmware(int fd, int device_type, str
     AT3_DEV_KEY toInitTarget;
 
     _LOWASIS_PHY_ANDROID_DEBUG("download_bootloader_firmware, this: %p, devicePath: %s, fd: %d", this, device_path.c_str(), fd);
-    //(%llx)", (unsigned long long)hKeyTarget);
+    this->instance_is_preboot_device = true;
 
     //jjustman-2020-08-24 - hack?
     int nDevAdded;
@@ -776,6 +779,16 @@ int LowaSISPHYAndroid::processThread()
                 _LOWASIS_PHY_ANDROID_TRACE("::processThread() - packetLen: %d", pData->payload->p_size);
 #endif
                 S_AT3DRV_RXDINFO_IP *info = (S_AT3DRV_RXDINFO_IP *) pData->pInfo;
+
+                if (info->l1time.flag) { // dump L1D time info.
+
+                    _LOWASIS_PHY_ANDROID_DEBUG("LowaSISPHYAndroid::ProcessThread: L1time: flag: %d, s: %d, ms: %d, us: %d, ns: %d",
+                                               info->l1time.flag, info->l1time.sec, info->l1time.msec, info->l1time.usec, info->l1time.nsec);
+
+                    if(atsc3_ndk_phy_bridge_get_instance()) {
+                        atsc3_ndk_phy_bridge_get_instance()->atsc3_update_l1d_time_information(info->l1time.flag, info->l1time.sec, info->l1time.msec, info->l1time.usec, info->l1time.nsec);
+                    }
+                }
 
                 if (atsc3_phy_rx_udp_packet_process_callback) {
                     atsc3_phy_rx_udp_packet_process_callback(info->plp_id, pData->payload);  //make sure to call atsc3_lowasis_phy_android_rxdata_free later
