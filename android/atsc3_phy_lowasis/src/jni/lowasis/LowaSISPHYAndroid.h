@@ -57,6 +57,8 @@ public:
     static AT3RESULT RxCallbackStatic(S_RX_DATA *pData, uint64_t ullUser);
     AT3RESULT RxCallbackInstanceScoped(S_RX_DATA *pData);
 
+    static AT3RESULT L1DTimeInfoCallback(uint32_t sec, uint16_t msec, uint16_t usec, uint16_t nsec, uint64_t ullUser);
+
     static void NotifyPlpSelectionChangeCallback(vector<uint8_t> plps, void* context);
 
     //jjustman-2020-08-23 - moving to public for now..
