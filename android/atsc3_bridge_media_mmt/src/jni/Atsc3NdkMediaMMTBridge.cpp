@@ -391,6 +391,8 @@ void Atsc3NdkMediaMMTBridge::atsc3_onExtractedSampleDuration(uint16_t packet_id,
         return;
     }
 
+    this->packet_id_extracted_sample_duration_map[packet_id] = extracted_sample_duration_us;
+
     localJniEnv->Get()->CallIntMethod(jni_instance_globalRef, atsc3_onExtractedSampleDurationID, (int32_t)packet_id, (int64_t)mpu_sequence_number, (int64_t)extracted_sample_duration_us);
 }
 
@@ -488,9 +490,26 @@ void Atsc3NdkMediaMMTBridge::atsc3_onMfuSampleMissing(uint16_t packet_id, uint32
 
 void Atsc3NdkMediaMMTBridge::writeToRingBuffer(int8_t type, uint16_t service_id, uint16_t packet_id, uint32_t sample_number, uint64_t presentationUs, uint8_t* buffer, uint32_t bufferLen) {
     // Reset the buffer if MMT emission service was changed
+
+    //jjustman-2021-09-02 - we should have a proper context_reset() method
     if (last_service_id != service_id) {
         rewindRingBuffer();
+        //clear out our extracted sample duration map on service change
+        packet_id_extracted_sample_duration_map.clear();
         last_service_id = service_id;
+    }
+
+    //only push across our samples that we have a corresponding <packet_id, extracted_sample_duration> for pts generation,
+    // as "presentationUs" is just the base mpu_timestamp_descriptor and requires extraction of the sample duration for proper rendering
+    if(type == Atsc3RingBuffer::RING_BUFFER_PAGE_FRAGMENT) {
+        if(!packet_id_extracted_sample_duration_map[packet_id]) {
+            _NDK_MEDIA_MMT_BRIDGE_DEBUG("Atsc3NdkMediaMMTBridge::writeToRingBuffer: packet_id_extracted_sample_duration: missing! service_id: %d, packet_id: %d, sample_number: %d, type == RING_BUFFER_PAGE_FRAGMENT, returning before write.", service_id, packet_id, sample_number);
+            return;
+        } else {
+            _NDK_MEDIA_MMT_BRIDGE_DEBUG("Atsc3NdkMediaMMTBridge::writeToRingBuffer: packet_id_extracted_sample_duration: %d, for service_id: %d, packet_id: %d, sample_number: %d, type == RING_BUFFER_PAGE_FRAGMENT", packet_id_extracted_sample_duration_map[packet_id], service_id, packet_id, sample_number);
+
+
+        }
     }
 
     fragmentBuffer->write(type, service_id, packet_id, sample_number, presentationUs, buffer, bufferLen);
