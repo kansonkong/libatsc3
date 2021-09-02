@@ -65,7 +65,7 @@ mutex SaankhyaPHYAndroid::CircularBufferMutex;
 mutex SaankhyaPHYAndroid::CS_global_mutex;
 atomic_bool SaankhyaPHYAndroid::cb_should_discard;
 
-int _SAANKHYA_PHY_ANDROID_DEBUG_ENABLED = 0;
+int _SAANKHYA_PHY_ANDROID_DEBUG_ENABLED = 1;
 int _SAANKHYA_PHY_ANDROID_TRACE_ENABLED = 0;
 
 //jjustman-2021-02-04 - global error flag if i2c txn fails, usually due to demod crash
