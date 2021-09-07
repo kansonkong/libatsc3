@@ -64,7 +64,7 @@ void atsc3_mmt_mpu_on_sequence_mpu_metadata_present_ndk(atsc3_mmt_mfu_context_t*
 
     bool is_stpp_packet =  (strncasecmp(ATSC3_MP_TABLE_ASSET_ROW_IMSC1_ID, atsc3_mmt_mfu_context->mmtp_packet_id_packets_container->asset_type, 4) == 0);
 
-    _ATSC3_MMT_MFU_CONTEXT_CALLBACKS_DEFAULT_JNI_DEBUG("atsc3_mmt_mpu_on_sequence_mpu_metadata_present_ndk: service_id: %d, packet_id: %d, is_video_packet: %d, is_audio_packet: %d, is_stpp_packet", service_id, packet_id, is_video_packet, is_audio_packet, is_stpp_packet);
+    _ATSC3_MMT_MFU_CONTEXT_CALLBACKS_DEFAULT_JNI_DEBUG("atsc3_mmt_mpu_on_sequence_mpu_metadata_present_ndk: service_id: %d, packet_id: %d, is_video_packet: %d, is_audio_packet: %d, is_stpp_packet: %d", service_id, packet_id, is_video_packet, is_audio_packet, is_stpp_packet);
 
     if(is_video_packet) {
         //manually extract our csd and NALs here
@@ -337,7 +337,9 @@ void atsc3_mmt_mpu_on_sequence_movie_fragment_metadata_present_ndk(atsc3_mmt_mfu
         return;
     }
 
-    _ATSC3_MMT_MFU_CONTEXT_CALLBACKS_DEFAULT_JNI_DEBUG("atsc3_mmt_mpu_on_sequence_movie_fragment_metadata_present_ndk: packet_id: %d, asset_type: %s, atsc3_video_decoder_configuration_record: %p, atsc3_audio_decoder_configuration_record: %p, atsc3_stpp_decoder_configuration_record: %p",
+    _ATSC3_MMT_MFU_CONTEXT_CALLBACKS_DEFAULT_JNI_DEBUG("atsc3_mmt_mpu_on_sequence_movie_fragment_metadata_present_ndk: packet_id: %d, mpu_sequence_number: %d, asset_type: %s, atsc3_video_decoder_configuration_record: %p, atsc3_audio_decoder_configuration_record: %p, atsc3_stpp_decoder_configuration_record: %p",
+                                                       packet_id,
+                                                       mpu_sequence_number,
                                                        atsc3_mmt_mfu_context->mmtp_packet_id_packets_container->asset_type,
                                                        atsc3_mmt_mfu_context->mmtp_packet_id_packets_container->atsc3_video_decoder_configuration_record,
                                                        atsc3_mmt_mfu_context->mmtp_packet_id_packets_container->atsc3_audio_decoder_configuration_record,
