@@ -345,8 +345,10 @@ void atsc3_lls_sls_alc_monitor_increment_lct_packet_received_count(lls_sls_alc_m
 	lls_sls_alc_monitor->lct_packets_received_count++;
 }
 
-#define _ATSC3_LLS_SLS_ALC_MONITOR_LCT_PACKETS_INTERVAL_TO_CHECK_GIVEN_UP_COUNT 5000
-#define _ATSC3_LLS_SLS_ALC_MONITOR_LCT_PACKETS_GIVEN_UP_SECONDS 10
+
+//jjustman-2021-07-20 - TODO: increase these values for the case of lossy NRT emissions, as we may want to have better durability for carousel recovery of long fade: *6
+#define _ATSC3_LLS_SLS_ALC_MONITOR_LCT_PACKETS_INTERVAL_TO_CHECK_GIVEN_UP_COUNT 5000 * 6
+#define _ATSC3_LLS_SLS_ALC_MONITOR_LCT_PACKETS_GIVEN_UP_SECONDS 10 * 6
 
 //how long to keep media fragments on disk for snap-back as needed
 #define _ATSC3_LLS_SLS_ALC_MONITOR_LCT_PACKETS_RECOVERY_COMPLETE_PURGE_SECONDS 60

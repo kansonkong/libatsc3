@@ -34,7 +34,7 @@ lls_sls_alc_session_t* lls_slt_alc_session_create(atsc3_lls_slt_service_t* atsc3
 		lls_slt_alc_session->sls_destination_ip_address = parseIpAddressIntoIntval(atsc3_slt_broadcast_svc_signalling->sls_destination_ip_address);
 		lls_slt_alc_session->sls_destination_udp_port = parsePortIntoIntval(atsc3_slt_broadcast_svc_signalling->sls_destination_udp_port);
 
-		_ATSC3_LLS_ALC_UTILS_TRACE("adding ALC sls_source ip: %s as: %u.%u.%u.%u| dest: %s:%s as: %u.%u.%u.%u:%u (%u:%u)",
+		_ATSC3_LLS_ALC_UTILS_TRACE("lls_slt_alc_session_create: adding ALC sls_source ip: %s as: %u.%u.%u.%u| dest: %s:%s as: %u.%u.%u.%u:%u (%u:%u)",
 				atsc3_slt_broadcast_svc_signalling->sls_source_ip_address,
 				__toipnonstruct(lls_slt_alc_session->sls_source_ip_address),
 				atsc3_slt_broadcast_svc_signalling->sls_destination_ip_address,
@@ -120,7 +120,7 @@ lls_sls_alc_session_t* lls_slt_alc_session_create_from_ip_and_port_values(atsc3_
         lls_sls_alc_session->sls_destination_ip_address = sls_destination_ip_address;
         lls_sls_alc_session->sls_destination_udp_port = sls_destination_udp_port;
 
-        _ATSC3_LLS_ALC_UTILS_TRACE("adding ALC sls_source ip: %d as: %u.%u.%u.%u| dest: %d:%d as: %u.%u.%u.%u:%u (%u:%u)",
+        _ATSC3_LLS_ALC_UTILS_TRACE("lls_slt_alc_session_create_from_ip_and_port_values: adding ALC sls_source ip: %d as: %u.%u.%u.%u| dest: %d:%d as: %u.%u.%u.%u:%u (%u:%u)",
                                    sls_source_ip_address,
                                    __toipnonstruct(lls_sls_alc_session->sls_source_ip_address),
                                    sls_destination_ip_address,
@@ -135,10 +135,6 @@ lls_sls_alc_session_t* lls_slt_alc_session_create_from_ip_and_port_values(atsc3_
 
     return lls_sls_alc_session;
 }
-
-
-
-
 
 
 lls_sls_alc_session_t* lls_slt_alc_session_find(lls_slt_monitor_t* lls_slt_monitor, atsc3_lls_slt_service_t* atsc3_lls_slt_service) {
@@ -203,13 +199,16 @@ lls_sls_alc_session_t* lls_slt_alc_session_find_from_udp_packet(lls_slt_monitor_
 	for(int i=0; i < lls_slt_monitor->lls_sls_alc_session_flows_v.count; i++) {
 		lls_sls_alc_session_flows_t* lls_sls_alc_session_flows = lls_slt_monitor->lls_sls_alc_session_flows_v.data[i];
 
-		for(int j=0; j < lls_sls_alc_session_flows->lls_sls_alc_session_v.count; j++ ) {
+        //try and find a matching lls_sls_alc_session from our flow
+        for(int j=0; j < lls_sls_alc_session_flows->lls_sls_alc_session_v.count; j++ ) {
 			lls_sls_alc_session_t* lls_sls_alc_session = lls_sls_alc_session_flows->lls_sls_alc_session_v.data[j];
 
 			if((lls_sls_alc_session->sls_relax_source_ip_check || (!lls_sls_alc_session->sls_relax_source_ip_check && lls_sls_alc_session->sls_source_ip_address == src_ip_addr)) &&
                     lls_sls_alc_session->sls_destination_ip_address == dst_ip_addr && lls_sls_alc_session->sls_destination_udp_port == dst_port) {
 				_ATSC3_LLS_ALC_UTILS_TRACE("lls_slt_alc_session_find_from_udp_packet: checking lls_slt_monitor->lls_sls_alc_monitor");
-			
+
+				//try and find a matching atsc3_lls_slt_service from our matching lls_sls_alc_session service_id value
+
 				for(int k=0; k < lls_slt_monitor->lls_sls_alc_monitor_v.count; k++) {
 					lls_sls_alc_monitor_t* lls_sls_alc_monitor = lls_slt_monitor->lls_sls_alc_monitor_v.data[k];
 
@@ -329,17 +328,20 @@ lls_sls_alc_session_t* lls_slt_alc_session_find_or_create(lls_slt_monitor_t* lls
 
 	return lls_slt_alc_session;
 }
-
+/*
+ * jjustman-2021-07-07 - WARNING, this will only match against the SLS atsc3_slt_broadcast_svc_signalling, and create from the sls_destination_ip_address:sls_destination_udp_port if not found -
+ *                          use lls_slt_alc_session_find_from_udp_packet to find distinct ip:udp match
+ */
 lls_sls_alc_session_t* lls_slt_alc_session_find_or_create_from_ip_udp_values(lls_slt_monitor_t* lls_slt_monitor, atsc3_lls_slt_service_t* atsc3_lls_slt_service, uint32_t sls_destination_ip_address, uint16_t sls_destination_udp_port, uint32_t sls_source_ip_address) {
-    lls_sls_alc_session_t* lls_slt_alc_session = lls_slt_alc_session_find(lls_slt_monitor, atsc3_lls_slt_service);
-    if(!lls_slt_alc_session) {
-        lls_slt_alc_session = lls_slt_alc_session_create_from_ip_and_port_values(atsc3_lls_slt_service, sls_destination_ip_address, sls_destination_udp_port, sls_source_ip_address);
+    lls_sls_alc_session_t* lls_sls_alc_session = lls_slt_alc_session_find(lls_slt_monitor, atsc3_lls_slt_service);
+    if(!lls_sls_alc_session) {
+        lls_sls_alc_session = lls_slt_alc_session_create_from_ip_and_port_values(atsc3_lls_slt_service, sls_destination_ip_address, sls_destination_udp_port, sls_source_ip_address);
 
         lls_sls_alc_session_flows_t* lls_sls_alc_session_flows = lls_sls_alc_session_flows_new();
-        lls_sls_alc_session_flows_add_lls_sls_alc_session(lls_sls_alc_session_flows, lls_slt_alc_session);
+        lls_sls_alc_session_flows_add_lls_sls_alc_session(lls_sls_alc_session_flows, lls_sls_alc_session);
 
         lls_slt_monitor_add_lls_sls_alc_session_flows(lls_slt_monitor, lls_sls_alc_session_flows);
-        lls_slt_alc_session->sls_relax_source_ip_check = __LLS_SESSION_RELAX_SOURCE_IP_CHECK__;
+        lls_sls_alc_session->sls_relax_source_ip_check = __LLS_SESSION_RELAX_SOURCE_IP_CHECK__;
     } else {
         for(int k=0; k < lls_slt_monitor->lls_sls_alc_monitor_v.count; k++) {
             lls_sls_alc_monitor_t* lls_sls_alc_monitor = lls_slt_monitor->lls_sls_alc_monitor_v.data[k];
@@ -350,10 +352,10 @@ lls_sls_alc_session_t* lls_slt_alc_session_find_or_create_from_ip_udp_values(lls
             }
         }
 
-        lls_slt_alc_session->atsc3_lls_slt_service = atsc3_lls_slt_service;
-        lls_slt_alc_session->transients.atsc3_lls_slt_service_stale = NULL;
+        lls_sls_alc_session->atsc3_lls_slt_service = atsc3_lls_slt_service;
+        lls_sls_alc_session->transients.atsc3_lls_slt_service_stale = NULL;
     }
-    return lls_slt_alc_session;
+    return lls_sls_alc_session;
 }
 
 
@@ -521,7 +523,7 @@ Example:
 void lls_sls_alc_update_all_mediainfo_flow_v_from_route_s_tsid(lls_sls_alc_monitor_t* lls_sls_alc_monitor, atsc3_route_s_tsid_t* atsc3_route_s_tsid) {
 
 	if(!lls_sls_alc_monitor || !atsc3_route_s_tsid) {
-		_ATSC3_LLS_ALC_UTILS_ERROR("lls_sls_alc_session: %p, atsc3_route_s_tsid: %p returning!", lls_sls_alc_monitor, atsc3_route_s_tsid);
+		_ATSC3_LLS_ALC_UTILS_ERROR("lls_sls_alc_update_all_mediainfo_flow_v_from_route_s_tsid: lls_sls_alc_session: %p, atsc3_route_s_tsid: %p returning!", lls_sls_alc_monitor, atsc3_route_s_tsid);
 		return;
 	}
 
@@ -529,7 +531,7 @@ void lls_sls_alc_update_all_mediainfo_flow_v_from_route_s_tsid(lls_sls_alc_monit
 
 	for(int i=0; i < atsc3_route_s_tsid->atsc3_route_s_tsid_RS_v.count; i++) {
 		atsc3_route_s_tsid_RS_t*  atsc3_route_s_tsid_RS = atsc3_route_s_tsid->atsc3_route_s_tsid_RS_v.data[i];
-		_ATSC3_LLS_ALC_UTILS_DEBUG("S-TSID.RS: RS: dIpAddr: %u, dPort: %u, sIpAddr: %u", atsc3_route_s_tsid_RS->dest_ip_addr, atsc3_route_s_tsid_RS->dest_port, atsc3_route_s_tsid_RS->src_ip_addr);
+		_ATSC3_LLS_ALC_UTILS_DEBUG("lls_sls_alc_update_all_mediainfo_flow_v_from_route_s_tsid: S-TSID.RS: RS: dIpAddr: (%u, dPort: %u, sIpAddr: %u, atsc3_route_s_tsid_RS_LS_v.count: %d", atsc3_route_s_tsid_RS->dest_ip_addr, atsc3_route_s_tsid_RS->dest_port, atsc3_route_s_tsid_RS->src_ip_addr, atsc3_route_s_tsid_RS->atsc3_route_s_tsid_RS_LS_v.count);
 		for(int j=0; j < atsc3_route_s_tsid_RS->atsc3_route_s_tsid_RS_LS_v.count; j++) {
 			char* src_flow_content_info_content_type = NULL;
 
@@ -663,4 +665,40 @@ void lls_sls_alc_update_all_mediainfo_flow_v_from_route_s_tsid(lls_sls_alc_monit
 	}
 
 }
+
+//jjustman-2021-07-07 - add in any new ip flows from our s-tsid to associate with this service
+
+int lls_sls_alc_add_additional_ip_flows_from_route_s_tsid(lls_slt_monitor_t* lls_slt_monitor, lls_sls_alc_monitor_t* lls_sls_alc_monitor, atsc3_route_s_tsid_t* atsc3_route_s_tsid) {
+
+    int ip_multicast_flows_added = 0;
+
+    if(!lls_sls_alc_monitor || !atsc3_route_s_tsid) {
+        _ATSC3_LLS_ALC_UTILS_ERROR("lls_sls_alc_add_additional_ip_flows_from_route_s_tsid: lls_sls_alc_session: %p, atsc3_route_s_tsid: %p returning!", lls_sls_alc_monitor, atsc3_route_s_tsid);
+        return ip_multicast_flows_added;
+    }
+
+    for(int i=0; i < atsc3_route_s_tsid->atsc3_route_s_tsid_RS_v.count; i++) {
+        atsc3_route_s_tsid_RS_t*  atsc3_route_s_tsid_RS = atsc3_route_s_tsid->atsc3_route_s_tsid_RS_v.data[i];
+        _ATSC3_LLS_ALC_UTILS_DEBUG("lls_sls_alc_add_additional_ip_flows_from_route_s_tsid: checking: %d, S-TSID.RS: RS: dIpAddr: (%u, dPort: %u, sIpAddr: %u, atsc3_route_s_tsid_RS_LS_v.count: %d", i, atsc3_route_s_tsid_RS->dest_ip_addr, atsc3_route_s_tsid_RS->dest_port, atsc3_route_s_tsid_RS->src_ip_addr, atsc3_route_s_tsid_RS->atsc3_route_s_tsid_RS_LS_v.count);
+
+        lls_sls_alc_session_t* lls_sls_alc_session = lls_slt_alc_session_find_from_udp_packet(lls_slt_monitor, atsc3_route_s_tsid_RS->dest_ip_addr, atsc3_route_s_tsid_RS->dest_port, atsc3_route_s_tsid_RS->src_ip_addr);
+
+        if(!lls_sls_alc_session) {
+            _ATSC3_LLS_ALC_UTILS_DEBUG("lls_sls_alc_add_additional_ip_flows_from_route_s_tsid: lls_sls_alc_session not found: creating with RS: dIpAddr: (%u, dPort: %u, sIpAddr: %u, atsc3_route_s_tsid_RS_LS_v.count: %d", atsc3_route_s_tsid_RS->dest_ip_addr, atsc3_route_s_tsid_RS->dest_port, atsc3_route_s_tsid_RS->src_ip_addr, atsc3_route_s_tsid_RS->atsc3_route_s_tsid_RS_LS_v.count);
+            lls_sls_alc_session = lls_slt_alc_session_create_from_ip_and_port_values(lls_sls_alc_monitor->atsc3_lls_slt_service, atsc3_route_s_tsid_RS->dest_ip_addr, atsc3_route_s_tsid_RS->dest_port, atsc3_route_s_tsid_RS->src_ip_addr);
+
+            lls_sls_alc_session_flows_t* lls_sls_alc_session_flows = lls_sls_alc_session_flows_new();
+            lls_sls_alc_session_flows_add_lls_sls_alc_session(lls_sls_alc_session_flows, lls_sls_alc_session);
+
+            lls_slt_monitor_add_lls_sls_alc_session_flows(lls_slt_monitor, lls_sls_alc_session_flows);
+            lls_sls_alc_session->sls_relax_source_ip_check = __LLS_SESSION_RELAX_SOURCE_IP_CHECK__;
+
+            ip_multicast_flows_added++;
+        }
+    }
+
+    return ip_multicast_flows_added;
+}
+
+
 

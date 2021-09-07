@@ -44,7 +44,9 @@ class IAtsc3NdkPHYBridge {
 
         virtual void atsc3_update_rf_bw_stats(uint64_t total_pkts, uint64_t total_bytes, unsigned int total_lmts) = 0;
 
-        //application callbacks - mapped to native method for Android
+        virtual void atsc3_update_l1d_time_information(uint8_t l1B_time_info_flag, uint32_t l1D_time_sec, uint16_t l1D_time_msec, uint16_t l1D_time_usec, uint16_t l1D_time_nsec) = 0;
+
+    //application callbacks - mapped to native method for Android
         virtual void setRfPhyStatisticsViewVisible(bool isRfPhyStatisticsVisible) = 0;
 
         virtual int pinCaptureThreadAsNeeded() = 0;

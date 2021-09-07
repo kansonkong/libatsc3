@@ -66,6 +66,8 @@ public:
 
     void atsc3_update_rf_bw_stats(uint64_t total_pkts, uint64_t total_bytes, unsigned int total_lmts);
 
+    void atsc3_update_l1d_time_information(uint8_t l1B_time_info_flag, uint32_t l1D_time_sec, uint16_t l1D_time_msec, uint16_t l1D_time_usec, uint16_t l1D_time_nsec);
+
     void setRfPhyStatisticsViewVisible(bool isRfPhyStatisticsVisible);
 
 
@@ -103,6 +105,8 @@ public:
     jclass    atsc3_nkd_phy_client_rf_metrics_jclass_global_ref = nullptr;
 
     jmethodID atsc3_update_rf_bw_stats_ID = nullptr;     // java callback method id for by stats
+
+    jmethodID atsc3_l1d_time_information_callback_ID = nullptr;
 
     std::thread atsc3_rxStatusThread;
 
