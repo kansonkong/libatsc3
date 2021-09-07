@@ -20,6 +20,11 @@
 extern "C" {
 #endif
 
+//jjustman-2021-07-07 - forward declare for now
+typedef struct lls_sls_alc_monitor lls_sls_alc_monitor_t;
+
+typedef void (*atsc3_lls_sls_alc_on_metadata_fragments_updated_callback_f)(lls_sls_alc_monitor_t* lls_sls_alc_monitor);
+
 typedef void (*atsc3_alc_on_object_close_flag_s_tsid_content_location_f)(uint16_t service_id, uint32_t tsi, uint32_t toi, char* s_tsid_content_location, char* s_tsid_content_type, char* cache_file_path);
 typedef void (*atsc3_alc_on_route_mpd_patched_f)(uint16_t service_id);
 typedef void (*atsc3_alc_on_route_mpd_patched_with_filename_f)(uint16_t service_id, char* mpd_filename);

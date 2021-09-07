@@ -73,10 +73,6 @@ dependencies {
     implementation 'androidx.annotation:annotation:1.1.0@jar'
 
     debugApi project(':atsc3_core')
-
-    //jjustman-2021-01-14 - adding firebase performance
-    api 'com.google.firebase:firebase-perf:19.1.0'
-
 }
 
 apply from: '../publish.gradle'
