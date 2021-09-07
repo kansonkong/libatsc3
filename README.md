@@ -14,7 +14,7 @@ build for linux:
 
 ## March, 2021 Update: Join the libatsc3 slack workspace for development support and updates
 
-https://communityinviter.com/apps/libatsc3/join-the-libatsc3-slack-workspace-for-development-support-and-updates
+https://communityinviter.com/apps/libatsc3/join
 
 ## Feb, 2021 Update: ExoPlayer MMT plugin released
 We've released our first cut of our ExoPlayer MMT Plugin to support ISO23008-1 playback of MPEG Media Transport here:  
