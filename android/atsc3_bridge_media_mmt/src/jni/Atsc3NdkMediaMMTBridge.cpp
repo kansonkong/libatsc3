@@ -239,18 +239,27 @@ void Atsc3NdkMediaMMTBridge::atsc3_onInitAudioDecoderConfigurationRecord(uint16_
         return;
     }
 
-    jclass j_ac4_se_box_cls = mmtAudioDecoderConfigurationRecord_AudioAC4SampleEntryBox_jclass_global_ref;
-    jobject j_ac4_se_box_obj = nullptr;
+    //jjustman-2021-09-08 - adding in mpeg-h support
+    jfieldID asset_type_valId = jniEnv->Get()->GetFieldID(jcls, "asset_type", "Ljava/lang/String;");
+    //hack-ish...
+    jstring asset_type_jstring = jniEnv->Get()->NewStringUTF((new string(atsc3_audio_decoder_configuration_record->asset_type, 4))->c_str());
+    jniEnv->Get()->SetObjectField(jobj, asset_type_valId, asset_type_jstring);
 
-    jclass j_ac4_se_specific_box_cls = mmtAudioDecoderConfigurationRecord_AudioAC4SampleEntryBox_AC4SpecificBox_jclass_global_ref;
-    jobject j_ac4_se_specific_box_obj = nullptr;
-
+    //packet_id
     jfieldID packet_id_valId = jniEnv->Get()->GetFieldID(jcls, "packet_id", "I");
     jniEnv->Get()->SetIntField(jobj, packet_id_valId, packet_id);
 
     //marshall our uint32_t packet_id to int64_t -> long in java
     jfieldID mpu_sequence_number_valId = jniEnv->Get()->GetFieldID(jcls, "mpu_sequence_number", "J");
     jniEnv->Get()->SetLongField(jobj, mpu_sequence_number_valId, (int64_t)mpu_sequence_number);
+
+    jclass j_ac4_se_box_cls = mmtAudioDecoderConfigurationRecord_AudioAC4SampleEntryBox_jclass_global_ref;
+    jobject j_ac4_se_box_obj = nullptr;
+
+    jclass j_ac4_se_specific_box_cls = mmtAudioDecoderConfigurationRecord_AudioAC4SampleEntryBox_AC4SpecificBox_jclass_global_ref;
+    jobject j_ac4_se_specific_box_obj = nullptr;
+
+
 
     jfieldID channel_count_valId = jniEnv->Get()->GetFieldID(jcls, "channel_count", "I");
     jniEnv->Get()->SetIntField(jobj, channel_count_valId, atsc3_audio_decoder_configuration_record->channel_count);
@@ -329,10 +338,14 @@ void Atsc3NdkMediaMMTBridge::atsc3_onInitAudioDecoderConfigurationRecord(uint16_
     }
 
 
-    _NDK_MEDIA_MMT_BRIDGE_INFO("Atsc3NdkMediaMMTBridge::atsc3_onInitAudioDecoderConfigurationRecord: with service_id: %d, packet_id: %d, mpu_sequence_number: %d, atsc3_audio_decoder_configuration_record: %p, channel_count: %d",
-                               service_id, packet_id, mpu_sequence_number, atsc3_audio_decoder_configuration_record, atsc3_audio_decoder_configuration_record->channel_count);
+    _NDK_MEDIA_MMT_BRIDGE_INFO("Atsc3NdkMediaMMTBridge::atsc3_onInitAudioDecoderConfigurationRecord: with service_id: %d, packet_id: %d, mpu_sequence_number: %d, atsc3_audio_decoder_configuration_record: %p, asset_type: %.4s, channel_count: %d",
+                               service_id, packet_id, mpu_sequence_number, atsc3_audio_decoder_configuration_record, &atsc3_audio_decoder_configuration_record->asset_type, atsc3_audio_decoder_configuration_record->channel_count);
 
     jniEnv->Get()->CallIntMethod(jni_instance_globalRef, atsc3_OnInitAudioDecoderConfigurationRecord, packet_id, (int64_t)mpu_sequence_number, jobj);
+
+    //cleanup
+    jniEnv->Get()->DeleteLocalRef(asset_type_jstring);
+
     if(j_ac4_se_box_obj) {
         jniEnv->Get()->DeleteLocalRef(j_ac4_se_box_obj);
     }
@@ -506,9 +519,7 @@ void Atsc3NdkMediaMMTBridge::writeToRingBuffer(int8_t type, uint16_t service_id,
             _NDK_MEDIA_MMT_BRIDGE_DEBUG("Atsc3NdkMediaMMTBridge::writeToRingBuffer: packet_id_extracted_sample_duration: missing! service_id: %d, packet_id: %d, sample_number: %d, type == RING_BUFFER_PAGE_FRAGMENT, returning before write.", service_id, packet_id, sample_number);
             return;
         } else {
-            _NDK_MEDIA_MMT_BRIDGE_DEBUG("Atsc3NdkMediaMMTBridge::writeToRingBuffer: packet_id_extracted_sample_duration: %d, for service_id: %d, packet_id: %d, sample_number: %d, type == RING_BUFFER_PAGE_FRAGMENT", packet_id_extracted_sample_duration_map[packet_id], service_id, packet_id, sample_number);
-
-
+            _NDK_MEDIA_MMT_BRIDGE_TRACE("Atsc3NdkMediaMMTBridge::writeToRingBuffer: packet_id_extracted_sample_duration: %d, for service_id: %d, packet_id: %d, sample_number: %d, type == RING_BUFFER_PAGE_FRAGMENT", packet_id_extracted_sample_duration_map[packet_id], service_id, packet_id, sample_number);
         }
     }
 
