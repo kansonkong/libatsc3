@@ -1238,10 +1238,12 @@ uint8_t* mmt_atsc3_message_payload_parse(mmt_signalling_message_header_and_paylo
 									mmt_atsc3_message_content_type_audio_stream_properties_descriptor_asset_presentation->num_languages_minus1 = block_Read_uint8(src);
 									
 									for(int k=0; k < mmt_atsc3_message_content_type_audio_stream_properties_descriptor_asset_presentation->num_languages_minus1 + 1; k++) {
+
 										mmt_atsc3_message_content_type_audio_stream_properties_descriptor_asset_presentation_language_t* mmt_atsc3_message_content_type_audio_stream_properties_descriptor_asset_presentation_language = mmt_atsc3_message_content_type_audio_stream_properties_descriptor_asset_presentation_language_new();
 										mmt_atsc3_message_content_type_audio_stream_properties_descriptor_asset_presentation_language->language_length = block_Read_uint8(src);
 										mmt_atsc3_message_content_type_audio_stream_properties_descriptor_asset_presentation_language->language = block_Read_uint8_varlen(src, mmt_atsc3_message_content_type_audio_stream_properties_descriptor_asset_presentation_language->language_length);
-
+										__MMSM_TRACE("MMT_ATSC3_MESSAGE_CONTENT_TYPE_AUDIO_STREAM_PROPERTIES_DESCRIPTOR: jj: language_present: %d, 0x%02x, %s", k, mmt_atsc3_message_content_type_audio_stream_properties_descriptor_asset->asset_header.asset_id[0], mmt_atsc3_message_content_type_audio_stream_properties_descriptor_asset_presentation_language->language );
+										
 										mmt_atsc3_message_content_type_audio_stream_properties_descriptor_asset_presentation_add_mmt_atsc3_message_content_type_audio_stream_properties_descriptor_asset_presentation_language(mmt_atsc3_message_content_type_audio_stream_properties_descriptor_asset_presentation, mmt_atsc3_message_content_type_audio_stream_properties_descriptor_asset_presentation_language);
 									}
 								}
@@ -1251,6 +1253,10 @@ uint8_t* mmt_atsc3_message_payload_parse(mmt_signalling_message_header_and_paylo
 									for(int k=0; k < mmt_atsc3_message_content_type_audio_stream_properties_descriptor_asset_presentation->num_languages_minus1 + 1; k++) {
 										mmt_atsc3_message_content_type_audio_stream_properties_descriptor_asset_presentation->accessibility[k] = block_Read_uint8(src);
 									}
+									__MMSM_TRACE("MMT_ATSC3_MESSAGE_CONTENT_TYPE_AUDIO_STREAM_PROPERTIES_DESCRIPTOR: jj: accessibility_role_present: 0x%02x, %s", mmt_atsc3_message_content_type_audio_stream_properties_descriptor_asset->asset_header.asset_id[0],
+												 mmt_atsc3_message_content_type_audio_stream_properties_descriptor_asset_presentation->accessibility);
+									
+
 									mmt_atsc3_message_content_type_audio_stream_properties_descriptor_asset_presentation->role = block_Read_uint8(src);
 								}
 								
@@ -1948,9 +1954,11 @@ void mpt_message_dump(mmt_signalling_message_header_and_payload_t* mmt_signallin
 	for(int i=0; i < mp_table->number_of_assets; i++) {
 		mp_table_asset_row_t* mp_table_asset_row = &mp_table->mp_table_asset_row[i];
 		__MMSM_DEBUG(" asset identifier type       : %u", mp_table_asset_row->identifier_mapping.identifier_type);
+		
 		if(mp_table_asset_row->identifier_mapping.identifier_type == 0x00) {
+			__MMSM_DEBUG(" asset id scheme             : %s", mp_table_asset_row->identifier_mapping.asset_id.asset_id_scheme);
+			__MMSM_DEBUG(" asset id length             : %s", mp_table_asset_row->identifier_mapping.asset_id.asset_id_length);
 			__MMSM_DEBUG(" asset id                    : %s", mp_table_asset_row->identifier_mapping.asset_id.asset_id);
-
 		}
 		__MMSM_DEBUG(" asset type                  : %s", mp_table_asset_row->asset_type);
 		__MMSM_DEBUG(" asset_clock_relation_flag   : %u", mp_table_asset_row->asset_clock_relation_flag);
