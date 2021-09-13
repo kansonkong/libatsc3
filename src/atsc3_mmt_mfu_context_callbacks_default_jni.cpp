@@ -90,7 +90,7 @@ void atsc3_mmt_mpu_on_sequence_mpu_metadata_present_ndk(atsc3_mmt_mfu_context_t*
             }
         }
     } else if(is_audio_packet){
-        atsc3_audio_decoder_configuration_record_t* atsc3_audio_decoder_configuration_record = atsc3_audio_decoder_configuration_record_parse_from_block_t(mmt_mpu_metadata);
+        atsc3_audio_decoder_configuration_record_t* atsc3_audio_decoder_configuration_record = atsc3_audio_decoder_configuration_record_parse_from_asset_type_and_block_t(atsc3_mmt_mfu_context->mmtp_packet_id_packets_container->asset_type, mmt_mpu_metadata);
         if(atsc3_audio_decoder_configuration_record) {
             atsc3_mmt_mfu_context->mmtp_packet_id_packets_container->atsc3_audio_decoder_configuration_record = atsc3_audio_decoder_configuration_record;
             Atsc3NdkMediaMMTBridge_ptr->atsc3_onInitAudioDecoderConfigurationRecord(service_id, packet_id, mpu_sequence_number, atsc3_audio_decoder_configuration_record);
