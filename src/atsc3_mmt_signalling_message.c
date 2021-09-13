@@ -950,6 +950,123 @@ uint8_t* mmt_atsc3_message_payload_parse(mmt_signalling_message_header_and_paylo
 							mmt_atsc3_message_content_type_video_stream_properties_descriptor_asset->asset_header.asset_id = block_Read_uint8_varlen(src, mmt_atsc3_message_content_type_video_stream_properties_descriptor_asset->asset_header.asset_id_length);
 
 							//jjustman-2021-09-013: TODO - remainder of object parsing
+							//parse out codec codec
+							for(int j=0; j < 4; j++) {
+								mmt_atsc3_message_content_type_video_stream_properties_descriptor_asset->codec_codec[j] = block_Read_uint8(src);
+							}
+							mmt_atsc3_message_content_type_video_stream_properties_descriptor_asset->temporal_scalability_present = block_Read_uint8_bitlen(src, 1);
+							mmt_atsc3_message_content_type_video_stream_properties_descriptor_asset->scalability_info_present = block_Read_uint8_bitlen(src, 1);
+							mmt_atsc3_message_content_type_video_stream_properties_descriptor_asset->multiview_info_present = block_Read_uint8_bitlen(src, 1);
+							mmt_atsc3_message_content_type_video_stream_properties_descriptor_asset->res_cf_bd_info_present = block_Read_uint8_bitlen(src, 1);
+							mmt_atsc3_message_content_type_video_stream_properties_descriptor_asset->pr_info_present = block_Read_uint8_bitlen(src, 1);
+							mmt_atsc3_message_content_type_video_stream_properties_descriptor_asset->br_info_present = block_Read_uint8_bitlen(src, 1);
+							mmt_atsc3_message_content_type_video_stream_properties_descriptor_asset->color_info_present = block_Read_uint8_bitlen(src, 1);
+							mmt_atsc3_message_content_type_video_stream_properties_descriptor_asset->reserved_1 = block_Read_uint8_bitlen(src, 1);
+							
+							if(mmt_atsc3_message_content_type_video_stream_properties_descriptor_asset->reserved_1 != 0x1) {
+								__MMSM_WARN("mmt_atsc3_message_content_type_video_stream_properties_descriptor_asset->reserved_1 is not 0x1!");
+							}
+							
+							if(mmt_atsc3_message_content_type_video_stream_properties_descriptor_asset->temporal_scalability_present) {
+								mmt_atsc3_message_content_type_video_stream_properties_descriptor_asset->temporal_scalability_info.max_sub_layers_instream = block_Read_uint8_bitlen(src, 6);
+								mmt_atsc3_message_content_type_video_stream_properties_descriptor_asset->temporal_scalability_info.sub_layer_profile_tier_level_info_present = block_Read_uint8_bitlen(src, 1);
+								mmt_atsc3_message_content_type_video_stream_properties_descriptor_asset->temporal_scalability_info.temporal_filter_present = block_Read_uint8_bitlen(src, 1);
+
+								//tid -> 3
+								mmt_atsc3_message_content_type_video_stream_properties_descriptor_asset->temporal_scalability_info.tid_max = block_Read_uint8_bitlen(src, 3);
+								mmt_atsc3_message_content_type_video_stream_properties_descriptor_asset->temporal_scalability_info.tid_min = block_Read_uint8_bitlen(src, 3);
+								
+								if(mmt_atsc3_message_content_type_video_stream_properties_descriptor_asset->temporal_scalability_info.temporal_filter_present) {
+									mmt_atsc3_message_content_type_video_stream_properties_descriptor_asset->temporal_scalability_info.tfweight = block_Read_uint8_bitlen(src, 2);
+								} else {
+									mmt_atsc3_message_content_type_video_stream_properties_descriptor_asset->temporal_scalability_info.reserved2 = block_Read_uint8_bitlen(src, 2);
+								}
+							}
+							
+							if(mmt_atsc3_message_content_type_video_stream_properties_descriptor_asset->scalability_info_present) {
+								mmt_atsc3_message_content_type_video_stream_properties_descriptor_asset->scalability_info.asset_layer_id = block_Read_uint8_bitlen(src, 6);
+								mmt_atsc3_message_content_type_video_stream_properties_descriptor_asset->scalability_info.reserved2 = block_Read_uint8_bitlen(src, 2);
+							}
+							
+							
+							if(mmt_atsc3_message_content_type_video_stream_properties_descriptor_asset->multiview_info_present) {
+								mmt_atsc3_message_content_type_video_stream_properties_descriptor_asset->multiview_info.view_nuh_layer_id = block_Read_uint8_bitlen(src, 6);
+								mmt_atsc3_message_content_type_video_stream_properties_descriptor_asset->multiview_info.view_pos = block_Read_uint8_bitlen(src, 6);
+								mmt_atsc3_message_content_type_video_stream_properties_descriptor_asset->multiview_info.reserved_4 = block_Read_uint8_bitlen(src, 4);
+								
+								mmt_atsc3_message_content_type_video_stream_properties_descriptor_asset->multiview_info.min_disp_with_offset = block_Read_uint16_bitlen(src, 11);
+								mmt_atsc3_message_content_type_video_stream_properties_descriptor_asset->multiview_info.max_disp_range = block_Read_uint16_bitlen(src, 11);
+								mmt_atsc3_message_content_type_video_stream_properties_descriptor_asset->multiview_info.reserved_2 = block_Read_uint8_bitlen(src, 2);
+							}
+							
+							if(mmt_atsc3_message_content_type_video_stream_properties_descriptor_asset->res_cf_bd_info_present) {
+								//res_cf_bd_prop_info
+								mmt_atsc3_message_content_type_video_stream_properties_descriptor_asset->res_cf_bd_info.pic_width_in_luma_samples = block_Read_uint16_ntohs(src);
+								mmt_atsc3_message_content_type_video_stream_properties_descriptor_asset->res_cf_bd_info.pic_height_in_luma_samples = block_Read_uint16_ntohs(src);
+								mmt_atsc3_message_content_type_video_stream_properties_descriptor_asset->res_cf_bd_info.chroma_format_idc = block_Read_uint8_bitlen(src, 2);
+								if(mmt_atsc3_message_content_type_video_stream_properties_descriptor_asset->res_cf_bd_info.chroma_format_idc == 3) {
+									mmt_atsc3_message_content_type_video_stream_properties_descriptor_asset->res_cf_bd_info.separate_colour_plane_flag = block_Read_uint8_bitlen(src, 1);
+									mmt_atsc3_message_content_type_video_stream_properties_descriptor_asset->res_cf_bd_info.reserved_3 = block_Read_uint8_bitlen(src, 3);
+								} else {
+									//reserved:4
+									mmt_atsc3_message_content_type_video_stream_properties_descriptor_asset->res_cf_bd_info.reserved_4 = block_Read_uint8_bitlen(src, 4);
+								}
+								mmt_atsc3_message_content_type_video_stream_properties_descriptor_asset->res_cf_bd_info.video_still_present = block_Read_uint8_bitlen(src, 1);
+								mmt_atsc3_message_content_type_video_stream_properties_descriptor_asset->res_cf_bd_info.video_24hr_pic_present = block_Read_uint8_bitlen(src, 1);
+
+								mmt_atsc3_message_content_type_video_stream_properties_descriptor_asset->res_cf_bd_info.bit_depth_luma_minus8 = block_Read_uint8_bitlen(src, 4);
+								mmt_atsc3_message_content_type_video_stream_properties_descriptor_asset->res_cf_bd_info.bit_depth_chroma_minus8 = block_Read_uint8_bitlen(src, 4);
+
+							}
+							
+							if(mmt_atsc3_message_content_type_video_stream_properties_descriptor_asset->pr_info_present) {
+								//pr_info(...)
+							}
+							
+							
+							if(mmt_atsc3_message_content_type_video_stream_properties_descriptor_asset->br_info_present) {
+								//br_info(...)
+							}
+							
+							
+							if(mmt_atsc3_message_content_type_video_stream_properties_descriptor_asset->color_info_present) {
+								//color_info()
+								mmt_atsc3_message_content_type_video_stream_properties_descriptor_asset->color_info.colour_primaries = block_Read_uint8(src);
+								mmt_atsc3_message_content_type_video_stream_properties_descriptor_asset->color_info.transfer_characteristics = block_Read_uint8(src);
+								mmt_atsc3_message_content_type_video_stream_properties_descriptor_asset->color_info.matrix_coeffs = block_Read_uint8(src);
+								
+								if(mmt_atsc3_message_content_type_video_stream_properties_descriptor_asset->color_info.colour_primaries >= 9) {
+									mmt_atsc3_message_content_type_video_stream_properties_descriptor_asset->color_info.cg_compatibility = block_Read_uint8_bitlen(src, 1);
+									mmt_atsc3_message_content_type_video_stream_properties_descriptor_asset->color_info.reserved_7_cp = block_Read_uint8_bitlen(src, 7);
+								}
+								
+								if(mmt_atsc3_message_content_type_video_stream_properties_descriptor_asset->color_info.transfer_characteristics >= 16) {
+									mmt_atsc3_message_content_type_video_stream_properties_descriptor_asset->color_info.eotf_info_present = block_Read_uint8_bitlen(src, 1);
+									if(mmt_atsc3_message_content_type_video_stream_properties_descriptor_asset->color_info.eotf_info_present) {
+										mmt_atsc3_message_content_type_video_stream_properties_descriptor_asset->color_info.eotf_info_len_minus1 = block_Read_uint16_bitlen(src, 15);
+										
+										//eotf_info
+										mmt_atsc3_message_content_type_video_stream_properties_descriptor_asset->color_info.eotf_info.num_SEIs_minus1 = block_Read_uint8(src);
+										for(int e=0; e < mmt_atsc3_message_content_type_video_stream_properties_descriptor_asset->color_info.eotf_info.num_SEIs_minus1 ; e++) {
+											
+											mmt_atsc3_message_content_type_video_stream_properties_descriptor_asset->color_info.eotf_info.SEI_NUT_length_minus1[e] = block_Read_uint16_ntohs(src);
+											mmt_atsc3_message_content_type_video_stream_properties_descriptor_asset->color_info.eotf_info.SEI_NUT_data[e] = block_Read_uint8_varlen(src, mmt_atsc3_message_content_type_video_stream_properties_descriptor_asset->color_info.eotf_info.SEI_NUT_length_minus1[e]);
+										}
+										
+
+									} else {
+										mmt_atsc3_message_content_type_video_stream_properties_descriptor_asset->color_info.reserved_7_tf = block_Read_uint8_bitlen(src, 7);
+									}
+								}
+							}
+
+							if(mmt_atsc3_message_content_type_video_stream_properties_descriptor_asset->temporal_scalability_info.sub_layer_profile_tier_level_info_present) {
+								//sub_layer_profile_tier_level_info_present(1, max_sub_layers_in_insteram-1)
+							} else {
+								//profile_tier_level(1,0)
+							}
+
+
 							
 							mmt_atsc3_message_content_type_video_stream_properties_descriptor_add_mmt_atsc3_message_content_type_video_stream_properties_descriptor_asset(mmt_atsc3_message_content_type_video_stream_properties_descriptor, mmt_atsc3_message_content_type_video_stream_properties_descriptor_asset);
 						}

@@ -233,7 +233,7 @@ typedef struct mmt_atsc3_message_content_type_video_stream_properties_descriptor
 			//if (temporal_filter_present) {
 				uint8_t	tfweight:2;
 			//} else {
-				uint8_t	reserved_2:2;
+				uint8_t	reserved2:2;
 			//}
 		} temporal_scalability_info;
 	//}
@@ -242,7 +242,7 @@ typedef struct mmt_atsc3_message_content_type_video_stream_properties_descriptor
 	//	mmt_atsc3_message_content_type_video_stream_properties_descriptor_scalability_info_t	scalability_info;
 		struct {
 			uint8_t		asset_layer_id:6;
-			uint8_t		reserved:2;
+			uint8_t		reserved2:2;
 
 		} scalability_info;
 	//}
@@ -328,14 +328,14 @@ typedef struct mmt_atsc3_message_content_type_video_stream_properties_descriptor
 						struct {
 							uint8_t		num_SEIs_minus1;
 							uint16_t	SEI_NUT_length_minus1[255];
-							uint8_t*	SEI_NUT_data[255];  //alloc to uint8_t, len: 8*(SEI_NUT_length_minus1[ i ]+1)
+							uint8_t*	SEI_NUT_data;  //alloc to uint8_t, len: 8*(SEI_NUT_length_minus1[ i ]+1)
 							///eotf_info()
 						} eotf_info;
 					//}
 				//} else {
 					uint8_t		reserved_7_tf;
 				//}
-			};
+		} color_info;
 	//}
 
 	//if(sub_layer_profile_tier_level_info_present) {
