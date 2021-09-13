@@ -209,6 +209,8 @@ typedef struct mmt_atsc3_message_content_type_application_event_information_a337
 
 
 typedef struct mmt_atsc3_message_content_type_video_stream_properties_descriptor_asset {
+	mmt_atsc3_message_content_type_asset_header_t										asset_header;
+
 	uint8_t		codec_codec[4];
 	uint8_t		temporal_scalability_present:1;
 	uint8_t		scalability_info_present:1;
@@ -348,10 +350,13 @@ typedef struct mmt_atsc3_message_content_type_video_stream_properties_descriptor
 
 //TODO: jjustman-2021-06-03: MMT_ATSC3_MESSAGE_CONTENT_TYPE_VIDEO_STREAM_PROPERTIES_DESCRIPTOR
 typedef struct mmt_atsc3_message_content_type_video_stream_properties_descriptor {
-	mmt_atsc3_message_content_type_asset_header_t										asset_header;
+	mmt_atsc3_message_content_type_descriptor_number_of_assets_header_t		descriptor_header;
+	
 	ATSC3_VECTOR_BUILDER_STRUCT(mmt_atsc3_message_content_type_video_stream_properties_descriptor_asset);
 
 } mmt_atsc3_message_content_type_video_stream_properties_descriptor_t;
+ATSC3_VECTOR_BUILDER_METHODS_INTERFACE(mmt_atsc3_message_content_type_video_stream_properties_descriptor, mmt_atsc3_message_content_type_video_stream_properties_descriptor_asset);
+
 
 //TODO: jjustman-2021-06-03: MMT_ATSC3_MESSAGE_CONTENT_TYPE_ATSC_STAGGERCAST_DESCRIPTOR
 typedef struct mmt_atsc3_message_content_type_atsc_staggercast_descriptor {
@@ -801,6 +806,8 @@ typedef struct mmt_atsc3_message_payload {
 	//MMT_ATSC3_MESSAGE_CONTENT_TYPE_HELD
 	mmt_atsc3_held_message_t*       										mmt_atsc3_held_message;
 	
+	
+	mmt_atsc3_message_content_type_video_stream_properties_descriptor_t*	mmt_atsc3_message_content_type_video_stream_properties_descriptor;
 	//MMT_ATSC3_MESSAGE_CONTENT_TYPE_CAPTION_ASSET_DESCRIPTOR
 	mmt_atsc3_message_content_type_caption_asset_descriptor_t* 				mmt_atsc3_message_content_type_caption_asset_descriptor;
 	
