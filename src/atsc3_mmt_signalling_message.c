@@ -1021,11 +1021,30 @@ uint8_t* mmt_atsc3_message_payload_parse(mmt_signalling_message_header_and_paylo
 							
 							if(mmt_atsc3_message_content_type_video_stream_properties_descriptor_asset->pr_info_present) {
 								//pr_info(...)
+								if(mmt_atsc3_message_content_type_video_stream_properties_descriptor_asset->temporal_scalability_info.sub_layer_profile_tier_level_info_present) {
+									//pr_info(max_sub_layers_instream-1)
+									for(int p=0; p < mmt_atsc3_message_content_type_video_stream_properties_descriptor_asset->temporal_scalability_info.max_sub_layers_instream-1; p++) {
+										mmt_atsc3_message_content_type_video_stream_properties_descriptor_asset->pr_info.picture_rate_code[p] = block_Read_uint8(src);
+										mmt_atsc3_message_content_type_video_stream_properties_descriptor_asset->pr_info.average_picture_rate[p] = block_Read_uint16_ntohs(src);
+									}
+								} else {
+									mmt_atsc3_message_content_type_video_stream_properties_descriptor_asset->pr_info.picture_rate_code[0] = block_Read_uint8(src);
+									mmt_atsc3_message_content_type_video_stream_properties_descriptor_asset->pr_info.average_picture_rate[0] = block_Read_uint16_ntohs(src);
+								}
 							}
 							
 							
 							if(mmt_atsc3_message_content_type_video_stream_properties_descriptor_asset->br_info_present) {
 								//br_info(...)
+								if(mmt_atsc3_message_content_type_video_stream_properties_descriptor_asset->temporal_scalability_info.sub_layer_profile_tier_level_info_present) {
+									for(int p=0; p < mmt_atsc3_message_content_type_video_stream_properties_descriptor_asset->temporal_scalability_info.max_sub_layers_instream-1; p++) {
+										mmt_atsc3_message_content_type_video_stream_properties_descriptor_asset->br_info.average_bitrate[p] = block_Read_uint16_ntohs(src);
+										mmt_atsc3_message_content_type_video_stream_properties_descriptor_asset->br_info.maximum_bitrate[p] = block_Read_uint16_ntohs(src);
+									}
+								} else {
+									mmt_atsc3_message_content_type_video_stream_properties_descriptor_asset->br_info.average_bitrate[0] = block_Read_uint16_ntohs(src);
+									mmt_atsc3_message_content_type_video_stream_properties_descriptor_asset->br_info.maximum_bitrate[0] = block_Read_uint16_ntohs(src);
+								}
 							}
 							
 							
@@ -1060,14 +1079,36 @@ uint8_t* mmt_atsc3_message_payload_parse(mmt_signalling_message_header_and_paylo
 								}
 							}
 
+							//jjustman-2021-09-13 - TODO
+							
+							/*
+							 def __init__(self, s, maxNumSubLayersMinus1):
+								   """
+								   Interpret next bits in BitString s as an profile_tier_level
+								   7.3.3 Profile, tier and level syntax
+								   """
+								   self.t = '\t\t'
+								   self.general_profile_space = s.read('uint:2')
+								   self.general_tier_flag = s.read('uint:1')
+								   self.general_profile_idc = s.read('uint:5')
+								   self.general_profile_compatibility_flag = [s.read('uint:1') for _ in range(32)]
+								   self.general_progressive_source_flag = s.read('uint:1')
+								   self.general_interlaced_source_flag = s.read('uint:1')
+								   self.general_non_packed_constraint_flag = s.read('uint:1')
+								   self.general_frame_only_constraint_flag = s.read('uint:1')
+								   self.general_reserved_zero_44bits = s.read('uint:44')
+								   self.general_level_idc = s.read('uint:8')
+								   self.sub_layer_profile_present_flag = []
+								   self.sub_layer_level_present_flag = []
+								   for i in range(maxNumSubLayersMinus1):
+									   self.sub_layer_profile_present_flag.append(s.read('uint:1'))
+									   self.sub_layer_level_present_flag.append(s.read('uint:1'))
+							 */
 							if(mmt_atsc3_message_content_type_video_stream_properties_descriptor_asset->temporal_scalability_info.sub_layer_profile_tier_level_info_present) {
 								//sub_layer_profile_tier_level_info_present(1, max_sub_layers_in_insteram-1)
 							} else {
 								//profile_tier_level(1,0)
 							}
-
-
-							
 							mmt_atsc3_message_content_type_video_stream_properties_descriptor_add_mmt_atsc3_message_content_type_video_stream_properties_descriptor_asset(mmt_atsc3_message_content_type_video_stream_properties_descriptor, mmt_atsc3_message_content_type_video_stream_properties_descriptor_asset);
 						}
 					}
@@ -1956,8 +1997,8 @@ void mpt_message_dump(mmt_signalling_message_header_and_payload_t* mmt_signallin
 		__MMSM_DEBUG(" asset identifier type       : %u", mp_table_asset_row->identifier_mapping.identifier_type);
 		
 		if(mp_table_asset_row->identifier_mapping.identifier_type == 0x00) {
-			__MMSM_DEBUG(" asset id scheme             : %s", mp_table_asset_row->identifier_mapping.asset_id.asset_id_scheme);
-			__MMSM_DEBUG(" asset id length             : %s", mp_table_asset_row->identifier_mapping.asset_id.asset_id_length);
+			__MMSM_DEBUG(" asset id scheme             : %u", mp_table_asset_row->identifier_mapping.asset_id.asset_id_scheme);
+			__MMSM_DEBUG(" asset id length             : %u", mp_table_asset_row->identifier_mapping.asset_id.asset_id_length);
 			__MMSM_DEBUG(" asset id                    : %s", mp_table_asset_row->identifier_mapping.asset_id.asset_id);
 		}
 		__MMSM_DEBUG(" asset type                  : %s", mp_table_asset_row->asset_type);

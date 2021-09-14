@@ -290,9 +290,10 @@ typedef struct mmt_atsc3_message_content_type_video_stream_properties_descriptor
 
 	//pr_info() {
 		//for(i=0; i <= maxSubLayersMinus1; i++) {
+		struct {
 			uint8_t			picture_rate_code[255];
 			uint16_t		average_picture_rate[255]; //only if picture_rate_code[i] ==
-		//}
+		} pr_info;
 	//}
 
 
@@ -305,8 +306,10 @@ typedef struct mmt_atsc3_message_content_type_video_stream_properties_descriptor
 	//}
 	//br_info() {
 		//for(i=0; i < maxSubLayersMinus1; i++) {
+	struct {
 			uint16_t		average_bitrate[255];
 			uint16_t		maximum_bitrate[255];
+	} br_info;
 		//}
 	//}
 
@@ -344,7 +347,7 @@ typedef struct mmt_atsc3_message_content_type_video_stream_properties_descriptor
 		//profile_tier_level(1, 0)
 	//}
 	//A/331:2021 Table 7.1 lists this as var length in "H.265" format?
-	uint8_t*	profile_tier_level[255];  //up to max_sub_layers_instream-1 of var length
+	uint8_t* profile_tier_level[255];  //up to max_sub_layers_instream-1 of var length
 
 } mmt_atsc3_message_content_type_video_stream_properties_descriptor_asset_t;
 
