@@ -48,15 +48,16 @@ typedef struct atsc3_audio_ac4_sample_entry_box {
 } atsc3_audio_ac4_sample_entry_box_t;
 
 typedef struct atsc3_audio_decoder_configuration_record {
+    char        asset_type[4]; //fourcc - extracted from mmtp_packet_id_packets_container
 
     //extracted from moov/init segment
-    uint16_t channel_count;
-    uint16_t sample_depth;
-    uint32_t sample_rate;
-    uint32_t timebase;  //14496-12:2015 - timescale is uint32_t
+    uint16_t    channel_count;
+    uint16_t    sample_depth;
+    uint32_t    sample_rate;
+    uint32_t    timebase;  //14496-12:2015 - timescale is uint32_t
 
     //extracted from moof/fragment metadata
-    uint32_t sample_duration;   //14496-12:2015 - duration is uint32_t
+    uint32_t    sample_duration;   //14496-12:2015 - duration is uint32_t
 
     atsc3_audio_ac4_sample_entry_box_t* atsc3_audio_ac4_sample_entry_box;
 
@@ -71,7 +72,9 @@ atsc3_audio_ac4_sample_entry_box_t* atsc3_audio_ac4_sample_entry_box_new();
 atsc3_audio_ac4_sample_entry_box_t* atsc3_audio_decoder_ac4_parse_init_box_from_block_t(block_t* mmt_mpu_metadata_block);
 void atsc3_audio_ac4_sample_entry_box_dump(atsc3_audio_ac4_sample_entry_box_t* atsc3_audio_ac4_sample_entry_box);
 
+atsc3_audio_decoder_configuration_record_t* atsc3_audio_decoder_configuration_record_parse_from_asset_type_and_block_t(char asset_type_fourcc[4], block_t* mmt_mpu_metadata_block);
 atsc3_audio_decoder_configuration_record_t* atsc3_audio_decoder_configuration_record_parse_from_block_t(block_t* mmt_mpu_metadata_block);
+
 bool atsc3_audio_decoder_configuration_parse_codec_type_and_sample_rate_from_block_t(atsc3_audio_decoder_configuration_record_t* atsc3_audio_decoder_configuration_record, block_t* mmt_mpu_metadata_block);
 
 
