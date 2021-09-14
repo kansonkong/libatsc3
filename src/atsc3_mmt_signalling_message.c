@@ -1080,35 +1080,23 @@ uint8_t* mmt_atsc3_message_payload_parse(mmt_signalling_message_header_and_paylo
 							}
 
 							//jjustman-2021-09-13 - TODO
-							
-							/*
-							 def __init__(self, s, maxNumSubLayersMinus1):
-								   """
-								   Interpret next bits in BitString s as an profile_tier_level
-								   7.3.3 Profile, tier and level syntax
-								   """
-								   self.t = '\t\t'
-								   self.general_profile_space = s.read('uint:2')
-								   self.general_tier_flag = s.read('uint:1')
-								   self.general_profile_idc = s.read('uint:5')
-								   self.general_profile_compatibility_flag = [s.read('uint:1') for _ in range(32)]
-								   self.general_progressive_source_flag = s.read('uint:1')
-								   self.general_interlaced_source_flag = s.read('uint:1')
-								   self.general_non_packed_constraint_flag = s.read('uint:1')
-								   self.general_frame_only_constraint_flag = s.read('uint:1')
-								   self.general_reserved_zero_44bits = s.read('uint:44')
-								   self.general_level_idc = s.read('uint:8')
-								   self.sub_layer_profile_present_flag = []
-								   self.sub_layer_level_present_flag = []
-								   for i in range(maxNumSubLayersMinus1):
-									   self.sub_layer_profile_present_flag.append(s.read('uint:1'))
-									   self.sub_layer_level_present_flag.append(s.read('uint:1'))
-							 */
+					
+#ifndef __ATSC3_MMT_SIGNALLING_MESSAGE_TYPES_PARSE_FULL_ISO23008_2_PROFILE_TIER_LEVEL_VARLEN_PAYLOAD
+							//hack - assume we will be 12 bytes?
+							uint8_t remaining_bytes = block_Remaining_size(src);
+							int p=0;
+							for(; p < __MIN(remaining_bytes, 255); p++) {
+								mmt_atsc3_message_content_type_video_stream_properties_descriptor_asset->profile_tier_level_h265_payload[p] = block_Read_uint8(src);
+							}
+							mmt_atsc3_message_content_type_video_stream_properties_descriptor_asset->profile_tier_level_h265_payload_length = p;
+
+#else
 							if(mmt_atsc3_message_content_type_video_stream_properties_descriptor_asset->temporal_scalability_info.sub_layer_profile_tier_level_info_present) {
 								//sub_layer_profile_tier_level_info_present(1, max_sub_layers_in_insteram-1)
 							} else {
 								//profile_tier_level(1,0)
 							}
+#endif
 							mmt_atsc3_message_content_type_video_stream_properties_descriptor_add_mmt_atsc3_message_content_type_video_stream_properties_descriptor_asset(mmt_atsc3_message_content_type_video_stream_properties_descriptor, mmt_atsc3_message_content_type_video_stream_properties_descriptor_asset);
 						}
 					}

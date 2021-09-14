@@ -341,13 +341,195 @@ typedef struct mmt_atsc3_message_content_type_video_stream_properties_descriptor
 		} color_info;
 	//}
 
+#ifndef __ATSC3_MMT_SIGNALLING_MESSAGE_TYPES_PARSE_FULL_ISO23008_2_PROFILE_TIER_LEVEL_VARLEN_PAYLOAD
+	uint8_t profile_tier_level_h265_payload_length;
+	uint8_t profile_tier_level_h265_payload[255];
+#else
 	//if(sub_layer_profile_tier_level_info_present) {
 		//profile_tier_level(1, max_sub_layers_instream-1)
 	//} else {
 		//profile_tier_level(1, 0)
 	//}
 	//A/331:2021 Table 7.1 lists this as var length in "H.265" format?
-	uint8_t* profile_tier_level[255];  //up to max_sub_layers_instream-1 of var length
+	//uint8_t* profile_tier_level[255];  //up to max_sub_layers_instream-1 of var length
+
+	//from iso23008-2:2020 7.3.3 profile_tier_levle
+	struct {
+		uint8_t	general_profile_space:2;
+		uint8_t	general_tier_flag:1;
+		uint8_t	general_profile_idc:5;
+		uint8_t general_profile_compatability_flag[4]; //32 bits
+		uint8_t	general_progressive_source_flag:1;
+		uint8_t	general_interlaced_source_flag:1;
+		uint8_t	general_non_packed_constraint_flag:1;
+		uint8_t general_frame_only_constraint_flag:1;
+		
+		/*
+		 if( general_profile_idc = = 4 | | general_profile_compatibility_flag[ 4 ] | |
+		  general_profile_idc = = 5 | | general_profile_compatibility_flag[ 5 ] | |
+		  general_profile_idc = = 6 | | general_profile_compatibility_flag[ 6 ] | |
+		  general_profile_idc = = 7 | | general_profile_compatibility_flag[ 7 ] | |
+		  general_profile_idc = = 8 | | general_profile_compatibility_flag[ 8 ] | |
+		  general_profile_idc = = 9 | | general_profile_compatibility_flag[ 9 ] | |
+		  general_profile_idc = = 10 | | general_profile_compatibility_flag[ 10 ] | |
+		  general_profile_idc = = 11 | | general_profile_compatibility_flag[ 11 ] ) {
+		*/
+		struct {
+			uint8_t general_max_12bit_constraint_flag:1;
+			uint8_t general_max_10bit_constraint_flag:1;
+			uint8_t general_max_8bit_constraint_flag:1;
+			uint8_t general_max_422chroma_constraint_flag:1;
+			uint8_t general_max_420chroma_constraint_flag:1;
+			uint8_t general_max_monochrome_constraint_flag:1;
+			uint8_t general_intra_constraint_flag:1;
+			uint8_t general_one_picture_only_constraint_flag:1;
+			uint8_t general_lower_bit_rate_constraint_flag:1;
+			
+		/*
+		 if( general_profile_idc = = 5 | | general_profile_compatibility_flag[ 5 ] | |
+		 general_profile_idc = = 9 | | general_profile_compatibility_flag[ 9 ] | |
+		 general_profile_idc = = 10 | | general_profile_compatibility_flag[ 10 ] | |
+		 general_profile_idc = = 11 | | general_profile_compatibility_flag[ 11 ] ) {
+		 */
+			struct {
+				uint8_t general_max_14bit_constraint_flag:1;
+				uint32_t general_reserved_zero_33bits_32[4];
+				uint8_t  general_reserved_zero_33_bits_1trailing:1;
+
+			} general_profile_idc_five_nine_ten_eleven;
+			
+		//else
+			uint32_t general_reserved_zero_34bits_32[4];
+			uint8_t  general_reserved_zero_34_bits_2trailing:2;
+			
+		} general_profile_idc_four_to_eleven;
+		
+		/*
+		 else if( general_profile_idc = = 2 | | general_profile_compatibility_flag[ 2 ] ) {
+		 */
+		
+		struct {
+			uint8_t general_reserved_zero_7bits:7;
+			uint8_t general_one_picture_only_constraint_flag:1;
+			uint32_t general_reserved_zero_35bits_32[4];
+			uint8_t  general_reserved_zero_35_bits_3trailing:3;
+		} general_profile_idc_2;
+		
+		//else
+		uint8_t	general_reserved_zero_43bits_40[5];
+		uint8_t	general_reserved_zero_43bits_3trailing:3;
+		
+		/*
+		 if( general_profile_idc = = 1 | | general_profile_compatibility_flag[ 1 ] | |
+		general_profile_idc = = 2 | | general_profile_compatibility_flag[ 2 ] | |
+		  general_profile_idc = = 3 | | general_profile_compatibility_flag[ 3 ] | |
+		  general_profile_idc = = 4 | | general_profile_compatibility_flag[ 4 ] | |
+		  general_profile_idc = = 5 | | general_profile_compatibility_flag[ 5 ] | |
+		  general_profile_idc = = 9 | | general_profile_compatibility_flag[ 9 ] | |
+		  general_profile_idc = = 11 | | general_profile_compatibility_flag[ 11 ] )
+		 */
+	
+		union {
+			uint8_t general_inbld_flag:1;
+		//	else
+			uint8_t general_reserved_zero_bit_closing:1;
+		} general_profile_present_flag_closing_bit;
+		
+		//more: page 56
+		uint8_t	general_level_idc:8;
+		
+		//for(i=0; i < maxNumSubLayersMinus1; i++)
+		struct {
+			uint8_t	sub_layer_profile_present_flag[255];
+			uint8_t sub_layer_level_present_flag[255];
+		} sub_layer_flags;
+		
+		//if(maxNumSubLayersMinus1 > 0)
+		// for( i = maxNumSubLayersMinus1; i < 8; i++ )
+		//reserved_zero_2bits[ i ]
+		
+		/*
+		 for( i = 0; i < maxNumSubLayersMinus1; i++ ) {
+		  if( sub_layer_profile_present_flag[ i ] ) {
+		  sub_layer_profile_space[ i ] u(2)
+		  sub_layer_tier_flag[ i ] u(1)
+		  sub_layer_profile_idc[ i ] u(5)
+		  for( j = 0; j < 32; j++ )
+		  sub_layer_profile_compatibility_flag[ i ][ j ] u(1)
+		  sub_layer_progressive_source_flag[ i ] u(1)
+		  sub_layer_interlaced_source_flag[ i ] u(1)
+		  sub_layer_non_packed_constraint_flag[ i ] u(1)
+		  sub_layer_frame_only_constraint_flag[ i ] u(1)
+		  if( sub_layer_profile_idc[ i ] = = 4 | | sub_layer_profile_compatibility_flag[ i ][ 4 ] | |
+		  sub_layer_profile_idc[ i ] = = 5 | | sub_layer_profile_compatibility_flag[ i ][ 5 ] | |
+		  sub_layer_profile_idc[ i ] = = 6 | | sub_layer_profile_compatibility_flag[ i ][ 6 ] | |
+		  sub_layer_profile_idc[ i ] = = 7 | | sub_layer_profile_compatibility_flag[ i ][ 7 ] | |
+		  sub_layer_profile_idc[ i ] = = 8 | | sub_layer_profile_compatibility_flag[ i ][ 8 ] | |
+		  sub_layer_profile_idc[ i ] = = 9 | | sub_layer_profile_compatibility_flag[ i ][ 9 ] | |
+		  sub_layer_profile_idc[ i ] = = 10 | |
+		  sub_layer_profile_compatibility_flag[ i ][ 10 ] | |
+		  sub_layer_profile_idc[ i ] = = 11 | |
+		  sub_layer_profile_compatibility_flag[ i ][ 11 ] ) {
+		  sub_layer_max_12bit_constraint_flag[ i ] u(1)
+		  sub_layer_max_10bit_constraint_flag[ i ] u(1)
+		  sub_layer_max_8bit_constraint_flag[ i ] u(1)
+		  sub_layer_max_422chroma_constraint_flag[ i ] u(1)
+		  sub_layer_max_420chroma_constraint_flag[ i ] u(1)
+		  sub_layer_max_monochrome_constraint_flag[ i ] u(1)
+		  sub_layer_intra_constraint_flag[ i ] u(1)
+		  sub_layer_one_picture_only_constraint_flag[ i ] u(1)
+		  sub_layer_lower_bit_rate_constraint_flag[ i ] u(1)
+		 
+		 if( sub_layer_profile_idc[ i ] = = 5 | |
+		  sub_layer_profile_compatibility_flag[ i ][ 5 ] | |
+		  sub_layer_profile_idc[ i ] = = 9 | |
+		  sub_layer_profile_compatibility_flag[ i ][ 9 ]
+		  sub_layer_profile_idc[ i ] = = 10 | |
+		  sub_layer_profile_compatibility_flag[ i ][ 10 ]
+		  sub_layer_profile_idc[ i ] = = 11 | |
+		  sub_layer_profile_compatibility_flag[ i ][ 11 ] ) {
+		  sub_layer_max_14bit_constraint_flag[ i ] u(1)
+		  sub_layer_reserved_zero_33bits[ i ] u(33)
+		  } else
+		  sub_layer_reserved_zero_34bits[ i ] u(34)
+		  } else if( sub_layer_profile_idc[ i ] = = 2 | |
+		  sub_layer_profile_compatibility_flag[ i ][ 2 ] ) {
+		  sub_layer_reserved_zero_7bits[ i ] u(7)
+		  sub_layer_one_picture_only_constraint_flag[ i ] u(1)
+		  sub_layer_reserved_zero_35bits[ i ] u(35)
+		  } else
+		  sub_layer_reserved_zero_43bits[ i ] u(43)
+		  if( sub_layer_profile_idc[ i ] = = 1 | |
+		  sub_layer_profile_compatibility_flag[ i ][ 1 ] | |
+		  sub_layer_profile_idc[ i ] = = 2 | |
+		  sub_layer_profile_compatibility_flag[ i ][ 2 ] | |
+		  sub_layer_profile_idc[ i ] = = 3 | |
+		  sub_layer_profile_compatibility_flag[ i ][ 3 ] | |
+		  sub_layer_profile_idc[ i ] = = 4 | |
+		  sub_layer_profile_compatibility_flag[ i ][ 4 ] | |
+		  sub_layer_profile_idc[ i ] = = 5 | |
+		  sub_layer_profile_compatibility_flag[ i ][ 5 ] | |
+		  sub_layer_profile_idc[ i ] = = 9 | |
+		  sub_layer_profile_compatibility_flag[ i ][ 9 ] | |
+		  sub_layer_profile_idc[ i ] = = 11 | |
+		  sub_layer_profile_compatibility_flag[ i ][ 11 ] )
+		  sub_layer_inbld_flag[ i ] u(1)
+		  else
+		  sub_layer_reserved_zero_bit[ i ] u(1)
+		  }
+		  if( sub_layer_level_present_flag[ i ] )
+		  sub_layer_level_idc[ i ] u(8)
+		  }
+
+		
+		 */
+		
+		
+		
+				
+	} profile_tier_level;
+	
+#endif
 
 } mmt_atsc3_message_content_type_video_stream_properties_descriptor_asset_t;
 
