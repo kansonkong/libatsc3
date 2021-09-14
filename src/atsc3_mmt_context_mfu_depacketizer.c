@@ -1168,13 +1168,50 @@ void mmt_signalling_message_dispatch_context_notification_callbacks(udp_packet_t
                 }
             }
 
+			//MMT_ATSC3_MESSAGE_CONTENT_TYPE_UserServiceDescription
+			if(mmt_signalling_message_header_and_payload->message_payload.mmt_atsc3_message_payload.mmt_atsc3_signalling_information_usbd_component) {
+				//dispatch our USBD component here
+				if(atsc3_mmt_mfu_context->atsc3_mmt_signalling_information_on_userservicedescription_present) {
+					atsc3_mmt_mfu_context->atsc3_mmt_signalling_information_on_userservicedescription_present(atsc3_mmt_mfu_context, mmt_signalling_message_header_and_payload->message_payload.mmt_atsc3_message_payload.mmt_atsc3_signalling_information_usbd_component);
+				}
+			}
+
+			//MMT_ATSC3_MESSAGE_CONTENT_TYPE_HELD
             if(mmt_signalling_message_header_and_payload->message_payload.mmt_atsc3_message_payload.mmt_atsc3_held_message) {
                 //dispatch our HELD component here
                 if(atsc3_mmt_mfu_context->atsc3_mmt_signalling_information_on_held_message_present) {
                     atsc3_mmt_mfu_context->atsc3_mmt_signalling_information_on_held_message_present(atsc3_mmt_mfu_context, mmt_signalling_message_header_and_payload->message_payload.mmt_atsc3_message_payload.mmt_atsc3_held_message);
                 }
-
             }
+
+			//MMT_ATSC3_MESSAGE_CONTENT_TYPE_VIDEO_STREAM_PROPERTIES_DESCRIPTOR
+			if(mmt_signalling_message_header_and_payload->message_payload.mmt_atsc3_message_payload.mmt_atsc3_message_content_type_video_stream_properties_descriptor) {
+				if(atsc3_mmt_mfu_context->mmt_atsc3_message_content_type_video_stream_properties_descriptor_present) {
+					atsc3_mmt_mfu_context->mmt_atsc3_message_content_type_video_stream_properties_descriptor_present(atsc3_mmt_mfu_context, mmt_signalling_message_header_and_payload->message_payload.mmt_atsc3_message_payload.mmt_atsc3_message_content_type_video_stream_properties_descriptor);
+				}
+			}
+			
+			//MMT_ATSC3_MESSAGE_CONTENT_TYPE_CAPTION_ASSET_DESCRIPTOR
+			if(mmt_signalling_message_header_and_payload->message_payload.mmt_atsc3_message_payload.mmt_atsc3_message_content_type_caption_asset_descriptor) {
+				if(atsc3_mmt_mfu_context->atsc3_mmt_signalling_information_on_caption_asset_descriptor_present) {
+					atsc3_mmt_mfu_context->atsc3_mmt_signalling_information_on_caption_asset_descriptor_present(atsc3_mmt_mfu_context, mmt_signalling_message_header_and_payload->message_payload.mmt_atsc3_message_payload.mmt_atsc3_message_content_type_caption_asset_descriptor);
+				}
+			}
+			
+			//MMT_ATSC3_MESSAGE_CONTENT_TYPE_AUDIO_STREAM_PROPERTIES_DESCRIPTOR
+			if(mmt_signalling_message_header_and_payload->message_payload.mmt_atsc3_message_payload.mmt_atsc3_message_content_type_audio_stream_properties_descriptor) {
+				if(atsc3_mmt_mfu_context->atsc3_mmt_signalling_information_on_audio_stream_properties_descriptor_present) {
+					atsc3_mmt_mfu_context->atsc3_mmt_signalling_information_on_audio_stream_properties_descriptor_present(atsc3_mmt_mfu_context, mmt_signalling_message_header_and_payload->message_payload.mmt_atsc3_message_payload.mmt_atsc3_message_content_type_audio_stream_properties_descriptor);
+				}
+			}
+			
+			//MMT_ATSC3_MESSAGE_CONTENT_TYPE_SECURITY_PROPERTIES_DESCRIPTOR_LAURL
+			if(mmt_signalling_message_header_and_payload->message_payload.mmt_atsc3_message_payload.mmt_atsc3_message_content_type_security_properties_descriptor_LAURL) {
+				if(atsc3_mmt_mfu_context->atsc3_mmt_signalling_information_on_security_properties_descriptor_LAURL_present) {
+					atsc3_mmt_mfu_context->atsc3_mmt_signalling_information_on_security_properties_descriptor_LAURL_present(atsc3_mmt_mfu_context, mmt_signalling_message_header_and_payload->message_payload.mmt_atsc3_message_payload.mmt_atsc3_message_content_type_security_properties_descriptor_LAURL);
+				}
+			}
+
 
 
 
