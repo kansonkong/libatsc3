@@ -141,7 +141,7 @@ uint8_t* si_message_not_supported(mmt_signalling_message_header_and_payload_t* m
 #define __MMSM_ERROR_23008_1(...)  	if(_MMT_SIGNALLING_MESSAGE_ERROR_23008_1_ENABLED) { __LIBATSC3_TIMESTAMP_ERROR(__VA_ARGS__);}
 
 #define __MMSM_WARN(...)   			__LIBATSC3_TIMESTAMP_WARN(__VA_ARGS__);
-#define __MMSM_INFO(...)   			__LIBATSC3_TIMESTAMP_INFO(__VA_ARGS__);
+#define __MMSM_INFO(...)   			if(_MMT_SIGNALLING_MESSAGE_INFO_ENABLED)  { __LIBATSC3_TIMESTAMP_INFO(__VA_ARGS__); }
     
 #define __MMSM_DEBUG(...)   		if(_MMT_SIGNALLING_MESSAGE_DEBUG_ENABLED) { __LIBATSC3_TIMESTAMP_DEBUG(__VA_ARGS__); }
 #define __MMSM_TRACE(...)   		if(_MMT_SIGNALLING_MESSAGE_TRACE_ENABLED) { __LIBATSC3_TIMESTAMP_TRACE(__VA_ARGS__); }

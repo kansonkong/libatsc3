@@ -75,9 +75,9 @@ public:
 
 private:
 
-
     MMTExtractor* mmtExtractor;
     Atsc3RingBuffer* fragmentBuffer;
+    std::map<uint16_t, uint32_t> packet_id_extracted_sample_duration_map;
 
     //global env.Get()->NewGlobalRef(jobjectByteBuffer); for c alloc'd MFU's and NAL's
     std::vector<jobject> global_jobject_mfu_refs;
