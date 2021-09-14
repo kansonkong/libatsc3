@@ -91,17 +91,12 @@ public class Atsc3NdkPHYBridge extends Atsc3BridgeNdkStaticJniLoader {
 
     int atsc3_rf_phy_status_callback_with_rf_phy_statistics_type(RfPhyStatistics rfPhyStatistics) {
         mActivity.pushRfPhyStatisticsUpdate(rfPhyStatistics);
-        rfPhyStatistics.sampleRfPhyStatisticsForTrace();
-
         return 0;
     }
 
     int atsc3_updateRfBwStats(long total_pkts, long total_bytes, int total_lmts) {
         BwPhyStatistics bwPhyStatistics = new BwPhyStatistics(total_pkts, total_bytes, total_lmts);
-
         mActivity.pushBwPhyStatistics(bwPhyStatistics);
-        bwPhyStatistics.sampleBwPhyStatisticsForTrace();
-
         return 0;
     }
 }
