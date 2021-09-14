@@ -4,7 +4,27 @@ package org.ngbp.libatsc3.middleware.android.mmt.models;
     mapping from atsc3_audio_decoder_configuration_record_t to java type
  */
 public class MMTAudioDecoderConfigurationRecord {
+
+    //AC-4:
+    public static final String AC_4_ID = "ac-4";
+
+    //MPEG-H: A/342-3:2017
+    public static final String MPEG_H_MHAS_ID = "mhm1";
+    public static final String MPEG_H_HYBRID_ID = "mhm2";
+
+    //mime types
+    public static final String MPEG_H_MHAS_MIME_TYPE = "audio/" + MPEG_H_MHAS_ID;
+    public static final String MPEG_H_HYBRID_MIME_TYPE = "audio/" + MPEG_H_HYBRID_ID;
+
+    //Audio: mp4 (latm?)
+    public static final String AAC_MP4A_ID = "mp4a";
+
+    //xHE-AAC
+    public static final String XHE_AAC_ID = "xhe1";
+
     //mmtp tracking information
+    public String asset_type;
+
     public int packet_id;
     public long mpu_sequence_number; //uint32_t doesn't map, so use long (int64_t)
 
@@ -39,4 +59,6 @@ public class MMTAudioDecoderConfigurationRecord {
             public int n_presentations;
         }
     }
+
+    //jjustman-2021-09-07 - todo - add mhm1 support
 }

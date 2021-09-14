@@ -864,7 +864,8 @@ int SaankhyaPHYAndroid::tune(int freqKHz, int plpid)
         //forcibly flush any in-flight TLV packets in cb here by calling, need (cb_should_discard == true),
         // as our type is atomic_bool and we can't printf its value here due to:
         //                  call to implicitly-deleted copy constructor of 'std::__ndk1::atomic_bool' (aka 'atomic<bool>')
-        _SAANKHYA_PHY_ANDROID_INFO("SaankhyaPHYAndroid::tune - cb_should_discard: %u, cb_GetDataSize: %d, calling CircularBufferReset(), cb: %p, early in tune() call", (cb_should_discard == true), CircularBufferGetDataSize(this->cb), cb);
+        _SAANKHYA_PHY_ANDROID_INFO("SaankhyaPHYAndroid::tune - cb_should_discard: %u, cb_GetDataSize: %zu, calling CircularBufferReset(), cb: %p, early in tune() call",
+                                   (cb_should_discard == true), CircularBufferGetDataSize(this->cb), cb);
         CircularBufferReset(cb);
     }
 
@@ -1764,7 +1765,8 @@ void SaankhyaPHYAndroid::processTLVFromCallback()
 
         do {
             atsc3_sl_tlv_payload = atsc3_sl_tlv_payload_parse_from_block_t(atsc3_sl_tlv_block);
-            _SAANKHYA_PHY_ANDROID_TRACE("atsc3NdkClientSlImpl::processTLVFromCallback() - processTLVFromCallbackInvocationCount: %d, inner loop count: %d, atsc3_sl_tlv_block.p_size: %d, atsc3_sl_tlv_block.i_pos: %d", processTLVFromCallbackInvocationCount, ++innerLoopCount, atsc3_sl_tlv_block->p_size, atsc3_sl_tlv_block->i_pos, atsc3_sl_tlv_payload);
+            _SAANKHYA_PHY_ANDROID_TRACE("atsc3NdkClientSlImpl::processTLVFromCallback() - processTLVFromCallbackInvocationCount: %d, inner loop count: %d, atsc3_sl_tlv_block.p_size: %d, atsc3_sl_tlv_block.i_pos: %d, atsc3_sl_tlv_payload: %p",
+                                        processTLVFromCallbackInvocationCount, ++innerLoopCount, atsc3_sl_tlv_block->p_size, atsc3_sl_tlv_block->i_pos, atsc3_sl_tlv_payload);
 
             if (atsc3_sl_tlv_payload) {
                 atsc3_sl_tlv_payload_dump(atsc3_sl_tlv_payload);
@@ -2103,9 +2105,9 @@ int SaankhyaPHYAndroid::statusThread()
     double snr_plp[4];
 
 
-    double ber_l1b;
-    double ber_l1d;
-    double ber_plp0;
+    int ber_l1b;
+    int ber_l1d;
+    int ber_plp0;
 
     SL_Atsc3p0L1DPlp_Diag_t myPlps[4];
 
@@ -2549,7 +2551,7 @@ printAtsc3PerfDiagnostics(perfDiag, 0);
 sl_i2c_tuner_mutex_unlock:
         SL_I2C_command_mutex_tuner_status_io.unlock();
 
-        if(global_sl_result_error_flag != SL_OK || global_sl_i2c_result_error_flag != SL_I2C_OK || dres != SL_OK || sl_res != SL_OK || tres != SL_OK) {
+        if(global_sl_result_error_flag != SL_OK || global_sl_i2c_result_error_flag != SL_I2C_OK || dres != SL_OK || sl_res != SL_OK || tres != SL_TUNER_OK) {
             if(atsc3_ndk_phy_bridge_get_instance()) {
                 atsc3_ndk_phy_bridge_get_instance()->atsc3_notify_phy_error("SaankhyaPHYAndroid::tunerStatusThread() - ERROR: command failed: global_sl_res: %d, global_sl_i2c_res: %d, dres: %d, sl_res, tres: %d",
                         global_sl_result_error_flag, global_sl_i2c_result_error_flag,

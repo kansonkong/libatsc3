@@ -9,7 +9,7 @@ int _SL_TLV_DEMOD_DEBUG_ENABLED = 0;
 int _SL_TLV_DEMOD_TRACE_ENABLED = 0;
 
 //jjustman-2021-05-04 - tested working int
-__ATSC3_SL_TLV_USE_INLINE_ALP_PARSER_CALL__ = 1;
+int __ATSC3_SL_TLV_USE_INLINE_ALP_PARSER_CALL__ = 1;
 //int __ATSC3_SL_TLV_USE_INLINE_ALP_PARSER_CALL__ = 0;
 
 //impl for default metrics collection
@@ -44,7 +44,7 @@ restart_parsing:
 
     //our TLV header must be at least 188 bytes to parse
     if(buf_end - buf_start < 188) {
-    	__SL_TLV_DEMOD_WARN("atsc3_sl_tlv_payload_parse_from_block_t: remaining payload length is less than TLV 188 bytes: %ld", (buf_end - buf_start));
+    	__SL_TLV_DEMOD_WARN("atsc3_sl_tlv_payload_parse_from_block_t: remaining payload length is less than TLV 188 bytes: %d", (buf_end - buf_start));
     	return NULL;
     }
 
