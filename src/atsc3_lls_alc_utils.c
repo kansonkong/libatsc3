@@ -13,6 +13,9 @@ int _LLS_ALC_UTILS_TRACE_ENABLED = 0;
 
 lls_sls_alc_monitor_t* lls_sls_alc_monitor_create() {
 	lls_sls_alc_monitor_t* lls_sls_alc_monitor = lls_sls_alc_monitor_new();
+	
+	//jjustman-2021-07-28 - wire up default atsc3_lls_sls_alc_on_metadata_fragments_updated_callback to track any new ip/udp flows for our monitor and alc session matching.
+	
 	return lls_sls_alc_monitor;
 }
 
@@ -220,8 +223,8 @@ lls_sls_alc_session_t* lls_slt_alc_session_find_from_udp_packet(lls_slt_monitor_
                                                    lls_sls_alc_monitor,
                                                    lls_sls_alc_monitor->atsc3_lls_slt_service->service_id);
 					} else {
-                        _ATSC3_LLS_ALC_UTILS_WARN("lls_slt_alc_session_find_from_udp_packet: checking lls_slt_monitor->lls_sls_alc_monitor_v.data[%d] is NULL!",
-                                                   k);
+						_ATSC3_LLS_ALC_UTILS_WARN("lls_slt_alc_session_find_from_udp_packet: checking lls_slt_monitor->lls_sls_alc_monitor_v.data[%d] is %p, or atsc3_lls_slt_service is NULL!",
+												   k, lls_sls_alc_monitor);
 					}
 
 					if(lls_sls_alc_monitor && lls_sls_alc_monitor->atsc3_lls_slt_service && lls_sls_alc_monitor->atsc3_lls_slt_service->service_id == lls_sls_alc_session->service_id) {

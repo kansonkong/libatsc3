@@ -166,6 +166,18 @@ void atsc3_mmt_mpu_on_sequence_movie_fragment_metadata_present_noop(atsc3_mmt_mf
 	uint32_t decoder_configuration_timebase = 1000000; //set as default to uS
     uint32_t extracted_sample_duration_us = 0;
 
+    if(!mmt_movie_fragment_metadata || !mmt_movie_fragment_metadata->p_size) {
+        __MMT_CONTEXT_MPU_WARN("atsc3_mmt_mpu_on_sequence_movie_fragment_metadata_present_noop: packet_id: %d, mpu_sequence_number: %d, mmt_movie_fragment_metadata: %p: returned null or no length!",
+                               packet_id, mpu_sequence_number, mmt_movie_fragment_metadata);
+        return;
+    }
+	
+	if(!atsc3_mmt_mfu_context->mmtp_packet_id_packets_container) {
+		__MMT_CONTEXT_MPU_WARN("atsc3_mmt_mpu_on_sequence_movie_fragment_metadata_present_noop: atsc3_mmt_mfu_context: %p, mmtp_packet_id_packets_container is NULL for: packet_id: %d, mpu_sequence_number: %d, mmt_movie_fragment_metadata: %p!",
+							   atsc3_mmt_mfu_context, packet_id, mpu_sequence_number, mmt_movie_fragment_metadata);
+		return;
+	}
+
     if(atsc3_mmt_mfu_context->mmtp_packet_id_packets_container->atsc3_video_decoder_configuration_record && atsc3_mmt_mfu_context->mmtp_packet_id_packets_container->atsc3_video_decoder_configuration_record->timebase) {
         decoder_configuration_timebase = atsc3_mmt_mfu_context->mmtp_packet_id_packets_container->atsc3_video_decoder_configuration_record->timebase;
     } else if(atsc3_mmt_mfu_context->mmtp_packet_id_packets_container->atsc3_audio_decoder_configuration_record && atsc3_mmt_mfu_context->mmtp_packet_id_packets_container->atsc3_audio_decoder_configuration_record->timebase) {
