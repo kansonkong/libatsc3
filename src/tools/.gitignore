@@ -54,3 +54,9 @@
 /atsc3_alc_listener_mde_writer_asan
 /atsc3_srt_rx_stltp_virtual_phy_alc_listener_writer
 /atsc3_srt_rx_stltp_virtual_phy_alc_listener_writer_noasan
+/atsc3_alc_listener_mde_writer_from_stltp_pcap
+/atsc3_alc_listener_mde_writer_from_stltp_pcap_asan
+/atsc3_pcap_stltp_preamble_timing_management_validate
+/atsc3_pcap_stltp_preamble_timing_management_validate_asan
+/slt.xml
+/aeat.xml
