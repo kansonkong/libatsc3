@@ -1071,8 +1071,6 @@ uint8_t* mmt_atsc3_message_payload_parse(mmt_signalling_message_header_and_paylo
 											mmt_atsc3_message_content_type_video_stream_properties_descriptor_asset->color_info.eotf_info.SEI_NUT_length_minus1[e] = block_Read_uint16_ntohs(src);
 											mmt_atsc3_message_content_type_video_stream_properties_descriptor_asset->color_info.eotf_info.SEI_NUT_data[e] = block_Read_uint8_varlen(src, mmt_atsc3_message_content_type_video_stream_properties_descriptor_asset->color_info.eotf_info.SEI_NUT_length_minus1[e]);
 										}
-										
-
 									} else {
 										mmt_atsc3_message_content_type_video_stream_properties_descriptor_asset->color_info.reserved_7_tf = block_Read_uint8_bitlen(src, 7);
 									}
