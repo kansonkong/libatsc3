@@ -153,6 +153,12 @@ void atsc3_mmt_mpu_on_sequence_movie_fragment_metadata_present_noop(atsc3_mmt_mf
                                packet_id, mpu_sequence_number, mmt_movie_fragment_metadata);
         return;
     }
+	
+	if(!atsc3_mmt_mfu_context->mmtp_packet_id_packets_container) {
+		__MMT_CONTEXT_MPU_WARN("atsc3_mmt_mpu_on_sequence_movie_fragment_metadata_present_noop: atsc3_mmt_mfu_context: %p, mmtp_packet_id_packets_container is NULL for: packet_id: %d, mpu_sequence_number: %d, mmt_movie_fragment_metadata: %p!",
+							   atsc3_mmt_mfu_context, packet_id, mpu_sequence_number, mmt_movie_fragment_metadata);
+		return;
+	}
 
     if(atsc3_mmt_mfu_context->mmtp_packet_id_packets_container->atsc3_video_decoder_configuration_record && atsc3_mmt_mfu_context->mmtp_packet_id_packets_container->atsc3_video_decoder_configuration_record->timebase) {
         decoder_configuration_timebase = atsc3_mmt_mfu_context->mmtp_packet_id_packets_container->atsc3_video_decoder_configuration_record->timebase;

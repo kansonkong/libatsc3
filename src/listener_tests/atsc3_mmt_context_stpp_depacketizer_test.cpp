@@ -59,7 +59,8 @@ lls_sls_mmt_monitor_t* lls_sls_mmt_monitor = NULL;
 atsc3_mmt_mfu_context_t* atsc3_mmt_mfu_context;
 
 //stpp packet_id under test
-uint16_t atsc3_mmt_context_stpp_packet_id_for_testing = 19;
+//jjustman-2021-09-14 - TODO: resolve this properly instead of a hardcoded value...
+uint16_t atsc3_mmt_context_stpp_packet_id_for_testing = 300;
 
 void atsc3_mmt_signalling_information_on_stpp_essence_packet_id_dump(atsc3_mmt_mfu_context_t* atsc3_mmt_mfu_context, uint16_t stpp_packet_id, mp_table_asset_row_t* mp_table_asset_row) {
 	__MMT_CONTEXT_MPU_DEBUG("atsc3_mmt_signalling_information_on_stpp_essence_packet_id_dump: stpp mp_table packet_id: %u, stpp_packet_id_under_test: %u",
@@ -447,6 +448,9 @@ int main(int argc,char **argv) {
 
 #endif
     
+	//jjustman-2021-09-14 - output path: mpu
+	mkdir("mpu", 0777);
+
     
     char *dev;
 
