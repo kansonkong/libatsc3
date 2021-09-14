@@ -33,11 +33,22 @@ atsc3_audio_ac4_sample_entry_box_t* atsc3_audio_ac4_sample_entry_box_new() {
     return atsc3_audio_ac4_sample_entry_box;
 }
 
+
 atsc3_audio_decoder_configuration_record_t* atsc3_audio_decoder_configuration_record_parse_from_block_t(block_t* mmt_mpu_metadata_block) {
+
+    char asset_type_unknown_fourcc[4] = { 0 };
+
+    atsc3_audio_decoder_configuration_record_t* atsc3_audio_decoder_configuration_record = atsc3_audio_decoder_configuration_record_parse_from_asset_type_and_block_t(asset_type_unknown_fourcc, mmt_mpu_metadata_block);
+
+    return atsc3_audio_decoder_configuration_record;
+}
+
+
+atsc3_audio_decoder_configuration_record_t* atsc3_audio_decoder_configuration_record_parse_from_asset_type_and_block_t(char asset_type_fourcc[4], block_t* mmt_mpu_metadata_block) {
     atsc3_isobmff_mdhd_box_t* atsc3_isobmff_mdhd_box = NULL;
 
     atsc3_audio_decoder_configuration_record_t* atsc3_audio_decoder_configuration_record = atsc3_audio_decoder_configuration_record_new();
-
+    memcpy(&atsc3_audio_decoder_configuration_record->asset_type, asset_type_fourcc, 4);
 
     atsc3_isobmff_mdhd_box = atsc3_isobmff_box_parser_tools_parse_mdhd_from_block_t(mmt_mpu_metadata_block);
     if(atsc3_isobmff_mdhd_box) {
@@ -54,6 +65,7 @@ atsc3_audio_decoder_configuration_record_t* atsc3_audio_decoder_configuration_re
 
     return atsc3_audio_decoder_configuration_record;
 }
+
 
 /*
  *
@@ -179,6 +191,12 @@ bool atsc3_audio_decoder_configuration_parse_codec_type_and_sample_rate_from_blo
                 atsc3_audio_decoder_configuration_record->atsc3_audio_ac4_sample_entry_box = atsc3_audio_ac4_sample_entry_box;
             }
             break;
+        } else {
+            //jjustman-2021-09-08 - HACK for mpeg-h - set some dummy values for channel count and sample depth / rate
+            atsc3_audio_decoder_configuration_record->channel_count = 2;
+            atsc3_audio_decoder_configuration_record->sample_depth = 16;
+            atsc3_audio_decoder_configuration_record->sample_rate = 48000;
+
         }
     }
 

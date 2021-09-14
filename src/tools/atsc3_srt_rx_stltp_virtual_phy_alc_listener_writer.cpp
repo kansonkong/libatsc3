@@ -56,6 +56,19 @@ lls_sls_mmt_monitor_t* lls_sls_mmt_monitor = NULL;
 
 uint32_t alc_packet_received_count = 0;
 
+
+//NOTE: this will _not_ by default update the PHY with a new list of PLPs to listen, this needs to performed in the atsc3_core_service_player_bridge.cpp
+void atsc3_lls_sls_alc_on_metadata_fragments_updated_callback_internal_add_monitor_and_alc_session_flows(lls_sls_alc_monitor_t* lls_sls_alc_monitor) {
+	int ip_mulitcast_flows_added_count = 0;
+
+	ip_mulitcast_flows_added_count = lls_sls_alc_add_additional_ip_flows_from_route_s_tsid(lls_slt_monitor, lls_sls_alc_monitor, lls_sls_alc_monitor->atsc3_sls_metadata_fragments->atsc3_route_s_tsid);
+
+	if(ip_mulitcast_flows_added_count) {
+		__INFO("atsc3_lls_sls_alc_on_metadata_fragments_updated_callback_internal_add_monitor_and_alc_session_flows: added %d ip mulitcast flows for alc monitor and session", ip_mulitcast_flows_added_count);
+	}
+}
+
+
 void atsc3_reset_context() {
 	_SRT_STLTP_VIRTUAL_PHY_ALC_WRITER_INFO("atsc3_reset_context");
 
@@ -110,6 +123,8 @@ bool atsc3_mmt_signalling_information_on_routecomponent_message_present_ndk(atsc
 	}
 
 	lls_sls_alc_monitor = lls_sls_alc_monitor_create();
+	lls_sls_alc_monitor->atsc3_lls_sls_alc_on_metadata_fragments_updated_callback = &atsc3_lls_sls_alc_on_metadata_fragments_updated_callback_internal_add_monitor_and_alc_session_flows;
+
 	lls_sls_alc_monitor->atsc3_lls_slt_service = atsc3_mmt_mfu_context->matching_lls_sls_mmt_session->atsc3_lls_slt_service;
 	lls_sls_alc_monitor->lls_sls_monitor_output_buffer_mode.file_dump_enabled = true;
 	lls_sls_alc_monitor->has_discontiguous_toi_flow = true; //jjustman-2020-07-27 - hack-ish
@@ -182,6 +197,7 @@ void process_from_udp_packet(udp_packet_t* udp_packet) {
 				//build our ROUTE monitor
 				if(atsc3_lls_slt_service->atsc3_slt_broadcast_svc_signalling_v.count && atsc3_lls_slt_service->atsc3_slt_broadcast_svc_signalling_v.data[0]->sls_protocol == SLS_PROTOCOL_ROUTE) {
 					lls_sls_alc_monitor_t* lls_sls_alc_monitor_local = lls_sls_alc_monitor_create();
+					lls_sls_alc_monitor_local->atsc3_lls_sls_alc_on_metadata_fragments_updated_callback = &atsc3_lls_sls_alc_on_metadata_fragments_updated_callback_internal_add_monitor_and_alc_session_flows;
 
 					lls_slt_service_id_t* lls_slt_service_id = lls_slt_service_id_new_from_atsc3_lls_slt_service(atsc3_lls_slt_service);
 					lls_slt_monitor_add_lls_slt_service_id(lls_slt_monitor, lls_slt_service_id);
@@ -535,11 +551,24 @@ void process_from_udp_packet(udp_packet_t* udp_packet) {
 	}
 
 udp_packet_free:
-	alc_packet_free(&alc_packet);
-	alc_packet = NULL;
-
+    if(alc_packet) {
+        alc_packet_free(&alc_packet);
+        alc_packet = NULL;
+    }
 error:
 cleanup:
+
+    //jjustman-2020-11-12 - this should be freed already from mmtp_*_free_packet_header_from_block_t, but just in case...
+    if(mmtp_packet_header) {
+        mmtp_packet_header_free(&mmtp_packet_header);
+    }
+
+    //jjustman-2020-11-12 - note: do not free mmtp_mpu_packet or mmtp_signalling_packet as they may have been added to a mmtp_*_packet_collection for re-assembly
+    //unless si_fragmentation_indicator == 0x0, then we can safely release, as we do not push single units to the mmtp_packet_id_packets_container->mmtp_signalling_packet_v
+    if(mmtp_signalling_packet && mmtp_signalling_packet->si_fragmentation_indicator == 0x0) {
+        mmtp_signalling_packet_free(&mmtp_signalling_packet);
+    }
+
     return udp_packet_free(&udp_packet);
 }
 
