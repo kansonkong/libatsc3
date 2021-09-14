@@ -18,9 +18,9 @@ atsc3_route_object.c    : 166:DEBUG:1595953002.6642:atsc3_route_object_reset_and
 
 ATSC3_VECTOR_BUILDER_METHODS_IMPLEMENTATION(atsc3_route_object, atsc3_route_object_lct_packet_received);
 
-int _ROUTE_OBJECT_INFO_ENABLED = 1;
-int _ROUTE_OBJECT_DEBUG_ENABLED = 1;
-int _ROUTE_OBJECT_TRACE_ENABLED = 1;
+int _ROUTE_OBJECT_INFO_ENABLED = 0;
+int _ROUTE_OBJECT_DEBUG_ENABLED = 0;
+int _ROUTE_OBJECT_TRACE_ENABLED = 0;
 
 int atsc3_route_object_lct_packet_received_cmp_fn(const struct avltree_node *a, const struct avltree_node *b)
 {
