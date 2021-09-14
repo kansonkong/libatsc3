@@ -57,6 +57,8 @@ public:
     static AT3RESULT RxCallbackStatic(S_RX_DATA *pData, uint64_t ullUser);
     AT3RESULT RxCallbackInstanceScoped(S_RX_DATA *pData);
 
+    static AT3RESULT L1DTimeInfoCallback(uint32_t sec, uint16_t msec, uint16_t usec, uint16_t nsec, uint64_t ullUser);
+
     static void NotifyPlpSelectionChangeCallback(vector<uint8_t> plps, void* context);
 
     //jjustman-2020-08-23 - moving to public for now..
@@ -81,6 +83,15 @@ protected:
     jobject jni_instance_globalRef = nullptr;
 
 private:
+
+    //jjustman-2021-08-19 - if we recieve a hotplug event for the fx3 preboot pid, the lowaSISPHYAndroid.java driver will invoke
+    // download_bootloader_firmware and the usb device will re-enumerate (i.e. disconnect from the usb bus).
+    // A race condition might occur if the ::stop() method (invoked from ~LowaSISPhy) is sleeping and the fx3 re-enumeration/hotplug event occurs in this sleeping window.
+    // Under the assumption we are waiting for producer/consumer/status threads to unwind from ...threadShouldRun = false, but in the preboot flow,
+    // there are no worker threads launched and thus no need to sleep when finalizing our object, otherwise the USB_DEVICE_ATTACHED event and
+    // corresponding FD may be processed via the HAL broadcastIntent in java and inadvertantly release the newly granted usb fd.
+
+    bool instance_is_preboot_device = false;
 
     bool init_completed = false;
     S_AT3_FE_INFO phyFeVendorDemodInfo = { };
