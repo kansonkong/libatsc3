@@ -166,7 +166,6 @@ void atsc3_mmt_mpu_on_sequence_movie_fragment_metadata_present_noop(atsc3_mmt_mf
 	uint32_t decoder_configuration_timebase = 1000000; //set as default to uS
     uint32_t extracted_sample_duration_us = 0;
 
-<<<<<<< HEAD
     if(!mmt_movie_fragment_metadata || !mmt_movie_fragment_metadata->p_size) {
         __MMT_CONTEXT_MPU_WARN("atsc3_mmt_mpu_on_sequence_movie_fragment_metadata_present_noop: packet_id: %d, mpu_sequence_number: %d, mmt_movie_fragment_metadata: %p: returned null or no length!",
                                packet_id, mpu_sequence_number, mmt_movie_fragment_metadata);
