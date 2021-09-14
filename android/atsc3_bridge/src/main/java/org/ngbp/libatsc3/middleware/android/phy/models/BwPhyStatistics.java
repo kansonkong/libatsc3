@@ -1,8 +1,5 @@
 package org.ngbp.libatsc3.middleware.android.phy.models;
 
-import com.google.firebase.perf.FirebasePerformance;
-import com.google.firebase.perf.metrics.Trace;
-
 public class BwPhyStatistics {
     public static long AppStartTimeMs = System.currentTimeMillis();
 
@@ -82,25 +79,5 @@ public class BwPhyStatistics {
             (float) ((this.total_bytes * 8.0) / (1024.0 * 1024.0)) / currentRuntimeDurationS,
             this.total_lmts);
 
-    }
-
-    public void sampleBwPhyStatisticsForTrace() {
-        computeBwMetricsOnce();
-
-        Trace bwPhyStatisticsTrace = FirebasePerformance.getInstance().newTrace("phy_bw_statistics_sample");
-        bwPhyStatisticsTrace.start();
-
-        bwPhyStatisticsTrace.putMetric("app_runtime_duration", (int)currentRuntimeDurationS);
-
-        bwPhyStatisticsTrace.putMetric("last_1s_bw_bitsSec", (int)last_1s_bw_bitsSec);
-        bwPhyStatisticsTrace.putMetric("last_1s_bw_pps", (int)last_1s_bw_pps);
-
-        bwPhyStatisticsTrace.putMetric("total_pkts_rx", (int)total_pkts);
-        bwPhyStatisticsTrace.putMetric("total_bytes_rx", (int)total_bytes);
-        bwPhyStatisticsTrace.putMetric("total_lmts_rx", (int)total_lmts);
-
-        bwPhyStatisticsTrace.putMetric("avg_bits_sec_rx_over_app_runtime_duration", (int)((this.total_bytes * 8) / currentRuntimeDurationS));
-
-        bwPhyStatisticsTrace.stop();
     }
 }
