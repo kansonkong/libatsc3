@@ -35,6 +35,8 @@ extern int _ATSC3_UDP_INFO_ENABLED;
 extern int _ATSC3_UDP_DEBUG_ENABLED;
 extern int _ATSC3_UDP_TRACE_ENABLED;
 
+extern int _ALP_PARSER_ERROR_ENABLED;
+extern int _ALP_PARSER_WARN_ENABLED;
 extern int _ALP_PARSER_INFO_ENABLED;
 extern int _ALP_PARSER_DEBUG_ENABLED;
 extern int _ALP_PARSER_TRACE_ENABLED;
@@ -89,6 +91,7 @@ extern int _ROUTE_USBD_PARSER_INFO_ENABLED;
 extern int _ROUTE_USBD_PARSER_DEBUG_ENABLED;
 
 extern int _MPU_DEBUG_ENABLED;
+
 extern int _MMTP_DEBUG_ENABLED;
 extern int _MMTP_TRACE_ENABLED;
 
@@ -102,6 +105,12 @@ extern int _MMT_SIGNALLING_MESSAGE_ERROR_23008_1_ENABLED;
 extern int _MMT_SIGNALLING_MESSAGE_INFO_ENABLED;
 extern int _MMT_SIGNALLING_MESSAGE_DEBUG_ENABLED;
 extern int _MMT_SIGNALLING_MESSAGE_TRACE_ENABLED;
+
+extern int _MMT_SI_TYPES_ERROR_ENABLED;
+extern int _MMT_SI_TYPES_WARN_ENABLED;
+extern int _MMT_SI_TYPES_INFO_ENABLED;
+extern int _MMT_SI_TYPES_DEBUG_ENABLED;
+extern int _MMT_SI_TYPES_TRACE_ENABLED;
 
 extern int _MMT_RECON_FROM_SAMPLE_DEBUG_ENABLED;
 extern int _MMT_RECON_FROM_SAMPLE_TRACE_ENABLED;
@@ -201,7 +210,8 @@ extern int _ATSC3_ALP_TYPES_DUMP_ENABLED;
 extern int _ATSC3_ALP_TYPES_DEBUG_ENABLED;
 extern int _ATSC3_ALP_TYPES_TRACE_ENABLED;
 
-
+extern int _ATSC3_CORE_SERVICE_PLAYER_BRIDGE_ERROR_ENABLED;
+extern int _ATSC3_CORE_SERVICE_PLAYER_BRIDGE_WARN_ENABLED;
 extern int _ATSC3_CORE_SERVICE_PLAYER_BRIDGE_INFO_ENABLED;
 extern int _ATSC3_CORE_SERVICE_PLAYER_BRIDGE_DEBUG_ENABLED;
 extern int _ATSC3_CORE_SERVICE_PLAYER_BRIDGE_TRACE_ENABLED;
@@ -230,6 +240,10 @@ extern int _ATSC3_SRTRXSTLTPVIRTUALPHY_INFO_ENABLED;
 extern int _ATSC3_SRTRXSTLTPVIRTUALPHY_DEBUG_ENABLED;
 extern int _ATSC3_SRTRXSTLTPVIRTUALPHY_TRACE_ENABLED;
 
+extern int _ATSC3_NDK_APPLICATION_BRIDGE_INFO_ENABLED;
+extern int _ATSC3_NDK_APPLICATION_BRIDGE_DEBUG_ENABLED;
+extern int _ATSC3_NDK_APPLICATION_BRIDGE_TRACE_ENABLED;
+
 //c++ linkage
 //extern int _ISOBMFFTRACKJOINER_DEBUG_ENABLED;
 
@@ -257,13 +271,13 @@ extern char  __ANDROID_LOG_VPRINTF_BUFFER[];
 
 #else
 
-#define __LIBATSC3_TIMESTAMP_ERROR(...)     	printf("%-24.24s:%4d:ERROR:%.4f:",__FILENAME__,__LINE__, gt()); printf(__VA_ARGS__); printf("%s%s","\r","\n");
-#define __LIBATSC3_TIMESTAMP_WARN(...)     		printf("%-24.24s:%4d:WARN :%.4f:",__FILENAME__,__LINE__, gt()); printf(__VA_ARGS__); printf("%s%s","\r","\n");
-#define __LIBATSC3_TIMESTAMP_INFO(...)      	printf("%-24.24s:%4d:INFO :%.4f:",__FILENAME__,__LINE__, gt()); printf(__VA_ARGS__); printf("%s%s","\r","\n");
-#define __LIBATSC3_TIMESTAMP_DUMP(...)      	printf("%-24.24s:%4d:DUMP :%.4f:",__FILENAME__,__LINE__, gt()); printf(__VA_ARGS__); printf("%s%s","\r","\n");
-#define __LIBATSC3_TIMESTAMP_DEBUG(...)    		printf("%-24.24s:%4d:DEBUG:%.4f:",__FILENAME__,__LINE__, gt()); printf(__VA_ARGS__); printf("%s%s","\r","\n");
-#define __LIBATSC3_TIMESTAMP_TRACE(...)    		printf("%-24.24s:%4d:TRACE:%.4f:",__FILENAME__,__LINE__, gt()); printf(__VA_ARGS__); printf("%s%s","\r","\n");
-#define __LIBATSC3_TIMESTAMP_TRACE_TAB(...)     printf("%-24.24s\t%4d\tTRACE\t%.4f\t",__FILENAME__,__LINE__, gt()); printf(__VA_ARGS__); printf("%s%s","\r","\n");
+#define __LIBATSC3_TIMESTAMP_ERROR(...)     	printf("%-24.24s:%4d:ERROR:%.3f:",__FILENAME__,__LINE__, gt()); printf(__VA_ARGS__); printf("%s%s","\r","\n");
+#define __LIBATSC3_TIMESTAMP_WARN(...)     		printf("%-24.24s:%4d:WARN :%.3f:",__FILENAME__,__LINE__, gt()); printf(__VA_ARGS__); printf("%s%s","\r","\n");
+#define __LIBATSC3_TIMESTAMP_INFO(...)      	printf("%-24.24s:%4d:INFO :%.3f:",__FILENAME__,__LINE__, gt()); printf(__VA_ARGS__); printf("%s%s","\r","\n");
+#define __LIBATSC3_TIMESTAMP_DUMP(...)      	printf("%-24.24s:%4d:DUMP :%.3f:",__FILENAME__,__LINE__, gt()); printf(__VA_ARGS__); printf("%s%s","\r","\n");
+#define __LIBATSC3_TIMESTAMP_DEBUG(...)    		printf("%-24.24s:%4d:DEBUG:%.3f:",__FILENAME__,__LINE__, gt()); printf(__VA_ARGS__); printf("%s%s","\r","\n");
+#define __LIBATSC3_TIMESTAMP_TRACE(...)    		printf("%-24.24s:%4d:TRACE:%.6f:",__FILENAME__,__LINE__, gt()); printf(__VA_ARGS__); printf("%s%s","\r","\n");
+#define __LIBATSC3_TIMESTAMP_TRACE_TAB(...)     printf("%-24.24s\t%4d\tTRACE\t%.6\t",__FILENAME__,__LINE__, gt()); printf(__VA_ARGS__); printf("%s%s","\r","\n");
 
 #define __ERROR(...)   __LIBATSC3_TIMESTAMP_ERROR(__VA_ARGS__);
 #define __WARN(...)    __LIBATSC3_TIMESTAMP_WARN(__VA_ARGS__);

@@ -9,8 +9,16 @@
 
 #include "atsc3_gzip.h"
 
+/*
+ jjustman-2021-08-09
+ 
+ NOTE: if ret <=0, decompressed_payload will be set to NULL as we don't have a valid decompressed datastream
+
+ */
 int32_t atsc3_unzip_gzip_payload(uint8_t* input_payload, uint32_t input_payload_size, uint8_t **decompressed_payload) {
 
+	*decompressed_payload = NULL;
+	
 	if(input_payload_size > GZIP_CHUNK_INPUT_SIZE_MAX) return -1;
 
 	uint32_t input_payload_offset = 0;
@@ -38,9 +46,14 @@ int32_t atsc3_unzip_gzip_payload(uint8_t* input_payload, uint32_t input_payload_
 	//treat this input_payload as gzip not just delfate
 	ret = inflateInit2(&strm, 16+MAX_WBITS);
 
-	if (ret != Z_OK)
+	if (ret != Z_OK) {
+		//jjustman-2021-08-09 - hack-ish - don't leak our malloc output_payload if we've failed deflate...
+		if(output_payload) {
+			freesafe((void*)output_payload);
+		}
 	   return ret;
-
+	}
+	
 	do {
 		strm.next_in = &input_payload[input_payload_offset];
 
@@ -63,6 +76,12 @@ int32_t atsc3_unzip_gzip_payload(uint8_t* input_payload, uint32_t input_payload_
 				case Z_DATA_ERROR:
 				case Z_MEM_ERROR:
 					(void)inflateEnd(&strm);
+					
+				//jjustman-2021-08-09 - hack-ish - don't leak our malloc output_payload if we've failed deflate...
+				if(output_payload) {
+					freesafe((void*)output_payload);
+				}
+
 				return ret;
 			}
 
@@ -74,19 +93,29 @@ int32_t atsc3_unzip_gzip_payload(uint8_t* input_payload, uint32_t input_payload_
                 output_payload_available = strm.avail_out;
             }
             output_payload_offset = strm.total_out; //move our append pointer forward
+			
 		} while (ret != Z_STREAM_END && strm.avail_out == 0); //loop until we are out of free output space, then loop input position
 
         input_payload_offset = strm.total_in; //move input pointer forward += GZIP_CHUNK_INPUT_READ_SIZE;
 
 	} while (ret != Z_STREAM_END && input_payload_offset < input_payload_size);
 
-    int paylod_len = strm.total_out; //(output_payload_offset + (GZIP_CHUNK_OUTPUT_BUFFER_SIZE - strm.avail_out));
+    int payload_len = strm.total_out; //(output_payload_offset + (GZIP_CHUNK_OUTPUT_BUFFER_SIZE - strm.avail_out));
 	/* clean up and return */
-	output_payload[paylod_len] = '\0';
+	output_payload[payload_len] = '\0';
 	*decompressed_payload = output_payload;
 
 	(void)inflateEnd(&strm);
-	return ret == Z_STREAM_END ?  paylod_len : Z_DATA_ERROR;
+	
+	if(ret == Z_STREAM_END) {
+		return payload_len;
+	} else {
+		//jjustman-2021-08-09 - hack-ish - don't leak our malloc output_payload if we've failed deflate...
+		if(output_payload) {
+			freesafe((void*)output_payload);
+		}
+		return Z_DATA_ERROR;
+	}
 }
 
 /*
@@ -177,11 +206,11 @@ int32_t atsc3_unzip_gzip_payload_block_t(block_t* src, block_t* dest) {
         loop_counter_outer++;
 	} while (ret != Z_STREAM_END && input_payload_offset < input_payload_size);
 
-    int paylod_len = strm.total_out;
+    int payload_len = strm.total_out;
 
 	(void)inflateEnd(&strm);
 	
-	return ret == Z_STREAM_END ?  paylod_len : Z_DATA_ERROR;
+	return ret == Z_STREAM_END ?  payload_len : Z_DATA_ERROR;
 }
 
 
@@ -259,14 +288,14 @@ int32_t atsc3_unzip_gzip_payload_block_t_with_dynamic_realloc(block_t* src, bloc
 
 	} while (ret != Z_STREAM_END && input_payload_offset < input_payload_size);
 
-	int paylod_len = strm.total_out; //(output_payload_offset + (GZIP_CHUNK_OUTPUT_BUFFER_SIZE - strm.avail_out));
+	int payload_len = strm.total_out; //(output_payload_offset + (GZIP_CHUNK_OUTPUT_BUFFER_SIZE - strm.avail_out));
 	/* clean up and return */
 	//jjustman-2020-11-23 - don't put null terminating character, assumed that block_t will have pre-allocated if needed...
-	//output_payload[paylod_len] = '\0';
+	//output_payload[payload_len] = '\0';
 
 	(void)inflateEnd(&strm);
 	
-	return ret == Z_STREAM_END ?  paylod_len : Z_DATA_ERROR;
+	return ret == Z_STREAM_END ?  payload_len : Z_DATA_ERROR;
 }
 
 uint32_t atsc3_compress_gzip_payload(uint8_t* input, uint32_t inputSize, uint8_t* output, uint32_t outputSize) {
