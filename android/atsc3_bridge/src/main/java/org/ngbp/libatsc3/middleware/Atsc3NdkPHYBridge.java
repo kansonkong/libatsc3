@@ -4,6 +4,7 @@ import android.util.Log;
 
 import org.ngbp.libatsc3.middleware.android.phy.interfaces.IAtsc3NdkPHYBridgeCallbacks;
 import org.ngbp.libatsc3.middleware.android.phy.models.BwPhyStatistics;
+import org.ngbp.libatsc3.middleware.android.phy.models.L1D_timePhyInformation;
 import org.ngbp.libatsc3.middleware.android.phy.models.RfPhyStatistics;
 
 /**
@@ -97,6 +98,12 @@ public class Atsc3NdkPHYBridge extends Atsc3BridgeNdkStaticJniLoader {
     int atsc3_updateRfBwStats(long total_pkts, long total_bytes, int total_lmts) {
         BwPhyStatistics bwPhyStatistics = new BwPhyStatistics(total_pkts, total_bytes, total_lmts);
         mActivity.pushBwPhyStatistics(bwPhyStatistics);
+        return 0;
+    }
+
+    int atsc3_l1d_time_information_callback(byte l1B_time_info_flag, long l1D_time_sec, int l1D_time_msec, int l1D_time_usec, int l1D_time_nsec) {
+        L1D_timePhyInformation l1d_timePhyInformation = new L1D_timePhyInformation(l1B_time_info_flag, l1D_time_sec, l1D_time_msec, l1D_time_usec, l1D_time_nsec);
+        mActivity.pushL1d_TimeInfo(l1d_timePhyInformation);
         return 0;
     }
 }
