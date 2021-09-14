@@ -291,7 +291,7 @@ bool LowaSISPHYAndroid::is_running() {
 int LowaSISPHYAndroid::stop()
 {
     AT3RESULT ar;
-    _LOWASIS_PHY_ANDROID_INFO("LowaSISPHYAndroid::stop: enter with this: %p, instance_is_preboot_device: %d, init_completed: %d, mhDevice: %d, captureThreadIsRunning: %d, statusThreadIsRunning: %d, processThreadIsRunning: %d, sleeping for %d ms",
+    _LOWASIS_PHY_ANDROID_INFO("LowaSISPHYAndroid::stop: enter with this: %p, instance_is_preboot_device: %d, init_completed: %d, mhDevice: %p, captureThreadIsRunning: %d, statusThreadIsRunning: %d, processThreadIsRunning: %d, sleeping for %d ms",
             this, this->instance_is_preboot_device, init_completed, mhDevice,
               this->captureThreadIsRunning,
               this->statusThreadIsRunning,
@@ -356,24 +356,24 @@ int LowaSISPHYAndroid::stop()
     _LOWASIS_PHY_ANDROID_DEBUG("LowaSISPHYAndroid::stop: after join for processThreadHandle");
 
     if(mhDevice) {
-        _LOWASIS_PHY_ANDROID_INFO("LowaSISPHYAndroid::stop: with this: %p, before AT3DRV_CancelWait with mhDevice: %d",
+        _LOWASIS_PHY_ANDROID_INFO("LowaSISPHYAndroid::stop: with this: %p, before AT3DRV_CancelWait with mhDevice: %p",
                                   this,
                                   mhDevice);
 
         ar = AT3DRV_CancelWait(mhDevice);
         if (ar) {
-            _LOWASIS_PHY_ANDROID_WARN("AT3DRV_CancelWait:: with mhDevice: %d returned ar: %d", mhDevice, ar);
+            _LOWASIS_PHY_ANDROID_WARN("AT3DRV_CancelWait:: with mhDevice: %p returned ar: %d", mhDevice, ar);
         }
         _LOWASIS_PHY_ANDROID_DEBUG("AT3DRV_CancelWait:: cancelled");
 
         ar = AT3DRV_FE_Stop(mhDevice);
         if (ar) {
-            _LOWASIS_PHY_ANDROID_WARN("AT3DRV_FE_Stop:: with mhDevice: %d returned ar: %d", mhDevice, ar);
+            _LOWASIS_PHY_ANDROID_WARN("AT3DRV_FE_Stop:: with mhDevice: %p returned ar: %d", mhDevice, ar);
         }
 
         ar = AT3DRV_CloseDevice(mhDevice);
         if (ar) {
-            _LOWASIS_PHY_ANDROID_WARN("AT3DRV_CloseDevice:: with mhDevice: %d returned ar: %d", mhDevice, ar);
+            _LOWASIS_PHY_ANDROID_WARN("AT3DRV_CloseDevice:: with mhDevice: %p returned ar: %d", mhDevice, ar);
         }
     }
 
