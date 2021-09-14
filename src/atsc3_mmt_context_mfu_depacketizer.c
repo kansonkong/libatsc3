@@ -410,7 +410,7 @@ void mmtp_mfu_process_from_payload_with_context(udp_packet_t *udp_packet, mmtp_m
 
         //notify context of the sequence number change
         if(atsc3_mmt_mfu_context->atsc3_mmt_mpu_on_sequence_number_change) {
-            atsc3_mmt_mfu_context->atsc3_mmt_mpu_on_sequence_number_change(atsc3_mmt_mfu_context, mmtp_mpu_packet->mmtp_packet_id, matching_lls_sls_mmt_session->last_udp_flow_packet_id_mpu_sequence_tuple_video->mpu_sequence_number, mmtp_mpu_packet->mpu_sequence_number);
+            atsc3_mmt_mfu_context->atsc3_mmt_mpu_on_sequence_number_change(atsc3_mmt_mfu_context, mmtp_mpu_packet->mmtp_packet_id, previous_mpu_sequence_number_mmtp_mpu_packet_collection->mpu_sequence_number, mmtp_mpu_packet->mpu_sequence_number);
         }
 
         //remove last mpu_sequence_number reference from our packets conntainenr

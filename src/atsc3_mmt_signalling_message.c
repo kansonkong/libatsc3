@@ -1069,7 +1069,10 @@ uint8_t* mmt_atsc3_message_payload_parse(mmt_signalling_message_header_and_paylo
 										for(int e=0; e < mmt_atsc3_message_content_type_video_stream_properties_descriptor_asset->color_info.eotf_info.num_SEIs_minus1 ; e++) {
 											
 											mmt_atsc3_message_content_type_video_stream_properties_descriptor_asset->color_info.eotf_info.SEI_NUT_length_minus1[e] = block_Read_uint16_ntohs(src);
-											mmt_atsc3_message_content_type_video_stream_properties_descriptor_asset->color_info.eotf_info.SEI_NUT_data[e] = block_Read_uint8_varlen(src, mmt_atsc3_message_content_type_video_stream_properties_descriptor_asset->color_info.eotf_info.SEI_NUT_length_minus1[e]);
+											uint32_t sei_nut_alloc_size = 8 * (mmt_atsc3_message_content_type_video_stream_properties_descriptor_asset->color_info.eotf_info.SEI_NUT_length_minus1[e] + 1);
+											__MMSM_TRACE("MMT_ATSC3_MESSAGE_CONTENT_TYPE_VIDEO_STREAM_PROPERTIES_DESCRIPTOR: SEI: %d, block_Read_uint8_varlen size for SEI_NUT_data is size: %d", e, sei_nut_alloc_size);
+																					
+											mmt_atsc3_message_content_type_video_stream_properties_descriptor_asset->color_info.eotf_info.SEI_NUT_data = block_Read_uint8_varlen(src, sei_nut_alloc_size);
 										}
 									} else {
 										mmt_atsc3_message_content_type_video_stream_properties_descriptor_asset->color_info.reserved_7_tf = block_Read_uint8_bitlen(src, 7);
@@ -1150,7 +1153,7 @@ uint8_t* mmt_atsc3_message_payload_parse(mmt_signalling_message_header_and_paylo
 							mmt_atsc3_message_content_type_caption_asset_descriptor_asset->asset_header.asset_id = block_Read_uint8_varlen(src, mmt_atsc3_message_content_type_caption_asset_descriptor_asset->asset_header.asset_id_length);
 
 							mmt_atsc3_message_content_type_caption_asset_descriptor_asset->language_header.language_length = block_Read_uint8(src);
-							mmt_atsc3_message_content_type_caption_asset_descriptor_asset->language_header.language = block_Read_uint8_varlen(src, mmt_atsc3_message_content_type_caption_asset_descriptor_asset->language_header.language_length);
+							mmt_atsc3_message_content_type_caption_asset_descriptor_asset->language_header.language = (char*)block_Read_uint8_varlen(src, mmt_atsc3_message_content_type_caption_asset_descriptor_asset->language_header.language_length);
 
 							mmt_atsc3_message_content_type_caption_asset_descriptor_asset->role = block_Read_uint8_bitlen(src, 4);
 							mmt_atsc3_message_content_type_caption_asset_descriptor_asset->aspect_ratio = block_Read_uint8_bitlen(src, 4);
@@ -1268,8 +1271,8 @@ uint8_t* mmt_atsc3_message_payload_parse(mmt_signalling_message_header_and_paylo
 
 										mmt_atsc3_message_content_type_audio_stream_properties_descriptor_asset_presentation_language_t* mmt_atsc3_message_content_type_audio_stream_properties_descriptor_asset_presentation_language = mmt_atsc3_message_content_type_audio_stream_properties_descriptor_asset_presentation_language_new();
 										mmt_atsc3_message_content_type_audio_stream_properties_descriptor_asset_presentation_language->language_length = block_Read_uint8(src);
-										mmt_atsc3_message_content_type_audio_stream_properties_descriptor_asset_presentation_language->language = block_Read_uint8_varlen(src, mmt_atsc3_message_content_type_audio_stream_properties_descriptor_asset_presentation_language->language_length);
-										__MMSM_TRACE("MMT_ATSC3_MESSAGE_CONTENT_TYPE_AUDIO_STREAM_PROPERTIES_DESCRIPTOR: jj: language_present: %d, 0x%02x, %s", k, mmt_atsc3_message_content_type_audio_stream_properties_descriptor_asset->asset_header.asset_id[0], mmt_atsc3_message_content_type_audio_stream_properties_descriptor_asset_presentation_language->language );
+										mmt_atsc3_message_content_type_audio_stream_properties_descriptor_asset_presentation_language->language = (char*)block_Read_uint8_varlen(src, mmt_atsc3_message_content_type_audio_stream_properties_descriptor_asset_presentation_language->language_length);
+										__MMSM_TRACE("MMT_ATSC3_MESSAGE_CONTENT_TYPE_AUDIO_STREAM_PROPERTIES_DESCRIPTOR: language_present: %d, 0x%02x, %s", k, mmt_atsc3_message_content_type_audio_stream_properties_descriptor_asset->asset_header.asset_id[0], mmt_atsc3_message_content_type_audio_stream_properties_descriptor_asset_presentation_language->language );
 										
 										mmt_atsc3_message_content_type_audio_stream_properties_descriptor_asset_presentation_add_mmt_atsc3_message_content_type_audio_stream_properties_descriptor_asset_presentation_language(mmt_atsc3_message_content_type_audio_stream_properties_descriptor_asset_presentation, mmt_atsc3_message_content_type_audio_stream_properties_descriptor_asset_presentation_language);
 									}
@@ -1280,7 +1283,7 @@ uint8_t* mmt_atsc3_message_payload_parse(mmt_signalling_message_header_and_paylo
 									for(int k=0; k < mmt_atsc3_message_content_type_audio_stream_properties_descriptor_asset_presentation->num_languages_minus1 + 1; k++) {
 										mmt_atsc3_message_content_type_audio_stream_properties_descriptor_asset_presentation->accessibility[k] = block_Read_uint8(src);
 									}
-									__MMSM_TRACE("MMT_ATSC3_MESSAGE_CONTENT_TYPE_AUDIO_STREAM_PROPERTIES_DESCRIPTOR: jj: accessibility_role_present: 0x%02x, %s", mmt_atsc3_message_content_type_audio_stream_properties_descriptor_asset->asset_header.asset_id[0],
+									__MMSM_TRACE("MMT_ATSC3_MESSAGE_CONTENT_TYPE_AUDIO_STREAM_PROPERTIES_DESCRIPTOR: accessibility_role_present: 0x%02x, %s", mmt_atsc3_message_content_type_audio_stream_properties_descriptor_asset->asset_header.asset_id[0],
 												 mmt_atsc3_message_content_type_audio_stream_properties_descriptor_asset_presentation->accessibility);
 									
 
@@ -1290,7 +1293,7 @@ uint8_t* mmt_atsc3_message_payload_parse(mmt_signalling_message_header_and_paylo
 								//label present
 								if(mmt_atsc3_message_content_type_audio_stream_properties_descriptor_asset_presentation->label_present) {
 									mmt_atsc3_message_content_type_audio_stream_properties_descriptor_asset_presentation->label_length = block_Read_uint8(src);
-									mmt_atsc3_message_content_type_audio_stream_properties_descriptor_asset_presentation->label_data_byte = block_Read_uint8_varlen(src, mmt_atsc3_message_content_type_audio_stream_properties_descriptor_asset_presentation->label_length);
+									mmt_atsc3_message_content_type_audio_stream_properties_descriptor_asset_presentation->label_data_byte = (char*)block_Read_uint8_varlen(src, mmt_atsc3_message_content_type_audio_stream_properties_descriptor_asset_presentation->label_length);
 								}
 								
 								//multi_stream_info_present
