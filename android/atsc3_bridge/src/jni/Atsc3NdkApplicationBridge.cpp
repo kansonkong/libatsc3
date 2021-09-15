@@ -549,7 +549,7 @@ void Atsc3NdkApplicationBridge::atsc3_onAeatTablePresent(const char *aeat_payloa
     }
 
     if (!bridgeConsumerJniEnv) {
-		_NDK_APPLICATION_BRIDGE_ERROR("Atsc3NdkApplicationBridge::atsc3_onSlsHeldEmissionPresent: bridgeConsumerJniEnv is NULL");
+		_NDK_APPLICATION_BRIDGE_ERROR("Atsc3NdkApplicationBridge::atsc3_onAeatTablePresent: bridgeConsumerJniEnv is NULL");
         return;
     }
 
