@@ -209,9 +209,9 @@ typedef struct mmt_atsc3_message_content_type_application_event_information_a337
 
 
 typedef struct mmt_atsc3_message_content_type_video_stream_properties_descriptor_asset {
-	mmt_atsc3_message_content_type_asset_header_t										asset_header;
+	mmt_atsc3_message_content_type_asset_header_t asset_header;
 
-	uint8_t		codec_codec[4];
+	uint8_t		codec_code[4];
 	uint8_t		temporal_scalability_present:1;
 	uint8_t		scalability_info_present:1;
 	uint8_t		multiview_info_present:1;
@@ -1324,6 +1324,8 @@ void atsc3_mmt_mp_table_asset_row_free_inner(mp_table_asset_row_t* mp_table_asse
 //ATSC3 MMT SI: internal helper methods / aggregation for inner payload type marshalling
 mmt_atsc3_signalling_information_usbd_component_t* 		mmt_atsc3_message_payload_add_mmt_atsc3_signalling_information_usbd_component(mmt_atsc3_message_payload_t* mmt_atsc3_message_payload);
 mmt_atsc3_route_component_t* 							mmt_atsc3_message_payload_add_mmt_atsc3_route_component(mmt_atsc3_message_payload_t* mmt_atsc3_message_payload);
+void 													mmt_atsc3_route_component_dump(mmt_atsc3_route_component_t* mmt_atsc3_route_component);
+
 mmt_atsc3_held_message_t*    							mmt_atsc3_message_payload_add_mmt_atsc3_held_message(mmt_atsc3_message_payload_t* mmt_atsc3_message_payload);
 
 void mmt_atsc3_signalling_information_usbd_component_free(mmt_atsc3_signalling_information_usbd_component_t** mmt_atsc3_signalling_information_usbd_component_p);
