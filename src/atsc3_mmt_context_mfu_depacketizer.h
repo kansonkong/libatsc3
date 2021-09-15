@@ -142,6 +142,7 @@ typedef struct atsc3_mmt_mfu_context {
 
 	//MMT_ATSC3_MESSAGE_CONTENT_TYPE_UserServiceDescription: mmt_atsc3_message_content_type == 0x0001 -> mmt_atsc3_signalling_information_usbd_component_t
 	atsc3_mmt_signalling_information_on_userservicedescription_present_f                                atsc3_mmt_signalling_information_on_userservicedescription_present;
+	//return: assign_routecomponent_payload_to_context
 	atsc3_mmt_signalling_information_on_routecomponent_message_present_f                                atsc3_mmt_signalling_information_on_routecomponent_message_present;
 	mmt_atsc3_route_component_t*                                                                        mmt_atsc3_route_component_monitored;
 
