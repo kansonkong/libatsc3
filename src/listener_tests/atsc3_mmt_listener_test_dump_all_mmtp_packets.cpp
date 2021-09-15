@@ -34,21 +34,12 @@
 #include "../atsc3_logging_externs.h"
 #include "../atsc3_mmtp_packet_types.h"
 
+#define __ATSC3_MMT_LISTENER_DUMP_ALL_MMTP_PACKETS_DUMP_DIR__ "mmtp"
+
 uint32_t* dst_ip_addr_filter = NULL;
 uint16_t* dst_ip_port_filter = NULL;
 uint16_t* dst_packet_id_filter = NULL;
 lls_slt_monitor_t* lls_slt_monitor;
-
-//make sure to invoke     mmtp_sub_flow_vector_init(&p_sys->mmtp_sub_flow_vector);
-//mmtp_sub_flow_vector_t* mmtp_sub_flow_vector;
-
-//todo - keep track of these by flow and packet_id to detect mpu_sequence_number increment
-//mmtp_payload_fragments_union_t* mmtp_payload_previous_for_reassembly = NULL;
-uint32_t __SEQUENCE_NUMBER_COUNT=0;
-
-pipe_ffplay_buffer_t* pipe_ffplay_buffer = NULL;
-uint32_t last_mpu_sequence_number = 0;
-uint32_t fragment_count = 0;
 
 void process_packet(u_char *user, const struct pcap_pkthdr *pkthdr, const u_char *packet) {
 	udp_packet_t* udp_packet = process_packet_from_pcap(user, pkthdr, packet);
@@ -93,8 +84,12 @@ void process_packet(u_char *user, const struct pcap_pkthdr *pkthdr, const u_char
 					goto cleanup;
 					
 				}
+				
+				mmtp_mpu_dump_flow(udp_packet->udp_flow.dst_ip_addr, udp_packet->udp_flow.dst_port, mmtp_mpu_packet);
+
 				if(mmtp_mpu_packet->mpu_timed_flag == 1) {
 					mmtp_mpu_dump_header(mmtp_mpu_packet);
+										
 				} else {
 					//non-timed
 					__ATSC3_WARN("process_packet: mmtp_packet_header_parse_from_block_t - non-timed payload: packet_id: %u", mmtp_packet_header->mmtp_packet_id);
@@ -245,9 +240,7 @@ int main(int argc,char **argv) {
 
     lls_slt_monitor = lls_slt_monitor_create();
 
-    mkdir("mpu", 0777);
-
-    //pipe_ffplay_buffer = pipe_create_ffplay();
+	mkdir("mpu", 0777);
 
 #ifndef _TEST_RUN_VALGRIND_OSX_
 
