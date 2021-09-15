@@ -111,7 +111,8 @@ int SRTRxSTLTPVirtualPHY::atsc3_srt_thread_run() {
         releasePinnedConsumerThreadAsNeeded();
     });
 
-    _SRTRXSTLTP_VIRTUAL_PHY_INFO("atsc3_srt_thread_run: threads created, srtProducerThreadPtr id: %lu, srtConsumerThreadPtr id: %lu",
+    //jjustman-2021-09-14 - use %zu to print size_t
+    _SRTRXSTLTP_VIRTUAL_PHY_INFO("atsc3_srt_thread_run: threads created, srtProducerThreadPtr id: %zu, srtConsumerThreadPtr id: %lu",
                                  __SRTRxSTLTPVirtualPHY_thread_hasher__(srtProducerThreadPtr.get_id()),
                                  __SRTRxSTLTPVirtualPHY_thread_hasher__(srtConsumerThreadPtr.get_id()));
 

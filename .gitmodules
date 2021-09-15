@@ -46,7 +46,8 @@
 [submodule "saankhyalabs-slsdk"]
 	path = saankhyalabs-slsdk
 	url = https://dev.azure.com/NGWP/Mark%20One%20Phone/_git/saankhyalabs-slsdk
-	branch = slsdk-0.15-jj
+	branch = slsdk-pre-0.16-jj
+	
 	
 	
 [submodule "libusb_android"]

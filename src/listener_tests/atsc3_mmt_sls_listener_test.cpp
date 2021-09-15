@@ -40,7 +40,9 @@ int PACKET_COUNTER=0;
 #include "../atsc3_mmt_mpu_utils.h"
 
 #include "../atsc3_logging_externs.h"
-//#include "../stubs/atsc3_alc_stubs.h"
+
+#include "../atsc3_mmt_context_mfu_depacketizer.h"
+#include "../atsc3_mmt_context_mfu_depacketizer_callbacks_noop.h"
 
 #define _ENABLE_DEBUG true
 
@@ -51,6 +53,9 @@ uint16_t* dst_ip_port_filter = NULL;
 uint16_t* dst_packet_id_filter = NULL;
 
 lls_slt_monitor_t* lls_slt_monitor;
+
+//jjustman-2019-10-03 - context event callbacks...
+atsc3_mmt_mfu_context_t* atsc3_mmt_mfu_context;
 
 mmtp_packet_header_t*  mmtp_parse_header_from_udp_packet(udp_packet_t* udp_packet) {
 
@@ -108,12 +113,26 @@ void process_packet(u_char *user, const struct pcap_pkthdr *pkthdr, const u_char
     	mmtp_packet_header_t* mmtp_packet_header = mmtp_parse_header_from_udp_packet(udp_packet);
         if(mmtp_packet_header && mmtp_packet_header->mmtp_payload_type == 0x02) {
 
+			//jjustman-2021-09-15 - TODO: fix me for fragmented parsing processing, refactor from atsc3_mmt_context_stpp_depacketizer_test.cpp
         	mmtp_signalling_packet_t* mmtp_signalling_packet = mmtp_signalling_packet_parse_and_free_packet_header_from_block_t(&mmtp_packet_header, udp_packet->data);
 			if(mmtp_signalling_packet->si_fragmentation_indicator == 0x0) {
 
 				mmtp_si_parsed_message_count = mmt_signalling_message_parse_packet(mmtp_signalling_packet, udp_packet->data);
 				__INFO("mmt_signalling_message_parse_packet: mmtp_si_parsed_message_count is: %d", mmtp_si_parsed_message_count);
 				mmtp_process_sls_from_payload(udp_packet, mmtp_signalling_packet, matching_lls_slt_mmt_session);
+				
+				if(mmtp_si_parsed_message_count > 0) {
+					mmt_signalling_message_dump(mmtp_signalling_packet);
+
+//					__ATSC3_TRACE("process_packet: calling mmt_signalling_message_dispatch_context_notification_callbacks with udp_packet: %p, mmtp_signalling_packet: %p, atsc3_mmt_mfu_context: %p,",
+//							udp_packet,
+//							mmtp_signalling_packet,
+//							atsc3_mmt_mfu_context);
+
+
+					//dispatch our wired callbacks
+					mmt_signalling_message_dispatch_context_notification_callbacks(udp_packet, mmtp_signalling_packet, atsc3_mmt_mfu_context);
+				}
 			} else {
 				__INFO("mmt_signalling_message_parse_packet: TODO: inline mmtp_si fragment reassembly for si_fragmentation_indicator: %d", mmtp_signalling_packet->si_fragmentation_indicator );			
 			}
@@ -169,15 +188,17 @@ int main(int argc,char **argv) {
 
 	//jjustman-2019-10-18 - TODO: fixme for proper MMT_SLS debugging/tracing
 	_MMTP_DEBUG_ENABLED = 1;
-	_MMTP_TRACE_ENABLED = 1;
+	_MMTP_TRACE_ENABLED = 0;
 	_MMT_MPU_PARSER_DEBUG_ENABLED = 0;
+	_MMT_CONTEXT_MPU_DEBUG_ENABLED = 1;
 
 	_LLS_DEBUG_ENABLED = 0;
 
 	_MMT_SIGNALLING_MESSAGE_DEBUG_ENABLED = 1;
 	_MMT_SIGNALLING_MESSAGE_TRACE_ENABLED = 1;
 	
-
+	//jjustman-2021-09-15 - next level deeper is #define _MMT_SIGNALLING_MESSAGE_DUMP_HEX_PAYLOAD
+	
     char *dev;
 
     char *filter_dst_ip = NULL;
@@ -247,6 +268,10 @@ int main(int argc,char **argv) {
     /** setup global structs **/
 
     lls_slt_monitor = lls_slt_monitor_create();
+	
+	
+	//callback contexts
+	atsc3_mmt_mfu_context = atsc3_mmt_mfu_context_callbacks_noop_new();
 
 
 #ifndef _TEST_RUN_VALGRIND_OSX_
