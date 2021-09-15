@@ -225,7 +225,7 @@ SL_SDR_CALIB_BUILD_TARGET:
 	$(shell mkdir -p "$(LOCAL_PATH)/prebuilt/firmware/atsc3")
 
 	$(shell cp $(LOCAL_PATH)/../../saankhyalabs-slsdk/slapi/bin/calib_aa/calib.hex	  $(LOCAL_PATH)/prebuilt/firmware/atsc3/calib_aa.hex)
-	$(shell cp $(LOCAL_PATH)/../../saankhyalabs-slsdk/slapi/bin/calib_bb/calib_bb.hex $(LOCAL_PATH)/prebuilt/firmware/atsc3/calib_bb.hex)
+	$(shell cp $(LOCAL_PATH)/../../saankhyalabs-slsdk/slapi/bin/calib_bb/calib_BB.hex $(LOCAL_PATH)/prebuilt/firmware/atsc3/calib_bb.hex)
 
 	$(shell cd $(LOCAL_PATH)/prebuilt/firmware/atsc3/ && $(TARGET_LD) -r -b binary ./calib_aa.hex -o ./calib_aa.o)
 	$(shell cd $(LOCAL_PATH)/prebuilt/firmware/atsc3/ && $(TARGET_LD) -r -b binary ./calib_bb.hex -o ./calib_bb.o)
