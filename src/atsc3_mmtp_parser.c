@@ -40,7 +40,7 @@ mmtp_packet_header_t* mmtp_packet_header_parse_from_block_t(block_t* udp_packet)
 	uint8_t *raw_buf = block_Get(udp_packet);
 	uint8_t *buf = raw_buf;
 
-	__MMTP_PARSER_DEBUG("mmtp_packet_header_parse_from_block_t: udp_packet->i_pos: %d, udp_packet->p_size: %d, udp_packet->p_buffer: %p, mmtp_packet_header: %p",
+	__MMTP_PARSER_TRACE("mmtp_packet_header_parse_from_block_t: udp_packet->i_pos: %d, udp_packet->p_size: %d, udp_packet->p_buffer: %p, mmtp_packet_header: %p",
 			udp_packet->i_pos,
 			udp_packet->p_size,
 			raw_buf,
@@ -185,7 +185,7 @@ mmtp_packet_header_t* mmtp_packet_header_parse_from_block_t(block_t* udp_packet)
 	}
 
     int32_t bytes_processed = (buf - raw_buf);
-    __MMTP_PARSER_DEBUG("mmtp_packet_header_parse_from_block_t: completed header parse, consumed %d bytes, mmtp_packet_header is: %p",
+    __MMTP_PARSER_TRACE("mmtp_packet_header_parse_from_block_t: completed header parse, consumed %d bytes, mmtp_packet_header is: %p",
     		bytes_processed,
 			mmtp_packet_header);
 

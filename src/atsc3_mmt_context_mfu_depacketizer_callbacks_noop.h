@@ -16,6 +16,21 @@
 extern "C" {
 #endif
 
+#define __ATSC3_MMT_CONTEXT_MFU_DEPACKETIZER_CALLBACKS_NOOP_GUARD_AND_LOG_ATSC3_MMT_MFU_CONTEXT(label, ptr) \
+	if(!atsc3_mmt_mfu_context) { \
+		__MMT_CONTEXT_MPU_WARN("%s: atsc3_mmt_mfu_context is NULL for %s, ptr: %p", __FUNCTION__, label, ptr); return; \
+	} else { \
+		__MMT_CONTEXT_MPU_DEBUG("callback_noop: %s: atsc3_mmt_mfu_context: %p, data: %s, ptr: %p", __FUNCTION__, atsc3_mmt_mfu_context, label, ptr); \
+	}
+
+#define __ATSC3_MMT_CONTEXT_MFU_DEPACKETIZER_CALLBACKS_NOOP_GUARD_AND_LOG_ATSC3_MMT_MFU_CONTEXT_RETURN_FALSE(label, ptr) \
+	if(!atsc3_mmt_mfu_context) { \
+		__MMT_CONTEXT_MPU_WARN("%s: atsc3_mmt_mfu_context is NULL for %s, ptr: %p", __FUNCTION__, label, ptr); return false; \
+	} else { \
+		__MMT_CONTEXT_MPU_DEBUG("callback_noop: %s: atsc3_mmt_mfu_context: %p, data: %s, ptr: %p", __FUNCTION__, atsc3_mmt_mfu_context, label, ptr); \
+	}
+
+
 atsc3_mmt_mfu_context_t* atsc3_mmt_mfu_context_callbacks_noop_new();
 
 
