@@ -1219,7 +1219,7 @@ void atsc3_core_service_bridge_process_packet_phy(block_t* packet) {
                           __ATSC3_CORE_SERVICE_PLAYER_BRIDGE_TRACE("atsc3_core_service_bridge_process_packet_phy - after atsc3_core_service_player_bridge_get_lls_slt_montior");
 
                           updated_plp_listeners = atsc3_phy_build_plp_listeners_from_lls_slt_monitor(lls_slt_monitor);
-                          __ATSC3_CORE_SERVICE_PLAYER_BRIDGE_TRACE("atsc3_core_service_bridge_process_packet_phy - after atsc3_phy_build_plp_listeners_from_lls_slt_monitor, with lls_slt_monitor: %p, updated_plp_listeners.size: %d", lls_slt_monitor, updated_plp_listeners.size());
+                          __ATSC3_CORE_SERVICE_PLAYER_BRIDGE_TRACE("atsc3_core_service_bridge_process_packet_phy - after atsc3_phy_build_plp_listeners_from_lls_slt_monitor, with lls_slt_monitor: %p, updated_plp_listeners.size: %lu", lls_slt_monitor, updated_plp_listeners.size());
 
                       } //release our context mutex before invoking atsc3_phy_notify_plp_selection_changed with our updated_plp_listeners values
 
