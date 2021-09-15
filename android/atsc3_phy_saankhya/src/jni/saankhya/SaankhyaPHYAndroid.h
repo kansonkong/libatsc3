@@ -255,6 +255,10 @@ private:
 
     //jjustman-2021-06-07 # 11798: compute global/l1b/l1d/plpN SNR metrics
     double compute_snr(int snr_linear_scale);
+
+    //jjustman-2021-08-31 - testing for l1d time info diagnostics
+    void printToConsoleAtsc3L1dDiagnostics(SL_Atsc3p0L1D_Diag_t diag);
+
 };
 
 #define _SAANKHYA_PHY_ANDROID_ERROR_NOTIFY_BRIDGE_INSTANCE(method, message, cmd_res) \

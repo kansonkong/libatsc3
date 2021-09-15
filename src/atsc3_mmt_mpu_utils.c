@@ -438,6 +438,7 @@ void mmtp_mpu_dump_flow(uint32_t dst_ip, uint16_t dst_port, mmtp_mpu_packet_t* m
 		du_block_to_write = mmtp_mpu_packet->du_mfu_block;
 	}
 
+	block_Rewind(du_block_to_write);
 	int blocks_written = fwrite(du_block_to_write->p_buffer, block_Remaining_size(du_block_to_write), 1, f);
 	if(blocks_written != 1) {
 		__MMT_MPU_WARN("Incomplete block written for %s", myFilePathName);

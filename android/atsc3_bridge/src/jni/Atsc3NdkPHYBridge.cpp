@@ -227,6 +227,28 @@ void Atsc3NdkPHYBridge::atsc3_update_rf_bw_stats(uint64_t total_pkts, uint64_t t
                                                      total_lmts);
 }
 
+void Atsc3NdkPHYBridge::atsc3_update_l1d_time_information(uint8_t l1B_time_info_flag, uint32_t l1D_time_sec, uint16_t l1D_time_msec, uint16_t l1D_time_usec, uint16_t l1D_time_nsec) {
+    Atsc3JniEnv* localUnsafeJniEnv = nullptr;
+
+    if (!atsc3_l1d_time_information_callback_ID)
+        return;
+
+    localUnsafeJniEnv = new Atsc3JniEnv(mJavaVM);
+
+    if (!localUnsafeJniEnv) {
+        _NDK_PHY_BRIDGE_ERROR("Atsc3NdkPHYBridge:atsc3_update_l1d_time_information: err on get jni env: localUnsafeJniEnv");
+        return;
+    }
+
+    int r = localUnsafeJniEnv->Get()->CallIntMethod(jni_instance_globalRef,
+                                                     atsc3_l1d_time_information_callback_ID,
+                                                     l1B_time_info_flag,
+                                                     (uint64_t) l1D_time_sec,
+                                                     l1D_time_msec,
+                                                     l1D_time_usec,
+                                                     l1D_time_nsec);
+}
+
 void Atsc3NdkPHYBridge::setRfPhyStatisticsViewVisible(bool isRfPhyStatisticsVisible) {
     rxStatusThreadShouldRun = isRfPhyStatisticsVisible;
 }
@@ -321,6 +343,13 @@ Java_org_ngbp_libatsc3_middleware_Atsc3NdkPHYBridge_init(JNIEnv *env, jobject in
     atsc3NdkPHYBridge->atsc3_update_rf_bw_stats_ID = env->GetMethodID(jniClassReference, "atsc3_updateRfBwStats", "(JJI)I");
     if (atsc3NdkPHYBridge->atsc3_update_rf_bw_stats_ID == NULL) {
         _NDK_PHY_BRIDGE_ERROR("Atsc3NdkPHYBridge_init: cannot find 'atsc3_update_rf_bw_stats_ID' method id");
+        return -1;
+    }
+
+    //atsc3_l1d_time_information_callback
+    atsc3NdkPHYBridge->atsc3_l1d_time_information_callback_ID = env->GetMethodID(jniClassReference, "atsc3_l1d_time_information_callback", "(BJIII)I");
+    if (atsc3NdkPHYBridge->atsc3_l1d_time_information_callback_ID == NULL) {
+        _NDK_PHY_BRIDGE_ERROR("Atsc3NdkPHYBridge_init: cannot find 'atsc3_l1d_time_information_callback_ID' method id");
         return -1;
     }
     

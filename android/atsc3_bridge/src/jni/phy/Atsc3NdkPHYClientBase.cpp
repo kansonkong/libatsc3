@@ -40,8 +40,3 @@ extern "C" JNIEXPORT jstring JNICALL
 Java_org_ngbp_libatsc3_middleware_android_phy_Atsc3NdkPHYClientBase_get_1firmware_1version(JNIEnv *env, jobject thiz) {
     return nullptr;
 }
-
-extern "C" JNIEXPORT jstring JNICALL
-Java_org_ngbp_libatsc3_middleware_android_phy_Atsc3NdkPHYClientBase_get_1demod_1version(JNIEnv *env, jobject thiz) {
-    return nullptr;
-}

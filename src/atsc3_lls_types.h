@@ -873,6 +873,8 @@ typedef struct lls_sls_alc_monitor {
     //atsc3_sls_alc_flow_v 	atsc3_sls_alc_all_mediainfo_flow_v;
 	
 	//method callback handlers
+    atsc3_lls_sls_alc_on_metadata_fragments_updated_callback_f  atsc3_lls_sls_alc_on_metadata_fragments_updated_callback;
+
     atsc3_alc_on_object_close_flag_s_tsid_content_location_f	atsc3_lls_sls_alc_on_object_close_flag_s_tsid_content_location_callback;
 	
 	atsc3_alc_on_route_mpd_patched_f    						atsc3_lls_sls_alc_on_route_mpd_patched_callback;                             //dispatched in atsc3_route_sls_processor.c
