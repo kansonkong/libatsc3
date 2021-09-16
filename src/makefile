@@ -128,6 +128,7 @@ clean:
 	-rm -f listener_tests/atsc3_alc_listener_test_valgrind
 	-rm -f listener_tests/atsc3_lls_listener_test
 	-rm -f listener_tests/atsc3_mmt_listener_test
+	-rm -f listener_tests/atsc3_mmt_listener_test_dump_all_mmtp_packets
 	-rm -f listener_tests/atsc3_mmt_sls_listener_test
 	-rm -f listener_tests/atsc3_stltp_listener_test
 	-rm -f listener_tests/atsc3_stltp_alp_listener_test
@@ -271,6 +272,7 @@ listener_tests: listener_tests/atsc3_alc_listener_test \
 				listener_tests/atsc3_alc_listener_test_valgrind \
 				listener_tests/atsc3_lls_listener_test \
 				listener_tests/atsc3_mmt_listener_test \
+				listener_tests/atsc3_mmt_listener_test_dump_all_mmtp_packets \
 				listener_tests/atsc3_mmt_sls_listener_test  \
 				listener_tests/atsc3_stltp_listener_test \
 				listener_tests/atsc3_stltp_alp_listener_test \
@@ -1567,6 +1569,14 @@ listener_tests/atsc3_mmt_listener_test: listener_tests/atsc3_mmt_listener_test.c
 		$(LOCAL_LD_LIBS_OPENSSL) \
 		$(LOCAL_LD_LIBS) \
 		-o listener_tests/atsc3_mmt_listener_test
+		
+# simple MMT listener that dumps all mmt packets to mpu/ files for tracing
+listener_tests/atsc3_mmt_listener_test_dump_all_mmtp_packets: listener_tests/atsc3_mmt_listener_test_dump_all_mmtp_packets.cpp libatsc3_bento4_gpl.o
+	$(CXX)  $(ASAN) -D __ISOBMFF_LIB=true $(CFLAGS) $(DEBUG)  listener_tests/atsc3_mmt_listener_test_dump_all_mmtp_packets.cpp \
+		libatsc3_bento4_gpl.o \
+		$(LOCAL_LD_LIBS_OPENSSL) \
+		$(LOCAL_LD_LIBS) \
+		-o listener_tests/atsc3_mmt_listener_test_dump_all_mmtp_packets
 
 # simple ALC/DASH listener that builds a single ISOBMFF segment with v/a muxed in for each MPU
 listener_tests/atsc3_alc_listener_test: listener_tests/atsc3_alc_listener_test.cpp libatsc3_bento4_gpl.o
