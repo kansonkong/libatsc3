@@ -28,6 +28,8 @@ done
 
  */
 
+#define __JJ_MARKONE_SMT_BB
+
 //set in android.mk LOCAL_CFLAGS to compute I Q offset values
 #ifdef __JJ_CALIBRATION_ENABLED
 //jjustman-2021-09-01 - original value
@@ -51,7 +53,7 @@ int                       calibrationStatus;
 #define __JJ_DEBUG_BSR_EA_WAKEUP_ITERATIONS 2000000 / __JJ_DEBUG_BSR_EA_WAKEUP_USLEEP
 
 //poll L1D for timeinfo_* fields
-#define __JJ_DEBUG_L1D_TIMEINFO
+//#define __JJ_DEBUG_L1D_TIMEINFO
 #define __JJ_DEBUG_L1D_TIMEINFO_USLEEP 500000
 #define __JJ_DEBUG_L1D_TIMEINFO_DEMOD_GET_ITERATIONS 2000000 / __JJ_DEBUG_L1D_TIMEINFO_USLEEP
 
@@ -313,7 +315,13 @@ SL_ConfigResult_t SaankhyaPHYAndroid::configPlatformParams_autodetect(int device
 
     if(device_type == SL_DEVICE_TYPE_MARKONE && device_path.c_str() && !strcasecmp(SL_HOSTINTERFACE_TYPE_MARKONE_PATH, device_path.c_str())) {
         //configure as aa_MarkONE
+#ifdef __JJ_MARKONE_SMT_BB
+        res = configPlatformParams_bb_markone();
+#else
         res = configPlatformParams_aa_markone();
+#endif
+
+
     } else if (device_type == SL_DEVICE_TYPE_FX3_KAILASH) {
         //configure as aa FX3
         res = configPlatformParams_aa_fx3();
@@ -508,7 +516,7 @@ int SaankhyaPHYAndroid::open(int fd, int device_type, string device_path)
             break;
 
         case SL_EVB_4000:
-            if (getPlfConfig.tunerType == TUNER_SI)
+            if (getPlfConfig.tunerType == TUNER_SI  || getPlfConfig.tunerType == TUNER_SI_P)
             {
                 afeInfo.spectrum = SL_SPECTRUM_NORMAL;
                 afeInfo.iftype = SL_IFTYPE_ZIF;
@@ -815,16 +823,27 @@ int SaankhyaPHYAndroid::open(int fd, int device_type, string device_path)
             tunerIQDcOffSet.iOffSet = 15;
             tunerIQDcOffSet.qOffSet = 14;
 
-         */
+             */
 
-/* jjustman-2021-09-01 - working values
-        tunerIQDcOffSet.iOffSet = 14;
-        tunerIQDcOffSet.qOffSet = 12;
-*/
+    /* jjustman-2021-09-01 - working values
+            tunerIQDcOffSet.iOffSet = 14;
+            tunerIQDcOffSet.qOffSet = 12;
+    */
 
-//jjustman-2021-09-01 - from calib run iO->13|14
-        tunerIQDcOffSet.iOffSet = 14;
-        tunerIQDcOffSet.qOffSet = 14;
+    //jjustman-2021-09-01 - from calib run iO->13|14
+
+    //markone evt1
+            tunerIQDcOffSet.iOffSet = 14;
+            tunerIQDcOffSet.qOffSet = 14;
+
+            //jjustman-2021-09-26 - markone evt2:
+            /*
+             * 034:INFO :1632373953.3050:Completing calibration with status: 2
+2021-09-23 00:12:33.305 13265-13471/com.nextgenbroadcast.mobile.middleware.sample D/NDK: SaankhyaPHYAndroid.cpp          :1035:INFO :1632373953.3051:I Off Set Value        : 11
+2021-09-23 00:12:33.305 13265-13471/com.nextgenbroadcast.mobile.middleware.sample D/NDK: SaankhyaPHYAndroid.cpp          :1036:INFO :1632373953.3051:Q Off Set Value        : 10
+             */
+        tunerIQDcOffSet.iOffSet = 11;
+        tunerIQDcOffSet.qOffSet = 10;
 
         tres = SL_TunerExSetDcOffSet(tUnit, &tunerIQDcOffSet);
         if (tres != 0)
@@ -1529,6 +1548,47 @@ SL_ConfigResult_t SaankhyaPHYAndroid::configPlatformParams_bb_fx3() {
 
     return res;
 }
+
+SL_ConfigResult_t SaankhyaPHYAndroid::configPlatformParams_bb_markone() {
+
+    SL_ConfigResult_t res = SL_CONFIG_OK;
+
+    sPlfConfig.chipType = SL_CHIP_4000;
+    sPlfConfig.chipRev = SL_CHIP_REV_BB;
+    sPlfConfig.boardType = SL_EVB_4000; //from venky 2020-09-07 - SL_BORQS_EVT;
+    sPlfConfig.tunerType = TUNER_SI_P;
+    sPlfConfig.hostInterfaceType = SL_HostInterfaceType_MarkONE;
+
+    sPlfConfig.demodControlIf = SL_DEMOD_CMD_CONTROL_IF_I2C;
+    sPlfConfig.demodOutputIf = SL_DEMOD_OUTPUTIF_SDIO;
+    sPlfConfig.demodI2cAddr = 0x30; /* SLDemod 7-bit Physical I2C Address */
+
+    sPlfConfig.slsdkPath = "."; //jjustman-2020-09-09 use extern object linkages for fx3/hex firmware
+
+    sPlfConfig.demodResetGpioPin = 12;   /* 09-10 03:25:56.498     0     0 E SAANKHYA: Reset low GPIO: 12 */
+    sPlfConfig.demodI2cAddr3GpioPin = 0;   /* not used on markone AA ? */
+
+    //from: sdm660-qrd-kf.dtsi
+    sPlfConfig.tunerResetGpioPin = 13;
+
+    /* Set Configuration Parameters */
+    res = SL_ConfigSetPlatform(sPlfConfig);
+
+    _SAANKHYA_PHY_ANDROID_DEBUG("configPlatformParams_bb_markone: with chipType: %d, chipRev: %d, boardType: %d, tunerType: %d, hostInterfaceType: %d, ",
+                                sPlfConfig.chipType,
+                                sPlfConfig.chipRev,
+                                sPlfConfig.boardType,
+                                sPlfConfig.tunerType,
+                                sPlfConfig.hostInterfaceType);
+
+    //reconfigure method callbacks for cust_markone
+    SL_ConfigureGpio_markone();
+    SL_ConfigureI2c_markone();
+    SL_ConfigureTs_markone();
+
+    return res;
+}
+
 
 
 
@@ -2417,8 +2477,7 @@ printAtsc3PerfDiagnostics(perfDiag, 0);
         snr_plp[3] = compute_snr(perfDiag.Plp3SnrLinearScale);
         atsc3_ndk_phy_client_rf_metrics.phy_client_rf_plp_metrics[3].snr1000 = snr_plp[3];
 
-        atsc3_ndk_phy_client_rf_metrics.rssi = tunerInfo.signalStrength;
-        atsc3_ndk_phy_client_rf_metrics.rfLevel1000 = tunerInfo.signalStrength * 1000.0;
+        atsc3_ndk_phy_client_rf_metrics.rssi_1000 = tunerInfo.signalStrength * 1000;
 
         //jjustman-2021-05-11 - fixme to just be perfDiag values
         ber_l1b = perfDiag.NumBitErrL1b; //(float)perfDiag.NumBitErrL1b / perfDiag.NumFecBitsL1b; // //aBerPreLdpcE7,

@@ -13,12 +13,10 @@ public class RfPhyStatistics {
 
     public int cpu_status;
 
-    public int rssi;
+    public int rssi_1000;
     public int snr1000_global;
     public int snr1000_l1b;
     public int snr1000_l1d;
-
-    public int rfLevel1000;
 
     public int bootstrap_system_bw;
     public int bootstrap_ea_wakeup;
@@ -72,14 +70,13 @@ public class RfPhyStatistics {
     public int total_error_fec_3;
     public int plp_snr1000_3;
 
-    public RfPhyStatistics(int tuner_lock, int rssi, int modcod_valid_0, int plp_fec_type_0, int plp_mod_0, int plp_cod_0, int rfLevel1000, int snr1000_global, int ber_pre_ldpc_0, int ber_pre_bch_0, int fer_post_bch_0, int demod_lock, int cpu_status, int plp_any, int plp_all) {
+    public RfPhyStatistics(int tuner_lock, int rssi_1000, int modcod_valid_0, int plp_fec_type_0, int plp_mod_0, int plp_cod_0, int snr1000_global, int ber_pre_ldpc_0, int ber_pre_bch_0, int fer_post_bch_0, int demod_lock, int cpu_status, int plp_any, int plp_all) {
         this.tuner_lock = tuner_lock;
-        this.rssi = rssi;
+        this.rssi_1000 = rssi_1000;
         this.modcod_valid_0 = modcod_valid_0;
         this.plp_fec_type_0 = plp_fec_type_0;
         this.plp_mod_0 = plp_mod_0;
         this.plp_cod_0 = plp_cod_0;
-        this.rfLevel1000 = rfLevel1000;
         this.snr1000_global = snr1000_global;
         this.ber_pre_ldpc_0 = ber_pre_ldpc_0;
         this.ber_pre_bch_0 = ber_pre_bch_0;
@@ -102,21 +99,28 @@ public class RfPhyStatistics {
                              "PLk:Any: 0x%02x, All: 0x%02x, Cpu: %s\n"+
                              "RSSI: %d.%03d dB (raw: %d), SNR: G:%4.2f, L1B:%4.2f, L1D: %4.2f\n\n" +
 
-                             "P%d:SNR:%4.2f, MC:G:%d, %s (%d), %s (%d), %s (%d)\n" +
-                             "  BER: p_ldpc: %d, p_bch: %d\n" +
-                             "     pst_bch: %d, t_fec: %d, t_e_fec: %d\n\n" +
+                            (this.plp_id_0 <= 63 ?
+                                 "P%d:SNR:%4.2f, MC:G:%d, %s (%d), %s (%d), %s (%d)\n" +
+                                 "  BER: p_ldpc: %d, p_bch: %d\n" +
+                                 "     pst_bch: %d, t_fec: %d, t_e_fec: %d\n\n"
+                               : "" ) +
 
-                        "P%d:SNR:%4.2f, MC:G:%d, %s (%d), %s (%d), %s (%d)\n" +
-                        "  BER: p_ldpc: %d, p_bch: %d\n" +
-                        "     pst_bch: %d, t_fec: %d, t_e_fec: %d\n\n" +
+                            (this.plp_id_1 <= 63 ?
+                                "P%d:SNR:%4.2f, MC:G:%d, %s (%d), %s (%d), %s (%d)\n" +
+                                        "  BER: p_ldpc: %d, p_bch: %d\n" +
+                                        "     pst_bch: %d, t_fec: %d, t_e_fec: %d\n\n"
+                                : "" ) +
 
-                        "P%d:SNR:%4.2f, MC:G:%d, %s (%d), %s (%d), %s (%d)\n" +
-                        "  BER: p_ldpc: %d, p_bch: %d\n" +
-                        "     pst_bch: %d, t_fec: %d, t_e_fec: %d\n\n" +
-
-                        "P%d:SNR:%4.2f, MC:G:%d, %s (%d), %s (%d), %s (%d)\n" +
-                        "  BER: p_ldpc: %d, p_bch: %d\n" +
-                        "     pst_bch: %d, t_fec: %d, t_e_fec: %d\n" ,
+                            (this.plp_id_2 <= 63 ?
+                                "P%d:SNR:%4.2f, MC:G:%d, %s (%d), %s (%d), %s (%d)\n" +
+                                        "  BER: p_ldpc: %d, p_bch: %d\n" +
+                                        "     pst_bch: %d, t_fec: %d, t_e_fec: %d\n\n"
+                                : "" ) +
+                            (this.plp_id_3 <= 63 ?
+                                "P%d:SNR:%4.2f, MC:G:%d, %s (%d), %s (%d), %s (%d)\n" +
+                                        "  BER: p_ldpc: %d, p_bch: %d\n" +
+                                        "     pst_bch: %d, t_fec: %d, t_e_fec: %d\n\n"
+                                : "" ),
 
 
                         this.tuner_lock,
@@ -131,9 +135,9 @@ public class RfPhyStatistics {
 
                 this.cpu_status == 1 ? "R" : "H",
 
-                (this.rssi) / 1000,
-                ((-this.rssi) % 1000),
-                this.rssi,
+                (this.rssi_1000) / 1000,
+                ((-this.rssi_1000) % 1000),
+                this.rssi_1000,
 
                 (float) this.snr1000_global / 1000.0,
                 (float) this.snr1000_l1b / 1000.0,
