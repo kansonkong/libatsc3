@@ -118,7 +118,7 @@ void atsc3_preg2_regex_extract_and_assign_named_capture_groups(atsc3_pcre2_regex
 				
 				if(atsc3_preg2_regex_match_capture->substring && !strncmp((const char*)(subject + atsc3_pcre2_regex_context->ovector[2*n]), (const char*)block_Get(atsc3_preg2_regex_match_capture->substring), __MIN(substring_length, strlen((const char*)block_Get(atsc3_preg2_regex_match_capture->substring))))) {
 					atsc3_preg2_regex_match_capture->capture_name = strdup((const char*)(tabptr + 2));
-					__PCRE2_REGEX_UTILS_INFO("atsc3_pcre2_regex_match: assigning named capture: %s to capture_id: %d, substring value: %s",
+					__PCRE2_REGEX_UTILS_DEBUG("atsc3_pcre2_regex_match: assigning named capture: %s to capture_id: %d, substring value: %s",
 											 atsc3_preg2_regex_match_capture->capture_name,
 											 atsc3_preg2_regex_match_capture->capture_reference_id,
 											 block_Get(atsc3_preg2_regex_match_capture->substring));

@@ -72,6 +72,7 @@ RFC 5775               ALC Protocol Instantiation             April 2010
 
 #include "atsc3_route_package_utils.h"
 
+int _ALC_UTILS_INFO_ENABLED=0;
 int _ALC_UTILS_DEBUG_ENABLED=0;
 int _ALC_UTILS_TRACE_ENABLED=0;
 int _ALC_UTILS_IOTRACE_ENABLED=0;
@@ -1541,10 +1542,10 @@ atsc3_route_object_t* atsc3_alc_persist_route_object_lct_packet_received_for_lls
 		if(!atsc3_route_object->object_length) {
 		    bool has_set_route_object_content_length = false;
 
-		    __ALC_UTILS_INFO("atsc3_alc_persist_route_object_lct_packet_received_for_lls_sls_alc_monitor_all_flows: tsi: %d, toi: %d has object_length of 0, metadata: atsc3_fdt_instance: %p, atsc3_sls_metadata_fragments->atsc3_route_s_tsid: %p", alc_packet->def_lct_hdr->tsi, alc_packet->def_lct_hdr->toi, lls_sls_alc_monitor->atsc3_fdt_instance, lls_sls_alc_monitor->atsc3_sls_metadata_fragments ? lls_sls_alc_monitor->atsc3_sls_metadata_fragments->atsc3_route_s_tsid : 0x0);
+		    __ALC_UTILS_DEBUG("atsc3_alc_persist_route_object_lct_packet_received_for_lls_sls_alc_monitor_all_flows: tsi: %d, toi: %d has object_length of 0, metadata: atsc3_fdt_instance: %p, atsc3_sls_metadata_fragments->atsc3_route_s_tsid: %p", alc_packet->def_lct_hdr->tsi, alc_packet->def_lct_hdr->toi, lls_sls_alc_monitor->atsc3_fdt_instance, lls_sls_alc_monitor->atsc3_sls_metadata_fragments ? lls_sls_alc_monitor->atsc3_sls_metadata_fragments->atsc3_route_s_tsid : 0x0);
 
 		    if(lls_sls_alc_monitor->atsc3_fdt_instance) {
-                __ALC_UTILS_INFO("atsc3_alc_persist_route_object_lct_packet_received_for_lls_sls_alc_monitor_all_flows: tsi: %d, toi: %d, atsc3_fdt_instance.atsc3_fdt_file count: %d", alc_packet->def_lct_hdr->tsi, alc_packet->def_lct_hdr->toi, lls_sls_alc_monitor->atsc3_fdt_instance->atsc3_fdt_file_v.count);
+                __ALC_UTILS_DEBUG("atsc3_alc_persist_route_object_lct_packet_received_for_lls_sls_alc_monitor_all_flows: tsi: %d, toi: %d, atsc3_fdt_instance.atsc3_fdt_file count: %d", alc_packet->def_lct_hdr->tsi, alc_packet->def_lct_hdr->toi, lls_sls_alc_monitor->atsc3_fdt_instance->atsc3_fdt_file_v.count);
                 for (int i = 0; i < lls_sls_alc_monitor->atsc3_fdt_instance->atsc3_fdt_file_v.count && !has_set_route_object_content_length; i++) {
                     atsc3_fdt_file_t* atsc3_fdt_file = lls_sls_alc_monitor->atsc3_fdt_instance->atsc3_fdt_file_v.data[i];
 
@@ -1583,7 +1584,7 @@ atsc3_route_object_t* atsc3_alc_persist_route_object_lct_packet_received_for_lls
 		    }
 
 		    if(!has_set_route_object_content_length) {
-                __ALC_UTILS_ERROR("atsc3_alc_persist_route_object_lct_packet_received_for_lls_sls_alc_monitor_all_flows: tsi: %d, toi: %d, no other metadata sources for object length!", alc_packet->def_lct_hdr->tsi, alc_packet->def_lct_hdr->toi);
+                __ALC_UTILS_INFO("atsc3_alc_persist_route_object_lct_packet_received_for_lls_sls_alc_monitor_all_flows: tsi: %d, toi: %d, no other metadata sources for object length!", alc_packet->def_lct_hdr->tsi, alc_packet->def_lct_hdr->toi);
             }
 		}
 	}
