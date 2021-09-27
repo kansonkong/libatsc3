@@ -42,18 +42,18 @@ public:
 
     void LogMsg(const char *msg);
     void LogMsg(const std::string &msg);
+    \
     void LogMsgF(const char *fmt, ...);
 
     void atsc3_notify_phy_error(const char* fmt, ...);
 
     void atsc3_update_rf_stats(int32_t tuner_lock,    //1
-                                       int32_t rssi,
+                                       int32_t rssi_1000,
                                        uint8_t modcod_valid,
                                        uint8_t plp_fec_type,
                                        uint8_t plp_mod,
                                        uint8_t plp_cod,
-                                       int32_t nRfLevel1000,
-                                       int32_t nSnr1000,
+                                       int32_t nSnr_1000,
                                        uint32_t ber_pre_ldpc_e7,
                                        uint32_t ber_pre_bch_e9,
                                        uint32_t fer_post_bch_e6,
