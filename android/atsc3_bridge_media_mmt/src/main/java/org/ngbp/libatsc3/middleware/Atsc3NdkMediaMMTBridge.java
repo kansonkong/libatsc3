@@ -5,11 +5,14 @@ import android.util.Log;
 import org.ngbp.libatsc3.middleware.android.ATSC3PlayerFlags;
 import org.ngbp.libatsc3.middleware.android.application.interfaces.IAtsc3NdkMediaMMTBridgeCallbacks;
 import org.ngbp.libatsc3.middleware.android.mmt.MfuByteBufferFragment;
+import org.ngbp.libatsc3.middleware.android.mmt.MmtAssetDescription;
 import org.ngbp.libatsc3.middleware.android.mmt.MmtPacketIdContext;
 import org.ngbp.libatsc3.middleware.android.mmt.MpuMetadata_HEVC_NAL_Payload;
 import org.ngbp.libatsc3.middleware.android.mmt.models.MMTAudioDecoderConfigurationRecord;
 
 import java.nio.ByteBuffer;
+import java.util.ArrayList;
+import java.util.List;
 
 /*
 Atsc3NdkMediaMMTBridge: for ExoPlayer plugin support
@@ -99,6 +102,49 @@ public class Atsc3NdkMediaMMTBridge extends Atsc3NdkMediaMMTBridgeStaticJniLoade
         MmtPacketIdContext.stpp_packet_signalling_information.mpu_presentation_time_microseconds = mpu_presentation_time_microseconds;
 
         return 0;
+    }
+
+    public void atsc3_onVideoStreamProperties(String[] asset_id, String[] codec) {
+        if(ATSC3PlayerFlags.ATSC3PlayerStartPlayback) {
+            List<MmtAssetDescription> codecs = createAssetDescriptionList(asset_id, codec);
+            if (codecs == null) return;
+
+            mActivity.onVideoStreamProperties(codecs);
+        } else {
+            //discard...
+        }
+    }
+
+    public void atsc3_onCaptionAssetProperties(String[] asset_id, String[] language) {
+        if(ATSC3PlayerFlags.ATSC3PlayerStartPlayback) {
+            List<MmtAssetDescription> languages = createAssetDescriptionList(asset_id, language);
+            if (languages == null) return;
+
+            mActivity.onCaptionAssetProperties(languages);
+        } else {
+            //discard...
+        }
+    }
+
+    public void atsc3_onAudioStreamProperties(String[] asset_id, String[] language) {
+        if(ATSC3PlayerFlags.ATSC3PlayerStartPlayback) {
+            List<MmtAssetDescription> languages = createAssetDescriptionList(asset_id, language);
+            if (languages == null) return;
+
+            mActivity.onAudioStreamProperties(languages);
+        } else {
+            //discard...
+        }
+    }
+
+    private List<MmtAssetDescription> createAssetDescriptionList(String[] asset_id, String[] description) {
+        if (asset_id.length != description.length) return null;
+
+        ArrayList<MmtAssetDescription> assets = new ArrayList<>(asset_id.length);
+        for (int i = 0; i < asset_id.length; i++) {
+            assets.add(new MmtAssetDescription(asset_id[i], description[i]));
+        }
+        return assets;
     }
 
     public int atsc3_onExtractedSampleDuration(int packet_id, long mpu_sequence_number, long extracted_sample_duration_us) {
