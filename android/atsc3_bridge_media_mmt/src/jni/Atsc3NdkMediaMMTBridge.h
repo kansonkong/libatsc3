@@ -62,6 +62,10 @@ public:
     void atsc3_signallingContext_notify_audio_packet_id_and_mpu_timestamp_descriptor(uint16_t audio_packet_id, uint32_t mpu_sequence_number, uint64_t mpu_presentation_time_ntp64, uint32_t mpu_presentation_time_seconds, uint32_t mpu_presentation_time_microsecond);
     void atsc3_signallingContext_notify_stpp_packet_id_and_mpu_timestamp_descriptor(uint16_t stpp_packet_id, uint32_t mpu_sequence_number, uint64_t mpu_presentation_time_ntp64, uint32_t mpu_presentation_time_seconds, uint32_t mpu_presentation_time_microseconds);
 
+    void atsc3_onVideoStreamProperties(vector<string> vAssetId, vector<string> vCodec);
+    void atsc3_onCaptionAssetProperties(vector<string> vAssetId, vector<string> vLanguage);
+    void atsc3_onAudioStreamProperties(vector<string> vAssetId, vector<string> vLanguage);
+
     //Fragment Metadata callbacks
     void atsc3_onExtractedSampleDuration(uint16_t packet_id, uint32_t mpu_sequence_number, uint32_t extracted_sample_duration_us);
     void atsc3_setVideoWidthHeightFromTrak(uint16_t packet_id, uint32_t width, uint32_t height);
@@ -140,6 +144,10 @@ public:
     jmethodID atsc3_signallingContext_notify_video_packet_id_and_mpu_timestamp_descriptor_ID = nullptr;  // java class method id
     jmethodID atsc3_signallingContext_notify_audio_packet_id_and_mpu_timestamp_descriptor_ID = nullptr;  // java class method id
     jmethodID atsc3_signallingContext_notify_stpp_packet_id_and_mpu_timestamp_descriptor_ID = nullptr;  // java class method id
+
+    jmethodID atsc3_onVideoStreamProperties_ID = nullptr;  // java class method id
+    jmethodID atsc3_onCaptionAssetProperties_ID = nullptr;  // java class method id
+    jmethodID atsc3_onAudioStreamProperties_ID = nullptr;  // java class method id
 
     jmethodID atsc3_onExtractedSampleDurationID = nullptr;
     jmethodID atsc3_setVideoWidthHeightFromTrakID = nullptr;
