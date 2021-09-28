@@ -20,7 +20,7 @@ public interface IAtsc3NdkApplicationBridgeCallbacks {
     public File jni_getCacheDir(); //hack, todo - move to pure NDK impl
 
     //service selection/notification callbacks
-    public void onSltTablePresent(String sltPayloadXML);
+    public void onSltTablePresent(int tableId, int tableVersion, int groupId, String sltPayloadXML);
     public void onAeatTablePresent(String aeatPayloadXML);
     public void onSlsHeldEmissionPresent(int serviceId, String heldPayloadXML);
 
