@@ -515,7 +515,7 @@ void Atsc3NdkApplicationBridge::atsc3_lls_sls_alc_on_package_extract_completed_c
 }
 
 
-void Atsc3NdkApplicationBridge::atsc3_onSltTablePresent(const char* slt_payload_xml) {
+void Atsc3NdkApplicationBridge::atsc3_onSltTablePresent(uint8_t lls_table_id, uint8_t lls_table_version, uint8_t lls_group_id, const char* slt_payload_xml) {
     if (!atsc3_onSltTablePresent_ID) {
         _NDK_APPLICATION_BRIDGE_ERROR("atsc3_onSltTablePresent_ID: %p", atsc3_onSltTablePresent_ID);
         return;
@@ -535,7 +535,7 @@ void Atsc3NdkApplicationBridge::atsc3_onSltTablePresent(const char* slt_payload_
 
 
     jstring xml_payload = bridgeConsumerJniEnv->Get()->NewStringUTF(slt_payload_xml);
-    int r = bridgeConsumerJniEnv->Get()->CallIntMethod(jni_instance_globalRef, atsc3_onSltTablePresent_ID, xml_payload);
+    int r = bridgeConsumerJniEnv->Get()->CallIntMethod(jni_instance_globalRef, atsc3_onSltTablePresent_ID, lls_table_id, lls_table_version, lls_group_id, xml_payload);
     bridgeConsumerJniEnv->Get()->DeleteLocalRef(xml_payload);
 }
 
@@ -557,7 +557,6 @@ void Atsc3NdkApplicationBridge::atsc3_onAeatTablePresent(const char *aeat_payloa
     int r = bridgeConsumerJniEnv->Get()->CallIntMethod(jni_instance_globalRef, atsc3_onAeatTablePresent_ID, xml_payload);
     bridgeConsumerJniEnv->Get()->DeleteLocalRef(xml_payload);
 }
-
 
 void Atsc3NdkApplicationBridge::atsc3_onSlsHeldEmissionPresent(uint16_t service_id, const char *held_payload_xml) {
 	if (!atsc3_onSlsHeldEmissionPresent_ID)
@@ -619,7 +618,7 @@ Java_org_ngbp_libatsc3_middleware_Atsc3NdkApplicationBridge_init(JNIEnv *env, jo
     }
 
     //atsc3_onSltTablePresent_ID
-    apiAppBridge->atsc3_onSltTablePresent_ID = env->GetMethodID(jniClassReference, "atsc3_onSltTablePresent", "(Ljava/lang/String;)I");
+    apiAppBridge->atsc3_onSltTablePresent_ID = env->GetMethodID(jniClassReference, "atsc3_onSltTablePresent", "(IIILjava/lang/String;)I");
     if (apiAppBridge->atsc3_onSltTablePresent_ID == NULL) {
         _NDK_APPLICATION_BRIDGE_ERROR("Atsc3NdkApplicationBridge_init: cannot find 'atsc3_onSltTablePresent_ID' method id");
         return -1;

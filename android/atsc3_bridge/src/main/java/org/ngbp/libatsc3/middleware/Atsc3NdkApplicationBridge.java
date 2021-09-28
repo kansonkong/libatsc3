@@ -56,9 +56,8 @@ public class Atsc3NdkApplicationBridge extends Atsc3BridgeNdkStaticJniLoader
         return 0;
     }
 
-    int atsc3_onSltTablePresent(String slt_payload_xml) {
-
-        mActivity.onSltTablePresent(slt_payload_xml);
+    int atsc3_onSltTablePresent(int table_id, int table_version, int group_id, String slt_payload_xml) {
+        mActivity.onSltTablePresent(table_id, table_version, group_id, slt_payload_xml);
         return 0;
     }
 
