@@ -226,7 +226,7 @@ typedef struct atsc3_video_decoder_configuration_record {
     uint32_t timebase;
 
     //extracted from moof/fragment metadata
-    uint32_t sample_duration;
+    uint32_t sample_duration_us;
 
 } atsc3_video_decoder_configuration_record_t;
 
