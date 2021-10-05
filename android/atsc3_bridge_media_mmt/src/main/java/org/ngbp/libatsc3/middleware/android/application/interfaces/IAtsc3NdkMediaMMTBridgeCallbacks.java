@@ -1,9 +1,11 @@
 package org.ngbp.libatsc3.middleware.android.application.interfaces;
 
 import org.ngbp.libatsc3.middleware.android.mmt.MfuByteBufferFragment;
-import org.ngbp.libatsc3.middleware.android.mmt.MmtAssetDescription;
 import org.ngbp.libatsc3.middleware.android.mmt.MpuMetadata_HEVC_NAL_Payload;
 import org.ngbp.libatsc3.middleware.android.mmt.models.MMTAudioDecoderConfigurationRecord;
+import org.ngbp.libatsc3.middleware.mmt.pb.MmtAudioProperties;
+import org.ngbp.libatsc3.middleware.mmt.pb.MmtCaptionProperties;
+import org.ngbp.libatsc3.middleware.mmt.pb.MmtVideoProperties;
 
 import java.util.List;
 
@@ -16,7 +18,7 @@ public interface IAtsc3NdkMediaMMTBridgeCallbacks {
 
     public void pushAudioDecoderConfigurationRecord(MMTAudioDecoderConfigurationRecord mmtAudioDecoderConfigurationRecord);
 
-    public void onVideoStreamProperties(List<MmtAssetDescription> codecs);
-    public void onCaptionAssetProperties(List<MmtAssetDescription> languages);
-    public void onAudioStreamProperties(List<MmtAssetDescription> languages);
+    public void onVideoStreamProperties(MmtVideoProperties.MmtVideoPropertiesDescriptor descriptor);
+    public void onCaptionAssetProperties(MmtCaptionProperties.MmtCaptionPropertiesDescriptor descriptor);
+    public void onAudioStreamProperties(MmtAudioProperties.MmtAudioPropertiesDescriptor descriptor);
 }
