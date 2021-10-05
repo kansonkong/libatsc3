@@ -1,4 +1,7 @@
 #include "Atsc3NdkMediaMMTBridge.h"
+#include "MmtVideoProperties.pb.h"
+#include "MmtCaptionProperties.pb.h"
+#include "MmtAudioProperties.pb.h"
 
 //#define __MMT_PROCESS_CORRUPT_FRAMES__
 
@@ -6,6 +9,8 @@ pthread_once_t Atsc3NdkMediaMMTBridge::JniPtrOnce = PTHREAD_ONCE_INIT;
 pthread_key_t Atsc3NdkMediaMMTBridge::JniPtr = 0;
 map<jobject, Atsc3NdkMediaMMTBridge*> Atsc3NdkMediaMMTBridge::MediaBridgePtrMap;
 int _NDK_MEDIA_MMT_BRIDGE_atsc3_onMfuPacket_counter = 0;
+
+using namespace org::ngbp::libatsc3::middleware::mmt;
 
 Atsc3NdkMediaMMTBridge::Atsc3NdkMediaMMTBridge(JNIEnv* env, jobject jni_instance, jobject fragment_buffer, jint max_fragment_count) {
     this->jni_instance_globalRef = env->NewGlobalRef(jni_instance);
@@ -393,7 +398,7 @@ void Atsc3NdkMediaMMTBridge::atsc3_signallingContext_notify_stpp_packet_id_and_m
      Atsc3NdkMediaMMTBridge::GetBridgeConsumerJniEnv()->Get()->CallIntMethod(jni_instance_globalRef, atsc3_signallingContext_notify_stpp_packet_id_and_mpu_timestamp_descriptor_ID, stpp_packet_id, mpu_sequence_number, mpu_presentation_time_ntp64, mpu_presentation_time_seconds, mpu_presentation_time_microseconds);
 }
 
-void Atsc3NdkMediaMMTBridge::atsc3_onVideoStreamProperties(vector<string> vAssetId, vector<string> vCodec) {
+void Atsc3NdkMediaMMTBridge::atsc3_onVideoStreamProperties(mmt_atsc3_message_content_type_video_stream_properties_descriptor_t* mmt_atsc3_video_stream_properties_descriptor_message) {
     this->pinConsumerThreadAsNeeded(); //jjustman-2020-12-17 - hack
 
     Atsc3JniEnv* jniEnv = Atsc3NdkMediaMMTBridge::GetBridgeConsumerJniEnv();
@@ -405,23 +410,30 @@ void Atsc3NdkMediaMMTBridge::atsc3_onVideoStreamProperties(vector<string> vAsset
 
     JNIEnv *env = jniEnv->Get();
 
-    jobjectArray asset_id_array = env->NewObjectArray(vAssetId.size(), env->FindClass("java/lang/String"), env->NewStringUTF(""));
-    for (int i = 0; i < vAssetId.size(); i++) {
-        env->SetObjectArrayElement(asset_id_array, i, env->NewStringUTF(vAssetId[i].c_str()));
+    pb::MmtVideoPropertiesDescriptor descriptor;
+
+    for(int i=0; i < mmt_atsc3_video_stream_properties_descriptor_message->descriptor_header.number_of_assets; i++) {
+        mmt_atsc3_message_content_type_video_stream_properties_descriptor_asset_t* mmt_atsc3_message_content_type_video_stream_properties_descriptor_asset = mmt_atsc3_video_stream_properties_descriptor_message->mmt_atsc3_message_content_type_video_stream_properties_descriptor_asset_v.data[i];
+
+        pb::MmtVideoPropertiesAsset* asset = descriptor.add_asset();
+        asset->set_id(string(reinterpret_cast<const char *>(mmt_atsc3_message_content_type_video_stream_properties_descriptor_asset->asset_header.asset_id),
+                             mmt_atsc3_message_content_type_video_stream_properties_descriptor_asset->asset_header.asset_id_length));
+        asset->set_codec(string(reinterpret_cast<const char *>(&mmt_atsc3_message_content_type_video_stream_properties_descriptor_asset->codec_code), 4));
     }
 
-    jobjectArray codec_code_array = env->NewObjectArray(vCodec.size(), env->FindClass("java/lang/String"), env->NewStringUTF(""));
-    for (int i = 0; i < vCodec.size(); i++) {
-        env->SetObjectArrayElement(codec_code_array, i, env->NewStringUTF(vCodec[i].c_str()));
-    }
+    size_t bufferSize = descriptor.ByteSizeLong();
+    char *p = (char *) malloc(bufferSize);
+    descriptor.SerializeToArray(p, bufferSize);
 
-    env->CallVoidMethod(jni_instance_globalRef, atsc3_onVideoStreamProperties_ID, asset_id_array, codec_code_array);
+    jbyteArray jArray = env->NewByteArray(bufferSize);
+    env->SetByteArrayRegion(jArray, 0, bufferSize, (jbyte*) p);
+    env->CallVoidMethod(jni_instance_globalRef, atsc3_onVideoStreamProperties_ID, jArray);
+    jniEnv->Get()->DeleteLocalRef(jArray);
 
-    jniEnv->Get()->DeleteLocalRef(codec_code_array);
-    jniEnv->Get()->DeleteLocalRef(asset_id_array);
+    free(p);
 }
 
-void Atsc3NdkMediaMMTBridge::atsc3_onCaptionAssetProperties(vector<string> vAssetId, vector<string> vLanguage) {
+void Atsc3NdkMediaMMTBridge::atsc3_onCaptionAssetProperties(mmt_atsc3_message_content_type_caption_asset_descriptor_t* mmt_atsc3_caption_asset_descriptor_message) {
     this->pinConsumerThreadAsNeeded(); //jjustman-2020-12-17 - hack
 
     Atsc3JniEnv* jniEnv = Atsc3NdkMediaMMTBridge::GetBridgeConsumerJniEnv();
@@ -433,23 +445,31 @@ void Atsc3NdkMediaMMTBridge::atsc3_onCaptionAssetProperties(vector<string> vAsse
 
     JNIEnv *env = jniEnv->Get();
 
-    jobjectArray asset_id_array = env->NewObjectArray(vAssetId.size(), env->FindClass("java/lang/String"), env->NewStringUTF(""));
-    for (int i = 0; i < vAssetId.size(); i++) {
-        env->SetObjectArrayElement(asset_id_array, i, env->NewStringUTF(vAssetId[i].c_str()));
+    pb::MmtCaptionPropertiesDescriptor descriptor;
+
+    for(int i=0; i < mmt_atsc3_caption_asset_descriptor_message->descriptor_header.number_of_assets; i++) {
+        mmt_atsc3_message_content_type_caption_asset_descriptor_asset_t* mmt_atsc3_message_content_type_caption_asset_descriptor_asset = mmt_atsc3_caption_asset_descriptor_message->mmt_atsc3_message_content_type_caption_asset_descriptor_asset_v.data[i];
+
+        pb::MmtCaptionPropertiesAsset* asset = descriptor.add_asset();
+        asset->set_id(string(reinterpret_cast<const char *>(mmt_atsc3_message_content_type_caption_asset_descriptor_asset->asset_header.asset_id),
+                             mmt_atsc3_message_content_type_caption_asset_descriptor_asset->asset_header.asset_id_length));
+        asset->set_language(string(reinterpret_cast<const char *>(mmt_atsc3_message_content_type_caption_asset_descriptor_asset->language_header.language),
+                                   mmt_atsc3_message_content_type_caption_asset_descriptor_asset->language_header.language_length));
     }
 
-    jobjectArray languages_array = env->NewObjectArray(vLanguage.size(), env->FindClass("java/lang/String"), env->NewStringUTF(""));
-    for (int i = 0; i < vLanguage.size(); i++) {
-        env->SetObjectArrayElement(languages_array, i, env->NewStringUTF(vLanguage[i].c_str()));
-    }
+    size_t bufferSize = descriptor.ByteSizeLong();
+    char *p = (char *) malloc(bufferSize);
+    descriptor.SerializeToArray(p, bufferSize);
 
-    env->CallVoidMethod(jni_instance_globalRef, atsc3_onCaptionAssetProperties_ID, asset_id_array, languages_array);
+    jbyteArray jArray = env->NewByteArray(bufferSize);
+    env->SetByteArrayRegion(jArray, 0, bufferSize, (jbyte*) p);
+    env->CallVoidMethod(jni_instance_globalRef, atsc3_onCaptionAssetProperties_ID, jArray);
+    jniEnv->Get()->DeleteLocalRef(jArray);
 
-    jniEnv->Get()->DeleteLocalRef(languages_array);
-    jniEnv->Get()->DeleteLocalRef(asset_id_array);
+    free(p);
 }
 
-void Atsc3NdkMediaMMTBridge::atsc3_onAudioStreamProperties(vector<string> vAssetId, vector<string> vLanguage) {
+void Atsc3NdkMediaMMTBridge::atsc3_onAudioStreamProperties(mmt_atsc3_message_content_type_audio_stream_properties_descriptor_t* mmt_atsc3_audio_stream_properties_descriptor_message) {
     this->pinConsumerThreadAsNeeded(); //jjustman-2020-12-17 - hack
 
     Atsc3JniEnv* jniEnv = Atsc3NdkMediaMMTBridge::GetBridgeConsumerJniEnv();
@@ -461,20 +481,49 @@ void Atsc3NdkMediaMMTBridge::atsc3_onAudioStreamProperties(vector<string> vAsset
 
     JNIEnv *env = jniEnv->Get();
 
-    jobjectArray asset_id_array = env->NewObjectArray(vAssetId.size(), env->FindClass("java/lang/String"), env->NewStringUTF(""));
-    for (int i = 0; i < vAssetId.size(); i++) {
-        env->SetObjectArrayElement(asset_id_array, i, env->NewStringUTF(vAssetId[i].c_str()));
+    pb::MmtAudioPropertiesDescriptor descriptor;
+
+    for(int i=0; i < mmt_atsc3_audio_stream_properties_descriptor_message->descriptor_header.number_of_assets; i++) {
+        mmt_atsc3_message_content_type_audio_stream_properties_descriptor_asset_t* mmt_atsc3_message_content_type_audio_stream_properties_descriptor_asset = mmt_atsc3_audio_stream_properties_descriptor_message->mmt_atsc3_message_content_type_audio_stream_properties_descriptor_asset_v.data[i];
+
+        pb::MmtAudioPropertiesAsset* asset = descriptor.add_asset();
+        asset->set_id(string(reinterpret_cast<const char *>(mmt_atsc3_message_content_type_audio_stream_properties_descriptor_asset->asset_header.asset_id),
+                             mmt_atsc3_message_content_type_audio_stream_properties_descriptor_asset->asset_header.asset_id_length));
+
+        for(int j=0; j < mmt_atsc3_message_content_type_audio_stream_properties_descriptor_asset->num_presentations; j++) {
+            mmt_atsc3_message_content_type_audio_stream_properties_descriptor_asset_presentation_t* mmt_atsc3_message_content_type_audio_stream_properties_descriptor_asset_presentation = mmt_atsc3_message_content_type_audio_stream_properties_descriptor_asset->mmt_atsc3_message_content_type_audio_stream_properties_descriptor_asset_presentation_v.data[j];
+
+            pb::MmtAudioPropertiesPresentation* presentation = asset->add_presentation();
+
+            if(mmt_atsc3_message_content_type_audio_stream_properties_descriptor_asset_presentation->language_present) {
+                //remember, we are _minus1
+
+                for(int k=0; k < mmt_atsc3_message_content_type_audio_stream_properties_descriptor_asset_presentation->num_languages_minus1 + 1; k++) {
+                    mmt_atsc3_message_content_type_audio_stream_properties_descriptor_asset_presentation_language_t* mmt_atsc3_message_content_type_audio_stream_properties_descriptor_asset_presentation_language = mmt_atsc3_message_content_type_audio_stream_properties_descriptor_asset_presentation->mmt_atsc3_message_content_type_audio_stream_properties_descriptor_asset_presentation_language_v.data[k];
+
+                    presentation->add_language(reinterpret_cast<const char *>(mmt_atsc3_message_content_type_audio_stream_properties_descriptor_asset_presentation_language->language),
+                                               mmt_atsc3_message_content_type_audio_stream_properties_descriptor_asset_presentation_language->language_length);
+                }
+            }
+
+            if(mmt_atsc3_message_content_type_audio_stream_properties_descriptor_asset_presentation->label_present) {
+                presentation->set_label(string(mmt_atsc3_message_content_type_audio_stream_properties_descriptor_asset_presentation->label_data_byte,
+                                               mmt_atsc3_message_content_type_audio_stream_properties_descriptor_asset_presentation->label_length));
+            }
+        }
     }
 
-    jobjectArray languages_array = env->NewObjectArray(vLanguage.size(), env->FindClass("java/lang/String"), env->NewStringUTF(""));
-    for (int i = 0; i < vLanguage.size(); i++) {
-        env->SetObjectArrayElement(languages_array, i, env->NewStringUTF(vLanguage[i].c_str()));
-    }
+    size_t bufferSize = descriptor.ByteSizeLong();
+    char *p = (char *) malloc(bufferSize);
+    descriptor.SerializeToArray(p, bufferSize);
 
-    env->CallVoidMethod(jni_instance_globalRef, atsc3_onAudioStreamProperties_ID, asset_id_array, languages_array);
+    jbyteArray jArray = env->NewByteArray(bufferSize);
+    env->SetByteArrayRegion(jArray, 0, bufferSize, (jbyte*) p);
+    free(p);
 
-    jniEnv->Get()->DeleteLocalRef(languages_array);
-    jniEnv->Get()->DeleteLocalRef(asset_id_array);
+    env->CallVoidMethod(jni_instance_globalRef, atsc3_onAudioStreamProperties_ID, jArray);
+
+    jniEnv->Get()->DeleteLocalRef(jArray);
 }
 
 //MFU metadata for sample duration
@@ -747,19 +796,19 @@ Java_org_ngbp_libatsc3_middleware_Atsc3NdkMediaMMTBridge_init(JNIEnv *env, jobje
         return -1;
     }
 
-    mediaMMTBridge->atsc3_onVideoStreamProperties_ID = env->GetMethodID(jniClassReference, "atsc3_onVideoStreamProperties", "([Ljava/lang/String;[Ljava/lang/String;)V");
+    mediaMMTBridge->atsc3_onVideoStreamProperties_ID = env->GetMethodID(jniClassReference, "atsc3_onVideoStreamProperties", "([B)V");
     if (mediaMMTBridge->atsc3_onVideoStreamProperties_ID == NULL) {
         _NDK_MEDIA_MMT_BRIDGE_ERROR("Atsc3NdkMediaMMTBridge_init: cannot find 'atsc3_onVideoStreamProperties_ID' method id");
         return -1;
     }
 
-    mediaMMTBridge->atsc3_onCaptionAssetProperties_ID = env->GetMethodID(jniClassReference, "atsc3_onCaptionAssetProperties", "([Ljava/lang/String;[Ljava/lang/String;)V");
+    mediaMMTBridge->atsc3_onCaptionAssetProperties_ID = env->GetMethodID(jniClassReference, "atsc3_onCaptionAssetProperties", "([B)V");
     if (mediaMMTBridge->atsc3_onCaptionAssetProperties_ID == NULL) {
         _NDK_MEDIA_MMT_BRIDGE_ERROR("Atsc3NdkMediaMMTBridge_init: cannot find 'atsc3_onCaptionAssetProperties_ID' method id");
         return -1;
     }
 
-    mediaMMTBridge->atsc3_onAudioStreamProperties_ID = env->GetMethodID(jniClassReference, "atsc3_onAudioStreamProperties", "([Ljava/lang/String;[Ljava/lang/String;)V");
+    mediaMMTBridge->atsc3_onAudioStreamProperties_ID = env->GetMethodID(jniClassReference, "atsc3_onAudioStreamProperties", "([B)V");
     if (mediaMMTBridge->atsc3_onAudioStreamProperties_ID == NULL) {
         _NDK_MEDIA_MMT_BRIDGE_ERROR("Atsc3NdkMediaMMTBridge_init: cannot find 'atsc3_onAudioStreamProperties_ID' method id");
         return -1;
