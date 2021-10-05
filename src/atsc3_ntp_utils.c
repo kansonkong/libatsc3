@@ -1,11 +1,11 @@
 /*
- * mmtp_ntp32_to_pts.h
+ * atsc3_ntp_utils.c
  *
  *  Created on: Jan 8, 2019
  *      Author: jjustman
  */
 
-#include "atsc3_mmtp_ntp32_to_pts.h"
+#include "atsc3_ntp_utils.h"
 
 /**
  * convert ntp "short-format" packet time into a future re-clocked pts
@@ -43,6 +43,15 @@ void compute_ntp64_to_seconds_microseconds(uint64_t timestamp, uint32_t *seconds
 	*microseconds = (uint32_t)( (double)tmp_mmtp_fractional_s * 1.0e6 / (double)(1LL<<32) );
 
 }
+
+uint32_t ntp32_compute_from_seconds_microseconds(uint16_t seconds, uint16_t microseconds) {
+    return ((uint32_t)(seconds) << 16) | (uint16_t)( (double)(microseconds+1) * (double)(1LL<<16) * 1.0e-6 );
+}
+
+uint64_t ntp64_compute_from_seconds_microseconds(uint16_t seconds, uint16_t microseconds) {
+    return ((uint64_t)(seconds) << 32) | (uint32_t)( (double)(microseconds+1) * (double)(1LL<<32) * 1.0e-6 );
+}
+
 /*
  *
  * make sure to call above to un-fractionalize fractions
