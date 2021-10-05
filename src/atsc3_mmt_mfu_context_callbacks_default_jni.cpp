@@ -2,8 +2,6 @@
 // Created by Jason Justman on 12/1/20.
 //
 
-#include <string>
-
 #include "atsc3_mmt_mfu_context_callbacks_default_jni.h"
 
 IAtsc3NdkMediaMMTBridge* Atsc3NdkMediaMMTBridge_ptr = NULL;
@@ -371,9 +369,6 @@ void atsc3_mmt_signalling_information_on_userservicedescription_present_ndk(atsc
 }
 
 void mmt_atsc3_message_content_type_video_stream_properties_descriptor_present_ndk(atsc3_mmt_mfu_context_t* atsc3_mmt_mfu_context, mmt_atsc3_message_content_type_video_stream_properties_descriptor_t* mmt_atsc3_video_stream_properties_descriptor_message){
-    vector<string> vAssetId;
-    vector<string> vCodec;
-
     for(int i=0; i < mmt_atsc3_video_stream_properties_descriptor_message->descriptor_header.number_of_assets; i++) {
         mmt_atsc3_message_content_type_video_stream_properties_descriptor_asset_t* mmt_atsc3_message_content_type_video_stream_properties_descriptor_asset = mmt_atsc3_video_stream_properties_descriptor_message->mmt_atsc3_message_content_type_video_stream_properties_descriptor_asset_v.data[i];
 
@@ -383,18 +378,12 @@ void mmt_atsc3_message_content_type_video_stream_properties_descriptor_present_n
                                 mmt_atsc3_message_content_type_video_stream_properties_descriptor_asset->asset_header.asset_id,
                                 mmt_atsc3_message_content_type_video_stream_properties_descriptor_asset->codec_code);
 
-        vAssetId.emplace_back(reinterpret_cast<const char *>(mmt_atsc3_message_content_type_video_stream_properties_descriptor_asset->asset_header.asset_id),
-                              mmt_atsc3_message_content_type_video_stream_properties_descriptor_asset->asset_header.asset_id_length);
-        vCodec.emplace_back(reinterpret_cast<const char *>(&mmt_atsc3_message_content_type_video_stream_properties_descriptor_asset->codec_code), 4);
     }
 
-    Atsc3NdkMediaMMTBridge_ptr->atsc3_onVideoStreamProperties(vAssetId, vCodec);
+    Atsc3NdkMediaMMTBridge_ptr->atsc3_onVideoStreamProperties(mmt_atsc3_video_stream_properties_descriptor_message);
 }
 
 void atsc3_mmt_signalling_information_on_caption_asset_descriptor_present_ndk(atsc3_mmt_mfu_context_t* atsc3_mmt_mfu_context, mmt_atsc3_message_content_type_caption_asset_descriptor_t* mmt_atsc3_caption_asset_descriptor_message){
-    vector<string> vAssetId;
-    vector<string> vLanguage;
-
     for(int i=0; i < mmt_atsc3_caption_asset_descriptor_message->descriptor_header.number_of_assets; i++) {
         mmt_atsc3_message_content_type_caption_asset_descriptor_asset_t* mmt_atsc3_message_content_type_caption_asset_descriptor_asset = mmt_atsc3_caption_asset_descriptor_message->mmt_atsc3_message_content_type_caption_asset_descriptor_asset_v.data[i];
 
@@ -404,20 +393,12 @@ void atsc3_mmt_signalling_information_on_caption_asset_descriptor_present_ndk(at
                                 mmt_atsc3_message_content_type_caption_asset_descriptor_asset->asset_header.asset_id,
                                 mmt_atsc3_message_content_type_caption_asset_descriptor_asset->language_header.language_length,
                                 mmt_atsc3_message_content_type_caption_asset_descriptor_asset->language_header.language);
-
-        vAssetId.emplace_back(reinterpret_cast<const char *>(mmt_atsc3_message_content_type_caption_asset_descriptor_asset->asset_header.asset_id),
-                              mmt_atsc3_message_content_type_caption_asset_descriptor_asset->asset_header.asset_id_length);
-        vLanguage.emplace_back(reinterpret_cast<const char *>(mmt_atsc3_message_content_type_caption_asset_descriptor_asset->language_header.language),
-                               mmt_atsc3_message_content_type_caption_asset_descriptor_asset->language_header.language_length);
     }
 
-    Atsc3NdkMediaMMTBridge_ptr->atsc3_onCaptionAssetProperties(vAssetId, vLanguage);
+    Atsc3NdkMediaMMTBridge_ptr->atsc3_onCaptionAssetProperties(mmt_atsc3_caption_asset_descriptor_message);
 }
 
 void atsc3_mmt_signalling_information_on_audio_stream_properties_descriptor_present_ndk(atsc3_mmt_mfu_context_t* atsc3_mmt_mfu_context, mmt_atsc3_message_content_type_audio_stream_properties_descriptor_t* mmt_atsc3_audio_stream_properties_descriptor_message){
-    vector<string> vAssetId;
-    vector<string> vLanguage;
-
     for(int i=0; i < mmt_atsc3_audio_stream_properties_descriptor_message->descriptor_header.number_of_assets; i++) {
         mmt_atsc3_message_content_type_audio_stream_properties_descriptor_asset_t* mmt_atsc3_message_content_type_audio_stream_properties_descriptor_asset = mmt_atsc3_audio_stream_properties_descriptor_message->mmt_atsc3_message_content_type_audio_stream_properties_descriptor_asset_v.data[i];
 
@@ -438,11 +419,6 @@ void atsc3_mmt_signalling_information_on_audio_stream_properties_descriptor_pres
 
                     _ATSC3_MMT_MFU_CONTEXT_CALLBACKS_DEFAULT_JNI_DEBUG("\t\tlanguage length: %d, language: %s",
                                             mmt_atsc3_message_content_type_audio_stream_properties_descriptor_asset_presentation_language->language_length, mmt_atsc3_message_content_type_audio_stream_properties_descriptor_asset_presentation_language->language);
-
-                    vAssetId.emplace_back(reinterpret_cast<const char *>(mmt_atsc3_message_content_type_audio_stream_properties_descriptor_asset->asset_header.asset_id),
-                                          mmt_atsc3_message_content_type_audio_stream_properties_descriptor_asset->asset_header.asset_id_length);
-                    vLanguage.emplace_back(reinterpret_cast<const char *>(mmt_atsc3_message_content_type_audio_stream_properties_descriptor_asset_presentation_language->language),
-                                           mmt_atsc3_message_content_type_audio_stream_properties_descriptor_asset_presentation_language->language_length);
                 }
             }
 
@@ -454,7 +430,7 @@ void atsc3_mmt_signalling_information_on_audio_stream_properties_descriptor_pres
         }
     }
 
-    Atsc3NdkMediaMMTBridge_ptr->atsc3_onAudioStreamProperties(vAssetId, vLanguage);
+    Atsc3NdkMediaMMTBridge_ptr->atsc3_onAudioStreamProperties(mmt_atsc3_audio_stream_properties_descriptor_message);
 }
 
 void atsc3_mmt_signalling_information_on_security_properties_descriptor_LAURL_present_ndk(atsc3_mmt_mfu_context_t* atsc3_mmt_mfu_context, mmt_atsc3_message_content_type_security_properties_descriptor_LAURL_t* mmt_atsc3_security_properties_descriptor_LAURL_message){
